@@ -83,7 +83,8 @@ on a temporary filesystem or else securely erased after use.
 
 \dt \cw{\-\-random\-device} \e{device}
 
-\dd Specify device to read entropy from (default \c{/dev/random}).
+\dd Specify device to read entropy from. By default, \c{puttygen}
+uses \c{/dev/urandom}, falling back to \c{/dev/random} if it has to.
 
 In the second phase, \c{puttygen} optionally alters properties of
 the key it has loaded or generated. The options to control this are:

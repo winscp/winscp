@@ -58,7 +58,7 @@ static const struct {
     { NULL }
 };
 
-static const char *bad_sl[] = {
+static const char *const bad_sl[] = {
     "",
     "HTTP/1.1 1000 OK",
     "HTTP/1.1 1000",
@@ -101,13 +101,16 @@ static int status_lines(void)
 }
 
 /* Write MD5 of 'len' bytes of 'str' to 'digest' */
-static unsigned char *digest_md5(const char *data, size_t len,
+static const unsigned char *digest_md5(const char *data, size_t len,
                                  unsigned int digest[4])
 {
     struct ne_md5_ctx *ctx;
 
 #define CHUNK 100
     ctx = ne_md5_create_ctx();
+    if (!ctx) {
+        return (unsigned char *)"NO-MD5-SUPPORT";
+    }        
     /* exercise the buffering interface */
     while (len > CHUNK) {
         ne_md5_process_bytes(data, CHUNK, ctx);
@@ -154,6 +157,7 @@ static int md5_alignment(void)
      * the process_bytes function would SIGBUS if the buffer argument
      * isn't 32-bit aligned. Won't trigger on x86 though. */
     ctx = ne_md5_create_ctx();
+    ONN("could not create MD5 context", ctx == NULL);
     ne_md5_process_bytes(bb + 1, 65, ctx);
     ne_md5_destroy_ctx(ctx);
     ne_free(bb);
@@ -161,14 +165,40 @@ static int md5_alignment(void)
     return OK;
 }
 
+#define INIT_MD5 "0123456789abcdeffedcba9876543210"
+
+static int md5_read(void)
+{
+    union {
+        unsigned int int32[4];
+        unsigned char buf[16];
+    } u;
+    struct ne_md5_ctx *ctx = ne_md5_create_ctx();
+    void *rv;
+    char hex[33];
+
+    rv = ne_md5_read_ctx(ctx, u.buf);
+    ONN("bogus return value", rv != u.buf);
+
+    ne_md5_to_ascii(u.buf, hex);
+
+    ONV(strcmp(INIT_MD5, hex) != 0,
+        ("read context was %s not %s", hex, INIT_MD5));
+
+    ne_md5_destroy_ctx(ctx);
+
+    return OK;
+}
+
 static const struct {
     const char *str;
     time_t time;
-    enum { d_rfc1123, d_iso8601, d_rfc1036 } type;
+    enum { d_rfc1123, d_iso8601, d_rfc1036, d_asctime } type;
 } good_dates[] = {
     { "Fri, 08 Jun 2001 22:59:46 GMT", 992041186, d_rfc1123 },
     { "Friday, 08-Jun-01 22:59:46 GMT", 992041186, d_rfc1036 },
     { "Wednesday, 06-Jun-01 22:59:46 GMT", 991868386, d_rfc1036 },
+    { "Wed Jun 06 22:59:46 2001", 991868386, d_asctime },
     /* some different types of ISO8601 dates. */
     { "2001-06-08T22:59:46Z", 992041186, d_iso8601 },
     { "2001-06-08T22:59:46.9Z", 992041186, d_iso8601 },
@@ -189,6 +219,7 @@ static int parse_dates(void)
 	case d_rfc1036: res = ne_rfc1036_parse(str); break;
 	case d_iso8601: res = ne_iso8601_parse(str); break;
 	case d_rfc1123: res = ne_rfc1123_parse(str); break;
+	case d_asctime: res = ne_asctime_parse(str); break;
 	default: res = -1; break;
 	}
 	
@@ -203,18 +234,24 @@ static int parse_dates(void)
     return OK;
 }
 
-/* trigger segfaults in ne_rfc1036_parse() in <=0.24.5. */
-static int regress_dates(void)
+#define BAD_DATE(format, result) \
+    ONN(format " date parse must fail", result != -1)
+
+/* Test for bad dates; trigger segfaults in ne_rfc1036_parse() in
+ * <=0.24.5. */
+static int bad_dates(void)
 {
     static const char *dates[] = {
-        "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "Friday, 08-Jun-01",
     };
     size_t n;
     
     for (n = 0; n < sizeof(dates)/sizeof(dates[0]); n++) {
-        ne_rfc1036_parse(dates[n]);
-        ne_iso8601_parse(dates[n]);
-        ne_rfc1123_parse(dates[n]);
+        BAD_DATE("rfc1036", ne_rfc1036_parse(dates[n]));
+        BAD_DATE("iso8601", ne_iso8601_parse(dates[n]));
+        BAD_DATE("rfc1123", ne_rfc1123_parse(dates[n]));
+        BAD_DATE("asctime", ne_asctime_parse(dates[n]));
     }
 
     return OK;
@@ -236,7 +273,11 @@ static int versioning(void)
     GOOD(NE_VERSION_MAJOR, NE_VERSION_MINOR - 1, "earlier minor");
 #endif /* NE_VERSION_MINOR > 0 */
 #else /* where NE_VERSION_MAJOR == 0 */
-    BAD(0, NE_VERSION_MINOR - 1, "earlier minor for 0.x");
+    BAD(0, 26, "earlier minor for 0.x");
+    GOOD(0, 27, "current version back-compat to 0.27");
+    GOOD(0, 28, "current version back-compat to 0.28");
+    GOOD(0, 29, "current version back-compat to 0.29");
+    GOOD(0, 30, "current version back-compat to 0.30");
 #endif
     return OK;
 }
@@ -302,8 +343,9 @@ ne_test tests[] = {
     T(status_lines),
     T(md5),
     T(md5_alignment),
+    T(md5_read),
     T(parse_dates),
-    T(regress_dates),
+    T(bad_dates),
     T(versioning),
     T(version_string),
     T(support),

@@ -171,11 +171,12 @@ time_t ne_rfc1123_parse(const char *date)
     int n;
     time_t result;
     
-/*  it goes: Sun, 06 Nov 1994 08:49:37 GMT */
-    n = sscanf(date, RFC1123_FORMAT,
-	    wkday, &gmt.tm_mday, mon, &gmt.tm_year, &gmt.tm_hour,
-	    &gmt.tm_min, &gmt.tm_sec);
-    /* Is it portable to check n==7 here? */
+    /* it goes: Sun, 06 Nov 1994 08:49:37 GMT */
+    if (sscanf(date, RFC1123_FORMAT,
+               wkday, &gmt.tm_mday, mon, &gmt.tm_year, &gmt.tm_hour,
+               &gmt.tm_min, &gmt.tm_sec) != 7)
+        return (time_t) -1;
+
     gmt.tm_year -= 1900;
     for (n=0; n<12; n++)
 	if (strcmp(mon, short_months[n]) == 0)
@@ -204,7 +205,6 @@ time_t ne_rfc1036_parse(const char *date)
 	return (time_t)-1;
     }
 
-    /* portable to check n here? */
     for (n=0; n<12; n++)
 	if (strcmp(mon, short_months[n]) == 0)
 	    break;
@@ -232,11 +232,13 @@ time_t ne_asctime_parse(const char *date)
     char wkday[4], mon[4];
     time_t result;
 
-    n = sscanf(date, ASCTIME_FORMAT,
-		wkday, mon, &gmt.tm_mday, 
-		&gmt.tm_hour, &gmt.tm_min, &gmt.tm_sec,
-		&gmt.tm_year);
-    /* portable to check n here? */
+    if (sscanf(date, ASCTIME_FORMAT,
+               wkday, mon, &gmt.tm_mday, 
+               &gmt.tm_hour, &gmt.tm_min, &gmt.tm_sec,
+               &gmt.tm_year) != 7)
+        return (time_t)-1;
+
+    gmt.tm_year -= 1900;
     for (n=0; n<12; n++)
 	if (strcmp(mon, short_months[n]) == 0)
 	    break;

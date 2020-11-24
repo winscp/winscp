@@ -598,7 +598,7 @@ static int incr_server(ne_socket *sock, void *arg)
 }
 
 /* Emulates a persistent connection timeout on the server. This tests
- * the timeout occuring after between 1 and 10 requests down the
+ * the timeout occurring after between 1 and 10 requests down the
  * connection. */
 static int persist_timeout(void)
 {
@@ -902,8 +902,6 @@ static int iterate_many(void)
     ONREQ(ne_request_dispatch(req));
 
     while ((cursor = ne_response_header_iterate(req, cursor, &name, &value))) {
-        n = -1;
-
         ONV(strncmp(name, "x-", 2) || strncmp(value, "Y-", 2)
             || strcmp(name + 2, value + 2)
             || (n = atoi(name + 2)) >= MANY_HEADERS
@@ -1328,7 +1326,7 @@ static void s_progress(void *userdata, ne_off_t prog, ne_off_t total)
 	    prog_state = prog_error;
 	}
 	else if (prog_last != -1 && prog_last > prog) {
-	    t_context("progess went backwards: " FOFF " to " FOFF, prog_last, prog);
+	    t_context("progress went backwards: " FOFF " to " FOFF, prog_last, prog);
 	    prog_state = prog_error;
 	}
 	else if (prog_last == prog) {
@@ -1423,7 +1421,7 @@ static int fail_noserver(const char *hostname, unsigned int port, int code)
      ne_session_destroy(sess);
 
      ONV(ret == NE_OK,
-	 ("request to server at %s:%u succeded?!", hostname, port));
+	 ("request to server at %s:%u succeeded?!", hostname, port));
      ONV(ret != code, ("request failed with %d not %d", ret, code));
 
      return OK;
@@ -1523,7 +1521,7 @@ static int serve_then_abort(ne_socket *sock, void *ud)
     exit(0);
 }
 
-/* Test that after an aborted request on a peristent connection, a
+/* Test that after an aborted request on a persistent connection, a
  * failure of the *subsequent* request is not treated as a persistent
  * connection timeout and retried.  */
 static int retry_after_abort(void)
@@ -2358,6 +2356,21 @@ static int socks_fail(void)
     return await_server();
 }
 
+static int safe_flags(void)
+{
+    ne_session *sess = ne_session_create("http", "localhost", 80);
+    ne_request *req = ne_request_create(sess, "GET", "/");
+
+    ne_set_request_flag(req, NE_REQFLAG_LAST, 0xAAAAAAAA);
+
+    ONN("flags array bound check failed", ne_get_session(req) != sess);
+
+    ne_request_destroy(req);
+    ne_session_destroy(sess);
+
+    return OK;
+}
+
 /* TODO: test that ne_set_notifier(, NULL, NULL) DTRT too. */
 
 ne_test tests[] = {
@@ -2451,5 +2464,6 @@ ne_test tests[] = {
     T(socks_fail),
     T(fail_lookup),
     T(fail_double_lookup),
+    T(safe_flags),
     T(NULL)
 };

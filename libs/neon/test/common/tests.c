@@ -184,6 +184,9 @@ int main(int argc, char *argv[])
 	test_suite++;
     }
 
+    if (strncmp(test_suite, "lt-", 3) == 0)
+        test_suite += 3;
+
 #ifdef HAVE_SETLOCALE
     setlocale(LC_MESSAGES, "");
 #endif
@@ -236,7 +239,7 @@ int main(int argc, char *argv[])
 
     if (ne_sock_init()) {
 	COL("43;01"); printf("WARNING:"); NOCOL;
-	printf(" Socket library initalization failed.\n");
+	printf(" Socket library initialization failed.\n");
     }
 
     if ((tmp = getenv("TEST_QUIET")) != NULL && strcmp(tmp, "1") == 0) {

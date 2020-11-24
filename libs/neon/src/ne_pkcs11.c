@@ -24,6 +24,7 @@
 
 #ifdef HAVE_PAKCHOIS
 #include <string.h>
+#include <assert.h>
 
 #include <pakchois.h>
 
@@ -72,8 +73,8 @@ struct ne_ssl_pkcs11_provider_s {
 #include <openssl/rsa.h>
 #include <openssl/err.h>
 
-#if defined(RSA_F_RSA_PRIVATE_ENCRYPT)
-#define PK11_RSA_ERR (RSA_F_RSA_PRIVATE_ENCRYPT)
+#if defined(RSA_F_RSA_OSSL_PRIVATE_ENCRYPT)
+#define PK11_RSA_ERR (RSA_F_RSA_OSSL_PRIVATE_ENCRYPT)
 #else
 #define PK11_RSA_ERR (RSA_F_RSA_EAY_PRIVATE_ENCRYPT)
 #endif
@@ -96,7 +97,7 @@ static RSA_METHOD *RSA_meth_new(const char *name, int flags)
 #define RSA_meth_set0_app_data(m, f) (m)->app_data = (void *)(f)
 #endif
 
-/* RSA_METHOD ->rsa_private_encrypt calback. */
+/* RSA_METHOD ->rsa_private_encrypt callback. */
 static int pk11_rsa_encrypt(int mlen, const unsigned char *m, 
                             unsigned char *sigret,
                             RSA *r, int padding)
@@ -113,13 +114,13 @@ static int pk11_rsa_encrypt(int mlen, const unsigned char *m,
         return 0;
     }
 
-    if (padding != RSA_PKCS1_PADDING) {
+    if (padding != RSA_PKCS1_PADDING && padding != RSA_NO_PADDING) {
         NE_DEBUG(NE_DBG_SSL, "pk11: Cannot sign, unknown padding mode '%d'.\n", padding);
         RSAerr(PK11_RSA_ERR,ERR_R_RSA_LIB);
         return 0;
     }        
 
-    mech.mechanism = CKM_RSA_PKCS;
+    mech.mechanism = padding == RSA_PKCS1_PADDING ? CKM_RSA_PKCS : CKM_RSA_X_509;
     mech.parameter = NULL;
     mech.parameter_len = 0;
 
@@ -360,12 +361,12 @@ static void terminate_string(unsigned char *str, size_t len)
 {
     unsigned char *ptr = str + len - 1;
 
+    assert(len > 0);
+
     while ((*ptr == ' ' || *ptr == '\t' || *ptr == '\0') && ptr >= str)
         ptr--;
     
-    if (ptr == str - 1)
-        str[0] = '\0';
-    else if (ptr == str + len - 1)
+    if (ptr == str + len - 1)
         str[len-1] = '\0';
     else
         ptr[1] = '\0';

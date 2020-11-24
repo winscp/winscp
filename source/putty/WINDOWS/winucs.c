@@ -25,7 +25,7 @@ static const WCHAR unitab_xterm_std[32] = {
  * duplicate definitions.
  */
 
-/* 
+/*
  * Tables for ISO-8859-{1-10,13-16} derived from those downloaded
  * 2001-10-02 from <http://www.unicode.org/Public/MAPPINGS/> -- jtn
  * Table for ISO-8859-11 derived from same on 2002-11-18. -- bjh21
@@ -440,170 +440,169 @@ static void link_font(WCHAR * line_tbl, WCHAR * font_tbl, WCHAR attr);
 void init_ucs(Conf *conf, struct unicode_data *ucsdata)
 {
     int i, j;
-    int used_dtf = 0;
+    bool used_dtf = false;
     int vtmode;
 
     /* Decide on the Line and Font codepages */
     ucsdata->line_codepage = decode_codepage(conf_get_str(conf,
-							  CONF_line_codepage));
+                                                          CONF_line_codepage));
 
-    if (ucsdata->font_codepage <= 0) { 
-	ucsdata->font_codepage=0; 
-	ucsdata->dbcs_screenfont=0; 
+    if (ucsdata->font_codepage <= 0) {
+        ucsdata->font_codepage=0;
+        ucsdata->dbcs_screenfont=false;
     }
 
     vtmode = conf_get_int(conf, CONF_vtmode);
     if (vtmode == VT_OEMONLY) {
-	ucsdata->font_codepage = 437;
-	ucsdata->dbcs_screenfont = 0;
-	if (ucsdata->line_codepage <= 0)
-	    ucsdata->line_codepage = GetACP();
+        ucsdata->font_codepage = 437;
+        ucsdata->dbcs_screenfont = false;
+        if (ucsdata->line_codepage <= 0)
+            ucsdata->line_codepage = GetACP();
     } else if (ucsdata->line_codepage <= 0)
-	ucsdata->line_codepage = ucsdata->font_codepage;
+        ucsdata->line_codepage = ucsdata->font_codepage;
 
     /* Collect screen font ucs table */
     if (ucsdata->dbcs_screenfont || ucsdata->font_codepage == 0) {
-	get_unitab(ucsdata->font_codepage, ucsdata->unitab_font, 2);
-	for (i = 128; i < 256; i++)
-	    ucsdata->unitab_font[i] = (WCHAR) (CSET_ACP + i);
+        get_unitab(ucsdata->font_codepage, ucsdata->unitab_font, 2);
+        for (i = 128; i < 256; i++)
+            ucsdata->unitab_font[i] = (WCHAR) (CSET_ACP + i);
     } else {
-	get_unitab(ucsdata->font_codepage, ucsdata->unitab_font, 1);
+        get_unitab(ucsdata->font_codepage, ucsdata->unitab_font, 1);
 
-	/* CP437 fonts are often broken ... */
-	if (ucsdata->font_codepage == 437)
-	    ucsdata->unitab_font[0] = ucsdata->unitab_font[255] = 0xFFFF;
+        /* CP437 fonts are often broken ... */
+        if (ucsdata->font_codepage == 437)
+            ucsdata->unitab_font[0] = ucsdata->unitab_font[255] = 0xFFFF;
     }
     if (vtmode == VT_XWINDOWS)
-	memcpy(ucsdata->unitab_font + 1, unitab_xterm_std,
-	       sizeof(unitab_xterm_std));
+        memcpy(ucsdata->unitab_font + 1, unitab_xterm_std,
+               sizeof(unitab_xterm_std));
 
     /* Collect OEMCP ucs table */
     get_unitab(CP_OEMCP, ucsdata->unitab_oemcp, 1);
 
     /* Collect CP437 ucs table for SCO acs */
     if (vtmode == VT_OEMANSI || vtmode == VT_XWINDOWS)
-	memcpy(ucsdata->unitab_scoacs, ucsdata->unitab_oemcp,
-	       sizeof(ucsdata->unitab_scoacs));
+        memcpy(ucsdata->unitab_scoacs, ucsdata->unitab_oemcp,
+               sizeof(ucsdata->unitab_scoacs));
     else
-	get_unitab(437, ucsdata->unitab_scoacs, 1);
+        get_unitab(437, ucsdata->unitab_scoacs, 1);
 
     /* Collect line set ucs table */
     if (ucsdata->line_codepage == ucsdata->font_codepage &&
-	(ucsdata->dbcs_screenfont ||
-	 vtmode == VT_POORMAN || ucsdata->font_codepage==0)) {
+        (ucsdata->dbcs_screenfont ||
+         vtmode == VT_POORMAN || ucsdata->font_codepage==0)) {
 
-	/* For DBCS and POOR fonts force direct to font */
-	used_dtf = 1;
-	for (i = 0; i < 32; i++)
-	    ucsdata->unitab_line[i] = (WCHAR) i;
-	for (i = 32; i < 256; i++)
-	    ucsdata->unitab_line[i] = (WCHAR) (CSET_ACP + i);
-	ucsdata->unitab_line[127] = (WCHAR) 127;
+        /* For DBCS and POOR fonts force direct to font */
+        used_dtf = true;
+        for (i = 0; i < 32; i++)
+            ucsdata->unitab_line[i] = (WCHAR) i;
+        for (i = 32; i < 256; i++)
+            ucsdata->unitab_line[i] = (WCHAR) (CSET_ACP + i);
+        ucsdata->unitab_line[127] = (WCHAR) 127;
     } else {
-	get_unitab(ucsdata->line_codepage, ucsdata->unitab_line, 0);
+        get_unitab(ucsdata->line_codepage, ucsdata->unitab_line, 0);
     }
 
 #if 0
-    debug(
-	  ("Line cp%d, Font cp%d%s\n", ucsdata->line_codepage,
-	   ucsdata->font_codepage, ucsdata->dbcs_screenfont ? " DBCS" : ""));
+    debug("Line cp%d, Font cp%d%s\n", ucsdata->line_codepage,
+          ucsdata->font_codepage, ucsdata->dbcs_screenfont ? " DBCS" : "");
 
     for (i = 0; i < 256; i += 16) {
-	for (j = 0; j < 16; j++) {
-	    debug(("%04x%s", ucsdata->unitab_line[i + j], j == 15 ? "" : ","));
-	}
-	debug(("\n"));
+        for (j = 0; j < 16; j++) {
+            debug("%04x%s", ucsdata->unitab_line[i + j], j == 15 ? "" : ",");
+        }
+        debug("\n");
     }
 #endif
 
     /* VT100 graphics - NB: Broken for non-ascii CP's */
     memcpy(ucsdata->unitab_xterm, ucsdata->unitab_line,
-	   sizeof(ucsdata->unitab_xterm));
+           sizeof(ucsdata->unitab_xterm));
     memcpy(ucsdata->unitab_xterm + '`', unitab_xterm_std,
-	   sizeof(unitab_xterm_std));
+           sizeof(unitab_xterm_std));
     ucsdata->unitab_xterm['_'] = ' ';
 
     /* Generate UCS ->line page table. */
     if (ucsdata->uni_tbl) {
-	for (i = 0; i < 256; i++)
-	    if (ucsdata->uni_tbl[i])
-		sfree(ucsdata->uni_tbl[i]);
-	sfree(ucsdata->uni_tbl);
-	ucsdata->uni_tbl = 0;
+        for (i = 0; i < 256; i++)
+            if (ucsdata->uni_tbl[i])
+                sfree(ucsdata->uni_tbl[i]);
+        sfree(ucsdata->uni_tbl);
+        ucsdata->uni_tbl = 0;
     }
     if (!used_dtf) {
-	for (i = 0; i < 256; i++) {
-	    if (DIRECT_CHAR(ucsdata->unitab_line[i]))
-		continue;
-	    if (DIRECT_FONT(ucsdata->unitab_line[i]))
-		continue;
-	    if (!ucsdata->uni_tbl) {
-		ucsdata->uni_tbl = snewn(256, char *);
-		memset(ucsdata->uni_tbl, 0, 256 * sizeof(char *));
-	    }
-	    j = ((ucsdata->unitab_line[i] >> 8) & 0xFF);
-	    if (!ucsdata->uni_tbl[j]) {
-		ucsdata->uni_tbl[j] = snewn(256, char);
-		memset(ucsdata->uni_tbl[j], 0, 256 * sizeof(char));
-	    }
-	    ucsdata->uni_tbl[j][ucsdata->unitab_line[i] & 0xFF] = i;
-	}
+        for (i = 0; i < 256; i++) {
+            if (DIRECT_CHAR(ucsdata->unitab_line[i]))
+                continue;
+            if (DIRECT_FONT(ucsdata->unitab_line[i]))
+                continue;
+            if (!ucsdata->uni_tbl) {
+                ucsdata->uni_tbl = snewn(256, char *);
+                memset(ucsdata->uni_tbl, 0, 256 * sizeof(char *));
+            }
+            j = ((ucsdata->unitab_line[i] >> 8) & 0xFF);
+            if (!ucsdata->uni_tbl[j]) {
+                ucsdata->uni_tbl[j] = snewn(256, char);
+                memset(ucsdata->uni_tbl[j], 0, 256 * sizeof(char));
+            }
+            ucsdata->uni_tbl[j][ucsdata->unitab_line[i] & 0xFF] = i;
+        }
     }
 
     /* Find the line control characters. */
     for (i = 0; i < 256; i++)
-	if (ucsdata->unitab_line[i] < ' '
-	    || (ucsdata->unitab_line[i] >= 0x7F && 
-		ucsdata->unitab_line[i] < 0xA0))
-	    ucsdata->unitab_ctrl[i] = i;
-	else
-	    ucsdata->unitab_ctrl[i] = 0xFF;
+        if (ucsdata->unitab_line[i] < ' '
+            || (ucsdata->unitab_line[i] >= 0x7F &&
+                ucsdata->unitab_line[i] < 0xA0))
+            ucsdata->unitab_ctrl[i] = i;
+        else
+            ucsdata->unitab_ctrl[i] = 0xFF;
 
     /* Generate line->screen direct conversion links. */
     if (vtmode == VT_OEMANSI || vtmode == VT_XWINDOWS)
-	link_font(ucsdata->unitab_scoacs, ucsdata->unitab_oemcp, CSET_OEMCP);
+        link_font(ucsdata->unitab_scoacs, ucsdata->unitab_oemcp, CSET_OEMCP);
 
     link_font(ucsdata->unitab_line, ucsdata->unitab_font, CSET_ACP);
     link_font(ucsdata->unitab_scoacs, ucsdata->unitab_font, CSET_ACP);
     link_font(ucsdata->unitab_xterm, ucsdata->unitab_font, CSET_ACP);
 
     if (vtmode == VT_OEMANSI || vtmode == VT_XWINDOWS) {
-	link_font(ucsdata->unitab_line, ucsdata->unitab_oemcp, CSET_OEMCP);
-	link_font(ucsdata->unitab_xterm, ucsdata->unitab_oemcp, CSET_OEMCP);
+        link_font(ucsdata->unitab_line, ucsdata->unitab_oemcp, CSET_OEMCP);
+        link_font(ucsdata->unitab_xterm, ucsdata->unitab_oemcp, CSET_OEMCP);
     }
 
     if (ucsdata->dbcs_screenfont &&
-	ucsdata->font_codepage != ucsdata->line_codepage) {
-	/* F***ing Microsoft fonts, Japanese and Korean codepage fonts
-	 * have a currency symbol at 0x5C but their unicode value is 
-	 * still given as U+005C not the correct U+00A5. */
-	ucsdata->unitab_line['\\'] = CSET_OEMCP + '\\';
+        ucsdata->font_codepage != ucsdata->line_codepage) {
+        /* F***ing Microsoft fonts, Japanese and Korean codepage fonts
+         * have a currency symbol at 0x5C but their unicode value is
+         * still given as U+005C not the correct U+00A5. */
+        ucsdata->unitab_line['\\'] = CSET_OEMCP + '\\';
     }
 
     /* Last chance, if !unicode then try poorman links. */
     if (vtmode != VT_UNICODE) {
-	static const char poorman_scoacs[] = 
-	    "CueaaaaceeeiiiAAE**ooouuyOUc$YPsaiounNao?++**!<>###||||++||++++++--|-+||++--|-+----++++++++##||#aBTPEsyt******EN=+><++-=... n2* ";
-	static const char poorman_latin1[] =
-	    " !cL.Y|S\"Ca<--R~o+23'u|.,1o>///?AAAAAAACEEEEIIIIDNOOOOOxOUUUUYPBaaaaaaaceeeeiiiionooooo/ouuuuypy";
-	static const char poorman_vt100[] = "*#****o~**+++++-----++++|****L.";
+        static const char poorman_scoacs[] =
+            "CueaaaaceeeiiiAAE**ooouuyOUc$YPsaiounNao?++**!<>###||||++||++++++--|-+||++--|-+----++++++++##||#aBTPEsyt******EN=+><++-=... n2* ";
+        static const char poorman_latin1[] =
+            " !cL.Y|S\"Ca<--R~o+23'u|.,1o>///?AAAAAAACEEEEIIIIDNOOOOOxOUUUUYPBaaaaaaaceeeeiiiionooooo/ouuuuypy";
+        static const char poorman_vt100[] = "*#****o~**+++++-----++++|****L.";
 
-	for (i = 160; i < 256; i++)
-	    if (!DIRECT_FONT(ucsdata->unitab_line[i]) &&
-		ucsdata->unitab_line[i] >= 160 &&
-		ucsdata->unitab_line[i] < 256) {
-		ucsdata->unitab_line[i] =
-		    (WCHAR) (CSET_ACP +
-			     poorman_latin1[ucsdata->unitab_line[i] - 160]);
-	    }
-	for (i = 96; i < 127; i++)
-	    if (!DIRECT_FONT(ucsdata->unitab_xterm[i]))
-		ucsdata->unitab_xterm[i] =
-	    (WCHAR) (CSET_ACP + poorman_vt100[i - 96]);
-	for(i=128;i<256;i++) 
-	    if (!DIRECT_FONT(ucsdata->unitab_scoacs[i]))
-		ucsdata->unitab_scoacs[i] = 
-		    (WCHAR) (CSET_ACP + poorman_scoacs[i - 128]);
+        for (i = 160; i < 256; i++)
+            if (!DIRECT_FONT(ucsdata->unitab_line[i]) &&
+                ucsdata->unitab_line[i] >= 160 &&
+                ucsdata->unitab_line[i] < 256) {
+                ucsdata->unitab_line[i] =
+                    (WCHAR) (CSET_ACP +
+                             poorman_latin1[ucsdata->unitab_line[i] - 160]);
+            }
+        for (i = 96; i < 127; i++)
+            if (!DIRECT_FONT(ucsdata->unitab_xterm[i]))
+                ucsdata->unitab_xterm[i] =
+            (WCHAR) (CSET_ACP + poorman_vt100[i - 96]);
+        for(i=128;i<256;i++)
+            if (!DIRECT_FONT(ucsdata->unitab_scoacs[i]))
+                ucsdata->unitab_scoacs[i] =
+                    (WCHAR) (CSET_ACP + poorman_scoacs[i - 128]);
     }
 }
 
@@ -611,15 +610,15 @@ static void link_font(WCHAR * line_tbl, WCHAR * font_tbl, WCHAR attr)
 {
     int font_index, line_index, i;
     for (line_index = 0; line_index < 256; line_index++) {
-	if (DIRECT_FONT(line_tbl[line_index]))
-	    continue;
-	for(i = 0; i < 256; i++) {
-	    font_index = ((32 + i) & 0xFF);
-	    if (line_tbl[line_index] == font_tbl[font_index]) {
-		line_tbl[line_index] = (WCHAR) (attr + font_index);
-		break;
-	    }
-	}
+        if (DIRECT_FONT(line_tbl[line_index]))
+            continue;
+        for(i = 0; i < 256; i++) {
+            font_index = ((32 + i) & 0xFF);
+            if (line_tbl[line_index] == font_tbl[font_index]) {
+                line_tbl[line_index] = (WCHAR) (attr + font_index);
+                break;
+            }
+        }
     }
 }
 
@@ -650,7 +649,7 @@ int check_compose_internal(int first, int second, int recurse)
 {
 
     static const struct {
-	char first, second;
+        char first, second;
         wchar_t composed;
     } composetbl[] = {
         {0x2b, 0x2b, 0x0023},
@@ -982,16 +981,16 @@ int check_compose_internal(int first, int second, int recurse)
     int nc = -1;
 
     for (c = composetbl; c->first; c++) {
-	if (c->first == first && c->second == second)
-	    return c->composed;
+        if (c->first == first && c->second == second)
+            return c->composed;
     }
 
     if (recurse == 0) {
-	nc = check_compose_internal(second, first, 1);
-	if (nc == -1)
-	    nc = check_compose_internal(toupper(first), toupper(second), 1);
-	if (nc == -1)
-	    nc = check_compose_internal(toupper(second), toupper(first), 1);
+        nc = check_compose_internal(second, first, 1);
+        if (nc == -1)
+            nc = check_compose_internal(toupper(first), toupper(second), 1);
+        if (nc == -1)
+            nc = check_compose_internal(toupper(second), toupper(first), 1);
     }
     return nc;
 }
@@ -1048,7 +1047,7 @@ int decode_codepage(char *cp_name)
         d += 3;
     for (s = d; *s >= '0' && *s <= '9'; s++);
     if (*s == 0 && s != d)
-        codepage = atoi(d);	       /* CP999 or IBM999 */
+        codepage = atoi(d);            /* CP999 or IBM999 */
 
     if (codepage == CP_ACP)
         codepage = GetACP();
@@ -1059,15 +1058,15 @@ int decode_codepage(char *cp_name)
 
   break_break:;
     if (codepage != -1) {
-	if (codepage != CP_UTF8 && codepage < 65536) {
-	    if (GetCPInfo(codepage, &cpinfo) == 0) {
-		codepage = -2;
-	    } else if (cpinfo.MaxCharSize > 1)
-		codepage = -3;
-	}
+        if (codepage != CP_UTF8 && codepage < 65536) {
+            if (GetCPInfo(codepage, &cpinfo) == 0) {
+                codepage = -2;
+            } else if (cpinfo.MaxCharSize > 1)
+                codepage = -3;
+        }
     }
     if (codepage == -1 && *cp_name)
-	codepage = -2;
+        codepage = -2;
     return codepage;
 }
 
@@ -1077,32 +1076,32 @@ const char *cp_name(int codepage)
     static char buf[32];
 
     if (codepage == -1) {
-	sprintf(buf, "Use font encoding");
-	return buf;
+        sprintf(buf, "Use font encoding");
+        return buf;
     }
 
     if (codepage > 0 && codepage < 65536)
-	sprintf(buf, "CP%03d", codepage);
+        sprintf(buf, "CP%03d", codepage);
     else
-	*buf = 0;
+        *buf = 0;
 
     if (codepage >= 65536) {
-	cpno = 0;
-	for (cpi = cp_list; cpi->name; cpi++)
-	    if (cpi == cp_list + (codepage - 65536)) {
-		cpno = cpi;
-		break;
-	    }
-	if (cpno)
-	    for (cpi = cp_list; cpi->name; cpi++) {
-		if (cpno->cp_table == cpi->cp_table)
-		    return cpi->name;
-	    }
+        cpno = 0;
+        for (cpi = cp_list; cpi->name; cpi++)
+            if (cpi == cp_list + (codepage - 65536)) {
+                cpno = cpi;
+                break;
+            }
+        if (cpno)
+            for (cpi = cp_list; cpi->name; cpi++) {
+                if (cpno->cp_table == cpi->cp_table)
+                    return cpi->name;
+            }
     } else {
-	for (cpi = cp_list; cpi->name; cpi++) {
-	    if (codepage == cpi->codepage)
-		return cpi->name;
-	}
+        for (cpi = cp_list; cpi->name; cpi++) {
+            if (codepage == cpi->codepage)
+                return cpi->name;
+        }
     }
     return buf;
 }
@@ -1114,7 +1113,7 @@ const char *cp_name(int codepage)
 const char *cp_enumerate(int index)
 {
     if (index < 0 || index >= lenof(cp_list))
-	return NULL;
+        return NULL;
     return cp_list[index].name;
 }
 
@@ -1124,83 +1123,91 @@ void get_unitab(int codepage, wchar_t * unitab, int ftype)
     int i, max = 256, flg = MB_ERR_INVALID_CHARS;
 
     if (ftype)
-	flg |= MB_USEGLYPHCHARS;
+        flg |= MB_USEGLYPHCHARS;
     if (ftype == 2)
-	max = 128;
+        max = 128;
 
     if (codepage == CP_UTF8) {
-	for (i = 0; i < max; i++)
-	    unitab[i] = i;
-	return;
+        for (i = 0; i < max; i++)
+            unitab[i] = i;
+        return;
     }
 
     if (codepage == CP_ACP)
-	codepage = GetACP();
+        codepage = GetACP();
     else if (codepage == CP_OEMCP)
-	codepage = GetOEMCP();
+        codepage = GetOEMCP();
 
     if (codepage > 0 && codepage < 65536) {
-	for (i = 0; i < max; i++) {
-	    tbuf[0] = i;
+        for (i = 0; i < max; i++) {
+            tbuf[0] = i;
 
-	    if (mb_to_wc(codepage, flg, tbuf, 1, unitab + i, 1)
-		!= 1)
-		unitab[i] = 0xFFFD;
-	}
+            if (mb_to_wc(codepage, flg, tbuf, 1, unitab + i, 1)
+                != 1)
+                unitab[i] = 0xFFFD;
+        }
     } else {
-	int j = 256 - cp_list[codepage & 0xFFFF].cp_size;
-	for (i = 0; i < max; i++)
-	    unitab[i] = i;
-	for (i = j; i < max; i++)
-	    unitab[i] = cp_list[codepage & 0xFFFF].cp_table[i - j];
+        int j = 256 - cp_list[codepage & 0xFFFF].cp_size;
+        for (i = 0; i < max; i++)
+            unitab[i] = i;
+        for (i = j; i < max; i++)
+            unitab[i] = cp_list[codepage & 0xFFFF].cp_table[i - j];
     }
 }
 
 int wc_to_mb(int codepage, int flags, const wchar_t *wcstr, int wclen,
-	     char *mbstr, int mblen, const char *defchr, int *defused,
-	     struct unicode_data *ucsdata)
+             char *mbstr, int mblen, const char *defchr,
+             struct unicode_data *ucsdata)
 {
     char *p;
     int i;
     if (ucsdata && codepage == ucsdata->line_codepage && ucsdata->uni_tbl) {
-	/* Do this by array lookup if we can. */
-	if (wclen < 0) {
-	    for (wclen = 0; wcstr[wclen++] ;);   /* will include the NUL */
-	}
-	for (p = mbstr, i = 0; i < wclen; i++) {
-	    wchar_t ch = wcstr[i];
-	    int by;
-	    char *p1;
-	    if (ucsdata->uni_tbl && (p1 = ucsdata->uni_tbl[(ch >> 8) & 0xFF])
-		&& (by = p1[ch & 0xFF]))
-		*p++ = by;
-	    else if (ch < 0x80)
-		*p++ = (char) ch;
-	    else if (defchr) {
-		int j;
-		for (j = 0; defchr[j]; j++)
-		    *p++ = defchr[j];
-		if (defused) *defused = 1;
-	    }
+        /* Do this by array lookup if we can. */
+        if (wclen < 0) {
+            for (wclen = 0; wcstr[wclen++] ;);   /* will include the NUL */
+        }
+        for (p = mbstr, i = 0; i < wclen; i++) {
+            wchar_t ch = wcstr[i];
+            int by;
+            char *p1;
+
+            #define WRITECH(chr) do             \
+            {                                   \
+                assert(p - mbstr < mblen);      \
+                *p++ = (char)(chr);             \
+            } while (0)
+
+            if (ucsdata->uni_tbl &&
+                (p1 = ucsdata->uni_tbl[(ch >> 8) & 0xFF]) != NULL &&
+                (by = p1[ch & 0xFF]) != '\0')
+                WRITECH(by);
+            else if (ch < 0x80)
+                WRITECH(ch);
+            else if (defchr)
+                for (const char *q = defchr; *q; q++)
+                    WRITECH(*q);
 #if 1
-	    else
-		*p++ = '.';
+            else
+                WRITECH('.');
 #endif
-	    assert(p - mbstr < mblen);
-	}
-	return p - mbstr;
-    } else
-	return WideCharToMultiByte(codepage, flags, wcstr, wclen,
-				   mbstr, mblen, defchr, defused);
+
+            #undef WRITECH
+        }
+        return p - mbstr;
+    } else {
+        int defused;
+        return WideCharToMultiByte(codepage, flags, wcstr, wclen,
+                                   mbstr, mblen, defchr, &defused);
+    }
 }
 
 int mb_to_wc(int codepage, int flags, const char *mbstr, int mblen,
-	     wchar_t *wcstr, int wclen)
+             wchar_t *wcstr, int wclen)
 {
     return MultiByteToWideChar(codepage, flags, mbstr, mblen, wcstr, wclen);
 }
 
-int is_dbcs_leadbyte(int codepage, char byte)
+bool is_dbcs_leadbyte(int codepage, char byte)
 {
     return IsDBCSLeadByteEx(codepage, byte);
 }

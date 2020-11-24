@@ -300,8 +300,6 @@ static void clean_session(auth_session *sess)
     sess->sspi_token = NULL;
     ne_sspi_destroy_context(sess->sspi_context);
     sess->sspi_context = NULL;
-    if (sess->sspi_host) ne_free(sess->sspi_host);
-    sess->sspi_host = NULL;
 #endif
 #ifdef HAVE_NTLM
     if (sess->ntlm_context) {
@@ -551,7 +549,7 @@ static int continue_negotiate(auth_session *sess, const char *token,
     return ret;
 }
 
-/* Process a Negotiate challange CHALL in session SESS; returns zero
+/* Process a Negotiate challenge CHALL in session SESS; returns zero
  * if challenge is accepted. */
 static int negotiate_challenge(auth_session *sess, int attempt,
                                struct auth_challenge *chall,
@@ -826,7 +824,7 @@ static int digest_challenge(auth_session *sess, int attempt,
         /* Non-stale challenge: clear session and request credentials. */
         clean_session(sess);
 
-        /* The domain paramater must be parsed after the session is
+        /* The domain parameter must be parsed after the session is
          * cleaned; ignore domain for proxy auth. */
         if (parms->domain && sess->spec == &ah_server_class
             && parse_domain(sess, parms->domain)) {
@@ -1343,7 +1341,7 @@ static int auth_challenge(auth_session *sess, int attempt,
 
             if ((proto->flags & AUTH_FLAG_OPAQUE_PARAM) && sep == ' ') {
                 /* Cope with the fact that the unquoted base64
-                 * paramater token doesn't match the 2617 auth-param
+                 * parameter token doesn't match the 2617 auth-param
                  * grammar: */
                 chall->opaque = ne_shave(ne_token(&pnt, ','), " \t");
                 NE_DEBUG(NE_DBG_HTTPAUTH, "auth: %s opaque parameter '%s'\n",
@@ -1584,6 +1582,10 @@ static void free_auth(void *cookie)
     }
 
     clean_session(sess);
+#ifdef HAVE_SSPI
+    if (sess->sspi_host) ne_free(sess->sspi_host);
+    sess->sspi_host = NULL;
+#endif
     ne_free(sess);
 }
 
@@ -1616,6 +1618,18 @@ static void auth_register(ne_session *sess, int isproxy, unsigned protomask,
         protomask |= NE_AUTH_GSSAPI_ONLY | NE_AUTH_SSPI;
     }
 
+    if ((protomask & NE_AUTH_DIGEST) == NE_AUTH_DIGEST) {
+        struct ne_md5_ctx *ctx = ne_md5_create_ctx();
+
+        if (ctx) {
+            ne_md5_destroy_ctx(ctx);
+        }
+        else {
+            NE_DEBUG(NE_DBG_HTTPAUTH, "auth: Disabling Digest support without MD5.\n");
+            protomask &= ~NE_AUTH_DIGEST;
+        }
+    }
+    
     ahs = ne_get_session_private(sess, id);
     if (ahs == NULL) {
         ahs = ne_calloc(sizeof *ahs);

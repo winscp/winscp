@@ -1,1092 +1,1004 @@
-#include <assert.h>
+/*
+ * sshdes.c: implementation of DES.
+ */
+
+/*
+ * Background
+ * ----------
+ *
+ * The basic structure of DES is a Feistel network: the 64-bit cipher
+ * block is divided into two 32-bit halves L and R, and in each round,
+ * a mixing function is applied to one of them, the result is XORed
+ * into the other, and then the halves are swapped so that the other
+ * one will be the input to the mixing function next time. (This
+ * structure guarantees reversibility no matter whether the mixing
+ * function itself is bijective.)
+ *
+ * The mixing function for DES goes like this:
+ *  + Extract eight contiguous 6-bit strings from the 32-bit word.
+ *    They start at positions 4 bits apart, so each string overlaps
+ *    the next one by one bit. At least one has to wrap cyclically
+ *    round the end of the word.
+ *  + XOR each of those strings with 6 bits of data from the key
+ *    schedule (which consists of 8 x 6-bit strings per round).
+ *  + Use the resulting 6-bit numbers as the indices into eight
+ *    different lookup tables ('S-boxes'), each of which delivers a
+ *    4-bit output.
+ *  + Concatenate those eight 4-bit values into a 32-bit word.
+ *  + Finally, apply a fixed permutation P to that word.
+ *
+ * DES adds one more wrinkle on top of this structure, which is to
+ * conjugate it by a bitwise permutation of the cipher block. That is,
+ * before starting the main cipher rounds, the input bits are permuted
+ * according to a 64-bit permutation called IP, and after the rounds
+ * are finished, the output bits are permuted back again by applying
+ * the inverse of IP.
+ *
+ * This gives a lot of leeway to redefine the components of the cipher
+ * without actually changing the input and output. You could permute
+ * the bits in the output of any or all of the S-boxes, or reorder the
+ * S-boxes among themselves, and adjust the following permutation P to
+ * compensate. And you could adjust IP by post-composing a rotation of
+ * each 32-bit half, and adjust the starting offsets of the 6-bit
+ * S-box indices to compensate.
+ *
+ * test/desref.py demonstrates this by providing two equivalent forms
+ * of the cipher, called DES and SGTDES, which give the same output.
+ * DES is the form described in the original spec: if you make it
+ * print diagnostic output during the cipher and check it against the
+ * original, you should recognise the S-box outputs as matching the
+ * ones you expect. But SGTDES, which I egotistically name after
+ * myself, is much closer to the form implemented here: I've changed
+ * the permutation P to suit my implementation strategy and
+ * compensated by permuting the S-boxes, and also I've added a
+ * rotation right by 1 bit to IP so that only one S-box index has to
+ * wrap round the word and also so that the indices are nicely aligned
+ * for the constant-time selection system I'm using.
+ */
+
+#include <stdio.h>
+
 #include "ssh.h"
+#include "mpint_i.h"               /* we reuse the BignumInt system */
 
-
-/* des.c - implementation of DES
- */
-
-/*
- * Description of DES
- * ------------------
- *
- * Unlike the description in FIPS 46, I'm going to use _sensible_ indices:
- * bits in an n-bit word are numbered from 0 at the LSB to n-1 at the MSB.
- * And S-boxes are indexed by six consecutive bits, not by the outer two
- * followed by the middle four.
- *
- * The DES encryption routine requires a 64-bit input, and a key schedule K
- * containing 16 48-bit elements.
- *
- *   First the input is permuted by the initial permutation IP.
- *   Then the input is split into 32-bit words L and R. (L is the MSW.)
- *   Next, 16 rounds. In each round:
- *     (L, R) <- (R, L xor f(R, K[i]))
- *   Then the pre-output words L and R are swapped.
- *   Then L and R are glued back together into a 64-bit word. (L is the MSW,
- *     again, but since we just swapped them, the MSW is the R that came out
- *     of the last round.)
- *   The 64-bit output block is permuted by the inverse of IP and returned.
- *
- * Decryption is identical except that the elements of K are used in the
- * opposite order. (This wouldn't work if that word swap didn't happen.)
- *
- * The function f, used in each round, accepts a 32-bit word R and a
- * 48-bit key block K. It produces a 32-bit output.
- *
- *   First R is expanded to 48 bits using the bit-selection function E.
- *   The resulting 48-bit block is XORed with the key block K to produce
- *     a 48-bit block X.
- *   This block X is split into eight groups of 6 bits. Each group of 6
- *     bits is then looked up in one of the eight S-boxes to convert
- *     it to 4 bits. These eight groups of 4 bits are glued back
- *     together to produce a 32-bit preoutput block.
- *   The preoutput block is permuted using the permutation P and returned.
- *
- * Key setup maps a 64-bit key word into a 16x48-bit key schedule. Although
- * the approved input format for the key is a 64-bit word, eight of the
- * bits are discarded, so the actual quantity of key used is 56 bits.
- *
- *   First the input key is converted to two 28-bit words C and D using
- *     the bit-selection function PC1.
- *   Then 16 rounds of key setup occur. In each round, C and D are each
- *     rotated left by either 1 or 2 bits (depending on which round), and
- *     then converted into a key schedule element using the bit-selection
- *     function PC2.
- *
- * That's the actual algorithm. Now for the tedious details: all those
- * painful permutations and lookup tables.
- *
- * IP is a 64-to-64 bit permutation. Its output contains the following
- * bits of its input (listed in order MSB to LSB of output).
- *
- *    6 14 22 30 38 46 54 62  4 12 20 28 36 44 52 60
- *    2 10 18 26 34 42 50 58  0  8 16 24 32 40 48 56
- *    7 15 23 31 39 47 55 63  5 13 21 29 37 45 53 61
- *    3 11 19 27 35 43 51 59  1  9 17 25 33 41 49 57
- *
- * E is a 32-to-48 bit selection function. Its output contains the following
- * bits of its input (listed in order MSB to LSB of output).
- *
- *    0 31 30 29 28 27 28 27 26 25 24 23 24 23 22 21 20 19 20 19 18 17 16 15
- *   16 15 14 13 12 11 12 11 10  9  8  7  8  7  6  5  4  3  4  3  2  1  0 31
- *
- * The S-boxes are arbitrary table-lookups each mapping a 6-bit input to a
- * 4-bit output. In other words, each S-box is an array[64] of 4-bit numbers.
- * The S-boxes are listed below. The first S-box listed is applied to the
- * most significant six bits of the block X; the last one is applied to the
- * least significant.
- *
- *   14  0  4 15 13  7  1  4  2 14 15  2 11 13  8  1
- *    3 10 10  6  6 12 12 11  5  9  9  5  0  3  7  8
- *    4 15  1 12 14  8  8  2 13  4  6  9  2  1 11  7
- *   15  5 12 11  9  3  7 14  3 10 10  0  5  6  0 13
- *
- *   15  3  1 13  8  4 14  7  6 15 11  2  3  8  4 14
- *    9 12  7  0  2  1 13 10 12  6  0  9  5 11 10  5
- *    0 13 14  8  7 10 11  1 10  3  4 15 13  4  1  2
- *    5 11  8  6 12  7  6 12  9  0  3  5  2 14 15  9
- *
- *   10 13  0  7  9  0 14  9  6  3  3  4 15  6  5 10
- *    1  2 13  8 12  5  7 14 11 12  4 11  2 15  8  1
- *   13  1  6 10  4 13  9  0  8  6 15  9  3  8  0  7
- *   11  4  1 15  2 14 12  3  5 11 10  5 14  2  7 12
- *
- *    7 13 13  8 14 11  3  5  0  6  6 15  9  0 10  3
- *    1  4  2  7  8  2  5 12 11  1 12 10  4 14 15  9
- *   10  3  6 15  9  0  0  6 12 10 11  1  7 13 13  8
- *   15  9  1  4  3  5 14 11  5 12  2  7  8  2  4 14
- *
- *    2 14 12 11  4  2  1 12  7  4 10  7 11 13  6  1
- *    8  5  5  0  3 15 15 10 13  3  0  9 14  8  9  6
- *    4 11  2  8  1 12 11  7 10  1 13 14  7  2  8 13
- *   15  6  9 15 12  0  5  9  6 10  3  4  0  5 14  3
- *
- *   12 10  1 15 10  4 15  2  9  7  2 12  6  9  8  5
- *    0  6 13  1  3 13  4 14 14  0  7 11  5  3 11  8
- *    9  4 14  3 15  2  5 12  2  9  8  5 12 15  3 10
- *    7 11  0 14  4  1 10  7  1  6 13  0 11  8  6 13
- *
- *    4 13 11  0  2 11 14  7 15  4  0  9  8  1 13 10
- *    3 14 12  3  9  5  7 12  5  2 10 15  6  8  1  6
- *    1  6  4 11 11 13 13  8 12  1  3  4  7 10 14  7
- *   10  9 15  5  6  0  8 15  0 14  5  2  9  3  2 12
- *
- *   13  1  2 15  8 13  4  8  6 10 15  3 11  7  1  4
- *   10 12  9  5  3  6 14 11  5  0  0 14 12  9  7  2
- *    7  2 11  1  4 14  1  7  9  4 12 10 14  8  2 13
- *    0 15  6 12 10  9 13  0 15  3  3  5  5  6  8 11
- *
- * P is a 32-to-32 bit permutation. Its output contains the following
- * bits of its input (listed in order MSB to LSB of output).
- *
- *   16 25 12 11  3 20  4 15 31 17  9  6 27 14  1 22
- *   30 24  8 18  0  5 29 23 13 19  2 26 10 21 28  7
- *
- * PC1 is a 64-to-56 bit selection function. Its output is in two words,
- * C and D. The word C contains the following bits of its input (listed
- * in order MSB to LSB of output).
- *
- *    7 15 23 31 39 47 55 63  6 14 22 30 38 46
- *   54 62  5 13 21 29 37 45 53 61  4 12 20 28
- *
- * And the word D contains these bits.
- *
- *    1  9 17 25 33 41 49 57  2 10 18 26 34 42
- *   50 58  3 11 19 27 35 43 51 59 36 44 52 60
- *
- * PC2 is a 56-to-48 bit selection function. Its input is in two words,
- * C and D. These are treated as one 56-bit word (with C more significant,
- * so that bits 55 to 28 of the word are bits 27 to 0 of C, and bits 27 to
- * 0 of the word are bits 27 to 0 of D). The output contains the following
- * bits of this 56-bit input word (listed in order MSB to LSB of output).
- *
- *   42 39 45 32 55 51 53 28 41 50 35 46 33 37 44 52 30 48 40 49 29 36 43 54
- *   15  4 25 19  9  1 26 16  5 11 23  8 12  7 17  0 22  3 10 14  6 20 27 24
- */
+/* If you compile with -DDES_DIAGNOSTICS, intermediate results will be
+ * sent to debug() (so you also need to compile with -DDEBUG).
+ * Otherwise this ifdef will condition away all the debug() calls. */
+#ifndef DES_DIAGNOSTICS
+#undef debug
+#define debug(...) ((void)0)
+#endif
 
 /*
- * Implementation details
- * ----------------------
- * 
- * If you look at the code in this module, you'll find it looks
- * nothing _like_ the above algorithm. Here I explain the
- * differences...
- *
- * Key setup has not been heavily optimised here. We are not
- * concerned with key agility: we aren't codebreakers. We don't
- * mind a little delay (and it really is a little one; it may be a
- * factor of five or so slower than it could be but it's still not
- * an appreciable length of time) while setting up. The only tweaks
- * in the key setup are ones which change the format of the key
- * schedule to speed up the actual encryption. I'll describe those
- * below.
- *
- * The first and most obvious optimisation is the S-boxes. Since
- * each S-box always targets the same four bits in the final 32-bit
- * word, so the output from (for example) S-box 0 must always be
- * shifted left 28 bits, we can store the already-shifted outputs
- * in the lookup tables. This reduces lookup-and-shift to lookup,
- * so the S-box step is now just a question of ORing together eight
- * table lookups.
- *
- * The permutation P is just a bit order change; it's invariant
- * with respect to OR, in that P(x)|P(y) = P(x|y). Therefore, we
- * can apply P to every entry of the S-box tables and then we don't
- * have to do it in the code of f(). This yields a set of tables
- * which might be called SP-boxes.
- *
- * The bit-selection function E is our next target. Note that E is
- * immediately followed by the operation of splitting into 6-bit
- * chunks. Examining the 6-bit chunks coming out of E we notice
- * they're all contiguous within the word (speaking cyclically -
- * the end two wrap round); so we can extract those bit strings
- * individually rather than explicitly running E. This would yield
- * code such as
- *
- *     y |= SPboxes[0][ (rotl(R, 5) ^  top6bitsofK) & 0x3F ];
- *     t |= SPboxes[1][ (rotl(R,11) ^ next6bitsofK) & 0x3F ];
- *
- * and so on; and the key schedule preparation would have to
- * provide each 6-bit chunk separately.
- *
- * Really we'd like to XOR in the key schedule element before
- * looking up bit strings in R. This we can't do, naively, because
- * the 6-bit strings we want overlap. But look at the strings:
- *
- *       3322222222221111111111
- * bit   10987654321098765432109876543210
- * 
- * box0  XXXXX                          X
- * box1     XXXXXX
- * box2         XXXXXX
- * box3             XXXXXX
- * box4                 XXXXXX
- * box5                     XXXXXX
- * box6                         XXXXXX
- * box7  X                          XXXXX
- *
- * The bit strings we need to XOR in for boxes 0, 2, 4 and 6 don't
- * overlap with each other. Neither do the ones for boxes 1, 3, 5
- * and 7. So we could provide the key schedule in the form of two
- * words that we can separately XOR into R, and then every S-box
- * index is available as a (cyclically) contiguous 6-bit substring
- * of one or the other of the results.
- *
- * The comments in Eric Young's libdes implementation point out
- * that two of these bit strings require a rotation (rather than a
- * simple shift) to extract. It's unavoidable that at least _one_
- * must do; but we can actually run the whole inner algorithm (all
- * 16 rounds) rotated one bit to the left, so that what the `real'
- * DES description sees as L=0x80000001 we see as L=0x00000003.
- * This requires rotating all our SP-box entries one bit to the
- * left, and rotating each word of the key schedule elements one to
- * the left, and rotating L and R one bit left just after IP and
- * one bit right again just before FP. And in each round we convert
- * a rotate into a shift, so we've saved a few per cent.
- *
- * That's about it for the inner loop; the SP-box tables as listed
- * below are what I've described here (the original S value,
- * shifted to its final place in the input to P, run through P, and
- * then rotated one bit left). All that remains is to optimise the
- * initial permutation IP.
- *
- * IP is not an arbitrary permutation. It has the nice property
- * that if you take any bit number, write it in binary (6 bits),
- * permute those 6 bits and invert some of them, you get the final
- * position of that bit. Specifically, the bit whose initial
- * position is given (in binary) as fedcba ends up in position
- * AcbFED (where a capital letter denotes the inverse of a bit).
- *
- * We have the 64-bit data in two 32-bit words L and R, where bits
- * in L are those with f=1 and bits in R are those with f=0. We
- * note that we can do a simple transformation: suppose we exchange
- * the bits with f=1,c=0 and the bits with f=0,c=1. This will cause
- * the bit fedcba to be in position cedfba - we've `swapped' bits c
- * and f in the position of each bit!
- * 
- * Better still, this transformation is easy. In the example above,
- * bits in L with c=0 are bits 0x0F0F0F0F, and those in R with c=1
- * are 0xF0F0F0F0. So we can do
- *
- *     difference = ((R >> 4) ^ L) & 0x0F0F0F0F
- *     R ^= (difference << 4)
- *     L ^= difference
- *
- * to perform the swap. Let's denote this by bitswap(4,0x0F0F0F0F).
- * Also, we can invert the bit at the top just by exchanging L and
- * R. So in a few swaps and a few of these bit operations we can
- * do:
- * 
- * Initially the position of bit fedcba is     fedcba
- * Swap L with R to make it                    Fedcba
- * Perform bitswap( 4,0x0F0F0F0F) to make it   cedFba
- * Perform bitswap(16,0x0000FFFF) to make it   ecdFba
- * Swap L with R to make it                    EcdFba
- * Perform bitswap( 2,0x33333333) to make it   bcdFEa
- * Perform bitswap( 8,0x00FF00FF) to make it   dcbFEa
- * Swap L with R to make it                    DcbFEa
- * Perform bitswap( 1,0x55555555) to make it   acbFED
- * Swap L with R to make it                    AcbFED
- *
- * (In the actual code the four swaps are implicit: R and L are
- * simply used the other way round in the first, second and last
- * bitswap operations.)
- *
- * The final permutation is just the inverse of IP, so it can be
- * performed by a similar set of operations.
+ * General utility functions.
  */
-
-typedef struct {
-    word32 k0246[16], k1357[16];
-    word32 iv0, iv1;
-} DESContext;
-
-#define rotl(x, c) ( (x << c) | (x >> (32-c)) )
-#define rotl28(x, c) ( ( (x << c) | (x >> (28-c)) ) & 0x0FFFFFFF)
-
-static word32 bitsel(word32 * input, const int *bitnums, int size)
+static inline uint32_t rol(uint32_t x, unsigned c)
 {
-    word32 ret = 0;
-    while (size--) {
-	int bitpos = *bitnums++;
-	ret <<= 1;
-	if (bitpos >= 0)
-	    ret |= 1 & (input[bitpos / 32] >> (bitpos % 32));
+    return (x << (31 & c)) | (x >> (31 & -c));
+}
+static inline uint32_t ror(uint32_t x, unsigned c)
+{
+    return rol(x, -c);
+}
+
+/*
+ * The hard part of doing DES in constant time is the S-box lookup.
+ *
+ * My strategy is to iterate over the whole lookup table! That's slow,
+ * but I don't see any way to avoid _something_ along those lines: in
+ * every round, every entry in every S-box is potentially needed, and
+ * if you can't change your memory access pattern based on the input
+ * data, it follows that you have to read a quantity of information
+ * equal to the size of all the S-boxes. (Unless they were to turn out
+ * to be significantly compressible, but I for one couldn't show them
+ * to be.)
+ *
+ * In more detail, I construct a sort of counter-based 'selection
+ * gadget', which is 15 bits wide and starts off with the top bit
+ * zero, the next eight bits all 1, and the bottom six set to the
+ * input S-box index:
+ *
+ *     011111111xxxxxx
+ *
+ * Now if you add 1 in the lowest bit position, then either it carries
+ * into the top section (resetting it to 100000000), or it doesn't do
+ * that yet. If you do that 64 times, then it will _guarantee_ to have
+ * ticked over into 100000000. In between those increments, the eight
+ * bits that started off as 11111111 will have stayed that way for
+ * some number of iterations and then become 00000000, and exactly how
+ * many iterations depends on the input index.
+ *
+ * The purpose of the 0 bit at the top is to absorb the carry when the
+ * switch happens, which means you can pack more than one gadget into
+ * the same machine word and have them all work in parallel without
+ * each one intefering with the next.
+ *
+ * The next step is to use each of those 8-bit segments as a bit mask:
+ * each one is ANDed with a lookup table entry, and all the results
+ * are XORed together. So you end up with the bitwise XOR of some
+ * initial segment of the table entries. And the stored S-box tables
+ * are transformed in such a way that the real S-box values are given
+ * not by the individual entries, but by the cumulative XORs
+ * constructed in this way.
+ *
+ * A refinement is that I increment each gadget by 2 rather than 1
+ * each time, so I only iterate 32 times instead of 64. That's why
+ * there are 8 selection bits instead of 4: each gadget selects enough
+ * bits to reconstruct _two_ S-box entries, for a pair of indices
+ * (2n,2n+1), and then finally I use the low bit of the index to do a
+ * parallel selection between each of those pairs.
+ *
+ * The selection gadget is not quite 16 bits wide. So you can fit four
+ * of them across a 64-bit word at 16-bit intervals, which is also
+ * convenient because the place the S-box indices are coming from also
+ * has pairs of them separated by 16-bit distances, so it's easy to
+ * copy them into the gadgets in the first place.
+ */
+
+/*
+ * The S-box data. Each pair of nonzero columns here describes one of
+ * the S-boxes, corresponding to the SGTDES tables in test/desref.py,
+ * under the following transformation.
+ *
+ * Take S-box #3 as an example. Its values in successive rows of this
+ * table are eb,e8,54,3d, ... So the cumulative XORs of initial
+ * sequences of those values are eb,(eb^e8),(eb^e8^54), ... which
+ * comes to eb,03,57,... Of _those_ values, the top nibble (e,0,5,...)
+ * gives the even-numbered entries in the S-box, in _reverse_ order
+ * (because a lower input index selects the XOR of a longer
+ * subsequence). The odd-numbered entries are given by XORing the two
+ * digits together: (e^b),(0^3),(5^7),... = 5,3,2,... And indeed, if
+ * you check SGTDES.sboxes[3] you find it ends ... 52 03 e5.
+ */
+#define SBOX_ITERATION(X)                       \
+    /*  66  22  44  00      77  33  55  11 */   \
+    X(0xf600970083008500, 0x0e00eb007b002e00)   \
+    X(0xda00e4009000e000, 0xad00e800a700b400)   \
+    X(0x1a009d003f003600, 0xf60054004300cd00)   \
+    X(0xaf00c500e900a900, 0x63003d00f2005900)   \
+    X(0xf300750079001400, 0x80005000a2008900)   \
+    X(0xa100d400d6007b00, 0xd3009000d300e100)   \
+    X(0x450087002600ac00, 0xae003c0031009c00)   \
+    X(0xd000b100b6003600, 0x3e006f0092005900)   \
+    X(0x4d008a0026001000, 0x89007a00b8004a00)   \
+    X(0xca00f5003f00ac00, 0x6f00f0003c009400)   \
+    X(0x92008d0090001000, 0x8c00c600ce004a00)   \
+    X(0xe2005900e9006d00, 0x790078007800fa00)   \
+    X(0x1300b10090008d00, 0xa300170027001800)   \
+    X(0xc70058005f006a00, 0x9c00c100e0006300)   \
+    X(0x9b002000f000f000, 0xf70057001600f900)   \
+    X(0xeb00b0009000af00, 0xa9006300b0005800)   \
+    X(0xa2001d00cf000000, 0x3800b00066000000)   \
+    X(0xf100da007900d000, 0xbc00790094007900)   \
+    X(0x570015001900ad00, 0x6f00ef005100cb00)   \
+    X(0xc3006100e9006d00, 0xc000b700f800f200)   \
+    X(0x1d005800b600d000, 0x67004d00cd002c00)   \
+    X(0xf400b800d600e000, 0x5e00a900b000e700)   \
+    X(0x5400d1003f009c00, 0xc90069002c005300)   \
+    X(0xe200e50060005900, 0x6a00b800c500f200)   \
+    X(0xdf0047007900d500, 0x7000ec004c00ea00)   \
+    X(0x7100d10060009c00, 0x3f00b10095005e00)   \
+    X(0x82008200f0002000, 0x87001d00cd008000)   \
+    X(0xd0007000af00c000, 0xe200be006100f200)   \
+    X(0x8000930060001000, 0x36006e0081001200)   \
+    X(0x6500a300d600ac00, 0xcf003d007d00c000)   \
+    X(0x9000700060009800, 0x62008100ad009200)   \
+    X(0xe000e4003f00f400, 0x5a00ed009000f200)   \
+    /* end of list */
+
+/*
+ * The S-box mapping function. Expects two 32-bit input words: si6420
+ * contains the table indices for S-boxes 0,2,4,6 with their low bits
+ * starting at position 2 (for S-box 0) and going up in steps of 8.
+ * si7531 has indices 1,3,5,7 in the same bit positions.
+ */
+static inline uint32_t des_S(uint32_t si6420, uint32_t si7531)
+{
+    debug("sindices: %02x %02x %02x %02x %02x %02x %02x %02x\n",
+          0x3F & (si6420 >>  2), 0x3F & (si7531 >>  2),
+          0x3F & (si6420 >> 10), 0x3F & (si7531 >> 10),
+          0x3F & (si6420 >> 18), 0x3F & (si7531 >> 18),
+          0x3F & (si6420 >> 26), 0x3F & (si7531 >> 26));
+
+#ifdef SIXTY_FOUR_BIT
+    /*
+     * On 64-bit machines, we store the table in exactly the form
+     * shown above, and make two 64-bit words containing four
+     * selection gadgets each.
+     */
+
+    /* Set up the gadgets. The 'cNNNN' variables will be gradually
+     * incremented, and the bits in positions FF00FF00FF00FF00 will
+     * act as selectors for the words in the table.
+     *
+     * A side effect of moving the input indices further apart is that
+     * they change order, because it's easier to keep a pair that were
+     * originally 16 bits apart still 16 bits apart, which now makes
+     * them adjacent instead of separated by one. So the fact that
+     * si6420 turns into c6240 (with the 2,4 reversed) is not a typo!
+     * This will all be undone when we rebuild the output word later.
+     */
+    uint64_t c6240 = ((si6420 | ((uint64_t)si6420 << 24))
+                      & 0x00FC00FC00FC00FC) | 0xFF00FF00FF00FF00;
+    uint64_t c7351 = ((si7531 | ((uint64_t)si7531 << 24))
+                      & 0x00FC00FC00FC00FC) | 0xFF00FF00FF00FF00;
+    debug("S in:  c6240=%016"PRIx64" c7351=%016"PRIx64"\n", c6240, c7351);
+
+    /* Iterate over the table. The 'sNNNN' variables accumulate the
+     * XOR of all the table entries not masked out. */
+    static const struct tbl { uint64_t t6240, t7351; } tbl[32] = {
+#define TABLE64(a, b) { a, b },
+        SBOX_ITERATION(TABLE64)
+#undef TABLE64
+    };
+    uint64_t s6240 = 0, s7351 = 0;
+    for (const struct tbl *t = tbl, *limit = tbl + 32; t < limit; t++) {
+        s6240 ^= c6240 & t->t6240; c6240 += 0x0008000800080008;
+        s7351 ^= c7351 & t->t7351; c7351 += 0x0008000800080008;
+    }
+    debug("S out: s6240=%016"PRIx64" s7351=%016"PRIx64"\n", s6240, s7351);
+
+    /* Final selection between each even/odd pair: mask off the low
+     * bits of all the input indices (which haven't changed throughout
+     * the iteration), and multiply by a bit mask that will turn each
+     * set bit into a mask covering the upper nibble of the selected
+     * pair. Then use those masks to control which set of lower
+     * nibbles is XORed into the upper nibbles. */
+    s6240 ^= (s6240 << 4) & ((0xf000/0x004) * (c6240 & 0x0004000400040004));
+    s7351 ^= (s7351 << 4) & ((0xf000/0x004) * (c7351 & 0x0004000400040004));
+
+    /* Now the eight final S-box outputs are in the upper nibble of
+     * each selection position. Mask away the rest of the clutter. */
+    s6240 &= 0xf000f000f000f000;
+    s7351 &= 0xf000f000f000f000;
+    debug("s0=%x s1=%x s2=%x s3=%x s4=%x s5=%x s6=%x s7=%x\n",
+          (unsigned)(0xF & (s6240 >> 12)),
+          (unsigned)(0xF & (s7351 >> 12)),
+          (unsigned)(0xF & (s6240 >> 44)),
+          (unsigned)(0xF & (s7351 >> 44)),
+          (unsigned)(0xF & (s6240 >> 28)),
+          (unsigned)(0xF & (s7351 >> 28)),
+          (unsigned)(0xF & (s6240 >> 60)),
+          (unsigned)(0xF & (s7351 >> 60)));
+
+    /* Combine them all into a single 32-bit output word, which will
+     * come out in the order 76543210. */
+    uint64_t combined = (s6240 >> 12) | (s7351 >> 8);
+    return combined | (combined >> 24);
+
+#else /* SIXTY_FOUR_BIT */
+    /*
+     * For 32-bit platforms, we do the same thing but in four 32-bit
+     * words instead of two 64-bit ones, so the CPU doesn't have to
+     * waste time propagating carries or shifted bits between the two
+     * halves of a uint64 that weren't needed anyway.
+     */
+
+    /* Set up the gadgets */
+    uint32_t c40 = ((si6420     ) & 0x00FC00FC) | 0xFF00FF00;
+    uint32_t c62 = ((si6420 >> 8) & 0x00FC00FC) | 0xFF00FF00;
+    uint32_t c51 = ((si7531     ) & 0x00FC00FC) | 0xFF00FF00;
+    uint32_t c73 = ((si7531 >> 8) & 0x00FC00FC) | 0xFF00FF00;
+    debug("S in:  c40=%08"PRIx32" c62=%08"PRIx32
+          " c51=%08"PRIx32" c73=%08"PRIx32"\n", c40, c62, c51, c73);
+
+    /* Iterate over the table */
+    static const struct tbl { uint32_t t40, t62, t51, t73; } tbl[32] = {
+#define TABLE32(a, b) { ((uint32_t)a), (a>>32), ((uint32_t)b), (b>>32) },
+        SBOX_ITERATION(TABLE32)
+#undef TABLE32
+    };
+    uint32_t s40 = 0, s62 = 0, s51 = 0, s73 = 0;
+    for (const struct tbl *t = tbl, *limit = tbl + 32; t < limit; t++) {
+        s40 ^= c40 & t->t40; c40 += 0x00080008;
+        s62 ^= c62 & t->t62; c62 += 0x00080008;
+        s51 ^= c51 & t->t51; c51 += 0x00080008;
+        s73 ^= c73 & t->t73; c73 += 0x00080008;
+    }
+    debug("S out: s40=%08"PRIx32" s62=%08"PRIx32
+           " s51=%08"PRIx32" s73=%08"PRIx32"\n", s40, s62, s51, s73);
+
+    /* Final selection within each pair */
+    s40 ^= (s40 << 4) & ((0xf000/0x004) * (c40 & 0x00040004));
+    s62 ^= (s62 << 4) & ((0xf000/0x004) * (c62 & 0x00040004));
+    s51 ^= (s51 << 4) & ((0xf000/0x004) * (c51 & 0x00040004));
+    s73 ^= (s73 << 4) & ((0xf000/0x004) * (c73 & 0x00040004));
+
+    /* Clean up the clutter */
+    s40 &= 0xf000f000;
+    s62 &= 0xf000f000;
+    s51 &= 0xf000f000;
+    s73 &= 0xf000f000;
+    debug("s0=%x s1=%x s2=%x s3=%x s4=%x s5=%x s6=%x s7=%x\n",
+          (unsigned)(0xF & (s40 >> 12)),
+          (unsigned)(0xF & (s51 >> 12)),
+          (unsigned)(0xF & (s62 >> 12)),
+          (unsigned)(0xF & (s73 >> 12)),
+          (unsigned)(0xF & (s40 >> 28)),
+          (unsigned)(0xF & (s51 >> 28)),
+          (unsigned)(0xF & (s62 >> 28)),
+          (unsigned)(0xF & (s73 >> 28)));
+
+    /* Recombine and return */
+    return (s40 >> 12) | (s62 >> 4) | (s51 >> 8) | (s73);
+
+#endif /* SIXTY_FOUR_BIT */
+
+}
+
+/*
+ * Now for the permutation P. The basic strategy here is to use a
+ * Benes network: in each stage, the bit at position i is allowed to
+ * either stay where it is or swap with i ^ D, where D is a power of 2
+ * that varies with each phase. (So when D=1, pairs of the form
+ * {2n,2n+1} can swap; when D=2, the pairs are {4n+j,4n+j+2} for
+ * j={0,1}, and so on.)
+ *
+ * You can recursively construct a Benes network for an arbitrary
+ * permutation, in which the values of D iterate across all the powers
+ * of 2 less than the permutation size and then go back again. For
+ * example, the typical presentation for 32 bits would have D iterate
+ * over 16,8,4,2,1,2,4,8,16, and there's an easy algorithm that can
+ * express any permutation in that form by deciding which pairs of
+ * bits to swap in the outer pair of stages and then recursing to do
+ * all the stages in between.
+ *
+ * Actually implementing the swaps is easy when they're all between
+ * bits at the same separation: make the value x ^ (x >> D), mask out
+ * just the bits in the low position of a pair that needs to swap, and
+ * then use the resulting value y to make x ^ y ^ (y << D) which is
+ * the swapped version.
+ *
+ * In this particular case, I processed the bit indices in the other
+ * order (going 1,2,4,8,16,8,4,2,1), which makes no significant
+ * difference to the construction algorithm (it's just a relabelling),
+ * but it now means that the first two steps only permute entries
+ * within the output of each S-box - and therefore we can leave them
+ * completely out, in favour of just defining the S-boxes so that
+ * those permutation steps are already applied. Furthermore, by
+ * exhaustive search over the rest of the possible bit-orders for each
+ * S-box, I was able to find a version of P which could be represented
+ * in such a way that two further phases had all their control bits
+ * zero and could be skipped. So the number of swap stages is reduced
+ * to 5 from the 9 that might have been needed.
+ */
+
+static inline uint32_t des_benes_step(uint32_t v, unsigned D, uint32_t mask)
+{
+    uint32_t diff = (v ^ (v >> D)) & mask;
+    return v ^ diff ^ (diff << D);
+}
+
+static inline uint32_t des_P(uint32_t v_orig)
+{
+    uint32_t v = v_orig;
+
+    /* initial stages with distance 1,2 are part of the S-box data table */
+    v = des_benes_step(v,  4, 0x07030702);
+    v = des_benes_step(v,  8, 0x004E009E);
+    v = des_benes_step(v, 16, 0x0000D9D3);
+/*  v = des_benes_step(v,  8, 0x00000000);  no-op, so we can skip it */
+    v = des_benes_step(v,  4, 0x05040004);
+/*  v = des_benes_step(v,  2, 0x00000000);  no-op, so we can skip it */
+    v = des_benes_step(v,  1, 0x04045015);
+
+    debug("P(%08"PRIx32") = %08"PRIx32"\n", v_orig, v);
+
+    return v;
+}
+
+/*
+ * Putting the S and P functions together, and adding in the round key
+ * as well, gives us the full mixing function f.
+ */
+
+static inline uint32_t des_f(uint32_t R, uint32_t K7531, uint32_t K6420)
+{
+    uint32_t s7531 = R ^ K7531, s6420 = rol(R, 4) ^ K6420;
+    return des_P(des_S(s6420, s7531));
+}
+
+/*
+ * The key schedule, and the function to set it up.
+ */
+
+typedef struct des_keysched des_keysched;
+struct des_keysched {
+    uint32_t k7531[16], k6420[16];
+};
+
+/*
+ * Simplistic function to select an arbitrary sequence of bits from
+ * one value and glue them together into another value. bitnums[]
+ * gives the sequence of bit indices of the input, from the highest
+ * output bit downwards. An index of -1 means that output bit is left
+ * at zero.
+ *
+ * This function is only used during key setup, so it doesn't need to
+ * be highly optimised.
+ */
+static inline uint64_t bitsel(
+    uint64_t input, const int8_t *bitnums, size_t size)
+{
+    uint64_t ret = 0;
+    while (size-- > 0) {
+        int bitpos = *bitnums++;
+        ret <<= 1;
+        if (bitpos >= 0)
+            ret |= 1 & (input >> bitpos);
     }
     return ret;
 }
 
-static void des_key_setup(word32 key_msw, word32 key_lsw, DESContext * sched)
+void des_key_setup(uint64_t key, des_keysched *sched)
 {
-
-    static const int PC1_Cbits[] = {
-	7, 15, 23, 31, 39, 47, 55, 63, 6, 14, 22, 30, 38, 46,
-	54, 62, 5, 13, 21, 29, 37, 45, 53, 61, 4, 12, 20, 28
+    static const int8_t PC1[] = {
+         7, 15, 23, 31, 39, 47, 55, 63,  6, 14, 22, 30, 38, 46,
+        54, 62,  5, 13, 21, 29, 37, 45, 53, 61,  4, 12, 20, 28,
+        -1, -1, -1, -1,
+         1,  9, 17, 25, 33, 41, 49, 57,  2, 10, 18, 26, 34, 42,
+        50, 58,  3, 11, 19, 27, 35, 43, 51, 59, 36, 44, 52, 60,
     };
-    static const int PC1_Dbits[] = {
-	1, 9, 17, 25, 33, 41, 49, 57, 2, 10, 18, 26, 34, 42,
-	50, 58, 3, 11, 19, 27, 35, 43, 51, 59, 36, 44, 52, 60
+    static const int8_t PC2_7531[] = {
+        46, 43, 49, 36, 59, 55, -1, -1, /* index into S-box 7 */
+        37, 41, 48, 56, 34, 52, -1, -1, /* index into S-box 5 */
+        15,  4, 25, 19,  9,  1, -1, -1, /* index into S-box 3 */
+        12,  7, 17,  0, 22,  3, -1, -1, /* index into S-box 1 */
     };
-    /*
-     * The bit numbers in the two lists below don't correspond to
-     * the ones in the above description of PC2, because in the
-     * above description C and D are concatenated so `bit 28' means
-     * bit 0 of C. In this implementation we're using the standard
-     * `bitsel' function above and C is in the second word, so bit
-     * 0 of C is addressed by writing `32' here.
-     */
-    static const int PC2_0246[] = {
-	49, 36, 59, 55, -1, -1, 37, 41, 48, 56, 34, 52, -1, -1, 15, 4,
-	25, 19, 9, 1, -1, -1, 12, 7, 17, 0, 22, 3, -1, -1, 46, 43
+    static const int8_t PC2_6420[] = {
+        57, 32, 45, 54, 39, 50, -1, -1, /* index into S-box 6 */
+        44, 53, 33, 40, 47, 58, -1, -1, /* index into S-box 4 */
+        26, 16,  5, 11, 23,  8, -1, -1, /* index into S-box 2 */
+        10, 14,  6, 20, 27, 24, -1, -1, /* index into S-box 0 */
     };
-    static const int PC2_1357[] = {
-	-1, -1, 57, 32, 45, 54, 39, 50, -1, -1, 44, 53, 33, 40, 47, 58,
-	-1, -1, 26, 16, 5, 11, 23, 8, -1, -1, 10, 14, 6, 20, 27, 24
-    };
-    static const int leftshifts[] =
-	{ 1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1 };
+    static const int leftshifts[] = {1,1,2,2,2,2,2,2,1,2,2,2,2,2,2,1};
 
-    word32 C, D;
-    word32 buf[2];
-    int i;
+    /* Select 56 bits from the 64-bit input key integer (the low bit
+     * of each input byte is unused), into a word consisting of two
+     * 28-bit integers starting at bits 0 and 32. */
+    uint64_t CD = bitsel(key, PC1, lenof(PC1));
 
-    buf[0] = key_lsw;
-    buf[1] = key_msw;
+    for (size_t i = 0; i < 16; i++) {
+        /* Rotate each 28-bit half of CD left by 1 or 2 bits (varying
+         * between rounds) */
+        CD <<= leftshifts[i];
+        CD = (CD & 0x0FFFFFFF0FFFFFFF) | ((CD & 0xF0000000F0000000) >> 28);
 
-    C = bitsel(buf, PC1_Cbits, 28);
-    D = bitsel(buf, PC1_Dbits, 28);
-
-    for (i = 0; i < 16; i++) {
-	C = rotl28(C, leftshifts[i]);
-	D = rotl28(D, leftshifts[i]);
-	buf[0] = D;
-	buf[1] = C;
-	sched->k0246[i] = bitsel(buf, PC2_0246, 32);
-	sched->k1357[i] = bitsel(buf, PC2_1357, 32);
+        /* Select key bits from the rotated word to use during the
+         * actual cipher */
+        sched->k7531[i] = bitsel(CD, PC2_7531, lenof(PC2_7531));
+        sched->k6420[i] = bitsel(CD, PC2_6420, lenof(PC2_6420));
     }
-
-    sched->iv0 = sched->iv1 = 0;
 }
-
-static const word32 SPboxes[8][64] = {
-    {0x01010400, 0x00000000, 0x00010000, 0x01010404,
-     0x01010004, 0x00010404, 0x00000004, 0x00010000,
-     0x00000400, 0x01010400, 0x01010404, 0x00000400,
-     0x01000404, 0x01010004, 0x01000000, 0x00000004,
-     0x00000404, 0x01000400, 0x01000400, 0x00010400,
-     0x00010400, 0x01010000, 0x01010000, 0x01000404,
-     0x00010004, 0x01000004, 0x01000004, 0x00010004,
-     0x00000000, 0x00000404, 0x00010404, 0x01000000,
-     0x00010000, 0x01010404, 0x00000004, 0x01010000,
-     0x01010400, 0x01000000, 0x01000000, 0x00000400,
-     0x01010004, 0x00010000, 0x00010400, 0x01000004,
-     0x00000400, 0x00000004, 0x01000404, 0x00010404,
-     0x01010404, 0x00010004, 0x01010000, 0x01000404,
-     0x01000004, 0x00000404, 0x00010404, 0x01010400,
-     0x00000404, 0x01000400, 0x01000400, 0x00000000,
-     0x00010004, 0x00010400, 0x00000000, 0x01010004L},
-
-    {0x80108020, 0x80008000, 0x00008000, 0x00108020,
-     0x00100000, 0x00000020, 0x80100020, 0x80008020,
-     0x80000020, 0x80108020, 0x80108000, 0x80000000,
-     0x80008000, 0x00100000, 0x00000020, 0x80100020,
-     0x00108000, 0x00100020, 0x80008020, 0x00000000,
-     0x80000000, 0x00008000, 0x00108020, 0x80100000,
-     0x00100020, 0x80000020, 0x00000000, 0x00108000,
-     0x00008020, 0x80108000, 0x80100000, 0x00008020,
-     0x00000000, 0x00108020, 0x80100020, 0x00100000,
-     0x80008020, 0x80100000, 0x80108000, 0x00008000,
-     0x80100000, 0x80008000, 0x00000020, 0x80108020,
-     0x00108020, 0x00000020, 0x00008000, 0x80000000,
-     0x00008020, 0x80108000, 0x00100000, 0x80000020,
-     0x00100020, 0x80008020, 0x80000020, 0x00100020,
-     0x00108000, 0x00000000, 0x80008000, 0x00008020,
-     0x80000000, 0x80100020, 0x80108020, 0x00108000L},
-
-    {0x00000208, 0x08020200, 0x00000000, 0x08020008,
-     0x08000200, 0x00000000, 0x00020208, 0x08000200,
-     0x00020008, 0x08000008, 0x08000008, 0x00020000,
-     0x08020208, 0x00020008, 0x08020000, 0x00000208,
-     0x08000000, 0x00000008, 0x08020200, 0x00000200,
-     0x00020200, 0x08020000, 0x08020008, 0x00020208,
-     0x08000208, 0x00020200, 0x00020000, 0x08000208,
-     0x00000008, 0x08020208, 0x00000200, 0x08000000,
-     0x08020200, 0x08000000, 0x00020008, 0x00000208,
-     0x00020000, 0x08020200, 0x08000200, 0x00000000,
-     0x00000200, 0x00020008, 0x08020208, 0x08000200,
-     0x08000008, 0x00000200, 0x00000000, 0x08020008,
-     0x08000208, 0x00020000, 0x08000000, 0x08020208,
-     0x00000008, 0x00020208, 0x00020200, 0x08000008,
-     0x08020000, 0x08000208, 0x00000208, 0x08020000,
-     0x00020208, 0x00000008, 0x08020008, 0x00020200L},
-
-    {0x00802001, 0x00002081, 0x00002081, 0x00000080,
-     0x00802080, 0x00800081, 0x00800001, 0x00002001,
-     0x00000000, 0x00802000, 0x00802000, 0x00802081,
-     0x00000081, 0x00000000, 0x00800080, 0x00800001,
-     0x00000001, 0x00002000, 0x00800000, 0x00802001,
-     0x00000080, 0x00800000, 0x00002001, 0x00002080,
-     0x00800081, 0x00000001, 0x00002080, 0x00800080,
-     0x00002000, 0x00802080, 0x00802081, 0x00000081,
-     0x00800080, 0x00800001, 0x00802000, 0x00802081,
-     0x00000081, 0x00000000, 0x00000000, 0x00802000,
-     0x00002080, 0x00800080, 0x00800081, 0x00000001,
-     0x00802001, 0x00002081, 0x00002081, 0x00000080,
-     0x00802081, 0x00000081, 0x00000001, 0x00002000,
-     0x00800001, 0x00002001, 0x00802080, 0x00800081,
-     0x00002001, 0x00002080, 0x00800000, 0x00802001,
-     0x00000080, 0x00800000, 0x00002000, 0x00802080L},
-
-    {0x00000100, 0x02080100, 0x02080000, 0x42000100,
-     0x00080000, 0x00000100, 0x40000000, 0x02080000,
-     0x40080100, 0x00080000, 0x02000100, 0x40080100,
-     0x42000100, 0x42080000, 0x00080100, 0x40000000,
-     0x02000000, 0x40080000, 0x40080000, 0x00000000,
-     0x40000100, 0x42080100, 0x42080100, 0x02000100,
-     0x42080000, 0x40000100, 0x00000000, 0x42000000,
-     0x02080100, 0x02000000, 0x42000000, 0x00080100,
-     0x00080000, 0x42000100, 0x00000100, 0x02000000,
-     0x40000000, 0x02080000, 0x42000100, 0x40080100,
-     0x02000100, 0x40000000, 0x42080000, 0x02080100,
-     0x40080100, 0x00000100, 0x02000000, 0x42080000,
-     0x42080100, 0x00080100, 0x42000000, 0x42080100,
-     0x02080000, 0x00000000, 0x40080000, 0x42000000,
-     0x00080100, 0x02000100, 0x40000100, 0x00080000,
-     0x00000000, 0x40080000, 0x02080100, 0x40000100L},
-
-    {0x20000010, 0x20400000, 0x00004000, 0x20404010,
-     0x20400000, 0x00000010, 0x20404010, 0x00400000,
-     0x20004000, 0x00404010, 0x00400000, 0x20000010,
-     0x00400010, 0x20004000, 0x20000000, 0x00004010,
-     0x00000000, 0x00400010, 0x20004010, 0x00004000,
-     0x00404000, 0x20004010, 0x00000010, 0x20400010,
-     0x20400010, 0x00000000, 0x00404010, 0x20404000,
-     0x00004010, 0x00404000, 0x20404000, 0x20000000,
-     0x20004000, 0x00000010, 0x20400010, 0x00404000,
-     0x20404010, 0x00400000, 0x00004010, 0x20000010,
-     0x00400000, 0x20004000, 0x20000000, 0x00004010,
-     0x20000010, 0x20404010, 0x00404000, 0x20400000,
-     0x00404010, 0x20404000, 0x00000000, 0x20400010,
-     0x00000010, 0x00004000, 0x20400000, 0x00404010,
-     0x00004000, 0x00400010, 0x20004010, 0x00000000,
-     0x20404000, 0x20000000, 0x00400010, 0x20004010L},
-
-    {0x00200000, 0x04200002, 0x04000802, 0x00000000,
-     0x00000800, 0x04000802, 0x00200802, 0x04200800,
-     0x04200802, 0x00200000, 0x00000000, 0x04000002,
-     0x00000002, 0x04000000, 0x04200002, 0x00000802,
-     0x04000800, 0x00200802, 0x00200002, 0x04000800,
-     0x04000002, 0x04200000, 0x04200800, 0x00200002,
-     0x04200000, 0x00000800, 0x00000802, 0x04200802,
-     0x00200800, 0x00000002, 0x04000000, 0x00200800,
-     0x04000000, 0x00200800, 0x00200000, 0x04000802,
-     0x04000802, 0x04200002, 0x04200002, 0x00000002,
-     0x00200002, 0x04000000, 0x04000800, 0x00200000,
-     0x04200800, 0x00000802, 0x00200802, 0x04200800,
-     0x00000802, 0x04000002, 0x04200802, 0x04200000,
-     0x00200800, 0x00000000, 0x00000002, 0x04200802,
-     0x00000000, 0x00200802, 0x04200000, 0x00000800,
-     0x04000002, 0x04000800, 0x00000800, 0x00200002L},
-
-    {0x10001040, 0x00001000, 0x00040000, 0x10041040,
-     0x10000000, 0x10001040, 0x00000040, 0x10000000,
-     0x00040040, 0x10040000, 0x10041040, 0x00041000,
-     0x10041000, 0x00041040, 0x00001000, 0x00000040,
-     0x10040000, 0x10000040, 0x10001000, 0x00001040,
-     0x00041000, 0x00040040, 0x10040040, 0x10041000,
-     0x00001040, 0x00000000, 0x00000000, 0x10040040,
-     0x10000040, 0x10001000, 0x00041040, 0x00040000,
-     0x00041040, 0x00040000, 0x10041000, 0x00001000,
-     0x00000040, 0x10040040, 0x00001000, 0x00041040,
-     0x10001000, 0x00000040, 0x10000040, 0x10040000,
-     0x10040040, 0x10000000, 0x00040000, 0x10001040,
-     0x00000000, 0x10041040, 0x00040040, 0x10000040,
-     0x10040000, 0x10001000, 0x10001040, 0x00000000,
-     0x10041040, 0x00041000, 0x00041000, 0x00001040,
-     0x00001040, 0x00040040, 0x10000000, 0x10041000L}
-};
-
-#define f(R, K0246, K1357) (\
-    s0246 = R ^ K0246, \
-    s1357 = R ^ K1357, \
-    s0246 = rotl(s0246, 28), \
-    SPboxes[0] [(s0246 >> 24) & 0x3F] | \
-    SPboxes[1] [(s1357 >> 24) & 0x3F] | \
-    SPboxes[2] [(s0246 >> 16) & 0x3F] | \
-    SPboxes[3] [(s1357 >> 16) & 0x3F] | \
-    SPboxes[4] [(s0246 >>  8) & 0x3F] | \
-    SPboxes[5] [(s1357 >>  8) & 0x3F] | \
-    SPboxes[6] [(s0246      ) & 0x3F] | \
-    SPboxes[7] [(s1357      ) & 0x3F])
-
-#define bitswap(L, R, n, mask) (\
-    swap = mask & ( (R >> n) ^ L ), \
-    R ^= swap << n, \
-    L ^= swap)
-
-/* Initial permutation */
-#define IP(L, R) (\
-    bitswap(R, L,  4, 0x0F0F0F0F), \
-    bitswap(R, L, 16, 0x0000FFFF), \
-    bitswap(L, R,  2, 0x33333333), \
-    bitswap(L, R,  8, 0x00FF00FF), \
-    bitswap(R, L,  1, 0x55555555))
-
-/* Final permutation */
-#define FP(L, R) (\
-    bitswap(R, L,  1, 0x55555555), \
-    bitswap(L, R,  8, 0x00FF00FF), \
-    bitswap(L, R,  2, 0x33333333), \
-    bitswap(R, L, 16, 0x0000FFFF), \
-    bitswap(R, L,  4, 0x0F0F0F0F))
-
-static void des_encipher(word32 * output, word32 L, word32 R,
-			 DESContext * sched)
-{
-    word32 swap, s0246, s1357;
-
-    IP(L, R);
-
-    L = rotl(L, 1);
-    R = rotl(R, 1);
-
-    L ^= f(R, sched->k0246[0], sched->k1357[0]);
-    R ^= f(L, sched->k0246[1], sched->k1357[1]);
-    L ^= f(R, sched->k0246[2], sched->k1357[2]);
-    R ^= f(L, sched->k0246[3], sched->k1357[3]);
-    L ^= f(R, sched->k0246[4], sched->k1357[4]);
-    R ^= f(L, sched->k0246[5], sched->k1357[5]);
-    L ^= f(R, sched->k0246[6], sched->k1357[6]);
-    R ^= f(L, sched->k0246[7], sched->k1357[7]);
-    L ^= f(R, sched->k0246[8], sched->k1357[8]);
-    R ^= f(L, sched->k0246[9], sched->k1357[9]);
-    L ^= f(R, sched->k0246[10], sched->k1357[10]);
-    R ^= f(L, sched->k0246[11], sched->k1357[11]);
-    L ^= f(R, sched->k0246[12], sched->k1357[12]);
-    R ^= f(L, sched->k0246[13], sched->k1357[13]);
-    L ^= f(R, sched->k0246[14], sched->k1357[14]);
-    R ^= f(L, sched->k0246[15], sched->k1357[15]);
-
-    L = rotl(L, 31);
-    R = rotl(R, 31);
-
-    swap = L;
-    L = R;
-    R = swap;
-
-    FP(L, R);
-
-    output[0] = L;
-    output[1] = R;
-}
-
-static void des_decipher(word32 * output, word32 L, word32 R,
-			 DESContext * sched)
-{
-    word32 swap, s0246, s1357;
-
-    IP(L, R);
-
-    L = rotl(L, 1);
-    R = rotl(R, 1);
-
-    L ^= f(R, sched->k0246[15], sched->k1357[15]);
-    R ^= f(L, sched->k0246[14], sched->k1357[14]);
-    L ^= f(R, sched->k0246[13], sched->k1357[13]);
-    R ^= f(L, sched->k0246[12], sched->k1357[12]);
-    L ^= f(R, sched->k0246[11], sched->k1357[11]);
-    R ^= f(L, sched->k0246[10], sched->k1357[10]);
-    L ^= f(R, sched->k0246[9], sched->k1357[9]);
-    R ^= f(L, sched->k0246[8], sched->k1357[8]);
-    L ^= f(R, sched->k0246[7], sched->k1357[7]);
-    R ^= f(L, sched->k0246[6], sched->k1357[6]);
-    L ^= f(R, sched->k0246[5], sched->k1357[5]);
-    R ^= f(L, sched->k0246[4], sched->k1357[4]);
-    L ^= f(R, sched->k0246[3], sched->k1357[3]);
-    R ^= f(L, sched->k0246[2], sched->k1357[2]);
-    L ^= f(R, sched->k0246[1], sched->k1357[1]);
-    R ^= f(L, sched->k0246[0], sched->k1357[0]);
-
-    L = rotl(L, 31);
-    R = rotl(R, 31);
-
-    swap = L;
-    L = R;
-    R = swap;
-
-    FP(L, R);
-
-    output[0] = L;
-    output[1] = R;
-}
-
-static void des_cbc_encrypt(unsigned char *blk,
-			    unsigned int len, DESContext * sched)
-{
-    word32 out[2], iv0, iv1;
-    unsigned int i;
-
-    assert((len & 7) == 0);
-
-    iv0 = sched->iv0;
-    iv1 = sched->iv1;
-    for (i = 0; i < len; i += 8) {
-	iv0 ^= GET_32BIT_MSB_FIRST(blk);
-	iv1 ^= GET_32BIT_MSB_FIRST(blk + 4);
-	des_encipher(out, iv0, iv1, sched);
-	iv0 = out[0];
-	iv1 = out[1];
-	PUT_32BIT_MSB_FIRST(blk, iv0);
-	PUT_32BIT_MSB_FIRST(blk + 4, iv1);
-	blk += 8;
-    }
-    sched->iv0 = iv0;
-    sched->iv1 = iv1;
-}
-
-static void des_cbc_decrypt(unsigned char *blk,
-			    unsigned int len, DESContext * sched)
-{
-    word32 out[2], iv0, iv1, xL, xR;
-    unsigned int i;
-
-    assert((len & 7) == 0);
-
-    iv0 = sched->iv0;
-    iv1 = sched->iv1;
-    for (i = 0; i < len; i += 8) {
-	xL = GET_32BIT_MSB_FIRST(blk);
-	xR = GET_32BIT_MSB_FIRST(blk + 4);
-	des_decipher(out, xL, xR, sched);
-	iv0 ^= out[0];
-	iv1 ^= out[1];
-	PUT_32BIT_MSB_FIRST(blk, iv0);
-	PUT_32BIT_MSB_FIRST(blk + 4, iv1);
-	blk += 8;
-	iv0 = xL;
-	iv1 = xR;
-    }
-    sched->iv0 = iv0;
-    sched->iv1 = iv1;
-}
-
-static void des_3cbc_encrypt(unsigned char *blk,
-			     unsigned int len, DESContext * scheds)
-{
-    des_cbc_encrypt(blk, len, &scheds[0]);
-    des_cbc_decrypt(blk, len, &scheds[1]);
-    des_cbc_encrypt(blk, len, &scheds[2]);
-}
-
-static void des_cbc3_encrypt(unsigned char *blk,
-			     unsigned int len, DESContext * scheds)
-{
-    word32 out[2], iv0, iv1;
-    unsigned int i;
-
-    assert((len & 7) == 0);
-
-    iv0 = scheds->iv0;
-    iv1 = scheds->iv1;
-    for (i = 0; i < len; i += 8) {
-	iv0 ^= GET_32BIT_MSB_FIRST(blk);
-	iv1 ^= GET_32BIT_MSB_FIRST(blk + 4);
-	des_encipher(out, iv0, iv1, &scheds[0]);
-	des_decipher(out, out[0], out[1], &scheds[1]);
-	des_encipher(out, out[0], out[1], &scheds[2]);
-	iv0 = out[0];
-	iv1 = out[1];
-	PUT_32BIT_MSB_FIRST(blk, iv0);
-	PUT_32BIT_MSB_FIRST(blk + 4, iv1);
-	blk += 8;
-    }
-    scheds->iv0 = iv0;
-    scheds->iv1 = iv1;
-}
-
-static void des_3cbc_decrypt(unsigned char *blk,
-			     unsigned int len, DESContext * scheds)
-{
-    des_cbc_decrypt(blk, len, &scheds[2]);
-    des_cbc_encrypt(blk, len, &scheds[1]);
-    des_cbc_decrypt(blk, len, &scheds[0]);
-}
-
-static void des_cbc3_decrypt(unsigned char *blk,
-			     unsigned int len, DESContext * scheds)
-{
-    word32 out[2], iv0, iv1, xL, xR;
-    unsigned int i;
-
-    assert((len & 7) == 0);
-
-    iv0 = scheds->iv0;
-    iv1 = scheds->iv1;
-    for (i = 0; i < len; i += 8) {
-	xL = GET_32BIT_MSB_FIRST(blk);
-	xR = GET_32BIT_MSB_FIRST(blk + 4);
-	des_decipher(out, xL, xR, &scheds[2]);
-	des_encipher(out, out[0], out[1], &scheds[1]);
-	des_decipher(out, out[0], out[1], &scheds[0]);
-	iv0 ^= out[0];
-	iv1 ^= out[1];
-	PUT_32BIT_MSB_FIRST(blk, iv0);
-	PUT_32BIT_MSB_FIRST(blk + 4, iv1);
-	blk += 8;
-	iv0 = xL;
-	iv1 = xR;
-    }
-    scheds->iv0 = iv0;
-    scheds->iv1 = iv1;
-}
-
-static void des_sdctr3(unsigned char *blk,
-			     unsigned int len, DESContext * scheds)
-{
-    word32 b[2], iv0, iv1, tmp;
-    unsigned int i;
-
-    assert((len & 7) == 0);
-
-    iv0 = scheds->iv0;
-    iv1 = scheds->iv1;
-    for (i = 0; i < len; i += 8) {
-	des_encipher(b, iv0, iv1, &scheds[0]);
-	des_decipher(b, b[0], b[1], &scheds[1]);
-	des_encipher(b, b[0], b[1], &scheds[2]);
-	tmp = GET_32BIT_MSB_FIRST(blk);
-	PUT_32BIT_MSB_FIRST(blk, tmp ^ b[0]);
-	blk += 4;
-	tmp = GET_32BIT_MSB_FIRST(blk);
-	PUT_32BIT_MSB_FIRST(blk, tmp ^ b[1]);
-	blk += 4;
-	if ((iv1 = (iv1 + 1) & 0xffffffff) == 0)
-	    iv0 = (iv0 + 1) & 0xffffffff;
-    }
-    scheds->iv0 = iv0;
-    scheds->iv1 = iv1;
-}
-
-static void *des3_make_context(void)
-{
-    return snewn(3, DESContext);
-}
-
-static void *des3_ssh1_make_context(void)
-{
-    /* Need 3 keys for each direction, in SSH-1 */
-    return snewn(6, DESContext);
-}
-
-static void *des_make_context(void)
-{
-    return snew(DESContext);
-}
-
-static void *des_ssh1_make_context(void)
-{
-    /* Need one key for each direction, in SSH-1 */
-    return snewn(2, DESContext);
-}
-
-static void des3_free_context(void *handle)   /* used for both 3DES and DES */
-{
-    sfree(handle);
-}
-
-static void des3_key(void *handle, unsigned char *key)
-{
-    DESContext *keys = (DESContext *) handle;
-    des_key_setup(GET_32BIT_MSB_FIRST(key),
-		  GET_32BIT_MSB_FIRST(key + 4), &keys[0]);
-    des_key_setup(GET_32BIT_MSB_FIRST(key + 8),
-		  GET_32BIT_MSB_FIRST(key + 12), &keys[1]);
-    des_key_setup(GET_32BIT_MSB_FIRST(key + 16),
-		  GET_32BIT_MSB_FIRST(key + 20), &keys[2]);
-}
-
-static void des3_iv(void *handle, unsigned char *key)
-{
-    DESContext *keys = (DESContext *) handle;
-    keys[0].iv0 = GET_32BIT_MSB_FIRST(key);
-    keys[0].iv1 = GET_32BIT_MSB_FIRST(key + 4);
-}
-
-static void des_key(void *handle, unsigned char *key)
-{
-    DESContext *keys = (DESContext *) handle;
-    des_key_setup(GET_32BIT_MSB_FIRST(key),
-		  GET_32BIT_MSB_FIRST(key + 4), &keys[0]);
-}
-
-static void des3_sesskey(void *handle, unsigned char *key)
-{
-    DESContext *keys = (DESContext *) handle;
-    des3_key(keys, key);
-    des3_key(keys+3, key);
-}
-
-static void des3_encrypt_blk(void *handle, unsigned char *blk, int len)
-{
-    DESContext *keys = (DESContext *) handle;
-    des_3cbc_encrypt(blk, len, keys);
-}
-
-static void des3_decrypt_blk(void *handle, unsigned char *blk, int len)
-{
-    DESContext *keys = (DESContext *) handle;
-    des_3cbc_decrypt(blk, len, keys+3);
-}
-
-static void des3_ssh2_encrypt_blk(void *handle, unsigned char *blk, int len)
-{
-    DESContext *keys = (DESContext *) handle;
-    des_cbc3_encrypt(blk, len, keys);
-}
-
-static void des3_ssh2_decrypt_blk(void *handle, unsigned char *blk, int len)
-{
-    DESContext *keys = (DESContext *) handle;
-    des_cbc3_decrypt(blk, len, keys);
-}
-
-static void des3_ssh2_sdctr(void *handle, unsigned char *blk, int len)
-{
-    DESContext *keys = (DESContext *) handle;
-    des_sdctr3(blk, len, keys);
-}
-
-static void des_ssh2_encrypt_blk(void *handle, unsigned char *blk, int len)
-{
-    DESContext *keys = (DESContext *) handle;
-    des_cbc_encrypt(blk, len, keys);
-}
-
-static void des_ssh2_decrypt_blk(void *handle, unsigned char *blk, int len)
-{
-    DESContext *keys = (DESContext *) handle;
-    des_cbc_decrypt(blk, len, keys);
-}
-
-void des3_decrypt_pubkey(unsigned char *key, unsigned char *blk, int len)
-{
-    DESContext ourkeys[3];
-    des_key_setup(GET_32BIT_MSB_FIRST(key),
-		  GET_32BIT_MSB_FIRST(key + 4), &ourkeys[0]);
-    des_key_setup(GET_32BIT_MSB_FIRST(key + 8),
-		  GET_32BIT_MSB_FIRST(key + 12), &ourkeys[1]);
-    des_key_setup(GET_32BIT_MSB_FIRST(key),
-		  GET_32BIT_MSB_FIRST(key + 4), &ourkeys[2]);
-    des_3cbc_decrypt(blk, len, ourkeys);
-    smemclr(ourkeys, sizeof(ourkeys));
-}
-
-void des3_encrypt_pubkey(unsigned char *key, unsigned char *blk, int len)
-{
-    DESContext ourkeys[3];
-    des_key_setup(GET_32BIT_MSB_FIRST(key),
-		  GET_32BIT_MSB_FIRST(key + 4), &ourkeys[0]);
-    des_key_setup(GET_32BIT_MSB_FIRST(key + 8),
-		  GET_32BIT_MSB_FIRST(key + 12), &ourkeys[1]);
-    des_key_setup(GET_32BIT_MSB_FIRST(key),
-		  GET_32BIT_MSB_FIRST(key + 4), &ourkeys[2]);
-    des_3cbc_encrypt(blk, len, ourkeys);
-    smemclr(ourkeys, sizeof(ourkeys));
-}
-
-void des3_decrypt_pubkey_ossh(unsigned char *key, unsigned char *iv,
-			      unsigned char *blk, int len)
-{
-    DESContext ourkeys[3];
-    des_key_setup(GET_32BIT_MSB_FIRST(key),
-		  GET_32BIT_MSB_FIRST(key + 4), &ourkeys[0]);
-    des_key_setup(GET_32BIT_MSB_FIRST(key + 8),
-		  GET_32BIT_MSB_FIRST(key + 12), &ourkeys[1]);
-    des_key_setup(GET_32BIT_MSB_FIRST(key + 16),
-		  GET_32BIT_MSB_FIRST(key + 20), &ourkeys[2]);
-    ourkeys[0].iv0 = GET_32BIT_MSB_FIRST(iv);
-    ourkeys[0].iv1 = GET_32BIT_MSB_FIRST(iv+4);
-    des_cbc3_decrypt(blk, len, ourkeys);
-    smemclr(ourkeys, sizeof(ourkeys));
-}
-
-void des3_encrypt_pubkey_ossh(unsigned char *key, unsigned char *iv,
-			      unsigned char *blk, int len)
-{
-    DESContext ourkeys[3];
-    des_key_setup(GET_32BIT_MSB_FIRST(key),
-		  GET_32BIT_MSB_FIRST(key + 4), &ourkeys[0]);
-    des_key_setup(GET_32BIT_MSB_FIRST(key + 8),
-		  GET_32BIT_MSB_FIRST(key + 12), &ourkeys[1]);
-    des_key_setup(GET_32BIT_MSB_FIRST(key + 16),
-		  GET_32BIT_MSB_FIRST(key + 20), &ourkeys[2]);
-    ourkeys[0].iv0 = GET_32BIT_MSB_FIRST(iv);
-    ourkeys[0].iv1 = GET_32BIT_MSB_FIRST(iv+4);
-    des_cbc3_encrypt(blk, len, ourkeys);
-    smemclr(ourkeys, sizeof(ourkeys));
-}
-
-static void des_keysetup_xdmauth(const unsigned char *keydata, DESContext *dc)
-{
-    unsigned char key[8];
-    int i, nbits, j;
-    unsigned int bits;
-
-    bits = 0;
-    nbits = 0;
-    j = 0;
-    for (i = 0; i < 8; i++) {
-	if (nbits < 7) {
-	    bits = (bits << 8) | keydata[j];
-	    nbits += 8;
-	    j++;
-	}
-	key[i] = (bits >> (nbits - 7)) << 1;
-	bits &= ~(0x7F << (nbits - 7));
-	nbits -= 7;
-    }
-
-    des_key_setup(GET_32BIT_MSB_FIRST(key), GET_32BIT_MSB_FIRST(key + 4), dc);
-}
-
-void des_encrypt_xdmauth(const unsigned char *keydata,
-                         unsigned char *blk, int len)
-{
-    DESContext dc;
-    des_keysetup_xdmauth(keydata, &dc);
-    des_cbc_encrypt(blk, len, &dc);
-}
-
-void des_decrypt_xdmauth(const unsigned char *keydata,
-                         unsigned char *blk, int len)
-{
-    DESContext dc;
-    des_keysetup_xdmauth(keydata, &dc);
-    des_cbc_decrypt(blk, len, &dc);
-}
-
-static const struct ssh2_cipher ssh_3des_ssh2 = {
-    des3_make_context, des3_free_context, des3_iv, des3_key,
-    des3_ssh2_encrypt_blk, des3_ssh2_decrypt_blk, NULL, NULL,
-    "3des-cbc",
-    8, 168, 24, SSH_CIPHER_IS_CBC, "triple-DES CBC",
-    NULL
-};
-
-static const struct ssh2_cipher ssh_3des_ssh2_ctr = {
-    des3_make_context, des3_free_context, des3_iv, des3_key,
-    des3_ssh2_sdctr, des3_ssh2_sdctr, NULL, NULL,
-    "3des-ctr",
-    8, 168, 24, 0, "triple-DES SDCTR",
-    NULL
-};
 
 /*
- * Single DES in SSH-2. "des-cbc" is marked as HISTORIC in
- * RFC 4250, referring to
- * FIPS-46-3.  ("Single DES (i.e., DES) will be permitted 
- * for legacy systems only.") , but ssh.com support it and 
- * apparently aren't the only people to do so, so we sigh 
- * and implement it anyway.
+ * Helper routines for dealing with 64-bit blocks in the form of an L
+ * and R word.
  */
-static const struct ssh2_cipher ssh_des_ssh2 = {
-    des_make_context, des3_free_context, des3_iv, des_key,
-    des_ssh2_encrypt_blk, des_ssh2_decrypt_blk, NULL, NULL,
-    "des-cbc",
-    8, 56, 8, SSH_CIPHER_IS_CBC, "single-DES CBC",
-    NULL
+
+typedef struct LR LR;
+struct LR { uint32_t L, R; };
+
+static inline LR des_load_lr(const void *vp)
+{
+    const uint8_t *p = (const uint8_t *)vp;
+    LR out;
+    out.L = GET_32BIT_MSB_FIRST(p);
+    out.R = GET_32BIT_MSB_FIRST(p+4);
+    return out;
+}
+
+static inline void des_store_lr(void *vp, LR lr)
+{
+    uint8_t *p = (uint8_t *)vp;
+    PUT_32BIT_MSB_FIRST(p, lr.L);
+    PUT_32BIT_MSB_FIRST(p+4, lr.R);
+}
+
+static inline LR des_xor_lr(LR a, LR b)
+{
+    a.L ^= b.L;
+    a.R ^= b.R;
+    return a;
+}
+
+static inline LR des_swap_lr(LR in)
+{
+    LR out;
+    out.L = in.R;
+    out.R = in.L;
+    return out;
+}
+
+/*
+ * The initial and final permutations of official DES are in a
+ * restricted form, in which the 'before' and 'after' positions of a
+ * given data bit are derived from each other by permuting the bits of
+ * the _index_ and flipping some of them. This allows the permutation
+ * to be performed effectively by a method that looks rather like
+ * _half_ of a general Benes network, because the restricted form
+ * means only half of it is actually needed.
+ *
+ * _Our_ initial and final permutations include a rotation by 1 bit,
+ * but it's still easier to just suffix that to the standard IP/FP
+ * than to regenerate everything using a more general method.
+ *
+ * Because we're permuting 64 bits in this case, between two 32-bit
+ * words, there's a separate helper function for this code that
+ * doesn't look quite like des_benes_step() above.
+ */
+
+static inline void des_bitswap_IP_FP(uint32_t *L, uint32_t *R,
+                                     unsigned D, uint32_t mask)
+{
+    uint32_t diff = mask & ((*R >> D) ^ *L);
+    *R ^= diff << D;
+    *L ^= diff;
+}
+
+static inline LR des_IP(LR lr)
+{
+    des_bitswap_IP_FP(&lr.R, &lr.L,  4, 0x0F0F0F0F);
+    des_bitswap_IP_FP(&lr.R, &lr.L, 16, 0x0000FFFF);
+    des_bitswap_IP_FP(&lr.L, &lr.R,  2, 0x33333333);
+    des_bitswap_IP_FP(&lr.L, &lr.R,  8, 0x00FF00FF);
+    des_bitswap_IP_FP(&lr.R, &lr.L,  1, 0x55555555);
+
+    lr.L = ror(lr.L, 1);
+    lr.R = ror(lr.R, 1);
+
+    return lr;
+}
+
+static inline LR des_FP(LR lr)
+{
+    lr.L = rol(lr.L, 1);
+    lr.R = rol(lr.R, 1);
+
+    des_bitswap_IP_FP(&lr.R, &lr.L,  1, 0x55555555);
+    des_bitswap_IP_FP(&lr.L, &lr.R,  8, 0x00FF00FF);
+    des_bitswap_IP_FP(&lr.L, &lr.R,  2, 0x33333333);
+    des_bitswap_IP_FP(&lr.R, &lr.L, 16, 0x0000FFFF);
+    des_bitswap_IP_FP(&lr.R, &lr.L,  4, 0x0F0F0F0F);
+
+    return lr;
+}
+
+/*
+ * The main cipher functions, which are identical except that they use
+ * the key schedule in opposite orders.
+ *
+ * We provide a version without the initial and final permutations,
+ * for use in triple-DES mode (no sense undoing and redoing it in
+ * between the phases).
+ */
+
+static inline LR des_round(LR in, const des_keysched *sched, size_t round)
+{
+    LR out;
+    out.L = in.R;
+    out.R = in.L ^ des_f(in.R, sched->k7531[round], sched->k6420[round]);
+    return out;
+}
+
+static inline LR des_inner_cipher(LR lr, const des_keysched *sched,
+                                  size_t start, size_t step)
+{
+    lr = des_round(lr, sched, start+0x0*step);
+    lr = des_round(lr, sched, start+0x1*step);
+    lr = des_round(lr, sched, start+0x2*step);
+    lr = des_round(lr, sched, start+0x3*step);
+    lr = des_round(lr, sched, start+0x4*step);
+    lr = des_round(lr, sched, start+0x5*step);
+    lr = des_round(lr, sched, start+0x6*step);
+    lr = des_round(lr, sched, start+0x7*step);
+    lr = des_round(lr, sched, start+0x8*step);
+    lr = des_round(lr, sched, start+0x9*step);
+    lr = des_round(lr, sched, start+0xa*step);
+    lr = des_round(lr, sched, start+0xb*step);
+    lr = des_round(lr, sched, start+0xc*step);
+    lr = des_round(lr, sched, start+0xd*step);
+    lr = des_round(lr, sched, start+0xe*step);
+    lr = des_round(lr, sched, start+0xf*step);
+    return des_swap_lr(lr);
+}
+
+static inline LR des_full_cipher(LR lr, const des_keysched *sched,
+                                 size_t start, size_t step)
+{
+    lr = des_IP(lr);
+    lr = des_inner_cipher(lr, sched, start, step);
+    lr = des_FP(lr);
+    return lr;
+}
+
+/*
+ * Parameter pairs for the start,step arguments to the cipher routines
+ * above, causing them to use the same key schedule in opposite orders.
+ */
+#define ENCIPHER 0, 1                  /* for encryption */
+#define DECIPHER 15, -1                /* for decryption */
+
+/* ----------------------------------------------------------------------
+ * Single-DES
+ */
+
+struct des_cbc_ctx {
+    des_keysched sched;
+    LR iv;
+    ssh_cipher ciph;
 };
 
-static const struct ssh2_cipher ssh_des_sshcom_ssh2 = {
-    des_make_context, des3_free_context, des3_iv, des_key,
-    des_ssh2_encrypt_blk, des_ssh2_decrypt_blk, NULL, NULL,
-    "des-cbc@ssh.com",
-    8, 56, 8, SSH_CIPHER_IS_CBC, "single-DES CBC",
-    NULL
+static ssh_cipher *des_cbc_new(const ssh_cipheralg *alg)
+{
+    struct des_cbc_ctx *ctx = snew(struct des_cbc_ctx);
+    ctx->ciph.vt = alg;
+    return &ctx->ciph;
+}
+
+static void des_cbc_free(ssh_cipher *ciph)
+{
+    struct des_cbc_ctx *ctx = container_of(ciph, struct des_cbc_ctx, ciph);
+    smemclr(ctx, sizeof(*ctx));
+    sfree(ctx);
+}
+
+static void des_cbc_setkey(ssh_cipher *ciph, const void *vkey)
+{
+    struct des_cbc_ctx *ctx = container_of(ciph, struct des_cbc_ctx, ciph);
+    const uint8_t *key = (const uint8_t *)vkey;
+    des_key_setup(GET_64BIT_MSB_FIRST(key), &ctx->sched);
+}
+
+static void des_cbc_setiv(ssh_cipher *ciph, const void *iv)
+{
+    struct des_cbc_ctx *ctx = container_of(ciph, struct des_cbc_ctx, ciph);
+    ctx->iv = des_load_lr(iv);
+}
+
+static void des_cbc_encrypt(ssh_cipher *ciph, void *vdata, int len)
+{
+    struct des_cbc_ctx *ctx = container_of(ciph, struct des_cbc_ctx, ciph);
+    uint8_t *data = (uint8_t *)vdata;
+    for (; len > 0; len -= 8, data += 8) {
+        LR plaintext = des_load_lr(data);
+        LR cipher_in = des_xor_lr(plaintext, ctx->iv);
+        LR ciphertext = des_full_cipher(cipher_in, &ctx->sched, ENCIPHER);
+        des_store_lr(data, ciphertext);
+        ctx->iv = ciphertext;
+    }
+}
+
+static void des_cbc_decrypt(ssh_cipher *ciph, void *vdata, int len)
+{
+    struct des_cbc_ctx *ctx = container_of(ciph, struct des_cbc_ctx, ciph);
+    uint8_t *data = (uint8_t *)vdata;
+    for (; len > 0; len -= 8, data += 8) {
+        LR ciphertext = des_load_lr(data);
+        LR cipher_out = des_full_cipher(ciphertext, &ctx->sched, DECIPHER);
+        LR plaintext = des_xor_lr(cipher_out, ctx->iv);
+        des_store_lr(data, plaintext);
+        ctx->iv = ciphertext;
+    }
+}
+
+const ssh_cipheralg ssh_des = {
+    des_cbc_new, des_cbc_free, des_cbc_setiv, des_cbc_setkey,
+    des_cbc_encrypt, des_cbc_decrypt, NULL, NULL, "des-cbc",
+    8, 56, 8, SSH_CIPHER_IS_CBC, "single-DES CBC", NULL
 };
 
-static const struct ssh2_cipher *const des3_list[] = {
+const ssh_cipheralg ssh_des_sshcom_ssh2 = {
+    /* Same as ssh_des_cbc, but with a different SSH-2 ID */
+    des_cbc_new, des_cbc_free, des_cbc_setiv, des_cbc_setkey,
+    des_cbc_encrypt, des_cbc_decrypt, NULL, NULL, "des-cbc@ssh.com",
+    8, 56, 8, SSH_CIPHER_IS_CBC, "single-DES CBC", NULL
+};
+
+static const ssh_cipheralg *const des_list[] = {
+    &ssh_des,
+    &ssh_des_sshcom_ssh2
+};
+
+const ssh2_ciphers ssh2_des = { lenof(des_list), des_list };
+
+/* ----------------------------------------------------------------------
+ * Triple-DES CBC, SSH-2 style. The CBC mode treats the three
+ * invocations of DES as a single unified cipher, and surrounds it
+ * with just one layer of CBC, so only one IV is needed.
+ */
+
+struct des3_cbc1_ctx {
+    des_keysched sched[3];
+    LR iv;
+    ssh_cipher ciph;
+};
+
+static ssh_cipher *des3_cbc1_new(const ssh_cipheralg *alg)
+{
+    struct des3_cbc1_ctx *ctx = snew(struct des3_cbc1_ctx);
+    ctx->ciph.vt = alg;
+    return &ctx->ciph;
+}
+
+static void des3_cbc1_free(ssh_cipher *ciph)
+{
+    struct des3_cbc1_ctx *ctx = container_of(ciph, struct des3_cbc1_ctx, ciph);
+    smemclr(ctx, sizeof(*ctx));
+    sfree(ctx);
+}
+
+static void des3_cbc1_setkey(ssh_cipher *ciph, const void *vkey)
+{
+    struct des3_cbc1_ctx *ctx = container_of(ciph, struct des3_cbc1_ctx, ciph);
+    const uint8_t *key = (const uint8_t *)vkey;
+    for (size_t i = 0; i < 3; i++)
+        des_key_setup(GET_64BIT_MSB_FIRST(key + 8*i), &ctx->sched[i]);
+}
+
+static void des3_cbc1_setiv(ssh_cipher *ciph, const void *iv)
+{
+    struct des3_cbc1_ctx *ctx = container_of(ciph, struct des3_cbc1_ctx, ciph);
+    ctx->iv = des_load_lr(iv);
+}
+
+static void des3_cbc1_cbc_encrypt(ssh_cipher *ciph, void *vdata, int len)
+{
+    struct des3_cbc1_ctx *ctx = container_of(ciph, struct des3_cbc1_ctx, ciph);
+    uint8_t *data = (uint8_t *)vdata;
+    for (; len > 0; len -= 8, data += 8) {
+        LR plaintext = des_load_lr(data);
+        LR cipher_in = des_xor_lr(plaintext, ctx->iv);
+
+        /* Run three copies of the cipher, without undoing and redoing
+         * IP/FP in between. */
+        LR lr = des_IP(cipher_in);
+        lr = des_inner_cipher(lr, &ctx->sched[0], ENCIPHER);
+        lr = des_inner_cipher(lr, &ctx->sched[1], DECIPHER);
+        lr = des_inner_cipher(lr, &ctx->sched[2], ENCIPHER);
+        LR ciphertext = des_FP(lr);
+
+        des_store_lr(data, ciphertext);
+        ctx->iv = ciphertext;
+    }
+}
+
+static void des3_cbc1_cbc_decrypt(ssh_cipher *ciph, void *vdata, int len)
+{
+    struct des3_cbc1_ctx *ctx = container_of(ciph, struct des3_cbc1_ctx, ciph);
+    uint8_t *data = (uint8_t *)vdata;
+    for (; len > 0; len -= 8, data += 8) {
+        LR ciphertext = des_load_lr(data);
+
+        /* Similarly to encryption, but with the order reversed. */
+        LR lr = des_IP(ciphertext);
+        lr = des_inner_cipher(lr, &ctx->sched[2], DECIPHER);
+        lr = des_inner_cipher(lr, &ctx->sched[1], ENCIPHER);
+        lr = des_inner_cipher(lr, &ctx->sched[0], DECIPHER);
+        LR cipher_out = des_FP(lr);
+
+        LR plaintext = des_xor_lr(cipher_out, ctx->iv);
+        des_store_lr(data, plaintext);
+        ctx->iv = ciphertext;
+    }
+}
+
+const ssh_cipheralg ssh_3des_ssh2 = {
+    des3_cbc1_new, des3_cbc1_free, des3_cbc1_setiv, des3_cbc1_setkey,
+    des3_cbc1_cbc_encrypt, des3_cbc1_cbc_decrypt, NULL, NULL, "3des-cbc",
+    8, 168, 24, SSH_CIPHER_IS_CBC, "triple-DES CBC", NULL
+};
+
+/* ----------------------------------------------------------------------
+ * Triple-DES in SDCTR mode. Again, the three DES instances are
+ * treated as one big cipher, with a single counter encrypted through
+ * all three.
+ */
+
+#define SDCTR_WORDS (8 / BIGNUM_INT_BYTES)
+
+struct des3_sdctr_ctx {
+    des_keysched sched[3];
+    BignumInt counter[SDCTR_WORDS];
+    ssh_cipher ciph;
+};
+
+static ssh_cipher *des3_sdctr_new(const ssh_cipheralg *alg)
+{
+    struct des3_sdctr_ctx *ctx = snew(struct des3_sdctr_ctx);
+    ctx->ciph.vt = alg;
+    return &ctx->ciph;
+}
+
+static void des3_sdctr_free(ssh_cipher *ciph)
+{
+    struct des3_sdctr_ctx *ctx = container_of(
+        ciph, struct des3_sdctr_ctx, ciph);
+    smemclr(ctx, sizeof(*ctx));
+    sfree(ctx);
+}
+
+static void des3_sdctr_setkey(ssh_cipher *ciph, const void *vkey)
+{
+    struct des3_sdctr_ctx *ctx = container_of(
+        ciph, struct des3_sdctr_ctx, ciph);
+    const uint8_t *key = (const uint8_t *)vkey;
+    for (size_t i = 0; i < 3; i++)
+        des_key_setup(GET_64BIT_MSB_FIRST(key + 8*i), &ctx->sched[i]);
+}
+
+static void des3_sdctr_setiv(ssh_cipher *ciph, const void *viv)
+{
+    struct des3_sdctr_ctx *ctx = container_of(
+        ciph, struct des3_sdctr_ctx, ciph);
+    const uint8_t *iv = (const uint8_t *)viv;
+
+    /* Import the initial counter value into the internal representation */
+    for (unsigned i = 0; i < SDCTR_WORDS; i++)
+        ctx->counter[i] = GET_BIGNUMINT_MSB_FIRST(
+            iv + 8 - BIGNUM_INT_BYTES - i*BIGNUM_INT_BYTES);
+}
+
+static void des3_sdctr_encrypt_decrypt(ssh_cipher *ciph, void *vdata, int len)
+{
+    struct des3_sdctr_ctx *ctx = container_of(
+        ciph, struct des3_sdctr_ctx, ciph);
+    uint8_t *data = (uint8_t *)vdata;
+    uint8_t iv_buf[8];
+    for (; len > 0; len -= 8, data += 8) {
+        /* Format the counter value into the buffer. */
+        for (unsigned i = 0; i < SDCTR_WORDS; i++)
+            PUT_BIGNUMINT_MSB_FIRST(
+                iv_buf + 8 - BIGNUM_INT_BYTES - i*BIGNUM_INT_BYTES,
+                ctx->counter[i]);
+
+        /* Increment the counter. */
+        BignumCarry carry = 1;
+        for (unsigned i = 0; i < SDCTR_WORDS; i++)
+            BignumADC(ctx->counter[i], carry, ctx->counter[i], 0, carry);
+
+        /* Triple-encrypt the counter value from the IV. */
+        LR lr = des_IP(des_load_lr(iv_buf));
+        lr = des_inner_cipher(lr, &ctx->sched[0], ENCIPHER);
+        lr = des_inner_cipher(lr, &ctx->sched[1], DECIPHER);
+        lr = des_inner_cipher(lr, &ctx->sched[2], ENCIPHER);
+        LR keystream = des_FP(lr);
+
+        LR input = des_load_lr(data);
+        LR output = des_xor_lr(input, keystream);
+        des_store_lr(data, output);
+    }
+    smemclr(iv_buf, sizeof(iv_buf));
+}
+
+const ssh_cipheralg ssh_3des_ssh2_ctr = {
+    des3_sdctr_new, des3_sdctr_free, des3_sdctr_setiv, des3_sdctr_setkey,
+    des3_sdctr_encrypt_decrypt, des3_sdctr_encrypt_decrypt,
+    NULL, NULL, "3des-ctr", 8, 168, 24, 0, "triple-DES SDCTR", NULL
+};
+
+static const ssh_cipheralg *const des3_list[] = {
     &ssh_3des_ssh2_ctr,
     &ssh_3des_ssh2
 };
 
-const struct ssh2_ciphers ssh2_3des = {
-    sizeof(des3_list) / sizeof(*des3_list),
-    des3_list
-};
+const ssh2_ciphers ssh2_3des = { lenof(des3_list), des3_list };
 
-static const struct ssh2_cipher *const des_list[] = {
-    &ssh_des_ssh2,
-    &ssh_des_sshcom_ssh2
-};
-
-const struct ssh2_ciphers ssh2_des = {
-    sizeof(des_list) / sizeof(*des_list),
-    des_list
-};
-
-const struct ssh_cipher ssh_3des = {
-    des3_ssh1_make_context, des3_free_context, des3_sesskey,
-    des3_encrypt_blk, des3_decrypt_blk,
-    8, "triple-DES inner-CBC"
-};
-
-static void des_sesskey(void *handle, unsigned char *key)
-{
-    DESContext *keys = (DESContext *) handle;
-    des_key(keys, key);
-    des_key(keys+1, key);
-}
-
-static void des_encrypt_blk(void *handle, unsigned char *blk, int len)
-{
-    DESContext *keys = (DESContext *) handle;
-    des_cbc_encrypt(blk, len, keys);
-}
-
-static void des_decrypt_blk(void *handle, unsigned char *blk, int len)
-{
-    DESContext *keys = (DESContext *) handle;
-    des_cbc_decrypt(blk, len, keys+1);
-}
-
-const struct ssh_cipher ssh_des = {
-    des_ssh1_make_context, des3_free_context, des_sesskey,
-    des_encrypt_blk, des_decrypt_blk,
-    8, "single-DES CBC"
-};
-
-#ifdef TEST_XDM_AUTH
-
-/*
- * Small standalone utility which allows encryption and decryption of
- * single cipher blocks in the XDM-AUTHORIZATION-1 style. Written
- * during the rework of X authorisation for connection sharing, to
- * check the corner case when xa1_firstblock matches but the rest of
- * the authorisation is bogus.
- *
- * Just compile this file on its own with the above ifdef symbol
- * predefined:
-
-gcc -DTEST_XDM_AUTH -o sshdes sshdes.c
-
+/* ----------------------------------------------------------------------
+ * Triple-DES, SSH-1 style. SSH-1 replicated the whole CBC structure
+ * three times, so there have to be three separate IVs, one in each
+ * layer.
  */
 
-#include <stdlib.h>
-void *safemalloc(size_t n, size_t size) { return calloc(n, size); }
-void safefree(void *p) { return free(p); }
-void smemclr(void *p, size_t size) { memset(p, 0, size); }
-int main(int argc, char **argv)
+struct des3_cbc3_ctx {
+    des_keysched sched[3];
+    LR iv[3];
+    ssh_cipher ciph;
+};
+
+static ssh_cipher *des3_cbc3_new(const ssh_cipheralg *alg)
 {
-    unsigned char words[2][8];
-    unsigned char out[8];
-    int i, j;
-
-    memset(words, 0, sizeof(words));
-
-    for (i = 0; i < 2; i++) {
-        for (j = 0; j < 8 && argv[i+1][2*j]; j++) {
-            char x[3];
-            unsigned u;
-            x[0] = argv[i+1][2*j];
-            x[1] = argv[i+1][2*j+1];
-            x[2] = 0;
-            sscanf(x, "%02x", &u);
-            words[i][j] = u;
-        }
-    }
-
-    memcpy(out, words[0], 8);
-    des_decrypt_xdmauth(words[1], out, 8);
-    printf("decrypt(%s,%s) = ", argv[1], argv[2]);
-    for (i = 0; i < 8; i++) printf("%02x", out[i]);
-    printf("\n");
-
-    memcpy(out, words[0], 8);
-    des_encrypt_xdmauth(words[1], out, 8);
-    printf("encrypt(%s,%s) = ", argv[1], argv[2]);
-    for (i = 0; i < 8; i++) printf("%02x", out[i]);
-    printf("\n");
+    struct des3_cbc3_ctx *ctx = snew(struct des3_cbc3_ctx);
+    ctx->ciph.vt = alg;
+    return &ctx->ciph;
 }
 
-#endif
+static void des3_cbc3_free(ssh_cipher *ciph)
+{
+    struct des3_cbc3_ctx *ctx = container_of(ciph, struct des3_cbc3_ctx, ciph);
+    smemclr(ctx, sizeof(*ctx));
+    sfree(ctx);
+}
+
+static void des3_cbc3_setkey(ssh_cipher *ciph, const void *vkey)
+{
+    struct des3_cbc3_ctx *ctx = container_of(ciph, struct des3_cbc3_ctx, ciph);
+    const uint8_t *key = (const uint8_t *)vkey;
+    for (size_t i = 0; i < 3; i++)
+        des_key_setup(GET_64BIT_MSB_FIRST(key + 8*i), &ctx->sched[i]);
+}
+
+static void des3_cbc3_setiv(ssh_cipher *ciph, const void *viv)
+{
+    struct des3_cbc3_ctx *ctx = container_of(ciph, struct des3_cbc3_ctx, ciph);
+
+    /*
+     * In principle, we ought to provide an interface for the user to
+     * input 24 instead of 8 bytes of IV. But that would make this an
+     * ugly exception to the otherwise universal rule that IV size =
+     * cipher block size, and there's really no need to violate that
+     * rule given that this is a historical one-off oddity and SSH-1
+     * always initialises all three IVs to zero anyway. So we fudge it
+     * by just setting all the IVs to the same value.
+     */
+
+    LR iv = des_load_lr(viv);
+
+    /* But we store the IVs in permuted form, so that we can handle
+     * all three CBC layers without having to do IP/FP in between. */
+    iv = des_IP(iv);
+    for (size_t i = 0; i < 3; i++)
+        ctx->iv[i] = iv;
+}
+
+static void des3_cbc3_cbc_encrypt(ssh_cipher *ciph, void *vdata, int len)
+{
+    struct des3_cbc3_ctx *ctx = container_of(ciph, struct des3_cbc3_ctx, ciph);
+    uint8_t *data = (uint8_t *)vdata;
+    for (; len > 0; len -= 8, data += 8) {
+        /* Load and IP the input. */
+        LR plaintext = des_IP(des_load_lr(data));
+        LR lr = plaintext;
+
+        /* Do three passes of CBC, with the middle one inverted. */
+
+        lr = des_xor_lr(lr, ctx->iv[0]);
+        lr = des_inner_cipher(lr, &ctx->sched[0], ENCIPHER);
+        ctx->iv[0] = lr;
+
+        LR ciphertext = lr;
+        lr = des_inner_cipher(ciphertext, &ctx->sched[1], DECIPHER);
+        lr = des_xor_lr(lr, ctx->iv[1]);
+        ctx->iv[1] = ciphertext;
+
+        lr = des_xor_lr(lr, ctx->iv[2]);
+        lr = des_inner_cipher(lr, &ctx->sched[2], ENCIPHER);
+        ctx->iv[2] = lr;
+
+        des_store_lr(data, des_FP(lr));
+    }
+}
+
+static void des3_cbc3_cbc_decrypt(ssh_cipher *ciph, void *vdata, int len)
+{
+    struct des3_cbc3_ctx *ctx = container_of(ciph, struct des3_cbc3_ctx, ciph);
+    uint8_t *data = (uint8_t *)vdata;
+    for (; len > 0; len -= 8, data += 8) {
+        /* Load and IP the input */
+        LR lr = des_IP(des_load_lr(data));
+        LR ciphertext;
+
+        /* Do three passes of CBC, with the middle one inverted. */
+        ciphertext = lr;
+        lr = des_inner_cipher(ciphertext, &ctx->sched[2], DECIPHER);
+        lr = des_xor_lr(lr, ctx->iv[2]);
+        ctx->iv[2] = ciphertext;
+
+        lr = des_xor_lr(lr, ctx->iv[1]);
+        lr = des_inner_cipher(lr, &ctx->sched[1], ENCIPHER);
+        ctx->iv[1] = lr;
+
+        ciphertext = lr;
+        lr = des_inner_cipher(ciphertext, &ctx->sched[0], DECIPHER);
+        lr = des_xor_lr(lr, ctx->iv[0]);
+        ctx->iv[0] = ciphertext;
+
+        des_store_lr(data, des_FP(lr));
+    }
+}
+
+const ssh_cipheralg ssh_3des_ssh1 = {
+    des3_cbc3_new, des3_cbc3_free, des3_cbc3_setiv, des3_cbc3_setkey,
+    des3_cbc3_cbc_encrypt, des3_cbc3_cbc_decrypt, NULL, NULL, NULL,
+    8, 168, 24, SSH_CIPHER_IS_CBC, "triple-DES inner-CBC", NULL
+};

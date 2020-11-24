@@ -42,6 +42,7 @@ NE_BEGIN_DECLS
 #define NE_SOCK_RESET (-4)
 /* Secure connection was closed without proper SSL shutdown. */
 #define NE_SOCK_TRUNC (-5)
+/* Reserved value -   (-6) */
 
 /* ne_socket represents a TCP socket. */
 typedef struct ne_socket_s ne_socket;
@@ -66,7 +67,7 @@ void ne_sock_exit(void);
 /* Resolve the given hostname. Hex string IPv6 addresses (e.g. `::1')
  * may be enclosed in brackets (e.g. `[::1]').  'flags' should be
  * zero, or if NE_ADDR_CANON is passed, the canonical name for the
- * hostname will be determind. */
+ * hostname will be determined. */
 ne_sock_addr *ne_addr_resolve(const char *hostname, int flags);
 
 /* Returns zero if name resolution was successful, non-zero on

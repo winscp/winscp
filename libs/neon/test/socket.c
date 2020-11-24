@@ -177,7 +177,7 @@ static int begin(ne_socket **sock, server_fn fn, void *ud)
     CALL(new_spawn_server(1, wrap_serve, &pair, &port));
     CALL(do_connect(sock, localhost, port));
     ONV(ne_sock_connect_ssl(*sock, client_ctx, NULL),
-	("SSL negotation failed: %s", ne_sock_error(*sock)));
+	("SSL negotiation failed: %s", ne_sock_error(*sock)));
     return OK;
 }
 
@@ -1046,6 +1046,9 @@ static int ssl_closure(void)
 
 static int serve_truncate(ne_socket *sock, void *userdata)
 {
+    if (ne_sock_read(sock, buffer, 1) != 1)
+        NE_DEBUG(NE_DBG_SOCKET, "serve_truncate failed to read a byte.\n");
+    NE_DEBUG(NE_DBG_SOCKET, "read a byte, exiting...\n");
     exit(0);
 }
 
@@ -1056,6 +1059,7 @@ static int ssl_truncate(void)
     ne_socket *sock; int ret;
     
     CALL(begin(&sock, serve_truncate, NULL));
+    CALL(full_write(sock, "a", 1));
     ret = ne_sock_read(sock, buffer, 1);
     ONV(ret != NE_SOCK_TRUNC,
 	("socket got error %d not truncation: `%s'", ret,

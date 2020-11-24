@@ -34,7 +34,9 @@ NE_BEGIN_DECLS
  */
 struct ne_md5_ctx;
 
-/* Create structure containing state of computation. */
+/* Create structure containing state of computation.  Can return NULL
+ * if the MD5 algorithm is prohibited (such as FIPS-enabled
+ * systems). */
 extern struct ne_md5_ctx *ne_md5_create_ctx(void);
 
 /* Starting with the result of former calls of this function (or the

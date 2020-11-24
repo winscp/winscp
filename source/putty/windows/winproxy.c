@@ -7,19 +7,15 @@
 #include <stdio.h>
 #include <assert.h>
 
-#define DEFINE_PLUG_METHOD_MACROS
 #include "tree234.h"
 #include "putty.h"
 #include "network.h"
 #include "proxy.h"
 
-Socket make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
-                          Plug plug, int overlapped);
-
-Socket platform_new_connection(SockAddr addr, const char *hostname,
-			       int port, int privport,
-			       int oobinline, int nodelay, int keepalive,
-			       Plug plug, Conf *conf)
+Socket *platform_new_connection(SockAddr *addr, const char *hostname,
+                                int port, bool privport,
+                                bool oobinline, bool nodelay, bool keepalive,
+                                Plug *plug, Conf *conf)
 {
     char *cmd;
     HANDLE us_to_cmd, cmd_from_us;
@@ -30,7 +26,7 @@ Socket platform_new_connection(SockAddr addr, const char *hostname,
     PROCESS_INFORMATION pi;
 
     if (conf_get_int(conf, CONF_proxy_type) != PROXY_CMD)
-	return NULL;
+        return NULL;
 
     cmd = format_telnet_command(addr, port, conf);
 
@@ -38,9 +34,9 @@ Socket platform_new_connection(SockAddr addr, const char *hostname,
     sk_addr_free(addr);
 
     {
-	char *msg = dupprintf("Starting local proxy command: %s", cmd);
-	plug_log(plug, 2, NULL, 0, msg, 0);
-	sfree(msg);
+        char *msg = dupprintf("Starting local proxy command: %s", cmd);
+        plug_log(plug, 2, NULL, 0, msg, 0);
+        sfree(msg);
     }
 
     /*
@@ -49,40 +45,32 @@ Socket platform_new_connection(SockAddr addr, const char *hostname,
      */
     sa.nLength = sizeof(sa);
     sa.lpSecurityDescriptor = NULL;    /* default */
-    sa.bInheritHandle = TRUE;
+    sa.bInheritHandle = true;
     if (!CreatePipe(&us_from_cmd, &cmd_to_us, &sa, 0)) {
-	Socket ret =
-            new_error_socket("Unable to create pipes for proxy command", plug);
         sfree(cmd);
-	return ret;
+        return new_error_socket_fmt(
+            plug, "Unable to create pipes for proxy command: %s",
+            win_strerror(GetLastError()));
     }
 
     if (!CreatePipe(&cmd_from_us, &us_to_cmd, &sa, 0)) {
-	Socket ret =
-            new_error_socket("Unable to create pipes for proxy command", plug);
         sfree(cmd);
-	CloseHandle(us_from_cmd);
-	CloseHandle(cmd_to_us);
-	return ret;
+        CloseHandle(us_from_cmd);
+        CloseHandle(cmd_to_us);
+        return new_error_socket_fmt(
+            plug, "Unable to create pipes for proxy command: %s",
+            win_strerror(GetLastError()));
     }
 
-    if (flags & FLAG_STDERR) {
-        /* If we have a sensible stderr, the proxy command can send
-         * its own standard error there, so we won't interfere. */
-        us_from_cmd_err = cmd_err_to_us = NULL;
-    } else {
-        /* If we don't have a sensible stderr, we should catch the
-         * proxy command's standard error to put in our event log. */
-        if (!CreatePipe(&us_from_cmd_err, &cmd_err_to_us, &sa, 0)) {
-            Socket ret = new_error_socket
-                ("Unable to create pipes for proxy command", plug);
-            sfree(cmd);
-            CloseHandle(us_from_cmd);
-            CloseHandle(cmd_to_us);
-            CloseHandle(us_to_cmd);
-            CloseHandle(cmd_from_us);
-            return ret;
-        }
+    if (!CreatePipe(&us_from_cmd_err, &cmd_err_to_us, &sa, 0)) {
+        sfree(cmd);
+        CloseHandle(us_from_cmd);
+        CloseHandle(cmd_to_us);
+        CloseHandle(us_to_cmd);
+        CloseHandle(cmd_from_us);
+        return new_error_socket_fmt(
+            plug, "Unable to create pipes for proxy command: %s",
+            win_strerror(GetLastError()));
     }
 
     SetHandleInformation(us_to_cmd, HANDLE_FLAG_INHERIT, 0);
@@ -100,9 +88,9 @@ Socket platform_new_connection(SockAddr addr, const char *hostname,
     si.hStdInput = cmd_from_us;
     si.hStdOutput = cmd_to_us;
     si.hStdError = cmd_err_to_us;
-    CreateProcess(NULL, cmd, NULL, NULL, TRUE,
-		  CREATE_NO_WINDOW | NORMAL_PRIORITY_CLASS,
-		  NULL, NULL, &si, &pi);
+    CreateProcess(NULL, cmd, NULL, NULL, true,
+                  CREATE_NO_WINDOW | NORMAL_PRIORITY_CLASS,
+                  NULL, NULL, &si, &pi);
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
 
@@ -115,5 +103,5 @@ Socket platform_new_connection(SockAddr addr, const char *hostname,
         CloseHandle(cmd_err_to_us);
 
     return make_handle_socket(us_to_cmd, us_from_cmd, us_from_cmd_err,
-                              plug, FALSE);
+                              plug, false);
 }

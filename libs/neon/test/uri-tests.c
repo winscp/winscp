@@ -66,28 +66,39 @@ static int no_path(void)
 
 static int escapes(void)
 {
-    const struct {
+    static const struct {
         const char *plain, *escaped;
+        unsigned int flags;
     } paths[] = {
-        { "/foo%", "/foo%25" },
-        { "/foo bar", "/foo%20bar" },
-        { "/foo_bar", "/foo_bar" },
-        { "/foobar", "/foobar" },
-        { "/a\xb9\xb2\xb3\xbc\xbd/", "/a%b9%b2%b3%bc%bd/" },
+        { "/foo%", "/foo%25", 0 },
+        { "/foo bar", "/foo%20bar", 0, },
+        { "/foo_bar", "/foo_bar", 0 },
+        { "/foobar", "/foobar", 0 },
+        { "/a\xb9\xb2\xb3\xbc\xbd/", "/a%b9%b2%b3%bc%bd/", 0 },
+        { "/foo%20\xb9\xb2\xb3\xbc\xbd/", "/foo%20%b9%b2%b3%bc%bd/", NE_PATH_NONURI },
+        { "/foo bar/", "/foo%20bar/", NE_PATH_NONURI },
         { NULL, NULL}
     };
     size_t n;
 
     for (n = 0; paths[n].plain; n++) {
-        char *esc = ne_path_escape(paths[n].plain), *un;
+        char *esc;
+
+        if (paths[n].flags)
+            esc = ne_path_escapef(paths[n].plain, paths[n].flags);
+        else
+            esc = ne_path_escape(paths[n].plain);
 
         ONCMP(paths[n].escaped, esc, paths[n].plain, "escape");
-        
-        un = ne_path_unescape(esc);
 
-        ONCMP(paths[n].plain, un, paths[n].plain, "unescape");
-        ne_free(un);
-        ne_free(esc);   
+        if (!paths[n].flags) {
+            char *un = ne_path_unescape(esc);
+
+            ONCMP(paths[n].plain, un, paths[n].plain, "unescape");
+            ne_free(un);
+        }
+
+        ne_free(esc);
     }
 
     ONN("unescape accepted invalid URI", 

@@ -136,12 +136,12 @@ AC_DEFUN([NE_VERSIONS_BUNDLED], [
 
 # Define the current versions.
 NE_VERSION_MAJOR=0
-NE_VERSION_MINOR=30
+NE_VERSION_MINOR=31
 NE_VERSION_PATCH=2
 NE_VERSION_TAG=
 
-# 0.30.x is backwards-compatible to 0.27.x, so AGE=3
-NE_LIBTOOL_VERSINFO="30:${NE_VERSION_PATCH}:3"
+# 0.31.x is backwards-compatible to 0.27.x, so AGE=4
+NE_LIBTOOL_VERSINFO="31:${NE_VERSION_PATCH}:4"
 
 NE_DEFINE_VERSIONS
 
@@ -351,7 +351,7 @@ AC_SUBST(NEON_BUILD_BUNDLED)
 dnl AC_SEARCH_LIBS done differently. Usage:
 dnl   NE_SEARCH_LIBS(function, libnames, [extralibs], [actions-if-not-found],
 dnl                            [actions-if-found])
-dnl Tries to find 'function' by linking againt `-lLIB $NEON_LIBS' for each
+dnl Tries to find 'function' by linking against `-lLIB $NEON_LIBS' for each
 dnl LIB in libnames.  If link fails and 'extralibs' is given, will also
 dnl try linking against `-lLIB extralibs $NEON_LIBS`.
 dnl Once link succeeds, `-lLIB [extralibs]` is prepended to $NEON_LIBS, and
@@ -806,11 +806,11 @@ AC_DEFUN([NE_FIND_AR], [
 
 # Search in /usr/ccs/bin for Solaris
 ne_PATH=$PATH:/usr/ccs/bin
-AC_PATH_TOOL(AR, ar, notfound, $ne_PATH)
+AC_CHECK_TOOL(AR, ar, notfound, $ne_PATH)
 if test "x$AR" = "xnotfound"; then
    AC_MSG_ERROR([could not find ar tool])
 fi
-AC_PATH_TOOL(RANLIB, ranlib, :, $ne_PATH)
+AC_CHECK_TOOL(RANLIB, ranlib, :, $ne_PATH)
 
 ])
 
@@ -871,6 +871,7 @@ else
    if test "$ne_cvar" = "yes"; then
       $1_CFLAGS=`$PKG_CONFIG --cflags $2`
       $1_LIBS=`$PKG_CONFIG --libs $2`
+      $1_VERSION=`$PKG_CONFIG --modversion $2`
       : Using provided pkg-config data
       $3
    else
@@ -903,21 +904,25 @@ case $with_ssl in
    ;;
 yes|openssl)
    NE_PKG_CONFIG(NE_SSL, openssl,
-    [AC_MSG_NOTICE(using SSL library configuration from pkg-config)
+    [AC_MSG_NOTICE(using OpenSSL $NE_SSL_VERSION library configuration from pkg-config)
      CPPFLAGS="$CPPFLAGS ${NE_SSL_CFLAGS}"
      NEON_LIBS="$NEON_LIBS ${NE_SSL_LIBS}"],
     [# Either OpenSSL library may require -ldl if built with dynamic engine support
      NE_SEARCH_LIBS(RSA_new, crypto, -ldl)
-     NE_SEARCH_LIBS(SSL_library_init, ssl, -ldl)])
+     NE_SEARCH_LIBS(SSL_library_init, ssl, -ldl)
+     NE_SSL_VERSION="(0.9.7 or later)"])
 
    AC_CHECK_HEADERS(openssl/ssl.h openssl/opensslv.h,,
    [AC_MSG_ERROR([OpenSSL headers not found, cannot enable SSL support])])
 
-   # Enable EGD support if using 0.9.7 or newer
    NE_CHECK_OPENSSLVER(ne_cv_lib_ssl097, 0.9.7, 0x00907000L)
-   if test "$ne_cv_lib_ssl097" = "yes"; then
+   NE_CHECK_OPENSSLVER(ne_cv_lib_ssl110, 1.1.0, 0x10100000L)
+   if test "$ne_cv_lib_ssl110" = "yes"; then
+      NE_ENABLE_SUPPORT(SSL, [SSL support enabled, using OpenSSL $NE_SSL_VERSION])
+   elif test "$ne_cv_lib_ssl097" = "yes"; then
+      # Enable EGD support if using 0.9.7 or newer
       AC_MSG_NOTICE([OpenSSL >= 0.9.7; EGD support not needed in neon])
-      NE_ENABLE_SUPPORT(SSL, [SSL support enabled, using OpenSSL (0.9.7 or later)])
+      NE_ENABLE_SUPPORT(SSL, [SSL support enabled, using OpenSSL $NE_SSL_VERSION])
       NE_CHECK_FUNCS(CRYPTO_set_idptr_callback SSL_SESSION_cmp)
    else
       # Fail if OpenSSL is older than 0.9.6
@@ -957,8 +962,6 @@ gnutls)
      [AC_MSG_NOTICE(using GnuTLS configuration from pkg-config)
       CPPFLAGS="$CPPFLAGS ${NE_SSL_CFLAGS}"
       NEON_LIBS="$NEON_LIBS ${NE_SSL_LIBS}"
-
-      ne_gnutls_ver=`$PKG_CONFIG --modversion gnutls`
      ], [
       # Fall back on libgnutls-config script
       AC_PATH_PROG(GNUTLS_CONFIG, libgnutls-config, no)
@@ -969,14 +972,13 @@ gnutls)
 
       CPPFLAGS="$CPPFLAGS `$GNUTLS_CONFIG --cflags`"
       NEON_LIBS="$NEON_LIBS `$GNUTLS_CONFIG --libs`"
-
-      ne_gnutls_ver=`$GNUTLS_CONFIG --version`
+      NE_SSL_VERSION="`$GNUTLS_CONFIG --version`"
      ])
 
    AC_CHECK_HEADER([gnutls/gnutls.h],,
       [AC_MSG_ERROR([could not find gnutls/gnutls.h in include path])])
 
-   NE_ENABLE_SUPPORT(SSL, [SSL support enabled, using GnuTLS $ne_gnutls_ver])
+   NE_ENABLE_SUPPORT(SSL, [SSL support enabled, using GnuTLS $NE_SSL_VERSION])
    NEON_EXTRAOBJS="$NEON_EXTRAOBJS ne_gnutls"
    AC_DEFINE([HAVE_GNUTLS], 1, [Define if GnuTLS support is enabled])
 
@@ -1026,8 +1028,11 @@ CC/CFLAGS/LIBS must be used to make the POSIX library interfaces
 available]),,
 enable_threadsafe_ssl=no)
 
-case $enable_threadsafe_ssl in
-posix|yes)
+case ${enable_threadsafe_ssl}X${ne_cv_lib_ssl110} in
+*Xyes)
+  NE_ENABLE_SUPPORT(TS_SSL, [OpenSSL is natively thread-safe])
+  ;;
+posixX*|yesX*)
   ne_pthr_ok=yes
   AC_CHECK_FUNCS([pthread_mutex_init pthread_mutex_lock],,[ne_pthr_ok=no])
   if test "${ne_pthr_ok}" = "no"; then
@@ -1045,7 +1050,7 @@ noX*Y*) ;;
 *X*Yyes|*XyesY*)
     # PKCS#11... ho!
     NE_PKG_CONFIG(NE_PK11, pakchois,
-      [AC_MSG_NOTICE([[using pakchois for PKCS#11 support]])
+      [AC_MSG_NOTICE([[using pakchois $NE_PK11_VERSION for PKCS#11 support]])
        AC_DEFINE(HAVE_PAKCHOIS, 1, [Define if pakchois library supported])
        CPPFLAGS="$CPPFLAGS ${NE_PK11_CFLAGS}"
        NEON_LIBS="${NEON_LIBS} ${NE_PK11_LIBS}"],
@@ -1097,7 +1102,7 @@ if test "x$with_libproxy" != "xno"; then
      [AC_DEFINE(HAVE_LIBPROXY, 1, [Define if libproxy is supported])
       CPPFLAGS="$CPPFLAGS $NE_PXY_CFLAGS"
       NEON_LIBS="$NEON_LIBS ${NE_PXY_LIBS}"
-      NE_ENABLE_SUPPORT(LIBPXY, [libproxy support enabled])],
+      NE_ENABLE_SUPPORT(LIBPXY, [libproxy support enabled using libproxy $NE_PXY_VERSION])],
      [NE_DISABLE_SUPPORT(LIBPXY, [libproxy support not enabled])])
 else
    NE_DISABLE_SUPPORT(LIBPXY, [libproxy support not enabled])

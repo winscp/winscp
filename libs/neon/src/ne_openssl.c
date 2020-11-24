@@ -35,6 +35,7 @@
 #include <openssl/x509v3.h>
 #include <openssl/rand.h>
 #include <openssl/opensslv.h>
+#include <openssl/evp.h>
 
 #ifdef NE_HAVE_TS_SSL
 #include <stdlib.h> /* for abort() */
@@ -47,7 +48,7 @@
 #include "ne_string.h"
 #include "ne_session.h"
 #include "ne_internal.h"
-
+#include "ne_md5.h"
 #include "ne_private.h"
 #include "ne_privssl.h"
 
@@ -67,8 +68,13 @@ typedef const unsigned char ne_d2i_uchar;
 #endif
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
+#define X509_get0_notBefore X509_get_notBefore
+#define X509_get0_notAfter X509_get_notAfter
 #define X509_up_ref(x) x->references++
 #define EVP_PKEY_up_ref(x) x->references++
+#define EVP_MD_CTX_new() ne_calloc(sizeof(EVP_MD_CTX))
+#define EVP_MD_CTX_free(ctx) ne_free(ctx)
+#define EVP_MD_CTX_reset EVP_MD_CTX_cleanup
 #define EVP_PKEY_get0_RSA(evp) (evp->pkey.rsa)
 #endif
 
@@ -226,10 +232,10 @@ void ne_ssl_cert_validity_time(const ne_ssl_certificate *cert,
                                time_t *from, time_t *until)
 {
     if (from) {
-        *from = asn1time_to_timet(X509_get_notBefore(cert->subject));
+        *from = asn1time_to_timet(X509_get0_notBefore(cert->subject));
     }
     if (until) {
-        *until = asn1time_to_timet(X509_get_notAfter(cert->subject));
+        *until = asn1time_to_timet(X509_get0_notAfter(cert->subject));
     }
 }
 
@@ -364,7 +370,7 @@ static ne_ssl_certificate *populate_cert(ne_ssl_certificate *cert, X509 *x5)
 }
 
 /* OpenSSL cert verification callback.  This is invoked for *each*
- * error which is encoutered whilst verifying the cert chain; multiple
+ * error which is encountered whilst verifying the cert chain; multiple
  * invocations for any particular cert in the chain are possible. */
 static int verify_callback(int ok, X509_STORE_CTX *ctx)
 {
@@ -574,6 +580,9 @@ ne_ssl_context *ne_ssl_context_create(int mode)
         /* enable workarounds for buggy SSL server implementations */
         SSL_CTX_set_options(ctx->ctx, SSL_OP_ALL);
         SSL_CTX_set_verify(ctx->ctx, SSL_VERIFY_PEER, verify_callback);
+#if !defined(LIBRESSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x10101000L
+        SSL_CTX_set_post_handshake_auth(ctx->ctx, 1);
+#endif
     } else if (mode == NE_SSL_CTX_SERVER) {
         ctx->ctx = SSL_CTX_new(SSLv23_server_method());
         SSL_CTX_set_session_cache_mode(ctx->ctx, SSL_SESS_CACHE_CLIENT);
@@ -1130,7 +1139,10 @@ int ne_ssl_cert_digest(const ne_ssl_certificate *cert, char *digest)
     return 0;
 }
 
-#ifdef NE_HAVE_TS_SSL
+#if defined(NE_HAVE_TS_SSL) && OPENSSL_VERSION_NUMBER < 0x10100000L
+/* From OpenSSL 1.1.0 locking callbacks are no longer needed. */
+#define WITH_OPENSSL_LOCKING (1)
+
 /* Implementation of locking callbacks to make OpenSSL thread-safe.
  * If the OpenSSL API was better designed, this wouldn't be necessary.
  * In OpenSSL releases without CRYPTO_set_idptr_callback, it's not
@@ -1184,8 +1196,6 @@ static void thread_lock_neon(int mode, int n, const char *file, int line)
     }
 }
 
-#endif
-
 /* ID_CALLBACK_IS_{NEON,OTHER} evaluate as true if the currently
  * registered OpenSSL ID callback is the neon function (_NEON), or has
  * been overwritten by some other app (_OTHER). */
@@ -1196,6 +1206,8 @@ static void thread_lock_neon(int mode, int n, const char *file, int line)
 #define ID_CALLBACK_IS_OTHER (CRYPTO_get_id_callback() != NULL)
 #define ID_CALLBACK_IS_NEON (CRYPTO_get_id_callback() == thread_id_neon)
 #endif
+        
+#endif /* NE_HAVE_TS_SSL && OPENSSL_VERSION_NUMBER < 1.1.1 */
 
 int ne__ssl_init(void)
 {
@@ -1205,7 +1217,7 @@ int ne__ssl_init(void)
     SSL_library_init();
     OpenSSL_add_all_algorithms();
 
-#ifdef NE_HAVE_TS_SSL
+#ifdef WITH_OPENSSL_LOCKING
     /* If some other library has already come along and set up the
      * thread-safety callbacks, then it must be presumed that the
      * other library will have a longer lifetime in the process than
@@ -1252,7 +1264,7 @@ void ne__ssl_exit(void)
     /* Cannot call ERR_free_strings() etc here in case any other code
      * in the process using OpenSSL. */
 
-#ifdef NE_HAVE_TS_SSL
+#ifdef WITH_OPENSSL_LOCKING
     /* Only unregister the callbacks if some *other* library has not
      * come along in the mean-time and trampled over the callbacks
      * installed by neon. */

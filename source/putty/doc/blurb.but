@@ -33,8 +33,8 @@ Plink, Pageant and PuTTYgen.
 Windows versions of the PuTTY utilities. Some options are therefore
 mentioned that are absent from the \i{Unix version}; the Unix version has
 features not described here; and the \i\cw{pterm} and command-line
-\cw{puttygen} utilities are not described at all. The only
-Unix-specific documentation that currently exists is the
+\cw{puttygen} and \cw{pageant} utilities are not described at all. The
+only Unix-specific documentation that currently exists is the
 \I{man pages for PuTTY tools}man pages.
 
 \copyright This manual is copyright \shortcopyrightdetails. All

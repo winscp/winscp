@@ -93,6 +93,20 @@ very useful in this context.)
 
 \dd Disable interactive prompts.
 
+\dt \cw{-sanitise-stderr}
+
+\dt \cw{-sanitise-stdout}
+
+\dt \cw{-no-sanitise-stderr}
+
+\dt \cw{-no-sanitise-stdout}
+
+\dd By default, Plink can choose to filter control characters if that
+seems appropriate, to prevent remote processes sending confusing escape
+sequences. These options override Plink's default behaviour to enable
+or disabling such filtering on the standard error and standard output
+channels.
+
 \dt \cw{-pw} \e{password}
 
 \dd Set remote password to \e{password}. \e{CAUTION:} this will likely
@@ -181,6 +195,15 @@ which of the agent's keys to use. }
 
 \dd Allow use of an authentication agent. (This option is only necessary
 to override a setting in a saved session.)
+
+\dt \cw{\-noshare}
+
+\dd Don't test and try to share an existing connection, always make
+a new connection.
+
+\dt \cw{\-share}
+
+\dd Test and try to share an existing connection.
 
 \dt \cw{\-hostkey} \e{key}
 

@@ -115,6 +115,14 @@ int full_write(ne_socket *sock, const char *data, size_t len);
  * on success.  Uses an unspecified hostname/port for the server. */
 int session_server(ne_session **sess, server_fn fn, void *userdata);
 
+/* Create a session for scheme with server process running count
+ * multiple iterations fn(userdata).  Sets test suite error on
+ * failure; initializes *sess with a new session on success.  Uses an
+ * unspecified hostname/port for the server. */
+int multi_session_server(ne_session **sess, const char *scheme,
+                         const char *hostname,
+                         int count, server_fn fn, void *userdata);
+
 /* Create a session with server process running fn(userdata).  Sets
  * test suite error on failure; initializes *sess with a new session
  * on success.  Uses an unspecified hostname/port for the server;

@@ -69,7 +69,7 @@ struct ne_propfind_handler_s {
 /* We build up the results of one 'response' element in memory. */
 struct prop {
     char *name, *nspace, *value, *lang;
-    /* Store a ne_propname here too, for convienience.  pname.name =
+    /* Store a ne_propname here too, for convenience.  pname.name =
      * name, pname.nspace = nspace, but they are const'ed in pname. */
     ne_propname pname;
 };
@@ -93,10 +93,10 @@ struct ne_prop_result_set_s {
 #define MAX_PROP_COUNTER (1024)
 
 static int 
-startelm(void *userdata, int state, const char *name, const char *nspace,
+startelm(void *userdata, int state, const char *nspace, const char *name,
 	 const char **atts);
 static int 
-endelm(void *userdata, int state, const char *name, const char *nspace);
+endelm(void *userdata, int state, const char *nspace, const char *name);
 
 /* Handle character data; flat property value. */
 static int chardata(void *userdata, int state, const char *data, size_t len)
@@ -604,6 +604,9 @@ ne_propfind_create(ne_session *sess, const char *uri, int depth)
 
     ne_207_set_propstat_handlers(ret->parser207, start_propstat,
 				  end_propstat);
+
+    if (ne_get_session_flag(sess, NE_SESSFLAG_SHAREPOINT))
+        ne_207_set_flags(ret->parser207, NE_207_MSSP_ESCAPING);
 
     /* The start of the request body is fixed: */
     ne_buffer_czappend(ret->body, 

@@ -54,23 +54,18 @@ void bcrypt_genblock(int counter,
                      const unsigned char *salt, int saltbytes,
                      unsigned char output[32])
 {
-    SHA512_State shastate;
     unsigned char hashed_salt[64];
-    unsigned char countbuf[4];
 
     /* Hash the input salt with the counter value optionally suffixed
      * to get our real 32-byte salt */
-    SHA512_Init(&shastate);
-    SHA512_Bytes(&shastate, salt, saltbytes);
-    if (counter) {
-        PUT_32BIT_MSB_FIRST(countbuf, counter);
-        SHA512_Bytes(&shastate, countbuf, 4);
-    }
-    SHA512_Final(&shastate, hashed_salt);
+    ssh_hash *h = ssh_hash_new(&ssh_sha512);
+    put_data(h, salt, saltbytes);
+    if (counter)
+        put_uint32(h, counter);
+    ssh_hash_final(h, hashed_salt);
 
     bcrypt_hash(hashed_passphrase, 64, hashed_salt, 64, output);
 
-    smemclr(&shastate, sizeof(shastate));
     smemclr(&hashed_salt, sizeof(hashed_salt));
 }
 
@@ -85,7 +80,7 @@ void openssh_bcrypt(const char *passphrase,
     int modulus, residue, i, j, round;
 
     /* Hash the passphrase to get the bcrypt key material */
-    SHA512_Simple(passphrase, strlen(passphrase), hashed_passphrase);
+    hash_simple(&ssh_sha512, ptrlen_from_asciz(passphrase), hashed_passphrase);
 
     /* We output key bytes in a scattered fashion to meld all output
      * key blocks into all parts of the output. To do this, we pick a

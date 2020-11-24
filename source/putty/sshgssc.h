@@ -10,6 +10,7 @@ typedef struct gssapi_ssh_gss_ctx {
     OM_uint32 maj_stat;
     OM_uint32 min_stat;
     gss_ctx_id_t ctx;
+    time_t expiry;
 } gssapi_ssh_gss_ctx;
 
 void ssh_gssapi_bind_fns(struct ssh_gss_library *lib);

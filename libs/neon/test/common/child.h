@@ -58,11 +58,6 @@ int spawn_server(int port, server_fn fn, void *userdata);
  * beforehand).  */
 int spawn_server_addr(int bind_local, int port, server_fn fn, void *userdata);
 
-/* Like spawn server except will continue accepting connections and
- * processing requests, up to 'n' times. If 'n' is reached, then the
- * child process exits with a failure status. */
-int spawn_server_repeat(int port, server_fn fn, void *userdata, int n);
-
 /* Forks a server child process running 'fn(userdata)' on an
  * unspecified port.  Sets test suite error on failure; on success,
  * sets *port to bound port number. */

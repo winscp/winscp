@@ -45,7 +45,7 @@
 static char *activelock(enum ne_lock_scope scope,
 			int depth,
 			const char *owner,
-			long timeout,
+			unsigned long timeout,
 			const char *token_href)
 {
     static char buf[BUFSIZ];
@@ -56,7 +56,7 @@ static char *activelock(enum ne_lock_scope scope,
 		"<D:lockscope><D:%s/></D:lockscope>\n"
 		"<D:depth>%d</D:depth>\n"
 		"<D:owner>%s</D:owner>\n"
-		"<D:timeout>Second-%ld</D:timeout>\n"
+		"<D:timeout>Second-%lu</D:timeout>\n"
 		"<D:locktoken><D:href>%s</D:href></D:locktoken>\n"
 		"</D:activelock>",
 		scope==ne_lockscope_exclusive?"exclusive":"shared",
@@ -69,15 +69,17 @@ static char *activelock(enum ne_lock_scope scope,
 static char *lock_response(enum ne_lock_scope scope,
 			   int depth,
 			   const char *owner,
-			   long timeout,
+			   unsigned long timeout,
 			   const char *token_href)
 {
     static char buf[BUFSIZ];
-    sprintf(buf, 
-	    "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
-	    "<D:prop xmlns:D=\"DAV:\">"
-	    "<D:lockdiscovery>%s</D:lockdiscovery></D:prop>\n",
-	    activelock(scope, depth, owner, timeout, token_href));
+
+    ne_snprintf(buf, sizeof buf,
+                "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+                "<D:prop xmlns:D=\"DAV:\">"
+                "<D:lockdiscovery>%s</D:lockdiscovery></D:prop>\n",
+                activelock(scope, depth, owner, timeout, token_href));
+
     return buf;
 }
 
@@ -258,6 +260,39 @@ static int lock_timeout(void)
     return OK;
 }
 
+#define LONG_TIMEOUT (4294967295UL)
+
+/* Lock timeouts should be allowed up to 2^32-1, but ne_lock uses a
+ * signed long to store timeouts, so this would fail with 32-bit long. */
+static int lock_long_timeout(void)
+{
+    ne_session *sess;
+    char *resp, *rbody = lock_response(ne_lockscope_exclusive, 0, "me",
+                                       LONG_TIMEOUT, "opaquelocktoken:foo");
+    struct ne_lock *lock = ne_lock_create();
+
+    resp = ne_concat("HTTP/1.1 200 OK\r\n" "Server: neon-test-server\r\n"
+                     "Content-type: application/xml" EOL
+                     "Lock-Token: <opaquelocktoken:foo>" EOL
+                     "Connection: close\r\n\r\n", rbody, NULL);
+
+    CALL(fake_session(&sess, single_serve_string, resp));
+    ne_free(resp);
+
+    ne_fill_server_uri(sess, &lock->uri);
+    lock->uri.path = ne_strdup("/foo");
+    lock->timeout = 5;
+
+    ONREQ(ne_lock(sess, lock));
+
+    ne_session_destroy(sess);
+    ne_lock_destroy(lock);
+
+    CALL(await_server());
+
+    return OK;
+}
+
 static int verify_if;
 static const char *verify_if_expect;
 
@@ -268,7 +303,7 @@ static void got_if_header(char *value)
 	     verify_if, value, verify_if_expect);
 }
 
-/* Server callback which checks that an If: header is recevied. */
+/* Server callback which checks that an If: header is received. */
 static int serve_verify_if(ne_socket *sock, void *userdata)
 {
     /* tell us about If headers in the request. */
@@ -316,24 +351,35 @@ static int do_request(ne_session *sess, const char *path, int depth,
     return OK;
 }
 
+/* If modparent is non-zero; the request is flagged to
+ * modify the parent resource too. */
+#define LOCK_MODPARENT (0x01)
+/* Enable SharePoint hacks. */
+#define LOCK_SHAREPOINT (0x02)
+
 /* Tests If: header submission, for a lock of depth 'lockdepth' at
  * 'lockpath', with a request to 'reqpath' which Depth header of
- * 'reqdepth'.  If modparent is non-zero; the request is flagged to
- * modify the parent resource too. */
+ * 'reqdepth'.  'flags' is bitwise-or of LOCK_* flags above. */
 static int submit_test(const char *lockpath, int lockdepth,
 		       const char *reqpath, int reqdepth,
-		       int modparent)
+		       unsigned int flags)
 {
     ne_lock_store *store = ne_lockstore_create();
     ne_session *sess;
     struct ne_lock *lk = ne_lock_create();
     char *expect_if;
     int ret;
-    
-    expect_if = ne_concat("<http://localhost:7777", lockpath, 
-			  "> (<somelocktoken>)", NULL);
+
+    if (flags & LOCK_SHAREPOINT)
+        expect_if = ne_strdup("(<somelocktoken>)");
+    else
+        expect_if = ne_concat("<http://localhost:7777", lockpath,
+                              "> (<somelocktoken>)", NULL);
     CALL(fake_session(&sess, serve_verify_if, expect_if));
     ne_free(expect_if);
+
+    if (flags & LOCK_SHAREPOINT)
+        ne_set_session_flag(sess, NE_SESSFLAG_SHAREPOINT, 1);
 
     ne_fill_server_uri(sess, &lk->uri);
     lk->uri.path = ne_strdup(lockpath);
@@ -344,7 +390,7 @@ static int submit_test(const char *lockpath, int lockdepth,
     ne_lockstore_register(store, sess);
     ne_lockstore_add(store, lk);
 
-    ret = do_request(sess, reqpath, reqdepth, modparent);
+    ret = do_request(sess, reqpath, reqdepth, flags & LOCK_MODPARENT);
     CALL(await_server());
 
     ne_lockstore_destroy(store);
@@ -370,7 +416,7 @@ static int if_infinite_over(void)
 
 static int if_child(void)
 {
-    return submit_test("/foo/", 0, "/foo/bar", 0, 1);
+    return submit_test("/foo/", 0, "/foo/bar", 0, LOCK_MODPARENT);
 }
 
 /* this is a special test, where the PARENT resource of "/foo/bar" is
@@ -380,7 +426,13 @@ static int if_child(void)
  * correctly. */
 static int if_covered_child(void)
 {
-    return submit_test("/", NE_DEPTH_INFINITE, "/foo/bar", -1, 1);
+    return submit_test("/", NE_DEPTH_INFINITE, "/foo/bar", -1,
+                       LOCK_MODPARENT);
+}
+static int if_sharepoint(void)
+{
+    return submit_test("/foo-sharepoint", 0, "/foo-sharepoint", 0,
+                       LOCK_SHAREPOINT);
 }
 
 static int serve_discovery(ne_socket *sock, void *userdata)
@@ -623,7 +675,9 @@ ne_test tests[] = {
     T(if_infinite_over),
     T(if_child),
     T(if_covered_child),
+    T(if_sharepoint),
     T(lock_timeout),
+    T(lock_long_timeout),
     T(lock_shared),
     T(discover),
     T(fail_discover),

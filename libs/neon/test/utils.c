@@ -175,15 +175,22 @@ int full_write(ne_socket *sock, const char *data, size_t len)
     return OK;
 }
 
-int session_server(ne_session **sess, server_fn fn, void *userdata)
+int multi_session_server(ne_session **sess,
+                         const char *scheme, const char *hostname,
+                         int count, server_fn fn, void *userdata)
 {
     unsigned int port;
     
-    CALL(new_spawn_server(1, fn, userdata, &port));
+    CALL(new_spawn_server(count, fn, userdata, &port));
     
-    *sess = ne_session_create("http", "127.0.0.1", port);
+    *sess = ne_session_create(scheme, hostname, port);
 
     return OK;
+}
+
+int session_server(ne_session **sess, server_fn fn, void *userdata)
+{
+    return multi_session_server(sess, "http", "127.0.0.1", 1, fn, userdata);
 }
 
 int proxied_session_server(ne_session **sess, const char *scheme,

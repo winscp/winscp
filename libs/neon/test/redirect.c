@@ -64,7 +64,10 @@ static int serve_redir(ne_socket *sock, void *ud)
 static int process_redir(ne_session *sess, const char *path,
                          const ne_uri **redir)
 {
-    ONN("did not get NE_REDIRECT", any_request(sess, path) != NE_REDIRECT);
+    int ret = any_request(sess, path);
+    ONV(ret != NE_REDIRECT,
+        ("request got %d (%s) rather than NE_REDIRECT",
+         ret, ne_get_error(sess)));
     *redir = ne_redirect_location(sess);
     return OK;
 }
@@ -162,17 +165,23 @@ static int fail_loop(void)
 }
 #endif
 
+#define RESP1 "HTTP/1.1 200 OK\r\n" "Content-Length: 0\r\n\r\n"
+#define RESP2 "HTTP/1.0 302 Get Ye Away\r\n" "Location: /blah\r\n" "\r\n"
+
 /* ensure that ne_redirect_location returns NULL when no redirect has
  * been encountered, or redirect hooks aren't registered. */
 static int no_redirect(void)
 {
     ne_session *sess;
     const ne_uri *loc;
+    struct double_serve_args resp;
 
-    CALL(session_server(&sess, single_serve_string, 
-                        "HTTP/1.1 200 OK\r\n" "Content-Length: 0\r\n\r\n"
-                        "HTTP/1.0 302 Get Ye Away\r\n"
-                        "Location: /blah\r\n" "\r\n"));
+    resp.first.data = RESP1;
+    resp.first.len = strlen(RESP1);
+    resp.second.data = RESP2;
+    resp.second.len = strlen(RESP2);
+
+    CALL(session_server(&sess, double_serve_sstring, &resp));
     ONN("redirect non-NULL before register", ne_redirect_location(sess));
     ne_redirect_register(sess);
     ONN("initial redirect non-NULL", ne_redirect_location(sess));
