@@ -5217,7 +5217,6 @@ void __fastcall TCustomScpExplorerForm::FixControlsPlacement()
   TControl * QueueControlsOrder[] =
     { QueueDock, QueueView3, QueueFileListSplitter, QueueFileList };
   SetVerticalControlsOrder(QueueControlsOrder, LENOF(QueueControlsOrder));
-
 }
 //---------------------------------------------------------------------------
 TControl * __fastcall TCustomScpExplorerForm::GetComponent(Byte Component)
