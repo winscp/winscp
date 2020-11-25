@@ -4785,7 +4785,6 @@ void __fastcall TCustomScpExplorerForm::NewSession(const UnicodeString & Session
 {
   if (OpenInNewWindow())
   {
-    // todo: Pass FromSite
     ExecuteNewInstance(SessionUrl);
   }
   else
