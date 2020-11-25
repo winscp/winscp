@@ -857,7 +857,7 @@ usage(const XML_Char *prog, int rc) {
       T("xmlwf - Determines if an XML document is well-formed\n")
       T("\n")
       T("positional arguments:\n")
-      T("  FILE          files to process (default: STDIN)\n")
+      T("  FILE          file to process (default: STDIN)\n")
       T("\n")
       T("input control arguments:\n")
       T("  -s            print an error if the document is not [s]tandalone\n")
@@ -879,7 +879,7 @@ usage(const XML_Char *prog, int rc) {
       T("  -h            show this [h]elp message and exit\n")
       T("  -v            show program's [v]ersion number and exit\n")
       T("\n")
-      T("libexpat is software libre, licensed under the MIT license.\n")
+      T("xmlwf of libexpat is software libre, licensed under the MIT license.\n")
       T("Please report bugs at https://github.com/libexpat/libexpat/issues.  Thank you!\n")
       , /* clang-format on */
       prog);
@@ -1051,13 +1051,17 @@ tmain(int argc, XML_Char **argv) {
       }
       outName = (XML_Char *)malloc((tcslen(outputDir) + tcslen(file) + 2)
                                    * sizeof(XML_Char));
+      if (! outName) {
+        tperror(T("Could not allocate memory"));
+        exit(1);
+      }
       tcscpy(outName, outputDir);
       tcscat(outName, delim);
       tcscat(outName, file);
       userData.fp = tfopen(outName, T("wb"));
       if (! userData.fp) {
         tperror(outName);
-        exit(1);
+        exit(3);
       }
       setvbuf(userData.fp, NULL, _IOFBF, 16384);
 #ifdef XML_UNICODE

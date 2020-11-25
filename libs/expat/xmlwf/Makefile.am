@@ -37,12 +37,13 @@ xmlwf_SOURCES = \
     codepage.c \
     @FILEMAP@.c
 
-xmlwf_CPPFLAGS = -I$(srcdir)/../lib
+xmlwf_CPPFLAGS = @AM_CPPFLAGS@ -I$(srcdir)/../lib
+xmlwf_LDFLAGS = @AM_LDFLAGS@
 
 if MINGW
 if UNICODE
 xmlwf_CPPFLAGS += -mwindows
-xmlwf_LDFLAGS = -municode
+xmlwf_LDFLAGS += -municode
 endif
 endif
 

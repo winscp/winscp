@@ -176,7 +176,7 @@ externalEntityRefFilemap(XML_Parser parser, const XML_Char *context,
 
 static int
 processStream(const XML_Char *filename, XML_Parser parser) {
-  /* passing NULL for filename means read intput from stdin */
+  /* passing NULL for filename means read input from stdin */
   int fd = 0; /* 0 is the fileno for stdin */
 
   if (filename != NULL) {

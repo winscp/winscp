@@ -31,7 +31,7 @@
 import argparse
 
 epilog = """
-libexpat is software libre, licensed under the MIT license.
+xmlwf of libexpat is software libre, licensed under the MIT license.
 Please report bugs at https://github.com/libexpat/libexpat/issues.  Thank you!
 """
 
@@ -57,7 +57,7 @@ output_mode.add_argument('-m', action='store_true', help='write [m]eta XML, not 
 output_mode.add_argument('-t', action='store_true', help='write no XML output for [t]iming of plain parsing')
 output_related.add_argument('-N', action='store_true', help='enable adding doctype and [n]otation declarations')
 
-parser.add_argument('files', metavar='FILE', nargs='*', help='files to process (default: STDIN)')
+parser.add_argument('files', metavar='FILE', nargs='*', help='file to process (default: STDIN)')
 
 info = parser.add_argument_group('info arguments')
 info = info.add_mutually_exclusive_group()

@@ -4,7 +4,7 @@
 ; This script was contributed by Tim Peters.
 ; It was designed for Inno Setup 2.0.19 but works with later versions as well.
 
-#define expatVer "2.2.9"
+#define expatVer "2.2.10"
 
 [Setup]
 AppName=Expat
@@ -45,6 +45,7 @@ Flags: ignoreversion; Source: doc\*.png;                    DestDir: "{app}\Doc"
 Flags: ignoreversion; Source: win32\bin\Release\*.dll;      DestDir: "{app}\Bin"
 Flags: ignoreversion; Source: win32\bin\Release\*.lib;      DestDir: "{app}\Bin"
 Flags: ignoreversion; Source: win32\README.txt;             DestDir: "{app}\Source"
+Flags: ignoreversion; Source: Changes;                      DestDir: "{app}\Source"
 Flags: ignoreversion; Source: CMake.README;                 DestDir: "{app}\Source"
 Flags: ignoreversion; Source: CMakeLists.txt;               DestDir: "{app}\Source"
 Flags: ignoreversion; Source: ConfigureChecks.cmake;        DestDir: "{app}\Source"

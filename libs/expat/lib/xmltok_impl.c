@@ -1772,13 +1772,14 @@ PREFIX(updatePosition)(const ENCODING *enc, const char *ptr, const char *end,
         return; \
       } \
     ptr += n;                                                                  \
+    pos->columnNumber++;                                                       \
     break;
       LEAD_CASE(2)
       LEAD_CASE(3)
       LEAD_CASE(4)
 #  undef LEAD_CASE
     case BT_LF:
-      pos->columnNumber = (XML_Size)-1;
+      pos->columnNumber = 0;
       pos->lineNumber++;
       ptr += MINBPC(enc);
       break;
@@ -1787,13 +1788,13 @@ PREFIX(updatePosition)(const ENCODING *enc, const char *ptr, const char *end,
       ptr += MINBPC(enc);
       if (HAS_CHAR(enc, ptr, end) && BYTE_TYPE(enc, ptr) == BT_LF)
         ptr += MINBPC(enc);
-      pos->columnNumber = (XML_Size)-1;
+      pos->columnNumber = 0;
       break;
     default:
       ptr += MINBPC(enc);
+      pos->columnNumber++;
       break;
     }
-    pos->columnNumber++;
   }
 }
 
