@@ -1130,7 +1130,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       Height = 45
       Align = alTop
       Constraints.MinHeight = 30
-        OnNeedHiddenDirectories = LocalDriveViewNeedHiddenDirectories
       inherited RemoteDriveView: TUnixDriveView
         Width = 458
         Height = 45

@@ -2617,7 +2617,7 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = LocalOpenDirAction
       end
       object TBXItem93: TTBXItem
-        Action = LocalExploreDirectoryAction2
+        Action = LocalExploreDirectoryAction
       end
       object TBXSeparatorItem15: TTBXSeparatorItem
       end
