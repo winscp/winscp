@@ -1100,6 +1100,8 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
       end
       object WebDavSheet: TTabSheet
         Tag = 2
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_webdav'
         Caption = 'WebDAV'
         ImageIndex = 17
         TabVisible = False
