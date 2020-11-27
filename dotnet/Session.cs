@@ -2479,10 +2479,12 @@ namespace WinSCP
             }
         }
 
+#if !NETSTANDARD
         private static string GetTypeLibKey(Type t)
         {
             return "CLSID\\{" + t.GUID.ToString().ToUpperInvariant() + "}\\TypeLib";
         }
+#endif
 
         FieldInfo IReflect.GetField(string name, BindingFlags bindingAttr)
         {

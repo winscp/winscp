@@ -119,8 +119,10 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Microsoft.Security", "CA5122:PInvokesShouldNotBeSafeCriticalFxCopRule", Scope = "member", Target = "~M:WinSCP.UnsafeNativeMethods.CreateJobObject(System.IntPtr,System.String)~System.IntPtr", Justification = "Warning is bogus.")]
 [assembly: SuppressMessage("Microsoft.Security", "CA5122:PInvokesShouldNotBeSafeCriticalFxCopRule", Scope = "member", Target = "~M:WinSCP.UnsafeNativeMethods.SetInformationJobObject(System.IntPtr,WinSCP.JobObjectInfoType,System.IntPtr,System.UInt32)~System.Boolean", Justification = "Warning is bogus.")]
 [assembly: SuppressMessage("Microsoft.Interoperability", "CA1409:ComVisibleTypesShouldBeCreatable", Scope = "type", Target = "~T:WinSCP.TransferResumeSupport")]
+#if !NETSTANDARD
 [assembly: SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Scope = "member", Target = "~M:WinSCP.Logger.CreateCounters")]
 [assembly: SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Scope = "member", Target = "~M:WinSCP.Logger.WriteCounters")]
+#endif
 [assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "~M:WinSCP.Logger.WriteProcesses")]
 [assembly: SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Scope = "member", Target = "~M:WinSCP.Logger.WriteProcesses")]
 [assembly: SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Scope = "member", Target = "~M:WinSCP.Logger.GetProcessStartTime(System.Diagnostics.Process)~System.Object")]
@@ -146,7 +148,9 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Microsoft.Security", "CA5122:PInvokesShouldNotBeSafeCriticalFxCopRule", Scope = "member", Target = "~M:WinSCP.UnsafeNativeMethods.GetThreadDesktop(System.Int32)~System.IntPtr")]
 [assembly: SuppressMessage("Microsoft.Security", "CA5122:PInvokesShouldNotBeSafeCriticalFxCopRule", Scope = "member", Target = "~M:WinSCP.UnsafeNativeMethods.GetCurrentThreadId~System.Int32")]
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Scope = "member", Target = "~M:WinSCP.ExeSessionProcess.CreateFileMapping(System.String)~Microsoft.Win32.SafeHandles.SafeFileHandle")]
+#if !NETSTANDARD
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Scope = "member", Target = "~M:WinSCP.Logger.CreateCounters")]
+#endif
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Scope = "member", Target = "~M:WinSCP.SessionLogReader.LogContents")]
 [assembly: SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Scope = "member", Target = "~M:WinSCP.Session.SessionOptionsToSwitches(WinSCP.SessionOptions,System.Boolean,System.String@,System.String@)")]
 [assembly: SuppressMessage("Microsoft.Security", "CA5122:PInvokesShouldNotBeSafeCriticalFxCopRule", Scope = "member", Target = "~M:WinSCP.UnsafeNativeMethods.RegGetValue(System.UIntPtr,System.String,System.String,WinSCP.RegistryFlags,WinSCP.RegistryType@,System.IntPtr,System.UInt32@)~System.Int32")]
