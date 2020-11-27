@@ -406,7 +406,7 @@ namespace WinSCP
         private readonly Dictionary<int, int> _indents = new Dictionary<int, int>();
         private readonly object _logLock = new object();
 #if !NETSTANDARD
-        private List<PerformanceCounter> _performanceCounters = new List<PerformanceCounter>();
+        private readonly List<PerformanceCounter> _performanceCounters = new List<PerformanceCounter>();
 #endif
         private int _logLevel;
     }

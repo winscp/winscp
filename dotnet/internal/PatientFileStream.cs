@@ -148,6 +148,6 @@ namespace WinSCP
         }
 
         private FileStream _stream;
-        private Session _session;
+        private readonly Session _session;
     }
 }

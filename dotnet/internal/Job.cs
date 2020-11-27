@@ -67,6 +67,6 @@ namespace WinSCP
         }
 
         private IntPtr _handle;
-        private Logger _logger;
+        private readonly Logger _logger;
     }
 }
