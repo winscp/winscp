@@ -72,5 +72,8 @@ BEGIN
   NEW_5_16_SYNC_CHECKLIST, "Improvements to Synchronization checklist window"
   NEW_5_16_FIND_SORT, "Find results can be sorted"
 
-  NEW_5_18_TBD, "TBD"
+  NEW_5_18_QUEUE_FILE_LIST, "A complete list of files that are queued for a transfer can be shown"
+  NEW_5_18_STREAMING, "A streaming support in scripting and .NET assembly"
+  NEW_5_18_REMOTE_SYNC, "An extension for synchronizing two remote servers"
+  NEW_5_18_TLS, "Enabled TLS 1.3 and added support for SHA-256 TLS/SSL fingerprints"
 END

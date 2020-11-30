@@ -47,8 +47,6 @@ uses
   DiscMon, IEDriveInfo, IEListView, PIDL, BaseUtils, ListExt, CustomDirView,
   CustomDriveView, System.Generics.Collections;
 
-{$I ResStrings.pas}
-
 const
   msThreadChangeDelay = 50;
 
@@ -398,9 +396,6 @@ implementation
 
 uses
   CompThread, PasTools, UITypes, Types, OperationWithTimeout, System.Generics.Defaults;
-
-resourcestring
-   SErrorInvalidDirName = 'New name contains invalid characters %s';
 
 type
   PInt = ^Integer;
@@ -803,7 +798,6 @@ end; {CanEdit}
 
 procedure TDriveView.Edit(const Item: TTVItem);
 var
-  NewDirName: string;
   SRec: TSearchRec;
   Node: TTreeNode;
   Info: string;
@@ -818,13 +812,8 @@ begin
       for i := Length(Info) downto 1 do
         System.Insert(Space, Info, i);
 
-      if Assigned(OnEdited) then
-      begin
-        NewDirName := Node.Text;
-        OnEdited(Self, Node, NewDirName);
-      end;
       if Length(Item.pszText) > 0 then
-        raise EInvalidDirName.CreateFmt(SErrorInvalidDirName, [Info]);
+        raise EInvalidDirName.Create(SErrorInvalidName + Space + Info);
       Exit;
     end;
 

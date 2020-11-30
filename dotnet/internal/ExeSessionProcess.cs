@@ -4,12 +4,16 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading;
+#if !NETSTANDARD
 using Microsoft.Win32;
+#endif
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 using System.Reflection;
+#if !NETSTANDARD
 using System.Security.Principal;
 using System.Security.AccessControl;
+#endif
 using System.ComponentModel;
 using System.Security.Cryptography;
 

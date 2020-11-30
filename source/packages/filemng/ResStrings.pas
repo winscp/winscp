@@ -1,3 +1,0 @@
-resourcestring
-   coInvalidDosChars   = '\/:*?"<>|';
-   Space               = ' ';

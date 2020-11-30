@@ -6,9 +6,13 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Xml;
+#if !NETSTANDARD
 using Microsoft.Win32;
+#endif
 using System.Diagnostics;
+#if !NETSTANDARD
 using System.Security;
+#endif
 using System.Text.RegularExpressions;
 using System.Linq;
 
@@ -812,10 +816,6 @@ namespace WinSCP
         {
             using (Logger.CreateCallstackAndLock())
             {
-                if (stream == null)
-                {
-                    throw Logger.WriteException(new ArgumentNullException(nameof(stream)));
-                }
                 if (remoteFilePath == null)
                 {
                     throw Logger.WriteException(new ArgumentNullException(nameof(remoteFilePath)));
@@ -824,7 +824,7 @@ namespace WinSCP
                 {
                     throw Logger.WriteException(new InvalidOperationException("Already uploading from a stream"));
                 }
-                _process.StdIn = stream;
+                _process.StdIn = stream ?? throw Logger.WriteException(new ArgumentNullException(nameof(stream)));
                 try
                 {
                     remoteFilePath = RemotePath.EscapeFileMask(remoteFilePath);
@@ -1461,7 +1461,7 @@ namespace WinSCP
                                 }
                             }
 
-                            if (difference.Action == default(SynchronizationAction))
+                            if (difference.Action == default)
                             {
                                 throw Logger.WriteException(new InvalidOperationException("No action tag found"));
                             }
@@ -2479,10 +2479,12 @@ namespace WinSCP
             }
         }
 
+#if !NETSTANDARD
         private static string GetTypeLibKey(Type t)
         {
             return "CLSID\\{" + t.GUID.ToString().ToUpperInvariant() + "}\\TypeLib";
         }
+#endif
 
         FieldInfo IReflect.GetField(string name, BindingFlags bindingAttr)
         {
