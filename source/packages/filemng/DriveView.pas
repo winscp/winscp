@@ -804,7 +804,6 @@ end; {CanEdit}
 
 procedure TDriveView.Edit(const Item: TTVItem);
 var
-  NewDirName: string;
   SRec: TSearchRec;
   Node: TTreeNode;
   Info: string;
@@ -819,11 +818,6 @@ begin
       for i := Length(Info) downto 1 do
         System.Insert(Space, Info, i);
 
-      if Assigned(OnEdited) then
-      begin
-        NewDirName := Node.Text;
-        OnEdited(Self, Node, NewDirName);
-      end;
       if Length(Item.pszText) > 0 then
         raise EInvalidDirName.CreateFmt(SErrorInvalidDirName, [Info]);
       Exit;
