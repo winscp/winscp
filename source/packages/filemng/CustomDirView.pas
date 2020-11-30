@@ -496,7 +496,7 @@ type
 resourcestring
   SErrorRenameFile = 'Can''t rename file or directory: ';
   SErrorRenameFileExists = 'File already exists: ';
-  SErrorInvalidName= 'Filename contains invalid characters:';
+  SErrorInvalidName = 'Filename contains invalid characters:';
   STextFileExt = 'File %s';
   STextFiles = '%u Files';
   STextDirectories = '%u Directories';
@@ -535,13 +535,16 @@ var
   DefaultExeIcon: Integer;
   UserDocumentDirectory: string;
 
+const
+  coInvalidDosChars = '\/:*?"<>|';
+  Space = ' ';
+
 implementation
 
 uses
   Math, DirViewColProperties, UITypes, Types, OperationWithTimeout, Winapi.UxTheme, Vcl.Themes;
 
 const
-  Space = ' ';
   ResDirUp = 'DIRUP%2.2d';
   ResLink = 'LINK%2.2d';
   ResBrokenLink = 'BROKEN%2.2d';
@@ -822,7 +825,7 @@ begin
   FWantUseDragImages := False;
   FAddParentDir := False;
   FullDrag := True;
-  FInvalidNameChars := '\/:*?"<>|';
+  FInvalidNameChars := coInvalidDosChars;
   FHasParentDir := False;
   FDragOnDriveIsMove := False;
   FCaseSensitive := False;

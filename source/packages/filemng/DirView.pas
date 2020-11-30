@@ -43,8 +43,6 @@ uses
   DragDrop, Messages, ListViewColProperties, CommCtrl, DragDropFilesEx,
   FileCtrl, SysUtils, BaseUtils, Controls, CustomDriveView, System.Generics.Collections, Winapi.ShellAPI;
 
-{$I ResStrings.pas }
-
 type
   TVolumeDisplayStyle = (doPrettyName, doDisplayName); {Diplaytext of drive node}
 
