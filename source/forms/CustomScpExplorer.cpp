@@ -3654,7 +3654,6 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TemporaryFileCopyParam(TCopyParamType & CopyParam)
 {
-  // do not forget to add additional options to TemporarilyDownloadFiles, and AS
   CopyParam.FileNameCase = ncNoChange;
   CopyParam.PreserveRights = false;
   CopyParam.PreserveReadOnly = false;
