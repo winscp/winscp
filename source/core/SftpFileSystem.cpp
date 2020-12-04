@@ -1866,6 +1866,8 @@ struct TOpenRemoteFileParams
   TOverwriteFileParams * FileParams;
   bool Confirmed;
   bool DontRecycle;
+  bool Recycled;
+  TRights RecycledRights;
 };
 //===========================================================================
 __fastcall TSFTPFileSystem::TSFTPFileSystem(TTerminal * ATerminal,
@@ -4633,6 +4635,7 @@ void __fastcall TSFTPFileSystem::Source(
   OpenParams.FileParams = &FileParams;
   OpenParams.Confirmed = (CopyParam->OnTransferIn != NULL);
   OpenParams.DontRecycle = false;
+  OpenParams.Recycled = false;
 
   FTerminal->LogEvent(0, L"Opening remote file.");
   FTerminal->FileOperationLoop(SFTPOpenRemote, OperationProgress, folAllowSkip,
@@ -4656,7 +4659,7 @@ void __fastcall TSFTPFileSystem::Source(
   __int64 DestWriteOffset = 0;
   TSFTPPacket CloseRequest;
   bool PreserveRights = CopyParam->PreserveRights && (CopyParam->OnTransferIn == NULL);
-  bool PreserveExistingRights = DoResume && DestFileExists;
+  bool PreserveExistingRights = (DoResume && DestFileExists) || OpenParams.Recycled;
   bool SetRights = (PreserveExistingRights || PreserveRights);
   bool PreserveTime = CopyParam->PreserveTime && (CopyParam->OnTransferIn == NULL);
   bool SetProperties = (PreserveTime || SetRights);
@@ -4672,7 +4675,14 @@ void __fastcall TSFTPFileSystem::Source(
     }
     else if (PreserveExistingRights)
     {
-      Rights = DestRights;
+      if (DestFileExists)
+      {
+        Rights = DestRights;
+      }
+      else
+      {
+        Rights = OpenParams.RecycledRights;
+      }
     }
     else
     {
@@ -5099,6 +5109,11 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
             {
               // Allow normal overwrite
               OpenParams->DontRecycle = true;
+            }
+            else
+            {
+              OpenParams->Recycled = true;
+              OpenParams->RecycledRights = *File->Rights;
             }
           }
         }
