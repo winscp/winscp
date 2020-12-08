@@ -827,7 +827,7 @@ namespace WinSCP
                 _process.StdIn = stream ?? throw Logger.WriteException(new ArgumentNullException(nameof(stream)));
                 try
                 {
-                    remoteFilePath = RemotePath.EscapeFileMask(remoteFilePath);
+                    remoteFilePath = RemotePath.EscapeOperationMask(remoteFilePath);
                     TransferOperationResult operationResult = DoPutFiles("-", remoteFilePath, false, options);
                     operationResult.Check();
                     // Assert that any transfer took place at all
