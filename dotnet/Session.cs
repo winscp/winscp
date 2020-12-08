@@ -850,7 +850,7 @@ namespace WinSCP
                 }
 
                 string localDirectory = Path.GetDirectoryName(localFilePath);
-                string filemask = RemotePath.EscapeFileMask(Path.GetFileName(localFilePath));
+                string filemask = Path.GetFileName(localFilePath);
 
                 TransferOperationResult operationResult = PutFilesToDirectory(localDirectory, remoteDirectory, filemask, remove, options);
                 operationResult.Check();
