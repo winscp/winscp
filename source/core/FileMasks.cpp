@@ -39,7 +39,7 @@ UnicodeString __fastcall MaskFilePart(const UnicodeString Part, const UnicodeStr
         if (!Delim)
         {
           Delim = true;
-          Masked = true;
+          Masked = false;
           break;
         }
 

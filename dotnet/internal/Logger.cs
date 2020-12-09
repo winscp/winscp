@@ -42,7 +42,18 @@ namespace WinSCP
 
             // It's also good to know that the CodeBase is not guaranteed to be set for assemblies in the GAC.
             // Location will always be set for assemblies loaded from disk, however.
-            string codeBase = assembly.CodeBase;
+            string codeBase;
+            try
+            {
+                codeBase = assembly.CodeBase;
+            }
+            catch (NotSupportedException e)
+            {
+                // CodeBase is not supported on assemblies loaded from a single-file bundle
+                WriteLine($"CodeBase not supported: {e.Message}");
+                codeBase = string.Empty;
+            }
+
             string location = assembly.Location;
 
             // cannot use Uri.UnescapeDataString, because it treats some characters valid in

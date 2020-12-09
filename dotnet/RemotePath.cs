@@ -24,6 +24,19 @@ namespace WinSCP
             return path + mask;
         }
 
+        public static string EscapeOperationMask(string operationMask)
+        {
+            if (operationMask == null)
+            {
+                throw new ArgumentNullException(nameof(operationMask));
+            }
+            int lastSlash = operationMask.LastIndexOf('/');
+            string path = lastSlash > 0 ? operationMask.Substring(0, lastSlash + 1) : string.Empty;
+            string mask = lastSlash > 0 ? operationMask.Substring(lastSlash + 1) : operationMask;
+            mask = mask.Replace("\\", "\\\\").Replace("*", "\\*").Replace("?", "\\?");
+            return path + mask;
+        }
+
         [Obsolete("Use RemotePath.Combine method")]
         public static string CombinePaths(string path1, string path2)
         {
