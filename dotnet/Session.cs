@@ -1090,6 +1090,11 @@ namespace WinSCP
                     operationResultGuard = RegisterOperationResult(result);
                     progressHandler = CreateProgressHandler();
 
+                    if (_throwStdOut)
+                    {
+                        throw Logger.WriteException(new InvalidOperationException());
+                    }
+                    _throwStdOut = true;
                     bool downloadFound;
                     try
                     {
@@ -1101,6 +1106,10 @@ namespace WinSCP
                     catch (StdOutException)
                     {
                         downloadFound = true;
+                    }
+                    finally
+                    {
+                        _throwStdOut = false;
                     }
                     if (downloadFound)
                     {
@@ -2277,9 +2286,10 @@ namespace WinSCP
                 throw Logger.WriteException(new SessionLocalException(this, "Aborted."));
             }
 
-            if ((_process.StdOut != null) && _process.StdOut.ReadAvailable(1))
+            if (_throwStdOut && (_process.StdOut != null) && _process.StdOut.ReadAvailable(1))
             {
-                throw new StdOutException();
+                // This is here to return from GetFile asap (?)
+                throw Logger.WriteException(new StdOutException());
             }
         }
 
@@ -2789,5 +2799,6 @@ namespace WinSCP
         private bool _ignoreFailed;
         private TimeSpan _sessionTimeout;
         private QueryReceivedEventHandler _queryReceived;
+        private bool _throwStdOut;
     }
 }
