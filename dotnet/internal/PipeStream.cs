@@ -30,7 +30,7 @@ namespace WinSCP
     ///  OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
     ///  OTHER DEALINGS IN THE SOFTWARE.
     /// </license>
-    public class PipeStream : Stream
+    internal class PipeStream : Stream
     {
         #region Private members
 
@@ -53,6 +53,8 @@ namespace WinSCP
         private bool _isDisposed;
 
         private bool _closedWrite;
+
+        private long _position;
 
         #endregion
 
@@ -173,6 +175,8 @@ namespace WinSCP
                 }
 
                 Monitor.Pulse(_buffer);
+
+                _position += readLength;
             }
 
             return readLength;
@@ -185,7 +189,8 @@ namespace WinSCP
         /// <returns><c>True</c> if data available; otherwise<c>false</c>.</returns>
         public bool ReadAvailable(int count)
         {
-            var length = Length;
+            CheckDisposed();
+            var length = _buffer.Count;
             return (_isFlushed || length >= count);
         }
 
@@ -203,6 +208,11 @@ namespace WinSCP
         ///<exception cref="ArgumentOutOfRangeException">offset or count is negative.</exception>
         public override void Write(byte[] buffer, int offset, int count)
         {
+            throw new NotSupportedException();
+        }
+
+        public void WriteInternal(byte[] buffer, int offset, int count)
+        {
             if (buffer == null)
                 throw new ArgumentNullException("buffer");
             if (offset + count > buffer.Length)
@@ -218,7 +228,7 @@ namespace WinSCP
             lock (_buffer)
             {
                 // wait until the buffer isn't full
-                while (Length >= MaxBufferLength)
+                while (_buffer.Count >= MaxBufferLength)
                     Monitor.Wait(_buffer);
 
                 _isFlushed = false; // if it were flushed before, it soon will not be.
@@ -285,7 +295,7 @@ namespace WinSCP
         /// </returns>
         public override bool CanWrite
         {
-            get { return !_isDisposed; }
+            get { return false; }
         }
 
         /// <summary>
@@ -300,9 +310,7 @@ namespace WinSCP
         {
             get
             {
-                CheckDisposed();
-
-                return _buffer.Count;
+                throw new NotSupportedException();
             }
         }
 
@@ -315,8 +323,18 @@ namespace WinSCP
         /// <exception cref="NotSupportedException">The stream does not support seeking.</exception>
         public override long Position
         {
-            get { return 0; }
-            set { throw new NotSupportedException(); }
+            get
+            {
+                lock (_buffer)
+                {
+                    return _position;
+                }
+            }
+
+            set
+            {
+                throw new NotSupportedException();
+            }
         }
 
         #endregion
