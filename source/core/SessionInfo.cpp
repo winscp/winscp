@@ -1307,6 +1307,10 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       }
       ADF(L"SFTP Bugs: %s", (Bugs));
       ADF(L"SFTP Server: %s", ((Data->SftpServer.IsEmpty()? UnicodeString(L"default") : Data->SftpServer)));
+      if (Data->SFTPRealPath != asAuto)
+      {
+        ADF(L"SFTP Real Path: %s", (EnumName(Data->SFTPRealPath, AutoSwitchNames)));
+      }
     }
     bool FtpsOn = false;
     if (Data->FSProtocol == fsFTP)

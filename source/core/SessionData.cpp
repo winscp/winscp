@@ -244,6 +244,7 @@ void __fastcall TSessionData::DefaultSettings()
   SFTPListingQueue = 2;
   SFTPMaxVersion = ::SFTPMaxVersion;
   SFTPMaxPacketSize = 0;
+  SFTPRealPath = asAuto;
 
   for (unsigned int Index = 0; Index < LENOF(FSFTPBugs); Index++)
   {
@@ -417,6 +418,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(SFTPListingQueue); \
   PROPERTY(SFTPMaxVersion); \
   PROPERTY(SFTPMaxPacketSize); \
+  PROPERTY(SFTPRealPath); \
   \
   for (unsigned int Index = 0; Index < LENOF(FSFTPBugs); Index++) \
   { \
@@ -800,6 +802,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   SFTPDownloadQueue = Storage->ReadInteger(L"SFTPDownloadQueue", SFTPDownloadQueue);
   SFTPUploadQueue = Storage->ReadInteger(L"SFTPUploadQueue", SFTPUploadQueue);
   SFTPListingQueue = Storage->ReadInteger(L"SFTPListingQueue", SFTPListingQueue);
+  SFTPRealPath = TAutoSwitch(Storage->ReadInteger(L"SFTPRealPath", SFTPRealPath));
 
   Color = Storage->ReadInteger(L"Color", Color);
 
@@ -1172,6 +1175,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(Integer, SFTPDownloadQueue);
     WRITE_DATA(Integer, SFTPUploadQueue);
     WRITE_DATA(Integer, SFTPListingQueue);
+    WRITE_DATA(Integer, SFTPRealPath);
 
     WRITE_DATA(Integer, Color);
 
@@ -3873,6 +3877,11 @@ void __fastcall TSessionData::SetSFTPMaxVersion(int value)
 void __fastcall TSessionData::SetSFTPMaxPacketSize(unsigned long value)
 {
   SET_SESSION_PROPERTY(SFTPMaxPacketSize);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetSFTPRealPath(TAutoSwitch value)
+{
+  SET_SESSION_PROPERTY(SFTPRealPath);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetSFTPBug(TSftpBug Bug, TAutoSwitch value)

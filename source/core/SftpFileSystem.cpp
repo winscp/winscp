@@ -2733,68 +2733,75 @@ int __fastcall TSFTPFileSystem::SendPacketAndReceiveResponse(
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path)
 {
-  try
+  if (FTerminal->SessionData->SFTPRealPath == asOff)
   {
-    FTerminal->LogEvent(0, FORMAT(L"Getting real path for '%s'", (Path)));
-
-    TSFTPPacket Packet(SSH_FXP_REALPATH);
-    AddPathString(Packet, Path);
-
-    // In SFTP-6 new optional field control-byte is added that defaults to
-    // SSH_FXP_REALPATH_NO_CHECK=0x01, meaning it won't fail, if the path does not exist.
-    // That differs from SFTP-5 recommendation that
-    // "The server SHOULD fail the request if the path is not present on the server."
-    // Earlier versions had no recommendation, though canonical SFTP-3 implementation
-    // in OpenSSH fails.
-
-    // While we really do not care much, we anyway set the flag to ~ & 0x01 to make the request fail.
-    // First for consistency.
-    // Second to workaround a bug in ProFTPD/mod_sftp version 1.3.5rc1 through 1.3.5-stable
-    // that sends a completelly malformed response for non-existing paths,
-    // when SSH_FXP_REALPATH_NO_CHECK (even implicitly) is used.
-    // See http://bugs.proftpd.org/show_bug.cgi?id=4160
-
-    // Note that earlier drafts of SFTP-6 (filexfer-07 and -08) had optional compose-path field
-    // before control-byte field. If we ever use this against a server conforming to those drafts,
-    // it may cause trouble.
-    if (FVersion >= 6)
+    return LocalCanonify(Path);
+  }
+  else
+  {
+    try
     {
-      if (FSecureShell->SshImplementation != sshiProFTPD)
+      FTerminal->LogEvent(0, FORMAT(L"Getting real path for '%s'", (Path)));
+
+      TSFTPPacket Packet(SSH_FXP_REALPATH);
+      AddPathString(Packet, Path);
+
+      // In SFTP-6 new optional field control-byte is added that defaults to
+      // SSH_FXP_REALPATH_NO_CHECK=0x01, meaning it won't fail, if the path does not exist.
+      // That differs from SFTP-5 recommendation that
+      // "The server SHOULD fail the request if the path is not present on the server."
+      // Earlier versions had no recommendation, though canonical SFTP-3 implementation
+      // in OpenSSH fails.
+
+      // While we really do not care much, we anyway set the flag to ~ & 0x01 to make the request fail.
+      // First for consistency.
+      // Second to workaround a bug in ProFTPD/mod_sftp version 1.3.5rc1 through 1.3.5-stable
+      // that sends a completelly malformed response for non-existing paths,
+      // when SSH_FXP_REALPATH_NO_CHECK (even implicitly) is used.
+      // See http://bugs.proftpd.org/show_bug.cgi?id=4160
+
+      // Note that earlier drafts of SFTP-6 (filexfer-07 and -08) had optional compose-path field
+      // before control-byte field. If we ever use this against a server conforming to those drafts,
+      // it may cause trouble.
+      if (FVersion >= 6)
       {
-        Packet.AddByte(SSH_FXP_REALPATH_STAT_ALWAYS);
+        if (FSecureShell->SshImplementation != sshiProFTPD)
+        {
+          Packet.AddByte(SSH_FXP_REALPATH_STAT_ALWAYS);
+        }
+        else
+        {
+          // Cannot use SSH_FXP_REALPATH_STAT_ALWAYS as ProFTPD does wrong bitwise test
+          // so it incorrectly evaluates SSH_FXP_REALPATH_STAT_ALWAYS (0x03) as
+          // SSH_FXP_REALPATH_NO_CHECK (0x01). The only value conforming to the
+          // specification, yet working with ProFTPD is SSH_FXP_REALPATH_STAT_IF (0x02).
+          Packet.AddByte(SSH_FXP_REALPATH_STAT_IF);
+        }
+      }
+      SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_NAME);
+      if (Packet.GetCardinal() != 1)
+      {
+        FTerminal->FatalError(NULL, LoadStr(SFTP_NON_ONE_FXP_NAME_PACKET));
+      }
+
+      UnicodeString RealDir = UnixExcludeTrailingBackslash(Packet.GetPathString(FUtfStrings));
+      RealDir = FTerminal->DecryptFileName(RealDir);
+      // ignore rest of SSH_FXP_NAME packet
+
+      FTerminal->LogEvent(0, FORMAT(L"Real path is '%s'", (RealDir)));
+
+      return RealDir;
+    }
+    catch(Exception & E)
+    {
+      if (FTerminal->Active)
+      {
+        throw ExtException(&E, FMTLOAD(SFTP_REALPATH_ERROR, (Path)));
       }
       else
       {
-        // Cannot use SSH_FXP_REALPATH_STAT_ALWAYS as ProFTPD does wrong bitwise test
-        // so it incorrectly evaluates SSH_FXP_REALPATH_STAT_ALWAYS (0x03) as
-        // SSH_FXP_REALPATH_NO_CHECK (0x01). The only value conforming to the
-        // specification, yet working with ProFTPD is SSH_FXP_REALPATH_STAT_IF (0x02).
-        Packet.AddByte(SSH_FXP_REALPATH_STAT_IF);
+        throw;
       }
-    }
-    SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_NAME);
-    if (Packet.GetCardinal() != 1)
-    {
-      FTerminal->FatalError(NULL, LoadStr(SFTP_NON_ONE_FXP_NAME_PACKET));
-    }
-
-    UnicodeString RealDir = UnixExcludeTrailingBackslash(Packet.GetPathString(FUtfStrings));
-    RealDir = FTerminal->DecryptFileName(RealDir);
-    // ignore rest of SSH_FXP_NAME packet
-
-    FTerminal->LogEvent(0, FORMAT(L"Real path is '%s'", (RealDir)));
-
-    return RealDir;
-  }
-  catch(Exception & E)
-  {
-    if (FTerminal->Active)
-    {
-      throw ExtException(&E, FMTLOAD(SFTP_REALPATH_ERROR, (Path)));
-    }
-    else
-    {
-      throw;
     }
   }
 }
