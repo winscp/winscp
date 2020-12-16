@@ -4948,26 +4948,28 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
   {
     CanClose = false;
   }
-  else if (Terminal != NULL)
+  else
   {
-    if (Terminal->Active && WinConfiguration->ConfirmClosingSession)
+    TTerminalManager * Manager = TTerminalManager::Instance();
+
+    int ActiveSessions = 0;
+    for (int Index = 0; Index < Manager->Count; Index++)
+    {
+      if (Manager->Sessions[Index]->Active)
+      {
+        ActiveSessions++;
+      }
+    }
+    // Confirm, when there's at least one active remote session
+    if ((ActiveSessions > 0) &&
+        WinConfiguration->ConfirmClosingSession)
     {
       unsigned int Result;
       TMessageParams Params(mpNeverAskAgainCheck);
       UnicodeString Message;
       int Answers = qaOK | qaCancel;
-      if (TTerminalManager::Instance()->Count > 1)
-      {
-        if (!WinConfiguration->AutoSaveWorkspace)
-        {
-          Message = LoadStr(CLOSE_SESSIONS_WORKSPACE3);
-        }
-        else
-        {
-          Message = LoadStr(CLOSE_SESSIONS);
-        }
-      }
-      else
+      // The current session is the only active session
+      if ((ActiveSessions == 1) && (Terminal != NULL) && Terminal->Active)
       {
         if (!WinConfiguration->AutoSaveWorkspace)
         {
@@ -4978,6 +4980,18 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
           Message = LoadStr(CLOSE_SESSION);
         }
         Message = FORMAT(Message, (Terminal->SessionData->SessionName));
+      }
+      // Multiple active sessions or one active session, but it's not the current one
+      else if (DebugAlwaysTrue(ActiveSessions > 0))
+      {
+        if (!WinConfiguration->AutoSaveWorkspace)
+        {
+          Message = LoadStr(CLOSE_SESSIONS_WORKSPACE3);
+        }
+        else
+        {
+          Message = LoadStr(CLOSE_SESSIONS);
+        }
       }
 
       UnicodeString Note;
