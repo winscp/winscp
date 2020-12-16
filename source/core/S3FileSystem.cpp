@@ -831,12 +831,17 @@ S3Status TS3FileSystem::LibS3ListBucketCallback(
 
   for (int Index = 0; Index < CommonPrefixesCount; Index++)
   {
-    std::unique_ptr<TRemoteFile> File(new TRemoteFile(NULL));
-    File->Terminal = Data.FileSystem->FTerminal;
-    File->FileName = UnixExtractFileName(UnixExcludeTrailingBackslash(StrFromS3(CommonPrefixes[Index])));
-    File->Type = FILETYPE_DIRECTORY;
-    File->ModificationFmt = mfNone;
-    Data.FileList->AddFile(File.release());
+    UnicodeString CommonPrefix = StrFromS3(CommonPrefixes[Index]);
+    // Reported only by one user, but should do no harm.
+    if (CommonPrefix != L"/")
+    {
+      std::unique_ptr<TRemoteFile> File(new TRemoteFile(NULL));
+      File->Terminal = Data.FileSystem->FTerminal;
+      File->FileName = UnixExtractFileName(UnixExcludeTrailingBackslash(CommonPrefix));
+      File->Type = FILETYPE_DIRECTORY;
+      File->ModificationFmt = mfNone;
+      Data.FileList->AddFile(File.release());
+    }
   }
 
   return S3StatusOK;

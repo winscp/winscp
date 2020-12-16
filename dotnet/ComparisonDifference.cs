@@ -119,6 +119,39 @@ namespace WinSCP
             }
         }
 
+        public void Reverse()
+        {
+            switch (Action)
+            {
+                case SynchronizationAction.UploadNew:
+                    Action = SynchronizationAction.DeleteLocal;
+                    break;
+
+                case SynchronizationAction.DownloadNew:
+                    Action = SynchronizationAction.DeleteRemote;
+                    break;
+
+                case SynchronizationAction.UploadUpdate:
+                    Action = SynchronizationAction.DownloadUpdate;
+                    break;
+
+                case SynchronizationAction.DownloadUpdate:
+                    Action = SynchronizationAction.UploadUpdate;
+                    break;
+
+                case SynchronizationAction.DeleteRemote:
+                    Action = SynchronizationAction.DownloadNew;
+                    break;
+
+                case SynchronizationAction.DeleteLocal:
+                    Action = SynchronizationAction.UploadNew;
+                    break;
+
+                default:
+                    throw new InvalidOperationException();
+            }
+        }
+
         private readonly string _localPath;
         private readonly string _remotePath;
     }

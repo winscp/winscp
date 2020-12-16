@@ -556,7 +556,7 @@ namespace WinSCP
                 int len = (int)e.Len;
                 if (len > 0)
                 {
-                    StdOut.Write(e.Data, 0, len);
+                    StdOut.WriteInternal(e.Data, 0, len);
                     _logger.WriteLine("Data written to the buffer");
                 }
                 else
