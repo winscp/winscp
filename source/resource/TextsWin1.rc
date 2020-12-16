@@ -162,6 +162,7 @@ BEGIN
         CUSTOM_INI_FILE_OVERWRITE, "**Do you want to overwrite an existing INI file '%s'?**\n\nChoose 'Overwrite' to overwrite the selected INI file with the current configuration.\n\nChoose 'Use' to restart WinSCP with a configuration loaded from the selected INI file. Your current configuration will be preserved and you can revert to it, if needed.|&Overwrite|&Use"
         READONLY_INI_FILE_OVERWRITE, "**Do you want to overwrite a read-only INI file '%s' to save your current configuration?**This question is asked, when you hold down Shift key while closing WinSCP and your INI file is set read-only. Normally read-only INI files are not overwritten and any changes to configuration are lost when closing WinSCP."
         CLOSE_SESSION_WORKSPACE, "Terminate session '%s' and close application without saving a workspace?"
+        CLOSE_WORKSPACE, "Close application without saving a workspace?"
 
         WIN_INFORMATION_STRINGS, "WIN_INFORMATION"
         COMPARE_NO_DIFFERENCES, "No differences found."

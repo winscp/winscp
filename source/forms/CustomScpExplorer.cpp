@@ -4982,8 +4982,9 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
         ActiveSessions++;
       }
     }
-    // Confirm, when there's at least one active remote session
-    if ((ActiveSessions > 0) &&
+    // Confirm, when there's at least one active remote session or
+    // when there are multiple (inactive or local) sessions and auto workspace saving is not enabled.
+    if (((ActiveSessions > 0) || ((Manager->Count > 1) && !WinConfiguration->AutoSaveWorkspace)) &&
         WinConfiguration->ConfirmClosingSession)
     {
       unsigned int Result;
@@ -5004,7 +5005,7 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
         Message = FORMAT(Message, (Terminal->SessionData->SessionName));
       }
       // Multiple active sessions or one active session, but it's not the current one
-      else if (DebugAlwaysTrue(ActiveSessions > 0))
+      else if (ActiveSessions > 0)
       {
         if (!WinConfiguration->AutoSaveWorkspace)
         {
@@ -5014,6 +5015,13 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
         {
           Message = LoadStr(CLOSE_SESSIONS);
         }
+      }
+      // Multiple tabs, but all are intactive or local, and saving of worspace is not enabled
+      else
+      {
+        DebugAlwaysTrue(Manager->Count > 1);
+        DebugAlwaysTrue(!WinConfiguration->AutoSaveWorkspace);
+        Message = LoadStr(CLOSE_WORKSPACE);
       }
 
       UnicodeString Note;
