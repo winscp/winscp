@@ -4955,7 +4955,7 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
     int ActiveSessions = 0;
     for (int Index = 0; Index < Manager->Count; Index++)
     {
-      if (Manager->Sessions[Index]->Active)
+      if (Manager->Terminals[Index]->Active)
       {
         ActiveSessions++;
       }
