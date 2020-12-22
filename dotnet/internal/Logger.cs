@@ -407,7 +407,7 @@ namespace WinSCP
         {
             if ((value < -1) || (value > 2))
             {
-                throw WriteException(new ArgumentOutOfRangeException(string.Format(CultureInfo.CurrentCulture, "Logging level has to be in range 0-2")));
+                throw WriteException(new ArgumentOutOfRangeException(string.Format(CultureInfo.CurrentCulture, "Logging level has to be in range -1 to 2")));
             }
             _logLevel = value;
         }

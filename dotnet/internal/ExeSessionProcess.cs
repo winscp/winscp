@@ -93,7 +93,7 @@ namespace WinSCP
                 }
 
                 string logLevelSwitch = null;
-                if (_session.DebugLogLevel > 0)
+                if (_session.DebugLogLevel != 0)
                 {
                     logLevelSwitch = string.Format(CultureInfo.InvariantCulture, "/loglevel={0} ", _session.DebugLogLevel);
                 }
