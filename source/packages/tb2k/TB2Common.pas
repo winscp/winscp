@@ -346,11 +346,20 @@ var
 begin
   Result := S;
   L := Length(Result);
-  if (L > 1) and (Result[L] = ':') and (ByteType(Result, L) = mbSingleByte) then
-    SetLength(Result, L-1)
-  else if (L > 3) and (Result[L-2] = '.') and (Result[L-1] = '.') and
+  // In German translation, Unicode ellipsis character is used with a preceding space,
+  // as opposite to the orignal English triple plain dot with no preceding space.
+  if (L > 1) and ((Result[L] = ':') or (Result[L] = #$2026)) and (ByteType(Result, L) = mbSingleByte) then
+  begin
+    SetLength(Result, L-1);
+    Result := TrimRight(Result);
+  end
+    else
+  if (L > 3) and (Result[L-2] = '.') and (Result[L-1] = '.') and
      (Result[L] = '.') and (ByteType(Result, L-2) = mbSingleByte) then
+  begin
     SetLength(Result, L-3);
+    Result := TrimRight(Result);
+  end;
 end;
 
 function GetTextWidth(const DC: HDC; S: String; const Prefix: Boolean): Integer;
