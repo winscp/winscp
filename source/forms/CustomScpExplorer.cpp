@@ -584,7 +584,7 @@ void __fastcall TCustomScpExplorerForm::TerminalChanged(bool Replaced)
   }
   DoTerminalListChanged();
 
-  DebugAssert(!IsLocalBrowserMode()); // TODO
+  DebugAssert(!IsLocalBrowserMode());
   if (Replaced)
   {
     RemoteDirView->ReplaceTerminal(Terminal);
@@ -1624,7 +1624,7 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(
 
     if ((Operation == foCopy) || (Operation == foMove))
     {
-      DebugAssert(!IsLocalBrowserMode()); // TODO
+      DebugAssert(!IsLocalBrowserMode());
       if (Side == osLocal)
       {
         Configuration->Usage->Inc(L"UploadedFiles");
@@ -5291,7 +5291,7 @@ void __fastcall TCustomScpExplorerForm::DoDirViewExecFile(TObject * Sender,
   TCustomDirView * ADirView = (TCustomDirView *)Sender;
   bool Remote = (ADirView == DirView(osRemote)) && !IsSideLocalBrowser(osRemote);
   bool ResolvedSymlinks = !Remote || Terminal->ResolvingSymlinks || Terminal->IsEncryptingFiles();
-  TOperationSide Side = (Remote ? osRemote : osLocal); // TODO
+  TOperationSide Side = (Remote ? osRemote : osLocal);
 
   // Anything special is done on double click only (not on "open" indicated by FForceExecution),
   // on files only (not directories)
@@ -8670,7 +8670,6 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
 
     if (HasTerminal)
     {
-      // TODO needed yet with second local browser?
       if (!RemoteDirView->Enabled)
       {
         RemoteDirView->Enabled = true;
@@ -10329,7 +10328,6 @@ void __fastcall TCustomScpExplorerForm::RemoteBookmarkClick(TObject * Sender)
 void __fastcall TCustomScpExplorerForm::CreateOpenDirMenuList(
   TTBCustomItem * Menu, TOperationSide Side, TBookmarkList * BookmarkList)
 {
-  // TODO
   if (BookmarkList != NULL)
   {
     TNotifyEvent OnBookmarkClick = (Side == osLocal) ? &LocalBookmarkClick : &RemoteBookmarkClick;

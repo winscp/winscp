@@ -884,7 +884,6 @@ void __fastcall TScpCommanderForm::UpdateControls()
   LocalDirView->Font->Color = GetWindowTextColor(LocalDirView->Color);
   LocalDriveView->Font->Color = LocalDirView->Font->Color;
 
-  // TODO
   bool LocalSide = (FCurrentSide == osLocal);
   TAction * CurrentCopyAction = LocalSide ? NonVisualDataModule->LocalCopyAction : NonVisualDataModule->RemoteCopyAction;
   if (CurrentCopyItem->Action != CurrentCopyAction)
@@ -914,7 +913,6 @@ void __fastcall TScpCommanderForm::ChangePath(TOperationSide Side)
 {
   DebugAssert((Side == osLocal) || (Side == osRemote));
   TTBXComboBoxItem * PathComboBox;
-  // TODO
   if (Side == osLocal)
   {
     PathComboBox = LocalPathComboBox;
@@ -1071,7 +1069,6 @@ void __fastcall TScpCommanderForm::LocalFileControlDDDragEnter(TObject *Sender,
 bool __fastcall TScpCommanderForm::PanelOperation(TOperationSide Side,
   bool DragDrop)
 {
-  // TODO
   return TCustomScpExplorerForm::PanelOperation(Side, DragDrop) ||
     (DropSourceControl == LocalDirView);
 }
@@ -1082,7 +1079,6 @@ void __fastcall TScpCommanderForm::FileOperationProgress(
   // Heuristic: When operation finishes and DD target is local dir view,
   // we suppose that drag&drop download finished, so local dir view should be
   // reloaded
-  // TODO
   if (!ProgressData.InProgress && FProgressForm &&
       IsFileControl(FDDTargetControl, osLocal) &&
       ((ProgressData.Operation == ::foCopy) || (ProgressData.Operation == ::foMove)))
@@ -1362,7 +1358,6 @@ void __fastcall TScpCommanderForm::DoDirViewLoaded(TCustomDirView * ADirView)
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::AddEditLink(TOperationSide Side, bool Add)
 {
-  // TODO
   if (GetSide(Side) == osLocal)
   {
     bool Edit = false;
@@ -1927,7 +1922,6 @@ void __fastcall TScpCommanderForm::UpdateImages()
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalPathComboUpdateDrives()
 {
-  // TODO
   FLocalSpecialPaths = 0;
   TStrings* Strings = LocalPathComboBox->Strings;
   Strings->BeginUpdate();
@@ -1970,7 +1964,6 @@ void __fastcall TScpCommanderForm::LocalPathComboUpdateDrives()
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalPathComboUpdate()
 {
-  // TODO
   // this may get called even after destructor finishes
   // (e.g. from SetDockAllowDrag invoked [indirectly] from StoreParams)
   if (FLocalPathComboBoxPaths != NULL)
