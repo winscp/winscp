@@ -276,15 +276,15 @@ object AuthenticateForm: TAuthenticateForm
       OnClick = HelpButtonClick
     end
   end
-  object BannerActionList: TActionList
+  object ActionList: TActionList
     Left = 32
     Top = 304
-    object EditCopy: TEditCopy
+    object EditCopyAction: TEditCopy
       Caption = '&Copy'
       ImageIndex = 0
       ShortCut = 16451
     end
-    object EditSelectAll: TEditSelectAll
+    object EditSelectAllAction: TEditSelectAll
       Caption = 'Select &All'
       ImageIndex = 1
       ShortCut = 16449
@@ -298,10 +298,10 @@ object AuthenticateForm: TAuthenticateForm
     Left = 144
     Top = 304
     object CopyItem: TMenuItem
-      Action = EditCopy
+      Action = EditCopyAction
     end
     object SelectAllItem: TMenuItem
-      Action = EditSelectAll
+      Action = EditSelectAllAction
     end
     object N1: TMenuItem
       Caption = '-'
