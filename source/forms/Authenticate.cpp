@@ -706,7 +706,7 @@ void __fastcall TAuthenticateForm::LabelContextPopup(TObject * Sender, const TPo
 {
   TLabel * Label = dynamic_cast<TLabel *>(Sender);
   UnicodeString Url;
-  LabelOpenLinkAction->Visible = ExtractUrl(Label->Caption, Url);
+  LabelOpenLinkAction2->Visible = ExtractUrl(Label->Caption, Url);
   FContextLabel = Label;
   MenuPopup(Sender, MousePos, Handled);
 }
@@ -729,7 +729,7 @@ void TAuthenticateForm::LabelOpen(TLabel * Label)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::LabelOpenLinkActionExecute(TObject *)
+void __fastcall TAuthenticateForm::LabelOpenLinkAction2Execute(TObject *)
 {
   if (DebugAlwaysTrue(FContextLabel != NULL))
   {
