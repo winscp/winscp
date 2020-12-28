@@ -43,9 +43,9 @@ __published:
   TPanel *TopPanel;
   TPanel *LeftPanel;
   TPaintBox *AnimationPaintBox;
-  TActionList *BannerActionList;
-  TEditCopy *EditCopy;
-  TEditSelectAll *EditSelectAll;
+  TActionList *ActionList;
+  TEditCopy *EditCopyAction;
+  TEditSelectAll *EditSelectAllAction;
   TAction *BannerMonospacedFontAction;
   TPopupMenu *BannerPopupMenu;
   TMenuItem *CopyItem;
