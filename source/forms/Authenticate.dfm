@@ -280,18 +280,31 @@ object AuthenticateForm: TAuthenticateForm
     Left = 32
     Top = 304
     object EditCopyAction: TEditCopy
+      Category = 'Banner'
       Caption = '&Copy'
       ImageIndex = 0
       ShortCut = 16451
     end
     object EditSelectAllAction: TEditSelectAll
+      Category = 'Banner'
       Caption = 'Select &All'
       ImageIndex = 1
       ShortCut = 16449
     end
     object BannerMonospacedFontAction: TAction
+      Category = 'Banner'
       Caption = 'Use &Monospaced Font'
       OnExecute = BannerMonospacedFontActionExecute
+    end
+    object LabelCopyAction: TAction
+      Category = 'Label'
+      Caption = '&Copy'
+      OnExecute = LabelCopyActionExecute
+    end
+    object LabelOpenLinkAction: TAction
+      Category = 'Label'
+      Caption = '&Open'
+      OnExecute = LabelOpenLinkActionExecute
     end
   end
   object BannerPopupMenu: TPopupMenu
@@ -308,6 +321,20 @@ object AuthenticateForm: TAuthenticateForm
     end
     object AdjustWindowItem: TMenuItem
       Action = BannerMonospacedFontAction
+    end
+  end
+  object LabelPopupMenu: TPopupMenu
+    Left = 56
+    Top = 72
+    object Copy1: TMenuItem
+      Action = LabelCopyAction
+    end
+    object N2: TMenuItem
+      Caption = '-'
+    end
+    object Open1: TMenuItem
+      Action = LabelOpenLinkAction
+      Default = True
     end
   end
 end

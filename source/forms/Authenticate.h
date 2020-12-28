@@ -52,6 +52,12 @@ __published:
   TMenuItem *SelectAllItem;
   TMenuItem *N1;
   TMenuItem *AdjustWindowItem;
+  TPopupMenu *LabelPopupMenu;
+  TMenuItem *N2;
+  TAction *LabelCopyAction;
+  TAction *LabelOpenLinkAction;
+  TMenuItem *Open1;
+  TMenuItem *Copy1;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall LogViewMeasureItem(TWinControl *Control, int Index, int &Height);
@@ -60,6 +66,8 @@ __published:
   void __fastcall BannerMemoContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
   void __fastcall BannerMonospacedFontActionExecute(TObject *Sender);
   void __fastcall LogViewMouseMove(TObject *Sender, TShiftState Shift, int X, int Y);
+  void __fastcall LabelCopyActionExecute(TObject *Sender);
+  void __fastcall LabelOpenLinkActionExecute(TObject *Sender);
 
 public:
   __fastcall TAuthenticateForm(TComponent * Owner);
@@ -86,7 +94,7 @@ protected:
   void __fastcall WMNCCreate(TWMNCCreate & Message);
   TLabel * __fastcall GenerateLabel(int Current, UnicodeString Caption);
   TCustomEdit * __fastcall GenerateEdit(int Current, bool Echo);
-  TList * __fastcall GeneratePrompt(UnicodeString Instructions, TStrings * Prompts);
+  TList * __fastcall GeneratePrompt(TPromptKind Kind, const UnicodeString & Instructions, TStrings * Prompts);
   void __fastcall DoCancel();
   void __fastcall AdjustLogView();
   void __fastcall MakeLogItemVisible(int Index);
@@ -96,6 +104,11 @@ protected:
   DYNAMIC void __fastcall ChangeScale(int M, int D);
   void __fastcall UpdateBannerFont();
   void __fastcall DoAdjustWindow();
+  void __fastcall LabelContextPopup(TObject* Sender, const TPoint & MousePos, bool & Handled);
+  bool ExtractUrl(const UnicodeString & Text, UnicodeString & Url);
+  void ExternalLabel(TLabel * Label);
+  void __fastcall LinkClick(TObject * Sender);
+  void LabelOpen(TLabel * Label);
 
 private:
   void * FShowAsModalStorage;
@@ -118,6 +131,7 @@ private:
   bool FShowNoActivate;
   std::vector<UnicodeString> FHints;
   int FHintIndex;
+  TLabel * FContextLabel;
 
   INTERFACE_HOOK;
 };
