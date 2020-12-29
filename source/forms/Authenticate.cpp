@@ -684,7 +684,9 @@ bool TAuthenticateForm::ExtractUrl(const UnicodeString & Text, UnicodeString & U
     P = 1;
     while (P <= Url.Length())
     {
+      #pragma warn -8111
       if (TCharacter::IsWhiteSpace(Url[P]))
+      #pragma warn .8111
       {
         Url.SetLength(P - 1);
       }
