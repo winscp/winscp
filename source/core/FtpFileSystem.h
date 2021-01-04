@@ -295,6 +295,7 @@ private:
   bool FVMS;
   bool FFileTransferAny;
   bool FLoggedIn;
+  bool FVmsAllRevisions;
   mutable UnicodeString FOptionScratch;
 };
 //---------------------------------------------------------------------------
