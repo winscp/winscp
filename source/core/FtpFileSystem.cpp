@@ -374,6 +374,7 @@ void __fastcall TFTPFileSystem::Open()
   FMVS = false;
   FVMS = false;
   FTransferActiveImmediately = (Data->FtpTransferActiveImmediately == asOn);
+  FVmsAllRevisions = false;
 
   FSessionInfo.LoginTime = Now();
   FSessionInfo.CertificateVerifiedManually = false;
@@ -2330,6 +2331,13 @@ void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
       {
         NameOnly = FileName.SubString(P + 1, FileName.Length() - P - 1);
       }
+      DebugAssert(!FVmsAllRevisions);
+      TAutoFlag VmsAllRevisionsFlag(FVmsAllRevisions);
+      if (FVMS && (NameOnly.Pos(L";") > 2))
+      {
+        FTerminal->LogEvent(L"VMS versioned file detected, asking for all revisions");
+        FVmsAllRevisions = true;
+      }
       TRemoteFile * AFile = NULL;
       // FZAPI does not have efficient way to read properties of one file.
       // In case we need properties of set of files from the same directory,
@@ -2695,7 +2703,7 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_VMSALLREVISIONS:
-      Result = FALSE;
+      Result = FVmsAllRevisions ? TRUE : FALSE;
       break;
 
     case OPTION_SPEEDLIMIT_DOWNLOAD_TYPE:
