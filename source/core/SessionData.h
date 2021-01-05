@@ -226,6 +226,7 @@ private:
   UnicodeString FS3DefaultRegion;
   UnicodeString FS3SessionToken;
   TS3UrlStyle FS3UrlStyle;
+  TAutoSwitch FS3MaxKeys;
   bool FIsWorkspace;
   UnicodeString FLink;
   UnicodeString FNameOverride;
@@ -411,6 +412,7 @@ private:
   void __fastcall SetS3DefaultRegion(UnicodeString value);
   void __fastcall SetS3SessionToken(UnicodeString value);
   void __fastcall SetS3UrlStyle(TS3UrlStyle value);
+  void __fastcall SetS3MaxKeys(TAutoSwitch value);
   void __fastcall SetLogicalHostName(UnicodeString value);
   void __fastcall SetIsWorkspace(bool value);
   void __fastcall SetLink(UnicodeString value);
@@ -680,6 +682,7 @@ public:
   __property UnicodeString S3DefaultRegion = { read = FS3DefaultRegion, write = SetS3DefaultRegion };
   __property UnicodeString S3SessionToken = { read = FS3SessionToken, write = SetS3SessionToken };
   __property TS3UrlStyle S3UrlStyle = { read = FS3UrlStyle, write = SetS3UrlStyle };
+  __property TAutoSwitch S3MaxKeys = { read = FS3MaxKeys, write = SetS3MaxKeys };
   __property bool IsWorkspace = { read = FIsWorkspace, write = SetIsWorkspace };
   __property UnicodeString Link = { read = FLink, write = SetLink };
   __property UnicodeString NameOverride = { read = FNameOverride, write = SetNameOverride };

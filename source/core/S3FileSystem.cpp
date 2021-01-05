@@ -894,6 +894,13 @@ void TS3FileSystem::ReadDirectoryInternal(
 
       Retry = false;
 
+      if ((FTerminal->SessionData->S3MaxKeys == asOff) ||
+          ((FTerminal->SessionData->S3MaxKeys == asAuto) &&
+           SameText(L"storage.googleapis.com", FTerminal->SessionData->HostNameExpanded)))
+      {
+        MaxKeys = 0;
+      }
+
       S3_list_service(
         FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), FSecurityToken, (FHostName + FPortSuffix).c_str(),
         StrToS3(FAuthRegion), MaxKeys, FRequestContext, FTimeout, &ListServiceHandler, &Data);
