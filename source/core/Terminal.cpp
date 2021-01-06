@@ -4734,7 +4734,8 @@ void __fastcall TTerminal::CreateDirectory(const UnicodeString & DirName, const 
   DoCreateDirectory(DirName, Encrypt);
 
   TValidProperties RemainingPropeties = Properties->Valid - (TValidProperties() << vpEncrypt);
-  if (!RemainingPropeties.Empty())
+  if (!RemainingPropeties.Empty() &&
+      (IsCapable[fcModeChanging] || IsCapable[fcOwnerChanging] || IsCapable[fcGroupChanging]))
   {
     DoChangeFileProperties(DirName, NULL, Properties);
   }
