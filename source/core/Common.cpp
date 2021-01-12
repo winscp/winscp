@@ -4173,7 +4173,8 @@ UnicodeString __fastcall GetAncestorProcessName(int Levels)
           DWORD Len = GetModuleFileNameEx(Process, NULL, Result.c_str(), Result.Length());
           if (Len == 0)
           {
-            Result = L"err-name";
+            // is common too, for some reason
+            Result = UnicodeString();
           }
           else
           {
