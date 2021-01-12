@@ -536,7 +536,7 @@ void __fastcall UpdateStaticUsage()
   UnicodeString ParentProcess = GetAncestorProcessName();
   // do not record the installer as a parent process
   if (!ParentProcess.IsEmpty() &&
-      (!StartsText(L"winscp-", ParentProcess) || !EndsText(L"-setup", ParentProcess)))
+      (!StartsText(L"winscp-", ParentProcess) || !ContainsText(ParentProcess, L"-setup")))
   {
     UnicodeString ParentProcesses = Configuration->Usage->Get(L"ParentProcesses");
     std::unique_ptr<TStringList> ParentProcessesList(CreateSortedStringList());
