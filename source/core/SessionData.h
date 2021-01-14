@@ -247,9 +247,11 @@ private:
 
   void __fastcall SetHostName(UnicodeString value);
   UnicodeString __fastcall GetHostNameExpanded();
+  UnicodeString GetHostNameSource();
   void __fastcall SetPortNumber(int value);
   void __fastcall SetUserName(UnicodeString value);
   UnicodeString __fastcall GetUserNameExpanded();
+  UnicodeString GetUserNameSource();
   void __fastcall SetPassword(UnicodeString value);
   UnicodeString __fastcall GetPassword() const;
   void __fastcall SetNewPassword(UnicodeString value);
@@ -536,9 +538,11 @@ public:
 
   __property UnicodeString HostName  = { read=FHostName, write=SetHostName };
   __property UnicodeString HostNameExpanded  = { read=GetHostNameExpanded };
+  __property UnicodeString HostNameSource = { read=GetHostNameSource };
   __property int PortNumber  = { read=FPortNumber, write=SetPortNumber };
   __property UnicodeString UserName  = { read=FUserName, write=SetUserName };
   __property UnicodeString UserNameExpanded  = { read=GetUserNameExpanded };
+  __property UnicodeString UserNameSource  = { read=GetUserNameSource };
   __property UnicodeString Password  = { read=GetPassword, write=SetPassword };
   __property UnicodeString NewPassword  = { read=GetNewPassword, write=SetNewPassword };
   __property bool ChangePassword  = { read=FChangePassword, write=SetChangePassword };
