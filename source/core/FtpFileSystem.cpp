@@ -3401,7 +3401,6 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
     }
   }
 
-
   if (StartsStr(DirectoryHasBytesPrefix, Response))
   {
     UnicodeString Buf = Response;
