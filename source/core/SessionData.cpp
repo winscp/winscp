@@ -2461,6 +2461,16 @@ UnicodeString __fastcall TSessionData::GetHostNameExpanded()
   return ::ExpandEnvironmentVariables(HostName);
 }
 //---------------------------------------------------------------------
+UnicodeString TSessionData::GetHostNameSource()
+{
+  UnicodeString Result;
+  if (HostName != HostNameExpanded)
+  {
+    Result = HostName;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetPortNumber(int value)
 {
   SET_SESSION_PROPERTY(PortNumber);
@@ -2518,6 +2528,16 @@ void __fastcall TSessionData::SetUserName(UnicodeString value)
 UnicodeString __fastcall TSessionData::GetUserNameExpanded()
 {
   return ::ExpandEnvironmentVariables(UserName);
+}
+//---------------------------------------------------------------------
+UnicodeString TSessionData::GetUserNameSource()
+{
+  UnicodeString Result;
+  if (UserName != UserNameExpanded)
+  {
+    Result = UserName;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetPassword(UnicodeString avalue)

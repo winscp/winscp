@@ -1197,9 +1197,19 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     {
       AddressFamily = FORMAT(L"%s, ", (Data->AddressFamily == afIPv4 ? L"IPv4" : L"IPv6"));
     }
-    ADF(L"Host name: %s (%sPort: %d)", (Data->HostNameExpanded, AddressFamily, Data->PortNumber));
+    UnicodeString HostName = Data->HostNameExpanded;
+    if (!Data->HostNameSource.IsEmpty())
+    {
+      HostName = FORMAT(L"%s [%s]", (HostName, Data->HostNameSource));
+    }
+    ADF(L"Host name: %s (%sPort: %d)", (HostName, AddressFamily, Data->PortNumber));
+    UnicodeString UserName = Data->UserNameExpanded;
+    if (!Data->UserNameSource.IsEmpty())
+    {
+      UserName = FORMAT(L"%s [%s]", (UserName, Data->UserNameSource));
+    }
     ADF(L"User name: %s (Password: %s, Key file: %s, Passphrase: %s)",
-      (Data->UserNameExpanded, LogSensitive(Data->Password),
+      (UserName, LogSensitive(Data->Password),
        LogSensitive(Data->PublicKeyFile), LogSensitive(Data->Passphrase)));
     if (Data->UsesSsh)
     {
