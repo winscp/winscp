@@ -257,6 +257,7 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   ResetReply();
 
   FListAll = FTerminal->SessionData->FtpListAll;
+  FWorkFromCwd = FTerminal->SessionData->FtpWorkFromCwd;
   FFileSystemInfo.ProtocolBaseName = L"FTP";
   FFileSystemInfo.ProtocolName = FFileSystemInfo.ProtocolBaseName;
   FTimeoutStatus = LoadStr(IDS_ERRORMSG_TIMEOUT);
@@ -902,6 +903,16 @@ void __fastcall TFTPFileSystem::EnsureLocation()
   }
 }
 //---------------------------------------------------------------------------
+bool TFTPFileSystem::EnsureLocationWhenWorkFromCwd(const UnicodeString & Directory)
+{
+  bool Result = (FWorkFromCwd == asOn);
+  if (Result)
+  {
+    EnsureLocation(Directory, false);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::AnyCommand(const UnicodeString Command,
   TCaptureOutputEvent OutputEvent)
 {
@@ -934,12 +945,47 @@ void __fastcall TFTPFileSystem::AnnounceFileListOperation()
   ResetCaches();
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::DoChangeDirectory(const UnicodeString & Directory)
+void TFTPFileSystem::SendCwd(const UnicodeString & Directory)
 {
   UnicodeString Command = FORMAT(L"CWD %s", (Directory));
   SendCommand(Command);
 
   GotReply(WaitForCommandReply(), REPLY_2XX_CODE);
+}
+//---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::DoChangeDirectory(const UnicodeString & Directory)
+{
+  if (FWorkFromCwd == asOn)
+  {
+    UnicodeString ADirectory = UnixIncludeTrailingBackslash(AbsolutePath(Directory, false));
+
+    UnicodeString Actual = UnixIncludeTrailingBackslash(ActualCurrentDirectory());
+    while (!UnixSamePath(Actual, ADirectory))
+    {
+      if (UnixIsChildPath(Actual, ADirectory))
+      {
+        UnicodeString SubDirectory = UnixExcludeTrailingBackslash(ADirectory);
+        SubDirectory.Delete(1, Actual.Length());
+        int P = SubDirectory.Pos(L'/');
+        if (P > 0)
+        {
+          SubDirectory.SetLength(P - 1);
+        }
+        SendCwd(SubDirectory);
+        Actual = UnixIncludeTrailingBackslash(Actual + SubDirectory);
+      }
+      else
+      {
+        SendCommand(L"CDUP");
+        GotReply(WaitForCommandReply(), REPLY_2XX_CODE);
+        Actual = UnixExtractFilePath(UnixExcludeTrailingBackslash(Actual));
+      }
+    }
+  }
+  else
+  {
+    SendCwd(Directory);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::ChangeDirectory(const UnicodeString ADirectory)
@@ -1033,7 +1079,7 @@ void __fastcall TFTPFileSystem::ChangeFileProperties(const UnicodeString AFileNa
       Action.Rights(Rights);
 
       UnicodeString FileNameOnly = UnixExtractFileName(FileName);
-      UnicodeString FilePath = UnixExtractFilePath(FileName);
+      UnicodeString FilePath = RemoteExtractFilePath(FileName);
       // FZAPI wants octal number represented as decadic
       FFileZillaIntf->Chmod(Rights.NumberDecadic, FileNameOnly.c_str(), FilePath.c_str());
 
@@ -1542,6 +1588,23 @@ void __fastcall TFTPFileSystem::CopyToLocal(TStrings * FilesToCopy,
     FilesToCopy, TargetDir, CopyParam, Params, OperationProgress, tfUseFileTransferAny, OnceDoneOperation);
 }
 //---------------------------------------------------------------------------
+UnicodeString TFTPFileSystem::RemoteExtractFilePath(const UnicodeString & Path)
+{
+  UnicodeString Result;
+  // If the path ends with a slash, FZAPI CServerPath contructor does not identify the path as VMS.
+  // It is probably ok to use UnixExtractFileDir for all paths passed to FZAPI,
+  // but for now, we limit the impact of the change to VMS.
+  if (FVMS)
+  {
+    Result = UnixExtractFileDir(Path);
+  }
+  else
+  {
+    Result = UnixExtractFilePath(Path);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::Sink(
   const UnicodeString & FileName, const TRemoteFile * File,
   const UnicodeString & TargetDir, UnicodeString & DestFileName, int Attrs,
@@ -1555,8 +1618,10 @@ void __fastcall TFTPFileSystem::Sink(
   TFileTransferData UserData;
 
   UnicodeString DestFullName = TargetDir + DestFileName;
-  UnicodeString FilePath = UnixExtractFilePath(FileName);
+  UnicodeString FilePath = RemoteExtractFilePath(FileName);
   unsigned int TransferType = (OperationProgress->AsciiTransfer ? 1 : 2);
+
+  EnsureLocationWhenWorkFromCwd(FilePath);
 
   {
     // ignore file list
@@ -1633,6 +1698,8 @@ void __fastcall TFTPFileSystem::Source(
   TFileTransferData UserData;
 
   unsigned int TransferType = (OperationProgress->AsciiTransfer ? 1 : 2);
+
+  EnsureLocationWhenWorkFromCwd(TargetDir);
 
   {
     // ignore file list
@@ -1717,7 +1784,7 @@ void __fastcall TFTPFileSystem::DeleteFile(const UnicodeString AFileName,
 {
   UnicodeString FileName = AbsolutePath(AFileName, false);
   UnicodeString FileNameOnly = UnixExtractFileName(FileName);
-  UnicodeString FilePath = UnixExtractFilePath(FileName);
+  UnicodeString FilePath = RemoteExtractFilePath(FileName);
 
   bool Dir = FTerminal->DeleteContentsIfDirectory(FileName, File, Params, Action);
 
@@ -1742,10 +1809,8 @@ void __fastcall TFTPFileSystem::DeleteFile(const UnicodeString AFileName,
     }
     else
     {
-      if ((FTerminal->SessionData->FtpDeleteFromCwd == asOn) ||
-          ((FTerminal->SessionData->FtpDeleteFromCwd == asAuto) && FVMS))
+      if (EnsureLocationWhenWorkFromCwd(FilePath))
       {
-        EnsureLocation(FilePath, false);
         FFileZillaIntf->Delete(FileNameOnly.c_str(), L"", true);
       }
       else
@@ -1946,6 +2011,8 @@ void __fastcall TFTPFileSystem::ReadCurrentDirectory()
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::DoReadDirectory(TRemoteFileList * FileList)
 {
+  EnsureLocationWhenWorkFromCwd(FileList->Directory);
+
   FBytesAvailable = -1;
   FileList->Reset();
   // FZAPI does not list parent directory, add it
@@ -2264,7 +2331,7 @@ void __fastcall TFTPFileSystem::DoReadFile(const UnicodeString & AFileName,
   else
   {
     FileNameOnly = UnixExtractFileName(FileName);
-    FilePath = UnixExtractFilePath(FileName);
+    FilePath = RemoteExtractFilePath(FileName);
   }
 
   TRemoteFileList * FileList = new TRemoteFileList();
@@ -2316,7 +2383,7 @@ void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
     }
     else
     {
-      UnicodeString Path = UnixExtractFilePath(FileName);
+      UnicodeString Path = RemoteExtractFilePath(FileName);
       UnicodeString NameOnly;
       int P;
       bool MVSPath =
@@ -2421,9 +2488,9 @@ void __fastcall TFTPFileSystem::RenameFile(const UnicodeString AFileName, const 
   UnicodeString NewName = AbsolutePath(ANewName, false);
 
   UnicodeString FileNameOnly = UnixExtractFileName(FileName);
-  UnicodeString FilePathOnly = UnixExtractFilePath(FileName);
+  UnicodeString FilePathOnly = RemoteExtractFilePath(FileName);
   UnicodeString NewNameOnly = UnixExtractFileName(NewName);
-  UnicodeString NewPathOnly = UnixExtractFilePath(NewName);
+  UnicodeString NewPathOnly = RemoteExtractFilePath(NewName);
 
   {
     // ignore file list
@@ -3367,22 +3434,15 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
     else if (FLastCommand == SYST)
     {
       DebugAssert(FSystem.IsEmpty());
-      // Positive reply to "SYST" must be 215, see RFC 959
-      if (FLastCode == 215)
+      // Positive reply to "SYST" should be 215, see RFC 959.
+      // But "VMS VAX/VMS V6.1 on node nsrp14" uses plain 200.
+      if (FLastCodeClass == 2)
       {
         FSystem = FLastResponse->Text.TrimRight();
         // full name is "MVS is the operating system of this server. FTP Server is running on ..."
         // (the ... can be "z/OS")
         // https://www.ibm.com/support/knowledgecenter/SSLTBW_2.1.0/com.ibm.zos.v2r1.cs3cod0/ftp215-02.htm
         FMVS = (FSystem.SubString(1, 3) == L"MVS");
-        if ((FListAll == asAuto) &&
-             // full name is "Personal FTP Server PRO K6.0"
-            ((FSystem.Pos(L"Personal FTP Server") > 0) ||
-             FMVS))
-        {
-          FTerminal->LogEvent(L"Server is known not to support LIST -a");
-          FListAll = asOff;
-        }
         // The FWelcomeMessage usually contains "Microsoft FTP Service" but can be empty
         if (ContainsText(FSystem, L"Windows_NT"))
         {
@@ -3390,7 +3450,25 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
           FWindowsServer = true;
         }
         // VMS system type. VMS V5.5-2.
-        FVMS = (FSystem.SubString(1, 3) == L"VMS");
+        // VMS VAX/VMS V6.1 on node nsrp14
+        if (FSystem.SubString(1, 3) == L"VMS")
+        {
+          FTerminal->LogEvent(L"VMS system detected.");
+          FVMS = true;
+        }
+        if ((FListAll == asAuto) &&
+             // full name is "Personal FTP Server PRO K6.0"
+            ((FSystem.Pos(L"Personal FTP Server") > 0) ||
+             FMVS || FVMS))
+        {
+          FTerminal->LogEvent(L"Server is known not to support LIST -a");
+          FListAll = asOff;
+        }
+        if ((FWorkFromCwd == asAuto) && FVMS)
+        {
+          FTerminal->LogEvent(L"Server is known to require use of relative paths");
+          FWorkFromCwd = asOn;
+        }
       }
       else
       {

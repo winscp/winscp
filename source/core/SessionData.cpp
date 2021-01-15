@@ -275,7 +275,7 @@ void __fastcall TSessionData::DefaultSettings()
   MaxTlsVersion = tls13;
   FtpListAll = asAuto;
   FtpHost = asAuto;
-  FtpDeleteFromCwd = asAuto;
+  FtpWorkFromCwd = asAuto;
   SslSessionReuse = true;
   TlsCertificateFile = L"";
 
@@ -446,7 +446,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(FtpTransferActiveImmediately); \
   PROPERTY(FtpListAll); \
   PROPERTY(FtpHost); \
-  PROPERTY(FtpDeleteFromCwd); \
+  PROPERTY(FtpWorkFromCwd); \
   PROPERTY(SslSessionReuse); \
   PROPERTY(TlsCertificateFile); \
   \
@@ -845,7 +845,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   Ftps = static_cast<TFtps>(Storage->ReadInteger(L"Ftps", Ftps));
   FtpListAll = TAutoSwitch(Storage->ReadInteger(L"FtpListAll", FtpListAll));
   FtpHost = TAutoSwitch(Storage->ReadInteger(L"FtpHost", FtpHost));
-  FtpDeleteFromCwd = TAutoSwitch(Storage->ReadInteger(L"FtpDeleteFromCwd", FtpDeleteFromCwd));
+  FtpWorkFromCwd = TAutoSwitch(Storage->ReadInteger(L"FtpWorkFromCwd", Storage->ReadInteger(L"FtpDeleteFromCwd", FtpWorkFromCwd)));
   SslSessionReuse = Storage->ReadBool(L"SslSessionReuse", SslSessionReuse);
   TlsCertificateFile = Storage->ReadString(L"TlsCertificateFile", TlsCertificateFile);
 
@@ -1200,7 +1200,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(Integer, Ftps);
     WRITE_DATA(Integer, FtpListAll);
     WRITE_DATA(Integer, FtpHost);
-    WRITE_DATA(Integer, FtpDeleteFromCwd);
+    WRITE_DATA(Integer, FtpWorkFromCwd);
     WRITE_DATA(Bool, SslSessionReuse);
     WRITE_DATA(String, TlsCertificateFile);
 
@@ -4085,9 +4085,9 @@ void __fastcall TSessionData::SetFtpHost(TAutoSwitch value)
   SET_SESSION_PROPERTY(FtpHost);
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::SetFtpDeleteFromCwd(TAutoSwitch value)
+void __fastcall TSessionData::SetFtpWorkFromCwd(TAutoSwitch value)
 {
-  SET_SESSION_PROPERTY(FtpDeleteFromCwd);
+  SET_SESSION_PROPERTY(FtpWorkFromCwd);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetSslSessionReuse(bool value)
