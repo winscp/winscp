@@ -1362,6 +1362,10 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
          EnumName(Data->FtpUseMlsd, AutoSwitchNames),
          EnumName(Data->FtpListAll, AutoSwitchNames),
          EnumName(Data->FtpHost, AutoSwitchNames)));
+      if (Data->FtpWorkFromCwd != asAuto)
+      {
+        ADF(L"FTP: Relative paths: %s", (EnumName(Data->FtpWorkFromCwd, AutoSwitchNames)));
+      }
     }
     if (Data->FSProtocol == fsWebDAV)
     {
