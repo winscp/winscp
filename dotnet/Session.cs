@@ -1047,38 +1047,44 @@ namespace WinSCP
 
                 void onGetEnd()
                 {
-                    try
-                    {
-                        // This can throw
-                        progressHandler?.Dispose();
-                    }
-                    finally
+                    using (Logger.CreateCallstack())
                     {
                         try
                         {
-                            groupReader?.Dispose();
+                            // This can throw
+                            progressHandler?.Dispose();
                         }
                         finally
                         {
-                            _process.StdOut = null;
-                            // Only after disposing the group reader, so when called from onGetEndWithExit, the Check() has all failures.
-                            operationResultGuard?.Dispose();
+                            try
+                            {
+                                groupReader?.Dispose();
+                            }
+                            finally
+                            {
+                                _process.StdOut = null;
+                                // Only after disposing the group reader, so when called from onGetEndWithExit, the Check() has all failures.
+                                operationResultGuard?.Dispose();
+                            }
                         }
                     }
                 }
 
                 void onGetEndWithExit()
                 {
-                    Logger.WriteLine("Closing download stream");
-                    try
+                    using (Logger.CreateCallstack())
                     {
-                        onGetEnd();
-                    }
-                    finally
-                    {
-                        Logger.Lock.Exit();
-                        Logger.WriteLine("Closed download stream");
-                        result.Check();
+                        Logger.WriteLine("Closing download stream");
+                        try
+                        {
+                            onGetEnd();
+                        }
+                        finally
+                        {
+                            Logger.Lock.Exit();
+                            Logger.WriteLine("Closed download stream");
+                            result.Check();
+                        }
                     }
                 }
 
