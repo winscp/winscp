@@ -1222,13 +1222,13 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   {
     TSessionData * Data = GetSessionData();
     // URL without hostname is pointless
-    Action->Enabled = (Data != NULL) && !Data->HostName.IsEmpty() && !FEditing;
+    Action->Enabled = (Data != NULL) && !Data->HostNameExpanded.IsEmpty() && !FEditing;
   }
   else if (Action == CopyParamRuleAction)
   {
     TSessionData * Data = GetSessionData();
     // without hostname it's pointless
-    Action->Enabled = (Data != NULL) && !Data->HostName.IsEmpty();
+    Action->Enabled = (Data != NULL) && !Data->HostNameExpanded.IsEmpty();
   }
   else if (Action == SearchSiteNameStartOnlyAction)
   {
