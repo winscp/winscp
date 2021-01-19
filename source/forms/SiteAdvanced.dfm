@@ -1078,7 +1078,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           DesignSize = (
             393
             143)
-          object Label5: TLabel
+          object S3SessionTokenLabel: TLabel
             Left = 12
             Top = 20
             Width = 73

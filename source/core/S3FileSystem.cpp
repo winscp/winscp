@@ -27,6 +27,13 @@
 //---------------------------------------------------------------------------
 #define FILE_OPERATION_LOOP_TERMINAL FTerminal
 //---------------------------------------------------------------------------
+#define AWS_ACCESS_KEY_ID L"AWS_ACCESS_KEY_ID"
+#define AWS_SECRET_ACCESS_KEY L"AWS_SECRET_ACCESS_KEY"
+#define AWS_SESSION_TOKEN L"AWS_SESSION_TOKEN"
+#define AWS_CONFIG_FILE L"AWS_CONFIG_FILE"
+#define AWS_PROFILE L"AWS_PROFILE"
+#define AWS_PROFILE_DEFAULT L"default"
+//---------------------------------------------------------------------------
 static std::unique_ptr<TCriticalSection> LibS3Section(TraceInitPtr(new TCriticalSection()));
 //---------------------------------------------------------------------------
 UTF8String LibS3Delimiter(L"/");
@@ -44,6 +51,84 @@ UnicodeString __fastcall S3LibDefaultHostName()
 UnicodeString __fastcall S3LibDefaultRegion()
 {
   return StrFromS3(S3_DEFAULT_REGION);
+}
+//---------------------------------------------------------------------------
+bool S3ConfigFileTried = false;
+std::unique_ptr<TCustomIniFile> S3ConfigFile;
+UnicodeString S3Profile;
+//---------------------------------------------------------------------------
+UnicodeString GetS3ConfigValue(const UnicodeString & Name, UnicodeString * Source)
+{
+  UnicodeString Result;
+  UnicodeString ASource;
+  TGuard Guard(LibS3Section.get());
+  try
+  {
+    Result = GetEnvironmentVariable(Name);
+    if (!Result.IsEmpty())
+    {
+      ASource = FORMAT(L"%%%s%%", (Name));
+    }
+    else
+    {
+      if (!S3ConfigFileTried)
+      {
+        S3ConfigFileTried = true;
+
+        S3Profile = GetEnvironmentVariable(AWS_PROFILE);
+        if (S3Profile.IsEmpty())
+        {
+          S3Profile = AWS_PROFILE_DEFAULT;
+        }
+
+        UnicodeString ConfigFileName = GetEnvironmentVariable(AWS_CONFIG_FILE);
+        if (Result.IsEmpty())
+        {
+          UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
+          UnicodeString DefaultConfigFileName = IncludeTrailingBackslash(ProfilePath) + L".aws\\credentials";
+          if (FileExists(DefaultConfigFileName))
+          {
+            ConfigFileName = DefaultConfigFileName;
+          }
+        }
+
+        S3ConfigFile.reset(new TMemIniFile(ConfigFileName));
+      }
+
+      if (S3ConfigFile.get() != NULL)
+      {
+        Result = S3ConfigFile->ReadString(S3Profile, Name, UnicodeString());
+        if (!Result.IsEmpty())
+        {
+          ASource = FORMAT(L"%s/%s", (ExtractFileName(S3ConfigFile->FileName), S3Profile));
+        }
+      }
+    }
+  }
+  catch (Exception & E)
+  {
+    throw ExtException(&E, MainInstructions(LoadStr(S3_CONFIG_ERROR)));
+  }
+  if (Source != NULL)
+  {
+    *Source = ASource;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString S3EnvUserName(UnicodeString * Source)
+{
+  return GetS3ConfigValue(AWS_ACCESS_KEY_ID, Source);
+}
+//---------------------------------------------------------------------------
+UnicodeString S3EnvPassword(UnicodeString * Source)
+{
+  return GetS3ConfigValue(AWS_SECRET_ACCESS_KEY, Source);
+}
+//---------------------------------------------------------------------------
+UnicodeString S3EnvSessionToken(UnicodeString * Source)
+{
+  return GetS3ConfigValue(AWS_SESSION_TOKEN, Source);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -105,7 +190,17 @@ void __fastcall TS3FileSystem::Open()
     FAccessKeyId.SetLength(S3_MAX_ACCESS_KEY_ID_LENGTH);
   }
 
-  UnicodeString SecretAccessKey = UTF8String(NormalizeString(Data->Password));
+  UnicodeString Password = Data->Password;
+  if (Password.IsEmpty() && Data->S3CredentialsEnv)
+  {
+    UnicodeString PasswordSource;
+    Password = S3EnvPassword(&PasswordSource);
+    if (!Password.IsEmpty())
+    {
+      FTerminal->LogEvent(FORMAT(L"Password (secret access key) read from %s", (PasswordSource)));
+    }
+  }
+  UnicodeString SecretAccessKey = UTF8String(NormalizeString(Password));
   if (SecretAccessKey.IsEmpty() && !FTerminal->SessionData->FingerprintScan)
   {
     if (!FTerminal->PromptUser(Data, pkPassword, LoadStr(S3_SECRET_ACCESS_KEY_TITLE), L"",
@@ -117,7 +212,17 @@ void __fastcall TS3FileSystem::Open()
   }
   FSecretAccessKey = UTF8String(SecretAccessKey);
 
-  FSecurityTokenBuf = UTF8String(Data->S3SessionToken);
+  UnicodeString SessionToken = Data->S3SessionToken;
+  if (SessionToken.IsEmpty() && Data->S3CredentialsEnv)
+  {
+    UnicodeString SessionTokenSource;
+    SessionToken = S3EnvSessionToken(&SessionTokenSource);
+    if (!SessionToken.IsEmpty())
+    {
+      FTerminal->LogEvent(FORMAT(L"Session token read from %s", (SessionTokenSource)));
+    }
+  }
+  FSecurityTokenBuf = UTF8String(SessionToken);
   FSecurityToken = static_cast<const char *>(FSecurityTokenBuf.data());
 
   FHostName = UTF8String(Data->HostNameExpanded);
