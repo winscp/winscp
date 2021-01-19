@@ -1733,7 +1733,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
     pData->pDirectoryListing = new t_directory;
     if (GetOptionVal(OPTION_DEBUGSHOWLISTING))
       m_pTransferSocket->m_pListResult->SendToMessageLog();
-    pData->pDirectoryListing->direntry = m_pTransferSocket->m_pListResult->getList(num, false);
+    pData->pDirectoryListing->direntry = m_pTransferSocket->m_pListResult->getList(num);
     pData->pDirectoryListing->num = num;
     if (m_pTransferSocket->m_pListResult->m_server.nServerType & FZ_SERVERTYPE_SUB_FTP_VMS && m_CurrentServer.nServerType & FZ_SERVERTYPE_FTP)
       m_CurrentServer.nServerType |= FZ_SERVERTYPE_SUB_FTP_VMS;
@@ -2414,12 +2414,13 @@ void CFtpControlSocket::ListFile(CString filename, const CServerPath &path)
       int size = m_ListFile.GetLength();
       char *buffer = new char[size + 1];
       memmove(buffer, (LPCSTR)m_ListFile, m_ListFile.GetLength());
-      CFtpListResult * pListResult = new CFtpListResult(m_CurrentServer, &m_bUTF8);
+      const bool mlst = true;
+      CFtpListResult * pListResult = new CFtpListResult(m_CurrentServer, mlst, &m_bUTF8);
       pListResult->InitIntern(GetIntern());
       pListResult->AddData(buffer, size);
       if (GetOptionVal(OPTION_DEBUGSHOWLISTING))
         pListResult->SendToMessageLog();
-      pData->direntry = pListResult->getList(num, true);
+      pData->direntry = pListResult->getList(num);
       if (pListResult->m_server.nServerType & FZ_SERVERTYPE_SUB_FTP_VMS && m_CurrentServer.nServerType & FZ_SERVERTYPE_FTP)
         m_CurrentServer.nServerType |= FZ_SERVERTYPE_SUB_FTP_VMS;
       delete pListResult;
@@ -2785,7 +2786,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       pData->pDirectoryListing=new t_directory;
       if (GetOptionVal(OPTION_DEBUGSHOWLISTING))
         m_pTransferSocket->m_pListResult->SendToMessageLog();
-      pData->pDirectoryListing->direntry=m_pTransferSocket->m_pListResult->getList(num, false);
+      pData->pDirectoryListing->direntry=m_pTransferSocket->m_pListResult->getList(num);
       pData->pDirectoryListing->num=num;
       if (m_pTransferSocket->m_pListResult->m_server.nServerType&FZ_SERVERTYPE_SUB_FTP_VMS && m_CurrentServer.nServerType&FZ_SERVERTYPE_FTP)
         m_CurrentServer.nServerType |= FZ_SERVERTYPE_SUB_FTP_VMS;
