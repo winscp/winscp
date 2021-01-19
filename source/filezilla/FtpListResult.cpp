@@ -774,7 +774,7 @@ void CFtpListResult::AddLine(t_directory::t_direntry &direntry)
   { //Remove version information, only keep the latest file
     int pos=direntry.name.ReverseFind(L';');
     if (pos<=0 || pos>=(direntry.name.GetLength()-1))
-      return;;
+      return;
     int version=_ttoi(direntry.name.Mid(pos+1));
     direntry.name=direntry.name.Left(pos);
 
