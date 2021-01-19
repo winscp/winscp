@@ -140,10 +140,11 @@
 
 #endif
 
-CFtpListResult::CFtpListResult(t_server server, bool *bUTF8)
+CFtpListResult::CFtpListResult(t_server server, bool mlst, bool *bUTF8)
 {
   listhead=curpos=0;
 
+  m_mlst = mlst;
   m_server = server;
   m_bUTF8 = bUTF8;
 
@@ -397,7 +398,7 @@ CFtpListResult::~CFtpListResult()
     delete [] m_curline;
 }
 
-t_directory::t_direntry *CFtpListResult::getList(int &num, bool mlst)
+t_directory::t_direntry *CFtpListResult::getList(int &num)
 {
   #ifdef _DEBUG
   USES_CONVERSION;
@@ -410,7 +411,7 @@ t_directory::t_direntry *CFtpListResult::getList(int &num, bool mlst)
     char *tmpline = new char[strlen(line) + 1];
     strcpy(tmpline, line);
     t_directory::t_direntry direntry;
-    if (parseLine(tmpline, strlen(tmpline), direntry, tmp, mlst))
+    if (parseLine(tmpline, strlen(tmpline), direntry, tmp))
     {
       delete [] tmpline;
       if (tmp)
@@ -481,7 +482,7 @@ t_directory::t_direntry *CFtpListResult::getList(int &num, bool mlst)
   return res;
 }
 
-BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_directory::t_direntry &direntry, int &nFTPServerType, bool mlst)
+BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_directory::t_direntry &direntry, int &nFTPServerType)
 {
   USES_CONVERSION;
 
@@ -490,7 +491,7 @@ BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_dir
   direntry.owner = L"";
   direntry.group = L"";
 
-  if (parseAsMlsd(lineToParse, linelen, direntry, mlst))
+  if (parseAsMlsd(lineToParse, linelen, direntry))
     return TRUE;
 
   if (parseAsUnix(lineToParse, linelen, direntry))
@@ -539,7 +540,6 @@ BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_dir
   return FALSE;
 }
 
-// Used only with LISTDEBUG
 void CFtpListResult::AddData(char *data, int size)
 {
   #ifdef _DEBUG
@@ -589,7 +589,7 @@ void CFtpListResult::AddData(char *data, int size)
     int tmp;
     char *tmpline = new char[strlen(line) + 1];
     strcpy(tmpline, line);
-    if (parseLine(tmpline, strlen(tmpline), direntry, tmp, false))
+    if (parseLine(tmpline, strlen(tmpline), direntry, tmp))
     {
       delete [] tmpline;
       if (tmp)
@@ -1262,7 +1262,7 @@ BOOL CFtpListResult::parseAsEPLF(const char *line, const int linelen, t_director
   return FALSE;
 }
 
-BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_directory::t_direntry &direntry, bool mlst)
+BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_directory::t_direntry &direntry)
 {
   #ifdef _DEBUG
   USES_CONVERSION;
@@ -1355,7 +1355,7 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
       {
         // ProFTPD up to 1.3.6rc1 and 1.3.5a incorrectly uses "cdir" for the current working directory.
         // So at least in MLST, where this would be the only entry, we treat it like "dir".
-        if (mlst)
+        if (m_mlst)
         {
           direntry.dir = TRUE;
         }
@@ -1451,7 +1451,7 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
   pos++;
   CString fileName;
   copyStr(fileName, 0, line + pos, linelen - pos, true);
-  if (mlst)
+  if (m_mlst)
   {
     // do not try to detect path type, assume a standard *nix syntax + do not trim
     CServerPath path(fileName, FZ_SERVERTYPE_FTP, false);

@@ -33,19 +33,19 @@ public:
   t_server m_server;
   void SendToMessageLog();
   void AddData(char * data,int size);
-  CFtpListResult(t_server server, bool * bUTF8 = 0);
+  CFtpListResult(t_server server, bool mlst, bool * bUTF8 = 0);
   virtual ~CFtpListResult();
-  t_directory::t_direntry * getList(int & num, bool mlst);
+  t_directory::t_direntry * getList(int & num);
 
 private:
   typedef std::list<t_directory::t_direntry> tEntryList;
   tEntryList m_EntryList;
 
-  BOOL parseLine(const char * lineToParse, const int linelen, t_directory::t_direntry & direntry, int & nFTPServerType, bool mlst);
+  BOOL parseLine(const char * lineToParse, const int linelen, t_directory::t_direntry & direntry, int & nFTPServerType);
 
   BOOL parseAsVMS(const char * line, const int linelen, t_directory::t_direntry & direntry);
   BOOL parseAsEPLF(const char * line, const int linelen, t_directory::t_direntry & direntry);
-  BOOL parseAsMlsd(const char * line, const int linelen, t_directory::t_direntry & direntry, bool mlst);
+  BOOL parseAsMlsd(const char * line, const int linelen, t_directory::t_direntry & direntry);
   BOOL parseAsUnix(const char * line, const int linelen, t_directory::t_direntry & direntry);
   BOOL parseAsDos(const char * line, const int linelen, t_directory::t_direntry & direntry);
   BOOL parseAsOther(const char * line, const int linelen, t_directory::t_direntry & direntry);
@@ -78,6 +78,7 @@ private:
   std::map<CString, int> m_MonthNamesMap;
 
 protected:
+  bool m_mlst;
   bool * m_bUTF8;
   void copyStr(CString & target, int pos, const char * source, int len, bool mayInvalidateUTF8 = false);
   const char * strnchr(const char * str, int len, char c) const;
