@@ -11,6 +11,7 @@
 #include <HelpWin.h>
 #include <VCLCommon.h>
 #include <Cryptography.h>
+#include <S3FileSystem.h>
 
 #include "WinInterface.h"
 #include "SiteAdvanced.h"
@@ -223,7 +224,20 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     {
       S3UrlStyleCombo->ItemIndex = 0;
     }
-    S3SessionTokenMemo->Lines->Text = FSessionData->S3SessionToken;
+
+    UnicodeString S3SessionToken = FSessionData->S3SessionToken;
+    if (FSessionData->HasAutoCredentials())
+    {
+      try
+      {
+        S3SessionToken = S3EnvSessionToken();
+      }
+      catch (...)
+      {
+        // noop
+      }
+    }
+    S3SessionTokenMemo->Lines->Text = S3SessionToken;
 
     // Authentication page
     SshNoUserAuthCheck->Checked = FSessionData->SshNoUserAuth;
@@ -634,8 +648,15 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   {
     SessionData->S3UrlStyle = s3usVirtualHost;
   }
-  // Trim not to try to authenticate with a stray new-line
-  SessionData->S3SessionToken = S3SessionTokenMemo->Lines->Text.Trim();
+  if (SessionData->HasAutoCredentials())
+  {
+    SessionData->S3SessionToken = EmptyStr;
+  }
+  else
+  {
+    // Trim not to try to authenticate with a stray new-line
+    SessionData->S3SessionToken = S3SessionTokenMemo->Lines->Text.Trim();
+  }
 
   // Proxy page
   SessionData->ProxyMethod = GetProxyMethod();
@@ -1050,6 +1071,8 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
 
     // environment/s3
     S3Sheet->Enabled = S3Protocol;
+    EnableControl(S3SessionTokenMemo, S3Sheet->Enabled && !FSessionData->HasAutoCredentials());
+    EnableControl(S3SessionTokenLabel, S3SessionTokenMemo->Enabled);
 
     // tunnel sheet
     TunnelSheet->Enabled = SshProtocol;

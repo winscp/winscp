@@ -285,7 +285,7 @@ __published:
   TGroupBox *WebdavGroup;
   TCheckBox *WebDavLiberalEscapingCheck;
   TGroupBox *S3AuthenticationGroup;
-  TLabel *Label5;
+  TLabel *S3SessionTokenLabel;
   TMemo *S3SessionTokenMemo;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);

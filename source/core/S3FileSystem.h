@@ -183,5 +183,8 @@ protected:
 UnicodeString __fastcall S3LibVersion();
 UnicodeString __fastcall S3LibDefaultHostName();
 UnicodeString __fastcall S3LibDefaultRegion();
+UnicodeString S3EnvUserName(UnicodeString * Source = NULL);
+UnicodeString S3EnvPassword(UnicodeString * Source = NULL);
+UnicodeString S3EnvSessionToken(UnicodeString * Source = NULL);
 //------------------------------------------------------------------------------
 #endif

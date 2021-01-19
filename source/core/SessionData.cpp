@@ -234,10 +234,12 @@ void __fastcall TSessionData::DefaultSettings()
   SCPLsFullTime = asAuto;
   NotUtf = asAuto;
 
+  // S3
   S3DefaultRegion = L"";
   S3SessionToken = L"";
   S3UrlStyle = s3usVirtualHost;
   S3MaxKeys = asAuto;
+  S3CredentialsEnv = false;
 
   // SFTP
   SftpServer = L"";
@@ -400,6 +402,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(S3SessionToken); \
   PROPERTY(S3UrlStyle); \
   PROPERTY(S3MaxKeys); \
+  PROPERTY(S3CredentialsEnv); \
   \
   PROPERTY(ProxyMethod); \
   PROPERTY(ProxyHost); \
@@ -737,6 +740,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   S3SessionToken = Storage->ReadString(L"S3SessionToken", S3SessionToken);
   S3UrlStyle = (TS3UrlStyle)Storage->ReadInteger(L"S3UrlStyle", S3UrlStyle);
   S3MaxKeys = (TAutoSwitch)Storage->ReadInteger(L"S3MaxKeys", S3MaxKeys);
+  S3CredentialsEnv = Storage->ReadBool(L"S3CredentialsEnv", S3CredentialsEnv);
 
   // PuTTY defaults to TcpNoDelay, but the psftp/pscp ignores this preference, and always set this to off (what is our default too)
   if (!PuttyImport)
@@ -1121,6 +1125,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(String, S3SessionToken);
     WRITE_DATA(Integer, S3UrlStyle);
     WRITE_DATA(Integer, S3MaxKeys);
+    WRITE_DATA(Bool, S3CredentialsEnv);
     WRITE_DATA(Integer, SendBuf);
     WRITE_DATA(String, SourceAddress);
     WRITE_DATA(String, ProtocolFeatures);
@@ -2543,13 +2548,22 @@ void __fastcall TSessionData::SetUserName(UnicodeString value)
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetUserNameExpanded()
 {
-  return ::ExpandEnvironmentVariables(UserName);
+  UnicodeString Result = ::ExpandEnvironmentVariables(UserName);
+  if (Result.IsEmpty() && HasS3AutoCredentials())
+  {
+    Result = S3EnvUserName();
+  }
+  return Result;
 }
 //---------------------------------------------------------------------
 UnicodeString TSessionData::GetUserNameSource()
 {
   UnicodeString Result;
-  if (UserName != UserNameExpanded)
+  if (UserName.IsEmpty() && HasS3AutoCredentials())
+  {
+    S3EnvUserName(&Result);
+  }
+  if (Result.IsEmpty() && (UserName != UserNameExpanded))
   {
     Result = UserName;
   }
@@ -3255,7 +3269,10 @@ UnicodeString __fastcall TSessionData::GenerateSessionUrl(unsigned int Flags)
 
   Url += GetProtocolUrl(FLAGSET(Flags, sufHttpForWebDAV));
 
-  if (FLAGSET(Flags, sufUserName) && !UserNameExpanded.IsEmpty())
+  // Add username only if it was somehow explicitly specified (so not with S3CredentialsEnv), but if it was, add it in the expanded form.
+  // For scripting, we might use unexpanded form (keeping the environment variables),
+  // but for consistency with code generation (where explicit expansion code would need to be added), we do not.
+  if (FLAGSET(Flags, sufUserName) && !UserName.IsEmpty())
   {
     Url += EncodeUrlString(UserNameExpanded);
 
@@ -4158,6 +4175,11 @@ void __fastcall TSessionData::SetS3MaxKeys(TAutoSwitch value)
   SET_SESSION_PROPERTY(S3MaxKeys);
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::SetS3CredentialsEnv(bool value)
+{
+  SET_SESSION_PROPERTY(S3CredentialsEnv);
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetIsWorkspace(bool value)
 {
   SET_SESSION_PROPERTY(IsWorkspace);
@@ -4290,6 +4312,16 @@ TStrings * TSessionData::GetAllOptionNames(bool PuttyExport)
 {
   std::unique_ptr<TSessionData> FactoryDefaults(new TSessionData(L""));
   return FactoryDefaults->SaveToOptions(NULL, false, PuttyExport);
+}
+//---------------------------------------------------------------------
+bool TSessionData::HasS3AutoCredentials()
+{
+  return (FSProtocol == fsS3) && S3CredentialsEnv;
+}
+//---------------------------------------------------------------------
+bool TSessionData::HasAutoCredentials()
+{
+  return HasS3AutoCredentials();
 }
 //=== TStoredSessionList ----------------------------------------------
 __fastcall TStoredSessionList::TStoredSessionList(bool aReadOnly):

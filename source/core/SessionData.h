@@ -227,6 +227,7 @@ private:
   UnicodeString FS3SessionToken;
   TS3UrlStyle FS3UrlStyle;
   TAutoSwitch FS3MaxKeys;
+  bool FS3CredentialsEnv;
   bool FIsWorkspace;
   UnicodeString FLink;
   UnicodeString FNameOverride;
@@ -415,6 +416,7 @@ private:
   void __fastcall SetS3SessionToken(UnicodeString value);
   void __fastcall SetS3UrlStyle(TS3UrlStyle value);
   void __fastcall SetS3MaxKeys(TAutoSwitch value);
+  void __fastcall SetS3CredentialsEnv(bool value);
   void __fastcall SetLogicalHostName(UnicodeString value);
   void __fastcall SetIsWorkspace(bool value);
   void __fastcall SetLink(UnicodeString value);
@@ -470,6 +472,7 @@ private:
     const UnicodeString & Name, bool Value);
   TStrings * __fastcall GetRawSettingsForUrl();
   void __fastcall DoCopyData(TSessionData * SourceData, bool NoRecrypt);
+  bool HasS3AutoCredentials();
   template<class AlgoT>
   void __fastcall SetAlgoList(AlgoT * List, const AlgoT * DefaultList, const UnicodeString * Names,
     int Count, AlgoT WarnAlgo, UnicodeString value);
@@ -519,6 +522,7 @@ public:
   UnicodeString __fastcall GenerateSessionUrl(unsigned int Flags);
   bool __fastcall HasRawSettingsForUrl();
   bool __fastcall HasSessionName();
+  bool HasAutoCredentials();
 
   UnicodeString __fastcall GenerateOpenCommandArgs(bool Rtf);
   void __fastcall GenerateAssemblyCode(TAssemblyLanguage Language, UnicodeString & Head, UnicodeString & Tail, int & Indent);
@@ -687,6 +691,7 @@ public:
   __property UnicodeString S3SessionToken = { read = FS3SessionToken, write = SetS3SessionToken };
   __property TS3UrlStyle S3UrlStyle = { read = FS3UrlStyle, write = SetS3UrlStyle };
   __property TAutoSwitch S3MaxKeys = { read = FS3MaxKeys, write = SetS3MaxKeys };
+  __property bool S3CredentialsEnv = { read = FS3CredentialsEnv, write = SetS3CredentialsEnv };
   __property bool IsWorkspace = { read = FIsWorkspace, write = SetIsWorkspace };
   __property UnicodeString Link = { read = FLink, write = SetLink };
   __property UnicodeString NameOverride = { read = FNameOverride, write = SetNameOverride };

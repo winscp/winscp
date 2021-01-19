@@ -209,6 +209,8 @@ __published:
   TMenuItem *EditRawSettings1;
   TPanel *ShowAgainPanel;
   TCheckBox *ShowAgainCheck;
+  TPanel *BasicS3Panel;
+  TCheckBox *S3CredentialsEnvCheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionTreeDblClick(TObject *Sender);
@@ -286,6 +288,7 @@ __published:
   void __fastcall SearchSiteNameActionExecute(TObject *Sender);
   void __fastcall SearchSiteActionExecute(TObject *Sender);
   void __fastcall PanelMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift, int X, int Y);
+  void __fastcall S3CredentialsEnvCheckClick(TObject *Sender);
 
 private:
   int NoUpdate;
@@ -401,6 +404,7 @@ private:
   void __fastcall CMDpiChanged(TMessage & Message);
   void __fastcall GenerateImages();
   void __fastcall CMVisibleChanged(TMessage & Message);
+  void UpdateS3Credentials();
 
 protected:
   void __fastcall Default();
