@@ -80,7 +80,8 @@ bool __fastcall FindFile(UnicodeString & Path)
         while (!Result && !Paths.IsEmpty())
         {
           UnicodeString P = CutToChar(Paths, L';', false);
-          NewPath = TPath::Combine(P, Path);
+          // Not using TPath::Combine as it throws on an invalid path and PATH is not under our control
+          NewPath = IncludeTrailingBackslash(P) + Path;
           Result = FileExistsFix(NewPath);
           if (Result)
           {
