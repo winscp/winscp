@@ -219,7 +219,6 @@ namespace WinSCP
                 throw new ArgumentException("The sum of offset and count is greater than the buffer length.");
             if (offset < 0 || count < 0)
                 throw new ArgumentOutOfRangeException("offset", "offset or count is negative.");
-            CheckDisposed();
             if (count == 0)
                 return;
             if (_closedWrite)
@@ -231,15 +230,18 @@ namespace WinSCP
                 while (_buffer.Count >= MaxBufferLength)
                     Monitor.Wait(_buffer);
 
-                _isFlushed = false; // if it were flushed before, it soon will not be.
-
-                // queue up the buffer data
-                for (var i = offset; i < offset + count; i++)
+                if (!_isDisposed)
                 {
-                    _buffer.Enqueue(buffer[i]);
-                }
+                    _isFlushed = false; // if it were flushed before, it soon will not be.
 
-                Monitor.Pulse(_buffer); // signal that write has occurred
+                    // queue up the buffer data
+                    for (var i = offset; i < offset + count; i++)
+                    {
+                        _buffer.Enqueue(buffer[i]);
+                    }
+
+                    Monitor.Pulse(_buffer); // signal that write has occurred
+                }
             }
         }
 
@@ -259,8 +261,10 @@ namespace WinSCP
                 lock (_buffer)
                 {
                     _isDisposed = true;
+                    _buffer.Clear();
                     Monitor.Pulse(_buffer);
                 }
+
                 Closed();
             }
         }
@@ -343,8 +347,9 @@ namespace WinSCP
         {
             lock (_buffer)
             {
-                CheckDisposed();
-                if (!_closedWrite)
+                // This can be called while the stream is disposed, when the download has finishes
+                // (TransferOut with Len=0 is processed) only after Close/Dispose is called
+                if (!_closedWrite && !_isDisposed)
                 {
                     _closedWrite = true;
                     Monitor.Pulse(_buffer);

@@ -278,21 +278,30 @@ namespace WinSCP
         {
             using (_logger.CreateCallstack())
             {
-                while (!AbortedOrExited())
+                try
                 {
-                    _logger.WriteLineLevel(1, "Waiting for request event");
-                    // Keep in sync with a delay in SessionLogReader.DoRead
-                    if (_requestEvent.WaitOne(100, false))
+                    while (!AbortedOrExited())
                     {
-                        _logger.WriteLineLevel(1, "Got request event");
-                        ProcessEvent();
-                    }
+                        _logger.WriteLineLevel(1, "Waiting for request event");
+                        // Keep in sync with a delay in SessionLogReader.DoRead
+                        if (_requestEvent.WaitOne(100, false))
+                        {
+                            _logger.WriteLineLevel(1, "Got request event");
+                            ProcessEvent();
+                        }
 
-                    if (_logger.LogLevel >= 1)
-                    {
-                        _logger.WriteLine(string.Format(CultureInfo.InvariantCulture, "2nd generation collection count: {0}", GC.CollectionCount(2)));
-                        _logger.WriteLine(string.Format(CultureInfo.InvariantCulture, "Total memory allocated: {0}", GC.GetTotalMemory(false)));
+                        if (_logger.LogLevel >= 1)
+                        {
+                            _logger.WriteLine(string.Format(CultureInfo.InvariantCulture, "2nd generation collection count: {0}", GC.CollectionCount(2)));
+                            _logger.WriteLine(string.Format(CultureInfo.InvariantCulture, "Total memory allocated: {0}", GC.GetTotalMemory(false)));
+                        }
                     }
+                }
+                catch (Exception e)
+                {
+                    _logger.WriteLine("Error while processing events");
+                    _logger.WriteException(e);
+                    throw;
                 }
             }
         }
@@ -343,6 +352,7 @@ namespace WinSCP
                 }
 
                 _responseEvent.Set();
+                _logger.WriteLineLevel(1, "Response event set");
             }
         }
 
