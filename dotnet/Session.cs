@@ -1113,6 +1113,7 @@ namespace WinSCP
                     }
                     if (downloadFound)
                     {
+                        Logger.WriteLine("Download stream started");
                         callstackAndLock.DisarmLock();
                         stream.OnDispose = onGetEndWithExit;
                         return stream;
@@ -2289,7 +2290,9 @@ namespace WinSCP
             if (_throwStdOut && (_process.StdOut != null) && _process.StdOut.ReadAvailable(1))
             {
                 // This is here to return from GetFile asap (?)
-                throw Logger.WriteException(new StdOutException());
+                // Not logging the exception, as it's not really an exception.
+                Logger.WriteLine("Got data");
+                throw new StdOutException();
             }
         }
 
