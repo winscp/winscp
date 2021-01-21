@@ -1507,7 +1507,7 @@ bool __fastcall TSiteRawDialog::Execute(TSessionData * Data)
     Data->Password = BackupData->Password;
     Data->Ftps = BackupData->Ftps;
 
-    Data->ApplyRawSettings(SettingsMemo->Lines);
+    Data->ApplyRawSettings(SettingsMemo->Lines, false);
   }
   return Result;
 }

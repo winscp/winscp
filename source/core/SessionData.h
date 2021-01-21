@@ -54,6 +54,7 @@ enum TSessionUrlFlags
 enum TParseUrlFlags
 {
   pufAllowStoredSiteWithProtocol = 0x01,
+  pufUnsafe = 0x02,
 };
 //---------------------------------------------------------------------------
 extern const UnicodeString CipherNames[CIPHER_COUNT];
@@ -434,7 +435,7 @@ private:
   UnicodeString __fastcall GetFolderName();
   void __fastcall Modify();
   UnicodeString __fastcall GetSource();
-  void __fastcall DoLoad(THierarchicalStorage * Storage, bool PuttyImport, bool & RewritePassword);
+  void __fastcall DoLoad(THierarchicalStorage * Storage, bool PuttyImport, bool & RewritePassword, bool Unsafe);
   void __fastcall DoSave(THierarchicalStorage * Storage,
     bool PuttyExport, const TSessionData * Default, bool DoNotEncryptPasswords);
   UnicodeString __fastcall ReadXmlNode(_di_IXMLNode Node, const UnicodeString & Name, const UnicodeString & Default);
@@ -488,8 +489,8 @@ public:
   void __fastcall DefaultSettings();
   void __fastcall NonPersistant();
   void __fastcall Load(THierarchicalStorage * Storage, bool PuttyImport);
-  void __fastcall ApplyRawSettings(TStrings * RawSettings);
-  void __fastcall ApplyRawSettings(THierarchicalStorage * Storage);
+  void __fastcall ApplyRawSettings(TStrings * RawSettings, bool Unsafe);
+  void __fastcall ApplyRawSettings(THierarchicalStorage * Storage, bool Unsafe);
   void __fastcall ImportFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
   void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport,
     const TSessionData * Default = NULL);
