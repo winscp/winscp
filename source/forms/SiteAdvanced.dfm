@@ -861,13 +861,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 6
           Width = 393
-          Height = 224
+          Height = 251
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Protocol options'
           TabOrder = 0
           DesignSize = (
             393
-            224)
+            251)
           object Label25: TLabel
             Left = 12
             Top = 42
@@ -975,6 +975,14 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Anchors = [akTop, akRight]
             TabOrder = 5
             OnChange = DataChange
+          end
+          object VMSAllRevisionsCheck: TCheckBox
+            Left = 12
+            Top = 220
+            Width = 309
+            Height = 17
+            Caption = 'Display all file &revisions on VMS servers'
+            TabOrder = 6
           end
         end
       end

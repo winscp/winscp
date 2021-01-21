@@ -221,6 +221,7 @@ void __fastcall TSessionData::DefaultSettings()
   LookupUserGroups = asAuto;
   EOLType = eolLF;
   TrimVMSVersions = false;
+  VMSAllRevisions = false;
   Shell = L""; //default shell
   ReturnVar = L"";
   ExitCode1IsError = false;
@@ -372,6 +373,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(LookupUserGroups); \
   PROPERTY(EOLType); \
   PROPERTY(TrimVMSVersions); \
+  PROPERTY(VMSAllRevisions); \
   PROPERTY(Shell); \
   PROPERTY(ClearAliases); \
   PROPERTY(Scp1Compatibility); \
@@ -745,6 +747,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   LookupUserGroups = Storage->ReadEnum(L"LookupUserGroups2", LookupUserGroups, AutoSwitchMapping);
   EOLType = (TEOLType)Storage->ReadInteger(L"EOLType", EOLType);
   TrimVMSVersions = Storage->ReadBool(L"TrimVMSVersions", TrimVMSVersions);
+  VMSAllRevisions = Storage->ReadBool(L"VMSAllRevisions", VMSAllRevisions);
   NotUtf = Storage->ReadEnum(L"Utf", Storage->ReadEnum(L"SFTPUtfBug", NotUtf), AutoSwitchReversedMapping);
   InternalEditorEncoding = Storage->ReadInteger(L"InternalEditorEncoding", InternalEditorEncoding);
 
@@ -1136,6 +1139,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA_EX(Integer, L"LookupUserGroups2", LookupUserGroups, );
     WRITE_DATA(Integer, EOLType);
     WRITE_DATA(Bool, TrimVMSVersions);
+    WRITE_DATA(Bool, VMSAllRevisions);
     Storage->DeleteValue(L"SFTPUtfBug");
     WRITE_DATA_EX(Integer, L"Utf", NotUtf, );
     WRITE_DATA(Integer, InternalEditorEncoding);
@@ -2960,6 +2964,11 @@ void __fastcall TSessionData::SetEOLType(TEOLType value)
 void __fastcall TSessionData::SetTrimVMSVersions(bool value)
 {
   SET_SESSION_PROPERTY(TrimVMSVersions);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSessionData::SetVMSAllRevisions(bool value)
+{
+  SET_SESSION_PROPERTY(VMSAllRevisions);
 }
 //---------------------------------------------------------------------------
 TDateTime __fastcall TSessionData::GetTimeoutDT()

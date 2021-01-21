@@ -133,6 +133,7 @@ private:
   bool FClearAliases;
   TEOLType FEOLType;
   bool FTrimVMSVersions;
+  bool FVMSAllRevisions;
   UnicodeString FPublicKeyFile;
   UnicodeString FPassphrase;
   UnicodeString FPuttyProtocol;
@@ -321,6 +322,7 @@ private:
   void __fastcall SetDefaultShell(bool value);
   void __fastcall SetEOLType(TEOLType value);
   void __fastcall SetTrimVMSVersions(bool value);
+  void __fastcall SetVMSAllRevisions(bool value);
   void __fastcall SetLookupUserGroups(TAutoSwitch value);
   void __fastcall SetReturnVar(UnicodeString value);
   void __fastcall SetExitCode1IsError(bool value);
@@ -605,6 +607,7 @@ public:
   __property bool DetectReturnVar = { read = GetDetectReturnVar, write = SetDetectReturnVar };
   __property TEOLType EOLType = { read = FEOLType, write = SetEOLType };
   __property bool TrimVMSVersions = { read = FTrimVMSVersions, write = SetTrimVMSVersions };
+  __property bool VMSAllRevisions = { read = FVMSAllRevisions, write = SetVMSAllRevisions };
   __property TAutoSwitch LookupUserGroups = { read = FLookupUserGroups, write = SetLookupUserGroups };
   __property UnicodeString ReturnVar = { read = FReturnVar, write = SetReturnVar };
   __property bool ExitCode1IsError = { read = FExitCode1IsError, write = SetExitCode1IsError };

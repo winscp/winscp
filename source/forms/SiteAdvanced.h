@@ -287,6 +287,7 @@ __published:
   TGroupBox *S3AuthenticationGroup;
   TLabel *S3SessionTokenLabel;
   TMemo *S3SessionTokenMemo;
+  TCheckBox *VMSAllRevisionsCheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);

@@ -299,7 +299,7 @@ private:
   bool FVMS;
   bool FFileTransferAny;
   bool FLoggedIn;
-  bool FVmsAllRevisions;
+  bool FVMSAllRevisions;
   mutable UnicodeString FOptionScratch;
 };
 //---------------------------------------------------------------------------
