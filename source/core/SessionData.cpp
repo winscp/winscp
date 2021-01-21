@@ -596,7 +596,7 @@ bool __fastcall TSessionData::IsInFolderOrWorkspace(UnicodeString AFolder)
   return StartsText(UnixIncludeTrailingBackslash(AFolder), Name);
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyImport, bool & RewritePassword)
+void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyImport, bool & RewritePassword, bool Unsafe)
 {
   // Make sure we only ever use methods supported by TOptionsStorage
   // (implemented by TOptionsIniFile)
@@ -668,7 +668,10 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   CipherList = Storage->ReadString(L"Cipher", CipherList);
   KexList = Storage->ReadString(L"KEX", KexList);
   HostKeyList = Storage->ReadString(L"HostKey", HostKeyList);
-  GssLibList = Storage->ReadString(L"GSSLibs", GssLibList);
+  if (!Unsafe)
+  {
+    GssLibList = Storage->ReadString(L"GSSLibs", GssLibList);
+  }
   GssLibCustom = Storage->ReadString(L"GSSCustom", GssLibCustom);
   PublicKeyFile = Storage->ReadString(L"PublicKeyFile", PublicKeyFile);
   AddressFamily = static_cast<TAddressFamily>
@@ -690,22 +693,31 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   DSTMode = (TDSTMode)Storage->ReadInteger(L"ConsiderDST", DSTMode);
   LockInHome = Storage->ReadBool(L"LockInHome", LockInHome);
   Special = Storage->ReadBool(L"Special", Special);
-  Shell = Storage->ReadString(L"Shell", Shell);
+  if (!Unsafe)
+  {
+    Shell = Storage->ReadString(L"Shell", Shell);
+  }
   ClearAliases = Storage->ReadBool(L"ClearAliases", ClearAliases);
   UnsetNationalVars = Storage->ReadBool(L"UnsetNationalVars", UnsetNationalVars);
-  ListingCommand = Storage->ReadString(L"ListingCommand",
-    Storage->ReadBool(L"AliasGroupList", false) ? UnicodeString(L"ls -gla") : ListingCommand);
+  if (!Unsafe)
+  {
+    ListingCommand = Storage->ReadString(L"ListingCommand",
+      Storage->ReadBool(L"AliasGroupList", false) ? UnicodeString(L"ls -gla") : ListingCommand);
+  }
   IgnoreLsWarnings = Storage->ReadBool(L"IgnoreLsWarnings", IgnoreLsWarnings);
   SCPLsFullTime = TAutoSwitch(Storage->ReadInteger(L"SCPLsFullTime", SCPLsFullTime));
   Scp1Compatibility = Storage->ReadBool(L"Scp1Compatibility", Scp1Compatibility);
   TimeDifference = Storage->ReadFloat(L"TimeDifference", TimeDifference);
   TimeDifferenceAuto = Storage->ReadBool(L"TimeDifferenceAuto", (TimeDifference == TDateTime()));
-  DeleteToRecycleBin = Storage->ReadBool(L"DeleteToRecycleBin", DeleteToRecycleBin);
-  OverwrittenToRecycleBin = Storage->ReadBool(L"OverwrittenToRecycleBin", OverwrittenToRecycleBin);
-  RecycleBinPath = Storage->ReadString(L"RecycleBinPath", RecycleBinPath);
-  PostLoginCommands = Storage->ReadString(L"PostLoginCommands", PostLoginCommands);
+  if (!Unsafe)
+  {
+    DeleteToRecycleBin = Storage->ReadBool(L"DeleteToRecycleBin", DeleteToRecycleBin);
+    OverwrittenToRecycleBin = Storage->ReadBool(L"OverwrittenToRecycleBin", OverwrittenToRecycleBin);
+    RecycleBinPath = Storage->ReadString(L"RecycleBinPath", RecycleBinPath);
+    PostLoginCommands = Storage->ReadString(L"PostLoginCommands", PostLoginCommands);
+    ReturnVar = Storage->ReadString(L"ReturnVar", ReturnVar);
+  }
 
-  ReturnVar = Storage->ReadString(L"ReturnVar", ReturnVar);
   ExitCode1IsError = Storage->ReadBool(L"ExitCode1IsError", ExitCode1IsError);
   LookupUserGroups = TAutoSwitch(Storage->ReadInteger(L"LookupUserGroups2", LookupUserGroups));
   EOLType = (TEOLType)Storage->ReadInteger(L"EOLType", EOLType);
@@ -740,13 +752,16 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
     RawByteString AProxyPassword = Storage->ReadStringAsBinaryData(L"ProxyPasswordEnc", FProxyPassword);
     SET_SESSION_PROPERTY_FROM(ProxyPassword, AProxyPassword);
   }
-  if (ProxyMethod == pmCmd)
+  if (!Unsafe)
   {
-    ProxyLocalCommand = Storage->ReadStringRaw(L"ProxyTelnetCommand", ProxyLocalCommand);
-  }
-  else
-  {
-    ProxyTelnetCommand = Storage->ReadStringRaw(L"ProxyTelnetCommand", ProxyTelnetCommand);
+    if (ProxyMethod == pmCmd)
+    {
+      ProxyLocalCommand = Storage->ReadStringRaw(L"ProxyTelnetCommand", ProxyLocalCommand);
+    }
+    else
+    {
+      ProxyTelnetCommand = Storage->ReadStringRaw(L"ProxyTelnetCommand", ProxyTelnetCommand);
+    }
   }
   ProxyDNS = TAutoSwitch((Storage->ReadInteger(L"ProxyDNS", (ProxyDNS + 2) % 3) + 1) % 3);
   ProxyLocalhost = Storage->ReadBool(L"ProxyLocalhost", ProxyLocalhost);
@@ -775,7 +790,10 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
       Bug[sbHMAC2] = asOn;
   }
 
-  SftpServer = Storage->ReadString(L"SftpServer", SftpServer);
+  if (!Unsafe)
+  {
+    SftpServer = Storage->ReadString(L"SftpServer", SftpServer);
+  }
   #define READ_SFTP_BUG(BUG) \
     SFTPBug[sb##BUG] = TAutoSwitch(Storage->ReadInteger(L"SFTP" #BUG "Bug", SFTPBug[sb##BUG]));
   READ_SFTP_BUG(Symlink);
@@ -920,7 +938,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage, bool PuttyImp
     ClearSessionPasswords();
     FProxyPassword = L"";
 
-    DoLoad(Storage, PuttyImport, RewritePassword);
+    DoLoad(Storage, PuttyImport, RewritePassword, false);
 
     Storage->CloseSubKey();
   }
@@ -1941,6 +1959,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     *AProtocolDefined = ProtocolDefined;
   }
 
+  bool Unsafe = FLAGSET(Flags, pufUnsafe);
   if (!Url.IsEmpty())
   {
     UnicodeString DecodedUrl = DecodeUrlChars(Url);
@@ -2105,7 +2124,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
 
       if (RawSettings->Count > 0) // optimization
       {
-        ApplyRawSettings(RawSettings.get());
+        ApplyRawSettings(RawSettings.get(), FLAGSET(Flags, pufUnsafe));
       }
 
       bool HasPassword = (UserInfo.Pos(L':') > 0);
@@ -2254,7 +2273,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       std::unique_ptr<TStrings> RawSettings(new TStringList());
       if (Options->FindSwitch(RawSettingsOption, RawSettings.get()))
       {
-        ApplyRawSettings(RawSettings.get());
+        ApplyRawSettings(RawSettings.get(), Unsafe);
       }
     }
   }
@@ -2262,16 +2281,16 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   return true;
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::ApplyRawSettings(TStrings * RawSettings)
+void __fastcall TSessionData::ApplyRawSettings(TStrings * RawSettings, bool Unsafe)
 {
   std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(RawSettings, false));
-  ApplyRawSettings(OptionsStorage.get());
+  ApplyRawSettings(OptionsStorage.get(), Unsafe);
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::ApplyRawSettings(THierarchicalStorage * Storage)
+void __fastcall TSessionData::ApplyRawSettings(THierarchicalStorage * Storage, bool Unsafe)
 {
   bool Dummy;
-  DoLoad(Storage, false, Dummy);
+  DoLoad(Storage, false, Dummy, Unsafe);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::ConfigureTunnel(int APortNumber)
