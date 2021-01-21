@@ -106,6 +106,32 @@ UnicodeString __fastcall UnMungeIniName(const UnicodeString & Str)
     return Str;
   }
 }
+//---------------------------------------------------------------------------
+template<typename T>
+void AddIntMapping(TIntMapping & Mapping, const wchar_t * Name, const T & Value)
+{
+  if (Name != NULL)
+  {
+    Mapping.insert(std::make_pair(UnicodeString(Name), Value));
+  }
+}
+//---------------------------------------------------------------------------
+template<typename T>
+TIntMapping CreateIntMapping(
+  const wchar_t * Name1, const T & Value1,
+  const wchar_t * Name2 = NULL, const T & Value2 = T(0),
+  const wchar_t * Name3 = NULL, const T & Value3 = T(0))
+{
+  TIntMapping Result;
+  AddIntMapping(Result, Name1, Value1);
+  AddIntMapping(Result, Name2, Value2);
+  AddIntMapping(Result, Name3, Value3);
+  return Result;
+}
+//---------------------------------------------------------------------------
+TIntMapping AutoSwitchMapping = CreateIntMapping(L"on", asOn, L"off", asOff, L"auto", asAuto);
+TIntMapping AutoSwitchReversedMapping = CreateIntMapping(L"on", asOff, L"off", asOn, L"auto", asAuto);
+TIntMapping BoolMapping = CreateIntMapping(L"on", true, L"off", false);
 //===========================================================================
 UnicodeString AccessValueName(L"Access");
 UnicodeString DefaultAccessString(L"inherit");
@@ -553,9 +579,14 @@ bool __fastcall THierarchicalStorage::ReadBool(const UnicodeString & Name, bool 
 //---------------------------------------------------------------------------
 int __fastcall THierarchicalStorage::ReadInteger(const UnicodeString & Name, int Default)
 {
+  return ReadIntegerWithMapping(Name, Default, NULL);
+}
+//---------------------------------------------------------------------------
+int THierarchicalStorage::ReadIntegerWithMapping(const UnicodeString & Name, int Default, const TIntMapping * Mapping)
+{
   if (CanRead())
   {
-    return DoReadInteger(Name, Default);
+    return DoReadInteger(Name, Default, Mapping);
   }
   else
   {
@@ -975,7 +1006,7 @@ double __fastcall TRegistryStorage::DoReadFloat(const UnicodeString & Name, doub
   READ_REGISTRY(ReadFloat);
 }
 //---------------------------------------------------------------------------
-int __fastcall TRegistryStorage::DoReadInteger(const UnicodeString & Name, int Default)
+int __fastcall TRegistryStorage::DoReadInteger(const UnicodeString & Name, int Default, const TIntMapping *)
 {
   READ_REGISTRY(ReadInteger);
 }
@@ -1307,20 +1338,49 @@ bool __fastcall TCustomIniFileStorage::DoReadBool(const UnicodeString & Name, bo
   }
   else
   {
-    return FIniFile->ReadBool(CurrentSection, MungeIniName(Name), Default);
+    int IntDefault = int(Default);
+    int Int = DoReadIntegerWithMapping(Name, IntDefault, &BoolMapping);
+    return (Int != 0);
   }
 }
 //---------------------------------------------------------------------------
-int __fastcall TCustomIniFileStorage::DoReadInteger(const UnicodeString & Name, int Default)
+int __fastcall TCustomIniFileStorage::DoReadIntegerWithMapping(const UnicodeString & Name, int Default, const TIntMapping * Mapping)
+{
+  int Result;
+  bool ReadAsInteger = true;
+  UnicodeString MungedName = MungeIniName(Name);
+  if (Mapping != NULL) // optimization
+  {
+    UnicodeString S = FIniFile->ReadString(CurrentSection, MungedName, EmptyStr);
+    if (!S.IsEmpty())
+    {
+      S = S.LowerCase();
+      TIntMapping::const_iterator I = Mapping->find(S);
+      if (I != Mapping->end())
+      {
+        Result = I->second;
+        ReadAsInteger = false;
+      }
+    }
+  }
+
+  if (ReadAsInteger)
+  {
+    Result = FIniFile->ReadInteger(CurrentSection, MungedName, Default);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall TCustomIniFileStorage::DoReadInteger(const UnicodeString & Name, int Default, const TIntMapping * Mapping)
 {
   int Result;
   if (HandleReadByMasterStorage(Name))
   {
-    Result = FMasterStorage->ReadInteger(Name, Default);
+    Result = FMasterStorage->ReadIntegerWithMapping(Name, Default, Mapping);
   }
   else
   {
-    Result = FIniFile->ReadInteger(CurrentSection, MungeIniName(Name), Default);
+    Result = DoReadIntegerWithMapping(Name, Default, Mapping);
   }
   return Result;
 }
