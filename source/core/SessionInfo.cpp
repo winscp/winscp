@@ -1408,10 +1408,10 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       (BooleanToEngStr(Data->DeleteToRecycleBin),
        BooleanToEngStr(Data->OverwrittenToRecycleBin),
        Data->RecycleBinPath));
-    if (Data->TrimVMSVersions)
+    if (Data->TrimVMSVersions || Data->VMSAllRevisions)
     {
-      ADF(L"Trim VMS versions: %s",
-        (BooleanToEngStr(Data->TrimVMSVersions)));
+      ADF(L"Trim VMS versions: %s; VMS all revisions: %s",
+        (BooleanToEngStr(Data->TrimVMSVersions), BooleanToEngStr(Data->VMSAllRevisions)));
     }
     UnicodeString TimeInfo;
     if ((Data->FSProtocol == fsSFTP) || (Data->FSProtocol == fsSFTPonly) || (Data->FSProtocol == fsSCPonly) || (Data->FSProtocol == fsWebDAV))

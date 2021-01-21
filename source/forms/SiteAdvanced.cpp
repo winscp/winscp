@@ -175,6 +175,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     TimeDifferenceAutoCheck->Checked = FSessionData->TimeDifferenceAuto;
 
     TrimVMSVersionsCheck->Checked = FSessionData->TrimVMSVersions;
+    VMSAllRevisionsCheck->Checked = FSessionData->VMSAllRevisions;
 
     PuttySettingsEdit->Text = FSessionData->PuttySettings;
 
@@ -584,6 +585,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   SessionData->TimeDifferenceAuto = TimeDifferenceAutoCheck->Checked;
 
   SessionData->TrimVMSVersions = TrimVMSVersionsCheck->Checked;
+  SessionData->VMSAllRevisions = VMSAllRevisionsCheck->Checked;
 
   SessionData->PuttySettings = PuttySettingsEdit->Text;
 

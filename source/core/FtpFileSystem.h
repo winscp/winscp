@@ -300,7 +300,7 @@ private:
   bool FFileZilla;
   bool FFileTransferAny;
   bool FLoggedIn;
-  bool FVmsAllRevisions;
+  bool FVMSAllRevisions;
   bool FForceReadSymlink;
   mutable UnicodeString FOptionScratch;
 };
