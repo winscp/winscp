@@ -1129,7 +1129,10 @@ int __fastcall Execute()
         std::unique_ptr<TObjectList> DataList(new TObjectList());
         try
         {
-          GetLoginData(AutoStartSession, Params, DataList.get(), DownloadFile, NeedSession, NULL, pufAllowStoredSiteWithProtocol);
+          int Flags =
+            pufAllowStoredSiteWithProtocol |
+            FLAGMASK(!CheckSafe(Params), pufUnsafe);
+          GetLoginData(AutoStartSession, Params, DataList.get(), DownloadFile, NeedSession, NULL, Flags);
           // GetLoginData now Aborts when session is needed and none is selected
           if (DebugAlwaysTrue(!NeedSession || (DataList->Count > 0)))
           {
