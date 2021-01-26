@@ -739,7 +739,7 @@ void TS3FileSystem::TryOpenDirectory(const UnicodeString & Directory)
 {
   FTerminal->LogEvent(FORMAT(L"Trying to open directory \"%s\".", (Directory)));
   std::unique_ptr<TRemoteFileList> FileList(new TRemoteFileList());
-  ReadDirectoryInternal(Directory, FileList.get(), 1, UnicodeString());
+  ReadDirectoryInternal(Directory, FileList.get(), -1, UnicodeString());
 }
 //---------------------------------------------------------------------------
 void __fastcall TS3FileSystem::ChangeDirectory(const UnicodeString ADirectory)
@@ -901,9 +901,10 @@ void TS3FileSystem::ReadDirectoryInternal(
         MaxKeys = 0;
       }
 
+      int AMaxKeys = (MaxKeys == -1) ? 1 : MaxKeys;
       S3_list_service(
         FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), FSecurityToken, (FHostName + FPortSuffix).c_str(),
-        StrToS3(FAuthRegion), MaxKeys, FRequestContext, FTimeout, &ListServiceHandler, &Data);
+        StrToS3(FAuthRegion), AMaxKeys, FRequestContext, FTimeout, &ListServiceHandler, &Data);
 
       HandleNonBucketStatus(Data, Retry);
     }
@@ -932,13 +933,20 @@ void TS3FileSystem::ReadDirectoryInternal(
 
       Continue = false;
 
-      if (Data.IsTruncated && ((MaxKeys == 0) || (Data.KeyCount < MaxKeys)))
+      if (Data.IsTruncated)
       {
-        bool Cancel = false;
-        FTerminal->DoReadDirectoryProgress(FileList->Count, false, Cancel);
-        if (!Cancel)
+        // We have report that with max-keys=1, server can return IsTruncated response with no keys,
+        // so we would loop infinitelly. For now, if we do GET request only to check for bucket/folder existence (MaxKeys == -1),
+        // we are happy with a successfull response and never loop, even if IsTruncated.
+        if ((MaxKeys == 0) ||
+            ((MaxKeys > 0) && (Data.KeyCount < MaxKeys)))
         {
-          Continue = true;
+          bool Cancel = false;
+          FTerminal->DoReadDirectoryProgress(FileList->Count, false, Cancel);
+          if (!Cancel)
+          {
+            Continue = true;
+          }
         }
       }
     } while (Continue);
