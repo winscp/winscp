@@ -982,6 +982,7 @@ void TS3FileSystem::ReadDirectoryInternal(
   const UnicodeString & APath, TRemoteFileList * FileList, int MaxKeys, const UnicodeString & FileName)
 {
   UnicodeString Path = UnixExcludeTrailingBackslash(AbsolutePath(APath, false));
+  int AMaxKeys = (MaxKeys == -1) ? 1 : MaxKeys;
   if (IsUnixRootPath(Path))
   {
     DebugAssert(FileList != NULL);
@@ -1006,7 +1007,6 @@ void TS3FileSystem::ReadDirectoryInternal(
         MaxKeys = 0;
       }
 
-      int AMaxKeys = (MaxKeys == -1) ? 1 : MaxKeys;
       S3_list_service(
         FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), FSecurityToken, (FHostName + FPortSuffix).c_str(),
         StrToS3(FAuthRegion), AMaxKeys, FRequestContext, FTimeout, &ListServiceHandler, &Data);
@@ -1033,7 +1033,7 @@ void TS3FileSystem::ReadDirectoryInternal(
 
     do
     {
-      DoListBucket(Prefix, FileList, MaxKeys, BucketContext, Data);
+      DoListBucket(Prefix, FileList, AMaxKeys, BucketContext, Data);
       CheckLibS3Error(Data);
 
       Continue = false;
