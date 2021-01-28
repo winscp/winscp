@@ -5029,7 +5029,7 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
       }
     }
 
-    if (CanClose)
+    if (CanClose && HasActiveTerminal())
     {
       CanClose = CanCloseQueue();
     }
