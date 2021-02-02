@@ -438,7 +438,6 @@ TRobustOperationLoop::~TRobustOperationLoop()
 //---------------------------------------------------------------------------
 bool TRobustOperationLoop::TryReopen(Exception & E)
 {
-  FRetry = FCanRetry && !FTerminal->Active;
   if (!FCanRetry)
   {
     FRetry = false;
