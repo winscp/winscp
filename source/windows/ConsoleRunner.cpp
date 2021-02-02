@@ -657,12 +657,12 @@ void __fastcall TExternalConsole::SendEvent(int Timeout)
 {
   SetEvent(FRequestEvent);
   unsigned int Start = 0; // shut up
-  if (Configuration->LogProtocol >= 1)
+  if (Configuration->ActualLogProtocol >= 1)
   {
     Start = GetTickCount();
   }
   unsigned int Result = WaitForSingleObject(FResponseEvent, Timeout);
-  if (Configuration->LogProtocol >= 1)
+  if (Configuration->ActualLogProtocol >= 1)
   {
     unsigned int End = GetTickCount();
     unsigned int Duration = End - Start;
@@ -2202,7 +2202,7 @@ int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Optio
     {
       UnicodeString ExitCodeMessage = FORMAT(L"Exit code: %d", (ExitCode));
       FScript->Log(llMessage, ExitCodeMessage);
-      if (Configuration->LogProtocol >= 1)
+      if (Configuration->ActualLogProtocol >= 1)
       {
         FConsole->Print(ExitCodeMessage + L"\n");
         UnicodeString LogMessage = FConsole->FinalLogMessage();
