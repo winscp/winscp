@@ -650,7 +650,14 @@ void __fastcall TSCPFileSystem::ReadCommandOutput(int Params, const UnicodeStrin
         if (WrongOutput || WrongReturnCode)
         {
           DebugAssert(Cmd != NULL);
-          FTerminal->TerminalError(FMTLOAD(COMMAND_FAILED, (*Cmd, ReturnCode, Message)));
+          if (Message.IsEmpty())
+          {
+            FTerminal->TerminalError(FMTLOAD(COMMAND_FAILED_CODEONLY, (ReturnCode)));
+          }
+          else
+          {
+            throw ETerminal(MainInstructions(FMTLOAD(COMMAND_FAILED2, (*Cmd, ReturnCode))), Message);
+          }
         }
       }
     }

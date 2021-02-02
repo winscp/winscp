@@ -8,7 +8,7 @@ BEGIN
   USER_TERMINATED, "Terminated by user."
   LOST_CONNECTION, "Lost connection."
   CANT_DETECT_RETURN_CODE, "Can't detect command return code."
-  COMMAND_FAILED, "Command '%s'\nfailed with return code %d and error message\n%s."
+  COMMAND_FAILED2, "Command '%s'\nfailed with return code %d and the following error message."
   COMMAND_FAILED_CODEONLY, "Command failed with return code %d."
   INVALID_OUTPUT_ERROR, "Command '%s' failed with invalid output '%s'."
   READ_CURRENT_DIR_ERROR, "Error getting name of current remote directory."

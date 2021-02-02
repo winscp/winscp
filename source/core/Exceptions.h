@@ -79,6 +79,10 @@ private:
       BASE(E, Ident) \
     { \
     } \
+    inline __fastcall NAME(const UnicodeString & Msg, const UnicodeString & MoreMessages, const UnicodeString & HelpKeyword = UnicodeString()) : \
+      BASE(Msg, MoreMessages, HelpKeyword) \
+    { \
+    } \
     inline __fastcall virtual ~NAME(void) \
     { \
     } \
