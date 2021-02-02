@@ -443,6 +443,10 @@ bool TRobustOperationLoop::TryReopen(Exception & E)
   {
     FRetry = false;
   }
+  else if (dynamic_cast<ESkipFile *>(&E) != NULL)
+  {
+    FRetry = false;
+  }
   else if (FTerminal->Active)
   {
     FTerminal->LogEvent(1, L"Session is open, will not retry transfer");
