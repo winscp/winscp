@@ -1004,7 +1004,7 @@ void TS3FileSystem::ReadDirectoryInternal(
           ((FTerminal->SessionData->S3MaxKeys == asAuto) &&
            SameText(L"storage.googleapis.com", FTerminal->SessionData->HostNameExpanded)))
       {
-        MaxKeys = 0;
+        AMaxKeys = 0;
       }
 
       S3_list_service(

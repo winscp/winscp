@@ -503,7 +503,7 @@ void __fastcall TScript::Command(UnicodeString Cmd)
         UnicodeString LogCmd = GetLogCmd(FullCmd, Command, Cmd);
         Log(llInput, LogCmd);
 
-        if (Configuration->LogProtocol >= 1)
+        if (Configuration->ActualLogProtocol >= 1)
         {
           UnicodeString DummyLogCmd;
           if (DebugAlwaysTrue(CutToken(LogCmd, DummyLogCmd)))
