@@ -42,6 +42,7 @@ private:
   tEntryList m_EntryList;
 
   BOOL parseLine(const char * lineToParse, const int linelen, t_directory::t_direntry & direntry, int & nFTPServerType);
+  void DoParseLine(char *& Line, t_directory::t_direntry & DirEntry);
 
   BOOL parseAsVMS(const char * line, const int linelen, t_directory::t_direntry & direntry);
   BOOL parseAsEPLF(const char * line, const int linelen, t_directory::t_direntry & direntry);

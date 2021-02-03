@@ -398,6 +398,63 @@ CFtpListResult::~CFtpListResult()
     delete [] m_curline;
 }
 
+void CFtpListResult::DoParseLine(char *& Line, t_directory::t_direntry & DirEntry)
+{
+  int ServerType;
+  char * TmpLine = new char[strlen(Line) + 1];
+  strcpy(TmpLine, Line);
+  bool Result = parseLine(TmpLine, strlen(TmpLine), DirEntry, ServerType);
+  delete [] TmpLine;
+  if (Result)
+  {
+    if (ServerType != 0)
+    {
+      m_server.nServerType |= ServerType;
+    }
+    if ((DirEntry.name != L".") && (DirEntry.name != L".."))
+    {
+      AddLine(DirEntry);
+    }
+    if (m_prevline != NULL)
+    {
+      delete [] m_prevline;
+      m_prevline = NULL;
+    }
+    if (m_curline != Line)
+    {
+      delete [] m_curline;
+    }
+    delete [] Line;
+    Line = GetLine();
+    m_curline = Line;
+  }
+  else
+  {
+    if (m_prevline != NULL)
+    {
+      if (m_curline != Line)
+      {
+        delete [] m_prevline;
+        m_prevline = m_curline;
+        delete [] Line;
+        Line = GetLine();
+        m_curline = Line;
+      }
+      else
+      {
+        Line = new char[strlen(m_prevline) + strlen(m_curline) + 2];
+        sprintf(Line, "%s %s", m_prevline, m_curline);
+      }
+    }
+    else
+    {
+      m_prevline = Line;
+      Line = GetLine();
+      m_curline = Line;
+    }
+  }
+}
+
 t_directory::t_direntry *CFtpListResult::getList(int &num)
 {
   #ifdef _DEBUG
@@ -407,56 +464,8 @@ t_directory::t_direntry *CFtpListResult::getList(int &num)
   m_curline=line;
   while (line)
   {
-    int tmp;
-    char *tmpline = new char[strlen(line) + 1];
-    strcpy(tmpline, line);
     t_directory::t_direntry direntry;
-    if (parseLine(tmpline, strlen(tmpline), direntry, tmp))
-    {
-      delete [] tmpline;
-      if (tmp)
-        m_server.nServerType |= tmp;
-      if (direntry.name!=L"." && direntry.name!=L"..")
-      {
-        AddLine(direntry);
-      }
-      if (m_prevline)
-      {
-        delete [] m_prevline;
-        m_prevline=0;
-      }
-      if (m_curline!=line)
-        delete [] m_curline;
-      delete [] line;
-      line=GetLine();
-      m_curline=line;
-    }
-    else
-    {
-      delete [] tmpline;
-      if (m_prevline)
-      {
-        if (m_curline!=line)
-        {
-          delete [] m_prevline;
-          m_prevline=m_curline;
-          delete [] line;
-          line=GetLine();
-          m_curline=line;
-        }
-        else
-        {
-          line=new char[strlen(m_prevline)+strlen(m_curline)+2];
-          sprintf(line, "%s %s", m_prevline, m_curline);
-        }
-      }
-      else
-      {
-        m_prevline=line;
-        line=GetLine();
-        m_curline=line;
-      }
-    }
+    DoParseLine(line, direntry);
   }
   if (m_prevline)
   {
@@ -586,55 +595,7 @@ void CFtpListResult::AddData(char *data, int size)
       m_curline = 0;
       break;
     }
-    int tmp;
-    char *tmpline = new char[strlen(line) + 1];
-    strcpy(tmpline, line);
-    if (parseLine(tmpline, strlen(tmpline), direntry, tmp))
-    {
-      delete [] tmpline;
-      if (tmp)
-        m_server.nServerType |= tmp;
-      if (direntry.name!=L"." && direntry.name!=L"..")
-      {
-        AddLine(direntry);
-      }
-      if (m_prevline)
-      {
-        delete [] m_prevline;
-        m_prevline=0;
-      }
-      if (m_curline!=line)
-        delete [] m_curline;
-      delete [] line;
-      line = GetLine();
-      m_curline = line;
-    }
-    else
-    {
-      delete [] tmpline;
-      if (m_prevline)
-      {
-        if (m_curline != line)
-        {
-          delete [] m_prevline;
-          m_prevline = m_curline;
-          delete [] line;
-          line = GetLine();
-          m_curline = line;
-        }
-        else
-        {
-          line=new char[strlen(m_prevline)+strlen(m_curline)+2];
-          sprintf(line, "%s %s", m_prevline, m_curline);
-        }
-      }
-      else
-      {
-        m_prevline=line;
-        line=GetLine();
-        m_curline=line;
-      }
-    }
+    DoParseLine(line, direntry);
   }
   curpos=pOldListPos;
   pos=nOldListBufferPos;
