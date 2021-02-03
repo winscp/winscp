@@ -864,6 +864,11 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
       else if (reply.GetLength() >= 11 && reply.Mid(3, 8) == " BS-2000")
         m_mayBeBS2000Filesystem = true;
 
+      if (reply.Left(4) == "VMS ")
+      {
+        m_CurrentServer.nServerType |= FZ_SERVERTYPE_SUB_FTP_VMS;
+      }
+
       if (reply.Find("FileZilla") != -1)
         m_isFileZilla = true;
     }
@@ -2415,8 +2420,7 @@ void CFtpControlSocket::ListFile(CString filename, const CServerPath &path)
       char *buffer = new char[size + 1];
       memmove(buffer, (LPCSTR)m_ListFile, m_ListFile.GetLength());
       const bool mlst = true;
-      CFtpListResult * pListResult = new CFtpListResult(m_CurrentServer, mlst, &m_bUTF8);
-      pListResult->InitIntern(GetIntern());
+      CFtpListResult * pListResult = CreateListResult(mlst);
       pListResult->AddData(buffer, size);
       if (GetOptionVal(OPTION_DEBUGSHOWLISTING))
         pListResult->SendToMessageLog();
@@ -6353,6 +6357,13 @@ bool CFtpControlSocket::CheckForcePasvIp(CString & host)
   }
 
   return result;
+}
+
+CFtpListResult * CFtpControlSocket::CreateListResult(bool mlst)
+{
+  CFtpListResult * Result = new CFtpListResult(m_CurrentServer, mlst, &m_bUTF8, GetOptionVal(OPTION_VMSALLREVISIONS));
+  Result->InitIntern(GetIntern());
+  return Result;
 }
 
 //---------------------------------------------------------------------------

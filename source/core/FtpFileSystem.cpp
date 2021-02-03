@@ -2289,6 +2289,7 @@ void __fastcall TFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 
         // use "-a" even for implicit directory reading by FZAPI?
         // (e.g. before file transfer)
+        // Note that FZAPI ignores this for VMS/MVS.
         FDoListAll = (FListAll == asOn);
       }
       catch(Exception & E)
@@ -3438,9 +3439,12 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
       if (FLastCodeClass == 2)
       {
         FSystem = FLastResponse->Text.TrimRight();
+        // FZAPI has own detection of MVS/VMS
+
         // full name is "MVS is the operating system of this server. FTP Server is running on ..."
         // (the ... can be "z/OS")
         // https://www.ibm.com/support/knowledgecenter/SSLTBW_2.1.0/com.ibm.zos.v2r1.cs3cod0/ftp215-02.htm
+        // FZPI has a different incompatible detection.
         FMVS = (FSystem.SubString(1, 3) == L"MVS");
         // The FWelcomeMessage usually contains "Microsoft FTP Service" but can be empty
         if (ContainsText(FSystem, L"Windows_NT"))
@@ -3450,7 +3454,7 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
         }
         // VMS system type. VMS V5.5-2.
         // VMS VAX/VMS V6.1 on node nsrp14
-        if (FSystem.SubString(1, 3) == L"VMS")
+        if (FSystem.SubString(1, 4) == L"VMS ")
         {
           FTerminal->LogEvent(L"VMS system detected.");
           FVMS = true;

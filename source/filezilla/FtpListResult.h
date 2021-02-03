@@ -33,7 +33,7 @@ public:
   t_server m_server;
   void SendToMessageLog();
   void AddData(char * data,int size);
-  CFtpListResult(t_server server, bool mlst, bool * bUTF8 = 0);
+  CFtpListResult(t_server server, bool mlst, bool * bUTF8, bool vmsAllRevisions);
   virtual ~CFtpListResult();
   t_directory::t_direntry * getList(int & num);
 
@@ -77,6 +77,8 @@ private:
 
   // Month names map
   std::map<CString, int> m_MonthNamesMap;
+
+  bool m_vmsAllRevisions;
 
 protected:
   bool m_mlst;

@@ -4,149 +4,14 @@
 #include "FileZillaApi.h"
 #include <WideStrUtils.hpp>
 
-//////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
-//////////////////////////////////////////////////////////////////////
-//#define LISTDEBUG
-#ifdef LISTDEBUG
-  //It's the normal UNIX format (or even another nonstandard format)
-  //Some samples are from https://cr.yp.to/ftpparse/ftpparse.c
-  /* UNIX-style listing, without inum and without blocks */
-
-  static char data[][110]={
-    "-rw-r--r--   1 root     other        531 Jan 29 03:26 01-unix-std file",
-    "-rw-r--r--   1 root     other        531 Jan 29 03:26 01-unix-std file with trailing space ",
-    "dr-xr-xr-x   2 root     other        512 Apr  8  1994 02-unix-std dir",
-    "dr-xr-xr-x   2 root                  512 Apr  8  1994 03-unix-nogroup dir",
-    "lrwxrwxrwx   1 root     other          7 Jan 25 00:17 04-unix-std link -> usr/bin",
-
-    /* Some listings with uncommon date/time format: */
-    "-rw-r--r--   1 root     other        531 09-26 2000 05-unix-date file",
-    "-rw-r--r--   1 root     other        531 09-26 13:45 06-unix-date file",
-    "-rw-r--r--   1 root     other        531 2005-06-07 21:22 07-unix-date file",
-
-    /* Unix style with size information in kilobytes */
-    "-rw-r--r--   1 root     other  34.5k Oct 5 21:22 08-unix-namedsize file",
-
-    /* Also NetWare: */
-    "d [R----F--] supervisor            512       Jan 16 18:53    09-netware dir",
-    "- [R----F--] rhesus             214059       Oct 20 15:27    10-netware file",
-
-    /* Also NetPresenz for the Mac: */
-    "-------r--         326  1391972  1392298 Nov 22  1995 11-netpresenz file",
-    "drwxrwxr-x               folder        2 May 10  1996 12-netpresenz dir",
-
-    /* A format with domain field some windows servers send */
-    "-rw-r--r--   1 group domain user 531 Jan 29 03:26 13-unix-domain file",
-
-    /* EPLF directory listings */
-    "+i8388621.48594,m825718503,r,s280,\t14-eplf file",
-    "+i8388621.50690,m824255907,/,\t15-eplf dir",
-
-    /* MSDOS type listing used by IIS */
-    "04-27-00  12:09PM       <DIR>          16-dos-dateambigious dir",
-    "04-14-00  03:47PM                  589 17-dos-dateambigious file",
-
-    /* Another type of MSDOS style listings */
-    "2002-09-02  18:48       <DIR>          18-dos-longyear dir",
-    "2002-09-02  19:06                9,730 19-dos-longyear file",
-
-    /* Numerical Unix style format */
-    "0100644   500  101   12345    123456789       20-unix-numerical file",
-
-    /* This one is used by SSH-2.0-VShell_2_1_2_143, this is the old VShell format */
-    "206876  Apr 04, 2000 21:06 21-vshell-old file",
-    "0  Dec 12, 2002 02:13 22-vshell-old dir/",
-
-    /* This type of directory listings is sent by some newer versions of VShell
-     * both year and time in one line is uncommon.
-     */
-    "-rwxr-xr-x    1 user group        9 Oct 08, 2002 09:47 23-vshell-new file",
-
-    /* Next ones come from an OS/2 server. The server obviously isn't Y2K aware */
-    "36611      A    04-23-103  10:57  24-os2 file",
-    " 1123      A    07-14-99   12:37  25-os2 file",
-    "    0 DIR       02-11-103  16:15  26-os2 dir",
-    " 1123 DIR  A    10-05-100  23:38  27-os2 dir",
-
-    /* Some servers send localized date formats, here the German one: */
-    "dr-xr-xr-x   2 root     other      2235 26. Juli, 20:10 28-datetest-ger dir",
-    "-r-xr-xr-x   2 root     other      2235 2.   Okt.  2003 29-datetest-ger file",
-    "-r-xr-xr-x   2 root     other      2235 1999/10/12 17:12 30-datetest file",
-    "-r-xr-xr-x   2 root     other      2235 24-04-2003 17:12 31-datetest file",
-
-    /* Here a Japanese one: */
-    "-rw-r--r--   1 root       sys           8473  4\x8c\x8e 18\x93\xfa 2003\x94\x4e 32-datatest-japanese file",
-
-    /* VMS style listings */
-    "33-vms-dir.DIR;1  1 19-NOV-2001 21:41 [root,root] (RWE,RWE,RE,RE)",
-    "34-vms-file;1       155   2-JUL-2003 10:30:13.64",
-
-    /* VMS style listings without time */
-    "35-vms-notime-file;1    2/8    15-JAN-2000    [IV2_XXX]   (RWED,RWED,RE,)",
-    "36-vms-notime-file;1    6/8    15-JUI-2002    PRONAS   (RWED,RWED,RE,)",
-
-    /* VMS multiline */
-    "37-vms-multiline-file;1\r\n170774/170775     24-APR-2003 08:16:15  [FTP_CLIENT,SCOT]      (RWED,RWED,RE,)",
-    "38-vms-multiline-file;1\r\n10           2-JUL-2003 10:30:08.59  [FTP_CLIENT,SCOT]      (RWED,RWED,RE,)",
-
-    /* IBM AS/400 style listing */
-    "QSYS            77824 02/23/00 15:09:55 *DIR 39-ibm-as400 dir/",
-    "QSYS            77824 23/02/00 15:09:55 *FILE 40-ibm-as400-date file",
-
-    /* aligned directory listing with too long size */
-    "-r-xr-xr-x longowner longgroup123456 Feb 12 17:20 41-unix-concatsize file",
-
-    /* short directory listing with month name */
-    "-r-xr-xr-x 2 owner group 4512 01-jun-99 42_unix_shortdatemonth file",
-
-    /* the following format is sent by the Connect:Enterprise server by Sterling Commerce */
-    "-C--E-----FTP B BCC3I1       7670  1294495 Jan 13 07:42 43-conent file",
-    "-C--E-----FTS B BCC3I1       7670  1294495 Jan 13 07:42 44-conent-file",
-
-    "-AR--M----TCP B ceunix      17570  2313708 Mar 29 08:56 45-conent-file",
-
-    /* Nortel wfFtp router */
-    "46-nortel-wfftp-file       1014196  06/03/04  Thur.   10:20:03",
-
-    /* VxWorks based server used in Nortel routers */
-    "2048    Feb-28-1998  05:23:30   47-nortel-vxworks dir <DIR>",
-
-    /* IBM MVS listings */
-    // Volume Unit    Referred Ext Used Recfm Lrecl BlkSz Dsorg Dsname
-    "  WYOSPT 3420   2003/05/21  1  200  FB      80  8053  PS  48-MVS.FILE",
-    "  WPTA01 3290   2004/03/04  1    3  FB      80  3125  PO  49-MVS.DATASET",
-    "  TSO004 3390   VSAM 50-mvs-file",
-    "  TSO005 3390   2005/06/06 213000 U 0 27998 PO 51-mvs-dir",
-    // Tape file (z/OS)
-    "C03193 Tape                                             AT.CCRIS.TP",
-
-    /* Dataset members */
-    // Name         VV.MM   Created      Changed       Size  Init  Mod Id
-    // ADATAB /* filenames without data, only check for those on MVS servers */
-    "  52-MVSPDSMEMBER 01.01 2004/06/22 2004/06/22 16:32   128   128    0 BOBY12",
-
-    "53-MVSPDSMEMBER2 00B308 000411  00 FO        RU      31    ANY",
-    "54-MVSPDSMEMBER3 00B308 000411  00 FO        RU      ANY    24",
-
-    // Some asian listing format. Those >127 chars are just examples
-    "-rwxrwxrwx   1 root     staff          0 2003   3\xed\xef 20 55-asian date file",
-        "-r--r--r-- 1 root root 2096 8\xed 17 08:52 56-asian date file",
-
-    // VMS style listing with a different field order
-    "57-vms-alternate-field-order-file;1   [SUMMARY]    1/3     2-AUG-2006 13:05  (RWE,RWE,RE,)",
-
-    ""};
-
-#endif
-
-CFtpListResult::CFtpListResult(t_server server, bool mlst, bool *bUTF8)
+CFtpListResult::CFtpListResult(t_server server, bool mlst, bool *bUTF8, bool vmsAllRevisions)
 {
   listhead=curpos=0;
 
   m_mlst = mlst;
   m_server = server;
   m_bUTF8 = bUTF8;
+  m_vmsAllRevisions = vmsAllRevisions;
 
   pos=0;
 
@@ -367,17 +232,6 @@ CFtpListResult::CFtpListResult(t_server server, bool mlst, bool *bUTF8)
 
   // Slovenian month names
   m_MonthNamesMap[L"avg"] = 8;
-
-#ifdef LISTDEBUG
-  int i=-1;
-  while (*data[++i])
-  {
-    char *pData=new char[strlen(data[i])+3];
-    sprintf(pData, "%s\r\n", data[i]);
-    AddData(pData, strlen(pData));
-  }
-  TRACE1("%d lines added\n", i);
-#endif
 }
 
 
@@ -514,9 +368,7 @@ BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_dir
 
   if (parseAsVMS(lineToParse, linelen, direntry))
   {
-#ifndef LISTDEBUG
     m_server.nServerType |= FZ_SERVERTYPE_SUB_FTP_VMS;
-#endif // LISTDEBUG
     return TRUE;
   }
 
@@ -540,8 +392,11 @@ BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_dir
     return TRUE;
 
   // name-only entries
-  if (strchr(lineToParse, ' ') == NULL)
+  // (multiline VMS entries have only a name on the first line, so for VMS we have to skip this)
+  if (FLAGCLEAR(m_server.nServerType, FZ_SERVERTYPE_SUB_FTP_VMS) &&
+      (strchr(lineToParse, ' ') == NULL))
   {
+    direntry = t_directory::t_direntry();
     copyStr(direntry.name, 0, lineToParse, strlen(lineToParse));
     return TRUE;
   }
@@ -731,7 +586,7 @@ void CFtpListResult::AddLine(t_directory::t_direntry &direntry)
   }
 
   if (m_server.nServerType&FZ_SERVERTYPE_SUB_FTP_VMS &&
-    (!GetOptionVal(OPTION_VMSALLREVISIONS) || direntry.dir))
+    (!m_vmsAllRevisions || direntry.dir))
   { //Remove version information, only keep the latest file
     int pos=direntry.name.ReverseFind(L';');
     if (pos<=0 || pos>=(direntry.name.GetLength()-1))
@@ -2818,10 +2673,8 @@ BOOL CFtpListResult::parseAsIBMMVSPDS2(const char *line, const int linelen, t_di
 {
   // Use this one only on MVS servers, as it will cause problems on other servers
 
-#ifndef LISTDEBUG
   if (!(m_server.nServerType & (FZ_SERVERTYPE_SUB_FTP_MVS | FZ_SERVERTYPE_SUB_FTP_BS2000)))
     return false;
-#endif
 
   int pos = 0;
   int tokenlen = 0;
