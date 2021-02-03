@@ -11,7 +11,6 @@ class CTransferSocket;
 class CMainThread;
 //---------------------------------------------------------------------------
 class CAsyncProxySocketLayer;
-class CMainThread;
 //---------------------------------------------------------------------------
 #define CSMODE_NONE             0x0000
 #define CSMODE_CONNECT          0x0001
