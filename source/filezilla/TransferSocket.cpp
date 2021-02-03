@@ -50,8 +50,7 @@ CTransferSocket::CTransferSocket(CFtpControlSocket *pOwner, int nMode)
   if (m_nMode & CSMODE_LIST)
   {
     const bool mlst = false;
-    m_pListResult = new CFtpListResult(pOwner->m_CurrentServer, mlst, &pOwner->m_bUTF8);
-    m_pListResult->InitIntern(GetIntern());
+    m_pListResult = m_pOwner->CreateListResult(mlst);
   }
   else
     m_pListResult = 0;

@@ -11,6 +11,7 @@ class CTransferSocket;
 class CMainThread;
 //---------------------------------------------------------------------------
 class CAsyncProxySocketLayer;
+class CFtpListResult;
 //---------------------------------------------------------------------------
 #define CSMODE_NONE             0x0000
 #define CSMODE_CONNECT          0x0001
@@ -98,6 +99,7 @@ public:
   _int64 GetAbleToTransferSize(enum transferDirection direction, bool &beenWaiting, int nBufSize = 0);
 
   t_server GetCurrentServer();
+  CFtpListResult * CreateListResult(bool mlst);
 
 public:
   virtual void OnReceive(int nErrorCode);
