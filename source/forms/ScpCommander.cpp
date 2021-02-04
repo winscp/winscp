@@ -545,6 +545,10 @@ void __fastcall TScpCommanderForm::TerminalChanged(bool Replaced)
           {
             Terminal->ShowExtendedException(&E);
           }
+          else
+          {
+            ALocalDirView->OpenFallbackPath(LocalDirectory);
+          }
         }
       }
     }
