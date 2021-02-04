@@ -270,6 +270,7 @@ type
     function ItemFileName(Item: TListItem): string; override;
     function ItemFileSize(Item: TListItem): Int64; override;
     function ItemFileTime(Item: TListItem; var Precision: TDateTimePrecision): TDateTime; override;
+    procedure OpenFallbackPath(Value: string);
 
     {Thread handling: }
     procedure StartWatchThread;
@@ -966,6 +967,29 @@ begin
     Load(True);
   finally
     PathChanged;
+  end;
+end;
+
+procedure TDirView.OpenFallbackPath(Value: string);
+var
+  APath: string;
+begin
+  while True do
+  begin
+    APath := ExtractFileDir(Value);
+    if (APath = '') or (APath = Value) then
+    begin
+      Break;
+    end
+      else
+    begin
+      try
+        Path := APath;
+        Break;
+      except
+        Value := APath;
+      end;
+    end;
   end;
 end;
 

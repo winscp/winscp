@@ -600,6 +600,10 @@ void TScpCommanderForm::RestoreSessionLocalDirView(TDirView * ALocalDirView, con
       {
         ManagedSession->ShowExtendedException(&E);
       }
+      else
+      {
+        ALocalDirView->OpenFallbackPath(LocalDirectory);
+      }
     }
   }
 }
