@@ -547,7 +547,7 @@ void __fastcall TScpCommanderForm::TerminalChanged(bool Replaced)
           }
           else
           {
-            ALocalDirView->OpenFallbackPath(LocalDirectory);
+            LocalDirView->OpenFallbackPath(LocalDirectory);
           }
         }
       }
