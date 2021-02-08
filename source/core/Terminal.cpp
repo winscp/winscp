@@ -4621,7 +4621,6 @@ bool __fastcall TTerminal::MoveFiles(TStrings * FileList, const UnicodeString Ta
   TMoveFileParams Params;
   Params.Target = Target;
   Params.FileMask = FileMask;
-  DirectoryModified(Target, true);
   bool Result;
   BeginTransaction();
   try
@@ -4632,6 +4631,10 @@ bool __fastcall TTerminal::MoveFiles(TStrings * FileList, const UnicodeString Ta
   {
     if (Active)
     {
+      // Only after the move, as with encryption, the folders can be read and cached before the move
+      // (when determining if the target exists and is encrypted)
+      DirectoryModified(Target, true);
+
       UnicodeString WithTrailing = UnixIncludeTrailingBackslash(CurrentDirectory);
       bool PossiblyMoved = false;
       // check if we was moving current directory.
