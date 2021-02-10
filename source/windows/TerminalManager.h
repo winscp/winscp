@@ -50,7 +50,7 @@ public:
 
   TManagedTerminal * __fastcall NewManagedTerminal(TSessionData * Data);
   TManagedTerminal * __fastcall NewLocalBrowser();
-  TManagedTerminal * __fastcall NewTerminals(TList * DataList);
+  TManagedTerminal * __fastcall NewSessions(TList * DataList);
   virtual void __fastcall FreeTerminal(TTerminal * Terminal);
   void __fastcall Move(TTerminal * Source, TTerminal * Target);
   void __fastcall DisconnectActiveTerminalIfPermanentFreeOtherwise();
@@ -175,7 +175,7 @@ private:
   void __fastcall UpdateTaskbarList();
   void __fastcall AuthenticateFormCancel(TObject * Sender);
   void __fastcall DoSessionListChanged();
-  TManagedTerminal * __fastcall DoNewTerminal(TSessionData * Data);
+  TManagedTerminal * __fastcall DoNewSession(TSessionData * Data);
   static void __fastcall TerminalThreadIdle(void * Data, TObject * Sender);
   void __fastcall SetQueueConfiguration(TTerminalQueue * Queue);
   void __fastcall ApplicationModalBegin(TObject * Sender);

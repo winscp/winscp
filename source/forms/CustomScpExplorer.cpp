@@ -516,7 +516,7 @@ bool __fastcall TCustomScpExplorerForm::CommandLineFromAnotherInstance(
       if (DataList->Count > 0)
       {
         TTerminalManager * Manager = TTerminalManager::Instance();
-        Manager->ActiveSession = Manager->NewTerminals(DataList.get());
+        Manager->ActiveSession = Manager->NewSessions(DataList.get());
       }
     }
     __finally
@@ -4988,14 +4988,14 @@ void __fastcall TCustomScpExplorerForm::DoOpenFolderOrWorkspace(const UnicodeStr
   TTerminalManager * Manager = TTerminalManager::Instance();
   std::unique_ptr<TObjectList> DataList(new TObjectList());
   StoredSessions->GetFolderOrWorkspace(Name, DataList.get());
-  TManagedTerminal * FirstTerminal = Manager->NewTerminals(DataList.get());
-  // FirstTerminal can be null, if some of the
-  if (!ConnectFirstTerminal && (FirstTerminal != NULL))
+  TManagedTerminal * FirstSession = Manager->NewSessions(DataList.get());
+  // FirstSession can be null, if some of the
+  if (!ConnectFirstTerminal && (FirstSession != NULL))
   {
-    FirstTerminal->Disconnected = true;
-    FirstTerminal->DisconnectedTemporarily = true;
+    FirstSession->Disconnected = true;
+    FirstSession->DisconnectedTemporarily = true;
   }
-  Manager->ActiveSession = FirstTerminal;
+  Manager->ActiveSession = FirstSession;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::OpenFolderOrWorkspace(const UnicodeString & Name)

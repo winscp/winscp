@@ -176,31 +176,31 @@ void __fastcall TTerminalManager::SetupTerminal(TTerminal * Terminal)
   Terminal->OnCustomCommand = TerminalCustomCommand;
 }
 //---------------------------------------------------------------------------
-TManagedTerminal * __fastcall TTerminalManager::DoNewTerminal(TSessionData * Data)
+TManagedTerminal * __fastcall TTerminalManager::DoNewSession(TSessionData * Data)
 {
-  TManagedTerminal * Terminal = DebugNotNull(dynamic_cast<TManagedTerminal *>(TTerminalList::NewTerminal(Data)));
+  TManagedTerminal * Session = DebugNotNull(dynamic_cast<TManagedTerminal *>(TTerminalList::NewTerminal(Data)));
   try
   {
-    FQueues->Add(NewQueue(Terminal));
+    FQueues->Add(NewQueue(Session));
     FTerminationMessages->Add(L"");
 
-    SetupTerminal(Terminal);
+    SetupTerminal(Session);
   }
   catch(...)
   {
-    if (Terminal != NULL)
+    if (Session != NULL)
     {
-      FreeTerminal(Terminal);
+      FreeTerminal(Session);
     }
     throw;
   }
 
-  return Terminal;
+  return Session;
 }
 //---------------------------------------------------------------------------
 TTerminal * __fastcall TTerminalManager::NewTerminal(TSessionData * Data)
 {
-  TTerminal * Terminal = DoNewTerminal(Data);
+  TTerminal * Terminal = DoNewSession(Data);
   DoSessionListChanged();
   return Terminal;
 }
@@ -218,13 +218,13 @@ TManagedTerminal * __fastcall TTerminalManager::NewManagedTerminal(TSessionData 
   return DebugNotNull(dynamic_cast<TManagedTerminal *>(NewTerminal(Data)));
 }
 //---------------------------------------------------------------------------
-TManagedTerminal * __fastcall TTerminalManager::NewTerminals(TList * DataList)
+TManagedTerminal * __fastcall TTerminalManager::NewSessions(TList * DataList)
 {
   TManagedTerminal * Result = NULL;
   for (int Index = 0; Index < DataList->Count; Index++)
   {
     TSessionData * Data = reinterpret_cast<TSessionData *>(DataList->Items[Index]);
-    TManagedTerminal * Terminal = DoNewTerminal(Data);
+    TManagedTerminal * Session = DoNewSession(Data);
     // When opening workspace/folder, keep the sessions open, even if they fail to connect.
     // We cannot detect a folder here, so we "guess" it by a session set size.
     // After all, no one will have a folder with a one session only (while a workspace with one session is likely).
@@ -232,10 +232,10 @@ TManagedTerminal * __fastcall TTerminalManager::NewTerminals(TList * DataList)
     // as when opening the session only.
     // Also closing a workspace session will remove the session from the workspace.
     // While closing a folder session won't remove the session from the folder.
-    Terminal->Permanent = Data->IsWorkspace || (DataList->Count > 1);
+    Session->Permanent = Data->IsWorkspace || (DataList->Count > 1);
     if (Index == 0)
     {
-      Result = Terminal;
+      Result = Session;
     }
   }
   DoSessionListChanged();
@@ -1604,7 +1604,7 @@ void __fastcall TTerminalManager::NewSession(
         TAutoNestingCounter UpdatingCounter(FUpdating); // prevent tab flicker
         FreeAll();
       }
-      TManagedTerminal * ANewSession = NewTerminals(DataList.get());
+      TManagedTerminal * ANewSession = NewSessions(DataList.get());
       bool AdHoc = (DataList->Count == 1) && (StoredSessions->FindSame(reinterpret_cast<TSessionData *>(DataList->Items[0])) == NULL);
       bool CanRetry = SessionUrl.IsEmpty() && AdHoc;
       bool ShowLoginWhenNoSession = WinConfiguration->ShowLoginWhenNoSession;

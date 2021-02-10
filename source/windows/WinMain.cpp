@@ -1157,7 +1157,7 @@ int __fastcall Execute()
               bool Browse = false;
               if (DataList->Count > 0)
               {
-                TManagedTerminal * Terminal = TerminalManager->NewTerminals(DataList.get());
+                TManagedTerminal * Session = TerminalManager->NewSessions(DataList.get());
                 UnicodeString BrowseFile;
                 if (Params->FindSwitch(BROWSE_SWITCH, BrowseFile) &&
                     (!BrowseFile.IsEmpty() || !DownloadFile.IsEmpty()))
@@ -1166,21 +1166,21 @@ int __fastcall Execute()
                   {
                     BrowseFile = DownloadFile;
                   }
-                  DebugAssert(Terminal->RemoteExplorerState == NULL);
-                  Terminal->RemoteExplorerState = CreateDirViewStateForFocusedItem(BrowseFile);
-                  DebugAssert(Terminal->LocalExplorerState == NULL);
-                  Terminal->LocalExplorerState = CreateDirViewStateForFocusedItem(BrowseFile);
+                  DebugAssert(Session->RemoteExplorerState == NULL);
+                  Session->RemoteExplorerState = CreateDirViewStateForFocusedItem(BrowseFile);
+                  DebugAssert(Session->LocalExplorerState == NULL);
+                  Session->LocalExplorerState = CreateDirViewStateForFocusedItem(BrowseFile);
                   DownloadFile = UnicodeString();
                   Browse = true;
                 }
                 if (!DownloadFile.IsEmpty())
                 {
-                  Terminal->AutoReadDirectory = false;
-                  DownloadFile = UnixIncludeTrailingBackslash(Terminal->SessionData->RemoteDirectory) + DownloadFile;
-                  Terminal->SessionData->RemoteDirectory = L"";
-                  Terminal->StateData->RemoteDirectory = Terminal->SessionData->RemoteDirectory;
+                  Session->AutoReadDirectory = false;
+                  DownloadFile = UnixIncludeTrailingBackslash(Session->SessionData->RemoteDirectory) + DownloadFile;
+                  Session->SessionData->RemoteDirectory = L"";
+                  Session->StateData->RemoteDirectory = Session->SessionData->RemoteDirectory;
                 }
-                TerminalManager->ActiveSession = Terminal;
+                TerminalManager->ActiveSession = Session;
                 CanStart = (TerminalManager->Count > 0);
               }
               else
