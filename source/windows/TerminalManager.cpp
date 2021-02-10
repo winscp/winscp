@@ -1604,7 +1604,7 @@ void __fastcall TTerminalManager::NewSession(
         TAutoNestingCounter UpdatingCounter(FUpdating); // prevent tab flicker
         FreeAll();
       }
-      TManagedTerminal * ANewTerminal = NewTerminals(DataList.get());
+      TManagedTerminal * ANewSession = NewTerminals(DataList.get());
       bool AdHoc = (DataList->Count == 1) && (StoredSessions->FindSame(reinterpret_cast<TSessionData *>(DataList->Items[0])) == NULL);
       bool CanRetry = SessionUrl.IsEmpty() && AdHoc;
       bool ShowLoginWhenNoSession = WinConfiguration->ShowLoginWhenNoSession;
@@ -1615,7 +1615,7 @@ void __fastcall TTerminalManager::NewSession(
       }
       try
       {
-        ActiveSession = ANewTerminal;
+        ActiveSession = ANewSession;
       }
       __finally
       {
@@ -1624,7 +1624,7 @@ void __fastcall TTerminalManager::NewSession(
           WinConfiguration->ShowLoginWhenNoSession = ShowLoginWhenNoSession;
         }
       }
-      Retry = CanRetry && (ActiveTerminal != ANewTerminal);
+      Retry = CanRetry && (ActiveSession != ANewSession);
     }
   }
   while (Retry);
