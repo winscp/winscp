@@ -647,6 +647,8 @@
 #define RIGHT_MENU_CAPTION      6037
 #define COPY_LOCAL_COPY_CAPTION 6038
 #define COPY_LOCAL_MOVE_CAPTION 6039
+#define LOGIN_OPEN              6040
+#define LOGIN_LOGIN             6041
 
 // 2xxx is reserved for TextsFileZilla.h
 

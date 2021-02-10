@@ -313,6 +313,7 @@ private:
   bool FLoading;
   bool FSortEnablePending;
   std::unique_ptr<TImageList> FButtonImageList;
+  std::map<int, int> FButtonImagesMap;
   TIncrementalSearch FSiteSearch;
   TForm * FLinkedForm;
   TPoint FPrevPos;
@@ -399,12 +400,14 @@ private:
   void __fastcall ParseHostName();
   void __fastcall ResetNewSiteData();
   TModalResult __fastcall DefaultResult();
-  int __fastcall AddLoginButtonImage(bool Enabled);
+  int AddLoginButtonImage(int Index, bool Enabled);
   void __fastcall WMWindowPosChanged(TWMWindowPosChanged & Message);
   void __fastcall CMDpiChanged(TMessage & Message);
   void __fastcall GenerateImages();
   void __fastcall CMVisibleChanged(TMessage & Message);
   void UpdateS3Credentials();
+  void UpdateLoginButton();
+  void FloodFill(TBitmap * Bitmap, int X, int Y);
 
 protected:
   void __fastcall Default();

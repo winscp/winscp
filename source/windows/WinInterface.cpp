@@ -1264,7 +1264,17 @@ void __fastcall CenterButtonImage(TButton * Button)
 
     std::unique_ptr<TCanvas> Canvas(CreateControlCanvas(Button));
 
-    UnicodeString Caption = Button->Caption.Trim();
+    UnicodeString Caption;
+    // Centering unlinks the caption from the action
+    TAction * Action = dynamic_cast<TAction *>(Button->Action);
+    if (Action != NULL)
+    {
+      Caption = Action->Caption;
+    }
+    else
+    {
+      Caption = Button->Caption.Trim();
+    }
     UnicodeString Padding;
     while (Canvas->TextWidth(Padding) < ImageWidth)
     {

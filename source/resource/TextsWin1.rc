@@ -652,6 +652,8 @@ BEGIN
         RIGHT_MENU_CAPTION, "&Right"
         COPY_LOCAL_COPY_CAPTION, "Copy"
         COPY_LOCAL_MOVE_CAPTION, "Move"
+        LOGIN_OPEN, "Open"
+        LOGIN_LOGIN, "Login"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000–2021 Martin Prikryl"

@@ -28,11 +28,15 @@
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 const int SiteImageIndex = 1;
-const int OpenFolderImageIndex = 2;
+const int OpenedFolderImageIndex = 2;
 const int ClosedFolderImageIndex = 3;
 const int WorkspaceImageIndex = 4;
 const int NewSiteImageIndex = 6;
 const int SiteColorMaskImageIndex = 8;
+//---------------------------------------------------------------------------
+const int LoginImageIndex = 0;
+const int OpenWorkspaceImageIndex = 5;
+const int OpenFolderImageIndex = 6;
 //---------------------------------------------------------------------------
 bool __fastcall DoLoginDialog(TList * DataList, TForm * LinkedForm)
 {
@@ -145,7 +149,6 @@ void __fastcall TLoginDialog::InitControls()
   MenuButton(ManageButton);
 
   FixButtonImage(LoginButton);
-  CenterButtonImage(LoginButton);
 
   SelectScaledImageList(SessionImageList);
   SelectScaledImageList(ActionImageList);
@@ -158,6 +161,23 @@ void __fastcall TLoginDialog::InitControls()
   }
 }
 //---------------------------------------------------------------------
+void TLoginDialog::UpdateLoginButton()
+{
+  TAction * Action = DebugNotNull(dynamic_cast<TAction *>(LoginButton->Action));
+  int ImageIndex = Action->ImageIndex;
+  if (FButtonImagesMap.find(ImageIndex) == FButtonImagesMap.end())
+  {
+    int LoginIndex = AddLoginButtonImage(ImageIndex, true);
+    FButtonImagesMap.insert(std::make_pair(ImageIndex, LoginIndex));
+    AddLoginButtonImage(ImageIndex, false);
+  }
+
+  LoginButton->ImageIndex = FButtonImagesMap[ImageIndex];
+  LoginButton->DisabledImageIndex = FButtonImagesMap[ImageIndex] + 1;
+
+  CenterButtonImage(LoginButton);
+}
+//---------------------------------------------------------------------
 void __fastcall TLoginDialog::GenerateImages()
 {
   // Generate button images.
@@ -166,9 +186,8 @@ void __fastcall TLoginDialog::GenerateImages()
   FButtonImageList.reset(new TImageList(this));
   FButtonImageList->SetSize(ActionImageList->Width, ActionImageList->Height);
   LoginButton->Images = FButtonImageList.get();
-
-  LoginButton->ImageIndex = AddLoginButtonImage(true);
-  LoginButton->DisabledImageIndex = AddLoginButtonImage(false);
+  FButtonImagesMap.clear();
+  UpdateLoginButton();
 
   SessionImageList->BeginUpdate();
   try
@@ -185,25 +204,32 @@ void __fastcall TLoginDialog::GenerateImages()
   }
 }
 //---------------------------------------------------------------------
-int __fastcall TLoginDialog::AddLoginButtonImage(bool Enabled)
+void TLoginDialog::FloodFill(TBitmap * Bitmap, int X, int Y)
+{
+  // A background is white, but there's also white used on the image itself.
+  // So we first replace the background white with a unique color,
+  // setting it as a transparent later.
+  // This is obviously a hack specific to this particular image.
+  // 16x16 version does not have any background
+  if (Bitmap->Canvas->Pixels[X][Y] == clWhite)
+  {
+    Bitmap->Canvas->FloodFill(X, Y, clWhite, fsSurface);
+  }
+}
+//---------------------------------------------------------------------
+int TLoginDialog::AddLoginButtonImage(int Index, bool Enabled)
 {
   std::unique_ptr<TBitmap> Bitmap(new TBitmap());
   Bitmap->SetSize(ActionImageList->Width, ActionImageList->Height);
 
-  ActionImageList->Draw(Bitmap->Canvas, 0, 0, LoginAction->ImageIndex, Enabled);
+  ActionImageList->Draw(Bitmap->Canvas, 0, 0, Index, Enabled);
 
   const TColor TransparentColor = clFuchsia;
 
-  // 16x16 version does not have any background
-  if (Bitmap->Canvas->Pixels[0][0] == clWhite)
-  {
-    // A background is white, but there's also white used on the image itself.
-    // So we first replace the background white with a unique color,
-    // setting it as a transparent later.
-    // This is obviously a hack specific to this particular image.
-    Bitmap->Canvas->Brush->Color = TransparentColor;
-    Bitmap->Canvas->FloodFill(0, 0, Bitmap->Canvas->Pixels[0][0], fsSurface);
-  }
+  Bitmap->Canvas->Brush->Color = TransparentColor;
+  FloodFill(Bitmap.get(), 0, 0);
+  FloodFill(Bitmap.get(), Bitmap->Width - 1, Bitmap->Height - 1);
+  FloodFill(Bitmap.get(), Bitmap->Width - 1, 0);
 
   return FButtonImageList->AddMasked(Bitmap.get(), TransparentColor);
 }
@@ -426,8 +452,8 @@ void __fastcall TLoginDialog::LoadSessions()
 void __fastcall TLoginDialog::UpdateFolderNode(TTreeNode * Node)
 {
   DebugAssert((Node->ImageIndex == 0) ||
-    (Node->ImageIndex == OpenFolderImageIndex) || (Node->ImageIndex == ClosedFolderImageIndex));
-  SetNodeImage(Node, (Node->Expanded ? OpenFolderImageIndex : ClosedFolderImageIndex));
+    (Node->ImageIndex == OpenedFolderImageIndex) || (Node->ImageIndex == ClosedFolderImageIndex));
+  SetNodeImage(Node, (Node->Expanded ? OpenedFolderImageIndex : ClosedFolderImageIndex));
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::NewSite()
@@ -1163,6 +1189,7 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   bool NewSiteSelected = IsNewSiteNode(SessionTree->Selected);
   bool SiteSelected = IsSiteNode(SessionTree->Selected);
   bool FolderOrWorkspaceSelected = IsFolderOrWorkspaceNode(SessionTree->Selected);
+  bool WorkspaceSelected = IsWorkspaceNode(SessionTree->Selected);
 
   TAction * Action = DebugNotNull(dynamic_cast<TAction *>(BasicAction));
   bool PrevEnabled = Action->Enabled;
@@ -1202,6 +1229,9 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   else if (Action == LoginAction)
   {
     LoginAction->Enabled = CanOpen();
+    LoginAction->Caption = FolderOrWorkspaceSelected ? LoadStr(LOGIN_OPEN) : LoadStr(LOGIN_LOGIN);
+    LoginAction->ImageIndex = FolderOrWorkspaceSelected ? (WorkspaceSelected ? OpenWorkspaceImageIndex : OpenFolderImageIndex) : LoginImageIndex;
+    UpdateLoginButton();
   }
   else if (Action == PuttyAction)
   {
