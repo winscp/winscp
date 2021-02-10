@@ -8782,7 +8782,7 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
   {
     TTerminalManager::Instance()->UpdateAppTitle();
   }
-  // WORAKRDOUND: Disabling list view when it is not showing yet does not set its
+  // WORKAROUND: Disabling list view when it is not showing yet does not set its
   // background to gray on Windows 7 (works on Windows 10).
   // See also EnableControl
   if (Showing)
