@@ -1285,7 +1285,7 @@ void __fastcall CenterButtonImage(TButton * Button)
     // so we have to set it to a double of desired padding.
     // The original formula is - 2 * ((CaptionWidth / 2) - (ImageWidth / 2) + ScaleByTextHeight(Button, 2))
     // the one below is equivalent, but with reduced rouding.
-    // Without the change, the rouding caused the space between icon and caption too
+    // Without the change, the rounding caused the space between icon and caption too
     // small on 200% zoom.
     // Note that (CaptionWidth / 2) - (ImageWidth / 2)
     // is approximatelly same as half of caption width before padding.
