@@ -4071,16 +4071,17 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
   bool NoConfirmation, bool Move)
 {
   DebugAssert(Terminal != NULL);
+  DebugAssert(Terminal == TTerminalManager::Instance()->ActiveTerminal);
   DebugAssert(!IsLocalBrowserMode());
   // update Terminal->StateData->RemoteDirectory
   UpdateSession(Terminal);
 
   if (Session == NULL)
   {
-    Session = TTerminalManager::Instance()->ActiveTerminal;
+    Session = Terminal;
   }
 
-  if (Session == TTerminalManager::Instance()->ActiveTerminal)
+  if (Session == Terminal)
   {
     if (RemoteDriveView->DropTarget != NULL)
     {
@@ -4128,9 +4129,9 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
       {
         for (int Index = 0; Index < Sessions->Count; Index++)
         {
-          TManagedTerminal * Terminal =
+          TManagedTerminal * ATerminal =
             dynamic_cast<TManagedTerminal *>(Sessions->Objects[Index]);
-          Directories->Add(Terminal->StateData->RemoteDirectory);
+          Directories->Add(ATerminal->StateData->RemoteDirectory);
         }
 
         TDirectRemoteCopy AllowDirectCopy;
@@ -4151,7 +4152,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
         }
         void * ASession = Session;
         Result = DoRemoteCopyDialog(Sessions, Directories, AllowDirectCopy,
-          Multi, ASession, Target, FileMask, DirectCopy, TTerminalManager::Instance()->ActiveTerminal);
+          Multi, ASession, Target, FileMask, DirectCopy, Terminal);
         Session = static_cast<TManagedTerminal *>(ASession);
       }
       __finally
