@@ -10009,7 +10009,7 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlMouseDown(
   {
     if (Button == mbLeft)
     {
-      // "Mouse down" is raised only after tab is switched.
+      // WORKAROUND: "Mouse down" is raised only after tab is switched.
       // If switching tab (switching session) takes long enough for user
       // to actually release the button, "mouse down" is still raised,
       // but we do not get "mouse up" event, so dragging is not cancelled,
