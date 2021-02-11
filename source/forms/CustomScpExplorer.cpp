@@ -4845,7 +4845,7 @@ void __fastcall TCustomScpExplorerForm::DuplicateSession()
     ATerminal->Disconnected = Terminal->Disconnected;
     // Not sure about these two
     ATerminal->Permanent = Terminal->Permanent;
-    ATerminal->DisconnectedTemporarily = Terminal->DisconnectedTemporarily; // maybe
+    ATerminal->DisconnectedTemporarily = Terminal->DisconnectedTemporarily;
     Manager->ActiveTerminal = ATerminal;
   }
 }
