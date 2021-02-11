@@ -8535,10 +8535,10 @@ void __fastcall TCustomScpExplorerForm::PasteFromClipBoard()
     {
       DebugAssert(!IsLocalBrowserMode());
       TTerminalManager * Manager = TTerminalManager::Instance();
-      TTerminal * TergetTerminal = Manager->ActiveTerminal;
+      TTerminal * TargetTerminal = Manager->ActiveTerminal;
       Manager->ActiveSession = FClipboardTerminal;
 
-      ExecuteFileOperation(foRemoteCopy, osRemote, FClipboardFileList.get(), false, TergetTerminal);
+      ExecuteFileOperation(foRemoteCopy, osRemote, FClipboardFileList.get(), false, TargetTerminal);
     }
   }
   else if (CanPasteToDirViewFromClipBoard())
