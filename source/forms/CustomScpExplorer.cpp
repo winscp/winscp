@@ -4130,7 +4130,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
       for (int Index = 0; Index < SessionList->Count; Index++)
       {
         TManagedTerminal * ASession = DebugNotNull(dynamic_cast<TManagedTerminal *>(SessionList->Objects[Index]));
-        if (!ASession->LocalBrowser)
+        if (IsActiveTerminal(ASession) && DebugAlwaysTrue(!ASession->LocalBrowser))
         {
           Sessions->AddObject(SessionList->Strings[Index], ASession);
           Directories->Add(ASession->StateData->RemoteDirectory);
@@ -7802,9 +7802,9 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDTargetDrop()
     {
       TPoint Point = SessionsPageControl->ScreenToClient(Mouse->CursorPos);
       int Index = SessionsPageControl->IndexOfTabAt(Point.X, Point.Y);
-      // do not allow dropping on local-local and the "+" tab (see also SessionsDDProcessDropped)
+      // do not allow dropping on local-local, disconnected and the "+" tab (see also SessionsDDProcessDropped)
       TargetTerminal = GetSessionTabSession(SessionsPageControl->Pages[Index]);
-      if ((TargetTerminal != NULL) && !TargetTerminal->LocalBrowser)
+      if (IsActiveTerminal(TargetTerminal) && DebugAlwaysTrue(!TargetTerminal->LocalBrowser))
       {
         if ((FLastDropEffect == DROPEFFECT_MOVE) &&
             (TargetTerminal == TTerminalManager::Instance()->ActiveTerminal))
@@ -10087,8 +10087,8 @@ void __fastcall TCustomScpExplorerForm::SessionsDDDragOver(
   else
   {
     TManagedTerminal * TargetSession = GetSessionTabSession(SessionsPageControl->Pages[Index]);
-    // do not allow dropping on the "+" tab or on local-local tabs
-    if ((TargetSession == NULL) || TargetSession->LocalBrowser)
+    // do not allow dropping on the "+" tab or on disconnected or local-local tabs
+    if (!IsActiveTerminal(TargetSession) || DebugAlwaysFalse(TargetSession->LocalBrowser))
     {
       Effect = DROPEFFECT_NONE;
     }
@@ -10103,10 +10103,10 @@ void __fastcall TCustomScpExplorerForm::SessionsDDProcessDropped(
   TObject * /*Sender*/, int /*KeyState*/, const TPoint & Point, int Effect)
 {
   int Index = SessionsPageControl->IndexOfTabAt(Point.X, Point.Y);
-  // do not allow dropping on local-local and the "+" tab
+  // do not allow dropping on local-local, disconnected and the "+" tab
   // (though we do not seem to get here in that case anyway, contrary to RemoteFileControlDDTargetDrop)
   TManagedTerminal * TargetTerminal = GetSessionTabSession(SessionsPageControl->Pages[Index]);
-  if (DebugAlwaysTrue((TargetTerminal != NULL) && !TargetTerminal->LocalBrowser))
+  if (DebugAlwaysTrue(IsActiveTerminal(TargetTerminal) && !TargetTerminal->LocalBrowser))
   {
     DebugAssert(!IsFileControl(DropSourceControl, osRemote));
     if (!IsFileControl(DropSourceControl, osRemote))
