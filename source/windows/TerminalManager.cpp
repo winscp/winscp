@@ -658,6 +658,17 @@ void __fastcall TTerminalManager::FreeTerminal(TTerminal * Terminal)
   }
 }
 //---------------------------------------------------------------------------
+void TTerminalManager::UpdateScpExplorer(TManagedTerminal * Session, TTerminalQueue * Queue)
+{
+  FScpExplorer->ManagedSession = Session;
+  FScpExplorer->Queue = Queue;
+}
+//---------------------------------------------------------------------------
+void TTerminalManager::UpdateScpExplorer()
+{
+  UpdateScpExplorer(ActiveSession, ActiveQueue);
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::SetScpExplorer(TCustomScpExplorerForm * value)
 {
   if (ScpExplorer != value)
@@ -667,8 +678,7 @@ void __fastcall TTerminalManager::SetScpExplorer(TCustomScpExplorerForm * value)
     FScpExplorer = value;
     if (FScpExplorer)
     {
-      FScpExplorer->ManagedSession = ActiveTerminal;
-      FScpExplorer->Queue = ActiveQueue;
+      UpdateScpExplorer();
       UpdateTaskbarList();
     }
   }
@@ -716,8 +726,7 @@ void __fastcall TTerminalManager::DoSetActiveSession(TManagedTerminal * value, b
       }
       else
       {
-        ScpExplorer->ManagedSession = NULL;
-        ScpExplorer->Queue = NULL;
+        UpdateScpExplorer(NULL, NULL);
       }
     }
     UpdateAppTitle();
@@ -739,7 +748,9 @@ void __fastcall TTerminalManager::DoSetActiveSession(TManagedTerminal * value, b
     if (ActiveSession != NULL)
     {
       int Index = ActiveSessionIndex;
-      if (!ActiveSession->Active && !FTerminationMessages->Strings[Index].IsEmpty())
+      if (!ActiveSession->Active &&
+          !FTerminationMessages->Strings[Index].IsEmpty() &&
+          DebugAlwaysTrue(!ActiveSession->LocalBrowser))
       {
         UnicodeString Message = FTerminationMessages->Strings[Index];
         FTerminationMessages->Strings[Index] = L"";
@@ -1405,8 +1416,7 @@ void __fastcall TTerminalManager::ConfigurationChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::SessionReady()
 {
-  ScpExplorer->ManagedSession = ActiveSession;
-  ScpExplorer->Queue = ActiveQueue;
+  UpdateScpExplorer();
   ScpExplorer->SessionReady();
 }
 //---------------------------------------------------------------------------

@@ -4123,42 +4123,40 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
     }
     else
     {
-      TStrings * Sessions = TTerminalManager::Instance()->SessionList;
-      TStrings * Directories = new TStringList;
-      try
-      {
-        for (int Index = 0; Index < Sessions->Count; Index++)
-        {
-          TManagedTerminal * ATerminal =
-            dynamic_cast<TManagedTerminal *>(Sessions->Objects[Index]);
-          Directories->Add(ATerminal->StateData->RemoteDirectory);
-        }
+      std::unique_ptr<TStrings> Sessions(new TStringList);
+      std::unique_ptr<TStrings> Directories(new TStringList);
 
-        TDirectRemoteCopy AllowDirectCopy;
-        if (Terminal->IsCapable[fcRemoteCopy] || Terminal->CommandSessionOpened)
-        {
-          DebugAssert(DirectCopy);
-          AllowDirectCopy = drcAllow;
-        }
-        else if (Terminal->IsCapable[fcSecondaryShell])
-        {
-          DebugAssert(DirectCopy);
-          AllowDirectCopy = drcConfirmCommandSession;
-        }
-        else
-        {
-          DebugAssert(!DirectCopy);
-          AllowDirectCopy = drcDisallow;
-        }
-        void * ASession = Session;
-        Result = DoRemoteCopyDialog(Sessions, Directories, AllowDirectCopy,
-          Multi, ASession, Target, FileMask, DirectCopy, Terminal);
-        Session = static_cast<TManagedTerminal *>(ASession);
-      }
-      __finally
+      TStrings * SessionList = TTerminalManager::Instance()->SessionList;
+      for (int Index = 0; Index < SessionList->Count; Index++)
       {
-        delete Directories;
+        TManagedTerminal * ASession = DebugNotNull(dynamic_cast<TManagedTerminal *>(SessionList->Objects[Index]));
+        if (!ASession->LocalBrowser)
+        {
+          Sessions->AddObject(SessionList->Strings[Index], ASession);
+          Directories->Add(ASession->StateData->RemoteDirectory);
+        }
       }
+
+      TDirectRemoteCopy AllowDirectCopy;
+      if (Terminal->IsCapable[fcRemoteCopy] || Terminal->CommandSessionOpened)
+      {
+        DebugAssert(DirectCopy);
+        AllowDirectCopy = drcAllow;
+      }
+      else if (Terminal->IsCapable[fcSecondaryShell])
+      {
+        DebugAssert(DirectCopy);
+        AllowDirectCopy = drcConfirmCommandSession;
+      }
+      else
+      {
+        DebugAssert(!DirectCopy);
+        AllowDirectCopy = drcDisallow;
+      }
+      void * ASession = Session;
+      Result = DoRemoteCopyDialog(
+        Sessions.get(), Directories.get(), AllowDirectCopy, Multi, ASession, Target, FileMask, DirectCopy, Terminal);
+      Session = static_cast<TManagedTerminal *>(ASession);
     }
   }
   return Result;
@@ -4877,6 +4875,7 @@ UnicodeString __fastcall TCustomScpExplorerForm::CreateHiddenDuplicateSession()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DuplicateSession()
 {
+  DebugAssert(!IsLocalBrowserMode());
   if (OpenInNewWindow())
   {
     ExecuteNewInstance(CreateHiddenDuplicateSession());
@@ -7183,7 +7182,8 @@ void __fastcall TCustomScpExplorerForm::DoShow()
   // This was previously in NeedSession, where other related code is.
   // But that is called from CMShowingChanged, when the window is already visible and the local-local window state
   // unpleasanly shows briefly.
-  if (!WinConfiguration->ShowLoginWhenNoSession &&
+  if ((ManagedSession == NULL) &&
+      !WinConfiguration->ShowLoginWhenNoSession &&
       WinConfiguration->AutoSaveWorkspace && !WinConfiguration->AutoWorkspace.IsEmpty() &&
       // This detects if workspace was saved the last time the main widow was closed
       SameText(WinConfiguration->LastStoredSession, WinConfiguration->AutoWorkspace))
@@ -7796,15 +7796,15 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDTargetDrop()
   if (IsFileControl(FDDTargetControl, osRemote) ||
       (FDDTargetControl == SessionsPageControl))
   {
-    TTerminal * TargetTerminal = NULL;
+    TManagedTerminal * TargetTerminal = NULL;
     TFileOperation Operation = foNone;
     if (FDDTargetControl == SessionsPageControl)
     {
       TPoint Point = SessionsPageControl->ScreenToClient(Mouse->CursorPos);
       int Index = SessionsPageControl->IndexOfTabAt(Point.X, Point.Y);
-      // do not allow dropping on the "+" tab
+      // do not allow dropping on local-local and the "+" tab (see also SessionsDDProcessDropped)
       TargetTerminal = GetSessionTabSession(SessionsPageControl->Pages[Index]);
-      if (TargetTerminal != NULL)
+      if ((TargetTerminal != NULL) && !TargetTerminal->LocalBrowser)
       {
         if ((FLastDropEffect == DROPEFFECT_MOVE) &&
             (TargetTerminal == TTerminalManager::Instance()->ActiveTerminal))
@@ -8529,6 +8529,7 @@ bool __fastcall TCustomScpExplorerForm::CanPasteFromClipBoard()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::PasteFromClipBoard()
 {
+  // Pasting to any local panel is handled in TScpCommanderForm::PasteFromClipBoard()
   if (DoesClipboardContainOurFiles())
   {
     if (DebugAlwaysTrue(CanPasteToDirViewFromClipBoard()))
@@ -8791,7 +8792,8 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
     if (ManagedSession != NULL)
     {
       // Update path when it changes
-      if ((SessionsPageControl->ActivePage != NULL) && (GetSessionTabSession(SessionsPageControl->ActivePage) == ManagedSession))
+      if ((SessionsPageControl->ActivePage != NULL) &&
+          (GetSessionTabSession(SessionsPageControl->ActivePage) == ManagedSession))
       {
         UpdateSessionTab(SessionsPageControl->ActivePage);
       }
@@ -10032,9 +10034,9 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlMouseDown(
     }
     else if (Button == mbMiddle)
     {
-      // ignore middle-click for "New session tab"
-      TTerminal * Terminal = GetSessionTabSession(SessionsPageControl->Pages[Index]);
-      if (Terminal != NULL)
+      // ignore middle-click for "New session tab" and the last local-local tab
+      TManagedTerminal * Session = GetSessionTabSession(SessionsPageControl->Pages[Index]);
+      if ((Session != NULL) && CanCloseSession(Session))
       {
         CloseSessionTab(Index);
       }
@@ -10101,9 +10103,10 @@ void __fastcall TCustomScpExplorerForm::SessionsDDProcessDropped(
   TObject * /*Sender*/, int /*KeyState*/, const TPoint & Point, int Effect)
 {
   int Index = SessionsPageControl->IndexOfTabAt(Point.X, Point.Y);
-  // do not allow dropping on the "+" tab
+  // do not allow dropping on local-local and the "+" tab
+  // (though we do not seem to get here in that case anyway, contrary to RemoteFileControlDDTargetDrop)
   TManagedTerminal * TargetTerminal = GetSessionTabSession(SessionsPageControl->Pages[Index]);
-  if (TargetTerminal != NULL)
+  if (DebugAlwaysTrue((TargetTerminal != NULL) && !TargetTerminal->LocalBrowser))
   {
     DebugAssert(!IsFileControl(DropSourceControl, osRemote));
     if (!IsFileControl(DropSourceControl, osRemote))

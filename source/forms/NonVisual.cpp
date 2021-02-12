@@ -1536,17 +1536,17 @@ void __fastcall TNonVisualDataModule::CreateOpenedSessionListMenu(TAction * Acti
   TTBCustomItem * OpenedSessionsMenu = dynamic_cast<TTBCustomItem *>(Action->ActionComponent);
   DebugAssert(OpenedSessionsMenu != NULL);
   TTerminalManager * Manager = TTerminalManager::Instance();
-  TStrings * TerminalList = Manager->SessionList;
+  TStrings * SessionList = Manager->SessionList;
   int PrevCount = OpenedSessionsMenu->Count;
-  for (int Index = 0; Index < TerminalList->Count; Index++)
+  for (int Index = 0; Index < SessionList->Count; Index++)
   {
-    TTerminal * Terminal = dynamic_cast<TTerminal *>(TerminalList->Objects[Index]);
-    DebugAssert(Terminal);
+    TManagedTerminal * Session = dynamic_cast<TManagedTerminal *>(SessionList->Objects[Index]);
+    DebugAssert(Session != NULL);
     TTBCustomItem * Item = new TTBXItem(OpenedSessionsMenu);
-    Item->Caption = TerminalList->Strings[Index];
-    Item->Tag = int(Terminal);
+    Item->Caption = SessionList->Strings[Index];
+    Item->Tag = int(Session);
     Item->Hint = FMTLOAD(OPENED_TAB_HINT, (Item->Caption));
-    Item->Checked = (Manager->ActiveTerminal == Terminal);
+    Item->Checked = (Manager->ActiveSession == Session);
     Item->ShortCut = OpenSessionShortCut(Index);
     Item->OnClick = OpenedSessionItemClick;
     Item->RadioItem = true;

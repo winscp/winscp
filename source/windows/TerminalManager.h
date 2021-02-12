@@ -126,6 +126,8 @@ private:
   bool __fastcall ConnectActiveTerminal();
   TTerminalQueue * __fastcall NewQueue(TTerminal * Terminal);
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
+  void UpdateScpExplorer();
+  void UpdateScpExplorer(TManagedTerminal * Session, TTerminalQueue * Queue);
   void __fastcall DoSetActiveSession(TManagedTerminal * value, bool AutoReconnect, bool LastTerminalClosed);
   void __fastcall SetActiveSession(TManagedTerminal * value);
   TManagedTerminal * GetActiveTerminal();
