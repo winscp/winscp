@@ -4086,42 +4086,40 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
     }
     else
     {
-      TStrings * Sessions = TTerminalManager::Instance()->TerminalList;
-      TStrings * Directories = new TStringList;
-      try
-      {
-        for (int Index = 0; Index < Sessions->Count; Index++)
-        {
-          TManagedTerminal * Terminal =
-            dynamic_cast<TManagedTerminal *>(Sessions->Objects[Index]);
-          Directories->Add(Terminal->StateData->RemoteDirectory);
-        }
+      std::unique_ptr<TStrings> Sessions(new TStringList);
+      std::unique_ptr<TStrings> Directories(new TStringList);
 
-        TDirectRemoteCopy AllowDirectCopy;
-        if (FTerminal->IsCapable[fcRemoteCopy] || FTerminal->CommandSessionOpened)
-        {
-          DebugAssert(DirectCopy);
-          AllowDirectCopy = drcAllow;
-        }
-        else if (FTerminal->IsCapable[fcSecondaryShell])
-        {
-          DebugAssert(DirectCopy);
-          AllowDirectCopy = drcConfirmCommandSession;
-        }
-        else
-        {
-          DebugAssert(!DirectCopy);
-          AllowDirectCopy = drcDisallow;
-        }
-        void * ASession = Session;
-        Result = DoRemoteCopyDialog(Sessions, Directories, AllowDirectCopy,
-          Multi, ASession, Target, FileMask, DirectCopy, TTerminalManager::Instance()->ActiveTerminal);
-        Session = static_cast<TManagedTerminal *>(ASession);
-      }
-      __finally
+      TStrings * SessionList = TTerminalManager::Instance()->TerminalList;
+      for (int Index = 0; Index < SessionList->Count; Index++)
       {
-        delete Directories;
+        TManagedTerminal * ASession = DebugNotNull(dynamic_cast<TManagedTerminal *>(SessionList->Objects[Index]));
+        if (IsActiveTerminal(ASession))
+        {
+          Sessions->AddObject(SessionList->Strings[Index], ASession);
+          Directories->Add(ASession->StateData->RemoteDirectory);
+        }
       }
+
+      TDirectRemoteCopy AllowDirectCopy;
+      if (FTerminal->IsCapable[fcRemoteCopy] || FTerminal->CommandSessionOpened)
+      {
+        DebugAssert(DirectCopy);
+        AllowDirectCopy = drcAllow;
+      }
+      else if (FTerminal->IsCapable[fcSecondaryShell])
+      {
+        DebugAssert(DirectCopy);
+        AllowDirectCopy = drcConfirmCommandSession;
+      }
+      else
+      {
+        DebugAssert(!DirectCopy);
+        AllowDirectCopy = drcDisallow;
+      }
+      void * ASession = Session;
+      Result = DoRemoteCopyDialog(
+        Sessions.get(), Directories.get(), AllowDirectCopy, Multi, ASession, Target, FileMask, DirectCopy, TTerminalManager::Instance()->ActiveTerminal);
+      Session = static_cast<TManagedTerminal *>(ASession);
     }
   }
   return Result;
@@ -7669,9 +7667,9 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDTargetDrop()
     {
       TPoint Point = SessionsPageControl->ScreenToClient(Mouse->CursorPos);
       int Index = SessionsPageControl->IndexOfTabAt(Point.X, Point.Y);
-      // do not allow dropping on the "+" tab
+      // do not allow dropping on the "+" and disconnected tabs
       TargetTerminal = GetSessionTabTerminal(SessionsPageControl->Pages[Index]);
-      if (TargetTerminal != NULL)
+      if (IsActiveTerminal(TargetTerminal))
       {
         if ((FLastDropEffect == DROPEFFECT_MOVE) &&
             (TargetTerminal == TTerminalManager::Instance()->ActiveTerminal))
@@ -9951,8 +9949,8 @@ void __fastcall TCustomScpExplorerForm::SessionsDDDragOver(
   else
   {
     TTerminal * TargetTerminal = GetSessionTabTerminal(SessionsPageControl->Pages[Index]);
-    // do not allow dropping on the "+" tab
-    if (TargetTerminal == NULL)
+    // do not allow dropping on the "+" and disconnected tabs
+    if (!IsActiveTerminal(TargetTerminal))
     {
       Effect = DROPEFFECT_NONE;
     }
@@ -9967,9 +9965,9 @@ void __fastcall TCustomScpExplorerForm::SessionsDDProcessDropped(
   TObject * /*Sender*/, int /*KeyState*/, const TPoint & Point, int Effect)
 {
   int Index = SessionsPageControl->IndexOfTabAt(Point.X, Point.Y);
-  // do not allow dropping on the "+" tab
+  // do not allow dropping on the "+" and disconnected tabs
   TManagedTerminal * TargetTerminal = GetSessionTabTerminal(SessionsPageControl->Pages[Index]);
-  if (TargetTerminal != NULL)
+  if (IsActiveTerminal(TargetTerminal))
   {
     DebugAssert(!IsFileControl(DropSourceControl, osRemote));
     if (!IsFileControl(DropSourceControl, osRemote))
