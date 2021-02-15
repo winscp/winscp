@@ -745,9 +745,10 @@ UnicodeString __fastcall TCustomScpExplorerForm::GetQueueProgressTitle()
 void __fastcall TCustomScpExplorerForm::UpdateQueueView()
 {
   ComponentVisible[fcQueueView] =
-    (WinConfiguration->QueueView.Show == qvShow) ||
-    ((WinConfiguration->QueueView.Show == qvHideWhenEmpty) &&
-     (FQueueStatus != NULL) && (FQueueStatus->Count > 0));
+    !IsLocalBrowserMode() &&
+    ((WinConfiguration->QueueView.Show == qvShow) ||
+     ((WinConfiguration->QueueView.Show == qvHideWhenEmpty) &&
+      (FQueueStatus != NULL) && (FQueueStatus->Count > 0)));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::QueueChanged()

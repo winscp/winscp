@@ -482,9 +482,11 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     QueueItemSpeedAction->Text = SetSpeedLimit(reinterpret_cast<unsigned long>(AuxVoidPtr)),
     QueueItemSpeedAction->Text = L"")
   UPDACT(QueueToggleShowAction,
-    Action->Checked = ScpExplorer->ComponentVisible[fcQueueView])
+    Action->Checked = ScpExplorer->ComponentVisible[fcQueueView];
+    Action->Enabled = !ScpExplorer->IsLocalBrowserMode())
   #define QUEUEACTION(SHOW) UPDACT(Queue ## SHOW ## Action, \
-    Action->Checked = WinConfiguration->QueueView.Show == qv ## SHOW)
+    Action->Checked = WinConfiguration->QueueView.Show == qv ## SHOW; \
+    Action->Enabled = !ScpExplorer->IsLocalBrowserMode())
   QUEUEACTION(Show)
   QUEUEACTION(HideWhenEmpty)
   QUEUEACTION(Hide)
