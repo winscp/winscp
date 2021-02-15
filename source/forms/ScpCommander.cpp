@@ -1133,7 +1133,7 @@ TControl * __fastcall TScpCommanderForm::GetComponent(Byte Component)
     case fcRemoteStatusBar: return RemoteStatusBar;
     case fcCommandLinePanel: return CommandLineToolbar;
     case fcLocalTree: return LocalDriveView;
-    case fcSessionToolbar: return SessionToolbar;
+    case fcSessionToolbar: return SessionToolbar2;
     case fcCustomCommandsBand: return CustomCommandsToolbar;
     case fcColorMenu: return reinterpret_cast<TControl*>(ColorMenuItem);
     case fcTransferDropDown: return reinterpret_cast<TControl*>(TransferDropDown);
@@ -1143,7 +1143,7 @@ TControl * __fastcall TScpCommanderForm::GetComponent(Byte Component)
     case fcRemotePathComboBox: return reinterpret_cast<TControl*>(RemotePathComboBox);
 
     case fcCommanderMenuBand: return MenuToolbar;
-    case fcCommanderSessionBand: return SessionToolbar;
+    case fcCommanderSessionBand: return SessionToolbar2;
     case fcCommanderPreferencesBand: return PreferencesToolbar;
     case fcCommanderSortBand: return SortToolbar;
     case fcCommanderCommandsBand: return CommandsToolbar;

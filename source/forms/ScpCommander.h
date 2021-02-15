@@ -50,7 +50,7 @@ __published:
   TTBXStatusBar *StatusBar;
   TDriveView *LocalDriveView;
   TSplitter *LocalPanelSplitter;
-  TTBXToolbar *SessionToolbar;
+  TTBXToolbar *SessionToolbar2;
   TTBXItem *TBXItem123;
   TTBXSeparatorItem *TBXSeparatorItem34;
   TTBXItem *TBXItem124;

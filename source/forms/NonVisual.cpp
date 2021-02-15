@@ -90,7 +90,7 @@ TNonVisualDataModule *NonVisualDataModule;
   EMIT_BAND_COMPONENT(ExplorerTransferBand) \
   EMIT_BAND_COMPONENT(ExplorerCustomCommandsBand) \
   EMIT_BAND_COMPONENT(CommanderMenuBand) \
-  EMIT_BAND_COMPONENT(CommanderSessionBand) \
+  EMIT_BAND_COMPONENT2(CommanderSessionBand, 2) \
   EMIT_BAND_COMPONENT(CommanderPreferencesBand) \
   EMIT_BAND_COMPONENT(CommanderSortBand) \
   EMIT_BAND_COMPONENT(CommanderCommandsBand) \
@@ -317,7 +317,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDEX1(TipsAction, true, TipsAction->Visible = AnyTips())
 
   // VIEW
-  UPDCOMP(SessionsTabs)
+  UPDCOMP2(SessionsTabs, 2)
   UPDCOMP(StatusBar)
   UPDCOMP(ToolBar2)
   UPDCOMP2(LocalStatusBar, 2)
@@ -659,7 +659,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(TipsAction, ShowTips())
 
     // VIEW
-    EXECOMP(SessionsTabs)
+    EXECOMP2(SessionsTabs, 2)
     EXECOMP(StatusBar)
     EXECOMP(ToolBar2)
     EXECOMP2(LocalStatusBar, 2)

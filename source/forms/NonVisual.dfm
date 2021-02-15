@@ -479,11 +479,11 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'Status &Bar'
       Hint = 'Hide/show status bar'
     end
-    object SessionsTabsAction: TAction
+    object SessionsTabsAction2: TAction
       Tag = 15
       Category = 'View'
-      Caption = 'Sessions Tabs'
-      Hint = 'Hide/show sessions tabs'
+      Caption = 'T&abs'
+      Hint = 'Hide/show tabs'
     end
     object ExplorerAddressBandAction: TAction
       Tag = 7
@@ -759,12 +759,12 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_toolbars'
       Hint = 'Hide/show menu'
     end
-    object CommanderSessionBandAction: TAction
+    object CommanderSessionBandAction2: TAction
       Tag = 11
       Category = 'View'
-      Caption = 'Sessio&n Buttons'
+      Caption = 'Sessio&ns and Tabs Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show session toolbar'
+      Hint = 'Hide/show sessions and tabs toolbar'
     end
     object CommanderPreferencesBandAction: TAction
       Tag = 11
@@ -2395,8 +2395,8 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object N5: TTBXSeparatorItem
     end
-    object SessionsTabsAction2: TTBXItem
-      Action = SessionsTabsAction
+    object SessionsTabs2: TTBXItem
+      Action = SessionsTabsAction2
     end
     object StatusBar2: TTBXItem
       Action = StatusBarAction
@@ -2453,7 +2453,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = CommanderCommandsBandAction
     end
     object SessionButtons5: TTBXItem
-      Action = CommanderSessionBandAction
+      Action = CommanderSessionBandAction2
     end
     object PreferencesButtons4: TTBXItem
       Action = CommanderPreferencesBandAction
@@ -2481,8 +2481,8 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object N26: TTBXSeparatorItem
     end
-    object SessionsTabsAction1: TTBXItem
-      Action = SessionsTabsAction
+    object SessionsTabs1: TTBXItem
+      Action = SessionsTabsAction2
     end
     object CommandLine2: TTBXItem
       Action = CommandLinePanelAction
@@ -3206,8 +3206,8 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXSeparatorItem35: TTBXSeparatorItem
     end
-    object SessionsTabsAction4: TTBXItem
-      Action = SessionsTabsAction
+    object SessionsTabs4: TTBXItem
+      Action = SessionsTabsAction2
     end
   end
   object LocalFilePopup: TTBXPopupMenu

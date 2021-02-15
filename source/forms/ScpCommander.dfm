@@ -485,7 +485,7 @@ inherited ScpCommanderForm: TScpCommanderForm
             Action = NonVisualDataModule.CommanderCommandsBandAction
           end
           object TBXItem60: TTBXItem
-            Action = NonVisualDataModule.CommanderSessionBandAction
+            Action = NonVisualDataModule.CommanderSessionBandAction2
           end
           object TBXItem62: TTBXItem
             Action = NonVisualDataModule.CommanderPreferencesBandAction
@@ -568,8 +568,8 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
         object TBXSeparatorItem20: TTBXSeparatorItem
         end
-        object SessionsTabsAction3: TTBXItem
-          Action = NonVisualDataModule.SessionsTabsAction
+        object SessionsTabs3: TTBXItem
+          Action = NonVisualDataModule.SessionsTabsAction2
         end
         object TBXItem73: TTBXItem
           Action = NonVisualDataModule.CommandLinePanelAction
@@ -840,10 +840,10 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
       end
     end
-    object SessionToolbar: TTBXToolbar
+    object SessionToolbar2: TTBXToolbar
       Left = 0
       Top = 25
-      Caption = 'Session'
+      Caption = 'Sessions and Tabs'
       DockPos = 0
       DockRow = 1
       Images = GlyphsModule.ExplorerImages

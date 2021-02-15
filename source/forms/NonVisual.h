@@ -96,7 +96,7 @@ __published:    // IDE-managed Components
   TAction *RemoteRefreshAction;
   TAction *AboutAction;
   TAction *StatusBarAction;
-  TAction *SessionsTabsAction;
+  TAction *SessionsTabsAction2;
   TAction *ExplorerAddressBandAction;
   TAction *ExplorerMenuBandAction;
   TAction *ExplorerToolbarBandAction;
@@ -127,7 +127,7 @@ __published:    // IDE-managed Components
   TAction *LocalRefreshAction;
   TAction *ToolBar2Action;
   TAction *CommanderMenuBandAction;
-  TAction *CommanderSessionBandAction;
+  TAction *CommanderSessionBandAction2;
   TAction *CommanderPreferencesBandAction;
   TAction *CommanderLocalHistoryBandAction2;
   TAction *CommanderLocalNavigationBandAction2;

@@ -421,7 +421,7 @@ int __fastcall GetToolbarLayoutPixelsPerInch(TStrings * Storage, TControl * Cont
 UnicodeString __fastcall GetToolbarKey(const UnicodeString & ToolbarName)
 {
   UnicodeString Result = ToolbarName;
-  Result = RemoveSuffix(Result, L"Toolbar");
+  Result = RemoveSuffix(Result, L"Toolbar", true);
   return Result;
 }
 //---------------------------------------------------------------------

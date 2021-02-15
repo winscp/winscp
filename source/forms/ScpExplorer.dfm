@@ -394,8 +394,8 @@ inherited ScpExplorerForm: TScpExplorerForm
             Action = NonVisualDataModule.SelectiveToolbarTextAction
           end
         end
-        object SessionsTabsAction3: TTBXItem
-          Action = NonVisualDataModule.SessionsTabsAction
+        object SessionsTabs3: TTBXItem
+          Action = NonVisualDataModule.SessionsTabsAction2
         end
         object TBXItem13: TTBXItem
           Action = NonVisualDataModule.StatusBarAction
