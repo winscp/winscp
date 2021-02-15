@@ -10367,24 +10367,28 @@ void __fastcall TCustomScpExplorerForm::DirViewBusy(TObject * /*Sender*/, int Bu
 void __fastcall TCustomScpExplorerForm::SessionsPageControlContextPopup(TObject * /*Sender*/, TPoint & MousePos, bool & Handled)
 {
   int Index = SessionsPageControl->IndexOfTabAt(MousePos.X, MousePos.Y);
-  // no context menu for "New session tab"
-  if ((Index >= 0) && (GetSessionTabSession(SessionsPageControl->Pages[Index]) != NULL))
+  if (Index >= 0)
   {
-    SessionsPageControl->ActivePageIndex = Index;
-
-    if (DebugAlwaysTrue(SessionTabSwitched()))
+    TManagedTerminal * Session = GetSessionTabSession(SessionsPageControl->Pages[Index]);
+    // no context menu for "New session tab"
+    if (Session != NULL)
     {
-      // copied from TControl.WMContextMenu
-      SendCancelMode(SessionsPageControl);
+      SessionsPageControl->ActivePageIndex = Index;
 
-      // explicit popup instead of using PopupMenu property
-      // to avoid menu to popup somewhere within SessionTabSwitched above,
-      // while connecting yet not-connected session and hence
-      // allowing an access to commands over not-completelly connected session
-      TPoint Point = SessionsPageControl->ClientToScreen(MousePos);
-      TPopupMenu * PopupMenu = NonVisualDataModule->SessionsPopup;
-      PopupMenu->PopupComponent = SessionsPageControl;
-      PopupMenu->Popup(Point.x, Point.y);
+      if (DebugAlwaysTrue(SessionTabSwitched()))
+      {
+        // copied from TControl.WMContextMenu
+        SendCancelMode(SessionsPageControl);
+
+        // explicit popup instead of using PopupMenu property
+        // to avoid menu to popup somewhere within SessionTabSwitched above,
+        // while connecting yet not-connected session and hence
+        // allowing an access to commands over not-completelly connected session
+        TPoint Point = SessionsPageControl->ClientToScreen(MousePos);
+        TPopupMenu * PopupMenu = Session->LocalBrowser ? NonVisualDataModule->LocalBrowserPopup : NonVisualDataModule->SessionsPopup;
+        PopupMenu->PopupComponent = SessionsPageControl;
+        PopupMenu->Popup(Point.x, Point.y);
+      }
     }
   }
   Handled = true;

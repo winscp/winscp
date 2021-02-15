@@ -2865,7 +2865,7 @@ object NonVisualDataModule: TNonVisualDataModule
     Images = GlyphsModule.ExplorerImages
     OnPopup = QueuePopupPopup
     Options = [tboShowHint]
-    Left = 392
+    Left = 360
     Top = 176
     object ShowQuery1: TTBXItem
       Action = QueueItemQueryAction
@@ -3159,7 +3159,7 @@ object NonVisualDataModule: TNonVisualDataModule
   object SessionsPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
     Options = [tboShowHint]
-    Left = 480
+    Left = 456
     Top = 176
     object TBXItem124: TTBXItem
       Action = CloseTabAction
@@ -3283,6 +3283,29 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXItem50: TTBXItem
       Action = CurrentSystemMenuFocusedAction
+    end
+  end
+  object LocalBrowserPopup: TTBXPopupMenu
+    Images = GlyphsModule.ExplorerImages
+    Options = [tboShowHint]
+    Left = 552
+    Top = 176
+    object TBXItem62: TTBXItem
+      Action = CloseTabAction
+    end
+    object TBXSeparatorItem21: TTBXSeparatorItem
+    end
+    object TBXItem109: TTBXItem
+      Action = NewSessionAction
+    end
+    object TBXSubmenuItem11: TTBXSubmenuItem
+      Action = SavedSessionsAction2
+      Options = [tboDropdownArrow]
+    end
+    object TBXSeparatorItem22: TTBXSeparatorItem
+    end
+    object TBXItem110: TTBXItem
+      Action = SessionsTabsAction2
     end
   end
 end
