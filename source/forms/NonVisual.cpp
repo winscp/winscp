@@ -149,6 +149,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   #define EnabledRemoteFocusedOperation (ScpExplorer->EnableFocusedOperation[osRemote] && HasTerminal)
   #define EnabledRemoteSelectedFileOperation (ScpExplorer->EnableSelectedFileOperation[osRemote] && HasTerminal)
   #define EnabledOtherSelectedOperation ScpExplorer->IsLocalBrowserMode() && ScpExplorer->EnableSelectedOperation[osOther]
+  #define EnabledOtherSelectedFileOperation ScpExplorer->IsLocalBrowserMode() && ScpExplorer->EnableSelectedFileOperation[osOther]
   // focused operation
   UPD(CurrentDeleteFocusedAction, EnabledFocusedOperation)
   UPD(CurrentPropertiesFocusedAction, EnabledFocusedOperation)
@@ -228,7 +229,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     Action->Visible = !ScpExplorer->IsLocalBrowserMode())
   UPDEX1(RemoteCopyNonQueueAction, EnabledRemoteSelectedOperation, Action->Visible = !ScpExplorer->IsLocalBrowserMode())
   UPD(RemoteRenameAction2, (EnabledRemoteSelectedOperation && ScpExplorer->Terminal->IsCapable[fcRename]) || EnabledOtherSelectedOperation)
-  UPD(RemoteEditAction2, (EnabledRemoteSelectedFileOperation || EnabledOtherSelectedOperation) && !WinConfiguration->DisableOpenEdit)
+  UPD(RemoteEditAction2, (EnabledRemoteSelectedFileOperation || EnabledOtherSelectedFileOperation) && !WinConfiguration->DisableOpenEdit)
   UPD(RemoteMoveAction, EnabledRemoteSelectedOperation)
   UPD(RemoteCreateDirAction3, DirViewEnabled(osRemote))
   UPD(RemoteNewFileAction, DirViewEnabled(osRemote) && !WinConfiguration->DisableOpenEdit)
