@@ -288,6 +288,8 @@ void __fastcall TScpCommanderForm::UpdateSessionData(TSessionData * Data)
   {
     Data->OtherLocalDirectory = OtherLocalDirView->PathName;
   }
+  // Setting both directories makes is a local browser
+  DebugAssert(Data->IsLocalBrowser == IsLocalBrowserMode());
   Data->SynchronizeBrowsing = NonVisualDataModule->SynchronizeBrowsingAction2->Checked;
 }
 //---------------------------------------------------------------------------

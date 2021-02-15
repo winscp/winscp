@@ -4858,7 +4858,7 @@ void __fastcall TCustomScpExplorerForm::NewSession(const UnicodeString & Session
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TCustomScpExplorerForm::SaveHiddenDuplicateSession(TSessionData * SessionData)
 {
-  UnicodeString SessionName = StoredSessions->HiddenPrefix + Terminal->SessionData->SessionName;
+  UnicodeString SessionName = StoredSessions->HiddenPrefix + ManagedSession->SessionData->SessionName;
   StoredSessions->NewSession(SessionName, SessionData);
   // modified only, explicit
   StoredSessions->Save(false, true);
@@ -4876,7 +4876,6 @@ UnicodeString __fastcall TCustomScpExplorerForm::CreateHiddenDuplicateSession()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DuplicateSession()
 {
-  DebugAssert(!IsLocalBrowserMode());
   if (OpenInNewWindow())
   {
     ExecuteNewInstance(CreateHiddenDuplicateSession());
@@ -4887,13 +4886,14 @@ void __fastcall TCustomScpExplorerForm::DuplicateSession()
     std::unique_ptr<TSessionData> SessionData(CloneCurrentSessionData());
 
     TTerminalManager * Manager = TTerminalManager::Instance();
-    TManagedTerminal * ATerminal = Manager->NewManagedTerminal(SessionData.get());
-    // We definitelly want this
-    ATerminal->Disconnected = Terminal->Disconnected;
+    TManagedTerminal * ASession = Manager->NewManagedTerminal(SessionData.get());
+    DebugAssert(ASession->LocalBrowser == ManagedSession->LocalBrowser);
+    // We definitelly want these
+    ASession->Disconnected = ManagedSession->Disconnected;
     // Not sure about these two
-    ATerminal->Permanent = Terminal->Permanent;
-    ATerminal->DisconnectedTemporarily = Terminal->DisconnectedTemporarily;
-    Manager->ActiveSession = ATerminal;
+    ASession->Permanent = ManagedSession->Permanent;
+    ASession->DisconnectedTemporarily = ManagedSession->DisconnectedTemporarily;
+    Manager->ActiveSession = ASession;
   }
 }
 //---------------------------------------------------------------------------
@@ -6128,12 +6128,15 @@ void __fastcall TCustomScpExplorerForm::ExploreLocalDirectory(TOperationSide)
 //---------------------------------------------------------------------------
 TSessionData * __fastcall TCustomScpExplorerForm::CloneCurrentSessionData()
 {
-  DebugAssert(!IsLocalBrowserMode()); // untested
   std::unique_ptr<TSessionData> SessionData(new TSessionData(L""));
-  SessionData->Assign(Terminal->SessionData);
+  SessionData->Assign(ManagedSession->SessionData);
   UpdateSessionData(SessionData.get());
-  Terminal->UpdateSessionCredentials(SessionData.get());
-  if (!Terminal->SessionData->HasSessionName())
+  DebugAssert(SessionData->IsLocalBrowser == IsLocalBrowserMode());
+  if (!IsLocalBrowserMode())
+  {
+    ManagedSession->UpdateSessionCredentials(SessionData.get());
+  }
+  if (!ManagedSession->SessionData->HasSessionName())
   {
     // Particularly for "Workspace/XXXX" name, we need to reset it, as it would become user-visible
     // once IsWorkspace is cleared

@@ -3293,6 +3293,9 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem62: TTBXItem
       Action = CloseTabAction
     end
+    object TBXItem102: TTBXItem
+      Action = DuplicateTabAction
+    end
     object TBXSeparatorItem21: TTBXSeparatorItem
     end
     object TBXItem109: TTBXItem
