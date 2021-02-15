@@ -3068,7 +3068,7 @@ UnicodeString __fastcall TSessionData::GetDefaultSessionName()
     // See also TScpCommanderForm::GetLocalBrowserSessionTitle
     UnicodeString Path1 = ExtractShortName(LocalDirectory, false);
     UnicodeString Path2 = ExtractShortName(OtherLocalDirectory, false);
-    return FORMAT(L"%s - %s", (Path1, Path2));
+    return Path1 + TitleSeparator + Path2;
   }
   else if (!HostName.IsEmpty() && !UserName.IsEmpty())
   {

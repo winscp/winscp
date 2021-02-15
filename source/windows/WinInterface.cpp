@@ -1677,7 +1677,7 @@ void __fastcall ::TTrayIcon::PopupBalloon(UnicodeString Title,
     Timeout = 30000;
   }
   FTrayIcon->uFlags |= NIF_INFO;
-  Title = FORMAT(L"%s - %s", (Title, AppNameString()));
+  Title = Title + TitleSeparator + AppNameString();
   StrPLCopy(FTrayIcon->szInfoTitle, Title, LENOF(FTrayIcon->szInfoTitle) - 1);
   UnicodeString Info = Str;
   // When szInfo is empty, balloon is not shown

@@ -288,7 +288,7 @@ BEGIN
   VERIFY_CERT_PROMPT3, "**The server's certificate is not known. You have no guarantee that the server is the computer you think it is.**\n\nServer's certificate details follow:\n\n%s\n\nIf you trust this certificate, press Yes. To connect without storing certificate, press No. To abandon the connection press Cancel.\n\nContinue connecting and store the certificate?"
   VERIFY_CERT_CONTACT, "- Organization: %s\n|- Location: %s\n|- Other: %s\n"
   VERIFY_CERT_CONTACT_LIST, "%s, %s"
-  CERT_TEXT2, "Issuer:\n%s\nSubject:\n%s\nValid: %s - %s\n\nFingerprints:\n- SHA-256: %s\n- SHA-1: %s\n\nSummary: %s"
+  CERT_TEXT2, "Issuer:\n%s\nSubject:\n%s\nValid: %s – %s\n\nFingerprints:\n- SHA-256: %s\n- SHA-1: %s\n\nSummary: %s"
   CERTIFICATE_PASSPHRASE_PROMPT, "&Passphrase for client certificate:"
   CERTIFICATE_PASSPHRASE_TITLE, "Client certificate passphrase"
   KEY_TYPE_CONVERT3, "**Do you want to convert this %s private key to PuTTY format?**\n\n%s"

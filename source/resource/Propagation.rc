@@ -28,7 +28,7 @@ BEGIN
   FUNCTIONS_DOCUMENTATION, "A comprehensive WinSCP documentation and an active user forum are freely accessible at WinSCP site"
 
   STORE_BUYING, "By buying WinSCP from Microsoft Store you support WinSCP development. Thank you!"
-  STORE_TITLE, "WinSCP - SFTP, FTP, WebDAV, SCP and S3 client"
+  STORE_TITLE, "WinSCP – SFTP, FTP, WebDAV, SCP and S3 client"
 
   KEYWORD_SFTP_CLIENT, "sftp client"
   KEYWORD_FTP_CLIENT, "ftp client"

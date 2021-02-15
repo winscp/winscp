@@ -2498,7 +2498,7 @@ int __fastcall BatchSettings(TConsole * Console, TProgramParams * Params)
               Changes++;
             }
             UnicodeString StateStr = LoadStr(Changed ? BATCH_SET_CHANGED : BATCH_SET_NOT_CHANGED);
-            Console->PrintLine(FORMAT(L"%s - %s", (Data->Name, StateStr)));
+            Console->PrintLine(Data->Name + TitleSeparator + StateStr);
           }
         }
 

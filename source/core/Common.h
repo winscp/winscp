@@ -29,6 +29,7 @@ extern const wchar_t TokenReplacement;
 extern const UnicodeString LocalInvalidChars;
 extern const UnicodeString PasswordMask;
 extern const UnicodeString Ellipsis;
+extern const UnicodeString TitleSeparator;
 //---------------------------------------------------------------------------
 extern const UnicodeString HttpProtocol;
 extern const UnicodeString HttpsProtocol;

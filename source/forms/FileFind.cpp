@@ -99,7 +99,7 @@ bool __fastcall TFileFindDialog::IsFinding()
 void __fastcall TFileFindDialog::UpdateControls()
 {
   bool Finding = IsFinding();
-  Caption = FORMAT("%s - %s", (LoadStr(Finding ? FIND_FILE_FINDING : FIND_FILE_TITLE), FTerminalName));
+  Caption = LoadStr(Finding ? FIND_FILE_FINDING : FIND_FILE_TITLE) + TitleSeparator + FTerminalName;
   UnicodeString StartStopCaption;
   if (Finding)
   {

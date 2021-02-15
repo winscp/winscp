@@ -1204,7 +1204,7 @@ TObjectList * __fastcall TGUIConfiguration::GetLocales()
         GetLocaleInfo(Locale, LOCALE_SENGLANGUAGE,
           LocaleStr, LENOF(LocaleStr));
         UnicodeString Name = LocaleStr;
-        Name += L" - ";
+        Name += TitleSeparator;
         // LOCALE_SNATIVELANGNAME
         GetLocaleInfo(Locale, LOCALE_SLANGUAGE,
           LocaleStr, LENOF(LocaleStr));

@@ -202,7 +202,7 @@ void __fastcall TAuthenticateForm::AdjustControls()
   }
   else
   {
-    ACaption = FORMAT(L"%s - %s", (FStatus, FSessionData->SessionName));
+    ACaption = FStatus + TitleSeparator + FSessionData->SessionName;
   }
   Caption = FormatFormCaption(this, ACaption);
 }

@@ -17,7 +17,7 @@ BEGIN
     "To connect without adding host key to the cache, press No. "
     "To abandon the connection press Cancel."
   DIFFERENT_KEY5,
-    "**WARNING - POTENTIAL SECURITY BREACH!**\n"
+    "**WARNING – POTENTIAL SECURITY BREACH!**\n"
     "\n"
     "The server's host key does not match the one WinSCP has "
     "in cache. This means that either the "

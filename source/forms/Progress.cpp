@@ -49,7 +49,7 @@ UnicodeString __fastcall TProgressForm::ProgressStr(
   UnicodeString Result = LoadStr(Id);
   if (SynchronizeProgress != NULL)
   {
-    Result = FORMAT(L"%s - %s", (LoadStr(SYNCHRONIZE_PROGRESS_SYNCHRONIZE2), Result));
+    Result = LoadStr(SYNCHRONIZE_PROGRESS_SYNCHRONIZE2) + TitleSeparator + Result;
   }
   if (!TFileOperationProgressType::IsIndeterminateOperation(ProgressData->Operation))
   {

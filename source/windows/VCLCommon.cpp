@@ -421,7 +421,7 @@ UnicodeString __fastcall FormatMainFormCaption(const UnicodeString & Caption, co
   UnicodeString Suffix = AppName;
   if (!SessionName.IsEmpty())
   {
-    Suffix = SessionName + L" - " + Suffix;
+    Suffix = SessionName + TitleSeparator + Suffix;
   }
   UnicodeString Result = Caption;
   if (Result.IsEmpty())
@@ -430,7 +430,7 @@ UnicodeString __fastcall FormatMainFormCaption(const UnicodeString & Caption, co
   }
   else
   {
-    Suffix = L" - " + Suffix;
+    Suffix = TitleSeparator + Suffix;
     if (!EndsStr(Suffix, Result))
     {
       Result += Suffix;

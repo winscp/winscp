@@ -859,14 +859,14 @@ void __fastcall TTerminalManager::UpdateAppTitle()
     UnicodeString ProgressTitle = GetAppProgressTitle();
     if (!ProgressTitle.IsEmpty())
     {
-      NewTitle = ProgressTitle + L" - " + NewTitle;
+      NewTitle = ProgressTitle + TitleSeparator + NewTitle;
     }
     else if (ScpExplorer != NULL)
     {
       UnicodeString Path = ScpExplorer->PathForCaption();
       if (!Path.IsEmpty())
       {
-        NewTitle = Path + L" - " + NewTitle;
+        NewTitle = Path + TitleSeparator + NewTitle;
       }
     }
 

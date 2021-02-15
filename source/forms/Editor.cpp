@@ -35,7 +35,7 @@ TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TForm * ParentFo
     Dialog->FileName = FileName;
     Dialog->ParentForm = ParentForm;
     UnicodeString ACaption = Caption.IsEmpty() ? FileName : Caption;
-    Dialog->Caption = ACaption + L" - " + LoadStr(EDITOR_CAPTION) + L" - " + AppName;
+    Dialog->Caption = ACaption + TitleSeparator + LoadStr(EDITOR_CAPTION) + TitleSeparator + AppName;
     Dialog->OnFileChanged = OnFileChanged;
     Dialog->OnFileReload = OnFileReload;
     Dialog->OnSaveAll = OnSaveAll;

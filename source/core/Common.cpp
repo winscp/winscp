@@ -37,6 +37,7 @@ const wchar_t TokenReplacement = wchar_t(true);
 const UnicodeString LocalInvalidChars(TraceInitStr(L"/\\:*?\"<>|"));
 const UnicodeString PasswordMask(TraceInitStr(L"***"));
 const UnicodeString Ellipsis(TraceInitStr(L"..."));
+const UnicodeString TitleSeparator(TraceInitStr(L" \u2013 ")); // En-Dash
 //---------------------------------------------------------------------------
 UnicodeString ReplaceChar(UnicodeString Str, wchar_t A, wchar_t B)
 {
@@ -1540,7 +1541,7 @@ bool __fastcall IsRealFile(const UnicodeString & FileName)
 UnicodeString GetOSInfo()
 {
   UnicodeString Result = WindowsVersionLong();
-  AddToList(Result, WindowsProductName(), L" - ");
+  AddToList(Result, WindowsProductName(), TitleSeparator);
   return Result;
 }
 //---------------------------------------------------------------------------

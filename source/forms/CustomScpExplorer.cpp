@@ -3199,8 +3199,8 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
   {
     if (!IsSideLocalBrowser(Side))
     {
-      UnicodeString Caption = UnixIncludeTrailingBackslash(RemoteDirectory) + OriginalFileName +
-        L" - " + Terminal->SessionData->SessionName;
+      UnicodeString RemotePath = UnixCombinePaths(RemoteDirectory, OriginalFileName);
+      UnicodeString Caption = RemotePath + TitleSeparator + Terminal->SessionData->SessionName;
       TForm * Editor;
       try
       {
@@ -7248,8 +7248,7 @@ void __fastcall TCustomScpExplorerForm::PopupTrayBalloon(TTerminal * Terminal,
       if (Terminal != NULL)
       {
         TManagedTerminal * Session = DebugNotNull(dynamic_cast<TManagedTerminal *>(Terminal));
-        Title = FORMAT(L"%s - %s",
-          (TTerminalManager::Instance()->GetSessionTitle(Session, true), Title));
+        Title = TTerminalManager::Instance()->GetSessionTitle(Session, true) + TitleSeparator + Title;
       }
     }
 

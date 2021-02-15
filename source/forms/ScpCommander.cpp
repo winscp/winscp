@@ -2804,6 +2804,6 @@ UnicodeString TScpCommanderForm::GetLocalBrowserSessionTitle(TManagedTerminal * 
   // See also TSessionData::GetDefaultSessionName()
   Path1 = Manager->GetPathForSessionTabName(ExtractShortName(Path1, false));
   Path2 = Manager->GetPathForSessionTabName(ExtractShortName(Path2, false));
-  UnicodeString Result = FORMAT(L"%s - %s", (Path1, Path2));
+  UnicodeString Result = Path1 + TitleSeparator + Path2;
   return Result;
 }
