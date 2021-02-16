@@ -6132,7 +6132,7 @@ TSessionData * __fastcall TCustomScpExplorerForm::CloneCurrentSessionData()
   SessionData->Assign(ManagedSession->SessionData);
   UpdateSessionData(SessionData.get());
   DebugAssert(SessionData->IsLocalBrowser == IsLocalBrowserMode());
-  if (!IsLocalBrowserMode())
+  if (IsActiveTerminal(ManagedSession))
   {
     ManagedSession->UpdateSessionCredentials(SessionData.get());
   }
