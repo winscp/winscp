@@ -930,15 +930,24 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
 
   if (!Result)
   {
+    LogEvent(L"Prompting user for the credentials.");
     Result = FUI->PromptUser(FSessionData,
       PromptKind, Name, Instructions, Prompts, Results);
 
-    if (Result)
+    if (!Result)
+    {
+      LogEvent(L"Prompt cancelled.");
+    }
+    else
     {
       if ((Prompts->Count >= 1) &&
           (FLAGSET(int(Prompts->Objects[0]), pupEcho) || Configuration->LogSensitive))
       {
         LogEvent(FORMAT(L"Response: \"%s\"", (Results->Strings[0])));
+      }
+      else
+      {
+        LogEvent("Prompt responded.");
       }
 
       if ((PromptKind == pkUserName) && (Prompts->Count == 1))
