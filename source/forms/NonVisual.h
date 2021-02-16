@@ -670,6 +670,7 @@ __published:    // IDE-managed Components
   TTBXSeparatorItem *TBXSeparatorItem22;
   TTBXItem *TBXItem110;
   TTBXItem *TBXItem102;
+  TTBXItem *TBXItem103;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);

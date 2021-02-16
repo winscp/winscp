@@ -2787,25 +2787,33 @@ void TScpCommanderForm::LocalLocalCopy(
 //---------------------------------------------------------------------------
 UnicodeString TScpCommanderForm::GetLocalBrowserSessionTitle(TManagedTerminal * ASession)
 {
-  DebugAssert(ASession->LocalBrowser);
-  UnicodeString Path1;
-  UnicodeString Path2;
-  TTerminalManager * Manager = TTerminalManager::Instance();
-  if ((ASession == ManagedSession) &&
-      // prevent tab title flicker, when switching to local-local tab, as the path changes in individual local panels
-      !FSessionChanging)
+  UnicodeString Result;
+  if (ASession->SessionData->HasSessionName())
   {
-    Path1 = LocalDirView->PathName;
-    Path2 = OtherLocalDirView->PathName;
+    Result = ASession->SessionData->SessionName;
   }
   else
   {
-    Path1 = ASession->StateData->LocalDirectory;
-    Path2 = ASession->StateData->OtherLocalDirectory;
+    DebugAssert(ASession->LocalBrowser);
+    UnicodeString Path1;
+    UnicodeString Path2;
+    TTerminalManager * Manager = TTerminalManager::Instance();
+    if ((ASession == ManagedSession) &&
+        // prevent tab title flicker, when switching to local-local tab, as the path changes in individual local panels
+        !FSessionChanging)
+    {
+      Path1 = LocalDirView->PathName;
+      Path2 = OtherLocalDirView->PathName;
+    }
+    else
+    {
+      Path1 = ASession->StateData->LocalDirectory;
+      Path2 = ASession->StateData->OtherLocalDirectory;
+    }
+    // See also TSessionData::GetDefaultSessionName()
+    Path1 = Manager->GetPathForSessionTabName(ExtractShortName(Path1, false));
+    Path2 = Manager->GetPathForSessionTabName(ExtractShortName(Path2, false));
+    Result = Path1 + TitleSeparator + Path2;
   }
-  // See also TSessionData::GetDefaultSessionName()
-  Path1 = Manager->GetPathForSessionTabName(ExtractShortName(Path1, false));
-  Path2 = Manager->GetPathForSessionTabName(ExtractShortName(Path2, false));
-  UnicodeString Result = Path1 + TitleSeparator + Path2;
   return Result;
 }

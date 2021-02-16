@@ -4899,14 +4899,16 @@ void __fastcall TCustomScpExplorerForm::DuplicateSession()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RenameSession()
 {
-  UnicodeString Name = Terminal->SessionData->SessionName;
-  if (InputDialog(LoadStr(RENAME_SESSION_TITLE), LoadStr(RENAME_SESSION_PROMPT), Name, HELP_SESSION_RENAME))
+  UnicodeString Name = ManagedSession->SessionData->SessionName;
+  if (InputDialog(LoadStr(RENAME_SESSION_TITLE), LoadStr(RENAME_SESSION_PROMPT), Name, HELP_SESSION_RENAME) &&
+      // When submitting the default name, do not fix it
+      (Name != ManagedSession->SessionData->SessionName))
   {
     // Checks for a slash only, so it's not that big deal that we do the check after submitting the dialog only.
     TSessionData::ValidateName(Name);
 
     // This is inconsistent with how color (for example) is handled.
-    Terminal->SessionData->Name = Name;
+    ManagedSession->SessionData->Name = Name;
 
     UpdateControls();
     // Add/Remove distinguishing paths from sessions of the same name.
