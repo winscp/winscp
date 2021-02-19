@@ -603,6 +603,7 @@ void __fastcall TWinConfiguration::Default()
   FExternalSessionInExistingInstance = true;
   FShowLoginWhenNoSession = true;
   FKeepOpenWhenNoSession = true;
+  FDefaultToNewRemoteTab = true;
   FLocalIconsByExt = false;
   FBidiModeOverride = lfoLanguageIfRecommended;
   FFlipChildrenOverride = lfoLanguageIfRecommended;
@@ -1012,6 +1013,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     ExternalSessionInExistingInstance); \
     KEY(Bool,     ShowLoginWhenNoSession); \
     KEY(Bool,     KeepOpenWhenNoSession); \
+    KEY(Bool,     DefaultToNewRemoteTab); \
     KEY(Bool,     LocalIconsByExt); \
     KEY(Integer,  BidiModeOverride); \
     KEY(Integer,  FlipChildrenOverride); \
@@ -2285,6 +2287,11 @@ void __fastcall TWinConfiguration::SetKeepOpenWhenNoSession(bool value)
   SET_CONFIG_PROPERTY(KeepOpenWhenNoSession);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetDefaultToNewRemoteTab(bool value)
+{
+  SET_CONFIG_PROPERTY(DefaultToNewRemoteTab);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetLocalIconsByExt(bool value)
 {
   SET_CONFIG_PROPERTY(LocalIconsByExt);
@@ -2800,6 +2807,7 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
   Usage->Set(L"ShowingTips", ShowTips);
   Usage->Set(L"KeepingOpenWhenNoSession", KeepOpenWhenNoSession);
   Usage->Set(L"ShowingLoginWhenNoSession", ShowLoginWhenNoSession);
+  Usage->Set(L"DefaultingToNewRemoteTab", DefaultToNewRemoteTab);
   TipsUpdateStaticUsage();
 
   Usage->Set(L"CommanderNortonLikeMode", int(ScpCommander.NortonLikeMode));

@@ -414,6 +414,10 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
 
   // SESSION
   UPD(NewSessionAction, true)
+  UPDACT(NewTabAction, Action->ImageIndex = ScpExplorer->GetNewTabActionImageIndex())
+  UPD(NewRemoteTabAction, true)
+  UPD(NewLocalTabAction, true)
+  UPDACT(DefaultToNewRemoteTabAction, Action->Checked = WinConfiguration->DefaultToNewRemoteTab)
   UPD(SiteManagerAction, true)
   UPD(DuplicateTabAction, HasManagedSession)
   UPD(RenameTabAction, HasManagedSession)
@@ -751,6 +755,10 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
 
     // SESSION
     EXE(NewSessionAction, ScpExplorer->NewSession())
+    EXE(NewTabAction, ScpExplorer->NewTab())
+    EXE(NewRemoteTabAction, ScpExplorer->NewTab(osRemote))
+    EXE(NewLocalTabAction, ScpExplorer->NewTab(osLocal))
+    EXE(DefaultToNewRemoteTabAction, WinConfiguration->DefaultToNewRemoteTab = !WinConfiguration->DefaultToNewRemoteTab)
     EXE(SiteManagerAction, ScpExplorer->NewSession())
     EXE(DuplicateTabAction, ScpExplorer->DuplicateSession())
     EXE(RenameTabAction, ScpExplorer->RenameSession())
@@ -934,12 +942,10 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
   NewFileAction->ShortCut = ShortCut(VK_F4, SHIFT);
   RemoteFindFilesAction2->ShortCut =
     ExplorerKeyboardShortcuts ? ShortCut(VK_F3, NONE) : ShortCut(VK_F7, ALT);
+  NewTabAction->ShortCut = ShortCut(L'T', CTRL);
   // legacy shortcut (can be removed when necessary)
   NewFileAction->SecondaryShortCuts->Clear();
   NewFileAction->SecondaryShortCuts->Add(ShortCutToText(ShortCut(VK_F4, CTRLSHIFT)));
-  // Backward compatibility, can be abandoned, once there's a better use for Ctrl+T
-  ConsoleAction->SecondaryShortCuts->Clear();
-  ConsoleAction->SecondaryShortCuts->Add(ShortCutToText(ShortCut(L'T', CTRL)));
 
   CloseApplicationAction2->ShortCut = ShortCut(VK_F10, NONE);
 

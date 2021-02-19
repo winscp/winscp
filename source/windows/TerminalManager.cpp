@@ -205,12 +205,20 @@ TTerminal * __fastcall TTerminalManager::NewTerminal(TSessionData * Data)
   return Terminal;
 }
 //---------------------------------------------------------------------------
-TManagedTerminal * __fastcall TTerminalManager::NewLocalBrowser()
+TManagedTerminal * __fastcall TTerminalManager::NewLocalBrowser(const UnicodeString & LocalDirectory, const UnicodeString & OtherLocalDirectory)
 {
   std::unique_ptr<TSessionData> SessionData(new TSessionData(UnicodeString()));
-  TManagedTerminal * Terminal = NewManagedTerminal(SessionData.get());
-  Terminal->LocalBrowser = true;
-  return Terminal;
+  SessionData->LocalDirectory = LocalDirectory;
+  SessionData->OtherLocalDirectory = OtherLocalDirectory;
+  TManagedTerminal * Result = NewManagedTerminal(SessionData.get());
+  // Is true already, when LocalDirectory and OtherLocalDirectory are set
+  Result->LocalBrowser = true;
+  return Result;
+}
+//---------------------------------------------------------------------------
+void TTerminalManager::NewLocalSession(const UnicodeString & LocalDirectory, const UnicodeString & OtherLocalDirectory)
+{
+  ActiveSession = NewLocalBrowser(LocalDirectory, OtherLocalDirectory);
 }
 //---------------------------------------------------------------------------
 TManagedTerminal * __fastcall TTerminalManager::NewManagedTerminal(TSessionData * Data)

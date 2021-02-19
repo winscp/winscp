@@ -410,6 +410,21 @@ inherited ScpCommanderForm: TScpCommanderForm
         Caption = '&Tab'
         HelpKeyword = 'ui_sessiontabs'
         Hint = 'Tab commands'
+        object TBXSubmenuItem30: TTBXSubmenuItem
+          Action = NonVisualDataModule.NewTabAction
+          DropdownCombo = True
+          object TBXItem33: TTBXItem
+            Action = NonVisualDataModule.NewRemoteTabAction
+          end
+          object TBXItem31: TTBXItem
+            Action = NonVisualDataModule.NewLocalTabAction
+          end
+          object TBXSeparatorItem67: TTBXSeparatorItem
+          end
+          object TBXItem232: TTBXItem
+            Action = NonVisualDataModule.DefaultToNewRemoteTabAction
+          end
+        end
         object TBXItem115: TTBXItem
           Action = NonVisualDataModule.CloseTabAction
         end
@@ -851,9 +866,21 @@ inherited ScpCommanderForm: TScpCommanderForm
       ParentShowHint = False
       ShowHint = True
       TabOrder = 0
-      object TBXItem123: TTBXItem
-        Action = NonVisualDataModule.NewSessionAction
+      object TBXSubmenuItem31: TTBXSubmenuItem
+        Action = NonVisualDataModule.NewTabAction
         DisplayMode = nbdmImageAndText
+        DropdownCombo = True
+        object TBXItem231: TTBXItem
+          Action = NonVisualDataModule.NewRemoteTabAction
+        end
+        object TBXItem123: TTBXItem
+          Action = NonVisualDataModule.NewLocalTabAction
+        end
+        object TBXSeparatorItem68: TTBXSeparatorItem
+        end
+        object TBXItem238: TTBXItem
+          Action = NonVisualDataModule.DefaultToNewRemoteTabAction
+        end
       end
       object TBXItem125: TTBXItem
         Action = NonVisualDataModule.SaveCurrentSessionAction2

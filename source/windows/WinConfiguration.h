@@ -453,6 +453,7 @@ private:
   bool FExternalSessionInExistingInstance;
   bool FShowLoginWhenNoSession;
   bool FKeepOpenWhenNoSession;
+  bool FDefaultToNewRemoteTab;
   bool FLocalIconsByExt;
   TLocaleFlagOverride FBidiModeOverride;
   TLocaleFlagOverride FFlipChildrenOverride;
@@ -557,6 +558,7 @@ private:
   void __fastcall SetExternalSessionInExistingInstance(bool value);
   void __fastcall SetShowLoginWhenNoSession(bool value);
   void __fastcall SetKeepOpenWhenNoSession(bool value);
+  void __fastcall SetDefaultToNewRemoteTab(bool value);
   void __fastcall SetLocalIconsByExt(bool value);
   void __fastcall SetBidiModeOverride(TLocaleFlagOverride value);
   void __fastcall SetFlipChildrenOverride(TLocaleFlagOverride value);
@@ -750,6 +752,7 @@ public:
   __property bool ExternalSessionInExistingInstance = { read = FExternalSessionInExistingInstance, write = SetExternalSessionInExistingInstance };
   __property bool ShowLoginWhenNoSession = { read = FShowLoginWhenNoSession, write = SetShowLoginWhenNoSession };
   __property bool KeepOpenWhenNoSession = { read = FKeepOpenWhenNoSession, write = SetKeepOpenWhenNoSession };
+  __property bool DefaultToNewRemoteTab = { read = FDefaultToNewRemoteTab, write = SetDefaultToNewRemoteTab };
   __property bool LocalIconsByExt = { read = FLocalIconsByExt, write = SetLocalIconsByExt };
   __property TLocaleFlagOverride BidiModeOverride = { read = FBidiModeOverride, write = SetBidiModeOverride };
   __property TLocaleFlagOverride FlipChildrenOverride = { read = FFlipChildrenOverride, write = SetFlipChildrenOverride };

@@ -407,8 +407,7 @@ void __fastcall TScpCommanderForm::DoShow()
   // Also the NoSession test in TCustomScpExplorerForm::CMShowingChanged rely on this happening here.
   if (ManagedSession == NULL)
   {
-    TTerminalManager * Manager = TTerminalManager::Instance();
-    Manager->ActiveSession = Manager->NewLocalBrowser();
+    TTerminalManager::Instance()->NewLocalSession();
   }
 }
 //---------------------------------------------------------------------------
@@ -419,8 +418,7 @@ void __fastcall TScpCommanderForm::NeedSession(bool Startup)
     // in the LastTerminalClosed, new session should have already been created by GetReplacementForLastSession
     DebugAssert(Startup);
 
-    TTerminalManager * Manager = TTerminalManager::Instance();
-    Manager->ActiveSession = Manager->NewLocalBrowser();
+    TTerminalManager::Instance()->NewLocalSession();
   }
 
   TCustomScpExplorerForm::NeedSession(Startup);
@@ -429,6 +427,23 @@ void __fastcall TScpCommanderForm::NeedSession(bool Startup)
 TManagedTerminal * TScpCommanderForm::GetReplacementForLastSession()
 {
   return TTerminalManager::Instance()->NewLocalBrowser();
+}
+//---------------------------------------------------------------------------
+void TScpCommanderForm::NewTab(TOperationSide Side)
+{
+  if (Side == osCurrent)
+  {
+    Side = WinConfiguration->DefaultToNewRemoteTab ? osRemote : osLocal;
+  }
+
+  if (Side == osRemote)
+  {
+    TCustomScpExplorerForm::NewTab();
+  }
+  else
+  {
+    TTerminalManager::Instance()->NewLocalSession(LocalDirView->PathName, OtherLocalDirView->PathName);
+  }
 }
 //---------------------------------------------------------------------------
 Boolean __fastcall TScpCommanderForm::AllowedAction(TAction * Action, TActionAllowed Allowed)
@@ -2816,4 +2831,19 @@ UnicodeString TScpCommanderForm::GetLocalBrowserSessionTitle(TManagedTerminal * 
     Result = Path1 + TitleSeparator + Path2;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+int TScpCommanderForm::GetNewTabActionImageIndex()
+{
+  return WinConfiguration->DefaultToNewRemoteTab ?
+    TCustomScpExplorerForm::GetNewTabActionImageIndex() : NonVisualDataModule->NewLocalTabAction->ImageIndex;
+}
+//---------------------------------------------------------------------------
+int TScpCommanderForm::GetNewTabTabImageIndex(TOperationSide Side)
+{
+  if (Side == osCurrent)
+  {
+    Side = WinConfiguration->DefaultToNewRemoteTab ? osRemote : osLocal;
+  }
+  return TCustomScpExplorerForm::GetNewTabTabImageIndex(Side);
 }

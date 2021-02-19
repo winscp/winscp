@@ -671,6 +671,10 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem110;
   TTBXItem *TBXItem102;
   TTBXItem *TBXItem103;
+  TAction *NewTabAction;
+  TAction *NewLocalTabAction;
+  TAction *NewRemoteTabAction;
+  TAction *DefaultToNewRemoteTabAction;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);

@@ -251,7 +251,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'Go to Comma&nd Line'
       HelpKeyword = 'ui_commander#command_line'
       Hint = 'Go to command line'
-      ShortCut = 24654
+      ShortCut = 24653
     end
     object QueueItemDeleteAction: TAction
       Tag = 12
@@ -431,7 +431,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'Comma&nd Line'
       HelpKeyword = 'ui_commander#command_line'
       Hint = 'Hide/show command line'
-      ShortCut = 24654
+      ShortCut = 24653
     end
     object RemoteParentDirAction: TAction
       Tag = 12
@@ -2350,6 +2350,40 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Move'
       Hint = 'Move the selected file(s) to another directory or rename them'
       ImageIndex = 100
+    end
+    object NewTabAction: TAction
+      Tag = 15
+      Category = 'Tab'
+      Caption = '&New Tab'
+      HelpKeyword = 'ui_tabs#new'
+      Hint = 'Open new tab'
+      ImageIndex = 5
+    end
+    object NewLocalTabAction: TAction
+      Tag = 11
+      Category = 'Tab'
+      Caption = '&Local Tab'
+      HelpKeyword = 'ui_tabs#new'
+      Hint = 'Open new tab with two local panels'
+      ImageIndex = 5
+      ShortCut = 24654
+    end
+    object NewRemoteTabAction: TAction
+      Tag = 11
+      Category = 'Tab'
+      Caption = '&Remote Tab'
+      HelpKeyword = 'ui_tabs#new'
+      Hint = 'Open new tab with one local panel and one remote session panel'
+      ImageIndex = 25
+      ShortCut = 16462
+    end
+    object DefaultToNewRemoteTabAction: TAction
+      Tag = 11
+      Category = 'Tab'
+      Caption = '&Default to Remote Tab'
+      Hint = 
+        'When turned on, the New Tab command opens a new remote tab. Othe' +
+        'rwise it opens a new local tab.'
     end
   end
   object ExplorerBarPopup: TTBXPopupMenu

@@ -51,7 +51,6 @@ __published:
   TDriveView *LocalDriveView;
   TSplitter *LocalPanelSplitter;
   TTBXToolbar *SessionToolbar2;
-  TTBXItem *TBXItem123;
   TTBXSeparatorItem *TBXSeparatorItem34;
   TTBXItem *TBXItem124;
   TTBXSubmenuItem *TBXSubmenuItem23;
@@ -443,6 +442,16 @@ __published:
   TTBXSubmenuItem *TBXSubmenuItem29;
   TTBXSeparatorItem *TBXSeparatorItem53;
   TTBXSeparatorItem *TBXSeparatorItem66;
+  TTBXItem *TBXItem31;
+  TTBXSubmenuItem *TBXSubmenuItem30;
+  TTBXItem *TBXItem33;
+  TTBXSubmenuItem *TBXSubmenuItem31;
+  TTBXItem *TBXItem123;
+  TTBXItem *TBXItem231;
+  TTBXSeparatorItem *TBXSeparatorItem67;
+  TTBXItem *TBXItem232;
+  TTBXSeparatorItem *TBXSeparatorItem68;
+  TTBXItem *TBXItem238;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -657,6 +666,9 @@ public:
     ::TFileOperation Operation, TOperationSide Side, bool OnFocused, bool NoConfirmation, bool DragDrop, unsigned int Flags);
   virtual UnicodeString GetLocalBrowserSessionTitle(TManagedTerminal * Session);
   virtual TManagedTerminal * GetReplacementForLastSession();
+  virtual void NewTab(TOperationSide Side);
+  virtual int GetNewTabActionImageIndex();
+  virtual int GetNewTabTabImageIndex(TOperationSide Side);
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

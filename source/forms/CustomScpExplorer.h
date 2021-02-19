@@ -266,7 +266,8 @@ private:
   int FTransferListHoverIndex;
   TColor FSessionColor;
   TPngImageList * FSessionColors;
-  int FNewSessionTabImageIndex;
+  int FNewRemoteTabTabImageIndex;
+  int FNewLocalTabTabImageIndex;
   int FSessionTabImageIndex;
   int FSessionColorMaskImageIndex;
   int FLocalBrowserTabImageIndex;
@@ -279,7 +280,7 @@ private:
   ITaskbarList3 * FTaskbarList;
   bool FShowing;
   int FMaxQueueLength;
-  TDateTime FSessionsPageControlNewSessionTime;
+  TDateTime FSessionsPageControlNewTabTime;
   bool FAppIdle;
   typedef std::set<TTBCustomItem *> TItemsWithTextDisplayMode;
   TItemsWithTextDisplayMode FItemsWithTextDisplayMode;
@@ -626,7 +627,7 @@ protected:
   void __fastcall UpdateCopyParamCounters(const TCopyParamType & CopyParam);
   int __fastcall AddSessionColor(TColor Color);
   void __fastcall UpdateSessionTab(TTabSheet * TabSheet);
-  void __fastcall UpdateNewSessionTab();
+  void __fastcall UpdateNewTabTab();
   void __fastcall AddFixedSessionImages();
   int __fastcall AddFixedSessionImage(int GlyphsSourceIndex);
   TObjectList * __fastcall DoCollectWorkspace();
@@ -759,6 +760,7 @@ public:
   bool CanCloseSession(TManagedTerminal * Session);
 
   void __fastcall NewSession(const UnicodeString & SessionUrl = L"");
+  virtual void NewTab(TOperationSide Side = osCurrent);
   void __fastcall DuplicateSession();
   void __fastcall RenameSession();
   void __fastcall CloseSession();
@@ -864,6 +866,8 @@ public:
   void __fastcall CloseApp();
   virtual bool IsSideLocalBrowser(TOperationSide Side);
   virtual UnicodeString GetLocalBrowserSessionTitle(TManagedTerminal * Session);
+  virtual int GetNewTabActionImageIndex();
+  virtual int GetNewTabTabImageIndex(TOperationSide Side);
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

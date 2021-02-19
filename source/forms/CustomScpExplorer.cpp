@@ -4856,6 +4856,11 @@ void __fastcall TCustomScpExplorerForm::NewSession(const UnicodeString & Session
   }
 }
 //---------------------------------------------------------------------------
+void TCustomScpExplorerForm::NewTab(TOperationSide)
+{
+  NewSession();
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TCustomScpExplorerForm::SaveHiddenDuplicateSession(TSessionData * SessionData)
 {
   UnicodeString SessionName = StoredSessions->HiddenPrefix + ManagedSession->SessionData->SessionName;
@@ -6846,12 +6851,11 @@ void __fastcall TCustomScpExplorerForm::SessionListChanged()
       }
       else
       {
-        TabSheet->ImageIndex = FNewSessionTabImageIndex;
         TabSheet->Tag = 0; // not really needed
         TabSheet->Shadowed = false;
         TabSheet->ShowCloseButton = false;
         // We know that we are at the last page, otherwise we could not call this (it assumes that new session tab is the last one)
-        UpdateNewSessionTab();
+        UpdateNewTabTab();
       }
     }
   }
@@ -6863,16 +6867,16 @@ void __fastcall TCustomScpExplorerForm::SessionListChanged()
   SessionsPageControl->ActivePageIndex = ActiveSessionIndex;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::UpdateNewSessionTab()
+void __fastcall TCustomScpExplorerForm::UpdateNewTabTab()
 {
   TTabSheet * TabSheet = SessionsPageControl->Pages[SessionsPageControl->PageCount - 1];
 
-  DebugAssert(TabSheet->ImageIndex == 0);
 
   TabSheet->Caption =
     WinConfiguration->SelectiveToolbarText ?
       StripHotkey(StripTrailingPunctuation(NonVisualDataModule->NewSessionAction->Caption)) :
       UnicodeString();
+  TabSheet->ImageIndex = GetNewTabTabImageIndex(osCurrent);
 }
 //---------------------------------------------------------------------------
 TManagedTerminal * __fastcall TCustomScpExplorerForm::GetSessionTabSession(TTabSheet * TabSheet)
@@ -6940,14 +6944,14 @@ bool __fastcall TCustomScpExplorerForm::SessionTabSwitched()
   {
     try
     {
-      NewSession();
+      NewTab();
     }
     __finally
     {
       SessionListChanged();
     }
 
-    FSessionsPageControlNewSessionTime = Now();
+    FSessionsPageControlNewTabTime = Now();
   }
   return Result;
 }
@@ -10027,7 +10031,7 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlMouseDown(
         // when user clicks the "+", we get mouse down only after the session
         // is closed, when new session tab is already on X:Y, so dragging
         // starts, prevent that
-        if (MilliSecondsBetween(Now(), FSessionsPageControlNewSessionTime) > 500)
+        if (MilliSecondsBetween(Now(), FSessionsPageControlNewTabTime) > 500)
         {
           TTerminal * Terminal = GetSessionTabSession(SessionsPageControl->Pages[Index]);
           if (Terminal != NULL)
@@ -10207,10 +10211,33 @@ int __fastcall TCustomScpExplorerForm::AddFixedSessionImage(int GlyphsSourceInde
 void __fastcall TCustomScpExplorerForm::AddFixedSessionImages()
 {
   FSessionColors->SetSize(GlyphsModule->ExplorerImages->Width, GlyphsModule->ExplorerImages->Height);
-  FNewSessionTabImageIndex = AddFixedSessionImage(NonVisualDataModule->NewSessionAction->ImageIndex);
+  FNewRemoteTabTabImageIndex = AddFixedSessionImage(NonVisualDataModule->NewRemoteTabAction->ImageIndex);
+  FNewLocalTabTabImageIndex = AddFixedSessionImage(NonVisualDataModule->NewLocalTabAction->ImageIndex);
   FSessionTabImageIndex = AddFixedSessionImage(SiteImageIndex);
   FSessionColorMaskImageIndex = AddFixedSessionImage(SiteColorMaskImageIndex);
   FLocalBrowserTabImageIndex = AddFixedSessionImage(LocalBrowserImageIndex);
+}
+//---------------------------------------------------------------------------
+int TCustomScpExplorerForm::GetNewTabActionImageIndex()
+{
+  return NonVisualDataModule->NewRemoteTabAction->ImageIndex;
+}
+//---------------------------------------------------------------------------
+int TCustomScpExplorerForm::GetNewTabTabImageIndex(TOperationSide Side)
+{
+  switch (Side)
+  {
+    case osLocal:
+      return FNewLocalTabTabImageIndex;
+
+    case osRemote:
+    case osCurrent:
+      return FNewRemoteTabTabImageIndex;
+
+    default:
+      DebugFail();
+      return -1;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CollectItemsWithTextDisplayMode(TWinControl * Control)
@@ -10287,10 +10314,7 @@ bool __fastcall TCustomScpExplorerForm::UpdateToolbarDisplayMode()
     ++i;
   }
 
-  if (Result)
-  {
-    UpdateNewSessionTab();
-  }
+  UpdateNewTabTab();
 
   return Result;
 }

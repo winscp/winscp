@@ -49,7 +49,8 @@ public:
   __fastcall ~TTerminalManager();
 
   TManagedTerminal * __fastcall NewManagedTerminal(TSessionData * Data);
-  TManagedTerminal * __fastcall NewLocalBrowser();
+  TManagedTerminal * __fastcall NewLocalBrowser(
+    const UnicodeString & LocalDirectory = UnicodeString(), const UnicodeString & OtherLocalDirectory = UnicodeString());
   TManagedTerminal * __fastcall NewSessions(TList * DataList);
   virtual void __fastcall FreeTerminal(TTerminal * Terminal);
   void __fastcall Move(TTerminal * Source, TTerminal * Target);
@@ -65,6 +66,7 @@ public:
   void __fastcall OpenInPutty();
   void __fastcall NewSession(
     const UnicodeString & SessionUrl, bool ReloadSessions = true, TForm * LinkedForm = NULL, bool ReplaceExisting = false);
+  void NewLocalSession(const UnicodeString & LocalDirectory = UnicodeString(), const UnicodeString & OtherLocalDirectory = UnicodeString());
   void __fastcall Idle(bool SkipCurrentTerminal);
   UnicodeString __fastcall GetSessionTitle(TManagedTerminal * Terminal, bool Unique);
   UnicodeString __fastcall GetActiveSessionAppTitle();
