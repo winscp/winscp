@@ -35,6 +35,7 @@ CTransferSocket::CTransferSocket(CFtpControlSocket *pOwner, int nMode)
   m_nInternalMessageID = 0;
   m_transferdata.transfersize = 0;
   m_transferdata.transferleft = 0;
+  m_uploaded = 0;
   m_nNotifyWaiting = 0;
   m_bActivationPending = false;
   m_LastSendBufferUpdate = 0;
@@ -665,6 +666,7 @@ void CTransferSocket::OnSend(int nErrorCode)
         return;
       }
 
+      m_uploaded += numsent;
       m_pOwner->SpeedLimitAddTransferredBytes(CFtpControlSocket::upload, numsent);
       m_LastActiveTime = CTime::GetCurrentTime();
 
@@ -748,6 +750,7 @@ void CTransferSocket::OnSend(int nErrorCode)
         m_pOwner->SpeedLimitAddTransferredBytes(CFtpControlSocket::upload, numsent);
         m_LastActiveTime = CTime::GetCurrentTime();
         m_transferdata.transferleft -= numsent;
+        m_uploaded += numsent;
       }
 
       if (numsent==SOCKET_ERROR || !numsent)
