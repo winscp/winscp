@@ -4683,8 +4683,6 @@ void CFtpControlSocket::ResetOperation(int nSuccessful /*=FALSE*/)
     m_pOwner->SetBusy(FALSE);
     //No operation in progress
     nSuccessful&=FZ_REPLY_DISCONNECTED|FZ_REPLY_CANCEL;
-    if (!nSuccessful)
-      DebugFail();
   }
 
   if (nSuccessful&FZ_REPLY_DISCONNECTED)
