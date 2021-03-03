@@ -34,6 +34,7 @@ public:
   BOOL m_bListening;
   CFile * m_pFile;
   t_transferdata m_transferdata;
+  __int64 m_uploaded;
   void SetActive();
   int CheckForTimeout(int delay);
 #ifndef MPEXT_NO_GSS

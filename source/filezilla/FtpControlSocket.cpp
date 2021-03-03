@@ -2585,7 +2585,7 @@ void CFtpControlSocket::OnClose(int nErrorCode)
     DoClose();
 }
 
-void CFtpControlSocket::ResetTransferSocket(bool Error)
+void CFtpControlSocket::ResetTransferSocket(int Error)
 {
   if (Error)
   {
@@ -2595,9 +2595,14 @@ void CFtpControlSocket::ResetTransferSocket(bool Error)
   {
     LogMessage(FZ_LOG_INFO, L"Destroying data socket after transfer completed");
   }
+  bool Close =
+    (Error != 0) &&
+    DebugAlwaysTrue(m_pTransferSocket != NULL) &&
+    (m_pTransferSocket->m_uploaded > 0) &&
+    FLAGCLEAR(Error, FZ_REPLY_CANCEL);
   delete m_pTransferSocket;
   m_pTransferSocket = NULL;
-  if (Error)
+  if (Close)
   {
     // close the control connection too to allow reconnect => transfer resume
     LogMessage(FZ_LOG_WARNING, L"Transfer connection failed, closing");
@@ -4554,7 +4559,7 @@ void CFtpControlSocket::ResetOperation(int nSuccessful /*=FALSE*/)
 
   if (m_pTransferSocket)
   {
-    ResetTransferSocket(nSuccessful & FZ_REPLY_ERROR);
+    ResetTransferSocket(nSuccessful & (FZ_REPLY_ERROR | FZ_REPLY_CANCEL));
   }
 
   if (m_pDataFile)
