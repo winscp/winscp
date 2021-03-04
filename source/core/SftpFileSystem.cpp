@@ -152,6 +152,7 @@
 #define SFTP_EXT_HARDLINK L"hardlink@openssh.com"
 #define SFTP_EXT_HARDLINK_VALUE_V1 L"1"
 #define SFTP_EXT_COPY_FILE L"copy-file"
+#define SFTP_EXT_LIMITS L"limits@openssh.com"
 //---------------------------------------------------------------------------
 #define OGQ_LIST_OWNERS 0x01
 #define OGQ_LIST_GROUPS 0x02
@@ -3170,6 +3171,11 @@ void __fastcall TSFTPFileSystem::DoStartup()
         {
           FTerminal->LogEvent(FORMAT(L"Unsupported %s extension version %s", (ExtensionName, HardlinkVersion)));
         }
+      }
+      else if (ExtensionName == SFTP_EXT_LIMITS)
+      {
+        UnicodeString LimitsVersion = AnsiToString(ExtensionData);
+        FTerminal->LogEvent(FORMAT(L"Supports %s extension version %s", (ExtensionName, LimitsVersion)));
       }
       else
       {
