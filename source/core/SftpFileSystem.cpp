@@ -134,24 +134,24 @@
 
 #define SFTP_MAX_PACKET_LEN   1024000
 //---------------------------------------------------------------------------
-#define SFTP_EXT_OWNER_GROUP "owner-group-query@generic-extensions"
-#define SFTP_EXT_OWNER_GROUP_REPLY "owner-group-query-reply@generic-extensions"
-#define SFTP_EXT_NEWLINE "newline"
-#define SFTP_EXT_SUPPORTED "supported"
-#define SFTP_EXT_SUPPORTED2 "supported2"
-#define SFTP_EXT_FSROOTS "fs-roots@vandyke.com"
-#define SFTP_EXT_VENDOR_ID "vendor-id"
-#define SFTP_EXT_VERSIONS "versions"
-#define SFTP_EXT_SPACE_AVAILABLE "space-available"
-#define SFTP_EXT_CHECK_FILE "check-file"
-#define SFTP_EXT_CHECK_FILE_NAME "check-file-name"
-#define SFTP_EXT_STATVFS "statvfs@openssh.com"
+#define SFTP_EXT_OWNER_GROUP L"owner-group-query@generic-extensions"
+#define SFTP_EXT_OWNER_GROUP_REPLY L"owner-group-query-reply@generic-extensions"
+#define SFTP_EXT_NEWLINE L"newline"
+#define SFTP_EXT_SUPPORTED L"supported"
+#define SFTP_EXT_SUPPORTED2 L"supported2"
+#define SFTP_EXT_FSROOTS L"fs-roots@vandyke.com"
+#define SFTP_EXT_VENDOR_ID L"vendor-id"
+#define SFTP_EXT_VERSIONS L"versions"
+#define SFTP_EXT_SPACE_AVAILABLE L"space-available"
+#define SFTP_EXT_CHECK_FILE L"check-file"
+#define SFTP_EXT_CHECK_FILE_NAME L"check-file-name"
+#define SFTP_EXT_STATVFS L"statvfs@openssh.com"
 #define SFTP_EXT_STATVFS_VALUE_V2 L"2"
 #define SFTP_EXT_STATVFS_ST_RDONLY 0x1
 #define SFTP_EXT_STATVFS_ST_NOSUID 0x2
-#define SFTP_EXT_HARDLINK "hardlink@openssh.com"
+#define SFTP_EXT_HARDLINK L"hardlink@openssh.com"
 #define SFTP_EXT_HARDLINK_VALUE_V1 L"1"
-#define SFTP_EXT_COPY_FILE "copy-file"
+#define SFTP_EXT_COPY_FILE L"copy-file"
 //---------------------------------------------------------------------------
 #define OGQ_LIST_OWNERS 0x01
 #define OGQ_LIST_GROUPS 0x02
@@ -3121,7 +3121,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
         {
           FFixedPaths->Clear();
           FTerminal->LogEvent(FORMAT(L"Failed to decode %s extension",
-            (SFTP_EXT_FSROOTS)));
+            (ExtensionName)));
           FTerminal->HandleException(&E);
         }
       }
@@ -3151,11 +3151,11 @@ void __fastcall TSFTPFileSystem::DoStartup()
         if (StatVfsVersion == SFTP_EXT_STATVFS_VALUE_V2)
         {
           FSupportsStatVfsV2 = true;
-          FTerminal->LogEvent(FORMAT(L"Supports %s extension version %s", (ExtensionName, ExtensionDisplayData)));
+          FTerminal->LogEvent(FORMAT(L"Supports %s extension version %s", (ExtensionName, StatVfsVersion)));
         }
         else
         {
-          FTerminal->LogEvent(FORMAT(L"Unsupported %s extension version %s", (ExtensionName, ExtensionDisplayData)));
+          FTerminal->LogEvent(FORMAT(L"Unsupported %s extension version %s", (ExtensionName, StatVfsVersion)));
         }
       }
       else if (ExtensionName == SFTP_EXT_HARDLINK)
@@ -3164,11 +3164,11 @@ void __fastcall TSFTPFileSystem::DoStartup()
         if (HardlinkVersion == SFTP_EXT_HARDLINK_VALUE_V1)
         {
           FSupportsHardlink = true;
-          FTerminal->LogEvent(FORMAT(L"Supports %s extension version %s", (ExtensionName, ExtensionDisplayData)));
+          FTerminal->LogEvent(FORMAT(L"Supports %s extension version %s", (ExtensionName, HardlinkVersion)));
         }
         else
         {
-          FTerminal->LogEvent(FORMAT(L"Unsupported %s extension version %s", (ExtensionName, ExtensionDisplayData)));
+          FTerminal->LogEvent(FORMAT(L"Unsupported %s extension version %s", (ExtensionName, HardlinkVersion)));
         }
       }
       else
