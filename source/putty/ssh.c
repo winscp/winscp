@@ -1006,8 +1006,12 @@ static size_t ssh_sendbuffer(Backend *be)
 
     backlog = ssh_stdin_backlog(ssh->cl);
 
+    #ifndef WINSCP
+    // This throttles WinSCP unnecessarily, as it uses its own throttling mechanism.
+    // This value is used only by WinSCP, never directly by PuTTY code.
     if (ssh->base_layer)
         backlog += ssh_ppl_queued_data_size(ssh->base_layer);
+    #endif
 
     /*
      * If the SSH socket itself has backed up, add the total backup
