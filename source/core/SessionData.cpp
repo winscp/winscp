@@ -720,7 +720,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
       Storage->ReadBool(L"AliasGroupList", false) ? UnicodeString(L"ls -gla") : ListingCommand);
   }
   IgnoreLsWarnings = Storage->ReadBool(L"IgnoreLsWarnings", IgnoreLsWarnings);
-  SCPLsFullTime = TAutoSwitch(Storage->ReadInteger(L"SCPLsFullTime", SCPLsFullTime));
+  SCPLsFullTime = Storage->ReadEnum(L"SCPLsFullTime", SCPLsFullTime, AutoSwitchMapping);
   Scp1Compatibility = Storage->ReadBool(L"Scp1Compatibility", Scp1Compatibility);
   TimeDifference = Storage->ReadFloat(L"TimeDifference", TimeDifference);
   TimeDifferenceAuto = Storage->ReadBool(L"TimeDifferenceAuto", (TimeDifference == TDateTime()));
@@ -734,16 +734,16 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   }
 
   ExitCode1IsError = Storage->ReadBool(L"ExitCode1IsError", ExitCode1IsError);
-  LookupUserGroups = TAutoSwitch(Storage->ReadInteger(L"LookupUserGroups2", LookupUserGroups));
+  LookupUserGroups = Storage->ReadEnum(L"LookupUserGroups2", LookupUserGroups, AutoSwitchMapping);
   EOLType = (TEOLType)Storage->ReadInteger(L"EOLType", EOLType);
   TrimVMSVersions = Storage->ReadBool(L"TrimVMSVersions", TrimVMSVersions);
-  NotUtf = TAutoSwitch(Storage->ReadInteger(L"Utf", Storage->ReadInteger(L"SFTPUtfBug", NotUtf)));
+  NotUtf = Storage->ReadEnum(L"Utf", Storage->ReadEnum(L"SFTPUtfBug", NotUtf), AutoSwitchReversedMapping);
   InternalEditorEncoding = Storage->ReadInteger(L"InternalEditorEncoding", InternalEditorEncoding);
 
   S3DefaultRegion = Storage->ReadString(L"S3DefaultRegion", S3DefaultRegion);
   S3SessionToken = Storage->ReadString(L"S3SessionToken", S3SessionToken);
   S3UrlStyle = (TS3UrlStyle)Storage->ReadInteger(L"S3UrlStyle", S3UrlStyle);
-  S3MaxKeys = (TAutoSwitch)Storage->ReadInteger(L"S3MaxKeys", S3MaxKeys);
+  S3MaxKeys = Storage->ReadEnum(L"S3MaxKeys", S3MaxKeys, AutoSwitchMapping);
 
   // PuTTY defaults to TcpNoDelay, but the psftp/pscp ignores this preference, and always set this to off (what is our default too)
   if (!PuttyImport)
@@ -813,7 +813,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
     SftpServer = Storage->ReadString(L"SftpServer", SftpServer);
   }
   #define READ_SFTP_BUG(BUG) \
-    SFTPBug[sb##BUG] = TAutoSwitch(Storage->ReadInteger(L"SFTP" #BUG "Bug", SFTPBug[sb##BUG]));
+    SFTPBug[sb##BUG] = Storage->ReadEnum(L"SFTP" #BUG "Bug", SFTPBug[sb##BUG], AutoSwitchMapping);
   READ_SFTP_BUG(Symlink);
   READ_SFTP_BUG(SignedTS);
   #undef READ_SFTP_BUG
@@ -823,7 +823,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   SFTPDownloadQueue = Storage->ReadInteger(L"SFTPDownloadQueue", SFTPDownloadQueue);
   SFTPUploadQueue = Storage->ReadInteger(L"SFTPUploadQueue", SFTPUploadQueue);
   SFTPListingQueue = Storage->ReadInteger(L"SFTPListingQueue", SFTPListingQueue);
-  SFTPRealPath = TAutoSwitch(Storage->ReadInteger(L"SFTPRealPath", SFTPRealPath));
+  SFTPRealPath = Storage->ReadEnum(L"SFTPRealPath", SFTPRealPath, AutoSwitchMapping);
 
   Color = Storage->ReadInteger(L"Color", Color);
 
@@ -854,16 +854,16 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
 
   // Ftp prefix
   FtpPasvMode = Storage->ReadBool(L"FtpPasvMode", FtpPasvMode);
-  FtpForcePasvIp = TAutoSwitch(Storage->ReadInteger(L"FtpForcePasvIp2", FtpForcePasvIp));
-  FtpUseMlsd = TAutoSwitch(Storage->ReadInteger(L"FtpUseMlsd", FtpUseMlsd));
+  FtpForcePasvIp = Storage->ReadEnum(L"FtpForcePasvIp2", FtpForcePasvIp, AutoSwitchMapping);
+  FtpUseMlsd = Storage->ReadEnum(L"FtpUseMlsd", FtpUseMlsd, AutoSwitchMapping);
   FtpAccount = Storage->ReadString(L"FtpAccount", FtpAccount);
   FtpPingInterval = Storage->ReadInteger(L"FtpPingInterval", FtpPingInterval);
   FtpPingType = static_cast<TPingType>(Storage->ReadInteger(L"FtpPingType", FtpPingType));
-  FtpTransferActiveImmediately = static_cast<TAutoSwitch>(Storage->ReadInteger(L"FtpTransferActiveImmediately2", FtpTransferActiveImmediately));
+  FtpTransferActiveImmediately = Storage->ReadEnum(L"FtpTransferActiveImmediately2", FtpTransferActiveImmediately, AutoSwitchMapping);
   Ftps = static_cast<TFtps>(Storage->ReadInteger(L"Ftps", Ftps));
-  FtpListAll = TAutoSwitch(Storage->ReadInteger(L"FtpListAll", FtpListAll));
-  FtpHost = TAutoSwitch(Storage->ReadInteger(L"FtpHost", FtpHost));
-  FtpWorkFromCwd = TAutoSwitch(Storage->ReadInteger(L"FtpWorkFromCwd", Storage->ReadInteger(L"FtpDeleteFromCwd", FtpWorkFromCwd)));
+  FtpListAll = Storage->ReadEnum(L"FtpListAll", FtpListAll, AutoSwitchMapping);
+  FtpHost = Storage->ReadEnum(L"FtpHost", FtpHost, AutoSwitchMapping);
+  FtpWorkFromCwd = Storage->ReadEnum(L"FtpWorkFromCwd", Storage->ReadEnum(L"FtpDeleteFromCwd", FtpWorkFromCwd), AutoSwitchMapping);
   SslSessionReuse = Storage->ReadBool(L"SslSessionReuse", SslSessionReuse);
   TlsCertificateFile = Storage->ReadString(L"TlsCertificateFile", TlsCertificateFile);
 
