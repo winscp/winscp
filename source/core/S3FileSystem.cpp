@@ -937,12 +937,13 @@ S3Status TS3FileSystem::LibS3ListBucketCallback(
   for (int Index = 0; Index < CommonPrefixesCount; Index++)
   {
     UnicodeString CommonPrefix = StrFromS3(CommonPrefixes[Index]);
-    // Reported only by one user, but should do no harm.
-    if (CommonPrefix != L"/")
+    UnicodeString FileName = UnixExtractFileName(UnixExcludeTrailingBackslash(CommonPrefix));
+    // Have seen prefixes like "/" or "path/subpath//"
+    if (!FileName.IsEmpty())
     {
       std::unique_ptr<TRemoteFile> File(new TRemoteFile(NULL));
       File->Terminal = Data.FileSystem->FTerminal;
-      File->FileName = UnixExtractFileName(UnixExcludeTrailingBackslash(CommonPrefix));
+      File->FileName = FileName;
       File->Type = FILETYPE_DIRECTORY;
       File->ModificationFmt = mfNone;
       Data.FileList->AddFile(File.release());
