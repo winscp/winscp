@@ -688,7 +688,7 @@ void __fastcall RegenerateSessionColorsImageList(TCustomImageList * ImageList, i
   DebugAssert(SessionColors->ColorMap == ColorMap);
 }
 //---------------------------------------------------------------------------
-void __fastcall SetSubmenu(TTBXCustomItem * Item)
+void __fastcall SetSubmenu(TTBXCustomItem * Item, bool Enable)
 {
   class TTBXPublicItem : public TTBXCustomItem
   {
@@ -698,7 +698,14 @@ void __fastcall SetSubmenu(TTBXCustomItem * Item)
   TTBXPublicItem * PublicItem = reinterpret_cast<TTBXPublicItem *>(Item);
   DebugAssert(PublicItem != NULL);
   // See TTBItemViewer.IsPtInButtonPart (called from TTBItemViewer.MouseDown)
-  PublicItem->ItemStyle = PublicItem->ItemStyle << tbisSubmenu;
+  if (Enable)
+  {
+    PublicItem->ItemStyle = PublicItem->ItemStyle << tbisSubmenu;
+  }
+  else
+  {
+    PublicItem->ItemStyle = PublicItem->ItemStyle >> tbisSubmenu;
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsEligibleForApplyingTabs(

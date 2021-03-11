@@ -3231,8 +3231,20 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXSeparatorItem34: TTBXSeparatorItem
     end
-    object TBXItem123: TTBXItem
-      Action = NewSessionAction
+    object SessionsNewTabItem: TTBXSubmenuItem
+      Action = NewTabAction
+      DropdownCombo = True
+      object TBXItem104: TTBXItem
+        Action = NewRemoteTabAction
+      end
+      object TBXItem105: TTBXItem
+        Action = NewLocalTabAction
+      end
+      object TBXSeparatorItem18: TTBXSeparatorItem
+      end
+      object TBXItem106: TTBXItem
+        Action = DefaultToNewRemoteTabAction
+      end
     end
     object TBXSubmenuItem23: TTBXSubmenuItem
       Action = SavedSessionsAction2
@@ -3335,8 +3347,20 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXSeparatorItem21: TTBXSeparatorItem
     end
-    object TBXItem109: TTBXItem
-      Action = NewSessionAction
+    object TBXSubmenuItem12: TTBXSubmenuItem
+      Action = NewTabAction
+      DropdownCombo = True
+      object TBXItem107: TTBXItem
+        Action = NewRemoteTabAction
+      end
+      object TBXItem108: TTBXItem
+        Action = NewLocalTabAction
+      end
+      object TBXSeparatorItem19: TTBXSeparatorItem
+      end
+      object TBXItem111: TTBXItem
+        Action = DefaultToNewRemoteTabAction
+      end
     end
     object TBXSubmenuItem11: TTBXSubmenuItem
       Action = SavedSessionsAction2
@@ -3346,6 +3370,23 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXItem110: TTBXItem
       Action = SessionsTabsAction2
+    end
+  end
+  object NewTabPopup: TTBXPopupMenu
+    Images = GlyphsModule.ExplorerImages
+    Options = [tboShowHint]
+    Left = 256
+    Top = 176
+    object NewRemoteTabItem: TTBXItem
+      Action = NewRemoteTabAction
+    end
+    object NewLocalTabItem: TTBXItem
+      Action = NewLocalTabAction
+    end
+    object TBXSeparatorItem67: TTBXSeparatorItem
+    end
+    object TBXItem232: TTBXItem
+      Action = DefaultToNewRemoteTabAction
     end
   end
 end

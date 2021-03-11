@@ -4,37 +4,40 @@
 //---------------------------------------------------------------------------
 #include <ComCtrls.hpp>
 //---------------------------------------------------------------------------
+enum TThemeTabSheetButtons { ttbNone, ttbClose, ttbDropDown };
+//---------------------------------------------------------------------------
 class TThemeTabSheet : public TTabSheet
 {
 public:
   __fastcall TThemeTabSheet(TComponent * Owner);
 
   __property bool Shadowed = { read = FShadowed, write = SetShadowed };
-  __property bool ShowCloseButton = { read = FShowCloseButton, write = SetShowCloseButton };
+  __property TThemeTabSheetButtons Button = { read = FButton, write = SetButton };
 
 private:
   void __fastcall SetShadowed(bool Value);
-  void __fastcall SetShowCloseButton(bool Value);
+  void __fastcall SetButton(TThemeTabSheetButtons Value);
   void __fastcall Invalidate();
 
   bool FShadowed;
-  bool FShowCloseButton;
+  TThemeTabSheetButtons FButton;
 };
 //---------------------------------------------------------------------------
-typedef void __fastcall (__closure *TPageControlCloseButtonClick)(TPageControl * Sender, int Index);
+typedef void __fastcall (__closure *TPageControlTabButtonClick)(TPageControl * Sender, int Index);
 //---------------------------------------------------------------------------
 class TThemePageControl : public TPageControl
 {
 friend class TThemeTabSheet;
 
 __published:
-  __property TPageControlCloseButtonClick OnCloseButtonClick = { read = FOnCloseButtonClick, write = FOnCloseButtonClick };
+  __property TPageControlTabButtonClick OnTabButtonClick = { read = FOnTabButtonClick, write = FOnTabButtonClick };
 
 public:
   __fastcall TThemePageControl(TComponent * Owner);
 
   int __fastcall GetTabsHeight();
-  UnicodeString __fastcall FormatCaptionWithCloseButton(const UnicodeString & Caption);
+  UnicodeString __fastcall FormatCaptionWithTabButton(const UnicodeString & Caption);
+  TRect __fastcall TabButtonRect(int Index);
 
 protected:
   virtual void __fastcall PaintWindow(HDC DC);
@@ -52,22 +55,24 @@ private:
   void __fastcall DrawTabItem(HDC DC, int Item, TRect TabRect, TRect Rect, bool Selected, bool Shadowed);
   void __fastcall DrawThemesPart(HDC DC, int PartId, int StateId, LPCWSTR PartNameID, LPRECT Rect);
   void __fastcall InvalidateTab(int Index);
-  int __fastcall CloseButtonSize();
+  int __fastcall TabButtonSize();
   int __fastcall GetCrossPadding();
-  TRect __fastcall CloseButtonRect(int Index);
-  int __fastcall IndexOfCloseButtonAt(int X, int Y);
+  int __fastcall IndexOfTabButtonAt(int X, int Y);
   void __fastcall ItemContentsRect(int Item, TRect & Rect);
   bool __fastcall HasItemImage(int Item);
   void __fastcall ItemTextRect(int Item, TRect & Rect);
   void __fastcall ItemTabRect(int Item, TRect & Rect);
-  bool __fastcall HasTabCloseButton(int Index);
-  void __fastcall SetHotCloseButton(int Index);
-  void __fastcall DrawCross(HDC DC, int Width, COLORREF Color, const TRect & Rect);
+  TThemeTabSheetButtons __fastcall GetTabButton(int Index);
+  void UpdateHotButton(int & Ref, int Index);
+  void DrawCross(HDC DC, int Width, COLORREF Color, const TRect & Rect);
+  void DrawDropDown(HDC DC, int Radius, int X, int Y, COLORREF Color, int Grow);
   void __fastcall WMLButtonDown(TWMLButtonDown & Message);
+  bool IsHotButton(int Index);
 
   int FOldTabIndex;
-  int FHotCloseButton;
-  TPageControlCloseButtonClick FOnCloseButtonClick;
+  int FHotTabButton;
+  int FClickedButton;
+  TPageControlTabButtonClick FOnTabButtonClick;
 };
 //---------------------------------------------------------------------------
 #endif

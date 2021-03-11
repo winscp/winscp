@@ -198,7 +198,7 @@ __published:
   void __fastcall DirViewBusy(TObject *Sender, int Busy, bool & Allow);
   void __fastcall SessionsPageControlContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
   void __fastcall DockContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
-  void __fastcall SessionsPageControlCloseButtonClick(TPageControl *Sender, int Index);
+  void __fastcall SessionsPageControlTabButtonClick(TPageControl *Sender, int Index);
   void __fastcall DirViewGetItemColor(
     TObject * Sender, UnicodeString FileName, bool Directory, __int64 Size, TDateTime Modification, TColor & Color);
   void __fastcall DirViewExit(TObject *Sender);
@@ -864,6 +864,7 @@ public:
   void __fastcall ReplaceTerminal(TManagedTerminal * value);
   virtual void __fastcall BrowseFile();
   void __fastcall CloseApp();
+  virtual bool SupportsLocalBrowser();
   virtual bool IsSideLocalBrowser(TOperationSide Side);
   virtual UnicodeString GetLocalBrowserSessionTitle(TManagedTerminal * Session);
   virtual int GetNewTabActionImageIndex();

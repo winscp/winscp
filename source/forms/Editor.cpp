@@ -685,7 +685,7 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   FClosePending = false;
   FReloading = false;
   FInternalEditorEncodingOverride = -1;
-  SetSubmenu(ColorItem);
+  SetSubmenu(ColorItem, true);
 
   InitCodePage();
   SelectScaledImageList(EditorImages);

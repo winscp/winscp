@@ -660,6 +660,7 @@ public:
   virtual void __fastcall CopyFilesToClipboard(TOperationSide Side, bool OnFocused);
   virtual void __fastcall PasteFromClipBoard();
   virtual void __fastcall BrowseFile();
+  virtual bool SupportsLocalBrowser();
   virtual bool IsSideLocalBrowser(TOperationSide Side);
   virtual bool IsLocalBrowserMode();
   virtual void LocalLocalCopy(

@@ -893,6 +893,9 @@ void __fastcall TNonVisualDataModule::ExplorerShortcuts()
   CloseApplicationAction2->ShortCut = ShortCut(VK_F4, ALT);
 
   CloneShortcuts();
+
+  SessionsNewTabItem->DropdownCombo = false;
+  SetSubmenu(SessionsNewTabItem, false);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CommanderShortcuts()

@@ -32,7 +32,7 @@ UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir,
 bool __fastcall DeleteDirectory(const UnicodeString DirName);
 int __fastcall GetSessionColorImage(TCustomImageList * ImageList, TColor Color, int MaskIndex);
 void __fastcall RegenerateSessionColorsImageList(TCustomImageList * ImageList, int MaskIndex);
-void __fastcall SetSubmenu(TTBXCustomItem * Item);
+void __fastcall SetSubmenu(TTBXCustomItem * Item, bool Enable);
 typedef int __fastcall (*TCalculateWidth)(UnicodeString Text, void * Arg);
 void __fastcall ApplyTabs(
   UnicodeString & Text, wchar_t Padding,

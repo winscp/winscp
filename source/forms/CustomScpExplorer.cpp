@@ -248,8 +248,8 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   TransferList->OnChange = TransferListChange;
   TransferList->OnDrawItem = TransferListDrawItem;
 
-  SetSubmenu(dynamic_cast<TTBXCustomItem *>(static_cast<TObject *>(GetComponent(fcColorMenu))));
-  SetSubmenu(NonVisualDataModule->ColorMenuItem);
+  SetSubmenu(dynamic_cast<TTBXCustomItem *>(static_cast<TObject *>(GetComponent(fcColorMenu))), true);
+  SetSubmenu(NonVisualDataModule->ColorMenuItem, true);
 
   UseDesktopFont(SessionsPageControl);
   UpdateSessionsPageControlHeight();
@@ -1696,6 +1696,11 @@ void __fastcall TCustomScpExplorerForm::OperationFinished(
 }
 //---------------------------------------------------------------------------
 bool TCustomScpExplorerForm::IsLocalBrowserMode()
+{
+  return false;
+}
+//---------------------------------------------------------------------------
+bool TCustomScpExplorerForm::SupportsLocalBrowser()
 {
   return false;
 }
@@ -6853,7 +6858,7 @@ void __fastcall TCustomScpExplorerForm::SessionListChanged()
       {
         TabSheet->Tag = 0; // not really needed
         TabSheet->Shadowed = false;
-        TabSheet->ShowCloseButton = false;
+        TabSheet->Button = SupportsLocalBrowser() ? ttbDropDown : ttbNone;
         // We know that we are at the last page, otherwise we could not call this (it assumes that new session tab is the last one)
         UpdateNewTabTab();
       }
@@ -6871,11 +6876,19 @@ void __fastcall TCustomScpExplorerForm::UpdateNewTabTab()
 {
   TTabSheet * TabSheet = SessionsPageControl->Pages[SessionsPageControl->PageCount - 1];
 
+  UnicodeString TabCaption;
+  if (WinConfiguration->SelectiveToolbarText)
+  {
+    TabCaption = StripHotkey(StripTrailingPunctuation(NonVisualDataModule->NewTabAction->Caption));
+  }
+  TThemeTabSheet * ThemeTabSheet = dynamic_cast<TThemeTabSheet *>(TabSheet);
+  // When starting, we can get here with the design-time unthemed tab
+  if ((ThemeTabSheet != NULL) && (ThemeTabSheet->Button != ttbNone))
+  {
+    TabCaption = SessionsPageControl->FormatCaptionWithTabButton(TabCaption);
+  }
+  TabSheet->Caption = TabCaption;
 
-  TabSheet->Caption =
-    WinConfiguration->SelectiveToolbarText ?
-      StripHotkey(StripTrailingPunctuation(NonVisualDataModule->NewSessionAction->Caption)) :
-      UnicodeString();
   TabSheet->ImageIndex = GetNewTabTabImageIndex(osCurrent);
 }
 //---------------------------------------------------------------------------
@@ -6914,10 +6927,10 @@ void __fastcall TCustomScpExplorerForm::UpdateSessionTab(TTabSheet * TabSheet)
       if (DebugAlwaysTrue(ThemeTabSheet != NULL))
       {
         ThemeTabSheet->Shadowed = !ASession->Active && !ASession->LocalBrowser;
-        ThemeTabSheet->ShowCloseButton = CanCloseSession(ASession);
-        if (ThemeTabSheet->ShowCloseButton)
+        ThemeTabSheet->Button = CanCloseSession(ASession) ? ttbClose : ttbNone;
+        if (ThemeTabSheet->Button != ttbNone)
         {
-          TabCaption = SessionsPageControl->FormatCaptionWithCloseButton(TabCaption);
+          TabCaption = SessionsPageControl->FormatCaptionWithTabButton(TabCaption);
         }
       }
 
@@ -10398,8 +10411,9 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlContextPopup(TObject 
   int Index = SessionsPageControl->IndexOfTabAt(MousePos.X, MousePos.Y);
   if (Index >= 0)
   {
+    TPopupMenu * PopupMenu = NULL;
+
     TManagedTerminal * Session = GetSessionTabSession(SessionsPageControl->Pages[Index]);
-    // no context menu for "New session tab"
     if (Session != NULL)
     {
       SessionsPageControl->ActivePageIndex = Index;
@@ -10413,11 +10427,22 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlContextPopup(TObject 
         // to avoid menu to popup somewhere within SessionTabSwitched above,
         // while connecting yet not-connected session and hence
         // allowing an access to commands over not-completelly connected session
-        TPoint Point = SessionsPageControl->ClientToScreen(MousePos);
-        TPopupMenu * PopupMenu = Session->LocalBrowser ? NonVisualDataModule->LocalBrowserPopup : NonVisualDataModule->SessionsPopup;
-        PopupMenu->PopupComponent = SessionsPageControl;
-        PopupMenu->Popup(Point.x, Point.y);
+        PopupMenu = Session->LocalBrowser ? NonVisualDataModule->LocalBrowserPopup : NonVisualDataModule->SessionsPopup;
       }
+    }
+    else
+    {
+      if (SupportsLocalBrowser())
+      {
+        PopupMenu = NonVisualDataModule->NewTabPopup;
+      }
+    }
+
+    if (PopupMenu != NULL)
+    {
+      TPoint Point = SessionsPageControl->ClientToScreen(MousePos);
+      PopupMenu->PopupComponent = SessionsPageControl;
+      PopupMenu->Popup(Point.x, Point.y);
     }
   }
   Handled = true;
@@ -10703,9 +10728,21 @@ void __fastcall TCustomScpExplorerForm::CloseSessionTab(int Index)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::SessionsPageControlCloseButtonClick(TPageControl * /*Sender*/, int Index)
+void __fastcall TCustomScpExplorerForm::SessionsPageControlTabButtonClick(TPageControl *, int Index)
 {
-  CloseSessionTab(Index);
+  TManagedTerminal * Session = GetSessionTabSession(SessionsPageControl->Pages[Index]);
+  if (Session == NULL)
+  {
+    TRect ButtonRect = SessionsPageControl->TabButtonRect(Index);
+    ButtonRect = TRect(SessionsPageControl->ClientToScreen(ButtonRect.TopLeft()), SessionsPageControl->ClientToScreen(ButtonRect.BottomRight()));
+    //TPoint P = TPoint(ButtonRect.Left, ButtonRect.Bottom);
+    //P = SessionsPageControl->ClientToScreen(P);
+    MenuPopup(NonVisualDataModule->NewTabPopup, ButtonRect, SessionsPageControl);
+  }
+  else
+  {
+    CloseSessionTab(Index);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CopyFilesToClipboard(TOperationSide Side, bool OnFocused)

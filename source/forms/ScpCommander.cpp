@@ -501,6 +501,11 @@ TCustomDriveView * __fastcall TScpCommanderForm::DriveView(TOperationSide Side)
   }
 }
 //---------------------------------------------------------------------------
+bool TScpCommanderForm::SupportsLocalBrowser()
+{
+  return true;
+}
+//---------------------------------------------------------------------------
 bool TScpCommanderForm::IsSideLocalBrowser(TOperationSide Side)
 {
   return (GetSide(Side) == osLocal) || IsLocalBrowserMode();

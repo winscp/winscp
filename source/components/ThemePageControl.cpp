@@ -34,7 +34,7 @@ __fastcall TThemeTabSheet::TThemeTabSheet(TComponent * Owner) :
   TTabSheet(Owner)
 {
   FShadowed = false;
-  FShowCloseButton = false;
+  FButton = ttbNone;
 }
 //----------------------------------------------------------------------------------------------------------
 void __fastcall TThemeTabSheet::Invalidate()
@@ -59,11 +59,11 @@ void __fastcall TThemeTabSheet::SetShadowed(bool Value)
   }
 }
 //----------------------------------------------------------------------------------------------------------
-void __fastcall TThemeTabSheet::SetShowCloseButton(bool Value)
+void __fastcall TThemeTabSheet::SetButton(TThemeTabSheetButtons Value)
 {
-  if (ShowCloseButton != Value)
+  if (Button != Value)
   {
-    FShowCloseButton = Value;
+    FButton = Value;
     Invalidate();
   }
 }
@@ -73,7 +73,8 @@ __fastcall TThemePageControl::TThemePageControl(TComponent * Owner) :
   TPageControl(Owner)
 {
   FOldTabIndex = -1;
-  FHotCloseButton = -1;
+  FHotTabButton = -1;
+  FClickedButton = -1;
 }
 //----------------------------------------------------------------------------------------------------------
 int __fastcall TThemePageControl::GetTabsHeight()
@@ -142,10 +143,10 @@ void __fastcall TThemePageControl::PaintWindow(HDC DC)
   }
 }
 //----------------------------------------------------------------------------------------------------------
-bool __fastcall TThemePageControl::HasTabCloseButton(int Index)
+TThemeTabSheetButtons __fastcall TThemePageControl::GetTabButton(int Index)
 {
   TThemeTabSheet * ThemeTabSheet = dynamic_cast<TThemeTabSheet *>(Pages[Index]);
-  return (UseThemes() && (ThemeTabSheet != NULL)) ? ThemeTabSheet->ShowCloseButton : false;
+  return (UseThemes() && (ThemeTabSheet != NULL)) ? ThemeTabSheet->Button : ttbNone;
 }
 //----------------------------------------------------------------------------------------------------------
 void __fastcall TThemePageControl::DrawThemesXpTab(HDC DC, int Tab)
@@ -224,7 +225,7 @@ void __fastcall TThemePageControl::ItemTabRect(int Item, TRect & Rect)
 {
   if (Item == TabIndex)
   {
-    // Countered in CloseButtonRect
+    // Countered in TabButtonRect
     Rect.Inflate(2, 2);
     Rect.Bottom--;
   }
@@ -268,7 +269,7 @@ void __fastcall TThemePageControl::ItemTextRect(int Item, TRect & Rect)
   OffsetRect(&Rect, 0, ((Item == TabIndex) ? 0 : -2));
 }
 //----------------------------------------------------------------------------------------------------------
-void __fastcall TThemePageControl::DrawCross(HDC DC, int Width, COLORREF Color, const TRect & Rect)
+void TThemePageControl::DrawCross(HDC DC, int Width, COLORREF Color, const TRect & Rect)
 {
   HPEN Pen = CreatePen(PS_SOLID, Width, Color);
   HPEN OldPen = static_cast<HPEN>(SelectObject(DC, Pen));
@@ -281,6 +282,22 @@ void __fastcall TThemePageControl::DrawCross(HDC DC, int Width, COLORREF Color, 
   LineTo(DC, Rect.Left, Rect.Top);
   SelectObject(DC, OldPen);
   DeleteObject(Pen);
+}
+//----------------------------------------------------------------------------------------------------------
+void TThemePageControl::DrawDropDown(HDC DC, int Radius, int X, int Y, COLORREF Color, int Grow)
+{
+  // Optimized for even-sized Rect (100% scaling), may need adjustments for even-sized to correctly center
+  TPoint Points[] = {
+    Point(X - Radius - 1 - Grow, Y), Point(X + Radius + Grow, Y),
+    Point(X, Y + Radius + Grow), Point(X - 1, Y + Radius + Grow)
+  };
+  HBRUSH Brush = CreateSolidBrush(Color);
+  HPEN Pen = CreatePen(PS_SOLID, 1, Color);
+  HGDIOBJ OldBrush = SelectObject(DC, Brush);
+  HGDIOBJ OldPen = SelectObject(DC, Pen);
+  Polygon(DC, Points, LENOF(Points));
+  SelectObject(DC, OldPen);
+  SelectObject(DC, OldBrush);
 }
 //----------------------------------------------------------------------------------------------------------
 // draw tab item context: possible icon and text
@@ -323,12 +340,13 @@ void __fastcall TThemePageControl::DrawTabItem(
     DrawText(DC, Buf, -1, &Rect, DT_NOPREFIX | DT_CENTER);
     delete[] Buf;
 
-    if (HasTabCloseButton(Item))
+    TThemeTabSheetButtons Button = GetTabButton(Item);
+    if (Button != ttbNone)
     {
-      Rect = CloseButtonRect(Item);
+      Rect = TabButtonRect(Item);
       Rect.Offset(-TabRect.Left, -TabRect.Top);
 
-      if (FHotCloseButton == Item)
+      if (IsHotButton(Item))
       {
         HBRUSH Brush = CreateSolidBrush(GetSelectedBodyColor());
         FillRect(DC, &Rect, Brush);
@@ -341,20 +359,32 @@ void __fastcall TThemePageControl::DrawTabItem(
         DeleteObject(Pen);
       }
 
-      int CrossPadding = GetCrossPadding();
-
       COLORREF BackColor = GetPixel(DC, Rect.Left + (Rect.Width() / 2), Rect.Top + (Rect.Height() / 2));
-      COLORREF CrossColor = ColorToRGB(Font->Color);
-      #define BlendValue(FN) (((4 * static_cast<int>(FN(BackColor))) + static_cast<int>(FN(CrossColor))) / 5)
+      COLORREF ShapeColor = ColorToRGB(Font->Color);
+      #define BlendValue(FN) (((4 * static_cast<int>(FN(BackColor))) + static_cast<int>(FN(ShapeColor))) / 5)
       COLORREF BlendColor = RGB(BlendValue(GetRValue), BlendValue(GetGValue), BlendValue(GetBValue));
       #undef BlendValue
 
-      TRect CrossRect(Rect);
-      CrossRect.Inflate(-CrossPadding, -CrossPadding);
+      if (Button == ttbClose)
+      {
+        int CrossPadding = GetCrossPadding();
 
-      int CrossWidth = ScaleByTextHeight(this, 1);
-      DrawCross(DC, CrossWidth + 1, BlendColor, CrossRect);
-      DrawCross(DC, CrossWidth, CrossColor, CrossRect);
+        TRect CrossRect(Rect);
+        CrossRect.Inflate(-CrossPadding, -CrossPadding);
+
+        int CrossWidth = ScaleByTextHeight(this, 1);
+        DrawCross(DC, CrossWidth + 1, BlendColor, CrossRect);
+        DrawCross(DC, CrossWidth, ShapeColor, CrossRect);
+      }
+      else if (DebugAlwaysTrue(Button == ttbDropDown))
+      {
+        // See TTBXOfficeXPTheme.PaintDropDownArrow
+        int Radius = ScaleByTextHeight(this, 2);
+        int X = ((Rect.Left + Rect.Right)) / 2;
+        int Y = ((Rect.Top + Rect.Bottom) / 2) - (Radius * 2 / 3);
+        DrawDropDown(DC, Radius, X, Y, BlendColor, 1);
+        DrawDropDown(DC, Radius, X, Y, ShapeColor, 0);
+      }
     }
 
     SelectObject(DC, OldFont);
@@ -363,7 +393,7 @@ void __fastcall TThemePageControl::DrawTabItem(
   SetBkMode(DC, OldMode);
 }
 //----------------------------------------------------------------------------------------------------------
-int __fastcall TThemePageControl::CloseButtonSize()
+int __fastcall TThemePageControl::TabButtonSize()
 {
   return ScaleByTextHeight(this, 16);
 }
@@ -373,59 +403,68 @@ int __fastcall TThemePageControl::GetCrossPadding()
   return ScaleByTextHeight(this, 4);
 }
 //----------------------------------------------------------------------------------------------------------
-TRect __fastcall TThemePageControl::CloseButtonRect(int Index)
+TRect __fastcall TThemePageControl::TabButtonRect(int Index)
 {
   TRect Rect = TabRect(Index);
   ItemTabRect(Index, Rect);
   ItemContentsRect(Index, Rect);
   ItemTextRect(Index, Rect);
 
-  int ACloseButtonSize = CloseButtonSize();
+  int ATabButtonSize = TabButtonSize();
   int CrossPadding = GetCrossPadding();
 
   TEXTMETRIC TextMetric;
   Canvas->Font = Font;
   GetTextMetrics(Canvas->Handle, &TextMetric);
 
-  Rect.Top += TextMetric.tmAscent - ACloseButtonSize + CrossPadding;
-  Rect.Left = Rect.Right - ACloseButtonSize - ScaleByTextHeight(this, 1);
+  Rect.Top += TextMetric.tmAscent - ATabButtonSize + CrossPadding;
+  Rect.Left = Rect.Right - ATabButtonSize - ScaleByTextHeight(this, 1);
   if (Index == TabIndex)
   {
     // To counter Inflate(2, 2) in ItemTabRect
     Rect.Left -= 2;
   }
-  Rect.Right = Rect.Left + ACloseButtonSize;
-  Rect.Bottom = Rect.Top + ACloseButtonSize;
+  Rect.Right = Rect.Left + ATabButtonSize;
+  Rect.Bottom = Rect.Top + ATabButtonSize;
   return Rect;
 }
 //----------------------------------------------------------------------------------------------------------
-void __fastcall TThemePageControl::SetHotCloseButton(int Index)
+bool TThemePageControl::IsHotButton(int Index)
 {
-  if (Index != FHotCloseButton)
+  // This was an attempt to allow tracking close buttons, even while drop down button menu is popped,
+  // but MouseMove does not trigger then.
+  return (Index == FClickedButton) || (Index == FHotTabButton);
+}
+//----------------------------------------------------------------------------------------------------------
+void TThemePageControl::UpdateHotButton(int & Ref, int Index)
+{
+  if (Ref != Index)
   {
-    if (FHotCloseButton >= 0)
+    bool WasHot = (Index >= 0) && IsHotButton(Index);
+    int Prev = Ref;
+    Ref = Index;
+    if ((Prev >= 0) && !IsHotButton(Prev))
     {
-      InvalidateTab(FHotCloseButton);
+      InvalidateTab(Prev);
     }
-    FHotCloseButton = Index;
-    if (FHotCloseButton >= 0)
+    if ((Index >= 0) && !WasHot)
     {
-      InvalidateTab(FHotCloseButton);
+      InvalidateTab(Index);
     }
   }
 }
 //----------------------------------------------------------------------------------------------------------
 void __fastcall TThemePageControl::MouseMove(TShiftState /*Shift*/, int X, int Y)
 {
-  SetHotCloseButton(IndexOfCloseButtonAt(X, Y));
+  UpdateHotButton(FHotTabButton, IndexOfTabButtonAt(X, Y));
 }
 //----------------------------------------------------------------------------------------------------------
-int __fastcall TThemePageControl::IndexOfCloseButtonAt(int X, int Y)
+int __fastcall TThemePageControl::IndexOfTabButtonAt(int X, int Y)
 {
   int Result = IndexOfTabAt(X, Y);
   if ((Result < 0) ||
-      !HasTabCloseButton(Result) ||
-      !CloseButtonRect(Result).Contains(TPoint(X, Y)))
+      !GetTabButton(Result) ||
+      !TabButtonRect(Result).Contains(TPoint(X, Y)))
   {
     Result = -1;
   }
@@ -477,14 +516,14 @@ void __fastcall TThemePageControl::Change()
   TPageControl::Change();
 }
 //----------------------------------------------------------------------------------------------------------
-UnicodeString __fastcall TThemePageControl::FormatCaptionWithCloseButton(const UnicodeString & Caption)
+UnicodeString __fastcall TThemePageControl::FormatCaptionWithTabButton(const UnicodeString & Caption)
 {
   UnicodeString Result = Caption;
   if (UseThemes())
   {
     int OrigWidth = Canvas->TextWidth(Caption);
-    int CloseButtonWidth = CloseButtonSize();
-    while (Canvas->TextWidth(Result) < OrigWidth + CloseButtonWidth)
+    int TabButtonWidth = TabButtonSize();
+    while (Canvas->TextWidth(Result) < OrigWidth + TabButtonWidth)
     {
       Result += L" ";
     }
@@ -494,13 +533,21 @@ UnicodeString __fastcall TThemePageControl::FormatCaptionWithCloseButton(const U
 //---------------------------------------------------------------------------
 void __fastcall TThemePageControl::WMLButtonDown(TWMLButtonDown & Message)
 {
-  int Index = IndexOfCloseButtonAt(Message.XPos, Message.YPos);
+  int Index = IndexOfTabButtonAt(Message.XPos, Message.YPos);
   if (Index >= 0)
   {
     Message.Result = 1;
-    if (FOnCloseButtonClick != NULL)
+    if (FOnTabButtonClick != NULL)
     {
-      FOnCloseButtonClick(this, Index);
+      UpdateHotButton(FClickedButton, Index);
+      try
+      {
+        FOnTabButtonClick(this, Index);
+      }
+      __finally
+      {
+        UpdateHotButton(FClickedButton, -1);
+      }
     }
   }
   else
@@ -514,7 +561,7 @@ void __fastcall TThemePageControl::Dispatch(void * Message)
   TMessage * M = reinterpret_cast<TMessage*>(Message);
   if (M->Msg == CM_MOUSELEAVE)
   {
-    SetHotCloseButton(-1);
+    UpdateHotButton(FHotTabButton, -1);
     TPageControl::Dispatch(Message);
   }
   else if (M->Msg == WM_LBUTTONDOWN)
