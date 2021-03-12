@@ -568,6 +568,7 @@ struct TLibS3BucketContext : S3BucketContext
 struct TLibS3ListBucketCallbackData : TLibS3CallbackData
 {
   TRemoteFileList * FileList;
+  bool Any;
   int KeyCount;
   UTF8String NextMarker;
   bool IsTruncated;
@@ -914,6 +915,7 @@ S3Status TS3FileSystem::LibS3ListBucketCallback(
 
   for (int Index = 0; Index < ContentsCount; Index++)
   {
+    Data.Any = true;
     const S3ListBucketContent * Content = &Contents[Index];
     UnicodeString FileName = UnixExtractFileName(StrFromS3(Content->key));
     if (!FileName.IsEmpty())
@@ -927,15 +929,11 @@ S3Status TS3FileSystem::LibS3ListBucketCallback(
       File->Owner = Data.FileSystem->MakeRemoteToken(Content->ownerId, Content->ownerDisplayName);
       Data.FileList->AddFile(File.release());
     }
-    else
-    {
-      // We needs this to distinguish empty and non-existing folders, see comments in ReadDirectoryInternal.
-      Data.FileList->AddFile(new TRemoteParentDirectory(Data.FileSystem->FTerminal));
-    }
   }
 
   for (int Index = 0; Index < CommonPrefixesCount; Index++)
   {
+    Data.Any = true;
     UnicodeString CommonPrefix = StrFromS3(CommonPrefixes[Index]);
     UnicodeString FileName = UnixExtractFileName(UnixExcludeTrailingBackslash(CommonPrefix));
     // Have seen prefixes like "/" or "path/subpath//"
@@ -959,6 +957,7 @@ void TS3FileSystem::DoListBucket(
 {
   S3ListBucketHandler ListBucketHandler = { CreateResponseHandler(), &LibS3ListBucketCallback };
   RequestInit(Data);
+  Data.Any = false;
   Data.KeyCount = 0;
   Data.FileList = FileList;
   Data.IsTruncated = false;
@@ -1058,17 +1057,18 @@ void TS3FileSystem::ReadDirectoryInternal(
     } while (Continue);
 
     // Listing bucket root directory will report an error if the bucket does not exist.
-    // But there won't be any prefix/ entry, so no ".." entry is created, so we have to add it explicitly
-    if (Prefix.IsEmpty())
+    // But there won't be any prefix/ entry, so if the bucket is ampty, the Data.Any is false.
+    // But when listing a prefix, we do not get any error, when the "prefix" does not exist.
+    // But when the prefix does exist, there's at least the prefix/ entry. If there's none, it means that the path does not exist.
+    // Even an empty-named entry/subprefix (which are ignored for other purposes) still indicate that the prefix exists.
+    if (Prefix.IsEmpty() || Data.Any)
     {
       FileList->AddFile(new TRemoteParentDirectory(FTerminal));
     }
     else
     {
-      // We do not get any error, when the "prefix" does not exist. But when prefix does exist, there's at least
-      // prefix/ entry (translated to ..). If there's none, it means that the path does not exist.
       // When called from DoReadFile (FileName is set), leaving error handling to the caller.
-      if ((FileList->Count == 0) && FileName.IsEmpty())
+      if (FileName.IsEmpty())
       {
         throw Exception(FMTLOAD(FILE_NOT_EXISTS, (APath)));
       }
@@ -1126,10 +1126,10 @@ void __fastcall TS3FileSystem::DeleteFile(const UnicodeString AFileName,
   UnicodeString BucketName, Key;
   ParsePath(FileName, BucketName, Key);
 
-  if (!Key.IsEmpty() && Dir)
-  {
-    Key = GetFolderKey(Key);
-  }
+    if (!Key.IsEmpty() && Dir)
+    {
+      Key = GetFolderKey(Key);
+    }
 
   TLibS3BucketContext BucketContext = GetBucketContext(BucketName, Key);
 
