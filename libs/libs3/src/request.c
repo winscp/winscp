@@ -399,9 +399,13 @@ static S3Status compose_amz_headers(const RequestParams *params,
         // Add the x-amz-copy-source header
         if (params->copySourceBucketName && params->copySourceBucketName[0]
             && params->copySourceKey && params->copySourceKey[0]) {
-            char bucketKey[S3_MAX_METADATA_SIZE];
-            snprintf(bucketKey, sizeof(bucketKey), "/%s/%s",
-                     params->copySourceBucketName, params->copySourceKey);
+            // WINSCP
+            char bucketKey[1 + S3_MAX_BUCKET_NAME_SIZE + 1 + MAX_URLENCODED_KEY_SIZE + 1];
+            snprintf(bucketKey, 1 + S3_MAX_BUCKET_NAME_SIZE + 1 + 1, "/%s/", params->copySourceBucketName);
+            if (!urlEncode(bucketKey + strlen(bucketKey), params->copySourceKey, S3_MAX_KEY_SIZE, 0))
+            {
+                return S3StatusUriTooLong;
+            }
             append_amz_header(values, 0, "x-amz-copy-source", bucketKey);
         }
         // If byteCount != 0 then we're just copying a range, add header
