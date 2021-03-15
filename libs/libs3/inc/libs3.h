@@ -767,6 +767,7 @@ typedef struct S3ListBucketContent
      * date of the object identified by the key.
      **/
     int64_t lastModified;
+    const char *lastModifiedStr; // WINSCP 
 
     /**
      * This gives a tag which gives a signature of the contents of the object,

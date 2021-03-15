@@ -819,7 +819,32 @@ S3Status TS3FileSystem::LibS3ListBucketCallback(
       File->Terminal = Data.FileSystem->FTerminal;
       File->FileName = FileName;
       File->Type = FILETYPE_DEFAULT;
-      File->Modification = UnixToDateTime(Content->lastModified, dstmWin);
+
+      #define ISO8601_FORMAT "%04d-%02d-%02dT%02d:%02d:%02d"
+      int Year = 0;
+      int Month = 0;
+      int Day = 0;
+      int Hour = 0;
+      int Min = 0;
+      int Sec = 0;
+      // The libs3's parseIso8601Time uses mktime, so returns a local time, which we would have to complicatedly restore,
+      // Doing own parting instead as it's easier.
+      // Keep is sync with WebDAV
+      int Filled =
+        sscanf(Content->lastModifiedStr, ISO8601_FORMAT, &Year, &Month, &Day, &Hour, &Min, &Sec);
+      if (Filled == 6)
+      {
+        TDateTime Modification =
+          EncodeDateVerbose((unsigned short)Year, (unsigned short)Month, (unsigned short)Day) +
+          EncodeTimeVerbose((unsigned short)Hour, (unsigned short)Min, (unsigned short)Sec, 0);
+        File->Modification = ConvertTimestampFromUTC(Modification);
+        File->ModificationFmt = mfFull;
+      }
+      else
+      {
+        File->ModificationFmt = mfNone;
+      }
+
       File->Size = Content->size;
       File->Owner = Data.FileSystem->MakeRemoteToken(Content->ownerId, Content->ownerDisplayName);
       Data.FileList->AddFile(File.release());

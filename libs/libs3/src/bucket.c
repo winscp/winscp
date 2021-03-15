@@ -493,6 +493,7 @@ static S3Status make_list_bucket_callback(ListBucketData *lbData)
         contentDest->key = contentSrc->key;
         contentDest->lastModified =
             parseIso8601Time(contentSrc->lastModified);
+        contentDest->lastModifiedStr = contentSrc->lastModified; // WINSCP
         contentDest->eTag = contentSrc->eTag;
         contentDest->size = parseUnsignedInt(contentSrc->size);
         contentDest->ownerId =
