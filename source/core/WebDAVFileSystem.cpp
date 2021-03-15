@@ -859,6 +859,7 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
     int Min = 0;
     int Sec = 0;
     #define RFC1123_FORMAT "%3s, %02d %3s %4d %02d:%02d:%02d GMT"
+    // Keep is sync with S3
     int Filled =
       sscanf(LastModified, RFC1123_FORMAT, WeekDay, &Day, MonthStr, &Year, &Hour, &Min, &Sec);
     // we need at least a complete date
@@ -873,6 +874,14 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
         File->Modification = ConvertTimestampFromUTC(Modification);
         File->ModificationFmt = mfFull;
       }
+      else
+      {
+        File->ModificationFmt = mfNone;
+      }
+    }
+    else
+    {
+      File->ModificationFmt = mfNone;
     }
   }
 
