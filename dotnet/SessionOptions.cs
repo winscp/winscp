@@ -401,9 +401,9 @@ namespace WinSCP
 
         private void SetPortNumber(int value)
         {
-            if (value < 0)
+            if ((value < 1) || (value > 65535))
             {
-                throw new ArgumentException("Port number cannot be negative");
+                throw new ArgumentException("Port number has to be in range from 0 to 65535");
             }
 
             _portNumber = value;
