@@ -1553,10 +1553,9 @@ void __fastcall TTerminal::OpenTunnel()
 
     FTunnelThread = new TTunnelThread(FTunnel);
   }
-  catch (Exception & E)
+  catch (...)
   {
     LogEvent(L"Error opening tunnel.");
-    Log->AddException(&E);
     CloseTunnel();
     throw;
   }

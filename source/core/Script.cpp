@@ -304,6 +304,7 @@ __fastcall TScript::TScript(bool LimitedOutput)
 {
   FLimitedOutput = LimitedOutput;
   FTerminal = NULL;
+  FLoggingTerminal = NULL;
   FGroups = false;
   FWantsProgress = false;
   FInteractive = false;
@@ -440,12 +441,13 @@ bool __fastcall TScript::IsTerminalLogging(TTerminal * ATerminal)
 }
 //---------------------------------------------------------------------------
 const static UnicodeString ScriptLogFormat(L"Script: %s");
-void __fastcall TScript::Log(TLogLineType Type, UnicodeString Str)
+void __fastcall TScript::Log(TLogLineType Type, const UnicodeString & AStr, TTerminal * ATerminal)
 {
-  Str = FORMAT(ScriptLogFormat, (Str));
-  if (IsTerminalLogging(Terminal))
+  UnicodeString Str = FORMAT(ScriptLogFormat, (AStr));
+  TTerminal * LoggingTerminal = (ATerminal != NULL ? Terminal : (FLoggingTerminal != NULL ? FLoggingTerminal : Terminal));
+  if (IsTerminalLogging(LoggingTerminal))
   {
-    Terminal->Log->Add(Type, Str);
+    LoggingTerminal->Log->Add(Type, Str);
   }
   else if (Configuration->Logging)
   {
@@ -895,9 +897,9 @@ void __fastcall TScript::Print(const UnicodeString Str, bool Error)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScript::PrintLine(const UnicodeString Str, bool Error)
+void __fastcall TScript::PrintLine(const UnicodeString Str, bool Error, TTerminal * ATerminal)
 {
-  Log(llOutput, Str);
+  Log(llOutput, Str, ATerminal);
   Print(Str + L"\n", Error);
 }
 //---------------------------------------------------------------------------
@@ -2261,7 +2263,7 @@ void __fastcall TManagementScript::TerminalInformation(
   DebugAssert(ATerminal != NULL);
   if ((Phase < 0) && (ATerminal->Status == ssOpening))
   {
-    PrintLine(Str);
+    PrintLine(Str, false, ATerminal);
   }
 }
 //---------------------------------------------------------------------------
@@ -2725,39 +2727,48 @@ void __fastcall TManagementScript::Connect(const UnicodeString Session,
 
       bool WasLogActions = Configuration->LogActions;
       TTerminal * ATerminal = FTerminalList->NewTerminal(Data);
+      DebugAssert(FLoggingTerminal == NULL);
+      FLoggingTerminal = ATerminal;
       try
       {
-        ATerminal->AutoReadDirectory = false;
+        try
+        {
+          ATerminal->AutoReadDirectory = false;
 
-        ATerminal->OnInformation = TerminalInformation;
-        ATerminal->OnPromptUser = TerminalPromptUser;
-        ATerminal->OnShowExtendedException = OnShowExtendedException;
-        ATerminal->OnQueryUser = OnTerminalQueryUser;
-        ATerminal->OnProgress = TerminalOperationProgress;
-        ATerminal->OnFinished = TerminalOperationFinished;
-        ATerminal->OnInitializeLog = TerminalInitializeLog;
+          ATerminal->OnInformation = TerminalInformation;
+          ATerminal->OnPromptUser = TerminalPromptUser;
+          ATerminal->OnShowExtendedException = OnShowExtendedException;
+          ATerminal->OnQueryUser = OnTerminalQueryUser;
+          ATerminal->OnProgress = TerminalOperationProgress;
+          ATerminal->OnFinished = TerminalOperationFinished;
+          ATerminal->OnInitializeLog = TerminalInitializeLog;
 
-        ConnectTerminal(ATerminal);
+          ConnectTerminal(ATerminal);
+        }
+        catch(Exception & E)
+        {
+          // fatal error, most probably caused by XML logging failure (as it has been turned off),
+          // and XML log is required => abort
+          if ((dynamic_cast<EFatal *>(&E) != NULL) &&
+              WasLogActions && !Configuration->LogActions &&
+              Configuration->LogActionsRequired)
+          {
+            FContinue = false;
+          }
+          // make sure errors (mainly fatal ones) are associated
+          // with this terminal, not the last active one
+          bool Handled = HandleExtendedException(&E, ATerminal);
+          FTerminalList->FreeTerminal(ATerminal);
+          ATerminal = NULL;
+          if (!Handled)
+          {
+            throw;
+          }
+        }
       }
-      catch(Exception & E)
+      __finally
       {
-        // fatal error, most probably caused by XML logging failure (as it has been turned off),
-        // and XML log is required => abort
-        if ((dynamic_cast<EFatal *>(&E) != NULL) &&
-            WasLogActions && !Configuration->LogActions &&
-            Configuration->LogActionsRequired)
-        {
-          FContinue = false;
-        }
-        // make sure errors (mainly fatal ones) are associated
-        // with this terminal, not the last active one
-        bool Handled = HandleExtendedException(&E, ATerminal);
-        FTerminalList->FreeTerminal(ATerminal);
-        ATerminal = NULL;
-        if (!Handled)
-        {
-          throw;
-        }
+        FLoggingTerminal = NULL;
       }
 
       if (ATerminal != NULL)
