@@ -54,8 +54,8 @@ public:
   virtual __fastcall ~TScript();
 
   void __fastcall Command(UnicodeString Cmd);
-  void __fastcall Log(TLogLineType Type, UnicodeString Str);
-  void __fastcall PrintLine(const UnicodeString Str, bool Error = false);
+  void __fastcall Log(TLogLineType Type, const UnicodeString & Str, TTerminal * ATerminal = NULL);
+  void __fastcall PrintLine(const UnicodeString Str, bool Error = false, TTerminal * ATerminal = NULL);
   void __fastcall StartInteractive();
 
   void __fastcall Synchronize(const UnicodeString LocalDirectory,
@@ -81,6 +81,7 @@ public:
 
 protected:
   TTerminal * FTerminal;
+  TTerminal * FLoggingTerminal;
   TScriptCommands * FCommands;
   TScriptPrintEvent FOnPrint;
   TExtendedExceptionEvent FOnShowExtendedException;
