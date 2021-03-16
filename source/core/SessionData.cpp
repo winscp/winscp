@@ -2107,8 +2107,12 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       // expanded from ?: operator, as it caused strange "access violation" errors
       if (!HostInfo.IsEmpty())
       {
-        PortNumber = StrToIntDef(DecodeUrlChars(HostInfo), -1);
-        PortNumberDefined = true;
+        int APortNumber = StrToIntDef(DecodeUrlChars(HostInfo), -1);
+        if ((APortNumber > 0) && (APortNumber <= 65535))
+        {
+          PortNumber = APortNumber;
+          PortNumberDefined = true;
+        }
       }
       else if (ProtocolDefined)
       {
