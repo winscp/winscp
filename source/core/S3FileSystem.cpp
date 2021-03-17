@@ -1151,10 +1151,10 @@ void __fastcall TS3FileSystem::DeleteFile(const UnicodeString AFileName,
   UnicodeString BucketName, Key;
   ParsePath(FileName, BucketName, Key);
 
-    if (!Key.IsEmpty() && Dir)
-    {
-      Key = GetFolderKey(Key);
-    }
+  if (!Key.IsEmpty() && Dir)
+  {
+    Key = GetFolderKey(Key);
+  }
 
   TLibS3BucketContext BucketContext = GetBucketContext(BucketName, Key);
 

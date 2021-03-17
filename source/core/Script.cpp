@@ -444,7 +444,7 @@ const static UnicodeString ScriptLogFormat(L"Script: %s");
 void __fastcall TScript::Log(TLogLineType Type, const UnicodeString & AStr, TTerminal * ATerminal)
 {
   UnicodeString Str = FORMAT(ScriptLogFormat, (AStr));
-  TTerminal * LoggingTerminal = (ATerminal != NULL ? Terminal : (FLoggingTerminal != NULL ? FLoggingTerminal : Terminal));
+  TTerminal * LoggingTerminal = (ATerminal != NULL ? ATerminal : (FLoggingTerminal != NULL ? FLoggingTerminal : Terminal));
   if (IsTerminalLogging(LoggingTerminal))
   {
     LoggingTerminal->Log->Add(Type, Str);
