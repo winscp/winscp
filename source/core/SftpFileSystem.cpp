@@ -3358,7 +3358,7 @@ void __fastcall TSFTPFileSystem::TryOpenDirectory(const UnicodeString Directory)
     // File can be NULL only when server does not support SSH_FXP_LSTAT.
     // Fallback to legacy solution, which in turn does not allow entering
     // traverse-only (chmod 110) directories.
-    // This is workaround for http://www.ftpshell.com/
+    // This is workaround for https://www.ftpshell.com/
     TSFTPPacket Packet(SSH_FXP_OPENDIR);
     AddPathString(Packet, UnixExcludeTrailingBackslash(Directory));
     SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_HANDLE);
