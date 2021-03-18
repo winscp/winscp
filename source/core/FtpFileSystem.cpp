@@ -331,7 +331,7 @@ void __fastcall TFTPFileSystem::Open()
 
   FLastDataSent = Now();
 
-  FMultineResponse = false;
+  FMultiLineResponse = false;
 
   // initialize FZAPI on the first connect only
   if (FFileZillaIntf == NULL)
@@ -3039,6 +3039,7 @@ void __fastcall TFTPFileSystem::ResetReply()
 {
   FLastCode = 0;
   FLastCodeClass = 0;
+  FMultiLineResponse = false;
   DebugAssert(FLastResponse != NULL);
   FLastResponse->Clear();
   DebugAssert(FLastErrorResponse != NULL);
@@ -3345,9 +3346,9 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
     (Code >= 100) && (Code <= 599) &&
     ((Response.Length() == 3) || (Response[4] == L' ') || (Response[4] == L'-'));
 
-  if (HasCodePrefix && !FMultineResponse)
+  if (HasCodePrefix && !FMultiLineResponse)
   {
-    FMultineResponse = (Response.Length() >= 4) && (Response[4] == L'-');
+    FMultiLineResponse = (Response.Length() >= 4) && (Response[4] == L'-');
     FLastResponse->Clear();
     FLastErrorResponse->Clear();
     SetLastCode(Code);
@@ -3365,7 +3366,7 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
       // End of multiline response?
       if ((Response.Length() <= 3) || (Response[4] == L' '))
       {
-        FMultineResponse = false;
+        FMultiLineResponse = false;
       }
       Start = 5;
     }
@@ -3375,7 +3376,7 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
     }
 
     // Intermediate empty lines are being added
-    if (FMultineResponse || (Response.Length() >= Start))
+    if (FMultiLineResponse || (Response.Length() >= Start))
     {
       StoreLastResponse(Response.SubString(Start, Response.Length() - Start + 1));
     }
@@ -3396,7 +3397,7 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
     }
   }
 
-  if (!FMultineResponse)
+  if (!FMultiLineResponse)
   {
     if (FLastCode == 220)
     {
