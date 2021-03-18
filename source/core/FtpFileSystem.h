@@ -240,7 +240,7 @@ private:
   TCommand FLastCommand;
   bool FPasswordFailed;
   bool FStoredPasswordTried;
-  bool FMultineResponse;
+  bool FMultiLineResponse;
   int FLastCode;
   int FLastCodeClass;
   int FLastReadDirectoryProgress;
