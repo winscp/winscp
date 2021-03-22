@@ -551,6 +551,8 @@ begin
   FChevronMoveItems := True;
   FView := GetViewClass.CreateView(Self, nil, FItem, Self, True, False,
     not(csDesigning in ComponentState));
+  // This might as well go to TTBToolbarView.Create
+  FView.Style := FView.Style + [vsUseHiddenAccels];
   FView.BackgroundColor := clBtnFace;
   FUpdateActions := True;
   FShrinkMode := tbsmChevron;
@@ -1062,11 +1064,11 @@ begin
     FMenuBar := Value;
     if Value then begin
       ControlStyle := ControlStyle + [csMenuEvents];
-      FView.Style := FView.Style + [vsMenuBar, vsUseHiddenAccels];
+      FView.Style := FView.Style + [vsMenuBar];
     end
     else begin
       ControlStyle := ControlStyle - [csMenuEvents];
-      FView.Style := FView.Style - [vsMenuBar, vsUseHiddenAccels];
+      FView.Style := FView.Style - [vsMenuBar];
     end;
     if not(csLoading in ComponentState) then begin
       FullSize := Value;
