@@ -2986,6 +2986,12 @@ void __fastcall TSFTPFileSystem::DoStartup()
 
   FVersion = Packet.GetCardinal();
   FTerminal->LogEvent(FORMAT(L"SFTP version %d negotiated.", (FVersion)));
+  if (FVersion > MaxVersion)
+  {
+    // This happens with ProFTPD:
+    // https://github.com/proftpd/proftpd/issues/1200
+    FTerminal->LogEvent(L"Got higher version than asked for.");
+  }
   if (FVersion < SFTPMinVersion || FVersion > SFTPMaxVersion)
   {
     FTerminal->FatalError(NULL, FMTLOAD(SFTP_VERSION_NOT_SUPPORTED,
