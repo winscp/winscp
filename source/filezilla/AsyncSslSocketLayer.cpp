@@ -1785,11 +1785,8 @@ int CAsyncSslSocketLayer::ProvideClientCert(
 {
   CAsyncSslSocketLayer * Layer = LookupLayer(Ssl);
 
-  USES_CONVERSION;
   CString Message;
   Message.LoadString(NEED_CLIENT_CERTIFICATE);
-  char * Buffer = new char[Message.GetLength() + 1];
-  strcpy(Buffer, T2A(Message));
 
   int Level;
   int Result;
@@ -1807,8 +1804,7 @@ int CAsyncSslSocketLayer::ProvideClientCert(
     Result = 1;
   }
 
-  Layer->LogSocketMessageRaw(Level, A2T(Buffer));
-  delete [] Buffer;
+  Layer->LogSocketMessageRaw(Level, static_cast<LPCTSTR>(Message));
 
   return Result;
 }
