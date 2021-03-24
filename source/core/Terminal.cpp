@@ -1250,6 +1250,7 @@ void __fastcall TTerminal::Open()
     DoInformation(L"", true, 1);
     try
     {
+      FRememberedPasswordUsed = false;
       try
       {
         ResetConnection();
@@ -1418,11 +1419,14 @@ void __fastcall TTerminal::Open()
           FFingerprintScannedSHA1 = SessionInfo.CertificateFingerprintSHA1;
           FFingerprintScannedMD5 = UnicodeString();
         }
-        // Particularly to prevent reusing a wrong client certificate passphrase
-        // in the next login attempt
-        FRememberedPassword = UnicodeString();
-        FRememberedPasswordKind = TPromptKind(-1);
-        FRememberedTunnelPassword = UnicodeString();
+        if (FRememberedPasswordUsed)
+        {
+          // Particularly to prevent reusing a wrong client certificate passphrase
+          // in the next login attempt
+          FRememberedPassword = UnicodeString();
+          FRememberedPasswordKind = TPromptKind(-1);
+          FRememberedTunnelPassword = UnicodeString();
+        }
         throw;
       }
     }
@@ -1738,6 +1742,7 @@ bool __fastcall TTerminal::DoPromptUser(TSessionData * /*Data*/, TPromptKind Kin
       {
         APassword = GetPasswordSource()->GetRememberedPassword();
       }
+      FRememberedPasswordUsed = true;
       Results->Strings[0] = APassword;
       if (!Results->Strings[0].IsEmpty())
       {
