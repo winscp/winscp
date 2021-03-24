@@ -197,6 +197,7 @@ private:
   RawByteString FRememberedPassword;
   TPromptKind FRememberedPasswordKind;
   RawByteString FRememberedTunnelPassword;
+  bool FRememberedPasswordUsed;
   TTunnelThread * FTunnelThread;
   TSecureShell * FTunnel;
   TSessionData * FTunnelData;
