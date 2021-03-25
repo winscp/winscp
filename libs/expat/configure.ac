@@ -11,11 +11,11 @@ dnl   in the file COPYING that comes with this distribution.
 dnl
 
 dnl Ensure that Expat is configured with autoconf 2.69 or newer.
-AC_PREREQ(2.69)
+AC_PREREQ([2.69])
 
 dnl Get the version number of Expat, using m4's esyscmd() command to run
 dnl the command at m4-generation time. This allows us to create an m4
-dnl symbol holding the correct version number. AC_INIT() requires the
+dnl symbol holding the correct version number. AC_INIT requires the
 dnl version number at m4-time, rather than when ./configure is run, so
 dnl all this must happen as part of m4, not as part of the shell code
 dnl contained in ./configure.
@@ -27,7 +27,7 @@ m4_define([expat_version],
   m4_ifdef([__gnu__],
            [esyscmd(conftools/get-version.sh lib/expat.h)],
            [2.2.x]))
-AC_INIT(expat, expat_version, expat-bugs@libexpat.org)
+AC_INIT([expat], expat_version, [expat-bugs@libexpat.org])
 m4_undefine([expat_version])
 
 AC_CONFIG_SRCDIR([Makefile.in])
@@ -48,12 +48,12 @@ dnl
 dnl If the API changes incompatibly set LIBAGE back to 0
 dnl
 
-LIBCURRENT=7    # sync
-LIBREVISION=12  # with
-LIBAGE=6        # CMakeLists.txt!
+LIBCURRENT=8   # sync
+LIBREVISION=0  # with
+LIBAGE=7       # CMakeLists.txt!
 
 AX_APPEND_FLAG([-DHAVE_EXPAT_CONFIG_H], [AM_CPPFLAGS])
-AC_CONFIG_HEADER([expat_config.h])
+AC_CONFIG_HEADERS([expat_config.h])
 
 AM_PROG_AR
 AC_PROG_INSTALL
@@ -105,9 +105,6 @@ EXPATCFG_COMPILER_SUPPORTS_VISIBILITY([
   AX_APPEND_FLAG([-fvisibility=hidden],       [AM_CFLAGS])
   AX_APPEND_FLAG([-DXML_ENABLE_VISIBILITY=1], [AM_CPPFLAGS])])
 
-dnl Checks for header files.
-AC_HEADER_STDC
-
 dnl Checks for typedefs, structures, and compiler characteristics.
 
 dnl We define BYTEORDER to 1234 when the platform is little endian; it
@@ -151,7 +148,11 @@ AS_CASE("${host_os}",
    AC_MSG_NOTICE([detected OS: MinGW])])
 AM_CONDITIONAL([MINGW], [test x${EXPATCFG_ON_MINGW} = xyes])
 
+dnl Note: Prefix "_INTERNAL_" here means exclusive use inside of file configure.ac
 AM_CONDITIONAL([UNICODE], [echo -- "${CPPFLAGS}${CFLAGS}" | ${FGREP} XML_UNICODE >/dev/null])
+AM_CONDITIONAL([_INTERNAL_UNICODE_WCHAR_T], [echo -- "${CPPFLAGS}${CFLAGS}" | ${FGREP} XML_UNICODE_WCHAR_T >/dev/null])
+AM_CONDITIONAL([_INTERNAL_MIN_SIZE], [echo -- "${CPPFLAGS}${CFLAGS}" | ${FGREP} XML_MIN_SIZE >/dev/null])
+AM_CONDITIONAL([_INTERNAL_LARGE_SIZE], [echo -- "${CPPFLAGS}${CFLAGS}" | ${FGREP} XML_LARGE_SIZE >/dev/null])
 
 
 AC_ARG_WITH([libbsd],
@@ -309,6 +310,50 @@ AS_IF([test "x${DOCBOOK_TO_MAN}" != x -a "x$with_docbook" != xno],
 
 AM_CONDITIONAL(WITH_DOCBOOK, [test "x${DOCBOOK_TO_MAN}" != x])
 
+
+dnl Configure CMake file templates
+dnl NOTE: The *_TRUE variables read here are Automake conditionals
+dnl       that are either set to "" when enabled or to "#" when disabled
+dnl       (because they are used to dynamically comment out certain things)
+AS_IF([test "x${enable_xml_attr_info}" = xyes],
+  [EXPAT_ATTR_INFO=ON],
+  [EXPAT_ATTR_INFO=OFF])
+EXPAT_DTD=ON
+AS_IF([test "x${_INTERNAL_LARGE_SIZE_TRUE}" = x],
+  [EXPAT_LARGE_SIZE=ON],
+  [EXPAT_LARGE_SIZE=OFF])
+AS_IF([test "x${_INTERNAL_MIN_SIZE_TRUE}" = x],
+  [EXPAT_MIN_SIZE=ON],
+  [EXPAT_MIN_SIZE=OFF])
+EXPAT_NS=ON
+AS_IF([test "x${enable_xml_context}" != xno],
+  [EXPAT_CONTEXT_BYTES=${enable_xml_context}],
+  [EXPAT_CONTEXT_BYTES=OFF])
+AS_IF([test "x${UNICODE_TRUE}" = x],
+  [AS_IF(
+     [test "x${_INTERNAL_UNICODE_WCHAR_T_TRUE}" = x],
+        [EXPAT_CHAR_TYPE=wchar_t],
+        [EXPAT_CHAR_TYPE=ushort])],
+  [EXPAT_CHAR_TYPE=char])
+PACKAGE_INIT="${srcdir}"/cmake/autotools/expat-package-init.cmake
+LIBDIR_BASENAME="$(basename "${libdir}")"
+SO_MAJOR="$(expr "${LIBCURRENT}" - "${LIBAGE}")"
+SO_MINOR="${LIBAGE}"
+SO_PATCH="${LIBREVISION}"
+AC_SUBST([EXPAT_ATTR_INFO])
+AC_SUBST([EXPAT_DTD])
+AC_SUBST([EXPAT_LARGE_SIZE])
+AC_SUBST([EXPAT_MIN_SIZE])
+AC_SUBST([EXPAT_NS])
+AC_SUBST([EXPAT_CONTEXT_BYTES])
+AC_SUBST([EXPAT_CHAR_TYPE])
+AC_SUBST_FILE([PACKAGE_INIT])
+AC_SUBST([LIBDIR_BASENAME])
+AC_SUBST([SO_MAJOR])
+AC_SUBST([SO_MINOR])
+AC_SUBST([SO_PATCH])
+
+
 dnl write the Automake flags we set
 AC_SUBST([AM_CPPFLAGS])
 AC_SUBST([AM_CFLAGS])
@@ -320,6 +365,9 @@ AC_SUBST(_EXPAT_OUTPUT_NAME, ["$PACKAGE_NAME"])
 
 AC_CONFIG_FILES([Makefile]
   [expat.pc]
+  [cmake/expat-config.cmake]
+  [cmake/autotools/expat-config-version.cmake]
+  [cmake/autotools/expat-noconfig.cmake]
   [doc/Makefile]
   [examples/Makefile]
   [lib/Makefile]

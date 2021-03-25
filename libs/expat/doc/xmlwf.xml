@@ -60,6 +60,7 @@
 	  <arg><option>-t</option></arg>
           <arg><option>-N</option></arg>
 
+	  <arg><option>-k</option></arg>
 	  <arg><option>-v</option></arg>
 
 	  <arg>file ...</arg>
@@ -294,6 +295,20 @@ supports both.
       </varlistentry>
 
       <varlistentry>
+	<term><option>-k</option></term>
+	<listitem>
+		<para>
+  When processing multiple files, Expat by default halts after the	    
+  the first file with an error. This tells Expat to report the error
+  but to keep processing. 
+  This can be useful, for example, when testing a filter that converts
+  many files to XML and you want to quickly find out which conversions
+  failed.
+	  </para>
+	</listitem>
+      </varlistentry>
+      
+      <varlistentry>
         <term><option>-v</option></term>
         <listitem>
 		<para>
@@ -379,11 +394,17 @@ supports both.
   <refsect1>
   <title>OUTPUT</title>
     <para>
-	If an input file is not well-formed,
-	<command>&dhpackage;</command> prints a single line describing
-	the problem to standard output.  If a file is well formed,
-	<command>&dhpackage;</command> outputs nothing.
-	</para>
+	<command>&dhpackage;</command> outputs nothing for files which are problem-free.
+        If any input file is not well-formed, or if the output for any
+	input file cannot be opened, <command>&dhpackage;</command> prints a single
+	line describing	the problem to standard output.
+    </para>
+    <para>
+        If the <option>-k</option> option is not provided, <command>&dhpackage;</command>
+	halts upon encountering a well-formedness or output-file error. 
+	If <option>-k</option> is provided, <command>&dhpackage;</command> continues
+	processing the remaining input files, describing problems found with any of them.
+    </para>
   </refsect1>
 
   <refsect1>
@@ -392,7 +413,7 @@ supports both.
     <variablelist>
       <varlistentry>
         <term><option>0</option></term>
-        <listitem><para>The input files are well-formed.</para>
+        <listitem><para>The input files are well-formed and the output (if requested) was written successfully.</para>
         </listitem>
       </varlistentry>
       <varlistentry>
@@ -402,12 +423,17 @@ supports both.
       </varlistentry>
       <varlistentry>
         <term><option>2</option></term>
-        <listitem><para>An input file was not well-formed or could not be parsed.</para>
+        <listitem><para>One or more input files were not well-formed or could not be parsed.</para>
         </listitem>
       </varlistentry>
       <varlistentry>
         <term><option>3</option></term>
         <listitem><para>If using the <option>-d</option> option, an error occurred opening an output file.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><option>4</option></term>
+        <listitem><para>There was a command-line argument error in how <command>&dhpackage;</command> was invoked.</para>
         </listitem>
       </varlistentry>
     </variablelist>
