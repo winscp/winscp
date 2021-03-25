@@ -665,7 +665,7 @@ namespace WinSCP
 
                 Regex regex = MaskToRegex(mask);
 
-                return DoEnumerateRemoteFiles(path, regex, options, true);
+                return new ImplicitEnumerable<RemoteFileInfo>(DoEnumerateRemoteFiles(path, regex, options, true));
             }
         }
 
