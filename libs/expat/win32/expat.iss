@@ -4,7 +4,7 @@
 ; This script was contributed by Tim Peters.
 ; It was designed for Inno Setup 2.0.19 but works with later versions as well.
 
-#define expatVer "2.2.10"
+#define expatVer "2.3.0"
 
 [Setup]
 AppName=Expat

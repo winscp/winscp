@@ -33,7 +33,7 @@ endif()
 
 project(expat
     VERSION
-        2.2.10
+        2.3.0
     LANGUAGES
         C
 )
@@ -46,11 +46,6 @@ set(PACKAGE_TARNAME "${PACKAGE_NAME}")
 
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
-
-#
-# Detect use by means of add_subdirectory
-#
-get_directory_property(_EXPAT_PARENT_DIRECTORY PARENT_DIRECTORY)
 
 #
 # Configuration defaults
@@ -117,6 +112,11 @@ if(MSVC OR _EXPAT_HELP)
     set(EXPAT_MSVC_STATIC_CRT OFF CACHE BOOL "Use /MT flag (static CRT) when compiling in MSVC")
 endif()
 
+if(EXPAT_BUILD_TESTS)
+    # We have to call enable_language() before modifying any CMAKE_CXX_* variables
+    enable_language(CXX)
+endif()
+
 #
 # Environment checks
 #
@@ -126,6 +126,14 @@ if(EXPAT_WITH_LIBBSD)
         message(SEND_ERROR "EXPAT_WITH_LIBBSD option is enabled, but libbsd was not found")
     else()
         set(HAVE_LIBBSD TRUE)
+    endif()
+endif()
+
+if(MSVC)
+    # Minimum supported MSVC version is 1910 = Visual Studio 15.0/2017
+    # See also https://cmake.org/cmake/help/latest/variable/MSVC_VERSION.html
+    if(MSVC_VERSION VERSION_LESS 1910)
+        message(SEND_ERROR "MSVC_VERSION ${MSVC_VERSION} is not a supported Visual Studio compiler version. Please use Visual Studio 15.0/2017 or any later version.")
     endif()
 endif()
 
@@ -327,9 +335,9 @@ if(EXPAT_WITH_LIBBSD)
     target_link_libraries(expat ${LIB_BSD})
 endif()
 
-set(LIBCURRENT 7)    # sync
-set(LIBREVISION 12)  # with
-set(LIBAGE 6)        # configure.ac!
+set(LIBCURRENT 8)   # sync
+set(LIBREVISION 0)  # with
+set(LIBAGE 7)       # configure.ac!
 math(EXPR LIBCURRENT_MINUS_AGE "${LIBCURRENT} - ${LIBAGE}")
 
 set_property(TARGET expat PROPERTY OUTPUT_NAME "${_EXPAT_OUTPUT_NAME}")
@@ -423,7 +431,6 @@ endif()
 #
 if(EXPAT_BUILD_TESTS)
     ## these are unittests that can be run on any platform
-    enable_language(CXX)
     enable_testing()
 
     set(test_SRCS

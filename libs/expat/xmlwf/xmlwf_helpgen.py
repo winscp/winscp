@@ -31,6 +31,13 @@
 import argparse
 
 epilog = """
+exit status:
+  0             the input files are well-formed and the output (if requested) was written successfully
+  1             could not allocate data structures, signals a serious problem with execution environment
+  2             one or more input files were not well-formed
+  3             could not create an output file
+  4             command-line argument error
+
 xmlwf of libexpat is software libre, licensed under the MIT license.
 Please report bugs at https://github.com/libexpat/libexpat/issues.  Thank you!
 """
@@ -48,6 +55,7 @@ input_related.add_argument('-x', action='store_true', help='enable processing of
 input_related.add_argument('-e', action='store', metavar='ENCODING', help='override any in-document [e]ncoding declaration')
 input_related.add_argument('-w', action='store_true', help='enable support for [W]indows code pages')
 input_related.add_argument('-r', action='store_true', help='disable memory-mapping and use normal file [r]ead IO calls instead')
+input_related.add_argument('-k', action='store_true', help='when processing multiple files, [k]eep processing after first file with error')
 
 output_related = parser.add_argument_group('output control arguments')
 output_related.add_argument('-d', action='store', metavar='DIRECTORY', help='output [d]estination directory')
