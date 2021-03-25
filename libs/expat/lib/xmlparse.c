@@ -1,4 +1,4 @@
-/* 5cd169f2942b85c05e0b1b96f9990f91ac3d07e470ad7ce906ac8590c8ed4f35 (2.2.10+)
+/* d667b5f8e56e24fdfaf5e38596d419d924a9fadceb987d81d5613ecb7ca51b0e (2.3.0+)
                             __  __            _
                          ___\ \/ /_ __   __ _| |_
                         / _ \\  /| '_ \ / _` | __|
@@ -47,17 +47,7 @@
 #include <limits.h> /* UINT_MAX */
 #include <stdio.h>  /* fprintf */
 #include <stdlib.h> /* getenv, rand_s */
-
-#if defined(_WIN32) && defined(_MSC_VER) && (_MSC_VER < 1600)
-/* vs2008/9.0 and earlier lack stdint.h; _MSC_VER 1600 is vs2010/10.0 */
-#  if defined(_WIN64)
-typedef unsigned __int64 uintptr_t;
-#  else
-typedef unsigned __int32 uintptr_t;
-#  endif
-#else
-#  include <stdint.h> /* uintptr_t */
-#endif
+#include <stdint.h> /* uintptr_t */
 
 #ifdef _WIN32
 #  define getpid GetCurrentProcessId
@@ -1893,6 +1883,12 @@ XML_ParseBuffer(XML_Parser parser, int len, int isFinal) {
     parser->m_errorCode = XML_ERROR_FINISHED;
     return XML_STATUS_ERROR;
   case XML_INITIALIZED:
+    /* Has someone called XML_GetBuffer successfully before? */
+    if (! parser->m_bufferPtr) {
+      parser->m_errorCode = XML_ERROR_NO_BUFFER;
+      return XML_STATUS_ERROR;
+    }
+
     if (parser->m_parentParser == NULL && ! startParsing(parser)) {
       parser->m_errorCode = XML_ERROR_NO_MEMORY;
       return XML_STATUS_ERROR;
@@ -2337,6 +2333,10 @@ XML_ErrorString(enum XML_Error code) {
   /* Added in 2.2.5. */
   case XML_ERROR_INVALID_ARGUMENT: /* Constant added in 2.2.1, already */
     return XML_L("invalid argument");
+    /* Added in 2.3.0. */
+  case XML_ERROR_NO_BUFFER:
+    return XML_L(
+        "a successful prior call to function XML_GetBuffer is required");
   }
   return NULL;
 }
