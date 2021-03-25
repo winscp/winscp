@@ -15,7 +15,7 @@ xmlwf \- Determines if an XML document is well-formed
 \fBxmlwf\fR \kx
 .if (\nx>(\n(.l/2)) .nr x (\n(.l/5)
 'in \n(.iu+\nxu
-[\fB-s\fR] [\fB-n\fR] [\fB-p\fR] [\fB-x\fR] [\fB-e \fIencoding\fB\fR] [\fB-w\fR] [\fB-d \fIoutput-dir\fB\fR] [\fB-c\fR] [\fB-m\fR] [\fB-r\fR] [\fB-t\fR] [\fB-N\fR] [\fB-v\fR] [file ...]
+[\fB-s\fR] [\fB-n\fR] [\fB-p\fR] [\fB-x\fR] [\fB-e \fIencoding\fB\fR] [\fB-w\fR] [\fB-d \fIoutput-dir\fB\fR] [\fB-c\fR] [\fB-m\fR] [\fB-r\fR] [\fB-t\fR] [\fB-N\fR] [\fB-k\fR] [\fB-v\fR] [file ...]
 'in \n(.iu-\nxu
 .ad b
 'hy
@@ -156,6 +156,14 @@ without client overhead.
 \*(T<\fB\-t\fR\*(T> turns off most of the output options
 (\*(T<\fB\-d\fR\*(T>, \*(T<\fB\-m\fR\*(T>, \*(T<\fB\-c\fR\*(T>, ...).
 .TP 
+\*(T<\fB\-k\fR\*(T>
+When processing multiple files, Expat by default halts after the 
+the first file with an error. This tells Expat to report the error
+but to keep processing. 
+This can be useful, for example, when testing a filter that converts
+many files to XML and you want to quickly find out which conversions
+failed.
+.TP 
 \*(T<\fB\-v\fR\*(T>
 Prints the version of the Expat library being used, including some
 information on the compile-time configuration of the library, and
@@ -210,24 +218,32 @@ will run \fBxmlwf\fR on the file
 Older versions of \fBxmlwf\fR do not support
 reading from standard input.
 .SH OUTPUT
-If an input file is not well-formed,
-\fBxmlwf\fR prints a single line describing
-the problem to standard output. If a file is well formed,
-\fBxmlwf\fR outputs nothing.
+\fBxmlwf\fR outputs nothing for files which are problem-free.
+If any input file is not well-formed, or if the output for any
+input file cannot be opened, \fBxmlwf\fR prints a single
+line describing the problem to standard output.
+.PP
+If the \*(T<\fB\-k\fR\*(T> option is not provided, \fBxmlwf\fR
+halts upon encountering a well-formedness or output-file error. 
+If \*(T<\fB\-k\fR\*(T> is provided, \fBxmlwf\fR continues
+processing the remaining input files, describing problems found with any of them.
 .SH "EXIT STATUS"
 For option \*(T<\fB\-v\fR\*(T> or \*(T<\fB\-h\fR\*(T>, \fBxmlwf\fR always exits with status code 0. For other cases, the following exit status codes are returned:
 .TP 
 \*(T<\fB0\fR\*(T>
-The input files are well-formed.
+The input files are well-formed and the output (if requested) was written successfully.
 .TP 
 \*(T<\fB1\fR\*(T>
 An internal error occurred.
 .TP 
 \*(T<\fB2\fR\*(T>
-An input file was not well-formed or could not be parsed.
+One or more input files were not well-formed or could not be parsed.
 .TP 
 \*(T<\fB3\fR\*(T>
 If using the \*(T<\fB\-d\fR\*(T> option, an error occurred opening an output file.
+.TP 
+\*(T<\fB4\fR\*(T>
+There was a command-line argument error in how \fBxmlwf\fR was invoked.
 .SH BUGS
 The errors should go to standard error, not standard output.
 .PP

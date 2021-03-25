@@ -53,8 +53,19 @@ pkgconfig_DATA = expat.pc
 pkgconfigdir = $(libdir)/pkgconfig
 
 
+dist_cmake_DATA = \
+    cmake/autotools/expat.cmake
+
+nodist_cmake_DATA = \
+    cmake/autotools/expat-config-version.cmake \
+    cmake/autotools/expat-noconfig.cmake \
+    cmake/expat-config.cmake
+
+cmakedir = $(libdir)/cmake/expat-@PACKAGE_VERSION@
+
+
 _EXTRA_DIST_CMAKE = \
-    cmake/expat-config.cmake.in \
+    cmake/autotools/expat-package-init.cmake \
     cmake/mingw-toolchain.cmake \
     \
     CMakeLists.txt \
