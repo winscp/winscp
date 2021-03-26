@@ -1020,6 +1020,19 @@ namespace WinSCP
         [DllImport("version.dll", CharSet = CharSet.Auto, SetLastError = true, BestFitMapping = false)]
         public static extern int GetFileVersionInfoSize(string lptstrFilename, out int handle);
 
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hReservedNull, uint dwFlags);
+        
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool FreeLibrary(IntPtr hModule);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern IntPtr FindResource(IntPtr hModule, string lpName, string lpType);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern uint SizeofResource(IntPtr hModule, IntPtr hResInfo);
+
         private void CheckVersion(string exePath, FileVersionInfo assemblyVersion)
         {
             using (_logger.CreateCallstack())
@@ -1075,13 +1088,51 @@ namespace WinSCP
                             using (SHA256 SHA256 = SHA256.Create())
                             using (FileStream stream = File.OpenRead(exePath))
                             {
-                                string sha256 = Convert.ToBase64String(SHA256.ComputeHash(stream));
+                                string sha256 = string.Concat(Array.ConvertAll(SHA256.ComputeHash(stream), b => b.ToString("x2")));
                                 _logger.WriteLine($"SHA-256 of the executable file is {sha256}");
                             }
                         }
                         catch (Exception e)
                         {
                             _logger.WriteLine("Calculating SHA-256 of the executable file failed");
+                            _logger.WriteException(e);
+                        }
+
+                        try
+                        {
+                            IntPtr library = LoadLibraryEx(exePath, IntPtr.Zero, 0x00000002); // LOAD_LIBRARY_AS_DATAFILE
+                            if (library == IntPtr.Zero)
+                            {
+                                _logger.WriteLine("Cannot load");
+                                _logger.WriteException(new Win32Exception());
+                            }
+                            else
+                            {
+                                IntPtr resource = FindResource(library, "#1", "#16");
+                                if (resource == IntPtr.Zero)
+                                {
+                                    _logger.WriteLine("Cannot find version resource");
+                                    _logger.WriteException(new Win32Exception());
+                                }
+                                else
+                                {
+                                    uint resourceSize = SizeofResource(library, resource);
+                                    if (resourceSize == 0)
+                                    {
+                                        _logger.WriteLine("Cannot find size of version resource");
+                                        _logger.WriteException(new Win32Exception());
+                                    }
+                                    else
+                                    {
+                                        _logger.WriteLine($"Version resource size is {resourceSize}");
+                                    }
+                                }
+                                FreeLibrary(library);
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.WriteLine("Querying version resource failed");
                             _logger.WriteException(e);
                         }
 
