@@ -25,8 +25,8 @@ namespace Themepagecontrol
 {
   void __fastcall PACKAGE Register()
   {
-    TComponentClass classes[1] = {__classid(TThemePageControl)};
-    RegisterComponents(L"Scp", classes, 0);
+    TComponentClass classes[2] = {__classid(TThemePageControl), __classid(TThemeTabSheet)};
+    RegisterComponents(L"Scp", classes, 1);
   }
 }
 //----------------------------------------------------------------------------------------------------------
@@ -572,6 +572,22 @@ void __fastcall TThemePageControl::Dispatch(void * Message)
   {
     TPageControl::Dispatch(Message);
   }
+}
+//----------------------------------------------------------------------------------------------------------
+TThemeTabSheet * TThemePageControl::GetPage(int Index)
+{
+  return DebugNotNull(dynamic_cast<TThemeTabSheet *>(TPageControl::Pages[Index]));
+}
+//----------------------------------------------------------------------------------------------------------
+TThemeTabSheet * TThemePageControl::GetActivePage()
+{
+  TTabSheet * TabSheet = TPageControl::ActivePage;
+  TThemeTabSheet * Result = NULL;
+  if (TabSheet != NULL)
+  {
+    Result = DebugNotNull(dynamic_cast<TThemeTabSheet *>(TabSheet));
+  }
+  return Result;
 }
 //----------------------------------------------------------------------------------------------------------
 #ifdef _DEBUG

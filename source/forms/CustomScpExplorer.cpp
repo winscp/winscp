@@ -6825,10 +6825,7 @@ void __fastcall TCustomScpExplorerForm::SessionListChanged()
   SendMessage(SessionsPageControl->Handle, WM_SETREDRAW, 0, 0);
   try
   {
-    while ((SessionsPageControl->PageCount > SessionList->Count + 1) ||
-           // Clear the design time unthemed tab
-           ((SessionsPageControl->PageCount > 0) &&
-            (dynamic_cast<TThemeTabSheet *>(SessionsPageControl->Pages[SessionsPageControl->PageCount - 1]) == NULL)))
+    while (SessionsPageControl->PageCount > Manager->Count + 1)
     {
       delete SessionsPageControl->Pages[SessionsPageControl->PageCount - 1];
     }
@@ -6843,7 +6840,7 @@ void __fastcall TCustomScpExplorerForm::SessionListChanged()
       }
       else
       {
-        TabSheet = DebugNotNull(dynamic_cast<TThemeTabSheet *>(SessionsPageControl->Pages[Index]));
+        TabSheet = SessionsPageControl->Pages[Index];
       }
 
       bool IsSessionTab = (Index < SessionList->Count);
@@ -6874,16 +6871,14 @@ void __fastcall TCustomScpExplorerForm::SessionListChanged()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateNewTabTab()
 {
-  TTabSheet * TabSheet = SessionsPageControl->Pages[SessionsPageControl->PageCount - 1];
+  TThemeTabSheet * TabSheet = SessionsPageControl->Pages[SessionsPageControl->PageCount - 1];
 
   UnicodeString TabCaption;
   if (WinConfiguration->SelectiveToolbarText)
   {
     TabCaption = StripHotkey(StripTrailingPunctuation(NonVisualDataModule->NewTabAction->Caption));
   }
-  TThemeTabSheet * ThemeTabSheet = dynamic_cast<TThemeTabSheet *>(TabSheet);
-  // When starting, we can get here with the design-time unthemed tab
-  if ((ThemeTabSheet != NULL) && (ThemeTabSheet->Button != ttbNone))
+  if (TabSheet->Button != ttbNone)
   {
     TabCaption = SessionsPageControl->FormatCaptionWithTabButton(TabCaption);
   }
@@ -6903,7 +6898,7 @@ UnicodeString TCustomScpExplorerForm::GetLocalBrowserSessionTitle(TManagedTermin
   return UnicodeString();
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::UpdateSessionTab(TTabSheet * TabSheet)
+void TCustomScpExplorerForm::UpdateSessionTab(TThemeTabSheet * TabSheet)
 {
   if (DebugAlwaysTrue(TabSheet != NULL))
   {
@@ -6923,15 +6918,11 @@ void __fastcall TCustomScpExplorerForm::UpdateSessionTab(TTabSheet * TabSheet)
       TTerminalManager * Manager = TTerminalManager::Instance();
       UnicodeString TabCaption = Manager->GetSessionTitle(ASession, true);
 
-      TThemeTabSheet * ThemeTabSheet = dynamic_cast<TThemeTabSheet *>(TabSheet);
-      if (DebugAlwaysTrue(ThemeTabSheet != NULL))
+      TabSheet->Shadowed = !ASession->Active && !ASession->LocalBrowser;
+      TabSheet->Button = CanCloseSession(ASession) ? ttbClose : ttbNone;
+      if (TabSheet->Button != ttbNone)
       {
-        ThemeTabSheet->Shadowed = !ASession->Active && !ASession->LocalBrowser;
-        ThemeTabSheet->Button = CanCloseSession(ASession) ? ttbClose : ttbNone;
-        if (ThemeTabSheet->Button != ttbNone)
-        {
-          TabCaption = SessionsPageControl->FormatCaptionWithTabButton(TabCaption);
-        }
+        TabCaption = SessionsPageControl->FormatCaptionWithTabButton(TabCaption);
       }
 
       TabSheet->Caption = TabCaption;

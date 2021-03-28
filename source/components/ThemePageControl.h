@@ -35,6 +35,9 @@ __published:
 public:
   __fastcall TThemePageControl(TComponent * Owner);
 
+  __property TThemeTabSheet * Pages[int Index] = { read = GetPage };
+  __property TThemeTabSheet * ActivePage = { read = GetActivePage };
+
   int __fastcall GetTabsHeight();
   UnicodeString __fastcall FormatCaptionWithTabButton(const UnicodeString & Caption);
   TRect __fastcall TabButtonRect(int Index);
@@ -68,6 +71,8 @@ private:
   void DrawDropDown(HDC DC, int Radius, int X, int Y, COLORREF Color, int Grow);
   void __fastcall WMLButtonDown(TWMLButtonDown & Message);
   bool IsHotButton(int Index);
+  TThemeTabSheet * GetPage(int Index);
+  TThemeTabSheet * GetActivePage();
 
   int FOldTabIndex;
   int FHotTabButton;

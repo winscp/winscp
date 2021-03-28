@@ -97,7 +97,7 @@ __published:
   TTBXItem *TBXItem211;
   TTBXItem *TBXItem225;
   TTBXItem *TBXItem226;
-  TTabSheet *TabSheet1;
+  TThemeTabSheet *TabSheet1;
   TThemePageControl *SessionsPageControl;
   TPathLabel *QueueLabel;
   TTBXSeparatorItem *TBXSeparatorItem57;
@@ -626,7 +626,7 @@ protected:
     bool OnFocused, bool NoConfirmation = false, void * Param = NULL);
   void __fastcall UpdateCopyParamCounters(const TCopyParamType & CopyParam);
   int __fastcall AddSessionColor(TColor Color);
-  void __fastcall UpdateSessionTab(TTabSheet * TabSheet);
+  void UpdateSessionTab(TThemeTabSheet * TabSheet);
   void __fastcall UpdateNewTabTab();
   void __fastcall AddFixedSessionImages();
   int __fastcall AddFixedSessionImage(int GlyphsSourceIndex);
