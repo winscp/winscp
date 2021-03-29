@@ -454,8 +454,9 @@ void TThemePageControl::UpdateHotButton(int & Ref, int Index)
   }
 }
 //----------------------------------------------------------------------------------------------------------
-void __fastcall TThemePageControl::MouseMove(TShiftState /*Shift*/, int X, int Y)
+void __fastcall TThemePageControl::MouseMove(TShiftState Shift, int X, int Y)
 {
+  TPageControl::MouseMove(Shift, X, Y);
   UpdateHotButton(FHotTabButton, IndexOfTabButtonAt(X, Y));
 }
 //----------------------------------------------------------------------------------------------------------
