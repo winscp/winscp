@@ -1022,7 +1022,7 @@ namespace WinSCP
 
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hReservedNull, uint dwFlags);
-        
+
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool FreeLibrary(IntPtr hModule);
