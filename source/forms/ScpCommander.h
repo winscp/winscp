@@ -635,6 +635,7 @@ protected:
   void __fastcall SetToolbar2ItemAction(TTBXItem * Item, TBasicAction * Action);
   virtual void __fastcall NeedSession(bool Startup);
   void RestoreSessionLocalDirView(TDirView * ALocalDirView, const UnicodeString & LocalDirectory);
+  virtual UnicodeString GetTabHintDetails(TManagedTerminal * ASession);
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);

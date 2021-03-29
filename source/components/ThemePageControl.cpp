@@ -7,6 +7,8 @@
 #include <memory>
 #include <PasTools.hpp>
 #include <TBXOfficeXPTheme.hpp>
+#include <StrUtils.hpp>
+#include <CustomWinConfiguration.h>
 #include "ThemePageControl.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -35,11 +37,17 @@ __fastcall TThemeTabSheet::TThemeTabSheet(TComponent * Owner) :
 {
   FShadowed = false;
   FButton = ttbNone;
+  FCaptionTruncation = tttNone;
+}
+//----------------------------------------------------------------------------------------------------------
+TThemePageControl * TThemeTabSheet::GetParentPageControl()
+{
+  return DebugNotNull(dynamic_cast<TThemePageControl *>(Parent));
 }
 //----------------------------------------------------------------------------------------------------------
 void __fastcall TThemeTabSheet::Invalidate()
 {
-  TThemePageControl * ThemePageControl = dynamic_cast<TThemePageControl *>(Parent);
+  TThemePageControl * ThemePageControl = GetParentPageControl();
   if (DebugAlwaysTrue(ThemePageControl != NULL))
   {
     ThemePageControl->InvalidateTab(TabIndex);
@@ -68,6 +76,78 @@ void __fastcall TThemeTabSheet::SetButton(TThemeTabSheetButtons Value)
   }
 }
 //----------------------------------------------------------------------------------------------------------
+void TThemeTabSheet::SetBaseCaption(const UnicodeString & value)
+{
+  if (FBaseCaption != value)
+  {
+    FBaseCaption = value;
+    UpdateCaption();
+  }
+}
+//----------------------------------------------------------------------------------------------------------
+UnicodeString TThemeTabSheet::TruncatedCaption()
+{
+  UnicodeString Result = FBaseCaption;
+  TThemePageControl * ParentPageControl = GetParentPageControl();
+  if (ParentPageControl->FSessionTabShrink > 0)
+  {
+    if (FCaptionTruncation == tttNone)
+    {
+      // noop
+    }
+    else if (FCaptionTruncation == tttEllipsis)
+    {
+      if (ParentPageControl->FSessionTabShrink == 1)
+      {
+        Result = Result.SubString(1, 1);
+      }
+      else if (ParentPageControl->FSessionTabShrink < Result.Length())
+      {
+        Result = Result.SubString(1, ParentPageControl->FSessionTabShrink - 1) + Ellipsis;
+      }
+    }
+    else if (DebugAlwaysTrue(FCaptionTruncation == tttNoText))
+    {
+      Result = EmptyStr;
+    }
+  }
+  return Result;
+}
+//----------------------------------------------------------------------------------------------------------
+void TThemeTabSheet::UpdateCaption()
+{
+  UnicodeString ACaption = TruncatedCaption();
+
+  TThemePageControl * ParentPageControl = GetParentPageControl();
+
+  if (UseThemes())
+  {
+    int OrigWidth = ParentPageControl->Canvas->TextWidth(ACaption);
+    int TabButtonWidth = ParentPageControl->TabButtonSize();
+    while (ParentPageControl->Canvas->TextWidth(ACaption) < OrigWidth + TabButtonWidth)
+    {
+      ACaption += L" ";
+    }
+  }
+  Caption = ACaption;
+}
+//----------------------------------------------------------------------------------------------------------
+UnicodeString TThemeTabSheet::GetBaseCaption()
+{
+  DebugAssert(StartsStr(FBaseCaption, Caption));
+  DebugAssert(RightStr(Caption, Caption.Length() - FBaseCaption.Length()).Trim().Length() == 0);
+  return FBaseCaption;
+}
+//----------------------------------------------------------------------------------------------------------
+void TThemeTabSheet::SetCaptionTruncation(TThemeTabCaptionTruncation Value)
+{
+  if (FCaptionTruncation != Value)
+  {
+    FCaptionTruncation = Value;
+    UpdateCaption();
+  }
+}
+//----------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------
 __fastcall TThemePageControl::TThemePageControl(TComponent * Owner) :
   TPageControl(Owner)
@@ -75,6 +155,9 @@ __fastcall TThemePageControl::TThemePageControl(TComponent * Owner) :
   FOldTabIndex = -1;
   FHotTabButton = -1;
   FClickedButton = -1;
+  FSessionTabShrink = 0;
+  FOnTabButtonClick = NULL;
+  FOnTabHint = NULL;
 }
 //----------------------------------------------------------------------------------------------------------
 int __fastcall TThemePageControl::GetTabsHeight()
@@ -516,21 +599,6 @@ void __fastcall TThemePageControl::Change()
 
   TPageControl::Change();
 }
-//----------------------------------------------------------------------------------------------------------
-UnicodeString __fastcall TThemePageControl::FormatCaptionWithTabButton(const UnicodeString & Caption)
-{
-  UnicodeString Result = Caption;
-  if (UseThemes())
-  {
-    int OrigWidth = Canvas->TextWidth(Caption);
-    int TabButtonWidth = TabButtonSize();
-    while (Canvas->TextWidth(Result) < OrigWidth + TabButtonWidth)
-    {
-      Result += L" ";
-    }
-  }
-  return Result;
-}
 //---------------------------------------------------------------------------
 void __fastcall TThemePageControl::WMLButtonDown(TWMLButtonDown & Message)
 {
@@ -557,6 +625,17 @@ void __fastcall TThemePageControl::WMLButtonDown(TWMLButtonDown & Message)
   }
 }
 //---------------------------------------------------------------------------
+void TThemePageControl::CMHintShow(TCMHintShow & HintShow)
+{
+  TPageControl::Dispatch(&HintShow);
+  if (OnTabHint != NULL)
+  {
+    int Tab = IndexOfTabAt(HintShow.HintInfo->CursorPos.x, HintShow.HintInfo->CursorPos.y);
+    OnTabHint(this, Tab, HintShow.HintInfo->HintStr);
+    HintShow.HintInfo->CursorRect = TabRect(Tab);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TThemePageControl::Dispatch(void * Message)
 {
   TMessage * M = reinterpret_cast<TMessage*>(Message);
@@ -568,6 +647,14 @@ void __fastcall TThemePageControl::Dispatch(void * Message)
   else if (M->Msg == WM_LBUTTONDOWN)
   {
     WMLButtonDown(*reinterpret_cast<TWMLButtonDown *>(M));
+  }
+  else if (M->Msg == WM_WANTS_SCREEN_TIPS)
+  {
+    M->Result = 1;
+  }
+  else if (M->Msg == CM_HINTSHOW)
+  {
+    CMHintShow(*reinterpret_cast<TCMHintShow *>(M));
   }
   else
   {
@@ -589,6 +676,74 @@ TThemeTabSheet * TThemePageControl::GetActivePage()
     Result = DebugNotNull(dynamic_cast<TThemeTabSheet *>(TabSheet));
   }
   return Result;
+}
+//----------------------------------------------------------------------------------------------------------
+int TThemePageControl::TotalTabsWidth()
+{
+  TRect FirstTabRect = TabRect(0);
+  TRect LastTabRect = TabRect(PageCount - 1);
+  return -FirstTabRect.Left + LastTabRect.Right;
+}
+//----------------------------------------------------------------------------------------------------------
+void TThemePageControl::UpdateTabsCaptionTruncation()
+{
+  FSessionTabShrink = 0;
+  for (int Index = 0; Index < PageCount; Index++)
+  {
+    Pages[Index]->UpdateCaption();
+  }
+
+  int TabsWidth = TotalTabsWidth();
+  int MaxWidth = ClientWidth - ScaleByTextHeight(this, 8); // arbitrary margin to avoid left/right buttons flicker
+  if (TabsWidth > MaxWidth)
+  {
+    int NeedWidth = (TabsWidth - MaxWidth);
+    int MaxLen = 0;
+    int CaptionsWidth = 0;
+    for (int Index = 0; Index < PageCount; Index++)
+    {
+      UnicodeString TabCaption = Pages[Index]->BaseCaption;
+      MaxLen = std::max(MaxLen, TabCaption.Length());
+      CaptionsWidth += Canvas->TextWidth(TabCaption);
+    }
+
+    bool Repeat;
+    do
+    {
+      int NewShrink;
+      if (FSessionTabShrink == 0)
+      {
+        NewShrink = MaxLen; // remove only new tab caption
+      }
+      else
+      {
+        NewShrink = FSessionTabShrink - 1;
+      }
+
+      if (NewShrink < 1)
+      {
+        Repeat = false;
+      }
+      else
+      {
+        FSessionTabShrink = NewShrink;
+        int NewCaptionsWidth = 0;
+        for (int Index = 0; Index < PageCount; Index++)
+        {
+          UnicodeString TabCaption = Pages[Index]->TruncatedCaption();
+          NewCaptionsWidth += Canvas->TextWidth(TabCaption);
+        }
+        int GainedWidth = (CaptionsWidth - NewCaptionsWidth);
+        Repeat = (GainedWidth < NeedWidth);
+      }
+    }
+    while (Repeat);
+
+    for (int Index = 0; Index < PageCount; Index++)
+    {
+      Pages[Index]->UpdateCaption();
+    }
+  }
 }
 //----------------------------------------------------------------------------------------------------------
 #ifdef _DEBUG

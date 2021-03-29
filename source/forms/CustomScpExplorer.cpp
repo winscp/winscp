@@ -4079,8 +4079,6 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
   DebugAssert(Terminal != NULL);
   DebugAssert(Terminal == TTerminalManager::Instance()->ActiveTerminal);
   DebugAssert(!IsLocalBrowserMode());
-  // update Terminal->StateData->RemoteDirectory
-  UpdateSession(Terminal);
 
   if (Session == NULL)
   {
@@ -4105,7 +4103,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
   }
   else
   {
-    Target = Session->StateData->RemoteDirectory;
+    Target = GetSessionPath(Session, osRemote);
   }
 
   Target = UnixIncludeTrailingBackslash(Target);
@@ -4139,7 +4137,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
         if (IsActiveTerminal(ASession) && DebugAlwaysTrue(!ASession->LocalBrowser))
         {
           Sessions->AddObject(SessionList->Strings[Index], ASession);
-          Directories->Add(ASession->StateData->RemoteDirectory);
+          Directories->Add(GetSessionPath(ASession, osRemote));
         }
       }
 
@@ -6813,24 +6811,25 @@ void __fastcall TCustomScpExplorerForm::NeedSession(bool Startup)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::SessionListChanged()
+void __fastcall TCustomScpExplorerForm::SessionListChanged(bool ForceTruncationUpdate)
 {
   TTerminalManager * Manager = TTerminalManager::Instance();
   DebugAssert(!Manager->Updating);
-  TStrings * SessionList = Manager->SessionList;
+  TAutoFlag UpdatingSessionTabsFlag(FUpdatingSessionTabs);
   int ActiveSessionIndex = Manager->ActiveSessionIndex;
 
-  Configuration->Usage->SetMax(L"MaxOpenedSessions", SessionList->Count);
+  Configuration->Usage->SetMax(L"MaxOpenedSessions", Manager->Count);
 
   SendMessage(SessionsPageControl->Handle, WM_SETREDRAW, 0, 0);
   try
   {
+    int PrevTabsWidth = SessionsPageControl->TotalTabsWidth();
     while (SessionsPageControl->PageCount > Manager->Count + 1)
     {
       delete SessionsPageControl->Pages[SessionsPageControl->PageCount - 1];
     }
 
-    for (int Index = 0; Index <= SessionList->Count; Index++)
+    for (int Index = 0; Index <= Manager->Count; Index++)
     {
       TThemeTabSheet * TabSheet;
       if (Index >= SessionsPageControl->PageCount)
@@ -6843,11 +6842,12 @@ void __fastcall TCustomScpExplorerForm::SessionListChanged()
         TabSheet = SessionsPageControl->Pages[Index];
       }
 
-      bool IsSessionTab = (Index < SessionList->Count);
+      bool IsSessionTab = (Index < Manager->Count);
       if (IsSessionTab)
       {
-        TTerminal * Terminal = dynamic_cast<TTerminal *>(SessionList->Objects[Index]);
+        TTerminal * Terminal = Manager->Sessions[Index];
         TabSheet->Tag = reinterpret_cast<int>(Terminal);
+        TabSheet->CaptionTruncation = tttEllipsis;
 
         UpdateSessionTab(TabSheet);
       }
@@ -6856,9 +6856,16 @@ void __fastcall TCustomScpExplorerForm::SessionListChanged()
         TabSheet->Tag = 0; // not really needed
         TabSheet->Shadowed = false;
         TabSheet->Button = SupportsLocalBrowser() ? ttbDropDown : ttbNone;
+        TabSheet->CaptionTruncation = tttNoText;
         // We know that we are at the last page, otherwise we could not call this (it assumes that new session tab is the last one)
         UpdateNewTabTab();
       }
+    }
+
+    // Prevent flicker on the right side where scrolling buttons would be, unless really needed
+    if (ForceTruncationUpdate || (SessionsPageControl->TotalTabsWidth() != PrevTabsWidth))
+    {
+      SessionsPageControl->UpdateTabsCaptionTruncation();
     }
   }
   __finally
@@ -6869,6 +6876,11 @@ void __fastcall TCustomScpExplorerForm::SessionListChanged()
   SessionsPageControl->ActivePageIndex = ActiveSessionIndex;
 }
 //---------------------------------------------------------------------------
+UnicodeString TCustomScpExplorerForm::GetNewTabTabCaption()
+{
+  return StripHotkey(StripTrailingPunctuation(NonVisualDataModule->NewTabAction->Caption));
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateNewTabTab()
 {
   TThemeTabSheet * TabSheet = SessionsPageControl->Pages[SessionsPageControl->PageCount - 1];
@@ -6876,14 +6888,9 @@ void __fastcall TCustomScpExplorerForm::UpdateNewTabTab()
   UnicodeString TabCaption;
   if (WinConfiguration->SelectiveToolbarText)
   {
-    TabCaption = StripHotkey(StripTrailingPunctuation(NonVisualDataModule->NewTabAction->Caption));
+    TabCaption = GetNewTabTabCaption();
   }
-  if (TabSheet->Button != ttbNone)
-  {
-    TabCaption = SessionsPageControl->FormatCaptionWithTabButton(TabCaption);
-  }
-  TabSheet->Caption = TabCaption;
-
+  TabSheet->BaseCaption = TabCaption;
   TabSheet->ImageIndex = GetNewTabTabImageIndex(osCurrent);
 }
 //---------------------------------------------------------------------------
@@ -6916,16 +6923,10 @@ void TCustomScpExplorerForm::UpdateSessionTab(TThemeTabSheet * TabSheet)
       }
 
       TTerminalManager * Manager = TTerminalManager::Instance();
-      UnicodeString TabCaption = Manager->GetSessionTitle(ASession, true);
 
       TabSheet->Shadowed = !ASession->Active && !ASession->LocalBrowser;
       TabSheet->Button = CanCloseSession(ASession) ? ttbClose : ttbNone;
-      if (TabSheet->Button != ttbNone)
-      {
-        TabCaption = SessionsPageControl->FormatCaptionWithTabButton(TabCaption);
-      }
-
-      TabSheet->Caption = TabCaption;
+      TabSheet->BaseCaption = Manager->GetSessionTitle(ASession, true);
     }
   }
 }
@@ -11227,3 +11228,70 @@ void TCustomScpExplorerForm::LocalLocalCopyCommand(TFileOperation Operation, TOp
 {
   LocalLocalCopy(Operation, Side, OnFocused, !WinConfiguration->ConfirmTransferring, false, Flags);
 }
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SessionsPageControlResize(TObject *)
+{
+  // Changing tab list triggers the OnResize.
+  if (!FUpdatingSessionTabs)
+  {
+    // UpdateTabsCaptionTruncation should be enough
+    SessionListChanged(true);
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString TCustomScpExplorerForm::GetSessionPath(TManagedTerminal * ASession, TOperationSide Side)
+{
+  if (ASession == ManagedSession)
+  {
+    UpdateSession(ASession);
+  }
+  TSessionData * Data = ASession->StateData;
+  UnicodeString Result;
+  if (Side == osLocal)
+  {
+    Result = Data->LocalDirectory;
+  }
+  else if (DebugAlwaysTrue(Side == osOther))
+  {
+    Result = ASession->LocalBrowser ? Data->OtherLocalDirectory : Data->RemoteDirectory;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString TCustomScpExplorerForm::GetTabHintDetails(TManagedTerminal * ASession)
+{
+  UnicodeString Result;
+  if (!ASession->Active)
+  {
+    Result = LoadStr(STATUS_NOT_CONNECTED2);
+  }
+  else
+  {
+    Result = GetSessionPath(ASession, osRemote);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SessionsPageControlTabHint(TPageControl *, int Index, UnicodeString & Hint)
+{
+  if (Index >= 0)
+  {
+    TThemeTabSheet * TabSheet = SessionsPageControl->Pages[Index];
+    TManagedTerminal * TabSession = GetSessionTabSession(TabSheet);
+    if (TabSession == NULL)
+    {
+      UnicodeString NewTabTabCaption = GetNewTabTabCaption();
+      if (NewTabTabCaption != TabSheet->Caption)
+      {
+        Hint = NewTabTabCaption;
+      }
+    }
+    else
+    {
+      TTerminalManager * Manager = TTerminalManager::Instance();
+      UnicodeString TabCaption = Manager->GetSessionTitle(TabSession, true);
+      Hint = TabCaption + L"|" + GetTabHintDetails(TabSession);
+    }
+  }
+}
+//---------------------------------------------------------------------------

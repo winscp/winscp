@@ -5,25 +5,40 @@
 #include <ComCtrls.hpp>
 //---------------------------------------------------------------------------
 enum TThemeTabSheetButtons { ttbNone, ttbClose, ttbDropDown };
+enum TThemeTabCaptionTruncation { tttNone, tttEllipsis, tttNoText };
+class TThemePageControl;
 //---------------------------------------------------------------------------
 class TThemeTabSheet : public TTabSheet
 {
+friend class TThemePageControl;
+
 public:
   __fastcall TThemeTabSheet(TComponent * Owner);
 
+  __property UnicodeString BaseCaption = { read = GetBaseCaption, write = SetBaseCaption };
   __property bool Shadowed = { read = FShadowed, write = SetShadowed };
   __property TThemeTabSheetButtons Button = { read = FButton, write = SetButton };
+  __property TThemeTabCaptionTruncation CaptionTruncation = { read = FCaptionTruncation, write = SetCaptionTruncation };
 
 private:
   void __fastcall SetShadowed(bool Value);
   void __fastcall SetButton(TThemeTabSheetButtons Value);
   void __fastcall Invalidate();
+  void SetBaseCaption(const UnicodeString & value);
+  UnicodeString GetBaseCaption();
+  TThemePageControl * GetParentPageControl();
+  void SetCaptionTruncation(TThemeTabCaptionTruncation Value);
+  void UpdateCaption();
+  UnicodeString TruncatedCaption();
 
   bool FShadowed;
   TThemeTabSheetButtons FButton;
+  UnicodeString FBaseCaption;
+  TThemeTabCaptionTruncation FCaptionTruncation;
 };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TPageControlTabButtonClick)(TPageControl * Sender, int Index);
+typedef void __fastcall (__closure *TPageControlTabHint)(TPageControl * Sender, int Index, UnicodeString & Hint);
 //---------------------------------------------------------------------------
 class TThemePageControl : public TPageControl
 {
@@ -31,6 +46,7 @@ friend class TThemeTabSheet;
 
 __published:
   __property TPageControlTabButtonClick OnTabButtonClick = { read = FOnTabButtonClick, write = FOnTabButtonClick };
+  __property TPageControlTabHint OnTabHint = { read = FOnTabHint, write = FOnTabHint };
 
 public:
   __fastcall TThemePageControl(TComponent * Owner);
@@ -39,8 +55,9 @@ public:
   __property TThemeTabSheet * ActivePage = { read = GetActivePage };
 
   int __fastcall GetTabsHeight();
-  UnicodeString __fastcall FormatCaptionWithTabButton(const UnicodeString & Caption);
   TRect __fastcall TabButtonRect(int Index);
+  int TotalTabsWidth();
+  void UpdateTabsCaptionTruncation();
 
 protected:
   virtual void __fastcall PaintWindow(HDC DC);
@@ -73,11 +90,14 @@ private:
   bool IsHotButton(int Index);
   TThemeTabSheet * GetPage(int Index);
   TThemeTabSheet * GetActivePage();
+  void CMHintShow(TCMHintShow & Message);
 
   int FOldTabIndex;
   int FHotTabButton;
   int FClickedButton;
   TPageControlTabButtonClick FOnTabButtonClick;
+  TPageControlTabHint FOnTabHint;
+  int FSessionTabShrink;
 };
 //---------------------------------------------------------------------------
 #endif

@@ -50,7 +50,7 @@
 		<ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
 		<ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
 		<ILINK_LibraryPath>components\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-		<IncludePath>components\;core;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
+		<IncludePath>components\;components;core;windows;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
 		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
 		<LinkPackageStatics>rtl.lib;vcl.lib;vclx.lib</LinkPackageStatics>
 		<Multithreaded>true</Multithreaded>

@@ -2818,6 +2818,7 @@ UnicodeString TScpCommanderForm::GetLocalBrowserSessionTitle(TManagedTerminal * 
     UnicodeString Path1;
     UnicodeString Path2;
     TTerminalManager * Manager = TTerminalManager::Instance();
+    // might use GetSessionPath here
     if ((ASession == ManagedSession) &&
         // prevent tab title flicker, when switching to local-local tab, as the path changes in individual local panels
         !FSessionChanging)
@@ -2851,4 +2852,30 @@ int TScpCommanderForm::GetNewTabTabImageIndex(TOperationSide Side)
     Side = WinConfiguration->DefaultToNewRemoteTab ? osRemote : osLocal;
   }
   return TCustomScpExplorerForm::GetNewTabTabImageIndex(Side);
+}
+//---------------------------------------------------------------------------
+UnicodeString TScpCommanderForm::GetTabHintDetails(TManagedTerminal * ASession)
+{
+  UnicodeString Result;
+  if (!ASession->LocalBrowser && !ASession->Active)
+  {
+    Result = LoadStr(STATUS_NOT_CONNECTED2);
+  }
+  else
+  {
+    UnicodeString Local = GetSessionPath(ASession, osLocal);
+    UnicodeString Other = GetSessionPath(ASession, osOther);
+    // Contrary to Panel(), the IsRightToLeft() is not considered here,
+    // as I assume they expect the right panel first, as they read from the right.
+    UnicodeString Sep = L"\n";
+    if (!WinConfiguration->ScpCommander.SwappedPanels)
+    {
+      Result = Local + Sep + Other;
+    }
+    else
+    {
+      Result = Other + Sep + Local;
+    }
+  }
+  return Result;
 }

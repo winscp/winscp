@@ -216,6 +216,8 @@ __published:
   void __fastcall QueueFileListData(TObject *Sender, TListItem *Item);
   void __fastcall QueueFileListCustomDrawItem(TCustomListView *Sender, TListItem *Item, TCustomDrawState State, bool &DefaultDraw);
   void __fastcall QueueFileListResize(TObject *Sender);
+  void __fastcall SessionsPageControlResize(TObject *Sender);
+  void __fastcall SessionsPageControlTabHint(TPageControl *Sender, int Index, UnicodeString &Hint);
 
 private:
   TManagedTerminal * FManagedSession;
@@ -295,6 +297,7 @@ private:
   bool FInvalid;
   std::auto_ptr<TQueueFileList> FQueueFileList;
   bool FStarted;
+  bool FUpdatingSessionTabs;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side, int FilesOnly);
@@ -628,6 +631,7 @@ protected:
   int __fastcall AddSessionColor(TColor Color);
   void UpdateSessionTab(TThemeTabSheet * TabSheet);
   void __fastcall UpdateNewTabTab();
+  UnicodeString GetNewTabTabCaption();
   void __fastcall AddFixedSessionImages();
   int __fastcall AddFixedSessionImage(int GlyphsSourceIndex);
   TObjectList * __fastcall DoCollectWorkspace();
@@ -722,6 +726,8 @@ protected:
   bool GetDoNotShowCopyDialogDefault(bool DragDrop);
   void HandleDoNotShowCopyDialogAgain(bool DragDrop, bool DoNotShowAgain);
   void __fastcall UpdateDarkMode();
+  virtual UnicodeString GetTabHintDetails(TManagedTerminal * ASession);
+  UnicodeString GetSessionPath(TManagedTerminal * ASession, TOperationSide Side);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -806,7 +812,7 @@ public:
   void __fastcall TerminalRemoved(TObject * Sender);
   void __fastcall TerminalDisconnected();
   void __fastcall TerminalConnecting();
-  void __fastcall SessionListChanged();
+  void __fastcall SessionListChanged(bool ForceTruncationUpdate = false);
   void __fastcall ApplicationTitleChanged();
   unsigned int __fastcall MoreMessageDialog(const UnicodeString Message,
     TStrings * MoreMessages, TQueryType Type, unsigned int Answers,

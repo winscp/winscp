@@ -383,6 +383,8 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     Align = alTop
     DoubleBuffered = True
     ParentDoubleBuffered = False
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 3
     TabStop = False
     OnChange = SessionsPageControlChange
@@ -390,7 +392,9 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     OnDragDrop = SessionsPageControlDragDrop
     OnDragOver = SessionsPageControlDragOver
     OnMouseDown = SessionsPageControlMouseDown
+    OnResize = SessionsPageControlResize
     OnTabButtonClick = SessionsPageControlTabButtonClick
+    OnTabHint = SessionsPageControlTabHint
     object TabSheet1: TThemeTabSheet
       Caption = 'TabSheet1'
     end
