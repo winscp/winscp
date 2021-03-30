@@ -651,15 +651,23 @@ UnicodeString __fastcall TSecureShell::ConvertFromPutty(const char * Str, int Le
   }
 }
 //---------------------------------------------------------------------------
+const UnicodeString ServerVersionMsg(L"Remote version: ");
+const UnicodeString ForwardingFailureMsg(L"Forwarded connection refused by remote");
+const UnicodeString LocalPortMsg(L"Local port ");
+const UnicodeString ForwadingToMsg(L" forwarding to ");
+const UnicodeString FailedMsg(L" failed:");
+//---------------------------------------------------------------------------
 void __fastcall TSecureShell::PuttyLogEvent(const char * AStr)
 {
   UnicodeString Str = ConvertFromPutty(AStr, strlen(AStr));
-  #define SERVER_VERSION_MSG L"Remote version: "
-  // Gross hack
-  if (Str.Pos(SERVER_VERSION_MSG) == 1)
+  if (Str.Pos(L"failed") > 0)
   {
-    FSessionInfo.SshVersionString = Str.SubString(wcslen(SERVER_VERSION_MSG) + 1,
-      Str.Length() - wcslen(SERVER_VERSION_MSG));
+    Str += L"";
+  }
+  // Gross hack
+  if (StartsStr(ServerVersionMsg, Str))
+  {
+    FSessionInfo.SshVersionString = RightStr(Str, Str.Length() - ServerVersionMsg.Length());
 
     const wchar_t * Ptr = wcschr(FSessionInfo.SshVersionString.c_str(), L'-');
     if (Ptr != NULL)
@@ -668,17 +676,30 @@ void __fastcall TSecureShell::PuttyLogEvent(const char * AStr)
     }
     FSessionInfo.SshImplementation = (Ptr != NULL) ? Ptr + 1 : L"";
   }
-  #define FORWARDING_FAILURE_MSG L"Forwarded connection refused by server: "
-  else if (Str.Pos(FORWARDING_FAILURE_MSG) == 1)
+  else if (StartsStr(ForwardingFailureMsg, Str))
   {
-    FLastTunnelError = Str.SubString(wcslen(FORWARDING_FAILURE_MSG) + 1,
-      Str.Length() - wcslen(FORWARDING_FAILURE_MSG));
-
-    static const TPuttyTranslation Translation[] = {
-      { L"Administratively prohibited [%]", PFWD_TRANSL_ADMIN },
-      { L"Connect failed [%]", PFWD_TRANSL_CONNECT },
-    };
-    TranslatePuttyMessage(Translation, LENOF(Translation), FLastTunnelError);
+    if (ForwardingFailureMsg == Str)
+    {
+      FLastTunnelError = Str;
+    }
+    else
+    {
+      FLastTunnelError = RightStr(Str, Str.Length() - ForwardingFailureMsg.Length());
+      UnicodeString Prefix(L": ");
+      if (StartsStr(Prefix, FLastTunnelError))
+      {
+        FLastTunnelError.Delete(1, Prefix.Length());
+      }
+      static const TPuttyTranslation Translation[] = {
+        { L"Administratively prohibited [%]", PFWD_TRANSL_ADMIN },
+        { L"Connect failed [%]", PFWD_TRANSL_CONNECT },
+      };
+      TranslatePuttyMessage(Translation, LENOF(Translation), FLastTunnelError);
+    }
+  }
+  else if (StartsStr(LocalPortMsg, Str) && ContainsStr(Str, ForwadingToMsg) && ContainsStr(Str, FailedMsg))
+  {
+    FLastTunnelError = Str;
   }
   LogEvent(Str);
 }
@@ -1492,7 +1513,7 @@ int __fastcall TSecureShell::TranslateErrorMessage(
   UnicodeString & Message, UnicodeString * HelpKeyword)
 {
   static const TPuttyTranslation Translation[] = {
-    { L"Server unexpectedly closed network connection", UNEXPECTED_CLOSE_ERROR, HELP_UNEXPECTED_CLOSE_ERROR },
+    { L"Remote side unexpectedly closed network connection", UNEXPECTED_CLOSE_ERROR, HELP_UNEXPECTED_CLOSE_ERROR },
     { L"Network error: Connection refused", NET_TRANSL_REFUSED2, HELP_NET_TRANSL_REFUSED },
     { L"Network error: Connection reset by peer", NET_TRANSL_RESET, HELP_NET_TRANSL_RESET },
     { L"Network error: Connection timed out", NET_TRANSL_TIMEOUT2, HELP_NET_TRANSL_TIMEOUT },
