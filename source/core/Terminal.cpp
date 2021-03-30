@@ -1330,10 +1330,12 @@ void __fastcall TTerminal::Open()
                     FSecureShell->GetHostKeyFingerprint(FFingerprintScannedSHA256, FFingerprintScannedMD5);
                     FFingerprintScannedSHA1 = UnicodeString();
                   }
+                  // Tunnel errors that happens only once we connect to the local port (server-side forwarding problems).
+                  // Contrary to local side problems handled already in OpenTunnel.
                   if (!FSecureShell->Active && !FTunnelError.IsEmpty())
                   {
-                    // the only case where we expect this to happen
-                    DebugAssert(E.Message == LoadStr(UNEXPECTED_CLOSE_ERROR));
+                    // the only case where we expect this to happen (first in GUI, the latter in scripting)
+                    DebugAssert((E.Message == LoadStr(UNEXPECTED_CLOSE_ERROR)) || (E.Message == LoadStr(NET_TRANSL_CONN_ABORTED)));
                     FatalError(&E, FMTLOAD(TUNNEL_ERROR, (FTunnelError)));
                   }
                   else
@@ -1555,13 +1557,31 @@ void __fastcall TTerminal::OpenTunnel()
       FTunnelOpening = false;
     }
 
+    // When forwarding fails due to a local problem (e.g. port in use), we get the error already here, so abort asap.
+    // If we won't abort, particularly in case of "port in use", we may not even detect the problem,
+    // as the connection to the port may succeed.
+    // Remote-side tunnel problems are handled in TTerminal::Open().
+    if (!FTunnel->LastTunnelError.IsEmpty())
+    {
+      // Throw and handle with any other theoretical forwarding errors that may cause tunnel connection close
+      // (probably cannot happen)
+      EXCEPTION;
+    }
+
     FTunnelThread = new TTunnelThread(FTunnel);
   }
-  catch (...)
+  catch (Exception & E)
   {
     LogEvent(L"Error opening tunnel.");
     CloseTunnel();
-    throw;
+    if (!FTunnelError.IsEmpty())
+    {
+      FatalError(&E, FMTLOAD(TUNNEL_ERROR, (FTunnelError)));
+    }
+    else
+    {
+      throw;
+    }
   }
 }
 //---------------------------------------------------------------------------
