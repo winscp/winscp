@@ -2984,6 +2984,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteCopyOperationCommand(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::HandleErrorList(TStringList *& ErrorList)
 {
+  int Count = ErrorList->Count;
   try
   {
     if (ErrorList->Count)
@@ -2996,7 +2997,7 @@ void __fastcall TCustomScpExplorerForm::HandleErrorList(TStringList *& ErrorList
         int Index = 0;
         do
         {
-          DebugAssert(Index >= 0 && Index < ErrorList->Count);
+          DebugAssert(Index >= 0 && Index < Count);
           TQueryButtonAlias Aliases[2];
           Aliases[0].Button = qaYes;
           Aliases[0].Alias = LoadStr(PREV_BUTTON);
@@ -3006,10 +3007,21 @@ void __fastcall TCustomScpExplorerForm::HandleErrorList(TStringList *& ErrorList
           Params.Aliases = Aliases;
           Params.AliasesCount = LENOF(Aliases);
 
+          int No = Index + 1;
+
+          UnicodeString Message = ErrorList->Strings[Index];
+          UnicodeString AMainInstructions;
+          UnicodeString Details;
+          if (ExtractMainInstructions(Message, AMainInstructions))
+          {
+            Details = Message;
+            Message = AMainInstructions;
+          }
+          Message = MainInstructions(FMTLOAD(ERROR_LIST_NUMBER, (No, Count, Message))) + Details;
           Answer = MoreMessageDialog(
-            FMTLOAD(ERROR_LIST_NUMBER, (Index+1, ErrorList->Count, ErrorList->Strings[Index])),
+            Message,
             dynamic_cast<TStrings *>(ErrorList->Objects[Index]), qtError,
-            (Index ? qaYes : 0) | (Index < ErrorList->Count - 1 ? qaNo : 0) |
+            (Index ? qaYes : 0) | (Index < Count - 1 ? qaNo : 0) |
             qaOK, HELP_NONE, &Params);
 
           if (Answer == qaNo)
@@ -3029,7 +3041,7 @@ void __fastcall TCustomScpExplorerForm::HandleErrorList(TStringList *& ErrorList
   {
     TStrings * List = ErrorList;
     ErrorList = NULL;
-    for (int i = 0; i < List->Count; i++)
+    for (int i = 0; i < Count; i++)
     {
       delete List->Objects[i];
     }
