@@ -246,6 +246,7 @@ BEGIN
   STREAM_IN_SCRIPT_ERROR, "When uploading streamed data, only one source can be specified and the target must specify a filename."
   STREAM_READ_ERROR, "Error reading input stream."
   S3_CONFIG_ERROR, "Error reading AWS configuration parameter %s"
+  TIMEOUT_ERROR, "Timeout waiting for server to respond."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"

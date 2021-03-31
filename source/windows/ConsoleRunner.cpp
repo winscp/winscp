@@ -1412,6 +1412,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   unsigned int Timer = 0;
   unsigned int Timeout = 0;
   unsigned int TimeoutA = 0;
+  unsigned int TimeoutR = 0;
   unsigned int NoBatchA = 0;
 
   if (Params != NULL)
@@ -1420,6 +1421,8 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
     {
       Timeout = Params->Timeout;
       TimeoutA = Params->TimeoutAnswer;
+      TimeoutR = Params->TimeoutResponse;
+      DebugAssert((TimeoutA != 0) && (TimeoutR != 0));
     }
 
     if (Params->Timer > 0)
@@ -1449,8 +1452,10 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
       Timeout = InputTimeout();
       if (Timeout != 0)
       {
+        DebugAssert((TimeoutA == 0) && (TimeoutR == 0));
         // See a duplicate AbortAnswer call below
         TimeoutA = AbortAnswer(Answers & ~NoBatchA);
+        TimeoutR = TimeoutA;
       }
     }
   }
@@ -1669,6 +1674,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
       else if (Timeouting && (Timeout < MSecsPerSec))
       {
         AnswerIndex = TimeoutIndex;
+        Answer = TimeoutR;
       }
       else
       {

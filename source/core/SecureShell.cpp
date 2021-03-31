@@ -1263,6 +1263,7 @@ unsigned int __fastcall TSecureShell::TimeoutPrompt(TQueryParamsTimerEvent PoolE
     {
       Params.Timeout = FConfiguration->SessionReopenAutoStall;
       Params.TimeoutAnswer = qaAbort;
+      Params.TimeoutResponse = qaNo;
     }
     Answer = FUI->QueryUser(MainInstructions(FMTLOAD(CONFIRM_PROLONG_TIMEOUT3, (FSessionData->Timeout))),
       NULL, qaRetry | qaAbort, &Params);
@@ -1295,6 +1296,11 @@ void __fastcall TSecureShell::SendBuffer(unsigned int & Result)
       Result = qaRetry;
     }
   }
+}
+//---------------------------------------------------------------------------
+void TSecureShell::TimeoutAbort(unsigned int Answer)
+{
+  FatalError(MainInstructions(LoadStr(Answer == qaAbort ? USER_TERMINATED : TIMEOUT_ERROR)));
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::DispatchSendBuffer(int BufSize)
@@ -1335,7 +1341,8 @@ void __fastcall TSecureShell::DispatchSendBuffer(int BufSize)
           // fallthru
 
         case qaAbort:
-          FatalError(MainInstructions(LoadStr(USER_TERMINATED)));
+        case qaNo:
+          TimeoutAbort(Answer);
           break;
       }
     }
@@ -1869,7 +1876,8 @@ void __fastcall TSecureShell::WaitForData()
           // fallthru
 
         case qaAbort:
-          FatalError(MainInstructions(LoadStr(USER_TERMINATED)));
+        case qaNo:
+          TimeoutAbort(Answer);
           break;
       }
     }

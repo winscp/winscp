@@ -2165,6 +2165,7 @@ bool __fastcall TTerminal::DoQueryReopen(Exception * E)
     TQueryParams Params(qpAllowContinueOnError);
     Params.Timeout = Configuration->SessionReopenAuto;
     Params.TimeoutAnswer = qaRetry;
+    Params.TimeoutResponse = Params.TimeoutAnswer;
     TQueryButtonAlias Aliases[1];
     Aliases[0].Button = qaRetry;
     Aliases[0].Alias = LoadStr(RECONNECT_BUTTON);
