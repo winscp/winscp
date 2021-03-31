@@ -100,6 +100,7 @@ private:
   void __fastcall DispatchSendBuffer(int BufSize);
   void __fastcall SendBuffer(unsigned int & Result);
   unsigned int __fastcall TimeoutPrompt(TQueryParamsTimerEvent PoolEvent);
+  void TimeoutAbort(unsigned int Answer);
   bool __fastcall TryFtp();
   UnicodeString __fastcall ConvertInput(const RawByteString & Input);
   void __fastcall GetRealHost(UnicodeString & Host, int & Port);

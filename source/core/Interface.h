@@ -125,6 +125,7 @@ struct TQueryParams
   TQueryType TimerQueryType;
   unsigned int Timeout;
   unsigned int TimeoutAnswer;
+  unsigned int TimeoutResponse;
   unsigned int NoBatchAnswers;
   UnicodeString HelpKeyword;
 };

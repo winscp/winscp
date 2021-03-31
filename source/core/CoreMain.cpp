@@ -77,6 +77,7 @@ TQueryParams::TQueryParams(unsigned int AParams, UnicodeString AHelpKeyword)
   TimerQueryType = static_cast<TQueryType>(-1);
   Timeout = 0;
   TimeoutAnswer = 0;
+  TimeoutResponse = 0;
   NoBatchAnswers = 0;
   HelpKeyword = AHelpKeyword;
 }
