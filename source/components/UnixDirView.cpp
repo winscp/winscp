@@ -523,11 +523,6 @@ void __fastcall TUnixDirView::DoSetTerminal(TTerminal * value, bool Replace)
       {
         FTerminal->OnStartReadDirectory = NULL;
       }
-      DebugAssert((FTerminal->OnChangeDirectory == DoChangeDirectory) || Replace);
-      if (FTerminal->OnChangeDirectory == DoChangeDirectory)
-      {
-        FTerminal->OnChangeDirectory = NULL;
-      }
       if (!value || !value->Files->Loaded)
       {
         ClearItems();
@@ -543,11 +538,9 @@ void __fastcall TUnixDirView::DoSetTerminal(TTerminal * value, bool Replace)
     {
       FTerminal->OnReadDirectory = DoReadDirectory;
       FTerminal->OnStartReadDirectory = DoStartReadDirectory;
-      FTerminal->OnChangeDirectory = DoChangeDirectory;
       FTerminal->Files->IncludeParentDirectory = AddParentDir;
       if (FTerminal->Files->Loaded)
       {
-        DoChangeDirectory(FTerminal);
         DoStartReadDirectory(FTerminal); // just for style and the assertions
         DoReadDirectoryImpl(FTerminal, false);
       }
@@ -619,13 +612,6 @@ void __fastcall TUnixDirView::DoReadDirectoryImpl(TObject * /*Sender*/, bool Rel
   }
 #else
   DebugUsedParam(ReloadOnly);
-#endif
-}
-//---------------------------------------------------------------------------
-void __fastcall TUnixDirView::DoChangeDirectory(TObject * /*Sender*/)
-{
-#ifndef DESIGN_ONLY
-//  Reload(false);
 #endif
 }
 //---------------------------------------------------------------------------
