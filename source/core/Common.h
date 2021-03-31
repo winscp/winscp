@@ -442,6 +442,83 @@ private:
   TSecondToFirst FSecondToFirst;
 };
 //---------------------------------------------------------------------------
+template<class T>
+class TMulticastEvent
+{
+public:
+  TMulticastEvent()
+  {
+    // noop
+  }
+
+  TMulticastEvent(const TMulticastEvent & Other) :
+    FEventHandlers(Other.FEventHandlers)
+  {
+  }
+
+  explicit TMulticastEvent(T EventHandler)
+  {
+    Add(EventHandler);
+  }
+
+  void Add(T EventHandler)
+  {
+    DebugAssert(EventHandler != NULL);
+    DebugAssert(Find(EventHandler) == FEventHandlers.end());
+    FEventHandlers.push_back(EventHandler);
+  }
+
+  void Remove(T EventHandler)
+  {
+    TEventHandlers::iterator I = Find(EventHandler);
+    if (DebugAlwaysTrue(I != FEventHandlers.end()))
+    {
+      FEventHandlers.erase(I);
+    }
+  }
+
+  template<typename P>
+  void Invoke(const P & p)
+  {
+    TEventHandlers::iterator I = FEventHandlers.begin();
+    while (I != FEventHandlers.end())
+    {
+      (*I)(p);
+      ++I;
+    }
+  }
+
+  bool Contains(T EventHandler)
+  {
+    return (Find(EventHandler) != FEventHandlers.end());
+  }
+
+  bool Any() const
+  {
+    return (FEventHandlers.size() > 0);
+  }
+
+  bool operator==(const TMulticastEvent<T> Other) const
+  {
+    return (FEventHandlers == Other.FEventHandlers);
+  }
+
+  void operator=(const TMulticastEvent<T> & Other)
+  {
+    FEventHandlers = Other.FEventHandlers;
+  }
+
+private:
+  typedef std::vector<T> TEventHandlers;
+  TEventHandlers FEventHandlers;
+
+  TEventHandlers::iterator Find(T EventHandler)
+  {
+    return std::find(FEventHandlers.begin(), FEventHandlers.end(), EventHandler);
+  }
+
+};
+//---------------------------------------------------------------------------
 typedef std::vector<UnicodeString> TUnicodeStringVector;
 //---------------------------------------------------------------------------
 #endif
