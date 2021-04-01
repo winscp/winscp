@@ -476,6 +476,7 @@ public:
     }
   }
 
+  #pragma warn -inl
   template<typename P>
   void Invoke(const P & p)
   {
@@ -486,6 +487,7 @@ public:
       ++I;
     }
   }
+  #pragma warn .inl
 
   bool Contains(T EventHandler)
   {
