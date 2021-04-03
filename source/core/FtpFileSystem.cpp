@@ -3444,7 +3444,7 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
 
         // full name is "MVS is the operating system of this server. FTP Server is running on ..."
         // (the ... can be "z/OS")
-        // https://www.ibm.com/support/knowledgecenter/SSLTBW_2.1.0/com.ibm.zos.v2r1.cs3cod0/ftp215-02.htm
+        // https://www.ibm.com/docs/en/zos/latest?topic=2rc-215-mvs-is-operating-system-this-server-ftp-server-is-running-name
         // FZPI has a different incompatible detection.
         FMVS = (FSystem.SubString(1, 3) == L"MVS");
         // The FWelcomeMessage usually contains "Microsoft FTP Service" but can be empty
