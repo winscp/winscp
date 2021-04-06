@@ -1070,6 +1070,7 @@ int __fastcall Execute()
         }
       }
 
+      bool NewInstance = Params->FindSwitch(NEWINSTANCE_SWICH);
       if (Params->ParamCount > 0)
       {
         AutoStartSession = Params->Param[1];
@@ -1077,7 +1078,7 @@ int __fastcall Execute()
 
         if ((ParamCommand == pcNone) &&
             (WinConfiguration->ExternalSessionInExistingInstance != OpenInNewWindow()) &&
-            !Params->FindSwitch(NEWINSTANCE_SWICH) &&
+            !NewInstance &&
             SendToAnotherInstance())
         {
           Configuration->Usage->Inc(L"SendToAnotherInstance");
@@ -1102,6 +1103,10 @@ int __fastcall Execute()
         }
         Configuration->Usage->Inc(CounterName);
       }
+      else if (NewInstance)
+      {
+        // no autostart
+      }
       else if (WinConfiguration->EmbeddedSessions && StoredSessions->Count)
       {
         AutoStartSession = StoredSessions->Sessions[0]->Name;
@@ -1120,7 +1125,7 @@ int __fastcall Execute()
       // from now flash message boxes on background
       SetOnForeground(false);
 
-      bool NeedSession = (ParamCommand != pcNone);
+      bool NeedSession = NewInstance || (ParamCommand != pcNone);
 
       bool Retry;
       do

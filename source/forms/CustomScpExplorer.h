@@ -727,6 +727,7 @@ protected:
   void HandleDoNotShowCopyDialogAgain(bool DragDrop, bool DoNotShowAgain);
   void __fastcall UpdateDarkMode();
   virtual UnicodeString GetTabHintDetails(TManagedTerminal * ASession);
+  virtual UnicodeString GetNewTabHintDetails();
   UnicodeString GetSessionPath(TManagedTerminal * ASession, TOperationSide Side);
 
 public:

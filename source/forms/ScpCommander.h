@@ -636,6 +636,7 @@ protected:
   virtual void __fastcall NeedSession(bool Startup);
   void RestoreSessionLocalDirView(TDirView * ALocalDirView, const UnicodeString & LocalDirectory);
   virtual UnicodeString GetTabHintDetails(TManagedTerminal * ASession);
+  virtual UnicodeString GetNewTabHintDetails();
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);

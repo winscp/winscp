@@ -433,7 +433,12 @@ void TScpCommanderForm::NewTab(TOperationSide Side)
 {
   if (Side == osCurrent)
   {
-    Side = WinConfiguration->DefaultToNewRemoteTab ? osRemote : osLocal;
+    bool Remote = WinConfiguration->DefaultToNewRemoteTab;
+    if (IsKeyPressed(VK_CONTROL))
+    {
+      Remote = !Remote;
+    }
+    Side = Remote ? osRemote : osLocal;
   }
 
   if (Side == osRemote)
@@ -2876,6 +2881,21 @@ UnicodeString TScpCommanderForm::GetTabHintDetails(TManagedTerminal * ASession)
     {
       Result = Other + Sep + Local;
     }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString TScpCommanderForm::GetNewTabHintDetails()
+{
+  UnicodeString Result;
+  if (WinConfiguration->DefaultToNewRemoteTab)
+  {
+    Result = TCustomScpExplorerForm::GetNewTabHintDetails();
+    Result = FMTLOAD(NEW_REMOTE_TAB_CTRL_HINT, (Result));
+  }
+  else
+  {
+    Result = LoadStr(NEW_LOCAL_TAB_HINT);
   }
   return Result;
 }

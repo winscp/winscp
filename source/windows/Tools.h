@@ -17,6 +17,7 @@ void __fastcall ExecuteProcessCheckedAndWait(
 bool __fastcall IsKeyPressed(int VirtualKey);
 bool __fastcall UseAlternativeFunction();
 bool __fastcall OpenInNewWindow();
+void ExecuteSelf(const UnicodeString & Params);
 void __fastcall ExecuteNewInstance(const UnicodeString & Param, const UnicodeString & AdditionalParams = UnicodeString());
 IShellLink * __fastcall CreateAppDesktopShortCut(
   const UnicodeString & Name, const UnicodeString & Params, const UnicodeString & Description,

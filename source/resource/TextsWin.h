@@ -649,6 +649,9 @@
 #define COPY_LOCAL_MOVE_CAPTION 6039
 #define LOGIN_OPEN              6040
 #define LOGIN_LOGIN             6041
+#define NEW_LOCAL_TAB_HINT      6042
+#define NEW_REMOTE_TAB_HINT     6043
+#define NEW_REMOTE_TAB_CTRL_HINT 6044
 
 // 2xxx is reserved for TextsFileZilla.h
 

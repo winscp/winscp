@@ -11284,6 +11284,11 @@ UnicodeString TCustomScpExplorerForm::GetTabHintDetails(TManagedTerminal * ASess
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString TCustomScpExplorerForm::GetNewTabHintDetails()
+{
+  return LoadStr(NEW_REMOTE_TAB_HINT);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SessionsPageControlTabHint(TPageControl *, int Index, UnicodeString & Hint)
 {
   if (Index >= 0)
@@ -11295,7 +11300,7 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlTabHint(TPageControl 
       UnicodeString NewTabTabCaption = GetNewTabTabCaption();
       if (NewTabTabCaption != TabSheet->Caption)
       {
-        Hint = NewTabTabCaption;
+        Hint = NewTabTabCaption + L"|" + GetNewTabHintDetails();
       }
     }
     else

@@ -489,19 +489,24 @@ bool __fastcall OpenInNewWindow()
   return UseAlternativeFunction();
 }
 //---------------------------------------------------------------------------
+void ExecuteSelf(const UnicodeString & Params)
+{
+  ExecuteShellChecked(Application->ExeName, Params);
+}
+//---------------------------------------------------------------------------
 void __fastcall ExecuteNewInstance(const UnicodeString & Param, const UnicodeString & AdditionalParams)
 {
-  UnicodeString Arg = Param;
-  if (!Arg.IsEmpty())
+  UnicodeString Arg;
+  UnicodeString Space(L" ");
+  if (!Param.IsEmpty())
   {
-    Arg = FORMAT(L"\"%s\" %s", (Arg, TProgramParams::FormatSwitch(NEWINSTANCE_SWICH)));
-    if (!AdditionalParams.IsEmpty())
-    {
-      Arg += L" " + AdditionalParams;
-    }
+    Arg = FORMAT(L"\"%s\"", (Param));
+    AddToList(Arg, Param, Space);
   }
+  AddToList(Arg, TProgramParams::FormatSwitch(NEWINSTANCE_SWICH), Space);
+  AddToList(Arg, AdditionalParams, Space);
 
-  ExecuteShellChecked(Application->ExeName, Arg);
+  ExecuteSelf(Arg);
 }
 //---------------------------------------------------------------------------
 IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,

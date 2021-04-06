@@ -3034,7 +3034,7 @@ void __fastcall TPreferencesDialog::CustomIniFileStorageChanged()
     else if (Result == qaNo)
     {
       Configuration->ScheduleCustomIniFileStorageUse(GetCustomIniFileStorageName());
-      ExecuteNewInstance(L"");
+      ExecuteSelf(EmptyStr);
       TerminateApplication();
     }
     else
