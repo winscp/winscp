@@ -243,6 +243,11 @@ void __fastcall TS3FileSystem::Open()
     S3_initialize(NULL, S3_INIT_ALL, NULL);
   }
 
+  if (IsGoogleCloud())
+  {
+    FTerminal->LogEvent(L"Google Cloud detected.");
+  }
+
   FActive = false;
   try
   {
@@ -1003,6 +1008,11 @@ void TS3FileSystem::HandleNonBucketStatus(TLibS3CallbackData & Data, bool & Retr
   }
 }
 //---------------------------------------------------------------------------
+bool TS3FileSystem::IsGoogleCloud()
+{
+  return SameText(L"storage.googleapis.com", FTerminal->SessionData->HostNameExpanded);
+}
+//---------------------------------------------------------------------------
 void TS3FileSystem::ReadDirectoryInternal(
   const UnicodeString & APath, TRemoteFileList * FileList, int MaxKeys, const UnicodeString & FileName)
 {
@@ -1026,10 +1036,13 @@ void TS3FileSystem::ReadDirectoryInternal(
       Retry = false;
 
       if ((FTerminal->SessionData->S3MaxKeys == asOff) ||
-          ((FTerminal->SessionData->S3MaxKeys == asAuto) &&
-           SameText(L"storage.googleapis.com", FTerminal->SessionData->HostNameExpanded)))
+          ((FTerminal->SessionData->S3MaxKeys == asAuto) && IsGoogleCloud()))
       {
-        AMaxKeys = 0;
+        if (AMaxKeys != 0)
+        {
+          FTerminal->LogEvent(1, L"Not limiting keys.");
+          AMaxKeys = 0;
+        }
       }
 
       S3_list_service(
@@ -1576,6 +1589,13 @@ void __fastcall TS3FileSystem::Source(
   int Parts = std::min(S3MaxMultiPartChunks, std::max(1, static_cast<int>((Handle.Size + S3MinMultiPartChunkSize - 1) / S3MinMultiPartChunkSize)));
   int ChunkSize = std::max(S3MinMultiPartChunkSize, static_cast<int>((Handle.Size + Parts - 1) / Parts));
   DebugAssert((ChunkSize == S3MinMultiPartChunkSize) || (Handle.Size > static_cast<__int64>(S3MaxMultiPartChunks) * S3MinMultiPartChunkSize));
+
+  if ((Parts > 1) && IsGoogleCloud())
+  {
+    FTerminal->LogEvent(L"Cannot use multipart upload with Google Cloud.");
+    Parts = 1;
+  }
+
   bool Multipart = (Parts > 1);
 
   RawByteString MultipartUploadId;
