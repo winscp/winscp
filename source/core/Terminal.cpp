@@ -1475,18 +1475,30 @@ void __fastcall TTerminal::OpenTunnel()
   FTunnelLocalPortNumber = FSessionData->TunnelLocalPortNumber;
   if (FTunnelLocalPortNumber == 0)
   {
-    FTunnelLocalPortNumber = Configuration->TunnelLocalPortNumberLow;
-    while (!IsListenerFree(FTunnelLocalPortNumber))
+    // Randomizing the port selection to reduce a chance of conflicts.
+    std::vector<int> Ports;
+    for (int Port = Configuration->TunnelLocalPortNumberLow; Port <= Configuration->TunnelLocalPortNumberHigh; Port++)
     {
-      FTunnelLocalPortNumber++;
-      if (FTunnelLocalPortNumber > Configuration->TunnelLocalPortNumberHigh)
+      Ports.push_back(Port);
+    }
+
+    do
+    {
+      if (Ports.empty())
       {
-        FTunnelLocalPortNumber = 0;
         FatalError(NULL, FMTLOAD(TUNNEL_NO_FREE_PORT,
           (Configuration->TunnelLocalPortNumberLow, Configuration->TunnelLocalPortNumberHigh)));
       }
+      int Index = Random(Ports.size());
+      int Port = Ports[Index];
+      Ports.erase(&Ports.at(Index));
+      if (IsListenerFree(Port))
+      {
+        FTunnelLocalPortNumber = Port;
+        LogEvent(FORMAT(L"Autoselected tunnel local port number %d", (FTunnelLocalPortNumber)));
+      }
     }
-    LogEvent(FORMAT(L"Autoselected tunnel local port number %d", (FTunnelLocalPortNumber)));
+    while (FTunnelLocalPortNumber == 0);
   }
 
   try
