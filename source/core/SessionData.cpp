@@ -3067,27 +3067,30 @@ void __fastcall TSessionData::SetRekeyTime(unsigned int value)
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetDefaultSessionName()
 {
+  UnicodeString Result;
   if (IsLocalBrowser)
   {
     // See also TScpCommanderForm::GetLocalBrowserSessionTitle
     UnicodeString Path1 = ExtractShortName(LocalDirectory, false);
     UnicodeString Path2 = ExtractShortName(OtherLocalDirectory, false);
-    return Path1 + TitleSeparator + Path2;
+    Result = Path1 + TitleSeparator + Path2;
   }
   else if (!HostName.IsEmpty() && !UserName.IsEmpty())
   {
     // If we ever choose to include port number,
     // we have to escape IPv6 literals in HostName
-    return FORMAT(L"%s@%s", (UserName, HostName));
+    Result = FORMAT(L"%s@%s", (UserName, HostName));
   }
   else if (!HostName.IsEmpty())
   {
-    return HostName;
+    Result = HostName;
   }
   else
   {
-    return L"session";
+    Result = L"session";
   }
+  Result = MakeValidName(Result);
+  return Result;
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetNameWithoutHiddenPrefix()
