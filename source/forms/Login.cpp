@@ -602,7 +602,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * SessionData)
   TSessionData * EditingSessionData = GetEditingSessionData();
   SessionData->Name =
     (EditingSessionData != NULL) ? EditingSessionData->Name :
-        (FNewSiteKeepName ? SessionData->Name : SessionData->DefaultSessionName);
+      (FNewSiteKeepName ? SessionData->Name : SessionData->DefaultSessionName);
 }
 //---------------------------------------------------------------------
 bool __fastcall TLoginDialog::IsEditable()
