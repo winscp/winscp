@@ -272,6 +272,7 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FBytesAvailableSuppoted = false;
   FLoggedIn = false;
   FAnyTransferSucceeded = false; // Do not reset on reconnect
+  FForceReadSymlink = false;
 
   FChecksumAlgs.reset(new TStringList());
   FChecksumCommands.reset(new TStringList());
@@ -2440,6 +2441,7 @@ void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
 
         AFile = FFileListCache->FindFile(NameOnly);
       }
+      VMSAllRevisionsFlag.Release();
 
       if (AFile != NULL)
       {
@@ -2448,6 +2450,11 @@ void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
         {
           File->FileName = FileName;
           File->FullFileName = FileName;
+        }
+        if (File->IsSymLink)
+        {
+          TAutoFlag AutoFlag(FForceReadSymlink);
+          File->Complete();
         }
       }
     }
@@ -2462,23 +2469,26 @@ void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
 void __fastcall TFTPFileSystem::ReadSymlink(TRemoteFile * SymlinkFile,
   TRemoteFile *& File)
 {
-  // Resolving symlinks over FTP is big overhead
-  // (involves opening TCPIP connection for retrieving "directory listing").
-  // Moreover FZAPI does not support that anyway.
-  // Though nowadays we could use MLST to read the symlink.
-  File = new TRemoteFile(SymlinkFile);
-  try
+  if (FForceReadSymlink && DebugAlwaysTrue(!SymlinkFile->LinkTo.IsEmpty()) && DebugAlwaysTrue(SymlinkFile->HaveFullFileName))
   {
-    File->Terminal = FTerminal;
-    File->FileName = UnixExtractFileName(SymlinkFile->LinkTo);
-    // FZAPI treats all symlink target as directories
-    File->Type = FILETYPE_DIRECTORY;
+    // When we get here from TFTPFileSystem::ReadFile, it's likely the second time ReadSymlink has been called for the link.
+    // The first time getting to the later branch, so IsDirectory is true and hence FullFileName ends with a slash.
+    UnicodeString SymlinkDir = UnixExtractFileDir(UnixExcludeTrailingBackslash(SymlinkFile->FullFileName));
+    UnicodeString LinkTo = ::AbsolutePath(SymlinkDir, SymlinkFile->LinkTo);
+    ReadFile(LinkTo, File);
   }
-  catch(...)
+  else
   {
-    delete File;
-    File = NULL;
-    throw;
+    // Resolving symlinks over FTP is big overhead
+    // (involves opening TCPIP connection for retrieving "directory listing").
+    // Moreover FZAPI does not support that anyway.
+    // Though nowadays we could use MLST to read the symlink.
+    std::unique_ptr<TRemoteFile> AFile(new TRemoteFile(SymlinkFile));
+    AFile->Terminal = FTerminal;
+    AFile->FileName = UnixExtractFileName(SymlinkFile->LinkTo);
+    // FZAPI treats all symlink target as directories
+    AFile->Type = FILETYPE_DIRECTORY;
+    File = AFile.release();
   }
 }
 //---------------------------------------------------------------------------
