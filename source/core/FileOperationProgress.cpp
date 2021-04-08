@@ -818,6 +818,7 @@ bool TFileOperationProgressType::IsTransferDoneChecked()
   return IsTransferDone();
 }
 //---------------------------------------------------------------------------
+// Note that this does not work correctly, if the file is larger than expected (at least with the FTP protocol)
 bool TFileOperationProgressType::IsTransferDone()
 {
   return (TransferredSize == TransferSize);
