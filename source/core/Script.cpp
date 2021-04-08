@@ -574,9 +574,9 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
   int End, TFileListType ListType)
 {
   TStrings * Result = new TStringList();
-  TStrings * FileLists = NULL;
   try
   {
+    TStrings * FileLists = NULL;
     try
     {
       for (int i = Start; i <= End; i++)
@@ -673,57 +673,57 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
         }
       }
     }
-    catch(...)
+    __finally
     {
-      FreeFileList(Result);
-      throw;
-    }
-  }
-  __finally
-  {
-    if (FileLists != NULL)
-    {
-      for (int i = 0; i < FileLists->Count; i++)
+      if (FileLists != NULL)
       {
-        delete FileLists->Objects[i];
-      }
-      delete FileLists;
-    }
-  }
-
-  if (FLAGSET(ListType, fltLatest) && (Result->Count > 1))
-  {
-    // otherwise we do not have TRemoteFile's
-    DebugAssert(FLAGSET(ListType, fltQueryServer));
-    int LatestIndex = 0;
-
-    for (int Index = 1; Index < Result->Count; Index++)
-    {
-      TRemoteFile * File = dynamic_cast<TRemoteFile *>(Result->Objects[Index]);
-      if (dynamic_cast<TRemoteFile *>(Result->Objects[LatestIndex])->Modification < File->Modification)
-      {
-        LatestIndex = Index;
+        for (int i = 0; i < FileLists->Count; i++)
+        {
+          delete FileLists->Objects[i];
+        }
+        delete FileLists;
       }
     }
 
-    TRemoteFile * File = dynamic_cast<TRemoteFile *>(Result->Objects[LatestIndex]);
-    UnicodeString Path = Result->Strings[LatestIndex];
-    Result->Delete(LatestIndex);
-    FreeFiles(Result);
-    Result->Clear();
-    Result->AddObject(Path, File);
-  }
-
-  if (FLAGSET(ListType, fltOnlyFile))
-  {
-    for (int Index = 0; Index < Result->Count; Index++)
+    if (FLAGSET(ListType, fltLatest) && (Result->Count > 1))
     {
-      TRemoteFile * File = dynamic_cast<TRemoteFile *>(Result->Objects[Index]);
-      if (File->IsDirectory)
+      // otherwise we do not have TRemoteFile's
+      DebugAssert(FLAGSET(ListType, fltQueryServer));
+      int LatestIndex = 0;
+
+      for (int Index = 1; Index < Result->Count; Index++)
       {
-        throw Exception(FMTLOAD(NOT_FILE_ERROR, (File->FileName)));
+        TRemoteFile * File = dynamic_cast<TRemoteFile *>(Result->Objects[Index]);
+        if (dynamic_cast<TRemoteFile *>(Result->Objects[LatestIndex])->Modification < File->Modification)
+        {
+          LatestIndex = Index;
+        }
+      }
+
+      TRemoteFile * File = dynamic_cast<TRemoteFile *>(Result->Objects[LatestIndex]);
+      UnicodeString Path = Result->Strings[LatestIndex];
+      Result->Delete(LatestIndex);
+      FreeFiles(Result);
+      Result->Clear();
+      Result->AddObject(Path, File);
+    }
+
+    if (FLAGSET(ListType, fltOnlyFile))
+    {
+      for (int Index = 0; Index < Result->Count; Index++)
+      {
+        TRemoteFile * File = dynamic_cast<TRemoteFile *>(Result->Objects[Index]);
+        if (File->IsDirectory)
+        {
+          throw Exception(FMTLOAD(NOT_FILE_ERROR, (File->FileName)));
+        }
       }
     }
+  }
+  catch (...)
+  {
+    FreeFileList(Result);
+    throw;
   }
 
   return Result;
