@@ -812,9 +812,14 @@ unsigned long __fastcall TFileOperationProgressType::StaticBlockSize()
   return TRANSFER_BUF_SIZE;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFileOperationProgressType::IsTransferDone()
+bool TFileOperationProgressType::IsTransferDoneChecked()
 {
   DebugAssert(TransferredSize <= TransferSize);
+  return IsTransferDone();
+}
+//---------------------------------------------------------------------------
+bool TFileOperationProgressType::IsTransferDone()
+{
   return (TransferredSize == TransferSize);
 }
 //---------------------------------------------------------------------------

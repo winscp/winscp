@@ -1874,7 +1874,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
               (AsciiBuf.Size)));
             // Should be equal, just in case it's rounded (see above)
             OperationProgress->ChangeTransferSize(AsciiBuf.Size);
-            while (!OperationProgress->IsTransferDone())
+            while (!OperationProgress->IsTransferDoneChecked())
             {
               unsigned long BlockSize = OperationProgress->TransferBlockSize();
               FSecureShell->Send(
@@ -1912,7 +1912,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
           throw Exception(MainInstructions(LoadStr(USER_TERMINATED)));
         }
       }
-      while (!OperationProgress->IsLocallyDone() || !OperationProgress->IsTransferDone());
+      while (!OperationProgress->IsLocallyDone() || !OperationProgress->IsTransferDoneChecked());
 
       FSecureShell->SendNull();
       try
@@ -2572,8 +2572,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
                     throw Exception(MainInstructions(LoadStr(USER_TERMINATED)));
                   }
                 }
-                while (!OperationProgress->IsLocallyDone() || !
-                    OperationProgress->IsTransferDone());
+                while (!OperationProgress->IsLocallyDone() || !OperationProgress->IsTransferDoneChecked());
               }
               catch (Exception &E)
               {
