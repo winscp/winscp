@@ -2441,7 +2441,7 @@ void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
 
         AFile = FFileListCache->FindFile(NameOnly);
       }
-      VMSAllRevisionsFlag.Release();
+      VmsAllRevisionsFlag.Release();
 
       if (AFile != NULL)
       {
