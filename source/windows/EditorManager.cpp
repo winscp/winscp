@@ -347,7 +347,7 @@ void __fastcall TEditorManager::FileReload(TObject * Token)
   TAutoFlag ReloadingFlag(FileData->Reloading);
 
   OnFileReload(FileData->FileName, FileData->Data);
-  FileAge(FileData->FileName, FileData->Timestamp);
+  GetFileTimestamp(FileData->FileName, FileData->Timestamp);
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::FileClosed(TObject * Token, bool Forced)
@@ -365,7 +365,7 @@ void __fastcall TEditorManager::AddFile(TFileData & FileData, TEditedFileData * 
 {
   std::unique_ptr<TEditedFileData> Data(AData);
 
-  FileAge(FileData.FileName, FileData.Timestamp);
+  GetFileTimestamp(FileData.FileName, FileData.Timestamp);
   FileData.Closed = false;
   FileData.UploadCompleteEvent = INVALID_HANDLE_VALUE;
   FileData.Opened = Now();
@@ -459,6 +459,17 @@ bool __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
   return Result;
 }
 //---------------------------------------------------------------------------
+bool TEditorManager::GetFileTimestamp(const UnicodeString & FileName, TDateTime & Timestamp)
+{
+  TSearchRecSmart ASearchRec;
+  bool Result = FileSearchRec(FileName, ASearchRec);
+  if (Result)
+  {
+    Timestamp = TTimeZone::Local->ToUniversalTime(ASearchRec.GetLastWriteTime());
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall TEditorManager::HasFileChanged(int Index, TDateTime & NewTimestamp)
 {
   TFileData * FileData = &FFiles[Index];
@@ -470,7 +481,7 @@ bool __fastcall TEditorManager::HasFileChanged(int Index, TDateTime & NewTimesta
   else
   {
     Result =
-      FileAge(FileData->FileName, NewTimestamp) &&
+      GetFileTimestamp(FileData->FileName, NewTimestamp) &&
       (FileData->Timestamp != NewTimestamp);
   }
   return Result;
