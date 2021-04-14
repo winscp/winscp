@@ -4,20 +4,13 @@
 #include "FileZillaApi.h"
 #include <WideStrUtils.hpp>
 
-CFtpListResult::CFtpListResult(t_server server, bool mlst, bool *bUTF8, bool vmsAllRevisions)
+CFtpListResult::CFtpListResult(t_server server, bool mlst, bool *bUTF8, bool vmsAllRevisions, bool debugShowListing)
 {
-  listhead=curpos=0;
-
   m_mlst = mlst;
   m_server = server;
   m_bUTF8 = bUTF8;
   m_vmsAllRevisions = vmsAllRevisions;
-
-  pos=0;
-
-  m_prevline=0;
-  m_curline=0;
-  m_curlistaddpos=0;
+  m_debugShowListing = debugShowListing;
 
   //Fill the month names map
 
@@ -234,115 +227,32 @@ CFtpListResult::CFtpListResult(t_server server, bool mlst, bool *bUTF8, bool vms
   m_MonthNamesMap[L"avg"] = 8;
 }
 
-
-CFtpListResult::~CFtpListResult()
+t_directory::t_direntry * CFtpListResult::getList(int & Num)
 {
-  t_list *ptr=listhead;
-  t_list *ptr2;
-  while (ptr)
+  if (!FBuffer.IsEmpty())
   {
-    delete [] ptr->buffer;
-    ptr2=ptr;
-    ptr=ptr->next;
-    delete ptr2;
+    SendLineToMessageLog("Unparsed listing:");
+    SendLineToMessageLog(FBuffer);
   }
-  if (m_prevline)
-    delete [] m_prevline;
-  if (m_curline)
-    delete [] m_curline;
-}
-
-void CFtpListResult::DoParseLine(char *& Line, t_directory::t_direntry & DirEntry)
-{
-  int ServerType;
-  char * TmpLine = new char[strlen(Line) + 1];
-  strcpy(TmpLine, Line);
-  bool Result = parseLine(TmpLine, strlen(TmpLine), DirEntry, ServerType);
-  delete [] TmpLine;
-  if (Result)
+  Num = m_EntryList.size();
+  t_directory::t_direntry * Result;
+  if (Num == 0)
   {
-    if (ServerType != 0)
-    {
-      m_server.nServerType |= ServerType;
-    }
-    if ((DirEntry.name != L".") && (DirEntry.name != L".."))
-    {
-      AddLine(DirEntry);
-    }
-    if (m_prevline != NULL)
-    {
-      delete [] m_prevline;
-      m_prevline = NULL;
-    }
-    if (m_curline != Line)
-    {
-      delete [] m_curline;
-    }
-    delete [] Line;
-    Line = GetLine();
-    m_curline = Line;
+    SendLineToMessageLog("<Empty directory listing>");
+    Result = NULL;
   }
   else
   {
-    if (m_prevline != NULL)
+    Result = new t_directory::t_direntry[Num];
+    int I = 0;
+    for (tEntryList::iterator Iter = m_EntryList.begin(); Iter != m_EntryList.end(); Iter++, I++)
     {
-      if (m_curline != Line)
-      {
-        delete [] m_prevline;
-        m_prevline = m_curline;
-        delete [] Line;
-        Line = GetLine();
-        m_curline = Line;
-      }
-      else
-      {
-        Line = new char[strlen(m_prevline) + strlen(m_curline) + 2];
-        sprintf(Line, "%s %s", m_prevline, m_curline);
-      }
+      Result[I] = *Iter;
     }
-    else
-    {
-      m_prevline = Line;
-      Line = GetLine();
-      m_curline = Line;
-    }
+    m_EntryList.clear();
   }
-}
 
-t_directory::t_direntry *CFtpListResult::getList(int &num)
-{
-  #ifdef _DEBUG
-  USES_CONVERSION;
-  #endif
-  char *line=GetLine();
-  m_curline=line;
-  while (line)
-  {
-    t_directory::t_direntry direntry;
-    DoParseLine(line, direntry);
-  }
-  if (m_prevline)
-  {
-    delete [] m_prevline;
-    m_prevline=0;
-  }
-  if (m_curline!=line)
-    delete [] m_curline;
-  delete [] line;
-  m_curline=0;
-
-  num=m_EntryList.size();
-  if (!num)
-    return 0;
-  t_directory::t_direntry *res=new t_directory::t_direntry[num];
-  int i=0;
-  for (tEntryList::iterator iter=m_EntryList.begin();iter!=m_EntryList.end();iter++, i++)
-  {
-    res[i]=*iter;
-  }
-  m_EntryList.clear();
-
-  return res;
+  return Result;
 }
 
 BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_directory::t_direntry &direntry, int &nFTPServerType)
@@ -404,159 +314,111 @@ BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_dir
   return FALSE;
 }
 
-void CFtpListResult::AddData(char *data, int size)
+bool CFtpListResult::IsNewLineChar(char C) const
 {
-  #ifdef _DEBUG
-  USES_CONVERSION;
-  #endif
-  if (!size)
-    return;
-
-  if (!m_curlistaddpos)
-    m_curlistaddpos = new t_list;
-  else
-  {
-    m_curlistaddpos->next = new t_list;
-    m_curlistaddpos = m_curlistaddpos->next;
-  }
-  if (!listhead)
-  {
-    curpos = m_curlistaddpos;
-    listhead = m_curlistaddpos;
-  }
-  m_curlistaddpos->buffer = data;
-  m_curlistaddpos->len = size;
-  m_curlistaddpos->next = 0;
-
-  t_list *pOldListPos = curpos;
-  int nOldListBufferPos = pos;
-
-  //Try if there are already some complete lines
-  t_directory::t_direntry direntry;
-  char *line = GetLine();
-  m_curline = line;
-  while (line)
-  {
-    if (curpos)
-    {
-      pOldListPos = curpos;
-      nOldListBufferPos = pos;
-    }
-    else
-    {
-      delete [] line;
-      if (m_curline != line)
-        delete [] m_curline;
-      m_curline = 0;
-      break;
-    }
-    DoParseLine(line, direntry);
-  }
-  curpos=pOldListPos;
-  pos=nOldListBufferPos;
-
+  return (C == '\r') || (C == '\n');
 }
 
-void CFtpListResult::SendToMessageLog()
+void CFtpListResult::AddData(const char * Data, int Size)
 {
-  t_list *oldlistpos = curpos;
-  int oldbufferpos = pos;
-  curpos = listhead;
-  pos=0;
-  char *line = GetLine();
-  // Note that FZ_LOG_INFO here is not checked against debug level, as the direct
-  // call to PostMessage bypasses check in LogMessage.
-  // So we get the listing on any logging level, what is actually what we want
-  if (!line)
+  FBuffer += RawByteString(Data, Size);
+
+  // Just in case the previous buffer was terminated between CR and LF.
+  while (!FBuffer.IsEmpty() && IsNewLineChar(FBuffer[1]))
   {
-    //Displays a message in the message log
-    t_ffam_statusmessage *pStatus = new t_ffam_statusmessage;
-    pStatus->post = TRUE;
-    pStatus->status = L"<Empty directory listing>";
-    pStatus->type = FZ_LOG_INFO;
-    GetIntern()->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_STATUS, 0), (LPARAM)pStatus);
+    FBuffer.Delete(1, 1);
   }
-  while (line)
+
+  bool Found;
+  int Pos;
+  int FirstLineEnd;
+  int Count;
+  bool Restart = true;
+
+  do
   {
-    CString status = line;
-    delete [] line;
-
-    //Displays a message in the message log
-    t_ffam_statusmessage *pStatus = new t_ffam_statusmessage;
-    pStatus->post = TRUE;
-    pStatus->status = status;
-    pStatus->type = FZ_LOG_INFO;
-    if (!GetIntern()->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_STATUS, 0), (LPARAM)pStatus))
-      delete pStatus;
-
-    line = GetLine();
-  }
-  curpos = oldlistpos;
-  pos = oldbufferpos;
-}
-
-char * CFtpListResult::GetLine()
-{
-  if (!curpos)
-    return 0;
-  int len=curpos->len;
-  while (curpos->buffer[pos]=='\r' || curpos->buffer[pos]=='\n' || curpos->buffer[pos]==' ' || curpos->buffer[pos]=='\t')
-  {
-    pos++;
-    if (pos>=len)
+    if (Restart)
     {
-      curpos=curpos->next;
-      if (!curpos)
-        return 0;
-      len=curpos->len;
-      pos=0;
+      Pos = 1;
+      FirstLineEnd = -1;
+      Count = 0;
+      Restart = false;
+    }
+
+    std::vector<RawByteString> Lines;
+    while ((Pos <= FBuffer.Length()) && !IsNewLineChar(FBuffer[Pos]))
+    {
+      Pos++;
+    }
+    Found = (Pos <= FBuffer.Length());
+    if (Found)
+    {
+      Count++;
+      RawByteString Record = FBuffer.SubString(1, Pos - 1);
+      while ((Pos <= FBuffer.Length()) && IsNewLineChar(FBuffer[Pos]))
+      {
+        Pos++;
+      }
+      if (FirstLineEnd < 0)
+      {
+        FirstLineEnd = Pos;
+      }
+      t_directory::t_direntry DirEntry;
+      int ServerType;
+      RawByteString Line = Record;
+      for (int Index = 1; Index <= Line.Length(); Index++)
+      {
+        if (IsNewLineChar(Line[Index]))
+        {
+          Line[Index] = ' ';
+        }
+      }
+      if (parseLine(Line.c_str(), Line.Length(), DirEntry, ServerType))
+      {
+        if (ServerType != 0)
+        {
+          m_server.nServerType |= ServerType;
+        }
+        if ((DirEntry.name != L".") && (DirEntry.name != L".."))
+        {
+          AddLine(DirEntry);
+        }
+        FBuffer.Delete(1, Pos - 1);
+        Restart = true;
+        SendLineToMessageLog(Record);
+      }
+      else
+      {
+        if (Count == 2)
+        {
+          RawByteString FirstLine = FBuffer.SubString(1, FirstLineEnd - 1).TrimRight();
+          SendLineToMessageLog("Cannot parse line:");
+          SendLineToMessageLog(FirstLine);
+          FBuffer.Delete(1, FirstLineEnd - 1);
+          Restart = true;
+        }
+      }
     }
   }
-
-  t_list *startptr=curpos;
-  int startpos=pos;
-  int reslen=0;
-
-  while ((curpos->buffer[pos]!='\n')&&(curpos->buffer[pos]!='\r'))
-  {
-    reslen++;
-    pos++;
-    if (pos>=len)
-    {
-      curpos=curpos->next;
-      if (!curpos)
-        break;
-      len=curpos->len;
-      pos=0;
-    }
-  }
-
-  char *res = new char[reslen+1];
-  res[reslen]=0;
-  int respos=0;
-  while (startptr!=curpos && reslen)
-  {
-    int copylen=startptr->len-startpos;
-    if (copylen>reslen)
-      copylen=reslen;
-    memcpy(&res[respos],&startptr->buffer[startpos], copylen);
-    reslen-=copylen;
-    respos+=startptr->len-startpos;
-    startpos=0;
-    startptr=startptr->next;
-  }
-  if (curpos && reslen)
-  {
-    int copylen=pos-startpos;
-    if (copylen>reslen)
-      copylen=reslen;
-    memcpy(&res[respos], &curpos->buffer[startpos], copylen);
-  }
-
-  return res;
+  while (Found);
 }
 
-void CFtpListResult::AddLine(t_directory::t_direntry &direntry)
+void CFtpListResult::SendLineToMessageLog(const RawByteString & Line)
+{
+  if (m_debugShowListing)
+  {
+    t_ffam_statusmessage * Status = new t_ffam_statusmessage;
+    Status->post = TRUE;
+    Status->status = Line.c_str();
+    Status->type = FZ_LOG_INFO;
+    if (!GetIntern()->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_STATUS, 0), (LPARAM)Status))
+    {
+      delete Status;
+    }
+  }
+}
+
+void CFtpListResult::AddLine(t_directory::t_direntry & direntry)
 {
   if (m_server.nTimeZoneOffset &&
     direntry.date.hasdate && direntry.date.hastime && !direntry.date.utc)
@@ -1167,22 +1029,16 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
         if ((value.GetLength() > 14) && (value[13] == ':'))
           direntry.linkTarget = value.Mid(14);
       }
+      // ProFTPD up to 1.3.6rc1 and 1.3.5a incorrectly uses "cdir" for the current working directory.
+      // So at least in MLST, where this would be the only entry, we treat it like "dir".
+      // For MLSD, these will be skipped in AddData.
       else if (!value.CompareNoCase(L"cdir"))
       {
-        // ProFTPD up to 1.3.6rc1 and 1.3.5a incorrectly uses "cdir" for the current working directory.
-        // So at least in MLST, where this would be the only entry, we treat it like "dir".
-        if (m_mlst)
-        {
-          direntry.dir = TRUE;
-        }
-        else
-        {
-          return FALSE;
-        }
+        direntry.dir = TRUE;
       }
       else if (!value.CompareNoCase(L"pdir"))
       {
-        return FALSE;
+        direntry.dir = TRUE;
       }
     }
     else if (factname == L"size")

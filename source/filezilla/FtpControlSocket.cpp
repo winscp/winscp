@@ -1736,8 +1736,6 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
 
     int num = 0;
     pData->pDirectoryListing = new t_directory;
-    if (GetOptionVal(OPTION_DEBUGSHOWLISTING))
-      m_pTransferSocket->m_pListResult->SendToMessageLog();
     pData->pDirectoryListing->direntry = m_pTransferSocket->m_pListResult->getList(num);
     pData->pDirectoryListing->num = num;
     if (m_pTransferSocket->m_pListResult->m_server.nServerType & FZ_SERVERTYPE_SUB_FTP_VMS && m_CurrentServer.nServerType & FZ_SERVERTYPE_FTP)
@@ -2416,14 +2414,10 @@ void CFtpControlSocket::ListFile(CString filename, const CServerPath &path)
     else
     {
       USES_CONVERSION;
-      int size = m_ListFile.GetLength();
-      char *buffer = new char[size + 1];
-      memmove(buffer, (LPCSTR)m_ListFile, m_ListFile.GetLength());
+      CStringA Buf = m_ListFile + '\n';
       const bool mlst = true;
       CFtpListResult * pListResult = CreateListResult(mlst);
-      pListResult->AddData(buffer, size);
-      if (GetOptionVal(OPTION_DEBUGSHOWLISTING))
-        pListResult->SendToMessageLog();
+      pListResult->AddData(static_cast<const char *>(Buf), Buf.GetLength());
       pData->direntry = pListResult->getList(num);
       if (pListResult->m_server.nServerType & FZ_SERVERTYPE_SUB_FTP_VMS && m_CurrentServer.nServerType & FZ_SERVERTYPE_FTP)
         m_CurrentServer.nServerType |= FZ_SERVERTYPE_SUB_FTP_VMS;
@@ -2793,8 +2787,6 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 
       int num=0;
       pData->pDirectoryListing=new t_directory;
-      if (GetOptionVal(OPTION_DEBUGSHOWLISTING))
-        m_pTransferSocket->m_pListResult->SendToMessageLog();
       pData->pDirectoryListing->direntry=m_pTransferSocket->m_pListResult->getList(num);
       pData->pDirectoryListing->num=num;
       if (m_pTransferSocket->m_pListResult->m_server.nServerType&FZ_SERVERTYPE_SUB_FTP_VMS && m_CurrentServer.nServerType&FZ_SERVERTYPE_FTP)
@@ -6364,7 +6356,9 @@ bool CFtpControlSocket::CheckForcePasvIp(CString & host)
 
 CFtpListResult * CFtpControlSocket::CreateListResult(bool mlst)
 {
-  CFtpListResult * Result = new CFtpListResult(m_CurrentServer, mlst, &m_bUTF8, GetOptionVal(OPTION_VMSALLREVISIONS));
+  CFtpListResult * Result =
+    new CFtpListResult(
+      m_CurrentServer, mlst, &m_bUTF8, GetOptionVal(OPTION_VMSALLREVISIONS), GetOptionVal(OPTION_DEBUGSHOWLISTING));
   Result->InitIntern(GetIntern());
   return Result;
 }

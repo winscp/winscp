@@ -114,8 +114,8 @@ void CTransferSocket::OnReceive(int nErrorCode)
     if (m_nTransferState == STATE_STARTING)
       OnConnect(0);
 
-    char *buffer = new char[BUFSIZE];
-    int numread = CAsyncSocketEx::Receive(buffer, BUFSIZE);
+    std::vector<char> Buffer(BUFSIZE);
+    int numread = CAsyncSocketEx::Receive(&Buffer[0], Buffer.size());
     if (numread != SOCKET_ERROR && numread)
     {
       m_LastActiveTime = CTime::GetCurrentTime();
@@ -123,35 +123,33 @@ void CTransferSocket::OnReceive(int nErrorCode)
 #ifndef MPEXT_NO_ZLIB
       if (m_useZlib)
       {
-        m_zlibStream.next_in = (Bytef *)buffer;
+        m_zlibStream.next_in = (Bytef *)&Buffer[0];
         m_zlibStream.avail_in = numread;
-        char *out = new char[BUFSIZE];
-        m_zlibStream.next_out = (Bytef *)out;
+        std::unique_ptr<char []> out(new char[BUFSIZE]);
+        m_zlibStream.next_out = (Bytef *)&out[0];
         m_zlibStream.avail_out = BUFSIZE;
         int res = inflate(&m_zlibStream, 0);
         while (res == Z_OK)
         {
-          m_pListResult->AddData(out, BUFSIZE - m_zlibStream.avail_out);
-          out = new char[BUFSIZE];
-          m_zlibStream.next_out = (Bytef *)out;
+          m_pListResult->AddData(&out[0], BUFSIZE - m_zlibStream.avail_out);
+          out.reset(new char[BUFSIZE]);
+          m_zlibStream.next_out = (Bytef *)&out[0];
           m_zlibStream.avail_out = BUFSIZE;
           res = inflate(&m_zlibStream, 0);
         }
-        delete [] buffer;
         if (res == Z_STREAM_END)
-          m_pListResult->AddData(out, BUFSIZE - m_zlibStream.avail_out);
+          m_pListResult->AddData(&out[0], BUFSIZE - m_zlibStream.avail_out);
         else if (res != Z_OK && res != Z_BUF_ERROR)
         {
-          delete [] out;
           CloseAndEnsureSendClose(CSMODE_TRANSFERERROR);
           return;
         }
-        else
-          delete [] out;
       }
       else
 #endif
-        m_pListResult->AddData(buffer, numread);
+      {
+        m_pListResult->AddData(&Buffer[0], numread);
+      }
       m_transferdata.transfersize += numread;
       t_ffam_transferstatus *status = new t_ffam_transferstatus;
       status->bFileTransfer = FALSE;
@@ -159,8 +157,6 @@ void CTransferSocket::OnReceive(int nErrorCode)
       status->bytes = m_transferdata.transfersize;
       GetIntern()->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_TRANSFERSTATUS, 0), (LPARAM)status);
     }
-    else
-      delete [] buffer;
     if (!numread)
     {
       CloseAndEnsureSendClose(0);
