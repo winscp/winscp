@@ -8171,7 +8171,7 @@ UnicodeString __fastcall TTerminal::EncryptFileName(const UnicodeString & Path, 
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TTerminal::DecryptFileName(const UnicodeString & Path)
+UnicodeString __fastcall TTerminal::DecryptFileName(const UnicodeString & Path, bool DecryptFullPath, bool DontCache)
 {
   UnicodeString Result = Path;
   if (IsEncryptingFiles() && !IsUnixRootPath(Path))
@@ -8184,15 +8184,18 @@ UnicodeString __fastcall TTerminal::DecryptFileName(const UnicodeString & Path)
     {
       TEncryption Encryption(FEncryptKey);
       FileName = Encryption.DecryptFileName(FileName);
+    }
 
+    if (Encrypted || DecryptFullPath) // DecryptFullPath is just an optimization
+    {
       UnicodeString FileDir = UnixExtractFileDir(Path);
-      FileDir = DecryptFileName(FileDir);
+      FileDir = DecryptFileName(FileDir, DecryptFullPath, DontCache);
       Result = UnixCombinePaths(FileDir, FileName);
     }
 
     TEncryptedFileNames::iterator Iter = FEncryptedFileNames.find(Result);
     bool NotCached = (Iter == FEncryptedFileNames.end());
-    if (Encrypted || NotCached)
+    if (!DontCache && (Encrypted || NotCached))
     {
       if (Encrypted && (NotCached || (Iter->second != FileNameEncrypted)))
       {

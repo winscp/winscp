@@ -489,7 +489,7 @@ protected:
   void __fastcall UpdateTargetTime(HANDLE Handle, TDateTime Modification, TDSTMode DSTMode);
 
   UnicodeString __fastcall EncryptFileName(const UnicodeString & Path, bool EncryptNewFiles);
-  UnicodeString __fastcall DecryptFileName(const UnicodeString & Path);
+  UnicodeString __fastcall DecryptFileName(const UnicodeString & Path, bool DecryptFullPath, bool DontCache);
   TEncryptedFileNames::const_iterator __fastcall GetEncryptedFileName(const UnicodeString & Path);
   bool __fastcall IsFileEncrypted(const UnicodeString & Path, bool EncryptNewFiles = false);
 

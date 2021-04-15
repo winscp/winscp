@@ -2732,7 +2732,7 @@ int __fastcall TSFTPFileSystem::SendPacketAndReceiveResponse(
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path)
+UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString & Path)
 {
   if (FTerminal->SessionData->SFTPRealPath == asOff)
   {
@@ -2786,7 +2786,10 @@ UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path)
       }
 
       UnicodeString RealDir = UnixExcludeTrailingBackslash(Packet.GetPathString(FUtfStrings));
-      RealDir = FTerminal->DecryptFileName(RealDir);
+      // do not cache, as particularly when called from CreateDirectory > Canonify,
+      // we would cache an unencrypted path to a directory we want to create encrypted,
+      // what would prevent the encryption later.
+      RealDir = FTerminal->DecryptFileName(RealDir, true, true);
       // ignore rest of SSH_FXP_NAME packet
 
       FTerminal->LogEvent(0, FORMAT(L"Real path is '%s'", (RealDir)));
@@ -2807,8 +2810,7 @@ UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path,
-  const UnicodeString BaseDir)
+UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString & Path, const UnicodeString & BaseDir)
 {
   UnicodeString APath;
 
@@ -2847,12 +2849,12 @@ UnicodeString __fastcall TSFTPFileSystem::LocalCanonify(const UnicodeString & Pa
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TSFTPFileSystem::Canonify(UnicodeString Path)
+UnicodeString __fastcall TSFTPFileSystem::Canonify(const UnicodeString & AAPath)
 {
   // inspired by canonify() from PSFTP.C
   UnicodeString Result;
-  FTerminal->LogEvent(FORMAT(L"Canonifying: \"%s\"", (Path)));
-  Path = LocalCanonify(Path);
+  FTerminal->LogEvent(FORMAT(L"Canonifying: \"%s\"", (AAPath)));
+  UnicodeString Path = LocalCanonify(AAPath);
   bool TryParent = false;
   try
   {
@@ -3478,7 +3480,7 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
               IsRealFile(File->FileName))
           {
             UnicodeString FullFileName = UnixExcludeTrailingBackslash(File->FullFileName);
-            UnicodeString FileName = UnixExtractFileName(FTerminal->DecryptFileName(FullFileName));
+            UnicodeString FileName = UnixExtractFileName(FTerminal->DecryptFileName(FullFileName, false, false));
             if (File->FileName != FileName)
             {
               File->SetEncrypted();
@@ -3647,7 +3649,9 @@ void __fastcall TSFTPFileSystem::ReadSymlink(TRemoteFile * SymlinkFile,
   {
     FTerminal->FatalError(NULL, LoadStr(SFTP_NON_ONE_FXP_NAME_PACKET));
   }
-  SymlinkFile->LinkTo = FTerminal->DecryptFileName(ReadLinkPacket.GetPathString(FUtfStrings));
+  // Not sure about the DontCache parameter here. Actually we should not get here for encrypted sessions.
+  DebugAssert(!FTerminal->IsEncryptingFiles());
+  SymlinkFile->LinkTo = FTerminal->DecryptFileName(ReadLinkPacket.GetPathString(FUtfStrings), true, true);
   FTerminal->LogEvent(FORMAT(L"Link resolved to \"%s\".", (SymlinkFile->LinkTo)));
 
   ReceiveResponse(&AttrsPacket, &AttrsPacket, SSH_FXP_ATTRS);
@@ -3713,14 +3717,15 @@ void __fastcall TSFTPFileSystem::CustomReadFile(const UnicodeString FileName,
     SSH_FILEXFER_ATTR_ACCESSTIME | SSH_FILEXFER_ATTR_MODIFYTIME |
     SSH_FILEXFER_ATTR_OWNERGROUP;
   TSFTPPacket Packet(Type);
-  AddPathString(Packet, LocalCanonify(FileName));
+  UnicodeString FullName = LocalCanonify(FileName);
+  AddPathString(Packet, FullName);
   SendCustomReadFile(&Packet, &Packet, Flags);
   ReceiveResponse(&Packet, &Packet, SSH_FXP_ATTRS, AllowStatus);
 
   if (Packet.Type == SSH_FXP_ATTRS)
   {
     File = LoadFile(&Packet, ALinkedByFile, UnixExtractFileName(FileName));
-    if (FTerminal->IsFileEncrypted(FileName))
+    if (FTerminal->IsFileEncrypted(FullName))
     {
       File->SetEncrypted();
     }
