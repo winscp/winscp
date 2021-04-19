@@ -1335,7 +1335,7 @@ void __fastcall TTerminal::Open()
                   if (!FSecureShell->Active && !FTunnelError.IsEmpty())
                   {
                     // the only case where we expect this to happen (first in GUI, the latter in scripting)
-                    DebugAssert((E.Message == LoadStr(UNEXPECTED_CLOSE_ERROR)) || (E.Message == LoadStr(NET_TRANSL_CONN_ABORTED)));
+                    DebugAssert((E.Message == LoadStr(UNEXPECTED_CLOSE_ERROR)) || (E.Message == LoadStr(NET_TRANSL_CONN_ABORTED)) || (E.Message.Pos(LoadStr(NOT_CONNECTED)) > 0));
                     FatalError(&E, FMTLOAD(TUNNEL_ERROR, (FTunnelError)));
                   }
                   else

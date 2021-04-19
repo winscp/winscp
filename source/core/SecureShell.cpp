@@ -111,6 +111,7 @@ void __fastcall TSecureShell::ResetConnection()
     log_free(FLogCtx);
   }
   FLogCtx = NULL;
+  FClosed = false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::ResetSessionInfo()
@@ -1539,8 +1540,14 @@ void __fastcall TSecureShell::PuttyFatalError(UnicodeString Error)
 {
   UnicodeString HelpKeyword;
   TranslateErrorMessage(Error, &HelpKeyword);
-
-  FatalError(Error, HelpKeyword);
+  if (!FClosed)
+  {
+    FatalError(Error, HelpKeyword);
+  }
+  else
+  {
+    LogEvent(FORMAT(L"Ignoring an error from the server while closing: %s", (Error)));
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::FatalError(UnicodeString Error, UnicodeString HelpKeyword)
@@ -1697,6 +1704,7 @@ void __fastcall TSecureShell::Discard()
   bool WasActive = FActive;
   FActive = false;
   FOpened = false;
+  FClosed = true;
 
   if (WasActive)
   {

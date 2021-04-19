@@ -47,6 +47,7 @@ private:
   bool FStoredPassphraseTried;
   int FSshVersion;
   bool FOpened;
+  bool FClosed;
   int FWaiting;
   bool FSimple;
   bool FNoConnectionResponse;
