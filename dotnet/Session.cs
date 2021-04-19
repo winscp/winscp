@@ -106,7 +106,7 @@ namespace WinSCP
         {
             add
             {
-                using (Logger.CreateCallstackAndLock())
+                using (CreateCallstackAndLock())
                 {
                     CheckNotOpened();
                     _fileTransferProgress += value;
@@ -115,7 +115,7 @@ namespace WinSCP
 
             remove
             {
-                using (Logger.CreateCallstackAndLock())
+                using (CreateCallstackAndLock())
                 {
                     CheckNotOpened();
                     _fileTransferProgress -= value;
@@ -123,11 +123,22 @@ namespace WinSCP
             }
         }
 
+        private IDisposable CreateCallstackAndLock()
+        {
+            var result = Logger.CreateCallstackAndLock();
+            if ((_process != null) && (_process.StdOut != null))
+            {
+                result.Dispose();
+                throw Logger.WriteException(new InvalidOperationException("Finish reading the stream from Session.GetFile first."));
+            }
+            return result;
+        }
+
         public event QueryReceivedEventHandler QueryReceived { add { AddQueryReceived(value); } remove { RemoveQueryReceived(value); } }
 
         private void AddQueryReceived(QueryReceivedEventHandler value)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 bool send = (_queryReceived == null);
                 _queryReceived += value;
@@ -141,7 +152,7 @@ namespace WinSCP
 
         private void RemoveQueryReceived(QueryReceivedEventHandler value)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 if (_queryReceived != null)
                 {
@@ -159,7 +170,7 @@ namespace WinSCP
         {
             Logger = new Logger();
 
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 Timeout = new TimeSpan(0, 1, 0);
                 _reconnectTime = new TimeSpan(0, 2, 0); // keep in sync with TScript::OptionImpl
@@ -184,7 +195,7 @@ namespace WinSCP
 
         public void Dispose()
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 _disposed = true;
 
@@ -225,7 +236,7 @@ namespace WinSCP
 
         public void Open(SessionOptions sessionOptions)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckNotDisposed();
 
@@ -402,7 +413,7 @@ namespace WinSCP
 
         public string ScanFingerprint(SessionOptions sessionOptions, string algorithm)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 string normalizeAlgorithm = NormalizeIdent(algorithm);
                 if (string.IsNullOrEmpty(normalizeAlgorithm))
@@ -491,7 +502,7 @@ namespace WinSCP
 
         public void Close()
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckOpened();
 
@@ -501,7 +512,7 @@ namespace WinSCP
 
         public RemoteDirectoryInfo ListDirectory(string path)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckOpened();
 
@@ -659,7 +670,7 @@ namespace WinSCP
             // so the Session object is not guarded during the whole enumeration.
             // Though it should not matter as it uses only guarded methods (ListDirectory)
             // for the actual work on the session
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckOpened();
 
@@ -691,7 +702,7 @@ namespace WinSCP
 
         public TransferOperationResult PutFiles(string localPath, string remotePath, bool remove = false, TransferOptions options = null)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 return DoPutFiles(localPath, remotePath, remove, options);
             }
@@ -814,7 +825,7 @@ namespace WinSCP
 
         public void PutFile(Stream stream, string remoteFilePath, TransferOptions options = null)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 if (remoteFilePath == null)
                 {
@@ -869,7 +880,7 @@ namespace WinSCP
 
         public TransferOperationResult GetFiles(string remotePath, string localPath, bool remove = false, TransferOptions options = null)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 return DoGetFiles(remotePath, localPath, remove, options, string.Empty);
             }
@@ -935,7 +946,7 @@ namespace WinSCP
         public TransferOperationResult GetFilesToDirectory(
             string remoteDirectory, string localDirectory, string filemask = null, bool remove = false, TransferOptions options = null)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 return DoGetFilesToDirectory(remoteDirectory, localDirectory, filemask, remove, options, null);
             }
@@ -973,7 +984,7 @@ namespace WinSCP
 
         public TransferEventArgs GetFileToDirectory(string remoteFilePath, string localDirectory, bool remove = false, TransferOptions options = null)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 const string additionalParams = "-onlyfile";
                 TransferOperationResult operationResult = GetEntryToDirectory(remoteFilePath, localDirectory, remove, options, additionalParams);
@@ -1023,7 +1034,7 @@ namespace WinSCP
 
         public Stream GetFile(string remoteFilePath, TransferOptions options = null)
         {
-            using (CallstackAndLock callstackAndLock = Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 const string additionalParams = "-onlyfile";
                 ParseRemotePath(remoteFilePath, out string remoteDirectory, out string filemask);
@@ -1072,7 +1083,8 @@ namespace WinSCP
 
                 void onGetEndWithExit()
                 {
-                    using (Logger.CreateCallstack())
+                    // Explicitly not Session.CreateCallstackAndLock
+                    using (Logger.CreateCallstackAndLock())
                     {
                         Logger.WriteLine("Closing download stream");
                         try
@@ -1081,7 +1093,6 @@ namespace WinSCP
                         }
                         finally
                         {
-                            Logger.Lock.Exit();
                             Logger.WriteLine("Closed download stream");
                             result.Check();
                         }
@@ -1120,7 +1131,6 @@ namespace WinSCP
                     if (downloadFound)
                     {
                         Logger.WriteLine("Download stream started");
-                        callstackAndLock.DisarmLock();
                         stream.OnDispose = onGetEndWithExit;
                         return stream;
                     }
@@ -1143,7 +1153,7 @@ namespace WinSCP
 
         public RemovalOperationResult RemoveFiles(string path)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 return DoRemoveFiles(path, string.Empty);
             }
@@ -1177,7 +1187,7 @@ namespace WinSCP
 
         public RemovalEventArgs RemoveFile(string path)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 RemovalOperationResult operationResult = RemoveEntry(path, "-onlyfile");
                 return GetOnlyFileOperation(operationResult.Removals);
@@ -1212,7 +1222,7 @@ namespace WinSCP
             bool removeFiles, bool mirror = false, SynchronizationCriteria criteria = SynchronizationCriteria.Time,
             TransferOptions options = null)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 DoSynchronizeDirectories(mode, localPath, remotePath, removeFiles, mirror, criteria, options, string.Empty);
 
@@ -1371,7 +1381,7 @@ namespace WinSCP
             bool removeFiles, bool mirror = false, SynchronizationCriteria criteria = SynchronizationCriteria.Time,
             TransferOptions options = null)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 DoSynchronizeDirectories(mode, localPath, remotePath, removeFiles, mirror, criteria, options, "-preview");
 
@@ -1498,7 +1508,7 @@ namespace WinSCP
 
         public CommandExecutionResult ExecuteCommand(string command)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckOpened();
 
@@ -1535,7 +1545,7 @@ namespace WinSCP
 
         public RemoteFileInfo GetFileInfo(string path)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckOpened();
 
@@ -1545,7 +1555,7 @@ namespace WinSCP
 
         public bool FileExists(string path)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckOpened();
 
@@ -1571,7 +1581,7 @@ namespace WinSCP
 
         public byte[] CalculateFileChecksum(string algorithm, string path)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 WriteCommand(string.Format(CultureInfo.InvariantCulture, "checksum -- \"{0}\" \"{1}\"", Tools.ArgumentEscape(algorithm), Tools.ArgumentEscape(path)));
 
@@ -1611,7 +1621,7 @@ namespace WinSCP
 
         public void CreateDirectory(string path)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckOpened();
 
@@ -1628,7 +1638,7 @@ namespace WinSCP
 
         public void MoveFile(string sourcePath, string targetPath)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckOpened();
 
@@ -1654,7 +1664,7 @@ namespace WinSCP
 
         public void DuplicateFile(string sourcePath, string targetPath)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckOpened();
 
