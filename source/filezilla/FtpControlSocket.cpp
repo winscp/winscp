@@ -1606,9 +1606,16 @@ void CFtpControlSocket::CheckForTimeout()
   int delay=GetOptionVal(OPTION_TIMEOUTLENGTH);
   if (m_pTransferSocket)
   {
-    int res=m_pTransferSocket->CheckForTimeout(delay);
-    if (res)
+    int res = m_pTransferSocket->CheckForTimeout(delay);
+    if (res != 0)
+    {
+      if (res == 1)
+      {
+        // avoid trying to set keepalive command right after the transfer finishes
+        m_LastSendTime = CTime::GetCurrentTime();
+      }
       return;
+    }
   }
   CTimeSpan span=CTime::GetCurrentTime()-m_LastRecvTime;
   if (span.GetTotalSeconds()>=delay)
