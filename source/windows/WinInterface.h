@@ -421,8 +421,6 @@ void __fastcall DoFileSystemInfoDialog(
   UnicodeString SpaceAvailablePath, TGetSpaceAvailable OnGetSpaceAvailable);
 
 // forms\MessageDlg.cpp
-void __fastcall AnswerNameAndCaption(
-  unsigned int Answer, UnicodeString & Name, UnicodeString & Caption);
 TForm * __fastcall CreateMoreMessageDialog(const UnicodeString & Msg,
   TStrings * MoreMessages, TMsgDlgType DlgType, unsigned int Answers,
   const TQueryButtonAlias * Aliases, unsigned int AliasesCount,
