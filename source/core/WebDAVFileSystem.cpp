@@ -65,11 +65,22 @@ static AnsiString PathEscape(const char * Path)
   return Result;
 }
 //---------------------------------------------------------------------------
-static UTF8String PathUnescape(const char * Path)
+static UnicodeString PathUnescape(const char * Path)
 {
   char * UnescapedPath = ne_path_unescape(Path);
-  UTF8String Result = UnescapedPath;
-  ne_free(UnescapedPath);
+  UTF8String UtfResult;
+  if (UnescapedPath != NULL)
+  {
+    UtfResult = UnescapedPath;
+    ne_free(UnescapedPath);
+  }
+  else
+  {
+    // OneDrive, particularly in the response to *file* PROPFIND tend to return a malformed URL.
+    // In such case, take the path as is and we will probably overwrite the name with "display name".
+    UtfResult = Path;
+  }
+  UnicodeString Result = StrFromNeon(UtfResult);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -193,6 +204,13 @@ void __fastcall TWebDAVFileSystem::Open()
   FSessionInfo.CertificateVerifiedManually = false;
 
   UnicodeString HostName = Data->HostNameExpanded;
+
+  FOneDrive = SameText(HostName, L"d.docs.live.net");
+  if (FOneDrive)
+  {
+    FTerminal->LogEvent(L"OneDrive host detected.");
+  }
+
   size_t Port = Data->PortNumber;
   UnicodeString ProtocolName = (FTerminal->SessionData->Ftps == ftpsNone) ? HttpProtocol : HttpsProtocol;
   UnicodeString Path = Data->RemoteDirectory;
@@ -221,7 +239,7 @@ UnicodeString __fastcall TWebDAVFileSystem::ParsePathFromUrl(const UnicodeString
   ne_uri ParsedUri;
   if (ne_uri_parse(StrToNeon(Url), &ParsedUri) == 0)
   {
-    Result = StrFromNeon(PathUnescape(ParsedUri.path));
+    Result = PathUnescape(ParsedUri.path);
     ne_uri_free(&ParsedUri);
   }
   return Result;
@@ -294,7 +312,8 @@ void __fastcall TWebDAVFileSystem::InitSession(ne_session_s * Session)
 
   ne_set_session_private(Session, SESSION_FS_KEY, this);
 
-  ne_set_session_flag(Session, NE_SESSFLAG_LIBERAL_ESCAPING, Data->WebDavLiberalEscaping);
+  // Allow ^-escaping in OneDrive
+  ne_set_session_flag(Session, NE_SESSFLAG_LIBERAL_ESCAPING, Data->WebDavLiberalEscaping || FOneDrive);
 }
 //---------------------------------------------------------------------------
 void TWebDAVFileSystem::NeonOpen(UnicodeString & CorrectedUrl, const UnicodeString & Url)
@@ -803,7 +822,7 @@ void __fastcall TWebDAVFileSystem::ReadFile(const UnicodeString FileName,
 void TWebDAVFileSystem::NeonPropsResult(
   void * UserData, const ne_uri * Uri, const ne_prop_result_set * Results)
 {
-  UnicodeString Path = StrFromNeon(PathUnescape(Uri->path).c_str());
+  UnicodeString Path = PathUnescape(Uri->path);
 
   TReadFileData & Data = *static_cast<TReadFileData *>(UserData);
   if (Data.FileList != NULL)
@@ -838,7 +857,7 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
 {
   File->FullFileName = UnixExcludeTrailingBackslash(Path);
   // Some servers do not use DAV:collection tag, but indicate the folder by trailing slash only.
-  // It seems that all servers actually use the trailing slash, including IIS, mod_Dav, IT Hit, OpenDrive, etc.
+  // But not all, for example OneDrive does not (it did in the past).
   bool Collection = (File->FullFileName != Path);
   File->FileName = UnixExtractFileName(File->FullFileName);
   const char * ContentLength = GetProp(Results, PROP_CONTENT_LENGTH);
@@ -888,8 +907,7 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
   // optimization
   if (!Collection)
   {
-    // This is possibly redundant code as all servers we know (see a comment above)
-    // indicate the folder by trailing slash too
+    // See a comment at the Collection declaration.
     const char * ResourceType = GetProp(Results, PROP_RESOURCE_TYPE);
     if (ResourceType != NULL)
     {
@@ -921,6 +939,17 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
   if (DisplayName != NULL)
   {
     File->DisplayName = StrFromNeon(DisplayName);
+    // OneDrive caret escaping (we could do this for all files, but let's limit the scope for now).
+    // In *file* PROPFIND response, the # (and other symbols like comma or plus) is not escaped at all
+    // (while in directory listing, they are caret-escaped),
+    // so if we see one in the display name, take the name from there.
+    // * and % won't help, as OneDrive seem to have bug with % as the end of the filename,
+    // and the * (and others) is removed from file names.
+    if (FOneDrive && (ContainsText(File->FileName, L"^") || (wcspbrk(File->DisplayName.c_str(), L"&,+#[]%*") != NULL)))
+    {
+      File->FileName = File->DisplayName;
+      File->FullFileName = UnixCombinePaths(UnixExtractFileDir(File->FullFileName), File->FileName);
+    }
   }
 
   const UnicodeString RightsDelimiter(L", ");
