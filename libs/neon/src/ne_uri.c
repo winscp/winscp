@@ -152,7 +152,7 @@ unsigned int ne_uri_defaultport(const char *scheme)
 	return 0;
 }
 
-int ne_uri_parse(const char *uri, ne_uri *parsed)
+int ne_uri_parse_ex(const char *uri, ne_uri *parsed, int liberal) // WINSCP
 {
     const char *p, *s;
 
@@ -238,7 +238,11 @@ int ne_uri_parse(const char *uri, ne_uri *parsed)
 
     p = s;
 
-    while (uri_lookup(*p) & URI_SEGCHAR)
+    while ((uri_lookup(*p) & URI_SEGCHAR) ||
+           (liberal && // WINSCP
+            ((uri_lookup(*p) & SD) ||
+            ((uri_lookup(*p) & OT) && (*p) >= ' ') || // OT without control characters
+            ((*p) == '[') || ((*p) == ']')))) // GD without #
         p++;
 
     /* => p = [ "?" query ] [ "#" fragment ] */
@@ -278,6 +282,13 @@ int ne_uri_parse(const char *uri, ne_uri *parsed)
     
     return 0;
 }
+
+#ifdef WINSCP
+int ne_uri_parse(const char *uri, ne_uri *parsed)
+{
+    return ne_uri_parse_ex(uri, parsed, 0);
+}
+#endif
 
 /* This function directly implements the "Merge Paths" algorithm
  * described in RFC 3986 section 5.2.3. */

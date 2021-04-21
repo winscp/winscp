@@ -168,6 +168,7 @@ private:
   UnicodeString FLastAuthorizationProtocol;
   bool FAuthenticationRetry;
   bool FNtlmAuthenticationFailed;
+  bool FOneDrive;
 
   void __fastcall CustomReadFile(UnicodeString FileName,
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);
