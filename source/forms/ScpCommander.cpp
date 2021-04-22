@@ -1118,9 +1118,15 @@ void __fastcall TScpCommanderForm::UpdateControls()
     {
       DriveView(osOther)->SetFocus();
     }
-    else
+    else if (LocalDriveView->Visible)
     {
       LocalDriveView->SetFocus();
+    }
+    else
+    {
+      // Switching to a disconnected session with local drive view hidden - fallback to the local dir view (should always be visible)
+      DebugAssert(LocalDirView->Visible);
+      LocalDirView->SetFocus();
     }
   }
 
