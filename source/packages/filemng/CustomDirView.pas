@@ -337,6 +337,7 @@ type
     procedure UpdateDarkMode;
     procedure DoUpdateStatusBar(Force: Boolean = False);
     procedure DoCustomDrawItem(Item: TListItem; Stage: TCustomDrawStage);
+    procedure RestoreState(AState: TObject);
     property ImageList16: TImageList read FImageList16;
     property ImageList32: TImageList read FImageList32;
   public
@@ -376,8 +377,7 @@ type
     procedure ContinueSession(Continue: Boolean);
     function CanPasteFromClipBoard: Boolean; dynamic;
     function PasteFromClipBoard(TargetPath: string = ''): Boolean; virtual; abstract;
-    function SaveState: TObject;
-    procedure RestoreState(AState: TObject);
+    function SaveState: TObject; virtual;
     procedure DisplayContextMenu(Where: TPoint); virtual; abstract;
     procedure DisplayContextMenuInSitu;
     procedure UpdateStatusBar;

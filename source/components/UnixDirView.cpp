@@ -53,6 +53,7 @@ __fastcall TUnixDirView::TUnixDirView(TComponent* Owner)
   FFullLoad = false;
   FDriveView = NULL;
   FInvalidNameChars = L"/";
+  FLoadingDriveViewState = NULL;
   DragDropFilesEx->PreferCopy = true;
 }
 //---------------------------------------------------------------------------
@@ -558,9 +559,51 @@ void __fastcall TUnixDirView::SetTerminal(TTerminal * value)
   DoSetTerminal(value, false);
 }
 //---------------------------------------------------------------------------
-void __fastcall TUnixDirView::ReplaceTerminal(TTerminal * value)
+class TUnixDirViewState : public TObject
 {
-  DoSetTerminal(value, true);
+public:
+  std::unique_ptr<TObject> CustomDirViewState;
+  std::unique_ptr<TObject> DriveViewState;
+};
+//---------------------------------------------------------------------------
+TObject * __fastcall TUnixDirView::SaveState()
+{
+  TUnixDirViewState * State = new TUnixDirViewState();
+  State->CustomDirViewState.reset(TCustomUnixDirView::SaveState());
+  if (FDriveView != NULL)
+  {
+    State->DriveViewState.reset(FDriveView->SaveState());
+  }
+  return State;
+}
+//---------------------------------------------------------------------------
+void TUnixDirView::LoadTerminal(TTerminal * value, bool Replace, TObject * State)
+{
+  TObject * CustomDirViewState = NULL;
+  TObject * DriveViewState = NULL;
+  if (State != NULL)
+  {
+    TUnixDirViewState * UnixDirViewState = dynamic_cast<TUnixDirViewState *>(State);
+    if (DebugAlwaysTrue(UnixDirViewState != NULL))
+    {
+      CustomDirViewState = UnixDirViewState->CustomDirViewState.get();
+      DriveViewState = UnixDirViewState->DriveViewState.get();
+    }
+  }
+  TValueRestorer<TObject *> LoadingStateRestorer(FLoadingDriveViewState);
+  FLoadingDriveViewState = DriveViewState;
+
+  DoSetTerminal(value, Replace);
+
+  if (value->Active)
+  {
+    value->RefreshDirectory();
+  }
+
+  if (CustomDirViewState != NULL)
+  {
+    RestoreState(CustomDirViewState);
+  }
 }
 #endif
 //---------------------------------------------------------------------------

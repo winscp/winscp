@@ -202,6 +202,7 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
       ChildrenDirs->Duplicates = Types::dupAccept;
       ChildrenDirs->CaseSensitive = true;
 
+      bool FirstChild = true;
       TTreeNode * ChildNode = Node->getFirstChild();
       while (ChildNode != NULL)
       {
@@ -210,6 +211,7 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
         ChildrenDirs->AddObject(UnixExtractFileName(ChildData->Directory),
           ChildNode);
         ChildNode = Node->GetNextChild(ChildNode);
+        FirstChild = false;
       }
 
       // sort only after adding all items.
@@ -238,6 +240,11 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
             DebugAssert(!IsUnixRootPath(ChildPath));
 
             LoadPathEasy(Node, ChildPath, File);
+            if (FirstChild)
+            {
+              LoadNodeState(Node, Path);
+              FirstChild = false;
+            }
           }
         }
       }
@@ -333,9 +340,11 @@ TTreeNode * __fastcall TCustomUnixDriveView::LoadPath(UnicodeString Path)
     TTreeNode * Parent = NULL;
     TRemoteFile * File = NULL;
 
+    UnicodeString ParentPath;
     if (!IsUnixRootPath(Path))
     {
-      Parent = LoadPath(UnixExtractFileDir(Path));
+      ParentPath = UnixExtractFileDir(Path);
+      Parent = LoadPath(ParentPath);
     }
 
     Node = FindNodeToPath(Path);
@@ -355,6 +364,7 @@ TTreeNode * __fastcall TCustomUnixDriveView::LoadPath(UnicodeString Path)
       Node = LoadPathEasy(Parent, Path, File);
       if (Parent != NULL)
       {
+        LoadNodeState(Parent, ParentPath);
         Parent->AlphaSort(false);
       }
     }
@@ -879,4 +889,32 @@ void __fastcall TCustomUnixDriveView::DisplayContextMenu(TTreeNode * /*Node*/,
 void __fastcall TCustomUnixDriveView::DisplayPropertiesMenu(TTreeNode * /*Node*/)
 {
   // TODO
+}
+//---------------------------------------------------------------------------
+void TCustomUnixDriveView::LoadNodeState(TTreeNode * Node, const UnicodeString & Path)
+{
+  if ((FDirView != NULL) && (FDirView->FLoadingDriveViewState != NULL))
+  {
+    TStrings * LoadingDriveViewState = DebugNotNull(dynamic_cast<TStrings *>(FDirView->FLoadingDriveViewState));
+    if (LoadingDriveViewState->IndexOf(Path) >= 0)
+    {
+      Node->Expand(false);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+TObject * TCustomUnixDriveView::SaveState()
+{
+  std::unique_ptr<TStrings> ExpandedNodes(CreateSortedStringList());
+  TTreeNode * Node = Items->GetFirstNode();
+  while (Node != NULL)
+  {
+    if (Node->Expanded)
+    {
+      DebugAssert(Node->HasChildren);
+      ExpandedNodes->Add(NodePathName(Node));
+    }
+    Node = Node->GetNext();
+  }
+  return ExpandedNodes.release();
 }

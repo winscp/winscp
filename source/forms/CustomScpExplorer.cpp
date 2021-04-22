@@ -596,24 +596,12 @@ void __fastcall TCustomScpExplorerForm::SessionChanged(bool Replaced)
 
   if (Terminal != NULL)
   {
-    if (Replaced)
-    {
-      RemoteDirView->ReplaceTerminal(Terminal);
-    }
-    else
-    {
-      RemoteDirView->Terminal = Terminal;
-    }
-
-    if (Terminal->Active)
-    {
-      Terminal->RefreshDirectory();
-    }
-
+    TObject * State = NULL;
     if (WinConfiguration->PreservePanelState)
     {
-      DirView(osRemote)->RestoreState(Terminal->RemoteExplorerState);
+      State = Terminal->RemoteExplorerState;
     }
+    RemoteDirView->LoadTerminal(Terminal, Replaced, State);
   }
   else
   {
