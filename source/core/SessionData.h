@@ -101,7 +101,6 @@ class TStoredSessionList;
 class TSessionData : public TNamedObject
 {
 friend class TStoredSessionList;
-
 private:
   UnicodeString FHostName;
   int FPortNumber;

@@ -182,6 +182,9 @@ namespace WinSCP
                 portNumber = hostInfo;
             }
 
+            // Contrary to TSessionData::ParseUrl, not converting Webdav to S3 on S3 hostname.
+            // Not sure if it is desirable and WinSCP will do the conversion for us later anyway.
+
             if (string.IsNullOrEmpty(HostName))
             {
                 throw new ArgumentException("No host name", nameof(url));
