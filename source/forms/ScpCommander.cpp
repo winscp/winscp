@@ -1041,7 +1041,7 @@ void __fastcall TScpCommanderForm::FullSynchronizeDirectories()
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::ExploreLocalDirectory()
 {
-  OpenFolderInExplorer(GetCurrentLocalBrowser()->Path);
+  OpenFolderInExplorer(LocalDirView->Path);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalDirViewExecFile(TObject *Sender,
