@@ -1893,6 +1893,13 @@ void __fastcall TSessionData::MaskPasswords()
   }
 }
 //---------------------------------------------------------------------
+static bool IsDomainOrSubdomain(const UnicodeString & FullDomain, const UnicodeString & Domain)
+{
+  return
+    SameText(FullDomain, Domain) ||
+    EndsText(L"." + Domain, FullDomain);
+}
+//---------------------------------------------------------------------
 bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   TStoredSessionList * StoredSessions, bool & DefaultsOnly, UnicodeString * FileName,
   bool * AProtocolDefined, UnicodeString * MaskedUrl, int Flags)
@@ -2116,6 +2123,13 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       }
       else if (ProtocolDefined)
       {
+        if ((AFSProtocol == fsWebDAV) &&
+            (IsDomainOrSubdomain(HostName, S3LibDefaultHostName()) ||
+             IsDomainOrSubdomain(HostName, L"digitaloceanspaces.com") ||
+             IsDomainOrSubdomain(HostName, L"storage.googleapis.com")))
+        {
+          AFSProtocol = fsS3;
+        }
         PortNumber = APortNumber;
       }
 
