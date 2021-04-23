@@ -2481,7 +2481,7 @@ void __fastcall TSessionData::SetHostName(UnicodeString value)
   {
     // HostName is key for password encryption
     UnicodeString XPassword = Password;
-    UnicodeString XNewPassword = Password;
+    UnicodeString XNewPassword = NewPassword;
     UnicodeString XEncryptKey = EncryptKey;
 
     // This is now hardly used as hostname is parsed directly on login dialog.
