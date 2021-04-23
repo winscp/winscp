@@ -1915,20 +1915,20 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   bool ProtocolDefined = false;
   bool PortNumberDefined = false;
   TFSProtocol AFSProtocol;
-  int APortNumber;
+  int DefaultProtocolPortNumber;
   TFtps AFtps = ftpsNone;
   int ProtocolLen = 0;
   if (IsProtocolUrl(Url, ScpProtocol, ProtocolLen))
   {
     AFSProtocol = fsSCPonly;
-    APortNumber = SshPortNumber;
+    DefaultProtocolPortNumber = SshPortNumber;
     MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
   else if (IsProtocolUrl(Url, SftpProtocol, ProtocolLen))
   {
     AFSProtocol = fsSFTPonly;
-    APortNumber = SshPortNumber;
+    DefaultProtocolPortNumber = SshPortNumber;
     MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
@@ -1936,7 +1936,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   {
     AFSProtocol = fsFTP;
     Ftps = ftpsNone;
-    APortNumber = FtpPortNumber;
+    DefaultProtocolPortNumber = FtpPortNumber;
     MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
@@ -1944,7 +1944,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   {
     AFSProtocol = fsFTP;
     AFtps = ftpsImplicit;
-    APortNumber = FtpsImplicitPortNumber;
+    DefaultProtocolPortNumber = FtpsImplicitPortNumber;
     MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
@@ -1952,7 +1952,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   {
     AFSProtocol = fsFTP;
     AFtps = ftpsExplicitTls;
-    APortNumber = FtpPortNumber;
+    DefaultProtocolPortNumber = FtpPortNumber;
     MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
@@ -1961,7 +1961,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   {
     AFSProtocol = fsWebDAV;
     AFtps = ftpsNone;
-    APortNumber = HTTPPortNumber;
+    DefaultProtocolPortNumber = HTTPPortNumber;
     MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
@@ -1970,7 +1970,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   {
     AFSProtocol = fsWebDAV;
     AFtps = ftpsImplicit;
-    APortNumber = HTTPSPortNumber;
+    DefaultProtocolPortNumber = HTTPSPortNumber;
     MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
@@ -1978,7 +1978,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   {
     AFSProtocol = fsS3;
     AFtps = ftpsImplicit;
-    APortNumber = HTTPSPortNumber;
+    DefaultProtocolPortNumber = HTTPSPortNumber;
     MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
@@ -1988,7 +1988,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     // The only place where a difference is made is GetLoginData() in WinMain.cpp
     AFSProtocol = fsSFTPonly;
     PuttyProtocol = PuttySshProtocol;
-    APortNumber = SshPortNumber;
+    DefaultProtocolPortNumber = SshPortNumber;
     MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
@@ -2131,7 +2131,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       }
       else if (ProtocolDefined)
       {
-        PortNumber = APortNumber;
+        PortNumber = DefaultProtocolPortNumber;
       }
 
       if (ProtocolDefined)
