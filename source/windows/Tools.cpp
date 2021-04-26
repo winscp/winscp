@@ -497,12 +497,11 @@ void ExecuteSelf(const UnicodeString & Params)
 void __fastcall ExecuteNewInstance(const UnicodeString & Param, const UnicodeString & AdditionalParams)
 {
   UnicodeString Arg;
-  UnicodeString Space(L" ");
   if (!Param.IsEmpty())
   {
     Arg = FORMAT(L"\"%s\"", (Param));
-    AddToList(Arg, Param, Space);
   }
+  UnicodeString Space(L" ");
   AddToList(Arg, TProgramParams::FormatSwitch(NEWINSTANCE_SWICH), Space);
   AddToList(Arg, AdditionalParams, Space);
 
