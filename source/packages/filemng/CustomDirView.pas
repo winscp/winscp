@@ -220,6 +220,7 @@ type
     FWatchForChanges: Boolean;
     FInvalidNameChars: string;
     FDragDrive: string;
+    FAnnouncedState: TObject;
 
     procedure AddToDragFileList(FileList: TFileList; Item: TListItem); virtual;
     function CanEdit(Item: TListItem): Boolean; override;
@@ -337,7 +338,7 @@ type
     procedure UpdateDarkMode;
     procedure DoUpdateStatusBar(Force: Boolean = False);
     procedure DoCustomDrawItem(Item: TListItem; Stage: TCustomDrawStage);
-    procedure RestoreState(AState: TObject);
+    procedure RestoreFocus(FocusedItem: string);
     property ImageList16: TImageList read FImageList16;
     property ImageList32: TImageList read FImageList32;
   public
@@ -378,6 +379,8 @@ type
     function CanPasteFromClipBoard: Boolean; dynamic;
     function PasteFromClipBoard(TargetPath: string = ''): Boolean; virtual; abstract;
     function SaveState: TObject; virtual;
+    procedure RestoreState(AState: TObject); virtual;
+    procedure AnnounceState(AState: TObject); virtual;
     procedure DisplayContextMenu(Where: TPoint); virtual; abstract;
     procedure DisplayContextMenuInSitu;
     procedure UpdateStatusBar;
@@ -2054,6 +2057,10 @@ begin
 
         if DoFocusSomething then
         begin
+          if FAnnouncedState is TDirViewState then
+          begin
+            RestoreFocus(TDirViewState(FAnnouncedState).FocusedItem);
+          end;
           FocusSomething;
         end;
 
@@ -2880,12 +2887,21 @@ begin
   if FCaseSensitive then CompareFunc := CompareStr
     else CompareFunc := CompareText;
 
-  for Index := 0 to Items.Count - 1 do
+  // Optimization to avoid duplicate lookups in consequent RestoreFocus calls from Load and RestoreState.
+  if Assigned(ItemFocused) and (CompareFunc(FileName, ItemFileName(ItemFocused)) = 0) then
   begin
-    if CompareFunc(FileName, ItemFileName(Items[Index])) = 0 then
+    Result := ItemFocused;
+    Exit;
+  end
+    else
+  begin
+    for Index := 0 to Items.Count - 1 do
     begin
-      Result := Items[Index];
-      Exit;
+      if CompareFunc(FileName, ItemFileName(Items[Index])) = 0 then
+      begin
+        Result := Items[Index];
+        Exit;
+      end;
     end;
   end;
   Result := nil;
@@ -3246,6 +3262,11 @@ begin
     else FLastPath := '';
 end;
 
+procedure TCustomDirView.AnnounceState(AState: TObject);
+begin
+  FAnnouncedState := AState;
+end;
+
 function TCustomDirView.SaveState: TObject;
 var
   State: TDirViewState;
@@ -3265,11 +3286,25 @@ begin
   Result := State;
 end;
 
+procedure TCustomDirView.RestoreFocus(FocusedItem: string);
+var
+  ListItem: TListItem;
+begin
+  if FocusedItem <> '' then
+  begin
+    ListItem := FindFileItem(FocusedItem);
+    if Assigned(ListItem) then
+    begin
+      ItemFocused := ListItem;
+      ListItem.MakeVisible(False);
+    end;
+  end;
+end;
+
 procedure TCustomDirView.RestoreState(AState: TObject);
 var
   State: TDirViewState;
   DirColProperties: TCustomDirViewColProperties;
-  ListItem: TListItem;
 begin
   if Assigned(AState) then
   begin
@@ -3289,15 +3324,7 @@ begin
       DirColProperties.SortStr := State.SortStr;
     end;
     Mask := State.Mask;
-    if State.FocusedItem <> '' then
-    begin
-      ListItem := FindFileItem(State.FocusedItem);
-      if Assigned(ListItem) then
-      begin
-        ItemFocused := ListItem;
-        ListItem.MakeVisible(False);
-      end;
-    end;
+    RestoreFocus(State.FocusedItem);
   end
     else
   begin

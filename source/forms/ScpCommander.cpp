@@ -605,33 +605,42 @@ void __fastcall TScpCommanderForm::StartingWithoutSession()
   LocalDefaultDirectory();
 }
 //---------------------------------------------------------------------------
-void TScpCommanderForm::RestoreSessionLocalDirView(TDirView * ALocalDirView, const UnicodeString & LocalDirectory)
+void TScpCommanderForm::RestoreSessionLocalDirView(
+  TDirView * ALocalDirView, const UnicodeString & LocalDirectory, TObject * State)
 {
-  // we will load completely different directory, so particularly
-  // do not attempt to select previously selected directory
-  ALocalDirView->ContinueSession(false);
-
-  // reset home directory
-  ALocalDirView->HomeDirectory = L"";
-
-  if (!LocalDirectory.IsEmpty() &&
-      (FFirstTerminal || !WinConfiguration->ScpCommander.PreserveLocalDirectory || ManagedSession->LocalBrowser))
+  ALocalDirView->AnnounceState(State);
+  try
   {
-    try
+    // we will load completely different directory, so particularly
+    // do not attempt to select previously selected directory
+    ALocalDirView->ContinueSession(false);
+
+    // reset home directory
+    ALocalDirView->HomeDirectory = L"";
+
+    if (!LocalDirectory.IsEmpty() &&
+        (FFirstTerminal || !WinConfiguration->ScpCommander.PreserveLocalDirectory || ManagedSession->LocalBrowser))
     {
-      ALocalDirView->Path = LocalDirectory;
-    }
-    catch(Exception & E)
-    {
-      if (!ManagedSession->SessionData->UpdateDirectories)
+      try
       {
-        ManagedSession->ShowExtendedException(&E);
+        ALocalDirView->Path = LocalDirectory;
       }
-      else
+      catch(Exception & E)
       {
-        ALocalDirView->OpenFallbackPath(LocalDirectory);
+        if (!ManagedSession->SessionData->UpdateDirectories)
+        {
+          ManagedSession->ShowExtendedException(&E);
+        }
+        else
+        {
+          ALocalDirView->OpenFallbackPath(LocalDirectory);
+        }
       }
     }
+  }
+  __finally
+  {
+    ALocalDirView->AnnounceState(NULL);
   }
 }
 //---------------------------------------------------------------------------
@@ -643,11 +652,17 @@ void __fastcall TScpCommanderForm::SessionChanged(bool Replaced)
 
   if (ManagedSession != NULL)
   {
-    RestoreSessionLocalDirView(LocalDirView, ManagedSession->StateData->LocalDirectory);
+    bool RestoreState =
+      WinConfiguration->PreservePanelState &&
+        (!WinConfiguration->ScpCommander.PreserveLocalDirectory || ManagedSession->LocalBrowser);
+
+    RestoreSessionLocalDirView(
+      LocalDirView, ManagedSession->StateData->LocalDirectory, ManagedSession->LocalExplorerState);
 
     if (ManagedSession->LocalBrowser)
     {
-      RestoreSessionLocalDirView(OtherLocalDirView, ManagedSession->StateData->OtherLocalDirectory);
+      RestoreSessionLocalDirView(
+        OtherLocalDirView, ManagedSession->StateData->OtherLocalDirectory, ManagedSession->OtherLocalExplorerState);
     }
 
     FFirstTerminal = false;
@@ -667,8 +682,7 @@ void __fastcall TScpCommanderForm::SessionChanged(bool Replaced)
       LocalDirView->HomeDirectory = ManagedSession->SessionData->LocalDirectoryExpanded;
     }
 
-    if (WinConfiguration->PreservePanelState &&
-        (!WinConfiguration->ScpCommander.PreserveLocalDirectory || ManagedSession->LocalBrowser))
+    if (RestoreState)
     {
       LocalDirView->RestoreState(ManagedSession->LocalExplorerState);
 

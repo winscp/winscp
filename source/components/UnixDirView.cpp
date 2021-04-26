@@ -53,7 +53,7 @@ __fastcall TUnixDirView::TUnixDirView(TComponent* Owner)
   FFullLoad = false;
   FDriveView = NULL;
   FInvalidNameChars = L"/";
-  FLoadingDriveViewState = NULL;
+  FAnnouncedDriveViewState = NULL;
   DragDropFilesEx->PreferCopy = true;
 }
 //---------------------------------------------------------------------------
@@ -559,6 +559,12 @@ void __fastcall TUnixDirView::SetTerminal(TTerminal * value)
   DoSetTerminal(value, false);
 }
 //---------------------------------------------------------------------------
+void __fastcall TUnixDirView::ReplaceTerminal(TTerminal * value)
+{
+  DoSetTerminal(value, true);
+}
+#endif
+//---------------------------------------------------------------------------
 class TUnixDirViewState : public TObject
 {
 public:
@@ -577,35 +583,44 @@ TObject * __fastcall TUnixDirView::SaveState()
   return State;
 }
 //---------------------------------------------------------------------------
-void TUnixDirView::LoadTerminal(TTerminal * value, bool Replace, TObject * State)
+void __fastcall TUnixDirView::AnnounceState(TObject * State)
 {
   TObject * CustomDirViewState = NULL;
-  TObject * DriveViewState = NULL;
   if (State != NULL)
   {
     TUnixDirViewState * UnixDirViewState = dynamic_cast<TUnixDirViewState *>(State);
-    if (DebugAlwaysTrue(UnixDirViewState != NULL))
+    if (UnixDirViewState != NULL)
     {
+      FAnnouncedDriveViewState = UnixDirViewState->DriveViewState.get();
       CustomDirViewState = UnixDirViewState->CustomDirViewState.get();
-      DriveViewState = UnixDirViewState->DriveViewState.get();
+    }
+    else
+    {
+      // It might be TCustomDirView state from CreateDirViewStateForFocusedItem.
+      CustomDirViewState = State;
     }
   }
-  TValueRestorer<TObject *> LoadingStateRestorer(FLoadingDriveViewState);
-  FLoadingDriveViewState = DriveViewState;
-
-  DoSetTerminal(value, Replace);
-
-  if (value->Active)
-  {
-    value->RefreshDirectory();
-  }
-
-  if (CustomDirViewState != NULL)
-  {
-    RestoreState(CustomDirViewState);
-  }
+  TCustomDirView::AnnounceState(CustomDirViewState);
 }
-#endif
+//---------------------------------------------------------------------------
+void __fastcall TUnixDirView::RestoreState(TObject * State)
+{
+  TObject * CustomDirViewState = NULL;
+  if (State != NULL)
+  {
+    TUnixDirViewState * UnixDirViewState = dynamic_cast<TUnixDirViewState *>(State);
+    if (UnixDirViewState != NULL)
+    {
+      CustomDirViewState = UnixDirViewState->CustomDirViewState.get();
+    }
+    else
+    {
+      // See the comment in AnnounceState
+      CustomDirViewState = State;
+    }
+  }
+  TCustomDirView::RestoreState(CustomDirViewState);
+}
 //---------------------------------------------------------------------------
 void __fastcall TUnixDirView::DoStartReadDirectory(TObject * /*Sender*/)
 {

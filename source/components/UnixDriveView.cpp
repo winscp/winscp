@@ -893,10 +893,10 @@ void __fastcall TCustomUnixDriveView::DisplayPropertiesMenu(TTreeNode * /*Node*/
 //---------------------------------------------------------------------------
 void TCustomUnixDriveView::LoadNodeState(TTreeNode * Node, const UnicodeString & Path)
 {
-  if ((FDirView != NULL) && (FDirView->FLoadingDriveViewState != NULL))
+  if ((FDirView != NULL) && (FDirView->FAnnouncedDriveViewState != NULL))
   {
-    TStrings * LoadingDriveViewState = DebugNotNull(dynamic_cast<TStrings *>(FDirView->FLoadingDriveViewState));
-    if (LoadingDriveViewState->IndexOf(Path) >= 0)
+    TStrings * AnnouncedDriveViewState = DebugNotNull(dynamic_cast<TStrings *>(FDirView->FAnnouncedDriveViewState));
+    if (AnnouncedDriveViewState->IndexOf(Path) >= 0)
     {
       Node->Expand(false);
     }
@@ -905,6 +905,7 @@ void TCustomUnixDriveView::LoadNodeState(TTreeNode * Node, const UnicodeString &
 //---------------------------------------------------------------------------
 TObject * TCustomUnixDriveView::SaveState()
 {
+  #ifndef DESIGN_ONLY
   std::unique_ptr<TStrings> ExpandedNodes(CreateSortedStringList());
   TTreeNode * Node = Items->GetFirstNode();
   while (Node != NULL)
@@ -917,4 +918,7 @@ TObject * TCustomUnixDriveView::SaveState()
     Node = Node->GetNext();
   }
   return ExpandedNodes.release();
+  #else
+  return NULL;
+  #endif
 }

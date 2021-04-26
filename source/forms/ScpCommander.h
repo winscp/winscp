@@ -634,7 +634,7 @@ protected:
   virtual void __fastcall UpdateRemotePathComboBox(bool TextOnly);
   void __fastcall SetToolbar2ItemAction(TTBXItem * Item, TBasicAction * Action);
   virtual void __fastcall NeedSession(bool Startup);
-  void RestoreSessionLocalDirView(TDirView * ALocalDirView, const UnicodeString & LocalDirectory);
+  void RestoreSessionLocalDirView(TDirView * ALocalDirView, const UnicodeString & LocalDirectory, TObject * State);
   virtual UnicodeString GetTabHintDetails(TManagedTerminal * ASession);
   virtual UnicodeString GetNewTabHintDetails();
 

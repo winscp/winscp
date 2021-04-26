@@ -261,7 +261,6 @@ type
     function DuplicateSelectedFiles: Boolean; dynamic;
     procedure DisplayPropertiesMenu; override;
     procedure DisplayContextMenu(Where: TPoint); override;
-    procedure RestoreState(AState: TObject);
 
     procedure ExecuteParentDirectory; override;
     procedure ExecuteRootDirectory; override;
@@ -2453,12 +2452,6 @@ begin
   finally
     StartWatchThread;
   end;
-end;
-
-// Just to make it public
-procedure TDirView.RestoreState(AState: TObject);
-begin
-  inherited;
 end;
 
 procedure TDirView.GetDisplayInfo(ListItem: TListItem;
