@@ -6177,8 +6177,10 @@ TSessionData * __fastcall TCustomScpExplorerForm::CloneCurrentSessionData()
     // Particularly for "Workspace/XXXX" name, we need to reset it, as it would become user-visible
     // once IsWorkspace is cleared
     SessionData->Name = UnicodeString();
-    SessionData->IsWorkspace = false;
   }
+  // Most uses of this method ends with saving the session, and we do not want to store the IsWorkspace flag.
+  // Particularly, with SaveHiddenDuplicateSession, it won't work as TSessionData::ParseUrl explicitly ignored workspace sessions.
+  SessionData->IsWorkspace = false;
   return SessionData.release();
 }
 //---------------------------------------------------------------------------
