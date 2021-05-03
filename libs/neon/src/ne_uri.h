@@ -38,10 +38,6 @@ char *ne_path_escape(const char *path);
 #define NE_PATH_NONRES (0x0001)
 /* Escape any characters outside of those allowed in URIs. */
 #define NE_PATH_NONURI (0x0002)
-#ifdef WINSCP
-/* As NE_PATH_NONRES, but excluding %, so it can be used on already encoded URI */
-#define NE_PATH_NONPC (0x0004)
-#endif
 
 /* Return a copy of a path string with escaping applied per rules
  * determined by any combination of NE_PATH_* flags given.  Returns a
