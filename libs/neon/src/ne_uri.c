@@ -241,7 +241,7 @@ int ne_uri_parse_ex(const char *uri, ne_uri *parsed, int liberal) // WINSCP
     while ((uri_lookup(*p) & URI_SEGCHAR) ||
            (liberal && // WINSCP
             ((uri_lookup(*p) & SD) ||
-            ((uri_lookup(*p) & OT) && (*p) >= ' ') || // OT without control characters
+            ((uri_lookup(*p) & OT) && ((unsigned char)(*p) >= (unsigned char)' ')) || // OT without control characters
             ((*p) == '[') || ((*p) == ']')))) // GD without #
         p++;
 
@@ -507,9 +507,6 @@ char *ne_path_escapef(const char *path, unsigned int flags)
 
     if (flags & NE_PATH_NONRES) mask |= URI_ESCAPE;
     if (flags & NE_PATH_NONURI) mask |= URI_NONURI;
-    #ifdef WINSCP
-    if (flags & NE_PATH_NONPC) mask |= URI_NONPC;
-    #endif
 
     for (pnt = (const unsigned char *)path; *pnt != '\0'; pnt++) {
         count += path_escape_ch(*pnt, mask);
