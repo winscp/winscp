@@ -7086,7 +7086,9 @@ bool __fastcall TTerminal::CreateTargetDirectory(
   if (DoCreate)
   {
     TRemoteProperties Properties;
-    if (CopyParam->PreserveRights)
+    // Do not even try with FTP, as while theoretically it supports setting permissions of created folders and it will try,
+    // it most likely fail as most FTP servers do not support SITE CHMOD.
+    if (CopyParam->PreserveRights && IsCapable[fcModeChangingUpload])
     {
       Properties.Valid = Properties.Valid << vpRights;
       Properties.Rights = CopyParam->RemoteFileRights(Attrs);
@@ -7105,7 +7107,7 @@ void __fastcall TTerminal::DirectorySource(
 {
   FFileSystem->TransferOnDirectory(TargetDir, CopyParam, Params);
 
-  UnicodeString DestFullName = UnixIncludeTrailingBackslash(TargetDir + DestDirectoryName);
+  UnicodeString DestFullName = TargetDir + DestDirectoryName;
 
   OperationProgress->SetFile(DirectoryName);
 
@@ -7133,7 +7135,10 @@ void __fastcall TTerminal::DirectorySource(
       {
         if (SearchRec.IsRealFile())
         {
-          SourceRobust(FileName, &SearchRec, DestFullName, CopyParam, Params, OperationProgress, (Flags & ~(tfFirstLevel | tfAutoResume)));
+          // Not sure if we need the trailing slash here, but we cannot use it in CreateTargetDirectory.
+          // At least FTP cannot handle it, when setting the new directory permissions.
+          UnicodeString ATargetDir = UnixIncludeTrailingBackslash(DestFullName);
+          SourceRobust(FileName, &SearchRec, ATargetDir, CopyParam, Params, OperationProgress, (Flags & ~(tfFirstLevel | tfAutoResume)));
           // FTP: if any file got uploaded (i.e. there were any file in the directory and at least one was not skipped),
           // do not try to create the directory, as it should be already created by FZAPI during upload
           PostCreateDir = false;
