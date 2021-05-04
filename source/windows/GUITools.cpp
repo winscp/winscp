@@ -1877,10 +1877,13 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
 
   const int ScreenTipTextOnlyWidth = ScaleByTextHeight(HintControl, cScreenTipTextOnlyWidth);
 
-  if (!LongHint.IsEmpty())
+  int LongHintMargin = 0; // shut up
+  bool HasLongHint = !LongHint.IsEmpty();
+  if (HasLongHint)
   {
     // double-margin on the right
-    MaxWidth = ScreenTipTextOnlyWidth - (3 * Margin);
+    LongHintMargin = (3 * Margin);
+    MaxWidth = ScreenTipTextOnlyWidth - LongHintMargin;
   }
 
   // Multi line short hints can be twice as wide, to not break the individual lines unless really necessary.
@@ -1907,7 +1910,7 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
 
   TRect Result;
 
-  if (LongHint.IsEmpty())
+  if (!HasLongHint)
   {
     Result = ShortRect;
 
@@ -1928,7 +1931,7 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
     TRect LongRect(0, 0, MaxWidth - LongIndentation, 0);
     CalcHintTextRect(this, Canvas, LongRect, LongHint);
 
-    Result.Right = ScreenTipTextOnlyWidth;
+    Result.Right = Max(ScreenTipTextOnlyWidth, LongRect.Right + LongIndentation + LongHintMargin);
     Result.Bottom = Margin + ShortRect.Height() + (Margin / 3 * 5) + LongRect.Height() + Margin;
   }
 
