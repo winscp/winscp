@@ -91,7 +91,7 @@ UnicodeString __fastcall UnixExtractFileDir(const UnicodeString Path)
   }
   else
   {
-    return (Pos == 1) ? UnicodeString(L"/") : UnicodeString();
+    return (Pos == 1) ? UnicodeString(ROOTDIRECTORY) : UnicodeString();
   }
 }
 //---------------------------------------------------------------------------
