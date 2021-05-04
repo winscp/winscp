@@ -1799,11 +1799,11 @@ void __fastcall TRemoteDirectoryCache::DoClearFileList(UnicodeString Directory, 
   }
   if (SubDirs)
   {
-    Directory = UnixIncludeTrailingBackslash(Directory);
+    UnicodeString DirectoryWithSlash = UnixIncludeTrailingBackslash(Directory); // optimization
     Index = Count-1;
     while (Index >= 0)
     {
-      if (Strings[Index].SubString(1, Directory.Length()) == Directory)
+      if (UnixIsChildPath(DirectoryWithSlash, Strings[Index]))
       {
         Delete(Index);
       }
