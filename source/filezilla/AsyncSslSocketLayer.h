@@ -42,12 +42,11 @@ Valid notification IDs are:
 - SSL_FAILURE 1
   This notification is sent if the SSL connection could not be established or if an existing
   connection failed. Valid values for param2 are:
-  - SSL_FAILURE_NONE 0 - Everything OK
-  - SSL_FAILURE_UNKNOWN 1 - Details may have been sent with a SSL_VERBOSE_* notification.
-  - SSL_FAILURE_ESTABLISH 2 - Problem during SSL negotiation
-  - SSL_FAILURE_INITSSL 8
-  - SSL_FAILURE_VERIFYCERT 16 - The remote SSL certificate was invalid
-  - SSL_FAILURE_CERTREJECTED 32 - The remote SSL certificate was rejected by user
+  - SSL_FAILURE_UNKNOWN 0 - Details may have been sent with a SSL_VERBOSE_* notification.
+  - SSL_FAILURE_ESTABLISH 1 - Problem during SSL negotiation
+  - SSL_FAILURE_INITSSL 4
+  - SSL_FAILURE_VERIFYCERT 8 - The remote SSL certificate was invalid
+  - SSL_FAILURE_CERTREJECTED 16 - The remote SSL certificate was rejected by user
 - SSL_VERIFY_CERT 2
   This notification is sent each time a remote certificate has to be verified.
   param2 is a pointer to a t_SslCertData structure which contains some information
@@ -245,6 +244,6 @@ private:
 #define SSL_FAILURE_ESTABLISH 1
 #define SSL_FAILURE_INITSSL 4
 #define SSL_FAILURE_VERIFYCERT 8
-#define SSL_FAILURE_CERTREJECTED 0x10
+#define SSL_FAILURE_CERTREJECTED 16
 //---------------------------------------------------------------------------
 #endif // AsyncSslSocketLayerH
