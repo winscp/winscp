@@ -910,9 +910,9 @@ TObject * TCustomUnixDriveView::SaveState()
   TTreeNode * Node = Items->GetFirstNode();
   while (Node != NULL)
   {
-    if (Node->Expanded)
+    // Node->HasChildren would be false in extreme cases only (like while closing the window)
+    if (Node->Expanded && Node->HasChildren)
     {
-      DebugAssert(Node->HasChildren);
       ExpandedNodes->Add(NodePathName(Node));
     }
     Node = Node->GetNext();
