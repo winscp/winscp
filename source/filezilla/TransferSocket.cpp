@@ -1016,16 +1016,24 @@ int CTransferSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
           }
           break;
         case SSL_FAILURE:
-          switch (iter->nParam2)
           {
-          case SSL_FAILURE_ESTABLISH:
-            m_pOwner->ShowStatus(IDS_ERRORMSG_CANTESTABLISHSSLCONNECTION, FZ_LOG_ERROR);
-            break;
-          case SSL_FAILURE_INITSSL:
-            m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
-            break;
+            int Mode = CSMODE_TRANSFERERROR;
+            switch (iter->nParam2)
+            {
+            case SSL_FAILURE_UNKNOWN:
+              m_pOwner->ShowStatus(IDS_ERRORMSG_UNKNOWNSSLERROR, FZ_LOG_ERROR);
+              // This may indicate re-key failure, make sure we retry
+              Mode |= CSMODE_TRANSFERTIMEOUT;
+              break;
+            case SSL_FAILURE_ESTABLISH:
+              m_pOwner->ShowStatus(IDS_ERRORMSG_CANTESTABLISHSSLCONNECTION, FZ_LOG_ERROR);
+              break;
+            case SSL_FAILURE_INITSSL:
+              m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
+              break;
+            }
+            CloseAndEnsureSendClose(Mode);
           }
-          EnsureSendClose(CSMODE_TRANSFERERROR);
           break;
         case SSL_VERIFY_CERT:
           t_SslCertData data;

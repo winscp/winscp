@@ -5752,6 +5752,8 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
           switch (iter->nParam2)
           {
           case SSL_FAILURE_UNKNOWN:
+            // CTransferSocket has a special treatment of SSL_FAILURE_UNKNOWN,
+            // as an indication of a re-key failure.
             ShowStatus(IDS_ERRORMSG_UNKNOWNSSLERROR, FZ_LOG_ERROR);
             break;
           case SSL_FAILURE_ESTABLISH:
