@@ -1186,7 +1186,10 @@ bool __fastcall TTerminalQueue::ContinueParallelOperation()
 {
   TGuard Guard(FItemsSection);
 
-  return (FItems->Count <= FItemsInProcess);
+  return
+    (FItems->Count <= FItemsInProcess) ||
+    // When queue auto processing is not enabled, keep using all connections for the transfers that were manually started
+    !FEnabled;
 }
 //---------------------------------------------------------------------------
 // TBackgroundItem
