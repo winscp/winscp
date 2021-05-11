@@ -2761,6 +2761,12 @@ bool __fastcall TCustomScpExplorerForm::ExecuteCopyMoveFileOperation(
             ReloadLocalDirectory(Param.TargetDirectory);
           }
         }
+
+        // When the transfer batch is aborted between individual file transfers, the Abort is not called.
+        if (FMoveToQueue)
+        {
+          Abort();
+        }
       }
       catch (EAbort &)
       {
