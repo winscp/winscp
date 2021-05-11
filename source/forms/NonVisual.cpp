@@ -197,6 +197,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(UnlockAction,
     EnabledSelectedOperation && !ScpExplorer->IsSideLocalBrowser(osCurrent) &&
     ScpExplorer->Terminal->IsCapable[fcLocking])
+  UPD(CalculateDirectorySizesAction, EnabledSelectedOperation)
   // local selected operation
   UPD(LocalCopyAction, HasTerminal && EnabledLocalSelectedOperation)
   UPDEX1(LocalCopyQueueAction,
@@ -557,6 +558,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(FileListFromClipboardAction, ScpExplorer->FileListFromClipboard())
     EXE(LockAction, ScpExplorer->ExecuteFileOperationCommand(foLock, osCurrent, false))
     EXE(UnlockAction, ScpExplorer->ExecuteFileOperationCommand(foUnlock, osCurrent, false))
+    EXE(CalculateDirectorySizesAction, ScpExplorer->CalculateDirectorySizes())
     // local selected operation
     EXE(LocalCopyAction, ScpExplorer->ExecuteCopyOperationCommand(osLocal, false, ShortCutFlag))
     EXE(LocalCopyQueueAction, ScpExplorer->ExecuteCopyOperationCommand(osLocal, false, cocQueue))

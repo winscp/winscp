@@ -273,7 +273,6 @@ type
     function ItemCanDrag(Item: TListItem): Boolean; virtual;
     function DoItemColor(Item: TListItem): TColor;
     function ItemColor(Item: TListItem): TColor; virtual;
-    function ItemData(Item: TListItem): TObject; virtual;
     function ItemImageIndex(Item: TListItem; Cache: Boolean): Integer; virtual; abstract;
     // ItemIsDirectory and ItemFullFileName is in public block
     function ItemIsRecycleBin(Item: TListItem): Boolean; virtual;
@@ -339,6 +338,7 @@ type
     procedure DoUpdateStatusBar(Force: Boolean = False);
     procedure DoCustomDrawItem(Item: TListItem; Stage: TCustomDrawStage);
     procedure RestoreFocus(FocusedItem: string);
+    procedure ItemCalculatedSizeUpdated(Item: TListItem; OldSize, NewSize: Int64);
     property ImageList16: TImageList read FImageList16;
     property ImageList32: TImageList read FImageList32;
   public
@@ -346,7 +346,8 @@ type
     destructor Destroy; override;
     procedure Reload(CacheIcons: Boolean); virtual;
     function CreateFocusedFileList(FullPath: Boolean; FileList: TStrings = nil): TStrings;
-    function CreateFileList(Focused: Boolean; FullPath: Boolean; FileList: TStrings = nil): TStrings;
+    function CreateFileList(Focused: Boolean; FullPath: Boolean; FileList: TStrings = nil;
+      ItemObject: Boolean = False): TStrings;
     function AnyFileSelected(OnlyFocused: Boolean; FilesOnly: Boolean;
       FocusedFileOnlyWhenFocused: Boolean): Boolean;
     procedure SelectFiles(Filter: TFileFilter; Select: Boolean);
@@ -363,6 +364,8 @@ type
     function ItemFileName(Item: TListItem): string; virtual; abstract;
     function ItemFileSize(Item: TListItem): Int64; virtual; abstract;
     function ItemFileTime(Item: TListItem; var Precision: TDateTimePrecision): TDateTime; virtual; abstract;
+    function ItemData(Item: TListItem): TObject; virtual;
+    procedure SetItemCalculatedSize(Item: TListItem; Size: Int64); virtual; abstract;
     procedure ReloadDirectory; virtual; abstract;
     procedure DisplayPropertiesMenu; virtual; abstract;
     function CreateChangedFileList(DirView: TCustomDirView; FullPath: Boolean;
@@ -2352,9 +2355,9 @@ begin
 end;
 
 function TCustomDirView.CreateFileList(Focused: Boolean; FullPath: Boolean;
-  FileList: TStrings): TStrings;
+  FileList: TStrings; ItemObject: Boolean): TStrings;
 begin
-  Result := CustomCreateFileList(Focused, False, FullPath, FileList);
+  Result := CustomCreateFileList(Focused, False, FullPath, FileList, ItemObject);
 end;
 
 procedure TCustomDirView.DDDrop(DataObj: IDataObject; grfKeyState: Integer;
@@ -3434,6 +3437,14 @@ begin
     finally
       EndBusy;
     end;
+end;
+
+procedure TCustomDirView.ItemCalculatedSizeUpdated(Item: TListItem; OldSize, NewSize: Int64);
+begin
+  if OldSize >= 0 then Dec(FFilesSize, OldSize);
+  if NewSize >= 0 then Inc(FFilesSize, NewSize);
+  Item.Update;
+  UpdateStatusBar;
 end;
 
 initialization

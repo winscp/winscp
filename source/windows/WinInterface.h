@@ -460,7 +460,7 @@ typedef void __fastcall (__closure *TFindEvent)
 typedef void __fastcall (__closure *TFocusFileEvent)
   (TTerminal * Terminal, const UnicodeString & Path);
 typedef void __fastcall (__closure *TFileOperationFinishedEvent)
-  (const UnicodeString & FileName, bool Success);
+  (TOperationSide Side, const UnicodeString & FileName, bool Success);
 typedef void __fastcall (__closure *TFileListOperationEvent)
   (TTerminal * Terminal, TStrings * FileList, TFileOperationFinishedEvent OnFileOperationFinished);
 void __fastcall ShowFileFindDialog(

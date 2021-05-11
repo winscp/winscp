@@ -4505,7 +4505,7 @@ bool __fastcall TTerminal::DoCalculateDirectorySize(const UnicodeString & FileNa
   {
     try
     {
-      ProcessDirectory(FileName, CalculateFileSize, Params);
+      ProcessDirectory(FileName, CalculateFileSize, Params, Params->UseCache);
       Result = true;
     }
     catch(Exception & E)
@@ -4534,9 +4534,7 @@ bool __fastcall TTerminal::DoCalculateDirectorySize(const UnicodeString & FileNa
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::CalculateFilesSize(TStrings * FileList,
-  __int64 & Size, int Params, const TCopyParamType * CopyParam,
-  bool AllowDirs, TCalculateSizeStats & Stats)
+bool TTerminal::CalculateFilesSize(TStrings * FileList, __int64 & Size, TCalculateSizeParams & Params)
 {
   // With FTP protocol, we may use DSIZ command from
   // draft-peterson-streamlined-ftp-command-extensions-10
@@ -4545,18 +4543,13 @@ bool __fastcall TTerminal::CalculateFilesSize(TStrings * FileList,
   TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor);
   FUseBusyCursor = false;
 
-  TCalculateSizeParams Param;
-  Param.Params = Params;
-  Param.CopyParam = CopyParam;
-  Param.Stats = &Stats;
-  Param.AllowDirs = AllowDirs;
-  ProcessFiles(FileList, foCalculateSize, DoCalculateFileSize, &Param);
-  Size = Param.Size;
+  ProcessFiles(FileList, foCalculateSize, DoCalculateFileSize, &Params);
+  Size = Params.Size;
   if (Configuration->ActualLogProtocol >= 1)
   {
     LogEvent(FORMAT(L"Size of %d remote files/folders calculated as %s", (FileList->Count, IntToStr(Size))));
   }
-  return Param.Result;
+  return Params.Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CalculateFilesChecksum(const UnicodeString & Alg,
@@ -6350,7 +6343,10 @@ void __fastcall TTerminal::SynchronizeChecklistCalculateSize(
       __int64 RemoteSize = 0;
       TCalculateSizeStats RemoteStats;
       RemoteStats.CalculatedSizes = &RemoteCalculatedSizes;
-      CalculateFilesSize(RemoteFileList.get(), RemoteSize, 0, CopyParam, true, RemoteStats);
+      TCalculateSizeParams Params;
+      Params.CopyParam = CopyParam;
+      Params.Stats = &RemoteStats;
+      CalculateFilesSize(RemoteFileList.get(), RemoteSize, Params);
     }
   }
   __finally
@@ -7374,8 +7370,12 @@ bool __fastcall TTerminal::CopyToLocal(
       {
         TCalculateSizeStats Stats;
         Stats.FoundFiles = Files.get();
-        bool CalculateSize = ACanParallel || CopyParam->CalculateSize;
-        if (CalculateFilesSize(FilesToCopy, TotalSize, csIgnoreErrors, CopyParam, CalculateSize, Stats))
+        TCalculateSizeParams Params;
+        Params.Params = csIgnoreErrors;
+        Params.CopyParam = CopyParam;
+        Params.AllowDirs = ACanParallel || CopyParam->CalculateSize;
+        Params.Stats = &Stats;
+        if (CalculateFilesSize(FilesToCopy, TotalSize, Params))
         {
           TotalSizeKnown = true;
         }

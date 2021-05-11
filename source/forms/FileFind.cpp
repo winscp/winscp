@@ -614,7 +614,7 @@ TListItem * __fastcall TFileFindDialog::FileOperationFinished(const UnicodeStrin
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileFindDialog::FileDeleteFinished(const UnicodeString & FileName, bool Success)
+void __fastcall TFileFindDialog::FileDeleteFinished(TOperationSide, const UnicodeString & FileName, bool Success)
 {
   // Delete in queue not supported
   DebugAssert(!FileName.IsEmpty());
@@ -626,7 +626,7 @@ void __fastcall TFileFindDialog::FileDeleteFinished(const UnicodeString & FileNa
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileFindDialog::FileDownloadFinished(const UnicodeString & FileName, bool Success)
+void __fastcall TFileFindDialog::FileDownloadFinished(TOperationSide, const UnicodeString & FileName, bool Success)
 {
   if (FileName.IsEmpty())
   {

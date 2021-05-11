@@ -96,6 +96,7 @@ public:
   virtual bool __fastcall ItemIsParentDirectory(TListItem * Item);
   virtual UnicodeString __fastcall ItemFullFileName(TListItem * Item);
   virtual __int64 __fastcall ItemFileSize(TListItem * Item);
+  virtual void __fastcall SetItemCalculatedSize(TListItem * Item, __int64 Size);
   virtual bool __fastcall PasteFromClipBoard(UnicodeString TargetPath = L"");
   void __fastcall UpdateFiles();
   void __fastcall DisplayContextMenu(const TPoint &Where);

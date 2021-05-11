@@ -50,6 +50,7 @@ class ITaskbarList3;
 struct TSynchronizeParams;
 class TBookmark;
 class TManagedTerminal;
+class TCalculateSizeOperation;
 //---------------------------------------------------------------------------
 enum TActionAllowed { aaShortCut, aaUpdate, aaExecute };
 enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4, afCommander = 8 };
@@ -230,6 +231,7 @@ private:
   bool FFormRestored;
   bool FAutoOperation;
   TFileOperationFinishedEvent FOnFileOperationFinished;
+  TFileOperation FPrimaryOperation;
   bool FForceExecution;
   unsigned short FIgnoreNextDialogChar;
   TStringList * FErrorList;
@@ -298,6 +300,7 @@ private:
   std::auto_ptr<TQueueFileList> FQueueFileList;
   bool FStarted;
   bool FUpdatingSessionTabs;
+  TCalculateSizeOperation * FCalculateSizeOperation;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side, int FilesOnly);
@@ -729,6 +732,8 @@ protected:
   virtual UnicodeString GetTabHintDetails(TManagedTerminal * ASession);
   virtual UnicodeString GetNewTabHintDetails();
   UnicodeString GetSessionPath(TManagedTerminal * ASession, TOperationSide Side);
+  void __fastcall DirectorySizeCalculated(TOperationSide Side, const UnicodeString & FileName, bool Success);
+  TListItem * VisualiseOperationFinished(TOperationSide Side, const UnicodeString & FileName, bool Unselect);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -876,6 +881,7 @@ public:
   virtual UnicodeString GetLocalBrowserSessionTitle(TManagedTerminal * Session);
   virtual int GetNewTabActionImageIndex();
   virtual int GetNewTabTabImageIndex(TOperationSide Side);
+  void CalculateDirectorySizes();
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

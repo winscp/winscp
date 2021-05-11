@@ -81,6 +81,7 @@ type
     Attr: LongWord;
     FileTime: TFileTime;
     PIDL: PItemIDList; {Fully qualified PIDL}
+    CalculatedSize: Int64;
   end;
 
   {Record for fileinfo caching:}
@@ -270,6 +271,7 @@ type
     function ItemFileName(Item: TListItem): string; override;
     function ItemFileSize(Item: TListItem): Int64; override;
     function ItemFileTime(Item: TListItem; var Precision: TDateTimePrecision): TDateTime; override;
+    procedure SetItemCalculatedSize(Item: TListItem; ASize: Int64); override;
     procedure OpenFallbackPath(Value: string);
 
     {Thread handling: }
@@ -1063,6 +1065,7 @@ begin
     IconEmpty := True;
     if Size > 0 then Inc(FFilesSize, Size);
     PIDL := nil;
+    CalculatedSize := -1;
 
     // Need to add before assigning to .Caption and .OverlayIndex,
     // as the setters these call back to owning view.
@@ -2458,6 +2461,7 @@ procedure TDirView.GetDisplayInfo(ListItem: TListItem;
   var DispInfo: TLVItem);
 var
   Value: string;
+  ASize: Int64;
 begin
   Assert(Assigned(ListItem) and Assigned(ListItem.Data));
   with PFileRec(ListItem.Data)^, DispInfo  do
@@ -2497,7 +2501,11 @@ begin
       begin
         case TDirViewCol(iSubItem) of
           dvSize: {Size:     }
-            if not IsDirectory then Value := FormatPanelBytes(Size, FormatSizeBytes);
+            begin
+              if not IsDirectory then ASize := Size
+                else ASize := CalculatedSize;
+              if ASize >= 0 then Value := FormatPanelBytes(ASize, FormatSizeBytes);
+            end;
           dvType: {FileType: }
             Value := TypeName;
           dvChanged: {Date}
@@ -2947,7 +2955,9 @@ begin
   Result := 0;
   if Assigned(Item) and Assigned(Item.Data) then
     with PFileRec(Item.Data)^ do
-      if Size >= 0 then Result := Size;
+      if Size >= 0 then Result := Size
+        else
+      if CalculatedSize >= 0 then Result := CalculatedSize;
 end;
 
 function TDirView.ItemFileTime(Item: TListItem;
@@ -3439,6 +3449,19 @@ begin
       ImageIndex := Index;
       IconEmpty := (ImageIndex < 0);
     end;
+end;
+
+procedure TDirView.SetItemCalculatedSize(Item: TListItem; ASize: Int64);
+var
+  OldSize: Int64;
+begin
+  Assert(Assigned(Item) and Assigned(Item.Data));
+  with PFileRec(Item.Data)^ do
+  begin
+    OldSize := CalculatedSize;
+    CalculatedSize := ASize;
+  end;
+  ItemCalculatedSizeUpdated(Item, OldSize, ASize);
 end;
 
 {=================================================================}

@@ -165,6 +165,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   RemoteDirView->Invalidate();
   FAutoOperation = false;
   FOnFileOperationFinished = NULL;
+  FPrimaryOperation = foNone;
   FForceExecution = false;
   FIgnoreNextDialogChar = 0;
   FErrorList = NULL;
@@ -207,6 +208,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FIncrementalSearchHaveNext = false;
   FQueueFileList.reset(new TQueueFileList());
   FProgressSide = osCurrent;
+  FCalculateSizeOperation = NULL;
 
   FEditorManager = new TEditorManager();
   FEditorManager->OnFileChange = ExecutedFileChanged;
@@ -1232,13 +1234,13 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ClearTransferSourceSelection(TTransferDirection Direction)
 {
+  TOperationSide Side = ((Direction == tdToRemote) ? osLocal : osRemote);
   if (FOnFileOperationFinished != NULL)
   {
-    FOnFileOperationFinished(UnicodeString(), true);
+    FOnFileOperationFinished(Side, UnicodeString(), true);
   }
   else
   {
-    TOperationSide Side = ((Direction == tdToRemote) ? osLocal : osRemote);
     if (HasDirView[Side])
     {
       DirView(Side)->SelectAll(smNone);
@@ -1620,6 +1622,23 @@ bool __fastcall TCustomScpExplorerForm::PanelOperation(TOperationSide /*Side*/,
     (DropSourceControl == DirView(osOther));
 }
 //---------------------------------------------------------------------------
+TListItem * TCustomScpExplorerForm::VisualiseOperationFinished(TOperationSide Side, const UnicodeString & FileName, bool Unselect)
+{
+  TCustomDirView * ADirView = DirView(Side);
+  UnicodeString FileNameOnly = ExtractFileName(FileName, !IsSideLocalBrowser(Side));
+  TListItem * Item = ADirView->FindFileItem(FileNameOnly);
+  // this can happen when local drive is unplugged in the middle of the operation
+  if (Item != NULL)
+  {
+    if (Unselect)
+    {
+      Item->Selected = false;
+    }
+    ADirView->MakeProgressVisible(Item);
+  }
+  return Item;
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DoOperationFinished(
   TFileOperation Operation, TOperationSide Side,
   bool /*Temp*/, const UnicodeString & FileName, bool Success,
@@ -1629,36 +1648,28 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(
   {
     // no selection on "/upload", form serves only as event handler
     // (it is not displayed)
-    if (PanelOperation(Side, FDragDropOperation) &&
-        Visible && (Operation != foCalculateSize) &&
-        (Operation != foGetProperties) && (Operation != foCalculateChecksum))
+    if (PanelOperation(Side, FDragDropOperation) && Visible &&
+        ((Operation == FPrimaryOperation) ||
+         ((Operation != foCalculateSize) && (Operation != foGetProperties) && (Operation != foCalculateChecksum))))
     {
-      if (FOnFileOperationFinished != NULL)
+      TOperationSide DViewSide;
+      if ((FProgressSide != osCurrent) &&
+          IsLocalBrowserMode() && (Side == osLocal)) // Only to limit the impact
       {
-        FOnFileOperationFinished(FileName, Success);
+        // assume the operation is over the focused panel
+        DViewSide = FProgressSide;
       }
       else
       {
-        TOperationSide DViewSide;
-        if ((FProgressSide != osCurrent) &&
-            IsLocalBrowserMode() && (Side == osLocal)) // Only to limit the impact
-        {
-          // assume the operation is over the focused panel
-          DViewSide = FProgressSide;
-        }
-        else
-        {
-          DViewSide = Side;
-        }
-        TCustomDirView * DView = DirView(DViewSide);
-        UnicodeString FileNameOnly = ExtractFileName(FileName, !IsSideLocalBrowser(DViewSide));
-        TListItem *Item = DView->FindFileItem(FileNameOnly);
-        // this can happen when local drive is unplugged in the middle of the operation
-        if (Item != NULL)
-        {
-          if (Success) Item->Selected = false;
-          DView->MakeProgressVisible(Item);
-        }
+        DViewSide = Side;
+      }
+      if (FOnFileOperationFinished != NULL)
+      {
+        FOnFileOperationFinished(DViewSide, FileName, Success);
+      }
+      else
+      {
+        VisualiseOperationFinished(DViewSide, FileName, Success);
       }
     }
 
@@ -4355,7 +4366,9 @@ void __fastcall TCustomScpExplorerForm::CalculateSize(
   {
     try
     {
-      Terminal->CalculateFilesSize(FileList, Size, 0, NULL, true, Stats);
+      TCalculateSizeParams Params;
+      Params.Stats = &Stats;
+      Terminal->CalculateFilesSize(FileList, Size, Params);
     }
     catch(...)
     {
@@ -10028,7 +10041,7 @@ void __fastcall TCustomScpExplorerForm::DoEditFoundFiles(
       UnicodeString FileName = FileList->Strings[Index];
       TRemoteFile * File = static_cast<TRemoteFile *>(FileList->Objects[Index]);
       ExecuteRemoteFile(FileName, File, efDefaultEditor);
-      OnFileOperationFinished(FileName, true);
+      OnFileOperationFinished(osRemote, FileName, true);
     }
   }
 }
@@ -11328,3 +11341,87 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlTabHint(TPageControl 
   }
 }
 //---------------------------------------------------------------------------
+typedef std::vector<TListItem *> TListItemsVector;
+struct TCalculateSizeOperation
+{
+  TCalculateSizeStats Stats;
+  TListItemsVector ListItems;
+  size_t Index;
+};
+//---------------------------------------------------------------------------
+void TCustomScpExplorerForm::CalculateDirectorySizes()
+{
+  TCalculateSizeOperation CalculateSizeOperation;
+  TOperationSide Side = GetSide(osCurrent);
+  TCustomDirView * ADirView = DirView(Side);
+  bool FullPath = IsSideLocalBrowser(Side);
+  std::unique_ptr<TStrings> AllFileList(ADirView->CreateFileList(false, FullPath, NULL, true));
+  std::unique_ptr<TStrings> FileList(new TStringList());
+  for (int Index = 0; Index < AllFileList->Count; Index++)
+  {
+    TListItem * Item = DebugNotNull(dynamic_cast<TListItem *>(AllFileList->Objects[Index]));
+    if (ADirView->ItemIsDirectory(Item))
+    {
+      FileList->AddObject(AllFileList->Strings[Index], ADirView->ItemData(Item));
+      CalculateSizeOperation.ListItems.push_back(Item);
+    }
+  }
+
+  CalculateSizeOperation.Index = 0;
+
+  __int64 Size = 0;
+  TValueRestorer<TCalculateSizeOperation *> DirectorySizeOperationRestorer(FCalculateSizeOperation);
+  FCalculateSizeOperation = &CalculateSizeOperation;
+
+  TValueRestorer<TFileOperationFinishedEvent> OnFileOperationFinishedRestorer(FOnFileOperationFinished);
+  FOnFileOperationFinished = DirectorySizeCalculated;
+  TValueRestorer<TFileOperation> PrimaryOperationRestorer(FPrimaryOperation);
+  FPrimaryOperation = foCalculateSize;
+
+  TCalculatedSizes CalculatedSizes;
+  CalculateSizeOperation.Stats.CalculatedSizes = &CalculatedSizes;
+
+  if (Side == osLocal)
+  {
+    Terminal->CalculateLocalFilesSize(FileList.get(), Size, NULL, true, NULL, &CalculatedSizes);
+  }
+  else
+  {
+    TCalculateSizeParams Params;
+    Params.Stats = &CalculateSizeOperation.Stats;
+    Params.UseCache = true;
+    Terminal->CalculateFilesSize(FileList.get(), Size, Params);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DirectorySizeCalculated(TOperationSide Side, const UnicodeString & FileName, bool)
+{
+  DebugAlwaysTrue(FCalculateSizeOperation != NULL);
+
+  TListItem * Item = VisualiseOperationFinished(Side, FileName, false);
+  TCustomDirView * ADirView = dynamic_cast<TCustomDirView *>(Item->Owner->Owner);
+  // optimization
+  bool GotExpectedItem =
+    (FCalculateSizeOperation->Index < FCalculateSizeOperation->ListItems.size()) &&
+    (FCalculateSizeOperation->ListItems[FCalculateSizeOperation->Index] == Item);
+  int Index = -1;
+  if (DebugAlwaysTrue(GotExpectedItem))
+  {
+    Index = FCalculateSizeOperation->Index;
+    FCalculateSizeOperation->Index++;
+  }
+  else
+  {
+    TListItemsVector::iterator I =
+      std::find(FCalculateSizeOperation->ListItems.begin(), FCalculateSizeOperation->ListItems.end(), Item);
+    if (DebugAlwaysTrue(I != FCalculateSizeOperation->ListItems.end()))
+    {
+      Index = I - FCalculateSizeOperation->ListItems.begin();
+    }
+  }
+  if (DebugAlwaysTrue(Index >= 0))
+  {
+    __int64 Size = (*FCalculateSizeOperation->Stats.CalculatedSizes)[Index];
+    ADirView->SetItemCalculatedSize(Item, Size);
+  }
+}

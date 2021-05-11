@@ -234,7 +234,7 @@ __int64 __fastcall TUnixDirView::ItemFileSize(TListItem * Item)
 {
 #ifndef DESIGN_ONLY
   ASSERT_VALID_ITEM;
-  return ITEMFILE->Size;
+  return (ITEMFILE->CalculatedSize >= 0) ? ITEMFILE->CalculatedSize : ITEMFILE->Size;
 #else
   DebugUsedParam(Item);
   return 0;
@@ -353,7 +353,7 @@ void __fastcall TUnixDirView::LoadFiles()
         // Assignment is redundant
         Item = Items->AddItem(Item);
         Item->Caption = File->FileName;
-        if (FFullLoad)
+        if (DebugAlwaysFalse(FFullLoad))
         {
           // this is out of date
           // (missing columns and does not update then file properties are loaded)
@@ -388,10 +388,20 @@ void __fastcall TUnixDirView::GetDisplayInfo(TListItem * Item, tagLVITEMW &DispI
       switch (DispInfo.iSubItem) {
         case uvName: Value = File->FileName; break;
         case uvSize:
-          // expanded from ?: to avoid memory leaks
-          if (!File->IsDirectory)
           {
-            Value = FormatPanelBytes(File->Size, FormatSizeBytes);
+            __int64 Size;
+            if (!File->IsDirectory)
+            {
+              Size = File->Size;
+            }
+            else
+            {
+              Size = File->CalculatedSize;
+            }
+            if (Size >= 0)
+            {
+              Value = FormatPanelBytes(Size, FormatSizeBytes);
+            }
           }
           break;
         case uvChanged: Value = File->UserModificationStr; break;
@@ -1074,4 +1084,16 @@ void __fastcall TUnixDirView::UpdatePathLabelCaption()
     PathLabel->Caption = UnicodeString();
     PathLabel->Mask = UnicodeString();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TUnixDirView::SetItemCalculatedSize(TListItem * Item, __int64 Size)
+{
+  __int64 OldSize;
+  #ifndef DESIGN_ONLY
+  OldSize = ITEMFILE->CalculatedSize;
+  ITEMFILE->CalculatedSize = Size;
+  #else
+  OldSize = -1;
+  #endif
+  ItemCalculatedSizeUpdated(Item, OldSize, Size);
 }

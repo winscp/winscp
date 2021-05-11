@@ -689,6 +689,7 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem108;
   TTBXSeparatorItem *TBXSeparatorItem19;
   TTBXItem *TBXItem111;
+  TAction *CalculateDirectorySizesAction;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);

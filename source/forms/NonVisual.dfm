@@ -2385,6 +2385,16 @@ object NonVisualDataModule: TNonVisualDataModule
         'When turned on, the New Tab command opens a new remote tab. Othe' +
         'rwise it opens a new local tab.'
     end
+    object CalculateDirectorySizesAction: TAction
+      Tag = 15
+      Category = 'Selected Operation'
+      Caption = '&Calculate Directory Sizes'
+      HelpKeyword = 'ui_file_panel#directory_sizes'
+      Hint = 
+        'Calculate sizes of the selected directories and display them in ' +
+        'the file panel'
+      ShortCut = 40973
+    end
   end
   object ExplorerBarPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages

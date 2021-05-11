@@ -295,6 +295,9 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem41: TTBXItem
           Action = NonVisualDataModule.CurrentPropertiesAction
         end
+        object TBXItem239: TTBXItem
+          Action = NonVisualDataModule.CalculateDirectorySizesAction
+        end
       end
       object TBXSubmenuItem7: TTBXSubmenuItem
         Caption = '&Commands'

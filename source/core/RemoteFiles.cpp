@@ -820,6 +820,7 @@ __fastcall TRemoteFile::TRemoteFile(TRemoteFile * ALinkedByFile):
   FDirectory = NULL;
   FIsHidden = -1;
   FIsEncrypted = false;
+  FCalculatedSize = -1;
 }
 //---------------------------------------------------------------------------
 __fastcall TRemoteFile::~TRemoteFile()
@@ -845,6 +846,7 @@ TRemoteFile * __fastcall TRemoteFile::Duplicate(bool Standalone) const
     COPY_FP(Owner);
     COPY_FP(ModificationFmt);
     COPY_FP(Size);
+    COPY_FP(CalculatedSize);
     COPY_FP(FileName);
     COPY_FP(DisplayName);
     COPY_FP(INodeBlocks);

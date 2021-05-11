@@ -563,9 +563,7 @@ public:
     /*const TMoveFileParams*/ void * Param);
   bool __fastcall CopyFiles(TStrings * FileList, const UnicodeString Target,
     const UnicodeString FileMask);
-  bool __fastcall CalculateFilesSize(TStrings * FileList, __int64 & Size,
-    int Params, const TCopyParamType * CopyParam, bool AllowDirs,
-    TCalculateSizeStats & Stats);
+  bool CalculateFilesSize(TStrings * FileList, __int64 & Size, TCalculateSizeParams & Params);
   bool __fastcall CalculateLocalFilesSize(TStrings * FileList, __int64 & Size,
     const TCopyParamType * CopyParam, bool AllowDirs, TStrings * Files, TCalculatedSizes * CalculatedSizes);
   void __fastcall CalculateFilesChecksum(const UnicodeString & Alg, TStrings * FileList,
@@ -729,15 +727,21 @@ struct TCalculateSizeStats
 //---------------------------------------------------------------------------
 struct TCalculateSizeParams
 {
+friend class TTerminal;
+
+public:
   TCalculateSizeParams();
 
-  __int64 Size;
   int Params;
   const TCopyParamType * CopyParam;
   TCalculateSizeStats * Stats;
   bool AllowDirs;
+  bool UseCache;
+
+private:
   TCollectedFileList * Files;
   UnicodeString LastDirPath;
+  __int64 Size;
   bool Result;
 };
 //---------------------------------------------------------------------------
