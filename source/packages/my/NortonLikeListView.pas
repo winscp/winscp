@@ -547,8 +547,9 @@ procedure TCustomNortonLikeListView.WMSysCommand(var Message: TWMSysCommand);
 begin
   // Ugly workaround to avoid Windows beeping when Alt+Grey +/- are pressed
   // (for (Us)Select File with Same Ext commands)
+  // The same for Alt+Enter (for Properties)
   if (Message.CmdType = SC_KEYMENU) and
-     ((Message.Key = Word('+')) or (Message.Key = Word('-'))) then
+     ((Message.Key = Word('+')) or (Message.Key = Word('-')) or (Message.Key = VK_RETURN)) then
   begin
     Message.Result := 1;
   end
