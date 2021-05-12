@@ -7,6 +7,7 @@
 
 #include "CustomScpExplorer.h"
 
+#include <algorithm>
 #include <Bookmarks.h>
 #include <Interface.h>
 #include <Exceptions.h>
