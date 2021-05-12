@@ -249,7 +249,7 @@ void __fastcall TEditorManager::Check()
     TDateTime NewTimestamp;
     if (HasFileChanged(Index, NewTimestamp))
     {
-      TDateTime N = Now();
+      TDateTime N = NormalizeTimestamp(Now());
       // Let the editor finish writing to the file
       // (first to avoid uploading partially saved file, second
       // because the timestamp may change more than once during saving).
@@ -459,13 +459,18 @@ bool __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
   return Result;
 }
 //---------------------------------------------------------------------------
+TDateTime TEditorManager::NormalizeTimestamp(const TDateTime & Timestamp)
+{
+  return TTimeZone::Local->ToUniversalTime(Timestamp);
+}
+//---------------------------------------------------------------------------
 bool TEditorManager::GetFileTimestamp(const UnicodeString & FileName, TDateTime & Timestamp)
 {
   TSearchRecSmart ASearchRec;
   bool Result = FileSearchRec(FileName, ASearchRec);
   if (Result)
   {
-    Timestamp = TTimeZone::Local->ToUniversalTime(ASearchRec.GetLastWriteTime());
+    Timestamp = NormalizeTimestamp(ASearchRec.GetLastWriteTime());
   }
   return Result;
 }
