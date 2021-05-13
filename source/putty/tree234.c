@@ -1211,12 +1211,12 @@ int chknode(chkctx * ctx, int level, node234 * node,
 
 void verify(void)
 {
-    chkctx ctx;
+    chkctx ctx[1];
     int i;
     void *p;
 
-    ctx.treedepth = -1;                /* depth unknown yet */
-    ctx.elemcount = 0;                 /* no elements seen yet */
+    ctx->treedepth = -1;                /* depth unknown yet */
+    ctx->elemcount = 0;                 /* no elements seen yet */
     /*
      * Verify validity of tree properties.
      */
@@ -1225,7 +1225,7 @@ void verify(void)
             error("root->parent is %p should be null", tree->root->parent);
         chknode(&ctx, 0, tree->root, NULL, NULL);
     }
-    printf("tree depth: %d\n", ctx.treedepth);
+    printf("tree depth: %d\n", ctx->treedepth);
     /*
      * Enumerate the tree and ensure it matches up to the array.
      */
@@ -1236,17 +1236,17 @@ void verify(void)
             error("enum at position %d: array says %s, tree says %s",
                   i, array[i], p);
     }
-    if (ctx.elemcount != i) {
+    if (ctx->elemcount != i) {
         error("tree really contains %d elements, enum gave %d",
-              ctx.elemcount, i);
+              ctx->elemcount, i);
     }
     if (i < arraylen) {
         error("enum gave only %d elements, array has %d", i, arraylen);
     }
     i = count234(tree);
-    if (ctx.elemcount != i) {
+    if (ctx->elemcount != i) {
         error("tree really contains %d elements, count234 gave %d",
-              ctx.elemcount, i);
+              ctx->elemcount, i);
     }
 }
 

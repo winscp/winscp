@@ -520,37 +520,6 @@ connection made by another copy of PuTTY, you might find the
 which host key it should be expecting. See \k{config-loghost} for
 details of this.
 
-\H{using-rawprot} Making \i{raw TCP connections}
-
-A lot of \I{debugging Internet protocols}Internet protocols are
-composed of commands and responses in plain text. For example,
-\i{SMTP} (the protocol used to transfer e-mail), \i{NNTP} (the
-protocol used to transfer Usenet news), and \i{HTTP} (the protocol
-used to serve Web pages) all consist of commands in readable plain
-text.
-
-Sometimes it can be useful to connect directly to one of these
-services and speak the protocol \q{by hand}, by typing protocol
-commands and watching the responses. On Unix machines, you can do
-this using the system's \c{telnet} command to connect to the right
-port number. For example, \c{telnet mailserver.example.com 25} might
-enable you to talk directly to the SMTP service running on a mail
-server.
-
-Although the Unix \c{telnet} program provides this functionality,
-the protocol being used is not really Telnet. Really there is no
-actual protocol at all; the bytes sent down the connection are
-exactly the ones you type, and the bytes shown on the screen are
-exactly the ones sent by the server. Unix \c{telnet} will attempt to
-detect or guess whether the service it is talking to is a real
-Telnet service or not; PuTTY prefers to be told for certain.
-
-In order to make a debugging connection to a service of this type,
-you simply select the fourth protocol name, \I{\q{Raw}
-protocol}\q{Raw}, from the \q{Protocol} buttons in the \q{Session}
-configuration panel. (See \k{config-hostname}.) You can then enter a
-host name and a port number, and make the connection.
-
 \H{using-serial} Connecting to a local serial line
 
 PuTTY can connect directly to a local serial line as an alternative
@@ -582,6 +551,93 @@ connection to notify the other that the connection is finished.
 Therefore, PuTTY in serial mode will remain connected until you
 close the window using the close button.
 
+\H{using-rawprot} Making \i{raw TCP connections}
+
+A lot of \I{debugging Internet protocols}Internet protocols are
+composed of commands and responses in plain text. For example,
+\i{SMTP} (the protocol used to transfer e-mail), \i{NNTP} (the
+protocol used to transfer Usenet news), and \i{HTTP} (the protocol
+used to serve Web pages) all consist of commands in readable plain
+text.
+
+Sometimes it can be useful to connect directly to one of these
+services and speak the protocol \q{by hand}, by typing protocol
+commands and watching the responses. On Unix machines, you can do
+this using the system's \c{telnet} command to connect to the right
+port number. For example, \c{telnet mailserver.example.com 25} might
+enable you to talk directly to the SMTP service running on a mail
+server.
+
+Although the Unix \c{telnet} program provides this functionality,
+the protocol being used is not really Telnet. Really there is no
+actual protocol at all; the bytes sent down the connection are
+exactly the ones you type, and the bytes shown on the screen are
+exactly the ones sent by the server. Unix \c{telnet} will attempt to
+detect or guess whether the service it is talking to is a real
+Telnet service or not; PuTTY prefers to be told for certain.
+
+In order to make a debugging connection to a service of this type,
+you simply select the fourth protocol name, \I{\q{Raw}
+protocol}\q{Raw}, from the \q{Protocol} buttons in the \q{Session}
+configuration panel. (See \k{config-hostname}.) You can then enter a
+host name and a port number, and make the connection.
+
+\H{using-telnet} Connecting using the \i{Telnet} protocol
+
+PuTTY can use the Telnet protocol to connect to a server.
+
+Telnet was perhaps the most popular remote login protocol before SSH
+was introduced. It was general enough to be used by multiple server
+operating systems (Unix and VMS in particular), and supported many
+optional protocol extensions providing extra support for particular
+server features.
+
+Unlike SSH, Telnet runs over an unsecured network connection, so it is
+a very bad idea to use it over the hostile Internet (though it is
+still used to some extent as of 2020).
+
+\H{using-rlogin} Connecting using the \i{Rlogin} protocol
+
+PuTTY can use the Rlogin protocol to connect to a server.
+
+Rlogin was similar to Telnet in concept, but more focused on
+connections between Unix machines. It supported a feature for
+passwordless login, based on use of \q{privileged ports} (ports with
+numbers below 1024, which Unix traditionally does not allow users
+other than \cw{root} to allocate). Ultimately, based on the server
+trusting that the client's IP address was owned by the Unix machine it
+claimed to be, and that that machine would guard its privileged ports
+appropriately.
+
+Like Telnet, Rlogin runs over an unsecured network connection.
+
+\H{using-supdup} Connecting using the \i{SUPDUP} protocol
+
+PuTTY can use the SUPDUP protocol to connect to a server.
+
+SUPDUP is a login protocol used mainly by PDP-10 and Lisp machines
+during the period 1975-1990. Like Telnet and Rlogin, it is unsecured,
+so modern systems almost never support it.
+
+To make a connection of this type, select \q{SUPDUP} from the
+\q{Connection type} radio buttons on the \q{Session} panel (see
+\k{config-hostname}). For further configuration options (character
+set, more processing, scrolling), you can use the \q{SUPDUP}
+configuration panel (see \k{config-supdup}).
+
+In SUPDUP, terminal emulation is more integrated with the network
+protocol than in other protocols such as SSH. The SUPDUP protocol can
+thus only be used with PuTTY proper, not with the command-line tool
+Plink.
+
+The SUPDUP protocol does not support changing the terminal dimensions,
+so this capability is disabled during a SUPDUP session.
+
+SUPDUP provides no well defined means for one end of the connection to
+notify the other that the connection is finished.  Therefore, PuTTY in
+SUPDUP mode will remain connected until you close the window using the
+close button.
+
 \H{using-cmdline} The PuTTY command line
 
 PuTTY can be made to do various things without user intervention by
@@ -590,13 +646,13 @@ window}, or a \i{Windows shortcut}).
 
 \S{using-cmdline-session} Starting a session from the command line
 
-\I\c{-ssh}\I\c{-telnet}\I\c{-rlogin}\I\c{-raw}\I\c{-serial}These
+\I\c{-ssh}\I\c{-ssh-connection}\I\c{-telnet}\I\c{-rlogin}\I\c{-supdup}\I\c{-raw}\I\c{-serial}These
 options allow you to bypass the configuration window and launch
 straight into a session.
 
 To start a connection to a server called \c{host}:
 
-\c putty.exe [-ssh | -telnet | -rlogin | -raw] [user@]host
+\c putty.exe [-ssh | -ssh-connection | -telnet | -rlogin | -supdup | -raw] [user@]host
 
 If this syntax is used, settings are taken from the \i{Default Settings}
 (see \k{config-saving}); \c{user} overrides these settings if
@@ -662,23 +718,31 @@ must be the very first thing on the command line. This form of the
 option is deprecated.)
 
 \S2{using-cmdline-protocol} Selecting a protocol: \c{-ssh},
-\c{-telnet}, \c{-rlogin}, \c{-raw} \c{-serial}
+\c{-ssh-connection}, \c{-telnet}, \c{-rlogin}, \c{-supdup},
+\c{-raw}, \c{-serial}
 
 To choose which protocol you want to connect with, you can use one
 of these options:
 
 \b \i\c{-ssh} selects the SSH protocol.
 
+\b \i\c{-ssh-connection} selects the bare ssh-connection protocol.
+(This is only useful in specialised circumstances; see \k{config-psusan}
+for more information.)
+
 \b \i\c{-telnet} selects the Telnet protocol.
 
 \b \i\c{-rlogin} selects the Rlogin protocol.
+
+\b \i\c{-supdup} selects the SUPDUP protocol.
 
 \b \i\c{-raw} selects the raw protocol.
 
 \b \i\c{-serial} selects a serial connection.
 
-These options are not available in the file transfer tools PSCP and
-PSFTP (which only work with the SSH protocol).
+Most of these options are not available in the file transfer tools
+PSCP and PSFTP (which only work with the SSH protocol and the bare
+ssh-connection protocol).
 
 These options are equivalent to the \i{protocol selection} buttons
 in the Session panel of the PuTTY configuration box (see
@@ -782,8 +846,9 @@ security. If you possibly can, we recommend you set up public-key
 authentication instead. See \k{pubkey} for details.
 
 Note that the \c{-pw} option only works when you are using the SSH
-protocol. Due to fundamental limitations of Telnet and Rlogin, these
-protocols do not support automated password authentication.
+protocol. Due to fundamental limitations of Telnet, Rlogin, and
+SUPDUP, these protocols do not support automated password
+authentication.
 
 \S2{using-cmdline-agentauth} \i\c{-agent} and \i\c{-noagent}:
 control use of Pageant for authentication
@@ -1003,7 +1068,7 @@ For example, \cq{-sercfg 19200,8,n,1,N} denotes a baud rate of
 19200, 8 data bits, no parity, 1 stop bit and no flow control.
 
 \S2{using-cmdline-sshlog} \i\c{-sessionlog}, \i\c{-sshlog},
-\i\c{-sshrawlog}: specify session logging
+\i\c{-sshrawlog}: enable session logging
 
 These options cause the PuTTY network tools to write out a \i{log
 file}. Each of them expects a file name as an argument, e.g.
@@ -1018,6 +1083,14 @@ different logging modes, all available from the GUI too:
 \b \c{-sshrawlog} selects \q{SSH packets and raw data} logging mode.
 
 For more information on logging configuration, see \k{config-logging}.
+
+\S2{using-cmdline-logfileexists} \i\c{-logoverwrite}, \i\c{-logappend}:
+control behaviour with existing log file
+
+If logging has been enabled (in the saved configuration, or by another
+command-line option), and the specified log file already exists, these
+options tell the PuTTY network tools what to do so that they don't
+have to ask the user. See \k{config-logfileexists} for details.
 
 \S2{using-cmdline-proxycmd} \i\c{-proxycmd}: specify a local proxy
 command
@@ -1060,7 +1133,7 @@ proxy command, you'll need to arrange to pass them the
 \c{-restrict-acl} option yourself, if that's what you want.)
 
 If Pageant is started with the \c{-restrict-acl} option, and you use
-it to launch a PuTTY session from its System Tray submenu, then
+it to launch a PuTTY session from its \ii{System Tray} submenu, then
 Pageant will \e{not} default to starting the PuTTY subprocess with a
 restricted ACL. This is because PuTTY is more likely to suffer reduced
 functionality as a result of restricted ACLs (e.g. screen reader

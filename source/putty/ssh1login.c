@@ -78,16 +78,16 @@ static bool ssh1_login_want_user_input(PacketProtocolLayer *ppl);
 static void ssh1_login_got_user_input(PacketProtocolLayer *ppl);
 static void ssh1_login_reconfigure(PacketProtocolLayer *ppl, Conf *conf);
 
-static const struct PacketProtocolLayerVtable ssh1_login_vtable = {
-    ssh1_login_free,
-    ssh1_login_process_queue,
-    ssh1_common_get_specials,
-    ssh1_login_special_cmd,
-    ssh1_login_want_user_input,
-    ssh1_login_got_user_input,
-    ssh1_login_reconfigure,
-    ssh_ppl_default_queued_data_size,
-    NULL /* no layer names in SSH-1 */,
+static const PacketProtocolLayerVtable ssh1_login_vtable = {
+    .free = ssh1_login_free,
+    .process_queue = ssh1_login_process_queue,
+    .get_specials = ssh1_common_get_specials,
+    .special_cmd = ssh1_login_special_cmd,
+    .want_user_input = ssh1_login_want_user_input,
+    .got_user_input = ssh1_login_got_user_input,
+    .reconfigure = ssh1_login_reconfigure,
+    .queued_data_size = ssh_ppl_default_queued_data_size,
+    .name = NULL, /* no layer names in SSH-1 */
 };
 
 static void ssh1_login_agent_query(struct ssh1_login_state *s, strbuf *req);
@@ -244,23 +244,24 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
         /*
          * First format the key into a string.
          */
-        char *fingerprint;
         char *keystr = rsastr_fmt(&s->hostkey);
-        fingerprint = rsa_ssh1_fingerprint(&s->hostkey);
+        char **fingerprints = rsa_ssh1_fake_all_fingerprints(&s->hostkey);
 
         /* First check against manually configured host keys. */
-        s->dlgret = verify_ssh_manual_host_key(s->conf, fingerprint, NULL);
+        s->dlgret = verify_ssh_manual_host_key(s->conf, fingerprints, NULL);
         if (s->dlgret == 0) {          /* did not match */
-            sfree(fingerprint);
+            ssh2_free_all_fingerprints(fingerprints);
             sfree(keystr);
             ssh_proto_error(s->ppl.ssh, "Host key did not appear in manually "
                             "configured list");
             return;
         } else if (s->dlgret < 0) { /* none configured; use standard handling */
+            char *keydisp = ssh1_pubkey_str(&s->hostkey);
             s->dlgret = seat_verify_ssh_host_key(
-                s->ppl.seat, s->savedhost, s->savedport,
-                "rsa", keystr, fingerprint, ssh1_login_dialog_callback, s);
-            sfree(fingerprint);
+                s->ppl.seat, s->savedhost, s->savedport, "rsa", keystr,
+                keydisp, fingerprints, ssh1_login_dialog_callback, s);
+            sfree(keydisp);
+            ssh2_free_all_fingerprints(fingerprints);
             sfree(keystr);
 #ifdef FUZZING
             s->dlgret = 1;
@@ -273,7 +274,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 return;
             }
         } else {
-            sfree(fingerprint);
+            ssh2_free_all_fingerprints(fingerprints);
             sfree(keystr);
         }
     }
@@ -438,7 +439,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
     pq_push(s->ppl.out_pq, pkt);
 
     ppl_logevent("Sent username \"%s\"", s->username);
-    if ((flags & FLAG_VERBOSE) || (flags & FLAG_INTERACTIVE))
+    if (seat_verbose(s->ppl.seat) || seat_interactive(s->ppl.seat))
         ppl_printf("Sent username \"%s\"\r\n", s->username);
 
     crMaybeWaitUntilV((pktin = ssh1_login_pop(s)) != NULL);
@@ -463,13 +464,13 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
             keytype == SSH_KEYTYPE_SSH1_PUBLIC) {
             const char *error;
             s->publickey_blob = strbuf_new();
-            if (rsa_ssh1_loadpub(s->keyfile,
-                                 BinarySink_UPCAST(s->publickey_blob),
-                                 &s->publickey_comment, &error)) {
+            if (rsa1_loadpub_f(s->keyfile,
+                               BinarySink_UPCAST(s->publickey_blob),
+                               &s->publickey_comment, &error)) {
                 s->privatekey_available = (keytype == SSH_KEYTYPE_SSH1);
                 if (!s->privatekey_available)
                     ppl_logevent("Key file contains public key only");
-                s->privatekey_encrypted = rsa_ssh1_encrypted(s->keyfile, NULL);
+                s->privatekey_encrypted = rsa1_encrypted_f(s->keyfile, NULL);
             } else {
                 ppl_logevent("Unable to load key (%s)", error);
                 ppl_printf("Unable to load key file \"%s\" (%s)\r\n",
@@ -650,7 +651,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                             if (pktin->type == SSH1_SMSG_SUCCESS) {
                                 ppl_logevent("Pageant's response "
                                              "accepted");
-                                if (flags & FLAG_VERBOSE) {
+                                if (seat_verbose(s->ppl.seat)) {
                                     ptrlen comment = ptrlen_from_strbuf(
                                         s->agent_keys[s->agent_key_index].
                                         comment);
@@ -685,7 +686,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
              * key file.
              */
             bool got_passphrase; /* need not be kept over crReturn */
-            if (flags & FLAG_VERBOSE)
+            if (seat_verbose(s->ppl.seat))
                 ppl_printf("Trying public key authentication.\r\n");
             ppl_logevent("Trying public key \"%s\"",
                          filename_to_str(s->keyfile));
@@ -699,7 +700,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 char *passphrase = NULL;    /* only written after crReturn */
                 const char *error;
                 if (!s->privatekey_encrypted) {
-                    if (flags & FLAG_VERBOSE)
+                    if (seat_verbose(s->ppl.seat))
                         ppl_printf("No passphrase required.\r\n");
                     passphrase = NULL;
                 } else {
@@ -738,8 +739,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 /*
                  * Try decrypting key with passphrase.
                  */
-                retd = rsa_ssh1_loadkey(
-                    s->keyfile, &s->key, passphrase, &error);
+                retd = rsa1_load_f(s->keyfile, &s->key, passphrase, &error);
                 if (passphrase) {
                     smemclr(passphrase, strlen(passphrase));
                     sfree(passphrase);
@@ -757,7 +757,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                     got_passphrase = false;
                     /* and try again */
                 } else {
-                    unreachable("unexpected return from rsa_ssh1_loadkey()");
+                    unreachable("unexpected return from rsa1_load_f()");
                 }
             }
 
@@ -822,7 +822,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                 crMaybeWaitUntilV((pktin = ssh1_login_pop(s))
                                   != NULL);
                 if (pktin->type == SSH1_SMSG_FAILURE) {
-                    if (flags & FLAG_VERBOSE)
+                    if (seat_verbose(s->ppl.seat))
                         ppl_printf("Failed to authenticate with"
                                    " our public key.\r\n");
                     continue;          /* go and try something else */
@@ -855,7 +855,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
             crMaybeWaitUntilV((pktin = ssh1_login_pop(s)) != NULL);
             if (pktin->type == SSH1_SMSG_FAILURE) {
                 ppl_logevent("TIS authentication declined");
-                if (flags & FLAG_INTERACTIVE)
+                if (seat_interactive(s->ppl.seat))
                     ppl_printf("TIS authentication refused.\r\n");
                 s->tis_auth_refused = true;
                 continue;
@@ -1110,7 +1110,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
         s->cur_prompt = NULL;
         crMaybeWaitUntilV((pktin = ssh1_login_pop(s)) != NULL);
         if (pktin->type == SSH1_SMSG_FAILURE) {
-            if (flags & FLAG_VERBOSE)
+            if (seat_verbose(s->ppl.seat))
                 ppl_printf("Access denied\r\n");
             ppl_logevent("Authentication refused");
         } else if (pktin->type != SSH1_SMSG_SUCCESS) {

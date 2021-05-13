@@ -11,7 +11,8 @@ format. See \k{pubkey} to find out how to generate and use one.
 
 When you run Pageant, it will put an icon of a computer wearing a
 hat into the \ii{System tray}. It will then sit and do nothing, until you
-load a private key into it.
+load a private key into it. (You may need to use Windows'
+\q{Show hidden icons} arrow to see the Pageant icon.)
 
 If you click the Pageant icon with the right mouse button, you will
 see a menu. Select \q{View Keys} from this menu. The Pageant main
@@ -46,6 +47,9 @@ When you want to shut down Pageant, click the right button on the
 Pageant icon in the System tray, and select \q{Exit} from the menu.
 Closing the Pageant main window does \e{not} shut down Pageant.
 
+If you want Pageant to stay running but forget all the keys it has
+acquired, select \q{Remove All Keys} from the System tray menu.
+
 \H{pageant-mainwin} The Pageant main window
 
 The Pageant main window appears when you left-click on the Pageant
@@ -60,8 +64,8 @@ The large list box in the Pageant main window lists the private keys
 that are currently loaded into Pageant. The list might look
 something like this:
 
-\c ssh-rsa 2048 22:d6:69:c9:22:51:ac:cb:b9:15:67:47:f7:65:6d:d7 k1
-\c ssh-dss 2048 e4:6c:69:f3:4f:fc:cf:fc:96:c0:88:34:a7:1e:59:d7 k2
+\c ssh-ed25519  SHA256:TddlQk20DVs4LRcAsIfDN9pInKpY06D+h4kSHwWAj4w
+\c ssh-rsa 2048 SHA256:8DFtyHm3kQihgy52nzX96qMcEVOq7/yJmmwQQhBWYFg
 
 For each key, the list box will tell you:
 
@@ -70,16 +74,28 @@ For each key, the list box will tell you:
 \c{ssh-dss} (a DSA key for use with the SSH-2 protocol),
 \c{ecdsa-sha2-*} (an ECDSA key for use with the SSH-2 protocol),
 \c{ssh-ed25519} (an Ed25519 key for use with the SSH-2 protocol),
+\c{ssh-ed448} (an Ed448 key for use with the SSH-2 protocol),
 or \c{ssh1} (an RSA key for use with the old SSH-1 protocol).
 
-\b The size (in bits) of the key.
+\b The size (in bits) of the key, for key types that come in different
+sizes.
 
 \b The \I{key fingerprint}fingerprint for the public key. This should be
 the same fingerprint given by PuTTYgen, and (hopefully) also the same
 fingerprint shown by remote utilities such as \i\c{ssh-keygen} when
 applied to your \c{authorized_keys} file.
 
+\lcont{
+By default this is shown in the \q{SHA256} format. You can change to the
+older \q{MD5} format (which looks like \c{aa:bb:cc:...}) with the
+\q{Fingerprint type} drop-down, but bear in mind that this format is
+less secure and should be avoided for comparison purposes where possible.
+}
+
 \b The comment attached to the key.
+
+\b The state of deferred decryption, if enabled for this key.
+See \k{pageant-deferred-decryption}.
 
 \S{pageant-mainwin-addkey} The \q{Add Key} button
 
@@ -138,6 +154,9 @@ passphrases on startup.
 If Pageant is already running, this syntax loads keys into the
 existing Pageant.
 
+You can specify the \cq{--encrypted} option to defer decryption of
+these keys; see \k{pageant-deferred-decryption}.
+
 \S{pageant-cmdline-command} Making Pageant run another program
 
 You can arrange for Pageant to start another program once it has
@@ -150,6 +169,11 @@ You do this by specifying the \I{-c-pageant}\c{-c} option followed
 by the command, like this:
 
 \c C:\PuTTY\pageant.exe d:\main.ppk -c C:\PuTTY\putty.exe
+
+\S{pageant-cmdline-keylist} Starting with the key list visible
+
+Start Pageant with the \i\c{--keylist} option to show the main window
+as soon as it starts up.
 
 \S{pageant-cmdline-restrict-acl} Restricting the \i{Windows process ACL}
 
@@ -220,6 +244,50 @@ you can send it all the way back to Pageant using the local
 
 and then it's available to every machine that has agent forwarding
 available (not just the ones downstream of the place you added it).
+
+\H{pageant-deferred-decryption} Loading keys without decrypting them
+
+You can add keys to Pageant \e{without} decrypting them. The key
+file will be held in Pageant's memory still encrypted, and when a
+client program first tries to use the key, Pageant will display a
+dialog box prompting for the passphrase so that the key can be
+decrypted.
+
+This works the same way whether the key is used by an instance of
+PuTTY running locally, or a remote client connecting to Pageant
+through agent forwarding.
+
+To add a key to Pageant in this encrypted form, press the \q{Add Key
+(encrypted)} button in the Pageant main window, or alternatively
+right-click on the Pageant icon in the system tray and select \q{Add
+Key (encrypted)} from there. Pageant will bring up a file dialog, in
+just the same way as it would for the plain \q{Add Key} button. But it
+won't ask for a passphrase. Instead, the key will be listed in the
+main window with \q{(encrypted)} after it.
+
+To start Pageant up in the first place with encrypted keys loaded into
+it, you can use the \cq{--encrypted} option on the command line. For
+example:
+
+\c C:\PuTTY\pageant.exe --encrypted d:\main.ppk
+
+After a key has been decrypted for the first use, it remains
+decrypted, so that it can be used again. The main window will list
+the key with \q{(\i{re-encryptable})} after it. You can revert it
+to the previous state, where a passphrase is required, using the
+\q{\i{Re-encrypt}} button in the Pageant main window.
+
+You can also \q{re-encrypt} all keys that were added encrypted by
+choosing \q{Re-encrypt All Keys} from the System tray menu.
+(Note that this does \e{not} discard cleartext keys that were not
+previously added encrypted!)
+
+\s{CAUTION}: When Pageant displays a prompt to decrypt an
+already-loaded key, it cannot give keyboard focus to the prompt dialog
+box. As far as I know this is a deliberate defensive measure by
+Windows, against malicious software. So make sure you click in the
+prompt window before typing your passphrase, or else the passphrase
+might be sent to somewhere you didn't want to trust with it!
 
 \H{pageant-security} Security considerations
 

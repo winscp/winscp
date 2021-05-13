@@ -18,15 +18,15 @@ you want to connect to. You should have been told this by the
 provider of your login account.
 
 Now select a login \i{protocol} to use, from the \q{Connection type}
-buttons. For a login session, you should select \i{Telnet},
-\i{Rlogin} or \i{SSH}. See \k{which-one} for a description of the
-differences between the three protocols, and advice on which one to
-use. The fourth protocol, \I{raw protocol}\e{Raw}, is not used for
-interactive login sessions; you would usually use this for debugging
-other Internet services (see \k{using-rawprot}). The fifth option,
-\e{Serial}, is used for connecting to a local serial line, and works
-somewhat differently: see \k{using-serial} for more information on
-this.
+controls. For a login session, you should select \i{SSH}, \i{Telnet},
+\i{Rlogin}, or \i{SUPDUP}. See \k{which-one} for a description of the
+differences between these protocols, and advice on which one to
+use. The \I{raw protocol}\e{Raw} protocol is not used for interactive
+login sessions; you would usually use this for debugging other Internet
+services (see \k{using-rawprot}). The \e{Serial} option is used for
+connecting to a local serial line, and works somewhat differently:
+see \k{using-serial} for more information on this.
+\#{FIXME: describe bare ssh-connection}
 
 When you change the selected protocol, the number in the \q{Port}
 box will change. This is normal: it happens because the various
@@ -37,7 +37,7 @@ provides login services on a non-standard port, your system
 administrator should have told you which one. (For example, many
 \i{MUDs} run Telnet service on a port other than 23.)
 
-Once you have filled in the \q{Host Name}, \q{Protocol}, and
+Once you have filled in the \q{Host Name}, \q{Connection type}, and
 possibly \q{Port} settings, you are ready to connect. Press the
 \q{Open} button at the bottom of the dialog box, and PuTTY will
 begin trying to connect you to the server.
@@ -50,17 +50,15 @@ section.
 If you are using SSH to connect to a server for the first time, you
 will probably see a message looking something like this:
 
-\c The server's host key is not cached in the registry. You
-\c have no guarantee that the server is the computer you
-\c think it is.
-\c The server's rsa2 key fingerprint is:
-\c ssh-rsa 1024 7b:e5:6f:a7:f4:f9:81:62:5c:e3:1f:bf:8b:57:6c:5a
-\c If you trust this host, hit Yes to add the key to
-\c PuTTY's cache and carry on connecting.
-\c If you want to carry on connecting just once, without
-\c adding the key to the cache, hit No.
-\c If you do not trust this host, hit Cancel to abandon the
-\c connection.
+\c The server's host key is not cached in the registry. You have no
+\c guarantee that the server is the computer you think it is.
+\c The server's ssh-ed25519 key fingerprint is:
+\c  ssh-ed25519 255 SHA256:TddlQk20DVs4LRcAsIfDN9pInKpY06D+h4kSHwWAj4w
+\c If you trust this host, press "Accept" to add the key to PuTTY's
+\c cache and carry on connecting.
+\c If you want to carry on connecting just once, without adding the key
+\c to the cache, press "Connect Once".
+\c If you do not trust this host, press "Cancel" to abandon the connection.
 
 This is a feature of the SSH protocol. It is designed to protect you
 against a network attack known as \i\e{spoofing}: secretly
@@ -83,7 +81,8 @@ server, it checks that the host key presented by the server is the
 same host key as it was the last time you connected. If it is not,
 you will see a warning, and you will have the chance to abandon your
 connection before you type any private information (such as a
-password) into it.
+password) into it. (See \k{errors-hostkey-wrong} for what that looks
+like.)
 
 However, when you connect to a server you have not connected to
 before, PuTTY has no way of telling whether the host key is the
@@ -97,10 +96,26 @@ network users are on the same side and spoofing attacks are
 unlikely, so you might choose to trust the key without checking it.
 If you are connecting across a hostile network (such as the
 Internet), you should check with your system administrator, perhaps
-by telephone or in person. (Many servers have more than one
-host key. If the system administrator sends you more than one
-\I{host key fingerprint}fingerprint, you should make sure the one
-PuTTY shows you is on the list, but it doesn't matter which one it is.)
+by telephone or in person. (When verifying the fingerprint, be careful
+with letters and numbers that can be confused with each other:
+\c{0}/\c{O}, \c{1}/\c{I}/\c{l}, and so on.)
+
+Many servers have more than one host key. If the system administrator
+sends you more than one \I{host key fingerprint}fingerprint, you should
+make sure the one PuTTY shows you is on the list, but it doesn't matter
+which one it is.
+
+If you don't have any fingerprints that look like the example
+(\I{SHA256 fingerprint}\c{SHA256:} followed by a long string of
+characters), but instead have pairs of characters separated by colons
+like \c{a4:db:96:a7:...}, try pressing the \q{More info...} button and
+see if you have a fingerprint matching the \q{\i{MD5 fingerprint}}
+there. This is an older and less secure way to summarise the same
+underlying host key; it's possible for an attacker to create their
+own host key with the same fingerprint; so you should avoid relying on
+this fingerprint format unless you have no choice. The
+\q{More info...} dialog box also shows the full host public key, in
+case that is easier to compare than a fingerprint.
 
 See \k{config-ssh-hostkey} for advanced options for managing host keys.
 

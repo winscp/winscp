@@ -15,7 +15,7 @@
 int platform_ssh_share(const char *name, Conf *conf,
                        Plug *downplug, Plug *upplug, Socket **sock,
                        char **logtext, char **ds_err, char **us_err,
-                       int can_upstream, int can_downstream)
+                       bool can_upstream, bool can_downstream)
 {
     return SHARE_NONE;
 }

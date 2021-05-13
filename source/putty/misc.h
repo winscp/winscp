@@ -189,6 +189,10 @@ int string_length_for_printf(size_t);
  * string. */
 #define PTRLEN_LITERAL(stringlit) \
     TYPECHECK("" stringlit "", make_ptrlen(stringlit, sizeof(stringlit)-1))
+/* Make a ptrlen out of a compile-time string literal in a way that
+ * allows you to declare the ptrlen itself as a compile-time initialiser. */
+#define PTRLEN_DECL_LITERAL(stringlit) \
+    { TYPECHECK("" stringlit "", stringlit), sizeof(stringlit)-1 }
 /* Make a ptrlen out of a constant byte array. */
 #define PTRLEN_FROM_CONST_BYTES(a) make_ptrlen(a, sizeof(a))
 
@@ -210,6 +214,9 @@ bool smemeq(const void *av, const void *bv, size_t len);
  * (such as things in the surrogate range, or > 0x10FFFF) have already
  * been removed. */
 size_t encode_utf8(void *output, unsigned long ch);
+
+/* Write a string out in C string-literal format. */
+void write_c_string_literal(FILE *fp, ptrlen str);
 
 char *buildinfo(const char *newline);
 
@@ -401,5 +408,35 @@ static inline char *stripctrl_string(StripCtrlChars *sccpub, const char *str)
 {
     return stripctrl_string_ptrlen(sccpub, ptrlen_from_asciz(str));
 }
+
+/*
+ * A mechanism for loading a file from disk into a memory buffer where
+ * it can be picked apart as a BinarySource.
+ */
+struct LoadedFile {
+    char *data;
+    size_t len, max_size;
+    BinarySource_IMPLEMENTATION;
+};
+typedef enum {
+    LF_OK,      /* file loaded successfully */
+    LF_TOO_BIG, /* file didn't fit in buffer */
+    LF_ERROR,   /* error from stdio layer */
+} LoadFileStatus;
+LoadedFile *lf_new(size_t max_size);
+void lf_free(LoadedFile *lf);
+LoadFileStatus lf_load_fp(LoadedFile *lf, FILE *fp);
+LoadFileStatus lf_load(LoadedFile *lf, const Filename *filename);
+static inline ptrlen ptrlen_from_lf(LoadedFile *lf)
+{ return make_ptrlen(lf->data, lf->len); }
+
+/* Set the memory block of 'size' bytes at 'out' to the bitwise XOR of
+ * the two blocks of the same size at 'in1' and 'in2'.
+ *
+ * 'out' may point to exactly the same address as one of the inputs,
+ * but if the input and output blocks overlap in any other way, the
+ * result of this function is not guaranteed. No memmove-style effort
+ * is made to handle difficult overlap cases. */
+void memxor(uint8_t *out, const uint8_t *in1, const uint8_t *in2, size_t size);
 
 #endif

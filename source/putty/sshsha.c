@@ -98,8 +98,10 @@ static ssh_hash *sha1_select(const ssh_hashalg *alg)
 }
 
 const ssh_hashalg ssh_sha1 = {
-    sha1_select, NULL, NULL, NULL,
-    20, 64, HASHALG_NAMES_ANNOTATED("SHA-1", "dummy selector vtable"),
+    .new = sha1_select,
+    .hlen = 20,
+    .blocklen = 64,
+    HASHALG_NAMES_ANNOTATED("SHA-1", "dummy selector vtable"),
 };
 
 /* ----------------------------------------------------------------------
@@ -259,26 +261,28 @@ static ssh_hash *sha1_sw_new(const ssh_hashalg *alg)
 {
     sha1_sw *s = snew(sha1_sw);
 
-    memcpy(s->core, sha1_initial_state, sizeof(s->core));
-
-    sha1_block_setup(&s->blk);
-
     s->hash.vt = alg;
     BinarySink_INIT(s, sha1_sw_write);
     BinarySink_DELEGATE_INIT(&s->hash, s);
     return &s->hash;
 }
 
-static ssh_hash *sha1_sw_copy(ssh_hash *hash)
+static void sha1_sw_reset(ssh_hash *hash)
 {
     sha1_sw *s = container_of(hash, sha1_sw, hash);
-    sha1_sw *copy = snew(sha1_sw);
 
-    memcpy(copy, s, sizeof(*copy));
+    memcpy(s->core, sha1_initial_state, sizeof(s->core));
+    sha1_block_setup(&s->blk);
+}
+
+static void sha1_sw_copyfrom(ssh_hash *hcopy, ssh_hash *horig)
+{
+    sha1_sw *copy = container_of(hcopy, sha1_sw, hash);
+    sha1_sw *orig = container_of(horig, sha1_sw, hash);
+
+    memcpy(copy, orig, sizeof(*copy));
     BinarySink_COPIED(copy);
     BinarySink_DELEGATE_INIT(&copy->hash, copy);
-
-    return &copy->hash;
 }
 
 static void sha1_sw_free(ssh_hash *hash)
@@ -298,19 +302,24 @@ static void sha1_sw_write(BinarySink *bs, const void *vp, size_t len)
             sha1_sw_block(s->core, s->blk.block);
 }
 
-static void sha1_sw_final(ssh_hash *hash, uint8_t *digest)
+static void sha1_sw_digest(ssh_hash *hash, uint8_t *digest)
 {
     sha1_sw *s = container_of(hash, sha1_sw, hash);
 
     sha1_block_pad(&s->blk, BinarySink_UPCAST(s));
     for (size_t i = 0; i < 5; i++)
         PUT_32BIT_MSB_FIRST(digest + 4*i, s->core[i]);
-    sha1_sw_free(hash);
 }
 
 const ssh_hashalg ssh_sha1_sw = {
-    sha1_sw_new, sha1_sw_copy, sha1_sw_final, sha1_sw_free,
-    20, 64, HASHALG_NAMES_ANNOTATED("SHA-1", "unaccelerated"),
+    .new = sha1_sw_new,
+    .reset = sha1_sw_reset,
+    .copyfrom = sha1_sw_copyfrom,
+    .digest = sha1_sw_digest,
+    .free = sha1_sw_free,
+    .hlen = 20,
+    .blocklen = 64,
+    HASHALG_NAMES_ANNOTATED("SHA-1", "unaccelerated"),
 };
 
 /* ----------------------------------------------------------------------
@@ -573,19 +582,12 @@ static sha1_ni *sha1_ni_alloc(void)
     return s;
 }
 
-FUNC_ISA static ssh_hash *sha1_ni_new(const ssh_hashalg *alg)
+static ssh_hash *sha1_ni_new(const ssh_hashalg *alg)
 {
     if (!sha1_hw_available_cached())
         return NULL;
 
     sha1_ni *s = sha1_ni_alloc();
-
-    /* Initialise the core vectors in their storage order */
-    s->core[0] = _mm_set_epi64x(
-        0x67452301efcdab89ULL, 0x98badcfe10325476ULL);
-    s->core[1] = _mm_set_epi32(0xc3d2e1f0, 0, 0, 0);
-
-    sha1_block_setup(&s->blk);
 
     s->hash.vt = alg;
     BinarySink_INIT(s, sha1_ni_write);
@@ -593,19 +595,29 @@ FUNC_ISA static ssh_hash *sha1_ni_new(const ssh_hashalg *alg)
     return &s->hash;
 }
 
-static ssh_hash *sha1_ni_copy(ssh_hash *hash)
+FUNC_ISA static void sha1_ni_reset(ssh_hash *hash)
 {
     sha1_ni *s = container_of(hash, sha1_ni, hash);
-    sha1_ni *copy = sha1_ni_alloc();
+
+    /* Initialise the core vectors in their storage order */
+    s->core[0] = _mm_set_epi64x(
+        0x67452301efcdab89ULL, 0x98badcfe10325476ULL);
+    s->core[1] = _mm_set_epi32(0xc3d2e1f0, 0, 0, 0);
+
+    sha1_block_setup(&s->blk);
+}
+
+static void sha1_ni_copyfrom(ssh_hash *hcopy, ssh_hash *horig)
+{
+    sha1_ni *copy = container_of(hcopy, sha1_ni, hash);
+    sha1_ni *orig = container_of(horig, sha1_ni, hash);
 
     void *ptf_save = copy->pointer_to_free;
-    *copy = *s; /* structure copy */
+    *copy = *orig; /* structure copy */
     copy->pointer_to_free = ptf_save;
 
     BinarySink_COPIED(copy);
     BinarySink_DELEGATE_INIT(&copy->hash, copy);
-
-    return &copy->hash;
 }
 
 static void sha1_ni_free(ssh_hash *hash)
@@ -626,7 +638,7 @@ static void sha1_ni_write(BinarySink *bs, const void *vp, size_t len)
             sha1_ni_block(s->core, s->blk.block);
 }
 
-FUNC_ISA static void sha1_ni_final(ssh_hash *hash, uint8_t *digest)
+FUNC_ISA static void sha1_ni_digest(ssh_hash *hash, uint8_t *digest)
 {
     sha1_ni *s = container_of(hash, sha1_ni, hash);
 
@@ -645,13 +657,17 @@ FUNC_ISA static void sha1_ni_final(ssh_hash *hash, uint8_t *digest)
     /* Finally, store the leftover word */
     uint32_t e = _mm_extract_epi32(s->core[1], 3);
     PUT_32BIT_MSB_FIRST(digest + 16, e);
-
-    sha1_ni_free(hash);
 }
 
 const ssh_hashalg ssh_sha1_hw = {
-    sha1_ni_new, sha1_ni_copy, sha1_ni_final, sha1_ni_free,
-    20, 64, HASHALG_NAMES_ANNOTATED("SHA-1", "SHA-NI accelerated"),
+    .new = sha1_ni_new,
+    .reset = sha1_ni_reset,
+    .copyfrom = sha1_ni_copyfrom,
+    .digest = sha1_ni_digest,
+    .free = sha1_ni_free,
+    .hlen = 20,
+    .blocklen = 64,
+    HASHALG_NAMES_ANNOTATED("SHA-1", "SHA-NI accelerated"),
 };
 
 /* ----------------------------------------------------------------------
@@ -813,28 +829,31 @@ static ssh_hash *sha1_neon_new(const ssh_hashalg *alg)
 
     sha1_neon *s = snew(sha1_neon);
 
-    s->core.abcd = vld1q_u32(sha1_initial_state);
-    s->core.e = sha1_initial_state[4];
-
-    sha1_block_setup(&s->blk);
-
     s->hash.vt = alg;
     BinarySink_INIT(s, sha1_neon_write);
     BinarySink_DELEGATE_INIT(&s->hash, s);
     return &s->hash;
 }
 
-static ssh_hash *sha1_neon_copy(ssh_hash *hash)
+static void sha1_neon_reset(ssh_hash *hash)
 {
     sha1_neon *s = container_of(hash, sha1_neon, hash);
-    sha1_neon *copy = snew(sha1_neon);
 
-    *copy = *s; /* structure copy */
+    s->core.abcd = vld1q_u32(sha1_initial_state);
+    s->core.e = sha1_initial_state[4];
+
+    sha1_block_setup(&s->blk);
+}
+
+static void sha1_neon_copyfrom(ssh_hash *hcopy, ssh_hash *horig)
+{
+    sha1_neon *copy = container_of(hcopy, sha1_neon, hash);
+    sha1_neon *orig = container_of(horig, sha1_neon, hash);
+
+    *copy = *orig; /* structure copy */
 
     BinarySink_COPIED(copy);
     BinarySink_DELEGATE_INIT(&copy->hash, copy);
-
-    return &copy->hash;
 }
 
 static void sha1_neon_free(ssh_hash *hash)
@@ -853,19 +872,24 @@ static void sha1_neon_write(BinarySink *bs, const void *vp, size_t len)
             sha1_neon_block(&s->core, s->blk.block);
 }
 
-static void sha1_neon_final(ssh_hash *hash, uint8_t *digest)
+static void sha1_neon_digest(ssh_hash *hash, uint8_t *digest)
 {
     sha1_neon *s = container_of(hash, sha1_neon, hash);
 
     sha1_block_pad(&s->blk, BinarySink_UPCAST(s));
     vst1q_u8(digest, vrev32q_u8(vreinterpretq_u8_u32(s->core.abcd)));
     PUT_32BIT_MSB_FIRST(digest + 16, s->core.e);
-    sha1_neon_free(hash);
 }
 
 const ssh_hashalg ssh_sha1_hw = {
-    sha1_neon_new, sha1_neon_copy, sha1_neon_final, sha1_neon_free,
-    20, 64, HASHALG_NAMES_ANNOTATED("SHA-1", "NEON accelerated"),
+    .new = sha1_neon_new,
+    .reset = sha1_neon_reset,
+    .copyfrom = sha1_neon_copyfrom,
+    .digest = sha1_neon_digest,
+    .free = sha1_neon_free,
+    .hlen = 20,
+    .blocklen = 64,
+    HASHALG_NAMES_ANNOTATED("SHA-1", "NEON accelerated"),
 };
 
 /* ----------------------------------------------------------------------
@@ -890,14 +914,20 @@ static ssh_hash *sha1_stub_new(const ssh_hashalg *alg)
 
 #define STUB_BODY { unreachable("Should never be called"); }
 
-static ssh_hash *sha1_stub_copy(ssh_hash *hash) STUB_BODY
+static void sha1_stub_reset(ssh_hash *hash) STUB_BODY
+static void sha1_stub_copyfrom(ssh_hash *hash, ssh_hash *orig) STUB_BODY
 static void sha1_stub_free(ssh_hash *hash) STUB_BODY
-static void sha1_stub_final(ssh_hash *hash, uint8_t *digest) STUB_BODY
+static void sha1_stub_digest(ssh_hash *hash, uint8_t *digest) STUB_BODY
 
 const ssh_hashalg ssh_sha1_hw = {
-    sha1_stub_new, sha1_stub_copy, sha1_stub_final, sha1_stub_free,
-    20, 64, HASHALG_NAMES_ANNOTATED(
-        "SHA-1", "!NONEXISTENT ACCELERATED VERSION!"),
+    .new = sha1_stub_new,
+    .reset = sha1_stub_reset,
+    .copyfrom = sha1_stub_copyfrom,
+    .digest = sha1_stub_digest,
+    .free = sha1_stub_free,
+    .hlen = 20,
+    .blocklen = 64,
+    HASHALG_NAMES_ANNOTATED("SHA-1", "!NONEXISTENT ACCELERATED VERSION!"),
 };
 
 #endif /* HW_SHA1 */

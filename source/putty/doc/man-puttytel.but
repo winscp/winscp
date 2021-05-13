@@ -4,7 +4,7 @@
 
 \S{puttytel-manpage-name} NAME
 
-\cw{puttytel} \- GUI Telnet and Rlogin client for X
+\cw{puttytel} \- GUI Telnet, Rlogin, and SUPDUP client for X
 
 \S{puttytel-manpage-synopsis} SYNOPSIS
 
@@ -13,9 +13,9 @@
 
 \S{puttytel-manpage-description} DESCRIPTION
 
-\cw{puttytel} is a graphical Telnet and Rlogin client for X. It
-is a direct port of the Windows Telnet and Rlogin client of the same
-name, and a cut-down cryptography-free version of PuTTY.
+\cw{puttytel} is a graphical Telnet, Rlogin, and SUPDUP client for X. It
+is a direct port of the Windows Telnet, Rlogin, and SUPDUP client of the
+same name, and a cut-down cryptography-free version of PuTTY.
 
 \S{puttytel-manpage-options} OPTIONS
 
@@ -161,7 +161,7 @@ in verifying new files released by the PuTTY team.
 straight from the command line without having to go through the
 configuration box first.
 
-\dt \cw{\-telnet}, \cw{\-rlogin}, \cw{\-raw}
+\dt \cw{\-telnet}, \cw{\-rlogin}, \cw{\-supdup}, \cw{\-raw}
 
 \dd Select the protocol \cw{puttytel} will use to make the connection.
 

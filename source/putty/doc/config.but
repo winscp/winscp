@@ -14,28 +14,47 @@ save your settings to be reloaded later.
 
 \S{config-hostname} The \i{host name} section
 
-The top box on the Session panel, labelled \q{Specify your
-connection by host name}, contains the details that need to be
-filled in before PuTTY can open a session at all.
+The top box on the Session panel, labelled \q{Specify the destination
+you want to connect to}, contains the details that need to be filled
+in before PuTTY can open a session at all.
 
 \b The \q{Host Name} box is where you type the name, or the \i{IP
 address}, of the server you want to connect to.
 
-\b The \q{Connection type} radio buttons let you choose what type of
-connection you want to make: a \I{raw TCP connections}raw
-connection, a \i{Telnet} connection, an \i{Rlogin} connection, an
-\i{SSH} connection, or a connection to a local \i{serial line}. (See
-\k{which-one} for a summary of the differences between SSH, Telnet
-and rlogin; see \k{using-rawprot} for an explanation of \q{raw}
-connections; see \k{using-serial} for information about using a
-serial line.)
+\b The \q{Connection type} controls let you choose what type of
+connection you want to make: an \i{SSH} network connection, a
+connection to a local \i{serial line}, or various other kinds of
+network connection.
+
+\lcont{
+
+\b See \k{which-one} for a summary of the
+differences between the network remote login protocols SSH, Telnet,
+Rlogin, and SUPDUP.
+
+\b See \k{using-serial} for information about using a serial line.
+
+\b See \k{using-rawprot} for an explanation of \q{raw}
+connections.
+
+\b See \k{using-telnet} for a little information about Telnet.
+
+\b See \k{using-rlogin} for information about using Rlogin.
+
+\b See \k{using-supdup} for information about using SUPDUP.
+
+\b The \q{Bare ssh-connection} option in the \q{Connection type}
+control is intended for specialist uses not involving network
+connections. See \k{config-psusan} for some information about it.
+
+}
 
 \b The \q{Port} box lets you specify which \i{port number} on the
-server to connect to. If you select Telnet, Rlogin, or SSH, this box
-will be filled in automatically to the usual value, and you will
-only need to change it if you have an unusual server. If you select
-Raw mode, you will almost certainly need to fill in the \q{Port} box
-yourself.
+server to connect to. If you select Telnet, Rlogin, SUPDUP, or SSH,
+this box will be filled in automatically to the usual value, and you
+will only need to change it if you have an unusual server. If you
+select Raw mode, you will almost certainly need to fill in the
+\q{Port} box yourself.
 
 If you select \q{Serial} from the \q{Connection type} radio buttons,
 the \q{Host Name} and \q{Port} boxes are replaced by \q{Serial line}
@@ -1668,8 +1687,8 @@ connection loss, or you might find they make it worse, depending on
 what \e{kind} of network problems you have between you and the
 server.
 
-Keepalives are only supported in Telnet and SSH; the Rlogin and Raw
-protocols offer no way of implementing them. (For an alternative, see
+Keepalives are only supported in Telnet and SSH; the Rlogin, SUPDUP, and
+Raw protocols offer no way of implementing them. (For an alternative, see
 \k{config-tcp-keepalives}.)
 
 Note that if you are using SSH-1 and the server has a bug that makes
@@ -1697,8 +1716,8 @@ are provided for completeness.
 The idea of TCP keepalives is similar to application-level keepalives,
 and the same caveats apply. The main differences are:
 
-\b TCP keepalives are available on \e{all} connection types, including
-Raw and Rlogin.
+\b TCP keepalives are available on \e{all} network connection types,
+including Raw, Rlogin, and SUPDUP.
 
 \b The interval between TCP keepalives is usually much longer,
 typically two hours; this is set by the operating system, and cannot
@@ -1791,7 +1810,7 @@ configuration panels.
 
 \S{config-username} \q{\ii{Auto-login username}}
 
-All three of the SSH, Telnet and Rlogin protocols allow you to
+All three of the SSH, Telnet, and Rlogin protocols allow you to
 specify what user name you want to log in as, without having to type
 it explicitly every time. (Some Telnet servers don't support this.)
 
@@ -1820,7 +1839,7 @@ Most servers you might connect to with PuTTY are designed to be
 connected to from lots of different types of terminal. In order to
 send the right \i{control sequence}s to each one, the server will need
 to know what type of terminal it is dealing with. Therefore, each of
-the SSH, Telnet and Rlogin protocols allow a text string to be sent
+the SSH, Telnet, and Rlogin protocols allow a text string to be sent
 down the connection describing the terminal.  On a \i{Unix} server,
 this selects an entry from the \i\c{termcap} or \i\c{terminfo} database
 that tells applications what \i{control sequences} to send to the
@@ -2086,123 +2105,6 @@ compromise; proxy messages will go to the terminal window until the main
 session is deemed to have started (in a protocol-dependent way), which
 is when they're most likely to be interesting; any further proxy-related
 messages during the session will only go to the Event Log.
-
-\H{config-telnet} The \i{Telnet} panel
-
-The Telnet panel allows you to configure options that only apply to
-Telnet sessions.
-
-\S{config-oldenviron} \q{Handling of OLD_ENVIRON ambiguity}
-
-The original Telnet mechanism for passing \i{environment variables} was
-badly specified. At the time the standard (RFC 1408) was written,
-BSD telnet implementations were already supporting the feature, and
-the intention of the standard was to describe the behaviour the BSD
-implementations were already using.
-
-Sadly there was a typing error in the standard when it was issued,
-and two vital function codes were specified the wrong way round. BSD
-implementations did not change, and the standard was not corrected.
-Therefore, it's possible you might find either \i{BSD} or \i{RFC}-compliant
-implementations out there. This switch allows you to choose which
-one PuTTY claims to be.
-
-The problem was solved by issuing a second standard, defining a new
-Telnet mechanism called \i\cw{NEW_ENVIRON}, which behaved exactly like
-the original \i\cw{OLD_ENVIRON} but was not encumbered by existing
-implementations. Most Telnet servers now support this, and it's
-unambiguous. This feature should only be needed if you have trouble
-passing environment variables to quite an old server.
-
-\S{config-ptelnet} Passive and active \i{Telnet negotiation} modes
-
-In a Telnet connection, there are two types of data passed between
-the client and the server: actual text, and \e{negotiations} about
-which Telnet extra features to use.
-
-PuTTY can use two different strategies for negotiation:
-
-\b In \I{active Telnet negotiation}\e{active} mode, PuTTY starts to send
-negotiations as soon as the connection is opened.
-
-\b In \I{passive Telnet negotiation}\e{passive} mode, PuTTY will wait to
-negotiate until it sees a negotiation from the server.
-
-The obvious disadvantage of passive mode is that if the server is
-also operating in a passive mode, then negotiation will never begin
-at all. For this reason PuTTY defaults to active mode.
-
-However, sometimes passive mode is required in order to successfully
-get through certain types of firewall and \i{Telnet proxy} server. If
-you have confusing trouble with a \i{firewall}, you could try enabling
-passive mode to see if it helps.
-
-\S{config-telnetkey} \q{Keyboard sends \i{Telnet special commands}}
-
-If this box is checked, several key sequences will have their normal
-actions modified:
-
-\b the Backspace key on the keyboard will send the \I{Erase Character,
-Telnet special command}Telnet special backspace code;
-
-\b Control-C will send the Telnet special \I{Interrupt Process, Telnet
-special command}Interrupt Process code;
-
-\b Control-Z will send the Telnet special \I{Suspend Process, Telnet
-special command}Suspend Process code.
-
-You probably shouldn't enable this
-unless you know what you're doing.
-
-\S{config-telnetnl} \q{Return key sends \i{Telnet New Line} instead of ^M}
-
-Unlike most other remote login protocols, the Telnet protocol has a
-special \q{\i{new line}} code that is not the same as the usual line
-endings of Control-M or Control-J. By default, PuTTY sends the
-Telnet New Line code when you press Return, instead of sending
-Control-M as it does in most other protocols.
-
-Most Unix-style Telnet servers don't mind whether they receive
-Telnet New Line or Control-M; some servers do expect New Line, and
-some servers prefer to see ^M. If you are seeing surprising
-behaviour when you press Return in a Telnet session, you might try
-turning this option off to see if it helps.
-
-\H{config-rlogin} The Rlogin panel
-
-The \i{Rlogin} panel allows you to configure options that only apply to
-Rlogin sessions.
-
-\S{config-rlogin-localuser} \I{local username in Rlogin}\q{Local username}
-
-Rlogin allows an automated (password-free) form of login by means of
-a file called \i\c{.rhosts} on the server. You put a line in your
-\c{.rhosts} file saying something like \c{jbloggs@pc1.example.com},
-and then when you make an Rlogin connection the client transmits the
-username of the user running the Rlogin client. The server checks
-the username and hostname against \c{.rhosts}, and if they match it
-\I{passwordless login}does not ask for a password.
-
-This only works because Unix systems contain a safeguard to stop a
-user from pretending to be another user in an Rlogin connection.
-Rlogin connections have to come from \I{privileged port}port numbers below
-1024, and Unix systems prohibit this to unprivileged processes; so when the
-server sees a connection from a low-numbered port, it assumes the
-client end of the connection is held by a privileged (and therefore
-trusted) process, so it believes the claim of who the user is.
-
-Windows does not have this restriction: \e{any} user can initiate an
-outgoing connection from a low-numbered port. Hence, the Rlogin
-\c{.rhosts} mechanism is completely useless for securely
-distinguishing several different users on a Windows machine. If you
-have a \c{.rhosts} entry pointing at a Windows PC, you should assume
-that \e{anyone} using that PC can \i{spoof} your username in
-an Rlogin connection and access your account on the server.
-
-The \q{Local username} control allows you to specify what user name
-PuTTY should claim you have, in case it doesn't match your \i{Windows
-user name} (or in case you didn't bother to set up a Windows user
-name).
 
 \H{config-ssh} The SSH panel
 
@@ -2521,8 +2423,12 @@ Configuration is similar to cipher selection (see
 
 PuTTY currently supports the following host key types:
 
-\b \q{Ed25519}: \i{Edwards-curve} \i{DSA} using a twisted Edwards
+\b \q{\i{Ed25519}}: \I{EdDSA}Edwards-curve DSA using a twisted Edwards
 curve with modulus \cw{2^255-19}.
+
+\b \q{\i{Ed448}}: another \I{EdDSA}Edwards-curve DSA type, using a
+larger elliptic curve with a 448-bit instead of 255-bit modulus (so it
+has a higher security level than Ed25519).
 
 \b \q{ECDSA}: \i{elliptic curve} \i{DSA} using one of the
 NIST-standardised elliptic curves.
@@ -2532,8 +2438,8 @@ NIST-standardised elliptic curves.
 \b \q{RSA}: the ordinary \i{RSA} algorithm.
 
 If PuTTY already has one or more host keys stored for the server,
-it will prefer to use one of those, even if the server has a key
-type that is higher in the preference order. You can add such a
+it will by default prefer to use one of those, even if the server has
+a key type that is higher in the preference order. You can add such a
 key to PuTTY's cache from within an existing session using the
 \q{Special Commands} menu; see \k{using-specials}.
 
@@ -2598,9 +2504,13 @@ You can remove keys again with the \q{Remove} button.
 
 The text describing a host key can be in one of the following formats:
 
-\b An MD5-based host key fingerprint of the form displayed in PuTTY's
-Event Log and host key dialog boxes, i.e. sixteen 2-digit hex numbers
-separated by colons.
+\b An \I{SHA256 fingerprint}SHA-256-based host key fingerprint of the
+form displayed in PuTTY's Event Log and host key dialog boxes,
+i.e. \cq{SHA256:} followed by 43 case-sensitive characters.
+
+\b An \I{MD5 fingerprint}MD5-based host key fingerprint, i.e. sixteen
+2-digit hex numbers separated by colons, optionally preceded by the
+prefix \cq{MD5:}. (The case of the characters does not matter.)
 
 \b A base64-encoded blob describing an SSH-2 public key in
 OpenSSH's one-line public key format. How you acquire a public key in
@@ -3479,6 +3389,52 @@ will be impossible.
 
 This is an SSH-1-specific bug.
 
+\H{config-psusan} The \q{Bare \cw{\i{ssh-connection}}} protocol
+
+In addition to SSH itself, PuTTY also supports a second protocol that
+is derived from SSH. It's listed in the PuTTY GUI under the name
+\q{Bare \cw{ssh-connection}}.
+
+This protocol consists of just the innermost of SSH-2's three layers: it
+leaves out the cryptography layer providing network security, and it
+leaves out the authentication layer where you provide a username and
+prove you're allowed to log in as that user.
+
+It is therefore \s{completely unsuited to any network connection}.
+Don't try to use it over a network!
+
+The purpose of this protocol is for various specialist circumstances
+in which the \q{connection} is not over a real network, but is a pipe
+or IPC channel between different processes running on the \e{same}
+computer. In these contexts, the operating system will already have
+guaranteed that each of the two communicating processes is owned by
+the expected user (so that no authentication is necessary), and that
+the communications channel cannot be tapped by a hostile user on the
+same machine (so that no cryptography is necessary either). Examples
+of possible uses involve communicating with a strongly separated
+context such as the inside of a container, or a VM, or a different
+network namespace.
+
+Explicit support for this protocol is new in PuTTY 0.75. As of
+2021-04, the only known server for the bare \cw{ssh-connection}
+protocol is the Unix program \cq{\i{psusan}} that is also part of the
+PuTTY tool suite.
+
+(However, this protocol is also the same one used between instances of
+PuTTY to implement connection sharing: see \k{config-ssh-sharing}. In
+fact, in the Unix version of PuTTY, when a sharing upstream records
+\q{Sharing this connection at [pathname]} in the Event Log, it's
+possible to connect another instance of PuTTY directly to that Unix
+socket, by entering its pathname in the host name box and selecting
+\q{Bare \cw{ssh-connection}} as the protocol!)
+
+Many of the options under the SSH panel also affect this protocol,
+although options to do with cryptography and authentication do not,
+for obvious reasons.
+
+I repeat, \s{DON'T TRY TO USE THIS PROTOCOL FOR NETWORK CONNECTIONS!}
+That's not what it's for, and it's not at all safe to do it.
+
 \H{config-serial} The Serial panel
 
 The \i{Serial} panel allows you to configure options that only apply
@@ -3555,6 +3511,164 @@ the serial line.
 
 \b \q{DSR/DTR}: flow control is done using the DSR and DTR wires on
 the serial line.
+
+\H{config-telnet} The \i{Telnet} panel
+
+The Telnet panel allows you to configure options that only apply to
+Telnet sessions.
+
+\S{config-oldenviron} \q{Handling of OLD_ENVIRON ambiguity}
+
+The original Telnet mechanism for passing \i{environment variables} was
+badly specified. At the time the standard (RFC 1408) was written,
+BSD telnet implementations were already supporting the feature, and
+the intention of the standard was to describe the behaviour the BSD
+implementations were already using.
+
+Sadly there was a typing error in the standard when it was issued,
+and two vital function codes were specified the wrong way round. BSD
+implementations did not change, and the standard was not corrected.
+Therefore, it's possible you might find either \i{BSD} or \i{RFC}-compliant
+implementations out there. This switch allows you to choose which
+one PuTTY claims to be.
+
+The problem was solved by issuing a second standard, defining a new
+Telnet mechanism called \i\cw{NEW_ENVIRON}, which behaved exactly like
+the original \i\cw{OLD_ENVIRON} but was not encumbered by existing
+implementations. Most Telnet servers now support this, and it's
+unambiguous. This feature should only be needed if you have trouble
+passing environment variables to quite an old server.
+
+\S{config-ptelnet} Passive and active \i{Telnet negotiation} modes
+
+In a Telnet connection, there are two types of data passed between
+the client and the server: actual text, and \e{negotiations} about
+which Telnet extra features to use.
+
+PuTTY can use two different strategies for negotiation:
+
+\b In \I{active Telnet negotiation}\e{active} mode, PuTTY starts to send
+negotiations as soon as the connection is opened.
+
+\b In \I{passive Telnet negotiation}\e{passive} mode, PuTTY will wait to
+negotiate until it sees a negotiation from the server.
+
+The obvious disadvantage of passive mode is that if the server is
+also operating in a passive mode, then negotiation will never begin
+at all. For this reason PuTTY defaults to active mode.
+
+However, sometimes passive mode is required in order to successfully
+get through certain types of firewall and \i{Telnet proxy} server. If
+you have confusing trouble with a \i{firewall}, you could try enabling
+passive mode to see if it helps.
+
+\S{config-telnetkey} \q{Keyboard sends \i{Telnet special commands}}
+
+If this box is checked, several key sequences will have their normal
+actions modified:
+
+\b the Backspace key on the keyboard will send the \I{Erase Character,
+Telnet special command}Telnet special backspace code;
+
+\b Control-C will send the Telnet special \I{Interrupt Process, Telnet
+special command}Interrupt Process code;
+
+\b Control-Z will send the Telnet special \I{Suspend Process, Telnet
+special command}Suspend Process code.
+
+You probably shouldn't enable this
+unless you know what you're doing.
+
+\S{config-telnetnl} \q{Return key sends \i{Telnet New Line} instead of ^M}
+
+Unlike most other remote login protocols, the Telnet protocol has a
+special \q{\i{new line}} code that is not the same as the usual line
+endings of Control-M or Control-J. By default, PuTTY sends the
+Telnet New Line code when you press Return, instead of sending
+Control-M as it does in most other protocols.
+
+Most Unix-style Telnet servers don't mind whether they receive
+Telnet New Line or Control-M; some servers do expect New Line, and
+some servers prefer to see ^M. If you are seeing surprising
+behaviour when you press Return in a Telnet session, you might try
+turning this option off to see if it helps.
+
+\H{config-rlogin} The Rlogin panel
+
+The \i{Rlogin} panel allows you to configure options that only apply to
+Rlogin sessions.
+
+\S{config-rlogin-localuser} \I{local username in Rlogin}\q{Local username}
+
+Rlogin allows an automated (password-free) form of login by means of
+a file called \i\c{.rhosts} on the server. You put a line in your
+\c{.rhosts} file saying something like \c{jbloggs@pc1.example.com},
+and then when you make an Rlogin connection the client transmits the
+username of the user running the Rlogin client. The server checks
+the username and hostname against \c{.rhosts}, and if they match it
+\I{passwordless login}does not ask for a password.
+
+This only works because Unix systems contain a safeguard to stop a
+user from pretending to be another user in an Rlogin connection.
+Rlogin connections have to come from \I{privileged port}port numbers below
+1024, and Unix systems prohibit this to unprivileged processes; so when the
+server sees a connection from a low-numbered port, it assumes the
+client end of the connection is held by a privileged (and therefore
+trusted) process, so it believes the claim of who the user is.
+
+Windows does not have this restriction: \e{any} user can initiate an
+outgoing connection from a low-numbered port. Hence, the Rlogin
+\c{.rhosts} mechanism is completely useless for securely
+distinguishing several different users on a Windows machine. If you
+have a \c{.rhosts} entry pointing at a Windows PC, you should assume
+that \e{anyone} using that PC can \i{spoof} your username in
+an Rlogin connection and access your account on the server.
+
+The \q{Local username} control allows you to specify what user name
+PuTTY should claim you have, in case it doesn't match your \i{Windows
+user name} (or in case you didn't bother to set up a Windows user
+name).
+
+\H{config-supdup} The \i{SUPDUP} panel
+
+The SUPDUP panel allows you to configure options that only apply
+to SUPDUP sessions. See \k{using-supdup} for more about the SUPDUP
+protocol.
+
+\S{supdup-location} \q{Location string}
+
+In SUPDUP, the client sends a piece of text of its choice to the
+server giving the user's location. This is typically displayed in
+lists of logged-in users.
+
+By default, PuTTY just defaults this to "The Internet". If you want
+your location to show up as something more specific, you can configure
+it here.
+
+\S{supdup-ascii} \q{Extended ASCII Character set}
+
+This declares what kind of character set extension your terminal
+supports. If the server supports it, it will send text using that
+character set. \q{None} means the standard 95 printable ASCII
+characters. \q{ITS} means ASCII extended with printable characters in
+the control character range. This character set is documented in the
+SUPDUP protocol definition. \q{WAITS} is similar to \q{ITS} but uses
+some alternative characters in the extended set: most prominently, it
+will display arrows instead of \c{^} and \c{_}, and \c{\}} instead of
+\c{~}.  \q{ITS} extended ASCII is used by ITS and Lisp machines,
+whilst \q{WAITS} is only used by the WAITS operating system from the
+Stanford AI Laboratory.
+
+\S{supdup-more} \q{**MORE** processing}
+
+When **MORE** processing is enabled, the server causes output to pause
+at the bottom of the screen, until a space is typed.
+
+\S{supdup-scroll} \q{Terminal scrolling}
+
+This controls whether the terminal will perform scrolling then the
+cursor goes below the last line, or if the cursor will return to the
+first line.
 
 \H{config-file} \ii{Storing configuration in a file}
 

@@ -157,11 +157,9 @@ void dll_hijacking_protection(void)
 
     if (!kernel32_module) {
         kernel32_module = load_system32_dll("kernel32.dll");
-#if (defined _MSC_VER && _MSC_VER < 1900) || defined COVERITY
-        /* For older Visual Studio, and also for the system I
-         * currently use for Coveritying the Windows code, this
-         * function isn't available in the header files to
-         * type-check */
+#if (defined _MSC_VER && _MSC_VER < 1900)
+        /* For older Visual Studio, this function isn't available in
+         * the header files to type-check */
         GET_WINDOWS_FUNCTION_NO_TYPECHECK(
             kernel32_module, SetDefaultDllDirectories);
 #else

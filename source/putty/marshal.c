@@ -218,6 +218,53 @@ const char *BinarySource_get_asciz(BinarySource *src)
     return start;
 }
 
+static ptrlen BinarySource_get_chars_internal(
+    BinarySource *src, const char *set, bool include)
+{
+    const char *start = here;
+    while (avail(1)) {
+        bool present = NULL != strchr(set, *(const char *)consume(0));
+        if (present != include)
+            break;
+        (void) consume(1);
+    }
+    const char *end = here;
+    return make_ptrlen(start, end - start);
+}
+
+ptrlen BinarySource_get_chars(BinarySource *src, const char *include_set)
+{
+    return BinarySource_get_chars_internal(src, include_set, true);
+}
+
+ptrlen BinarySource_get_nonchars(BinarySource *src, const char *exclude_set)
+{
+    return BinarySource_get_chars_internal(src, exclude_set, false);
+}
+
+ptrlen BinarySource_get_chomped_line(BinarySource *src)
+{
+    const char *start, *end;
+
+    if (src->err)
+        return make_ptrlen(here, 0);
+
+    start = here;
+    end = memchr(start, '\n', src->len - src->pos);
+    if (end)
+        advance(end + 1 - start);
+    else
+        advance(src->len - src->pos);
+    end = here;
+
+    if (end > start && end[-1] == '\n')
+        end--;
+    if (end > start && end[-1] == '\r')
+        end--;
+
+    return make_ptrlen(start, end - start);
+}
+
 ptrlen BinarySource_get_pstring(BinarySource *src)
 {
     const unsigned char *ucp;

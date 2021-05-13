@@ -944,11 +944,17 @@ static const char *poly_text_name(ssh2_mac *mac)
 }
 
 const ssh2_macalg ssh2_poly1305 = {
-    poly_ssh2_new, poly_ssh2_free, poly_setkey,
-    poly_start, poly_genresult, poly_text_name,
-
-    "", "", /* Not selectable individually, just part of ChaCha20-Poly1305 */
-    16, 0,
+    .new = poly_ssh2_new,
+    .free = poly_ssh2_free,
+    .setkey = poly_setkey,
+    .start = poly_start,
+    .genresult = poly_genresult,
+    .text_name = poly_text_name,
+    .name = "",
+    .etm_name = "", /* Not selectable individually, just part of
+                     * ChaCha20-Poly1305 */
+    .len = 16,
+    .keylen = 0,
 };
 
 static ssh_cipher *ccp_new(const ssh_cipheralg *alg)
@@ -1032,20 +1038,21 @@ static void ccp_decrypt_length(ssh_cipher *cipher, void *blk, int len,
 }
 
 const ssh_cipheralg ssh2_chacha20_poly1305 = {
-
-    ccp_new,
-    ccp_free,
-    ccp_iv,
-    ccp_key,
-    ccp_encrypt,
-    ccp_decrypt,
-    ccp_encrypt_length,
-    ccp_decrypt_length,
-
-    "chacha20-poly1305@openssh.com",
-    1, 512, 64, SSH_CIPHER_SEPARATE_LENGTH, "ChaCha20",
-
-    &ssh2_poly1305
+    .new = ccp_new,
+    .free = ccp_free,
+    .setiv = ccp_iv,
+    .setkey = ccp_key,
+    .encrypt = ccp_encrypt,
+    .decrypt = ccp_decrypt,
+    .encrypt_length = ccp_encrypt_length,
+    .decrypt_length = ccp_decrypt_length,
+    .ssh2_id = "chacha20-poly1305@openssh.com",
+    .blksize = 1,
+    .real_keybits = 512,
+    .padded_keybytes = 64,
+    .flags = SSH_CIPHER_SEPARATE_LENGTH,
+    .text_name = "ChaCha20",
+    .required_mac = &ssh2_poly1305,
 };
 
 static const ssh_cipheralg *const ccp_list[] = {

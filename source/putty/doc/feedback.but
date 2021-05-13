@@ -158,7 +158,7 @@ for Arm, tell us, or we'll assume you're running on Windows for
 Intel as this is overwhelmingly the case.)
 
 \b Tell us what protocol you are connecting with: SSH, Telnet,
-Rlogin, or Raw mode, or a serial connection.
+Rlogin, SUPDUP, or Raw mode, or a serial connection.
 
 \b Tell us what kind of server you are connecting to; what OS, and
 if possible what SSH server (if you're using SSH). You can get some

@@ -25,13 +25,15 @@ static void ssh2_bare_bpp_handle_input(BinaryPacketProtocol *bpp);
 static void ssh2_bare_bpp_handle_output(BinaryPacketProtocol *bpp);
 static PktOut *ssh2_bare_bpp_new_pktout(int type);
 
-static const struct BinaryPacketProtocolVtable ssh2_bare_bpp_vtable = {
-    ssh2_bare_bpp_free,
-    ssh2_bare_bpp_handle_input,
-    ssh2_bare_bpp_handle_output,
-    ssh2_bare_bpp_new_pktout,
-    ssh2_bpp_queue_disconnect, /* in sshcommon.c */
-    0x4000, /* packet size limit, per protocol spec in sshshare.c comment */
+static const BinaryPacketProtocolVtable ssh2_bare_bpp_vtable = {
+    .free = ssh2_bare_bpp_free,
+    .handle_input = ssh2_bare_bpp_handle_input,
+    .handle_output = ssh2_bare_bpp_handle_output,
+    .new_pktout = ssh2_bare_bpp_new_pktout,
+    .queue_disconnect = ssh2_bpp_queue_disconnect, /* in sshcommon.c */
+
+    /* packet size limit, per protocol spec in sshshare.c comment */
+    .packet_size_limit = 0x4000,
 };
 
 BinaryPacketProtocol *ssh2_bare_bpp_new(LogContext *logctx)
@@ -107,6 +109,18 @@ static void ssh2_bare_bpp_handle_input(BinaryPacketProtocol *bpp)
         s->data++;
         s->packetlen--;
         BinarySource_INIT(s->pktin, s->data, s->packetlen);
+
+        if (s->pktin->type == SSH2_MSG_EXT_INFO) {
+            /*
+             * Mild layer violation: EXT_INFO is not permitted in the
+             * bare ssh-connection protocol. Faulting it here means
+             * that ssh2_common_filter_queue doesn't receive it in the
+             * first place unless it's legal to have sent it.
+             */
+            ssh_proto_error(s->bpp.ssh, "Remote side sent SSH2_MSG_EXT_INFO "
+                            "in bare connection protocol");
+            return;
+        }
 
         /*
          * Log incoming packet, possibly omitting sensitive fields.

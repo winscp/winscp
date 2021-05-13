@@ -1902,11 +1902,9 @@ void share_activate(ssh_sharing_state *sharestate,
 }
 
 static const PlugVtable ssh_sharing_conn_plugvt = {
-    NULL, /* no log function, because that's for outgoing connections */
-    share_closing,
-    share_receive,
-    share_sent,
-    NULL /* no accepting function, because we've already done it */
+    .closing = share_closing,
+    .receive = share_receive,
+    .sent = share_sent,
 };
 
 static int share_listen_accepting(Plug *plug,
@@ -1940,7 +1938,7 @@ static int share_listen_accepting(Plug *plug,
         return err != NULL;
     }
 
-    sk_set_frozen(cs->sock, 0);
+    sk_set_frozen(cs->sock, false);
 
     add234(cs->parent->connections, cs);
 
@@ -1993,8 +1991,13 @@ static int share_listen_accepting(Plug *plug,
  */
 char *ssh_share_sockname(const char *host, int port, Conf *conf)
 {
-    char *username = get_remote_username(conf);
+    char *username = NULL;
     char *sockname;
+
+    /* Include the username we're logging in as in the hash, unless
+     * we're using a protocol for which it's completely irrelevant. */
+    if (conf_get_int(conf, CONF_protocol) != PROT_SSHCONN)
+        username = get_remote_username(conf);
 
     if (port == 22) {
         if (username)
@@ -2041,11 +2044,8 @@ bool ssh_share_test_for_upstream(const char *host, int port, Conf *conf)
 }
 
 static const PlugVtable ssh_sharing_listen_plugvt = {
-    NULL, /* no log function, because that's for outgoing connections */
-    share_listen_closing,
-    NULL, /* no receive function on a listening socket */
-    NULL, /* no sent function on a listening socket */
-    share_listen_accepting
+    .closing = share_listen_closing,
+    .accepting = share_listen_accepting,
 };
 
 void ssh_connshare_provide_connlayer(ssh_sharing_state *sharestate,

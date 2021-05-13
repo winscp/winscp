@@ -4,7 +4,7 @@
 
 \S{putty-manpage-name} NAME
 
-\cw{putty} - GUI SSH, Telnet and Rlogin client for X
+\cw{putty} - GUI SSH, Telnet, Rlogin, and SUPDUP client for X
 
 \S{putty-manpage-synopsis} SYNOPSIS
 
@@ -13,8 +13,8 @@
 
 \S{putty-manpage-description} DESCRIPTION
 
-\cw{putty} is a graphical SSH, Telnet and Rlogin client for X. It is
-a direct port of the Windows SSH client of the same name.
+\cw{putty} is a graphical SSH, Telnet, Rlogin, and SUPDUP client for
+X. It is a direct port of the Windows SSH client of the same name.
 
 \S{putty-manpage-options} OPTIONS
 
@@ -128,6 +128,16 @@ an effort is made to suppress obvious passwords.)
 encrypted packet data.
 }
 
+\dt \cw{\-logoverwrite}
+
+\dd If \cw{putty} is configured to write to a log file that already exists,
+discard the existing file.
+
+\dt \cw{\-logappend}
+
+\dd If \cw{putty} is configured to write to a log file that already exists,
+append new log data to the existing file.
+
 \dt \cw{\-cs} \e{charset}
 
 \dd This option specifies the character set in which \cw{putty}
@@ -174,7 +184,8 @@ in verifying new files released by the PuTTY team.
 straight from the command line without having to go through the
 configuration box first.
 
-\dt \cw{\-ssh}, \cw{\-telnet}, \cw{\-rlogin}, \cw{\-raw}, \cw{\-serial}
+\dt \cw{\-ssh}, \cw{\-telnet}, \cw{\-rlogin}, \cw{\-supdup}, \cw{\-raw},
+\cw{-ssh-connection}, \cw{\-serial}
 
 \dd Select the protocol \cw{putty} will use to make the connection.
 
@@ -279,8 +290,9 @@ to override a setting in a saved session.)
 \dt \cw{\-hostkey} \e{key}
 
 \dd Specify an acceptable host public key. This option may be specified
-multiple times; each key can be either a fingerprint (\cw{99:aa:bb:...}) or
-a base64-encoded blob in OpenSSH's one-line format.
+multiple times; each key can be either a fingerprint (\cw{SHA256:AbCdE...},
+\cw{99:aa:bb:...}, etc) or a base64-encoded blob in OpenSSH's one-line
+format.
 
 \lcont{ Specifying this option overrides automated host key
 management; \e{only} the key(s) specified on the command-line will be

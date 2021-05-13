@@ -151,7 +151,7 @@ bool ssh1_handle_direction_specific_packet(
         remid = get_uint32(pktin);
 
         /* Refuse if agent forwarding is disabled. */
-        if (!s->agent_fwd_enabled) {
+        if (!ssh_agent_forwarding_permitted(&s->cl)) {
             pktout = ssh_bpp_new_pktout(
                 s->ppl.bpp, SSH1_MSG_CHANNEL_OPEN_FAILURE);
             put_uint32(pktout, remid);
@@ -161,8 +161,30 @@ bool ssh1_handle_direction_specific_packet(
             c->connlayer = s;
             ssh1_channel_init(c);
             c->remoteid = remid;
-            c->chan = agentf_new(&c->sc);
             c->halfopen = false;
+
+            /*
+             * If possible, make a stream-oriented connection to the
+             * agent and set up an ordinary port-forwarding type
+             * channel over it.
+             */
+            Plug *plug;
+            Channel *ch = portfwd_raw_new(&s->cl, &plug, true);
+            Socket *skt = agent_connect(plug);
+            if (!sk_socket_error(skt)) {
+                portfwd_raw_setup(ch, skt, &c->sc);
+                c->chan = ch;
+            } else {
+                portfwd_raw_free(ch);
+
+                /*
+                 * Otherwise, fall back to the old-fashioned system of
+                 * parsing the forwarded data stream ourselves for
+                 * message boundaries, and passing each individual
+                 * message to the one-off agent_query().
+                 */
+                c->chan = agentf_new(&c->sc);
+            }
 
             pktout = ssh_bpp_new_pktout(
                 s->ppl.bpp, SSH1_MSG_CHANNEL_OPEN_CONFIRMATION);
@@ -240,15 +262,14 @@ bool ssh1_handle_direction_specific_packet(
 
         return true;
 
-      case SSH1_SMSG_EXIT_STATUS:
-        {
-            int exitcode = get_uint32(pktin);
-            ppl_logevent("Server sent command exit status %d", exitcode);
-            ssh_got_exitcode(s->ppl.ssh, exitcode);
+      case SSH1_SMSG_EXIT_STATUS: {
+        int exitcode = get_uint32(pktin);
+        ppl_logevent("Server sent command exit status %d", exitcode);
+        ssh_got_exitcode(s->ppl.ssh, exitcode);
 
-            s->session_terminated = true;
-        }
+        s->session_terminated = true;
         return true;
+      }
 
       default:
         return false;
@@ -420,28 +441,21 @@ static void ssh1mainchan_write_eof(SshChannel *sc)
     pq_push(s->ppl.out_pq, pktout);
 }
 
-static const struct SshChannelVtable ssh1mainchan_vtable = {
-    ssh1mainchan_write,
-    ssh1mainchan_write_eof,
-    NULL /* unclean_close */,
-    NULL /* unthrottle */,
-    NULL /* get_conf */,
-    NULL /* window_override_removed is only used by SSH-2 sharing */,
-    NULL /* x11_sharing_handover, likewise */,
-    NULL /* send_exit_status */,
-    NULL /* send_exit_signal */,
-    NULL /* send_exit_signal_numeric */,
-    ssh1mainchan_request_x11_forwarding,
-    ssh1mainchan_request_agent_forwarding,
-    ssh1mainchan_request_pty,
-    ssh1mainchan_send_env_var,
-    ssh1mainchan_start_shell,
-    ssh1mainchan_start_command,
-    ssh1mainchan_start_subsystem,
-    ssh1mainchan_send_serial_break,
-    ssh1mainchan_send_signal,
-    ssh1mainchan_send_terminal_size_change,
-    ssh1mainchan_hint_channel_is_simple,
+static const SshChannelVtable ssh1mainchan_vtable = {
+    .write = ssh1mainchan_write,
+    .write_eof = ssh1mainchan_write_eof,
+    .request_x11_forwarding = ssh1mainchan_request_x11_forwarding,
+    .request_agent_forwarding = ssh1mainchan_request_agent_forwarding,
+    .request_pty = ssh1mainchan_request_pty,
+    .send_env_var = ssh1mainchan_send_env_var,
+    .start_shell = ssh1mainchan_start_shell,
+    .start_command = ssh1mainchan_start_command,
+    .start_subsystem = ssh1mainchan_start_subsystem,
+    .send_serial_break = ssh1mainchan_send_serial_break,
+    .send_signal = ssh1mainchan_send_signal,
+    .send_terminal_size_change = ssh1mainchan_send_terminal_size_change,
+    .hint_channel_is_simple = ssh1mainchan_hint_channel_is_simple,
+    /* other methods are NULL */
 };
 
 static void ssh1_session_confirm_callback(void *vctx)

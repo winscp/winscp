@@ -290,29 +290,29 @@ static void zombiechan_open_failure(Channel *chan, const char *);
 static bool zombiechan_want_close(Channel *chan, bool sent_eof, bool rcvd_eof);
 static char *zombiechan_log_close_msg(Channel *chan) { return NULL; }
 
-static const struct ChannelVtable zombiechan_channelvt = {
-    zombiechan_free,
-    zombiechan_do_nothing,             /* open_confirmation */
-    zombiechan_open_failure,
-    zombiechan_send,
-    zombiechan_do_nothing,             /* send_eof */
-    zombiechan_set_input_wanted,
-    zombiechan_log_close_msg,
-    zombiechan_want_close,
-    chan_no_exit_status,
-    chan_no_exit_signal,
-    chan_no_exit_signal_numeric,
-    chan_no_run_shell,
-    chan_no_run_command,
-    chan_no_run_subsystem,
-    chan_no_enable_x11_forwarding,
-    chan_no_enable_agent_forwarding,
-    chan_no_allocate_pty,
-    chan_no_set_env,
-    chan_no_send_break,
-    chan_no_send_signal,
-    chan_no_change_window_size,
-    chan_no_request_response,
+static const ChannelVtable zombiechan_channelvt = {
+    .free = zombiechan_free,
+    .open_confirmation = zombiechan_do_nothing,
+    .open_failed = zombiechan_open_failure,
+    .send = zombiechan_send,
+    .send_eof = zombiechan_do_nothing,
+    .set_input_wanted = zombiechan_set_input_wanted,
+    .log_close_msg = zombiechan_log_close_msg,
+    .want_close = zombiechan_want_close,
+    .rcvd_exit_status = chan_no_exit_status,
+    .rcvd_exit_signal = chan_no_exit_signal,
+    .rcvd_exit_signal_numeric = chan_no_exit_signal_numeric,
+    .run_shell = chan_no_run_shell,
+    .run_command = chan_no_run_command,
+    .run_subsystem = chan_no_run_subsystem,
+    .enable_x11_forwarding = chan_no_enable_x11_forwarding,
+    .enable_agent_forwarding = chan_no_enable_agent_forwarding,
+    .allocate_pty = chan_no_allocate_pty,
+    .set_env = chan_no_set_env,
+    .send_break = chan_no_send_break,
+    .send_signal = chan_no_send_signal,
+    .change_window_size = chan_no_change_window_size,
+    .request_response = chan_no_request_response,
 };
 
 Channel *zombiechan_new(void)
@@ -354,109 +354,6 @@ static void zombiechan_set_input_wanted(Channel *chan, bool enable)
 static bool zombiechan_want_close(Channel *chan, bool sent_eof, bool rcvd_eof)
 {
     return true;
-}
-
-/* ----------------------------------------------------------------------
- * Centralised standard methods for other channel implementations to
- * borrow.
- */
-
-void chan_remotely_opened_confirmation(Channel *chan)
-{
-    unreachable("this channel type should never receive OPEN_CONFIRMATION");
-}
-
-void chan_remotely_opened_failure(Channel *chan, const char *errtext)
-{
-    unreachable("this channel type should never receive OPEN_FAILURE");
-}
-
-bool chan_default_want_close(
-    Channel *chan, bool sent_local_eof, bool rcvd_remote_eof)
-{
-    /*
-     * Default close policy: we start initiating the CHANNEL_CLOSE
-     * procedure as soon as both sides of the channel have seen EOF.
-     */
-    return sent_local_eof && rcvd_remote_eof;
-}
-
-bool chan_no_exit_status(Channel *chan, int status)
-{
-    return false;
-}
-
-bool chan_no_exit_signal(
-    Channel *chan, ptrlen signame, bool core_dumped, ptrlen msg)
-{
-    return false;
-}
-
-bool chan_no_exit_signal_numeric(
-    Channel *chan, int signum, bool core_dumped, ptrlen msg)
-{
-    return false;
-}
-
-bool chan_no_run_shell(Channel *chan)
-{
-    return false;
-}
-
-bool chan_no_run_command(Channel *chan, ptrlen command)
-{
-    return false;
-}
-
-bool chan_no_run_subsystem(Channel *chan, ptrlen subsys)
-{
-    return false;
-}
-
-bool chan_no_enable_x11_forwarding(
-    Channel *chan, bool oneshot, ptrlen authproto, ptrlen authdata,
-    unsigned screen_number)
-{
-    return false;
-}
-
-bool chan_no_enable_agent_forwarding(Channel *chan)
-{
-    return false;
-}
-
-bool chan_no_allocate_pty(
-    Channel *chan, ptrlen termtype, unsigned width, unsigned height,
-    unsigned pixwidth, unsigned pixheight, struct ssh_ttymodes modes)
-{
-    return false;
-}
-
-bool chan_no_set_env(Channel *chan, ptrlen var, ptrlen value)
-{
-    return false;
-}
-
-bool chan_no_send_break(Channel *chan, unsigned length)
-{
-    return false;
-}
-
-bool chan_no_send_signal(Channel *chan, ptrlen signame)
-{
-    return false;
-}
-
-bool chan_no_change_window_size(
-    Channel *chan, unsigned width, unsigned height,
-    unsigned pixwidth, unsigned pixheight)
-{
-    return false;
-}
-
-void chan_no_request_response(Channel *chan, bool success)
-{
-    unreachable("this channel type should never send a want-reply request");
 }
 
 /* ----------------------------------------------------------------------
@@ -929,28 +826,28 @@ bool ssh2_bpp_check_unimplemented(BinaryPacketProtocol *bpp, PktIn *pktin)
  * Function to check a host key against any manually configured in Conf.
  */
 
-int verify_ssh_manual_host_key(
-    Conf *conf, const char *fingerprint, ssh_key *key)
+int verify_ssh_manual_host_key(Conf *conf, char **fingerprints, ssh_key *key)
 {
     if (!conf_get_str_nthstrkey(conf, CONF_ssh_manual_hostkeys, 0))
         return -1;                     /* no manual keys configured */
 
-    if (fingerprint) {
-        /*
-         * The fingerprint string we've been given will have things
-         * like 'ssh-rsa 2048' at the front of it. Strip those off and
-         * narrow down to just the colon-separated hex block at the
-         * end of the string.
-         */
-        const char *p = strrchr(fingerprint, ' ');
-        fingerprint = p ? p+1 : fingerprint;
-        /* Quick sanity checks, including making sure it's in lowercase */
-        assert(strlen(fingerprint) == 16*3 - 1);
-        assert(fingerprint[2] == ':');
-        assert(fingerprint[strspn(fingerprint, "0123456789abcdef:")] == 0);
-
-        if (conf_get_str_str_opt(conf, CONF_ssh_manual_hostkeys, fingerprint))
-            return 1;                  /* success */
+    if (fingerprints) {
+        for (size_t i = 0; i < SSH_N_FPTYPES; i++) {
+            /*
+             * Each fingerprint string we've been given will have
+             * things like 'ssh-rsa 2048' at the front of it. Strip
+             * those off and narrow down to just the hash at the end
+             * of the string.
+             */
+            const char *fingerprint = fingerprints[i];
+            if (!fingerprint)
+                continue;
+            const char *p = strrchr(fingerprint, ' ');
+            fingerprint = p ? p+1 : fingerprint;
+            if (conf_get_str_str_opt(conf, CONF_ssh_manual_hostkeys,
+                                     fingerprint))
+                return 1;                  /* success */
+        }
     }
 
     if (key) {
@@ -1046,18 +943,4 @@ void ssh1_compute_session_id(
         put_byte(hash, mp_get_byte(servkey->modulus, i));
     put_data(hash, cookie, 8);
     ssh_hash_final(hash, session_id);
-}
-
-/* ----------------------------------------------------------------------
- * Other miscellaneous utility functions.
- */
-
-void free_rportfwd(struct ssh_rportfwd *rpf)
-{
-    if (rpf) {
-        sfree(rpf->log_description);
-        sfree(rpf->shost);
-        sfree(rpf->dhost);
-        sfree(rpf);
-    }
 }

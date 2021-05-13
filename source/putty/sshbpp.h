@@ -5,6 +5,8 @@
 #ifndef PUTTY_SSHBPP_H
 #define PUTTY_SSHBPP_H
 
+typedef struct BinaryPacketProtocolVtable BinaryPacketProtocolVtable;
+
 struct BinaryPacketProtocolVtable {
     void (*free)(BinaryPacketProtocol *);
     void (*handle_input)(BinaryPacketProtocol *);
@@ -34,7 +36,10 @@ struct BinaryPacketProtocol {
      * the callback on out_pq. */
     IdempotentCallback ic_out_pq;
 
+    /* Information that all packet layers sharing this BPP will
+     * potentially be interested in. */
     int remote_bugs;
+    bool ext_info_rsa_sha256_ok, ext_info_rsa_sha512_ok;
 
     /* Set this if remote connection closure should not generate an
      * error message (either because it's not to be treated as an

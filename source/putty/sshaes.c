@@ -85,7 +85,7 @@
  * vtables: one for the pure software implementation, one using
  * hardware acceleration (if available), and a top-level one which is
  * never actually instantiated, and only contains a new() method whose
- * job is to decide whihc of the other two to return an actual
+ * job is to decide which of the other two to return an actual
  * instance of.
  */
 
@@ -106,30 +106,54 @@ struct aes_extra {
 };
 
 #define VTABLES_INNER(cid, pid, bits, name, encsuffix,                  \
-                      decsuffix, setiv, flags)                          \
+                      decsuffix, setivsuffix, flagsval)                 \
     static void cid##_sw##encsuffix(ssh_cipher *, void *blk, int len);  \
     static void cid##_sw##decsuffix(ssh_cipher *, void *blk, int len);  \
     const ssh_cipheralg ssh_##cid##_sw = {                              \
-        aes_sw_new, aes_sw_free, aes_sw_##setiv, aes_sw_setkey,         \
-        cid##_sw##encsuffix, cid##_sw##decsuffix, NULL, NULL,           \
-        pid, 16, bits, bits/8, flags, name " (unaccelerated)",          \
-        NULL, NULL };                                                   \
+        .new = aes_sw_new,                                              \
+        .free = aes_sw_free,                                            \
+        .setiv = aes_sw_##setivsuffix,                                  \
+        .setkey = aes_sw_setkey,                                        \
+        .encrypt = cid##_sw##encsuffix,                                 \
+        .decrypt = cid##_sw##decsuffix,                                 \
+        .ssh2_id = pid,                                                 \
+        .blksize = 16,                                                  \
+        .real_keybits = bits,                                           \
+        .padded_keybytes = bits/8,                                      \
+        .flags = flagsval,                                              \
+        .text_name = name " (unaccelerated)",                           \
+    };                                                                  \
                                                                         \
     static void cid##_hw##encsuffix(ssh_cipher *, void *blk, int len);  \
     static void cid##_hw##decsuffix(ssh_cipher *, void *blk, int len);  \
     const ssh_cipheralg ssh_##cid##_hw = {                              \
-        aes_hw_new, aes_hw_free, aes_hw_##setiv, aes_hw_setkey,         \
-        cid##_hw##encsuffix, cid##_hw##decsuffix, NULL, NULL,           \
-        pid, 16, bits, bits/8, flags, name HW_NAME_SUFFIX,              \
-        NULL, NULL };                                                   \
+        .new = aes_hw_new,                                              \
+        .free = aes_hw_free,                                            \
+        .setiv = aes_hw_##setivsuffix,                                  \
+        .setkey = aes_hw_setkey,                                        \
+        .encrypt = cid##_hw##encsuffix,                                 \
+        .decrypt = cid##_hw##decsuffix,                                 \
+        .ssh2_id = pid,                                                 \
+        .blksize = 16,                                                  \
+        .real_keybits = bits,                                           \
+        .padded_keybytes = bits/8,                                      \
+        .flags = flagsval,                                              \
+        .text_name = name HW_NAME_SUFFIX,                               \
+    };                                                                  \
                                                                         \
-    const struct aes_extra extra_##cid = {                              \
+    static const struct aes_extra extra_##cid = {                       \
         &ssh_##cid##_sw, &ssh_##cid##_hw };                             \
                                                                         \
     const ssh_cipheralg ssh_##cid = {                                   \
-        aes_select, NULL, NULL, NULL, NULL, NULL, NULL, NULL,           \
-        pid, 16, bits, bits/8, flags, name " (dummy selector vtable)",  \
-        NULL, &extra_##cid };                                           \
+        .new = aes_select,                                              \
+        .ssh2_id = pid,                                                 \
+        .blksize = 16,                                                  \
+        .real_keybits = bits,                                           \
+        .padded_keybytes = bits/8,                                      \
+        .flags = flagsval,                                              \
+        .text_name = name " (dummy selector vtable)",                   \
+        .extra = &extra_##cid                                           \
+    };                                                                  \
 
 #define VTABLES(keylen)                                                 \
     VTABLES_INNER(aes ## keylen ## _cbc, "aes" #keylen "-cbc",          \
@@ -144,9 +168,14 @@ VTABLES(256)
 
 static const ssh_cipheralg ssh_rijndael_lysator = {
     /* Same as aes256_cbc, but with a different protocol ID */
-    aes_select, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    "rijndael-cbc@lysator.liu.se", 16, 256, 256/8, 0,
-    "AES-256 CBC (dummy selector vtable)", NULL, &extra_aes256_cbc
+    .new = aes_select,
+    .ssh2_id = "rijndael-cbc@lysator.liu.se",
+    .blksize = 16,
+    .real_keybits = 256,
+    .padded_keybytes = 256/8,
+    .flags = 0,
+    .text_name = "AES-256 CBC (dummy selector vtable)",
+    .extra = &extra_aes256_cbc,
 };
 
 static const ssh_cipheralg *const aes_list[] = {
