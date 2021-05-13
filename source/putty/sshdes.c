@@ -430,7 +430,7 @@ static inline uint64_t bitsel(
     return ret;
 }
 
-void des_key_setup(uint64_t key, des_keysched *sched)
+static void des_key_setup(uint64_t key, des_keysched *sched)
 {
     static const int8_t PC1[] = {
          7, 15, 23, 31, 39, 47, 55, 63,  6, 14, 22, 30, 38, 46,
@@ -683,16 +683,34 @@ static void des_cbc_decrypt(ssh_cipher *ciph, void *vdata, int len)
 }
 
 const ssh_cipheralg ssh_des = {
-    des_cbc_new, des_cbc_free, des_cbc_setiv, des_cbc_setkey,
-    des_cbc_encrypt, des_cbc_decrypt, NULL, NULL, "des-cbc",
-    8, 56, 8, SSH_CIPHER_IS_CBC, "single-DES CBC", NULL
+    .new = des_cbc_new,
+    .free = des_cbc_free,
+    .setiv = des_cbc_setiv,
+    .setkey = des_cbc_setkey,
+    .encrypt = des_cbc_encrypt,
+    .decrypt = des_cbc_decrypt,
+    .ssh2_id = "des-cbc",
+    .blksize = 8,
+    .real_keybits = 56,
+    .padded_keybytes = 8,
+    .flags = SSH_CIPHER_IS_CBC,
+    .text_name = "single-DES CBC",
 };
 
 const ssh_cipheralg ssh_des_sshcom_ssh2 = {
     /* Same as ssh_des_cbc, but with a different SSH-2 ID */
-    des_cbc_new, des_cbc_free, des_cbc_setiv, des_cbc_setkey,
-    des_cbc_encrypt, des_cbc_decrypt, NULL, NULL, "des-cbc@ssh.com",
-    8, 56, 8, SSH_CIPHER_IS_CBC, "single-DES CBC", NULL
+    .new = des_cbc_new,
+    .free = des_cbc_free,
+    .setiv = des_cbc_setiv,
+    .setkey = des_cbc_setkey,
+    .encrypt = des_cbc_encrypt,
+    .decrypt = des_cbc_decrypt,
+    .ssh2_id = "des-cbc@ssh.com",
+    .blksize = 8,
+    .real_keybits = 56,
+    .padded_keybytes = 8,
+    .flags = SSH_CIPHER_IS_CBC,
+    .text_name = "single-DES CBC",
 };
 
 static const ssh_cipheralg *const des_list[] = {
@@ -784,9 +802,18 @@ static void des3_cbc1_cbc_decrypt(ssh_cipher *ciph, void *vdata, int len)
 }
 
 const ssh_cipheralg ssh_3des_ssh2 = {
-    des3_cbc1_new, des3_cbc1_free, des3_cbc1_setiv, des3_cbc1_setkey,
-    des3_cbc1_cbc_encrypt, des3_cbc1_cbc_decrypt, NULL, NULL, "3des-cbc",
-    8, 168, 24, SSH_CIPHER_IS_CBC, "triple-DES CBC", NULL
+    .new = des3_cbc1_new,
+    .free = des3_cbc1_free,
+    .setiv = des3_cbc1_setiv,
+    .setkey = des3_cbc1_setkey,
+    .encrypt = des3_cbc1_cbc_encrypt,
+    .decrypt = des3_cbc1_cbc_decrypt,
+    .ssh2_id = "3des-cbc",
+    .blksize = 8,
+    .real_keybits = 168,
+    .padded_keybytes = 24,
+    .flags = SSH_CIPHER_IS_CBC,
+    .text_name = "triple-DES CBC",
 };
 
 /* ----------------------------------------------------------------------
@@ -872,9 +899,18 @@ static void des3_sdctr_encrypt_decrypt(ssh_cipher *ciph, void *vdata, int len)
 }
 
 const ssh_cipheralg ssh_3des_ssh2_ctr = {
-    des3_sdctr_new, des3_sdctr_free, des3_sdctr_setiv, des3_sdctr_setkey,
-    des3_sdctr_encrypt_decrypt, des3_sdctr_encrypt_decrypt,
-    NULL, NULL, "3des-ctr", 8, 168, 24, 0, "triple-DES SDCTR", NULL
+    .new = des3_sdctr_new,
+    .free = des3_sdctr_free,
+    .setiv = des3_sdctr_setiv,
+    .setkey = des3_sdctr_setkey,
+    .encrypt = des3_sdctr_encrypt_decrypt,
+    .decrypt = des3_sdctr_encrypt_decrypt,
+    .ssh2_id = "3des-ctr",
+    .blksize = 8,
+    .real_keybits = 168,
+    .padded_keybytes = 24,
+    .flags = 0,
+    .text_name = "triple-DES SDCTR",
 };
 
 static const ssh_cipheralg *const des3_list[] = {
@@ -998,7 +1034,15 @@ static void des3_cbc3_cbc_decrypt(ssh_cipher *ciph, void *vdata, int len)
 }
 
 const ssh_cipheralg ssh_3des_ssh1 = {
-    des3_cbc3_new, des3_cbc3_free, des3_cbc3_setiv, des3_cbc3_setkey,
-    des3_cbc3_cbc_encrypt, des3_cbc3_cbc_decrypt, NULL, NULL, NULL,
-    8, 168, 24, SSH_CIPHER_IS_CBC, "triple-DES inner-CBC", NULL
+    .new = des3_cbc3_new,
+    .free = des3_cbc3_free,
+    .setiv = des3_cbc3_setiv,
+    .setkey = des3_cbc3_setkey,
+    .encrypt = des3_cbc3_cbc_encrypt,
+    .decrypt = des3_cbc3_cbc_decrypt,
+    .blksize = 8,
+    .real_keybits = 168,
+    .padded_keybytes = 24,
+    .flags = SSH_CIPHER_IS_CBC,
+    .text_name = "triple-DES inner-CBC",
 };

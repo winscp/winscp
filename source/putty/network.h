@@ -44,25 +44,37 @@ struct Plug {
     const struct PlugVtable *vt;
 };
 
+typedef enum PlugLogType {
+    PLUGLOG_CONNECT_TRYING,
+    PLUGLOG_CONNECT_FAILED,
+    PLUGLOG_CONNECT_SUCCESS,
+    PLUGLOG_PROXY_MSG,
+} PlugLogType;
+
 struct PlugVtable {
-    void (*log)(Plug *p, int type, SockAddr *addr, int port,
+    void (*log)(Plug *p, PlugLogType type, SockAddr *addr, int port,
                 const char *error_msg, int error_code);
     /*
      * Passes the client progress reports on the process of setting
      * up the connection.
      *
-     *  - type==0 means we are about to try to connect to address
-     *    `addr' (error_msg and error_code are ignored)
-     *  - type==1 means we have failed to connect to address `addr'
-     *    (error_msg and error_code are supplied). This is not a
-     *    fatal error - we may well have other candidate addresses
-     *    to fall back to. When it _is_ fatal, the closing()
+     *  - PLUGLOG_CONNECT_TRYING means we are about to try to connect
+     *    to address `addr' (error_msg and error_code are ignored)
+     *
+     *  - PLUGLOG_CONNECT_FAILED means we have failed to connect to
+     *    address `addr' (error_msg and error_code are supplied). This
+     *    is not a fatal error - we may well have other candidate
+     *    addresses to fall back to. When it _is_ fatal, the closing()
      *    function will be called.
-     *  - type==2 means that error_msg contains a line of generic
-     *    logging information about setting up the connection. This
-     *    will typically be a wodge of standard-error output from a
-     *    proxy command, so the receiver should probably prefix it to
-     *    indicate this.
+     *
+     *  - PLUGLOG_CONNECT_SUCCESS means we have succeeded in
+     *    connecting to address `addr'.
+     *
+     *  - PLUGLOG_PROXY_MSG means that error_msg contains a line of
+     *    logging information from whatever the connection is being
+     *    proxied through. This will typically be a wodge of
+     *    standard-error output from a local proxy command, so the
+     *    receiver should probably prefix it to indicate this.
      */
     void (*closing)
      (Plug *p, const char *error_msg, int error_code, bool calling_back);
@@ -264,9 +276,13 @@ char *get_hostname(void);
 /*
  * Trivial socket implementation which just stores an error. Found in
  * errsock.c.
+ *
+ * The consume_string variant takes an already-formatted dynamically
+ * allocated string, and takes over ownership of that string.
  */
 Socket *new_error_socket_fmt(Plug *plug, const char *fmt, ...)
     PRINTF_LIKE(2, 3);
+Socket *new_error_socket_consume_string(Plug *plug, char *errmsg);
 
 /*
  * Trivial plug that does absolutely nothing. Found in nullplug.c.
@@ -283,7 +299,7 @@ extern Plug *const nullplug;
  * Exports from be_misc.c.
  */
 void backend_socket_log(Seat *seat, LogContext *logctx,
-                        int type, SockAddr *addr, int port,
+                        PlugLogType type, SockAddr *addr, int port,
                         const char *error_msg, int error_code, Conf *conf,
                         bool session_started);
 

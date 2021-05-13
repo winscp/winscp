@@ -140,6 +140,9 @@ struct FontSpec *fontspec_new(
 #define DECL_WINDOWS_FUNCTION(linkage, rettype, name, params)   \
     typedef rettype (WINAPI *t_##name) params;                  \
     linkage t_##name p_##name
+/* If you DECL_WINDOWS_FUNCTION as extern in a header file, use this to
+ * define the function pointer in a source file */
+#define DEF_WINDOWS_FUNCTION(name) t_##name p_##name
 #define STR1(x) #x
 #define STR(x) STR1(x)
 #define GET_WINDOWS_FUNCTION_PP(module, name)                           \
@@ -153,19 +156,6 @@ struct FontSpec *fontspec_new(
 #define GET_WINDOWS_FUNCTION_NO_TYPECHECK(module, name) \
     (p_##name = module ?                                \
      (t_##name) GetProcAddress(module, #name) : NULL)
-
-/*
- * Global variables. Most modules declare these `extern', but
- * window.c will do `#define PUTTY_DO_GLOBALS' before including this
- * module, and so will get them properly defined.
-*/
-#ifndef GLOBAL
-#ifdef PUTTY_DO_GLOBALS
-#define GLOBAL
-#else
-#define GLOBAL extern
-#endif
-#endif
 
 #define PUTTY_REG_POS "Software\\SimonTatham\\PuTTY"
 #define PUTTY_REG_PARENT "Software\\SimonTatham"
@@ -207,16 +197,11 @@ typedef void *Ssh_gss_name;
 #endif
 
 /*
- * Window handles for the windows that can be running during a
- * PuTTY session.
+ * The all-important instance handle, saved from WinMain in every GUI
+ * program and exported for other GUI code to pass back to the Windows
+ * API.
  */
-GLOBAL HWND hwnd;       /* the main terminal window */
-GLOBAL HWND logbox;
-
-/*
- * The all-important instance handle.
- */
-GLOBAL HINSTANCE hinst;
+extern HINSTANCE hinst;
 
 /*
  * Help file stuff in winhelp.c.
@@ -229,22 +214,12 @@ void quit_help(HWND hwnd);
 int has_embedded_chm(void);            /* 1 = yes, 0 = no, -1 = N/A */
 
 /*
- * The terminal and logging context are notionally local to the
- * Windows front end, but they must be shared between window.c and
- * windlg.c. Likewise the Seat structure for the Windows GUI, and the
- * Conf for the main session..
- */
-GLOBAL Terminal *term;
-GLOBAL LogContext *logctx;
-GLOBAL Conf *conf;
-
-/*
  * GUI seat methods in windlg.c, so that the vtable definition in
  * window.c can refer to them.
  */
 int win_seat_verify_ssh_host_key(
-    Seat *seat, const char *host, int port,
-    const char *keytype, char *keystr, char *key_fingerprint,
+    Seat *seat, const char *host, int port, const char *keytype,
+    char *keystr, const char *keydisp, char **key_fingerprints,
     void (*callback)(void *ctx, int result), void *ctx);
 int win_seat_confirm_weak_crypto_primitive(
     Seat *seat, const char *algtype, const char *algname,
@@ -252,12 +227,6 @@ int win_seat_confirm_weak_crypto_primitive(
 int win_seat_confirm_weak_cached_hostkey(
     Seat *seat, const char *algname, const char *betteralgs,
     void (*callback)(void *ctx, int result), void *ctx);
-
-/*
- * The Windows GUI seat object itself, so that its methods can be
- * called outside window.c.
- */
-extern Seat *const win_seat;
 
 /*
  * Windows-specific clipboard helper function shared with windlg.c,
@@ -319,6 +288,8 @@ bool socket_writable(SOCKET skt);
 void socket_reselect_all(void);
 /* Make a SockAddr which just holds a named pipe address. */
 SockAddr *sk_namedpipe_addr(const char *pipename);
+/* Turn a WinSock error code into a string. */
+const char *winsock_error_string(int error);
 
 /*
  * winnet.c dynamically loads WinSock 2 or WinSock 1 depending on
@@ -326,12 +297,12 @@ SockAddr *sk_namedpipe_addr(const char *pipename);
  * that module must be exported from it as function pointers. So
  * here they are.
  */
-DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAAsyncSelect,
+DECL_WINDOWS_FUNCTION(extern, int, WSAAsyncSelect,
                       (SOCKET, HWND, u_int, long));
-DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAEventSelect,
+DECL_WINDOWS_FUNCTION(extern, int, WSAEventSelect,
                       (SOCKET, WSAEVENT, long));
-DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAGetLastError, (void));
-DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAEnumNetworkEvents,
+DECL_WINDOWS_FUNCTION(extern, int, WSAGetLastError, (void));
+DECL_WINDOWS_FUNCTION(extern, int, WSAEnumNetworkEvents,
                       (SOCKET, WSAEVENT, LPWSANETWORKEVENTS));
 #ifdef NEED_DECLARATION_OF_SELECT
 /* This declaration is protected by an ifdef for the sake of building
@@ -341,16 +312,27 @@ DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAEnumNetworkEvents,
  * only a modules actually needing to use (or define, or initialise)
  * this function pointer will see its declaration, and _those_ modules
  * - which will be Windows-specific anyway - can take more care. */
-DECL_WINDOWS_FUNCTION(GLOBAL, int, select,
+DECL_WINDOWS_FUNCTION(extern, int, select,
                       (int, fd_set FAR *, fd_set FAR *,
                        fd_set FAR *, const struct timeval FAR *));
 #endif
 
 /*
- * Provided by each client of winnet.c, and called by winnet.c to turn
- * on or off WSA*Select for a given socket.
+ * Implemented differently depending on the client of winnet.c, and
+ * called by winnet.c to turn on or off WSA*Select for a given socket.
  */
-char *do_select(SOCKET skt, bool enable);
+const char *do_select(SOCKET skt, bool enable);
+
+/*
+ * Exports from winselgui.c and winselcli.c, each of which provides an
+ * implementation of do_select.
+ */
+void winselgui_set_hwnd(HWND hwnd);
+void winselgui_clear_hwnd(void);
+
+void winselcli_setup(void);
+SOCKET winselcli_unique_socket(void);
+extern HANDLE winselcli_event;
 
 /*
  * Network-subsystem-related functions provided in other Windows modules.
@@ -359,6 +341,12 @@ Socket *make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
                            Plug *plug, bool overlapped); /* winhsock */
 Socket *new_named_pipe_client(const char *pipename, Plug *plug); /* winnpc */
 Socket *new_named_pipe_listener(const char *pipename, Plug *plug); /* winnps */
+
+/* A lower-level function in winnpc.c, which does most of the work of
+ * new_named_pipe_client (including checking the ownership of what
+ * it's connected to), but returns a plain HANDLE instead of wrapping
+ * it into a Socket. */
+HANDLE connect_to_named_pipe(const char *pipename, char **err);
 
 /*
  * Exports from winctrls.c.
@@ -382,7 +370,10 @@ typedef struct filereq_tag filereq; /* cwd for file requester */
 bool request_file(filereq *state, OPENFILENAME *of, bool preserve, bool save);
 filereq *filereq_new(void);
 void filereq_free(filereq *state);
-int message_box(LPCTSTR text, LPCTSTR caption, DWORD style, DWORD helpctxid);
+void pgp_fingerprints_msgbox(HWND owner);
+int message_box(HWND owner, LPCTSTR text, LPCTSTR caption,
+                DWORD style, DWORD helpctxid);
+void MakeDlgItemBorderless(HWND parent, int id);
 char *GetDlgItemText_alloc(HWND hwnd, int id);
 void split_into_argv(char *, int *, char ***, char ***);
 
@@ -501,6 +492,12 @@ struct winctrl {
     int base_id;
     int num_ids;
     /*
+     * For vertical alignment, the id of a particular representative
+     * control that has the y-extent of the sensible part of the
+     * control.
+     */
+    int align_id;
+    /*
      * Remember what keyboard shortcuts were used by this control,
      * so that when we remove it again we can take them out of the
      * list in the dlgparam.
@@ -551,24 +548,25 @@ void win_setup_config_box(struct controlbox *b, HWND *hwndp, bool has_help,
  * Exports from windlg.c.
  */
 void defuse_showwindow(void);
-bool do_config(void);
-bool do_reconfig(HWND, int);
+bool do_config(Conf *);
+bool do_reconfig(HWND, Conf *, int);
 void showeventlog(HWND);
 void showabout(HWND);
 void force_normal(HWND hwnd);
 void modal_about_box(HWND hwnd);
 void show_help(HWND hwnd);
+HWND event_log_window(void);
 
 /*
  * Exports from winmisc.c.
  */
-GLOBAL DWORD osMajorVersion, osMinorVersion, osPlatformId;
+extern DWORD osMajorVersion, osMinorVersion, osPlatformId;
 void init_winver(void);
 void dll_hijacking_protection(void);
 HMODULE load_system32_dll(const char *libname);
 const char *win_strerror(int error);
 void restrict_process_acl(void);
-GLOBAL bool restricted_acl;
+bool restricted_acl(void);
 void escape_registry_key(const char *in, strbuf *out);
 void unescape_registry_key(const char *in, strbuf *out);
 
@@ -635,16 +633,9 @@ struct handle_sink {
 void handle_sink_init(handle_sink *sink, struct handle *h);
 
 /*
- * winpgntc.c needs to schedule callbacks for asynchronous agent
- * requests. This has to be done differently in GUI and console, so
- * there's an exported function used for the purpose.
- *
- * Also, we supply FLAG_SYNCAGENT to force agent requests to be
- * synchronous in pscp and psftp.
+ * Exports from winpgntc.c.
  */
-void agent_schedule_callback(void (*callback)(void *, void *, int),
-                             void *callback_ctx, void *data, int len);
-#define FLAG_SYNCAGENT 0x1000
+char *agent_named_pipe_name(void);
 
 /*
  * Exports from winser.c.
@@ -701,5 +692,13 @@ char *get_jumplist_registry_entries(void);
 
 /* In winmisc.c */
 char *registry_get_string(HKEY root, const char *path, const char *leaf);
+
+/* In wincliloop.c */
+typedef bool (*cliloop_pre_t)(void *vctx, const HANDLE **extra_handles,
+                              size_t *n_extra_handles);
+typedef bool (*cliloop_post_t)(void *vctx, size_t extra_handle_index);
+void cli_main_loop(cliloop_pre_t pre, cliloop_post_t post, void *ctx);
+bool cliloop_null_pre(void *vctx, const HANDLE **, size_t *);
+bool cliloop_null_post(void *vctx, size_t);
 
 #endif

@@ -8,6 +8,7 @@
 #define PUTTY_SSHPPL_H
 
 typedef void (*packet_handler_fn_t)(PacketProtocolLayer *ppl, PktIn *pktin);
+typedef struct PacketProtocolLayerVtable PacketProtocolLayerVtable;
 
 struct PacketProtocolLayerVtable {
     void (*free)(PacketProtocolLayer *);

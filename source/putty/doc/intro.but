@@ -1,43 +1,45 @@
 \C{intro} Introduction to PuTTY
 
-PuTTY is a free SSH, Telnet and Rlogin client for Windows
+PuTTY is a free SSH, Telnet, Rlogin, and SUPDUP client for Windows
 systems.
 
-\H{you-what} What are SSH, Telnet and Rlogin?
+\H{you-what} What are SSH, Telnet, Rlogin, and SUPDUP?
 
-If you already know what SSH, Telnet and Rlogin are, you can safely
-skip on to the next section.
+If you already know what SSH, Telnet, Rlogin, and SUPDUP are, you can
+safely skip on to the next section.
 
-SSH, Telnet and Rlogin are three ways of doing the same thing:
+SSH, Telnet, Rlogin, and SUPDUP are four ways of doing the same thing:
 logging in to a multi-user computer from another computer, over a
 network.
 
-Multi-user operating systems, such as Unix and VMS, usually present
-a \i{command-line interface} to the user, much like the \q{\i{Command
-Prompt}} or \q{\i{MS-DOS Prompt}} in Windows. The system prints a
-prompt, and you type commands which the system will obey.
+Multi-user operating systems, typically of the Unix family (such as
+Linux, MacOS, and the BSD family), usually present a \i{command-line
+interface} to the user, much like the \q{\i{Command Prompt}} or
+\q{\i{MS-DOS Prompt}} in Windows. The system prints a prompt, and you
+type commands which the system will obey.
 
 Using this type of interface, there is no need for you to be sitting
 at the same machine you are typing commands to. The commands, and
 responses, can be sent over a network, so you can sit at one
 computer and give commands to another one, or even to more than one.
 
-SSH, Telnet and Rlogin are \i\e{network protocols} that allow you to
-do this. On the computer you sit at, you run a \i\e{client}, which
-makes a network connection to the other computer (the \i\e{server}).
-The network connection carries your keystrokes and commands from the
-client to the server, and carries the server's responses back to
-you.
+SSH, Telnet, Rlogin, and SUPDUP are \i\e{network protocols} that allow
+you to do this. On the computer you sit at, you run a \i\e{client},
+which makes a network connection to the other computer (the
+\i\e{server}).  The network connection carries your keystrokes and
+commands from the client to the server, and carries the server's
+responses back to you.
 
 These protocols can also be used for other types of keyboard-based
 interactive session. In particular, there are a lot of bulletin
 boards, \i{talker systems} and \i{MUDs} (Multi-User Dungeons) which support
 access using Telnet. There are even a few that support SSH.
 
-You might want to use SSH, Telnet or Rlogin if:
+You might want to use SSH, Telnet, Rlogin, or SUPDUP if:
 
-\b you have an account on a Unix or VMS system which you want to be
-able to access from somewhere else
+\b you have an account on a Unix system (or some other multi-user OS
+such as VMS or ITS) which you want to be able to access from somewhere
+else
 
 \b your Internet Service Provider provides you with a login account
 on a \i{web server}. (This might also be known as a \i\e{shell account}.
@@ -47,22 +49,22 @@ your commands for you.)
 \b you want to use a \i{bulletin board system}, talker or MUD which can
 be accessed using Telnet.
 
-You probably do \e{not} want to use SSH, Telnet or Rlogin if:
+You probably do \e{not} want to use SSH, Telnet, Rlogin, or SUPDUP if:
 
 \b you only use Windows. Windows computers have their own
 ways of networking between themselves, and unless you are doing
 something fairly unusual, you will not need to use any of these
 remote login protocols.
 
-\H{which-one} How do SSH, Telnet and Rlogin differ?
+\H{which-one} How do SSH, Telnet, Rlogin, and SUPDUP differ?
 
-This list summarises some of the \i{differences between SSH, Telnet
-and Rlogin}.
+This list summarises some of the \i{differences between SSH, Telnet,
+Rlogin, and SUPDUP}.
 
 \b SSH (which stands for \q{\i{secure shell}}) is a recently designed,
 high-security protocol. It uses strong cryptography to protect your
-connection against eavesdropping, hijacking and other attacks. Telnet
-and Rlogin are both older protocols offering minimal security.
+connection against eavesdropping, hijacking and other attacks. Telnet,
+Rlogin, and SUPDUP are all older protocols offering minimal security.
 
 \b SSH and Rlogin both allow you to \I{passwordless login}log in to the
 server without having to type a password. (Rlogin's method of doing this is
@@ -82,5 +84,5 @@ doesn't support SSH, it might be worth trying to persuade the
 administrator to install it.
 
 If your client and server are both behind the same (good) firewall,
-it is more likely to be safe to use Telnet or Rlogin, but we still
-recommend you use SSH.
+it is more likely to be safe to use Telnet, Rlogin, or SUPDUP, but we
+still recommend you use SSH.

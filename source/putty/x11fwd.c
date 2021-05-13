@@ -684,7 +684,7 @@ void x11_format_auth_for_authfile(
     put_stringpl_xauth(bs, authdata);
 }
 
-static void x11_log(Plug *p, int type, SockAddr *addr, int port,
+static void x11_log(Plug *p, PlugLogType type, SockAddr *addr, int port,
                     const char *error_msg, int error_code)
 {
     /* We have no interface to the logging module here, so we drop these. */
@@ -762,11 +762,10 @@ int x11_get_screen_number(char *display)
 }
 
 static const PlugVtable X11Connection_plugvt = {
-    x11_log,
-    x11_closing,
-    x11_receive,
-    x11_sent,
-    NULL
+    .log = x11_log,
+    .closing = x11_closing,
+    .receive = x11_receive,
+    .sent = x11_sent,
 };
 
 static void x11_chan_free(Channel *chan);
@@ -776,29 +775,29 @@ static void x11_send_eof(Channel *chan);
 static void x11_set_input_wanted(Channel *chan, bool wanted);
 static char *x11_log_close_msg(Channel *chan);
 
-static const struct ChannelVtable X11Connection_channelvt = {
-    x11_chan_free,
-    chan_remotely_opened_confirmation,
-    chan_remotely_opened_failure,
-    x11_send,
-    x11_send_eof,
-    x11_set_input_wanted,
-    x11_log_close_msg,
-    chan_default_want_close,
-    chan_no_exit_status,
-    chan_no_exit_signal,
-    chan_no_exit_signal_numeric,
-    chan_no_run_shell,
-    chan_no_run_command,
-    chan_no_run_subsystem,
-    chan_no_enable_x11_forwarding,
-    chan_no_enable_agent_forwarding,
-    chan_no_allocate_pty,
-    chan_no_set_env,
-    chan_no_send_break,
-    chan_no_send_signal,
-    chan_no_change_window_size,
-    chan_no_request_response,
+static const ChannelVtable X11Connection_channelvt = {
+    .free = x11_chan_free,
+    .open_confirmation = chan_remotely_opened_confirmation,
+    .open_failed = chan_remotely_opened_failure,
+    .send = x11_send,
+    .send_eof = x11_send_eof,
+    .set_input_wanted = x11_set_input_wanted,
+    .log_close_msg = x11_log_close_msg,
+    .want_close = chan_default_want_close,
+    .rcvd_exit_status = chan_no_exit_status,
+    .rcvd_exit_signal = chan_no_exit_signal,
+    .rcvd_exit_signal_numeric = chan_no_exit_signal_numeric,
+    .run_shell = chan_no_run_shell,
+    .run_command = chan_no_run_command,
+    .run_subsystem = chan_no_run_subsystem,
+    .enable_x11_forwarding = chan_no_enable_x11_forwarding,
+    .enable_agent_forwarding = chan_no_enable_agent_forwarding,
+    .allocate_pty = chan_no_allocate_pty,
+    .set_env = chan_no_set_env,
+    .send_break = chan_no_send_break,
+    .send_signal = chan_no_send_signal,
+    .change_window_size = chan_no_change_window_size,
+    .request_response = chan_no_request_response,
 };
 
 /*

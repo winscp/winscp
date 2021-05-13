@@ -45,17 +45,14 @@ static SocketPeerInfo *sk_error_peer_info(Socket *s)
 }
 
 static const SocketVtable ErrorSocket_sockvt = {
-    sk_error_plug,
-    sk_error_close,
-    NULL /* write */,
-    NULL /* write_oob */,
-    NULL /* write_eof */,
-    NULL /* set_frozen */,
-    sk_error_socket_error,
-    sk_error_peer_info,
+    .plug = sk_error_plug,
+    .close = sk_error_close,
+    .socket_error = sk_error_socket_error,
+    .peer_info = sk_error_peer_info,
+    /* other methods are NULL */
 };
 
-static Socket *new_error_socket_internal(char *errmsg, Plug *plug)
+Socket *new_error_socket_consume_string(Plug *plug, char *errmsg)
 {
     ErrorSocket *es = snew(ErrorSocket);
     es->sock.vt = &ErrorSocket_sockvt;
@@ -73,5 +70,5 @@ Socket *new_error_socket_fmt(Plug *plug, const char *fmt, ...)
     msg = dupvprintf(fmt, ap);
     va_end(ap);
 
-    return new_error_socket_internal(msg, plug);
+    return new_error_socket_consume_string(plug, msg);
 }

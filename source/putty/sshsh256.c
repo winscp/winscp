@@ -98,8 +98,10 @@ static ssh_hash *sha256_select(const ssh_hashalg *alg)
 }
 
 const ssh_hashalg ssh_sha256 = {
-    sha256_select, NULL, NULL, NULL,
-    32, 64, HASHALG_NAMES_ANNOTATED("SHA-256", "dummy selector vtable"),
+    .new = sha256_select,
+    .hlen = 32,
+    .blocklen = 64,
+    HASHALG_NAMES_ANNOTATED("SHA-256", "dummy selector vtable"),
 };
 
 /* ----------------------------------------------------------------------
@@ -276,26 +278,28 @@ static ssh_hash *sha256_sw_new(const ssh_hashalg *alg)
 {
     sha256_sw *s = snew(sha256_sw);
 
-    memcpy(s->core, sha256_initial_state, sizeof(s->core));
-
-    sha256_block_setup(&s->blk);
-
     s->hash.vt = alg;
     BinarySink_INIT(s, sha256_sw_write);
     BinarySink_DELEGATE_INIT(&s->hash, s);
     return &s->hash;
 }
 
-static ssh_hash *sha256_sw_copy(ssh_hash *hash)
+static void sha256_sw_reset(ssh_hash *hash)
 {
     sha256_sw *s = container_of(hash, sha256_sw, hash);
-    sha256_sw *copy = snew(sha256_sw);
 
-    memcpy(copy, s, sizeof(*copy));
+    memcpy(s->core, sha256_initial_state, sizeof(s->core));
+    sha256_block_setup(&s->blk);
+}
+
+static void sha256_sw_copyfrom(ssh_hash *hcopy, ssh_hash *horig)
+{
+    sha256_sw *copy = container_of(hcopy, sha256_sw, hash);
+    sha256_sw *orig = container_of(horig, sha256_sw, hash);
+
+    memcpy(copy, orig, sizeof(*copy));
     BinarySink_COPIED(copy);
     BinarySink_DELEGATE_INIT(&copy->hash, copy);
-
-    return &copy->hash;
 }
 
 static void sha256_sw_free(ssh_hash *hash)
@@ -315,19 +319,24 @@ static void sha256_sw_write(BinarySink *bs, const void *vp, size_t len)
             sha256_sw_block(s->core, s->blk.block);
 }
 
-static void sha256_sw_final(ssh_hash *hash, uint8_t *digest)
+static void sha256_sw_digest(ssh_hash *hash, uint8_t *digest)
 {
     sha256_sw *s = container_of(hash, sha256_sw, hash);
 
     sha256_block_pad(&s->blk, BinarySink_UPCAST(s));
     for (size_t i = 0; i < 8; i++)
         PUT_32BIT_MSB_FIRST(digest + 4*i, s->core[i]);
-    sha256_sw_free(hash);
 }
 
 const ssh_hashalg ssh_sha256_sw = {
-    sha256_sw_new, sha256_sw_copy, sha256_sw_final, sha256_sw_free,
-    32, 64, HASHALG_NAMES_ANNOTATED("SHA-256", "unaccelerated"),
+    .new = sha256_sw_new,
+    .reset = sha256_sw_reset,
+    .copyfrom = sha256_sw_copyfrom,
+    .digest = sha256_sw_digest,
+    .free = sha256_sw_free,
+    .hlen = 32,
+    .blocklen = 64,
+    HASHALG_NAMES_ANNOTATED("SHA-256", "unaccelerated"),
 };
 
 /* ----------------------------------------------------------------------
@@ -602,12 +611,23 @@ static sha256_ni *sha256_ni_alloc(void)
     return s;
 }
 
-FUNC_ISA static ssh_hash *sha256_ni_new(const ssh_hashalg *alg)
+static ssh_hash *sha256_ni_new(const ssh_hashalg *alg)
 {
     if (!sha256_hw_available_cached())
         return NULL;
 
     sha256_ni *s = sha256_ni_alloc();
+
+    s->hash.vt = alg;
+    BinarySink_INIT(s, sha256_ni_write);
+    BinarySink_DELEGATE_INIT(&s->hash, s);
+
+    return &s->hash;
+}
+
+FUNC_ISA static void sha256_ni_reset(ssh_hash *hash)
+{
+    sha256_ni *s = container_of(hash, sha256_ni, hash);
 
     /* Initialise the core vectors in their storage order */
     s->core[0] = _mm_set_epi64x(
@@ -616,26 +636,19 @@ FUNC_ISA static ssh_hash *sha256_ni_new(const ssh_hashalg *alg)
         0x3c6ef372a54ff53aULL, 0x1f83d9ab5be0cd19ULL);
 
     sha256_block_setup(&s->blk);
-
-    s->hash.vt = alg;
-    BinarySink_INIT(s, sha256_ni_write);
-    BinarySink_DELEGATE_INIT(&s->hash, s);
-    return &s->hash;
 }
 
-static ssh_hash *sha256_ni_copy(ssh_hash *hash)
+static void sha256_ni_copyfrom(ssh_hash *hcopy, ssh_hash *horig)
 {
-    sha256_ni *s = container_of(hash, sha256_ni, hash);
-    sha256_ni *copy = sha256_ni_alloc();
+    sha256_ni *copy = container_of(hcopy, sha256_ni, hash);
+    sha256_ni *orig = container_of(horig, sha256_ni, hash);
 
     void *ptf_save = copy->pointer_to_free;
-    *copy = *s; /* structure copy */
+    *copy = *orig; /* structure copy */
     copy->pointer_to_free = ptf_save;
 
     BinarySink_COPIED(copy);
     BinarySink_DELEGATE_INIT(&copy->hash, copy);
-
-    return &copy->hash;
 }
 
 static void sha256_ni_free(ssh_hash *hash)
@@ -656,7 +669,7 @@ static void sha256_ni_write(BinarySink *bs, const void *vp, size_t len)
             sha256_ni_block(s->core, s->blk.block);
 }
 
-FUNC_ISA static void sha256_ni_final(ssh_hash *hash, uint8_t *digest)
+FUNC_ISA static void sha256_ni_digest(ssh_hash *hash, uint8_t *digest)
 {
     sha256_ni *s = container_of(hash, sha256_ni, hash);
 
@@ -677,13 +690,17 @@ FUNC_ISA static void sha256_ni_final(ssh_hash *hash, uint8_t *digest)
     __m128i *output = (__m128i *)digest;
     _mm_storeu_si128(output, dcba);
     _mm_storeu_si128(output+1, hgfe);
-
-    sha256_ni_free(hash);
 }
 
 const ssh_hashalg ssh_sha256_hw = {
-    sha256_ni_new, sha256_ni_copy, sha256_ni_final, sha256_ni_free,
-    32, 64, HASHALG_NAMES_ANNOTATED("SHA-256", "SHA-NI accelerated"),
+    .new = sha256_ni_new,
+    .reset = sha256_ni_reset,
+    .copyfrom = sha256_ni_copyfrom,
+    .digest = sha256_ni_digest,
+    .free = sha256_ni_free,
+    .hlen = 32,
+    .blocklen = 64,
+    HASHALG_NAMES_ANNOTATED("SHA-256", "SHA-NI accelerated"),
 };
 
 /* ----------------------------------------------------------------------
@@ -818,28 +835,31 @@ static ssh_hash *sha256_neon_new(const ssh_hashalg *alg)
 
     sha256_neon *s = snew(sha256_neon);
 
-    s->core.abcd = vld1q_u32(sha256_initial_state);
-    s->core.efgh = vld1q_u32(sha256_initial_state + 4);
-
-    sha256_block_setup(&s->blk);
-
     s->hash.vt = alg;
     BinarySink_INIT(s, sha256_neon_write);
     BinarySink_DELEGATE_INIT(&s->hash, s);
     return &s->hash;
 }
 
-static ssh_hash *sha256_neon_copy(ssh_hash *hash)
+static void sha256_neon_reset(ssh_hash *hash)
 {
     sha256_neon *s = container_of(hash, sha256_neon, hash);
-    sha256_neon *copy = snew(sha256_neon);
 
-    *copy = *s; /* structure copy */
+    s->core.abcd = vld1q_u32(sha256_initial_state);
+    s->core.efgh = vld1q_u32(sha256_initial_state + 4);
+
+    sha256_block_setup(&s->blk);
+}
+
+static void sha256_neon_copyfrom(ssh_hash *hcopy, ssh_hash *horig)
+{
+    sha256_neon *copy = container_of(hcopy, sha256_neon, hash);
+    sha256_neon *orig = container_of(horig, sha256_neon, hash);
+
+    *copy = *orig; /* structure copy */
 
     BinarySink_COPIED(copy);
     BinarySink_DELEGATE_INIT(&copy->hash, copy);
-
-    return &copy->hash;
 }
 
 static void sha256_neon_free(ssh_hash *hash)
@@ -858,19 +878,24 @@ static void sha256_neon_write(BinarySink *bs, const void *vp, size_t len)
             sha256_neon_block(&s->core, s->blk.block);
 }
 
-static void sha256_neon_final(ssh_hash *hash, uint8_t *digest)
+static void sha256_neon_digest(ssh_hash *hash, uint8_t *digest)
 {
     sha256_neon *s = container_of(hash, sha256_neon, hash);
 
     sha256_block_pad(&s->blk, BinarySink_UPCAST(s));
     vst1q_u8(digest,      vrev32q_u8(vreinterpretq_u8_u32(s->core.abcd)));
     vst1q_u8(digest + 16, vrev32q_u8(vreinterpretq_u8_u32(s->core.efgh)));
-    sha256_neon_free(hash);
 }
 
 const ssh_hashalg ssh_sha256_hw = {
-    sha256_neon_new, sha256_neon_copy, sha256_neon_final, sha256_neon_free,
-    32, 64, HASHALG_NAMES_ANNOTATED("SHA-256", "NEON accelerated"),
+    .new = sha256_neon_new,
+    .reset = sha256_neon_reset,
+    .copyfrom = sha256_neon_copyfrom,
+    .digest = sha256_neon_digest,
+    .free = sha256_neon_free,
+    .hlen = 32,
+    .blocklen = 64,
+    HASHALG_NAMES_ANNOTATED("SHA-256", "NEON accelerated"),
 };
 
 /* ----------------------------------------------------------------------
@@ -895,14 +920,20 @@ static ssh_hash *sha256_stub_new(const ssh_hashalg *alg)
 
 #define STUB_BODY { unreachable("Should never be called"); }
 
-static ssh_hash *sha256_stub_copy(ssh_hash *hash) STUB_BODY
+static void sha256_stub_reset(ssh_hash *hash) STUB_BODY
+static void sha256_stub_copyfrom(ssh_hash *hash, ssh_hash *orig) STUB_BODY
 static void sha256_stub_free(ssh_hash *hash) STUB_BODY
-static void sha256_stub_final(ssh_hash *hash, uint8_t *digest) STUB_BODY
+static void sha256_stub_digest(ssh_hash *hash, uint8_t *digest) STUB_BODY
 
 const ssh_hashalg ssh_sha256_hw = {
-    sha256_stub_new, sha256_stub_copy, sha256_stub_final, sha256_stub_free,
-    32, 64, HASHALG_NAMES_ANNOTATED(
-        "SHA-256", "!NONEXISTENT ACCELERATED VERSION!"),
+    .new = sha256_stub_new,
+    .reset = sha256_stub_reset,
+    .copyfrom = sha256_stub_copyfrom,
+    .digest = sha256_stub_digest,
+    .free = sha256_stub_free,
+    .hlen = 32,
+    .blocklen = 64,
+    HASHALG_NAMES_ANNOTATED("SHA-256", "!NONEXISTENT ACCELERATED VERSION!"),
 };
 
 #endif /* HW_SHA256 */

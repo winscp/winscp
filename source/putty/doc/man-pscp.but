@@ -115,6 +115,19 @@ commands such as \q{\c{w}}).
 
 \dd Force use of SSH protocol version 2.
 
+\dt \cw{-ssh-connection}
+
+\dd Force use of the \q{bare \cw{ssh-connection}} protocol. This is
+only likely to be useful when connecting to a \e{psusan(1)} server,
+most likely with an absolute path to a Unix-domain socket in place
+of \e{host}.
+
+\dt \cw{-ssh}
+
+\dd Force use of the SSH protocol. (This is usually not needed; it's
+only likely to be useful if you need to override some other
+configuration of the \q{bare \cw{ssh-connection}} protocol.)
+
 \dt \cw{-4}, \cw{-6}
 
 \dd Force use of IPv4 or IPv6 for network connections.
@@ -145,8 +158,9 @@ to override a setting in a saved session.)
 \dt \cw{\-hostkey} \e{key}
 
 \dd Specify an acceptable host public key. This option may be specified
-multiple times; each key can be either a fingerprint (\cw{99:aa:bb:...}) or
-a base64-encoded blob in OpenSSH's one-line format.
+multiple times; each key can be either a fingerprint (\cw{SHA256:AbCdE...},
+\cw{99:aa:bb:...}, etc) or a base64-encoded blob in OpenSSH's one-line
+format.
 
 \lcont{ Specifying this option overrides automated host key
 management; \e{only} the key(s) specified on the command-line will be
@@ -175,6 +189,16 @@ to suppress obvious passwords.)
 \cw{\-v} would print). \cw{\-sshrawlog} additionally logs the raw
 encrypted packet data.
 }
+
+\dt \cw{\-logoverwrite}
+
+\dd If PSCP is configured to write to a log file that already exists,
+discard the existing file.
+
+\dt \cw{\-logappend}
+
+\dd If PSCP is configured to write to a log file that already exists,
+append new log data to the existing file.
 
 \S{pscp-manpage-more-information} MORE INFORMATION
 

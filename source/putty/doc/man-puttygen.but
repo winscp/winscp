@@ -8,12 +8,14 @@
 
 \S{puttygen-manpage-synopsis} SYNOPSIS
 
-\c puttygen ( keyfile | -t keytype [ -b bits ] )
-\e bbbbbbbb   iiiiiii   bb iiiiiii   bb iiii
-\c          [ -C new-comment ] [ -P ] [ -q ]
-\e            bb iiiiiiiiiii     bb     bb
-\c          [ -O output-type | -l | -L | -p ]
-\e            bb iiiiiiiiiii   bb   bb   bb
+\c puttygen ( keyfile | -t keytype [ -b bits ] [ --primes method ] [ -q ] )
+\e bbbbbbbb   iiiiiii   bb iiiiiii   bb iiii     bbbbbbbb iiiiii     bb
+\c          [ -C new-comment ] [ -P ] [ --reencrypt ]
+\e            bb iiiiiiiiiii     bb     bbbbbbbbbbb
+\c          [ -O output-type | -l | -L | -p | --dump ] [ -E fptype ]
+\e            bb iiiiiiiiiii   bb   bb   bb   bbbbbb     bb iiiiii
+\c             [ --ppk-param key=value,... ]
+\e               bbbbbbbbbbb iiibiiiiib
 \c          [ -o output-file ]
 \e            bb iiiiiiiiiii
 
@@ -26,7 +28,7 @@ also interoperate with the key formats used by some other SSH clients.
 When you run \c{puttygen}, it does three things. Firstly, it either
 loads an existing key file (if you specified \e{keyfile}), or
 generates a new key (if you specified \e{keytype}). Then, it
-optionally makes modifications to the key (changing the comment
+optionally makes modifications to the key (such as changing the comment
 and/or the passphrase); finally, it outputs the key, or some
 information about the key, to a file.
 
@@ -44,7 +46,8 @@ The options to control this phase are:
 
 \dt \e{keyfile}
 
-\dd Specify a key file to be loaded.
+\dd Specify a key file to be loaded. (Use \cq{-} to read a key
+file from standard input.)
 
 \lcont{
 
@@ -63,12 +66,50 @@ OpenSSH format, or the standard SSH-1 format.
 \dt \cw{\-t} \e{keytype}
 
 \dd Specify a type of key to generate. The acceptable values here are
-\c{rsa}, \c{dsa}, \c{ecdsa}, and \c{ed25519} (to generate SSH-2 keys),
-and \c{rsa1} (to generate SSH-1 keys).
+\c{rsa}, \c{dsa}, \c{ecdsa}, \c{eddsa}, \c{ed25519}, and \c{ed448}
+(to generate SSH-2 keys), and \c{rsa1} (to generate SSH-1 keys).
 
 \dt \cw{\-b} \e{bits}
 
-\dd Specify the size of the key to generate, in bits. Default is 2048.
+\dd Specify the size of the key to generate, in bits. Default for
+\c{rsa} and \c{dsa} keys is 2048.
+
+\dt \cw{\-\-primes} \e{method}
+
+\dd Method for generating prime numbers. The acceptable values here
+are \c{probable} (the default), \c{proven}, and \c{proven-even};
+the later methods are slower. (Various synonyms for these method
+names are also accepted.)
+
+\lcont{
+
+The \q{probable primes} method sounds unsafe, but it's the most
+commonly used prime-generation strategy. There is in theory a
+possibility that it might accidentally generate a number that isn't
+prime, but the software does enough checking to make that probability
+vanishingly small (less than 1 in 2^80, or 1 in 10^24). So, in
+practice, nobody worries about it very much.
+
+The other methods cause PuTTYgen to use numbers that it is \e{sure}
+are prime, because it generates the output number together with a
+proof of its primality. This takes more effort, but it eliminates that
+theoretical risk in the probabilistic method.
+
+You might choose to switch from probable to proven primes if you have
+a local security standard that demands it, or if you don't trust the
+probabilistic argument for the safety of the usual method.
+
+}
+
+\dt \cw{\-\-strong-rsa}
+
+\dd When generating an RSA key, make sure the prime factors of the key
+modulus are \q{strong primes}. A strong prime is a prime number chosen
+to have a particular structure that makes certain factoring algorithms
+more difficult to apply, so some security standards recommend their
+use. However, the most modern factoring algorithms are unaffected, so
+this option is probably not worth turning on \e{unless} you have a
+local standard that recommends it.
 
 \dt \cw{\-q}
 
@@ -102,6 +143,70 @@ to type).
 automatic when you are generating a new key, but not when you are
 modifying an existing key.
 
+\dt \cw{\-\-reencrypt}
+
+\dd For an existing private key saved with a passphrase, refresh the
+encryption without changing the passphrase.
+
+\lcont{
+This is most likely to be useful with the \cw{\-\-ppk-param} option,
+to change some aspect of the key file's format or encryption.
+}
+
+\dt \cw{\-\-ppk-param} \e{key}\cw{=}\e{value}\cw{,}...
+
+\dd When saving a PPK file (the default \cw{private} output type for SSH-2
+keys), adjust details of the on-disk format.
+
+\lcont{
+
+Aspects to change are specified as a series of \e{key}\cw{=}\e{value} pairs
+separated by commas. The \e{key}s are:
+
+\dt \cw{version}
+
+\dd The PPK format version. Possible values are \cw{3} (the default)
+and \cw{2} (which is less resistant to brute-force decryption, but
+which you might need if your key needs to be used by old versions of
+PuTTY tools, or other PPK consumers).
+
+\lcont{
+The following \e{key}s only affect PPK version 3 files.
+}
+
+\dt \cw{kdf}
+
+\dd The variant of the Argon2 key derivation function to use. Options
+are \cw{argon2id} (default, and recommended), \cw{argon2i}, and
+\cw{argon2d}.
+
+\lcont{
+You might change this if you consider your exposure to side-channel
+attacks to be different to the norm.
+}
+
+\dt \cw{memory}
+
+\dd The amount of memory needed to decrypt the key, in Kbyte. Default
+is 8192 (i.e., 8 Mbyte).
+
+\dt \cw{time}
+
+\dd Approximate time, on this machine, required to attempt decrypting
+the key, in milliseconds. Default is 100 (ms).
+
+\dt \cw{passes}
+
+\dd Alternative to \cw{time}: explicitly specify the number of hash
+passes required to attempt decrypting the key.
+
+\dt \cw{parallelism}
+
+\dd Number of parallelisable threads that can be used to decrypt the
+key. Default is 1 (force decryption to run single-threaded).
+
+}
+
 In the third phase, \c{puttygen} saves the key or information
 about it. The options to control this are:
 
@@ -115,7 +220,8 @@ Acceptable options are:
 \dt \cw{private}
 
 \dd Save the private key in a format usable by PuTTY. This will either
-be the standard SSH-1 key format, or PuTTY's own SSH-2 key format.
+be the standard SSH-1 key format, or PuTTY's own SSH-2 key format
+(\q{PPK}). This is the default.
 
 \dt \cw{public}
 
@@ -134,8 +240,9 @@ which is a single line (\q{\cw{ssh-rsa AAAAB3NzaC1yc2}...}).
 
 \dt \cw{fingerprint}
 
-\dd Print the fingerprint of the public key. All fingerprinting
-algorithms are believed compatible with OpenSSH.
+\dd Print a fingerprint of the public key. The \cw{-E} option lets you
+specify which fingerprinting algorithm to use. All algorithms are
+believed compatible with OpenSSH.
 
 \dt \cw{private-openssh}
 
@@ -152,6 +259,19 @@ newer format even for RSA, DSA, and ECDSA keys.
 
 \dd Save an SSH-2 private key in ssh.com's format. This option is not
 permitted for SSH-1 keys.
+
+\dt \cw{text}
+
+\dd Save a textual dump of the numeric components comprising the key
+(both the public and private parts, if present). Useful for debugging,
+or for using PuTTYgen as a key generator for applications other than
+SSH.
+
+\lcont{
+The output consists of a series of \cw{name=value} lines, where each
+\c{value} is either a C-like string literal in double quotes, or a
+hexadecimal number starting with \cw{0x...}
+}
 
 If no output type is specified, the default is \c{private}.
 
@@ -177,6 +297,15 @@ fingerprint. Otherwise, the \c{\-o} option is required.
 \dt \cw{\-p}
 
 \dd Synonym for \q{\cw{-O public}}.
+
+\dt \cw{\-\-dump}
+
+\dd Synonym for \q{\cw{-O text}}.
+
+\dt \cw{-E} \e{fptype}
+
+\dd Specify the algorithm to use if generating a fingerprint. The
+options are \cw{sha256} (the default) and \cw{md5}.
 
 \dt \cw{\-\-new\-passphrase} \e{file}
 
@@ -231,7 +360,7 @@ automatically detect the input key type):
 
 \c puttygen my-ssh.com-key -o mykey.ppk
 
-To display the fingerprint of a key (some key types require a
+To display the SHA-256 fingerprint of a key (some key types require a
 passphrase to extract even this much information):
 
 \c puttygen -l mykey.ppk

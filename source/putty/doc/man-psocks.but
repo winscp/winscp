@@ -1,0 +1,92 @@
+\cfg{man-identity}{psocks}{1}{2021-04-08}{PuTTY tool suite}{PuTTY tool suite}
+
+\H{psocks-manpage} Man page for \cw{psocks}
+
+\S{psocks-manpage-name} NAME
+
+\cw{psocks} \- simple SOCKS proxy server
+
+\S{psocks-manpage-synopsis} SYNOPSIS
+
+\c psocks [ -d ] [ -f | -p pipe-cmd ] [ -g ] [ port-number ]
+\e bbbbbb   bb     bb   bb iiiiiiii     bb     iiiiiiiiiii
+
+\S{psocks-manpage-description} DESCRIPTION
+
+\cw{psocks} is a simple SOCKS4/5 proxy server. It supports proxying
+IPv4 and IPv6 connections. It does not support requiring
+authentication of its clients.
+
+\cw{psocks} can be used together with an SSH client such as
+\cw{putty(1)} to implement a reverse dynamic SSH tunnel. It can also
+be used for network protocol debugging, as it can record all the
+traffic passing through it in various ways.
+
+By default, \cw{psocks} listens to connections from localhost only,
+on TCP port 1080. A different \e{port-number} can optionally be
+supplied, and with \cw{-g} it will listen to connections from any
+host.
+
+\cw{psocks} will emit log messages about connections it receives on
+standard error. With \cw{-d}, it will log the contents of those
+connections too.
+
+\S{psocks-manpage-options} OPTIONS
+
+The command-line options supported by \cw{psocks} are:
+
+\dt \cw{-g}
+
+\dd Accept connections from anywhere. By default, \cw{psocks} only
+accepts connections on the loopback interface.
+
+\dt \cw{--exec} \e{command}
+
+\dd \cw{psocks} will run the provided command as a subprocess. When
+the subprocess terminates, \cw{psocks} will terminate as well.
+
+\lcont{
+
+All arguments on the \cw{psocks} command line after \cw{--exec} will be
+treated as part of the command to run, even if they look like other
+valid \cw{psocks} options.
+
+}
+
+\dt \cw{-d}
+
+\dd Log all traffic to standard error, in a more or less human-readable
+form (in addition to messages about connections being opened and
+closed, which are always logged).
+
+\dt \cw{-f}
+
+\dd Record all traffic to files. For every incoming connection, two
+files are created, \cw{sockout.NNNN} and \cw{sockin.NNNN}, where
+\e{NNNN} is a decimal index starting at 0 identifying the proxied
+connection. These record, respectively, traffic from the SOCKS client,
+and from the server it connected to through the proxy.
+
+\dt \cw{-p} \e{pipe-cmd}
+
+\dd Pipe all traffic to a command. For every incoming connection,
+\e{pipe-cmd} is invoked twice:
+
+\lcont{
+\c pipe-cmd out N
+\e iiiiiiii bbb i
+\c pipe-cmd in N
+\e iiiiiiii bb i
+
+Each command will run for the direction of a proxied connection, and
+have the connection's traffic piped into it, similar to \cw{-f}.
+}
+
+\S{psocks-manpage-examples} EXAMPLES
+
+In combination with the \e{plink(1)} SSH client, to set up a reverse
+dynamic SSH tunnel, in which the remote listening port 1080 on
+remote host \cw{myhost} acts as a SOCKS server giving access to your
+local network:
+
+\c psocks 12345 --exec plink -R 1080:localhost:12345 user@myhost

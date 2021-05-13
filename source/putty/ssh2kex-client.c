@@ -13,6 +13,12 @@
 #include "ssh2transport.h"
 #include "mpint.h"
 
+/*
+ * Another copy of the symbol defined in mpunsafe.c. See the comment
+ * there.
+ */
+const int deliberate_symbol_clash = 12345;
+
 void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
 {
     PacketProtocolLayer *ppl = &s->ppl; /* for ppl_logevent */
@@ -250,7 +256,6 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
         s->init_token_sent = false;
         s->complete_rcvd = false;
         s->hkey = NULL;
-        s->fingerprint = NULL;
         s->keystr = NULL;
 
         /*
@@ -715,11 +720,12 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
              * host key, store it.
              */
             if (s->hkey) {
-                s->fingerprint = ssh2_fingerprint(s->hkey);
+                char *fingerprint = ssh2_fingerprint(
+                    s->hkey, SSH_FPTYPE_DEFAULT);
                 ppl_logevent("GSS kex provided fallback host key:");
-                ppl_logevent("%s", s->fingerprint);
-                sfree(s->fingerprint);
-                s->fingerprint = NULL;
+                ppl_logevent("%s", fingerprint);
+                sfree(fingerprint);
+
                 ssh_transient_hostkey_cache_add(s->thc, s->hkey);
             } else if (!ssh_transient_hostkey_cache_non_empty(s->thc)) {
                 /*
@@ -773,25 +779,25 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
              * triggered on purpose to populate the transient cache.
              */
             assert(s->hkey);  /* only KEXTYPE_GSS lets this be null */
-            s->fingerprint = ssh2_fingerprint(s->hkey);
+            char *fingerprint = ssh2_fingerprint(s->hkey, SSH_FPTYPE_DEFAULT);
 
             if (s->need_gss_transient_hostkey) {
                 ppl_logevent("Post-GSS rekey provided fallback host key:");
-                ppl_logevent("%s", s->fingerprint);
+                ppl_logevent("%s", fingerprint);
                 ssh_transient_hostkey_cache_add(s->thc, s->hkey);
                 s->need_gss_transient_hostkey = false;
             } else if (!ssh_transient_hostkey_cache_verify(s->thc, s->hkey)) {
                 ppl_logevent("Non-GSS rekey after initial GSS kex "
                              "used host key:");
-                ppl_logevent("%s", s->fingerprint);
+                ppl_logevent("%s", fingerprint);
+                sfree(fingerprint);
                 ssh_sw_abort(s->ppl.ssh, "Server's host key did not match any "
                              "used in previous GSS kex");
                 *aborted = true;
                 return;
             }
 
-            sfree(s->fingerprint);
-            s->fingerprint = NULL;
+            sfree(fingerprint);
         }
     } else
 #endif /* NO_GSSAPI */
@@ -837,22 +843,29 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
              * Authenticate remote host: verify host key. (We've already
              * checked the signature of the exchange hash.)
              */
-            s->fingerprint = ssh2_fingerprint(s->hkey);
+            char **fingerprints = ssh2_all_fingerprints(s->hkey);
+            FingerprintType fptype_default =
+                ssh2_pick_default_fingerprint(fingerprints);
             ppl_logevent("Host key fingerprint is:");
-            ppl_logevent("%s", s->fingerprint);
+            ppl_logevent("%s", fingerprints[fptype_default]);
             /* First check against manually configured host keys. */
             s->dlgret = verify_ssh_manual_host_key(
-                s->conf, s->fingerprint, s->hkey);
+                s->conf, fingerprints, s->hkey);
             if (s->dlgret == 0) {          /* did not match */
+                ssh2_free_all_fingerprints(fingerprints);
                 ssh_sw_abort(s->ppl.ssh, "Host key did not appear in manually "
                              "configured list");
                 *aborted = true;
                 return;
             } else if (s->dlgret < 0) { /* none configured; use standard handling */
+                ssh2_userkey uk = { .key = s->hkey, .comment = NULL };
+                char *keydisp = ssh2_pubkey_openssh_str(&uk);
                 s->dlgret = seat_verify_ssh_host_key(
                     s->ppl.seat, s->savedhost, s->savedport,
-                    ssh_key_cache_id(s->hkey), s->keystr, s->fingerprint,
-                    ssh2_transport_dialog_callback, s);
+                    ssh_key_cache_id(s->hkey), s->keystr, keydisp,
+                    fingerprints, ssh2_transport_dialog_callback, s);
+                sfree(keydisp);
+                ssh2_free_all_fingerprints(fingerprints);
 #ifdef FUZZING
                 s->dlgret = 1;
 #endif
@@ -864,8 +877,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
                     return;
                 }
             }
-            sfree(s->fingerprint);
-            s->fingerprint = NULL;
+
             /*
              * Save this host key, to check against the one presented in
              * subsequent rekeys.
@@ -876,11 +888,11 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
             assert(s->hkey);
             assert(ssh_key_alg(s->hkey) == s->cross_certifying);
 
-            s->fingerprint = ssh2_fingerprint(s->hkey);
+            char *fingerprint = ssh2_fingerprint(s->hkey, SSH_FPTYPE_DEFAULT);
             ppl_logevent("Storing additional host key for this host:");
-            ppl_logevent("%s", s->fingerprint);
-            sfree(s->fingerprint);
-            s->fingerprint = NULL;
+            ppl_logevent("%s", fingerprint);
+            sfree(fingerprint);
+
             store_host_key(s->savedhost, s->savedport,
                            ssh_key_cache_id(s->hkey), s->keystr);
             /*

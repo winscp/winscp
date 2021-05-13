@@ -62,7 +62,7 @@ static uintmax_t shift_left_by_one_word(uintmax_t n)
         n << (shift_too_big ? 0 : BIGNUM_INT_BITS);
 }
 
-static mp_int *mp_make_sized(size_t nw)
+mp_int *mp_make_sized(size_t nw)
 {
     mp_int *x = snew_plus(mp_int, nw * sizeof(BignumInt));
     assert(nw);                   /* we outlaw the zero-word mp_int */
@@ -117,6 +117,14 @@ void mp_copy_into(mp_int *dest, mp_int *src)
     size_t copy_nw = size_t_min(dest->nw, src->nw);
     memmove(dest->w, src->w, copy_nw * sizeof(BignumInt));
     smemclr(dest->w + copy_nw, (dest->nw - copy_nw) * sizeof(BignumInt));
+}
+
+void mp_copy_integer_into(mp_int *r, uintmax_t n)
+{
+    for (size_t i = 0; i < r->nw; i++) {
+        r->w[i] = n;
+        n = shift_right_by_one_word(n);
+    }
 }
 
 /*
@@ -216,7 +224,7 @@ mp_int *mp_from_decimal_pl(ptrlen decimal)
 
     mp_int *x = mp_make_sized(words);
     for (size_t i = 0; i < decimal.len; i++) {
-        mp_add_integer_into(x, x, ((char *)decimal.ptr)[i] - '0');
+        mp_add_integer_into(x, x, ((const char *)decimal.ptr)[i] - '0');
 
         if (i+1 == decimal.len)
             break;
@@ -245,7 +253,7 @@ mp_int *mp_from_hex_pl(ptrlen hex)
     words = size_t_max(words, 1);
     mp_int *x = mp_make_sized(words);
     for (size_t nibble = 0; nibble < hex.len; nibble++) {
-        BignumInt digit = ((char *)hex.ptr)[hex.len-1 - nibble];
+        BignumInt digit = ((const char *)hex.ptr)[hex.len-1 - nibble];
 
         BignumInt lmask = ~-((BignumInt)((digit-'a')|('f'-digit))
                              >> (BIGNUM_INT_BITS-1));
@@ -905,7 +913,7 @@ unsigned mp_eq_integer(mp_int *x, uintmax_t n)
     return 1 ^ normalise_to_1(diff);   /* return 1 if diff _is_ zero */
 }
 
-void mp_neg_into(mp_int *r, mp_int *a)
+static void mp_neg_into(mp_int *r, mp_int *a)
 {
     mp_int zero;
     zero.nw = 0;
@@ -923,13 +931,6 @@ mp_int *mp_sub(mp_int *x, mp_int *y)
 {
     mp_int *r = mp_make_sized(size_t_max(x->nw, y->nw));
     mp_sub_into(r, x, y);
-    return r;
-}
-
-mp_int *mp_neg(mp_int *a)
-{
-    mp_int *r = mp_make_sized(a->nw);
-    mp_neg_into(r, a);
     return r;
 }
 
@@ -1148,6 +1149,14 @@ void mp_rshift_fixed_into(mp_int *r, mp_int *a, size_t bits)
     }
 }
 
+mp_int *mp_lshift_fixed(mp_int *x, size_t bits)
+{
+    size_t words = (bits + BIGNUM_INT_BITS - 1) / BIGNUM_INT_BITS;
+    mp_int *r = mp_make_sized(x->nw + words);
+    mp_lshift_fixed_into(r, x, bits);
+    return r;
+}
+
 mp_int *mp_rshift_fixed(mp_int *x, size_t bits)
 {
     size_t words = bits / BIGNUM_INT_BITS;
@@ -1165,18 +1174,16 @@ mp_int *mp_rshift_fixed(mp_int *x, size_t bits)
  * by a power of 2 words, using the usual bit twiddling to make the
  * whole shift conditional on the appropriate bit of n.
  */
-mp_int *mp_rshift_safe(mp_int *x, size_t bits)
+static void mp_rshift_safe_in_place(mp_int *r, size_t bits)
 {
     size_t wordshift = bits / BIGNUM_INT_BITS;
     size_t bitshift = bits % BIGNUM_INT_BITS;
-
-    mp_int *r = mp_copy(x);
 
     unsigned clear = (r->nw - wordshift) >> (CHAR_BIT * sizeof(size_t) - 1);
     mp_cond_clear(r, clear);
 
     for (unsigned bit = 0; r->nw >> bit; bit++) {
-        size_t word_offset = 1 << bit;
+        size_t word_offset = (size_t)1 << bit;
         BignumInt mask = -(BignumInt)((wordshift >> bit) & 1);
         for (size_t i = 0; i < r->nw; i++) {
             BignumInt w = mp_word(r, i + word_offset);
@@ -1196,8 +1203,58 @@ mp_int *mp_rshift_safe(mp_int *x, size_t bits)
             r->w[i] ^= (r->w[i] ^ w) & mask;
         }
     }
+}
 
+mp_int *mp_rshift_safe(mp_int *x, size_t bits)
+{
+    mp_int *r = mp_copy(x);
+    mp_rshift_safe_in_place(r, bits);
     return r;
+}
+
+void mp_rshift_safe_into(mp_int *r, mp_int *x, size_t bits)
+{
+    mp_copy_into(r, x);
+    mp_rshift_safe_in_place(r, bits);
+}
+
+static void mp_lshift_safe_in_place(mp_int *r, size_t bits)
+{
+    size_t wordshift = bits / BIGNUM_INT_BITS;
+    size_t bitshift = bits % BIGNUM_INT_BITS;
+
+    /*
+     * Same strategy as mp_rshift_safe_in_place, but of course the
+     * other way up.
+     */
+
+    unsigned clear = (r->nw - wordshift) >> (CHAR_BIT * sizeof(size_t) - 1);
+    mp_cond_clear(r, clear);
+
+    for (unsigned bit = 0; r->nw >> bit; bit++) {
+        size_t word_offset = (size_t)1 << bit;
+        BignumInt mask = -(BignumInt)((wordshift >> bit) & 1);
+        for (size_t i = r->nw; i-- > 0 ;) {
+            BignumInt w = mp_word(r, i - word_offset);
+            r->w[i] ^= (r->w[i] ^ w) & mask;
+        }
+    }
+
+    size_t downshift = BIGNUM_INT_BITS - bitshift;
+    size_t no_shift = (downshift >> BIGNUM_INT_BITS_BITS);
+    downshift &= ~-(size_t)no_shift;
+    BignumInt downshifted_mask = ~-(BignumInt)no_shift;
+
+    for (size_t i = r->nw; i-- > 0 ;) {
+        r->w[i] = (r->w[i] << bitshift) |
+            ((mp_word(r, i-1) >> downshift) & downshifted_mask);
+    }
+}
+
+void mp_lshift_safe_into(mp_int *r, mp_int *x, size_t bits)
+{
+    mp_copy_into(r, x);
+    mp_lshift_safe_in_place(r, bits);
 }
 
 void mp_reduce_mod_2to(mp_int *x, size_t p)
@@ -1533,10 +1590,10 @@ mp_int *mp_modpow(mp_int *base, mp_int *exponent, mp_int *modulus)
 }
 
 /*
- * Given two coprime nonzero input integers a,b, returns two integers
- * A,B such that A*a - B*b = 1. A,B will be the minimal non-negative
- * pair satisfying that criterion, which is equivalent to saying that
- * 0<=A<b and 0<=B<a.
+ * Given two input integers a,b which are not both even, computes d =
+ * gcd(a,b) and also two integers A,B such that A*a - B*b = d. A,B
+ * will be the minimal non-negative pair satisfying that criterion,
+ * which is equivalent to saying that 0 <= A < b/d and 0 <= B < a/d.
  *
  * This algorithm is an adapted form of Stein's algorithm, which
  * computes gcd(a,b) using only addition and bit shifts (i.e. without
@@ -1548,9 +1605,11 @@ mp_int *mp_modpow(mp_int *base, mp_int *exponent, mp_int *modulus)
  *  - if both of a,b are odd, then WLOG a>b, and gcd(a,b) =
  *    gcd(b,(a-b)/2).
  *
- * For this application, I always expect the actual gcd to be coprime,
- * so we can rule out the 'both even' initial case. So this function
- * just performs a sequence of reductions in the following form:
+ * Sometimes this function is used for modular inversion, in which
+ * case we already know we expect the two inputs to be coprime, so to
+ * save time the 'both even' initial case is assumed not to arise (or
+ * to have been handled already by the caller). So this function just
+ * performs a sequence of reductions in the following form:
  *
  *  - if a,b are both odd, sort them so that a > b, and replace a with
  *    b-a; otherwise sort them so that a is the even one
@@ -1561,14 +1620,14 @@ mp_int *mp_modpow(mp_int *base, mp_int *exponent, mp_int *modulus)
  * generate those in each case, based on the coefficients from the
  * reduced pair of numbers:
  *
- *  - If a is even, and u,v are such that u*(a/2) + v*b = 1:
- *     + if u is also even, then this is just (u/2)*a + v*b = 1
- *     + otherwise, (u+b)*(a/2) + (v-a/2)*b is also equal to 1, and
+ *  - If a is even, and u,v are such that u*(a/2) + v*b = d:
+ *     + if u is also even, then this is just (u/2)*a + v*b = d
+ *     + otherwise, (u+b)*(a/2) + (v-a/2)*b is also equal to d, and
  *       since u and b are both odd, (u+b)/2 is an integer, so we have
- *       ((u+b)/2)*a + (v-a/2)*b = 1.
+ *       ((u+b)/2)*a + (v-a/2)*b = d.
  *
- *  - If a,b are both odd, and u,v are such that u*b + v*(a-b) = 1,
- *    then v*a + (u-v)*b = 1.
+ *  - If a,b are both odd, and u,v are such that u*b + v*(a-b) = d,
+ *    then v*a + (u-v)*b = d.
  *
  * In the case where we passed from (a,b) to (b,(a-b)/2), we regard it
  * as having first subtracted b from a and then halved a, so both of
@@ -1586,11 +1645,11 @@ mp_int *mp_modpow(mp_int *base, mp_int *exponent, mp_int *modulus)
  * Also, since these mp_ints are generally treated as unsigned, we
  * store the coefficients by absolute value, with the semantics that
  * they always have opposite sign, and in the unwinding loop we keep a
- * bit indicating whether Aa-Bb is currently expected to be +1 or -1,
- * so that we can do one final conditional adjustment if it's -1.
+ * bit indicating whether Aa-Bb is currently expected to be +d or -d,
+ * so that we can do one final conditional adjustment if it's -d.
  *
  * Once the reduction rules have managed to reduce the input numbers
- * to (0,1), then they are stable (the next reduction will always
+ * to (0,d), then they are stable (the next reduction will always
  * divide the even one by 2, which maps 0 to 0). So it doesn't matter
  * if we do more steps of the algorithm than necessary; hence, for
  * constant time, we just need to find the maximum number we could
@@ -1609,7 +1668,7 @@ mp_int *mp_modpow(mp_int *base, mp_int *exponent, mp_int *modulus)
  * n further steps each of which subtracts 1 from y and halves it.
  */
 static void mp_bezout_into(mp_int *a_coeff_out, mp_int *b_coeff_out,
-                           mp_int *a_in, mp_int *b_in)
+                           mp_int *gcd_out, mp_int *a_in, mp_int *b_in)
 {
     size_t nw = size_t_max(1, size_t_max(a_in->nw, b_in->nw));
 
@@ -1668,99 +1727,126 @@ static void mp_bezout_into(mp_int *a_coeff_out, mp_int *b_coeff_out,
     }
 
     /*
-     * Now we expect to have reduced the two numbers to 0 and 1,
+     * Now we expect to have reduced the two numbers to 0 and d,
      * although we don't know which way round. (But we avoid checking
      * this by assertion; sometimes we'll need to do this computation
      * without giving away that we already know the inputs were bogus.
      * So we'd prefer to just press on and return nonsense.)
      */
 
-    /*
-     * So their Bezout coefficients at this point are simply
-     * themselves.
-     */
-    mp_copy_into(ac, a);
-    mp_copy_into(bc, b);
-
-    /*
-     * We'll maintain the invariant as we unwind that ac * a - bc * b
-     * is either +1 or -1, and we'll remember which. (We _could_ keep
-     * it at +1 the whole time, but it would cost more work every time
-     * round the loop, so it's cheaper to fix that up once at the
-     * end.)
-     *
-     * Initially, the result is +1 if a was the nonzero value after
-     * reduction, and -1 if b was.
-     */
-    unsigned minus_one = b->w[0];
-
-    for (size_t step = steps; step-- > 0 ;) {
+    if (gcd_out) {
         /*
-         * Recover the data from the step we're unwinding.
+         * At this point we can return the actual gcd. Since one of
+         * a,b is it and the other is zero, the easiest way to get it
+         * is to add them together.
          */
-        unsigned both_odd = mp_get_bit(record, step*2);
-        unsigned swap = mp_get_bit(record, step*2+1);
-
-        /*
-         * Unwind the division: if our coefficient of a is odd, we
-         * adjust the coefficients by +b and +a respectively.
-         */
-        unsigned adjust = ac->w[0] & 1;
-        mp_cond_add_into(ac, ac, b, adjust);
-        mp_cond_add_into(bc, bc, a, adjust);
-
-        /*
-         * Now ac is definitely even, so we divide it by two.
-         */
-        mp_rshift_fixed_into(ac, ac, 1);
-
-        /*
-         * Now unwind the subtraction, if there was one, by adding
-         * ac to bc.
-         */
-        mp_cond_add_into(bc, bc, ac, both_odd);
-
-        /*
-         * Undo the transformation of the input numbers, by
-         * multiplying a by 2 and then adding b to a (the latter
-         * only if both_odd).
-         */
-        mp_lshift_fixed_into(a, a, 1);
-        mp_cond_add_into(a, a, b, both_odd);
-
-        /*
-         * Finally, undo the swap. If we do swap, this also
-         * reverses the sign of the current result ac*a+bc*b.
-         */
-        mp_cond_swap(a, b, swap);
-        mp_cond_swap(ac, bc, swap);
-        minus_one ^= swap;
+        mp_add_into(gcd_out, a, b);
     }
 
     /*
-     * Now we expect to have recovered the input a,b.
+     * If the caller _only_ wanted the gcd, and neither Bezout
+     * coefficient is even required, we can skip the entire unwind
+     * stage.
      */
-    assert(mp_cmp_eq(a, a_in) & mp_cmp_eq(b, b_in));
+    if (a_coeff_out || b_coeff_out) {
 
-    /*
-     * But we might find that our current result is -1 instead of +1,
-     * that is, we have A',B' such that A'a - B'b = -1.
-     *
-     * In that situation, we set A = b-A' and B = a-B', giving us
-     * Aa-Bb = ab - A'a - ab + B'b = +1.
-     */
-    mp_sub_into(tmp, b, ac);
-    mp_select_into(ac, ac, tmp, minus_one);
-    mp_sub_into(tmp, a, bc);
-    mp_select_into(bc, bc, tmp, minus_one);
+        /*
+         * The Bezout coefficients of a,b at this point are simply 0
+         * for whichever of a,b is zero, and 1 for whichever is
+         * nonzero. The nonzero number equals gcd(a,b), which by
+         * assumption is odd, so we can do this by just taking the low
+         * bit of each one.
+         */
+        ac->w[0] = mp_get_bit(a, 0);
+        bc->w[0] = mp_get_bit(b, 0);
 
-    /*
-     * Now we really are done. Return the outputs.
-     */
-    if (a_coeff_out)
-        mp_copy_into(a_coeff_out, ac);
-    if (b_coeff_out)
-        mp_copy_into(b_coeff_out, bc);
+        /*
+         * Overwrite a,b themselves with those same numbers. This has
+         * the effect of dividing both of them by d, which will
+         * arrange that during the unwind stage we generate the
+         * minimal coefficients instead of a larger pair.
+         */
+        mp_copy_into(a, ac);
+        mp_copy_into(b, bc);
+
+        /*
+         * We'll maintain the invariant as we unwind that ac * a - bc
+         * * b is either +d or -d (or rather, +1/-1 after scaling by
+         * d), and we'll remember which. (We _could_ keep it at +d the
+         * whole time, but it would cost more work every time round
+         * the loop, so it's cheaper to fix that up once at the end.)
+         *
+         * Initially, the result is +d if a was the nonzero value after
+         * reduction, and -d if b was.
+         */
+        unsigned minus_d = b->w[0];
+
+        for (size_t step = steps; step-- > 0 ;) {
+            /*
+             * Recover the data from the step we're unwinding.
+             */
+            unsigned both_odd = mp_get_bit(record, step*2);
+            unsigned swap = mp_get_bit(record, step*2+1);
+
+            /*
+             * Unwind the division: if our coefficient of a is odd, we
+             * adjust the coefficients by +b and +a respectively.
+             */
+            unsigned adjust = ac->w[0] & 1;
+            mp_cond_add_into(ac, ac, b, adjust);
+            mp_cond_add_into(bc, bc, a, adjust);
+
+            /*
+             * Now ac is definitely even, so we divide it by two.
+             */
+            mp_rshift_fixed_into(ac, ac, 1);
+
+            /*
+             * Now unwind the subtraction, if there was one, by adding
+             * ac to bc.
+             */
+            mp_cond_add_into(bc, bc, ac, both_odd);
+
+            /*
+             * Undo the transformation of the input numbers, by
+             * multiplying a by 2 and then adding b to a (the latter
+             * only if both_odd).
+             */
+            mp_lshift_fixed_into(a, a, 1);
+            mp_cond_add_into(a, a, b, both_odd);
+
+            /*
+             * Finally, undo the swap. If we do swap, this also
+             * reverses the sign of the current result ac*a+bc*b.
+             */
+            mp_cond_swap(a, b, swap);
+            mp_cond_swap(ac, bc, swap);
+            minus_d ^= swap;
+        }
+
+        /*
+         * Now we expect to have recovered the input a,b (or rather,
+         * the versions of them divided by d). But we might find that
+         * our current result is -d instead of +d, that is, we have
+         * A',B' such that A'a - B'b = -d.
+         *
+         * In that situation, we set A = b-A' and B = a-B', giving us
+         * Aa-Bb = ab - A'a - ab + B'b = +1.
+         */
+        mp_sub_into(tmp, b, ac);
+        mp_select_into(ac, ac, tmp, minus_d);
+        mp_sub_into(tmp, a, bc);
+        mp_select_into(bc, bc, tmp, minus_d);
+
+        /*
+         * Now we really are done. Return the outputs.
+         */
+        if (a_coeff_out)
+            mp_copy_into(a_coeff_out, ac);
+        if (b_coeff_out)
+            mp_copy_into(b_coeff_out, bc);
+
+    }
 
     mp_free(a);
     mp_free(b);
@@ -1773,8 +1859,63 @@ static void mp_bezout_into(mp_int *a_coeff_out, mp_int *b_coeff_out,
 mp_int *mp_invert(mp_int *x, mp_int *m)
 {
     mp_int *result = mp_make_sized(m->nw);
-    mp_bezout_into(result, NULL, x, m);
+    mp_bezout_into(result, NULL, NULL, x, m);
     return result;
+}
+
+void mp_gcd_into(mp_int *a, mp_int *b, mp_int *gcd, mp_int *A, mp_int *B)
+{
+    /*
+     * Identify shared factors of 2. To do this we OR the two numbers
+     * to get something whose lowest set bit is in the right place,
+     * remove all higher bits by ANDing it with its own negation, and
+     * use mp_get_nbits to find the location of the single remaining
+     * set bit.
+     */
+    mp_int *tmp = mp_make_sized(size_t_max(a->nw, b->nw));
+    for (size_t i = 0; i < tmp->nw; i++)
+        tmp->w[i] = mp_word(a, i) | mp_word(b, i);
+    BignumCarry carry = 1;
+    for (size_t i = 0; i < tmp->nw; i++) {
+        BignumInt negw;
+        BignumADC(negw, carry, 0, ~tmp->w[i], carry);
+        tmp->w[i] &= negw;
+    }
+    size_t shift = mp_get_nbits(tmp) - 1;
+    mp_free(tmp);
+
+    /*
+     * Make copies of a,b with those shared factors of 2 divided off,
+     * so that at least one is odd (which is the precondition for
+     * mp_bezout_into). Compute the gcd of those.
+     */
+    mp_int *as = mp_rshift_safe(a, shift);
+    mp_int *bs = mp_rshift_safe(b, shift);
+    mp_bezout_into(A, B, gcd, as, bs);
+    mp_free(as);
+    mp_free(bs);
+
+    /*
+     * And finally shift the gcd back up (unless the caller didn't
+     * even ask for it), to put the shared factors of 2 back in.
+     */
+    if (gcd)
+        mp_lshift_safe_in_place(gcd, shift);
+}
+
+mp_int *mp_gcd(mp_int *a, mp_int *b)
+{
+    mp_int *gcd = mp_make_sized(size_t_min(a->nw, b->nw));
+    mp_gcd_into(a, b, gcd, NULL, NULL);
+    return gcd;
+}
+
+unsigned mp_coprime(mp_int *a, mp_int *b)
+{
+    mp_int *gcd = mp_gcd(a, b);
+    unsigned toret = mp_eq_integer(gcd, 1);
+    mp_free(gcd);
+    return toret;
 }
 
 static uint32_t recip_approx_32(uint32_t x)
@@ -1901,7 +2042,7 @@ void mp_divmod_into(mp_int *n, mp_int *d, mp_int *q_out, mp_int *r_out)
      */
     size_t shift_up = 0;
     for (size_t i = BIGNUM_INT_BITS_BITS; i-- > 0;) {
-        size_t sl = 1 << i;               /* left shift count */
+        size_t sl = (size_t)1 << i;       /* left shift count */
         size_t sr = 64 - sl;     /* complementary right-shift count */
 
         /* Should we shift up? */
@@ -1938,7 +2079,7 @@ void mp_divmod_into(mp_int *n, mp_int *d, mp_int *q_out, mp_int *r_out)
      * instructions, e.g. by splitting up into cases.
      */
     for (size_t i = BIGNUM_INT_BITS_BITS; i-- > 0;) {
-        size_t sl = 1 << i;               /* left shift count */
+        size_t sl = (size_t)1 << i;       /* left shift count */
         size_t sr = 64 - sl;     /* complementary right-shift count */
 
         /* Should we shift up? */
@@ -2116,6 +2257,82 @@ mp_int *mp_mod(mp_int *n, mp_int *d)
     mp_int *r = mp_make_sized(d->nw);
     mp_divmod_into(n, d, NULL, r);
     return r;
+}
+
+mp_int *mp_nthroot(mp_int *y, unsigned n, mp_int *remainder_out)
+{
+    /*
+     * Allocate scratch space.
+     */
+    mp_int **alloc, **powers, **newpowers, *scratch;
+    size_t nalloc = 2*(n+1)+1;
+    alloc = snewn(nalloc, mp_int *);
+    for (size_t i = 0; i < nalloc; i++)
+        alloc[i] = mp_make_sized(y->nw + 1);
+    powers = alloc;
+    newpowers = alloc + (n+1);
+    scratch = alloc[2*n+2];
+
+    /*
+     * We're computing the rounded-down nth root of y, i.e. the
+     * maximal x such that x^n <= y. We try to add 2^i to it for each
+     * possible value of i, starting from the largest one that might
+     * fit (i.e. such that 2^{n*i} fits in the size of y) downwards to
+     * i=0.
+     *
+     * We track all the smaller powers of x in the array 'powers'. In
+     * each iteration, if we update x, we update all of those values
+     * to match.
+     */
+    mp_copy_integer_into(powers[0], 1);
+    for (size_t s = mp_max_bits(y) / n + 1; s-- > 0 ;) {
+        /*
+         * Let b = 2^s. We need to compute the powers (x+b)^i for each
+         * i, starting from our recorded values of x^i.
+         */
+        for (size_t i = 0; i < n+1; i++) {
+            /*
+             * (x+b)^i = x^i
+             *         + (i choose 1) x^{i-1} b
+             *         + (i choose 2) x^{i-2} b^2
+             *         + ...
+             *         + b^i
+             */
+            uint16_t binom = 1;       /* coefficient of b^i */
+            mp_copy_into(newpowers[i], powers[i]);
+            for (size_t j = 0; j < i; j++) {
+                /* newpowers[i] += binom * powers[j] * 2^{(i-j)*s} */
+                mp_mul_integer_into(scratch, powers[j], binom);
+                mp_lshift_fixed_into(scratch, scratch, (i-j) * s);
+                mp_add_into(newpowers[i], newpowers[i], scratch);
+
+                uint32_t binom_mul = binom;
+                binom_mul *= (i-j);
+                binom_mul /= (j+1);
+                assert(binom_mul < 0x10000);
+                binom = binom_mul;
+            }
+        }
+
+        /*
+         * Now, is the new value of x^n still <= y? If so, update.
+         */
+        unsigned newbit = mp_cmp_hs(y, newpowers[n]);
+        for (size_t i = 0; i < n+1; i++)
+            mp_select_into(powers[i], powers[i], newpowers[i], newbit);
+    }
+
+    if (remainder_out)
+        mp_sub_into(remainder_out, y, powers[n]);
+
+    mp_int *root = mp_new(mp_max_bits(y) / n);
+    mp_copy_into(root, powers[1]);
+
+    for (size_t i = 0; i < nalloc; i++)
+        mp_free(alloc[i]);
+    sfree(alloc);
+
+    return root;
 }
 
 mp_int *mp_modmul(mp_int *x, mp_int *y, mp_int *modulus)
@@ -2400,10 +2617,8 @@ mp_int *mp_random_bits_fn(size_t bits, random_read_fn_t random_read)
     return toret;
 }
 
-mp_int *mp_random_in_range_fn(mp_int *lo, mp_int *hi, random_read_fn_t rf)
+mp_int *mp_random_upto_fn(mp_int *limit, random_read_fn_t rf)
 {
-    mp_int *n_outcomes = mp_sub(hi, lo);
-
     /*
      * It would be nice to generate our random numbers in such a way
      * as to make every possible outcome literally equiprobable. But
@@ -2413,10 +2628,19 @@ mp_int *mp_random_in_range_fn(mp_int *lo, mp_int *hi, random_read_fn_t rf)
      * is acceptable on the grounds that you'd have to examine so many
      * outputs to even detect it.
      */
-    mp_int *unreduced = mp_random_bits_fn(mp_max_bits(n_outcomes) + 128, rf);
-    mp_int *reduced = mp_mod(unreduced, n_outcomes);
-    mp_add_into(reduced, reduced, lo);
+    mp_int *unreduced = mp_random_bits_fn(mp_max_bits(limit) + 128, rf);
+    mp_int *reduced = mp_mod(unreduced, limit);
     mp_free(unreduced);
-    mp_free(n_outcomes);
     return reduced;
+}
+
+mp_int *mp_random_in_range_fn(mp_int *lo, mp_int *hi, random_read_fn_t rf)
+{
+    mp_int *n_outcomes = mp_sub(hi, lo);
+    mp_int *addend = mp_random_upto_fn(n_outcomes, rf);
+    mp_int *result = mp_make_sized(hi->nw);
+    mp_add_into(result, addend, lo);
+    mp_free(addend);
+    mp_free(n_outcomes);
+    return result;
 }

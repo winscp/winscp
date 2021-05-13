@@ -319,3 +319,6 @@ struct MontyContext {
      */
     mp_int *scratch;
 };
+
+/* Functions shared between mpint.c and mpunsafe.c */
+mp_int *mp_make_sized(size_t nw);

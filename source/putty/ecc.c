@@ -486,10 +486,10 @@ static void ecc_weierstrass_normalise(WeierstrassPoint *wp)
     mp_int *zinv3 = monty_mul(wc->mc, zinv2, zinv);
     monty_mul_into(wc->mc, wp->X, wp->X, zinv2);
     monty_mul_into(wc->mc, wp->Y, wp->Y, zinv3);
+    monty_mul_into(wc->mc, wp->Z, wp->Z, zinv);
     mp_free(zinv);
     mp_free(zinv2);
     mp_free(zinv3);
-    mp_copy_into(wp->Z, monty_identity(wc->mc));
 }
 
 void ecc_weierstrass_get_affine(
@@ -759,8 +759,8 @@ static void ecc_montgomery_normalise(MontgomeryPoint *mp)
     MontgomeryCurve *mc = mp->mc;
     mp_int *zinv = monty_invert(mc->mc, mp->Z);
     monty_mul_into(mc->mc, mp->X, mp->X, zinv);
+    monty_mul_into(mc->mc, mp->Z, mp->Z, zinv);
     mp_free(zinv);
-    mp_copy_into(mp->Z, monty_identity(mc->mc));
 }
 
 MontgomeryPoint *ecc_montgomery_multiply(MontgomeryPoint *B, mp_int *n)
@@ -831,6 +831,11 @@ void ecc_montgomery_get_affine(MontgomeryPoint *mp, mp_int **x)
 
     if (x)
         *x = monty_export(mc->mc, mp->X);
+}
+
+unsigned ecc_montgomery_is_identity(MontgomeryPoint *mp)
+{
+    return mp_eq_integer(mp->Z, 0);
 }
 
 /* ----------------------------------------------------------------------
@@ -1083,8 +1088,8 @@ static void ecc_edwards_normalise(EdwardsPoint *ep)
     mp_int *zinv = monty_invert(ec->mc, ep->Z);
     monty_mul_into(ec->mc, ep->X, ep->X, zinv);
     monty_mul_into(ec->mc, ep->Y, ep->Y, zinv);
+    monty_mul_into(ec->mc, ep->Z, ep->Z, zinv);
     mp_free(zinv);
-    mp_copy_into(ep->Z, monty_identity(ec->mc));
     monty_mul_into(ec->mc, ep->T, ep->X, ep->Y);
 }
 

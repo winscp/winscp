@@ -13,12 +13,12 @@
 #include "mpint.h"
 #include "misc.h"
 
-static bool openssh_pem_encrypted(const Filename *file);
-static bool openssh_new_encrypted(const Filename *file);
+static bool openssh_pem_encrypted(BinarySource *src);
+static bool openssh_new_encrypted(BinarySource *src);
 static ssh2_userkey *openssh_pem_read(
-    const Filename *file, const char *passphrase, const char **errmsg_p);
+    BinarySource *src, const char *passphrase, const char **errmsg_p);
 static ssh2_userkey *openssh_new_read(
-    const Filename *file, const char *passphrase, const char **errmsg_p);
+    BinarySource *src, const char *passphrase, const char **errmsg_p);
 static bool openssh_auto_write(
     const Filename *file, ssh2_userkey *key, const char *passphrase);
 static bool openssh_pem_write(
@@ -26,9 +26,9 @@ static bool openssh_pem_write(
 static bool openssh_new_write(
     const Filename *file, ssh2_userkey *key, const char *passphrase);
 
-static bool sshcom_encrypted(const Filename *file, char **comment);
+static bool sshcom_encrypted(BinarySource *src, char **comment);
 static ssh2_userkey *sshcom_read(
-    const Filename *file, const char *passphrase, const char **errmsg_p);
+    BinarySource *src, const char *passphrase, const char **errmsg_p);
 static bool sshcom_write(
     const Filename *file, ssh2_userkey *key, const char *passphrase);
 
@@ -59,48 +59,95 @@ int import_target_type(int type)
     return SSH_KEYTYPE_SSH2;
 }
 
+static inline char *bsgetline(BinarySource *src)
+{
+    ptrlen line = get_chomped_line(src);
+    if (get_err(src))
+        return NULL;
+    return mkstr(line);
+}
+
 /*
  * Determine whether a foreign key is encrypted.
  */
-bool import_encrypted(const Filename *filename, int type, char **comment)
+bool import_encrypted_s(const Filename *filename, BinarySource *src,
+                        int type, char **comment)
 {
     if (type == SSH_KEYTYPE_OPENSSH_PEM) {
         /* OpenSSH PEM format doesn't contain a key comment at all */
         *comment = dupstr(filename_to_str(filename));
-        return openssh_pem_encrypted(filename);
+        return openssh_pem_encrypted(src);
     } else if (type == SSH_KEYTYPE_OPENSSH_NEW) {
         /* OpenSSH new format does, but it's inside the encrypted
          * section for some reason */
         *comment = dupstr(filename_to_str(filename));
-        return openssh_new_encrypted(filename);
+        return openssh_new_encrypted(src);
     } else if (type == SSH_KEYTYPE_SSHCOM) {
-        return sshcom_encrypted(filename, comment);
+        return sshcom_encrypted(src, comment);
     }
     return false;
+}
+
+bool import_encrypted(const Filename *filename, int type, char **comment)
+{
+    LoadedFile *lf = lf_load_keyfile(filename, NULL);
+    if (!lf)
+        return false; /* couldn't even open the file */
+
+    bool toret = import_encrypted_s(filename, BinarySource_UPCAST(lf),
+                                    type, comment);
+    lf_free(lf);
+    return toret;
 }
 
 /*
  * Import an SSH-1 key.
  */
+int import_ssh1_s(BinarySource *src, int type,
+                  RSAKey *key, char *passphrase, const char **errmsg_p)
+{
+    return 0;
+}
+
 int import_ssh1(const Filename *filename, int type,
                 RSAKey *key, char *passphrase, const char **errmsg_p)
 {
-    return 0;
+    LoadedFile *lf = lf_load_keyfile(filename, errmsg_p);
+    if (!lf)
+        return false;
+
+    int toret = import_ssh1_s(BinarySource_UPCAST(lf),
+                              type, key, passphrase, errmsg_p);
+    lf_free(lf);
+    return toret;
 }
 
 /*
  * Import an SSH-2 key.
  */
-ssh2_userkey *import_ssh2(const Filename *filename, int type,
-                                 char *passphrase, const char **errmsg_p)
+ssh2_userkey *import_ssh2_s(BinarySource *src, int type,
+                            char *passphrase, const char **errmsg_p)
 {
     if (type == SSH_KEYTYPE_OPENSSH_PEM)
-        return openssh_pem_read(filename, passphrase, errmsg_p);
+        return openssh_pem_read(src, passphrase, errmsg_p);
     else if (type == SSH_KEYTYPE_OPENSSH_NEW)
-        return openssh_new_read(filename, passphrase, errmsg_p);
+        return openssh_new_read(src, passphrase, errmsg_p);
     if (type == SSH_KEYTYPE_SSHCOM)
-        return sshcom_read(filename, passphrase, errmsg_p);
+        return sshcom_read(src, passphrase, errmsg_p);
     return NULL;
+}
+
+ssh2_userkey *import_ssh2(const Filename *filename, int type,
+                          char *passphrase, const char **errmsg_p)
+{
+    LoadedFile *lf = lf_load_keyfile(filename, errmsg_p);
+    if (!lf)
+        return false;
+
+    ssh2_userkey *toret = import_ssh2_s(BinarySource_UPCAST(lf),
+                                        type, passphrase, errmsg_p);
+    lf_free(lf);
+    return toret;
 }
 
 /*
@@ -300,11 +347,10 @@ void BinarySink_put_mp_ssh2_from_string(BinarySink *bs, ptrlen str)
 #define put_mp_ssh2_from_string(bs, str) \
     BinarySink_put_mp_ssh2_from_string(BinarySink_UPCAST(bs), str)
 
-static struct openssh_pem_key *load_openssh_pem_key(const Filename *filename,
+static struct openssh_pem_key *load_openssh_pem_key(BinarySource *src,
                                                     const char **errmsg_p)
 {
     struct openssh_pem_key *ret;
-    FILE *fp = NULL;
     char *line = NULL;
     const char *errmsg;
     char *p;
@@ -315,17 +361,10 @@ static struct openssh_pem_key *load_openssh_pem_key(const Filename *filename,
     ret = snew(struct openssh_pem_key);
     ret->keyblob = strbuf_new_nm();
 
-    fp = f_open(filename, "r", false);
-    if (!fp) {
-        errmsg = "unable to open key file";
-        goto error;
-    }
-
-    if (!(line = fgetline(fp))) {
+    if (!(line = bsgetline(src))) {
         errmsg = "unexpected end of file";
         goto error;
     }
-    strip_crlf(line);
     if (!strstartswith(line, "-----BEGIN ") ||
         !strendswith(line, "PRIVATE KEY-----")) {
         errmsg = "file does not begin with OpenSSH key header";
@@ -359,11 +398,10 @@ static struct openssh_pem_key *load_openssh_pem_key(const Filename *filename,
 
     headers_done = false;
     while (1) {
-        if (!(line = fgetline(fp))) {
+        if (!(line = bsgetline(src))) {
             errmsg = "unexpected end of file";
             goto error;
         }
-        strip_crlf(line);
         if (strstartswith(line, "-----END ") &&
             strendswith(line, "PRIVATE KEY-----")) {
             sfree(line);
@@ -445,9 +483,6 @@ static struct openssh_pem_key *load_openssh_pem_key(const Filename *filename,
         line = NULL;
     }
 
-    fclose(fp);
-    fp = NULL;
-
     if (!ret->keyblob || ret->keyblob->len == 0) {
         errmsg = "key body not present";
         goto error;
@@ -477,13 +512,12 @@ static struct openssh_pem_key *load_openssh_pem_key(const Filename *filename,
         sfree(ret);
     }
     if (errmsg_p) *errmsg_p = errmsg;
-    if (fp) fclose(fp);
     return NULL;
 }
 
-static bool openssh_pem_encrypted(const Filename *filename)
+static bool openssh_pem_encrypted(BinarySource *src)
 {
-    struct openssh_pem_key *key = load_openssh_pem_key(filename, NULL);
+    struct openssh_pem_key *key = load_openssh_pem_key(src, NULL);
     bool ret;
 
     if (!key)
@@ -516,9 +550,9 @@ static void openssh_pem_derivekey(
     h = ssh_hash_new(&ssh_md5);
     put_datapl(h, passphrase);
     put_data(h, iv, 8);
-    ssh_hash_final(h, keybuf);
+    ssh_hash_digest(h, keybuf);
 
-    h = ssh_hash_new(&ssh_md5);
+    ssh_hash_reset(h);
     put_data(h, keybuf, 16);
     put_datapl(h, passphrase);
     put_data(h, iv, 8);
@@ -526,9 +560,9 @@ static void openssh_pem_derivekey(
 }
 
 static ssh2_userkey *openssh_pem_read(
-    const Filename *filename, const char *passphrase, const char **errmsg_p)
+    BinarySource *filesrc, const char *passphrase, const char **errmsg_p)
 {
-    struct openssh_pem_key *key = load_openssh_pem_key(filename, errmsg_p);
+    struct openssh_pem_key *key = load_openssh_pem_key(filesrc, errmsg_p);
     ssh2_userkey *retkey;
     const ssh_keyalg *alg;
     BinarySource src[1];
@@ -1089,11 +1123,10 @@ struct openssh_new_key {
     strbuf *keyblob;
 };
 
-static struct openssh_new_key *load_openssh_new_key(const Filename *filename,
+static struct openssh_new_key *load_openssh_new_key(BinarySource *filesrc,
                                                     const char **errmsg_p)
 {
     struct openssh_new_key *ret;
-    FILE *fp = NULL;
     char *line = NULL;
     const char *errmsg;
     char *p;
@@ -1106,17 +1139,10 @@ static struct openssh_new_key *load_openssh_new_key(const Filename *filename,
     ret = snew(struct openssh_new_key);
     ret->keyblob = strbuf_new_nm();
 
-    fp = f_open(filename, "r", false);
-    if (!fp) {
-        errmsg = "unable to open key file";
-        goto error;
-    }
-
-    if (!(line = fgetline(fp))) {
+    if (!(line = bsgetline(filesrc))) {
         errmsg = "unexpected end of file";
         goto error;
     }
-    strip_crlf(line);
     if (0 != strcmp(line, "-----BEGIN OPENSSH PRIVATE KEY-----")) {
         errmsg = "file does not begin with OpenSSH new-style key header";
         goto error;
@@ -1126,11 +1152,10 @@ static struct openssh_new_key *load_openssh_new_key(const Filename *filename,
     line = NULL;
 
     while (1) {
-        if (!(line = fgetline(fp))) {
+        if (!(line = bsgetline(filesrc))) {
             errmsg = "unexpected end of file";
             goto error;
         }
-        strip_crlf(line);
         if (0 == strcmp(line, "-----END OPENSSH PRIVATE KEY-----")) {
             sfree(line);
             line = NULL;
@@ -1164,9 +1189,6 @@ static struct openssh_new_key *load_openssh_new_key(const Filename *filename,
         sfree(line);
         line = NULL;
     }
-
-    fclose(fp);
-    fp = NULL;
 
     if (ret->keyblob->len == 0) {
         errmsg = "key body not present";
@@ -1215,20 +1237,19 @@ static struct openssh_new_key *load_openssh_new_key(const Filename *filename,
             goto error;
         }
         break;
-      case ON_K_BCRYPT:
-        {
-            BinarySource opts[1];
+      case ON_K_BCRYPT: {
+        BinarySource opts[1];
 
-            BinarySource_BARE_INIT_PL(opts, str);
-            ret->kdfopts.bcrypt.salt = get_string(opts);
-            ret->kdfopts.bcrypt.rounds = get_uint32(opts);
+        BinarySource_BARE_INIT_PL(opts, str);
+        ret->kdfopts.bcrypt.salt = get_string(opts);
+        ret->kdfopts.bcrypt.rounds = get_uint32(opts);
 
-            if (get_err(opts)) {
-                errmsg = "failed to parse bcrypt options string";
-                goto error;
-            }
+        if (get_err(opts)) {
+          errmsg = "failed to parse bcrypt options string";
+          goto error;
         }
         break;
+      }
     }
 
     /*
@@ -1286,13 +1307,12 @@ static struct openssh_new_key *load_openssh_new_key(const Filename *filename,
         sfree(ret);
     }
     if (errmsg_p) *errmsg_p = errmsg;
-    if (fp) fclose(fp);
     return NULL;
 }
 
-static bool openssh_new_encrypted(const Filename *filename)
+static bool openssh_new_encrypted(BinarySource *src)
 {
-    struct openssh_new_key *key = load_openssh_new_key(filename, NULL);
+    struct openssh_new_key *key = load_openssh_new_key(src, NULL);
     bool ret;
 
     if (!key)
@@ -1305,9 +1325,9 @@ static bool openssh_new_encrypted(const Filename *filename)
 }
 
 static ssh2_userkey *openssh_new_read(
-    const Filename *filename, const char *passphrase, const char **errmsg_p)
+    BinarySource *filesrc, const char *passphrase, const char **errmsg_p)
 {
-    struct openssh_new_key *key = load_openssh_new_key(filename, errmsg_p);
+    struct openssh_new_key *key = load_openssh_new_key(filesrc, errmsg_p);
     ssh2_userkey *retkey = NULL;
     ssh2_userkey *retval = NULL;
     const char *errmsg;
@@ -1705,11 +1725,10 @@ struct sshcom_key {
     strbuf *keyblob;
 };
 
-static struct sshcom_key *load_sshcom_key(const Filename *filename,
+static struct sshcom_key *load_sshcom_key(BinarySource *src,
                                           const char **errmsg_p)
 {
     struct sshcom_key *ret;
-    FILE *fp;
     char *line = NULL;
     int hdrstart, len;
     const char *errmsg;
@@ -1722,16 +1741,10 @@ static struct sshcom_key *load_sshcom_key(const Filename *filename,
     ret->comment[0] = '\0';
     ret->keyblob = strbuf_new_nm();
 
-    fp = f_open(filename, "r", false);
-    if (!fp) {
-        errmsg = "unable to open key file";
-        goto error;
-    }
-    if (!(line = fgetline(fp))) {
+    if (!(line = bsgetline(src))) {
         errmsg = "unexpected end of file";
         goto error;
     }
-    strip_crlf(line);
     if (0 != strcmp(line, "---- BEGIN SSH2 ENCRYPTED PRIVATE KEY ----")) {
         errmsg = "file does not begin with ssh.com key header";
         goto error;
@@ -1742,11 +1755,10 @@ static struct sshcom_key *load_sshcom_key(const Filename *filename,
 
     headers_done = false;
     while (1) {
-        if (!(line = fgetline(fp))) {
+        if (!(line = bsgetline(src))) {
             errmsg = "unexpected end of file";
             goto error;
         }
-        strip_crlf(line);
         if (!strcmp(line, "---- END SSH2 ENCRYPTED PRIVATE KEY ----")) {
             sfree(line);
             line = NULL;
@@ -1771,12 +1783,11 @@ static struct sshcom_key *load_sshcom_key(const Filename *filename,
                 char *line2;
                 int line2len;
 
-                line2 = fgetline(fp);
+                line2 = bsgetline(src);
                 if (!line2) {
                     errmsg = "unexpected end of file";
                     goto error;
                 }
-                strip_crlf(line2);
 
                 line2len = strlen(line2);
                 line = sresize(line, len + line2len + 1, char);
@@ -1789,7 +1800,6 @@ static struct sshcom_key *load_sshcom_key(const Filename *filename,
                 line2 = NULL;
             }
             p = line + hdrstart;
-            strip_crlf(p);
             if (!strcmp(line, "Comment")) {
                 /* Strip quotes in comment if present. */
                 if (p[0] == '"' && p[strlen(p)-1] == '"') {
@@ -1833,14 +1843,10 @@ static struct sshcom_key *load_sshcom_key(const Filename *filename,
         goto error;
     }
 
-    fclose(fp);
     if (errmsg_p) *errmsg_p = NULL;
     return ret;
 
     error:
-    if (fp)
-        fclose(fp);
-
     if (line) {
         smemclr(line, strlen(line));
         sfree(line);
@@ -1855,9 +1861,9 @@ static struct sshcom_key *load_sshcom_key(const Filename *filename,
     return NULL;
 }
 
-static bool sshcom_encrypted(const Filename *filename, char **comment)
+static bool sshcom_encrypted(BinarySource *filesrc, char **comment)
 {
-    struct sshcom_key *key = load_sshcom_key(filename, NULL);
+    struct sshcom_key *key = load_sshcom_key(filesrc, NULL);
     BinarySource src[1];
     ptrlen str;
     bool answer = false;
@@ -1934,15 +1940,15 @@ static void sshcom_derivekey(ptrlen passphrase, uint8_t *keybuf)
 
     h = ssh_hash_new(&ssh_md5);
     put_datapl(h, passphrase);
-    ssh_hash_final(ssh_hash_copy(h), keybuf);
+    ssh_hash_digest_nondestructive(h, keybuf);
     put_data(h, keybuf, 16);
     ssh_hash_final(h, keybuf + 16);
 }
 
 static ssh2_userkey *sshcom_read(
-    const Filename *filename, const char *passphrase, const char **errmsg_p)
+    BinarySource *filesrc, const char *passphrase, const char **errmsg_p)
 {
-    struct sshcom_key *key = load_sshcom_key(filename, errmsg_p);
+    struct sshcom_key *key = load_sshcom_key(filesrc, errmsg_p);
     const char *errmsg;
     BinarySource src[1];
     ptrlen str, ciphertext;

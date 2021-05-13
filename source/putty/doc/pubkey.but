@@ -64,7 +64,7 @@ The key types supported by PuTTY are described in \k{puttygen-keytype}.
 PuTTYgen is a key generator. It \I{generating keys}generates pairs of
 public and private keys to be used with PuTTY, PSCP, and Plink, as well
 as the PuTTY authentication agent, Pageant (see \k{pageant}).  PuTTYgen
-generates RSA, DSA, ECDSA, and Ed25519 keys.
+generates RSA, DSA, ECDSA, and EdDSA keys.
 
 When you run PuTTYgen you will see a window where you have two main
 choices: \q{Generate}, to generate a new public/private key pair, or
@@ -108,7 +108,8 @@ Before generating a key pair using PuTTYgen, you need to select
 which type of key you need.
 
 The current version of the SSH protocol, SSH-2, supports several
-different key types. PuTTYgen can generate:
+different key types, although specific servers may not support all of
+them. PuTTYgen can generate:
 
 \b An \i{RSA} key for use with the SSH-2 protocol.
 
@@ -117,8 +118,8 @@ different key types. PuTTYgen can generate:
 \b An \i{ECDSA} (\i{elliptic curve} DSA) key for use with the
 SSH-2 protocol.
 
-\b An \i{Ed25519} key (another elliptic curve algorithm) for use
-with the SSH-2 protocol.
+\b An \i{EdDSA} key (Edwards-curve DSA, another elliptic curve
+algorithm) for use with the SSH-2 protocol.
 
 PuTTYgen can also generate an RSA key suitable for use with the old
 SSH-1 protocol (which only supports RSA); for this, you need to select
@@ -130,14 +131,64 @@ considered secure, it's rare to need this option.
 The \q{Number of bits} input box allows you to choose the strength
 of the key PuTTYgen will generate.
 
-\b For RSA, 2048 bits should currently be sufficient for most purposes.
-
-\#{FIXME: advice for DSA?}
+\b For RSA and DSA, 2048 bits should currently be sufficient for most
+purposes.
 
 \b For ECDSA, only 256, 384, and 521 bits are supported. (ECDSA offers
 equivalent security to RSA with smaller key sizes.)
 
-\b For Ed25519, the only valid size is 256 bits.
+\b For EdDSA, the only valid sizes are 255 bits (these keys are also
+known as \q{\i{Ed25519}} and are commonly used) and 448 bits
+(\q{\i{Ed448}}, which is much less common at the time of writing).
+(256 is also accepted for backward compatibility, but the effect is
+the same as 255.)
+
+\S{puttygen-primes} Selecting the \i{prime generation method}
+
+On the \q{Key} menu, you can also optionally change the method for
+generating the prime numbers used in the generated key. This is used
+for RSA and DSA keys only. (The other key types don't require
+generating prime numbers at all.)
+
+The prime-generation method does not affect compatibility: a key
+generated with any of these methods will still work with all the same
+SSH servers.
+
+If you don't care about this, it's entirely sensible to leave it on the
+default setting.
+
+The available methods are:
+
+\b Use \i{probable primes} (fast)
+
+\b Use \i{proven primes} (slower)
+
+\b Use proven primes with even distribution (slowest)
+
+The \q{probable primes} method sounds unsafe, but it's the most
+commonly used prime-generation strategy. There is in theory a
+possibility that it might accidentally generate a number that isn't
+prime, but the software does enough checking to make that probability
+vanishingly small (less than 1 in 2^80, or 1 in 10^24). So, in
+practice, nobody worries about it very much.
+
+The other methods cause PuTTYgen to use numbers that it is \e{sure}
+are prime, because it generates the output number together with a
+proof of its primality. This takes more effort, but it eliminates that
+theoretical risk in the probabilistic method.
+
+You might choose to switch from probable to proven primes if you have
+a local security standard that demands it, or if you don't trust the
+probabilistic argument for the safety of the usual method.
+
+For RSA keys, there's also an option on the \q{Key} menu to use
+\i{\q{strong} primes} as the prime factors of the public key. A \q{strong}
+prime is a prime number chosen to have a particular structure that
+makes certain factoring algorithms more difficult to apply, so some
+security standards recommend their use. However, the most modern
+factoring algorithms are unaffected, so this option is probably not
+worth turning on \e{unless} you have a local standard that recommends
+it.
 
 \S{puttygen-generate} The \q{Generate} button
 
@@ -178,6 +229,13 @@ invent a second key with the same fingerprint, or to find a key with
 a particular fingerprint. So some utilities, such as the Pageant key
 list box (see \k{pageant-mainwin-keylist}) and the Unix \c{ssh-add}
 utility, will list key fingerprints rather than the whole public key.
+
+By default, PuTTYgen will display fingerprints in the \q{SHA256}
+format. If you need to see the fingerprint in the older \q{MD5} format
+(which looks like \c{aa:bb:cc:...}), you can choose
+\q{Show fingerprint as MD5} from the \q{Key} menu, but bear in mind
+that this is less cryptographically secure; it may be feasible for
+an attacker to create a key with the same fingerprint as yours.
 
 \S{puttygen-comment} Setting a comment for your key
 
@@ -254,6 +312,10 @@ will need to tell PuTTY to use for authentication (see
 \k{config-ssh-privkey}) or tell Pageant to load (see
 \k{pageant-mainwin-addkey}).
 
+(You can optionally change some details of the PPK format for your saved
+key files; see \k{puttygen-save-params}. But The defaults should be
+fine for most purposes.)
+
 \S{puttygen-savepub} Saving your public key to a disk file
 
 RFC 4716 specifies a \I{SSH-2 public key format}standard format for
@@ -292,6 +354,60 @@ PuTTY session which is already connected to the server.
 
 See \k{pubkey-gettingready} for general instructions on configuring
 public-key authentication once you have generated a key.
+
+\S{puttygen-save-params} Parameters for saving key files
+
+Selecting \q{Parameters for saving key files...} from the \q{Key} menu
+lets you adjust some aspects of PPK-format private key files stored on
+disk. None of these options affect compatibility with SSH servers.
+
+In most cases, it's entirely sensible to leave all of these at their
+default settings.
+
+\S2{puttygen-save-ppk-version} PPK file version
+
+This defaults to version 3, which is fine for most uses.
+
+You might need to select PPK version 2 if you need your private key
+file to be loadable in older versions of PuTTY (0.74 and older), or in
+other tools which do not yet support the version 3 format (which was
+introduced in 2021).
+
+The version 2 format is less resistant to brute-force decryption, and
+doesn't support any of the following options to control that.
+
+\S2{puttygen-save-passphrase-hashing} Options affecting \i{passphrase hashing}
+
+All of the following options only affect keys saved with passphrases.
+They control how much work is required to decrypt the key (which
+happens every time you type its passphrase). This allows you to trade
+off the cost of legitimate use of the key against the resistance of
+the encrypted key to password-guessing attacks.
+
+These options only affect PPK version 3.
+
+\dt Key derivation function
+
+\dd The variant of the \i{Argon2} key derivation function to use.
+You might change this if you consider your exposure to side-channel
+attacks to be different to the norm.
+
+\dt Memory to use for passphrase hash
+
+\dd The amount of memory needed to decrypt the key, in Kbyte.
+
+\dt Time to use for passphrase hash
+
+\dd Controls how much time is required to attempt decrypting the key.
+You can either specify an approximate time in milliseconds (on this
+machine), or explicitly specify a number of hash passes (which is what
+the time is turned into during encryption).
+
+\dt Parallelism for passphrase hash
+
+\dd Number of parallelisable threads that can be used to decrypt the
+key. The default, 1, forces the process to run single-threaded, even
+on machines with multiple cores.
 
 \S{puttygen-load} Reloading a private key
 

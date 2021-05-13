@@ -43,6 +43,21 @@ void BinarySource_get_rsa_ssh1_priv(
     rsa->private_exponent = get_mp_ssh1(src);
 }
 
+key_components *rsa_components(RSAKey *rsa)
+{
+    key_components *kc = key_components_new();
+    key_components_add_text(kc, "key_type", "RSA");
+    key_components_add_mp(kc, "public_modulus", rsa->modulus);
+    key_components_add_mp(kc, "public_exponent", rsa->exponent);
+    if (rsa->private_exponent) {
+        key_components_add_mp(kc, "private_exponent", rsa->private_exponent);
+        key_components_add_mp(kc, "private_p", rsa->p);
+        key_components_add_mp(kc, "private_q", rsa->q);
+        key_components_add_mp(kc, "private_inverse_q_mod_p", rsa->iqmp);
+    }
+    return kc;
+}
+
 RSAKey *BinarySource_get_rsa_ssh1_priv_agent(BinarySource *src)
 {
     RSAKey *rsa = snew(RSAKey);
@@ -128,8 +143,8 @@ bool rsa_ssh1_encrypt(unsigned char *data, int length, RSAKey *key)
  * Uses Chinese Remainder Theorem to speed computation up over the
  * obvious implementation of a single big modpow.
  */
-mp_int *crt_modpow(mp_int *base, mp_int *exp, mp_int *mod,
-                      mp_int *p, mp_int *q, mp_int *iqmp)
+static mp_int *crt_modpow(mp_int *base, mp_int *exp, mp_int *mod,
+                          mp_int *p, mp_int *q, mp_int *iqmp)
 {
     mp_int *pm1, *qm1, *pexp, *qexp, *presult, *qresult;
     mp_int *diff, *multiplier, *ret0, *ret;
@@ -305,6 +320,19 @@ char *rsa_ssh1_fingerprint(RSAKey *key)
 }
 
 /*
+ * Wrap the output of rsa_ssh1_fingerprint up into the same kind of
+ * structure that comes from ssh2_all_fingerprints.
+ */
+char **rsa_ssh1_fake_all_fingerprints(RSAKey *key)
+{
+    char **ret = snewn(SSH_N_FPTYPES, char *);
+    for (unsigned i = 0; i < SSH_N_FPTYPES; i++)
+        ret[i] = NULL;
+    ret[SSH_FPTYPE_MD5] = rsa_ssh1_fingerprint(key);
+    return ret;
+}
+
+/*
  * Verify that the public data in an RSA key matches the private
  * data. We also check the private data itself: we ensure that p >
  * q and that iqmp really is the inverse of q mod p.
@@ -374,6 +402,15 @@ void rsa_ssh1_public_blob(BinarySink *bs, RSAKey *key,
     }
 }
 
+void rsa_ssh1_private_blob_agent(BinarySink *bs, RSAKey *key)
+{
+    rsa_ssh1_public_blob(bs, key, RSA_SSH1_MODULUS_FIRST);
+    put_mp_ssh1(bs, key->private_exponent);
+    put_mp_ssh1(bs, key->iqmp);
+    put_mp_ssh1(bs, key->q);
+    put_mp_ssh1(bs, key->p);
+}
+
 /* Given an SSH-1 public key blob, determine its length. */
 int rsa_ssh1_public_blob_len(ptrlen data)
 {
@@ -432,8 +469,12 @@ void freersakey(RSAKey *key)
 }
 
 /* ----------------------------------------------------------------------
- * Implementation of the ssh-rsa signing key type.
+ * Implementation of the ssh-rsa signing key type family.
  */
+
+struct ssh2_rsa_extra {
+    unsigned signflags;
+};
 
 static void rsa2_freekey(ssh_key *key);   /* forward reference */
 
@@ -447,7 +488,7 @@ static ssh_key *rsa2_new_pub(const ssh_keyalg *self, ptrlen data)
         return NULL;
 
     rsa = snew(RSAKey);
-    rsa->sshk.vt = &ssh_rsa;
+    rsa->sshk.vt = self;
     rsa->exponent = get_mp_ssh2(src);
     rsa->modulus = get_mp_ssh2(src);
     rsa->private_exponent = NULL;
@@ -473,6 +514,12 @@ static char *rsa2_cache_str(ssh_key *key)
 {
     RSAKey *rsa = container_of(key, RSAKey, sshk);
     return rsastr_fmt(rsa);
+}
+
+static key_components *rsa2_components(ssh_key *key)
+{
+    RSAKey *rsa = container_of(key, RSAKey, sshk);
+    return rsa_components(rsa);
 }
 
 static void rsa2_public_blob(ssh_key *key, BinarySink *bs)
@@ -699,8 +746,10 @@ static bool rsa2_verify(ssh_key *key, ptrlen sig, ptrlen data)
     ptrlen type, in_pl;
     mp_int *in, *out;
 
-    /* If we need to support variable flags on verify, this is where they go */
-    const ssh_hashalg *halg = rsa2_hash_alg_for_flags(0, NULL);
+    const struct ssh2_rsa_extra *extra =
+        (const struct ssh2_rsa_extra *)key->vt->extra;
+
+    const ssh_hashalg *halg = rsa2_hash_alg_for_flags(extra->signflags, NULL);
 
     /* Start by making sure the key is even long enough to encode a
      * signature. If not, everything fails to verify. */
@@ -721,7 +770,7 @@ static bool rsa2_verify(ssh_key *key, ptrlen sig, ptrlen data)
      * mp_from_bytes_be, which will tolerate anything.
      */
     in_pl = get_string(src);
-    if (get_err(src) || !ptrlen_eq_string(type, "ssh-rsa"))
+    if (get_err(src) || !ptrlen_eq_string(type, key->vt->ssh_id))
         return false;
 
     in = mp_from_bytes_be(in_pl);
@@ -750,6 +799,10 @@ static void rsa2_sign(ssh_key *key, ptrlen data,
     const ssh_hashalg *halg;
     const char *sign_alg_name;
 
+    const struct ssh2_rsa_extra *extra =
+        (const struct ssh2_rsa_extra *)key->vt->extra;
+    flags |= extra->signflags;
+
     halg = rsa2_hash_alg_for_flags(flags, &sign_alg_name);
 
     nbytes = (mp_get_nbits(rsa->modulus) + 7) / 8;
@@ -771,7 +824,7 @@ static void rsa2_sign(ssh_key *key, ptrlen data,
     mp_free(out);
 }
 
-char *rsa2_invalid(ssh_key *key, unsigned flags)
+static char *rsa2_invalid(ssh_key *key, unsigned flags)
 {
     RSAKey *rsa = container_of(key, RSAKey, sshk);
     size_t bits = mp_get_nbits(rsa->modulus), nbytes = (bits + 7) / 8;
@@ -786,26 +839,46 @@ char *rsa2_invalid(ssh_key *key, unsigned flags)
     return NULL;
 }
 
+static const struct ssh2_rsa_extra
+    rsa_extra = { 0 },
+    rsa_sha256_extra = { SSH_AGENT_RSA_SHA2_256 },
+    rsa_sha512_extra = { SSH_AGENT_RSA_SHA2_512 };
+
+#define COMMON_KEYALG_FIELDS                    \
+    .new_pub = rsa2_new_pub,                    \
+    .new_priv = rsa2_new_priv,                  \
+    .new_priv_openssh = rsa2_new_priv_openssh,  \
+    .freekey = rsa2_freekey,                    \
+    .invalid = rsa2_invalid,                    \
+    .sign = rsa2_sign,                          \
+    .verify = rsa2_verify,                      \
+    .public_blob = rsa2_public_blob,            \
+    .private_blob = rsa2_private_blob,          \
+    .openssh_blob = rsa2_openssh_blob,          \
+    .cache_str = rsa2_cache_str,                \
+    .components = rsa2_components,              \
+    .pubkey_bits = rsa2_pubkey_bits,            \
+    .cache_id = "rsa2"
+
 const ssh_keyalg ssh_rsa = {
-    rsa2_new_pub,
-    rsa2_new_priv,
-    rsa2_new_priv_openssh,
+    COMMON_KEYALG_FIELDS,
+    .ssh_id = "ssh-rsa",
+    .supported_flags = SSH_AGENT_RSA_SHA2_256 | SSH_AGENT_RSA_SHA2_512,
+    .extra = &rsa_extra,
+};
 
-    rsa2_freekey,
-    rsa2_invalid,
-    rsa2_sign,
-    rsa2_verify,
-    rsa2_public_blob,
-    rsa2_private_blob,
-    rsa2_openssh_blob,
-    rsa2_cache_str,
+const ssh_keyalg ssh_rsa_sha256 = {
+    COMMON_KEYALG_FIELDS,
+    .ssh_id = "rsa-sha2-256",
+    .supported_flags = 0,
+    .extra = &rsa_sha256_extra,
+};
 
-    rsa2_pubkey_bits,
-
-    "ssh-rsa",
-    "rsa2",
-    NULL,
-    SSH_AGENT_RSA_SHA2_256 | SSH_AGENT_RSA_SHA2_512,
+const ssh_keyalg ssh_rsa_sha512 = {
+    COMMON_KEYALG_FIELDS,
+    .ssh_id = "rsa-sha2-512",
+    .supported_flags = 0,
+    .extra = &rsa_sha512_extra,
 };
 
 RSAKey *ssh_rsakex_newkey(ptrlen data)
@@ -832,16 +905,17 @@ static void oaep_mask(const ssh_hashalg *h, void *seed, int seedlen,
     unsigned char *data = (unsigned char *)vdata;
     unsigned count = 0;
 
+    ssh_hash *s = ssh_hash_new(h);
+
     while (datalen > 0) {
         int i, max = (datalen > h->hlen ? h->hlen : datalen);
-        ssh_hash *s;
         unsigned char hash[MAX_HASH_LEN];
 
+        ssh_hash_reset(s);
         assert(h->hlen <= MAX_HASH_LEN);
-        s = ssh_hash_new(h);
         put_data(s, seed, seedlen);
         put_uint32(s, count);
-        ssh_hash_final(s, hash);
+        ssh_hash_digest(s, hash);
         count++;
 
         for (i = 0; i < max; i++)
@@ -850,6 +924,8 @@ static void oaep_mask(const ssh_hashalg *h, void *seed, int seedlen,
         data += max;
         datalen -= max;
     }
+
+    ssh_hash_free(s);
 }
 
 strbuf *ssh_rsakex_encrypt(RSAKey *rsa, const ssh_hashalg *h, ptrlen in)
@@ -907,10 +983,7 @@ strbuf *ssh_rsakex_encrypt(RSAKey *rsa, const ssh_hashalg *h, ptrlen in)
     random_read(out + 1, HLEN);
     /* At position 1+HLEN, the data block DB, consisting of: */
     /* The hash of the label (we only support an empty label here) */
-    {
-        ssh_hash *s = ssh_hash_new(h);
-        ssh_hash_final(s, out + HLEN + 1);
-    }
+    hash_simple(h, PTRLEN_LITERAL(""), out + HLEN + 1);
     /* A bunch of zero octets */
     memset(out + 2*HLEN + 1, 0, outlen - (2*HLEN + 1));
     /* A single 1 octet, followed by the input message data. */
@@ -953,7 +1026,6 @@ mp_int *ssh_rsakex_decrypt(
     int outlen, i;
     unsigned char *out;
     unsigned char labelhash[64];
-    ssh_hash *hash;
     BinarySource src[1];
     const int HLEN = h->hlen;
 
@@ -987,8 +1059,7 @@ mp_int *ssh_rsakex_decrypt(
     }
     /* Check the label hash at position 1+HLEN */
     assert(HLEN <= lenof(labelhash));
-    hash = ssh_hash_new(h);
-    ssh_hash_final(hash, labelhash);
+    hash_simple(h, PTRLEN_LITERAL(""), labelhash);
     if (memcmp(out + HLEN + 1, labelhash, HLEN)) {
         sfree(out);
         return NULL;

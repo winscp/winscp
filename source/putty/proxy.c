@@ -65,7 +65,7 @@ void proxy_activate (ProxySocket *p)
      * unfreezing the actual underlying socket.
      */
     if (!p->freeze)
-        sk_set_frozen(&p->sock, 0);
+        sk_set_frozen(&p->sock, false);
 }
 
 /* basic proxy socket functions */
@@ -171,8 +171,8 @@ static const char * sk_proxy_socket_error (Socket *s)
 
 /* basic proxy plug functions */
 
-static void plug_proxy_log(Plug *plug, int type, SockAddr *addr, int port,
-                           const char *error_msg, int error_code)
+static void plug_proxy_log(Plug *plug, PlugLogType type, SockAddr *addr,
+                           int port, const char *error_msg, int error_code)
 {
     ProxySocket *ps = container_of(plug, ProxySocket, plugimpl);
 
@@ -371,23 +371,23 @@ SockAddr *name_lookup(const char *host, int port, char **canonicalname,
     }
 }
 
-static const struct SocketVtable ProxySocket_sockvt = {
-    sk_proxy_plug,
-    sk_proxy_close,
-    sk_proxy_write,
-    sk_proxy_write_oob,
-    sk_proxy_write_eof,
-    sk_proxy_set_frozen,
-    sk_proxy_socket_error,
-    NULL, /* peer_info */
+static const SocketVtable ProxySocket_sockvt = {
+    .plug = sk_proxy_plug,
+    .close = sk_proxy_close,
+    .write = sk_proxy_write,
+    .write_oob = sk_proxy_write_oob,
+    .write_eof = sk_proxy_write_eof,
+    .set_frozen = sk_proxy_set_frozen,
+    .socket_error = sk_proxy_socket_error,
+    .peer_info = NULL,
 };
 
-static const struct PlugVtable ProxySocket_plugvt = {
-    plug_proxy_log,
-    plug_proxy_closing,
-    plug_proxy_receive,
-    plug_proxy_sent,
-    plug_proxy_accepting
+static const PlugVtable ProxySocket_plugvt = {
+    .log = plug_proxy_log,
+    .closing = plug_proxy_closing,
+    .receive = plug_proxy_receive,
+    .sent = plug_proxy_sent,
+    .accepting = plug_proxy_accepting
 };
 
 Socket *new_connection(SockAddr *addr, const char *hostname,
@@ -407,8 +407,7 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
 
         if ((sret = platform_new_connection(addr, hostname, port, privport,
                                             oobinline, nodelay, keepalive,
-                                            plug, conf)) !=
-            NULL)
+                                            plug, conf)) != NULL)
             return sret;
 
         ret = snew(ProxySocket);
@@ -455,7 +454,7 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
                                       conf_get_str(conf, CONF_proxy_host),
                                       conf_get_int(conf, CONF_proxy_port),
                                       hostname, port);
-            plug_log(plug, 2, NULL, 0, logmsg, 0);
+            plug_log(plug, PLUGLOG_PROXY_MSG, NULL, 0, logmsg, 0);
             sfree(logmsg);
         }
 
@@ -463,7 +462,7 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
             char *logmsg = dns_log_msg(conf_get_str(conf, CONF_proxy_host),
                                        conf_get_int(conf, CONF_addressfamily),
                                        "proxy");
-            plug_log(plug, 2, NULL, 0, logmsg, 0);
+            plug_log(plug, PLUGLOG_PROXY_MSG, NULL, 0, logmsg, 0);
             sfree(logmsg);
         }
 
@@ -484,7 +483,7 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
             logmsg = dupprintf("Connecting to %s proxy at %s port %d",
                                proxy_type, addrbuf,
                                conf_get_int(conf, CONF_proxy_port));
-            plug_log(plug, 2, NULL, 0, logmsg, 0);
+            plug_log(plug, PLUGLOG_PROXY_MSG, NULL, 0, logmsg, 0);
             sfree(logmsg);
         }
 
@@ -499,7 +498,7 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
             return &ret->sock;
 
         /* start the proxy negotiation process... */
-        sk_set_frozen(ret->sub_socket, 0);
+        sk_set_frozen(ret->sub_socket, false);
         ret->negotiate(ret, PROXY_CHANGE_NEW);
 
         return &ret->sock;
@@ -766,13 +765,12 @@ int proxy_socks4_negotiate (ProxySocket *p, int change)
         put_uint16(command, p->remote_port);
 
         switch (sk_addrtype(p->remote_addr)) {
-          case ADDRTYPE_IPV4:
-            {
-                char addr[4];
-                sk_addrcopy(p->remote_addr, addr);
-                put_data(command, addr, 4);
-                break;
-            }
+          case ADDRTYPE_IPV4: {
+            char addr[4];
+            sk_addrcopy(p->remote_addr, addr);
+            put_data(command, addr, 4);
+            break;
+          }
           case ADDRTYPE_NAME:
             sk_getaddr(p->remote_addr, hostname, lenof(hostname));
             put_uint32(command, 1);
@@ -1084,19 +1082,18 @@ int proxy_socks5_negotiate (ProxySocket *p, int change)
                 put_byte(command, 4);  /* IPv6 */
                 sk_addrcopy(p->remote_addr, strbuf_append(command, 16));
                 break;
-              case ADDRTYPE_NAME:
-                {
-                    char hostname[512];
-                    put_byte(command, 3);  /* domain name */
-                    sk_getaddr(p->remote_addr, hostname, lenof(hostname));
-                    if (!put_pstring(command, hostname)) {
-                        p->error = "Proxy error: SOCKS 5 cannot "
-                            "support host names longer than 255 chars";
-                        strbuf_free(command);
-                        return 1;
-                    }
+              case ADDRTYPE_NAME: {
+                char hostname[512];
+                put_byte(command, 3);  /* domain name */
+                sk_getaddr(p->remote_addr, hostname, lenof(hostname));
+                if (!put_pstring(command, hostname)) {
+                  p->error = "Proxy error: SOCKS 5 cannot "
+                      "support host names longer than 255 chars";
+                  strbuf_free(command);
+                  return 1;
                 }
                 break;
+              }
             }
 
             put_uint16(command, p->remote_port);
@@ -1317,41 +1314,40 @@ char *format_telnet_command(SockAddr *addr, int port, Conf *conf)
                 break;
 
               case 'x':
-              case 'X':
-                {
-                    /* escaped hexadecimal value (ie. \xff) */
-                    unsigned char v = 0;
-                    int i = 0;
+              case 'X': {
+                /* escaped hexadecimal value (ie. \xff) */
+                unsigned char v = 0;
+                int i = 0;
 
-                    for (;;) {
-                        eo++;
-                        if (fmt[eo] >= '0' && fmt[eo] <= '9')
-                            v += fmt[eo] - '0';
-                        else if (fmt[eo] >= 'a' && fmt[eo] <= 'f')
-                            v += fmt[eo] - 'a' + 10;
-                        else if (fmt[eo] >= 'A' && fmt[eo] <= 'F')
-                            v += fmt[eo] - 'A' + 10;
-                        else {
-                            /* non hex character, so we abort and just
-                             * send the whole thing unescaped (including \x)
-                             */
-                            put_byte(buf, '\\');
-                            eo = so + 1;
-                            break;
-                        }
+                for (;;) {
+                  eo++;
+                  if (fmt[eo] >= '0' && fmt[eo] <= '9')
+                      v += fmt[eo] - '0';
+                  else if (fmt[eo] >= 'a' && fmt[eo] <= 'f')
+                      v += fmt[eo] - 'a' + 10;
+                  else if (fmt[eo] >= 'A' && fmt[eo] <= 'F')
+                      v += fmt[eo] - 'A' + 10;
+                  else {
+                    /* non hex character, so we abort and just
+                     * send the whole thing unescaped (including \x)
+                     */
+                    put_byte(buf, '\\');
+                    eo = so + 1;
+                    break;
+                  }
 
-                        /* we only extract two hex characters */
-                        if (i == 1) {
-                            put_byte(buf, v);
-                            eo++;
-                            break;
-                        }
+                  /* we only extract two hex characters */
+                  if (i == 1) {
+                    put_byte(buf, v);
+                    eo++;
+                    break;
+                  }
 
-                        i++;
-                        v <<= 4;
-                    }
+                  i++;
+                  v <<= 4;
                 }
                 break;
+              }
 
               default:
                 put_data(buf, fmt + so, 2);
@@ -1456,7 +1452,7 @@ int proxy_telnet_negotiate (ProxySocket *p, int change)
             *out = '\0';
 
             logmsg = dupprintf("Sending Telnet proxy command: %s", reescaped);
-            plug_log(p->plug, 2, NULL, 0, logmsg, 0);
+            plug_log(p->plug, PLUGLOG_PROXY_MSG, NULL, 0, logmsg, 0);
             sfree(logmsg);
             sfree(reescaped);
         }

@@ -332,8 +332,8 @@ your server was rejected by the server. Usually this happens because
 the server does not provide the service which PuTTY is trying to
 access.
 
-Check that you are connecting with the correct protocol (SSH, Telnet
-or Rlogin), and check that the port number is correct. If that
+Check that you are connecting with the correct protocol (SSH, Telnet,
+etc), and check that the port number is correct. If that
 fails, consult the administrator of your server.
 
 \H{errors-conntimedout} \q{Network error: Connection timed out}

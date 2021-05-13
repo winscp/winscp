@@ -5,8 +5,6 @@ struct outstanding_succfail;
 struct ssh1_connection_state {
     int crState;
 
-    Ssh *ssh;
-
     Conf *conf;
     int local_protoflags, remote_protoflags;
 
@@ -32,8 +30,6 @@ struct ssh1_connection_state {
     struct X11Display *x11disp;
     struct X11FakeAuth *x11auth;
     tree234 *x11authtree;
-
-    bool agent_fwd_enabled;
 
     tree234 *rportfwds;
     PortFwdManager *portfwdmgr;

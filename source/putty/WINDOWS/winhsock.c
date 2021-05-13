@@ -272,7 +272,7 @@ static SocketPeerInfo *sk_handle_peer_info(Socket *s)
 
     if (!kernel32_module) {
         kernel32_module = load_system32_dll("kernel32.dll");
-#if (defined _MSC_VER && _MSC_VER < 1900) || defined __MINGW32__ || defined COVERITY
+#if (defined _MSC_VER && _MSC_VER < 1900) || defined __MINGW32__
         /* For older Visual Studio, and MinGW too (at least as of
          * Ubuntu 16.04), this function isn't available in the header
          * files to type-check. Ditto the toolchain I use for
@@ -304,14 +304,14 @@ static SocketPeerInfo *sk_handle_peer_info(Socket *s)
 }
 
 static const SocketVtable HandleSocket_sockvt = {
-    sk_handle_plug,
-    sk_handle_close,
-    sk_handle_write,
-    sk_handle_write_oob,
-    sk_handle_write_eof,
-    sk_handle_set_frozen,
-    sk_handle_socket_error,
-    sk_handle_peer_info,
+    .plug = sk_handle_plug,
+    .close = sk_handle_close,
+    .write = sk_handle_write,
+    .write_oob = sk_handle_write_oob,
+    .write_eof = sk_handle_write_eof,
+    .set_frozen = sk_handle_set_frozen,
+    .socket_error = sk_handle_socket_error,
+    .peer_info = sk_handle_peer_info,
 };
 
 Socket *make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
