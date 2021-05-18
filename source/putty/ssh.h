@@ -628,7 +628,6 @@ struct ssh_cipheralg {
     void (*setkey)(ssh_cipher *, const void *key);
     void (*encrypt)(ssh_cipher *, void *blk, int len);
     void (*decrypt)(ssh_cipher *, void *blk, int len);
-
     /* Ignored unless SSH_CIPHER_SEPARATE_LENGTH flag set */
     void (*encrypt_length)(ssh_cipher *, void *blk, int len,
                            unsigned long seq);
