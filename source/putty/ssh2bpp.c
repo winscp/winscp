@@ -37,6 +37,9 @@ struct ssh2_bpp_state {
     bool is_server;
     bool pending_newkeys;
     bool pending_compression, seen_userauth_success;
+    bool enforce_next_packet_is_userauth_success;
+    unsigned nnewkeys;
+    int prev_type;
 
     BinaryPacketProtocol bpp;
 };
@@ -46,13 +49,13 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp);
 static void ssh2_bpp_handle_output(BinaryPacketProtocol *bpp);
 static PktOut *ssh2_bpp_new_pktout(int type);
 
-static const struct BinaryPacketProtocolVtable ssh2_bpp_vtable = {
-    ssh2_bpp_free,
-    ssh2_bpp_handle_input,
-    ssh2_bpp_handle_output,
-    ssh2_bpp_new_pktout,
-    ssh2_bpp_queue_disconnect, /* in sshcommon.c */
-    0xFFFFFFFF, /* no special packet size limit for this bpp */
+static const BinaryPacketProtocolVtable ssh2_bpp_vtable = {
+    .free = ssh2_bpp_free,
+    .handle_input = ssh2_bpp_handle_input,
+    .handle_output = ssh2_bpp_handle_output,
+    .new_pktout = ssh2_bpp_new_pktout,
+    .queue_disconnect = ssh2_bpp_queue_disconnect, /* in sshcommon.c */
+    .packet_size_limit = 0xFFFFFFFF, /* no special limit for this bpp */
 };
 
 BinaryPacketProtocol *ssh2_bpp_new(
@@ -594,9 +597,25 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
 
         {
             int type = s->pktin->type;
+            int prev_type = s->prev_type;
+            s->prev_type = type;
             s->pktin = NULL;
 
+            if (s->enforce_next_packet_is_userauth_success) {
+                /* See EXT_INFO handler below */
+                if (type != SSH2_MSG_USERAUTH_SUCCESS) {
+                    ssh_proto_error(s->bpp.ssh,
+                                    "Remote side sent SSH2_MSG_EXT_INFO "
+                                    "not either preceded by NEWKEYS or "
+                                    "followed by USERAUTH_SUCCESS");
+                    return;
+                }
+                s->enforce_next_packet_is_userauth_success = false;
+            }
+
             if (type == SSH2_MSG_NEWKEYS) {
+                if (s->nnewkeys < 2)
+                    s->nnewkeys++;
                 /*
                  * Mild layer violation: in this situation we must
                  * suspend processing of the input byte stream until
@@ -625,6 +644,44 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
                  * future rekey will be treated as un-delayed.
                  */
                 s->seen_userauth_success = true;
+            }
+
+            if (type == SSH2_MSG_EXT_INFO) {
+                /*
+                 * And another: enforce that an incoming EXT_INFO is
+                 * either the message immediately after the initial
+                 * NEWKEYS, or (if we're the client) the one
+                 * immediately before USERAUTH_SUCCESS.
+                 */
+                if (prev_type == SSH2_MSG_NEWKEYS && s->nnewkeys == 1) {
+                    /* OK - this is right after the first NEWKEYS. */
+                } else if (s->is_server) {
+                    /* We're the server, so they're the client.
+                     * Clients may not send EXT_INFO at _any_ other
+                     * time. */
+                    ssh_proto_error(s->bpp.ssh,
+                                    "Remote side sent SSH2_MSG_EXT_INFO "
+                                    "that was not immediately after the "
+                                    "initial NEWKEYS");
+                    return;
+                } else if (s->nnewkeys > 0 && s->seen_userauth_success) {
+                    /* We're the client, so they're the server. In
+                     * that case they may also send EXT_INFO
+                     * immediately before USERAUTH_SUCCESS. Error out
+                     * immediately if this can't _possibly_ be that
+                     * moment (because we haven't even seen NEWKEYS
+                     * yet, or because we've already seen
+                     * USERAUTH_SUCCESS). */
+                    ssh_proto_error(s->bpp.ssh,
+                                    "Remote side sent SSH2_MSG_EXT_INFO "
+                                    "after USERAUTH_SUCCESS");
+                    return;
+                } else {
+                    /* This _could_ be OK, provided the next packet is
+                     * USERAUTH_SUCCESS. Set a flag to remember to
+                     * fault it if not. */
+                    s->enforce_next_packet_is_userauth_success = true;
+                }
             }
 
             if (s->pending_compression && userauth_range(type)) {

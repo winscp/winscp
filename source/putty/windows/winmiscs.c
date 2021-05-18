@@ -266,6 +266,14 @@ bool platform_sha1_hw_available(void)
     return IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE);
 }
 
+bool platform_sha512_hw_available(void)
+{
+    /* As of 2020-12-24, as far as I can tell from docs.microsoft.com,
+     * Windows on Arm does not yet provide a PF_ARM_V8_* flag for the
+     * SHA-512 architecture extension. */
+    return false;
+}
+
 #endif
 
 bool is_console_handle(HANDLE handle)

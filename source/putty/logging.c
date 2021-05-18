@@ -364,7 +364,7 @@ void log_packet(LogContext *ctx, int direction, int type,
                 c = 'X';
                 sprintf(smalldata, "XX");
             } else {  /* PKTLOG_EMIT */
-                c = ((unsigned char *)data)[p];
+                c = ((const unsigned char *)data)[p];
                 sprintf(smalldata, "%02x", c);
             }
             dumpdata[10+2+3*(p%16)] = smalldata[0];

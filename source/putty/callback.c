@@ -24,12 +24,12 @@ struct callback {
 #define cbhead CALLBACK_SET_VAR->cbhead
 #define cbtail CALLBACK_SET_VAR->cbtail
 #else
-struct callback *cbcurr = NULL, *cbhead = NULL, *cbtail = NULL;
+static struct callback *cbcurr = NULL, *cbhead = NULL, *cbtail = NULL;
 #endif
 
 #ifndef MPEXT
-toplevel_callback_notify_fn_t notify_frontend = NULL;
-void *notify_ctx = NULL;
+static toplevel_callback_notify_fn_t notify_frontend = NULL;
+static void *notify_ctx = NULL;
 
 void request_callback_notifications(toplevel_callback_notify_fn_t fn,
                                     void *ctx)

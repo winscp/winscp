@@ -44,14 +44,8 @@
 
 #define CMP(a, b)       (memcmp(a, b, SSH_BLOCKSIZE))
 
-#ifdef MPEXT
-static
-#endif
-uint8_t ONE[4] = { 1, 0, 0, 0 };
-#ifdef MPEXT
-static
-#endif
-uint8_t ZERO[4] = { 0, 0, 0, 0 };
+static const uint8_t ONE[4] = { 1, 0, 0, 0 };
+static const uint8_t ZERO[4] = { 0, 0, 0, 0 };
 
 struct crcda_ctx {
     uint16_t *h;
