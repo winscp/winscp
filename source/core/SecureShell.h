@@ -124,6 +124,7 @@ protected:
   void __fastcall inline LogEvent(const UnicodeString & Str);
   void __fastcall FatalError(UnicodeString Error, UnicodeString HelpKeyword = L"");
   UnicodeString __fastcall FormatKeyStr(UnicodeString KeyStr);
+  void ParseFingerprint(const UnicodeString & Fingerprint, UnicodeString & SignKeyType, UnicodeString & Hash);
   static Conf * __fastcall StoreToConfig(TSessionData * Data, bool Simple);
 
 public:
@@ -169,7 +170,7 @@ public:
   const UnicodeString & __fastcall GetStdError();
   void __fastcall VerifyHostKey(
     const UnicodeString & Host, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr,
-    const UnicodeString & Fingerprint);
+    const UnicodeString & FingerprintSHA256, const UnicodeString & FingerprintMD5);
   bool __fastcall HaveHostKey(UnicodeString Host, int Port, const UnicodeString KeyType);
   void __fastcall AskAlg(UnicodeString AlgType, UnicodeString AlgName);
   void __fastcall DisplayBanner(const UnicodeString & Banner);

@@ -26,15 +26,16 @@ static void ssh2_connection_reconfigure(PacketProtocolLayer *ppl, Conf *conf);
 static unsigned int ssh2_connection_winscp_query(PacketProtocolLayer *ppl, int query);
 
 static const PacketProtocolLayerVtable ssh2_connection_vtable = {
-    .free = ssh2_connection_free,
-    .process_queue = ssh2_connection_process_queue,
-    .get_specials = ssh2_connection_get_specials,
-    .special_cmd = ssh2_connection_special_cmd,
-    .want_user_input = ssh2_connection_want_user_input,
-    .got_user_input = ssh2_connection_got_user_input,
-    .reconfigure = ssh2_connection_reconfigure,
-    .queued_data_size = ssh_ppl_default_queued_data_size,
-    .name = "ssh-connection",
+    // WINSCP
+    /*.free =*/ ssh2_connection_free,
+    /*.process_queue =*/ ssh2_connection_process_queue,
+    /*.get_specials =*/ ssh2_connection_get_specials,
+    /*.special_cmd =*/ ssh2_connection_special_cmd,
+    /*.want_user_input =*/ ssh2_connection_want_user_input,
+    /*.got_user_input =*/ ssh2_connection_got_user_input,
+    /*.reconfigure =*/ ssh2_connection_reconfigure,
+    /*.queued_data_size =*/ ssh_ppl_default_queued_data_size,
+    /*.name =*/ "ssh-connection",
     ssh2_connection_winscp_query,
 };
 
@@ -69,29 +70,30 @@ static void ssh2_enable_x_fwd(ConnectionLayer *cl);
 static void ssh2_set_wants_user_input(ConnectionLayer *cl, bool wanted);
 
 static const ConnectionLayerVtable ssh2_connlayer_vtable = {
-    .rportfwd_alloc = ssh2_rportfwd_alloc,
-    .rportfwd_remove = ssh2_rportfwd_remove,
-    .lportfwd_open = ssh2_lportfwd_open,
-    .session_open = ssh2_session_open,
-    .serverside_x11_open = ssh2_serverside_x11_open,
-    .serverside_agent_open = ssh2_serverside_agent_open,
-    .add_x11_display = ssh2_add_x11_display,
-    .add_sharing_x11_display = ssh2_add_sharing_x11_display,
-    .remove_sharing_x11_display = ssh2_remove_sharing_x11_display,
-    .send_packet_from_downstream = ssh2_send_packet_from_downstream,
-    .alloc_sharing_channel = ssh2_alloc_sharing_channel,
-    .delete_sharing_channel = ssh2_delete_sharing_channel,
-    .sharing_queue_global_request = ssh2_sharing_queue_global_request,
-    .sharing_no_more_downstreams = ssh2_sharing_no_more_downstreams,
-    .agent_forwarding_permitted = ssh2_agent_forwarding_permitted,
-    .terminal_size = ssh2_terminal_size,
-    .stdout_unthrottle = ssh2_stdout_unthrottle,
-    .stdin_backlog = ssh2_stdin_backlog,
-    .throttle_all_channels = ssh2_throttle_all_channels,
-    .ldisc_option = ssh2_ldisc_option,
-    .set_ldisc_option = ssh2_set_ldisc_option,
-    .enable_x_fwd = ssh2_enable_x_fwd,
-    .set_wants_user_input = ssh2_set_wants_user_input,
+    // WINSCP
+    /*.rportfwd_alloc =*/ ssh2_rportfwd_alloc,
+    /*.rportfwd_remove =*/ ssh2_rportfwd_remove,
+    /*.lportfwd_open =*/ ssh2_lportfwd_open,
+    /*.session_open =*/ ssh2_session_open,
+    /*.serverside_x11_open =*/ ssh2_serverside_x11_open,
+    /*.serverside_agent_open =*/ ssh2_serverside_agent_open,
+    /*.add_x11_display =*/ ssh2_add_x11_display,
+    /*.add_sharing_x11_display =*/ ssh2_add_sharing_x11_display,
+    /*.remove_sharing_x11_display =*/ ssh2_remove_sharing_x11_display,
+    /*.send_packet_from_downstream =*/ ssh2_send_packet_from_downstream,
+    /*.alloc_sharing_channel =*/ ssh2_alloc_sharing_channel,
+    /*.delete_sharing_channel =*/ ssh2_delete_sharing_channel,
+    /*.sharing_queue_global_request =*/ ssh2_sharing_queue_global_request,
+    /*.sharing_no_more_downstreams =*/ ssh2_sharing_no_more_downstreams,
+    /*.agent_forwarding_permitted =*/ ssh2_agent_forwarding_permitted,
+    /*.terminal_size =*/ ssh2_terminal_size,
+    /*.stdout_unthrottle =*/ ssh2_stdout_unthrottle,
+    /*.stdin_backlog =*/ ssh2_stdin_backlog,
+    /*.throttle_all_channels =*/ ssh2_throttle_all_channels,
+    /*.ldisc_option =*/ ssh2_ldisc_option,
+    /*.set_ldisc_option =*/ ssh2_set_ldisc_option,
+    /*.enable_x_fwd =*/ ssh2_enable_x_fwd,
+    /*.set_wants_user_input =*/ ssh2_set_wants_user_input,
 };
 
 static char *ssh2_channel_open_failure_error_text(PktIn *pktin)
@@ -135,27 +137,28 @@ static void ssh2channel_x11_sharing_handover(
 static void ssh2channel_hint_channel_is_simple(SshChannel *c);
 
 static const SshChannelVtable ssh2channel_vtable = {
-    .write = ssh2channel_write,
-    .write_eof = ssh2channel_write_eof,
-    .initiate_close = ssh2channel_initiate_close,
-    .unthrottle = ssh2channel_unthrottle,
-    .get_conf = ssh2channel_get_conf,
-    .window_override_removed = ssh2channel_window_override_removed,
-    .x11_sharing_handover = ssh2channel_x11_sharing_handover,
-    .send_exit_status = ssh2channel_send_exit_status,
-    .send_exit_signal = ssh2channel_send_exit_signal,
-    .send_exit_signal_numeric = ssh2channel_send_exit_signal_numeric,
-    .request_x11_forwarding = ssh2channel_request_x11_forwarding,
-    .request_agent_forwarding = ssh2channel_request_agent_forwarding,
-    .request_pty = ssh2channel_request_pty,
-    .send_env_var = ssh2channel_send_env_var,
-    .start_shell = ssh2channel_start_shell,
-    .start_command = ssh2channel_start_command,
-    .start_subsystem = ssh2channel_start_subsystem,
-    .send_serial_break = ssh2channel_send_serial_break,
-    .send_signal = ssh2channel_send_signal,
-    .send_terminal_size_change = ssh2channel_send_terminal_size_change,
-    .hint_channel_is_simple = ssh2channel_hint_channel_is_simple,
+    // WINSCP
+    /*.write =*/ ssh2channel_write,
+    /*.write_eof =*/ ssh2channel_write_eof,
+    /*.initiate_close =*/ ssh2channel_initiate_close,
+    /*.unthrottle =*/ ssh2channel_unthrottle,
+    /*.get_conf =*/ ssh2channel_get_conf,
+    /*.window_override_removed =*/ ssh2channel_window_override_removed,
+    /*.x11_sharing_handover =*/ ssh2channel_x11_sharing_handover,
+    /*.send_exit_status =*/ ssh2channel_send_exit_status,
+    /*.send_exit_signal =*/ ssh2channel_send_exit_signal,
+    /*.send_exit_signal_numeric =*/ ssh2channel_send_exit_signal_numeric,
+    /*.request_x11_forwarding =*/ ssh2channel_request_x11_forwarding,
+    /*.request_agent_forwarding =*/ ssh2channel_request_agent_forwarding,
+    /*.request_pty =*/ ssh2channel_request_pty,
+    /*.send_env_var =*/ ssh2channel_send_env_var,
+    /*.start_shell =*/ ssh2channel_start_shell,
+    /*.start_command =*/ ssh2channel_start_command,
+    /*.start_subsystem =*/ ssh2channel_start_subsystem,
+    /*.send_serial_break =*/ ssh2channel_send_serial_break,
+    /*.send_signal =*/ ssh2channel_send_signal,
+    /*.send_terminal_size_change =*/ ssh2channel_send_terminal_size_change,
+    /*.hint_channel_is_simple =*/ ssh2channel_hint_channel_is_simple,
 };
 
 static void ssh2_channel_check_close(struct ssh2_channel *c);
@@ -525,9 +528,11 @@ static bool ssh2_connection_filter_queue(struct ssh2_connection_state *s)
               case SSH2_MSG_CHANNEL_OPEN_FAILURE: {
                 assert(c->halfopen);
 
+                { // WINSCP
                 char *err = ssh2_channel_open_failure_error_text(pktin);
                 chan_open_failed(c->chan, err);
                 sfree(err);
+                } // WINSCP
 
                 del234(s->channels, c);
                 ssh2_channel_free(c);

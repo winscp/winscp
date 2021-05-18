@@ -99,6 +99,7 @@ static ChanopenResult chan_open_auth_agent(
      * If possible, make a stream-oriented connection to the agent and
      * set up an ordinary port-forwarding type channel over it.
      */
+    { // WINSCP
     Plug *plug;
     Channel *ch = portfwd_raw_new(&s->cl, &plug, true);
     Socket *skt = agent_connect(plug);
@@ -115,6 +116,7 @@ static ChanopenResult chan_open_auth_agent(
          */
         CHANOPEN_RETURN_SUCCESS(agentf_new(sc));
     }
+    } // WINSCP
 }
 
 ChanopenResult ssh2_connection_parse_channel_open(

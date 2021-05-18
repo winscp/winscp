@@ -316,28 +316,28 @@ static bool zombiechan_want_close(Channel *chan, bool sent_eof, bool rcvd_eof);
 static char *zombiechan_log_close_msg(Channel *chan) { return NULL; }
 
 static const ChannelVtable zombiechan_channelvt = {
-    .free = zombiechan_free,
-    .open_confirmation = zombiechan_do_nothing,
-    .open_failed = zombiechan_open_failure,
-    .send = zombiechan_send,
-    .send_eof = zombiechan_do_nothing,
-    .set_input_wanted = zombiechan_set_input_wanted,
-    .log_close_msg = zombiechan_log_close_msg,
-    .want_close = zombiechan_want_close,
-    .rcvd_exit_status = chan_no_exit_status,
-    .rcvd_exit_signal = chan_no_exit_signal,
-    .rcvd_exit_signal_numeric = chan_no_exit_signal_numeric,
-    .run_shell = chan_no_run_shell,
-    .run_command = chan_no_run_command,
-    .run_subsystem = chan_no_run_subsystem,
-    .enable_x11_forwarding = chan_no_enable_x11_forwarding,
-    .enable_agent_forwarding = chan_no_enable_agent_forwarding,
-    .allocate_pty = chan_no_allocate_pty,
-    .set_env = chan_no_set_env,
-    .send_break = chan_no_send_break,
-    .send_signal = chan_no_send_signal,
-    .change_window_size = chan_no_change_window_size,
-    .request_response = chan_no_request_response,
+    /*.free =*/ zombiechan_free,
+    /*.open_confirmation =*/ zombiechan_do_nothing,
+    /*.open_failed =*/ zombiechan_open_failure,
+    /*.send =*/ zombiechan_send,
+    /*.send_eof =*/ zombiechan_do_nothing,
+    /*.set_input_wanted =*/ zombiechan_set_input_wanted,
+    /*.log_close_msg =*/ zombiechan_log_close_msg,
+    /*.want_close =*/ zombiechan_want_close,
+    /*.rcvd_exit_status =*/ chan_no_exit_status,
+    /*.rcvd_exit_signal =*/ chan_no_exit_signal,
+    /*.rcvd_exit_signal_numeric =*/ chan_no_exit_signal_numeric,
+    /*.run_shell =*/ chan_no_run_shell,
+    /*.run_command =*/ chan_no_run_command,
+    /*.run_subsystem =*/ chan_no_run_subsystem,
+    /*.enable_x11_forwarding =*/ chan_no_enable_x11_forwarding,
+    /*.enable_agent_forwarding =*/ chan_no_enable_agent_forwarding,
+    /*.allocate_pty =*/ chan_no_allocate_pty,
+    /*.set_env =*/ chan_no_set_env,
+    /*.send_break =*/ chan_no_send_break,
+    /*.send_signal =*/ chan_no_send_signal,
+    /*.change_window_size =*/ chan_no_change_window_size,
+    /*.request_response =*/ chan_no_request_response,
 };
 
 Channel *zombiechan_new(void)
@@ -864,7 +864,8 @@ int verify_ssh_manual_host_key(Conf *conf, char **fingerprints, ssh_key *key)
         return -1;                     /* no manual keys configured */
 
     if (fingerprints) {
-        for (size_t i = 0; i < SSH_N_FPTYPES; i++) {
+        size_t i; // WINSCP
+        for (i = 0; i < SSH_N_FPTYPES; i++) {
             /*
              * Each fingerprint string we've been given will have
              * things like 'ssh-rsa 2048' at the front of it. Strip
@@ -874,11 +875,13 @@ int verify_ssh_manual_host_key(Conf *conf, char **fingerprints, ssh_key *key)
             const char *fingerprint = fingerprints[i];
             if (!fingerprint)
                 continue;
+            { // WINSCP
             const char *p = strrchr(fingerprint, ' ');
             fingerprint = p ? p+1 : fingerprint;
             if (conf_get_str_str_opt(conf, CONF_ssh_manual_hostkeys,
                                      fingerprint))
                 return 1;                  /* success */
+            } // WINSCP
         }
     }
 

@@ -50,12 +50,13 @@ static void ssh2_bpp_handle_output(BinaryPacketProtocol *bpp);
 static PktOut *ssh2_bpp_new_pktout(int type);
 
 static const BinaryPacketProtocolVtable ssh2_bpp_vtable = {
-    .free = ssh2_bpp_free,
-    .handle_input = ssh2_bpp_handle_input,
-    .handle_output = ssh2_bpp_handle_output,
-    .new_pktout = ssh2_bpp_new_pktout,
-    .queue_disconnect = ssh2_bpp_queue_disconnect, /* in sshcommon.c */
-    .packet_size_limit = 0xFFFFFFFF, /* no special limit for this bpp */
+    // WINSCP
+    /*.free =*/ ssh2_bpp_free,
+    /*.handle_input =*/ ssh2_bpp_handle_input,
+    /*.handle_output =*/ ssh2_bpp_handle_output,
+    /*.new_pktout =*/ ssh2_bpp_new_pktout,
+    /*.queue_disconnect =*/ ssh2_bpp_queue_disconnect, /* in sshcommon.c */
+    /*.packet_size_limit =*/ 0xFFFFFFFF, /* no special limit for this bpp */
 };
 
 BinaryPacketProtocol *ssh2_bpp_new(

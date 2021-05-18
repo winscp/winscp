@@ -75,6 +75,7 @@ LoadFileStatus lf_load_fp(LoadedFile *lf, FILE *fp)
         lf->len += retd;
     }
 
+    { // WINSCP
     LoadFileStatus status = LF_OK;
 
     if (lf->len == lf->max_size) {
@@ -87,6 +88,7 @@ LoadFileStatus lf_load_fp(LoadedFile *lf, FILE *fp)
     BinarySource_INIT(lf, lf->data, lf->len);
 
     return status;
+    } // WINSCP
 }
 
 LoadFileStatus lf_load(LoadedFile *lf, const Filename *filename)
@@ -95,9 +97,11 @@ LoadFileStatus lf_load(LoadedFile *lf, const Filename *filename)
     if (!fp)
         return LF_ERROR;
 
+    { // WINSCP
     LoadFileStatus status = lf_load_fp(lf, fp);
     fclose(fp);
     return status;
+    } // WINSCP
 }
 
 static inline bool lf_load_keyfile_helper(LoadFileStatus status,
@@ -202,12 +206,14 @@ static int rsa1_load_s_internal(BinarySource *src, RSAKey *key, bool pub_only,
         buf = strbuf_new_nm();
         put_datapl(buf, get_data(src, enclen));
 
+        { // WINSCP
         unsigned char keybuf[16];
         hash_simple(&ssh_md5, ptrlen_from_asciz(passphrase), keybuf);
         des3_decrypt_pubkey(keybuf, buf->u, enclen);
         smemclr(keybuf, sizeof(keybuf));        /* burn the evidence */
 
         BinarySource_BARE_INIT_PL(src, ptrlen_from_strbuf(buf));
+        } // WINSCP
     }
 
     /*
@@ -264,9 +270,11 @@ int rsa1_load_f(const Filename *filename, RSAKey *key,
     if (!lf)
         return false;
 
+    { // WINSCP
     int toret = rsa1_load_s(BinarySource_UPCAST(lf), key, passphrase, errstr);
     lf_free(lf);
     return toret;
+    } // WINSCP
 }
 
 /*
@@ -285,9 +293,11 @@ bool rsa1_encrypted_f(const Filename *filename, char **comment)
     if (!lf)
         return false; /* couldn't even open the file */
 
+    { // WINSCP
     bool toret = rsa1_encrypted_s(BinarySource_UPCAST(lf), comment);
     lf_free(lf);
     return toret;
+    } // WINSCP
 }
 
 /*
@@ -304,6 +314,7 @@ int rsa1_loadpub_s(BinarySource *src, BinarySink *bs,
     /* Default return if we fail. */
     ret = 0;
 
+    { // WINSCP
     bool is_privkey_file = expect_signature(src, rsa1_signature);
     BinarySource_REWIND(src);
 
@@ -375,6 +386,7 @@ int rsa1_loadpub_s(BinarySource *src, BinarySink *bs,
     if ((ret != 1) && errorstr)
         *errorstr = error;
     return ret;
+    } // WINSCP
 }
 
 int rsa1_loadpub_f(const Filename *filename, BinarySink *bs,
@@ -384,10 +396,12 @@ int rsa1_loadpub_f(const Filename *filename, BinarySink *bs,
     if (!lf)
         return 0;
 
+    { // WINSCP
     int toret = rsa1_loadpub_s(BinarySource_UPCAST(lf), bs,
                                commentptr, errorstr);
     lf_free(lf);
     return toret;
+    } // WINSCP
 }
 
 strbuf *rsa1_save_sb(RSAKey *key, const char *passphrase)
@@ -458,12 +472,14 @@ bool rsa1_save_f(const Filename *filename, RSAKey *key, const char *passphrase)
     if (!fp)
         return false;
 
+    { // WINSCP
     strbuf *buf = rsa1_save_sb(key, passphrase);
     bool toret = fwrite(buf->s, 1, buf->len, fp) == buf->len;
     if (fclose(fp))
         toret = false;
     strbuf_free(buf);
     return toret;
+    } // WINSCP
 }
 
 /* ----------------------------------------------------------------------
@@ -574,7 +590,8 @@ const size_t n_keyalgs = lenof(all_keyalgs);
 
 const ssh_keyalg *find_pubkey_alg_len(ptrlen name)
 {
-    for (size_t i = 0; i < n_keyalgs; i++)
+    size_t i; // WINSCP
+    for (i = 0; i < n_keyalgs; i++)
         if (ptrlen_eq_string(name, all_keyalgs[i]->ssh_id))
             return all_keyalgs[i];
 
@@ -606,10 +623,12 @@ static void ssh2_ppk_derive_keys(
             mac_keylen = 0;
             break;
         }
+        { // WINSCP
         ptrlen empty = PTRLEN_LITERAL("");
 
         mac_keylen = 32;
 
+        { // WINSCP
         uint32_t taglen = ciphertype->keylen + ciphertype->ivlen + mac_keylen;
 
         if (params->argon2_passes_auto) {
@@ -628,6 +647,8 @@ static void ssh2_ppk_derive_keys(
                    params->argon2_passes, params->argon2_parallelism, taglen,
                    passphrase, passphrase_salt, empty, empty, storage);
         }
+        } // WINSCP
+        } // WINSCP
 
         break;
       }
@@ -635,7 +656,9 @@ static void ssh2_ppk_derive_keys(
       case 2:
       case 1: {
         /* Counter-mode iteration to generate cipher key data. */
-        for (unsigned ctr = 0; ctr * 20 < ciphertype->keylen; ctr++) {
+        { // WINSCP
+        unsigned ctr; // WINSCP
+        for (ctr = 0; ctr * 20 < ciphertype->keylen; ctr++) {
             ssh_hash *h = ssh_hash_new(&ssh_sha1);
             put_uint32(h, ctr);
             put_datapl(h, passphrase);
@@ -647,11 +670,14 @@ static void ssh2_ppk_derive_keys(
         put_padding(storage, ciphertype->ivlen, 0);
 
         /* Completely separate hash for the MAC key. */
+        { // WINSCP
         ssh_hash *h = ssh_hash_new(&ssh_sha1);
         mac_keylen = ssh_hash_alg(h)->hlen;
         put_datapl(h, PTRLEN_LITERAL("putty-private-key-file-mac-key"));
         put_datapl(h, passphrase);
         ssh_hash_final(h, strbuf_append(storage, mac_keylen));
+        } // WINSCP
+        } // WINSCP
 
         break;
       }
@@ -660,11 +686,13 @@ static void ssh2_ppk_derive_keys(
         unreachable("bad format version in ssh2_ppk_derive_keys");
     }
 
+    { // WINSCP
     BinarySource src[1];
     BinarySource_BARE_INIT_PL(src, ptrlen_from_strbuf(storage));
     *cipherkey = get_data(src, ciphertype->keylen);
     *cipheriv = get_data(src, ciphertype->ivlen);
     *mackey = get_data(src, mac_keylen);
+    } // WINSCP
 }
 
 static int userkey_parse_line_counter(const char *text)
@@ -830,7 +858,9 @@ ssh2_userkey *ppk_load_s(BinarySource *src, const char *passphrase,
             goto error;
         if ((b = read_body(src)) == NULL)
             goto error;
-        for (size_t i = 0; b[i]; i += 2) {
+        { // WINSCP
+        size_t i; // WINSCP
+        for (i = 0; b[i]; i += 2) {
             if (isxdigit((unsigned char)b[i]) && b[i+1] &&
                 isxdigit((unsigned char)b[i+1])) {
                 char s[3];
@@ -843,6 +873,7 @@ ssh2_userkey *ppk_load_s(BinarySource *src, const char *passphrase,
                 goto error;
             }
         }
+        } // WINSCP
         sfree(b);
     }
 
@@ -1131,7 +1162,7 @@ static bool rfc4716_loadpub(BinarySource *src, char **algorithm,
     return false;
 }
 
-static bool openssh_loadpub(BinarySource *src, char **algorithm,
+/*WINSCP static*/ bool openssh_loadpub(BinarySource *src, char **algorithm,
                             BinarySink *bs,
                             char **commentptr, const char **errorstr)
 {
@@ -1305,10 +1336,12 @@ bool ppk_loadpub_f(const Filename *filename, char **algorithm, BinarySink *bs,
     if (!lf)
         return false;
 
+    { // WINSCP
     bool toret = ppk_loadpub_s(BinarySource_UPCAST(lf), algorithm, bs,
                                commentptr, errorstr);
     lf_free(lf);
     return toret;
+    } // WINSCP
 }
 
 bool ppk_encrypted_s(BinarySource *src, char **commentptr)
@@ -1369,9 +1402,11 @@ bool ppk_encrypted_f(const Filename *filename, char **commentptr)
         return false;
     }
 
+    { // WINSCP
     bool toret = ppk_encrypted_s(BinarySource_UPCAST(lf), commentptr);
     lf_free(lf);
     return toret;
+    } // WINSCP
 }
 
 int base64_lines(int datalen)
@@ -1412,14 +1447,15 @@ void base64_encode(FILE *fp, const unsigned char *data, int datalen, int cpl)
 }
 
 const ppk_save_parameters ppk_save_default_parameters = {
-    .fmt_version = 3,
+    // WINSCP
+    /*.fmt_version =*/ 3,
 
     /*
      * The Argon2 spec recommends the hybrid variant Argon2id, where
      * you don't have a good reason to go with the pure Argon2d or
      * Argon2i.
      */
-    .argon2_flavour = Argon2id,
+    /*.argon2_flavour =*/ Argon2id,
 
     /*
      * Memory requirement for hashing a password: I don't want to set
@@ -1434,7 +1470,7 @@ const ppk_save_parameters ppk_save_default_parameters = {
      * (which was plain SHA-1), so it still imposes a limit on
      * parallel attacks on someone's key file.
      */
-    .argon2_mem = 8192,                /* require 8 Mb memory */
+    /*.argon2_mem =*/ 8192,                /* require 8 Mb memory */
 
     /*
      * Automatically scale the number of Argon2 passes so that the
@@ -1443,8 +1479,8 @@ const ppk_save_parameters ppk_save_default_parameters = {
      * but for the moment, I'm trying to err on the side of not
      * stopping anyone from using the tools at all.)
      */
-    .argon2_passes_auto = true,
-    .argon2_milliseconds = 100,
+    /*.argon2_passes_auto =*/ true,
+    /*.argon2_milliseconds =*/ 100,
 
     /*
      * PuTTY's own Argon2 implementation is single-threaded. So we
@@ -1456,7 +1492,8 @@ const ppk_save_parameters ppk_save_default_parameters = {
      * least they don't get a speed advantage over us in computing
      * even one hash.)
      */
-    .argon2_parallelism = 1,
+    /*.argon2_parallelism =*/ 1,
+    NULL, 0, // WINSCP
 };
 
 strbuf *ppk_save_sb(ssh2_userkey *key, const char *passphrase,
@@ -1507,6 +1544,7 @@ strbuf *ppk_save_sb(ssh2_userkey *key, const char *passphrase,
     /* Copy the save parameters, so that when derive_keys chooses the
      * number of Argon2 passes, it can write the result back to our
      * copy for us to retrieve. */
+    { // WINSCP
     ppk_save_parameters params = *params_orig;
 
     strbuf *passphrase_salt = strbuf_new();
@@ -1525,6 +1563,7 @@ strbuf *ppk_save_sb(ssh2_userkey *key, const char *passphrase,
                          cipher_mac_keys_blob, &cipherkey, &cipheriv, &mackey,
                          ptrlen_from_strbuf(passphrase_salt), &params);
 
+    { // WINSCP
     const ssh2_macalg *macalg = (params.fmt_version == 2 ?
                                  &ssh_hmac_sha1 : &ssh_hmac_sha256);
 
@@ -1549,6 +1588,7 @@ strbuf *ppk_save_sb(ssh2_userkey *key, const char *passphrase,
                               priv_blob_encrypted, priv_encrypted_len);
     }
 
+    { // WINSCP
     strbuf *out = strbuf_new_nm();
     strbuf_catf(out, "PuTTY-User-Key-File-%u: %s\n",
                 params.fmt_version, ssh_key_ssh_id(key->key));
@@ -1566,8 +1606,11 @@ strbuf *ppk_save_sb(ssh2_userkey *key, const char *passphrase,
         strbuf_catf(out, "Argon2-Parallelism: %"PRIu32"\n",
                     params.argon2_parallelism);
         strbuf_catf(out, "Argon2-Salt: ");
-        for (size_t i = 0; i < passphrase_salt->len; i++)
+        { // WINSCP
+        size_t i;
+        for (i = 0; i < passphrase_salt->len; i++)
             strbuf_catf(out, "%02x", passphrase_salt->u[i]);
+        } // WINSCP
         strbuf_catf(out, "\n");
     }
     strbuf_catf(out, "Private-Lines: %d\n", base64_lines(priv_encrypted_len));
@@ -1585,6 +1628,9 @@ strbuf *ppk_save_sb(ssh2_userkey *key, const char *passphrase,
     smemclr(priv_blob_encrypted, priv_encrypted_len);
     sfree(priv_blob_encrypted);
     return out;
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
 bool ppk_save_f(const Filename *filename, ssh2_userkey *key,
@@ -1594,12 +1640,14 @@ bool ppk_save_f(const Filename *filename, ssh2_userkey *key,
     if (!fp)
         return false;
 
+    { // WINSCP
     strbuf *buf = ppk_save_sb(key, passphrase, params);
     bool toret = fwrite(buf->s, 1, buf->len, fp) == buf->len;
     if (fclose(fp))
         toret = false;
     strbuf_free(buf);
     return toret;
+    } // WINSCP
 }
 
 /* ----------------------------------------------------------------------
@@ -1738,8 +1786,9 @@ static void ssh2_fingerprint_blob_md5(ptrlen blob, strbuf *sb)
 {
     unsigned char digest[16];
 
+    unsigned i; // WINSCP
     hash_simple(&ssh_md5, blob, digest);
-    for (unsigned i = 0; i < 16; i++)
+    for (i = 0; i < 16; i++)
         strbuf_catf(sb, "%02x%s", digest[i], i==15 ? "" : ":");
 }
 
@@ -1750,7 +1799,9 @@ static void ssh2_fingerprint_blob_sha256(ptrlen blob, strbuf *sb)
 
     put_datapl(sb, PTRLEN_LITERAL("SHA256:"));
 
-    for (unsigned i = 0; i < 32; i += 3) {
+    { // WINSCP
+    unsigned i;
+    for (i = 0; i < 32; i += 3) {
         char buf[5];
         unsigned len = 32-i;
         if (len > 3)
@@ -1759,6 +1810,7 @@ static void ssh2_fingerprint_blob_sha256(ptrlen blob, strbuf *sb)
         put_data(sb, buf, 4);
     }
     strbuf_chomp(sb, '=');
+    } // WINSCP
 }
 
 char *ssh2_fingerprint_blob(ptrlen blob, FingerprintType fptype)
@@ -1773,6 +1825,7 @@ char *ssh2_fingerprint_blob(ptrlen blob, FingerprintType fptype)
      */
     BinarySource src[1];
     BinarySource_BARE_INIT_PL(src, blob);
+    { // WINSCP
     ptrlen algname = get_string(src);
     if (!get_err(src)) {
         const ssh_keyalg *alg = find_pubkey_alg_len(algname);
@@ -1783,6 +1836,7 @@ char *ssh2_fingerprint_blob(ptrlen blob, FingerprintType fptype)
             strbuf_catf(sb, "%.*s ", PTRLEN_PRINTF(algname));
         }
     }
+    } // WINSCP
 
     switch (fptype) {
       case SSH_FPTYPE_MD5:
@@ -1799,7 +1853,8 @@ char *ssh2_fingerprint_blob(ptrlen blob, FingerprintType fptype)
 char **ssh2_all_fingerprints_for_blob(ptrlen blob)
 {
     char **fps = snewn(SSH_N_FPTYPES, char *);
-    for (unsigned i = 0; i < SSH_N_FPTYPES; i++)
+    unsigned i; // WINSCP
+    for (i = 0; i < SSH_N_FPTYPES; i++)
         fps[i] = ssh2_fingerprint_blob(blob, i);
     return fps;
 }
@@ -1818,14 +1873,17 @@ char **ssh2_all_fingerprints(ssh_key *data)
 {
     strbuf *blob = strbuf_new();
     ssh_key_public_blob(data, BinarySink_UPCAST(blob));
+    { // WINSCP
     char **ret = ssh2_all_fingerprints_for_blob(ptrlen_from_strbuf(blob));
     strbuf_free(blob);
     return ret;
+    } // WINSCP
 }
 
 void ssh2_free_all_fingerprints(char **fps)
 {
-    for (unsigned i = 0; i < SSH_N_FPTYPES; i++)
+    unsigned i; // WINSCP
+    for (i = 0; i < SSH_N_FPTYPES; i++)
         sfree(fps[i]);
     sfree(fps);
 }
@@ -1892,9 +1950,11 @@ int key_type(const Filename *filename)
         return SSH_KEYTYPE_UNOPENABLE;
     }
 
+    { // WINSCP
     int toret = key_type_s(BinarySource_UPCAST(lf));
     lf_free(lf);
     return toret;
+    } // WINSCP
 }
 
 /*
@@ -1951,25 +2011,31 @@ void key_components_add_text(key_components *kc,
                              const char *name, const char *value)
 {
     sgrowarray(kc->components, kc->componentsize, kc->ncomponents);
+    { // WINSCP
     size_t n = kc->ncomponents++;
     kc->components[n].name = dupstr(name);
     kc->components[n].is_mp_int = false;
     kc->components[n].text = dupstr(value);
+    } // WINSCP
 }
 
 void key_components_add_mp(key_components *kc,
                            const char *name, mp_int *value)
 {
     sgrowarray(kc->components, kc->componentsize, kc->ncomponents);
+    { // WINSCP
     size_t n = kc->ncomponents++;
     kc->components[n].name = dupstr(name);
     kc->components[n].is_mp_int = true;
     kc->components[n].mp = mp_copy(value);
+    } // WINSCP
 }
 
 void key_components_free(key_components *kc)
 {
-    for (size_t i = 0; i < kc->ncomponents; i++) {
+    { // WINSCP
+    size_t i;
+    for (i = 0; i < kc->ncomponents; i++) {
         sfree(kc->components[i].name);
         if (kc->components[i].is_mp_int) {
             mp_free(kc->components[i].mp);
@@ -1980,4 +2046,5 @@ void key_components_free(key_components *kc)
     }
     sfree(kc->components);
     sfree(kc);
+    } // WINSCP
 }

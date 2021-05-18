@@ -783,6 +783,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
              * triggered on purpose to populate the transient cache.
              */
             assert(s->hkey);  /* only KEXTYPE_GSS lets this be null */
+            { // WINSCP
             char *fingerprint = ssh2_fingerprint(s->hkey, SSH_FPTYPE_DEFAULT);
 
             if (s->need_gss_transient_hostkey) {
@@ -802,6 +803,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
             }
 
             sfree(fingerprint);
+            } // WINSCP
         }
     } else
 #endif /* NO_GSSAPI */
@@ -847,6 +849,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
              * Authenticate remote host: verify host key. (We've already
              * checked the signature of the exchange hash.)
              */
+            { // WINSCP
             char **fingerprints = ssh2_all_fingerprints(s->hkey);
             FingerprintType fptype_default =
                 ssh2_pick_default_fingerprint(fingerprints);
@@ -862,7 +865,10 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
                 *aborted = true;
                 return;
             } else if (s->dlgret < 0) { /* none configured; use standard handling */
-                ssh2_userkey uk = { .key = s->hkey, .comment = NULL };
+                ssh2_userkey uk; // WINSCP
+                uk.key = s->hkey; // WINSCP
+                uk.comment = NULL; // WINSCP
+                { // WINSCP
                 char *keydisp = ssh2_pubkey_openssh_str(&uk);
                 s->dlgret = seat_verify_ssh_host_key(
                     s->ppl.seat, s->savedhost, s->savedport,
@@ -880,6 +886,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
                     *aborted = true;
                     return;
                 }
+                } // WINSCP
             }
 
             /*
@@ -888,10 +895,12 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
              */
             s->hostkey_str = s->keystr;
             s->keystr = NULL;
+            } // WINSCP
         } else if (s->cross_certifying) {
             assert(s->hkey);
             assert(ssh_key_alg(s->hkey) == s->cross_certifying);
 
+            { // WINSCP
             char *fingerprint = ssh2_fingerprint(s->hkey, SSH_FPTYPE_DEFAULT);
             ppl_logevent("Storing additional host key for this host:");
             ppl_logevent("%s", fingerprint);
@@ -905,6 +914,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
              */
             s->hostkey_str = s->keystr;
             s->keystr = NULL;
+            } // WINSCP
         } else {
             /*
              * In a rekey, we never present an interactive host key

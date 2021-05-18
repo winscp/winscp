@@ -37,12 +37,13 @@ static void ssh1_bpp_queue_disconnect(BinaryPacketProtocol *bpp,
 static PktOut *ssh1_bpp_new_pktout(int type);
 
 static const BinaryPacketProtocolVtable ssh1_bpp_vtable = {
-    .free = ssh1_bpp_free,
-    .handle_input = ssh1_bpp_handle_input,
-    .handle_output = ssh1_bpp_handle_output,
-    .new_pktout = ssh1_bpp_new_pktout,
-    .queue_disconnect = ssh1_bpp_queue_disconnect,
-    .packet_size_limit = 0xFFFFFFFF, /* no special limit for this bpp */
+    // WINSCP
+    /*.free =*/ ssh1_bpp_free,
+    /*.handle_input =*/ ssh1_bpp_handle_input,
+    /*.handle_output =*/ ssh1_bpp_handle_output,
+    /*.new_pktout =*/ ssh1_bpp_new_pktout,
+    /*.queue_disconnect =*/ ssh1_bpp_queue_disconnect,
+    /*.packet_size_limit =*/ 0xFFFFFFFF, /* no special limit for this bpp */
 };
 
 BinaryPacketProtocol *ssh1_bpp_new(LogContext *logctx)

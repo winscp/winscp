@@ -325,14 +325,15 @@ static SocketPeerInfo *sk_handle_peer_info(Socket *s)
 }
 
 static const SocketVtable HandleSocket_sockvt = {
-    .plug = sk_handle_plug,
-    .close = sk_handle_close,
-    .write = sk_handle_write,
-    .write_oob = sk_handle_write_oob,
-    .write_eof = sk_handle_write_eof,
-    .set_frozen = sk_handle_set_frozen,
-    .socket_error = sk_handle_socket_error,
-    .peer_info = sk_handle_peer_info,
+    // WINSCP
+    /*.plug =*/ sk_handle_plug,
+    /*.close =*/ sk_handle_close,
+    /*.write =*/ sk_handle_write,
+    /*.write_oob =*/ sk_handle_write_oob,
+    /*.write_eof =*/ sk_handle_write_eof,
+    /*.set_frozen =*/ sk_handle_set_frozen,
+    /*.socket_error =*/ sk_handle_socket_error,
+    /*.peer_info =*/ sk_handle_peer_info,
 };
 
 Socket *make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,

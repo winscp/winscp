@@ -229,6 +229,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
       case hkDSA: phk = hkDSA; break;
       case hkECDSA: phk = HK_ECDSA; break;
       case hkED25519: phk = HK_ED25519; break;
+      case hkED448: phk = HK_ED448; break;
       default: DebugFail();
     }
     conf_set_int_int(conf, CONF_ssh_hklist, h, phk);
@@ -408,6 +409,7 @@ static const LogPolicyVtable ScpLogPolicyVTable =
     eventlog,
     NULL, // Should never be called
     NULL, // Should never be called
+    null_lp_verbose_no, // Should never be called
   };
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::Open()
@@ -2411,24 +2413,10 @@ UnicodeString TSecureShell::StoreHostKey(
   return Storage->Source;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::VerifyHostKey(
-  const UnicodeString & AHost, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr,
-  const UnicodeString & Fingerprint)
+void TSecureShell::ParseFingerprint(const UnicodeString & Fingerprint, UnicodeString & SignKeyType, UnicodeString & Hash)
 {
-  if (Configuration->ActualLogProtocol >= 1)
-  {
-    LogEvent(FORMAT(L"Verifying host key %s %s with fingerprints %s", (KeyType, FormatKeyStr(KeyStr), Fingerprint)));
-  }
-
-  GotHostKey();
-
-  DebugAssert(KeyStr.Pos(HostKeyDelimiter) == 0);
-
-  UnicodeString Host = AHost;
-  GetRealHost(Host, Port);
-
   UnicodeString Buf = Fingerprint;
-  UnicodeString SignKeyAlg, SignKeySize, MD5, SHA256;
+  UnicodeString SignKeyAlg, SignKeySize;
   if (get_ssh_version(FBackendHandle) == 1)
   {
     SignKeyAlg = GetSsh1KeyType();
@@ -2438,19 +2426,47 @@ void __fastcall TSecureShell::VerifyHostKey(
     SignKeyAlg = CutToChar(Buf, L' ', false);
   }
   SignKeySize = CutToChar(Buf, L' ', false);
-  MD5 = CutToChar(Buf, L' ', false);
+  SignKeyType = SignKeyAlg + L' ' + SignKeySize;
+  Hash = Buf;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecureShell::VerifyHostKey(
+  const UnicodeString & AHost, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr,
+  const UnicodeString & AFingerprintSHA256, const UnicodeString & AFingerprintMD5)
+{
+  if (Configuration->ActualLogProtocol >= 1)
+  {
+    LogEvent(FORMAT(L"Verifying host key %s %s with fingerprints %s, %s", (KeyType, FormatKeyStr(KeyStr), AFingerprintSHA256, AFingerprintMD5)));
+  }
+
+  GotHostKey();
+
+  DebugAssert(KeyStr.Pos(HostKeyDelimiter) == 0);
+
+  UnicodeString Host = AHost;
+  GetRealHost(Host, Port);
+
+  UnicodeString SignKeyType, MD5, SHA256;
+  ParseFingerprint(AFingerprintMD5, SignKeyType, MD5);
   if (get_ssh_version(FBackendHandle) == 1)
   {
+    DebugAssert(AFingerprintSHA256.IsEmpty());
     SHA256 = L"-";
-    DebugAssert(Buf.IsEmpty());
   }
   else
   {
-    SHA256 = Buf;
+    UnicodeString SignKeyTypeSHA256;
+    ParseFingerprint(AFingerprintSHA256, SignKeyTypeSHA256, SHA256);
+    DebugAssert(SignKeyTypeSHA256 == SignKeyType);
+    if (DebugAlwaysTrue(StartsText(L"SHA256:", SHA256)))
+    {
+      CutToChar(SHA256, L':', false);
+    }
   }
-  UnicodeString SignKeyType = SignKeyAlg + L' ' + SignKeySize;
   UnicodeString FingerprintMD5 = SignKeyType + L' ' + MD5;
+  DebugAssert(AFingerprintMD5 == FingerprintMD5);
   UnicodeString FingerprintSHA256 = SignKeyType + L' ' + SHA256;
+  DebugAssert(ReplaceStr(AFingerprintSHA256, L"SHA256:", EmptyStr) == FingerprintSHA256);
 
   FSessionInfo.HostKeyFingerprintSHA256 = FingerprintSHA256;
   FSessionInfo.HostKeyFingerprintMD5 = FingerprintMD5;

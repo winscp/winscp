@@ -105,10 +105,16 @@ static ssh_hash *sha256_select(const ssh_hashalg *alg)
 }
 
 const ssh_hashalg ssh_sha256 = {
-    .new = sha256_select,
-    .hlen = 32,
-    .blocklen = 64,
+    // WINSCP
+    /*.new =*/ sha256_select,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    /*.hlen =*/ 32,
+    /*.blocklen =*/ 64,
     HASHALG_NAMES_ANNOTATED("SHA-256", "dummy selector vtable"),
+    NULL,
 };
 
 #else
@@ -356,14 +362,16 @@ static void sha256_sw_digest(ssh_hash *hash, uint8_t *digest)
 }
 
 const ssh_hashalg ssh_sha256_sw = {
-    .new = sha256_sw_new,
-    .reset = sha256_sw_reset,
-    .copyfrom = sha256_sw_copyfrom,
-    .digest = sha256_sw_digest,
-    .free = sha256_sw_free,
-    .hlen = 32,
-    .blocklen = 64,
+    // WINSCP
+    /*.new =*/ sha256_sw_new,
+    /*.reset =*/ sha256_sw_reset,
+    /*.copyfrom =*/ sha256_sw_copyfrom,
+    /*.digest =*/ sha256_sw_digest,
+    /*.free =*/ sha256_sw_free,
+    /*.hlen =*/ 32,
+    /*.blocklen =*/ 64,
     HASHALG_NAMES_BARE("SHA-256"), // WINSCP (removed "unaccelerated" annotation)
+    NULL,
 };
 #endif // !WINSCP_VS
 
@@ -969,14 +977,16 @@ static void sha256_stub_free(ssh_hash *hash) STUB_BODY
 static void sha256_stub_digest(ssh_hash *hash, uint8_t *digest) STUB_BODY
 
 const ssh_hashalg ssh_sha256_hw = {
-    .new = sha256_stub_new,
-    .reset = sha256_stub_reset,
-    .copyfrom = sha256_stub_copyfrom,
-    .digest = sha256_stub_digest,
-    .free = sha256_stub_free,
-    .hlen = 32,
-    .blocklen = 64,
+    // WINSCP
+    /*.new =*/ sha256_stub_new,
+    /*.reset =*/ sha256_stub_reset,
+    /*.copyfrom =*/ sha256_stub_copyfrom,
+    /*.digest =*/ sha256_stub_digest,
+    /*.free =*/ sha256_stub_free,
+    /*.hlen =*/ 32,
+    /*.blocklen =*/ 64,
     HASHALG_NAMES_ANNOTATED("SHA-256", "!NONEXISTENT ACCELERATED VERSION!"),
+    NULL,
 };
 
 #endif // !WINSCP_VS

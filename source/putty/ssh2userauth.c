@@ -122,15 +122,17 @@ static void ssh2_userauth_antispoof_msg(
     struct ssh2_userauth_state *s, const char *msg);
 
 static const PacketProtocolLayerVtable ssh2_userauth_vtable = {
-    .free = ssh2_userauth_free,
-    .process_queue = ssh2_userauth_process_queue,
-    .get_specials = ssh2_userauth_get_specials,
-    .special_cmd = ssh2_userauth_special_cmd,
-    .want_user_input = ssh2_userauth_want_user_input,
-    .got_user_input = ssh2_userauth_got_user_input,
-    .reconfigure = ssh2_userauth_reconfigure,
-    .queued_data_size = ssh_ppl_default_queued_data_size,
-    .name = "ssh-userauth",
+    // WINSCP
+    /*.free =*/ ssh2_userauth_free,
+    /*.process_queue =*/ ssh2_userauth_process_queue,
+    /*.get_specials =*/ ssh2_userauth_get_specials,
+    /*.special_cmd =*/ ssh2_userauth_special_cmd,
+    /*.want_user_input =*/ ssh2_userauth_want_user_input,
+    /*.got_user_input =*/ ssh2_userauth_got_user_input,
+    /*.reconfigure =*/ ssh2_userauth_reconfigure,
+    /*.queued_data_size =*/ ssh_ppl_default_queued_data_size,
+    /*.name =*/ "ssh-userauth",
+    NULL, // WINSCP
 };
 
 PacketProtocolLayer *ssh2_userauth_new(

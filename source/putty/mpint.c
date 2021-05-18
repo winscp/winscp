@@ -125,7 +125,8 @@ void mp_copy_into(mp_int *dest, mp_int *src)
 
 void mp_copy_integer_into(mp_int *r, uintmax_t n)
 {
-    for (size_t i = 0; i < r->nw; i++) {
+    size_t i; // WINSCP
+    for (i = 0; i < r->nw; i++) {
         r->w[i] = n;
         n = shift_right_by_one_word(n);
     }
@@ -1305,24 +1306,33 @@ static void mp_lshift_safe_in_place(mp_int *r, size_t bits)
     unsigned clear = (r->nw - wordshift) >> (CHAR_BIT * sizeof(size_t) - 1);
     mp_cond_clear(r, clear);
 
-    for (unsigned bit = 0; r->nw >> bit; bit++) {
+    { // WINSCP
+    unsigned bit; // WINSCP
+    for (bit = 0; r->nw >> bit; bit++) {
         size_t word_offset = (size_t)1 << bit;
         BignumInt mask = -(BignumInt)((wordshift >> bit) & 1);
-        for (size_t i = r->nw; i-- > 0 ;) {
+        size_t i; // WINSCP
+        for (i = r->nw; i-- > 0 ;) {
             BignumInt w = mp_word(r, i - word_offset);
             r->w[i] ^= (r->w[i] ^ w) & mask;
         }
     }
 
+    { // WINSCP
     size_t downshift = BIGNUM_INT_BITS - bitshift;
     size_t no_shift = (downshift >> BIGNUM_INT_BITS_BITS);
     downshift &= ~-(size_t)no_shift;
+    { // WINSCP
     BignumInt downshifted_mask = ~-(BignumInt)no_shift;
 
-    for (size_t i = r->nw; i-- > 0 ;) {
+    size_t i; // WINSCP
+    for (i = r->nw; i-- > 0 ;) {
         r->w[i] = (r->w[i] << bitshift) |
             ((mp_word(r, i-1) >> downshift) & downshifted_mask);
     }
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
 void mp_lshift_safe_into(mp_int *r, mp_int *x, size_t bits)
@@ -1886,9 +1896,11 @@ static void mp_bezout_into(mp_int *a_coeff_out, mp_int *b_coeff_out,
          * Initially, the result is +d if a was the nonzero value after
          * reduction, and -d if b was.
          */
+        { // WINSCP
         unsigned minus_d = b->w[0];
 
-        for (size_t step = steps; step-- > 0 ;) {
+        size_t step; // WINSCP
+        for (step = steps; step-- > 0 ;) {
             /*
              * Recover the data from the step we're unwinding.
              */
@@ -1953,6 +1965,7 @@ static void mp_bezout_into(mp_int *a_coeff_out, mp_int *b_coeff_out,
         if (b_coeff_out)
             mp_copy_into(b_coeff_out, bc);
 
+        } // WINSCP
     }
 
     mp_free(a);
@@ -1981,14 +1994,18 @@ void mp_gcd_into(mp_int *a, mp_int *b, mp_int *gcd, mp_int *A, mp_int *B)
      * set bit.
      */
     mp_int *tmp = mp_make_sized(size_t_max(a->nw, b->nw));
-    for (size_t i = 0; i < tmp->nw; i++)
+    size_t i; // WINSCP
+    for (i = 0; i < tmp->nw; i++)
         tmp->w[i] = mp_word(a, i) | mp_word(b, i);
+    { // WINSCP
     BignumCarry carry = 1;
-    for (size_t i = 0; i < tmp->nw; i++) {
+    size_t i;
+    for (i = 0; i < tmp->nw; i++) {
         BignumInt negw;
         BignumADC(negw, carry, 0, ~tmp->w[i], carry);
         tmp->w[i] &= negw;
     }
+    { // WINSCP
     size_t shift = mp_get_nbits(tmp) - 1;
     mp_free(tmp);
 
@@ -1997,6 +2014,7 @@ void mp_gcd_into(mp_int *a, mp_int *b, mp_int *gcd, mp_int *A, mp_int *B)
      * so that at least one is odd (which is the precondition for
      * mp_bezout_into). Compute the gcd of those.
      */
+    { // WINSCP
     mp_int *as = mp_rshift_safe(a, shift);
     mp_int *bs = mp_rshift_safe(b, shift);
     mp_bezout_into(A, B, gcd, as, bs);
@@ -2009,6 +2027,9 @@ void mp_gcd_into(mp_int *a, mp_int *b, mp_int *gcd, mp_int *A, mp_int *B)
      */
     if (gcd)
         mp_lshift_safe_in_place(gcd, shift);
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
 mp_int *mp_gcd(mp_int *a, mp_int *b)
@@ -2395,7 +2416,9 @@ mp_int *mp_nthroot(mp_int *y, unsigned n, mp_int *remainder_out)
     mp_int **alloc, **powers, **newpowers, *scratch;
     size_t nalloc = 2*(n+1)+1;
     alloc = snewn(nalloc, mp_int *);
-    for (size_t i = 0; i < nalloc; i++)
+    { // WINSCP
+    size_t i; // WINSCP
+    for (i = 0; i < nalloc; i++)
         alloc[i] = mp_make_sized(y->nw + 1);
     powers = alloc;
     newpowers = alloc + (n+1);
@@ -2413,12 +2436,15 @@ mp_int *mp_nthroot(mp_int *y, unsigned n, mp_int *remainder_out)
      * to match.
      */
     mp_copy_integer_into(powers[0], 1);
-    for (size_t s = mp_max_bits(y) / n + 1; s-- > 0 ;) {
+    { // WINSCP
+    size_t s; // WINSCP
+    for (s = mp_max_bits(y) / n + 1; s-- > 0 ;) {
         /*
          * Let b = 2^s. We need to compute the powers (x+b)^i for each
          * i, starting from our recorded values of x^i.
          */
-        for (size_t i = 0; i < n+1; i++) {
+        size_t i; // WINSCP
+        for (i = 0; i < n+1; i++) {
             /*
              * (x+b)^i = x^i
              *         + (i choose 1) x^{i-1} b
@@ -2428,39 +2454,54 @@ mp_int *mp_nthroot(mp_int *y, unsigned n, mp_int *remainder_out)
              */
             uint16_t binom = 1;       /* coefficient of b^i */
             mp_copy_into(newpowers[i], powers[i]);
-            for (size_t j = 0; j < i; j++) {
+            { // WINSCP
+            size_t j; // WINSCP
+            for (j = 0; j < i; j++) {
                 /* newpowers[i] += binom * powers[j] * 2^{(i-j)*s} */
                 mp_mul_integer_into(scratch, powers[j], binom);
                 mp_lshift_fixed_into(scratch, scratch, (i-j) * s);
                 mp_add_into(newpowers[i], newpowers[i], scratch);
 
+                { // WINSCP
                 uint32_t binom_mul = binom;
                 binom_mul *= (i-j);
                 binom_mul /= (j+1);
                 assert(binom_mul < 0x10000);
                 binom = binom_mul;
+                } // WINSCP
             }
+            } // WINSCP
         }
 
         /*
          * Now, is the new value of x^n still <= y? If so, update.
          */
+        { // WINSCP
         unsigned newbit = mp_cmp_hs(y, newpowers[n]);
-        for (size_t i = 0; i < n+1; i++)
+        size_t i; // WINSCP
+        for (i = 0; i < n+1; i++)
             mp_select_into(powers[i], powers[i], newpowers[i], newbit);
+        } // WINSCP
     }
 
     if (remainder_out)
         mp_sub_into(remainder_out, y, powers[n]);
 
+    { // WINSCP
     mp_int *root = mp_new(mp_max_bits(y) / n);
     mp_copy_into(root, powers[1]);
 
-    for (size_t i = 0; i < nalloc; i++)
+    { // WINSCP
+    size_t i;
+    for (i = 0; i < nalloc; i++)
         mp_free(alloc[i]);
     sfree(alloc);
 
     return root;
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
 mp_int *mp_modmul(mp_int *x, mp_int *y, mp_int *modulus)

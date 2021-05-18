@@ -809,9 +809,9 @@ static inline void ssh_hash_digest_nondestructive(ssh_hash *h,
 
 /* Handy macros for defining all those text-name fields at once */
 #define HASHALG_NAMES_BARE(base) \
-    .text_basename = base, .annotation = NULL, .text_name = base
+    /*.text_basename =*/ base, /*.annotation =*/ NULL, /*.text_name =*/ base
 #define HASHALG_NAMES_ANNOTATED(base, ann) \
-    .text_basename = base, .annotation = ann, .text_name = base " (" ann ")"
+    /*.text_basename =*/ base, /*.annotation =*/ ann, /*.text_name =*/ base " (" ann ")"
 
 #ifndef WINSCP_VS
 
@@ -836,6 +836,7 @@ enum kexlist {
     NKEXLIST
 };
 
+#pragma option push -w-mnc // WINSCP
 struct ssh_keyalg {
     /* Constructors that create an ssh_key */
     ssh_key *(*new_pub) (const ssh_keyalg *self, ptrlen pub);
@@ -860,8 +861,9 @@ struct ssh_keyalg {
     const char *ssh_id;    /* string identifier in the SSH protocol */
     const char *cache_id;  /* identifier used in PuTTY's host key cache */
     const void *extra;     /* private to the public key methods */
-    /*WINSCP const*/ unsigned supported_flags;    /* signature-type flags we understand */
+    const unsigned supported_flags;    /* signature-type flags we understand */
 };
+#pragma option pop // WINSCP
 
 static inline ssh_key *ssh_key_new_pub(const ssh_keyalg *self, ptrlen pub)
 { return self->new_pub(self, pub); }
@@ -1388,6 +1390,9 @@ void ssh2_free_all_fingerprints(char **);
 int key_type(const Filename *filename);
 int key_type_s(BinarySource *src);
 const char *key_type_to_str(int type);
+bool openssh_loadpub(BinarySource *src, char **algorithm, // WINSCP
+                     BinarySink *bs,
+                     char **commentptr, const char **errorstr);
 
 bool import_possible(int type);
 int import_target_type(int type);

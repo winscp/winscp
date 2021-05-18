@@ -55,15 +55,16 @@ static bool ssh_decomp_none_block(ssh_decompressor *handle,
     return false;
 }
 static const ssh_compression_alg ssh_comp_none = {
-    .name = "none",
-    .delayed_name = NULL,
-    .compress_new = ssh_comp_none_init,
-    .compress_free = ssh_comp_none_cleanup,
-    .compress = ssh_comp_none_block,
-    .decompress_new = ssh_decomp_none_init,
-    .decompress_free = ssh_decomp_none_cleanup,
-    .decompress = ssh_decomp_none_block,
-    .text_name = NULL,
+    // WINSCP
+    /*.name =*/ "none",
+    /*.delayed_name =*/ NULL,
+    /*.compress_new =*/ ssh_comp_none_init,
+    /*.compress_free =*/ ssh_comp_none_cleanup,
+    /*.compress =*/ ssh_comp_none_block,
+    /*.decompress_new =*/ ssh_decomp_none_init,
+    /*.decompress_free =*/ ssh_decomp_none_cleanup,
+    /*.decompress =*/ ssh_decomp_none_block,
+    /*.text_name =*/ NULL,
 };
 const static ssh_compression_alg *const compressions[] = {
     &ssh_zlib, &ssh_comp_none
@@ -86,15 +87,16 @@ static void ssh2_transport_higher_layer_packet_callback(void *context);
 static unsigned int ssh2_transport_winscp_query(PacketProtocolLayer *ppl, int query);
 
 static const PacketProtocolLayerVtable ssh2_transport_vtable = {
-    .free = ssh2_transport_free,
-    .process_queue = ssh2_transport_process_queue,
-    .get_specials = ssh2_transport_get_specials,
-    .special_cmd = ssh2_transport_special_cmd,
-    .want_user_input = ssh2_transport_want_user_input,
-    .got_user_input = ssh2_transport_got_user_input,
-    .reconfigure = ssh2_transport_reconfigure,
-    .queued_data_size = ssh2_transport_queued_data_size,
-    .name = NULL, /* no protocol name for this layer */
+    // WINSCP
+    /*.free =*/ ssh2_transport_free,
+    /*.process_queue =*/ ssh2_transport_process_queue,
+    /*.get_specials =*/ ssh2_transport_get_specials,
+    /*.special_cmd =*/ ssh2_transport_special_cmd,
+    /*.want_user_input =*/ ssh2_transport_want_user_input,
+    /*.got_user_input =*/ ssh2_transport_got_user_input,
+    /*.reconfigure =*/ ssh2_transport_reconfigure,
+    /*.queued_data_size =*/ ssh2_transport_queued_data_size,
+    /*.name =*/ NULL, /* no protocol name for this layer */
     ssh2_transport_winscp_query,
 };
 
@@ -405,7 +407,8 @@ bool ssh2_common_filter_queue(PacketProtocolLayer *ppl)
              * the session before the BPP aborts it anyway.
              */
             uint32_t nexts = get_uint32(pktin);
-            for (uint32_t i = 0; i < nexts && !get_err(pktin); i++) {
+            uint32_t i; // WINSCP
+            for (i = 0; i < nexts && !get_err(pktin); i++) {
                 ptrlen extname = get_string(pktin);
                 ptrlen extvalue = get_string(pktin);
                 if (ptrlen_eq_string(extname, "server-sig-algs")) {
@@ -1076,7 +1079,8 @@ static bool ssh2_scan_kexinits(
              PTRLEN_LITERAL("ext-info-s"));
         ptrlen list = (server_hostkeys ? clists[KEXLIST_KEX] :
                        slists[KEXLIST_KEX]);
-        for (ptrlen word; get_commasep_word(&list, &word) ;)
+        ptrlen word; // WINSCP
+        for (; get_commasep_word(&list, &word) ;)
             if (ptrlen_eq_ptrlen(word, extinfo_advert))
                 *can_send_ext_info = true;
     }
@@ -1469,10 +1473,13 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                  * key algorithms. */
                 n_exts++;
                 put_stringz(extinfo, "server-sig-algs");
+                { // WINSCP
                 strbuf *list = strbuf_new();
-                for (size_t i = 0; i < n_keyalgs; i++)
+                size_t i; // WINSCP
+                for (i = 0; i < n_keyalgs; i++)
                     add_to_commasep(list, all_keyalgs[i]->ssh_id);
                 put_stringsb(extinfo, list);
+                }  // WINSCP
             } else {
                 /* Client->server EXT_INFO is currently not sent, but here's
                  * where we should put things in it if we ever want to. */

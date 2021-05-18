@@ -31,6 +31,8 @@ uintmax_t strtoumax(const char *nptr, char **endptr, int base);
 #ifndef WINSCP
 // Not needed by the code WinSCP uses
 #include <inttypes.h>
+#else
+#define PRIu32 "u"
 #endif
 /* Because we still support older MSVC libraries which don't recognise the
  * standard C "z" modifier for size_t-sized integers, we must use an

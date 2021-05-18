@@ -98,10 +98,16 @@ static ssh_hash *sha1_select(const ssh_hashalg *alg)
 }
 
 const ssh_hashalg ssh_sha1 = {
-    .new = sha1_select,
-    .hlen = 20,
-    .blocklen = 64,
+    // WINSCP
+    /*.new =*/ sha1_select,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    /*.hlen =*/ 20,
+    /*.blocklen =*/ 64,
     HASHALG_NAMES_ANNOTATED("SHA-1", "dummy selector vtable"),
+    NULL,
 };
 
 /* ----------------------------------------------------------------------
@@ -322,14 +328,16 @@ static void sha1_sw_digest(ssh_hash *hash, uint8_t *digest)
 }
 
 const ssh_hashalg ssh_sha1_sw = {
-    .new = sha1_sw_new,
-    .reset = sha1_sw_reset,
-    .copyfrom = sha1_sw_copyfrom,
-    .digest = sha1_sw_digest,
-    .free = sha1_sw_free,
-    .hlen = 20,
-    .blocklen = 64,
+    // WINSCP
+    /*.new =*/ sha1_sw_new,
+    /*.reset =*/ sha1_sw_reset,
+    /*.copyfrom =*/ sha1_sw_copyfrom,
+    /*.digest =*/ sha1_sw_digest,
+    /*.free =*/ sha1_sw_free,
+    /*.hlen =*/ 20,
+    /*.blocklen =*/ 64,
     HASHALG_NAMES_BARE("SHA-1"), // WINSCP (removed "unaccelerated" annotation)
+    NULL,
 };
 
 /* ----------------------------------------------------------------------
@@ -930,14 +938,16 @@ static void sha1_stub_free(ssh_hash *hash) STUB_BODY
 static void sha1_stub_digest(ssh_hash *hash, uint8_t *digest) STUB_BODY
 
 const ssh_hashalg ssh_sha1_hw = {
-    .new = sha1_stub_new,
-    .reset = sha1_stub_reset,
-    .copyfrom = sha1_stub_copyfrom,
-    .digest = sha1_stub_digest,
-    .free = sha1_stub_free,
-    .hlen = 20,
-    .blocklen = 64,
+    // WINSCP
+    /*.new =*/ sha1_stub_new,
+    /*.reset =*/ sha1_stub_reset,
+    /*.copyfrom =*/ sha1_stub_copyfrom,
+    /*.digest =*/ sha1_stub_digest,
+    /*.free =*/ sha1_stub_free,
+    /*.hlen =*/ 20,
+    /*.blocklen =*/ 64,
     HASHALG_NAMES_ANNOTATED("SHA-1", "!NONEXISTENT ACCELERATED VERSION!"),
+    NULL,
 };
 
 #endif /* HW_SHA1 */

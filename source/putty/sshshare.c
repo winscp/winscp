@@ -1904,9 +1904,11 @@ void share_activate(ssh_sharing_state *sharestate,
 }
 
 static const PlugVtable ssh_sharing_conn_plugvt = {
-    .closing = share_closing,
-    .receive = share_receive,
-    .sent = share_sent,
+    NULL, // WINSCP
+    /*.closing =*/ share_closing,
+    /*.receive =*/ share_receive,
+    /*.sent =*/ share_sent,
+    NULL, // WINSCP
 };
 
 static int share_listen_accepting(Plug *plug,
@@ -2046,8 +2048,11 @@ bool ssh_share_test_for_upstream(const char *host, int port, Conf *conf)
 }
 
 static const PlugVtable ssh_sharing_listen_plugvt = {
-    .closing = share_listen_closing,
-    .accepting = share_listen_accepting,
+    NULL, // WINSCP
+    // WINSCP
+    /*.closing =*/ share_listen_closing,
+    NULL, NULL, // WINSCP
+    /*.accepting =*/ share_listen_accepting,
 };
 
 void ssh_connshare_provide_connlayer(ssh_sharing_state *sharestate,

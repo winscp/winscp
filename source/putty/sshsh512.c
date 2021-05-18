@@ -84,19 +84,23 @@ const struct sha512_select_options ssh_sha384_select_options = {
 };
 
 const ssh_hashalg ssh_sha512 = {
-    .new = sha512_select,
-    .hlen = 64,
-    .blocklen = 128,
+    // WINSCP
+    /*.new =*/ sha512_select,
+    NULL, NULL, NULL, NULL, // WINSCP
+    /*.hlen =*/ 64,
+    /*.blocklen =*/ 128,
     HASHALG_NAMES_ANNOTATED("SHA-512", "dummy selector vtable"),
-    .extra = &ssh_sha512_select_options,
+    /*.extra =*/ &ssh_sha512_select_options,
 };
 
 const ssh_hashalg ssh_sha384 = {
-    .new = sha512_select,
-    .hlen = 48,
-    .blocklen = 128,
+    // WINSCP
+    /*.new =*/ sha512_select,
+    NULL, NULL, NULL, NULL, // WINSCP
+    /*.hlen =*/ 48,
+    /*.blocklen =*/ 128,
     HASHALG_NAMES_ANNOTATED("SHA-384", "dummy selector vtable"),
-    .extra = &ssh_sha384_select_options,
+    /*.extra =*/ &ssh_sha384_select_options,
 };
 
 /* ----------------------------------------------------------------------
@@ -195,6 +199,7 @@ static inline bool sha512_block_write(
     *len -= chunk;
     blk->used += chunk;
 
+    { // WINSCP
     size_t chunkbits = chunk << 3;
 
     blk->lenlo += chunkbits;
@@ -206,6 +211,7 @@ static inline bool sha512_block_write(
     }
 
     return false;
+    } // WINSCP
 }
 
 static inline void sha512_block_pad(sha512_block *blk, BinarySink *bs)
@@ -228,7 +234,9 @@ static inline void sha512_block_pad(sha512_block *blk, BinarySink *bs)
 
 static inline uint64_t ror(uint64_t x, unsigned y)
 {
+#pragma option push -w-ngu // WINSCP
     return (x << (63 & -y)) | (x >> (63 & y));
+#pragma option pop // WINSCP
 }
 
 static inline uint64_t Ch(uint64_t ctrl, uint64_t if1, uint64_t if0)
@@ -369,32 +377,37 @@ static void sha512_sw_digest(ssh_hash *hash, uint8_t *digest)
     sha512_sw *s = container_of(hash, sha512_sw, hash);
 
     sha512_block_pad(&s->blk, BinarySink_UPCAST(s));
-    for (size_t i = 0; i < hash->vt->hlen / 8; i++)
+    { // WINSCP
+    size_t i; // WINSCP
+    for (i = 0; i < hash->vt->hlen / 8; i++)
         PUT_64BIT_MSB_FIRST(digest + 8*i, s->core[i]);
+    }  // WINSCP
 }
 
 const ssh_hashalg ssh_sha512_sw = {
-    .new = sha512_sw_new,
-    .reset = sha512_sw_reset,
-    .copyfrom = sha512_sw_copyfrom,
-    .digest = sha512_sw_digest,
-    .free = sha512_sw_free,
-    .hlen = 64,
-    .blocklen = 128,
+    // WINSCP
+    /*.new =*/ sha512_sw_new,
+    /*.reset =*/ sha512_sw_reset,
+    /*.copyfrom =*/ sha512_sw_copyfrom,
+    /*.digest =*/ sha512_sw_digest,
+    /*.free =*/ sha512_sw_free,
+    /*.hlen =*/ 64,
+    /*.blocklen =*/ 128,
     HASHALG_NAMES_ANNOTATED("SHA-512", "unaccelerated"),
-    .extra = sha512_initial_state,
+    /*.extra =*/ sha512_initial_state,
 };
 
 const ssh_hashalg ssh_sha384_sw = {
-    .new = sha512_sw_new,
-    .reset = sha512_sw_reset,
-    .copyfrom = sha512_sw_copyfrom,
-    .digest = sha512_sw_digest,
-    .free = sha512_sw_free,
-    .hlen = 48,
-    .blocklen = 128,
+    // WINSCP
+    /*.new =*/ sha512_sw_new,
+    /*.reset =*/ sha512_sw_reset,
+    /*.copyfrom =*/ sha512_sw_copyfrom,
+    /*.digest =*/ sha512_sw_digest,
+    /*.free =*/ sha512_sw_free,
+    /*.hlen =*/ 48,
+    /*.blocklen =*/ 128,
     HASHALG_NAMES_ANNOTATED("SHA-384", "unaccelerated"),
-    .extra = sha384_initial_state,
+    /*.extra =*/ sha384_initial_state,
 };
 
 /* ----------------------------------------------------------------------
@@ -812,25 +825,29 @@ static void sha512_stub_free(ssh_hash *hash) STUB_BODY
 static void sha512_stub_digest(ssh_hash *hash, uint8_t *digest) STUB_BODY
 
 const ssh_hashalg ssh_sha512_hw = {
-    .new = sha512_stub_new,
-    .reset = sha512_stub_reset,
-    .copyfrom = sha512_stub_copyfrom,
-    .digest = sha512_stub_digest,
-    .free = sha512_stub_free,
-    .hlen = 64,
-    .blocklen = 128,
+    // WINSCP
+    /*.new =*/ sha512_stub_new,
+    /*.reset =*/ sha512_stub_reset,
+    /*.copyfrom =*/ sha512_stub_copyfrom,
+    /*.digest =*/ sha512_stub_digest,
+    /*.free =*/ sha512_stub_free,
+    /*.hlen =*/ 64,
+    /*.blocklen =*/ 128,
     HASHALG_NAMES_ANNOTATED("SHA-512", "!NONEXISTENT ACCELERATED VERSION!"),
+    NULL, // WINSCP
 };
 
 const ssh_hashalg ssh_sha384_hw = {
-    .new = sha512_stub_new,
-    .reset = sha512_stub_reset,
-    .copyfrom = sha512_stub_copyfrom,
-    .digest = sha512_stub_digest,
-    .free = sha512_stub_free,
-    .hlen = 48,
-    .blocklen = 128,
+    // WINSCP
+    /*.new =*/ sha512_stub_new,
+    /*.reset =*/ sha512_stub_reset,
+    /*.copyfrom =*/ sha512_stub_copyfrom,
+    /*.digest =*/ sha512_stub_digest,
+    /*.free =*/ sha512_stub_free,
+    /*.hlen =*/ 48,
+    /*.blocklen =*/ 128,
     HASHALG_NAMES_ANNOTATED("SHA-384", "!NONEXISTENT ACCELERATED VERSION!"),
+    NULL, // WINSCP
 };
 
 #endif /* HW_SHA512 */

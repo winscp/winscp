@@ -40,15 +40,16 @@ static void ssh1_connection_reconfigure(PacketProtocolLayer *ppl, Conf *conf);
 static unsigned int ssh1_connection_winscp_query(PacketProtocolLayer *ppl, int query);
 
 static const PacketProtocolLayerVtable ssh1_connection_vtable = {
-    .free = ssh1_connection_free,
-    .process_queue = ssh1_connection_process_queue,
-    .get_specials = ssh1_common_get_specials,
-    .special_cmd = ssh1_connection_special_cmd,
-    .want_user_input = ssh1_connection_want_user_input,
-    .got_user_input = ssh1_connection_got_user_input,
-    .reconfigure = ssh1_connection_reconfigure,
-    .queued_data_size = ssh_ppl_default_queued_data_size,
-    .name = NULL, /* no layer names in SSH-1 */
+    // WINSCP
+    /*.free =*/ ssh1_connection_free,
+    /*.process_queue =*/ ssh1_connection_process_queue,
+    /*.get_specials =*/ ssh1_common_get_specials,
+    /*.special_cmd =*/ ssh1_connection_special_cmd,
+    /*.want_user_input =*/ ssh1_connection_want_user_input,
+    /*.got_user_input =*/ ssh1_connection_got_user_input,
+    /*.reconfigure =*/ ssh1_connection_reconfigure,
+    /*.queued_data_size =*/ ssh_ppl_default_queued_data_size,
+    /*.name =*/ NULL, /* no layer names in SSH-1 */
     ssh1_connection_winscp_query,
 };
 
@@ -70,22 +71,24 @@ static void ssh1_enable_x_fwd(ConnectionLayer *cl);
 static void ssh1_set_wants_user_input(ConnectionLayer *cl, bool wanted);
 
 static const ConnectionLayerVtable ssh1_connlayer_vtable = {
-    .rportfwd_alloc = ssh1_rportfwd_alloc,
-    .rportfwd_remove = ssh1_rportfwd_remove,
-    .lportfwd_open = ssh1_lportfwd_open,
-    .session_open = ssh1_session_open,
-    .serverside_x11_open = ssh1_serverside_x11_open,
-    .serverside_agent_open = ssh1_serverside_agent_open,
-    .add_x11_display = ssh1_add_x11_display,
-    .agent_forwarding_permitted = ssh1_agent_forwarding_permitted,
-    .terminal_size = ssh1_terminal_size,
-    .stdout_unthrottle = ssh1_stdout_unthrottle,
-    .stdin_backlog = ssh1_stdin_backlog,
-    .throttle_all_channels = ssh1_throttle_all_channels,
-    .ldisc_option = ssh1_ldisc_option,
-    .set_ldisc_option = ssh1_set_ldisc_option,
-    .enable_x_fwd = ssh1_enable_x_fwd,
-    .set_wants_user_input = ssh1_set_wants_user_input,
+    // WINSCP
+    /*.rportfwd_alloc =*/ ssh1_rportfwd_alloc,
+    /*.rportfwd_remove =*/ ssh1_rportfwd_remove,
+    /*.lportfwd_open =*/ ssh1_lportfwd_open,
+    /*.session_open =*/ ssh1_session_open,
+    /*.serverside_x11_open =*/ ssh1_serverside_x11_open,
+    /*.serverside_agent_open =*/ ssh1_serverside_agent_open,
+    /*.add_x11_display =*/ ssh1_add_x11_display,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, // WINSCP
+    /*.agent_forwarding_permitted =*/ ssh1_agent_forwarding_permitted,
+    /*.terminal_size =*/ ssh1_terminal_size,
+    /*.stdout_unthrottle =*/ ssh1_stdout_unthrottle,
+    /*.stdin_backlog =*/ ssh1_stdin_backlog,
+    /*.throttle_all_channels =*/ ssh1_throttle_all_channels,
+    /*.ldisc_option =*/ ssh1_ldisc_option,
+    /*.set_ldisc_option =*/ ssh1_set_ldisc_option,
+    /*.enable_x_fwd =*/ ssh1_enable_x_fwd,
+    /*.set_wants_user_input =*/ ssh1_set_wants_user_input,
     /* other methods are NULL */
 };
 
@@ -98,13 +101,15 @@ static Conf *ssh1channel_get_conf(SshChannel *c);
 static void ssh1channel_window_override_removed(SshChannel *c) { /* ignore */ }
 
 static const SshChannelVtable ssh1channel_vtable = {
-    .write = ssh1channel_write,
-    .write_eof = ssh1channel_write_eof,
-    .initiate_close = ssh1channel_initiate_close,
-    .unthrottle = ssh1channel_unthrottle,
-    .get_conf = ssh1channel_get_conf,
-    .window_override_removed = ssh1channel_window_override_removed,
+    // WINSCP
+    /*.write =*/ ssh1channel_write,
+    /*.write_eof =*/ ssh1channel_write_eof,
+    /*.initiate_close =*/ ssh1channel_initiate_close,
+    /*.unthrottle =*/ ssh1channel_unthrottle,
+    /*.get_conf =*/ ssh1channel_get_conf,
+    /*.window_override_removed =*/ ssh1channel_window_override_removed,
     /* everything else is NULL */
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, // WINSCP
 };
 
 static void ssh1_channel_try_eof(struct ssh1_channel *c);
