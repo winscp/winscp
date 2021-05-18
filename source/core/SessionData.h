@@ -20,7 +20,7 @@ enum TProxyMethod { pmNone, pmSocks4, pmSocks5, pmHTTP, pmTelnet, pmCmd };
 enum TSshProt { ssh1only, ssh1deprecated, ssh2deprecated, ssh2only };
 enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGEx, kexRSA, kexECDH };
 #define KEX_COUNT (kexECDH+1)
-enum THostKey { hkWarn, hkRSA, hkDSA, hkECDSA, hkED25519, hkMax };
+enum THostKey { hkWarn, hkRSA, hkDSA, hkECDSA, hkED25519, hkED448, hkMax };
 #define HOSTKEY_COUNT (hkMax)
 enum TGssLib { gssGssApi32, gssSspi, gssCustom };
 #define GSSLIB_COUNT (gssCustom+1)

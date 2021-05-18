@@ -113,49 +113,58 @@ struct aes_extra {
     /*WINSCP static*/ void cid##_sw##encsuffix(ssh_cipher *, void *blk, int len);  \
     /*WINSCP static*/ void cid##_sw##decsuffix(ssh_cipher *, void *blk, int len);  \
     const ssh_cipheralg ssh_##cid##_sw = {                              \
-        .new = aes_sw_new,                                              \
-        .free = aes_sw_free,                                            \
-        .setiv = aes_sw_##setivsuffix,                                  \
-        .setkey = aes_sw_setkey,                                        \
-        .encrypt = cid##_sw##encsuffix,                                 \
-        .decrypt = cid##_sw##decsuffix,                                 \
-        .ssh2_id = pid,                                                 \
-        .blksize = 16,                                                  \
-        .real_keybits = bits,                                           \
-        .padded_keybytes = bits/8,                                      \
-        .flags = flagsval,                                              \
-        .text_name = name " (unaccelerated)",                           \
+        /*WINSCP*/                                                          \
+        /*.new =*/ aes_sw_new,                                              \
+        /*.free =*/ aes_sw_free,                                            \
+        /*.setiv =*/ aes_sw_##setivsuffix,                                  \
+        /*.setkey =*/ aes_sw_setkey,                                        \
+        /*.encrypt =*/ cid##_sw##encsuffix,                                 \
+        /*.decrypt =*/ cid##_sw##decsuffix,                                 \
+        NULL, NULL, /*WINSCP*/                                              \
+        /*.ssh2_id =*/ pid,                                                 \
+        /*.blksize =*/ 16,                                                  \
+        /*.real_keybits =*/ bits,                                           \
+        /*.padded_keybytes =*/ bits/8,                                      \
+        /*.flags =*/ flagsval,                                              \
+        /*.text_name =*/ name " (unaccelerated)",                           \
+        NULL, NULL, /*WINSCP*/                                              \
     };                                                                  \
                                                                         \
     /*WINSCP static*/ void cid##_hw##encsuffix(ssh_cipher *, void *blk, int len);  \
     /*WINSCP static*/ void cid##_hw##decsuffix(ssh_cipher *, void *blk, int len);  \
     const ssh_cipheralg ssh_##cid##_hw = {                              \
-        .new = aes_hw_new,                                              \
-        .free = aes_hw_free,                                            \
-        .setiv = aes_hw_##setivsuffix,                                  \
-        .setkey = aes_hw_setkey,                                        \
-        .encrypt = cid##_hw##encsuffix,                                 \
-        .decrypt = cid##_hw##decsuffix,                                 \
-        .ssh2_id = pid,                                                 \
-        .blksize = 16,                                                  \
-        .real_keybits = bits,                                           \
-        .padded_keybytes = bits/8,                                      \
-        .flags = flagsval,                                              \
-        .text_name = name HW_NAME_SUFFIX,                               \
+        /*WINSCP*/                                                          \
+        /*.new =*/ aes_hw_new,                                              \
+        /*.free =*/ aes_hw_free,                                            \
+        /*.setiv =*/ aes_hw_##setivsuffix,                                  \
+        /*.setkey =*/ aes_hw_setkey,                                        \
+        /*.encrypt =*/ cid##_hw##encsuffix,                                 \
+        /*.decrypt =*/ cid##_hw##decsuffix,                                 \
+        NULL, NULL, /*WINSCP*/                                              \
+        /*.ssh2_id =*/ pid,                                                 \
+        /*.blksize =*/ 16,                                                  \
+        /*.real_keybits =*/ bits,                                           \
+        /*.padded_keybytes =*/ bits/8,                                      \
+        /*.flags =*/ flagsval,                                              \
+        /*.text_name =*/ name HW_NAME_SUFFIX,                               \
+        NULL, NULL, /*WINSCP*/                                              \
     };                                                                  \
                                                                         \
     static const struct aes_extra extra_##cid = {                       \
         &ssh_##cid##_sw, &ssh_##cid##_hw };                             \
                                                                         \
     const ssh_cipheralg ssh_##cid = {                                   \
-        .new = aes_select,                                              \
-        .ssh2_id = pid,                                                 \
-        .blksize = 16,                                                  \
-        .real_keybits = bits,                                           \
-        .padded_keybytes = bits/8,                                      \
-        .flags = flagsval,                                              \
-        .text_name = name " (dummy selector vtable)",                   \
-        .extra = &extra_##cid                                           \
+        /*WINSCP*/                                                          \
+        /*.new =*/ aes_select,                                              \
+        NULL, NULL, NULL, NULL, NULL, NULL, NULL,                           \
+        /*.ssh2_id =*/ pid,                                                 \
+        /*.blksize =*/ 16,                                                  \
+        /*.real_keybits =*/ bits,                                           \
+        /*.padded_keybytes =*/ bits/8,                                      \
+        /*.flags =*/ flagsval,                                              \
+        /*.text_name =*/ name " (dummy selector vtable)",                   \
+        NULL,                                                               \
+        /*.extra =*/ &extra_##cid                                           \
     };                                                                  \
 
 #define VTABLES(keylen)                                                 \
@@ -171,14 +180,17 @@ VTABLES(256)
 
 static const ssh_cipheralg ssh_rijndael_lysator = {
     /* Same as aes256_cbc, but with a different protocol ID */
-    .new = aes_select,
-    .ssh2_id = "rijndael-cbc@lysator.liu.se",
-    .blksize = 16,
-    .real_keybits = 256,
-    .padded_keybytes = 256/8,
-    .flags = 0,
-    .text_name = "AES-256 CBC (dummy selector vtable)",
-    .extra = &extra_aes256_cbc,
+    // WINSCP
+    /*.new =*/ aes_select,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, // WINSCP
+    /*.ssh2_id =*/ "rijndael-cbc@lysator.liu.se",
+    /*.blksize =*/ 16,
+    /*.real_keybits =*/ 256,
+    /*.padded_keybytes =*/ 256/8,
+    /*.flags =*/ 0,
+    /*.text_name =*/ "AES-256 CBC (dummy selector vtable)",
+    NULL, // WINSCP
+    /*.extra =*/ &extra_aes256_cbc,
 };
 
 static const ssh_cipheralg *const aes_list[] = {

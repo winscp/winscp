@@ -372,22 +372,24 @@ SockAddr *name_lookup(const char *host, int port, char **canonicalname,
 }
 
 static const SocketVtable ProxySocket_sockvt = {
-    .plug = sk_proxy_plug,
-    .close = sk_proxy_close,
-    .write = sk_proxy_write,
-    .write_oob = sk_proxy_write_oob,
-    .write_eof = sk_proxy_write_eof,
-    .set_frozen = sk_proxy_set_frozen,
-    .socket_error = sk_proxy_socket_error,
-    .peer_info = NULL,
+    // WINSCP
+    /*.plug =*/ sk_proxy_plug,
+    /*.close =*/ sk_proxy_close,
+    /*.write =*/ sk_proxy_write,
+    /*.write_oob =*/ sk_proxy_write_oob,
+    /*.write_eof =*/ sk_proxy_write_eof,
+    /*.set_frozen =*/ sk_proxy_set_frozen,
+    /*.socket_error =*/ sk_proxy_socket_error,
+    /*.peer_info =*/ NULL,
 };
 
 static const PlugVtable ProxySocket_plugvt = {
-    .log = plug_proxy_log,
-    .closing = plug_proxy_closing,
-    .receive = plug_proxy_receive,
-    .sent = plug_proxy_sent,
-    .accepting = plug_proxy_accepting
+    // WINSCP
+    /*.log =*/ plug_proxy_log,
+    /*.closing =*/ plug_proxy_closing,
+    /*.receive =*/ plug_proxy_receive,
+    /*.sent =*/ plug_proxy_sent,
+    /*.accepting =*/ plug_proxy_accepting
 };
 
 Socket *new_connection(SockAddr *addr, const char *hostname,

@@ -211,12 +211,17 @@ static inline void prng_generate(prng_impl *pi, void *outbuf)
 
     prngdebug("prng_generate\n");
     put_byte(h, 'G');
-    for (unsigned i = 0; i < 128; i += 8)
+    { // WINSCP
+    unsigned i; // WINSCP
+    for (i = 0; i < 128; i += 8)
         put_byte(h, pi->counter[i/BIGNUM_INT_BITS] >> (i%BIGNUM_INT_BITS));
+    { // WINSCP
     BignumCarry c = 1;
-    for (unsigned i = 0; i < lenof(pi->counter); i++)
+    for (i = 0; i < lenof(pi->counter); i++)
         BignumADC(pi->counter[i], c, pi->counter[i], 0, c);
     ssh_hash_final(h, outbuf);
+    } // WINSCP
+    } // WINSCP
 }
 
 void prng_read(prng *pr, void *vout, size_t size)
@@ -232,10 +237,12 @@ void prng_read(prng *pr, void *vout, size_t size)
     uint8_t *out = (uint8_t *)vout;
     while (size > 0) {
         prng_generate(pi, buf);
+        { // WINSCP
         size_t to_use = size > pi->hashalg->hlen ? pi->hashalg->hlen : size;
         memcpy(out, buf, to_use);
         out += to_use;
         size -= to_use;
+        } // WINSCP
     }
 
     smemclr(buf, sizeof(buf));

@@ -1069,7 +1069,8 @@ size_t encode_utf8(void *output, unsigned long ch)
 
 void write_c_string_literal(FILE *fp, ptrlen str)
 {
-    for (const char *p = str.ptr; p < (const char *)str.ptr + str.len; p++) {
+    const char *p; // WINSCP
+    for (p = str.ptr; p < (const char *)str.ptr + str.len; p++) {
         char c = *p;
 
         if (c == '\n')

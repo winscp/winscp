@@ -308,8 +308,14 @@
 			<BuildOrder>71</BuildOrder>
 			<BuildOrder>7</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\sshsha3.c">
+			<BuildOrder>42</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\sshshare.c">
 			<BuildOrder>42</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\sshutils.c">
+			<BuildOrder>63</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\sshverstring.c">
 			<BuildOrder>63</BuildOrder>
@@ -331,6 +337,9 @@
 		<CppCompile Include="putty\wildcard.c">
 			<BuildOrder>83</BuildOrder>
 			<BuildOrder>3</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\windows\wincapi.c">
+			<BuildOrder>83</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\windows\windefs.c">
 			<BuildOrder>83</BuildOrder>
@@ -361,6 +370,9 @@
 			<BuildOrder>16</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\windows\winnojmp.c">
+			<BuildOrder>39</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\windows\winnpc.c">
 			<BuildOrder>39</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\windows\winpgntc.c">

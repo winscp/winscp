@@ -836,6 +836,7 @@ enum kexlist {
     NKEXLIST
 };
 
+#pragma option push -w-mnc // WINSCP
 struct ssh_keyalg {
     /* Constructors that create an ssh_key */
     ssh_key *(*new_pub) (const ssh_keyalg *self, ptrlen pub);
@@ -860,8 +861,9 @@ struct ssh_keyalg {
     const char *ssh_id;    /* string identifier in the SSH protocol */
     const char *cache_id;  /* identifier used in PuTTY's host key cache */
     const void *extra;     /* private to the public key methods */
-    /*WINSCP const*/ unsigned supported_flags;    /* signature-type flags we understand */
+    const unsigned supported_flags;    /* signature-type flags we understand */
 };
+#pragma option pop // WINSCP
 
 static inline ssh_key *ssh_key_new_pub(const ssh_keyalg *self, ptrlen pub)
 { return self->new_pub(self, pub); }

@@ -46,12 +46,13 @@ static void ssh_verstring_queue_disconnect(BinaryPacketProtocol *bpp,
                                           const char *msg, int category);
 
 static const BinaryPacketProtocolVtable ssh_verstring_vtable = {
-    .free = ssh_verstring_free,
-    .handle_input = ssh_verstring_handle_input,
-    .handle_output = ssh_verstring_handle_output,
-    .new_pktout = ssh_verstring_new_pktout,
-    .queue_disconnect = ssh_verstring_queue_disconnect,
-    .packet_size_limit = 0xFFFFFFFF, /* no special limit for this bpp */
+    // WINSCP
+    /*.free =*/ ssh_verstring_free,
+    /*.handle_input =*/ ssh_verstring_handle_input,
+    /*.handle_output =*/ ssh_verstring_handle_output,
+    /*.new_pktout =*/ ssh_verstring_new_pktout,
+    /*.queue_disconnect =*/ ssh_verstring_queue_disconnect,
+    /*.packet_size_limit =*/ 0xFFFFFFFF, /* no special limit for this bpp */
 };
 
 static void ssh_detect_bugs(struct ssh_verstring_state *s);

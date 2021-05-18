@@ -94,10 +94,12 @@ bool import_encrypted(const Filename *filename, int type, char **comment)
     if (!lf)
         return false; /* couldn't even open the file */
 
+    { // WINSCP
     bool toret = import_encrypted_s(filename, BinarySource_UPCAST(lf),
                                     type, comment);
     lf_free(lf);
     return toret;
+    } // WINSCP
 }
 
 /*
@@ -116,10 +118,12 @@ int import_ssh1(const Filename *filename, int type,
     if (!lf)
         return false;
 
+    { // WINSCP
     int toret = import_ssh1_s(BinarySource_UPCAST(lf),
                               type, key, passphrase, errmsg_p);
     lf_free(lf);
     return toret;
+    } // WINSCP
 }
 
 /*
@@ -144,10 +148,12 @@ ssh2_userkey *import_ssh2(const Filename *filename, int type,
     if (!lf)
         return false;
 
+    { // WINSCP
     ssh2_userkey *toret = import_ssh2_s(BinarySource_UPCAST(lf),
                                         type, passphrase, errmsg_p);
     lf_free(lf);
     return toret;
+    } // WINSCP
 }
 
 /*

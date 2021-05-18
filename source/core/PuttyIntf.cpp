@@ -2,7 +2,6 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#define PUTTY_DO_GLOBALS
 #include "PuttyIntf.h"
 #include "Interface.h"
 #include "SecureShell.h"
@@ -44,8 +43,6 @@ void __fastcall PuttyInitialize()
   // make sure random generator is initialised, so random_save_seed()
   // in destructor can proceed
   random_ref();
-
-  flags = FLAG_VERBOSE | FLAG_SYNCAGENT; // verbose log
 
   sk_init();
 
@@ -134,7 +131,7 @@ struct callback_set * get_seat_callback_set(Seat * seat)
   return SecureShell->GetCallbackSet();
 }
 //---------------------------------------------------------------------------
-extern "C" char * do_select(Plug * plug, SOCKET skt, bool enable)
+extern "C" const char * do_select(Plug * plug, SOCKET skt, bool enable)
 {
   bool pfwd;
   TSecureShell * SecureShell = GetSecureShell(plug, pfwd);
@@ -250,11 +247,20 @@ static void connection_fatal(Seat * seat, const char * message)
 }
 //---------------------------------------------------------------------------
 int verify_ssh_host_key(Seat * seat, const char * host, int port, const char * keytype,
-  char * keystr, char * fingerprint, void (*/*callback*/)(void * ctx, int result),
-  void * /*ctx*/)
+  char * keystr, const char * DebugUsedArg(keydisp), char ** key_fingerprints,
+  void (*DebugUsedArg(callback))(void *ctx, int result), void * DebugUsedArg(ctx))
 {
+  UnicodeString FingerprintSHA256, FingerprintMD5;
+  if (key_fingerprints[SSH_FPTYPE_SHA256] != NULL)
+  {
+    FingerprintSHA256 = key_fingerprints[SSH_FPTYPE_SHA256];
+  }
+  if (DebugAlwaysTrue(key_fingerprints[SSH_FPTYPE_MD5] != NULL))
+  {
+    FingerprintMD5 = key_fingerprints[SSH_FPTYPE_MD5];
+  }
   TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
-  SecureShell->VerifyHostKey(host, port, keytype, keystr, fingerprint);
+  SecureShell->VerifyHostKey(host, port, keytype, keystr, FingerprintSHA256, FingerprintMD5);
 
   // We should return 0 when key was not confirmed, we throw exception instead.
   return 1;
@@ -393,7 +399,10 @@ static const SeatVtable ScpSeatVtable =
     nullseat_get_windowid,
     nullseat_get_window_pixel_size,
     nullseat_stripctrl_new,
-    nullseat_set_trust_status_vacuously
+    nullseat_set_trust_status_vacuously,
+    nullseat_verbose_yes,
+    nullseat_interactive_no,
+    nullseat_get_cursor_position,
   };
 //---------------------------------------------------------------------------
 ScpSeat::ScpSeat(TSecureShell * ASecureShell)
@@ -609,7 +618,7 @@ bool IsKeyEncrypted(TKeyType KeyType, const UnicodeString & FileName, UnicodeStr
     switch (KeyType)
     {
       case ktSSH2:
-        Result = (ssh2_userkey_encrypted(KeyFile, &CommentStr) != 0);
+        Result = (ppk_encrypted_f(KeyFile, &CommentStr) != 0);
         break;
 
       case ktOpenSSHPEM:
@@ -655,7 +664,7 @@ TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const Un
     switch (KeyType)
     {
       case ktSSH2:
-        Ssh2Key = ssh2_load_userkey(KeyFile, AnsiPassphrase.c_str(), &ErrorStr);
+        Ssh2Key = ppk_load_f(KeyFile, AnsiPassphrase.c_str(), &ErrorStr);
         break;
 
       case ktOpenSSHPEM:
@@ -754,7 +763,7 @@ RawByteString LoadPublicKey(const UnicodeString & FileName, UnicodeString & Algo
     char * CommentStr = NULL;
     const char * ErrorStr = NULL;
     strbuf * PublicKeyBuf = strbuf_new();
-    if (!ssh2_userkey_loadpub(KeyFile, &AlgorithmStr, BinarySink_UPCAST(PublicKeyBuf), &CommentStr, &ErrorStr))
+    if (!ppk_loadpub_f(KeyFile, &AlgorithmStr, BinarySink_UPCAST(PublicKeyBuf), &CommentStr, &ErrorStr))
     {
       UnicodeString Error = UnicodeString(AnsiString(ErrorStr));
       throw Exception(Error);

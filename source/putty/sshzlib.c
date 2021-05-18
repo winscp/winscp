@@ -1241,13 +1241,14 @@ bool zlib_decompress_block(ssh_decompressor *dc,
 }
 
 const ssh_compression_alg ssh_zlib = {
-    .name = "zlib",
-    .delayed_name = "zlib@openssh.com", /* delayed version */
-    .compress_new = zlib_compress_init,
-    .compress_free = zlib_compress_cleanup,
-    .compress = zlib_compress_block,
-    .decompress_new = zlib_decompress_init,
-    .decompress_free = zlib_decompress_cleanup,
-    .decompress = zlib_decompress_block,
-    .text_name = "zlib (RFC1950)",
+    // WINSCP
+    /*.name =*/ "zlib",
+    /*.delayed_name =*/ "zlib@openssh.com", /* delayed version */
+    /*.compress_new =*/ zlib_compress_init,
+    /*.compress_free =*/ zlib_compress_cleanup,
+    /*.compress =*/ zlib_compress_block,
+    /*.decompress_new =*/ zlib_decompress_init,
+    /*.decompress_free =*/ zlib_decompress_cleanup,
+    /*.decompress =*/ zlib_decompress_block,
+    /*.text_name =*/ "zlib (RFC1950)",
 };

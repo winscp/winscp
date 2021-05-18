@@ -691,34 +691,40 @@ static void des_cbc_decrypt(ssh_cipher *ciph, void *vdata, int len)
 }
 
 const ssh_cipheralg ssh_des = {
-    .new = des_cbc_new,
-    .free = des_cbc_free,
-    .setiv = des_cbc_setiv,
-    .setkey = des_cbc_setkey,
-    .encrypt = des_cbc_encrypt,
-    .decrypt = des_cbc_decrypt,
-    .ssh2_id = "des-cbc",
-    .blksize = 8,
-    .real_keybits = 56,
-    .padded_keybytes = 8,
-    .flags = SSH_CIPHER_IS_CBC,
-    .text_name = "single-DES CBC",
+    // WINSCP
+    /*.new =*/ des_cbc_new,
+    /*.free =*/ des_cbc_free,
+    /*.setiv =*/ des_cbc_setiv,
+    /*.setkey =*/ des_cbc_setkey,
+    /*.encrypt =*/ des_cbc_encrypt,
+    /*.decrypt =*/ des_cbc_decrypt,
+    NULL, NULL, // WINSCP
+    /*.ssh2_id =*/ "des-cbc",
+    /*.blksize =*/ 8,
+    /*.real_keybits =*/ 56,
+    /*.padded_keybytes =*/ 8,
+    /*.flags =*/ SSH_CIPHER_IS_CBC,
+    /*.text_name =*/ "single-DES CBC",
+    NULL, NULL, // WINSCP
 };
 
 const ssh_cipheralg ssh_des_sshcom_ssh2 = {
     /* Same as ssh_des_cbc, but with a different SSH-2 ID */
-    .new = des_cbc_new,
-    .free = des_cbc_free,
-    .setiv = des_cbc_setiv,
-    .setkey = des_cbc_setkey,
-    .encrypt = des_cbc_encrypt,
-    .decrypt = des_cbc_decrypt,
-    .ssh2_id = "des-cbc@ssh.com",
-    .blksize = 8,
-    .real_keybits = 56,
-    .padded_keybytes = 8,
-    .flags = SSH_CIPHER_IS_CBC,
-    .text_name = "single-DES CBC",
+    // WINSCP
+    /*.new =*/ des_cbc_new,
+    /*.free =*/ des_cbc_free,
+    /*.setiv =*/ des_cbc_setiv,
+    /*.setkey =*/ des_cbc_setkey,
+    /*.encrypt =*/ des_cbc_encrypt,
+    /*.decrypt =*/ des_cbc_decrypt,
+    NULL, NULL, // WINSCP
+    /*.ssh2_id =*/ "des-cbc@ssh.com",
+    /*.blksize =*/ 8,
+    /*.real_keybits =*/ 56,
+    /*.padded_keybytes =*/ 8,
+    /*.flags =*/ SSH_CIPHER_IS_CBC,
+    /*.text_name =*/ "single-DES CBC",
+    NULL, NULL, // WINSCP
 };
 
 static const ssh_cipheralg *const des_list[] = {
@@ -815,18 +821,21 @@ static void des3_cbc1_cbc_decrypt(ssh_cipher *ciph, void *vdata, int len)
 }
 
 const ssh_cipheralg ssh_3des_ssh2 = {
-    .new = des3_cbc1_new,
-    .free = des3_cbc1_free,
-    .setiv = des3_cbc1_setiv,
-    .setkey = des3_cbc1_setkey,
-    .encrypt = des3_cbc1_cbc_encrypt,
-    .decrypt = des3_cbc1_cbc_decrypt,
-    .ssh2_id = "3des-cbc",
-    .blksize = 8,
-    .real_keybits = 168,
-    .padded_keybytes = 24,
-    .flags = SSH_CIPHER_IS_CBC,
-    .text_name = "triple-DES CBC",
+    // WINSCP
+    /*.new =*/ des3_cbc1_new,
+    /*.free =*/ des3_cbc1_free,
+    /*.setiv =*/ des3_cbc1_setiv,
+    /*.setkey =*/ des3_cbc1_setkey,
+    /*.encrypt =*/ des3_cbc1_cbc_encrypt,
+    /*.decrypt =*/ des3_cbc1_cbc_decrypt,
+    NULL, NULL, // WINSCP
+    /*.ssh2_id =*/ "3des-cbc",
+    /*.blksize =*/ 8,
+    /*.real_keybits =*/ 168,
+    /*.padded_keybytes =*/ 24,
+    /*.flags =*/ SSH_CIPHER_IS_CBC,
+    /*.text_name =*/ "triple-DES CBC",
+    NULL, NULL, // WINSCP
 };
 
 /* ----------------------------------------------------------------------
@@ -921,18 +930,21 @@ static void des3_sdctr_encrypt_decrypt(ssh_cipher *ciph, void *vdata, int len)
 }
 
 const ssh_cipheralg ssh_3des_ssh2_ctr = {
-    .new = des3_sdctr_new,
-    .free = des3_sdctr_free,
-    .setiv = des3_sdctr_setiv,
-    .setkey = des3_sdctr_setkey,
-    .encrypt = des3_sdctr_encrypt_decrypt,
-    .decrypt = des3_sdctr_encrypt_decrypt,
-    .ssh2_id = "3des-ctr",
-    .blksize = 8,
-    .real_keybits = 168,
-    .padded_keybytes = 24,
-    .flags = 0,
-    .text_name = "triple-DES SDCTR",
+    // WINSCP
+    /*.new =*/ des3_sdctr_new,
+    /*.free =*/ des3_sdctr_free,
+    /*.setiv =*/ des3_sdctr_setiv,
+    /*.setkey =*/ des3_sdctr_setkey,
+    /*.encrypt =*/ des3_sdctr_encrypt_decrypt,
+    /*.decrypt =*/ des3_sdctr_encrypt_decrypt,
+    NULL, NULL, // WINSCP
+    /*.ssh2_id =*/ "3des-ctr",
+    /*.blksize =*/ 8,
+    /*.real_keybits =*/ 168,
+    /*.padded_keybytes =*/ 24,
+    /*.flags =*/ 0,
+    /*.text_name =*/ "triple-DES SDCTR",
+    NULL, NULL, // WINSCP
 };
 
 static const ssh_cipheralg *const des3_list[] = {
@@ -1062,15 +1074,19 @@ static void des3_cbc3_cbc_decrypt(ssh_cipher *ciph, void *vdata, int len)
 }
 
 const ssh_cipheralg ssh_3des_ssh1 = {
-    .new = des3_cbc3_new,
-    .free = des3_cbc3_free,
-    .setiv = des3_cbc3_setiv,
-    .setkey = des3_cbc3_setkey,
-    .encrypt = des3_cbc3_cbc_encrypt,
-    .decrypt = des3_cbc3_cbc_decrypt,
-    .blksize = 8,
-    .real_keybits = 168,
-    .padded_keybytes = 24,
-    .flags = SSH_CIPHER_IS_CBC,
-    .text_name = "triple-DES inner-CBC",
+    // WINSCP
+    /*.new =*/ des3_cbc3_new,
+    /*.free =*/ des3_cbc3_free,
+    /*.setiv =*/ des3_cbc3_setiv,
+    /*.setkey =*/ des3_cbc3_setkey,
+    /*.encrypt =*/ des3_cbc3_cbc_encrypt,
+    /*.decrypt =*/ des3_cbc3_cbc_decrypt,
+    NULL, NULL, // WINSCP
+    NULL, // WINSCP
+    /*.blksize =*/ 8,
+    /*.real_keybits =*/ 168,
+    /*.padded_keybytes =*/ 24,
+    /*.flags =*/ SSH_CIPHER_IS_CBC,
+    /*.text_name =*/ "triple-DES inner-CBC",
+    NULL, NULL, // WINSCP
 };

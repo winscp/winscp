@@ -579,6 +579,12 @@ static void handle_destroy(struct handle *h)
     CloseHandle(h->u.g.ev_to_main);
     del234(handles_by_evtomain, h);
     sfree(h);
+    // WINSCP (memory leak)
+    if (count234(handles_by_evtomain) == 0)
+    {
+        freetree234(handles_by_evtomain);
+        handles_by_evtomain = NULL;
+    }
 }
 
 void handle_free(struct handle *h)

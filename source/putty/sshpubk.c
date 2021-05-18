@@ -1162,7 +1162,7 @@ static bool rfc4716_loadpub(BinarySource *src, char **algorithm,
     return false;
 }
 
-static bool openssh_loadpub(BinarySource *src, char **algorithm,
+/*WINSCP static*/ bool openssh_loadpub(BinarySource *src, char **algorithm,
                             BinarySink *bs,
                             char **commentptr, const char **errorstr)
 {
@@ -1786,8 +1786,9 @@ static void ssh2_fingerprint_blob_md5(ptrlen blob, strbuf *sb)
 {
     unsigned char digest[16];
 
+    unsigned i; // WINSCP
     hash_simple(&ssh_md5, blob, digest);
-    for (unsigned i = 0; i < 16; i++)
+    for (i = 0; i < 16; i++)
         strbuf_catf(sb, "%02x%s", digest[i], i==15 ? "" : ":");
 }
 
@@ -1798,7 +1799,9 @@ static void ssh2_fingerprint_blob_sha256(ptrlen blob, strbuf *sb)
 
     put_datapl(sb, PTRLEN_LITERAL("SHA256:"));
 
-    for (unsigned i = 0; i < 32; i += 3) {
+    { // WINSCP
+    unsigned i;
+    for (i = 0; i < 32; i += 3) {
         char buf[5];
         unsigned len = 32-i;
         if (len > 3)
@@ -1807,6 +1810,7 @@ static void ssh2_fingerprint_blob_sha256(ptrlen blob, strbuf *sb)
         put_data(sb, buf, 4);
     }
     strbuf_chomp(sb, '=');
+    } // WINSCP
 }
 
 char *ssh2_fingerprint_blob(ptrlen blob, FingerprintType fptype)
@@ -1821,6 +1825,7 @@ char *ssh2_fingerprint_blob(ptrlen blob, FingerprintType fptype)
      */
     BinarySource src[1];
     BinarySource_BARE_INIT_PL(src, blob);
+    { // WINSCP
     ptrlen algname = get_string(src);
     if (!get_err(src)) {
         const ssh_keyalg *alg = find_pubkey_alg_len(algname);
@@ -1831,6 +1836,7 @@ char *ssh2_fingerprint_blob(ptrlen blob, FingerprintType fptype)
             strbuf_catf(sb, "%.*s ", PTRLEN_PRINTF(algname));
         }
     }
+    } // WINSCP
 
     switch (fptype) {
       case SSH_FPTYPE_MD5:
@@ -1847,7 +1853,8 @@ char *ssh2_fingerprint_blob(ptrlen blob, FingerprintType fptype)
 char **ssh2_all_fingerprints_for_blob(ptrlen blob)
 {
     char **fps = snewn(SSH_N_FPTYPES, char *);
-    for (unsigned i = 0; i < SSH_N_FPTYPES; i++)
+    unsigned i; // WINSCP
+    for (i = 0; i < SSH_N_FPTYPES; i++)
         fps[i] = ssh2_fingerprint_blob(blob, i);
     return fps;
 }
@@ -1866,14 +1873,17 @@ char **ssh2_all_fingerprints(ssh_key *data)
 {
     strbuf *blob = strbuf_new();
     ssh_key_public_blob(data, BinarySink_UPCAST(blob));
+    { // WINSCP
     char **ret = ssh2_all_fingerprints_for_blob(ptrlen_from_strbuf(blob));
     strbuf_free(blob);
     return ret;
+    } // WINSCP
 }
 
 void ssh2_free_all_fingerprints(char **fps)
 {
-    for (unsigned i = 0; i < SSH_N_FPTYPES; i++)
+    unsigned i; // WINSCP
+    for (i = 0; i < SSH_N_FPTYPES; i++)
         sfree(fps[i]);
     sfree(fps);
 }
@@ -2001,25 +2011,31 @@ void key_components_add_text(key_components *kc,
                              const char *name, const char *value)
 {
     sgrowarray(kc->components, kc->componentsize, kc->ncomponents);
+    { // WINSCP
     size_t n = kc->ncomponents++;
     kc->components[n].name = dupstr(name);
     kc->components[n].is_mp_int = false;
     kc->components[n].text = dupstr(value);
+    } // WINSCP
 }
 
 void key_components_add_mp(key_components *kc,
                            const char *name, mp_int *value)
 {
     sgrowarray(kc->components, kc->componentsize, kc->ncomponents);
+    { // WINSCP
     size_t n = kc->ncomponents++;
     kc->components[n].name = dupstr(name);
     kc->components[n].is_mp_int = true;
     kc->components[n].mp = mp_copy(value);
+    } // WINSCP
 }
 
 void key_components_free(key_components *kc)
 {
-    for (size_t i = 0; i < kc->ncomponents; i++) {
+    { // WINSCP
+    size_t i;
+    for (i = 0; i < kc->ncomponents; i++) {
         sfree(kc->components[i].name);
         if (kc->components[i].is_mp_int) {
             mp_free(kc->components[i].mp);
@@ -2030,4 +2046,5 @@ void key_components_free(key_components *kc)
     }
     sfree(kc->components);
     sfree(kc);
+    } // WINSCP
 }

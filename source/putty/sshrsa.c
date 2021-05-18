@@ -342,7 +342,8 @@ char *rsa_ssh1_fingerprint(RSAKey *key)
 char **rsa_ssh1_fake_all_fingerprints(RSAKey *key)
 {
     char **ret = snewn(SSH_N_FPTYPES, char *);
-    for (unsigned i = 0; i < SSH_N_FPTYPES; i++)
+    unsigned i; // WINSCP
+    for (i = 0; i < SSH_N_FPTYPES; i++)
         ret[i] = NULL;
     ret[SSH_FPTYPE_MD5] = rsa_ssh1_fingerprint(key);
     return ret;
@@ -871,41 +872,49 @@ static const struct ssh2_rsa_extra
     rsa_sha256_extra = { SSH_AGENT_RSA_SHA2_256 },
     rsa_sha512_extra = { SSH_AGENT_RSA_SHA2_512 };
 
+// WINSCP
 #define COMMON_KEYALG_FIELDS                    \
-    .new_pub = rsa2_new_pub,                    \
-    .new_priv = rsa2_new_priv,                  \
-    .new_priv_openssh = rsa2_new_priv_openssh,  \
-    .freekey = rsa2_freekey,                    \
-    .invalid = rsa2_invalid,                    \
-    .sign = rsa2_sign,                          \
-    .verify = rsa2_verify,                      \
-    .public_blob = rsa2_public_blob,            \
-    .private_blob = rsa2_private_blob,          \
-    .openssh_blob = rsa2_openssh_blob,          \
-    .cache_str = rsa2_cache_str,                \
-    .components = rsa2_components,              \
-    .pubkey_bits = rsa2_pubkey_bits,            \
-    .cache_id = "rsa2"
+    /*.new_pub =*/ rsa2_new_pub,                    \
+    /*.new_priv =*/ rsa2_new_priv,                  \
+    /*.new_priv_openssh =*/ rsa2_new_priv_openssh,  \
+    /*.freekey =*/ rsa2_freekey,                    \
+    /*.invalid =*/ rsa2_invalid,                    \
+    /*.sign =*/ rsa2_sign,                          \
+    /*.verify =*/ rsa2_verify,                      \
+    /*.public_blob =*/ rsa2_public_blob,            \
+    /*.private_blob =*/ rsa2_private_blob,          \
+    /*.openssh_blob =*/ rsa2_openssh_blob,          \
+    /*.cache_str =*/ rsa2_cache_str,                \
+    /*.components =*/ rsa2_components,              \
+    /*.pubkey_bits =*/ rsa2_pubkey_bits
+#define COMMON_KEYALG_FIELDS2 \
+    /*.cache_id =*/ "rsa2"
 
 const ssh_keyalg ssh_rsa = {
+    // WINSCP
     COMMON_KEYALG_FIELDS,
-    .ssh_id = "ssh-rsa",
-    .supported_flags = SSH_AGENT_RSA_SHA2_256 | SSH_AGENT_RSA_SHA2_512,
-    .extra = &rsa_extra,
+    /*.ssh_id =*/ "ssh-rsa",
+    COMMON_KEYALG_FIELDS2,
+    /*.extra =*/ &rsa_extra,
+    /*.supported_flags =*/ SSH_AGENT_RSA_SHA2_256 | SSH_AGENT_RSA_SHA2_512,
 };
 
 const ssh_keyalg ssh_rsa_sha256 = {
+    // WINSCP
     COMMON_KEYALG_FIELDS,
-    .ssh_id = "rsa-sha2-256",
-    .supported_flags = 0,
-    .extra = &rsa_sha256_extra,
+    /*.ssh_id =*/ "rsa-sha2-256",
+    COMMON_KEYALG_FIELDS2,
+    /*.extra =*/ &rsa_sha256_extra,
+    /*.supported_flags =*/ 0,
 };
 
 const ssh_keyalg ssh_rsa_sha512 = {
+    // WINSCP
     COMMON_KEYALG_FIELDS,
-    .ssh_id = "rsa-sha2-512",
-    .supported_flags = 0,
-    .extra = &rsa_sha512_extra,
+    /*.ssh_id =*/ "rsa-sha2-512",
+    COMMON_KEYALG_FIELDS2,
+    /*.extra =*/ &rsa_sha512_extra,
+    /*.supported_flags =*/ 0,
 };
 
 RSAKey *ssh_rsakex_newkey(ptrlen data)

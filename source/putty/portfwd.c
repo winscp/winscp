@@ -427,10 +427,12 @@ static void pfd_sent(Plug *plug, size_t bufsize)
 }
 
 static const PlugVtable PortForwarding_plugvt = {
-    .log = pfd_log,
-    .closing = pfd_closing,
-    .receive = pfd_receive,
-    .sent = pfd_sent,
+    // WINSCP
+    /*.log =*/ pfd_log,
+    /*.closing =*/ pfd_closing,
+    /*.receive =*/ pfd_receive,
+    /*.sent =*/ pfd_sent,
+    NULL,
 };
 
 static void pfd_chan_free(Channel *chan);
@@ -443,28 +445,29 @@ static void pfd_set_input_wanted(Channel *chan, bool wanted);
 static char *pfd_log_close_msg(Channel *chan);
 
 static const ChannelVtable PortForwarding_channelvt = {
-    .free = pfd_chan_free,
-    .open_confirmation = pfd_open_confirmation,
-    .open_failed = pfd_open_failure,
-    .send = pfd_send,
-    .send_eof = pfd_send_eof,
-    .set_input_wanted = pfd_set_input_wanted,
-    .log_close_msg = pfd_log_close_msg,
-    .want_close = chan_default_want_close,
-    .rcvd_exit_status = chan_no_exit_status,
-    .rcvd_exit_signal = chan_no_exit_signal,
-    .rcvd_exit_signal_numeric = chan_no_exit_signal_numeric,
-    .run_shell = chan_no_run_shell,
-    .run_command = chan_no_run_command,
-    .run_subsystem = chan_no_run_subsystem,
-    .enable_x11_forwarding = chan_no_enable_x11_forwarding,
-    .enable_agent_forwarding = chan_no_enable_agent_forwarding,
-    .allocate_pty = chan_no_allocate_pty,
-    .set_env = chan_no_set_env,
-    .send_break = chan_no_send_break,
-    .send_signal = chan_no_send_signal,
-    .change_window_size = chan_no_change_window_size,
-    .request_response = chan_no_request_response,
+    // WINSCP
+    /*.free =*/ pfd_chan_free,
+    /*.open_confirmation =*/ pfd_open_confirmation,
+    /*.open_failed =*/ pfd_open_failure,
+    /*.send =*/ pfd_send,
+    /*.send_eof =*/ pfd_send_eof,
+    /*.set_input_wanted =*/ pfd_set_input_wanted,
+    /*.log_close_msg =*/ pfd_log_close_msg,
+    /*.want_close =*/ chan_default_want_close,
+    /*.rcvd_exit_status =*/ chan_no_exit_status,
+    /*.rcvd_exit_signal =*/ chan_no_exit_signal,
+    /*.rcvd_exit_signal_numeric =*/ chan_no_exit_signal_numeric,
+    /*.run_shell =*/ chan_no_run_shell,
+    /*.run_command =*/ chan_no_run_command,
+    /*.run_subsystem =*/ chan_no_run_subsystem,
+    /*.enable_x11_forwarding =*/ chan_no_enable_x11_forwarding,
+    /*.enable_agent_forwarding =*/ chan_no_enable_agent_forwarding,
+    /*.allocate_pty =*/ chan_no_allocate_pty,
+    /*.set_env =*/ chan_no_set_env,
+    /*.send_break =*/ chan_no_send_break,
+    /*.send_signal =*/ chan_no_send_signal,
+    /*.change_window_size =*/ chan_no_change_window_size,
+    /*.request_response =*/ chan_no_request_response,
 };
 
 Channel *portfwd_raw_new(ConnectionLayer *cl, Plug **plug, bool start_ready)
@@ -550,9 +553,12 @@ static int pfl_accepting(Plug *p, accept_fn_t constructor, accept_ctx_t ctx)
 }
 
 static const PlugVtable PortListener_plugvt = {
-    .log = pfl_log,
-    .closing = pfl_closing,
-    .accepting = pfl_accepting,
+    // WINSCP
+    /*.log =*/ pfl_log,
+    /*.closing =*/ pfl_closing,
+    NULL,
+    NULL,
+    /*.accepting =*/ pfl_accepting,
 };
 
 /*

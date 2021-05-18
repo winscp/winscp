@@ -45,10 +45,12 @@ static SocketPeerInfo *sk_error_peer_info(Socket *s)
 }
 
 static const SocketVtable ErrorSocket_sockvt = {
-    .plug = sk_error_plug,
-    .close = sk_error_close,
-    .socket_error = sk_error_socket_error,
-    .peer_info = sk_error_peer_info,
+    // WINSCP
+    /*.plug =*/ sk_error_plug,
+    /*.close =*/ sk_error_close,
+    NULL, NULL, NULL, NULL, // WINSCP
+    /*.socket_error =*/ sk_error_socket_error,
+    /*.peer_info =*/ sk_error_peer_info,
     /* other methods are NULL */
 };
 

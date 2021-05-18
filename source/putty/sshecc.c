@@ -831,6 +831,7 @@ static key_components *ecdsa_components(ssh_key *key)
     key_components_add_text(kc, "key_type", "ECDSA");
     key_components_add_text(kc, "curve_name", ek->curve->textname);
 
+    { // WINSCP
     mp_int *x, *y;
     ecc_weierstrass_get_affine(ek->publicKey, &x, &y);
     key_components_add_mp(kc, "public_affine_x", x);
@@ -842,6 +843,7 @@ static key_components *ecdsa_components(ssh_key *key)
         key_components_add_mp(kc, "private_exponent", ek->privateKey);
 
     return kc;
+    } // WINSCP
 }
 
 static char *eddsa_cache_str(ssh_key *key)
@@ -866,6 +868,7 @@ static key_components *eddsa_components(ssh_key *key)
     key_components_add_text(kc, "key_type", "EdDSA");
     key_components_add_text(kc, "curve_name", ek->curve->textname);
 
+    { // WINSCP
     mp_int *x, *y;
     ecc_edwards_get_affine(ek->publicKey, &x, &y);
     key_components_add_mp(kc, "public_affine_x", x);
@@ -877,6 +880,7 @@ static key_components *eddsa_components(ssh_key *key)
         key_components_add_mp(kc, "private_exponent", ek->privateKey);
 
     return kc;
+    } // WINSCP
 }
 
 static void ecdsa_public_blob(ssh_key *key, BinarySink *bs)
@@ -1448,22 +1452,24 @@ static const struct ecsign_extra sign_extra_ed25519 = {
     NULL, 0, PTRLEN_DECL_LITERAL(""),
 };
 const ssh_keyalg ssh_ecdsa_ed25519 = {
-    .new_pub = eddsa_new_pub,
-    .new_priv = eddsa_new_priv,
-    .new_priv_openssh = eddsa_new_priv_openssh,
-    .freekey = eddsa_freekey,
-    .invalid = ec_signkey_invalid,
-    .sign = eddsa_sign,
-    .verify = eddsa_verify,
-    .public_blob = eddsa_public_blob,
-    .private_blob = eddsa_private_blob,
-    .openssh_blob = eddsa_openssh_blob,
-    .cache_str = eddsa_cache_str,
-    .components = eddsa_components,
-    .pubkey_bits = ec_shared_pubkey_bits,
-    .ssh_id = "ssh-ed25519",
-    .cache_id = "ssh-ed25519",
-    .extra = &sign_extra_ed25519,
+    // WINSCP
+    /*.new_pub =*/ eddsa_new_pub,
+    /*.new_priv =*/ eddsa_new_priv,
+    /*.new_priv_openssh =*/ eddsa_new_priv_openssh,
+    /*.freekey =*/ eddsa_freekey,
+    /*.invalid =*/ ec_signkey_invalid,
+    /*.sign =*/ eddsa_sign,
+    /*.verify =*/ eddsa_verify,
+    /*.public_blob =*/ eddsa_public_blob,
+    /*.private_blob =*/ eddsa_private_blob,
+    /*.openssh_blob =*/ eddsa_openssh_blob,
+    /*.cache_str =*/ eddsa_cache_str,
+    /*.components =*/ eddsa_components,
+    /*.pubkey_bits =*/ ec_shared_pubkey_bits,
+    /*.ssh_id =*/ "ssh-ed25519",
+    /*.cache_id =*/ "ssh-ed25519",
+    /*.extra =*/ &sign_extra_ed25519,
+    0, // WINSCP
 };
 
 static const struct ecsign_extra sign_extra_ed448 = {
@@ -1471,22 +1477,24 @@ static const struct ecsign_extra sign_extra_ed448 = {
     NULL, 0, PTRLEN_DECL_LITERAL("SigEd448\0\0"),
 };
 const ssh_keyalg ssh_ecdsa_ed448 = {
-    .new_pub = eddsa_new_pub,
-    .new_priv = eddsa_new_priv,
-    .new_priv_openssh = eddsa_new_priv_openssh,
-    .freekey = eddsa_freekey,
-    .invalid = ec_signkey_invalid,
-    .sign = eddsa_sign,
-    .verify = eddsa_verify,
-    .public_blob = eddsa_public_blob,
-    .private_blob = eddsa_private_blob,
-    .openssh_blob = eddsa_openssh_blob,
-    .cache_str = eddsa_cache_str,
-    .components = eddsa_components,
-    .pubkey_bits = ec_shared_pubkey_bits,
-    .ssh_id = "ssh-ed448",
-    .cache_id = "ssh-ed448",
-    .extra = &sign_extra_ed448,
+    // WINSCP
+    /*.new_pub =*/ eddsa_new_pub,
+    /*.new_priv =*/ eddsa_new_priv,
+    /*.new_priv_openssh =*/ eddsa_new_priv_openssh,
+    /*.freekey =*/ eddsa_freekey,
+    /*.invalid =*/ ec_signkey_invalid,
+    /*.sign =*/ eddsa_sign,
+    /*.verify =*/ eddsa_verify,
+    /*.public_blob =*/ eddsa_public_blob,
+    /*.private_blob =*/ eddsa_private_blob,
+    /*.openssh_blob =*/ eddsa_openssh_blob,
+    /*.cache_str =*/ eddsa_cache_str,
+    /*.components =*/ eddsa_components,
+    /*.pubkey_bits =*/ ec_shared_pubkey_bits,
+    /*.ssh_id =*/ "ssh-ed448",
+    /*.cache_id =*/ "ssh-ed448",
+    /*.extra =*/ &sign_extra_ed448,
+    0, // WINSCP
 };
 
 /* OID: 1.2.840.10045.3.1.7 (ansiX9p256r1) */
@@ -1498,22 +1506,24 @@ static const struct ecsign_extra sign_extra_nistp256 = {
     nistp256_oid, lenof(nistp256_oid),
 };
 const ssh_keyalg ssh_ecdsa_nistp256 = {
-    .new_pub = ecdsa_new_pub,
-    .new_priv = ecdsa_new_priv,
-    .new_priv_openssh = ecdsa_new_priv_openssh,
-    .freekey = ecdsa_freekey,
-    .invalid = ec_signkey_invalid,
-    .sign = ecdsa_sign,
-    .verify = ecdsa_verify,
-    .public_blob = ecdsa_public_blob,
-    .private_blob = ecdsa_private_blob,
-    .openssh_blob = ecdsa_openssh_blob,
-    .cache_str = ecdsa_cache_str,
-    .components = ecdsa_components,
-    .pubkey_bits = ec_shared_pubkey_bits,
-    .ssh_id = "ecdsa-sha2-nistp256",
-    .cache_id = "ecdsa-sha2-nistp256",
-    .extra = &sign_extra_nistp256,
+    // WINSCP
+    /*.new_pub =*/ ecdsa_new_pub,
+    /*.new_priv =*/ ecdsa_new_priv,
+    /*.new_priv_openssh =*/ ecdsa_new_priv_openssh,
+    /*.freekey =*/ ecdsa_freekey,
+    /*.invalid =*/ ec_signkey_invalid,
+    /*.sign =*/ ecdsa_sign,
+    /*.verify =*/ ecdsa_verify,
+    /*.public_blob =*/ ecdsa_public_blob,
+    /*.private_blob =*/ ecdsa_private_blob,
+    /*.openssh_blob =*/ ecdsa_openssh_blob,
+    /*.cache_str =*/ ecdsa_cache_str,
+    /*.components =*/ ecdsa_components,
+    /*.pubkey_bits =*/ ec_shared_pubkey_bits,
+    /*.ssh_id =*/ "ecdsa-sha2-nistp256",
+    /*.cache_id =*/ "ecdsa-sha2-nistp256",
+    /*.extra =*/ &sign_extra_nistp256,
+    0, // WINSCP
 };
 
 /* OID: 1.3.132.0.34 (secp384r1) */
@@ -1525,22 +1535,24 @@ static const struct ecsign_extra sign_extra_nistp384 = {
     nistp384_oid, lenof(nistp384_oid),
 };
 const ssh_keyalg ssh_ecdsa_nistp384 = {
-    .new_pub = ecdsa_new_pub,
-    .new_priv = ecdsa_new_priv,
-    .new_priv_openssh = ecdsa_new_priv_openssh,
-    .freekey = ecdsa_freekey,
-    .invalid = ec_signkey_invalid,
-    .sign = ecdsa_sign,
-    .verify = ecdsa_verify,
-    .public_blob = ecdsa_public_blob,
-    .private_blob = ecdsa_private_blob,
-    .openssh_blob = ecdsa_openssh_blob,
-    .cache_str = ecdsa_cache_str,
-    .components = ecdsa_components,
-    .pubkey_bits = ec_shared_pubkey_bits,
-    .ssh_id = "ecdsa-sha2-nistp384",
-    .cache_id = "ecdsa-sha2-nistp384",
-    .extra = &sign_extra_nistp384,
+    // WINSCP
+    /*.new_pub =*/ ecdsa_new_pub,
+    /*.new_priv =*/ ecdsa_new_priv,
+    /*.new_priv_openssh =*/ ecdsa_new_priv_openssh,
+    /*.freekey =*/ ecdsa_freekey,
+    /*.invalid =*/ ec_signkey_invalid,
+    /*.sign =*/ ecdsa_sign,
+    /*.verify =*/ ecdsa_verify,
+    /*.public_blob =*/ ecdsa_public_blob,
+    /*.private_blob =*/ ecdsa_private_blob,
+    /*.openssh_blob =*/ ecdsa_openssh_blob,
+    /*.cache_str =*/ ecdsa_cache_str,
+    /*.components =*/ ecdsa_components,
+    /*.pubkey_bits =*/ ec_shared_pubkey_bits,
+    /*.ssh_id =*/ "ecdsa-sha2-nistp384",
+    /*.cache_id =*/ "ecdsa-sha2-nistp384",
+    /*.extra =*/ &sign_extra_nistp384,
+    0, // WINSCP
 };
 
 /* OID: 1.3.132.0.35 (secp521r1) */
@@ -1552,22 +1564,24 @@ static const struct ecsign_extra sign_extra_nistp521 = {
     nistp521_oid, lenof(nistp521_oid),
 };
 const ssh_keyalg ssh_ecdsa_nistp521 = {
-    .new_pub = ecdsa_new_pub,
-    .new_priv = ecdsa_new_priv,
-    .new_priv_openssh = ecdsa_new_priv_openssh,
-    .freekey = ecdsa_freekey,
-    .invalid = ec_signkey_invalid,
-    .sign = ecdsa_sign,
-    .verify = ecdsa_verify,
-    .public_blob = ecdsa_public_blob,
-    .private_blob = ecdsa_private_blob,
-    .openssh_blob = ecdsa_openssh_blob,
-    .cache_str = ecdsa_cache_str,
-    .components = ecdsa_components,
-    .pubkey_bits = ec_shared_pubkey_bits,
-    .ssh_id = "ecdsa-sha2-nistp521",
-    .cache_id = "ecdsa-sha2-nistp521",
-    .extra = &sign_extra_nistp521,
+    // WINSCP
+    /*.new_pub =*/ ecdsa_new_pub,
+    /*.new_priv =*/ ecdsa_new_priv,
+    /*.new_priv_openssh =*/ ecdsa_new_priv_openssh,
+    /*.freekey =*/ ecdsa_freekey,
+    /*.invalid =*/ ec_signkey_invalid,
+    /*.sign =*/ ecdsa_sign,
+    /*.verify =*/ ecdsa_verify,
+    /*.public_blob =*/ ecdsa_public_blob,
+    /*.private_blob =*/ ecdsa_private_blob,
+    /*.openssh_blob =*/ ecdsa_openssh_blob,
+    /*.cache_str =*/ ecdsa_cache_str,
+    /*.components =*/ ecdsa_components,
+    /*.pubkey_bits =*/ ec_shared_pubkey_bits,
+    /*.ssh_id =*/ "ecdsa-sha2-nistp521",
+    /*.cache_id =*/ "ecdsa-sha2-nistp521",
+    /*.extra =*/ &sign_extra_nistp521,
+    0, // WINSCP
 };
 
 /* ----------------------------------------------------------------------
@@ -1715,6 +1729,7 @@ static mp_int *ssh_ecdhkex_m_getkey(ecdh_key *dh, ptrlen remoteKey)
         return NULL;
     }
 
+    { // WINSCP
     mp_int *x;
     ecc_montgomery_get_affine(p, &x);
 
@@ -1745,6 +1760,7 @@ static mp_int *ssh_ecdhkex_m_getkey(ecdh_key *dh, ptrlen remoteKey)
     strbuf_free(sb);
 
     return x;
+    } // WINSCP
     } // WINSCP
     } // WINSCP
     } // WINSCP
