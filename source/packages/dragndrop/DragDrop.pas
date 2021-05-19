@@ -1909,9 +1909,10 @@ var
   DropSource: TDropSource;
   pt: TPoint;
   grfKeyState: LongInt;
+  DragResult: HResult;
 begin
   Result := drInvalid;
-  if (DataObject = nil) or (GInternalSource <> nil) then exit;
+  if (DataObject = nil) or (DragDropControl = nil) or (GInternalSource <> nil) then exit;
   GInternalSource := Self;
   if FSourceEffects <> 0 then
   begin
@@ -1928,8 +1929,8 @@ begin
       try
         DropSource := TDropSource.Create(self);
         try
-          if (DataObject <> nil) and (DragDropControl <> nil) and
-             (DoDragDrop(IDataObject(DataObject), DropSource, FSourceEffects, dwEffect) = DRAGDROP_S_DROP) then
+          DragResult := DoDragDrop(IDataObject(DataObject), DropSource, FSourceEffects, dwEffect);
+          if DragResult = DRAGDROP_S_DROP then
           begin
             case dwEffect and ((DROPEFFECT_COPY or DROPEFFECT_MOVE or DROPEFFECT_LINK)) of
               DROPEFFECT_COPY: Result := drCopy;
