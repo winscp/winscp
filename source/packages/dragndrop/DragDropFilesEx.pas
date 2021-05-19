@@ -909,7 +909,7 @@ begin
   if Assigned(OnDataObjectRelease) then OnDataObjectRelease(Self);
 end;
 
-function TDragDropFilesEx.CreateDataObject:TDataObject;
+function TDragDropFilesEx.CreateDataObject: TDataObject;
 var
   DataObject: TDataObjectFilesEx;
   RFName, RPidl: Boolean;
