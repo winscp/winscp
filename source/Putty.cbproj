@@ -223,10 +223,16 @@
 			<BuildOrder>29</BuildOrder>
 			<BuildOrder>21</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\sshargon2.c">
+			<BuildOrder>29</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\sshauxcrypt.c">
 			<BuildOrder>78</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\sshbcrypt.c">
+			<BuildOrder>50</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\sshblake2.c">
 			<BuildOrder>50</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\sshblowf.c">

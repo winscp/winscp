@@ -712,10 +712,15 @@ void SaveKey(TKeyType KeyType, const UnicodeString & FileName,
     switch (KeyType)
     {
       case ktSSH2:
-        if (!ssh2_save_userkey(KeyFile, Ssh2Key, PassphrasePtr))
         {
-          int Error = errno;
-          throw EOSExtException(FMTLOAD(KEY_SAVE_ERROR, (FileName)), Error);
+          ppk_save_parameters Params = ppk_save_default_parameters;
+          // Other parameters are probably not relevant for version 2
+          Params.fmt_version = 2;
+          if (!ppk_save_f(KeyFile, Ssh2Key, PassphrasePtr, &Params))
+          {
+            int Error = errno;
+            throw EOSExtException(FMTLOAD(KEY_SAVE_ERROR, (FileName)), Error);
+          }
         }
         break;
 
@@ -901,8 +906,10 @@ UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const s
   char * CommentPtr = NULL;
   const char * ErrorStr = NULL;
   strbuf * PubBlobBuf = strbuf_new();
+  BinarySource Source[1];
+  BinarySource_BARE_INIT(Source, UtfLine.c_str(), UtfLine.Length());
   UnicodeString Result;
-  if (!openssh_loadpub_line(UtfLine.c_str(), &AlgorithmName, BinarySink_UPCAST(PubBlobBuf), &CommentPtr, &ErrorStr))
+  if (!openssh_loadpub(Source, &AlgorithmName, BinarySink_UPCAST(PubBlobBuf), &CommentPtr, &ErrorStr))
   {
     throw Exception(UnicodeString(ErrorStr));
   }

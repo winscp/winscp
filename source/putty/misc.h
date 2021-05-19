@@ -189,6 +189,10 @@ int string_length_for_printf(size_t);
  * string. */
 #define PTRLEN_LITERAL(stringlit) \
     TYPECHECK("" stringlit "", make_ptrlen(stringlit, sizeof(stringlit)-1))
+/* Make a ptrlen out of a compile-time string literal in a way that
+ * allows you to declare the ptrlen itself as a compile-time initialiser. */
+#define PTRLEN_DECL_LITERAL(stringlit) \
+    { TYPECHECK("" stringlit "", stringlit), sizeof(stringlit)-1 }
 /* Make a ptrlen out of a constant byte array. */
 #define PTRLEN_FROM_CONST_BYTES(a) make_ptrlen(a, sizeof(a))
 
@@ -414,5 +418,29 @@ static inline char *stripctrl_string(StripCtrlChars *sccpub, const char *str)
 // Frequently that code are assertions. This assert implementation allows being used before code.
 #define pinitassert(P) const int __assert_dummy = 1/((int)(P))
 #endif
+
+/*
+ * A mechanism for loading a file from disk into a memory buffer where
+ * it can be picked apart as a BinarySource.
+ */
+struct LoadedFile {
+    char *data;
+    size_t len, max_size;
+    BinarySource_IMPLEMENTATION;
+};
+typedef enum {
+    LF_OK,      /* file loaded successfully */
+    LF_TOO_BIG, /* file didn't fit in buffer */
+    LF_ERROR,   /* error from stdio layer */
+} LoadFileStatus;
+
+/* Set the memory block of 'size' bytes at 'out' to the bitwise XOR of
+ * the two blocks of the same size at 'in1' and 'in2'.
+ *
+ * 'out' may point to exactly the same address as one of the inputs,
+ * but if the input and output blocks overlap in any other way, the
+ * result of this function is not guaranteed. No memmove-style effort
+ * is made to handle difficult overlap cases. */
+void memxor(uint8_t *out, const uint8_t *in1, const uint8_t *in2, size_t size);
 
 #endif
