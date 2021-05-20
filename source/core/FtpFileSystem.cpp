@@ -1107,7 +1107,7 @@ UnicodeString __fastcall TFTPFileSystem::DoCalculateFileChecksum(
   bool UsingHashCommand, const UnicodeString & Alg, TRemoteFile * File)
 {
   // Overview of server supporting various hash commands is at:
-  // https://tools.ietf.org/html/draft-bryan-ftpext-hash-02#appendix-B
+  // https://datatracker.ietf.org/doc/html/draft-bryan-ftpext-hash-02#appendix-B
 
   UnicodeString CommandName;
 
