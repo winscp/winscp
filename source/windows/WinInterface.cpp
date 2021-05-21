@@ -411,7 +411,10 @@ void __fastcall TMessageTimeout::DoTimer(TObject * /*Sender*/)
     // Needed particularly for "keep up to date" dialog, which does not close on the button click
     Enabled = false;
     TModalResult PrevModalResult = FButton->ModalResult;
-    FButton->ModalResult = FAnswer;
+    if (FAnswer != 0)
+    {
+      FButton->ModalResult = FAnswer;
+    }
     try
     {
       FButton->Click();
