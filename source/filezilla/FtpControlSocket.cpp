@@ -801,7 +801,7 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
       // Handle servers that disobey RFC 2640 that have UTF8 in the FEAT
       // response but do not use UTF8 unless OPTS UTF8 ON gets send.
       // However these servers obey a conflicting ietf draft:
-      // https://tools.ietf.org/html/draft-ietf-ftpext-utf-8-option-00
+      // https://datatracker.ietf.org/doc/html/draft-ietf-ftpext-utf-8-option-00
       // servers are, amongst others, G6 FTP Server and RaidenFTPd.
       if (Send(L"OPTS UTF8 ON"))
         m_Operation.nOpState = CONNECT_OPTSUTF8;
