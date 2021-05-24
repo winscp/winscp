@@ -748,6 +748,7 @@ void FreeKey(TPrivateKey * PrivateKey)
 {
   struct ssh2_userkey * Ssh2Key = reinterpret_cast<struct ssh2_userkey *>(PrivateKey);
   ssh_key_free(Ssh2Key->key);
+  sfree(Ssh2Key->comment);
   sfree(Ssh2Key);
 }
 //---------------------------------------------------------------------------
