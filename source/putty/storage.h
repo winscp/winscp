@@ -78,7 +78,7 @@ void enum_settings_finish(settings_e *handle);
 
 #ifdef MPEXT
 int retrieve_host_key(const char *hostname, int port,
-		    const char *keytype, char *key, int maxlen);
+                      const char *keytype, char *key, int maxlen);
 #else
 /*
  * See if a host key matches the database entry. Return values can

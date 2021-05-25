@@ -223,12 +223,12 @@ static void ssh2_rportfwd_globreq_response(struct ssh2_connection_state *s,
         ppl_logevent("Remote port forwarding from %s refused",
                      rpf->log_description);
 
-	{ // WINSCP
+        { // WINSCP
         struct ssh_rportfwd *realpf = del234(s->rportfwds, rpf);
         assert(realpf == rpf);
         portfwdmgr_close(s->portfwdmgr, rpf->pfr);
         free_rportfwd(rpf);
-	} // WINSCP
+        } // WINSCP
     }
 }
 

@@ -496,11 +496,11 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
                                  conf_get_int(conf, CONF_proxy_port),
                                  privport, oobinline,
                                  nodelay, keepalive, &ret->plugimpl,
-				 #ifdef MPEXT
-				 conf_get_int(conf, CONF_connect_timeout), conf_get_int(conf, CONF_sndbuf),
-				 conf_get_str(conf, CONF_srcaddr)
-				 #endif
-				 );
+                                 #ifdef MPEXT
+                                 conf_get_int(conf, CONF_connect_timeout), conf_get_int(conf, CONF_sndbuf),
+                                 conf_get_str(conf, CONF_srcaddr)
+                                 #endif
+                                 );
         if (sk_socket_error(ret->sub_socket) != NULL)
             return &ret->sock;
 
