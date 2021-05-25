@@ -1535,7 +1535,6 @@ void __fastcall TTerminal::OpenTunnel()
 
     // inherit most SSH options of the main session (except for private key and bugs)
     FTunnelData->Compression = FSessionData->Compression;
-    FTunnelData->SshProt = FSessionData->SshProt;
     FTunnelData->CipherList = FSessionData->CipherList;
     FTunnelData->Ssh2DES = FSessionData->Ssh2DES;
 
@@ -1549,7 +1548,6 @@ void __fastcall TTerminal::OpenTunnel()
     FTunnelData->GSSAPIFwdTGT = FSessionData->GSSAPIFwdTGT;
     FTunnelData->TryAgent = FSessionData->TryAgent;
     FTunnelData->AgentFwd = FSessionData->AgentFwd;
-    FTunnelData->AuthTIS = FSessionData->AuthTIS;
     FTunnelData->AuthKI = FSessionData->AuthKI;
     FTunnelData->AuthKIPassword = FSessionData->AuthKIPassword;
 

@@ -1272,12 +1272,11 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     }
     if (Data->UsesSsh)
     {
-      ADF(L"SSH protocol version: %s; Compression: %s",
-        (Data->SshProtStr, BooleanToEngStr(Data->Compression)));
+      ADF(L"Compression: %s", (BooleanToEngStr(Data->Compression)));
       ADF(L"Bypass authentication: %s",
        (BooleanToEngStr(Data->SshNoUserAuth)));
-      ADF(L"Try agent: %s; Agent forwarding: %s; TIS/CryptoCard: %s; KI: %s; GSSAPI: %s",
-        (BooleanToEngStr(Data->TryAgent), BooleanToEngStr(Data->AgentFwd), BooleanToEngStr(Data->AuthTIS),
+      ADF(L"Try agent: %s; Agent forwarding: %s; KI: %s; GSSAPI: %s",
+        (BooleanToEngStr(Data->TryAgent), BooleanToEngStr(Data->AgentFwd),
          BooleanToEngStr(Data->AuthKI), BooleanToEngStr(Data->AuthGSSAPI)));
       if (Data->AuthGSSAPI)
       {

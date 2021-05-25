@@ -1988,21 +1988,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 6
           Width = 393
-          Height = 71
+          Height = 46
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Protocol options'
           TabOrder = 0
           DesignSize = (
             393
-            71)
-          object Label37: TLabel
-            Left = 12
-            Top = 42
-            Width = 103
-            Height = 13
-            Caption = 'SSH protocol version:'
-            FocusControl = SshProtCombo2
-          end
+            46)
           object CompressionCheck: TCheckBox
             Left = 16
             Top = 19
@@ -2013,23 +2005,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 0
             OnClick = DataChange
           end
-          object SshProtCombo2: TComboBox
-            Left = 303
-            Top = 37
-            Width = 80
-            Height = 21
-            Style = csDropDownList
-            Anchors = [akTop, akRight]
-            TabOrder = 1
-            OnChange = DataChange
-            Items.Strings = (
-              '1 (insecure)'
-              '2')
-          end
         end
         object EncryptionGroup: TGroupBox
           Left = 0
-          Top = 83
+          Top = 58
           Width = 393
           Height = 171
           Anchors = [akLeft, akTop, akRight]
@@ -2066,7 +2045,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 367
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Enable legacy use of single-&DES in SSH-2'
+            Caption = 'Enable legacy use of single-&DES'
             TabOrder = 3
           end
           object CipherUpButton: TButton
@@ -2243,13 +2222,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 32
           Width = 393
-          Height = 117
+          Height = 94
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Authentication options'
           TabOrder = 1
           DesignSize = (
             393
-            117)
+            94)
           object TryAgentCheck: TCheckBox
             Left = 12
             Top = 19
@@ -2258,16 +2237,6 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Attempt authentication using &Pageant'
             TabOrder = 0
-            OnClick = DataChange
-          end
-          object AuthTISCheck: TCheckBox
-            Left = 12
-            Top = 88
-            Width = 373
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Atte&mpt TIS or CryptoCard authentication (SSH-1)'
-            TabOrder = 3
             OnClick = DataChange
           end
           object AuthKICheck: TCheckBox
@@ -2293,7 +2262,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         end
         object AuthenticationParamsGroup: TGroupBox
           Left = 0
-          Top = 154
+          Top = 132
           Width = 393
           Height = 120
           Anchors = [akLeft, akTop, akRight]
@@ -2360,7 +2329,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         end
         object GSSAPIGroup: TGroupBox
           Left = 0
-          Top = 279
+          Top = 258
           Width = 393
           Height = 71
           Anchors = [akLeft, akTop, akRight]
@@ -2405,130 +2374,76 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 6
           Width = 393
-          Height = 289
+          Height = 217
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Detection of known bugs in SSH servers'
           TabOrder = 0
           DesignSize = (
             393
-            289)
-          object BugIgnore1Label: TLabel
-            Left = 12
-            Top = 212
-            Width = 169
-            Height = 13
-            Caption = 'Chokes on SSH-1 &ignore messages:'
-            FocusControl = BugIgnore1Combo
-          end
-          object BugPlainPW1Label: TLabel
-            Left = 12
-            Top = 236
-            Width = 195
-            Height = 13
-            Caption = 'Refuses all SSH-1 pass&word camouflage:'
-            FocusControl = BugPlainPW1Combo
-          end
-          object BugRSA1Label: TLabel
-            Left = 12
-            Top = 260
-            Width = 181
-            Height = 13
-            Caption = 'Chokes on SSH-1 &RSA authentication:'
-            FocusControl = BugRSA1Combo
-          end
+            217)
           object BugHMAC2Label: TLabel
             Left = 12
             Top = 68
-            Width = 154
+            Width = 144
             Height = 13
-            Caption = 'Miscomputes SSH-2 H&MAC keys:'
+            Caption = 'Miscomputes SSH H&MAC keys:'
             FocusControl = BugHMAC2Combo
           end
           object BugDeriveKey2Label: TLabel
             Left = 12
             Top = 92
-            Width = 176
+            Width = 166
             Height = 13
-            Caption = 'Miscomputes SSH-2 &encryption keys:'
+            Caption = 'Miscomputes SSH &encryption keys:'
             FocusControl = BugDeriveKey2Combo
           end
           object BugRSAPad2Label: TLabel
             Left = 12
             Top = 116
-            Width = 210
+            Width = 200
             Height = 13
-            Caption = 'Requires &padding on SSH-2 RSA signatures:'
+            Caption = 'Requires &padding on SSH RSA signatures:'
             FocusControl = BugRSAPad2Combo
           end
           object BugPKSessID2Label: TLabel
             Left = 12
             Top = 140
-            Width = 195
+            Width = 185
             Height = 13
-            Caption = 'Misuses the sessio&n ID in SSH-2 PK auth:'
+            Caption = 'Misuses the sessio&n ID in SSH PK auth:'
             FocusControl = BugPKSessID2Combo
           end
           object BugRekey2Label: TLabel
             Left = 12
             Top = 164
-            Width = 187
+            Width = 177
             Height = 13
-            Caption = 'Handles SSH-2 &key re-exchange badly:'
+            Caption = 'Handles SSH &key re-exchange badly:'
             FocusControl = BugRekey2Combo
           end
           object BugMaxPkt2Label: TLabel
             Left = 12
             Top = 188
-            Width = 176
+            Width = 166
             Height = 13
-            Caption = 'Ignores SSH-2 ma&ximum packet size:'
+            Caption = 'Ignores SSH ma&ximum packet size:'
             FocusControl = BugMaxPkt2Combo
           end
           object BugIgnore2Label: TLabel
             Left = 12
             Top = 20
-            Width = 169
+            Width = 159
             Height = 13
-            Caption = 'Chokes on SSH-&2 ignore messages:'
+            Caption = 'Chokes on SSH i&gnore messages:'
             FocusControl = BugIgnore2Combo
           end
           object BugWinAdjLabel: TLabel
             Left = 12
             Top = 44
-            Width = 212
+            Width = 202
             Height = 13
-            Caption = 'Chokes on WinSCP'#39's SSH-2 '#39'winadj'#39' requests'
+            Caption = 'Chokes on WinSCP'#39's SSH '#39'&winadj'#39' requests'
             FocusControl = BugWinAdjCombo
-          end
-          object BugIgnore1Combo: TComboBox
-            Left = 320
-            Top = 207
-            Width = 61
-            Height = 21
-            Style = csDropDownList
-            Anchors = [akTop, akRight]
-            TabOrder = 8
-            OnChange = DataChange
-          end
-          object BugPlainPW1Combo: TComboBox
-            Left = 320
-            Top = 231
-            Width = 61
-            Height = 21
-            Style = csDropDownList
-            Anchors = [akTop, akRight]
-            TabOrder = 9
-            OnChange = DataChange
-          end
-          object BugRSA1Combo: TComboBox
-            Left = 320
-            Top = 255
-            Width = 61
-            Height = 21
-            Style = csDropDownList
-            Anchors = [akTop, akRight]
-            TabOrder = 10
-            OnChange = DataChange
           end
           object BugHMAC2Combo: TComboBox
             Left = 320

@@ -9,7 +9,6 @@ int is_ssh(Plug * plug);
 int get_ssh_version(Backend * be);
 Seat * get_ssh_seat(Plug * plug);
 #ifdef WINSCP_SSH
-const ssh_cipher * get_cipher(Backend * be);
 const ssh_cipher * get_cscipher(Backend * be);
 const ssh_cipher * get_sccipher(Backend * be);
 #endif

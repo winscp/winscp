@@ -17,7 +17,6 @@ enum TFSProtocol { fsSCPonly = 0, fsSFTP = 1, fsSFTPonly = 2, fsFTP = 5, fsWebDA
 #define FSPROTOCOL_COUNT (fsS3+1)
 extern const wchar_t * ProxyMethodNames;
 enum TProxyMethod { pmNone, pmSocks4, pmSocks5, pmHTTP, pmTelnet, pmCmd };
-enum TSshProt { ssh1only, ssh1deprecated, ssh2deprecated, ssh2only };
 enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGEx, kexRSA, kexECDH };
 #define KEX_COUNT (kexECDH+1)
 enum THostKey { hkWarn, hkRSA, hkDSA, hkECDSA, hkED25519, hkED448, hkMax };
@@ -25,7 +24,7 @@ enum THostKey { hkWarn, hkRSA, hkDSA, hkECDSA, hkED25519, hkED448, hkMax };
 enum TGssLib { gssGssApi32, gssSspi, gssCustom };
 #define GSSLIB_COUNT (gssCustom+1)
 // names have to match PuTTY registry entries (see settings.c)
-enum TSshBug { sbIgnore1, sbPlainPW1, sbRSA1, sbHMAC2, sbDeriveKey2, sbRSAPad2,
+enum TSshBug { sbHMAC2, sbDeriveKey2, sbRSAPad2,
   sbPKSessID2, sbRekey2, sbMaxPkt2, sbIgnore2, sbOldGex2, sbWinAdj, sbChanReq };
 #define BUG_COUNT (sbChanReq+1)
 enum TSftpBug { sbSymlink, sbSignedTS };
@@ -114,7 +113,6 @@ private:
   bool FTryAgent;
   bool FAgentFwd;
   UnicodeString FListingCommand;
-  bool FAuthTIS;
   bool FAuthKI;
   bool FAuthKIPassword;
   bool FAuthGSSAPI;
@@ -122,7 +120,6 @@ private:
   bool FGSSAPIFwdTGT;
   bool FChangeUsername;
   bool FCompression;
-  TSshProt FSshProt;
   bool FSsh2DES;
   bool FSshNoUserAuth;
   TCipher FCiphers[CIPHER_COUNT];
@@ -263,7 +260,6 @@ private:
   void __fastcall SetPingInterval(int value);
   void __fastcall SetTryAgent(bool value);
   void __fastcall SetAgentFwd(bool value);
-  void __fastcall SetAuthTIS(bool value);
   void __fastcall SetAuthKI(bool value);
   void __fastcall SetAuthKIPassword(bool value);
   void __fastcall SetAuthGSSAPI(bool value);
@@ -271,7 +267,6 @@ private:
   void __fastcall SetGSSAPIFwdTGT(bool value);
   void __fastcall SetChangeUsername(bool value);
   void __fastcall SetCompression(bool value);
-  void __fastcall SetSshProt(TSshProt value);
   void __fastcall SetSsh2DES(bool value);
   void __fastcall SetSshNoUserAuth(bool value);
   void __fastcall SetCipher(int Index, TCipher value);
@@ -334,7 +329,6 @@ private:
   void __fastcall SetSourceAddress(const UnicodeString & value);
   void __fastcall SetProtocolFeatures(const UnicodeString & value);
   void __fastcall SetSshSimple(bool value);
-  UnicodeString __fastcall GetSshProtStr();
   bool __fastcall GetUsesSsh();
   void __fastcall SetCipherList(UnicodeString value);
   UnicodeString __fastcall GetCipherList() const;
@@ -555,7 +549,6 @@ public:
   __property bool TryAgent  = { read=FTryAgent, write=SetTryAgent };
   __property bool AgentFwd  = { read=FAgentFwd, write=SetAgentFwd };
   __property UnicodeString ListingCommand = { read = FListingCommand, write = SetListingCommand };
-  __property bool AuthTIS  = { read=FAuthTIS, write=SetAuthTIS };
   __property bool AuthKI  = { read=FAuthKI, write=SetAuthKI };
   __property bool AuthKIPassword  = { read=FAuthKIPassword, write=SetAuthKIPassword };
   __property bool AuthGSSAPI  = { read=FAuthGSSAPI, write=SetAuthGSSAPI };
@@ -563,7 +556,6 @@ public:
   __property bool GSSAPIFwdTGT = { read=FGSSAPIFwdTGT, write=SetGSSAPIFwdTGT };
   __property bool ChangeUsername  = { read=FChangeUsername, write=SetChangeUsername };
   __property bool Compression  = { read=FCompression, write=SetCompression };
-  __property TSshProt SshProt  = { read=FSshProt, write=SetSshProt };
   __property bool UsesSsh = { read = GetUsesSsh };
   __property bool Ssh2DES  = { read=FSsh2DES, write=SetSsh2DES };
   __property bool SshNoUserAuth  = { read=FSshNoUserAuth, write=SetSshNoUserAuth };
@@ -618,7 +610,6 @@ public:
   __property UnicodeString SourceAddress = { read=FSourceAddress, write=SetSourceAddress };
   __property UnicodeString ProtocolFeatures = { read=FProtocolFeatures, write=SetProtocolFeatures };
   __property bool SshSimple  = { read=FSshSimple, write=SetSshSimple };
-  __property UnicodeString SshProtStr  = { read=GetSshProtStr };
   __property UnicodeString CipherList  = { read=GetCipherList, write=SetCipherList };
   __property UnicodeString KexList  = { read=GetKexList, write=SetKexList };
   __property UnicodeString HostKeyList  = { read=GetHostKeyList, write=SetHostKeyList };

@@ -45,7 +45,6 @@ private:
   bool FStoredPasswordTried;
   bool FStoredPasswordTriedForKI;
   bool FStoredPassphraseTried;
-  int FSshVersion;
   bool FOpened;
   bool FClosed;
   int FWaiting;
