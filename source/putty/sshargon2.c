@@ -11,10 +11,13 @@
 
 #include <assert.h>
 
+#ifndef WINSCP_VS
 #include "putty.h"
+#endif
 #include "ssh.h"
 #include "marshal.h"
 
+#ifndef WINSCP_VS
 /* ----------------------------------------------------------------------
  * Argon2 uses data marshalling rules similar to SSH but with 32-bit integers
  * stored little-endian. Start with some local BinarySink routines for storing
@@ -92,6 +95,7 @@ strbuf *argon2_long_hash(unsigned length, ptrlen data)
     return out;
     } // WINSCP
 }
+#endif
 
 /* ----------------------------------------------------------------------
  * Argon2's own mixing function G, which operates on 1Kb blocks of data.
@@ -102,11 +106,12 @@ strbuf *argon2_long_hash(unsigned length, ptrlen data)
  * could perfectly well regard G as a 1Kb->1Kb function.
  */
 
+#ifdef WINSCP_VS
 static inline uint64_t ror(uint64_t x, unsigned rotation)
 {
-#pragma option push -w-ngu // WINSCP
+    #pragma warning(suppress: 4068)
+    #pragma warning(suppress: 4146)
     unsigned lshift = 63 & -rotation, rshift = 63 & rotation;
-#pragma option pop // WINSCP
     return (x << lshift) | (x >> rshift);
 }
 
@@ -155,12 +160,16 @@ static inline void P(uint64_t *out, unsigned outstep,
     GB(out+1*outstep+0, out+3*outstep+1, out+4*outstep+0, out+6*outstep+1);
     GB(out+1*outstep+1, out+2*outstep+0, out+4*outstep+1, out+7*outstep+0);
 }
+#endif
 
 /* The full G function, taking input blocks X and Y. The result of G is most
  * often XORed into an existing output block, so this API is designed with
  * that in mind: the mixing function's output is always XORed into whatever
  * 1Kb of data is already at 'out'. */
-static void G_xor(uint8_t *out, const uint8_t *X, const uint8_t *Y)
+/*static*/ void G_xor(uint8_t *out, const uint8_t *X, const uint8_t *Y)
+#ifndef WINSCP_VS
+;
+#else
 {
     uint64_t R[128], Q[128], Z[128];
 
@@ -182,7 +191,12 @@ static void G_xor(uint8_t *out, const uint8_t *X, const uint8_t *Y)
     smemclr(Q, sizeof(Q));
     smemclr(Z, sizeof(Z));
 }
+#endif
 
+struct blk { uint8_t data[1024]; };
+
+#ifndef WINSCP_VS
+void argon2_internal_vs(size_t jstart, size_t SL, size_t q, unsigned slice, bool d_mode, struct blk *B, size_t i, uint32_t p, struct blk * pin2i, size_t pass, size_t mprime, uint32_t t, uint32_t y, struct blk * ptmp2i, struct blk * pout2i);
 /* ----------------------------------------------------------------------
  * The main Argon2 function.
  */
@@ -217,7 +231,7 @@ static void argon2_internal(uint32_t p, uint32_t T, uint32_t m, uint32_t t,
     }
 
     { // WINSCP
-    struct blk { uint8_t data[1024]; };
+    // WINSCP struct blk { uint8_t data[1024]; };
 
     /*
      * Array of 1Kb blocks. The total size is (approximately) m, the
@@ -307,6 +321,15 @@ static void argon2_internal(uint32_t p, uint32_t T, uint32_t m, uint32_t t,
             size_t i; // WINSCP
             for (i = 0; i < p; i++) {
 
+                argon2_internal_vs(jstart, SL, q, slice, d_mode, B, i, p, &in2i, pass, mprime, t, y, &tmp2i, &out2i); // WINSCP
+
+#endif
+#ifdef WINSCP_VS
+void argon2_internal_vs(size_t jstart, size_t SL, size_t q, unsigned slice, bool d_mode, struct blk *B, size_t i, uint32_t p, struct blk * pin2i, size_t pass, size_t mprime, uint32_t t, uint32_t y, struct blk * ptmp2i, struct blk * pout2i)
+{
+#define in2i (*pin2i)
+#define tmp2i (*ptmp2i)
+#define out2i (*pout2i)
                 /* And within that segment, process the blocks from left to
                  * right, starting at 'jstart' (usually 0, but 2 in the first
                  * slice). */
@@ -486,6 +509,12 @@ static void argon2_internal(uint32_t p, uint32_t T, uint32_t m, uint32_t t,
                     } // WINSCP
                     } // WINSCP
                 }
+#undef in2i
+#undef tmp2i
+#undef out2i
+}
+#endif
+#ifndef WINSCP_VS
             }
 
             /* We've finished processing a slice. Reset jstart to 0. It will
@@ -554,7 +583,7 @@ void argon2_choose_passes(
     ptrlen P, ptrlen S, ptrlen K, ptrlen X,
     strbuf *out)
 {
-    unsigned long desired_time = (TICKSPERSEC * milliseconds) / 1000;
+    unsigned long desired_time = (TICKSPERSEC * milliseconds) / 1000 /*WINSCP*/ * 3;
 
     /*
      * We only need the time taken to be approximately right, so we
@@ -591,3 +620,4 @@ void argon2_choose_passes(
         } // WINSCP
     }
 }
+#endif

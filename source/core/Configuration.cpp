@@ -118,6 +118,7 @@ void __fastcall TConfiguration::Default()
   FMimeTypes = UnicodeString();
   FDontReloadMoreThanSessions = 1000;
   FScriptProgressFileNameLimit = 25;
+  FKeyVersion = 0;
   CollectUsage = FDefaultCollectUsage;
 
   FLogging = false;
@@ -253,6 +254,7 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(String,   MimeTypes); \
     KEY(Integer,  DontReloadMoreThanSessions); \
     KEY(Integer,  ScriptProgressFileNameLimit); \
+    KEY(Integer,  KeyVersion); \
     KEY(Bool,     CollectUsage); \
   ); \
   BLOCK(L"Logging", CANCREATE, \
