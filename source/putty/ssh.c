@@ -187,12 +187,13 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
      * connect_to_host().
      */
     assert(ssh->version == major_version);
+    assert(ssh->version == 2);
 
     old_bpp = ssh->bpp;
     ssh->remote_bugs = ssh_verstring_get_bugs(old_bpp);
 
     if (!ssh->bare_connection) {
-        if (ssh->version == 2) {
+        /*WINSCP if (ssh->version == 2)*/ {
             PacketProtocolLayer *userauth_layer, *transport_child_layer;
 
             /*
@@ -294,19 +295,7 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
                 ssh2_userauth_set_transport_layer(userauth_layer,
                                                   ssh->base_layer);
 
-        } else {
-
-            ssh->bpp = ssh1_bpp_new(ssh->logctx);
-            ssh_connect_bpp(ssh);
-
-            connection_layer = ssh1_connection_new(ssh, ssh->conf, &ssh->cl);
-            ssh_connect_ppl(ssh, connection_layer);
-
-            ssh->base_layer = ssh1_login_new(
-                ssh->conf, ssh->savedhost, ssh->savedport, connection_layer);
-            ssh_connect_ppl(ssh, ssh->base_layer);
-
-        }
+        } // WINSCP
 
     } else {
         ssh->bpp = ssh2_bare_bpp_new(ssh->logctx);
@@ -734,7 +723,7 @@ static char *connect_to_host(
     SockAddr *addr;
     const char *err;
     char *loghost;
-    int addressfamily, sshprot;
+    int addressfamily;
 
     ssh_hostport_setup(host, port, ssh->conf,
                        &ssh->savedhost, &ssh->savedport, &loghost);
@@ -811,15 +800,8 @@ static char *connect_to_host(
      * The SSH version number is always fixed (since we no longer support
      * fallback between versions), so set it now.
      */
-    sshprot = conf_get_int(ssh->conf, CONF_sshprot);
-    assert(sshprot == 0 || sshprot == 3);
-    if (sshprot == 0)
-        /* SSH-1 only */
-        ssh->version = 1;
-    if (sshprot == 3 || ssh->bare_connection) {
         /* SSH-2 only */
-        ssh->version = 2;
-    }
+        ssh->version = 2; // WINSCP
 
     /*
      * Set up the initial BPP that will do the version string
@@ -1294,12 +1276,6 @@ int get_ssh_version(Backend * be)
 Seat * get_ssh_seat(Plug * plug)
 {
   return container_of(plug, Ssh, plug)->seat;
-}
-
-const ssh_cipher * get_cipher(Backend * be)
-{
-  Ssh * ssh = container_of(be, Ssh, backend);
-  return ssh1_bpp_get_cipher(ssh->bpp);
 }
 
 const ssh_cipher * get_cscipher(Backend * be)

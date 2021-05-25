@@ -34,7 +34,6 @@ const UnicodeString CipherNames[CIPHER_COUNT] = {L"WARN", L"3des", L"blowfish", 
 const UnicodeString KexNames[KEX_COUNT] = {L"WARN", L"dh-group1-sha1", L"dh-group14-sha1", L"dh-gex-sha1", L"rsa", L"ecdh"};
 const UnicodeString HostKeyNames[HOSTKEY_COUNT] = {L"WARN", L"rsa", L"dsa", L"ecdsa", L"ed25519", L"ed448"};
 const UnicodeString GssLibNames[GSSLIB_COUNT] = {L"gssapi32", L"sspi", L"custom"};
-const wchar_t SshProtList[][10] = {L"1", L"1>2", L"2>1", L"2"};
 // Update also order in Ssh2CipherList()
 const TCipher DefaultCipherList[CIPHER_COUNT] =
   { cipAES, cipChaCha20, cipBlowfish, cip3DES, cipWarn, cipArcfour, cipDES };
@@ -129,7 +128,6 @@ void __fastcall TSessionData::DefaultSettings()
   Timeout = 15;
   TryAgent = true;
   AgentFwd = false;
-  AuthTIS = false;
   AuthKI = true;
   AuthKIPassword = true;
   AuthGSSAPI = true;
@@ -138,7 +136,6 @@ void __fastcall TSessionData::DefaultSettings()
   LogicalHostName = L"";
   ChangeUsername = false;
   Compression = false;
-  SshProt = ssh2only;
   Ssh2DES = false;
   SshNoUserAuth = false;
   for (int Index = 0; Index < CIPHER_COUNT; Index++)
@@ -338,11 +335,9 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(Timeout); \
   PROPERTY(TryAgent); \
   PROPERTY(AgentFwd); \
-  PROPERTY(AuthTIS); \
   PROPERTY(LogicalHostName); \
   PROPERTY(ChangeUsername); \
   PROPERTY(Compression); \
-  PROPERTY(SshProt); \
   PROPERTY(Ssh2DES); \
   PROPERTY(SshNoUserAuth); \
   PROPERTY(CipherList); \
@@ -661,7 +656,6 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   Timeout = Storage->ReadInteger(L"Timeout", Timeout);
   TryAgent = Storage->ReadBool(L"TryAgent", TryAgent);
   AgentFwd = Storage->ReadBool(L"AgentFwd", AgentFwd);
-  AuthTIS = Storage->ReadBool(L"AuthTIS", AuthTIS);
   AuthKI = Storage->ReadBool(L"AuthKI", AuthKI);
   AuthKIPassword = Storage->ReadBool(L"AuthKIPassword", AuthKIPassword);
   // Continue to use setting keys of previous kerberos implementation (vaclav tomec),
@@ -676,17 +670,6 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   LogicalHostName = Storage->ReadString(L"LogicalHostName", Storage->ReadString(L"GSSAPIServerRealm", Storage->ReadString(L"KerbPrincipal", LogicalHostName)));
   ChangeUsername = Storage->ReadBool(L"ChangeUsername", ChangeUsername);
   Compression = Storage->ReadBool(L"Compression", Compression);
-  TSshProt ASshProt = (TSshProt)Storage->ReadInteger(L"SshProt", SshProt);
-  // Old sessions may contain the values correponding to the fallbacks we used to allow; migrate them
-  if (ASshProt == ssh2deprecated)
-  {
-    ASshProt = ssh2only;
-  }
-  else if (ASshProt == ssh1deprecated)
-  {
-    ASshProt = ssh1only;
-  }
-  SshProt = ASshProt;
   Ssh2DES = Storage->ReadBool(L"Ssh2DES", Ssh2DES);
   SshNoUserAuth = Storage->ReadBool(L"SshNoUserAuth", SshNoUserAuth);
   CipherList = Storage->ReadString(L"Cipher", CipherList);
@@ -799,9 +782,6 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   #define READ_BUG(BUG) \
     Bug[sb##BUG] = TAutoSwitch(2 - Storage->ReadInteger(L"Bug"#BUG, \
       2 - Bug[sb##BUG]));
-  READ_BUG(Ignore1);
-  READ_BUG(PlainPW1);
-  READ_BUG(RSA1);
   READ_BUG(HMAC2);
   READ_BUG(DeriveKey2);
   READ_BUG(RSAPad2);
@@ -1040,7 +1020,6 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
   WRITE_DATA(Integer, Timeout);
   WRITE_DATA(Bool, TryAgent);
   WRITE_DATA(Bool, AgentFwd);
-  WRITE_DATA(Bool, AuthTIS);
   WRITE_DATA(Bool, AuthKI);
   WRITE_DATA(Bool, AuthKIPassword);
   WRITE_DATA(String, Note);
@@ -1065,7 +1044,6 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
 
   WRITE_DATA(Bool, ChangeUsername);
   WRITE_DATA(Bool, Compression);
-  WRITE_DATA(Integer, SshProt);
   WRITE_DATA(Bool, Ssh2DES);
   WRITE_DATA(Bool, SshNoUserAuth);
   WRITE_DATA_EX(String, L"Cipher", CipherList, );
@@ -1173,9 +1151,6 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
 
   #define WRITE_DATA_CONV_FUNC(X) (2 - (X))
   #define WRITE_BUG(BUG) WRITE_DATA_CONV(Integer, L"Bug" #BUG, Bug[sb##BUG]);
-  WRITE_BUG(Ignore1);
-  WRITE_BUG(PlainPW1);
-  WRITE_BUG(RSA1);
   WRITE_BUG(HMAC2);
   WRITE_BUG(DeriveKey2);
   WRITE_BUG(RSAPad2);
@@ -2653,11 +2628,6 @@ void __fastcall TSessionData::SetAgentFwd(bool value)
   SET_SESSION_PROPERTY(AgentFwd);
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::SetAuthTIS(bool value)
-{
-  SET_SESSION_PROPERTY(AuthTIS);
-}
-//---------------------------------------------------------------------
 void __fastcall TSessionData::SetAuthKI(bool value)
 {
   SET_SESSION_PROPERTY(AuthKI);
@@ -2693,11 +2663,6 @@ void __fastcall TSessionData::SetCompression(bool value)
   SET_SESSION_PROPERTY(Compression);
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::SetSshProt(TSshProt value)
-{
-  SET_SESSION_PROPERTY(SshProt);
-}
-//---------------------------------------------------------------------
 void __fastcall TSessionData::SetSsh2DES(bool value)
 {
   SET_SESSION_PROPERTY(Ssh2DES);
@@ -2706,11 +2671,6 @@ void __fastcall TSessionData::SetSsh2DES(bool value)
 void __fastcall TSessionData::SetSshNoUserAuth(bool value)
 {
   SET_SESSION_PROPERTY(SshNoUserAuth);
-}
-//---------------------------------------------------------------------
-UnicodeString __fastcall TSessionData::GetSshProtStr()
-{
-  return SshProtList[FSshProt];
 }
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::GetUsesSsh()
@@ -4346,7 +4306,6 @@ UnicodeString __fastcall TSessionData::ComposePath(
 void __fastcall TSessionData::DisableAuthentationsExceptPassword()
 {
   SshNoUserAuth = false;
-  AuthTIS = false;
   AuthKI = false;
   AuthKIPassword = false;
   AuthGSSAPI = false;

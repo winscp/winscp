@@ -177,7 +177,6 @@ const char *ssh_verstring_get_local(BinaryPacketProtocol *);
 int ssh_verstring_get_bugs(BinaryPacketProtocol *);
 
 #ifdef MPEXT
-const ssh_cipher * ssh1_bpp_get_cipher(BinaryPacketProtocol *bpp);
 const ssh_cipher * ssh2_bpp_get_cscipher(BinaryPacketProtocol *bpp);
 const ssh_cipher * ssh2_bpp_get_sccipher(BinaryPacketProtocol *bpp);
 const struct ssh_compressor * ssh2_bpp_get_cscomp(BinaryPacketProtocol *bpp);

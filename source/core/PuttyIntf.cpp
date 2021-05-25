@@ -956,11 +956,6 @@ UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const s
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall GetSsh1KeyType()
-{
-  return UnicodeString(ssh_rsa.cache_id);
-}
-//---------------------------------------------------------------------------
 UnicodeString __fastcall GetKeyTypeHuman(const UnicodeString & KeyType)
 {
   UnicodeString Result;

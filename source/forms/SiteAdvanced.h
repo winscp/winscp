@@ -29,7 +29,6 @@ __published:
   TPageControl *PageControl;
   TTabSheet *AdvancedSheet;
   TGroupBox *ProtocolGroup;
-  TLabel *Label37;
   TCheckBox *CompressionCheck;
   TTabSheet *EnvironmentSheet;
   TTabSheet *ScpSheet;
@@ -62,12 +61,6 @@ __published:
   TEdit *ProxyTelnetCommandEdit;
   TTabSheet *BugsSheet;
   TGroupBox *BugsGroupBox;
-  TLabel *BugIgnore1Label;
-  TComboBox *BugIgnore1Combo;
-  TLabel *BugPlainPW1Label;
-  TComboBox *BugPlainPW1Combo;
-  TLabel *BugRSA1Label;
-  TComboBox *BugRSA1Combo;
   TLabel *BugHMAC2Label;
   TComboBox *BugHMAC2Combo;
   TLabel *BugDeriveKey2Label;
@@ -76,7 +69,6 @@ __published:
   TComboBox *BugRSAPad2Combo;
   TTabSheet *AuthSheet;
   TGroupBox *AuthenticationGroup;
-  TCheckBox *AuthTISCheck;
   TCheckBox *AuthKICheck;
   TGroupBox *EncryptionGroup;
   TListBox *CipherListBox;
@@ -252,7 +244,6 @@ __published:
   TLabel *Label4;
   TFilenameEdit *TlsCertificateFileEdit;
   TCheckBox *TrimVMSVersionsCheck;
-  TComboBox *SshProtCombo2;
   TCheckBox *FollowDirectorySymlinksCheck;
   TImageList *ColorImageList120;
   TImageList *ColorImageList144;
@@ -371,7 +362,6 @@ private:
   TProxyMethod __fastcall GetProxyMethod();
   int __fastcall GetFtpProxyLogonType();
   void __fastcall UpdateNavigationTree();
-  TSshProt __fastcall GetSshProt();
   void __fastcall SessionColorChange(TColor Color);
   TTlsVersion __fastcall IndexToTlsVersion(int Index);
   int __fastcall TlsVersionToIndex(TTlsVersion TlsVersion);

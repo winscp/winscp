@@ -1895,7 +1895,7 @@ bool __fastcall TTerminalManager::UploadPublicKey(
     const UnicodeString AuthorizedKeysFile = L"authorized_keys";
     UnicodeString AuthorizedKeysFilePath = FORMAT(L"%s/%s", (SshFolder, AuthorizedKeysFile));
 
-    VerifyAndConvertKey(FileName, ssh2only, false);
+    VerifyAndConvertKey(FileName, false);
 
     UnicodeString Comment;
     UnicodeString Line = GetPublicKeyLine(FileName, Comment);

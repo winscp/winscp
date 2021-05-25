@@ -170,21 +170,6 @@
 			<BuildOrder>23</BuildOrder>
 			<BuildOrder>19</BuildOrder>
 		</CppCompile>
-		<CppCompile Include="putty\ssh1bpp.c">
-			<BuildOrder>53</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh1censor.c">
-			<BuildOrder>57</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh1connection.c">
-			<BuildOrder>64</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh1connection-client.c">
-			<BuildOrder>71</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\ssh1login.c">
-			<BuildOrder>65</BuildOrder>
-		</CppCompile>
 		<CppCompile Include="putty\ssh2bpp.c">
 			<BuildOrder>54</BuildOrder>
 		</CppCompile>
@@ -244,14 +229,6 @@
 		</CppCompile>
 		<CppCompile Include="putty\sshcommon.c">
 			<BuildOrder>62</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\sshcrc.c">
-			<BuildOrder>38</BuildOrder>
-			<BuildOrder>36</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\sshcrcda.c">
-			<BuildOrder>41</BuildOrder>
-			<BuildOrder>35</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\sshdes.c">
 			<BuildOrder>44</BuildOrder>

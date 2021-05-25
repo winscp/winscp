@@ -1285,8 +1285,7 @@ static void __fastcall ConvertKey(UnicodeString & FileName, TKeyType Type)
   }
 }
 //---------------------------------------------------------------------------
-static void __fastcall DoVerifyKey(
-  UnicodeString & FileName, TSshProt SshProt, bool Convert, bool CanIgnore)
+static void __fastcall DoVerifyKey(UnicodeString & FileName, bool Convert, bool CanIgnore)
 {
   if (!FileName.Trim().IsEmpty())
   {
@@ -1330,14 +1329,7 @@ static void __fastcall DoVerifyKey(
         break;
 
       case ktSSH1:
-      case ktSSH2:
-        if ((Type == ktSSH1) != (SshProt == ssh1only))
-        {
-          Message =
-            MainInstructions(
-              FMTLOAD(KEY_TYPE_DIFFERENT_SSH,
-                (FileName, (Type == ktSSH1 ? L"SSH-1" : L"PuTTY SSH-2"))));
-        }
+        Message = MainInstructions(LoadStr(KEY_TYPE_SSH1));
         break;
 
       case ktSSH1Public:
@@ -1375,14 +1367,15 @@ static void __fastcall DoVerifyKey(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall VerifyAndConvertKey(UnicodeString & FileName, TSshProt SshProt, bool CanIgnore)
+void __fastcall VerifyAndConvertKey(UnicodeString & FileName, bool CanIgnore)
 {
-  DoVerifyKey(FileName, SshProt, true, CanIgnore);
+  DoVerifyKey(FileName, true, CanIgnore);
 }
 //---------------------------------------------------------------------------
-void __fastcall VerifyKey(UnicodeString FileName, TSshProt SshProt)
+void __fastcall VerifyKey(const UnicodeString & FileName)
 {
-  DoVerifyKey(FileName, SshProt, false, true);
+  UnicodeString AFileName(FileName);
+  DoVerifyKey(AFileName, false, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall VerifyCertificate(const UnicodeString & FileName)

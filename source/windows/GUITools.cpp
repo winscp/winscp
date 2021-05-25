@@ -229,8 +229,7 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
           {
             AddToList(PuttyParams, L"-C", L" ");
           }
-          AddToList(PuttyParams,
-            ((SessionData->SshProt == ssh1only || SessionData->SshProt == ssh1deprecated) ? L"-1" : L"-2"), L" ");
+          AddToList(PuttyParams, L"-2", L" ");
           if (!SessionData->LogicalHostName.IsEmpty())
           {
             AddToList(PuttyParams, FORMAT(L"-loghost \"%s\"", (SessionData->LogicalHostName)), L" ");

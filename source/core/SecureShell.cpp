@@ -123,27 +123,16 @@ inline void __fastcall TSecureShell::UpdateSessionInfo()
 {
   if (!FSessionInfoValid)
   {
-    FSshVersion = get_ssh_version(FBackendHandle);
+    DebugAssert(get_ssh_version(FBackendHandle) == 2);
     FSessionInfo.ProtocolBaseName = L"SSH";
     FSessionInfo.ProtocolName =
       FORMAT(L"%s-%d", (FSessionInfo.ProtocolBaseName, get_ssh_version(FBackendHandle)));
     FSessionInfo.SecurityProtocolName = FSessionInfo.ProtocolName;
 
-    if (FSshVersion == 1)
-    {
-      FSessionInfo.CSCipher = GetCipherName(get_cipher(FBackendHandle));
-      FSessionInfo.SCCipher = FSessionInfo.CSCipher;
-      // Retrieval of compression is not implemented for SSH-1
-      FSessionInfo.CSCompression = UnicodeString();
-      FSessionInfo.SCCompression = UnicodeString();
-    }
-    else
-    {
-      FSessionInfo.CSCipher = GetCipherName(get_cscipher(FBackendHandle));
-      FSessionInfo.SCCipher = GetCipherName(get_sccipher(FBackendHandle));
-      FSessionInfo.CSCompression = GetCompressorName(get_cscomp(FBackendHandle));
-      FSessionInfo.SCCompression = GetDecompressorName(get_sccomp(FBackendHandle));
-    }
+    FSessionInfo.CSCipher = GetCipherName(get_cscipher(FBackendHandle));
+    FSessionInfo.SCCipher = GetCipherName(get_sccipher(FBackendHandle));
+    FSessionInfo.CSCompression = GetCompressorName(get_cscomp(FBackendHandle));
+    FSessionInfo.SCCompression = GetDecompressorName(get_sccomp(FBackendHandle));
 
     FSessionInfoValid = true;
   }
@@ -259,10 +248,8 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   conf_set_filename(conf, CONF_keyfile, KeyFileFileName);
   filename_free(KeyFileFileName);
 
-  conf_set_int(conf, CONF_sshprot, Data->SshProt);
   conf_set_bool(conf, CONF_ssh2_des_cbc, Data->Ssh2DES);
   conf_set_bool(conf, CONF_ssh_no_userauth, Data->SshNoUserAuth);
-  conf_set_bool(conf, CONF_try_tis_auth, Data->AuthTIS);
   conf_set_bool(conf, CONF_try_ki_auth, Data->AuthKI);
   conf_set_bool(conf, CONF_try_gssapi_auth, Data->AuthGSSAPI);
   conf_set_bool(conf, CONF_try_gssapi_kex, Data->AuthGSSAPIKEX);
@@ -285,9 +272,6 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   conf_set_int(conf, CONF_proxy_dns, Data->ProxyDNS);
   conf_set_bool(conf, CONF_even_proxy_localhost, Data->ProxyLocalhost);
 
-  conf_set_int(conf, CONF_sshbug_ignore1, Data->Bug[sbIgnore1]);
-  conf_set_int(conf, CONF_sshbug_plainpw1, Data->Bug[sbPlainPW1]);
-  conf_set_int(conf, CONF_sshbug_rsa1, Data->Bug[sbRSA1]);
   conf_set_int(conf, CONF_sshbug_hmac2, Data->Bug[sbHMAC2]);
   conf_set_int(conf, CONF_sshbug_derivekey2, Data->Bug[sbDeriveKey2]);
   conf_set_int(conf, CONF_sshbug_rsapad2, Data->Bug[sbRSAPad2]);
@@ -2176,14 +2160,7 @@ unsigned long __fastcall TSecureShell::MaxPacketSize()
     UpdateSessionInfo();
   }
 
-  if (FSshVersion == 1)
-  {
-    return 0;
-  }
-  else
-  {
-    return winscp_query(FBackendHandle, WINSCP_QUERY_REMMAXPKT);
-  }
+  return winscp_query(FBackendHandle, WINSCP_QUERY_REMMAXPKT);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TSecureShell::FormatKeyStr(UnicodeString KeyStr)
@@ -2416,16 +2393,8 @@ UnicodeString TSecureShell::StoreHostKey(
 void TSecureShell::ParseFingerprint(const UnicodeString & Fingerprint, UnicodeString & SignKeyType, UnicodeString & Hash)
 {
   UnicodeString Buf = Fingerprint;
-  UnicodeString SignKeyAlg, SignKeySize;
-  if (get_ssh_version(FBackendHandle) == 1)
-  {
-    SignKeyAlg = GetSsh1KeyType();
-  }
-  else
-  {
-    SignKeyAlg = CutToChar(Buf, L' ', false);
-  }
-  SignKeySize = CutToChar(Buf, L' ', false);
+  UnicodeString SignKeyAlg = CutToChar(Buf, L' ', false);
+  UnicodeString SignKeySize = CutToChar(Buf, L' ', false);
   SignKeyType = SignKeyAlg + L' ' + SignKeySize;
   Hash = Buf;
 }
@@ -2448,21 +2417,16 @@ void __fastcall TSecureShell::VerifyHostKey(
 
   UnicodeString SignKeyType, MD5, SHA256;
   ParseFingerprint(AFingerprintMD5, SignKeyType, MD5);
-  if (get_ssh_version(FBackendHandle) == 1)
+
+  DebugAssert(get_ssh_version(FBackendHandle) == 2);
+  UnicodeString SignKeyTypeSHA256;
+  ParseFingerprint(AFingerprintSHA256, SignKeyTypeSHA256, SHA256);
+  DebugAssert(SignKeyTypeSHA256 == SignKeyType);
+  if (DebugAlwaysTrue(StartsText(L"SHA256:", SHA256)))
   {
-    DebugAssert(AFingerprintSHA256.IsEmpty());
-    SHA256 = L"-";
+    CutToChar(SHA256, L':', false);
   }
-  else
-  {
-    UnicodeString SignKeyTypeSHA256;
-    ParseFingerprint(AFingerprintSHA256, SignKeyTypeSHA256, SHA256);
-    DebugAssert(SignKeyTypeSHA256 == SignKeyType);
-    if (DebugAlwaysTrue(StartsText(L"SHA256:", SHA256)))
-    {
-      CutToChar(SHA256, L':', false);
-    }
-  }
+
   UnicodeString FingerprintMD5 = SignKeyType + L' ' + MD5;
   DebugAssert(AFingerprintMD5 == FingerprintMD5);
   UnicodeString FingerprintSHA256 = SignKeyType + L' ' + SHA256;
@@ -2755,14 +2719,7 @@ void __fastcall TSecureShell::CollectUsage()
     Configuration->Usage->Inc(L"OpenedSessionsPrivateKey2");
   }
 
-  if (FSshVersion == 1)
-  {
-    Configuration->Usage->Inc(L"OpenedSessionsSSH1");
-  }
-  else if (FSshVersion == 2)
-  {
-    Configuration->Usage->Inc(L"OpenedSessionsSSH2");
-  }
+  Configuration->Usage->Inc(L"OpenedSessionsSSH2");
 
   if (SshImplementation == sshiOpenSSH)
   {
