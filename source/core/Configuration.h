@@ -79,6 +79,7 @@ private:
   UnicodeString FMimeTypes;
   int FDontReloadMoreThanSessions;
   int FScriptProgressFileNameLimit;
+  int FKeyVersion;
 
   bool FDisablePasswordStoring;
   bool FForceBanners;
@@ -330,6 +331,7 @@ public:
   __property UnicodeString MimeTypes = { read = FMimeTypes, write = SetMimeTypes };
   __property int DontReloadMoreThanSessions = { read = FDontReloadMoreThanSessions, write = FDontReloadMoreThanSessions };
   __property int ScriptProgressFileNameLimit = { read = FScriptProgressFileNameLimit, write = FScriptProgressFileNameLimit };
+  __property int KeyVersion = { read = FKeyVersion, write = FKeyVersion };
 
   __property UnicodeString TimeFormat = { read = GetTimeFormat };
   __property TStorage Storage  = { read=GetStorage };

@@ -79,6 +79,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\putty\sshaes.c" />
+    <ClCompile Include="..\..\source\putty\sshargon2.c" />
     <ClCompile Include="..\..\source\putty\sshsh256.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

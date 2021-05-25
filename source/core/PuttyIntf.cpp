@@ -724,8 +724,10 @@ void SaveKey(TKeyType KeyType, const UnicodeString & FileName,
       case ktSSH2:
         {
           ppk_save_parameters Params = ppk_save_default_parameters;
-          // Other parameters are probably not relevant for version 2
-          Params.fmt_version = 2;
+          if (Configuration->KeyVersion != 0)
+          {
+            Params.fmt_version = Configuration->KeyVersion;
+          }
           if (!ppk_save_f(KeyFile, Ssh2Key, PassphrasePtr, &Params))
           {
             int Error = errno;

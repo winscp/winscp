@@ -2575,7 +2575,8 @@ int __fastcall KeyGen(TConsole * Console, TProgramParams * Params)
         throw Exception(LoadStr(KEYGEN_SSH1));
 
       case ktSSH2:
-        if (NewComment.IsEmpty() && !ChangePassphrase)
+        if (NewComment.IsEmpty() && !ChangePassphrase &&
+            (Configuration->KeyVersion == 0)) // We should better check for version change
         {
           throw Exception(LoadStr(KEYGEN_NO_ACTION));
         }
