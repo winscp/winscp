@@ -174,7 +174,7 @@ DECL_WINDOWS_FUNCTION(static, int, bind,
                       (SOCKET, const struct sockaddr FAR *, int));
 #ifdef MPEXT
 DECL_WINDOWS_FUNCTION(static, int, getsockopt,
-		      (SOCKET, int, int, char FAR *, int *));
+                      (SOCKET, int, int, char FAR *, int *));
 #endif
 DECL_WINDOWS_FUNCTION(static, int, setsockopt,
                       (SOCKET, int, int, const char FAR *, int));
@@ -487,9 +487,9 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
                 sfree(trimmed_host);
             }
             if (err == 0)
-	    {
+            {
                 ret->resolved = true;
-	    }	
+            }
         } else
 #endif
         {
@@ -520,11 +520,11 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
                 /* Are we in IPv4 fallback mode? */
                 /* We put the IPv4 address into the a variable so we can further-on use the IPv4 code... */
                 if (ret->ais->ai_family == AF_INET)
-		{
+                {
                     memcpy(&a,
                            (char *) &((SOCKADDR_IN *) ret->ais->
                                       ai_addr)->sin_addr, sizeof(a));
-		}
+                }
 
                 if (ret->ais->ai_canonname)
                     strncpy(realhost, ret->ais->ai_canonname, lenof(realhost));
@@ -924,7 +924,7 @@ static DWORD try_connect(NetSocket *sock,
 
     if (sock->s != INVALID_SOCKET) {
 #ifdef MPEXT
-	do_select(sock->plug, sock->s, false);
+        do_select(sock->plug, sock->s, false);
 #else
         do_select(sock->s, false);
 #endif
@@ -979,12 +979,12 @@ static DWORD try_connect(NetSocket *sock,
 
     if (sndbuf > 0)
     {
-	int rcvbuf = 4 * 1024 * 1024;
-	p_setsockopt(s, SOL_SOCKET, SO_SNDBUF, (void *) &sndbuf, sizeof(sndbuf));
+        int rcvbuf = 4 * 1024 * 1024;
+        p_setsockopt(s, SOL_SOCKET, SO_SNDBUF, (void *) &sndbuf, sizeof(sndbuf));
 
-	// For now we increase receive buffer, whenever send buffer is set.
-	// The size is not configurable. The constant taken from FZ.
-	p_setsockopt(s, SOL_SOCKET, SO_RCVBUF, (void*) &rcvbuf, sizeof(rcvbuf));
+        // For now we increase receive buffer, whenever send buffer is set.
+        // The size is not configurable. The constant taken from FZ.
+        p_setsockopt(s, SOL_SOCKET, SO_RCVBUF, (void*) &rcvbuf, sizeof(rcvbuf));
     }
 
     /*
@@ -1009,11 +1009,11 @@ static DWORD try_connect(NetSocket *sock,
 #endif
         {
             a.sin_family = AF_INET;
-	    if (srcaddr && srcaddr[0]) {
-	        a.sin_addr.s_addr = p_inet_addr(srcaddr);
-	    } else {
+            if (srcaddr && srcaddr[0]) {
+                a.sin_addr.s_addr = p_inet_addr(srcaddr);
+            } else {
                 a.sin_addr.s_addr = p_htonl(INADDR_ANY);
-	    }
+            }
             a.sin_port = p_htons(localport);
         }
 #ifndef NO_IPV6
@@ -1119,8 +1119,8 @@ static DWORD try_connect(NetSocket *sock,
          */
         if ( err != WSAEWOULDBLOCK ) {
 #ifdef MPEXT
-    // unselect on error
-    do_select(sock->plug, s, 0);
+            // unselect on error
+            do_select(sock->plug, s, 0);
 #endif
             sock->error = winsock_error_string(err);
             goto ret;
@@ -1149,9 +1149,9 @@ static DWORD try_connect(NetSocket *sock,
      * window, or an EventSelect on an event object. */
     errstr = do_select(sock->plug, s, 1);
     if (errstr) {
-	sock->error = errstr;
-	err = 1;
-	goto ret;
+        sock->error = errstr;
+        err = 1;
+        goto ret;
     }
 #endif
 
@@ -1176,11 +1176,11 @@ static DWORD try_connect(NetSocket *sock,
 Socket *sk_new(SockAddr *addr, int port, bool privport, bool oobinline,
                bool nodelay, bool keepalive, Plug *plug,
 #ifdef MPEXT
-	      int timeout,
-	      int sndbuf,
-	      const char *srcaddr
+              int timeout,
+              int sndbuf,
+              const char *srcaddr
 #endif
-	      )
+              )
 {
     NetSocket *ret;
     DWORD err;
@@ -1642,15 +1642,15 @@ void select_result(WPARAM wParam, LPARAM lParam)
             while (err && s->addr && sk_nextaddr(s->addr, &s->step)) {
                 err = try_connect(s
 #ifdef MPEXT
-		    , 0, 0, NULL
+                    , 0, 0, NULL
 #endif
-		);
+                );
             }
         }
         if (err != 0)
-	{
+        {
             plug_closing(s->plug, winsock_error_string(err), err, 0);
-	}
+        }
         return;
     }
 
@@ -1758,10 +1758,10 @@ void select_result(WPARAM wParam, LPARAM lParam)
                 if (ret)
                     plug_receive(s->plug, 0, buf, ret);
                 else
-		{
+                {
                     plug_closing(s->plug, NULL, 0, 0);
                 }
-	    }
+            }
         } while (ret > 0);
         return;
       case FD_ACCEPT: {
@@ -1875,7 +1875,7 @@ static void sk_net_set_frozen(Socket *sock, bool is_frozen)
     s->frozen = is_frozen;
     if (!is_frozen) {
 #ifdef MPEXT
-	do_select(s->plug, s->s, true);
+        do_select(s->plug, s->s, true);
 #else
         do_select(s->s, true);
 #endif
@@ -1895,7 +1895,7 @@ void socket_reselect_all(void)
     for (i = 0; (s = index234(sktree, i)) != NULL; i++) {
         if (!s->frozen)
 #ifdef MPEXT
-	    do_select(s->plug, s->s, true);
+            do_select(s->plug, s->s, true);
 #else
             do_select(s->s, true);
 #endif

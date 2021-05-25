@@ -163,7 +163,7 @@ Socket *sk_new(SockAddr *addr, int port, bool privport, bool oobinline,
               int sndbuf,
               const char *srcaddr
 #endif
-	      );
+              );
 
 Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
                        bool local_host_only, int address_family);

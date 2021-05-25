@@ -34,9 +34,9 @@
 
 #include "ssh.h"
 
-#define MAX_NR 14		       /* max no of rounds */
-#define MAX_NK 8		       /* max no of words in input key */
-#define MAX_NB 8		       /* max no of words in cipher blk */
+#define MAX_NR 14                      /* max no of rounds */
+#define MAX_NK 8                       /* max no of words in input key */
+#define MAX_NB 8                       /* max no of words in cipher blk */
 
 #define mulby2(x) ( ((x&0x7F) << 1) ^ (x & 0x80 ? 0x1B : 0) )
 
@@ -658,14 +658,14 @@ static const word32 D3[256] = {
  * Common macros in both the encryption and decryption routines.
  */
 #define ADD_ROUND_KEY_4 (block[0]^=*keysched++, block[1]^=*keysched++, \
-		         block[2]^=*keysched++, block[3]^=*keysched++)
+                         block[2]^=*keysched++, block[3]^=*keysched++)
 #define ADD_ROUND_KEY_6 (block[0]^=*keysched++, block[1]^=*keysched++, \
-		         block[2]^=*keysched++, block[3]^=*keysched++, \
-		         block[4]^=*keysched++, block[5]^=*keysched++)
+                         block[2]^=*keysched++, block[3]^=*keysched++, \
+                         block[4]^=*keysched++, block[5]^=*keysched++)
 #define ADD_ROUND_KEY_8 (block[0]^=*keysched++, block[1]^=*keysched++, \
-		         block[2]^=*keysched++, block[3]^=*keysched++, \
-		         block[4]^=*keysched++, block[5]^=*keysched++, \
-		         block[6]^=*keysched++, block[7]^=*keysched++)
+                         block[2]^=*keysched++, block[3]^=*keysched++, \
+                         block[4]^=*keysched++, block[5]^=*keysched++, \
+                         block[6]^=*keysched++, block[7]^=*keysched++)
 #define MOVEWORD(i) ( block[i] = newstate[i] )
 
 /*
@@ -673,13 +673,13 @@ static const word32 D3[256] = {
  * cores, for Nb=4,6,8.
  */
 #define MAKEWORD(i) ( newstate[i] = (E0[(block[i] >> 24) & 0xFF] ^ \
-				     E1[(block[(i+C1)%Nb] >> 16) & 0xFF] ^ \
-				     E2[(block[(i+C2)%Nb] >> 8) & 0xFF] ^ \
-				     E3[block[(i+C3)%Nb] & 0xFF]) )
+                                     E1[(block[(i+C1)%Nb] >> 16) & 0xFF] ^ \
+                                     E2[(block[(i+C2)%Nb] >> 8) & 0xFF] ^ \
+                                     E3[block[(i+C3)%Nb] & 0xFF]) )
 #define LASTWORD(i) ( newstate[i] = (Sbox[(block[i] >> 24) & 0xFF] << 24) | \
-			    (Sbox[(block[(i+C1)%Nb] >> 16) & 0xFF] << 16) | \
-			    (Sbox[(block[(i+C2)%Nb] >>  8) & 0xFF] <<  8) | \
-			    (Sbox[(block[(i+C3)%Nb]      ) & 0xFF]      ) )
+                            (Sbox[(block[(i+C1)%Nb] >> 16) & 0xFF] << 16) | \
+                            (Sbox[(block[(i+C2)%Nb] >>  8) & 0xFF] <<  8) | \
+                            (Sbox[(block[(i+C3)%Nb]      ) & 0xFF]      ) )
 
 /*
  * Core encrypt routines, expecting word32 inputs read big-endian
@@ -692,15 +692,15 @@ static void aes_encrypt_nb_4(AESContext * ctx, word32 * block)
     word32 *keysched = ctx->keysched;
     word32 newstate[4];
     for (i = 0; i < ctx->Nr - 1; i++) {
-	ADD_ROUND_KEY_4;
-	MAKEWORD(0);
-	MAKEWORD(1);
-	MAKEWORD(2);
-	MAKEWORD(3);
-	MOVEWORD(0);
-	MOVEWORD(1);
-	MOVEWORD(2);
-	MOVEWORD(3);
+        ADD_ROUND_KEY_4;
+        MAKEWORD(0);
+        MAKEWORD(1);
+        MAKEWORD(2);
+        MAKEWORD(3);
+        MOVEWORD(0);
+        MOVEWORD(1);
+        MOVEWORD(2);
+        MOVEWORD(3);
     }
     ADD_ROUND_KEY_4;
     LASTWORD(0);
@@ -720,19 +720,19 @@ static void aes_encrypt_nb_6(AESContext * ctx, word32 * block)
     word32 *keysched = ctx->keysched;
     word32 newstate[6];
     for (i = 0; i < ctx->Nr - 1; i++) {
-	ADD_ROUND_KEY_6;
-	MAKEWORD(0);
-	MAKEWORD(1);
-	MAKEWORD(2);
-	MAKEWORD(3);
-	MAKEWORD(4);
-	MAKEWORD(5);
-	MOVEWORD(0);
-	MOVEWORD(1);
-	MOVEWORD(2);
-	MOVEWORD(3);
-	MOVEWORD(4);
-	MOVEWORD(5);
+        ADD_ROUND_KEY_6;
+        MAKEWORD(0);
+        MAKEWORD(1);
+        MAKEWORD(2);
+        MAKEWORD(3);
+        MAKEWORD(4);
+        MAKEWORD(5);
+        MOVEWORD(0);
+        MOVEWORD(1);
+        MOVEWORD(2);
+        MOVEWORD(3);
+        MOVEWORD(4);
+        MOVEWORD(5);
     }
     ADD_ROUND_KEY_6;
     LASTWORD(0);
@@ -756,23 +756,23 @@ static void aes_encrypt_nb_8(AESContext * ctx, word32 * block)
     word32 *keysched = ctx->keysched;
     word32 newstate[8];
     for (i = 0; i < ctx->Nr - 1; i++) {
-	ADD_ROUND_KEY_8;
-	MAKEWORD(0);
-	MAKEWORD(1);
-	MAKEWORD(2);
-	MAKEWORD(3);
-	MAKEWORD(4);
-	MAKEWORD(5);
-	MAKEWORD(6);
-	MAKEWORD(7);
-	MOVEWORD(0);
-	MOVEWORD(1);
-	MOVEWORD(2);
-	MOVEWORD(3);
-	MOVEWORD(4);
-	MOVEWORD(5);
-	MOVEWORD(6);
-	MOVEWORD(7);
+        ADD_ROUND_KEY_8;
+        MAKEWORD(0);
+        MAKEWORD(1);
+        MAKEWORD(2);
+        MAKEWORD(3);
+        MAKEWORD(4);
+        MAKEWORD(5);
+        MAKEWORD(6);
+        MAKEWORD(7);
+        MOVEWORD(0);
+        MOVEWORD(1);
+        MOVEWORD(2);
+        MOVEWORD(3);
+        MOVEWORD(4);
+        MOVEWORD(5);
+        MOVEWORD(6);
+        MOVEWORD(7);
     }
     ADD_ROUND_KEY_8;
     LASTWORD(0);
@@ -802,13 +802,13 @@ static void aes_encrypt_nb_8(AESContext * ctx, word32 * block)
  * cores, for Nb=4,6,8.
  */
 #define MAKEWORD(i) ( newstate[i] = (D0[(block[i] >> 24) & 0xFF] ^ \
-				     D1[(block[(i+C1)%Nb] >> 16) & 0xFF] ^ \
-				     D2[(block[(i+C2)%Nb] >> 8) & 0xFF] ^ \
-				     D3[block[(i+C3)%Nb] & 0xFF]) )
+                                     D1[(block[(i+C1)%Nb] >> 16) & 0xFF] ^ \
+                                     D2[(block[(i+C2)%Nb] >> 8) & 0xFF] ^ \
+                                     D3[block[(i+C3)%Nb] & 0xFF]) )
 #define LASTWORD(i) (newstate[i] = (Sboxinv[(block[i] >> 24) & 0xFF] << 24) | \
-			   (Sboxinv[(block[(i+C1)%Nb] >> 16) & 0xFF] << 16) | \
-			   (Sboxinv[(block[(i+C2)%Nb] >>  8) & 0xFF] <<  8) | \
-			   (Sboxinv[(block[(i+C3)%Nb]      ) & 0xFF]      ) )
+                           (Sboxinv[(block[(i+C1)%Nb] >> 16) & 0xFF] << 16) | \
+                           (Sboxinv[(block[(i+C2)%Nb] >>  8) & 0xFF] <<  8) | \
+                           (Sboxinv[(block[(i+C3)%Nb]      ) & 0xFF]      ) )
 
 /*
  * Core decrypt routines, expecting word32 inputs read big-endian
@@ -821,15 +821,15 @@ static void aes_decrypt_nb_4(AESContext * ctx, word32 * block)
     word32 *keysched = ctx->invkeysched;
     word32 newstate[4];
     for (i = 0; i < ctx->Nr - 1; i++) {
-	ADD_ROUND_KEY_4;
-	MAKEWORD(0);
-	MAKEWORD(1);
-	MAKEWORD(2);
-	MAKEWORD(3);
-	MOVEWORD(0);
-	MOVEWORD(1);
-	MOVEWORD(2);
-	MOVEWORD(3);
+        ADD_ROUND_KEY_4;
+        MAKEWORD(0);
+        MAKEWORD(1);
+        MAKEWORD(2);
+        MAKEWORD(3);
+        MOVEWORD(0);
+        MOVEWORD(1);
+        MOVEWORD(2);
+        MOVEWORD(3);
     }
     ADD_ROUND_KEY_4;
     LASTWORD(0);
@@ -849,19 +849,19 @@ static void aes_decrypt_nb_6(AESContext * ctx, word32 * block)
     word32 *keysched = ctx->invkeysched;
     word32 newstate[6];
     for (i = 0; i < ctx->Nr - 1; i++) {
-	ADD_ROUND_KEY_6;
-	MAKEWORD(0);
-	MAKEWORD(1);
-	MAKEWORD(2);
-	MAKEWORD(3);
-	MAKEWORD(4);
-	MAKEWORD(5);
-	MOVEWORD(0);
-	MOVEWORD(1);
-	MOVEWORD(2);
-	MOVEWORD(3);
-	MOVEWORD(4);
-	MOVEWORD(5);
+        ADD_ROUND_KEY_6;
+        MAKEWORD(0);
+        MAKEWORD(1);
+        MAKEWORD(2);
+        MAKEWORD(3);
+        MAKEWORD(4);
+        MAKEWORD(5);
+        MOVEWORD(0);
+        MOVEWORD(1);
+        MOVEWORD(2);
+        MOVEWORD(3);
+        MOVEWORD(4);
+        MOVEWORD(5);
     }
     ADD_ROUND_KEY_6;
     LASTWORD(0);
@@ -885,23 +885,23 @@ static void aes_decrypt_nb_8(AESContext * ctx, word32 * block)
     word32 *keysched = ctx->invkeysched;
     word32 newstate[8];
     for (i = 0; i < ctx->Nr - 1; i++) {
-	ADD_ROUND_KEY_8;
-	MAKEWORD(0);
-	MAKEWORD(1);
-	MAKEWORD(2);
-	MAKEWORD(3);
-	MAKEWORD(4);
-	MAKEWORD(5);
-	MAKEWORD(6);
-	MAKEWORD(7);
-	MOVEWORD(0);
-	MOVEWORD(1);
-	MOVEWORD(2);
-	MOVEWORD(3);
-	MOVEWORD(4);
-	MOVEWORD(5);
-	MOVEWORD(6);
-	MOVEWORD(7);
+        ADD_ROUND_KEY_8;
+        MAKEWORD(0);
+        MAKEWORD(1);
+        MAKEWORD(2);
+        MAKEWORD(3);
+        MAKEWORD(4);
+        MAKEWORD(5);
+        MAKEWORD(6);
+        MAKEWORD(7);
+        MOVEWORD(0);
+        MOVEWORD(1);
+        MOVEWORD(2);
+        MOVEWORD(3);
+        MOVEWORD(4);
+        MOVEWORD(5);
+        MOVEWORD(6);
+        MOVEWORD(7);
     }
     ADD_ROUND_KEY_8;
     LASTWORD(0);
@@ -933,7 +933,7 @@ static void aes_decrypt_nb_8(AESContext * ctx, word32 * block)
  * (256-bit).
  */
 static void aes_setup(AESContext * ctx, int blocklen,
-	       unsigned char *key, int keylen)
+               unsigned char *key, int keylen)
 {
     int i, j, Nk, rconst;
 
@@ -951,73 +951,73 @@ static void aes_setup(AESContext * ctx, int blocklen,
      * Assign core-function pointers.
      */
     if (ctx->Nb == 8)
-	ctx->encrypt = aes_encrypt_nb_8, ctx->decrypt = aes_decrypt_nb_8;
+        ctx->encrypt = aes_encrypt_nb_8, ctx->decrypt = aes_decrypt_nb_8;
     else if (ctx->Nb == 6)
-	ctx->encrypt = aes_encrypt_nb_6, ctx->decrypt = aes_decrypt_nb_6;
+        ctx->encrypt = aes_encrypt_nb_6, ctx->decrypt = aes_decrypt_nb_6;
     else if (ctx->Nb == 4)
-	ctx->encrypt = aes_encrypt_nb_4, ctx->decrypt = aes_decrypt_nb_4;
+        ctx->encrypt = aes_encrypt_nb_4, ctx->decrypt = aes_decrypt_nb_4;
 
     /*
      * Now do the key setup itself.
      */
     rconst = 1;
     for (i = 0; i < (ctx->Nr + 1) * ctx->Nb; i++) {
-	if (i < Nk)
-	    ctx->keysched[i] = GET_32BIT_MSB_FIRST(key + 4 * i);
-	else {
-	    word32 temp = ctx->keysched[i - 1];
-	    if (i % Nk == 0) {
-		int a, b, c, d;
-		a = (temp >> 16) & 0xFF;
-		b = (temp >> 8) & 0xFF;
-		c = (temp >> 0) & 0xFF;
-		d = (temp >> 24) & 0xFF;
-		temp = Sbox[a] ^ rconst;
-		temp = (temp << 8) | Sbox[b];
-		temp = (temp << 8) | Sbox[c];
-		temp = (temp << 8) | Sbox[d];
-		rconst = mulby2(rconst);
-	    } else if (i % Nk == 4 && Nk > 6) {
-		int a, b, c, d;
-		a = (temp >> 24) & 0xFF;
-		b = (temp >> 16) & 0xFF;
-		c = (temp >> 8) & 0xFF;
-		d = (temp >> 0) & 0xFF;
-		temp = Sbox[a];
-		temp = (temp << 8) | Sbox[b];
-		temp = (temp << 8) | Sbox[c];
-		temp = (temp << 8) | Sbox[d];
-	    }
-	    ctx->keysched[i] = ctx->keysched[i - Nk] ^ temp;
-	}
+        if (i < Nk)
+            ctx->keysched[i] = GET_32BIT_MSB_FIRST(key + 4 * i);
+        else {
+            word32 temp = ctx->keysched[i - 1];
+            if (i % Nk == 0) {
+                int a, b, c, d;
+                a = (temp >> 16) & 0xFF;
+                b = (temp >> 8) & 0xFF;
+                c = (temp >> 0) & 0xFF;
+                d = (temp >> 24) & 0xFF;
+                temp = Sbox[a] ^ rconst;
+                temp = (temp << 8) | Sbox[b];
+                temp = (temp << 8) | Sbox[c];
+                temp = (temp << 8) | Sbox[d];
+                rconst = mulby2(rconst);
+            } else if (i % Nk == 4 && Nk > 6) {
+                int a, b, c, d;
+                a = (temp >> 24) & 0xFF;
+                b = (temp >> 16) & 0xFF;
+                c = (temp >> 8) & 0xFF;
+                d = (temp >> 0) & 0xFF;
+                temp = Sbox[a];
+                temp = (temp << 8) | Sbox[b];
+                temp = (temp << 8) | Sbox[c];
+                temp = (temp << 8) | Sbox[d];
+            }
+            ctx->keysched[i] = ctx->keysched[i - Nk] ^ temp;
+        }
     }
 
     /*
      * Now prepare the modified keys for the inverse cipher.
      */
     for (i = 0; i <= ctx->Nr; i++) {
-	for (j = 0; j < ctx->Nb; j++) {
-	    word32 temp;
-	    temp = ctx->keysched[(ctx->Nr - i) * ctx->Nb + j];
-	    if (i != 0 && i != ctx->Nr) {
-		/*
-		 * Perform the InvMixColumn operation on i. The D
-		 * tables give the result of InvMixColumn applied
-		 * to Sboxinv on individual bytes, so we should
-		 * compose Sbox with the D tables for this.
-		 */
-		int a, b, c, d;
-		a = (temp >> 24) & 0xFF;
-		b = (temp >> 16) & 0xFF;
-		c = (temp >> 8) & 0xFF;
-		d = (temp >> 0) & 0xFF;
-		temp = D0[Sbox[a]];
-		temp ^= D1[Sbox[b]];
-		temp ^= D2[Sbox[c]];
-		temp ^= D3[Sbox[d]];
-	    }
-	    ctx->invkeysched[i * ctx->Nb + j] = temp;
-	}
+        for (j = 0; j < ctx->Nb; j++) {
+            word32 temp;
+            temp = ctx->keysched[(ctx->Nr - i) * ctx->Nb + j];
+            if (i != 0 && i != ctx->Nr) {
+                /*
+                 * Perform the InvMixColumn operation on i. The D
+                 * tables give the result of InvMixColumn applied
+                 * to Sboxinv on individual bytes, so we should
+                 * compose Sbox with the D tables for this.
+                 */
+                int a, b, c, d;
+                a = (temp >> 24) & 0xFF;
+                b = (temp >> 16) & 0xFF;
+                c = (temp >> 8) & 0xFF;
+                d = (temp >> 0) & 0xFF;
+                temp = D0[Sbox[a]];
+                temp ^= D1[Sbox[b]];
+                temp ^= D2[Sbox[c]];
+                temp ^= D3[Sbox[d]];
+            }
+            ctx->invkeysched[i * ctx->Nb + j] = temp;
+        }
     }
 }
 

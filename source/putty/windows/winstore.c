@@ -342,7 +342,7 @@ static void hostkey_regname(strbuf *sb, const char *hostname,
 
 #ifdef MPEXT
 int retrieve_host_key(const char *hostname, int port,
-		    const char *keytype, char *key, int maxlen)
+                    const char *keytype, char *key, int maxlen)
 #else
 int verify_host_key(const char *hostname, int port,
                     const char *keytype, const char *key)
