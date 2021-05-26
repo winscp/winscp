@@ -1887,18 +1887,7 @@ bool __fastcall TTerminalManager::UploadPublicKey(
     Configuration->Usage->Inc(L"PublicKeyInstallation");
     FileName = OpenDialog->FileName;
 
-    bool AutoReadDirectory;
-    bool ExceptionOnFail;
-    UnicodeString TemporaryDir;
-
-    const UnicodeString SshFolder = L".ssh";
-    const UnicodeString AuthorizedKeysFile = L"authorized_keys";
-    UnicodeString AuthorizedKeysFilePath = FORMAT(L"%s/%s", (SshFolder, AuthorizedKeysFile));
-
     VerifyAndConvertKey(FileName, false);
-
-    UnicodeString Comment;
-    UnicodeString Line = GetPublicKeyLine(FileName, Comment);
 
     bool AdHocTerminal = (Terminal == NULL);
     std::unique_ptr<TTerminal> TerminalOwner;
@@ -1926,8 +1915,16 @@ bool __fastcall TTerminalManager::UploadPublicKey(
     bool Installed = false;
     bool WrongRights = false;
 
-    AutoReadDirectory = Terminal->AutoReadDirectory;
-    ExceptionOnFail = Terminal->ExceptionOnFail;
+    UnicodeString TemporaryDir;
+    bool AutoReadDirectory = Terminal->AutoReadDirectory;
+    bool ExceptionOnFail = Terminal->ExceptionOnFail;
+
+    const UnicodeString SshFolder = L".ssh";
+    const UnicodeString AuthorizedKeysFile = L"authorized_keys";
+    UnicodeString AuthorizedKeysFilePath = FORMAT(L"%s/%s", (SshFolder, AuthorizedKeysFile));
+
+    UnicodeString Comment;
+    UnicodeString Line = GetPublicKeyLine(FileName, Comment);
 
     try
     {
