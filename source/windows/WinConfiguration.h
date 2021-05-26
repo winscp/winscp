@@ -629,7 +629,7 @@ public:
   virtual void __fastcall Default();
   void __fastcall ClearTemporaryLoginData();
   virtual THierarchicalStorage * CreateScpStorage(bool & SessionList);
-  UnicodeString __fastcall TemporaryDir(bool Mask = false);
+  virtual UnicodeString TemporaryDir(bool Mask = false);
   TStrings * __fastcall FindTemporaryFolders();
   bool __fastcall AnyTemporaryFolders();
   void __fastcall CleanupTemporaryFolders();

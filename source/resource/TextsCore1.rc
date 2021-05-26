@@ -247,6 +247,7 @@ BEGIN
   STREAM_READ_ERROR, "Error reading input stream."
   S3_CONFIG_ERROR, "Error reading AWS configuration parameter %s"
   TIMEOUT_ERROR, "Timeout waiting for server to respond."
+  CREATE_TEMP_DIR_ERROR, "Cannot create temporary directory '%s'. You may change root directory to store temporary files in Preferences."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"
@@ -456,6 +457,8 @@ BEGIN
   COPY_INFO_DONT_ENCRYPT_NEW_FILES, "Do not encrypt new files"
   COPY_INFO_EXCLUDE_HIDDEN_FILES, "Exclude hidden files"
   COPY_INFO_EXCLUDE_EMPTY_DIRS, "Exclude empty directories"
+  PUBLIC_KEY_UPLOADED, "**Public key \"%s\" was installed.**\n\nYou can now login to the server using the key pair."
+  PUBLIC_KEY_PERMISSIONS, "Though potentially wrong permissions of \"%s\" file and/or its parent folder were detected. Please check them."
 
   CORE_VARIABLE_STRINGS, "CORE_VARIABLE"
   PUTTY_BASED_ON, "SSH and SCP code based on PuTTY %s"

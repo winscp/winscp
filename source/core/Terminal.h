@@ -487,6 +487,7 @@ protected:
   void __fastcall UpdateTargetAttrs(
     const UnicodeString & DestFullName, const TRemoteFile * File, const TCopyParamType * CopyParam, int Attrs);
   void __fastcall UpdateTargetTime(HANDLE Handle, TDateTime Modification, TDSTMode DSTMode);
+  TRemoteFile * CheckRights(const UnicodeString & EntryType, const UnicodeString & FileName, bool & WrongRights);
 
   UnicodeString __fastcall EncryptFileName(const UnicodeString & Path, bool EncryptNewFiles);
   UnicodeString __fastcall DecryptFileName(const UnicodeString & Path, bool DecryptFullPath, bool DontCache);
@@ -607,6 +608,7 @@ public:
   TTerminal * __fastcall CreateSecondarySession(const UnicodeString & Name, TSessionData * SessionData);
   void __fastcall FillSessionDataForCode(TSessionData * Data);
   void __fastcall UpdateSessionCredentials(TSessionData * Data);
+  UnicodeString UploadPublicKey(const UnicodeString & FileName);
 
   const TSessionInfo & __fastcall GetSessionInfo();
   const TFileSystemInfo & __fastcall GetFileSystemInfo(bool Retrieve = false);
