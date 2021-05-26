@@ -2456,7 +2456,7 @@ UnicodeString __fastcall TWinConfiguration::ExpandedTemporaryDirectory()
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TWinConfiguration::TemporaryDir(bool Mask)
+UnicodeString TWinConfiguration::TemporaryDir(bool Mask)
 {
   return UniqTempDir(ExpandedTemporaryDirectory(), L"scp", Mask);
 }

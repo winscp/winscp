@@ -182,8 +182,6 @@ private:
   void __fastcall SetupTerminal(TTerminal * Terminal);
   void __fastcall CloseAutheticateForm();
   void __fastcall AuthenticatingDone();
-  TRemoteFile * __fastcall CheckRights(
-    TTerminal * Terminal, const UnicodeString & EntryType, const UnicodeString & FileName, bool & WrongRights);
   TManagedTerminal * __fastcall CreateManagedTerminal(TSessionData * Data);
   TManagedTerminal * __fastcall GetTerminal(int Index);
 };

@@ -266,6 +266,7 @@ public:
   UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName);
   bool RegistryPathExists(const UnicodeString & RegistryPath);
   bool HasLocalPortNumberLimits();
+  virtual UnicodeString TemporaryDir(bool Mask = false) = 0;
 
   TStoredSessionList * __fastcall SelectFilezillaSessionsForImport(
     TStoredSessionList * Sessions, UnicodeString & Error);
