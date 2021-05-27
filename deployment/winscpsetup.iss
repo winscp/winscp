@@ -193,8 +193,10 @@ Name: custom; Description: "custom"; Flags: iscustom
 [Components]
 Name: main; Description: {cm:ApplicationComponent}; \
   Types: full custom compact; Flags: fixed
+; Because the files for the component have Check parameters, they are ignored for the size calculation
 Name: shellext; Description: {cm:ShellExtComponent}; \
-  Types: full compact
+  ExtraDiskSpaceRequired: {#Max(FileSize(ShellExtFileSource), FileSize(ShellExt64FileSource))}; \
+  Types: full compact; 
 Name: pageant; Description: {cm:PageantComponent}; \
   Types: full
 Name: puttygen; Description: {cm:PuTTYgenComponent}; \
@@ -267,6 +269,7 @@ Source: "{#AssemblyFileSource}"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
 Source: "license.txt"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
+; If the Check is ever removed, remove the ExtraDiskSpaceRequired parameter of the component too
 Source: "{#ShellExtFileSource}"; DestDir: "{app}"; \
   Components: shellext; \
   Flags: regserver restartreplace uninsrestartdelete ignoreversion; \
