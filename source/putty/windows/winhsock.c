@@ -342,7 +342,7 @@ Socket *make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
 {
     HandleSocket *hs;
     int flags = (overlapped ? HANDLE_FLAG_OVERLAPPED : 0);
-    tree234 * handles_by_evtomain = get_callback_set(hs->plug)->handles_by_evtomain; // WINSCP
+    tree234 * handles_by_evtomain = get_callback_set(plug)->handles_by_evtomain; // WINSCP
 
     hs = snew(HandleSocket);
     hs->sock.vt = &HandleSocket_sockvt;
