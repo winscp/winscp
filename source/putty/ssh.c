@@ -270,7 +270,8 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
                     NULL
 #endif
                     ,conf_get_str(ssh->conf, CONF_loghost),
-                    conf_get_bool(ssh->conf, CONF_change_password) // WINSCP
+                    conf_get_bool(ssh->conf, CONF_change_password), // WINSCP
+                    ssh->seat
                     );
                 ssh_connect_ppl(ssh, userauth_layer);
                 transport_child_layer = userauth_layer;

@@ -618,19 +618,15 @@ typedef size_t (*handle_inputfn_t)(
     struct handle *h, const void *data, size_t len, int err);
 typedef void (*handle_outputfn_t)(
     struct handle *h, size_t new_backlog, int err);
-struct handle *handle_input_new(HANDLE handle, handle_inputfn_t gotdata,
+struct handle *handle_input_new(tree234 * handles_by_evtomain, HANDLE handle, handle_inputfn_t gotdata, // WINSCP
                                 void *privdata, int flags);
-struct handle *handle_output_new(HANDLE handle, handle_outputfn_t sentdata,
+struct handle *handle_output_new(tree234 * handles_by_evtomain, HANDLE handle, handle_outputfn_t sentdata, // WINSCP
                                  void *privdata, int flags);
 size_t handle_write(struct handle *h, const void *data, size_t len);
 void handle_write_eof(struct handle *h);
-HANDLE *handle_get_events(int *nevents);
-void handle_free(struct handle *h);
-#ifdef MPEXT
-int handle_got_event(HANDLE event);
-#else
-void handle_got_event(HANDLE event);
-#endif
+HANDLE *handle_get_events(tree234 * handles_by_evtomain, int *nevents); // WINSCP
+void handle_free(tree234 * handles_by_evtomain, struct handle *h); // WINSCP
+int handle_got_event(tree234 * handles_by_evtomain, HANDLE event); // WINSCP
 void handle_unthrottle(struct handle *h, size_t backlog);
 size_t handle_backlog(struct handle *h);
 void *handle_get_privdata(struct handle *h);

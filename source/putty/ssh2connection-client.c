@@ -114,7 +114,7 @@ static ChanopenResult chan_open_auth_agent(
          * forwarded data stream ourselves for message boundaries, and
          * passing each individual message to the one-off agent_query().
          */
-        CHANOPEN_RETURN_SUCCESS(agentf_new(sc));
+        CHANOPEN_RETURN_SUCCESS(agentf_new(sc, plug));
     }
     } // WINSCP
 }

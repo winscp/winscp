@@ -77,10 +77,13 @@ __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
   FWaitingForData = 0;
   FCallbackSet.reset(new callback_set());
   memset(FCallbackSet.get(), 0, sizeof(callback_set));
+  FCallbackSet->handles_by_evtomain = new_handles_by_evtomain();
 }
 //---------------------------------------------------------------------------
 __fastcall TSecureShell::~TSecureShell()
 {
+  freetree234(FCallbackSet->handles_by_evtomain);
+  FCallbackSet->handles_by_evtomain = NULL;
   DebugAssert(FWaiting == 0);
   Active = false;
   ResetConnection();
@@ -2003,10 +2006,8 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
         {
           sfree(Handles);
         }
-        // Note that this returns all handles, not only the this-session-related handles,
-        // so we can possibly be processing handles of other sessions, what may be very wrong.
         // It returns only busy handles, so the set can change with every call to run_toplevel_callbacks.
-        Handles = handle_get_events(&HandleCount);
+        Handles = handle_get_events(FCallbackSet->handles_by_evtomain, &HandleCount);
         Handles = sresize(Handles, HandleCount + 1, HANDLE);
         Handles[HandleCount] = FSocketEvent;
         WaitResult = WaitForMultipleObjects(HandleCount + 1, Handles, FALSE, TimeoutStep);
@@ -2027,7 +2028,7 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
 
       if (WaitResult < WAIT_OBJECT_0 + HandleCount)
       {
-        if (handle_got_event(Handles[WaitResult - WAIT_OBJECT_0]))
+        if (handle_got_event(FCallbackSet->handles_by_evtomain, Handles[WaitResult - WAIT_OBJECT_0]))
         {
           Result = true;
         }
