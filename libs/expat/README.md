@@ -1,12 +1,14 @@
 [![Run Linux Travis CI tasks](https://github.com/libexpat/libexpat/actions/workflows/linux.yml/badge.svg)](https://github.com/libexpat/libexpat/actions/workflows/linux.yml)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/libexpat/libexpat?svg=true)](https://ci.appveyor.com/project/libexpat/libexpat)
 [![Packaging status](https://repology.org/badge/tiny-repos/expat.svg)](https://repology.org/metapackage/expat/versions)
+[![Downloads SourceForge](https://img.shields.io/sourceforge/dt/expat?label=Downloads%20SourceForge)](https://sourceforge.net/projects/expat/files/)
+[![Downloads GitHub](https://img.shields.io/github/downloads/libexpat/libexpat/total?label=Downloads%20GitHub)](https://github.com/libexpat/libexpat/releases)
 
 
-# Expat, Release 2.3.0
+# Expat, Release 2.4.1
 
 This is Expat, a C library for parsing XML, started by
-[James Clark](https://en.wikipedia.org/wiki/James_Clark_(programmer)) in 1997.
+[James Clark](https://en.wikipedia.org/wiki/James_Clark_%28programmer%29) in 1997.
 Expat is a stream-oriented XML parser.  This means that you register
 handlers with the parser before starting the parse.  These handlers
 are called when the parser discovers the associated structures in the
@@ -20,7 +22,7 @@ Expat supports the following compilers:
 - Microsoft Visual Studio >=15.0/2017 (rolling `${today} minus 5 years`)
 
 Windows users can use the
-[`expat-win32bin-*.*.*.exe` installer download](https://github.com/libexpat/libexpat/releases),
+[`expat-win32bin-*.*.*.{exe,zip}` download](https://github.com/libexpat/libexpat/releases),
 which includes both pre-compiled libraries and executables, and source code for
 developers.
 
@@ -40,10 +42,10 @@ There are two ways of using libexpat with CMake:
 
 This approach leverages CMake's own [module `FindEXPAT`](https://cmake.org/cmake/help/latest/module/FindEXPAT.html).
 
-Notice the uppercase `EXPAT` in the following example:
+Notice the *uppercase* `EXPAT` in the following example:
 
 ```cmake
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.0)  # or 3.10, see below
 
 project(hello VERSION 1.0.0)
 
@@ -53,22 +55,27 @@ add_executable(hello
     hello.c
 )
 
-if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.10")
-    target_link_libraries(hello PUBLIC EXPAT::EXPAT)
-else()
-    target_include_directories(hello PRIVATE ${EXPAT_INCLUDE_DIRS})
-    target_link_libraries(hello PUBLIC ${EXPAT_LIBRARIES})
-endif()
+# a) for CMake >=3.10 (see CMake's FindEXPAT docs)
+target_link_libraries(hello PUBLIC EXPAT::EXPAT)
+
+# b) for CMake >=3.0
+target_include_directories(hello PRIVATE ${EXPAT_INCLUDE_DIRS})
+target_link_libraries(hello PUBLIC ${EXPAT_LIBRARIES})
 ```
 
 ### b) Config Mode
 
-This approach requires files from
-libexpat >=2.2.8 where packaging uses the CMake build system
-or
-libexpat >=2.3.0 where packaging uses the GNU Autotools build system.
+This approach requires files from…
 
-Notice the lowercase `expat` in the following example:
+- libexpat >=2.2.8 where packaging uses the CMake build system
+or
+- libexpat >=2.3.0 where packaging uses the GNU Autotools build system
+  on Linux
+or
+- libexpat >=2.4.0 where packaging uses the GNU Autotools build system
+  on macOS or MinGW.
+
+Notice the *lowercase* `expat` in the following example:
 
 ```cmake
 cmake_minimum_required(VERSION 3.0)
@@ -85,7 +92,7 @@ target_link_libraries(hello PUBLIC expat::expat)
 ```
 
 
-## Buildung from a Git Clone
+## Building from a Git Clone
 
 If you are building Expat from a check-out from the
 [Git repository](https://github.com/libexpat/libexpat/),
@@ -101,7 +108,7 @@ Once this has been done, follow the same instructions as for building
 from a source distribution.
 
 
-## Buildung from a Source Distribution
+## Building from a Source Distribution
 
 ### a) Building with the configure script (i.e. GNU Autotools)
 
