@@ -775,6 +775,14 @@ void __fastcall TPropertiesDialog::CMDpiChanged(TMessage & Message)
   {
     UpdateFileImage();
   }
+
+  // WORKAROUND: Mere presence of the RightsFrame breaks automatic layout on DPI change in some situation, fixing it manually.
+  // (opening on a secondary display with 100%, while primary display has 150%)
+  SizeLabel->Width = CalculateSizeButton->Left - ScaleByTextHeight(this, 8) - SizeLabel->Left;
+  Bevel1->Width = CommonSheet->ClientWidth - (Bevel1->Left * 2);
+  Bevel2->Width = Bevel1->Width;
+  Bevel3->Width = Bevel1->Width;
+  RecursiveBevel->Width = Bevel1->Width;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::Dispatch(void * Message)
