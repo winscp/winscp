@@ -2567,6 +2567,11 @@ int __fastcall KeyGen(TConsole * Console, TProgramParams * Params)
     bool ChangePassphrase =
       FindPuttygenCompatibleSwitch(Params, KEYGEN_CHANGE_PASSPHRASE_SWITCH, L"P", NewPassphrase, NewPassphraseSet);
 
+    if (Params->ParamCount > 0)
+    {
+      throw Exception(LoadStr(TOO_MANY_PARAMS_ERROR));
+    }
+
     TKeyType Type = KeyType(InputFileName);
     int Error = errno;
     switch (Type)
