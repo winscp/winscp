@@ -22,7 +22,9 @@
 #                      \___/_/\_\ .__/ \__,_|\__|
 #                               |_| XML parser
 #
-# Copyright (c) 2017 Expat development team
+# Copyright (c) 2017-2021 Sebastian Pipping <sebastian@pipping.org>
+# Copyright (c) 2017      Tomasz Kłoczko <kloczek@fedoraproject.org>
+# Copyright (c) 2019      David Loffredo <loffredo@steptools.com>
 # Licensed under the MIT license:
 #
 # Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -171,9 +173,9 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(docdir)" \
 	"$(DESTDIR)$(includedir)"
-LTLIBRARIES = $(lib_LTLIBRARIES)
-libexpat_la_LIBADD =
-am_libexpat_la_OBJECTS = xmlparse.lo xmltok.lo xmlrole.lo
+LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
+libexpat_la_DEPENDENCIES = libexpatinternal.la
+am_libexpat_la_OBJECTS =
 libexpat_la_OBJECTS = $(am_libexpat_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -182,6 +184,9 @@ am__v_lt_1 =
 libexpat_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libexpat_la_LDFLAGS) $(LDFLAGS) -o $@
+libexpatinternal_la_LIBADD =
+am_libexpatinternal_la_OBJECTS = xmlparse.lo xmltok.lo xmlrole.lo
+libexpatinternal_la_OBJECTS = $(am_libexpatinternal_la_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -218,8 +223,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libexpat_la_SOURCES)
-DIST_SOURCES = $(libexpat_la_SOURCES)
+SOURCES = $(libexpat_la_SOURCES) $(libexpatinternal_la_SOURCES)
+DIST_SOURCES = $(libexpat_la_SOURCES) $(libexpatinternal_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -265,6 +270,7 @@ AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
@@ -345,6 +351,7 @@ ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
+ac_cv_sizeof_void_p = @ac_cv_sizeof_void_p@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
@@ -397,16 +404,23 @@ include_HEADERS = \
     expat_external.h
 
 lib_LTLIBRARIES = libexpat.la
+noinst_LTLIBRARIES = libexpatinternal.la
 libexpat_la_LDFLAGS = \
     @AM_LDFLAGS@ \
     -no-undefined \
     -version-info @LIBCURRENT@:@LIBREVISION@:@LIBAGE@
 
-libexpat_la_SOURCES = \
+libexpat_la_SOURCES = 
+
+# This layer of indirection allows
+# the test suite to access internal symbols
+# despite compiling with -fvisibility=hidden
+libexpatinternal_la_SOURCES = \
     xmlparse.c \
     xmltok.c \
     xmlrole.c
 
+libexpat_la_LIBADD = libexpatinternal.la
 doc_DATA = \
     ../AUTHORS \
     ../Changes
@@ -500,8 +514,22 @@ clean-libLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; \
+	locs=`for p in $$list; do echo $$p; done | \
+	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
+	      sort -u`; \
+	test -z "$$locs" || { \
+	  echo rm -f $${locs}; \
+	  rm -f $${locs}; \
+	}
+
 libexpat.la: $(libexpat_la_OBJECTS) $(libexpat_la_DEPENDENCIES) $(EXTRA_libexpat_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libexpat_la_LINK) -rpath $(libdir) $(libexpat_la_OBJECTS) $(libexpat_la_LIBADD) $(LIBS)
+
+libexpatinternal.la: $(libexpatinternal_la_OBJECTS) $(libexpatinternal_la_DEPENDENCIES) $(EXTRA_libexpatinternal_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(LINK)  $(libexpatinternal_la_OBJECTS) $(libexpatinternal_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -713,7 +741,7 @@ maintainer-clean-generic:
 clean: clean-am
 
 clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
-	mostlyclean-am
+	clean-noinstLTLIBRARIES mostlyclean-am
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/xmlparse.Plo
@@ -790,16 +818,17 @@ uninstall-am: uninstall-docDATA uninstall-includeHEADERS \
 .MAKE: install-am install-data-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-am clean \
-	clean-generic clean-libLTLIBRARIES clean-libtool cscopelist-am \
-	ctags ctags-am distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-data-hook install-docDATA install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-includeHEADERS install-info \
-	install-info-am install-libLTLIBRARIES install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
+	clean-generic clean-libLTLIBRARIES clean-libtool \
+	clean-noinstLTLIBRARIES cscopelist-am ctags ctags-am distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distdir dvi dvi-am html html-am info info-am \
+	install install-am install-data install-data-am \
+	install-data-hook install-docDATA install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-includeHEADERS install-info install-info-am \
+	install-libLTLIBRARIES install-man install-pdf install-pdf-am \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags tags-am uninstall uninstall-am uninstall-docDATA \

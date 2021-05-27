@@ -2,6 +2,97 @@ NOTE: We are looking for help with a few things:
       https://github.com/libexpat/libexpat/labels/help%20wanted
       If you can help, please get in touch.  Thanks!
 
+Release 2.4.1 Sun May 23 2021
+        Bug fixes:
+       #488 #490  Autotools: Fix installed header expat_config.h for multilib
+                    systems; regression introduced in 2.4.0 by pull request #486
+
+        Other changes:
+       #491 #492  Version info bumped from 9:0:8 to 9:1:8;
+                    see https://verbump.de/ for what these numbers do
+
+        Special thanks to:
+            Gentoo's QA check "multilib_check_headers"
+
+Release 2.4.0 Sun May 23 2021
+        Security fixes:
+   #34 #466 #484  CVE-2013-0340/CWE-776 -- Protect against billion laughs attacks
+                    (denial-of-service; flavors targeting CPU time or RAM or both,
+                    leveraging general entities or parameter entities or both)
+                    by tracking and limiting the input amplification factor
+                    (<amplification> := (<direct> + <indirect>) / <direct>).
+                    By conservative default, amplification up to a factor of 100.0
+                    is tolerated and rejection only starts after 8 MiB of output bytes
+                    (=<direct> + <indirect>) have been processed.
+                    The fix adds the following to the API:
+                    - A new error code XML_ERROR_AMPLIFICATION_LIMIT_BREACH to
+                      signals this specific condition.
+                    - Two new API functions ..
+                      - XML_SetBillionLaughsAttackProtectionMaximumAmplification and
+                      - XML_SetBillionLaughsAttackProtectionActivationThreshold
+                      .. to further tighten billion laughs protection parameters
+                      when desired.  Please see file "doc/reference.html" for details.
+                      If you ever need to increase the defaults for non-attack XML
+                      payload, please file a bug report with libexpat.
+                    - Two new XML_FEATURE_* constants ..
+                      - that can be queried using the XML_GetFeatureList function, and
+                      - that are shown in "xmlwf -v" output.
+                    - Two new environment variable switches ..
+                      - EXPAT_ACCOUNTING_DEBUG=(0|1|2|3) and
+                      - EXPAT_ENTITY_DEBUG=(0|1)
+                      .. for runtime debugging of accounting and entity processing.
+                      Specific behavior of these values may change in the future.
+                    - Two new command line arguments "-a FACTOR" and "-b BYTES"
+                      for xmlwf to further tighten billion laughs protection
+                      parameters when desired.
+                      If you ever need to increase the defaults for non-attack XML
+                      payload, please file a bug report with libexpat.
+
+        Bug fixes:
+       #332 #470  For (non-default) compilation with -DEXPAT_MIN_SIZE=ON (CMake)
+                    or CPPFLAGS=-DXML_MIN_SIZE (GNU Autotools): Fix segfault
+                    for UTF-16 payloads containing CDATA sections.
+       #485 #486  Autotools: Fix generated CMake files for non-64bit and
+                    non-Linux platforms (e.g. macOS and MinGW in particular)
+                    that were introduced with release 2.3.0
+
+        Other changes:
+       #468 #469  xmlwf: Improve help output and the xmlwf man page
+            #463  xmlwf: Improve maintainability through some refactoring
+            #477  xmlwf: Fix man page DocBook validity
+       #458 #459  CMake: Support absolute paths for both CMAKE_INSTALL_LIBDIR
+                    and CMAKE_INSTALL_INCLUDEDIR
+       #471 #481  CMake: Add support for standard variable BUILD_SHARED_LIBS
+            #457  Unexpose symbol _INTERNAL_trim_to_complete_utf8_characters
+            #467  Resolve macro HAVE_EXPAT_CONFIG_H
+            #472  Delete unused legacy helper file "conftools/PrintPath"
+       #473 #483  Improve attribution
+  #464 #465 #477  doc/reference.html: Fix XHTML validity
+       #475 #478  doc/reference.html: Replace the 90s look by OK.css
+            #479  Version info bumped from 8:0:7 to 9:0:8
+                    due to addition of new symbols and error codes;
+                    see https://verbump.de/ for what these numbers do
+
+        Infrastructure:
+            #456  CI: Enable periodic runs
+            #457  CI: Start covering the list of exported symbols
+            #474  CI: Isolate coverage task
+       #476 #482  CI: Adapt to breaking changes in image "ubuntu-18.04"
+            #477  CI: Cover well-formedness and DocBook/XHTML validity
+                    of doc/reference.html and doc/xmlwf.xml
+
+        Special thanks to:
+            Dimitry Andric
+            Eero Helenius
+            Nick Wellnhofer
+            Rhodri James
+            Tomas Korbar
+            Yury Gribov
+                 and
+            Clang LeakSan
+            JetBrains
+            OSS-Fuzz
+
 Release 2.3.0 Thu March 25 2021
         Bug fixes:
             #438  When calling XML_ParseBuffer without a prior successful call to
