@@ -22,7 +22,9 @@
 #                      \___/_/\_\ .__/ \__,_|\__|
 #                               |_| XML parser
 #
-# Copyright (c) 2017 Expat development team
+# Copyright (c) 2017-2021 Sebastian Pipping <sebastian@pipping.org>
+# Copyright (c) 2017      Rhodri James <rhodri@wildebeest.org.uk>
+# Copyright (c) 2020      Jeffrey Walton <noloader@gmail.com>
 # Licensed under the MIT license:
 #
 # Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -154,14 +156,14 @@ am_libruntests_a_OBJECTS = chardata.$(OBJEXT) structdata.$(OBJEXT) \
 libruntests_a_OBJECTS = $(am_libruntests_a_OBJECTS)
 am_runtests_OBJECTS = runtests.$(OBJEXT)
 runtests_OBJECTS = $(am_runtests_OBJECTS)
-runtests_DEPENDENCIES = libruntests.a ../lib/libexpat.la
+runtests_DEPENDENCIES = libruntests.a ../lib/libexpatinternal.la
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
 am_runtestspp_OBJECTS = runtestspp.$(OBJEXT)
 runtestspp_OBJECTS = $(am_runtestspp_OBJECTS)
-runtestspp_DEPENDENCIES = libruntests.a ../lib/libexpat.la
+runtestspp_DEPENDENCIES = libruntests.a ../lib/libexpatinternal.la
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -510,6 +512,7 @@ AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
@@ -590,6 +593,7 @@ ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
+ac_cv_sizeof_void_p = @ac_cv_sizeof_void_p@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
@@ -653,8 +657,8 @@ runtests_SOURCES = \
 runtestspp_SOURCES = \
     runtestspp.cpp
 
-runtests_LDADD = libruntests.a ../lib/libexpat.la
-runtestspp_LDADD = libruntests.a ../lib/libexpat.la
+runtests_LDADD = libruntests.a ../lib/libexpatinternal.la
+runtestspp_LDADD = libruntests.a ../lib/libexpatinternal.la
 EXTRA_DIST = \
     chardata.h \
     structdata.h \

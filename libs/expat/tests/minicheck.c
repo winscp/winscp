@@ -10,8 +10,11 @@
                         \___/_/\_\ .__/ \__,_|\__|
                                  |_| XML parser
 
-   Copyright (c) 1997-2000 Thai Open Source Software Center Ltd
-   Copyright (c) 2000-2017 Expat development team
+   Copyright (c) 2004-2006 Fred L. Drake, Jr. <fdrake@users.sourceforge.net>
+   Copyright (c) 2016-2020 Sebastian Pipping <sebastian@pipping.org>
+   Copyright (c) 2017      Rhodri James <rhodri@wildebeest.org.uk>
+   Copyright (c) 2018      Marco Maggi <marco.maggi-ipsu@poste.it>
+   Copyright (c) 2019      David Loffredo <loffredo@steptools.com>
    Licensed under the MIT license:
 
    Permission is  hereby granted,  free of charge,  to any  person obtaining
