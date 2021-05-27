@@ -469,7 +469,7 @@ BEGIN
   NEON_COPYRIGHT, "Copyright © 1999–2020 Joe Orton"
   NEON_URL, "https://notroj.github.io/neon/"
   EXPAT_BASED_ON, "eXpat library %s"
-  EXPAT_URL, "http://www.libexpat.org/"
+  EXPAT_URL, "https://libexpat.github.io/"
   PUTTY_LICENSE_URL, "https://www.chiark.greenend.org.uk/~sgtatham/putty/licence.html"
   MAIN_MSG_TAG, "**"
   INTERACTIVE_MSG_TAG, "$$"
