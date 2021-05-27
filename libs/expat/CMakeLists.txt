@@ -1,5 +1,36 @@
-# This file is copyrighted under the BSD-license for buildsystem files of KDE
-# copyright 2010, Patrick Spendrin <ps_ml@gmx.de>
+#                          __  __            _
+#                       ___\ \/ /_ __   __ _| |_
+#                      / _ \\  /| '_ \ / _` | __|
+#                     |  __//  \| |_) | (_| | |_
+#                      \___/_/\_\ .__/ \__,_|\__|
+#                               |_| XML parser
+#
+# Copyright (c) 2010      Patrick Spendrin <ps_ml@gmx.de>
+# Copyright (c) 2012      Karl Waclawek <karl@waclawek.net>
+# Copyright (c) 2016-2021 Sebastian Pipping <sebastian@pipping.org>
+# Copyright (c) 2016      Sergei Nikulov <sergey.nikulov@gmail.com>
+# Copyright (c) 2016      Björn Lindahl <bjorn.lindahl@foi.se>
+# Copyright (c) 2016      Tobias Taschner <github@tc84.de>
+# Copyright (c) 2016      Ben Boeckel <ben.boeckel@kitware.com>
+# Copyright (c) 2017      Rhodri James <rhodri@wildebeest.org.uk>
+# Copyright (c) 2017      Rolf Eike Beer <eike@sf-mail.de>
+# Copyright (c) 2017      Stephen Groat <stephen@groat.us>
+# Copyright (c) 2017      Franek Korta <fkorta@gmail.com>
+# Copyright (c) 2018      pedro-vicente <pedro.vicente@space-research.org>
+# Copyright (c) 2018      Frank Rast <frank.rast@gefeg.com>
+# Copyright (c) 2018      userwithuid <userwithuid@gmail.com>
+# Copyright (c) 2018      Yury Gribov <tetra2005@gmail.com>
+# Copyright (c) 2019      Kishore Kunche <kishore.kunche@intel.com>
+# Copyright (c) 2019      xantares <xantares09@hotmail.com>
+# Copyright (c) 2019      Mohammed Khajapasha <mohammed.khajapasha@intel.com>
+# Copyright (c) 2019      David Loffredo <loffredo@steptools.com>
+# Copyright (c) 2019      Bhargava Shastry <bhargava.shastry@ethereum.org>
+# Copyright (c) 2020      Maciej Sroczyński <macieksroczynski@poczta.fm>
+# Copyright (c) 2020      Gulliver <gulliver@traumkristalle.net>
+# Copyright (c) 2020      Thomas Beutlich <tc@tbeu.de>
+# Copyright (c) 2021      Alex Richardson <Alexander.Richardson@cl.cam.ac.uk>
+# Unlike most of Expat,
+# this file is copyrighted under the BSD-license for buildsystem files of KDE.
 
 cmake_minimum_required(VERSION 3.1.3)
 
@@ -33,7 +64,7 @@ endif()
 
 project(expat
     VERSION
-        2.3.0
+        2.4.1
     LANGUAGES
         C
 )
@@ -70,6 +101,11 @@ if(MSVC)
 else()
     set(_EXPAT_BUILD_PKGCONFIG_DEFAULT ON)
 endif()
+if(DEFINED BUILD_SHARED_LIBS)
+    set(_EXPAT_SHARED_LIBS_DEFAULT ${BUILD_SHARED_LIBS})
+else()
+    set(_EXPAT_SHARED_LIBS_DEFAULT ON)
+endif()
 
 #
 # Configuration
@@ -77,7 +113,7 @@ endif()
 option(EXPAT_BUILD_TOOLS "build the xmlwf tool for expat library" ${_EXPAT_BUILD_TOOLS_DEFAULT})
 option(EXPAT_BUILD_EXAMPLES "build the examples for expat library" ON)
 option(EXPAT_BUILD_TESTS "build the tests for expat library" ON)
-option(EXPAT_SHARED_LIBS "build a shared expat library" ON)
+option(EXPAT_SHARED_LIBS "build a shared expat library" ${_EXPAT_SHARED_LIBS_DEFAULT})
 option(EXPAT_BUILD_DOCS "build man page for xmlwf" ${_EXPAT_BUILD_DOCS_DEFAULT})
 option(EXPAT_BUILD_FUZZERS "build fuzzers for the expat library" OFF)
 option(EXPAT_BUILD_PKGCONFIG "build pkg-config file" ${_EXPAT_BUILD_PKGCONFIG_DEFAULT})
@@ -130,10 +166,22 @@ if(EXPAT_WITH_LIBBSD)
 endif()
 
 if(MSVC)
-    # Minimum supported MSVC version is 1910 = Visual Studio 15.0/2017
-    # See also https://cmake.org/cmake/help/latest/variable/MSVC_VERSION.html
-    if(MSVC_VERSION VERSION_LESS 1910)
-        message(SEND_ERROR "MSVC_VERSION ${MSVC_VERSION} is not a supported Visual Studio compiler version. Please use Visual Studio 15.0/2017 or any later version.")
+    # For the three types of MSVC version values, please see:
+    # - https://cmake.org/cmake/help/latest/variable/MSVC_VERSION.html
+    # - https://sourceforge.net/p/predef/wiki/Compilers/
+    # - https://en.wikipedia.org/wiki/Microsoft_Visual_Studio#History
+    set(_EXPAT_MSVC_REQUIRED_INT 1800)  # i.e. 12.0/2013/1800; see PR #426
+    set(_EXPAT_MSVC_SUPPORTED_INT 1910)
+    set(_EXPAT_MSVC_SUPPORTED_DISPLAY "Visual Studio 15.0/2017/${_EXPAT_MSVC_SUPPORTED_INT}")
+
+    if(MSVC_VERSION VERSION_LESS ${_EXPAT_MSVC_SUPPORTED_INT})
+        if(MSVC_VERSION VERSION_LESS ${_EXPAT_MSVC_REQUIRED_INT})
+            message(SEND_ERROR "MSVC_VERSION ${MSVC_VERSION} is TOO OLD to compile Expat without errors.")
+            message(SEND_ERROR "Please use officially supported ${_EXPAT_MSVC_SUPPORTED_DISPLAY} or later.  Thank you!")
+        else()
+            message(WARNING "MSVC_VERSION ${MSVC_VERSION} is NOT OFFICIALLY SUPPORTED by Expat.")
+            message(WARNING "Please use ${_EXPAT_MSVC_SUPPORTED_DISPLAY} or later.  Thank you!")
+        endif()
     endif()
 endif()
 
@@ -225,7 +273,6 @@ macro(expat_install)
 endmacro()
 
 configure_file(expat_config.h.cmake "${CMAKE_CURRENT_BINARY_DIR}/expat_config.h")
-add_definitions(-DHAVE_EXPAT_CONFIG_H)
 expat_install(FILES "${CMAKE_CURRENT_BINARY_DIR}/expat_config.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 
@@ -236,6 +283,10 @@ endif()
 if(FLAG_VISIBILITY)
   add_definitions(-DXML_ENABLE_VISIBILITY=1)
   set(EXTRA_COMPILE_FLAGS "${EXTRA_COMPILE_FLAGS} -fvisibility=hidden")
+endif()
+if(MINGW)
+    # Without __USE_MINGW_ANSI_STDIO the compiler produces a false positive
+    set(EXTRA_COMPILE_FLAGS "${EXTRA_COMPILE_FLAGS} -Wno-pedantic-ms-format")
 endif()
 if (EXPAT_WARNINGS_AS_ERRORS)
     if(MSVC)
@@ -335,9 +386,9 @@ if(EXPAT_WITH_LIBBSD)
     target_link_libraries(expat ${LIB_BSD})
 endif()
 
-set(LIBCURRENT 8)   # sync
-set(LIBREVISION 0)  # with
-set(LIBAGE 7)       # configure.ac!
+set(LIBCURRENT 9)   # sync
+set(LIBREVISION 1)  # with
+set(LIBAGE 8)       # configure.ac!
 math(EXPR LIBCURRENT_MINUS_AGE "${LIBCURRENT} - ${LIBAGE}")
 
 set_property(TARGET expat PROPERTY OUTPUT_NAME "${_EXPAT_OUTPUT_NAME}")
@@ -371,8 +422,19 @@ expat_install(FILES lib/expat.h lib/expat_external.h DESTINATION ${CMAKE_INSTALL
 if(EXPAT_BUILD_PKGCONFIG)
     set(prefix ${CMAKE_INSTALL_PREFIX})
     set(exec_prefix "\${prefix}")
-    set(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
-    set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+
+    if(CMAKE_INSTALL_LIBDIR MATCHES "^/")
+        set(libdir "${CMAKE_INSTALL_LIBDIR}")
+    else()
+        set(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
+    endif()
+
+    if(CMAKE_INSTALL_INCLUDEDIR MATCHES "^/")
+        set(includedir "${CMAKE_INSTALL_INCLUDEDIR}")
+    else()
+        set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+    endif()
+
     configure_file(expat.pc.in ${CMAKE_CURRENT_BINARY_DIR}/expat.pc @ONLY)
     expat_install(FILES ${CMAKE_CURRENT_BINARY_DIR}/expat.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif()
@@ -438,6 +500,7 @@ if(EXPAT_BUILD_TESTS)
         tests/memcheck.c
         tests/minicheck.c
         tests/structdata.c
+        ${expat_SRCS}
     )
 
     if(NOT MSVC)
@@ -457,13 +520,16 @@ if(EXPAT_BUILD_TESTS)
 
     add_executable(runtests tests/runtests.c ${test_SRCS})
     set_property(TARGET runtests PROPERTY RUNTIME_OUTPUT_DIRECTORY tests)
-    target_link_libraries(runtests expat)
     expat_add_test(runtests $<TARGET_FILE:runtests>)
 
     add_executable(runtestspp tests/runtestspp.cpp ${test_SRCS})
     set_property(TARGET runtestspp PROPERTY RUNTIME_OUTPUT_DIRECTORY tests)
-    target_link_libraries(runtestspp expat)
     expat_add_test(runtestspp $<TARGET_FILE:runtestspp>)
+
+    if(EXPAT_WITH_LIBBSD)
+        target_link_libraries(runtests ${LIB_BSD})
+        target_link_libraries(runtestspp ${LIB_BSD})
+    endif()
 endif()
 
 if(EXPAT_BUILD_FUZZERS)

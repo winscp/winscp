@@ -22,7 +22,8 @@
 #                      \___/_/\_\ .__/ \__,_|\__|
 #                               |_| XML parser
 #
-# Copyright (c) 2017 Expat development team
+# Copyright (c) 2017-2021 Sebastian Pipping <sebastian@pipping.org>
+# Copyright (c) 2018      KangLin <kl222@126.com>
 # Licensed under the MIT license:
 #
 # Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -237,7 +238,6 @@ DIST_SUBDIRS = lib examples tests xmlwf doc
 am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/expat.pc.in \
 	$(srcdir)/expat_config.h.in $(srcdir)/run.sh.in \
 	$(top_srcdir)/cmake/autotools/expat-config-version.cmake.in \
-	$(top_srcdir)/cmake/autotools/expat-noconfig.cmake.in \
 	$(top_srcdir)/cmake/expat-config.cmake.in \
 	$(top_srcdir)/conftools/ar-lib $(top_srcdir)/conftools/compile \
 	$(top_srcdir)/conftools/config.guess \
@@ -309,6 +309,7 @@ AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
@@ -389,6 +390,7 @@ ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
+ac_cv_sizeof_void_p = @ac_cv_sizeof_void_p@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
@@ -457,6 +459,9 @@ nodist_cmake_DATA = \
 
 cmakedir = $(libdir)/cmake/expat-@PACKAGE_VERSION@
 _EXTRA_DIST_CMAKE = \
+    cmake/autotools/expat-noconfig__linux.cmake.in \
+    cmake/autotools/expat-noconfig__macos.cmake.in \
+    cmake/autotools/expat-noconfig__windows.cmake.in \
     cmake/autotools/expat-package-init.cmake \
     cmake/mingw-toolchain.cmake \
     \
@@ -477,7 +482,6 @@ EXTRA_DIST = \
     \
     conftools/expat.m4 \
     conftools/get-version.sh \
-    conftools/PrintPath \
     \
     xmlwf/xmlwf_helpgen.py \
     xmlwf/xmlwf_helpgen.sh \
@@ -546,7 +550,7 @@ cmake/expat-config.cmake: $(top_builddir)/config.status $(top_srcdir)/cmake/expa
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 cmake/autotools/expat-config-version.cmake: $(top_builddir)/config.status $(top_srcdir)/cmake/autotools/expat-config-version.cmake.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-cmake/autotools/expat-noconfig.cmake: $(top_builddir)/config.status $(top_srcdir)/cmake/autotools/expat-noconfig.cmake.in
+cmake/autotools/expat-noconfig.cmake: $(top_builddir)/config.status 
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 run.sh: $(top_builddir)/config.status $(srcdir)/run.sh.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
