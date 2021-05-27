@@ -98,6 +98,7 @@ BEGIN
         NO_SITE_FOR_COMMAND, "**No session is opened**\nThe selected command has site-specific options, but no session is opened."
         DD_TARGET_UNKNOWN, "**WinSCP was not able to detect a folder, where the dragged file(s) was dropped.** In the default drag&drop mode, WinSCP allows dropping files only to local drives and mapped network drives.\n\nYou can allow dropping files to other targets in preferences. Press Help button for details."
         JUMPLIST_ERROR, "Error updating jump list."
+        TOO_MANY_PARAMS_ERROR, "Too many parameters."
 
         WIN_CONFIRMATION_STRINGS, "WIN_CONFIRMATION"
         CONFIRM_OVERWRITE_SESSION, "Site with name '%s' already exists. Overwrite?"
