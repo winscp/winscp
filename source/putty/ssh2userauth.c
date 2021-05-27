@@ -95,6 +95,8 @@ struct ssh2_userauth_state {
     bool ki_scc_initialised;
     bool ki_printed_header;
 
+    Seat *seat; // WINSCP
+
     PacketProtocolLayer ppl;
 };
 
@@ -142,10 +144,11 @@ PacketProtocolLayer *ssh2_userauth_new(
     const char *default_username, bool change_username,
     bool try_ki_auth, bool try_gssapi_auth, bool try_gssapi_kex_auth,
     bool gssapi_fwd, struct ssh_connection_shared_gss_state *shgss,
-    const char * loghost, bool change_password) // WINSCP
+    const char * loghost, bool change_password, Seat *seat) // WINSCP
 {
     struct ssh2_userauth_state *s = snew(struct ssh2_userauth_state);
     memset(s, 0, sizeof(*s));
+    s->seat = seat;
     s->ppl.vt = &ssh2_userauth_vtable;
 
     s->successor_layer = successor_layer;
@@ -1829,7 +1832,7 @@ static void ssh2_userauth_agent_query(
     s->agent_response_to_free = NULL;
 
     s->auth_agent_query = agent_query(req, &response, &response_len,
-                                      ssh2_userauth_agent_callback, s);
+                                      ssh2_userauth_agent_callback, s, get_seat_callback_set(s->seat)); // WINSCP
     if (!s->auth_agent_query)
         ssh2_userauth_agent_callback(s, response, response_len);
 }

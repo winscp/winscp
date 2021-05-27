@@ -1226,7 +1226,7 @@ void x11_format_auth_for_authfile(
 int x11_identify_auth_proto(ptrlen protoname);
 void *x11_dehexify(ptrlen hex, int *outlen);
 
-Channel *agentf_new(SshChannel *c);
+Channel *agentf_new(SshChannel *c, Plug *plug); // WINSCP
 
 bool dh_is_gex(const ssh_kex *kex);
 dh_ctx *dh_setup_group(const ssh_kex *kex);

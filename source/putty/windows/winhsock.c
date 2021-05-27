@@ -119,6 +119,7 @@ static Plug *sk_handle_plug(Socket *s, Plug *p)
 static void sk_handle_close(Socket *s)
 {
     HandleSocket *hs = container_of(s, HandleSocket, sock);
+    tree234 * handles_by_evtomain = get_callback_set(hs->plug)->handles_by_evtomain; // WINSCP
 
     if (hs->defer_close) {
         hs->deferred_close = true;
@@ -130,8 +131,8 @@ static void sk_handle_close(Socket *s)
     do_select(hs->plug, INVALID_SOCKET, 0);
     #endif
 
-    handle_free(hs->send_h);
-    handle_free(hs->recv_h);
+    handle_free(handles_by_evtomain, hs->send_h); // WINSCP
+    handle_free(handles_by_evtomain, hs->recv_h); // WINSCP
     CloseHandle(hs->send_H);
     if (hs->recv_H != hs->send_H)
         CloseHandle(hs->recv_H);
@@ -139,7 +140,7 @@ static void sk_handle_close(Socket *s)
 #ifdef MPEXT
     if (hs->stderr_h)
     {
-        handle_free(hs->stderr_h);
+        handle_free(handles_by_evtomain, hs->stderr_h); // WINSCP
     }
     if (hs->stderr_H)
     {
@@ -341,6 +342,7 @@ Socket *make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
 {
     HandleSocket *hs;
     int flags = (overlapped ? HANDLE_FLAG_OVERLAPPED : 0);
+    tree234 * handles_by_evtomain = get_callback_set(hs->plug)->handles_by_evtomain; // WINSCP
 
     hs = snew(HandleSocket);
     hs->sock.vt = &HandleSocket_sockvt;
@@ -351,12 +353,12 @@ Socket *make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
     psb_init(&hs->psb);
 
     hs->recv_H = recv_H;
-    hs->recv_h = handle_input_new(hs->recv_H, handle_gotdata, hs, flags);
+    hs->recv_h = handle_input_new(handles_by_evtomain, hs->recv_H, handle_gotdata, hs, flags); // WINSCP
     hs->send_H = send_H;
-    hs->send_h = handle_output_new(hs->send_H, handle_sentdata, hs, flags);
+    hs->send_h = handle_output_new(handles_by_evtomain, hs->send_H, handle_sentdata, hs, flags); // WINSCP
     hs->stderr_H = stderr_H;
     if (hs->stderr_H)
-        hs->stderr_h = handle_input_new(hs->stderr_H, handle_stderr,
+        hs->stderr_h = handle_input_new(handles_by_evtomain, hs->stderr_H, handle_stderr, // WINSCP
                                         hs, flags);
 
     hs->defer_close = hs->deferred_close = false;

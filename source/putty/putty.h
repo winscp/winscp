@@ -2072,7 +2072,7 @@ int mk_wcswidth_cjk(const unsigned int *pwcs, size_t n);
 typedef struct agent_pending_query agent_pending_query;
 agent_pending_query *agent_query(
     strbuf *in, void **out, int *outlen,
-    void (*callback)(void *, void *, int), void *callback_ctx);
+    void (*callback)(void *, void *, int), void *callback_ctx, struct callback_set * callback_set); // WINSCP
 void agent_cancel_query(agent_pending_query *);
 void agent_query_synchronous(strbuf *in, void **out, int *outlen);
 bool agent_exists(void);
@@ -2376,6 +2376,7 @@ struct callback_set {
     struct callback *cbcurr, *cbhead, *cbtail;
     IdempotentCallback * ic_pktin_free;
     PacketQueueNode * pktin_freeq_head;
+    tree234 * handles_by_evtomain;
 };
 #define CALLBACK_SET_ONLY struct callback_set * callback_set_v
 #define CALLBACK_SET CALLBACK_SET_ONLY,
@@ -2393,6 +2394,7 @@ void delete_callbacks_for_context(CALLBACK_SET void *ctx);
 LogPolicy *log_get_logpolicy(LogContext *ctx); // WINSCP
 Seat * get_log_seat(LogContext * lp); // WINSCP
 struct callback_set * get_log_callback_set(LogContext * lp); // WINSCP
+tree234 *new_handles_by_evtomain(); // WINSCP
 
 /*
  * Another facility in callback.c deals with 'idempotent' callbacks,

@@ -402,7 +402,9 @@ struct handle {
     } u;
 };
 
+#ifndef WINSCP
 static tree234 *handles_by_evtomain;
+#endif
 
 static int handle_cmp_evtomain(void *av, void *bv)
 {
@@ -430,7 +432,7 @@ static int handle_find_evtomain(void *av, void *bv)
         return 0;
 }
 
-struct handle *handle_input_new(HANDLE handle, handle_inputfn_t gotdata,
+struct handle *handle_input_new(tree234 * handles_by_evtomain, HANDLE handle, handle_inputfn_t gotdata,
                                 void *privdata, int flags)
 {
     struct handle *h = snew(struct handle);
@@ -447,8 +449,10 @@ struct handle *handle_input_new(HANDLE handle, handle_inputfn_t gotdata,
     h->u.i.privdata = privdata;
     h->u.i.flags = flags;
 
+    #ifndef WINSCP
     if (!handles_by_evtomain)
         handles_by_evtomain = newtree234(handle_cmp_evtomain);
+    #endif
     add234(handles_by_evtomain, h);
 
     CreateThread(NULL, 0, handle_input_threadfunc,
@@ -458,7 +462,7 @@ struct handle *handle_input_new(HANDLE handle, handle_inputfn_t gotdata,
     return h;
 }
 
-struct handle *handle_output_new(HANDLE handle, handle_outputfn_t sentdata,
+struct handle *handle_output_new(tree234 * handles_by_evtomain, HANDLE handle, handle_outputfn_t sentdata, // WINSCP
                                  void *privdata, int flags)
 {
     struct handle *h = snew(struct handle);
@@ -478,8 +482,10 @@ struct handle *handle_output_new(HANDLE handle, handle_outputfn_t sentdata,
     h->u.o.sentdata = sentdata;
     h->u.o.flags = flags;
 
+    #ifndef WINSCP
     if (!handles_by_evtomain)
         handles_by_evtomain = newtree234(handle_cmp_evtomain);
+    #endif
     add234(handles_by_evtomain, h);
 
     CreateThread(NULL, 0, handle_output_threadfunc,
@@ -488,6 +494,7 @@ struct handle *handle_output_new(HANDLE handle, handle_outputfn_t sentdata,
     return h;
 }
 
+#ifndef WINSCP
 struct handle *handle_add_foreign_event(HANDLE event,
                                         void (*callback)(void *), void *ctx)
 {
@@ -511,6 +518,7 @@ struct handle *handle_add_foreign_event(HANDLE event,
 
     return h;
 }
+#endif
 
 size_t handle_write(struct handle *h, const void *data, size_t len)
 {
@@ -537,7 +545,7 @@ void handle_write_eof(struct handle *h)
     }
 }
 
-HANDLE *handle_get_events(int *nevents)
+HANDLE *handle_get_events(tree234 * handles_by_evtomain, int *nevents) // WINSCP
 {
     HANDLE *ret;
     struct handle *h;
@@ -563,7 +571,7 @@ HANDLE *handle_get_events(int *nevents)
     return ret;
 }
 
-static void handle_destroy(struct handle *h)
+static void handle_destroy(tree234 * handles_by_evtomain, struct handle *h) // WINSCP
 {
     if (h->type == HT_OUTPUT)
         bufchain_clear(&h->u.o.queued_data);
@@ -571,15 +579,9 @@ static void handle_destroy(struct handle *h)
     CloseHandle(h->u.g.ev_to_main);
     del234(handles_by_evtomain, h);
     sfree(h);
-    // WINSCP (memory leak)
-    if (count234(handles_by_evtomain) == 0)
-    {
-        freetree234(handles_by_evtomain);
-        handles_by_evtomain = NULL;
-    }
 }
 
-void handle_free(struct handle *h)
+void handle_free(tree234 * handles_by_evtomain, struct handle *h) // WINSCP
 {
     assert(h && !h->u.g.moribund);
     if (h->u.g.busy && h->type != HT_FOREIGN) {
@@ -600,7 +602,7 @@ void handle_free(struct handle *h)
          * There isn't even a subthread; we can go straight to
          * handle_destroy.
          */
-        handle_destroy(h);
+        handle_destroy(handles_by_evtomain, h); // WINSCP
     } else {
         /*
          * The subthread is alive but not busy, so we now signal it
@@ -614,7 +616,7 @@ void handle_free(struct handle *h)
     }
 }
 
-int handle_got_event(HANDLE event) // WINSCP
+int handle_got_event(tree234 * handles_by_evtomain, HANDLE event) // WINSCP
 {
     struct handle *h;
 
@@ -642,7 +644,7 @@ int handle_got_event(HANDLE event) // WINSCP
          * we haven't yet done so, or destroy the handle if not.
          */
         if (h->u.g.done) {
-            handle_destroy(h);
+            handle_destroy(handles_by_evtomain, h); // WINSCP
         } else {
             h->u.g.done = true;
             h->u.g.busy = true;
@@ -730,4 +732,10 @@ void handle_sink_init(handle_sink *sink, struct handle *h)
 {
     sink->h = h;
     BinarySink_INIT(sink, handle_sink_write);
+}
+
+// WINSCP
+tree234 *new_handles_by_evtomain()
+{
+    return newtree234(handle_cmp_evtomain);
 }
