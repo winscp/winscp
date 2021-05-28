@@ -182,14 +182,20 @@ var
   dlg: TPngImageListEditorDlg;
 begin
   dlg := TPngImageListEditorDlg.Create(nil);
-  ImageList := GetComponent(0) as TPngImageList;
-  dlg.Caption := Format(SEditing, [ImageList.Name, GetName]);
-  dlg.Images.Items.Assign(ImageList.PngImages);
-  dlg.ImageWidth := ImageList.Width;
-  dlg.ImageHeight := ImageList.Height;
-  if dlg.ShowModal = mrOK then begin
-    ImageList.PngImages.Assign(dlg.Images.Items);
-    Designer.Modified;
+  try
+    ImageList := GetComponent(0) as TPngImageList;
+    dlg.Caption := Format(SEditing, [ImageList.Name, GetName]);
+    dlg.Images.Items.Assign(ImageList.PngImages);
+    dlg.ImageWidth := ImageList.Width;
+    dlg.ImageHeight := ImageList.Height;
+    if dlg.ShowModal = mrOK then begin
+      ImageList.Width := dlg.ImageWidth;
+      ImageList.Height := dlg.ImageHeight;
+      ImageList.PngImages.Assign(dlg.Images.Items);
+      Designer.Modified;
+    end;
+  finally
+    dlg.Free;
   end;
 end;
 
@@ -212,11 +218,15 @@ var
 begin
   Collection := GetComponent(0) as TPngImageCollection;
   dlg := TPngImageListEditorDlg.Create(nil);
-  dlg.Caption := Format(SEditing, [Collection.Name, GetName]);
-  dlg.Images.Items.Assign(Collection.Items);
-  if dlg.ShowModal = mrOK then begin
-    Collection.Items.Assign(dlg.Images.Items);
-    Designer.Modified;
+  try
+    dlg.Caption := Format(SEditing, [Collection.Name, GetName]);
+    dlg.Images.Items.Assign(Collection.Items);
+    if dlg.ShowModal = mrOK then begin
+      Collection.Items.Assign(dlg.Images.Items);
+      Designer.Modified;
+    end;
+  finally
+    dlg.Free;
   end;
 end;
 
