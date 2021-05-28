@@ -66,7 +66,6 @@ object PngImageListEditorDlg: TPngImageListEditorDlg
         Top = 79
         Width = 140
         Height = 21
-        ItemHeight = 0
         TabOrder = 2
         OnChange = cmbBackgroundColorChange
         OnDblClick = cmbBackgroundColorDblClick
@@ -92,7 +91,6 @@ object PngImageListEditorDlg: TPngImageListEditorDlg
       Anchors = [akLeft, akTop, akRight, akBottom]
       DragCursor = crDefault
       DragMode = dmAutomatic
-      ItemHeight = 16
       MultiSelect = True
       TabOrder = 3
       OnClick = lbxImagesClick
@@ -232,11 +230,11 @@ object PngImageListEditorDlg: TPngImageListEditorDlg
         Width = 75
         Height = 25
         Caption = '&Add'
-        TabOrder = 0
-        OnClick = btnAddClick
         Layout = blGlyphRight
         Margin = 6
         Spacing = 3
+        TabOrder = 0
+        OnClick = btnAddClick
         PngImage.Data = {
           89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
           610000001974455874536F6674776172650041646F626520496D616765526561
@@ -269,11 +267,11 @@ object PngImageListEditorDlg: TPngImageListEditorDlg
         Width = 75
         Height = 25
         Caption = '&Delete'
-        TabOrder = 1
-        OnClick = btnDeleteClick
         Layout = blGlyphRight
         Margin = 6
         Spacing = 3
+        TabOrder = 1
+        OnClick = btnDeleteClick
         PngImage.Data = {
           89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
           610000001974455874536F6674776172650041646F626520496D616765526561
@@ -306,11 +304,11 @@ object PngImageListEditorDlg: TPngImageListEditorDlg
         Width = 75
         Height = 25
         Caption = '&Replace'
-        TabOrder = 2
-        OnClick = btnReplaceClick
         Layout = blGlyphRight
         Margin = 6
         Spacing = 3
+        TabOrder = 2
+        OnClick = btnReplaceClick
         PngImage.Data = {
           89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
           610000001974455874536F6674776172650041646F626520496D616765526561
@@ -350,11 +348,11 @@ object PngImageListEditorDlg: TPngImageListEditorDlg
         Width = 75
         Height = 25
         Caption = '&Clear'
-        TabOrder = 3
-        OnClick = btnClearClick
         Layout = blGlyphRight
         Margin = 6
         Spacing = 3
+        TabOrder = 3
+        OnClick = btnClearClick
         PngImage.Data = {
           89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
           610000001974455874536F6674776172650041646F626520496D616765526561
@@ -392,11 +390,11 @@ object PngImageListEditorDlg: TPngImageListEditorDlg
         Width = 75
         Height = 25
         Caption = '&Up'
-        TabOrder = 4
-        OnClick = btnUpClick
         Layout = blGlyphRight
         Margin = 6
         Spacing = 3
+        TabOrder = 4
+        OnClick = btnUpClick
         PngImage.Data = {
           89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
           610000001974455874536F6674776172650041646F626520496D616765526561
@@ -426,11 +424,11 @@ object PngImageListEditorDlg: TPngImageListEditorDlg
         Width = 75
         Height = 25
         Caption = '&Down'
-        TabOrder = 5
-        OnClick = btnDownClick
         Layout = blGlyphRight
         Margin = 6
         Spacing = 3
+        TabOrder = 5
+        OnClick = btnDownClick
         PngImage.Data = {
           89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
           610000001974455874536F6674776172650041646F626520496D616765526561

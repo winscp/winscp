@@ -7,23 +7,40 @@ This unit only compiles with Delphi 7 and higher!
 interface
 
 uses
-  Windows, Classes, SysUtils, Controls, Graphics, ImgList, PngImage,
-  PngFunctions;
+  Windows, Classes, SysUtils, Controls, Graphics, ImgList,
+  {$IF CompilerVersion >= 34.0 Delphi 10.4 }
+  System.UITypes,
+  {$ENDIF}
+  PngImage, PngFunctions;
+
+type
+  INameMapping = interface
+  ['{38EECDD8-7440-4EA2-BFD0-424E5BB2C1D5}']
+    function GetName(Index: Integer): string;
+    function IndexOfName(const AName: string): Integer;
+    procedure ListNames(Target: TStrings);
+    property Name[Index: Integer]: string read GetName;
+  end;
 
 type
   TPngImageCollection = class;
   TPngImageCollectionItem = class;
   TPngImageCollectionItems = class;
 
-  TPngImageList = class(TImageList)
+  TPngImageList = class(TImageList, INameMapping)
+    function INameMapping.GetName = GetImageName;
+    function INameMapping.IndexOfName = FindIndexByName;
+    procedure INameMapping.ListNames = ListImageNames;
   private
     FEnabledImages: Boolean;
+    FImageNameAvailable: Boolean;
     FLocked: Integer;
     FOverlayIndex: array[TOverlay] of Integer;
     FPngImages: TPngImageCollectionItems;
     FPngOptions: TPngOptions;
     function ExtractOverlayIndex(Style: Cardinal): Integer;
     function GetHeight: Integer;
+    function GetImageName(Index: Integer): string;
     function GetWidth: Integer;
     procedure SetHeight(const Value: Integer);
     procedure SetPngOptions(const Value: TPngOptions);
@@ -50,24 +67,37 @@ type
     function AddImage(Value: TCustomImageList; Index: Integer): Integer; virtual;
     procedure AddImages(Value: TCustomImageList); virtual;
     function AddMasked(Image: TBitmap; MaskColor: TColor): Integer; virtual;
+    {$IF CompilerVersion >= 34.0 Delphi 10.4 Sydney }
+    function AddDisabledImage(Value: TCustomImageList; Index: Integer): Integer; virtual;
+    procedure AddDisabledImages(Value: TCustomImageList); virtual;
+    {$ENDIF}
     procedure Assign(Source: TPersistent); override;
     procedure BeginUpdate;
     procedure Clear; virtual;
     procedure Delete(Index: Integer); virtual;
     procedure EndUpdate(Update: Boolean = True);
+    function FindIndexByName(const AName: string): Integer;
     procedure Insert(Index: Integer; Image, Mask: TBitmap); virtual;
     procedure InsertIcon(Index: Integer; Image: TIcon); virtual;
     procedure InsertPng(Index: Integer; Image: TPngImage; Background: TColor = clNone);
     procedure InsertMasked(Index: Integer; Image: TBitmap; MaskColor: TColor); virtual;
+    procedure ListImageNames(Target: TStrings);
     procedure Move(CurIndex, NewIndex: Integer); virtual;
     function Overlay(ImageIndex: Integer; Overlay: TOverlay): Boolean;
     procedure Replace(Index: Integer; Image, Mask: TBitmap); virtual;
     procedure ReplaceIcon(Index: Integer; Image: TIcon); virtual;
     procedure ReplaceMasked(Index: Integer; NewImage: TBitmap; MaskColor: TColor); virtual;
+    {$IF CompilerVersion >= 34.0 Delphi 10.4 }
+    function IsImageNameAvailable: Boolean; override;
+    function GetIndexByName(const AName: TImageName): TImageIndex; override;
+    function GetNameByIndex(AIndex: TImageIndex): TImageName; override;
+    {$ENDIF}
+    property ImageName[Index: Integer]: string read GetImageName;
   published
     property ColorDepth default cd32Bit;
     property EnabledImages: Boolean read FEnabledImages write SetEnabledImages default True;
     property Height read GetHeight write SetHeight default 16;
+    property ImageNameAvailable: Boolean read FImageNameAvailable write FImageNameAvailable default False;
     property PngImages: TPngImageCollectionItems read FPngImages write SetPngImages;
     property PngOptions: TPngOptions read FPngOptions write SetPngOptions default [pngBlendOnDisabled];
     property Width read GetWidth write SetWidth default 16;
@@ -226,7 +256,11 @@ var
   I: Integer;
 begin
   if ImageListCount = 0 then begin
+    {$IF CompilerVersion >= 34.0 Delphi 10.4 Sydney }
+    SetLength(Pointers, 17);
+    {$ELSE}
     SetLength(Pointers, 15);
+    {$ENDIF}
     Pointers[0] := Combo(@TCustomImageList.Add, @TPngImageList.Add, 'Add');
     Pointers[1] := Combo(@TCustomImageList.AddIcon, @TPngImageList.AddIcon, 'AddIcon');
     Pointers[2] := Combo(@TCustomImageList.AddImage, @TPngImageList.AddImage, 'AddImage');
@@ -242,6 +276,10 @@ begin
     Pointers[12] := Combo(@TCustomImageList.ReplaceIcon, @TPngImageList.ReplaceIcon, 'ReplaceIcon');
     Pointers[13] := Combo(@TCustomImageList.ReplaceMasked, @TPngImageList.ReplaceMasked, 'ReplaceMasked');
     Pointers[14] := Combo(@TCustomImageList.Overlay, @TPngImageList.Overlay, 'Overlay');
+    {$IF CompilerVersion >= 34.0 Delphi 10.4 Sydney }
+    Pointers[15] := Combo(@TCustomImageList.AddDisabledImage, @TPngImageList.AddDisabledImage, 'AddDisabledImage');
+    Pointers[16] := Combo(@TCustomImageList.AddDisabledImages, @TPngImageList.AddDisabledImages, 'AddDisabledImages');
+    {$ENDIF}
 
     MethodPatches := TObjectList.Create;
     for I := Low(Pointers) to High(Pointers) do begin
@@ -353,6 +391,10 @@ begin
     FOverlayIndex[I] := -1;
   end;
   inherited Create(AOwner);
+  {$IF CompilerVersion >= 33.0 Delphi 10.3 Rio }
+  StoreBitmap := False;
+  {$ENDIF}
+  FImageNameAvailable := False;
   ColorDepth := cd32Bit;
   if ImageListCount = 0 then
     ApplyMethodPatches;
@@ -462,12 +504,15 @@ begin
     Png := TPngImage.Create;
     try
       CopyImageFromImageList(Png, Value, Index);
-      result := AddPng(Png);
-      { Since Berlin AddImage returns the new size of the list, while before it returned the index of the added image.
-        Although this behaviour seems somewhat strange, it actually matches the documentation. }
-      {$IF RTLVersion >= 31.00}
-      result := FPngImages.Count;
-      {$IFEND}
+      if RTLVersion < 31.00 then begin
+        result := AddPng(Png);
+      end
+      else begin
+        { Since Berlin AddImage returns the new size of the list, while before it returned the index of the added image.
+          Although this behaviour seems somewhat strange, it actually matches the documentation. }
+        AddPng(Png);
+        result := FPngImages.Count;
+      end;
     finally
       Png.Free;
     end;
@@ -522,6 +567,76 @@ begin
     end;
   end;
 end;
+
+{$IF CompilerVersion >= 34.0 Delphi 10.4 Sydney }
+function TPngImageList.AddDisabledImage(Value: TCustomImageList; Index: Integer): Integer;
+var
+  Patch: TMethodPatch;
+  Png: TPngImage;
+begin
+  if TObject(Self) is TPngImageList then begin
+    Png := TPngImage.Create;
+    try
+      CopyImageFromImageList(Png, Value, Index);
+      MakeDisabledImage(Png, PngOptions);
+      AddPng(Png);
+      result := FPngImages.Count;
+    finally
+      Png.Free;
+    end;
+  end
+  else begin
+    Patch := FindMethodPatch('AddDisabledImage');
+    if Patch <> nil then begin
+      Patch.BeginInvokeOldMethod;
+      try
+        Result := TCustomImageList(Self).AddDisabledImage(Value, Index);
+      finally
+        Patch.FinishInvokeOldMethod;
+      end;
+    end
+    else
+      Result := -1;
+  end;
+end;
+
+procedure TPngImageList.AddDisabledImages(Value: TCustomImageList);
+var
+  Patch: TMethodPatch;
+  I: Integer;
+  Png: TPngImage;
+begin
+  if TObject(Self) is TPngImageList then begin
+    BeginUpdate;
+    try
+      //Copy every image from Value into this imagelist.
+      Png := TPngImage.Create;
+      try
+        for I := 0 to Value.Count - 1 do begin
+          CopyImageFromImageList(Png, Value, I);
+          MakeDisabledImage(Png, PngOptions);
+          AddPng(Png);
+        end;
+      finally
+        Png.Free;
+      end;
+    finally
+      EndUpdate;
+    end;
+  end
+  else begin
+    Patch := FindMethodPatch('AddDisabledImages');
+    if Patch <> nil then begin
+      Patch.BeginInvokeOldMethod;
+      try
+        TCustomImageList(Self).AddDisabledImages(Value);
+      finally
+        Patch.FinishInvokeOldMethod;
+      end;
+    end;
+  end;
+end;
+{$ENDIF}
 
 function TPngImageList.AddMasked(Image: TBitmap; MaskColor: TColor): Integer;
 var
@@ -649,10 +764,7 @@ begin
       else begin
         //Basically the same as in the DrawPNG function
         Png.Assign(item.PngImage);
-        if pngBlendOnDisabled in FPngOptions then
-          MakeImageBlended(Png);
-        if pngGrayscaleOnDisabled in FPngOptions then
-          MakeImageGrayscale(Png);
+        MakeDisabledImage(Png, PngOptions);
         Icon := PngToIcon(Png);
       end;
       ImageList_AddIcon(Handle, Icon);
@@ -739,9 +851,24 @@ begin
     idx := idx shr 8;
     if (idx > 0) then begin
       Dec(idx);
+      {$WARN COMPARISON_TRUE OFF }
       if (idx >= Low(FOverlayIndex)) and (idx <= High(FOverlayIndex)) then begin
         Result := FOverlayIndex[idx];
       end;
+      {$WARN COMPARISON_TRUE DEFAULT }
+    end;
+  end;
+end;
+
+function TPngImageList.FindIndexByName(const AName: string): Integer;
+var
+  I: Integer;
+begin
+  Result := -1;
+  for I := 0 to PngImages.Count - 1 do begin
+    if SameText(PngImages[I].Name, AName) then begin
+      Result := I;
+      Break;
     end;
   end;
 end;
@@ -750,6 +877,33 @@ function TPngImageList.GetHeight: Integer;
 begin
   Result := inherited Height;
 end;
+
+function TPngImageList.GetImageName(Index: Integer): string;
+var
+  item: TPngImageCollectionItem;
+begin
+  Result := '';
+  item := PngImages[Index];
+  if item <> nil then
+    Result := item.Name;
+end;
+
+{$IF CompilerVersion >= 34.0 Delphi 10.4 }
+function TPngImageList.IsImageNameAvailable: Boolean;
+begin
+  Result := FImageNameAvailable;
+end;
+
+function TPngImageList.GetIndexByName(const AName: TImageName): TImageIndex;
+begin
+  Result := FindIndexByName(AName);
+end;
+
+function TPngImageList.GetNameByIndex(AIndex: TImageIndex): TImageName;
+begin
+  Result := ImageName[AIndex];
+end;
+{$ENDIF}
 
 function TPngImageList.GetWidth: Integer;
 begin
@@ -904,6 +1058,15 @@ begin
     ImageList_AddIcon(Handle, Icon);
   finally
     DestroyIcon(Icon);
+  end;
+end;
+
+procedure TPngImageList.ListImageNames(Target: TStrings);
+var
+  I: Integer;
+begin
+  for I := 0 to PngImages.Count - 1 do begin
+    Target.Add(PngImages[I].Name);
   end;
 end;
 

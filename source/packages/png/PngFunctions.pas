@@ -17,6 +17,7 @@ type
   TPngOption = (pngBlendOnDisabled, pngGrayscaleOnDisabled);
   TPngOptions = set of TPngOption;
 
+procedure MakeDisabledImage(Image: TPngImage; const Options: TPngOptions);
 procedure MakeImageBlended(Image: TPngImage; Amount: Byte = 127);
 procedure MakeImageGrayscale(Image: TPngImage; Amount: Byte = 255);
 procedure DrawPNG(Png: TPngImage; Canvas: TCanvas; const ARect: TRect; const Options: TPngOptions);
@@ -501,12 +502,22 @@ begin
   end;
 end;
 
+procedure MakeDisabledImage(Image: TPngImage; const Options: TPngOptions);
+begin
+  if pngBlendOnDisabled in Options then
+    MakeImageBlended(Image);
+  if pngGrayscaleOnDisabled in Options then
+    MakeImageGrayscale(Image);
+end;
+
 {$IF RTLVersion >= 20.0 }
+{$IFDEF RegisterOldPngFormat}
 type
   TPNGObject = class(TPngImage);
 initialization
   TPicture.RegisterFileFormat('', '', TPNGObject);
 finalization
   TPicture.UnregisterGraphicClass(TPNGObject);
+{$IFEND}
 {$IFEND}
 end.
