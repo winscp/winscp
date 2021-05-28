@@ -4375,6 +4375,7 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
   UNUSED_P(account);
 #endif
 
+  { // WINSCP
   /* save one level of indirection */
   DTD *const dtd = parser->m_dtd;
 
@@ -5348,6 +5349,7 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
       tok = XmlPrologTok(enc, s, end, &next);
     }
   }
+  } // WINSCP
   /* not reached */
 }
 
@@ -7970,9 +7972,11 @@ getDebugLevel(const char *variableName, unsigned long defaultDebugLevel) {
   if (valueOrNull == NULL) {
     return defaultDebugLevel;
   }
+  { // WINSCP
   const char *const value = valueOrNull;
 
   errno = 0;
+  { // WINSCP
   char *afterValue = (char *)value;
   unsigned long debugLevel = strtoul(value, &afterValue, 10);
   if ((errno != 0) || (afterValue[0] != '\0')) {
@@ -7981,4 +7985,6 @@ getDebugLevel(const char *variableName, unsigned long defaultDebugLevel) {
   }
 
   return debugLevel;
+  } // WINSCP
+  } // WINSCP
 }
