@@ -23,7 +23,7 @@
 #define HAVE_GETPAGESIZE 1
 
 /* Define to 1 if you have the `getrandom' function. */
-#define HAVE_GETRANDOM 1
+#undef HAVE_GETRANDOM
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
@@ -50,7 +50,7 @@
 #define HAVE_STRING_H 1
 
 /* Define to 1 if you have `syscall' and `SYS_getrandom'. */
-#define HAVE_SYSCALL_GETRANDOM 1
+#undef HAVE_SYSCALL_GETRANDOM
 
 /* Define to 1 if you have the <sys/param.h> header file. */
 #define HAVE_SYS_PARAM_H 1
@@ -118,7 +118,7 @@
 #define XML_DEV_URANDOM 1
 
 /* Define to make parameter entity parsing functionality available. */
-#define XML_DTD 1
+#undef XML_DTD
 
 /* Define to make XML Namespaces functionality available. */
 #define XML_NS 1

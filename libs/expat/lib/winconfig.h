@@ -41,5 +41,7 @@
 
 #include <memory.h>
 #include <string.h>
+#include <float.h>
+#define isnan _isnan
 
 #endif /* ndef WINCONFIG_H */
