@@ -800,10 +800,7 @@ namespace WinSCP
                     filemask = "*";
                 }
                 string localPath = Path.Combine(localDirectory, filemask);
-                const string remoteSeparator = "/";
-                string remotePath =
-                    remoteDirectory +
-                    (remoteDirectory.EndsWith(remoteSeparator, StringComparison.Ordinal) ? string.Empty : remoteSeparator);
+                string remotePath = RemotePath.AddDirectorySeparator(remoteDirectory);
                 return PutFiles(localPath, remotePath, remove, options);
             }
         }
