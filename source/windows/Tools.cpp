@@ -1336,7 +1336,6 @@ static void __fastcall DoVerifyKey(UnicodeString & FileName, bool Convert, bool 
       case ktSSH2PublicRFC4716:
       case ktSSH2PublicOpenSSH:
         // noop
-        // Do not even bother checking SSH protocol version
         break;
 
       case ktUnopenable:
