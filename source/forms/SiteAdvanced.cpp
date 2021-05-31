@@ -1323,7 +1323,6 @@ void __fastcall TSiteAdvancedDialog::FormCloseQuery(TObject * /*Sender*/,
   {
     // StripPathQuotes should not be needed as we do not feed quotes anymore
     VerifyKey(StripPathQuotes(PrivateKeyEdit3->Text));
-    // for tunnel SSH version is not configurable
     VerifyKey(StripPathQuotes(TunnelPrivateKeyEdit3->Text));
     VerifyCertificate(StripPathQuotes(TlsCertificateFileEdit->Text));
     // Particularly for EncryptKey*Edit's
