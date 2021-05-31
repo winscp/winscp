@@ -196,7 +196,7 @@ Name: main; Description: {cm:ApplicationComponent}; \
 ; Because the files for the component have Check parameters, they are ignored for the size calculation
 Name: shellext; Description: {cm:ShellExtComponent}; \
   ExtraDiskSpaceRequired: {#Max(FileSize(ShellExtFileSource), FileSize(ShellExt64FileSource))}; \
-  Types: full compact; 
+  Types: full compact;
 Name: pageant; Description: {cm:PageantComponent}; \
   Types: full
 Name: puttygen; Description: {cm:PuTTYgenComponent}; \
