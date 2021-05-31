@@ -651,7 +651,7 @@ bool IsKeyEncrypted(TKeyType KeyType, const UnicodeString & FileName, UnicodeStr
   return Result;
 }
 //---------------------------------------------------------------------------
-TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const UnicodeString & Passphrase)
+TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const UnicodeString & Passphrase, UnicodeString & Error)
 {
   UTF8String UtfFileName = UTF8String(FileName);
   Filename * KeyFile = filename_from_str(UtfFileName.c_str());
@@ -685,19 +685,48 @@ TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const Un
 
   if (Ssh2Key == NULL)
   {
-    UnicodeString Error = AnsiString(ErrorStr);
     // While theoretically we may get "unable to open key file" and
     // so we should check system error code,
     // we actully never get here unless we call KeyType previously
     // and handle ktUnopenable accordingly.
-    throw Exception(Error);
+    Error = AnsiString(ErrorStr);
   }
   else if (Ssh2Key == SSH2_WRONG_PASSPHRASE)
   {
-    throw Exception(LoadStr(AUTH_TRANSL_WRONG_PASSPHRASE));
+    Error = EmptyStr;
+    Ssh2Key = NULL;
   }
 
   return reinterpret_cast<TPrivateKey *>(Ssh2Key);
+}
+//---------------------------------------------------------------------------
+TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const UnicodeString & Passphrase)
+{
+  UnicodeString Error;
+  TPrivateKey * Result = LoadKey(KeyType, FileName, Passphrase, Error);
+  if (Result == NULL)
+  {
+    if (!Error.IsEmpty())
+    {
+      throw Exception(Error);
+    }
+    else
+    {
+      throw Exception(LoadStr(AUTH_TRANSL_WRONG_PASSPHRASE));
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString TestKey(TKeyType KeyType, const UnicodeString & FileName)
+{
+  UnicodeString Result;
+  TPrivateKey * Key = LoadKey(KeyType, FileName, EmptyStr, Result);
+  if (Key != NULL)
+  {
+    FreeKey(Key);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void ChangeKeyComment(TPrivateKey * PrivateKey, const UnicodeString & Comment)
