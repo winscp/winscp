@@ -1590,12 +1590,6 @@ void __fastcall TS3FileSystem::Source(
   int ChunkSize = std::max(S3MinMultiPartChunkSize, static_cast<int>((Handle.Size + Parts - 1) / Parts));
   DebugAssert((ChunkSize == S3MinMultiPartChunkSize) || (Handle.Size > static_cast<__int64>(S3MaxMultiPartChunks) * S3MinMultiPartChunkSize));
 
-  if ((Parts > 1) && IsGoogleCloud())
-  {
-    FTerminal->LogEvent(L"Cannot use multipart upload with Google Cloud.");
-    Parts = 1;
-  }
-
   bool Multipart = (Parts > 1);
 
   RawByteString MultipartUploadId;
