@@ -242,6 +242,11 @@ public:
     Parameter(L"destination", Destination);
   }
 
+  void Size(__int64 Size)
+  {
+    Parameter(L"size", Size);
+  }
+
   void __fastcall Rights(const TRights & Rights)
   {
     Parameter(L"permissions", Rights.Text);
@@ -558,14 +563,28 @@ void __fastcall TFileLocationSessionAction::Destination(const UnicodeString & De
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+TTransferSessionAction::TTransferSessionAction(TActionLog * Log, TLogAction Action) :
+  TFileLocationSessionAction(Log, Action)
+{
+}
+//---------------------------------------------------------------------------
+void TTransferSessionAction::Size(__int64 Size)
+{
+  if (FRecord != NULL)
+  {
+    FRecord->Size(Size);
+  }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 __fastcall TUploadSessionAction::TUploadSessionAction(TActionLog * Log) :
-  TFileLocationSessionAction(Log, laUpload)
+  TTransferSessionAction(Log, laUpload)
 {
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 __fastcall TDownloadSessionAction::TDownloadSessionAction(TActionLog * Log) :
-  TFileLocationSessionAction(Log, laDownload)
+  TTransferSessionAction(Log, laDownload)
 {
 }
 //---------------------------------------------------------------------------

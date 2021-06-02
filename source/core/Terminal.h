@@ -428,7 +428,9 @@ protected:
   UnicodeString __fastcall FormatFileDetailsForLog(
     const UnicodeString & FileName, TDateTime Modification, __int64 Size, const TRemoteFile * LinkedFile = NULL);
   void __fastcall LogFileDetails(const UnicodeString & FileName, TDateTime Modification, __int64 Size, const TRemoteFile * LinkedFile = NULL);
-  void __fastcall LogFileDone(TFileOperationProgressType * OperationProgress, const UnicodeString & DestFileName);
+  void __fastcall LogFileDone(
+    TFileOperationProgressType * OperationProgress, const UnicodeString & DestFileName,
+    TTransferSessionAction & Action);
   void __fastcall LogTotalTransferDetails(
     const UnicodeString TargetDir, const TCopyParamType * CopyParam,
     TFileOperationProgressType * OperationProgress, bool Parallel, TStrings * Files);

@@ -1984,7 +1984,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
         Rights);
     }
 
-    FTerminal->LogFileDone(OperationProgress, AbsoluteFileName);
+    FTerminal->LogFileDone(OperationProgress, AbsoluteFileName, Action);
     // Stream is disposed here
   }
 
@@ -2644,7 +2644,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
             FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DestFileName)));
           }
 
-          FTerminal->LogFileDone(OperationProgress, DestFileName);
+          FTerminal->LogFileDone(OperationProgress, DestFileName, Action);
         }
       }
     }
