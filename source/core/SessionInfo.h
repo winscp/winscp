@@ -132,13 +132,21 @@ public:
   void __fastcall Destination(const UnicodeString & Destination);
 };
 //---------------------------------------------------------------------------
-class TUploadSessionAction : public TFileLocationSessionAction
+class TTransferSessionAction : public TFileLocationSessionAction
+{
+public:
+  TTransferSessionAction(TActionLog * Log, TLogAction Action);
+
+  void Size(__int64 Size);
+};
+//---------------------------------------------------------------------------
+class TUploadSessionAction : public TTransferSessionAction
 {
 public:
   __fastcall TUploadSessionAction(TActionLog * Log);
 };
 //---------------------------------------------------------------------------
-class TDownloadSessionAction : public TFileLocationSessionAction
+class TDownloadSessionAction : public TTransferSessionAction
 {
 public:
   __fastcall TDownloadSessionAction(TActionLog * Log);

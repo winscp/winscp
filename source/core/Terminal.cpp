@@ -3468,7 +3468,9 @@ void __fastcall TTerminal::LogFileDetails(const UnicodeString & FileName, TDateT
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::LogFileDone(TFileOperationProgressType * OperationProgress, const UnicodeString & DestFileName)
+void __fastcall TTerminal::LogFileDone(
+  TFileOperationProgressType * OperationProgress, const UnicodeString & DestFileName,
+  TTransferSessionAction & Action)
 {
   if (FDestFileName.IsEmpty())
   {
@@ -3479,11 +3481,14 @@ void __fastcall TTerminal::LogFileDone(TFileOperationProgressType * OperationPro
     FMultipleDestinationFiles = true;
   }
 
+  __int64 Size = OperationProgress->TransferredSize;
   // optimization
   if (Log->Logging)
   {
-    LogEvent(FORMAT("Transfer done: '%s' => '%s' [%s]", (OperationProgress->FullFileName, DestFileName, IntToStr(OperationProgress->TransferredSize))));
+    LogEvent(FORMAT("Transfer done: '%s' => '%s' [%s]", (OperationProgress->FullFileName, DestFileName, IntToStr(Size))));
   }
+
+  Action.Size(Size);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CustomReadDirectory(TRemoteFileList * FileList)
@@ -7310,7 +7315,7 @@ void __fastcall TTerminal::Source(
     FFileSystem->Source(
       Handle, TargetDir, DestFileName, CopyParam, Params, OperationProgress, Flags, Action, ChildError);
 
-    LogFileDone(OperationProgress, AbsolutePath(TargetDir + DestFileName, true));
+    LogFileDone(OperationProgress, AbsolutePath(TargetDir + DestFileName, true), Action);
     OperationProgress->Succeeded();
   }
 
@@ -7725,7 +7730,7 @@ void __fastcall TTerminal::Sink(
     FFileSystem->Sink(
       FileName, File, TargetDir, DestFileName, Attrs, CopyParam, Params, OperationProgress, Flags, Action);
 
-    LogFileDone(OperationProgress, LogFileName);
+    LogFileDone(OperationProgress, LogFileName, Action);
     OperationProgress->Succeeded();
   }
 }

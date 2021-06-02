@@ -235,7 +235,7 @@ void CTransferSocket::OnReceive(int nErrorCode)
         CloseAndEnsureSendClose(CSMODE_TRANSFERERROR);
       }
 
-      UpdateStatusBar(false);
+      UpdateStatusBar(true);
       return;
     }
 
@@ -658,7 +658,7 @@ void CTransferSocket::OnSend(int nErrorCode)
           LogError(nError);
           CloseOnShutDownOrError(CSMODE_TRANSFERERROR);
         }
-        UpdateStatusBar(false);
+        UpdateStatusBar(true);
         return;
       }
 
@@ -773,7 +773,7 @@ void CTransferSocket::OnSend(int nErrorCode)
           LogError(nError);
           CloseOnShutDownOrError(CSMODE_TRANSFERERROR);
         }
-        UpdateStatusBar(false);
+        UpdateStatusBar(true);
         return;
       }
       else

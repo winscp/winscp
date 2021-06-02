@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace WinSCP
 {
@@ -10,6 +11,8 @@ namespace WinSCP
         public ProgressSide Side { get; internal set; }
 
         public string Destination { get; private set; }
+
+        public long Length { get; private set; }
 
         public TouchEventArgs Touch { get; internal set; }
         public ChmodEventArgs Chmod { get; internal set; }
@@ -38,6 +41,10 @@ namespace WinSCP
                     else if (reader.GetEmptyElementValue("destination", out value))
                     {
                         args.Destination = value;
+                    }
+                    else if (reader.GetEmptyElementValue("size", out value))
+                    {
+                        args.Length = long.Parse(value, CultureInfo.InvariantCulture);
                     }
                     else if (SessionRemoteException.IsResult(reader))
                     {
