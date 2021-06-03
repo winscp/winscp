@@ -7258,6 +7258,7 @@ accountingReportStats(XML_Parser originParser, const char *epilog) {
     return;
   }
 
+  { // WINSCP
   const float amplificationFactor
       = accountingGetCurrentAmplification(rootParser);
   fprintf(stderr,
@@ -7266,6 +7267,7 @@ accountingReportStats(XML_Parser originParser, const char *epilog) {
           (void *)rootParser, rootParser->m_accounting.countBytesDirect,
           rootParser->m_accounting.countBytesIndirect,
           (double)amplificationFactor, epilog);
+  } // WINSCP
 }
 
 static void
@@ -7285,6 +7287,7 @@ accountingReportDiff(XML_Parser rootParser,
           bytesMore, (account == XML_ACCOUNT_DIRECT) ? "DIR" : "EXP",
           levelsAwayFromRootParser, source_line, 10, "");
 
+  { // WINSCP
   const char ellipis[] = "[..]";
   const size_t ellipsisLength = sizeof(ellipis) /* because compile-time */ - 1;
   const unsigned int contextLength = 10;
@@ -7308,6 +7311,7 @@ accountingReportDiff(XML_Parser rootParser,
     }
   }
   fprintf(stderr, "\"\n");
+  } // WINSCP
 }
 
 static XML_Bool
@@ -7328,11 +7332,13 @@ accountingDiffTolerated(XML_Parser originParser, int tok, const char *before,
   if (account == XML_ACCOUNT_NONE)
     return XML_TRUE; /* because these bytes have been accounted for, already */
 
+  { // WINSCP
   unsigned int levelsAwayFromRootParser;
   const XML_Parser rootParser
       = getRootParserOf(originParser, &levelsAwayFromRootParser);
   assert(! rootParser->m_parentParser);
 
+  { // WINSCP
   const int isDirect
       = (account == XML_ACCOUNT_DIRECT) && (originParser == rootParser);
   const ptrdiff_t bytesMore = after - before;
@@ -7346,6 +7352,7 @@ accountingDiffTolerated(XML_Parser originParser, int tok, const char *before,
     return XML_FALSE;
   *additionTarget += bytesMore;
 
+  { // WINSCP
   const XmlBigCount countBytesOutput
       = rootParser->m_accounting.countBytesDirect
         + rootParser->m_accounting.countBytesIndirect;
@@ -7363,6 +7370,9 @@ accountingDiffTolerated(XML_Parser originParser, int tok, const char *before,
   }
 
   return tolerated;
+  } // WINSCP
+  } // WINSCP
+  } // WINSCP
 }
 
 unsigned long long
@@ -7386,6 +7396,7 @@ entityTrackingReportStats(XML_Parser rootParser, ENTITY *entity,
   if (rootParser->m_entity_stats.debugLevel < 1)
     return;
 
+  { // WINSCP
 #  if defined(XML_UNICODE)
   const char *const entityName = "[..]";
 #  else
@@ -7401,6 +7412,7 @@ entityTrackingReportStats(XML_Parser rootParser, ENTITY *entity,
       (rootParser->m_entity_stats.currentDepth - 1) * 2, "",
       entity->is_param ? "%" : "&", entityName, action, entity->textLen,
       sourceLine);
+  } // WINSCP
 }
 
 static void
@@ -7961,7 +7973,7 @@ unsignedCharToPrintable(unsigned char c) {
     assert(0); /* never gets here */
     return "dead code";
   }
-  assert(0); /* never gets here */
+  // WINSCP assert(0); /* never gets here */
 }
 
 #endif /* XML_DTD */
