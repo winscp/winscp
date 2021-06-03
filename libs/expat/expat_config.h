@@ -118,7 +118,7 @@
 #define XML_DEV_URANDOM 1
 
 /* Define to make parameter entity parsing functionality available. */
-#undef XML_DTD
+#define XML_DTD 1
 
 /* Define to make XML Namespaces functionality available. */
 #define XML_NS 1
