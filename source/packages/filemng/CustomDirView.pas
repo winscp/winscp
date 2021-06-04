@@ -615,6 +615,7 @@ end;
 type
   TDirViewState = class(TObject)
   public
+    constructor Create;
     destructor Destroy; override;
 
   private
@@ -624,6 +625,11 @@ type
     Mask: string;
     FocusedItem: string;
   end;
+
+constructor TDirViewState.Create;
+begin
+  inherited;
+end;
 
 destructor TDirViewState.Destroy;
 begin

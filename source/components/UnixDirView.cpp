@@ -596,6 +596,7 @@ TObject * __fastcall TUnixDirView::SaveState()
 void __fastcall TUnixDirView::AnnounceState(TObject * State)
 {
   TObject * CustomDirViewState = NULL;
+  FAnnouncedDriveViewState = NULL;
   if (State != NULL)
   {
     TUnixDirViewState * UnixDirViewState = dynamic_cast<TUnixDirViewState *>(State);
