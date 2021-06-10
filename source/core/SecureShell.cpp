@@ -1709,7 +1709,6 @@ void __fastcall TSecureShell::Discard()
   bool WasActive = FActive;
   FActive = false;
   FOpened = false;
-  FClosed = true;
 
   if (WasActive)
   {
@@ -1721,6 +1720,7 @@ void __fastcall TSecureShell::Close()
 {
   LogEvent(L"Closing connection.");
   DebugAssert(FActive);
+  FClosed = true;
 
   // Without main channel SS_EOF is ignored and would get stuck waiting for exit code.
   if ((backend_exitcode(FBackendHandle) < 0) && winscp_query(FBackendHandle, WINSCP_QUERY_MAIN_CHANNEL))
