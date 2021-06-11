@@ -93,6 +93,13 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
   }
 }
 //---------------------------------------------------------------------------
+int GetCommandLineParseUrlFlags(TProgramParams * Params)
+{
+  return
+    pufAllowStoredSiteWithProtocol |
+    FLAGMASK(!CheckSafe(Params), pufUnsafe);
+}
+//---------------------------------------------------------------------------
 void __fastcall Upload(TTerminal * Terminal, TStrings * FileList, int UseDefaults)
 {
   UnicodeString TargetDirectory;
@@ -1134,9 +1141,7 @@ int __fastcall Execute()
         std::unique_ptr<TObjectList> DataList(new TObjectList());
         try
         {
-          int Flags =
-            pufAllowStoredSiteWithProtocol |
-            FLAGMASK(!CheckSafe(Params), pufUnsafe);
+          int Flags = GetCommandLineParseUrlFlags(Params);
           GetLoginData(AutoStartSession, Params, DataList.get(), DownloadFile, NeedSession, NULL, Flags);
           // GetLoginData now Aborts when session is needed and none is selected
           if (DebugAlwaysTrue(!NeedSession || (DataList->Count > 0)))

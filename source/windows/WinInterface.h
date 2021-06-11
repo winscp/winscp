@@ -170,6 +170,7 @@ bool __fastcall DoChangeMasterPasswordDialog(UnicodeString & NewPassword);
 int __fastcall Execute();
 void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
   TObjectList * DataList, UnicodeString & DownloadFile, bool NeedSession, TForm * LinkedForm, int Flags = 0);
+int GetCommandLineParseUrlFlags(TProgramParams * Params);
 
 // forms\InputDlg.cpp
 struct TInputDialogData
