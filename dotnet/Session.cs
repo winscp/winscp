@@ -238,12 +238,7 @@ namespace WinSCP
         {
             using (CreateCallstackAndLock())
             {
-                CheckNotDisposed();
-
-                if (Opened)
-                {
-                    throw Logger.WriteException(new InvalidOperationException("Session is already opened"));
-                }
+                CheckNotOpened();
 
                 if (sessionOptions == null)
                 {
@@ -423,12 +418,7 @@ namespace WinSCP
 
                 string result;
 
-                CheckNotDisposed();
-
-                if (Opened)
-                {
-                    throw Logger.WriteException(new InvalidOperationException("Session is already opened"));
-                }
+                CheckNotOpened();
 
                 try
                 {
