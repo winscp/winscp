@@ -1248,6 +1248,11 @@ void __fastcall EditSelectBaseName(HWND Edit)
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString GetConvertedKeyFileName(const UnicodeString & FileName)
+{
+  return ChangeFileExt(FileName, FORMAT(L".%s", (PuttyKeyExt)));
+}
+//---------------------------------------------------------------------------
 static void __fastcall ConvertKey(UnicodeString & FileName, TKeyType Type)
 {
   UnicodeString Passphrase;
@@ -1268,7 +1273,7 @@ static void __fastcall ConvertKey(UnicodeString & FileName, TKeyType Type)
 
   try
   {
-    FileName = ChangeFileExt(FileName, FORMAT(L".%s", (PuttyKeyExt)));
+    FileName = GetConvertedKeyFileName(FileName);
 
     if (!SaveDialog(LoadStr(CONVERTKEY_SAVE_TITLE), LoadStr(CONVERTKEY_SAVE_FILTER), PuttyKeyExt, FileName))
     {
@@ -1308,7 +1313,7 @@ void DoVerifyKey(UnicodeString & FileName, bool Convert, UnicodeString & Message
           if (Convert)
           {
             Configuration->Usage->Inc(L"PrivateKeyConvertSuggestionsNative");
-            UnicodeString ConvertMessage = FMTLOAD(KEY_TYPE_CONVERT3, (TypeName, RemoveMainInstructionsTag(Message)));
+            UnicodeString ConvertMessage = FMTLOAD(KEY_TYPE_CONVERT4, (TypeName, RemoveMainInstructionsTag(Message)));
             Message = EmptyStr;
             if (MoreMessageDialog(ConvertMessage, NULL, qtConfirmation, qaOK | qaCancel, HelpKeyword) == qaOK)
             {

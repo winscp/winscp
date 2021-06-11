@@ -655,6 +655,7 @@ BEGIN
         NEW_LOCAL_TAB_HINT, "Click to open new local tab.\nHold down Ctrl key to open new remote tab."
         NEW_REMOTE_TAB_HINT, "Click to open new session in new remote tab.\nHold down Shift Key to open new session in new window."
         NEW_REMOTE_TAB_CTRL_HINT, "%s\nHold down Ctrl key to open new local tab."
+        IMPORT_CONVERTED_KEYS, "%d key files in %d imported sessions were converted or replaced with existing keys in supported format."
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000–2021 Martin Prikryl"

@@ -879,21 +879,30 @@ UnicodeString __fastcall ExpandEnvironmentVariables(const UnicodeString & Str)
   return Buf;
 }
 //---------------------------------------------------------------------------
+UnicodeString GetNormalizedPath(const UnicodeString & Path)
+{
+  UnicodeString Result = ExcludeTrailingBackslash(Path);
+  Result = ReplaceChar(Result, L'/', L'\\');
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString GetCanonicalPath(const UnicodeString & Path)
+{
+  UnicodeString Result = ExtractShortPathName(Path);
+  if (Result.IsEmpty())
+  {
+    Result = Path;
+  }
+  Result = GetNormalizedPath(Result);
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsPathToSameFile(const UnicodeString & Path1, const UnicodeString & Path2)
 {
-  UnicodeString ShortPath1 = ExtractShortPathName(Path1);
-  UnicodeString ShortPath2 = ExtractShortPathName(Path2);
+  UnicodeString CanonicalPath1 = GetCanonicalPath(Path1);
+  UnicodeString CanonicalPath2 = GetCanonicalPath(Path2);
 
-  bool Result;
-  // ExtractShortPathName returns empty string if file does not exist
-  if (ShortPath1.IsEmpty() || ShortPath2.IsEmpty())
-  {
-    Result = AnsiSameText(Path1, Path2);
-  }
-  else
-  {
-    Result = AnsiSameText(ShortPath1, ShortPath2);
-  }
+  bool Result = SameText(CanonicalPath1, CanonicalPath2);
   return Result;
 }
 //---------------------------------------------------------------------------

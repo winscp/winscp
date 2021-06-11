@@ -650,6 +650,7 @@
 #define NEW_LOCAL_TAB_HINT      6042
 #define NEW_REMOTE_TAB_HINT     6043
 #define NEW_REMOTE_TAB_CTRL_HINT 6044
+#define IMPORT_CONVERTED_KEYS   6045
 
 // 2xxx is reserved for TextsFileZilla.h
 

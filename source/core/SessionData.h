@@ -488,6 +488,7 @@ public:
   void __fastcall ApplyRawSettings(TStrings * RawSettings, bool Unsafe);
   void __fastcall ApplyRawSettings(THierarchicalStorage * Storage, bool Unsafe);
   void __fastcall ImportFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
+  void ImportFromOpenssh(TStrings * Lines);
   void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport,
     const TSessionData * Default = NULL);
   void __fastcall SaveRecryptedPasswords(THierarchicalStorage * Storage);
@@ -718,6 +719,7 @@ public:
   void __fastcall Saved();
   void __fastcall ImportFromFilezilla(const UnicodeString FileName, const UnicodeString ConfigurationFileName);
   void __fastcall ImportFromKnownHosts(TStrings * Lines);
+  void ImportFromOpenssh(TStrings * Lines);
   void __fastcall Export(const UnicodeString FileName);
   void __fastcall Load(THierarchicalStorage * Storage, bool AsModified = false,
     bool UseDefaults = false, bool PuttyImport = false);
@@ -755,6 +757,7 @@ public:
     const UnicodeString & SourceKey, TStoredSessionList * Sessions, bool OnlySelected);
   static void __fastcall ImportSelectedKnownHosts(TStoredSessionList * Sessions);
   static bool __fastcall OpenHostKeysSubKey(THierarchicalStorage * Storage, bool CanCreate);
+  static void SelectKnownHostsForSelectedSessions(TStoredSessionList * KnownHosts, TStoredSessionList * Sessions);
 
 private:
   TSessionData * FDefaultSettings;
