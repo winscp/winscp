@@ -1525,7 +1525,7 @@ void __fastcall TSiteRawDialog::AddButtonClick(TObject *)
   UnicodeString RandomAppendix(L"_");
   BasicData->HostName = FactoryDefaults->HostName + RandomAppendix;
   BasicData->Ftps = TFtps(FactoryDefaults->Ftps + 1);
-  BasicData->PortNumber = DefaultPort(BasicData->FSProtocol, BasicData->Ftps) + 1;
+  BasicData->PortNumber = BasicData->GetDefaultPort() + 1;
   BasicData->UserName = FactoryDefaults->UserName + RandomAppendix;
   BasicData->Password = FactoryDefaults->Password + RandomAppendix;
 
