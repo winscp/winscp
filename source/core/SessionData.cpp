@@ -2425,10 +2425,15 @@ bool __fastcall TSessionData::GetCanOpen()
   return CanLogin || IsLocalBrowser;
 }
 //---------------------------------------------------------------------------
+int TSessionData::GetDefaultPort()
+{
+  return DefaultPort(FSProtocol, Ftps);
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetSessionKey()
 {
   UnicodeString Result = FORMAT(L"%s@%s", (UserName, HostName));
-  if (PortNumber != DefaultPort(FSProtocol, Ftps))
+  if (PortNumber != GetDefaultPort())
   {
     Result += FORMAT(L":%d", (PortNumber));
   }
@@ -3335,7 +3340,7 @@ UnicodeString __fastcall TSessionData::GenerateSessionUrl(unsigned int Flags)
     Url += EncodeUrlString(HostNameExpanded);
   }
 
-  if (PortNumber != DefaultPort(FSProtocol, Ftps))
+  if (PortNumber != GetDefaultPort())
   {
     Url += L":" + IntToStr(PortNumber);
   }
@@ -3552,7 +3557,7 @@ void __fastcall TSessionData::GenerateAssemblyCode(
     AddAssemblyProperty(Head, Language, L"HostName", HostName);
     SessionData->HostName = FactoryDefaults->HostName;
   }
-  int ADefaultPort = DefaultPort(FSProtocol, Ftps);
+  int ADefaultPort = GetDefaultPort();
   if (SessionData->PortNumber != ADefaultPort)
   {
     AddAssemblyProperty(Head, Language, L"PortNumber", PortNumber);

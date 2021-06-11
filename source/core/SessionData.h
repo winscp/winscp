@@ -520,6 +520,7 @@ public:
   bool __fastcall HasRawSettingsForUrl();
   bool __fastcall HasSessionName();
   bool HasAutoCredentials();
+  int GetDefaultPort();
 
   UnicodeString __fastcall GenerateOpenCommandArgs(bool Rtf);
   void __fastcall GenerateAssemblyCode(TAssemblyLanguage Language, UnicodeString & Head, UnicodeString & Tail, int & Indent);
