@@ -49,7 +49,9 @@ static void finalize_common(struct ec_curve * curve)
 
 static void finalize_wcurve(struct ec_curve *curve)
 {
-    // TODO
+    ecc_weierstrass_curve_free(curve->w.wc);
+    ecc_weierstrass_point_free(curve->w.G);
+    mp_free(curve->w.G_order);
     finalize_common(curve);
 }
 
