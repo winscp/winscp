@@ -509,10 +509,11 @@ bool __fastcall TCustomScpExplorerForm::CommandLineFromAnotherInstance(
       StoredSessions->Reload();
       UnicodeString SessionName = Params.Param[1];
       std::unique_ptr<TObjectList> DataList(new TObjectList());
-      UnicodeString DownloadFile; // unused
       try
       {
-        GetLoginData(SessionName, &Params, DataList.get(), DownloadFile, true, this);
+        UnicodeString DownloadFile; // unused
+        int Flags = GetCommandLineParseUrlFlags(&Params);
+        GetLoginData(SessionName, &Params, DataList.get(), DownloadFile, true, this, Flags);
       }
       catch (EAbort &)
       {
