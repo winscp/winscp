@@ -13,6 +13,7 @@
 #include "RemoteFiles.h"
 #include "SFTPFileSystem.h"
 #include "S3FileSystem.h"
+#include "FileMasks.h"
 #include <Soap.EncdDecd.hpp>
 #include <StrUtils.hpp>
 #include <XMLDoc.hpp>
@@ -75,10 +76,44 @@ const UnicodeString UrlRawSettingsParamNamePrefix(L"x-");
 const UnicodeString PassphraseOption(L"passphrase");
 const UnicodeString RawSettingsOption(L"rawsettings");
 const UnicodeString S3HostName(S3LibDefaultHostName());
+const UnicodeString OpensshHostDirective(L"Host");
 //---------------------------------------------------------------------
 TDateTime __fastcall SecToDateTime(int Sec)
 {
   return TDateTime(double(Sec) / SecsPerDay);
+}
+//---------------------------------------------------------------------
+static bool IsValidOpensshLine(const UnicodeString & Line)
+{
+  return !Line.IsEmpty() && (Line[1] != L'#');
+}
+//---------------------------------------------------------------------
+static bool ParseOpensshDirective(const UnicodeString & ALine, UnicodeString & Directive, UnicodeString & Value)
+{
+  bool Result = IsValidOpensshLine(ALine);
+  if (Result)
+  {
+    int From = 1;
+    wchar_t Equal = L'=';
+    UnicodeString Delimiters(UnicodeString(L" \t") + Equal);
+    wchar_t Delimiter;
+    UnicodeString Line = Trim(ALine);
+    Directive = CopyToChars(Line, From, Delimiters, false, &Delimiter, false);
+    Result = !Directive.IsEmpty();
+    if (Result)
+    {
+      Value = Line;
+      Value.Delete(1, Directive.Length() + 1);
+      Value = Trim(Value);
+      if ((Delimiter != Equal) && !Value.IsEmpty() && (Value[1] == Equal))
+      {
+        Value.Delete(1, 1);
+        Value = Trim(Value); // not sure about this, but for the directives we support it does not matter
+      }
+      Result = !Value.IsEmpty();
+    }
+  }
+  return Result;
 }
 //--- TSessionData ----------------------------------------------------
 __fastcall TSessionData::TSessionData(UnicodeString aName):
@@ -1547,6 +1582,135 @@ void __fastcall TSessionData::ImportFromFilezilla(
     }
   }
 
+}
+//---------------------------------------------------------------------
+bool OpensshBoolValue(const UnicodeString & Value)
+{
+  return SameText(Value, L"yes");
+}
+//---------------------------------------------------------------------
+UnicodeString CutOpensshToken(UnicodeString & S)
+{
+  DebugAssert(!S.IsEmpty() && (S == Trim(S)));
+  int From = 1;
+  UnicodeString Result = CopyToChars(S, From, L" \t", false);
+  S.Delete(1, Result.Length());
+  S = Trim(S);
+  DebugAssert(!Result.IsEmpty() && (Result == Trim(Result)));
+  Result = Trim(Result);
+  return Result;
+}
+//---------------------------------------------------------------------
+void TSessionData::ImportFromOpenssh(TStrings * Lines)
+{
+  bool SkippingSection = false;
+  std::unique_ptr<TStrings> UsedDirectives(CreateSortedStringList());
+  for (int Index = 0; Index < Lines->Count; Index++)
+  {
+    UnicodeString Line = Lines->Strings[Index];
+    UnicodeString Directive, Value;
+    if (ParseOpensshDirective(Line, Directive, Value))
+    {
+      if (SameText(Directive, OpensshHostDirective))
+      {
+        DebugAssert(!Value.IsEmpty() && (Value == Trim(Value)));
+
+        SkippingSection = true;
+        while (!Value.IsEmpty())
+        {
+          UnicodeString M = CutOpensshToken(Value);
+          bool Negated = DebugAlwaysTrue(!M.IsEmpty()) && (M[1] == L'!');
+          if (Negated)
+          {
+            M.Delete(1, 1);
+          }
+          TFileMasks Mask;
+          Mask.SetMask(M);
+          // This does way more than OpenSSH, but on the other hand, the special characters of our file masks,
+          // should not be present in hostnames.
+          if (Mask.Matches(Name, false, UnicodeString(), NULL))
+          {
+            if (Negated)
+            {
+              // Skip even if matched by other possitive patterns
+              SkippingSection = true;
+              break;
+            }
+            else
+            {
+              // Keep looking, in case if negated
+              SkippingSection = false;
+            }
+          }
+        }
+      }
+      else if (SameText(Directive, L"Match"))
+      {
+        SkippingSection = true;
+      }
+      else if (!SkippingSection && (UsedDirectives->IndexOf(Directive) < 0))
+      {
+        if (SameText(Directive, L"AddressFamily"))
+        {
+          if (SameText(Value, L"inet"))
+          {
+            AddressFamily = afIPv4;
+          }
+          else if (SameText(Value, L"inet6"))
+          {
+            AddressFamily = afIPv6;
+          }
+          else
+          {
+            AddressFamily = afAuto;
+          }
+        }
+        else if (SameText(Directive, L"BindAddress"))
+        {
+          SourceAddress = Value;
+        }
+        else if (SameText(Directive, L"Compression"))
+        {
+          Compression = OpensshBoolValue(Value);
+        }
+        else if (SameText(Directive, L"ForwardAgent"))
+        {
+          AgentFwd = OpensshBoolValue(Value);
+        }
+        else if (SameText(Directive, L"GSSAPIAuthentication"))
+        {
+          AuthGSSAPI = OpensshBoolValue(Value);
+        }
+        else if (SameText(Directive, L"GSSAPIDelegateCredentials"))
+        {
+          AuthGSSAPIKEX = OpensshBoolValue(Value);
+        }
+        else if (SameText(Directive, L"Hostname"))
+        {
+          HostName = Value;
+        }
+        else if (SameText(Directive, L"IdentityFile"))
+        {
+          // It's likely there would be forward slashes in OpenSSH config file and our load/save dialogs
+          // (e.g. when converting keys) work suboptimally when working with forward slashes.
+          PublicKeyFile = GetNormalizedPath(Value);
+        }
+        else if (SameText(Directive, L"KbdInteractiveAuthentication"))
+        {
+          AuthKI = OpensshBoolValue(Value);
+        }
+        else if (SameText(Directive, L"Port"))
+        {
+          PortNumber = StrToInt(Value);
+        }
+        else if (SameText(Directive, L"User"))
+        {
+          UserName = Value;
+        }
+        UsedDirectives->Add(Directive);
+      }
+    }
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool PuttyExport, bool DoNotEncryptPasswords, bool SaveAll)
@@ -4607,6 +4771,11 @@ void __fastcall TStoredSessionList::ImportFromFilezilla(
   }
 }
 //---------------------------------------------------------------------
+UnicodeString FormatKnownHostName(const UnicodeString & HostName, int PortNumber)
+{
+  return FORMAT(L"%s:%d", (HostName, PortNumber));
+}
+//---------------------------------------------------------------------
 void __fastcall TStoredSessionList::ImportFromKnownHosts(TStrings * Lines)
 {
   bool SessionList = false;
@@ -4625,7 +4794,7 @@ void __fastcall TStoredSessionList::ImportFromKnownHosts(TStrings * Lines)
     {
       UnicodeString Line = Lines->Strings[Index];
       Line = Trim(Line);
-      if (!Line.IsEmpty() && (Line[1] != L';'))
+      if (IsValidOpensshLine(Line))
       {
         int P = Pos(L' ', Line);
         if (P > 0)
@@ -4654,7 +4823,7 @@ void __fastcall TStoredSessionList::ImportFromKnownHosts(TStrings * Lines)
           UnicodeString NameStr = HostNameStr;
           if (PortNumber >= 0)
           {
-            NameStr = FORMAT(L"%s:%d", (NameStr, PortNumber));
+            NameStr = FormatKnownHostName(NameStr, PortNumber);
           }
 
           std::unique_ptr<TSessionData> SessionDataOwner;
@@ -4712,6 +4881,34 @@ void __fastcall TStoredSessionList::ImportFromKnownHosts(TStrings * Lines)
     }
 
     throw Exception(Message);
+  }
+}
+//---------------------------------------------------------------------
+void TStoredSessionList::ImportFromOpenssh(TStrings * Lines)
+{
+  std::unique_ptr<TStrings> Hosts(CreateSortedStringList());
+  for (int Index = 0; Index < Lines->Count; Index++)
+  {
+    UnicodeString Line = Lines->Strings[Index];
+    UnicodeString Directive, Value;
+    if (ParseOpensshDirective(Line, Directive, Value) &&
+        SameText(Directive, OpensshHostDirective))
+    {
+      while (!Value.IsEmpty())
+      {
+        UnicodeString Name = CutOpensshToken(Value);
+        if ((Hosts->IndexOf(Name) < 0) && (Name.LastDelimiter(L"*?") == 0))
+        {
+          std::unique_ptr<TSessionData> Data(new TSessionData(EmptyStr));
+          Data->CopyData(DefaultSettings);
+          Data->Name = Name;
+          Data->HostName = Name;
+          Data->ImportFromOpenssh(Lines);
+          Add(Data.release());
+          Hosts->Add(Name);
+        }
+      }
+    }
   }
 }
 //---------------------------------------------------------------------
@@ -5063,6 +5260,28 @@ void __fastcall TStoredSessionList::ImportSelectedKnownHosts(TStoredSessionList 
           UnicodeString Key = CutToChar(HostKey, L'=', true);
           Storage->WriteStringRaw(Key, HostKey);
         }
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void TStoredSessionList::SelectKnownHostsForSelectedSessions(
+  TStoredSessionList * KnownHosts, TStoredSessionList * Sessions)
+{
+  for (int SessionIndex = 0; SessionIndex < Sessions->Count; SessionIndex++)
+  {
+    TSessionData * Session = Sessions->Sessions[SessionIndex];
+    if (Session->Selected)
+    {
+      UnicodeString Key = Session->HostName;
+      if (Session->PortNumber != Session->GetDefaultPort())
+      {
+        Key = FormatKnownHostName(Key, Session->PortNumber);
+      }
+      TSessionData * KnownHost = dynamic_cast<TSessionData *>(KnownHosts->FindByName(Key));
+      if (KnownHost != NULL)
+      {
+        KnownHost->Selected = true;
       }
     }
   }

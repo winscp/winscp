@@ -644,6 +644,7 @@ BEGIN
         SYNCHRONIZE_CHECKLIST_DELETE_REMOTE, "Delete obsolete remote file"
         SYNCHRONIZE_CHECKLIST_DELETE_LOCAL, "Delete obsolete local file"
         SYNCHRONIZE_CHECKLIST_REVERSE, "Click to reverse"
+        IMPORT_CONVERTED_KEYS, "%d key files in %d imported sessions were converted or replaced with existing keys in supported format."
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000–2021 Martin Prikryl"

@@ -248,6 +248,8 @@ BEGIN
   S3_CONFIG_ERROR, "Error reading AWS configuration parameter %s"
   TIMEOUT_ERROR, "Timeout waiting for server to respond."
   CREATE_TEMP_DIR_ERROR, "Cannot create temporary directory '%s'. You may change root directory to store temporary files in Preferences."
+  OPENSSH_CONFIG_NOT_FOUND, "OpenSSH config file not found."
+  OPENSSH_CONFIG_NO_SITES, "No Host directives for specific hosts found in OpenSSH config file (%s)."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"
@@ -293,7 +295,7 @@ BEGIN
   CERT_TEXT2, "Issuer:\n%s\nSubject:\n%s\nValid: %s - %s\n\nFingerprints:\n- SHA-256: %s\n- SHA-1: %s\n\nSummary: %s"
   CERTIFICATE_PASSPHRASE_PROMPT, "&Passphrase for client certificate:"
   CERTIFICATE_PASSPHRASE_TITLE, "Client certificate passphrase"
-  KEY_TYPE_CONVERT3, "**Do you want to convert this %s private key to PuTTY format?**\n\n%s"
+  KEY_TYPE_CONVERT4, "**Do you want to convert %s private key to PuTTY format?**\n\n%s"
   MULTI_FILES_TO_ONE, "**Are you sure you want to transfer multiple files to a single file '%s' in a directory '%s'?**\n\nThe files will overwrite one another.\n\nIf you actually want to transfer all files to a directory '%s', keeping their name, make sure you terminate the path with a slash."
   KEY_EXCHANGE_ALG, "key-exchange algorithm"
   KEYKEY_TYPE, "host key type"

@@ -40,11 +40,13 @@ private:
   TList * FSessionListsList;
   TStrings * FErrors;
   std::unique_ptr<TStoredSessionList> FPastedKnownHosts;
+  int FKnownHostsIndex;
   void __fastcall UpdateControls();
   void __fastcall LoadSessions();
   void __fastcall ClearSelections();
   void __fastcall SaveSelection();
   TStoredSessionList * __fastcall GetSessionList(int Index);
+  TSessionData * GetSessionData(TListItem * Item);
   virtual void __fastcall CreateHandle();
   virtual void __fastcall DestroyHandle();
   virtual void __fastcall Dispatch(void * Message);

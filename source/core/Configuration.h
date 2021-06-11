@@ -275,6 +275,7 @@ public:
     TStoredSessionList * Sessions, UnicodeString & Error);
   TStoredSessionList * __fastcall SelectKnownHostsSessionsForImport(
     TStrings * Lines, TStoredSessionList * Sessions, UnicodeString & Error);
+  TStoredSessionList * SelectOpensshSessionsForImport(TStoredSessionList * Sessions, UnicodeString & Error);
 
   __property TVSFixedFileInfo *FixedApplicationInfo  = { read=GetFixedApplicationInfo };
   __property void * ApplicationInfo  = { read=GetApplicationInfo };
