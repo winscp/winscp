@@ -7244,7 +7244,7 @@ void __fastcall TCustomScpExplorerForm::DoShow()
 
   // This was previously in NeedSession, where other related code is.
   // But that is called from CMShowingChanged, when the window is already visible and the local-local window state
-  // unpleasanly shows briefly.
+  // unpleasantly shows briefly.
   if ((ManagedSession == NULL) &&
       !WinConfiguration->ShowLoginWhenNoSession &&
       WinConfiguration->AutoSaveWorkspace && !WinConfiguration->AutoWorkspace.IsEmpty() &&
