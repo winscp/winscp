@@ -3,6 +3,7 @@
 #pragma hdrstop
 
 #include <StrUtils.hpp>
+#include <System.IOUtils.hpp>
 #include <Common.h>
 #include <math.h>
 
@@ -2647,6 +2648,7 @@ void __fastcall TPreferencesDialog::AddExtension()
     bool Latest;
     UnicodeString FileName;
     UnicodeString ExtensionPath;
+    UnicodeString LinesSourcePath;
     std::unique_ptr<TStringList> Lines(new TStringList());
     std::unique_ptr<TCustomCommandType> CustomCommand;
 
@@ -2716,6 +2718,7 @@ void __fastcall TPreferencesDialog::AddExtension()
           ProvisionaryId = WinConfiguration->GetProvisionaryExtensionId(FileName);
         }
 
+        LinesSourcePath = Path;
         LoadScriptFromFile(Path, Lines.get());
       }
 
@@ -2787,7 +2790,16 @@ void __fastcall TPreferencesDialog::AddExtension()
           ExtensionPath = WinConfiguration->UniqueExtensionName(LeftStr(OriginalExtensionPath, P - 1), Counter) + RightStr(OriginalExtensionPath, OriginalExtensionPath.Length() - P + 1);
         }
 
-        Lines->SaveToFile(ApiPath(ExtensionPath));
+        if (!LinesSourcePath.IsEmpty())
+        {
+          // Copy as is, exactly preserving the file encoding
+          TFile::Copy(ApiPath(LinesSourcePath), ApiPath(ExtensionPath));
+        }
+        else
+        {
+          Lines->WriteBOM = false;
+          Lines->SaveToFile(ApiPath(ExtensionPath));
+        }
 
         FAddedExtensions->Add(ExtensionPath);
       }
