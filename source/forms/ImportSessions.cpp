@@ -257,7 +257,6 @@ bool __fastcall TImportSessionsDialog::Execute()
 
     if (SourceComboBox->ItemIndex == OpensshIndex)
     {
-      int ConvertedKeys = 0;
       std::unique_ptr<TStrings> ConvertedSessions(new TStringList());
       std::unique_ptr<TStrings> ConvertedKeyFiles(new TStringList());
       std::unique_ptr<TStrings> NotConvertedKeyFiles(CreateSortedStringList());
