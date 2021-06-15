@@ -125,6 +125,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
       Top = 0
       Width = 185
       Height = 26
+      AllowDrag = False
       Color = clWindow
       object Toolbar: TTBXToolbar
         Left = 0
