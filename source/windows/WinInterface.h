@@ -355,6 +355,7 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   TGetSynchronizeOptionsEvent OnGetOptions,
   TSynchronizeSessionLog OnSynchronizeSessionLog,
   TFeedSynchronizeError & OnFeedSynchronizeError,
+  TNotifyEvent & OnSynchronizeAbort,
   TSynchronizeInNewWindow OnSynchronizeInNewWindow,
   int AutoSubmit);
 

@@ -291,8 +291,10 @@ private:
   HWND FHiddenWindow;
   TStrings * FTransferResumeList;
   bool FMoveToQueue;
-  bool FStandaloneEditing;
+  bool FStandaloneOperation;
   TFeedSynchronizeError FOnFeedSynchronizeError;
+  TNotifyEvent FOnSynchronizeAbort;
+  TTerminal * FSynchronizeTerminal;
   bool FNeedSession;
   TTerminal * FFileFindTerminal;
   UnicodeString FFileColorsCurrent;
@@ -893,6 +895,7 @@ public:
   __property TManagedTerminal * Terminal = { read = GetTerminal };
   __property TTerminalQueue * Queue = { read = FQueue, write = SetQueue };
   __property TColor SessionColor = { read = FSessionColor, write = SetSessionColor };
+  __property bool StandaloneOperation = { read = FStandaloneOperation, write = FStandaloneOperation };
 };
 //---------------------------------------------------------------------------
 class TAutoBatch
