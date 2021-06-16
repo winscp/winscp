@@ -1217,6 +1217,7 @@ int __fastcall Execute()
                   if ((ParamCommand != pcNone) || !DownloadFile.IsEmpty())
                   {
                     Configuration->Usage->Inc(L"CommandLineOperation");
+                    ScpExplorer->StandaloneOperation = true;
                   }
 
                   if (ParamCommand == pcUpload)
@@ -1249,6 +1250,8 @@ int __fastcall Execute()
                       LifetimeRuns = Configuration->Usage->Inc(L"RunsNormal");
                     }
                   }
+
+                  ScpExplorer->StandaloneOperation = false;
 
                   if (Browse)
                   {

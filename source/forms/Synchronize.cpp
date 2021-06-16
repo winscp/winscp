@@ -33,13 +33,16 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   TGetSynchronizeOptionsEvent OnGetOptions,
   TSynchronizeSessionLog OnSynchronizeSessionLog,
   TFeedSynchronizeError & OnFeedSynchronizeError,
+  TNotifyEvent & OnSynchronizeAbort,
   TSynchronizeInNewWindow OnSynchronizeInNewWindow,
   int AutoSubmit)
 {
   bool Result;
   TSynchronizeDialog * Dialog = SafeFormCreate<TSynchronizeDialog>(Application);
 
-  Dialog->Init(OnStartStop, OnGetOptions, OnSynchronizeSessionLog, OnFeedSynchronizeError, OnSynchronizeInNewWindow, AutoSubmit);
+  Dialog->Init(
+    OnStartStop, OnGetOptions, OnSynchronizeSessionLog, OnFeedSynchronizeError, OnSynchronizeAbort,
+    OnSynchronizeInNewWindow, AutoSubmit);
 
   try
   {
@@ -58,6 +61,7 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   __finally
   {
     delete Dialog;
+    OnSynchronizeAbort = NULL;
   }
 
   return Result;
@@ -95,6 +99,7 @@ void __fastcall TSynchronizeDialog::Init(TSynchronizeStartStopEvent OnStartStop,
   TGetSynchronizeOptionsEvent OnGetOptions,
   TSynchronizeSessionLog OnSynchronizeSessionLog,
   TFeedSynchronizeError & OnFeedSynchronizeError,
+  TNotifyEvent & OnSynchronizeAbort,
   TSynchronizeInNewWindow OnSynchronizeInNewWindow,
   int AutoSubmit)
 {
@@ -102,6 +107,7 @@ void __fastcall TSynchronizeDialog::Init(TSynchronizeStartStopEvent OnStartStop,
   FOnGetOptions = OnGetOptions;
   FOnSynchronizeSessionLog = OnSynchronizeSessionLog;
   FOnFeedSynchronizeError = &OnFeedSynchronizeError;
+  OnSynchronizeAbort = &SynchronizeAbort;
   DebugAssert(OnSynchronizeInNewWindow != NULL);
   FOnSynchronizeInNewWindow = OnSynchronizeInNewWindow;
   if (AutoSubmit == 0)
@@ -140,6 +146,11 @@ void __fastcall TSynchronizeDialog::FeedSynchronizeError(
   const UnicodeString & HelpKeyword)
 {
   DoLogInternal(slContinuedError, Message, MoreMessages, Type, HelpKeyword);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::SynchronizeAbort(TObject *)
+{
+  Abort(true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::UpdateControls()
@@ -361,11 +372,16 @@ void __fastcall TSynchronizeDialog::Dispatch(void * AMessage)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeDialog::DoAbort(TObject * /*Sender*/, bool Close)
+void TSynchronizeDialog::Abort(bool Close)
 {
   FAbort = true;
   FClose = Close;
   PostMessage(Handle, WM_USER_STOP, 0, 0);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::DoAbort(TObject * /*Sender*/, bool Close)
+{
+  Abort(Close);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::DoLogInternal(

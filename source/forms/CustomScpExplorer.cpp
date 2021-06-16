@@ -206,8 +206,10 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FLastContextPopupScreenPoint = TPoint(-1, -1);
   FTransferResumeList = NULL;
   FMoveToQueue = false;
-  FStandaloneEditing = false;
+  StandaloneOperation = false;
   FOnFeedSynchronizeError = NULL;
+  FOnSynchronizeAbort = NULL;
+  FSynchronizeTerminal = NULL;
   FNeedSession = false;
   FDoNotIdleCurrentTerminal = 0;
   FIncrementalSearching = 0;
@@ -802,7 +804,7 @@ bool __fastcall TCustomScpExplorerForm::IsQueueAutoPopup()
 {
   // during standalone editing, we have no way to see/control queue,
   // so we have to always popup prompts automatically
-  return FStandaloneEditing || GUIConfiguration->QueueAutoPopup;
+  return StandaloneOperation || GUIConfiguration->QueueAutoPopup;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RefreshQueueItems()
@@ -3193,7 +3195,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
         Editor = ShowEditorForm(FileName, this, OnFileChanged,
           FEditorManager->FileReload, FEditorManager->FileClosed,
           OnSaveAll, OnAnyModified,
-          Caption, FStandaloneEditing, SessionColor, Terminal->SessionData->InternalEditorEncoding, NewFile);
+          Caption, StandaloneOperation, SessionColor, Terminal->SessionData->InternalEditorEncoding, NewFile);
       }
       catch(...)
       {
@@ -3208,7 +3210,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
     }
     else
     {
-      DebugAssert(!FStandaloneEditing);
+      DebugAssert(!StandaloneOperation);
       TForm * Editor =
         ShowEditorForm(FileName, this, NULL, NULL, LocalEditorClosed,
           SaveAllInternalEditors, AnyInternalEditorModified,
@@ -4620,7 +4622,10 @@ void __fastcall TCustomScpExplorerForm::UpdateStatusPanelText(TTBXStatusPanel * 
 void __fastcall TCustomScpExplorerForm::Idle()
 {
 
-  if (FShowing || FStandaloneEditing)
+  if (FShowing ||
+      // Particularly to detect closed connection and automatically reconnect it while waiting for changes
+      // while "keeping remote directory up to date"
+      StandaloneOperation)
   {
     FEditorManager->Check();
 
@@ -4660,7 +4665,7 @@ void __fastcall TCustomScpExplorerForm::Idle()
     }
   }
 
-  if (FShowing || FStandaloneEditing)
+  if (FShowing || StandaloneOperation)
   {
     if (FQueueStatusInvalidated)
     {
@@ -5388,9 +5393,12 @@ bool __fastcall TCustomScpExplorerForm::DoSynchronizeDirectories(
     int Options =
       FLAGMASK(SynchronizeAllowSelectedOnly(), soAllowSelectedOnly);
     DebugAssert(FOnFeedSynchronizeError == NULL);
+    DebugAssert(FOnSynchronizeAbort == NULL);
+    DebugAssert(FSynchronizeTerminal == NULL);
+    FSynchronizeTerminal = Terminal;
     Result = DoSynchronizeDialog(Params, &CopyParam, Controller.StartStop,
       SaveSettings, Options, CopyParamAttrs, GetSynchronizeOptions, SynchronizeSessionLog,
-      FOnFeedSynchronizeError, SynchronizeInNewWindow, UseDefaults);
+      FOnFeedSynchronizeError, FOnSynchronizeAbort, SynchronizeInNewWindow, UseDefaults);
     if (Result)
     {
       if (SaveSettings)
@@ -5418,6 +5426,9 @@ bool __fastcall TCustomScpExplorerForm::DoSynchronizeDirectories(
     FSynchronizeController = NULL;
     DebugAssert(FOnFeedSynchronizeError == NULL);
     FOnFeedSynchronizeError = NULL;
+    DebugAssert(FOnSynchronizeAbort == NULL);
+    FOnSynchronizeAbort = NULL;
+    FSynchronizeTerminal = NULL;
   }
   return Result;
 }
@@ -6039,7 +6050,6 @@ void __fastcall TCustomScpExplorerForm::StandaloneEdit(const UnicodeString & Fil
   if (File != NULL)
   {
     std::unique_ptr<TRemoteFile> FileOwner(File);
-    TAutoFlag Flag(FStandaloneEditing);
 
     ExecuteRemoteFile(FullFileName, File, efInternalEditor);
 
@@ -6655,6 +6665,12 @@ void __fastcall TCustomScpExplorerForm::DetachTerminal(TObject * ATerminal)
   if (FClipboardTerminal == ATerminal)
   {
     ClipboardClear(); // implies ClipboardStop
+  }
+
+  if ((FOnSynchronizeAbort != NULL) &&
+      (ATerminal == FManagedSession))
+  {
+    FOnSynchronizeAbort(NULL);
   }
 }
 //---------------------------------------------------------------------------
