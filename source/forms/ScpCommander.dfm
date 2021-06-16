@@ -443,24 +443,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           Action = NonVisualDataModule.ColorMenuAction2
           Color = clNone
         end
-        object TBXSeparatorItem29: TTBXSeparatorItem
-        end
-        object TBXSubmenuItem21: TTBXSubmenuItem
-          Action = NonVisualDataModule.OpenedTabsAction
-        end
-        object TBXSubmenuItem231: TTBXSubmenuItem
-          Action = NonVisualDataModule.WorkspacesAction
-        end
-        object TBXItem230: TTBXItem
-          Action = NonVisualDataModule.SaveWorkspaceAction
-        end
-      end
-      object TBXSubmenuItem19: TTBXSubmenuItem
-        Caption = '&Session'
-        HelpKeyword = 'ui_commander_menu#session'
-        Hint = 'Session commands'
-        object TBXItem113: TTBXItem
-          Action = NonVisualDataModule.NewSessionAction
+        object TBXSeparatorItem69: TTBXSeparatorItem
         end
         object TBXItem252: TTBXItem
           Action = NonVisualDataModule.DisconnectSessionAction
@@ -484,6 +467,17 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
         object TBXItem76: TTBXItem
           Action = NonVisualDataModule.PrivateKeyUploadAction
+        end
+        object TBXSeparatorItem29: TTBXSeparatorItem
+        end
+        object TBXSubmenuItem21: TTBXSubmenuItem
+          Action = NonVisualDataModule.OpenedTabsAction
+        end
+        object TBXSubmenuItem231: TTBXSubmenuItem
+          Action = NonVisualDataModule.WorkspacesAction
+        end
+        object TBXItem230: TTBXItem
+          Action = NonVisualDataModule.SaveWorkspaceAction
         end
         object TBXSeparatorItem23: TTBXSeparatorItem
         end
