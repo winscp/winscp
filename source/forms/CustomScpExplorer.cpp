@@ -5599,15 +5599,29 @@ void __fastcall TCustomScpExplorerForm::DoSynchronize(
     }
     catch (Exception & E)
     {
-      if (FLAGSET(Params.Options, soContinueOnError) && Terminal->Active &&
-          DebugAlwaysTrue(FOnFeedSynchronizeError != NULL))
+      if (!Terminal->Active)
       {
-        // noop, already logged in MoreMessageDialog
+        ShowExtendedExceptionEx(Terminal, &E);
+        // Do not abort the "keep up to date" when the session was succesfully reconnected.
+        if (!Terminal->Active)
+        {
+          throw;
+        }
       }
       else
       {
-        ShowExtendedExceptionEx(Terminal, &E);
-        throw;
+        if (FLAGSET(Params.Options, soContinueOnError) &&
+            DebugAlwaysTrue(FOnFeedSynchronizeError != NULL))
+        {
+          // noop, already logged in MoreMessageDialog
+        }
+        else
+        {
+          // We get mostly EAbort here, so this is noop.
+          // Exception is an error when listing directories while looking for differences.
+          ShowExtendedExceptionEx(Terminal, &E);
+          throw;
+        }
       }
     }
   }
