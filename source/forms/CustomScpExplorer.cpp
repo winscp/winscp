@@ -6668,7 +6668,7 @@ void __fastcall TCustomScpExplorerForm::DetachTerminal(TObject * ATerminal)
   }
 
   if ((FOnSynchronizeAbort != NULL) &&
-      (ATerminal == FManagedSession))
+      (ATerminal == FTerminal))
   {
     FOnSynchronizeAbort(NULL);
   }
