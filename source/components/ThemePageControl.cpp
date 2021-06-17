@@ -687,62 +687,72 @@ int TThemePageControl::TotalTabsWidth()
 //----------------------------------------------------------------------------------------------------------
 void TThemePageControl::UpdateTabsCaptionTruncation()
 {
-  FSessionTabShrink = 0;
-  for (int Index = 0; Index < PageCount; Index++)
+  DisableAlign();
+  Tabs->BeginUpdate();
+  try
   {
-    Pages[Index]->UpdateCaption();
-  }
-
-  int TabsWidth = TotalTabsWidth();
-  int MaxWidth = ClientWidth - ScaleByTextHeight(this, 8); // arbitrary margin to avoid left/right buttons flicker
-  if (TabsWidth > MaxWidth)
-  {
-    int NeedWidth = (TabsWidth - MaxWidth);
-    int MaxLen = 0;
-    int CaptionsWidth = 0;
-    for (int Index = 0; Index < PageCount; Index++)
-    {
-      UnicodeString TabCaption = Pages[Index]->BaseCaption;
-      MaxLen = std::max(MaxLen, TabCaption.Length());
-      CaptionsWidth += Canvas->TextWidth(TabCaption);
-    }
-
-    bool Repeat;
-    do
-    {
-      int NewShrink;
-      if (FSessionTabShrink == 0)
-      {
-        NewShrink = MaxLen; // remove only new tab caption
-      }
-      else
-      {
-        NewShrink = FSessionTabShrink - 1;
-      }
-
-      if (NewShrink < 1)
-      {
-        Repeat = false;
-      }
-      else
-      {
-        FSessionTabShrink = NewShrink;
-        int NewCaptionsWidth = 0;
-        for (int Index = 0; Index < PageCount; Index++)
-        {
-          UnicodeString TabCaption = Pages[Index]->TruncatedCaption();
-          NewCaptionsWidth += Canvas->TextWidth(TabCaption);
-        }
-        int GainedWidth = (CaptionsWidth - NewCaptionsWidth);
-        Repeat = (GainedWidth < NeedWidth);
-      }
-    }
-    while (Repeat);
-
+    FSessionTabShrink = 0;
     for (int Index = 0; Index < PageCount; Index++)
     {
       Pages[Index]->UpdateCaption();
     }
+
+    int TabsWidth = TotalTabsWidth();
+    int MaxWidth = ClientWidth - ScaleByTextHeight(this, 8); // arbitrary margin to avoid left/right buttons flicker
+    if (TabsWidth > MaxWidth)
+    {
+      int NeedWidth = (TabsWidth - MaxWidth);
+      int MaxLen = 0;
+      int CaptionsWidth = 0;
+      for (int Index = 0; Index < PageCount; Index++)
+      {
+        UnicodeString TabCaption = Pages[Index]->BaseCaption;
+        MaxLen = std::max(MaxLen, TabCaption.Length());
+        CaptionsWidth += Canvas->TextWidth(TabCaption);
+      }
+
+      bool Repeat;
+      do
+      {
+        int NewShrink;
+        if (FSessionTabShrink == 0)
+        {
+          NewShrink = MaxLen; // remove only new tab caption
+        }
+        else
+        {
+          NewShrink = FSessionTabShrink - 1;
+        }
+
+        if (NewShrink < 1)
+        {
+          Repeat = false;
+        }
+        else
+        {
+          FSessionTabShrink = NewShrink;
+          int NewCaptionsWidth = 0;
+          for (int Index = 0; Index < PageCount; Index++)
+          {
+            UnicodeString TabCaption = Pages[Index]->TruncatedCaption();
+            NewCaptionsWidth += Canvas->TextWidth(TabCaption);
+          }
+          int GainedWidth = (CaptionsWidth - NewCaptionsWidth);
+          Repeat = (GainedWidth < NeedWidth);
+        }
+      }
+      while (Repeat);
+
+      for (int Index = 0; Index < PageCount; Index++)
+      {
+        Pages[Index]->UpdateCaption();
+      }
+    }
+  }
+  __finally
+  {
+    Tabs->BeginUpdate();
+    EnableAlign();
   }
 }
 //----------------------------------------------------------------------------------------------------------
