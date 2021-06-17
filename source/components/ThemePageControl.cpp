@@ -120,7 +120,7 @@ void TThemeTabSheet::UpdateCaption()
 
   TThemePageControl * ParentPageControl = GetParentPageControl();
 
-  if (UseThemes())
+  if (UseThemes() && (Button != ttbNone))
   {
     int OrigWidth = ParentPageControl->Canvas->TextWidth(ACaption);
     int TabButtonWidth = ParentPageControl->TabButtonSize();
