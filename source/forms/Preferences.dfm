@@ -100,7 +100,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Overwriting of files'
-            TabOrder = 1
+            TabOrder = 2
             OnClick = ControlChange
           end
           object ConfirmDeletingCheck: TCheckBox
@@ -110,7 +110,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Deleting of files (recommended)'
-            TabOrder = 4
+            TabOrder = 5
             OnClick = ControlChange
           end
           object ConfirmClosingSessionCheck2: TCheckBox
@@ -120,7 +120,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Closing sessions when exiting appli&cation'
-            TabOrder = 6
+            TabOrder = 7
             OnClick = ControlChange
           end
           object DDTransferConfirmationCheck2: TCheckBox
@@ -130,7 +130,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'D&rag && drop operations and paste to other applications'
-            TabOrder = 8
+            TabOrder = 1
             OnClick = ControlChange
           end
           object ContinueOnErrorCheck: TCheckBox
@@ -150,7 +150,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Exiting application on o&peration completion'
-            TabOrder = 7
+            TabOrder = 8
             OnClick = ControlChange
           end
           object ConfirmResumeCheck: TCheckBox
@@ -160,7 +160,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Trans&fer resuming'
-            TabOrder = 2
+            TabOrder = 3
             OnClick = ControlChange
           end
           object ConfirmCommandSessionCheck: TCheckBox
@@ -180,7 +180,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Moving files to Recycle bin'
-            TabOrder = 5
+            TabOrder = 6
             OnClick = ControlChange
           end
           object ConfirmTransferringCheck: TCheckBox
@@ -201,7 +201,7 @@ object PreferencesDialog: TPreferencesDialog
             Alignment = taRightJustify
             AutoSize = False
             Caption = 'Change confirmations of background transfers'
-            TabOrder = 3
+            TabOrder = 4
             TabStop = True
             OnClick = BackgroundConfirmationsLinkClick
           end
