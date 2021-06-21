@@ -58,7 +58,7 @@ AboutDonations=About donations
 Donate=Donate %s
 Currency=USD
 ImportSites=Looking for sites to import...
-AcceptButton=&Accept >
+AcceptButton=&Accept
 IncompleteTranslation=You are about to use an incomplete translation. It is completed by %1%% only.%n%nUntranslated parts of the user interface will be shown in their original English version.%n%nVisit WinSCP website at winscp.net to check, if newer version of the translation is available.
 
 [CustomOptions]
