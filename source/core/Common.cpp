@@ -4131,6 +4131,41 @@ DWORD __fastcall GetParentProcessId(HANDLE Snapshot, DWORD ProcessId)
   return Result;
 }
 //---------------------------------------------------------------------------
+static UnicodeString GetProcessName(DWORD ProcessId)
+{
+  UnicodeString Result;
+  if (ProcessId == 0)
+  {
+    Result = L"err-notfound";
+  }
+  else
+  {
+    HANDLE Process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, ProcessId);
+    if (!Process)
+    {
+      // is common, when the parent process is installer, so we ignore it
+      Result = UnicodeString();
+    }
+    else
+    {
+      Result.SetLength(MAX_PATH);
+      DWORD Len = GetModuleFileNameEx(Process, NULL, Result.c_str(), Result.Length());
+      if (Len == 0)
+      {
+        // is common too, for some reason
+        Result = UnicodeString();
+      }
+      else
+      {
+        Result.SetLength(Len);
+        Result = ExtractProgramName(FormatCommand(Result, UnicodeString()));
+      }
+      CloseHandle(Process);
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString ParentProcessName;
 //---------------------------------------------------------------------------
 UnicodeString __fastcall GetAncestorProcessName(int Levels)
@@ -4149,40 +4184,21 @@ UnicodeString __fastcall GetAncestorProcessName(int Levels)
 
       DWORD ProcessId = GetCurrentProcessId();
 
-      while ((Levels > 0) && (ProcessId != 0))
+      // Either more to go (>0) or collecting all levels (-1 from GetAncestorProcessNames)
+      while ((Levels != 0) &&
+             (ProcessId != 0))
       {
         ProcessId = GetParentProcessId(Snapshot, ProcessId);
+        if ((Levels < 0) && (ProcessId != 0))
+        {
+          AddToList(Result, GetProcessName(ProcessId), L", ");
+        }
         Levels--;
       }
 
-      if (ProcessId == 0)
+      if (Levels >= 0)
       {
-        Result = L"err-notfound";
-      }
-      else
-      {
-        HANDLE Process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, ProcessId);
-        if (!Process)
-        {
-          // is common, when the parent process is installer, so we ignore it
-          Result = UnicodeString();
-        }
-        else
-        {
-          Result.SetLength(MAX_PATH);
-          DWORD Len = GetModuleFileNameEx(Process, NULL, Result.c_str(), Result.Length());
-          if (Len == 0)
-          {
-            // is common too, for some reason
-            Result = UnicodeString();
-          }
-          else
-          {
-            Result.SetLength(Len);
-            Result = ExtractProgramName(FormatCommand(Result, UnicodeString()));
-          }
-          CloseHandle(Process);
-        }
+        Result = GetProcessName(ProcessId);
       }
 
       CloseHandle(Snapshot);
@@ -4198,4 +4214,15 @@ UnicodeString __fastcall GetAncestorProcessName(int Levels)
     }
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString AncestorProcessNames;
+//---------------------------------------------------------------------------
+UnicodeString GetAncestorProcessNames()
+{
+  if (AncestorProcessNames.IsEmpty())
+  {
+    AncestorProcessNames = GetAncestorProcessName(-1);
+  }
+  return AncestorProcessNames;
 }
