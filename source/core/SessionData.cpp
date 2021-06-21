@@ -1459,6 +1459,11 @@ void __fastcall TSessionData::ImportFromFilezilla(
   {
     FtpPasvMode = false;
   }
+  else if (SettingsNode != NULL)
+  {
+    int PasvMode = ReadSettingsNode(SettingsNode, L"Use Pasv mode", 1);
+    FtpPasvMode = (PasvMode != 0);
+  }
 
   UnicodeString EncodingType = ReadXmlNode(Node, L"EncodingType", L"");
   if (SameText(EncodingType, L"Auto"))
