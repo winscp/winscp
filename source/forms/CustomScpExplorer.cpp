@@ -4637,8 +4637,10 @@ void __fastcall TCustomScpExplorerForm::Idle()
 {
 
   if (FShowing ||
-      // Particularly to detect closed connection and automatically reconnect it while waiting for changes
-      // while "keeping remote directory up to date"
+      // Particularly for
+      // - Standalone editing
+      // - Detecting closed connection and automatically reconnect it while waiting for changes
+      //   while "keeping remote directory up to date".
       StandaloneOperation)
   {
     FEditorManager->Check();
