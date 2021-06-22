@@ -267,6 +267,7 @@ protected:
   bool FReadDirectoryPending;
   bool FTunnelOpening;
   TCustomFileSystem * FFileSystem;
+  int FSecondaryTerminals;
 
   void __fastcall DoStartReadDirectory();
   void __fastcall DoReadDirectoryProgress(int Progress, int ResolvedLinks, bool & Cancel);
