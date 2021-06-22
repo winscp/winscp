@@ -1051,6 +1051,7 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   FCallbackGuard = NULL;
   FNesting = 0;
   FRememberedPasswordKind = TPromptKind(-1);
+  FSecondaryTerminals = 0;
 }
 //---------------------------------------------------------------------------
 __fastcall TTerminal::~TTerminal()
@@ -8225,6 +8226,11 @@ __fastcall TSecondaryTerminal::TSecondaryTerminal(TTerminal * MainTerminal,
   ActionLog->Enabled = false;
   SessionData->NonPersistant();
   DebugAssert(FMainTerminal != NULL);
+  FMainTerminal->FSecondaryTerminals++;
+  if (SessionData->TunnelLocalPortNumber != 0)
+  {
+    SessionData->TunnelLocalPortNumber = SessionData->TunnelLocalPortNumber + FMainTerminal->FSecondaryTerminals;
+  }
   if (!FMainTerminal->UserName.IsEmpty())
   {
     SessionData->UserName = FMainTerminal->UserName;
