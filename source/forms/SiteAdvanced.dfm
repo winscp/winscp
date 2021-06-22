@@ -1089,9 +1089,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           object S3SessionTokenLabel: TLabel
             Left = 12
             Top = 20
-            Width = 73
+            Width = 70
             Height = 13
-            Caption = '&Security token:'
+            Caption = '&Session token:'
           end
           object S3SessionTokenMemo: TMemo
             Left = 11
