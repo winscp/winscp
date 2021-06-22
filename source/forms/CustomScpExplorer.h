@@ -716,7 +716,7 @@ protected:
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   DYNAMIC void __fastcall Deactivate();
   void __fastcall CenterReconnectToolbar();
-  void __fastcall DoOpenFolderOrWorkspace(const UnicodeString & Name, bool ConnectFirstTerminal);
+  void DoOpenFolderOrWorkspace(const UnicodeString & Name, bool ConnectFirstTerminal, bool CheckMaxSessions);
   virtual void __fastcall ThemeChanged();
   int __fastcall GetStaticQueuePanelComponentsHeight();
   int __fastcall GetMinQueueViewHeight();

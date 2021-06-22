@@ -5048,19 +5048,23 @@ void __fastcall TCustomScpExplorerForm::OpenStoredSession(TSessionData * Data)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::DoOpenFolderOrWorkspace(const UnicodeString & Name, bool ConnectFirstTerminal)
+void TCustomScpExplorerForm::DoOpenFolderOrWorkspace(
+  const UnicodeString & Name, bool ConnectFirstTerminal, bool CheckMaxSessions)
 {
   TTerminalManager * Manager = TTerminalManager::Instance();
   std::unique_ptr<TObjectList> DataList(new TObjectList());
   StoredSessions->GetFolderOrWorkspace(Name, DataList.get());
-  TManagedTerminal * FirstSession = Manager->NewSessions(DataList.get());
-  // FirstSession can be null, if some of the
-  if (!ConnectFirstTerminal && (FirstSession != NULL))
+  if (!CheckMaxSessions || (DataList->Count <= WinConfiguration->MaxSessions))
   {
-    FirstSession->Disconnected = true;
-    FirstSession->DisconnectedTemporarily = true;
+    TManagedTerminal * FirstSession = Manager->NewSessions(DataList.get());
+    // FirstSession can be null, if some of the
+    if (!ConnectFirstTerminal && (FirstSession != NULL))
+    {
+      FirstSession->Disconnected = true;
+      FirstSession->DisconnectedTemporarily = true;
+    }
+    Manager->ActiveSession = FirstSession;
   }
-  Manager->ActiveSession = FirstSession;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::OpenFolderOrWorkspace(const UnicodeString & Name)
@@ -5071,7 +5075,7 @@ void __fastcall TCustomScpExplorerForm::OpenFolderOrWorkspace(const UnicodeStrin
   }
   else
   {
-    DoOpenFolderOrWorkspace(Name, true);
+    DoOpenFolderOrWorkspace(Name, true, false);
   }
 }
 //---------------------------------------------------------------------------
@@ -7284,7 +7288,7 @@ void __fastcall TCustomScpExplorerForm::DoShow()
       // This detects if workspace was saved the last time the main widow was closed
       SameText(WinConfiguration->LastStoredSession, WinConfiguration->AutoWorkspace))
   {
-    DoOpenFolderOrWorkspace(WinConfiguration->AutoWorkspace, false);
+    DoOpenFolderOrWorkspace(WinConfiguration->AutoWorkspace, false, true);
     Configuration->Usage->Inc(L"OpenedWorkspacesAuto");
   }
 

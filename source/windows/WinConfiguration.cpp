@@ -605,6 +605,7 @@ void __fastcall TWinConfiguration::Default()
   FKeepOpenWhenNoSession = true;
   FDefaultToNewRemoteTab = true;
   FLocalIconsByExt = false;
+  FMaxSessions = 100;
   FBidiModeOverride = lfoLanguageIfRecommended;
   FFlipChildrenOverride = lfoLanguageIfRecommended;
   FShowTips = true;
@@ -1015,6 +1016,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     KeepOpenWhenNoSession); \
     KEY(Bool,     DefaultToNewRemoteTab); \
     KEY(Bool,     LocalIconsByExt); \
+    KEY(Integer,  MaxSessions); \
     KEY(Integer,  BidiModeOverride); \
     KEY(Integer,  FlipChildrenOverride); \
     KEY(Bool,     ShowTips); \
