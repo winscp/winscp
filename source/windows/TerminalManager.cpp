@@ -96,6 +96,8 @@ __fastcall TTerminalManager::TTerminalManager() :
   FOnTerminalListChanged = NULL;
 
   FTerminalList = new TStringList();
+  FMaxSessions = WinConfiguration->MaxSessions;
+
   FQueues = new TList();
   FTerminationMessages = new TStringList();
   std::unique_ptr<TSessionData> DummyData(new TSessionData(L""));
@@ -176,6 +178,15 @@ void __fastcall TTerminalManager::SetupTerminal(TTerminal * Terminal)
 //---------------------------------------------------------------------------
 TManagedTerminal * __fastcall TTerminalManager::DoNewTerminal(TSessionData * Data)
 {
+  if (Count >= FMaxSessions)
+  {
+    UnicodeString Msg = FMTLOAD(TOO_MANY_SESSIONS, (Count));
+    if (MessageDialog(Msg, qtConfirmation, qaOK | qaCancel, HELP_TOO_MANY_SESSIONS) == qaCancel)
+    {
+      Abort();
+    }
+    FMaxSessions = FMaxSessions * 3 / 2; // increase limit before the next warning by 50%
+  }
   TManagedTerminal * Terminal = DebugNotNull(dynamic_cast<TManagedTerminal *>(TTerminalList::NewTerminal(Data)));
   try
   {

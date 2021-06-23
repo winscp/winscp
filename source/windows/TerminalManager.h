@@ -118,6 +118,7 @@ private:
   bool FAuthenticationCancelled;
   std::unique_ptr<TApplicationEvents> FApplicationsEvents;
   bool FKeepAuthenticateForm;
+  int FMaxSessions;
 
   bool __fastcall ConnectActiveTerminalImpl(bool Reopen);
   bool __fastcall ConnectActiveTerminal();
