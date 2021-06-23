@@ -614,8 +614,6 @@ object NonVisualDataModule: TNonVisualDataModule
         'New session|Opens new session (hold down Shift to open session i' +
         'n new window)'
       ImageIndex = 25
-      SecondaryShortCuts.Strings = (
-        'Ctrl+Shift+N')
       ShortCut = 16462
     end
     object SiteManagerAction: TAction
