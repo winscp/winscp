@@ -163,6 +163,7 @@ BEGIN
         READONLY_INI_FILE_OVERWRITE, "**Do you want to overwrite a read-only INI file '%s' to save your current configuration?**This question is asked, when you hold down Shift key while closing WinSCP and your INI file is set read-only. Normally read-only INI files are not overwritten and any changes to configuration are lost when closing WinSCP."
         CLOSE_SESSION_WORKSPACE, "Terminate session '%s' and close application without saving a workspace?"
         CLOSE_WORKSPACE, "Close application without saving a workspace?"
+        TOO_MANY_SESSIONS, "**Do you really want to open another tab?**\nYou have %d tabs opened already. Please consider closing some tabs first to free resources of your computer."
 
         WIN_INFORMATION_STRINGS, "WIN_INFORMATION"
         COMPARE_NO_DIFFERENCES, "No differences found."

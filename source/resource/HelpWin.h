@@ -69,5 +69,6 @@
 #define HELP_PUTTY_SETTINGS          "ui_login_environment#putty"
 #define HELP_CLOSE_SESSION_WORKSPACE "workspace"
 #define HELP_ADD_EXTENSION           "ui_pref_commands#extensions"
+#define HELP_TOO_MANY_SESSIONS       "ui_sessiontabs"
 
 #endif // TextsWin
