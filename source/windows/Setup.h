@@ -33,8 +33,10 @@ void __fastcall ShowTips();
 UnicodeString __fastcall FirstUnshownTip();
 void __fastcall TipsUpdateStaticUsage();
 int __fastcall GetNetVersion();
-UnicodeString __fastcall GetNetVersionStr();
-UnicodeString __fastcall GetPowerShellVersionStr();
+UnicodeString GetNetVersionStr();
+UnicodeString GetNetCoreVersionStr();
+UnicodeString GetPowerShellVersionStr();
+UnicodeString GetPowerShellCoreVersionStr();
 int ComRegistration(TConsole * Console);
 //---------------------------------------------------------------------------
 #endif
