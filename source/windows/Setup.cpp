@@ -2226,14 +2226,14 @@ UnicodeString GetNetCoreVersionStr()
     {
       ::SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
     }
-    UnicodeString SdkFolder = L"sdk";
-    UnicodeString DotNetPath = TPath::Combine(TPath::Combine(ProgramsFolder, L"dotnet"), SdkFolder);
+    UnicodeString RuntimeFolder = L"shared\\Microsoft.NETCore.App";
+    UnicodeString DotNetPath = TPath::Combine(TPath::Combine(ProgramsFolder, L"dotnet"), RuntimeFolder);
     if (!DirectoryExistsFix(DotNetPath))
     {
       UnicodeString DotNetExe = L"dotnet.exe";
       if (FindFile(DotNetExe))
       {
-        DotNetPath = TPath::Combine(ExtractFilePath(DotNetPath), SdkFolder);
+        DotNetPath = TPath::Combine(ExtractFilePath(DotNetExe), RuntimeFolder);
       }
     }
     if (DirectoryExistsFix(DotNetPath))
