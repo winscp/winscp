@@ -2216,7 +2216,7 @@ UnicodeString __fastcall GetPowerShellVersionStr()
 {
   if (PowerShellVersionStr.IsEmpty())
   {
-    PowerShellVersionStr = 0; // not to retry on failure
+    PowerShellVersionStr = L"0"; // not to retry on failure
 
     std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(L"SOFTWARE\\Microsoft\\PowerShell", HKEY_LOCAL_MACHINE));
     if (Registry->OpenRootKey(false))
