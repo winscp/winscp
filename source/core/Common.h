@@ -221,6 +221,7 @@ int __fastcall FindCheck(int Result, const UnicodeString & Path);
 int __fastcall FindFirstUnchecked(const UnicodeString & Path, int Attr, TSearchRecChecked & F);
 int __fastcall FindFirstChecked(const UnicodeString & Path, int Attr, TSearchRecChecked & F);
 int __fastcall FindNextChecked(TSearchRecChecked & F);
+int __fastcall FindNextUnchecked(TSearchRecChecked & F);
 void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   TProcessLocalFileEvent CallBackFunc, void * Param = NULL, int FindAttrs = -1);
 int __fastcall FileGetAttrFix(const UnicodeString FileName);

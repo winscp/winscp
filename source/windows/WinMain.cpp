@@ -538,7 +538,9 @@ void __fastcall UpdateStaticUsage()
   Configuration->Usage->Set(L"IsInstalled", IsInstalled());
   Configuration->Usage->Set(L"Wine", IsWine());
   Configuration->Usage->Set(L"NetFrameworkVersion", GetNetVersionStr());
+  Configuration->Usage->Set(L"NetCoreVersion", GetNetCoreVersionStr());
   Configuration->Usage->Set(L"PowerShellVersion", GetPowerShellVersionStr());
+  Configuration->Usage->Set(L"PwshVersion", GetPowerShellCoreVersionStr());
 
   UnicodeString ParentProcess = GetAncestorProcessName();
   // do not record the installer as a parent process

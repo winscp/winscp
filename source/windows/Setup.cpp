@@ -33,6 +33,7 @@
 #include <OperationWithTimeout.hpp>
 #include <Soap.HTTPUtil.hpp>
 #include <Web.HTTPApp.hpp>
+#include <System.IOUtils.hpp>
 //---------------------------------------------------------------------------
 #define KEY _T("SYSTEM\\CurrentControlSet\\Control\\") \
             _T("Session Manager\\Environment")
@@ -44,7 +45,9 @@
 UnicodeString LastPathError;
 //---------------------------------------------------------------------------
 UnicodeString NetVersionStr;
+UnicodeString NetCoreVersionStr;
 UnicodeString PowerShellVersionStr;
+UnicodeString PowerShellCoreVersionStr;
 //---------------------------------------------------------------------------
 // Display the error "err_msg".
 void err_out(LPCTSTR err_msg)
@@ -2174,7 +2177,7 @@ static void ReadNetVersion(TRegistryStorage * Registry)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall GetNetVersionStr()
+UnicodeString GetNetVersionStr()
 {
   if (NetVersionStr.IsEmpty())
   {
@@ -2212,7 +2215,66 @@ UnicodeString __fastcall GetNetVersionStr()
   return NetVersionStr;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall GetPowerShellVersionStr()
+UnicodeString GetNetCoreVersionStr()
+{
+  if (NetCoreVersionStr.IsEmpty())
+  {
+    NetCoreVersionStr = L"0"; // not to retry on failure
+
+    UnicodeString ProgramsFolder = DefaultStr(GetEnvironmentVariable(L"ProgramW6432"), GetEnvironmentVariable(L"ProgramFiles"));
+    if (ProgramsFolder.IsEmpty())
+    {
+      ::SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
+    }
+    UnicodeString SdkFolder = L"sdk";
+    UnicodeString DotNetPath = TPath::Combine(TPath::Combine(ProgramsFolder, L"dotnet"), SdkFolder);
+    if (!DirectoryExistsFix(DotNetPath))
+    {
+      UnicodeString DotNetExe = L"dotnet.exe";
+      if (FindFile(DotNetExe))
+      {
+        DotNetPath = TPath::Combine(ExtractFilePath(DotNetPath), SdkFolder);
+      }
+    }
+    if (DirectoryExistsFix(DotNetPath))
+    {
+      TSearchRecChecked SearchRec;
+      DotNetPath = TPath::Combine(DotNetPath, L"*.*");
+      if (FindFirstUnchecked(ApiPath(DotNetPath), faDirectory, SearchRec) == 0)
+      {
+        do
+        {
+          if (SearchRec.IsRealFile())
+          {
+            UnicodeString Name = SearchRec.Name;
+            // 1.0.0-preview2-003131
+            UnicodeString VersionStr = CutToChar(Name, L'-', true);
+            if (!VersionStr.IsEmpty() && IsDigit(VersionStr[1]) && (VersionStr.Pos(L".") >= 2))
+            {
+              for (int I = 1; I <= VersionStr.Length(); I++)
+              {
+                if (!IsDigit(VersionStr[I]) && (VersionStr[I] != L'.'))
+                {
+                  VersionStr = EmptyStr;
+                }
+              }
+
+              if (!VersionStr.IsEmpty() && (CompareVersion(VersionStr, NetCoreVersionStr) > 0))
+              {
+                NetCoreVersionStr = VersionStr;
+              }
+            }
+          }
+        }
+        while (FindNextUnchecked(SearchRec) == 0);
+      }
+    }
+  }
+
+  return NetCoreVersionStr;
+}
+//---------------------------------------------------------------------------
+UnicodeString GetPowerShellVersionStr()
 {
   if (PowerShellVersionStr.IsEmpty())
   {
@@ -2241,6 +2303,41 @@ UnicodeString __fastcall GetPowerShellVersionStr()
   }
 
   return PowerShellVersionStr;
+}
+//---------------------------------------------------------------------------
+UnicodeString GetPowerShellCoreVersionStr()
+{
+  if (PowerShellCoreVersionStr.IsEmpty())
+  {
+    PowerShellCoreVersionStr = L"0"; // not to retry on failure
+
+    // TRegistryStorage does not support KEY_WOW64_64KEY
+    unsigned int Access = KEY_READ | FLAGMASK(IsWin64(), KEY_WOW64_64KEY);
+    std::unique_ptr<TRegistry> Registry(new TRegistry(Access));
+    Registry->RootKey = HKEY_LOCAL_MACHINE;
+    UnicodeString RootKey(L"SOFTWARE\\Microsoft\\PowerShellCore\\InstalledVersions");
+    if (Registry->OpenKeyReadOnly(RootKey))
+    {
+      std::unique_ptr<TStringList> Keys(new TStringList());
+      Registry->GetKeyNames(Keys.get());
+      Registry->CloseKey();
+      for (int Index = 0; Index < Keys->Count; Index++)
+      {
+        UnicodeString Key = RootKey + L"\\" + Keys->Strings[Index];
+        if (Registry->OpenKeyReadOnly(Key))
+        {
+          UnicodeString VersionStr = Registry->ReadString(L"SemanticVersion");
+          if (!VersionStr.IsEmpty() && (CompareVersion(VersionStr, PowerShellCoreVersionStr) > 0))
+          {
+            PowerShellCoreVersionStr = VersionStr;
+          }
+          Registry->CloseKey();
+        }
+      }
+    }
+  }
+
+  return PowerShellCoreVersionStr;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

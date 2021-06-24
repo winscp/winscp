@@ -3039,9 +3039,17 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines, const Unicod
           {
             Failed = (CompareVersion(Value, GetNetVersionStr()) > 0);
           }
+          else if (Dependency == L".netcore")
+          {
+            Failed = (CompareVersion(Value, GetNetCoreVersionStr()) > 0);
+          }
           else if (Dependency == L"powershell")
           {
             Failed = (CompareVersion(Value, GetPowerShellVersionStr()) > 0);
+          }
+          else if (Dependency == L"pwsh")
+          {
+            Failed = (CompareVersion(Value, GetPowerShellCoreVersionStr()) > 0);
           }
           else if (Dependency == L"windows")
           {
