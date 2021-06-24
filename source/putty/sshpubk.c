@@ -496,7 +496,7 @@ static bool read_header(BinarySource *src, char *header)
 
     while (1) {
         c = get_byte(src);
-        if (c == '\n' || c == '\r' || c == EOF)
+        if (c == '\n' || c == '\r' || get_err(src))
             return false;              /* failure */
         if (c == ':') {
             c = get_byte(src);
@@ -519,10 +519,10 @@ static char *read_body(BinarySource *src)
 
     while (1) {
         int c = get_byte(src);
-        if (c == '\r' || c == '\n' || c == EOF) {
-            if (c != EOF) {
+        if (c == '\r' || c == '\n' || get_err(src)) {
+            if (!get_err(src)) {
                 c = get_byte(src);
-                if (c != '\r' && c != '\n')
+                if (c != '\r' && c != '\n' && !get_err(src))
                     src->pos--;
             }
             return strbuf_to_str(buf);
