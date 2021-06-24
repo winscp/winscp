@@ -1288,6 +1288,7 @@ static void __fastcall ConvertKey(UnicodeString & FileName, TKeyType Type)
 //---------------------------------------------------------------------------
 void DoVerifyKey(UnicodeString & FileName, bool Convert, UnicodeString & Message, TStrings *& MoreMessages, UnicodeString & HelpKeyword)
 {
+  std::unique_ptr<TStrings> AMoreMessages;
   if (!FileName.Trim().IsEmpty())
   {
     FileName = ExpandEnvironmentVariables(FileName);
@@ -1296,7 +1297,6 @@ void DoVerifyKey(UnicodeString & FileName, bool Convert, UnicodeString & Message
     int Error = errno;
     HelpKeyword = HELP_LOGIN_KEY_TYPE;
     UnicodeString PuttygenPath;
-    std::unique_ptr<TStrings> AMoreMessages;
     switch (Type)
     {
       case ktOpenSSHPEM:
@@ -1357,9 +1357,8 @@ void DoVerifyKey(UnicodeString & FileName, bool Convert, UnicodeString & Message
         Message = MainInstructions(FMTLOAD(KEY_TYPE_UNKNOWN2, (FileName)));
         break;
     }
-
-    MoreMessages = AMoreMessages.release();
   }
+  MoreMessages = AMoreMessages.release();
 }
 
 //---------------------------------------------------------------------------
