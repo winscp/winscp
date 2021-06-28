@@ -1413,7 +1413,12 @@ void __fastcall TLoginDialog::SaveState()
 
     WinConfiguration->OpenedStoredSessionFolders = OpenedStoredSessionFolders->CommaText;
 
-    WinConfiguration->LastStoredSession = SessionNodePath(SessionTree->Selected);
+    UnicodeString LastStoredSession = SessionNodePath(SessionTree->Selected);
+    if (IsFolderNode(SessionTree->Selected))
+    {
+      LastStoredSession = UnixIncludeTrailingBackslash(LastStoredSession);
+    }
+    WinConfiguration->LastStoredSession = LastStoredSession;
 
     TLoginDialogConfiguration DialogConfiguration = CustomWinConfiguration->LoginDialog;
     DialogConfiguration.WindowSize = StoreFormSize(this);
@@ -1485,7 +1490,8 @@ void __fastcall TLoginDialog::LoadState()
   if (!FForceNewSite &&
       !WinConfiguration->LastStoredSession.IsEmpty() && DebugAlwaysTrue(Visible))
   {
-    UnicodeString Path = WinConfiguration->LastStoredSession;
+    UnicodeString Path = UnixExcludeTrailingBackslash(WinConfiguration->LastStoredSession);
+    bool Folder = (Path != WinConfiguration->LastStoredSession);
 
     UnicodeString ParentPath = UnixExtractFilePath(Path);
     TTreeNode * Node;
@@ -1502,10 +1508,7 @@ void __fastcall TLoginDialog::LoadState()
     if (Node != NULL)
     {
       UnicodeString Name = UnixExtractFileName(Path);
-      // actually we cannot distinguish folder and session here
-      // (note that we allow folder and session with the same name),
-      // this is pending for future improvements
-      while ((Node != NULL) && !AnsiSameText(Node->Text, Name))
+      while ((Node != NULL) && (!SameText(Node->Text, Name) || (IsFolderNode(Node) != Folder)))
       {
         Node = Node->getNextSibling();
       }
