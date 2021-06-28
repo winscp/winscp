@@ -47,6 +47,7 @@ private:
   void __fastcall SaveSelection();
   TStoredSessionList * __fastcall GetSessionList(int Index);
   TSessionData * GetSessionData(TListItem * Item);
+  bool ConvertKeyFile(UnicodeString & KeyFile, TStrings * ConvertedKeyFiles, TStrings * NotConvertedKeyFiles);
   virtual void __fastcall CreateHandle();
   virtual void __fastcall DestroyHandle();
   virtual void __fastcall Dispatch(void * Message);

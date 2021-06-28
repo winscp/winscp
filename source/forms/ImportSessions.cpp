@@ -246,6 +246,68 @@ void __fastcall TImportSessionsDialog::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
+bool TImportSessionsDialog::ConvertKeyFile(
+  UnicodeString & KeyFile, TStrings * ConvertedKeyFiles, TStrings * NotConvertedKeyFiles)
+{
+  bool ConvertedSession = false;
+  if (!KeyFile.IsEmpty() &&
+      FileExists(ApiPath(KeyFile)))
+  {
+    UnicodeString CanonicalPath = GetCanonicalPath(KeyFile);
+    // Reuses the already converted keys saved under a custom name
+    // (when saved under the default name they would be captured by the later condition based on GetConvertedKeyFileName)
+    int CanonicalIndex = ConvertedKeyFiles->IndexOfName(CanonicalPath);
+    if (CanonicalIndex >= 0)
+    {
+      KeyFile = ConvertedKeyFiles->ValueFromIndex[CanonicalIndex];
+      ConvertedSession = true;
+    }
+    // Prevents asking about converting the same key again, when the user refuses the conversion.
+    else if (NotConvertedKeyFiles->IndexOf(CanonicalPath) >= 0)
+    {
+      // noop
+    }
+    else
+    {
+      UnicodeString ConvertedFilename = GetConvertedKeyFileName(KeyFile);
+      UnicodeString FileName;
+      if (FileExists(ApiPath(ConvertedFilename)))
+      {
+        FileName = ConvertedFilename;
+        ConvertedSession = true;
+      }
+      else
+      {
+        FileName = KeyFile;
+        TDateTime TimestampBefore, TimestampAfter;
+        FileAge(FileName, TimestampBefore);
+        try
+        {
+          VerifyAndConvertKey(FileName, true);
+          FileAge(FileName, TimestampAfter);
+          if ((KeyFile != FileName) ||
+              // should never happen as cancelling the saving throws EAbort
+              DebugAlwaysTrue(TimestampBefore != TimestampAfter))
+          {
+            ConvertedSession = true;
+          }
+        }
+        catch (EAbort &)
+        {
+          NotConvertedKeyFiles->Add(CanonicalPath);
+        }
+      }
+
+      if (ConvertedSession)
+      {
+        KeyFile = FileName;
+        ConvertedKeyFiles->Values[CanonicalPath] = FileName;
+      }
+    }
+  }
+  return ConvertedSession;
+}
+//---------------------------------------------------------------------------
 bool __fastcall TImportSessionsDialog::Execute()
 {
   bool Result = (ShowModal() == DefaultResult(this));
@@ -266,65 +328,28 @@ bool __fastcall TImportSessionsDialog::Execute()
         if (Item->Checked)
         {
           TSessionData * Data = GetSessionData(Item);
-          if (!Data->PublicKeyFile.IsEmpty() &&
-              FileExists(ApiPath(Data->PublicKeyFile)))
-          {
-            UnicodeString CanonicalPath = GetCanonicalPath(Data->PublicKeyFile);
-            // Reuses the already converted keys saved under a custom name
-            // (when saved under the default name they would be captured by the later condition based on GetConvertedKeyFileName)
-            int CanonicalIndex = ConvertedKeyFiles->IndexOfName(CanonicalPath);
-            bool ConvertedSession = false;
-            if (CanonicalIndex >= 0)
-            {
-              Data->PublicKeyFile = ConvertedKeyFiles->ValueFromIndex[CanonicalIndex];
-              ConvertedSession = true;
-            }
-            // Prevents asking about converting the same key again, when the user refuses the conversion.
-            else if (NotConvertedKeyFiles->IndexOf(CanonicalPath) >= 0)
-            {
-              // noop
-            }
-            else
-            {
-              UnicodeString ConvertedFilename = GetConvertedKeyFileName(Data->PublicKeyFile);
-              UnicodeString FileName;
-              if (FileExists(ApiPath(ConvertedFilename)))
-              {
-                FileName = ConvertedFilename;
-                ConvertedSession = true;
-              }
-              else
-              {
-                FileName = Data->PublicKeyFile;
-                TDateTime TimestampBefore, TimestampAfter;
-                FileAge(FileName, TimestampBefore);
-                try
-                {
-                  VerifyAndConvertKey(FileName, true);
-                  FileAge(FileName, TimestampAfter);
-                  if ((Data->PublicKeyFile != FileName) ||
-                      // should never happen as cancelling the saving throws EAbort
-                      DebugAlwaysTrue(TimestampBefore != TimestampAfter))
-                  {
-                    ConvertedSession = true;
-                  }
-                }
-                catch (EAbort &)
-                {
-                  NotConvertedKeyFiles->Add(CanonicalPath);
-                }
-              }
+          UnicodeString SessionKeys;
 
-              if (ConvertedSession)
-              {
-                Data->PublicKeyFile = FileName;
-                ConvertedKeyFiles->Values[CanonicalPath] = FileName;
-              }
-            }
-            if (ConvertedSession)
+          UnicodeString PublicKeyFile = Data->PublicKeyFile;
+          if (ConvertKeyFile(PublicKeyFile, ConvertedKeyFiles.get(), NotConvertedKeyFiles.get()))
+          {
+            Data->PublicKeyFile = PublicKeyFile;
+            SessionKeys = PublicKeyFile;
+          }
+
+          UnicodeString TunnelPublicKeyFile = Data->TunnelPublicKeyFile;
+          if (ConvertKeyFile(TunnelPublicKeyFile, ConvertedKeyFiles.get(), NotConvertedKeyFiles.get()))
+          {
+            Data->TunnelPublicKeyFile = TunnelPublicKeyFile;
+            if (SessionKeys != TunnelPublicKeyFile)
             {
-              ConvertedSessions->Add(FORMAT(L"%s (%s)", (Data->Name, Data->PublicKeyFile)));
+              AddToList(SessionKeys, TunnelPublicKeyFile, L", ");
             }
+          }
+
+          if (!SessionKeys.IsEmpty())
+          {
+            ConvertedSessions->Add(FORMAT(L"%s (%s)", (Data->Name, SessionKeys)));
           }
         }
       }

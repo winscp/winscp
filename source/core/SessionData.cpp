@@ -1714,6 +1714,29 @@ void TSessionData::ImportFromOpenssh(TStrings * Lines)
         {
           UserName = Value;
         }
+        else if (SameText(Directive, L"ProxyJump"))
+        {
+          UnicodeString Jump = Value;
+          // multiple jumps are not supported
+          if (Jump.Pos(L",") == 0)
+          {
+            std::unique_ptr<TSessionData> JumpData(new TSessionData(EmptyStr));
+            bool DefaultsOnly;
+            if ((JumpData->ParseUrl(Jump, NULL, NULL, DefaultsOnly, NULL, NULL, NULL, 0)) &&
+                !JumpData->HostName.IsEmpty())
+            {
+              JumpData->Name = JumpData->HostName;
+              JumpData->ImportFromOpenssh(Lines);
+
+              Tunnel = true;
+              TunnelHostName = JumpData->HostName;
+              TunnelPortNumber = JumpData->PortNumber;
+              TunnelUserName = JumpData->UserName;
+              TunnelPassword = JumpData->Password;
+              TunnelPublicKeyFile = JumpData->PublicKeyFile;
+            }
+          }
+        }
         UsedDirectives->Add(Directive);
       }
     }
