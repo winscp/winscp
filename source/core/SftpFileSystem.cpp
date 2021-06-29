@@ -2924,6 +2924,11 @@ UnicodeString __fastcall TSFTPFileSystem::GetHomeDirectory()
   if (FHomeDirectory.IsEmpty())
   {
     FHomeDirectory = RealPath(L".");
+    // Prevent infinite recursion when the server is broken
+    if (FHomeDirectory.IsEmpty())
+    {
+      FHomeDirectory = ROOTDIRECTORY;
+    }
   }
   return FHomeDirectory;
 }
