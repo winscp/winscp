@@ -279,6 +279,8 @@ __published:
   TLabel *S3SessionTokenLabel;
   TMemo *S3SessionTokenMemo;
   TCheckBox *VMSAllRevisionsCheck;
+  TLabel *Label5;
+  TComboBox *SFTPRealPathCombo;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);

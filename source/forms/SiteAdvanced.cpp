@@ -72,6 +72,7 @@ void __fastcall TSiteAdvancedDialog::InitControls()
   ComboAutoSwitchInitialize(BugIgnore2Combo);
   ComboAutoSwitchInitialize(BugWinAdjCombo);
 
+  ComboAutoSwitchInitialize(SFTPRealPathCombo);
   ComboAutoSwitchInitialize(SFTPBugSymlinkCombo);
   ComboAutoSwitchInitialize(SFTPBugSignedTSCombo);
 
@@ -198,6 +199,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
 
     SFTPMaxVersionCombo->ItemIndex = FSessionData->SFTPMaxVersion;
 
+    ComboAutoSwitchLoad(SFTPRealPathCombo, FSessionData->SFTPRealPath);
     #define LOAD_SFTP_BUG_COMBO(BUG) \
       ComboAutoSwitchLoad(SFTPBug ## BUG ## Combo, FSessionData->SFTPBug[sb ## BUG])
     LOAD_SFTP_BUG_COMBO(Symlink);
@@ -604,6 +606,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
     }
   }
 
+  FSessionData->SFTPRealPath = ComboAutoSwitchSave(SFTPRealPathCombo);
   #define SAVE_SFTP_BUG_COMBO(BUG) SessionData->SFTPBug[sb ## BUG] = ComboAutoSwitchSave(SFTPBug ## BUG ## Combo);
   SAVE_SFTP_BUG_COMBO(Symlink);
   SAVE_SFTP_BUG_COMBO(SignedTS);
