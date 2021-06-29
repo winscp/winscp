@@ -556,7 +556,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           382)
         object SFTPBugsGroupBox: TGroupBox
           Left = 0
-          Top = 108
+          Top = 130
           Width = 393
           Height = 70
           Anchors = [akLeft, akTop, akRight]
@@ -604,13 +604,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 6
           Width = 393
-          Height = 96
+          Height = 118
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Protocol options'
           TabOrder = 0
           DesignSize = (
             393
-            96)
+            118)
           object Label34: TLabel
             Left = 12
             Top = 44
@@ -626,6 +626,14 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Height = 13
             Caption = 'SFTP ser&ver:'
             FocusControl = SftpServerEdit
+          end
+          object Label5: TLabel
+            Left = 12
+            Top = 68
+            Width = 157
+            Height = 13
+            Caption = '&Canonicalize paths on the server'
+            FocusControl = SFTPRealPathCombo
           end
           object SFTPMaxVersionCombo: TComboBox
             Left = 320
@@ -662,13 +670,22 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object AllowScpFallbackCheck: TCheckBox
             Left = 12
-            Top = 68
+            Top = 90
             Width = 369
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Allow SCP &fallback'
-            TabOrder = 2
+            TabOrder = 3
             OnClick = DataChange
+          end
+          object SFTPRealPathCombo: TComboBox
+            Left = 320
+            Top = 63
+            Width = 61
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akTop, akRight]
+            TabOrder = 2
           end
         end
       end
