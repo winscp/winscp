@@ -1672,7 +1672,11 @@ void __fastcall TTerminal::Reopen(int Params)
   {
     FReadCurrentDirectoryPending = false;
     FReadDirectoryPending = false;
-    FSuspendTransaction = true;
+    // Not sure why we are suspeding the transaction in the first place,
+    // but definitelly when set while connecting auto loaded workspace session, it causes loading the directory twice.
+    // (when reconnecting lost connection, it's usually prevented by cached directory)
+    // Preventing that by suspeding transaction only when there is one.
+    FSuspendTransaction = (FInTransaction > 0);
     FExceptionOnFail = 0;
     // typically, we avoid reading directory, when there is operation ongoing,
     // for file list which may reference files from current directory
