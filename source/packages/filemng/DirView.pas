@@ -624,13 +624,17 @@ begin
   if not DirectoryExistsFix(Path) then
     raise Exception.CreateFmt(SDirNotExists, [Path]);
   DosError := SysUtils.FindFirst(ApiPath(IncludeTrailingPathDelimiter(Path) + '*.*'), FileAttr, SRec);
-  if DosError = 0 then
+  if DosError = ERROR_SUCCESS then
   begin
     FindClose(SRec);
   end
     else
   begin
-    RaiseLastOSError;
+    // File not found is expected when accessing a root folder of an empty drive
+    if DosError <> ERROR_FILE_NOT_FOUND then
+    begin
+      RaiseLastOSError;
+    end;
   end;
 end;
 
