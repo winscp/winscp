@@ -127,10 +127,18 @@ void __fastcall TLoginDialog::InitControls()
 
   int FtpsNoneIndex = FtpsToIndex(ftpsNone);
   int FtpsImplicitIndex = FtpsToIndex(ftpsImplicit);
+  // Items item setter is implemented as deleting and re-adding the item. If we do it for the last item
+  // (explicit for FTP, implicit for WebDAV), the ItemIndex is effectivelly reset to -1.
+  // This happens when TLS is set in the default session settings.
+  // Also as TransferProtocolComboChange is not triggered it results in currupted state in respect to protocol/tls to port number sync.
+  int Index = FtpsCombo->ItemIndex;
   FtpsCombo->Items->Strings[FtpsImplicitIndex] = LoadStr(FTPS_IMPLICIT);
   FtpsCombo->Items->Strings[FtpsToIndex(ftpsExplicitTls)] = LoadStr(FTPS_EXPLICIT);
+  FtpsCombo->ItemIndex = Index;
+  Index = WebDavsCombo->ItemIndex;
   WebDavsCombo->Items->Strings[FtpsNoneIndex] = FtpsCombo->Items->Strings[FtpsNoneIndex];
   WebDavsCombo->Items->Strings[FtpsImplicitIndex] = FtpsCombo->Items->Strings[FtpsImplicitIndex];
+  WebDavsCombo->ItemIndex = Index;
 
   BasicSshPanel->Top = BasicFtpPanel->Top;
   BasicS3Panel->Top = BasicFtpPanel->Top;
