@@ -4210,6 +4210,10 @@ UnicodeString __fastcall GetAncestorProcessName(int Levels)
       {
         Result = GetProcessName(ProcessId);
       }
+      else if (Result.IsEmpty())
+      {
+        Result = L"n/a";
+      }
 
       CloseHandle(Snapshot);
     }
