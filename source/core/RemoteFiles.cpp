@@ -2978,7 +2978,7 @@ __int64 TSynchronizeProgress::GetProcessed(const TFileOperationProgressType * Cu
   DebugAssert(!TFileOperationProgressType::IsIndeterminateOperation(CurrentItemOperationProgress->Operation));
 
   // Need to calculate the total size on the first call only,
-  // as at the time the contrusctor it called, we usually do not have sizes of folders caculated yet.
+  // as at the time the constructor it called, we usually do not have sizes of folders caculated yet.
   if (FTotalSize < 0)
   {
     FTotalSize = 0;
