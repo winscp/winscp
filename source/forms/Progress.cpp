@@ -28,6 +28,21 @@
 #pragma link "TBXExtItems"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
+static IsIndeterminate(const TSynchronizeProgress * SynchronizeProgress, const TFileOperationProgressType * ProgressData)
+{
+  bool Result;
+  // TSynchronizeProgress has its own way how to take atomic operations into account
+  if (SynchronizeProgress != NULL)
+  {
+    Result = TFileOperationProgressType::IsIndeterminateOperation(ProgressData->Operation);
+  }
+  else
+  {
+    Result = ProgressData->IsIndeterminate();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
 UnicodeString __fastcall TProgressForm::ProgressStr(
   const TSynchronizeProgress * SynchronizeProgress, const TFileOperationProgressType * ProgressData)
 {
@@ -51,7 +66,7 @@ UnicodeString __fastcall TProgressForm::ProgressStr(
   {
     Result = FORMAT(L"%s - %s", (LoadStr(SYNCHRONIZE_PROGRESS_SYNCHRONIZE2), Result));
   }
-  if (!TFileOperationProgressType::IsIndeterminateOperation(ProgressData->Operation))
+  if (!IsIndeterminate(SynchronizeProgress, ProgressData))
   {
     int OverallProgress;
     if (SynchronizeProgress != NULL)
@@ -134,6 +149,7 @@ void __fastcall TProgressForm::UpdateControls()
 
   bool TransferOperation =
     ((FData.Operation == foCopy) || (FData.Operation == foMove));
+  bool Indeterminate = IsIndeterminate(SynchronizeProgress, &FData);
 
   CancelItem->Enabled = !FReadOnly && (FCancel < csCancel);
   SkipItem->Visible = TransferOperation && FAllowSkip;
@@ -221,7 +237,7 @@ void __fastcall TProgressForm::UpdateControls()
 
     CancelItem->Caption = CancelCaption;
 
-    OperationProgress->Style = TFileOperationProgressType::IsIndeterminateOperation(FData.Operation) ? pbstMarquee : pbstNormal;
+    OperationProgress->Style = Indeterminate ? pbstMarquee : pbstNormal;
 
     if (SynchronizeProgress != NULL)
     {
@@ -292,7 +308,7 @@ void __fastcall TProgressForm::UpdateControls()
   int OverallProgress;
   // as a side effect this prevents calling TSynchronizeProgress::Progress when we do not know total size yet
   // (what would cache wrong values forever)
-  if (TFileOperationProgressType::IsIndeterminateOperation(FData.Operation))
+  if (Indeterminate)
   {
     OverallProgress = -1;
   }

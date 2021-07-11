@@ -227,6 +227,7 @@ public:
   UnicodeString __fastcall GetLogStr(bool Done);
   void __fastcall Store(TPersistence & Persistence);
   void __fastcall Restore(TPersistence & Persistence);
+  bool IsIndeterminate() const;
 
   static bool IsIndeterminateOperation(TFileOperation Operation);
 };
