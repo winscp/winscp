@@ -982,3 +982,10 @@ void __fastcall TFileOperationProgressType::Restore(TPersistence & Persistence)
   FPersistence = Persistence;
   FRestored = true;
 }
+//---------------------------------------------------------------------------
+bool TFileOperationProgressType::IsIndeterminate() const
+{
+  return
+    IsIndeterminateOperation(FOperation) ||
+    (!TotalSizeSet && (FCount == 1));
+}

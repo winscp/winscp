@@ -911,7 +911,7 @@ void __fastcall TCustomScpExplorerForm::SetTaskbarListProgressValue(TFileOperati
   {
     OverallProgress = FProgressForm->SynchronizeProgress->Progress(ProgressData);
   }
-  else if (!TFileOperationProgressType::IsIndeterminateOperation(ProgressData->Operation))
+  else if (!ProgressData->IsIndeterminate())
   {
     OverallProgress = ProgressData->OverallProgress();
   }
