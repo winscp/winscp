@@ -4475,7 +4475,7 @@ void __fastcall TCustomScpExplorerForm::KeyDown(Word & Key, Classes::TShiftState
     QueueView3->OnKeyDown(QueueView3, Key, Shift);
   }
 
-  if (!DirView(osCurrent)->IsEditing())
+  if ((Key != 0) && !DirView(osCurrent)->IsEditing())
   {
     TShortCut KeyShortCut = ShortCut(Key, Shift);
     for (int Index = 0; Index < NonVisualDataModule->ExplorerActions->ActionCount; Index++)
