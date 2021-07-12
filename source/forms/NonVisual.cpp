@@ -701,6 +701,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
 
     #define COLVIEWPROPS ((TCustomDirViewColProperties*)(((TCustomDirView*)(((TListColumns*)(ListColumn->Collection))->Owner()))->ColProperties))
     // SORT
+    EXESORTA(Local, 2)
     #define EXESORTL(NAME, COL) EXESORT(Local, NAME, COL, COL, 2)
     EXESORTL(Name, dvName)
     EXESORTL(Ext, dvExt)
