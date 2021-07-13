@@ -882,6 +882,7 @@ bool __fastcall TTerminalQueue::ItemDelete(TQueueItem * Item)
         if (Result)
         {
           FDoneItems->Delete(Index);
+          delete Item;
           UpdateList = true;
         }
       }
