@@ -228,8 +228,10 @@ public:
   void __fastcall Store(TPersistence & Persistence);
   void __fastcall Restore(TPersistence & Persistence);
   bool IsIndeterminate() const;
+  bool IsTransfer() const;
 
   static bool IsIndeterminateOperation(TFileOperation Operation);
+  static bool IsTransferOperation(TFileOperation Operation);
 };
 //---------------------------------------------------------------------------
 class TSuspendFileOperationProgress

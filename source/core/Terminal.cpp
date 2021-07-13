@@ -2015,7 +2015,7 @@ void __fastcall TTerminal::DoProgress(TFileOperationProgressType & ProgressData)
 {
 
   if ((Configuration->ActualLogProtocol >= 1) &&
-      ((ProgressData.Operation == foCopy) || (ProgressData.Operation == foMove)))
+      ProgressData.IsTransfer())
   {
     DWORD Now = GetTickCount();
     if (Now - FLastProgressLogged >= 1000)

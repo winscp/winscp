@@ -1085,7 +1085,7 @@ void __fastcall TScpCommanderForm::FileOperationProgress(
   // reloaded
   if (!ProgressData.InProgress && FProgressForm &&
       IsFileControl(FDDTargetControl, osLocal) &&
-      ((ProgressData.Operation == ::foCopy) || (ProgressData.Operation == ::foMove)))
+      ProgressData.IsTransfer())
   {
     ReloadLocalDirectory();
   }

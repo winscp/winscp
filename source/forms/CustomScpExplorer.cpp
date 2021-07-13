@@ -1537,7 +1537,7 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
 
     if ((FTransferResumeList != NULL) &&
         ProgressData.InProgress &&
-        ((ProgressData.Operation == foCopy) || (ProgressData.Operation == foMove)) &&
+        ProgressData.IsTransfer() &&
         !ProgressData.FullFileName.IsEmpty())
     {
       if ((FTransferResumeList->Count == 0) ||
@@ -1627,7 +1627,7 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(
       }
     }
 
-    if ((Operation == foCopy) || (Operation == foMove))
+    if (TFileOperationProgressType::IsTransferOperation(Operation))
     {
       DebugAssert(!IsLocalBrowserMode());
       if (Side == osLocal)
@@ -2830,7 +2830,7 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
 {
   TAutoBatch AutoBatch(this);
   bool Result;
-  if ((Operation == foCopy) || (Operation == foMove))
+  if (TFileOperationProgressType::IsTransferOperation(Operation))
   {
     Result = ExecuteCopyMoveFileOperation(Operation, Side, FileList, NoConfirmation, Param);
   }
@@ -2918,7 +2918,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperationCommand(
 {
   if (ExecuteFileOperation(Operation, Side, OnFocused, NoConfirmation, Param))
   {
-    if ((Operation == foCopy) || (Operation == foMove))
+    if (TFileOperationProgressType::IsTransferOperation(Operation))
     {
       DebugAssert(!IsLocalBrowserMode());
       if (GetSide(Side) == osLocal)

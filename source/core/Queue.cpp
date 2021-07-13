@@ -1689,7 +1689,7 @@ void __fastcall TQueueItem::SetProgress(
 
     // do not lose CPS limit override on "calculate size" operation,
     // wait until the real transfer operation starts
-    if ((FCPSLimit >= 0) && ((ProgressData.Operation == foMove) || (ProgressData.Operation == foCopy)))
+    if ((FCPSLimit >= 0) && ProgressData.IsTransfer())
     {
       ProgressData.SetCPSLimit(static_cast<unsigned long>(FCPSLimit));
       FCPSLimit = -1;
@@ -2199,7 +2199,7 @@ void __fastcall TTransferQueueItem::ProgressUpdated()
       // We can probably move the check outside of the guard.
       if (FParallelOperation->IsInitialized())
       {
-        DebugAssert((FProgressData->Operation == foCopy) || (FProgressData->Operation == foCalculateSize));
+        DebugAssert(FProgressData->IsTransfer());
         if (FProgressData->Operation == foCopy)
         {
           Add = FParallelOperation->ShouldAddClient();

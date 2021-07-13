@@ -907,15 +907,9 @@ void __fastcall TExternalConsole::Progress(TScriptProgress & Progress)
 
     CommStruct->Event = TConsoleCommStruct::PROGRESS;
 
-    switch (Progress.Operation)
+    if (DebugAlwaysTrue(TFileOperationProgressType::IsTransferOperation(Progress.Operation)))
     {
-      case foCopy:
-      case foMove:
-        ProgressEvent.Operation = TProgressEvent::COPY;
-        break;
-
-      default:
-        DebugFail();
+      ProgressEvent.Operation = TProgressEvent::COPY;
     }
 
     switch (Progress.Side)

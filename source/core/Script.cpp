@@ -2302,8 +2302,7 @@ void __fastcall TManagementScript::ShowPendingProgress()
 void __fastcall TManagementScript::TerminalOperationProgress(
   TFileOperationProgressType & ProgressData)
 {
-  if ((ProgressData.Operation == foCopy) ||
-      (ProgressData.Operation == foMove))
+  if (ProgressData.IsTransfer())
   {
     if (ProgressData.InProgress  && ProgressData.FileInProgress &&
         !ProgressData.FileName.IsEmpty())
@@ -2412,7 +2411,7 @@ void __fastcall TManagementScript::TerminalOperationFinished(
 {
   if (Success &&
       (Operation != foCalculateSize) && (Operation != foCalculateChecksum) &&
-      (Operation != foCopy) && (Operation != foMove))
+      !TFileOperationProgressType::IsTransferOperation(Operation))
   {
     ShowPendingProgress();
     // For FKeepingUpToDate we should send events to synchronize controller eventually.
