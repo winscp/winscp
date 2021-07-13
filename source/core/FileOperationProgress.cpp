@@ -25,6 +25,11 @@ bool TFileOperationProgressType::IsIndeterminateOperation(TFileOperation Operati
   return (Operation == foCalculateSize);
 }
 //---------------------------------------------------------------------------
+bool TFileOperationProgressType::IsTransferOperation(TFileOperation Operation)
+{
+  return (Operation == foCopy) || (Operation == foMove);
+}
+//---------------------------------------------------------------------------
 void TFileOperationProgressType::TPersistence::Clear(bool Batch, bool Speed)
 {
   if (Batch)
@@ -289,7 +294,7 @@ int __fastcall TFileOperationProgressType::OverallProgress() const
 {
   if (TotalSizeSet)
   {
-    DebugAssert((Operation == foCopy) || (Operation == foMove));
+    DebugAssert(IsTransfer());
     return TotalTransferProgress();
   }
   else
@@ -329,7 +334,7 @@ void __fastcall TFileOperationProgressType::Succeeded(int Count)
 {
   if (FPersistence.Statistics != NULL)
   {
-    if ((Operation == foCopy) || (Operation == foMove))
+    if (IsTransfer())
     {
       __int64 Transferred = FTransferredSize - FSkippedSize;
       if (Side == osLocal)
@@ -988,4 +993,9 @@ bool TFileOperationProgressType::IsIndeterminate() const
   return
     IsIndeterminateOperation(FOperation) ||
     (!TotalSizeSet && (FCount == 1));
+}
+//---------------------------------------------------------------------------
+bool TFileOperationProgressType::IsTransfer() const
+{
+  return IsTransferOperation(Operation);
 }

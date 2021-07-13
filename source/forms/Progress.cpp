@@ -52,7 +52,7 @@ UnicodeString __fastcall TProgressForm::ProgressStr(
     PROGRESS_CALCULATE_CHECKSUM, PROGRESS_LOCK, PROGRESS_UNLOCK };
   DebugAssert((unsigned int)ProgressData->Operation >= 1 && ((unsigned int)ProgressData->Operation - 1) < LENOF(Captions));
   int Id;
-  if ((ProgressData->Operation == foCopy) || (ProgressData->Operation == foMove))
+  if (ProgressData->IsTransfer())
   {
     Id = (ProgressData->Side == osLocal) ? PROGRESS_UPLOAD : PROGRESS_DOWNLOAD;
   }
@@ -147,8 +147,7 @@ void __fastcall TProgressForm::UpdateControls()
   DebugAssert((FData.Operation >= foCopy) && (FData.Operation <= foUnlock) &&
     (FData.Operation != foRename));
 
-  bool TransferOperation =
-    ((FData.Operation == foCopy) || (FData.Operation == foMove));
+  bool TransferOperation = FData.IsTransfer();
   bool Indeterminate = IsIndeterminate(SynchronizeProgress, &FData);
 
   CancelItem->Enabled = !FReadOnly && (FCancel < csCancel);
