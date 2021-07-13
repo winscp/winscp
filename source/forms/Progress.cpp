@@ -210,6 +210,7 @@ void __fastcall TProgressForm::UpdateControls()
 
       case foDelete:
         Animation = ((FData.Side == osRemote) ? DeleteRemoteToRecycleBin : DeleteLocalToRecycleBin) ? L"Recycle" : L"Delete";
+        MoveToQueueImageIndex = 10;
         break;
 
       case foCalculateSize:
@@ -262,6 +263,7 @@ void __fastcall TProgressForm::UpdateControls()
     PathLabel->Caption =
       LoadStr((FData.Operation == foCalculateSize) ? PROGRESS_PATH_LABEL : PROGRESS_FILE_LABEL);
 
+    DebugAssert(!MoveToQueueItem->Visible || (MoveToQueueImageIndex >= 0));
     MoveToQueueItem->ImageIndex = MoveToQueueImageIndex;
 
     FLastOperation = FData.Operation;

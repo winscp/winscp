@@ -200,6 +200,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FMaxQueueLength = 0;
   FLastContextPopupScreenPoint = TPoint(-1, -1);
   FTransferResumeList = NULL;
+  FDeletedFiles = NULL;
   FMoveToQueue = false;
   StandaloneOperation = false;
   FOnFeedSynchronizeError = NULL;
@@ -1236,9 +1237,8 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::ClearTransferSourceSelection(TTransferDirection Direction)
+void TCustomScpExplorerForm::ClearOperationSelection(TOperationSide Side)
 {
-  TOperationSide Side = ((Direction == tdToRemote) ? osLocal : osRemote);
   if (FOnFileOperationFinished != NULL)
   {
     FOnFileOperationFinished(Side, UnicodeString(), true);
@@ -1250,6 +1250,12 @@ void __fastcall TCustomScpExplorerForm::ClearTransferSourceSelection(TTransferDi
       DirView(Side)->SelectAll(smNone);
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ClearTransferSourceSelection(TTransferDirection Direction)
+{
+  TOperationSide Side = ((Direction == tdToRemote) ? osLocal : osRemote);
+  ClearOperationSelection(Side);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::AddQueueItem(
@@ -1467,7 +1473,8 @@ void __fastcall TCustomScpExplorerForm::CreateProgressForm(TSynchronizeProgress 
 {
   DebugAssert(FProgressForm == NULL);
   bool AllowSkip = HasActiveTerminal() ? Terminal->IsCapable[fcSkipTransfer] : false;
-  FProgressForm = new TProgressForm(Application, (FTransferResumeList != NULL), AllowSkip, SynchronizeProgress);
+  bool AllowMoveToQueue = (FTransferResumeList != NULL) || (FDeletedFiles != NULL);
+  FProgressForm = new TProgressForm(Application, AllowMoveToQueue, AllowSkip, SynchronizeProgress);
 
   FProgressForm->DeleteLocalToRecycleBin =
     (WinConfiguration->DeleteToRecycleBin != FAlternativeDelete);
@@ -4049,6 +4056,16 @@ void __fastcall TCustomScpExplorerForm::SideEnter(TOperationSide Side)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::FileDeleted(TOperationSide Side, const UnicodeString & FileName, bool Success)
+{
+  VisualiseOperationFinished(Side, FileName, Success);
+
+  if (DebugAlwaysTrue(FDeletedFiles != NULL) && Success)
+  {
+    FDeletedFiles->Add(FileName);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DeleteFiles(TOperationSide Side,
   TStrings * FileList, bool Alternative)
 {
@@ -4063,7 +4080,56 @@ void __fastcall TCustomScpExplorerForm::DeleteFiles(TOperationSide Side,
     if (!IsSideLocalBrowser(Side))
     {
       DebugAssert(Terminal != NULL);
-      Terminal->DeleteFiles(FileList, FLAGMASK(Alternative, dfAlternative));
+
+      // Clone the file list as it may refer to current directory files, which get destroyed, when the directory is reloaded after the operation
+      std::unique_ptr<TStrings> PermanentFileList(TRemoteFileList::CloneStrings(FileList));
+      std::unique_ptr<TStringList> DeletedFiles(new TStringList());
+      DeletedFiles->CaseSensitive = DebugAlwaysTrue(!IsSideLocalBrowser(Side));
+      int Params = FLAGMASK(Alternative, dfAlternative);
+
+      try
+      {
+        TValueRestorer<TStrings *> DeletedFilesRestorer(FDeletedFiles);
+        DebugAssert(FDeletedFiles == NULL);
+        FDeletedFiles = DeletedFiles.get();
+
+        TValueRestorer<TFileOperationFinishedEvent> OnFileOperationFinishedRestorer(FOnFileOperationFinished);
+        FOnFileOperationFinished = FileDeleted;
+
+        FMoveToQueue = false;
+
+        Terminal->DeleteFiles(FileList, Params);
+
+        // Probably not needed for deleting, just for consistency with transfer code
+        if (FMoveToQueue)
+        {
+          Abort();
+        }
+      }
+      catch (EAbort &)
+      {
+        if (FMoveToQueue)
+        {
+          DeletedFiles->Sorted = true;
+          for (int Index = 0; Index < PermanentFileList->Count; Index++)
+          {
+            if (DeletedFiles->IndexOf(PermanentFileList->Strings[Index]) >= 0)
+            {
+              // We should always be deleting the first item => what can be used to optimize this code, if needed
+              DebugAssert(Index == 0);
+              PermanentFileList->Delete(Index);
+              Index--;
+            }
+          }
+
+          Configuration->Usage->Inc("MovesToBackgroundDelete");
+
+          TQueueItem * QueueItem = new TDeleteQueueItem(Terminal, PermanentFileList.get(), Params);
+          AddQueueItem(Queue, QueueItem, Terminal);
+
+          ClearOperationSelection(osRemote);
+        }
+      }
     }
     else
     {

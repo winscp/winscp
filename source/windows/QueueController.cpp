@@ -134,7 +134,9 @@ bool __fastcall TQueueController::AllowOperation(
 
     case qoItemSpeed:
       {
-        bool Result = (QueueItem != NULL) && (QueueItem->Status != TQueueItem::qsDone);
+        bool Result =
+          (QueueItem != NULL) && (QueueItem->Status != TQueueItem::qsDone) &&
+          TFileOperationProgressType::IsTransferOperation(QueueItem->Info->Operation);
         if (Result && (Param != NULL))
         {
           Result = QueueItem->GetCPSLimit(*reinterpret_cast<unsigned long *>(Param));
@@ -273,6 +275,25 @@ void __fastcall TQueueController::ExecuteOperation(TQueueOperation Operation,
   }
 }
 //---------------------------------------------------------------------------
+static UnicodeString GetTime(TFileOperationProgressType * ProgressData)
+{
+  UnicodeString Result;
+  if (ProgressData->TotalSizeSet)
+  {
+    Result = FormatDateTimeSpan(Configuration->TimeFormat, ProgressData->TotalTimeLeft());
+  }
+  else
+  {
+    Result = FormatDateTimeSpan(Configuration->TimeFormat, ProgressData->TimeElapsed());
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+static UnicodeString GetOverallProgress(TFileOperationProgressType * ProgressData)
+{
+  return FORMAT(L"%d%%", (ProgressData->OverallProgress()));
+}
+//---------------------------------------------------------------------------
 void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
   TQueueItemProxy * QueueItem, bool Detail, bool OnlyLine)
 {
@@ -328,7 +349,37 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
   TFileOperationProgressType * ProgressData = QueueItem->ProgressData;
   TQueueItem::TInfo * Info = QueueItem->Info;
 
-  if (!Detail && Info->Primary)
+  if (SimpleOperation(QueueItem))
+  {
+    DebugAssert(!Detail && Info->Primary);
+    State = 8;
+
+    if ((ProgressData != NULL) && (QueueItem->Status != TQueueItem::qsDone))
+    {
+      Values[0] = ProgressData->FileName;
+
+      Values[3] = GetTime(ProgressData);
+
+      if (ProgressStr.IsEmpty())
+      {
+        if (ProgressData->Count > 1)
+        {
+          ProgressStr = GetOverallProgress(ProgressData);
+        }
+        else
+        {
+          ProgressStr = LoadStr(QUEUE_DELETING);
+        }
+      }
+    }
+    else
+    {
+      Values[0] = Info->Source;
+    }
+
+    Values[5] = ProgressStr;
+  }
+  else if (!Detail && Info->Primary)
   {
     switch (Info->Operation)
     {
@@ -339,6 +390,9 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
       case foMove:
         State = ((Info->Side == osLocal) ? 3 : 1);
         break;
+
+      default:
+        DebugFail();
     }
 
     if (!OnlyLine)
@@ -368,21 +422,13 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
       {
         if (QueueItem->Status != TQueueItem::qsDone)
         {
-          if (ProgressData->TotalSizeSet)
-          {
-            Values[3] = FormatDateTimeSpan(Configuration->TimeFormat, ProgressData->TotalTimeLeft());
-          }
-          else
-          {
-            Values[3] = FormatDateTimeSpan(Configuration->TimeFormat, ProgressData->TimeElapsed());
-          }
-
+          Values[3] = GetTime(ProgressData);
           Values[4] = FORMAT(L"%s/s", (FormatBytes(ProgressData->CPS())));
         }
 
         if (ProgressStr.IsEmpty())
         {
-          ProgressStr = FORMAT(L"%d%%", (ProgressData->OverallProgress()));
+          ProgressStr = GetOverallProgress(ProgressData);
         }
       }
       else if (ProgressData->Operation == foCalculateSize)
@@ -512,6 +558,11 @@ void __fastcall TQueueController::UpdateQueueStatus(
   DoChange();
 }
 //---------------------------------------------------------------------------
+bool TQueueController::SimpleOperation(TQueueItemProxy * QueueItem)
+{
+  return (QueueItem->Info->Operation == foDelete); // basically any non-transfer, but we support delete now only
+}
+//---------------------------------------------------------------------------
 bool __fastcall TQueueController::UseDetailsLine(int ItemIndex, TQueueItemProxy * QueueItem)
 {
   return
@@ -519,6 +570,7 @@ bool __fastcall TQueueController::UseDetailsLine(int ItemIndex, TQueueItemProxy 
     (ItemIndex < FQueueStatus->DoneAndActiveCount) &&
     QueueItem->Info->Primary &&
     !QueueItem->Info->SingleFile &&
+    !SimpleOperation(QueueItem) &&
     ((QueueItem->ProgressData == NULL) || !QueueItem->ProgressData->Done);
 }
 //---------------------------------------------------------------------------

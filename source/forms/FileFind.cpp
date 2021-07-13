@@ -616,13 +616,19 @@ TListItem * __fastcall TFileFindDialog::FileOperationFinished(const UnicodeStrin
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::FileDeleteFinished(TOperationSide, const UnicodeString & FileName, bool Success)
 {
-  // Delete in queue not supported
-  DebugAssert(!FileName.IsEmpty());
-  TListItem * Item = FileOperationFinished(FileName);
-  if (DebugAlwaysTrue(Item != NULL) && Success)
+  if (FileName.IsEmpty())
   {
-    ClearItem(Item);
-    Item->Delete();
+    DebugAssert(Success);
+    FileView->SelectAll(smNone);
+  }
+  else
+  {
+    TListItem * Item = FileOperationFinished(FileName);
+    if (DebugAlwaysTrue(Item != NULL) && Success)
+    {
+      ClearItem(Item);
+      Item->Delete();
+    }
   }
 }
 //---------------------------------------------------------------------------

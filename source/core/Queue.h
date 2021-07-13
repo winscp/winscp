@@ -376,6 +376,19 @@ protected:
   virtual void __fastcall DoTransferExecute(TTerminal * Terminal, TParallelOperation * ParallelOperation);
 };
 //---------------------------------------------------------------------------
+class TDeleteQueueItem : public TLocatedQueueItem
+{
+public:
+  TDeleteQueueItem(TTerminal * Terminal, TStrings * FilesToDelete, int Params);
+
+protected:
+  virtual void __fastcall DoExecute(TTerminal * Terminal);
+
+private:
+  std::unique_ptr<TStrings> FFilesToDelete;
+  int FParams;
+};
+//---------------------------------------------------------------------------
 class TUserAction;
 class TTerminalThread : public TSignalThread
 {

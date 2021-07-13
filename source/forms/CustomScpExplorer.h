@@ -290,6 +290,7 @@ private:
   TItemsWithTextDisplayMode FItemsWithTextDisplayMode;
   HWND FHiddenWindow;
   TStrings * FTransferResumeList;
+  TStrings * FDeletedFiles;
   bool FMoveToQueue;
   bool FStandaloneOperation;
   TFeedSynchronizeError FOnFeedSynchronizeError;
@@ -328,6 +329,7 @@ private:
     const TGUICopyParamType & CopyParam, int Params);
   void __fastcall AddQueueItem(TTerminalQueue * Queue, TQueueItem * QueueItem, TManagedTerminal * Terminal);
   void __fastcall ClearTransferSourceSelection(TTransferDirection Direction);
+  void ClearOperationSelection(TOperationSide Side);
   void __fastcall SessionsDDDragOver(int KeyState, const TPoint & Point, int & Effect, int PreferredEffect);
   void __fastcall SessionsDDProcessDropped(TObject * Sender, int KeyState, const TPoint & Point, int Effect);
   void __fastcall RemoteFileControlDragDropFileOperation(
@@ -736,6 +738,7 @@ protected:
   UnicodeString GetSessionPath(TManagedTerminal * ASession, TOperationSide Side);
   void __fastcall DirectorySizeCalculated(TOperationSide Side, const UnicodeString & FileName, bool Success);
   TListItem * VisualiseOperationFinished(TOperationSide Side, const UnicodeString & FileName, bool Unselect);
+  void __fastcall FileDeleted(TOperationSide Side, const UnicodeString & FileName, bool Success);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
