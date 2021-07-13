@@ -1077,7 +1077,7 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
   }
 
   // show only when keeping queue items forever,
-  // otherwise, its enough to have in in the context menu
+  // otherwise, it's enough to have it in the context menu
   QueueDeleteAllDoneQueueToolbarItem->Visible =
     WinConfiguration->QueueKeepDoneItems && (WinConfiguration->QueueKeepDoneItemsFor < 0);
 
