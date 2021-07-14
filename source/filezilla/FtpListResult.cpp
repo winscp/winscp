@@ -965,6 +965,7 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
   {
     return FALSE;
   }
+  direntry.name = L"";
   direntry.bUnsure = FALSE;
   direntry.dir = FALSE;
   direntry.bLink = FALSE;
@@ -1029,15 +1030,20 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
         if ((value.GetLength() > 14) && (value[13] == ':'))
           direntry.linkTarget = value.Mid(14);
       }
-      // ProFTPD up to 1.3.6rc1 and 1.3.5a incorrectly uses "cdir" for the current working directory.
-      // So at least in MLST, where this would be the only entry, we treat it like "dir".
       // For MLSD, these will be skipped in AddData.
       else if (!value.CompareNoCase(L"cdir"))
       {
+        // ProFTPD up to 1.3.6rc1 and 1.3.5a incorrectly uses "cdir" for the current working directory.
+        // So at least in MLST, where this would be the only entry, we treat it like "dir".
+        if (!m_mlst)
+        {
+          direntry.name = L".";
+        }
         direntry.dir = TRUE;
       }
       else if (!value.CompareNoCase(L"pdir"))
       {
+        direntry.name = L"..";
         direntry.dir = TRUE;
       }
     }
@@ -1120,22 +1126,25 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
   {
     return FALSE;
   }
-  pos++;
-  CString fileName;
-  copyStr(fileName, 0, line + pos, linelen - pos, true);
-  if (m_mlst)
+  if (direntry.name.IsEmpty())
   {
-    // do not try to detect path type, assume a standard *nix syntax + do not trim
-    CServerPath path(fileName, FZ_SERVERTYPE_FTP, false);
-    direntry.name = path.GetLastSegment();
-    if (direntry.name.IsEmpty())
+    pos++;
+    CString fileName;
+    copyStr(fileName, 0, line + pos, linelen - pos, true);
+    if (m_mlst)
+    {
+      // do not try to detect path type, assume a standard *nix syntax + do not trim
+      CServerPath path(fileName, FZ_SERVERTYPE_FTP, false);
+      direntry.name = path.GetLastSegment();
+      if (direntry.name.IsEmpty())
+      {
+        direntry.name = fileName;
+      }
+    }
+    else
     {
       direntry.name = fileName;
     }
-  }
-  else
-  {
-    direntry.name = fileName;
   }
   return TRUE;
 }
