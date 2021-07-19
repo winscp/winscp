@@ -28,7 +28,7 @@ struct ssh2_userauth_state {
 
     PacketProtocolLayer *transport_layer, *successor_layer;
     Filename *keyfile;
-    bool show_banner, tryagent, change_username;
+    bool show_banner, tryagent, notrivialauth, change_username;
     char *hostname, *fullhostname;
     char *default_username;
     bool try_ki_auth, try_gssapi_auth, try_gssapi_kex_auth, gssapi_fwd;
@@ -82,6 +82,7 @@ struct ssh2_userauth_state {
     int len;
     PktOut *pktout;
     bool want_user_input;
+    bool is_trivial_auth;
 
     agent_pending_query *auth_agent_query;
     bufchain banner;
@@ -134,7 +135,7 @@ static const PacketProtocolLayerVtable ssh2_userauth_vtable = {
 PacketProtocolLayer *ssh2_userauth_new(
     PacketProtocolLayer *successor_layer,
     const char *hostname, const char *fullhostname,
-    Filename *keyfile, bool show_banner, bool tryagent,
+    Filename *keyfile, bool show_banner, bool tryagent, bool notrivialauth,
     const char *default_username, bool change_username,
     bool try_ki_auth, bool try_gssapi_auth, bool try_gssapi_kex_auth,
     bool gssapi_fwd, struct ssh_connection_shared_gss_state *shgss)
@@ -149,6 +150,7 @@ PacketProtocolLayer *ssh2_userauth_new(
     s->keyfile = filename_copy(keyfile);
     s->show_banner = show_banner;
     s->tryagent = tryagent;
+    s->notrivialauth = notrivialauth;
     s->default_username = dupstr(default_username);
     s->change_username = change_username;
     s->try_ki_auth = try_ki_auth;
@@ -157,6 +159,7 @@ PacketProtocolLayer *ssh2_userauth_new(
     s->gssapi_fwd = gssapi_fwd;
     s->shgss = shgss;
     s->last_methods_string = strbuf_new();
+    s->is_trivial_auth = true;
     bufchain_init(&s->banner);
     bufchain_sink_init(&s->banner_bs, &s->banner);
 
@@ -818,6 +821,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                                 sigblob);
                             pq_push(s->ppl.out_pq, s->pktout);
                             s->type = AUTH_TYPE_PUBLICKEY;
+                            s->is_trivial_auth = false;
                         } else {
                             ppl_logevent("Pageant refused signing request");
                             ppl_printf("Pageant failed to "
@@ -1038,6 +1042,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     ssh_key_free(key->key);
                     sfree(key->comment);
                     sfree(key);
+                    s->is_trivial_auth = false;
                 }
 
 #ifndef NO_GSSAPI
@@ -1169,6 +1174,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                      * no longer says CONTINUE_NEEDED
                      */
                     if (s->gss_sndtok.length != 0) {
+                        s->is_trivial_auth = false;
                         s->pktout =
                             ssh_bpp_new_pktout(
                                 s->ppl.bpp, SSH2_MSG_USERAUTH_GSSAPI_TOKEN);
@@ -1288,7 +1294,6 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                  * Loop while the server continues to send INFO_REQUESTs.
                  */
                 while (pktin->type == SSH2_MSG_USERAUTH_INFO_REQUEST) {
-
                     ptrlen name, inst;
                     strbuf *sb;
 
@@ -1308,6 +1313,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                      */
                     s->num_prompts = get_uint32(pktin);
                     for (uint32_t i = 0; i < s->num_prompts; i++) {
+                        s->is_trivial_auth = false;
                         ptrlen prompt = get_string(pktin);
                         bool echo = get_bool(pktin);
 
@@ -1472,7 +1478,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 pq_push_front(s->ppl.in_pq, pktin);
 
             } else if (s->can_passwd) {
-
+                s->is_trivial_auth = false;
                 /*
                  * Plain old password authentication.
                  */
@@ -1731,6 +1737,12 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
     }
 
   userauth_success:
+    if (s->notrivialauth && s->is_trivial_auth) {
+        ssh_proto_error(s->ppl.ssh, "Authentication was trivial! "
+                        "Abandoning session as specified in configuration.");
+        return;
+    }
+
     /*
      * We've just received USERAUTH_SUCCESS, and we haven't sent
      * any packets since. Signal the transport layer to consider

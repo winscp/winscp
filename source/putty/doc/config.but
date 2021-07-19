@@ -2623,6 +2623,49 @@ interact with them.)
 This option only affects SSH-2 connections. SSH-1 connections always
 require an authentication step.
 
+\S{config-ssh-notrivialauth} \q{Disconnect if authentication succeeds
+trivially}
+
+This option causes PuTTY to abandon an SSH session and disconnect from
+the server, if the server accepted authentication without ever having
+asked for any kind of password or signature or token.
+
+This might be used as a security measure. There are some forms of
+attack against an SSH client user which work by terminating the SSH
+authentication stage early, and then doing something in the main part
+of the SSH session which \e{looks} like part of the authentication,
+but isn't really.
+
+For example, instead of demanding a signature from your public key,
+for which PuTTY would ask for your key's passphrase, a compromised or
+malicious server might allow you to log in with no signature or
+password at all, and then print a message that \e{imitates} PuTTY's
+request for your passphrase, in the hope that you would type it in.
+(In fact, the passphrase for your public key should not be sent to any
+server.)
+
+PuTTY's main defence against attacks of this type is the \q{trust
+sigil} system: messages in the PuTTY window that are truly originated
+by PuTTY itself are shown next to a small copy of the PuTTY icon,
+which the server cannot fake when it tries to imitate the same message
+using terminal output.
+
+However, if you think you might be at risk of this kind of thing
+anyway (if you don't watch closely for the trust sigils, or if you
+think you're at extra risk of one of your servers being malicious),
+then you could enable this option as an extra defence. Then, if the
+server tries any of these attacks involving letting you through the
+authentication stage, PuTTY will disconnect from the server before it
+can send a follow-up fake prompt or other type of attack.
+
+On the other hand, some servers \e{legitimately} let you through the
+SSH authentication phase trivially, either because they are genuinely
+public, or because the important authentication step happens during
+the terminal session. (An example might be an SSH server that connects
+you directly to the terminal login prompt of a legacy mainframe.) So
+enabling this option might cause some kinds of session to stop
+working. It's up to you.
+
 \S{config-ssh-tryagent} \q{Attempt authentication using Pageant}
 
 If this option is enabled, then PuTTY will look for Pageant (the SSH

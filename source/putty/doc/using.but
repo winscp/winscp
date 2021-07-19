@@ -1014,6 +1014,15 @@ This option is equivalent to the \q{Private key file for
 authentication} box in the Auth panel of the PuTTY configuration box
 (see \k{config-ssh-privkey}).
 
+\S2{using-cmdline-no-trivial-auth} \i\c{-no-trivial-auth}: disconnect
+if SSH authentication succeeds trivially
+
+This option causes PuTTY to abandon an SSH session if the server
+accepts authentication without ever having asked for any kind of
+password or signature or token.
+
+See \k{config-ssh-notrivialauth} for why you might want this.
+
 \S2{using-cmdline-loghost} \i\c{-loghost}: specify a \i{logical host
 name}
 

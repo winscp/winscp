@@ -41,7 +41,7 @@ use Plink:
 
 \c C:\>plink
 \c Plink: command-line connection utility
-\c Release 0.75
+\c Release 0.76
 \c Usage: plink [options] [user@]host [command]
 \c        ("host" can also be a PuTTY saved session name)
 \c Options:
@@ -77,6 +77,8 @@ use Plink:
 \c   -i key    private key file for user authentication
 \c   -noagent  disable use of Pageant
 \c   -agent    enable use of Pageant
+\c   -no-trivial-auth
+\c             disconnect if SSH authentication succeeds trivially
 \c   -noshare  disable use of connection sharing
 \c   -share    enable use of connection sharing
 \c   -hostkey keyid

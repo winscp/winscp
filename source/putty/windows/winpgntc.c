@@ -169,6 +169,7 @@ bool agent_exists(void)
 
 struct agent_pending_query {
     struct handle *handle;
+    HANDLE os_handle;
     strbuf *response;
     void (*callback)(void *, void *, int);
     void *callback_ctx;
@@ -266,7 +267,8 @@ static agent_pending_query *named_pipe_agent_query(
 
     pq = snew(agent_pending_query);
     pq->handle = handle_input_new(pipehandle, named_pipe_agent_gotdata, pq, 0);
-    pipehandle = NULL;  /* prevent it being closed below */
+    pq->os_handle = pipehandle;
+    pipehandle = INVALID_HANDLE_VALUE;  /* prevent it being closed below */
     pq->response = strbuf_new_nm();
     pq->callback = callback;
     pq->callback_ctx = callback_ctx;
@@ -290,6 +292,7 @@ static agent_pending_query *named_pipe_agent_query(
 void agent_cancel_query(agent_pending_query *pq)
 {
     handle_free(pq->handle);
+    CloseHandle(pq->os_handle);
     if (pq->response)
         strbuf_free(pq->response);
     sfree(pq);

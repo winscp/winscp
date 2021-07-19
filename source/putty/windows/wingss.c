@@ -95,6 +95,28 @@ const char *gsslogmsg = NULL;
 
 static void ssh_sspi_bind_fns(struct ssh_gss_library *lib);
 
+static tree234 *libraries_to_never_unload;
+static int library_to_never_unload_cmp(void *av, void *bv)
+{
+    uintptr_t a = (uintptr_t)av, b = (uintptr_t)bv;
+    return a < b ? -1 : a > b ? +1 : 0;
+}
+static void ensure_library_tree_exists(void)
+{
+    if (!libraries_to_never_unload)
+        libraries_to_never_unload = newtree234(library_to_never_unload_cmp);
+}
+static bool library_is_in_never_unload_tree(HMODULE module)
+{
+    ensure_library_tree_exists();
+    return find234(libraries_to_never_unload, module, NULL);
+}
+static void add_library_to_never_unload_tree(HMODULE module)
+{
+    ensure_library_tree_exists();
+    add234(libraries_to_never_unload, module);
+}
+
 struct ssh_gss_liblist *ssh_gss_setup(Conf *conf)
 {
     HMODULE module;
@@ -145,6 +167,23 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf)
                                         LOAD_LIBRARY_SEARCH_SYSTEM32 |
                                         LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR |
                                         LOAD_LIBRARY_SEARCH_USER_DIRS);
+
+                /*
+                 * The MIT Kerberos DLL suffers an internal segfault
+                 * for some reason if you unload and reload one within
+                 * the same process. So, make sure that after we load
+                 * this library, we never free it.
+                 *
+                 * Or rather: after we've loaded it once, if any
+                 * _further_ load returns the same module handle, we
+                 * immediately free it again (to prevent the Windows
+                 * API's internal reference count growing without
+                 * bound). But on the other hand we never free it in
+                 * ssh_gss_cleanup.
+                 */
+                if (library_is_in_never_unload_tree(module))
+                    FreeLibrary(module);
+                add_library_to_never_unload_tree(module);
             }
             sfree(buffer);
         }
@@ -280,7 +319,11 @@ void ssh_gss_cleanup(struct ssh_gss_liblist *list)
      * another SSH instance still using it.
      */
     for (i = 0; i < list->nlibraries; i++) {
-        FreeLibrary((HMODULE)list->libraries[i].handle);
+        if (list->libraries[i].id != 0) {
+            HMODULE module = (HMODULE)list->libraries[i].handle;
+            if (!library_is_in_never_unload_tree(module))
+                FreeLibrary(module);
+        }
         if (list->libraries[i].id == 2) {
             /* The 'custom' id involves a dynamically allocated message.
              * Note that we must cast away the 'const' to free it. */

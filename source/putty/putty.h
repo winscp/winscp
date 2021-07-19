@@ -1299,8 +1299,14 @@ struct TermWinVtable {
 
     /* Query the front end for any OS-local overrides to the default
      * colours stored in Conf. The front end should set any it cares
-     * about by calling term_palette_override. */
-    void (*palette_get_overrides)(TermWin *);
+     * about by calling term_palette_override.
+     *
+     * The Terminal object is passed in as a parameter, because this
+     * can be called as a callback from term_init(). So the TermWin
+     * itself won't yet have been told where to find its Terminal
+     * object, because that doesn't happen until term_init
+     * returns. */
+    void (*palette_get_overrides)(TermWin *, Terminal *);
 };
 
 static inline bool win_setup_draw_ctx(TermWin *win)
@@ -1354,8 +1360,8 @@ static inline void win_set_zorder(TermWin *win, bool top)
 static inline void win_palette_set(
     TermWin *win, unsigned start, unsigned ncolours, const rgb *colours)
 { win->vt->palette_set(win, start, ncolours, colours); }
-static inline void win_palette_get_overrides(TermWin *win)
-{ win->vt->palette_get_overrides(win); }
+static inline void win_palette_get_overrides(TermWin *win, Terminal *term)
+{ win->vt->palette_get_overrides(win, term); }
 
 /*
  * Global functions not specific to a connection instance.
@@ -1422,6 +1428,7 @@ NORETURN void cleanup_exit(int);
     X(INT, NONE, sshprot) \
     X(BOOL, NONE, ssh2_des_cbc) /* "des-cbc" unrecommended SSH-2 cipher */ \
     X(BOOL, NONE, ssh_no_userauth) /* bypass "ssh-userauth" (SSH-2 only) */ \
+    X(BOOL, NONE, ssh_no_trivial_userauth) /* disable trivial types of auth */ \
     X(BOOL, NONE, ssh_show_banner) /* show USERAUTH_BANNERs (SSH-2 only) */ \
     X(BOOL, NONE, try_tis_auth) \
     X(BOOL, NONE, try_ki_auth) \
@@ -1784,7 +1791,7 @@ void term_keyinputw(Terminal *, const wchar_t * widebuf, int len);
 void term_get_cursor_position(Terminal *term, int *x, int *y);
 void term_setup_window_titles(Terminal *term, const char *title_hostname);
 void term_notify_minimised(Terminal *term, bool minimised);
-void term_notify_palette_overrides_changed(Terminal *term);
+void term_notify_palette_changed(Terminal *term);
 void term_notify_window_pos(Terminal *term, int x, int y);
 void term_notify_window_size_pixels(Terminal *term, int x, int y);
 void term_palette_override(Terminal *term, unsigned osc4_index, rgb rgb);

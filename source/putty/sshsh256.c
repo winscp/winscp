@@ -723,6 +723,7 @@ const ssh_hashalg ssh_sha256_hw = {
  */
 #define __ARM_NEON 1
 #define __ARM_FEATURE_CRYPTO 1
+#define __ARM_FEATURE_SHA2 1
 #define FUNC_ISA __attribute__ ((target("neon,crypto")))
 #endif /* USE_CLANG_ATTR_TARGET_AARCH64 */
 
