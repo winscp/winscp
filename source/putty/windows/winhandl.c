@@ -455,6 +455,7 @@ struct handle *handle_input_new(tree234 * handles_by_evtomain, HANDLE handle, ha
     #endif
     add234(handles_by_evtomain, h);
 
+    { // WINSCP
     HANDLE hThread = CreateThread(NULL, 0, handle_input_threadfunc,
                                   &h->u.i, 0, &in_threadid);
     if (hThread)
@@ -462,6 +463,7 @@ struct handle *handle_input_new(tree234 * handles_by_evtomain, HANDLE handle, ha
     h->u.i.busy = true;
 
     return h;
+    } // WINSCP
 }
 
 struct handle *handle_output_new(tree234 * handles_by_evtomain, HANDLE handle, handle_outputfn_t sentdata, // WINSCP
@@ -490,12 +492,14 @@ struct handle *handle_output_new(tree234 * handles_by_evtomain, HANDLE handle, h
     #endif
     add234(handles_by_evtomain, h);
 
+    { // WINSCP
     HANDLE hThread = CreateThread(NULL, 0, handle_output_threadfunc,
                                   &h->u.o, 0, &out_threadid);
     if (hThread)
         CloseHandle(hThread);          /* we don't need the thread handle */
 
     return h;
+    } // WINSCP
 }
 
 #ifndef WINSCP
