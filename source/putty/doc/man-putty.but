@@ -287,6 +287,15 @@ which of the agent's keys to use. }
 \dd Allow use of an authentication agent. (This option is only necessary
 to override a setting in a saved session.)
 
+\dt \cw{\-no\-trivial\-auth}
+
+\dd Disconnect from any SSH server which accepts authentication without
+ever having asked for any kind of password or signature or token. (You
+might want to enable this for a server you always expect to challenge
+you, for instance to ensure you don't accidentally type your key file's
+passphrase into a compromised server spoofing PuTTY's passphrase
+prompt.)
+
 \dt \cw{\-hostkey} \e{key}
 
 \dd Specify an acceptable host public key. This option may be specified

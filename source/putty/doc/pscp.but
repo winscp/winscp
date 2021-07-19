@@ -39,7 +39,7 @@ use PSCP:
 
 \c C:\>pscp
 \c PuTTY Secure Copy client
-\c Release 0.75
+\c Release 0.76
 \c Usage: pscp [options] [user@]host:source target
 \c        pscp [options] source [source...] [user@]host:target
 \c        pscp [options] -ls [user@]host:filespec
@@ -62,6 +62,8 @@ use PSCP:
 \c   -i key    private key file for user authentication
 \c   -noagent  disable use of Pageant
 \c   -agent    enable use of Pageant
+\c   -no-trivial-auth
+\c             disconnect if SSH authentication succeeds trivially
 \c   -hostkey keyid
 \c             manually specify a host key (may be repeated)
 \c   -batch    disable all interactive prompts

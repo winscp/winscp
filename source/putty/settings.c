@@ -609,6 +609,7 @@ void save_open_settings(settings_w *sesskey, Conf *conf)
 #endif
     write_setting_s(sesskey, "RekeyBytes", conf_get_str(conf, CONF_ssh_rekey_data));
     write_setting_b(sesskey, "SshNoAuth", conf_get_bool(conf, CONF_ssh_no_userauth));
+    write_setting_b(sesskey, "SshNoTrivialAuth", conf_get_bool(conf, CONF_ssh_no_trivial_userauth));
     write_setting_b(sesskey, "SshBanner", conf_get_bool(conf, CONF_ssh_show_banner));
     write_setting_b(sesskey, "AuthTIS", conf_get_bool(conf, CONF_try_tis_auth));
     write_setting_b(sesskey, "AuthKI", conf_get_bool(conf, CONF_try_ki_auth));
@@ -1025,6 +1026,7 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
     gpps(sesskey, "LogHost", "", conf, CONF_loghost);
     gppb(sesskey, "SSH2DES", false, conf, CONF_ssh2_des_cbc);
     gppb(sesskey, "SshNoAuth", false, conf, CONF_ssh_no_userauth);
+    gppb(sesskey, "SshNoTrivialAuth", false, conf, CONF_ssh_no_trivial_userauth);
     gppb(sesskey, "SshBanner", true, conf, CONF_ssh_show_banner);
     gppb(sesskey, "AuthTIS", false, conf, CONF_try_tis_auth);
     gppb(sesskey, "AuthKI", true, conf, CONF_try_ki_auth);

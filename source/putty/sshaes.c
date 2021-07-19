@@ -1580,6 +1580,7 @@ NI_ENC_DEC(256)
  */
 #define __ARM_NEON 1
 #define __ARM_FEATURE_CRYPTO 1
+#define __ARM_FEATURE_AES 1
 #define FUNC_ISA __attribute__ ((target("neon,crypto")))
 #endif /* USE_CLANG_ATTR_TARGET_AARCH64 */
 

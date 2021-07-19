@@ -27,7 +27,7 @@ struct ssh1_login_state {
 
     char *savedhost;
     int savedport;
-    bool try_agent_auth;
+    bool try_agent_auth, is_trivial_auth;
 
     int remote_protoflags;
     int local_protoflags;
@@ -105,6 +105,8 @@ PacketProtocolLayer *ssh1_login_new(
     s->savedhost = dupstr(host);
     s->savedport = port;
     s->successor_layer = successor_layer;
+    s->is_trivial_auth = true;
+
     return &s->ppl;
 }
 
@@ -645,6 +647,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                                 s->ppl.bpp, SSH1_CMSG_AUTH_RSA_RESPONSE);
                             put_data(pkt, ret + 5, 16);
                             pq_push(s->ppl.out_pq, pkt);
+                            s->is_trivial_auth = false;
                             crMaybeWaitUntilV(
                                 (pktin = ssh1_login_pop(s))
                                 != NULL);
@@ -814,6 +817,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                         s->ppl.bpp, SSH1_CMSG_AUTH_RSA_RESPONSE);
                     put_data(pkt, buffer, 16);
                     pq_push(s->ppl.out_pq, pkt);
+                    s->is_trivial_auth = false;
 
                     mp_free(challenge);
                     mp_free(response);
@@ -1105,6 +1109,7 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
             put_stringz(pkt, prompt_get_result_ref(s->cur_prompt->prompts[0]));
             pq_push(s->ppl.out_pq, pkt);
         }
+        s->is_trivial_auth = false;
         ppl_logevent("Sent password");
         free_prompts(s->cur_prompt);
         s->cur_prompt = NULL;
@@ -1119,6 +1124,13 @@ static void ssh1_login_process_queue(PacketProtocolLayer *ppl)
                             "(%s)", pktin->type, ssh1_pkt_type(pktin->type));
             return;
         }
+    }
+
+    if (conf_get_bool(s->conf, CONF_ssh_no_trivial_userauth) &&
+        s->is_trivial_auth) {
+        ssh_proto_error(s->ppl.ssh, "Authentication was trivial! "
+                        "Abandoning session as specified in configuration.");
+        return;
     }
 
     ppl_logevent("Authentication successful");
