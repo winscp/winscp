@@ -1352,6 +1352,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                     uint32_t i;
                     for (i = 0; i < s->num_prompts; i++) {
                         s->is_trivial_auth = false;
+                        { // WINSCP
                         ptrlen prompt = get_string(pktin);
                         bool echo = get_bool(pktin);
 
@@ -1375,6 +1376,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                             put_datapl(sb, prompt);
                         }
                         add_prompt(s->cur_prompt, strbuf_to_str(sb), echo);
+                        } // WINSCP
                     }
                     } // WINSCP
 
@@ -1522,6 +1524,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
 
             } else if (s->can_passwd) {
                 s->is_trivial_auth = false;
+                { // WINSCP
                 /*
                  * Plain old password authentication.
                  */
@@ -1778,6 +1781,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                  */
                 smemclr(s->password, strlen(s->password));
                 sfree(s->password);
+                } // WINSCP
 
             } else {
                 ssh_bpp_queue_disconnect(
