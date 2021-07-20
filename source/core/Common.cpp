@@ -12,6 +12,7 @@
 #include <math.h>
 #include <shlobj.h>
 #include <limits>
+#include <set>
 #include <shlwapi.h>
 #include <tlhelp32.h>
 #include <psapi.h>
