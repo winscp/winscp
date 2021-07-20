@@ -4144,34 +4144,19 @@ DWORD __fastcall GetParentProcessId(HANDLE Snapshot, DWORD ProcessId)
 static UnicodeString GetProcessName(DWORD ProcessId)
 {
   UnicodeString Result;
-  if (ProcessId == 0)
+  HANDLE Process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, ProcessId);
+   // is common, when the parent process is installer, so we ignore it
+  if (Process)
   {
-    Result = L"err-notfound";
-  }
-  else
-  {
-    HANDLE Process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, ProcessId);
-    if (!Process)
+    Result.SetLength(MAX_PATH);
+    DWORD Len = GetModuleFileNameEx(Process, NULL, Result.c_str(), Result.Length());
+    Result.SetLength(Len);
+    // is common too, for some reason
+    if (!Result.IsEmpty())
     {
-      // is common, when the parent process is installer, so we ignore it
-      Result = UnicodeString();
+      Result = ExtractProgramName(FormatCommand(Result, UnicodeString()));
     }
-    else
-    {
-      Result.SetLength(MAX_PATH);
-      DWORD Len = GetModuleFileNameEx(Process, NULL, Result.c_str(), Result.Length());
-      if (Len == 0)
-      {
-        // is common too, for some reason
-        Result = UnicodeString();
-      }
-      else
-      {
-        Result.SetLength(Len);
-        Result = ExtractProgramName(FormatCommand(Result, UnicodeString()));
-      }
-      CloseHandle(Process);
-    }
+    CloseHandle(Process);
   }
   return Result;
 }
@@ -4194,21 +4179,51 @@ UnicodeString __fastcall GetAncestorProcessName(int Levels)
 
       DWORD ProcessId = GetCurrentProcessId();
 
+      typedef std::vector<DWORD> TProcesses;
+      TProcesses Processes;
       // Either more to go (>0) or collecting all levels (-1 from GetAncestorProcessNames)
       while ((Levels != 0) &&
+             (Levels > -20) && // prevent infinite loops
              (ProcessId != 0))
       {
+        const UnicodeString Sep(L", ");
         ProcessId = GetParentProcessId(Snapshot, ProcessId);
-        if ((Levels < 0) && (ProcessId != 0))
+        // When ancestor process is terminated and another process reuses its ID, we may get a cycle.
+        TProcesses::const_iterator I = std::find(Processes.begin(), Processes.end(), ProcessId);
+        if (I != Processes.end())
         {
-          AddToList(Result, GetProcessName(ProcessId), L", ");
+          int Index = I - Processes.begin();
+          AddToList(Result, FORMAT(L"cycle-%d", (Index)), Sep);
+          ProcessId = 0;
         }
-        Levels--;
+        else
+        {
+          Processes.push_back(ProcessId);
+
+          if ((Levels < 0) && (ProcessId != 0))
+          {
+            UnicodeString Name = GetProcessName(ProcessId);
+            if (Name.IsEmpty())
+            {
+              Name = L"...";
+              ProcessId = 0;
+            }
+            AddToList(Result, Name, Sep);
+          }
+          Levels--;
+        }
       }
 
       if (Levels >= 0)
       {
-        Result = GetProcessName(ProcessId);
+        if (ProcessId == 0)
+        {
+          Result = L"err-notfound";
+        }
+        else
+        {
+          Result = GetProcessName(ProcessId);
+        }
       }
       else if (Result.IsEmpty())
       {
