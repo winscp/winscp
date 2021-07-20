@@ -76,6 +76,7 @@ void __fastcall PuttyFinalize()
   win_misc_cleanup();
   win_secur_cleanup();
   ec_cleanup();
+  wingss_cleanup();
   DeleteCriticalSection(&putty_section);
 }
 //---------------------------------------------------------------------------

@@ -748,3 +748,16 @@ void ssh_gss_init(void)
 }
 
 #endif
+
+#ifdef WINSCP
+
+void wingss_cleanup(void)
+{
+    if (libraries_to_never_unload != NULL)
+    {
+        freetree234(libraries_to_never_unload);
+        libraries_to_never_unload = NULL;
+    }
+}
+
+#endif
