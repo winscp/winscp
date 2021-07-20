@@ -31,6 +31,8 @@ int have_any_ssh2_hostkey(Seat * seat, const char * host, int port);
 #include "sshgss.h"
 #endif
 
+void wingss_cleanup(void);
+
 // from portfwd.c
 
 int is_pfwd(Plug * plug);
