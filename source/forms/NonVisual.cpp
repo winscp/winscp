@@ -879,13 +879,6 @@ void __fastcall TNonVisualDataModule::ExplorerShortcuts()
   // selected operation
   CurrentDeleteAlternativeAction->ShortCut = ShortCut(VK_DELETE, SHIFT);
   RemoteMoveToAction->ShortCut = ShortCut(L'M', CTRLALT);
-  // selection
-  SelectAction->ShortCut = ShortCut(VK_ADD, NONE);
-  UnselectAction->ShortCut = ShortCut(VK_SUBTRACT, NONE);
-  SelectAllAction->ShortCut = ShortCut(L'A', CTRL);
-  InvertSelectionAction->ShortCut = ShortCut(VK_MULTIPLY, NONE);
-  ClearSelectionAction->ShortCut = ShortCut(L'L', CTRLSHIFT);
-  RestoreSelectionAction->ShortCut = ShortCut(L'R', CTRLSHIFT);
   // commands
   NewFileAction->ShortCut = ShortCut(L'E', CTRLSHIFT);
   RemoteFindFilesAction2->ShortCut = ShortCut(VK_F3, NONE);
@@ -935,12 +928,6 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
   RemoteCopyToAction->ShortCut = ShortCut(VK_F5, SHIFT);
   // selection
   SelectOneAction->ShortCut = VK_INSERT;
-  SelectAction->ShortCut = ShortCut(VK_ADD, NONE);
-  UnselectAction->ShortCut = ShortCut(VK_SUBTRACT, NONE);
-  SelectAllAction->ShortCut = ShortCut(L'A', CTRL);
-  InvertSelectionAction->ShortCut = ShortCut(VK_MULTIPLY, NONE);
-  ClearSelectionAction->ShortCut = ShortCut(L'L', CTRLSHIFT);
-  RestoreSelectionAction->ShortCut = ShortCut(L'R', CTRLSHIFT);
   // commands
   NewFileAction->ShortCut = ShortCut(VK_F4, SHIFT);
   RemoteFindFilesAction2->ShortCut =
