@@ -523,6 +523,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_select'
       Hint = 'Select|Select files by mask'
       ImageIndex = 19
+      ShortCut = 107
     end
     object UnselectAction: TAction
       Tag = 15
@@ -531,6 +532,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_select'
       Hint = 'Unselect|Unselect files by mask'
       ImageIndex = 20
+      ShortCut = 109
     end
     object SelectAllAction: TAction
       Tag = 15
@@ -539,6 +541,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_file_panel#selecting_files'
       Hint = 'Select all files'
       ImageIndex = 21
+      ShortCut = 16449
     end
     object InvertSelectionAction: TAction
       Tag = 15
@@ -547,6 +550,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_file_panel#selecting_files'
       Hint = 'Invert selection'
       ImageIndex = 22
+      ShortCut = 106
     end
     object ExplorerSelectionBandAction: TAction
       Tag = 7
@@ -562,6 +566,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_file_panel#selecting_files'
       Hint = 'Clear selection'
       ImageIndex = 23
+      ShortCut = 24652
     end
     object ExplorerSessionBandAction: TAction
       Tag = 7
@@ -1868,6 +1873,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_file_panel#selecting_files'
       Hint = 'Restore previous selection'
       ImageIndex = 86
+      ShortCut = 24658
     end
     object LocalSelectAction: TAction
       Tag = 12
