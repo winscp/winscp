@@ -656,6 +656,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Reconnect Session'
       HelpKeyword = 'task_connections'
       Hint = 'Reconnect the current disconnected session'
+      ShortCut = 24658
     end
     object SavedSessionsAction2: TAction
       Tag = 15
@@ -1873,7 +1874,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_file_panel#selecting_files'
       Hint = 'Restore previous selection'
       ImageIndex = 86
-      ShortCut = 24658
+      ShortCut = 24659
     end
     object LocalSelectAction: TAction
       Tag = 12
