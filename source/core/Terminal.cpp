@@ -1504,52 +1504,7 @@ void __fastcall TTerminal::OpenTunnel()
 
   try
   {
-    FTunnelData = new TSessionData(L"");
-    FTunnelData->Assign(StoredSessions->DefaultSettings);
-    FTunnelData->Name = FMTLOAD(TUNNEL_SESSION_NAME, (FSessionData->SessionName));
-    FTunnelData->Tunnel = false;
-    FTunnelData->HostName = FSessionData->TunnelHostName;
-    FTunnelData->PortNumber = FSessionData->TunnelPortNumber;
-    FTunnelData->UserName = FSessionData->TunnelUserName;
-    FTunnelData->Password = FSessionData->TunnelPassword;
-    FTunnelData->PublicKeyFile = FSessionData->TunnelPublicKeyFile;
-    UnicodeString HostName = FSessionData->HostNameExpanded;
-    if (IsIPv6Literal(HostName))
-    {
-      HostName = EscapeIPv6Literal(HostName);
-    }
-    FTunnelData->TunnelPortFwd = FORMAT(L"L%d\t%s:%d",
-      (FTunnelLocalPortNumber, HostName, FSessionData->PortNumber));
-    FTunnelData->HostKey = FSessionData->TunnelHostKey;
-
-    // inherit proxy options on the main session
-    FTunnelData->ProxyMethod = FSessionData->ProxyMethod;
-    FTunnelData->ProxyHost = FSessionData->ProxyHost;
-    FTunnelData->ProxyPort = FSessionData->ProxyPort;
-    FTunnelData->ProxyUsername = FSessionData->ProxyUsername;
-    FTunnelData->ProxyPassword = FSessionData->ProxyPassword;
-    FTunnelData->ProxyTelnetCommand = FSessionData->ProxyTelnetCommand;
-    FTunnelData->ProxyLocalCommand = FSessionData->ProxyLocalCommand;
-    FTunnelData->ProxyDNS = FSessionData->ProxyDNS;
-    FTunnelData->ProxyLocalhost = FSessionData->ProxyLocalhost;
-
-    // inherit most SSH options of the main session (except for private key and bugs)
-    FTunnelData->Compression = FSessionData->Compression;
-    FTunnelData->CipherList = FSessionData->CipherList;
-    FTunnelData->Ssh2DES = FSessionData->Ssh2DES;
-
-    FTunnelData->KexList = FSessionData->KexList;
-    FTunnelData->RekeyData = FSessionData->RekeyData;
-    FTunnelData->RekeyTime = FSessionData->RekeyTime;
-
-    FTunnelData->SshNoUserAuth = FSessionData->SshNoUserAuth;
-    FTunnelData->AuthGSSAPI = FSessionData->AuthGSSAPI;
-    FTunnelData->AuthGSSAPIKEX = FSessionData->AuthGSSAPIKEX;
-    FTunnelData->GSSAPIFwdTGT = FSessionData->GSSAPIFwdTGT;
-    FTunnelData->TryAgent = FSessionData->TryAgent;
-    FTunnelData->AgentFwd = FSessionData->AgentFwd;
-    FTunnelData->AuthKI = FSessionData->AuthKI;
-    FTunnelData->AuthKIPassword = FSessionData->AuthKIPassword;
+    FTunnelData = FSessionData->CreateTunnelData(FTunnelLocalPortNumber);
 
     // The Started argument is not used with Parent being set
     FTunnelLog = new TSessionLog(this, TDateTime(), FTunnelData, Configuration);
@@ -4986,6 +4941,15 @@ void __fastcall TTerminal::FillSessionDataForCode(TSessionData * Data)
   else if (SessionInfo.CertificateVerifiedManually && DebugAlwaysTrue(!SessionInfo.CertificateFingerprintSHA256.IsEmpty()))
   {
     Data->HostKey = SessionInfo.CertificateFingerprintSHA256;
+  }
+
+  if (FTunnel != NULL)
+  {
+    const TSessionInfo & TunnelSessionInfo = FTunnel->GetSessionInfo();
+    if (DebugAlwaysTrue(!TunnelSessionInfo.HostKeyFingerprintSHA256.IsEmpty()))
+    {
+      Data->TunnelHostKey = TunnelSessionInfo.HostKeyFingerprintSHA256;
+    }
   }
 }
 //---------------------------------------------------------------------------

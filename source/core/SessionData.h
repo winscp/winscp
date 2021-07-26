@@ -509,6 +509,7 @@ public:
   TStrings * __fastcall SaveToOptions(const TSessionData * Default, bool SaveName, bool PuttyExport);
   void __fastcall ConfigureTunnel(int PortNumber);
   void __fastcall RollbackTunnel();
+  TSessionData * CreateTunnelData(int TunnelLocalPortNumber);
   void __fastcall ExpandEnvironmentVariables();
   void __fastcall DisableAuthentationsExceptPassword();
   bool __fastcall IsSame(const TSessionData * Default, bool AdvancedOnly);
