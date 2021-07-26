@@ -1057,6 +1057,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
   WRITE_DATA(Bool, AgentFwd);
   WRITE_DATA(Bool, AuthKI);
   WRITE_DATA(Bool, AuthKIPassword);
+  WRITE_DATA_EX(String, L"SshHostKey", HostKey, );
   WRITE_DATA(String, Note);
 
   WRITE_DATA(Bool, AuthGSSAPI);
@@ -1232,6 +1233,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(String, TunnelUserName);
     WRITE_DATA(String, TunnelPublicKeyFile);
     WRITE_DATA(Integer, TunnelLocalPortNumber);
+    WRITE_DATA(String, TunnelHostKey);
 
     WRITE_DATA(Bool, FtpPasvMode);
     WRITE_DATA_EX(Integer, L"FtpForcePasvIp2", FtpForcePasvIp, );
@@ -2551,6 +2553,57 @@ void __fastcall TSessionData::RollbackTunnel()
   FLogicalHostName = L"";
 }
 //---------------------------------------------------------------------
+TSessionData * TSessionData::CreateTunnelData(int TunnelLocalPortNumber)
+{
+  std::unique_ptr<TSessionData> TunnelData(new TSessionData(EmptyStr));
+  TunnelData->Assign(StoredSessions->DefaultSettings);
+  TunnelData->Name = FMTLOAD(TUNNEL_SESSION_NAME, (SessionName));
+  TunnelData->Tunnel = false;
+  TunnelData->HostName = TunnelHostName;
+  TunnelData->PortNumber = TunnelPortNumber;
+  TunnelData->UserName = TunnelUserName;
+  TunnelData->Password = TunnelPassword;
+  TunnelData->PublicKeyFile = TunnelPublicKeyFile;
+  UnicodeString AHostName = HostNameExpanded;
+  if (IsIPv6Literal(AHostName))
+  {
+    AHostName = EscapeIPv6Literal(AHostName);
+  }
+  TunnelData->TunnelPortFwd = FORMAT(L"L%d\t%s:%d",
+    (TunnelLocalPortNumber, AHostName, PortNumber));
+  TunnelData->HostKey = TunnelHostKey;
+
+  // inherit proxy options on the main session
+  TunnelData->ProxyMethod = ProxyMethod;
+  TunnelData->ProxyHost = ProxyHost;
+  TunnelData->ProxyPort = ProxyPort;
+  TunnelData->ProxyUsername = ProxyUsername;
+  TunnelData->ProxyPassword = ProxyPassword;
+  TunnelData->ProxyTelnetCommand = ProxyTelnetCommand;
+  TunnelData->ProxyLocalCommand = ProxyLocalCommand;
+  TunnelData->ProxyDNS = ProxyDNS;
+  TunnelData->ProxyLocalhost = ProxyLocalhost;
+
+  // inherit most SSH options of the main session (except for private key and bugs)
+  TunnelData->Compression = Compression;
+  TunnelData->CipherList = CipherList;
+  TunnelData->Ssh2DES = Ssh2DES;
+
+  TunnelData->KexList = KexList;
+  TunnelData->RekeyData = RekeyData;
+  TunnelData->RekeyTime = RekeyTime;
+
+  TunnelData->SshNoUserAuth = SshNoUserAuth;
+  TunnelData->AuthGSSAPI = AuthGSSAPI;
+  TunnelData->AuthGSSAPIKEX = AuthGSSAPIKEX;
+  TunnelData->GSSAPIFwdTGT = GSSAPIFwdTGT;
+  TunnelData->TryAgent = TryAgent;
+  TunnelData->AgentFwd = AgentFwd;
+  TunnelData->AuthKI = AuthKI;
+  TunnelData->AuthKIPassword = AuthKIPassword;
+  return TunnelData.release();
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::ExpandEnvironmentVariables()
 {
   HostName = HostNameExpanded;
@@ -3576,6 +3629,14 @@ void __fastcall TSessionData::LookupLastFingerprint()
   if (!FingerprintType.IsEmpty())
   {
     HostKey = Configuration->LastFingerprint(SiteKey, FingerprintType);
+  }
+
+  if (Tunnel)
+  {
+    // not used anyway
+    int TunnelPortNumber = std::max(TunnelLocalPortNumber, Configuration->TunnelLocalPortNumberLow);
+    std::unique_ptr<TSessionData> TunnelData(CreateTunnelData(TunnelPortNumber));
+    TunnelHostKey = Configuration->LastFingerprint(TunnelData->SiteKey, SshFingerprintType);
   }
 }
 //---------------------------------------------------------------------
