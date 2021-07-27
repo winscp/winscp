@@ -138,7 +138,6 @@ private:
   bool FModified;
   UnicodeString FLocalDirectory;
   UnicodeString FRemoteDirectory;
-  bool FLockInHome;
   bool FSpecial;
   bool FSynchronizeBrowsing;
   bool FUpdateDirectories;
@@ -303,7 +302,6 @@ private:
   void __fastcall SetCacheDirectories(bool value);
   void __fastcall SetCacheDirectoryChanges(bool value);
   void __fastcall SetPreserveDirectoryChanges(bool value);
-  void __fastcall SetLockInHome(bool value);
   void __fastcall SetSpecial(bool value);
   UnicodeString __fastcall GetInfoTip();
   bool __fastcall GetDefaultShell();
@@ -589,7 +587,6 @@ public:
   __property bool CacheDirectories = { read=FCacheDirectories, write=SetCacheDirectories };
   __property bool CacheDirectoryChanges = { read=FCacheDirectoryChanges, write=SetCacheDirectoryChanges };
   __property bool PreserveDirectoryChanges = { read=FPreserveDirectoryChanges, write=SetPreserveDirectoryChanges };
-  __property bool LockInHome = { read=FLockInHome, write=SetLockInHome };
   __property bool Special = { read=FSpecial, write=SetSpecial };
   __property bool Selected  = { read=FSelected, write=FSelected };
   __property UnicodeString InfoTip  = { read=GetInfoTip };
