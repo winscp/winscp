@@ -145,8 +145,6 @@ public:
   static const int spCaseSensitive = 0x2000;
   static const int spDefault = TTerminal::spNoConfirmation | TTerminal::spPreviewChanges;
 
-// for TranslateLockedPath()
-friend class TRemoteFile;
 // for ReactOnCommand()
 friend class TSCPFileSystem;
 friend class TSFTPFileSystem;
@@ -164,7 +162,6 @@ private:
   TActionLog * FActionLog;
   TConfiguration * FConfiguration;
   UnicodeString FCurrentDirectory;
-  UnicodeString FLockDirectory;
   Integer FExceptionOnFail;
   TRemoteDirectory * FFiles;
   int FInTransaction;
@@ -304,7 +301,6 @@ protected:
   bool __fastcall DeleteContentsIfDirectory(
     const UnicodeString & FileName, const TRemoteFile * File, int Params, TRmSessionAction & Action);
   void __fastcall AnnounceFileListOperation();
-  UnicodeString __fastcall TranslateLockedPath(UnicodeString Path, bool Lock);
   void __fastcall ReadDirectory(TRemoteFileList * FileList);
   void __fastcall CustomReadDirectory(TRemoteFileList * FileList);
   void __fastcall DoCreateLink(const UnicodeString FileName, const UnicodeString PointTo, bool Symbolic);

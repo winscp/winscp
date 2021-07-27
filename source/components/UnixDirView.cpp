@@ -904,9 +904,7 @@ void __fastcall TUnixDirView::ChangeDirectory(UnicodeString Path)
     {
       Terminal->HomeDirectory();
     }
-    else
-    // this works even with LockInHome
-    if (Path == ROOTDIRECTORY)
+    else if (Path == ROOTDIRECTORY)
     {
       Terminal->CurrentDirectory = ROOTDIRECTORY;
     }

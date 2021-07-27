@@ -239,7 +239,6 @@ void __fastcall TSessionData::DefaultSettings()
   CacheDirectories = true;
   CacheDirectoryChanges = true;
   PreserveDirectoryChanges = true;
-  LockInHome = false;
   ResolveSymlinks = true;
   FollowDirectorySymlinks = false;
   DSTMode = dstmUnix;
@@ -395,7 +394,6 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(ResolveSymlinks); \
   PROPERTY(FollowDirectorySymlinks); \
   PROPERTY(DSTMode); \
-  PROPERTY(LockInHome); \
   PROPERTY(Special); \
   PROPERTY(Selected); \
   PROPERTY(ReturnVar); \
@@ -734,7 +732,6 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   ResolveSymlinks = Storage->ReadBool(L"ResolveSymlinks", ResolveSymlinks);
   FollowDirectorySymlinks = Storage->ReadBool(L"FollowDirectorySymlinks", FollowDirectorySymlinks);
   DSTMode = (TDSTMode)Storage->ReadInteger(L"ConsiderDST", DSTMode);
-  LockInHome = Storage->ReadBool(L"LockInHome", LockInHome);
   Special = Storage->ReadBool(L"Special", Special);
   if (!Unsafe)
   {
@@ -1117,7 +1114,6 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(Bool, ResolveSymlinks);
     WRITE_DATA(Bool, FollowDirectorySymlinks);
     WRITE_DATA_EX(Integer, L"ConsiderDST", DSTMode, );
-    WRITE_DATA(Bool, LockInHome);
     // Special is never stored (if it would, login dialog must be modified not to
     // duplicate Special parameter when Special session is loaded and then stored
     // under different name)
@@ -4065,11 +4061,6 @@ void __fastcall TSessionData::SetRecycleBinPath(UnicodeString value)
 void __fastcall TSessionData::SetPostLoginCommands(UnicodeString value)
 {
   SET_SESSION_PROPERTY(PostLoginCommands);
-}
-//---------------------------------------------------------------------
-void __fastcall TSessionData::SetLockInHome(bool value)
-{
-  SET_SESSION_PROPERTY(LockInHome);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetSpecial(bool value)

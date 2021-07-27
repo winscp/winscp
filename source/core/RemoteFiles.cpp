@@ -1449,20 +1449,29 @@ UnicodeString __fastcall TRemoteFile::GetListingStr()
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TRemoteFile::GetFullFileName() const
 {
+  UnicodeString Result;
   if (FFullFileName.IsEmpty())
   {
     DebugAssert(Terminal);
     DebugAssert(Directory != NULL);
-    UnicodeString Path;
-    if (IsParentDirectory) Path = Directory->ParentPath;
-    else if (IsDirectory) Path = UnixIncludeTrailingBackslash(Directory->FullDirectory + FileName);
-    else Path = Directory->FullDirectory + FileName;
-    return Terminal->TranslateLockedPath(Path, true);
+    if (IsParentDirectory)
+    {
+      Result = Directory->ParentPath;
+    }
+    else if (IsDirectory)
+    {
+      Result = UnixIncludeTrailingBackslash(Directory->FullDirectory + FileName);
+    }
+    else
+    {
+      Result = Directory->FullDirectory + FileName;
+    }
   }
   else
   {
-    return FFullFileName;
+    Result = FFullFileName;
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRemoteFile::GetHaveFullFileName() const

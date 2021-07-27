@@ -1033,7 +1033,6 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   FOperationProgressOnceDoneOperation = odoIdle;
 
   FUseBusyCursor = True;
-  FLockDirectory = L"";
   FDirectoryCache = new TRemoteDirectoryCache();
   FDirectoryChangesCache = NULL;
   FFSProtocol = cfsUnknown;
@@ -2327,26 +2326,6 @@ int __fastcall TTerminal::FileOperationLoop(TFileOperationEvent CallBackFunc,
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TTerminal::TranslateLockedPath(UnicodeString Path, bool Lock)
-{
-  if (SessionData->LockInHome && !Path.IsEmpty() && (Path[1] == L'/'))
-  {
-    if (Lock)
-    {
-      if (Path.SubString(1, FLockDirectory.Length()) == FLockDirectory)
-      {
-        Path.Delete(1, FLockDirectory.Length());
-        if (Path.IsEmpty()) Path = L"/";
-      }
-    }
-    else
-    {
-      Path = UnixExcludeTrailingBackslash(FLockDirectory + Path);
-    }
-  }
-  return Path;
-}
-//---------------------------------------------------------------------------
 void __fastcall TTerminal::ClearCaches()
 {
   FDirectoryCache->Clear();
@@ -2418,7 +2397,6 @@ TRemoteFileList * __fastcall TTerminal::DirectoryFileList(const UnicodeString Pa
 void __fastcall TTerminal::SetCurrentDirectory(UnicodeString value)
 {
   DebugAssert(FFileSystem);
-  value = TranslateLockedPath(value, false);
   if (value != FFileSystem->CurrentDirectory)
   {
     ChangeDirectory(value);
@@ -2440,8 +2418,7 @@ UnicodeString __fastcall TTerminal::GetCurrentDirectory()
     }
   }
 
-  UnicodeString Result = TranslateLockedPath(FCurrentDirectory, true);
-  return Result;
+  return FCurrentDirectory;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TTerminal::PeekCurrentDirectory()
@@ -2451,8 +2428,7 @@ UnicodeString __fastcall TTerminal::PeekCurrentDirectory()
     FCurrentDirectory = FFileSystem->CurrentDirectory;
   }
 
-  UnicodeString Result = TranslateLockedPath(FCurrentDirectory, true);
-  return Result;
+  return FCurrentDirectory;
 }
 //---------------------------------------------------------------------------
 const TRemoteTokenList * __fastcall TTerminal::GetGroups()
@@ -3289,11 +3265,6 @@ void __fastcall TTerminal::ReadCurrentDirectory()
       FLastDirectoryChange = L"";
     }
 
-    if (OldDirectory.IsEmpty())
-    {
-      FLockDirectory = (SessionData->LockInHome ?
-        FFileSystem->CurrentDirectory : UnicodeString(L""));
-    }
     if (OldDirectory != FFileSystem->CurrentDirectory) DoChangeDirectory();
   }
   catch (Exception &E)
@@ -6696,10 +6667,6 @@ int __fastcall TTerminal::CopyToParallel(TParallelOperation * ParallelOperation,
     std::unique_ptr<TStrings> FilesToCopy(new TStringList());
     FilesToCopy->AddObject(FileName, Object);
 
-    if (ParallelOperation->Side == osLocal)
-    {
-      TargetDir = TranslateLockedPath(TargetDir, false);
-    }
     // OnceDoneOperation is not supported
     TOnceDoneOperation OnceDoneOperation = odoIdle;
 
@@ -6884,7 +6851,6 @@ bool __fastcall TTerminal::CopyToRemote(
         OperationProgress.SetTotalSize(Size);
       }
 
-      UnicodeString UnlockedTargetDir = TranslateLockedPath(TargetDir, false);
       BeginTransaction();
       try
       {
@@ -6894,13 +6860,13 @@ bool __fastcall TTerminal::CopyToRemote(
         if (Parallel)
         {
           // OnceDoneOperation is not supported
-          ParallelOperation->Init(Files.release(), UnlockedTargetDir, CopyParam, Params, &OperationProgress, Log->Name);
+          ParallelOperation->Init(Files.release(), TargetDir, CopyParam, Params, &OperationProgress, Log->Name);
           CopyParallel(ParallelOperation, &OperationProgress);
         }
         else
         {
-          FFileSystem->CopyToRemote(FilesToCopy, UnlockedTargetDir,
-            CopyParam, Params, &OperationProgress, OnceDoneOperation);
+          FFileSystem->CopyToRemote(
+            FilesToCopy, TargetDir, CopyParam, Params, &OperationProgress, OnceDoneOperation);
         }
 
         LogTotalTransferDone(&OperationProgress);
