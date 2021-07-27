@@ -360,7 +360,6 @@ protected:
   UnicodeString __fastcall RemotePathComboBoxText();
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   virtual bool __fastcall UpdateToolbarDisplayMode();
-  virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
   virtual void __fastcall UpdateImages();
 
 public:
@@ -371,6 +370,7 @@ public:
   virtual void __fastcall SynchronizeDirectories();
   virtual void __fastcall ChangePath(TOperationSide Side);
   virtual void __fastcall GoToAddress();
+  virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
 };
 //---------------------------------------------------------------------------
 #endif

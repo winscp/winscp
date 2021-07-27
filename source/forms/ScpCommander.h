@@ -598,7 +598,6 @@ protected:
   virtual bool __fastcall EligibleForImageDisplayMode(TTBCustomItem * Item);
   virtual bool __fastcall UpdateToolbarDisplayMode();
   virtual void __fastcall QueueLabelUpdateStatus();
-  virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
   virtual void __fastcall StartingDisconnected();
   virtual void __fastcall UpdateImages();
   virtual void __fastcall FileColorsChanged();
@@ -628,6 +627,7 @@ public:
   virtual void __fastcall CopyFilesToClipboard(TOperationSide Side, bool OnFocused);
   virtual void __fastcall PasteFromClipBoard();
   virtual void __fastcall BrowseFile();
+  virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

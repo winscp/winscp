@@ -653,7 +653,6 @@ protected:
   bool __fastcall SessionTabSwitched();
   void __fastcall RestoreApp();
   void __fastcall GoToQueue();
-  virtual UnicodeString __fastcall DefaultDownloadTargetDirectory() = 0;
   void __fastcall LockFiles(TStrings * FileList, bool Lock);
   void __fastcall SaveInternalEditor(
     const UnicodeString FileName, TEditedFileData * Data, TObject * Token,
@@ -745,6 +744,7 @@ public:
   void __fastcall SuspendWindowLock();
   void __fastcall ResumeWindowLock();
   bool __fastcall HasActiveTerminal();
+  virtual UnicodeString __fastcall DefaultDownloadTargetDirectory() = 0;
 
   void __fastcall NewSession(const UnicodeString & SessionUrl = L"");
   void __fastcall DuplicateSession();

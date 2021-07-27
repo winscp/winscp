@@ -135,7 +135,12 @@ void __fastcall TScpExplorerForm::StoreParams()
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TScpExplorerForm::DefaultDownloadTargetDirectory()
 {
-  return WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
+  UnicodeString Result = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
+  if (!DirectoryExists(Result))
+  {
+    Result = GetPersonalFolder();
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::CopyParamDialogAfter(
