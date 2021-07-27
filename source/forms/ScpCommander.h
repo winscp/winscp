@@ -618,7 +618,6 @@ protected:
   virtual bool __fastcall EligibleForImageDisplayMode(TTBCustomItem * Item);
   virtual bool __fastcall UpdateToolbarDisplayMode();
   virtual void __fastcall QueueLabelUpdateStatus();
-  virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
   virtual void __fastcall StartingWithoutSession();
   virtual void __fastcall UpdateImages();
   virtual void __fastcall FileColorsChanged();
@@ -672,6 +671,7 @@ public:
   virtual void NewTab(TOperationSide Side);
   virtual int GetNewTabActionImageIndex();
   virtual int GetNewTabTabImageIndex(TOperationSide Side);
+  virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

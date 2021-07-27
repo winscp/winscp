@@ -664,7 +664,6 @@ protected:
   bool __fastcall SessionTabSwitched();
   void __fastcall RestoreApp();
   void __fastcall GoToQueue();
-  virtual UnicodeString __fastcall DefaultDownloadTargetDirectory() = 0;
   void __fastcall LockFiles(TStrings * FileList, bool Lock);
   void __fastcall SaveInternalEditor(
     const UnicodeString FileName, TEditedFileData * Data, TObject * Token,
@@ -775,6 +774,7 @@ public:
   bool __fastcall HasManagedSession();
   virtual bool IsLocalBrowserMode();
   bool CanCloseSession(TManagedTerminal * Session);
+  virtual UnicodeString __fastcall DefaultDownloadTargetDirectory() = 0;
 
   void __fastcall NewSession(const UnicodeString & SessionUrl = L"");
   virtual void NewTab(TOperationSide Side = osCurrent);

@@ -199,8 +199,8 @@ void __fastcall Edit(TCustomScpExplorerForm * ScpExplorer, TStrings * FileList)
   Abort();
 }
 //---------------------------------------------------------------------------
-void __fastcall SynchronizeDirectories(TTerminal * Terminal,
-  TStrings * CommandParams,
+void __fastcall SynchronizeDirectories(
+  TTerminal * Terminal, TCustomScpExplorerForm * ScpExplorer, TStrings * CommandParams,
   UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory)
 {
   if (CommandParams->Count >= 1)
@@ -213,7 +213,7 @@ void __fastcall SynchronizeDirectories(TTerminal * Terminal,
   }
   else
   {
-    LocalDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
+    LocalDirectory = ScpExplorer->DefaultDownloadTargetDirectory();
   }
 
   if (CommandParams->Count >= 2)
@@ -232,7 +232,7 @@ void __fastcall FullSynchronize(
   UnicodeString LocalDirectory;
   UnicodeString RemoteDirectory;
 
-  SynchronizeDirectories(Terminal, CommandParams, LocalDirectory, RemoteDirectory);
+  SynchronizeDirectories(Terminal, ScpExplorer, CommandParams, LocalDirectory, RemoteDirectory);
 
   bool SaveMode = true;
   // bit ugly
@@ -262,7 +262,7 @@ void __fastcall Synchronize(
   UnicodeString LocalDirectory;
   UnicodeString RemoteDirectory;
 
-  SynchronizeDirectories(Terminal, CommandParams, LocalDirectory, RemoteDirectory);
+  SynchronizeDirectories(Terminal, ScpExplorer, CommandParams, LocalDirectory, RemoteDirectory);
 
   // Undocumented syntax for "Start in New Window"
   if (CommandParams->Count >= 4)
