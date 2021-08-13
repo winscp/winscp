@@ -3479,40 +3479,44 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
         int ResolvedLinks = 0;
         for (unsigned long Index = 0; !isEOF && (Index < Count); Index++)
         {
-          File = LoadFile(&ListingPacket, NULL, L"", FileList);
-          FileList->AddFile(File);
-          if (FTerminal->IsEncryptingFiles() && // optimization
-              IsRealFile(File->FileName))
+          std::unique_ptr<TRemoteFile> AFile(LoadFile(&ListingPacket, NULL, L"", FileList));
+          TRemoteFile * File = AFile.get();
+          if (FTerminal->IsValidFile(File))
           {
-            UnicodeString FullFileName = UnixExcludeTrailingBackslash(File->FullFileName);
-            UnicodeString FileName = UnixExtractFileName(FTerminal->DecryptFileName(FullFileName, false, false));
-            if (File->FileName != FileName)
+            FileList->AddFile(AFile.release());
+            if (FTerminal->IsEncryptingFiles() && // optimization
+                IsRealFile(File->FileName))
             {
-              File->SetEncrypted();
+              UnicodeString FullFileName = UnixExcludeTrailingBackslash(File->FullFileName);
+              UnicodeString FileName = UnixExtractFileName(FTerminal->DecryptFileName(FullFileName, false, false));
+              if (File->FileName != FileName)
+              {
+                File->SetEncrypted();
+              }
+              File->FileName = FileName;
             }
-            File->FileName = FileName;
-          }
-          if (FTerminal->Configuration->ActualLogProtocol >= 1)
-          {
-            FTerminal->LogEvent(FORMAT(L"Read file '%s' from listing", (File->FileName)));
-          }
-          if (File->LinkedFile != NULL)
-          {
-            ResolvedLinks++;
-          }
-          if (File->IsParentDirectory)
-          {
-            HasParentDirectory = true;
-          }
-          Total++;
-
-          if (Total % 10 == 0)
-          {
-            FTerminal->DoReadDirectoryProgress(Total, ResolvedLinks, isEOF);
-            if (isEOF)
+            if (FTerminal->Configuration->ActualLogProtocol >= 1)
             {
-              FTerminal->LogEvent(L"Listing directory cancelled.");
-              FTerminal->DoReadDirectoryProgress(-2, 0, isEOF);
+              FTerminal->LogEvent(FORMAT(L"Read file '%s' from listing", (File->FileName)));
+            }
+            if (File->LinkedFile != NULL)
+            {
+              ResolvedLinks++;
+            }
+            if (File->IsParentDirectory)
+            {
+              HasParentDirectory = true;
+            }
+            Total++;
+
+            if (Total % 10 == 0)
+            {
+              FTerminal->DoReadDirectoryProgress(Total, ResolvedLinks, isEOF);
+              if (isEOF)
+              {
+                FTerminal->LogEvent(L"Listing directory cancelled.");
+                FTerminal->DoReadDirectoryProgress(-2, 0, isEOF);
+              }
             }
           }
         }

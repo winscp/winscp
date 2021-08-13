@@ -1009,8 +1009,6 @@ void __fastcall TSCPFileSystem::ReadDirectory(TRemoteFileList * FileList)
           Params);
       }
 
-      TRemoteFile * File;
-
       // If output is not empty, we have successfully got file listing,
       // otherwise there was an error, in case it was "permission denied"
       // we try to get at least parent directory (see "else" statement below)
@@ -1036,8 +1034,11 @@ void __fastcall TSCPFileSystem::ReadDirectory(TRemoteFileList * FileList)
             UnicodeString OutputLine = OutputCopy->Strings[Index];
             if (!OutputLine.IsEmpty())
             {
-              File = CreateRemoteFile(OutputCopy->Strings[Index]);
-              FileList->AddFile(File);
+              std::unique_ptr<TRemoteFile> File(CreateRemoteFile(OutputCopy->Strings[Index]));
+              if (FTerminal->IsValidFile(File.get()))
+              {
+                FileList->AddFile(File.release());
+              }
             }
           }
         }
@@ -1053,6 +1054,7 @@ void __fastcall TSCPFileSystem::ReadDirectory(TRemoteFileList * FileList)
         {
           // Empty file list -> probably "permission denied", we
           // at least get link to parent directory ("..")
+          TRemoteFile * File;
           FTerminal->ReadFile(
             UnixIncludeTrailingBackslash(FTerminal->FFiles->Directory) +
               PARENTDIRECTORY, File);

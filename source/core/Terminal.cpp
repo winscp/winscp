@@ -8315,6 +8315,13 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
   return Result;
 }
 //---------------------------------------------------------------------------
+bool TTerminal::IsValidFile(TRemoteFile * File)
+{
+  return
+    !File->FileName.IsEmpty() &&
+    (IsUnixRootPath(File->FileName) || UnixExtractFileDir(File->FileName).IsEmpty());
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 __fastcall TSecondaryTerminal::TSecondaryTerminal(TTerminal * MainTerminal,
   TSessionData * ASessionData, TConfiguration * Configuration, const UnicodeString & Name) :

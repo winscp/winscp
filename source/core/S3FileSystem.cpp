@@ -896,12 +896,16 @@ S3Status TS3FileSystem::LibS3ListServiceCallback(
   if (Data.FileName.IsEmpty() || (Data.FileName == FileName))
   {
     std::unique_ptr<TRemoteFile> File(new TRemoteFile(NULL));
-    File->Terminal = Data.FileSystem->FTerminal;
+    TTerminal * Terminal = Data.FileSystem->FTerminal;
+    File->Terminal = Terminal;
     File->FileName = StrFromS3(BucketName);
     File->Type = FILETYPE_DIRECTORY;
     File->Owner = Data.FileSystem->MakeRemoteToken(OwnerId, OwnerDisplayName);
     File->ModificationFmt = mfNone;
-    Data.FileList->AddFile(File.release());
+    if (Terminal->IsValidFile(File.get()))
+    {
+      Data.FileList->AddFile(File.release());
+    }
   }
 
   return S3StatusOK;
@@ -917,6 +921,7 @@ S3Status TS3FileSystem::LibS3ListBucketCallback(
   // This is being called in chunks, not once for all data in a response.
   Data.KeyCount += ContentsCount;
   Data.NextMarker = StrFromS3(NextMarker);
+  TTerminal * Terminal = Data.FileSystem->FTerminal;
 
   for (int Index = 0; Index < ContentsCount; Index++)
   {
@@ -926,7 +931,7 @@ S3Status TS3FileSystem::LibS3ListBucketCallback(
     if (!FileName.IsEmpty())
     {
       std::unique_ptr<TRemoteFile> File(new TRemoteFile(NULL));
-      File->Terminal = Data.FileSystem->FTerminal;
+      File->Terminal = Terminal;
       File->FileName = FileName;
       File->Type = FILETYPE_DEFAULT;
 
@@ -957,7 +962,10 @@ S3Status TS3FileSystem::LibS3ListBucketCallback(
 
       File->Size = Content->size;
       File->Owner = Data.FileSystem->MakeRemoteToken(Content->ownerId, Content->ownerDisplayName);
-      Data.FileList->AddFile(File.release());
+      if (Terminal->IsValidFile(File.get()))
+      {
+        Data.FileList->AddFile(File.release());
+      }
     }
   }
 
@@ -974,7 +982,10 @@ S3Status TS3FileSystem::LibS3ListBucketCallback(
       File->FileName = FileName;
       File->Type = FILETYPE_DIRECTORY;
       File->ModificationFmt = mfNone;
-      Data.FileList->AddFile(File.release());
+      if (Terminal->IsValidFile(File.get()))
+      {
+        Data.FileList->AddFile(File.release());
+      }
     }
   }
 
