@@ -4359,7 +4359,7 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
     for (unsigned int Index = 0; Index < Count; Index++)
     {
       const TListDataEntry * Entry = &Entries[Index];
-      TRemoteFile * File = new TRemoteFile();
+      std::unique_ptr<TRemoteFile> File(new TRemoteFile());
       try
       {
         File->Terminal = FTerminal;
@@ -4432,7 +4432,6 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
       }
       catch (Exception & E)
       {
-        delete File;
         UnicodeString EntryData =
           FORMAT(L"%s/%s/%s/%s/%s/%s/%s/%d/%d/%d/%d/%d/%d/%d/%d/%d/%d",
             (Entry->Name, Entry->Permissions, Entry->HumanPerm, Entry->Owner, Entry->Group, Entry->OwnerGroup, IntToStr(Entry->Size),
@@ -4442,7 +4441,10 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
         throw ETerminal(&E, FMTLOAD(LIST_LINE_ERROR, (EntryData)), HELP_LIST_LINE_ERROR);
       }
 
-      FFileList->AddFile(File);
+      if (FTerminal->IsValidFile(File.get()))
+      {
+        FFileList->AddFile(File.release());
+      }
     }
     return true;
   }
