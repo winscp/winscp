@@ -667,6 +667,21 @@ bool CAsyncSslSocketLayer::HandleSession(SSL_SESSION * Session)
         LogSocketMessageRaw(FZ_LOG_INFO, L"Session ID changed");
       }
       m_sessionid = Session;
+      // Some TLS 1.3 servers require reuse of the session of the previous data connection, not of the main session.
+      // It seems that it's safe to do this even for older TLS versions, but let's not for now.
+      // Once we do, we can simply always use main session's m_sessionid field in the code above.
+      if ((SSL_version(m_ssl) >= TLS1_3_VERSION) && (m_Main != NULL))
+      {
+        if (m_Main->m_sessionid != NULL)
+        {
+          SSL_SESSION_free(m_Main->m_sessionid);
+        }
+        m_Main->m_sessionid = Session;
+        if (Session != NULL)
+        {
+          SSL_SESSION_up_ref(Session);
+        }
+      }
       Result = true;
     }
   }
