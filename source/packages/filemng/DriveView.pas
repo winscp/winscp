@@ -2031,24 +2031,24 @@ end; {DirWatchChangeDetected}
 
 procedure TDriveView.ChangeTimerOnTimer(Sender: TObject);
 var
-  DriveStatus: TDriveStatus;
+  DriveStatusPair: TPair<string, TDriveStatus>;
 begin
   if (FChangeTimerSuspended = 0) and (Sender is TTimer) then
   begin
-    for DriveStatus in FDriveStatus.Values do
+    for DriveStatusPair in FDriveStatus do
     begin
-      if DriveStatus.ChangeTimer = Sender then
+      if DriveStatusPair.Value.ChangeTimer = Sender then
       begin
-        with DriveStatus.ChangeTimer do
+        with DriveStatusPair.Value.ChangeTimer do
         begin
           Interval := 0;
           Enabled := False;
         end;
 
-        if Assigned(DriveStatus.RootNode) then
+        if Assigned(DriveStatusPair.Value.RootNode) then
         begin
           {Check also collapsed (invisible) subdirectories:}
-          ValidateDirectory(DriveStatus.RootNode);
+          ValidateDirectory(DriveStatusPair.Value.RootNode);
         end;
       end;
     end;
