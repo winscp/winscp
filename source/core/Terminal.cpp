@@ -1807,8 +1807,16 @@ unsigned int __fastcall TTerminal::QueryUser(const UnicodeString Query,
       }
     }
   }
-  UnicodeString Name, Caption;
-  AnswerNameAndCaption(Answer, Name, Caption);
+  UnicodeString Name;
+  if (Answer == qaNeverAskAgain)
+  {
+    Name = L"NeverAskAgain";
+  }
+  else
+  {
+    UnicodeString Caption;
+    AnswerNameAndCaption(Answer, Name, Caption);
+  }
   LogEvent(FORMAT(L"Answer: %s", (Name)));
   return Answer;
 }
