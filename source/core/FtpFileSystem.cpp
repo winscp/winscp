@@ -1155,7 +1155,17 @@ UnicodeString __fastcall TFTPFileSystem::DoCalculateFileChecksum(
 
   UnicodeString Command = FORMAT(L"%s %s", (CommandName, FileName));
   SendCommand(Command);
-  UnicodeString ResponseText = GotReply(WaitForCommandReply(), REPLY_2XX_CODE | REPLY_SINGLE_LINE);
+  TStrings * Response;
+  GotReply(WaitForCommandReply(), REPLY_2XX_CODE, EmptyStr, NULL, &Response);
+  UnicodeString ResponseText;
+  if (DebugAlwaysTrue(Response->Count > 0))
+  {
+    // ProFTPD response has this format:
+    // 213-Computing MD5 digest
+    // 213 MD5 0-687104 b359479cfda703b7fd473c7e09f39049 filename
+    ResponseText = Response->Strings[Response->Count - 1];
+  }
+  delete Response;
 
   UnicodeString Hash;
   if (UsingHashCommand)
@@ -1204,7 +1214,7 @@ UnicodeString __fastcall TFTPFileSystem::DoCalculateFileChecksum(
 
   if (Hash.IsEmpty())
   {
-    throw Exception(FMTLOAD(FTP_RESPONSE_ERROR, (CommandName, ResponseText)));
+    throw Exception(FMTLOAD(FTP_RESPONSE_ERROR, (CommandName, FLastResponse->Text)));
   }
 
   return LowerCase(Hash);
