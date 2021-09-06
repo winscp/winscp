@@ -2039,16 +2039,24 @@ begin
     begin
       if DriveStatusPair.Value.ChangeTimer = Sender then
       begin
-        with DriveStatusPair.Value.ChangeTimer do
-        begin
-          Interval := 0;
-          Enabled := False;
-        end;
+        // Messages are processed during ValidateDirectory, so we may detect another change while
+        // updating the directory. Prevent the recursion.
+        // But retry the update afterwards (by reenabling the timer in ChangeDetected)
+        SuspendChangeTimer;
+        try
+          with DriveStatusPair.Value.ChangeTimer do
+          begin
+            Interval := 0;
+            Enabled := False;
+          end;
 
-        if Assigned(DriveStatusPair.Value.RootNode) then
-        begin
-          {Check also collapsed (invisible) subdirectories:}
-          ValidateDirectory(DriveStatusPair.Value.RootNode);
+          if Assigned(DriveStatusPair.Value.RootNode) then
+          begin
+            {Check also collapsed (invisible) subdirectories:}
+            ValidateDirectory(DriveStatusPair.Value.RootNode);
+          end;
+        finally
+          ResumeChangeTimer;
         end;
       end;
     end;
