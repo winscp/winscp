@@ -1039,8 +1039,8 @@ void __fastcall TCustomScpExplorerForm::UpdateRowSelect(TCustomDirView * DirView
   if (DirView->RowSelect != WinConfiguration->FullRowSelect)
   {
     DirView->RowSelect = WinConfiguration->FullRowSelect;
-    // selection is not redrawn automatically when RowSelect changes
-    DirView->Invalidate();
+    // Without this, the panel turns gray and unused part of header turns black
+    DirView->Perform(CM_COLORCHANGED, 0, 0);
   }
 }
 //---------------------------------------------------------------------------
