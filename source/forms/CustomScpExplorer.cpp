@@ -1029,8 +1029,8 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
   if (RemoteDirView->RowSelect != WinConfiguration->FullRowSelect)
   {
     RemoteDirView->RowSelect = WinConfiguration->FullRowSelect;
-    // selection is not redrawn automatically when RowSelect changes
-    RemoteDirView->Invalidate();
+    // Without this, the panel turns gray and unused part of header turns black
+    RemoteDirView->Perform(CM_COLORCHANGED, 0, 0);
   }
 
   RemoteDriveView->DDAllowMove = !WinConfiguration->DDDisableMove;

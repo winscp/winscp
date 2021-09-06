@@ -655,8 +655,8 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
   if (LocalDirView->RowSelect != WinConfiguration->FullRowSelect)
   {
     LocalDirView->RowSelect = WinConfiguration->FullRowSelect;
-    // selection is not redrawn automatically when RowSelect changes
-    LocalDirView->Invalidate();
+    // Without this, the panel turns gray and unused part of header turns black
+    LocalDirView->Perform(CM_COLORCHANGED, 0, 0);
   }
 
   // See also LocalDirViewDDTargetHasDropHandler
