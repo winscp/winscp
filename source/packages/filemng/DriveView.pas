@@ -1043,7 +1043,7 @@ var
   Drive: string;
   OldSerial: DWORD;
   NewDir: string;
-  LastDrive: string;
+  PrevDrive: string;
 begin
   if not Reading and not (csRecreating in ControlState) then
   begin
@@ -1054,9 +1054,9 @@ begin
       begin
         Drive := DriveInfo.GetDriveKey(NewDir);
         if Length(FLastDir) > 0 then
-          LastDrive := DriveInfo.GetDriveKey(FLastDir)
+          PrevDrive := DriveInfo.GetDriveKey(FLastDir)
         else
-          LastDrive := '';
+          PrevDrive := '';
 
         FChangeFlag := True;
         FLastDir := NewDir;
@@ -1078,12 +1078,12 @@ begin
 
             GetDriveStatus(Drive).DefaultDir := IncludeTrailingBackslash(NewDir);
 
-            if LastDrive <> Drive then
+            if PrevDrive <> Drive then
             begin
-              if (LastDrive <> '') and
-                 (DriveInfo.Get(LastDrive).DriveType = DRIVE_REMOVABLE) then
+              if (PrevDrive <> '') and
+                 (DriveInfo.Get(PrevDrive).DriveType = DRIVE_REMOVABLE) then
               begin
-                TerminateWatchThread(LastDrive);
+                TerminateWatchThread(PrevDrive);
               end;
 
               {Drive serial has changed or is missing: allways reread the drive:}
