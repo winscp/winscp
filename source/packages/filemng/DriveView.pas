@@ -1377,12 +1377,12 @@ begin
             if (Directory <> '') and (Directory[1] = Drive) then
             begin
               if DriveInfo.IsRealDrive(Drive) then NewDrive := Drive[1]
-                else NewDrive := FirstFixedDrive;
+                else NewDrive := SystemDrive;
 
               repeat
-                if NewDrive < FirstFixedDrive then NewDrive := FirstFixedDrive
+                if NewDrive < SystemDrive then NewDrive := SystemDrive
                   else
-                if NewDrive = FirstFixedDrive then NewDrive := LastDrive
+                if NewDrive = SystemDrive then NewDrive := LastDrive
                   else Dec(NewDrive);
                 DriveInfo.ReadDriveStatus(NewDrive, dsSize or dsImageIndex);
 
@@ -1400,7 +1400,7 @@ begin
 
               if not Assigned(Selected) then
               begin
-                Directory := NodePathName(GetDriveStatus(FirstFixedDrive).RootNode);
+                Directory := NodePathName(GetDriveStatus(SystemDrive).RootNode);
               end;
             end;
             Scanned := False;
