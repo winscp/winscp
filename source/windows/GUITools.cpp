@@ -352,7 +352,7 @@ TObjectList * StartCreationDirectoryMonitorsOnEachDrive(unsigned int Filter, TFi
       TDriveInfoRec * DriveInfoRec = DriveInfo->Get(Drive);
       if (DriveInfoRec->Valid &&
           (DriveInfoRec->DriveType != DRIVE_CDROM) &&
-          ((DriveInfoRec->DriveType != DRIVE_REMOVABLE) || (Drive >= FirstFixedDrive)))
+          ((DriveInfoRec->DriveType != DRIVE_REMOVABLE) || (Drive >= DriveInfo->FirstFixedDrive)))
       {
         Drives->Add(Drive);
       }

@@ -41,7 +41,7 @@ const
   dsDisplayName = 4;  {Fetch drives displayname}
   dsAll = dsImageIndex or dsSize or dsDisplayName;
   FirstDrive          = 'A';
-  FirstFixedDrive     = 'C';
+  SystemDrive         = 'C';
   LastDrive           = 'Z';
   FirstSpecialFolder  = CSIDL_DESKTOP;
   LastSpecialFolder   = CSIDL_PRINTHOOD;
@@ -78,11 +78,13 @@ type
     FDesktop: IShellFolder;
     FFolders: array[TSpecialFolder] of TSpecialFolderRec;
     FHonorDrivePolicy: Boolean;
+    FUseABDrives: Boolean;
     FLoaded: Boolean;
     function GetFolder(Folder: TSpecialFolder): PSpecialFolderRec;
     procedure ReadDriveBasicStatus(Drive: string);
     procedure ResetDrive(Drive: string);
     procedure SetHonorDrivePolicy(Value: Boolean);
+    function GetFirstFixedDrive: Char;
     procedure NeedData;
     procedure Load;
     function AddDrive(Drive: string): TDriveInfoRec;
@@ -102,6 +104,9 @@ type
     function GetPrettyName(Drive: string): string;
     function ReadDriveStatus(Drive: string; Flags: Integer): Boolean;
     property HonorDrivePolicy: Boolean read FHonorDrivePolicy write SetHonorDrivePolicy;
+    property FirstFixedDrive: Char read GetFirstFixedDrive;
+    property UseABDrives: Boolean read FUseABDrives write FUseABDrives;
+
     constructor Create;
     destructor Destroy; override;
   end;
@@ -129,6 +134,7 @@ begin
   inherited;
 
   FHonorDrivePolicy := True;
+  FUseABDrives := True;
   FLoaded := False;
   FData := TObjectDictionary<string, TDriveInfoRec>.Create([doOwnsValues]);
 end; {TDriveInfo.Create}
@@ -152,7 +158,8 @@ function TDriveInfo.AnyValidPath: string;
 var
   Drive: TRealDrive;
 begin
-  for Drive := FirstFixedDrive to LastDrive do
+  // Fallback to A:/B: if no other drive is found?
+  for Drive := SystemDrive to LastDrive do
     if Get(Drive).Valid and
        (Get(Drive).DriveType = DRIVE_FIXED) and
        DirectoryExists(ApiPath(DriveInfo.GetDriveRoot(Drive))) then
@@ -160,7 +167,7 @@ begin
       Result := DriveInfo.GetDriveRoot(Drive);
       Exit;
     end;
-  for Drive := FirstFixedDrive to LastDrive do
+  for Drive := SystemDrive to LastDrive do
     if Get(Drive).Valid and
        (Get(Drive).DriveType = DRIVE_REMOTE) and
        DirectoryExists(ApiPath(DriveInfo.GetDriveRoot(Drive))) then
@@ -265,6 +272,12 @@ begin
       end;
     end;
   end;
+end;
+
+function TDriveInfo.GetFirstFixedDrive: Char;
+begin
+  if UseABDrives then Result := FirstDrive
+    else Result := SystemDrive;
 end;
 
 procedure TDriveInfo.ReadDriveBasicStatus(Drive: string);

@@ -617,6 +617,7 @@ void __fastcall TWinConfiguration::Default()
   FLockedInterface = false;
 
   HonorDrivePolicy = true;
+  UseABDrives = true;
   TimeoutShellOperations = true;
   TimeoutShellIconRetrieval = false;
   UseIconUpdateThread = true;
@@ -1025,6 +1026,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(String,   FileColors); \
     KEY(Integer,  RunsSinceLastTip); \
     KEY(Bool,     HonorDrivePolicy); \
+    KEY(Bool,     UseABDrives); \
     KEY(Integer,  LastMachineInstallations); \
     KEY(String,   FExtensionsDeleted); \
     KEY(String,   FExtensionsOrder); \
@@ -2344,6 +2346,20 @@ void __fastcall TWinConfiguration::SetHonorDrivePolicy(bool value)
   if (HonorDrivePolicy != value)
   {
     DriveInfo->HonorDrivePolicy = value;
+    Changed();
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::GetUseABDrives()
+{
+  return DriveInfo->UseABDrives;
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetUseABDrives(bool value)
+{
+  if (UseABDrives != value)
+  {
+    DriveInfo->UseABDrives = value;
     Changed();
   }
 }
