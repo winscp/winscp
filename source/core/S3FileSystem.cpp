@@ -593,10 +593,6 @@ TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & Bucket
     if (I != FRegions.end())
     {
       Region = I->second;
-      if (Region.IsEmpty())
-      {
-        Region = FAuthRegion;
-      }
     }
     else
     {
@@ -678,8 +674,8 @@ TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & Bucket
       // Minio
       else if (Data.Status == S3StatusOK)
       {
-        FTerminal->LogEvent(FORMAT("Will use default region for bucket \"%s\" from now on.", (BucketName)));
-        FRegions.insert(std::make_pair(BucketName, UnicodeString()));
+        FTerminal->LogEvent(FORMAT("Will keep using region \"%s\" for bucket \"%s\" from now on.", (FAuthRegion, BucketName)));
+        FRegions.insert(std::make_pair(BucketName, FAuthRegion));
       }
     }
   }
