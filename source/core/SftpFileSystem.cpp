@@ -2136,7 +2136,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
       // This is here only because of VShell
       // (it supports owner/group, but does not include them into response to
       // SSH_FXP_READDIR)
-      // and Bitwise (the same as VShell, but it does not even bother to provide "supported" extension until 6.21)
+      // and Bitvise (the same as VShell, but it does not even bother to provide "supported" extension until 6.21)
       // No other use is known.
       return
         (FSupport->Loaded &&
@@ -2152,7 +2152,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
         SupportsExtension(SFTP_EXT_SPACE_AVAILABLE) ||
         // extension announced by proprietary SFTP_EXT_STATVFS extension
         FSupportsStatVfsV2 ||
-        // Bitwise (until 6.21) fails to report it's supported extensions.
+        // Bitvise (until 6.21) fails to report it's supported extensions.
         (FSecureShell->SshImplementation == sshiBitvise);
 
     case fcCalculatingChecksum:
