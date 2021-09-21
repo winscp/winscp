@@ -1,6 +1,6 @@
 /* 
    String utility functions
-   Copyright (C) 1999-2007, 2009, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1999-2021, Joe Orton <joe@manyfish.co.uk>
    strcasecmp/strncasecmp implementations are:
    Copyright (C) 1991, 1992, 1995, 1996, 1997 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
@@ -35,9 +35,16 @@
 #endif
 
 #include <stdio.h>
+#include <assert.h>
 
 #include "ne_alloc.h"
 #include "ne_string.h"
+#include "ne_internal.h"
+
+#ifndef NE_HAVE_SSL
+#include "ne_md5.h"
+#define NEED_VSTRHASH
+#endif
 
 char *ne_token(char **str, char separator)
 {
@@ -274,7 +281,7 @@ static const unsigned char ascii_quote[256] = {
     4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4
 };
 
-static const char hex_chars[16] = "0123456789ABCDEF";
+static const char hex_chars[16] = "0123456789abcdef";
 
 /* Return the expected number of bytes needed to append the string
  * beginning at byte 's', where 'send' points to the last byte after
@@ -337,7 +344,7 @@ void ne_buffer_qappend(ne_buffer *buf, const unsigned char *data, size_t len)
 char *ne_strnqdup(const unsigned char *data, size_t len)
 {
     const unsigned char *dend = data + len;
-    char *dest = malloc(qappend_count(data, dend) + 1);
+    char *dest = ne_malloc(qappend_count(data, dend) + 1);
 
     quoted_append(dest, data, dend);
 
@@ -613,4 +620,142 @@ int ne_strncasecmp(const char *s1, const char *s2, size_t n)
     } while (--n > 0);
     
     return c1 - c2;
+}
+
+char *ne_strhash(unsigned int flags, ...)
+{
+    va_list ap;
+    char *rv;
+    
+    va_start(ap, flags);
+    rv = ne_vstrhash(flags, ap);
+    va_end(ap);
+
+    return rv;
+}
+
+#ifdef NEED_VSTRHASH
+char *ne_vstrhash(unsigned int flags, va_list ap)
+{
+    const char *arg;
+    struct ne_md5_ctx *ctx;
+    unsigned int resbuf[4];
+
+    if ((flags & NE_HASH_ALGMASK) != NE_HASH_MD5) return NULL;
+
+    ctx = ne_md5_create_ctx();
+    if (!ctx) return NULL;
+
+    while ((arg = va_arg(ap, const char *)) != NULL)
+        ne_md5_process_bytes(arg, strlen(arg), ctx);
+
+    ne_md5_finish_ctx(ctx, resbuf);
+    ne_md5_destroy_ctx(ctx);
+
+    return ne__strhash2hex((void *)&resbuf, sizeof resbuf, flags);
+}
+#endif
+
+#define HEX2ASC(a) (hex_chars[((unsigned char)(a)) & 0xf])
+
+char *ne__strhash2hex(const unsigned char *digest, size_t len,
+                      unsigned int flags)
+{
+    unsigned char sep = '\0';
+    size_t step = 2;
+    char *rv, *p;
+    size_t n;
+
+    assert(len > 0);
+
+    if ((flags & NE_HASH_COLON)) {
+        step = 3;
+        sep = ':';
+    }
+    else if ((flags & NE_HASH_SPACE)) {
+        step = 3;
+        sep = ' ';
+    }
+
+    p = rv = ne_malloc(len * step + 1);
+
+    for (n = 0; n < len; n++) {
+        *p++ = HEX2ASC(digest[n] >> 4);
+        *p++ = HEX2ASC(digest[n] & 0x0f);
+        if (sep) *p++ = sep;
+    }
+
+    if (sep) p--;
+
+    *p = '\0';
+    return rv;
+}
+
+/* Determines whether a character is valid in a regular parameter (NQ)
+ * not (QT). Per https://tools.ietf.org/html/rfc5987#section-3.2.1
+ * every character in attr-char is NQ, everything else is QT. */
+#define QT 3
+#define NQ 1
+static const unsigned char ext_notation[256] = {
+/* 0xXX    x0      x2      x4      x6      x8      xA      xC      xE     */
+/*   0x */ QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT,
+/*   1x */ QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT,
+/*   2x */ QT, NQ, QT, NQ, NQ, QT, NQ, QT, QT, QT, QT, NQ, QT, NQ, NQ, QT,
+/*   3x */ QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT,
+/*   4x */ QT, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ,
+/*   5x */ NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, QT, QT, QT, NQ, NQ,
+/*   6x */ NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ,
+/*   7x */ NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, NQ, QT, NQ, QT, NQ, QT,
+/*   8x */ QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, 
+/*   9x */ QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, 
+/*   Ax */ QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, 
+/*   Bx */ QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, 
+/*   Cx */ QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, 
+/*   Dx */ QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, 
+/*   Ex */ QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, 
+/*   Fx */ QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT, QT
+};
+#undef QT
+#undef NQ
+
+char *ne_strparam(const char *charset, const char *lang,
+                  const unsigned char *value)
+{
+    const unsigned char *p;
+    size_t count = 0;
+    char *rv, *rp;
+
+    /* Determine length required for the value. */
+    for (p = value; *p; p++)
+        count += ext_notation[*p];
+
+    /* If length == input length, no encoding is required, return
+     * NULL. */
+    if (count == strlen((const char *)value)) return NULL;
+
+    /* +3 accounts for '' and trailing NUL */
+    rv = ne_malloc(strlen(charset) + (lang ? strlen(lang) : 0) + count + 3);
+    memcpy(rv, charset, strlen(charset));
+    rp = rv + strlen(charset);
+    *rp++ = '\'';
+    if (lang) {
+        memcpy(rp, lang, strlen(lang));
+        rp += strlen(lang);
+    }
+    *rp++ = '\'';
+
+    for (p = value; *p; p++) {
+        if (ext_notation[*p] == 1)  {
+            *rp++ = *p;
+        }
+        else {
+            *rp++ = '%';
+            *rp++ = HEX2ASC(*p >> 4);
+            *rp++ = HEX2ASC(*p & 0x0f);
+        }
+    }
+
+    *rp = '\0';
+
+    return rv;
 }

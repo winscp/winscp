@@ -29,17 +29,22 @@
 #include <unistd.h>
 #endif
 
+#include "ne_md5.h"
+#include "ne_string.h"
 #include "ne_request.h"
 #include "ne_auth.h"
 #include "ne_basic.h"
-#include "ne_md5.h"
 
 #include "tests.h"
 #include "child.h"
 #include "utils.h"
 
 static const char username[] = "Aladdin", password[] = "open sesame";
+static const char *alt_username, *alt_username_star;
+
 static int auth_failed;
+
+static int has_sha256 = 0, has_sha512_256 = 0;
 
 #define BASIC_WALLY "Basic realm=WallyWorld"
 #define CHAL_WALLY "WWW-Authenticate: " BASIC_WALLY
@@ -53,10 +58,23 @@ static int auth_cb(void *userdata, const char *realm, int tries,
         NE_DEBUG(NE_DBG_HTTP, "Got wrong realm '%s'!\n", realm);
         return -1;
     }    
-    strcpy(un, username);
+    strcpy(un, userdata ? userdata : username);
     strcpy(pw, password);
     return tries;
 }		   
+
+static int auth_provide_cb(void *userdata, int attempt,
+                           unsigned protocol, const char *realm,
+                           char *un, char *pw, size_t buflen)
+{
+    if (strcmp(realm, "WallyWorld")) {
+        NE_DEBUG(NE_DBG_HTTP, "Got wrong realm '%s'!\n", realm);
+        return -1;
+    }
+    strcpy(un, alt_username);
+    strcpy(pw, password);
+    return attempt;
+}
 
 static void auth_hdr(char *value)
 {
@@ -110,6 +128,21 @@ static int auth_serve(ne_socket *sock, void *userdata)
     send_response(sock, NULL, auth_failed?500:200, 1);
 
     return 0;
+}
+
+static int init(void)
+{
+    char *p;
+
+    p = ne_strhash(NE_HASH_SHA256, "", NULL);
+    has_sha256 = p != NULL;
+    if (p) ne_free(p);
+
+    p = ne_strhash(NE_HASH_SHA512_256, "", NULL);
+    has_sha512_256 = p != NULL;
+    if (p) ne_free(p);
+
+    return lookup_localhost();
 }
 
 /* Test that various Basic auth challenges are correctly handled. */
@@ -372,13 +405,20 @@ static void dup_header(char *header)
     digest_hdr = ne_strdup(header);
 }
 
+#define PARM_PROXY     (0x0001)
+#define PARM_NEXTNONCE (0x0002)
+#define PARM_RFC2617   (0x0004)
+#define PARM_AINFO     (0x0008)
+#define PARM_USERHASH  (0x0010) /* userhash=true */
+#define PARM_UHFALSE   (0x0020) /* userhash=false */
+#define PARM_ALTUSER   (0x0040)
+#define PARM_LEGACY      (0x0080)
+#define PARM_LEGACY_ONLY (0x0100)
+
 struct digest_parms {
     const char *realm, *nonce, *opaque, *domain;
-    int rfc2617;
-    int send_ainfo;
-    enum { ALG_MD5 = 0, ALG_MD5_SESS = 1, ALG_SHA256 = 2 } alg;
-    int proxy;
-    int send_nextnonce;
+    enum { ALG_MD5 = 0, ALG_MD5_SESS, ALG_SHA256, ALG_SHA256_SESS, ALG_SHA512_256, ALG_SHA512_256_SESS } alg;
+    unsigned int flags;
     int num_requests;
     int stale;
     enum digest_failure {
@@ -396,84 +436,104 @@ struct digest_parms {
         fail_ai_omit_cnonce,
         fail_ai_omit_digest,
         fail_ai_omit_nc,
-        fail_outside_domain
+        fail_outside_domain,
+        fail_2069_weak
     } failure;
 };
 
 struct digest_state {
-    const char *realm, *nonce, *uri, *username, *password, *algorithm, *qop,
+    const char *realm, *nonce, *uri, *username, *username_star, *password, *algorithm, *qop,
         *method, *opaque;
+    char userhash[64];
     char *cnonce, *digest, *ncval;
     long nc;
+    int count;
+    int uhash_bool;
 };
+
+static char *hash(struct digest_parms *p, ...)
+    ne_attribute_sentinel;
+
+static char *hash(struct digest_parms *p, ...)
+{
+    va_list ap;
+    unsigned int flags;
+    char *h;
+
+    switch (p->alg) {
+    case ALG_SHA512_256_SESS:
+    case ALG_SHA512_256:
+        flags = NE_HASH_SHA512_256;
+        break;
+    case ALG_SHA256_SESS:
+    case ALG_SHA256:
+        flags = NE_HASH_SHA256;
+        break;
+    default:
+        flags = NE_HASH_MD5;
+        break;
+    }
+
+    va_start(ap, p);
+    h = ne_vstrhash(flags, ap);
+    va_end(ap);
+
+    if (h == NULL) abort();
+
+    return h;
+}
 
 /* Write the request-digest into 'digest' (or response-digest if
  * auth_info is non-zero) for given digest auth state and
  * parameters.  */
-static void make_digest(struct digest_state *state, struct digest_parms *parms,
-                        int auth_info, char digest[33])
+static char *make_digest(struct digest_state *state, struct digest_parms *parms,
+                         int auth_info)
 {
-    struct ne_md5_ctx *ctx;
-    char h_a1[33], h_a2[33];
+    char *h_a1, *h_a2, *rv;
 
-    /* H(A1) */
-    ctx = ne_md5_create_ctx();
-    if (!ctx) return;
-    ne_md5_process_bytes(state->username, strlen(state->username), ctx);
-    ne_md5_process_bytes(":", 1, ctx);
-    ne_md5_process_bytes(state->realm, strlen(state->realm), ctx);
-    ne_md5_process_bytes(":", 1, ctx);
-    ne_md5_process_bytes(state->password, strlen(state->password), ctx);
-    ne_md5_finish_ascii(ctx, h_a1);
+    h_a1 = hash(parms, state->username, ":", state->realm, ":", 
+                state->password, NULL);
 
-    if (parms->alg == ALG_MD5_SESS) {
-        ne_md5_reset_ctx(ctx);
-        ne_md5_process_bytes(h_a1, 32, ctx);
-        ne_md5_process_bytes(":", 1, ctx);
-        ne_md5_process_bytes(state->nonce, strlen(state->nonce), ctx);
-        ne_md5_process_bytes(":", 1, ctx);
-        ne_md5_process_bytes(state->cnonce, strlen(state->cnonce), ctx);
-        ne_md5_finish_ascii(ctx, h_a1);
+    if (parms->alg == ALG_MD5_SESS || parms->alg == ALG_SHA256_SESS || parms->alg == ALG_SHA512_256_SESS) {
+        char *sess_h_a1;
+
+        sess_h_a1 = hash(parms, h_a1, ":", state->nonce, ":", state->cnonce, NULL);
+        ne_free(h_a1);
+        h_a1 = sess_h_a1;
     }
 
-    /* H(A2) */
-    ne_md5_reset_ctx(ctx);
-    if (!auth_info)
-        ne_md5_process_bytes(state->method, strlen(state->method), ctx);
-    ne_md5_process_bytes(":", 1, ctx);
-    ne_md5_process_bytes(state->uri, strlen(state->uri), ctx);
-    ne_md5_finish_ascii(ctx, h_a2);
+    h_a2 = hash(parms, !auth_info ? state->method : "", ":", state->uri, NULL);
 
-    /* request-digest */
-    ne_md5_reset_ctx(ctx);
-    ne_md5_process_bytes(h_a1, strlen(h_a1), ctx);
-    ne_md5_process_bytes(":", 1, ctx);
-    ne_md5_process_bytes(state->nonce, strlen(state->nonce), ctx);
-    ne_md5_process_bytes(":", 1, ctx);
-
-    if (parms->rfc2617) {
-        ne_md5_process_bytes(state->ncval, strlen(state->ncval), ctx);
-        ne_md5_process_bytes(":", 1, ctx);
-        ne_md5_process_bytes(state->cnonce, strlen(state->cnonce), ctx);
-        ne_md5_process_bytes(":", 1, ctx);
-        ne_md5_process_bytes(state->qop, strlen(state->qop), ctx);
-        ne_md5_process_bytes(":", 1, ctx);
+    if (parms->flags & PARM_RFC2617) {
+        rv = hash(parms,
+                  h_a1, ":", state->nonce, ":",
+                  state->ncval, ":", state->cnonce, ":", state->qop, ":",
+                  h_a2, NULL);
+    }
+    else {
+        /* RFC2069-style */
+        rv = hash(parms, h_a1, ":", state->nonce, ":", h_a2, NULL);
     }
 
-    ne_md5_process_bytes(h_a2, strlen(h_a2), ctx);
-    ne_md5_finish_ascii(ctx, digest);
-    ne_md5_destroy_ctx(ctx);
+    ne_free(h_a2);
+    ne_free(h_a1);
+
+    return rv;
 }
 
 /* Verify that the response-digest matches expected state. */
 static int check_digest(struct digest_state *state, struct digest_parms *parms)
 {
-    char digest[33];
+    char *digest;
 
-    make_digest(state, parms, 0, digest);
+    digest = make_digest(state, parms, 0);
+    ONV(digest == NULL,
+        ("failed to create digest for %s", state->algorithm));
 
     ONV(strcmp(digest, state->digest),
         ("bad digest; expected %s got %s", state->digest, digest));
+
+    ne_free(digest);
 
     return OK;
 }
@@ -484,15 +544,16 @@ static int check_digest(struct digest_state *state, struct digest_parms *parms)
               "Digest response header", #field);        \
     } while (0)
 
-#define PARAM(field)                                            \
+#define NPARAM(field, param)                                    \
     do {                                                        \
-        if (ne_strcasecmp(name, #field) == 0) {                 \
-            ONV(newstate.field != NULL,                        \
-                ("received multiple %s params: %s, %s", #field, \
-                 newstate.field, val));                        \
-            newstate.field = val;                              \
+        if (ne_strcasecmp(name, param) == 0) {                  \
+            ONV(newstate.field != NULL,                         \
+                ("received multiple %s params: %s, %s", param,  \
+                 newstate.field, val));                         \
+            newstate.field = val;                               \
         }                                                       \
     } while (0)
+#define PARAM(field) NPARAM(field, #field)
 
 /* Verify that Digest auth request header, 'header', meets expected
  * state and parameters. */
@@ -532,6 +593,7 @@ static int verify_digest_header(struct digest_state *state,
         PARAM(qop);
         PARAM(opaque);
         PARAM(cnonce);
+        NPARAM(username_star, "username*");
 
         if (ne_strcasecmp(name, "nc") == 0) {
             long nc = strtol(val, NULL, 16);
@@ -545,20 +607,40 @@ static int verify_digest_header(struct digest_state *state,
         else if (ne_strcasecmp(name, "response") == 0) {
             state->digest = ne_strdup(val);
         }
+        else if (ne_strcasecmp(name, "userhash") == 0 ) {
+            newstate.uhash_bool = strcmp(val, "true") == 0;
+        }
     }
 
-    ONN("cnonce param missing for 2617-style auth",
-        parms->rfc2617 && !newstate.cnonce);
+    ONN("cnonce param missing or short for 2617-style auth",
+        (parms->flags & PARM_RFC2617)
+        && (newstate.cnonce == NULL
+            || strlen(newstate.cnonce) < 32));
+
+    if (alt_username_star) {
+        ONN("unexpected userhash=true sent", newstate.uhash_bool);
+        ONN("username* missing", newstate.username_star == NULL);
+        ONCMP(alt_username_star, newstate.username_star, "Digest field", "username*");
+    }
+    else if (parms->flags & PARM_USERHASH) {
+        ONN("userhash missing", !newstate.uhash_bool);
+
+        ONCMP(state->userhash, newstate.username,
+              "Digest username (userhash) field", "userhash");
+    }
+    else {
+        ONN("unexpected userhash=true sent", newstate.uhash_bool);
+        DIGCMP(username);
+    }
 
     DIGCMP(realm);
-    DIGCMP(username);
     if (!parms->domain)
         DIGCMP(uri);
     DIGCMP(nonce);
     DIGCMP(opaque);
     DIGCMP(algorithm);
 
-    if (parms->rfc2617) {
+    if (parms->flags & PARM_RFC2617) {
         DIGCMP(qop);
     }
         
@@ -582,12 +664,12 @@ static char *make_authinfo_header(struct digest_state *state,
                                   struct digest_parms *parms)
 {
     ne_buffer *buf = ne_buffer_create();
-    char digest[33], *ncval, *cnonce;
+    char *digest, *ncval, *cnonce;
 
     if (parms->failure == fail_ai_bad_digest) {
-        strcpy(digest, "fish");
+        digest = ne_strdup("fish");
     } else {
-        make_digest(state, parms, 1, digest);
+        digest = make_digest(state, parms, 1);
     }
 
     if (parms->failure == fail_ai_bad_nc_syntax) {
@@ -604,13 +686,13 @@ static char *make_authinfo_header(struct digest_state *state,
         cnonce = state->cnonce;
     }
 
-    if (parms->proxy) {
+    if ((parms->flags & PARM_PROXY)) {
         ne_buffer_czappend(buf, "Proxy-");
     }
 
     ne_buffer_czappend(buf, "Authentication-Info: ");
 
-    if (!parms->rfc2617) {
+    if ((parms->flags & PARM_RFC2617) == 0) {
         ne_buffer_concat(buf, "rspauth=\"", digest, "\"", NULL);
     } else {
         if (parms->failure != fail_ai_omit_nc) {
@@ -622,13 +704,15 @@ static char *make_authinfo_header(struct digest_state *state,
         if (parms->failure != fail_ai_omit_digest) {
             ne_buffer_concat(buf, "rspauth=\"", digest, "\", ", NULL);
         }
-        if (parms->send_nextnonce) {
+        if (parms->flags & PARM_NEXTNONCE) {
             state->nonce = ne_concat("next-", state->nonce, NULL);
             ne_buffer_concat(buf, "nextnonce=\"", state->nonce, "\", ", NULL);
             state->nc = 1;
         }
         ne_buffer_czappend(buf, "qop=\"auth\"");
     }
+
+    ne_free(digest);
     
     return ne_buffer_finish(buf);
 }
@@ -643,12 +727,12 @@ static char *make_digest_header(struct digest_state *state,
         : state->algorithm;
 
     ne_buffer_concat(buf, 
-                     parms->proxy ? "Proxy-Authenticate"
+                     (parms->flags & PARM_PROXY) ? "Proxy-Authenticate"
                      : "WWW-Authenticate",
                      ": Digest "
                      "realm=\"", parms->realm, "\", ", NULL);
     
-    if (parms->rfc2617) {
+    if (parms->flags & PARM_RFC2617) {
         ne_buffer_concat(buf, "algorithm=\"", algorithm, "\", ",
                          "qop=\"", state->qop, "\", ", NULL);
     }
@@ -659,6 +743,13 @@ static char *make_digest_header(struct digest_state *state,
 
     if (parms->domain) {
         ne_buffer_concat(buf, "domain=\"", parms->domain, "\", ", NULL);
+    }
+
+    if (parms->flags & PARM_USERHASH) {
+        ne_buffer_czappend(buf, "userhash=true, ");
+    }
+    else if (parms->flags & PARM_UHFALSE) {
+        ne_buffer_czappend(buf, "userhash=false, ");
     }
 
     if (parms->failure == fail_req0_stale
@@ -677,9 +768,9 @@ static int serve_digest(ne_socket *sock, void *userdata)
 {
     struct digest_parms *parms = userdata;
     struct digest_state state;
-    char resp[NE_BUFSIZ];
+    char resp[NE_BUFSIZ], *rspdigest;
     
-    if (parms->proxy)
+    if ((parms->flags & PARM_PROXY))
         state.uri = "http://www.example.com/fish";
     else if (parms->domain)
         state.uri = "/fish/0";
@@ -689,16 +780,31 @@ static int serve_digest(ne_socket *sock, void *userdata)
     state.realm = parms->realm;
     state.nonce = parms->nonce;
     state.opaque = parms->opaque;
-    state.username = username;
+    if (parms->flags & PARM_ALTUSER)
+        state.username = alt_username;
+    else
+        state.username = username;
     state.password = password;
     state.nc = 1;
     switch (parms->alg) {
+    case ALG_SHA512_256: state.algorithm = "SHA-512-256"; break;
+    case ALG_SHA512_256_SESS: state.algorithm = "SHA-512-256-sess"; break;
     case ALG_SHA256: state.algorithm = "SHA-256"; break;
+    case ALG_SHA256_SESS: state.algorithm = "SHA-256-sess"; break;
     case ALG_MD5_SESS: state.algorithm = "MD5-sess"; break;
     default:
     case ALG_MD5: state.algorithm = "MD5"; break;
     }
     state.qop = "auth";
+
+    if (parms->flags & PARM_USERHASH) {
+        char *uh = hash(parms, username, ":", parms->realm, NULL);
+
+        ONN("userhash too long", strlen(uh) >= sizeof state.userhash);
+
+        ne_strnzcpy(state.userhash, uh, sizeof state.userhash);
+        ne_free(uh);
+    }
 
     state.cnonce = state.digest = state.ncval = NULL;
 
@@ -707,7 +813,7 @@ static int serve_digest(ne_socket *sock, void *userdata)
     NE_DEBUG(NE_DBG_HTTP, ">>>> Response sequence begins, %d requests.\n",
              parms->num_requests);
 
-    want_header = parms->proxy ? "Proxy-Authorization" : "Authorization";
+    want_header = (parms->flags & PARM_PROXY) ? "Proxy-Authorization" : "Authorization";
     digest_hdr = NULL;
     got_header = dup_header;
 
@@ -716,12 +822,14 @@ static int serve_digest(ne_socket *sock, void *userdata)
     ONV(digest_hdr != NULL,
         ("got unwarranted WWW-Auth header: %s", digest_hdr));
 
+    rspdigest = make_digest_header(&state, parms);
     ne_snprintf(resp, sizeof resp,
                 "HTTP/1.1 %d Auth Denied\r\n"
                 "%s\r\n"
                 "Content-Length: 0\r\n" "\r\n",
-                parms->proxy ? 407 : 401,
-                make_digest_header(&state, parms));
+                (parms->flags & PARM_PROXY) ? 407 : 401,
+                rspdigest);
+    ne_free(rspdigest);
 
     SEND_STRING(sock, resp);
 
@@ -748,21 +856,24 @@ static int serve_digest(ne_socket *sock, void *userdata)
         else {
             ONN("no Authorization header sent", digest_hdr == NULL);
 
-            CALL(verify_digest_header(&state, parms, digest_hdr));
+            ONERR(sock, verify_digest_header(&state, parms, digest_hdr));
         }
 
         if (parms->num_requests == parms->stale) {
+            char *dig;
             state.nonce = ne_concat("stale-", state.nonce, NULL);
             state.nc = 1;
 
+            dig = make_digest_header(&state, parms);
             ne_snprintf(resp, sizeof resp,
                         "HTTP/1.1 %d Auth Denied\r\n"
                         "%s\r\n"
                         "Content-Length: 0\r\n" "\r\n",
-                        parms->proxy ? 407 : 401,
-                        make_digest_header(&state, parms));
+                        (parms->flags & PARM_PROXY) ? 407 : 401,
+                        dig);
+            ne_free(dig);
         }
-        else if (parms->send_ainfo) {
+        else if (parms->flags & PARM_AINFO) {
             char *ai = make_authinfo_header(&state, parms);
             
             ne_snprintf(resp, sizeof resp,
@@ -790,20 +901,30 @@ static int serve_digest(ne_socket *sock, void *userdata)
 static int test_digest(struct digest_parms *parms)
 {
     ne_session *sess;
+    unsigned proto = NE_AUTH_DIGEST;
+
+    if ((parms->flags & PARM_LEGACY))
+        proto |= NE_AUTH_LEGACY_DIGEST;
+    else if ((parms->flags & PARM_LEGACY_ONLY))
+        proto = NE_AUTH_LEGACY_DIGEST;
 
     NE_DEBUG(NE_DBG_HTTP, ">>>> Request sequence begins "
-             "(nonce=%s, rfc=%s, stale=%d).\n",
-             parms->nonce, parms->rfc2617 ? "2617" : "2069",
-             parms->stale);
+             "(reqs=%d, nonce=%s, rfc=%s, stale=%d, proxy=%d).\n",
+             parms->num_requests,
+             parms->nonce, (parms->flags & PARM_RFC2617) ? "2617" : "2069",
+             parms->stale, !!(parms->flags & PARM_PROXY));
 
-    if (parms->proxy) {
+    if ((parms->flags & PARM_PROXY)) {
         CALL(proxied_session_server(&sess, "http", "www.example.com", 80,
                                     serve_digest, parms));
         ne_set_proxy_auth(sess, auth_cb, NULL);
     } 
     else {
         CALL(session_server(&sess, serve_digest, parms));
-        ne_set_server_auth(sess, auth_cb, NULL);
+        if ((parms->flags & PARM_ALTUSER))
+            ne_add_auth(sess, proto, auth_provide_cb, NULL);
+        else
+            ne_add_server_auth(sess, proto, auth_cb, NULL);
     }
 
     do {
@@ -819,39 +940,40 @@ static int digest(void)
 {
     struct digest_parms parms[] = {
         /* RFC 2617-style */
-        { "WallyWorld", "this-is-a-nonce", NULL, NULL, 1, 0, 0, 0, 0, 1, 0, fail_not },
-        { "WallyWorld", "this-is-also-a-nonce", "opaque-string", NULL, 1, 0, 0, 0, 0, 1, 0, fail_not },
+        { "WallyWorld", "this-is-a-nonce", NULL, NULL, ALG_MD5, PARM_RFC2617, 1, 0, fail_not },
+        { "WallyWorld", "this-is-also-a-nonce", "opaque-string", NULL, ALG_MD5, PARM_RFC2617, 1, 0, fail_not },
         /* ... with A-I */
-        { "WallyWorld", "nonce-nonce-nonce", "opaque-string", NULL, 1, 1, 0, 0, 0, 1, 0, fail_not },
+        { "WallyWorld", "nonce-nonce-nonce", "opaque-string", NULL, ALG_MD5, PARM_RFC2617 | PARM_AINFO, 1, 0, fail_not },
         /* ... with md5-sess. */
-        { "WallyWorld", "nonce-nonce-nonce", "opaque-string", NULL, 1, 1, 1, 0, 0, 1, 0, fail_not },
+        { "WallyWorld", "nonce-nonce-nonce", "opaque-string", NULL, ALG_MD5_SESS, PARM_RFC2617 | PARM_AINFO, 1, 0, fail_not },
         /* many requests, with changing nonces; tests for next-nonce handling bug. */
-        { "WallyWorld", "this-is-a-nonce", "opaque-thingy", NULL, 1, 1, 0, 0, 1, 20, 0, fail_not },
+        { "WallyWorld", "this-is-a-nonce", "opaque-thingy", NULL, ALG_MD5, PARM_RFC2617 | PARM_AINFO | PARM_NEXTNONCE, 20, 0, fail_not },
 
         /* staleness. */
-        { "WallyWorld", "this-is-a-nonce", "opaque-thingy", NULL, 1, 1, 0, 0, 0, 3, 2, fail_not },
+        { "WallyWorld", "this-is-a-nonce", "opaque-thingy", NULL, ALG_MD5, PARM_RFC2617 | PARM_AINFO, 3, 2, fail_not },
         /* 2069 + stale */
-        { "WallyWorld", "this-is-a-nonce", NULL, NULL, 0, 1, 0, 0, 0, 3, 2, fail_not },
+        { "WallyWorld", "this-is-a-nonce", NULL, NULL, ALG_MD5, PARM_LEGACY|PARM_AINFO, 3, 2, fail_not },
+
+        /* RFC 7616-style */
+        { "WallyWorld", "new-day-new-nonce", "new-opaque", NULL, ALG_MD5, PARM_RFC2617 | PARM_USERHASH, 1, 0, fail_not },
+        /* ... userhash=false */
+        { "WallyWorld", "just-another-nonce", "new-opaque", NULL, ALG_MD5, PARM_RFC2617 | PARM_UHFALSE, 1, 0, fail_not },
 
         /* RFC 2069-style */ 
-        { "WallyWorld", "lah-di-da-di-dah", NULL, NULL, 0, 0, 0, 0, 0, 1, 0, fail_not },
-        { "WallyWorld", "fee-fi-fo-fum", "opaque-string", NULL, 0, 0, 0, 0, 0, 1, 0, fail_not },
-        { "WallyWorld", "fee-fi-fo-fum", "opaque-string", NULL, 0, 1, 0, 0, 0, 1, 0, fail_not },
+        { "WallyWorld", "lah-di-da-di-dah", NULL, NULL, ALG_MD5, PARM_LEGACY, 1, 0, fail_not },
+        { "WallyWorld", "lah-lah-lah-lah", NULL, NULL, ALG_MD5, PARM_LEGACY_ONLY, 1, 0, fail_not },
+        { "WallyWorld", "fee-fi-fo-fum", "opaque-string", NULL, ALG_MD5, PARM_LEGACY, 1, 0, fail_not },
+        { "WallyWorld", "fee-fi-fo-fum", "opaque-string", NULL, ALG_MD5, PARM_AINFO|PARM_LEGACY, 1, 0, fail_not },
 
         /* Proxy auth */
-        { "WallyWorld", "this-is-also-a-nonce", "opaque-string", NULL, 1, 1, 0, 0, 0, 1, 0, fail_not },
-        /* Proxy + A-I */
-        { "WallyWorld", "this-is-also-a-nonce", "opaque-string", NULL, 1, 1, 0, 1, 0, 1, 0, fail_not },
+        { "WallyWorld", "this-is-also-a-nonce", "opaque-string", NULL, ALG_MD5, PARM_RFC2617|PARM_PROXY, 1, 0, fail_not },
+        /* Proxy + nextnonce */
+        { "WallyWorld", "this-is-also-a-nonce", "opaque-string", NULL, ALG_MD5, PARM_RFC2617|PARM_AINFO|PARM_PROXY, 1, 0, fail_not },
 
-#if 0
-        /* RFC 6717. */
-        { "WallyWorld", "nonce-sha-nonce", "opaque-string", NULL, 1, 1, ALG_SHA256, 0, 0, 1, 0, fail_not },
-#endif
-        
         { NULL }
     };
     size_t n;
-    
+
     for (n = 0; parms[n].realm; n++) {
         CALL(test_digest(&parms[n]));
 
@@ -859,6 +981,88 @@ static int digest(void)
 
     return OK;
 }
+
+static int digest_sha256(void)
+{
+    struct digest_parms parms[] = {
+        { "WallyWorld", "nonce-sha-nonce", "opaque-string", NULL, ALG_SHA256, PARM_RFC2617, 1, 0, fail_not },
+        { "WallyWorld", "nonce-sha-nonce", "opaque-string", NULL, ALG_SHA256, PARM_RFC2617|PARM_AINFO, 1, 0, fail_not },
+        { "WallyWorld", "nonce-sha-session", "opaque-string", NULL, ALG_SHA256_SESS, PARM_RFC2617|PARM_AINFO, 1, 0, fail_not },
+        { "WallyWorld", "nonce-sha-nonce", "opaque-string", NULL, ALG_SHA256, PARM_RFC2617|PARM_AINFO, 8, 0, fail_not },
+        
+        { NULL },
+    };
+    size_t n;
+
+    if (!has_sha256) {
+        t_context("SHA-256 not supported");
+        return SKIP;
+    }
+
+    for (n = 0; parms[n].realm; n++) {
+        CALL(test_digest(&parms[n]));
+
+    }
+
+    return OK;
+}
+
+static int digest_sha512_256(void)
+{
+    struct digest_parms parms[] = {
+        { "WallyWorld", "nonce-sha5-nonce", "opaque-string", NULL, ALG_SHA512_256, PARM_RFC2617, 1, 0, fail_not },
+        { "WallyWorld", "nonce-sha5-nonce", "opaque-string", NULL, ALG_SHA512_256, PARM_RFC2617|PARM_AINFO, 1, 0, fail_not },
+        { "WallyWorld", "nonce-sha5-session", "opaque-string", NULL, ALG_SHA512_256_SESS, PARM_RFC2617|PARM_AINFO, 1, 0, fail_not },
+        { "WallyWorld", "nonce-sha-nonce", "opaque-string", NULL, ALG_SHA512_256_SESS, PARM_RFC2617|PARM_AINFO, 20, 0, fail_not },
+        { NULL },
+    };
+    size_t n;
+
+    if (!has_sha512_256) {
+        t_context("SHA-512/256 not supported");
+        return SKIP;
+    }
+
+    for (n = 0; parms[n].realm; n++) {
+        CALL(test_digest(&parms[n]));
+
+    }
+
+    return OK;
+}
+
+static int digest_username_star(void)
+{
+    static const struct {
+        const char *username_raw, *username_star;
+    } ts[] = {
+        { "Aladdin", NULL },
+        { "Ałâddín", "UTF-8''A%c5%82%c3%a2dd%c3%adn" },
+        { "Jäsøn Doe", "UTF-8''J%c3%a4s%c3%b8n%20Doe" },
+        { "foo bar",  "UTF-8''foo%20bar"},
+        { "foo\"bar", "UTF-8''foo%22bar" },
+        { NULL, NULL }
+    };
+    unsigned n;
+    int ret = OK;
+
+    for (n = 0; ret == OK && ts[n].username_raw; n++) {
+        struct digest_parms parms = {
+            "WallyWorld", "nonce-sha5-nonce", "opaque-string",
+            NULL, ALG_MD5, PARM_RFC2617|PARM_UHFALSE|PARM_ALTUSER, 1, 0, fail_not };
+
+        alt_username = ts[n].username_raw;
+        alt_username_star = ts[n].username_star;
+
+        ret = test_digest(&parms);
+    }
+
+    alt_username = NULL;
+    alt_username_star = NULL;
+
+    return ret;
+}
+
 
 static int digest_failures(void)
 {
@@ -877,16 +1081,17 @@ static int digest_failures(void)
         { fail_bogus_alg, "unknown algorithm" },
         { fail_req0_stale, "initial Digest challenge was stale" },
         { fail_req0_2069_stale, "initial Digest challenge was stale" },
+        { fail_2069_weak, "legacy Digest challenge not supported" },
         { fail_not, NULL }
     };
-    size_t n;
+    unsigned n;
 
     memset(&parms, 0, sizeof parms);
     
     parms.realm = "WallyWorld";
     parms.nonce = "random-invented-string";
     parms.opaque = NULL;
-    parms.send_ainfo = 1;
+    parms.flags = PARM_AINFO;
     parms.num_requests = 1;
 
     for (n = 0; fails[n].message; n++) {
@@ -895,10 +1100,10 @@ static int digest_failures(void)
 
         parms.failure = fails[n].mode;
 
-        if (parms.failure == fail_req0_2069_stale)
-            parms.rfc2617 = 0;
+        if (parms.failure == fail_req0_2069_stale || parms.failure == fail_2069_weak)
+            parms.flags &= ~PARM_RFC2617;
         else
-            parms.rfc2617 = 1;
+            parms.flags |= PARM_RFC2617;
 
         NE_DEBUG(NE_DBG_HTTP, ">>> New Digest failure test, "
                  "expecting failure '%s'\n", fails[n].message);
@@ -909,8 +1114,8 @@ static int digest_failures(void)
         
         ret = any_2xx_request(sess, "/fish");
         ONV(ret == NE_OK,
-            ("request success; expecting error '%s'",
-             fails[n].message));
+            ("request success (iter %u); expecting error '%s'",
+             n, fails[n].message));
 
         ONV(strstr(ne_get_error(sess), fails[n].message) == NULL,
             ("request fails with error '%s'; expecting '%s'",
@@ -919,7 +1124,8 @@ static int digest_failures(void)
         ne_session_destroy(sess);
         
         if (fails[n].mode == fail_bogus_alg
-            || fails[n].mode == fail_req0_stale) {
+            || fails[n].mode == fail_req0_stale
+            || fails[n].mode == fail_2069_weak) {
             reap_server();
         } else {
             CALL(await_server());
@@ -935,6 +1141,12 @@ static int fail_cb(void *userdata, const char *realm, int tries,
     ne_buffer *buf = userdata;
     char str[64];
 
+    if (strcmp(realm, "colonic") == 0 && ne_buffer_size(buf) == 0) {
+        ne_strnzcpy(un, "user:name", NE_ABUFSIZ);
+        ne_strnzcpy(pw, "passwerd", NE_ABUFSIZ);
+        return 0;
+    }
+
     ne_snprintf(str, sizeof str, "<%s, %d>", realm, tries);
     ne_buffer_zappend(buf, str);
 
@@ -948,6 +1160,8 @@ static int fail_challenge(void)
     } ts[] = {
         /* only possible Basic parse failure. */
         { "Basic", "missing realm in Basic challenge" },
+
+        { "Basic realm=\"colonic\"", "username containing colon" },
 
         /* Digest parameter invalid/omitted failure cases: */
         { "Digest algorithm=MD5, qop=auth, nonce=\"foo\"",
@@ -995,14 +1209,15 @@ static int fail_challenge(void)
                     "Content-Length: 0\r\n" "\r\n",
                     ts[n].resp);
         
-        CALL(make_session(&sess, single_serve_string, resp));
+        CALL(multi_session_server(&sess, "http", "localhost",
+                                  2, single_serve_string, resp));
 
         ne_set_server_auth(sess, fail_cb, buf);
         
         ret = any_2xx_request(sess, "/fish");
         ONV(ret == NE_OK,
-            ("request success; expecting error '%s'",
-             ts[n].error));
+            ("request success (iter %u); expecting error '%s'",
+             n, ts[n].error));
 
         ONV(strstr(ne_get_error(sess), ts[n].error) == NULL,
             ("request fails with error '%s'; expecting '%s'",
@@ -1015,7 +1230,7 @@ static int fail_challenge(void)
 
         ne_session_destroy(sess);
         ne_buffer_destroy(buf);
-        CALL(await_server());
+        reap_server();
     }
 
     return OK;
@@ -1070,6 +1285,155 @@ static int multi_handler(void)
     return await_server();
 }
 
+static int multi_rfc7616(void)
+{
+    ne_session *sess;
+    struct multi_context c[2];
+    unsigned n;
+    ne_buffer *buf, *exp;
+
+    buf = ne_buffer_create();
+    CALL(make_session(&sess, single_serve_string,
+                      "HTTP/1.1 401 Auth Denied\r\n"
+                      "WWW-Authenticate: "
+                      "Digest realm='sha512-realm', algorithm=SHA-512-256, qop=auth, nonce=gaga, "
+                      "Basic realm='basic-realm', "
+                      "Digest realm='md5-realm', algorithm=MD5, qop=auth, nonce=gaga, "
+                      "Digest realm='sha256-realm', algorithm=SHA-256, qop=auth, nonce=gaga\r\n"
+                      "Content-Length: 0\r\n" "\r\n"));
+
+    for (n = 0; n < 2; n++) {
+        c[n].buf = buf;
+        c[n].id = n + 1;
+    }
+
+    ne_add_server_auth(sess, NE_AUTH_BASIC, multi_cb, &c[0]);
+    ne_add_server_auth(sess, NE_AUTH_DIGEST, multi_cb, &c[1]);
+
+    any_request(sess, "/fish");
+
+    exp = ne_buffer_create();
+    n = 0;
+    if (has_sha512_256)
+        ne_buffer_snprintf(exp, 100, "[id=2, realm=sha512-realm, tries=%u]", n++);
+    if (has_sha256)
+        ne_buffer_snprintf(exp, 100, "[id=2, realm=sha256-realm, tries=%u]", n++);
+    ne_buffer_snprintf(exp, 100,
+                       "[id=2, realm=md5-realm, tries=%u]"
+                       "[id=1, realm=basic-realm, tries=0]", n);
+    ONV(strcmp(exp->data, buf->data),
+        ("unexpected callback ordering.\n"
+         "expected: %s\n"
+         "actual:   %s\n",
+         exp->data, buf->data));
+
+    ne_session_destroy(sess);
+    ne_buffer_destroy(buf);
+    ne_buffer_destroy(exp);
+
+    return await_server();
+}
+
+static int multi_provider_cb(void *userdata, int attempt,
+                             unsigned protocol, const char *realm,
+                             char *un, char *pw, size_t buflen)
+{
+    ne_buffer *buf = userdata;
+    const char *ctx;
+
+    if (buflen == NE_ABUFSIZ) {
+        NE_DEBUG(NE_DBG_HTTPAUTH, "auth: FAILED for short buffer length.\n");
+        return -1;
+    }
+
+    if ((protocol & NE_AUTH_PROXY) == NE_AUTH_PROXY) {
+        ctx = "proxy";
+        protocol ^= NE_AUTH_PROXY;
+    }
+    else {
+        ctx = "server";
+    }
+
+    ne_buffer_snprintf(buf, 128, "[%s: proto=%u, realm=%s, attempt=%d]",
+                       ctx, protocol, realm, attempt);
+
+    ne_strnzcpy(un, "foo", buflen);
+    ne_strnzcpy(pw, "bar", buflen);
+
+    return protocol == NE_AUTH_BASIC ? 0 : -1;
+}
+
+static int serve_provider(ne_socket *s, void *userdata)
+{
+    CALL(serve_response(s,
+                        "HTTP/1.1 407 Proxy Auth Plz\r\n"
+                        "Proxy-Authenticate: Basic realm='proxy-realm'\r\n"
+                        "Content-Length: 0\r\n" "\r\n"));
+    CALL(serve_response(s,
+                        "HTTP/1.1 401 Auth Denied\r\n"
+                        "WWW-Authenticate: "
+                        "  Digest realm='sha512-realm', algorithm=SHA-512-256, qop=auth, nonce=gaga, "
+                        "  Basic realm='basic-realm', "
+                        "  Digest realm='md5-realm', algorithm=MD5, qop=auth, nonce=gaga, "
+                        "  Digest realm='sha256-realm', algorithm=SHA-256, qop=auth, nonce=gaga\r\n"
+                        "Content-Length: 0\r\n" "\r\n"));
+    CALL(serve_response(s,
+                        "HTTP/1.1 401 Auth Denied\r\n"
+                        "WWW-Authenticate: "
+                        "  Digest realm='sha512-realm', algorithm=SHA-512-256, qop=auth, nonce=gaga, "
+                        "  Basic realm='basic-realm'\r\n"
+                        "Content-Length: 0\r\n" "\r\n"));
+    return serve_response(s,
+                          "HTTP/1.1 200 OK\r\n"
+                          "Content-Length: 0\r\n" "\r\n");
+}
+
+static int multi_provider(void)
+{
+    ne_session *sess;
+    ne_buffer *buf = ne_buffer_create(), *exp;
+
+    CALL(make_session(&sess, serve_provider, NULL));
+
+    ne_add_auth(sess, NE_AUTH_DIGEST|NE_AUTH_BASIC, multi_provider_cb, buf);
+
+    ONREQ(any_request(sess, "/fish"));
+
+    exp = ne_buffer_create();
+    ne_buffer_snprintf(exp, 100,
+                       "[proxy: proto=%u, realm=proxy-realm, attempt=0]",
+                       NE_AUTH_BASIC);
+    if (has_sha512_256)
+        ne_buffer_snprintf(exp, 100, "[server: proto=%u, realm=sha512-realm, attempt=0]",
+                           NE_AUTH_DIGEST);
+    if (has_sha256)
+        ne_buffer_snprintf(exp, 100, "[server: proto=%u, realm=sha256-realm, attempt=0]",
+                           NE_AUTH_DIGEST);
+    ne_buffer_snprintf(exp, 100,
+                       "[server: proto=%u, realm=md5-realm, attempt=0]"
+                       "[server: proto=%u, realm=basic-realm, attempt=0]",
+                       NE_AUTH_DIGEST, NE_AUTH_BASIC);
+
+    if (has_sha512_256)
+        ne_buffer_snprintf(exp, 100, "[server: proto=%u, realm=sha512-realm, attempt=1]",
+                           NE_AUTH_DIGEST);
+    ne_buffer_snprintf(exp, 100, "[server: proto=%u, realm=basic-realm, attempt=1]",
+                       NE_AUTH_BASIC);
+
+    ONV(strcmp(exp->data, buf->data),
+        ("unexpected callback ordering.\n"
+         "expected: %s\n"
+         "actual:   %s\n",
+         exp->data, buf->data));
+
+    ne_session_destroy(sess);
+    ne_buffer_destroy(buf);
+    ne_buffer_destroy(exp);
+
+    return await_server();
+}
+
+
 static int domains(void)
 {
     ne_session *sess;
@@ -1077,7 +1441,7 @@ static int domains(void)
 
     memset(&parms, 0, sizeof parms);
     parms.realm = "WallyWorld";
-    parms.rfc2617 = 1;
+    parms.flags = PARM_RFC2617;
     parms.nonce = "agoog";
     parms.domain = "http://localhost:4242/fish/ https://example.com /agaor /other";
     parms.num_requests = 6;
@@ -1107,7 +1471,7 @@ static int CVE_2008_3746(void)
 
     memset(&parms, 0, sizeof parms);
     parms.realm = "WallyWorld";
-    parms.rfc2617 = 1;
+    parms.flags = PARM_RFC2617;
     parms.nonce = "agoog";
     parms.domain = "foo";
     parms.num_requests = 1;
@@ -1197,22 +1561,87 @@ static int forget(void)
     return await_server();
 }
 
+static int serve_basic_scope_checker(ne_socket *sock, void *userdata)
+{
+    /* --- GET /fish/0.txt -- first request */
+    digest_hdr = NULL;
+    got_header = dup_header;
+    want_header = "Authorization";
+    CALL(discard_request(sock));
+    if (digest_hdr) {
+        t_context("Got WWW-Auth header on initial request");
+        return error_response(sock, FAIL);
+    }
+
+    send_response(sock, CHAL_WALLY, 401, 0);
+
+    /* Retry of GET /fish/0 - expect Basic creds */
+    auth_failed = 0;
+    got_header = auth_hdr;
+    CALL(discard_request(sock));
+    if (auth_failed) {
+        t_context("bad Basic Auth on first request");
+        return error_response(sock, FAIL);
+    }
+    send_response(sock, CHAL_WALLY, 200, 0);
+    
+    /* --- GET /not/inside -- second request */
+    got_header = dup_header;
+    CALL(discard_request(sock));
+    if (digest_hdr) {
+        t_context("Basic auth sent outside of credentials scope");
+        return error_response(sock, FAIL);
+    }
+    send_response(sock, CHAL_WALLY, 200, 0);
+
+    /* --- GET /fish/1 -- third request */
+    got_header = auth_hdr;
+    CALL(discard_request(sock));
+    send_response(sock, NULL, auth_failed?500:200, 1);
+    
+    return 0;    
+}
+
+/* Check that Basic auth follows the RFC7617 rules around scope. */
+static int basic_scope(void)
+{
+    ne_session *sess;
+
+    CALL(make_session(&sess, serve_basic_scope_checker, NULL));
+
+    ne_set_server_auth(sess, auth_cb, NULL);
+    
+    CALL(any_2xx_request(sess, "/fish/0.txt")); /* must use auth */
+    CALL(any_2xx_request(sess, "/not/inside")); /* must NOT use auth credentials */
+    CALL(any_2xx_request(sess, "/fish/1")); /* must use auth credentials */
+
+    ne_session_destroy(sess);
+
+    return await_server();
+}
+
 /* proxy auth, proxy AND origin */
 
 ne_test tests[] = {
-    T(lookup_localhost),
+    T(init),
     T(basic),
     T(retries),
     T(forget_regress),
     T(tunnel_regress),
     T(negotiate_regress),
     T(digest),
+    T(digest_sha256),
+    T(digest_sha512_256),
     T(digest_failures),
+    T(digest_username_star),
     T(fail_challenge),
     T(multi_handler),
+    T(multi_rfc7616),
+    T(multi_provider),
     T(domains),
     T(defaults),
     T(CVE_2008_3746),
     T(forget),
+    T(basic_scope),
     T(NULL)
 };

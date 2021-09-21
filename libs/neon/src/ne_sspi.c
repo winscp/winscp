@@ -427,7 +427,7 @@ initSingleEmptyBuffer(SecBufferDesc * bufferDesc, SecBuffer * buffer)
 }
 
 /*
- * Destroyes the supplied context.
+ * Destroys the supplied context.
  */
 int ne_sspi_destroy_context(void *context)
 {

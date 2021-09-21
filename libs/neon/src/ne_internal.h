@@ -1,6 +1,6 @@
 /* 
    Global interfaces private to neon.
-   Copyright (C) 2005-2006, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 2005-2021, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -82,5 +82,17 @@
 #define ne_strtoff strtol
 #endif
 #endif /* NE_LFS */
+
+#define NE_HASH_ALGMASK (0x000f)
+
+/* Return malloc-allocated ASCII hexadecimal representation of
+ * input. */
+NE_PRIVATE char *ne__strhash2hex(const unsigned char *digest, size_t len, unsigned int flags);
+
+#ifdef HAVE_EXPLICIT_BZERO
+#define ne__strzero(s, n) explicit_bzero(s, n)
+#else
+#define ne__strzero(s, n) memset(s, 0, n)
+#endif
 
 #endif /* NE_INTERNAL_H */

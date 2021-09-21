@@ -1,6 +1,6 @@
 /* 
    neon SSL/TLS support using OpenSSL
-   Copyright (C) 2002-2011, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 2002-2021, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -1114,9 +1114,39 @@ char *ne_ssl_cert_export(const ne_ssl_certificate *cert)
     return ret;
 }
 
+static const EVP_MD *hash_to_md(unsigned int flags)
+{
+    switch (flags & NE_HASH_ALGMASK) {
+    case NE_HASH_MD5: return EVP_md5();
+    case NE_HASH_SHA256: return EVP_sha256();
+#ifdef HAVE_OPENSSL11
+    case NE_HASH_SHA512: return EVP_sha512();
+    case NE_HASH_SHA512_256: return EVP_sha512_256();
+#endif
+    default: break;
+    }
+    return NULL;
+}
+
 #if SHA_DIGEST_LENGTH != 20
 # error SHA digest length is not 20 bytes
 #endif
+
+char *ne_ssl_cert_hdigest(const ne_ssl_certificate *cert, unsigned int flags)
+{
+    const EVP_MD *md = hash_to_md(flags);
+    unsigned char dig[EVP_MAX_MD_SIZE];
+    unsigned int len;
+
+    if (!md) return NULL;
+
+    if (!X509_digest(cert->subject, md, dig, &len)) {
+        ERR_clear_error();
+        return NULL;
+    }
+
+    return ne__strhash2hex(dig, len, flags);
+}
 
 int ne_ssl_cert_digest(const ne_ssl_certificate *cert, char *digest)
 {
@@ -1137,6 +1167,31 @@ int ne_ssl_cert_digest(const ne_ssl_certificate *cert, char *digest)
 
     p[-1] = '\0';
     return 0;
+}
+
+char *ne_vstrhash(unsigned int flags, va_list ap)
+{
+    EVP_MD_CTX *ctx;
+    const EVP_MD *md = hash_to_md(flags);
+    unsigned char v[EVP_MAX_MD_SIZE];
+    unsigned int vlen;
+    const char *arg;
+
+    ctx = EVP_MD_CTX_new();
+    if (!ctx) return NULL;
+
+    if (EVP_DigestInit(ctx, md) != 1) {
+        EVP_MD_CTX_free(ctx);
+        return NULL;
+    }
+
+    while ((arg = va_arg(ap, const char *)) != NULL)
+        EVP_DigestUpdate(ctx, arg, strlen(arg));
+
+    EVP_DigestFinal_ex(ctx, v, &vlen);
+    EVP_MD_CTX_free(ctx);
+
+    return ne__strhash2hex(v, vlen, flags);
 }
 
 #if defined(NE_HAVE_TS_SSL) && OPENSSL_VERSION_NUMBER < 0x10100000L
