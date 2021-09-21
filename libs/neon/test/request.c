@@ -67,8 +67,7 @@ static int prepare_request(server_fn fn, void *ud)
 static int finish_request(void)
 {
     ne_request_destroy(def_req);
-    ne_session_destroy(def_sess);
-    return await_server();
+    return destroy_and_wait(def_sess);
 }
 
 #define RESP200 "HTTP/1.1 200 OK\r\n" "Server: neon-test-server\r\n"
@@ -128,6 +127,7 @@ static int expect_header_value(const char *name, const char *value,
 
     req = ne_request_create(sess, "FOO", "/bar");
     ONREQ(ne_request_dispatch(req));
+    ne_close_connection(sess);
     CALL(await_server());
     
     gotval = ne_get_response_header(req, name);
@@ -153,11 +153,11 @@ static int expect_response(const char *expect, server_fn fn, void *userdata)
 
     CALL(session_server(&sess, fn, userdata));
     CALL(run_request(sess, 200, construct_get, buf));
+    ne_session_destroy(sess);
     CALL(await_server());
 
     ONN("response body match", strcmp(buf->data, expect));
 
-    ne_session_destroy(sess);
     ne_buffer_destroy(buf);
     
     return OK;
@@ -193,11 +193,9 @@ static int expect_no_body(const char *method, const char *resp)
     ONV(any_request(sess, "/second"),
 	("second request on connection failed: %s",ne_get_error(sess)));
 
-    ON(await_server());
-
     ne_request_destroy(req);
-    ne_session_destroy(sess);
-    return OK;
+
+    return destroy_and_wait(sess);
 }
 
 static int reason_phrase(void)
@@ -207,6 +205,7 @@ static int reason_phrase(void)
     CALL(make_session(&sess, single_serve_string, RESP200
 		      "Connection: close\r\n\r\n"));
     ONREQ(any_request(sess, "/foo"));
+    ne_close_connection(sess);
     CALL(await_server());
     
     ONV(strcmp(ne_get_error(sess), "200 OK"),
@@ -434,13 +433,12 @@ static int test_persist_p(const char *response, const char *body, int proxy)
     /* Run it again. */
     ne_buffer_clear(buf);
     CALL(run_request(sess, 200, construct_get, buf));
-
+    ne_session_destroy(sess);
     ON(await_server());
 
     ONV(strcmp(buf->data, body),
 	("response #2 mismatch: [%s] not [%s]", buf->data, body));
 
-    ne_session_destroy(sess);
     ne_buffer_destroy(buf);
 
     return OK;
@@ -842,10 +840,8 @@ static int reset_headers(void)
     ONCMP("hello fair world", value, "response header", "X-Foo");
 
     ne_request_destroy(req);
-    ne_session_destroy(sess);
-    CALL(await_server());
 
-    return OK;
+    return destroy_and_wait(sess);
 }
 
 static int iterate_none(void)
@@ -862,11 +858,9 @@ static int iterate_none(void)
     ONN("iterator was not NULL for no headers",
         ne_response_header_iterate(req, NULL, NULL, NULL) != NULL);
 
-    CALL(await_server());
     ne_request_destroy(req);
-    ne_session_destroy(sess);
 
-    return OK;
+    return destroy_and_wait(sess);
 }
 
 #define MANY_HEADERS (90)
@@ -921,10 +915,8 @@ static int iterate_many(void)
     
     ne_buffer_destroy(buf);
     ne_request_destroy(req);
-    ne_session_destroy(sess);
-    CALL(await_server());
-    
-    return OK;
+
+    return destroy_and_wait(sess);
 }
 
 
@@ -1012,9 +1004,8 @@ static int expect_100_once(void)
     ne_set_request_body_buffer(req, body, sizeof(body));
     ONREQ(ne_request_dispatch(req));
     ne_request_destroy(req);
-    ne_session_destroy(sess);
-    CALL(await_server());
-    return OK;
+
+    return destroy_and_wait(sess);
 }
 
 /* regression test for enabling 100-continue without sending a body. */
@@ -1029,9 +1020,8 @@ static int expect_100_nobody(void)
     ne_set_request_flag(req, NE_REQFLAG_EXPECT100, 1);
     ONREQ(ne_request_dispatch(req));
     ne_request_destroy(req);
-    ne_session_destroy(sess);
 
-    return await_server();
+    return destroy_and_wait(sess);
 }
 
 struct body {
@@ -1117,11 +1107,9 @@ static int send_bodies(void)
 	    }
 
 	    ONREQ(ne_request_dispatch(req));
-	    
-	    CALL(await_server());
-	    
 	    ne_request_destroy(req);
-	    ne_session_destroy(sess);
+
+	    CALL(destroy_and_wait(sess));
 	}
     }
 
@@ -1462,13 +1450,10 @@ static int proxy_no_resolve(void)
                                 RESP200 "Content-Length: 0\r\n\r\n"));
     
     ret = any_request(sess, "/foo");
-    ne_session_destroy(sess);
     
     ONN("origin server name resolved when proxy used", ret == NE_LOOKUP);
     
-    CALL(await_server());
-    
-    return OK;
+    return destroy_and_wait(sess);
 }
 
 /* If the chunk size is entirely invalid, the request should be
@@ -1496,7 +1481,7 @@ static int abort_respbody(void)
      * contains an invalid chunk size. */
     ONN("invalid chunk size was accepted?",
 	any_request(sess, "/foo") != NE_ERROR);
-
+    ne_close_connection(sess);
     CALL(await_server());
     
     /* second request should fail since server has gone away. */
@@ -1536,7 +1521,7 @@ static int retry_after_abort(void)
 
     ONREQ(any_request(sess, "/first"));
     ONN("second request should fail", any_request(sess, "/second") == NE_OK);
-
+    ne_close_connection(sess);
     CALL(await_server());
 
     /* A third attempt to connect to the server should fail to
@@ -1561,7 +1546,7 @@ static int fail_statusline(void)
     
     ret = any_request(sess, "/fail");
     ONV(ret != NE_ERROR, ("request failed with %d not NE_ERROR", ret));
-    
+    ne_close_connection(sess);
     ONV(strstr(ne_get_error(sess), 
                "Could not parse response status line") == NULL,
 	("session error was `%s'", ne_get_error(sess)));
@@ -1758,10 +1743,8 @@ static int dup_method(void)
 
     ONREQ(ne_request_dispatch(req));
     ne_request_destroy(req);
-    ne_session_destroy(sess);
-    CALL(await_server());
 
-    return OK;
+    return destroy_and_wait(sess);
 }
 
 static int abortive_reader(void *userdata, const char *buf, size_t len)
@@ -1798,9 +1781,8 @@ static int abort_reader(void)
     /* test that the connection was closed. */
     ONN("connection not closed after aborted response",
         any_2xx_request(sess, "/failmeplease") == OK);
-    ne_session_destroy(sess);
-    CALL(await_server());
-    return OK;
+
+    return destroy_and_wait(sess);
 }
 
 /* attempt and fail to send request from offset 500 of /dev/null. */
@@ -2023,9 +2005,7 @@ static int icy_protocol(void)
     
     ONREQ(any_request(sess, "/foo"));
 
-    ne_session_destroy(sess);
-
-    return await_server();
+    return destroy_and_wait(sess);
 }
 
 static void status_cb(void *userdata, ne_session_status status,
@@ -2173,10 +2153,8 @@ static int dereg_progress(void)
     ne_set_progress(sess, NULL, NULL);
 
     ONREQ(any_request(sess, "/foo"));
-
-    ne_session_destroy(sess);
     
-    return await_server();    
+    return destroy_and_wait(sess);
 }
 
 static int addrlist(void)
@@ -2195,10 +2173,9 @@ static int addrlist(void)
 
     CALL(any_2xx_request(sess, "/blah"));
 
-    ne_session_destroy(sess);
     ne_iaddr_free(ia);
     
-    return await_server();
+    return destroy_and_wait(sess);
 }
 
 static int socks_session(ne_session **sess, struct socks_server *srv,
@@ -2235,8 +2212,7 @@ static int socks_proxy(void)
 
     CALL(any_2xx_request(sess, "/blee"));
 
-    ne_session_destroy(sess);
-    return await_server();
+    return destroy_and_wait(sess);
 }
 
 static int socks_v4_proxy(void)
@@ -2259,8 +2235,7 @@ static int socks_v4_proxy(void)
 
     ne_iaddr_free(srv.expect_addr);
 
-    ne_session_destroy(sess);
-    return await_server();
+    return destroy_and_wait(sess);
 }
 
 /* Server function which serves the request body back as the response
@@ -2352,8 +2327,7 @@ static int socks_fail(void)
 
     ne_iaddr_free(srv.expect_addr);
 
-    ne_session_destroy(sess);
-    return await_server();
+    return destroy_and_wait(sess);
 }
 
 static int safe_flags(void)
@@ -2369,6 +2343,13 @@ static int safe_flags(void)
     ne_session_destroy(sess);
 
     return OK;
+}
+
+static int fail_excess_1xx(void)
+{
+    struct s1xx_args args = {200, 0};
+    return fail_request_with_error(0, serve_1xx, &args, 0,
+                                   "Too many interim responses");
 }
 
 /* TODO: test that ne_set_notifier(, NULL, NULL) DTRT too. */
@@ -2465,5 +2446,6 @@ ne_test tests[] = {
     T(fail_lookup),
     T(fail_double_lookup),
     T(safe_flags),
+    T(fail_excess_1xx),
     T(NULL)
 };

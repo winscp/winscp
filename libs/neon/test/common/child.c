@@ -148,14 +148,26 @@ int reset_socket(ne_socket *sock)
 /* close 'sock', performing lingering close to avoid premature RST. */
 static int close_socket(ne_socket *sock)
 {
-#ifdef HAVE_SHUTDOWN
+    int ret;
     char buf[20];
-    int fd = ne_sock_fd(sock);
-    
-    shutdown(fd, 0);
+
+    ret = ne_sock_shutdown(sock, NE_SOCK_SEND);
+    if (ret == 0) {
+	NE_DEBUG(NE_DBG_SOCKET, "ssl: Socket cleanly closed.\n");
+    }
+    else {
+	NE_DEBUG(NE_DBG_SOCKET, "sock: Socket closed uncleanly: %s\n",
+		 ne_sock_error(sock));
+    }
+
+    NE_DEBUG(NE_DBG_SSL, "sock: Lingering close...\n");
+    ne_sock_read_timeout(sock, 5);
     while (ne_sock_read(sock, buf, sizeof buf) > 0);
-#endif
-    return ne_sock_close(sock);
+
+    NE_DEBUG(NE_DBG_SSL, "sock: Closing socket.\n");
+    ret = ne_sock_close(sock);
+    NE_DEBUG(NE_DBG_SSL, "sock: Socket closed (%d).\n", ret);
+    return ret;
 }
 
 /* This runs as the child process. */
@@ -345,6 +357,11 @@ int dead_server(void)
     return OK;
 }
 
+int destroy_and_wait(ne_session *sess)
+{
+    ne_session_destroy(sess);
+    return await_server();
+}
 
 int await_server(void)
 {
@@ -416,6 +433,23 @@ int discard_request(ne_socket *sock)
     
     return OK;
 }
+
+int error_response(ne_socket *sock, int ret)
+{
+    char resp[1024];
+
+    ne_snprintf(resp, sizeof resp,
+                "HTTP/1.1 500 Server Test Failed\r\n"
+                "X-Neon-Context: %s\r\n"
+                "Content-Length: 0\r\n"
+                "Connection: close\r\n"
+                "\r\n",
+                test_context);
+    SEND_STRING(sock, resp);
+
+    return ret;
+}
+
 
 int discard_body(ne_socket *sock)
 {

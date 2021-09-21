@@ -1,6 +1,6 @@
 /* 
    HTTP Request Handling
-   Copyright (C) 1999-2006, 2008, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1999-2021, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -238,12 +238,11 @@ int ne_get_request_flag(ne_request *req, ne_request_flag flag);
 
 typedef void (*ne_free_hooks)(void *cookie);
 
-/* Hook called when a request is created; passed the request method,
- * and the string used as the Request-URI (note that this may be a
- * absolute URI if a proxy is in use, an absolute path, a "*", etc).
- * A create_request hook is called exactly once per request. */
+/* Hook called when a request is created; passed the method and
+ * request-target as used in the request-line (RFC7230§5.3).  The
+ * create_request hook is called exactly once per request. */
 typedef void (*ne_create_request_fn)(ne_request *req, void *userdata,
-				     const char *method, const char *requri);
+				     const char *method, const char *target);
 void ne_hook_create_request(ne_session *sess, 
 			    ne_create_request_fn fn, void *userdata);
 

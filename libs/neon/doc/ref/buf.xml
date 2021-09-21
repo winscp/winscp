@@ -27,7 +27,7 @@ typedef struct {
 
 	<para>The <type>ne_buffer</type> type represents an expandable
 memory buffer for holding &nul;-terminated strings.  The
-<structfield>data</structfield> field points to the beginnning of the
+<structfield>data</structfield> field points to the beginning of the
 string, the length of which is given by the
 <structfield>used</structfield> field.  The current size of memory
 allocated is given by the <structfield>length</structfield> field.  It

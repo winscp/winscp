@@ -100,6 +100,15 @@ static int do_connect(ne_socket **sock, ne_sock_addr *addr, unsigned int port)
     return FAIL;
 }
 
+static int close_and_wait(ne_socket *sock)
+{
+    int ret = ne_sock_close(sock);
+
+    ONV(ret, ("failed closing socket: %d", ret));
+
+    return await_server();
+}
+
 #ifdef SOCKET_SSL
 
 static int init_ssl(void)
@@ -431,8 +440,8 @@ static int just_connect(void)
     ne_socket *sock;
     
     CALL(begin(&sock, serve_close, NULL));
-    ne_sock_close(sock);
-    return await_server();
+
+    return close_and_wait(sock);
 }
 
 /* Connect to an address crafted using ne_iaddr_make rather than from
@@ -448,11 +457,9 @@ static int addr_connect(void)
     
     CALL(new_spawn_server(1, serve_close, NULL, &port));
     ONN("could not connect", ne_sock_connect(sock, ia, port));
-    ne_sock_close(sock);
-    CALL(await_server());
-
     ne_iaddr_free(ia);
-    return OK;
+
+    return close_and_wait(sock);
 }
 
 static int addr_peer(void)
@@ -506,6 +513,8 @@ static int finish(ne_socket *sock, int eof)
 {
     if (eof)
 	CALL(expect_close(sock));
+    else
+	ne_sock_shutdown(sock, NE_SOCK_SEND);
     CALL(good_close(sock));
     return await_server();
 }
@@ -527,6 +536,14 @@ static int read_close(void)
     CALL(expect_close(sock));    
     ONN("close failed", ne_sock_close(sock));
     return await_server();
+}
+
+/* Test that just does an open then a close. */
+static int open_close(void)
+{
+    ONN("close of newly opened socket failed", ne_sock_close(ne_sock_create()));
+
+    return OK;
 }
 
 /* Test that just does a connect then a close (but gets the close via
@@ -566,7 +583,8 @@ static int read_expect(ne_socket *sock, const char *str, size_t len)
 {
     ssize_t ret = ne_sock_read(sock, buffer, len);
     ONV((ssize_t)len != ret,
-	("read got %" NE_FMT_SSIZE_T " bytes not %" NE_FMT_SIZE_T, ret, len));
+	("read got %" NE_FMT_SSIZE_T " bytes (%s) not %" NE_FMT_SIZE_T,
+         ret, ne_sock_error(sock), len));
     ONV(memcmp(str, buffer, len),
 	("read mismatch: `%.*s' not `%.*s'", 
 	 (int)len, buffer, (int)len, str));    
@@ -1002,7 +1020,11 @@ static int echo_server(ne_socket *sock, void *ud)
 	NE_DEBUG(NE_DBG_SOCKET, "Wrote line.\n");
     }
 
-    ONN("readline failed", ret != NE_SOCK_CLOSED);
+    ONV(ret != NE_SOCK_CLOSED, ("unexpected readline failure: %s",
+				ne_sock_error(sock)));
+
+    NE_DEBUG(NE_DBG_SOCKET, "ssl: Readline got closure\n");
+
     return 0;
 }
 
@@ -1025,14 +1047,50 @@ static int echo_lines(void)
 }
 
 #ifdef SOCKET_SSL
-/* harder to simulate closure cases for an SSL connection, since it
- * may be doing multiple read()s or write()s per ne_sock_* call. */
+static int serve_wait_close(ne_socket *sock, void *ud)
+{
+    ONV(ne_sock_read(sock, buffer, 1) != NE_SOCK_CLOSED,
+        ("failed waiting for TLS closure: %s", ne_sock_error(sock)));
+
+    return 0;
+}
+
+static int ssl_shutdown(void)
+{
+    ne_socket *sock;
+    int ret;
+
+    CALL(begin(&sock, serve_wait_close, NULL));
+
+    ONV(ne_sock_shutdown(sock, NE_SOCK_RECV) != NE_SOCK_RETRY,
+        ("TLS socket closed too early"));
+
+    ret = ne_sock_shutdown(sock, NE_SOCK_SEND);
+    if (ret == NE_SOCK_RETRY) {
+        /* Wait for closure. */
+        ret = ne_sock_read(sock, buffer, 0);
+        ONV(ret != NE_SOCK_CLOSED,
+            ("read for closure didn't get closure: %d/%s",
+             ret, ne_sock_error(sock)));
+    }
+    else {
+        ONV(ret, ("socket shutdown unexpected state: %d/%s",
+                  ret, ne_sock_error(sock)));
+    }
+
+    CALL(await_server());
+    ne_sock_close(sock);
+
+    return OK;
+}
+
 static int ssl_closure(void)
 {
     ne_socket *sock;
     ssize_t ret;
     CALL(begin(&sock, serve_close, NULL));
     CALL(full_write(sock, "a", 1));
+    ne_sock_shutdown(sock, NE_SOCK_SEND);
     CALL(await_server());
     do {
         ret = ne_sock_fullwrite(sock, "a", 1);
@@ -1074,7 +1132,10 @@ static int ssl_truncate(void)
 /* use W Richard Stevens' SO_LINGER trick to elicit a TCP RST */
 static int serve_reset(ne_socket *sock, void *ud)
 {
-    minisleep();
+    ONV(ne_sock_read(sock, buffer, 1) != 1,
+	("socket read error `%s'", ne_sock_error(sock)));
+    ONV(buffer[0] != 'R',
+        ("got unexpected byte %c from client", buffer[0]));
     reset_socket(sock);
     exit(0);
     return 0;
@@ -1085,7 +1146,7 @@ static int write_reset(void)
     ne_socket *sock;
     int ret;
     CALL(begin(&sock, serve_reset, NULL));
-    CALL(full_write(sock, "a", 1));
+    CALL(full_write(sock, "R", 1));
     CALL(await_server());
     ret = ne_sock_fullwrite(sock, "a", 1);
     if (ret == 0) {
@@ -1106,7 +1167,7 @@ static int read_reset(void)
     ne_socket *sock;
     ssize_t ret;
     CALL(begin(&sock, serve_reset, NULL));
-    CALL(full_write(sock, "a", 1));
+    CALL(full_write(sock, "R", 1));
     CALL(await_server());
     ret = ne_sock_read(sock, buffer, 1);
     if (ret == NE_SOCK_CLOSED) {
@@ -1162,6 +1223,32 @@ static int block_timeout(void)
     TO_OP(ne_sock_block(sock, 1));
     TO_FINISH;
 }
+
+#ifndef SOCKET_SSL
+/* Waits for EOF from read-side and then sends "abcd". */
+static int serve_shutdown(ne_socket *sock, void *userdata)
+{
+    ONV(ne_sock_read(sock, buffer, 1) != NE_SOCK_CLOSED,
+        ("expected to get closure"));
+    CALL(full_write(sock, "abcd", 4));
+    return 0;
+}
+
+static int bidi(void)
+{
+    ne_socket *sock;
+    
+    CALL(begin(&sock, serve_shutdown, NULL));
+
+    CALL(expect_block_timeout(sock, 1, "read should timeout before closure"));
+
+    ONV(ne_sock_shutdown(sock, NE_SOCK_SEND) != 0,
+	("shutdown failed: `%s'", ne_sock_error(sock)));
+    FULLREAD("abcd");
+
+    return finish(sock, 1);
+}
+#endif
 
 static int ssl_session_id(void)
 {
@@ -1491,6 +1578,7 @@ ne_test tests[] = {
     T(addr_canonical),
     T(read_close),
     T(peek_close),
+    T(open_close),
     T(single_read),
     T(single_peek),
     T(small_reads),
@@ -1514,11 +1602,13 @@ ne_test tests[] = {
     T(prebind),
     T(error),
 #ifdef SOCKET_SSL
+    T(ssl_shutdown),
     T(ssl_closure),
     T(ssl_truncate),
 #else
     T(write_reset),
     T(read_reset),
+    T(bidi),
 #endif
 #if TEST_CONNECT_TIMEOUT
     T(connect_timeout),

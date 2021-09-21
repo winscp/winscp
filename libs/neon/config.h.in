@@ -42,6 +42,9 @@
 /* Define if you have expat */
 #undef HAVE_EXPAT
 
+/* Define to 1 if you have the `explicit_bzero' function. */
+#undef HAVE_EXPLICIT_BZERO
+
 /* Define to 1 if you have the `fcntl' function. */
 #undef HAVE_FCNTL
 
@@ -166,6 +169,9 @@
 /* Define if OpenSSL support is enabled */
 #undef HAVE_OPENSSL
 
+/* Enable OpenSSL 1.1 support */
+#undef HAVE_OPENSSL11
+
 /* Define to 1 if you have the <openssl/opensslv.h> header file. */
 #undef HAVE_OPENSSL_OPENSSLV_H
 
@@ -186,6 +192,9 @@
 
 /* Define to 1 if you have the `pthread_mutex_lock' function. */
 #undef HAVE_PTHREAD_MUTEX_LOCK
+
+/* Define to 1 if you have the `sendmsg' function. */
+#undef HAVE_SENDMSG
 
 /* Define to 1 if you have the `setlocale' function. */
 #undef HAVE_SETLOCALE

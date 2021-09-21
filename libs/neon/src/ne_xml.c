@@ -1,6 +1,6 @@
 /* 
    Wrapper interface to XML parser
-   Copyright (C) 1999-2007, 2009, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1999-2021, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -471,7 +471,7 @@ ne_xml_parser *ne_xml_create(void)
     p->current = p->root = ne_calloc(sizeof *p->root);
     p->root->default_ns = "";
     p->root->state = 0;
-    strcpy(p->error, _("Unknown error"));
+    ne_strnzcpy(p->error, _("Unknown error"), sizeof p->error);
 #ifdef HAVE_EXPAT
     p->parser = XML_ParserCreate(NULL);
     if (p->parser == NULL) {

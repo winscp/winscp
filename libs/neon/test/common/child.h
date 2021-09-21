@@ -28,6 +28,7 @@
 #endif
 
 #include "ne_socket.h"
+#include "ne_session.h"
 
 /* Test which does DNS lookup on "localhost": this must be the first
  * named test. */
@@ -54,7 +55,7 @@ int spawn_server(int port, server_fn fn, void *userdata);
 
 /* Like spawn_server; if bind_local is non-zero, binds server to
  * localhost, otherwise, binds server to real local hostname.  (must
- * have called lookup_localhost or lookup_hostname as approprate
+ * have called lookup_localhost or lookup_hostname as appropriate
  * beforehand).  */
 int spawn_server_addr(int bind_local, int port, server_fn fn, void *userdata);
 
@@ -70,6 +71,9 @@ int new_spawn_server2(int count, server_fn fn, void *userdata,
 
 /* Blocks until child process exits, and gives return code of 'fn'. */
 int await_server(void);
+
+/* Destroys session 'sess' and then is equivalent to await_server. */
+int destroy_and_wait(ne_session *sess);
 
 /* Kills child process. */
 int reap_server(void);
@@ -88,6 +92,14 @@ ssize_t server_send(ne_socket *sock, const char *data, size_t len);
 
 /* Utility macro: send given string down socket. */
 #define SEND_STRING(sock, str) server_send((sock), (str), strlen((str)))
+
+/* If test result 'err' is not OK, return an HTTP 500 error response
+ * including the test context in a response header. */
+#define ONERR(sock, err) do { int ret_ = (err); if (ret_) return error_response(sock, ret_); } while (0)
+
+/* Send an HTTP error response including the test context in a
+ * response header. */
+int error_response(ne_socket *sock, int ret);
 
 /* Tries to ensure that the socket will be closed using RST rather
  * than FIN. */

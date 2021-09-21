@@ -1,6 +1,6 @@
 /*
    neon SSL/TLS support using GNU TLS
-   Copyright (C) 2002-2011, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 2002-2021, Joe Orton <joe@manyfish.co.uk>
    Copyright (C) 2004, Aleix Conchillo Flaque <aleix@member.fsf.org>
 
    This library is free software; you can redistribute it and/or
@@ -33,6 +33,7 @@
 #include <errno.h>
 
 #include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 #include <gnutls/pkcs12.h>
 
 #ifdef NE_HAVE_TS_SSL
@@ -1462,6 +1463,41 @@ char *ne_ssl_cert_export(const ne_ssl_certificate *cert)
     return ret;
 }
 
+static gnutls_digest_algorithm_t hash_to_alg(unsigned int flags)
+{
+    switch (flags & NE_HASH_ALGMASK) {
+    case NE_HASH_MD5: return GNUTLS_DIG_MD5; break;
+    case NE_HASH_SHA256: return GNUTLS_DIG_SHA256; break;
+    case NE_HASH_SHA512: return GNUTLS_DIG_SHA512; break;
+    default: break;
+    }
+    return GNUTLS_DIG_UNKNOWN;
+}
+
+char *ne_ssl_cert_hdigest(const ne_ssl_certificate *cert, unsigned int flags)
+{
+    gnutls_digest_algorithm_t alg = hash_to_alg(flags);
+    unsigned char *dig;
+    size_t len;
+    char *rv;
+
+    if (alg == GNUTLS_DIG_UNKNOWN) return NULL;
+
+    if (gnutls_x509_crt_get_fingerprint(cert->subject, alg, NULL, &len) != GNUTLS_E_SHORT_MEMORY_BUFFER) {
+        return NULL;
+    }
+
+    dig = ne_malloc(len);
+    if (gnutls_x509_crt_get_fingerprint(cert->subject, alg, dig, &len) < 0) {
+        ne_free(dig);
+        return NULL;
+    }
+
+    rv = ne__strhash2hex(dig, len, flags);
+    ne_free(dig);
+    return rv;
+}
+
 int ne_ssl_cert_digest(const ne_ssl_certificate *cert, char *digest)
 {
     char sha1[20], *p;
@@ -1504,4 +1540,31 @@ void ne__ssl_exit(void)
      * the process. */
     gnutls_global_deinit();
 #endif
+}
+
+char *ne_vstrhash(unsigned int flags, va_list ap)
+{
+    gnutls_digest_algorithm_t alg = hash_to_alg(flags);
+    gnutls_hash_hd_t hd;
+    unsigned char *out;
+    const char *arg;
+    unsigned len;
+    char *rv;
+
+    if (alg == GNUTLS_DIG_UNKNOWN)
+        return NULL;
+
+    if (gnutls_hash_init(&hd, alg) < 0)
+        return NULL;
+
+    while ((arg = va_arg(ap, const char *)) != NULL)
+        gnutls_hash(hd, arg, strlen(arg));
+
+    len = gnutls_hash_get_len(alg);
+    out = ne_malloc(len);
+    gnutls_hash_deinit(hd, out);
+
+    rv = ne__strhash2hex(out, len, flags);
+    ne_free(out);
+    return rv;
 }

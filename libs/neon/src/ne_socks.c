@@ -1,6 +1,6 @@
 /*
    SOCKS proxy support for neon
-   Copyright (C) 2008, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 2021, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public

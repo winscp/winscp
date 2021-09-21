@@ -52,8 +52,8 @@ static int patch_simple(void)
 		      "HTTP/1.1 200 Goferit\r\n"
 		      "Connection: close\r\n\r\n"));
     ONREQ(ne_proppatch(sess, "/fish", ops));
-    ne_session_destroy(sess);
-    return await_server();
+
+    return destroy_and_wait(sess);
 }
 
 #define RESP207 "HTTP/1.0 207 Stuff\r\n" "Server: foo\r\n\r\n"

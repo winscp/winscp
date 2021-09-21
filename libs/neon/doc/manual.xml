@@ -65,6 +65,8 @@
 <!ENTITY refbufapp SYSTEM "ref/bufapp.xml">
 <!ENTITY refbufdest SYSTEM "ref/bufdest.xml">
 <!ENTITY refbufutil SYSTEM "ref/bufutil.xml">
+<!ENTITY refhash SYSTEM "ref/hash.xml">
+<!ENTITY refparam SYSTEM "ref/param.xml">
 <!ENTITY reftok SYSTEM "ref/tok.xml">
 <!ENTITY refshave SYSTEM "ref/shave.xml">
 <!ENTITY refvers SYSTEM "ref/vers.xml">
@@ -87,7 +89,7 @@
       </personname>
       <email>neon@lists.manyfish.co.uk</email>
     </author>
-    <copyright><year>2001-2008</year><holder>Joe Orton</holder></copyright>
+    <copyright><year>2001-2021</year><holder>Joe Orton</holder></copyright>
 
     <legalnotice>
 
@@ -170,6 +172,8 @@ ignoring the WebDAV support if desired.</para>
     &refbufutil; <!-- ne_buffer_clear -->
     &refbufcr; <!-- ne_buffer_create -->
     &refbufdest; <!-- ne_buffer_destroy -->
+    &refhash; <!-- ne_strhash -->
+    &refparam; <!-- ne_strparam -->
     &referr; <!-- ne_get_error -->
     &refgetst; <!-- ne_get_status -->
     &reffeat; <!-- ne_has_support -->
