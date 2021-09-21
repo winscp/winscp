@@ -1,6 +1,6 @@
 /* 
    Socket handling routines
-   Copyright (C) 1998-2011, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1998-2021, Joe Orton <joe@manyfish.co.uk>
    Copyright (C) 2004 Aleix Conchillo Flaque <aleix@member.fsf.org>
 
    This library is free software; you can redistribute it and/or
@@ -179,9 +179,6 @@ typedef struct in_addr ne_inet_addr;
 /* Socket read timeout */
 #define SOCKET_READ_TIMEOUT 120
 
-/* Internal read retry value */
-#define NE_SOCK_RETRY (-6)
-    
 /* Critical I/O functions on a socket: useful abstraction for easily
  * handling SSL I/O alongside raw socket I/O. */
 struct iofns {
@@ -541,6 +538,12 @@ static ssize_t read_raw(ne_socket *sock, char *buffer, size_t len)
 #define MAP_ERR(e) (NE_ISCLOSED(e) ? NE_SOCK_CLOSED : \
                     (NE_ISRESET(e) ? NE_SOCK_RESET : NE_SOCK_ERROR))
 
+#ifdef MSG_NOSIGNAL
+#define SEND_FLAGS MSG_NOSIGNAL
+#else
+#define SEND_FLAGS (0)
+#endif
+
 static ssize_t write_raw(ne_socket *sock, const char *data, size_t length) 
 {
     ssize_t ret;
@@ -552,7 +555,7 @@ static ssize_t write_raw(ne_socket *sock, const char *data, size_t length)
 #endif
 
     do {
-	ret = send(sock->fd, data, length, 0);
+	ret = send(sock->fd, data, length, SEND_FLAGS);
     } while (ret == -1 && NE_ISINTR(ne_errno));
 
     if (ret < 0) {
@@ -581,6 +584,17 @@ static ssize_t writev_raw(ne_socket *sock, const struct ne_iovec *vector, int co
         ret = total;
     
     ne_free(wasvector);
+#elif defined(MSG_NOSIGNAL) && defined(HAVE_SENDMSG)
+    struct msghdr m;
+
+    memset(&m, 0, sizeof m);
+    m.msg_iov = (struct iovec *)vector;
+    m.msg_iovlen = count;
+
+    do {
+	ret = sendmsg(sock->fd, &m, MSG_NOSIGNAL);
+    } while (ret == -1 && NE_ISINTR(ne_errno));
+
 #else
     const struct iovec *vec = (const struct iovec *) vector;
 
@@ -662,7 +676,8 @@ static int error_ossl(ne_socket *sock, int sret)
     unsigned long err;
 
     if (errnum == SSL_ERROR_ZERO_RETURN) {
-	set_error(sock, _("Connection closed"));
+        set_error(sock, _("Connection closed"));
+        NE_DEBUG(NE_DBG_SSL, "ssl: Got TLS closure.\n");
         return NE_SOCK_CLOSED;
     }
     else if (errnum == SSL_ERROR_WANT_READ) {
@@ -672,6 +687,25 @@ static int error_ossl(ne_socket *sock, int sret)
     
     /* for all other errors, look at the OpenSSL error stack */
     err = ERR_get_error();
+    NE_DEBUG(NE_DBG_SSL, "ssl: Got OpenSSL error stack %lu\n", err);
+
+    if (ERR_GET_LIB(err) == ERR_LIB_SSL) {
+	int reason = ERR_GET_REASON(err);
+
+#ifdef SSL_R_UNEXPECTED_EOF_WHILE_READING
+        /* OpenSSL 3 signals truncation this way. */
+	if (reason == SSL_R_UNEXPECTED_EOF_WHILE_READING) {
+	    set_error(sock, _("Secure connection truncated"));
+	    return NE_SOCK_TRUNC;
+	}
+        else
+#endif
+	if (reason == SSL_R_PROTOCOL_IS_SHUTDOWN) {
+	    set_error(sock, _("Secure connection reset"));
+	    return NE_SOCK_RESET;
+	}
+    }
+
     if (err == 0) {
         /* Empty error stack, presume this is a system call error: */
         if (sret == 0) {
@@ -787,6 +821,10 @@ static ssize_t error_gnutls(ne_socket *sock, ssize_t sret)
 #endif
         ret = NE_SOCK_TRUNC;
         set_error(sock, _("Secure connection truncated"));
+        break;
+    case GNUTLS_E_INVALID_SESSION:
+        ret = NE_SOCK_RESET;
+        set_error(sock, ("SSL socket terminated"));
         break;
     case GNUTLS_E_PUSH_ERROR:
         ret = NE_SOCK_RESET;
@@ -1980,31 +2018,105 @@ void ne_sock_set_error(ne_socket *sock, const char *format, ...)
     va_end(params);
 }
 
+int ne_sock_shutdown(ne_socket *sock, unsigned int flags)
+{
+    int ret;
+
+    if (!flags) {
+        set_error(sock, _("Missing flags for socket shutdown"));
+        return NE_SOCK_ERROR;
+    }
+
+#if defined(HAVE_OPENSSL)
+    if (sock->ssl) {
+        int state = SSL_get_shutdown(sock->ssl);
+
+        NE_DEBUG(NE_DBG_SSL, "ssl: Shutdown state: %ssent | %sreceived.\n",
+                 (state & SSL_SENT_SHUTDOWN) ? "" : "not ",
+                 (state & SSL_RECEIVED_SHUTDOWN) ? "" : "not ");
+
+        if ((flags == NE_SOCK_BOTH || flags == NE_SOCK_SEND)
+            && (state & SSL_SENT_SHUTDOWN) == 0) {
+            NE_DEBUG(NE_DBG_SSL, "ssl: Sending closure.\n");
+            ret = SSL_shutdown(sock->ssl);
+
+            if (ret == 0) {
+                set_error(sock, _("Incomplete TLS closure"));
+                return NE_SOCK_RETRY;
+            }
+            else if (ret != 1) {
+                return error_ossl(sock, ret);
+            }
+        }
+
+	if (flags == NE_SOCK_RECV || flags == NE_SOCK_BOTH) {
+	    /* Returns whether the receive side is shutdown or not yet. */
+	    if ((state & SSL_RECEIVED_SHUTDOWN) == 0) {
+		set_error(sock, _("Incomplete TLS closure"));
+		return NE_SOCK_RETRY;
+	    }
+
+            /* For recv-only shutdown, must not complete TCP-level
+             * shutdown until the TLS shutdown is complete. */
+            if (flags == NE_SOCK_RECV) {
+                return 0;
+            }
+	}
+    }
+#elif defined(HAVE_GNUTLS)
+    if (sock->ssl) {
+        if (flags == NE_SOCK_RECV) {
+            /* unclear how to handle */
+            set_error(sock, _("Incomplete TLS closure"));
+            return NE_SOCK_RETRY;
+        }
+
+        ret = gnutls_bye(sock->ssl,
+                         flags == NE_SOCK_SEND ? GNUTLS_SHUT_WR : GNUTLS_SHUT_RDWR);
+        if (ret == GNUTLS_E_INTERRUPTED || ret == GNUTLS_E_AGAIN) {
+            return NE_SOCK_RETRY;
+        }
+    }
+#endif
+
+    { // WINSCP
+#ifdef _WIN32
+    int how = flags == NE_SOCK_RECV ? SD_RECEIVE : (flags == NE_SOCK_SEND ? SD_SEND : SD_BOTH);
+#else
+    int how = flags == NE_SOCK_RECV ? SHUT_RD : (flags == NE_SOCK_SEND ? SHUT_WR : SHUT_RDWR);
+#endif
+    ret = shutdown(sock->fd, how);
+    if (ret < 0) {
+	int errnum = ne_errno;
+	set_strerror(sock, errnum);
+	return MAP_ERR(errnum);
+    }
+
+    return ret;
+    } // WINSCP
+}
+
 int ne_sock_close(ne_socket *sock)
 {
     int ret;
 
-    /* Per API description - for an SSL connection, simply send the
-     * close_notify but do not wait for the peer's response. */
+    if (sock->fd != -1) {
+        /* Ignore errors. */
+        (void) ne_sock_shutdown(sock, NE_SOCK_SEND);
+    }
+
 #if defined(HAVE_OPENSSL)
     if (sock->ssl) {
-        SSL_shutdown(sock->ssl);
-        SSL_free(sock->ssl);
+	SSL_free(sock->ssl);
     }
 #elif defined(HAVE_GNUTLS)
     if (sock->ssl) {
-        do {
-            ret = gnutls_bye(sock->ssl, GNUTLS_SHUT_WR);
-        } while (ret < 0
-                 && (ret == GNUTLS_E_INTERRUPTED || ret == GNUTLS_E_AGAIN));
         gnutls_deinit(sock->ssl);
     }
 #endif
 
-    if (sock->fd < 0)
-        ret = 0;
-    else
-        ret = ne_close(sock->fd);
+    ret = sock->fd < 0 ? 0 : ne_close(sock->fd);
+
     ne_free(sock);
     return ret;
 }

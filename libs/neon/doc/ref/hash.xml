@@ -1,0 +1,108 @@
+    <refentry id="refhash">
+
+      <refmeta>
+	<refentrytitle>ne_strhash</refentrytitle>
+	<manvolnum>3</manvolnum>
+      </refmeta>
+
+      <refnamediv>
+	<refname id="ne_strhash">ne_strhash</refname>
+	<refname id="ne_vstrhash">ne_vstrhash</refname>
+	<refpurpose>string hash interface</refpurpose>
+      </refnamediv>
+      
+      <refsynopsisdiv>
+
+	<funcsynopsis>
+          <funcsynopsisinfo>#include &lt;ne_string.h&gt;</funcsynopsisinfo>
+
+	  <funcprototype>
+	    <funcdef>char *<function>ne_strhash</function></funcdef>
+	    <paramdef>unsigned int <parameter>flags</parameter></paramdef>
+	    <paramdef><parameter>...</parameter></paramdef>
+	  </funcprototype>
+
+	  <funcprototype>
+	    <funcdef>char *<function>ne_vstrhash</function></funcdef>
+	    <paramdef>unsigned int <parameter>flags</parameter></paramdef>
+	    <paramdef>va_list <parameter>ap</parameter></paramdef>
+	  </funcprototype>
+        </funcsynopsis>
+
+      </refsynopsisdiv>
+
+      <refsect1>
+	<title>Description</title>
+
+	<para>The <function>ne_strhash</function> and
+	<function>ne_vstrhash</function> functions can be used to
+	create hashes.  The varargs argument list must be <type>const
+	char *</type> strings followed by a &null; terminator.  The
+	<parameter>flags</parameter> argument must select exactly one
+	hash algorithm from the list below, which can be optionally
+	bitwise-ORed with one of the formatting option.  The hash is
+	calculated for the concatenation of the argument list, without
+	separators.</para>
+
+        <refsect2>
+          <title>Hash algorithms</title>
+        
+        <para>The following hash algorithms are available:
+	<variablelist>
+	  <varlistentry>
+            <term><constant>NE_HASH_MD5</constant></term>
+	    <listitem><simpara>MD5</simpara></listitem>
+	  </varlistentry>
+	  <varlistentry>
+            <term><constant>NE_HASH_SHA256</constant></term>
+	    <listitem><simpara>SHA-256 (SHA-2)</simpara></listitem>
+	  </varlistentry>
+	  <varlistentry>
+            <term><constant>NE_HASH_SHA512</constant></term>
+	    <listitem><simpara>SHA-512 (SHA-2)</simpara></listitem>
+	  </varlistentry>
+	  <varlistentry>
+            <term><constant>NE_HASH_SHA256_256</constant></term>
+	    <listitem><simpara>SHA-512/256 (SHA-2)</simpara></listitem>
+	  </varlistentry>
+        </variablelist>
+
+        </para></refsect2>
+        
+        <refsect2>
+          <title>Formatting options</title>
+          
+          <para>By default, the hash is returned as a hexadecimal
+          lower-case character string. The following formatting
+          options are available:
+        
+	<variablelist>
+	  <varlistentry>
+            <term><constant>NE_HASH_COLON</constant></term>
+	    <listitem><simpara>colon-separated hex pairs, e.g. <literal>"aa:11:22..."</literal> </simpara></listitem>
+	  </varlistentry>
+	  <varlistentry>
+            <term><constant>NE_HASH_SPACE</constant></term>
+	    <listitem><simpara>space-separated hex pairs, e.g. <literal>"aa 11 22..."</literal></simpara></listitem>
+	  </varlistentry>
+          </variablelist></para>
+
+        </refsect2>
+        
+      </refsect1>
+
+      <refsect1>
+	<title>Return value</title>
+
+        <para>The return value is the ASCII hexadecimal representation
+        of the hash as a malloc-allocated, NUL-terminated string, or
+        &null; if the hash cannot be created.  The string length is
+        determined by the hash algorithm (and formatting options
+        used).  Support for hash algorithms is specific to the SSL
+        toolkit with which &neon; is compiled.  Some systems will
+        further restrict hash availability at runtime, e.g. due to
+        FIPS mode.</para>
+
+      </refsect1>
+
+    </refentry>

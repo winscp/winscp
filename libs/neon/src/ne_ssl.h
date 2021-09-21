@@ -1,6 +1,6 @@
 /* 
    SSL/TLS abstraction layer for neon
-   Copyright (C) 2003-2006, 2009, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 2003-2021, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -91,7 +91,13 @@ const ne_ssl_dname *ne_ssl_cert_subject(const ne_ssl_certificate *cert);
  * Returns zero on success or non-zero if there was an internal error
  * whilst calculating the digest.  'digest' must be at least 
  * NE_SSL_DIGESTLEN bytes in length. */
-int ne_ssl_cert_digest(const ne_ssl_certificate *cert, char *digest, int sha256); // WINSCP
+int ne_ssl_cert_digest(const ne_ssl_certificate *cert, char *digest);
+
+/* Calculate the certificate digest ("fingerprint") and format it as a
+ * NUL-terminated hex string using the hash algorithm and formatting
+ * flags exactly as if flags was passed to ne_strhash().  Returns NULL
+ * on error. */
+char *ne_ssl_cert_hdigest(const ne_ssl_certificate *cert, unsigned int flags);
 
 /* Copy the validity times for the certificate 'cert' into 'from' and
  * 'until' (either may be NULL).  If the time cannot be represented by

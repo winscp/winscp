@@ -136,12 +136,12 @@ AC_DEFUN([NE_VERSIONS_BUNDLED], [
 
 # Define the current versions.
 NE_VERSION_MAJOR=0
-NE_VERSION_MINOR=31
-NE_VERSION_PATCH=2
+NE_VERSION_MINOR=32
+NE_VERSION_PATCH=1
 NE_VERSION_TAG=
 
-# 0.31.x is backwards-compatible to 0.27.x, so AGE=4
-NE_LIBTOOL_VERSINFO="31:${NE_VERSION_PATCH}:4"
+# 0.32.x is backwards-compatible to 0.27.x, so AGE=5
+NE_LIBTOOL_VERSINFO="32:${NE_VERSION_PATCH}:5"
 
 NE_DEFINE_VERSIONS
 
@@ -363,27 +363,67 @@ AC_DEFUN([NE_SEARCH_LIBS], [
 AC_REQUIRE([NE_CHECK_OS])
 
 AC_CACHE_CHECK([for library containing $1], [ne_cv_libsfor_$1], [
-AC_LINK_IFELSE(
-  [AC_LANG_PROGRAM([], [[$1();]])], 
-  [ne_cv_libsfor_$1="none needed"], [
-ne_sl_save_LIBS=$LIBS
-ne_cv_libsfor_$1="not found"
-for lib in $2; do
-    # The w32api libraries link using the stdcall calling convention.
-    case ${lib}-${ne_cv_os_uname} in
-    ws2_32-MINGW*) ne__code="__stdcall $1();" ;;
-    *) ne__code="$1();" ;;
+  case $ne_cv_os_uname in
+  MINGW*)
+    ;;
+  *)
+    case $1 in
+    getaddrinfo)
+      ne__prologue="#include <netdb.h>"
+      ne__code="getaddrinfo(0,0,0,0);"
+      ;;
+    socket)
+      ne__prologue="#include <sys/socket.h>"
+      ne__code="socket(0,0,0);"
+      ;;
+    *)
+      ne__prologue=""
+      ne__code="$1();"
+      ;;
     esac
-
-    LIBS="$ne_sl_save_LIBS -l$lib $NEON_LIBS"
-    AC_LINK_IFELSE([AC_LANG_PROGRAM([], [$ne__code])],
-                   [ne_cv_libsfor_$1="-l$lib"; break])
-    m4_if($3, [], [], dnl If $3 is specified, then...
-              [LIBS="$ne_sl_save_LIBS -l$lib $3 $NEON_LIBS"
-               AC_LINK_IFELSE([AC_LANG_PROGRAM([], [$ne__code])], 
-                              [ne_cv_libsfor_$1="-l$lib $3"; break])])
-done
-LIBS=$ne_sl_save_LIBS])])
+    ;;
+  esac
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([$ne__prologue], [$ne__code])], [ne_cv_libsfor_$1="none needed"], [
+    ne_sl_save_LIBS=$LIBS
+    ne_cv_libsfor_$1="not found"
+    for lib in $2; do
+      case $ne_cv_os_uname in
+      MINGW*)
+        case $lib in
+        ws2_32)
+          ne__prologue="#include <winsock2.h>"
+          case $1 in
+          gethostbyname)
+            ne__code="gethostbyname(\"\")"
+            ;;
+          socket)
+            ne__code="socket(0,0,0);"
+            ;;
+          *)
+            ne__code="$1();"
+            ;;
+          esac
+          ;;
+        *)
+          ne__prologue=""
+          ne__code=""
+          ;;
+        esac
+        ;;
+      *)
+        ;;
+      esac
+      LIBS="$ne_sl_save_LIBS -l$lib $NEON_LIBS"
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([$ne__prologue], [$ne__code])],
+                     [ne_cv_libsfor_$1="-l$lib"; break])
+      m4_if($3, [], [], dnl If $3 is specified, then...
+                [LIBS="$ne_sl_save_LIBS -l$lib $3 $NEON_LIBS"
+                 AC_LINK_IFELSE([AC_LANG_PROGRAM([$ne__prologue], [$ne__code])],
+                                [ne_cv_libsfor_$1="-l$lib $3"; break])])
+    done
+    LIBS=$ne_sl_save_LIBS
+  ])
+])
 
 if test "$ne_cv_libsfor_$1" = "not found"; then
    m4_if([$4], [], [AC_MSG_ERROR([could not find library containing $1])], [$4])
@@ -614,7 +654,8 @@ NE_LARGEFILE
 
 AC_REPLACE_FUNCS(strcasecmp)
 
-AC_CHECK_FUNCS(signal setvbuf setsockopt stpcpy poll fcntl getsockopt)
+AC_CHECK_FUNCS([signal setvbuf setsockopt stpcpy poll fcntl getsockopt \
+                explicit_bzero sendmsg])
 
 if test "x${ac_cv_func_poll}${ac_cv_header_sys_poll_h}y" = "xyesyesy"; then
   AC_DEFINE([NE_USE_POLL], 1, [Define if poll() should be used])
@@ -849,7 +890,8 @@ AC_CACHE_CHECK([OpenSSL version is >= $2], $1, [
 AC_EGREP_CPP(good, [#include <openssl/opensslv.h>
 #if OPENSSL_VERSION_NUMBER >= $3
 good
-#endif], [$1=yes], [$1=no])])])
+#endif], [$1=yes
+$4], [$1=no])])])
 
 dnl Less noisy replacement for PKG_CHECK_MODULES
 AC_DEFUN([NE_PKG_CONFIG], [
@@ -919,6 +961,7 @@ yes|openssl)
    NE_CHECK_OPENSSLVER(ne_cv_lib_ssl110, 1.1.0, 0x10100000L)
    if test "$ne_cv_lib_ssl110" = "yes"; then
       NE_ENABLE_SUPPORT(SSL, [SSL support enabled, using OpenSSL $NE_SSL_VERSION])
+      AC_DEFINE(HAVE_OPENSSL11, 1, [Enable OpenSSL 1.1 support])
    elif test "$ne_cv_lib_ssl097" = "yes"; then
       # Enable EGD support if using 0.9.7 or newer
       AC_MSG_NOTICE([OpenSSL >= 0.9.7; EGD support not needed in neon])
@@ -1063,21 +1106,29 @@ dnl Check for Kerberos installation
 AC_DEFUN([NEON_GSSAPI], [
 AC_ARG_WITH(gssapi, AS_HELP_STRING(--without-gssapi, disable GSSAPI support))
 if test "$with_gssapi" != "no"; then
-  AC_PATH_PROG([KRB5_CONFIG], krb5-config, none, $PATH:/usr/kerberos/bin)
+  ne_save_CFLAGS=$CFLAGS
+  ne_save_LIBS=$NEON_LIBS
+  NE_PKG_CONFIG(NE_GSSAPI, [krb5-gssapi],
+    [AC_MSG_NOTICE(using GSSAPI configuration from pkg-config)
+     KRB5_CONF_TOOL=pkgconf],
+    [AC_PATH_PROG([KRB5_CONF_TOOL], krb5-config, none, $PATH:/usr/kerberos/bin)
+     if test "x$KRB5_CONF_TOOL" != "xnone"; then
+        NE_GSSAPI_LIBS="`${KRB5_CONF_TOOL} --libs gssapi`"
+        NE_GSSAPI_CFLAGS="`${KRB5_CONF_TOOL} --cflags gssapi`"
+        NE_GSSAPI_VERSION="`${KRB5_CONF_TOOL} --version`"
+     fi])
 else
-  KRB5_CONFIG=none
+  KRB5_CONF_TOOL=none
 fi
-if test "x$KRB5_CONFIG" != "xnone"; then
-   ne_save_CPPFLAGS=$CPPFLAGS
-   ne_save_LIBS=$NEON_LIBS
-   NEON_LIBS="$NEON_LIBS `${KRB5_CONFIG} --libs gssapi`"
-   CPPFLAGS="$CPPFLAGS `${KRB5_CONFIG} --cflags gssapi`"
+if test "x$KRB5_CONF_TOOL" != "xnone"; then
+   CFLAGS="$CFLAGS ${NE_GSSAPI_CFLAGS}"
+   NEON_LIBS="${NEON_LIBS} ${NE_GSSAPI_LIBS}"
    # MIT and Heimdal put gssapi.h in different places
    AC_CHECK_HEADERS(gssapi/gssapi.h gssapi.h, [
      NE_CHECK_FUNCS(gss_init_sec_context, [
-      ne_save_CPPFLAGS=$CPPFLAGS
+      ne_save_CFLAGS=$CFLAGS
       ne_save_LIBS=$NEON_LIBS
-      AC_MSG_NOTICE([GSSAPI authentication support enabled])
+      AC_MSG_NOTICE([GSSAPI authentication support enabled, using $NE_GSSAPI_VERSION])
       AC_DEFINE(HAVE_GSSAPI, 1, [Define if GSSAPI support is enabled])
       AC_CHECK_HEADERS(gssapi/gssapi_generic.h)
       # Older versions of MIT Kerberos lack GSS_C_NT_HOSTBASED_SERVICE
@@ -1091,7 +1142,7 @@ if test "x$KRB5_CONFIG" != "xnone"; then
 #endif])])
      break
    ])
-   CPPFLAGS=$ne_save_CPPFLAGS
+   CFLAGS=$ne_save_CFLAGS
    NEON_LIBS=$ne_save_LIBS
 fi])
 

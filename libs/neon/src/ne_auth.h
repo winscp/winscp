@@ -1,6 +1,6 @@
 /* 
    HTTP authentication routines
-   Copyright (C) 1999-2009, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1999-2021, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -33,8 +33,8 @@ NE_BEGIN_DECLS
 /* The callback used to request the username and password in the given
  * realm. The username and password must be copied into the buffers
  * which are both of size NE_ABUFSIZ.  The 'attempt' parameter is zero
- * on the first call to the callback, and increases by one each time
- * an attempt to authenticate fails.
+ * on the first call to the callback, and increases by one for each
+ * invocation of the callback during an attempt to authenticate.
  *
  * The callback must return zero to indicate that authentication
  * should be attempted with the username/password, or non-zero to
@@ -70,8 +70,14 @@ void ne_set_proxy_auth(ne_session *sess, ne_auth_creds creds, void *userdata);
  * password, and certain aspects of the request, so prevents passive
  * attackers from obtaining the credentials; active attackers can
  * still modify most of the request/response if using an unsecured
- * channel. */ 
-#define NE_AUTH_DIGEST (0x0002)
+ * channel.  Supports algorithms from RFC 2617 and RFC 7616. */
+#define NE_AUTH_DIGEST (0x0080)
+
+/* NE_AUTH_LEGACY_DIGEST: Using this flag together with NE_AUTH_DIGEST
+ * enables support for the weaker, legacy version of the Digest
+ * algorithm specified in RFC 2069 (obsoleted by RFC 2617, which was
+ * published in June 1999).  */
+#define NE_AUTH_LEGACY_DIGEST (0x0002)
 
 /* NE_AUTH_NEGOTIATE: Negotiate uses GSSAPI/SSPI, or NTLM, to
  * authenticate the user; an active attacker can modify any of the
@@ -101,16 +107,25 @@ void ne_set_proxy_auth(ne_session *sess, ne_auth_creds creds, void *userdata);
  * this must not be used over an unsecured channel. */
 #define NE_AUTH_GSSAPI_ONLY (0x0040)
 
+/* 0x0080: legacy definition of NE_AUTH_DIGEST in 0.31 and earlier */
+
 #ifdef WINSCP
 #define NE_AUTH_PASSPORT (0x0080)
 #endif
 
 /* The default set of supported protocols, as deemed appropriate for
- * the given session scheme. */
+ * the given session scheme.  The interpretation of this flag may
+ * change across versions, for example with older, less secure
+ * protocols being removed from the default set. */
 #define NE_AUTH_DEFAULT (0x1000)
 
-/* All protocols supported by the library. */
+/* All protocols supported by the library. The interpretation of this
+ * flag may change across versions. */
 #define NE_AUTH_ALL (0x2000)
+
+/* If present in the protocol mask passed to ne_auth_provide,
+ * indicates that proxy authentication is requested. */
+#define NE_AUTH_PROXY (0x4000)
 
 /* Add a callback to provide credentials for server and proxy
  * authentication using a particular auth protocol or set of
@@ -147,6 +162,43 @@ void ne_set_aux_request_init(ne_session * sess, ne_aux_request_init aux_request_
 
 int is_passport_challenge(ne_request *req, const ne_status *status);
 #endif
+
+/* Alternative credentials provider callback, invoked when credentials
+ * are required to authenticate the client to either a server or
+ * proxy.  'protocol' is the authentication protocol number
+ * (NE_AUTH_*) of the challenge, bitwise-ORed with NE_AUTH_PROXY when
+ * the auth challenge is made by an HTTP proxy.
+ *
+ * 'realm' is the realm name.  The 'attempt' counter reflects the
+ * number of attempts to provide credentials to the server
+ * (i.e. retried requests sent with a challenge response), NOT the
+ * number of times the callback is invoked, unlike the ne_auth_creds
+ * callback.
+ *
+ * The callback must return zero to indicate that authentication
+ * should be attempted with the username/password, or non-zero to
+ * cancel the request. (if non-zero, username and password are
+ * ignored.)
+ *
+ * The username and password buffers have length 'buflen', which is
+ * guaranteed to be >= NE_ABUFSIZ.  The username must be provided as a
+ * NUL-terminated UTF-8 encoding only.  The password must be provided
+ * as a NUL-terminated string.  Additional protocol-specific
+ * restrictions apply, e.g. username cannot contain a colon for Basic
+ * auth.
+ *
+ * IMPORTANT NOTE: The callback will be invoked repeatedly until
+ * either it returns non-zero, or authentication is successful.
+ *
+ * Hint: if you just wish to attempt authentication just once (even if
+ * the user gets the username/password wrong), have the callback
+ * function use 'attempt' value as the function return value. */
+typedef int (*ne_auth_provide)(void *userdata, int attempt,
+                               unsigned protocol, const char *realm,
+                               char *username, char *password, size_t buflen);
+
+void ne_add_auth(ne_session *sess, unsigned protocol,
+                 ne_auth_provide creds, void *userdata);
 
 /* Clear any cached authentication credentials for the given
  * session. */
