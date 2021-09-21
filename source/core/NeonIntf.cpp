@@ -444,20 +444,28 @@ void __fastcall UnregisterFromNeonDebug(TTerminal * Terminal)
 void __fastcall RetrieveNeonCertificateData(
   int Failures, const ne_ssl_certificate * Certificate, TNeonCertificateData & Data)
 {
-  char Fingerprint[NE_SSL_DIGESTLEN];
-  Fingerprint[0] = '\0';
-  if (ne_ssl_cert_digest(Certificate, Fingerprint, 0) != 0)
+  UnicodeString Unknown(L"<unknown>");
+  char FingerprintSHA1[NE_SSL_DIGESTLEN];
+  FingerprintSHA1[0] = '\0';
+  if (DebugAlwaysFalse(ne_ssl_cert_digest(Certificate, FingerprintSHA1) != 0))
   {
-    strcpy(Fingerprint, "<unknown>");
+    Data.FingerprintSHA1 = Unknown;
   }
-  Data.FingerprintSHA1 = StrFromNeon(Fingerprint);
+  else
+  {
+    Data.FingerprintSHA1 = StrFromNeon(FingerprintSHA1);
+  }
 
-  Fingerprint[0] = '\0';
-  if (ne_ssl_cert_digest(Certificate, Fingerprint, 1) != 0)
+  char * FingeprintSHA256 = ne_ssl_cert_hdigest(Certificate, NE_HASH_SHA256);
+  if (DebugAlwaysFalse(FingeprintSHA256 == NULL))
   {
-    strcpy(Fingerprint, "<unknown>");
+    Data.FingerprintSHA256 = Unknown;
   }
-  Data.FingerprintSHA256 = StrFromNeon(Fingerprint);
+  else
+  {
+    Data.FingerprintSHA256 = StrFromNeon(FingeprintSHA256);
+    ne_free(FingeprintSHA256);
+  }
 
   Data.AsciiCert = NeonExportCertificate(Certificate);
 
