@@ -98,6 +98,7 @@
 #define in_addr_t                       unsigned int
 #endif
 
+// WINSCP
 #define HAVE_CRYPTO_SET_IDPTR_CALLBACK
 
 typedef int socklen_t;
