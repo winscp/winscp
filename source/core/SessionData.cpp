@@ -655,18 +655,21 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   // must be loaded after UserName, because HostName may be in format user@host
   HostName = Storage->ReadString(L"HostName", HostName);
 
+  #define LOAD_PASSWORD_EX(PROP, PLAIN_NAME, ENC_NAME, ONPLAIN) \
+    if (Storage->ValueExists(PLAIN_NAME)) \
+    { \
+      PROP = Storage->ReadString(PLAIN_NAME, PROP); \
+      ONPLAIN \
+    } \
+    else \
+    { \
+      RawByteString A##PROP = Storage->ReadStringAsBinaryData(ENC_NAME, F##PROP); \
+      SET_SESSION_PROPERTY_FROM(PROP, A##PROP); \
+    }
+  #define LOAD_PASSWORD(PROP, PLAIN_NAME) LOAD_PASSWORD_EX(PROP, PLAIN_NAME, TEXT(#PROP), RewritePassword = true;)
   if (!Configuration->DisablePasswordStoring)
   {
-    if (Storage->ValueExists(L"PasswordPlain"))
-    {
-      Password = Storage->ReadString(L"PasswordPlain", Password);
-      RewritePassword = true;
-    }
-    else
-    {
-      RawByteString APassword = Storage->ReadStringAsBinaryData(L"Password", FPassword);
-      SET_SESSION_PROPERTY_FROM(Password, APassword);
-    }
+    LOAD_PASSWORD(Password, L"PasswordPlain");
   }
   HostKey = Storage->ReadString(L"SshHostKey", HostKey); // probably never used
   Note = Storage->ReadString(L"Note", Note);
@@ -783,17 +786,8 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   ProxyHost = Storage->ReadString(L"ProxyHost", ProxyHost);
   ProxyPort = Storage->ReadInteger(L"ProxyPort", ProxyPort);
   ProxyUsername = Storage->ReadString(L"ProxyUsername", ProxyUsername);
-  if (Storage->ValueExists(L"ProxyPassword"))
-  {
-    // encrypt unencrypted password
-    ProxyPassword = Storage->ReadString(L"ProxyPassword", L"");
-  }
-  else
-  {
-    // load encrypted password
-    RawByteString AProxyPassword = Storage->ReadStringAsBinaryData(L"ProxyPasswordEnc", FProxyPassword);
-    SET_SESSION_PROPERTY_FROM(ProxyPassword, AProxyPassword);
-  }
+  // proxy password is not rewritten
+  LOAD_PASSWORD_EX(ProxyPassword, L"ProxyPassword", L"ProxyPasswordEnc", );
   if (!Unsafe)
   {
     if (ProxyMethod == pmCmd)
@@ -858,16 +852,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   TunnelHostName = Storage->ReadString(L"TunnelHostName", TunnelHostName);
   if (!Configuration->DisablePasswordStoring)
   {
-    if (Storage->ValueExists(L"TunnelPasswordPlain"))
-    {
-      TunnelPassword = Storage->ReadString(L"TunnelPasswordPlain", TunnelPassword);
-      RewritePassword = true;
-    }
-    else
-    {
-      RawByteString ATunnelPassword = Storage->ReadStringAsBinaryData(L"TunnelPassword", FTunnelPassword);
-      SET_SESSION_PROPERTY_FROM(TunnelPassword, ATunnelPassword);
-    }
+    LOAD_PASSWORD(TunnelPassword, L"TunnelPasswordPlain");
   }
   TunnelPublicKeyFile = Storage->ReadString(L"TunnelPublicKeyFile", TunnelPublicKeyFile);
   TunnelLocalPortNumber = Storage->ReadInteger(L"TunnelLocalPortNumber", TunnelLocalPortNumber);
@@ -894,16 +879,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   MinTlsVersion = static_cast<TTlsVersion>(Storage->ReadInteger(L"MinTlsVersion", MinTlsVersion));
   MaxTlsVersion = static_cast<TTlsVersion>(Storage->ReadInteger(L"MaxTlsVersion", MaxTlsVersion));
 
-  if (Storage->ValueExists(L"EncryptKeyPlain"))
-  {
-    EncryptKey = Storage->ReadString(L"EncryptKeyPlain", EncryptKey);
-    RewritePassword = true;
-  }
-  else
-  {
-    RawByteString AEncryptKey = Storage->ReadStringAsBinaryData(L"EncryptKey", FEncryptKey);
-    SET_SESSION_PROPERTY_FROM(EncryptKey, AEncryptKey);
-  }
+  LOAD_PASSWORD(EncryptKey, L"EncryptKeyPlain");
 
   WebDavLiberalEscaping = Storage->ReadBool(L"WebDavLiberalEscaping", WebDavLiberalEscaping);
 
@@ -915,6 +891,8 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
 
   CustomParam1 = Storage->ReadString(L"CustomParam1", CustomParam1);
   CustomParam2 = Storage->ReadString(L"CustomParam2", CustomParam2);
+
+  #undef LOAD_PASSWORD
 
 #ifdef TEST
   #define KEX_TEST(VALUE, EXPECTED) KexList = VALUE; DebugAssert(KexList == EXPECTED);
@@ -995,21 +973,16 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage, bool PuttyImp
     {
       if (Storage->OpenSubKey(InternalStorageKey, true))
       {
-        Storage->DeleteValue(L"PasswordPlain");
-        if (!Password.IsEmpty())
-        {
-          Storage->WriteBinaryDataAsString(L"Password", FPassword);
-        }
-        Storage->DeleteValue(L"TunnelPasswordPlain");
-        if (!TunnelPassword.IsEmpty())
-        {
-          Storage->WriteBinaryDataAsString(L"TunnelPassword", FTunnelPassword);
-        }
-        Storage->DeleteValue(L"EncryptKeyPlain");
-        if (!EncryptKey.IsEmpty())
-        {
-          Storage->WriteBinaryDataAsString(L"EncryptKey", FEncryptKey);
-        }
+        #define REWRITE_PASSWORD(PROP, PLAIN_NAME) \
+          Storage->DeleteValue(PLAIN_NAME); \
+          if (!PROP.IsEmpty()) \
+          { \
+            Storage->WriteBinaryDataAsString(TEXT(#PROP), F##PROP); \
+          }
+        REWRITE_PASSWORD(Password, L"PasswordPlain");
+        REWRITE_PASSWORD(TunnelPassword, L"TunnelPasswordPlain");
+        REWRITE_PASSWORD(EncryptKey, L"EncryptKeyPlain");
+        #undef REWRITE_PASSWORD
         Storage->CloseSubKey();
       }
     }
@@ -1741,6 +1714,7 @@ void TSessionData::ImportFromOpenssh(TStrings * Lines)
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool PuttyExport, bool DoNotEncryptPasswords, bool SaveAll)
 {
+  // It's probably safe to replace this with if (!PuttyExport) { SAVE_PASSWORD(...) }
   if (!Configuration->DisablePasswordStoring && !PuttyExport && (!FPassword.IsEmpty() || SaveAll))
   {
     if (DoNotEncryptPasswords)
@@ -1767,79 +1741,36 @@ void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool
   }
   else
   {
-    if (DoNotEncryptPasswords)
-    {
-      if (!FProxyPassword.IsEmpty() || SaveAll)
-      {
-        Storage->WriteString(L"ProxyPassword", ProxyPassword);
+    #define SAVE_PASSWORD_EX(PROP, PLAIN_NAME, ENC_NAME, ENC_KEY, COND) \
+      if (DoNotEncryptPasswords) \
+      { \
+        if (!F##PROP.IsEmpty() || SaveAll) \
+        { \
+          Storage->WriteString(PLAIN_NAME, PROP); \
+        } \
+        else \
+        { \
+          Storage->DeleteValue(PLAIN_NAME); \
+        } \
+        Storage->DeleteValue(ENC_NAME); \
+      } \
+      else \
+      { \
+        if (COND && (!F##PROP.IsEmpty() || SaveAll)) \
+        { \
+          Storage->WriteBinaryDataAsString(ENC_NAME, StronglyRecryptPassword(F##PROP, ENC_KEY)); \
+        } \
+        else \
+        { \
+          Storage->DeleteValue(ENC_NAME); \
+        } \
+        Storage->DeleteValue(PLAIN_NAME); \
       }
-      else
-      {
-        Storage->DeleteValue(L"ProxyPassword");
-      }
-      Storage->DeleteValue(L"ProxyPasswordEnc");
-    }
-    else
-    {
-      // save password encrypted
-      if (!FProxyPassword.IsEmpty() || SaveAll)
-      {
-        Storage->WriteBinaryDataAsString(L"ProxyPasswordEnc", StronglyRecryptPassword(FProxyPassword, ProxyUsername+ProxyHost));
-      }
-      else
-      {
-        Storage->DeleteValue(L"ProxyPasswordEnc");
-      }
-      Storage->DeleteValue(L"ProxyPassword");
-    }
+    #define SAVE_PASSWORD(PROP, PLAIN_NAME, ENC_KEY) SAVE_PASSWORD_EX(PROP, PLAIN_NAME, TEXT(#PROP), ENC_KEY, !Configuration->DisablePasswordStoring)
 
-    if (DoNotEncryptPasswords)
-    {
-      if (!FTunnelPassword.IsEmpty() || SaveAll)
-      {
-        Storage->WriteString(L"TunnelPasswordPlain", TunnelPassword);
-      }
-      else
-      {
-        Storage->DeleteValue(L"TunnelPasswordPlain");
-      }
-    }
-    else
-    {
-      if (!Configuration->DisablePasswordStoring && (!FTunnelPassword.IsEmpty() || SaveAll))
-      {
-        Storage->WriteBinaryDataAsString(L"TunnelPassword", StronglyRecryptPassword(FTunnelPassword, TunnelUserName+TunnelHostName));
-      }
-      else
-      {
-        Storage->DeleteValue(L"TunnelPassword");
-      }
-    }
-
-    if (DoNotEncryptPasswords)
-    {
-      if (!FEncryptKey.IsEmpty() || SaveAll)
-      {
-        Storage->WriteString(L"EncryptKeyPlain", EncryptKey);
-      }
-      else
-      {
-        Storage->DeleteValue(L"EncryptKeyPlain");
-      }
-      Storage->DeleteValue(L"EncryptKey");
-    }
-    else
-    {
-      if (!FEncryptKey.IsEmpty() || SaveAll)
-      {
-        Storage->WriteBinaryDataAsString(L"EncryptKey", StronglyRecryptPassword(FEncryptKey, UserName+HostName));
-      }
-      else
-      {
-        Storage->DeleteValue(L"EncryptKey");
-      }
-      Storage->DeleteValue(L"EncryptKeyPlain");
-    }
+    SAVE_PASSWORD_EX(ProxyPassword, L"ProxyPassword", L"ProxyPasswordEnc", ProxyUsername + ProxyHost, true);
+    SAVE_PASSWORD(TunnelPassword, L"TunnelPasswordPlain", TunnelUserName + TunnelHostName);
+    SAVE_PASSWORD_EX(EncryptKey, L"EncryptKeyPlain", L"EncryptKey", UserName + HostName, true);
   }
 }
 //---------------------------------------------------------------------
