@@ -1978,7 +1978,8 @@ bool __fastcall TSessionData::MaskPasswordInOptionParameter(const UnicodeString 
           SameText(Key, L"TunnelPasswordPlain") ||
           SameText(Key, L"TunnelPassphrase") ||
           SameText(Key, L"TunnelPassphrasePlain") ||
-          SameText(Key, L"EncryptKey"))
+          SameText(Key, L"EncryptKey") ||
+          SameText(Key, L"EncryptKeyPlain"))
       {
         Param = Key + L"=" + PasswordMask;
         Result = true;
