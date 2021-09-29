@@ -1806,7 +1806,7 @@ bool __fastcall TSessionData::HasAnySessionPassword()
   // Keep in sync with ClearSessionPasswords
   return
     HasPassword() ||
-    !FTunnelPassword.IsEmpty()  ||
+    !FTunnelPassword.IsEmpty() ||
     // will probably be never used
     !FNewPassword.IsEmpty();
 }
