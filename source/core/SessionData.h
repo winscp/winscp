@@ -206,6 +206,7 @@ private:
   UnicodeString FTunnelUserName;
   RawByteString FTunnelPassword;
   UnicodeString FTunnelPublicKeyFile;
+  RawByteString FTunnelPassphrase;
   int FTunnelLocalPortNumber;
   UnicodeString FTunnelPortFwd;
   UnicodeString FTunnelHostKey;
@@ -391,6 +392,8 @@ private:
   void __fastcall SetTunnelPassword(UnicodeString value);
   UnicodeString __fastcall GetTunnelPassword() const;
   void __fastcall SetTunnelPublicKeyFile(UnicodeString value);
+  void __fastcall SetTunnelPassphrase(UnicodeString value);
+  UnicodeString __fastcall GetTunnelPassphrase() const;
   void __fastcall SetTunnelPortFwd(UnicodeString value);
   void __fastcall SetTunnelLocalPortNumber(int value);
   bool __fastcall GetTunnelAutoassignLocalPortNumber();
@@ -664,6 +667,7 @@ public:
   __property UnicodeString TunnelUserName = { read = FTunnelUserName, write = SetTunnelUserName };
   __property UnicodeString TunnelPassword = { read = GetTunnelPassword, write = SetTunnelPassword };
   __property UnicodeString TunnelPublicKeyFile = { read = FTunnelPublicKeyFile, write = SetTunnelPublicKeyFile };
+  __property UnicodeString TunnelPassphrase = { read = GetTunnelPassphrase, write = SetTunnelPassphrase };
   __property bool TunnelAutoassignLocalPortNumber = { read = GetTunnelAutoassignLocalPortNumber };
   __property int TunnelLocalPortNumber = { read = FTunnelLocalPortNumber, write = SetTunnelLocalPortNumber };
   __property UnicodeString TunnelPortFwd = { read = FTunnelPortFwd, write = SetTunnelPortFwd };

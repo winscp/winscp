@@ -293,6 +293,7 @@ void __fastcall TSessionData::DefaultSettings()
   TunnelUserName = L"";
   TunnelPassword = L"";
   TunnelPublicKeyFile = L"";
+  TunnelPassphrase = L"";
   TunnelLocalPortNumber = 0;
   TunnelPortFwd = L"";
   TunnelHostKey = L"";
@@ -468,6 +469,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(TunnelUserName); \
   PROPERTY_HANDLER(TunnelPassword, F); \
   PROPERTY(TunnelPublicKeyFile); \
+  PROPERTY_HANDLER(TunnelPassphrase, F); \
   PROPERTY(TunnelLocalPortNumber); \
   PROPERTY(TunnelPortFwd); \
   PROPERTY(TunnelHostKey); \
@@ -858,6 +860,12 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
     LOAD_PASSWORD(TunnelPassword, L"TunnelPasswordPlain");
   }
   TunnelPublicKeyFile = Storage->ReadString(L"TunnelPublicKeyFile", TunnelPublicKeyFile);
+  // Contrary to main session passphrase (which has -passphrase switch in scripting),
+  // we are loading tunnel passphrase, as there's no other way to provide it in scripting
+  if (!Configuration->DisablePasswordStoring)
+  {
+    LOAD_PASSWORD(TunnelPassphrase, L"TunnelPassphrasePlain");
+  }
   TunnelLocalPortNumber = Storage->ReadInteger(L"TunnelLocalPortNumber", TunnelLocalPortNumber);
   TunnelHostKey = Storage->ReadString(L"TunnelHostKey", TunnelHostKey);
 
@@ -984,6 +992,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage, bool PuttyImp
         REWRITE_PASSWORD(Password, L"PasswordPlain");
         REWRITE_PASSWORD(TunnelPassword, L"TunnelPasswordPlain");
         REWRITE_PASSWORD(EncryptKey, L"EncryptKeyPlain");
+        REWRITE_PASSWORD(TunnelPassphrase, L"TunnelPassphrasePlain");
         #undef REWRITE_PASSWORD
         Storage->CloseSubKey();
       }
@@ -1782,6 +1791,7 @@ void __fastcall TSessionData::RecryptPasswords()
   NewPassword = NewPassword;
   ProxyPassword = ProxyPassword;
   TunnelPassword = TunnelPassword;
+  TunnelPassphrase = TunnelPassphrase;
   Passphrase = Passphrase;
   EncryptKey = EncryptKey;
 }
@@ -1808,7 +1818,8 @@ bool __fastcall TSessionData::HasAnyPassword()
     HasAnySessionPassword() ||
     !FProxyPassword.IsEmpty() ||
     !FEncryptKey.IsEmpty() ||
-    !FPassphrase.IsEmpty();
+    !FPassphrase.IsEmpty() ||
+    !FTunnelPassphrase.IsEmpty();
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::ClearSessionPasswords()
@@ -1965,6 +1976,8 @@ bool __fastcall TSessionData::MaskPasswordInOptionParameter(const UnicodeString 
           SameText(Key, L"ProxyPasswordEnc") ||
           SameText(Key, L"TunnelPassword") ||
           SameText(Key, L"TunnelPasswordPlain") ||
+          SameText(Key, L"TunnelPassphrase") ||
+          SameText(Key, L"TunnelPassphrasePlain") ||
           SameText(Key, L"EncryptKey"))
       {
         Param = Key + L"=" + PasswordMask;
@@ -1993,6 +2006,10 @@ void __fastcall TSessionData::MaskPasswords()
   if (!TunnelPassword.IsEmpty())
   {
     TunnelPassword = PasswordMask;
+  }
+  if (!TunnelPassphrase.IsEmpty())
+  {
+    TunnelPassphrase = PasswordMask;
   }
   if (!EncryptKey.IsEmpty())
   {
@@ -2491,6 +2508,7 @@ TSessionData * TSessionData::CreateTunnelData(int TunnelLocalPortNumber)
   TunnelData->UserName = TunnelUserName;
   TunnelData->Password = TunnelPassword;
   TunnelData->PublicKeyFile = TunnelPublicKeyFile;
+  TunnelData->Passphrase = TunnelPassphrase;
   UnicodeString AHostName = HostNameExpanded;
   if (IsIPv6Literal(AHostName))
   {
@@ -4219,13 +4237,30 @@ UnicodeString __fastcall TSessionData::GetTunnelPassword() const
   return DecryptPassword(FTunnelPassword, TunnelUserName+TunnelHostName);
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::SetTunnelPassphrase(UnicodeString avalue)
+{
+  RawByteString value = EncryptPassword(avalue, TunnelPublicKeyFile);
+  SET_SESSION_PROPERTY(TunnelPassphrase);
+}
+//---------------------------------------------------------------------
+UnicodeString __fastcall TSessionData::GetTunnelPassphrase() const
+{
+  return DecryptPassword(FTunnelPassphrase, TunnelPublicKeyFile);
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetTunnelPublicKeyFile(UnicodeString value)
 {
   if (FTunnelPublicKeyFile != value)
   {
+    // TunnelPublicKeyFile is key for TunnelPassphrase encryption
+    UnicodeString XTunnelPassphrase = TunnelPassphrase;
+
     // StripPathQuotes should not be needed as we do not feed quotes anymore
     FTunnelPublicKeyFile = StripPathQuotes(value);
     Modify();
+
+    TunnelPassphrase = XTunnelPassphrase;
+    Shred(XTunnelPassphrase);
   }
 }
 //---------------------------------------------------------------------
