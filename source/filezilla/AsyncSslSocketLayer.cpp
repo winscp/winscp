@@ -1005,15 +1005,6 @@ BOOL CAsyncSslSocketLayer::ShutDown(int nHow /*=sends*/)
     }
 
     int res = SSL_shutdown(m_ssl);
-    if (res == 0)
-    {
-      res = SSL_shutdown(m_ssl);
-      // While this should not be necessary, with IIS we get timeout otherwise
-      if (SSL_version(m_ssl) <= TLS1_2_VERSION)
-      {
-        res = 0;
-      }
-    }
     if (res >= 0)
     {
       if (ShutDownComplete())
