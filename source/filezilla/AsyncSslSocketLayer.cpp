@@ -339,7 +339,7 @@ void CAsyncSslSocketLayer::OnSend(int nErrorCode)
     if (m_nShutDown == 1 && ShutDownComplete())
     {
       //Send shutdown notification if all pending data has been sent
-            // FileZilla3 calls ShutDownNext() here
+      // FileZilla3 calls ShutDownNext() here
       DoLayerCallback(LAYERCALLBACK_LAYERSPECIFIC, SSL_INFO, SSL_INFO_SHUTDOWNCOMPLETE);
       m_nShutDown++;
     }
