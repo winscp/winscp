@@ -1063,8 +1063,6 @@ void __fastcall TWinInteractiveCustomCommand::Prompt(
 void __fastcall TWinInteractiveCustomCommand::Execute(
   const UnicodeString & Command, UnicodeString & Value)
 {
-  // inspired by
-  // http://forum.codecall.net/topic/72472-execute-a-console-program-and-capture-its-output/
   HANDLE StdOutOutput;
   HANDLE StdOutInput;
   HANDLE StdInOutput;
