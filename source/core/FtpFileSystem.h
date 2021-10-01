@@ -294,7 +294,7 @@ private:
   bool FTransferActiveImmediately;
   bool FWindowsServer;
   __int64 FBytesAvailable;
-  bool FBytesAvailableSuppoted;
+  bool FBytesAvailableSupported;
   bool FMVS;
   bool FVMS;
   bool FFileTransferAny;

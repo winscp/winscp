@@ -269,7 +269,7 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FCertificate = NULL;
   FPrivateKey = NULL;
   FBytesAvailable = -1;
-  FBytesAvailableSuppoted = false;
+  FBytesAvailableSupported = false;
   FLoggedIn = false;
   FAnyTransferSucceeded = false; // Do not reset on reconnect
   FForceReadSymlink = false;
@@ -1911,7 +1911,7 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
       return FSupportsAnyChecksumFeature;
 
     case fcCheckingSpaceAvailable:
-      return FBytesAvailableSuppoted || SupportsCommand(AvblCommand) || SupportsCommand(XQuotaCommand);
+      return FBytesAvailableSupported || SupportsCommand(AvblCommand) || SupportsCommand(XQuotaCommand);
 
     case fcModeChangingUpload:
     case fcLoadingAdditionalProperties:
@@ -2549,7 +2549,7 @@ TStrings * __fastcall TFTPFileSystem::GetFixedPaths()
 void __fastcall TFTPFileSystem::SpaceAvailable(const UnicodeString Path,
   TSpaceAvailable & ASpaceAvailable)
 {
-  if (FBytesAvailableSuppoted)
+  if (FBytesAvailableSupported)
   {
     std::unique_ptr<TRemoteFileList> DummyFileList(new TRemoteFileList());
     DummyFileList->Directory = Path;
@@ -3412,7 +3412,7 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
     FBytesAvailable = StrToInt64Def(BytesStr, -1);
     if (FBytesAvailable >= 0)
     {
-      FBytesAvailableSuppoted = true;
+      FBytesAvailableSupported = true;
     }
   }
 
