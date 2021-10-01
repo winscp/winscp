@@ -1005,6 +1005,11 @@ BOOL CAsyncSslSocketLayer::ShutDown(int nHow /*=sends*/)
     }
 
     int res = SSL_shutdown(m_ssl);
+    if (res == 0)
+    {
+      // maybe we do not need to call this at all (as neon does)
+      SSL_shutdown(m_ssl);
+    }
     if (res >= 0)
     {
       if (ShutDownComplete())
