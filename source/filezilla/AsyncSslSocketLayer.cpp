@@ -606,6 +606,14 @@ int CAsyncSslSocketLayer::Receive(void* lpBuf, int nBufLen, int nFlags)
 
 void CAsyncSslSocketLayer::Close()
 {
+  if (!m_nShutDown)
+  {
+    ShutDown();
+    while (!ShutDownComplete())
+    {
+      OnSend(0);
+    }
+  }
   m_nShutDown = 0;
   m_onCloseCalled = false;
   ResetSslSession();
