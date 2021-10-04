@@ -3807,11 +3807,11 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       {
         if (nError)
         {
-          LogMessage(FZ_LOG_INFO, L"Transfer completed");
+          LogMessage(FZ_LOG_INFO, L"Transfer failed");
         }
         else
         {
-          LogMessage(FZ_LOG_INFO, L"Transfer failed");
+          LogMessage(FZ_LOG_INFO, L"Transfer completed");
         }
       }
       if (!bFinish)
