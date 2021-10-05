@@ -2623,12 +2623,15 @@ TRemoteProperties __fastcall TRemoteProperties::CommonProperties(TStrings * File
     DebugAssert(File);
     if (!Index)
     {
-      CommonProperties.Rights = *(File->Rights);
-      // previously we allowed undef implicitly for directories,
-      // now we do it explicitly in properties dialog and only in combination
-      // with "recursive" option
-      CommonProperties.Rights.AllowUndef = File->Rights->IsUndef;
-      CommonProperties.Valid << vpRights;
+      if (!File->Rights->Unknown)
+      {
+        CommonProperties.Rights = *(File->Rights);
+        // previously we allowed undef implicitly for directories,
+        // now we do it explicitly in properties dialog and only in combination
+        // with "recursive" option
+        CommonProperties.Rights.AllowUndef = File->Rights->IsUndef;
+        CommonProperties.Valid << vpRights;
+      }
       if (File->Owner.IsSet)
       {
         CommonProperties.Owner = File->Owner;
