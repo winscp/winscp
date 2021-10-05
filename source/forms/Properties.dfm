@@ -138,7 +138,7 @@ object PropertiesDialog: TPropertiesDialog
         Anchors = [akLeft, akTop, akRight]
         Shape = bsTopLine
       end
-      object Label3: TLabel
+      object RightsLabel: TLabel
         Left = 8
         Top = 203
         Width = 59
@@ -146,7 +146,7 @@ object PropertiesDialog: TPropertiesDialog
         Caption = 'Permissions:'
         FocusControl = RightsFrame
       end
-      object Bevel3: TBevel
+      object GroupOwnerRightsBevel: TBevel
         Left = 8
         Top = 193
         Width = 320
@@ -154,17 +154,17 @@ object PropertiesDialog: TPropertiesDialog
         Anchors = [akLeft, akTop, akRight]
         Shape = bsTopLine
       end
-      object Label4: TLabel
+      object GroupLabel: TLabel
         Left = 8
-        Top = 138
+        Top = 166
         Width = 33
         Height = 13
         Caption = 'Group:'
         FocusControl = GroupComboBox
       end
-      object Label5: TLabel
+      object OwnerLabel: TLabel
         Left = 8
-        Top = 166
+        Top = 138
         Width = 36
         Height = 13
         Caption = 'Owner:'
@@ -194,35 +194,35 @@ object PropertiesDialog: TPropertiesDialog
       end
       object GroupComboBox: TComboBox
         Left = 85
-        Top = 135
-        Width = 161
-        Height = 21
-        DropDownCount = 16
-        MaxLength = 50
-        TabOrder = 1
-        Text = 'GroupComboBox'
-        OnChange = ControlChange
-        OnExit = GroupComboBoxExit
-      end
-      object OwnerComboBox: TComboBox
-        Left = 85
         Top = 163
         Width = 161
         Height = 21
         DropDownCount = 16
         MaxLength = 50
         TabOrder = 2
+        Text = 'GroupComboBox'
+        OnChange = ControlChange
+        OnExit = GroupComboBoxExit
+      end
+      object OwnerComboBox: TComboBox
+        Left = 85
+        Top = 135
+        Width = 161
+        Height = 21
+        DropDownCount = 16
+        MaxLength = 50
+        TabOrder = 1
         Text = 'OwnerComboBox'
         OnChange = ControlChange
         OnExit = OwnerComboBoxExit
       end
-      object RecursiveCheck: TCheckBox
+      object RecursiveCheck2: TCheckBox
         Left = 12
         Top = 322
         Width = 317
         Height = 17
         Anchors = [akLeft, akTop, akRight]
-        Caption = 'Set group, owner and permissions &recursively'
+        Caption = 'Set owner, group and permissions &recursively'
         TabOrder = 4
         OnClick = ControlChange
       end

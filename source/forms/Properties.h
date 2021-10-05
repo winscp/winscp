@@ -34,15 +34,15 @@ __published:
   TLabel *LinksToLabelLabel;
   TPathLabel *LinksToLabel;
   TBevel *Bevel2;
-  TLabel *Label3;
-  TBevel *Bevel3;
-  TLabel *Label4;
+  TLabel *RightsLabel;
+  TBevel *GroupOwnerRightsBevel;
+  TLabel *GroupLabel;
   TComboBox *GroupComboBox;
-  TLabel *Label5;
+  TLabel *OwnerLabel;
   TComboBox *OwnerComboBox;
   TImage *FileIconImage;
   TBevel *RecursiveBevel;
-  TCheckBox *RecursiveCheck;
+  TCheckBox *RecursiveCheck2;
   TButton *CalculateSizeButton;
   TRightsFrame *RightsFrame;
   TButton *HelpButton;
@@ -79,6 +79,7 @@ private:
   TStrings * FChecksumAlgs;
   TRemoteProperties FOrigProperties;
   bool FMultiple;
+  bool FAnyDirectories;
   bool FAllowCalculateStats;
   bool FStatsNotCalculated;
   TCalculateSizeEvent FOnCalculateSize;

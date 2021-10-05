@@ -86,12 +86,22 @@ bool __fastcall TPropertiesDialog::Execute(TRemoteProperties & Properties)
   SetFileProperties(Properties);
 
   PageControl->ActivePage = CommonSheet;
-  if (FAllowedChanges & cpGroup) ActiveControl = GroupComboBox;
-    else
-  if (FAllowedChanges & cpOwner) ActiveControl = OwnerComboBox;
-    else
-  if (FAllowedChanges & cpMode) ActiveControl = RightsFrame;
-    else ActiveControl = CancelButton;
+  if (OwnerComboBox->Visible && OwnerComboBox->Enabled)
+  {
+    ActiveControl = OwnerComboBox;
+  }
+  else if (GroupComboBox->Visible && GroupComboBox->Enabled)
+  {
+    ActiveControl = GroupComboBox;
+  }
+  else if (RightsFrame->Visible && RightsFrame->Enabled)
+  {
+    ActiveControl = RightsFrame;
+  }
+  else if (DebugAlwaysTrue(CancelButton->Visible && CancelButton->Enabled))
+  {
+    ActiveControl = CancelButton;
+  }
 
   if (DebugAlwaysTrue(FChecksumAlgs != NULL))
   {
@@ -228,19 +238,18 @@ void __fastcall TPropertiesDialog::LoadInfo()
     FilesSize += File->Size;
   }
 
+  LoadRemoteTokens(GroupComboBox, FGroupList);
+  LoadRemoteTokens(OwnerComboBox, FUserList);
+
+  FAnyDirectories = (Stats.Directories > 0);
+  RightsFrame->AllowAddXToDirectories = FAnyDirectories;
+
   if (!FMultiple)
   {
     // Show only file name, if we have only single file/directory.
     // For directory, this changes, once "Calculate" button is pressed
     Stats = TCalculateSizeStats();
   }
-
-  LoadRemoteTokens(GroupComboBox, FGroupList);
-  LoadRemoteTokens(OwnerComboBox, FUserList);
-
-  RightsFrame->AllowAddXToDirectories = (Stats.Directories > 0);
-  RecursiveCheck->Visible = (Stats.Directories > 0);
-  RecursiveBevel->Visible = (Stats.Directories > 0);
 
   LoadStats(FilesSize, Stats);
 
@@ -260,10 +269,7 @@ void __fastcall TPropertiesDialog::LoadInfo()
       LinksToLabel->Caption = File->LinkTo;
     }
 
-    RightsFrame->AllowAddXToDirectories = File->IsDirectory;
     Caption = FMTLOAD(PROPERTIES_FILE_CAPTION, (File->FileName));
-    RecursiveCheck->Visible = File->IsDirectory;
-    RecursiveBevel->Visible = File->IsDirectory;
   }
   else
   {
@@ -375,7 +381,10 @@ void __fastcall TPropertiesDialog::SetFileProperties(const TRemoteProperties & v
   FOrigProperties.Valid = Valid;
   FOrigProperties.Recursive = false;
 
-  if (value.Valid.Contains(vpRights))
+  bool HasRights = value.Valid.Contains(vpRights);
+  RightsFrame->Visible = HasRights;
+  RightsLabel->Visible = RightsFrame->Visible;
+  if (HasRights)
   {
     RightsFrame->Rights = value.Rights;
     RightsFrame->AddXToDirectories = value.AddXToDirectories;
@@ -385,9 +394,27 @@ void __fastcall TPropertiesDialog::SetFileProperties(const TRemoteProperties & v
     RightsFrame->Rights = TRights();
     RightsFrame->AddXToDirectories = false;
   }
-  LoadRemoteToken(GroupComboBox, value.Valid.Contains(vpGroup), value.Group);
-  LoadRemoteToken(OwnerComboBox, value.Valid.Contains(vpOwner), value.Owner);
-  RecursiveCheck->Checked = value.Recursive;
+
+  bool HasGroup = value.Valid.Contains(vpGroup);
+  LoadRemoteToken(GroupComboBox, HasGroup, value.Group);
+  bool HasOwner = value.Valid.Contains(vpOwner);
+  LoadRemoteToken(OwnerComboBox, HasOwner, value.Owner);
+
+  bool HasGroupOrOwner = HasGroup || HasOwner;
+  bool HasAnything = HasGroupOrOwner || HasRights;
+  // Not necesarily true, let's find the scenario when it is not and then decide how to render that (shift rights up?)
+  DebugAssert(HasGroupOrOwner || !HasRights);
+  bool ShowGroupAndOwner = HasAnything;
+  OwnerComboBox->Visible = HasGroupOrOwner;
+  OwnerLabel->Visible = OwnerComboBox->Visible;
+  GroupComboBox->Visible = HasGroupOrOwner;
+  GroupLabel->Visible = GroupComboBox->Visible;
+  GroupOwnerRightsBevel->Visible = ShowGroupAndOwner;
+
+  RecursiveCheck2->Checked = value.Recursive;
+  RecursiveCheck2->Visible = HasAnything && FAnyDirectories;
+  RecursiveBevel->Visible = RecursiveCheck2->Visible || HasRights;
+
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -498,7 +525,7 @@ TRemoteProperties __fastcall TPropertiesDialog::GetFileProperties()
   StoreRemoteToken(OwnerComboBox, cpOwner, vpOwner, FOrigProperties.Owner,
     Result.Owner, PROPERTIES_INVALID_OWNER, FUserList, Result);
 
-  Result.Recursive = RecursiveCheck->Checked;
+  Result.Recursive = RecursiveCheck2->Checked;
 
   return Result;
 }
@@ -515,14 +542,14 @@ void __fastcall TPropertiesDialog::UpdateControls()
 {
   // No point enabling recursive check if there's no change allowed (supported),
   // i.e. with WebDAV.
-  EnableControl(RecursiveCheck, ((FAllowedChanges & (cpGroup | cpOwner | cpMode)) != 0));
+  EnableControl(RecursiveCheck2, ((FAllowedChanges & (cpGroup | cpOwner | cpMode)) != 0));
 
   bool Allow;
   try
   {
     Allow =
       !TRemoteProperties::ChangedProperties(FOrigProperties, GetFileProperties()).Valid.Empty() ||
-      (RecursiveCheck->Enabled && RecursiveCheck->Checked);
+      (RecursiveCheck2->Enabled && RecursiveCheck2->Checked);
   }
   catch(...)
   {
@@ -547,7 +574,7 @@ void __fastcall TPropertiesDialog::UpdateControls()
     bool AllowUndef =
       (FOrigProperties.Valid.Contains(vpRights) &&
        FOrigProperties.Rights.AllowUndef) ||
-      (RecursiveCheck->Checked);
+      (RecursiveCheck2->Checked);
     if (!AllowUndef)
     {
       // when disallowing undef state, make sure, all undef are turned into unset
@@ -781,7 +808,7 @@ void __fastcall TPropertiesDialog::CMDpiChanged(TMessage & Message)
   SizeLabel->Width = CalculateSizeButton->Left - ScaleByTextHeight(this, 8) - SizeLabel->Left;
   Bevel1->Width = CommonSheet->ClientWidth - (Bevel1->Left * 2);
   Bevel2->Width = Bevel1->Width;
-  Bevel3->Width = Bevel1->Width;
+  GroupOwnerRightsBevel->Width = Bevel1->Width;
   RecursiveBevel->Width = Bevel1->Width;
 }
 //---------------------------------------------------------------------------
