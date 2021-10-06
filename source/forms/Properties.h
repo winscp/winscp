@@ -26,13 +26,13 @@ __published:
   TPageControl *PageControl;
   TTabSheet *CommonSheet;
   TBevel *Bevel1;
-  TLabel *FileLabel;
+  TEdit *FileLabel;
   TLabel *Label1;
-  TPathLabel *LocationLabel;
+  TEdit *LocationLabel;
   TLabel *Label2;
-  TLabel *SizeLabel;
+  TEdit *SizeLabel;
   TLabel *LinksToLabelLabel;
-  TPathLabel *LinksToLabel;
+  TEdit *LinksToLabel;
   TBevel *Bevel2;
   TLabel *RightsLabel;
   TBevel *GroupOwnerRightsBevel;
@@ -56,6 +56,8 @@ __published:
   TPopupMenu *ListViewMenu;
   TMenuItem *Copy;
   TLabel *ChecksumUnknownLabel;
+  TEdit *OwnerView;
+  TEdit *GroupView;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall CalculateSizeButtonClick(TObject *Sender);
@@ -103,7 +105,8 @@ protected:
   void __fastcall LoadInfo();
   void __fastcall LoadRemoteTokens(TComboBox * ComboBox, const TRemoteTokenList * List);
   UnicodeString __fastcall LoadRemoteToken(const TRemoteToken & Token);
-  void __fastcall LoadRemoteToken(TComboBox * ComboBox, bool Valid, const TRemoteToken & Token);
+  void __fastcall LoadRemoteToken(
+    TComboBox * ComboBox, TEdit * View, TLabel * Label, bool Valid, const TRemoteToken & Token, int Change);
   TRemoteToken __fastcall StoreRemoteToken(const TRemoteToken & Orig,
     UnicodeString Text, int Message, const TRemoteTokenList * List);
   void __fastcall StoreRemoteToken(TComboBox * ComboBox,

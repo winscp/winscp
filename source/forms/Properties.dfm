@@ -71,26 +71,29 @@ object PropertiesDialog: TPropertiesDialog
         Caption = 'Location:'
         ShowAccelChar = False
       end
-      object LocationLabel: TPathLabel
+      object LocationLabel: TEdit
         Left = 85
         Top = 58
-        Width = 243
-        Height = 13
-        UnixPath = True
-        IndentHorizontal = 0
-        IndentVertical = 0
-        Align = alNone
+        Width = 241
+        Height = 17
+        TabStop = False
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
+        BorderStyle = bsNone
+        TabOrder = 7
+        Text = 'LocationLabel'
       end
-      object FileLabel: TLabel
+      object FileLabel: TEdit
         Left = 85
         Top = 18
         Width = 241
-        Height = 13
+        Height = 17
+        TabStop = False
+        Anchors = [akLeft, akTop, akRight]
         AutoSize = False
-        Caption = 'FileLabel'
-        ShowAccelChar = False
+        BorderStyle = bsNone
+        TabOrder = 8
+        Text = 'FileLabel'
       end
       object Label2: TLabel
         Left = 8
@@ -100,15 +103,17 @@ object PropertiesDialog: TPropertiesDialog
         Caption = 'Size:'
         ShowAccelChar = False
       end
-      object SizeLabel: TLabel
+      object SizeLabel: TEdit
         Left = 85
         Top = 80
         Width = 160
-        Height = 13
+        Height = 17
+        TabStop = False
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
-        Caption = 'SizeLabel'
-        ShowAccelChar = False
+        BorderStyle = bsNone
+        TabOrder = 9
+        Text = 'SizeLabel'
       end
       object LinksToLabelLabel: TLabel
         Left = 8
@@ -118,17 +123,17 @@ object PropertiesDialog: TPropertiesDialog
         Caption = 'Links to:'
         ShowAccelChar = False
       end
-      object LinksToLabel: TPathLabel
+      object LinksToLabel: TEdit
         Left = 85
         Top = 102
-        Width = 240
-        Height = 13
-        UnixPath = True
-        IndentHorizontal = 0
-        IndentVertical = 0
-        Align = alNone
+        Width = 241
+        Height = 17
+        TabStop = False
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
+        BorderStyle = bsNone
+        TabOrder = 10
+        Text = 'LinksToLabel'
       end
       object Bevel2: TBevel
         Left = 8
@@ -185,12 +190,36 @@ object PropertiesDialog: TPropertiesDialog
         Anchors = [akLeft, akTop, akRight]
         Shape = bsTopLine
       end
+      object GroupView: TEdit
+        Left = 85
+        Top = 166
+        Width = 241
+        Height = 17
+        TabStop = False
+        Anchors = [akLeft, akTop, akRight]
+        BorderStyle = bsNone
+        MaxLength = 50
+        TabOrder = 4
+        Text = 'GroupView'
+      end
+      object OwnerView: TEdit
+        Left = 85
+        Top = 138
+        Width = 241
+        Height = 17
+        TabStop = False
+        Anchors = [akLeft, akTop, akRight]
+        BorderStyle = bsNone
+        MaxLength = 50
+        TabOrder = 2
+        Text = 'OwnerView'
+      end
       inline RightsFrame: TRightsFrame
         Left = 84
         Top = 200
         Width = 244
         Height = 109
-        TabOrder = 3
+        TabOrder = 5
       end
       object GroupComboBox: TComboBox
         Left = 85
@@ -199,7 +228,7 @@ object PropertiesDialog: TPropertiesDialog
         Height = 21
         DropDownCount = 16
         MaxLength = 50
-        TabOrder = 2
+        TabOrder = 3
         Text = 'GroupComboBox'
         OnChange = ControlChange
         OnExit = GroupComboBoxExit
@@ -223,7 +252,7 @@ object PropertiesDialog: TPropertiesDialog
         Height = 17
         Anchors = [akLeft, akTop, akRight]
         Caption = 'Set owner, group and permissions &recursively'
-        TabOrder = 4
+        TabOrder = 6
         OnClick = ControlChange
       end
       object CalculateSizeButton: TButton
