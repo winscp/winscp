@@ -62,13 +62,19 @@ __fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner,
   FChecksumLoaded = false;
   FMultipleChecksum = false;
 
-  LocationLabel->Caption = Directory;
+  LocationLabel->Text = Directory;
 
   FGroupList = GroupList;
   FUserList = UserList;
   FChecksumAlgs = ChecksumAlgs;
 
   ReadOnlyControl(ChecksumEdit);
+  ReadOnlyControl(OwnerView);
+  ReadOnlyControl(GroupView);
+  ReadOnlyControl(FileLabel);
+  ReadOnlyControl(LocationLabel);
+  ReadOnlyControl(SizeLabel);
+  ReadOnlyControl(LinksToLabel);
   ChecksumUnknownLabel->Caption = LoadStr(PROPERTIES_CHECKSUM_UNKNOWN);
   LoadInfo();
 
@@ -165,16 +171,19 @@ UnicodeString __fastcall TPropertiesDialog::LoadRemoteToken(
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::LoadRemoteToken(
-  TComboBox * ComboBox, bool Valid, const TRemoteToken & Token)
+  TComboBox * ComboBox, TEdit * View, TLabel * Label, bool Valid, const TRemoteToken & Token, int Change)
 {
   if (Valid)
   {
-    ComboBox->Text = LoadRemoteToken(Token);
+    UnicodeString Value = LoadRemoteToken(Token);
+    ComboBox->Text = Value;
+    View->Text = Value;
   }
-  else
-  {
-    ComboBox->Text = L"";
-  }
+  bool AllowedChange = FLAGSET(FAllowedChanges, Change);
+  ComboBox->Visible = Valid && AllowedChange;
+  View->Visible = Valid && !AllowedChange;
+  Label->Visible = Valid;
+  Label->FocusControl = AllowedChange ? static_cast<TWinControl *>(ComboBox) : static_cast<TWinControl *>(View);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::LoadRemoteTokens(TComboBox * ComboBox,
@@ -266,7 +275,7 @@ void __fastcall TPropertiesDialog::LoadInfo()
     LinksToLabel->Visible = File->IsSymLink;
     if (File->IsSymLink)
     {
-      LinksToLabel->Caption = File->LinkTo;
+      LinksToLabel->Text = File->LinkTo;
     }
 
     Caption = FMTLOAD(PROPERTIES_FILE_CAPTION, (File->FileName));
@@ -367,8 +376,8 @@ void __fastcall TPropertiesDialog::LoadStats(__int64 FilesSize,
     }
   }
 
-  SizeLabel->Caption = SizeStr;
-  FileLabel->Caption = FilesStr;
+  SizeLabel->Text = SizeStr;
+  FileLabel->Text = FilesStr;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::SetFileProperties(const TRemoteProperties & value)
@@ -395,21 +404,16 @@ void __fastcall TPropertiesDialog::SetFileProperties(const TRemoteProperties & v
     RightsFrame->AddXToDirectories = false;
   }
 
-  bool HasGroup = value.Valid.Contains(vpGroup);
-  LoadRemoteToken(GroupComboBox, HasGroup, value.Group);
-  bool HasOwner = value.Valid.Contains(vpOwner);
-  LoadRemoteToken(OwnerComboBox, HasOwner, value.Owner);
+  // Not necesarily true, let's find the scenario when it is not and then decide how to render that (shift group up?)
+  DebugAssert(value.Valid.Contains(vpOwner) || !value.Valid.Contains(vpGroup));
+  LoadRemoteToken(GroupComboBox, GroupView, GroupLabel, value.Valid.Contains(vpGroup), value.Group, cpGroup);
+  LoadRemoteToken(OwnerComboBox, OwnerView, OwnerLabel, value.Valid.Contains(vpOwner), value.Owner, cpOwner);
 
-  bool HasGroupOrOwner = HasGroup || HasOwner;
+  bool HasGroupOrOwner = GroupLabel->Visible || OwnerLabel->Visible;
   bool HasAnything = HasGroupOrOwner || HasRights;
   // Not necesarily true, let's find the scenario when it is not and then decide how to render that (shift rights up?)
   DebugAssert(HasGroupOrOwner || !HasRights);
-  bool ShowGroupAndOwner = HasAnything;
-  OwnerComboBox->Visible = HasGroupOrOwner;
-  OwnerLabel->Visible = OwnerComboBox->Visible;
-  GroupComboBox->Visible = HasGroupOrOwner;
-  GroupLabel->Visible = GroupComboBox->Visible;
-  GroupOwnerRightsBevel->Visible = ShowGroupAndOwner;
+  GroupOwnerRightsBevel->Visible = HasAnything;
 
   RecursiveCheck2->Checked = value.Recursive;
   RecursiveCheck2->Visible = HasAnything && FAnyDirectories;
