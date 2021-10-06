@@ -191,7 +191,7 @@ object LoginDialog: TLoginDialog
         object TransferProtocolView: TEdit
           Left = 12
           Top = 39
-          Width = 137
+          Width = 145
           Height = 21
           TabOrder = 1
           OnChange = TransferProtocolComboChange
