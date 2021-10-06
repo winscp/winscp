@@ -71,30 +71,6 @@ object PropertiesDialog: TPropertiesDialog
         Caption = 'Location:'
         ShowAccelChar = False
       end
-      object LocationLabel: TEdit
-        Left = 85
-        Top = 58
-        Width = 241
-        Height = 17
-        TabStop = False
-        Anchors = [akLeft, akTop, akRight]
-        AutoSize = False
-        BorderStyle = bsNone
-        TabOrder = 7
-        Text = 'LocationLabel'
-      end
-      object FileLabel: TEdit
-        Left = 85
-        Top = 18
-        Width = 241
-        Height = 17
-        TabStop = False
-        Anchors = [akLeft, akTop, akRight]
-        AutoSize = False
-        BorderStyle = bsNone
-        TabOrder = 8
-        Text = 'FileLabel'
-      end
       object Label2: TLabel
         Left = 8
         Top = 80
@@ -103,18 +79,6 @@ object PropertiesDialog: TPropertiesDialog
         Caption = 'Size:'
         ShowAccelChar = False
       end
-      object SizeLabel: TEdit
-        Left = 85
-        Top = 80
-        Width = 160
-        Height = 17
-        TabStop = False
-        Anchors = [akLeft, akTop, akRight]
-        AutoSize = False
-        BorderStyle = bsNone
-        TabOrder = 9
-        Text = 'SizeLabel'
-      end
       object LinksToLabelLabel: TLabel
         Left = 8
         Top = 102
@@ -122,18 +86,6 @@ object PropertiesDialog: TPropertiesDialog
         Height = 13
         Caption = 'Links to:'
         ShowAccelChar = False
-      end
-      object LinksToLabel: TEdit
-        Left = 85
-        Top = 102
-        Width = 241
-        Height = 17
-        TabStop = False
-        Anchors = [akLeft, akTop, akRight]
-        AutoSize = False
-        BorderStyle = bsNone
-        TabOrder = 10
-        Text = 'LinksToLabel'
       end
       object Bevel2: TBevel
         Left = 8
@@ -189,6 +141,54 @@ object PropertiesDialog: TPropertiesDialog
         Height = 9
         Anchors = [akLeft, akTop, akRight]
         Shape = bsTopLine
+      end
+      object LocationLabel: TEdit
+        Left = 85
+        Top = 58
+        Width = 241
+        Height = 17
+        TabStop = False
+        Anchors = [akLeft, akTop, akRight]
+        AutoSize = False
+        BorderStyle = bsNone
+        TabOrder = 7
+        Text = 'LocationLabel'
+      end
+      object FileLabel: TEdit
+        Left = 85
+        Top = 18
+        Width = 241
+        Height = 17
+        TabStop = False
+        Anchors = [akLeft, akTop, akRight]
+        AutoSize = False
+        BorderStyle = bsNone
+        TabOrder = 8
+        Text = 'FileLabel'
+      end
+      object SizeLabel: TEdit
+        Left = 85
+        Top = 80
+        Width = 160
+        Height = 17
+        TabStop = False
+        Anchors = [akLeft, akTop, akRight]
+        AutoSize = False
+        BorderStyle = bsNone
+        TabOrder = 9
+        Text = 'SizeLabel'
+      end
+      object LinksToLabel: TEdit
+        Left = 85
+        Top = 102
+        Width = 241
+        Height = 17
+        TabStop = False
+        Anchors = [akLeft, akTop, akRight]
+        AutoSize = False
+        BorderStyle = bsNone
+        TabOrder = 10
+        Text = 'LinksToLabel'
       end
       object GroupView: TEdit
         Left = 85
