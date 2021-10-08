@@ -1183,14 +1183,14 @@ void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString & ADirName, b
   }
   else
   {
-    TLibS3CallbackData Data;
-    RequestInit(Data);
-
     Key = GetFolderKey(Key);
 
     TLibS3BucketContext BucketContext = GetBucketContext(BucketName, Key);
 
     S3PutObjectHandler PutObjectHandler = { CreateResponseHandler(), NULL };
+
+    TLibS3CallbackData Data;
+    RequestInit(Data);
 
     S3_put_object(&BucketContext, StrToS3(Key), 0, NULL, FRequestContext, FTimeout, &PutObjectHandler, &Data);
 
