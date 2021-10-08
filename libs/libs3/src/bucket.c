@@ -652,10 +652,8 @@ static void listBucketCompleteCallback(S3Status requestStatus,
 {
     ListBucketData *lbData = (ListBucketData *) callbackData;
 
-    // Make the callback if there is anything
-    if (lbData->contentsCount || lbData->commonPrefixesCount) {
-        make_list_bucket_callback(lbData);
-    }
+    // WINSCP making callback unconditionally, as we need the isTruncated
+    make_list_bucket_callback(lbData);
 
     (*(lbData->responseCompleteCallback))
         (requestStatus, s3ErrorDetails, lbData->callbackData);
