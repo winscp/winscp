@@ -50,5 +50,6 @@
 #define OPTION_MPEXT_HOST 1009
 #define OPTION_MPEXT_NODELAY 1010
 #define OPTION_MPEXT_NOLIST 1011
+#define OPTION_MPEXT_COMPLETE_TLS_SHUTDOWN 1012
 //---------------------------------------------------------------------------
 #endif // FileZillaOptH

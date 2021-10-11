@@ -297,6 +297,7 @@ private:
   bool FBytesAvailableSuppoted;
   bool FMVS;
   bool FVMS;
+  bool FFileZilla;
   bool FFileTransferAny;
   bool FLoggedIn;
   bool FVmsAllRevisions;
