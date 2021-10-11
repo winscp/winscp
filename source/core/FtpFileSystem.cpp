@@ -375,6 +375,7 @@ void __fastcall TFTPFileSystem::Open()
   FWindowsServer = false;
   FMVS = false;
   FVMS = false;
+  FFileZilla = false;
   FTransferActiveImmediately = (Data->FtpTransferActiveImmediately == asOn);
   FVMSAllRevisions = Data->VMSAllRevisions;
 
@@ -637,13 +638,7 @@ void __fastcall TFTPFileSystem::CollectUsage()
     FTerminal->CollectTlsUsage(TlsVersionStr);
   }
 
-  // 220-FileZilla Server version 0.9.43 beta
-  // 220-written by Tim Kosse (Tim.Kosse@gmx.de)
-  // 220 Please visit http://sourceforge.net/projects/filezilla/
-  // SYST
-  // 215 UNIX emulated by FileZilla
-  // (Welcome message is configurable)
-  if (ContainsText(FSystem, L"FileZilla"))
+  if (FFileZilla)
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPFileZilla");
   }
@@ -2840,6 +2835,10 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       Result = FFileTransferNoList ? TRUE : FALSE;
       break;
 
+    case OPTION_MPEXT_COMPLETE_TLS_SHUTDOWN:
+      Result = FFileZilla ? FALSE : TRUE;
+      break;
+
     default:
       DebugFail();
       Result = FALSE;
@@ -3492,6 +3491,16 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
         {
           FTerminal->LogEvent(L"Server is known to require use of relative paths");
           FWorkFromCwd = asOn;
+        }
+        // 220-FileZilla Server 1.0.1
+        // 220 Please visit https://filezilla-project.org/
+        // SYST
+        // 215 UNIX emulated by FileZilla
+        // (Welcome message is configurable)
+        if (ContainsText(FSystem, L"FileZilla"))
+        {
+          FTerminal->LogEvent(L"FileZilla server detected.");
+          FFileZilla = true;
         }
       }
       else

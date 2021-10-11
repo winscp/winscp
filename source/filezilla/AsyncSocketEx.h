@@ -283,6 +283,7 @@ protected:
 
   virtual void LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg) {};
   virtual bool LoggingSocketMessage(int nMessageType) { return true; };
+  virtual int GetSocketOptionVal(int OptionID) const { DebugFail(); return 0; };
   virtual void ConfigureSocket() {};
 };
 //---------------------------------------------------------------------------

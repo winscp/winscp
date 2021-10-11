@@ -1015,8 +1015,15 @@ BOOL CAsyncSslSocketLayer::ShutDown(int nHow /*=sends*/)
     int res = SSL_shutdown(m_ssl);
     if (res == 0)
     {
-      // maybe we do not need to call this at all (as neon does)
-      SSL_shutdown(m_ssl);
+      // Without bi-directional shutdown, file uploads are incomplete on some servers
+      res = SSL_shutdown(m_ssl);
+
+      if ((SSL_version(m_ssl) <= TLS1_2_VERSION) ||
+          !GetSocketOptionVal(OPTION_MPEXT_COMPLETE_TLS_SHUTDOWN))
+      {
+        LogSocketMessageRaw(FZ_LOG_INFO, L"Not waiting for complete TLS shutdown");
+        res = 0;
+      }
     }
     if (res >= 0)
     {

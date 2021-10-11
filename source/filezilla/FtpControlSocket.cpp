@@ -6035,6 +6035,11 @@ bool CFtpControlSocket::LoggingSocketMessage(int nMessageType)
   return LoggingMessageType(nMessageType);
 }
 
+int CFtpControlSocket::GetSocketOptionVal(int OptionID) const
+{
+  return GetOptionVal(OptionID);
+}
+
 BOOL CFtpControlSocket::ParsePwdReply(CString& rawpwd)
 {
   CServerPath realPath;

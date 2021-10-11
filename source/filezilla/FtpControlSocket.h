@@ -144,6 +144,7 @@ protected:
 
   virtual void LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg);
   virtual bool LoggingSocketMessage(int nMessageType);
+  virtual int GetSocketOptionVal(int OptionID) const;
 
   void ShowStatus(UINT nID, int type) const;
   void ShowStatus(CString status,int type) const;

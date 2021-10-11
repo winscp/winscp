@@ -136,6 +136,7 @@ protected:
 
   void LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg);
   bool LoggingSocketMessage(int nMessageType);
+  int GetSocketOptionVal(int OptionID) const;
 
 private:
   // Layer state can't be set directly from derived classes

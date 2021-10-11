@@ -56,6 +56,7 @@ protected:
   virtual int OnLayerCallback(std::list<t_callbackMsg> & callbacks);
   int ReadDataFromFile(char * buffer, int len);
   virtual void LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg);
+  virtual int GetSocketOptionVal(int OptionID) const;
   virtual void ConfigureSocket();
   bool Activate();
   void Start();

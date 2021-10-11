@@ -1135,6 +1135,11 @@ void CTransferSocket::LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg)
   LogMessageRaw(nMessageType, pMsg);
 }
 
+int CTransferSocket::GetSocketOptionVal(int OptionID) const
+{
+  return GetOptionVal(OptionID);
+}
+
 void CTransferSocket::EnsureSendClose(int Mode)
 {
   if (!m_bSentClose)

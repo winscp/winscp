@@ -980,3 +980,11 @@ bool CAsyncSocketExLayer::LoggingSocketMessage(int nMessageType)
   else
     return m_pOwnerSocket->LoggingSocketMessage(nMessageType);
 }
+
+int CAsyncSocketExLayer::GetSocketOptionVal(int OptionID) const
+{
+  if (m_pPrevLayer)
+    return m_pPrevLayer->GetSocketOptionVal(OptionID);
+  else
+    return m_pOwnerSocket->GetSocketOptionVal(OptionID);
+}
