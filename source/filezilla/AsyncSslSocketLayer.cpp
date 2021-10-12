@@ -606,7 +606,7 @@ int CAsyncSslSocketLayer::Receive(void* lpBuf, int nBufLen, int nFlags)
 
 void CAsyncSslSocketLayer::Close()
 {
-  if (!m_nShutDown && m_bSslEstablished)
+  if (!m_nShutDown && m_bSslEstablished && !m_nCriticalError)
   {
     ShutDown();
     while (!ShutDownComplete())
