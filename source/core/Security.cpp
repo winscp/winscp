@@ -11,13 +11,15 @@
 #define PWALG_SIMPLE_INTERNAL 0x00
 #define PWALG_SIMPLE_EXTERNAL 0x01
 #define PWALG_SIMPLE_INTERNAL2 0x02
+RawByteString PWALG_SIMPLE_STRING("0123456789ABCDEF");
 //---------------------------------------------------------------------------
 RawByteString SimpleEncryptChar(unsigned char Ch)
 {
   Ch = (unsigned char)((~Ch) ^ PWALG_SIMPLE_MAGIC);
-  return
-    PWALG_SIMPLE_STRING.SubString(((Ch & 0xF0) >> 4) + 1, 1) +
-    PWALG_SIMPLE_STRING.SubString(((Ch & 0x0F) >> 0) + 1, 1);
+  RawByteString Result("..");
+  Result[1] = PWALG_SIMPLE_STRING[((Ch & 0xF0) >> 4) + 1];
+  Result[2] = PWALG_SIMPLE_STRING[((Ch & 0x0F) >> 0) + 1];
+  return Result;
 }
 //---------------------------------------------------------------------------
 unsigned char SimpleDecryptNextChar(RawByteString &Str)
@@ -38,8 +40,7 @@ RawByteString EncryptPassword(UnicodeString UnicodePassword, UnicodeString Unico
   UTF8String Password = UnicodePassword;
   UTF8String Key = UnicodeKey;
 
-  RawByteString Result("");
-  int Index;
+  RawByteString Result;
 
   if (!RandSeed) Randomize();
   Password = Key + Password;
@@ -62,9 +63,9 @@ RawByteString EncryptPassword(UnicodeString UnicodePassword, UnicodeString Unico
     Password.Length();
   int Shift = (DataLen < PWALG_SIMPLE_MAXLEN) ? random(PWALG_SIMPLE_MAXLEN - DataLen) : 0;
   Result += SimpleEncryptChar((unsigned char)Shift);
-  for (Index = 0; Index < Shift; Index++)
+  for (int Index = 0; Index < Shift; Index++)
     Result += SimpleEncryptChar((unsigned char)random(256));
-  for (Index = 0; Index < Password.Length(); Index++)
+  for (int Index = 0; Index < Password.Length(); Index++)
     Result += SimpleEncryptChar(Password.c_str()[Index]);
   while (Result.Length() < PWALG_SIMPLE_MAXLEN * 2)
     Result += SimpleEncryptChar((unsigned char)random(256));
