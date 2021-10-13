@@ -1106,6 +1106,7 @@ begin
     IsRecycleBin := False;
     IsParentDir := True;
     Size := -1;
+    CalculatedSize := -1;
 
     Item.Caption := '..';
 
