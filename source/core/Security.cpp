@@ -39,12 +39,10 @@ RawByteString EncryptPassword(UnicodeString UnicodePassword, UnicodeString Unico
   UTF8String Key = UnicodeKey;
 
   RawByteString Result("");
-  int Shift, Index;
+  int Index;
 
   if (!RandSeed) Randomize();
   Password = Key + Password;
-  Shift = (Password.Length() < PWALG_SIMPLE_MAXLEN) ?
-    (unsigned char)random(PWALG_SIMPLE_MAXLEN - Password.Length()) : 0;
   Result += SimpleEncryptChar((unsigned char)PWALG_SIMPLE_FLAG); // Flag
   int Len = Password.Length();
   if (Len > std::numeric_limits<unsigned char>::max())
@@ -58,6 +56,11 @@ RawByteString EncryptPassword(UnicodeString UnicodePassword, UnicodeString Unico
     Result += SimpleEncryptChar((unsigned char)PWALG_SIMPLE_INTERNAL);
     Result += SimpleEncryptChar((unsigned char)Len);
   }
+  int DataLen =
+    (Result.Length() / 2) +
+    1 + // Shift
+    Password.Length();
+  int Shift = (DataLen < PWALG_SIMPLE_MAXLEN) ? random(PWALG_SIMPLE_MAXLEN - DataLen) : 0;
   Result += SimpleEncryptChar((unsigned char)Shift);
   for (Index = 0; Index < Shift; Index++)
     Result += SimpleEncryptChar((unsigned char)random(256));
