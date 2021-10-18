@@ -27,7 +27,7 @@ using System.Runtime.InteropServices;
 
 [assembly: CLSCompliant(true)]
 
-[assembly: InternalsVisibleTo("Tests")]
+[assembly: InternalsVisibleTo("TestsAccess")]
 
 namespace WinSCP
 {
