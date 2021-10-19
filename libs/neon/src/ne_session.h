@@ -329,6 +329,7 @@ void ne_set_useragent(ne_session *sess, const char *product);
 
 #ifdef WINSCP
 void ne_set_realhost(ne_session *sess, const char *realhost);
+void ne_ssl_set_certificates_storage(ne_session *sess, const char * filename);
 #endif
 
 /* Returns non-zero if next-hop server does not claim compliance to

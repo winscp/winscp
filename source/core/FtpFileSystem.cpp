@@ -2685,6 +2685,10 @@ const wchar_t * __fastcall TFTPFileSystem::GetOption(int OptionID) const
       FOptionScratch = L"";
       break;
 
+    case OPTION_MPEXT_CERT_STORAGE:
+      FOptionScratch = FTerminal->Configuration->CertificateStorageExpanded;
+      break;
+
     default:
       DebugFail();
       FOptionScratch = L"";
