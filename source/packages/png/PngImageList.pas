@@ -862,7 +862,6 @@ begin
       {$WARN COMPARISON_TRUE OFF }
       if (idx >= Low(FOverlayIndex)) and (idx <= High(FOverlayIndex)) then begin
         Result := FOverlayIndex[idx];
-{$WARN COMPARISON_TRUE DEFAULT}
       end;
       {$WARN COMPARISON_TRUE DEFAULT }
     end;

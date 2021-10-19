@@ -2656,7 +2656,7 @@ void __fastcall TLoginDialog::ImportActionExecute(TObject * /*Sender*/)
       SessionTree->Items->Clear();
       Configuration->Import(OpenDialog->FileName);
       // Similar to TPreferencesDialog::CustomIniFileStorageChanged
-      ExecuteSelf(EmptyStr);
+      ExecuteShellChecked(Application->ExeName, EmptyStr);
       TerminateApplication();
     }
   }

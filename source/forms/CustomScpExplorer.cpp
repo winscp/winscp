@@ -4991,7 +4991,7 @@ void TCustomScpExplorerForm::DoOpenFolderOrWorkspace(
     TManagedTerminal * FirstTerminal = Manager->NewTerminals(DataList.get());
     // FirstTerminal can be null, if some of the
     if (!ConnectFirstTerminal && (FirstTerminal != NULL))
-      {
+    {
       FirstTerminal->Disconnected = true;
       FirstTerminal->DisconnectedTemporarily = true;
     }

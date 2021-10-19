@@ -272,7 +272,6 @@ type
     function ItemCanDrag(Item: TListItem): Boolean; virtual;
     function DoItemColor(Item: TListItem): TColor;
     function ItemColor(Item: TListItem): TColor; virtual;
-    function ItemData(Item: TListItem): TObject; virtual;
     function ItemImageIndex(Item: TListItem; Cache: Boolean): Integer; virtual; abstract;
     // ItemIsDirectory and ItemFullFileName is in public block
     function ItemIsRecycleBin(Item: TListItem): Boolean; virtual;
@@ -361,6 +360,7 @@ type
     function ItemFileName(Item: TListItem): string; virtual; abstract;
     function ItemFileSize(Item: TListItem): Int64; virtual; abstract;
     function ItemFileTime(Item: TListItem; var Precision: TDateTimePrecision): TDateTime; virtual; abstract;
+    function ItemData(Item: TListItem): TObject; virtual;
     procedure ReloadDirectory; virtual; abstract;
     procedure DisplayPropertiesMenu; virtual; abstract;
     function CreateChangedFileList(DirView: TCustomDirView; FullPath: Boolean;

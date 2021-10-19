@@ -449,7 +449,7 @@ static mp_int *eddsa_exponent_from_hash(
      * Clear a curve-specific number of low bits.
      */
     { // WINSCP
-    unsigned int bit; // WINSCP
+    unsigned bit; // WINSCP 
     for (bit = 0; bit < curve->e.log2_cofactor; bit++)
         mp_set_bit(e, bit, 0);
     } // WINSCP
