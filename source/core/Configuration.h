@@ -80,6 +80,7 @@ private:
   int FDontReloadMoreThanSessions;
   int FScriptProgressFileNameLimit;
   int FKeyVersion;
+  UnicodeString FCertificateStorage;
 
   bool FDisablePasswordStoring;
   bool FForceBanners;
@@ -145,6 +146,8 @@ private:
   void __fastcall SetTryFtpWhenSshFails(bool value);
   void __fastcall SetParallelDurationThreshold(int value);
   void __fastcall SetMimeTypes(UnicodeString value);
+  void SetCertificateStorage(const UnicodeString & value);
+  UnicodeString GetCertificateStorageExpanded();
   bool __fastcall GetCollectUsage();
   void __fastcall SetCollectUsage(bool value);
   bool __fastcall GetIsUnofficial();
@@ -326,6 +329,8 @@ public:
   __property int CacheDirectoryChangesMaxSize = { read = FCacheDirectoryChangesMaxSize, write = SetCacheDirectoryChangesMaxSize };
   __property bool ShowFtpWelcomeMessage = { read = FShowFtpWelcomeMessage, write = SetShowFtpWelcomeMessage };
   __property UnicodeString ExternalIpAddress = { read = FExternalIpAddress, write = SetExternalIpAddress };
+  __property UnicodeString CertificateStorage = { read = FCertificateStorage, write = SetCertificateStorage };
+  __property UnicodeString CertificateStorageExpanded = { read = GetCertificateStorageExpanded };
   __property int LocalPortNumberMin = { read = FLocalPortNumberMin, write = SetLocalPortNumberMin };
   __property int LocalPortNumberMax = { read = FLocalPortNumberMax, write = SetLocalPortNumberMax };
   __property bool TryFtpWhenSshFails = { read = FTryFtpWhenSshFails, write = SetTryFtpWhenSshFails };

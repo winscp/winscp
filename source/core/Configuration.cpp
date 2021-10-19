@@ -116,6 +116,7 @@ void __fastcall TConfiguration::Default()
   FTryFtpWhenSshFails = true;
   FParallelDurationThreshold = 10;
   FMimeTypes = UnicodeString();
+  FCertificateStorage = EmptyStr;
   FDontReloadMoreThanSessions = 1000;
   FScriptProgressFileNameLimit = 25;
   FKeyVersion = 0;
@@ -256,6 +257,7 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(Integer,  ScriptProgressFileNameLimit); \
     KEY(Integer,  KeyVersion); \
     KEY(Bool,     CollectUsage); \
+    KEY(String,   CertificateStorage); \
   ); \
   BLOCK(L"Logging", CANCREATE, \
     KEYEX(Bool,  PermanentLogging, L"Logging"); \
@@ -1662,6 +1664,25 @@ void TConfiguration::SetLocalPortNumberMax(int value)
 void __fastcall TConfiguration::SetMimeTypes(UnicodeString value)
 {
   SET_CONFIG_PROPERTY(MimeTypes);
+}
+//---------------------------------------------------------------------
+void TConfiguration::SetCertificateStorage(const UnicodeString & value)
+{
+  SET_CONFIG_PROPERTY(CertificateStorage);
+}
+//---------------------------------------------------------------------
+UnicodeString TConfiguration::GetCertificateStorageExpanded()
+{
+  UnicodeString Result = FCertificateStorage;
+  if (Result.IsEmpty())
+  {
+    UnicodeString DefaultCertificateStorage = TPath::Combine(ExtractFilePath(ModuleFileName()), L"cacert.pem");
+    if (FileExists(DefaultCertificateStorage))
+    {
+      Result = DefaultCertificateStorage;
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetTryFtpWhenSshFails(bool value)

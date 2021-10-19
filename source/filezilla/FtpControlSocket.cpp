@@ -384,17 +384,7 @@ bool CFtpControlSocket::InitConnect()
 
     m_pSslLayer->SetClientCertificate(m_CurrentServer.Certificate, m_CurrentServer.PrivateKey);
 
-    TCHAR buffer[1000];
-    GetModuleFileName(NULL, buffer, 1000);
-    CString filename = buffer;
-    int pos = filename.ReverseFind(L'\\');
-    if (pos != -1)
-    {
-      filename = filename.Left(pos + 1);
-      filename += L"cacert.pem";
-    }
-    else
-      filename = L"cacert.pem";
+    CString filename = GetOption(OPTION_MPEXT_CERT_STORAGE);
     m_pSslLayer->SetCertStorage(filename);
   }
 
