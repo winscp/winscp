@@ -114,6 +114,10 @@ void InitNeonSession(ne_session * Session, TProxyMethod ProxyMethod, const Unico
   if (!CertificateStorage.IsEmpty())
   {
     ne_ssl_set_certificates_storage(Session, StrToNeon(CertificateStorage));
+    if (Terminal != NULL)
+    {
+      Terminal->LogEvent(FORMAT(L"Using certificate store \"%s\"", (CertificateStorage)));
+    }
   }
 
   if (Terminal != NULL)
