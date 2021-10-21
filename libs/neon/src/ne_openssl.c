@@ -829,6 +829,13 @@ void ne_ssl_trust_default_ca(ne_session *sess)
 #endif
 }
 
+#ifdef WINSCP
+void ne_ssl_set_certificates_storage(ne_session *sess, const char * filename)
+{
+    SSL_CTX_load_verify_locations(sess->ssl_context->ctx, filename, 0);
+}
+#endif
+
 /* Find a friendly name in a PKCS12 structure the hard way, without
  * decrypting the parts which are encrypted.. */
 static char *find_friendly_name(PKCS12 *p12)
