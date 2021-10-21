@@ -1013,7 +1013,6 @@ UnicodeString __fastcall TConfiguration::GetVersionStr()
       BuildStr += L" " + IntToStr(Build);
     }
 
-    #ifndef BUILD_OFFICIAL
     UnicodeString BuildDate = __DATE__;
     UnicodeString MonthStr = CutToChar(BuildDate, L' ', true);
     int Month = ParseShortEngMonthName(MonthStr);
@@ -1021,7 +1020,6 @@ UnicodeString __fastcall TConfiguration::GetVersionStr()
     int Year = StrToInt(Trim(BuildDate));
     UnicodeString DateStr = FORMAT(L"%d-%2.2d-%2.2d", (Year, Month, Day));
     AddToList(BuildStr, DateStr, L" ");
-    #endif
 
     UnicodeString FullVersion = Version;
 
