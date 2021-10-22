@@ -2,7 +2,7 @@
 
 To build WinSCP you need:
 - [Embarcadero C++ Builder XE6 Professional](https://www.embarcadero.com/products/cbuilder).
-- [Build Tools and Agents for Visual Studio 2017](https://visualstudio.microsoft.com/) (for C# 7.0)
+- [Build Tools and Agents for Visual Studio 2019](https://visualstudio.microsoft.com/) (for C# 9.0)
 - [nasm](https://www.nasm.us/) (store it to `buildtools/tools/nasm.exe`)
 - [Object file converter](https://www.agner.org/optimize/#objconv) (store it to `buildtools/tools/objconv.exe`)
 - Build MFC (see [`readme_mfc.txt`](readme_mfc.txt)).
