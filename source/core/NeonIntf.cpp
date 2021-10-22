@@ -111,7 +111,7 @@ void InitNeonSession(ne_session * Session, TProxyMethod ProxyMethod, const Unico
   ne_redirect_register(Session);
   ne_set_useragent(Session, StrToNeon(FORMAT(L"%s/%s", (AppNameString(), Configuration->Version))));
 
-  UnicodeString CertificateStorage = TPath::Combine(ExtractFilePath(ModuleFileName()), L"cacert.pem");
+  UnicodeString CertificateStorage = IncludeTrailingBackslash(ExtractFilePath(ParamStr(0))) + L"cacert.pem";
   if (FileExists(CertificateStorage))
   {
     ne_ssl_set_certificates_storage(Session, StrToNeon(CertificateStorage));
