@@ -276,6 +276,7 @@ void __fastcall TSessionData::DefaultSettings()
   FtpListAll = asAuto;
   FtpHost = asAuto;
   FtpWorkFromCwd = asAuto;
+  FtpAnyCodeForPwd = false;
   SslSessionReuse = true;
   TlsCertificateFile = L"";
 
@@ -447,6 +448,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(FtpListAll); \
   PROPERTY(FtpHost); \
   PROPERTY(FtpWorkFromCwd); \
+  PROPERTY(FtpAnyCodeForPwd); \
   PROPERTY(SslSessionReuse); \
   PROPERTY(TlsCertificateFile); \
   \
@@ -864,6 +866,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   FtpListAll = Storage->ReadEnum(L"FtpListAll", FtpListAll, AutoSwitchMapping);
   FtpHost = Storage->ReadEnum(L"FtpHost", FtpHost, AutoSwitchMapping);
   FtpWorkFromCwd = Storage->ReadEnum(L"FtpWorkFromCwd", Storage->ReadEnum(L"FtpDeleteFromCwd", FtpWorkFromCwd), AutoSwitchMapping);
+  FtpAnyCodeForPwd = Storage->ReadBool(L"FtpAnyCodeForPwd", FtpAnyCodeForPwd);
   SslSessionReuse = Storage->ReadBool(L"SslSessionReuse", SslSessionReuse);
   TlsCertificateFile = Storage->ReadString(L"TlsCertificateFile", TlsCertificateFile);
 
@@ -1219,6 +1222,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(Integer, FtpListAll);
     WRITE_DATA(Integer, FtpHost);
     WRITE_DATA(Integer, FtpWorkFromCwd);
+    WRITE_DATA(Bool, FtpAnyCodeForPwd);
     WRITE_DATA(Bool, SslSessionReuse);
     WRITE_DATA(String, TlsCertificateFile);
 
@@ -4128,6 +4132,11 @@ void __fastcall TSessionData::SetFtpHost(TAutoSwitch value)
 void __fastcall TSessionData::SetFtpWorkFromCwd(TAutoSwitch value)
 {
   SET_SESSION_PROPERTY(FtpWorkFromCwd);
+}
+//---------------------------------------------------------------------
+void TSessionData::SetFtpAnyCodeForPwd(bool value)
+{
+  SET_SESSION_PROPERTY(FtpAnyCodeForPwd);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetSslSessionReuse(bool value)

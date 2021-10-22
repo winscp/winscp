@@ -196,6 +196,7 @@ private:
   TAutoSwitch FFtpListAll;
   TAutoSwitch FFtpHost;
   TAutoSwitch FFtpWorkFromCwd;
+  bool FFtpAnyCodeForPwd;
   bool FSslSessionReuse;
   UnicodeString FTlsCertificateFile;
   TAddressFamily FAddressFamily;
@@ -371,6 +372,7 @@ private:
   void __fastcall SetFtpListAll(TAutoSwitch value);
   void __fastcall SetFtpHost(TAutoSwitch value);
   void __fastcall SetFtpWorkFromCwd(TAutoSwitch value);
+  void SetFtpAnyCodeForPwd(bool value);
   void __fastcall SetSslSessionReuse(bool value);
   void __fastcall SetTlsCertificateFile(UnicodeString value);
   UnicodeString __fastcall GetStorageKey();
@@ -642,6 +644,7 @@ public:
   __property TAutoSwitch FtpListAll = { read = FFtpListAll, write = SetFtpListAll };
   __property TAutoSwitch FtpHost = { read = FFtpHost, write = SetFtpHost };
   __property TAutoSwitch FtpWorkFromCwd = { read = FFtpWorkFromCwd, write = SetFtpWorkFromCwd };
+  __property bool FtpAnyCodeForPwd = { read = FFtpAnyCodeForPwd, write = SetFtpAnyCodeForPwd };
   __property bool SslSessionReuse = { read = FSslSessionReuse, write = SetSslSessionReuse };
   __property UnicodeString TlsCertificateFile = { read=FTlsCertificateFile, write=SetTlsCertificateFile };
   __property TDSTMode DSTMode = { read = FDSTMode, write = SetDSTMode };
