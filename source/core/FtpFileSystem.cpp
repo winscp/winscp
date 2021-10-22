@@ -1960,8 +1960,8 @@ void __fastcall TFTPFileSystem::ReadCurrentDirectory()
       DebugAssert(Response != NULL);
       bool Result = false;
 
-      // the only allowed 2XX code to "PWD"
-      if ((Code == 257) &&
+      // The 257 is the only allowed 2XX code to "PWD"
+      if (((Code == 257) || FTerminal->SessionData->FtpAnyCodeForPwd) &&
           (Response->Count == 1))
       {
         UnicodeString Path = Response->Text;
