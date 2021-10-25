@@ -213,6 +213,8 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FQueueFileList.reset(new TQueueFileList());
   FProgressSide = osCurrent;
   FCalculateSizeOperation = NULL;
+  FDownloadingFromClipboard = false;
+  FClipboardFakeMonitorsPendingReset = false;
 
   FEditorManager = new TEditorManager();
   FEditorManager->OnFileChange = ExecutedFileChanged;
@@ -4855,6 +4857,12 @@ void __fastcall TCustomScpExplorerForm::Idle()
   if (FShowing)
   {
     UpdateStatusBar();
+  }
+
+  if (FClipboardFakeMonitorsPendingReset && !FDownloadingFromClipboard)
+  {
+    FClipboardFakeMonitorsPendingReset = false;
+    FClipboardFakeMonitors.reset(NULL);
   }
 
   FIgnoreNextDialogChar = 0;
@@ -10945,7 +10953,15 @@ void __fastcall TCustomScpExplorerForm::ClipboardStop()
   RemoveDir(ApiPath(FClipboardFakeDirectory));
   FClipboardFakeDirectory = UnicodeString();
   FClipboardTerminal = NULL;
-  FClipboardFakeMonitors.reset(NULL);
+  if (FDownloadingFromClipboard)
+  {
+    // We are called by the monitor, so attempt to release it would deadlonk
+    FClipboardFakeMonitorsPendingReset = true;
+  }
+  else
+  {
+    FClipboardFakeMonitors.reset(NULL);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ClipboardDataObjectRelease(TObject * /*Sender*/)
@@ -10981,7 +10997,10 @@ void __fastcall TCustomScpExplorerForm::ClipboardFakeCreated(TObject * /*Sender*
     {
       if (!NonVisualDataModule->Busy)
       {
+        DebugAssert(!FClipboardFakeMonitorsPendingReset);
+        FClipboardFakeMonitorsPendingReset = false;
         bool NoConfirmation = (WinConfiguration->DDTransferConfirmation == asOff);
+        TAutoFlag Flag(FDownloadingFromClipboard);
         ClipboardDownload(ExtractFilePath(FileName), NoConfirmation, true);
       }
     }

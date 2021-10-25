@@ -240,6 +240,8 @@ private:
   TObjectList * FDragFakeMonitors;
   UnicodeString FClipboardFakeDirectory;
   std::unique_ptr<TObjectList> FClipboardFakeMonitors;
+  bool FDownloadingFromClipboard;
+  bool FClipboardFakeMonitorsPendingReset;
   std::unique_ptr<TDragDropFilesEx> FClipboardDragDropFilesEx;
   TManagedTerminal * FClipboardTerminal;
   std::unique_ptr<TStrings> FClipboardFileList;
