@@ -609,7 +609,8 @@ void CAsyncSslSocketLayer::Close()
   if (!m_nShutDown && m_bSslEstablished && !m_nNetworkError && !m_nCriticalError)
   {
     ShutDown();
-    while (!ShutDownComplete() && !m_nNetworkError && !m_nCriticalError)
+    while (!ShutDownComplete() && !m_nNetworkError && !m_nCriticalError &&
+           ((m_nNetworkSendBufferLen > 0) || (BIO_ctrl_pending(m_nbio) > 0) || m_pRetrySendBuffer))
     {
       OnSend(0);
     }
