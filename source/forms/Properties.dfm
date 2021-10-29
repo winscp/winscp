@@ -215,9 +215,9 @@ object PropertiesDialog: TPropertiesDialog
         Text = 'OwnerView'
       end
       inline RightsFrame: TRightsFrame
-        Left = 84
-        Top = 200
-        Width = 244
+        Left = 81
+        Top = 199
+        Width = 247
         Height = 109
         TabOrder = 5
       end
