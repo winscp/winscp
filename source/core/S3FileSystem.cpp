@@ -763,6 +763,8 @@ bool __fastcall TS3FileSystem::IsCapable(int Capability) const
     case fcMoveToQueue:
     case fcSkipTransfer:
     case fcParallelTransfers:
+    case fcLoadingAdditionalProperties:
+    case fcAclChangingFiles:
       return true;
 
     case fcPreservingTimestampUpload:
@@ -780,7 +782,6 @@ bool __fastcall TS3FileSystem::IsCapable(int Capability) const
     case fcNativeTextMode:
     case fcNewerOnlyUpload:
     case fcTimestampChanging:
-    case fcLoadingAdditionalProperties:
     case fcIgnorePermErrors:
     case fcCalculatingChecksum:
     case fcSecondaryShell:
@@ -1332,17 +1333,314 @@ void __fastcall TS3FileSystem::CreateLink(const UnicodeString FileName,
   DebugFail();
 }
 //---------------------------------------------------------------------------
-void __fastcall TS3FileSystem::ChangeFileProperties(const UnicodeString FileName,
-  const TRemoteFile * /*File*/, const TRemoteProperties * /*Properties*/,
-  TChmodSessionAction & /*Action*/)
+struct TS3FileProperties
 {
-  DebugFail();
+  char OwnerId[S3_MAX_GRANTEE_USER_ID_SIZE];
+  char OwnerDisplayName[S3_MAX_GRANTEE_DISPLAY_NAME_SIZE];
+  int AclGrantCount;
+  S3AclGrant AclGrants[S3_MAX_ACL_GRANT_COUNT];
+};
+//---------------------------------------------------------------------------
+static TRights::TRightLevel S3PermissionToRightLevel(S3Permission Permission)
+{
+  TRights::TRightLevel Result;
+  switch (Permission)
+  {
+    case S3PermissionRead: Result = TRights::rlS3Read; break;
+    case S3PermissionWrite: Result = TRights::rlS3Write; break;
+    case S3PermissionReadACP: Result = TRights::rlS3ReadACP; break;
+    case S3PermissionWriteACP: Result = TRights::rlS3WriteACP; break;
+    default: DebugFail(); Result = TRights::rlNone; break;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TS3FileSystem::LoadFilesProperties(TStrings * /*FileList*/)
+bool TS3FileSystem::ParsePathForPropertiesRequests(
+  const UnicodeString & Path, const TRemoteFile * File, UnicodeString & BucketName, UnicodeString & Key)
 {
-  DebugFail();
-  return false;
+  UnicodeString FileName = AbsolutePath(Path, false);
+
+  ParsePath(FileName, BucketName, Key);
+
+  bool Result = !Key.IsEmpty();
+  if (Result && File->IsDirectory)
+  {
+    Key = GetFolderKey(Key);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool TS3FileSystem::DoLoadFileProperties(
+  const UnicodeString & AFileName, const TRemoteFile * File, TS3FileProperties & Properties)
+{
+  UnicodeString BucketName, Key;
+  bool Result = ParsePathForPropertiesRequests(AFileName, File, BucketName, Key);
+  if (Result)
+  {
+    TLibS3BucketContext BucketContext = GetBucketContext(BucketName, Key);
+
+    S3ResponseHandler ResponseHandler = CreateResponseHandler();
+
+    TLibS3CallbackData Data;
+    RequestInit(Data);
+
+    S3_get_acl(
+      &BucketContext, StrToS3(Key), Properties.OwnerId, Properties.OwnerDisplayName,
+      &Properties.AclGrantCount, Properties.AclGrants,
+      FRequestContext, FTimeout, &ResponseHandler, &Data);
+
+    CheckLibS3Error(Data);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+typedef std::vector<S3AclGrant> TAclGrantsVector;
+static void AddAclGrant(
+  TRights::TRightGroup Group, unsigned short & Permissions, TAclGrantsVector & AclGrants,
+  const S3AclGrant & AclGrantTemplate, S3Permission Permission)
+{
+  TRights::TRightLevel Level = S3PermissionToRightLevel(Permission);
+  TRights::TFlag Flag = TRights::CalculateFlag(Group, Level);
+  if (FLAGSET(Permissions, Flag))
+  {
+    S3AclGrant AclGrant(AclGrantTemplate);
+    AclGrant.permission = Permission;
+    AclGrants.push_back(AclGrant);
+    Permissions -= static_cast<short int>(Flag);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TS3FileSystem::ChangeFileProperties(const UnicodeString FileName,
+  const TRemoteFile * File, const TRemoteProperties * Properties,
+  TChmodSessionAction & /*Action*/)
+{
+  TValidProperties ValidProperties = Properties->Valid;
+  if (DebugAlwaysTrue(ValidProperties.Contains(vpRights)))
+  {
+    ValidProperties >> vpRights;
+
+    DebugAssert(!Properties->AddXToDirectories);
+
+    TS3FileProperties FileProperties;
+    if (DebugAlwaysTrue(!File->IsDirectory) &&
+        DebugAlwaysTrue(DoLoadFileProperties(FileName, File, FileProperties)))
+    {
+      TAclGrantsVector NewAclGrants;
+
+      unsigned short Permissions = File->Rights->Combine(Properties->Rights);
+      for (int GroupI = TRights::rgFirst; GroupI <= TRights::rgLast; GroupI++)
+      {
+        TRights::TRightGroup Group = static_cast<TRights::TRightGroup>(GroupI);
+        S3AclGrant NewAclGrant;
+        memset(&NewAclGrant, 0, sizeof(NewAclGrant));
+        if (Group == TRights::rgUser)
+        {
+          NewAclGrant.granteeType = S3GranteeTypeCanonicalUser;
+          DebugAssert(sizeof(NewAclGrant.grantee.canonicalUser.id) == sizeof(FileProperties.OwnerId));
+          strcpy(NewAclGrant.grantee.canonicalUser.id, FileProperties.OwnerId);
+        }
+        else if (Group == TRights::rgS3AllAwsUsers)
+        {
+          NewAclGrant.granteeType = S3GranteeTypeAllAwsUsers;
+        }
+        else if (DebugAlwaysTrue(Group == TRights::rgS3AllUsers))
+        {
+          NewAclGrant.granteeType = S3GranteeTypeAllUsers;
+        }
+        unsigned short AllGroupPermissions =
+          TRights::CalculatePermissions(Group, TRights::rlS3Read, TRights::rlS3ReadACP, TRights::rlS3WriteACP);
+        if (FLAGSET(Permissions, AllGroupPermissions))
+        {
+          NewAclGrant.permission = S3PermissionFullControl;
+          NewAclGrants.push_back(NewAclGrant);
+          Permissions -= AllGroupPermissions;
+        }
+        else
+        {
+          #define ADD_ACL_GRANT(PERM) AddAclGrant(Group, Permissions, NewAclGrants, NewAclGrant, PERM)
+          ADD_ACL_GRANT(S3PermissionRead);
+          ADD_ACL_GRANT(S3PermissionWrite);
+          ADD_ACL_GRANT(S3PermissionReadACP);
+          ADD_ACL_GRANT(S3PermissionWriteACP);
+        }
+      }
+
+      DebugAssert(Permissions == 0);
+
+      // Preserve unrecognized permissions
+      for (int Index = 0; Index < FileProperties.AclGrantCount; Index++)
+      {
+        S3AclGrant & AclGrant = FileProperties.AclGrants[Index];
+        unsigned short Permission = AclGrantToPermissions(AclGrant, FileProperties);
+        if (Permission == 0)
+        {
+          NewAclGrants.push_back(AclGrant);
+        }
+      }
+
+      UnicodeString BucketName, Key;
+      if (DebugAlwaysTrue(ParsePathForPropertiesRequests(FileName, File, BucketName, Key)))
+      {
+        TLibS3BucketContext BucketContext = GetBucketContext(BucketName, Key);
+
+        S3ResponseHandler ResponseHandler = CreateResponseHandler();
+
+        TLibS3CallbackData Data;
+        RequestInit(Data);
+
+        S3_set_acl(
+          &BucketContext, StrToS3(Key), FileProperties.OwnerId, FileProperties.OwnerDisplayName,
+          NewAclGrants.size(), &NewAclGrants[0],
+          FRequestContext, FTimeout, &ResponseHandler, &Data);
+
+        CheckLibS3Error(Data);
+      }
+    }
+  }
+
+  DebugAssert(ValidProperties.Empty());
+}
+//---------------------------------------------------------------------------
+unsigned short TS3FileSystem::AclGrantToPermissions(S3AclGrant & AclGrant, const TS3FileProperties & Properties)
+{
+  TRights::TRightGroup RightGroup = static_cast<TRights::TRightGroup>(-1);
+  if (AclGrant.granteeType == S3GranteeTypeCanonicalUser)
+  {
+    if (strcmp(Properties.OwnerId, AclGrant.grantee.canonicalUser.id) == 0)
+    {
+      RightGroup = TRights::rgUser;
+    }
+    else
+    {
+      FTerminal->LogEvent(1, FORMAT(L"Unspported permission for canonical user %s", (StrFromS3(Properties.OwnerId))));
+    }
+  }
+  else if (AclGrant.granteeType == S3GranteeTypeAllAwsUsers)
+  {
+    RightGroup = TRights::rgS3AllAwsUsers;
+  }
+  else if (AclGrant.granteeType == S3GranteeTypeAllUsers)
+  {
+    RightGroup = TRights::rgS3AllUsers;
+  }
+  unsigned short Result;
+  if (RightGroup < 0)
+  {
+    Result = 0;
+  }
+  else
+  {
+    if (AclGrant.permission == S3PermissionFullControl)
+    {
+      Result = TRights::CalculatePermissions(RightGroup, TRights::rlS3Read, TRights::rlS3ReadACP, TRights::rlS3WriteACP);
+    }
+    else
+    {
+      DebugAssert(AclGrant.permission != S3PermissionWrite);
+      TRights::TRightLevel RightLevel = S3PermissionToRightLevel(AclGrant.permission);
+      if (RightLevel == TRights::rlNone)
+      {
+        Result = 0;
+      }
+      else
+      {
+        Result = TRights::CalculateFlag(RightGroup, RightLevel);
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TS3FileSystem::LoadFileProperties(const UnicodeString AFileName, const TRemoteFile * File, void * Param)
+{
+  bool & Result = *static_cast<bool *>(Param);
+  TS3FileProperties Properties;
+  Result = DoLoadFileProperties(AFileName, File, Properties);
+  if (Result)
+  {
+    bool AdditionalRights;
+    unsigned short Permissions = 0;
+    for (int Index = 0; Index < Properties.AclGrantCount; Index++)
+    {
+      S3AclGrant & AclGrant = Properties.AclGrants[Index];
+      unsigned short Permission = AclGrantToPermissions(AclGrant, Properties);
+      if (Permission == 0)
+      {
+        AdditionalRights = true;
+      }
+      else
+      {
+        Permissions |= Permission;
+      }
+    }
+
+    UnicodeString Delimiter(L",");
+    UnicodeString HumanRights;
+    for (int GroupI = TRights::rgFirst; GroupI <= TRights::rgLast; GroupI++)
+    {
+      TRights::TRightGroup Group = static_cast<TRights::TRightGroup>(GroupI);
+      #define RIGHT_LEVEL_SET(LEVEL) FLAGSET(Permissions, TRights::CalculateFlag(Group, TRights::LEVEL))
+      bool ReadRight = RIGHT_LEVEL_SET(rlS3Read);
+      bool WriteRight = DebugAlwaysFalse(RIGHT_LEVEL_SET(rlS3Write));
+      bool ReadACPRight = RIGHT_LEVEL_SET(rlS3ReadACP);
+      bool WriteACPRight = RIGHT_LEVEL_SET(rlS3WriteACP);
+      UnicodeString Desc;
+      if (ReadRight && ReadACPRight && WriteACPRight)
+      {
+        Desc = L"F";
+      }
+      else if (ReadRight)
+      {
+        Desc = L"R";
+        if (ReadACPRight || WriteACPRight || WriteRight)
+        {
+          Desc += L"+";
+        }
+      }
+
+      if (!Desc.IsEmpty())
+      {
+        UnicodeString GroupDesc;
+        switch (Group)
+        {
+          case TRights::rgUser: GroupDesc = L"O"; break;
+          case TRights::rgS3AllAwsUsers: GroupDesc = L"U"; break;
+          case TRights::rgS3AllUsers: GroupDesc = L"E"; break;
+          default: DebugFail(); break;
+        }
+
+        if (!GroupDesc.IsEmpty())
+        {
+          Desc = GroupDesc + L":" + Desc;
+          AddToList(HumanRights, Desc, Delimiter);
+        }
+      }
+    }
+
+    if (AdditionalRights)
+    {
+      AddToList(HumanRights, L"+", Delimiter);
+    }
+
+    File->Rights->Number = Permissions;
+    File->Rights->SetTextOverride(HumanRights);
+    Result = true;
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TS3FileSystem::LoadFilesProperties(TStrings * FileList)
+{
+  bool Result = false;
+  FTerminal->BeginTransaction();
+  try
+  {
+    FTerminal->ProcessFiles(FileList, foGetProperties, LoadFileProperties, &Result);
+  }
+  __finally
+  {
+    FTerminal->EndTransaction();
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TS3FileSystem::CalculateFilesChecksum(const UnicodeString & /*Alg*/,

@@ -297,6 +297,7 @@ struct TCalculateSizeStats;
 const cpMode =  0x01;
 const cpOwner = 0x02;
 const cpGroup = 0x04;
+const cpAcl =   0x08;
 typedef void __fastcall (__closure *TCalculateSizeEvent)
   (TStrings * FileList, __int64 & Size, TCalculateSizeStats & Stats,
    bool & Close);

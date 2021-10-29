@@ -646,6 +646,10 @@ BEGIN
         SYNCHRONIZE_CHECKLIST_DELETE_LOCAL, "Delete obsolete local file"
         SYNCHRONIZE_CHECKLIST_REVERSE, "Click to reverse"
         IMPORT_CONVERTED_KEYS, "%d key file(s) in %d imported session(s) were converted or replaced with existing key(s) in supported format."
+        FSINFO_ACL_CHANGING, "Can change ACL"
+        PROPERTIES_ACL, "ACL:"
+        PROPERTIES_S3_USERS, "&Users"
+        PROPERTIES_S3_EVERYONE, "&Everyone"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000–2021 Martin Prikryl"

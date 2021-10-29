@@ -32,7 +32,7 @@ struct TSessionInfo
   bool CertificateVerifiedManually;
 };
 //---------------------------------------------------------------------------
-enum TFSCapability { fcUserGroupListing, fcModeChanging, fcGroupChanging,
+enum TFSCapability { fcUserGroupListing, fcModeChanging, fcAclChangingFiles, fcGroupChanging,
   fcOwnerChanging, fcGroupOwnerChangingByID, fcAnyCommand, fcHardLink,
   fcSymbolicLink,
   // With WebDAV this is always true, to avoid double-click on

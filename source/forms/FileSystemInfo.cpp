@@ -118,6 +118,7 @@ void __fastcall TFileSystemInfoDialog::Feed(TFeedFileSystemData AddItem)
   AddItem(CertificateFingerprintSha1Edit, 0, FSessionInfo.CertificateFingerprintSHA1);
 
   AddItem(ProtocolView, FSINFO_MODE_CHANGING, CapabilityStr(fcModeChanging));
+  AddItem(ProtocolView, FSINFO_ACL_CHANGING, CapabilityStr(fcAclChangingFiles));
   AddItem(ProtocolView, FSINFO_OWNER_GROUP_CHANGING, CapabilityStr(fcGroupChanging));
   UnicodeString AnyCommand;
   if (!FFileSystemInfo.IsCapable[fcShellAnyCommand] &&

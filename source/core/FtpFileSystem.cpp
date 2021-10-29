@@ -1908,6 +1908,7 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
     case fcCheckingSpaceAvailable:
       return FBytesAvailableSupported || SupportsCommand(AvblCommand) || SupportsCommand(XQuotaCommand);
 
+    case fcAclChangingFiles:
     case fcModeChangingUpload:
     case fcLoadingAdditionalProperties:
     case fcShellAnyCommand:

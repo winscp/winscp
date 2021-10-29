@@ -491,9 +491,7 @@ public:
       if (Properties->Valid.Contains(vpRights))
       {
         Valid = (TValid)(Valid | valRights);
-        TRights Rights = BaseRights;
-        Rights |= Properties->Rights.NumberSet;
-        Rights &= (unsigned short)~Properties->Rights.NumberUnset;
+        TRights Rights = TRights(BaseRights).Combine(Properties->Rights);
         if (IsDirectory && Properties->AddXToDirectories)
         {
           Rights.AddExecute();
@@ -2073,6 +2071,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
     case fcAnyCommand:
     case fcShellAnyCommand:
     case fcLocking:
+    case fcAclChangingFiles: // pending implementation
       return false;
 
     case fcNewerOnlyUpload:

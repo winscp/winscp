@@ -716,6 +716,7 @@ protected:
   void __fastcall DetachTerminal(TObject * ATerminal);
   bool __fastcall IsActiveTerminal(TTerminal * Terminal);
   void __fastcall UpdateDarkMode();
+  void LoadFilesProperties(TStrings * FileList);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
