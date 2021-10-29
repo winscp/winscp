@@ -582,6 +582,7 @@ bool __fastcall TWebDAVFileSystem::IsCapable(int Capability) const
     case fcUserGroupListing:
     case fcModeChanging:
     case fcModeChangingUpload:
+    case fcAclChangingFiles:
     case fcGroupChanging:
     case fcOwnerChanging:
     case fcAnyCommand:

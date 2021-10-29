@@ -55,6 +55,12 @@ __fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner,
   FFileList = new TStringList();
   FFileList->Assign(FileList);
   FAllowedChanges = AllowedChanges;
+  if (FLAGSET(FAllowedChanges, cpAcl))
+  {
+    DebugAssert(FLAGCLEAR(FAllowedChanges, cpMode));
+    RightsLabel->Caption = LoadStr(PROPERTIES_ACL);
+    RightsFrame->DisplayAsAcl();
+  }
   FUserGroupByID = UserGroupByID;
 
   FAllowCalculateStats = false;
@@ -173,17 +179,14 @@ UnicodeString __fastcall TPropertiesDialog::LoadRemoteToken(
 void __fastcall TPropertiesDialog::LoadRemoteToken(
   TComboBox * ComboBox, TEdit * View, TLabel * Label, bool Valid, const TRemoteToken & Token, int Change)
 {
-  if (Valid)
-  {
-    UnicodeString Value = LoadRemoteToken(Token);
-    ComboBox->Text = Value;
-    View->Text = Value;
-  }
+  UnicodeString Value = Valid ? LoadRemoteToken(Token) : EmptyStr;
+  ComboBox->Text = Value;
+  View->Text = Value;
   bool AllowedChange = FLAGSET(FAllowedChanges, Change);
-  ComboBox->Visible = Valid && AllowedChange;
+  ComboBox->Visible = AllowedChange;
   View->Visible = Valid && !AllowedChange;
-  Label->Visible = Valid;
   Label->FocusControl = AllowedChange ? static_cast<TWinControl *>(ComboBox) : static_cast<TWinControl *>(View);
+  Label->Visible = Label->FocusControl->Visible;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::LoadRemoteTokens(TComboBox * ComboBox,
@@ -383,9 +386,18 @@ void __fastcall TPropertiesDialog::LoadStats(__int64 FilesSize,
 void __fastcall TPropertiesDialog::SetFileProperties(const TRemoteProperties & value)
 {
   TValidProperties Valid;
-  if (value.Valid.Contains(vpRights) && FAllowedChanges & cpMode) Valid << vpRights;
-  if (value.Valid.Contains(vpOwner) && FAllowedChanges & cpOwner) Valid << vpOwner;
-  if (value.Valid.Contains(vpGroup) && FAllowedChanges & cpGroup) Valid << vpGroup;
+  if (value.Valid.Contains(vpRights) && (FLAGSET(FAllowedChanges, cpMode) || FLAGSET(FAllowedChanges, cpAcl)))
+  {
+    Valid << vpRights;
+  }
+  if (value.Valid.Contains(vpOwner) && FLAGSET(FAllowedChanges, cpOwner))
+  {
+    Valid << vpOwner;
+  }
+  if (value.Valid.Contains(vpGroup) && FLAGSET(FAllowedChanges, cpGroup))
+  {
+    Valid << vpGroup;
+  }
   FOrigProperties = value;
   FOrigProperties.Valid = Valid;
   FOrigProperties.Recursive = false;
@@ -409,14 +421,13 @@ void __fastcall TPropertiesDialog::SetFileProperties(const TRemoteProperties & v
   LoadRemoteToken(GroupComboBox, GroupView, GroupLabel, value.Valid.Contains(vpGroup), value.Group, cpGroup);
   LoadRemoteToken(OwnerComboBox, OwnerView, OwnerLabel, value.Valid.Contains(vpOwner), value.Owner, cpOwner);
 
-  bool HasGroupOrOwner = GroupLabel->Visible || OwnerLabel->Visible;
-  bool HasAnything = HasGroupOrOwner || HasRights;
+  bool HasAnything = GroupLabel->Visible || OwnerLabel->Visible || HasRights;
   // Not necesarily true, let's find the scenario when it is not and then decide how to render that (shift rights up?)
-  DebugAssert(HasGroupOrOwner || !HasRights);
+  DebugAssert((GroupLabel->Visible || OwnerLabel->Visible) || !HasRights);
   GroupOwnerRightsBevel->Visible = HasAnything;
 
   RecursiveCheck2->Checked = value.Recursive;
-  RecursiveCheck2->Visible = HasAnything && FAnyDirectories;
+  RecursiveCheck2->Visible = (GroupComboBox->Visible || OwnerComboBox->Visible) && FAnyDirectories;
   RecursiveBevel->Visible = RecursiveCheck2->Visible || HasRights;
 
   UpdateControls();
@@ -517,7 +528,7 @@ TRemoteProperties __fastcall TPropertiesDialog::GetFileProperties()
 {
   TRemoteProperties Result;
 
-  if (FAllowedChanges & cpMode)
+  if (FLAGSET(FAllowedChanges, cpMode) || FLAGSET(FAllowedChanges, cpAcl))
   {
     Result.Valid << vpRights;
     Result.Rights = RightsFrame->Rights;
@@ -546,7 +557,10 @@ void __fastcall TPropertiesDialog::UpdateControls()
 {
   // No point enabling recursive check if there's no change allowed (supported),
   // i.e. with WebDAV.
-  EnableControl(RecursiveCheck2, ((FAllowedChanges & (cpGroup | cpOwner | cpMode)) != 0));
+  bool AnyAllowedChanges =
+    FLAGSET(FAllowedChanges, cpGroup) || FLAGSET(FAllowedChanges, cpOwner) ||
+    FLAGSET(FAllowedChanges, cpMode) || FLAGSET(FAllowedChanges, cpAcl);
+  EnableControl(RecursiveCheck2, AnyAllowedChanges);
 
   bool Allow;
   try
@@ -565,9 +579,9 @@ void __fastcall TPropertiesDialog::UpdateControls()
   }
   EnableControl(OkButton, Allow);
 
-  EnableControl(GroupComboBox, FAllowedChanges & cpGroup);
-  EnableControl(OwnerComboBox, FAllowedChanges & cpOwner);
-  EnableControl(RightsFrame, FAllowedChanges & cpMode);
+  EnableControl(GroupComboBox, FLAGSET(FAllowedChanges, cpGroup));
+  EnableControl(OwnerComboBox, FLAGSET(FAllowedChanges, cpOwner));
+  EnableControl(RightsFrame, FLAGSET(FAllowedChanges, cpMode) || FLAGSET(FAllowedChanges, cpAcl));
   CalculateSizeButton->Visible = FAllowCalculateStats;
 
   if (!FMultiple)

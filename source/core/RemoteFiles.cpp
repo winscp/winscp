@@ -2058,9 +2058,45 @@ void __fastcall TRights::Assign(const TRights * Source)
   FUnknown = Source->FUnknown;
 }
 //---------------------------------------------------------------------------
+TRights::TRight TRights::CalculateRight(TRightGroup Group, TRightLevel Level)
+{
+  int Result;
+  if (Level == rlSpecial)
+  {
+    Result = rrUserIDExec + Group;
+  }
+  else
+  {
+    DebugAssert(rlRead == 0);
+    Result = rrUserRead + Level + (Group * 3);
+  }
+  return static_cast<TRight>(Result);
+}
+//---------------------------------------------------------------------------
 TRights::TFlag __fastcall TRights::RightToFlag(TRights::TRight Right)
 {
   return static_cast<TFlag>(1 << (rrLast - Right));
+}
+//---------------------------------------------------------------------------
+TRights::TFlag TRights::CalculateFlag(TRightGroup Group, TRightLevel Level)
+{
+  return RightToFlag(CalculateRight(Group, Level));
+}
+//---------------------------------------------------------------------------
+unsigned short TRights::CalculatePermissions(TRightGroup Group, TRightLevel Level, TRightLevel Level2, TRightLevel Level3)
+{
+  unsigned int Permissions = CalculateFlag(Group, Level);
+  if (Level2 != rlNone)
+  {
+    Permissions |= CalculateFlag(Group, Level2);
+  }
+  if (Level3 != rlNone)
+  {
+    Permissions |= CalculateFlag(Group, Level3);
+  }
+  unsigned short Result = static_cast<unsigned short>(Permissions);
+  DebugAssert((Permissions - Result) == 0);
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRights::operator ==(const TRights & rhr) const
@@ -2246,6 +2282,15 @@ void __fastcall TRights::SetText(const UnicodeString & value)
   FUnknown = false;
 }
 //---------------------------------------------------------------------------
+void TRights::SetTextOverride(const UnicodeString & value)
+{
+  if (FText != value)
+  {
+    FText = value;
+    FUnknown = false;
+  }
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TRights::GetText() const
 {
   if (!FText.IsEmpty())
@@ -2330,6 +2375,7 @@ void __fastcall TRights::SetOctal(UnicodeString value)
       ((AValue[2] - L'0') << 6) +
       ((AValue[3] - L'0') << 3) +
       ((AValue[4] - L'0') << 0));
+    FText = L"";
   }
   FUnknown = false;
 }
@@ -2539,6 +2585,7 @@ void __fastcall TRights::AddExecute()
         (RightUndef[static_cast<TRight>(rrUserWrite + (Group * 3))] == rsYes))
     {
       Right[static_cast<TRight>(rrUserExec + (Group * 3))] = true;
+      FText = L"";
     }
   }
   FUnknown = false;
@@ -2568,6 +2615,14 @@ __fastcall TRights::operator unsigned short() const
 __fastcall TRights::operator unsigned long() const
 {
   return Number;
+}
+//---------------------------------------------------------------------------
+TRights TRights::Combine(const TRights & Other) const
+{
+  TRights Result = (*this);
+  Result |= Other.NumberSet;
+  Result &= (unsigned short)~Other.NumberUnset;
+  return Result;
 }
 //=== TRemoteProperties -------------------------------------------------------
 __fastcall TRemoteProperties::TRemoteProperties()

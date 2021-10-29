@@ -447,6 +447,7 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
     case fcTextMode:
       return FTerminal->SessionData->EOLType != FTerminal->Configuration->LocalEOLType;
 
+    case fcAclChangingFiles:
     case fcNativeTextMode:
     case fcNewerOnlyUpload:
     case fcTimestampChanging:

@@ -2967,16 +2967,35 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
   TOperationSide Side, bool OnFocused, bool NoConfirmation, void * Param)
 {
   Side = GetSide(Side);
+  bool FullPath = IsSideLocalBrowser(Side);
+  TCustomDirView * ADirView = DirView(Side);
+  std::unique_ptr<TStringList> FileList(new TStringList());
+  ADirView->CreateFileList(OnFocused, FullPath, FileList.get());
 
-  bool Result;
-  TStrings * FileList = DirView(Side)->CreateFileList(OnFocused, IsSideLocalBrowser(Side), NULL);
-  try
+  bool ReloadProperties =
+    (Side == osRemote) && (Operation == foSetProperties) &&
+    DebugAlwaysTrue(HasActiveTerminal()) && Terminal->IsCapable[fcLoadingAdditionalProperties];
+
+  bool Result = ExecuteFileOperation(Operation, Side, FileList.get(), NoConfirmation, Param);
+
+  if (Result && ReloadProperties)
   {
-    Result = ExecuteFileOperation(Operation, Side, FileList, NoConfirmation, Param);
-  }
-  __finally
-  {
-    delete FileList;
+    std::unique_ptr<TStringList> FileList2(new TStringList());
+
+    FileList->CaseSensitive = true;
+    FileList->Sort();
+    for (int Index = 0; Index < ADirView->Items->Count; Index++)
+    {
+      TListItem * Item = ADirView->Items->Item[Index];
+      UnicodeString FileName = ADirView->ItemFileName(Item);
+      int Index2;
+      if (FileList->Find(FileName, Index2))
+      {
+        FileList2->AddObject(FileName, ADirView->ItemData(Item));
+      }
+    }
+
+    LoadFilesProperties(FileList2.get());
   }
   return Result;
 }
@@ -4483,6 +4502,14 @@ void __fastcall TCustomScpExplorerForm::CalculateChecksum(const UnicodeString & 
   }
 }
 //---------------------------------------------------------------------------
+void TCustomScpExplorerForm::LoadFilesProperties(TStrings * FileList)
+{
+  if (Terminal->LoadFilesProperties(FileList))
+  {
+    RemoteDirView->Invalidate();
+  }
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStrings * FileList)
 {
   bool Result;
@@ -4495,10 +4522,7 @@ bool __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStri
     {
       TRemoteProperties CurrentProperties;
 
-      if (Terminal->LoadFilesProperties(FileList))
-      {
-        RemoteDirView->Invalidate();
-      }
+      LoadFilesProperties(FileList);
 
       bool CapableGroupChanging = Terminal->IsCapable[fcGroupChanging];
       bool CapableOwnerChanging = Terminal->IsCapable[fcOwnerChanging];
@@ -4553,8 +4577,19 @@ bool __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStri
 
       CurrentProperties = TRemoteProperties::CommonProperties(FileList);
 
+      bool CapableAclChanging = Terminal->IsCapable[fcAclChangingFiles];
+      for (int Index = 0; (Index < FileList->Count) && CapableAclChanging; Index++)
+      {
+        if (dynamic_cast<TRemoteFile *>(FileList->Objects[Index])->IsDirectory)
+        {
+          CapableAclChanging = false;
+          CurrentProperties.Valid = CurrentProperties.Valid >> vpRights;
+        }
+      }
+
       int Flags = 0;
       if (Terminal->IsCapable[fcModeChanging]) Flags |= cpMode;
+      if (CapableAclChanging) Flags |= cpAcl;
       if (CapableOwnerChanging) Flags |= cpOwner;
       if (CapableGroupChanging) Flags |= cpGroup;
 

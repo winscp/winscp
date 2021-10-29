@@ -8,7 +8,7 @@
 
 #include <VCLCommon.h>
 #include <Tools.h>
-#include <GUITools.h>
+#include <TextsWin.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "GrayedCheckBox"
@@ -29,6 +29,7 @@ __fastcall TRightsFrame::TRightsFrame(TComponent* Owner)
   PopupMenu = RightsPopup;
   FPopingContextMenu = false;
   FInitialized = false;
+  FAcl = false;
 
   #define COPY_HINT(R) \
     Checks[TRights::rrGroup ## R]->Hint = Checks[TRights::rrUser ## R]->Hint; \
@@ -192,52 +193,70 @@ void __fastcall TRightsFrame::UpdateControls()
   DoChange();
 }
 //---------------------------------------------------------------------------
-void __fastcall TRightsFrame::CycleRights(int Group)
+void TRightsFrame::CycleRights(TRights::TRightGroup RightGroup)
 {
-  TRights::TState State;
+  int Last = FAcl ? TRights::rlLastAcl : TRights::rlLastNormal;
+  TRights::TState State = TRights::TState(); // shut up
+  bool Any = false;
   bool Same = true;
-  for (int Right = 0; Right < 3; Right++)
+  for (int RightLevelI = TRights::rlFirst; RightLevelI <= Last; RightLevelI++)
   {
-    TRights::TState CState = States[static_cast<TRights::TRight>(
-      TRights::rrUserRead + Right + ((Group - 1) * 3))];
+    TRights::TRightLevel RightLevel = static_cast<TRights::TRightLevel>(RightLevelI);
+    TRights::TRight Right = TRights::CalculateRight(RightGroup, RightLevel);
 
-    if (Right == 0) State = CState;
-      else
-    if (State != CState) Same = False;
-  }
-
-  if (!Same)
-  {
-    State = TRights::rsYes;
-  }
-  else
-  {
-    switch (State) {
-      case TRights::rsYes:
-        State = TRights::rsNo;
+    if (Checks[Right]->Visible)
+    {
+      TRights::TState RightState = States[Right];
+      if (!Any)
+      {
+        State = RightState;
+        Any = true;
+      }
+      else if (State != RightState)
+      {
+        Same = false;
         break;
-
-      case TRights::rsNo:
-        State = AllowUndef ? TRights::rsUndef : TRights::rsYes;
-        break;
-
-      case TRights::rsUndef:
-        State = TRights::rsYes;
-        break;
+      }
     }
   }
 
-  for (int Right = 0; Right < 3; Right++)
+  if (DebugAlwaysTrue(Any))
   {
-    States[static_cast<TRights::TRight>(
-      TRights::rrUserRead + Right + ((Group - 1) * 3))] = State;
+    if (!Same)
+    {
+      State = TRights::rsYes;
+    }
+    else
+    {
+      switch (State)
+      {
+        case TRights::rsYes:
+          State = TRights::rsNo;
+          break;
+
+        case TRights::rsNo:
+          State = AllowUndef ? TRights::rsUndef : TRights::rsYes;
+          break;
+
+        case TRights::rsUndef:
+          State = TRights::rsYes;
+          break;
+      }
+    }
+
+    for (int RightLevelI = TRights::rlFirst; RightLevelI <= Last; RightLevelI++)
+    {
+      TRights::TRightLevel RightLevel = static_cast<TRights::TRightLevel>(RightLevelI);
+      TRights::TRight Right = TRights::CalculateRight(RightGroup, RightLevel);
+      States[Right] = State;
+    }
+    UpdateControls();
   }
-  UpdateControls();
 }
 //---------------------------------------------------------------------------
-void __fastcall TRightsFrame::RightsButtonsClick(TObject *Sender)
+void __fastcall TRightsFrame::RightsButtonsClick(TObject * Sender)
 {
-  CycleRights(((TComponent*)Sender)->Tag);
+  CycleRights(static_cast<TRights::TRightGroup>(dynamic_cast<TComponent *>(Sender)->Tag - 1));
 }
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::SetAllowAddXToDirectories(bool value)
@@ -358,37 +377,37 @@ void __fastcall TRightsFrame::RightsActionsUpdate(TBasicAction *Action,
   {
     // explicitly enable as action gets disabled, if its shortcut is pressed,
     // while the form does not have a focus and OnExecute handler denies the execution
-    NoRightsAction->Enabled = true;
+    NoRightsAction->Enabled = !FAcl;
     NoRightsAction->Checked = !R.IsUndef && (R.NumberSet == TRights::rfNo);
   }
   else if (Action == DefaultRightsAction)
   {
-    DefaultRightsAction->Enabled = true;
+    DefaultRightsAction->Enabled = !FAcl;
     DefaultRightsAction->Checked = !R.IsUndef && (R.NumberSet == TRights::rfDefault);
   }
   else if (Action == AllRightsAction)
   {
-    AllRightsAction->Enabled = true;
+    AllRightsAction->Enabled = !FAcl;
     AllRightsAction->Checked = !R.IsUndef && (R.NumberSet == TRights::rfAll);
   }
   else if (Action == LeaveRightsAsIsAction)
   {
-    LeaveRightsAsIsAction->Enabled = true;
+    LeaveRightsAsIsAction->Enabled = !FAcl;
     LeaveRightsAsIsAction->Visible = R.AllowUndef;
     LeaveRightsAsIsAction->Checked = (R.NumberSet == TRights::rfNo) &&
       (R.NumberUnset == TRights::rfNo);
   }
   else if (Action == CopyTextAction)
   {
-    CopyTextAction->Enabled = !R.IsUndef;
+    CopyTextAction->Enabled = !FAcl && !R.IsUndef;
   }
   else if (Action == CopyOctalAction)
   {
-    CopyOctalAction->Enabled = !R.IsUndef;
+    CopyOctalAction->Enabled = !FAcl && !R.IsUndef;
   }
   else if (Action == PasteAction)
   {
-    PasteAction->Enabled = IsFormatInClipboard(CF_TEXT);
+    PasteAction->Enabled = !FAcl && IsFormatInClipboard(CF_TEXT);
   }
   else
   {
@@ -633,8 +652,15 @@ void __fastcall TRightsFrame::RightsPopupPopup(TObject * /*Sender*/)
 void __fastcall TRightsFrame::FrameContextPopup(TObject * Sender,
   TPoint & MousePos, bool & Handled)
 {
-  SelectScaledImageList(RightsImages);
-  MenuPopup(Sender, MousePos, Handled);
+  if (!FAcl)
+  {
+    SelectScaledImageList(RightsImages);
+    MenuPopup(Sender, MousePos, Handled);
+  }
+  else
+  {
+    Handled = true;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::UpdateByOctal()
@@ -707,3 +733,34 @@ void __fastcall TRightsFrame::CloseButtonClick(TObject *)
   CloseUp();
 }
 //---------------------------------------------------------------------------
+void TRightsFrame::DisplayAsAcl(TRights::TRight ReadRight, TRights::TRight WriteRight, TRights::TRight ExecRight, TRights::TRight SpecialRight)
+{
+  TCheckBox * ReadCheck = Checks[ReadRight];
+  TCheckBox * WriteCheck = Checks[WriteRight];
+  TCheckBox * ReadAclCheck = Checks[ExecRight];
+  TCheckBox * WriteAclCheck = Checks[SpecialRight];
+
+  WriteCheck->Visible = false;
+
+  int ReadAclLeft = (3*ReadCheck->Left + 2*WriteAclCheck->Left) / 5;
+  int Shift = ReadAclLeft - ReadAclCheck->Left;
+  ReadAclCheck->Left = ReadAclLeft;
+  ReadAclCheck->Width = ReadAclCheck->Width - Shift;
+  ReadAclCheck->Caption = L"R ACL";
+
+  WriteAclCheck->Caption = L"W ACL";
+
+  GroupLabel->Caption = LoadStr(PROPERTIES_S3_USERS);
+  OthersLabel->Caption = LoadStr(PROPERTIES_S3_EVERYONE);
+}
+//---------------------------------------------------------------------------
+void TRightsFrame::DisplayAsAcl()
+{
+  AllowAddXToDirectories = false;
+  OctalLabel->Visible = false;
+  OctalEdit->Visible = false;
+  DisplayAsAcl(TRights::rrUserRead, TRights::rrUserWrite, TRights::rrUserExec, TRights::rrUserIDExec);
+  DisplayAsAcl(TRights::rrGroupRead, TRights::rrGroupWrite, TRights::rrGroupExec, TRights::rrGroupIDExec);
+  DisplayAsAcl(TRights::rrOtherRead, TRights::rrOtherWrite, TRights::rrOtherExec, TRights::rrStickyBit);
+  FAcl = true;
+}

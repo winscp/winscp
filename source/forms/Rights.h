@@ -84,8 +84,9 @@ private:
   bool FPopingContextMenu;
   UnicodeString FAddXToDirectoriesSuffix;
   bool FInitialized;
+  bool FAcl;
 
-  void __fastcall CycleRights(int Group);
+  void CycleRights(TRights::TRightGroup RightGroup);
   bool __fastcall GetAddXToDirectories();
   bool __fastcall GetAllowUndef();
   TCheckBox * __fastcall GetChecks(TRights::TRight Right);
@@ -104,6 +105,7 @@ public:
   __fastcall TRightsFrame(TComponent* Owner);
   void __fastcall DropDown();
   void __fastcall CloseUp();
+  void DisplayAsAcl();
 
   __property bool AddXToDirectories = { read = GetAddXToDirectories, write = SetAddXToDirectories };
   __property bool AllowAddXToDirectories = { read = FAllowAddXToDirectories, write = SetAllowAddXToDirectories };
@@ -134,6 +136,7 @@ protected:
   bool __fastcall DirectoriesXEffective();
   void __fastcall UpdateOctalEdit();
   void __fastcall UpdateByOctal();
+  void DisplayAsAcl(TRights::TRight ReadRight, TRights::TRight WriteRight, TRights::TRight ExecRight, TRights::TRight SpecialRight);
 
   INTERFACE_HOOK_CUSTOM(TFrame);
 

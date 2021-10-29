@@ -658,6 +658,10 @@ BEGIN
         NEW_REMOTE_TAB_HINT, "Click to open new session in new remote tab.\nHold down Shift Key to open new session in new window."
         NEW_REMOTE_TAB_CTRL_HINT, "%s\nHold down Ctrl key to open new local tab."
         IMPORT_CONVERTED_KEYS, "%d key file(s) in %d imported session(s) were converted or replaced with existing key(s) in supported format."
+        FSINFO_ACL_CHANGING, "Can change ACL"
+        PROPERTIES_ACL, "ACL:"
+        PROPERTIES_S3_USERS, "&Users"
+        PROPERTIES_S3_EVERYONE, "&Everyone"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000–2021 Martin Prikryl"

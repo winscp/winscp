@@ -142,6 +142,15 @@ object PropertiesDialog: TPropertiesDialog
         Anchors = [akLeft, akTop, akRight]
         Shape = bsTopLine
       end
+      object AclLabel: TLabel
+        Left = 8
+        Top = 203
+        Width = 59
+        Height = 13
+        Caption = 'Permissions:'
+        FocusControl = RightsFrame
+        Visible = False
+      end
       object LocationLabel: TEdit
         Left = 85
         Top = 58

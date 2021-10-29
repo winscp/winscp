@@ -325,6 +325,17 @@ public:
   static const wchar_t CombinedSymbols[];
   static const wchar_t ExtendedSymbols[];
   static const wchar_t ModeGroups[];
+  enum TRightLevel {
+    rlNone = -1,
+    rlRead, rlWrite, rlExec, rlSpecial,
+    rlFirst = rlRead, rlLastNormal = rlExec, rlLastWithSpecial = rlSpecial,
+    rlS3Read = rlRead, rlS3Write = rlWrite, rlS3ReadACP = rlExec, rlS3WriteACP = rlSpecial, rlLastAcl = rlLastWithSpecial,
+  };
+  enum TRightGroup {
+    rgUser, rgGroup, rgOther,
+    rgFirst = rgUser, rgLast = rgOther,
+    rgS3AllAwsUsers = rgGroup, rgS3AllUsers = rgOther,
+  };
   enum TRight {
     rrUserIDExec, rrGroupIDExec, rrStickyBit,
     rrUserRead, rrUserWrite, rrUserExec,
@@ -338,13 +349,18 @@ public:
     rfOtherRead = 00004, rfOtherWrite =  00002, rfOtherExec = 00001,
     rfRead =      00444, rfWrite =       00222, rfExec =      00111,
     rfNo =        00000, rfDefault =     00644, rfAll =       00777,
-    rfSpecials =  07000, rfAllSpecials = 07777 };
+    rfSpecials =  07000, rfAllSpecials = 07777,
+    rfS3Read = rfOtherRead, rfS3Write = rfOtherWrite, rfS3ReadACP = rfOtherExec, rfS3WriteACP = rfStickyBit,
+     };
   enum TUnsupportedFlag {
     rfDirectory  = 040000 };
   enum TState { rsNo, rsYes, rsUndef };
 
 public:
   static TFlag __fastcall RightToFlag(TRight Right);
+  static TRight CalculateRight(TRightGroup Group, TRightLevel Level);
+  static TFlag CalculateFlag(TRightGroup Group, TRightLevel Level);
+  static unsigned short CalculatePermissions(TRightGroup Group, TRightLevel Level, TRightLevel Level2 = rlNone, TRightLevel Level3 = rlNone);
 
   __fastcall TRights();
   __fastcall TRights(const TRights & Source);
@@ -352,6 +368,8 @@ public:
   void __fastcall Assign(const TRights * Source);
   void __fastcall AddExecute();
   void __fastcall AllUndef();
+  TRights Combine(const TRights & Other) const;
+  void SetTextOverride(const UnicodeString & value);
 
   bool __fastcall operator ==(const TRights & rhr) const;
   bool __fastcall operator ==(unsigned short rhr) const;

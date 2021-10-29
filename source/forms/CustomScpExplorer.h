@@ -740,6 +740,7 @@ protected:
   void __fastcall DirectorySizeCalculated(TOperationSide Side, const UnicodeString & FileName, bool Success);
   TListItem * VisualiseOperationFinished(TOperationSide Side, const UnicodeString & FileName, bool Unselect);
   void __fastcall FileDeleted(TOperationSide Side, const UnicodeString & FileName, bool Success);
+  void LoadFilesProperties(TStrings * FileList);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

@@ -653,6 +653,10 @@
 #define NEW_REMOTE_TAB_HINT     6043
 #define NEW_REMOTE_TAB_CTRL_HINT 6044
 #define IMPORT_CONVERTED_KEYS   6045
+#define FSINFO_ACL_CHANGING     6046
+#define PROPERTIES_ACL          6047
+#define PROPERTIES_S3_USERS     6048
+#define PROPERTIES_S3_EVERYONE  6049
 
 // 2xxx is reserved for TextsFileZilla.h
 
