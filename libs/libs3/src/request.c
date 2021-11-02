@@ -1233,6 +1233,11 @@ static S3Status setup_neon(Request *request,
     {
         ne_set_request_body_provider(request->NeonRequest, (ne_off_t)params->toS3CallbackTotalSize, neon_read_func, request);
     }
+    else if (params->httpRequestType == HttpRequestTypeCOPY)
+    {
+        // Google cloud needs "Content-Length: 0" header
+        ne_set_request_body_buffer(request->NeonRequest, "", 0);
+    }
 
     // WINSCP (Last-Modified parsed in response_headers_handler_done)
 
