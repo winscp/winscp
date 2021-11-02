@@ -108,14 +108,15 @@ void __fastcall TUnixDirView::ExecuteFile(TListItem * Item)
 {
 #ifndef DESIGN_ONLY
   ASSERT_VALID_ITEM;
-  if (ITEMFILE->IsDirectory ||
-      (!Terminal->ResolvingSymlinks && !Terminal->IsEncryptingFiles()))
+  TResolvedDoubleClickAction Action = WinConfiguration->ResolveDoubleClickAction(ITEMFILE->IsDirectory, Terminal);
+  if (Action == rdcaChangeDir)
   {
     PathChanging(true);
     ChangeDirectory(ITEMFILE->FileName);
   }
   else
   {
+    DebugAssert(Action == rdcaOpen);
     if (ItemFocused != Item) ItemFocused = Item;
     DisplayPropertiesMenu();
   }

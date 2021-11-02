@@ -2590,19 +2590,23 @@ bool __fastcall TCustomScpExplorerForm::IsFileControl(TObject * Control,
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DirViewContextPopupDefaultItem(
-  TOperationSide Side, TTBXCustomItem * Item, TDoubleClickAction DoubleClickAction)
+  TOperationSide Side, TTBXCustomItem * Item,
+  TResolvedDoubleClickAction DoubleClickAction1, TResolvedDoubleClickAction DoubleClickAction2)
 {
-  TTBItemOptions O;
-  O = Item->Options;
   TCustomDirView * DView = DirView(Side);
-  if ((DView->ItemFocused != NULL) &&
-      (WinConfiguration->DoubleClickAction == DoubleClickAction) &&
-      // when resolving links is disabled, default action is to enter the directory,
-      // no matter what DoubleClickAction is configured to
-      (IsSideLocalBrowser(Side) || Terminal->ResolvingSymlinks || Terminal->IsEncryptingFiles()) &&
-      // Can only Edit files, but can Open/Copy even directories
-      ((DoubleClickAction != dcaEdit) ||
-       !DView->ItemIsDirectory(DView->ItemFocused)))
+
+  bool IsDefault = false;
+  if (DView->ItemFocused != NULL)
+  {
+    TTerminal * ATerminal = !IsSideLocalBrowser(Side) ? Terminal : NULL;
+
+    TResolvedDoubleClickAction DefaultAction =
+      WinConfiguration->ResolveDoubleClickAction(DView->ItemIsDirectory(DView->ItemFocused), ATerminal);
+    IsDefault = (DefaultAction == DoubleClickAction1) || (DefaultAction == DoubleClickAction2);
+  }
+
+  TTBItemOptions O = Item->Options;
+  if (IsDefault)
   {
     Item->Options = O << tboDefault;
   }
@@ -2633,9 +2637,9 @@ void __fastcall TCustomScpExplorerForm::DirViewContextPopup(
 void __fastcall TCustomScpExplorerForm::RemoteDirViewContextPopup(
       TObject * /*Sender*/, const TPoint &MousePos, bool &Handled)
 {
-  DirViewContextPopupDefaultItem(osRemote, NonVisualDataModule->RemoteOpenMenuItem, dcaOpen);
-  DirViewContextPopupDefaultItem(osRemote, NonVisualDataModule->RemoteEditMenuItem, dcaEdit);
-  DirViewContextPopupDefaultItem(osRemote, NonVisualDataModule->RemoteCopyMenuItem, dcaCopy);
+  DirViewContextPopupDefaultItem(osRemote, NonVisualDataModule->RemoteOpenMenuItem, rdcaChangeDir, rdcaOpen);
+  DirViewContextPopupDefaultItem(osRemote, NonVisualDataModule->RemoteEditMenuItem, rdcaEdit, rdcaNone);
+  DirViewContextPopupDefaultItem(osRemote, NonVisualDataModule->RemoteCopyMenuItem, rdcaCopy, rdcaNone);
 
   DirViewContextPopup(osRemote, fcRemotePopup, MousePos);
   Handled = true;
@@ -5553,60 +5557,56 @@ void __fastcall TCustomScpExplorerForm::DoDirViewExecFile(TObject * Sender,
   TCustomDirView * ADirView = (TCustomDirView *)Sender;
   TOperationSide Side = ((ADirView == DirView(osRemote)) ? osRemote : osLocal);
   bool Remote = !IsSideLocalBrowser(Side);
-  bool ResolvedSymlinks = !Remote || Terminal->ResolvingSymlinks || Terminal->IsEncryptingFiles();
 
-  // Anything special is done on double click only (not on "open" indicated by FForceExecution),
-  // on files only (not directories)
-  // and only when symlinks are resolved (apply to remote panel only)
-  if (!ADirView->ItemIsDirectory(Item) &&
-      (ResolvedSymlinks || FForceExecution))
+  DebugAssert(Item == ADirView->ItemFocused);
+  bool IsDirectory = ADirView->ItemIsDirectory(Item);
+  TResolvedDoubleClickAction Action;
+
+  if (FForceExecution)
   {
-    if ((WinConfiguration->DoubleClickAction != dcaOpen) &&
-        !FForceExecution && ResolvedSymlinks)
+    Action = IsDirectory ? rdcaChangeDir : rdcaOpen;
+  }
+  else
+  {
+    TTerminal * ATerminal = !IsSideLocalBrowser(Side) ? Terminal : NULL;
+    Action = WinConfiguration->ResolveDoubleClickAction(IsDirectory, ATerminal);
+  }
+
+  if (Action == rdcaCopy)
+  {
+    // To counter the lock in DirViewBusy (called from TCustomDirView.DoExecute)
+    UnlockWindow();
+    try
     {
-      if (WinConfiguration->DoubleClickAction == dcaCopy)
+      if (IsLocalBrowserMode())
       {
-        // To counter the lock in DirViewBusy (called from TCustomDirView.DoExecute)
-        UnlockWindow();
-        try
-        {
-          if (IsLocalBrowserMode())
-          {
-            LocalLocalCopy(foCopy, Side, true, !WinConfiguration->CopyOnDoubleClickConfirmation, false, 0);
-          }
-          else
-          {
-            ExecuteFileOperation(foCopy, Side, true, !WinConfiguration->CopyOnDoubleClickConfirmation);
-          }
-        }
-        __finally
-        {
-          LockWindow();
-        }
-        AllowExec = false;
-      }
-      else if (WinConfiguration->DoubleClickAction == dcaEdit)
-      {
-        if (!Remote || !WinConfiguration->DisableOpenEdit)
-        {
-          ExecuteFile(Side, efDefaultEditor);
-          AllowExec = false;
-        }
+        LocalLocalCopy(foCopy, Side, true, !WinConfiguration->CopyOnDoubleClickConfirmation, false, 0);
       }
       else
       {
-        DebugFail();
+        ExecuteFileOperation(foCopy, Side, true, !WinConfiguration->CopyOnDoubleClickConfirmation);
       }
     }
-
-    // if we have not done anything special, fall back to default behavior
-    if (AllowExec)
+    __finally
     {
-      if (Remote && !WinConfiguration->DisableOpenEdit)
-      {
-        ExecuteFile(osRemote, efShell);
-        AllowExec = false;
-      }
+      LockWindow();
+    }
+    AllowExec = false;
+  }
+  else if (Action == rdcaEdit)
+  {
+    if (!Remote || !WinConfiguration->DisableOpenEdit)
+    {
+      ExecuteFile(Side, efDefaultEditor);
+      AllowExec = false;
+    }
+  }
+  else if (Action == rdcaOpen)
+  {
+    if (DebugAlwaysTrue(!IsDirectory) && Remote && !WinConfiguration->DisableOpenEdit)
+    {
+      ExecuteFile(osRemote, efShell);
+      AllowExec = false;
     }
   }
 }

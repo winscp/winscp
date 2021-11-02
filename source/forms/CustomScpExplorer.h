@@ -652,7 +652,7 @@ protected:
   virtual void __fastcall QueueLabelUpdateStatus();
   void __fastcall EditorAutoConfig();
   void __fastcall DirViewContextPopupDefaultItem(
-    TOperationSide Side, TTBXCustomItem * Item, TDoubleClickAction DoubleClickAction);
+    TOperationSide Side, TTBXCustomItem * Item, TResolvedDoubleClickAction DoubleClickAction1, TResolvedDoubleClickAction DoubleClickAction2);
   void __fastcall DirViewContextPopup(
     TOperationSide Side, Byte PopupComponent, const TPoint & MousePos);
   bool __fastcall CommandLineFromAnotherInstance(const UnicodeString & CommandLine);

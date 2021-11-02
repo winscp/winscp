@@ -350,6 +350,7 @@ enum TPathInCaption { picShort, picFull, picNone };
 enum TSessionTabNameFormat { stnfNone, stnfShortPath, stnfShortPathTrunc };
 // constants must be compatible with legacy CopyOnDoubleClick
 enum TDoubleClickAction { dcaOpen = 0, dcaCopy = 1, dcaEdit = 2 };
+enum TResolvedDoubleClickAction { rdcaNone, rdcaChangeDir, rdcaOpen, rdcaCopy, rdcaEdit };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TMasterPasswordPromptEvent)();
 //---------------------------------------------------------------------------
@@ -359,6 +360,7 @@ private:
   UnicodeString FAutoStartSession;
   TDoubleClickAction FDoubleClickAction;
   bool FCopyOnDoubleClickConfirmation;
+  bool FAlwaysRespectDoubleClickAction;
   bool FDDDisableMove;
   TAutoSwitch FDDTransferConfirmation;
   bool FDeleteToRecycleBin;
@@ -480,6 +482,7 @@ private:
 
   void __fastcall SetDoubleClickAction(TDoubleClickAction value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);
+  void __fastcall SetAlwaysRespectDoubleClickAction(bool value);
   void __fastcall SetDDDisableMove(bool value);
   void __fastcall SetDDTransferConfirmation(TAutoSwitch value);
   void __fastcall SetDeleteToRecycleBin(bool value);
@@ -665,6 +668,7 @@ public:
   bool __fastcall IsDDExtRunning();
   bool __fastcall IsDDExtBroken();
   bool __fastcall UseDarkTheme();
+  TResolvedDoubleClickAction ResolveDoubleClickAction(bool IsDirectory, TTerminal * Terminal);
 
   static void __fastcall RestoreFont(const TFontConfiguration & Configuration, TFont * Font);
   static void __fastcall StoreFont(TFont * Font, TFontConfiguration & Configuration);
@@ -687,6 +691,7 @@ public:
   __property UnicodeString AutoStartSession = { read = FAutoStartSession, write = SetAutoStartSession };
   __property TDoubleClickAction DoubleClickAction = { read = FDoubleClickAction, write = SetDoubleClickAction };
   __property bool CopyOnDoubleClickConfirmation = { read = FCopyOnDoubleClickConfirmation, write = SetCopyOnDoubleClickConfirmation };
+  __property bool AlwaysRespectDoubleClickAction = { read = FAlwaysRespectDoubleClickAction, write = SetAlwaysRespectDoubleClickAction };
   __property bool DDDisableMove = { read = FDDDisableMove, write = SetDDDisableMove };
   __property TAutoSwitch DDTransferConfirmation = { read = FDDTransferConfirmation, write = SetDDTransferConfirmation };
   __property bool DeleteToRecycleBin = { read = FDeleteToRecycleBin, write = SetDeleteToRecycleBin };

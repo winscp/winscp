@@ -2510,15 +2510,15 @@ void __fastcall TScpCommanderForm::DoLocalDirViewContextPopup(TOperationSide Sid
 {
   if (!WinConfiguration->ScpCommander.SystemContextMenu && !FForceSystemContextMenu)
   {
-    DirViewContextPopupDefaultItem(Side, NonVisualDataModule->LocalOpenMenuItem, dcaOpen);
-    DirViewContextPopupDefaultItem(Side, NonVisualDataModule->LocalEditMenuItem, dcaEdit);
+    DirViewContextPopupDefaultItem(Side, NonVisualDataModule->LocalOpenMenuItem, rdcaOpen, rdcaChangeDir);
+    DirViewContextPopupDefaultItem(Side, NonVisualDataModule->LocalEditMenuItem, rdcaEdit, rdcaNone);
     if (IsLocalBrowserMode())
     {
-      DirViewContextPopupDefaultItem(Side, NonVisualDataModule->LocalLocalCopyMenuItem, dcaCopy);
+      DirViewContextPopupDefaultItem(Side, NonVisualDataModule->LocalLocalCopyMenuItem, rdcaCopy, rdcaNone);
     }
     else
     {
-      DirViewContextPopupDefaultItem(Side, NonVisualDataModule->LocalCopyMenuItem, dcaCopy);
+      DirViewContextPopupDefaultItem(Side, NonVisualDataModule->LocalCopyMenuItem, rdcaCopy, rdcaNone);
     }
 
     DirViewContextPopup(Side, fcLocalPopup, MousePos);

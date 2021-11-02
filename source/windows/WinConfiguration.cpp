@@ -547,6 +547,7 @@ void __fastcall TWinConfiguration::Default()
   FConfirmClosingSession = true;
   FDoubleClickAction = dcaEdit;
   FCopyOnDoubleClickConfirmation = false;
+  FAlwaysRespectDoubleClickAction = false;
   FDimmHiddenFiles = true;
   FRenameWholeName = false;
   FAutoStartSession = L"";
@@ -947,6 +948,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
   BLOCK(L"Interface", CANCREATE, \
     KEYEX(Integer,DoubleClickAction, L"CopyOnDoubleClick"); \
     KEY(Bool,     CopyOnDoubleClickConfirmation); \
+    KEY(Bool,     AlwaysRespectDoubleClickAction); \
     KEY(Bool,     DDDisableMove); \
     KEYEX(Integer, DDTransferConfirmation, L"DDTransferConfirmation2"); \
     KEY(String,   DDTemporaryDirectory); \
@@ -2058,6 +2060,11 @@ void __fastcall TWinConfiguration::SetCopyOnDoubleClickConfirmation(bool value)
   SET_CONFIG_PROPERTY(CopyOnDoubleClickConfirmation);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetAlwaysRespectDoubleClickAction(bool value)
+{
+  SET_CONFIG_PROPERTY(AlwaysRespectDoubleClickAction);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDimmHiddenFiles(bool value)
 {
   SET_CONFIG_PROPERTY(DimmHiddenFiles);
@@ -2897,6 +2904,51 @@ void __fastcall TWinConfiguration::StoreFont(
   Configuration.FontSize = Font->Size;
   Configuration.FontCharset = Font->Charset;
   Configuration.FontStyle = FontStylesToInt(Font->Style);
+}
+//---------------------------------------------------------------------------
+TResolvedDoubleClickAction TWinConfiguration::ResolveDoubleClickAction(bool IsDirectory, TTerminal * Terminal)
+{
+  TResolvedDoubleClickAction Result;
+  // Anything special is done on files only (not directories)
+  if (IsDirectory)
+  {
+    Result = rdcaChangeDir;
+  }
+  else
+  {
+    Result = rdcaNone;
+    if (Terminal != NULL)
+    {
+      if (!Terminal->ResolvingSymlinks && !Terminal->IsEncryptingFiles() && !AlwaysRespectDoubleClickAction)
+      {
+        Result = rdcaChangeDir;
+      }
+    }
+
+    if (Result == rdcaNone)
+    {
+      switch (DoubleClickAction)
+      {
+        case dcaOpen:
+          Result = rdcaOpen;
+          break;
+
+        case dcaCopy:
+          Result = rdcaCopy;
+          break;
+
+        case dcaEdit:
+          Result = rdcaEdit;
+          break;
+
+        default:
+          DebugFail();
+          Abort();
+          break;
+      }
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
