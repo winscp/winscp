@@ -657,6 +657,8 @@
 #define PROPERTIES_ACL          6047
 #define PROPERTIES_S3_USERS     6048
 #define PROPERTIES_S3_EVERYONE  6049
+#define PROPERTIES_S3_R_ACL_HINT 6050
+#define PROPERTIES_S3_W_ACL_HINT 6051
 
 // 2xxx is reserved for TextsFileZilla.h
 
