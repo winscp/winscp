@@ -650,6 +650,8 @@ BEGIN
         PROPERTIES_ACL, "ACL:"
         PROPERTIES_S3_USERS, "&Users"
         PROPERTIES_S3_EVERYONE, "&Everyone"
+        PROPERTIES_S3_R_ACL_HINT, "Read ACL"
+        PROPERTIES_S3_W_ACL_HINT, "Write ACL"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000–2021 Martin Prikryl"

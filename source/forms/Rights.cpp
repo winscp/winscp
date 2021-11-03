@@ -747,8 +747,11 @@ void TRightsFrame::DisplayAsAcl(TRights::TRight ReadRight, TRights::TRight Write
   ReadAclCheck->Left = ReadAclLeft;
   ReadAclCheck->Width = ReadAclCheck->Width - Shift;
   ReadAclCheck->Caption = L"R ACL";
+  ReadAclCheck->Hint = LoadStr(PROPERTIES_S3_R_ACL_HINT);
 
   WriteAclCheck->Caption = L"W ACL";
+  WriteAclCheck->Hint = LoadStr(PROPERTIES_S3_W_ACL_HINT);
+  WriteAclCheck->ShowHint = true;
 
   GroupLabel->Caption = LoadStr(PROPERTIES_S3_USERS);
   OthersLabel->Caption = LoadStr(PROPERTIES_S3_EVERYONE);
