@@ -6133,7 +6133,7 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeBrowse(TOperationSide Side,
     }
 
     UnicodeString SessionName = SaveHiddenDuplicateSession(SessionData.get());
-    ExecuteNewInstance(SessionName, FORMAT(L"%s=%s", (TProgramParams::FormatSwitch(BROWSE_SWITCH), Item->GetFileName())));
+    ExecuteNewInstance(SessionName, FORMAT(L"%s=\"%s\"", (TProgramParams::FormatSwitch(BROWSE_SWITCH), Item->GetFileName())));
   }
 }
 //---------------------------------------------------------------------------
