@@ -3047,6 +3047,7 @@ void __fastcall TPreferencesDialog::CustomIniFileStorageChanged()
     }
     else if (Result == qaNo)
     {
+      // Similar to TLoginDialog::ImportActionExecute
       Configuration->ScheduleCustomIniFileStorageUse(GetCustomIniFileStorageName());
       ExecuteSelf(EmptyStr);
       TerminateApplication();

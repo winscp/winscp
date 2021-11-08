@@ -148,7 +148,7 @@ BEGIN
         EDIT_SESSION_RECONNECT, "Do you want to reconnect session '%s' to upload edited file '%s'?"
         CLOSE_SESSIONS_WORKSPACE3, "Terminate all sessions and close application without saving a workspace?"
         IMPORT_SESSIONS2, "**You have stored sessions/sites in %s.\n\nDo you want to import them into WinSCP?**\n\n(You can import them anytime later from Login dialog)|PuTTY SSH client|FileZilla FTP client|%s and %s"
-        IMPORT_CONFIGURATION, "Importing configuration will overwrite all your preferences and sites.\n\nDo you want to continue?"
+        IMPORT_CONFIGURATION2, "**Restore configuration from a backup?**\n\nImporting configuration will overwrite all your preferences and sites. WinSCP will be restarted with the new configuration. Consider saving your work and creating backup of your current configuration."
         ALL_BUTTON, "A&ll"
         YES_TO_ALL_BUTTON, "Yes to A&ll"
         REPORT_BUTTON, "Re&port"
