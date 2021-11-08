@@ -405,6 +405,8 @@ void __fastcall TConfiguration::Import(const UnicodeString & FileName)
     Default();
     LoadFrom(ImportStorage);
 
+    Storage->RecursiveDeleteSubKey(Configuration->StoredSessionsSubKey);
+
     if (ImportStorage->OpenSubKey(Configuration->StoredSessionsSubKey, false))
     {
       StoredSessions->Clear();
@@ -420,6 +422,8 @@ void __fastcall TConfiguration::Import(const UnicodeString & FileName)
 
   // save all and explicit
   DoSave(true, true);
+
+  FDontSave = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::LoadData(THierarchicalStorage * Storage)

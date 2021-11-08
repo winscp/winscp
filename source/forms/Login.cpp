@@ -2641,7 +2641,7 @@ void __fastcall TLoginDialog::ExportActionExecute(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::ImportActionExecute(TObject * /*Sender*/)
 {
-  if (MessageDialog(MainInstructions(LoadStr(IMPORT_CONFIGURATION)),
+  if (MessageDialog(LoadStr(IMPORT_CONFIGURATION2),
         qtWarning, qaOK | qaCancel, HELP_IMPORT_CONFIGURATION) == qaOK)
   {
     std::unique_ptr<TOpenDialog> OpenDialog(new TOpenDialog(Application));
@@ -2652,15 +2652,12 @@ void __fastcall TLoginDialog::ImportActionExecute(TObject * /*Sender*/)
 
     if (OpenDialog->Execute())
     {
-      // before the session list gets destroyed
+      // Before the session list gets destroyed
       SessionTree->Items->Clear();
       Configuration->Import(OpenDialog->FileName);
-      ReloadSessions(L"");
-
-      if (SessionTree->Items->Count > 0)
-      {
-        SessionTree->Items->GetFirstNode()->MakeVisible();
-      }
+      // Similar to TPreferencesDialog::CustomIniFileStorageChanged
+      ExecuteSelf(EmptyStr);
+      TerminateApplication();
     }
   }
 }
