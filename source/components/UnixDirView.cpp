@@ -595,8 +595,8 @@ void __fastcall TUnixDirView::DoReadDirectoryImpl(TObject * /*Sender*/, bool Rel
     else
     {
       Load(true);
-      PathChanged();
     }
+    PathChanged();
 
     if ((FDriveView != NULL) && FDriveView->Visible)
     {
