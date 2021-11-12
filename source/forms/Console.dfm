@@ -1403,6 +1403,7 @@ object ConsoleDialog: TConsoleDialog
     Top = 56
     Width = 299
     Height = 13
+    UnixPath = True
     IndentHorizontal = 0
     IndentVertical = 0
     Align = alNone
