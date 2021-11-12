@@ -1190,13 +1190,29 @@ void __fastcall TS3FileSystem::DeleteFile(const UnicodeString AFileName,
       BucketContext.protocol, BucketContext.uriStyle, BucketContext.accessKeyId, BucketContext.secretAccessKey,
       BucketContext.securityToken, BucketContext.hostName, BucketContext.bucketName, BucketContext.authRegion,
       FRequestContext, FTimeout, &ResponseHandler, &Data);
+    CheckLibS3Error(Data);
   }
   else
   {
     S3_delete_object(&BucketContext, StrToS3(Key), FRequestContext, FTimeout, &ResponseHandler, &Data);
+    try
+    {
+      CheckLibS3Error(Data);
+    }
+    catch (...)
+    {
+      if (FTerminal->Active && Dir && !FTerminal->FileExists(AFileName))
+      {
+        // Amazon silently ignores attampts to delete non existing folders,
+        // But Google Cloud fails that.
+        FTerminal->LogEvent(L"Folder does not exist anymore, it was probably only virtual");
+      }
+      else
+      {
+        throw;
+      }
+    }
   }
-
-  CheckLibS3Error(Data);
 }
 //---------------------------------------------------------------------------
 void __fastcall TS3FileSystem::RenameFile(const UnicodeString FileName, const TRemoteFile * File,
