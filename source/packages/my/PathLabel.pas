@@ -23,6 +23,8 @@ type
     FOnPathClick: TPathLabelPathClickEvent;
     FOnMaskClick: TNotifyEvent;
     FDisplayPath: string;
+    FShortenedDisplayPath: string;
+    FShortenedPath: string;
     FDisplayHotTrack: string;
     FDisplayMask: string;
     FHotTrack: Boolean;
@@ -148,7 +150,7 @@ implementation
 
 uses
   { SysUtils must overload deprecated FileCtrl (implements MinimizeName) }
-  FileCtrl, SysUtils, Math, PasTools;
+  FileCtrl, SysUtils, Math, PasTools, StrUtils;
 
 const
   // magic value
@@ -192,44 +194,40 @@ end; { CMHintShow }
 procedure TCustomPathLabel.Click;
 var
   HotPath: string;
-  RemainingPath: string;
 begin
   if FIsEnabled then
   begin
     HotPath := HotTrackPath;
     if HotPath <> '' then
     begin
-      if (Copy(HotPath, Length(HotPath), 1) = GetSeparator) and
-         (HotPath <> GetSeparator) then
-        SetLength(HotPath, Length(HotPath) - 1);
-
       if HotPath = HotTrackMask then DoMaskClick
         else
-      if FDisplayPath = Caption then DoPathClick(HotPath)
-        else
       begin
-        // Displayed path is shortened.
-        // The below is based on knowledge of MinimizeName algorithm
-        RemainingPath := Copy(FDisplayPath, Length(HotPath) + 1,
-          Length(FDisplayPath) - Length(HotPath));
-        // Contrary to stripping separator from HotPath above, we strip it even from bare /,
-        // as the Caption does not include it either
-        if Copy(RemainingPath, Length(RemainingPath), 1) = GetSeparator then
-          SetLength(RemainingPath, Length(RemainingPath) - 1);
+        if FShortenedPath <> '' then
+        begin
+          // No matter the shortening algo, when the clicked path is the full displayed path, use full original path
+          if HotPath = FDisplayPath then HotPath := Caption
+            else
+          begin
+            Assert(FShortenedDisplayPath <> '');
+            Assert((Length(HotPath) >= Length(FShortenedDisplayPath)) or (not ContainsStr(HotPath, '...')));
+            if Length(HotPath) >= Length(FShortenedDisplayPath) then
+            begin
+              Assert(StartsStr(FShortenedDisplayPath, HotPath));
+              if StartsStr(FShortenedDisplayPath, HotPath) then
+              begin
+                Delete(HotPath, 1, Length(FShortenedDisplayPath));
+                HotPath := FShortenedPath + HotPath;
+              end;
+            end;
+          end;
+        end;
 
-        // Part from ellipsis (inclusive)
-        if RemainingPath = Copy(Caption, Length(Caption) - Length(RemainingPath) + 1,
-             Length(RemainingPath)) then
-        begin
-          DoPathClick(Copy(Caption, 1, Length(Caption) - Length(RemainingPath)));
-        end
-          else
-        // Part before ellipsis
-        if HotPath = Copy(Caption, 1, Length(HotPath)) then
-        begin
-          DoPathClick(HotPath);
-        end
-          else Assert(False);
+        if EndsStr(GetSeparator, HotPath) and
+           (HotPath <> GetSeparator) then
+          SetLength(HotPath, Length(HotPath) - 1);
+
+        DoPathClick(HotPath);
       end;
     end;
 
@@ -493,15 +491,54 @@ begin
   end;
 end;
 
+function MinimizeStr(Buf: string; Canvas: TCanvas; Width: Integer): string;
+var
+  StrWidth: Integer;
+begin
+  if Canvas.TextWidth(Buf) > Width then
+  begin
+    Buf := Buf + '...';
+    repeat
+      Delete(Buf, Length(Buf) - 3, 1);
+      StrWidth := Canvas.TextWidth(Buf);
+    until (StrWidth <= Width) or (Length(Buf) = 4);
+  end;
+  Result := Buf;
+end;
+
+function ConvertPath(Path: string; S1, S2: Char): string;
+var
+  I: Integer;
+begin
+  for I := 1 to Length(Path) do
+  begin
+    if Path[I] = S1 then Path[I] := S2
+      else
+    if Path[I] = S2 then Path[I] := S1;
+  end;
+  Result := Path;
+end;
+
+function ConvertPathToWin(Path: string): string;
+begin
+  Result := ConvertPath(Path, '/', '\');
+end;
+
+function ConvertPathToUnix(Path: string): string;
+begin
+  Result := ConvertPath(Path, '\', '/');
+end;
+
 procedure TCustomPathLabel.DoDrawTextIntern(var Rect: TRect; Flags: Longint; S: string);
 var
-  i: Integer;
+  I, I2, L: Integer;
   Width: Integer;
   WidthMask: Integer;
   WidthPath: Integer;
+  WidthRemain: Integer;
   HotTrackOffset: Integer;
   HotTrackBottom: Integer;
-  Separator: string;
+  Separator, Buf, Buf2: string;
   Str: string;
   HotTrackColor: TColor;
   VirtualMask: string;
@@ -527,13 +564,14 @@ begin
     IsVirtualMask := not FMouseInView;
   end;
 
+  Separator := GetSeparator;
   if VirtualMask <> '' then
   begin
     if (Length(FDisplayPath) > 0) and (FDisplayPath[Length(FDisplayPath)] <> GetSeparator) then
-      Separator := GetSeparator;
+      Buf := Separator;
 
-    FDisplayPath := FDisplayPath + Separator;
-    S := S + Separator;
+    FDisplayPath := FDisplayPath + Buf;
+    S := S + Buf;
 
     WidthMask := Canvas.TextWidth(VirtualMask);
     if WidthMask > Width div 3 then
@@ -548,35 +586,69 @@ begin
   end;
 
   if FUnixPath then
-    for i := 1 to Length(FDisplayPath) do
+    FDisplayPath := ConvertPathToWin(FDisplayPath);
+
+  Buf := FDisplayPath;
+  WidthRemain := WidthPath;
+  if EndsStr('\', FDisplayPath) then
+  begin
+    Dec(WidthRemain, Canvas.TextWidth('\'));
+    SetLength(Buf, Length(Buf) - 1);
+  end;
+  Buf2 := ExtractFileName(Buf);
+  FShortenedDisplayPath := '...\';
+  if WidthRemain < Canvas.TextWidth(FShortenedDisplayPath + Buf2) then
+  begin
+    Dec(WidthRemain, Canvas.TextWidth(FShortenedDisplayPath));
+    Buf2 := MinimizeStr(Buf2, Canvas, WidthRemain);
+    FShortenedPath := ExtractFilePath(Buf);
+    Buf := FShortenedDisplayPath + Buf2;
+  end
+    else
+  begin
+    Buf2 := MinimizeName(Buf, Canvas, WidthRemain);
+    if Buf2 = Buf then
     begin
-      case FDisplayPath[i] of
-        '/': FDisplayPath[i] := '\';
-        '\': FDisplayPath[i] := '/';
-      end;
+      FShortenedPath := '';
+      FShortenedDisplayPath := '';
+    end
+      else
+    begin
+      I := Length(Buf);
+      repeat
+        I2 := LastDelimiter('\', Copy(Buf, 1, I - 1));
+        if I2 = 0 then
+          Break;
+        L := Length(Buf) - I2 + 1;
+        if Copy(Buf, I2, L) = Copy(Buf2, Length(Buf2) - L + 1, L) then
+          I := I2
+        else
+          Break;
+      until False;
+      FShortenedPath := Copy(Buf, 1, I);
+      FShortenedDisplayPath := Copy(Buf2, 1, Length(Buf2) - (Length(Buf) - I));
+      Buf := Buf2;
     end;
-  FDisplayPath := MinimizeName(FDisplayPath, Canvas, WidthPath);
+  end;
+  if EndsStr('\', FDisplayPath) then
+  begin
+    Buf := Buf + '\';
+  end;
+  FDisplayPath := Buf;
+
   if FUnixPath then
-    for i := 1 to Length(FDisplayPath) do
-    begin
-      case FDisplayPath[i] of
-        '\': FDisplayPath[i] := '/';
-        '/': FDisplayPath[i] := '\';
-      end;
-    end;
+  begin
+    FDisplayPath := ConvertPathToUnix(FDisplayPath);
+    FShortenedPath := ConvertPathToUnix(FShortenedPath);
+    FShortenedDisplayPath := ConvertPathToUnix(FShortenedDisplayPath);
+  end;
 
   WidthPath := Canvas.TextWidth(FDisplayPath);
 
   if VirtualMask <> '' then
   begin
-    if WidthMask > Width - WidthPath then
-    begin
-      VirtualMask := VirtualMask + '...';
-      repeat
-        Delete(VirtualMask, Length(VirtualMask) - 3, 1);
-        WidthMask := Canvas.TextWidth(VirtualMask);
-      until (WidthMask <= Width - WidthPath) or (Length(VirtualMask) = 3);
-    end;
+    VirtualMask := MinimizeStr(VirtualMask, Canvas, Width - WidthPath);
+    WidthMask := Canvas.TextWidth(VirtualMask);
   end;
 
   Str := FDisplayPath;
