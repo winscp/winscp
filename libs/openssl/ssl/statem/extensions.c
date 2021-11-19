@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -18,6 +18,7 @@ static int final_renegotiate(SSL *s, unsigned int context, int sent);
 static int init_server_name(SSL *s, unsigned int context);
 static int final_server_name(SSL *s, unsigned int context, int sent);
 #ifndef OPENSSL_NO_EC
+static int init_ec_point_formats(SSL *s, unsigned int context);
 static int final_ec_pt_formats(SSL *s, unsigned int context, int sent);
 #endif
 static int init_session_ticket(SSL *s, unsigned int context);
@@ -56,6 +57,7 @@ static int final_sig_algs(SSL *s, unsigned int context, int sent);
 static int final_early_data(SSL *s, unsigned int context, int sent);
 static int final_maxfragmentlen(SSL *s, unsigned int context, int sent);
 static int init_post_handshake_auth(SSL *s, unsigned int context);
+static int final_psk(SSL *s, unsigned int context, int sent);
 
 /* Structure to define a built-in extension */
 typedef struct extensions_definition_st {
@@ -158,7 +160,7 @@ static const EXTENSION_DEFINITION ext_defs[] = {
         TLSEXT_TYPE_ec_point_formats,
         SSL_EXT_CLIENT_HELLO | SSL_EXT_TLS1_2_SERVER_HELLO
         | SSL_EXT_TLS1_2_AND_BELOW_ONLY,
-        NULL, tls_parse_ctos_ec_pt_formats, tls_parse_stoc_ec_pt_formats,
+        init_ec_point_formats, tls_parse_ctos_ec_pt_formats, tls_parse_stoc_ec_pt_formats,
         tls_construct_stoc_ec_pt_formats, tls_construct_ctos_ec_pt_formats,
         final_ec_pt_formats
     },
@@ -336,6 +338,8 @@ static const EXTENSION_DEFINITION ext_defs[] = {
         tls_construct_stoc_key_share, tls_construct_ctos_key_share,
         final_key_share
     },
+#else
+    INVALID_EXTENSION,
 #endif
     {
         /* Must be after key_share */
@@ -387,7 +391,7 @@ static const EXTENSION_DEFINITION ext_defs[] = {
         SSL_EXT_CLIENT_HELLO | SSL_EXT_TLS1_3_SERVER_HELLO
         | SSL_EXT_TLS_IMPLEMENTATION_ONLY | SSL_EXT_TLS1_3_ONLY,
         NULL, tls_parse_ctos_psk, tls_parse_stoc_psk, tls_construct_stoc_psk,
-        tls_construct_ctos_psk, NULL
+        tls_construct_ctos_psk, final_psk
     }
 };
 
@@ -966,7 +970,8 @@ static int final_server_name(SSL *s, unsigned int context, int sent)
      * context, to avoid the confusing situation of having sess_accept_good
      * exceed sess_accept (zero) for the new context.
      */
-    if (SSL_IS_FIRST_HANDSHAKE(s) && s->ctx != s->session_ctx) {
+    if (SSL_IS_FIRST_HANDSHAKE(s) && s->ctx != s->session_ctx
+		    && s->hello_retry_request == SSL_HRR_NONE) {
         tsan_counter(&s->ctx->stats.sess_accept);
         tsan_decr(&s->session_ctx->stats.sess_accept);
     }
@@ -1023,6 +1028,15 @@ static int final_server_name(SSL *s, unsigned int context, int sent)
 }
 
 #ifndef OPENSSL_NO_EC
+static int init_ec_point_formats(SSL *s, unsigned int context)
+{
+    OPENSSL_free(s->ext.peer_ecpointformats);
+    s->ext.peer_ecpointformats = NULL;
+    s->ext.peer_ecpointformats_len = 0;
+
+    return 1;
+}
+
 static int final_ec_pt_formats(SSL *s, unsigned int context, int sent)
 {
     unsigned long alg_k, alg_a;
@@ -1136,6 +1150,7 @@ static int init_sig_algs(SSL *s, unsigned int context)
     /* Clear any signature algorithms extension received */
     OPENSSL_free(s->s3->tmp.peer_sigalgs);
     s->s3->tmp.peer_sigalgs = NULL;
+    s->s3->tmp.peer_sigalgslen = 0;
 
     return 1;
 }
@@ -1145,6 +1160,7 @@ static int init_sig_algs_cert(SSL *s, unsigned int context)
     /* Clear any signature algorithms extension received */
     OPENSSL_free(s->s3->tmp.peer_cert_sigalgs);
     s->s3->tmp.peer_cert_sigalgs = NULL;
+    s->s3->tmp.peer_cert_sigalgslen = 0;
 
     return 1;
 }
@@ -1710,6 +1726,22 @@ static int final_maxfragmentlen(SSL *s, unsigned int context, int sent)
 static int init_post_handshake_auth(SSL *s, unsigned int context)
 {
     s->post_handshake_auth = SSL_PHA_NONE;
+
+    return 1;
+}
+
+/*
+ * If clients offer "pre_shared_key" without a "psk_key_exchange_modes"
+ * extension, servers MUST abort the handshake.
+ */
+static int final_psk(SSL *s, unsigned int context, int sent)
+{
+    if (s->server && sent && s->clienthello != NULL
+            && !s->clienthello->pre_proc_exts[TLSEXT_IDX_psk_kex_modes].present) {
+        SSLfatal(s, TLS13_AD_MISSING_EXTENSION, SSL_F_FINAL_PSK,
+                 SSL_R_MISSING_PSK_KEX_MODES_EXTENSION);
+        return 0;
+    }
 
     return 1;
 }

@@ -705,8 +705,8 @@ static void share_remove_forwarding(struct ssh_sharing_connstate *cs,
     sfree(fwd);
 }
 
-static void log_downstream(struct ssh_sharing_connstate *cs,
-                           const char *logfmt, ...)
+static PRINTF_LIKE(2, 3) void log_downstream(struct ssh_sharing_connstate *cs,
+                                             const char *logfmt, ...)
 {
     va_list ap;
     char *buf;
@@ -719,8 +719,8 @@ static void log_downstream(struct ssh_sharing_connstate *cs,
     sfree(buf);
 }
 
-static void log_general(struct ssh_sharing_state *sharestate,
-                        const char *logfmt, ...)
+static PRINTF_LIKE(2, 3) void log_general(struct ssh_sharing_state *sharestate,
+                                          const char *logfmt, ...)
 {
     va_list ap;
     char *buf;
@@ -1794,8 +1794,9 @@ static void share_receive(Plug *plug, int urgent, const char *data, size_t len)
     }
     if (cs->recvlen > 0 && cs->recvbuf[cs->recvlen-1] == '\015')
         cs->recvlen--;                 /* trim off \r before \n */
+    ptrlen verstring = make_ptrlen(cs->recvbuf, cs->recvlen);
     log_downstream(cs, "Downstream version string: %.*s",
-                   cs->recvlen, cs->recvbuf);
+                   PTRLEN_PRINTF(verstring));
     cs->got_verstring = true;
 
     /*
@@ -1858,7 +1859,7 @@ static void share_listen_closing(Plug *plug, const char *error_msg,
 static void share_send_verstring(ssh_sharing_connstate *cs)
 {
     char *fullstring = dupcat("SSHCONNECTION@putty.projects.tartarus.org-2.0-",
-                              cs->parent->server_verstring, "\015\012", NULL);
+                              cs->parent->server_verstring, "\015\012");
     sk_write(cs->sock, fullstring, strlen(fullstring));
     sfree(fullstring);
 

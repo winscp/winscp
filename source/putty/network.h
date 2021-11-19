@@ -265,7 +265,8 @@ char *get_hostname(void);
  * Trivial socket implementation which just stores an error. Found in
  * errsock.c.
  */
-Socket *new_error_socket_fmt(Plug *plug, const char *fmt, ...);
+Socket *new_error_socket_fmt(Plug *plug, const char *fmt, ...)
+    PRINTF_LIKE(2, 3);
 
 /*
  * Trivial plug that does absolutely nothing. Found in nullplug.c.

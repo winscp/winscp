@@ -1817,8 +1817,7 @@ char *get_hostname(void)
     return dupstr(hostbuf);
 }
 
-SockAddr *platform_get_x11_unix_address(const char *display, int displaynum,
-                                       char **canonicalname)
+SockAddr *platform_get_x11_unix_address(const char *display, int displaynum)
 {
     SockAddr *ret = snew(SockAddr);
     memset(ret, 0, sizeof(SockAddr));

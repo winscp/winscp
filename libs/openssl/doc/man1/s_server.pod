@@ -297,7 +297,7 @@ The private format to use: DER or PEM. PEM is the default.
 =item B<-pass val>
 
 The private key password source. For more information about the format of B<val>
-see the B<PASS PHRASE ARGUMENTS> section in L<openssl(1)>.
+see L<openssl(1)/Pass Phrase Options>.
 
 =item B<-dcert infile>, B<-dkey infile>
 
@@ -701,7 +701,7 @@ disabling the ephemeral DH cipher suites.
 
 =item B<-alpn val>, B<-nextprotoneg val>
 
-These flags enable the Enable the Application-Layer Protocol Negotiation
+These flags enable the Application-Layer Protocol Negotiation
 or Next Protocol Negotiation (NPN) extension, respectively. ALPN is the
 IETF standard and replaces NPN.
 The B<val> list is a comma-separated list of supported protocol
@@ -845,7 +845,7 @@ The
 
 =head1 COPYRIGHT
 
-Copyright 2000-2020 The OpenSSL Project Authors. All Rights Reserved.
+Copyright 2000-2021 The OpenSSL Project Authors. All Rights Reserved.
 
 Licensed under the OpenSSL license (the "License").  You may not use
 this file except in compliance with the License.  You can obtain a copy

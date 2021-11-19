@@ -562,7 +562,7 @@ void ssh_deferred_abort_callback(void *vctx)
     Ssh *ssh = (Ssh *)vctx;
     char *msg = ssh->deferred_abort_message;
     ssh->deferred_abort_message = NULL;
-    ssh_sw_abort(ssh, msg);
+    ssh_sw_abort(ssh, "%s", msg);
     sfree(msg);
 }
 
@@ -996,7 +996,8 @@ static size_t ssh_sendbuffer(Backend *be)
 
     backlog = ssh_stdin_backlog(ssh->cl);
 
-    /* FIXME: also include sizes of pqs */
+    if (ssh->base_layer)
+        backlog += ssh_ppl_queued_data_size(ssh->base_layer);
 
     /*
      * If the SSH socket itself has backed up, add the total backup

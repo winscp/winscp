@@ -177,7 +177,7 @@ static void prng_seed_BinarySink_write(
     prng *pr = BinarySink_DOWNCAST(bs, prng);
     prng_impl *pi = container_of(pr, prng_impl, Prng);
     assert(pi->keymaker);
-    prngdebug("prng: got %zu bytes of seed\n", len);
+    prngdebug("prng: got %"SIZEu" bytes of seed\n", len);
     put_data(pi->keymaker, data, len);
 }
 
@@ -228,7 +228,7 @@ void prng_read(prng *pr, void *vout, size_t size)
 
     assert(!pi->keymaker);
 
-    prngdebug("prng_read %zu\n", size);
+    prngdebug("prng_read %"SIZEu"\n", size);
 
     uint8_t *out = (uint8_t *)vout;
     for (; size > 0; size--) {
@@ -256,7 +256,7 @@ void prng_add_entropy(prng *pr, unsigned source_id, ptrlen data)
         index++;
     }
 
-    prngdebug("prng_add_entropy source=%u size=%zu -> collector %zi\n",
+    prngdebug("prng_add_entropy source=%u size=%"SIZEu" -> collector %zi\n",
               source_id, data.len, index);
 
     put_datapl(pi->collectors[index], data);
@@ -272,7 +272,7 @@ void prng_add_entropy(prng *pr, unsigned source_id, ptrlen data)
         uint32_t reseed_index = ++pi->reseeds;
         prngdebug("prng entropy reseed #%"PRIu32"\n", reseed_index);
         for (size_t i = 0; i < NCOLLECTORS; i++) {
-            prngdebug("emptying collector %zu\n", i);
+            prngdebug("emptying collector %"SIZEu"\n", i);
             ssh_hash_final(pi->collectors[i], pi->pending_output);
             put_data(&pi->Prng, pi->pending_output, pi->hashalg->hlen);
             pi->collectors[i] = ssh_hash_new(pi->hashalg);

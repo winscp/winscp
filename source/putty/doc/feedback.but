@@ -51,7 +51,9 @@ actually need it, and only one of us needs to download it instead of
 it being automatically copied to all the developers.
 
 (If the file contains confidential information, then you could encrypt
-it with our Secure Contact Key; see \k{pgpkeys-pubkey} for details.)
+it with our Secure Contact Key; see \k{pgpkeys-pubkey} for details.
+Please \e{only} use this for information that \e{needs} to be
+confidential.)
 
 Some people like to send mail in MS Word format. Please \e{don't}
 send us bug reports, or any other mail, as a Word document. Word

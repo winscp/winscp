@@ -72,8 +72,10 @@ static char *dss_cache_str(ssh_key *key)
     struct dss_key *dss = container_of(key, struct dss_key, sshk);
     strbuf *sb = strbuf_new();
 
-    if (!dss->p)
+    if (!dss->p) {
+        strbuf_free(sb);
         return NULL;
+    }
 
     append_hex_to_strbuf(sb, dss->p);
     append_hex_to_strbuf(sb, dss->q);

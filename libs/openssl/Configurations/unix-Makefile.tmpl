@@ -523,7 +523,6 @@ clean: libclean
 	$(RM) -r test/test-runs
 	$(RM) openssl.pc libcrypto.pc libssl.pc
 	-$(RM) `find . -type l \! -name '.*' -print`
-	$(RM) $(TARFILE)
 
 distclean: clean
 	$(RM) configdata.pm
@@ -917,8 +916,8 @@ errors:
           done )
 
 ordinals:
-	( b=`pwd`; cd $(SRCDIR); $(PERL) -I$$b util/mkdef.pl crypto update )
-	( b=`pwd`; cd $(SRCDIR); $(PERL) -I$$b util/mkdef.pl ssl update )
+	$(PERL) $(SRCDIR)/util/mkdef.pl crypto update
+	$(PERL) $(SRCDIR)/util/mkdef.pl ssl update
 
 test_ordinals:
 	( cd test; \

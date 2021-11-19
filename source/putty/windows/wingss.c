@@ -308,7 +308,7 @@ static Ssh_gss_stat ssh_sspi_import_name(struct ssh_gss_library *lib,
     if (host == NULL) return SSH_GSS_FAILURE;
 
     /* copy it into form host/FQDN */
-    pStr = dupcat("host/", host, NULL);
+    pStr = dupcat("host/", host);
 
     *srv_name = (Ssh_gss_name) pStr;
 

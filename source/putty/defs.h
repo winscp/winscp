@@ -22,10 +22,37 @@
 #define PRIdMAX "I64d"
 #define PRIXMAX "I64X"
 #define SCNu64 "I64u"
+#define SIZEx "Ix"
+#define SIZEu "Iu"
 uintmax_t strtoumax(const char *nptr, char **endptr, int base);
 #else
 #include <inttypes.h>
+/* Because we still support older MSVC libraries which don't recognise the
+ * standard C "z" modifier for size_t-sized integers, we must use an
+ * inttypes.h-style macro for those */
+#define SIZEx "zx"
+#define SIZEu "zu"
 #endif
+
+#if defined __GNUC__ || defined __clang__
+/*
+ * On MinGW, the correct compiler format checking for vsnprintf() etc
+ * can depend on compile-time flags; these control whether you get
+ * ISO C or Microsoft's non-standard format strings.
+ * We sometimes use __attribute__ ((format)) for our own printf-like
+ * functions, which are ultimately interpreted by the toolchain-chosen
+ * printf, so we need to take that into account to get correct warnings.
+ */
+#ifdef __MINGW_PRINTF_FORMAT
+#define PRINTF_LIKE(fmt_index, ellipsis_index) \
+    __attribute__ ((format (__MINGW_PRINTF_FORMAT, fmt_index, ellipsis_index)))
+#else
+#define PRINTF_LIKE(fmt_index, ellipsis_index) \
+    __attribute__ ((format (printf, fmt_index, ellipsis_index)))
+#endif
+#else /* __GNUC__ */
+#define PRINTF_LIKE(fmt_index, ellipsis_index)
+#endif /* __GNUC__ */
 
 typedef struct conf_tag Conf;
 typedef struct terminal_tag Terminal;

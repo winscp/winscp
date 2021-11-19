@@ -19,6 +19,7 @@ struct PacketProtocolLayerVtable {
     bool (*want_user_input)(PacketProtocolLayer *ppl);
     void (*got_user_input)(PacketProtocolLayer *ppl);
     void (*reconfigure)(PacketProtocolLayer *ppl, Conf *conf);
+    size_t (*queued_data_size)(PacketProtocolLayer *ppl);
 
     /* Protocol-level name of this layer. */
     const char *name;
@@ -73,6 +74,8 @@ static inline void ssh_ppl_got_user_input(PacketProtocolLayer *ppl)
 { ppl->vt->got_user_input(ppl); }
 static inline void ssh_ppl_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
 { ppl->vt->reconfigure(ppl, conf); }
+static inline size_t ssh_ppl_queued_data_size(PacketProtocolLayer *ppl)
+{ return ppl->vt->queued_data_size(ppl); }
 
 /* ssh_ppl_free is more than just a macro wrapper on the vtable; it
  * does centralised parts of the freeing too. */
@@ -89,6 +92,11 @@ void ssh_ppl_setup_queues(PacketProtocolLayer *ppl,
  * if 'old' actually called this (which is likely) then it should
  * avoid dereferencing itself on return from this function! */
 void ssh_ppl_replace(PacketProtocolLayer *old, PacketProtocolLayer *new);
+
+/* Default implementation of queued_data_size, which just adds up the
+ * sizes of all the packets in pq_out. A layer can override this if it
+ * has other things to take into account as well. */
+size_t ssh_ppl_default_queued_data_size(PacketProtocolLayer *ppl);
 
 PacketProtocolLayer *ssh1_login_new(
     Conf *conf, const char *host, int port,

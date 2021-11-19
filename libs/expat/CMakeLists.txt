@@ -1,11 +1,70 @@
-# This file is copyrighted under the BSD-license for buildsystem files of KDE
-# copyright 2010, Patrick Spendrin <ps_ml@gmx.de>
+#                          __  __            _
+#                       ___\ \/ /_ __   __ _| |_
+#                      / _ \\  /| '_ \ / _` | __|
+#                     |  __//  \| |_) | (_| | |_
+#                      \___/_/\_\ .__/ \__,_|\__|
+#                               |_| XML parser
+#
+# Copyright (c) 2010      Patrick Spendrin <ps_ml@gmx.de>
+# Copyright (c) 2012      Karl Waclawek <karl@waclawek.net>
+# Copyright (c) 2016-2021 Sebastian Pipping <sebastian@pipping.org>
+# Copyright (c) 2016      Sergei Nikulov <sergey.nikulov@gmail.com>
+# Copyright (c) 2016      Björn Lindahl <bjorn.lindahl@foi.se>
+# Copyright (c) 2016      Tobias Taschner <github@tc84.de>
+# Copyright (c) 2016      Ben Boeckel <ben.boeckel@kitware.com>
+# Copyright (c) 2017      Rhodri James <rhodri@wildebeest.org.uk>
+# Copyright (c) 2017      Rolf Eike Beer <eike@sf-mail.de>
+# Copyright (c) 2017      Stephen Groat <stephen@groat.us>
+# Copyright (c) 2017      Franek Korta <fkorta@gmail.com>
+# Copyright (c) 2018      pedro-vicente <pedro.vicente@space-research.org>
+# Copyright (c) 2018      Frank Rast <frank.rast@gefeg.com>
+# Copyright (c) 2018      userwithuid <userwithuid@gmail.com>
+# Copyright (c) 2018      Yury Gribov <tetra2005@gmail.com>
+# Copyright (c) 2019      Kishore Kunche <kishore.kunche@intel.com>
+# Copyright (c) 2019      xantares <xantares09@hotmail.com>
+# Copyright (c) 2019      Mohammed Khajapasha <mohammed.khajapasha@intel.com>
+# Copyright (c) 2019      David Loffredo <loffredo@steptools.com>
+# Copyright (c) 2019      Bhargava Shastry <bhargava.shastry@ethereum.org>
+# Copyright (c) 2020      Maciej Sroczyński <macieksroczynski@poczta.fm>
+# Copyright (c) 2020      Gulliver <gulliver@traumkristalle.net>
+# Copyright (c) 2020      Thomas Beutlich <tc@tbeu.de>
+# Copyright (c) 2021      Alex Richardson <Alexander.Richardson@cl.cam.ac.uk>
+# Unlike most of Expat,
+# this file is copyrighted under the BSD-license for buildsystem files of KDE.
 
 cmake_minimum_required(VERSION 3.1.3)
 
+# This allows controlling documented build time switches
+# when Expat is pulled in using the add_subdirectory function, e.g.
+#
+#   set(EXPAT_BUILD_DOCS OFF)
+#   set(EXPAT_BUILD_TOOLS OFF)
+#   add_subdirectory(${expat_SOURCE_DIR}/expat ${expat_BINARY_DIR})
+#
+# would disable compilation of the xmlwf CLI and its man page.
+# Without activating behaviour NEW for policy CMP0077 here,
+# a user with -Wdev enabled would see warning
+#
+#   Policy CMP0077 is not set: option() honors normal variables.  Run "cmake
+#   --help-policy CMP0077" for policy details.  Use the cmake_policy command to
+#   set the policy and suppress this warning.
+#
+#   For compatibility with older versions of CMake, option is clearing the
+#   normal variable 'EXPAT_BUILD_DOCS'.
+#
+# and effectively not be able to adjust option EXPAT_BUILD_DOCS.
+#
+# For more details please see:
+# - https://cmake.org/cmake/help/latest/policy/CMP0077.html
+# - https://github.com/libexpat/libexpat/pull/419
+#
+if(POLICY CMP0077)
+    cmake_policy(SET CMP0077 NEW)
+endif()
+
 project(expat
     VERSION
-        2.2.9
+        2.4.1
     LANGUAGES
         C
 )
@@ -37,6 +96,16 @@ else()
         set(_EXPAT_BUILD_DOCS_DEFAULT OFF)
     endif()
 endif()
+if(MSVC)
+    set(_EXPAT_BUILD_PKGCONFIG_DEFAULT OFF)
+else()
+    set(_EXPAT_BUILD_PKGCONFIG_DEFAULT ON)
+endif()
+if(DEFINED BUILD_SHARED_LIBS)
+    set(_EXPAT_SHARED_LIBS_DEFAULT ${BUILD_SHARED_LIBS})
+else()
+    set(_EXPAT_SHARED_LIBS_DEFAULT ON)
+endif()
 
 #
 # Configuration
@@ -44,10 +113,14 @@ endif()
 option(EXPAT_BUILD_TOOLS "build the xmlwf tool for expat library" ${_EXPAT_BUILD_TOOLS_DEFAULT})
 option(EXPAT_BUILD_EXAMPLES "build the examples for expat library" ON)
 option(EXPAT_BUILD_TESTS "build the tests for expat library" ON)
-option(EXPAT_SHARED_LIBS "build a shared expat library" ON)
+option(EXPAT_SHARED_LIBS "build a shared expat library" ${_EXPAT_SHARED_LIBS_DEFAULT})
 option(EXPAT_BUILD_DOCS "build man page for xmlwf" ${_EXPAT_BUILD_DOCS_DEFAULT})
 option(EXPAT_BUILD_FUZZERS "build fuzzers for the expat library" OFF)
-option(EXPAT_WITH_LIBBSD "utilize libbsd (for arc4random_buf)" OFF)
+option(EXPAT_BUILD_PKGCONFIG "build pkg-config file" ${_EXPAT_BUILD_PKGCONFIG_DEFAULT})
+option(EXPAT_OSSFUZZ_BUILD "build fuzzers via ossfuzz for the expat library" OFF)
+if(UNIX OR _EXPAT_HELP)
+    option(EXPAT_WITH_LIBBSD "utilize libbsd (for arc4random_buf)" OFF)
+endif()
 option(EXPAT_ENABLE_INSTALL "install expat files in cmake install target" ON)
 set(EXPAT_CONTEXT_BYTES 1024 CACHE STRING "Define to specify how much context to retain around the current parse point")
 mark_as_advanced(EXPAT_CONTEXT_BYTES)
@@ -56,7 +129,7 @@ mark_as_advanced(EXPAT_DTD)
 option(EXPAT_NS "Define to make XML Namespaces functionality available" ON)
 mark_as_advanced(EXPAT_NS)
 option(EXPAT_WARNINGS_AS_ERRORS "Treat all compiler warnings as errors" OFF)
-if(NOT WIN32 OR _EXPAT_HELP)
+if(UNIX OR _EXPAT_HELP)
     option(EXPAT_DEV_URANDOM "Define to include code reading entropy from `/dev/urandom'." ON)
     set(EXPAT_WITH_GETRANDOM "AUTO" CACHE STRING
             "Make use of getrandom function (ON|OFF|AUTO) [default=AUTO]")
@@ -75,6 +148,11 @@ if(MSVC OR _EXPAT_HELP)
     set(EXPAT_MSVC_STATIC_CRT OFF CACHE BOOL "Use /MT flag (static CRT) when compiling in MSVC")
 endif()
 
+if(EXPAT_BUILD_TESTS)
+    # We have to call enable_language() before modifying any CMAKE_CXX_* variables
+    enable_language(CXX)
+endif()
+
 #
 # Environment checks
 #
@@ -84,6 +162,26 @@ if(EXPAT_WITH_LIBBSD)
         message(SEND_ERROR "EXPAT_WITH_LIBBSD option is enabled, but libbsd was not found")
     else()
         set(HAVE_LIBBSD TRUE)
+    endif()
+endif()
+
+if(MSVC)
+    # For the three types of MSVC version values, please see:
+    # - https://cmake.org/cmake/help/latest/variable/MSVC_VERSION.html
+    # - https://sourceforge.net/p/predef/wiki/Compilers/
+    # - https://en.wikipedia.org/wiki/Microsoft_Visual_Studio#History
+    set(_EXPAT_MSVC_REQUIRED_INT 1800)  # i.e. 12.0/2013/1800; see PR #426
+    set(_EXPAT_MSVC_SUPPORTED_INT 1910)
+    set(_EXPAT_MSVC_SUPPORTED_DISPLAY "Visual Studio 15.0/2017/${_EXPAT_MSVC_SUPPORTED_INT}")
+
+    if(MSVC_VERSION VERSION_LESS ${_EXPAT_MSVC_SUPPORTED_INT})
+        if(MSVC_VERSION VERSION_LESS ${_EXPAT_MSVC_REQUIRED_INT})
+            message(SEND_ERROR "MSVC_VERSION ${MSVC_VERSION} is TOO OLD to compile Expat without errors.")
+            message(SEND_ERROR "Please use officially supported ${_EXPAT_MSVC_SUPPORTED_DISPLAY} or later.  Thank you!")
+        else()
+            message(WARNING "MSVC_VERSION ${MSVC_VERSION} is NOT OFFICIALLY SUPPORTED by Expat.")
+            message(WARNING "Please use ${_EXPAT_MSVC_SUPPORTED_DISPLAY} or later.  Thank you!")
+        endif()
     endif()
 endif()
 
@@ -109,12 +207,27 @@ if(EXPAT_CHAR_TYPE STREQUAL "char")
 elseif(EXPAT_CHAR_TYPE STREQUAL "ushort")
     set(_EXPAT_UNICODE ON)
     set(_EXPAT_UNICODE_WCHAR_T OFF)
+    if(EXPAT_BUILD_EXAMPLES)
+        message(SEND_ERROR "Examples can not be built with option -DEXPAT_CHAR_TYPE=ushort. Please pass -DEXPAT_CHAR_TYPE=(char|wchar_t) or -DEXPAT_BUILD_EXAMPLES=OFF.")
+    endif()
+    if(EXPAT_BUILD_TESTS)
+        message(SEND_ERROR "The testsuite can not be built with option -DEXPAT_CHAR_TYPE=ushort. Please pass -DEXPAT_CHAR_TYPE=(char|wchar_t) or -DEXPAT_BUILD_TESTS=OFF.")
+    endif()
     if(EXPAT_BUILD_TOOLS)
         message(SEND_ERROR "The xmlwf tool can not be built with option -DEXPAT_CHAR_TYPE=ushort. Please pass -DEXPAT_CHAR_TYPE=(char|wchar_t) or -DEXPAT_BUILD_TOOLS=OFF.")
     endif()
 elseif(EXPAT_CHAR_TYPE STREQUAL "wchar_t")
     set(_EXPAT_UNICODE ON)
     set(_EXPAT_UNICODE_WCHAR_T ON)
+    if(NOT WIN32)
+        string(FIND "${CMAKE_C_FLAGS}" "-fshort-wchar" _expat_short_wchar_found)
+        if(${_expat_short_wchar_found} EQUAL "-1")
+            message(SEND_ERROR "Configuration -DEXPAT_CHAR_TYPE=wchar_t requires -DCMAKE_{C,CXX}_FLAGS=-fshort-wchar (which was not found) and libc compiled with -fshort-wchar, too.")
+        endif()
+        if (EXPAT_BUILD_TOOLS)
+            message(SEND_ERROR "The xmlwf tool can not be built with option -DEXPAT_CHAR_TYPE=wchar_t outside of Windows. Please pass -DEXPAT_CHAR_TYPE=char or -DEXPAT_BUILD_TOOLS=OFF.")
+        endif()
+    endif()
 else()
     message(SEND_ERROR "Option -DEXPAT_CHAR_TYPE=(char|ushort|wchar_t) cannot be \"${EXPAT_CHAR_TYPE}\".")
 endif()
@@ -160,7 +273,6 @@ macro(expat_install)
 endmacro()
 
 configure_file(expat_config.h.cmake "${CMAKE_CURRENT_BINARY_DIR}/expat_config.h")
-add_definitions(-DHAVE_EXPAT_CONFIG_H)
 expat_install(FILES "${CMAKE_CURRENT_BINARY_DIR}/expat_config.h" DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 
@@ -171,14 +283,18 @@ endif()
 if(FLAG_VISIBILITY)
   add_definitions(-DXML_ENABLE_VISIBILITY=1)
   set(EXTRA_COMPILE_FLAGS "${EXTRA_COMPILE_FLAGS} -fvisibility=hidden")
-endif(FLAG_VISIBILITY)
+endif()
+if(MINGW)
+    # Without __USE_MINGW_ANSI_STDIO the compiler produces a false positive
+    set(EXTRA_COMPILE_FLAGS "${EXTRA_COMPILE_FLAGS} -Wno-pedantic-ms-format")
+endif()
 if (EXPAT_WARNINGS_AS_ERRORS)
     if(MSVC)
         add_definitions(/WX)
-    else(MSVC)
+    else()
         set(EXTRA_COMPILE_FLAGS "${EXTRA_COMPILE_FLAGS} -Werror")
-    endif(MSVC)
-endif(EXPAT_WARNINGS_AS_ERRORS)
+    endif()
+endif()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${EXTRA_COMPILE_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EXTRA_COMPILE_FLAGS}")
 
@@ -203,7 +319,7 @@ endif()
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -wd4996)
-endif(MSVC)
+endif()
 if(WIN32)
     if(_EXPAT_UNICODE_WCHAR_T)
         set(_POSTFIX_WIDE "w")
@@ -231,7 +347,7 @@ if(WIN32)
 
         set(${postfix_var} "${_POSTFIX_WIDE}${_POSTFIX_DEBUG}${_POSTFIX_CRT}" CACHE STRING "Windows binary postfix, e.g. libexpat<postfix=[w][d][MD|MT]>.lib")
     endforeach()
-endif(WIN32)
+endif()
 
 #
 # C library
@@ -249,38 +365,51 @@ if(EXPAT_SHARED_LIBS)
     set(_SHARED SHARED)
     if(MSVC)
         set(expat_SRCS ${expat_SRCS} lib/libexpat.def)
-    endif(MSVC)
-else(EXPAT_SHARED_LIBS)
+    endif()
+else()
     set(_SHARED STATIC)
-    if(WIN32)
-        add_definitions(-DXML_STATIC)
-    endif(WIN32)
-endif(EXPAT_SHARED_LIBS)
+endif()
 
 # Avoid colliding with Expat.dll of Perl's XML::Parser::Expat
 if(WIN32 AND NOT MINGW)
-    set(_EXPAT_TARGET libexpat)
+    set(_EXPAT_OUTPUT_NAME libexpat)  # CMAKE_*_POSTFIX applies, see above
 else()
-    set(_EXPAT_TARGET expat)
+    if(_EXPAT_UNICODE)
+        set(_EXPAT_OUTPUT_NAME expatw)
+    else()
+        set(_EXPAT_OUTPUT_NAME expat)
+    endif()
 endif()
 
-add_library(${_EXPAT_TARGET} ${_SHARED} ${expat_SRCS})
+add_library(expat ${_SHARED} ${expat_SRCS})
 if(EXPAT_WITH_LIBBSD)
-    target_link_libraries(${_EXPAT_TARGET} ${LIB_BSD})
+    target_link_libraries(expat ${LIB_BSD})
 endif()
 
-set(LIBCURRENT 7)    # sync
-set(LIBREVISION 11)  # with
-set(LIBAGE 6)        # configure.ac!
+set(LIBCURRENT 9)   # sync
+set(LIBREVISION 1)  # with
+set(LIBAGE 8)       # configure.ac!
 math(EXPR LIBCURRENT_MINUS_AGE "${LIBCURRENT} - ${LIBAGE}")
 
+set_property(TARGET expat PROPERTY OUTPUT_NAME "${_EXPAT_OUTPUT_NAME}")
 if(NOT WIN32)
-    set_property(TARGET ${_EXPAT_TARGET} PROPERTY VERSION ${LIBCURRENT_MINUS_AGE}.${LIBAGE}.${LIBREVISION})
-    set_property(TARGET ${_EXPAT_TARGET} PROPERTY SOVERSION ${LIBCURRENT_MINUS_AGE})
-    set_property(TARGET ${_EXPAT_TARGET} PROPERTY NO_SONAME ${NO_SONAME})
-endif(NOT WIN32)
+    set_property(TARGET expat PROPERTY VERSION ${LIBCURRENT_MINUS_AGE}.${LIBAGE}.${LIBREVISION})
+    set_property(TARGET expat PROPERTY SOVERSION ${LIBCURRENT_MINUS_AGE})
+    set_property(TARGET expat PROPERTY NO_SONAME ${NO_SONAME})
+endif()
 
-expat_install(TARGETS ${_EXPAT_TARGET} EXPORT expat
+target_include_directories(expat
+    INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lib>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+
+if(NOT EXPAT_SHARED_LIBS AND WIN32)
+    target_compile_definitions(expat PUBLIC -DXML_STATIC)
+endif()
+
+expat_install(TARGETS expat EXPORT expat
                       RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
                       LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
                       ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -290,11 +419,22 @@ expat_install(FILES lib/expat.h lib/expat_external.h DESTINATION ${CMAKE_INSTALL
 #
 # pkg-config file
 #
-if(NOT MSVC)
+if(EXPAT_BUILD_PKGCONFIG)
     set(prefix ${CMAKE_INSTALL_PREFIX})
     set(exec_prefix "\${prefix}")
-    set(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
-    set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+
+    if(CMAKE_INSTALL_LIBDIR MATCHES "^/")
+        set(libdir "${CMAKE_INSTALL_LIBDIR}")
+    else()
+        set(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
+    endif()
+
+    if(CMAKE_INSTALL_INCLUDEDIR MATCHES "^/")
+        set(includedir "${CMAKE_INSTALL_INCLUDEDIR}")
+    else()
+        set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+    endif()
+
     configure_file(expat.pc.in ${CMAKE_CURRENT_BINARY_DIR}/expat.pc @ONLY)
     expat_install(FILES ${CMAKE_CURRENT_BINARY_DIR}/expat.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif()
@@ -312,7 +452,7 @@ if(EXPAT_BUILD_TOOLS)
 
     add_executable(xmlwf ${xmlwf_SRCS})
     set_property(TARGET xmlwf PROPERTY RUNTIME_OUTPUT_DIRECTORY xmlwf)
-    target_link_libraries(xmlwf ${_EXPAT_TARGET})
+    target_link_libraries(xmlwf expat)
     expat_install(TARGETS xmlwf DESTINATION ${CMAKE_INSTALL_BINDIR})
 
     if(MINGW AND _EXPAT_UNICODE_WCHAR_T)
@@ -322,8 +462,16 @@ if(EXPAT_BUILD_TOOLS)
 
     if(EXPAT_BUILD_DOCS)
         file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/doc)
-        add_custom_command(TARGET ${_EXPAT_TARGET} PRE_BUILD COMMAND "${DOCBOOK_TO_MAN}" "${PROJECT_SOURCE_DIR}/doc/xmlwf.xml" && mv "XMLWF.1" "${PROJECT_BINARY_DIR}/doc/xmlwf.1")
+        add_custom_target(
+            xmlwf-manpage
+            COMMAND
+                "${DOCBOOK_TO_MAN}" "${PROJECT_SOURCE_DIR}/doc/xmlwf.xml" && mv "XMLWF.1" "${PROJECT_BINARY_DIR}/doc/xmlwf.1"
+            BYPRODUCTS
+                doc/xmlwf.1)
+        add_dependencies(expat xmlwf-manpage)
         expat_install(FILES "${PROJECT_BINARY_DIR}/doc/xmlwf.1" DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
+    elseif(EXISTS ${PROJECT_SOURCE_DIR}/doc/xmlwf.1)
+        expat_install(FILES "${PROJECT_SOURCE_DIR}/doc/xmlwf.1" DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
     endif()
 endif()
 
@@ -333,19 +481,18 @@ endif()
 if(EXPAT_BUILD_EXAMPLES)
     add_executable(elements examples/elements.c)
     set_property(TARGET elements PROPERTY RUNTIME_OUTPUT_DIRECTORY examples)
-    target_link_libraries(elements ${_EXPAT_TARGET})
+    target_link_libraries(elements expat)
 
     add_executable(outline examples/outline.c)
     set_property(TARGET outline PROPERTY RUNTIME_OUTPUT_DIRECTORY examples)
-    target_link_libraries(outline ${_EXPAT_TARGET})
-endif(EXPAT_BUILD_EXAMPLES)
+    target_link_libraries(outline expat)
+endif()
 
 #
 # C/C++ test runners
 #
 if(EXPAT_BUILD_TESTS)
     ## these are unittests that can be run on any platform
-    enable_language(CXX)
     enable_testing()
 
     set(test_SRCS
@@ -353,6 +500,7 @@ if(EXPAT_BUILD_TESTS)
         tests/memcheck.c
         tests/minicheck.c
         tests/structdata.c
+        ${expat_SRCS}
     )
 
     if(NOT MSVC)
@@ -372,14 +520,17 @@ if(EXPAT_BUILD_TESTS)
 
     add_executable(runtests tests/runtests.c ${test_SRCS})
     set_property(TARGET runtests PROPERTY RUNTIME_OUTPUT_DIRECTORY tests)
-    target_link_libraries(runtests ${_EXPAT_TARGET})
     expat_add_test(runtests $<TARGET_FILE:runtests>)
 
     add_executable(runtestspp tests/runtestspp.cpp ${test_SRCS})
     set_property(TARGET runtestspp PROPERTY RUNTIME_OUTPUT_DIRECTORY tests)
-    target_link_libraries(runtestspp ${_EXPAT_TARGET})
     expat_add_test(runtestspp $<TARGET_FILE:runtestspp>)
-endif(EXPAT_BUILD_TESTS)
+
+    if(EXPAT_WITH_LIBBSD)
+        target_link_libraries(runtests ${LIB_BSD})
+        target_link_libraries(runtestspp ${LIB_BSD})
+    endif()
+endif()
 
 if(EXPAT_BUILD_FUZZERS)
     if(NOT "${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
@@ -389,23 +540,34 @@ if(EXPAT_BUILD_FUZZERS)
             "-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++.")
     endif()
 
-    string(FIND "${CMAKE_EXE_LINKER_FLAGS}" "-fsanitize" sanitizer_present)
+    string(FIND "${CMAKE_C_FLAGS}" "-fsanitize" sanitizer_present)
     if(${sanitizer_present} EQUAL "-1")
         message(WARNING
             "There was no sanitizer present when building the fuzz targets. "
             "This is likely in error - consider adding "
             "-DCMAKE_C_FLAGS='-fsanitize=<sanitizer>' and "
             "-DCMAKE_CXX_FLAGS='-fsanitize=<sanitizer>' and "
-            "-DCMAKE_STATIC_LINKER_FLAGS='-fsanitize=<sanitizer>' and "
-            "-DCMAKE_EXE_LINKER_FLAGS='-fsanitize=<sanitizer>' to your cmake "
+            "-DCMAKE_EXE_LINKER_FLAGS='-fsanitize=<sanitizer>' and "
+            "-DCMAKE_MODULE_LINKER_FLAGS='-fsanitize=<sanitizer>' and "
+            "-DCMAKE_SHARED_LINKER_FLAGS='-fsanitize=<sanitizer>' to your cmake "
             "execution.")
+    endif()
+
+    if(EXPAT_OSSFUZZ_BUILD AND NOT DEFINED ENV{LIB_FUZZING_ENGINE})
+        message(SEND_ERROR
+            "OSS-Fuzz builds require the environment variable "
+            "LIB_FUZZING_ENGINE to be set. If you are seeing this "
+            "warning, it points to a deeper problem in the ossfuzz "
+            "build setup.")
     endif()
 
     set(encoding_types UTF-16 UTF-8 ISO-8859-1 US-ASCII UTF-16BE UTF-16LE)
     set(fuzz_targets xml_parse_fuzzer xml_parsebuffer_fuzzer)
 
     add_library(fuzzpat STATIC ${expat_SRCS})
-    target_compile_options(fuzzpat PRIVATE -fsanitize=fuzzer-no-link)
+    if(NOT EXPAT_OSSFUZZ_BUILD)
+        target_compile_options(fuzzpat PRIVATE -fsanitize=fuzzer-no-link)
+    endif()
 
     foreach(fuzz_target ${fuzz_targets})
         foreach(encoding_type ${encoding_types})
@@ -414,14 +576,28 @@ if(EXPAT_BUILD_FUZZERS)
             target_link_libraries(${target_name} fuzzpat)
             target_compile_definitions(${target_name}
                 PRIVATE ENCODING_FOR_FUZZING=${encoding_type})
-            target_compile_options(${target_name} PRIVATE -fsanitize=fuzzer-no-link)
+            if(NOT EXPAT_OSSFUZZ_BUILD)
+                target_compile_options(${target_name} PRIVATE -fsanitize=fuzzer-no-link)
+            endif()
             # NOTE: Avoiding target_link_options here only because it needs CMake >=3.13
-            set_target_properties(${target_name} PROPERTIES LINK_FLAGS -fsanitize=fuzzer)
+            if(EXPAT_OSSFUZZ_BUILD)
+                set_target_properties(${target_name} PROPERTIES LINK_FLAGS $ENV{LIB_FUZZING_ENGINE})
+                set_target_properties(${target_name} PROPERTIES LINKER_LANGUAGE "CXX")
+            else()
+                set_target_properties(${target_name} PROPERTIES LINK_FLAGS -fsanitize=fuzzer)
+            endif()
             set_property(
                 TARGET ${target_name} PROPERTY RUNTIME_OUTPUT_DIRECTORY fuzz)
         endforeach()
     endforeach()
-endif(EXPAT_BUILD_FUZZERS)
+else()
+    if(EXPAT_OSSFUZZ_BUILD)
+        message(SEND_ERROR
+                "Attempting to perform an ossfuzz build without turning on the fuzzer build. "
+                "This is likely in error - consider adding "
+                "-DEXPAT_BUILD_FUZZERS=ON to your cmake execution.")
+    endif()
+endif()
 
 #
 # Custom target "run-xmltest"
@@ -498,7 +674,7 @@ write_basic_package_version_file(
 )
 export(
     TARGETS
-        ${_EXPAT_TARGET}
+        expat
     FILE
         cmake/expat-targets.cmake  # not going to be installed
 )
@@ -517,6 +693,25 @@ expat_install(
     NAMESPACE
         expat::
 )
+
+#
+# CPack
+#
+
+# This effectively disables target "package_source".
+# That is done due to CPack's unfortunate choice of an exclusion list
+# rather than inclusion list.  An exclusion list does not protect against
+# unwanted files ending up in the resulting archive in a way that's
+# safe to run from an Expat developer's machine.
+set(CPACK_SOURCE_GENERATOR '')
+
+if(WIN32)
+    set(CPACK_GENERATOR ZIP)
+else()
+    set(CPACK_GENERATOR TGZ)
+endif()
+
+include(CPack)
 
 #
 # Summary
@@ -555,6 +750,7 @@ message(STATUS "  Build examples ............. ${EXPAT_BUILD_EXAMPLES}")
 message(STATUS "  Build fuzzers .............. ${EXPAT_BUILD_FUZZERS}")
 message(STATUS "  Build tests ................ ${EXPAT_BUILD_TESTS}")
 message(STATUS "  Build tools (xmlwf) ........ ${EXPAT_BUILD_TOOLS}")
+message(STATUS "  Build pkg-config file ...... ${EXPAT_BUILD_PKGCONFIG}")
 message(STATUS "  Install files .............. ${EXPAT_ENABLE_INSTALL}")
 message(STATUS "")
 message(STATUS "  Features")

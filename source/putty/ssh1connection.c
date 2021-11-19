@@ -43,6 +43,7 @@ static const struct PacketProtocolLayerVtable ssh1_connection_vtable = {
     ssh1_connection_want_user_input,
     ssh1_connection_got_user_input,
     ssh1_connection_reconfigure,
+    ssh_ppl_default_queued_data_size,
     NULL /* no layer names in SSH-1 */,
 };
 
@@ -520,10 +521,12 @@ static void ssh1_channel_close_local(struct ssh1_channel *c,
 {
     struct ssh1_connection_state *s = c->connlayer;
     PacketProtocolLayer *ppl = &s->ppl; /* for ppl_logevent */
-    const char *msg = chan_log_close_msg(c->chan);
+    char *msg = chan_log_close_msg(c->chan);
 
-    if (msg != NULL)
+    if (msg != NULL) {
         ppl_logevent("%s%s%s", msg, reason ? " " : "", reason ? reason : "");
+        sfree(msg);
+    }
 
     chan_free(c->chan);
     c->chan = zombiechan_new();
