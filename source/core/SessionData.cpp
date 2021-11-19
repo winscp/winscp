@@ -2037,6 +2037,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   int DefaultProtocolPortNumber;
   TFtps AFtps = ftpsNone;
   int ProtocolLen = 0;
+  bool HttpForWebdav = FLAGCLEAR(Flags, pufPreferProtocol) || (FSProtocol != fsS3);
   if (IsProtocolUrl(Url, ScpProtocol, ProtocolLen))
   {
     AFSProtocol = fsSCPonly;
@@ -2076,7 +2077,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     ProtocolDefined = true;
   }
   else if (IsProtocolUrl(Url, WebDAVProtocol, ProtocolLen) ||
-           IsProtocolUrl(Url, HttpProtocol, ProtocolLen))
+           (HttpForWebdav && IsProtocolUrl(Url, HttpProtocol, ProtocolLen)))
   {
     AFSProtocol = fsWebDAV;
     AFtps = ftpsNone;
@@ -2085,7 +2086,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     ProtocolDefined = true;
   }
   else if (IsProtocolUrl(Url, WebDAVSProtocol, ProtocolLen) ||
-           IsProtocolUrl(Url, HttpsProtocol, ProtocolLen))
+           (HttpForWebdav && IsProtocolUrl(Url, HttpsProtocol, ProtocolLen)))
   {
     AFSProtocol = fsWebDAV;
     AFtps = ftpsImplicit;
@@ -2093,7 +2094,9 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     MoveStr(Url, MaskedUrl, ProtocolLen);
     ProtocolDefined = true;
   }
-  else if (IsProtocolUrl(Url, S3Protocol, ProtocolLen))
+  else if (IsProtocolUrl(Url, S3Protocol, ProtocolLen) ||
+           IsProtocolUrl(Url, HttpProtocol, ProtocolLen) || // sic
+           IsProtocolUrl(Url, HttpsProtocol, ProtocolLen))
   {
     AFSProtocol = fsS3;
     AFtps = ftpsImplicit;
