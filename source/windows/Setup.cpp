@@ -1114,12 +1114,18 @@ static void __fastcall DoQueryUpdates(bool CollectUsage)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall FormatUpdatesMessage(UnicodeString Message)
+UnicodeString __fastcall FormatUpdatesMessage(const UnicodeString & AMessage, const TUpdatesConfiguration & Updates)
 {
+  UnicodeString Message = AMessage;
   Message = ReplaceStr(Message, "%UPDATE_UNAUTHORIZED%", LoadStr(UPDATE_UNAUTHORIZED));
   Message = ReplaceStr(Message, "%UPDATE_EXPIRED%", LoadStr(UPDATE_EXPIRED));
   Message = ReplaceStr(Message, "%UPDATE_TOO_MANY%", LoadStr(UPDATE_TOO_MANY));
-  Message = ReplaceStr(Message, "%UPDATE_MISSING_ADDRESS%", LoadStr(UPDATE_MISSING_ADDRESS2));
+  UnicodeString Buf = LoadStr(UPDATE_MISSING_ADDRESS2);
+  if (!Updates.AuthenticationEmail.IsEmpty())
+  {
+    Buf += L"\n\n" + FMTLOAD(UPDATE_MISSING_ADDRESS3, (Updates.AuthenticationEmail, L"WinSCP donation receipt"));
+  }
+  Message = ReplaceStr(Message, "%UPDATE_MISSING_ADDRESS%", Buf);
   Message = ReplaceStr(Message, "%UPDATE_TOO_LOW%", LoadStr(UPDATE_TOO_LOW));
   Message = ReplaceStr(Message, L"|", L"\n");
   return Message;
@@ -1166,13 +1172,13 @@ void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New,
     if (!Updates.Results.Message.IsEmpty())
     {
       Message +=
-        FMTLOAD(UPDATE_MESSAGE, (FormatUpdatesMessage(Updates.Results.Message)));
+        FMTLOAD(UPDATE_MESSAGE, (FormatUpdatesMessage(Updates.Results.Message, Updates)));
     }
 
     if (!Updates.Results.AuthenticationError.IsEmpty())
     {
       Message +=
-        FMTLOAD(UPDATE_MESSAGE, (FormatUpdatesMessage(Updates.Results.AuthenticationError)));
+        FMTLOAD(UPDATE_MESSAGE, (FormatUpdatesMessage(Updates.Results.AuthenticationError, Updates)));
     }
     Type = (Updates.Results.Critical ? qtWarning : qtInformation);
   }
