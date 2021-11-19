@@ -71,6 +71,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FSortEnablePending = false;
   FSiteSearch = isName;
   FLinkedForm = NULL;
+  FRestoring = false;
   FPrevPos = TPoint(std::numeric_limits<LONG>::min(), std::numeric_limits<LONG>::min());
 
   // we need to make sure that window procedure is set asap
@@ -121,10 +122,18 @@ void __fastcall TLoginDialog::InitControls()
 
   int FtpsNoneIndex = FtpsToIndex(ftpsNone);
   int FtpsImplicitIndex = FtpsToIndex(ftpsImplicit);
+  // Items item setter is implemented as deleting and re-adding the item. If we do it for the last item
+  // (explicit for FTP, implicit for WebDAV), the ItemIndex is effectivelly reset to -1.
+  // This happens when TLS is set in the default session settings.
+  // Also as TransferProtocolComboChange is not triggered it results in currupted state in respect to protocol/tls to port number sync.
+  int Index = FtpsCombo->ItemIndex;
   FtpsCombo->Items->Strings[FtpsImplicitIndex] = LoadStr(FTPS_IMPLICIT);
   FtpsCombo->Items->Strings[FtpsToIndex(ftpsExplicitTls)] = LoadStr(FTPS_EXPLICIT);
+  FtpsCombo->ItemIndex = Index;
+  Index = WebDavsCombo->ItemIndex;
   WebDavsCombo->Items->Strings[FtpsNoneIndex] = FtpsCombo->Items->Strings[FtpsNoneIndex];
   WebDavsCombo->Items->Strings[FtpsImplicitIndex] = FtpsCombo->Items->Strings[FtpsImplicitIndex];
+  WebDavsCombo->ItemIndex = Index;
 
   BasicSshPanel->Top = BasicFtpPanel->Top;
 
@@ -772,7 +781,7 @@ void __fastcall TLoginDialog::SessionTreeDblClick(TObject * /*Sender*/)
       {
         CloneToNewSite();
       }
-      // this can hardle be false
+      // this can hardly be false
       // (after editing and clone tests above)
       // (except for empty folders, but those do not pass a condition below)
       else if (CanLogin())
@@ -1006,7 +1015,14 @@ void __fastcall TLoginDialog::DeleteSessionActionExecute(TObject * /*Sender*/)
     if (MessageDialog(Message,
           qtConfirmation, qaOK | qaCancel, HELP_DELETE_SESSION, &Params) == qaOK)
     {
-      WinConfiguration->DeleteSessionFromJumpList(Session->SessionName);
+      try
+      {
+        WinConfiguration->DeleteSessionFromJumpList(Session->SessionName);
+      }
+      catch (Exception & E)
+      {
+        ShowExtendedException(&E);
+      }
       Session->Remove();
       DestroySession(Session);
       SessionTree->Selected->Delete();
@@ -1053,7 +1069,14 @@ void __fastcall TLoginDialog::DeleteSessionActionExecute(TObject * /*Sender*/)
     {
       if (IsWorkspaceNode(Node))
       {
-        WinConfiguration->DeleteWorkspaceFromJumpList(Path);
+        try
+        {
+          WinConfiguration->DeleteWorkspaceFromJumpList(Path);
+        }
+        catch (Exception & E)
+        {
+          ShowExtendedException(&E);
+        }
       }
 
       Node = SessionTree->Selected;
@@ -1273,10 +1296,6 @@ bool __fastcall TLoginDialog::Execute(TList * DataList)
       FNewSiteData->CopyData(SessionData);
       FNewSiteData->Special = false;
 
-      // This is actualy bit pointless.
-      // As of now, we hardly ever get any useful data in ad-hoc DataList.
-      // (this was implemented for support taking session url from clipboard instead
-      // of command-line, but without autoconnect, but this functionality was cancelled)
       if (!FNewSiteData->IsSameDecrypted(StoredSessions->DefaultSettings))
       {
         // we want to start with new site page
@@ -1334,7 +1353,14 @@ void __fastcall TLoginDialog::SaveDataList(TList * DataList)
 
     if (IsWorkspaceNode(Node))
     {
-      WinConfiguration->AddWorkspaceToJumpList(Name);
+      try
+      {
+        WinConfiguration->AddWorkspaceToJumpList(Name);
+      }
+      catch (Exception & E)
+      {
+        ShowExtendedException(&E);
+      }
     }
 
     StoredSessions->GetFolderOrWorkspace(Name, DataList);
@@ -1387,7 +1413,12 @@ void __fastcall TLoginDialog::SaveState()
 
     WinConfiguration->OpenedStoredSessionFolders = OpenedStoredSessionFolders->CommaText;
 
-    WinConfiguration->LastStoredSession = SessionNodePath(SessionTree->Selected);
+    UnicodeString LastStoredSession = SessionNodePath(SessionTree->Selected);
+    if (IsFolderNode(SessionTree->Selected))
+    {
+      LastStoredSession = UnixIncludeTrailingBackslash(LastStoredSession);
+    }
+    WinConfiguration->LastStoredSession = LastStoredSession;
 
     TLoginDialogConfiguration DialogConfiguration = CustomWinConfiguration->LoginDialog;
     DialogConfiguration.WindowSize = StoreFormSize(this);
@@ -1459,7 +1490,8 @@ void __fastcall TLoginDialog::LoadState()
   if (!FForceNewSite &&
       !WinConfiguration->LastStoredSession.IsEmpty() && DebugAlwaysTrue(Visible))
   {
-    UnicodeString Path = WinConfiguration->LastStoredSession;
+    UnicodeString Path = UnixExcludeTrailingBackslash(WinConfiguration->LastStoredSession);
+    bool Folder = (Path != WinConfiguration->LastStoredSession);
 
     UnicodeString ParentPath = UnixExtractFilePath(Path);
     TTreeNode * Node;
@@ -1476,10 +1508,7 @@ void __fastcall TLoginDialog::LoadState()
     if (Node != NULL)
     {
       UnicodeString Name = UnixExtractFileName(Path);
-      // actually we cannot distinguish folder and session here
-      // (note that we allow folder and session with the same name),
-      // this is pending for future improvements
-      while ((Node != NULL) && !AnsiSameText(Node->Text, Name))
+      while ((Node != NULL) && (!SameText(Node->Text, Name) || (IsFolderNode(Node) != Folder)))
       {
         Node = Node->getNextSibling();
       }
@@ -1569,23 +1598,34 @@ void __fastcall TLoginDialog::CMDialogKey(TWMKeyDown & Message)
   TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::WMMoving(TMessage & Message)
+void __fastcall TLoginDialog::WMWindowPosChanged(TWMWindowPosChanged & Message)
 {
   TForm::Dispatch(&Message);
-
-  if (FLinkedForm != NULL)
+  if (FLAGCLEAR(Message.WindowPos->flags, SWP_NOMOVE) && (FLinkedForm != NULL))
   {
     if (FPrevPos.X == std::numeric_limits<LONG>::min())
     {
       FPrevPos = BoundsRect.TopLeft();
     }
-    TRect Rect = *reinterpret_cast<RECT*>(Message.LParam);
-    FLinkedForm->SetBounds(
-      FLinkedForm->Left + (Rect.Left - FPrevPos.X),
-      FLinkedForm->Top + (Rect.Top - FPrevPos.Y),
-      FLinkedForm->Width, FLinkedForm->Height);
-    FPrevPos = Rect.TopLeft();
+    TPoint P = TPoint(Message.WindowPos->x, Message.WindowPos->y);
+    if (FPrevPos != P)
+    {
+      if (!FRestoring)
+      {
+        FLinkedForm->SetBounds(
+          FLinkedForm->Left + (P.X - FPrevPos.X),
+          FLinkedForm->Top + (P.Y - FPrevPos.Y),
+          FLinkedForm->Width, FLinkedForm->Height);
+      }
+      FPrevPos = P;
+    }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::CMVisibleChanged(TMessage & Message)
+{
+  TAutoFlag RestoringSwitch(FRestoring);
+  TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::CMDpiChanged(TMessage & Message)
@@ -1633,9 +1673,13 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
       TForm::Dispatch(Message);
     }
   }
-  else if (M->Msg == WM_MOVING)
+  else if (M->Msg == WM_WINDOWPOSCHANGED)
   {
-    WMMoving(*M);
+    WMWindowPosChanged(*reinterpret_cast<TWMWindowPosChanged *>(M));
+  }
+  else if (M->Msg == CM_VISIBLECHANGED)
+  {
+    CMVisibleChanged(*M);
   }
   else if (M->Msg == CM_DPICHANGED)
   {

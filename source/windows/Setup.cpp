@@ -136,7 +136,7 @@ void path_reg_propagate()
   {
     err_out_sys(_T("Cannot propagate the new enviroment to ")
                 _T("other processes. The new value will be ")
-                _T("avaible after a reboot."), GetLastError());
+                _T("available after a reboot."), GetLastError());
     SimpleErrorDialog(LastPathError);
     LastPathError = L"";
   }
@@ -1763,7 +1763,14 @@ void __fastcall StopUpdateThread()
 //---------------------------------------------------------------------------
 void __fastcall SetupInitialize()
 {
-  WinConfiguration->UpdateJumpList();
+  try
+  {
+    WinConfiguration->UpdateJumpList();
+  }
+  catch (Exception & E)
+  {
+    ShowExtendedException(&E);
+  }
 }
 //---------------------------------------------------------------------------
 static bool __fastcall AddJumpListCategory(TStrings * Names,
@@ -2128,6 +2135,11 @@ void __fastcall AutoShowNewTip()
   ShowTip(true);
 }
 //---------------------------------------------------------------------------
+bool __fastcall AnyTips()
+{
+  return !WinConfiguration->Updates.Results.Tips.IsEmpty();
+}
+//---------------------------------------------------------------------------
 void __fastcall ShowTips()
 {
   {
@@ -2135,7 +2147,7 @@ void __fastcall ShowTips()
     DoQueryUpdates(false);
   }
 
-  if (WinConfiguration->Updates.Results.Tips.IsEmpty())
+  if (!AnyTips())
   {
     throw Exception(MainInstructions(LoadStr(TIPS_NONE)));
   }

@@ -23,12 +23,15 @@ void md5checksum(const char * buffer, int len, unsigned char output[16]);
 typedef const struct ssh_keyalg * cp_ssh_keyalg;
 void get_hostkey_algs(int * count, cp_ssh_keyalg * SignKeys);
 void get_macs(int * count, const struct ssh2_macalg *** amacs);
+int have_any_ssh2_hostkey(Seat * seat, const char * host, int port);
 
 // from wingss.c
 
 #ifndef SSH2_GSS_OIDTYPE
 #include "sshgss.h"
 #endif
+
+void wingss_cleanup(void);
 
 // from portfwd.c
 

@@ -35,6 +35,15 @@ namespace WinSCP
         Explicit = 3,
     }
 
+    [Guid("8A98AB8F-30E8-4539-A3DE-A33DDC43B33C")]
+    [ComVisible(true)]
+    public enum SshHostKeyPolicy
+    {
+        Check = 0,
+        GiveUpSecurityAndAcceptAny = 1,
+        AcceptNew = 2,
+    }
+
     [Guid("2D4EF368-EE80-4C15-AE77-D12AEAF4B00A")]
     [ClassInterface(Constants.ClassInterface)]
     [ComVisible(true)]
@@ -63,7 +72,9 @@ namespace WinSCP
 
         // SSH
         public string SshHostKeyFingerprint { get { return _sshHostKeyFingerprint; } set { SetSshHostKeyFingerprint(value); } }
-        public bool GiveUpSecurityAndAcceptAnySshHostKey { get; set; }
+        public SshHostKeyPolicy SshHostKeyPolicy { get; set; }
+        [Obsolete("Use SshHostKeyPolicy")]
+        public bool GiveUpSecurityAndAcceptAnySshHostKey { get { return GetGiveUpSecurityAndAcceptAnySshHostKey(); } set { SetGiveUpSecurityAndAcceptAnySshHostKey(value); } }
         public string SshPrivateKeyPath { get; set; }
         [Obsolete("Use PrivateKeyPassphrase")]
         public string SshPrivateKeyPassphrase { get { return PrivateKeyPassphrase; } set { PrivateKeyPassphrase = value; } }
@@ -171,6 +182,9 @@ namespace WinSCP
                 portNumber = hostInfo;
             }
 
+            // Contrary to TSessionData::ParseUrl, not converting Webdav to S3 on S3 hostname.
+            // Not sure if it is desirable and WinSCP will do the conversion for us later anyway.
+
             if (string.IsNullOrEmpty(HostName))
             {
                 throw new ArgumentException("No host name", nameof(url));
@@ -196,7 +210,7 @@ namespace WinSCP
             UserName = null;
             Password = null;
             SshHostKeyFingerprint = null;
-            GiveUpSecurityAndAcceptAnySshHostKey = false;
+            SshHostKeyPolicy = SshHostKeyPolicy.Check;
             TlsHostCertificateFingerprint = null;
             GiveUpSecurityAndAcceptAnyTlsHostCertificate = false;
             if (!string.IsNullOrEmpty(userInfo))
@@ -216,7 +230,22 @@ namespace WinSCP
                     const string RawSettingsPrefix = "x-";
                     if (parameterName.Equals("fingerprint", StringComparison.OrdinalIgnoreCase))
                     {
-                        SshHostKeyFingerprint = parameter;
+                        switch (Protocol)
+                        {
+                            case Protocol.Sftp:
+                            case Protocol.Scp:
+                                SshHostKeyFingerprint = parameter;
+                                break;
+
+                            case Protocol.Ftp:
+                            case Protocol.Webdav:
+                            case Protocol.S3:
+                                TlsHostCertificateFingerprint = parameter;
+                                break;
+
+                            default:
+                                throw new ArgumentException();
+                        }
                     }
                     else if (parameterName.StartsWith(RawSettingsPrefix, StringComparison.OrdinalIgnoreCase))
                     {
@@ -375,9 +404,9 @@ namespace WinSCP
 
         private void SetPortNumber(int value)
         {
-            if (value < 0)
+            if ((value < 0) || (value > 65535))
             {
-                throw new ArgumentException("Port number cannot be negative");
+                throw new ArgumentOutOfRangeException("Port number has to be in range from 0 to 65535");
             }
 
             _portNumber = value;
@@ -468,6 +497,16 @@ namespace WinSCP
             return Name;
         }
 
+        private void SetGiveUpSecurityAndAcceptAnySshHostKey(bool value)
+        {
+            SshHostKeyPolicy = value ? SshHostKeyPolicy.GiveUpSecurityAndAcceptAny : SshHostKeyPolicy.Check;
+        }
+
+        private bool GetGiveUpSecurityAndAcceptAnySshHostKey()
+        {
+            return (SshHostKeyPolicy == SshHostKeyPolicy.GiveUpSecurityAndAcceptAny);
+        }
+
         private SecureString _securePassword;
         private SecureString _secureNewPassword;
         private SecureString _securePrivateKeyPassphrase;
@@ -483,7 +522,7 @@ namespace WinSCP
         private const string _sshHostKeyPattern = @"((ssh-rsa|ssh-dss|ssh-ed25519|ecdsa-sha2-nistp(256|384|521))( |-))?(\d+ )?(([0-9a-fA-F]{2}(:|-)){15}[0-9a-fA-F]{2}|[0-9a-zA-Z+/\-_]{43}=?)";
         private static readonly Regex _sshHostKeyRegex =
             new Regex(string.Format(CultureInfo.InvariantCulture, _listPattern, _sshHostKeyPattern));
-        private const string _tlsCertificatePattern = @"([0-9a-fA-F]{2}[:\-]){19}[0-9a-fA-F]{2}";
+        private const string _tlsCertificatePattern = @"((([0-9a-fA-F]{2}[:\-]){31})|(([0-9a-fA-F]{2}[:\-]){19}))[0-9a-fA-F]{2}";
         private static readonly Regex _tlsCertificateRegex =
             new Regex(string.Format(CultureInfo.InvariantCulture, _listPattern, _tlsCertificatePattern));
     }

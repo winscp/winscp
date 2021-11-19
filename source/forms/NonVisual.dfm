@@ -34,7 +34,7 @@ object NonVisualDataModule: TNonVisualDataModule
       end
     end
     object Duplicate3: TTBXItem
-      Action = RemoteCopyToAction
+      Action = RemoteCopyToFocusedAction
     end
     object Moveto6: TTBXItem
       Action = RemoteMoveToFocusedAction
@@ -1622,6 +1622,12 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Toolbar'
       Hint = 'Hide/show queue list toolbar (on queue list panel)'
     end
+    object QueueFileListAction: TAction
+      Tag = 12
+      Category = 'Queue'
+      Caption = '&File List'
+      Hint = 'Hide/show full queue file list'
+    end
     object QueuePreferencesAction: TAction
       Tag = 12
       Category = 'Queue'
@@ -1634,7 +1640,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Command'
       Caption = '&Paste'
-      HelpKeyword = 'task_upload#using_copy_amp:paste'
+      HelpKeyword = 'clipboard'
       Hint = 
         'Paste files from clipboard to current directory in active panel;' +
         ' or opens path from clipboard in active panel; or opens session ' +
@@ -1699,6 +1705,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Selected Operation'
       Caption = '&Transfer Files in Clipboard'
+      HelpKeyword = 'clipboard'
       Hint = 'Transfer files whose names are in clipboard'
     end
     object LocalCopyAction: TAction
@@ -2269,6 +2276,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Selected Operation'
       Caption = '&Copy'
+      HelpKeyword = 'clipboard#copy'
       Hint = 'Copy|Copy the selected files to clipboard'
       ImageIndex = 111
       ShortCut = 16451
@@ -2284,6 +2292,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Focused Operation'
       Caption = '&Copy'
+      HelpKeyword = 'clipboard#copy'
       Hint = 'Copy|Copy the selected files to clipboard'
       ImageIndex = 111
       ShortCut = 16451
@@ -2360,6 +2369,9 @@ object NonVisualDataModule: TNonVisualDataModule
       end
       object Toolbar5: TTBXItem
         Action = QueueToolbarAction
+      end
+      object TBXItem85: TTBXItem
+        Action = QueueFileListAction
       end
       object N70: TTBXSeparatorItem
       end
@@ -2504,6 +2516,9 @@ object NonVisualDataModule: TNonVisualDataModule
       object Toolbar4: TTBXItem
         Action = QueueToolbarAction
       end
+      object TBXItem84: TTBXItem
+        Action = QueueFileListAction
+      end
       object N68: TTBXSeparatorItem
       end
       object Customize4: TTBXItem
@@ -2516,20 +2531,44 @@ object NonVisualDataModule: TNonVisualDataModule
     Options = [tboShowHint]
     Left = 312
     Top = 264
+    object TBXSubmenuItem8: TTBXSubmenuItem
+      Caption = '&Go To'
+      HelpKeyword = 'task_navigate'
+      Hint = 'Go to directory'
+      object TBXItem86: TTBXItem
+        Action = RemoteOpenDirAction
+      end
+      object TBXSeparatorItem13: TTBXSeparatorItem
+      end
+      object TBXItem87: TTBXItem
+        Action = RemoteParentDirAction
+      end
+      object TBXItem88: TTBXItem
+        Action = RemoteRootDirAction
+      end
+      object TBXItem89: TTBXItem
+        Action = RemoteHomeDirAction
+      end
+      object TBXSeparatorItem14: TTBXSeparatorItem
+      end
+      object TBXItem90: TTBXItem
+        Action = RemoteBackAction
+      end
+      object TBXItem91: TTBXItem
+        Action = RemoteForwardAction
+      end
+    end
     object TBXItem32: TTBXItem
       Action = RemoteRefreshAction
     end
     object TBXItem30: TTBXItem
       Action = RemoteAddBookmarkAction
     end
-    object CopyPathtoClipboard1: TTBXItem
-      Action = RemotePathToClipboardAction
-    end
-    object OpenDirectoryBookmark1: TTBXItem
-      Action = RemoteOpenDirAction
-    end
     object TBXItem26: TTBXItem
       Action = RemoteFilterAction
+    end
+    object CopyPathtoClipboard1: TTBXItem
+      Action = RemotePathToClipboardAction
     end
     object N51: TTBXSeparatorItem
     end
@@ -2570,20 +2609,47 @@ object NonVisualDataModule: TNonVisualDataModule
     Options = [tboShowHint]
     Left = 312
     Top = 336
+    object TBXSubmenuItem10: TTBXSubmenuItem
+      Caption = '&Go To'
+      HelpKeyword = 'task_navigate'
+      Hint = 'Go to directory'
+      object TBXItem92: TTBXItem
+        Action = LocalOpenDirAction
+      end
+      object TBXItem93: TTBXItem
+        Action = LocalExploreDirectoryAction
+      end
+      object TBXSeparatorItem15: TTBXSeparatorItem
+      end
+      object TBXItem94: TTBXItem
+        Action = LocalParentDirAction
+      end
+      object TBXItem95: TTBXItem
+        Action = LocalRootDirAction
+      end
+      object TBXItem96: TTBXItem
+        Action = LocalHomeDirAction
+      end
+      object TBXSeparatorItem16: TTBXSeparatorItem
+      end
+      object TBXItem97: TTBXItem
+        Action = LocalBackAction
+      end
+      object TBXItem98: TTBXItem
+        Action = LocalForwardAction
+      end
+    end
     object TBXItem34: TTBXItem
       Action = LocalRefreshAction
+    end
+    object TBXItem27: TTBXItem
+      Action = LocalFilterAction
     end
     object TBXItem31: TTBXItem
       Action = LocalAddBookmarkAction
     end
     object CopyPathtoClipboard2: TTBXItem
       Action = LocalPathToClipboardAction
-    end
-    object OpenDirectoryBookmark2: TTBXItem
-      Action = LocalOpenDirAction
-    end
-    object TBXItem27: TTBXItem
-      Action = LocalFilterAction
     end
     object N52: TTBXSeparatorItem
     end
@@ -2849,6 +2915,9 @@ object NonVisualDataModule: TNonVisualDataModule
       object Toolbar3: TTBXItem
         Action = QueueToolbarAction
       end
+      object TBXItem83: TTBXItem
+        Action = QueueFileListAction
+      end
       object N65: TTBXSeparatorItem
       end
       object Customize3: TTBXItem
@@ -3083,10 +3152,6 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = SessionsTabsAction
     end
   end
-  object ShellResources: TShellResources
-    Left = 48
-    Top = 424
-  end
   object LocalFilePopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
     Options = [tboShowHint]
@@ -3145,9 +3210,6 @@ object NonVisualDataModule: TNonVisualDataModule
       end
       object TBXItem61: TTBXItem
         Action = FullFileListToClipboardAction
-      end
-      object TBXItem62: TTBXItem
-        Action = FileGenerateUrlAction2
       end
     end
     object TBXSeparatorItem4: TTBXSeparatorItem

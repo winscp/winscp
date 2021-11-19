@@ -47,8 +47,6 @@ uses
   DiscMon, IEDriveInfo, IEListView, PIDL, BaseUtils, ListExt, CustomDirView,
   CustomDriveView, System.Generics.Collections;
 
-{$I ResStrings.pas}
-
 const
   msThreadChangeDelay = 50;
 
@@ -141,6 +139,7 @@ type
     {Additional events:}
     FOnDisplayContextMenu: TNotifyEvent;
     FOnRefreshDrives: TNotifyEvent;
+    FOnNeedHiddenDirectories: TNotifyEvent;
 
     {used components:}
     FDirView: TDirView;
@@ -253,10 +252,6 @@ type
     function NodePathName(Node: TTreeNode): string; override;
 
     function GetFQPIDL(Node: TTreeNode): PItemIDList;
-
-    {Directory update:}
-    function  CreateDirectory(ParentNode: TTreeNode; NewName: string): TTreeNode; dynamic;
-    function  DeleteDirectory(Node: TTreeNode; AllowUndo: Boolean): Boolean; dynamic;
 
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -392,6 +387,7 @@ type
     property OnMouseUp;
     property OnStartDock;
     property OnStartDrag;
+    property OnNeedHiddenDirectories: TNotifyEvent read FOnNeedHiddenDirectories write FOnNeedHiddenDirectories;
   end;
 
 procedure Register;
@@ -400,9 +396,6 @@ implementation
 
 uses
   CompThread, PasTools, UITypes, Types, OperationWithTimeout, System.Generics.Defaults;
-
-resourcestring
-   SErrorInvalidDirName = 'New name contains invalid characters %s';
 
 type
   PInt = ^Integer;
@@ -480,7 +473,6 @@ begin
   end;
 
   FFileOperator := TFileOperator.Create(Self);
-  FFileOperator.ProgressTitle := coFileOperatorTitle;
   FFileOperator.Flags := [foAllowUndo, foNoConfirmMkDir];
 
   FShowVolLabel := True;
@@ -807,7 +799,6 @@ end; {CanEdit}
 
 procedure TDriveView.Edit(const Item: TTVItem);
 var
-  NewDirName: string;
   SRec: TSearchRec;
   Node: TTreeNode;
   Info: string;
@@ -822,13 +813,8 @@ begin
       for i := Length(Info) downto 1 do
         System.Insert(Space, Info, i);
 
-      if Assigned(OnEdited) then
-      begin
-        NewDirName := Node.Text;
-        OnEdited(Self, Node, NewDirName);
-      end;
       if Length(Item.pszText) > 0 then
-        raise EInvalidDirName.CreateFmt(SErrorInvalidDirName, [Info]);
+        raise EInvalidDirName.Create(SErrorInvalidName + Space + Info);
       Exit;
     end;
 
@@ -1021,9 +1007,10 @@ begin
           Result := False;
         end
           else
-        if not DirectoryExists(ApiPath(Path)) then
-        begin
-          MessageDlg(Format(SDirNotExists, [Path]), mtError, [mbOK], 0);
+        try
+          CheckCanOpenDirectory(Path);
+        except
+          Application.HandleException(Self);
           Result := False;
         end;
       end;
@@ -1616,30 +1603,17 @@ function TDriveView.FindNodeToPath(Path: string): TTreeNode;
   end;
 
   function SearchSubDirs(ParentNode: TTreeNode; Path: string): TTreeNode;
-  var
-    Read: Boolean;
   begin
     Result := nil;
     if Length(Path) > 0 then
     begin
-      Read := False;
-
       if not TNodeData(ParentNode.Data).Scanned then
       begin
         ReadSubDirs(ParentNode, GetDriveTypetoNode(ParentNode));
-        Read := True;
       end;
 
+      // Factored out of DoSearchSubDirs is remnant of Bug 956 superceded by Bug 1320
       Result := DoSearchSubDirs(ParentNode, Path);
-
-      // reread subfolders, just in case the directory we look for was just created
-      // (as can happen when navigating to new remote directory with synchronized
-      // browsing enabled and opting to create the non-existing local directory)
-      if (not Assigned(Result)) and (not Read) then
-      begin
-        ValidateDirectoryEx(ParentNode, rsNoRecursive, True);
-        Result := DoSearchSubDirs(ParentNode, Path);
-      end;
     end;
   end; {SearchSubDirs}
 
@@ -1810,6 +1784,7 @@ begin {CallBackValidateDir}
       ParentDir := IncludeTrailingBackslash(NodePath(Node));
       {Build list of existing subnodes:}
       SubDirList := TStringList.Create;
+      SubDirList.CaseSensitive := True; // We want to reflect changes in subfolder name case
       while Assigned(WorkNode) do
       begin
         SubDirList.Add(TNodeData(WorkNode.Data).DirName);
@@ -1818,6 +1793,7 @@ begin {CallBackValidateDir}
       {Sorting not required, because the subnodes are already sorted!}
 
       SRecList := TStringList.Create;
+      SRecList.CaseSensitive := True;
       DosError := FindFirst(ApiPath(ParentDir + '*.*'), DirAttrMask, SRec);
       while DosError = 0 do
       begin
@@ -1966,111 +1942,6 @@ begin
 
   Result := DriveInfo.Get(GetDriveToNode(Node)).DriveType;
 end; {GetDriveTypeToNode}
-
-function TDriveView.CreateDirectory(ParentNode: TTreeNode; NewName: string): TTreeNode;
-var
-  SRec: TSearchRec;
-begin
-  Assert(Assigned(ParentNode));
-
-  Result := nil;
-  if not TNodeData(ParentNode.Data).Scanned then
-    ValidateDirectory(ParentNode);
-
-  StopWatchThread;
-
-  try
-    if Assigned(FDirView) then
-      FDirView.StopWatchThread;
-
-    {create phyical directory:}
-    LastIOResult := 0;
-    if not Windows.CreateDirectory(PChar(NodePath(ParentNode) + '\' + NewName), nil) then
-      LastIOResult := GetLastError;
-    if LastIOResult = 0 then
-    begin
-      {Create treenode:}
-      FindFirst(ApiPath(NodePath(ParentNode) + '\' + NewName), faAnyFile, SRec);
-      Result := AddChildNode(ParentNode, Srec);
-      FindClose(Srec);
-      TNodeData(Result.Data).Scanned := True;
-      SortChildren(ParentNode, False);
-      ParentNode.Expand(False);
-    end;
-  finally
-    StartWatchThread;
-    if Assigned(FDirView) then
-    begin
-      FDirView.StartWatchThread;
-      FDirView.Reload2;
-    end;
-  end;
-end; {CreateDirectory}
-
-function TDriveView.DeleteDirectory(Node: TTreeNode; AllowUndo: Boolean): Boolean;
-var
-  DelDir: string;
-  OperatorResult: Boolean;
-  FileOperator: TFileOperator;
-  SaveCursor: TCursor;
-begin
-  Assert(Assigned(Node));
-
-  Result := False;
-  if Assigned(Node) and (Node.Level > 0) then
-  begin
-    SaveCursor := Screen.Cursor;
-    Screen.Cursor := crHourGlass;
-    FileOperator := TFileOperator.Create(Self);
-    DelDir := NodePathName(Node);
-    FileOperator.OperandFrom.Add(DelDir);
-    FileOperator.Operation := foDelete;
-    if AllowUndo then
-      FileOperator.Flags := FileOperator.Flags + [foAllowUndo]
-    else
-      FileOperator.Flags := FileOperator.Flags - [foAllowUndo];
-
-    if not ConfirmDelete then
-      FileOperator.Flags := FileOperator.Flags + [foNoConfirmation];
-
-    try
-      if DirectoryExists(DelDir) then
-      begin
-        StopWatchThread;
-        OperatorResult := FileOperator.Execute;
-
-        if OperatorResult and (not FileOperator.OperationAborted) and
-           (not DirectoryExists(DelDir)) then
-        begin
-          Node.Delete
-        end
-          else
-        begin
-          Result := False;
-          if not AllowUndo then
-          begin
-            {WinNT4-Bug: FindFirst still returns the directories search record, even if the
-             directory was deleted:}
-            ChDir(DelDir);
-            if IOResult <> 0 then
-              Node.Delete;
-          end;
-        end;
-      end
-        else
-      begin
-        Node.Delete;
-        Result := True;
-      end;
-    finally
-      StartWatchThread;
-      if Assigned(DirView) and Assigned(Selected) then
-        DirView.Path := NodePathName(Selected);
-      FileOperator.Free;
-      Screen.Cursor := SaveCursor;
-    end;
-  end;
-end; {DeleteDirectory}
 
 procedure TDriveView.CreateWatchThread(Drive: string);
 begin
@@ -2304,7 +2175,34 @@ begin
 end; {SetAutoScan}
 
 function TDriveView.FindPathNode(Path: string): TTreeNode;
+var
+  PossiblyHiddenPath: string;
+  Attrs: Integer;
 begin
+  if Assigned(FOnNeedHiddenDirectories) and
+     (not ShowHiddenDirs) and
+     DirectoryExistsFix(Path) then // do not even bother if the path does not exist
+  begin
+    PossiblyHiddenPath := ExcludeTrailingPathDelimiter(Path);
+    while (PossiblyHiddenPath <> '') and
+          (not IsRootPath(PossiblyHiddenPath)) do // Drives have hidden attribute
+    begin
+      Attrs := FileGetAttr(PossiblyHiddenPath, False);
+      if (Attrs and faHidden) = faHidden then
+      begin
+        if Assigned(FOnNeedHiddenDirectories) then
+        begin
+          FOnNeedHiddenDirectories(Self);
+        end;
+        Break;
+      end
+        else
+      begin
+        PossiblyHiddenPath := ExtractFileDir(PossiblyHiddenPath);
+      end;
+    end;
+  end;
+
   {Find existing path or parent path of not existing path:}
   repeat
     Result := FindNodeToPath(Path);

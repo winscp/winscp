@@ -109,32 +109,24 @@ bool __fastcall TEditorData::operator==(const TEditorData & rhd) const
 }
 #undef C
 //---------------------------------------------------------------------------
-bool __fastcall TEditorData::DecideExternalEditorText(UnicodeString ExternalEditor)
+void __fastcall TEditorData::ExternalEditorOptionsAutodetect()
 {
-  bool Result = false;
   // By default we use default transfer mode (binary),
   // as all reasonable 3rd party editors support all EOL styles.
   // A notable exception is Windows Notepad, so here's an exception for it.
   // Notepad support unix line endings since Windows 10 1809. Once that's widespread, remove this.
 
-  ReformatFileNameCommand(ExternalEditor);
-  UnicodeString ProgramName = ExtractProgramName(ExternalEditor);
+  UnicodeString Command = ExternalEditor;
+  ReformatFileNameCommand(Command);
+  UnicodeString ProgramName = ExtractProgramName(Command);
   // We explicitly do not use TEditorPreferences::GetDefaultExternalEditor(),
   // as we need to explicitly refer to the Notepad, even if the default external
   // editor ever changes
   UnicodeString NotepadProgramName = ExtractProgramName(NotepadName);
   if (SameText(ProgramName, NotepadProgramName))
   {
-    Result = true;
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-void __fastcall TEditorData::DecideExternalEditorText()
-{
-  if (DecideExternalEditorText(ExternalEditor))
-  {
     ExternalEditorText = true;
+    SDIExternalEditor = true;
   }
 }
 //---------------------------------------------------------------------------
@@ -167,7 +159,7 @@ UnicodeString __fastcall TEditorPreferences::GetDefaultExternalEditor()
 void __fastcall TEditorPreferences::LegacyDefaults()
 {
   FData.ExternalEditor = GetDefaultExternalEditor();
-  FData.DecideExternalEditorText();
+  FData.ExternalEditorOptionsAutodetect();
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TEditorPreferences::ExtractExternalEditorName() const
@@ -480,7 +472,6 @@ bool __fastcall TEditorList::IsDefaultList() const
 //---------------------------------------------------------------------------
 __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
 {
-  ResetSysDarkTheme();
   FInvalidDefaultTranslationMessage = L"";
   FDDExtInstalled = -1;
   FBookmarks = new TBookmarks();
@@ -535,6 +526,7 @@ void __fastcall TWinConfiguration::Default()
   int WorkAreaHeightScaled = DimensionToDefaultPixelsPerInch(Screen->WorkAreaHeight);
   UnicodeString PixelsPerInchToolbarValue = "PixelsPerInch=" + SaveDefaultPixelsPerInch();
 
+  FDDDisableMove = false;
   FDDTransferConfirmation = asAuto;
   FDDTemporaryDirectory = L"";
   FDDDrives = L"";
@@ -612,6 +604,7 @@ void __fastcall TWinConfiguration::Default()
   FShowLoginWhenNoSession = true;
   FKeepOpenWhenNoSession = true;
   FLocalIconsByExt = false;
+  FMaxSessions = 100;
   FBidiModeOverride = lfoLanguageIfRecommended;
   FFlipChildrenOverride = lfoLanguageIfRecommended;
   FShowTips = true;
@@ -660,6 +653,9 @@ void __fastcall TWinConfiguration::Default()
   FQueueView.LastHideShow = qvHideWhenEmpty;
   FQueueView.ToolBar = true;
   FQueueView.Label = true;
+  FQueueView.FileList = false;
+  FQueueView.FileListHeight = 90;
+  FQueueView.FileListHeightPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
 
   FEnableQueueByDefault = true;
 
@@ -947,6 +943,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
   BLOCK(L"Interface", CANCREATE, \
     KEYEX(Integer,DoubleClickAction, L"CopyOnDoubleClick"); \
     KEY(Bool,     CopyOnDoubleClickConfirmation); \
+    KEY(Bool,     DDDisableMove); \
     KEYEX(Integer, DDTransferConfirmation, L"DDTransferConfirmation2"); \
     KEY(String,   DDTemporaryDirectory); \
     KEY(String,   DDDrives); \
@@ -1015,6 +1012,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     ShowLoginWhenNoSession); \
     KEY(Bool,     KeepOpenWhenNoSession); \
     KEY(Bool,     LocalIconsByExt); \
+    KEY(Integer,  MaxSessions); \
     KEY(Integer,  BidiModeOverride); \
     KEY(Integer,  FlipChildrenOverride); \
     KEY(Bool,     ShowTips); \
@@ -1062,6 +1060,9 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  QueueView.LastHideShow); \
     KEY(Bool,     QueueView.ToolBar); \
     KEY(Bool,     QueueView.Label); \
+    KEY(Bool,     QueueView.FileList); \
+    KEY(Integer,  QueueView.FileListHeight); \
+    KEY(Integer,  QueueView.FileListHeightPixelsPerInch); \
   ); \
   BLOCK(L"Interface\\Updates", CANCREATE, \
     KEY(Integer,  FUpdates.Period); \
@@ -1890,6 +1891,11 @@ void __fastcall TWinConfiguration::EndMasterPasswordSession()
   FMasterPasswordSessionAsked = false;
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetDDDisableMove(bool value)
+{
+  SET_CONFIG_PROPERTY(DDDisableMove);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDDTransferConfirmation(TAutoSwitch value)
 {
   SET_CONFIG_PROPERTY(DDTransferConfirmation);
@@ -2117,26 +2123,8 @@ static int __fastcall SysDarkTheme(HKEY RootKey)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::ResetSysDarkTheme()
-{
-  FSysDarkTheme = -1;
-}
-//---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::UseDarkTheme()
 {
-  if (FSysDarkTheme < 0)
-  {
-    FSysDarkTheme = SysDarkTheme(HKEY_CURRENT_USER);
-    if (FSysDarkTheme < 0)
-    {
-      FSysDarkTheme = SysDarkTheme(HKEY_LOCAL_MACHINE);
-      if (FSysDarkTheme < 0)
-      {
-        FSysDarkTheme = 0;
-      }
-    }
-  }
-
   switch (WinConfiguration->DarkTheme)
   {
     case asOn:
@@ -2144,7 +2132,7 @@ bool __fastcall TWinConfiguration::UseDarkTheme()
     case asOff:
       return false;
     default:
-      return (FSysDarkTheme > 0);
+      return (GetSysDarkTheme() > 0);
   }
 }
 //---------------------------------------------------------------------------
@@ -2712,18 +2700,19 @@ void __fastcall TWinConfiguration::TrimJumpList(TStringList * List)
 void __fastcall TWinConfiguration::UpdateEntryInJumpList(
   bool Session, const UnicodeString & Name, bool Add)
 {
-  THierarchicalStorage * Storage = CreateConfigStorage();
   try
   {
-    FDontDecryptPasswords++;
+    std::auto_ptr<THierarchicalStorage> Storage(CreateConfigStorage());
+    TAutoNestingCounter DontDecryptPasswordsCounter(FDontDecryptPasswords);
+
     Storage->AccessMode = smReadWrite;
 
     // For initial call from UpdateJumpList, do not create the key if it does ot exist yet.
     // To avoid creating the key if we are being started just for a maintenance task.
     if (Storage->OpenSubKey(ConfigurationSubKey, !Name.IsEmpty()))
     {
-      std::unique_ptr<TStringList> ListSessions(LoadJumpList(Storage, L"JumpList"));
-      std::unique_ptr<TStringList> ListWorkspaces(LoadJumpList(Storage, L"JumpListWorkspaces"));
+      std::unique_ptr<TStringList> ListSessions(LoadJumpList(Storage.get(), L"JumpList"));
+      std::unique_ptr<TStringList> ListWorkspaces(LoadJumpList(Storage.get(), L"JumpListWorkspaces"));
 
       if (!Name.IsEmpty())
       {
@@ -2745,14 +2734,13 @@ void __fastcall TWinConfiguration::UpdateEntryInJumpList(
 
       ::UpdateJumpList(ListSessions.get(), ListWorkspaces.get());
 
-      SaveJumpList(Storage, L"JumpList", ListSessions.get());
-      SaveJumpList(Storage, L"JumpListWorkspaces", ListWorkspaces.get());
+      SaveJumpList(Storage.get(), L"JumpList", ListSessions.get());
+      SaveJumpList(Storage.get(), L"JumpListWorkspaces", ListWorkspaces.get());
     }
   }
-  __finally
+  catch (Exception & E)
   {
-    FDontDecryptPasswords--;
-    delete Storage;
+    throw ExtException(&E, MainInstructions(LoadStr(JUMPLIST_ERROR)));
   }
 }
 //---------------------------------------------------------------------------

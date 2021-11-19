@@ -126,6 +126,7 @@ protected:
   void __fastcall FeedSynchronizeError(
     const UnicodeString & Message, TStrings * MoreMessages, TQueryType Type,
     const UnicodeString & HelpKeyword);
+  void __fastcall SynchronizeAbort(TObject *);
   TLogItemData * __fastcall GetLogItemData(TListItem * Item);
   void __fastcall Minimize(TObject * Sender);
   void __fastcall Start();
@@ -134,6 +135,7 @@ protected:
   void __fastcall UpdateControls();
   bool __fastcall AllowStartInNewWindow();
   bool __fastcall CanStartInNewWindow();
+  void Abort(bool Close);
 
   INTERFACE_HOOK;
 
@@ -142,7 +144,9 @@ public:
   void __fastcall Init(TSynchronizeStartStopEvent OnStartStop,
     TGetSynchronizeOptionsEvent OnGetOptions,
     TSynchronizeSessionLog OnSynchronizeSessionLog,
-    TFeedSynchronizeError & OnFeedSynchronizeError, TSynchronizeInNewWindow OnSynchronizeInNewWindow,
+    TFeedSynchronizeError & OnFeedSynchronizeError,
+    TNotifyEvent & OnSynchronizeAbort,
+    TSynchronizeInNewWindow OnSynchronizeInNewWindow,
     int AutoSubmit);
   virtual __fastcall ~TSynchronizeDialog();
 

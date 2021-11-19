@@ -86,6 +86,6 @@ namespace WinSCP
         private readonly string _localName;
         private readonly int _depth;
         protected bool _read;
-        private string _token;
+        private readonly string _token;
     }
 }

@@ -607,12 +607,20 @@ procedure TCustomNortonLikeListView.FocusSomething;
 begin
   if Valid and (Items.Count > 0) and not Assigned(ItemFocused) then
   begin
-    if (NortonLike <> nlOff) then SendMessage(Handle, WM_KEYDOWN, VK_DOWN, LongInt(0));
+    if (NortonLike <> nlOff) then
+    begin
+      SendMessage(Handle, WM_KEYDOWN, VK_DOWN, LongInt(0));
+    end;
+
     if not Assigned(ItemFocused) then
+    begin
       ItemFocused := Items[0];
+    end;
   end;
   if Assigned(ItemFocused) then
+  begin
     ItemFocused.MakeVisible(False);
+  end;
 end;
 
 function TCustomNortonLikeListView.EnableDragOnClick: Boolean;

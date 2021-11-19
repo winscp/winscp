@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <windows.h>
+#include <io.h>
+#include <fcntl.h>
 
 #include "Console.h"
 #define MAX_ATTEMPTS 10
@@ -12,9 +14,14 @@
 using namespace std;
 HANDLE ConsoleInput = NULL;
 HANDLE ConsoleOutput = NULL;
+HANDLE ConsoleStandardOutput = NULL;
+HANDLE ConsoleErrorOutput = NULL;
+TConsoleCommStruct::TInitEvent::STDINOUT OutputFormat;
+TConsoleCommStruct::TInitEvent::STDINOUT InputFormat;
 HANDLE Child = NULL;
 HANDLE CancelEvent = NULL;
 HANDLE InputTimerEvent = NULL;
+bool SupportsUtf8ConsoleOutput = false;
 unsigned int OutputType = FILE_TYPE_UNKNOWN;
 unsigned int InputType = FILE_TYPE_UNKNOWN;
 enum { RESULT_GLOBAL_ERROR = 1, RESULT_INIT_ERROR = 2, RESULT_PROCESSING_ERROR = 3,
@@ -410,6 +417,19 @@ inline void Flush()
   }
 }
 //---------------------------------------------------------------------------
+void PrintException(const exception& e)
+{
+  if (ConsoleOutput != NULL)
+  {
+    unsigned long Written;
+    WriteFile(ConsoleOutput, e.what(), strlen(e.what()), &Written, NULL);
+  }
+  else
+  {
+    puts(e.what());
+  }
+}
+//---------------------------------------------------------------------------
 void Print(const wchar_t* Message)
 {
   char* Buffer = WideStringToString(Message);
@@ -767,10 +787,70 @@ inline void ProcessTitleEvent(TConsoleCommStruct::TTitleEvent& Event)
 //---------------------------------------------------------------------------
 inline void ProcessInitEvent(TConsoleCommStruct::TInitEvent& Event)
 {
+  if (Event.UseStdErr)
+  {
+    ConsoleOutput = ConsoleErrorOutput;
+  }
+
+  OutputFormat = Event.OutputFormat;
+  if (OutputFormat != TConsoleCommStruct::TInitEvent::OFF)
+  {
+    setmode(fileno(stdout), O_BINARY);
+  }
+
+  InputFormat = Event.InputFormat;
+  if (InputFormat != TConsoleCommStruct::TInitEvent::OFF)
+  {
+    setmode(fileno(stdin), O_BINARY);
+  }
+
+  OutputType = GetFileType(ConsoleOutput);
+  // Until now we should not have printed anything.
+  // Only in case of a fatal failure, we might have printed a pure ASCII error messages (and never got here).
+  if ((OutputType == FILE_TYPE_DISK) || (OutputType == FILE_TYPE_PIPE) ||
+      SupportsUtf8ConsoleOutput)
+  {
+    SetConsoleOutputCP(CP_UTF8);
+  }
+  else
+  {
+    SetConsoleOutputCP(CP_ACP);
+  }
+
   Event.InputType = InputType;
   Event.OutputType = OutputType;
   // default anyway
   Event.WantsProgress = false;
+}
+//---------------------------------------------------------------------------
+inline void ProcessTransferOutEvent(TConsoleCommStruct::TTransferEvent& Event)
+{
+  if (OutputFormat == TConsoleCommStruct::TInitEvent::BINARY)
+  {
+    fwrite(Event.Data, 1, Event.Len, stdout);
+  }
+  else if (OutputFormat == TConsoleCommStruct::TInitEvent::CHUNKED)
+  {
+    fprintf(stdout, "%x\r\n", static_cast<int>(Event.Len));
+    fwrite(Event.Data, 1, Event.Len, stdout);
+    fputs("\r\n", stdout);
+  }
+}
+//---------------------------------------------------------------------------
+inline void ProcessTransferInEvent(TConsoleCommStruct::TTransferEvent& Event)
+{
+  size_t Read = fread(Event.Data, 1, Event.Len, stdin);
+  if (Read != Event.Len)
+  {
+    if (ferror(stdin))
+    {
+      Event.Error = true;
+    }
+    else
+    {
+      Event.Len = Read;
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void ProcessEvent(HANDLE ResponseEvent, HANDLE FileMapping)
@@ -803,6 +883,14 @@ void ProcessEvent(HANDLE ResponseEvent, HANDLE FileMapping)
 
       case TConsoleCommStruct::INIT:
         ProcessInitEvent(CommStruct->InitEvent);
+        break;
+
+      case TConsoleCommStruct::TRANSFEROUT:
+        ProcessTransferOutEvent(CommStruct->TransferEvent);
+        break;
+
+      case TConsoleCommStruct::TRANSFERIN:
+        ProcessTransferInEvent(CommStruct->TransferEvent);
         break;
 
       default:
@@ -855,11 +943,12 @@ int wmain(int /*argc*/, wchar_t* /*argv*/[])
     unsigned int SavedConsoleCP = GetConsoleCP();
     unsigned int SavedConsoleOutputCP = GetConsoleOutputCP();
 
-    ConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-    OutputType = GetFileType(ConsoleOutput);
+    ConsoleStandardOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    ConsoleOutput = ConsoleStandardOutput;
+    ConsoleErrorOutput = GetStdHandle(STD_ERROR_HANDLE);
 
 
-    bool SupportsUtf8ConsoleOutput =
+    SupportsUtf8ConsoleOutput =
       ((VersionInfo.dwMajorVersion == 6) && (VersionInfo.dwMinorVersion >= 1)) ||
       (VersionInfo.dwMajorVersion > 6);
 
@@ -871,16 +960,6 @@ int wmain(int /*argc*/, wchar_t* /*argv*/[])
     else
     {
       SetConsoleCP(CP_ACP);
-    }
-
-    if ((OutputType == FILE_TYPE_DISK) || (OutputType == FILE_TYPE_PIPE) ||
-        SupportsUtf8ConsoleOutput)
-    {
-      SetConsoleOutputCP(CP_UTF8);
-    }
-    else
-    {
-      SetConsoleOutputCP(CP_ACP);
     }
 
 
@@ -939,7 +1018,7 @@ int wmain(int /*argc*/, wchar_t* /*argv*/[])
       }
       catch(const exception& e)
       {
-        puts(e.what());
+        PrintException(e);
         Result = RESULT_PROCESSING_ERROR;
       }
 
@@ -954,7 +1033,7 @@ int wmain(int /*argc*/, wchar_t* /*argv*/[])
     }
     catch(const exception& e)
     {
-      puts(e.what());
+      PrintException(e);
       Result = RESULT_INIT_ERROR;
     }
 
@@ -963,7 +1042,7 @@ int wmain(int /*argc*/, wchar_t* /*argv*/[])
   }
   catch(const exception& e)
   {
-    puts(e.what());
+    PrintException(e);
     Result = RESULT_GLOBAL_ERROR;
   }
 

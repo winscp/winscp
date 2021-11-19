@@ -1654,6 +1654,11 @@ static const struct eckex_extra kex_extra_curve25519 = {
     ssh_ecdhkex_m_getkey,
 };
 const ssh_kex ssh_ec_kex_curve25519 = {
+    "curve25519-sha256", NULL, KEXTYPE_ECDH,
+    &ssh_sha256, &kex_extra_curve25519,
+};
+/* Pre-RFC alias */
+const ssh_kex ssh_ec_kex_curve25519_libssh = {
     "curve25519-sha256@libssh.org", NULL, KEXTYPE_ECDH,
     &ssh_sha256, &kex_extra_curve25519,
 };
@@ -1696,6 +1701,7 @@ const ssh_kex ssh_ec_kex_nistp521 = {
 
 static const ssh_kex *const ec_kex_list[] = {
     &ssh_ec_kex_curve25519,
+    &ssh_ec_kex_curve25519_libssh,
     &ssh_ec_kex_nistp256,
     &ssh_ec_kex_nistp384,
     &ssh_ec_kex_nistp521,
@@ -1758,7 +1764,7 @@ bool ec_ed_alg_and_curve_by_bits(
     int bits, const struct ec_curve **curve, const ssh_keyalg **alg)
 {
     switch (bits) {
-      case 256: *alg = &ssh_ecdsa_ed25519; break;
+      case 255: case 256: *alg = &ssh_ecdsa_ed25519; break;
       default: return false;
     }
     *curve = ((struct ecsign_extra *)(*alg)->extra)->curve();

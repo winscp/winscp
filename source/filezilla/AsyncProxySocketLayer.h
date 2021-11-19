@@ -10,7 +10,7 @@ can connect through SOCKS4/5 and HTTP 1.1 proxies. This class works
 as semi-transparent layer between CAsyncSocketEx and the actual socket.
 This class is used in FileZilla, a powerful open-source FTP client.
 It can be found under https://sourceforge.net/projects/filezilla/
-For more information about HTTP 1.1 goto https://tools.ietf.org/html/rfc2616
+For more information about HTTP 1.1 goto https://datatracker.ietf.org/doc/html/rfc2616
 
 How to use?
 -----------

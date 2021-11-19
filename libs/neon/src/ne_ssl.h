@@ -84,14 +84,14 @@ const ne_ssl_dname *ne_ssl_cert_issuer(const ne_ssl_certificate *cert);
 /* Returns the distinguished name of the certificate subject. */
 const ne_ssl_dname *ne_ssl_cert_subject(const ne_ssl_certificate *cert);
 
-#define NE_SSL_DIGESTLEN (60)
+#define NE_SSL_DIGESTLEN (96) // WINSCP for SHA-256
 
 /* Calculate the certificate digest ("fingerprint") and format it as a
  * NUL-terminated hex string in 'digest', of the form "aa:bb:...:ff".
  * Returns zero on success or non-zero if there was an internal error
  * whilst calculating the digest.  'digest' must be at least 
  * NE_SSL_DIGESTLEN bytes in length. */
-int ne_ssl_cert_digest(const ne_ssl_certificate *cert, char *digest);
+int ne_ssl_cert_digest(const ne_ssl_certificate *cert, char *digest, int sha256); // WINSCP
 
 /* Copy the validity times for the certificate 'cert' into 'from' and
  * 'until' (either may be NULL).  If the time cannot be represented by

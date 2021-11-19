@@ -60,7 +60,7 @@ TNonVisualDataModule *NonVisualDataModule;
 #define EXESORTA(SIDE) EXE(SIDE ## SortAscendingAction, \
   COLPROPS(SIDE)->SortAscending = !COLPROPS(SIDE)->SortAscending; )
 #define UPDSORTC(LPREFIX, LCOL, RPREFIX, RCOL) if (Action == CurrentSortBy ## RCOL ## Action) { \
-  CurrentSortBy ## RCOL ## Action->Enabled = ScpExplorer->AllowedAction((TAction *)Action, aaShortCut); \
+  CurrentSortBy ## RCOL ## Action->Enabled = ScpExplorer->AllowedAction(Action, aaShortCut); \
   if (CurrentSortBy ## RCOL ## Action->Enabled) { \
     if (ScpExplorer->DirView(osCurrent) == ScpExplorer->DirView(osRemote)) \
          CurrentSortBy ## RCOL ## Action->Checked = (COLPROPS(Current)->SortColumn == RPREFIX ## RCOL); \
@@ -125,16 +125,17 @@ __fastcall TNonVisualDataModule::~TNonVisualDataModule()
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
-      TBasicAction *Action, bool &Handled)
+  TBasicAction * BasicAction, bool & Handled)
 {
-  if (!ScpExplorer || !ScpExplorer->AllowedAction((TAction *)Action, aaUpdate))
+  TAction * Action = DebugNotNull(dynamic_cast<TAction *>(BasicAction));
+  if (!ScpExplorer || !ScpExplorer->AllowedAction(Action, aaUpdate))
   {
-    ((TAction *)Action)->Enabled = false;
+    Action->Enabled = false;
     Handled = true;
     return;
   }
   void * Param;
-  #define HasTerminal (ScpExplorer->Terminal != NULL) && ScpExplorer->Terminal->Active
+  #define HasTerminal ScpExplorer->HasActiveTerminal()
   // CURRENT DIRVIEW
   #define EnabledSelectedOperation (ScpExplorer->EnableSelectedOperation[osCurrent])
   #define EnabledFocusedOperation (ScpExplorer->EnableFocusedOperation[osCurrent])
@@ -170,7 +171,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CurrentOpenAction, EnabledFocusedOperation &&
     !WinConfiguration->DisableOpenEdit)
   UPDEX1(CurrentAddEditLinkContextAction, ScpExplorer->CanAddEditLink(osCurrent),
-    ((TAction *)Action)->Visible = ScpExplorer->LinkFocused())
+    Action->Visible = ScpExplorer->LinkFocused())
   UPD(NewLinkAction, ScpExplorer->CanAddEditLink(osCurrent))
   // selected operation
   UPD(CurrentDeleteAction, EnabledSelectedOperation)
@@ -196,7 +197,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     ScpExplorer->Terminal->IsCapable[fcLocking])
   // local selected operation
   UPD(LocalCopyAction, HasTerminal && EnabledLocalSelectedOperation)
-  UPD(LocalCopyQueueAction, HasTerminal && EnabledLocalSelectedOperation && ScpExplorer->Terminal->IsCapable[fsBackgroundTransfers])
+  UPD(LocalCopyQueueAction, HasTerminal && EnabledLocalSelectedOperation && ScpExplorer->Terminal->IsCapable[fcBackgroundTransfers])
   UPD(LocalCopyNonQueueAction, HasTerminal && EnabledLocalSelectedOperation)
   UPD(LocalRenameAction, EnabledLocalSelectedOperation)
   UPD(LocalEditAction, EnabledLocalSelectedFileOperation && !WinConfiguration->DisableOpenEdit)
@@ -208,12 +209,12 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(LocalNewFileAction, !WinConfiguration->DisableOpenEdit)
   // local focused operation
   UPD(LocalCopyFocusedAction, HasTerminal && EnabledLocalFocusedOperation)
-  UPD(LocalCopyFocusedQueueAction, HasTerminal && EnabledLocalFocusedOperation && ScpExplorer->Terminal->IsCapable[fsBackgroundTransfers])
+  UPD(LocalCopyFocusedQueueAction, HasTerminal && EnabledLocalFocusedOperation && ScpExplorer->Terminal->IsCapable[fcBackgroundTransfers])
   UPD(LocalCopyFocusedNonQueueAction, HasTerminal && EnabledLocalFocusedOperation)
   UPD(LocalMoveFocusedAction, HasTerminal && EnabledLocalFocusedOperation)
   // remote selected operation
   UPD(RemoteCopyAction, EnabledRemoteSelectedOperation)
-  UPD(RemoteCopyQueueAction, EnabledRemoteSelectedOperation && ScpExplorer->Terminal->IsCapable[fsBackgroundTransfers])
+  UPD(RemoteCopyQueueAction, EnabledRemoteSelectedOperation && ScpExplorer->Terminal->IsCapable[fcBackgroundTransfers])
   UPD(RemoteCopyNonQueueAction, EnabledRemoteSelectedOperation)
   UPD(RemoteRenameAction, EnabledRemoteSelectedOperation &&
     ScpExplorer->Terminal->IsCapable[fcRename])
@@ -226,7 +227,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(RemoteAddEditLinkAction2, ScpExplorer->CanAddEditLink(osRemote))
   // remote focused operation
   UPD(RemoteCopyFocusedAction, EnabledRemoteFocusedOperation)
-  UPD(RemoteCopyFocusedQueueAction, EnabledRemoteFocusedOperation && ScpExplorer->Terminal->IsCapable[fsBackgroundTransfers])
+  UPD(RemoteCopyFocusedQueueAction, EnabledRemoteFocusedOperation && ScpExplorer->Terminal->IsCapable[fcBackgroundTransfers])
   UPD(RemoteCopyFocusedNonQueueAction, EnabledRemoteFocusedOperation)
   UPD(RemoteMoveFocusedAction, EnabledRemoteFocusedOperation)
   UPD(RemoteMoveToFocusedAction, EnabledFocusedOperation &&
@@ -287,7 +288,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     UPD(SIDE ## ChangePathAction, DirViewEnabled(os ## SIDE)) \
     UPD(SIDE ## AddBookmarkAction, DirViewEnabled(os ## SIDE)) \
     UPD(SIDE ## PathToClipboardAction, DirViewEnabled(os ## SIDE)) \
-    UPDEX1(SIDE ## FilterAction, DirViewEnabled(os ## SIDE), ((TAction *)Action)->Checked = !DirView(os ## SIDE)->Mask.IsEmpty())
+    UPDEX1(SIDE ## FilterAction, DirViewEnabled(os ## SIDE), Action->Checked = !DirView(os ## SIDE)->Mask.IsEmpty())
   PANEL_ACTIONS(Local)
   PANEL_ACTIONS(Remote)
   #undef PANEL_ACTIONS
@@ -303,7 +304,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(UpdatesPreferencesAction, true)
   UPD(DonatePageAction, true)
   UPD(DownloadPageAction, true)
-  UPD(TipsAction, true)
+  UPDEX1(TipsAction, true, TipsAction->Visible = AnyTips())
 
   // VIEW
   UPDCOMP(SessionsTabs)
@@ -370,9 +371,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDSORTC(dv, Name, uv, Group)
   #define COLVIEWPROPS ((TCustomDirViewColProperties*)(((TCustomDirView*)(((TListColumns*)(ListColumn->Collection))->Owner()))->ColProperties))
   UPDEX(SortColumnAscendingAction, (ListColumn != NULL), SortColumnAscendingAction->Checked =
-    (COLVIEWPROPS->SortColumn == ListColumn->Index) && COLVIEWPROPS->SortAscending, /*DebugFail()*/  )
+    (COLVIEWPROPS->SortColumn == ListColumn->Index) && COLVIEWPROPS->SortAscending, )
   UPDEX(SortColumnDescendingAction, (ListColumn != NULL), SortColumnDescendingAction->Checked =
-    (COLVIEWPROPS->SortColumn == ListColumn->Index) && !COLVIEWPROPS->SortAscending, /*DebugFail()*/ )
+    (COLVIEWPROPS->SortColumn == ListColumn->Index) && !COLVIEWPROPS->SortAscending, )
   #undef COLVIEWPROPS
 
   // SHOW/HIDE COLUMN
@@ -397,8 +398,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   // SESSION
   UPD(NewSessionAction, true)
   UPD(SiteManagerAction, true)
-  UPD(DuplicateSessionAction, HasTerminal)
-  UPD(RenameSessionAction, HasTerminal)
+  UPD(DuplicateSessionAction, (ScpExplorer->Terminal != NULL))
+  UPD(RenameSessionAction, (ScpExplorer->Terminal != NULL))
   UPD(CloseSessionAction2, (ScpExplorer->Terminal != NULL))
   UPDEX1(DisconnectSessionAction, HasTerminal, DisconnectSessionAction->Visible = (ScpExplorer->Terminal == NULL) || !ScpExplorer->Terminal->Disconnected)
   UPDEX1(ReconnectSessionAction, (ScpExplorer->Terminal != NULL) && ScpExplorer->Terminal->Disconnected, ReconnectSessionAction->Visible = ReconnectSessionAction->Enabled)
@@ -434,26 +435,26 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CustomCommandsCustomizeAction, true)
 
   // QUEUE
-  UPDEX(QueueEnableAction, HasTerminal, ((TAction *)Action)->Checked = ScpExplorer->GetQueueEnabled(), )
+  UPDEX(QueueEnableAction, HasTerminal, Action->Checked = ScpExplorer->GetQueueEnabled(), )
   #define UPDQUEUE(OPERATION) UPD(Queue ## OPERATION ## Action, \
     ScpExplorer->AllowQueueOperation(qo ## OPERATION))
   UPDQUEUE(GoTo)
   UPDQUEUE(Preferences)
   UPDEX(QueueItemQueryAction, ScpExplorer->AllowQueueOperation(qoItemQuery),
-    ((TAction *)Action)->Visible = true, ((TAction *)Action)->Visible = false)
+    Action->Visible = true, Action->Visible = false)
   UPDEX(QueueItemErrorAction, ScpExplorer->AllowQueueOperation(qoItemError),
-    ((TAction *)Action)->Visible = true, ((TAction *)Action)->Visible = false)
+    Action->Visible = true, Action->Visible = false)
   UPDEX(QueueItemPromptAction, ScpExplorer->AllowQueueOperation(qoItemPrompt),
-    ((TAction *)Action)->Visible = true, ((TAction *)Action)->Visible = false)
+    Action->Visible = true, Action->Visible = false)
   UPDQUEUE(ItemDelete)
   UPDEX(QueueItemExecuteAction, ScpExplorer->AllowQueueOperation(qoItemExecute),
-    ((TAction *)Action)->Visible = true, ((TAction *)Action)->Visible =
+    Action->Visible = true, Action->Visible =
       !ScpExplorer->AllowQueueOperation(qoItemPause) &&
       !ScpExplorer->AllowQueueOperation(qoItemResume))
   UPDEX(QueueItemPauseAction, ScpExplorer->AllowQueueOperation(qoItemPause),
-    ((TAction *)Action)->Visible = true, ((TAction *)Action)->Visible = false)
+    Action->Visible = true, Action->Visible = false)
   UPDEX(QueueItemResumeAction, ScpExplorer->AllowQueueOperation(qoItemResume),
-    ((TAction *)Action)->Visible = true, ((TAction *)Action)->Visible = false)
+    Action->Visible = true, Action->Visible = false)
   UPDQUEUE(ItemUp)
   UPDQUEUE(ItemDown)
   UPDQUEUE(PauseAll)
@@ -465,9 +466,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     QueueItemSpeedAction->Text = SetSpeedLimit(reinterpret_cast<unsigned long>(Param)),
     QueueItemSpeedAction->Text = L"")
   UPDACT(QueueToggleShowAction,
-    ((TAction *)Action)->Checked = ScpExplorer->ComponentVisible[fcQueueView])
+    Action->Checked = ScpExplorer->ComponentVisible[fcQueueView])
   #define QUEUEACTION(SHOW) UPDACT(Queue ## SHOW ## Action, \
-    ((TAction *)Action)->Checked = WinConfiguration->QueueView.Show == qv ## SHOW)
+    Action->Checked = WinConfiguration->QueueView.Show == qv ## SHOW)
   QUEUEACTION(Show)
   QUEUEACTION(HideWhenEmpty)
   QUEUEACTION(Hide)
@@ -481,16 +482,20 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(QueueShutDownOnceEmptyAction2, ScpExplorer->AllowQueueOperation(qoOnceEmpty))
   UPDCOMP(CommanderPreferencesBand)
   UPDACT(QueueToolbarAction,
-    ((TAction *)Action)->Enabled = ScpExplorer->ComponentVisible[fcQueueView];
-    ((TAction *)Action)->Checked = ScpExplorer->ComponentVisible[fcQueueToolbar])
+    Action->Enabled = ScpExplorer->ComponentVisible[fcQueueView];
+    Action->Checked = ScpExplorer->ComponentVisible[fcQueueToolbar])
+  UPDACT(QueueFileListAction,
+    Action->Enabled = ScpExplorer->ComponentVisible[fcQueueView];
+    Action->Checked = ScpExplorer->ComponentVisible[fcQueueFileList])
   ;
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
-      TBasicAction *Action, bool &Handled)
+  TBasicAction * BasicAction, bool & Handled)
 {
   DebugAssert(ScpExplorer);
-  if (!ScpExplorer->AllowedAction((TAction *)Action, aaExecute))
+  TAction * Action = DebugNotNull(dynamic_cast<TAction *>(BasicAction));
+  if (!ScpExplorer->AllowedAction(Action, aaExecute))
   {
     Handled = true;
     return;
@@ -715,8 +720,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     #undef COLVIEWPROPS
 
     // SESSION
-    EXE(NewSessionAction, ScpExplorer->NewSession(false))
-    EXE(SiteManagerAction, ScpExplorer->NewSession(true))
+    EXE(NewSessionAction, ScpExplorer->NewSession())
+    EXE(SiteManagerAction, ScpExplorer->NewSession())
     EXE(DuplicateSessionAction, ScpExplorer->DuplicateSession())
     EXE(RenameSessionAction, ScpExplorer->RenameSession())
     EXE(CloseSessionAction2, ScpExplorer->CloseSession())
@@ -751,7 +756,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(CustomCommandsEnterFocusedAction, ScpExplorer->AdHocCustomCommand(true))
     EXE(CustomCommandsLastAction, ScpExplorer->LastCustomCommand(false))
     EXE(CustomCommandsLastFocusedAction, ScpExplorer->LastCustomCommand(true))
-    EXE(CustomCommandsCustomizeAction, PreferencesDialog(pmCustomCommands))
+    EXE(CustomCommandsCustomizeAction, CustomCommandsCustomize(NULL))
 
     // QUEUE
     EXE(QueueEnableAction, ScpExplorer->ToggleQueueEnabled())
@@ -789,6 +794,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(QueueSuspendOnceEmptyAction2, SetQueueOnceEmptyAction(QueueSuspendOnceEmptyAction2))
     EXE(QueueShutDownOnceEmptyAction2, SetQueueOnceEmptyAction(QueueShutDownOnceEmptyAction2))
     EXECOMP(QueueToolbar)
+    EXECOMP(QueueFileList)
     EXE(QueueItemSpeedAction, )
     ;
   }
@@ -899,8 +905,10 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
   RemoteFindFilesAction->ShortCut =
     ExplorerKeyboardShortcuts ? ShortCut(VK_F3, NONE) : ShortCut(VK_F7, ALT);
   // legacy shortcut (can be removed when necessary)
+  NewFileAction->SecondaryShortCuts->Clear();
   NewFileAction->SecondaryShortCuts->Add(ShortCutToText(ShortCut(VK_F4, CTRLSHIFT)));
   // Backward compatibility, can be abandoned, once there's a better use for Ctrl+T
+  ConsoleAction->SecondaryShortCuts->Clear();
   ConsoleAction->SecondaryShortCuts->Add(ShortCutToText(ShortCut(L'T', CTRL)));
 
   CloseApplicationAction->ShortCut = ShortCut(VK_F10, NONE);
@@ -1100,6 +1108,11 @@ int __fastcall TNonVisualDataModule::CreateCustomCommandsListMenu(
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::CustomCommandsCustomize(TObject *)
+{
+  PreferencesDialog(pmCustomCommands);
+}
+//---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
   TTBCustomItem * Menu, bool OnFocused, bool Toolbar, TCustomCommandListType ListType, TStrings * HiddenCommands)
 {
@@ -1154,6 +1167,11 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
 
   Item = new TTBXItem(Menu);
   Item->Action = CustomCommandsCustomizeAction;
+  if (ListType == ccltBoth)
+  {
+    // Hack. Bypass the Busy test in ExplorerActionsExecute.
+    Item->OnClick = CustomCommandsCustomize;
+  }
   Menu->Add(Item);
 }
 //---------------------------------------------------------------------------

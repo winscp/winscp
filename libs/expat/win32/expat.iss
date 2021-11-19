@@ -1,21 +1,53 @@
 ; Basic setup script for the Inno Setup installer builder.  For more
 ; information on the free installer builder, see www.jrsoftware.org.
 ;
-; This script was contributed by Tim Peters.
+; This script was originally contributed by Tim Peters.
 ; It was designed for Inno Setup 2.0.19 but works with later versions as well.
+;
+;                          __  __            _
+;                       ___\ \/ /_ __   __ _| |_
+;                      / _ \\  /| '_ \ / _` | __|
+;                     |  __//  \| |_) | (_| | |_
+;                      \___/_/\_\ .__/ \__,_|\__|
+;                               |_| XML parser
+;
+; Copyright (c) 2001      Tim Peters <tim.peters@gmail.com>
+; Copyright (c) 2001-2005 Fred L. Drake, Jr. <fdrake@users.sourceforge.net>
+; Copyright (c) 2006-2017 Karl Waclawek <karl@waclawek.net>
+; Copyright (c) 2007-2021 Sebastian Pipping <sebastian@pipping.org>
+; Licensed under the MIT license:
+;
+; Permission is  hereby granted,  free of charge,  to any  person obtaining
+; a  copy  of  this  software   and  associated  documentation  files  (the
+; "Software"),  to  deal in  the  Software  without restriction,  including
+; without  limitation the  rights  to use,  copy,  modify, merge,  publish,
+; distribute, sublicense, and/or sell copies of the Software, and to permit
+; persons  to whom  the Software  is  furnished to  do so,  subject to  the
+; following conditions:
+;
+; The above copyright  notice and this permission notice  shall be included
+; in all copies or substantial portions of the Software.
+;
+; THE  SOFTWARE  IS  PROVIDED  "AS  IS",  WITHOUT  WARRANTY  OF  ANY  KIND,
+; EXPRESS  OR IMPLIED,  INCLUDING  BUT  NOT LIMITED  TO  THE WARRANTIES  OF
+; MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+; NO EVENT SHALL THE AUTHORS OR  COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+; DAMAGES OR  OTHER LIABILITY, WHETHER  IN AN  ACTION OF CONTRACT,  TORT OR
+; OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+; USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#define expatVer "2.2.9"
+#define expatVer "2.4.1"
 
 [Setup]
 AppName=Expat
 AppId=expat
 AppVersion={#expatVer}
 AppVerName=Expat {#expatVer}
-AppCopyright=Copyright © 1998-2017 Thai Open Source Software Center, Clark Cooper, and the Expat maintainers
+AppCopyright=Copyright © 1997-2021 Thai Open Source Software Center, Clark Cooper, and the Expat maintainers
 AppPublisher=The Expat Developers
-AppPublisherURL=http://www.libexpat.org/
-AppSupportURL=http://www.libexpat.org/
-AppUpdatesURL=http://www.libexpat.org/
+AppPublisherURL=https://libexpat.github.io/
+AppSupportURL=https://libexpat.github.io/
+AppUpdatesURL=https://libexpat.github.io/
 UninstallDisplayName=Expat XML Parser {#expatVer}
 VersionInfoVersion={#expatVer}
 OutputBaseFilename=expat-win32bin-{#expatVer}
@@ -45,6 +77,7 @@ Flags: ignoreversion; Source: doc\*.png;                    DestDir: "{app}\Doc"
 Flags: ignoreversion; Source: win32\bin\Release\*.dll;      DestDir: "{app}\Bin"
 Flags: ignoreversion; Source: win32\bin\Release\*.lib;      DestDir: "{app}\Bin"
 Flags: ignoreversion; Source: win32\README.txt;             DestDir: "{app}\Source"
+Flags: ignoreversion; Source: Changes;                      DestDir: "{app}\Source"
 Flags: ignoreversion; Source: CMake.README;                 DestDir: "{app}\Source"
 Flags: ignoreversion; Source: CMakeLists.txt;               DestDir: "{app}\Source"
 Flags: ignoreversion; Source: ConfigureChecks.cmake;        DestDir: "{app}\Source"

@@ -22,6 +22,7 @@ char appname_[50];
 const char *const appname = appname_;
 extern const bool share_can_be_downstream = false;
 extern const bool share_can_be_upstream = false;
+THierarchicalStorage * PuttyStorage = NULL;
 //---------------------------------------------------------------------------
 extern "C"
 {
@@ -78,6 +79,7 @@ void __fastcall PuttyFinalize()
   win_misc_cleanup();
   win_secur_cleanup();
   ec_cleanup();
+  wingss_cleanup();
   DeleteCriticalSection(&putty_section);
 }
 //---------------------------------------------------------------------------
@@ -132,17 +134,17 @@ struct callback_set * get_seat_callback_set(Seat * seat)
   return SecureShell->GetCallbackSet();
 }
 //---------------------------------------------------------------------------
-extern "C" char * do_select(Plug * plug, SOCKET skt, bool startup)
+extern "C" char * do_select(Plug * plug, SOCKET skt, bool enable)
 {
   bool pfwd;
   TSecureShell * SecureShell = GetSecureShell(plug, pfwd);
   if (!pfwd)
   {
-    SecureShell->UpdateSocket(skt, startup);
+    SecureShell->UpdateSocket(skt, enable);
   }
   else
   {
-    SecureShell->UpdatePortFwdSocket(skt, startup);
+    SecureShell->UpdatePortFwdSocket(skt, enable);
   }
 
   return NULL;
@@ -202,7 +204,7 @@ static int get_userpass_input(Seat * seat, prompts_t * p, bufchain * DebugUsedAr
       Prompts->AddObject(S, (TObject *)(FLAGMASK(Prompt->echo, pupEcho)));
       // this fails, when new passwords do not match on change password prompt,
       // and putty retries the prompt
-      DebugAssert(Prompt->resultsize == 0);
+      DebugAssert(strlen(prompt_get_result_ref(Prompt)) == 0);
       Results->Add(L"");
     }
 
@@ -409,7 +411,6 @@ TPuttyRegistryTypes PuttyRegistryTypes;
 static long OpenWinSCPKey(HKEY Key, const char * SubKey, HKEY * Result, bool CanCreate)
 {
   long R;
-  DebugAssert(Configuration != NULL);
 
   DebugAssert(Key == HKEY_CURRENT_USER);
   DebugUsedParam(Key);
@@ -431,19 +432,18 @@ static long OpenWinSCPKey(HKEY Key, const char * SubKey, HKEY * Result, bool Can
   }
   else
   {
-    // we expect this to be called only from verify_host_key() or store_host_key()
+    // we expect this to be called only from retrieve_host_key() or store_host_key()
     DebugAssert(RegKey == L"SshHostKeys");
 
-    THierarchicalStorage * Storage = Configuration->CreateConfigStorage();
-    Storage->AccessMode = (CanCreate ? smReadWrite : smRead);
-    if (Storage->OpenSubKey(RegKey, CanCreate))
+    DebugAssert(PuttyStorage != NULL);
+    DebugAssert(PuttyStorage->AccessMode == (CanCreate ? smReadWrite : smRead));
+    if (PuttyStorage->OpenSubKey(RegKey, CanCreate))
     {
-      *Result = reinterpret_cast<HKEY>(Storage);
+      *Result = reinterpret_cast<HKEY>(PuttyStorage);
       R = ERROR_SUCCESS;
     }
     else
     {
-      delete Storage;
       R = ERROR_CANTOPEN;
     }
   }
@@ -557,7 +557,6 @@ long reg_set_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long Res
     return ERROR_SUCCESS;
   }
   DebugAssert(PuttyRegistryMode == prmRedirect);
-  DebugAssert(Configuration != NULL);
 
   DebugAssert(Type == REG_SZ);
   DebugUsedParam(Type);
@@ -583,13 +582,6 @@ long reg_close_winscp_key(HKEY Key)
     return ERROR_SUCCESS;
   }
   DebugAssert(PuttyRegistryMode == prmRedirect);
-  DebugAssert(Configuration != NULL);
-
-  THierarchicalStorage * Storage = reinterpret_cast<THierarchicalStorage *>(Key);
-  if (Storage != NULL)
-  {
-    delete Storage;
-  }
 
   return ERROR_SUCCESS;
 }
@@ -721,10 +713,15 @@ void SaveKey(TKeyType KeyType, const UnicodeString & FileName,
     switch (KeyType)
     {
       case ktSSH2:
-        if (!ssh2_save_userkey(KeyFile, Ssh2Key, PassphrasePtr))
         {
-          int Error = errno;
-          throw EOSExtException(FMTLOAD(KEY_SAVE_ERROR, (FileName)), Error);
+          ppk_save_parameters Params = ppk_save_default_parameters;
+          // Other parameters are probably not relevant for version 2
+          Params.fmt_version = 2;
+          if (!ppk_save_f(KeyFile, Ssh2Key, PassphrasePtr, &Params))
+          {
+            int Error = errno;
+            throw EOSExtException(FMTLOAD(KEY_SAVE_ERROR, (FileName)), Error);
+          }
         }
         break;
 
@@ -910,8 +907,10 @@ UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const s
   char * CommentPtr = NULL;
   const char * ErrorStr = NULL;
   strbuf * PubBlobBuf = strbuf_new();
+  BinarySource Source[1];
+  BinarySource_BARE_INIT(Source, UtfLine.c_str(), UtfLine.Length());
   UnicodeString Result;
-  if (!openssh_loadpub_line(UtfLine.c_str(), &AlgorithmName, BinarySink_UPCAST(PubBlobBuf), &CommentPtr, &ErrorStr))
+  if (!openssh_loadpub(Source, &AlgorithmName, BinarySink_UPCAST(PubBlobBuf), &CommentPtr, &ErrorStr))
   {
     throw Exception(UnicodeString(ErrorStr));
   }
@@ -1055,7 +1054,13 @@ TStrings * SshMacList()
   for (int Index = 0; Index < Count; Index++)
   {
     UnicodeString Name = UnicodeString(Macs[Index]->name);
-    Result->Add(Name);
+    UnicodeString S = Name;
+    UnicodeString ETMName = UnicodeString(Macs[Index]->etm_name);
+    if (!ETMName.IsEmpty())
+    {
+      S = FORMAT(L"%s (%s)", (S, ETMName));
+    }
+    Result->Add(S);
   }
   return Result.release();
 }

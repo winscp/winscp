@@ -69,7 +69,7 @@ void __fastcall TCleanupDialog::FindData()
 
   if (Configuration->HasAnyCache())
   {
-    AddRegistryLocation(CLEANUP_HOSTKEYS, L"...", Configuration->CleanupCaches);
+    AddRegistryLocation(CLEANUP_CACHES, L"...", Configuration->CleanupCaches);
   }
 
   UnicodeString IniFilePath = ExpandEnvironmentVariables(Configuration->IniFileStorageNameForReading);

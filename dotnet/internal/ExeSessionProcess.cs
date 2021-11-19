@@ -4,12 +4,18 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading;
+#if !NETSTANDARD
 using Microsoft.Win32;
+#endif
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 using System.Reflection;
+#if !NETSTANDARD
 using System.Security.Principal;
 using System.Security.AccessControl;
+#endif
+using System.ComponentModel;
+using System.Security.Cryptography;
 
 namespace WinSCP
 {
@@ -19,6 +25,8 @@ namespace WinSCP
 
         public bool HasExited { get { return _process.HasExited; } }
         public int ExitCode { get { return _process.ExitCode; } }
+        public PipeStream StdOut { get; set; }
+        public Stream StdIn { get; set; }
 
         public static ExeSessionProcess CreateForSession(Session session)
         {
@@ -85,7 +93,7 @@ namespace WinSCP
                 }
 
                 string logLevelSwitch = null;
-                if (_session.DebugLogLevel > 0)
+                if (_session.DebugLogLevel != 0)
                 {
                     logLevelSwitch = string.Format(CultureInfo.InvariantCulture, "/loglevel={0} ", _session.DebugLogLevel);
                 }
@@ -98,7 +106,7 @@ namespace WinSCP
                     string.Format(CultureInfo.InvariantCulture, "/dotnet={0} ", assemblyVersionStr);
 
                 string arguments =
-                    xmlLogSwitch + "/nointeractiveinput " + assemblyVersionSwitch +
+                    xmlLogSwitch + "/nointeractiveinput /stdout /stdin " + assemblyVersionSwitch +
                     configSwitch + logSwitch + logLevelSwitch + _session.AdditionalExecutableArguments;
 
                 Tools.AddRawParameters(ref arguments, _session.RawConfiguration, "/rawconfig", false);
@@ -270,21 +278,30 @@ namespace WinSCP
         {
             using (_logger.CreateCallstack())
             {
-                while (!AbortedOrExited())
+                try
                 {
-                    _logger.WriteLineLevel(1, "Waiting for request event");
-                    // Keep in sync with a delay in SessionLogReader.DoRead
-                    if (_requestEvent.WaitOne(100, false))
+                    while (!AbortedOrExited())
                     {
-                        _logger.WriteLineLevel(1, "Got request event");
-                        ProcessEvent();
-                    }
+                        _logger.WriteLineLevel(1, "Waiting for request event");
+                        // Keep in sync with a delay in SessionLogReader.DoRead
+                        if (_requestEvent.WaitOne(100, false))
+                        {
+                            _logger.WriteLineLevel(1, "Got request event");
+                            ProcessEvent();
+                        }
 
-                    if (_logger.LogLevel >= 1)
-                    {
-                        _logger.WriteLine(string.Format(CultureInfo.InvariantCulture, "2nd generation collection count: {0}", GC.CollectionCount(2)));
-                        _logger.WriteLine(string.Format(CultureInfo.InvariantCulture, "Total memory allocated: {0}", GC.GetTotalMemory(false)));
+                        if (_logger.LogLevel >= 1)
+                        {
+                            _logger.WriteLine(string.Format(CultureInfo.InvariantCulture, "2nd generation collection count: {0}", GC.CollectionCount(2)));
+                            _logger.WriteLine(string.Format(CultureInfo.InvariantCulture, "Total memory allocated: {0}", GC.GetTotalMemory(false)));
+                        }
                     }
+                }
+                catch (Exception e)
+                {
+                    _logger.WriteLine("Error while processing events");
+                    _logger.WriteException(e);
+                    throw;
                 }
             }
         }
@@ -321,12 +338,21 @@ namespace WinSCP
                             ProcessProgressEvent(commStruct.ProgressEvent);
                             break;
 
+                        case ConsoleEvent.TransferOut:
+                            ProcessTransferOutEvent(commStruct.TransferOutEvent);
+                            break;
+
+                        case ConsoleEvent.TransferIn:
+                            ProcessTransferInEvent(commStruct.TransferInEvent);
+                            break;
+
                         default:
                             throw _logger.WriteException(new NotImplementedException());
                     }
                 }
 
                 _responseEvent.Set();
+                _logger.WriteLineLevel(1, "Response event set");
             }
         }
 
@@ -462,6 +488,13 @@ namespace WinSCP
         {
             using (_logger.CreateCallstack())
             {
+                if (!e.UseStdErr ||
+                    (e.BinaryOutput != ConsoleInitEventStruct.StdInOut.Binary) ||
+                    (e.BinaryInput != ConsoleInitEventStruct.StdInOut.Binary))
+                {
+                    throw _logger.WriteException(new InvalidOperationException("Unexpected console interface options"));
+                }
+
                 e.InputType = 3; // pipe
                 e.OutputType = 3; // pipe
                 e.WantsProgress = _session.WantsProgress;
@@ -516,6 +549,56 @@ namespace WinSCP
                 if (_cancel)
                 {
                     e.Cancel = true;
+                }
+            }
+        }
+
+        private void ProcessTransferOutEvent(ConsoleTransferEventStruct e)
+        {
+            using (_logger.CreateCallstack())
+            {
+                _logger.WriteLine("Len [{0}]", e.Len);
+
+                if (StdOut == null)
+                {
+                    throw _logger.WriteException(new InvalidOperationException("Unexpected data"));
+                }
+                int len = (int)e.Len;
+                if (len > 0)
+                {
+                    StdOut.WriteInternal(e.Data, 0, len);
+                    _logger.WriteLine("Data written to the buffer");
+                }
+                else
+                {
+                    StdOut.CloseWrite();
+                    _logger.WriteLine("Data buffer closed");
+                }
+            }
+        }
+
+        private void ProcessTransferInEvent(ConsoleTransferEventStruct e)
+        {
+            using (_logger.CreateCallstack())
+            {
+                _logger.WriteLine("Len [{0}]", e.Len);
+
+                if (StdIn == null)
+                {
+                    throw _logger.WriteException(new InvalidOperationException("Unexpected data request"));
+                }
+                try
+                {
+                    int len = (int)e.Len;
+                    len = StdIn.Read(e.Data, 0, len);
+                    _logger.WriteLine("{0} bytes read", len);
+                    e.Len = (UIntPtr)len;
+                }
+                catch (Exception ex)
+                {
+                    _logger.WriteLine("Error reading data stream");
+                    _logger.WriteException(ex);
+                    e.Error = true;
                 }
             }
         }
@@ -934,6 +1017,22 @@ namespace WinSCP
             return path;
         }
 
+        [DllImport("version.dll", CharSet = CharSet.Auto, SetLastError = true, BestFitMapping = false)]
+        public static extern int GetFileVersionInfoSize(string lptstrFilename, out int handle);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hReservedNull, uint dwFlags);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool FreeLibrary(IntPtr hModule);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern IntPtr FindResource(IntPtr hModule, string lpName, string lpType);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern uint SizeofResource(IntPtr hModule, IntPtr hResInfo);
+
         private void CheckVersion(string exePath, FileVersionInfo assemblyVersion)
         {
             using (_logger.CreateCallstack())
@@ -952,17 +1051,103 @@ namespace WinSCP
 
                     _logger.WriteLine("Version of {0} is {1}, product {2} version is {3}", exePath, version.FileVersion, version.ProductName, version.ProductVersion);
 
+                    Exception accessException = null;
+                    try
+                    {
+                        using (File.OpenRead(exePath))
+                        {
+                        }
+                        long size = new FileInfo(exePath).Length;
+                        _logger.WriteLine($"Size of the executable file is {size}");
+
+                        int verInfoSize = GetFileVersionInfoSize(exePath, out int handle);
+                        if (verInfoSize == 0)
+                        {
+                            throw new Exception($"Cannot retrieve {exePath} version info", new Win32Exception());
+                        }
+                        else
+                        {
+                            _logger.WriteLine($"Size of the executable file version info is {verInfoSize}");
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.WriteLine("Accessing executable file failed");
+                        _logger.WriteException(e);
+                        accessException = e;
+                    }
+
                     if (_session.DisableVersionCheck)
                     {
                         _logger.WriteLine("Version check disabled (not recommended)");
                     }
                     else if (assemblyVersion.ProductVersion != version.ProductVersion)
                     {
-                        throw _logger.WriteException(
-                            new SessionLocalException(
-                                _session, string.Format(CultureInfo.CurrentCulture,
-                                    "The version of {0} ({1}) does not match version of this assembly {2} ({3}).",
-                                    exePath, version.ProductVersion, _logger.GetAssemblyFilePath(), assemblyVersion.ProductVersion)));
+                        try
+                        {
+                            using (SHA256 SHA256 = SHA256.Create())
+                            using (FileStream stream = File.OpenRead(exePath))
+                            {
+                                string sha256 = string.Concat(Array.ConvertAll(SHA256.ComputeHash(stream), b => b.ToString("x2")));
+                                _logger.WriteLine($"SHA-256 of the executable file is {sha256}");
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.WriteLine("Calculating SHA-256 of the executable file failed");
+                            _logger.WriteException(e);
+                        }
+
+                        try
+                        {
+                            IntPtr library = LoadLibraryEx(exePath, IntPtr.Zero, 0x00000002); // LOAD_LIBRARY_AS_DATAFILE
+                            if (library == IntPtr.Zero)
+                            {
+                                _logger.WriteLine("Cannot load");
+                                _logger.WriteException(new Win32Exception());
+                            }
+                            else
+                            {
+                                IntPtr resource = FindResource(library, "#1", "#16");
+                                if (resource == IntPtr.Zero)
+                                {
+                                    _logger.WriteLine("Cannot find version resource");
+                                    _logger.WriteException(new Win32Exception());
+                                }
+                                else
+                                {
+                                    uint resourceSize = SizeofResource(library, resource);
+                                    if (resourceSize == 0)
+                                    {
+                                        _logger.WriteLine("Cannot find size of version resource");
+                                        _logger.WriteException(new Win32Exception());
+                                    }
+                                    else
+                                    {
+                                        _logger.WriteLine($"Version resource size is {resourceSize}");
+                                    }
+                                }
+                                FreeLibrary(library);
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.WriteLine("Querying version resource failed");
+                            _logger.WriteException(e);
+                        }
+
+                        string message;
+                        if (string.IsNullOrEmpty(version.ProductVersion) && (accessException != null))
+                        {
+                            message = $"Cannot use {exePath}";
+                        }
+                        else
+                        {
+                            message =
+                                $"The version of {exePath} ({version.ProductVersion}) does not match " +
+                                $"version of this assembly {_logger.GetAssemblyFilePath()} ({assemblyVersion.ProductVersion}).";
+                        }
+                        throw _logger.WriteException(new SessionLocalException(_session, message, accessException));
                     }
                 }
             }

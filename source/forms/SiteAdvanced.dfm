@@ -1067,6 +1067,69 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'Path')
           end
         end
+        object S3AuthenticationGroup: TGroupBox
+          Left = 1
+          Top = 82
+          Width = 393
+          Height = 143
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Authentication'
+          TabOrder = 1
+          DesignSize = (
+            393
+            143)
+          object Label5: TLabel
+            Left = 12
+            Top = 20
+            Width = 73
+            Height = 13
+            Caption = '&Security token:'
+          end
+          object S3SessionTokenMemo: TMemo
+            Left = 11
+            Top = 36
+            Width = 371
+            Height = 93
+            Anchors = [akLeft, akTop, akRight, akBottom]
+            MaxLength = 10000
+            TabOrder = 0
+            OnChange = DataChange
+            OnKeyDown = NoteMemoKeyDown
+          end
+        end
+      end
+      object WebDavSheet: TTabSheet
+        Tag = 2
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_webdav'
+        Caption = 'WebDAV'
+        ImageIndex = 17
+        TabVisible = False
+        DesignSize = (
+          401
+          382)
+        object WebdavGroup: TGroupBox
+          Left = 0
+          Top = 6
+          Width = 393
+          Height = 46
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Protocol options'
+          TabOrder = 0
+          DesignSize = (
+            393
+            46)
+          object WebDavLiberalEscapingCheck: TCheckBox
+            Left = 12
+            Top = 19
+            Width = 369
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Tolerate non-encoded special characters in filenames'
+            TabOrder = 0
+            OnClick = DataChange
+          end
+        end
       end
       object ConnSheet: TTabSheet
         Tag = 1
@@ -2034,13 +2097,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 6
           Width = 393
-          Height = 137
+          Height = 158
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Key exchange algorithm options'
           TabOrder = 0
           DesignSize = (
             393
-            137)
+            158)
           object Label28: TLabel
             Left = 12
             Top = 19
@@ -2083,10 +2146,19 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 2
             OnClick = KexButtonClick
           end
+          object AuthGSSAPIKEXCheck: TCheckBox
+            Left = 12
+            Top = 131
+            Width = 285
+            Height = 17
+            Caption = 'Attempt &GSSAPI key exchange'
+            TabOrder = 3
+            OnClick = DataChange
+          end
         end
         object KexReexchangeGroup: TGroupBox
           Left = 0
-          Top = 150
+          Top = 171
           Width = 393
           Height = 69
           Anchors = [akLeft, akTop, akRight]
@@ -2596,7 +2668,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         OnCollapsing = NavigationTreeCollapsing
         Items.NodeData = {
           030400000036000000000000000000000000000000FFFFFFFF00000000000000
-          0007000000010C45006E007600690072006F006E006D0065006E007400580036
+          0008000000010C45006E007600690072006F006E006D0065006E007400580036
           000000000000000000000000000000FFFFFFFF00000000000000000000000001
           0C4400690072006500630074006F007200690065007300580036000000000000
           000000000000000000FFFFFFFF000000000000000000000000010C5200650063
@@ -2607,20 +2679,21 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           00000000000000FFFFFFFF000000000000000000000000010453004300500058
           00260000000000000000000000FFFFFFFFFFFFFFFF0000000000000000000000
           000104460054005000580024000000000000000000000000000000FFFFFFFF00
-          0000000000000000000000010353003300580034000000000000000000000000
-          000000FFFFFFFF000000000000000002000000010B43006F006E006E00650063
-          00740069006F006E0058002A000000000000000000000000000000FFFFFFFF00
-          00000000000000000000000106500072006F007800790058002C000000000000
-          000000000000000000FFFFFFFF0000000000000000000000000107540075006E
-          006E0065006C00580026000000000000000000000000000000FFFFFFFF000000
-          0000000000030000000104530053004800580038000000000000000000000000
-          000000FFFFFFFF000000000000000000000000010D4B00650078002000650078
-          006300680061006E006700650058003C000000000000000000000000000000FF
-          FFFFFF000000000000000000000000010F410075007400680065006E00740069
-          0063006100740069006F006E00580028000000000000000000000000000000FF
-          FFFFFF0000000000000000000000000105420075006700730058002800000000
-          0000000000000000000000FFFFFFFF00000000000000000000000001054E006F
-          00740065005800}
+          000000000000000000000001035300330058002C0000000000000000000000FF
+          FFFFFFFFFFFFFF00000000000000000000000001075700650062004400410056
+          00580034000000000000000000000000000000FFFFFFFF000000000000000002
+          000000010B43006F006E006E0065006300740069006F006E0058002A00000000
+          0000000000000000000000FFFFFFFF0000000000000000000000000106500072
+          006F007800790058002C000000000000000000000000000000FFFFFFFF000000
+          0000000000000000000107540075006E006E0065006C00580026000000000000
+          000000000000000000FFFFFFFF00000000000000000300000001045300530048
+          00580038000000000000000000000000000000FFFFFFFF000000000000000000
+          000000010D4B00650078002000650078006300680061006E006700650058003C
+          000000000000000000000000000000FFFFFFFF00000000000000000000000001
+          0F410075007400680065006E007400690063006100740069006F006E00580028
+          000000000000000000000000000000FFFFFFFF00000000000000000000000001
+          054200750067007300580028000000000000000000000000000000FFFFFFFF00
+          000000000000000000000001054E006F00740065005800}
       end
     end
   end

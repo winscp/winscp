@@ -47,6 +47,7 @@ private:
   bool FStoredPassphraseTried;
   int FSshVersion;
   bool FOpened;
+  bool FClosed;
   int FWaiting;
   bool FSimple;
   bool FNoConnectionResponse;
@@ -88,7 +89,7 @@ private:
     const UnicodeString & Line);
   void __fastcall ResetConnection();
   void __fastcall ResetSessionInfo();
-  void __fastcall SocketEventSelect(SOCKET Socket, HANDLE Event, bool Startup);
+  void __fastcall SocketEventSelect(SOCKET Socket, HANDLE Event, bool Enable);
   bool __fastcall EnumNetworkEvents(SOCKET Socket, WSANETWORKEVENTS & Events);
   void __fastcall HandleNetworkEvents(SOCKET Socket, WSANETWORKEVENTS & Events);
   bool __fastcall ProcessNetworkEvents(SOCKET Socket);
@@ -102,7 +103,13 @@ private:
   bool __fastcall TryFtp();
   UnicodeString __fastcall ConvertInput(const RawByteString & Input);
   void __fastcall GetRealHost(UnicodeString & Host, int & Port);
-  UnicodeString __fastcall RetrieveHostKey(UnicodeString Host, int Port, const UnicodeString KeyType);
+  UnicodeString __fastcall RetrieveHostKey(const UnicodeString & Host, int Port, const UnicodeString & KeyType);
+  bool HaveAcceptNewHostKeyPolicy();
+  THierarchicalStorage * GetHostKeyStorage();
+  bool VerifyCachedHostKey(
+    const UnicodeString & StoredKeys, const UnicodeString & KeyStr, const UnicodeString & FingerprintMD5, const UnicodeString & FingerprintSHA256);
+  UnicodeString StoreHostKey(
+    const UnicodeString & Host, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr);
 
 protected:
   TCaptureOutputEvent FOnCaptureOutput;
@@ -147,8 +154,8 @@ public:
   void __fastcall UnregisterReceiveHandler(TNotifyEvent Handler);
 
   // interface to PuTTY core
-  void __fastcall UpdateSocket(SOCKET value, bool Startup);
-  void __fastcall UpdatePortFwdSocket(SOCKET value, bool Startup);
+  void __fastcall UpdateSocket(SOCKET value, bool Enable);
+  void __fastcall UpdatePortFwdSocket(SOCKET value, bool Enable);
   void __fastcall PuttyFatalError(UnicodeString Error);
   TPromptKind __fastcall IdentifyPromptKind(UnicodeString & Name);
   bool __fastcall PromptUser(bool ToServer,

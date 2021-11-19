@@ -188,7 +188,7 @@ end_element(void *userdata, int state, const char *nspace, const char *name)
                 cdata = hh;
             }
 
-            ret = ne_uri_parse(cdata, &ref);
+            ret = ne_uri_parse_ex(cdata, &ref, (p->flags & NE_207_LIBERAL_ESCAPING)); // WINSCP
             if (!ret) {
                 ne_uri_resolve(&p->base, &ref, &resolved);
 

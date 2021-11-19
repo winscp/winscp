@@ -542,6 +542,6 @@ UnicodeString __fastcall AddContextToExceptionMessage(const Exception & E, const
   {
     Context += L"\n" + NewContext;
   }
-  UnicodeString Result = MainInstructions(MainMessage) + Context;
+  UnicodeString Result = MainInstructions(MainMessage) + L"\n" + Context;
   return Result;
 }

@@ -67,7 +67,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
           351
           87)
         object Label2: TLabel
-          Left = 7
+          Left = 10
           Top = 18
           Width = 49
           Height = 13
@@ -75,7 +75,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
           FocusControl = HostKeyAlgorithmEdit
         end
         object Label3: TLabel
-          Left = 7
+          Left = 10
           Top = 41
           Width = 46
           Height = 13
@@ -83,7 +83,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
           FocusControl = HostKeyFingerprintSHA256Edit
         end
         object Label4: TLabel
-          Left = 7
+          Left = 10
           Top = 64
           Width = 25
           Height = 13
@@ -91,9 +91,9 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
           FocusControl = HostKeyFingerprintMD5Edit
         end
         object HostKeyFingerprintSHA256Edit: TEdit
-          Left = 62
+          Left = 65
           Top = 41
-          Width = 282
+          Width = 279
           Height = 17
           TabStop = False
           Anchors = [akLeft, akTop, akRight]
@@ -106,9 +106,9 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
           OnContextPopup = HostKeyFingerprintSHA256EditContextPopup
         end
         object HostKeyAlgorithmEdit: TEdit
-          Left = 62
+          Left = 65
           Top = 18
-          Width = 282
+          Width = 279
           Height = 17
           TabStop = False
           Anchors = [akLeft, akTop, akRight]
@@ -119,9 +119,9 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
           Text = 'HostKeyAlgorithmEdit'
         end
         object HostKeyFingerprintMD5Edit: TEdit
-          Left = 62
+          Left = 65
           Top = 64
-          Width = 282
+          Width = 279
           Height = 17
           TabStop = False
           Anchors = [akLeft, akTop, akRight]
@@ -164,17 +164,33 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         Left = 6
         Top = 294
         Width = 351
-        Height = 72
+        Height = 104
         Anchors = [akLeft, akRight, akBottom]
         Caption = 'Certificate fingerprint'
         TabOrder = 2
         DesignSize = (
           351
-          72)
-        object CertificateFingerprintEdit: TEdit
+          104)
+        object Label5: TLabel
           Left = 10
-          Top = 18
-          Width = 334
+          Top = 20
+          Width = 46
+          Height = 13
+          Caption = 'SHA-256:'
+          FocusControl = CertificateFingerprintSha256Edit
+        end
+        object Label6: TLabel
+          Left = 10
+          Top = 43
+          Width = 34
+          Height = 13
+          Caption = 'SHA-1:'
+          FocusControl = CertificateFingerprintSha1Edit
+        end
+        object CertificateFingerprintSha256Edit: TEdit
+          Left = 65
+          Top = 20
+          Width = 279
           Height = 17
           TabStop = False
           Anchors = [akLeft, akTop, akRight]
@@ -182,16 +198,31 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
           Color = clBtnFace
           ReadOnly = True
           TabOrder = 0
-          Text = 'CertificateFingerprintEdit'
+          Text = 'CertificateFingerprintSha256Edit'
         end
         object CertificateViewButton: TButton
           Left = 10
-          Top = 37
+          Top = 66
           Width = 121
           Height = 25
           Caption = '&Full certificate'
-          TabOrder = 1
+          TabOrder = 2
           OnClick = CertificateViewButtonClick
+        end
+        object CertificateFingerprintSha1Edit: TEdit
+          Left = 65
+          Top = 43
+          Width = 279
+          Height = 17
+          TabStop = False
+          Anchors = [akLeft, akTop, akRight]
+          BorderStyle = bsNone
+          Color = clBtnFace
+          PopupMenu = FingerprintPopupMenu
+          ReadOnly = True
+          TabOrder = 1
+          Text = 'CertificateFingerprintSha1Edit'
+          OnContextPopup = HostKeyFingerprintSHA256EditContextPopup
         end
       end
     end

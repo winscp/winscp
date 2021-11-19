@@ -182,10 +182,21 @@ int main(void)
     printf("passed %d failed %d total %d\n", passes, fails, passes+fails);
     return fails != 0 ? 1 : 0;
 }
+
 /* Stubs to stop the rest of this module causing compile failures. */
-void modalfatalbox(const char *fmt, ...) {}
-int conf_get_int(Conf *conf, int primary) { return 0; }
-char *conf_get_str(Conf *conf, int primary) { return NULL; }
+static NORETURN void fatal_error(const char *p, ...)
+{
+    va_list ap;
+    fprintf(stderr, "host_string_test: ");
+    va_start(ap, p);
+    vfprintf(stderr, p, ap);
+    va_end(ap);
+    fputc('\n', stderr);
+    exit(1);
+}
+
+void out_of_memory(void) { fatal_error("out of memory"); }
+
 #endif /* TEST_HOST_STRFOO */
 
 /*
@@ -249,7 +260,7 @@ char *dupstr(const char *s)
 }
 
 /* Allocate the concatenation of N strings. Terminate arg list with NULL. */
-char *dupcat(const char *s1, ...)
+char *dupcat_fn(const char *s1, ...)
 {
     int len;
     char *p, *q, *sn;
@@ -427,6 +438,29 @@ void *strbuf_append(strbuf *buf_o, size_t len)
     buf->visible.len += len;
     buf->visible.s[buf->visible.len] = '\0';
     return toret;
+}
+
+void strbuf_shrink_to(strbuf *buf, size_t new_len)
+{
+    assert(new_len <= buf->len);
+    buf->len = new_len;
+    buf->s[buf->len] = '\0';
+}
+
+void strbuf_shrink_by(strbuf *buf, size_t amount_to_remove)
+{
+    assert(amount_to_remove <= buf->len);
+    buf->len -= amount_to_remove;
+    buf->s[buf->len] = '\0';
+}
+
+bool strbuf_chomp(strbuf *buf, char char_to_remove)
+{
+    if (buf->len > 0 && buf->s[buf->len-1] == char_to_remove) {
+        strbuf_shrink_by(buf, 1);
+        return true;
+    }
+    return false;
 }
 
 static void strbuf_BinarySink_write(
@@ -1030,4 +1064,30 @@ size_t encode_utf8(void *output, unsigned long ch)
         *p++ = 0x80 | (ch & 0x3F);
     }
     return p - start;
+}
+
+void memxor(uint8_t *out, const uint8_t *in1, const uint8_t *in2, size_t size)
+{
+    switch (size & 15) {
+      case 0:
+        while (size >= 16) {
+            size -= 16;
+                   *out++ = *in1++ ^ *in2++;
+          case 15: *out++ = *in1++ ^ *in2++;
+          case 14: *out++ = *in1++ ^ *in2++;
+          case 13: *out++ = *in1++ ^ *in2++;
+          case 12: *out++ = *in1++ ^ *in2++;
+          case 11: *out++ = *in1++ ^ *in2++;
+          case 10: *out++ = *in1++ ^ *in2++;
+          case 9:  *out++ = *in1++ ^ *in2++;
+          case 8:  *out++ = *in1++ ^ *in2++;
+          case 7:  *out++ = *in1++ ^ *in2++;
+          case 6:  *out++ = *in1++ ^ *in2++;
+          case 5:  *out++ = *in1++ ^ *in2++;
+          case 4:  *out++ = *in1++ ^ *in2++;
+          case 3:  *out++ = *in1++ ^ *in2++;
+          case 2:  *out++ = *in1++ ^ *in2++;
+          case 1:  *out++ = *in1++ ^ *in2++;
+        }
+    }
 }

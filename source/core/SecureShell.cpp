@@ -22,6 +22,7 @@
 #define MAX_BUFSIZE 32768
 //---------------------------------------------------------------------------
 const wchar_t HostKeyDelimiter = L';';
+static std::unique_ptr<TCriticalSection> PuttyStorageSection(TraceInitPtr(new TCriticalSection()));
 //---------------------------------------------------------------------------
 struct TPuttyTranslation
 {
@@ -110,6 +111,7 @@ void __fastcall TSecureShell::ResetConnection()
     log_free(FLogCtx);
   }
   FLogCtx = NULL;
+  FClosed = false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::ResetSessionInfo()
@@ -262,7 +264,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   conf_set_bool(conf, CONF_try_tis_auth, Data->AuthTIS);
   conf_set_bool(conf, CONF_try_ki_auth, Data->AuthKI);
   conf_set_bool(conf, CONF_try_gssapi_auth, Data->AuthGSSAPI);
-  conf_set_bool(conf, CONF_try_gssapi_kex, false);
+  conf_set_bool(conf, CONF_try_gssapi_kex, Data->AuthGSSAPIKEX);
   conf_set_bool(conf, CONF_gssapifwd, Data->GSSAPIFwdTGT);
   conf_set_bool(conf, CONF_change_username, Data->ChangeUsername);
 
@@ -650,15 +652,23 @@ UnicodeString __fastcall TSecureShell::ConvertFromPutty(const char * Str, int Le
   }
 }
 //---------------------------------------------------------------------------
+const UnicodeString ServerVersionMsg(L"Remote version: ");
+const UnicodeString ForwardingFailureMsg(L"Forwarded connection refused by remote");
+const UnicodeString LocalPortMsg(L"Local port ");
+const UnicodeString ForwadingToMsg(L" forwarding to ");
+const UnicodeString FailedMsg(L" failed:");
+//---------------------------------------------------------------------------
 void __fastcall TSecureShell::PuttyLogEvent(const char * AStr)
 {
   UnicodeString Str = ConvertFromPutty(AStr, strlen(AStr));
-  #define SERVER_VERSION_MSG L"Remote version: "
-  // Gross hack
-  if (Str.Pos(SERVER_VERSION_MSG) == 1)
+  if (Str.Pos(L"failed") > 0)
   {
-    FSessionInfo.SshVersionString = Str.SubString(wcslen(SERVER_VERSION_MSG) + 1,
-      Str.Length() - wcslen(SERVER_VERSION_MSG));
+    Str += L"";
+  }
+  // Gross hack
+  if (StartsStr(ServerVersionMsg, Str))
+  {
+    FSessionInfo.SshVersionString = RightStr(Str, Str.Length() - ServerVersionMsg.Length());
 
     const wchar_t * Ptr = wcschr(FSessionInfo.SshVersionString.c_str(), L'-');
     if (Ptr != NULL)
@@ -667,17 +677,30 @@ void __fastcall TSecureShell::PuttyLogEvent(const char * AStr)
     }
     FSessionInfo.SshImplementation = (Ptr != NULL) ? Ptr + 1 : L"";
   }
-  #define FORWARDING_FAILURE_MSG L"Forwarded connection refused by server: "
-  else if (Str.Pos(FORWARDING_FAILURE_MSG) == 1)
+  else if (StartsStr(ForwardingFailureMsg, Str))
   {
-    FLastTunnelError = Str.SubString(wcslen(FORWARDING_FAILURE_MSG) + 1,
-      Str.Length() - wcslen(FORWARDING_FAILURE_MSG));
-
-    static const TPuttyTranslation Translation[] = {
-      { L"Administratively prohibited [%]", PFWD_TRANSL_ADMIN },
-      { L"Connect failed [%]", PFWD_TRANSL_CONNECT },
-    };
-    TranslatePuttyMessage(Translation, LENOF(Translation), FLastTunnelError);
+    if (ForwardingFailureMsg == Str)
+    {
+      FLastTunnelError = Str;
+    }
+    else
+    {
+      FLastTunnelError = RightStr(Str, Str.Length() - ForwardingFailureMsg.Length());
+      UnicodeString Prefix(L": ");
+      if (StartsStr(Prefix, FLastTunnelError))
+      {
+        FLastTunnelError.Delete(1, Prefix.Length());
+      }
+      static const TPuttyTranslation Translation[] = {
+        { L"Administratively prohibited [%]", PFWD_TRANSL_ADMIN },
+        { L"Connect failed [%]", PFWD_TRANSL_CONNECT },
+      };
+      TranslatePuttyMessage(Translation, LENOF(Translation), FLastTunnelError);
+    }
+  }
+  else if (StartsStr(LocalPortMsg, Str) && ContainsStr(Str, ForwadingToMsg) && ContainsStr(Str, FailedMsg))
+  {
+    FLastTunnelError = Str;
   }
   LogEvent(Str);
 }
@@ -1491,7 +1514,7 @@ int __fastcall TSecureShell::TranslateErrorMessage(
   UnicodeString & Message, UnicodeString * HelpKeyword)
 {
   static const TPuttyTranslation Translation[] = {
-    { L"Server unexpectedly closed network connection", UNEXPECTED_CLOSE_ERROR, HELP_UNEXPECTED_CLOSE_ERROR },
+    { L"Remote side unexpectedly closed network connection", UNEXPECTED_CLOSE_ERROR, HELP_UNEXPECTED_CLOSE_ERROR },
     { L"Network error: Connection refused", NET_TRANSL_REFUSED2, HELP_NET_TRANSL_REFUSED },
     { L"Network error: Connection reset by peer", NET_TRANSL_RESET, HELP_NET_TRANSL_RESET },
     { L"Network error: Connection timed out", NET_TRANSL_TIMEOUT2, HELP_NET_TRANSL_TIMEOUT },
@@ -1517,8 +1540,14 @@ void __fastcall TSecureShell::PuttyFatalError(UnicodeString Error)
 {
   UnicodeString HelpKeyword;
   TranslateErrorMessage(Error, &HelpKeyword);
-
-  FatalError(Error, HelpKeyword);
+  if (!FClosed)
+  {
+    FatalError(Error, HelpKeyword);
+  }
+  else
+  {
+    LogEvent(FORMAT(L"Ignoring an error from the server while closing: %s", (Error)));
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::FatalError(UnicodeString Error, UnicodeString HelpKeyword)
@@ -1534,11 +1563,11 @@ void __fastcall inline TSecureShell::LogEvent(const UnicodeString & Str)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::SocketEventSelect(SOCKET Socket, HANDLE Event, bool Startup)
+void __fastcall TSecureShell::SocketEventSelect(SOCKET Socket, HANDLE Event, bool Enable)
 {
   int Events;
 
-  if (Startup)
+  if (Enable)
   {
     Events = (FD_CONNECT | FD_READ | FD_WRITE | FD_OOB | FD_CLOSE | FD_ACCEPT);
   }
@@ -1559,16 +1588,16 @@ void __fastcall TSecureShell::SocketEventSelect(SOCKET Socket, HANDLE Event, boo
       LogEvent(FORMAT(L"Error selecting events %d for socket %d", (int(Events), int(Socket))));
     }
 
-    if (Startup)
+    if (Enable)
     {
       FatalError(FMTLOAD(EVENT_SELECT_ERROR, (WSAGetLastError())));
     }
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Startup)
+void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Enable)
 {
-  if (!FActive && !Startup)
+  if (!FActive && !Enable)
   {
     // no-op
     // Remove the branch eventually:
@@ -1580,19 +1609,19 @@ void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Startup)
   else
   {
     DebugAssert(value);
-    DebugAssert((FActive && (FSocket == value)) || (!FActive && Startup));
+    DebugAssert((FActive && (FSocket == value)) || (!FActive && Enable));
 
     // filter our "local proxy" connection, which have no socket
     if (value != INVALID_SOCKET)
     {
-      SocketEventSelect(value, FSocketEvent, Startup);
+      SocketEventSelect(value, FSocketEvent, Enable);
     }
     else
     {
       DebugAssert(FSessionData->ProxyMethod == pmCmd);
     }
 
-    if (Startup)
+    if (Enable)
     {
       FSocket = value;
       FActive = true;
@@ -1605,16 +1634,16 @@ void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Startup)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::UpdatePortFwdSocket(SOCKET value, bool Startup)
+void __fastcall TSecureShell::UpdatePortFwdSocket(SOCKET value, bool Enable)
 {
   if (Configuration->ActualLogProtocol >= 2)
   {
-    LogEvent(FORMAT(L"Updating forwarding socket %d (%d)", (int(value), int(Startup))));
+    LogEvent(FORMAT(L"Updating forwarding socket %d (%d)", (int(value), int(Enable))));
   }
 
-  SocketEventSelect(value, FSocketEvent, Startup);
+  SocketEventSelect(value, FSocketEvent, Enable);
 
-  if (Startup)
+  if (Enable)
   {
     FPortFwdSockets.insert(value);
   }
@@ -1686,6 +1715,7 @@ void __fastcall TSecureShell::Close()
 {
   LogEvent(L"Closing connection.");
   DebugAssert(FActive);
+  FClosed = true;
 
   // Without main channel SS_EOF is ignored and would get stuck waiting for exit code.
   if ((backend_exitcode(FBackendHandle) < 0) && winscp_query(FBackendHandle, WINSCP_QUERY_MAIN_CHANNEL))
@@ -2172,8 +2202,32 @@ void __fastcall TSecureShell::GetRealHost(UnicodeString & Host, int & Port)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TSecureShell::RetrieveHostKey(UnicodeString Host, int Port, const UnicodeString KeyType)
+bool TSecureShell::HaveAcceptNewHostKeyPolicy()
 {
+  return SameText(FSessionData->HostKey.Trim(), L"acceptnew");
+}
+//---------------------------------------------------------------------------
+THierarchicalStorage * TSecureShell::GetHostKeyStorage()
+{
+  if (!Configuration->Persistent && HaveAcceptNewHostKeyPolicy())
+  {
+    return Configuration->CreateConfigRegistryStorage();
+  }
+  else
+  {
+    return Configuration->CreateConfigStorage();
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TSecureShell::RetrieveHostKey(const UnicodeString & Host, int Port, const UnicodeString & KeyType)
+{
+  std::unique_ptr<THierarchicalStorage> Storage(GetHostKeyStorage());
+  Storage->AccessMode = smRead;
+  TGuard Guard(PuttyStorageSection.get());
+  DebugAssert(PuttyStorage == NULL);
+  TValueRestorer<THierarchicalStorage *> StorageRestorer(PuttyStorage);
+  PuttyStorage = Storage.get();
+
   AnsiString AnsiStoredKeys;
   AnsiStoredKeys.SetLength(10240);
   UnicodeString Result;
@@ -2288,6 +2342,58 @@ void __fastcall TPasteKeyHandler::Paste(TObject * /*Sender*/, unsigned int & Ans
   }
 }
 //---------------------------------------------------------------------------
+bool TSecureShell::VerifyCachedHostKey(
+  const UnicodeString & StoredKeys, const UnicodeString & KeyStr, const UnicodeString & FingerprintMD5, const UnicodeString & FingerprintSHA256)
+{
+  bool Result = false;
+  UnicodeString Buf = StoredKeys;
+  while (!Result && !Buf.IsEmpty())
+  {
+    UnicodeString StoredKey = CutToChar(Buf, HostKeyDelimiter, false);
+    // skip leading ECDH subtype identification
+    int P = StoredKey.Pos(L",");
+    // Start from beginning or after the comma, if there's any.
+    // If it does not start with 0x, it's probably a fingerprint (stored by TSessionData::CacheHostKey).
+    bool Fingerprint = (StoredKey.SubString(P + 1, 2) != L"0x");
+    if (!Fingerprint && (StoredKey == KeyStr))
+    {
+      LogEvent(L"Host key matches cached key");
+      Result = true;
+    }
+    else if (Fingerprint && VerifyFingerprint(StoredKey, FingerprintMD5, FingerprintSHA256))
+    {
+      LogEvent(L"Host key matches cached key fingerprint");
+      Result = true;
+    }
+    else
+    {
+      if (Configuration->ActualLogProtocol >= 1)
+      {
+        UnicodeString FormattedKey = Fingerprint ? StoredKey : FormatKeyStr(StoredKey);
+        LogEvent(FORMAT(L"Host key does not match cached key %s", (FormattedKey)));
+      }
+      else
+      {
+        LogEvent(L"Host key does not match cached key");
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString TSecureShell::StoreHostKey(
+  const UnicodeString & Host, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr)
+{
+  TGuard Guard(PuttyStorageSection.get());
+  DebugAssert(PuttyStorage == NULL);
+  TValueRestorer<THierarchicalStorage *> StorageRestorer(PuttyStorage);
+  std::unique_ptr<THierarchicalStorage> Storage(GetHostKeyStorage());
+  Storage->AccessMode = smReadWrite;
+  PuttyStorage = Storage.get();
+  store_host_key(AnsiString(Host).c_str(), Port, AnsiString(KeyType).c_str(), AnsiString(KeyStr).c_str());
+  return Storage->Source;
+}
+//---------------------------------------------------------------------------
 void __fastcall TSecureShell::VerifyHostKey(
   const UnicodeString & AHost, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr,
   const UnicodeString & Fingerprint)
@@ -2337,48 +2443,35 @@ void __fastcall TSecureShell::VerifyHostKey(
     Abort();
   }
 
-  bool Result = false;
+  bool AcceptNew = HaveAcceptNewHostKeyPolicy();
+  UnicodeString ConfigHostKey;
+  if (!AcceptNew)
+  {
+    ConfigHostKey = FSessionData->HostKey;
+  }
 
   UnicodeString StoredKeys = RetrieveHostKey(Host, Port, KeyType);
-  Buf = StoredKeys;
-  while (!Result && !Buf.IsEmpty())
+  bool Result = VerifyCachedHostKey(StoredKeys, KeyStr, FingerprintMD5, FingerprintSHA256);
+  if (!Result && AcceptNew)
   {
-    UnicodeString StoredKey = CutToChar(Buf, HostKeyDelimiter, false);
-    // skip leading ECDH subtype identification
-    int P = StoredKey.Pos(L",");
-    // Start from beginning or after the comma, if there's any.
-    // If it does not start with 0x, it's probably a fingerprint (stored by TSessionData::CacheHostKey).
-    bool Fingerprint = (StoredKey.SubString(P + 1, 2) != L"0x");
-    if (!Fingerprint && (StoredKey == KeyStr))
+    if (!StoredKeys.IsEmpty()) // optimization + avoiding the log message
     {
-      LogEvent(L"Host key matches cached key");
-      Result = true;
+      AcceptNew = false;
     }
-    else if (Fingerprint && VerifyFingerprint(StoredKey, FingerprintMD5, FingerprintSHA256))
+    else if (have_any_ssh2_hostkey(FSeat, AnsiString(Host).c_str(), Port))
     {
-      LogEvent(L"Host key matches cached key fingerprint");
-      Result = true;
-    }
-    else
-    {
-      if (Configuration->ActualLogProtocol >= 1)
-      {
-        UnicodeString FormattedKey = Fingerprint ? StoredKey : FormatKeyStr(StoredKey);
-        LogEvent(FORMAT(L"Host key does not match cached key %s", (FormattedKey)));
-      }
-      else
-      {
-        LogEvent(L"Host key does not match cached key");
-      }
+      LogEvent(L"Host key not found in the cache, but other key types found, cannot accept new key");
+      AcceptNew = false;
     }
   }
 
   bool ConfiguredKeyNotMatch = false;
 
-  if (!Result && !FSessionData->HostKey.IsEmpty() &&
+  if (!Result && !ConfigHostKey.IsEmpty() &&
+      // Should test have_any_ssh2_hostkey + No need to bother with AcceptNew, as we never get here
       (StoredKeys.IsEmpty() || FSessionData->OverrideCachedHostKey))
   {
-    UnicodeString Buf = FSessionData->HostKey;
+    UnicodeString Buf = ConfigHostKey;
     while (!Result && !Buf.IsEmpty())
     {
       UnicodeString ExpectedKey = CutToChar(Buf, HostKeyDelimiter, false);
@@ -2403,6 +2496,26 @@ void __fastcall TSecureShell::VerifyHostKey(
     if (!Result)
     {
       ConfiguredKeyNotMatch = true;
+    }
+  }
+
+  if (!Result && AcceptNew && DebugAlwaysTrue(ConfigHostKey.IsEmpty()))
+  {
+    try
+    {
+      UnicodeString StorageSource = StoreHostKey(Host, Port, KeyType, KeyStr);
+      UnicodeString StoredKeys = RetrieveHostKey(Host, Port, KeyType);
+      if (StoredKeys != KeyStr)
+      {
+        throw Exception(UnicodeString());
+      }
+      Configuration->Usage->Inc(L"HostKeyNewAccepted");
+      LogEvent(FORMAT(L"Warning: Stored new host key to %s - This should occur only on the first connection", (StorageSource)));
+      Result = true;
+    }
+    catch (Exception & E)
+    {
+      FUI->FatalError(&E, LoadStr(STORE_NEW_HOSTKEY_ERROR));
     }
   }
 
@@ -2484,7 +2597,7 @@ void __fastcall TSecureShell::VerifyHostKey(
           StoreKeyStr = (StoredKeys + HostKeyDelimiter + StoreKeyStr);
           // fall thru
         case qaYes:
-          store_host_key(AnsiString(Host).c_str(), Port, AnsiString(KeyType).c_str(), AnsiString(StoreKeyStr).c_str());
+          StoreHostKey(Host, Port, KeyType, StoreKeyStr);
           Verified = true;
           break;
 
@@ -2505,7 +2618,7 @@ void __fastcall TSecureShell::VerifyHostKey(
       UnicodeString Message;
       if (ConfiguredKeyNotMatch)
       {
-        Message = FMTLOAD(CONFIGURED_KEY_NOT_MATCH, (FSessionData->HostKey));
+        Message = FMTLOAD(CONFIGURED_KEY_NOT_MATCH, (ConfigHostKey));
       }
       else if (!Configuration->Persistent && Configuration->Scripting)
       {

@@ -17,6 +17,6 @@ namespace WinSCP
             }
         }
 
-        private Session _session;
+        private readonly Session _session;
     }
 }

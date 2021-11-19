@@ -435,6 +435,9 @@ __published:
   TTBXItem *TBXItem251;
   TTBXItem *TBXItem252;
   TTBXItem *TBXItem253;
+  TTBXItem *TBXItem255;
+  TTBXSeparatorItem *TBXSeparatorItem65;
+  TTBXItem *TBXItem256;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -492,6 +495,7 @@ __published:
   void __fastcall LocalPathLabelMaskClick(TObject *Sender);
   void __fastcall LocalOpenDirButtonPopup(TTBCustomItem *Sender, bool FromLink);
   void __fastcall RemoteOpenDirButtonPopup(TTBCustomItem *Sender, bool FromLink);
+  void __fastcall LocalDriveViewNeedHiddenDirectories(TObject *Sender);
 
 private:
   bool FConstructed;
@@ -594,7 +598,6 @@ protected:
   virtual bool __fastcall EligibleForImageDisplayMode(TTBCustomItem * Item);
   virtual bool __fastcall UpdateToolbarDisplayMode();
   virtual void __fastcall QueueLabelUpdateStatus();
-  virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
   virtual void __fastcall StartingDisconnected();
   virtual void __fastcall UpdateImages();
   virtual void __fastcall FileColorsChanged();
@@ -624,6 +627,7 @@ public:
   virtual void __fastcall CopyFilesToClipboard(TOperationSide Side, bool OnFocused);
   virtual void __fastcall PasteFromClipBoard();
   virtual void __fastcall BrowseFile();
+  virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

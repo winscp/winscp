@@ -38,9 +38,12 @@ object AuthenticateForm: TAuthenticateForm
       BorderStyle = bsNone
       DoubleBuffered = True
       ParentDoubleBuffered = False
+      ParentShowHint = False
+      ShowHint = True
       TabOrder = 0
       OnDrawItem = LogViewDrawItem
       OnMeasureItem = LogViewMeasureItem
+      OnMouseMove = LogViewMouseMove
     end
     object LeftPanel: TPanel
       Left = 0
@@ -273,38 +276,65 @@ object AuthenticateForm: TAuthenticateForm
       OnClick = HelpButtonClick
     end
   end
-  object BannerActionList: TActionList
+  object ActionList: TActionList
     Left = 32
     Top = 304
-    object EditCopy: TEditCopy
+    object EditCopyAction: TEditCopy
+      Category = 'Banner'
       Caption = '&Copy'
       ImageIndex = 0
       ShortCut = 16451
     end
-    object EditSelectAll: TEditSelectAll
+    object EditSelectAllAction: TEditSelectAll
+      Category = 'Banner'
       Caption = 'Select &All'
       ImageIndex = 1
       ShortCut = 16449
     end
     object BannerMonospacedFontAction: TAction
+      Category = 'Banner'
       Caption = 'Use &Monospaced Font'
       OnExecute = BannerMonospacedFontActionExecute
+    end
+    object LabelCopyAction: TAction
+      Category = 'Label'
+      Caption = '&Copy'
+      OnExecute = LabelCopyActionExecute
+    end
+    object LabelOpenLinkAction: TAction
+      Category = 'Label'
+      Caption = '&Open'
+      OnExecute = LabelOpenLinkActionExecute
     end
   end
   object BannerPopupMenu: TPopupMenu
     Left = 144
     Top = 304
     object CopyItem: TMenuItem
-      Action = EditCopy
+      Action = EditCopyAction
     end
     object SelectAllItem: TMenuItem
-      Action = EditSelectAll
+      Action = EditSelectAllAction
     end
     object N1: TMenuItem
       Caption = '-'
     end
     object AdjustWindowItem: TMenuItem
       Action = BannerMonospacedFontAction
+    end
+  end
+  object LabelPopupMenu: TPopupMenu
+    Left = 56
+    Top = 72
+    object Copy1: TMenuItem
+      Action = LabelCopyAction
+    end
+    object N2: TMenuItem
+      Caption = '-'
+    end
+    object Open1: TMenuItem
+      Action = LabelOpenLinkAction
+      Default = True
     end
   end
 end

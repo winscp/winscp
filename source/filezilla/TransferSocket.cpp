@@ -35,6 +35,7 @@ CTransferSocket::CTransferSocket(CFtpControlSocket *pOwner, int nMode)
   m_nInternalMessageID = 0;
   m_transferdata.transfersize = 0;
   m_transferdata.transferleft = 0;
+  m_uploaded = 0;
   m_nNotifyWaiting = 0;
   m_bActivationPending = false;
   m_LastSendBufferUpdate = 0;
@@ -49,8 +50,8 @@ CTransferSocket::CTransferSocket(CFtpControlSocket *pOwner, int nMode)
 
   if (m_nMode & CSMODE_LIST)
   {
-    m_pListResult = new CFtpListResult(pOwner->m_CurrentServer, &pOwner->m_bUTF8);
-    m_pListResult->InitIntern(GetIntern());
+    const bool mlst = false;
+    m_pListResult = m_pOwner->CreateListResult(mlst);
   }
   else
     m_pListResult = 0;
@@ -113,8 +114,8 @@ void CTransferSocket::OnReceive(int nErrorCode)
     if (m_nTransferState == STATE_STARTING)
       OnConnect(0);
 
-    char *buffer = new char[BUFSIZE];
-    int numread = CAsyncSocketEx::Receive(buffer, BUFSIZE);
+    std::vector<char> Buffer(BUFSIZE);
+    int numread = CAsyncSocketEx::Receive(&Buffer[0], Buffer.size());
     if (numread != SOCKET_ERROR && numread)
     {
       m_LastActiveTime = CTime::GetCurrentTime();
@@ -122,35 +123,33 @@ void CTransferSocket::OnReceive(int nErrorCode)
 #ifndef MPEXT_NO_ZLIB
       if (m_useZlib)
       {
-        m_zlibStream.next_in = (Bytef *)buffer;
+        m_zlibStream.next_in = (Bytef *)&Buffer[0];
         m_zlibStream.avail_in = numread;
-        char *out = new char[BUFSIZE];
-        m_zlibStream.next_out = (Bytef *)out;
+        std::unique_ptr<char []> out(new char[BUFSIZE]);
+        m_zlibStream.next_out = (Bytef *)&out[0];
         m_zlibStream.avail_out = BUFSIZE;
         int res = inflate(&m_zlibStream, 0);
         while (res == Z_OK)
         {
-          m_pListResult->AddData(out, BUFSIZE - m_zlibStream.avail_out);
-          out = new char[BUFSIZE];
-          m_zlibStream.next_out = (Bytef *)out;
+          m_pListResult->AddData(&out[0], BUFSIZE - m_zlibStream.avail_out);
+          out.reset(new char[BUFSIZE]);
+          m_zlibStream.next_out = (Bytef *)&out[0];
           m_zlibStream.avail_out = BUFSIZE;
           res = inflate(&m_zlibStream, 0);
         }
-        delete [] buffer;
         if (res == Z_STREAM_END)
-          m_pListResult->AddData(out, BUFSIZE - m_zlibStream.avail_out);
+          m_pListResult->AddData(&out[0], BUFSIZE - m_zlibStream.avail_out);
         else if (res != Z_OK && res != Z_BUF_ERROR)
         {
-          delete [] out;
           CloseAndEnsureSendClose(CSMODE_TRANSFERERROR);
           return;
         }
-        else
-          delete [] out;
       }
       else
 #endif
-        m_pListResult->AddData(buffer, numread);
+      {
+        m_pListResult->AddData(&Buffer[0], numread);
+      }
       m_transferdata.transfersize += numread;
       t_ffam_transferstatus *status = new t_ffam_transferstatus;
       status->bFileTransfer = FALSE;
@@ -158,8 +157,6 @@ void CTransferSocket::OnReceive(int nErrorCode)
       status->bytes = m_transferdata.transfersize;
       GetIntern()->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_TRANSFERSTATUS, 0), (LPARAM)status);
     }
-    else
-      delete [] buffer;
     if (!numread)
     {
       CloseAndEnsureSendClose(0);
@@ -413,7 +410,7 @@ void CTransferSocket::Start()
   {
     AddLayer(m_pSslLayer);
     int res = m_pSslLayer->InitSSLConnection(true, m_pOwner->m_pSslLayer,
-      GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE),
+      GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE), CString(),
       m_pOwner->m_pTools);
     if (res == SSL_FAILURE_INITSSL)
     {
@@ -658,12 +655,14 @@ void CTransferSocket::OnSend(int nErrorCode)
         }
         else if (nError != WSAEWOULDBLOCK)
         {
+          LogError(nError);
           CloseOnShutDownOrError(CSMODE_TRANSFERERROR);
         }
         UpdateStatusBar(false);
         return;
       }
 
+      m_uploaded += numsent;
       m_pOwner->SpeedLimitAddTransferredBytes(CFtpControlSocket::upload, numsent);
       m_LastActiveTime = CTime::GetCurrentTime();
 
@@ -747,6 +746,7 @@ void CTransferSocket::OnSend(int nErrorCode)
         m_pOwner->SpeedLimitAddTransferredBytes(CFtpControlSocket::upload, numsent);
         m_LastActiveTime = CTime::GetCurrentTime();
         m_transferdata.transferleft -= numsent;
+        m_uploaded += numsent;
       }
 
       if (numsent==SOCKET_ERROR || !numsent)
@@ -770,6 +770,7 @@ void CTransferSocket::OnSend(int nErrorCode)
         }
         else
         {
+          LogError(nError);
           CloseOnShutDownOrError(CSMODE_TRANSFERERROR);
         }
         UpdateStatusBar(false);
@@ -911,24 +912,29 @@ BOOL CTransferSocket::Create(BOOL bUseSsl)
   {
     int min=GetOptionVal(OPTION_PORTRANGELOW);
     int max=GetOptionVal(OPTION_PORTRANGEHIGH);
-    if (min>=max)
+    if (min > max)
     {
       m_pOwner->ShowStatus(IDS_ERRORMSG_CANTCREATEDUETOPORTRANGE,FZ_LOG_ERROR);
       return FALSE;
     }
     int startport=static_cast<int>(min+((double)rand()*(max-min))/(RAND_MAX+1));
     int port=startport;
-    while (!CAsyncSocketEx::Create(port, SOCK_STREAM, FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE, 0, GetFamily()))
+    // Failure to create the socket, calls Close(), which resets the family. We want to keep trying the original faimily with each port.
+    // Only with the specific family set, the Create actually does bind(), without which the port testing does not work.
+    int family = GetFamily();
+    DebugAssert(family != AF_UNSPEC);
+    while (!CAsyncSocketEx::Create(port, SOCK_STREAM, FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE, 0, family))
     {
       port++;
       if (port>max)
         port=min;
       if (port==startport)
       {
-        m_pOwner->ShowStatus(IDS_ERRORMSG_CANTCREATEDUETOPORTRANGE,FZ_LOG_ERROR);
+        m_pOwner->ShowStatus(IDS_ERRORMSG_CANTCREATEDUETOPORTRANGE, FZ_LOG_ERROR);
         return FALSE;
       }
     }
+    LogMessage(FZ_LOG_INFO, L"Selected port %d", port);
   }
 
   return TRUE;
@@ -1010,16 +1016,24 @@ int CTransferSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
           }
           break;
         case SSL_FAILURE:
-          switch (iter->nParam2)
           {
-          case SSL_FAILURE_ESTABLISH:
-            m_pOwner->ShowStatus(IDS_ERRORMSG_CANTESTABLISHSSLCONNECTION, FZ_LOG_ERROR);
-            break;
-          case SSL_FAILURE_INITSSL:
-            m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
-            break;
+            int Mode = CSMODE_TRANSFERERROR;
+            switch (iter->nParam2)
+            {
+            case SSL_FAILURE_UNKNOWN:
+              m_pOwner->ShowStatus(IDS_ERRORMSG_UNKNOWNSSLERROR, FZ_LOG_ERROR);
+              // This may indicate re-key failure, make sure we retry
+              Mode |= CSMODE_TRANSFERTIMEOUT;
+              break;
+            case SSL_FAILURE_ESTABLISH:
+              m_pOwner->ShowStatus(IDS_ERRORMSG_CANTESTABLISHSSLCONNECTION, FZ_LOG_ERROR);
+              break;
+            case SSL_FAILURE_INITSSL:
+              m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
+              break;
+            }
+            CloseAndEnsureSendClose(Mode);
           }
-          EnsureSendClose(CSMODE_TRANSFERERROR);
           break;
         case SSL_VERIFY_CERT:
           t_SslCertData data;
@@ -1121,13 +1135,23 @@ void CTransferSocket::LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg)
   LogMessageRaw(nMessageType, pMsg);
 }
 
+int CTransferSocket::GetSocketOptionVal(int OptionID) const
+{
+  return GetOptionVal(OptionID);
+}
+
 void CTransferSocket::EnsureSendClose(int Mode)
 {
   if (!m_bSentClose)
   {
     if (Mode != 0)
     {
+      m_pOwner->ShowStatus(L"Data connection failed", FZ_LOG_INFO);
       m_nMode |= Mode;
+    }
+    else
+    {
+      m_pOwner->ShowStatus(L"Data connection closed", FZ_LOG_INFO);
     }
     m_bSentClose = TRUE;
     DebugCheck(m_pOwner->m_pOwner->PostThreadMessage(m_nInternalMessageID, FZAPI_THREADMSG_TRANSFEREND, m_nMode));
@@ -1159,20 +1183,5 @@ void CTransferSocket::CloseOnShutDownOrError(int Mode)
       LogError(Error);
       CloseAndEnsureSendClose(Mode);
     }
-  }
-}
-
-void CTransferSocket::LogError(int Error)
-{
-  wchar_t * Buffer;
-  int Len = FormatMessage(
-    FORMAT_MESSAGE_FROM_SYSTEM |
-    FORMAT_MESSAGE_IGNORE_INSERTS |
-    FORMAT_MESSAGE_ARGUMENT_ARRAY |
-    FORMAT_MESSAGE_ALLOCATE_BUFFER, NULL, Error, 0, (LPTSTR)&Buffer, 0, NULL);
-  if (Len > 0)
-  {
-    m_pOwner->ShowStatus(Buffer, FZ_LOG_ERROR);
-    LocalFree(Buffer);
   }
 }

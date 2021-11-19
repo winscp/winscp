@@ -117,6 +117,9 @@ void __fastcall TS3FileSystem::Open()
   }
   FSecretAccessKey = UTF8String(SecretAccessKey);
 
+  FSecurityTokenBuf = UTF8String(Data->S3SessionToken);
+  FSecurityToken = static_cast<const char *>(FSecurityTokenBuf.data());
+
   FHostName = UTF8String(Data->HostNameExpanded);
   FPortSuffix = UTF8String();
   int ADefaultPort = DefaultPort(FTerminal->SessionData->FSProtocol, FTerminal->SessionData->Ftps);
@@ -133,6 +136,11 @@ void __fastcall TS3FileSystem::Open()
   {
     TGuard Guard(LibS3Section.get());
     S3_initialize(NULL, S3_INIT_ALL, NULL);
+  }
+
+  if (IsGoogleCloud())
+  {
+    FTerminal->LogEvent(L"Google Cloud detected.");
   }
 
   FActive = false;
@@ -185,6 +193,8 @@ void TS3FileSystem::LibS3SessionCallback(ne_session_s * Session, void * Callback
 
   SetNeonTlsInit(Session, FileSystem->InitSslSession);
 
+  ne_set_session_flag(Session, SE_SESSFLAG_SNDBUF, Data->SendBuf);
+
   // Data->Timeout is propagated via timeoutMs parameter of functions like S3_list_service
 
   FileSystem->FNeonSession = Session;
@@ -206,7 +216,8 @@ int TS3FileSystem::LibS3SslCallback(int Failures, const ne_ssl_certificate_s * C
 // Similar to TWebDAVFileSystem::VerifyCertificate
 bool TS3FileSystem::VerifyCertificate(TNeonCertificateData Data)
 {
-  FSessionInfo.CertificateFingerprint = Data.Fingerprint;
+  FSessionInfo.CertificateFingerprintSHA1 = Data.FingerprintSHA1;
+  FSessionInfo.CertificateFingerprintSHA256 = Data.FingerprintSHA256;
 
   bool Result;
   if (FTerminal->SessionData->FingerprintScan)
@@ -219,7 +230,8 @@ bool TS3FileSystem::VerifyCertificate(TNeonCertificateData Data)
 
     UnicodeString SiteKey = TSessionData::FormatSiteKey(FTerminal->SessionData->HostNameExpanded, FTerminal->SessionData->PortNumber);
     Result =
-      FTerminal->VerifyCertificate(HttpsCertificateStorageKey, SiteKey, Data.Fingerprint, Data.Subject, Data.Failures);
+      FTerminal->VerifyCertificate(
+        HttpsCertificateStorageKey, SiteKey, Data.FingerprintSHA1, Data.FingerprintSHA256, Data.Subject, Data.Failures);
 
     if (Result)
     {
@@ -456,6 +468,7 @@ struct TLibS3BucketContext : S3BucketContext
 struct TLibS3ListBucketCallbackData : TLibS3CallbackData
 {
   TRemoteFileList * FileList;
+  bool Any;
   int KeyCount;
   UTF8String NextMarker;
   bool IsTruncated;
@@ -519,7 +532,7 @@ TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & Bucket
     Result.uriStyle = UriStyle;
     Result.accessKeyId = FAccessKeyId.c_str();
     Result.secretAccessKey = FSecretAccessKey.c_str();
-    Result.securityToken = NULL;
+    Result.securityToken = FSecurityToken;
     Result.AuthRegionBuf = UTF8String(Region);
     if (Result.AuthRegionBuf.Length() > S3_MAX_REGION_LENGTH)
     {
@@ -647,8 +660,8 @@ bool __fastcall TS3FileSystem::IsCapable(int Capability) const
     case fcRename:
     case fcRemoteMove:
     case fcMoveToQueue:
-    case fsSkipTransfer:
-    case fsParallelTransfers:
+    case fcSkipTransfer:
+    case fcParallelTransfers:
       return true;
 
     case fcPreservingTimestampUpload:
@@ -677,6 +690,8 @@ bool __fastcall TS3FileSystem::IsCapable(int Capability) const
     case fcResumeSupport:
     case fcChangePassword:
     case fcLocking:
+    case fcTransferOut:
+    case fcTransferIn:
       return false;
 
     default:
@@ -730,7 +745,7 @@ void TS3FileSystem::TryOpenDirectory(const UnicodeString & Directory)
 {
   FTerminal->LogEvent(FORMAT(L"Trying to open directory \"%s\".", (Directory)));
   std::unique_ptr<TRemoteFileList> FileList(new TRemoteFileList());
-  ReadDirectoryInternal(Directory, FileList.get(), 1, UnicodeString());
+  ReadDirectoryInternal(Directory, FileList.get(), -1, UnicodeString());
 }
 //---------------------------------------------------------------------------
 void __fastcall TS3FileSystem::ChangeDirectory(const UnicodeString ADirectory)
@@ -800,6 +815,7 @@ S3Status TS3FileSystem::LibS3ListBucketCallback(
 
   for (int Index = 0; Index < ContentsCount; Index++)
   {
+    Data.Any = true;
     const S3ListBucketContent * Content = &Contents[Index];
     UnicodeString FileName = UnixExtractFileName(StrFromS3(Content->key));
     if (!FileName.IsEmpty())
@@ -808,26 +824,53 @@ S3Status TS3FileSystem::LibS3ListBucketCallback(
       File->Terminal = Data.FileSystem->FTerminal;
       File->FileName = FileName;
       File->Type = FILETYPE_DEFAULT;
-      File->Modification = UnixToDateTime(Content->lastModified, dstmWin);
+
+      #define ISO8601_FORMAT "%04d-%02d-%02dT%02d:%02d:%02d"
+      int Year = 0;
+      int Month = 0;
+      int Day = 0;
+      int Hour = 0;
+      int Min = 0;
+      int Sec = 0;
+      // The libs3's parseIso8601Time uses mktime, so returns a local time, which we would have to complicatedly restore,
+      // Doing own parting instead as it's easier.
+      // Keep is sync with WebDAV
+      int Filled =
+        sscanf(Content->lastModifiedStr, ISO8601_FORMAT, &Year, &Month, &Day, &Hour, &Min, &Sec);
+      if (Filled == 6)
+      {
+        TDateTime Modification =
+          EncodeDateVerbose((unsigned short)Year, (unsigned short)Month, (unsigned short)Day) +
+          EncodeTimeVerbose((unsigned short)Hour, (unsigned short)Min, (unsigned short)Sec, 0);
+        File->Modification = ConvertTimestampFromUTC(Modification);
+        File->ModificationFmt = mfFull;
+      }
+      else
+      {
+        File->ModificationFmt = mfNone;
+      }
+
       File->Size = Content->size;
       File->Owner = Data.FileSystem->MakeRemoteToken(Content->ownerId, Content->ownerDisplayName);
       Data.FileList->AddFile(File.release());
-    }
-    else
-    {
-      // We needs this to distinguish empty and non-existing folders, see comments in ReadDirectoryInternal.
-      Data.FileList->AddFile(new TRemoteParentDirectory(Data.FileSystem->FTerminal));
     }
   }
 
   for (int Index = 0; Index < CommonPrefixesCount; Index++)
   {
-    std::unique_ptr<TRemoteFile> File(new TRemoteFile(NULL));
-    File->Terminal = Data.FileSystem->FTerminal;
-    File->FileName = UnixExtractFileName(UnixExcludeTrailingBackslash(StrFromS3(CommonPrefixes[Index])));
-    File->Type = FILETYPE_DIRECTORY;
-    File->ModificationFmt = mfNone;
-    Data.FileList->AddFile(File.release());
+    Data.Any = true;
+    UnicodeString CommonPrefix = StrFromS3(CommonPrefixes[Index]);
+    UnicodeString FileName = UnixExtractFileName(UnixExcludeTrailingBackslash(CommonPrefix));
+    // Have seen prefixes like "/" or "path/subpath//"
+    if (!FileName.IsEmpty())
+    {
+      std::unique_ptr<TRemoteFile> File(new TRemoteFile(NULL));
+      File->Terminal = Data.FileSystem->FTerminal;
+      File->FileName = FileName;
+      File->Type = FILETYPE_DIRECTORY;
+      File->ModificationFmt = mfNone;
+      Data.FileList->AddFile(File.release());
+    }
   }
 
   return S3StatusOK;
@@ -839,6 +882,7 @@ void TS3FileSystem::DoListBucket(
 {
   S3ListBucketHandler ListBucketHandler = { CreateResponseHandler(), &LibS3ListBucketCallback };
   RequestInit(Data);
+  Data.Any = false;
   Data.KeyCount = 0;
   Data.FileList = FileList;
   Data.IsTruncated = false;
@@ -859,10 +903,16 @@ void TS3FileSystem::HandleNonBucketStatus(TLibS3CallbackData & Data, bool & Retr
   }
 }
 //---------------------------------------------------------------------------
+bool TS3FileSystem::IsGoogleCloud()
+{
+  return SameText(L"storage.googleapis.com", FTerminal->SessionData->HostNameExpanded);
+}
+//---------------------------------------------------------------------------
 void TS3FileSystem::ReadDirectoryInternal(
   const UnicodeString & APath, TRemoteFileList * FileList, int MaxKeys, const UnicodeString & FileName)
 {
   UnicodeString Path = UnixExcludeTrailingBackslash(AbsolutePath(APath, false));
+  int AMaxKeys = (MaxKeys == -1) ? 1 : MaxKeys;
   if (IsUnixRootPath(Path))
   {
     DebugAssert(FileList != NULL);
@@ -880,9 +930,19 @@ void TS3FileSystem::ReadDirectoryInternal(
 
       Retry = false;
 
+      if ((FTerminal->SessionData->S3MaxKeys == asOff) ||
+          ((FTerminal->SessionData->S3MaxKeys == asAuto) && IsGoogleCloud()))
+      {
+        if (AMaxKeys != 0)
+        {
+          FTerminal->LogEvent(1, L"Not limiting keys.");
+          AMaxKeys = 0;
+        }
+      }
+
       S3_list_service(
-        FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), 0, (FHostName + FPortSuffix).c_str(),
-        StrToS3(FAuthRegion), MaxKeys, FRequestContext, FTimeout, &ListServiceHandler, &Data);
+        FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), FSecurityToken, (FHostName + FPortSuffix).c_str(),
+        StrToS3(FAuthRegion), AMaxKeys, FRequestContext, FTimeout, &ListServiceHandler, &Data);
 
       HandleNonBucketStatus(Data, Retry);
     }
@@ -906,34 +966,42 @@ void TS3FileSystem::ReadDirectoryInternal(
 
     do
     {
-      DoListBucket(Prefix, FileList, MaxKeys, BucketContext, Data);
+      DoListBucket(Prefix, FileList, AMaxKeys, BucketContext, Data);
       CheckLibS3Error(Data);
 
       Continue = false;
 
-      if (Data.IsTruncated && ((MaxKeys == 0) || (Data.KeyCount < MaxKeys)))
+      if (Data.IsTruncated)
       {
-        bool Cancel = false;
-        FTerminal->DoReadDirectoryProgress(FileList->Count, false, Cancel);
-        if (!Cancel)
+        // We have report that with max-keys=1, server can return IsTruncated response with no keys,
+        // so we would loop infinitelly. For now, if we do GET request only to check for bucket/folder existence (MaxKeys == -1),
+        // we are happy with a successfull response and never loop, even if IsTruncated.
+        if ((MaxKeys == 0) ||
+            ((MaxKeys > 0) && (Data.KeyCount < MaxKeys)))
         {
-          Continue = true;
+          bool Cancel = false;
+          FTerminal->DoReadDirectoryProgress(FileList->Count, false, Cancel);
+          if (!Cancel)
+          {
+            Continue = true;
+          }
         }
       }
     } while (Continue);
 
     // Listing bucket root directory will report an error if the bucket does not exist.
-    // But there won't be any prefix/ entry, so no ".." entry is created, so we have to add it explicitly
-    if (Prefix.IsEmpty())
+    // But there won't be any prefix/ entry, so if the bucket is ampty, the Data.Any is false.
+    // But when listing a prefix, we do not get any error, when the "prefix" does not exist.
+    // But when the prefix does exist, there's at least the prefix/ entry. If there's none, it means that the path does not exist.
+    // Even an empty-named entry/subprefix (which are ignored for other purposes) still indicate that the prefix exists.
+    if (Prefix.IsEmpty() || Data.Any)
     {
       FileList->AddFile(new TRemoteParentDirectory(FTerminal));
     }
     else
     {
-      // We do not get any error, when the "prefix" does not exist. But when prefix does exist, there's at least
-      // prefix/ entry (translated to ..). If there's none, it means that the path does not exist.
       // When called from DoReadFile (FileName is set), leaving error handling to the caller.
-      if ((FileList->Count == 0) && FileName.IsEmpty())
+      if (FileName.IsEmpty())
       {
         throw Exception(FMTLOAD(FILE_NOT_EXISTS, (APath)));
       }
@@ -1009,13 +1077,29 @@ void __fastcall TS3FileSystem::DeleteFile(const UnicodeString AFileName,
       BucketContext.protocol, BucketContext.uriStyle, BucketContext.accessKeyId, BucketContext.secretAccessKey,
       BucketContext.securityToken, BucketContext.hostName, BucketContext.bucketName, BucketContext.authRegion,
       FRequestContext, FTimeout, &ResponseHandler, &Data);
+    CheckLibS3Error(Data);
   }
   else
   {
     S3_delete_object(&BucketContext, StrToS3(Key), FRequestContext, FTimeout, &ResponseHandler, &Data);
+    try
+    {
+      CheckLibS3Error(Data);
+    }
+    catch (...)
+    {
+      if (FTerminal->Active && Dir && !FTerminal->FileExists(AFileName))
+      {
+        // Amazon silently ignores attampts to delete non existing folders,
+        // But Google Cloud fails that.
+        FTerminal->LogEvent(L"Folder does not exist anymore, it was probably only virtual");
+      }
+      else
+      {
+        throw;
+      }
+    }
   }
-
-  CheckLibS3Error(Data);
 }
 //---------------------------------------------------------------------------
 void __fastcall TS3FileSystem::RenameFile(const UnicodeString FileName, const TRemoteFile * File,
@@ -1103,7 +1187,8 @@ void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString & ADirName, b
       Retry = false;
 
       S3_create_bucket(
-        FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), NULL, (FHostName + FPortSuffix).c_str(), StrToS3(BucketName),
+        FLibS3Protocol, FAccessKeyId.c_str(), FSecretAccessKey.c_str(), FSecurityToken,
+        (FHostName + FPortSuffix).c_str(), StrToS3(BucketName),
         StrToS3(FAuthRegion), S3CannedAclPrivate, Region, FRequestContext, FTimeout, &ResponseHandler, &Data);
 
       HandleNonBucketStatus(Data, Retry);
@@ -1114,14 +1199,14 @@ void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString & ADirName, b
   }
   else
   {
-    TLibS3CallbackData Data;
-    RequestInit(Data);
-
     Key = GetFolderKey(Key);
 
     TLibS3BucketContext BucketContext = GetBucketContext(BucketName, Key);
 
     S3PutObjectHandler PutObjectHandler = { CreateResponseHandler(), NULL };
+
+    TLibS3CallbackData Data;
+    RequestInit(Data);
 
     S3_put_object(&BucketContext, StrToS3(Key), 0, NULL, FRequestContext, FTimeout, &PutObjectHandler, &Data);
 
@@ -1415,6 +1500,7 @@ void __fastcall TS3FileSystem::Source(
   int Parts = std::min(S3MaxMultiPartChunks, std::max(1, static_cast<int>((Handle.Size + S3MinMultiPartChunkSize - 1) / S3MinMultiPartChunkSize)));
   int ChunkSize = std::max(S3MinMultiPartChunkSize, static_cast<int>((Handle.Size + Parts - 1) / Parts));
   DebugAssert((ChunkSize == S3MinMultiPartChunkSize) || (Handle.Size > static_cast<__int64>(S3MaxMultiPartChunks) * S3MinMultiPartChunkSize));
+
   bool Multipart = (Parts > 1);
 
   RawByteString MultipartUploadId;

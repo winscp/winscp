@@ -143,8 +143,12 @@ struct TQueueViewConfiguration {
   TQueueViewShow LastHideShow;
   bool ToolBar;
   bool Label;
+  bool FileList;
+  int FileListHeight;
+  int FileListHeightPixelsPerInch;
   bool __fastcall operator !=(TQueueViewConfiguration & rhc)
-    { return C(Height) C(HeightPixelsPerInch) C(Layout) C(Show) C(LastHideShow) C(ToolBar) C(Label) 0; };
+    { return C(Height) C(HeightPixelsPerInch) C(Layout) C(Show) C(LastHideShow) C(ToolBar) C(Label)
+        C(FileList) C(FileListHeight) C(FileListHeightPixelsPerInch) 0; };
 };
 //---------------------------------------------------------------------------
 struct TUpdatesData
@@ -248,8 +252,7 @@ struct TEditorData
   bool DetectMDIExternalEditor;
 
   bool __fastcall operator ==(const TEditorData & rhd) const;
-  void __fastcall DecideExternalEditorText();
-  static bool __fastcall DecideExternalEditorText(UnicodeString ExternalEditor);
+  void __fastcall ExternalEditorOptionsAutodetect();
 };
 //---------------------------------------------------------------------------
 struct TFileColorData
@@ -353,6 +356,7 @@ private:
   UnicodeString FAutoStartSession;
   TDoubleClickAction FDoubleClickAction;
   bool FCopyOnDoubleClickConfirmation;
+  bool FDDDisableMove;
   TAutoSwitch FDDTransferConfirmation;
   bool FDeleteToRecycleBin;
   bool FDimmHiddenFiles;
@@ -447,6 +451,7 @@ private:
   bool FShowLoginWhenNoSession;
   bool FKeepOpenWhenNoSession;
   bool FLocalIconsByExt;
+  int FMaxSessions;
   TLocaleFlagOverride FBidiModeOverride;
   TLocaleFlagOverride FFlipChildrenOverride;
   bool FShowTips;
@@ -471,6 +476,7 @@ private:
 
   void __fastcall SetDoubleClickAction(TDoubleClickAction value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);
+  void __fastcall SetDDDisableMove(bool value);
   void __fastcall SetDDTransferConfirmation(TAutoSwitch value);
   void __fastcall SetDeleteToRecycleBin(bool value);
   void __fastcall SetDimmHiddenFiles(bool value);
@@ -652,7 +658,6 @@ public:
   bool __fastcall IsDDExtRunning();
   bool __fastcall IsDDExtBroken();
   bool __fastcall UseDarkTheme();
-  void __fastcall ResetSysDarkTheme();
 
   static void __fastcall RestoreFont(const TFontConfiguration & Configuration, TFont * Font);
   static void __fastcall StoreFont(TFont * Font, TFontConfiguration & Configuration);
@@ -675,6 +680,7 @@ public:
   __property UnicodeString AutoStartSession = { read = FAutoStartSession, write = SetAutoStartSession };
   __property TDoubleClickAction DoubleClickAction = { read = FDoubleClickAction, write = SetDoubleClickAction };
   __property bool CopyOnDoubleClickConfirmation = { read = FCopyOnDoubleClickConfirmation, write = SetCopyOnDoubleClickConfirmation };
+  __property bool DDDisableMove = { read = FDDDisableMove, write = SetDDDisableMove };
   __property TAutoSwitch DDTransferConfirmation = { read = FDDTransferConfirmation, write = SetDDTransferConfirmation };
   __property bool DeleteToRecycleBin = { read = FDeleteToRecycleBin, write = SetDeleteToRecycleBin };
   __property bool DimmHiddenFiles = { read = FDimmHiddenFiles, write = SetDimmHiddenFiles };
@@ -743,6 +749,7 @@ public:
   __property bool ShowLoginWhenNoSession = { read = FShowLoginWhenNoSession, write = SetShowLoginWhenNoSession };
   __property bool KeepOpenWhenNoSession = { read = FKeepOpenWhenNoSession, write = SetKeepOpenWhenNoSession };
   __property bool LocalIconsByExt = { read = FLocalIconsByExt, write = SetLocalIconsByExt };
+  __property int MaxSessions = { read = FMaxSessions, write = FMaxSessions };
   __property TLocaleFlagOverride BidiModeOverride = { read = FBidiModeOverride, write = SetBidiModeOverride };
   __property TLocaleFlagOverride FlipChildrenOverride = { read = FFlipChildrenOverride, write = SetFlipChildrenOverride };
   __property bool ShowTips = { read = FShowTips, write = SetShowTips };

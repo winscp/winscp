@@ -3,6 +3,7 @@
 #define CopyParamH
 
 #include "FileMasks.h"
+#include "FileBuffer.h"
 #include "RemoteFiles.h"
 #include "Exceptions.h"
 //---------------------------------------------------------------------------
@@ -70,6 +71,8 @@ private:
   bool FExcludeEmptyDirectories;
   __int64 FSize;
   TOnceDoneOperation FOnceDoneOperation;
+  TTransferOutEvent FOnTransferOut;
+  TTransferInEvent FOnTransferIn;
   static const wchar_t TokenPrefix = L'%';
   static const wchar_t NoReplacement = wchar_t(false);
   static const wchar_t TokenReplacement = wchar_t(true);
@@ -97,7 +100,7 @@ public:
   TRights __fastcall RemoteFileRights(int Attrs) const;
   bool __fastcall UseAsciiTransfer(UnicodeString FileName, TOperationSide Side,
     const TFileMasks::TParams & Params) const;
-  bool __fastcall AllowResume(__int64 Size) const;
+  bool __fastcall AllowResume(__int64 Size, const UnicodeString & FileName) const;
   bool __fastcall ResumeTransfer(UnicodeString FileName) const;
   UnicodeString __fastcall ValidLocalFileName(UnicodeString FileName) const;
   UnicodeString __fastcall ValidLocalPath(UnicodeString Path) const;
@@ -146,6 +149,8 @@ public:
   __property bool ExcludeEmptyDirectories = { read = FExcludeEmptyDirectories, write = FExcludeEmptyDirectories };
   __property __int64 Size = { read = FSize, write = FSize };
   __property TOnceDoneOperation OnceDoneOperation = { read = FOnceDoneOperation, write = FOnceDoneOperation };
+  __property TTransferOutEvent OnTransferOut = { read = FOnTransferOut, write = FOnTransferOut };
+  __property TTransferInEvent OnTransferIn = { read = FOnTransferIn, write = FOnTransferIn };
 };
 //---------------------------------------------------------------------------
 unsigned long __fastcall GetSpeedLimit(const UnicodeString & Text);

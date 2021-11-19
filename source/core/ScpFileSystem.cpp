@@ -460,8 +460,10 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
     case fcLocking:
     case fcPreservingTimestampDirs:
     case fcResumeSupport:
-    case fsSkipTransfer:
-    case fsParallelTransfers: // does not implement cpNoRecurse
+    case fcSkipTransfer:
+    case fcParallelTransfers: // does not implement cpNoRecurse
+    case fcTransferOut:
+    case fcTransferIn:
       return false;
 
     case fcChangePassword:
@@ -1237,7 +1239,8 @@ void __fastcall TSCPFileSystem::ChangeFileProperties(const UnicodeString FileNam
   TChmodSessionAction & Action)
 {
   DebugAssert(Properties);
-  bool IsDirectory = File && File->IsDirectory;
+  int Directory = ((File == NULL) ? -1 : (File->IsDirectory ? 1 : 0));
+  bool IsDirectory = (Directory > 0);
   bool Recursive = Properties->Recursive && IsDirectory;
   UnicodeString RecursiveStr = Recursive ? L"-R" : L"";
 
@@ -1269,7 +1272,7 @@ void __fastcall TSCPFileSystem::ChangeFileProperties(const UnicodeString FileNam
     if ((Rights.NumberSet | Rights.NumberUnset) != TRights::rfNo)
     {
       ExecCommand(fsChangeMode,
-        ARRAYOFCONST((RecursiveStr, Rights.SimplestStr, DelimitedName)));
+        ARRAYOFCONST((RecursiveStr, Rights.GetChmodStr(Directory), DelimitedName)));
     }
 
     // if file is directory and we do recursive mode settings with
@@ -1278,7 +1281,7 @@ void __fastcall TSCPFileSystem::ChangeFileProperties(const UnicodeString FileNam
     {
       Rights.AddExecute();
       ExecCommand(fsChangeMode,
-        ARRAYOFCONST((L"", Rights.SimplestStr, DelimitedName)));
+        ARRAYOFCONST((L"", Rights.GetChmodStr(Directory), DelimitedName)));
     }
   }
   else
@@ -1871,7 +1874,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
               (AsciiBuf.Size)));
             // Should be equal, just in case it's rounded (see above)
             OperationProgress->ChangeTransferSize(AsciiBuf.Size);
-            while (!OperationProgress->IsTransferDone())
+            while (!OperationProgress->IsTransferDoneChecked())
             {
               unsigned long BlockSize = OperationProgress->TransferBlockSize();
               FSecureShell->Send(
@@ -1909,7 +1912,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
           throw Exception(MainInstructions(LoadStr(USER_TERMINATED)));
         }
       }
-      while (!OperationProgress->IsLocallyDone() || !OperationProgress->IsTransferDone());
+      while (!OperationProgress->IsLocallyDone() || !OperationProgress->IsTransferDoneChecked());
 
       FSecureShell->SendNull();
       try
@@ -2569,8 +2572,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
                     throw Exception(MainInstructions(LoadStr(USER_TERMINATED)));
                   }
                 }
-                while (!OperationProgress->IsLocallyDone() || !
-                    OperationProgress->IsTransferDone());
+                while (!OperationProgress->IsLocallyDone() || !OperationProgress->IsTransferDoneChecked());
               }
               catch (Exception &E)
               {

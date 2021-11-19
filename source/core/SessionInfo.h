@@ -26,7 +26,8 @@ struct TSessionInfo
   UnicodeString HostKeyFingerprintSHA256;
   UnicodeString HostKeyFingerprintMD5;
 
-  UnicodeString CertificateFingerprint;
+  UnicodeString CertificateFingerprintSHA1;
+  UnicodeString CertificateFingerprintSHA256;
   UnicodeString Certificate;
   bool CertificateVerifiedManually;
 };
@@ -44,7 +45,8 @@ enum TFSCapability { fcUserGroupListing, fcModeChanging, fcGroupChanging,
   fcModeChangingUpload, fcPreservingTimestampUpload, fcShellAnyCommand,
   fcSecondaryShell, fcRemoveCtrlZUpload, fcRemoveBOMUpload, fcMoveToQueue,
   fcLocking, fcPreservingTimestampDirs, fcResumeSupport,
-  fcChangePassword, fsSkipTransfer, fsParallelTransfers, fsBackgroundTransfers,
+  fcChangePassword, fcSkipTransfer, fcParallelTransfers, fcBackgroundTransfers,
+  fcTransferOut, fcTransferIn,
   fcCount };
 //---------------------------------------------------------------------------
 struct TFileSystemInfo
@@ -102,12 +104,14 @@ public:
 
   void __fastcall Restart();
 
-  void __fastcall Commit();
   void __fastcall Rollback(Exception * E = NULL);
   void __fastcall Cancel();
 
+  bool __fastcall IsValid();
+
 protected:
   TSessionActionRecord * FRecord;
+  bool FCancelled;
 };
 //---------------------------------------------------------------------------
 class TFileSessionAction : public TSessionAction

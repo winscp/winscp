@@ -598,6 +598,9 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXItem80: TTBXItem
             Action = NonVisualDataModule.QueueToolbarAction
           end
+          object TBXItem255: TTBXItem
+            Action = NonVisualDataModule.QueueFileListAction
+          end
           object TBXSeparatorItem22: TTBXSeparatorItem
           end
           object TBXSubmenuItem8: TTBXSubmenuItem
@@ -828,6 +831,11 @@ inherited ScpCommanderForm: TScpCommanderForm
           Action = NonVisualDataModule.QueueHideAction
           RadioItem = True
         end
+        object TBXSeparatorItem65: TTBXSeparatorItem
+        end
+        object TBXItem256: TTBXItem
+          Action = NonVisualDataModule.QueueFileListAction
+        end
       end
     end
     object SessionToolbar: TTBXToolbar
@@ -1017,7 +1025,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
     end
     object CustomCommandsToolbar: TTBXToolbar
-      Left = 300
+      Left = 299
       Top = 129
       Caption = 'Custom Commands'
       DockPos = 168
@@ -1340,12 +1348,20 @@ inherited ScpCommanderForm: TScpCommanderForm
     inherited QueueLabel: TPathLabel
       Width = 898
     end
+    inherited QueueFileListSplitter: TSplitter
+      Top = 93
+      Width = 898
+    end
     inherited QueueView3: TListView
       Width = 898
-      Height = 71
+      Height = 48
       TabStop = False
     end
     inherited QueueDock: TTBXDock
+      Width = 898
+    end
+    inherited QueueFileList: TListView
+      Top = 96
       Width = 898
     end
   end
@@ -1685,6 +1701,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       TabOrder = 2
       TabStop = False
       OnEnter = LocalDriveViewEnter
+      OnNeedHiddenDirectories = LocalDriveViewNeedHiddenDirectories
     end
     object LocalBottomDock: TTBXDock
       Left = 0

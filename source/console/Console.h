@@ -12,8 +12,8 @@ struct TConsoleCommStruct
 {
   enum TVersion
   {
-    CurrentVersion =          0x0009,
-    CurrentVersionConfirmed = 0x0109
+    CurrentVersion =          0x000A,
+    CurrentVersionConfirmed = 0x010A
   };
 
   struct TInitEvent
@@ -21,6 +21,10 @@ struct TConsoleCommStruct
     unsigned int InputType;
     unsigned int OutputType;
     bool WantsProgress; // since version 6
+    bool UseStdErr; // since version 10
+    enum STDINOUT { OFF, BINARY, CHUNKED };
+    STDINOUT OutputFormat; // since version 10
+    STDINOUT InputFormat; // since version 10
   };
 
   struct TPrintEvent
@@ -69,9 +73,17 @@ struct TConsoleCommStruct
     bool Cancel; // since version 8
   };
 
+  // Since version 10
+  struct TTransferEvent
+  {
+    unsigned char Data[20480];
+    size_t Len;
+    bool Error; // TRANSFERIN only
+  };
+
   size_t Size;
   int Version;
-  enum { NONE, PRINT, INPUT, CHOICE, TITLE, INIT, PROGRESS } Event;
+  enum { NONE, PRINT, INPUT, CHOICE, TITLE, INIT, PROGRESS, TRANSFEROUT, TRANSFERIN } Event;
 
   union
   {
@@ -81,6 +93,7 @@ struct TConsoleCommStruct
     TTitleEvent TitleEvent;
     TInitEvent InitEvent;
     TProgressEvent ProgressEvent;
+    TTransferEvent TransferEvent;
   };
 };
 //---------------------------------------------------------------------------

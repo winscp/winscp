@@ -106,6 +106,8 @@ __published:
   TApplicationEvents *ApplicationEvents;
   TTBXToolbar *ReconnectToolbar;
   TTBXItem *TBXItem254;
+  TSplitter *QueueFileListSplitter;
+  TListView *QueueFileList;
   void __fastcall ApplicationMinimize(TObject * Sender);
   void __fastcall ApplicationRestore(TObject * Sender);
   void __fastcall RemoteDirViewContextPopup(TObject *Sender,
@@ -207,6 +209,13 @@ __published:
   void __fastcall DirViewChangeFocus(TObject *Sender, TListItem *Item);
   void __fastcall RemoteStatusBarMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift, int X, int Y);
   void __fastcall RemoteDirViewResize(TObject *Sender);
+  void __fastcall QueueFileListSplitterCanResize(TObject *Sender, int &NewSize, bool &Accept);
+  void __fastcall QueueView3Change(TObject *Sender, TListItem *Item, TItemChange Change);
+  void __fastcall QueueLabelGetStatus(TCustomPathLabel *Sender, bool &Active);
+  void __fastcall QueueFileListEnterExit(TObject *Sender);
+  void __fastcall QueueFileListData(TObject *Sender, TListItem *Item);
+  void __fastcall QueueFileListCustomDrawItem(TCustomListView *Sender, TListItem *Item, TCustomDrawState State, bool &DefaultDraw);
+  void __fastcall QueueFileListResize(TObject *Sender);
 
 private:
   TManagedTerminal * FTerminal;
@@ -215,6 +224,7 @@ private:
   TCriticalSection * FQueueStatusSection;
   bool FQueueStatusInvalidated;
   bool FQueueItemInvalidated;
+  bool FQueueStatusUpdating;
   bool FFormRestored;
   bool FAutoOperation;
   TFileOperationFinishedEvent FOnFileOperationFinished;
@@ -226,6 +236,8 @@ private:
   TObjectList * FDragFakeMonitors;
   UnicodeString FClipboardFakeDirectory;
   std::unique_ptr<TObjectList> FClipboardFakeMonitors;
+  bool FDownloadingFromClipboard;
+  bool FClipboardFakeMonitorsPendingReset;
   std::unique_ptr<TDragDropFilesEx> FClipboardDragDropFilesEx;
   TManagedTerminal * FClipboardTerminal;
   std::unique_ptr<TStrings> FClipboardFileList;
@@ -275,12 +287,15 @@ private:
   HWND FHiddenWindow;
   TStrings * FTransferResumeList;
   bool FMoveToQueue;
-  bool FStandaloneEditing;
+  bool FStandaloneOperation;
   TFeedSynchronizeError FOnFeedSynchronizeError;
+  TNotifyEvent FOnSynchronizeAbort;
+  TTerminal * FSynchronizeTerminal;
   bool FNeedSession;
   TTerminal * FFileFindTerminal;
   UnicodeString FFileColorsCurrent;
   bool FInvalid;
+  std::auto_ptr<TQueueFileList> FQueueFileList;
   bool FStarted;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
@@ -300,6 +315,7 @@ private:
   void __fastcall AdHocCustomCommandValidate(const TCustomCommandType & Command);
   void __fastcall SetDockAllowDrag(bool value);
   void __fastcall QueueSplitterDblClick(TObject * Sender);
+  void __fastcall QueueFileListSplitterDblClick(TObject * Sender);
   void __fastcall AddQueueItem(TTerminalQueue * Queue, TTransferDirection Direction,
     TStrings * FileList, const UnicodeString TargetDirectory,
     const TGUICopyParamType & CopyParam, int Params);
@@ -332,6 +348,9 @@ private:
   void __fastcall LocalBookmarkClick(TObject * Sender);
   void __fastcall RemoteBookmarkClick(TObject * Sender);
   void __fastcall InitControls();
+  void __fastcall UpdateQueueFileList();
+  void __fastcall QueueFileListColumnAutoSize();
+  void __fastcall AdjustQueueLayout();
 
 protected:
   TOperationSide FCurrentSide;
@@ -365,6 +384,7 @@ protected:
   UnicodeString FIncrementalSearch;
   int FIncrementalSearching;
   bool FIncrementalSearchHaveNext;
+  bool FImmersiveDarkMode;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
@@ -578,6 +598,7 @@ protected:
   void __fastcall PostNote(UnicodeString Note, unsigned int Seconds,
     TNotifyEvent OnNoteClick, TObject * NoteData);
   bool __fastcall CancelNote(bool Force);
+  void __fastcall UpdateNoteHints();
   void __fastcall UpdatesChecked();
   void __fastcall UpdatesNoteClicked(TObject * Sender);
   void __fastcall TransferPresetNoteClicked(TObject * Sender);
@@ -634,7 +655,6 @@ protected:
   bool __fastcall SessionTabSwitched();
   void __fastcall RestoreApp();
   void __fastcall GoToQueue();
-  virtual UnicodeString __fastcall DefaultDownloadTargetDirectory() = 0;
   void __fastcall LockFiles(TStrings * FileList, bool Lock);
   void __fastcall SaveInternalEditor(
     const UnicodeString FileName, TEditedFileData * Data, TObject * Token,
@@ -689,9 +709,13 @@ protected:
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   DYNAMIC void __fastcall Deactivate();
   void __fastcall CenterReconnectToolbar();
-  void __fastcall DoOpenFolderOrWorkspace(const UnicodeString & Name, bool ConnectFirstTerminal);
+  void DoOpenFolderOrWorkspace(const UnicodeString & Name, bool ConnectFirstTerminal, bool CheckMaxSessions);
   virtual void __fastcall ThemeChanged();
+  int __fastcall GetStaticQueuePanelComponentsHeight();
+  int __fastcall GetMinQueueViewHeight();
   void __fastcall DetachTerminal(TObject * ATerminal);
+  bool __fastcall IsActiveTerminal(TTerminal * Terminal);
+  void __fastcall UpdateDarkMode();
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -721,8 +745,10 @@ public:
   void __fastcall UnlockWindow();
   void __fastcall SuspendWindowLock();
   void __fastcall ResumeWindowLock();
+  bool __fastcall HasActiveTerminal();
+  virtual UnicodeString __fastcall DefaultDownloadTargetDirectory() = 0;
 
-  void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl = L"");
+  void __fastcall NewSession(const UnicodeString & SessionUrl = L"");
   void __fastcall DuplicateSession();
   void __fastcall RenameSession();
   void __fastcall CloseSession();
@@ -834,6 +860,7 @@ public:
   __property TManagedTerminal * Terminal = { read = FTerminal, write = SetTerminal };
   __property TTerminalQueue * Queue = { read = FQueue, write = SetQueue };
   __property TColor SessionColor = { read = FSessionColor, write = SetSessionColor };
+  __property bool StandaloneOperation = { read = FStandaloneOperation, write = FStandaloneOperation };
 };
 //---------------------------------------------------------------------------
 #endif

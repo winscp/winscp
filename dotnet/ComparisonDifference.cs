@@ -51,6 +51,56 @@ namespace WinSCP
             _remotePath = remotePath;
         }
 
+        public override string ToString()
+        {
+            string buf;
+            switch (Action)
+            {
+                case SynchronizationAction.UploadNew:
+                    buf = RemotePath.Combine(TranslateLocalPathToRemote(), "*");
+                    return $"{GetLocalPathString()} ==> {buf}";
+
+                case SynchronizationAction.DownloadNew:
+                    buf = Path.Combine(TranslateRemotePathToLocal(), "*");
+                    return $"{buf} <== {GetRemotePathString()}";
+
+                case SynchronizationAction.UploadUpdate:
+                    return $"{GetLocalPathString()} ==> {GetRemotePathString()}";
+
+                case SynchronizationAction.DownloadUpdate:
+                    return $"{GetLocalPathString()} <== {GetRemotePathString()}";
+
+                case SynchronizationAction.DeleteRemote:
+                    return $"× {GetRemotePathString()}";
+
+                case SynchronizationAction.DeleteLocal:
+                    return $"× {GetLocalPathString()}";
+
+                default:
+                    throw new InvalidOperationException();
+            }
+        }
+
+        private string TranslateRemotePathToLocal()
+        {
+            return RemotePath.TranslateRemotePathToLocal(RemotePath.GetDirectoryName(Remote.FileName), _remotePath, _localPath);
+        }
+
+        private string TranslateLocalPathToRemote()
+        {
+            return RemotePath.TranslateLocalPathToRemote(Path.GetDirectoryName(Local.FileName), _localPath, _remotePath);
+        }
+
+        private string GetRemotePathString()
+        {
+            return Remote.FileName + (IsDirectory ? "/" : string.Empty);
+        }
+
+        private string GetLocalPathString()
+        {
+            return Local.FileName + (IsDirectory ? "\\" : string.Empty);
+        }
+
         public FileOperationEventArgs Resolve(Session session, TransferOptions options = null)
         {
             if (session == null)
@@ -63,8 +113,7 @@ namespace WinSCP
                 case SynchronizationAction.UploadNew:
                 case SynchronizationAction.UploadUpdate:
                     {
-                        string remoteDirectory =
-                            RemotePath.TranslateLocalPathToRemote(Path.GetDirectoryName(Local.FileName), _localPath, _remotePath);
+                        string remoteDirectory = TranslateLocalPathToRemote();
                         if (!IsDirectory)
                         {
                             return session.PutFileToDirectory(Local.FileName, remoteDirectory, options: options);
@@ -79,8 +128,7 @@ namespace WinSCP
                 case SynchronizationAction.DownloadNew:
                 case SynchronizationAction.DownloadUpdate:
                     {
-                        string localDirectory =
-                            RemotePath.TranslateRemotePathToLocal(RemotePath.GetDirectoryName(Remote.FileName), _remotePath, _localPath);
+                        string localDirectory = TranslateRemotePathToLocal();
                         if (!IsDirectory)
                         {
                             return session.GetFileToDirectory(Remote.FileName, localDirectory, options: options);
@@ -116,6 +164,39 @@ namespace WinSCP
 
                 default:
                     throw session.Logger.WriteException(new InvalidOperationException());
+            }
+        }
+
+        public void Reverse()
+        {
+            switch (Action)
+            {
+                case SynchronizationAction.UploadNew:
+                    Action = SynchronizationAction.DeleteLocal;
+                    break;
+
+                case SynchronizationAction.DownloadNew:
+                    Action = SynchronizationAction.DeleteRemote;
+                    break;
+
+                case SynchronizationAction.UploadUpdate:
+                    Action = SynchronizationAction.DownloadUpdate;
+                    break;
+
+                case SynchronizationAction.DownloadUpdate:
+                    Action = SynchronizationAction.UploadUpdate;
+                    break;
+
+                case SynchronizationAction.DeleteRemote:
+                    Action = SynchronizationAction.DownloadNew;
+                    break;
+
+                case SynchronizationAction.DeleteLocal:
+                    Action = SynchronizationAction.UploadNew;
+                    break;
+
+                default:
+                    throw new InvalidOperationException();
             }
         }
 

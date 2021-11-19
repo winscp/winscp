@@ -4,9 +4,11 @@
 
 #include <registry.hpp>
 #include <memory>
+#include <map>
 //---------------------------------------------------------------------------
 enum TStorage { stDetect, stRegistry, stIniFile, stNul };
 enum TStorageAccessMode { smRead, smReadWrite };
+typedef std::map<UnicodeString, int> TIntMapping;
 //---------------------------------------------------------------------------
 class THierarchicalStorage
 {
@@ -35,6 +37,9 @@ public:
   bool __fastcall DeleteValue(const UnicodeString & Name);
 
   bool __fastcall ReadBool(const UnicodeString & Name, bool Default);
+  template<typename T>
+  typename T __fastcall ReadEnum(
+    const UnicodeString & Name, const T & Default, const TIntMapping & Mapping = TIntMapping());
   int __fastcall ReadInteger(const UnicodeString & Name, int Default);
   __int64 __fastcall ReadInt64(const UnicodeString & Name, __int64 Default);
   TDateTime __fastcall ReadDateTime(const UnicodeString & Name, TDateTime Default);
@@ -115,7 +120,8 @@ protected:
 
   virtual bool __fastcall DoReadBool(const UnicodeString & Name, bool Default) = 0;
   virtual UnicodeString __fastcall DoReadStringRaw(const UnicodeString & Name, const UnicodeString & Default) = 0;
-  virtual int __fastcall DoReadInteger(const UnicodeString & Name, int Default) = 0;
+  int ReadIntegerWithMapping(const UnicodeString & Name, int Default, const TIntMapping * Mapping);
+  virtual int __fastcall DoReadInteger(const UnicodeString & Name, int Default, const TIntMapping * Mapping) = 0;
   virtual __int64 __fastcall DoReadInt64(const UnicodeString & Name, __int64 Default) = 0;
   virtual TDateTime __fastcall DoReadDateTime(const UnicodeString & Name, TDateTime Default) = 0;
   virtual double __fastcall DoReadFloat(const UnicodeString & Name, double Default) = 0;
@@ -133,6 +139,16 @@ protected:
   inline bool __fastcall CanWrite();
   unsigned int __fastcall GetCurrentAccess();
 };
+//---------------------------------------------------------------------------
+extern TIntMapping AutoSwitchMapping;
+extern TIntMapping AutoSwitchReversedMapping;
+//---------------------------------------------------------------------------
+template<typename T>
+T __fastcall THierarchicalStorage::ReadEnum(const UnicodeString & Name, const T & Default, const TIntMapping & Mapping)
+{
+  const TIntMapping * AMapping = (Mapping == TIntMapping()) ? NULL : &Mapping;
+  return T(ReadIntegerWithMapping(Name, int(Default), AMapping));
+}
 //---------------------------------------------------------------------------
 class TRegistryStorage : public THierarchicalStorage
 {
@@ -164,7 +180,7 @@ protected:
   virtual void __fastcall DoWriteBinaryData(const UnicodeString & Name, const void * Buffer, int Size);
 
   virtual bool __fastcall DoReadBool(const UnicodeString & Name, bool Default);
-  virtual int __fastcall DoReadInteger(const UnicodeString & Name, int Default);
+  virtual int __fastcall DoReadInteger(const UnicodeString & Name, int Default, const TIntMapping * Mapping);
   virtual __int64 __fastcall DoReadInt64(const UnicodeString & Name, __int64 Default);
   virtual TDateTime __fastcall DoReadDateTime(const UnicodeString & Name, TDateTime Default);
   virtual double __fastcall DoReadFloat(const UnicodeString & Name, double Default);
@@ -193,6 +209,7 @@ private:
   inline bool __fastcall HandleReadByMasterStorage(const UnicodeString & Name);
   inline bool __fastcall DoValueExistsInternal(const UnicodeString & Value);
   void __fastcall DoWriteStringRawInternal(const UnicodeString & Name, const UnicodeString & Value);
+  int __fastcall DoReadIntegerWithMapping(const UnicodeString & Name, int Default, const TIntMapping * Mapping);
 
 protected:
   TCustomIniFile * FIniFile;
@@ -222,7 +239,7 @@ protected:
   virtual void __fastcall DoWriteBinaryData(const UnicodeString & Name, const void * Buffer, int Size);
 
   virtual bool __fastcall DoReadBool(const UnicodeString & Name, bool Default);
-  virtual int __fastcall DoReadInteger(const UnicodeString & Name, int Default);
+  virtual int __fastcall DoReadInteger(const UnicodeString & Name, int Default, const TIntMapping * Mapping);
   virtual __int64 __fastcall DoReadInt64(const UnicodeString & Name, __int64 Default);
   virtual TDateTime __fastcall DoReadDateTime(const UnicodeString & Name, TDateTime Default);
   virtual double __fastcall DoReadFloat(const UnicodeString & Name, double Default);

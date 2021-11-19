@@ -43,6 +43,8 @@ const UnicodeString DirectoryStatisticsCacheKey(L"DirectoryStatisticsCache");
 const UnicodeString CDCacheKey(L"CDCache");
 const UnicodeString BannersKey(L"Banners");
 //---------------------------------------------------------------------------
+const int BelowNormalLogLevels = 1;
+//---------------------------------------------------------------------------
 __fastcall TConfiguration::TConfiguration()
 {
   FCriticalSection = new TCriticalSection();
@@ -109,6 +111,8 @@ void __fastcall TConfiguration::Default()
   FCacheDirectoryChangesMaxSize = 100;
   FShowFtpWelcomeMessage = false;
   FExternalIpAddress = L"";
+  FLocalPortNumberMin = 0;
+  FLocalPortNumberMax = 0;
   FTryFtpWhenSshFails = true;
   FParallelDurationThreshold = 10;
   FMimeTypes = UnicodeString();
@@ -166,13 +170,18 @@ THierarchicalStorage * TConfiguration::CreateConfigStorage()
   return CreateScpStorage(SessionList);
 }
 //---------------------------------------------------------------------------
+THierarchicalStorage * TConfiguration::CreateConfigRegistryStorage()
+{
+  return new TRegistryStorage(RegistryStorageKey);
+}
+//---------------------------------------------------------------------------
 THierarchicalStorage * TConfiguration::CreateScpStorage(bool & SessionList)
 {
   TGuard Guard(FCriticalSection);
   THierarchicalStorage * Result;
   if (Storage == stRegistry)
   {
-    Result = new TRegistryStorage(RegistryStorageKey);
+    Result = CreateConfigRegistryStorage();
   }
   else if (Storage == stNul)
   {
@@ -237,6 +246,8 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(Integer,  CacheDirectoryChangesMaxSize); \
     KEY(Bool,     ShowFtpWelcomeMessage); \
     KEY(String,   ExternalIpAddress); \
+    KEY(Integer,  LocalPortNumberMin); \
+    KEY(Integer,  LocalPortNumberMax); \
     KEY(Bool,     TryFtpWhenSshFails); \
     KEY(Integer,  ParallelDurationThreshold); \
     KEY(String,   MimeTypes); \
@@ -813,7 +824,7 @@ void __fastcall TConfiguration::CleanupCaches()
   }
   catch (Exception & E)
   {
-    throw ExtException(&E, LoadStr(CLEANUP_HOSTKEYS_ERROR));
+    throw ExtException(&E, LoadStr(CLEANUP_CACHES_ERROR));
   }
 }
 //---------------------------------------------------------------------------
@@ -1002,7 +1013,6 @@ UnicodeString __fastcall TConfiguration::GetVersionStr()
       BuildStr += L" " + IntToStr(Build);
     }
 
-    #ifndef BUILD_OFFICIAL
     UnicodeString BuildDate = __DATE__;
     UnicodeString MonthStr = CutToChar(BuildDate, L' ', true);
     int Month = ParseShortEngMonthName(MonthStr);
@@ -1010,7 +1020,6 @@ UnicodeString __fastcall TConfiguration::GetVersionStr()
     int Year = StrToInt(Trim(BuildDate));
     UnicodeString DateStr = FORMAT(L"%d-%2.2d-%2.2d", (Year, Month, Day));
     AddToList(BuildStr, DateStr, L" ");
-    #endif
 
     UnicodeString FullVersion = Version;
 
@@ -1590,6 +1599,21 @@ void __fastcall TConfiguration::SetExternalIpAddress(UnicodeString value)
   SET_CONFIG_PROPERTY(ExternalIpAddress);
 }
 //---------------------------------------------------------------------
+bool TConfiguration::HasLocalPortNumberLimits()
+{
+  return (LocalPortNumberMin > 0) && (LocalPortNumberMax >= LocalPortNumberMin);
+}
+//---------------------------------------------------------------------
+void TConfiguration::SetLocalPortNumberMin(int value)
+{
+  SET_CONFIG_PROPERTY(LocalPortNumberMin);
+}
+//---------------------------------------------------------------------
+void TConfiguration::SetLocalPortNumberMax(int value)
+{
+  SET_CONFIG_PROPERTY(LocalPortNumberMax);
+}
+//---------------------------------------------------------------------
 void __fastcall TConfiguration::SetMimeTypes(UnicodeString value)
 {
   SET_CONFIG_PROPERTY(MimeTypes);
@@ -1732,7 +1756,7 @@ bool __fastcall TConfiguration::GetLogToFile()
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::UpdateActualLogProtocol()
 {
-  FActualLogProtocol = FLogging ? FLogProtocol : 0;
+  FActualLogProtocol = FLogging ? FLogProtocol : (-BelowNormalLogLevels - 1);
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogProtocol(int value)

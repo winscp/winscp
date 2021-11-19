@@ -43,8 +43,6 @@ uses
   DragDrop, Messages, ListViewColProperties, CommCtrl, DragDropFilesEx,
   FileCtrl, SysUtils, BaseUtils, Controls, CustomDriveView, System.Generics.Collections, Winapi.ShellAPI;
 
-{$I ResStrings.pas }
-
 type
   TVolumeDisplayStyle = (doPrettyName, doDisplayName); {Diplaytext of drive node}
 
@@ -272,6 +270,7 @@ type
     function ItemFileName(Item: TListItem): string; override;
     function ItemFileSize(Item: TListItem): Int64; override;
     function ItemFileTime(Item: TListItem; var Precision: TDateTimePrecision): TDateTime; override;
+    procedure OpenFallbackPath(Value: string);
 
     {Thread handling: }
     procedure StartWatchThread;
@@ -284,8 +283,6 @@ type
     {Other additional functions: }
     procedure ClearIconCache;
 
-    {Create a new file:}
-    function CreateFile(NewName: string): TListItem; dynamic;
     {Create a new subdirectory:}
     procedure CreateDirectory(DirName: string); override;
     {Delete all selected files:}
@@ -404,10 +401,10 @@ function DropFiles(
   RenameOnCollision: Boolean; IsRecycleBin: Boolean; ConfirmDelete: Boolean; ConfirmOverwrite: Boolean; Paste: Boolean;
   Sender: TObject; OnDDFileOperation: TDDFileOperationEvent;
   out SourcePath: string; out SourceIsDirectory: Boolean): Boolean;
+procedure CheckCanOpenDirectory(Path: string);
 
 var
   LastClipBoardOperation: TClipBoardOperation;
-  LastIOResult: DWORD;
 
 implementation
 
@@ -619,6 +616,28 @@ begin
     else Result := False;
 end; {GetShellDisplayName}
 
+procedure CheckCanOpenDirectory(Path: string);
+var
+  DosError: Integer;
+  SRec: SysUtils.TSearchRec;
+begin
+  if not DirectoryExistsFix(Path) then
+    raise Exception.CreateFmt(SDirNotExists, [Path]);
+  DosError := SysUtils.FindFirst(ApiPath(IncludeTrailingPathDelimiter(Path) + '*.*'), FileAttr, SRec);
+  if DosError = ERROR_SUCCESS then
+  begin
+    FindClose(SRec);
+  end
+    else
+  begin
+    // File not found is expected when accessing a root folder of an empty drive
+    if DosError <> ERROR_FILE_NOT_FOUND then
+    begin
+      RaiseLastOSError;
+    end;
+  end;
+end;
+
 { TIconUpdateThread }
 
 constructor TIconUpdateThread.Create(Owner: TDirView);
@@ -817,7 +836,6 @@ begin
   FNotRelative := False;
 
   FFileOperator := TFileOperator.Create(Self);
-  FFileOperator.ProgressTitle := coFileOperatorTitle;
   FFileOperator.Flags := [foAllowUndo, foNoConfirmMkDir];
   FDirOK := True;
   FPath := '';
@@ -935,8 +953,7 @@ begin
   // it would truncate non-existing directory to first superior existing
   Value := ReplaceStr(Value, '/', '\');
 
-  if not DirectoryExists(ApiPath(Value)) then
-    raise Exception.CreateFmt(SDirNotExists, [Value]);
+  CheckCanOpenDirectory(Value);
 
   if Assigned(FDriveView) and
      (FDriveView.Directory <> Value) then
@@ -946,13 +963,38 @@ begin
     else
   if FPath <> Value then
   try
-    while (Length(Value) > 0) and (Value[Length(Value)] = '\') do
-      SetLength(Value, Length(Value) - 1);
+    while ExcludeTrailingPathDelimiter(Value) <> Value do
+    begin
+      Value := ExcludeTrailingPathDelimiter(Value);
+    end;
     PathChanging(not FNotRelative);
     FPath := Value;
     Load(True);
   finally
     PathChanged;
+  end;
+end;
+
+procedure TDirView.OpenFallbackPath(Value: string);
+var
+  APath: string;
+begin
+  while True do
+  begin
+    APath := ExtractFileDir(Value);
+    if (APath = '') or (APath = Value) then
+    begin
+      Break;
+    end
+      else
+    begin
+      try
+        Path := APath;
+        Break;
+      except
+        Value := APath;
+      end;
+    end;
   end;
 end;
 
@@ -1489,7 +1531,9 @@ begin
         FChangeTimer.Interval := 0;
 
         EItems := TStringlist.Create;
+        EItems.CaseSensitive := True; // We want to reflect changes in file name case
         FItems := TStringlist.Create;
+        FItems.CaseSensitive := True;
         NewItems := TStringlist.Create;
 
         PUpdate := False;
@@ -1827,7 +1871,7 @@ begin
               if (FileInfo.iIcon <= 0) or (FileInfo.iIcon > SmallImages.Count) then
               begin
                 {Invalid icon returned: retry with access file attribute flag:}
-                SHGetFileInfo(PChar(fPath + '\' + FileName), FILE_ATTRIBUTE_DIRECTORY,
+                SHGetFileInfo(PChar(FPath + '\' + FileName), FILE_ATTRIBUTE_DIRECTORY,
                   FileInfo, SizeOf(FileInfo),
                   SHGFI_TYPENAME or SHGFI_SYSICONINDEX or SHGFI_USEFILEATTRIBUTES);
               end;
@@ -1910,11 +1954,11 @@ begin
       begin
         try
           if IsDirectory then
-            SHGetFileInfo(PChar(FPath), FILE_ATTRIBUTE_DIRECTORY, FileInfo, SizeOf(FileInfo),
-            SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES)
-            else
-          SHGetFileInfo(PChar(FPath + '\' + FileName), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
-            SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES);
+            SHGetFileInfo(PChar(FPath + '\' + FileName), FILE_ATTRIBUTE_DIRECTORY, FileInfo, SizeOf(FileInfo),
+              SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES)
+          else
+            SHGetFileInfo(PChar(FPath + '\' + FileName), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
+              SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES);
           TypeName := FileInfo.szTypeName;
         except
           {Capture exceptions generated by the shell}
@@ -2185,51 +2229,6 @@ begin
     end;
   end;
 end; {ValidateSelectedFiles}
-
-function TDirView.CreateFile(NewName: string): TListItem;
-var
-  F: file;
-  SRec: SysUtils.TSearchRec;
-begin
-  Result := nil;
-  {Neue Datei anlegen:}
-  NewName := Path + '\' + NewName;
-
-  {Ermitteln des neuen Dateinamens:}
-  if not FileExists(ApiPath(NewName)) then
-  begin
-    if FWatchForChanges then
-      StopWatchThread;
-    StopIconUpdateThread;
-
-    try
-      {Create the desired file as empty file:}
-      AssignFile(F, ApiPath(NewName));
-      Rewrite(F);
-      LastIOResult := IOResult;
-      if LastIOResult = 0 then
-      begin
-        CloseFile(F);
-
-        {Anlegen der Datei als TListItem:}
-        if FindFirst(ApiPath(NewName), faAnyFile, SRec) = 0 then
-        begin
-          Result := AddItem(SRec);
-          ItemFocused := FindFileItem(GetFileRec(Result.Index)^.FileName);
-          if Assigned(ItemFocused) then
-            ItemFocused.MakeVisible(False);
-        end;
-        FindClose(Srec);
-      end;
-    finally
-      if FUseIconUpdateThread then
-        StartIconUpdateThread;
-      if WatchForChanges then
-        StartWatchThread;
-    end;
-  end
-    else LastIOResult := 183;
-end; {CreateFile}
 
 procedure TDirView.CreateDirectory(DirName: string);
 var
@@ -2748,7 +2747,7 @@ begin
     if PFileRec(Item.Data)^.IsDirectory then
     begin
       FileName := ItemFullFileName(Item);
-      if not DirectoryExists(FileName) then
+      if not DirectoryExistsFix(FileName) then
       begin
         Reload2;
         if Assigned(FDriveView) and Assigned(FDriveView.Selected) then
@@ -2760,13 +2759,13 @@ begin
       else
     FileName := ResolveFileShortCut(ItemFullFileName(Item), True);
 
-    if DirectoryExists(FileName) then
+    if DirectoryExistsFix(FileName) then
     begin
       Path := FileName;
       Exit;
     end
       else
-    if not FileExists(ApiPath(FileName)) then
+    if not FileExistsFix(ApiPath(FileName)) then
     begin
       Exit;
     end;
@@ -3451,6 +3450,5 @@ end;
 
 initialization
   LastClipBoardOperation := cboNone;
-  LastIOResult := 0;
   DaylightHack := (not IsWin7);
 end.

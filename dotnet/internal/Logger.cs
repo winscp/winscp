@@ -15,6 +15,7 @@ namespace WinSCP
         public string LogPath { get { return _logPath; } set { SetLogPath(value); } }
         public int LogLevel { get { return _logLevel; } set { SetLogLevel(value); } }
         public bool Logging { get { return (_writter != null) && _writter.BaseStream.CanWrite; } }
+        public Lock Lock { get; } = new Lock();
 
         public string GetAssemblyFilePath()
         {
@@ -41,7 +42,18 @@ namespace WinSCP
 
             // It's also good to know that the CodeBase is not guaranteed to be set for assemblies in the GAC.
             // Location will always be set for assemblies loaded from disk, however.
-            string codeBase = assembly.CodeBase;
+            string codeBase;
+            try
+            {
+                codeBase = assembly.CodeBase;
+            }
+            catch (NotSupportedException e)
+            {
+                // CodeBase is not supported on assemblies loaded from a single-file bundle
+                WriteLine($"CodeBase not supported: {e.Message}");
+                codeBase = string.Empty;
+            }
+
             string location = assembly.Location;
 
             // cannot use Uri.UnescapeDataString, because it treats some characters valid in
@@ -282,9 +294,9 @@ namespace WinSCP
             return new Callstack(this, token);
         }
 
-        public Callstack CreateCallstackAndLock()
+        public CallstackAndLock CreateCallstackAndLock()
         {
-            return new CallstackAndLock(this, _lock);
+            return new CallstackAndLock(this, Lock);
         }
 
         public Exception WriteException(Exception e)
@@ -395,7 +407,7 @@ namespace WinSCP
         {
             if ((value < -1) || (value > 2))
             {
-                throw WriteException(new ArgumentOutOfRangeException(string.Format(CultureInfo.CurrentCulture, "Logging level has to be in range 0-2")));
+                throw WriteException(new ArgumentOutOfRangeException(string.Format(CultureInfo.CurrentCulture, "Logging level has to be in range -1 to 2")));
             }
             _logLevel = value;
         }
@@ -404,9 +416,8 @@ namespace WinSCP
         private string _logPath;
         private readonly Dictionary<int, int> _indents = new Dictionary<int, int>();
         private readonly object _logLock = new object();
-        private readonly Lock _lock = new Lock();
 #if !NETSTANDARD
-        private List<PerformanceCounter> _performanceCounters = new List<PerformanceCounter>();
+        private readonly List<PerformanceCounter> _performanceCounters = new List<PerformanceCounter>();
 #endif
         private int _logLevel;
     }

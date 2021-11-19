@@ -11,10 +11,18 @@
 
         public override void Dispose()
         {
-            _lock.Exit();
+            if (_lock != null)
+            {
+                _lock.Exit();
+            }
             base.Dispose();
         }
 
-        private readonly Lock _lock;
+        public void DisarmLock()
+        {
+            _lock = null;
+        }
+
+        private Lock _lock;
     }
 }

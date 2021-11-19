@@ -50,6 +50,8 @@ __fastcall TScpExplorerForm::TScpExplorerForm(TComponent* Owner)
   CopyPopup(BottomDock, TopDock);
   CopyPopup(LeftDock, TopDock);
   CopyPopup(RightDock, TopDock);
+  CopyPopup(QueueFileList, TopDock);
+  CopyPopup(QueueFileListSplitter, TopDock);
   reinterpret_cast<TLabel*>(RemotePanelSplitter)->OnDblClick = RemotePanelSplitterDblClick;
 
   QueuePanel->Parent = RemotePanel;
@@ -133,7 +135,12 @@ void __fastcall TScpExplorerForm::StoreParams()
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TScpExplorerForm::DefaultDownloadTargetDirectory()
 {
-  return WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
+  UnicodeString Result = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
+  if (!DirectoryExists(Result))
+  {
+    Result = GetPersonalFolder();
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::CopyParamDialogAfter(

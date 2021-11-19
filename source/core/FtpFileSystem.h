@@ -153,9 +153,11 @@ protected:
   bool __fastcall GetFileModificationTimeInUtc(const wchar_t * FileName, struct tm & Time);
   void __fastcall EnsureLocation(const UnicodeString & Directory, bool Log);
   void __fastcall EnsureLocation();
+  bool EnsureLocationWhenWorkFromCwd(const UnicodeString & Directory);
   UnicodeString __fastcall ActualCurrentDirectory();
   void __fastcall Discard();
   void __fastcall DoChangeDirectory(const UnicodeString & Directory);
+  void SendCwd(const UnicodeString & Directory);
 
   void __fastcall Sink(const UnicodeString FileName,
     const TRemoteFile * File, const UnicodeString TargetDir,
@@ -204,12 +206,15 @@ protected:
     TFileOperationProgressType * OperationProgress, bool FirstLevel);
   void __fastcall HandleFeatReply();
   void __fastcall ResetFeatures();
+  void ProcessFeatures();
+  UnicodeString CutFeature(UnicodeString & Buf);
   bool __fastcall SupportsSiteCommand(const UnicodeString & Command) const;
   bool __fastcall SupportsCommand(const UnicodeString & Command) const;
   void __fastcall RegisterChecksumAlgCommand(const UnicodeString & Alg, const UnicodeString & Command);
   void __fastcall SendCommand(const UnicodeString & Command);
   bool __fastcall CanTransferSkipList(int Params, unsigned int Flags, const TCopyParamType * CopyParam);
   void __fastcall Disconnect();
+  UnicodeString RemoteExtractFilePath(const UnicodeString & Path);
 
   static bool __fastcall Unquote(UnicodeString & Str);
 
@@ -235,7 +240,7 @@ private:
   TCommand FLastCommand;
   bool FPasswordFailed;
   bool FStoredPasswordTried;
-  bool FMultineResponse;
+  bool FMultiLineResponse;
   int FLastCode;
   int FLastCodeClass;
   int FLastReadDirectoryProgress;
@@ -269,6 +274,7 @@ private:
   UnicodeString FUserName;
   TAutoSwitch FListAll;
   bool FDoListAll;
+  TAutoSwitch FWorkFromCwd;
   TFTPServerCapabilities * FServerCapabilities;
   TDateTime FLastDataSent;
   bool FAnyTransferSucceeded;
@@ -291,8 +297,11 @@ private:
   bool FBytesAvailableSuppoted;
   bool FMVS;
   bool FVMS;
+  bool FFileZilla;
   bool FFileTransferAny;
   bool FLoggedIn;
+  bool FVmsAllRevisions;
+  bool FForceReadSymlink;
   mutable UnicodeString FOptionScratch;
 };
 //---------------------------------------------------------------------------

@@ -12,6 +12,7 @@
 
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
+#include <openssl/tls1.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // CAsyncSslSocketLayer
@@ -666,6 +667,21 @@ bool CAsyncSslSocketLayer::HandleSession(SSL_SESSION * Session)
         LogSocketMessageRaw(FZ_LOG_INFO, L"Session ID changed");
       }
       m_sessionid = Session;
+      // Some TLS 1.3 servers require reuse of the session of the previous data connection, not of the main session.
+      // It seems that it's safe to do this even for older TLS versions, but let's not for now.
+      // Once we do, we can simply always use main session's m_sessionid field in the code above.
+      if ((SSL_version(m_ssl) >= TLS1_3_VERSION) && (m_Main != NULL))
+      {
+        if (m_Main->m_sessionid != NULL)
+        {
+          SSL_SESSION_free(m_Main->m_sessionid);
+        }
+        m_Main->m_sessionid = Session;
+        if (Session != NULL)
+        {
+          SSL_SESSION_up_ref(Session);
+        }
+      }
       Result = true;
     }
   }
@@ -688,7 +704,7 @@ int CAsyncSslSocketLayer::NewSessionCallback(struct ssl_st * Ssl, SSL_SESSION * 
 }
 
 int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
-  CAsyncSslSocketLayer* main, bool sessionreuse,
+  CAsyncSslSocketLayer* main, bool sessionreuse, const CString & host,
   CFileZillaTools * tools,
   void* pSslContext /*=0*/)
 {
@@ -751,6 +767,12 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
     m_sCriticalSection.Unlock();
     ResetSslSession();
     return SSL_FAILURE_INITSSL;
+  }
+
+  if (clientMode && (host.GetLength() > 0))
+  {
+    USES_CONVERSION;
+    SSL_set_tlsext_host_name(m_ssl, T2CA(host));
   }
 
 #ifdef _DEBUG
@@ -985,10 +1007,13 @@ BOOL CAsyncSslSocketLayer::ShutDown(int nHow /*=sends*/)
     int res = SSL_shutdown(m_ssl);
     if (res == 0)
     {
+      // Without bi-directional shutdown, file uploads are incomplete on some servers
       res = SSL_shutdown(m_ssl);
-      // While this should not be necessary, with IIS we get timeout otherwise
-      if (SSL_version(m_ssl) <= TLS1_2_VERSION)
+
+      if ((SSL_version(m_ssl) <= TLS1_2_VERSION) ||
+          !GetSocketOptionVal(OPTION_MPEXT_COMPLETE_TLS_SHUTDOWN))
       {
+        LogSocketMessageRaw(FZ_LOG_INFO, L"Not waiting for complete TLS shutdown");
         res = 0;
       }
     }
@@ -1571,8 +1596,13 @@ BOOL CAsyncSslSocketLayer::GetPeerCertificateData(t_SslCertData &SslCertData, LP
     BIO_vfree(subjectAltNameBio);
   }
 
-  unsigned int length = 20;
-  X509_digest(pX509, EVP_sha1(), SslCertData.hash, &length);
+  unsigned int length;
+  length = sizeof(SslCertData.hashSha1);
+  X509_digest(pX509, EVP_sha1(), SslCertData.hashSha1, &length);
+  DebugAssert(length == sizeof(SslCertData.hashSha1));
+  length = sizeof(SslCertData.hashSha256);
+  X509_digest(pX509, EVP_sha256(), SslCertData.hashSha256, &length);
+  DebugAssert(length == sizeof(SslCertData.hashSha256));
 
   // Inspired by ne_ssl_cert_export()
   // Find the length of the DER encoding.
@@ -1773,11 +1803,8 @@ int CAsyncSslSocketLayer::ProvideClientCert(
 {
   CAsyncSslSocketLayer * Layer = LookupLayer(Ssl);
 
-  USES_CONVERSION;
   CString Message;
   Message.LoadString(NEED_CLIENT_CERTIFICATE);
-  char * Buffer = new char[Message.GetLength() + 1];
-  strcpy(Buffer, T2A(Message));
 
   int Level;
   int Result;
@@ -1795,8 +1822,7 @@ int CAsyncSslSocketLayer::ProvideClientCert(
     Result = 1;
   }
 
-  Layer->LogSocketMessageRaw(Level, A2T(Buffer));
-  delete [] Buffer;
+  Layer->LogSocketMessageRaw(Level, static_cast<LPCTSTR>(Message));
 
   return Result;
 }

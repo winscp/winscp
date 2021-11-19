@@ -192,6 +192,7 @@ struct TCustomCommandData
 {
   __fastcall TCustomCommandData();
   __fastcall TCustomCommandData(TTerminal * Terminal);
+  __fastcall TCustomCommandData(TSessionData * SessionData);
   __fastcall TCustomCommandData(
     TSessionData * SessionData, const UnicodeString & AUserName,
     const UnicodeString & Password);
@@ -202,6 +203,7 @@ struct TCustomCommandData
 
 private:
   std::unique_ptr<TSessionData> FSessionData;
+  void __fastcall Init(TSessionData * ASessionData);
   void __fastcall Init(
     TSessionData * SessionData, const UnicodeString & AUserName,
     const UnicodeString & Password, const UnicodeString & HostKey);
@@ -224,6 +226,7 @@ public:
   virtual bool __fastcall IsFileCommand(const UnicodeString & Command);
   bool __fastcall IsRemoteFileCommand(const UnicodeString & Command);
   bool __fastcall IsSiteCommand(const UnicodeString & Command);
+  bool __fastcall IsSessionCommand(const UnicodeString & Command);
   bool __fastcall IsPasswordCommand(const UnicodeString & Command);
 
 protected:

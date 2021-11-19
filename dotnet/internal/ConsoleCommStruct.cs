@@ -4,14 +4,20 @@ using Microsoft.Win32.SafeHandles;
 
 namespace WinSCP
 {
-    public enum ConsoleEvent { None, Print, Input, Choice, Title, Init, Progress }
+    public enum ConsoleEvent { None, Print, Input, Choice, Title, Init, Progress, TransferOut, TransferIn }
 
     [StructLayout(LayoutKind.Sequential)]
     internal class ConsoleInitEventStruct
     {
         public uint InputType;
         public uint OutputType;
+        [MarshalAs(UnmanagedType.I1)]
         public bool WantsProgress; // since version 6
+        [MarshalAs(UnmanagedType.I1)]
+        public bool UseStdErr; // since version 10
+        public enum StdInOut { Off, Binary, Chunked }
+        public StdInOut BinaryOutput; // since version 10
+        public StdInOut BinaryInput; // since version 10
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -80,7 +86,19 @@ namespace WinSCP
         public uint OverallProgress;
         public uint FileProgress;
         public uint CPS;
+        [MarshalAs(UnmanagedType.I1)]
         public bool Cancel; // since version 8
+    }
+
+    // Since version 10
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    internal class ConsoleTransferEventStruct
+    {
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 20480)]
+        public byte[] Data;
+        public UIntPtr Len;
+        [MarshalAs(UnmanagedType.I1)]
+        public bool Error; // TransferIn only
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -95,7 +113,7 @@ namespace WinSCP
 
     internal class ConsoleCommStruct : IDisposable
     {
-        public const int CurrentVersion = 0x0009;
+        public const int CurrentVersion = 0x000A;
 
         public ConsoleCommStruct(Session session, SafeFileHandle fileMapping)
         {
@@ -162,6 +180,10 @@ namespace WinSCP
 
         public ConsoleProgressEventStruct ProgressEvent { get { return UnmarshalPayload<ConsoleProgressEventStruct>(ConsoleEvent.Progress); } }
 
+        public ConsoleTransferEventStruct TransferOutEvent { get { return UnmarshalPayload<ConsoleTransferEventStruct>(ConsoleEvent.TransferOut); } }
+
+        public ConsoleTransferEventStruct TransferInEvent { get { return UnmarshalPayload<ConsoleTransferEventStruct>(ConsoleEvent.TransferIn); } }
+
         private T UnmarshalPayload<T>(ConsoleEvent e)
         {
             CheckNotDisposed();
@@ -194,7 +216,8 @@ namespace WinSCP
                 Type[] types =
                     new[] {
                         typeof(ConsolePrintEventStruct), typeof(ConsoleInitEventStruct), typeof(ConsoleInputEventStruct),
-                        typeof(ConsoleChoiceEventStruct), typeof(ConsoleTitleEventStruct), typeof(ConsoleProgressEventStruct) };
+                        typeof(ConsoleChoiceEventStruct), typeof(ConsoleTitleEventStruct), typeof(ConsoleProgressEventStruct),
+                        typeof(ConsoleTransferEventStruct) };
 
                 int maxSize = 0;
                 foreach (Type type in types)

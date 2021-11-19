@@ -462,8 +462,6 @@ const BOOL CServerPath::IsEmpty() const
 
 BOOL CServerPath::AddSubdir(CString subdir)
 {
-  subdir.TrimLeft( L" " );
-  subdir.TrimRight( L" " );
   if (subdir == L"")
     return FALSE;
 

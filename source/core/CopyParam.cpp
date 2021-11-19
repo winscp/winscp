@@ -59,6 +59,8 @@ void __fastcall TCopyParamType::Default()
   ExcludeEmptyDirectories = false;
   Size = -1;
   OnceDoneOperation = odoIdle;
+  OnTransferOut = NULL;
+  OnTransferIn = NULL;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TCopyParamType::GetInfoStr(
@@ -286,7 +288,6 @@ void __fastcall TCopyParamType::DoGetInfoStr(
         }
         else
         {
-          DebugFail(); // should never get here
           ScriptArgs += RtfSwitch(PRESERVETIME_SWITCH, Link);
         }
       }
@@ -576,6 +577,8 @@ void __fastcall TCopyParamType::Assign(const TCopyParamType * Source)
   COPY(ExcludeEmptyDirectories);
   COPY(Size);
   COPY(OnceDoneOperation);
+  COPY(OnTransferOut);
+  COPY(OnTransferIn);
   #undef COPY
 }
 //---------------------------------------------------------------------------
@@ -772,15 +775,24 @@ int __fastcall TCopyParamType::LocalFileAttrs(const TRights & Rights) const
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCopyParamType::AllowResume(__int64 Size) const
+bool __fastcall TCopyParamType::AllowResume(__int64 Size, const UnicodeString & FileName) const
 {
-  switch (ResumeSupport)
+  bool Result;
+  if (FileName.Length() + UnicodeString(PARTIAL_EXT).Length() > 255) // it's a different limit than MAX_PATH
   {
-    case rsOn: return true;
-    case rsOff: return false;
-    case rsSmart: return (Size >= ResumeThreshold);
-    default: DebugFail(); return false;
+    Result = false;
   }
+  else
+  {
+    switch (ResumeSupport)
+    {
+      case rsOn: Result = true; break;
+      case rsOff: Result = false; break;
+      case rsSmart: Result = (Size >= ResumeThreshold); break;
+      default: DebugFail(); Result = false; break;
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCopyParamType::AllowAnyTransfer() const
@@ -901,6 +913,8 @@ void __fastcall TCopyParamType::Load(THierarchicalStorage * Storage)
   ExcludeEmptyDirectories = Storage->ReadBool(L"ExcludeEmptyDirectories", ExcludeEmptyDirectories);
   Size = -1;
   OnceDoneOperation = odoIdle;
+  OnTransferOut = NULL;
+  OnTransferIn = NULL;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage, const TCopyParamType * Defaults) const
@@ -949,6 +963,8 @@ void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage, const TCopy
   WRITE_DATA(Bool, ExcludeEmptyDirectories);
   DebugAssert(Size < 0);
   DebugAssert(OnceDoneOperation == odoIdle);
+  DebugAssert(OnTransferOut == NULL);
+  DebugAssert(OnTransferIn == NULL);
 }
 //---------------------------------------------------------------------------
 #define C(Property) (Property == rhp.Property)
@@ -956,8 +972,12 @@ bool __fastcall TCopyParamType::operator==(const TCopyParamType & rhp) const
 {
   DebugAssert(FTransferSkipList.get() == NULL);
   DebugAssert(FTransferResumeFile.IsEmpty());
+  DebugAssert(OnTransferOut == NULL);
+  DebugAssert(OnTransferIn == NULL);
   DebugAssert(rhp.FTransferSkipList.get() == NULL);
   DebugAssert(rhp.FTransferResumeFile.IsEmpty());
+  DebugAssert(rhp.OnTransferOut == NULL);
+  DebugAssert(rhp.OnTransferIn == NULL);
   return
     C(AddXToDirectories) &&
     C(AsciiFileMask) &&

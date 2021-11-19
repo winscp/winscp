@@ -73,7 +73,7 @@
 #define Minor
 #define Rev
 #define Build
-#expr ParseVersion(MainFileSource, Major, Minor, Rev, Build)
+#expr GetVersionComponents(MainFileSource, Major, Minor, Rev, Build)
 #define VersionOnly Str(Major)+"."+Str(Minor)+(Rev > 0 ? "."+Str(Rev) : "")
 #define Version VersionOnly+(Status != "" ? " "+Status : "")
 
@@ -123,7 +123,6 @@ PrivilegesRequiredOverridesAllowed=commandline dialog
 ShowLanguageDialog=auto
 UsePreviousLanguage=yes
 DisableProgramGroupPage=yes
-MinVersion=6.0
 SetupIconFile=winscpsetup.ico
 DisableDirPage=no
 WizardStyle=modern
@@ -194,8 +193,10 @@ Name: custom; Description: "custom"; Flags: iscustom
 [Components]
 Name: main; Description: {cm:ApplicationComponent}; \
   Types: full custom compact; Flags: fixed
+; Because the files for the component have Check parameters, they are ignored for the size calculation
 Name: shellext; Description: {cm:ShellExtComponent}; \
-  Types: full compact
+  ExtraDiskSpaceRequired: {#Max(FileSize(ShellExtFileSource), FileSize(ShellExt64FileSource))}; \
+  Types: full compact; 
 Name: pageant; Description: {cm:PageantComponent}; \
   Types: full
 Name: puttygen; Description: {cm:PuTTYgenComponent}; \
@@ -268,14 +269,15 @@ Source: "{#AssemblyFileSource}"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
 Source: "license.txt"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
+; If the Check is ever removed, remove the ExtraDiskSpaceRequired parameter of the component too
 Source: "{#ShellExtFileSource}"; DestDir: "{app}"; \
   Components: shellext; \
   Flags: regserver restartreplace uninsrestartdelete ignoreversion; \
-  Check: not IsWin64 and ShouldInstallShellExt(ExpandConstant('{app}\{#ShellExtFileName}'), '{#GetFileVersion(ShellExtFileSource)}')
+  Check: not IsWin64 and ShouldInstallShellExt(ExpandConstant('{app}\{#ShellExtFileName}'), '{#GetVersionNumbersString(ShellExtFileSource)}')
 Source: "{#ShellExt64FileSource}"; DestDir: "{app}"; \
   Components: shellext; \
   Flags: regserver restartreplace uninsrestartdelete ignoreversion; \
-  Check: IsWin64 and ShouldInstallShellExt(ExpandConstant('{app}\{#ShellExt64FileName}'), '{#GetFileVersion(ShellExt64FileSource)}')
+  Check: IsWin64 and ShouldInstallShellExt(ExpandConstant('{app}\{#ShellExt64FileName}'), '{#GetVersionNumbersString(ShellExt64FileSource)}')
 Source: "{#PuttySourceDir}\LICENCE"; DestDir: "{app}\PuTTY"; \
   Components: pageant puttygen; Flags: ignoreversion
 Source: "{#PuttySourceDir}\putty.chm"; DestDir: "{app}\PuTTY"; \
@@ -1419,7 +1421,7 @@ begin
       // old style counter
       UsageData := UsageData + Format('TypicalInstallation:%d,', [Integer(IsTypicalInstallation)]);
 
-      UsageData := UsageData + 'InstallationsUser+,';
+      UsageData := UsageData + 'InstallationsUser+,InstallationParentProcess@,';
 
       Installations := 0; // default, if the counter does not exist
       RegQueryDWordValue(HKEY_LOCAL_MACHINE, '{#RegistryKey}', 'Installations', Installations);
@@ -1531,11 +1533,48 @@ const
 
 var
   ShowSponsor: Integer;
+  SponsoringLinkLabel, SponsorLinkLabel: TLabel;
+  SponsorImage: TBitmapImage;
 
 procedure SponsorImageClick(Sender: TObject);
 begin
   SponsorStatus := 'C';
   OpenBrowser('{#WebReport}?mode=sponsor' + Format('&sponsor=%s&', [Sponsor]) + ExpandConstant('{#WebArguments}'));
+end;
+
+function GetSponsorAreaHeight: Integer;
+begin
+  Result := SponsorPage.SurfaceHeight - SponsorLinkLabel.Height - ScaleY(12);
+end;
+
+procedure CenterSponsorImage;
+begin
+  if (Extended(SponsorImage.Bitmap.Width) / SponsorPage.SurfaceWidth) <
+       (Extended(SponsorImage.Bitmap.Height) / GetSponsorAreaHeight())  then
+  begin
+    SponsorImage.Top := 0;
+    SponsorImage.Height := GetSponsorAreaHeight();
+    SponsorImage.Width :=
+      Trunc((Extended(SponsorImage.Bitmap.Width) / SponsorImage.Bitmap.Height) * SponsorImage.Height);
+    SponsorImage.Left := (SponsorPage.SurfaceWidth - SponsorImage.Width) div 2;
+  end
+    else
+  begin
+    SponsorImage.Left := 0;
+    SponsorImage.Width := SponsorPage.SurfaceWidth;
+    SponsorImage.Height :=
+      Trunc((Extended(SponsorImage.Bitmap.Height) / SponsorImage.Bitmap.Width) * SponsorImage.Width);
+    SponsorImage.Top := (GetSponsorAreaHeight() - SponsorImage.Height) div 2;
+  end;
+  SponsorLinkLabel.Left := SponsorImage.Left;
+  SponsorLinkLabel.Top := GetBottom(SponsorImage) + ScaleX(6);
+  SponsoringLinkLabel.Left := GetRight(SponsorImage) - SponsoringLinkLabel.Width;
+  SponsoringLinkLabel.Top := SponsorLinkLabel.Top;
+end;
+
+procedure WizardFormResize(Sender: TObject);
+begin
+  CenterSponsorImage;
 end;
 
 function CheckSponsorReq: Boolean;
@@ -1549,9 +1588,8 @@ var
   Size: LongWord;
   ZipPath, TargetPath, ImagePath: string;
   Shell, ZipFile, TargetFolder: Variant;
-  SponsorLinkLabel, SponsoringLinkLabel: TLabel;
-  SponsorImage: TBitmapImage;
-  ImageSize, GrayHeight: Integer;
+  SponsorArea: TBitmapImage;
+  ImageSize: Integer;
 begin
   if ShowSponsor = 0 then
   begin
@@ -1579,17 +1617,28 @@ begin
       begin
         Log('Sponsor request succeeded');
 
+        if CmdLineParamExists('/SponsorArea') then
+        begin
+          SponsorArea := TBitmapImage.Create(SponsorPage);
+          SponsorArea.Parent := SponsorPage.Surface;
+          SponsorArea.Visible := CmdLineParamExists('/SponsorArea');
+          SponsorArea.BackColor := clTeal;
+          SponsorArea.Anchors := [akLeft, akTop, akRight, akBottom];
+        end
+          else
+        begin
+          SponsorArea := nil;
+        end;
+
         SponsorLinkLabel := TLabel.Create(SponsorPage);
         SponsorLinkLabel.Parent := SponsorPage.Surface;
         SponsorLinkLabel.Caption := 'Visit release sponsor';
-        SponsorLinkLabel.Top := SponsorPage.Surface.Height - SponsorLinkLabel.Height - ScaleY(2);
         SponsorLinkLabel.OnClick := @SponsorImageClick;
         LinkLabel(SponsorLinkLabel);
 
         SponsoringLinkLabel := TLabel.Create(SponsorPage);
         SponsoringLinkLabel.Parent := SponsorPage.Surface;
         SponsoringLinkLabel.Caption := 'Become next release sponsor';
-        SponsoringLinkLabel.Top := SponsorLinkLabel.Top;
         SponsoringLinkLabel.OnClick := @SponsoringLinkLabelClick;
         LinkLabel(SponsoringLinkLabel);
 
@@ -1684,9 +1733,9 @@ begin
 
                 SponsorImage := TBitmapImage.Create(SponsorPage);
                 SponsorImage.Parent := SponsorPage.Surface;
-                SponsorImage.AutoSize := True;
                 SponsorImage.Hint := SponsorLinkLabel.Caption;
                 SponsorImage.ShowHint := True;
+                SponsorImage.Stretch := True;
                 try
                   LoadBitmap(SponsorImage, ImagePath, SponsorPage.Surface.Color);
                 except
@@ -1697,26 +1746,26 @@ begin
 
                 if ShowSponsor = 0 then
                 begin
-                  GrayHeight :=
-                    // Overal height of area between header and footer (InnerNotebook is smaller and not vertically centered)
-                    (WizardForm.Bevel.Top - (WizardForm.OuterNotebook.Top + GetBottom(WizardForm.Bevel1)))
-                    // Bottom padding of InnerNotebook
-                    - (WizardForm.Bevel.Top - GetBottom(WizardForm.InnerNotebook))
-                    // height occupied by link label on the bottom of InnerNotebook
-                    - SponsorLinkLabel.Height;
+                  if Assigned(SponsorArea) then
+                  begin
+                    SponsorArea.Left := 0;
+                    SponsorArea.Top := 0;
+                    SponsorArea.Width := SponsorPage.Surface.Width;
+                    SponsorArea.Height := GetSponsorAreaHeight();
+                    Log(Format('Sponsor area is %dx%d', [SponsorArea.Width, SponsorArea.Height]));
+                  end;
 
-                  SponsorImage.Top := ((GrayHeight - SponsorImage.Height) div 2) - (WizardForm.InnerNotebook.Top - GetBottom(WizardForm.Bevel1));
-                  if SponsorImage.Top < 0 then SponsorImage.Top := 0;
-                  SponsorImage.Left := (SponsorPage.Surface.Width - SponsorImage.Width) div 2;
-                  SponsorLinkLabel.Left := SponsorImage.Left;
-                  if SponsorLinkLabel.Left < 0 then SponsorLinkLabel.Left := 0;
-                  SponsoringLinkLabel.Left := GetRight(SponsorImage) - SponsoringLinkLabel.Width;
-                  if GetRight(SponsoringLinkLabel) > SponsorPage.Surface.Width then
-                    SponsoringLinkLabel.Left := SponsorPage.Surface.Width - SponsoringLinkLabel.Width;
+                  CenterSponsorImage;
+
                   SponsorImage.Cursor := crHand;
                   SponsorImage.OnClick := @SponsorImageClick;
+
+                  WizardForm.OnResize := @WizardFormResize;
+
                   FileSize(ImagePath, ImageSize);
-                  Log(Format('Sponsor image loaded (%d bytes, %dx%d)', [Integer(ImageSize), SponsorPage.Surface.Width, SponsorImage.Height]));
+                  Log(Format('Sponsor image loaded (%d bytes, %dx%d) and displayed (%dx%d)', [
+                    Integer(ImageSize), SponsorImage.Bitmap.Width, SponsorImage.Bitmap.Height,
+                    SponsorImage.Width, SponsorImage.Height]));
                 end;
               end
                 else

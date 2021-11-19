@@ -60,7 +60,7 @@ public:
   void __fastcall UpdateAppTitle();
   bool __fastcall CanOpenInPutty();
   void __fastcall OpenInPutty();
-  void __fastcall NewSession(bool FromSite, const UnicodeString & SessionUrl, bool ReloadSessions = true, TForm * LinkedForm = NULL);
+  void __fastcall NewSession(const UnicodeString & SessionUrl, bool ReloadSessions = true, TForm * LinkedForm = NULL);
   void __fastcall Idle(bool SkipCurrentTerminal);
   UnicodeString __fastcall GetTerminalShortPath(TTerminal * Terminal);
   UnicodeString __fastcall GetTerminalTitle(TTerminal * Terminal, bool Unique);
@@ -70,6 +70,7 @@ public:
   void __fastcall HandleException(Exception * E);
   void __fastcall SaveWorkspace(TList * DataList);
   void __fastcall QueueStatusUpdated();
+  bool __fastcall IsActiveTerminalForSite(TTerminal * Terminal, TSessionData * Data);
   TTerminal * __fastcall FindActiveTerminalForSite(TSessionData * Data);
   TTerminalQueue * __fastcall FindQueueForTerminal(TTerminal * Terminal);
   bool __fastcall UploadPublicKey(TTerminal * Terminal, TSessionData * Data, UnicodeString & FileName);
@@ -144,8 +145,8 @@ private:
     Exception * E, void * Arg);
   void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress,
     int ResolvedLinks, bool & Cancel);
-  void __fastcall TerminalInformation(TTerminal * Terminal, const UnicodeString & Str,
-    bool Status, int Phase);
+  void __fastcall TerminalInformation(
+    TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase, const UnicodeString & Additional);
   void __fastcall TerminalCustomCommand(TTerminal * Terminal, const UnicodeString & Command, bool & Handled);
   void __fastcall FreeAll();
   void __fastcall TerminalReady();

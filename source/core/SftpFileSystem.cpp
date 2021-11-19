@@ -1498,6 +1498,7 @@ public:
     FEncryption(Encryption)
   {
     FStream = NULL;
+    FOnTransferIn = NULL;
     OperationProgress = NULL;
     FLastBlockSize = 0;
     FEnd = false;
@@ -1509,15 +1510,19 @@ public:
     delete FStream;
   }
 
-  bool __fastcall Init(const UnicodeString AFileName,
-    HANDLE AFile, TFileOperationProgressType * AOperationProgress,
+  bool __fastcall Init(const UnicodeString & AFileName,
+    HANDLE AFile, TTransferInEvent OnTransferIn, TFileOperationProgressType * AOperationProgress,
     const RawByteString AHandle, __int64 ATransferred,
     int ConvertParams)
   {
     FFileName = AFileName;
-    FStream = new TSafeHandleStream((THandle)AFile);
+    if (OnTransferIn == NULL)
+    {
+      FStream = new TSafeHandleStream((THandle)AFile);
+    }
     OperationProgress = AOperationProgress;
     FHandle = AHandle;
+    FOnTransferIn = OnTransferIn;
     FTransferred = ATransferred;
     FConvertParams = ConvertParams;
 
@@ -1541,11 +1546,21 @@ protected:
 
     if (Result)
     {
-      FILE_OPERATION_LOOP_BEGIN
+      bool Last;
+      if (FOnTransferIn != NULL)
       {
-        BlockBuf.LoadStream(FStream, BlockSize, false);
+        size_t Read = BlockBuf.LoadFromIn(FOnTransferIn, FTerminal, BlockSize);
+        Last = (Read < BlockSize);
       }
-      FILE_OPERATION_LOOP_END(FMTLOAD(READ_ERROR, (FFileName)));
+      else
+      {
+        FILE_OPERATION_LOOP_BEGIN
+        {
+          BlockBuf.LoadStream(FStream, BlockSize, false);
+        }
+        FILE_OPERATION_LOOP_END(FMTLOAD(READ_ERROR, (FFileName)));
+        Last = (FStream->Position >= FStream->Size);
+      }
 
       FEnd = (BlockBuf.Size == 0);
       Result = !FEnd;
@@ -1572,7 +1587,7 @@ protected:
 
         if (FEncryption != NULL)
         {
-          FEncryption->Encrypt(BlockBuf, (FStream->Position >= FStream->Size));
+          FEncryption->Encrypt(BlockBuf, Last);
         }
 
         Request->ChangeType(SSH_FXP_WRITE);
@@ -1641,6 +1656,7 @@ protected:
 
 private:
   TStream * FStream;
+  TTransferInEvent FOnTransferIn;
   TFileOperationProgressType * OperationProgress;
   UnicodeString FFileName;
   unsigned long FLastBlockSize;
@@ -1850,6 +1866,8 @@ struct TOpenRemoteFileParams
   TOverwriteFileParams * FileParams;
   bool Confirmed;
   bool DontRecycle;
+  bool Recycled;
+  TRights RecycledRights;
 };
 //===========================================================================
 __fastcall TSFTPFileSystem::TSFTPFileSystem(TTerminal * ATerminal,
@@ -2053,6 +2071,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
   switch (Capability) {
     case fcAnyCommand:
     case fcShellAnyCommand:
+    case fcLocking:
       return false;
 
     case fcNewerOnlyUpload:
@@ -2063,12 +2082,14 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
     case fcRemoveCtrlZUpload:
     case fcRemoveBOMUpload:
     case fcPreservingTimestampDirs:
+    case fcTransferOut:
+    case fcTransferIn:
       return true;
 
     case fcMoveToQueue:
     case fcResumeSupport:
-    case fsSkipTransfer:
-    case fsParallelTransfers:
+    case fcSkipTransfer:
+    case fcParallelTransfers:
       return !FTerminal->IsEncryptingFiles();
 
     case fcRename:
@@ -2154,9 +2175,6 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
       return
         (FVersion >= 6) ||
         FSupportsHardlink;
-
-    case fcLocking:
-      return false;
 
     case fcChangePassword:
       return FSecureShell->CanChangePassword();
@@ -2713,76 +2731,85 @@ int __fastcall TSFTPFileSystem::SendPacketAndReceiveResponse(
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path)
+UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString & Path)
 {
-  try
+  if (FTerminal->SessionData->SFTPRealPath == asOff)
   {
-    FTerminal->LogEvent(0, FORMAT(L"Getting real path for '%s'", (Path)));
-
-    TSFTPPacket Packet(SSH_FXP_REALPATH);
-    AddPathString(Packet, Path);
-
-    // In SFTP-6 new optional field control-byte is added that defaults to
-    // SSH_FXP_REALPATH_NO_CHECK=0x01, meaning it won't fail, if the path does not exist.
-    // That differs from SFTP-5 recommendation that
-    // "The server SHOULD fail the request if the path is not present on the server."
-    // Earlier versions had no recommendation, though canonical SFTP-3 implementation
-    // in OpenSSH fails.
-
-    // While we really do not care much, we anyway set the flag to ~ & 0x01 to make the request fail.
-    // First for consistency.
-    // Second to workaround a bug in ProFTPD/mod_sftp version 1.3.5rc1 through 1.3.5-stable
-    // that sends a completelly malformed response for non-existing paths,
-    // when SSH_FXP_REALPATH_NO_CHECK (even implicitly) is used.
-    // See http://bugs.proftpd.org/show_bug.cgi?id=4160
-
-    // Note that earlier drafts of SFTP-6 (filexfer-07 and -08) had optional compose-path field
-    // before control-byte field. If we ever use this against a server conforming to those drafts,
-    // it may cause trouble.
-    if (FVersion >= 6)
+    return LocalCanonify(Path);
+  }
+  else
+  {
+    try
     {
-      if (FSecureShell->SshImplementation != sshiProFTPD)
+      FTerminal->LogEvent(0, FORMAT(L"Getting real path for '%s'", (Path)));
+
+      TSFTPPacket Packet(SSH_FXP_REALPATH);
+      AddPathString(Packet, Path);
+
+      // In SFTP-6 new optional field control-byte is added that defaults to
+      // SSH_FXP_REALPATH_NO_CHECK=0x01, meaning it won't fail, if the path does not exist.
+      // That differs from SFTP-5 recommendation that
+      // "The server SHOULD fail the request if the path is not present on the server."
+      // Earlier versions had no recommendation, though canonical SFTP-3 implementation
+      // in OpenSSH fails.
+
+      // While we really do not care much, we anyway set the flag to ~ & 0x01 to make the request fail.
+      // First for consistency.
+      // Second to workaround a bug in ProFTPD/mod_sftp version 1.3.5rc1 through 1.3.5-stable
+      // that sends a completelly malformed response for non-existing paths,
+      // when SSH_FXP_REALPATH_NO_CHECK (even implicitly) is used.
+      // See http://bugs.proftpd.org/show_bug.cgi?id=4160
+
+      // Note that earlier drafts of SFTP-6 (filexfer-07 and -08) had optional compose-path field
+      // before control-byte field. If we ever use this against a server conforming to those drafts,
+      // it may cause trouble.
+      if (FVersion >= 6)
       {
-        Packet.AddByte(SSH_FXP_REALPATH_STAT_ALWAYS);
+        if (FSecureShell->SshImplementation != sshiProFTPD)
+        {
+          Packet.AddByte(SSH_FXP_REALPATH_STAT_ALWAYS);
+        }
+        else
+        {
+          // Cannot use SSH_FXP_REALPATH_STAT_ALWAYS as ProFTPD does wrong bitwise test
+          // so it incorrectly evaluates SSH_FXP_REALPATH_STAT_ALWAYS (0x03) as
+          // SSH_FXP_REALPATH_NO_CHECK (0x01). The only value conforming to the
+          // specification, yet working with ProFTPD is SSH_FXP_REALPATH_STAT_IF (0x02).
+          Packet.AddByte(SSH_FXP_REALPATH_STAT_IF);
+        }
+      }
+      SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_NAME);
+      if (Packet.GetCardinal() != 1)
+      {
+        FTerminal->FatalError(NULL, LoadStr(SFTP_NON_ONE_FXP_NAME_PACKET));
+      }
+
+      UnicodeString RealDir = UnixExcludeTrailingBackslash(Packet.GetPathString(FUtfStrings));
+      // do not cache, as particularly when called from CreateDirectory > Canonify,
+      // we would cache an unencrypted path to a directory we want to create encrypted,
+      // what would prevent the encryption later.
+      RealDir = FTerminal->DecryptFileName(RealDir, true, true);
+      // ignore rest of SSH_FXP_NAME packet
+
+      FTerminal->LogEvent(0, FORMAT(L"Real path is '%s'", (RealDir)));
+
+      return RealDir;
+    }
+    catch(Exception & E)
+    {
+      if (FTerminal->Active)
+      {
+        throw ExtException(&E, FMTLOAD(SFTP_REALPATH_ERROR, (Path)));
       }
       else
       {
-        // Cannot use SSH_FXP_REALPATH_STAT_ALWAYS as ProFTPD does wrong bitwise test
-        // so it incorrectly evaluates SSH_FXP_REALPATH_STAT_ALWAYS (0x03) as
-        // SSH_FXP_REALPATH_NO_CHECK (0x01). The only value conforming to the
-        // specification, yet working with ProFTPD is SSH_FXP_REALPATH_STAT_IF (0x02).
-        Packet.AddByte(SSH_FXP_REALPATH_STAT_IF);
+        throw;
       }
-    }
-    SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_NAME);
-    if (Packet.GetCardinal() != 1)
-    {
-      FTerminal->FatalError(NULL, LoadStr(SFTP_NON_ONE_FXP_NAME_PACKET));
-    }
-
-    UnicodeString RealDir = UnixExcludeTrailingBackslash(Packet.GetPathString(FUtfStrings));
-    RealDir = FTerminal->DecryptFileName(RealDir);
-    // ignore rest of SSH_FXP_NAME packet
-
-    FTerminal->LogEvent(0, FORMAT(L"Real path is '%s'", (RealDir)));
-
-    return RealDir;
-  }
-  catch(Exception & E)
-  {
-    if (FTerminal->Active)
-    {
-      throw ExtException(&E, FMTLOAD(SFTP_REALPATH_ERROR, (Path)));
-    }
-    else
-    {
-      throw;
     }
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString Path,
-  const UnicodeString BaseDir)
+UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString & Path, const UnicodeString & BaseDir)
 {
   UnicodeString APath;
 
@@ -2821,12 +2848,12 @@ UnicodeString __fastcall TSFTPFileSystem::LocalCanonify(const UnicodeString & Pa
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TSFTPFileSystem::Canonify(UnicodeString Path)
+UnicodeString __fastcall TSFTPFileSystem::Canonify(const UnicodeString & AAPath)
 {
   // inspired by canonify() from PSFTP.C
   UnicodeString Result;
-  FTerminal->LogEvent(FORMAT(L"Canonifying: \"%s\"", (Path)));
-  Path = LocalCanonify(Path);
+  FTerminal->LogEvent(FORMAT(L"Canonifying: \"%s\"", (AAPath)));
+  UnicodeString Path = LocalCanonify(AAPath);
   bool TryParent = false;
   try
   {
@@ -2896,6 +2923,11 @@ UnicodeString __fastcall TSFTPFileSystem::GetHomeDirectory()
   if (FHomeDirectory.IsEmpty())
   {
     FHomeDirectory = RealPath(L".");
+    // Prevent infinite recursion when the server is broken
+    if (FHomeDirectory.IsEmpty())
+    {
+      FHomeDirectory = ROOTDIRECTORY;
+    }
   }
   return FHomeDirectory;
 }
@@ -2960,6 +2992,12 @@ void __fastcall TSFTPFileSystem::DoStartup()
 
   FVersion = Packet.GetCardinal();
   FTerminal->LogEvent(FORMAT(L"SFTP version %d negotiated.", (FVersion)));
+  if (FVersion > MaxVersion)
+  {
+    // This happens with ProFTPD:
+    // https://github.com/proftpd/proftpd/issues/1200
+    FTerminal->LogEvent(L"Got higher version than asked for.");
+  }
   if (FVersion < SFTPMinVersion || FVersion > SFTPMaxVersion)
   {
     FTerminal->FatalError(NULL, FMTLOAD(SFTP_VERSION_NOT_SUPPORTED,
@@ -3333,7 +3371,7 @@ void __fastcall TSFTPFileSystem::TryOpenDirectory(const UnicodeString Directory)
     // File can be NULL only when server does not support SSH_FXP_LSTAT.
     // Fallback to legacy solution, which in turn does not allow entering
     // traverse-only (chmod 110) directories.
-    // This is workaround for http://www.ftpshell.com/
+    // This is workaround for https://www.ftpshell.com/
     TSFTPPacket Packet(SSH_FXP_OPENDIR);
     AddPathString(Packet, UnixExcludeTrailingBackslash(Directory));
     SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_HANDLE);
@@ -3441,7 +3479,7 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
               IsRealFile(File->FileName))
           {
             UnicodeString FullFileName = UnixExcludeTrailingBackslash(File->FullFileName);
-            UnicodeString FileName = UnixExtractFileName(FTerminal->DecryptFileName(FullFileName));
+            UnicodeString FileName = UnixExtractFileName(FTerminal->DecryptFileName(FullFileName, false, false));
             if (File->FileName != FileName)
             {
               File->SetEncrypted();
@@ -3467,6 +3505,7 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
             FTerminal->DoReadDirectoryProgress(Total, ResolvedLinks, isEOF);
             if (isEOF)
             {
+              FTerminal->LogEvent(L"Listing directory cancelled.");
               FTerminal->DoReadDirectoryProgress(-2, 0, isEOF);
             }
           }
@@ -3609,7 +3648,9 @@ void __fastcall TSFTPFileSystem::ReadSymlink(TRemoteFile * SymlinkFile,
   {
     FTerminal->FatalError(NULL, LoadStr(SFTP_NON_ONE_FXP_NAME_PACKET));
   }
-  SymlinkFile->LinkTo = FTerminal->DecryptFileName(ReadLinkPacket.GetPathString(FUtfStrings));
+  // Not sure about the DontCache parameter here. Actually we should not get here for encrypted sessions.
+  DebugAssert(!FTerminal->IsEncryptingFiles());
+  SymlinkFile->LinkTo = FTerminal->DecryptFileName(ReadLinkPacket.GetPathString(FUtfStrings), true, true);
   FTerminal->LogEvent(FORMAT(L"Link resolved to \"%s\".", (SymlinkFile->LinkTo)));
 
   ReceiveResponse(&AttrsPacket, &AttrsPacket, SSH_FXP_ATTRS);
@@ -3675,14 +3716,15 @@ void __fastcall TSFTPFileSystem::CustomReadFile(const UnicodeString FileName,
     SSH_FILEXFER_ATTR_ACCESSTIME | SSH_FILEXFER_ATTR_MODIFYTIME |
     SSH_FILEXFER_ATTR_OWNERGROUP;
   TSFTPPacket Packet(Type);
-  AddPathString(Packet, LocalCanonify(FileName));
+  UnicodeString FullName = LocalCanonify(FileName);
+  AddPathString(Packet, FullName);
   SendCustomReadFile(&Packet, &Packet, Flags);
   ReceiveResponse(&Packet, &Packet, SSH_FXP_ATTRS, AllowStatus);
 
   if (Packet.Type == SSH_FXP_ATTRS)
   {
     File = LoadFile(&Packet, ALinkedByFile, UnixExtractFileName(FileName));
-    if (FTerminal->IsFileEncrypted(FileName))
+    if (FTerminal->IsFileEncrypted(FullName))
     {
       File->SetEncrypted();
     }
@@ -4485,9 +4527,10 @@ void __fastcall TSFTPFileSystem::Source(
   // should we check for interrupted transfer?
   ResumeAllowed =
     !OperationProgress->AsciiTransfer &&
-    CopyParam->AllowResume(OperationProgress->LocalSize) &&
+    CopyParam->AllowResume(OperationProgress->LocalSize, DestFileName) &&
     IsCapable(fcRename) &&
-    !FTerminal->IsEncryptingFiles();
+    !FTerminal->IsEncryptingFiles() &&
+    (CopyParam->OnTransferIn == NULL);
 
   TOpenRemoteFileParams OpenParams;
   OpenParams.OverwriteMode = omOverwrite;
@@ -4613,8 +4656,9 @@ void __fastcall TSFTPFileSystem::Source(
   OpenParams.CopyParam = CopyParam;
   OpenParams.Params = Params;
   OpenParams.FileParams = &FileParams;
-  OpenParams.Confirmed = false;
+  OpenParams.Confirmed = (CopyParam->OnTransferIn != NULL);
   OpenParams.DontRecycle = false;
+  OpenParams.Recycled = false;
 
   FTerminal->LogEvent(0, L"Opening remote file.");
   FTerminal->FileOperationLoop(SFTPOpenRemote, OperationProgress, folAllowSkip,
@@ -4637,21 +4681,31 @@ void __fastcall TSFTPFileSystem::Source(
   bool TransferFinished = false;
   __int64 DestWriteOffset = 0;
   TSFTPPacket CloseRequest;
-  bool SetRights = ((DoResume && DestFileExists) || CopyParam->PreserveRights);
-  bool SetProperties = (CopyParam->PreserveTime || SetRights);
+  bool PreserveRights = CopyParam->PreserveRights && (CopyParam->OnTransferIn == NULL);
+  bool PreserveExistingRights = (DoResume && DestFileExists) || OpenParams.Recycled;
+  bool SetRights = (PreserveExistingRights || PreserveRights);
+  bool PreserveTime = CopyParam->PreserveTime && (CopyParam->OnTransferIn == NULL);
+  bool SetProperties = (PreserveTime || SetRights);
   TSFTPPacket PropertiesRequest(SSH_FXP_SETSTAT);
   TSFTPPacket PropertiesResponse;
   TRights Rights;
   if (SetProperties)
   {
     AddPathString(PropertiesRequest, DestFullName);
-    if (CopyParam->PreserveRights)
+    if (PreserveRights)
     {
       Rights = CopyParam->RemoteFileRights(Handle.Attrs);
     }
-    else if (DoResume && DestFileExists)
+    else if (PreserveExistingRights)
     {
-      Rights = DestRights;
+      if (DestFileExists)
+      {
+        Rights = DestRights;
+      }
+      else
+      {
+        Rights = OpenParams.RecycledRights;
+      }
     }
     else
     {
@@ -4661,7 +4715,7 @@ void __fastcall TSFTPFileSystem::Source(
     unsigned short RightsNumber = Rights.NumberSet;
     PropertiesRequest.AddProperties(
       SetRights ? &RightsNumber : NULL, NULL, NULL,
-      CopyParam->PreserveTime ? &Handle.MTime : NULL,
+      PreserveTime ? &Handle.MTime : NULL,
       NULL, NULL, false, FVersion, FUtfStrings);
   }
 
@@ -4691,7 +4745,7 @@ void __fastcall TSFTPFileSystem::Source(
       int ConvertParams =
         FLAGMASK(CopyParam->RemoveCtrlZ, cpRemoveCtrlZ) |
         FLAGMASK(CopyParam->RemoveBOM, cpRemoveBOM);
-      Queue.Init(Handle.FileName, Handle.Handle, OperationProgress,
+      Queue.Init(Handle.FileName, Handle.Handle, CopyParam->OnTransferIn, OperationProgress,
         OpenParams.RemoteFileHandle,
         DestWriteOffset + OperationProgress->TransferredSize,
         ConvertParams);
@@ -4798,7 +4852,7 @@ void __fastcall TSFTPFileSystem::Source(
   if (SetProperties)
   {
     std::unique_ptr<TTouchSessionAction> TouchAction;
-    if (CopyParam->PreserveTime)
+    if (PreserveTime)
     {
       TDateTime MDateTime = UnixToDateTime(Handle.MTime, FTerminal->SessionData->DSTMode);
       FTerminal->LogEvent(FORMAT(L"Preserving timestamp [%s]",
@@ -4810,7 +4864,7 @@ void __fastcall TSFTPFileSystem::Source(
     // do record chmod only if it was explicitly requested,
     // not when it was implicitly performed to apply timestamp
     // of overwritten file to new file
-    if (CopyParam->PreserveRights)
+    if (PreserveRights)
     {
       ChmodAction.reset(new TChmodSessionAction(FTerminal->ActionLog, DestFullName, Rights));
     }
@@ -4843,7 +4897,7 @@ void __fastcall TSFTPFileSystem::Source(
         catch (...)
         {
           if (FTerminal->Active &&
-              (!CopyParam->PreserveRights && !CopyParam->PreserveTime))
+              (!PreserveRights && !PreserveTime))
           {
             DebugAssert(DoResume);
             FTerminal->LogEvent(L"Ignoring error preserving permissions of overwritten file");
@@ -5079,6 +5133,11 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
               // Allow normal overwrite
               OpenParams->DontRecycle = true;
             }
+            else
+            {
+              OpenParams->Recycled = true;
+              OpenParams->RecycledRights = *File->Rights;
+            }
           }
         }
       }
@@ -5210,14 +5269,21 @@ void __fastcall TSFTPFileSystem::DirectorySunk(
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::WriteLocalFile(
-  TStream * FileStream, TFileBuffer & BlockBuf, const UnicodeString & LocalFileName,
+  const TCopyParamType * CopyParam, TStream * FileStream, TFileBuffer & BlockBuf, const UnicodeString & LocalFileName,
   TFileOperationProgressType * OperationProgress)
 {
-  FILE_OPERATION_LOOP_BEGIN
+  if (CopyParam->OnTransferOut != NULL)
   {
-    BlockBuf.WriteToStream(FileStream, BlockBuf.Size);
+    BlockBuf.WriteToOut(CopyParam->OnTransferOut, FTerminal, BlockBuf.Size);
   }
-  FILE_OPERATION_LOOP_END(FMTLOAD(WRITE_ERROR, (LocalFileName)));
+  else
+  {
+    FILE_OPERATION_LOOP_BEGIN
+    {
+      BlockBuf.WriteToStream(FileStream, BlockBuf.Size);
+    }
+    FILE_OPERATION_LOOP_END(FMTLOAD(WRITE_ERROR, (LocalFileName)));
+  }
 
   OperationProgress->AddLocallyUsed(BlockBuf.Size);
 }
@@ -5232,8 +5298,9 @@ void __fastcall TSFTPFileSystem::Sink(
   bool ResumeAllowed =
     FLAGCLEAR(Params, cpTemporary) &&
     !OperationProgress->AsciiTransfer &&
-    CopyParam->AllowResume(OperationProgress->TransferSize) &&
-    !FTerminal->IsEncryptingFiles();
+    CopyParam->AllowResume(OperationProgress->TransferSize, DestFileName) &&
+    !FTerminal->IsEncryptingFiles() &&
+    (CopyParam->OnTransferOut == NULL);
 
   HANDLE LocalHandle = NULL;
   TStream * FileStream = NULL;
@@ -5402,20 +5469,23 @@ void __fastcall TSFTPFileSystem::Sink(
 
     Action.Destination(ExpandUNCFileName(DestFullName));
 
-    // if not already opened (resume, append...), create new empty file
-    if (!LocalHandle)
+    if (CopyParam->OnTransferOut == NULL)
     {
-      if (!FTerminal->CreateLocalFile(LocalFileName, OperationProgress,
-             &LocalHandle, FLAGSET(Params, cpNoConfirmation)))
+      // if not already opened (resume, append...), create new empty file
+      if (!LocalHandle)
       {
-        throw ESkipFile();
+        if (!FTerminal->CreateLocalFile(LocalFileName, OperationProgress,
+               &LocalHandle, FLAGSET(Params, cpNoConfirmation)))
+        {
+          throw ESkipFile();
+        }
       }
+      DebugAssert(LocalHandle);
+
+      DeleteLocalFile = true;
+
+      FileStream = new TSafeHandleStream((THandle)LocalHandle);
     }
-    DebugAssert(LocalHandle);
-
-    DeleteLocalFile = true;
-
-    FileStream = new TSafeHandleStream((THandle)LocalHandle);
 
     // at end of this block queue is discarded
     {
@@ -5539,7 +5609,7 @@ void __fastcall TSFTPFileSystem::Sink(
               Encryption.Decrypt(BlockBuf);
             }
 
-            WriteLocalFile(FileStream, BlockBuf, LocalFileName, OperationProgress);
+            WriteLocalFile(CopyParam, FileStream, BlockBuf, LocalFileName, OperationProgress);
           }
 
           if (OperationProgress->Cancel != csContinue)
@@ -5565,7 +5635,7 @@ void __fastcall TSFTPFileSystem::Sink(
           TFileBuffer BlockBuf;
           if (Encryption.DecryptEnd(BlockBuf))
           {
-            WriteLocalFile(FileStream, BlockBuf, LocalFileName, OperationProgress);
+            WriteLocalFile(CopyParam, FileStream, BlockBuf, LocalFileName, OperationProgress);
           }
         }
       }
@@ -5576,30 +5646,34 @@ void __fastcall TSFTPFileSystem::Sink(
       // queue is discarded here
     }
 
-    if (CopyParam->PreserveTime)
+    if (CopyParam->OnTransferOut == NULL)
     {
-      FTerminal->UpdateTargetTime(LocalHandle, Modification, FTerminal->SessionData->DSTMode);
-    }
-
-    CloseHandle(LocalHandle);
-    LocalHandle = NULL;
-
-    if (ResumeAllowed)
-    {
-      FILE_OPERATION_LOOP_BEGIN
+      DebugAssert(LocalHandle);
+      if (CopyParam->PreserveTime)
       {
-        if (FileExists(ApiPath(DestFullName)))
-        {
-          DeleteFileChecked(DestFullName);
-        }
-        THROWOSIFFALSE(Sysutils::RenameFile(ApiPath(DestPartialFullName), ApiPath(DestFullName)));
+        FTerminal->UpdateTargetTime(LocalHandle, Modification, FTerminal->SessionData->DSTMode);
       }
-      FILE_OPERATION_LOOP_END(FMTLOAD(RENAME_AFTER_RESUME_ERROR, (ExtractFileName(DestPartialFullName), DestFileName)));
+
+      CloseHandle(LocalHandle);
+      LocalHandle = NULL;
+
+      if (ResumeAllowed)
+      {
+        FILE_OPERATION_LOOP_BEGIN
+        {
+          if (FileExists(ApiPath(DestFullName)))
+          {
+            DeleteFileChecked(DestFullName);
+          }
+          THROWOSIFFALSE(Sysutils::RenameFile(ApiPath(DestPartialFullName), ApiPath(DestFullName)));
+        }
+        FILE_OPERATION_LOOP_END(FMTLOAD(RENAME_AFTER_RESUME_ERROR, (ExtractFileName(DestPartialFullName), DestFileName)));
+      }
+
+      DeleteLocalFile = false;
+
+      FTerminal->UpdateTargetAttrs(DestFullName, File, CopyParam, Attrs);
     }
-
-    DeleteLocalFile = false;
-
-    FTerminal->UpdateTargetAttrs(DestFullName, File, CopyParam, Attrs);
 
   }
   __finally

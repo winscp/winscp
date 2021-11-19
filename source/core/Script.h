@@ -54,8 +54,8 @@ public:
   virtual __fastcall ~TScript();
 
   void __fastcall Command(UnicodeString Cmd);
-  void __fastcall Log(TLogLineType Type, UnicodeString Str);
-  void __fastcall PrintLine(const UnicodeString Str, bool Error = false);
+  void __fastcall Log(TLogLineType Type, const UnicodeString & Str, TTerminal * ATerminal = NULL);
+  void __fastcall PrintLine(const UnicodeString Str, bool Error = false, TTerminal * ATerminal = NULL);
   void __fastcall StartInteractive();
 
   void __fastcall Synchronize(const UnicodeString LocalDirectory,
@@ -76,9 +76,12 @@ public:
   __property bool Groups = { read = FGroups, write = FGroups };
   __property bool WantsProgress = { read = FWantsProgress, write = FWantsProgress };
   __property bool Interactive = { read = FInteractive, write = FInteractive };
+  __property TTransferOutEvent OnTransferOut = { read = FOnTransferOut, write = FOnTransferOut };
+  __property TTransferInEvent OnTransferIn = { read = FOnTransferIn, write = FOnTransferIn };
 
 protected:
   TTerminal * FTerminal;
+  TTerminal * FLoggingTerminal;
   TScriptCommands * FCommands;
   TScriptPrintEvent FOnPrint;
   TExtendedExceptionEvent FOnShowExtendedException;
@@ -103,6 +106,8 @@ protected:
   bool FGroups;
   bool FWantsProgress;
   bool FInteractive;
+  TTransferOutEvent FOnTransferOut;
+  TTransferInEvent FOnTransferIn;
   TStrings * FPendingLogLines;
   bool FWarnNonDefaultCopyParam;
   bool FWarnNonDefaultSynchronizeParams;
@@ -227,8 +232,8 @@ protected:
 
   virtual void __fastcall ResetTransfer();
   void __fastcall Input(const UnicodeString Prompt, UnicodeString & Str, bool AllowEmpty);
-  void __fastcall TerminalInformation(TTerminal * Terminal, const UnicodeString & Str,
-    bool Status, int Phase);
+  void __fastcall TerminalInformation(
+    TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase, const UnicodeString & Additional);
   void __fastcall TerminalOperationProgress(TFileOperationProgressType & ProgressData);
   void __fastcall TerminalOperationFinished(TFileOperation Operation, TOperationSide Side,
     bool Temp, const UnicodeString & FileName, Boolean Success,

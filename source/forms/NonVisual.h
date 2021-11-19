@@ -17,7 +17,6 @@
 #include "TBX.hpp"
 #include "TB2ExtItems.hpp"
 #include "TBXExtItems.hpp"
-#include <ShellAnimations.hpp>
 #include "TBXToolPals.hpp"
 #include <System.Actions.hpp>
 //---------------------------------------------------------------------------
@@ -40,6 +39,7 @@
 #define fcSessionsTabs     0x25
 #define fcLocalPopup       0x26
 #define fcRemotePathComboBox 0x27
+#define fcQueueFileList    0x28
 
 #define fcExplorerMenuBand        0x31
 #define fcExplorerAddressBand     0x32
@@ -268,7 +268,6 @@ __published:    // IDE-managed Components
   TTBXItem *Customize4;
   TTBXPopupMenu *RemotePanelPopup;
   TTBXItem *CopyPathtoClipboard1;
-  TTBXItem *OpenDirectoryBookmark1;
   TTBXSeparatorItem *N51;
   TTBXItem *HistoryButtons5;
   TTBXItem *NavigationButtons5;
@@ -278,7 +277,6 @@ __published:    // IDE-managed Components
   TTBXItem *StatusBar9;
   TTBXPopupMenu *LocalPanelPopup;
   TTBXItem *CopyPathtoClipboard2;
-  TTBXItem *OpenDirectoryBookmark2;
   TTBXSeparatorItem *N52;
   TTBXItem *HistoryButtons6;
   TTBXItem *NavigationButtons6;
@@ -494,7 +492,6 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem36;
   TTBXItem *TBXItem37;
   TTBXItem *TBXItem38;
-  TShellResources *ShellResources;
   TTBXColorItem *ColorMenuItem;
   TAction *CurrentEditInternalAction;
   TAction *SaveWorkspaceAction;
@@ -550,7 +547,6 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem59;
   TTBXItem *TBXItem60;
   TTBXItem *TBXItem61;
-  TTBXItem *TBXItem62;
   TTBXSeparatorItem *TBXSeparatorItem4;
   TTBXItem *TBXItem63;
   TAction *LocalCopyFocusedAction;
@@ -629,6 +625,29 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem81;
   TTBXSeparatorItem *TBXSeparatorItem12;
   TTBXItem *TBXItem82;
+  TAction *QueueFileListAction;
+  TTBXItem *TBXItem83;
+  TTBXItem *TBXItem84;
+  TTBXItem *TBXItem85;
+  TTBXSubmenuItem *TBXSubmenuItem8;
+  TTBXItem *TBXItem86;
+  TTBXSeparatorItem *TBXSeparatorItem13;
+  TTBXItem *TBXItem87;
+  TTBXItem *TBXItem88;
+  TTBXItem *TBXItem89;
+  TTBXSeparatorItem *TBXSeparatorItem14;
+  TTBXItem *TBXItem90;
+  TTBXItem *TBXItem91;
+  TTBXSubmenuItem *TBXSubmenuItem10;
+  TTBXItem *TBXItem92;
+  TTBXItem *TBXItem93;
+  TTBXSeparatorItem *TBXSeparatorItem15;
+  TTBXItem *TBXItem94;
+  TTBXItem *TBXItem95;
+  TTBXItem *TBXItem96;
+  TTBXSeparatorItem *TBXSeparatorItem16;
+  TTBXItem *TBXItem97;
+  TTBXItem *TBXItem98;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);
@@ -691,6 +710,7 @@ protected:
   TAction * __fastcall CurrentQueueOnceEmptyAction();
   void __fastcall CloneShortcuts();
   void __fastcall ToolbarButtonItemClick(TObject * Sender);
+  void __fastcall CustomCommandsCustomize(TObject * Sender);
 
 public:
   __fastcall TNonVisualDataModule(TComponent * Owner);

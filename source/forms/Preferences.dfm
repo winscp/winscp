@@ -100,7 +100,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Overwriting of files'
-            TabOrder = 1
+            TabOrder = 2
             OnClick = ControlChange
           end
           object ConfirmDeletingCheck: TCheckBox
@@ -110,7 +110,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Deleting of files (recommended)'
-            TabOrder = 4
+            TabOrder = 5
             OnClick = ControlChange
           end
           object ConfirmClosingSessionCheck2: TCheckBox
@@ -120,7 +120,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Closing sessions when exiting appli&cation'
-            TabOrder = 6
+            TabOrder = 7
             OnClick = ControlChange
           end
           object DDTransferConfirmationCheck2: TCheckBox
@@ -130,7 +130,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'D&rag && drop operations and paste to other applications'
-            TabOrder = 8
+            TabOrder = 1
             OnClick = ControlChange
           end
           object ContinueOnErrorCheck: TCheckBox
@@ -150,7 +150,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Exiting application on o&peration completion'
-            TabOrder = 7
+            TabOrder = 8
             OnClick = ControlChange
           end
           object ConfirmResumeCheck: TCheckBox
@@ -160,7 +160,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Trans&fer resuming'
-            TabOrder = 2
+            TabOrder = 3
             OnClick = ControlChange
           end
           object ConfirmCommandSessionCheck: TCheckBox
@@ -180,7 +180,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Moving files to Recycle bin'
-            TabOrder = 5
+            TabOrder = 6
             OnClick = ControlChange
           end
           object ConfirmTransferringCheck: TCheckBox
@@ -201,7 +201,7 @@ object PreferencesDialog: TPreferencesDialog
             Alignment = taRightJustify
             AutoSize = False
             Caption = 'Change confirmations of background transfers'
-            TabOrder = 3
+            TabOrder = 4
             TabStop = True
             OnClick = BackgroundConfirmationsLinkClick
           end
@@ -2776,24 +2776,31 @@ object PreferencesDialog: TPreferencesDialog
         DesignSize = (
           405
           398)
-        object ExternalIpAddressGroupBox: TGroupBox
+        object ExternalIpAddressGroupBox2: TGroupBox
           Left = 8
           Top = 8
           Width = 389
-          Height = 98
+          Height = 152
           Anchors = [akLeft, akTop, akRight]
-          Caption = 'External IP address'
+          Caption = 'Incoming FTP connections (active mode)'
           TabOrder = 0
           DesignSize = (
             389
-            98)
+            152)
+          object LocalPortNumberRangeLabel: TLabel
+            Left = 133
+            Top = 120
+            Width = 6
+            Height = 13
+            Caption = #8211
+          end
           object RetrieveExternalIpAddressButton: TRadioButton
             Left = 16
             Top = 21
             Width = 361
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Retrieve external IP address from &operating system'
+            Caption = 'Retrieve the external IP address from &operating system'
             TabOrder = 0
             OnClick = ControlChange
           end
@@ -2803,22 +2810,60 @@ object PreferencesDialog: TPreferencesDialog
             Width = 361
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Use &following external IP address:'
+            Caption = 'Use the &following external IP address:'
             TabOrder = 1
             OnClick = ControlChange
           end
           object CustomExternalIpAddressEdit: TEdit
             Left = 45
             Top = 67
-            Width = 136
+            Width = 182
             Height = 21
             TabOrder = 2
             OnClick = ControlChange
           end
+          object LocalPortNumberCheck: TCheckBox
+            Left = 16
+            Top = 94
+            Width = 361
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Limit listening &ports to:'
+            TabOrder = 3
+            OnClick = ControlChange
+          end
+          object LocalPortNumberMinEdit: TUpDownEdit
+            Left = 45
+            Top = 117
+            Width = 82
+            Height = 21
+            Alignment = taRightJustify
+            MaxValue = 65535.000000000000000000
+            MinValue = 1024.000000000000000000
+            Value = 1.000000000000000000
+            Anchors = [akTop, akRight]
+            TabOrder = 4
+            OnChange = ControlChange
+            OnExit = LocalPortNumberMinEditExit
+          end
+          object LocalPortNumberMaxEdit: TUpDownEdit
+            Left = 145
+            Top = 117
+            Width = 82
+            Height = 21
+            Alignment = taRightJustify
+            MaxValue = 65535.000000000000000000
+            MinValue = 1024.000000000000000000
+            Value = 1.000000000000000000
+            Anchors = [akTop, akRight]
+            TabOrder = 5
+            OnChange = ControlChange
+            OnExit = LocalPortNumberMaxEditExit
+          end
         end
         object ConnectionsGroup: TGroupBox
           Left = 8
-          Top = 112
+          Top = 166
           Width = 389
           Height = 53
           Anchors = [akLeft, akTop, akRight]

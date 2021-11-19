@@ -11,7 +11,7 @@ class CTransferSocket;
 class CMainThread;
 //---------------------------------------------------------------------------
 class CAsyncProxySocketLayer;
-class CMainThread;
+class CFtpListResult;
 //---------------------------------------------------------------------------
 #define CSMODE_NONE             0x0000
 #define CSMODE_CONNECT          0x0001
@@ -99,6 +99,7 @@ public:
   _int64 GetAbleToTransferSize(enum transferDirection direction, bool &beenWaiting, int nBufSize = 0);
 
   t_server GetCurrentServer();
+  CFtpListResult * CreateListResult(bool mlst);
 
 public:
   virtual void OnReceive(int nErrorCode);
@@ -116,6 +117,7 @@ protected:
   void SetFileExistsAction(int nAction, COverwriteRequestData * pData);
   void SetVerifyCertResult(int nResult, t_SslCertData * pData);
   void ResetOperation(int nSuccessful = -1);
+  void ResetTransferSocket(int Error);
 
   void DoClose(int nError = 0);
   int GetReplyCode();
@@ -142,6 +144,7 @@ protected:
 
   virtual void LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg);
   virtual bool LoggingSocketMessage(int nMessageType);
+  virtual int GetSocketOptionVal(int OptionID) const;
 
   void ShowStatus(UINT nID, int type) const;
   void ShowStatus(CString status,int type) const;

@@ -265,7 +265,8 @@ void __fastcall TFullSynchronizeDialog::SetParams(int value)
 {
   FParams = value &
     ~(TTerminal::spDelete | TTerminal::spExistingOnly | TTerminal::spPreviewChanges | TTerminal::spTimestamp |
-      TTerminal::spNotByTime | TTerminal::spBySize | TTerminal::spSelectedOnly | TTerminal::spMirror);
+      TTerminal::spNotByTime | TTerminal::spBySize | TTerminal::spSelectedOnly | TTerminal::spMirror |
+      TTerminal::spCaseSensitive);
   SynchronizeDeleteCheck->Checked = FLAGSET(value, TTerminal::spDelete);
   SynchronizeExistingOnlyCheck->Checked = FLAGSET(value, TTerminal::spExistingOnly);
   SynchronizePreviewChangesCheck->Checked = FLAGSET(value, TTerminal::spPreviewChanges);
@@ -284,6 +285,7 @@ void __fastcall TFullSynchronizeDialog::SetParams(int value)
   }
   SynchronizeByTimeCheck->Checked = FLAGCLEAR(value, TTerminal::spNotByTime);
   SynchronizeBySizeCheck->Checked = FLAGSET(value, TTerminal::spBySize);
+  SynchronizeCaseSensitiveCheck->Checked = FLAGSET(value, TTerminal::spCaseSensitive);
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -298,7 +300,8 @@ int __fastcall TFullSynchronizeDialog::GetParams()
       TTerminal::spTimestamp) |
     FLAGMASK(MirrorFilesButton->Checked, TTerminal::spMirror) |
     FLAGMASK(!SynchronizeByTimeCheck->Checked, TTerminal::spNotByTime) |
-    FLAGMASK(SynchronizeBySizeCheck->Checked, TTerminal::spBySize);
+    FLAGMASK(SynchronizeBySizeCheck->Checked, TTerminal::spBySize) |
+    FLAGMASK(SynchronizeCaseSensitiveCheck->Checked, TTerminal::spCaseSensitive);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::LocalDirectoryBrowseButtonClick(

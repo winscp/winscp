@@ -12,7 +12,10 @@
 #include <math.h>
 #include <shlobj.h>
 #include <limits>
+#include <algorithm>
 #include <shlwapi.h>
+#include <tlhelp32.h>
+#include <psapi.h>
 #include <CoreMain.h>
 #include <openssl/pkcs12.h>
 #include <openssl/pem.h>
@@ -181,6 +184,7 @@ UnicodeString DefaultStr(const UnicodeString & Str, const UnicodeString & Defaul
   }
 }
 //---------------------------------------------------------------------------
+// For alternative with quoting support, see TFTPFileSystem::CutFeature
 UnicodeString CutToChar(UnicodeString &Str, wchar_t Ch, bool Trim)
 {
   Integer P = Str.Pos(Ch);
@@ -267,12 +271,20 @@ UnicodeString CopyToChar(const UnicodeString & Str, wchar_t Ch, bool Trim)
   return CopyToChars(Str, From, UnicodeString(Ch), Trim);
 }
 //---------------------------------------------------------------------------
-UnicodeString RemoveSuffix(const UnicodeString & Str, const UnicodeString & Suffix)
+UnicodeString RemoveSuffix(const UnicodeString & Str, const UnicodeString & Suffix, bool RemoveNumbersAfterSuffix)
 {
   UnicodeString Result = Str;
-  if (EndsStr(Suffix, Result))
+  UnicodeString Buf = Str;
+  if (RemoveNumbersAfterSuffix)
   {
-    Result.SetLength(Result.Length() - Suffix.Length());
+    while (!Buf.IsEmpty() && IsDigit(Buf[Buf.Length()]))
+    {
+      Buf.SetLength(Buf.Length() - 1);
+    }
+  }
+  if (EndsStr(Suffix, Buf))
+  {
+    Result.SetLength(Buf.Length() - Suffix.Length());
   }
   return Result;
 }
@@ -894,14 +906,23 @@ bool __fastcall SamePaths(const UnicodeString & Path1, const UnicodeString & Pat
 int __fastcall CompareLogicalText(
   const UnicodeString & S1, const UnicodeString & S2, bool NaturalOrderNumericalSorting)
 {
+  // Keep in sync with CompareLogicalTextPas
+
+  int Result;
   if (NaturalOrderNumericalSorting)
   {
-    return StrCmpLogicalW(S1.c_str(), S2.c_str());
+    Result = StrCmpLogicalW(S1.c_str(), S2.c_str());
   }
   else
   {
-    return lstrcmpi(S1.c_str(), S2.c_str());
+    Result = lstrcmpi(S1.c_str(), S2.c_str());
   }
+  // For deterministics results
+  if (Result == 0)
+  {
+    Result = lstrcmp(S1.c_str(), S2.c_str());
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 int __fastcall CompareNumber(__int64 Value1, __int64 Value2)
@@ -1401,7 +1422,19 @@ bool __fastcall IsHex(wchar_t Ch)
 TSearchRecSmart::TSearchRecSmart()
 {
   FLastWriteTimeSource.dwLowDateTime = 0;
+  FLastWriteTimeSource.dwHighDateTime = 0;
+}
+//---------------------------------------------------------------------------
+void TSearchRecSmart::Clear()
+{
+  Size = 0;
+  Attr = 0;
+  Name = TFileName();
+  ExcludeAttr = 0;
+  FindHandle = 0;
+  memset(&FindData, 0, sizeof(FindData));
   FLastWriteTimeSource.dwLowDateTime = 0;
+  FLastWriteTimeSource.dwHighDateTime = 0;
 }
 //---------------------------------------------------------------------------
 TDateTime TSearchRecSmart::GetLastWriteTime() const
@@ -2949,6 +2982,28 @@ bool __fastcall IsWin10()
   return CheckWin32Version(10, 0);
 }
 //---------------------------------------------------------------------------
+static OSVERSIONINFO __fastcall GetWindowsVersion()
+{
+  OSVERSIONINFO Result;
+  memset(&Result, 0, sizeof(Result));
+  Result.dwOSVersionInfoSize = sizeof(Result);
+  // Cannot use the VCL Win32MajorVersion+Win32MinorVersion+Win32BuildNumber as
+  // on Windows 10 due to some hacking in InitPlatformId, the Win32BuildNumber is lost
+  GetVersionEx(&Result);
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsWin10Build(unsigned int BuildNumber)
+{
+  // It might be enough to check the dwBuildNumber, as we do in TWinConfiguration::IsDDExtBroken()
+  OSVERSIONINFO OSVersionInfo = GetWindowsVersion();
+  return
+    (OSVersionInfo.dwMajorVersion > 10) ||
+    ((OSVersionInfo.dwMajorVersion == 10) && (OSVersionInfo.dwMinorVersion > 0)) ||
+    ((OSVersionInfo.dwMajorVersion == 10) && (OSVersionInfo.dwMinorVersion == 0) &&
+     (OSVersionInfo.dwBuildNumber >= BuildNumber));
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsWine()
 {
   HMODULE NtDll = GetModuleHandle(L"ntdll.dll");
@@ -3031,17 +3086,6 @@ UnicodeString __fastcall WindowsProductName()
   catch(...)
   {
   }
-  return Result;
-}
-//---------------------------------------------------------------------------
-static OSVERSIONINFO __fastcall GetWindowsVersion()
-{
-  OSVERSIONINFO Result;
-  memset(&Result, 0, sizeof(Result));
-  Result.dwOSVersionInfoSize = sizeof(Result);
-  // Cannot use the VCL Win32MajorVersion+Win32MinorVersion+Win32BuildNumber as
-  // on Windows 10 due to some hacking in InitPlatformId, the Win32BuildNumber is lost
-  GetVersionEx(&Result);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -4065,4 +4109,140 @@ void SetStringValueEvenIfEmpty(TStrings * Strings, const UnicodeString & Name, c
   {
     Strings->Values[Name] = Value;
   }
+}
+//---------------------------------------------------------------------------
+DWORD __fastcall GetParentProcessId(HANDLE Snapshot, DWORD ProcessId)
+{
+  DWORD Result = 0;
+
+  PROCESSENTRY32 ProcessEntry;
+  memset(&ProcessEntry, sizeof(ProcessEntry), 0);
+  ProcessEntry.dwSize = sizeof(PROCESSENTRY32);
+
+  if (Process32First(Snapshot, &ProcessEntry))
+  {
+    do
+    {
+      if (ProcessEntry.th32ProcessID == ProcessId)
+      {
+        Result = ProcessEntry.th32ParentProcessID;
+      }
+    } while (Process32Next(Snapshot, &ProcessEntry));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+static UnicodeString GetProcessName(DWORD ProcessId)
+{
+  UnicodeString Result;
+  HANDLE Process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, ProcessId);
+   // is common, when the parent process is installer, so we ignore it
+  if (Process)
+  {
+    Result.SetLength(MAX_PATH);
+    DWORD Len = GetModuleFileNameEx(Process, NULL, Result.c_str(), Result.Length());
+    Result.SetLength(Len);
+    // is common too, for some reason
+    if (!Result.IsEmpty())
+    {
+      Result = ExtractProgramName(FormatCommand(Result, UnicodeString()));
+    }
+    CloseHandle(Process);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString ParentProcessName;
+//---------------------------------------------------------------------------
+UnicodeString __fastcall GetAncestorProcessName(int Levels)
+{
+  UnicodeString Result;
+  bool Parent = (Levels == 1);
+  if (Parent && !ParentProcessName.IsEmpty())
+  {
+    Result = ParentProcessName;
+  }
+  else
+  {
+    try
+    {
+      HANDLE Snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+
+      DWORD ProcessId = GetCurrentProcessId();
+
+      typedef std::vector<DWORD> TProcesses;
+      TProcesses Processes;
+      // Either more to go (>0) or collecting all levels (-1 from GetAncestorProcessNames)
+      while ((Levels != 0) &&
+             (Levels > -20) && // prevent infinite loops
+             (ProcessId != 0))
+      {
+        const UnicodeString Sep(L", ");
+        ProcessId = GetParentProcessId(Snapshot, ProcessId);
+        // When ancestor process is terminated and another process reuses its ID, we may get a cycle.
+        TProcesses::const_iterator I = std::find(Processes.begin(), Processes.end(), ProcessId);
+        if (I != Processes.end())
+        {
+          int Index = I - Processes.begin();
+          AddToList(Result, FORMAT(L"cycle-%d", (Index)), Sep);
+          ProcessId = 0;
+        }
+        else
+        {
+          Processes.push_back(ProcessId);
+
+          if ((Levels < 0) && (ProcessId != 0))
+          {
+            UnicodeString Name = GetProcessName(ProcessId);
+            if (Name.IsEmpty())
+            {
+              Name = L"...";
+              ProcessId = 0;
+            }
+            AddToList(Result, Name, Sep);
+          }
+          Levels--;
+        }
+      }
+
+      if (Levels >= 0)
+      {
+        if (ProcessId == 0)
+        {
+          Result = L"err-notfound";
+        }
+        else
+        {
+          Result = GetProcessName(ProcessId);
+        }
+      }
+      else if (Result.IsEmpty())
+      {
+        Result = L"n/a";
+      }
+
+      CloseHandle(Snapshot);
+    }
+    catch (...)
+    {
+      Result = L"err-except";
+    }
+
+    if (Parent)
+    {
+      ParentProcessName = Result;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString AncestorProcessNames;
+//---------------------------------------------------------------------------
+UnicodeString GetAncestorProcessNames()
+{
+  if (AncestorProcessNames.IsEmpty())
+  {
+    AncestorProcessNames = GetAncestorProcessName(-1);
+  }
+  return AncestorProcessNames;
 }

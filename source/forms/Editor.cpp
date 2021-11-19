@@ -836,15 +836,27 @@ void __fastcall TEditorForm::SaveFile()
   if (IsFileModified())
   {
     DebugAssert(!FFileName.IsEmpty());
-    SaveToFile();
-    if (FOnFileChanged)
-    {
-      FOnFileChanged(this);
-    }
     FSaving = true;
-    EditorMemo->Modified = false;
-    NewFile = false;
-    UpdateControls();
+    UpdateControls(); // It does not redraw the status bar anyway
+    bool Direct = (FOnFileChanged == NULL);
+    try
+    {
+      SaveToFile();
+      if (!Direct)
+      {
+        FOnFileChanged(this);
+      }
+      EditorMemo->Modified = false;
+      NewFile = false;
+    }
+    __finally
+    {
+      if (Direct)
+      {
+        FSaving = false;
+      }
+      UpdateControls();
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1397,7 +1409,7 @@ void __fastcall TEditorForm::CheckFileSize()
         TMessageParams Params(mpNeverAskAgainCheck);
         unsigned int Answer =
           MoreMessageDialog(
-            FMTLOAD(INTERNAL_EDITOR_LARGE_FILE, (FormatBytes(Size))), NULL,
+            FMTLOAD(INTERNAL_EDITOR_LARGE_FILE2, (FormatBytes(Size))), NULL,
             qtConfirmation, qaOK | qaCancel, HELP_NONE, &Params);
         switch (Answer)
         {

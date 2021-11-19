@@ -4,153 +4,13 @@
 #include "FileZillaApi.h"
 #include <WideStrUtils.hpp>
 
-//////////////////////////////////////////////////////////////////////
-// Konstruktion/Destruktion
-//////////////////////////////////////////////////////////////////////
-//#define LISTDEBUG
-#ifdef LISTDEBUG
-  //It's the normal UNIX format (or even another nonstandard format)
-  //Some samples are from https://cr.yp.to/ftpparse/ftpparse.c
-  /* UNIX-style listing, without inum and without blocks */
-
-  static char data[][110]={
-    "-rw-r--r--   1 root     other        531 Jan 29 03:26 01-unix-std file",
-    "dr-xr-xr-x   2 root     other        512 Apr  8  1994 02-unix-std dir",
-    "dr-xr-xr-x   2 root                  512 Apr  8  1994 03-unix-nogroup dir",
-    "lrwxrwxrwx   1 root     other          7 Jan 25 00:17 04-unix-std link -> usr/bin",
-
-    /* Some listings with uncommon date/time format: */
-    "-rw-r--r--   1 root     other        531 09-26 2000 05-unix-date file",
-    "-rw-r--r--   1 root     other        531 09-26 13:45 06-unix-date file",
-    "-rw-r--r--   1 root     other        531 2005-06-07 21:22 07-unix-date file",
-
-    /* Unix style with size information in kilobytes */
-    "-rw-r--r--   1 root     other  34.5k Oct 5 21:22 08-unix-namedsize file",
-
-    /* Also NetWare: */
-    "d [R----F--] supervisor            512       Jan 16 18:53    09-netware dir",
-    "- [R----F--] rhesus             214059       Oct 20 15:27    10-netware file",
-
-    /* Also NetPresenz for the Mac: */
-    "-------r--         326  1391972  1392298 Nov 22  1995 11-netpresenz file",
-    "drwxrwxr-x               folder        2 May 10  1996 12-netpresenz dir",
-
-    /* A format with domain field some windows servers send */
-    "-rw-r--r--   1 group domain user 531 Jan 29 03:26 13-unix-domain file",
-
-    /* EPLF directory listings */
-    "+i8388621.48594,m825718503,r,s280,\t14-eplf file",
-    "+i8388621.50690,m824255907,/,\t15-eplf dir",
-
-    /* MSDOS type listing used by IIS */
-    "04-27-00  12:09PM       <DIR>          16-dos-dateambigious dir",
-    "04-14-00  03:47PM                  589 17-dos-dateambigious file",
-
-    /* Another type of MSDOS style listings */
-    "2002-09-02  18:48       <DIR>          18-dos-longyear dir",
-    "2002-09-02  19:06                9,730 19-dos-longyear file",
-
-    /* Numerical Unix style format */
-    "0100644   500  101   12345    123456789       20-unix-numerical file",
-
-    /* This one is used by SSH-2.0-VShell_2_1_2_143, this is the old VShell format */
-    "206876  Apr 04, 2000 21:06 21-vshell-old file",
-    "0  Dec 12, 2002 02:13 22-vshell-old dir/",
-
-    /* This type of directory listings is sent by some newer versions of VShell
-     * both year and time in one line is uncommon.
-     */
-    "-rwxr-xr-x    1 user group        9 Oct 08, 2002 09:47 23-vshell-new file",
-
-    /* Next ones come from an OS/2 server. The server obviously isn't Y2K aware */
-    "36611      A    04-23-103  10:57  24-os2 file",
-    " 1123      A    07-14-99   12:37  25-os2 file",
-    "    0 DIR       02-11-103  16:15  26-os2 dir",
-    " 1123 DIR  A    10-05-100  23:38  27-os2 dir",
-
-    /* Some servers send localized date formats, here the German one: */
-    "dr-xr-xr-x   2 root     other      2235 26. Juli, 20:10 28-datetest-ger dir",
-    "-r-xr-xr-x   2 root     other      2235 2.   Okt.  2003 29-datetest-ger file",
-    "-r-xr-xr-x   2 root     other      2235 1999/10/12 17:12 30-datetest file",
-    "-r-xr-xr-x   2 root     other      2235 24-04-2003 17:12 31-datetest file",
-
-    /* Here a Japanese one: */
-    "-rw-r--r--   1 root       sys           8473  4\x8c\x8e 18\x93\xfa 2003\x94\x4e 32-datatest-japanese file",
-
-    /* VMS style listings */
-    "33-vms-dir.DIR;1  1 19-NOV-2001 21:41 [root,root] (RWE,RWE,RE,RE)",
-    "34-vms-file;1       155   2-JUL-2003 10:30:13.64",
-
-    /* VMS style listings without time */
-    "35-vms-notime-file;1    2/8    15-JAN-2000    [IV2_XXX]   (RWED,RWED,RE,)",
-    "36-vms-notime-file;1    6/8    15-JUI-2002    PRONAS   (RWED,RWED,RE,)",
-
-    /* VMS multiline */
-    "37-vms-multiline-file;1\r\n170774/170775     24-APR-2003 08:16:15  [FTP_CLIENT,SCOT]      (RWED,RWED,RE,)",
-    "38-vms-multiline-file;1\r\n10           2-JUL-2003 10:30:08.59  [FTP_CLIENT,SCOT]      (RWED,RWED,RE,)",
-
-    /* IBM AS/400 style listing */
-    "QSYS            77824 02/23/00 15:09:55 *DIR 39-ibm-as400 dir/",
-    "QSYS            77824 23/02/00 15:09:55 *FILE 40-ibm-as400-date file",
-
-    /* aligned directory listing with too long size */
-    "-r-xr-xr-x longowner longgroup123456 Feb 12 17:20 41-unix-concatsize file",
-
-    /* short directory listing with month name */
-    "-r-xr-xr-x 2 owner group 4512 01-jun-99 42_unix_shortdatemonth file",
-
-    /* the following format is sent by the Connect:Enterprise server by Sterling Commerce */
-    "-C--E-----FTP B BCC3I1       7670  1294495 Jan 13 07:42 43-conent file",
-    "-C--E-----FTS B BCC3I1       7670  1294495 Jan 13 07:42 44-conent-file",
-
-    "-AR--M----TCP B ceunix      17570  2313708 Mar 29 08:56 45-conent-file",
-
-    /* Nortel wfFtp router */
-    "46-nortel-wfftp-file       1014196  06/03/04  Thur.   10:20:03",
-
-    /* VxWorks based server used in Nortel routers */
-    "2048    Feb-28-1998  05:23:30   47-nortel-vxworks dir <DIR>",
-
-    /* IBM MVS listings */
-    // Volume Unit    Referred Ext Used Recfm Lrecl BlkSz Dsorg Dsname
-    "  WYOSPT 3420   2003/05/21  1  200  FB      80  8053  PS  48-MVS.FILE",
-    "  WPTA01 3290   2004/03/04  1    3  FB      80  3125  PO  49-MVS.DATASET",
-    "  TSO004 3390   VSAM 50-mvs-file",
-    "  TSO005 3390   2005/06/06 213000 U 0 27998 PO 51-mvs-dir",
-    // Tape file (z/OS)
-    "C03193 Tape                                             AT.CCRIS.TP",
-
-    /* Dataset members */
-    // Name         VV.MM   Created      Changed       Size  Init  Mod Id
-    // ADATAB /* filenames without data, only check for those on MVS servers */
-    "  52-MVSPDSMEMBER 01.01 2004/06/22 2004/06/22 16:32   128   128    0 BOBY12",
-
-    "53-MVSPDSMEMBER2 00B308 000411  00 FO        RU      31    ANY",
-    "54-MVSPDSMEMBER3 00B308 000411  00 FO        RU      ANY    24",
-
-    // Some asian listing format. Those >127 chars are just examples
-    "-rwxrwxrwx   1 root     staff          0 2003   3\xed\xef 20 55-asian date file",
-        "-r--r--r-- 1 root root 2096 8\xed 17 08:52 56-asian date file",
-
-    // VMS style listing with a different field order
-    "57-vms-alternate-field-order-file;1   [SUMMARY]    1/3     2-AUG-2006 13:05  (RWE,RWE,RE,)",
-
-    ""};
-
-#endif
-
-CFtpListResult::CFtpListResult(t_server server, bool *bUTF8)
+CFtpListResult::CFtpListResult(t_server server, bool mlst, bool *bUTF8, bool vmsAllRevisions, bool debugShowListing)
 {
-  listhead=curpos=0;
-
+  m_mlst = mlst;
   m_server = server;
   m_bUTF8 = bUTF8;
-
-  pos=0;
-
-  m_prevline=0;
-  m_curline=0;
-  m_curlistaddpos=0;
+  m_vmsAllRevisions = vmsAllRevisions;
+  m_debugShowListing = debugShowListing;
 
   //Fill the month names map
 
@@ -365,122 +225,37 @@ CFtpListResult::CFtpListResult(t_server server, bool *bUTF8)
 
   // Slovenian month names
   m_MonthNamesMap[L"avg"] = 8;
-
-#ifdef LISTDEBUG
-  int i=-1;
-  while (*data[++i])
-  {
-    char *pData=new char[strlen(data[i])+3];
-    sprintf(pData, "%s\r\n", data[i]);
-    AddData(pData, strlen(pData));
-  }
-  TRACE1("%d lines added\n", i);
-#endif
 }
 
-
-CFtpListResult::~CFtpListResult()
+t_directory::t_direntry * CFtpListResult::getList(int & Num)
 {
-  t_list *ptr=listhead;
-  t_list *ptr2;
-  while (ptr)
+  if (!FBuffer.IsEmpty())
   {
-    delete [] ptr->buffer;
-    ptr2=ptr;
-    ptr=ptr->next;
-    delete ptr2;
+    SendLineToMessageLog("Unparsed listing:");
+    SendLineToMessageLog(FBuffer);
   }
-  if (m_prevline)
-    delete [] m_prevline;
-  if (m_curline)
-    delete [] m_curline;
+  Num = m_EntryList.size();
+  t_directory::t_direntry * Result;
+  if (Num == 0)
+  {
+    SendLineToMessageLog("<Empty directory listing>");
+    Result = NULL;
+  }
+  else
+  {
+    Result = new t_directory::t_direntry[Num];
+    int I = 0;
+    for (tEntryList::iterator Iter = m_EntryList.begin(); Iter != m_EntryList.end(); Iter++, I++)
+    {
+      Result[I] = *Iter;
+    }
+    m_EntryList.clear();
+  }
+
+  return Result;
 }
 
-t_directory::t_direntry *CFtpListResult::getList(int &num, bool mlst)
-{
-  #ifdef _DEBUG
-  USES_CONVERSION;
-  #endif
-  char *line=GetLine();
-  m_curline=line;
-  while (line)
-  {
-    int tmp;
-    char *tmpline = new char[strlen(line) + 1];
-    strcpy(tmpline, line);
-    t_directory::t_direntry direntry;
-    if (parseLine(tmpline, strlen(tmpline), direntry, tmp, mlst))
-    {
-      delete [] tmpline;
-      if (tmp)
-        m_server.nServerType |= tmp;
-      if (direntry.name!=L"." && direntry.name!=L"..")
-      {
-        AddLine(direntry);
-      }
-      if (m_prevline)
-      {
-        delete [] m_prevline;
-        m_prevline=0;
-      }
-      if (m_curline!=line)
-        delete [] m_curline;
-      delete [] line;
-      line=GetLine();
-      m_curline=line;
-    }
-    else
-    {
-      delete [] tmpline;
-      if (m_prevline)
-      {
-        if (m_curline!=line)
-        {
-          delete [] m_prevline;
-          m_prevline=m_curline;
-          delete [] line;
-          line=GetLine();
-          m_curline=line;
-        }
-        else
-        {
-          line=new char[strlen(m_prevline)+strlen(m_curline)+2];
-          sprintf(line, "%s %s", m_prevline, m_curline);
-        }
-      }
-      else
-      {
-        m_prevline=line;
-        line=GetLine();
-        m_curline=line;
-      }
-    }
-  }
-  if (m_prevline)
-  {
-    delete [] m_prevline;
-    m_prevline=0;
-  }
-  if (m_curline!=line)
-    delete [] m_curline;
-  delete [] line;
-  m_curline=0;
-
-  num=m_EntryList.size();
-  if (!num)
-    return 0;
-  t_directory::t_direntry *res=new t_directory::t_direntry[num];
-  int i=0;
-  for (tEntryList::iterator iter=m_EntryList.begin();iter!=m_EntryList.end();iter++, i++)
-  {
-    res[i]=*iter;
-  }
-  m_EntryList.clear();
-
-  return res;
-}
-
-BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_directory::t_direntry &direntry, int &nFTPServerType, bool mlst)
+BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_directory::t_direntry &direntry, int &nFTPServerType)
 {
   USES_CONVERSION;
 
@@ -489,7 +264,7 @@ BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_dir
   direntry.owner = L"";
   direntry.group = L"";
 
-  if (parseAsMlsd(lineToParse, linelen, direntry, mlst))
+  if (parseAsMlsd(lineToParse, linelen, direntry))
     return TRUE;
 
   if (parseAsUnix(lineToParse, linelen, direntry))
@@ -503,9 +278,7 @@ BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_dir
 
   if (parseAsVMS(lineToParse, linelen, direntry))
   {
-#ifndef LISTDEBUG
     m_server.nServerType |= FZ_SERVERTYPE_SUB_FTP_VMS;
-#endif // LISTDEBUG
     return TRUE;
   }
 
@@ -529,8 +302,11 @@ BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_dir
     return TRUE;
 
   // name-only entries
-  if (strchr(lineToParse, ' ') == NULL)
+  // (multiline VMS entries have only a name on the first line, so for VMS we have to skip this)
+  if (FLAGCLEAR(m_server.nServerType, FZ_SERVERTYPE_SUB_FTP_VMS) &&
+      (strchr(lineToParse, ' ') == NULL))
   {
+    direntry = t_directory::t_direntry();
     copyStr(direntry.name, 0, lineToParse, strlen(lineToParse));
     return TRUE;
   }
@@ -538,216 +314,111 @@ BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_dir
   return FALSE;
 }
 
-// Used only with LISTDEBUG
-void CFtpListResult::AddData(char *data, int size)
+bool CFtpListResult::IsNewLineChar(char C) const
 {
-  #ifdef _DEBUG
-  USES_CONVERSION;
-  #endif
-  if (!size)
-    return;
+  return (C == '\r') || (C == '\n');
+}
 
-  if (!m_curlistaddpos)
-    m_curlistaddpos = new t_list;
-  else
+void CFtpListResult::AddData(const char * Data, int Size)
+{
+  FBuffer += RawByteString(Data, Size);
+
+  // Just in case the previous buffer was terminated between CR and LF.
+  while (!FBuffer.IsEmpty() && IsNewLineChar(FBuffer[1]))
   {
-    m_curlistaddpos->next = new t_list;
-    m_curlistaddpos = m_curlistaddpos->next;
+    FBuffer.Delete(1, 1);
   }
-  if (!listhead)
-  {
-    curpos = m_curlistaddpos;
-    listhead = m_curlistaddpos;
-  }
-  m_curlistaddpos->buffer = data;
-  m_curlistaddpos->len = size;
-  m_curlistaddpos->next = 0;
 
-  t_list *pOldListPos = curpos;
-  int nOldListBufferPos = pos;
+  bool Found;
+  int Pos;
+  int FirstLineEnd;
+  int Count;
+  bool Restart = true;
 
-  //Try if there are already some complete lines
-  t_directory::t_direntry direntry;
-  char *line = GetLine();
-  m_curline = line;
-  while (line)
+  do
   {
-    if (curpos)
+    if (Restart)
     {
-      pOldListPos = curpos;
-      nOldListBufferPos = pos;
+      Pos = 1;
+      FirstLineEnd = -1;
+      Count = 0;
+      Restart = false;
     }
-    else
+
+    std::vector<RawByteString> Lines;
+    while ((Pos <= FBuffer.Length()) && !IsNewLineChar(FBuffer[Pos]))
     {
-      delete [] line;
-      if (m_curline != line)
-        delete [] m_curline;
-      m_curline = 0;
-      break;
+      Pos++;
     }
-    int tmp;
-    char *tmpline = new char[strlen(line) + 1];
-    strcpy(tmpline, line);
-    if (parseLine(tmpline, strlen(tmpline), direntry, tmp, false))
+    Found = (Pos <= FBuffer.Length());
+    if (Found)
     {
-      delete [] tmpline;
-      if (tmp)
-        m_server.nServerType |= tmp;
-      if (direntry.name!=L"." && direntry.name!=L"..")
+      Count++;
+      RawByteString Record = FBuffer.SubString(1, Pos - 1);
+      while ((Pos <= FBuffer.Length()) && IsNewLineChar(FBuffer[Pos]))
       {
-        AddLine(direntry);
+        Pos++;
       }
-      if (m_prevline)
+      if (FirstLineEnd < 0)
       {
-        delete [] m_prevline;
-        m_prevline=0;
+        FirstLineEnd = Pos;
       }
-      if (m_curline!=line)
-        delete [] m_curline;
-      delete [] line;
-      line = GetLine();
-      m_curline = line;
-    }
-    else
-    {
-      delete [] tmpline;
-      if (m_prevline)
+      t_directory::t_direntry DirEntry;
+      int ServerType;
+      RawByteString Line = Record;
+      for (int Index = 1; Index <= Line.Length(); Index++)
       {
-        if (m_curline != line)
+        if (IsNewLineChar(Line[Index]))
         {
-          delete [] m_prevline;
-          m_prevline = m_curline;
-          delete [] line;
-          line = GetLine();
-          m_curline = line;
+          Line[Index] = ' ';
         }
-        else
+      }
+      if (parseLine(Line.c_str(), Line.Length(), DirEntry, ServerType))
+      {
+        if (ServerType != 0)
         {
-          line=new char[strlen(m_prevline)+strlen(m_curline)+2];
-          sprintf(line, "%s %s", m_prevline, m_curline);
+          m_server.nServerType |= ServerType;
         }
+        if ((DirEntry.name != L".") && (DirEntry.name != L".."))
+        {
+          AddLine(DirEntry);
+        }
+        FBuffer.Delete(1, Pos - 1);
+        Restart = true;
+        SendLineToMessageLog(Record);
       }
       else
       {
-        m_prevline=line;
-        line=GetLine();
-        m_curline=line;
+        if (Count == 2)
+        {
+          RawByteString FirstLine = FBuffer.SubString(1, FirstLineEnd - 1).TrimRight();
+          SendLineToMessageLog("Cannot parse line:");
+          SendLineToMessageLog(FirstLine);
+          FBuffer.Delete(1, FirstLineEnd - 1);
+          Restart = true;
+        }
       }
     }
   }
-  curpos=pOldListPos;
-  pos=nOldListBufferPos;
-
+  while (Found);
 }
 
-void CFtpListResult::SendToMessageLog()
+void CFtpListResult::SendLineToMessageLog(const RawByteString & Line)
 {
-  t_list *oldlistpos = curpos;
-  int oldbufferpos = pos;
-  curpos = listhead;
-  pos=0;
-  char *line = GetLine();
-  // Note that FZ_LOG_INFO here is not checked against debug level, as the direct
-  // call to PostMessage bypasses check in LogMessage.
-  // So we get the listing on any logging level, what is actually what we want
-  if (!line)
+  if (m_debugShowListing)
   {
-    //Displays a message in the message log
-    t_ffam_statusmessage *pStatus = new t_ffam_statusmessage;
-    pStatus->post = TRUE;
-    pStatus->status = L"<Empty directory listing>";
-    pStatus->type = FZ_LOG_INFO;
-    GetIntern()->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_STATUS, 0), (LPARAM)pStatus);
+    t_ffam_statusmessage * Status = new t_ffam_statusmessage;
+    Status->post = TRUE;
+    Status->status = Line.c_str();
+    Status->type = FZ_LOG_INFO;
+    if (!GetIntern()->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_STATUS, 0), (LPARAM)Status))
+    {
+      delete Status;
+    }
   }
-  while (line)
-  {
-    CString status = line;
-    delete [] line;
-
-    //Displays a message in the message log
-    t_ffam_statusmessage *pStatus = new t_ffam_statusmessage;
-    pStatus->post = TRUE;
-    pStatus->status = status;
-    pStatus->type = FZ_LOG_INFO;
-    if (!GetIntern()->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_STATUS, 0), (LPARAM)pStatus))
-      delete pStatus;
-
-    line = GetLine();
-  }
-  curpos = oldlistpos;
-  pos = oldbufferpos;
 }
 
-char * CFtpListResult::GetLine()
-{
-  if (!curpos)
-    return 0;
-  int len=curpos->len;
-  while (curpos->buffer[pos]=='\r' || curpos->buffer[pos]=='\n' || curpos->buffer[pos]==' ' || curpos->buffer[pos]=='\t')
-  {
-    pos++;
-    if (pos>=len)
-    {
-      curpos=curpos->next;
-      if (!curpos)
-        return 0;
-      len=curpos->len;
-      pos=0;
-    }
-  }
-
-  t_list *startptr=curpos;
-  int startpos=pos;
-  int reslen=0;
-
-  int emptylen=0;
-
-  while ((curpos->buffer[pos]!='\n')&&(curpos->buffer[pos]!='\r'))
-  {
-    if (curpos->buffer[pos]!=' ' && curpos->buffer[pos]!='\t')
-    {
-      reslen+=emptylen+1;
-      emptylen=0;
-    }
-    else
-      emptylen++;
-    pos++;
-    if (pos>=len)
-    {
-      curpos=curpos->next;
-      if (!curpos)
-        break;
-      len=curpos->len;
-      pos=0;
-    }
-  }
-
-  char *res = new char[reslen+1];
-  res[reslen]=0;
-  int respos=0;
-  while (startptr!=curpos && reslen)
-  {
-    int copylen=startptr->len-startpos;
-    if (copylen>reslen)
-      copylen=reslen;
-    memcpy(&res[respos],&startptr->buffer[startpos], copylen);
-    reslen-=copylen;
-    respos+=startptr->len-startpos;
-    startpos=0;
-    startptr=startptr->next;
-  }
-  if (curpos && reslen)
-  {
-    int copylen=pos-startpos;
-    if (copylen>reslen)
-      copylen=reslen;
-    memcpy(&res[respos], &curpos->buffer[startpos], copylen);
-  }
-
-  return res;
-}
-
-void CFtpListResult::AddLine(t_directory::t_direntry &direntry)
+void CFtpListResult::AddLine(t_directory::t_direntry & direntry)
 {
   if (m_server.nTimeZoneOffset &&
     direntry.date.hasdate && direntry.date.hastime && !direntry.date.utc)
@@ -777,7 +448,7 @@ void CFtpListResult::AddLine(t_directory::t_direntry &direntry)
   }
 
   if (m_server.nServerType&FZ_SERVERTYPE_SUB_FTP_VMS &&
-    (!GetOptionVal(OPTION_VMSALLREVISIONS) || direntry.dir))
+    (!m_vmsAllRevisions || direntry.dir))
   { //Remove version information, only keep the latest file
     int pos=direntry.name.ReverseFind(L';');
     if (pos<=0 || pos>=(direntry.name.GetLength()-1))
@@ -1269,12 +940,12 @@ BOOL CFtpListResult::parseAsEPLF(const char *line, const int linelen, t_director
   return FALSE;
 }
 
-BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_directory::t_direntry &direntry, bool mlst)
+BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_directory::t_direntry &direntry)
 {
   #ifdef _DEBUG
   USES_CONVERSION;
   #endif
-  // MLSD format as described here: https://tools.ietf.org/html/rfc3659
+  // MLSD format as described here: https://datatracker.ietf.org/doc/html/rfc3659
   // Parsing is done strict, abort on slightest error.
 
   // If we ever add some detection that entry is symlink,
@@ -1294,6 +965,7 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
   {
     return FALSE;
   }
+  direntry.name = L"";
   direntry.bUnsure = FALSE;
   direntry.dir = FALSE;
   direntry.bLink = FALSE;
@@ -1350,7 +1022,7 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
       }
       // This is syntax shown in RFC 3659 section 7.7.4 "A More Complex Example"
       // Type=OS.unix=slink:/foobar;Perm=;Unique=keVO1+4G4; foobar
-      // https://tools.ietf.org/html/rfc3659
+      // https://datatracker.ietf.org/doc/html/rfc3659
       else if (!value.Left(13).CompareNoCase(L"OS.unix=slink"))
       {
         direntry.dir = TRUE;
@@ -1358,22 +1030,21 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
         if ((value.GetLength() > 14) && (value[13] == ':'))
           direntry.linkTarget = value.Mid(14);
       }
+      // For MLSD, these will be skipped in AddData.
       else if (!value.CompareNoCase(L"cdir"))
       {
         // ProFTPD up to 1.3.6rc1 and 1.3.5a incorrectly uses "cdir" for the current working directory.
         // So at least in MLST, where this would be the only entry, we treat it like "dir".
-        if (mlst)
+        if (!m_mlst)
         {
-          direntry.dir = TRUE;
+          direntry.name = L".";
         }
-        else
-        {
-          return FALSE;
-        }
+        direntry.dir = TRUE;
       }
       else if (!value.CompareNoCase(L"pdir"))
       {
-        return FALSE;
+        direntry.name = L"..";
+        direntry.dir = TRUE;
       }
     }
     else if (factname == L"size")
@@ -1455,22 +1126,25 @@ BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_director
   {
     return FALSE;
   }
-  pos++;
-  CString fileName;
-  copyStr(fileName, 0, line + pos, linelen - pos, true);
-  if (mlst)
+  if (direntry.name.IsEmpty())
   {
-    // do not try to detect path type, assume a standard *nix syntax + do not trim
-    CServerPath path(fileName, FZ_SERVERTYPE_FTP, false);
-    direntry.name = path.GetLastSegment();
-    if (direntry.name.IsEmpty())
+    pos++;
+    CString fileName;
+    copyStr(fileName, 0, line + pos, linelen - pos, true);
+    if (m_mlst)
+    {
+      // do not try to detect path type, assume a standard *nix syntax + do not trim
+      CServerPath path(fileName, FZ_SERVERTYPE_FTP, false);
+      direntry.name = path.GetLastSegment();
+      if (direntry.name.IsEmpty())
+      {
+        direntry.name = fileName;
+      }
+    }
+    else
     {
       direntry.name = fileName;
     }
-  }
-  else
-  {
-    direntry.name = fileName;
   }
   return TRUE;
 }
@@ -2864,10 +2538,8 @@ BOOL CFtpListResult::parseAsIBMMVSPDS2(const char *line, const int linelen, t_di
 {
   // Use this one only on MVS servers, as it will cause problems on other servers
 
-#ifndef LISTDEBUG
   if (!(m_server.nServerType & (FZ_SERVERTYPE_SUB_FTP_MVS | FZ_SERVERTYPE_SUB_FTP_BS2000)))
     return false;
-#endif
 
   int pos = 0;
   int tokenlen = 0;

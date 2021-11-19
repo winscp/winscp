@@ -6,9 +6,13 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Xml;
+#if !NETSTANDARD
 using Microsoft.Win32;
+#endif
 using System.Diagnostics;
+#if !NETSTANDARD
 using System.Security;
+#endif
 using System.Text.RegularExpressions;
 using System.Linq;
 
@@ -102,7 +106,7 @@ namespace WinSCP
         {
             add
             {
-                using (Logger.CreateCallstackAndLock())
+                using (CreateCallstackAndLock())
                 {
                     CheckNotOpened();
                     _fileTransferProgress += value;
@@ -111,7 +115,7 @@ namespace WinSCP
 
             remove
             {
-                using (Logger.CreateCallstackAndLock())
+                using (CreateCallstackAndLock())
                 {
                     CheckNotOpened();
                     _fileTransferProgress -= value;
@@ -119,11 +123,22 @@ namespace WinSCP
             }
         }
 
+        private IDisposable CreateCallstackAndLock()
+        {
+            var result = Logger.CreateCallstackAndLock();
+            if ((_process != null) && (_process.StdOut != null))
+            {
+                result.Dispose();
+                throw Logger.WriteException(new InvalidOperationException("Finish reading the stream from Session.GetFile first."));
+            }
+            return result;
+        }
+
         public event QueryReceivedEventHandler QueryReceived { add { AddQueryReceived(value); } remove { RemoveQueryReceived(value); } }
 
         private void AddQueryReceived(QueryReceivedEventHandler value)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 bool send = (_queryReceived == null);
                 _queryReceived += value;
@@ -137,7 +152,7 @@ namespace WinSCP
 
         private void RemoveQueryReceived(QueryReceivedEventHandler value)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 if (_queryReceived != null)
                 {
@@ -155,7 +170,7 @@ namespace WinSCP
         {
             Logger = new Logger();
 
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 Timeout = new TimeSpan(0, 1, 0);
                 _reconnectTime = new TimeSpan(0, 2, 0); // keep in sync with TScript::OptionImpl
@@ -180,7 +195,7 @@ namespace WinSCP
 
         public void Dispose()
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 _disposed = true;
 
@@ -221,7 +236,7 @@ namespace WinSCP
 
         public void Open(SessionOptions sessionOptions)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckNotDisposed();
 
@@ -398,7 +413,7 @@ namespace WinSCP
 
         public string ScanFingerprint(SessionOptions sessionOptions, string algorithm)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 string normalizeAlgorithm = NormalizeIdent(algorithm);
                 if (string.IsNullOrEmpty(normalizeAlgorithm))
@@ -487,7 +502,7 @@ namespace WinSCP
 
         public void Close()
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckOpened();
 
@@ -497,7 +512,7 @@ namespace WinSCP
 
         public RemoteDirectoryInfo ListDirectory(string path)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckOpened();
 
@@ -655,13 +670,13 @@ namespace WinSCP
             // so the Session object is not guarded during the whole enumeration.
             // Though it should not matter as it uses only guarded methods (ListDirectory)
             // for the actual work on the session
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckOpened();
 
                 Regex regex = MaskToRegex(mask);
 
-                return DoEnumerateRemoteFiles(path, regex, options, true);
+                return new ImplicitEnumerable<RemoteFileInfo>(DoEnumerateRemoteFiles(path, regex, options, true));
             }
         }
 
@@ -687,7 +702,15 @@ namespace WinSCP
 
         public TransferOperationResult PutFiles(string localPath, string remotePath, bool remove = false, TransferOptions options = null)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
+            {
+                return DoPutFiles(localPath, remotePath, remove, options);
+            }
+        }
+
+        public TransferOperationResult DoPutFiles(string localPath, string remotePath, bool remove, TransferOptions options)
+        {
+            using (Logger.CreateCallstack())
             {
                 if (options == null)
                 {
@@ -800,6 +823,34 @@ namespace WinSCP
             }
         }
 
+        public void PutFile(Stream stream, string remoteFilePath, TransferOptions options = null)
+        {
+            using (CreateCallstackAndLock())
+            {
+                if (remoteFilePath == null)
+                {
+                    throw Logger.WriteException(new ArgumentNullException(nameof(remoteFilePath)));
+                }
+                if (_process.StdIn != null)
+                {
+                    throw Logger.WriteException(new InvalidOperationException("Already uploading from a stream"));
+                }
+                _process.StdIn = stream ?? throw Logger.WriteException(new ArgumentNullException(nameof(stream)));
+                try
+                {
+                    remoteFilePath = RemotePath.EscapeOperationMask(remoteFilePath);
+                    TransferOperationResult operationResult = DoPutFiles("-", remoteFilePath, false, options);
+                    operationResult.Check();
+                    // Assert that any transfer took place at all
+                    GetOnlyFileOperation(operationResult.Transfers);
+                }
+                finally
+                {
+                    _process.StdIn = null;
+                }
+            }
+        }
+
         internal TransferOperationResult PutEntryToDirectory(string localFilePath, string remoteDirectory, bool remove = false, TransferOptions options = null)
         {
             using (Logger.CreateCallstack())
@@ -810,7 +861,7 @@ namespace WinSCP
                 }
 
                 string localDirectory = Path.GetDirectoryName(localFilePath);
-                string filemask = RemotePath.EscapeFileMask(Path.GetFileName(localFilePath));
+                string filemask = Path.GetFileName(localFilePath);
 
                 TransferOperationResult operationResult = PutFilesToDirectory(localDirectory, remoteDirectory, filemask, remove, options);
                 operationResult.Check();
@@ -829,7 +880,7 @@ namespace WinSCP
 
         public TransferOperationResult GetFiles(string remotePath, string localPath, bool remove = false, TransferOptions options = null)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 return DoGetFiles(remotePath, localPath, remove, options, string.Empty);
             }
@@ -840,17 +891,7 @@ namespace WinSCP
         {
             using (Logger.CreateCallstack())
             {
-                if (options == null)
-                {
-                    options = new TransferOptions();
-                }
-
-                CheckOpened();
-
-                WriteCommand(
-                    string.Format(CultureInfo.InvariantCulture, "get {0} {1} {2} -- \"{3}\" \"{4}\"",
-                        BooleanSwitch(remove, "delete"), options.ToSwitches(), additionalParams,
-                        Tools.ArgumentEscape(remotePath), Tools.ArgumentEscape(localPath)));
+                StartGetCommand(remotePath, localPath, remove, options, additionalParams);
 
                 TransferOperationResult result = new TransferOperationResult();
 
@@ -887,10 +928,25 @@ namespace WinSCP
             }
         }
 
+        private void StartGetCommand(string remotePath, string localPath, bool remove, TransferOptions options, string additionalParams)
+        {
+            if (options == null)
+            {
+                options = new TransferOptions();
+            }
+
+            CheckOpened();
+
+            WriteCommand(
+                string.Format(CultureInfo.InvariantCulture, "get {0} {1} {2} -- \"{3}\" \"{4}\"",
+                    BooleanSwitch(remove, "delete"), options.ToSwitches(), additionalParams,
+                    Tools.ArgumentEscape(remotePath), Tools.ArgumentEscape(localPath)));
+        }
+
         public TransferOperationResult GetFilesToDirectory(
             string remoteDirectory, string localDirectory, string filemask = null, bool remove = false, TransferOptions options = null)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 return DoGetFilesToDirectory(remoteDirectory, localDirectory, filemask, remove, options, null);
             }
@@ -928,7 +984,7 @@ namespace WinSCP
 
         public TransferEventArgs GetFileToDirectory(string remoteFilePath, string localDirectory, bool remove = false, TransferOptions options = null)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 const string additionalParams = "-onlyfile";
                 TransferOperationResult operationResult = GetEntryToDirectory(remoteFilePath, localDirectory, remove, options, additionalParams);
@@ -941,19 +997,24 @@ namespace WinSCP
         {
             using (Logger.CreateCallstack())
             {
-                if (string.IsNullOrEmpty(remoteFilePath))
-                {
-                    throw Logger.WriteException(new ArgumentException("File to path cannot be empty", nameof(remoteFilePath)));
-                }
-
-                string remoteDirectory = RemotePath.GetDirectoryName(remoteFilePath);
-                string filemask = RemotePath.EscapeFileMask(RemotePath.GetFileName(remoteFilePath));
+                ParseRemotePath(remoteFilePath, out string remoteDirectory, out string filemask);
 
                 TransferOperationResult operationResult =
                     DoGetFilesToDirectory(remoteDirectory, localDirectory, filemask, remove, options, additionalParams ?? string.Empty);
                 operationResult.Check();
                 return operationResult;
             }
+        }
+
+        private void ParseRemotePath(string remoteFilePath, out string remoteDirectory, out string filemask)
+        {
+            if (string.IsNullOrEmpty(remoteFilePath))
+            {
+                throw Logger.WriteException(new ArgumentException("File to path cannot be empty", nameof(remoteFilePath)));
+            }
+
+            remoteDirectory = RemotePath.GetDirectoryName(remoteFilePath);
+            filemask = RemotePath.EscapeFileMask(RemotePath.GetFileName(remoteFilePath));
         }
 
         private T GetOnlyFileOperation<T>(ICollection<T> operations)
@@ -971,9 +1032,128 @@ namespace WinSCP
             return operations.First();
         }
 
+        public Stream GetFile(string remoteFilePath, TransferOptions options = null)
+        {
+            using (CreateCallstackAndLock())
+            {
+                const string additionalParams = "-onlyfile";
+                ParseRemotePath(remoteFilePath, out string remoteDirectory, out string filemask);
+                string remotePath = RemotePath.Combine(remoteDirectory, filemask);
+
+                // only to collect failures
+                TransferOperationResult result = new TransferOperationResult();
+
+                ElementLogReader groupReader = null;
+                IDisposable operationResultGuard = null;
+                IDisposable progressHandler = null;
+
+                // should never happen
+                if (_process.StdOut != null)
+                {
+                    throw Logger.WriteException(new InvalidOperationException("Data stream already exist"));
+                }
+
+                PipeStream stream = new PipeStream();
+                _process.StdOut = stream;
+
+                void onGetEnd()
+                {
+                    using (Logger.CreateCallstack())
+                    {
+                        try
+                        {
+                            // This can throw
+                            progressHandler?.Dispose();
+                        }
+                        finally
+                        {
+                            try
+                            {
+                                groupReader?.Dispose();
+                            }
+                            finally
+                            {
+                                _process.StdOut = null;
+                                // Only after disposing the group reader, so when called from onGetEndWithExit, the Check() has all failures.
+                                operationResultGuard?.Dispose();
+                            }
+                        }
+                    }
+                }
+
+                void onGetEndWithExit()
+                {
+                    // Explicitly not Session.CreateCallstackAndLock
+                    using (Logger.CreateCallstackAndLock())
+                    {
+                        Logger.WriteLine("Closing download stream");
+                        try
+                        {
+                            onGetEnd();
+                        }
+                        finally
+                        {
+                            Logger.WriteLine("Closed download stream");
+                            result.Check();
+                        }
+                    }
+                }
+
+                try
+                {
+                    StartGetCommand(remotePath, "-", false, options, additionalParams);
+
+                    groupReader = _reader.WaitForGroupAndCreateLogReader();
+                    operationResultGuard = RegisterOperationResult(result);
+                    progressHandler = CreateProgressHandler();
+
+                    if (_throwStdOut)
+                    {
+                        throw Logger.WriteException(new InvalidOperationException());
+                    }
+                    _throwStdOut = true;
+                    bool downloadFound;
+                    try
+                    {
+                        // Not using WaitForNonEmptyElement only to allow throwing better exception message below.
+                        // Not using ThrowFailures as we need to return the stream, if there's <download>,
+                        // even if there's a <failure> as well.
+                        downloadFound = groupReader.TryWaitForNonEmptyElement(TransferEventArgs.DownloadTag, 0);
+                    }
+                    catch (StdOutException)
+                    {
+                        downloadFound = true;
+                    }
+                    finally
+                    {
+                        _throwStdOut = false;
+                    }
+                    if (downloadFound)
+                    {
+                        Logger.WriteLine("Download stream started");
+                        stream.OnDispose = onGetEndWithExit;
+                        return stream;
+                    }
+                    else
+                    {
+                        // First throw any specific error from <failure>
+                        result.Check();
+                        // And only then fallback to the generic one.
+                        // See also the comment in GetOnlyFileOperation.
+                        throw Logger.WriteException(new FileNotFoundException("File not found"));
+                    }
+                }
+                catch
+                {
+                    onGetEnd();
+                    throw;
+                }
+            }
+        }
+
         public RemovalOperationResult RemoveFiles(string path)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 return DoRemoveFiles(path, string.Empty);
             }
@@ -1007,7 +1187,7 @@ namespace WinSCP
 
         public RemovalEventArgs RemoveFile(string path)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 RemovalOperationResult operationResult = RemoveEntry(path, "-onlyfile");
                 return GetOnlyFileOperation(operationResult.Removals);
@@ -1042,7 +1222,7 @@ namespace WinSCP
             bool removeFiles, bool mirror = false, SynchronizationCriteria criteria = SynchronizationCriteria.Time,
             TransferOptions options = null)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 DoSynchronizeDirectories(mode, localPath, remotePath, removeFiles, mirror, criteria, options, string.Empty);
 
@@ -1201,7 +1381,7 @@ namespace WinSCP
             bool removeFiles, bool mirror = false, SynchronizationCriteria criteria = SynchronizationCriteria.Time,
             TransferOptions options = null)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 DoSynchronizeDirectories(mode, localPath, remotePath, removeFiles, mirror, criteria, options, "-preview");
 
@@ -1307,7 +1487,7 @@ namespace WinSCP
                                 }
                             }
 
-                            if (difference.Action == default(SynchronizationAction))
+                            if (difference.Action == default)
                             {
                                 throw Logger.WriteException(new InvalidOperationException("No action tag found"));
                             }
@@ -1328,7 +1508,7 @@ namespace WinSCP
 
         public CommandExecutionResult ExecuteCommand(string command)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckOpened();
 
@@ -1365,7 +1545,7 @@ namespace WinSCP
 
         public RemoteFileInfo GetFileInfo(string path)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckOpened();
 
@@ -1375,7 +1555,7 @@ namespace WinSCP
 
         public bool FileExists(string path)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckOpened();
 
@@ -1401,7 +1581,7 @@ namespace WinSCP
 
         public byte[] CalculateFileChecksum(string algorithm, string path)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 WriteCommand(string.Format(CultureInfo.InvariantCulture, "checksum -- \"{0}\" \"{1}\"", Tools.ArgumentEscape(algorithm), Tools.ArgumentEscape(path)));
 
@@ -1441,7 +1621,7 @@ namespace WinSCP
 
         public void CreateDirectory(string path)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckOpened();
 
@@ -1458,7 +1638,7 @@ namespace WinSCP
 
         public void MoveFile(string sourcePath, string targetPath)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckOpened();
 
@@ -1484,7 +1664,7 @@ namespace WinSCP
 
         public void DuplicateFile(string sourcePath, string targetPath)
         {
-            using (Logger.CreateCallstackAndLock())
+            using (CreateCallstackAndLock())
             {
                 CheckOpened();
 
@@ -1847,17 +2027,29 @@ namespace WinSCP
                 List<string> switches = new List<string>();
 
                 if (!string.IsNullOrEmpty(sessionOptions.SshHostKeyFingerprint) ||
-                    (sessionOptions.GiveUpSecurityAndAcceptAnySshHostKey && !scanFingerprint))
+                    ((sessionOptions.SshHostKeyPolicy != SshHostKeyPolicy.Check) && !scanFingerprint))
                 {
                     if (!sessionOptions.IsSsh)
                     {
-                        throw Logger.WriteException(new ArgumentException("SessionOptions.SshHostKeyFingerprint or SessionOptions.GiveUpSecurityAndAcceptAnySshHostKey is set, but SessionOptions.Protocol is neither Protocol.Sftp nor Protocol.Scp."));
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.SshHostKeyFingerprint is set or sessionOptions.SshHostKeyPolicy has not the default value Check, but SessionOptions.Protocol is neither Protocol.Sftp nor Protocol.Scp."));
                     }
                     string sshHostKeyFingerprint = sessionOptions.SshHostKeyFingerprint;
-                    if (sessionOptions.GiveUpSecurityAndAcceptAnySshHostKey)
+                    switch (sessionOptions.SshHostKeyPolicy)
                     {
-                        Logger.WriteLine("WARNING! Giving up security and accepting any key as configured");
-                        sshHostKeyFingerprint = AddStarToList(sshHostKeyFingerprint);
+                        case SshHostKeyPolicy.Check:
+                            // noop
+                            break;
+                        case SshHostKeyPolicy.GiveUpSecurityAndAcceptAny:
+                            sshHostKeyFingerprint = AddStarToList(sshHostKeyFingerprint);
+                            Logger.WriteLine("WARNING! Giving up security and accepting any key as configured");
+                            break;
+                        case SshHostKeyPolicy.AcceptNew:
+                            if (!string.IsNullOrEmpty(sshHostKeyFingerprint))
+                            {
+                                throw Logger.WriteException(new ArgumentException("SessionOptions.SshHostKeyFingerprint is set and SshHostKeyPolicy is not Check"));
+                            }
+                            sshHostKeyFingerprint = "acceptnew";
+                            break;
                     }
                     switches.Add(FormatSwitch("hostkey", sshHostKeyFingerprint));
                 }
@@ -2102,12 +2294,21 @@ namespace WinSCP
                 {
                     _logReader.SetTimeouted();
                 }
+                Cleanup();
                 throw Logger.WriteException(new TimeoutException(message));
             }
 
             if (_aborted)
             {
                 throw Logger.WriteException(new SessionLocalException(this, "Aborted."));
+            }
+
+            if (_throwStdOut && (_process.StdOut != null) && _process.StdOut.ReadAvailable(1))
+            {
+                // This is here to return from GetFile asap (?)
+                // Not logging the exception, as it's not really an exception.
+                Logger.WriteLine("Got data");
+                throw new StdOutException();
             }
         }
 
@@ -2200,6 +2401,7 @@ namespace WinSCP
 
         internal void UnregisterOperationResult(OperationResultBase operationResult)
         {
+            // GetFile relies on this not to throw
             _operationResults.Remove(operationResult);
         }
 
@@ -2306,10 +2508,12 @@ namespace WinSCP
             }
         }
 
+#if !NETSTANDARD
         private static string GetTypeLibKey(Type t)
         {
             return "CLSID\\{" + t.GUID.ToString().ToUpperInvariant() + "}\\TypeLib";
         }
+#endif
 
         FieldInfo IReflect.GetField(string name, BindingFlags bindingAttr)
         {
@@ -2588,7 +2792,6 @@ namespace WinSCP
         private ElementLogReader _reader;
         private SessionLogReader _logReader;
         private readonly IList<OperationResultBase> _operationResults;
-        private delegate void Action();
         private readonly IList<Action> _events;
         private AutoResetEvent _eventsEvent;
         private ManualResetEvent _choiceEvent;
@@ -2615,5 +2818,6 @@ namespace WinSCP
         private bool _ignoreFailed;
         private TimeSpan _sessionTimeout;
         private QueryReceivedEventHandler _queryReceived;
+        private bool _throwStdOut;
     }
 }

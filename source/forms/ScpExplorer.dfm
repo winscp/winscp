@@ -416,6 +416,9 @@ inherited ScpExplorerForm: TScpExplorerForm
           object TBXItem80: TTBXItem
             Action = NonVisualDataModule.QueueToolbarAction
           end
+          object TBXItem164: TTBXItem
+            Action = NonVisualDataModule.QueueFileListAction
+          end
           object TBXSeparatorItem22: TTBXSeparatorItem
           end
           object TBXSubmenuItem8: TTBXSubmenuItem
@@ -832,6 +835,11 @@ inherited ScpExplorerForm: TScpExplorerForm
           Action = NonVisualDataModule.QueueHideAction
           RadioItem = True
         end
+        object TBXSeparatorItem44: TTBXSeparatorItem
+        end
+        object TBXItem165: TTBXItem
+          Action = NonVisualDataModule.QueueFileListAction
+        end
       end
       object TBXItem71: TTBXItem
         Action = NonVisualDataModule.RemoteTreeAction
@@ -1010,7 +1018,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       end
     end
     object CustomCommandsToolbar: TTBXToolbar
-      Left = 300
+      Left = 299
       Top = 182
       Caption = 'Custom Commands'
       DockPos = 193
@@ -1122,10 +1130,16 @@ inherited ScpExplorerForm: TScpExplorerForm
     inherited QueueLabel: TPathLabel
       Width = 632
     end
+    inherited QueueFileListSplitter: TSplitter
+      Width = 632
+    end
     inherited QueueView3: TListView
       Width = 632
     end
     inherited QueueDock: TTBXDock
+      Width = 632
+    end
+    inherited QueueFileList: TListView
       Width = 632
     end
   end

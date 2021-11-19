@@ -182,7 +182,8 @@ public:
   void __fastcall Progress();
   unsigned long __fastcall LocalBlockSize();
   bool __fastcall IsLocallyDone();
-  bool __fastcall IsTransferDone();
+  bool IsTransferDone();
+  bool IsTransferDoneChecked();
   void __fastcall SetFile(UnicodeString AFileName, bool AFileInProgress = true);
   void __fastcall SetFileInProgress();
   unsigned long __fastcall TransferBlockSize();

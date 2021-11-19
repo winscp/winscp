@@ -223,6 +223,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     {
       S3UrlStyleCombo->ItemIndex = 0;
     }
+    S3SessionTokenMemo->Lines->Text = FSessionData->S3SessionToken;
 
     // Authentication page
     SshNoUserAuthCheck->Checked = FSessionData->SshNoUserAuth;
@@ -266,6 +267,8 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
         LoadStr(KEX_NAME_WARN+FSessionData->Kex[Index]),
         (TObject*)FSessionData->Kex[Index]);
     }
+
+    AuthGSSAPIKEXCheck->Checked = FSessionData->AuthGSSAPIKEX;
 
     RekeyTimeEdit->AsInteger = FSessionData->RekeyTime;
     RekeyDataEdit->Text = FSessionData->RekeyData;
@@ -414,6 +417,9 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     EncryptFilesCheck->Checked = !FSessionData->EncryptKey.IsEmpty();
     GetEncryptKeyEdit()->Text = FSessionData->EncryptKey;
 
+    // webdav page
+    WebDavLiberalEscapingCheck->Checked = FSessionData->WebDavLiberalEscaping;
+
     // color
     FColor = (TColor)FSessionData->Color;
   }
@@ -458,6 +464,8 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   {
     SessionData->Kex[Index] = (TKex)KexListBox->Items->Objects[Index];
   }
+
+  FSessionData->AuthGSSAPIKEX = AuthGSSAPIKEXCheck->Checked;
 
   SessionData->RekeyTime = RekeyTimeEdit->AsInteger;
   SessionData->RekeyData = RekeyDataEdit->Text;
@@ -626,6 +634,8 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   {
     SessionData->S3UrlStyle = s3usVirtualHost;
   }
+  // Trim not to try to authenticate with a stray new-line
+  SessionData->S3SessionToken = S3SessionTokenMemo->Lines->Text.Trim();
 
   // Proxy page
   SessionData->ProxyMethod = GetProxyMethod();
@@ -681,6 +691,9 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
 
   // Encryption page
   SessionData->EncryptKey = EncryptFilesCheck->Checked ? GetEncryptKeyEdit()->Text : UnicodeString();
+
+  // webdav page
+  SessionData->WebDavLiberalEscaping = WebDavLiberalEscapingCheck->Checked;
 
   // color
   SessionData->Color = FColor;
@@ -1054,6 +1067,9 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     // encryption sheet
     EncryptionSheet->Enabled = SftpProtocol;
     EnableControl(EncryptFilesGroup, EncryptFilesCheck->Checked);
+
+    // environment/webdav
+    WebDavSheet->Enabled = WebDavProtocol;
 
     UpdateNavigationTree();
 

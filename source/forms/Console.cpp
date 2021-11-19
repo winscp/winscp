@@ -93,6 +93,10 @@ void __fastcall TConsoleDialog::SetTerminal(TTerminal * value)
     if (FTerminal)
     {
       OutputMemo->Clear();
+      // If ever these events are used elsewhere, use TMulticastEvent,
+      // to avoid problems when the connnection is lost while the dialog is opened.
+      DebugAssert(FTerminal->OnChangeDirectory == NULL);
+      DebugAssert(FTerminal->OnClose == NULL);
       FOldChangeDirectory = FTerminal->OnChangeDirectory;
       FTerminal->OnChangeDirectory = DoChangeDirectory;
       // avoid reloading directory after each change of current directory from console

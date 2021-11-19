@@ -218,6 +218,7 @@ object ProgressForm: TProgressForm
       Top = 0
       Width = 302
       Height = 27
+      AllowDrag = False
       Color = clWindow
       object Toolbar: TTBXToolbar
         Left = 0

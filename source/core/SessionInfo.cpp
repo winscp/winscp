@@ -460,6 +460,7 @@ private:
 //---------------------------------------------------------------------------
 __fastcall TSessionAction::TSessionAction(TActionLog * Log, TLogAction Action)
 {
+  FCancelled = false;
   if (Log->FLogging)
   {
     FRecord = new TSessionActionRecord(Log, Action);
@@ -474,7 +475,9 @@ __fastcall TSessionAction::~TSessionAction()
 {
   if (FRecord != NULL)
   {
-    Commit();
+    TSessionActionRecord * Record = FRecord;
+    FRecord = NULL;
+    Record->Commit();
   }
 }
 //---------------------------------------------------------------------------
@@ -483,16 +486,6 @@ void __fastcall TSessionAction::Restart()
   if (FRecord != NULL)
   {
     FRecord->Restart();
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TSessionAction::Commit()
-{
-  if (FRecord != NULL)
-  {
-    TSessionActionRecord * Record = FRecord;
-    FRecord = NULL;
-    Record->Commit();
   }
 }
 //---------------------------------------------------------------------------
@@ -512,8 +505,14 @@ void __fastcall TSessionAction::Cancel()
   {
     TSessionActionRecord * Record = FRecord;
     FRecord = NULL;
+    FCancelled = true;
     Record->Cancel();
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSessionAction::IsValid()
+{
+  return !FCancelled;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -1176,8 +1175,9 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     ADF(L"Local account: %s", (UserName));
     ADF(L"Working directory: %s", (GetCurrentDir()));
     ADF(L"Process ID: %d", (int(GetCurrentProcessId())));
+    ADF(L"Ancestor processes: %s", (GetAncestorProcessNames()));
     ADF(L"Command-line: %s", (GetCmdLineLog()));
-    if (FConfiguration->LogProtocol >= 1)
+    if (FConfiguration->ActualLogProtocol >= 1)
     {
       AddOptions(GetGlobalOptions());
     }
@@ -1197,9 +1197,19 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     {
       AddressFamily = FORMAT(L"%s, ", (Data->AddressFamily == afIPv4 ? L"IPv4" : L"IPv6"));
     }
-    ADF(L"Host name: %s (%sPort: %d)", (Data->HostNameExpanded, AddressFamily, Data->PortNumber));
+    UnicodeString HostName = Data->HostNameExpanded;
+    if (!Data->HostNameSource.IsEmpty())
+    {
+      HostName = FORMAT(L"%s [%s]", (HostName, Data->HostNameSource));
+    }
+    ADF(L"Host name: %s (%sPort: %d)", (HostName, AddressFamily, Data->PortNumber));
+    UnicodeString UserName = Data->UserNameExpanded;
+    if (!Data->UserNameSource.IsEmpty())
+    {
+      UserName = FORMAT(L"%s [%s]", (UserName, Data->UserNameSource));
+    }
     ADF(L"User name: %s (Password: %s, Key file: %s, Passphrase: %s)",
-      (Data->UserNameExpanded, LogSensitive(Data->Password),
+      (UserName, LogSensitive(Data->Password),
        LogSensitive(Data->PublicKeyFile), LogSensitive(Data->Passphrase)));
     if (Data->UsesSsh)
     {
@@ -1271,8 +1281,8 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
          BooleanToEngStr(Data->AuthKI), BooleanToEngStr(Data->AuthGSSAPI)));
       if (Data->AuthGSSAPI)
       {
-        ADF(L"GSSAPI: Forwarding: %s; Libs: %s; Custom: %s",
-          (BooleanToEngStr(Data->GSSAPIFwdTGT), Data->GssLibList, Data->GssLibCustom));
+        ADF(L"GSSAPI: KEX: %s; Forwarding: %s; Libs: %s; Custom: %s",
+          (BooleanToEngStr(Data->AuthGSSAPIKEX), BooleanToEngStr(Data->GSSAPIFwdTGT), Data->GssLibList, Data->GssLibCustom));
       }
       ADF(L"Ciphers: %s; Ssh2DES: %s",
         (Data->CipherList, BooleanToEngStr(Data->Ssh2DES)));
@@ -1307,6 +1317,10 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       }
       ADF(L"SFTP Bugs: %s", (Bugs));
       ADF(L"SFTP Server: %s", ((Data->SftpServer.IsEmpty()? UnicodeString(L"default") : Data->SftpServer)));
+      if (Data->SFTPRealPath != asAuto)
+      {
+        ADF(L"SFTP Real Path: %s", (EnumName(Data->SFTPRealPath, AutoSwitchNames)));
+      }
     }
     bool FtpsOn = false;
     if (Data->FSProtocol == fsFTP)
@@ -1348,12 +1362,17 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
          EnumName(Data->FtpUseMlsd, AutoSwitchNames),
          EnumName(Data->FtpListAll, AutoSwitchNames),
          EnumName(Data->FtpHost, AutoSwitchNames)));
+      if (Data->FtpWorkFromCwd != asAuto)
+      {
+        ADF(L"FTP: Relative paths: %s", (EnumName(Data->FtpWorkFromCwd, AutoSwitchNames)));
+      }
     }
     if (Data->FSProtocol == fsWebDAV)
     {
       FtpsOn = (Data->Ftps != ftpsNone);
       ADF(L"HTTPS: %s [Client certificate: %s]",
         (BooleanToEngStr(FtpsOn), LogSensitive(Data->TlsCertificateFile)));
+      ADF(L"WebDAV: Tolerate non-encoded: %s", (BooleanToEngStr(Data->WebDavLiberalEscaping)));
     }
     if (Data->FSProtocol == fsS3)
     {
@@ -1363,6 +1382,10 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       if (!Data->S3DefaultRegion.IsEmpty())
       {
         ADF(L"S3: Default region: %s", (Data->S3DefaultRegion));
+      }
+      if (!Data->S3SessionToken.IsEmpty())
+      {
+        ADF(L"S3: Session token: %s", (Data->S3SessionToken));
       }
     }
     if (FtpsOn)
@@ -1408,6 +1431,14 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
         (BooleanToEngStr(Data->Compression)));
     }
 
+    if ((Data->FSProtocol == fsFTP) && !Data->FtpPasvMode)
+    {
+      if (!Configuration->ExternalIpAddress.IsEmpty() || Configuration->HasLocalPortNumberLimits())
+      {
+        AddSeparator();
+        ADF(L"FTP active mode interface: %s:%d-%d", (DefaultStr(Configuration->ExternalIpAddress, L"<system address>"), Configuration->LocalPortNumberMin, Configuration->LocalPortNumberMax));
+      }
+    }
     AddSeparator();
   }
 }

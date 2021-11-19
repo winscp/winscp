@@ -27,6 +27,8 @@ public:
 
   bool __fastcall NeedRefresh();
 
+  TQueueItemProxy * __fastcall GetFocusedPrimaryItem();
+
   __property TNotifyEvent OnChange = { read = FOnChange, write = FOnChange };
   __property bool Empty = { read = GetEmpty };
 
@@ -36,8 +38,7 @@ private:
   TNotifyEvent FOnChange;
   TFormatBytesStyle FFormatSizeBytes;
 
-  TQueueItemProxy * __fastcall QueueViewItemToQueueItem(
-    TListItem * Item, bool * Detail = NULL);
+  TQueueItemProxy * __fastcall QueueViewItemToQueueItem(TListItem * Item);
   void __fastcall QueueViewDblClick(TObject * Sender);
   void __fastcall QueueViewKeyDown(TObject * Sender, WORD & Key, TShiftState Shift);
   void __fastcall QueueViewCustomDrawItem(TCustomListView * Sender, TListItem * Item,

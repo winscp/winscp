@@ -34,7 +34,6 @@ extern const wchar_t * PingTypeNames;
 enum TPingType { ptOff, ptNullPacket, ptDummyCommand };
 enum TAddressFamily { afAuto, afIPv4, afIPv6 };
 enum TFtps { ftpsNone, ftpsImplicit, ftpsExplicitSsl, ftpsExplicitTls };
-// has to match SSL_VERSION_XXX constants in AsyncSslSocketLayer.h
 // ssl2 has no effect now
 enum TTlsVersion { ssl2 = 2, ssl3 = 3, tls10 = 10, tls11 = 11, tls12 = 12, tls13 = 13 };
 // has to match libs3 S3UriStyle
@@ -119,6 +118,7 @@ private:
   bool FAuthKI;
   bool FAuthKIPassword;
   bool FAuthGSSAPI;
+  bool FAuthGSSAPIKEX;
   bool FGSSAPIFwdTGT;
   bool FChangeUsername;
   bool FCompression;
@@ -160,6 +160,7 @@ private:
   bool FTcpNoDelay;
   int FSendBuf;
   UnicodeString FSourceAddress;
+  UnicodeString FProtocolFeatures;
   bool FSshSimple;
   TProxyMethod FProxyMethod;
   UnicodeString FProxyHost;
@@ -184,6 +185,7 @@ private:
   int FSFTPListingQueue;
   int FSFTPMaxVersion;
   unsigned long FSFTPMaxPacketSize;
+  TAutoSwitch FSFTPRealPath;
   TDSTMode FDSTMode;
   TAutoSwitch FSFTPBugs[SFTP_BUG_COUNT];
   bool FDeleteToRecycleBin;
@@ -193,7 +195,8 @@ private:
   TAutoSwitch FSCPLsFullTime;
   TAutoSwitch FFtpListAll;
   TAutoSwitch FFtpHost;
-  TAutoSwitch FFtpDeleteFromCwd;
+  TAutoSwitch FFtpWorkFromCwd;
+  bool FFtpAnyCodeForPwd;
   bool FSslSessionReuse;
   UnicodeString FTlsCertificateFile;
   TAddressFamily FAddressFamily;
@@ -222,7 +225,9 @@ private:
   TAutoSwitch FNotUtf;
   int FInternalEditorEncoding;
   UnicodeString FS3DefaultRegion;
+  UnicodeString FS3SessionToken;
   TS3UrlStyle FS3UrlStyle;
+  TAutoSwitch FS3MaxKeys;
   bool FIsWorkspace;
   UnicodeString FLink;
   UnicodeString FNameOverride;
@@ -232,6 +237,7 @@ private:
   UnicodeString FNote;
   UnicodeString FWinTitle;
   RawByteString FEncryptKey;
+  bool FWebDavLiberalEscaping;
 
   UnicodeString FOrigHostName;
   int FOrigPortNumber;
@@ -242,9 +248,11 @@ private:
 
   void __fastcall SetHostName(UnicodeString value);
   UnicodeString __fastcall GetHostNameExpanded();
+  UnicodeString GetHostNameSource();
   void __fastcall SetPortNumber(int value);
   void __fastcall SetUserName(UnicodeString value);
   UnicodeString __fastcall GetUserNameExpanded();
+  UnicodeString GetUserNameSource();
   void __fastcall SetPassword(UnicodeString value);
   UnicodeString __fastcall GetPassword() const;
   void __fastcall SetNewPassword(UnicodeString value);
@@ -257,6 +265,7 @@ private:
   void __fastcall SetAuthKI(bool value);
   void __fastcall SetAuthKIPassword(bool value);
   void __fastcall SetAuthGSSAPI(bool value);
+  void __fastcall SetAuthGSSAPIKEX(bool value);
   void __fastcall SetGSSAPIFwdTGT(bool value);
   void __fastcall SetChangeUsername(bool value);
   void __fastcall SetCompression(bool value);
@@ -320,6 +329,7 @@ private:
   void __fastcall SetTcpNoDelay(bool value);
   void __fastcall SetSendBuf(int value);
   void __fastcall SetSourceAddress(const UnicodeString & value);
+  void __fastcall SetProtocolFeatures(const UnicodeString & value);
   void __fastcall SetSshSimple(bool value);
   UnicodeString __fastcall GetSshProtStr();
   bool __fastcall GetUsesSsh();
@@ -355,12 +365,14 @@ private:
   void __fastcall SetSFTPListingQueue(int value);
   void __fastcall SetSFTPMaxVersion(int value);
   void __fastcall SetSFTPMaxPacketSize(unsigned long value);
+  void __fastcall SetSFTPRealPath(TAutoSwitch value);
   void __fastcall SetSFTPBug(TSftpBug Bug, TAutoSwitch value);
   TAutoSwitch __fastcall GetSFTPBug(TSftpBug Bug) const;
   void __fastcall SetSCPLsFullTime(TAutoSwitch value);
   void __fastcall SetFtpListAll(TAutoSwitch value);
   void __fastcall SetFtpHost(TAutoSwitch value);
-  void __fastcall SetFtpDeleteFromCwd(TAutoSwitch value);
+  void __fastcall SetFtpWorkFromCwd(TAutoSwitch value);
+  void SetFtpAnyCodeForPwd(bool value);
   void __fastcall SetSslSessionReuse(bool value);
   void __fastcall SetTlsCertificateFile(UnicodeString value);
   UnicodeString __fastcall GetStorageKey();
@@ -399,7 +411,9 @@ private:
   void __fastcall SetNotUtf(TAutoSwitch value);
   void __fastcall SetInternalEditorEncoding(int value);
   void __fastcall SetS3DefaultRegion(UnicodeString value);
+  void __fastcall SetS3SessionToken(UnicodeString value);
   void __fastcall SetS3UrlStyle(TS3UrlStyle value);
+  void __fastcall SetS3MaxKeys(TAutoSwitch value);
   void __fastcall SetLogicalHostName(UnicodeString value);
   void __fastcall SetIsWorkspace(bool value);
   void __fastcall SetLink(UnicodeString value);
@@ -409,6 +423,7 @@ private:
   void __fastcall SetWinTitle(UnicodeString value);
   UnicodeString __fastcall GetEncryptKey() const;
   void __fastcall SetEncryptKey(UnicodeString value);
+  void __fastcall SetWebDavLiberalEscaping(bool value);
 
   TDateTime __fastcall GetTimeoutDT();
   void __fastcall SavePasswords(THierarchicalStorage * Storage, bool PuttyExport, bool DoNotEncryptPasswords, bool SaveAll);
@@ -522,9 +537,11 @@ public:
 
   __property UnicodeString HostName  = { read=FHostName, write=SetHostName };
   __property UnicodeString HostNameExpanded  = { read=GetHostNameExpanded };
+  __property UnicodeString HostNameSource = { read=GetHostNameSource };
   __property int PortNumber  = { read=FPortNumber, write=SetPortNumber };
   __property UnicodeString UserName  = { read=FUserName, write=SetUserName };
   __property UnicodeString UserNameExpanded  = { read=GetUserNameExpanded };
+  __property UnicodeString UserNameSource  = { read=GetUserNameSource };
   __property UnicodeString Password  = { read=GetPassword, write=SetPassword };
   __property UnicodeString NewPassword  = { read=GetNewPassword, write=SetNewPassword };
   __property bool ChangePassword  = { read=FChangePassword, write=SetChangePassword };
@@ -536,6 +553,7 @@ public:
   __property bool AuthKI  = { read=FAuthKI, write=SetAuthKI };
   __property bool AuthKIPassword  = { read=FAuthKIPassword, write=SetAuthKIPassword };
   __property bool AuthGSSAPI  = { read=FAuthGSSAPI, write=SetAuthGSSAPI };
+  __property bool AuthGSSAPIKEX  = { read=FAuthGSSAPIKEX, write=SetAuthGSSAPIKEX };
   __property bool GSSAPIFwdTGT = { read=FGSSAPIFwdTGT, write=SetGSSAPIFwdTGT };
   __property bool ChangeUsername  = { read=FChangeUsername, write=SetChangeUsername };
   __property bool Compression  = { read=FCompression, write=SetCompression };
@@ -591,6 +609,7 @@ public:
   __property bool TcpNoDelay  = { read=FTcpNoDelay, write=SetTcpNoDelay };
   __property int SendBuf  = { read=FSendBuf, write=SetSendBuf };
   __property UnicodeString SourceAddress = { read=FSourceAddress, write=SetSourceAddress };
+  __property UnicodeString ProtocolFeatures = { read=FProtocolFeatures, write=SetProtocolFeatures };
   __property bool SshSimple  = { read=FSshSimple, write=SetSshSimple };
   __property UnicodeString SshProtStr  = { read=GetSshProtStr };
   __property UnicodeString CipherList  = { read=GetCipherList, write=SetCipherList };
@@ -619,11 +638,13 @@ public:
   __property int SFTPListingQueue = { read = FSFTPListingQueue, write = SetSFTPListingQueue };
   __property int SFTPMaxVersion = { read = FSFTPMaxVersion, write = SetSFTPMaxVersion };
   __property unsigned long SFTPMaxPacketSize = { read = FSFTPMaxPacketSize, write = SetSFTPMaxPacketSize };
+  __property TAutoSwitch SFTPRealPath = { read = FSFTPRealPath, write = SetSFTPRealPath };
   __property TAutoSwitch SFTPBug[TSftpBug Bug]  = { read=GetSFTPBug, write=SetSFTPBug };
   __property TAutoSwitch SCPLsFullTime = { read = FSCPLsFullTime, write = SetSCPLsFullTime };
   __property TAutoSwitch FtpListAll = { read = FFtpListAll, write = SetFtpListAll };
   __property TAutoSwitch FtpHost = { read = FFtpHost, write = SetFtpHost };
-  __property TAutoSwitch FtpDeleteFromCwd = { read = FFtpDeleteFromCwd, write = SetFtpDeleteFromCwd };
+  __property TAutoSwitch FtpWorkFromCwd = { read = FFtpWorkFromCwd, write = SetFtpWorkFromCwd };
+  __property bool FtpAnyCodeForPwd = { read = FFtpAnyCodeForPwd, write = SetFtpAnyCodeForPwd };
   __property bool SslSessionReuse = { read = FSslSessionReuse, write = SetSslSessionReuse };
   __property UnicodeString TlsCertificateFile = { read=FTlsCertificateFile, write=SetTlsCertificateFile };
   __property TDSTMode DSTMode = { read = FDSTMode, write = SetDSTMode };
@@ -660,7 +681,9 @@ public:
   __property TAutoSwitch NotUtf = { read = FNotUtf, write = SetNotUtf };
   __property int InternalEditorEncoding = { read = FInternalEditorEncoding, write = SetInternalEditorEncoding };
   __property UnicodeString S3DefaultRegion = { read = FS3DefaultRegion, write = SetS3DefaultRegion };
+  __property UnicodeString S3SessionToken = { read = FS3SessionToken, write = SetS3SessionToken };
   __property TS3UrlStyle S3UrlStyle = { read = FS3UrlStyle, write = SetS3UrlStyle };
+  __property TAutoSwitch S3MaxKeys = { read = FS3MaxKeys, write = SetS3MaxKeys };
   __property bool IsWorkspace = { read = FIsWorkspace, write = SetIsWorkspace };
   __property UnicodeString Link = { read = FLink, write = SetLink };
   __property UnicodeString NameOverride = { read = FNameOverride, write = SetNameOverride };
@@ -670,6 +693,7 @@ public:
   __property UnicodeString Note = { read = FNote, write = SetNote };
   __property UnicodeString WinTitle = { read = FWinTitle, write = SetWinTitle };
   __property UnicodeString EncryptKey = { read = GetEncryptKey, write = SetEncryptKey };
+  __property bool WebDavLiberalEscaping = { read = FWebDavLiberalEscaping, write = SetWebDavLiberalEscaping };
 
   __property UnicodeString StorageKey = { read = GetStorageKey };
   __property UnicodeString SiteKey = { read = GetSiteKey };

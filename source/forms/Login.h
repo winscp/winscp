@@ -317,6 +317,7 @@ private:
   UnicodeString FUserNameLabel;
   UnicodeString FPasswordLabel;
   int FFixedSessionImages;
+  bool FRestoring;
 
   void __fastcall LoadSession(TSessionData * SessionData);
   void __fastcall LoadContents();
@@ -396,9 +397,10 @@ private:
   void __fastcall ResetNewSiteData();
   TModalResult __fastcall DefaultResult();
   int __fastcall AddLoginButtonImage(bool Enabled);
-  void __fastcall WMMoving(TMessage & Message);
+  void __fastcall WMWindowPosChanged(TWMWindowPosChanged & Message);
   void __fastcall CMDpiChanged(TMessage & Message);
   void __fastcall GenerateImages();
+  void __fastcall CMVisibleChanged(TMessage & Message);
 
 protected:
   void __fastcall Default();

@@ -101,6 +101,8 @@ private:
   void __fastcall CheckFileChange(int Index, bool Force);
   int __fastcall FindFile(const TObject * Token);
   void __fastcall ReleaseFile(int Index);
+  TDateTime NormalizeTimestamp(const TDateTime & Timestamp);
+  bool GetFileTimestamp(const UnicodeString & FileName, TDateTime & Timestamp);
 
   enum TWaitHandle { PROCESS, EVENT };
   int __fastcall WaitFor(unsigned int Count, const HANDLE * Handles,

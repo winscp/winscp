@@ -115,6 +115,8 @@ protected:
   TSessionInfo FSessionInfo;
   UTF8String FAccessKeyId;
   UTF8String FSecretAccessKey;
+  UTF8String FSecurityTokenBuf;
+  const char * FSecurityToken;
   UTF8String FHostName;
   UTF8String FPortSuffix;
   int FTimeout;
@@ -155,6 +157,7 @@ protected:
   int PutObjectData(int BufferSize, char * Buffer, TLibS3PutObjectDataCallbackData & Data);
   S3Status GetObjectData(int BufferSize, const char * Buffer, TLibS3GetObjectDataCallbackData & Data);
   bool ShouldCancelTransfer(TLibS3TransferObjectDataCallbackData & Data);
+  bool IsGoogleCloud();
 
   static TS3FileSystem * GetFileSystem(void * CallbackData);
   static void LibS3SessionCallback(ne_session_s * Session, void * CallbackData);

@@ -142,9 +142,9 @@ protected:
   void __fastcall LoadFile(TRemoteFile * File, TSFTPPacket * Packet,
     bool Complete = true);
   UnicodeString __fastcall LocalCanonify(const UnicodeString & Path);
-  UnicodeString __fastcall Canonify(UnicodeString Path);
-  UnicodeString __fastcall RealPath(const UnicodeString Path);
-  UnicodeString __fastcall RealPath(const UnicodeString Path, const UnicodeString BaseDir);
+  UnicodeString __fastcall Canonify(const UnicodeString & Path);
+  UnicodeString __fastcall RealPath(const UnicodeString & Path);
+  UnicodeString __fastcall RealPath(const UnicodeString & Path, const UnicodeString & BaseDir);
   void __fastcall ReserveResponse(const TSFTPPacket * Packet,
     TSFTPPacket * Response);
   int __fastcall ReceivePacket(TSFTPPacket * Packet, int ExpectedType = -1,
@@ -196,7 +196,7 @@ protected:
   void __fastcall Progress(TFileOperationProgressType * OperationProgress);
   void AddPathString(TSFTPPacket & Packet, const UnicodeString & Value, bool EncryptNewFiles = false);
   void __fastcall WriteLocalFile(
-    TStream * FileStream, TFileBuffer & BlockBuf, const UnicodeString & LocalFileName,
+    const TCopyParamType * CopyParam, TStream * FileStream, TFileBuffer & BlockBuf, const UnicodeString & LocalFileName,
     TFileOperationProgressType * OperationProgress);
   bool __fastcall DoesFileLookLikeSymLink(TRemoteFile * File);
 };

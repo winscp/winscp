@@ -189,14 +189,30 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       Height = 19
       IndentVertical = 3
       AutoSizeVertical = True
+      OnGetStatus = QueueLabelGetStatus
       AutoSize = False
       Transparent = False
+    end
+    object QueueFileListSplitter: TSplitter
+      Left = 0
+      Top = 117
+      Width = 620
+      Height = 3
+      Cursor = crSizeNS
+      Hint = 
+        'Drag to resize queue file list. Double click to hide queue file ' +
+        'list.'
+      Align = alBottom
+      AutoSnap = False
+      MinSize = 10
+      ResizeStyle = rsUpdate
+      OnCanResize = QueueFileListSplitterCanResize
     end
     object QueueView3: TListView
       Left = 0
       Top = 45
       Width = 620
-      Height = 95
+      Height = 72
       Align = alClient
       Columns = <
         item
@@ -242,6 +258,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       StateImages = GlyphsModule.QueueImages
       TabOrder = 0
       ViewStyle = vsReport
+      OnChange = QueueView3Change
       OnContextPopup = QueueView3ContextPopup
       OnDeletion = QueueView3Deletion
       OnEnter = QueueView3Enter
@@ -332,6 +349,29 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
           Action = NonVisualDataModule.QueuePreferencesAction
         end
       end
+    end
+    object QueueFileList: TListView
+      Left = 0
+      Top = 120
+      Width = 620
+      Height = 20
+      Align = alBottom
+      Columns = <
+        item
+        end>
+      DoubleBuffered = True
+      OwnerData = True
+      ReadOnly = True
+      ParentDoubleBuffered = False
+      ShowColumnHeaders = False
+      TabOrder = 2
+      TabStop = False
+      ViewStyle = vsReport
+      OnCustomDrawItem = QueueFileListCustomDrawItem
+      OnData = QueueFileListData
+      OnEnter = QueueFileListEnterExit
+      OnExit = QueueFileListEnterExit
+      OnResize = QueueFileListResize
     end
   end
   object SessionsPageControl: TThemePageControl

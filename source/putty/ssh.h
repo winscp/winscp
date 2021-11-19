@@ -57,6 +57,7 @@ struct ssh_channel;
 typedef struct PacketQueueNode PacketQueueNode;
 struct PacketQueueNode {
     PacketQueueNode *next, *prev;
+    size_t formal_size;    /* contribution to PacketQueueBase's total_size */
     bool on_free_queue;     /* is this packet scheduled for freeing? */
 };
 
@@ -89,6 +90,7 @@ typedef struct PktOut {
 
 typedef struct PacketQueueBase {
     PacketQueueNode end;
+    size_t total_size;    /* sum of all formal_size fields on the queue */
     struct IdempotentCallback *ic;
     Seat * seat; // WINSCP
 } PacketQueueBase;
@@ -409,12 +411,12 @@ void ssh_conn_processed_data(Ssh *ssh);
 void ssh_check_frozen(Ssh *ssh);
 
 /* Functions to abort the connection, for various reasons. */
-void ssh_remote_error(Ssh *ssh, const char *fmt, ...);
-void ssh_remote_eof(Ssh *ssh, const char *fmt, ...);
-void ssh_proto_error(Ssh *ssh, const char *fmt, ...);
-void ssh_sw_abort(Ssh *ssh, const char *fmt, ...);
-void ssh_sw_abort_deferred(Ssh *ssh, const char *fmt, ...);
-void ssh_user_close(Ssh *ssh, const char *fmt, ...);
+void ssh_remote_error(Ssh *ssh, const char *fmt, ...) PRINTF_LIKE(2, 3);
+void ssh_remote_eof(Ssh *ssh, const char *fmt, ...) PRINTF_LIKE(2, 3);
+void ssh_proto_error(Ssh *ssh, const char *fmt, ...) PRINTF_LIKE(2, 3);
+void ssh_sw_abort(Ssh *ssh, const char *fmt, ...) PRINTF_LIKE(2, 3);
+void ssh_sw_abort_deferred(Ssh *ssh, const char *fmt, ...) PRINTF_LIKE(2, 3);
+void ssh_user_close(Ssh *ssh, const char *fmt, ...) PRINTF_LIKE(2, 3);
 
 /* Bit positions in the SSH-1 cipher protocol word */
 #define SSH1_CIPHER_IDEA        1
@@ -545,6 +547,7 @@ void BinarySource_get_rsa_ssh1_pub(
     BinarySource *src, RSAKey *result, RsaSsh1Order order);
 void BinarySource_get_rsa_ssh1_priv(
     BinarySource *src, RSAKey *rsa);
+RSAKey *BinarySource_get_rsa_ssh1_priv_agent(BinarySource *src);
 bool rsa_ssh1_encrypt(unsigned char *data, int length, RSAKey *key);
 mp_int *rsa_ssh1_decrypt(mp_int *input, RSAKey *key);
 bool rsa_ssh1_decrypt_pkcs1(mp_int *input, RSAKey *key, strbuf *outbuf);
@@ -741,32 +744,43 @@ struct ssh_hash {
 
 struct ssh_hashalg {
     ssh_hash *(*new)(const ssh_hashalg *alg);
-    ssh_hash *(*copy)(ssh_hash *);
-    void (*final)(ssh_hash *, unsigned char *); /* ALSO FREES THE ssh_hash! */
+    void (*reset)(ssh_hash *);
+    void (*copyfrom)(ssh_hash *dest, ssh_hash *src);
+    void (*digest)(ssh_hash *, unsigned char *);
     void (*free)(ssh_hash *);
-    int hlen; /* output length in bytes */
-    int blocklen; /* length of the hash's input block, or 0 for N/A */
+    size_t hlen; /* output length in bytes */
+    size_t blocklen; /* length of the hash's input block, or 0 for N/A */
     const char *text_basename;     /* the semantic name of the hash */
     const char *annotation;   /* extra info, e.g. which of multiple impls */
     const char *text_name;    /* both combined, e.g. "SHA-n (unaccelerated)" */
+    const void *extra;        /* private to the hash implementation */
 };
 
 static inline ssh_hash *ssh_hash_new(const ssh_hashalg *alg)
-{ return alg->new(alg); }
-static inline ssh_hash *ssh_hash_copy(ssh_hash *h)
-{ return h->vt->copy(h); }
-static inline void ssh_hash_final(ssh_hash *h, unsigned char *out)
-{ h->vt->final(h, out); }
+{ ssh_hash *h = alg->new(alg); if (h) h->vt->reset(h); return h; }
+static inline ssh_hash *ssh_hash_copy(ssh_hash *orig)
+{ ssh_hash *h = orig->vt->new(orig->vt); h->vt->copyfrom(h, orig); return h; }
+static inline void ssh_hash_digest(ssh_hash *h, unsigned char *out)
+{ h->vt->digest(h, out); }
 static inline void ssh_hash_free(ssh_hash *h)
 { h->vt->free(h); }
 static inline const ssh_hashalg *ssh_hash_alg(ssh_hash *h)
 { return h->vt; }
 
+/* The reset and copyfrom vtable methods return void. But for call-site
+ * convenience, these wrappers return their input pointer. */
+static inline ssh_hash *ssh_hash_reset(ssh_hash *h)
+{ h->vt->reset(h); return h; }
+
+/* ssh_hash_final emits the digest _and_ frees the ssh_hash */
+static inline void ssh_hash_final(ssh_hash *h, unsigned char *out)
+{ h->vt->digest(h, out); h->vt->free(h); }
+
 /* Handy macros for defining all those text-name fields at once */
 #define HASHALG_NAMES_BARE(base) \
-    base, NULL, base
-#define HASHALG_NAMES_ANNOTATED(base, annotation) \
-    base, annotation, base " (" annotation ")"
+    /*.text_basename =*/ base, /*.annotation =*/ NULL, /*.text_name =*/ base
+#define HASHALG_NAMES_ANNOTATED(base, ann) \
+    /*.text_basename =*/ base, /*.annotation =*/ ann, /*.text_name =*/ base " (" ann ")"
 
 #ifndef WINSCP_VS
 
@@ -911,8 +925,20 @@ struct ssh2_userkey {
     char *comment;                     /* the key comment */
 };
 
+/* Argon2 password hashing function */
+typedef enum { Argon2d = 0, Argon2i = 1, Argon2id = 2 } Argon2Flavour;
+void argon2(Argon2Flavour, uint32_t mem, uint32_t passes,
+            uint32_t parallel, uint32_t taglen,
+            ptrlen P, ptrlen S, ptrlen K, ptrlen X, strbuf *out);
+void argon2_choose_passes(
+    Argon2Flavour, uint32_t mem, uint32_t milliseconds, uint32_t *passes,
+    uint32_t parallel, uint32_t taglen, ptrlen P, ptrlen S, ptrlen K, ptrlen X,
+    strbuf *out);
+/* The H' hash defined in Argon2, exposed just for testcrypt */
+strbuf *argon2_long_hash(unsigned length, ptrlen data);
+
 /* The maximum length of any hash algorithm. (bytes) */
-#define MAX_HASH_LEN (64)              /* longest is SHA-512 */
+#define MAX_HASH_LEN (114) /* longest is SHAKE256 with 114-byte output */
 
 extern const ssh_cipheralg ssh_3des_ssh1;
 extern const ssh_cipheralg ssh_blowfish_ssh1;
@@ -957,7 +983,12 @@ extern const ssh_hashalg ssh_sha256;
 extern const ssh_hashalg ssh_sha256_hw;
 extern const ssh_hashalg ssh_sha256_sw;
 extern const ssh_hashalg ssh_sha384;
+extern const ssh_hashalg ssh_sha384_hw;
+extern const ssh_hashalg ssh_sha384_sw;
 extern const ssh_hashalg ssh_sha512;
+extern const ssh_hashalg ssh_sha512_hw;
+extern const ssh_hashalg ssh_sha512_sw;
+extern const ssh_hashalg ssh_blake2b;
 extern const ssh_kexes ssh_diffiehellman_group1;
 extern const ssh_kexes ssh_diffiehellman_group14;
 extern const ssh_kexes ssh_diffiehellman_gex;
@@ -982,6 +1013,10 @@ extern const ssh2_macalg ssh_hmac_sha1_96_buggy;
 extern const ssh2_macalg ssh_hmac_sha256;
 extern const ssh2_macalg ssh2_poly1305;
 extern const ssh_compression_alg ssh_zlib;
+
+/* Special constructor: BLAKE2b can be instantiated with any hash
+ * length up to 128 bytes */
+ssh_hash *blake2b_new_general(unsigned hashlen);
 
 /*
  * On some systems, you have to detect hardware crypto acceleration by
@@ -1156,13 +1191,6 @@ mp_int *dh_create_e(dh_ctx *, int nbits);
 const char *dh_validate_f(dh_ctx *, mp_int *f);
 mp_int *dh_find_K(dh_ctx *, mp_int *f);
 
-bool rsa_ssh1_encrypted(const Filename *filename, char **comment);
-int rsa_ssh1_loadpub(const Filename *filename, BinarySink *bs,
-                     char **commentptr, const char **errorstr);
-int rsa_ssh1_loadkey(const Filename *filename, RSAKey *key,
-                     const char *passphrase, const char **errorstr);
-bool rsa_ssh1_savekey(const Filename *filename, RSAKey *key, char *passphrase);
-
 static inline bool is_base64_char(char c)
 {
     return ((c >= '0' && c <= '9') ||
@@ -1181,14 +1209,68 @@ extern void base64_encode(FILE *fp, const unsigned char *data, int datalen,
 extern ssh2_userkey ssh2_wrong_passphrase;
 #define SSH2_WRONG_PASSPHRASE (&ssh2_wrong_passphrase)
 
-bool ssh2_userkey_encrypted(const Filename *filename, char **comment);
-ssh2_userkey *ssh2_load_userkey(
-    const Filename *filename, const char *passphrase, const char **errorstr);
-bool ssh2_userkey_loadpub(
-    const Filename *filename, char **algorithm, BinarySink *bs,
-    char **commentptr, const char **errorstr);
-bool ssh2_save_userkey(
-    const Filename *filename, ssh2_userkey *key, char *passphrase);
+bool ppk_encrypted_s(BinarySource *src, char **comment);
+bool ppk_encrypted_f(const Filename *filename, char **comment);
+#define ssh2_userkey_encrypted ppk_encrypted_f
+bool rsa1_encrypted_s(BinarySource *src, char **comment);
+bool rsa1_encrypted_f(const Filename *filename, char **comment);
+#define rsa_ssh1_encrypted rsa1_encrypted_f
+
+ssh2_userkey *ppk_load_s(BinarySource *src, const char *passphrase,
+                         const char **errorstr);
+ssh2_userkey *ppk_load_f(const Filename *filename, const char *passphrase,
+                         const char **errorstr);
+#define ssh2_load_userkey ppk_load_f
+int rsa1_load_s(BinarySource *src, RSAKey *key,
+                const char *passphrase, const char **errorstr);
+int rsa1_load_f(const Filename *filename, RSAKey *key,
+                const char *passphrase, const char **errorstr);
+#define rsa_ssh1_loadkey rsa1_load_f
+
+typedef struct ppk_save_parameters {
+    unsigned fmt_version;              /* currently 2 or 3 */
+
+    /*
+     * Parameters for fmt_version == 3
+     */
+    Argon2Flavour argon2_flavour;
+    uint32_t argon2_mem;               /* in Kbyte */
+    bool argon2_passes_auto;
+    union {
+        uint32_t argon2_passes;        /* if auto == false */
+        uint32_t argon2_milliseconds;  /* if auto == true */
+    };
+    uint32_t argon2_parallelism;
+
+    /* The ability to choose a specific salt is only intended for the
+     * use of the automated test of PuTTYgen. It's a (mild) security
+     * risk to do it with any passphrase you actually care about,
+     * because it invalidates the entire point of having a salt in the
+     * first place. */
+    const uint8_t *salt;
+    size_t saltlen;
+} ppk_save_parameters;
+extern const ppk_save_parameters ppk_save_default_parameters;
+
+strbuf *ppk_save_sb(ssh2_userkey *key, const char *passphrase,
+                    const ppk_save_parameters *params);
+bool ppk_save_f(const Filename *filename, ssh2_userkey *key,
+                const char *passphrase, const ppk_save_parameters *params);
+strbuf *rsa1_save_sb(RSAKey *key, const char *passphrase);
+bool rsa1_save_f(const Filename *filename, RSAKey *key,
+                 const char *passphrase);
+
+bool ppk_loadpub_s(BinarySource *src, char **algorithm, BinarySink *bs,
+                   char **commentptr, const char **errorstr);
+bool ppk_loadpub_f(const Filename *filename, char **algorithm, BinarySink *bs,
+                   char **commentptr, const char **errorstr);
+#define ssh2_userkey_loadpub ppk_loadpub_f
+int rsa1_loadpub_s(BinarySource *src, BinarySink *bs,
+                   char **commentptr, const char **errorstr);
+int rsa1_loadpub_f(const Filename *filename, BinarySink *bs,
+                   char **commentptr, const char **errorstr);
+#define rsa_ssh1_loadpub rsa1_loadpub_f
+
 const ssh_keyalg *find_pubkey_alg(const char *name);
 const ssh_keyalg *find_pubkey_alg_len(ptrlen name);
 
@@ -1235,6 +1317,15 @@ enum {
     SSH_KEYTYPE_SSH2_PUBLIC_RFC4716,
     SSH_KEYTYPE_SSH2_PUBLIC_OPENSSH
 };
+
+typedef enum {
+    SSH_FPTYPE_MD5,
+    SSH_FPTYPE_SHA256,
+} FingerprintType;
+
+#define SSH_FPTYPE_DEFAULT SSH_FPTYPE_SHA256
+#define SSH_N_FPTYPES (SSH_FPTYPE_SHA256 + 1)
+
 char *ssh1_pubkey_str(RSAKey *ssh1key);
 void ssh1_write_pubkey(FILE *fp, RSAKey *ssh1key);
 char *ssh2_pubkey_openssh_str(ssh2_userkey *key);
@@ -1244,10 +1335,11 @@ void ssh2_write_pubkey(FILE *fp, const char *comment,
 char *ssh2_fingerprint_blob(ptrlen);
 char *ssh2_fingerprint(ssh_key *key);
 int key_type(const Filename *filename);
+int key_type_s(BinarySource *src);
 const char *key_type_to_str(int type);
-bool openssh_loadpub_line(char * line, char **algorithm, // WINSCP
-                         BinarySink *bs,
-                         char **commentptr, const char **errorstr);
+bool openssh_loadpub(BinarySource *src, char **algorithm, // WINSCP
+                     BinarySink *bs,
+                     char **commentptr, const char **errorstr);
 
 bool import_possible(int type);
 int import_target_type(int type);
@@ -1267,8 +1359,10 @@ void des3_decrypt_pubkey_ossh(const void *key, const void *iv,
                               void *blk, int len);
 void des3_encrypt_pubkey_ossh(const void *key, const void *iv,
                               void *blk, int len);
-void aes256_encrypt_pubkey(const void *key, void *blk, int len);
-void aes256_decrypt_pubkey(const void *key, void *blk, int len);
+void aes256_encrypt_pubkey(const void *key, const void *iv,
+                           void *blk, int len);
+void aes256_decrypt_pubkey(const void *key, const void *iv,
+                           void *blk, int len);
 
 void des_encrypt_xdmauth(const void *key, void *blk, int len);
 void des_decrypt_xdmauth(const void *key, void *blk, int len);

@@ -496,7 +496,7 @@ type
 resourcestring
   SErrorRenameFile = 'Can''t rename file or directory: ';
   SErrorRenameFileExists = 'File already exists: ';
-  SErrorInvalidName= 'Filename contains invalid characters:';
+  SErrorInvalidName = 'Filename contains invalid characters:';
   STextFileExt = 'File %s';
   STextFiles = '%u Files';
   STextDirectories = '%u Directories';
@@ -535,13 +535,16 @@ var
   DefaultExeIcon: Integer;
   UserDocumentDirectory: string;
 
+const
+  coInvalidDosChars = '\/:*?"<>|';
+  Space = ' ';
+
 implementation
 
 uses
   Math, DirViewColProperties, UITypes, Types, OperationWithTimeout, Winapi.UxTheme, Vcl.Themes;
 
 const
-  Space = ' ';
   ResDirUp = 'DIRUP%2.2d';
   ResLink = 'LINK%2.2d';
   ResBrokenLink = 'BROKEN%2.2d';
@@ -671,10 +674,15 @@ function StrCmpLogicalW(const sz1, sz2: UnicodeString): Integer; stdcall; extern
 
 function CompareLogicalTextPas(const S1, S2: string; NaturalOrderNumericalSorting: Boolean): Integer;
 begin
+  // Keep in sync with CompareLogicalText
+
   if NaturalOrderNumericalSorting then
     Result := StrCmpLogicalW(PChar(S1), PChar(S2))
   else
     Result := lstrcmpi(PChar(S1), PChar(S2));
+  // For deterministics results
+  if Result = 0 then
+    Result := lstrcmp(PChar(S1), PChar(S2));
 end;
 
 { Shortcut-handling }
@@ -817,7 +825,7 @@ begin
   FWantUseDragImages := False;
   FAddParentDir := False;
   FullDrag := True;
-  FInvalidNameChars := '\/:*?"<>|';
+  FInvalidNameChars := coInvalidDosChars;
   FHasParentDir := False;
   FDragOnDriveIsMove := False;
   FCaseSensitive := False;
@@ -916,10 +924,12 @@ end;
 
 procedure TCustomDirView.WMNotify(var Msg: TWMNotify);
 begin
-  // This all is to make header text white in dark mode
-  if DarkMode and SupportsDarkMode and (FHeaderHandle <> 0) and (Msg.NMHdr^.hWndFrom = FHeaderHandle) then
+  // This all is to make header text white in dark mode.
+  if Msg.NMHdr.code = NM_CUSTOMDRAW then
   begin
-    if Msg.NMHdr.code = NM_CUSTOMDRAW then
+    if DarkMode and SupportsDarkMode and
+       GetSysDarkTheme and // When system app theme is light, headers are not dark
+       (FHeaderHandle <> 0) and (Msg.NMHdr^.hWndFrom = FHeaderHandle) then
     begin
       with PNMLVCustomDraw(Msg.NMHdr)^ do
       begin
@@ -1035,21 +1045,23 @@ begin
 
   inherited;
 
-  if (Message.NMHdr.code = LVN_GETDISPINFO) and
-     FNotifyEnabled and Valid and (not Loading) then
-    with PLVDispInfo(Pointer(Message.NMHdr))^.Item do
-      try
-        InfoMask := PLVDispInfo(Pointer(Message.NMHdr))^.item.Mask;
+  if Message.NMHdr.code = LVN_GETDISPINFO then
+  begin
+    if FNotifyEnabled and Valid and (not Loading) then
+      with PLVDispInfo(Pointer(Message.NMHdr))^.Item do
+        try
+          InfoMask := PLVDispInfo(Pointer(Message.NMHdr))^.item.Mask;
 
-        if (InfoMask and LVIF_PARAM) <> 0 then Item := TListItem(lParam)
-          else
-        if iItem < Items.Count then Item := Items[iItem]
-          else Item := nil;
+          if (InfoMask and LVIF_PARAM) <> 0 then Item := TListItem(lParam)
+            else
+          if iItem < Items.Count then Item := Items[iItem]
+            else Item := nil;
 
-        if Assigned(Item) and Assigned(Item.Data) then
-          GetDisplayInfo(Item, PLVDispInfo(Pointer(Message.NMHdr))^.item);
-      except
-      end;
+          if Assigned(Item) and Assigned(Item.Data) then
+            GetDisplayInfo(Item, PLVDispInfo(Pointer(Message.NMHdr))^.item);
+        except
+        end;
+  end;
 
   if (Message.NMHdr.code = NM_CUSTOMDRAW) and
      Valid and (not Loading) then
@@ -1245,10 +1257,14 @@ begin
 
   if SupportsDarkMode then
   begin
-    // This enabled dark mode - List view itself supports dark mode somewhat even in the our 'Explorer' theme.
-    // The 'ItemsView' has better dark mode selection color, but on the other hand is does not have dark scrollbars.
+    // This enables dark mode - List view itself supports dark mode somewhat even in the our 'Explorer' theme.
+    // The 'ItemsView' has better (Explorer-like) dark mode selection color, but on the other hand it does not have dark scrollbars.
     // win32-darkmode has ugly fix for that (FixDarkScrollBar), which we do not want to employ.
+    // The 'DarkMode_Explorer' uses the standard selection color (bright blue).
+
+    // Enables dark headers:
     SetWindowTheme(FHeaderHandle, 'ItemsView', nil);
+
     if DarkMode then UpdateDarkMode;
   end;
 
@@ -2025,7 +2041,7 @@ begin
             begin
               LastDirName := Copy(LastDirName, 2, MaxInt);
             end;
-            if LastDelimiter('\:/', LastDirName) = 0 then
+            if LastDelimiter(Delimiters, LastDirName) = 0 then
             begin
               ItemFocused := FindFileItem(LastDirName);
             end;

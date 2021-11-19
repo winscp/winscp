@@ -249,7 +249,7 @@ void __fastcall TEditorManager::Check()
     TDateTime NewTimestamp;
     if (HasFileChanged(Index, NewTimestamp))
     {
-      TDateTime N = Now();
+      TDateTime N = NormalizeTimestamp(Now());
       // Let the editor finish writing to the file
       // (first to avoid uploading partially saved file, second
       // because the timestamp may change more than once during saving).
@@ -347,7 +347,7 @@ void __fastcall TEditorManager::FileReload(TObject * Token)
   TAutoFlag ReloadingFlag(FileData->Reloading);
 
   OnFileReload(FileData->FileName, FileData->Data);
-  FileAge(FileData->FileName, FileData->Timestamp);
+  GetFileTimestamp(FileData->FileName, FileData->Timestamp);
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::FileClosed(TObject * Token, bool Forced)
@@ -365,7 +365,7 @@ void __fastcall TEditorManager::AddFile(TFileData & FileData, TEditedFileData * 
 {
   std::unique_ptr<TEditedFileData> Data(AData);
 
-  FileAge(FileData.FileName, FileData.Timestamp);
+  GetFileTimestamp(FileData.FileName, FileData.Timestamp);
   FileData.Closed = false;
   FileData.UploadCompleteEvent = INVALID_HANDLE_VALUE;
   FileData.Opened = Now();
@@ -459,6 +459,22 @@ bool __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
   return Result;
 }
 //---------------------------------------------------------------------------
+TDateTime TEditorManager::NormalizeTimestamp(const TDateTime & Timestamp)
+{
+  return TTimeZone::Local->ToUniversalTime(Timestamp);
+}
+//---------------------------------------------------------------------------
+bool TEditorManager::GetFileTimestamp(const UnicodeString & FileName, TDateTime & Timestamp)
+{
+  TSearchRecSmart ASearchRec;
+  bool Result = FileSearchRec(FileName, ASearchRec);
+  if (Result)
+  {
+    Timestamp = NormalizeTimestamp(ASearchRec.GetLastWriteTime());
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall TEditorManager::HasFileChanged(int Index, TDateTime & NewTimestamp)
 {
   TFileData * FileData = &FFiles[Index];
@@ -470,7 +486,7 @@ bool __fastcall TEditorManager::HasFileChanged(int Index, TDateTime & NewTimesta
   else
   {
     Result =
-      FileAge(FileData->FileName, NewTimestamp) &&
+      GetFileTimestamp(FileData->FileName, NewTimestamp) &&
       (FileData->Timestamp != NewTimestamp);
   }
   return Result;
@@ -489,31 +505,51 @@ void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)
     }
     else
     {
-      FileData->UploadCompleteEvent = CreateEvent(NULL, false, false, NULL);
-      FUploadCompleteEvents.push_back(FileData->UploadCompleteEvent);
-
-      FileData->Timestamp = NewTimestamp;
-      FileData->Saves++;
-      if (FileData->Saves == 1)
+      bool Upload = true;
+      if (!Force)
       {
-        Configuration->Usage->Inc(L"RemoteFilesSaved");
-      }
-      Configuration->Usage->Inc(L"RemoteFileSaves");
-
-      try
-      {
-        DebugAssert(OnFileChange != NULL);
-        OnFileChange(FileData->FileName, FileData->Data,
-          FileData->UploadCompleteEvent);
-      }
-      catch(...)
-      {
-        // upload failed (was not even started)
-        if (FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE)
+        HANDLE Handle = CreateFile(ApiPath(FileData->FileName).c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, 0);
+        if (Handle == INVALID_HANDLE_VALUE)
         {
-          UploadComplete(Index);
+          int Error = GetLastError();
+          if (Error == ERROR_ACCESS_DENIED)
+          {
+            Upload = false;
+          }
         }
-        throw;
+        else
+        {
+          CloseHandle(Handle);
+        }
+      }
+      if (Upload)
+      {
+        FileData->UploadCompleteEvent = CreateEvent(NULL, false, false, NULL);
+        FUploadCompleteEvents.push_back(FileData->UploadCompleteEvent);
+
+        FileData->Timestamp = NewTimestamp;
+        FileData->Saves++;
+        if (FileData->Saves == 1)
+        {
+          Configuration->Usage->Inc(L"RemoteFilesSaved");
+        }
+        Configuration->Usage->Inc(L"RemoteFileSaves");
+
+        try
+        {
+          DebugAssert(OnFileChange != NULL);
+          OnFileChange(FileData->FileName, FileData->Data,
+            FileData->UploadCompleteEvent);
+        }
+        catch(...)
+        {
+          // upload failed (was not even started)
+          if (FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE)
+          {
+            UploadComplete(Index);
+          }
+          throw;
+        }
       }
     }
   }

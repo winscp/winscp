@@ -79,11 +79,15 @@ procedure SetAppTerminated(Value: Boolean);
 procedure ForceColorChange(Control: TWinControl);
 
 function IsUncPath(Path: string): Boolean;
+function FileExistsFix(Path: string): Boolean;
+function DirectoryExistsFix(Path: string): Boolean;
 
 function SupportsDarkMode: Boolean;
 procedure AllowDarkModeForWindow(Control: TWinControl; Allow: Boolean); overload;
 procedure AllowDarkModeForWindow(Handle: THandle; Allow: Boolean); overload;
 procedure RefreshColorMode;
+procedure ResetSysDarkTheme;
+function GetSysDarkTheme: Boolean;
 
 type
   TApiPathEvent = function(Path: string): string;
@@ -148,7 +152,7 @@ type
 implementation
 
 uses
-  SysUtils, StdCtrls, Graphics, MultiMon, ShellAPI, Generics.Collections, CommCtrl, ImgList;
+  SysUtils, StdCtrls, Graphics, MultiMon, ShellAPI, Generics.Collections, CommCtrl, ImgList, Registry;
 
 const
   DDExpandDelay = 15000000;
@@ -429,8 +433,9 @@ begin
   Form := GetParentForm(Control);
   if Form = nil then
   begin
-    // This should happen only for screen tip over dropped down menu
-    Assert(Control.ClassName = 'TTBXPopupWindow');
+    // This should happen only for screen tip over dropped down menu.
+    // The other condition is a temporary fix is for TCustomComboEdit on TCopyParamsFrame.
+    Assert((Control.ClassName = 'TTBXPopupWindow') or ((Control.Parent <> nil) and (Control.Parent.ClassName = 'TCopyParamsFrame')) or ((Control.Parent.Parent <> nil) and (Control.Parent.Parent.ClassName = 'TCopyParamsFrame')));
     Result := ScaleByPixelsPerInch(Dimension, Control);
   end
     else
@@ -987,6 +992,38 @@ begin
   Result := (Copy(Path, 1, 2) = '\\') or (Copy(Path, 1, 2) = '//');
 end;
 
+const ERROR_CANT_ACCESS_FILE = 1920;
+
+function DoExists(R: Boolean; Path: string): Boolean;
+var
+  Error: Integer;
+begin
+  Result := R;
+  if not Result then
+  begin
+    Error := GetLastError();
+    if (Error = ERROR_CANT_ACCESS_FILE) or // returned when resolving symlinks in %LOCALAPPDATA%\Microsoft\WindowsApps
+       (Error = ERROR_ACCESS_DENIED) then // returned for %USERPROFILE%\Application Data symlink
+    begin
+      Result := DirectoryExists(ApiPath(ExtractFileDir(Path)));
+    end;
+  end;
+end;
+
+function FileExistsFix(Path: string): Boolean;
+begin
+  // WORKAROUND
+  SetLastError(ERROR_SUCCESS);
+  Result := DoExists(FileExists(ApiPath(Path)), Path);
+end;
+
+function DirectoryExistsFix(Path: string): Boolean;
+begin
+  // WORKAROUND
+  SetLastError(ERROR_SUCCESS);
+  Result := DoExists(DirectoryExists(ApiPath(Path)), Path);
+end;
+
 type TPreferredAppMode = (pamDefault, pamAllowDark, pamForceDark, pamForceLight, pamMax);
 
 var
@@ -1022,6 +1059,54 @@ begin
   begin
     ARefreshImmersiveColorPolicyState;
   end;
+end;
+
+var
+  SysDarkTheme: Integer;
+
+procedure ResetSysDarkTheme;
+begin
+  SysDarkTheme := -1;
+end;
+
+function DoGetSysDarkTheme(RootKey: HKEY): Integer;
+const
+  ThemesPersonalizeKey = 'Software\Microsoft\Windows\CurrentVersion\Themes\Personalize';
+  AppsUseLightThemeValue = 'AppsUseLightTheme';
+var
+  Registry: TRegistry;
+begin
+  Registry := TRegistry.Create;
+  try
+    Registry.RootKey := RootKey;
+    Result := -1;
+    if Registry.OpenKeyReadOnly(ThemesPersonalizeKey) and
+       Registry.ValueExists(AppsUseLightThemeValue) then
+    begin
+      if Registry.ReadBool(AppsUseLightThemeValue) then Result := 0
+        else Result := 1;
+    end;
+  finally
+    Registry.Free;
+  end;
+end;
+
+function GetSysDarkTheme: Boolean;
+begin
+  if SysDarkTheme < 0 then
+  begin
+    SysDarkTheme := DoGetSysDarkTheme(HKEY_CURRENT_USER);
+    if SysDarkTheme < 0 then
+    begin
+      SysDarkTheme := DoGetSysDarkTheme(HKEY_LOCAL_MACHINE);
+      if SysDarkTheme < 0 then
+      begin
+        SysDarkTheme := 0;
+      end;
+    end;
+  end;
+
+  Result := (SysDarkTheme > 0);
 end;
 
 var
@@ -1070,6 +1155,8 @@ initialization
       end;
     end;
   end;
+
+  ResetSysDarkTheme;
 
 finalization
   // No need to release individual image lists as they are owned by Application object.

@@ -34,6 +34,7 @@ public:
   BOOL m_bListening;
   CFile * m_pFile;
   t_transferdata m_transferdata;
+  __int64 m_uploaded;
   void SetActive();
   int CheckForTimeout(int delay);
 #ifndef MPEXT_NO_GSS
@@ -55,6 +56,7 @@ protected:
   virtual int OnLayerCallback(std::list<t_callbackMsg> & callbacks);
   int ReadDataFromFile(char * buffer, int len);
   virtual void LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg);
+  virtual int GetSocketOptionVal(int OptionID) const;
   virtual void ConfigureSocket();
   bool Activate();
   void Start();
@@ -82,7 +84,6 @@ protected:
   void CloseAndEnsureSendClose(int Mode);
   void EnsureSendClose(int Mode);
   void CloseOnShutDownOrError(int Mode);
-  void LogError(int Error);
   void SetBuffers();
 
   LARGE_INTEGER m_LastUpdateTime;

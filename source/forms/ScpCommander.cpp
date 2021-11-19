@@ -90,6 +90,8 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
   CopyPopup(QueueLabel, TopDock);
   CopyPopup(BottomDock, TopDock);
   CopyPopup(QueueSeparatorPanel, TopDock);
+  CopyPopup(QueueFileList, TopDock);
+  CopyPopup(QueueFileListSplitter, TopDock);
 
   LocalTopDock->PopupMenu = NonVisualDataModule->LocalPanelPopup;
   CopyPopup(LocalPathLabel, LocalTopDock);
@@ -358,9 +360,9 @@ void __fastcall TScpCommanderForm::DoShow()
   // Make sure the RemoteDirView is disabled (if not connected yet)
   // before the focusing below,
   // otherwise we disable the view while setting it focused
-  // (UpdateControls gets calling within the SetFocus),
-  // leading to VCL focus inconsistency wih Windows,
-  // and the view [anothing actually] not getting focused after the session
+  // (UpdateControls gets called within the SetFocus),
+  // leading to VCL focus inconsistency with Windows,
+  // and the view [anything actually] not getting focused after the session
   // is finally connected
   UpdateControls();
 
@@ -543,6 +545,10 @@ void __fastcall TScpCommanderForm::TerminalChanged(bool Replaced)
           {
             Terminal->ShowExtendedException(&E);
           }
+          else
+          {
+            LocalDirView->OpenFallbackPath(LocalDirectory);
+          }
         }
       }
     }
@@ -649,8 +655,8 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
   if (LocalDirView->RowSelect != WinConfiguration->FullRowSelect)
   {
     LocalDirView->RowSelect = WinConfiguration->FullRowSelect;
-    // selection is not redrawn automatically when RowSelect changes
-    LocalDirView->Invalidate();
+    // Without this, the panel turns gray and unused part of header turns black
+    LocalDirView->Perform(CM_COLORCHANGED, 0, 0);
   }
 
   // See also LocalDirViewDDTargetHasDropHandler
@@ -735,7 +741,7 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
       RemoteDrivePanel->Height = RemotePanel.DriveViewHeight;
     }
 
-    // in case it trigges config-changed event (does not),
+    // in case it triggers config-changed event (does not),
     // make sure it does only after we apply the TreeOnLeft change to avoid endless recursion
     WinConfiguration->ScpCommander.LocalPanel = LocalPanel;
     WinConfiguration->ScpCommander.RemotePanel = RemotePanel;
@@ -882,7 +888,6 @@ void __fastcall TScpCommanderForm::UpdateControls()
   LocalDirView->Font->Color = GetWindowTextColor(LocalDirView->Color);
   LocalDriveView->Font->Color = LocalDirView->Font->Color;
 
-  // TODO
   bool LocalSide = (FCurrentSide == osLocal);
   TAction * CurrentCopyAction = LocalSide ? NonVisualDataModule->LocalCopyAction : NonVisualDataModule->RemoteCopyAction;
   if (CurrentCopyItem->Action != CurrentCopyAction)
@@ -912,7 +917,6 @@ void __fastcall TScpCommanderForm::ChangePath(TOperationSide Side)
 {
   DebugAssert((Side == osLocal) || (Side == osRemote));
   TTBXComboBoxItem * PathComboBox;
-  // TODO
   if (Side == osLocal)
   {
     PathComboBox = LocalPathComboBox;
@@ -1037,7 +1041,7 @@ void __fastcall TScpCommanderForm::FullSynchronizeDirectories()
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::ExploreLocalDirectory()
 {
-  OpenFolderInExplorer(GetCurrentLocalBrowser()->Path);
+  OpenFolderInExplorer(LocalDirView->Path);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalDirViewExecFile(TObject *Sender,
@@ -1062,14 +1066,13 @@ void __fastcall TScpCommanderForm::LocalFileControlDDDragEnter(TObject *Sender,
 {
   // LocalDirViewDDDragEnter is duplication of
   // TCustomScpExplorerForm::DirViewDDDragEnter, but it differs in
-  // literal type of 'DataObj' parameter.Actual type is however same
+  // literal type of 'DataObj' parameter. The actual type is however the same.
   FileControlDDDragEnter(Sender, DataObj, grfKeyState, Point, dwEffect, Accept);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScpCommanderForm::PanelOperation(TOperationSide Side,
   bool DragDrop)
 {
-  // TODO
   return TCustomScpExplorerForm::PanelOperation(Side, DragDrop) ||
     (DropSourceControl == LocalDirView);
 }
@@ -1077,10 +1080,9 @@ bool __fastcall TScpCommanderForm::PanelOperation(TOperationSide Side,
 void __fastcall TScpCommanderForm::FileOperationProgress(
   TFileOperationProgressType & ProgressData)
 {
-  // Heuristic: When operation finishes and DD targed is local dir view,
+  // Heuristic: When operation finishes and DD target is local dir view,
   // we suppose that drag&drop download finished, so local dir view should be
   // reloaded
-  // TODO
   if (!ProgressData.InProgress && FProgressForm &&
       IsFileControl(FDDTargetControl, osLocal) &&
       ((ProgressData.Operation == ::foCopy) || (ProgressData.Operation == ::foMove)))
@@ -1360,7 +1362,6 @@ void __fastcall TScpCommanderForm::DoDirViewLoaded(TCustomDirView * ADirView)
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::AddEditLink(TOperationSide Side, bool Add)
 {
-  // TODO
   if (GetSide(Side) == osLocal)
   {
     bool Edit = false;
@@ -1925,7 +1926,6 @@ void __fastcall TScpCommanderForm::UpdateImages()
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalPathComboUpdateDrives()
 {
-  // TODO
   FLocalSpecialPaths = 0;
   TStrings* Strings = LocalPathComboBox->Strings;
   Strings->BeginUpdate();
@@ -1968,7 +1968,6 @@ void __fastcall TScpCommanderForm::LocalPathComboUpdateDrives()
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalPathComboUpdate()
 {
-  // TODO
   // this may get called even after destructor finishes
   // (e.g. from SetDockAllowDrag invoked [indirectly] from StoreParams)
   if (FLocalPathComboBoxPaths != NULL)
@@ -2325,5 +2324,13 @@ void __fastcall TScpCommanderForm::ThemeChanged()
 {
   TCustomScpExplorerForm::ThemeChanged();
   LocalDirView->Perform(WM_THEMECHANGED, 0, 0);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalDriveViewNeedHiddenDirectories(TObject *)
+{
+  if (DebugAlwaysTrue(!WinConfiguration->ShowHiddenFiles))
+  {
+    ToggleShowHiddenFiles();
+  }
 }
 //---------------------------------------------------------------------------

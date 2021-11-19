@@ -205,7 +205,7 @@ __published:
   TButton *SetMasterPasswordButton;
   TCheckBox *UseMasterPasswordCheck;
   TTabSheet *NetworkSheet;
-  TGroupBox *ExternalIpAddressGroupBox;
+  TGroupBox *ExternalIpAddressGroupBox2;
   TRadioButton *RetrieveExternalIpAddressButton;
   TRadioButton *CustomExternalIpAddressButton;
   TEdit *CustomExternalIpAddressEdit;
@@ -336,6 +336,10 @@ __published:
   TComboBox *PanelSearchCombo;
   TLabel *Label2;
   TCheckBox *ShowLoginWhenNoSessionCheck;
+  TCheckBox *LocalPortNumberCheck;
+  TLabel *LocalPortNumberRangeLabel;
+  TUpDownEdit *LocalPortNumberMinEdit;
+  TUpDownEdit *LocalPortNumberMaxEdit;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -440,6 +444,8 @@ __published:
   void __fastcall FileColorsViewDblClick(TObject *Sender);
   void __fastcall UpDownFileColorButtonClick(TObject *Sender);
   void __fastcall CopyParamListViewDragOver(TObject *Sender, TObject *Source, int X, int Y, TDragState State, bool &Accept);
+  void __fastcall LocalPortNumberMinEditExit(TObject *Sender);
+  void __fastcall LocalPortNumberMaxEditExit(TObject *Sender);
 
 private:
   TPreferencesMode FPreferencesMode;

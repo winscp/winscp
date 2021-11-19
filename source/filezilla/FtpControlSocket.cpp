@@ -504,7 +504,7 @@ void CFtpControlSocket::Connect(t_server &server)
       return;
     }
     int res = m_pSslLayer->InitSSLConnection(true, NULL,
-      GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE),
+      GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE), server.host,
       m_pTools);
     if (res == SSL_FAILURE_INITSSL)
       ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
@@ -550,6 +550,14 @@ void CFtpControlSocket::Connect(t_server &server)
       DoClose();
       return;
     }
+    else
+    {
+      LogMessage(FZ_LOG_INFO, L"Connection pending");
+    }
+  }
+  else
+  {
+    LogMessage(FZ_LOG_INFO, L"Connected");
   }
   m_ServerName = logontype?fwhost:hostname;
   m_LastRecvTime = m_LastSendTime = CTime::GetCurrentTime();
@@ -634,7 +642,7 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
         return;
       }
       int res = m_pSslLayer->InitSSLConnection(true, NULL,
-        GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE),
+        GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE), m_CurrentServer.host,
         m_pTools);
       if (res == SSL_FAILURE_INITSSL)
         ShowStatus(IDS_ERRORMSG_CANTINITSSL, FZ_LOG_ERROR);
@@ -793,7 +801,7 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
       // Handle servers that disobey RFC 2640 that have UTF8 in the FEAT
       // response but do not use UTF8 unless OPTS UTF8 ON gets send.
       // However these servers obey a conflicting ietf draft:
-      // https://tools.ietf.org/html/draft-ietf-ftpext-utf-8-option-00
+      // https://datatracker.ietf.org/doc/html/draft-ietf-ftpext-utf-8-option-00
       // servers are, amongst others, G6 FTP Server and RaidenFTPd.
       if (Send(L"OPTS UTF8 ON"))
         m_Operation.nOpState = CONNECT_OPTSUTF8;
@@ -855,6 +863,11 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
         m_mayBeMvsFilesystem = true;
       else if (reply.GetLength() >= 11 && reply.Mid(3, 8) == " BS-2000")
         m_mayBeBS2000Filesystem = true;
+
+      if (reply.Left(4) == "VMS ")
+      {
+        m_CurrentServer.nServerType |= FZ_SERVERTYPE_SUB_FTP_VMS;
+      }
 
       if (reply.Find("FileZilla") != -1)
         m_isFileZilla = true;
@@ -1191,10 +1204,16 @@ void CFtpControlSocket::OnReceive(int nErrorCode)
   {
     delete [] buffer;
     buffer = NULL;
-    if (GetLastError() != WSAEWOULDBLOCK)
+    int Error = GetLastError();
+    if (Error != WSAEWOULDBLOCK)
     {
+      LogError(Error);
       ShowStatus(IDS_STATUSMSG_DISCONNECTED, FZ_LOG_ERROR);
       DoClose();
+    }
+    else
+    {
+      LogSocketMessageRaw(FZ_LOG_INFO, L"No data to read");
     }
     return;
   }
@@ -1204,6 +1223,12 @@ void CFtpControlSocket::OnReceive(int nErrorCode)
     buffer = NULL;
     ShowStatus(IDS_STATUSMSG_DISCONNECTED, FZ_LOG_ERROR);
     DoClose();
+  }
+  if (LoggingMessageType(FZ_LOG_INFO))
+  {
+    CString str;
+    str.Format(L"Read %d bytes", numread);
+    LogSocketMessageRaw(FZ_LOG_INFO, str);
   }
 
   for (int i=0; i < numread; i++)
@@ -1527,6 +1552,7 @@ int CFtpControlSocket::GetReplyCode()
 
 void CFtpControlSocket::DoClose(int nError /*=0*/)
 {
+  LogMessage(FZ_LOG_INFO, L"Connection closed");
   m_bCheckForTimeout=TRUE;
   m_pOwner->SetConnected(FALSE);
   m_bKeepAliveActive=FALSE;
@@ -1710,9 +1736,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
 
     int num = 0;
     pData->pDirectoryListing = new t_directory;
-    if (GetOptionVal(OPTION_DEBUGSHOWLISTING))
-      m_pTransferSocket->m_pListResult->SendToMessageLog();
-    pData->pDirectoryListing->direntry = m_pTransferSocket->m_pListResult->getList(num, false);
+    pData->pDirectoryListing->direntry = m_pTransferSocket->m_pListResult->getList(num);
     pData->pDirectoryListing->num = num;
     if (m_pTransferSocket->m_pListResult->m_server.nServerType & FZ_SERVERTYPE_SUB_FTP_VMS && m_CurrentServer.nServerType & FZ_SERVERTYPE_FTP)
       m_CurrentServer.nServerType |= FZ_SERVERTYPE_SUB_FTP_VMS;
@@ -2307,6 +2331,14 @@ bool CFtpControlSocket::ConnectTransferSocket(const CString & host, UINT port)
     {
       result = false;
     }
+    else
+    {
+      LogMessage(FZ_LOG_INFO, L"Connection pending");
+    }
+  }
+  else
+  {
+    LogMessage(FZ_LOG_INFO, L"Connected");
   }
   return result;
 }
@@ -2382,15 +2414,11 @@ void CFtpControlSocket::ListFile(CString filename, const CServerPath &path)
     else
     {
       USES_CONVERSION;
-      int size = m_ListFile.GetLength();
-      char *buffer = new char[size + 1];
-      memmove(buffer, (LPCSTR)m_ListFile, m_ListFile.GetLength());
-      CFtpListResult * pListResult = new CFtpListResult(m_CurrentServer, &m_bUTF8);
-      pListResult->InitIntern(GetIntern());
-      pListResult->AddData(buffer, size);
-      if (GetOptionVal(OPTION_DEBUGSHOWLISTING))
-        pListResult->SendToMessageLog();
-      pData->direntry = pListResult->getList(num, true);
+      CStringA Buf = m_ListFile + '\n';
+      const bool mlst = true;
+      CFtpListResult * pListResult = CreateListResult(mlst);
+      pListResult->AddData(static_cast<const char *>(Buf), Buf.GetLength());
+      pData->direntry = pListResult->getList(num);
       if (pListResult->m_server.nServerType & FZ_SERVERTYPE_SUB_FTP_VMS && m_CurrentServer.nServerType & FZ_SERVERTYPE_FTP)
         m_CurrentServer.nServerType |= FZ_SERVERTYPE_SUB_FTP_VMS;
       delete pListResult;
@@ -2551,6 +2579,31 @@ void CFtpControlSocket::OnClose(int nErrorCode)
     DoClose();
 }
 
+void CFtpControlSocket::ResetTransferSocket(int Error)
+{
+  if (Error)
+  {
+    LogMessage(FZ_LOG_INFO, L"Destroying data socket on error");
+  }
+  else
+  {
+    LogMessage(FZ_LOG_INFO, L"Destroying data socket after transfer completed");
+  }
+  bool Close =
+    (Error != 0) &&
+    DebugAlwaysTrue(m_pTransferSocket != NULL) &&
+    (m_pTransferSocket->m_uploaded > 0) &&
+    FLAGCLEAR(Error, FZ_REPLY_CANCEL);
+  delete m_pTransferSocket;
+  m_pTransferSocket = NULL;
+  if (Close)
+  {
+    // close the control connection too to allow reconnect => transfer resume
+    LogMessage(FZ_LOG_WARNING, L"Transfer connection failed, closing");
+    DoClose();
+  }
+}
+
 void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFinish/*=FALSE*/,int nError/*=0*/)
 {
   USES_CONVERSION;
@@ -2707,11 +2760,14 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       else if (nError&CSMODE_TRANSFERTIMEOUT)
         DoClose();
       else
+      {
         // we may get here when connection was closed, when the closure
         // was first detected while reading/writing,
         // when we abort file transfer with regular error,
         // possibly preventing automatic reconnect
+        LogMessage(FZ_LOG_INFO, L"Transfer error (%x)", nError);
         ResetOperation(FZ_REPLY_ERROR);
+      }
       return;
     }
     if (m_Operation.nOpState <= FILETRANSFER_LIST_PORTPASV)
@@ -2731,9 +2787,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 
       int num=0;
       pData->pDirectoryListing=new t_directory;
-      if (GetOptionVal(OPTION_DEBUGSHOWLISTING))
-        m_pTransferSocket->m_pListResult->SendToMessageLog();
-      pData->pDirectoryListing->direntry=m_pTransferSocket->m_pListResult->getList(num, false);
+      pData->pDirectoryListing->direntry=m_pTransferSocket->m_pListResult->getList(num);
       pData->pDirectoryListing->num=num;
       if (m_pTransferSocket->m_pListResult->m_server.nServerType&FZ_SERVERTYPE_SUB_FTP_VMS && m_CurrentServer.nServerType&FZ_SERVERTYPE_FTP)
         m_CurrentServer.nServerType |= FZ_SERVERTYPE_SUB_FTP_VMS;
@@ -2775,8 +2829,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         return;
       else
       {
-        delete m_pTransferSocket;
-        m_pTransferSocket=0;
+        ResetTransferSocket(nError);
       }
     }
   }
@@ -3750,6 +3803,17 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       }
       break;
     case FILETRANSFER_WAITFINISH:
+      if (bFinish)
+      {
+        if (nError)
+        {
+          LogMessage(FZ_LOG_INFO, L"Transfer failed");
+        }
+        else
+        {
+          LogMessage(FZ_LOG_INFO, L"Transfer completed");
+        }
+      }
       if (!bFinish)
       {
         if (code == 1)
@@ -3769,8 +3833,8 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       }
       if (pData->nGotTransferEndReply==3)
       {
-          // Not really sure about a reason for the m_pDataFile condition here
-          TransferFinished(m_pDataFile != NULL);
+        // Not really sure about a reason for the m_pDataFile condition here
+        TransferFinished(m_pDataFile != NULL);
         return;
       }
       break;
@@ -3781,6 +3845,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     }
     if (nReplyError)
     { //Error transferring the file
+      LogMessage(FZ_LOG_INFO, L"Transfer response error (%x)", nReplyError);
       ResetOperation(nReplyError);
       return;
     }
@@ -4283,6 +4348,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
   }
   if (bError)
   { //Error transferring the file
+    LogMessage(FZ_LOG_INFO, L"Transfer error");
     ResetOperation(FZ_REPLY_ERROR);
     return;
   }
@@ -4475,38 +4541,8 @@ void CFtpControlSocket::ResumeTransfer()
 
 BOOL CFtpControlSocket::Create()
 {
-  if (!GetOptionVal(OPTION_LIMITPORTRANGE))
-    return CAsyncSocketEx::Create(0, SOCK_STREAM, FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT |  FD_CONNECT | FD_CLOSE, 0, GetOptionVal(OPTION_ENABLE_IPV6) ? AF_UNSPEC : AF_INET);
-  else
-  {
-    int min=GetOptionVal(OPTION_PORTRANGELOW);
-    int max=GetOptionVal(OPTION_PORTRANGEHIGH);
-    if (min>=max)
-    {
-      ShowStatus(IDS_ERRORMSG_CANTCREATEDUETOPORTRANGE,FZ_LOG_ERROR);
-      return FALSE;
-    }
-    int startport = static_cast<int>(min+((double)rand()*(max-min))/(RAND_MAX+1));
-    int port = startport;
-
-    while (!CAsyncSocketEx::Create(port, SOCK_STREAM, FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT |  FD_CONNECT | FD_CLOSE, 0, GetOptionVal(OPTION_ENABLE_IPV6) ? AF_UNSPEC : AF_INET))
-    {
-      port++;
-      if (port>max)
-        port=min;
-      if (port==startport)
-      {
-        ShowStatus(IDS_ERRORMSG_CANTCREATEDUETOPORTRANGE,FZ_LOG_ERROR);
-        return FALSE;
-      }
-
-      if (!InitConnect())
-        return FALSE;
-    }
-  }
-  return TRUE;
+  return CAsyncSocketEx::Create(0, SOCK_STREAM, FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT |  FD_CONNECT | FD_CLOSE, 0, GetOptionVal(OPTION_ENABLE_IPV6) ? AF_UNSPEC : AF_INET);
 }
-
 
 void CFtpControlSocket::ResetOperation(int nSuccessful /*=FALSE*/)
 {
@@ -4514,8 +4550,9 @@ void CFtpControlSocket::ResetOperation(int nSuccessful /*=FALSE*/)
     nSuccessful |= FZ_REPLY_ERROR;
 
   if (m_pTransferSocket)
-    delete m_pTransferSocket;
-  m_pTransferSocket=0;
+  {
+    ResetTransferSocket(nSuccessful & (FZ_REPLY_ERROR | FZ_REPLY_CANCEL));
+  }
 
   if (m_pDataFile)
     delete m_pDataFile;
@@ -4643,8 +4680,6 @@ void CFtpControlSocket::ResetOperation(int nSuccessful /*=FALSE*/)
     m_pOwner->SetBusy(FALSE);
     //No operation in progress
     nSuccessful&=FZ_REPLY_DISCONNECTED|FZ_REPLY_CANCEL;
-    if (!nSuccessful)
-      DebugFail();
   }
 
   if (nSuccessful&FZ_REPLY_DISCONNECTED)
@@ -5710,6 +5745,8 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
           switch (iter->nParam2)
           {
           case SSL_FAILURE_UNKNOWN:
+            // CTransferSocket has a special treatment of SSL_FAILURE_UNKNOWN,
+            // as an indication of a re-key failure.
             ShowStatus(IDS_ERRORMSG_UNKNOWNSSLERROR, FZ_LOG_ERROR);
             break;
           case SSL_FAILURE_ESTABLISH:
@@ -5991,6 +6028,11 @@ bool CFtpControlSocket::LoggingSocketMessage(int nMessageType)
   return LoggingMessageType(nMessageType);
 }
 
+int CFtpControlSocket::GetSocketOptionVal(int OptionID) const
+{
+  return GetOptionVal(OptionID);
+}
+
 BOOL CFtpControlSocket::ParsePwdReply(CString& rawpwd)
 {
   CServerPath realPath;
@@ -6066,10 +6108,6 @@ void CFtpControlSocket::DiscardLine(CStringA line)
     else if (line == "MDTM")
     {
       m_serverCapabilities.SetCapability(mdtm_command, yes);
-    }
-    else if (line == "SIZE")
-    {
-      m_serverCapabilities.SetCapability(size_command, yes);
     }
     else if (line.Left(4) == "MLST")
     {
@@ -6199,8 +6237,10 @@ void CFtpControlSocket::OnSend(int nErrorCode)
   int res = CAsyncSocketEx::Send(m_sendBuffer, m_sendBufferLen);
   if (res == -1)
   {
-    if (GetLastError() != WSAEWOULDBLOCK)
+    int Error = GetLastError();
+    if (Error != WSAEWOULDBLOCK)
     {
+      LogError(Error);
       ShowStatus(IDS_ERRORMSG_CANTSENDCOMMAND, FZ_LOG_ERROR);
       DoClose();
     }
@@ -6319,6 +6359,15 @@ bool CFtpControlSocket::CheckForcePasvIp(CString & host)
   }
 
   return result;
+}
+
+CFtpListResult * CFtpControlSocket::CreateListResult(bool mlst)
+{
+  CFtpListResult * Result =
+    new CFtpListResult(
+      m_CurrentServer, mlst, &m_bUTF8, GetOptionVal(OPTION_VMSALLREVISIONS), GetOptionVal(OPTION_DEBUGSHOWLISTING));
+  Result->InitIntern(GetIntern());
+  return Result;
 }
 
 //---------------------------------------------------------------------------

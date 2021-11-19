@@ -18,7 +18,7 @@ class TInputDialog : public TCustomDialog
 public:
   __fastcall TInputDialog(
     const UnicodeString & ACaption, const UnicodeString & Prompt, const UnicodeString & HelpKeyword,
-    TStrings * History, bool PathInput, TInputDialogInitialize OnInitialize, bool Echo);
+    TStrings * History, bool PathInput, TInputDialogInitialize OnInitialize, bool Echo, int AWidth);
 
   bool __fastcall Execute(UnicodeString & Value);
 
@@ -35,7 +35,7 @@ private:
 //---------------------------------------------------------------------------
 __fastcall TInputDialog::TInputDialog(
   const UnicodeString & ACaption, const UnicodeString & Prompt, const UnicodeString & HelpKeyword,
-  TStrings * History, bool PathInput, TInputDialogInitialize OnInitialize, bool Echo) :
+  TStrings * History, bool PathInput, TInputDialogInitialize OnInitialize, bool Echo, int AWidth) :
   TCustomDialog(HelpKeyword)
 {
   Caption = ACaption;
@@ -43,9 +43,10 @@ __fastcall TInputDialog::TInputDialog(
   FOnInitialize = OnInitialize;
   FHistory = History;
 
-  ClientWidth = ScaleByTextHeight(this, 275);
+  ClientWidth = ScaleByTextHeight(this, AWidth);
 
   TLabel * Label = CreateLabel(Prompt);
+  int MaxLength = FPathInput ? 0 : 255;
   if (History == NULL)
   {
     if (Echo)
@@ -58,14 +59,14 @@ __fastcall TInputDialog::TInputDialog(
     }
     HistoryCombo = NULL;
     AddEditLikeControl(Edit, Label);
-    reinterpret_cast<TEdit *>(Edit)->MaxLength = 255;
+    reinterpret_cast<TEdit *>(Edit)->MaxLength = MaxLength;
   }
   else
   {
     DebugAssert(Echo);
     HistoryCombo = new THistoryComboBox(this);
     AddEditLikeControl(HistoryCombo, Label);
-    HistoryCombo->MaxLength = 255;
+    HistoryCombo->MaxLength = MaxLength;
     HistoryCombo->AutoComplete = false;
     Edit = NULL;
   }
@@ -130,9 +131,9 @@ bool __fastcall TInputDialog::Execute(UnicodeString & Value)
 //---------------------------------------------------------------------------
 bool __fastcall InputDialog(const UnicodeString ACaption,
   const UnicodeString APrompt, UnicodeString & Value, UnicodeString HelpKeyword,
-  TStrings * History, bool PathInput, TInputDialogInitialize OnInitialize, bool Echo)
+  TStrings * History, bool PathInput, TInputDialogInitialize OnInitialize, bool Echo, int Width)
 {
-  std::unique_ptr<TInputDialog> Dialog(new TInputDialog(ACaption, APrompt, HelpKeyword, History, PathInput, OnInitialize, Echo));
+  std::unique_ptr<TInputDialog> Dialog(new TInputDialog(ACaption, APrompt, HelpKeyword, History, PathInput, OnInitialize, Echo, Width));
   return Dialog->Execute(Value);
 }
 //---------------------------------------------------------------------------

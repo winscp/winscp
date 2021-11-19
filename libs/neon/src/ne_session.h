@@ -104,6 +104,11 @@ typedef enum ne_session_flag_e {
                              * to improve interoperability with
                              * SharePoint */
 
+    #ifdef WINSCP
+    NE_SESSFLAG_LIBERAL_ESCAPING,
+    SE_SESSFLAG_SNDBUF,
+    #endif
+
     NE_SESSFLAG_LAST /* enum sentinel value */
 } ne_session_flag;
 
@@ -324,6 +329,7 @@ void ne_set_useragent(ne_session *sess, const char *product);
 
 #ifdef WINSCP
 void ne_set_realhost(ne_session *sess, const char *realhost);
+void ne_ssl_set_certificates_storage(ne_session *sess, const char * filename);
 #endif
 
 /* Returns non-zero if next-hop server does not claim compliance to

@@ -280,6 +280,13 @@ __published:
   TButton *PuttySettingsButton;
   TLabel *PuttySettingsLabel;
   TEdit *PuttySettingsEdit;
+  TCheckBox *AuthGSSAPIKEXCheck;
+  TTabSheet *WebDavSheet;
+  TGroupBox *WebdavGroup;
+  TCheckBox *WebDavLiberalEscapingCheck;
+  TGroupBox *S3AuthenticationGroup;
+  TLabel *Label5;
+  TMemo *S3SessionTokenMemo;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);

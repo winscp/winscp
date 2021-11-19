@@ -64,7 +64,7 @@ typedef void __fastcall (__closure *TDeleteLocalFileEvent)(
 typedef int __fastcall (__closure *TDirectoryModifiedEvent)
   (TTerminal * Terminal, const UnicodeString Directory, bool SubDirs);
 typedef void __fastcall (__closure *TInformationEvent)
-  (TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase);
+  (TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase, const UnicodeString & Additional);
 typedef void __fastcall (__closure *TCustomCommandEvent)
   (TTerminal * Terminal, const UnicodeString & Command, bool & Handled);
 //---------------------------------------------------------------------------
@@ -142,6 +142,7 @@ public:
   static const int spBySize = 0x400; // cannot be combined with smBoth, has opposite meaning for spTimestamp
   static const int spSelectedOnly = 0x800; // not used by core
   static const int spMirror = 0x1000;
+  static const int spCaseSensitive = 0x2000;
   static const int spDefault = TTerminal::spNoConfirmation | TTerminal::spPreviewChanges;
 
 // for TranslateLockedPath()
@@ -196,6 +197,7 @@ private:
   RawByteString FRememberedPassword;
   TPromptKind FRememberedPasswordKind;
   RawByteString FRememberedTunnelPassword;
+  bool FRememberedPasswordUsed;
   TTunnelThread * FTunnelThread;
   TSecureShell * FTunnel;
   TSessionData * FTunnelData;
@@ -265,6 +267,7 @@ protected:
   bool FReadDirectoryPending;
   bool FTunnelOpening;
   TCustomFileSystem * FFileSystem;
+  int FSecondaryTerminals;
 
   void __fastcall DoStartReadDirectory();
   void __fastcall DoReadDirectoryProgress(int Progress, int ResolvedLinks, bool & Cancel);
@@ -372,7 +375,8 @@ protected:
     TStrings * Response);
   void __fastcall OpenTunnel();
   void __fastcall CloseTunnel();
-  void __fastcall DoInformation(const UnicodeString & Str, bool Status, int Phase = -1);
+  void __fastcall DoInformation(
+    const UnicodeString & Str, bool Status, int Phase = -1, const UnicodeString & Additional = UnicodeString());
   bool __fastcall PromptUser(TSessionData * Data, TPromptKind Kind,
     UnicodeString Name, UnicodeString Instructions, UnicodeString Prompt, bool Echo,
     int MaxLen, UnicodeString & Result);
@@ -433,10 +437,11 @@ protected:
   void __fastcall DoEndTransaction(bool Inform);
   bool  __fastcall VerifyCertificate(
     const UnicodeString & CertificateStorageKey, const UnicodeString & SiteKey,
-    const UnicodeString & Fingerprint,
+    const UnicodeString & FingerprintSHA1, const UnicodeString & FingerprintSHA256,
     const UnicodeString & CertificateSubject, int Failures);
   void __fastcall CacheCertificate(const UnicodeString & CertificateStorageKey,
-    const UnicodeString & SiteKey, const UnicodeString & Fingerprint, int Failures);
+    const UnicodeString & SiteKey, const UnicodeString & FingerprintSHA1, const UnicodeString & FingerprintSHA256,
+    int Failures);
   bool __fastcall ConfirmCertificate(
     TSessionInfo & SessionInfo, int Failures, const UnicodeString & CertificateStorageKey, bool CanRemember);
   void __fastcall CollectTlsUsage(const UnicodeString & TlsVersionStr);
@@ -485,7 +490,7 @@ protected:
   void __fastcall UpdateTargetTime(HANDLE Handle, TDateTime Modification, TDSTMode DSTMode);
 
   UnicodeString __fastcall EncryptFileName(const UnicodeString & Path, bool EncryptNewFiles);
-  UnicodeString __fastcall DecryptFileName(const UnicodeString & Path);
+  UnicodeString __fastcall DecryptFileName(const UnicodeString & Path, bool DecryptFullPath, bool DontCache);
   TEncryptedFileNames::const_iterator __fastcall GetEncryptedFileName(const UnicodeString & Path);
   bool __fastcall IsFileEncrypted(const UnicodeString & Path, bool EncryptNewFiles = false);
 
@@ -785,7 +790,7 @@ struct TSpaceAvailable
 class TRobustOperationLoop
 {
 public:
-  TRobustOperationLoop(TTerminal * Terminal, TFileOperationProgressType * OperationProgress, bool * AnyTransfer = NULL);
+  TRobustOperationLoop(TTerminal * Terminal, TFileOperationProgressType * OperationProgress, bool * AnyTransfer = NULL, bool CanRetry = true);
   ~TRobustOperationLoop();
   bool TryReopen(Exception & E);
   bool ShouldRetry();
@@ -798,6 +803,7 @@ private:
   bool * FAnyTransfer;
   bool FPrevAnyTransfer;
   TDateTime FStart;
+  bool FCanRetry;
 };
 //---------------------------------------------------------------------------
 class TCollectedFileList : public TObject
@@ -813,6 +819,8 @@ public:
   TObject * GetObject(int Index) const;
   bool IsDir(int Index) const;
   bool IsRecursed(int Index) const;
+  int GetState(int Index) const;
+  void SetState(int Index, int State);
 
 private:
   struct TFileData
@@ -821,10 +829,13 @@ private:
     TObject * Object;
     bool Dir;
     bool Recursed;
+    int State;
   };
   typedef std::vector<TFileData> TFileDataList;
   TFileDataList FList;
 };
+//---------------------------------------------------------------------------
+class TQueueFileList;
 //---------------------------------------------------------------------------
 class TParallelOperation
 {
@@ -845,6 +856,7 @@ public:
     TTerminal * Terminal, UnicodeString & FileName, TObject *& Object, UnicodeString & TargetDir,
     bool & Dir, bool & Recursed);
   void Done(const UnicodeString & FileName, bool Dir, bool Success);
+  bool UpdateFileList(TQueueFileList * UpdateFileList);
 
   __property TOperationSide Side = { read = FSide };
   __property const TCopyParamType * CopyParam = { read = FCopyParam };
@@ -861,6 +873,7 @@ private:
   };
 
   std::unique_ptr<TStrings> FFileList;
+  int FListIndex;
   int FIndex;
   typedef std::map<UnicodeString, TDirectoryData> TDirectories;
   TDirectories FDirectories;
@@ -873,8 +886,10 @@ private:
   TFileOperationProgressType * FMainOperationProgress;
   TOperationSide FSide;
   UnicodeString FMainName;
+  int FVersion;
 
   bool CheckEnd(TCollectedFileList * Files);
+  TCollectedFileList * GetFileList(int Index);
 };
 //---------------------------------------------------------------------------
 struct TLocalFileHandle

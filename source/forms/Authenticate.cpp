@@ -12,6 +12,8 @@
 #include <CoreMain.h>
 #include <PasTools.hpp>
 #include <CustomWinConfiguration.h>
+#include <Character.hpp>
+#include <Tools.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "PasswordEdit"
@@ -45,12 +47,12 @@ void __fastcall TAuthenticateForm::Init(TTerminal * Terminal)
   FHorizontalLogPadding = ScaleByTextHeight(this, 4);
   FVerticalLogPadding = ScaleByTextHeight(this, 3);
   FLogTextFormat << tfNoPrefix << tfWordBreak << tfVerticalCenter;
-
-  ClearLog();
+  FHintIndex = -1;
 }
 //---------------------------------------------------------------------------
 __fastcall TAuthenticateForm::~TAuthenticateForm()
 {
+  Application->CancelHint();
   if (ReleaseAsModal(this, FShowAsModalStorage))
   {
     UnhookFormActivation(this);
@@ -148,14 +150,7 @@ void __fastcall TAuthenticateForm::FormShow(TObject * /*Sender*/)
   FFrameAnimation.Start();
 }
 //---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::ClearLog()
-{
-  // TListItems::Clear() does nothing without allocated handle
-  LogView->HandleNeeded();
-  LogView->Items->Clear();
-}
-//---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::Log(const UnicodeString Message)
+void __fastcall TAuthenticateForm::Log(const UnicodeString & Message, const UnicodeString & Additional)
 {
   // HACK
   // The first call to Repaint from TFrameAnimation happens
@@ -168,6 +163,7 @@ void __fastcall TAuthenticateForm::Log(const UnicodeString Message)
   }
 
   int Index = LogView->Items->Add(Message);
+  FHints.push_back(Additional);
   MakeLogItemVisible(Index);
   LogView->Repaint();
 }
@@ -246,8 +242,20 @@ TCustomEdit * __fastcall TAuthenticateForm::GenerateEdit(int Current, bool Echo)
   return Result;
 }
 //---------------------------------------------------------------------------
-TList * __fastcall TAuthenticateForm::GeneratePrompt(UnicodeString Instructions,
-  TStrings * Prompts)
+void TAuthenticateForm::ExternalLabel(TLabel * Label)
+{
+  Label->OnContextPopup = LabelContextPopup;
+  Label->PopupMenu = LabelPopupMenu;
+  UnicodeString Url;
+  if (ExtractUrl(Label->Caption, Url))
+  {
+    Label->Cursor = crHandPoint;
+    Label->OnClick = LinkClick;
+  }
+}
+//---------------------------------------------------------------------------
+TList * __fastcall TAuthenticateForm::GeneratePrompt(
+  TPromptKind Kind, const UnicodeString & Instructions, TStrings * Prompts)
 {
   while (FPromptParent->ControlCount > 0)
   {
@@ -260,6 +268,7 @@ TList * __fastcall TAuthenticateForm::GeneratePrompt(UnicodeString Instructions,
   if (!Instructions.IsEmpty())
   {
     TLabel * Label = GenerateLabel(Current, Instructions);
+    ExternalLabel(Label);
     Current += Label->Height + FPromptsGap;
   }
 
@@ -271,6 +280,10 @@ TList * __fastcall TAuthenticateForm::GeneratePrompt(UnicodeString Instructions,
     }
 
     TLabel * Label = GenerateLabel(Current, Prompts->Strings[Index]);
+    if (Kind == pkKeybInteractive)
+    {
+      ExternalLabel(Label);
+    }
     Current += Label->Height + FPromptEditGap;
 
     bool Echo = FLAGSET(int(Prompts->Objects[Index]), pupEcho);
@@ -291,7 +304,7 @@ bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, UnicodeString Na
 {
 
   bool Result;
-  TList * Edits = GeneratePrompt(Instructions, Prompts);
+  TList * Edits = GeneratePrompt(Kind, Instructions, Prompts);
 
   try
   {
@@ -569,7 +582,7 @@ void __fastcall TAuthenticateForm::LogViewDrawItem(TWinControl * /*Control*/, in
   TRect & Rect, TOwnerDrawState /*State*/)
 {
   // Reset back to base colors. We do not want to render selection.
-  // + At initial phases the canvas font will not yet reflect he desktop font.
+  // + At initial phases the canvas font will not yet reflect the desktop font.
   LogView->Canvas->Font = LogView->Font;
   LogView->Canvas->Brush->Color = LogView->Color;
 
@@ -638,5 +651,94 @@ void __fastcall TAuthenticateForm::BannerMonospacedFontActionExecute(TObject * /
 {
   BannerMonospacedFontAction->Checked = !BannerMonospacedFontAction->Checked;
   UpdateBannerFont();
+}
+//---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::LogViewMouseMove(TObject *, TShiftState, int X, int Y)
+{
+  int Index = LogView->ItemAtPos(TPoint(X, Y), true);
+
+  if (FHintIndex != Index)
+  {
+    Application->CancelHint();
+    FHintIndex = Index;
+    if (Index >= 0)
+    {
+      LogView->Hint = FHints[Index];
+    }
+  }
+}
+//---------------------------------------------------------------------------
+bool TAuthenticateForm::ExtractUrl(const UnicodeString & Text, UnicodeString & Url)
+{
+  bool Result = false;
+  UnicodeString Prefix = HttpsProtocol + ProtocolSeparator;
+  int P = Text.Pos(Prefix);
+  if (P == 0)
+  {
+    Prefix = HttpProtocol + ProtocolSeparator;
+    P = Text.Pos(Prefix);
+  }
+  if (P > 0)
+  {
+    Url = Text.SubString(P, Text.Length() - P + 1);
+    P = 1;
+    while (P <= Url.Length())
+    {
+      #pragma warn -8111
+      if (TCharacter::IsWhiteSpace(Url[P]))
+      #pragma warn .8111
+      {
+        Url.SetLength(P - 1);
+      }
+      P++;
+    }
+    // At least one letter/digit after the prefix
+    if ((Url.Length() > Prefix.Length()) &&
+        (::IsLetter(Url[Prefix.Length() + 1]) || ::IsDigit(Url[Prefix.Length() + 1])))
+    {
+      Result = true;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::LabelContextPopup(TObject * Sender, const TPoint & MousePos, bool & Handled)
+{
+  TLabel * Label = dynamic_cast<TLabel *>(Sender);
+  UnicodeString Url;
+  LabelOpenLinkAction->Visible = ExtractUrl(Label->Caption, Url);
+  FContextLabel = Label;
+  MenuPopup(Sender, MousePos, Handled);
+}
+//---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::LabelCopyActionExecute(TObject *)
+{
+  if (DebugAlwaysTrue(FContextLabel != NULL))
+  {
+    TInstantOperationVisualizer Visualizer;
+    CopyToClipboard(FContextLabel->Caption);
+  }
+}
+//---------------------------------------------------------------------------
+void TAuthenticateForm::LabelOpen(TLabel * Label)
+{
+  UnicodeString Url;
+  if (ExtractUrl(Label->Caption, Url))
+  {
+    OpenBrowser(Url);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::LabelOpenLinkActionExecute(TObject *)
+{
+  if (DebugAlwaysTrue(FContextLabel != NULL))
+  {
+    LabelOpen(FContextLabel);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::LinkClick(TObject * Sender)
+{
+  LabelOpen(DebugNotNull(dynamic_cast<TLabel *>(Sender)));
 }
 //---------------------------------------------------------------------------

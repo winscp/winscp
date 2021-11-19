@@ -117,6 +117,7 @@ bool __fastcall TEditorPreferencesDialog::Execute(TEditorData * Editor, bool & R
   }
   ExternalEditorEdit->Text = ExternalEditor;
   ExternalEditorEdit->Items = CustomWinConfiguration->History[L"ExternalEditor"];
+  FExternalEditorDefaults = GetExternalEditorDefaults();
   MaskEdit->Text = Editor->FileMask.Masks;
   MaskEdit->Items = CustomWinConfiguration->History[L"Mask"];
   ExternalEditorTextCheck->Checked = Editor->ExternalEditorText;
@@ -176,14 +177,27 @@ void __fastcall TEditorPreferencesDialog::ExternalEditorEditExit(
     throw;
   }
 
-  DecideExternalEditorText();
+  ExternalEditorOptionsAutodetect();
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorPreferencesDialog::DecideExternalEditorText()
+TEditorData __fastcall TEditorPreferencesDialog::GetExternalEditorDefaults()
 {
-  if (TEditorData::DecideExternalEditorText(ExternalEditorEdit->Text))
+  TEditorData Result;
+  Result.ExternalEditor = ExternalEditorEdit->Text;
+  Result.ExternalEditorOptionsAutodetect();
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorPreferencesDialog::ExternalEditorOptionsAutodetect()
+{
+  DebugAssert(EditorExternalButton->Checked);
+  TEditorData Defaults = GetExternalEditorDefaults();
+
+  if (!(FExternalEditorDefaults == Defaults))
   {
-    ExternalEditorTextCheck->Checked = true;
+    ExternalEditorTextCheck->Checked = Defaults.ExternalEditorText;
+    SDIExternalEditorCheck->Checked = Defaults.SDIExternalEditor;
+    FExternalEditorDefaults = Defaults;
     UpdateControls();
   }
 }
@@ -194,7 +208,7 @@ void __fastcall TEditorPreferencesDialog::ExternalEditorBrowseButtonClick(
   BrowseForExecutable(ExternalEditorEdit,
     LoadStr(PREFERENCES_SELECT_EXTERNAL_EDITOR),
     LoadStr(EXECUTABLE_FILTER), true, false);
-  DecideExternalEditorText();
+  ExternalEditorOptionsAutodetect();
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorPreferencesDialog::HelpButtonClick(TObject * /*Sender*/)
@@ -242,6 +256,6 @@ void __fastcall TEditorPreferencesDialog::DefaultButtonClick(TObject * /*Sender*
   EditorExternalButton->Checked = true;
   ExternalEditorEdit->Text = FSystemExternalEditor;
   UpdateControls();
-  DecideExternalEditorText();
+  ExternalEditorOptionsAutodetect();
 }
 //---------------------------------------------------------------------------

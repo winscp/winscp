@@ -322,6 +322,9 @@ __published:
   TTBXItem *TBXItem161;
   TTBXItem *TBXItem162;
   TTBXItem *TBXItem163;
+  TTBXItem *TBXItem164;
+  TTBXItem *TBXItem165;
+  TTBXSeparatorItem *TBXSeparatorItem44;
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
   void __fastcall UnixPathComboBoxBeginEdit(TTBEditItem *Sender,
@@ -357,7 +360,6 @@ protected:
   UnicodeString __fastcall RemotePathComboBoxText();
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   virtual bool __fastcall UpdateToolbarDisplayMode();
-  virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
   virtual void __fastcall UpdateImages();
 
 public:
@@ -368,6 +370,7 @@ public:
   virtual void __fastcall SynchronizeDirectories();
   virtual void __fastcall ChangePath(TOperationSide Side);
   virtual void __fastcall GoToAddress();
+  virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
 };
 //---------------------------------------------------------------------------
 #endif

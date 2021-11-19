@@ -49,6 +49,11 @@ const int mpAllowContinueOnError = 0x02;
 #define INFO_SWITCH L"Info"
 #define COMREGISTRATION_SWITCH L"ComRegistration"
 #define BROWSE_SWITCH L"Browse"
+#define NOINTERACTIVEINPUT_SWITCH L"NoInteractiveInput"
+#define STDOUT_SWITCH L"StdOut"
+#define STDIN_SWITCH L"StdIn"
+#define STDINOUT_BINARY_VALUE L"binary"
+#define STDINOUT_CHUNKED_VALUE L"chunked"
 
 #define DUMPCALLSTACK_EVENT L"WinSCPCallstack%d"
 
@@ -163,6 +168,7 @@ bool __fastcall DoChangeMasterPasswordDialog(UnicodeString & NewPassword);
 int __fastcall Execute();
 void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
   TObjectList * DataList, UnicodeString & DownloadFile, bool NeedSession, TForm * LinkedForm, int Flags = 0);
+int GetCommandLineParseUrlFlags(TProgramParams * Params);
 
 // forms\InputDlg.cpp
 struct TInputDialogData
@@ -174,7 +180,7 @@ typedef void __fastcall (__closure *TInputDialogInitialize)
 bool __fastcall InputDialog(const UnicodeString ACaption,
   const UnicodeString APrompt, UnicodeString & Value, UnicodeString HelpKeyword = HELP_NONE,
   TStrings * History = NULL, bool PathInput = false,
-  TInputDialogInitialize OnInitialize = NULL, bool Echo = true);
+  TInputDialogInitialize OnInitialize = NULL, bool Echo = true, int Width = 275);
 
 // forms\About.cpp
 struct TRegistration
@@ -338,6 +344,7 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   TGetSynchronizeOptionsEvent OnGetOptions,
   TSynchronizeSessionLog OnSynchronizeSessionLog,
   TFeedSynchronizeError & OnFeedSynchronizeError,
+  TNotifyEvent & OnSynchronizeAbort,
   TSynchronizeInNewWindow OnSynchronizeInNewWindow,
   int AutoSubmit);
 
@@ -405,8 +412,6 @@ void __fastcall DoFileSystemInfoDialog(
   UnicodeString SpaceAvailablePath, TGetSpaceAvailable OnGetSpaceAvailable);
 
 // forms\MessageDlg.cpp
-void __fastcall AnswerNameAndCaption(
-  unsigned int Answer, UnicodeString & Name, UnicodeString & Caption);
 TForm * __fastcall CreateMoreMessageDialog(const UnicodeString & Msg,
   TStrings * MoreMessages, TMsgDlgType DlgType, unsigned int Answers,
   const TQueryButtonAlias * Aliases, unsigned int AliasesCount,
@@ -528,6 +533,7 @@ UnicodeString DumpCallstackFileName(int ProcessId);
 
 void CheckConfigurationForceSave();
 void InterfaceStarted();
+void InterfaceStartDontMeasure();
 //---------------------------------------------------------------------------
 #define HIDDEN_WINDOW_NAME L"WinSCPHiddenWindow3"
 //---------------------------------------------------------------------------
@@ -613,6 +619,18 @@ private:
   void __fastcall BalloonCancelled();
 };
 //---------------------------------------------------------------------------
+enum TConsoleFlag
+{
+  cfLimitedOutput,
+  cfLiveOutput,
+  cfNoInteractiveInput,
+  cfInteractive,
+  cfCommandLineOnly,
+  cfWantsProgress,
+  cfStdOut,
+  cfStdIn
+};
+//---------------------------------------------------------------------------
 class TConsole
 {
 public:
@@ -623,16 +641,13 @@ public:
   virtual int __fastcall Choice(
     UnicodeString Options, int Cancel, int Break, int Continue, int Timeouted, bool Timeouting, unsigned int Timer,
     UnicodeString Message) = 0;
+  virtual bool __fastcall HasFlag(TConsoleFlag Flag) const = 0;
   virtual bool __fastcall PendingAbort() = 0;
   virtual void __fastcall SetTitle(UnicodeString Title) = 0;
-  virtual bool __fastcall LimitedOutput() = 0;
-  virtual bool __fastcall LiveOutput() = 0;
-  virtual bool __fastcall NoInteractiveInput() = 0;
-  virtual bool __fastcall Interactive() = 0;
   virtual void __fastcall WaitBeforeExit() = 0;
-  virtual bool __fastcall CommandLineOnly() = 0;
-  virtual bool __fastcall WantsProgress() = 0;
   virtual void __fastcall Progress(TScriptProgress & Progress) = 0;
+  virtual void __fastcall TransferOut(const unsigned char * Data, size_t Len) = 0;
+  virtual size_t __fastcall TransferIn(unsigned char * Data, size_t Len) = 0;
   virtual UnicodeString __fastcall FinalLogMessage() = 0;
 };
 //---------------------------------------------------------------------------

@@ -54,7 +54,7 @@ UnicodeString CutToChar(UnicodeString &Str, wchar_t Ch, bool Trim);
 UnicodeString CopyToChars(const UnicodeString & Str, int & From, UnicodeString Chs, bool Trim,
   wchar_t * Delimiter = NULL, bool DoubleDelimiterEscapes = false);
 UnicodeString CopyToChar(const UnicodeString & Str, wchar_t Ch, bool Trim);
-UnicodeString RemoveSuffix(const UnicodeString & Str, const UnicodeString & Suffix);
+UnicodeString RemoveSuffix(const UnicodeString & Str, const UnicodeString & Suffix, bool RemoveNumbersAfterSuffix = false);
 UnicodeString DelimitStr(UnicodeString Str, UnicodeString Chars);
 UnicodeString ShellDelimitStr(UnicodeString Str, wchar_t Quote);
 UnicodeString ExceptionLogString(Exception *E);
@@ -138,6 +138,7 @@ bool __fastcall IsWinVista();
 bool __fastcall IsWin7();
 bool __fastcall IsWin8();
 bool __fastcall IsWin10();
+bool __fastcall IsWin10Build(unsigned int BuildNumber);
 bool __fastcall IsWine();
 bool __fastcall IsUWP();
 TLibModule * __fastcall FindModule(void * Instance);
@@ -183,11 +184,14 @@ bool __fastcall IsRealFile(const UnicodeString & FileName);
 UnicodeString GetOSInfo();
 UnicodeString GetEnvironmentInfo();
 void SetStringValueEvenIfEmpty(TStrings * Strings, const UnicodeString & Name, const UnicodeString & Value);
+UnicodeString __fastcall GetAncestorProcessName(int Levels = 1);
+UnicodeString GetAncestorProcessNames();
 //---------------------------------------------------------------------------
 struct TSearchRecSmart : public TSearchRec
 {
 public:
   TSearchRecSmart();
+  void Clear();
   TDateTime GetLastWriteTime() const;
   bool IsRealFile() const;
   bool IsDirectory() const;
@@ -436,6 +440,85 @@ private:
   TFirstToSecond FFirstToSecond;
   typedef std::map<T2, T1> TSecondToFirst;
   TSecondToFirst FSecondToFirst;
+};
+//---------------------------------------------------------------------------
+template<class T>
+class TMulticastEvent
+{
+public:
+  TMulticastEvent()
+  {
+    // noop
+  }
+
+  TMulticastEvent(const TMulticastEvent & Other) :
+    FEventHandlers(Other.FEventHandlers)
+  {
+  }
+
+  explicit TMulticastEvent(T EventHandler)
+  {
+    Add(EventHandler);
+  }
+
+  void Add(T EventHandler)
+  {
+    DebugAssert(EventHandler != NULL);
+    DebugAssert(Find(EventHandler) == FEventHandlers.end());
+    FEventHandlers.push_back(EventHandler);
+  }
+
+  void Remove(T EventHandler)
+  {
+    TEventHandlers::iterator I = Find(EventHandler);
+    if (DebugAlwaysTrue(I != FEventHandlers.end()))
+    {
+      FEventHandlers.erase(I);
+    }
+  }
+
+  #pragma warn -inl
+  template<typename P>
+  void Invoke(const P & p)
+  {
+    TEventHandlers::iterator I = FEventHandlers.begin();
+    while (I != FEventHandlers.end())
+    {
+      (*I)(p);
+      ++I;
+    }
+  }
+  #pragma warn .inl
+
+  bool Contains(T EventHandler)
+  {
+    return (Find(EventHandler) != FEventHandlers.end());
+  }
+
+  bool Any() const
+  {
+    return (FEventHandlers.size() > 0);
+  }
+
+  bool operator==(const TMulticastEvent<T> Other) const
+  {
+    return (FEventHandlers == Other.FEventHandlers);
+  }
+
+  void operator=(const TMulticastEvent<T> & Other)
+  {
+    FEventHandlers = Other.FEventHandlers;
+  }
+
+private:
+  typedef std::vector<T> TEventHandlers;
+  TEventHandlers FEventHandlers;
+
+  TEventHandlers::iterator Find(T EventHandler)
+  {
+    return std::find(FEventHandlers.begin(), FEventHandlers.end(), EventHandler);
+  }
+
 };
 //---------------------------------------------------------------------------
 typedef std::vector<UnicodeString> TUnicodeStringVector;

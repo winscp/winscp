@@ -3,6 +3,7 @@
 #pragma hdrstop
 
 #include <StrUtils.hpp>
+#include <System.IOUtils.hpp>
 #include <Common.h>
 #include <math.h>
 
@@ -33,7 +34,7 @@
 #pragma link "PathLabel"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
-const int BelowNormalLogLevels = 1;
+const int PrivatePortMin = 49152; // https://en.wikipedia.org/wiki/List_of_TCP_and_UDP_port_numbers#Dynamic,_private_or_ephemeral_ports
 //---------------------------------------------------------------------
 bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode,
   TPreferencesDialogData * DialogData)
@@ -630,6 +631,11 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     RetrieveExternalIpAddressButton->Checked = Configuration->ExternalIpAddress.IsEmpty();
     CustomExternalIpAddressButton->Checked = !RetrieveExternalIpAddressButton->Checked;
     CustomExternalIpAddressEdit->Text = Configuration->ExternalIpAddress;
+    LocalPortNumberCheck->Checked = Configuration->HasLocalPortNumberLimits();
+    LocalPortNumberMinEdit->AsInteger =
+      (Configuration->LocalPortNumberMin > 0 ? Configuration->LocalPortNumberMin : PrivatePortMin);
+    LocalPortNumberMaxEdit->AsInteger =
+      (Configuration->LocalPortNumberMax >= LocalPortNumberMinEdit->AsInteger ? Configuration->LocalPortNumberMax : static_cast<int>(LocalPortNumberMaxEdit->MaxValue));
     TryFtpWhenSshFailsCheck->Checked = Configuration->TryFtpWhenSshFails;
 
     // logging
@@ -962,6 +968,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     // network
     Configuration->ExternalIpAddress =
       (CustomExternalIpAddressButton->Checked ? CustomExternalIpAddressEdit->Text : UnicodeString());
+    Configuration->LocalPortNumberMin = LocalPortNumberCheck->Checked ? LocalPortNumberMinEdit->AsInteger : 0;
+    Configuration->LocalPortNumberMax = LocalPortNumberCheck->Checked ? LocalPortNumberMaxEdit->AsInteger : 0;
     Configuration->TryFtpWhenSshFails = TryFtpWhenSshFailsCheck->Checked;
 
     // security
@@ -1396,6 +1404,9 @@ void __fastcall TPreferencesDialog::UpdateControls()
 
     // network
     EnableControl(CustomExternalIpAddressEdit, CustomExternalIpAddressButton->Checked);
+    EnableControl(LocalPortNumberMinEdit, LocalPortNumberCheck->Checked);
+    EnableControl(LocalPortNumberMaxEdit, LocalPortNumberCheck->Checked);
+    EnableControl(LocalPortNumberRangeLabel, LocalPortNumberCheck->Checked);
 
     // window
     EnableControl(AutoWorkspaceCombo, AutoSaveWorkspaceCheck->Checked);
@@ -1403,6 +1414,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(AutoSaveWorkspacePasswordsCheck,
       !Configuration->DisablePasswordStoring &&
       AutoWorkspaceCombo->Enabled);
+    EnableControl(ShowTipsCheck, AnyTips());
 
     // integration
     EnableControl(ShellIconsGroup, !IsUWP());
@@ -2627,7 +2639,7 @@ void __fastcall TPreferencesDialog::AddExtension()
   std::unique_ptr<TStrings> History(CloneStrings(CustomWinConfiguration->History[HistoryKey]));
   UnicodeString Path;
   if (InputDialog(LoadStr(ADD_EXTENSION_CAPTION), LoadStr(ADD_EXTENSION_PROMPT), Path,
-        HELP_NONE, History.get(), true) &&
+        HELP_ADD_EXTENSION, History.get(), true, NULL, true, 400) &&
       !Path.IsEmpty())
   {
     CustomWinConfiguration->History[HistoryKey] = History.get();
@@ -2636,6 +2648,7 @@ void __fastcall TPreferencesDialog::AddExtension()
     bool Latest;
     UnicodeString FileName;
     UnicodeString ExtensionPath;
+    UnicodeString LinesSourcePath;
     std::unique_ptr<TStringList> Lines(new TStringList());
     std::unique_ptr<TCustomCommandType> CustomCommand;
 
@@ -2705,6 +2718,7 @@ void __fastcall TPreferencesDialog::AddExtension()
           ProvisionaryId = WinConfiguration->GetProvisionaryExtensionId(FileName);
         }
 
+        LinesSourcePath = Path;
         LoadScriptFromFile(Path, Lines.get());
       }
 
@@ -2776,7 +2790,16 @@ void __fastcall TPreferencesDialog::AddExtension()
           ExtensionPath = WinConfiguration->UniqueExtensionName(LeftStr(OriginalExtensionPath, P - 1), Counter) + RightStr(OriginalExtensionPath, OriginalExtensionPath.Length() - P + 1);
         }
 
-        Lines->SaveToFile(ApiPath(ExtensionPath));
+        if (!LinesSourcePath.IsEmpty())
+        {
+          // Copy as is, exactly preserving the file encoding
+          TFile::Copy(ApiPath(LinesSourcePath), ApiPath(ExtensionPath));
+        }
+        else
+        {
+          Lines->WriteBOM = false;
+          Lines->SaveToFile(ApiPath(ExtensionPath));
+        }
 
         FAddedExtensions->Add(ExtensionPath);
       }
@@ -3180,5 +3203,28 @@ void __fastcall TPreferencesDialog::UpDownFileColorButtonClick(TObject * Sender)
 {
   int DestIndex = FileColorsView->ItemIndex + (Sender == UpFileColorButton ? -1 : 1);
   FileColorMove(FileColorsView->ItemIndex, DestIndex);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::LocalPortNumberMinEditExit(TObject *)
+{
+  if (LocalPortNumberMinEdit->AsInteger > LocalPortNumberMaxEdit->AsInteger)
+  {
+    LocalPortNumberMaxEdit->Value = LocalPortNumberMaxEdit->MaxValue;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::LocalPortNumberMaxEditExit(TObject *)
+{
+  if (LocalPortNumberMaxEdit->AsInteger < LocalPortNumberMinEdit->AsInteger)
+  {
+    if (LocalPortNumberMaxEdit->AsInteger >= PrivatePortMin)
+    {
+      LocalPortNumberMinEdit->AsInteger = PrivatePortMin;
+    }
+    else
+    {
+      LocalPortNumberMinEdit->Value = LocalPortNumberMinEdit->MinValue;
+    }
+  }
 }
 //---------------------------------------------------------------------------

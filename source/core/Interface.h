@@ -25,6 +25,8 @@
 #define DELETE_SWITCH L"delete"
 #define REFRESH_SWITCH L"refresh"
 #define RAWTRANSFERSETTINGS_SWITCH L"rawtransfersettings"
+#define USERNAME_SWITCH L"username"
+#define PASSWORD_SWITCH L"password"
 extern const wchar_t * TransferModeNames[];
 extern const int TransferModeNamesCount;
 extern const wchar_t * ToggleNames[];
@@ -145,6 +147,7 @@ enum TPromptUserParam { pupEcho = 0x01, pupRemember = 0x02 };
 bool __fastcall IsAuthenticationPrompt(TPromptKind Kind);
 bool __fastcall IsPasswordOrPassphrasePrompt(TPromptKind Kind, TStrings * Prompts);
 bool __fastcall IsPasswordPrompt(TPromptKind Kind, TStrings * Prompts);
+void __fastcall AnswerNameAndCaption(unsigned int Answer, UnicodeString & Name, UnicodeString & Caption);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TFileFoundEvent)
   (TTerminal * Terminal, const UnicodeString FileName, const TRemoteFile * File,

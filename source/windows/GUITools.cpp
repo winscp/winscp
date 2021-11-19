@@ -40,16 +40,6 @@
 extern const UnicodeString PageantTool = L"pageant.exe";
 extern const UnicodeString PuttygenTool = L"puttygen.exe";
 //---------------------------------------------------------------------------
-static bool __fastcall FileExistsFix(const UnicodeString & Path)
-{
-  // WORKAROUND
-  ::SetLastError(ERROR_SUCCESS);
-  return
-    FileExists(ApiPath(Path)) ||
-    // returned when resolving symlinks in %LOCALAPPDATA%\Microsoft\WindowsApps
-    (GetLastError() == ERROR_CANT_ACCESS_FILE);
-}
-//---------------------------------------------------------------------------
 bool __fastcall FindFile(UnicodeString & Path)
 {
   bool Result = FileExistsFix(Path);
@@ -90,7 +80,8 @@ bool __fastcall FindFile(UnicodeString & Path)
         while (!Result && !Paths.IsEmpty())
         {
           UnicodeString P = CutToChar(Paths, L';', false);
-          NewPath = TPath::Combine(P, Path);
+          // Not using TPath::Combine as it throws on an invalid path and PATH is not under our control
+          NewPath = IncludeTrailingBackslash(P) + Path;
           Result = FileExistsFix(NewPath);
           if (Result)
           {
@@ -182,15 +173,15 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
       }
     }
     TCustomCommandData Data(SessionData, SessionData->UserName, Password);
-    TRemoteCustomCommand RemoteCustomCommand(Data, SessionData->RemoteDirectory);
+    TLocalCustomCommand LocalCustomCommand(Data, SessionData->RemoteDirectory, SessionData->LocalDirectory);
     TWinInteractiveCustomCommand InteractiveCustomCommand(
-      &RemoteCustomCommand, L"PuTTY", UnicodeString());
+      &LocalCustomCommand, L"PuTTY", UnicodeString());
 
     UnicodeString Params =
-      RemoteCustomCommand.Complete(InteractiveCustomCommand.Complete(AParams, false), true);
+      LocalCustomCommand.Complete(InteractiveCustomCommand.Complete(AParams, false), true);
     UnicodeString PuttyParams;
 
-    if (!RemoteCustomCommand.IsSiteCommand(AParams))
+    if (!LocalCustomCommand.IsSiteCommand(AParams))
     {
       {
         bool SessionList = false;
@@ -282,7 +273,7 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
       }
     }
 
-    if (!Password.IsEmpty() && !RemoteCustomCommand.IsPasswordCommand(AParams))
+    if (!Password.IsEmpty() && !LocalCustomCommand.IsPasswordCommand(AParams))
     {
       Password = NormalizeString(Password); // if password is empty, we should quote it always
       AddToList(PuttyParams, FORMAT(L"-pw %s", (EscapePuttyCommandParam(Password))), L" ");
@@ -1460,7 +1451,7 @@ bool __fastcall TLocalCustomCommand::PatternReplacement(
   bool Result;
   if (Pattern == L"!\\")
   {
-    // When used as "!\" in an argument to PowerShell, the trailing \ would escpae the ",
+    // When used as "!\" in an argument to PowerShell, the trailing \ would escape the ",
     // so we exclude it
     Replacement = ExcludeTrailingBackslash(FLocalPath);
     Result = true;

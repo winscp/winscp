@@ -19,6 +19,7 @@
 #include "Tools.h"
 #include "WinApi.h"
 #include <DateUtils.hpp>
+#include <StrUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -76,7 +77,7 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
       DefaultsOnly)
   {
     // Note that GetFolderOrWorkspace never returns sites that !CanLogin,
-    // so we should not get here with more then one site.
+    // so we should not get here with more than one site.
     // Though we should be good, if we ever do.
 
     // We get here when:
@@ -90,6 +91,13 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
       Abort();
     }
   }
+}
+//---------------------------------------------------------------------------
+int GetCommandLineParseUrlFlags(TProgramParams * Params)
+{
+  return
+    pufAllowStoredSiteWithProtocol |
+    FLAGMASK(!CheckSafe(Params), pufUnsafe);
 }
 //---------------------------------------------------------------------------
 void __fastcall Upload(TTerminal * Terminal, TStrings * FileList, int UseDefaults)
@@ -191,8 +199,8 @@ void __fastcall Edit(TCustomScpExplorerForm * ScpExplorer, TStrings * FileList)
   Abort();
 }
 //---------------------------------------------------------------------------
-void __fastcall SynchronizeDirectories(TTerminal * Terminal,
-  TStrings * CommandParams,
+void __fastcall SynchronizeDirectories(
+  TTerminal * Terminal, TCustomScpExplorerForm * ScpExplorer, TStrings * CommandParams,
   UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory)
 {
   if (CommandParams->Count >= 1)
@@ -205,7 +213,7 @@ void __fastcall SynchronizeDirectories(TTerminal * Terminal,
   }
   else
   {
-    LocalDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
+    LocalDirectory = ScpExplorer->DefaultDownloadTargetDirectory();
   }
 
   if (CommandParams->Count >= 2)
@@ -224,7 +232,7 @@ void __fastcall FullSynchronize(
   UnicodeString LocalDirectory;
   UnicodeString RemoteDirectory;
 
-  SynchronizeDirectories(Terminal, CommandParams, LocalDirectory, RemoteDirectory);
+  SynchronizeDirectories(Terminal, ScpExplorer, CommandParams, LocalDirectory, RemoteDirectory);
 
   bool SaveMode = true;
   // bit ugly
@@ -254,7 +262,7 @@ void __fastcall Synchronize(
   UnicodeString LocalDirectory;
   UnicodeString RemoteDirectory;
 
-  SynchronizeDirectories(Terminal, CommandParams, LocalDirectory, RemoteDirectory);
+  SynchronizeDirectories(Terminal, ScpExplorer, CommandParams, LocalDirectory, RemoteDirectory);
 
   // Undocumented syntax for "Start in New Window"
   if (CommandParams->Count >= 4)
@@ -323,10 +331,25 @@ void __fastcall Usage(UnicodeString Param)
         UnicodeString Key = Pair.SubString(1, Pair.Length() - 1).Trim();
         Configuration->Usage->Inc(Key);
       }
+      else if (Pair[Pair.Length()] == L'@')
+      {
+        UnicodeString Key = Pair.SubString(1, Pair.Length() - 1).Trim();
+        UnicodeString Value;
+        if (SameText(Key, L"InstallationParentProcess"))
+        {
+          Value = GetAncestorProcessName(3).LowerCase();
+        }
+        else
+        {
+          Value = L"err-unknown-key";
+        }
+        Configuration->Usage->Set(Key, Value);
+      }
       else
       {
         UnicodeString Key = CutToChar(Pair, L':', true);
-        Configuration->Usage->Set(Key, Pair.Trim());
+        UnicodeString Value = Pair.Trim();
+        Configuration->Usage->Set(Key, Value);
       }
     }
   }
@@ -392,12 +415,17 @@ static UnicodeString ColorToRGBStr(TColor Color)
 TDateTime Started(Now());
 int LifetimeRuns = -1;
 //---------------------------------------------------------------------------
+void InterfaceStartDontMeasure()
+{
+  Started = TDateTime();
+}
+//---------------------------------------------------------------------------
 void InterfaceStarted()
 {
-  // deliberate downcast
-  int StartupSeconds = static_cast<int>(SecondsBetween(Now(), Started));
-  if (LifetimeRuns > 0)
+  if ((Started != TDateTime()) && (LifetimeRuns > 0))
   {
+    // deliberate downcast
+    int StartupSeconds = static_cast<int>(SecondsBetween(Now(), Started));
     if (LifetimeRuns == 1)
     {
       Configuration->Usage->Set(L"StartupSeconds1", StartupSeconds);
@@ -412,7 +440,7 @@ void InterfaceStarted()
 //---------------------------------------------------------------------------
 void __fastcall UpdateStaticUsage()
 {
-  LifetimeRuns = Configuration->Usage->Inc(L"Runs");
+  Configuration->Usage->Inc(L"Runs");
 
   Configuration->Usage->UpdateCurrentVersion();
 
@@ -511,6 +539,18 @@ void __fastcall UpdateStaticUsage()
   Configuration->Usage->Set(L"Wine", IsWine());
   Configuration->Usage->Set(L"NetFrameworkVersion", GetNetVersionStr());
   Configuration->Usage->Set(L"PowerShellVersion", GetPowerShellVersionStr());
+
+  UnicodeString ParentProcess = GetAncestorProcessName();
+  // do not record the installer as a parent process
+  if (!ParentProcess.IsEmpty() &&
+      (!StartsText(L"winscp-", ParentProcess) || !ContainsText(ParentProcess, L"-setup")))
+  {
+    UnicodeString ParentProcesses = Configuration->Usage->Get(L"ParentProcesses");
+    std::unique_ptr<TStringList> ParentProcessesList(CreateSortedStringList());
+    ParentProcessesList->CommaText = ParentProcesses;
+    ParentProcessesList->Add(ParentProcess.LowerCase());
+    Configuration->Usage->Set(L"ParentProcesses", ParentProcessesList->CommaText);
+  }
 
   WinConfiguration->UpdateStaticUsage();
 
@@ -1096,9 +1136,7 @@ int __fastcall Execute()
         std::unique_ptr<TObjectList> DataList(new TObjectList());
         try
         {
-          int Flags =
-            pufAllowStoredSiteWithProtocol |
-            FLAGMASK(!CheckSafe(Params), pufUnsafe);
+          int Flags = GetCommandLineParseUrlFlags(Params);
           GetLoginData(AutoStartSession, Params, DataList.get(), DownloadFile, NeedSession, NULL, Flags);
           // GetLoginData now Aborts when session is needed and none is selected
           if (DebugAlwaysTrue(!NeedSession || (DataList->Count > 0)))
@@ -1179,6 +1217,7 @@ int __fastcall Execute()
                   if ((ParamCommand != pcNone) || !DownloadFile.IsEmpty())
                   {
                     Configuration->Usage->Inc(L"CommandLineOperation");
+                    ScpExplorer->StandaloneOperation = true;
                   }
 
                   if (ParamCommand == pcUpload)
@@ -1204,6 +1243,15 @@ int __fastcall Execute()
                     Download(TerminalManager->ActiveTerminal, DownloadFile,
                       UseDefaults);
                   }
+                  else
+                  {
+                    if (DataList->Count == 0)
+                    {
+                      LifetimeRuns = Configuration->Usage->Inc(L"RunsNormal");
+                    }
+                  }
+
+                  ScpExplorer->StandaloneOperation = false;
 
                   if (Browse)
                   {
