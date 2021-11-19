@@ -2557,7 +2557,7 @@ void __fastcall TPreferencesDialog::UpdatesAuthenticationEmailEditExit(TObject *
         UnicodeString AuthenticationError = Updates.Results.AuthenticationError;
         if (!AuthenticationError.IsEmpty())
         {
-          AuthenticationError = FormatUpdatesMessage(AuthenticationError);
+          AuthenticationError = FormatUpdatesMessage(AuthenticationError, Updates);
           if (HasParagraphs(AuthenticationError))
           {
             AuthenticationError = MainInstructionsFirstParagraph(AuthenticationError);
