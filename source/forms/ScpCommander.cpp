@@ -1603,7 +1603,12 @@ void __fastcall TScpCommanderForm::DoDirViewLoaded(TCustomDirView * ADirView)
 
   UpdateControls();
 
-  SynchronizeBrowsing(ADirView);
+  // In addition to being an optimization, this prevents synchronized browsing against the other local panel,
+  // when the users happens to e.g. download a file to the directory loaded in the panel.
+  if (ADirView != OtherLocalDirView)
+  {
+    SynchronizeBrowsing(ADirView);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::AddEditLink(TOperationSide Side, bool Add)
