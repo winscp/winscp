@@ -170,6 +170,11 @@ MontgomeryPoint *ecc_montgomery_multiply(MontgomeryPoint *, mp_int *);
  */
 void ecc_montgomery_get_affine(MontgomeryPoint *mp, mp_int **x);
 
+/*
+ * Test whether a point is the curve identity.
+ */
+unsigned ecc_montgomery_is_identity(MontgomeryPoint *mp);
+
 /* ----------------------------------------------------------------------
  * Twisted Edwards curves.
  *

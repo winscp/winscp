@@ -13,11 +13,13 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>                     /* for __MINGW_PRINTF_FORMAT */
 #include <stdbool.h>
 
 #if (!defined WINSCP) && defined _MSC_VER && _MSC_VER < 1800
 /* Work around lack of inttypes.h and strtoumax in older MSVC */
 #define PRIx32 "x"
+#define PRIu32 "u"
 #define PRIu64 "I64u"
 #define PRIdMAX "I64d"
 #define PRIXMAX "I64X"
@@ -187,6 +189,8 @@ typedef struct PacketProtocolLayer PacketProtocolLayer;
 
 #if defined __GNUC__ || defined __clang__
 #define NORETURN __attribute__((__noreturn__))
+#elif defined _MSC_VER
+#define NORETURN __declspec(noreturn)
 #else
 #define NORETURN
 #endif

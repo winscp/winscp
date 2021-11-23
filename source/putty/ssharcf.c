@@ -104,19 +104,33 @@ static void arcfour_ssh2_block(ssh_cipher *cipher, void *blk, int len)
 }
 
 const ssh_cipheralg ssh_arcfour128_ssh2 = {
-    arcfour_new, arcfour_free, arcfour_ssh2_setiv, arcfour_ssh2_setkey,
-    arcfour_ssh2_block, arcfour_ssh2_block, NULL, NULL,
-    "arcfour128",
-    1, 128, 16, 0, "Arcfour-128",
-    NULL
+    .new = arcfour_new,
+    .free = arcfour_free,
+    .setiv = arcfour_ssh2_setiv,
+    .setkey = arcfour_ssh2_setkey,
+    .encrypt = arcfour_ssh2_block,
+    .decrypt = arcfour_ssh2_block,
+    .ssh2_id = "arcfour128",
+    .blksize = 1,
+    .real_keybits = 128,
+    .padded_keybytes = 16,
+    .flags = 0,
+    .text_name = "Arcfour-128",
 };
 
 const ssh_cipheralg ssh_arcfour256_ssh2 = {
-    arcfour_new, arcfour_free, arcfour_ssh2_setiv, arcfour_ssh2_setkey,
-    arcfour_ssh2_block, arcfour_ssh2_block, NULL, NULL,
-    "arcfour256",
-    1, 256, 32, 0, "Arcfour-256",
-    NULL
+    .new = arcfour_new,
+    .free = arcfour_free,
+    .setiv = arcfour_ssh2_setiv,
+    .setkey = arcfour_ssh2_setkey,
+    .encrypt = arcfour_ssh2_block,
+    .decrypt = arcfour_ssh2_block,
+    .ssh2_id = "arcfour256",
+    .blksize = 1,
+    .real_keybits = 256,
+    .padded_keybytes = 32,
+    .flags = 0,
+    .text_name = "Arcfour-256",
 };
 
 static const ssh_cipheralg *const arcfour_list[] = {

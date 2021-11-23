@@ -6,6 +6,8 @@
 #ifndef PUTTY_SSHCHAN_H
 #define PUTTY_SSHCHAN_H
 
+typedef struct ChannelVtable ChannelVtable;
+
 struct ChannelVtable {
     void (*free)(Channel *);
 
@@ -168,6 +170,8 @@ Channel *zombiechan_new(void);
  * the connection layer's end of the channel, for the Channel
  * implementation to talk back to.
  */
+
+typedef struct SshChannelVtable SshChannelVtable;
 
 struct SshChannelVtable {
     size_t (*write)(SshChannel *c, bool is_stderr, const void *, size_t);

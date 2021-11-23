@@ -648,30 +648,47 @@ static void blowfish_ssh2_sdctr(ssh_cipher *cipher, void *blk, int len)
 }
 
 const ssh_cipheralg ssh_blowfish_ssh1 = {
-    blowfish_new, blowfish_free,
-    blowfish_ssh1_setiv, blowfish_ssh_setkey,
-    blowfish_ssh1_encrypt_blk, blowfish_ssh1_decrypt_blk,
-    NULL, NULL, NULL,
-    8, 128, SSH1_SESSION_KEY_LENGTH, SSH_CIPHER_IS_CBC, "Blowfish-256 CBC",
-    NULL
+    .new = blowfish_new,
+    .free = blowfish_free,
+    .setiv = blowfish_ssh1_setiv,
+    .setkey = blowfish_ssh_setkey,
+    .encrypt = blowfish_ssh1_encrypt_blk,
+    .decrypt = blowfish_ssh1_decrypt_blk,
+    .blksize = 8,
+    .real_keybits = 128,
+    .padded_keybytes = SSH1_SESSION_KEY_LENGTH,
+    .flags = SSH_CIPHER_IS_CBC,
+    .text_name = "Blowfish-256 CBC",
 };
 
 const ssh_cipheralg ssh_blowfish_ssh2 = {
-    blowfish_new, blowfish_free,
-    blowfish_ssh2_setiv, blowfish_ssh_setkey,
-    blowfish_ssh2_encrypt_blk, blowfish_ssh2_decrypt_blk, NULL, NULL,
-    "blowfish-cbc",
-    8, 128, 16, SSH_CIPHER_IS_CBC, "Blowfish-128 CBC",
-    NULL
+    .new = blowfish_new,
+    .free = blowfish_free,
+    .setiv = blowfish_ssh2_setiv,
+    .setkey = blowfish_ssh_setkey,
+    .encrypt = blowfish_ssh2_encrypt_blk,
+    .decrypt = blowfish_ssh2_decrypt_blk,
+    .ssh2_id = "blowfish-cbc",
+    .blksize = 8,
+    .real_keybits = 128,
+    .padded_keybytes = 16,
+    .flags = SSH_CIPHER_IS_CBC,
+    .text_name = "Blowfish-128 CBC",
 };
 
 const ssh_cipheralg ssh_blowfish_ssh2_ctr = {
-    blowfish_new, blowfish_free,
-    blowfish_ssh2_setiv, blowfish_ssh_setkey,
-    blowfish_ssh2_sdctr, blowfish_ssh2_sdctr, NULL, NULL,
-    "blowfish-ctr",
-    8, 256, 32, 0, "Blowfish-256 SDCTR",
-    NULL
+    .new = blowfish_new,
+    .free = blowfish_free,
+    .setiv = blowfish_ssh2_setiv,
+    .setkey = blowfish_ssh_setkey,
+    .encrypt = blowfish_ssh2_sdctr,
+    .decrypt = blowfish_ssh2_sdctr,
+    .ssh2_id = "blowfish-ctr",
+    .blksize = 8,
+    .real_keybits = 256,
+    .padded_keybytes = 32,
+    .flags = 0,
+    .text_name = "Blowfish-256 SDCTR",
 };
 
 static const ssh_cipheralg *const blowfish_list[] = {

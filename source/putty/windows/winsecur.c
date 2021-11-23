@@ -9,11 +9,18 @@
 
 #if !defined NO_SECURITY
 
-#define WINSECUR_GLOBAL
 #include "winsecur.h"
 
 /* Initialised once, then kept around to reuse forever */
 static PSID worldsid, networksid, usersid;
+
+DEF_WINDOWS_FUNCTION(OpenProcessToken);
+DEF_WINDOWS_FUNCTION(GetTokenInformation);
+DEF_WINDOWS_FUNCTION(InitializeSecurityDescriptor);
+DEF_WINDOWS_FUNCTION(SetSecurityDescriptorOwner);
+DEF_WINDOWS_FUNCTION(GetSecurityInfo);
+DEF_WINDOWS_FUNCTION(SetSecurityInfo);
+DEF_WINDOWS_FUNCTION(SetEntriesInAclA);
 
 #ifdef MPEXT
 void win_secur_cleanup(void)
@@ -102,7 +109,7 @@ PSID get_user_sid(void)
     return ret;
 }
 
-bool getsids(char **error)
+static bool getsids(char **error)
 {
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -238,6 +245,9 @@ bool make_private_security_descriptor(DWORD permissions,
     return ret;
 }
 
+static bool acl_restricted = false;
+bool restricted_acl(void) { return acl_restricted; }
+
 static bool really_restrict_process_acl(char **error)
 {
     EXPLICIT_ACCESS ea[2];
@@ -288,7 +298,7 @@ static bool really_restrict_process_acl(char **error)
         goto cleanup;
     }
 
-
+    acl_restricted = true;
     ret=true;
 
   cleanup:

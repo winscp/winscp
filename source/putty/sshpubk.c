@@ -577,14 +577,14 @@ ssh2_userkey ssh2_wrong_passphrase = { NULL, NULL };
 
 const ssh_keyalg *const all_keyalgs[] = {
     &ssh_rsa,
-    // &ssh_rsa_sha256, WINSCP
-    // &ssh_rsa_sha512, WINSCP
+    &ssh_rsa_sha256,
+    &ssh_rsa_sha512,
     &ssh_dss,
     &ssh_ecdsa_nistp256,
     &ssh_ecdsa_nistp384,
     &ssh_ecdsa_nistp521,
     &ssh_ecdsa_ed25519,
-    // &ssh_ecdsa_ed448, WINSCP
+    &ssh_ecdsa_ed448, WINSCP
 };
 const size_t n_keyalgs = lenof(all_keyalgs);
 
@@ -1162,7 +1162,7 @@ static bool rfc4716_loadpub(BinarySource *src, char **algorithm,
     return false;
 }
 
-/*WINSCP static*/ bool openssh_loadpub(BinarySource *src, char **algorithm,
+static bool openssh_loadpub(BinarySource *src, char **algorithm,
                             BinarySink *bs,
                             char **commentptr, const char **errorstr)
 {
@@ -1413,20 +1413,6 @@ int base64_lines(int datalen)
 {
     /* When encoding, we use 64 chars/line, which equals 48 real chars. */
     return (datalen + 47) / 48;
-}
-
-void base64_encode_buf(const unsigned char *data, int datalen, unsigned char *out)
-{
-    int n;
-
-    while (datalen > 0) {
-	n = (datalen < 3 ? datalen : 3);
-	base64_encode_atom(data, n, out);
-	data += n;
-	out += 4;
-	datalen -= n;
-    }
-    *out = 0;
 }
 
 static void base64_encode_s(BinarySink *bs, const unsigned char *data,
@@ -1796,58 +1782,100 @@ void ssh2_write_pubkey(FILE *fp, const char *comment,
 /* ----------------------------------------------------------------------
  * Utility functions to compute SSH-2 fingerprints in a uniform way.
  */
-char *ssh2_fingerprint_blob(ptrlen blob)
+static void ssh2_fingerprint_blob_md5(ptrlen blob, strbuf *sb)
+{
+    unsigned char digest[16];
+
+    hash_simple(&ssh_md5, blob, digest);
+    for (unsigned i = 0; i < 16; i++)
+        strbuf_catf(sb, "%02x%s", digest[i], i==15 ? "" : ":");
+}
+
+static void ssh2_fingerprint_blob_sha256(ptrlen blob, strbuf *sb)
 {
     unsigned char digest[32];
-    char fingerprint_str_md5[16*3];
-    char fingerprint_str_sha256[45]; /* ceil(32/3)*4+1 */
-    ptrlen algname;
-    const ssh_keyalg *alg;
-    int i;
-    BinarySource src[1];
-
-    /*
-     * The fingerprint hash itself is always just the MD5 of the blob.
-     */
-    hash_simple(&ssh_md5, blob, digest);
-    for (i = 0; i < 16; i++)
-        sprintf(fingerprint_str_md5 + i*3, "%02x%s", digest[i], i==15 ? "" : ":");
-
     hash_simple(&ssh_sha256, blob, digest);
-    base64_encode_buf(digest, 32, fingerprint_str_sha256);
+
+    put_datapl(sb, PTRLEN_LITERAL("SHA256:"));
+
+    for (unsigned i = 0; i < 32; i += 3) {
+        char buf[5];
+        unsigned len = 32-i;
+        if (len > 3)
+            len = 3;
+        base64_encode_atom(digest + i, len, buf);
+        put_data(sb, buf, 4);
+    }
+    strbuf_chomp(sb, '=');
+}
+
+char *ssh2_fingerprint_blob(ptrlen blob, FingerprintType fptype)
+{
+    strbuf *sb = strbuf_new();
 
     /*
      * Identify the key algorithm, if possible.
+     *
+     * If we can't do that, then we have a seriously confused key
+     * blob, in which case we return only the hash.
      */
+    BinarySource src[1];
     BinarySource_BARE_INIT_PL(src, blob);
-    algname = get_string(src);
+    ptrlen algname = get_string(src);
     if (!get_err(src)) {
-        alg = find_pubkey_alg_len(algname);
+        const ssh_keyalg *alg = find_pubkey_alg_len(algname);
         if (alg) {
             int bits = ssh_key_public_bits(alg, blob);
-            return dupprintf("%.*s %d %s %s", PTRLEN_PRINTF(algname),
-                             bits, fingerprint_str_md5, fingerprint_str_sha256);
+            strbuf_catf(sb, "%.*s %d ", PTRLEN_PRINTF(algname), bits);
         } else {
-            return dupprintf("%.*s %s %s", PTRLEN_PRINTF(algname),
-                             fingerprint_str_md5, fingerprint_str_sha256);
+            strbuf_catf(sb, "%.*s ", PTRLEN_PRINTF(algname));
         }
-    } else {
-        /*
-         * No algorithm available (which means a seriously confused
-         * key blob, but there we go). Return only the hash.
-         */
-        return dupprintf("%s %s", fingerprint_str_md5, fingerprint_str_sha256);
     }
+
+    switch (fptype) {
+      case SSH_FPTYPE_MD5:
+        ssh2_fingerprint_blob_md5(blob, sb);
+        break;
+      case SSH_FPTYPE_SHA256:
+        ssh2_fingerprint_blob_sha256(blob, sb);
+        break;
+    }
+
+    return strbuf_to_str(sb);
 }
 
-char *ssh2_fingerprint(ssh_key *data)
+char **ssh2_all_fingerprints_for_blob(ptrlen blob)
+{
+    char **fps = snewn(SSH_N_FPTYPES, char *);
+    for (unsigned i = 0; i < SSH_N_FPTYPES; i++)
+        fps[i] = ssh2_fingerprint_blob(blob, i);
+    return fps;
+}
+
+char *ssh2_fingerprint(ssh_key *data, FingerprintType fptype)
 {
     strbuf *blob = strbuf_new();
     char *ret; //MPEXT
     ssh_key_public_blob(data, BinarySink_UPCAST(blob));
-    ret = ssh2_fingerprint_blob(ptrlen_from_strbuf(blob));
+    ret = ssh2_fingerprint_blob(ptrlen_from_strbuf(blob), fptype);
     strbuf_free(blob);
     return ret;
+}
+
+char **ssh2_all_fingerprints(ssh_key *data)
+{
+    strbuf *blob = strbuf_new();
+    ssh_key_public_blob(data, BinarySink_UPCAST(blob));
+    char **ret = ssh2_all_fingerprints_for_blob(ptrlen_from_strbuf(blob));
+    strbuf_free(blob);
+    return ret;
+}
+
+void ssh2_free_all_fingerprints(char **fps)
+{
+    for (unsigned i = 0; i < SSH_N_FPTYPES; i++)
+        sfree(fps[i]);
+    sfree(fps);
 }
 
 /* ----------------------------------------------------------------------
@@ -1960,3 +1988,46 @@ const char *key_type_to_str(int type)
     }
 }
 
+key_components *key_components_new(void)
+{
+    key_components *kc = snew(key_components);
+    kc->ncomponents = 0;
+    kc->componentsize = 0;
+    kc->components = NULL;
+    return kc;
+}
+
+void key_components_add_text(key_components *kc,
+                             const char *name, const char *value)
+{
+    sgrowarray(kc->components, kc->componentsize, kc->ncomponents);
+    size_t n = kc->ncomponents++;
+    kc->components[n].name = dupstr(name);
+    kc->components[n].is_mp_int = false;
+    kc->components[n].text = dupstr(value);
+}
+
+void key_components_add_mp(key_components *kc,
+                           const char *name, mp_int *value)
+{
+    sgrowarray(kc->components, kc->componentsize, kc->ncomponents);
+    size_t n = kc->ncomponents++;
+    kc->components[n].name = dupstr(name);
+    kc->components[n].is_mp_int = true;
+    kc->components[n].mp = mp_copy(value);
+}
+
+void key_components_free(key_components *kc)
+{
+    for (size_t i = 0; i < kc->ncomponents; i++) {
+        sfree(kc->components[i].name);
+        if (kc->components[i].is_mp_int) {
+            mp_free(kc->components[i].mp);
+        } else {
+            smemclr(kc->components[i].text, strlen(kc->components[i].text));
+            sfree(kc->components[i].text);
+        }
+    }
+    sfree(kc->components);
+    sfree(kc);
+}

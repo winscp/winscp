@@ -201,7 +201,7 @@ static DWORD WINAPI handle_input_threadfunc(void *param)
 }
 
 /*
- * This is called after a succcessful read, or from the
+ * This is called after a successful read, or from the
  * `unthrottle' function. It decides whether or not to begin a new
  * read operation.
  */

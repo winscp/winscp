@@ -215,6 +215,9 @@ bool smemeq(const void *av, const void *bv, size_t len);
  * been removed. */
 size_t encode_utf8(void *output, unsigned long ch);
 
+/* Write a string out in C string-literal format. */
+void write_c_string_literal(FILE *fp, ptrlen str);
+
 char *buildinfo(const char *newline);
 
 /*
@@ -433,6 +436,12 @@ typedef enum {
     LF_TOO_BIG, /* file didn't fit in buffer */
     LF_ERROR,   /* error from stdio layer */
 } LoadFileStatus;
+LoadedFile *lf_new(size_t max_size);
+void lf_free(LoadedFile *lf);
+LoadFileStatus lf_load_fp(LoadedFile *lf, FILE *fp);
+LoadFileStatus lf_load(LoadedFile *lf, const Filename *filename);
+static inline ptrlen ptrlen_from_lf(LoadedFile *lf)
+{ return make_ptrlen(lf->data, lf->len); }
 
 /* Set the memory block of 'size' bytes at 'out' to the bitwise XOR of
  * the two blocks of the same size at 'in1' and 'in2'.
