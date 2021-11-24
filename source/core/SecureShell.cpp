@@ -703,6 +703,27 @@ void __fastcall TSecureShell::PuttyLogEvent(const char * AStr)
     FLastTunnelError = Str;
   }
   LogEvent(Str);
+  if (SameText(Str, L"Server refused our key") &&
+      // This occurs before FSshImplementation is initialized
+      IsOpenSSH(GetSessionInfo().SshImplementation))
+  {
+    UnicodeString SshImplementation = GetSessionInfo().SshImplementation;
+    int P = SshImplementation.LastDelimiter(L"_");
+    if (P > 0)
+    {
+      UnicodeString Version = SshImplementation.SubString(P + 1, SshImplementation.Length() - P);
+      int P = Version.Pos(L".");
+      if (P > 0)
+      {
+        int Major = StrToIntDef(Version.SubString(1, P - 1), 0);
+        int Minor = StrToIntDef(Version.SubString(P + 1, Version.Length() - P), 0);
+        if ((Major > 8) || ((Major == 8) && (Minor >= 6)))
+        {
+          LogEvent(L"See https://winscp.net/tracker/1952");
+        }
+      }
+    }
+  }
 }
 //---------------------------------------------------------------------------
 TPromptKind __fastcall TSecureShell::IdentifyPromptKind(UnicodeString & Name)
