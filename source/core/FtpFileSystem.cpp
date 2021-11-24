@@ -3178,9 +3178,15 @@ UnicodeString __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned i
           MoreMessages->Add(LoadStr(AUTHENTICATION_FAILED));
         }
 
+        bool RetryTransfer = false;
         if (FLastCode == 425)
         {
-          if (!FTerminal->SessionData->FtpPasvMode)
+          if (FAnyTransferSucceeded)
+          {
+            FTerminal->LogEvent(FORMAT(L"Got %d after some previous data connections succeeded, retrying connection", (FLastCode)));
+            RetryTransfer = true;
+          }
+          else if (!FTerminal->SessionData->FtpPasvMode)
           {
             MoreMessages->Add(LoadStr(FTP_CANNOT_OPEN_ACTIVE_CONNECTION2));
             HelpKeyword = HELP_FTP_CANNOT_OPEN_ACTIVE_CONNECTION;
@@ -3207,10 +3213,16 @@ UnicodeString __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned i
           }
           if (ContainsText(FLastError->Strings[0], CantOpenTransferChannelMessage))
           {
-            Disconnected = true;
-            // Close only later, as we still need to use FLast* fields
-            DoClose = true;
+            FTerminal->LogEvent(L"Failed to connection data connection after some previous data connections succeeded, retrying connection");
+            RetryTransfer = true;
           }
+        }
+
+        if (RetryTransfer)
+        {
+          Disconnected = true;
+          // Close only later, as we still need to use FLast* fields
+          DoClose = true;
         }
 
         MoreMessages->AddStrings(FLastError);
