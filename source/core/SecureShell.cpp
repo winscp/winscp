@@ -650,10 +650,6 @@ const UnicodeString FailedMsg(L" failed:");
 void __fastcall TSecureShell::PuttyLogEvent(const char * AStr)
 {
   UnicodeString Str = ConvertFromPutty(AStr, strlen(AStr));
-  if (Str.Pos(L"failed") > 0)
-  {
-    Str += L"";
-  }
   // Gross hack
   if (StartsStr(ServerVersionMsg, Str))
   {
