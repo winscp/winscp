@@ -1,6 +1,6 @@
 /* 
    neon SSL/TLS support using OpenSSL
-   Copyright (C) 2002-2011, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 2002-2021, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -1155,24 +1155,52 @@ char *ne_ssl_cert_export(const ne_ssl_certificate *cert)
     return ret;
 }
 
+static const EVP_MD *hash_to_md(unsigned int flags)
+{
+    switch (flags & NE_HASH_ALGMASK) {
+    case NE_HASH_MD5: return EVP_md5();
+    case NE_HASH_SHA256: return EVP_sha256();
+#ifdef HAVE_OPENSSL11
+    case NE_HASH_SHA512: return EVP_sha512();
+    case NE_HASH_SHA512_256: return EVP_sha512_256();
+#endif
+    default: break;
+    }
+    return NULL;
+}
+
 #if SHA_DIGEST_LENGTH != 20
 # error SHA digest length is not 20 bytes
 #endif
 
-int ne_ssl_cert_digest(const ne_ssl_certificate *cert, char *digest, int sha256) // WINSCP
+char *ne_ssl_cert_hdigest(const ne_ssl_certificate *cert, unsigned int flags)
+{
+    const EVP_MD *md = hash_to_md(flags);
+    unsigned char dig[EVP_MAX_MD_SIZE];
+    unsigned int len;
+
+    if (!md) return NULL;
+
+    if (!X509_digest(cert->subject, md, dig, &len)) {
+        ERR_clear_error();
+        return NULL;
+    }
+
+    return ne__strhash2hex(dig, len, flags);
+}
+
+int ne_ssl_cert_digest(const ne_ssl_certificate *cert, char *digest)
 {
     unsigned char sha1[EVP_MAX_MD_SIZE];
     unsigned int len, j;
     char *p;
-    const EVP_MD *type = sha256 ? EVP_sha256() : EVP_sha1(); // WINSCP
-    unsigned int type_len = sha256 ? 32 : 20;
 
-    if (!X509_digest(cert->subject, type, sha1, &len) || len != type_len) { // WINSCP
+    if (!X509_digest(cert->subject, EVP_sha1(), sha1, &len) || len != 20) {
         ERR_clear_error();
         return -1;
     }
     
-    for (j = 0, p = digest; j < type_len; j++) {
+    for (j = 0, p = digest; j < 20; j++) {
         *p++ = NE_HEX2ASC((sha1[j] >> 4) & 0x0f);
         *p++ = NE_HEX2ASC(sha1[j] & 0x0f);
         *p++ = ':';
@@ -1180,6 +1208,31 @@ int ne_ssl_cert_digest(const ne_ssl_certificate *cert, char *digest, int sha256)
 
     p[-1] = '\0';
     return 0;
+}
+
+char *ne_vstrhash(unsigned int flags, va_list ap)
+{
+    EVP_MD_CTX *ctx;
+    const EVP_MD *md = hash_to_md(flags);
+    unsigned char v[EVP_MAX_MD_SIZE];
+    unsigned int vlen;
+    const char *arg;
+
+    ctx = EVP_MD_CTX_new();
+    if (!ctx) return NULL;
+
+    if (EVP_DigestInit(ctx, md) != 1) {
+        EVP_MD_CTX_free(ctx);
+        return NULL;
+    }
+
+    while ((arg = va_arg(ap, const char *)) != NULL)
+        EVP_DigestUpdate(ctx, arg, strlen(arg));
+
+    EVP_DigestFinal_ex(ctx, v, &vlen);
+    EVP_MD_CTX_free(ctx);
+
+    return ne__strhash2hex(v, vlen, flags);
 }
 
 #if defined(NE_HAVE_TS_SSL) && OPENSSL_VERSION_NUMBER < 0x10100000L
@@ -1215,7 +1268,6 @@ static unsigned long thread_id_neon(void)
 }
 #endif
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
 /* Another great API design win for OpenSSL: no return value!  So if
  * the lock/unlock fails, all that can be done is to abort. */
 static void thread_lock_neon(int mode, int n, const char *file, int line)
@@ -1239,9 +1291,7 @@ static void thread_lock_neon(int mode, int n, const char *file, int line)
         }
     }
 }
-#endif
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
 /* ID_CALLBACK_IS_{NEON,OTHER} evaluate as true if the currently
  * registered OpenSSL ID callback is the neon function (_NEON), or has
  * been overwritten by some other app (_OTHER). */
@@ -1251,7 +1301,6 @@ static void thread_lock_neon(int mode, int n, const char *file, int line)
 #else
 #define ID_CALLBACK_IS_OTHER (CRYPTO_get_id_callback() != NULL)
 #define ID_CALLBACK_IS_NEON (CRYPTO_get_id_callback() == thread_id_neon)
-#endif
 #endif
         
 #endif /* NE_HAVE_TS_SSL && OPENSSL_VERSION_NUMBER < 1.1.1 */
