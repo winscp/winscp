@@ -144,6 +144,7 @@ bool __fastcall IsWin10();
 bool __fastcall IsWin10Build(unsigned int BuildNumber);
 bool __fastcall IsWine();
 bool __fastcall IsUWP();
+UnicodeString GetPackageName();
 TLibModule * __fastcall FindModule(void * Instance);
 __int64 __fastcall Round(double Number);
 bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, bool Add);
