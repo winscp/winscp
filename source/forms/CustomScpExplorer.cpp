@@ -5246,7 +5246,7 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
           Message = LoadStr(CLOSE_SESSIONS);
         }
       }
-      // Multiple tabs, but all are intactive or local, and saving of worspace is not enabled
+      // Multiple tabs, but all are inactive or local, and saving of worspace is not enabled
       else
       {
         DebugAlwaysTrue(Manager->Count > 1);
@@ -10990,7 +10990,7 @@ void __fastcall TCustomScpExplorerForm::ClipboardStop()
   FClipboardTerminal = NULL;
   if (FDownloadingFromClipboard)
   {
-    // We are called by the monitor, so attempt to release it would deadlonk
+    // We are called by the monitor, so attempt to release it would deadlock
     FClipboardFakeMonitorsPendingReset = true;
   }
   else

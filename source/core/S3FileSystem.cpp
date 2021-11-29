@@ -1203,7 +1203,7 @@ void __fastcall TS3FileSystem::DeleteFile(const UnicodeString AFileName,
     {
       if (FTerminal->Active && Dir && !FTerminal->FileExists(AFileName))
       {
-        // Amazon silently ignores attampts to delete non existing folders,
+        // Amazon silently ignores attempts to delete non existing folders,
         // But Google Cloud fails that.
         FTerminal->LogEvent(L"Folder does not exist anymore, it was probably only virtual");
       }
