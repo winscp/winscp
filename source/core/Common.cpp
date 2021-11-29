@@ -3022,22 +3022,46 @@ bool __fastcall IsWine()
 }
 //---------------------------------------------------------------------------
 int GIsUWP = -1;
+UnicodeString GPackageName;
 //---------------------------------------------------------------------------
-bool __fastcall IsUWP()
+static void NeedUWPData()
 {
   if (GIsUWP < 0)
   {
+    GIsUWP = 0;
+
     HINSTANCE Kernel32 = GetModuleHandle(kernel32);
-    typedef LONG WINAPI (* GetPackageFamilyNameProc)(HANDLE hProcess, UINT32 *packageFamilyNameLength, PWSTR packageFamilyName);
-    GetPackageFamilyNameProc GetPackageFamilyName =
-      (GetPackageFamilyNameProc)GetProcAddress(Kernel32, "GetPackageFamilyName");
-    UINT32 Len = 0;
-    bool Result =
-      (GetPackageFamilyName != NULL) &&
-      (GetPackageFamilyName(GetCurrentProcess(), &Len, NULL) == ERROR_INSUFFICIENT_BUFFER);
-    GIsUWP = (Result ? 1 : 0);
+    typedef LONG WINAPI (* GetCurrentPackageFamilyNameProc)(UINT32 * packageFamilyNameLength, PWSTR packageFamilyName);
+    GetCurrentPackageFamilyNameProc GetCurrentPackageFamilyName =
+      (GetCurrentPackageFamilyNameProc)GetProcAddress(Kernel32, "GetCurrentPackageFamilyName");
+    UINT32 NameLen = 0;
+    if ((GetCurrentPackageFamilyName != NULL) &&
+        (GetCurrentPackageFamilyName(&NameLen, NULL) == ERROR_INSUFFICIENT_BUFFER))
+    {
+      GIsUWP = 1;
+      GPackageName.SetLength(NameLen);
+      if (GetCurrentPackageFamilyName(&NameLen, GPackageName.c_str()) == ERROR_SUCCESS)
+      {
+        PackStr(GPackageName);
+      }
+      else
+      {
+        GPackageName = L"err";
+      }
+    }
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsUWP()
+{
+  NeedUWPData();
   return (GIsUWP > 0);
+}
+//---------------------------------------------------------------------------
+UnicodeString GetPackageName()
+{
+  NeedUWPData();
+  return GPackageName;
 }
 //---------------------------------------------------------------------------
 LCID __fastcall GetDefaultLCID()
