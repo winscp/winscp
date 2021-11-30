@@ -522,7 +522,8 @@ void TS3FileSystem::CheckLibS3Error(const TLibS3CallbackData & Data, bool FatalO
 
     if (FatalCandidate && FatalOnConnectError)
     {
-      throw EFatal(NULL, Error, Details);
+      std::unique_ptr<Exception> E(new Exception(Error));
+      throw EFatal(E.get(), Details);
     }
     else
     {
