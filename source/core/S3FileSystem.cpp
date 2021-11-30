@@ -494,6 +494,7 @@ void TS3FileSystem::CheckLibS3Error(const TLibS3CallbackData & Data, bool FatalO
         break;
 
       case S3StatusConnectionFailed:
+      case S3StatusErrorSlowDown:
         FatalCandidate = true;
         break;
     }
