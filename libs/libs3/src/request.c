@@ -1649,6 +1649,7 @@ void request_perform(const RequestParams *params, S3RequestContext *context)
 
 void request_finish(Request *request, NeonCode code)
 {
+    const char * httpMessage = NULL;
     // If we haven't detected this already, we now know that the headers are
     // definitely done being read in
     request_headers_done(request);
@@ -1734,14 +1735,24 @@ void request_finish(Request *request, NeonCode code)
                 request->status = S3StatusHttpErrorUnknown;
                 break;
             }
+            httpMessage = ne_get_status(request->NeonRequest)->reason_phrase;
         }
     }
 
+    { // WINSCP
+    // WINSCP
+    S3ErrorDetails errorDetails = request->errorParser.s3ErrorDetails;
+    if (errorDetails.furtherDetails == NULL)
+    {
+        errorDetails.furtherDetails = httpMessage;
+    }
+
     (*(request->completeCallback))
-        (request->status, &(request->errorParser.s3ErrorDetails),
+        (request->status, &errorDetails, // WINSCP
          request->callbackData);
 
     request_release(request);
+    } // WINSCP
 }
 
 
