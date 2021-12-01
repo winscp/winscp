@@ -35,7 +35,7 @@ namespace WinSCP
     {
         public const string UndefinedProductVersion = "9.9.9.9";
 
-        public const string Version = "1.8.3.0";
+        public const string Version = "1.9.0.0";
         public const string ProductVersion = "5.20.0.0";
     }
 }
