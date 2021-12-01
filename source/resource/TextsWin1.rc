@@ -196,7 +196,7 @@ BEGIN
         CUSTOM_COMMAND_GREP, "&Grep..."
         CUSTOM_COMMAND_GREP_PATTERN, "&Search for pattern:"
         DIRECTORY_READING_PROGRESS, "%d Reading directory"
-        QUEUE_CALCULATING_SIZE2, "Calculating..."
+        QUEUE_LISTING, "Listing..."
         UPDATE_MESSAGE, "\n \n%s"
         UPGRADE_BUTTON, "&Upgrade"
         COPY_PARAM_AUTOSELECTED, "Transfer settings preset '%s' was automatically selected."
