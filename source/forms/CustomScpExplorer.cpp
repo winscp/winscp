@@ -8443,8 +8443,9 @@ void __fastcall TCustomScpExplorerForm::DirViewMatchMask(
   FDirViewMatchMask = Masks;
   bool ImplicitMatch;
   Matches =
-    // RecurseInclude parameter has no effect as the Path is empty
-    FDirViewMatchMask.Matches(FileName, Directory, UnicodeString(L""), &MaskParams, true, ImplicitMatch) &&
+    // Local and RecurseInclude parameters have no effect as there's no path.
+    // This should use potential MatchesFileName overload with ImplicitMatch argument.
+    FDirViewMatchMask.Matches(FileName, false, Directory, &MaskParams, true, ImplicitMatch) &&
     (AllowImplicitMatches || !ImplicitMatch);
 }
 //---------------------------------------------------------------------------

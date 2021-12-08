@@ -636,7 +636,7 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
               Params.Size = File->Size;
               Params.Modification = File->Modification;
               if (IsRealFile(File->FileName) &&
-                  Mask.Matches(File->FileName, false, UnicodeString(), &Params))
+                  Mask.MatchesFileName(File->FileName, false, &Params))
               {
                 Result->AddObject(FileDirectory + File->FileName,
                   FLAGSET(ListType, fltQueryServer) ? File->Duplicate() : NULL);
