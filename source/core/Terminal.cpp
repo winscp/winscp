@@ -3224,10 +3224,13 @@ void __fastcall TTerminal::DoStartup()
         }
         catch (...)
         {
-          if (!Active)
+          if (!Active || SessionData->RequireDirectories)
+          {
+            throw;
+          }
+          else
           {
             LogEvent(L"Configured initial remote directory cannot be opened, staying in the home directory.");
-            throw;
           }
         }
         ExceptionOnFail = false;
