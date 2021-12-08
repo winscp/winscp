@@ -11057,10 +11057,11 @@ void __fastcall TCustomScpExplorerForm::DirViewGetItemColor(
   MaskParams.Modification = Modification;
 
   TCustomDirView * DirView = DebugNotNull(dynamic_cast<TCustomDirView *>(Sender));
+  bool Local = (dynamic_cast<TUnixDirView *>(DirView) == NULL);
   for (TFileColorData::TList::const_iterator Iter = FFileColors.begin(); Iter != FFileColors.end(); Iter++)
   {
     bool ImplicitMatch;
-    if (Iter->FileMask.Matches(FileName, Directory, DirView->PathName, &MaskParams, false, ImplicitMatch) &&
+    if (Iter->FileMask.Matches(FileName, Local, Directory, &MaskParams, false, ImplicitMatch) &&
         !ImplicitMatch)
     {
       Color = Iter->Color;

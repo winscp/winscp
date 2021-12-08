@@ -1333,7 +1333,7 @@ begin
   Result := clDefaultItemColor;
   if Assigned(OnGetItemColor) then
   begin
-    OnGetItemColor(Self, ItemFileName(Item), ItemIsDirectory(Item), ItemFileSize(Item), ItemFileTime(Item, Precision), Result);
+    OnGetItemColor(Self, ItemFullFileName(Item), ItemIsDirectory(Item), ItemFileSize(Item), ItemFileTime(Item, Precision), Result);
   end;
 end;
 
