@@ -142,6 +142,7 @@ private:
   bool FSpecial;
   bool FSynchronizeBrowsing;
   bool FUpdateDirectories;
+  bool FRequireDirectories;
   bool FCacheDirectories;
   bool FCacheDirectoryChanges;
   bool FPreserveDirectoryChanges;
@@ -588,6 +589,7 @@ public:
   __property UnicodeString RemoteDirectory  = { read=FRemoteDirectory, write=SetRemoteDirectory };
   __property bool SynchronizeBrowsing = { read=FSynchronizeBrowsing, write=SetSynchronizeBrowsing };
   __property bool UpdateDirectories = { read=FUpdateDirectories, write=SetUpdateDirectories };
+  __property bool RequireDirectories = { read=FRequireDirectories, write=FRequireDirectories };
   __property bool CacheDirectories = { read=FCacheDirectories, write=SetCacheDirectories };
   __property bool CacheDirectoryChanges = { read=FCacheDirectoryChanges, write=SetCacheDirectoryChanges };
   __property bool PreserveDirectoryChanges = { read=FPreserveDirectoryChanges, write=SetPreserveDirectoryChanges };

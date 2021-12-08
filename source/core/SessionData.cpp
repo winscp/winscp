@@ -235,6 +235,7 @@ void __fastcall TSessionData::DefaultSettings()
   RemoteDirectory = L"";
   SynchronizeBrowsing = false;
   UpdateDirectories = true;
+  RequireDirectories = false;
   CacheDirectories = true;
   CacheDirectoryChanges = true;
   PreserveDirectoryChanges = true;
@@ -357,6 +358,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(Ftps); \
   PROPERTY(LocalDirectory); \
   PROPERTY(RemoteDirectory); \
+  PROPERTY(RequireDirectories); \
   PROPERTY(Color); \
   PROPERTY(SynchronizeBrowsing); \
   PROPERTY(Note);
@@ -2196,6 +2198,10 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     }
     else
     {
+      // When ad-hoc URL is used, always display error when the directories are not valid,
+      // no matter if they are part of the URL or raw settings.
+      RequireDirectories = true;
+
       // This happens when pasting URL on Login dialog
       if (StoredSessions != NULL)
       {
@@ -2355,6 +2361,8 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
         ARemoteDirectory = UnixExtractFilePath(ARemoteDirectory);
       }
       RemoteDirectory = DecodeUrlChars(ARemoteDirectory);
+      // Is already true for ad-hoc URL, but we want to error even for "storedsite/path/"-style URL.
+      RequireDirectories = true;
     }
 
     DefaultsOnly = false;
