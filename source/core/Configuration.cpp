@@ -1140,7 +1140,7 @@ UnicodeString __fastcall TConfiguration::GetFileMimeType(const UnicodeString & F
       UnicodeString Token = CutToChar(AMimeTypes, L',', true);
       UnicodeString MaskStr = CutToChar(Token, L'=', true);
       TFileMasks Mask(MaskStr);
-      if (Mask.Matches(FileNameOnly))
+      if (Mask.MatchesFileName(FileNameOnly))
       {
         Result = Token.Trim();
         Found = true;

@@ -3502,9 +3502,7 @@ TRemoteFileList * __fastcall TTerminal::ReadDirectoryListing(UnicodeString Direc
           TFileMasks::TParams Params;
           Params.Size = File->Resolve()->Size;
           Params.Modification = File->Modification;
-          // Have to use UnicodeString(), instead of L"", as with that
-          // overload with (UnicodeString, bool, bool, TParams*) wins
-          if (!Mask.Matches(File->FileName, false, UnicodeString(), &Params))
+          if (!Mask.MatchesFileName(File->FileName, false, &Params))
           {
             FileList->Delete(Index);
           }

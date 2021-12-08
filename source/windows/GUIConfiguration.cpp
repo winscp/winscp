@@ -165,7 +165,7 @@ bool __fastcall TCopyParamRule::Match(const UnicodeString & Mask,
     }
     else
     {
-      Result = M.Matches(Value, false);
+      Result = M.MatchesFileName(Value);
     }
   }
   return Result;

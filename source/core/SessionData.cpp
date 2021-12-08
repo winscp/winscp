@@ -1621,7 +1621,7 @@ void TSessionData::ImportFromOpenssh(TStrings * Lines)
           Mask.SetMask(M);
           // This does way more than OpenSSH, but on the other hand, the special characters of our file masks,
           // should not be present in hostnames.
-          if (Mask.Matches(Name, false, UnicodeString(), NULL))
+          if (Mask.MatchesFileName(Name))
           {
             if (Negated)
             {

@@ -47,11 +47,7 @@ public:
 
   void __fastcall SetMask(const UnicodeString & Mask);
 
-  bool __fastcall Matches(const UnicodeString FileName, bool Directory = false,
-    const UnicodeString Path = L"", const TParams * Params = NULL) const;
-  bool __fastcall Matches(const UnicodeString FileName, bool Directory,
-    const UnicodeString Path, const TParams * Params,
-    bool RecurseInclude, bool & ImplicitMatch) const;
+  bool MatchesFileName(const UnicodeString & FileName, bool Directory = false, const TParams * Params = NULL) const;
   bool __fastcall Matches(const UnicodeString FileName, bool Local, bool Directory,
     const TParams * Params = NULL) const;
   bool __fastcall Matches(const UnicodeString FileName, bool Local, bool Directory,
@@ -121,6 +117,9 @@ private:
     const UnicodeString Path, const TParams * Params, const TMasks & Masks, bool Recurse);
   static inline bool __fastcall MatchesMaskMask(const TMaskMask & MaskMask, const UnicodeString & Str);
   void __fastcall ThrowError(int Start, int End);
+  bool DoMatches(
+    const UnicodeString & FileName, bool Directory, const UnicodeString & Path, const TParams * Params,
+    bool RecurseInclude, bool & ImplicitMatch) const;
 };
 //---------------------------------------------------------------------------
 UnicodeString __fastcall MaskFileName(UnicodeString FileName, const UnicodeString Mask);

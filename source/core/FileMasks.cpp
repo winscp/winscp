@@ -413,15 +413,8 @@ bool __fastcall TFileMasks::MatchesMasks(const UnicodeString FileName, bool Dire
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFileMasks::Matches(const UnicodeString FileName, bool Directory,
-  const UnicodeString Path, const TParams * Params) const
-{
-  bool ImplicitMatch;
-  return Matches(FileName, Directory, Path, Params, true, ImplicitMatch);
-}
-//---------------------------------------------------------------------------
-bool __fastcall TFileMasks::Matches(const UnicodeString FileName, bool Directory,
-  const UnicodeString Path, const TParams * Params,
+bool TFileMasks::DoMatches(
+  const UnicodeString & FileName, bool Directory, const UnicodeString & Path, const TParams * Params,
   bool RecurseInclude, bool & ImplicitMatch) const
 {
   bool ImplicitIncludeMatch = (FAllDirsAreImplicitlyIncluded && Directory) || FMasks[MASK_INDEX(Directory, true)].empty();
@@ -453,16 +446,22 @@ bool __fastcall TFileMasks::Matches(const UnicodeString FileName, bool Local,
     {
       Path = ToUnixPath(ExcludeTrailingBackslash(Path));
     }
-    Result = Matches(ExtractFileName(FileName), Directory, Path, Params,
+    Result = DoMatches(ExtractFileName(FileName), Directory, Path, Params,
       RecurseInclude, ImplicitMatch);
   }
   else
   {
-    Result = Matches(UnixExtractFileName(FileName), Directory,
+    Result = DoMatches(UnixExtractFileName(FileName), Directory,
       SimpleUnixExcludeTrailingBackslash(UnixExtractFilePath(FileName)), Params,
       RecurseInclude, ImplicitMatch);
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+bool TFileMasks::MatchesFileName(const UnicodeString & FileName, bool Directory, const TParams * Params) const
+{
+  bool ImplicitMatch;
+  return DoMatches(FileName, Directory, EmptyStr, Params, true, ImplicitMatch);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileMasks::operator ==(const TFileMasks & rhm) const
