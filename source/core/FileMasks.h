@@ -110,6 +110,7 @@ private:
   static inline void __fastcall ReleaseMaskMask(TMaskMask & MaskMask);
   inline void __fastcall Init();
   void __fastcall DoInit(bool Delete);
+  void DoCopy(const TFileMasks & Source);
   void __fastcall Clear();
   static void __fastcall Clear(TMasks & Masks);
   static void __fastcall TrimEx(UnicodeString & Str, int & Start, int & End);

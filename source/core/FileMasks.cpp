@@ -247,10 +247,7 @@ __fastcall TFileMasks::TFileMasks(int ForceDirectoryMasks)
 __fastcall TFileMasks::TFileMasks(const TFileMasks & Source)
 {
   Init();
-  FForceDirectoryMasks = Source.FForceDirectoryMasks;
-  FNoImplicitMatchWithDirExcludeMask = Source.FNoImplicitMatchWithDirExcludeMask;
-  FAllDirsAreImplicitlyIncluded = Source.FAllDirsAreImplicitlyIncluded;
-  SetStr(Source.Masks, false);
+  DoCopy(Source);
 }
 //---------------------------------------------------------------------------
 __fastcall TFileMasks::TFileMasks(const UnicodeString & AMasks)
@@ -262,6 +259,14 @@ __fastcall TFileMasks::TFileMasks(const UnicodeString & AMasks)
 __fastcall TFileMasks::~TFileMasks()
 {
   Clear();
+}
+//---------------------------------------------------------------------------
+void TFileMasks::DoCopy(const TFileMasks & Source)
+{
+  FForceDirectoryMasks = Source.FForceDirectoryMasks;
+  FNoImplicitMatchWithDirExcludeMask = Source.FNoImplicitMatchWithDirExcludeMask;
+  FAllDirsAreImplicitlyIncluded = Source.FAllDirsAreImplicitlyIncluded;
+  SetStr(Source.Masks, false);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileMasks::Init()
@@ -477,10 +482,8 @@ TFileMasks & __fastcall TFileMasks::operator =(const UnicodeString & rhs)
 //---------------------------------------------------------------------------
 TFileMasks & __fastcall TFileMasks::operator =(const TFileMasks & rhm)
 {
-  FForceDirectoryMasks = rhm.FForceDirectoryMasks;
-  FNoImplicitMatchWithDirExcludeMask = rhm.FNoImplicitMatchWithDirExcludeMask;
-  FAllDirsAreImplicitlyIncluded = rhm.FAllDirsAreImplicitlyIncluded;
-  Masks = rhm.Masks;
+  DoInit(true);
+  DoCopy(rhm);
   return *this;
 }
 //---------------------------------------------------------------------------
