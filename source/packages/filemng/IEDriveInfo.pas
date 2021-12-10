@@ -162,17 +162,17 @@ begin
   for Drive := SystemDrive to LastDrive do
     if Get(Drive).Valid and
        (Get(Drive).DriveType = DRIVE_FIXED) and
-       DirectoryExists(ApiPath(DriveInfo.GetDriveRoot(Drive))) then
+       DirectoryExists(ApiPath(GetDriveRoot(Drive))) then
     begin
-      Result := DriveInfo.GetDriveRoot(Drive);
+      Result := GetDriveRoot(Drive);
       Exit;
     end;
   for Drive := SystemDrive to LastDrive do
     if Get(Drive).Valid and
        (Get(Drive).DriveType = DRIVE_REMOTE) and
-       DirectoryExists(ApiPath(DriveInfo.GetDriveRoot(Drive))) then
+       DirectoryExists(ApiPath(GetDriveRoot(Drive))) then
     begin
-      Result := DriveInfo.GetDriveRoot(Drive);
+      Result := GetDriveRoot(Drive);
       Exit;
     end;
   raise Exception.Create(SNoValidPath);
@@ -285,7 +285,7 @@ begin
   Assert(FData.ContainsKey(Drive));
   with FData[Drive] do
   begin
-    DriveType := Windows.GetDriveType(PChar(DriveInfo.GetDriveRoot(Drive)));
+    DriveType := Windows.GetDriveType(PChar(GetDriveRoot(Drive)));
     Valid :=
       ((not IsRealDrive(Drive)) or (not FHonorDrivePolicy) or (not Bool((1 shl (Ord(Drive[1]) - 65)) and FNoDrives))) and
       (DriveType in [DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_CDROM, DRIVE_RAMDISK, DRIVE_REMOTE]);
@@ -420,7 +420,7 @@ begin
   if not Assigned(FDesktop) then
     SHGetDesktopFolder(FDesktop);
 
-  DriveRoot := DriveInfo.GetDriveRoot(Drive);
+  DriveRoot := GetDriveRoot(Drive);
 
   // When this method is called, the entry always exists already
   Assert(FData.ContainsKey(Drive));
