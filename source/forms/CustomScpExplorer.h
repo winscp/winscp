@@ -567,7 +567,7 @@ protected:
     UnicodeString RemoteDirectory, TCopyParamType CopyParam,
     UnicodeString & Result, UnicodeString & RootDirectory);
   void __fastcall TemporarilyDownloadFiles(TStrings * FileList, bool ForceText,
-    UnicodeString & RootTempDir, UnicodeString & TempDir, bool AllFiles, bool GetTargetNames,
+    UnicodeString & RootTempDir, UnicodeString & TempDir, bool GetTargetNames,
     bool AutoOperation);
   void __fastcall LocalEditorClosed(TObject * Sender, bool Forced);
   TTBXPopupMenu * __fastcall HistoryMenu(TOperationSide Side, bool Back);
