@@ -1262,7 +1262,7 @@ void __fastcall TCustomScpExplorerForm::ClearTransferSourceSelection(TTransferDi
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::AddQueueItem(
   TTerminalQueue * Queue, TTransferDirection Direction, TStrings * FileList,
-  const UnicodeString TargetDirectory, const TGUICopyParamType & CopyParam,
+  const UnicodeString TargetDirectory, TGUICopyParamType & CopyParam,
   int Params)
 {
   DebugAssert(Queue != NULL);
@@ -1285,11 +1285,13 @@ void __fastcall TCustomScpExplorerForm::AddQueueItem(
   TQueueItem * QueueItem;
   if (Direction == tdToRemote)
   {
+    CopyParam.IncludeFileMask.SetRoots(FileList, TargetDirectory);
     QueueItem = new TUploadQueueItem(Terminal, FileList, TargetDirectory,
       &CopyParam, Params, SingleFile, CopyParam.QueueParallel);
   }
   else
   {
+    CopyParam.IncludeFileMask.SetRoots(TargetDirectory, FileList);
     QueueItem = new TDownloadQueueItem(Terminal, FileList, TargetDirectory,
       &CopyParam, Params, SingleFile, CopyParam.QueueParallel);
   }
@@ -2741,6 +2743,9 @@ bool __fastcall TCustomScpExplorerForm::ExecuteCopyMoveFileOperation(
           PermanentFileList = FileList;
 
           Params |= FLAGMASK(Param.Temp, cpTemporary);
+
+          CopyParam.IncludeFileMask.SetRoots(FileList, Param.TargetDirectory);
+
           Terminal->CopyToRemote(FileList, Param.TargetDirectory, &CopyParam, Params, NULL);
           if (Operation == foMove)
           {
@@ -2763,6 +2768,8 @@ bool __fastcall TCustomScpExplorerForm::ExecuteCopyMoveFileOperation(
 
           try
           {
+            CopyParam.IncludeFileMask.SetRoots(Param.TargetDirectory, FileList);
+
             Terminal->CopyToLocal(FileList, Param.TargetDirectory, &CopyParam, Params, NULL);
           }
           __finally
@@ -6167,6 +6174,7 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
   if (Continue)
   {
     Configuration->Usage->Inc(L"Synchronizations");
+    CopyParam.IncludeFileMask.SetRoots(LocalDirectory, RemoteDirectory);
     UpdateCopyParamCounters(CopyParam);
 
     TSynchronizeOptions SynchronizeOptions;
@@ -8098,10 +8106,11 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDTargetDrop()
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DDDownload(
-  TStrings * FilesToCopy, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params)
+  TStrings * FilesToCopy, const UnicodeString & TargetDir, TCopyParamType * CopyParam, int Params)
 {
   DebugAssert(!IsLocalBrowserMode());
   TAutoBatch AutoBatch(this);
+  CopyParam->IncludeFileMask.SetRoots(TargetDir, FilesToCopy);
   UpdateCopyParamCounters(*CopyParam);
   Terminal->CopyToLocal(FilesToCopy, TargetDir, CopyParam, Params, NULL);
   if (FLAGSET(Params, cpDelete) && (DropSourceControl == RemoteDriveView))

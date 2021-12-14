@@ -1498,6 +1498,7 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
     }
 
     CheckParams(Parameters);
+    CopyParam.IncludeFileMask.SetRoots(TargetDirectory, FileList);
 
     FTerminal->CopyToLocal(FileList, TargetDirectory, &CopyParam, Params, NULL);
   }
@@ -1569,6 +1570,7 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
     }
 
     CheckParams(Parameters);
+    CopyParam.IncludeFileMask.SetRoots(FileList, TargetDirectory);
 
     FTerminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params, NULL);
   }
@@ -1973,6 +1975,7 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
     UnicodeString RemoteDirectory;
 
     SynchronizeDirectories(Parameters, LocalDirectory, RemoteDirectory, 2);
+    CopyParam.IncludeFileMask.SetRoots(LocalDirectory, RemoteDirectory);
 
     CheckDefaultSynchronizeParams();
     int SynchronizeParams = FSynchronizeParams | TTerminal::spNoConfirmation;

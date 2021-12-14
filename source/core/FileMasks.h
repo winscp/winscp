@@ -29,6 +29,7 @@ public:
   };
 
   static bool __fastcall IsMask(const UnicodeString Mask);
+  static UnicodeString EscapeMask(const UnicodeString & S);
   static UnicodeString __fastcall NormalizeMask(const UnicodeString & Mask, const UnicodeString & AnyMask = L"");
   static UnicodeString __fastcall ComposeMaskStr(
     TStrings * IncludeFileMasksStr, TStrings * ExcludeFileMasksStr,
@@ -53,6 +54,10 @@ public:
   bool __fastcall Matches(const UnicodeString FileName, bool Local, bool Directory,
     const TParams * Params, bool RecurseInclude, bool & ImplicitMatch) const;
 
+  void SetRoots(const UnicodeString & LocalRoot, const UnicodeString & RemoteRoot);
+  void SetRoots(TStrings * LocalFileList, const UnicodeString & RemoteRoot);
+  void SetRoots(const UnicodeString & LocalRoot, TStrings * RemoteFileList);
+
   __property UnicodeString Masks = { read = FStr, write = SetMasks };
   __property bool NoImplicitMatchWithDirExcludeMask = { read = FNoImplicitMatchWithDirExcludeMask, write = FNoImplicitMatchWithDirExcludeMask };
   __property bool AllDirsAreImplicitlyIncluded = { read = FAllDirsAreImplicitlyIncluded, write = FAllDirsAreImplicitlyIncluded };
@@ -67,17 +72,19 @@ private:
   UnicodeString FStr;
   bool FNoImplicitMatchWithDirExcludeMask;
   bool FAllDirsAreImplicitlyIncluded;
-
-  struct TMaskMask
-  {
-    enum { Any, NoExt, Regular } Kind;
-    TMask * Mask;
-  };
+  bool FAnyRelative;
+  UnicodeString FLocalRoot;
+  UnicodeString FRemoteRoot;
 
   struct TMask
   {
-    TMaskMask FileNameMask;
-    TMaskMask DirectoryMask;
+    enum TKind { Any, NoExt, Regular };
+
+    TKind FileNameMaskKind;
+    Masks::TMask * FileNameMask;
+    TKind DirectoryMaskKind;
+    Masks::TMask * RemoteDirectoryMask;
+    Masks::TMask * LocalDirectoryMask;
 
     enum TMaskBoundary { None, Open, Close };
 
@@ -101,25 +108,26 @@ private:
 
   void __fastcall SetStr(const UnicodeString value, bool SingleMask);
   void __fastcall SetMasks(const UnicodeString value);
-  void __fastcall CreateMaskMask(const UnicodeString & Mask, int Start, int End,
-    bool Ex, TMaskMask & MaskMask);
+  void __fastcall CreateMaskMask(
+    const UnicodeString & Mask, int Start, int End, bool Ex, TMask::TKind & MaskKind, Masks::TMask *& MaskMask);
   void __fastcall CreateMask(const UnicodeString & MaskStr, int MaskStart,
     int MaskEnd, bool Include);
   TStrings * __fastcall GetMasksStr(int Index) const;
   static UnicodeString __fastcall MakeDirectoryMask(UnicodeString Str);
-  static inline void __fastcall ReleaseMaskMask(TMaskMask & MaskMask);
   inline void __fastcall Init();
   void __fastcall DoInit(bool Delete);
   void DoCopy(const TFileMasks & Source);
   void __fastcall Clear();
   static void __fastcall Clear(TMasks & Masks);
   static void __fastcall TrimEx(UnicodeString & Str, int & Start, int & End);
-  static bool __fastcall MatchesMasks(const UnicodeString FileName, bool Directory,
-    const UnicodeString Path, const TParams * Params, const TMasks & Masks, bool Recurse);
-  static inline bool __fastcall MatchesMaskMask(const TMaskMask & MaskMask, const UnicodeString & Str);
+  static bool __fastcall MatchesMasks(
+    const UnicodeString & FileName, bool Local, bool Directory,
+    const UnicodeString & Path, const TParams * Params, const TMasks & Masks, bool Recurse);
+  static inline bool MatchesMaskMask(TMask::TKind MaskKind, Masks::TMask * MaskMask, const UnicodeString & Str);
+  static Masks::TMask * DoCreateMaskMask(const UnicodeString & Str);
   void __fastcall ThrowError(int Start, int End);
   bool DoMatches(
-    const UnicodeString & FileName, bool Directory, const UnicodeString & Path, const TParams * Params,
+    const UnicodeString & FileName, bool Local, bool Directory, const UnicodeString & Path, const TParams * Params,
     bool RecurseInclude, bool & ImplicitMatch) const;
 };
 //---------------------------------------------------------------------------

@@ -326,9 +326,10 @@ private:
   void __fastcall SetDockAllowDrag(bool value);
   void __fastcall QueueSplitterDblClick(TObject * Sender);
   void __fastcall QueueFileListSplitterDblClick(TObject * Sender);
-  void __fastcall AddQueueItem(TTerminalQueue * Queue, TTransferDirection Direction,
+  void __fastcall AddQueueItem(
+    TTerminalQueue * Queue, TTransferDirection Direction,
     TStrings * FileList, const UnicodeString TargetDirectory,
-    const TGUICopyParamType & CopyParam, int Params);
+    TGUICopyParamType & CopyParam, int Params);
   void __fastcall AddQueueItem(TTerminalQueue * Queue, TQueueItem * QueueItem, TManagedTerminal * Terminal);
   void __fastcall ClearTransferSourceSelection(TTransferDirection Direction);
   void ClearOperationSelection(TOperationSide Side);
@@ -540,7 +541,7 @@ protected:
   bool __fastcall RemoteFileControlFileOperation(TObject * Sender,
     TFileOperation Operation, bool NoConfirmation, void * Param);
   void __fastcall DDDownload(
-    TStrings * FilesToCopy, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params);
+    TStrings * FilesToCopy, const UnicodeString & TargetDir, TCopyParamType * CopyParam, int Params);
   bool __fastcall EnsureCommandSessionFallback(TFSCapability Capability);
   bool __fastcall CommandSessionFallback();
   void __fastcall FileTerminalRemoved(const UnicodeString FileName,

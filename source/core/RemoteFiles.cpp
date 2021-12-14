@@ -181,18 +181,32 @@ bool __fastcall ExtractCommonPath(TStrings * Files, UnicodeString & Path)
   return Result;
 }
 //---------------------------------------------------------------------------
+static UnicodeString GetFileListItemPath(TStrings * Files, int Index)
+{
+  UnicodeString Result;
+  if (Files->Objects[Index] != NULL)
+  {
+    Result = DebugNotNull(dynamic_cast<TRemoteFile *>(Files->Objects[Index]))->FullFileName;
+  }
+  else
+  {
+    Result = Files->Strings[Index];
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall UnixExtractCommonPath(TStrings * Files, UnicodeString & Path)
 {
   DebugAssert(Files->Count > 0);
 
-  Path = UnixExtractFilePath(Files->Strings[0]);
+  Path = UnixExtractFilePath(GetFileListItemPath(Files, 0));
   bool Result = !Path.IsEmpty();
   if (Result)
   {
     for (int Index = 1; Index < Files->Count; Index++)
     {
       while (!Path.IsEmpty() &&
-        (Files->Strings[Index].SubString(1, Path.Length()) != Path))
+        (GetFileListItemPath(Files, Index).SubString(1, Path.Length()) != Path))
       {
         int PrevLen = Path.Length();
         Path = UnixExtractFilePath(UnixExcludeTrailingBackslash(Path));
