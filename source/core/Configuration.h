@@ -390,4 +390,7 @@ extern const UnicodeString HttpsCertificateStorageKey;
 //---------------------------------------------------------------------------
 extern const int BelowNormalLogLevels;
 //---------------------------------------------------------------------------
+extern const UnicodeString OpensshFolderName;
+extern const UnicodeString OpensshAuthorizedKeysFileName;
+//---------------------------------------------------------------------------
 #endif

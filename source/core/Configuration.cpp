@@ -43,6 +43,9 @@ const UnicodeString DirectoryStatisticsCacheKey(L"DirectoryStatisticsCache");
 const UnicodeString CDCacheKey(L"CDCache");
 const UnicodeString BannersKey(L"Banners");
 //---------------------------------------------------------------------------
+const UnicodeString OpensshFolderName(L".ssh");
+const UnicodeString OpensshAuthorizedKeysFileName(L"authorized_keys");
+//---------------------------------------------------------------------------
 const int BelowNormalLogLevels = 1;
 //---------------------------------------------------------------------------
 __fastcall TConfiguration::TConfiguration()
@@ -1473,7 +1476,7 @@ bool __fastcall TConfiguration::AnyFilezillaSessionForImport(TStoredSessionList 
 static UnicodeString GetOpensshFolder()
 {
   UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
-  UnicodeString Result = TPath::Combine(ProfilePath, L".ssh");
+  UnicodeString Result = TPath::Combine(ProfilePath, OpensshFolderName);
   return Result;
 }
 //---------------------------------------------------------------------

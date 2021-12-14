@@ -8197,9 +8197,7 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
   bool PrevAutoReadDirectory = AutoReadDirectory;
   bool PrevExceptionOnFail = ExceptionOnFail;
 
-  const UnicodeString SshFolder = L".ssh";
-  const UnicodeString AuthorizedKeysFile = L"authorized_keys";
-  UnicodeString AuthorizedKeysFilePath = FORMAT(L"%s/%s", (SshFolder, AuthorizedKeysFile));
+  UnicodeString AuthorizedKeysFilePath = FORMAT(L"%s/%s", (OpensshFolderName, OpensshAuthorizedKeysFileName));
 
   try
   {
@@ -8213,7 +8211,7 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
 
     LogEvent(FORMAT(L"Adding public key line to \"%s\" file:\n%s", (AuthorizedKeysFilePath, Line)));
 
-    UnicodeString SshFolderAbsolutePath = UnixIncludeTrailingBackslash(GetHomeDirectory()) + SshFolder;
+    UnicodeString SshFolderAbsolutePath = UnixIncludeTrailingBackslash(GetHomeDirectory()) + OpensshFolderName;
     bool WrongRights = false;
     std::unique_ptr<TRemoteFile> SshFolderFile(CheckRights(L"Folder", SshFolderAbsolutePath, WrongRights));
     if (SshFolderFile.get() == NULL)
@@ -8224,7 +8222,7 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
       SshFolderProperties.Rights = SshFolderRights;
       SshFolderProperties.Valid = TValidProperties() << vpRights;
 
-      LogEvent(FORMAT(L"Trying to create \"%s\" folder with permissions %s...", (SshFolder, SshFolderRights.Octal)));
+      LogEvent(FORMAT(L"Trying to create \"%s\" folder with permissions %s...", (OpensshFolderName, SshFolderRights.Octal)));
       CreateDirectory(SshFolderAbsolutePath, &SshFolderProperties);
     }
 
@@ -8233,9 +8231,9 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
     {
       throw EOSExtException(FMTLOAD(CREATE_TEMP_DIR_ERROR, (TemporaryDir)));
     }
-    UnicodeString TemporaryAuthorizedKeysFile = IncludeTrailingBackslash(TemporaryDir) + AuthorizedKeysFile;
+    UnicodeString TemporaryAuthorizedKeysFile = IncludeTrailingBackslash(TemporaryDir) + OpensshAuthorizedKeysFileName;
 
-    UnicodeString AuthorizedKeysFileAbsolutePath = UnixIncludeTrailingBackslash(SshFolderAbsolutePath) + AuthorizedKeysFile;
+    UnicodeString AuthorizedKeysFileAbsolutePath = UnixIncludeTrailingBackslash(SshFolderAbsolutePath) + OpensshAuthorizedKeysFileName;
 
     bool Updated = true;
     TCopyParamType CopyParam; // Use factory defaults
@@ -8249,7 +8247,7 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
       AuthorizedKeysFileFile->FullFileName = AuthorizedKeysFileAbsolutePath;
       std::unique_ptr<TStrings> Files(new TStringList());
       Files->AddObject(AuthorizedKeysFileAbsolutePath, AuthorizedKeysFileFile.get());
-      LogEvent(FORMAT(L"Downloading current \"%s\" file...", (AuthorizedKeysFile)));
+      LogEvent(FORMAT(L"Downloading current \"%s\" file...", (OpensshAuthorizedKeysFileName)));
       CopyToLocal(Files.get(), TemporaryDir, &CopyParam, cpNoConfirmation, NULL);
       // Overload with Encoding parameter work incorrectly, when used on a file without BOM
       AuthorizedKeys = TFile::ReadAllText(TemporaryAuthorizedKeysFile);
@@ -8265,24 +8263,24 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
       {
         if (StartsStr(Prefix, AuthorizedKeysLines->Strings[Index]))
         {
-          LogEvent(FORMAT(L"\"%s\" file already contains public key line:\n%s", (AuthorizedKeysFile, AuthorizedKeysLines->Strings[Index])));
+          LogEvent(FORMAT(L"\"%s\" file already contains public key line:\n%s", (OpensshAuthorizedKeysFileName, AuthorizedKeysLines->Strings[Index])));
           Updated = false;
         }
       }
 
       if (Updated)
       {
-        LogEvent(FORMAT(L"\"%s\" file does not contain the public key line yet.", (AuthorizedKeysFile)));
+        LogEvent(FORMAT(L"\"%s\" file does not contain the public key line yet.", (OpensshAuthorizedKeysFileName)));
         if (!EndsStr(L"\n", AuthorizedKeys))
         {
-          LogEvent(FORMAT(L"Adding missing trailing new line to \"%s\" file...", (AuthorizedKeysFile)));
+          LogEvent(FORMAT(L"Adding missing trailing new line to \"%s\" file...", (OpensshAuthorizedKeysFileName)));
           AuthorizedKeys += L"\n";
         }
       }
     }
     else
     {
-      LogEvent(FORMAT(L"Creating new \"%s\" file...", (AuthorizedKeysFile)));
+      LogEvent(FORMAT(L"Creating new \"%s\" file...", (OpensshAuthorizedKeysFileName)));
       CopyParam.PreserveRights = true;
       CopyParam.Rights.Number = TRights::rfUserRead | TRights::rfUserWrite;
     }
@@ -8294,7 +8292,7 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
       TFile::WriteAllText(TemporaryAuthorizedKeysFile, AuthorizedKeys);
       std::unique_ptr<TStrings> Files(new TStringList());
       Files->Add(TemporaryAuthorizedKeysFile);
-      LogEvent(FORMAT(L"Uploading updated \"%s\" file...", (AuthorizedKeysFile)));
+      LogEvent(FORMAT(L"Uploading updated \"%s\" file...", (OpensshAuthorizedKeysFileName)));
       CopyToRemote(Files.get(), SshFolderAbsolutePath, &CopyParam, cpNoConfirmation, NULL);
     }
 
