@@ -118,6 +118,7 @@ void __fastcall Upload(TTerminal * Terminal, TStrings * FileList, int UseDefault
   {
     // Setting parameter overrides only now, otherwise the dialog would present the parametes as non-default
     CopyParam.OnceDoneOperation = odoDisconnect;
+    CopyParam.IncludeFileMask.SetRoots(FileList, TargetDirectory);
 
     Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, 0, NULL);
   }
@@ -180,6 +181,8 @@ void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName, int
 
       std::unique_ptr<TStrings> FileList(new TStringList());
       FileList->AddObject(FileName, File);
+      CopyParam.IncludeFileMask.SetRoots(TargetDirectory, FileList.get());
+
       Terminal->CopyToLocal(FileList.get(), TargetDirectory, &CopyParam, 0, NULL);
     }
 
