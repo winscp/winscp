@@ -882,7 +882,7 @@ UnicodeString __fastcall ExpandEnvironmentVariables(const UnicodeString & Str)
 UnicodeString GetNormalizedPath(const UnicodeString & Path)
 {
   UnicodeString Result = ExcludeTrailingBackslash(Path);
-  Result = ReplaceChar(Result, L'/', L'\\');
+  Result = FromUnixPath(Result);
   return Result;
 }
 //---------------------------------------------------------------------------
