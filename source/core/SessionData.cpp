@@ -1686,7 +1686,15 @@ void TSessionData::ImportFromOpenssh(TStrings * Lines)
         {
           // It's likely there would be forward slashes in OpenSSH config file and our load/save dialogs
           // (e.g. when converting keys) work suboptimally when working with forward slashes.
-          PublicKeyFile = GetNormalizedPath(Value);
+          UnicodeString Path = GetNormalizedPath(Value);
+          const UnicodeString HomePathPrefix = L"~";
+          if (StartsStr(HomePathPrefix, Path + L"\\"))
+          {
+            Path =
+              GetShellFolderPath(CSIDL_PROFILE) +
+              Path.SubString(HomePathPrefix.Length() + 1, Path.Length() - HomePathPrefix.Length());
+          }
+          PublicKeyFile = Path;
         }
         else if (SameText(Directive, L"KbdInteractiveAuthentication"))
         {
