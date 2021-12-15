@@ -349,8 +349,9 @@ TObjectList * StartCreationDirectoryMonitorsOnEachDrive(unsigned int Filter, TFi
   {
     if (ExcludedDrives.Pos(Drive) == 0)
     {
+      // Not calling ReadDriveStatus(... dsSize), relying on drive ready status cached by the background thread
       TDriveInfoRec * DriveInfoRec = DriveInfo->Get(Drive);
-      if (DriveInfoRec->Valid &&
+      if (DriveInfoRec->Valid && DriveInfoRec->DriveReady &&
           (DriveInfoRec->DriveType != DRIVE_CDROM) &&
           ((DriveInfoRec->DriveType != DRIVE_REMOVABLE) || (Drive >= DriveInfo->FirstFixedDrive)))
       {
