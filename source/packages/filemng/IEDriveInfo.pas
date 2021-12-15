@@ -127,7 +127,57 @@ resourceString
 implementation
 
 uses
-  Math, PIDL, OperationWithTimeout, PasTools;
+  Math, PIDL, OperationWithTimeout, PasTools, CompThread;
+
+var
+  ThreadLock: TRTLCriticalSection;
+  ReadyDrives: string;
+
+type
+  TDriveInfoThread = class(TCompThread)
+  public
+    constructor Create(Drives: string);
+  protected
+    procedure Execute; override;
+  private
+    FDrives: string;
+  end;
+
+constructor TDriveInfoThread.Create(Drives: string);
+begin
+  inherited Create(True);
+  FDrives := Drives;
+  FreeOnTerminate := True;
+  Resume;
+end;
+
+procedure TDriveInfoThread.Execute;
+var
+  I: Integer;
+  FreeSpace, Size: Int64;
+  DriveRoot: string;
+  Drive: Char;
+begin
+  if Length(FDrives) = 1 then
+  begin
+    Drive := FDrives[1];
+    DriveRoot := DriveInfo.GetDriveRoot(Drive);
+    if GetDiskFreeSpaceEx(PChar(DriveRoot), FreeSpace, Size, nil) then
+    begin
+      EnterCriticalSection(ThreadLock);
+      ReadyDrives := ReadyDrives + Drive;
+      LeaveCriticalSection(ThreadLock);
+    end;
+  end
+    else
+  begin
+    for I := 1 to Length(FDrives) do
+    begin
+      TDriveInfoThread.Create(FDrives[I]);
+      Sleep(100);
+    end;
+  end;
+end;
 
 constructor TDriveInfo.Create;
 begin
@@ -146,11 +196,27 @@ begin
 end; {TDriveInfo.Destroy}
 
 procedure TDriveInfo.NeedData;
+var
+  I: Integer;
+  Drive: Char;
 begin
   if not FLoaded then
   begin
     Load;
     FLoaded := True;
+  end;
+
+  EnterCriticalSection(ThreadLock);
+  try
+    for I := 1 to Length(ReadyDrives) do
+    begin
+      Drive := ReadyDrives[I];
+      Assert(FData.ContainsKey(Drive));
+      FData[Drive].DriveReady := True;
+    end;
+    ReadyDrives := '';
+  finally
+    LeaveCriticalSection(ThreadLock);
   end;
 end;
 
@@ -310,6 +376,7 @@ var
   Drive: TRealDrive;
   Reg: TRegistry;
   Folder: TSpecialFolder;
+  Drives: string;
 begin
   FNoDrives := 0;
   Reg := TRegistry.Create;
@@ -326,10 +393,15 @@ begin
 
   FDesktop := nil;
 
+  Drives := EmptyStr;
   for Drive := FirstDrive to LastDrive do
   begin
-    AddDrive(Drive);
+    if AddDrive(Drive).Valid then
+      Drives := Drives + Drive;
   end;
+
+  if Length(Drives) > 0 then
+    TDriveInfoThread.Create(Drives);
 
   for Folder := Low(FFolders) to High(FFolders) do
     FFolders[Folder].Valid := False;
@@ -417,6 +489,9 @@ var
   DriveInfoRec: TDriveInfoRec;
   S: string;
 begin
+  // Among other, this makes sure the pending drive-ready status from the background thread are collected,
+  // before we overwrite it with fresh status here.
+  NeedData;
   if not Assigned(FDesktop) then
     SHGetDesktopFolder(FDesktop);
 
@@ -671,6 +746,7 @@ begin
 end;
 
 initialization
+  InitializeCriticalSection(ThreadLock);
   if not Assigned(DriveInfo) then
     DriveInfo := TDriveInfo.Create;
 
@@ -680,4 +756,5 @@ finalization
     DriveInfo.Free;
     DriveInfo := nil;
   end;
+  DeleteCriticalSection(ThreadLock);
 end.
