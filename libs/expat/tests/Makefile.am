@@ -57,6 +57,9 @@ runtestspp_SOURCES = \
 runtests_LDADD = libruntests.a ../lib/libexpatinternal.la
 runtestspp_LDADD = libruntests.a ../lib/libexpatinternal.la
 
+runtests_LDFLAGS = @AM_LDFLAGS@ @LIBM@
+runtestspp_LDFLAGS = @AM_LDFLAGS@ @LIBM@
+
 EXTRA_DIST = \
     chardata.h \
     structdata.h \
