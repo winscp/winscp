@@ -40,6 +40,7 @@ noinst_LTLIBRARIES = libexpatinternal.la
 
 libexpat_la_LDFLAGS = \
     @AM_LDFLAGS@ \
+    @LIBM@ \
     -no-undefined \
     -version-info @LIBCURRENT@:@LIBREVISION@:@LIBAGE@
 

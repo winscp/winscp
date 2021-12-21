@@ -64,7 +64,7 @@ endif()
 
 project(expat
     VERSION
-        2.4.1
+        2.4.2
     LANGUAGES
         C
 )
@@ -106,6 +106,10 @@ if(DEFINED BUILD_SHARED_LIBS)
 else()
     set(_EXPAT_SHARED_LIBS_DEFAULT ON)
 endif()
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE NoConfig)  # so that accessing CMAKE_*_POSTFIX will be waterproof
+endif()
+string(TOUPPER "${CMAKE_BUILD_TYPE}" _EXPAT_BUILD_TYPE_UPPER)
 
 #
 # Configuration
@@ -302,10 +306,12 @@ if (MSVC)
     if (EXPAT_MSVC_STATIC_CRT)
         message("-- Using static CRT ${EXPAT_MSVC_STATIC_CRT}")
         foreach(flag_var
+                CMAKE_CXX_FLAGS_${_EXPAT_BUILD_TYPE_UPPER}
                 CMAKE_CXX_FLAGS_DEBUG
                 CMAKE_CXX_FLAGS_RELEASE
                 CMAKE_CXX_FLAGS_MINSIZEREL
                 CMAKE_CXX_FLAGS_RELWITHDEBINFO
+                CMAKE_C_FLAGS_${_EXPAT_BUILD_TYPE_UPPER}
                 CMAKE_C_FLAGS_DEBUG
                 CMAKE_C_FLAGS_RELEASE
                 CMAKE_C_FLAGS_MINSIZEREL
@@ -320,34 +326,37 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -wd4996)
 endif()
-if(WIN32)
-    if(_EXPAT_UNICODE_WCHAR_T)
-        set(_POSTFIX_WIDE "w")
-    endif()
 
-    if(MSVC AND NOT EXPAT_SHARED_LIBS)
-        if(EXPAT_MSVC_STATIC_CRT)
-            set(_POSTFIX_CRT "MT")
-        else()
-            set(_POSTFIX_CRT "MD")
-        endif()
-    endif()
-
-    foreach(postfix_var
-            CMAKE_DEBUG_POSTFIX
-            CMAKE_RELEASE_POSTFIX
-            CMAKE_MINSIZEREL_POSTFIX
-            CMAKE_RELWITHDEBINFO_POSTFIX
-            )
-        if(postfix_var STREQUAL "CMAKE_DEBUG_POSTFIX")
-            set(_POSTFIX_DEBUG "d")
-        else()
-            set(_POSTFIX_DEBUG "")
-        endif()
-
-        set(${postfix_var} "${_POSTFIX_WIDE}${_POSTFIX_DEBUG}${_POSTFIX_CRT}" CACHE STRING "Windows binary postfix, e.g. libexpat<postfix=[w][d][MD|MT]>.lib")
-    endforeach()
+#
+# Library filename postfix
+#
+if(_EXPAT_UNICODE)
+    set(_POSTFIX_WIDE "w")
 endif()
+
+if(MSVC AND NOT EXPAT_SHARED_LIBS)
+    if(EXPAT_MSVC_STATIC_CRT)
+        set(_POSTFIX_CRT "MT")
+    else()
+        set(_POSTFIX_CRT "MD")
+    endif()
+endif()
+
+foreach(postfix_var
+        CMAKE_${_EXPAT_BUILD_TYPE_UPPER}_POSTFIX
+        CMAKE_DEBUG_POSTFIX
+        CMAKE_RELEASE_POSTFIX
+        CMAKE_MINSIZEREL_POSTFIX
+        CMAKE_RELWITHDEBINFO_POSTFIX
+        )
+    if(WIN32 AND postfix_var STREQUAL "CMAKE_DEBUG_POSTFIX")
+        set(_POSTFIX_DEBUG "d")
+    else()
+        set(_POSTFIX_DEBUG "")  # needs a reset because of being looped
+    endif()
+
+    set(${postfix_var} "${_POSTFIX_WIDE}${_POSTFIX_DEBUG}${_POSTFIX_CRT}" CACHE STRING "Library filename postfix, e.g. libexpat<postfix=[w][d][MD|MT]>.lib")
+endforeach()
 
 #
 # C library
@@ -370,32 +379,32 @@ else()
     set(_SHARED STATIC)
 endif()
 
-# Avoid colliding with Expat.dll of Perl's XML::Parser::Expat
-if(WIN32 AND NOT MINGW)
-    set(_EXPAT_OUTPUT_NAME libexpat)  # CMAKE_*_POSTFIX applies, see above
-else()
-    if(_EXPAT_UNICODE)
-        set(_EXPAT_OUTPUT_NAME expatw)
-    else()
-        set(_EXPAT_OUTPUT_NAME expat)
-    endif()
-endif()
-
 add_library(expat ${_SHARED} ${expat_SRCS})
+if(_EXPAT_LIBM_FOUND)
+    target_link_libraries(expat m)
+endif()
 if(EXPAT_WITH_LIBBSD)
     target_link_libraries(expat ${LIB_BSD})
 endif()
 
 set(LIBCURRENT 9)   # sync
-set(LIBREVISION 1)  # with
+set(LIBREVISION 2)  # with
 set(LIBAGE 8)       # configure.ac!
 math(EXPR LIBCURRENT_MINUS_AGE "${LIBCURRENT} - ${LIBAGE}")
 
-set_property(TARGET expat PROPERTY OUTPUT_NAME "${_EXPAT_OUTPUT_NAME}")
 if(NOT WIN32)
     set_property(TARGET expat PROPERTY VERSION ${LIBCURRENT_MINUS_AGE}.${LIBAGE}.${LIBREVISION})
     set_property(TARGET expat PROPERTY SOVERSION ${LIBCURRENT_MINUS_AGE})
     set_property(TARGET expat PROPERTY NO_SONAME ${NO_SONAME})
+endif()
+if(WIN32 AND NOT MINGW)
+    # NOTE: This avoids a name collision with Expat.dll of Perl's XML::Parser::Expat
+    #       on Windows by resorting to filename libexpat.dll since Expat 1.95.3.
+    #       Everything but MSVC is already adding prefix "lib", automatically.
+    # NOTE: "set_property(TARGET expat PROPERTY PREFIX lib)" would only affect *.dll
+    #       files but not *.lib files, so we have to rely on propert OUTPUT_NAME, instead.
+    #       Property CMAKE_*_POSTFIX still applies.
+    set_property(TARGET expat PROPERTY OUTPUT_NAME libexpat)
 endif()
 
 target_include_directories(expat
@@ -420,23 +429,42 @@ expat_install(FILES lib/expat.h lib/expat_external.h DESTINATION ${CMAKE_INSTALL
 # pkg-config file
 #
 if(EXPAT_BUILD_PKGCONFIG)
-    set(prefix ${CMAKE_INSTALL_PREFIX})
-    set(exec_prefix "\${prefix}")
-
     if(CMAKE_INSTALL_LIBDIR MATCHES "^/")
-        set(libdir "${CMAKE_INSTALL_LIBDIR}")
+        set(_expat_pkgconfig_libdir "${CMAKE_INSTALL_LIBDIR}")
     else()
-        set(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
+        set(_expat_pkgconfig_libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
     endif()
 
     if(CMAKE_INSTALL_INCLUDEDIR MATCHES "^/")
-        set(includedir "${CMAKE_INSTALL_INCLUDEDIR}")
+        set(_expat_pkgconfig_includedir "${CMAKE_INSTALL_INCLUDEDIR}")
     else()
-        set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+        set(_expat_pkgconfig_includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
     endif()
 
-    configure_file(expat.pc.in ${CMAKE_CURRENT_BINARY_DIR}/expat.pc @ONLY)
-    expat_install(FILES ${CMAKE_CURRENT_BINARY_DIR}/expat.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+    set_target_properties(expat PROPERTIES
+        pkgconfig_prefix "${CMAKE_INSTALL_PREFIX}"
+        pkgconfig_exec_prefix "\${prefix}"
+        pkgconfig_libdir "${_expat_pkgconfig_libdir}"
+        pkgconfig_includedir "${_expat_pkgconfig_includedir}"
+        pkgconfig_version "${PACKAGE_VERSION}")
+
+    foreach(_build_type ${CMAKE_BUILD_TYPE} Debug Release RelWithDebInfo MinSizeRel)
+        string(TOLOWER "${_build_type}" _build_type_lower)
+        string(TOUPPER "${_build_type}" _build_type_upper)
+        set_property(TARGET expat PROPERTY "pkgconfig_${_build_type_lower}_name" "expat${CMAKE_${_build_type_upper}_POSTFIX}")
+        if(_EXPAT_LIBM_FOUND)
+            set_property(TARGET expat PROPERTY "pkgconfig_libm" "-lm")
+        else()
+            set_property(TARGET expat PROPERTY "pkgconfig_libm" "")
+        endif()
+    endforeach()
+
+    file(GENERATE
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/expat.pc
+        INPUT ${PROJECT_SOURCE_DIR}/expat.pc.cmake
+        TARGET expat)
+
+    expat_install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/expat.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif()
 
 #
@@ -453,6 +481,9 @@ if(EXPAT_BUILD_TOOLS)
     add_executable(xmlwf ${xmlwf_SRCS})
     set_property(TARGET xmlwf PROPERTY RUNTIME_OUTPUT_DIRECTORY xmlwf)
     target_link_libraries(xmlwf expat)
+    if(_EXPAT_LIBM_FOUND)
+        target_link_libraries(xmlwf m)
+    endif()
     expat_install(TARGETS xmlwf DESTINATION ${CMAKE_INSTALL_BINDIR})
 
     if(MINGW AND _EXPAT_UNICODE_WCHAR_T)
@@ -525,6 +556,11 @@ if(EXPAT_BUILD_TESTS)
     add_executable(runtestspp tests/runtestspp.cpp ${test_SRCS})
     set_property(TARGET runtestspp PROPERTY RUNTIME_OUTPUT_DIRECTORY tests)
     expat_add_test(runtestspp $<TARGET_FILE:runtestspp>)
+
+    if(_EXPAT_LIBM_FOUND)
+        target_link_libraries(runtests m)
+        target_link_libraries(runtestspp m)
+    endif()
 
     if(EXPAT_WITH_LIBBSD)
         target_link_libraries(runtests ${LIB_BSD})
@@ -729,20 +765,31 @@ elseif(EXPAT_CHAR_TYPE STREQUAL "wchar_t")
 else()
     set(_EXPAT_CHAR_TYPE_SUMMARY "ERROR")
 endif()
-string(TOUPPER "${CMAKE_BUILD_TYPE}" _EXPAT_BUILD_TYPE_UPPER)
+# NOTE: We're not accessing global property GENERATOR_IS_MULTI_CONFIG
+#       because that would require CMake >=3.9
+if(CMAKE_CONFIGURATION_TYPES)
+    set(_EXPAT_GENERATOR_IS_MULTI_CONFIG TRUE)
+else()
+    set(_EXPAT_GENERATOR_IS_MULTI_CONFIG FALSE)
+endif()
 
 message(STATUS "===========================================================================")
 message(STATUS "")
 message(STATUS "Configuration")
+message(STATUS "  Generator .................. ${CMAKE_GENERATOR}")
+if(_EXPAT_GENERATOR_IS_MULTI_CONFIG)
+    message(STATUS "  Build types ................ ${CMAKE_CONFIGURATION_TYPES}")
+else()
+    message(STATUS "  Build type ................. ${CMAKE_BUILD_TYPE}")
+endif()
 message(STATUS "  Prefix ..................... ${CMAKE_INSTALL_PREFIX}")
-message(STATUS "  Build type ................. ${CMAKE_BUILD_TYPE}")
 message(STATUS "  Shared libraries ........... ${EXPAT_SHARED_LIBS}")
 if(MSVC)
     message(STATUS "  Static CRT ................. ${EXPAT_MSVC_STATIC_CRT}")
 endif()
 message(STATUS "  Character type ............. ${_EXPAT_CHAR_TYPE_SUMMARY}")
-if(WIN32)
-    message(STATUS "  Binary postfix ............. ${CMAKE_${_EXPAT_BUILD_TYPE_UPPER}_POSTFIX}")
+if(NOT _EXPAT_GENERATOR_IS_MULTI_CONFIG)
+    message(STATUS "  Library name postfix ....... ${CMAKE_${_EXPAT_BUILD_TYPE_UPPER}_POSTFIX}")
 endif()
 message(STATUS "")
 message(STATUS "  Build documentation ........ ${EXPAT_BUILD_DOCS}")
