@@ -17,6 +17,7 @@
    Copyright (c) 2018      Marco Maggi <marco.maggi-ipsu@poste.it>
    Copyright (c) 2019      David Loffredo <loffredo@steptools.com>
    Copyright (c) 2020      Tim Gates <tim.gates@iress.com>
+   Copyright (c) 2021      Dong-hee Na <donghee.na@python.org>
    Licensed under the MIT license:
 
    Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -39,11 +40,11 @@
    USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+#include <expat_config.h>
+
 #if defined(NDEBUG)
 #  undef NDEBUG /* because test suite relies on assert(...) at the moment */
 #endif
-
-#include <expat_config.h>
 
 #include <assert.h>
 #include <stdlib.h>
@@ -7351,7 +7352,7 @@ START_TEST(test_misc_version) {
     fail("Version mismatch");
 
 #if ! defined(XML_UNICODE) || defined(XML_UNICODE_WCHAR_T)
-  if (xcstrcmp(version_text, XCS("expat_2.4.1"))) /* needs bump on releases */
+  if (xcstrcmp(version_text, XCS("expat_2.4.2"))) /* needs bump on releases */
     fail("XML_*_VERSION in expat.h out of sync?\n");
 #else
   /* If we have XML_UNICODE defined but not XML_UNICODE_WCHAR_T
