@@ -1027,6 +1027,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       Left = 299
       Top = 182
       Caption = 'Custom Commands'
+      ChevronMenu = True
       ChevronPriorityForNewItems = tbcpLowest
       DockPos = 193
       DockRow = 7
