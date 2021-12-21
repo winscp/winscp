@@ -82,7 +82,7 @@ dnl If the API changes incompatibly set LIBAGE back to 0
 dnl
 
 LIBCURRENT=9   # sync
-LIBREVISION=1  # with
+LIBREVISION=2  # with
 LIBAGE=8       # CMakeLists.txt!
 
 AC_CONFIG_HEADERS([expat_config.h])
@@ -186,6 +186,7 @@ AM_CONDITIONAL([_INTERNAL_UNICODE_WCHAR_T], [echo -- "${CPPFLAGS}${CFLAGS}" | ${
 AM_CONDITIONAL([_INTERNAL_MIN_SIZE], [echo -- "${CPPFLAGS}${CFLAGS}" | ${FGREP} XML_MIN_SIZE >/dev/null])
 AM_CONDITIONAL([_INTERNAL_LARGE_SIZE], [echo -- "${CPPFLAGS}${CFLAGS}" | ${FGREP} XML_LARGE_SIZE >/dev/null])
 
+LT_LIB_M
 
 AC_ARG_WITH([libbsd],
   [AS_HELP_STRING([--with-libbsd], [utilize libbsd (for arc4random_buf)])],
@@ -393,9 +394,6 @@ AC_SUBST([AM_CPPFLAGS])
 AC_SUBST([AM_CFLAGS])
 AC_SUBST([AM_CXXFLAGS])
 AC_SUBST([AM_LDFLAGS])
-
-dnl updating _EXPAT_OUTPUT_NAME variable to effect the package name in expat.pc file (issue #361)
-AC_SUBST(_EXPAT_OUTPUT_NAME, ["$PACKAGE_NAME"])
 
 AS_CASE("${host_os}",
   [darwin*], [CMAKE_NOCONFIG_SOURCE=cmake/autotools/expat-noconfig__macos.cmake.in],
