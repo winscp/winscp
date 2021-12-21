@@ -230,6 +230,7 @@ type
     destructor Destroy; override;
     function HasParent: Boolean; override;
     function GetParentComponent: TComponent; override;
+    function GetTopComponent: TComponent;
 
     procedure Add(AItem: TTBCustomItem);
     procedure Clear;
@@ -1419,6 +1420,12 @@ begin
     Result := FParent.FParentComponent
   else
     Result := FParent;
+end;
+
+function TTBCustomItem.GetTopComponent: TComponent;
+begin
+  if Parent <> nil then Result := Parent.GetTopComponent
+    else Result := FParentComponent;
 end;
 
 procedure TTBCustomItem.SetName(const NewName: TComponentName);
