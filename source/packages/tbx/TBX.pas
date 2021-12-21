@@ -350,6 +350,7 @@ type
     property Caption;
     property ChevronHint;
     property ChevronMoveItems;
+    property ChevronMenu;
     property ChevronPriorityForNewItems;
     property CloseButton;
     property CloseButtonWhenDocked;
@@ -2036,7 +2037,13 @@ begin
     HorzLine := (IsVertical xor LineSep) or View.IsPopup;
     if (((ViewType and VT_POPUP) = VT_POPUP) and
       ((ViewType and PVT_CHEVRONMENU) = PVT_CHEVRONMENU)) then
-      HorzLine := (HorzLine and LineSep);
+    begin
+      if (not (Item.GetTopComponent is TTBCustomToolbar)) or
+         (not TTBCustomToolbar(Item.GetTopComponent).ChevronMenu) then
+      begin
+        HorzLine := (HorzLine and LineSep);
+      end;
+    end;
   end;
   CurrentTheme.PaintSeparator(Canvas, R, ItemInfo, HorzLine, LineSep);
 end;

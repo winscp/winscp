@@ -1028,6 +1028,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Left = 299
       Top = 129
       Caption = 'Custom Commands'
+      ChevronMenu = True
       ChevronPriorityForNewItems = tbcpLowest
       DockPos = 168
       DockRow = 7

@@ -68,6 +68,7 @@ type
     FBaseSize: TPoint;
     FChevronItem: TTBChevronItem;
     FChevronMoveItems: Boolean;
+    FChevronMenu: Boolean;
     FChevronPriorityForNewItems: TTBChevronPriorityForNewItems;
     FDisableAlignArrange: Integer;
     FFloatingWidth: Integer;
@@ -179,6 +180,7 @@ type
 
     property ChevronHint: String read GetChevronHint write SetChevronHint stored IsChevronHintStored;
     property ChevronMoveItems: Boolean read FChevronMoveItems write SetChevronMoveItems default True;
+    property ChevronMenu: Boolean read FChevronMenu write FChevronMenu default False;
     property ChevronPriorityForNewItems: TTBChevronPriorityForNewItems read FChevronPriorityForNewItems
       write SetChevronPriorityForNewItems default tbcpHighest;
     property FloatingWidth: Integer read FFloatingWidth write SetFloatingWidth default 0;
@@ -208,6 +210,7 @@ type
     property Caption;
     property ChevronHint;
     property ChevronMoveItems;
+    property ChevronMenu;
     property ChevronPriorityForNewItems;
     property CloseButton;
     property CloseButtonWhenDocked;
@@ -549,6 +552,7 @@ begin
   FChevronItem := GetChevronItemClass.Create(Self);
   FChevronItem.LinkSubitems := FItem;
   FChevronMoveItems := True;
+  FChevronMenu := False;
   FView := GetViewClass.CreateView(Self, nil, FItem, Self, True, False,
     not(csDesigning in ComponentState));
   // This might as well go to TTBToolbarView.Create

@@ -883,7 +883,7 @@ function ProcessDoneAction(const DoneActionData: TTBDoneActionData;
 implementation
 
 uses
-  MMSYSTEM, TB2Consts, TB2Common, IMM, TB2Acc, Winapi.oleacc, Types, PasTools, Generics.Collections;
+  MMSYSTEM, TB2Consts, TB2Common, IMM, TB2Acc, Winapi.oleacc, Types, PasTools, Generics.Collections, TB2Toolbar;
 
 var
   LastPos: TPoint;
@@ -1929,6 +1929,7 @@ var
   EventItem, ParentItem: TTBCustomItem;
   Opposite: Boolean;
   ChevronParentView: TTBView;
+  ChevronMenu: Boolean;
   X, Y, W, H: Integer;
   P: TPoint;
   ParentItemRect: TRect;
@@ -1942,10 +1943,16 @@ begin
   DoPopup(Self, False);
 
   ChevronParentView := GetChevronParentView;
+  ChevronMenu := False; // shut up
   if ChevronParentView = nil then
     ParentItem := Self
-  else
+  else begin
     ParentItem := ChevronParentView.FParentItem;
+    Assert(ParentItem.ParentComponent is TTBCustomToolbar);
+    ChevronMenu :=
+      (ParentItem.ParentComponent is TTBCustomToolbar) and
+      TTBCustomToolbar(ParentItem.ParentComponent).ChevronMenu;
+  end;
 
   Opposite := Assigned(ParentView) and (vsOppositePopup in ParentView.FState);
   Result := GetPopupWindowClass.CreatePopupWindow(nil, ParentView, ParentItem,
@@ -1954,7 +1961,7 @@ begin
     if Assigned(ChevronParentView) then begin
       ChevronParentView.FreeNotification(Result.View);
       Result.View.FChevronParentView := ChevronParentView;
-      Result.View.FIsToolbar := True;
+      Result.View.FIsToolbar := not ChevronMenu;
       Result.View.Style := Result.View.Style +
         (ChevronParentView.Style * [vsAlwaysShowHints]);
       Result.Color := clBtnFace;
