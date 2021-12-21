@@ -1056,6 +1056,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Left = 299
       Top = 129
       Caption = 'Custom Commands'
+      ChevronPriorityForNewItems = tbcpLowest
       DockPos = 168
       DockRow = 7
       Images = GlyphsModule.ExplorerImages

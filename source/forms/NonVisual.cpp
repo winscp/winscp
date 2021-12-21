@@ -1145,6 +1145,17 @@ void __fastcall TNonVisualDataModule::CustomCommandsCustomize(TObject *)
   PreferencesDialog(pmCustomCommands);
 }
 //---------------------------------------------------------------------------
+static void GiveItemPriority(TTBCustomItem * Item)
+{
+  DebugAssert(Item->GetTopComponent() != NULL);
+  TTBCustomToolbar * ToolbarComponent = dynamic_cast<TTBCustomToolbar *>(Item->GetTopComponent());
+  if (ToolbarComponent != NULL)
+  {
+    TTBItemViewer * Viewer = ToolbarComponent->View->Find(Item);
+    ToolbarComponent->View->GivePriority(Viewer);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
   TTBCustomItem * Menu, bool OnFocused, bool Toolbar, TCustomCommandListType ListType, TStrings * HiddenCommands)
 {
@@ -1157,6 +1168,7 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
     Item = new TTBXItem(Menu);
     Item->Action = OnFocused ? CustomCommandsEnterFocusedAction : CustomCommandsEnterAction;
     Menu->Add(Item);
+    GiveItemPriority(Item);
 
     Item = new TTBXItem(Menu);
     Item->Action = OnFocused ? CustomCommandsLastFocusedAction : CustomCommandsLastAction;
@@ -1165,6 +1177,7 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
       Item->Caption = EscapeHotkey(StripHotkey(LoadStr(CUSTOM_COMMAND_LAST_SHORT)));
     }
     Menu->Add(Item);
+    GiveItemPriority(Item);
   }
 
   TTBXSeparatorItem * Separator = AddMenuSeparator(Menu);
@@ -1195,6 +1208,7 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
     Item = new TTBXItem(Menu);
     Item->Action = CustomCommandsBandAction;
     Menu->Add(Item);
+    GiveItemPriority(Item);
   }
 
   Item = new TTBXItem(Menu);
@@ -1205,6 +1219,7 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
     Item->OnClick = CustomCommandsCustomize;
   }
   Menu->Add(Item);
+  GiveItemPriority(Item);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
