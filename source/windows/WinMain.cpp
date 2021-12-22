@@ -416,11 +416,20 @@ static UnicodeString ColorToRGBStr(TColor Color)
 }
 //---------------------------------------------------------------------------
 TDateTime Started(Now());
+TDateTime LastStartupStartupSequence(Now());
+UnicodeString StartupSequence;
 int LifetimeRuns = -1;
 //---------------------------------------------------------------------------
 void InterfaceStartDontMeasure()
 {
   Started = TDateTime();
+}
+//---------------------------------------------------------------------------
+void AddStartupSequence(const UnicodeString & Tag)
+{
+  int SequenceTensOfSecond = static_cast<int>(MilliSecondsBetween(Now(), LastStartupStartupSequence) / 100);
+  LastStartupStartupSequence = Now();
+  AddToList(StartupSequence, FORMAT(L"%s:%d", (Tag, SequenceTensOfSecond)), L",");
 }
 //---------------------------------------------------------------------------
 void InterfaceStarted()
@@ -438,6 +447,8 @@ void InterfaceStarted()
       Configuration->Usage->Set(L"StartupSeconds2", StartupSeconds);
     }
     Configuration->Usage->Set(L"StartupSecondsLast", StartupSeconds);
+    AddStartupSequence(L"I");
+    Configuration->Usage->Set(L"StartupSequenceLast", StartupSequence);
   }
 }
 //---------------------------------------------------------------------------
@@ -759,6 +770,7 @@ bool __fastcall ShowUpdatesIfAvailable()
 //---------------------------------------------------------------------------
 int __fastcall Execute()
 {
+  AddStartupSequence(L"E");
   DebugAssert(StoredSessions);
   TProgramParams * Params = TProgramParams::Instance();
   DebugAssert(Params);
@@ -896,6 +908,7 @@ int __fastcall Execute()
   GlyphsModule = NULL;
   NonVisualDataModule = NULL;
   TStrings * CommandParams = new TStringList;
+  AddStartupSequence(L"C");
   try
   {
     TerminalManager = TTerminalManager::Instance();
@@ -908,7 +921,9 @@ int __fastcall Execute()
     {
       GUIConfiguration->ChangeResourceModule(ResourceModule);
     }
+    AddStartupSequence(L"G");
     NonVisualDataModule = new TNonVisualDataModule(Application);
+    AddStartupSequence(L"N");
 
     // The default is 2.5s.
     // 20s is used by Office 2010 and Windows 10 Explorer.
@@ -1148,6 +1163,7 @@ int __fastcall Execute()
         try
         {
           int Flags = GetCommandLineParseUrlFlags(Params);
+          AddStartupSequence(L"B");
           GetLoginData(AutoStartSession, Params, DataList.get(), DownloadFile, NeedSession, NULL, Flags);
           // GetLoginData now Aborts when session is needed and none is selected
           if (DebugAlwaysTrue(!NeedSession || (DataList->Count > 0)))
@@ -1218,7 +1234,9 @@ int __fastcall Execute()
               {
                 // from now on, we do not support runtime interface change
                 CustomWinConfiguration->CanApplyInterfaceImmediately = false;
+                AddStartupSequence(L"A");
                 TCustomScpExplorerForm * ScpExplorer = CreateScpExplorer();
+                AddStartupSequence(L"E");
                 CustomWinConfiguration->AppliedInterface = CustomWinConfiguration->Interface;
                 try
                 {
@@ -1269,6 +1287,7 @@ int __fastcall Execute()
                     ScpExplorer->BrowseFile();
                   }
 
+                  AddStartupSequence(L"R");
                   Application->Run();
                   // to allow dialog boxes show later (like from CheckConfigurationForceSave)
                   SetAppTerminated(False);

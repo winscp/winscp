@@ -153,6 +153,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
     FFormRestored(false),
     TForm(Owner)
 {
+  AddStartupSequence(L"F");
   FInvalid = false;
   FCurrentSide = osRemote;
   FEverShown = false;
@@ -9534,6 +9535,11 @@ void __fastcall TCustomScpExplorerForm::WMClose(TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CMShowingChanged(TMessage & Message)
 {
+  if (!FShowingChanged)
+  {
+    AddStartupSequence(L"D");
+    FShowingChanged = true;
+  }
   // Ignoring implicit local-local browser of Commander, opened from DoShow
   bool NoSession = (ManagedSession == NULL);
   // This calls TCustomScpExplorerForm::DoShow

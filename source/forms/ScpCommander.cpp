@@ -409,6 +409,7 @@ void __fastcall TScpCommanderForm::DoShow()
   {
     TTerminalManager::Instance()->NewLocalSession();
   }
+  AddStartupSequence(L"O");
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::NeedSession(bool Startup)

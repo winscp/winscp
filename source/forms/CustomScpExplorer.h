@@ -303,6 +303,7 @@ private:
   UnicodeString FFileColorsCurrent;
   bool FInvalid;
   std::auto_ptr<TQueueFileList> FQueueFileList;
+  bool FShowingChanged;
   bool FStarted;
   bool FUpdatingSessionTabs;
   TCalculateSizeOperation * FCalculateSizeOperation;
