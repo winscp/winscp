@@ -16,6 +16,7 @@ USEFORM("forms\ScpExplorer.cpp", ScpExplorerForm);
 //---------------------------------------------------------------------------
 WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 {
+  AddStartupSequence(L"T");
   int Result = 0;
   try
   {
@@ -28,6 +29,7 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
     CoreInitialize();
     InitializeWinHelp();
     InitializeSystemSettings();
+    AddStartupSequence(L"S");
 
     try
     {

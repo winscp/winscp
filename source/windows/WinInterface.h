@@ -536,6 +536,7 @@ UnicodeString DumpCallstackFileName(int ProcessId);
 void CheckConfigurationForceSave();
 void InterfaceStarted();
 void InterfaceStartDontMeasure();
+void AddStartupSequence(const UnicodeString & Tag);
 //---------------------------------------------------------------------------
 #define HIDDEN_WINDOW_NAME L"WinSCPHiddenWindow3"
 //---------------------------------------------------------------------------

@@ -388,6 +388,7 @@ void __fastcall TScpCommanderForm::DoShow()
   }
 
   TCustomScpExplorerForm::DoShow();
+  AddStartupSequence(L"O");
 }
 //---------------------------------------------------------------------------
 Boolean __fastcall TScpCommanderForm::AllowedAction(TAction * Action, TActionAllowed Allowed)

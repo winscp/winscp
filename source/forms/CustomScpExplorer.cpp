@@ -160,6 +160,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
     FFormRestored(false),
     TForm(Owner)
 {
+  AddStartupSequence(L"F");
   FInvalid = false;
   FCurrentSide = osRemote;
   FEverShown = false;
@@ -9321,6 +9322,11 @@ void __fastcall TCustomScpExplorerForm::WMClose(TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CMShowingChanged(TMessage & Message)
 {
+  if (!FShowingChanged)
+  {
+    AddStartupSequence(L"D");
+    FShowingChanged = true;
+  }
   TForm::Dispatch(&Message);
 
   // Now the window is visible (TForm::Dispatch is what usually takes long, like when loading a "local" network directory)

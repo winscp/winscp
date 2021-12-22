@@ -181,6 +181,7 @@ void __fastcall TScpExplorerForm::DoShow()
   FRemoteDirViewWasFocused = true;
 
   TCustomScpExplorerForm::DoShow();
+  AddStartupSequence(L"O");
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScpExplorerForm::AllowedAction(TAction * Action, TActionAllowed Allowed)
