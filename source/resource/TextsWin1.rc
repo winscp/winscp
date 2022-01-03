@@ -667,7 +667,7 @@ BEGIN
         PROPERTIES_S3_W_ACL_HINT, "Write ACL"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
-        WINSCP_COPYRIGHT, "Copyright © 2000–2021 Martin Prikryl"
+        WINSCP_COPYRIGHT, "Copyright © 2000–2022 Martin Prikryl"
         HOMEPAGE_URL, "https://winscp.net/"
         HISTORY_URL, "https://winscp.net/eng/docs/history"
         FORUM_URL, "https://winscp.net/forum/"
