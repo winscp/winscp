@@ -373,6 +373,7 @@ static char *dupvprintf_inner(char *buf, size_t oldlen, size_t *sizeptr,
         va_copy(aq, ap);
         { // WINSCP
 #if defined _DEBUG && defined IDE
+// WORKAROUND
 // CodeGuard hangs in v*printf functions. But while it's possible to disable CodeGuard in vsprintf, it's not possible for vsnprintf.
 // We never want to distribute this version of the code, hence the IDE condition.
 // Put this into WinSCP.cgi along with WinSCP.exe
