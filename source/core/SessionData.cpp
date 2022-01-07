@@ -1956,12 +1956,26 @@ bool __fastcall TSessionData::IsProtocolUrl(
     DoIsProtocolUrl(Url, WinSCPProtocolPrefix + Protocol, ProtocolLen);
 }
 //---------------------------------------------------------------------
-bool __fastcall TSessionData::IsSensitiveOption(const UnicodeString & Option)
+bool __fastcall TSessionData::IsSensitiveOption(const UnicodeString & Option, const UnicodeString & Value)
 {
-  return
-    SameText(Option, PassphraseOption) ||
-    SameText(Option, PASSWORD_SWITCH) ||
-    SameText(Option, NEWPASSWORD_SWITCH);
+  bool Result;
+  if (SameText(Option, PassphraseOption) ||
+      SameText(Option, PASSWORD_SWITCH) ||
+      SameText(Option, NEWPASSWORD_SWITCH))
+  {
+    Result = true;
+  }
+  else if (SameText(Option, PRIVATEKEY_SWITCH))
+  {
+    Filename * AFilename = filename_from_str(UTF8String(Value).c_str());
+    Result = (in_memory_key_data(AFilename) != NULL);
+    filename_free(AFilename);
+  }
+  else
+  {
+    Result = false;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::IsOptionWithParameters(const UnicodeString & Option)
@@ -2414,7 +2428,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       ChangePassword = true;
       NewPassword = Value;
     }
-    if (Options->FindSwitch(L"privatekey", Value))
+    if (Options->FindSwitch(PRIVATEKEY_SWITCH, Value))
     {
       PublicKeyFile = Value;
     }
@@ -3617,7 +3631,7 @@ UnicodeString __fastcall TSessionData::GenerateOpenCommandArgs(bool Rtf)
   }
   if (SessionData->PublicKeyFile != FactoryDefaults->PublicKeyFile)
   {
-    AddSwitch(Result, L"privatekey", SessionData->PublicKeyFile, Rtf);
+    AddSwitch(Result, PRIVATEKEY_SWITCH, SessionData->PublicKeyFile, Rtf);
     SessionData->PublicKeyFile = FactoryDefaults->PublicKeyFile;
   }
   if (SessionData->TlsCertificateFile != FactoryDefaults->TlsCertificateFile)

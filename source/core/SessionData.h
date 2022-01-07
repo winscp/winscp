@@ -535,7 +535,7 @@ public:
   static UnicodeString __fastcall ExtractLocalName(const UnicodeString & Name);
   static UnicodeString __fastcall ExtractFolderName(const UnicodeString & Name);
   static UnicodeString __fastcall ComposePath(const UnicodeString & Path, const UnicodeString & Name);
-  static bool __fastcall IsSensitiveOption(const UnicodeString & Option);
+  static bool __fastcall IsSensitiveOption(const UnicodeString & Option, const UnicodeString & Value);
   static bool __fastcall IsOptionWithParameters(const UnicodeString & Option);
   static bool __fastcall MaskPasswordInOptionParameter(const UnicodeString & Option, UnicodeString & Param);
   static UnicodeString __fastcall FormatSiteKey(const UnicodeString & HostName, int PortNumber);

@@ -2240,6 +2240,7 @@ enum {
  */
 Filename *filename_from_str(const char *string);
 const char *filename_to_str(const Filename *fn);
+const char* in_memory_key_data(const Filename *fn); // WINSCP
 bool filename_equal(const Filename *f1, const Filename *f2);
 bool filename_is_null(const Filename *fn);
 Filename *filename_copy(const Filename *fn);
