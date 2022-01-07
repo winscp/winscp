@@ -33,8 +33,45 @@ Filename *filename_copy(const Filename *fn)
     return filename_from_str(fn->path);
 }
 
+#ifdef WINSCP
+const char* in_memory_key_data(const Filename *fn)
+{
+    const char* result = fn->path;
+    if (result[0] != '@')
+    {
+        result = NULL;
+    }
+    else
+    {
+        int len;
+        result++;
+        len = strlen(result);
+        if (((len % 2) != 0) ||
+            ((len / 2) < MAX_PATH))
+        {
+            result = NULL;
+        }
+        else
+        {
+            int i;
+            for (i = 0; (result != NULL) && (i < len); i++)
+            {
+                 if (!isxdigit(result[i]))
+                 {
+                     result = NULL;
+                 }
+            }
+        }
+    }
+    return result;
+}
+#endif
+
 const char *filename_to_str(const Filename *fn)
 {
+    #ifdef WINSCP
+    if (in_memory_key_data(fn) != NULL) return "in-memory";
+    #endif
     return fn->path;
 }
 

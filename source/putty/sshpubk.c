@@ -93,6 +93,32 @@ LoadFileStatus lf_load_fp(LoadedFile *lf, FILE *fp)
 
 LoadFileStatus lf_load(LoadedFile *lf, const Filename *filename)
 {
+    #ifdef WINSCP
+    const char * data = in_memory_key_data(filename);
+    if (data != NULL)
+    {
+        LoadFileStatus status = LF_OK;
+        int len = strlen(data);
+        char buf[3] = { '\0' };
+        int i;
+        for (i = 0; i < len; i += 2)
+        {
+            if (lf->len == lf->max_size)
+            {
+                status = LF_TOO_BIG;
+                break;
+            }
+            buf[0] = data[i];
+            buf[1] = data[i + 1];
+            lf->data[lf->len] = strtol(buf, NULL, 16);
+            lf->len++;
+        }
+
+        BinarySource_INIT(lf, lf->data, lf->len);
+        return status;
+    }
+    #endif
+    { // WINSCP
     FILE *fp = f_open(filename, "rb", false);
     if (!fp)
         return LF_ERROR;
@@ -101,6 +127,7 @@ LoadFileStatus lf_load(LoadedFile *lf, const Filename *filename)
     LoadFileStatus status = lf_load_fp(lf, fp);
     fclose(fp);
     return status;
+    } // WINSCP
     } // WINSCP
 }
 
@@ -135,6 +162,8 @@ LoadedFile *lf_load_keyfile(const Filename *filename, const char **errptr)
     return lf;
 }
 
+#ifndef WINSCP
+/* This API does not support in-memory keys like lf_load, so make sure it's not in use */
 LoadedFile *lf_load_keyfile_fp(FILE *fp, const char **errptr)
 {
     LoadedFile *lf = lf_new(MAX_KEY_FILE_SIZE);
@@ -144,6 +173,7 @@ LoadedFile *lf_load_keyfile_fp(FILE *fp, const char **errptr)
     }
     return lf;
 }
+#endif
 
 static bool expect_signature(BinarySource *src, ptrlen realsig)
 {

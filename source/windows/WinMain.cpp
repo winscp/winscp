@@ -785,7 +785,7 @@ int __fastcall Execute()
   UpdateStaticUsage();
 
   UnicodeString KeyFile;
-  if (Params->FindSwitch(L"PrivateKey", KeyFile))
+  if (Params->FindSwitch(PRIVATEKEY_SWITCH, KeyFile))
   {
     WinConfiguration->DefaultKeyFile = KeyFile;
   }

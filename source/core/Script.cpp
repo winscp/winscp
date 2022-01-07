@@ -2559,12 +2559,12 @@ void __fastcall TManagementScript::MaskPasswordInCommandLine(UnicodeString & Com
     {
       UnicodeString & MaskedParams = Url.IsEmpty() ? MaskedParamsPre : MaskedParamsPost;
 
-      UnicodeString Switch;
+      UnicodeString Switch, Value;
       wchar_t SwitchMark;
-      if (Options.WasSwitchAdded(Switch, SwitchMark))
+      if (Options.WasSwitchAdded(Switch, Value, SwitchMark))
       {
         OptionWithParameters = L"";
-        if (TSessionData::IsSensitiveOption(Switch))
+        if (TSessionData::IsSensitiveOption(Switch, Value))
         {
           // We should use something like TProgramParams::FormatSwitch here
           RawParam = FORMAT(L"%s%s=%s", (SwitchMark, Switch, PasswordMask));

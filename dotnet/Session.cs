@@ -15,6 +15,7 @@ using System.Security;
 #endif
 using System.Text.RegularExpressions;
 using System.Linq;
+using System.Text;
 
 namespace WinSCP
 {
@@ -2048,13 +2049,28 @@ namespace WinSCP
                     }
                 }
 
-                if (!string.IsNullOrEmpty(sessionOptions.SshPrivateKeyPath) && !scanFingerprint)
+                bool hasSshPrivateKeyPath = !string.IsNullOrEmpty(sessionOptions.SshPrivateKeyPath);
+                bool hasSshPrivateKey = !string.IsNullOrEmpty(sessionOptions.SshPrivateKey);
+                if ((hasSshPrivateKeyPath || hasSshPrivateKey) && !scanFingerprint)
                 {
                     if (!sessionOptions.IsSsh)
                     {
-                        throw Logger.WriteException(new ArgumentException("SessionOptions.SshPrivateKeyPath is set, but SessionOptions.Protocol is neither Protocol.Sftp nor Protocol.Scp."));
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.SshPrivateKeyPath or SessionOptions.SshPrivateKey is set, but SessionOptions.Protocol is neither Protocol.Sftp nor Protocol.Scp."));
                     }
-                    switches.Add(FormatSwitch("privatekey", sessionOptions.SshPrivateKeyPath));
+                    if (hasSshPrivateKeyPath && hasSshPrivateKey)
+                    {
+                        throw Logger.WriteException(new ArgumentException("Set only one of SessionOptions.SshPrivateKeyPath or SessionOptions.SshPrivateKey."));
+                    }
+                    string privateKey;
+                    if (hasSshPrivateKeyPath)
+                    {
+                        privateKey = sessionOptions.SshPrivateKeyPath;
+                    }
+                    else
+                    {
+                        privateKey = "@" + GenerateInMemoryPrivateKey(sessionOptions);
+                    }
+                    switches.Add(FormatSwitch("privatekey", privateKey));
                 }
 
                 if (!string.IsNullOrEmpty(sessionOptions.TlsClientCertificatePath) && !scanFingerprint)
@@ -2116,9 +2132,11 @@ namespace WinSCP
 
                 if ((sessionOptions.SecurePrivateKeyPassphrase != null) && !scanFingerprint)
                 {
-                    if (string.IsNullOrEmpty(sessionOptions.SshPrivateKeyPath) && string.IsNullOrEmpty(sessionOptions.TlsClientCertificatePath))
+                    if (string.IsNullOrEmpty(sessionOptions.SshPrivateKeyPath) &&
+                        string.IsNullOrEmpty(sessionOptions.SshPrivateKey) &&
+                        string.IsNullOrEmpty(sessionOptions.TlsClientCertificatePath))
                     {
-                        throw Logger.WriteException(new ArgumentException("SessionOptions.PrivateKeyPassphrase is set, but neither SessionOptions.SshPrivateKeyPath nor SessionOptions.TlsClientCertificatePath is set."));
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.PrivateKeyPassphrase is set, but neither SessionOptions.SshPrivateKeyPath, SessionOptions.SshPrivateKey nor SessionOptions.TlsClientCertificatePath is set."));
                     }
                     switches.Add(FormatSwitch("passphrase", sessionOptions.PrivateKeyPassphrase));
                     logSwitches.Add(FormatSwitch("passphrase", "***"));
@@ -2137,6 +2155,12 @@ namespace WinSCP
                 arguments = string.Join(" ", switches.ToArray());
                 logArguments = string.Join(" ", logSwitches.ToArray());
             }
+        }
+
+        internal static string GenerateInMemoryPrivateKey(SessionOptions sessionOptions)
+        {
+            byte[] bytes = Encoding.Default.GetBytes(sessionOptions.SshPrivateKey);
+            return BitConverter.ToString(bytes).Replace("-", "");
         }
 
         private static string AddStarToList(string list)
