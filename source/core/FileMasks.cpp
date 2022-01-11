@@ -447,10 +447,6 @@ bool TFileMasks::DoMatches(
   const UnicodeString & FileName, bool Local, bool Directory, const UnicodeString & Path, const TParams * Params,
   bool RecurseInclude, bool & ImplicitMatch) const
 {
-  if (FileName == L"aaa2.txt")
-  {
-    UnicodeString X;
-  }
   bool ImplicitIncludeMatch = (FAllDirsAreImplicitlyIncluded && Directory) || FMasks[MASK_INDEX(Directory, true)].empty();
   bool ExplicitIncludeMatch = MatchesMasks(FileName, Local, Directory, Path, Params, FMasks[MASK_INDEX(Directory, true)], RecurseInclude);
   bool Result =
