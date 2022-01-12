@@ -1875,9 +1875,7 @@ __fastcall TSFTPFileSystem::TSFTPFileSystem(TTerminal * ATerminal,
 {
   FSecureShell = SecureShell;
   FPacketReservations = new TList();
-  FPacketNumbers = VarArrayCreate(OPENARRAY(int, (0, 1)), varLongWord);
-  FPreviousLoggedPacket = 0;
-  FNotLoggedPackets = 0;
+  ResetConnection();
   FBusy = 0;
   FAvoidBusy = false;
   FUtfStrings = asOff;
@@ -1920,6 +1918,7 @@ void __fastcall TSFTPFileSystem::Open()
 void __fastcall TSFTPFileSystem::Close()
 {
   FSecureShell->Close();
+  ResetConnection();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSFTPFileSystem::GetActive()
@@ -2061,7 +2060,10 @@ void __fastcall TSFTPFileSystem::ResetConnection()
     delete (TSFTPPacket *)FPacketReservations->Items[i];
   }
   FPacketReservations->Clear();
-  FPacketNumbers.Clear();
+  FPacketNumbers = VarArrayCreate(OPENARRAY(int, (0, 1)), varLongWord);
+  FNotLoggedRequests.clear();
+  FPreviousLoggedPacket = 0;
+  FNotLoggedPackets = 0;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
