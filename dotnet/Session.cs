@@ -70,7 +70,7 @@ namespace WinSCP
     [ComSourceInterfaces(typeof(ISessionEvents))]
     public sealed class Session : IDisposable, IReflect
     {
-        public string ExecutablePath { get { return _executablePath; } set { CheckNotOpened(); _executablePath = value; } }
+        public string ExecutablePath { get { return GetExecutablePath(); } set { CheckNotOpened(); _executablePath = value; } }
 #if !NETSTANDARD
         public string ExecutableProcessUserName { get { return _executableProcessUserName; } set { CheckNotOpened(); _executableProcessUserName = value; } }
         public SecureString ExecutableProcessPassword { get { return _executableProcessPassword; } set { CheckNotOpened(); _executableProcessPassword = value; } }
@@ -2518,6 +2518,31 @@ namespace WinSCP
                 }
             }
         }
+
+        private string GetExecutablePath()
+        {
+            string result;
+            if (_process != null)
+            {
+                result = _process.ExecutablePath;
+            }
+            else
+            {
+                // Same as ExeSessionProcess.GetExecutablePath,
+                // except that it does not throw when user-provided "executable path" does not exist
+
+                if (!string.IsNullOrEmpty(_executablePath))
+                {
+                    result = _executablePath;
+                }
+                else
+                {
+                    result = ExeSessionProcess.FindExecutable(this);
+                }
+            }
+            return result;
+        }
+
 
 #if !NETSTANDARD
         private static string GetTypeLibKey(Type t)
