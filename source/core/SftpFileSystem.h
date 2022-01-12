@@ -112,7 +112,8 @@ protected:
   TList * FPacketReservations;
   Variant FPacketNumbers;
   char FPreviousLoggedPacket;
-  int FNotLoggedPackets;
+  int FNotLoggedWritePackets, FNotLoggedReadPackets, FNotLoggedStatusPackets, FNotLoggedDataPackets;
+  std::set<unsigned int> FNotLoggedRequests;
   int FBusy;
   void * FBusyToken;
   bool FAvoidBusy;
@@ -134,7 +135,7 @@ protected:
     TRemoteFile *& File, unsigned char Type, TRemoteFile * ALinkedByFile = NULL,
     int AllowStatus = -1);
   virtual UnicodeString __fastcall GetCurrentDirectory();
-  unsigned long __fastcall GotStatusPacket(TSFTPPacket * Packet, int AllowStatus);
+  unsigned long __fastcall GotStatusPacket(TSFTPPacket * Packet, int AllowStatus, bool DoNotForceLog);
   bool __fastcall RemoteFileExists(const UnicodeString FullPath, TRemoteFile ** File = NULL);
   TRemoteFile * __fastcall LoadFile(TSFTPPacket * Packet,
     TRemoteFile * ALinkedByFile, const UnicodeString FileName,
@@ -157,6 +158,7 @@ protected:
   int __fastcall SendPacketAndReceiveResponse(const TSFTPPacket * Packet,
     TSFTPPacket * Response, int ExpectedType = -1, int AllowStatus = -1);
   void __fastcall UnreserveResponse(TSFTPPacket * Response);
+  void LogPacket(const TSFTPPacket * Packet, TLogLineType Type);
   void __fastcall TryOpenDirectory(const UnicodeString Directory);
   bool __fastcall SupportsExtension(const UnicodeString & Extension) const;
   void __fastcall ResetConnection();

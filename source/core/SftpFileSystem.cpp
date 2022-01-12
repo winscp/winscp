@@ -2063,7 +2063,7 @@ void __fastcall TSFTPFileSystem::ResetConnection()
   FPacketNumbers = VarArrayCreate(OPENARRAY(int, (0, 1)), varLongWord);
   FNotLoggedRequests.clear();
   FPreviousLoggedPacket = 0;
-  FNotLoggedPackets = 0;
+  FNotLoggedWritePackets = FNotLoggedReadPackets = FNotLoggedStatusPackets = FNotLoggedDataPackets = 0;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
@@ -2303,6 +2303,36 @@ void __fastcall TSFTPFileSystem::Progress(TFileOperationProgressType * Operation
   FTerminal->Progress(OperationProgress);
 }
 //---------------------------------------------------------------------------
+void TSFTPFileSystem::LogPacket(const TSFTPPacket * Packet, TLogLineType Type)
+{
+  std::vector<UnicodeString> NotLogged;
+  #define ADD_NOT_LOGGED(V, N) \
+    if (FNotLogged##V##Packets > 0) \
+    { \
+      NotLogged.push_back(FORMAT(L"%d SSH_FXP_"#N, (FNotLogged##V##Packets))); \
+      FNotLogged##V##Packets = 0; \
+    }
+  ADD_NOT_LOGGED(Write, WRITE);
+  ADD_NOT_LOGGED(Read, READ);
+  ADD_NOT_LOGGED(Data, DATA);
+  ADD_NOT_LOGGED(Status, STATUS);
+  if (!NotLogged.empty())
+  {
+    UnicodeString S;
+    for (size_t Index = 0; Index < NotLogged.size(); Index++)
+    {
+      AddToList(S, NotLogged[Index], (Index < NotLogged.size() - 1 ? L", " : L" and "));
+    }
+    FTerminal->LogEvent(FORMAT(L"Skipped %s packets", (S)));
+  }
+  FTerminal->Log->Add(
+    Type, FORMAT(L"Type: %s, Size: %d, Number: %d", (Packet->TypeName, (int)Packet->Length, (int)Packet->MessageNumber)));
+  if (FTerminal->Configuration->ActualLogProtocol >= 2)
+  {
+    FTerminal->Log->Add(Type, Packet->Dump());
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::SendPacket(const TSFTPPacket * Packet)
 {
   // putting here for a lack of better place
@@ -2322,23 +2352,20 @@ void __fastcall TSFTPFileSystem::SendPacket(const TSFTPPacket * Packet)
           (Packet->Type != FPreviousLoggedPacket) ||
           (FTerminal->Configuration->ActualLogProtocol >= 1))
       {
-        if (FNotLoggedPackets)
-        {
-          FTerminal->LogEvent(FORMAT(L"%d skipped SSH_FXP_WRITE, SSH_FXP_READ, SSH_FXP_DATA and SSH_FXP_STATUS packets.",
-            (FNotLoggedPackets)));
-          FNotLoggedPackets = 0;
-        }
-        FTerminal->Log->Add(llInput, FORMAT(L"Type: %s, Size: %d, Number: %d",
-          (Packet->TypeName, (int)Packet->Length, (int)Packet->MessageNumber)));
-        if (FTerminal->Configuration->ActualLogProtocol >= 2)
-        {
-          FTerminal->Log->Add(llInput, Packet->Dump());
-        }
+        LogPacket(Packet, llInput);
         FPreviousLoggedPacket = Packet->Type;
       }
       else
       {
-        FNotLoggedPackets++;
+        if (Packet->Type == SSH_FXP_WRITE)
+        {
+          FNotLoggedWritePackets++;
+        }
+        else if (DebugAlwaysTrue(Packet->Type == SSH_FXP_READ))
+        {
+          FNotLoggedReadPackets++;
+        }
+        FNotLoggedRequests.insert(Packet->MessageNumber);
       }
     }
     FSecureShell->Send(Packet->SendData, Packet->SendLength);
@@ -2349,8 +2376,8 @@ void __fastcall TSFTPFileSystem::SendPacket(const TSFTPPacket * Packet)
   }
 }
 //---------------------------------------------------------------------------
-unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
-  int AllowStatus)
+unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(
+  TSFTPPacket * Packet, int AllowStatus, bool DoNotForceLog)
 {
   unsigned long Code = Packet->GetCardinal();
 
@@ -2468,7 +2495,7 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
   }
   else
   {
-    if (!FNotLoggedPackets || Code)
+    if (!DoNotForceLog || (Code != 0))
     {
       if (FTerminal->Configuration->ActualLogProtocol >= 0)
       {
@@ -2532,6 +2559,7 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
 
   int Result = SSH_FX_OK;
   int Reservation = FPacketReservations->IndexOf(Packet);
+  bool NotLogged;
 
   if (Reservation < 0 || Packet->Capacity == 0)
   {
@@ -2539,6 +2567,7 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
     do
     {
       IsReserved = false;
+      NotLogged = false;
 
       DebugAssert(Packet);
 
@@ -2557,29 +2586,26 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
         FSecureShell->Receive(Packet->Data, Length);
         Packet->DataUpdated(Length);
 
+        bool ResponseToNotLoggedRequest = (FNotLoggedRequests.erase(Packet->MessageNumber) != 0);
         if (FTerminal->Log->Logging && (FTerminal->Configuration->ActualLogProtocol >= 0))
         {
-          if ((FPreviousLoggedPacket != SSH_FXP_READ &&
-               FPreviousLoggedPacket != SSH_FXP_WRITE) ||
+          if (!ResponseToNotLoggedRequest ||
               (Packet->Type != SSH_FXP_STATUS && Packet->Type != SSH_FXP_DATA) ||
               (FTerminal->Configuration->ActualLogProtocol >= 1))
           {
-            if (FNotLoggedPackets)
-            {
-              FTerminal->LogEvent(FORMAT(L"%d skipped SSH_FXP_WRITE, SSH_FXP_READ, SSH_FXP_DATA and SSH_FXP_STATUS packets.",
-                (FNotLoggedPackets)));
-              FNotLoggedPackets = 0;
-            }
-            FTerminal->Log->Add(llOutput, FORMAT(L"Type: %s, Size: %d, Number: %d",
-              (Packet->TypeName, (int)Packet->Length, (int)Packet->MessageNumber)));
-            if (FTerminal->Configuration->ActualLogProtocol >= 2)
-            {
-              FTerminal->Log->Add(llOutput, Packet->Dump());
-            }
+            LogPacket(Packet, llOutput);
           }
           else
           {
-            FNotLoggedPackets++;
+            if (Packet->Type == SSH_FXP_STATUS)
+            {
+              FNotLoggedStatusPackets++;
+            }
+            else if (DebugAlwaysTrue(Packet->Type == SSH_FXP_DATA))
+            {
+              FNotLoggedDataPackets++;
+            }
+            NotLogged = true; // used only for the response we wait for
           }
         }
 
@@ -2643,7 +2669,7 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
         {
           AllowStatus = (ExpectedType == SSH_FXP_STATUS ? asOK : asNo);
         }
-        Result = GotStatusPacket(Packet, AllowStatus);
+        Result = GotStatusPacket(Packet, AllowStatus, NotLogged);
       }
       else if (ExpectedType != Packet->Type)
       {
@@ -3540,7 +3566,7 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
       }
       else if (Response.Type == SSH_FXP_STATUS)
       {
-        isEOF = (GotStatusPacket(&Response, asEOF) == SSH_FX_EOF);
+        isEOF = (GotStatusPacket(&Response, asEOF, false) == SSH_FX_EOF);
       }
       else
       {
