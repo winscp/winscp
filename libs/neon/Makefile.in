@@ -87,9 +87,8 @@ uncover: subdirs
 subdirs:
 	@cd src && $(MAKE)
 
-# Uses Tim Waugh's excellent "xmlto" utility, see
-# http://cyberelk.net/tim/xmlto/.  (The docs target is executed at release
-# time before generating a .tar.gz)
+# Regenerating the docs requires xmlto to be installed, this target is
+# executed when release tarballs are generated.
 docs: docs-man docs-html
 
 docs-man:
@@ -128,13 +127,13 @@ neon-config: $(srcdir)/neon-config.in
 
 install-docs: install-man install-html
 
-install-html: docs-html
+install-html:
 	$(INSTALL) -d $(DESTDIR)$(docdir)/html
 	for d in doc/html/*.html; do \
 		$(INSTALL_DATA) $$d $(DESTDIR)$(docdir)/html; \
 	done
 
-install-man: docs-man
+install-man:
 	$(INSTALL) -d $(DESTDIR)$(man3dir)
 	$(INSTALL) -d $(DESTDIR)$(man1dir)
 	for m in doc/man/*.3; do \
