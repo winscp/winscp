@@ -9,7 +9,7 @@ _neon_ is an HTTP and WebDAV client library, with a C language API.
 Mailing list: neon@lists.manyfish.co.uk || Web site: https://notroj.github.io/neon/
 
 The neon API and ABI are stable and maintain backwards compatibility
-from 0.27.x through 0.31.x.
+since 0.27 through to current releases.
 
 Features:
 
