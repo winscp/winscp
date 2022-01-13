@@ -173,6 +173,8 @@ static const struct auth_class {
 /* Internal buffer size, which must be >= NE_ABUFSIZ. */
 #define ABUFSIZE (NE_ABUFSIZ * 2)
 
+#define zero_and_free(s) do { ne__strzero(s, strlen(s)); ne_free(s); } while (0)
+
 /* Authentication session state. */
 typedef struct {
     ne_session *sess;
@@ -317,7 +319,7 @@ static void free_domains(auth_session *sess)
 
 static void clean_session(auth_session *sess) 
 {
-    if (sess->basic) ne_free(sess->basic);
+    if (sess->basic) zero_and_free(sess->basic);
     if (sess->nonce) ne_free(sess->nonce);
     if (sess->cnonce) ne_free(sess->cnonce);
     if (sess->opaque) ne_free(sess->opaque);
@@ -325,7 +327,7 @@ static void clean_session(auth_session *sess)
     if (sess->userhash) ne_free(sess->userhash);
     if (sess->username_star) ne_free(sess->username_star);
     if (sess->response_rhs) ne_free(sess->response_rhs);
-    if (sess->h_a1) ne_free(sess->h_a1);
+    if (sess->h_a1) zero_and_free(sess->h_a1);
     sess->realm = sess->basic = sess->cnonce = sess->nonce =
         sess->opaque = sess->userhash = sess->response_rhs =
         sess->h_a1 = sess->username_star = NULL;
@@ -466,7 +468,7 @@ static char *get_scope_path(const char *uri)
     memset(&udot, 0, sizeof udot);
     udot.path = ".";
 
-    if (strcmp(uri, "*") == 0 || ne_uri_parse(uri, &base) != 0) {
+    if (ne_uri_parse(uri, &base) != 0) {
         /* Assume scope is whole origin. */
         return ne_strdup("/");
     }
@@ -521,18 +523,18 @@ static int basic_challenge(auth_session *sess, int attempt,
 
     ne__strzero(password, sizeof password);
 
-    if (sess->context == AUTH_CONNECT) {
-        /* For proxy auth w/TLS, auth is limited to handling CONNECT
-         * request, no need to derive the "scope" path. */
+    if (sess->ndomains) free_domains(sess); /* is this really needed? */
+
+    if (strcmp(uri, "*") == 0) {
+        /* If the request-target is "*" the auth scope is explicitly
+         * the whole server. */
         return 0;
     }
 
-    if (sess->ndomains != 1) {
-        sess->domains = ne_realloc(sess->domains, sizeof(*sess->domains));
-        sess->ndomains = 1;
-    }
-
+    sess->domains = ne_realloc(sess->domains, sizeof(*sess->domains));
     sess->domains[0] = get_scope_path(uri);
+    sess->ndomains = 1;
+
     NE_DEBUG(NE_DBG_HTTPAUTH, "auth: Basic auth scope is: %s\n",
              sess->domains[0]);
 
@@ -542,7 +544,7 @@ static int basic_challenge(auth_session *sess, int attempt,
 /* Add Basic authentication credentials to a request */
 static char *request_basic(auth_session *sess, struct auth_request *req) 
 {
-    if (!inside_domain(sess, req->uri)) {
+    if (sess->ndomains && !inside_domain(sess, req->uri)) {
         return NULL;
     }
 
@@ -1082,7 +1084,7 @@ static int digest_challenge(auth_session *sess, int attempt,
             || sess->alg == auth_alg_sha512_256_sess) {
             sess->h_a1 = ne_strhash(hash, h_urp, ":", sess->nonce, ":",
                                     sess->cnonce, NULL);
-            ne_free(h_urp);
+            zero_and_free(h_urp);
             NE_DEBUG(NE_DBG_HTTPAUTH, "auth: Session H(A1) is [%s]\n", sess->h_a1);
         }
         else {
