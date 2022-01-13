@@ -50,6 +50,10 @@ int any_2xx_request(ne_session *sess, const char *uri);
 /* As above but with a request body. */
 int any_2xx_request_body(ne_session *sess, const char *uri);
 
+/* As any_2xx_request but with a specified method. */
+int any_2xx_request_method(ne_session *sess, const char *method,
+                           const char *uri);
+
 /* makes *session, spawns server which will run 'fn(userdata,
  * socket)'.  sets error context if returns non-zero, i.e use like:
  * CALL(make_session(...)); */

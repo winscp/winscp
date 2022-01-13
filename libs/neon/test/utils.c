@@ -99,9 +99,9 @@ int any_request(ne_session *sess, const char *uri)
     return ret;
 }
 
-int any_2xx_request(ne_session *sess, const char *uri)
+int any_2xx_request_method(ne_session *sess, const char *method, const char *uri)
 {
-    ne_request *req = ne_request_create(sess, "GET", uri);
+    ne_request *req = ne_request_create(sess, method, uri);
     int ret = ne_request_dispatch(req);
     int klass = ne_get_status(req)->klass;
     const char *context = ne_get_response_header(req, "X-Neon-Context");
@@ -117,6 +117,11 @@ int any_2xx_request(ne_session *sess, const char *uri)
     }
     ne_request_destroy(req);
     return ret;
+}
+
+int any_2xx_request(ne_session *sess, const char *uri)
+{
+    return any_2xx_request_method(sess, "GET", uri);
 }
 
 int any_2xx_request_body(ne_session *sess, const char *uri)

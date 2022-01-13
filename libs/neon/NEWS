@@ -1,3 +1,9 @@
+Changes in release 0.32.2:
+* Fix auth handling for request-target of "*" (regressed since 0.31.x)
+* Fix bindtextdomain() detection on OS X (Daniel Macks)
+* Fix regeneration of docs in "make install" (Lonnie Abelbeck)
+* Fixes for NetBSD build (Thomas Klausner)
+
 Changes in release 0.32.1:
 * Fix configure CFLAGS handling in Kerberos detection.
 * Various spelling fixes.

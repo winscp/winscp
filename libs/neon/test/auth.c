@@ -341,11 +341,7 @@ static int retries(void)
     ONV(any_request(sess, "/foo") == NE_AUTH,
 	("auth failed on second try, should have succeeded: %s", ne_get_error(sess)));
 
-    ne_session_destroy(sess);
-
-    CALL(await_server());
-
-    return OK;
+    return destroy_and_wait(sess);
 }
 
 /* crashes with neon <0.22 */
@@ -375,9 +371,8 @@ static int tunnel_regress(void)
                                 "Content-Length: 0\r\n\r\n"));
     ne_set_server_auth(sess, fail_auth_cb, NULL);
     any_request(sess, "/foo");
-    ne_session_destroy(sess);
-    CALL(await_server());
-    return OK;
+
+    return destroy_and_wait(sess);
 }
 
 /* regression test for parsing a Negotiate challenge with on parameter
@@ -392,9 +387,8 @@ static int negotiate_regress(void)
                         "Content-Length: 0\r\n\r\n"));
     ne_set_server_auth(sess, fail_auth_cb, NULL);
     any_request(sess, "/foo");
-    ne_session_destroy(sess);
-    CALL(await_server());
-    return OK;
+
+    return destroy_and_wait(sess);
 }
 
 static char *digest_hdr = NULL;
@@ -931,8 +925,7 @@ static int test_digest(struct digest_parms *parms)
         CALL(any_2xx_request(sess, "/fish"));
     } while (--parms->num_requests);
     
-    ne_session_destroy(sess);
-    return await_server();
+    return destroy_and_wait(sess);
 }
 
 /* Test for RFC2617-style Digest auth. */
@@ -1279,10 +1272,9 @@ static int multi_handler(void)
           "[id=1, realm=fish, tries=0]", buf->data,
           "multiple callback", "invocation order");
     
-    ne_session_destroy(sess);
     ne_buffer_destroy(buf);
 
-    return await_server();
+    return destroy_and_wait(sess);
 }
 
 static int multi_rfc7616(void)
@@ -1327,11 +1319,10 @@ static int multi_rfc7616(void)
          "actual:   %s\n",
          exp->data, buf->data));
 
-    ne_session_destroy(sess);
     ne_buffer_destroy(buf);
     ne_buffer_destroy(exp);
 
-    return await_server();
+    return destroy_and_wait(sess);
 }
 
 static int multi_provider_cb(void *userdata, int attempt,
@@ -1426,11 +1417,10 @@ static int multi_provider(void)
          "actual:   %s\n",
          exp->data, buf->data));
 
-    ne_session_destroy(sess);
     ne_buffer_destroy(buf);
     ne_buffer_destroy(exp);
 
-    return await_server();
+    return destroy_and_wait(sess);
 }
 
 
@@ -1458,9 +1448,7 @@ static int domains(void)
     CALL(any_2xx_request(sess, "/fish/2"));
     CALL(any_2xx_request(sess, "*"));
     
-    ne_session_destroy(sess);
-
-    return await_server();
+    return destroy_and_wait(sess);
 }
 
 /* This segfaulted with 0.28.0 through 0.28.2 inclusive. */
@@ -1483,9 +1471,7 @@ static int CVE_2008_3746(void)
 
     any_2xx_request(sess, "/fish/0");
     
-    ne_session_destroy(sess);
-
-    return await_server();
+    return destroy_and_wait(sess);
 }
 
 static int defaults(void)
@@ -1501,8 +1487,8 @@ static int defaults(void)
     CALL(make_session(&sess, auth_serve, CHAL_WALLY));
     ne_add_server_auth(sess, NE_AUTH_ALL, auth_cb, NULL);
     CALL(any_2xx_request(sess, "/norman"));
-    ne_session_destroy(sess);
-    return await_server();
+
+    return destroy_and_wait(sess);
 }
 
 static void fail_hdr(char *value)
@@ -1576,7 +1562,7 @@ static int serve_basic_scope_checker(ne_socket *sock, void *userdata)
     send_response(sock, CHAL_WALLY, 401, 0);
 
     /* Retry of GET /fish/0 - expect Basic creds */
-    auth_failed = 0;
+    auth_failed = 1;
     got_header = auth_hdr;
     CALL(discard_request(sock));
     if (auth_failed) {
@@ -1615,9 +1601,49 @@ static int basic_scope(void)
     CALL(any_2xx_request(sess, "/not/inside")); /* must NOT use auth credentials */
     CALL(any_2xx_request(sess, "/fish/1")); /* must use auth credentials */
 
-    ne_session_destroy(sess);
+    return destroy_and_wait(sess);
+}
 
-    return await_server();
+/* Test for scope of "*" */
+static int serve_star_scope_checker(ne_socket *sock, void *userdata)
+{
+    /* --- OPTIONS * -- first request */
+    digest_hdr = NULL;
+    got_header = dup_header;
+    want_header = "Authorization";
+    CALL(discard_request(sock));
+    if (digest_hdr) {
+        t_context("Got WWW-Auth header on initial request");
+        return error_response(sock, FAIL);
+    }
+
+    send_response(sock, CHAL_WALLY, 401, 0);
+
+    /* Retry of OPTIONS * - expect Basic creds */
+    auth_failed = 1;
+    got_header = auth_hdr;
+    CALL(discard_request(sock));
+    if (auth_failed) {
+        t_context("No Basic Auth in OPTIONS request");
+        return error_response(sock, FAIL);
+    }
+    send_response(sock, CHAL_WALLY, 200, 0);
+
+    return 0;
+}
+
+/* Test for the scope of "*". */
+static int star_scope(void)
+{
+    ne_session *sess;
+
+    CALL(make_session(&sess, serve_star_scope_checker, NULL));
+
+    ne_set_server_auth(sess, auth_cb, NULL);
+
+    CALL(any_2xx_request_method(sess, "OPTIONS", "*")); /* must use auth */
+
+    return destroy_and_wait(sess);
 }
 
 /* proxy auth, proxy AND origin */
@@ -1643,5 +1669,6 @@ ne_test tests[] = {
     T(CVE_2008_3746),
     T(forget),
     T(basic_scope),
+    T(star_scope),
     T(NULL)
 };
