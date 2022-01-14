@@ -262,7 +262,7 @@ BOOL AFXAPI _AfxCopyStgMedium(
 
 // helper for reliable and small Release calls
 DWORD AFXAPI _AfxRelease(LPUNKNOWN* plpUnknown);
-#ifndef _DEBUG
+#ifndef MFC_DEBUG
 // generate smaller code in release build
 #define RELEASE(lpUnk) _AfxRelease((LPUNKNOWN*)&lpUnk)
 #else

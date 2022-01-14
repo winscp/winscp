@@ -182,7 +182,7 @@ protected:
 	void DoBeginPrinting(CView* pView, CDC* pDC, CPrintInfo* pprintInfo);
 	void DoEndPrinting(CView* pView, CDC* pDC, CPrintInfo* pprintInfo);
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -312,7 +312,7 @@ protected:
 // Implementation
 public:
 	virtual ~COleDocIPFrameWnd();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -357,7 +357,7 @@ public:
 // Implementation
 public:
 	virtual ~CDocObjectServerItem();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif

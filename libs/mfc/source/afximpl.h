@@ -243,7 +243,7 @@ typedef struct tagAFX_OLDTOOLINFO {
 #define _UNICODE_SUFFIX _T("u")
 #endif
 
-#ifndef _DEBUG
+#ifndef MFC_DEBUG
 #define _DEBUG_SUFFIX
 #else
 #define _DEBUG_SUFFIX _T("d")
@@ -531,7 +531,7 @@ CHandleMap* PASCAL afxMapHMENU(BOOL bCreate = FALSE);
 /////////////////////////////////////////////////////////////////////////////
 // Debugging/Tracing helpers
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void AFXAPI _AfxTraceMsg(LPCTSTR lpszPrefix, const MSG* pMsg);
 	BOOL AFXAPI _AfxCheckDialogTemplate(LPCTSTR lpszResource,
 		BOOL bInvisibleChild);

@@ -456,7 +456,7 @@ public:
 
 // Implementation
 public:
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -486,7 +486,7 @@ public:
 	virtual void OnDataAvailable(DWORD dwSize, DWORD bscfFlag);
 	virtual void Close();
 	virtual void ResetData();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -811,10 +811,10 @@ public:
 	~COleControl();
 	void RequestAsynchronousExchange(DWORD dwVersion);
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void AssertValid() const;
 	void Dump(CDumpContext& dc) const;
-#endif // _DEBUG
+#endif // MFC_DEBUG
 
 protected:
 	// Friend classes
@@ -1591,7 +1591,7 @@ private:
 
 	HGLOBAL m_hDialog;          // Handle of the dialog resource
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 protected:
 	BOOL m_bNonStandardSize;
 #endif

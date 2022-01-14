@@ -5,7 +5,6 @@ To build WinSCP you need:
 - [Build Tools and Agents for Visual Studio 2019](https://visualstudio.microsoft.com/) (for C# 9.0)
 - [nasm](https://www.nasm.us/) (store it to `buildtools/tools/nasm.exe`)
 - [Object file converter](https://www.agner.org/optimize/#objconv) (store it to `buildtools/tools/objconv.exe`)
-- Build MFC (see [`readme_mfc.txt`](readme_mfc.txt)).
 
 To build WinSCP from source by yourself, modify and use [`build.bat`](build.bat) in root folder.
 

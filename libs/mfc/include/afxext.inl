@@ -90,7 +90,7 @@ _AFXEXT_INLINE void CStatusBar::SetBorders(LPCRECT lpRect)
 	{ SetBorders(lpRect->left, lpRect->top, lpRect->right, lpRect->bottom); }
 _AFXEXT_INLINE void CStatusBar::SetBorders(int cxLeft, int cyTop, int cxRight, int cyBottom)
 	{ ASSERT(cyTop >= 2); CControlBar::SetBorders(cxLeft, cyTop, cxRight, cyBottom); }
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 // status bars do not support docking
 _AFXEXT_INLINE void CStatusBar::EnableDocking(DWORD)
 	{ ASSERT(FALSE); }
@@ -99,7 +99,7 @@ _AFXEXT_INLINE void CStatusBar::EnableDocking(DWORD)
 // CReBar
 _AFXEXT_INLINE CReBarCtrl& CReBar::GetReBarCtrl() const
 	{ return *(CReBarCtrl*)this; }
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 // rebars do not support docking
 _AFXEXT_INLINE void CReBar::EnableDocking(DWORD)
 	{ ASSERT(FALSE); }

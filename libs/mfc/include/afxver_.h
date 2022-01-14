@@ -41,8 +41,8 @@
 #define AFX_OLE5_SEG    _TEXTSEG(AFX_OLE5)  // and even more OLE support
 #define AFX_OLERA_SEG   _TEXTSEG(AFX_OLERA) // (reserved for future use)
 #define AFX_PRINT_SEG   _TEXTSEG(AFX_PRNT)  // Printing functionality
-#define AFX_DBG1_SEG    _TEXTSEG(AFX_DBG1)  // inlines go here in _DEBUG
-#define AFX_DBG2_SEG    _TEXTSEG(AFX_DBG2)  // inlines go here in _DEBUG
+#define AFX_DBG1_SEG    _TEXTSEG(AFX_DBG1)  // inlines go here in MFC_DEBUG
+#define AFX_DBG2_SEG    _TEXTSEG(AFX_DBG2)  // inlines go here in MFC_DEBUG
 #define AFX_VDEL_SEG    _TEXTSEG(AFX_VDEL)  // vector deleting destructors
 #define AFX_TERM_SEG    _TEXTSEG(AFX_TERM)  // cleanup routines
 #define AFX_MAPI_SEG    _TEXTSEG(AFX_MAPI)  // simple MAPI support
@@ -64,8 +64,8 @@
 #define AFX_OLE5_SEG                        // and even more OLE support
 #define AFX_OLERA_SEG                       // (reserved for future use)
 #define AFX_PRINT_SEG                       // Printing functionality
-#define AFX_DBG1_SEG                        // inlines go here in _DEBUG
-#define AFX_DBG2_SEG                        // inlines go here in _DEBUG
+#define AFX_DBG1_SEG                        // inlines go here in MFC_DEBUG
+#define AFX_DBG2_SEG                        // inlines go here in MFC_DEBUG
 #define AFX_VDEL_SEG                        // vector deleting destructors
 #define AFX_TERM_SEG                        // cleanup routines
 #define AFX_MAPI_SEG                        // simple MAPI support
@@ -106,13 +106,13 @@
 //   _CUSTOM   : for custom configurations (causes afxv_cfg.h to be included)
 //
 // Additional build options:
-//  _DEBUG              debug versions (full diagnostics)
+//  MFC_DEBUG              debug versions (full diagnostics)
 //  _AFXDLL             use shared MFC DLL
 //  _AFXEXT             extension DLL version, implies _AFXDLL
 //  _USRDLL             create regular DLL (_AFXDLL is valid too)
 //
 
-#ifndef _DEBUG
+#ifndef MFC_DEBUG
 	#define _AFX_ENABLE_INLINES
 #endif
 
@@ -193,12 +193,12 @@
 #endif
 #endif
 
-#ifndef _DEBUG
+#ifndef MFC_DEBUG
 #ifdef AfxDebugBreak
 #undef AfxDebugBreak
 #endif
 #define AfxDebugBreak()
-#endif  // _DEBUG
+#endif  // MFC_DEBUG
 
 /////////////////////////////////////////////////////////////////////////////
 // Standard preprocessor symbols if not already defined
@@ -287,7 +287,7 @@
 // This macro is used to reduce size requirements of some classes
 #ifndef AFX_ALWAYS_VTABLE
 #ifndef AFX_NOVTABLE
-#if _MSC_VER >= 1100 && !defined(_DEBUG)
+#if _MSC_VER >= 1100 && !defined(MFC_DEBUG)
 #define AFX_NOVTABLE __declspec(novtable)
 #else
 #define AFX_NOVTABLE

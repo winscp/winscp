@@ -19,7 +19,7 @@
 #include "winver.h"
 #include "afxbld_.h"
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 
 // Version Info for MFCN42D.DLL
 VS_VERSION_INFO     VERSIONINFO

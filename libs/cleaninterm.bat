@@ -25,4 +25,10 @@ rem ==== libs3 ====
 echo Cleaning up libs3 ...
 rmdir /s /q libs3\tmp
 
+rem ==== MFC ====
+
+echo Cleaning up MFC ...
+rmdir /s /q mfc\source\$UW
+del mfc\source\bor.rsp
+
 echo All done

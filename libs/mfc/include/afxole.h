@@ -240,7 +240,7 @@ public:
 // Implementation
 public:
 	virtual ~COleDataSource();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -307,7 +307,7 @@ protected:
 public:
 	virtual void Serialize(CArchive& ar);   // for Native data
 	virtual ~CDocItem();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -364,7 +364,7 @@ public:
 public:
 	CObList m_docItemList;  // not owned items
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -666,7 +666,7 @@ public:
 public:
 	virtual ~COleClientItem();
 	virtual void Serialize(CArchive& ar);
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -950,7 +950,7 @@ public:
 	LPDATAADVISEHOLDER m_lpDataAdviseHolder;    // may be NULL
 
 	virtual ~COleServerItem();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -1060,7 +1060,7 @@ protected:
 public:
 	COleObjectFactory* m_pFactory;  // back-pointer to server
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -1237,7 +1237,7 @@ protected:
 
 public:
 	virtual ~COleServerDoc();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -1392,7 +1392,7 @@ public:
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	virtual LRESULT OnSetMessageString(WPARAM wParam, LPARAM lParam);
 	virtual ~COleIPFrameWnd();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -1509,7 +1509,7 @@ public:
 // Implementation
 public:
 	LPSTREAM m_lpStream;
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -1598,7 +1598,7 @@ public:
 
 	virtual void Flush();
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 	// Calls COleStreamFile::Dump(), and prints out moniker value.
@@ -1697,7 +1697,7 @@ protected:
 // Implementation
 public:
 	virtual ~CAsyncMonikerFile();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 	// Calls CMonikerFile::Dump(), and prints out IBinding,
@@ -1739,7 +1739,7 @@ public:
 
 // Implementation
 public:
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 
@@ -1793,7 +1793,7 @@ public:
 // Implementation
 public:
 	virtual ~COleDropTarget();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -1860,7 +1860,7 @@ public:
 
 // Implementation
 public:
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -1911,7 +1911,7 @@ public:
 void AFXAPI AfxOleSetEditMenu(COleClientItem* pClient, CMenu* pMenu,
 	UINT iMenuItem, UINT nIDVerbMin, UINT nIDVerbMax = 0, UINT nIDConvert = 0);
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 // Mapping SCODEs to readable text
 LPCTSTR AFXAPI AfxGetFullScodeString(SCODE sc);
 LPCTSTR AFXAPI AfxGetScodeString(SCODE sc);

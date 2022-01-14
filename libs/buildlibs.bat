@@ -99,4 +99,23 @@ exit
 
 :SKIP_LIBS3
 
+rem ==== MFC ====
+
+if exist lib\UafxcW.lib (
+echo MFC already built
+goto SKIP_MFC
+)
+
+echo Building MFC ...
+cd mfc\source
+make -fborland.mak NO_WARNINGS=1
+cd ..\..
+
+if not exist lib\UafxcW.lib (
+echo MFC build failed
+exit
+)
+
+:SKIP_MFC
+
 echo All done

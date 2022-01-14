@@ -69,7 +69,7 @@ public:
 // Implementation
 public:
 	virtual ~CSyncObject();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	CString m_strName;
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;

@@ -121,7 +121,7 @@ public:
 	~CByteArray();
 
 	void Serialize(CArchive&);
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void Dump(CDumpContext&) const;
 	void AssertValid() const;
 #endif
@@ -194,7 +194,7 @@ public:
 	~CWordArray();
 
 	void Serialize(CArchive&);
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void Dump(CDumpContext&) const;
 	void AssertValid() const;
 #endif
@@ -267,7 +267,7 @@ public:
 	~CDWordArray();
 
 	void Serialize(CArchive&);
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void Dump(CDumpContext&) const;
 	void AssertValid() const;
 #endif
@@ -338,7 +338,7 @@ protected:
 
 public:
 	~CUIntArray();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void Dump(CDumpContext&) const;
 	void AssertValid() const;
 #endif
@@ -409,7 +409,7 @@ protected:
 
 public:
 	~CPtrArray();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void Dump(CDumpContext&) const;
 	void AssertValid() const;
 #endif
@@ -482,7 +482,7 @@ public:
 	~CObArray();
 
 	void Serialize(CArchive&);
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void Dump(CDumpContext&) const;
 	void AssertValid() const;
 #endif
@@ -565,7 +565,7 @@ public:
 	~CStringArray();
 
 	void Serialize(CArchive&);
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void Dump(CDumpContext&) const;
 	void AssertValid() const;
 #endif
@@ -665,7 +665,7 @@ protected:
 
 public:
 	~CPtrList();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void Dump(CDumpContext&) const;
 	void AssertValid() const;
 #endif
@@ -765,7 +765,7 @@ public:
 	~CObList();
 
 	void Serialize(CArchive&);
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void Dump(CDumpContext&) const;
 	void AssertValid() const;
 #endif
@@ -873,7 +873,7 @@ public:
 	~CStringList();
 
 	void Serialize(CArchive&);
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void Dump(CDumpContext&) const;
 	void AssertValid() const;
 #endif
@@ -950,7 +950,7 @@ protected:
 
 public:
 	~CMapWordToPtr();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void Dump(CDumpContext&) const;
 	void AssertValid() const;
 #endif
@@ -1032,7 +1032,7 @@ protected:
 
 public:
 	~CMapPtrToWord();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void Dump(CDumpContext&) const;
 	void AssertValid() const;
 #endif
@@ -1114,7 +1114,7 @@ protected:
 
 public:
 	~CMapPtrToPtr();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void Dump(CDumpContext&) const;
 	void AssertValid() const;
 #endif
@@ -1200,7 +1200,7 @@ public:
 	~CMapWordToOb();
 
 	void Serialize(CArchive&);
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void Dump(CDumpContext&) const;
 	void AssertValid() const;
 #endif
@@ -1283,7 +1283,7 @@ protected:
 
 public:
 	~CMapStringToPtr();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void Dump(CDumpContext&) const;
 	void AssertValid() const;
 #endif
@@ -1367,7 +1367,7 @@ public:
 	~CMapStringToOb();
 
 	void Serialize(CArchive&);
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void Dump(CDumpContext&) const;
 	void AssertValid() const;
 #endif
@@ -1451,7 +1451,7 @@ public:
 	~CMapStringToString();
 
 	void Serialize(CArchive&);
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void Dump(CDumpContext&) const;
 	void AssertValid() const;
 #endif

@@ -40,7 +40,7 @@ protected:
 	CRITICAL_SECTION m_protect;
 };
 
-#ifndef _DEBUG
+#ifndef MFC_DEBUG
 
 // DECLARE_FIXED_ALLOC -- used in class definition
 #define DECLARE_FIXED_ALLOC(class_name) \
@@ -67,11 +67,11 @@ protected: \
 #define IMPLEMENT_FIXED_ALLOC(class_name, block_size) \
 CFixedAlloc class_name::s_alloc(sizeof(class_name), block_size) \
 
-#else //!_DEBUG
+#else //!MFC_DEBUG
 
 #define DECLARE_FIXED_ALLOC(class_name)     // nothing in debug
 #define IMPLEMENT_FIXED_ALLOC(class_name, block_size)   // nothing in debug
 
-#endif //!_DEBUG
+#endif //!MFC_DEBUG
 
 #endif

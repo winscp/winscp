@@ -4,11 +4,7 @@
 #include "FileZillaIntf.h"
 #include "FileZillaIntern.h"
 //---------------------------------------------------------------------------
-#ifndef _DEBUG
 #pragma comment(lib, "uafxcw.lib")
-#else
-#pragma comment(lib, "uafxcwd.lib")
-#endif
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

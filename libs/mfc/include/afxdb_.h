@@ -63,10 +63,10 @@ public:
 public:
 	virtual ~CLongBinary();
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
-#endif //_DEBUG
+#endif //MFC_DEBUG
 };
 
 //////////////////////////////////////////////////////////////////////////////

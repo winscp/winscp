@@ -25,7 +25,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // _AFX_DEBUG_STATE
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 
 class _AFX_DEBUG_STATE : public CNoTrackObject
 {
@@ -36,7 +36,7 @@ public:
 
 EXTERN_PROCESS_LOCAL(_AFX_DEBUG_STATE, afxDebugState)
 
-#endif //_DEBUG
+#endif //MFC_DEBUG
 
 /////////////////////////////////////////////////////////////////////////////
 // _AFX_WIN_STATE
