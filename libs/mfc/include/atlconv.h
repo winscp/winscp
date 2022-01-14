@@ -24,7 +24,7 @@
 // Make sure MFC's afxconv.h hasn't already been loaded to do this
 #ifndef USES_CONVERSION
 
-#ifndef _DEBUG
+#ifndef MFC_DEBUG
 #   define USES_CONVERSION int _convert; _convert
 #else
 #   define USES_CONVERSION int _convert = 0;

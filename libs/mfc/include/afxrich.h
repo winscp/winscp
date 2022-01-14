@@ -176,7 +176,7 @@ public:
 	HRESULT ShowContainerUI(BOOL b);
 	static DWORD CALLBACK EditStreamCallBack(DWORD dwCookie,
 		LPBYTE pbBuff, LONG cb, LONG *pcb);
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -323,7 +323,7 @@ public:
 	CRichEditCntrItem* LookupItem(LPOLEOBJECT lpobj) const;
 	void InvalidateObjectCache();
 	virtual void Serialize(CArchive& ar);   // overridden for document i/o
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -367,7 +367,7 @@ public:
 	virtual void SetDrawAspect(DVASPECT nDrawAspect);
 	virtual void OnDeactivateUI(BOOL bUndoable);
 	virtual BOOL CanActivate();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif

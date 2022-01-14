@@ -73,8 +73,8 @@ public:
 	friend class CWinThread;
 };
 
-// Note: out-of-line _DEBUG version is in winhand.cpp
-#ifndef _DEBUG
+// Note: out-of-line MFC_DEBUG version is in winhand.cpp
+#ifndef MFC_DEBUG
 inline void CHandleMap::SetPermanent(HANDLE h, CObject* permOb)
 	{ m_permanentMap[(LPVOID)h] = permOb; }
 

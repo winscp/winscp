@@ -116,7 +116,7 @@ public:
 public:
 	int MapResult(UINT nResult);
 	COleDialog(CWnd* pParentWnd);
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 
@@ -164,7 +164,7 @@ public:
 // Implementation
 public:
 	virtual ~COleInsertDialog();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 
@@ -214,7 +214,7 @@ public:
 // Implementation
 public:
 	virtual ~COleConvertDialog();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 };
@@ -245,7 +245,7 @@ public:
 // Implementation
 public:
 	virtual ~COleChangeIconDialog();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 };
@@ -292,7 +292,7 @@ public:
 // Implementation
 public:
 	virtual ~COlePasteSpecialDialog();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 	virtual void AssertValid() const;
 #endif
@@ -321,7 +321,7 @@ public:
 // Implementation
 public:
 	virtual ~COleLinksDialog();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 	virtual void AssertValid() const;
 #endif
@@ -349,7 +349,7 @@ public:
 // Implementation
 public:
 	virtual ~COleUpdateDialog();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 
@@ -381,7 +381,7 @@ public:
 // Implementation
 public:
 	~COleBusyDialog();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 
@@ -418,7 +418,7 @@ public:
 
 // Implementation
 public:
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 	virtual void AssertValid() const;
 #endif
@@ -475,7 +475,7 @@ public:
 	COleUILinkInfo m_xLinkInfo;
 
 	virtual ~COleChangeSourceDialog();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 	virtual void AssertValid() const;
 #endif

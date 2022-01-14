@@ -117,7 +117,7 @@ LPATH=..\..\LIB;..\..\LIB\PSDK
 
 # MFC Include directory base
 !ifndef MFCINCL
-MFCINCL=..\..\include\mfc
+MFCINCL=..\include
 !endif
 
 # BC Include directory
@@ -501,8 +501,8 @@ $(CPPFLAGS) -I$(BCINCL);$(MFCINCL) /c $(PCH_CPP).cpp
 $(LIBDIR)\$(GOAL).lib: $(D)\$(OBJS)
 	# @-if exist $@ erase $@
 	@$(LIB32) $@ /P2048 @&&!
-+-$(**: = &^
-+-)
++$(**: = &^
++)
 !
 
 !endif #DLL!=2

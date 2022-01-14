@@ -51,7 +51,7 @@
 // Win32 libraries
 
 #ifdef _AFXDLL
-	#if defined(_DEBUG) && !defined(_AFX_MONOLITHIC)
+	#if defined(MFC_DEBUG) && !defined(_AFX_MONOLITHIC)
 		#ifndef _UNICODE
 			#pragma comment(lib, "mfco42d.lib")
 		#else
@@ -569,7 +569,7 @@ protected:
 // Implementation
 public:
 	virtual ~COleObjectFactory();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void AssertValid() const;
 	void Dump(CDumpContext& dc) const;
 #endif
@@ -1000,7 +1000,7 @@ public:
 };
 
 // COleVariant diagnostics and serialization
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 CDumpContext& AFXAPI operator<<(CDumpContext& dc, COleVariant varSrc);
 #endif
 CArchive& AFXAPI operator<<(CArchive& ar, COleVariant varSrc);
@@ -1075,7 +1075,7 @@ public:
 };
 
 // COleCurrency diagnostics and serialization
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 CDumpContext& AFXAPI operator<<(CDumpContext& dc, COleCurrency curSrc);
 #endif
 CArchive& AFXAPI operator<<(CArchive& ar, COleCurrency curSrc);
@@ -1183,7 +1183,7 @@ protected:
 };
 
 // COleDateTime diagnostics and serialization
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 CDumpContext& AFXAPI operator<<(CDumpContext& dc, COleDateTime dateSrc);
 #endif
 CArchive& AFXAPI operator<<(CArchive& ar, COleDateTime dateSrc);
@@ -1260,7 +1260,7 @@ public:
 };
 
 // COleDateTimeSpan diagnostics and serialization
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 CDumpContext& AFXAPI operator<<(CDumpContext& dc,COleDateTimeSpan dateSpanSrc);
 #endif
 CArchive& AFXAPI operator<<(CArchive& ar, COleDateTimeSpan dateSpanSrc);
@@ -1348,7 +1348,7 @@ public:
 };
 
 // COleSafeArray diagnostics and serialization
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 CDumpContext& AFXAPI operator<<(CDumpContext& dc, COleSafeArray& saSrc);
 #endif
 

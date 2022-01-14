@@ -250,7 +250,7 @@ public:
 // Implementation
 public:
 	virtual ~CPreviewDC();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -369,7 +369,7 @@ protected:
 public:
 	virtual ~CPreviewView();
 	virtual void OnPrepareDC(CDC* pDC, CPrintInfo* pInfo = NULL);
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void AssertValid() const;
 	void Dump(CDumpContext& dc) const;
 #endif
@@ -593,7 +593,7 @@ public:
 // Implementation
 public:
 	virtual ~CDockBar();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -676,7 +676,7 @@ public:
 	void OnIdleUpdateCmdUI();
 	virtual BOOL OnCmdMsg(UINT nID, int nCode, void* pExtra,
 		AFX_CMDHANDLERINFO* pHandlerInfo);
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void AssertValid() const;
 #endif
 };

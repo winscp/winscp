@@ -39,7 +39,7 @@ extern CComModule _Module;
 
 #ifndef _AFX_NOFORCE_LIBS
 #ifdef _AFXDLL
-	#if defined(_DEBUG) && !defined(_AFX_MONOLITHIC)
+	#if defined(MFC_DEBUG) && !defined(_AFX_MONOLITHIC)
 		#ifndef _UNICODE
 			#pragma comment(lib, "mfco42d.lib")
 			#pragma comment(lib, "mfcd42d.lib")

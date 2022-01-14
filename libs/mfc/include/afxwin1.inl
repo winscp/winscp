@@ -83,7 +83,7 @@ _AFXWIN_INLINE CPoint::CPoint()
 	{ /* random filled */ }
 _AFXWIN_INLINE CPoint::CPoint(int initX, int initY)
 	{ x = initX; y = initY; }
-#if !defined(_AFX_CORE_IMPL) || !defined(_AFXDLL) || defined(_DEBUG)
+#if !defined(_AFX_CORE_IMPL) || !defined(_AFXDLL) || defined(MFC_DEBUG)
 _AFXWIN_INLINE CPoint::CPoint(POINT initPt)
 	{ *(POINT*)this = initPt; }
 #endif

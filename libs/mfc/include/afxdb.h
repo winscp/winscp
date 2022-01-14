@@ -45,7 +45,7 @@
 // Win32 libraries
 
 #ifdef _AFXDLL
-	#if defined(_DEBUG) && !defined(_AFX_MONOLITHIC)
+	#if defined(MFC_DEBUG) && !defined(_AFX_MONOLITHIC)
 		#ifndef _UNICODE
 			#pragma comment(lib, "mfcd42d.lib")
 		#else
@@ -203,7 +203,7 @@ public:
 	virtual BOOL GetErrorMessage(LPTSTR lpszError, UINT nMaxError,
 		PUINT pnHelpContext = NULL);
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void TraceErrorMessage(LPCTSTR szTrace) const;
 #endif // DEBUG
 
@@ -276,12 +276,12 @@ public:
 public:
 	virtual ~CDatabase();
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 
 	BOOL m_bTransactionPending;
-#endif //_DEBUG
+#endif //MFC_DEBUG
 
 	// general error check
 	virtual BOOL Check(RETCODE nRetCode) const;
@@ -359,7 +359,7 @@ public:
 		AllocCache,         // allocate cache used for dirty field check
 		AllocMultiRowBuffer,    // allocate buffer holding multi rows of data
 		DeleteMultiRowBuffer,   // delete buffer holding multi rows of data
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 		DumpField,          // dump bound field name and value
 #endif
 	};
@@ -411,9 +411,9 @@ public:
 	long m_lDefaultLBFetchSize;     // For fetching CLongBinary data of unknown len
 	long m_lDefaultLBReallocSize;   // For fetching CLongBinary data of unknown len
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	CDumpContext* m_pdcDump;
-#endif //_DEBUG
+#endif //MFC_DEBUG
 
 };
 
@@ -706,10 +706,10 @@ public:
 
 // Implementation
 public:
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
-#endif //_DEBUG
+#endif //MFC_DEBUG
 
 	virtual BOOL Check(RETCODE nRetCode) const; // general error check
 
@@ -759,9 +759,9 @@ public:
 	void MarkForUpdate();
 	void AllocDataCache();
 	void FreeDataCache();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void DumpFields(CDumpContext& dc) const;
-#endif //_DEBUG
+#endif //MFC_DEBUG
 
 	// RFX operation helper functions
 	virtual void ThrowDBException(RETCODE nRetCode, HSTMT hstmt = SQL_NULL_HSTMT);
@@ -906,7 +906,7 @@ struct CFieldInfo
 	long m_nLength;
 	int m_nDataType;
 	BYTE m_bStatus;
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void* m_pvBindAddress;
 #endif
 };
@@ -1006,7 +1006,7 @@ public:
 // Implementation
 public:
 	virtual ~CRecordView();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif

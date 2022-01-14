@@ -842,7 +842,7 @@ public:
 // Implementation
 public:
 	virtual ~CImageList();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 	virtual void AssertValid() const;
 #endif

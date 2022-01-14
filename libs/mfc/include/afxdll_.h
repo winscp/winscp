@@ -67,10 +67,10 @@ public:
 	CDynLinkLibrary* m_pNextDLL;        // simple singly linked list
 	virtual ~CDynLinkLibrary();
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
-#endif //_DEBUG
+#endif //MFC_DEBUG
 };
 
 // call in every DLL_PROCESS_ATTACH
@@ -80,7 +80,7 @@ void AFXAPI AfxTermExtensionModule(AFX_EXTENSION_MODULE&, BOOL bAll = FALSE);
 
 // special function(s) for stand-alone DLLs (and controls)
 void AFXAPI AfxCoreInitModule();
-#if defined(_DEBUG) && !defined(_AFX_MONOLITHIC)
+#if defined(MFC_DEBUG) && !defined(_AFX_MONOLITHIC)
 void AFXAPI AfxOleInitModule();
 void AFXAPI AfxNetInitModule();
 void AFXAPI AfxDbInitModule();

@@ -92,7 +92,7 @@ public:
 
 // Implementation:
 public:
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -167,7 +167,7 @@ public:
 // Implementation
 public:
 	virtual ~CControlBar();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -296,7 +296,7 @@ public:
 	void CalcInsideRect(CRect& rect, BOOL bHorz) const;
 	virtual void OnBarStyleChange(DWORD dwOldStyle, DWORD dwNewStyle);
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 	void EnableDocking(DWORD dwDockStyle);
@@ -397,7 +397,7 @@ public:
 	BOOL AddReplaceBitmap(HBITMAP hbmImageWell);
 	virtual void OnBarStyleChange(DWORD dwOldStyle, DWORD dwNewStyle);
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -532,7 +532,7 @@ public:
 	virtual int OnToolHitTest(CPoint point, TOOLINFO* pTI) const;
 	virtual CSize CalcFixedLayout(BOOL bStretch, BOOL bHorz);
 	virtual CSize CalcDynamicLayout(int nLength, DWORD nMode);
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	void EnableDocking(DWORD dwDockStyle);
 #endif
 
@@ -649,7 +649,7 @@ public:
 // Implementation
 public:
 	virtual ~CSplitterWnd();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -740,7 +740,7 @@ protected:      // must derive your own class
 
 // Implementation
 public:
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -823,7 +823,7 @@ protected:
 // Implementation
 public:
 	virtual ~CEditView();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif

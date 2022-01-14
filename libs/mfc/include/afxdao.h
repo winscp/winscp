@@ -52,7 +52,7 @@
 // Win32 libraries
 
 #ifdef _AFXDLL
-	#if defined(_DEBUG) && !defined(_AFX_MONOLITHIC)
+	#if defined(MFC_DEBUG) && !defined(_AFX_MONOLITHIC)
 		#ifndef _UNICODE
 			#pragma comment(lib, "mfco42d.lib")
 			#pragma comment(lib, "mfcd42d.lib")
@@ -128,7 +128,7 @@ struct CDaoErrorInfo
 	CString m_strHelpFile;
 	long m_lHelpContext;
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 };
@@ -140,7 +140,7 @@ struct CDaoWorkspaceInfo
 	CString m_strUserName;          // Secondary
 	BOOL m_bIsolateODBCTrans;       // All
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 };
@@ -156,7 +156,7 @@ struct CDaoDatabaseInfo
 	short m_nQueryTimeout;          // Secondary
 	CString m_strConnect;           // All
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 };
@@ -175,7 +175,7 @@ struct CDaoTableDefInfo
 	CString m_strValidationText;    // All
 	long m_lRecordCount;            // All
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 };
@@ -198,7 +198,7 @@ struct CDaoFieldInfo
 	CString m_strValidationText;    // All
 	CString m_strDefaultValue;      // All
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 };
@@ -209,7 +209,7 @@ struct CDaoIndexFieldInfo
 	CString m_strName;              // Primary
 	BOOL m_bDescending;             // Primary
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 };
@@ -235,7 +235,7 @@ struct CDaoIndexInfo
 	virtual ~CDaoIndexInfo();
 	BOOL m_bCleanupFieldInfo;
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 };
@@ -246,7 +246,7 @@ struct CDaoRelationFieldInfo
 	CString m_strName;              // Primary
 	CString m_strForeignName;       // Primary
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 };
@@ -268,7 +268,7 @@ struct CDaoRelationInfo
 	virtual ~CDaoRelationInfo();
 	BOOL m_bCleanupFieldInfo;
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 };
@@ -286,7 +286,7 @@ struct CDaoQueryDefInfo
 	CString m_strConnect;           // All
 	short m_nODBCTimeout;           // See readme
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 };
@@ -298,7 +298,7 @@ struct CDaoParameterInfo
 	short m_nType;                  // Primary
 	COleVariant m_varValue;         // Secondary
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 };
@@ -367,12 +367,12 @@ void AFXAPI AfxDaoCheck(SCODE scode, LPCSTR lpszDaoCall,
 	LPCSTR lpszFile, int nLine, int nError = NO_AFX_DAO_ERROR,
 	BOOL bMemOnly = FALSE);
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 void AFXAPI AfxDaoTrace(SCODE scode, LPCSTR lpszDaoCall,
 	LPCSTR lpszFile, int nLine);
 #endif
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 #define DAO_CHECK(f)            AfxDaoCheck(f, #f, THIS_FILE, __LINE__)
 #define DAO_CHECK_ERROR(f, err) AfxDaoCheck(f, #f, THIS_FILE, __LINE__, err)
 #define DAO_CHECK_MEM(f)        AfxDaoCheck(f, #f, THIS_FILE, __LINE__, \
@@ -407,7 +407,7 @@ public:
 		MarkForAddNew,          // marks fields dirty if not PSEUDO NULL
 		MarkForEdit,            // marks fields dirty if don't match cache
 		SetDirtyField,          // sets field values marked as dirty
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 		DumpField,
 #endif
 		MaxDFXOperation,        // dummy operation type for input checking
@@ -453,9 +453,9 @@ public:
 	UINT m_nParam;
 	UINT m_nFieldFound;
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	CDumpContext* m_pdcDump;
-#endif //_DEBUG
+#endif //MFC_DEBUG
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -617,7 +617,7 @@ public:
 public:
 	virtual ~CDaoWorkspace();
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -761,7 +761,7 @@ public:
 public:
 	virtual ~CDaoDatabase();
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -869,7 +869,7 @@ public:
 public:
 	~CDaoTableDef();
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -963,7 +963,7 @@ public:
 public:
 	~CDaoQueryDef();
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -1146,7 +1146,7 @@ public:
 	virtual COleVariant GetFieldValue(LPCTSTR lpszName);
 	virtual COleVariant GetFieldValue(int nIndex);
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -1265,7 +1265,7 @@ public:
 // Implementation
 public:
 	virtual ~CDaoRecordView();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif

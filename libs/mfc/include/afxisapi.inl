@@ -13,7 +13,7 @@
 #ifdef _AFXISAPI_INLINE
 
 _AFXISAPI_INLINE CHttpServerContext::CHttpServerContext(EXTENSION_CONTROL_BLOCK* pECB)
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	: m_dwStatusCode(DWORD(-1)), m_bSendHeaders(TRUE), m_pECB(pECB),
 	  m_pStream(NULL), m_dwEndOfHeaders(0), m_dwOldEndOfHeaders(0),
 	  m_dwChunkSize(0)

@@ -36,7 +36,7 @@
 // Win32 libraries
 
 #ifdef _AFXDLL
-	#if defined(_DEBUG) && !defined(_AFX_MONOLITHIC)
+	#if defined(MFC_DEBUG) && !defined(_AFX_MONOLITHIC)
 		#ifndef _UNICODE
 			#pragma comment(lib, "mfcn42d.lib")
 		#else
@@ -195,7 +195,7 @@ public:
 		FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE,
 		int nProtocolType = 0, int nAddressFormat = PF_INET);
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -272,7 +272,7 @@ protected:
 
 	virtual BOOL PumpMessages(UINT uStopFlag);
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -295,7 +295,7 @@ public:
 
 	virtual ~CSocketFile();
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif

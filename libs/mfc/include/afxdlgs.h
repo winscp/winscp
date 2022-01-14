@@ -168,7 +168,7 @@ protected:
 	virtual void OnTypeChange();
 
 // Implementation
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 public:
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -234,7 +234,7 @@ public:
 	DWORD FillInLogFont(const CHARFORMAT& cf);
 #endif
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 public:
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -276,7 +276,7 @@ protected:
 
 // Implementation
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 public:
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -329,7 +329,7 @@ protected:
 	static UINT CALLBACK PaintHookProc(HWND hWnd, UINT message, WPARAM wParam,
 		LPARAM lParam);
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 public:
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -385,7 +385,7 @@ public:
 
 // Implementation
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 public:
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -444,7 +444,7 @@ public:
 protected:
 	virtual void PostNcDestroy();
 
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 public:
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -544,7 +544,7 @@ public:
 // Implementation
 public:
 	virtual ~CPropertyPage();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -596,7 +596,7 @@ public:
 
 // Implementation
 public:
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -673,7 +673,7 @@ public:
 // Implementation
 public:
 	virtual ~CPropertySheet();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
@@ -745,7 +745,7 @@ public:
 // Implementation
 public:
 	virtual ~CPropertySheetEx();
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif

@@ -66,7 +66,7 @@
 		<ILINK_GenerateDRC>true</ILINK_GenerateDRC>
 		<ILINK_LibraryPath>windows\;forms\;packages\filemng;packages\tbx;packages\png;..\libs\lib;$(LIB_PATH);$(ILINK_LibraryPath)</ILINK_LibraryPath>
 		<ILINK_MapFileType>DetailedSegments</ILINK_MapFileType>
-		<IncludePath>console;windows\;forms\;core;resource;components;dragext;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;packages\png;packages\jcl;$(BDS)\include\mfc;$(BDS)\include\windows;$(BDS)\include\windows\sdk;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
+		<IncludePath>console;windows\;forms\;core;resource;components;dragext;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;packages\png;packages\jcl;..\libs\mfc\include;$(BDS)\include\windows;$(BDS)\include\windows\sdk;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
 		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
 		<LinkPackageStatics>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;My.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib;jcl.lib;vclie.lib;urlmon.lib;shlwapi.lib;powrprof.lib;soaprtl.lib</LinkPackageStatics>
 		<Manifest_File>windows\WinSCP.exe.manifest</Manifest_File>

@@ -31,7 +31,7 @@
 #pragma warning(disable: 4705)  // statement has no effect in optimized code
 #pragma warning(disable: 4191)  // pointer-to-function casting
 // warnings caused by normal optimizations
-#ifndef _DEBUG
+#ifndef MFC_DEBUG
 #pragma warning(disable: 4701)  // local variable *may* be used without init
 #pragma warning(disable: 4702)  // unreachable code caused by optimizations
 #pragma warning(disable: 4791)  // loss of debugging info in retail version
@@ -50,7 +50,7 @@
 
 #define STRICT 1
 
-#ifndef _DEBUG
+#ifndef MFC_DEBUG
 #ifndef _AFX_ENABLE_INLINES
 #define _AFX_ENABLE_INLINES
 #endif
@@ -67,7 +67,7 @@
 #endif
 
 #ifndef UNUSED
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 #define UNUSED(x)
 #else
 #define UNUSED(x) x
@@ -88,7 +88,7 @@
 #ifndef _AFX_NOFORCE_LIBS
 
 #ifdef _AFXDLL
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	#ifdef _UNICODE
 		#pragma comment(lib, "MFCISUD.lib")
 	#else
@@ -100,9 +100,9 @@
 	#else
 		#pragma comment(lib, "EAFXIS.lib")
 	#endif // _UNICODE
-#endif // _DEBUG
+#endif // MFC_DEBUG
 #else
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	#ifdef _UNICODE
 		#pragma comment(lib, "UAFXISD.lib")
 	#else
@@ -114,7 +114,7 @@
 	#else
 		#pragma comment(lib, "NAFXIS.lib")
 	#endif // _UNICODE
-#endif // _DEBUG
+#endif // MFC_DEBUG
 #endif // _AFXDLL
 
 #pragma comment(lib, "kernel32.lib")
@@ -368,7 +368,7 @@ public:
 	EXTENSION_CONTROL_BLOCK* const m_pECB;
 	CHtmlStream* m_pStream;
 	DWORD m_dwEndOfHeaders;
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 	DWORD m_dwOldEndOfHeaders;
 #endif
 
@@ -570,18 +570,18 @@ public:
 #define ISAPITRACE1(str, arg1)              TRACE1(str, arg1)
 #define ISAPITRACE2(str, arg1, arg2)        TRACE2(str, arg1, arg2)
 #define ISAPITRACE3(str, arg1, arg2, arg3)  TRACE3(str, arg1, arg2, arg3)
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 #define ISAPIVERIFY(f)                      ASSERT(f)
 #else
 #define ISAPIVERIFY(f)                      ((void)(f))
-#endif // _DEBUG
+#endif // MFC_DEBUG
 #else // !_AFX
 #define ISAPIASSERT(expr)                   _ASSERTE(expr)
 #define ISAPITRACE0(str)                    _RPT0(_CRT_WARN, str)
 #define ISAPITRACE1(str, arg1)              _RPT1(_CRT_WARN, str, arg1)
 #define ISAPITRACE2(str, arg1, arg2)        _RPT2(_CRT_WARN, str, arg1, arg2)
 #define ISAPITRACE3(str, arg1, arg2, arg3)  _RPT3(_CRT_WARN, arg1, arg2, arg3)
-#ifdef _DEBUG
+#ifdef MFC_DEBUG
 void AFXISAPI_CDECL AfxISAPITrace(LPCTSTR lpszFormat, ...);
 #define ISAPIVERIFY(expr)                   _ASSERTE(expr)
 #define ISAPITRACE                          AfxISAPITrace
@@ -589,7 +589,7 @@ void AFXISAPI_CDECL AfxISAPITrace(LPCTSTR lpszFormat, ...);
 AFX_INLINE void AfxISAPITrace(LPCTSTR, ...) { }
 #define ISAPIVERIFY(expr)                   ((void)(expr))
 #define ISAPITRACE                          AfxISAPITrace
-#endif // _DEBUG
+#endif // MFC_DEBUG
 #endif // _AFX
 
 
