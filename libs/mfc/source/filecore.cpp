@@ -480,7 +480,6 @@ BOOL AFXAPI AfxGetInProcServer(LPCTSTR lpszCLSID, CString& str)
 	}
 	return b;
 }
-#endif  //!_AFX_NO_OLE_SUPPORT
 
 
 BOOL AFXAPI AfxResolveShortcut(CWnd* pWnd, LPCTSTR lpszFileIn,
@@ -524,6 +523,7 @@ BOOL AFXAPI AfxResolveShortcut(CWnd* pWnd, LPCTSTR lpszFileIn,
 	psl->Release();
 	return FALSE;
 }
+#endif  //!_AFX_NO_OLE_SUPPORT
 
 // turn a file, relative path or other into an absolute path
 BOOL AFXAPI AfxFullPath(LPTSTR lpszPathOut, LPCTSTR lpszFileIn)
@@ -672,6 +672,7 @@ BOOL AFXAPI AfxComparePath(LPCTSTR lpszPath1, LPCTSTR lpszPath2)
 	return TRUE; // otherwise file name is truly the same
 }
 
+#ifndef WINSCP
 UINT AFXAPI AfxGetFileTitle(LPCTSTR lpszPathName, LPTSTR lpszTitle, UINT nMax)
 {
 	ASSERT(lpszTitle == NULL ||
@@ -693,6 +694,7 @@ UINT AFXAPI AfxGetFileTitle(LPCTSTR lpszPathName, LPTSTR lpszTitle, UINT nMax)
 	}
 	return lpszTitle == NULL ? lstrlen(lpszTemp)+1 : 0;
 }
+#endif
 
 void AFXAPI AfxGetModuleShortFileName(HINSTANCE hInst, CString& strShortName)
 {

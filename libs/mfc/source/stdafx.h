@@ -57,12 +57,26 @@
 // core headers
 #include "afx.h"
 #include "afxplex_.h"
+#ifndef WINSCP
 #include "afxcoll.h"
+#endif
 
 // public headers
+#ifndef WINSCP
 #include "afxwin.h"
 #include "afxdlgs.h"
 #include "afxext.h"
+#else
+#include "afxres.h"
+void AFXAPI AfxFormatString1(CString& rString, UINT nIDS, LPCTSTR lpsz1);
+void AFXAPI AfxFormatStrings(CString& rString, UINT nIDS,
+				LPCTSTR const* rglpsz, int nString);
+void AFXAPI AfxFormatStrings(CString& rString, LPCTSTR lpszFormat,
+				LPCTSTR const* rglpsz, int nString);
+inline HINSTANCE AFXAPI AfxGetResourceHandle()
+	{ ASSERT(afxCurrentResourceHandle != NULL);
+		return afxCurrentResourceHandle; }
+#endif
 
 #ifndef _AFX_NO_OLEDB_SUPPORT
 	#include "atlbase.h"
@@ -108,11 +122,23 @@
 #endif
 
 // private headers as well
+#ifndef WINSCP
 #include "afxpriv.h"
+#else
+int AFXAPI AfxLoadString(UINT nIDS, LPTSTR lpszBuf, UINT nMaxBuf = 256);
+#endif
+#ifndef WINSCP
 #include "afximpl.h"
 #include "winhand_.h"
+#else
+#define _countof(array) (sizeof(array)/sizeof(array[0]))
+BOOL AFXAPI AfxFullPath(LPTSTR lpszPathOut, LPCTSTR lpszFileIn);
+void AFXAPI AfxGetRoot(LPCTSTR lpszPath, CString& strRoot);
+#endif
 #ifndef _AFX_NO_OLE_SUPPORT
+#ifndef WINSCP
 	#include "oleimpl2.h"
+#endif
 #endif
 #ifndef _AFX_NO_OCX_SUPPORT
 	#include "ctlimpl.h"
@@ -148,7 +174,9 @@
 #include <malloc.h>
 #include <new.h>
 #ifndef _AFX_OLD_EXCEPTIONS
+#ifndef WINSCP
 #include <eh.h>     // for set_terminate
+#endif
 #endif
 
 #undef AfxWndProc
@@ -217,5 +245,16 @@
 
 #define min std::min
 #define max std::max
+
+#ifdef WINSCP
+class CMessageException : public CException
+{
+public:
+    CMessageException(LPCTSTR Message);
+    virtual BOOL GetErrorMessage(LPTSTR lpszError, UINT nMaxError, PUINT pnHelpContext = NULL);
+private:
+    CString mMessage;
+};
+#endif
 
 /////////////////////////////////////////////////////////////////////////////

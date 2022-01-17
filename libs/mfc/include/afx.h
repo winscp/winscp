@@ -883,7 +883,9 @@ public:
 
 	virtual BOOL GetErrorMessage(LPTSTR lpszError, UINT nMaxError,
 		PUINT pnHelpContext = NULL);
+#ifndef WINSCP
 	virtual int ReportError(UINT nType = MB_OK, UINT nMessageID = 0);
+#endif
 
 // Implementation (setting m_bAutoDelete to FALSE is advanced)
 public:
@@ -1253,8 +1255,10 @@ public:
 
 	virtual DWORD GetPosition() const;
 	BOOL GetStatus(CFileStatus& rStatus) const;
+#ifndef WINSCP
 	virtual CString GetFileName() const;
 	virtual CString GetFileTitle() const;
+#endif
 	virtual CString GetFilePath() const;
 	virtual void SetFilePath(LPCTSTR lpszNewName);
 
@@ -1956,11 +1960,13 @@ extern AFX_DATA BOOL afxTraceEnabled;
 #pragma pack(pop)
 #endif
 
+#ifndef WINSCP
 #ifndef __AFXCOLL_H__
 	#include <afxcoll.h>
 	#ifndef __AFXSTATE_H__
 		#include <afxstat_.h> // for _AFX_APP_STATE and _AFX_THREAD_STATE
 	#endif
+#endif
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1986,6 +1992,10 @@ extern AFX_DATA BOOL afxTraceEnabled;
 #endif
 #ifndef _AFX_FULLTYPEINFO
 #pragma component(mintypeinfo, off)
+#endif
+
+#ifdef WINSCP
+extern HINSTANCE afxCurrentResourceHandle;
 #endif
 
 #endif // __AFX_H__

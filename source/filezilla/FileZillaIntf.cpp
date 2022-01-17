@@ -20,10 +20,7 @@ void __fastcall TFileZillaIntf::Finalize()
 //---------------------------------------------------------------------------
 void __fastcall TFileZillaIntf::SetResourceModule(void * ResourceHandle)
 {
-  // set afx resource handles, taken from AfxWinInit (mfc/appinit.cpp)
-  AFX_MODULE_STATE * ModuleState = AfxGetModuleState();
-  ModuleState->m_hCurrentInstanceHandle = (HINSTANCE)ResourceHandle;
-  ModuleState->m_hCurrentResourceHandle = (HINSTANCE)ResourceHandle;
+  afxCurrentResourceHandle = (HINSTANCE)ResourceHandle;
 }
 //---------------------------------------------------------------------------
 __fastcall TFileZillaIntf::TFileZillaIntf() :

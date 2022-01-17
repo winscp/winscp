@@ -13,7 +13,6 @@
 //---------------------------------------------------------------------------
 #include <afx.h>
 #include "wtypes.h"
-#include <afxmt.h>
 
 // STL includes
 #include <list>
@@ -38,7 +37,6 @@ class CFileFix;
 #include <TextsFileZilla.h>
 //---------------------------------------------------------------------------
 #include <oleauto.h>
-#include <afxdisp.h>
 #include <afxconv.h>
 //---------------------------------------------------------------------------
 #define _strlwr strlwr
