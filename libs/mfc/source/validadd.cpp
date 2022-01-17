@@ -26,7 +26,7 @@ BOOL AFXAPI AfxIsValidString(LPCWSTR lpsz, int nLength /* = -1 */)
 {
 	if (lpsz == NULL)
 		return FALSE;
-	return afxData.bWin95 || ::IsBadStringPtrW(lpsz, nLength) == 0;
+	return /*WINSCP afxData.bWin95 || */::IsBadStringPtrW(lpsz, nLength) == 0;
 }
 
 // As above, but for ANSI strings.

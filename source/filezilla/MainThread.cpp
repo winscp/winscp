@@ -385,11 +385,14 @@ BOOL CMainThread::PostThreadMessage(UINT message, WPARAM wParam, LPARAM lParam)
 
 DWORD CMainThread::ResumeThread()
 {
+  m_Started = false;
   BOOL res=::ResumeThread(m_hThread);
   if (res)
   {
-    m_EventStarted.Lock();
-    m_EventStarted.Unlock();
+    while (!m_Started)
+    {
+      Sleep(10);
+    }
   }
   return res;
 }
@@ -403,7 +406,7 @@ DWORD CMainThread::Run()
 {
   ECS;
   InitInstance();
-  m_EventStarted.SetEvent();
+  m_Started = true;
   LCS;
   MSG msg;
   while (GetMessage(&msg, 0, 0, 0))

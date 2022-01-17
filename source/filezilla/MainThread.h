@@ -51,7 +51,6 @@ public:
   __int64 GetAsyncRequestID() const;
   __int64 GetNextAsyncRequestID();
   virtual int OnThreadMessage(UINT Msg, WPARAM wParam, LPARAM lParam);
-  DWORD SuspendThread();
   DWORD ResumeThread();
   BOOL PostThreadMessage( UINT message , WPARAM wParam, LPARAM lParam);
 
@@ -61,7 +60,7 @@ protected:
   DWORD Run();
   static DWORD WINAPI ThreadProc(LPVOID lpParameter);
 
-  CCriticalSection m_CriticalSection;
+  CCriticalSectionWrapper m_CriticalSection;
 
   CFtpControlSocket * m_pControlSocket;
   __int64 m_nAsyncRequestID;
@@ -75,7 +74,7 @@ protected:
   CServerPath m_CurrentPath;
   UINT m_nTimerID;
   virtual ~CMainThread();
-  CEvent m_EventStarted;
+  bool m_Started;
 };
 //---------------------------------------------------------------------------
 #endif MainThreadH

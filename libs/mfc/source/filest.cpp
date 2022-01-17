@@ -51,6 +51,7 @@ void CFileStatus::Dump(CDumpContext& dc) const
 /////////////////////////////////////////////////////////////////////////////
 // CFile name handlers
 
+#ifndef WINSCP
 CString CFile::GetFileName() const
 {
 	ASSERT_VALID(this);
@@ -76,6 +77,7 @@ CString CFile::GetFileTitle() const
 	strResult.ReleaseBuffer();
 	return strResult;
 }
+#endif
 
 CString CFile::GetFilePath() const
 {

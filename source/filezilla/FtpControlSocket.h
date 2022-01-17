@@ -164,7 +164,7 @@ protected:
   static std::list<t_ActiveList> m_InstanceList[2];
   static CTime m_CurrentTransferTime[2];
   static _int64 m_CurrentTransferLimit[2];
-  static CCriticalSection m_SpeedLimitSync;
+  static CCriticalSectionWrapper m_SpeedLimitSync;
   _int64 GetAbleToUDSize(bool & beenWaiting, CTime & curTime, _int64 & curLimit, std::list<t_ActiveList>::iterator & iter, enum transferDirection direction, int nBufSize);
   _int64 GetSpeedLimit(CTime & time, int valType, int valValue);
 

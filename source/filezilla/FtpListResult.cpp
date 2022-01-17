@@ -908,15 +908,8 @@ BOOL CFtpListResult::parseAsEPLF(const char *line, const int linelen, t_director
         dir.size = strntoi64(fact+1, len-1);
       else if (*fact=='m')
       {
-        __int64 rawtime = strntoi64(fact+1, len-1);
-        COleDateTime time((time_t)rawtime);
-        dir.date.hasdate = TRUE;
-        dir.date.hastime = TRUE;
-        dir.date.year = time.GetYear();
-        dir.date.month = time.GetMonth();
-        dir.date.day = time.GetDay();
-        dir.date.hour = time.GetHour();
-        dir.date.minute = time.GetMinute();
+        time_t rawtime = (time_t)strntoi64(fact+1, len-1);
+        TimeTToDate(rawtime, dir.date);
       }
       else if (len == 5 && *fact=='u' && *(fact+1)=='p')
       {
@@ -1921,6 +1914,17 @@ BOOL CFtpListResult::parseAsDos(const char *line, const int linelen, t_directory
   return TRUE;
 }
 
+void CFtpListResult::TimeTToDate(time_t TimeT, t_directory::t_direntry::t_date & Date) const
+{
+  tm * sTime = gmtime(&TimeT);
+  Date.year = sTime->tm_year + 1900;
+  Date.month = sTime->tm_mon+1;
+  Date.day = sTime->tm_mday;
+  Date.hour = sTime->tm_hour;
+  Date.minute = sTime->tm_min;
+  Date.hasdate = Date.hastime = TRUE;
+}
+
 BOOL CFtpListResult::parseAsOther(const char *line, const int linelen, t_directory::t_direntry &direntry)
 {
   int pos = 0;
@@ -1981,13 +1985,7 @@ BOOL CFtpListResult::parseAsOther(const char *line, const int linelen, t_directo
       return FALSE;
 
     time_t secsSince1970 = static_cast<long>(strntoi64(str, tokenlen));
-    tm *sTime = gmtime(&secsSince1970);
-    direntry.date.year = sTime->tm_year + 1900;
-    direntry.date.month = sTime->tm_mon+1;
-    direntry.date.day = sTime->tm_mday;
-    direntry.date.hour = sTime->tm_hour;
-    direntry.date.minute = sTime->tm_min;
-    direntry.date.hasdate = direntry.date.hastime = TRUE;
+    TimeTToDate(secsSince1970, direntry.date);
 
     str = GetNextToken(line, linelen, tokenlen, pos, 1);
     if (!str)

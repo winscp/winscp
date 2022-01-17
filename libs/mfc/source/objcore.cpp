@@ -152,6 +152,7 @@ BOOL CObject::IsSerializable() const
 	return (GetRuntimeClass()->m_wSchema != 0xffff);
 }
 
+#ifndef WINSCP
 void AFXAPI AfxClassInit(CRuntimeClass* pNewClass)
 {
 	AFX_MODULE_STATE* pModuleState = AfxGetModuleState();
@@ -222,5 +223,6 @@ void AFXAPI AfxDoForAllClasses(void (AFX_CDECL *pfn)(const CRuntimeClass*, void*
 #endif
 }
 #endif //_DEBUG
+#endif // WINSCP
 
 /////////////////////////////////////////////////////////////////////////////

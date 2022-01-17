@@ -143,7 +143,7 @@ std::list<CFtpControlSocket::t_ActiveList> CFtpControlSocket::m_InstanceList[2];
 CTime CFtpControlSocket::m_CurrentTransferTime[2] = { CTime::GetCurrentTime(), CTime::GetCurrentTime() };
 _int64 CFtpControlSocket::m_CurrentTransferLimit[2] = {0, 0};
 
-CCriticalSection CFtpControlSocket::m_SpeedLimitSync;
+CCriticalSectionWrapper CFtpControlSocket::m_SpeedLimitSync;
 
 #define BUFSIZE 16384
 
