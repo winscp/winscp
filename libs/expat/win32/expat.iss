@@ -14,7 +14,7 @@
 ; Copyright (c) 2001      Tim Peters <tim.peters@gmail.com>
 ; Copyright (c) 2001-2005 Fred L. Drake, Jr. <fdrake@users.sourceforge.net>
 ; Copyright (c) 2006-2017 Karl Waclawek <karl@waclawek.net>
-; Copyright (c) 2007-2021 Sebastian Pipping <sebastian@pipping.org>
+; Copyright (c) 2007-2022 Sebastian Pipping <sebastian@pipping.org>
 ; Licensed under the MIT license:
 ;
 ; Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -36,7 +36,7 @@
 ; OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 ; USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#define expatVer "2.4.2"
+#define expatVer "2.4.3"
 
 [Setup]
 AppName=Expat
