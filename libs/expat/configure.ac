@@ -11,7 +11,7 @@ dnl   Copyright (c) 2000      Clark Cooper <coopercc@users.sourceforge.net>
 dnl   Copyright (c) 2000-2005 Fred L. Drake, Jr. <fdrake@users.sourceforge.net>
 dnl   Copyright (c) 2001-2003 Greg Stein <gstein@users.sourceforge.net>
 dnl   Copyright (c) 2006-2012 Karl Waclawek <karl@waclawek.net>
-dnl   Copyright (c) 2016-2021 Sebastian Pipping <sebastian@pipping.org>
+dnl   Copyright (c) 2016-2022 Sebastian Pipping <sebastian@pipping.org>
 dnl   Copyright (c) 2017      S. P. Zeidler <spz@netbsd.org>
 dnl   Copyright (c) 2017      Stephen Groat <stephen@groat.us>
 dnl   Copyright (c) 2017-2020 Joe Orton <jorton@redhat.com>
@@ -82,7 +82,7 @@ dnl If the API changes incompatibly set LIBAGE back to 0
 dnl
 
 LIBCURRENT=9   # sync
-LIBREVISION=2  # with
+LIBREVISION=3  # with
 LIBAGE=8       # CMakeLists.txt!
 
 AC_CONFIG_HEADERS([expat_config.h])
