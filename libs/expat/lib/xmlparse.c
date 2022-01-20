@@ -3460,6 +3460,7 @@ storeAtts(XML_Parser parser, const ENCODING *enc, const char *attStr,
       return XML_ERROR_NO_MEMORY;
     }
 
+    { // WINSCP
     unsigned int nsAttsSize = 1u << parser->m_nsAttsPower;
     unsigned char oldNsAttsPower = parser->m_nsAttsPower;
     /* size of hash table must be at least 2 * (# of prefixed attributes) */
@@ -3616,6 +3617,7 @@ storeAtts(XML_Parser parser, const ENCODING *enc, const char *attStr,
       } else                     /* not prefixed */
         ((XML_Char *)s)[-1] = 0; /* clear flag */
     }
+    } // WINSCP
   }
   /* clear flags for the remaining attributes */
   for (; i < attIndex; i += 2)
@@ -3785,12 +3787,14 @@ addBinding(XML_Parser parser, PREFIX *prefix, const ATTRIBUTE_ID *attId,
       }
 #endif
 
+      { // WINSCP
       XML_Char *temp = (XML_Char *)REALLOC(
           parser, b->uri, sizeof(XML_Char) * (len + EXPAND_SPARE));
       if (temp == NULL)
         return XML_ERROR_NO_MEMORY;
       b->uri = temp;
       b->uriAlloc = len + EXPAND_SPARE;
+      } // WINSCP
     }
     parser->m_freeBindingList = b->nextTagBinding;
   } else {
@@ -5144,6 +5148,7 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
               return XML_ERROR_NO_MEMORY;
             }
 
+            { // WINSCP
             char *const new_connector = (char *)REALLOC(
                 parser, parser->m_groupConnector, parser->m_groupSize *= 2);
             if (new_connector == NULL) {
@@ -5151,6 +5156,7 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
               return XML_ERROR_NO_MEMORY;
             }
             parser->m_groupConnector = new_connector;
+            } // WINSCP
           }
 
           if (dtd->scaffIndex) {
@@ -5164,11 +5170,13 @@ doProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,
             }
 #endif
 
+            { // WINSCP
             int *const new_scaff_index = (int *)REALLOC(
                 parser, dtd->scaffIndex, parser->m_groupSize * sizeof(int));
             if (new_scaff_index == NULL)
               return XML_ERROR_NO_MEMORY;
             dtd->scaffIndex = new_scaff_index;
+            } // WINSCP
           }
         } else {
           parser->m_groupConnector
@@ -6241,6 +6249,7 @@ defineAttribute(ELEMENT_TYPE *type, ATTRIBUTE_ID *attId, XML_Bool isCdata,
         return 0;
       }
 
+      { // WINSCP
       int count = type->allocDefaultAtts * 2;
 
       /* Detect and prevent integer overflow.
@@ -6259,6 +6268,7 @@ defineAttribute(ELEMENT_TYPE *type, ATTRIBUTE_ID *attId, XML_Bool isCdata,
         return 0;
       type->allocDefaultAtts = count;
       type->defaultAtts = temp;
+      } // WINSCP
     }
   }
   att = type->defaultAtts + type->nDefaultAtts;
@@ -6909,6 +6919,7 @@ lookup(XML_Parser parser, HASH_TABLE *table, KEY name, size_t createSize) {
         return NULL;
       }
 
+      { // WINSCP
       size_t newSize = (size_t)1 << newPower;
       unsigned long newMask = (unsigned long)newSize - 1;
 
@@ -6917,6 +6928,7 @@ lookup(XML_Parser parser, HASH_TABLE *table, KEY name, size_t createSize) {
         return NULL;
       }
 
+      { // WINSCP
       size_t tsize = newSize * sizeof(NAMED *);
       NAMED **newV = (NAMED **)table->mem->malloc_fcn(tsize);
       if (! newV)
@@ -6945,6 +6957,8 @@ lookup(XML_Parser parser, HASH_TABLE *table, KEY name, size_t createSize) {
           step = PROBE_STEP(h, newMask, newPower);
         i < step ? (i += newSize - step) : (i -= step);
       }
+      } // WINSCP
+      } // WINSCP
     }
   }
   table->v[i] = (NAMED *)table->mem->malloc_fcn(createSize);
@@ -7367,6 +7381,7 @@ build_model(XML_Parser parser) {
     return NULL;
   }
 
+  { // WINSCP
   const size_t allocsize = (dtd->scaffCount * sizeof(XML_Content)
                             + (dtd->contentStringLen * sizeof(XML_Char)));
 
@@ -7379,6 +7394,7 @@ build_model(XML_Parser parser) {
 
   build_node(parser, 0, ret, &cpos, &str);
   return ret;
+  } // WINSCP
 }
 
 static ELEMENT_TYPE *
