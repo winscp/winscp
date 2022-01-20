@@ -7,7 +7,7 @@
 #
 # Copyright (c) 2010      Patrick Spendrin <ps_ml@gmx.de>
 # Copyright (c) 2012      Karl Waclawek <karl@waclawek.net>
-# Copyright (c) 2016-2021 Sebastian Pipping <sebastian@pipping.org>
+# Copyright (c) 2016-2022 Sebastian Pipping <sebastian@pipping.org>
 # Copyright (c) 2016      Sergei Nikulov <sergey.nikulov@gmail.com>
 # Copyright (c) 2016      Björn Lindahl <bjorn.lindahl@foi.se>
 # Copyright (c) 2016      Tobias Taschner <github@tc84.de>
@@ -64,7 +64,7 @@ endif()
 
 project(expat
     VERSION
-        2.4.2
+        2.4.3
     LANGUAGES
         C
 )
@@ -150,6 +150,9 @@ option(EXPAT_MIN_SIZE "Get a smaller (but slower) parser (in particular avoid mu
 mark_as_advanced(EXPAT_MIN_SIZE)
 if(MSVC OR _EXPAT_HELP)
     set(EXPAT_MSVC_STATIC_CRT OFF CACHE BOOL "Use /MT flag (static CRT) when compiling in MSVC")
+endif()
+if(NOT _EXPAT_HELP)
+    set(_EXPAT_M32 OFF CACHE BOOL "(Unofficial!) Produce 32bit code with -m32")
 endif()
 
 if(EXPAT_BUILD_TESTS)
@@ -322,6 +325,23 @@ if (MSVC)
     endif()
 endif()
 
+if(_EXPAT_M32 AND NOT MSVC)
+    foreach(flag_var
+            CMAKE_CXX_FLAGS_${_EXPAT_BUILD_TYPE_UPPER}
+            CMAKE_CXX_FLAGS_DEBUG
+            CMAKE_CXX_FLAGS_RELEASE
+            CMAKE_CXX_FLAGS_MINSIZEREL
+            CMAKE_CXX_FLAGS_RELWITHDEBINFO
+            CMAKE_C_FLAGS_${_EXPAT_BUILD_TYPE_UPPER}
+            CMAKE_C_FLAGS_DEBUG
+            CMAKE_C_FLAGS_RELEASE
+            CMAKE_C_FLAGS_MINSIZEREL
+            CMAKE_C_FLAGS_RELWITHDEBINFO
+            )
+        set(${flag_var} "${${flag_var}} -m32")
+    endforeach()
+endif()
+
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS -wd4996)
@@ -388,7 +408,7 @@ if(EXPAT_WITH_LIBBSD)
 endif()
 
 set(LIBCURRENT 9)   # sync
-set(LIBREVISION 2)  # with
+set(LIBREVISION 3)  # with
 set(LIBAGE 8)       # configure.ac!
 math(EXPR LIBCURRENT_MINUS_AGE "${LIBCURRENT} - ${LIBAGE}")
 
@@ -461,8 +481,7 @@ if(EXPAT_BUILD_PKGCONFIG)
 
     file(GENERATE
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/expat.pc
-        INPUT ${PROJECT_SOURCE_DIR}/expat.pc.cmake
-        TARGET expat)
+        INPUT ${PROJECT_SOURCE_DIR}/expat.pc.cmake)
 
     expat_install(FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/expat.pc DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
 endif()
