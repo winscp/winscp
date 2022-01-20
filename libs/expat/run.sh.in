@@ -6,7 +6,7 @@
 #                      \___/_/\_\ .__/ \__,_|\__|
 #                               |_| XML parser
 #
-# Copyright (c) 2017 Sebastian Pipping <sebastian@pipping.org>
+# Copyright (c) 2017-2022 Sebastian Pipping <sebastian@pipping.org>
 # Licensed under the MIT license:
 #
 # Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -30,7 +30,16 @@
 
 case "@host@" in
 *-mingw*)
-    exec wine "$@"
+    case "$(uname -o)" in
+    Cygwin|Msys)
+        # Windows binary on Windows host
+        exec "$@"
+        ;;
+    *)
+        # Windows binary on non-Windows host
+        exec wine "$@"
+        ;;
+    esac
     ;;
 *)
     exec "$@"
