@@ -2,6 +2,58 @@ NOTE: We are looking for help with a few things:
       https://github.com/libexpat/libexpat/labels/help%20wanted
       If you can help, please get in touch.  Thanks!
 
+Release 2.4.3 Sun January 16 2022
+        Security fixes:
+       #531 #534  CVE-2021-45960 -- Fix issues with left shifts by >=29 places
+                    resulting in
+                      a) realloc acting as free
+                      b) realloc allocating too few bytes
+                      c) undefined behavior
+                    depending on architecture and precise value
+                    for XML documents with >=2^27+1 prefixed attributes
+                    on a single XML tag a la
+                    "<r xmlns:a='[..]' a:a123='[..]' [..] />"
+                    where XML_ParserCreateNS is used to create the parser
+                    (which needs argument "-n" when running xmlwf).
+                    Impact is denial of service, or more.
+       #532 #538  CVE-2021-46143 (ZDI-CAN-16157) -- Fix integer overflow
+                    on variable m_groupSize in function doProlog leading
+                    to realloc acting as free.
+                    Impact is denial of service or more.
+            #539  CVE-2022-22822 to CVE-2022-22827 -- Prevent integer overflows
+                    near memory allocation at multiple places.  Mitre assigned
+                    a dedicated CVE for each involved internal C function:
+                    - CVE-2022-22822 for function addBinding
+                    - CVE-2022-22823 for function build_model
+                    - CVE-2022-22824 for function defineAttribute
+                    - CVE-2022-22825 for function lookup
+                    - CVE-2022-22826 for function nextScaffoldPart
+                    - CVE-2022-22827 for function storeAtts
+                    Impact is denial of service or more.
+
+        Other changes:
+            #535  CMake: Make call to file(GENERATE [..]) work for CMake <3.19
+            #541  Autotools|CMake: MinGW: Make run.sh(.in) work for Cygwin
+                    and MSYS2 by not going through Wine on these platforms
+       #527 #528  Address compiler warnings
+       #533 #543  Version info bumped from 9:2:8 to 9:3:8;
+                    see https://verbump.de/ for what these numbers do
+
+        Infrastructure:
+            #536  CI: Check for realistic minimum CMake version
+       #529 #539  CI: Cover compilation with -m32
+            #529  CI: Store coverage reports as artifacts for download
+            #528  CI: Upgrade Clang from 11 to 13
+
+        Special thanks to:
+            An anonymous whitehat
+            Christopher Degawa
+            J. Peter Mugaas
+            Tyson Smith
+                 and
+            GCC Farm Project
+            Trend Micro Zero Day Initiative
+
 Release 2.4.2 Sun December 19 2021
         Other changes:
        #509 #510  Link againgst libm for function "isnan"
