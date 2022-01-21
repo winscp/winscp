@@ -29,7 +29,7 @@ LIB_CFLAG=
 SRC_D=.
 
 # The output directory for everything intersting
-OUT_D=..\lib
+OUT_D=$(LIB_PATH)
 # The output directory for all the temporary muck
 TMP_D=tmp
 INCO_D=openssl

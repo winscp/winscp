@@ -1,11 +1,13 @@
 @echo off
 if "%BUILDTOOLS%" == "" echo BUILDTOOLS not set & exit
 
-if not exist lib mkdir lib
+set LIB_PATH=%INTERM_PATH%\Win32
+
+if not exist %LIB_PATH% mkdir %LIB_PATH%
 
 rem ==== OpenSSL ====
 
-if exist lib\libeay32.lib (
+if exist %LIB_PATH%\libeay32.lib (
 echo OpenSSL already built
 goto SKIP_OPENSSL
 )
@@ -15,7 +17,7 @@ cd openssl
 make
 cd ..
 
-if not exist lib\libeay32.lib (
+if not exist %LIB_PATH%\libeay32.lib (
 echo OpenSSL build failed
 exit
 )
@@ -24,7 +26,7 @@ exit
 
 rem ==== Expat ====
 
-if exist lib\libexpats_mtd.lib (
+if exist %LIB_PATH%\libexpats_mtd.lib (
 echo Expat already built
 goto SKIP_EXPAT
 )
@@ -39,13 +41,13 @@ echo Expat build failed
 exit
 )
 
-copy expat\bcb5\release\libexpats_mtd.lib lib
+copy expat\bcb5\release\libexpats_mtd.lib %LIB_PATH%
 
 :SKIP_EXPAT
 
 rem ==== neon ====
 
-if exist lib\neon.lib (
+if exist %LIB_PATH%\neon.lib (
 echo neon already built
 goto SKIP_NEON
 )
@@ -55,7 +57,7 @@ cd neon
 make -f Makefile.bcb all
 cd ..
 
-if not exist lib\neon.lib (
+if not exist %LIB_PATH%\neon.lib (
 echo neon build failed
 exit
 )
@@ -64,7 +66,7 @@ exit
 
 rem ==== PuTTY VS ====
 
-if exist lib\PuTTYVS.lib (
+if exist %LIB_PATH%\PuTTYVS.lib (
 echo PuTTYVS already built
 goto SKIP_PUTTYVS
 )
@@ -74,7 +76,7 @@ cd puttyvs
 call build.bat
 cd ..
 
-if not exist lib\PuTTYVS.lib (
+if not exist %LIB_PATH%\PuTTYVS.lib (
 echo PuTTYVS build failed
 exit
 )
@@ -83,7 +85,7 @@ exit
 
 rem ==== libs3 ====
 
-if exist lib\libs3.lib (
+if exist %LIB_PATH%\libs3.lib (
 echo libs3 already built
 goto SKIP_LIBS3
 )
@@ -93,7 +95,7 @@ cd libs3
 make all
 cd ..
 
-if not exist lib\libs3.lib (
+if not exist %LIB_PATH%\libs3.lib (
 echo libs3 build failed
 exit
 )
@@ -102,7 +104,7 @@ exit
 
 rem ==== MFC ====
 
-if exist lib\UafxcW.lib (
+if exist %LIB_PATH%\UafxcW.lib (
 echo MFC already built
 goto SKIP_MFC
 )
@@ -112,7 +114,7 @@ cd mfc\source
 make -fborland.mak NO_WARNINGS=1
 cd ..\..
 
-if not exist lib\UafxcW.lib (
+if not exist %LIB_PATH%\UafxcW.lib (
 echo MFC build failed
 exit
 )

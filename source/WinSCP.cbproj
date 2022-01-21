@@ -64,7 +64,7 @@
 		<FinalOutputDir>$(FINAL_PATH)\$(Platform)\$(Config)</FinalOutputDir>
 		<Icon_MainIcon>resource\Application.ico</Icon_MainIcon>
 		<ILINK_GenerateDRC>true</ILINK_GenerateDRC>
-		<ILINK_LibraryPath>windows\;forms\;packages\filemng;packages\tbx;packages\png;..\libs\lib;$(LIB_PATH);$(ILINK_LibraryPath)</ILINK_LibraryPath>
+		<ILINK_LibraryPath>windows\;forms\;packages\filemng;packages\tbx;packages\png;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 		<ILINK_MapFileType>DetailedSegments</ILINK_MapFileType>
 		<IncludePath>console;windows\;forms\;core;resource;components;dragext;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;packages\png;packages\jcl;..\libs\mfc\include;$(BDS)\include\windows;$(BDS)\include\windows\sdk;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
 		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
@@ -106,21 +106,21 @@
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
 		<ILINK_DisableIncrementalLinking>true</ILINK_DisableIncrementalLinking>
-		<ILINK_LibraryPath>$(INTERM_PATH)\Win32\Debug\;$(BDS)\lib\Win32\Debug\;$(BDS)\lib\Win32\Release\;$(BDS)\lib\Win32\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+		<ILINK_LibraryPath>$(INTERM_PATH)\Win32\Debug\;$(INTERM_PATH)\Win32\;$(BDS)\lib\Win32\Debug\;$(BDS)\lib\Win32\Release\;$(BDS)\lib\Win32\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 		<LinkPackageStatics>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;My.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib;jcl.lib;vclie.lib;urlmon.lib;shlwapi.lib;powrprof.lib;soaprtl.lib;fmx.lib;dbrtl.lib;inet.lib;psapi.lib</LinkPackageStatics>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
-		<ILINK_LibraryPath>$(INTERM_PATH)\Win64\Debug\;$(BDS)\lib\Win64\Debug\;$(BDS)\lib\Win64\Release\;$(BDS)\lib\Win64\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+		<ILINK_LibraryPath>$(INTERM_PATH)\Win64\Debug\;$(INTERM_PATH)\Win64\;$(BDS)\lib\Win64\Debug\;$(BDS)\lib\Win64\Release\;$(BDS)\lib\Win64\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_2)'!=''">
 		<Defines>NDEBUG;$(Defines)</Defines>
 		<TASM_Debugging>None</TASM_Debugging>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
-		<ILINK_LibraryPath>$(INTERM_PATH)\Win32\Release\;$(BDS)\lib\Win32\Release\;$(BDS)\lib\Win32\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+		<ILINK_LibraryPath>$(INTERM_PATH)\Win32\Release\;$(INTERM_PATH)\Win32\;$(BDS)\lib\Win32\Release\;$(BDS)\lib\Win32\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
-		<ILINK_LibraryPath>$(INTERM_PATH)\Win64\Release\;$(BDS)\lib\Win64\Release\;$(BDS)\lib\Win64\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+		<ILINK_LibraryPath>$(INTERM_PATH)\Win64\Release\;$(INTERM_PATH)\Win64\;$(BDS)\lib\Win64\Release\;$(BDS)\lib\Win64\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
 	</PropertyGroup>
 	<ItemGroup>
 		<CppCompile Include="forms\CustomScpExplorer.cpp">
