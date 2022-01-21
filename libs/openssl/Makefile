@@ -39,10 +39,7 @@ RM=del
 MKDIR=-mkdir
 MKLIB=tlib /P128 /C
 
-!ifndef BUILDTOOLS_PATH
-BUILDTOOLS_PATH=..\..\buildtools
-!endif
-ASM=$(BUILDTOOLS_PATH)\tools\nasm -f obj -d__omf__
+ASM=$(BUILDTOOLS)\tools\nasm -f obj -d__omf__
 
 ######################################################
 # You should not need to touch anything below this point

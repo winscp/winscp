@@ -3,11 +3,13 @@ rem See 'readme' file
 if "%PROCESSOR_ARCHITECTURE%"=="x86" set PROGRAMFILES32=%ProgramFiles%
 if "%PROCESSOR_ARCHITECTURE%"=="AMD64" set PROGRAMFILES32=%ProgramFiles(x86)%
 set BDS=%PROGRAMFILES32%\Embarcadero\Studio\14.0
-set MSBUILD=%PROGRAMFILES32%\Microsoft Visual Studio\2017\BuildTools\MSBuild\15.0\Bin\MSBuild.exe
+set MSBUILD=%PROGRAMFILES32%\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\MSBuild.exe
 
 set WITH_DOTNET=1
 if "%BUILD_TARGET%"=="" set BUILD_TARGET=Build
 if "%BUILD_CONFIG%"=="" set BUILD_CONFIG=Release
+
+set BUILDTOOLS=%~dp0\buildtools
 
 cd libs
 call buildlibs.bat

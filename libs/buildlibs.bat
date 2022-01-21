@@ -1,5 +1,6 @@
 @echo off
-set BUILDTOOLS_PATH=%1
+if "%BUILDTOOLS%" == "" echo BUILDTOOLS not set & exit
+
 if not exist lib mkdir lib
 
 rem ==== OpenSSL ====
@@ -70,7 +71,7 @@ goto SKIP_PUTTYVS
 
 echo Building PuTTYVS ...
 cd puttyvs
-call build.bat %BUILDTOOLS_PATH%
+call build.bat
 cd ..
 
 if not exist lib\PuTTYVS.lib (
