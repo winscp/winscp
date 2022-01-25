@@ -24,7 +24,7 @@ struct TEditedFileData
 };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TEditedFileChangedEvent)
-  (const UnicodeString FileName, TEditedFileData * Data, HANDLE CompleteEvent);
+  (const UnicodeString & FileName, TEditedFileData * Data, HANDLE CompleteEvent, bool & Retry);
 typedef void __fastcall (__closure * TEditedFileReloadEvent)
   (const UnicodeString FileName, const TEditedFileData * Data);
 typedef void __fastcall (__closure * TEditedFileEarlyClosedEvent)

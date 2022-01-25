@@ -453,8 +453,8 @@ protected:
   void __fastcall DestroyProgressForm();
   virtual void __fastcall FileOperationProgress(TFileOperationProgressType & ProgressData);
   void __fastcall OperationComplete(const TDateTime & StartTime);
-  void __fastcall ExecutedFileChanged(const UnicodeString FileName,
-    TEditedFileData * Data, HANDLE UploadCompleteEvent);
+  void __fastcall ExecutedFileChanged(
+    const UnicodeString & FileName, TEditedFileData * Data, HANDLE UploadCompleteEvent, bool & Retry);
   void __fastcall ExecutedFileReload(const UnicodeString FileName,
     const TEditedFileData * Data);
   void __fastcall ExecutedFileEarlyClosed(const TEditedFileData * Data,

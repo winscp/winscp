@@ -3296,20 +3296,12 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
       TForm * Editor;
       try
       {
-        TNotifyEvent OnFileChanged = NULL;
-        TNotifyEvent OnSaveAll = NULL;
-        TAnyModifiedEvent OnAnyModified = NULL;
-        // Edited files are uploaded in background queue, what we do not support with encrypted files
-        if (Terminal->IsCapable[fcBackgroundTransfers])
-        {
-          OnFileChanged = FEditorManager->FileChanged;
-          OnSaveAll = SaveAllInternalEditors;
-          OnAnyModified = AnyInternalEditorModified;
-        }
-        Editor = ShowEditorForm(FileName, this, OnFileChanged,
-          FEditorManager->FileReload, FEditorManager->FileClosed,
-          OnSaveAll, OnAnyModified,
-          Caption, StandaloneOperation, SessionColor, Terminal->SessionData->InternalEditorEncoding, NewFile);
+        Editor =
+          ShowEditorForm(
+            FileName, this,
+            FEditorManager->FileChanged, FEditorManager->FileReload, FEditorManager->FileClosed,
+            SaveAllInternalEditors, AnyInternalEditorModified,
+            Caption, StandaloneOperation, SessionColor, Terminal->SessionData->InternalEditorEncoding, NewFile);
       }
       catch(...)
       {
@@ -3782,8 +3774,8 @@ void __fastcall TCustomScpExplorerForm::TemporaryFileCopyParam(TCopyParamType & 
   CopyParam.FileMask = L"";
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const UnicodeString FileName,
-  TEditedFileData * Data, HANDLE UploadCompleteEvent)
+void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
+  const UnicodeString & FileName, TEditedFileData * Data, HANDLE UploadCompleteEvent, bool & Retry)
 {
   TTerminalManager * Manager = TTerminalManager::Instance();
   if (!IsActiveTerminal(Data->Terminal))
@@ -3867,13 +3859,28 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const UnicodeString 
       CopyParam.FileMask = DelimitFileNameMask(Data->OriginalFileName);
     }
 
-    DebugAssert(Data->Queue != NULL);
-
     int Params = cpNoConfirmation | cpTemporary;
-    TQueueItem * QueueItem = new TUploadQueueItem(Data->Terminal, FileList,
-      Data->RemoteDirectory, &CopyParam, Params, true, false);
-    QueueItem->CompleteEvent = UploadCompleteEvent;
-    AddQueueItem(Data->Queue, QueueItem, Data->Terminal);
+    if (Terminal->IsCapable[fcBackgroundTransfers])
+    {
+      DebugAssert(Data->Queue != NULL);
+
+      TQueueItem * QueueItem = new TUploadQueueItem(Data->Terminal, FileList,
+        Data->RemoteDirectory, &CopyParam, Params, true, false);
+      QueueItem->CompleteEvent = UploadCompleteEvent;
+      AddQueueItem(Data->Queue, QueueItem, Data->Terminal);
+    }
+    else
+    {
+      if (NonVisualDataModule->Busy)
+      {
+        Retry = true;
+      }
+      else
+      {
+        Terminal->CopyToRemote(FileList, Data->RemoteDirectory, &CopyParam, Params, NULL);
+        SetEvent(UploadCompleteEvent);
+      }
+    }
   }
   __finally
   {

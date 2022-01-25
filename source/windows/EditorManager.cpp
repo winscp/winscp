@@ -527,6 +527,7 @@ void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)
         FileData->UploadCompleteEvent = CreateEvent(NULL, false, false, NULL);
         FUploadCompleteEvents.push_back(FileData->UploadCompleteEvent);
 
+        TDateTime PrevTimestamp = FileData->Timestamp;
         FileData->Timestamp = NewTimestamp;
         FileData->Saves++;
         if (FileData->Saves == 1)
@@ -538,8 +539,13 @@ void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)
         try
         {
           DebugAssert(OnFileChange != NULL);
-          OnFileChange(FileData->FileName, FileData->Data,
-            FileData->UploadCompleteEvent);
+          bool Retry = false;
+          OnFileChange(FileData->FileName, FileData->Data, FileData->UploadCompleteEvent, Retry);
+          if (Retry)
+          {
+            UploadComplete(Index);
+            FileData->Timestamp = PrevTimestamp;
+          }
         }
         catch(...)
         {
