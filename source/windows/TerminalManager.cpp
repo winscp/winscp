@@ -731,89 +731,103 @@ void __fastcall TTerminalManager::DoSetActiveSession(TManagedTerminal * value, b
 {
   if (ActiveSession != value)
   {
-    // here used to be call to TCustomScpExporer::UpdateSessionData (now UpdateSession)
-    // but it seems to be duplicate to call from TCustomScpExporer::SessionChanging
-
-    TManagedTerminal * PActiveSession = ActiveSession;
-    FActiveSession = value;
-    if (ScpExplorer)
+    if (NonVisualDataModule != NULL)
     {
-      if ((ActiveSession != NULL) &&
-          ((ActiveSession->Status == ssOpened) || ActiveSession->Disconnected || ActiveSession->LocalBrowser))
-      {
-        SessionReady();
-      }
-      else
-      {
-        UpdateScpExplorer(NULL, NULL);
-      }
+      NonVisualDataModule->StartBusy();
     }
-    UpdateAppTitle();
-
-    if (PActiveSession != NULL)
+    try
     {
-      if (PActiveSession->DisconnectedTemporarily && DebugAlwaysTrue(PActiveSession->Disconnected))
-      {
-        PActiveSession->Disconnected = false;
-        PActiveSession->DisconnectedTemporarily = false;
-      }
+      // here used to be call to TCustomScpExporer::UpdateSessionData (now UpdateSession)
+      // but it seems to be duplicate to call from TCustomScpExporer::SessionChanging
 
-      if (!PActiveSession->Active)
+      TManagedTerminal * PActiveSession = ActiveSession;
+      FActiveSession = value;
+      if (ScpExplorer)
       {
-        SaveTerminal(PActiveSession);
-      }
-    }
-
-    if (ActiveSession != NULL)
-    {
-      int Index = ActiveSessionIndex;
-      if (!ActiveSession->Active &&
-          !FTerminationMessages->Strings[Index].IsEmpty() &&
-          DebugAlwaysTrue(!ActiveSession->LocalBrowser))
-      {
-        UnicodeString Message = FTerminationMessages->Strings[Index];
-        FTerminationMessages->Strings[Index] = L"";
-        if (AutoReconnect)
+        if ((ActiveSession != NULL) &&
+            ((ActiveSession->Status == ssOpened) || ActiveSession->Disconnected || ActiveSession->LocalBrowser))
         {
-          ReconnectActiveTerminal();
+          SessionReady();
         }
         else
         {
-          Exception * E = new ESshFatal(NULL, Message);
-          try
-          {
-            // finally show pending terminal message,
-            // this gives user also possibility to reconnect
-            ActiveTerminal->ShowExtendedException(E);
-          }
-          __finally
-          {
-            delete E;
-          }
+          UpdateScpExplorer(NULL, NULL);
+        }
+      }
+      UpdateAppTitle();
+
+      if (PActiveSession != NULL)
+      {
+        if (PActiveSession->DisconnectedTemporarily && DebugAlwaysTrue(PActiveSession->Disconnected))
+        {
+          PActiveSession->Disconnected = false;
+          PActiveSession->DisconnectedTemporarily = false;
+        }
+
+        if (!PActiveSession->Active)
+        {
+          SaveTerminal(PActiveSession);
         }
       }
 
-      // LastTerminalClosed is true only for a replacement local session,
-      // and it should never happen that it fails to be activated
-      if (LastTerminalClosed && DebugAlwaysFalse(value != ActiveSession))
+      if (ActiveSession != NULL)
       {
-        LastTerminalClosed = false; // just in case
+        int Index = ActiveSessionIndex;
+        if (!ActiveSession->Active &&
+            !FTerminationMessages->Strings[Index].IsEmpty() &&
+            DebugAlwaysTrue(!ActiveSession->LocalBrowser))
+        {
+          UnicodeString Message = FTerminationMessages->Strings[Index];
+          FTerminationMessages->Strings[Index] = L"";
+          if (AutoReconnect)
+          {
+            ReconnectActiveTerminal();
+          }
+          else
+          {
+            Exception * E = new ESshFatal(NULL, Message);
+            try
+            {
+              // finally show pending terminal message,
+              // this gives user also possibility to reconnect
+              ActiveTerminal->ShowExtendedException(E);
+            }
+            __finally
+            {
+              delete E;
+            }
+          }
+        }
+
+        // LastTerminalClosed is true only for a replacement local session,
+        // and it should never happen that it fails to be activated
+        if (LastTerminalClosed && DebugAlwaysFalse(value != ActiveSession))
+        {
+          LastTerminalClosed = false; // just in case
+        }
+      }
+      else
+      {
+        LastTerminalClosed = true;
+      }
+
+      if (LastTerminalClosed && !Updating && (ScpExplorer != NULL))
+      {
+        ScpExplorer->LastTerminalClosed();
+      }
+
+      if ((ActiveSession != NULL) &&
+          !ActiveSession->Active && !ActiveSession->Disconnected && !ActiveSession->LocalBrowser)
+      {
+        ConnectActiveTerminal();
       }
     }
-    else
+    __finally
     {
-      LastTerminalClosed = true;
-    }
-
-    if (LastTerminalClosed && !Updating && (ScpExplorer != NULL))
-    {
-      ScpExplorer->LastTerminalClosed();
-    }
-
-    if ((ActiveSession != NULL) &&
-        !ActiveSession->Active && !ActiveSession->Disconnected && !ActiveSession->LocalBrowser)
-    {
-      ConnectActiveTerminal();
+      if (NonVisualDataModule != NULL)
+      {
+        NonVisualDataModule->EndBusy();
+      }
     }
   }
 }

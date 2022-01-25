@@ -4662,63 +4662,66 @@ void __fastcall TCustomScpExplorerForm::CheckCustomCommandShortCut(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::KeyDown(Word & Key, Classes::TShiftState Shift)
 {
-  if (QueueView3->Focused() && (QueueView3->OnKeyDown != NULL))
+  if (!NonVisualDataModule->Busy)
   {
-    QueueView3->OnKeyDown(QueueView3, Key, Shift);
-  }
-
-  if ((Key != 0) && !DirView(osCurrent)->IsEditing())
-  {
-    TShortCut KeyShortCut = ShortCut(Key, Shift);
-    for (int Index = 0; Index < NonVisualDataModule->ExplorerActions->ActionCount; Index++)
+    if (QueueView3->Focused() && (QueueView3->OnKeyDown != NULL))
     {
-      // Note that handling shortcuts on panel (current control) popup menu has precendence over this.
-      // But so far it's not a problem, as it does what we want.
-      TAction * Action = (TAction *)NonVisualDataModule->ExplorerActions->Actions[Index];
-      if (((Action->ShortCut == KeyShortCut) ||
-           (Action->SecondaryShortCuts->IndexOfShortCut(KeyShortCut) >= 0)) &&
-          AllowedAction(Action, aaShortCut))
+      QueueView3->OnKeyDown(QueueView3, Key, Shift);
+    }
+
+    if ((Key != 0) && !DirView(osCurrent)->IsEditing())
+    {
+      TShortCut KeyShortCut = ShortCut(Key, Shift);
+      for (int Index = 0; Index < NonVisualDataModule->ExplorerActions->ActionCount; Index++)
       {
-        // Has to be called before the action as the dialog char is already in queue.
-        // So when the action consumes message queue, we already need to have the
-        // FIgnoreNextDialogChar set
-        KeyProcessed(Key, Shift);
-        // Reset reference to previous component (when menu/toolbar was clicked).
-        // Needed to detect that action was invoked by keyboard shortcut
-        // in TNonVisualDataModule::ExplorerActionsExecute
-        Action->ActionComponent = NULL;
-        Action->Execute();
-        return;
+        // Note that handling shortcuts on panel (current control) popup menu has precendence over this.
+        // But so far it's not a problem, as it does what we want.
+        TAction * Action = (TAction *)NonVisualDataModule->ExplorerActions->Actions[Index];
+        if (((Action->ShortCut == KeyShortCut) ||
+             (Action->SecondaryShortCuts->IndexOfShortCut(KeyShortCut) >= 0)) &&
+            AllowedAction(Action, aaShortCut))
+        {
+          // Has to be called before the action as the dialog char is already in queue.
+          // So when the action consumes message queue, we already need to have the
+          // FIgnoreNextDialogChar set
+          KeyProcessed(Key, Shift);
+          // Reset reference to previous component (when menu/toolbar was clicked).
+          // Needed to detect that action was invoked by keyboard shortcut
+          // in TNonVisualDataModule::ExplorerActionsExecute
+          Action->ActionComponent = NULL;
+          Action->Execute();
+          return;
+        }
       }
-    }
-    for (int i = 0; i < TTerminalManager::Instance()->Count; i++)
-    {
-      if (NonVisualDataModule->OpenSessionShortCut(i) == KeyShortCut)
+      for (int i = 0; i < TTerminalManager::Instance()->Count; i++)
       {
-        KeyProcessed(Key, Shift);
-        TTerminalManager::Instance()->ActiveSessionIndex = i;
-        return;
-      }
-    }
-    if (Key == VK_TAB && Shift.Contains(ssCtrl))
-    {
-      KeyProcessed(Key, Shift);
-      TTerminalManager::Instance()->CycleTerminals(!Shift.Contains(ssShift));
-    }
-
-    TShortCut CustomShortCut = NormalizeCustomShortCut(KeyShortCut);
-    if (IsCustomShortCut(CustomShortCut))
-    {
-      CheckCustomCommandShortCut(WinConfiguration->CustomCommandList, Key, Shift, CustomShortCut);
-      CheckCustomCommandShortCut(WinConfiguration->ExtensionList, Key, Shift, CustomShortCut);
-
-      if (WinConfiguration->SharedBookmarks != NULL)
-      {
-        TBookmark * Bookmark = WinConfiguration->SharedBookmarks->FindByShortCut(CustomShortCut);
-        if ((Bookmark != NULL) &&
-            OpenBookmark(FCurrentSide, Bookmark))
+        if (NonVisualDataModule->OpenSessionShortCut(i) == KeyShortCut)
         {
           KeyProcessed(Key, Shift);
+          TTerminalManager::Instance()->ActiveSessionIndex = i;
+          return;
+        }
+      }
+      if (Key == VK_TAB && Shift.Contains(ssCtrl))
+      {
+        KeyProcessed(Key, Shift);
+        TTerminalManager::Instance()->CycleTerminals(!Shift.Contains(ssShift));
+      }
+
+      TShortCut CustomShortCut = NormalizeCustomShortCut(KeyShortCut);
+      if (IsCustomShortCut(CustomShortCut))
+      {
+        CheckCustomCommandShortCut(WinConfiguration->CustomCommandList, Key, Shift, CustomShortCut);
+        CheckCustomCommandShortCut(WinConfiguration->ExtensionList, Key, Shift, CustomShortCut);
+
+        if (WinConfiguration->SharedBookmarks != NULL)
+        {
+          TBookmark * Bookmark = WinConfiguration->SharedBookmarks->FindByShortCut(CustomShortCut);
+          if ((Bookmark != NULL) &&
+              OpenBookmark(FCurrentSide, Bookmark))
+          {
+            KeyProcessed(Key, Shift);
+          }
         }
       }
     }
