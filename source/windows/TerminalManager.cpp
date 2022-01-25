@@ -679,81 +679,95 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TManagedTerminal * value, 
 {
   if (ActiveTerminal != value)
   {
-    // here used to be call to TCustomScpExporer::UpdateSessionData (now UpdateTerminal)
-    // but it seems to be duplicate to call from TCustomScpExporer::TerminalChanging
-
-    TManagedTerminal * PActiveTerminal = ActiveTerminal;
-    FActiveTerminal = value;
-    // moved from else block of next if (ActiveTerminal) statement
-    // so ScpExplorer can update its caption
-    UpdateAppTitle();
-    if (ScpExplorer)
+    if (NonVisualDataModule != NULL)
     {
-      if (ActiveTerminal && ((ActiveTerminal->Status == ssOpened) || ActiveTerminal->Disconnected))
-      {
-        TerminalReady();
-      }
-      else
-      {
-        ScpExplorer->Terminal = NULL;
-        ScpExplorer->Queue = NULL;
-      }
+      NonVisualDataModule->StartBusy();
     }
-
-    if (PActiveTerminal != NULL)
+    try
     {
-      if (PActiveTerminal->DisconnectedTemporarily && DebugAlwaysTrue(PActiveTerminal->Disconnected))
-      {
-        PActiveTerminal->Disconnected = false;
-        PActiveTerminal->DisconnectedTemporarily = false;
-      }
+      // here used to be call to TCustomScpExporer::UpdateSessionData (now UpdateTerminal)
+      // but it seems to be duplicate to call from TCustomScpExporer::TerminalChanging
 
-      if (!PActiveTerminal->Active)
+      TManagedTerminal * PActiveTerminal = ActiveTerminal;
+      FActiveTerminal = value;
+      // moved from else block of next if (ActiveTerminal) statement
+      // so ScpExplorer can update its caption
+      UpdateAppTitle();
+      if (ScpExplorer)
       {
-        SaveTerminal(PActiveTerminal);
-      }
-    }
-
-    if (ActiveTerminal)
-    {
-      int Index = ActiveTerminalIndex;
-      if (!ActiveTerminal->Active && !FTerminationMessages->Strings[Index].IsEmpty())
-      {
-        UnicodeString Message = FTerminationMessages->Strings[Index];
-        FTerminationMessages->Strings[Index] = L"";
-        if (AutoReconnect)
+        if (ActiveTerminal && ((ActiveTerminal->Status == ssOpened) || ActiveTerminal->Disconnected))
         {
-          ReconnectActiveTerminal();
+          TerminalReady();
         }
         else
         {
-          Exception * E = new ESshFatal(NULL, Message);
-          try
+          ScpExplorer->Terminal = NULL;
+          ScpExplorer->Queue = NULL;
+        }
+      }
+
+      if (PActiveTerminal != NULL)
+      {
+        if (PActiveTerminal->DisconnectedTemporarily && DebugAlwaysTrue(PActiveTerminal->Disconnected))
+        {
+          PActiveTerminal->Disconnected = false;
+          PActiveTerminal->DisconnectedTemporarily = false;
+        }
+
+        if (!PActiveTerminal->Active)
+        {
+          SaveTerminal(PActiveTerminal);
+        }
+      }
+
+      if (ActiveTerminal)
+      {
+        int Index = ActiveTerminalIndex;
+        if (!ActiveTerminal->Active && !FTerminationMessages->Strings[Index].IsEmpty())
+        {
+          UnicodeString Message = FTerminationMessages->Strings[Index];
+          FTerminationMessages->Strings[Index] = L"";
+          if (AutoReconnect)
           {
-            // finally show pending terminal message,
-            // this gives user also possibility to reconnect
-            ActiveTerminal->ShowExtendedException(E);
+            ReconnectActiveTerminal();
           }
-          __finally
+          else
           {
-            delete E;
+            Exception * E = new ESshFatal(NULL, Message);
+            try
+            {
+              // finally show pending terminal message,
+              // this gives user also possibility to reconnect
+              ActiveTerminal->ShowExtendedException(E);
+            }
+            __finally
+            {
+              delete E;
+            }
           }
         }
       }
-    }
-    else
-    {
-      if (OnLastTerminalClosed)
+      else
       {
-        OnLastTerminalClosed(this);
+        if (OnLastTerminalClosed)
+        {
+          OnLastTerminalClosed(this);
+        }
+      }
+
+
+      if ((ActiveTerminal != NULL) && !ActiveTerminal->Active &&
+          !ActiveTerminal->Disconnected)
+      {
+        ConnectActiveTerminal();
       }
     }
-
-
-    if ((ActiveTerminal != NULL) && !ActiveTerminal->Active &&
-        !ActiveTerminal->Disconnected)
+    __finally
     {
-      ConnectActiveTerminal();
+      if (NonVisualDataModule != NULL)
+      {
+        NonVisualDataModule->EndBusy();
+      }
     }
   }
 }
