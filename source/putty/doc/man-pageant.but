@@ -41,7 +41,7 @@ extract their public half.
 
 The agent protocol used by \c{pageant} is compatible with the PuTTY
 tools and also with other implementations such as OpenSSH's SSH client
-and \e{ssh-agent(1)}. Some \c{pageant} features are implemented with
+and \cw{ssh-agent}(\e{1}). Some \c{pageant} features are implemented with
 protocol extensions, so will only work if \c{pageant} is on both ends.
 
 To run \c{pageant} as an agent, you must provide an option to tell it
@@ -317,15 +317,15 @@ by the SSH agent protocol.
 
 \dt \cw{--askpass} \e{prompt}
 
-\dd With this option, \c{pageant} acts as an \e{ssh-askpass(1)}
+\dd With this option, \c{pageant} acts as an \cw{ssh-askpass}(\e{1})
 replacement, rather than performing any SSH agent functionality. This
 may be useful if you prefer Pageant's GUI prompt style, which
 minimises information leakage about your passphrase length in its
-visual feedback, compared to other \e{ssh-askpass(1)} implementations.
+visual feedback, compared to other \cw{ssh-askpass}(\e{1}) implementations.
 
 \lcont{
 
-\c{pageant --askpass} implements the standard \e{ssh-askpass(1)}
+\c{pageant --askpass} implements the standard \cw{ssh-askpass}(\e{1})
 interface: it can be passed a prompt to display (as a single argument)
 and, if successful, prints the passphrase on standard output and
 returns a zero exit status. Typically you would use the environment

@@ -325,7 +325,8 @@ unfinished.
 
 If any OS X and/or GTK programming experts are keen to have a finished
 version of this, we urge them to help out with some of the remaining
-problems! See the TODO list in \c{unix/gtkapp.c} in the source code.
+problems! See the TODO list in \c{unix/main-gtk-application.c} in the
+source code.
 
 \S{faq-epoc}{Question} Will there be a port to EPOC?
 

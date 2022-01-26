@@ -101,11 +101,16 @@ channel from the server, to prevent remote processes sending confusing
 escape sequences. This option forces the standard error channel to not be
 filtered.
 
+\dt \cw{-pwfile} \e{filename}
+
+\dd Open the specified file, and use the first line of text read from
+it as the remote password.
+
 \dt \cw{-pw} \e{password}
 
 \dd Set remote password to \e{password}. \e{CAUTION:} this will likely
 make the password visible to other users of the local machine (via
-commands such as \q{\c{w}}).
+commands such as \q{\c{ps}} or \q{\c{w}}). Use \cw{-pwfile} instead.
 
 \dt \cw{-1}
 
@@ -118,9 +123,9 @@ commands such as \q{\c{w}}).
 \dt \cw{-ssh-connection}
 
 \dd Force use of the \q{bare \cw{ssh-connection}} protocol. This is
-only likely to be useful when connecting to a \e{psusan(1)} server,
-most likely with an absolute path to a Unix-domain socket in place
-of \e{host}.
+only likely to be useful when connecting to a \cw{psusan}(\e{1})
+server, most likely with an absolute path to a Unix-domain socket in
+place of \e{host}.
 
 \dt \cw{-ssh}
 

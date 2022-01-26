@@ -10,8 +10,8 @@ self-explanatory. If you get an error message which is not listed in
 this chapter and which you don't understand, report it to us as a
 bug (see \k{feedback}) and we will add documentation for it.
 
-\H{errors-hostkey-absent} \q{The server's host key is not cached in
-the registry}
+\H{errors-hostkey-absent} \q{The host key is not cached for this
+server}
 
 This error message occurs when PuTTY connects to a new SSH server.
 Every server identifies itself by means of a host key; once PuTTY
@@ -35,7 +35,7 @@ See \k{gs-hostkey} for more information on host keys.
 \H{errors-hostkey-wrong} \q{WARNING - POTENTIAL SECURITY BREACH!}
 
 This message, followed by \q{The server's host key does not match
-the one PuTTY has cached in the registry}, means that PuTTY has
+the one PuTTY has cached for this server}, means that PuTTY has
 connected to the SSH server before, knows what its host key
 \e{should} be, but has found a different one.
 

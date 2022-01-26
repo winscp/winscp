@@ -17,7 +17,6 @@ page</a>.</p>}
 \cfg{chm-contents-filename}{index.html}
 \cfg{chm-template-filename}{%k.html}
 \cfg{chm-head-end}{<link rel="stylesheet" type="text/css" href="chm.css">}
-\cfg{chm-extra-file}{chm.css}
 
 \cfg{xhtml-contents-filename}{index.html}
 \cfg{text-filename}{puttydoc.txt}

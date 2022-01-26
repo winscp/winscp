@@ -596,6 +596,33 @@ through to \c{ESC [j}.  With control they generate \c{ESC [k} through
 to \c{ESC [v}, and with shift and control together they generate
 \c{ESC [w} through to \c{ESC [\{}.
 
+\b In \I{xterm}Xterm 216 mode, the unshifted function keys behave the
+same as Xterm R6 mode. But pressing a function key together with Shift
+or Alt or Ctrl generates a different sequence containing an extra
+numeric parameter of the form (1 for Shift) + (2 for Alt) + (4 for
+Ctrl) + 1. For F1-F4, the basic sequences like \c{ESC OP} become
+\cw{ESC [1;}\e{bitmap}\cw{P} and similar; for F5 and above,
+\cw{ESC[}\e{index}\cw{~} becomes
+\cw{ESC[}\e{index}\cw{;}\e{bitmap}\cw{~}.
+
+If you don't know what any of this means, you probably don't need to
+fiddle with it.
+
+\S{config-sharrow} Changing the action of the \i{shifted arrow keys}
+
+This option affects the arrow keys, if you press one with any of the
+modifier keys Shift, Ctrl or Alt held down.
+
+\b In the default mode, labelled \c{Ctrl toggles app mode}, the Ctrl
+key toggles between the default arrow-key sequences like \c{ESC [A} and
+\c{ESC [B}, and the sequences Digital's terminals generate in
+\q{application cursor keys} mode, i.e. \c{ESC O A} and so on. Shift
+and Alt have no effect.
+
+\b In the \q{xterm-style bitmap} mode, Shift, Ctrl and Alt all
+generate different sequences, with a number indicating which set of
+modifiers is active.
+
 If you don't know what any of this means, you probably don't need to
 fiddle with it.
 
@@ -1342,7 +1369,7 @@ which one of the options is \q{Paste}). (This context menu is always
 available by holding down Ctrl and right-clicking, regardless of the
 setting of this option.)
 
-(When PuTTY iself is running on Unix, it follows the X Window System
+(When PuTTY itself is running on Unix, it follows the X Window System
 convention.)
 
 \S{config-mouseshift} \q{Shift overrides application's use of mouse}
@@ -1934,6 +1961,19 @@ and enter a command such as \c{connect myhost.com 22} to connect
 through to an external host. Selecting \I{Telnet proxy}\q{Telnet}
 allows you to tell PuTTY to use this type of proxy.
 
+\b Selecting \q{SSH} causes PuTTY to make a secondary SSH connection
+to the proxy host (sometimes called a \q{\i{jump host}} in this
+context), and then open a port-forwarding channel to the
+final destination host. 
+
+\lcont{
+The \q{Proxy hostname} field will be interpreted as the name of a
+PuTTY saved session if one exists, or a hostname if not. This
+allows multi-hop jump paths, if the referenced saved session is
+itself configured to use an SSH proxy; and it allows combining SSH
+and non-SSH proxying.
+}
+
 \b Selecting \I{Local proxy}\q{Local} allows you to specify an arbitrary
 command on the local machine to act as a proxy. When the session is
 started, instead of creating a TCP connection, PuTTY runs the command
@@ -1944,11 +1984,6 @@ output streams.
 This could be used, for instance, to talk to some kind of network proxy
 that PuTTY does not natively support; or you could tunnel a connection
 over something other than TCP/IP entirely.
-
-If you want your local proxy command to make a secondary SSH
-connection to a proxy host and then tunnel the primary connection
-over that, you might well want the \c{-nc} command-line option in
-Plink. See \k{using-cmdline-ncmode} for more information.
 
 You can also enable this mode on the command line; see
 \k{using-cmdline-proxycmd}.
@@ -2007,9 +2042,9 @@ set it to \q{Yes}, PuTTY will always pass host names straight to the
 proxy without trying to look them up first.
 
 If you set this option to \q{Auto} (the default), PuTTY will do
-something it considers appropriate for each type of proxy. Telnet,
-HTTP, and SOCKS5 proxies will have host names passed straight to
-them; SOCKS4 proxies will not.
+something it considers appropriate for each type of proxy. Most
+types of proxy (HTTP, SOCK5, SSH, Telnet, and local) will have host
+names passed straight to them; SOCKS4 proxies will not.
 
 Note that if you are doing DNS at the proxy, you should make sure
 that your proxy exclusion settings (see \k{config-proxy-exclude}) do
@@ -2042,17 +2077,34 @@ proxies and SOCKS 5 proxies.
 supports it (this is not supported in \i{PuTTYtel}); otherwise the
 password is sent to the proxy in \I{plaintext password}plain text.
 
-\b With HTTP proxying, the only currently supported authentication
-method is \I{HTTP basic}\q{basic}, where the password is sent to the proxy
-in \I{plaintext password}plain text.
+\b With HTTP proxying, authentication is via \q{\i{HTTP Digest}} if
+possible (again, not supported in PuTTYtel), or \q{\i{HTTP Basic}}. In
+the latter case, the password is sent to the proxy in \I{plaintext
+password}plain text.
 
 }
 
 \b SOCKS 4 can use the \q{Username} field, but does not support
 passwords.
 
+\b SSH proxying can use all the same forms of SSH authentication
+supported by PuTTY for its main connection. If the SSH server requests
+password authentication, the configured proxy password will be used,
+but other authentication methods such as public keys will be tried
+first, just as for a primary SSH connection.
+
 \b You can specify a way to include a username and password in the
 Telnet/Local proxy command (see \k{config-proxy-command}).
+
+If PuTTY discovers that it needs a proxy username or password and you
+have not specified one in the configuration, it will prompt for it
+interactively in the terminal.
+
+(For SSH proxying, this will also happen in the case of other
+interactive SSH login prompts, such as SSH key passphrases or GSSAPI.
+For the Telnet and Local proxy types, PuTTY will prompt for a username
+or password if you included \c{%user} or \c{%pass} in the command
+string and did not provide a corresponding configuration entry.)
 
 \S{config-proxy-command} Specifying the Telnet or Local proxy command
 
@@ -2403,7 +2455,7 @@ protection than SSH-2 without rekeys.
 
 \H{config-ssh-hostkey} The Host Keys panel
 
-The Host Keys panel allows you to configure options related to SSH-2
+The Host Keys panel allows you to configure options related to
 \i{host key management}.
 
 Host keys are used to prove the server's identity, and assure you that
@@ -2411,8 +2463,8 @@ the server is not being spoofed (either by a man-in-the-middle attack
 or by completely replacing it on the network). See \k{gs-hostkey} for
 a basic introduction to host keys.
 
-This entire panel is only relevant to SSH protocol version 2; none of
-these settings affect SSH-1 at all.
+Much of this panel is only relevant to SSH protocol version 2; SSH-1
+only supports one type of host key.
 
 \S{config-ssh-hostkey-order} \ii{Host key type} selection
 
@@ -2452,7 +2504,7 @@ to that for cipher selection (see \k{config-ssh-encryption}).
 
 \S{config-ssh-prefer-known-hostkeys} Preferring known host keys
 
-By default, PuTTY will adjust the preference order for host key
+By default, PuTTY will adjust the preference order for SSH-2 host key
 algorithms so that any host keys it already knows are moved to the top
 of the list.
 
@@ -3206,7 +3258,10 @@ three states:
 \b \q{On}: PuTTY will assume the server \e{does} have the bug.
 
 \b \q{Auto}: PuTTY will use the server's version number announcement
-to try to guess whether or not the server has the bug.
+to try to guess whether or not the server has the bug. (This option is
+not available for bugs that \e{cannot} be detected from the server
+version, e.g. because they must be acted on before the server version
+is known.)
 
 \S{config-ssh-bug-ignore2} \q{Chokes on SSH-2 \i{ignore message}s}
 
@@ -3298,6 +3353,29 @@ If this bug is detected, PuTTY never allows the channel's
 send an over-sized packet.  If this bug is enabled when talking to a
 correct server, the session will work correctly, but download
 performance will be less than it could be.
+
+\S{config-ssh-bug-dropstart} \q{Discards data sent before its greeting}
+
+Just occasionally, an SSH connection can be established over some
+channel that will accidentally discard outgoing data very early in the
+connection.
+
+This is not typically seen as a bug in an actual SSH server, but it
+can sometimes occur in situations involving a complicated proxy
+process. An example is
+\W{https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=991958}{Debian
+bug #991958}, in which a connection going over the console of a User
+Mode Linux kernel can lose outgoing data before the kernel has fully
+booted.
+
+You can work around this problem by manually enabling this bug flag,
+which will cause PuTTY to wait to send its initial SSH greeting until
+after it sees the greeting from the server.
+
+Note that this bug flag can never be automatically detected, since
+auto-detection relies on the version string in the server's greeting,
+and PuTTY has to decide whether to expect this bug \e{before} it sees
+the server's greeting. So this is a manual workaround only.
 
 \S{config-ssh-bug-sig} \q{Requires padding on SSH-2 \i{RSA} \i{signatures}}
 

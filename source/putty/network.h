@@ -51,9 +51,14 @@ typedef enum PlugLogType {
     PLUGLOG_PROXY_MSG,
 } PlugLogType;
 
+typedef enum PlugCloseType {
+    PLUGCLOSE_NORMAL,
+    PLUGCLOSE_ERROR,
+    PLUGCLOSE_BROKEN_PIPE,
+    PLUGCLOSE_USER_ABORT,
+} PlugCloseType;
+
 struct PlugVtable {
-    void (*log)(Plug *p, PlugLogType type, SockAddr *addr, int port,
-                const char *error_msg, int error_code);
     /*
      * Passes the client progress reports on the process of setting
      * up the connection.
@@ -67,22 +72,63 @@ struct PlugVtable {
      *    addresses to fall back to. When it _is_ fatal, the closing()
      *    function will be called.
      *
-     *  - PLUGLOG_CONNECT_SUCCESS means we have succeeded in
-     *    connecting to address `addr'.
+     *  - PLUGLOG_CONNECT_SUCCESS means we have succeeded in making a
+     *    connection. `addr' gives the address we connected to, if
+     *    available. (But sometimes, in cases of complicated proxy
+     *    setups, it might not be available, so receivers of this log
+     *    event should be prepared to deal with addr==NULL.)
      *
      *  - PLUGLOG_PROXY_MSG means that error_msg contains a line of
      *    logging information from whatever the connection is being
      *    proxied through. This will typically be a wodge of
      *    standard-error output from a local proxy command, so the
      *    receiver should probably prefix it to indicate this.
+     *
+     * Note that sometimes log messages may be sent even to Socket
+     * types that don't involve making an outgoing connection, e.g.
+     * because the same core implementation (such as Windows handle
+     * sockets) is shared between listening and connecting sockets. So
+     * all Plugs must implement this method, even if only to ignore
+     * the logged events.
      */
-    void (*closing)
-     (Plug *p, const char *error_msg, int error_code, bool calling_back);
-    /* error_msg is NULL iff it is not an error (ie it closed normally) */
-    /* calling_back != 0 iff there is a Plug function */
-    /* currently running (would cure the fixme in try_send()) */
-    void (*receive) (Plug *p, int urgent, const char *data, size_t len);
+    void (*log)(Plug *p, PlugLogType type, SockAddr *addr, int port,
+                const char *error_msg, int error_code);
+
     /*
+     * Notifies the Plug that the socket is closing, and something
+     * about why.
+     *
+     *  - PLUGCLOSE_NORMAL means an ordinary non-error closure. In
+     *    this case, error_msg should be ignored (and hopefully
+     *    callers will have passed NULL).
+     *
+     *  - PLUGCLOSE_ERROR indicates that an OS error occurred, and
+     *    'error_msg' contains a string describing it, for use in
+     *    diagnostics. (Ownership of the string is not transferred.)
+     *    This error class covers anything other than the special
+     *    case below:
+     *
+     *  - PLUGCLOSE_BROKEN_PIPE behaves like PLUGCLOSE_ERROR (in
+     *    particular, there's still an error message provided), but
+     *    distinguishes the particular error condition signalled by
+     *    EPIPE / ERROR_BROKEN_PIPE, which ssh/sharing.c needs to
+     *    recognise and handle specially in one situation.
+     *
+     *  - PLUGCLOSE_USER_ABORT means that the close has happened as a
+     *    result of some kind of deliberate user action (e.g. hitting
+     *    ^C at a password prompt presented by a proxy socket setup
+     *    phase). This can be used to suppress interactive error
+     *    messages sent to the user (such as dialog boxes), on the
+     *    grounds that the user already knows. However, 'error_msg'
+     *    will still contain some appropriate text, so that
+     *    non-interactive error reporting (e.g. event logs) can still
+     *    record why the connection terminated.
+     */
+    void (*closing)(Plug *p, PlugCloseType type, const char *error_msg);
+
+    /*
+     * Provides incoming socket data to the Plug. Three cases:
+     *
      *  - urgent==0. `data' points to `len' bytes of perfectly
      *    ordinary data.
      *
@@ -92,28 +138,52 @@ struct PlugVtable {
      *  - urgent==2. `data' points to `len' bytes of data,
      *    the first of which was the one at the Urgent mark.
      */
-    void (*sent) (Plug *p, size_t bufsize);
+    void (*receive) (Plug *p, int urgent, const char *data, size_t len);
+
     /*
-     * The `sent' function is called when the pending send backlog
-     * on a socket is cleared or partially cleared. The new backlog
-     * size is passed in the `bufsize' parameter.
+     * Called when the pending send backlog on a socket is cleared or
+     * partially cleared. The new backlog size is passed in the
+     * `bufsize' parameter.
+     */
+    void (*sent) (Plug *p, size_t bufsize);
+
+    /*
+     * Only called on listener-type sockets, and is passed a
+     * constructor function+context that will create a fresh Socket
+     * describing the connection. It returns nonzero if it doesn't
+     * want the connection for some reason, or 0 on success.
      */
     int (*accepting)(Plug *p, accept_fn_t constructor, accept_ctx_t ctx);
-    /*
-     * `accepting' is called only on listener-type sockets, and is
-     * passed a constructor function+context that will create a fresh
-     * Socket describing the connection. It returns nonzero if it
-     * doesn't want the connection for some reason, or 0 on success.
-     */
 };
 
-/* proxy indirection layer */
-/* NB, control of 'addr' is passed via new_connection, which takes
- * responsibility for freeing it */
+/* Proxy indirection layer.
+ *
+ * Calling new_connection transfers ownership of 'addr': the proxy
+ * layer is now responsible for freeing it, and the caller shouldn't
+ * assume it exists any more.
+ *
+ * If calling this from a backend with a Seat, you can also give it a
+ * pointer to the backend's Interactor trait. In that situation, it
+ * might replace the backend's seat with a temporary seat of its own,
+ * and give the real Seat to an Interactor somewhere in the proxy
+ * system so that it can ask for passwords (and, in the case of SSH
+ * proxying, other prompts like host key checks). If that happens,
+ * then the resulting 'temp seat' is the backend's property, and it
+ * will have to remember to free it when cleaning up, or after
+ * flushing it back into the real seat when the network connection
+ * attempt completes.
+ *
+ * You can free your TempSeat and resume using the real Seat when one
+ * of two things happens: either your Plug's closing() method is
+ * called (indicating failure to connect), or its log() method is
+ * called with PLUGLOG_CONNECT_SUCCESS. In the latter case, you'll
+ * probably want to flush the TempSeat's contents into the real Seat,
+ * of course.
+ */
 Socket *new_connection(SockAddr *addr, const char *hostname,
                        int port, bool privport,
                        bool oobinline, bool nodelay, bool keepalive,
-                       Plug *plug, Conf *conf);
+                       Plug *plug, Conf *conf, Interactor *interactor);
 Socket *new_listener(const char *srcaddr, int port, Plug *plug,
                      bool local_host_only, Conf *conf, int addressfamily);
 SockAddr *name_lookup(const char *host, int port, char **canonicalname,
@@ -125,7 +195,13 @@ SockAddr *name_lookup(const char *host, int port, char **canonicalname,
 Socket *platform_new_connection(SockAddr *addr, const char *hostname,
                                 int port, bool privport,
                                 bool oobinline, bool nodelay, bool keepalive,
-                                Plug *plug, Conf *conf);
+                                Plug *plug, Conf *conf, Interactor *itr);
+
+/* callback for SSH jump-host proxying */
+Socket *sshproxy_new_connection(SockAddr *addr, const char *hostname,
+                                int port, bool privport,
+                                bool oobinline, bool nodelay, bool keepalive,
+                                Plug *plug, Conf *conf, Interactor *itr);
 
 /* socket functions */
 
@@ -171,9 +247,14 @@ static inline void sk_write_eof(Socket *s)
 static inline void plug_log(
     Plug *p, int type, SockAddr *addr, int port, const char *msg, int code)
 { p->vt->log(p, type, addr, port, msg, code); }
-static inline void plug_closing(
-    Plug *p, const char *msg, int code, bool calling_back)
-{ p->vt->closing(p, msg, code, calling_back); }
+static inline void plug_closing(Plug *p, PlugCloseType type, const char *msg)
+{ p->vt->closing(p, type, msg); }
+static inline void plug_closing_normal(Plug *p)
+{ p->vt->closing(p, PLUGCLOSE_NORMAL, NULL); }
+static inline void plug_closing_error(Plug *p, const char *msg)
+{ p->vt->closing(p, PLUGCLOSE_ERROR, msg); }
+static inline void plug_closing_user_abort(Plug *p)
+{ p->vt->closing(p, PLUGCLOSE_USER_ABORT, "User aborted connection setup"); }
 static inline void plug_receive(Plug *p, int urg, const char *data, size_t len)
 { p->vt->receive(p, urg, data, len); }
 static inline void plug_sent (Plug *p, size_t bufsize)
@@ -221,7 +302,7 @@ static inline SocketPeerInfo *sk_peer_info(Socket *s)
 
 /*
  * The structure returned from sk_peer_info, and a function to free
- * one (in misc.c).
+ * one (in utils).
  */
 struct SocketPeerInfo {
     int addressfamily;
@@ -259,13 +340,13 @@ struct SocketPeerInfo {
 void sk_free_peer_info(SocketPeerInfo *pi);
 
 /*
- * Simple wrapper on getservbyname(), needed by ssh.c. Returns the
+ * Simple wrapper on getservbyname(), needed by portfwd.c. Returns the
  * port number, in host byte order (suitable for printf and so on).
  * Returns 0 on failure. Any platform not supporting getservbyname
  * can just return 0 - this function is not required to handle
  * numeric port specifications.
  */
-int net_service_lookup(char *service);
+int net_service_lookup(const char *service);
 
 /*
  * Look up the local hostname; return value needs freeing.
@@ -289,15 +370,25 @@ Socket *new_error_socket_consume_string(Plug *plug, char *errmsg);
  */
 extern Plug *const nullplug;
 
+/*
+ * Some trivial no-op plug functions, also in nullplug.c; exposed here
+ * so that other Plug implementations can use them too.
+ *
+ * In particular, nullplug_log is useful to Plugs that don't need to
+ * worry about logging.
+ */
+void nullplug_log(Plug *plug, PlugLogType type, SockAddr *addr,
+                  int port, const char *err_msg, int err_code);
+void nullplug_closing(Plug *plug, PlugCloseType type, const char *error_msg);
+void nullplug_receive(Plug *plug, int urgent, const char *data, size_t len);
+void nullplug_sent(Plug *plug, size_t bufsize);
+
 /* ----------------------------------------------------------------------
  * Functions defined outside the network code, which have to be
  * declared in this header file rather than the main putty.h because
  * they use types defined here.
  */
 
-/*
- * Exports from be_misc.c.
- */
 void backend_socket_log(Seat *seat, LogContext *logctx,
                         PlugLogType type, SockAddr *addr, int port,
                         const char *error_msg, int error_code, Conf *conf,
@@ -310,5 +401,32 @@ typedef struct ProxyStderrBuf {
 void psb_init(ProxyStderrBuf *psb);
 void log_proxy_stderr(
     Plug *plug, ProxyStderrBuf *psb, const void *vdata, size_t len);
+
+/* ----------------------------------------------------------------------
+ * The DeferredSocketOpener trait. This is a thing that some Socket
+ * implementations may choose to own if they need to delay actually
+ * setting up the underlying connection. For example, sockets used in
+ * local-proxy handling (Unix FdSocket / Windows HandleSocket) might
+ * need to do this if they have to prompt the user interactively for
+ * parts of the command they'll run.
+ *
+ * Mostly, a DeferredSocketOpener implementation will keep to itself,
+ * arrange its own callbacks in order to do whatever setup it needs,
+ * and when it's ready, call back to its parent Socket via some
+ * implementation-specific API of its own. So the shared API here
+ * requires almost nothing: the only thing we need is a free function,
+ * so that if the owner of a Socket of this kind needs to close it
+ * before the deferred connection process is finished, the Socket can
+ * also clean up the DeferredSocketOpener dangling off it.
+ */
+
+struct DeferredSocketOpener {
+    const DeferredSocketOpenerVtable *vt;
+};
+struct DeferredSocketOpenerVtable {
+    void (*free)(DeferredSocketOpener *);
+};
+static inline void deferred_socket_opener_free(DeferredSocketOpener *dso)
+{ dso->vt->free(dso); }
 
 #endif

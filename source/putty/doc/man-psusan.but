@@ -191,15 +191,36 @@ And the setup script \cw{uml-psusan.sh} might look like this:
 \c # Choose what shell you want to run inside psusan
 \e iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
 \c export SHELL=/bin/bash
+\c # Set up a default path
+\e iiiiiiiiiiiiiiiiiiiiiii
+\c export PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin
 \c # And now run psusan over the serial port
 \e iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
 \c exec /home/simon/src/putty/misc/psusan
 
-Now set up a PuTTY saved session as in the Docker example above, using
-that \cw{linux} command as the local proxy command, and you'll have a
-PuTTY session that starts up a clean UML instance when you run it, and
-(if you enabled connection sharing) further instances of the same
-session will connect to the same instance again.
+Now set up a PuTTY saved session as in the Docker example above.
+Basically you'll want to use the above \cw{linux} command as the local
+proxy command. However, it's worth wrapping it in \cw{setsid}(\e{1}),
+because when UML terminates, it kills its entire process group. So
+it's better that PuTTY should not be part of that group, and should
+have the opportunity to shut down cleanly by itself. So probably you
+end up setting the proxy command to be something more like:
+
+\c setsid linux mem=512M rootfstype=hostfs rootflags=/ rw \
+\c     con=fd:2,fd:2 ssl0=fd:0,fd:1 init=/some/path/to/uml-psusan.sh
+\e                                       iiiiiiiiiiiiiiiiiiiiiiiiiii
+
+You may also find that you have to enable the bug workaround that
+indicates that the server \q{Discards data sent before its greeting},
+because otherwise PuTTY's outgoing protocol greeting can be
+accidentally lost during UML startup. (See
+\W{https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=991958}{Debian
+bug #991958}.)
+
+Once you've done that, you'll have a PuTTY session that starts up a
+clean UML instance when you run it, and (if you enabled connection
+sharing) further instances of the same session will connect to the
+same instance again.
 
 \S2{psusan-manpage-examples-wsl} Windows Subsystem for Linux
 
@@ -230,6 +251,39 @@ Like all the other examples here, this also permits you to forward
 ports in and out of the WSL environment (e.g. expose a WSL2 network
 service through the hypervisor's internal NAT), forward Pageant into
 it, and so on.
+
+\S2{psusan-manpage-examples-cygwin} Cygwin
+
+Another Unix-like environment on Windows is Cygwin. That comes with
+its own GUI terminal application, \cw{mintty} (as it happens, a
+derivative of PuTTY); but if you'd prefer to use PuTTY itself to talk
+to your Cygwin terminal sessions, \cw{psusan} can help.
+
+To do this, you'll first need to build the Unix PuTTY tools inside
+Cygwin (via the usual \cw{cmake} method). Then, copy the resulting
+\cw{psusan.exe} into Cygwin's \cw{/bin} directory. (It has to be
+in that directory for non-Cygwin programs to run it; otherwise it
+won't be able to find the Cygwin DLL at startup.)
+
+Then set up your PuTTY saved session like this:
+
+\b set the local proxy command to run \cw{psusan.exe} via its real
+Windows path. You might also want to add the \cw{--sessiondir} option
+so that shell sessions start up in your Cygwin home directory. For
+example, you might use the command \cq{c:\\cygwin64\\bin\\psusan.exe
+--sessiondir /home/simon} (changing the pathname and username to match
+your setup).
+
+\b enter anything you like in the host name box; \cq{Cygwin} is
+probably a good choice
+
+\b set the protocol to \q{Bare ssh-connection}, as usual.
+
+Port forwarding is probably not particularly useful in this case,
+since Cygwin shares the same network port space as the host machine.
+But turning on agent forwarding is useful, because then the Cygwin
+command-line SSH client can talk to Pageant without any further
+configuration.
 
 \S2{psusan-manpage-examples-schroot} \cw{schroot}
 

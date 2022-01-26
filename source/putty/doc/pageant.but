@@ -170,6 +170,28 @@ by the command, like this:
 
 \c C:\PuTTY\pageant.exe d:\main.ppk -c C:\PuTTY\putty.exe
 
+\S{pageant-cmdline-openssh} Integrating with Windows OpenSSH
+
+When Pageant starts up, it can optionally write out a file containing
+an OpenSSH configuration directive that tells the Windows \c{ssh.exe}
+where to find Pageant. If you include this file from your Windows SSH
+configuration, then \c{ssh.exe} should automatically use Pageant as
+its agent, so that you can keep your keys in one place and have both
+SSH clients able to use them.
+
+The option is \c{--openssh-config}, and you follow it with a filename.
+
+To refer to this file from your main OpenSSH configuration, you can
+use the \cq{Include} directive. For example, you might run Pageant
+like this:
+
+\c pageant --openssh-config C:\Users\Simon\.ssh\pageant.conf
+
+and then add a directive like this to your main \cq{.ssh\\config}
+file:
+
+\c Include C:\Users\Simon\.ssh\pageant.conf
+
 \S{pageant-cmdline-keylist} Starting with the key list visible
 
 Start Pageant with the \i\c{--keylist} option to show the main window

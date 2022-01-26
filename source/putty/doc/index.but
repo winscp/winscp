@@ -245,6 +245,7 @@ saved sessions from
 \IM{-m} \c{-m} command-line option
 \IM{-P-upper} \c{-P} command-line option
 \IM{-pw} \c{-pw} command-line option
+\IM{-pwfile} \c{-pwfile} command-line option
 \IM{-A-upper} \c{-A} command-line option
 \IM{-a} \c{-a} command-line option
 \IM{-X-upper} \c{-X} command-line option
@@ -607,8 +608,11 @@ saved sessions from
 \IM{proxy authentication} proxy authentication
 \IM{proxy authentication} authentication, to proxy
 
-\IM{HTTP basic} HTTP \q{basic} authentication
-\IM{HTTP basic} \q{basic} authentication (HTTP)
+\IM{HTTP Basic} HTTP Basic authentication
+\IM{HTTP Basic} \q{basic} authentication (HTTP)
+
+\IM{HTTP Digest} HTTP Digest authentication
+\IM{HTTP Digest} \q{digest} authentication (HTTP)
 
 \IM{plaintext password} plain text password
 \IM{plaintext password} password, plain text
@@ -930,3 +934,6 @@ saved sessions from
 \IM{system tray} system tray, Windows
 \IM{system tray} notification area, Windows (aka system tray)
 \IM{system tray} taskbar notification area, Windows (aka system tray)
+
+\IM{shifted arrow keys} arrow keys, shifted
+\IM{shifted arrow keys} shifted arrow keys

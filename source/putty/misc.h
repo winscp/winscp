@@ -1,5 +1,6 @@
 /*
- * Header for misc.c.
+ * Header for miscellaneous helper functions, mostly defined in the
+ * utils subdirectory.
  */
 
 #ifndef PUTTY_MISC_H
@@ -33,7 +34,7 @@ void burnstr(char *string);
 
 /*
  * The visible part of a strbuf structure. There's a surrounding
- * implementation struct in misc.c, which isn't exposed to client
+ * implementation struct in strbuf.c, which isn't exposed to client
  * code.
  */
 struct strbuf {
@@ -56,8 +57,6 @@ void *strbuf_append(strbuf *buf, size_t len);
 void strbuf_shrink_to(strbuf *buf, size_t new_len);
 void strbuf_shrink_by(strbuf *buf, size_t amount_to_remove);
 char *strbuf_to_str(strbuf *buf); /* does free buf, but you must free result */
-void strbuf_catf(strbuf *buf, const char *fmt, ...) PRINTF_LIKE(2, 3);
-void strbuf_catfv(strbuf *buf, const char *fmt, va_list ap);
 static inline void strbuf_clear(strbuf *buf) { strbuf_shrink_to(buf, 0); }
 bool strbuf_chomp(strbuf *buf, char char_to_remove);
 
@@ -65,11 +64,7 @@ strbuf *strbuf_new_for_agent_query(void);
 void strbuf_finalise_agent_query(strbuf *buf);
 
 /* String-to-Unicode converters that auto-allocate the destination and
- * work around the rather deficient interface of mb_to_wc.
- *
- * These actually live in miscucs.c, not misc.c (the distinction being
- * that the former is only linked into tools that also have the main
- * Unicode support). */
+ * work around the rather deficient interface of mb_to_wc. */
 wchar_t *dup_mb_to_wc_c(int codepage, int flags, const char *string, int len);
 wchar_t *dup_mb_to_wc(int codepage, int flags, const char *string);
 
@@ -123,6 +118,8 @@ ptrlen bufchain_prefix(bufchain *ch);
 void bufchain_consume(bufchain *ch, size_t len);
 void bufchain_fetch(bufchain *ch, void *data, size_t len);
 void bufchain_fetch_consume(bufchain *ch, void *data, size_t len);
+bool bufchain_try_consume(bufchain *ch, size_t len);
+bool bufchain_try_fetch(bufchain *ch, void *data, size_t len);
 bool bufchain_try_fetch_consume(bufchain *ch, void *data, size_t len);
 size_t bufchain_fetch_consume_up_to(bufchain *ch, void *data, size_t len);
 void bufchain_set_callback_inner(
@@ -132,9 +129,9 @@ static inline void bufchain_set_callback(bufchain *ch, IdempotentCallback *ic)
 {
     extern void queue_idempotent_callback(struct IdempotentCallback *ic);
     /* Wrapper that puts in the standard queue_idempotent_callback
-     * function. Lives here rather than in utils.c so that standalone
-     * programs can use the bufchain facility without this optional
-     * callback feature and not need to provide a stub of
+     * function. Lives here rather than in bufchain.c so that
+     * standalone programs can use the bufchain facility without this
+     * optional callback feature and not need to provide a stub of
      * queue_idempotent_callback. */
     bufchain_set_callback_inner(ch, ic, queue_idempotent_callback);
 }
@@ -214,6 +211,11 @@ bool smemeq(const void *av, const void *bv, size_t len);
  * (such as things in the surrogate range, or > 0x10FFFF) have already
  * been removed. */
 size_t encode_utf8(void *output, unsigned long ch);
+
+/* Encode a wide-character string into UTF-8. Tolerates surrogates if
+ * sizeof(wchar_t) == 2, assuming that in that case the wide string is
+ * encoded in UTF-16. */
+char *encode_wide_string_as_utf8(const wchar_t *wstr);
 
 /* Write a string out in C string-literal format. */
 void write_c_string_literal(FILE *fp, ptrlen str);
@@ -372,6 +374,22 @@ static inline void PUT_16BIT_MSB_FIRST(void *vp, uint16_t value)
     uint8_t *p = (uint8_t *)vp;
     p[1] = (uint8_t)(value);
     p[0] = (uint8_t)(value >> 8);
+}
+
+/* For use in X11-related applications, an endianness-variable form of
+ * {GET,PUT}_16BIT which expects 'endian' to be either 'B' or 'l' */
+
+static inline uint16_t GET_16BIT_X11(char endian, const void *p)
+{
+    return endian == 'B' ? GET_16BIT_MSB_FIRST(p) : GET_16BIT_LSB_FIRST(p);
+}
+
+static inline void PUT_16BIT_X11(char endian, void *p, uint16_t value)
+{
+    if (endian == 'B')
+        PUT_16BIT_MSB_FIRST(p, value);
+    else
+        PUT_16BIT_LSB_FIRST(p, value);
 }
 
 /* Replace NULL with the empty string, permitting an idiom in which we

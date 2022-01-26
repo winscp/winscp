@@ -4,6 +4,7 @@
 #include "defs.h"
 
 #include <stdio.h>
+#include <stdarg.h>
 
 /*
  * A sort of 'abstract base class' or 'interface' or 'trait' which is
@@ -12,6 +13,7 @@
  */
 struct BinarySink {
     void (*write)(BinarySink *sink, const void *data, size_t len);
+    void (*writefmtv)(BinarySink *sink, const char *fmt, va_list ap);
     BinarySink *binarysink_;
 };
 
@@ -25,6 +27,7 @@ struct BinarySink {
 #define BinarySink_IMPLEMENTATION BinarySink binarysink_[1]
 #define BinarySink_INIT(obj, writefn) \
     ((obj)->binarysink_->write = (writefn), \
+     (obj)->binarysink_->writefmtv = NULL, \
      (obj)->binarysink_->binarysink_ = (obj)->binarysink_)
 
 /*
@@ -138,6 +141,20 @@ struct BinarySink {
     BinarySink_put_data(BinarySink_UPCAST(bs), val, len)
 #define put_datapl(bs, pl) \
     BinarySink_put_datapl(BinarySink_UPCAST(bs), pl)
+#define put_dataz(bs, val) \
+    BinarySink_put_datapl(BinarySink_UPCAST(bs), ptrlen_from_asciz(val))
+#define put_datalit(bs, val) \
+    BinarySink_put_datapl(BinarySink_UPCAST(bs), PTRLEN_LITERAL(val))
+
+/* Emit printf-formatted data, with no terminator. */
+#define put_fmt(bs, ...) \
+    BinarySink_put_fmt(BinarySink_UPCAST(bs), __VA_ARGS__)
+#define put_fmtv(bs, fmt, ap) \
+    BinarySink_put_fmtv(BinarySink_UPCAST(bs), fmt, ap)
+
+/* More complicated function implemented in write_c_string_literal.c */
+#define put_c_string_literal(bs, str) \
+    BinarySink_put_c_string_literal(BinarySink_UPCAST(bs), str)
 
 /*
  * The underlying real C functions that implement most of those
@@ -160,12 +177,14 @@ void BinarySink_put_uint64(BinarySink *, uint64_t);
 void BinarySink_put_string(BinarySink *, const void *data, size_t len);
 void BinarySink_put_stringpl(BinarySink *, ptrlen);
 void BinarySink_put_stringz(BinarySink *, const char *str);
-struct strbuf;
-void BinarySink_put_stringsb(BinarySink *, struct strbuf *);
+void BinarySink_put_stringsb(BinarySink *, strbuf *);
 void BinarySink_put_asciz(BinarySink *, const char *str);
 bool BinarySink_put_pstring(BinarySink *, const char *str);
 void BinarySink_put_mp_ssh1(BinarySink *bs, mp_int *x);
 void BinarySink_put_mp_ssh2(BinarySink *bs, mp_int *x);
+void BinarySink_put_fmt(BinarySink *, const char *fmt, ...) PRINTF_LIKE(2, 3);
+void BinarySink_put_fmtv(BinarySink *, const char *fmt, va_list ap);
+void BinarySink_put_c_string_literal(BinarySink *, ptrlen);
 
 /* ---------------------------------------------------------------------- */
 

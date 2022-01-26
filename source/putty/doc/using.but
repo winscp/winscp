@@ -838,17 +838,23 @@ any case.)
 This option is equivalent to the port number control in the Session
 panel of the PuTTY configuration box (see \k{config-hostname}).
 
-\S2{using-cmdline-pw} \i\c{-pw}: specify a \i{password}
+\S2{using-cmdline-pw} \i\c{-pwfile} and \i\c{-pw}: specify a \i{password}
 
 A simple way to automate a remote login is to supply your password
-on the command line. This is \e{not recommended} for reasons of
-security. If you possibly can, we recommend you set up public-key
-authentication instead. See \k{pubkey} for details.
+on the command line.
 
-Note that the \c{-pw} option only works when you are using the SSH
-protocol. Due to fundamental limitations of Telnet, Rlogin, and
-SUPDUP, these protocols do not support automated password
-authentication.
+The \c{-pwfile} option takes a file name as an argument. The first
+line of text in that file will be used as your password.
+
+The \c{-pw} option takes the password itself as an argument. This is
+\s{NOT SECURE} if anybody else uses the same computer, because the
+whole command line (including the password) is likely to show up if
+another user lists the running processes. \c{-pw} is retained for
+backwards compatibility only; you should use \c{-pwfile} instead.
+
+Note that these options only work when you are using the SSH protocol.
+Due to fundamental limitations of Telnet, Rlogin, and SUPDUP, these
+protocols do not support automated password authentication.
 
 \S2{using-cmdline-agentauth} \i\c{-agent} and \i\c{-noagent}:
 control use of Pageant for authentication
@@ -941,15 +947,19 @@ this:
 
 \c plink host1.example.com -nc host2.example.com:1234
 
-You might want to use this feature if you needed to make an SSH
-connection to a target host which you can only reach by going
-through a proxy host, and rather than using port forwarding you
-prefer to use the local proxy feature (see \k{config-proxy-type} for
-more about local proxies). In this situation you might select
-\q{Local} proxy type, set your local proxy command to be \cq{plink
-%proxyhost -nc %host:%port}, enter the target host name on the
-Session panel, and enter the directly reachable proxy host name on
-the Proxy panel.
+This can be useful if you're trying to make a connection to a target
+host which you can only reach by SSH forwarding through a proxy host.
+One way to do this would be to have an existing SSH connection to the
+proxy host, with a port forwarding, but if you prefer to have the
+connection started on demand as needed, then this approach can also
+work.
+
+However, this does depend on the program \e{using} the proxy being
+able to run a subprocess in place of making a network connection.
+PuTTY itself can do this using the \q{Local} proxy type, but there's a
+built-in more flexible way using the \q{SSH} proxy type. (See
+\k{config-proxy-type} for a description of both.) So this feature is
+probably most useful with another client program as the end user.
 
 This feature is only available in SSH protocol version 2 (since the
 version 1 protocol assumes you will always want to run a shell). It
