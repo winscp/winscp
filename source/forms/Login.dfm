@@ -143,7 +143,7 @@ object LoginDialog: TLoginDialog
           FocusControl = TransferProtocolCombo
         end
         object FtpsLabel: TLabel
-          Left = 163
+          Left = 138
           Top = 22
           Width = 55
           Height = 13
@@ -151,7 +151,7 @@ object LoginDialog: TLoginDialog
           FocusControl = FtpsCombo
         end
         object WebDavsLabel: TLabel
-          Left = 163
+          Left = 138
           Top = 22
           Width = 55
           Height = 13
@@ -244,7 +244,7 @@ object LoginDialog: TLoginDialog
         object TransferProtocolCombo: TComboBox
           Left = 12
           Top = 39
-          Width = 145
+          Width = 120
           Height = 21
           Style = csDropDownList
           TabOrder = 0
@@ -257,9 +257,9 @@ object LoginDialog: TLoginDialog
             'Amazon S3')
         end
         object FtpsCombo: TComboBox
-          Left = 163
+          Left = 138
           Top = 39
-          Width = 173
+          Width = 198
           Height = 21
           Style = csDropDownList
           TabOrder = 2
