@@ -93,7 +93,7 @@ object CopyDialog: TCopyDialog
   object QueueCheck2: TCheckBox
     Left = 12
     Top = 112
-    Width = 297
+    Width = 317
     Height = 17
     Caption = 'Transfer on background (add to transfer &queue) X'
     TabOrder = 4
