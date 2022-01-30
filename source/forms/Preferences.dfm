@@ -736,9 +736,9 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = ControlChange
           end
           object PanelSearchCombo: TComboBox
-            Left = 216
+            Left = 196
             Top = 191
-            Width = 156
+            Width = 176
             Height = 21
             Style = csDropDownList
             Anchors = [akTop, akRight]
@@ -1291,7 +1291,7 @@ object PreferencesDialog: TPreferencesDialog
           object AddCommandButton: TButton
             Left = 16
             Top = 313
-            Width = 83
+            Width = 98
             Height = 25
             Anchors = [akLeft, akBottom]
             Caption = '&Add...'
@@ -1303,7 +1303,7 @@ object PreferencesDialog: TPreferencesDialog
           object RemoveCommandButton: TButton
             Left = 16
             Top = 344
-            Width = 83
+            Width = 98
             Height = 25
             Anchors = [akLeft, akBottom]
             Caption = '&Remove'
@@ -1341,9 +1341,9 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = EditCommandButtonClick
           end
           object ConfigureCommandButton: TButton
-            Left = 112
+            Left = 127
             Top = 313
-            Width = 83
+            Width = 98
             Height = 25
             Anchors = [akLeft, akBottom]
             Caption = '&Configure...'
@@ -3134,7 +3134,7 @@ object PreferencesDialog: TPreferencesDialog
           object EditorEncodingCombo: TComboBox
             Left = 16
             Top = 112
-            Width = 145
+            Width = 155
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
