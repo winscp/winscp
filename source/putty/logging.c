@@ -81,6 +81,11 @@ void logflush(LogContext *ctx)
             fflush(ctx->lgfp);
 }
 
+LogPolicy *log_get_policy(LogContext *ctx)
+{
+    return ctx->lp;
+}
+
 static void logfopen_callback(void *vctx, int mode)
 {
     LogContext *ctx = (LogContext *)vctx;
