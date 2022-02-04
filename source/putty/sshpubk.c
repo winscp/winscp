@@ -181,6 +181,8 @@ static bool expect_signature(BinarySource *src, ptrlen realsig)
     return !get_err(src) && ptrlen_eq_ptrlen(realsig, thissig);
 }
 
+#ifndef WINSCP
+
 static int rsa1_load_s_internal(BinarySource *src, RSAKey *key, bool pub_only,
                                 char **commentptr, const char *passphrase,
                                 const char **error)
@@ -511,6 +513,8 @@ bool rsa1_save_f(const Filename *filename, RSAKey *key, const char *passphrase)
     return toret;
     } // WINSCP
 }
+
+#endif
 
 /* ----------------------------------------------------------------------
  * SSH-2 private key load/store functions.

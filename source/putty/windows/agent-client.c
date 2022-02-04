@@ -154,7 +154,6 @@ struct agent_pending_query {
     strbuf *response;
     void (*callback)(void *, void *, int);
     void *callback_ctx;
-    struct callback_set *callback_set; // WINSCP
 };
 
 static int named_pipe_agent_accumulate_response(
@@ -254,8 +253,7 @@ static agent_pending_query *named_pipe_agent_query(
     }
 
     pq = snew(agent_pending_query);
-    pq->callback_set = callback_set; // WINSCP
-    pq->handle = handle_input_new(callback_set->handles_by_evtomain, pipehandle, named_pipe_agent_gotdata, pq, 0); // WINSCP
+    pq->handle = handle_input_new(callback_set, pipehandle, named_pipe_agent_gotdata, pq, 0); // WINSCP
     pq->os_handle = pipehandle;
     pipehandle = INVALID_HANDLE_VALUE;  /* prevent it being closed below */
     pq->response = strbuf_new_nm();
@@ -281,7 +279,7 @@ static agent_pending_query *named_pipe_agent_query(
 
 void agent_cancel_query(agent_pending_query *pq)
 {
-    handle_free(pq->callback_set->handles_by_evtomain, pq->handle);
+    handle_free(pq->handle);
     CloseHandle(pq->os_handle);
     if (pq->response)
         strbuf_free(pq->response);

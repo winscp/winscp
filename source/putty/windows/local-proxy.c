@@ -64,6 +64,7 @@ char *platform_setup_local_proxy(Socket *socket, const char *cmd)
     si.hStdInput = cmd_from_us;
     si.hStdOutput = cmd_to_us;
     si.hStdError = cmd_err_to_us;
+    { // WINSCP
     char *cmd_mutable = dupstr(cmd); /* CreateProcess needs non-const char * */
     CreateProcess(NULL, cmd_mutable, NULL, NULL, true,
                   CREATE_NO_WINDOW | NORMAL_PRIORITY_CLASS,
@@ -82,6 +83,7 @@ char *platform_setup_local_proxy(Socket *socket, const char *cmd)
                         false);
 
     return NULL;
+    } // WINSCP
 }
 
 Socket *platform_new_connection(SockAddr *addr, const char *hostname,
@@ -92,9 +94,11 @@ Socket *platform_new_connection(SockAddr *addr, const char *hostname,
     if (conf_get_int(conf, CONF_proxy_type) != PROXY_CMD)
         return NULL;
 
+    { // WINSCP
     DeferredSocketOpener *opener = local_proxy_opener(
         addr, port, plug, conf, itr);
     Socket *socket = make_deferred_handle_socket(opener, addr, port, plug);
     local_proxy_opener_set_socket(opener, socket);
     return socket;
+    } // WINSCP
 }

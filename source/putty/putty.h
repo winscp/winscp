@@ -2496,7 +2496,6 @@ void pgp_fingerprints(void);
  */
 bool have_ssh_host_key(Seat *seat, const char *host, int port, const char *keytype);
 
-void display_banner(Seat *seat, const char* banner, int size); // WINSCP
 /*
  * Exports from console frontends (console.c in platform subdirs)
  * that aren't equivalents to things in windlg.c et al.
@@ -2772,11 +2771,18 @@ unsigned long timing_last_clock(void);
 typedef struct callback callback;
 struct IdempotentCallback;
 typedef struct PacketQueueNode PacketQueueNode;
+typedef struct handle_list_node handle_list_node;
+struct handle_list_node {
+    handle_list_node *next, *prev;
+};
 struct callback_set {
     struct callback *cbcurr, *cbhead, *cbtail;
     IdempotentCallback * ic_pktin_free;
     PacketQueueNode * pktin_freeq_head;
-    tree234 * handles_by_evtomain;
+    handle_list_node ready_head[1];
+    CRITICAL_SECTION ready_critsec[1];
+    HANDLE ready_event;
+    tree234 *handlewaits_tree_real;
 };
 #define CALLBACK_SET_ONLY struct callback_set * callback_set_v
 #define CALLBACK_SET CALLBACK_SET_ONLY,
@@ -2794,7 +2800,6 @@ void delete_callbacks_for_context(CALLBACK_SET void *ctx);
 LogPolicy *log_get_logpolicy(LogContext *ctx); // WINSCP
 Seat * get_log_seat(LogContext * lp); // WINSCP
 struct callback_set * get_log_callback_set(LogContext * lp); // WINSCP
-tree234 *new_handles_by_evtomain(); // WINSCP
 
 /*
  * Another facility in callback.c deals with 'idempotent' callbacks,

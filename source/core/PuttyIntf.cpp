@@ -25,7 +25,7 @@ THierarchicalStorage * PuttyStorage = NULL;
 //---------------------------------------------------------------------------
 extern "C"
 {
-#include <winstuff.h>
+#include <windows\platform.h>
 }
 const UnicodeString OriginalPuttyRegistryStorageKey(_T(PUTTY_REG_POS));
 const UnicodeString KittyRegistryStorageKey(L"Software\\9bis.com\\KiTTY");
@@ -147,14 +147,14 @@ extern "C" const char * do_select(Plug * plug, SOCKET skt, bool enable)
   return NULL;
 }
 //---------------------------------------------------------------------------
-static size_t output(Seat * seat, bool is_stderr, const void * data, size_t len)
+static size_t output(Seat * seat, SeatOutputType type, const void * data, size_t len)
 {
   TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
-  if (static_cast<int>(static_cast<char>(is_stderr)) == -1)
+  if (static_cast<int>(static_cast<char>(type)) == -1)
   {
     SecureShell->CWrite(reinterpret_cast<const char *>(data), len);
   }
-  else if (!is_stderr)
+  else if (type != SEAT_OUTPUT_STDERR)
   {
     SecureShell->FromBackend(reinterpret_cast<const unsigned char *>(data), len);
   }
@@ -170,13 +170,13 @@ static bool eof(Seat *)
   return false;
 }
 //---------------------------------------------------------------------------
-static int get_userpass_input(Seat * seat, prompts_t * p, bufchain * DebugUsedArg(input))
+static SeatPromptResult get_userpass_input(Seat * seat, prompts_t * p)
 {
   DebugAssert(p != NULL);
   TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
   DebugAssert(SecureShell != NULL);
 
-  int Result;
+  SeatPromptResult Result;
   TStrings * Prompts = new TStringList();
   TStrings * Results = new TStringList();
   try
@@ -223,11 +223,11 @@ static int get_userpass_input(Seat * seat, prompts_t * p, bufchain * DebugUsedAr
         }
         prompt_set_result(Prompt, S.c_str());
       }
-      Result = 1;
+      Result = SPR_OK;
     }
     else
     {
-      Result = 0;
+      Result = SPR_USER_ABORT;
     }
   }
   __finally
@@ -246,9 +246,9 @@ static void connection_fatal(Seat * seat, const char * message)
   SecureShell->PuttyFatalError(UnicodeString(AnsiString(message)));
 }
 //---------------------------------------------------------------------------
-int verify_ssh_host_key(Seat * seat, const char * host, int port, const char * keytype,
-  char * keystr, const char * DebugUsedArg(keydisp), char ** key_fingerprints,
-  void (*DebugUsedArg(callback))(void *ctx, int result), void * DebugUsedArg(ctx))
+SeatPromptResult confirm_ssh_host_key(Seat * seat, const char * host, int port, const char * keytype,
+  char * keystr, const char * DebugUsedArg(keydisp), char ** key_fingerprints, bool DebugUsedArg(mismatch),
+  void (*DebugUsedArg(callback))(void *ctx, SeatPromptResult result), void * DebugUsedArg(ctx))
 {
   UnicodeString FingerprintSHA256, FingerprintMD5;
   if (key_fingerprints[SSH_FPTYPE_SHA256] != NULL)
@@ -263,7 +263,7 @@ int verify_ssh_host_key(Seat * seat, const char * host, int port, const char * k
   SecureShell->VerifyHostKey(host, port, keytype, keystr, FingerprintSHA256, FingerprintMD5);
 
   // We should return 0 when key was not confirmed, we throw exception instead.
-  return 1;
+  return SPR_OK;
 }
 //---------------------------------------------------------------------------
 bool have_ssh_host_key(Seat * seat, const char * hostname, int port,
@@ -273,20 +273,20 @@ bool have_ssh_host_key(Seat * seat, const char * hostname, int port,
   return SecureShell->HaveHostKey(hostname, port, keytype) ? 1 : 0;
 }
 //---------------------------------------------------------------------------
-int confirm_weak_crypto_primitive(Seat * seat, const char * algtype, const char * algname,
-  void (*/*callback*/)(void * ctx, int result), void * /*ctx*/)
+SeatPromptResult confirm_weak_crypto_primitive(Seat * seat, const char * algtype, const char * algname,
+  void (*/*callback*/)(void * ctx, SeatPromptResult result), void * /*ctx*/)
 {
   TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
   SecureShell->AskAlg(algtype, algname);
 
   // We should return 0 when alg was not confirmed, we throw exception instead.
-  return 1;
+  return SPR_OK;
 }
 //---------------------------------------------------------------------------
-int confirm_weak_cached_hostkey(Seat *, const char * /*algname*/, const char * /*betteralgs*/,
-  void (*/*callback*/)(void *ctx, int result), void * /*ctx*/)
+SeatPromptResult confirm_weak_cached_hostkey(Seat *, const char * /*algname*/, const char * /*betteralgs*/,
+  void (*/*callback*/)(void *ctx, SeatPromptResult result), void * /*ctx*/)
 {
-  return 1;
+  return SPR_OK;
 }
 //---------------------------------------------------------------------------
 void old_keyfile_warning(void)
@@ -294,11 +294,22 @@ void old_keyfile_warning(void)
   // no reference to TSecureShell instance available
 }
 //---------------------------------------------------------------------------
-void display_banner(Seat * seat, const char * banner, int size)
+size_t banner(Seat * seat, const void * data, size_t len)
 {
   TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
-  UnicodeString Banner(UTF8String(banner, size));
+  UnicodeString Banner(UTF8String(static_cast<const char *>(data), len));
   SecureShell->DisplayBanner(Banner);
+  return 0; // PuTTY never uses the value
+}
+//---------------------------------------------------------------------------
+uintmax_t strtoumax(const char *nptr, char **endptr, int base)
+{
+  if (DebugAlwaysFalse(endptr != NULL) ||
+      DebugAlwaysFalse(base == 10))
+  {
+    Abort();
+  }
+  return StrToInt64(UnicodeString(AnsiString(nptr)));
 }
 //---------------------------------------------------------------------------
 static void SSHFatalError(const char * Format, va_list Param)
@@ -384,13 +395,17 @@ static const SeatVtable ScpSeatVtable =
   {
     output,
     eof,
+    nullseat_sent,
+    banner,
     get_userpass_input,
+    nullseat_notify_session_started,
     nullseat_notify_remote_exit,
+    nullseat_notify_remote_disconnect,
     connection_fatal,
     nullseat_update_specials_menu,
     nullseat_get_ttymode,
     nullseat_set_busy_status,
-    verify_ssh_host_key,
+    confirm_ssh_host_key,
     confirm_weak_crypto_primitive,
     confirm_weak_cached_hostkey,
     nullseat_is_always_utf8,
@@ -399,7 +414,9 @@ static const SeatVtable ScpSeatVtable =
     nullseat_get_windowid,
     nullseat_get_window_pixel_size,
     nullseat_stripctrl_new,
-    nullseat_set_trust_status_vacuously,
+    nullseat_set_trust_status,
+    nullseat_can_set_trust_status_yes,
+    nullseat_has_mixed_input_stream_yes,
     nullseat_verbose_yes,
     nullseat_interactive_no,
     nullseat_get_cursor_position,
@@ -989,7 +1006,7 @@ UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const s
 UnicodeString __fastcall GetKeyTypeHuman(const UnicodeString & KeyType)
 {
   UnicodeString Result;
-  if (KeyType == ssh_dss.cache_id)
+  if (KeyType == ssh_dsa.cache_id)
   {
     Result = L"DSA";
   }

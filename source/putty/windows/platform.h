@@ -106,10 +106,12 @@ struct FontSpec *fontspec_new(
 #define LONG_PTR LONG
 #endif
 
+#ifndef WINSCP
 #if !HAVE_STRTOUMAX
 /* Work around lack of strtoumax in older MSVC libraries */
 static inline uintmax_t strtoumax(const char *nptr, char **endptr, int base)
 { return _strtoui64(nptr, endptr, base); }
+#endif
 #endif
 
 #define BOXFLAGS DLGWINDOWEXTRA
@@ -627,13 +629,13 @@ typedef size_t (*handle_inputfn_t)(
     struct handle *h, const void *data, size_t len, int err);
 typedef void (*handle_outputfn_t)(
     struct handle *h, size_t new_backlog, int err, bool close);
-struct handle *handle_input_new(tree234 * handles_by_evtomain, HANDLE handle, handle_inputfn_t gotdata, // WINSCP
+struct handle *handle_input_new(struct callback_set * callback_set, HANDLE handle, handle_inputfn_t gotdata, // WINSCP
                                 void *privdata, int flags);
-struct handle *handle_output_new(tree234 * handles_by_evtomain, HANDLE handle, handle_outputfn_t sentdata, // WINSCP
+struct handle *handle_output_new(struct callback_set * callback_set, HANDLE handle, handle_outputfn_t sentdata, // WINSCP
                                  void *privdata, int flags);
 size_t handle_write(struct handle *h, const void *data, size_t len);
 void handle_write_eof(struct handle *h);
-void handle_free(tree234 * handles_by_evtomain, struct handle *h); // WINSCP
+void handle_free(struct handle *h); // WINSCP
 void handle_unthrottle(struct handle *h, size_t backlog);
 size_t handle_backlog(struct handle *h);
 void *handle_get_privdata(struct handle *h);
@@ -648,17 +650,17 @@ void handle_sink_init(handle_sink *sink, struct handle *h);
  * Exports from handle-wait.c.
  */
 typedef struct HandleWait HandleWait;
-typedef void (*handle_wait_callback_fn_t)(void *);
-HandleWait *add_handle_wait(HANDLE h, handle_wait_callback_fn_t callback,
+typedef bool (*handle_wait_callback_fn_t)(struct callback_set * callback_set, void *); // WINSCP
+HandleWait *add_handle_wait(struct callback_set * callback_set, HANDLE h, handle_wait_callback_fn_t callback,
                             void *callback_ctx);
-void delete_handle_wait(HandleWait *hw);
+void delete_handle_wait(struct callback_set * callback_set, HandleWait *hw);
 
 typedef struct HandleWaitList {
     HANDLE handles[MAXIMUM_WAIT_OBJECTS];
     int nhandles;
 } HandleWaitList;
-HandleWaitList *get_handle_wait_list(void);
-void handle_wait_activate(HandleWaitList *hwl, int index);
+HandleWaitList *get_handle_wait_list(struct callback_set * callback_set);
+bool handle_wait_activate(struct callback_set * callback_set, HandleWaitList *hwl, int index); // WINSCP
 void handle_wait_list_free(HandleWaitList *hwl);
 
 /*

@@ -26,9 +26,7 @@ int have_any_ssh2_hostkey(Seat * seat, const char * host, int port);
 
 // from wingss.c
 
-#ifndef SSH2_GSS_OIDTYPE
-#include "sshgss.h"
-#endif
+#include "ssh\gss.h"
 
 void wingss_cleanup(void);
 
@@ -39,7 +37,7 @@ Seat * get_pfwd_seat(Plug * plug);
 
 // for winstore.c
 
-#include "winstuff.h"
+#include <windows.h>
 
 long reg_open_winscp_key(HKEY Key, const char * SubKey, HKEY * Result);
 long reg_create_winscp_key(HKEY Key, const char * SubKey, HKEY * Result);

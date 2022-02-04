@@ -56,18 +56,20 @@ static int handlewait_cmp(void *av, void *bv)
     return 0;
 }
 
+#ifndef WINSCP
 static tree234 *handlewaits_tree_real;
+#endif
 
-static inline tree234 *ensure_handlewaits_tree_exists(void)
+static inline tree234 *ensure_handlewaits_tree_exists(struct callback_set * callback_set)
 {
-    if (!handlewaits_tree_real)
-        handlewaits_tree_real = newtree234(handlewait_cmp);
-    return handlewaits_tree_real;
+    if (!callback_set->handlewaits_tree_real)
+        callback_set->handlewaits_tree_real = newtree234(handlewait_cmp);
+    return callback_set->handlewaits_tree_real;
 }
 
-static int allocate_index(void)
+static int allocate_index(struct callback_set * callback_set)
 {
-    tree234 *t = ensure_handlewaits_tree_exists();
+    tree234 *t = ensure_handlewaits_tree_exists(callback_set);
     search234_state st[1];
 
     search234_start(st, t);
@@ -85,7 +87,7 @@ static int allocate_index(void)
     return st->index;
 }
 
-HandleWait *add_handle_wait(HANDLE h, handle_wait_callback_fn_t callback,
+HandleWait *add_handle_wait(struct callback_set * callback_set, HANDLE h, handle_wait_callback_fn_t callback,
                             void *callback_ctx)
 {
     HandleWait *hw = snew(HandleWait);
@@ -93,29 +95,34 @@ HandleWait *add_handle_wait(HANDLE h, handle_wait_callback_fn_t callback,
     hw->callback = callback;
     hw->callback_ctx = callback_ctx;
 
-    tree234 *t = ensure_handlewaits_tree_exists();
-    hw->index = allocate_index();
+    { // WINSCP
+    tree234 *t = ensure_handlewaits_tree_exists(callback_set);
+    hw->index = allocate_index(callback_set);
+    { // WINSCP
     HandleWait *added = add234(t, hw);
     assert(added == hw);
 
     return hw;
+    } // WINSCP
+    } // WINSCP
 }
 
-void delete_handle_wait(HandleWait *hw)
+void delete_handle_wait(struct callback_set * callback_set, HandleWait *hw)
 {
-    tree234 *t = ensure_handlewaits_tree_exists();
+    tree234 *t = ensure_handlewaits_tree_exists(callback_set);
     HandleWait *deleted = del234(t, hw);
     assert(deleted == hw);
     sfree(hw);
 }
 
-HandleWaitList *get_handle_wait_list(void)
+HandleWaitList *get_handle_wait_list(struct callback_set * callback_set)
 {
-    tree234 *t = ensure_handlewaits_tree_exists();
+    tree234 *t = ensure_handlewaits_tree_exists(callback_set);
     struct HandleWaitListInner *hwli = snew(struct HandleWaitListInner);
     size_t n = 0;
     HandleWait *hw;
-    for (int i = 0; (hw = index234(t, i)) != NULL; i++) {
+    int i; // WINSCP
+    for (i = 0; (hw = index234(t, i)) != NULL; i++) {
         assert(n < MAXIMUM_WAIT_OBJECTS);
         hwli->hws[n] = hw;
         hwli->hwl.handles[n] = hw->handle;
@@ -125,14 +132,16 @@ HandleWaitList *get_handle_wait_list(void)
     return &hwli->hwl;
 }
 
-void handle_wait_activate(HandleWaitList *hwl, int index)
+bool handle_wait_activate(struct callback_set * callback_set, HandleWaitList *hwl, int index)
 {
     struct HandleWaitListInner *hwli =
         container_of(hwl, struct HandleWaitListInner, hwl);
     assert(0 <= index);
     assert(index < hwli->hwl.nhandles);
+    { // WINSCP
     HandleWait *hw = hwli->hws[index];
-    hw->callback(hw->callback_ctx);
+    return hw->callback(callback_set, hw->callback_ctx);
+    } // WINSCP
 }
 
 void handle_wait_list_free(HandleWaitList *hwl)

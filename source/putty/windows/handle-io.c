@@ -37,11 +37,14 @@
  * Generic definitions.
  */
 
+#ifndef WINSCP
+// Moved to putty.h
 typedef struct handle_list_node handle_list_node;
 struct handle_list_node {
     handle_list_node *next, *prev;
 };
-static void add_to_ready_list(handle_list_node *node);
+#endif
+static void add_to_ready_list(struct handle_generic *ctx); // WINSCP
 
 /*
  * Maximum amount of backlog we will allow to build up on an input
@@ -69,6 +72,7 @@ struct handle_generic {
     bool defunct;                      /* has the subthread already gone? */
     bool busy;                         /* operation currently in progress? */
     void *privdata;                    /* for client to remember who they are */
+    struct callback_set * callback_set; // WINSCP
 };
 
 typedef enum { HT_INPUT, HT_OUTPUT } HandleType;
@@ -92,6 +96,7 @@ struct handle_input {
     bool defunct;                      /* has the subthread already gone? */
     bool busy;                         /* operation currently in progress? */
     void *privdata;                    /* for client to remember who they are */
+    struct callback_set * callback_set; // WINSCP
 
     /*
      * Data set at initialisation and then read-only.
@@ -182,7 +187,7 @@ static DWORD WINAPI handle_input_threadfunc(void *param)
          */
         finished = (ctx->len == 0);
 
-        add_to_ready_list(&ctx->ready_node);
+        add_to_ready_list(ctx); // WINSCP
 
         if (finished)
             break;
@@ -195,7 +200,7 @@ static DWORD WINAPI handle_input_threadfunc(void *param)
              * not touch ctx at all, because the main thread might
              * have freed it.
              */
-            add_to_ready_list(&ctx->ready_node);
+            add_to_ready_list(ctx); // WINSCP
             break;
         }
     }
@@ -253,6 +258,7 @@ struct handle_output {
     bool defunct;                      /* has the subthread already gone? */
     bool busy;                         /* operation currently in progress? */
     void *privdata;                    /* for client to remember who they are */
+    struct callback_set * callback_set; // WINSCP
 
     /*
      * Data set at initialisation and then read-only.
@@ -310,7 +316,7 @@ static DWORD WINAPI handle_output_threadfunc(void *param)
              * not touch ctx at all, because the main thread might
              * have freed it.
              */
-            add_to_ready_list(&ctx->ready_node);
+            add_to_ready_list(ctx); // WINSCP
             break;
         }
         if (povl) {
@@ -333,7 +339,7 @@ static DWORD WINAPI handle_output_threadfunc(void *param)
                 ctx->writeerr = 0;
         }
 
-        add_to_ready_list(&ctx->ready_node);
+        add_to_ready_list(ctx); // WINSCP
         if (!writeret) {
             /*
              * The write operation has suffered an error. Telling that
@@ -381,6 +387,7 @@ struct handle {
     } u;
 };
 
+#ifndef WINSCP
 /*
  * Linked list storing the current list of handles ready to have
  * something done to them by the main thread.
@@ -393,9 +400,12 @@ static CRITICAL_SECTION ready_critsec[1];
  * something on the ready list, i.e. that the ready list is non-empty.
  */
 static HANDLE ready_event = INVALID_HANDLE_VALUE;
+#endif
 
-static void add_to_ready_list(handle_list_node *node)
+static void add_to_ready_list(struct handle_generic *ctx) // WINSCP
 {
+    handle_list_node *node = &ctx->ready_node; // WINSCP
+    struct callback_set * callback_set = ctx->callback_set;
     /*
      * Called from subthreads, when their handle has done something
      * that they need the main thread to respond to. We append the
@@ -403,32 +413,34 @@ static void add_to_ready_list(handle_list_node *node)
      * ready_event to signal to the main thread that the ready list is
      * now non-empty.
      */
-    EnterCriticalSection(ready_critsec);
-    node->next = ready_head;
-    node->prev = ready_head->prev;
+    EnterCriticalSection(callback_set->ready_critsec);
+    node->next = callback_set->ready_head;
+    node->prev = callback_set->ready_head->prev;
     node->next->prev = node->prev->next = node;
-    SetEvent(ready_event);
-    LeaveCriticalSection(ready_critsec);
+    SetEvent(callback_set->ready_event);
+    LeaveCriticalSection(callback_set->ready_critsec);
 }
 
-static void remove_from_ready_list(handle_list_node *node)
+static void remove_from_ready_list(struct handle_generic *ctx) // WINSCP
 {
+    handle_list_node *node = &ctx->ready_node; // WINSCP
+    struct callback_set * callback_set = ctx->callback_set;
     /*
      * Called from the main thread, just before destroying a 'struct
      * handle' completely: as a precaution, we make absolutely sure
      * it's not linked on the ready list, just in case somehow it
      * still was.
      */
-    EnterCriticalSection(ready_critsec);
+    EnterCriticalSection(callback_set->ready_critsec);
     node->next->prev = node->prev;
     node->prev->next = node->next;
     node->next = node->prev = node;
-    LeaveCriticalSection(ready_critsec);
+    LeaveCriticalSection(callback_set->ready_critsec);
 }
 
-static void handle_ready(struct handle *h); /* process one handle (below) */
+static bool handle_ready(struct handle *h); /* process one handle (below) */ // WINSCP
 
-static void handle_ready_callback(void *vctx)
+static bool handle_ready_callback(struct callback_set * callback_set, void *vctx) // WINSCP
 {
     /*
      * Called when the main thread detects ready_event, indicating
@@ -444,28 +456,33 @@ static void handle_ready_callback(void *vctx)
      * LeaveCriticalSection to release it again, which is just what we
      * want here.)
      */
-    EnterCriticalSection(ready_critsec);
-    while (ready_head->next != ready_head) {
-        handle_list_node *node = ready_head->next;
+    bool result = false;
+    EnterCriticalSection(callback_set->ready_critsec);
+    while (callback_set->ready_head->next != callback_set->ready_head) {
+        handle_list_node *node = callback_set->ready_head->next;
         node->prev->next = node->next;
         node->next->prev = node->prev;
         node->next = node->prev = node;
-        handle_ready(container_of(node, struct handle, u.g.ready_node));
+        if (handle_ready(container_of(node, struct handle, u.g.ready_node))) // WINSCP
+        {
+            result = true; // WINSCP
+        }
     }
-    LeaveCriticalSection(ready_critsec);
+    LeaveCriticalSection(callback_set->ready_critsec);
+    return result;
 }
 
-static inline void ensure_ready_event_setup(void)
+static inline void ensure_ready_event_setup(struct callback_set * callback_set) // WINSCP
 {
-    if (ready_event == INVALID_HANDLE_VALUE) {
-        ready_head->prev = ready_head->next = ready_head;
-        InitializeCriticalSection(ready_critsec);
-        ready_event = CreateEvent(NULL, false, false, NULL);
-        add_handle_wait(ready_event, handle_ready_callback, NULL);
+    if (callback_set->ready_event == INVALID_HANDLE_VALUE) {
+        callback_set->ready_head->prev = callback_set->ready_head->next = callback_set->ready_head;
+        InitializeCriticalSection(callback_set->ready_critsec);
+        callback_set->ready_event = CreateEvent(NULL, false, false, NULL);
+        add_handle_wait(callback_set, callback_set->ready_event, handle_ready_callback, NULL);
     }
 }
 
-struct handle *handle_input_new(tree234 * handles_by_evtomain, HANDLE handle, handle_inputfn_t gotdata,
+struct handle *handle_input_new(struct callback_set * callback_set, HANDLE handle, handle_inputfn_t gotdata,
                                 void *privdata, int flags)
 {
     struct handle *h = snew(struct handle);
@@ -480,8 +497,9 @@ struct handle *handle_input_new(tree234 * handles_by_evtomain, HANDLE handle, ha
     h->u.i.done = false;
     h->u.i.privdata = privdata;
     h->u.i.flags = flags;
+    h->u.i.callback_set = callback_set; // WINSCP
 
-    ensure_ready_event_setup();
+    ensure_ready_event_setup(callback_set);
     { // WINSCP
     HANDLE hThread = CreateThread(NULL, 0, handle_input_threadfunc,
                                   &h->u.i, 0, &in_threadid);
@@ -493,7 +511,7 @@ struct handle *handle_input_new(tree234 * handles_by_evtomain, HANDLE handle, ha
     } // WINSCP
 }
 
-struct handle *handle_output_new(tree234 * handles_by_evtomain, HANDLE handle, handle_outputfn_t sentdata, // WINSCP
+struct handle *handle_output_new(struct callback_set * callback_set, HANDLE handle, handle_outputfn_t sentdata, // WINSCP
                                  void *privdata, int flags)
 {
     struct handle *h = snew(struct handle);
@@ -513,7 +531,7 @@ struct handle *handle_output_new(tree234 * handles_by_evtomain, HANDLE handle, h
     h->u.o.sentdata_param = h;
     h->u.o.flags = flags;
 
-    ensure_ready_event_setup();
+    ensure_ready_event_setup(callback_set);
     { // WINSCP
     HANDLE hThread = CreateThread(NULL, 0, handle_output_threadfunc,
                                   &h->u.o, 0, &out_threadid);
@@ -549,16 +567,16 @@ void handle_write_eof(struct handle *h)
     }
 }
 
-static void handle_destroy(tree234 * handles_by_evtomain, struct handle *h) // WINSCP
+static void handle_destroy(struct handle *h)
 {
     if (h->type == HT_OUTPUT)
         bufchain_clear(&h->u.o.queued_data);
     CloseHandle(h->u.g.ev_from_main);
-    remove_from_ready_list(&h->u.g.ready_node);
+    remove_from_ready_list(&h->u.g); // WINSCP
     sfree(h);
 }
 
-void handle_free(tree234 * handles_by_evtomain, struct handle *h) // WINSCP
+void handle_free(struct handle *h)
 {
     assert(h && !h->u.g.moribund);
     if (h->u.g.busy) {
@@ -579,7 +597,7 @@ void handle_free(tree234 * handles_by_evtomain, struct handle *h) // WINSCP
          * There isn't even a subthread; we can go straight to
          * handle_destroy.
          */
-        handle_destroy(handles_by_evtomain, h); // WINSCP
+        handle_destroy(h); // WINSCP
     } else {
         /*
          * The subthread is alive but not busy, so we now signal it
@@ -593,8 +611,9 @@ void handle_free(tree234 * handles_by_evtomain, struct handle *h) // WINSCP
     }
 }
 
-static void handle_ready(struct handle *h)
+static bool handle_ready(struct handle *h) // WINSCP
 {
+    bool result = false; // WINSCP
     if (h->u.g.moribund) {
         /*
          * A moribund handle is one which we have either already
@@ -605,13 +624,13 @@ static void handle_ready(struct handle *h)
          * we haven't yet done so, or destroy the handle if not.
          */
         if (h->u.g.done) {
-            handle_destroy(handles_by_evtomain, h); // WINSCP
+            handle_destroy(h); // WINSCP
         } else {
             h->u.g.done = true;
             h->u.g.busy = true;
             SetEvent(h->u.g.ev_from_main);
         }
-        return 0; // WINSCP
+        return result;
     }
 
     switch (h->type) {
@@ -633,7 +652,8 @@ static void handle_ready(struct handle *h)
             backlog = h->u.i.gotdata(h, h->u.i.buffer, h->u.i.len, 0);
             handle_throttle(&h->u.i, backlog);
         }
-        return 1; // WINSCP
+        result = true;
+        break;
 
       case HT_OUTPUT:
         h->u.o.busy = false;
@@ -657,8 +677,9 @@ static void handle_ready(struct handle *h)
             h->u.o.sentdata(h, bufchain_size(&h->u.o.queued_data), 0, false);
             handle_try_output(&h->u.o);
         }
-        return 0; // WINSCP
+        break;
     }
+    return result;
 }
 
 void handle_unthrottle(struct handle *h, size_t backlog)
@@ -688,10 +709,4 @@ void handle_sink_init(handle_sink *sink, struct handle *h)
 {
     sink->h = h;
     BinarySink_INIT(sink, handle_sink_write);
-}
-
-// WINSCP
-tree234 *new_handles_by_evtomain()
-{
-    return newtree234(handle_cmp_evtomain);
 }

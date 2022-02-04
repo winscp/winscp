@@ -77,13 +77,11 @@ __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
   FWaitingForData = 0;
   FCallbackSet.reset(new callback_set());
   memset(FCallbackSet.get(), 0, sizeof(callback_set));
-  FCallbackSet->handles_by_evtomain = new_handles_by_evtomain();
+  FCallbackSet->ready_event = INVALID_HANDLE_VALUE;
 }
 //---------------------------------------------------------------------------
 __fastcall TSecureShell::~TSecureShell()
 {
-  freetree234(FCallbackSet->handles_by_evtomain);
-  FCallbackSet->handles_by_evtomain = NULL;
   DebugAssert(FWaiting == 0);
   Active = false;
   ResetConnection();
@@ -1339,7 +1337,8 @@ void __fastcall TSecureShell::DispatchSendBuffer(int BufSize)
 void __fastcall TSecureShell::Send(const unsigned char * Buf, Integer Len)
 {
   CheckConnection();
-  int BufSize = backend_send(FBackendHandle, const_cast<char *>(reinterpret_cast<const char *>(Buf)), Len);
+  backend_send(FBackendHandle, const_cast<char *>(reinterpret_cast<const char *>(Buf)), Len);
+  int BufSize = backend_sendbuffer(FBackendHandle);
   if (Configuration->ActualLogProtocol >= 1)
   {
     LogEvent(FORMAT(L"Sent %u bytes", (static_cast<int>(Len))));
@@ -1697,6 +1696,25 @@ void __fastcall TSecureShell::FreeBackend()
       sfree(FCallbackSet->pktin_freeq_head);
       FCallbackSet->pktin_freeq_head = NULL;
     }
+
+    if (FCallbackSet->handlewaits_tree_real != NULL)
+    {
+      DebugAssert(count234(FCallbackSet->handlewaits_tree_real) <= 1);
+      while (count234(FCallbackSet->handlewaits_tree_real) > 0)
+      {
+        HandleWait * AHandleWait = static_cast<HandleWait *>(index234(FCallbackSet->handlewaits_tree_real, 0));
+        delete_handle_wait(FCallbackSet.get(), AHandleWait);
+      }
+
+      freetree234(FCallbackSet->handlewaits_tree_real);
+      FCallbackSet->handlewaits_tree_real = NULL;
+    }
+
+    if (FCallbackSet->ready_event != INVALID_HANDLE_VALUE)
+    {
+      CloseHandle(FCallbackSet->ready_event);
+      FCallbackSet->ready_event = INVALID_HANDLE_VALUE;
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1982,8 +2000,8 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
       LogEvent(L"Looking for network events");
     }
     unsigned int TicksBefore = GetTickCount();
-    int HandleCount;
-    HANDLE * Handles = NULL;
+    HandleWaitList * WaitList = NULL;
+
     try
     {
       unsigned int Timeout = MSec;
@@ -1998,15 +2016,15 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
           TimeoutStep = 0;
         }
         Timeout -= TimeoutStep;
-        if (Handles != NULL)
+        if (WaitList != NULL)
         {
-          sfree(Handles);
+          handle_wait_list_free(WaitList);
         }
         // It returns only busy handles, so the set can change with every call to run_toplevel_callbacks.
-        Handles = handle_get_events(FCallbackSet->handles_by_evtomain, &HandleCount);
-        Handles = sresize(Handles, HandleCount + 1, HANDLE);
-        Handles[HandleCount] = FSocketEvent;
-        WaitResult = WaitForMultipleObjects(HandleCount + 1, Handles, FALSE, TimeoutStep);
+        WaitList = get_handle_wait_list(FCallbackSet.get());
+        DebugAssert(WaitList->nhandles < MAXIMUM_WAIT_OBJECTS);
+        WaitList->handles[WaitList->nhandles] = FSocketEvent;
+        WaitResult = WaitForMultipleObjects(WaitList->nhandles + 1, WaitList->handles, FALSE, TimeoutStep);
         FUI->ProcessGUI();
         // run_toplevel_callbacks can cause processing of pending raw data, so:
         // 1) Check for changes in our pending buffer - wait criteria in Receive()
@@ -2022,14 +2040,14 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
         }
       } while ((WaitResult == WAIT_TIMEOUT) && (Timeout > 0) && !Result);
 
-      if (WaitResult < WAIT_OBJECT_0 + HandleCount)
+      if (WaitResult < WAIT_OBJECT_0 + WaitList->nhandles)
       {
-        if (handle_got_event(FCallbackSet->handles_by_evtomain, Handles[WaitResult - WAIT_OBJECT_0]))
+        if (handle_wait_activate(FCallbackSet.get(), WaitList, WaitResult - WAIT_OBJECT_0))
         {
           Result = true;
         }
       }
-      else if (WaitResult == WAIT_OBJECT_0 + HandleCount)
+      else if (WaitResult == WAIT_OBJECT_0 + WaitList->nhandles)
       {
         if (Configuration->ActualLogProtocol >= 1)
         {
@@ -2081,7 +2099,7 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
     }
     __finally
     {
-      sfree(Handles);
+      handle_wait_list_free(WaitList);
     }
 
 

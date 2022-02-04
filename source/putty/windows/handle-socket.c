@@ -149,7 +149,6 @@ static Plug *sk_handle_plug(Socket *s, Plug *p)
 static void sk_handle_close(Socket *s)
 {
     HandleSocket *hs = container_of(s, HandleSocket, sock);
-    tree234 * handles_by_evtomain = get_callback_set(hs->plug)->handles_by_evtomain; // WINSCP
 
     if (hs->defer_close) {
         hs->deferred_close = true;
@@ -161,8 +160,8 @@ static void sk_handle_close(Socket *s)
     do_select(hs->plug, INVALID_SOCKET, 0);
     #endif
 
-    handle_free(handles_by_evtomain, hs->send_h); // WINSCP
-    handle_free(handles_by_evtomain, hs->recv_h); // WINSCP
+    handle_free(hs->send_h);
+    handle_free(hs->recv_h);
     if (hs->send_H != INVALID_HANDLE_VALUE)
         CloseHandle(hs->send_H);
     if (hs->recv_H != INVALID_HANDLE_VALUE && hs->recv_H != hs->send_H)
@@ -171,7 +170,7 @@ static void sk_handle_close(Socket *s)
 #ifdef MPEXT
     if (hs->stderr_h)
     {
-        handle_free(handles_by_evtomain, hs->stderr_h); // WINSCP
+        handle_free(hs->stderr_h);
     }
     if (hs->stderr_H)
     {
@@ -383,7 +382,7 @@ Socket *make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
 {
     HandleSocket *hs;
     int flags = (overlapped ? HANDLE_FLAG_OVERLAPPED : 0);
-    tree234 * handles_by_evtomain = get_callback_set(plug)->handles_by_evtomain; // WINSCP
+    struct callback_set * callback_set = get_callback_set(plug); // WINSCP
 
     hs = snew(HandleSocket);
     hs->sock.vt = &HandleSocket_sockvt;
@@ -397,12 +396,12 @@ Socket *make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
     psb_init(&hs->psb);
 
     hs->recv_H = recv_H;
-    hs->recv_h = handle_input_new(handles_by_evtomain, hs->recv_H, handle_gotdata, hs, flags); // WINSCP
+    hs->recv_h = handle_input_new(callback_set, hs->recv_H, handle_gotdata, hs, flags); // WINSCP
     hs->send_H = send_H;
-    hs->send_h = handle_output_new(handles_by_evtomain, hs->send_H, handle_sentdata, hs, flags); // WINSCP
+    hs->send_h = handle_output_new(callback_set, hs->send_H, handle_sentdata, hs, flags); // WINSCP
     hs->stderr_H = stderr_H;
     if (hs->stderr_H)
-        hs->stderr_h = handle_input_new(handles_by_evtomain, hs->stderr_H, handle_stderr, // WINSCP
+        hs->stderr_h = handle_input_new(callback_set, hs->stderr_H, handle_stderr, // WINSCP
                                         hs, flags);
 
     hs->defer_close = hs->deferred_close = false;
@@ -427,7 +426,7 @@ static void sk_handle_deferred_close(Socket *s)
     if (hs->addr)
         sk_addr_free(hs->addr);
 
-    delete_callbacks_for_context(hs);
+    delete_callbacks_for_context(get_callback_set(hs->plug), hs);
 
     sfree(hs);
 }
@@ -459,14 +458,15 @@ static SocketPeerInfo *sk_handle_deferred_peer_info(Socket *s)
 }
 
 static const SocketVtable HandleSocket_deferred_sockvt = {
-    .plug = sk_handle_plug,
-    .close = sk_handle_deferred_close,
-    .write = sk_handle_deferred_write,
-    .write_oob = sk_handle_deferred_write,
-    .write_eof = sk_handle_deferred_write_eof,
-    .set_frozen = sk_handle_deferred_set_frozen,
-    .socket_error = sk_handle_socket_error,
-    .peer_info = sk_handle_deferred_peer_info,
+    // WINSCP
+    /*.plug =*/ sk_handle_plug,
+    /*.close =*/ sk_handle_deferred_close,
+    /*.write =*/ sk_handle_deferred_write,
+    /*.write_oob =*/ sk_handle_deferred_write,
+    /*.write_eof =*/ sk_handle_deferred_write_eof,
+    /*.set_frozen =*/ sk_handle_deferred_set_frozen,
+    /*.socket_error =*/ sk_handle_socket_error,
+    /*.peer_info =*/ sk_handle_deferred_peer_info,
 };
 
 Socket *make_deferred_handle_socket(DeferredSocketOpener *opener,
@@ -491,16 +491,17 @@ void setup_handle_socket(Socket *s, HANDLE send_H, HANDLE recv_H,
                          HANDLE stderr_H, bool overlapped)
 {
     HandleSocket *hs = container_of(s, HandleSocket, sock);
-    assert(hs->sock.vt == &HandleSocket_deferred_sockvt);
+    pinitassert(hs->sock.vt == &HandleSocket_deferred_sockvt);
+    struct callback_set * callback_set = get_callback_set(hs->plug);
 
     int flags = (overlapped ? HANDLE_FLAG_OVERLAPPED : 0);
 
     struct handle *recv_h = handle_input_new(
-        recv_H, handle_gotdata, hs, flags);
+        callback_set, recv_H, handle_gotdata, hs, flags);
     struct handle *send_h = handle_output_new(
-        send_H, handle_sentdata, hs, flags);
+        callback_set, send_H, handle_sentdata, hs, flags);
     struct handle *stderr_h = !stderr_H ? NULL : handle_input_new(
-        stderr_H, handle_stderr, hs, flags);
+        callback_set, stderr_H, handle_stderr, hs, flags);
 
     while (bufchain_size(&hs->outputdata)) {
         ptrlen data = bufchain_prefix(&hs->outputdata);
@@ -511,6 +512,7 @@ void setup_handle_socket(Socket *s, HANDLE send_H, HANDLE recv_H,
     if (hs->output_eof_pending)
         handle_write_eof(send_h);
 
+    { // WINSCP
     bool start_frozen = hs->start_frozen;
 
     deferred_socket_opener_free(hs->opener);
@@ -531,4 +533,5 @@ void setup_handle_socket(Socket *s, HANDLE send_H, HANDLE recv_H,
     hs->defer_close = hs->deferred_close = false;
 
     queue_toplevel_callback(sk_handle_connect_success_callback, hs);
+    } // WINSCP
 }

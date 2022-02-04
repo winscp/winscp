@@ -18,7 +18,7 @@ extern "C"
 #include <ssh.h>
 #undef new
 #include <puttyexp.h>
-#include <proxy.h>
+#include <proxy\proxy.h>
 #include <storage.h>
 // Defined in misc.h - Conflicts with std::min/max
 #undef min

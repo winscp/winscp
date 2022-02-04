@@ -11,6 +11,7 @@
 #ifndef PUTTY_DEFS_H
 #define PUTTY_DEFS_H
 
+#ifndef WINSCP
 #ifdef NDEBUG
 /*
  * PuTTY is a security project, so assertions are important - if an
@@ -20,6 +21,7 @@
  * out.
  */
 #error Do not compile this code base with NDEBUG defined!
+#endif
 #endif
 
 #if HAVE_CMAKE_H
@@ -31,6 +33,10 @@
 #include <stdio.h>                     /* for __MINGW_PRINTF_FORMAT */
 #include <stdbool.h>
 
+#ifdef WINSCP
+#define HAVE_AES_NI 1
+#endif
+
 #if (!defined WINSCP) && defined _MSC_VER && _MSC_VER < 1800
 /* Work around lack of inttypes.h and strtoumax in older MSVC */
 #define PRIx32 "x"
@@ -41,7 +47,6 @@
 #define SCNu64 "I64u"
 #define SIZEx "Ix"
 #define SIZEu "Iu"
-uintmax_t strtoumax(const char *nptr, char **endptr, int base);
 #else
 #ifndef WINSCP
 // Not needed by the code WinSCP uses
@@ -55,6 +60,7 @@ uintmax_t strtoumax(const char *nptr, char **endptr, int base);
 #define SIZEx "zx"
 #define SIZEu "zu"
 #endif
+uintmax_t strtoumax(const char *nptr, char **endptr, int base);
 
 #if defined __GNUC__ || defined __clang__
 /*
