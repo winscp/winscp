@@ -76,7 +76,7 @@ object ImportSessionsDialog: TImportSessionsDialog
   object CheckAllButton: TButton
     Left = 8
     Top = 242
-    Width = 108
+    Width = 113
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = 'Un/check &all'
