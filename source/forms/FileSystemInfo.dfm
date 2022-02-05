@@ -356,7 +356,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   object ClipboardButton: TButton
     Left = 8
     Top = 364
-    Width = 121
+    Width = 161
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Copy to Clipboard'
