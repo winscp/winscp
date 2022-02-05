@@ -1397,7 +1397,7 @@ __fastcall TUsageStatisticsDialog::TUsageStatisticsDialog() :
 
   ClipboardButton = new TButton(this);
   ClipboardButton->Caption = LoadStr(USAGE_COPY);
-  ClipboardButton->Width = ScaleByTextHeight(this, 121);
+  ClipboardButton->Width = ScaleByTextHeight(this, 161);
   ClipboardButton->OnClick = ClipboardButtonClick;
   AddDialogButton(ClipboardButton);
 
