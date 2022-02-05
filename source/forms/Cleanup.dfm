@@ -89,7 +89,7 @@ object CleanupDialog: TCleanupDialog
   object CheckAllButton: TButton
     Left = 8
     Top = 266
-    Width = 108
+    Width = 113
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = 'Un/check &all'
