@@ -222,7 +222,7 @@ object GenerateUrlDialog: TGenerateUrlDialog
   object ClipboardButton: TButton
     Left = 8
     Top = 305
-    Width = 145
+    Width = 165
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = '&Copy to Clipboard'
