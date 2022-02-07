@@ -2,6 +2,38 @@ NOTE: We are looking for help with a few things:
       https://github.com/libexpat/libexpat/labels/help%20wanted
       If you can help, please get in touch.  Thanks!
 
+Release 2.4.4 Sun January 30 2022
+        Security fixes:
+            #550  CVE-2022-23852 -- Fix signed integer overflow
+                    (undefined behavior) in function XML_GetBuffer
+                    (that is also called by function XML_Parse internally)
+                    for when XML_CONTEXT_BYTES is defined to >0 (which is both
+                    common and default).
+                    Impact is denial of service or more.
+            #551  CVE-2022-23990 -- Fix unsigned integer overflow in function
+                    doProlog triggered by large content in element type
+                    declarations when there is an element declaration handler
+                    present (from a prior call to XML_SetElementDeclHandler).
+                    Impact is denial of service or more.
+
+        Bug fixes:
+       #544 #545  xmlwf: Fix a memory leak on output file opening error
+
+        Other changes:
+            #546  Autotools: Fix broken CMake support under Cygwin
+            #554  Windows: Add missing files to the installer to fix
+                    compilation with CMake from installed sources
+       #552 #554  Version info bumped from 9:3:8 to 9:4:8;
+                    see https://verbump.de/ for what these numbers do
+
+        Special thanks to:
+            Carlo Bramini
+            hwt0415
+            Roland Illig
+            Samanta Navarro
+                 and
+            Clang LeakSan and the Clang team
+
 Release 2.4.3 Sun January 16 2022
         Security fixes:
        #531 #534  CVE-2021-45960 -- Fix issues with left shifts by >=29 places

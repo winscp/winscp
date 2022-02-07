@@ -57,5 +57,4 @@ EXTRA_DIST = \
     ok.min.css \
     reference.html \
     style.css \
-    valid-xhtml10.png \
     xmlwf.xml
