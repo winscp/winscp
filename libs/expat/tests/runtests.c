@@ -3847,6 +3847,30 @@ START_TEST(test_get_buffer_2) {
 }
 END_TEST
 
+/* Test for signed integer overflow CVE-2022-23852 */
+#if defined(XML_CONTEXT_BYTES)
+START_TEST(test_get_buffer_3_overflow) {
+  XML_Parser parser = XML_ParserCreate(NULL);
+  assert(parser != NULL);
+
+  const char *const text = "\n";
+  const int expectedKeepValue = (int)strlen(text);
+
+  // After this call, variable "keep" in XML_GetBuffer will
+  // have value expectedKeepValue
+  if (XML_Parse(parser, text, (int)strlen(text), XML_FALSE /* isFinal */)
+      == XML_STATUS_ERROR)
+    xml_failure(parser);
+
+  assert(expectedKeepValue > 0);
+  if (XML_GetBuffer(parser, INT_MAX - expectedKeepValue + 1) != NULL)
+    fail("enlarging buffer not failed");
+
+  XML_ParserFree(parser);
+}
+END_TEST
+#endif // defined(XML_CONTEXT_BYTES)
+
 /* Test position information macros */
 START_TEST(test_byte_info_at_end) {
   const char *text = "<doc></doc>";
@@ -7352,7 +7376,7 @@ START_TEST(test_misc_version) {
     fail("Version mismatch");
 
 #if ! defined(XML_UNICODE) || defined(XML_UNICODE_WCHAR_T)
-  if (xcstrcmp(version_text, XCS("expat_2.4.3"))) /* needs bump on releases */
+  if (xcstrcmp(version_text, XCS("expat_2.4.4"))) /* needs bump on releases */
     fail("XML_*_VERSION in expat.h out of sync?\n");
 #else
   /* If we have XML_UNICODE defined but not XML_UNICODE_WCHAR_T
@@ -11286,7 +11310,7 @@ START_TEST(test_accounting_precision) {
       {"<p:e xmlns:p=\"https://domain.invalid/\" />", NULL, NULL, 0,
        filled_later},
       {"<e k=\"&amp;&apos;&gt;&lt;&quot;\" />", NULL, NULL,
-       sizeof(XML_Char) * 5 /* number of predefined entites */, filled_later},
+       sizeof(XML_Char) * 5 /* number of predefined entities */, filled_later},
       {"<e1 xmlns='https://example.org/'>\n"
        "  <e2 xmlns=''/>\n"
        "</e1>",
@@ -11296,7 +11320,7 @@ START_TEST(test_accounting_precision) {
       {"<e>text</e>", NULL, NULL, 0, filled_later},
       {"<e1><e2>text1<e3/>text2</e2></e1>", NULL, NULL, 0, filled_later},
       {"<e>&amp;&apos;&gt;&lt;&quot;</e>", NULL, NULL,
-       sizeof(XML_Char) * 5 /* number of predefined entites */, filled_later},
+       sizeof(XML_Char) * 5 /* number of predefined entities */, filled_later},
       {"<e>&#65;&#41;</e>", NULL, NULL, 0, filled_later},
 
       /* Prolog */
@@ -11731,6 +11755,9 @@ make_suite(void) {
   tcase_add_test(tc_basic, test_empty_parse);
   tcase_add_test(tc_basic, test_get_buffer_1);
   tcase_add_test(tc_basic, test_get_buffer_2);
+#if defined(XML_CONTEXT_BYTES)
+  tcase_add_test(tc_basic, test_get_buffer_3_overflow);
+#endif
   tcase_add_test(tc_basic, test_byte_info_at_end);
   tcase_add_test(tc_basic, test_byte_info_at_error);
   tcase_add_test(tc_basic, test_byte_info_at_cdata);
