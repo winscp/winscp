@@ -205,9 +205,6 @@
 		<CppCompile Include="putty\crypto\sha512-sw.c">
 			<BuildOrder>42</BuildOrder>
 		</CppCompile>
-		<CppCompile Include="putty\crypto\xdmauth.c">
-			<BuildOrder>43</BuildOrder>
-		</CppCompile>
 		<CppCompile Include="putty\errsock.c">
 			<BuildOrder>2</BuildOrder>
 		</CppCompile>
@@ -358,9 +355,6 @@
 		<CppCompile Include="putty\utils\dupstr.c">
 			<BuildOrder>152</BuildOrder>
 		</CppCompile>
-		<CppCompile Include="putty\utils\encode_utf8.c">
-			<BuildOrder>89</BuildOrder>
-		</CppCompile>
 		<CppCompile Include="putty\utils\host_strchr.c">
 			<BuildOrder>92</BuildOrder>
 		</CppCompile>
@@ -411,9 +405,6 @@
 		</CppCompile>
 		<CppCompile Include="putty\utils\ptrlen.c">
 			<BuildOrder>105</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\utils\read_file_into.c">
-			<BuildOrder>106</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\utils\seat_connection_fatal.c">
 			<BuildOrder>107</BuildOrder>
@@ -528,9 +519,6 @@
 		</CppCompile>
 		<CppCompile Include="putty\windows\utils\ltime.c">
 			<BuildOrder>147</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\utils\minefield.c">
-			<BuildOrder>148</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\windows\utils\open_for_write_would_lose_data.c">
 			<BuildOrder>149</BuildOrder>
