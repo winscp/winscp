@@ -1792,9 +1792,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             FocusControl = TunnelLocalPortNumberEdit
           end
           object TunnelLocalPortNumberEdit: TComboBox
-            Left = 234
+            Left = 284
             Top = 15
-            Width = 148
+            Width = 98
             Height = 21
             AutoComplete = False
             Anchors = [akTop, akRight]
