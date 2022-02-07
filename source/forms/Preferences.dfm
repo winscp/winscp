@@ -3134,7 +3134,7 @@ object PreferencesDialog: TPreferencesDialog
           object EditorEncodingCombo: TComboBox
             Left = 16
             Top = 112
-            Width = 155
+            Width = 145
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
