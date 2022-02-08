@@ -76,6 +76,7 @@ private:
   ScpLogPolicy * FLogPolicy;
   ScpSeat * FSeat;
   LogContext * FLogCtx;
+  std::set<UnicodeString> FLoggedKnownHostKeys;
 
   void __fastcall Init();
   void __fastcall SetActive(bool value);

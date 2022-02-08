@@ -113,6 +113,7 @@ void __fastcall TSecureShell::ResetConnection()
   }
   FLogCtx = NULL;
   FClosed = false;
+  FLoggedKnownHostKeys.clear();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::ResetSessionInfo()
@@ -2676,9 +2677,13 @@ bool __fastcall TSecureShell::HaveHostKey(UnicodeString Host, int Port, const Un
     }
   }
 
-  if (Result)
+  if (Result &&
+      (FLoggedKnownHostKeys.find(KeyType) == FLoggedKnownHostKeys.end()))
   {
     LogEvent(FORMAT(L"Have a known host key of type %s", (KeyType)));
+    // This is called multiple times for the same cached key since PuTTY 0.76 (support for rsa-sha2*?).
+    // Avoid repeated log entries.
+    FLoggedKnownHostKeys.insert(KeyType);
   }
 
   return Result;
