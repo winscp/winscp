@@ -2713,7 +2713,11 @@ void __fastcall TSecureShell::AskAlg(UnicodeString AlgType, UnicodeString AlgNam
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::DisplayBanner(const UnicodeString & Banner)
 {
-  FUI->DisplayBanner(Banner);
+  // Since 0.77 PuTTY calls this again with CRLF if the actual banner does not end with one.
+  if (!Banner.Trim().IsEmpty())
+  {
+    FUI->DisplayBanner(Banner);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::OldKeyfileWarning()
