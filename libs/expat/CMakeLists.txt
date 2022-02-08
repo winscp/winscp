@@ -64,7 +64,7 @@ endif()
 
 project(expat
     VERSION
-        2.4.3
+        2.4.4
     LANGUAGES
         C
 )
@@ -408,7 +408,7 @@ if(EXPAT_WITH_LIBBSD)
 endif()
 
 set(LIBCURRENT 9)   # sync
-set(LIBREVISION 3)  # with
+set(LIBREVISION 4)  # with
 set(LIBAGE 8)       # configure.ac!
 math(EXPR LIBCURRENT_MINUS_AGE "${LIBCURRENT} - ${LIBAGE}")
 
@@ -422,7 +422,7 @@ if(WIN32 AND NOT MINGW)
     #       on Windows by resorting to filename libexpat.dll since Expat 1.95.3.
     #       Everything but MSVC is already adding prefix "lib", automatically.
     # NOTE: "set_property(TARGET expat PROPERTY PREFIX lib)" would only affect *.dll
-    #       files but not *.lib files, so we have to rely on propert OUTPUT_NAME, instead.
+    #       files but not *.lib files, so we have to rely on property OUTPUT_NAME, instead.
     #       Property CMAKE_*_POSTFIX still applies.
     set_property(TARGET expat PROPERTY OUTPUT_NAME libexpat)
 endif()
