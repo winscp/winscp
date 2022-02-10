@@ -1177,6 +1177,15 @@ void __fastcall TWinConfiguration::SaveData(THierarchicalStorage * Storage, bool
   if ((All && !FCustomCommandsDefaults) || FCustomCommandList->Modified)
   {
     FCustomCommandList->Save(Storage);
+
+    if (FCustomCommandList->Count == 0)
+    {
+      Storage->WriteBool(L"CustomCommandsNone", true);
+    }
+    else
+    {
+      Storage->DeleteValue(L"CustomCommandsNone");
+    }
   }
 
   if ((All || FCustomCommandOptionsModified) &&
@@ -1509,7 +1518,8 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
     Storage->CloseSubKey();
   }
 
-  if (Storage->KeyExists(L"CustomCommands"))
+  if (Storage->KeyExists(L"CustomCommands") ||
+      Storage->ReadBool(L"CustomCommandsNone", false))
   {
     FCustomCommandList->Load(Storage);
     FCustomCommandsDefaults = false;
