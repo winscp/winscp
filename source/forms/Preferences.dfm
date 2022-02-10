@@ -1331,9 +1331,9 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = UpDownCommandButtonClick
           end
           object EditCommandButton: TButton
-            Left = 112
+            Left = 127
             Top = 313
-            Width = 83
+            Width = 98
             Height = 25
             Anchors = [akLeft, akBottom]
             Caption = '&Edit...'
