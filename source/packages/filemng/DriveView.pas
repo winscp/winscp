@@ -70,6 +70,8 @@ type
     DefaultDir: string;        {Current directory}
   end;
 
+  TDriveStatusPair = TPair<string, TDriveStatus>;
+
   TScanDirInfo = record
     SearchNewDirs: Boolean;
     StartNode: TTreeNode;
@@ -1277,7 +1279,7 @@ end;
 
 function TDriveView.GetDrives: TStrings;
 var
-  DriveStatusPair: TPair<string, TDriveStatus>;
+  DriveStatusPair: TDriveStatusPair;
   Drives: TStringList;
 begin
   Drives := TStringList.Create;
@@ -2031,7 +2033,7 @@ end; {DirWatchChangeDetected}
 
 procedure TDriveView.ChangeTimerOnTimer(Sender: TObject);
 var
-  DriveStatusPair: TPair<string, TDriveStatus>;
+  DriveStatusPair: TDriveStatusPair;
 begin
   if (FChangeTimerSuspended = 0) and (Sender is TTimer) then
   begin
@@ -2113,7 +2115,7 @@ end; {StopWatchThread}
 
 procedure TDriveView.StartAllWatchThreads;
 var
-  DriveStatusPair: TPair<string, TDriveStatus>;
+  DriveStatusPair: TDriveStatusPair;
   Drive: string;
 begin
   if (csDesigning in ComponentState) or (not FWatchDirectory) then
@@ -2141,7 +2143,7 @@ end; {StartAllWatchThreads}
 
 procedure TDriveView.StopAllWatchThreads;
 var
-  DriveStatusPair: TPair<string, TDriveStatus>;
+  DriveStatusPair: TDriveStatusPair;
 begin
   if (csDesigning in ComponentState) or (not FWatchDirectory) then
      Exit;
