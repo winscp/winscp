@@ -580,9 +580,9 @@ begin
   begin
     if Msg = WM_DEVICECHANGE then
     begin
-       if (wParam = DBT_CONFIGCHANGED) or
-          (wParam = DBT_DEVICEARRIVAL) or
-          (wParam = DBT_DEVICEREMOVECOMPLETE) then
+      if (wParam = DBT_CONFIGCHANGED) or
+         (wParam = DBT_DEVICEARRIVAL) or
+         (wParam = DBT_DEVICEREMOVECOMPLETE) then
       begin
         // Delay refreshing drives for a sec.
         // Particularly with CD/DVD drives, if we query display name
