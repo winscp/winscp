@@ -2,6 +2,81 @@ NOTE: We are looking for help with a few things:
       https://github.com/libexpat/libexpat/labels/help%20wanted
       If you can help, please get in touch.  Thanks!
 
+Release 2.4.3 Sun January 16 2022
+        Security fixes:
+       #531 #534  CVE-2021-45960 -- Fix issues with left shifts by >=29 places
+                    resulting in
+                      a) realloc acting as free
+                      b) realloc allocating too few bytes
+                      c) undefined behavior
+                    depending on architecture and precise value
+                    for XML documents with >=2^27+1 prefixed attributes
+                    on a single XML tag a la
+                    "<r xmlns:a='[..]' a:a123='[..]' [..] />"
+                    where XML_ParserCreateNS is used to create the parser
+                    (which needs argument "-n" when running xmlwf).
+                    Impact is denial of service, or more.
+       #532 #538  CVE-2021-46143 (ZDI-CAN-16157) -- Fix integer overflow
+                    on variable m_groupSize in function doProlog leading
+                    to realloc acting as free.
+                    Impact is denial of service or more.
+            #539  CVE-2022-22822 to CVE-2022-22827 -- Prevent integer overflows
+                    near memory allocation at multiple places.  Mitre assigned
+                    a dedicated CVE for each involved internal C function:
+                    - CVE-2022-22822 for function addBinding
+                    - CVE-2022-22823 for function build_model
+                    - CVE-2022-22824 for function defineAttribute
+                    - CVE-2022-22825 for function lookup
+                    - CVE-2022-22826 for function nextScaffoldPart
+                    - CVE-2022-22827 for function storeAtts
+                    Impact is denial of service or more.
+
+        Other changes:
+            #535  CMake: Make call to file(GENERATE [..]) work for CMake <3.19
+            #541  Autotools|CMake: MinGW: Make run.sh(.in) work for Cygwin
+                    and MSYS2 by not going through Wine on these platforms
+       #527 #528  Address compiler warnings
+       #533 #543  Version info bumped from 9:2:8 to 9:3:8;
+                    see https://verbump.de/ for what these numbers do
+
+        Infrastructure:
+            #536  CI: Check for realistic minimum CMake version
+       #529 #539  CI: Cover compilation with -m32
+            #529  CI: Store coverage reports as artifacts for download
+            #528  CI: Upgrade Clang from 11 to 13
+
+        Special thanks to:
+            An anonymous whitehat
+            Christopher Degawa
+            J. Peter Mugaas
+            Tyson Smith
+                 and
+            GCC Farm Project
+            Trend Micro Zero Day Initiative
+
+Release 2.4.2 Sun December 19 2021
+        Other changes:
+       #509 #510  Link againgst libm for function "isnan"
+       #513 #514  Include expat_config.h as early as possible
+            #498  Autotools: Include files with release archives:
+                    - buildconf.sh
+                    - fuzz/*.c
+       #507 #519  Autotools: Sync CMake templates
+       #495 #524  CMake: MinGW: Fix pkg-config section "Libs" for
+                    - non-release build types (e.g. -DCMAKE_BUILD_TYPE=Debug)
+                    - multi-config CMake generators (e.g. Ninja Multi-Config)
+       #502 #503  docs: Document that function XML_GetBuffer may return NULL
+                    when asking for a buffer of 0 (zero) bytes size
+       #522 #523  docs: Fix return value docs for both
+                    XML_SetBillionLaughsAttackProtection* functions
+       #525 #526  Version info bumped from 9:1:8 to 9:2:8;
+                    see https://verbump.de/ for what these numbers do
+
+        Special thanks to:
+            Dong-hee Na
+            Joergen Ibsen
+            Kai Pastor
+
 Release 2.4.1 Sun May 23 2021
         Bug fixes:
        #488 #490  Autotools: Fix installed header expat_config.h for multilib

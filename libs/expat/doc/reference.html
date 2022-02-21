@@ -14,9 +14,10 @@
    Copyright (c) 2000      Clark Cooper <coopercc@users.sourceforge.net>
    Copyright (c) 2000-2004 Fred L. Drake, Jr. <fdrake@users.sourceforge.net>
    Copyright (c) 2002-2012 Karl Waclawek <karl@waclawek.net>
-   Copyright (c) 2017-2021 Sebastian Pipping <sebastian@pipping.org>
+   Copyright (c) 2017-2022 Sebastian Pipping <sebastian@pipping.org>
    Copyright (c) 2017      Jakub Wilk <jwilk@jwilk.net>
    Copyright (c) 2021      Tomas Korbar <tkorbar@redhat.com>
+   Copyright (c) 2021      Nicolas Cavallari <nicolas.cavallari@green-communications.fr>
    Licensed under the MIT license:
 
    Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -48,7 +49,7 @@
   <div>
     <h1>
       The Expat XML Parser
-      <small>Release 2.4.1</small>
+      <small>Release 2.4.3</small>
     </h1>
   </div>
 <div class="content">
@@ -1115,7 +1116,8 @@ XML_GetBuffer(XML_Parser p,
 <div class="fcndef">
 Obtain a buffer of size <code>len</code> to read a piece of the document
 into. A NULL value is returned if Expat can't allocate enough memory for
-this buffer. This has to be called prior to every call to
+this buffer. A NULL value may also be returned if <code>len</code> is zero.
+This has to be called prior to every call to
 <code><a href= "#XML_ParseBuffer" >XML_ParseBuffer</a></code>. A
 typical use would look like this:
 
@@ -2100,7 +2102,7 @@ XML_SetBillionLaughsAttackProtectionMaximumAmplification(XML_Parser p,
     <a href="https://en.wikipedia.org/wiki/Billion_laughs_attack">billion laughs attacks</a>
     (default: <code>100.0</code>)
     of parser <code>p</code> to <code>maximumAmplificationFactor</code>, and
-    returns <code>XML_TRUE</code> upon success and <code>XML_TRUE</code> upon error.
+    returns <code>XML_TRUE</code> upon success and <code>XML_FALSE</code> upon error.
   </p>
 
   The amplification factor is calculated as ..
@@ -2150,7 +2152,7 @@ XML_SetBillionLaughsAttackProtectionActivationThreshold(XML_Parser p,
     <a href="https://en.wikipedia.org/wiki/Billion_laughs_attack">billion laughs attacks</a>
     (default: <code>8 MiB</code>)
     of parser <code>p</code> to <code>activationThresholdBytes</code>, and
-    returns <code>XML_TRUE</code> upon success and <code>XML_TRUE</code> upon error.
+    returns <code>XML_TRUE</code> upon success and <code>XML_FALSE</code> upon error.
   </p>
 
   <p>For a call to <code>XML_SetBillionLaughsAttackProtectionActivationThreshold</code> to succeed:</p>
