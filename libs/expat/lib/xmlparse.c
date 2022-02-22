@@ -718,7 +718,10 @@ XML_ParserCreate(const XML_Char *encodingName) {
 
 XML_Parser XMLCALL
 XML_ParserCreateNS(const XML_Char *encodingName, XML_Char nsSep) {
-  XML_Char tmp[2] = {nsSep, 0};
+  // WINSCP
+  XML_Char tmp[2];
+  tmp[0] = nsSep;
+  tmp[1] = 0;
   return XML_ParserCreate_MM(encodingName, NULL, tmp);
 }
 
@@ -1347,7 +1350,10 @@ XML_ExternalEntityParserCreate(XML_Parser oldParser, const XML_Char *context,
      would be otherwise.
   */
   if (parser->m_ns) {
-    XML_Char tmp[2] = {parser->m_namespaceSeparator, 0};
+    // WINSCP
+    XML_Char tmp[2];
+    tmp[0] = parser->m_namespaceSeparator;
+    tmp[1] = 0;
     parser = parserCreate(encodingName, &parser->m_mem, tmp, newDtd);
   } else {
     parser = parserCreate(encodingName, &parser->m_mem, NULL, newDtd);
@@ -7435,6 +7441,7 @@ build_model(XML_Parser parser) {
    *
    * - The algorithm repeats until all target array indices have been processed.
    */
+  { // WINSCP
   XML_Content *dest = ret; /* tree node writing location, moves upwards */
   XML_Content *const destLimit = &ret[dtd->scaffCount];
   XML_Content *jobDest = ret; /* next free writing location in target array */
@@ -7477,6 +7484,7 @@ build_model(XML_Parser parser) {
   }
 
   return ret;
+  } // WINSCP
   } // WINSCP
 }
 
