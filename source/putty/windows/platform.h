@@ -293,6 +293,7 @@ void socket_reselect_all(void);
 SockAddr *sk_namedpipe_addr(const char *pipename);
 /* Turn a WinSock error code into a string. */
 const char *winsock_error_string(int error);
+Socket *sk_newlistener_unix(const char *socketpath, Plug *plug);
 
 /*
  * network.c dynamically loads WinSock 2 or WinSock 1 depending on
@@ -332,6 +333,7 @@ const char *do_select(SOCKET skt, bool enable);
  */
 void winselgui_set_hwnd(HWND hwnd);
 void winselgui_clear_hwnd(void);
+void winselgui_response(WPARAM wParam, LPARAM lParam);
 
 void winselcli_setup(void);
 SOCKET winselcli_unique_socket(void);

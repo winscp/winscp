@@ -72,7 +72,8 @@ typedef struct HttpProxyNegotiator {
     uint32_t nonce_count;
     prompts_t *prompts;
     int username_prompt_index, password_prompt_index;
-    size_t content_length;
+    size_t content_length, chunk_length;
+    bool chunked_transfer;
     ProxyNegotiator pn;
 } HttpProxyNegotiator;
 
@@ -151,7 +152,9 @@ static void proxy_http_free(ProxyNegotiator *pn)
 #define HTTP_HEADER_LIST(X) \
     X(HDR_CONNECTION, "Connection") \
     X(HDR_CONTENT_LENGTH, "Content-Length") \
+    X(HDR_TRANSFER_ENCODING, "Transfer-Encoding") \
     X(HDR_PROXY_AUTHENTICATE, "Proxy-Authenticate") \
+    X(HDR_PROXY_CONNECTION, "Proxy-Connection") \
     /* end of list */
 
 typedef enum HttpHeader {
@@ -322,7 +325,7 @@ static HttpAuthDetails *parse_http_auth_header(HttpProxyNegotiator *s)
                 d->hash_username = !stricmp(s->token->s, "true");
             } else if (!stricmp(s->token->s, "algorithm")) {
                 if (!get_separator(s, '=') ||
-                    !get_token(s))
+                    (!get_token(s) && !get_quoted_string(s)))
                     return auth_error(d, "parse error in Digest algorithm "
                                       "field");
                 bool found = false;
@@ -460,6 +463,7 @@ static void proxy_http_process_queue(ProxyNegotiator *pn)
         crReturnV;
 
         s->content_length = 0;
+        s->chunked_transfer = false;
         s->connection_close = false;
 
         /*
@@ -479,7 +483,7 @@ static void proxy_http_process_queue(ProxyNegotiator *pn)
                 crStopV;
             }
 
-            if (maj_ver < 1 && (maj_ver == 1 && min_ver < 1)) {
+            if (maj_ver < 1 || (maj_ver == 1 && min_ver < 1)) {
                 /* Before HTTP/1.1, connections close by default */
                 s->connection_close = true;
             }
@@ -530,7 +534,25 @@ static void proxy_http_process_queue(ProxyNegotiator *pn)
                 if (!get_token(s))
                     continue;
                 s->content_length = strtoumax(s->token->s, NULL, 10);
-            } else if (hdr == HDR_CONNECTION) {
+            } else if (hdr == HDR_TRANSFER_ENCODING) {
+                /*
+                 * The Transfer-Encoding header value should be a
+                 * comma-separated list of keywords including
+                 * "chunked", "deflate" and "gzip". We parse it in the
+                 * most superficial way, by just looking for "chunked"
+                 * and ignoring everything else.
+                 *
+                 * It's OK to do that because we're not actually
+                 * _using_ the error document - we only have to skip
+                 * over it to find the end of the HTTP response. So we
+                 * don't care if it's gzipped or not.
+                 */
+                while (get_token(s)) {
+                    if (!stricmp(s->token->s, "chunked"))
+                        s->chunked_transfer = true;
+                }
+            } else if (hdr == HDR_CONNECTION ||
+                       hdr == HDR_PROXY_CONNECTION) {
                 if (!get_token(s))
                     continue;
                 if (!stricmp(s->token->s, "close"))
@@ -584,8 +606,62 @@ static void proxy_http_process_queue(ProxyNegotiator *pn)
         } while (s->header->len > 0);
 
         /* Read and ignore the entire response document */
-        crMaybeWaitUntilV(bufchain_try_consume(
-                              pn->input, s->content_length));
+        if (!s->chunked_transfer) {
+            /* Simple approach: read exactly Content-Length bytes */
+            crMaybeWaitUntilV(bufchain_try_consume(
+                                  pn->input, s->content_length));
+        } else {
+            /* Chunked transfer: read a sequence of
+             * <hex length>\r\n<data>\r\n chunks, terminating in one with
+             * zero length */
+            do {
+                /*
+                 * Expect a chunk length
+                 */
+                s->chunk_length = 0;
+                while (true) {
+                    char c;
+                    crMaybeWaitUntilV(bufchain_try_fetch_consume(
+                                          pn->input, &c, 1));
+                    if (c == '\r') {
+                        continue;
+                    } else if (c == '\n') {
+                        break;
+                    } else if ('0' <= c && c <= '9') {
+                        s->chunk_length = s->chunk_length*16 + (c-'0');
+                    } else if ('A' <= c && c <= 'F') {
+                        s->chunk_length = s->chunk_length*16 + (c-'A'+10);
+                    } else if ('a' <= c && c <= 'f') {
+                        s->chunk_length = s->chunk_length*16 + (c-'a'+10);
+                    } else {
+                        pn->error = dupprintf(
+                            "Received bad character 0x%02X in chunk length "
+                            "during HTTP chunked transfer encoding",
+                            (unsigned)(unsigned char)c);
+                        crStopV;
+                    }
+                }
+
+                /*
+                 * Expect that many bytes of chunked data
+                 */
+                crMaybeWaitUntilV(bufchain_try_consume(
+                                      pn->input, s->chunk_length));
+
+                /* Now expect \r\n */
+                {
+                    char buf[2];
+                    crMaybeWaitUntilV(bufchain_try_fetch_consume(
+                                          pn->input, buf, 2));
+                    if (memcmp(buf, "\r\n", 2)) {
+                        pn->error = dupprintf(
+                            "Missing CRLF after chunk "
+                            "during HTTP chunked transfer encoding");
+                        crStopV;
+                    }
+                }
+            } while (s->chunk_length);
+        }
 
         if (200 <= s->http_status && s->http_status < 300) {
             /* Any 2xx HTTP response means we're done */
@@ -594,9 +670,9 @@ static void proxy_http_process_queue(ProxyNegotiator *pn)
             /* 407 is Proxy Authentication Required, which we may be
              * able to do something about. */
             if (s->connection_close) {
-                pn->error = dupprintf("HTTP proxy closed connection after "
-                                      "asking for authentication");
-                crStopV;
+                /* If we got 407 + connection closed, reconnect before
+                 * sending our next request. */
+                pn->reconnect = true;
             }
 
             /* If the best we can do is report some kind of error from

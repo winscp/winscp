@@ -2057,6 +2057,16 @@ is a protocol extension (SOCKS 4A) which does support it, but not
 all SOCKS 4 servers provide this extension. If you enable proxy DNS
 and your SOCKS 4 server cannot deal with it, this might be why.
 
+If you want to avoid PuTTY making \e{any} DNS query related to your
+destination host name (for example, because your local DNS resolver is
+very slow to return a negative response in that situation), then as
+well as setting this control to \q{Yes}, you may also need to turn off
+GSSAPI authentication and GSSAPI key exchange in SSH (see
+\k{config-ssh-auth-gssapi} and \k{config-ssh-gssapi-kex}
+respectively). This is because GSSAPI setup also involves a DNS query
+for the destination host name, and that query is performed by the
+separate GSSAPI library, so PuTTY can't override or reconfigure it.
+
 \S{config-proxy-auth} \I{proxy username}Username and \I{proxy password}password
 
 If your proxy requires \I{proxy authentication}authentication, you can

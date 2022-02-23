@@ -172,6 +172,11 @@ by the command, like this:
 
 \S{pageant-cmdline-openssh} Integrating with Windows OpenSSH
 
+Windows's own port of OpenSSH uses the same mechanism as Pageant to
+talk to its SSH agent (Windows named pipes). This means that Windows
+OpenSSH can talk directly to Pageant, if it knows where to find
+Pageant's named pipe.
+
 When Pageant starts up, it can optionally write out a file containing
 an OpenSSH configuration directive that tells the Windows \c{ssh.exe}
 where to find Pageant. If you include this file from your Windows SSH
@@ -183,14 +188,73 @@ The option is \c{--openssh-config}, and you follow it with a filename.
 
 To refer to this file from your main OpenSSH configuration, you can
 use the \cq{Include} directive. For example, you might run Pageant
-like this:
+like this (with your own username substituted, of course):
 
 \c pageant --openssh-config C:\Users\Simon\.ssh\pageant.conf
 
-and then add a directive like this to your main \cq{.ssh\\config}
-file:
+and then add a directive like this to your main \cq{.ssh\\config} file
+(assuming that lives in the same directory that you just put
+\cw{pageant.conf}):
 
-\c Include C:\Users\Simon\.ssh\pageant.conf
+\c Include pageant.conf
+
+\s{Note}: this technique only works with \e{Windows's} port of
+OpenSSH, which lives at \cw{C:\\Windows\\System32\\OpenSSH\\ssh.exe}
+if you have it installed. (If not, it can be installed as a Windows
+optional feature, e.g., via Settings > Apps & features > Optional
+features > Add a feature > OpenSSH Client.)
+
+There are other versions of OpenSSH for Windows, notably the one that
+comes with Windows \cw{git}. Those will likely not work with the same
+configuration, because they tend to depend on Unix emulation layers
+like MinGW or MSys, so they won't speak Windows native pathname syntax
+or understand named pipes. The above instructions will only work with
+Windows's own version of OpenSSH.
+
+So, if you want to use Windows \cw{git} with an SSH key held in
+Pageant, you'll have to set the environment variable \cw{GIT_SSH}, to
+point at a different program. You could point it at
+\cw{c:\\Windows\\System32\\OpenSSH\\ssh.exe} once you've done this
+setup \dash but it's just as easy to point it at Plink!
+
+\S{pageant-cmdline-unix} Unix-domain sockets: integrating with WSL 1
+
+Pageant can listen on the WinSock implementation of \q{Unix-domain
+sockets}. These interoperate with the Unix-domain sockets found in the
+original Windows Subsystem for Linux (now known as WSL 1). So if you
+ask Pageant to listen on one of these, then your WSL 1 processes can
+talk directly to Pageant.
+
+To configure this, run Pageant with the option \c{--unix}, followed
+with a pathname. Then, in WSL 1, set the environment variable
+\cw{SSH_AUTH_SOCK} to point at the WSL translation of that pathname.
+
+For example, you might run
+
+\c pageant --unix C:\Users\Simon\.ssh\agent.sock
+
+and in WSL 1, set the environment variable
+
+\c SSH_AUTH_SOCK=/mnt/c/Users/Simon/.ssh/agent.sock
+
+Alternatively, you can add a line to your \cw{.ssh/config} file inside
+WSL that says
+
+\c IdentityAgent /mnt/c/Users/Simon/.ssh/agent.sock
+
+although doing it like that may mean that \cw{ssh-add} commands won't
+find the agent, even though \cw{ssh} itself will.
+
+\s{Security note}: Unix-domain sockets are protected against access by
+other users by the file protections on their containing directory. So
+if your Windows machine is multiuser, make sure you create the socket
+inside a directory that other users can't access at all. (In fact,
+that's a good idea on general principles.)
+
+\s{Compatibility note}: WSL 2 processes cannot talk to Pageant by this
+mechanism, because WSL 2's Unix-domain sockets are managed by a
+separate Linux kernel, and not by the same kernel that WinSock talks
+to.
 
 \S{pageant-cmdline-keylist} Starting with the key list visible
 

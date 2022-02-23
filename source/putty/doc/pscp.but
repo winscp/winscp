@@ -53,7 +53,7 @@ use PSCP:
 \c   -load sessname  Load settings from saved session
 \c   -P port   connect to specified port
 \c   -l user   connect with specified username
-\c   -pw passw login with specified password
+\c   -pwfile file   login with password read from specified file
 \c   -1 -2     force use of particular SSH protocol version
 \c   -ssh -ssh-connection
 \c             force use of particular SSH protocol variant

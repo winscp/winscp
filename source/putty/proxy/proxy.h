@@ -22,6 +22,11 @@ struct ProxySocket {
     SockAddr *remote_addr;
     int remote_port;
 
+    /* Parameters needed to make further connections to the proxy */
+    SockAddr *proxy_addr;
+    int proxy_port;
+    bool proxy_privport, proxy_oobinline, proxy_nodelay, proxy_keepalive;
+
     bufchain pending_output_data;
     bufchain pending_oob_output_data;
     bufchain pending_input_data;
@@ -68,6 +73,11 @@ struct ProxyNegotiator {
 
     /* Set to report user abort during proxy negotiation.  */
     bool aborted;
+
+    /* Set to request the centralised code to make a fresh connection
+     * to the proxy server, e.g. because an HTTP proxy slammed the
+     * connection shut after sending 407 Proxy Auth Required. */
+    bool reconnect;
 };
 
 struct ProxyNegotiatorVT {
