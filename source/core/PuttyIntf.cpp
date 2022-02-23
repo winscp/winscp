@@ -92,6 +92,18 @@ bool RandomSeedExists()
     FileExists(ApiPath(Configuration->RandomSeedFileName));
 }
 //---------------------------------------------------------------------------
+TSecureShell * GetSeatSecureShell(Seat * seat)
+{
+  DebugAssert(seat != NULL);
+  if (is_tempseat(seat))
+  {
+    seat = tempseat_get_real(seat);
+  }
+
+  TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
+  return SecureShell;
+}
+//---------------------------------------------------------------------------
 TSecureShell * GetSecureShell(Plug * plug, bool & pfwd)
 {
   if (!is_ssh(plug) && !is_pfwd(plug))
@@ -113,9 +125,7 @@ TSecureShell * GetSecureShell(Plug * plug, bool & pfwd)
     seat = get_ssh_seat(plug);
   }
   DebugAssert(seat != NULL);
-
-  TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
-  return SecureShell;
+  return GetSeatSecureShell(seat);
 }
 //---------------------------------------------------------------------------
 struct callback_set * get_callback_set(Plug * plug)
@@ -127,7 +137,7 @@ struct callback_set * get_callback_set(Plug * plug)
 //---------------------------------------------------------------------------
 struct callback_set * get_seat_callback_set(Seat * seat)
 {
-  TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
+  TSecureShell * SecureShell = GetSeatSecureShell(seat);
   return SecureShell->GetCallbackSet();
 }
 //---------------------------------------------------------------------------
