@@ -226,12 +226,19 @@ static void proxy_negotiate(ProxySocket *ps)
 
     if (ps->pn->reconnect) {
         sk_close(ps->sub_socket);
+        { // WINSCP
         SockAddr *proxy_addr = sk_addr_dup(ps->proxy_addr);
         ps->sub_socket = sk_new(proxy_addr, ps->proxy_port,
                                 ps->proxy_privport, ps->proxy_oobinline,
                                 ps->proxy_nodelay, ps->proxy_keepalive,
-                                &ps->plugimpl);
+                                &ps->plugimpl,
+                                #ifdef WINSCP
+                                conf_get_int(ps->conf, CONF_connect_timeout), conf_get_int(ps->conf, CONF_sndbuf),
+                                conf_get_str(ps->conf, CONF_srcaddr)
+                                #endif
+                                );
         ps->pn->reconnect = false;
+        } // WINSCP
     }
 
     while (bufchain_size(&ps->output_from_negotiator)) {
