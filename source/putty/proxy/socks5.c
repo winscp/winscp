@@ -70,7 +70,7 @@ static void proxy_socks5_free(ProxyNegotiator *pn)
     strbuf_free(s->password);
     if (s->prompts)
         free_prompts(s->prompts);
-    smemclr(s, sizeof(s));
+    smemclr(s, sizeof(*s));
     sfree(s);
 }
 
