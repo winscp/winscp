@@ -1000,7 +1000,11 @@ static void ssh_free(Backend *be)
     ssh_shutdown(ssh);
 
     if (is_tempseat(ssh->seat))
+    {
+        Seat * realseat = tempseat_get_real(ssh->seat); // WINSCP
         tempseat_free(ssh->seat);
+        ssh->seat = realseat; // WINSCP
+    }
 
     conf_free(ssh->conf);
     if (ssh->connshare)
