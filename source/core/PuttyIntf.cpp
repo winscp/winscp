@@ -305,7 +305,7 @@ size_t banner(Seat * seat, const void * data, size_t len)
 uintmax_t strtoumax(const char *nptr, char **endptr, int base)
 {
   if (DebugAlwaysFalse(endptr != NULL) ||
-      DebugAlwaysFalse(base == 10))
+      DebugAlwaysFalse(base != 10))
   {
     Abort();
   }
