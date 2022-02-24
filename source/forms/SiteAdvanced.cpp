@@ -836,7 +836,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
       FtpPasvModeCheck->Checked = true;
       MessageDialog(MainInstructions(LoadStr(FTP_PASV_MODE_REQUIRED)), qtInformation, qaOK);
     }
-    EnableControl(BufferSizeCheck, SshProtocol || FtpProtocol);
+    EnableControl(BufferSizeCheck, SshProtocol || FtpProtocol || S3Protocol);
     PingGroup->Visible = !FtpProtocol;
     EnableControl(PingGroup, SshProtocol);
     EnableControl(PingIntervalSecEdit, PingGroup->Enabled && !PingOffButton->Checked);
