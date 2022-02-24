@@ -98,6 +98,7 @@ private:
   bool FShowInaccesibleDirectories;
   TRemoteFile * FDummyDragFile;
   TList * FPendingDelete;
+  bool FChangingDirectory;
 
   bool __fastcall IsRootNameStored();
   void __fastcall SetShowInaccesibleDirectories(bool value);
