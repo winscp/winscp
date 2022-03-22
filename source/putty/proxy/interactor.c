@@ -116,7 +116,8 @@ InteractionReadySeat interactor_announce(Interactor *itr)
         sfree(adjective);
         sfree(desc);
 
-        seat_antispoof_msg(iseat, msg);
+        // WINSCP We could comment out whole this function
+        // WINSCP seat_antispoof_msg(iseat, msg);
         sfree(msg);
 
         itr_top->last_to_talk = itr;

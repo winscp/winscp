@@ -701,6 +701,7 @@ TPromptKind __fastcall TSecureShell::IdentifyPromptKind(UnicodeString & Name)
     { L"SSH server authentication", SERVER_PROMPT_TITLE },
     { L"SSH password", PASSWORD_TITLE },
     { L"New SSH password", NEW_PASSWORD_TITLE },
+    { L"SOCKS proxy authentication", PROXY_AUTH_TITLE },
   };
 
   int Index = TranslatePuttyMessage(NameTranslation, LENOF(NameTranslation), Name);
@@ -733,6 +734,10 @@ TPromptKind __fastcall TSecureShell::IdentifyPromptKind(UnicodeString & Name)
   else if (Index == 7)
   {
     PromptKind = pkNewPassword;
+  }
+  else if (Index == 8)
+  {
+    PromptKind = pkProxyAuth;
   }
   else
   {
@@ -837,6 +842,16 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
     PromptTranslation = NewPasswordPromptTranslation;
     PromptTranslationCount = LENOF(NewPasswordPromptTranslation);
     PromptDesc = L"new password";
+  }
+  else if (PromptKind == pkProxyAuth)
+  {
+    static const TPuttyTranslation ProxyAuthPromptTranslation[] = {
+      { L"Proxy username: ", PROXY_AUTH_USERNAME_PROMPT },
+      { L"Proxy password: ", PROXY_AUTH_PASSWORD_PROMPT },
+    };
+    PromptTranslation = ProxyAuthPromptTranslation;
+    PromptTranslationCount = LENOF(ProxyAuthPromptTranslation);
+    PromptDesc = L"proxy authentication";
   }
   else
   {
