@@ -863,7 +863,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
     (Instructions.IsEmpty() ? UnicodeString(L"<no instructions>") : FORMAT(L"\"%s\"", (Instructions)));
   UnicodeString PromptsLog =
     (Prompts->Count > 0 ? FORMAT(L"\"%s\"", (Prompts->Strings[0])) : UnicodeString(L"<no prompt>")) +
-    (Prompts->Count > 1 ? FORMAT(L"%d more", (Prompts->Count - 1)) : UnicodeString());
+    (Prompts->Count > 1 ? FORMAT(L" + %d more", (Prompts->Count - 1)) : UnicodeString());
   LogEvent(FORMAT(L"Prompt (%s, \"%s\", %s, %s)", (PromptDesc, AName, InstructionsLog, PromptsLog)));
 
   Name = Name.Trim();
