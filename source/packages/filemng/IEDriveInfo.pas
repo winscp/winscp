@@ -589,7 +589,7 @@ begin
       end;
 
       {ImageIndex:}
-      if ((Flags and dsImageIndex) <> 0) and (ImageIndex < 5) then
+      if (Flags and dsImageIndex) <> 0 then
       begin
         if Assigned(PIDL) then
         begin

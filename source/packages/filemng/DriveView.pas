@@ -56,6 +56,8 @@ const
   dvdsFloppy          = 8;  {Include floppy drives}
   dvdsRereadAllways   = 16; {Refresh drivestatus in any case}
 
+  WM_USER_SHCHANGENOTIFY = WM_USER + $2000 + 13;
+
 type
   EInvalidDirName  = class(Exception);
   ENodeNotAssigned = class(Exception);
@@ -134,6 +136,7 @@ type
     FRenameNode: TTreeNode;
     FLastRenameName: string;
     FInternalWindowHandle: HWND;
+    FChangeNotify: ULONG;
     FPrevSelected: TTreeNode;
     FPrevSelectedIndex: Integer;
     FChangeTimerSuspended: Integer;
@@ -190,6 +193,8 @@ type
     procedure UpdateDriveNotifications(Drive: string);
     procedure DriveRemoved(Drive: string);
     procedure DriveRemoving(Drive: string);
+    procedure CancelDriveRefresh;
+    procedure ScheduleDriveRefresh;
 
     function DirAttrMask: Integer;
     function CreateDriveStatus: TDriveStatus;
@@ -466,6 +471,8 @@ end;
 constructor TDriveView.Create(AOwner: TComponent);
 var
   Drive: TRealDrive;
+  ChangeNotifyEntry: TSHChangeNotifyEntry;
+  Dummy: string;
 begin
   inherited;
 
@@ -503,6 +510,19 @@ begin
 
   FInternalWindowHandle := Classes.AllocateHWnd(InternalWndProc);
 
+  // Source: petr.solin 2022-02-25
+  FChangeNotify := 0;
+  if SpecialFolderLocation(CSIDL_DESKTOP, Dummy, ChangeNotifyEntry.pidl) then
+  begin
+    ChangeNotifyEntry.fRecursive := False;
+
+    FChangeNotify :=
+      SHChangeNotifyRegister(
+        FInternalWindowHandle, SHCNRF_ShellLevel or SHCNRF_NewDelivery,
+        SHCNE_RENAMEFOLDER or SHCNE_MEDIAINSERTED or SHCNE_MEDIAREMOVED,
+        WM_USER_SHCHANGENOTIFY, 1, ChangeNotifyEntry);
+  end;
+
   with FDragDropFilesEx do
   begin
     ShellExtensions.DragDropHandler := True;
@@ -513,6 +533,7 @@ destructor TDriveView.Destroy;
 var
   DriveStatusPair: TDriveStatusPair;
 begin
+  if FChangeNotify <> 0 then SHChangeNotifyDeregister(FChangeNotify);
   Classes.DeallocateHWnd(FInternalWindowHandle);
 
   for DriveStatusPair in FDriveStatus do
@@ -590,6 +611,8 @@ type
     dbch_data       : Byte;
   end;
 
+  PPItemIDList = ^PItemIDList;
+
 const
   DBT_DEVTYP_HANDLE = $00000006;
   DBT_CONFIGCHANGED = $0018;
@@ -599,6 +622,11 @@ const
   DBT_DEVICEREMOVECOMPLETE = $8004;
   DBT_DEVTYP_VOLUME = $00000002;
 
+// WORKAROUND Declaration in Winapi.ShlObj.pas is wrong
+function SHChangeNotification_Lock(hChange: THandle; dwProcId: DWORD;
+  var PPidls: PPItemIDList; var plEvent: Longint): THANDLE; stdcall;
+external 'shell32.dll' name 'SHChangeNotification_Lock';
+
 procedure TDriveView.InternalWndProc(var Msg: TMessage);
 var
   DeviceType: DWORD;
@@ -606,21 +634,34 @@ var
   DeviceHandle: THandle;
   Drive: Char;
   DriveStatusPair: TDriveStatusPair;
+  PPIDL: PPItemIDList;
+  Event: LONG;
+  Lock: THandle;
 begin
   with Msg do
   begin
+    if Msg = WM_USER_SHCHANGENOTIFY then
+    begin
+      Lock := SHChangeNotification_Lock(wParam, lParam, PPIDL, Event);
+      try
+        if (Event = SHCNE_RENAMEFOLDER) or // = drive rename
+           (Event = SHCNE_MEDIAINSERTED) or // also bitlocker drive unlock (also sends SHCNE_UPDATEDIR)
+           (Event = SHCNE_MEDIAREMOVED) then
+        begin
+          ScheduleDriveRefresh;
+        end;
+      finally
+        SHChangeNotification_Unlock(Lock);
+      end;
+    end
+      else
     if Msg = WM_DEVICECHANGE then
     begin
       if (wParam = DBT_CONFIGCHANGED) or
          (wParam = DBT_DEVICEARRIVAL) or
          (wParam = DBT_DEVICEREMOVECOMPLETE) then
       begin
-        // Delay refreshing drives for a sec.
-        // Particularly with CD/DVD drives, if we query display name
-        // immediately after receiving DBT_DEVICEARRIVAL, we do not get media label.
-        // Actually one sec does not help usually, but we do not want to wait any longer,
-        // because we want to add USB drives asap.
-        SetTimer(FInternalWindowHandle, 1, MSecsPerSec, nil);
+        ScheduleDriveRefresh;
       end
         else
       if (wParam = DBT_DEVICEQUERYREMOVE) or
@@ -659,7 +700,7 @@ begin
       else
     if Msg = WM_TIMER then
     begin
-      KillTimer(FInternalWindowHandle, 1);
+      CancelDriveRefresh;
       try
         //DriveInfo.Load;
         RefreshRootNodes(dsAll or dvdsRereadAllways);
@@ -672,6 +713,23 @@ begin
 
     Result := DefWindowProc(FInternalWindowHandle, Msg, wParam, lParam);
   end;
+end;
+
+procedure TDriveView.CancelDriveRefresh;
+begin
+  KillTimer(FInternalWindowHandle, 1);
+end;
+
+procedure TDriveView.ScheduleDriveRefresh;
+begin
+  CancelDriveRefresh;
+  // Delay refreshing drives for a sec.
+  // Particularly with CD/DVD drives, if we query display name
+  // immediately after receiving DBT_DEVICEARRIVAL, we do not get media label.
+  // Actually one sec does not help usually, but we do not want to wait any longer,
+  // because we want to add USB drives asap.
+  // And this problem might be solved now by SHChangeNotifyRegister/SHCNE_RENAMEFOLDER.
+  SetTimer(FInternalWindowHandle, 1, MSecsPerSec, nil);
 end;
 
 procedure TDriveView.CreateWnd;
