@@ -552,7 +552,7 @@ begin
       end;
 
       {DisplayName:}
-      if (Flags and dsDisplayName <> 0) then
+      if (Flags and dsDisplayName) <> 0 then
       begin
         {Fetch drives displayname:}
         SimpleName := GetSimpleName(Drive);
