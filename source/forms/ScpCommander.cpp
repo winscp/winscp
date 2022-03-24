@@ -2035,13 +2035,23 @@ void __fastcall TScpCommanderForm::LocalPathComboBoxItemClick(TObject * /*Sender
   DebugAssert((LocalPathComboBox->ItemIndex >= 0) && (LocalPathComboBox->ItemIndex < FLocalPathComboBoxPaths->Count));
 
   UnicodeString Path = FLocalPathComboBoxPaths->Strings[LocalPathComboBox->ItemIndex];
-  if (LocalPathComboBox->ItemIndex >= FLocalSpecialPaths)
+  try
   {
-    LocalDirView->ExecuteDrive(DriveInfo->GetDriveKey(Path));
+    if (LocalPathComboBox->ItemIndex >= FLocalSpecialPaths)
+    {
+      LocalDirView->ExecuteDrive(DriveInfo->GetDriveKey(Path));
+    }
+    else
+    {
+      LocalDirView->Path = Path;
+    }
   }
-  else
+  catch (...)
   {
-    LocalDirView->Path = Path;
+    // Changing the path failed, reset the combo box back.
+    // Does not recurse, so infinite recursion should not happen.
+    LocalPathComboUpdate();
+    throw;
   }
 }
 //---------------------------------------------------------------------------
