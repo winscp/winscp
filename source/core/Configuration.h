@@ -225,7 +225,6 @@ public:
   void __fastcall ScheduleCustomIniFileStorageUse(const UnicodeString & ACustomIniFileStorageName);
   void __fastcall SetExplicitIniFileStorageName(const UnicodeString & FileName);
   void __fastcall SetNulStorage();
-  void __fastcall SetDefaultStorage();
   UnicodeString __fastcall GetAutomaticIniFileStorageName(bool ReadingOnly);
   UnicodeString __fastcall GetDefaultIniFileExportPath();
   UnicodeString __fastcall GetIniFileParamValue();

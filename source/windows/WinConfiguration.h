@@ -593,6 +593,7 @@ private:
 
 protected:
   virtual TStorage __fastcall GetStorage();
+  bool DetectStorage(bool SafeOnly);
   virtual void __fastcall SaveData(THierarchicalStorage * Storage, bool All);
   virtual void __fastcall LoadData(THierarchicalStorage * Storage);
   virtual void __fastcall LoadFrom(THierarchicalStorage * Storage);
@@ -660,6 +661,7 @@ public:
   bool __fastcall IsDDExtRunning();
   bool __fastcall IsDDExtBroken();
   bool __fastcall UseDarkTheme();
+  bool TrySetSafeStorage();
 
   static void __fastcall RestoreFont(const TFontConfiguration & Configuration, TFont * Font);
   static void __fastcall StoreFont(TFont * Font, TFontConfiguration & Configuration);

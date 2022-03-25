@@ -1169,11 +1169,6 @@ void __fastcall TConfiguration::SetNulStorage()
   FStorage = stNul;
 }
 //---------------------------------------------------------------------------
-void __fastcall TConfiguration::SetDefaultStorage()
-{
-  FStorage = stDetect;
-}
-//---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetExplicitIniFileStorageName(const UnicodeString & FileName)
 {
   FIniFileStorageName = FileName;
