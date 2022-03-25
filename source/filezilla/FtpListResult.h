@@ -59,6 +59,7 @@ private:
   bool parseTime(const char * str, int len, t_directory::t_direntry::t_date & date) const;
   bool ParseSize(const char * str, int len, __int64 & size) const;
   void TimeTToDate(time_t TimeT, t_directory::t_direntry::t_date & date) const;
+  static void GuessYearIfUnknown(t_directory::t_direntry::t_date & Date);
 
   bool parseMlsdDateTime(const CString value, t_directory::t_direntry::t_date & date) const;
 
