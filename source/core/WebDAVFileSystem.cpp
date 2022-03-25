@@ -892,6 +892,7 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
           EncodeDateVerbose((unsigned short)Year, (unsigned short)Month, (unsigned short)Day) +
           EncodeTimeVerbose((unsigned short)Hour, (unsigned short)Min, (unsigned short)Sec, 0);
         File->Modification = ConvertTimestampFromUTC(Modification);
+        // Should use mfYMDHM or mfMDY when appropriate according to Filled
         File->ModificationFmt = mfFull;
       }
       else

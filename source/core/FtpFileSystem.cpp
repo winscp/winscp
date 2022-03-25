@@ -4344,9 +4344,7 @@ void __fastcall TFTPFileSystem::RemoteFileTimeToDateTimeAndPrecision(const TRemo
       DateTime = DateTime +
         EncodeTimeVerbose((unsigned short)Source.Hour, (unsigned short)Source.Minute,
           (unsigned short)Source.Second, 0);
-      // not exact as we got year as well, but it is most probably
-      // guessed by FZAPI anyway
-      ModificationFmt = Source.HasSeconds ? mfFull : mfMDHM;
+      ModificationFmt = Source.HasSeconds ? mfFull : (Source.HasYear ? mfYMDHM : mfMDHM);
 
       // With IIS, the Utc should be false only for MDTM
       if (FWindowsServer && !Source.Utc)
@@ -4469,11 +4467,11 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
       catch (Exception & E)
       {
         UnicodeString EntryData =
-          FORMAT(L"%s/%s/%s/%s/%s/%s/%s/%d/%d/%d/%d/%d/%d/%d/%d/%d/%d",
+          FORMAT(L"%s/%s/%s/%s/%s/%s/%s/%d/%d/%d/%d/%d/%d/%d/%d/%d/%d/%d",
             (Entry->Name, Entry->Permissions, Entry->HumanPerm, Entry->Owner, Entry->Group, Entry->OwnerGroup, IntToStr(Entry->Size),
              int(Entry->Dir), int(Entry->Link), Entry->Time.Year, Entry->Time.Month, Entry->Time.Day,
              Entry->Time.Hour, Entry->Time.Minute, int(Entry->Time.HasTime),
-             int(Entry->Time.HasSeconds), int(Entry->Time.HasDate)));
+             int(Entry->Time.HasYear), int(Entry->Time.HasSeconds), int(Entry->Time.HasDate)));
         throw ETerminal(&E, FMTLOAD(LIST_LINE_ERROR, (EntryData)), HELP_LIST_LINE_ERROR);
       }
 

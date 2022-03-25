@@ -20,6 +20,7 @@ struct TRemoteFileTime
   int Minute;
   int Second;
   bool HasTime;
+  bool HasYear;
   bool HasSeconds;
   bool HasDate;
   bool Utc;
