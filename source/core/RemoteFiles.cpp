@@ -1284,7 +1284,7 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
             {
               Year = (Word)StrToInt(Col);
               if (Year > 10000) Abort();
-              // When we don't got time we assume midnight
+              // When we didn't get time we assume midnight
               Hour = 0; Min = 0; Sec = 0;
               FModificationFmt = mfMDY;
             }
