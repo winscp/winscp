@@ -532,6 +532,11 @@ void setup_handle_socket(Socket *s, HANDLE send_H, HANDLE recv_H,
 
     hs->defer_close = hs->deferred_close = false;
 
+    #ifdef MPEXT
+    // WinSCP core uses do_select as signalization of connection up/down
+    do_select(hs->plug, INVALID_SOCKET, 1);
+    #endif
+
     queue_toplevel_callback(sk_handle_connect_success_callback, hs);
     } // WINSCP
 }

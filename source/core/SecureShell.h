@@ -111,6 +111,7 @@ private:
     const UnicodeString & StoredKeys, const UnicodeString & KeyStr, const UnicodeString & FingerprintMD5, const UnicodeString & FingerprintSHA256);
   UnicodeString StoreHostKey(
     const UnicodeString & Host, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr);
+  bool HasLocalProxy();
 
 protected:
   TCaptureOutputEvent FOnCaptureOutput;

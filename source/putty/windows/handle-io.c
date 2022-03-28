@@ -530,6 +530,7 @@ struct handle *handle_output_new(struct callback_set * callback_set, HANDLE hand
     h->u.o.sentdata = sentdata;
     h->u.o.sentdata_param = h;
     h->u.o.flags = flags;
+    h->u.o.callback_set = callback_set; // WINSCP
 
     ensure_ready_event_setup(callback_set);
     { // WINSCP

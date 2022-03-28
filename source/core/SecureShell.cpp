@@ -448,6 +448,10 @@ void __fastcall TSecureShell::Open()
       PuttyFatalError(InitError);
     }
     FUI->Information(LoadStr(STATUS_CONNECT), true);
+    if (!Active && DebugAlwaysTrue(HasLocalProxy()))
+    {
+      FActive = true;
+    }
     Init();
 
     CheckConnection(CONNECTION_FAILED);
@@ -1614,6 +1618,11 @@ void __fastcall TSecureShell::SocketEventSelect(SOCKET Socket, HANDLE Event, boo
   }
 }
 //---------------------------------------------------------------------------
+bool TSecureShell::HasLocalProxy()
+{
+  return (FSessionData->ProxyMethod == pmCmd);
+}
+//---------------------------------------------------------------------------
 void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Enable)
 {
   if (!FActive && !Enable)
@@ -1637,7 +1646,7 @@ void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Enable)
     }
     else
     {
-      DebugAssert(FSessionData->ProxyMethod == pmCmd);
+      DebugAssert(HasLocalProxy());
     }
 
     if (Enable)
