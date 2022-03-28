@@ -1993,8 +1993,6 @@ bool __fastcall TSecureShell::ProcessNetworkEvents(SOCKET Socket)
 bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventRequired,
   WSANETWORKEVENTS * Events)
 {
-  CheckConnection();
-
   bool Result = false;
 
   do
