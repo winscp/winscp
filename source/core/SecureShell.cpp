@@ -2101,7 +2101,10 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
     }
     __finally
     {
-      handle_wait_list_free(WaitList);
+      if (WaitList != NULL)
+      {
+        handle_wait_list_free(WaitList);
+      }
     }
 
 
