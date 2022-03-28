@@ -2056,6 +2056,7 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
           LogEvent(L"Detected network event");
         }
 
+        DebugAssert(FSocket != INVALID_SOCKET);
         if (Events == NULL)
         {
           if (ProcessNetworkEvents(FSocket))
@@ -2123,7 +2124,8 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
       }
     }
 
-    if ((FSendBuf > 0) && (TicksAfter - FLastSendBufferUpdate >= 1000))
+    if ((FSocket != INVALID_SOCKET) &&
+        (FSendBuf > 0) && (TicksAfter - FLastSendBufferUpdate >= 1000))
     {
       DWORD BufferLen = 0;
       DWORD OutLen = 0;
