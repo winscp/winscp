@@ -179,7 +179,7 @@ public:
   UnicodeString __fastcall ConvertFromPutty(const char * Str, int Length);
   struct callback_set * GetCallbackSet();
 
-  __property bool Active = { read = FActive, write = SetActive };
+  __property bool Active = { read = FActive };
   __property bool Ready = { read = GetReady };
   __property TCaptureOutputEvent OnCaptureOutput = { read = FOnCaptureOutput, write = FOnCaptureOutput };
   __property TDateTime LastDataSent = { read = FLastDataSent };

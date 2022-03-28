@@ -83,7 +83,10 @@ __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
 __fastcall TSecureShell::~TSecureShell()
 {
   DebugAssert(FWaiting == 0);
-  Active = false;
+  if (Active)
+  {
+    Close();
+  }
   ResetConnection();
   CloseHandle(FSocketEvent);
 }
@@ -409,7 +412,7 @@ void __fastcall TSecureShell::Open()
   // do not use UTF-8 until decided otherwise (see TSCPFileSystem::DetectUtf())
   FUtfStrings = false;
 
-  Active = false;
+  FActive = false;
 
   FAuthenticationLog = L"";
   FNoConnectionResponse = false;
@@ -1666,21 +1669,6 @@ void __fastcall TSecureShell::UpdatePortFwdSocket(SOCKET value, bool Enable)
   else
   {
     FPortFwdSockets.erase(value);
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TSecureShell::SetActive(bool value)
-{
-  if (FActive != value)
-  {
-    if (value)
-    {
-      Open();
-    }
-    else
-    {
-      Close();
-    }
   }
 }
 //---------------------------------------------------------------------------
