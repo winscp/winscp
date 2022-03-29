@@ -775,7 +775,7 @@ static ssh2_userkey *openssh_pem_read(
          */
         assert(privptr > 0);          /* should have bombed by now if not */
         retkey = snew(ssh2_userkey);
-        alg = (key->keytype == OP_RSA ? &ssh_rsa : &ssh_dss);
+        alg = (key->keytype == OP_RSA ? &ssh_rsa : &ssh_dsa);
         retkey->key = ssh_key_new_priv(
             alg, make_ptrlen(blob->u, privptr),
             make_ptrlen(blob->u+privptr, blob->len-privptr));
@@ -841,11 +841,11 @@ static bool openssh_pem_write(
      * line.
      */
     if (ssh_key_alg(key->key) == &ssh_rsa ||
-        ssh_key_alg(key->key) == &ssh_dss) {
+        ssh_key_alg(key->key) == &ssh_dsa) {
         strbuf *seq;
 
         /*
-         * The RSA and DSS handlers share some code because the two
+         * The RSA and DSA handlers share some code because the two
          * key types have very similar ASN.1 representations, as a
          * plain SEQUENCE of big integers. So we set up a list of
          * bignums per key type and then construct the actual blob in
@@ -1363,9 +1363,8 @@ static ssh2_userkey *openssh_new_read(
             memset(keybuf, 0, keysize);
             break;
           case ON_K_BCRYPT:
-            openssh_bcrypt(passphrase,
-                           key->kdfopts.bcrypt.salt.ptr,
-                           key->kdfopts.bcrypt.salt.len,
+            openssh_bcrypt(ptrlen_from_asciz(passphrase),
+                           key->kdfopts.bcrypt.salt,
                            key->kdfopts.bcrypt.rounds,
                            keybuf, keysize);
             break;
@@ -1583,9 +1582,9 @@ static bool openssh_new_write(
             unsigned char keybuf[48];
             ssh_cipher *cipher;
 
-            openssh_bcrypt(passphrase,
-                           bcrypt_salt, sizeof(bcrypt_salt), bcrypt_rounds,
-                           keybuf, sizeof(keybuf));
+            openssh_bcrypt(ptrlen_from_asciz(passphrase),
+                           make_ptrlen(bcrypt_salt, sizeof(bcrypt_salt)),
+                           bcrypt_rounds, keybuf, sizeof(keybuf));
 
             cipher = ssh_cipher_new(&ssh_aes256_sdctr);
             ssh_cipher_setkey(cipher, keybuf);
@@ -1634,7 +1633,7 @@ static bool openssh_auto_write(
      * assume that anything not in that fixed list is newer, and hence
      * will use the new format.
      */
-    if (ssh_key_alg(key->key) == &ssh_dss ||
+    if (ssh_key_alg(key->key) == &ssh_dsa ||
         ssh_key_alg(key->key) == &ssh_rsa ||
         ssh_key_alg(key->key) == &ssh_ecdsa_nistp256 ||
         ssh_key_alg(key->key) == &ssh_ecdsa_nistp384 ||
@@ -2111,7 +2110,7 @@ static ssh2_userkey *sshcom_read(
             goto error;
         }
 
-        alg = &ssh_dss;
+        alg = &ssh_dsa;
         put_stringz(blob, "ssh-dss");
         put_mp_ssh2_from_string(blob, p);
         put_mp_ssh2_from_string(blob, q);
@@ -2202,7 +2201,7 @@ static bool sshcom_write(
         nnumbers = 6;
         initial_zero = false;
         type = "if-modn{sign{rsa-pkcs1-sha1},encrypt{rsa-pkcs1v2-oaep}}";
-    } else if (ssh_key_alg(key->key) == &ssh_dss) {
+    } else if (ssh_key_alg(key->key) == &ssh_dsa) {
         ptrlen p, q, g, y, x;
 
         /*

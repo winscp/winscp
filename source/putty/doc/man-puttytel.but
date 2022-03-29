@@ -56,7 +56,7 @@ will be ignored unless the \cw{BoldAsColour} resource is set to 0 or 2.
 \dt \cw{\-geometry} \e{geometry}
 
 \dd Specify the size of the terminal, in rows and columns of text. See
-\e{X(7)} for more information on the syntax of geometry
+\cw{X}(\e{7}) for more information on the syntax of geometry
 specifications.
 
 \dt \cw{\-sl} \e{lines}

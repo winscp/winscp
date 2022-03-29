@@ -563,7 +563,7 @@ const ssh_keyalg *const all_keyalgs[] = {
     &ssh_rsa,
     &ssh_rsa_sha256,
     &ssh_rsa_sha512,
-    &ssh_dss,
+    &ssh_dsa,
     &ssh_ecdsa_nistp256,
     &ssh_ecdsa_nistp384,
     &ssh_ecdsa_nistp521,
@@ -1550,33 +1550,33 @@ strbuf *ppk_save_sb(ssh2_userkey *key, const char *passphrase,
     }
 
     strbuf *out = strbuf_new_nm();
-    strbuf_catf(out, "PuTTY-User-Key-File-%u: %s\n",
-                params.fmt_version, ssh_key_ssh_id(key->key));
-    strbuf_catf(out, "Encryption: %s\n", cipherstr);
-    strbuf_catf(out, "Comment: %s\n", key->comment);
-    strbuf_catf(out, "Public-Lines: %d\n", base64_lines(pub_blob->len));
+    put_fmt(out, "PuTTY-User-Key-File-%u: %s\n",
+            params.fmt_version, ssh_key_ssh_id(key->key));
+    put_fmt(out, "Encryption: %s\n", cipherstr);
+    put_fmt(out, "Comment: %s\n", key->comment);
+    put_fmt(out, "Public-Lines: %d\n", base64_lines(pub_blob->len));
     base64_encode_s(BinarySink_UPCAST(out), pub_blob->u, pub_blob->len, 64);
     if (params.fmt_version == 3 && ciphertype->keylen != 0) {
-        strbuf_catf(out, "Key-Derivation: %s\n",
-                    params.argon2_flavour == Argon2d ? "Argon2d" :
-                    params.argon2_flavour == Argon2i ? "Argon2i" : "Argon2id");
-        strbuf_catf(out, "Argon2-Memory: %"PRIu32"\n", params.argon2_mem);
+        put_fmt(out, "Key-Derivation: %s\n",
+                params.argon2_flavour == Argon2d ? "Argon2d" :
+                params.argon2_flavour == Argon2i ? "Argon2i" : "Argon2id");
+        put_fmt(out, "Argon2-Memory: %"PRIu32"\n", params.argon2_mem);
         assert(!params.argon2_passes_auto);
-        strbuf_catf(out, "Argon2-Passes: %"PRIu32"\n", params.argon2_passes);
-        strbuf_catf(out, "Argon2-Parallelism: %"PRIu32"\n",
-                    params.argon2_parallelism);
-        strbuf_catf(out, "Argon2-Salt: ");
+        put_fmt(out, "Argon2-Passes: %"PRIu32"\n", params.argon2_passes);
+        put_fmt(out, "Argon2-Parallelism: %"PRIu32"\n",
+                params.argon2_parallelism);
+        put_fmt(out, "Argon2-Salt: ");
         for (size_t i = 0; i < passphrase_salt->len; i++)
-            strbuf_catf(out, "%02x", passphrase_salt->u[i]);
-        strbuf_catf(out, "\n");
+            put_fmt(out, "%02x", passphrase_salt->u[i]);
+        put_fmt(out, "\n");
     }
-    strbuf_catf(out, "Private-Lines: %d\n", base64_lines(priv_encrypted_len));
+    put_fmt(out, "Private-Lines: %d\n", base64_lines(priv_encrypted_len));
     base64_encode_s(BinarySink_UPCAST(out),
                     priv_blob_encrypted, priv_encrypted_len, 64);
-    strbuf_catf(out, "Private-MAC: ");
+    put_fmt(out, "Private-MAC: ");
     for (i = 0; i < macalg->len; i++)
-        strbuf_catf(out, "%02x", priv_mac[i]);
-    strbuf_catf(out, "\n");
+        put_fmt(out, "%02x", priv_mac[i]);
+    put_fmt(out, "\n");
 
     strbuf_free(cipher_mac_keys_blob);
     strbuf_free(passphrase_salt);
@@ -1740,7 +1740,7 @@ static void ssh2_fingerprint_blob_md5(ptrlen blob, strbuf *sb)
 
     hash_simple(&ssh_md5, blob, digest);
     for (unsigned i = 0; i < 16; i++)
-        strbuf_catf(sb, "%02x%s", digest[i], i==15 ? "" : ":");
+        put_fmt(sb, "%02x%s", digest[i], i==15 ? "" : ":");
 }
 
 static void ssh2_fingerprint_blob_sha256(ptrlen blob, strbuf *sb)
@@ -1778,9 +1778,9 @@ char *ssh2_fingerprint_blob(ptrlen blob, FingerprintType fptype)
         const ssh_keyalg *alg = find_pubkey_alg_len(algname);
         if (alg) {
             int bits = ssh_key_public_bits(alg, blob);
-            strbuf_catf(sb, "%.*s %d ", PTRLEN_PRINTF(algname), bits);
+            put_fmt(sb, "%.*s %d ", PTRLEN_PRINTF(algname), bits);
         } else {
-            strbuf_catf(sb, "%.*s ", PTRLEN_PRINTF(algname));
+            put_fmt(sb, "%.*s ", PTRLEN_PRINTF(algname));
         }
     }
 

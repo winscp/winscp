@@ -258,6 +258,12 @@ mp_int *mp_div(mp_int *n, mp_int *d);
 mp_int *mp_mod(mp_int *x, mp_int *modulus);
 
 /*
+ * Compute the residue of x mod m, where m is a small integer. x is
+ * kept secret, but m is not.
+ */
+uint32_t mp_mod_known_integer(mp_int *x, uint32_t m);
+
+/*
  * Integer nth root. mp_nthroot returns the largest integer x such
  * that x^n <= y, and if 'remainder' is non-NULL then it fills it with
  * the residue (y - x^n).
@@ -422,10 +428,10 @@ mp_int *mp_rshift_fixed(mp_int *x, size_t shift);
  *
  * The _function_ definitions here will expect to be given a gen_data
  * function that provides random data. Normally you'd use this using
- * random_read() from random.c, and the macro wrappers automate that.
+ * random_read() from sshrand.c, and the macro wrappers automate that.
  *
  * (This is a bit of a dodge to avoid mpint.c having a link-time
- * dependency on random.c, so that programs can link against one but
+ * dependency on sshrand.c, so that programs can link against one but
  * not the other: if a client of this header uses one of these macros
  * then _they_ have link-time dependencies on both modules.)
  *

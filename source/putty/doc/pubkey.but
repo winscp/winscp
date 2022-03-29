@@ -56,7 +56,7 @@ and convenience. See \k{pageant} for further details.
 
 There is more than one \i{public-key algorithm} available. The most
 common are \i{RSA} and \i{ECDSA}, but others exist, notably \i{DSA}
-(otherwise known as DSS), the USA's federal Digital Signature Standard.
+(otherwise known as \i{DSS}), the USA's federal Digital Signature Standard.
 The key types supported by PuTTY are described in \k{puttygen-keytype}.
 
 \H{pubkey-puttygen} Using \i{PuTTYgen}, the PuTTY key generator
@@ -176,6 +176,15 @@ The other methods cause PuTTYgen to use numbers that it is \e{sure}
 are prime, because it generates the output number together with a
 proof of its primality. This takes more effort, but it eliminates that
 theoretical risk in the probabilistic method.
+
+There in one way in which PuTTYgen's \q{proven primes} method is not
+strictly better than its \q{probable primes} method. If you use
+PuTTYgen to generate an RSA key on a computer that is potentially
+susceptible to timing- or cache-based \i{side-channel attacks}, such
+as a shared computer, the \q{probable primes} method is designed to
+resist such attacks, whereas the \q{proven primes} methods are not.
+(This is only a concern for RSA keys; for other key types, primes
+are either not secret or not involved.)
 
 You might choose to switch from probable to proven primes if you have
 a local security standard that demands it, or if you don't trust the
@@ -389,8 +398,8 @@ These options only affect PPK version 3.
 \dt Key derivation function
 
 \dd The variant of the \i{Argon2} key derivation function to use.
-You might change this if you consider your exposure to side-channel
-attacks to be different to the norm.
+You might change this if you consider your exposure to \i{side-channel
+attacks} to be different to the norm.
 
 \dt Memory to use for passphrase hash
 
@@ -468,6 +477,77 @@ you have generated an SSH-1 private key using OpenSSH or
 \cw{ssh.com}'s client, you can use it with PuTTY, and vice versa.
 Hence, the export options are not available if you have generated an
 SSH-1 key.
+
+\S{puttygen-cli} PuTTYgen command-line configuration
+
+PuTTYgen supports a set of command-line options to configure many of
+the same settings you can select in the GUI. This allows you to start
+it up with your own preferences ready-selected, which might be useful
+if you generate a lot of keys. (For example, you could make a Windows
+shortcut that runs PuTTYgen with some command line options, or a batch
+file or Powershell script that you could distribute to a whole
+organisation containing your local standards.)
+
+The options supported on the command line are:
+
+\dt \cw{\-t} \e{keytype}
+
+\dd Type of key to generate. You can select \c{rsa}, \c{dsa},
+\c{ecdsa}, \c{eddsa} or \c{rsa1}. See \k{puttygen-keytype}.
+
+\dt \cw{\-b} \e{bits}
+
+\dd Size of the key to generate, in bits. See \k{puttygen-strength}.
+
+\dt \cw{\-\-primes} \e{method}
+
+\dd Method for generating prime numbers. You can select \c{probable},
+\c{proven}, and \c{proven-even}. See \k{puttygen-primes}.
+
+\dt \cw{\-\-strong-rsa}
+
+\dd When generating an RSA key, make sure the prime factors of the key
+modulus are \q{strong primes}. See \k{puttygen-primes}.
+
+\dt \cw{\-\-ppk-param} \e{key}\cw{=}\e{value}\cw{,}...
+
+\dd Allows setting all the same details of the PPK save file format
+described in \k{puttygen-save-params}.
+
+\lcont{
+
+Aspects to change are specified as a series of \e{key}\cw{=}\e{value} pairs
+separated by commas. The \e{key}s are:
+
+\dt \cw{version}
+
+\dd The PPK format version: either \cw{3} or \cw{2}.
+
+\dt \cw{kdf}
+
+\dd The variant of Argon2 to use: \cw{argon2id}, \cw{argon2i}, and
+\cw{argon2d}.
+
+\dt \cw{memory}
+
+\dd The amount of memory needed to decrypt the key, in Kbyte.
+
+\dt \cw{time}
+
+\dd Specifies how much time is required to attempt decrypting the key,
+in milliseconds.
+
+\dt \cw{passes}
+
+\dd Alternative to \cw{time}: specifies the number of hash passes
+required to attempt decrypting the key.
+
+\dt \cw{parallelism}
+
+\dd Number of parallelisable threads that can be used to decrypt the
+key.
+
+}
 
 \H{pubkey-gettingready} Getting ready for public key authentication
 

@@ -61,7 +61,7 @@ use Plink:
 \c   -sercfg configuration-string (e.g. 19200,8,n,1,X)
 \c             Specify the serial configuration (serial only)
 \c The following options only apply to SSH connections:
-\c   -pw passw login with specified password
+\c   -pwfile file   login with password read from specified file
 \c   -D [listen-IP:]listen-port
 \c             Dynamic SOCKS-based port forwarding
 \c   -L [listen-IP:]listen-port:host:port

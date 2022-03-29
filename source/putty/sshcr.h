@@ -18,7 +18,6 @@
  * Edit and Continue debugging feature causes their compiler to
  * violate ANSI C. To disable Edit and Continue debugging:
  *
- *  - right-click ssh.c in the FileView
  *  - click Settings
  *  - select the C/C++ tab and the General category
  *  - under `Debug info:', select anything _other_ than `Program

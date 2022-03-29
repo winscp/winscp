@@ -50,8 +50,9 @@ section.
 If you are using SSH to connect to a server for the first time, you
 will probably see a message looking something like this:
 
-\c The server's host key is not cached in the registry. You have no
-\c guarantee that the server is the computer you think it is.
+\c The host key is not cached for this server:
+\c  ssh.example.com (port 22)
+\c You have no guarantee that the server is the computer you think it is.
 \c The server's ssh-ed25519 key fingerprint is:
 \c  ssh-ed25519 255 SHA256:TddlQk20DVs4LRcAsIfDN9pInKpY06D+h4kSHwWAj4w
 \c If you trust this host, press "Accept" to add the key to PuTTY's
