@@ -33,6 +33,7 @@ public:
       t_date();
       int year,month,day,hour,minute,second;
       bool hastime;
+      bool hasyear; // ignored and assumed true when hasseconds
       bool hasseconds;
       bool hasdate;
       bool utc;

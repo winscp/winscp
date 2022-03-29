@@ -141,7 +141,8 @@ enum TPromptKind
   pkCryptoCard,
   pkKeybInteractive,
   pkPassword,
-  pkNewPassword
+  pkNewPassword,
+  pkProxyAuth
 };
 
 enum TPromptUserParam { pupEcho = 0x01, pupRemember = 0x02 };

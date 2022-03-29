@@ -1021,6 +1021,7 @@ TDateTime __fastcall TUnixDirView::ItemFileTime(TListItem * Item,
       break;
 
     case mfMDHM:
+    case mfYMDHM:
       Precision = tpMinute;
       break;
 

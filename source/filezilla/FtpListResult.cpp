@@ -674,6 +674,7 @@ bool CFtpListResult::ParseShortDate(const char *str, int len, t_directory::t_dir
   }
 
   date.hasdate = TRUE;
+  date.hasyear = TRUE;
   return true;
 }
 
@@ -803,6 +804,7 @@ BOOL CFtpListResult::parseAsVMS(const char *line, const int linelen, t_directory
   p++;
 
   dir.date.year = static_cast<int>(strntoi64(p, tokenlen - (p - str)));
+  dir.date.hasyear = TRUE;
 
   //Get time
   str = GetNextToken(line, linelen, tokenlen, pos, 0);
@@ -1169,6 +1171,7 @@ bool CFtpListResult::parseMlsdDateTime(const CString value, t_directory::t_diren
   if (result)
   {
     date.year = Year;
+    date.hasyear = TRUE;
     date.month = Month;
     date.day = Day;
     date.hour = Hours;
@@ -1177,6 +1180,32 @@ bool CFtpListResult::parseMlsdDateTime(const CString value, t_directory::t_diren
     date.utc = TRUE;
   }
   return result;
+}
+
+void CFtpListResult::GuessYearIfUnknown(t_directory::t_direntry::t_date & Date)
+{
+  // Problem: Some servers use times only for files newer than 6 months,
+  // others use one year as limit. IIS shows time for files from the current year (jan-dec).
+  // So there is no support for files with time
+  // dated in the near future. Under normal conditions there should not be such files.
+  if (!Date.year) // might use direntry.date.hasyear now?
+  {
+    CTime curtime = CTime::GetCurrentTime();
+    int curday = curtime.GetDay();
+    int curmonth = curtime.GetMonth();
+    int curyear = curtime.GetYear();
+    int now = curmonth * 31 + curday;
+    int file = Date.month * 31 + Date.day;
+    if ((now + 1) >= file)
+    {
+      Date.year = curyear;
+    }
+    else
+    {
+      Date.year = curyear - 1;
+    }
+    // year is guessed, not setting hasyear
+  }
 }
 
 BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_directory::t_direntry &direntry)
@@ -1467,6 +1496,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
     else if (p-smonth == 4) //2002-10-14
     {
       direntry.date.year = static_cast<int>(strntoi64(smonth, p-smonth));
+      direntry.date.hasyear = TRUE;
       sday = pos2 + 1;
       sdaylen = smonthlen - (pos2 - smonth) - 1;
       smonthlen = pos2-smonth - (p-smonth) - 1;
@@ -1488,6 +1518,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
     else if (p-smonth) //14-10-2002 or 01-jun-99
     {
       direntry.date.year = static_cast<int>(strntoi64(pos2+1, tokenlen - (pos2-smonth) - 1));
+      direntry.date.hasyear = TRUE;
       sday = smonth;
       sdaylen = p - smonth;
       smonthlen = pos2-smonth - (p-smonth) - 1;
@@ -1529,6 +1560,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
     else if (p-smonth==4)
     {
       direntry.date.year = static_cast<int>(strntoi64(smonth, p-smonth));
+      direntry.date.hasyear = TRUE;
       sday = pos2 + 1;
       sdaylen = smonthlen - (pos2 - smonth) - 1;
       smonthlen = pos2-smonth - (p-smonth) - 1;
@@ -1550,6 +1582,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
     else if (p-smonth==2)
     {
       direntry.date.year = static_cast<int>(strntoi64(pos2+1, tokenlen - (pos2-smonth) - 1));
+      direntry.date.hasyear = TRUE;
       sday = smonth;
       sdaylen = p - smonth;
       smonthlen = pos2-smonth - (p-smonth) - 1;
@@ -1652,6 +1685,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
   {
     gotYear = true;
     direntry.date.year = year;
+    direntry.date.hasyear = TRUE;
   }
   else
   {
@@ -1729,23 +1763,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
     }
     direntry.date.hastime = TRUE;
 
-    //Problem: Some servers use times only for files newer than 6 months,
-    //others use one year as limit. IIS shows time for files from the current year (jan-dec).
-    //So there is no support for files with time
-    //dated in the near future. Under normal conditions there should not be such files.
-    if (!direntry.date.year)
-    {
-      CTime curtime = CTime::GetCurrentTime();
-      int curday = curtime.GetDay();
-      int curmonth = curtime.GetMonth();
-      int curyear = curtime.GetYear();
-      int now = curmonth*31+curday;
-      int file = direntry.date.month*31+direntry.date.day;
-      if ((now+1)>=file)
-        direntry.date.year = curyear;
-      else
-        direntry.date.year = curyear-1;
-    }
+    GuessYearIfUnknown(direntry.date);
     bCouldBeVShell = FALSE;
   }
   else
@@ -1758,12 +1776,13 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
         return false;
       }
     }
-    else if (!direntry.date.year)
+    else if (!direntry.date.year) // might use direntry.date.hasyear now?
     {
       //No delimiters -> year
 
       direntry.date.hastime = FALSE;
       direntry.date.year = static_cast<int>(strntoi64(stimeyear, stimeyearlen));
+      direntry.date.hasyear = TRUE;
     }
     else
     {
@@ -1772,7 +1791,7 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
     }
   }
 
-  if (!direntry.date.year) //Year 0? Really ancient file, this is invalid!
+  if (!direntry.date.year) //Year 0? Really ancient file, this is invalid! might use direntry.date.hasyear now?
   {
     return FALSE;
   }
@@ -1918,6 +1937,7 @@ void CFtpListResult::TimeTToDate(time_t TimeT, t_directory::t_direntry::t_date &
 {
   tm * sTime = gmtime(&TimeT);
   Date.year = sTime->tm_year + 1900;
+  Date.hasyear = TRUE;
   Date.month = sTime->tm_mon+1;
   Date.day = sTime->tm_mday;
   Date.hour = sTime->tm_hour;
@@ -2044,22 +2064,7 @@ BOOL CFtpListResult::parseAsOther(const char *line, const int linelen, t_directo
         direntry.date.minute = static_cast<int>(strntoi64(strpos+1, tokenlen - (strpos - str) - 1));
         direntry.date.hastime = TRUE;
 
-        //Problem: Some servers use times only for files newer than 6 months,
-        //others use one year as limit. So there is no support for files with time
-        //dated in the near future. Under normal conditions there should not be such files
-        if (!direntry.date.year)
-        {
-          CTime curtime = CTime::GetCurrentTime();
-          int curday = curtime.GetDay();
-          int curmonth = curtime.GetMonth();
-          int curyear = curtime.GetYear();
-          int now = curmonth*31+curday;
-          int file = direntry.date.month*31+direntry.date.day;
-          if ((now+1)>=file)
-            direntry.date.year = curyear;
-          else
-            direntry.date.year = curyear-1;
-        }
+        GuessYearIfUnknown(direntry.date);
       }
 
       str = GetNextToken(line, linelen, tokenlen, pos, 1);
@@ -2111,6 +2116,7 @@ BOOL CFtpListResult::parseAsOther(const char *line, const int linelen, t_directo
         return FALSE;
 
       direntry.date.year = static_cast<int>(strntoi64(str, tokenlen));
+      direntry.date.hasyear = TRUE;
       if (direntry.date.year < 50)
         direntry.date.year += 2000;
       else if (direntry.date.year < 1000)

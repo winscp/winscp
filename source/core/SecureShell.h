@@ -76,6 +76,7 @@ private:
   ScpLogPolicy * FLogPolicy;
   ScpSeat * FSeat;
   LogContext * FLogCtx;
+  std::set<UnicodeString> FLoggedKnownHostKeys;
 
   void __fastcall Init();
   void __fastcall SetActive(bool value);
@@ -110,6 +111,7 @@ private:
     const UnicodeString & StoredKeys, const UnicodeString & KeyStr, const UnicodeString & FingerprintMD5, const UnicodeString & FingerprintSHA256);
   UnicodeString StoreHostKey(
     const UnicodeString & Host, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr);
+  bool HasLocalProxy();
 
 protected:
   TCaptureOutputEvent FOnCaptureOutput;
@@ -178,7 +180,7 @@ public:
   UnicodeString __fastcall ConvertFromPutty(const char * Str, int Length);
   struct callback_set * GetCallbackSet();
 
-  __property bool Active = { read = FActive, write = SetActive };
+  __property bool Active = { read = FActive };
   __property bool Ready = { read = GetReady };
   __property TCaptureOutputEvent OnCaptureOutput = { read = FOnCaptureOutput, write = FOnCaptureOutput };
   __property TDateTime LastDataSent = { read = FLastDataSent };

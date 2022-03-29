@@ -527,7 +527,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           object ShowEncryptionKeyCheck: TCheckBox
             Left = 12
             Top = 61
-            Width = 97
+            Width = 117
             Height = 17
             Caption = '&Show key'
             TabOrder = 2
@@ -2327,7 +2327,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnChange = DataChange
           end
           object PrivateKeyToolsButton: TButton
-            Left = 151
+            Left = 201
             Top = 86
             Width = 101
             Height = 25
@@ -2338,7 +2338,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           object PrivateKeyViewButton: TButton
             Left = 12
             Top = 86
-            Width = 133
+            Width = 183
             Height = 25
             Caption = '&Display Public Key'
             TabOrder = 2

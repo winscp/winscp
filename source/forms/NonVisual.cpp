@@ -1149,7 +1149,9 @@ static void GiveItemPriority(TTBCustomItem * Item)
 {
   DebugAssert(Item->GetTopComponent() != NULL);
   TTBCustomToolbar * ToolbarComponent = dynamic_cast<TTBCustomToolbar *>(Item->GetTopComponent());
-  if (ToolbarComponent != NULL)
+  if ((ToolbarComponent != NULL) &&
+      // Only for top-level buttons on custom command toolbar, not for submenus of the custom commands menu in the main menu
+      (Item->Parent == ToolbarComponent->Items))
   {
     TTBItemViewer * Viewer = ToolbarComponent->View->Find(Item);
     ToolbarComponent->View->GivePriority(Viewer);

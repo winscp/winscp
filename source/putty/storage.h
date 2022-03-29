@@ -85,8 +85,8 @@ int retrieve_host_key(const char *hostname, int port,
  * be 0 (entry matches database), 1 (entry is absent in database),
  * or 2 (entry exists in database and is different).
  */
-int verify_host_key(const char *hostname, int port,
-                    const char *keytype, const char *key);
+int check_stored_host_key(const char *hostname, int port,
+                          const char *keytype, const char *key);
 #endif
 
 /*

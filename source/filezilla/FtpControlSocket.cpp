@@ -4416,6 +4416,7 @@ bool CFtpControlSocket::HandleMdtm(int code, t_directory::t_direntry::t_date & d
             date.minute = m;
             date.second = s;
             date.hastime = true;
+            date.hasyear = true;
             date.hasseconds = hasseconds;
             date.hasdate = true;
             date.utc = true;

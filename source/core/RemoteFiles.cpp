@@ -407,6 +407,7 @@ TDateTime __fastcall ReduceDateTimePrecision(TDateTime DateTime,
     DecodeTime(DateTime, H, N, S, MS);
     switch (Precision)
     {
+      case mfYMDHM:
       case mfMDHM:
         S = 0;
         MS = 0;
@@ -443,6 +444,7 @@ UnicodeString __fastcall UserModificationStr(TDateTime DateTime,
       return L"";
     case mfMDY:
       return FormatDateTime(L"ddddd", DateTime);
+    case mfYMDHM:
     case mfMDHM:
       return FormatDateTime(L"ddddd t", DateTime);
     case mfFull:
@@ -468,6 +470,10 @@ UnicodeString __fastcall ModificationStr(TDateTime DateTime,
     case mfMDHM:
       return FORMAT(L"%3s %2d %2d:%2.2d",
         (EngShortMonthNames[Month-1], Day, Hour, Min));
+
+    case mfYMDHM:
+      return FORMAT(L"%3s %2d %2d:%2.2d %4d",
+        (EngShortMonthNames[Month-1], Day, Hour, Min, Year));
 
     default:
       DebugFail();
@@ -1024,7 +1030,7 @@ bool __fastcall TRemoteFile::IsTimeShiftingApplicable()
 //---------------------------------------------------------------------------
 bool __fastcall TRemoteFile::IsTimeShiftingApplicable(TModificationFmt ModificationFmt)
 {
-  return (ModificationFmt == mfMDHM) || (ModificationFmt == mfFull);
+  return (ModificationFmt == mfMDHM) || (ModificationFmt == mfYMDHM) || (ModificationFmt == mfFull);
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteFile::ShiftTimeInSeconds(__int64 Seconds)
@@ -1296,7 +1302,7 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
             {
               Year = (Word)StrToInt(Col);
               if (Year > 10000) Abort();
-              // When we don't got time we assume midnight
+              // When we didn't get time we assume midnight
               Hour = 0; Min = 0; Sec = 0;
               FModificationFmt = mfMDY;
             }
@@ -1306,7 +1312,9 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
         FModification = EncodeDateVerbose(Year, Month, Day) + EncodeTimeVerbose(Hour, Min, Sec, 0);
         // adjust only when time is known,
         // adjusting default "midnight" time makes no sense
-        if ((FModificationFmt == mfMDHM) || (FModificationFmt == mfFull))
+        if ((FModificationFmt == mfMDHM) ||
+             DebugAlwaysFalse(FModificationFmt == mfYMDHM) ||
+             (FModificationFmt == mfFull))
         {
           DebugAssert(Terminal != NULL);
           FModification = AdjustDateTimeFromUnix(FModification,

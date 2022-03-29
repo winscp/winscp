@@ -52,6 +52,7 @@ __fastcall TCustomUnixDriveView::TCustomUnixDriveView(TComponent* Owner) :
   FDummyDragFile = NULL;
   FPendingDelete = new TList();
   FDragDropFilesEx->PreferCopy = true;
+  FChangingDirectory = false;
 }
 //---------------------------------------------------------------------------
 __fastcall TCustomUnixDriveView::~TCustomUnixDriveView()
@@ -473,6 +474,13 @@ void __fastcall TCustomUnixDriveView::Delete(TTreeNode * Node)
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCustomUnixDriveView::CanChange(TTreeNode * Node)
+{
+  return
+    TCustomDriveView::CanChange(Node) &&
+    !FChangingDirectory;
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
 {
   #ifndef DESIGN_ONLY
@@ -512,7 +520,13 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
         }
         try
         {
-          Terminal->ChangeDirectory(NodePathName(Node));
+          {
+            // Prevent curther changes while loading the folder.
+            // Particularly prevent user from trying to proceed with incremental search.
+            TValueRestorer<bool> ChangingDirectoryRestorer(FChangingDirectory);
+            FChangingDirectory = true;
+            Terminal->ChangeDirectory(NodePathName(Node));
+          }
           TCustomDriveView::Change(Node);
         }
         __finally

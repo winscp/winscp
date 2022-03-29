@@ -77,15 +77,16 @@ __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
   FWaitingForData = 0;
   FCallbackSet.reset(new callback_set());
   memset(FCallbackSet.get(), 0, sizeof(callback_set));
-  FCallbackSet->handles_by_evtomain = new_handles_by_evtomain();
+  FCallbackSet->ready_event = INVALID_HANDLE_VALUE;
 }
 //---------------------------------------------------------------------------
 __fastcall TSecureShell::~TSecureShell()
 {
-  freetree234(FCallbackSet->handles_by_evtomain);
-  FCallbackSet->handles_by_evtomain = NULL;
   DebugAssert(FWaiting == 0);
-  Active = false;
+  if (Active)
+  {
+    Close();
+  }
   ResetConnection();
   CloseHandle(FSocketEvent);
 }
@@ -115,6 +116,7 @@ void __fastcall TSecureShell::ResetConnection()
   }
   FLogCtx = NULL;
   FClosed = false;
+  FLoggedKnownHostKeys.clear();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::ResetSessionInfo()
@@ -410,7 +412,7 @@ void __fastcall TSecureShell::Open()
   // do not use UTF-8 until decided otherwise (see TSCPFileSystem::DetectUtf())
   FUtfStrings = false;
 
-  Active = false;
+  FActive = false;
 
   FAuthenticationLog = L"";
   FNoConnectionResponse = false;
@@ -446,6 +448,10 @@ void __fastcall TSecureShell::Open()
       PuttyFatalError(InitError);
     }
     FUI->Information(LoadStr(STATUS_CONNECT), true);
+    if (!Active && DebugAlwaysTrue(HasLocalProxy()))
+    {
+      FActive = true;
+    }
     Init();
 
     CheckConnection(CONNECTION_FAILED);
@@ -702,6 +708,7 @@ TPromptKind __fastcall TSecureShell::IdentifyPromptKind(UnicodeString & Name)
     { L"SSH server authentication", SERVER_PROMPT_TITLE },
     { L"SSH password", PASSWORD_TITLE },
     { L"New SSH password", NEW_PASSWORD_TITLE },
+    { L"SOCKS proxy authentication", PROXY_AUTH_TITLE },
   };
 
   int Index = TranslatePuttyMessage(NameTranslation, LENOF(NameTranslation), Name);
@@ -734,6 +741,10 @@ TPromptKind __fastcall TSecureShell::IdentifyPromptKind(UnicodeString & Name)
   else if (Index == 7)
   {
     PromptKind = pkNewPassword;
+  }
+  else if (Index == 8)
+  {
+    PromptKind = pkProxyAuth;
   }
   else
   {
@@ -839,6 +850,16 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
     PromptTranslationCount = LENOF(NewPasswordPromptTranslation);
     PromptDesc = L"new password";
   }
+  else if (PromptKind == pkProxyAuth)
+  {
+    static const TPuttyTranslation ProxyAuthPromptTranslation[] = {
+      { L"Proxy username: ", PROXY_AUTH_USERNAME_PROMPT },
+      { L"Proxy password: ", PROXY_AUTH_PASSWORD_PROMPT },
+    };
+    PromptTranslation = ProxyAuthPromptTranslation;
+    PromptTranslationCount = LENOF(ProxyAuthPromptTranslation);
+    PromptDesc = L"proxy authentication";
+  }
   else
   {
     PromptDesc = L"unknown";
@@ -849,7 +870,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
     (Instructions.IsEmpty() ? UnicodeString(L"<no instructions>") : FORMAT(L"\"%s\"", (Instructions)));
   UnicodeString PromptsLog =
     (Prompts->Count > 0 ? FORMAT(L"\"%s\"", (Prompts->Strings[0])) : UnicodeString(L"<no prompt>")) +
-    (Prompts->Count > 1 ? FORMAT(L"%d more", (Prompts->Count - 1)) : UnicodeString());
+    (Prompts->Count > 1 ? FORMAT(L" + %d more", (Prompts->Count - 1)) : UnicodeString());
   LogEvent(FORMAT(L"Prompt (%s, \"%s\", %s, %s)", (PromptDesc, AName, InstructionsLog, PromptsLog)));
 
   Name = Name.Trim();
@@ -1339,7 +1360,8 @@ void __fastcall TSecureShell::DispatchSendBuffer(int BufSize)
 void __fastcall TSecureShell::Send(const unsigned char * Buf, Integer Len)
 {
   CheckConnection();
-  int BufSize = backend_send(FBackendHandle, const_cast<char *>(reinterpret_cast<const char *>(Buf)), Len);
+  backend_send(FBackendHandle, const_cast<char *>(reinterpret_cast<const char *>(Buf)), Len);
+  int BufSize = backend_sendbuffer(FBackendHandle);
   if (Configuration->ActualLogProtocol >= 1)
   {
     LogEvent(FORMAT(L"Sent %u bytes", (static_cast<int>(Len))));
@@ -1596,6 +1618,11 @@ void __fastcall TSecureShell::SocketEventSelect(SOCKET Socket, HANDLE Event, boo
   }
 }
 //---------------------------------------------------------------------------
+bool TSecureShell::HasLocalProxy()
+{
+  return (FSessionData->ProxyMethod == pmCmd);
+}
+//---------------------------------------------------------------------------
 void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Enable)
 {
   if (!FActive && !Enable)
@@ -1619,7 +1646,7 @@ void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Enable)
     }
     else
     {
-      DebugAssert(FSessionData->ProxyMethod == pmCmd);
+      DebugAssert(HasLocalProxy());
     }
 
     if (Enable)
@@ -1654,21 +1681,6 @@ void __fastcall TSecureShell::UpdatePortFwdSocket(SOCKET value, bool Enable)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::SetActive(bool value)
-{
-  if (FActive != value)
-  {
-    if (value)
-    {
-      Open();
-    }
-    else
-    {
-      Close();
-    }
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TSecureShell::FreeBackend()
 {
   if (FBackendHandle != NULL)
@@ -1696,6 +1708,25 @@ void __fastcall TSecureShell::FreeBackend()
       DebugAssert(FCallbackSet->pktin_freeq_head->next == FCallbackSet->pktin_freeq_head);
       sfree(FCallbackSet->pktin_freeq_head);
       FCallbackSet->pktin_freeq_head = NULL;
+    }
+
+    if (FCallbackSet->handlewaits_tree_real != NULL)
+    {
+      DebugAssert(count234(FCallbackSet->handlewaits_tree_real) <= 1);
+      while (count234(FCallbackSet->handlewaits_tree_real) > 0)
+      {
+        HandleWait * AHandleWait = static_cast<HandleWait *>(index234(FCallbackSet->handlewaits_tree_real, 0));
+        delete_handle_wait(FCallbackSet.get(), AHandleWait);
+      }
+
+      freetree234(FCallbackSet->handlewaits_tree_real);
+      FCallbackSet->handlewaits_tree_real = NULL;
+    }
+
+    if (FCallbackSet->ready_event != INVALID_HANDLE_VALUE)
+    {
+      CloseHandle(FCallbackSet->ready_event);
+      FCallbackSet->ready_event = INVALID_HANDLE_VALUE;
     }
   }
 }
@@ -1971,8 +2002,6 @@ bool __fastcall TSecureShell::ProcessNetworkEvents(SOCKET Socket)
 bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventRequired,
   WSANETWORKEVENTS * Events)
 {
-  CheckConnection();
-
   bool Result = false;
 
   do
@@ -1982,8 +2011,8 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
       LogEvent(L"Looking for network events");
     }
     unsigned int TicksBefore = GetTickCount();
-    int HandleCount;
-    HANDLE * Handles = NULL;
+    HandleWaitList * WaitList = NULL;
+
     try
     {
       unsigned int Timeout = MSec;
@@ -1998,15 +2027,15 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
           TimeoutStep = 0;
         }
         Timeout -= TimeoutStep;
-        if (Handles != NULL)
+        if (WaitList != NULL)
         {
-          sfree(Handles);
+          handle_wait_list_free(WaitList);
         }
         // It returns only busy handles, so the set can change with every call to run_toplevel_callbacks.
-        Handles = handle_get_events(FCallbackSet->handles_by_evtomain, &HandleCount);
-        Handles = sresize(Handles, HandleCount + 1, HANDLE);
-        Handles[HandleCount] = FSocketEvent;
-        WaitResult = WaitForMultipleObjects(HandleCount + 1, Handles, FALSE, TimeoutStep);
+        WaitList = get_handle_wait_list(FCallbackSet.get());
+        DebugAssert(WaitList->nhandles < MAXIMUM_WAIT_OBJECTS);
+        WaitList->handles[WaitList->nhandles] = FSocketEvent;
+        WaitResult = WaitForMultipleObjects(WaitList->nhandles + 1, WaitList->handles, FALSE, TimeoutStep);
         FUI->ProcessGUI();
         // run_toplevel_callbacks can cause processing of pending raw data, so:
         // 1) Check for changes in our pending buffer - wait criteria in Receive()
@@ -2022,20 +2051,21 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
         }
       } while ((WaitResult == WAIT_TIMEOUT) && (Timeout > 0) && !Result);
 
-      if (WaitResult < WAIT_OBJECT_0 + HandleCount)
+      if (WaitResult < WAIT_OBJECT_0 + WaitList->nhandles)
       {
-        if (handle_got_event(FCallbackSet->handles_by_evtomain, Handles[WaitResult - WAIT_OBJECT_0]))
+        if (handle_wait_activate(FCallbackSet.get(), WaitList, WaitResult - WAIT_OBJECT_0))
         {
           Result = true;
         }
       }
-      else if (WaitResult == WAIT_OBJECT_0 + HandleCount)
+      else if (WaitResult == WAIT_OBJECT_0 + WaitList->nhandles)
       {
         if (Configuration->ActualLogProtocol >= 1)
         {
           LogEvent(L"Detected network event");
         }
 
+        DebugAssert(FSocket != INVALID_SOCKET);
         if (Events == NULL)
         {
           if (ProcessNetworkEvents(FSocket))
@@ -2081,7 +2111,10 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
     }
     __finally
     {
-      sfree(Handles);
+      if (WaitList != NULL)
+      {
+        handle_wait_list_free(WaitList);
+      }
     }
 
 
@@ -2100,7 +2133,8 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
       }
     }
 
-    if ((FSendBuf > 0) && (TicksAfter - FLastSendBufferUpdate >= 1000))
+    if ((FSocket != INVALID_SOCKET) &&
+        (FSendBuf > 0) && (TicksAfter - FLastSendBufferUpdate >= 1000))
     {
       DWORD BufferLen = 0;
       DWORD OutLen = 0;
@@ -2658,9 +2692,13 @@ bool __fastcall TSecureShell::HaveHostKey(UnicodeString Host, int Port, const Un
     }
   }
 
-  if (Result)
+  if (Result &&
+      (FLoggedKnownHostKeys.find(KeyType) == FLoggedKnownHostKeys.end()))
   {
     LogEvent(FORMAT(L"Have a known host key of type %s", (KeyType)));
+    // This is called multiple times for the same cached key since PuTTY 0.76 (support for rsa-sha2*?).
+    // Avoid repeated log entries.
+    FLoggedKnownHostKeys.insert(KeyType);
   }
 
   return Result;
@@ -2690,7 +2728,11 @@ void __fastcall TSecureShell::AskAlg(UnicodeString AlgType, UnicodeString AlgNam
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::DisplayBanner(const UnicodeString & Banner)
 {
-  FUI->DisplayBanner(Banner);
+  // Since 0.77 PuTTY calls this again with CRLF if the actual banner does not end with one.
+  if (!Banner.Trim().IsEmpty())
+  {
+    FUI->DisplayBanner(Banner);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::OldKeyfileWarning()

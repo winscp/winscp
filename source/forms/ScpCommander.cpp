@@ -2325,23 +2325,33 @@ void __fastcall TScpCommanderForm::DoLocalPathComboBoxItemClick(TDirView * ADirV
   DebugAssert((PathComboBox->ItemIndex >= 0) && (PathComboBox->ItemIndex < FLocalPathComboBoxPaths->Count));
 
   UnicodeString Path = FLocalPathComboBoxPaths->Strings[PathComboBox->ItemIndex];
-  if (PathComboBox->ItemIndex >= FLocalSpecialPaths)
+  try
   {
-    UnicodeString Drive = DriveInfo->GetDriveKey(Path);
-    TDirView * CurrentDirView = dynamic_cast<TDirView *>(DirView(osCurrent));
-    if (IsLocalBrowserMode() && (ADirView != CurrentDirView) &&
-        SamePaths(DriveInfo->GetDriveKey(CurrentDirView->PathName), Drive))
+    if (PathComboBox->ItemIndex >= FLocalSpecialPaths)
     {
-      ADirView->Path = CurrentDirView->PathName;
+      UnicodeString Drive = DriveInfo->GetDriveKey(Path);
+      TDirView * CurrentDirView = dynamic_cast<TDirView *>(DirView(osCurrent));
+      if (IsLocalBrowserMode() && (ADirView != CurrentDirView) &&
+        SamePaths(DriveInfo->GetDriveKey(CurrentDirView->PathName), Drive))
+      {
+        ADirView->Path = CurrentDirView->PathName;
+      }
+      else
+      {
+        ADirView->ExecuteDrive(Drive);
+      }
     }
     else
     {
-      ADirView->ExecuteDrive(Drive);
+      ADirView->Path = Path;
     }
   }
-  else
+  catch (...)
   {
-    ADirView->Path = Path;
+    // Changing the path failed, reset the combo box back.
+    // Does not recurse, so infinite recursion should not happen.
+    DoLocalPathComboBoxItemClick(ADirView, PathComboBox);
+    throw;
   }
 }
 //---------------------------------------------------------------------------

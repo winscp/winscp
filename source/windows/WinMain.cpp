@@ -371,12 +371,12 @@ void __fastcall RecordWrapperVersions(UnicodeString ConsoleVersion, UnicodeStrin
   }
   WinConfiguration->Updates = Updates;
 
-  if (Configuration->Storage == stNul)
+  if ((WinConfiguration->Storage == stNul) &&
+      WinConfiguration->TrySetSafeStorage())
   {
-    Configuration->SetDefaultStorage();
     try
     {
-      THierarchicalStorage * Storage = Configuration->CreateConfigStorage();
+      THierarchicalStorage * Storage = WinConfiguration->CreateConfigStorage();
       try
       {
         Storage->AccessMode = smReadWrite;

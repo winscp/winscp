@@ -303,6 +303,9 @@ BEGIN
   S3_ACCESS_KEY_ID_PROMPT, "A&ccess key ID:"
   S3_SECRET_ACCESS_KEY_TITLE, "Secret access key"
   S3_SECRET_ACCESS_KEY_PROMPT, "Secret access &key:"
+  PROXY_AUTH_TITLE, "Proxy authentication"
+  PROXY_AUTH_USERNAME_PROMPT, "Proxy &username:"
+  PROXY_AUTH_PASSWORD_PROMPT, "Proxy &password:"
 
   CORE_INFORMATION_STRINGS, "CORE_INFORMATION"
   YES_STR, "Yes"

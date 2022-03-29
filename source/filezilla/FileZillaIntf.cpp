@@ -293,6 +293,7 @@ void __fastcall CopyFileTime(TRemoteFileTime & Dest, const t_directory::t_dirent
   Dest.Second = Source.second;
   Dest.HasTime = Source.hastime;
   Dest.HasDate = Source.hasdate;
+  Dest.HasYear = Source.hasyear;
   Dest.HasSeconds = Source.hasseconds;
   Dest.Utc = Source.utc;
 }

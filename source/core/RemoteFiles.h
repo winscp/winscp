@@ -5,7 +5,7 @@
 #include <vector>
 #include <map>
 //---------------------------------------------------------------------------
-enum TModificationFmt { mfNone, mfMDHM, mfMDY, mfFull };
+enum TModificationFmt { mfNone, mfMDHM, mfYMDHM, mfMDY, mfFull };
 //---------------------------------------------------------------------------
 #define SYMLINKSTR L" -> "
 #define ROOTDIRECTORY L"/"

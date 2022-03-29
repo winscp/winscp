@@ -845,6 +845,49 @@ bool __fastcall TWinConfiguration::CanWriteToStorage()
   return Result;
 }
 //---------------------------------------------------------------------------
+bool TWinConfiguration::DetectStorage(bool SafeOnly)
+{
+  bool Result;
+  FStorage = stIniFile;
+  if (FileExists(ApiPath(IniFileStorageNameForReading)))
+  {
+    Result = !SafeOnly;
+    if (Result)
+    {
+      FStorage = stIniFile;
+    }
+  }
+  else
+  {
+    if (DetectRegistryStorage(HKEY_CURRENT_USER) ||
+        DetectRegistryStorage(HKEY_LOCAL_MACHINE))
+    {
+      FStorage = stRegistry;
+      Result = true;
+    }
+    else
+    {
+      if (SafeOnly)
+      {
+        Result = false;
+      }
+      else
+      {
+        FStorage = stIniFile;
+        // As we fall back to user profile folder, when application folder
+        // is not writtable, it is actually unlikely that the below test ever fails.
+        if (!CanWriteToStorage())
+        {
+          FStorage = stRegistry;
+        }
+        // With !SafeOnly we always return true, so this result is actually never considered
+        Result = true;
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 TStorage __fastcall TWinConfiguration::GetStorage()
 {
   if (FStorage == stDetect)
@@ -864,22 +907,17 @@ TStorage __fastcall TWinConfiguration::GetStorage()
       }
     }
 
-    FStorage = stIniFile;
-    if (!FileExists(ApiPath(IniFileStorageNameForReading)))
-    {
-      if (DetectRegistryStorage(HKEY_CURRENT_USER) ||
-          DetectRegistryStorage(HKEY_LOCAL_MACHINE) ||
-          // FStorage is now stIniFile, so this tests writing to an INI file.
-          // As we fall back to user profile folder, when application folder
-          // is not writtable, it is actually unlikely that the below test ever fails.
-          !CanWriteToStorage())
-      {
-        FStorage = stRegistry;
-      }
-    }
+    DebugCheck(DetectStorage(false));
   }
+  // Meaning any inherited autodetection basically does not happen, so the below call returns FStorage
+  DebugAssert(FStorage != stDetect);
   TStorage Result = TCustomWinConfiguration::GetStorage();
   return Result;
+}
+//---------------------------------------------------------------------------
+bool TWinConfiguration::TrySetSafeStorage()
+{
+  return DetectStorage(true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::Saved()
@@ -1187,6 +1225,15 @@ void __fastcall TWinConfiguration::SaveData(THierarchicalStorage * Storage, bool
   if ((All && !FCustomCommandsDefaults) || FCustomCommandList->Modified)
   {
     FCustomCommandList->Save(Storage);
+
+    if (FCustomCommandList->Count == 0)
+    {
+      Storage->WriteBool(L"CustomCommandsNone", true);
+    }
+    else
+    {
+      Storage->DeleteValue(L"CustomCommandsNone");
+    }
   }
 
   if ((All || FCustomCommandOptionsModified) &&
@@ -1519,7 +1566,8 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
     Storage->CloseSubKey();
   }
 
-  if (Storage->KeyExists(L"CustomCommands"))
+  if (Storage->KeyExists(L"CustomCommands") ||
+      Storage->ReadBool(L"CustomCommandsNone", false))
   {
     FCustomCommandList->Load(Storage);
     FCustomCommandsDefaults = false;
