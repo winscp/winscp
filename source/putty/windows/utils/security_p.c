@@ -31,6 +31,20 @@ void win_secur_cleanup(void)
 }
 #endif
 
+bool should_have_security(void)
+{
+#ifdef LEGACY_WINDOWS
+    /* Legacy pre-NT platforms are not expected to have any of these APIs */
+    init_winver();
+    return (osPlatformId == VER_PLATFORM_WIN32_NT);
+#else
+    /* In the up-to-date PuTTY builds which do not support those
+     * platforms, unconditionally return true, to minimise the risk of
+     * compiling out security checks. */
+    return true;
+#endif
+}
+
 bool got_advapi(void)
 {
     static bool attempted = false;

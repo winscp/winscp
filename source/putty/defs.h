@@ -47,6 +47,8 @@
 #define SCNu64 "I64u"
 #define SIZEx "Ix"
 #define SIZEu "Iu"
+/* Also, define a LEGACY_WINDOWS flag to enable other workarounds */
+#define LEGACY_WINDOWS
 #else
 #ifndef WINSCP
 // Not needed by the code WinSCP uses
@@ -202,6 +204,8 @@ typedef struct logblank_t logblank_t;
 
 typedef struct BinaryPacketProtocol BinaryPacketProtocol;
 typedef struct PacketProtocolLayer PacketProtocolLayer;
+
+struct unicode_data;
 
 /* Do a compile-time type-check of 'to_check' (without evaluating it),
  * as a side effect of returning the value 'to_return'. Note that
