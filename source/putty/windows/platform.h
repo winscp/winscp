@@ -576,6 +576,7 @@ void dll_hijacking_protection(void);
 const char *get_system_dir(void);
 HMODULE load_system32_dll(const char *libname);
 const char *win_strerror(int error);
+bool should_have_security(void);
 void restrict_process_acl(void);
 bool restricted_acl(void);
 void escape_registry_key(const char *in, strbuf *out);
@@ -608,7 +609,6 @@ void EnableSizeTip(bool bEnable);
 /*
  * Exports from unicode.c.
  */
-struct unicode_data;
 void init_ucs(Conf *, struct unicode_data *);
 
 /*

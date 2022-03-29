@@ -1195,16 +1195,93 @@ int wc_to_mb(int codepage, int flags, const wchar_t *wcstr, int wclen,
         }
         return p - mbstr;
     } else {
-        int defused;
-        return WideCharToMultiByte(codepage, flags, wcstr, wclen,
-                                   mbstr, mblen, defchr, &defused);
+        int defused, ret;
+        ret = WideCharToMultiByte(codepage, flags, wcstr, wclen,
+                                  mbstr, mblen, defchr, &defused);
+        if (ret)
+            return ret;
+
+#ifdef LEGACY_WINDOWS
+        /*
+         * Fallback for legacy platforms too old to support UTF-8: if
+         * the codepage is UTF-8, we can do the translation ourselves.
+         */
+        if (codepage == CP_UTF8 && mblen > 0 && wclen > 0) {
+            size_t remaining = mblen;
+            char *p = mbstr;
+
+            while (wclen > 0) {
+                unsigned long wc = (wclen--, *wcstr++);
+                if (wclen > 0 && IS_SURROGATE_PAIR(wc, *wcstr)) {
+                    wc = FROM_SURROGATES(wc, *wcstr);
+                    wclen--, wcstr++;
+                }
+
+                char utfbuf[6];
+                size_t utflen = encode_utf8(utfbuf, wc);
+                if (utflen <= remaining) {
+                    memcpy(p, utfbuf, utflen);
+                    p += utflen;
+                    remaining -= utflen;
+                } else {
+                    return p - mbstr;
+                }
+            }
+
+            return p - mbstr;
+        }
+#endif
+
+        /* No other fallbacks are available */
+        return 0;
     }
 }
 
 int mb_to_wc(int codepage, int flags, const char *mbstr, int mblen,
              wchar_t *wcstr, int wclen)
 {
-    return MultiByteToWideChar(codepage, flags, mbstr, mblen, wcstr, wclen);
+    int ret = MultiByteToWideChar(codepage, flags, mbstr, mblen, wcstr, wclen);
+    if (ret)
+        return ret;
+
+#ifdef LEGACY_WINDOWS
+    /*
+     * Fallback for legacy platforms too old to support UTF-8: if the
+     * codepage is UTF-8, we can do the translation ourselves.
+     */
+    if (codepage == CP_UTF8 && mblen > 0 && wclen > 0) {
+        size_t remaining = wclen;
+        wchar_t *p = wcstr;
+
+        while (mblen > 0) {
+            char utfbuf[7];
+            int thissize = mblen < 6 ? mblen : 6;
+            memcpy(utfbuf, mbstr, thissize);
+            utfbuf[thissize] = '\0';
+
+            const char *utfptr = utfbuf;
+            wchar_t wcbuf[2];
+            size_t nwc = decode_utf8_to_wchar(&utfptr, wcbuf);
+
+            for (size_t i = 0; i < nwc; i++) {
+                if (remaining > 0) {
+                    remaining--;
+                    *p++ = wcbuf[i];
+                } else {
+                    return p - wcstr;
+                }
+            }
+
+            mbstr += (utfptr - utfbuf);
+            mblen -= (utfptr - utfbuf);
+        }
+
+        return p - wcstr;
+    }
+#endif
+
+    /* No other fallbacks are available */
+    return 0;
 }
 
 bool is_dbcs_leadbyte(int codepage, char byte)

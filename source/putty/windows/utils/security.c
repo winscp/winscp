@@ -20,6 +20,20 @@ DEF_WINDOWS_FUNCTION(GetSecurityInfo);
 DEF_WINDOWS_FUNCTION(SetSecurityInfo);
 DEF_WINDOWS_FUNCTION(SetEntriesInAclA);
 
+bool should_have_security(void)
+{
+#ifdef LEGACY_WINDOWS
+    /* Legacy pre-NT platforms are not expected to have any of these APIs */
+    init_winver();
+    return (osPlatformId == VER_PLATFORM_WIN32_NT);
+#else
+    /* In the up-to-date PuTTY builds which do not support those
+     * platforms, unconditionally return true, to minimise the risk of
+     * compiling out security checks. */
+    return true;
+#endif
+}
+
 bool got_advapi(void)
 {
     static bool attempted = false;

@@ -47,8 +47,18 @@ void interactor_return_seat(Interactor *itr)
     if (!is_tempseat(tempseat))
         return;                        /* no-op */
 
-    tempseat_flush(tempseat);
+    /*
+     * We're about to hand this seat back to the parent Interactor to
+     * do its own thing with. It will typically expect to start in the
+     * same state as if the seat had never been borrowed, i.e. in the
+     * starting trust state.
+     *
+     * However, this may be overridden by the tempseat_flush call.
+     */
     Seat *realseat = tempseat_get_real(tempseat);
+    seat_set_trust_status(realseat, true);
+
+    tempseat_flush(tempseat);
     interactor_set_seat(itr, realseat);
     tempseat_free(tempseat);
 
@@ -60,14 +70,6 @@ void interactor_return_seat(Interactor *itr)
     Interactor *itr_top = interactor_toplevel(itr, NULL);
     if (itr_top->last_to_talk)
         interactor_announce(itr);
-
-    /*
-     * We're about to hand this seat back to the parent Interactor to
-     * do its own thing with. It will typically expect to start in the
-     * same state as if the seat had never been borrowed, i.e. in the
-     * starting trust state.
-     */
-    seat_set_trust_status(realseat, true);
 }
 
 InteractionReadySeat interactor_announce(Interactor *itr)

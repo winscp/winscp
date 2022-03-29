@@ -67,6 +67,10 @@ void strbuf_finalise_agent_query(strbuf *buf);
  * work around the rather deficient interface of mb_to_wc. */
 wchar_t *dup_mb_to_wc_c(int codepage, int flags, const char *string, int len);
 wchar_t *dup_mb_to_wc(int codepage, int flags, const char *string);
+char *dup_wc_to_mb_c(int codepage, int flags, const wchar_t *string, int len,
+                     const char *defchr, struct unicode_data *ucsdata);
+char *dup_wc_to_mb(int codepage, int flags, const wchar_t *string,
+                   const char *defchr, struct unicode_data *ucsdata);
 
 static inline int toint(unsigned u)
 {
@@ -216,6 +220,17 @@ size_t encode_utf8(void *output, unsigned long ch);
  * sizeof(wchar_t) == 2, assuming that in that case the wide string is
  * encoded in UTF-16. */
 char *encode_wide_string_as_utf8(const wchar_t *wstr);
+
+/* Decode a single UTF-8 character. Returns U+FFFD for any of the
+ * illegal cases. */
+unsigned long decode_utf8(const char **utf8);
+
+/* Decode a single UTF-8 character to an output buffer of the
+ * platform's wchar_t. May write a pair of surrogates if
+ * sizeof(wchar_t) == 2, assuming that in that case the wide string is
+ * encoded in UTF-16. Otherwise, writes one character. Returns the
+ * number written. */
+size_t decode_utf8_to_wchar(const char **utf8, wchar_t *out);
 
 /* Write a string out in C string-literal format. */
 void write_c_string_literal(FILE *fp, ptrlen str);
