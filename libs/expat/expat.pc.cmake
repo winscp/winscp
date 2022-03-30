@@ -7,5 +7,6 @@ Name: $<TARGET_PROPERTY:expat,pkgconfig_$<LOWER_CASE:$<CONFIG>>_name>
 Version: $<TARGET_PROPERTY:expat,pkgconfig_version>
 Description: expat XML parser
 URL: https://libexpat.github.io/
-Libs: -L${libdir} -l$<TARGET_PROPERTY:expat,pkgconfig_$<LOWER_CASE:$<CONFIG>>_name> $<TARGET_PROPERTY:expat,pkgconfig_libm>
+Libs: -L${libdir} -l$<TARGET_PROPERTY:expat,pkgconfig_$<LOWER_CASE:$<CONFIG>>_output_name>
+Libs.private: $<TARGET_PROPERTY:expat,pkgconfig_libm>
 Cflags: -I${includedir}
