@@ -844,7 +844,6 @@ bool __fastcall TWinConfiguration::CanWriteToStorage()
 bool TWinConfiguration::DetectStorage(bool SafeOnly)
 {
   bool Result;
-  FStorage = stIniFile;
   if (FileExists(ApiPath(IniFileStorageNameForReading)))
   {
     Result = !SafeOnly;
