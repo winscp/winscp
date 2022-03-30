@@ -7,5 +7,6 @@ Name: @PACKAGE_NAME@
 Version: @PACKAGE_VERSION@
 Description: expat XML parser
 URL: https://libexpat.github.io/
-Libs: -L${libdir} -l@PACKAGE_NAME@ @LIBM@
+Libs: -L${libdir} -l@PACKAGE_NAME@
+Libs.private: @LIBM@
 Cflags: -I${includedir}
