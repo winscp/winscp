@@ -604,6 +604,7 @@ void __fastcall TWinConfiguration::Default()
   FShowLoginWhenNoSession = true;
   FKeepOpenWhenNoSession = true;
   FLocalIconsByExt = false;
+  FFlashTaskbar = true;
   FMaxSessions = 100;
   FBidiModeOverride = lfoLanguageIfRecommended;
   FFlipChildrenOverride = lfoLanguageIfRecommended;
@@ -1050,6 +1051,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     ShowLoginWhenNoSession); \
     KEY(Bool,     KeepOpenWhenNoSession); \
     KEY(Bool,     LocalIconsByExt); \
+    KEY(Bool,     FlashTaskbar); \
     KEY(Integer,  MaxSessions); \
     KEY(Integer,  BidiModeOverride); \
     KEY(Integer,  FlipChildrenOverride); \
@@ -2333,6 +2335,11 @@ void __fastcall TWinConfiguration::SetKeepOpenWhenNoSession(bool value)
 void __fastcall TWinConfiguration::SetLocalIconsByExt(bool value)
 {
   SET_CONFIG_PROPERTY(LocalIconsByExt);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetFlashTaskbar(bool value)
+{
+  SET_CONFIG_PROPERTY(FlashTaskbar);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetBidiModeOverride(TLocaleFlagOverride value)
