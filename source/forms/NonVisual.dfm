@@ -1379,6 +1379,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 
         'Exit application|Close application (any opened sessions are clos' +
         'ed)'
+      ImageIndex = 61
     end
     object OpenedTabsAction: TAction
       Tag = 15

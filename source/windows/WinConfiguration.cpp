@@ -606,6 +606,7 @@ void __fastcall TWinConfiguration::Default()
   FKeepOpenWhenNoSession = true;
   FDefaultToNewRemoteTab = true;
   FLocalIconsByExt = false;
+  FFlashTaskbar = true;
   FMaxSessions = 100;
   FBidiModeOverride = lfoLanguageIfRecommended;
   FFlipChildrenOverride = lfoLanguageIfRecommended;
@@ -1056,6 +1057,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     KeepOpenWhenNoSession); \
     KEY(Bool,     DefaultToNewRemoteTab); \
     KEY(Bool,     LocalIconsByExt); \
+    KEY(Bool,     FlashTaskbar); \
     KEY(Integer,  MaxSessions); \
     KEY(Integer,  BidiModeOverride); \
     KEY(Integer,  FlipChildrenOverride); \
@@ -2353,6 +2355,11 @@ void __fastcall TWinConfiguration::SetDefaultToNewRemoteTab(bool value)
 void __fastcall TWinConfiguration::SetLocalIconsByExt(bool value)
 {
   SET_CONFIG_PROPERTY(LocalIconsByExt);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetFlashTaskbar(bool value)
+{
+  SET_CONFIG_PROPERTY(FlashTaskbar);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetBidiModeOverride(TLocaleFlagOverride value)

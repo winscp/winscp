@@ -109,7 +109,7 @@ void __fastcall SetOnForeground(bool OnForeground)
 void __fastcall FlashOnBackground()
 {
   DebugAssert(Application);
-  if (!ForcedOnForeground && !ForegroundTask())
+  if (WinConfiguration->FlashTaskbar && !ForcedOnForeground && !ForegroundTask())
   {
     FlashWindow(Application->MainFormHandle, true);
   }

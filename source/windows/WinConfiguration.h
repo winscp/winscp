@@ -457,6 +457,7 @@ private:
   bool FKeepOpenWhenNoSession;
   bool FDefaultToNewRemoteTab;
   bool FLocalIconsByExt;
+  bool FFlashTaskbar;
   int FMaxSessions;
   TLocaleFlagOverride FBidiModeOverride;
   TLocaleFlagOverride FFlipChildrenOverride;
@@ -564,6 +565,7 @@ private:
   void __fastcall SetKeepOpenWhenNoSession(bool value);
   void __fastcall SetDefaultToNewRemoteTab(bool value);
   void __fastcall SetLocalIconsByExt(bool value);
+  void __fastcall SetFlashTaskbar(bool value);
   void __fastcall SetBidiModeOverride(TLocaleFlagOverride value);
   void __fastcall SetFlipChildrenOverride(TLocaleFlagOverride value);
   void __fastcall SetShowTips(bool value);
@@ -764,6 +766,7 @@ public:
   __property bool KeepOpenWhenNoSession = { read = FKeepOpenWhenNoSession, write = SetKeepOpenWhenNoSession };
   __property bool DefaultToNewRemoteTab = { read = FDefaultToNewRemoteTab, write = SetDefaultToNewRemoteTab };
   __property bool LocalIconsByExt = { read = FLocalIconsByExt, write = SetLocalIconsByExt };
+  __property bool FlashTaskbar = { read = FFlashTaskbar, write = SetFlashTaskbar };
   __property int MaxSessions = { read = FMaxSessions, write = FMaxSessions };
   __property TLocaleFlagOverride BidiModeOverride = { read = FBidiModeOverride, write = SetBidiModeOverride };
   __property TLocaleFlagOverride FlipChildrenOverride = { read = FFlipChildrenOverride, write = SetFlipChildrenOverride };
