@@ -1391,6 +1391,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 
         'Exit application|Terminate opened session(s) and close applicati' +
         'on'
+      ImageIndex = 61
     end
     object OpenedSessionsAction: TAction
       Tag = 15
