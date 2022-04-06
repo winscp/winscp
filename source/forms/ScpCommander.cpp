@@ -834,6 +834,8 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
 
     SWAP(UnicodeString, NonVisualDataModule->CommanderLocalPanelAction->Caption, NonVisualDataModule->CommanderRemotePanelAction->Caption);
     SWAP(UnicodeString, NonVisualDataModule->CommanderLocalPanelAction->Hint, NonVisualDataModule->CommanderRemotePanelAction->Hint);
+    SWAP(int, NonVisualDataModule->LocalLocalCopyAction->ImageIndex, NonVisualDataModule->LocalOtherCopyAction->ImageIndex);
+    SWAP(int, NonVisualDataModule->LocalLocalMoveAction->ImageIndex, NonVisualDataModule->LocalOtherMoveAction->ImageIndex);
   }
 
   if ((RemoteDrivePanel->Align == alLeft) != WinConfiguration->ScpCommander.TreeOnLeft)

@@ -2334,14 +2334,14 @@ object NonVisualDataModule: TNonVisualDataModule
       Category = 'Local Selected Operation'
       Caption = '&Copy'
       Hint = 'Copy the selected file(s) to another directory or another name'
-      ImageIndex = 78
+      ImageIndex = 112
     end
     object LocalOtherMoveAction: TAction
       Tag = 14
       Category = 'Local Selected Operation'
       Caption = '&Move'
       Hint = 'Move the selected file(s) to another directory or rename them'
-      ImageIndex = 100
+      ImageIndex = 113
     end
     object LocalLocalCopyFocusedAction: TAction
       Tag = 8
@@ -2363,7 +2363,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&New Tab'
       HelpKeyword = 'ui_tabs#new'
       Hint = 'Open new tab'
-      ImageIndex = 5
+      ImageIndex = 115
     end
     object NewLocalTabAction: TAction
       Tag = 11
@@ -2371,7 +2371,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Local Tab'
       HelpKeyword = 'ui_tabs#new'
       Hint = 'Open new tab with two local panels'
-      ImageIndex = 5
+      ImageIndex = 115
       ShortCut = 24654
     end
     object NewRemoteTabAction: TAction

@@ -28,6 +28,6 @@ private:
 extern PACKAGE TGlyphsModule * GlyphsModule;
 const int SiteImageIndex = 103;
 const int SiteColorMaskImageIndex = 104;
-const int LocalBrowserImageIndex = 29;
+const int LocalBrowserImageIndex = 114;
 //---------------------------------------------------------------------------
 #endif
