@@ -467,7 +467,7 @@ BEGIN
 
   CORE_VARIABLE_STRINGS, "CORE_VARIABLE"
   PUTTY_BASED_ON, "SSH and SCP code based on PuTTY %s"
-  PUTTY_COPYRIGHT, "Copyright © 1997–2021 Simon Tatham"
+  PUTTY_COPYRIGHT, "Copyright © 1997–2022 Simon Tatham"
   PUTTY_URL, "https://www.chiark.greenend.org.uk/~sgtatham/putty/"
   FILEZILLA_BASED_ON2, "FTP code based on FileZilla"
   FILEZILLA_COPYRIGHT2, "Copyright © Tim Kosse"
@@ -476,7 +476,7 @@ BEGIN
   OPENSSL_COPYRIGHT2, "Copyright © 1998–%s The OpenSSL Project"
   OPENSSL_URL, "https://www.openssl.org/"
   NEON_BASED_ON2, "WebDAV/HTTP code based on neon library %s"
-  NEON_COPYRIGHT, "Copyright © 1999–2020 Joe Orton"
+  NEON_COPYRIGHT, "Copyright © 1999–2022 Joe Orton"
   NEON_URL, "https://notroj.github.io/neon/"
   EXPAT_BASED_ON, "eXpat library %s"
   EXPAT_URL, "https://libexpat.github.io/"
