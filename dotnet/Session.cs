@@ -1541,6 +1541,33 @@ namespace WinSCP
             }
         }
 
+        public bool TryGetFileInfo(string path, out RemoteFileInfo fileInfo)
+        {
+            using (CreateCallstackAndLock())
+            {
+                CheckOpened();
+
+                try
+                {
+                    _ignoreFailed = true;
+                    try
+                    {
+                        fileInfo = DoGetFileInfo(path);
+                    }
+                    finally
+                    {
+                        _ignoreFailed = false;
+                    }
+                    return true;
+                }
+                catch (SessionRemoteException)
+                {
+                    fileInfo = null;
+                    return false;
+                }
+            }
+        }
+
         public bool FileExists(string path)
         {
             using (CreateCallstackAndLock())
