@@ -58,7 +58,6 @@ __published:
   TLabel *ChecksumUnknownLabel;
   TEdit *OwnerView;
   TEdit *GroupView;
-  TLabel *AclLabel;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall CalculateSizeButtonClick(TObject *Sender);
