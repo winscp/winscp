@@ -5078,7 +5078,7 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
           Message = LoadStr(CLOSE_SESSIONS);
         }
       }
-      // Multiple tabs, but all are intactive or local, and saving of worspace is not enabled
+      // Multiple tabs, but all are inactive or local, and saving of worspace is not enabled
       else
       {
         DebugAlwaysTrue(Manager->Count > 1);
