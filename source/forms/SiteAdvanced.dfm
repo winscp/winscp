@@ -1110,6 +1110,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 70
             Height = 13
             Caption = '&Session token:'
+            FocusControl = S3SessionTokenMemo
           end
           object S3SessionTokenMemo: TMemo
             Left = 11
