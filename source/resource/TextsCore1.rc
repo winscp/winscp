@@ -245,7 +245,7 @@ BEGIN
   STORE_NEW_HOSTKEY_ERROR, "Failed to store new host key."
   STREAM_IN_SCRIPT_ERROR, "When uploading streamed data, only one source can be specified and the target must specify a filename."
   STREAM_READ_ERROR, "Error reading input stream."
-  S3_CONFIG_ERROR, "Error reading AWS configuration parameter %s"
+  S3_CONFIG_ERROR, "Error reading AWS configuration parameter %s."
   TIMEOUT_ERROR, "Timeout waiting for server to respond."
   CREATE_TEMP_DIR_ERROR, "Cannot create temporary directory '%s'. You may change root directory to store temporary files in Preferences."
   OPENSSH_CONFIG_NOT_FOUND, "OpenSSH config file not found."
