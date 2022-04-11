@@ -811,6 +811,8 @@ UnicodeString __fastcall TS3FileSystem::GetCurrentDirectory()
 //---------------------------------------------------------------------------
 void __fastcall TS3FileSystem::DoStartup()
 {
+  // Capabilities of S3 protocol are fixed
+  FTerminal->SaveCapabilities(FFileSystemInfo);
   FTerminal->SetExceptionOnFail(true);
   // retrieve initialize working directory to save it as home directory
   ReadCurrentDirectory();
