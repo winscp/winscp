@@ -1570,28 +1570,7 @@ namespace WinSCP
 
         public bool FileExists(string path)
         {
-            using (CreateCallstackAndLock())
-            {
-                CheckOpened();
-
-                try
-                {
-                    _ignoreFailed = true;
-                    try
-                    {
-                        DoGetFileInfo(path);
-                    }
-                    finally
-                    {
-                        _ignoreFailed = false;
-                    }
-                    return true;
-                }
-                catch (SessionRemoteException)
-                {
-                    return false;
-                }
-            }
+            return TryGetFileInfo(path, out _);
         }
 
         public byte[] CalculateFileChecksum(string algorithm, string path)
