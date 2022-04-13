@@ -1541,7 +1541,7 @@ namespace WinSCP
             }
         }
 
-        public bool FileExists(string path)
+        public bool TryGetFileInfo(string path, out RemoteFileInfo fileInfo)
         {
             using (CreateCallstackAndLock())
             {
@@ -1552,7 +1552,7 @@ namespace WinSCP
                     _ignoreFailed = true;
                     try
                     {
-                        DoGetFileInfo(path);
+                        fileInfo = DoGetFileInfo(path);
                     }
                     finally
                     {
@@ -1562,9 +1562,15 @@ namespace WinSCP
                 }
                 catch (SessionRemoteException)
                 {
+                    fileInfo = null;
                     return false;
                 }
             }
+        }
+
+        public bool FileExists(string path)
+        {
+            return TryGetFileInfo(path, out _);
         }
 
         public byte[] CalculateFileChecksum(string algorithm, string path)
