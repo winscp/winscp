@@ -244,8 +244,9 @@ bool __fastcall TOpenDirectoryDialog::Execute()
   }
 
   LoadBookmarks(SharedBookmarksList, FSharedBookmarkList, WinConfiguration->SharedBookmarks);
-  PageControl->ActivePage =
+  TTabSheet * Page =
     (Terminal == NULL) || WinConfiguration->UseSharedBookmarks ? SharedBookmarksSheet : SessionBookmarksSheet;
+  PageControl->ActivePage = Page;
   DirectoryEditChange(NULL);
   if (Mode == odAddBookmark)
   {
