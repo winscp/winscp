@@ -1597,10 +1597,10 @@ void __fastcall TFTPFileSystem::CopyToLocal(TStrings * FilesToCopy,
 UnicodeString TFTPFileSystem::RemoteExtractFilePath(const UnicodeString & Path)
 {
   UnicodeString Result;
-  // If the path ends with a slash, FZAPI CServerPath contructor does not identify the path as VMS.
+  // If the path ends with a slash, FZAPI CServerPath contructor does not identify the path as VMS nor MVS.
   // It is probably ok to use UnixExtractFileDir for all paths passed to FZAPI,
-  // but for now, we limit the impact of the change to VMS.
-  if (FVMS)
+  // but for now, we limit the impact of the change to VMS/MVS.
+  if (FVMS || FMVS)
   {
     Result = UnixExtractFileDir(Path);
   }
@@ -3504,7 +3504,7 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
           FTerminal->LogEvent(L"Server is known not to support LIST -a");
           FListAll = asOff;
         }
-        if ((FWorkFromCwd == asAuto) && FVMS)
+        if ((FWorkFromCwd == asAuto) && (FVMS || FMVS))
         {
           FTerminal->LogEvent(L"Server is known to require use of relative paths");
           FWorkFromCwd = asOn;
