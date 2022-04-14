@@ -12,6 +12,7 @@ class TOptions
 {
 public:
   __fastcall TOptions();
+  __fastcall TOptions(const TOptions & Source);
 
   void __fastcall Add(UnicodeString Option);
   void __fastcall Parse(const UnicodeString & CmdLine);

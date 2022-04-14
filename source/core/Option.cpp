@@ -20,6 +20,16 @@ __fastcall TOptions::TOptions()
   FParamCount = 0;
 }
 //---------------------------------------------------------------------------
+__fastcall TOptions::TOptions(const TOptions & Source)
+{
+  FSwitchMarks = Source.FSwitchMarks;
+  FSwitchValueDelimiters = Source.FSwitchValueDelimiters;
+  FOptions = Source.FOptions;
+  FOriginalOptions = Source.FOriginalOptions;
+  FNoMoreSwitches = Source.FNoMoreSwitches;
+  FParamCount = Source.FParamCount;
+}
+//---------------------------------------------------------------------------
 void __fastcall TOptions::Parse(const UnicodeString & CmdLine)
 {
   UnicodeString ACmdLine = CmdLine;

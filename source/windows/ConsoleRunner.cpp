@@ -2956,7 +2956,15 @@ int __fastcall Console(TConsoleMode Mode)
           Session = Params->Param[1];
           if (Params->ParamCount > 1)
           {
-            Runner->PrintMessage(LoadStr(SCRIPT_CMDLINE_PARAMETERS));
+            // Check if the pending parameters will be consumed by ParseUrl (/rawsettings) in TManagementScript::Connect.
+            // This way we parse the options twice, but we do not want to refactor the code just for nicer test for this minor warning.
+            TOptions OptionsCopy(*Params);
+            bool DefaultsOnly = false;
+            StoredSessions->ParseUrl(Session, &OptionsCopy, DefaultsOnly);
+            if (OptionsCopy.ParamCount > 1)
+            {
+              Runner->PrintMessage(LoadStr(SCRIPT_CMDLINE_PARAMETERS));
+            }
           }
         }
 
