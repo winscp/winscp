@@ -1237,6 +1237,8 @@ void __fastcall TTerminal::FingerprintScan(UnicodeString & SHA256, UnicodeString
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::Open()
 {
+  AnySession = true;
+  Configuration->Usage->Inc(L"SessionOpens");
   TAutoNestingCounter OpeningCounter(FOpening);
   ReflectSettings();
   try

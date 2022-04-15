@@ -573,6 +573,11 @@ void __fastcall UpdateStaticUsage()
 
 }
 //---------------------------------------------------------------------------
+void __fastcall UpdateFinalStaticUsage()
+{
+  CoreUpdateFinalStaticUsage();
+}
+//---------------------------------------------------------------------------
 void __fastcall MaintenanceTask()
 {
   CoreMaintenanceTask();
@@ -1316,6 +1321,8 @@ int __fastcall Execute()
 
     // In GUI mode only
     CheckConfigurationForceSave();
+
+    UpdateFinalStaticUsage();
   }
   __finally
   {
