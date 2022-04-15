@@ -18,6 +18,7 @@
 //---------------------------------------------------------------------------
 TConfiguration * Configuration = NULL;
 TStoredSessionList * StoredSessions = NULL;
+bool AnySession = false;
 //---------------------------------------------------------------------------
 TQueryButtonAlias::TQueryButtonAlias()
 {
@@ -209,6 +210,14 @@ void CoreSetResourceModule(void * ResourceHandle)
 void CoreMaintenanceTask()
 {
   DontSaveRandomSeed();
+}
+//---------------------------------------------------------------------------
+void CoreUpdateFinalStaticUsage()
+{
+  if (!AnySession)
+  {
+    Configuration->Usage->Inc(L"RunsWithoutSession");
+  }
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
