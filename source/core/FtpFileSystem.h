@@ -158,6 +158,8 @@ protected:
   void __fastcall Discard();
   void __fastcall DoChangeDirectory(const UnicodeString & Directory);
   void SendCwd(const UnicodeString & Directory);
+  UnicodeString MakeUnixAbsolutePath(const UnicodeString & Path);
+  bool IsMVSAbsolutePath(const UnicodeString & Path);
 
   void __fastcall Sink(const UnicodeString FileName,
     const TRemoteFile * File, const UnicodeString TargetDir,

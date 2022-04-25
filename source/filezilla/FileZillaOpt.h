@@ -52,5 +52,6 @@
 #define OPTION_MPEXT_NOLIST 1011
 #define OPTION_MPEXT_COMPLETE_TLS_SHUTDOWN 1012
 #define OPTION_MPEXT_CERT_STORAGE 1013
+#define OPTION_MPEXT_WORK_FROM_CWD 1014
 //---------------------------------------------------------------------------
 #endif // FileZillaOptH

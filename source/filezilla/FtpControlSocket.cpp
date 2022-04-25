@@ -2923,7 +2923,9 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     }
     else
     {
-      if (path.IsEmpty())
+      if (pData->transferfile.remotepath.IsEmpty() && GetOptionVal(OPTION_MPEXT_WORK_FROM_CWD))
+        m_Operation.nOpState = FileTransferListState(pData->transferfile.get);
+      else if (path.IsEmpty())
         m_Operation.nOpState = FILETRANSFER_PWD;
       else
         m_Operation.nOpState = FILETRANSFER_CWD;

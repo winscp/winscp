@@ -847,12 +847,31 @@ void __fastcall TFTPFileSystem::Discard()
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString TFTPFileSystem::MakeUnixAbsolutePath(const UnicodeString & Path)
+{
+  UnicodeString Result = Path;
+  if ((Result.Length() > 0) && !UnixIsAbsolutePath(Result))
+  {
+    Result = L"/" + Result;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool TFTPFileSystem::IsMVSAbsolutePath(const UnicodeString & Path)
+{
+  return (Path.Length() >= 3) && StartsStr(L"'", Path) && EndsStr(L"'", Path);
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TFTPFileSystem::AbsolutePath(UnicodeString Path, bool /*Local*/)
 {
   // TODO: improve (handle .. etc.)
   if (UnixIsAbsolutePath(Path))
   {
     return Path;
+  }
+  else if (FMVS && IsMVSAbsolutePath(Path))
+  {
+    return MakeUnixAbsolutePath(Path);
   }
   else
   {
@@ -862,9 +881,16 @@ UnicodeString __fastcall TFTPFileSystem::AbsolutePath(UnicodeString Path, bool /
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TFTPFileSystem::ActualCurrentDirectory()
 {
-  wchar_t CurrentPath[1024];
-  FFileZillaIntf->GetCurrentPath(CurrentPath, LENOF(CurrentPath));
-  return UnixExcludeTrailingBackslash(CurrentPath);
+  UnicodeString Result;
+  Result.SetLength(1024);
+  FFileZillaIntf->GetCurrentPath(Result.c_str(), Result.Length());
+  PackStr(Result);
+  if (FMVS)
+  {
+    Result = MakeUnixAbsolutePath(Result);
+  }
+  Result = UnixExcludeTrailingBackslash(Result);
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::EnsureLocation(const UnicodeString & Directory, bool Log)
@@ -1627,7 +1653,17 @@ void __fastcall TFTPFileSystem::Sink(
   UnicodeString FilePath = RemoteExtractFilePath(FileName);
   unsigned int TransferType = (OperationProgress->AsciiTransfer ? 1 : 2);
 
-  EnsureLocationWhenWorkFromCwd(FilePath);
+  UnicodeString AFileName;
+  UnicodeString OnlyFileName = UnixExtractFileName(FileName);
+  if (EnsureLocationWhenWorkFromCwd(FilePath))
+  {
+    AFileName = OnlyFileName;
+    FilePath = EmptyStr;
+  }
+  else
+  {
+    AFileName = FileName;
+  }
 
   {
     // ignore file list
@@ -1643,8 +1679,7 @@ void __fastcall TFTPFileSystem::Sink(
     UserData.AutoResume = FLAGSET(Flags, tfAutoResume);
     UserData.CopyParam = CopyParam;
     UserData.Modification = File->Modification;
-    UnicodeString OnlyFileName = UnixExtractFileName(FileName);
-    FileTransfer(FileName, DestFullName, OnlyFileName,
+    FileTransfer(AFileName, DestFullName, OnlyFileName,
       FilePath, true, File->Size, TransferType, UserData, OperationProgress);
   }
 
@@ -1991,11 +2026,7 @@ void __fastcall TFTPFileSystem::ReadCurrentDirectory()
 
         if (Result)
         {
-          if ((Path.Length() > 0) && !UnixIsAbsolutePath(Path))
-          {
-            Path = L"/" + Path;
-          }
-          FCurrentDirectory = UnixExcludeTrailingBackslash(Path);
+          FCurrentDirectory = UnixExcludeTrailingBackslash(MakeUnixAbsolutePath(Path));
           FReadCurrentDirectory = false;
         }
       }
@@ -2018,7 +2049,11 @@ void __fastcall TFTPFileSystem::ReadCurrentDirectory()
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::DoReadDirectory(TRemoteFileList * FileList)
 {
-  EnsureLocationWhenWorkFromCwd(FileList->Directory);
+  UnicodeString Directory;
+  if (!EnsureLocationWhenWorkFromCwd(FileList->Directory))
+  {
+    Directory = AbsolutePath(FileList->Directory, false);
+  }
 
   FBytesAvailable = -1;
   FileList->Reset();
@@ -2032,7 +2067,6 @@ void __fastcall TFTPFileSystem::DoReadDirectory(TRemoteFileList * FileList)
   // always specify path to list, do not attempt to list "current" dir as:
   // 1) List() lists again the last listed directory, not the current working directory
   // 2) we handle this way the cached directory change
-  UnicodeString Directory = AbsolutePath(FileList->Directory, false);
   FFileZillaIntf->List(Directory.c_str());
 
   GotReply(WaitForCommandReply(), REPLY_2XX_CODE | REPLY_ALLOW_CANCEL);
@@ -2396,7 +2430,7 @@ void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
       int P;
       bool MVSPath =
         FMVS && Path.IsEmpty() &&
-        (FileName.SubString(1, 1) == L"'") && (FileName.SubString(FileName.Length(), 1) == L"'") &&
+        IsMVSAbsolutePath(FileName) &&
         ((P = FileName.Pos(L".")) > 0);
       if (!MVSPath)
       {
@@ -2843,6 +2877,10 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
     case OPTION_MPEXT_COMPLETE_TLS_SHUTDOWN:
       Result = FFileZilla ? FALSE : TRUE;
       break;
+
+    case OPTION_MPEXT_WORK_FROM_CWD:
+       Result = (FWorkFromCwd == asOn);
+       break;
 
     default:
       DebugFail();
@@ -3483,6 +3521,10 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
         // https://www.ibm.com/docs/en/zos/latest?topic=2rc-215-mvs-is-operating-system-this-server-ftp-server-is-running-name
         // FZPI has a different incompatible detection.
         FMVS = (FSystem.SubString(1, 3) == L"MVS");
+        if (FMVS)
+        {
+          FTerminal->LogEvent(L"MVS system detected.");
+        }
         // The FWelcomeMessage usually contains "Microsoft FTP Service" but can be empty
         if (ContainsText(FSystem, L"Windows_NT"))
         {
