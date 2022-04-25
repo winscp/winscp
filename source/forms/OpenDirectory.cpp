@@ -329,7 +329,7 @@ void __fastcall TOpenDirectoryDialog::AddAsBookmark(TObject * Sender)
   }
   Bookmark->Name = Directory;
 
-  // would alway be equal to Directory atm,
+  // would always be equal to Directory atm,
   // as only difference can be a shorcut, which is not set
   UnicodeString Text = BookmarkText(Bookmark);
 
