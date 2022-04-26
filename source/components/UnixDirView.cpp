@@ -323,6 +323,7 @@ void __fastcall TUnixDirView::LoadFiles()
     int VisibleFiles = 0;
     FHiddenCount = 0;
     FFilteredCount = 0;
+    DebugAssert(Items->Count == 0); // to make sure that Index matches Items->Count
     for (int Index = 0; Index < Terminal->Files->Count; Index++)
     {
       TRemoteFile *File = Terminal->Files->Files[Index];
@@ -347,11 +348,16 @@ void __fastcall TUnixDirView::LoadFiles()
 
         TListItem * Item = new TListItem(Items);
         Item->Data = File;
-        // Need to add before assigning to .Caption and .OverlayIndex,
-        // as the setters these call back to owning view.
-        // Assignment is redundant
-        Item = Items->AddItem(Item);
-        Item->Caption = File->FileName;
+        // Need to add before assigning to .Caption, as its setter call back to owning view.
+        // Item assignment is redundant.
+        // Index is optimization.
+        Item = Items->AddItem(Item, Index);
+        // Setting Caption is expensive and it's for display only.
+        // Captions of excessive items is delay loaded in GetDisplayInfo.
+        if (Index <= 10000)
+        {
+          Item->Caption = File->FileName;
+        }
         if (FFullLoad)
         {
           // this is out of date
@@ -367,7 +373,7 @@ void __fastcall TUnixDirView::LoadFiles()
       }
     }
 
-    if (OwnerData)
+    if (DebugAlwaysFalse(OwnerData))
     {
       Items->Count = VisibleFiles;
     }
@@ -381,6 +387,11 @@ void __fastcall TUnixDirView::GetDisplayInfo(TListItem * Item, tagLVITEMW &DispI
   {
 #ifndef DESIGN_ONLY
     TRemoteFile * File = ITEMFILE;
+    // delay loading caption
+    if (Item->Caption.IsEmpty())
+    {
+      Item->Caption = File->FileName;
+    }
     if (DispInfo.mask & LVIF_TEXT)
     {
       UnicodeString Value;
