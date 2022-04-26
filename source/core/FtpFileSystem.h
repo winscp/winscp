@@ -245,7 +245,7 @@ private:
   bool FMultiLineResponse;
   int FLastCode;
   int FLastCodeClass;
-  int FLastReadDirectoryProgress;
+  DWORD FLastReadDirectoryProgress;
   UnicodeString FTimeoutStatus;
   UnicodeString FDisconnectStatus;
   TStrings * FLastResponse;

@@ -11223,10 +11223,10 @@ TListItem * __fastcall TCustomScpExplorerForm::SearchFile(const UnicodeString & 
       switch (WinConfiguration->PanelSearch)
       {
         case isNameStartOnly:
-          Matches = ContainsTextSemiCaseSensitive(Item->Caption.SubString(1, Text.Length()), Text);
+          Matches = ContainsTextSemiCaseSensitive(ADirView->ItemFileName(Item).SubString(1, Text.Length()), Text);
           break;
         case isName:
-          Matches = ContainsTextSemiCaseSensitive(Item->Caption, Text);
+          Matches = ContainsTextSemiCaseSensitive(ADirView->ItemFileName(Item), Text);
           break;
         case isAll:
           int ColCount = (ADirView->ViewStyle == vsReport) ? ADirView->ColProperties->Count : 1;

@@ -1409,9 +1409,9 @@ begin
     begin
       Item := Items[Index];
       Assert(Assigned(Item));
-      if (Item.Selected <> Select) and
+      if (GetItemSelectedByIndex(Index) <> Select) and
          ItemMatchesFilter(Item, Filter) then
-           Item.Selected := Select;
+           SetItemSelectedByIndex(Index, Select);
     end;
   finally
     Screen.Cursor := OldCursor;
@@ -1861,7 +1861,7 @@ begin
         // cannot use ItemFileName as for TUnixDirView the file object
         // is no longer valid
         FileName := Item.Caption;
-        if Item.Selected then
+        if GetItemSelectedByIndex(Index) then
           OldSelection.Add(FileName);
 
         if CacheIcons and (ItemImageIndex(Item, True) >= 0) then
@@ -1934,7 +1934,7 @@ begin
           ItemToFocus := Item;
 
         if OldSelection.Find(FileName, FoundIndex) then
-          Item.Selected := True;
+          SetItemSelectedByIndex(Index, True);
 
         if CacheIcons and (ItemImageIndex(Item, True) < 0) then
         begin
@@ -2004,6 +2004,7 @@ begin
     else
   begin
     FLoading := True;
+    FInsertingNewUnselectedItem := True;
     try
       FHasParentDir := False;
 
@@ -2030,6 +2031,7 @@ begin
       end;
     finally
       FLoading := False;
+      FInsertingNewUnselectedItem := False;
 
       try
         if FAbortLoading then
