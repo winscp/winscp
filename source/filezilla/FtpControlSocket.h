@@ -65,7 +65,6 @@ public:
 
   void SetAsyncRequestResult(int nAction, CAsyncRequestData * pData);
 
-  int CheckOverwriteFile();
   BOOL Create();
   void TransfersocketListenFinished(unsigned int ip, unsigned short port);
 
@@ -169,6 +168,9 @@ protected:
   _int64 GetSpeedLimit(CTime & time, int valType, int valValue);
 
   void SetDirectoryListing(t_directory * pDirectory, bool bSetWorkingDir = true);
+  int CheckOverwriteFile();
+  int CheckOverwriteFileAndCreateTarget();
+  int FileTransferHandleDirectoryListing(t_directory * pDirectory);
   t_directory * m_pDirectoryListing;
 
   CMainThread * m_pOwner;

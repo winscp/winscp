@@ -2895,25 +2895,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         }
         if (m_pDirectoryListing && i==m_pDirectoryListing->num)
         {
-          nReplyError = CheckOverwriteFile();
-          if (!nReplyError)
-          {
-            if (pData->transferfile.get)
-            {
-              CString path=pData->transferfile.localfile;
-              if (path.ReverseFind(L'\\')!=-1)
-              {
-                path=path.Left(path.ReverseFind(L'\\')+1);
-                CString path2;
-                while (path!=L"")
-                {
-                  path2+=path.Left(path.Find( L"\\" )+1);
-                  path=path.Mid(path.Find( L"\\" )+1);
-                  CreateDirectory(path2, 0);
-                }
-              }
-            }
-          }
+          nReplyError = CheckOverwriteFileAndCreateTarget();
         }
       }
       else
@@ -3312,31 +3294,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         else
           listing.path = pData->transferfile.remotepath;
 
-        SetDirectoryListing(&listing);
-
-        m_Operation.nOpState = FILETRANSFER_TYPE;
-        delete m_pTransferSocket;
-        m_pTransferSocket = 0;
-
-        nReplyError = CheckOverwriteFile();
-        if (!nReplyError)
-        {
-          if (pData->transferfile.get)
-          {
-            CString path=pData->transferfile.localfile;
-            if (path.ReverseFind(L'\\')!=-1)
-            {
-              path=path.Left(path.ReverseFind(L'\\')+1);
-              CString path2;
-              while (path!=L"")
-              {
-                path2+=path.Left(path.Find( L"\\" )+1);
-                path=path.Mid(path.Find( L"\\" )+1);
-                CreateDirectory(path2, 0);
-              }
-            }
-          }
-        }
+        nReplyError = FileTransferHandleDirectoryListing(&listing);
       }
       else if (code==4 || code==5) //LIST failed, try getting file information using SIZE and MDTM
       {
@@ -3366,29 +3324,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       }
       if (pData->nGotTransferEndReply && pData->pDirectoryListing)
       {
-        SetDirectoryListing(pData->pDirectoryListing);
-        delete m_pTransferSocket;
-        m_pTransferSocket=0;
-        m_Operation.nOpState=FILETRANSFER_TYPE;
-        nReplyError = CheckOverwriteFile();
-        if (!nReplyError)
-        {
-          if (pData->transferfile.get)
-          {
-            CString path=pData->transferfile.localfile;
-            if (path.ReverseFind(L'\\')!=-1)
-            {
-              path=path.Left(path.ReverseFind(L'\\')+1);
-              CString path2;
-              while (path!=L"")
-              {
-                path2+=path.Left(path.Find( L"\\" )+1);
-                path=path.Mid(path.Find( L"\\" )+1);
-                CreateDirectory(path2, 0);
-              }
-            }
-          }
-        }
+        nReplyError = FileTransferHandleDirectoryListing(pData->pDirectoryListing);
         pData->nGotTransferEndReply=0;
       }
       break;
@@ -4912,6 +4848,42 @@ public:
     else
       ResetOperation(FZ_REPLY_ERROR);
   }
+}
+
+int CFtpControlSocket::FileTransferHandleDirectoryListing(t_directory * pDirectory)
+{
+  SetDirectoryListing(pDirectory);
+
+  m_Operation.nOpState = FILETRANSFER_TYPE;
+  delete m_pTransferSocket;
+  m_pTransferSocket = 0;
+
+  return CheckOverwriteFileAndCreateTarget();
+}
+
+int CFtpControlSocket::CheckOverwriteFileAndCreateTarget()
+{
+  int nReplyError = CheckOverwriteFile();
+  if (!nReplyError)
+  {
+    CFileTransferData * pData = static_cast<CFileTransferData *>(m_Operation.pData);
+    if (pData->transferfile.get)
+    {
+      CString path = pData->transferfile.localfile;
+      if (path.ReverseFind(L'\\') != -1)
+      {
+        path = path.Left(path.ReverseFind(L'\\')+1);
+        CString path2;
+        while (path != L"")
+        {
+          path2 += path.Left(path.Find(L"\\") + 1);
+          path = path.Mid(path.Find(L"\\") + 1);
+          CreateDirectory(path2, 0);
+        }
+      }
+    }
+  }
+  return nReplyError;
 }
 
 int CFtpControlSocket::CheckOverwriteFile()
