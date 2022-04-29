@@ -1581,8 +1581,9 @@ void __fastcall TFTPFileSystem::FileTransfer(const UnicodeString & FileName,
 {
   FILE_OPERATION_LOOP_BEGIN
   {
-    FFileZillaIntf->FileTransfer(ApiPath(LocalFile).c_str(), RemoteFile.c_str(),
-      RemotePath.c_str(), Get, Size, Type, &UserData);
+    FFileZillaIntf->FileTransfer(
+      ApiPath(LocalFile).c_str(), RemoteFile.c_str(), RemotePath.c_str(),
+      Get, Size, Type, &UserData, UserData.CopyParam->OnTransferOut, UserData.CopyParam->OnTransferIn);
     // we may actually catch response code of the listing
     // command (when checking for existence of the remote file)
     unsigned int Reply = WaitForCommandReply();
@@ -1694,7 +1695,10 @@ void __fastcall TFTPFileSystem::Sink(
   UnicodeString ExpandedDestFullName = ExpandUNCFileName(DestFullName);
   Action.Destination(ExpandedDestFullName);
 
-  FTerminal->UpdateTargetAttrs(DestFullName, File, CopyParam, Attrs);
+  if (CopyParam->OnTransferOut == NULL)
+  {
+    FTerminal->UpdateTargetAttrs(DestFullName, File, CopyParam, Attrs);
+  }
 
   FLastDataSent = Now();
 }
@@ -1718,12 +1722,13 @@ void __fastcall TFTPFileSystem::CopyToRemote(TStrings * FilesToCopy,
 bool __fastcall TFTPFileSystem::CanTransferSkipList(int Params, unsigned int Flags, const TCopyParamType * CopyParam)
 {
   bool Result =
-    FLAGSET(Params, cpNoConfirmation) &&
-    // cpAppend is not supported with FTP
-    DebugAlwaysTrue(FLAGCLEAR(Params, cpAppend)) &&
-    FLAGCLEAR(Params, cpResume) &&
-    FLAGCLEAR(Flags, tfAutoResume) &&
-    !CopyParam->NewerOnly;
+    (CopyParam->OnTransferIn != NULL) ||
+    (FLAGSET(Params, cpNoConfirmation) &&
+     // cpAppend is not supported with FTP
+     DebugAlwaysTrue(FLAGCLEAR(Params, cpAppend)) &&
+     FLAGCLEAR(Params, cpResume) &&
+     FLAGCLEAR(Flags, tfAutoResume) &&
+     !CopyParam->NewerOnly);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -1733,7 +1738,10 @@ void __fastcall TFTPFileSystem::Source(
   TFileOperationProgressType * OperationProgress, unsigned int Flags,
   TUploadSessionAction & Action, bool & /*ChildError*/)
 {
-  Handle.Close();
+  if (CopyParam->OnTransferIn == NULL)
+  {
+    Handle.Close();
+  }
 
   ResetFileTransfer();
 
@@ -1749,8 +1757,9 @@ void __fastcall TFTPFileSystem::Source(
 
     SetCPSLimit(OperationProgress);
     // not used for uploads anyway
-    FFileTransferPreserveTime = CopyParam->PreserveTime;
+    FFileTransferPreserveTime = CopyParam->PreserveTime && (CopyParam->OnTransferIn == NULL);
     FFileTransferRemoveBOM = CopyParam->RemoveBOM;
+    // not used for uploads anyway
     FFileTransferNoList = CanTransferSkipList(Params, Flags, CopyParam);
     // not used for uploads, but we get new name (if any) back in this field
     UserData.FileName = DestFileName;
@@ -1927,6 +1936,8 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
     case fcMoveToQueue:
     case fcSkipTransfer:
     case fcParallelTransfers:
+    case fcTransferOut:
+    case fcTransferIn:
       return true;
 
     case fcPreservingTimestampUpload:
@@ -1962,8 +1973,6 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
     case fcPreservingTimestampDirs:
     case fcResumeSupport:
     case fcChangePassword:
-    case fcTransferOut:
-    case fcTransferIn:
       return false;
 
     default:
@@ -3877,6 +3886,11 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestOverwrite(
       // on retry, use the same answer as on the first attempt
       RequestResult = UserData.OverwriteResult;
     }
+    else if ((UserData.CopyParam->OnTransferOut != NULL) || (UserData.CopyParam->OnTransferIn != NULL))
+    {
+      DebugFail();
+      RequestResult = TFileZillaIntf::FILEEXISTS_OVERWRITE;
+    }
     else
     {
       TFileOperationProgressType * OperationProgress = FTerminal->OperationProgress;
@@ -4684,6 +4698,7 @@ bool __fastcall TFTPFileSystem::Unquote(UnicodeString & Str)
 void __fastcall TFTPFileSystem::PreserveDownloadFileTime(HANDLE Handle, void * UserData)
 {
   TFileTransferData * Data = static_cast<TFileTransferData *>(UserData);
+  DebugAssert(Data->CopyParam->OnTransferOut == NULL);
   FTerminal->UpdateTargetTime(Handle, Data->Modification, dstmUnix);
 }
 //---------------------------------------------------------------------------

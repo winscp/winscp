@@ -2841,10 +2841,14 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     DebugAssert(!m_Operation.nOpMode);
     DebugAssert(!m_Operation.pData);
 
-    CString str;
-    str.Format(transferfile->get?IDS_STATUSMSG_DOWNLOADSTART:IDS_STATUSMSG_UPLOADSTART,
-          transferfile->get ? transferfile->remotepath.FormatFilename(transferfile->remotefile) : transferfile->localfile);
-    ShowStatus(str,FZ_LOG_STATUS);
+    if ((transferfile->OnTransferOut == NULL) &&
+        (transferfile->OnTransferIn == NULL))
+    {
+      CString str;
+      str.Format(transferfile->get?IDS_STATUSMSG_DOWNLOADSTART:IDS_STATUSMSG_UPLOADSTART,
+            transferfile->get ? transferfile->remotepath.FormatFilename(transferfile->remotefile) : transferfile->localfile);
+      ShowStatus(str,FZ_LOG_STATUS);
+    }
 
     m_Operation.nOpMode=CSMODE_TRANSFER|(transferfile->get?CSMODE_DOWNLOAD:CSMODE_UPLOAD);
 
@@ -3502,18 +3506,31 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
           m_Operation.nOpState = FILETRANSFER_REST;
         else
           m_Operation.nOpState = FILETRANSFER_RETRSTOR;
-        BOOL res = FALSE;
-        if (!m_pDataFile)
-          m_pDataFile = new CFile;
+        BOOL res;
+        if (m_pDataFile != NULL)
+        {
+          delete m_pDataFile;
+          m_pDataFile = NULL;
+        }
         if (pData->transferfile.get)
         {
-          if (pData->transferdata.bResume)
-            res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeCreate|CFile::modeWrite|CFile::modeNoTruncate|CFile::shareDenyWrite);
-          else
-            res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeWrite|CFile::modeCreate|CFile::shareDenyWrite);
+          if (pData->transferfile.OnTransferOut == NULL)
+          {
+            m_pDataFile = new CFile();
+            if (pData->transferdata.bResume)
+              res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeCreate|CFile::modeWrite|CFile::modeNoTruncate|CFile::shareDenyWrite);
+            else
+              res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeWrite|CFile::modeCreate|CFile::shareDenyWrite);
+          }
         }
         else
-          res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeRead|CFile::shareDenyNone);
+        {
+          if (pData->transferfile.OnTransferIn == NULL)
+          {
+            m_pDataFile = new CFile();
+            res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeRead|CFile::shareDenyNone);
+          }
+        }
         if (!res)
         {
           wchar_t * Error = m_pTools->LastSysErrorMessage();
@@ -3535,11 +3552,16 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         }
 
         m_pTransferSocket->m_pFile = m_pDataFile;
+        m_pTransferSocket->m_OnTransferOut = pData->transferfile.OnTransferOut;
+        m_pTransferSocket->m_OnTransferIn = pData->transferfile.OnTransferIn;
         if (!pData->transferfile.get)
         {
-          // See comment in !get branch below
-          pData->transferdata.transfersize=GetLength64(*m_pDataFile);
-          pData->transferdata.transferleft=pData->transferdata.transfersize;
+          if (m_pDataFile != NULL)
+          {
+            // See comment in !get branch below
+            pData->transferdata.transfersize=GetLength64(*m_pDataFile);
+            pData->transferdata.transferleft=pData->transferdata.transfersize;
+          }
           if (pData->transferdata.bResume)
           {
             CString remotefile=pData->transferfile.remotefile;
@@ -4385,8 +4407,10 @@ void CFtpControlSocket::TransferFinished(bool preserveFileTimeForUploads)
 {
   CFileTransferData *pData=static_cast<CFileTransferData *>(m_Operation.pData);
 
-  if (GetOptionVal(OPTION_PRESERVEDOWNLOADFILETIME) && m_pDataFile &&
-        pData->transferfile.get)
+  if (GetOptionVal(OPTION_PRESERVEDOWNLOADFILETIME) &&
+      m_pDataFile &&
+      pData->transferfile.get &&
+      DebugAlwaysTrue(pData->transferfile.OnTransferOut == NULL))
   {
     m_pTools->PreserveDownloadFileTime(
       (HANDLE)m_pDataFile->m_hFile, reinterpret_cast<void *>(pData->transferfile.nUserData));
@@ -4394,7 +4418,8 @@ void CFtpControlSocket::TransferFinished(bool preserveFileTimeForUploads)
   if (!pData->transferfile.get &&
       GetOptionVal(OPTION_MPEXT_PRESERVEUPLOADFILETIME) && preserveFileTimeForUploads &&
       ((m_serverCapabilities.GetCapability(mfmt_command) == yes) ||
-       (m_serverCapabilities.GetCapability(mdtm_command) == yes)))
+       (m_serverCapabilities.GetCapability(mdtm_command) == yes)) &&
+      DebugAlwaysTrue(pData->transferfile.OnTransferIn == NULL))
   {
     CString filename =
       pData->transferfile.remotepath.FormatFilename(pData->transferfile.remotefile, !pData->bUseAbsolutePaths);
@@ -4867,7 +4892,7 @@ int CFtpControlSocket::CheckOverwriteFileAndCreateTarget()
   if (!nReplyError)
   {
     CFileTransferData * pData = static_cast<CFileTransferData *>(m_Operation.pData);
-    if (pData->transferfile.get)
+    if (pData->transferfile.get && (pData->transferfile.OnTransferOut == NULL))
     {
       CString path = pData->transferfile.localfile;
       if (path.ReverseFind(L'\\') != -1)
@@ -4897,8 +4922,12 @@ int CFtpControlSocket::CheckOverwriteFile()
 
   int nReplyError = 0;
   CFileStatus64 status;
-  BOOL res = GetStatus64(pData->transferfile.localfile, status);
-  if (!res)
+  if ((pData->transferfile.OnTransferOut != NULL) ||
+      (pData->transferfile.OnTransferIn != NULL))
+  {
+    m_Operation.nOpState = FILETRANSFER_TYPE;
+  }
+  else if (!GetStatus64(pData->transferfile.localfile, status))
   {
     if (!pData->transferfile.get)
     {
