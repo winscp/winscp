@@ -218,9 +218,10 @@ bool __fastcall TFileZillaIntf::ListFile(const wchar_t * FileName, const wchar_t
   return Check(FFileZillaApi->ListFile(FileName, Path), L"listfile");
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFileZillaIntf::FileTransfer(const wchar_t * LocalFile,
-  const wchar_t * RemoteFile, const wchar_t * RemotePath, bool Get, __int64 Size,
-  int Type, void * UserData)
+bool __fastcall TFileZillaIntf::FileTransfer(
+  const wchar_t * LocalFile, const wchar_t * RemoteFile,
+  const wchar_t * RemotePath, bool Get, __int64 Size, int Type, void * UserData,
+  TTransferOutEvent OnTransferOut, TTransferInEvent OnTransferIn)
 {
   t_transferfile Transfer;
 
@@ -233,6 +234,8 @@ bool __fastcall TFileZillaIntf::FileTransfer(const wchar_t * LocalFile,
   // 1 = ascii, 2 = binary
   Transfer.nType = Type;
   Transfer.nUserData = reinterpret_cast<int>(UserData);
+  Transfer.OnTransferOut = OnTransferOut;
+  Transfer.OnTransferIn = OnTransferIn;
 
   return Check(FFileZillaApi->FileTransfer(Transfer), L"filetransfer");
 }

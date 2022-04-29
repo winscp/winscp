@@ -560,6 +560,8 @@ private:
   bool FWantsProgress;
   bool FInteractive;
   unsigned int FMaxSend;
+  // Particularly FTP calls TransferOut/In from other thread
+  std::unique_ptr<TCriticalSection> FSection;
 
   inline TConsoleCommStruct * __fastcall GetCommStruct();
   inline void __fastcall FreeCommStruct(TConsoleCommStruct * CommStruct);
@@ -591,6 +593,8 @@ __fastcall TExternalConsole::TExternalConsole(
     // we get terminated as well
     CloseHandle(Job);
   }
+
+  FSection.reset(new TCriticalSection());
 
   TConsoleCommStruct * CommStruct = GetCommStruct();
   try
@@ -686,6 +690,7 @@ UnicodeString __fastcall TExternalConsole::FinalLogMessage()
 //---------------------------------------------------------------------------
 void __fastcall TExternalConsole::Print(UnicodeString Str, bool FromBeginning, bool Error)
 {
+  TGuard Guard(FSection.get());
   // need to do at least one iteration, even when Str is empty (new line)
   do
   {
@@ -721,6 +726,7 @@ void __fastcall TExternalConsole::Print(UnicodeString Str, bool FromBeginning, b
 //---------------------------------------------------------------------------
 bool __fastcall TExternalConsole::Input(UnicodeString & Str, bool Echo, unsigned int Timer)
 {
+  TGuard Guard(FSection.get());
   TConsoleCommStruct * CommStruct = GetCommStruct();
   try
   {
@@ -757,6 +763,7 @@ int __fastcall TExternalConsole::Choice(
   UnicodeString Options, int Cancel, int Break, int Continue, int Timeouted, bool Timeouting, unsigned int Timer,
   UnicodeString Message)
 {
+  TGuard Guard(FSection.get());
   TConsoleCommStruct * CommStruct = GetCommStruct();
   try
   {
@@ -803,6 +810,7 @@ bool __fastcall TExternalConsole::PendingAbort()
 //---------------------------------------------------------------------------
 void __fastcall TExternalConsole::SetTitle(UnicodeString Title)
 {
+  TGuard Guard(FSection.get());
   TConsoleCommStruct * CommStruct = GetCommStruct();
   try
   {
@@ -822,6 +830,7 @@ void __fastcall TExternalConsole::SetTitle(UnicodeString Title)
 //---------------------------------------------------------------------------
 void __fastcall TExternalConsole::Init()
 {
+  TGuard Guard(FSection.get());
   TConsoleCommStruct * CommStruct = GetCommStruct();
   try
   {
@@ -897,6 +906,7 @@ void __fastcall TExternalConsole::WaitBeforeExit()
 //---------------------------------------------------------------------------
 void __fastcall TExternalConsole::Progress(TScriptProgress & Progress)
 {
+  TGuard Guard(FSection.get());
   TConsoleCommStruct * CommStruct = GetCommStruct();
 
   typedef TConsoleCommStruct::TProgressEvent TProgressEvent;
@@ -957,6 +967,7 @@ void __fastcall TExternalConsole::Progress(TScriptProgress & Progress)
 //---------------------------------------------------------------------------
 void __fastcall TExternalConsole::TransferOut(const unsigned char * Data, size_t Len)
 {
+  TGuard Guard(FSection.get());
   DebugAssert((Data == NULL) == (Len == 0));
   size_t Offset = 0;
   do
@@ -981,6 +992,7 @@ void __fastcall TExternalConsole::TransferOut(const unsigned char * Data, size_t
 //---------------------------------------------------------------------------
 size_t __fastcall TExternalConsole::TransferIn(unsigned char * Data, size_t Len)
 {
+  TGuard Guard(FSection.get());
   size_t Offset = 0;
   size_t Result = 0;
   while ((Result == Offset) && (Offset < Len))

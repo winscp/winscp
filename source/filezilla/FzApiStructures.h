@@ -3,6 +3,7 @@
 #define FzApiStructuresH
 //---------------------------------------------------------------------------
 #include <openssl/pkcs12.h>
+#include <FileBuffer.h>
 //---------------------------------------------------------------------------
 class t_server
 {
@@ -35,6 +36,8 @@ typedef struct
     t_server server;
     int nType;
     int nUserData;
+    TTransferOutEvent OnTransferOut;
+    TTransferInEvent OnTransferIn;
 } t_transferfile;
 //---------------------------------------------------------------------------
 #endif // FzApiStructuresH

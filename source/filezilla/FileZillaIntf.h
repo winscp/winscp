@@ -195,8 +195,10 @@ public:
   bool __fastcall Rename(const wchar_t* OldName, const wchar_t* NewName,
     const wchar_t* Path, const wchar_t* NewPath);
 
-  bool __fastcall FileTransfer(const wchar_t * LocalFile, const wchar_t * RemoteFile,
-    const wchar_t * RemotePath, bool Get, __int64 Size, int Type, void * UserData);
+  bool __fastcall FileTransfer(
+    const wchar_t * LocalFile, const wchar_t * RemoteFile,
+    const wchar_t * RemotePath, bool Get, __int64 Size, int Type, void * UserData,
+    TTransferOutEvent OnTransferOut, TTransferInEvent OnTransferIn);
 
   virtual const wchar_t * __fastcall Option(int OptionID) const = 0;
   virtual int __fastcall OptionVal(int OptionID) const = 0;
