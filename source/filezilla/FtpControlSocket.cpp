@@ -3588,7 +3588,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         {
           // Resetting transfersize here is pointless as we
           // always provide valid size in call to FileTransfer.
-          // We unnecessary reply on the file being in the directory listing.
+          // We unnecessary rely on the file being in the directory listing.
           pData->transferdata.transfersize=-1;
           CString remotefile=pData->transferfile.remotefile;
           if (m_pDirectoryListing)
