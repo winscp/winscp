@@ -3522,6 +3522,10 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
             else
               res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeWrite|CFile::modeCreate|CFile::shareDenyWrite);
           }
+          else
+          {
+            res = TRUE;
+          }
         }
         else
         {
@@ -3529,6 +3533,10 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
           {
             m_pDataFile = new CFile();
             res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeRead|CFile::shareDenyNone);
+          }
+          else
+          {
+            res = TRUE;
           }
         }
         if (!res)
