@@ -953,12 +953,7 @@ void __fastcall TLocationProfilesDialog::ProfilesViewGetSelectedIndex(
 void __fastcall TLocationProfilesDialog::LocalDirectoryBrowseButtonClick(
   TObject * /*Sender*/)
 {
-  UnicodeString Directory = LocalDirectoryEdit->Text;
-  if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY), true))
-  {
-    LocalDirectoryEdit->Text = Directory;
-    DirectoryEditChange(LocalDirectoryEdit);
-  }
+  SelectDirectoryForEdit(LocalDirectoryEdit);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLocationProfilesDialog::SwitchButtonClick(TObject * /*Sender*/)

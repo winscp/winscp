@@ -4323,9 +4323,7 @@ bool __fastcall TCustomScpExplorerForm::OpenBookmark(TOperationSide Side, TBookm
   bool Result = !Path.IsEmpty();
   if (Result)
   {
-    // While we might get here when the session is closed (from location profiles),
-    // it's not a problem as the Path setter is noop then
-    DirView(Side)->Path = Path;
+    TryOpenDirectory(Side, Path);
   }
   return Result;
 }
@@ -10579,14 +10577,19 @@ bool __fastcall TCustomScpExplorerForm::TryOpenDirectory(TOperationSide Side, co
   bool Result = true;
   try
   {
+    UnicodeString APath = Path;
     if (Side == osRemote)
     {
       Terminal->ExceptionOnFail = true;
     }
+    else
+    {
+      APath = ExpandEnvironmentVariables(Path);
+    }
 
     try
     {
-      DirView(Side)->Path = Path;
+      DirView(Side)->Path = APath;
     }
     __finally
     {

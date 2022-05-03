@@ -1328,6 +1328,21 @@ bool __fastcall SelectDirectory(UnicodeString & Path, const UnicodeString Prompt
   return Result;
 }
 //---------------------------------------------------------------------------
+void SelectDirectoryForEdit(THistoryComboBox * Edit)
+{
+  UnicodeString OriginalDirectory = ExpandEnvironmentVariables(Edit->Text);
+  UnicodeString Directory = OriginalDirectory;
+  if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY), true) &&
+      !SamePaths(OriginalDirectory, Directory))
+  {
+    Edit->Text = Directory;
+    if (Edit->OnChange != NULL)
+    {
+      Edit->OnChange(Edit);
+    }
+  }
+}
+//---------------------------------------------------------------------------
 bool __fastcall ListViewAnyChecked(TListView * ListView, bool Checked)
 {
   bool AnyChecked = false;

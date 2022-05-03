@@ -1482,7 +1482,8 @@ void __fastcall TScpCommanderForm::DoOpenBookmark(UnicodeString Local, UnicodeSt
   {
     if (!Local.IsEmpty())
     {
-      LocalDirView->Path = Local;
+      DebugAssert(!IsLocalBrowserMode());
+      LocalDirView->Path = ExpandEnvironmentVariables(Local);
     }
   }
   __finally

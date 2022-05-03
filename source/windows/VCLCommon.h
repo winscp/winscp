@@ -6,6 +6,7 @@
 #include "Configuration.h"
 #include "Exceptions.h"
 #include <ComCtrls.hpp>
+#include <HistoryComboBox.hpp>
 //---------------------------------------------------------------------------
 const TColor LinkColor = clBlue;
 //---------------------------------------------------------------------------
@@ -36,6 +37,7 @@ bool __fastcall ReleaseAsModal(TForm * Form, void *& Storage);
 bool __fastcall IsMainFormLike(TCustomForm * Form);
 bool __fastcall SelectDirectory(UnicodeString & Path, const UnicodeString Prompt,
   bool PreserveFileName);
+void SelectDirectoryForEdit(THistoryComboBox * Edit);
 enum TListViewCheckAll { caCheck, caUncheck, caToggle };
 bool __fastcall ListViewAnyChecked(TListView * ListView, bool Checked = true);
 void __fastcall ListViewCheckAll(TListView * ListView,
