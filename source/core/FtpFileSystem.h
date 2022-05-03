@@ -217,6 +217,7 @@ protected:
   bool __fastcall CanTransferSkipList(int Params, unsigned int Flags, const TCopyParamType * CopyParam);
   void __fastcall Disconnect();
   UnicodeString RemoteExtractFilePath(const UnicodeString & Path);
+  UnicodeString DoReadCurrentDirectory();
 
   static bool __fastcall Unquote(UnicodeString & Str);
 
