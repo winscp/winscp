@@ -1905,7 +1905,29 @@ void __fastcall TFTPFileSystem::DoStartup()
   }
 
   // retrieve initialize working directory to save it as home directory
-  ReadCurrentDirectory();
+  UnicodeString RawPwd = DoReadCurrentDirectory();
+
+  // Full name is "MVS is the operating system of this server. FTP Server is running on ..."
+  // (the ... can be "z/OS")
+  // https://www.ibm.com/docs/en/zos/latest?topic=2rc-215-mvs-is-operating-system-this-server-ftp-server-is-running-name
+  // FZPI has a different incompatible detection.
+  // MVS FTP servers have two separate MVS and Unix file systems cooexisting in the same session.
+  // Use the "MVS mode" only if we are starting in the MVS file system.
+  // WinSCP cannot handle switching between these two file system in one session.
+  FMVS = (FSystem.SubString(1, 3) == L"MVS") && !UnixIsAbsolutePath(RawPwd);
+  if (FMVS)
+  {
+    FTerminal->LogEvent(L"MVS system detected.");
+  }
+
+  // Other systems are detected in HandleReplyStatus
+
+  if ((FWorkFromCwd == asAuto) && (FVMS || FMVS))
+  {
+    FTerminal->LogEvent(L"Server is known to require use of relative paths");
+    FWorkFromCwd = asOn;
+  }
+
   FHomeDirectory = FCurrentDirectory;
 }
 //---------------------------------------------------------------------------
@@ -1988,6 +2010,12 @@ void __fastcall TFTPFileSystem::LookupUsersGroups()
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::ReadCurrentDirectory()
 {
+  DoReadCurrentDirectory();
+}
+//---------------------------------------------------------------------------
+UnicodeString TFTPFileSystem::DoReadCurrentDirectory()
+{
+  UnicodeString Path;
   // ask the server for current directory on startup only
   // and immediately after call to CWD,
   // later our current directory may be not synchronized with FZAPI current
@@ -2010,7 +2038,7 @@ void __fastcall TFTPFileSystem::ReadCurrentDirectory()
       if (((Code == 257) || FTerminal->SessionData->FtpAnyCodeForPwd) &&
           (Response->Count == 1))
       {
-        UnicodeString Path = Response->Text;
+        Path = Response->Text;
 
         int P = Path.Pos(L"\"");
         if (P == 0)
@@ -2055,6 +2083,7 @@ void __fastcall TFTPFileSystem::ReadCurrentDirectory()
       delete Response;
     }
   }
+  return Path;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::DoReadDirectory(TRemoteFileList * FileList)
@@ -3526,15 +3555,6 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
         FSystem = FLastResponse->Text.TrimRight();
         // FZAPI has own detection of MVS/VMS
 
-        // full name is "MVS is the operating system of this server. FTP Server is running on ..."
-        // (the ... can be "z/OS")
-        // https://www.ibm.com/docs/en/zos/latest?topic=2rc-215-mvs-is-operating-system-this-server-ftp-server-is-running-name
-        // FZPI has a different incompatible detection.
-        FMVS = (FSystem.SubString(1, 3) == L"MVS");
-        if (FMVS)
-        {
-          FTerminal->LogEvent(L"MVS system detected.");
-        }
         // The FWelcomeMessage usually contains "Microsoft FTP Service" but can be empty
         if (ContainsText(FSystem, L"Windows_NT"))
         {
@@ -3556,11 +3576,6 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
           FTerminal->LogEvent(L"Server is known not to support LIST -a");
           FListAll = asOff;
         }
-        if ((FWorkFromCwd == asAuto) && (FVMS || FMVS))
-        {
-          FTerminal->LogEvent(L"Server is known to require use of relative paths");
-          FWorkFromCwd = asOn;
-        }
         // 220-FileZilla Server 1.0.1
         // 220 Please visit https://filezilla-project.org/
         // SYST
@@ -3571,6 +3586,8 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
           FTerminal->LogEvent(L"FileZilla server detected.");
           FFileZilla = true;
         }
+
+        // MVS is detected in DoStartup
       }
       else
       {
