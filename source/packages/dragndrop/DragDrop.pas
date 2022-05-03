@@ -1416,7 +1416,7 @@ begin
     end;
     if dwEffect <> DROPEFFECT_NONE then
     begin
-      if FOwner.FBTF then SetForegroundWindow((FOwner.Owner as TWinControl).Handle);
+      if FOwner.FBTF then SetForegroundWindow(GetParentForm(FOwner.Owner as TWinControl).Handle);
       TDragDrop(FOwner).FdwEffect := dwEffect;
       TDragDrop(FOwner).FgrfKeyState := KeyState;
       TDragDrop(FOwner).Fpt := pt;
