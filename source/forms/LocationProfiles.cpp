@@ -533,8 +533,9 @@ bool __fastcall TLocationProfilesDialog::AddAsBookmark(TObject * Sender, bool In
         if (Initial)
         {
           WinConfiguration->UseSharedBookmarks = Shared;
-          BookmarkList = GetBookmarkList(GetProfilesSheet());
-          ProfilesView = GetProfilesView(GetProfilesSheet());
+          PageControl->ActivePage = GetProfilesSheet();
+          BookmarkList = GetBookmarkList(PageControl->ActivePage);
+          ProfilesView = GetProfilesView(PageControl->ActivePage);
         }
 
         TBookmark * Bookmark = BookmarkList->FindByName(SelectedNode, BookmarkName);
