@@ -2335,7 +2335,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
 
       if (RawSettings->Count > 0) // optimization
       {
-        ApplyRawSettings(RawSettings.get(), FLAGSET(Flags, pufUnsafe));
+        ApplyRawSettings(RawSettings.get(), Unsafe);
       }
 
       bool HasPassword = (UserInfo.Pos(L':') > 0);
