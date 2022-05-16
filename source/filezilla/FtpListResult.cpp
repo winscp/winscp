@@ -255,11 +255,10 @@ t_directory::t_direntry * CFtpListResult::getList(int & Num)
   return Result;
 }
 
-BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_directory::t_direntry &direntry, int &nFTPServerType)
+BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_directory::t_direntry &direntry)
 {
   USES_CONVERSION;
 
-  nFTPServerType = 0;
   direntry.ownergroup = L"";
   direntry.owner = L"";
   direntry.group = L"";
@@ -364,7 +363,6 @@ void CFtpListResult::AddData(const char * Data, int Size)
         FirstLineEnd = Pos;
       }
       t_directory::t_direntry DirEntry;
-      int ServerType;
       RawByteString Line = Record;
       for (int Index = 1; Index <= Line.Length(); Index++)
       {
@@ -373,12 +371,8 @@ void CFtpListResult::AddData(const char * Data, int Size)
           Line[Index] = ' ';
         }
       }
-      if (parseLine(Line.c_str(), Line.Length(), DirEntry, ServerType))
+      if (parseLine(Line.c_str(), Line.Length(), DirEntry))
       {
-        if (ServerType != 0)
-        {
-          m_server.nServerType |= ServerType;
-        }
         if ((DirEntry.name != L".") && (DirEntry.name != L".."))
         {
           AddLine(DirEntry);
