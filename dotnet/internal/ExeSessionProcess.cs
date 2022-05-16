@@ -1044,6 +1044,11 @@ namespace WinSCP
         [DllImport("kernel32.dll", SetLastError = true)]
         static extern uint SizeofResource(IntPtr hModule, IntPtr hResInfo);
 
+        private string GetVersionStr(FileVersionInfo version)
+        {
+            return $"{version.FileVersion}, product {version.ProductName} version is {version.ProductVersion}";
+        }
+
         private void CheckVersion(string exePath, FileVersionInfo assemblyVersion)
         {
             using (_logger.CreateCallstack())
@@ -1058,107 +1063,142 @@ namespace WinSCP
                 }
                 else
                 {
-                    FileVersionInfo version = FileVersionInfo.GetVersionInfo(exePath);
+                    DateTime dateTime = File.GetLastWriteTimeUtc(exePath);
+                    _logger.WriteLine($"Timestamp of {exePath} is {dateTime}");
 
-                    _logger.WriteLine("Version of {0} is {1}, product {2} version is {3}", exePath, version.FileVersion, version.ProductName, version.ProductVersion);
-
-                    Exception accessException = null;
-                    try
+                    bool known;
+                    var cacheKey = new Tuple<string, DateTime>(exePath, dateTime);
+                    lock (_versionInfoCache)
                     {
-                        using (File.OpenRead(exePath))
+                        known = _versionInfoCache.TryGetValue(cacheKey, out FileVersionInfo version);
+                        if (known)
                         {
-                        }
-                        long size = new FileInfo(exePath).Length;
-                        _logger.WriteLine($"Size of the executable file is {size}");
-
-                        int verInfoSize = GetFileVersionInfoSize(exePath, out int handle);
-                        if (verInfoSize == 0)
-                        {
-                            throw new Exception($"Cannot retrieve {exePath} version info", new Win32Exception());
+                            _logger.WriteLine(
+                                $"Cached version of {exePath} is {GetVersionStr(version)}, and it was already deemed compatible");
                         }
                         else
                         {
-                            _logger.WriteLine($"Size of the executable file version info is {verInfoSize}");
+                            _logger.WriteLine($"Executable version is not cached yet, cache size is {_versionInfoCache.Count}");
                         }
                     }
-                    catch (Exception e)
+                    if (!known)
                     {
-                        _logger.WriteLine("Accessing executable file failed");
-                        _logger.WriteException(e);
-                        accessException = e;
-                    }
+                        FileVersionInfo version = FileVersionInfo.GetVersionInfo(exePath);
+                        _logger.WriteLine($"Version of {exePath} is {GetVersionStr(version)}");
 
-                    if (_session.DisableVersionCheck)
-                    {
-                        _logger.WriteLine("Version check disabled (not recommended)");
-                    }
-                    else if (assemblyVersion.ProductVersion != version.ProductVersion)
-                    {
-                        try
+                        bool incompatible = assemblyVersion.ProductVersion != version.ProductVersion;
+                        Exception accessException = null;
+                        if (incompatible || _logger.Logging)
                         {
-                            using (SHA256 SHA256 = SHA256.Create())
-                            using (FileStream stream = File.OpenRead(exePath))
+                            try
                             {
-                                string sha256 = string.Concat(Array.ConvertAll(SHA256.ComputeHash(stream), b => b.ToString("x2")));
-                                _logger.WriteLine($"SHA-256 of the executable file is {sha256}");
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            _logger.WriteLine("Calculating SHA-256 of the executable file failed");
-                            _logger.WriteException(e);
-                        }
-
-                        try
-                        {
-                            IntPtr library = LoadLibraryEx(exePath, IntPtr.Zero, 0x00000002); // LOAD_LIBRARY_AS_DATAFILE
-                            if (library == IntPtr.Zero)
-                            {
-                                _logger.WriteLine("Cannot load");
-                                _logger.WriteException(new Win32Exception());
-                            }
-                            else
-                            {
-                                IntPtr resource = FindResource(library, "#1", "#16");
-                                if (resource == IntPtr.Zero)
+                                using (File.OpenRead(exePath))
                                 {
-                                    _logger.WriteLine("Cannot find version resource");
-                                    _logger.WriteException(new Win32Exception());
+                                }
+                                long size = new FileInfo(exePath).Length;
+                                _logger.WriteLine($"Size of the executable file is {size}");
+
+                                int verInfoSize = GetFileVersionInfoSize(exePath, out int handle);
+                                if (verInfoSize == 0)
+                                {
+                                    throw new Exception($"Cannot retrieve {exePath} version info", new Win32Exception());
                                 }
                                 else
                                 {
-                                    uint resourceSize = SizeofResource(library, resource);
-                                    if (resourceSize == 0)
+                                    _logger.WriteLine($"Size of the executable file version info is {verInfoSize}");
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                _logger.WriteLine("Accessing executable file failed");
+                                _logger.WriteException(e);
+                                accessException = e;
+                            }
+                        }
+
+                        if (_session.DisableVersionCheck)
+                        {
+                            _logger.WriteLine("Version check disabled (not recommended)");
+                        }
+                        else if (incompatible)
+                        {
+                            if (_logger.Logging)
+                            {
+                                try
+                                {
+                                    using (SHA256 SHA256 = SHA256.Create())
+                                    using (FileStream stream = File.OpenRead(exePath))
                                     {
-                                        _logger.WriteLine("Cannot find size of version resource");
+                                        string sha256 = string.Concat(Array.ConvertAll(SHA256.ComputeHash(stream), b => b.ToString("x2")));
+                                        _logger.WriteLine($"SHA-256 of the executable file is {sha256}");
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    _logger.WriteLine("Calculating SHA-256 of the executable file failed");
+                                    _logger.WriteException(e);
+                                }
+
+                                try
+                                {
+                                    IntPtr library = LoadLibraryEx(exePath, IntPtr.Zero, 0x00000002); // LOAD_LIBRARY_AS_DATAFILE
+                                    if (library == IntPtr.Zero)
+                                    {
+                                        _logger.WriteLine("Cannot load");
                                         _logger.WriteException(new Win32Exception());
                                     }
                                     else
                                     {
-                                        _logger.WriteLine($"Version resource size is {resourceSize}");
+                                        IntPtr resource = FindResource(library, "#1", "#16");
+                                        if (resource == IntPtr.Zero)
+                                        {
+                                            _logger.WriteLine("Cannot find version resource");
+                                            _logger.WriteException(new Win32Exception());
+                                        }
+                                        else
+                                        {
+                                            uint resourceSize = SizeofResource(library, resource);
+                                            if (resourceSize == 0)
+                                            {
+                                                _logger.WriteLine("Cannot find size of version resource");
+                                                _logger.WriteException(new Win32Exception());
+                                            }
+                                            else
+                                            {
+                                                _logger.WriteLine($"Version resource size is {resourceSize}");
+                                            }
+                                        }
+                                        FreeLibrary(library);
                                     }
                                 }
-                                FreeLibrary(library);
+                                catch (Exception e)
+                                {
+                                    _logger.WriteLine("Querying version resource failed");
+                                    _logger.WriteException(e);
+                                }
                             }
-                        }
-                        catch (Exception e)
-                        {
-                            _logger.WriteLine("Querying version resource failed");
-                            _logger.WriteException(e);
-                        }
 
-                        string message;
-                        if (string.IsNullOrEmpty(version.ProductVersion) && (accessException != null))
-                        {
-                            message = $"Cannot use {exePath}";
+                            string message;
+                            if (string.IsNullOrEmpty(version.ProductVersion) && (accessException != null))
+                            {
+                                message = $"Cannot use {exePath}";
+                            }
+                            else
+                            {
+                                message =
+                                    $"The version of {exePath} ({version.ProductVersion}) does not match " +
+                                    $"version of this assembly {_logger.GetAssemblyFilePath()} ({assemblyVersion.ProductVersion}).";
+                            }
+                            throw _logger.WriteException(new SessionLocalException(_session, message, accessException));
                         }
                         else
                         {
-                            message =
-                                $"The version of {exePath} ({version.ProductVersion}) does not match " +
-                                $"version of this assembly {_logger.GetAssemblyFilePath()} ({assemblyVersion.ProductVersion}).";
+                            lock (_versionInfoCache)
+                            {
+                                _logger.WriteLine("Caching executable version");
+                                _versionInfoCache[cacheKey] = version;
+                            }
                         }
-                        throw _logger.WriteException(new SessionLocalException(_session, message, accessException));
                     }
                 }
             }
@@ -1250,5 +1290,6 @@ namespace WinSCP
         private AutoResetEvent _inputEvent = new AutoResetEvent(false);
         private Job _job;
         private bool _cancel;
+        private static readonly Dictionary<Tuple<string, DateTime>, FileVersionInfo> _versionInfoCache = new Dictionary<Tuple<string, DateTime>, FileVersionInfo>();
     }
 }
