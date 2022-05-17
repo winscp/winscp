@@ -303,12 +303,17 @@ BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_dir
 
   // name-only entries
   // (multiline VMS entries have only a name on the first line, so for VMS we have to skip this)
-  if (FLAGCLEAR(m_server.nServerType, FZ_SERVERTYPE_SUB_FTP_VMS) &&
-      (strchr(lineToParse, ' ') == NULL))
+  if (FLAGCLEAR(m_server.nServerType, FZ_SERVERTYPE_SUB_FTP_VMS))
   {
-    direntry = t_directory::t_direntry();
-    copyStr(direntry.name, 0, lineToParse, strlen(lineToParse));
-    return TRUE;
+    RawByteString Buf(lineToParse);
+    // z/OS PDS members without ISPF statistics (name only) still have loads of spaces after them.
+    Buf = Buf.TrimRight();
+    if (Buf.Pos(' ') == 0)
+    {
+      direntry = t_directory::t_direntry();
+      direntry.name = Buf.c_str();
+      return TRUE;
+    }
   }
 
   return FALSE;
