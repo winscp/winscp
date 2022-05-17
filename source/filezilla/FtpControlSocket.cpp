@@ -453,8 +453,6 @@ int CFtpControlSocket::InitConnectState()
 
 void CFtpControlSocket::Connect(t_server &server)
 {
-  USES_CONVERSION;
-
   if (m_Operation.nOpMode)
   {
     ShowStatus(L"Internal error: m_Operation.nOpMode not zero in Connect", FZ_LOG_ERROR);
@@ -914,8 +912,8 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
   if (m_CurrentServer.port != 21)
     hostname.Format(hostname+  L":%d", m_CurrentServer.port); // add port to hostname (only if port is not 21)
 
-  USES_CONVERSION;
 #ifndef MPEXT_NO_GSS
+  USES_CONVERSION;
   //**** GSS Authentication ****
   if (m_Operation.nOpState==CONNECT_GSS_INIT)  //authenticate
   {
@@ -2239,7 +2237,6 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
           host = GetOption(OPTION_TRANSFERIP6);
           if (host != L"")
           {
-            USES_CONVERSION;
             addrinfo hints, *res;
             memset(&hints, 0, sizeof(addrinfo));
             hints.ai_family = AF_INET6;
@@ -2342,8 +2339,6 @@ bool CFtpControlSocket::ConnectTransferSocket(const CString & host, UINT port)
 
 void CFtpControlSocket::ListFile(CString filename, const CServerPath &path)
 {
-  USES_CONVERSION;
-
   #define LISTFILE_INIT  -1
   #define LISTFILE_MLST  1
   #define LISTFILE_TYPE  2
@@ -2410,7 +2405,6 @@ void CFtpControlSocket::ListFile(CString filename, const CServerPath &path)
     }
     else
     {
-      USES_CONVERSION;
       CStringA Buf = m_ListFile + '\n';
       const bool mlst = true;
       CFtpListResult * pListResult = CreateListResult(mlst);
@@ -5734,8 +5728,6 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 #endif
       else if (iter->pLayer == m_pSslLayer)
       {
-        USES_CONVERSION;
-
         switch (iter->nParam1)
         {
         case SSL_INFO:
@@ -6120,7 +6112,6 @@ void CFtpControlSocket::DiscardLine(CStringA line)
     }
     else if (line.Left(4) == "MLST")
     {
-      USES_CONVERSION;
       std::string facts;
       if (line.GetLength() > 5)
       {

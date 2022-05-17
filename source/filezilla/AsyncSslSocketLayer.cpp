@@ -1155,7 +1155,6 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
       sprintf(buffer + strlen(buffer), " [%s]", debug);
       OPENSSL_free(debug);
     }
-    USES_CONVERSION;
     pLayer->LogSocketMessageRaw(FZ_LOG_INFO, A2T(buffer));
     delete[] buffer;
   }
