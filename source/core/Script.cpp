@@ -2242,10 +2242,12 @@ void __fastcall TManagementScript::PrintProgress(bool First, const UnicodeString
 void __fastcall TManagementScript::ResetTransfer()
 {
   TScript::ResetTransfer();
-  FLastProgressFile = L"";
+  FLastProgressFile = EmptyStr;
   FLastProgressTime = 0;
   FLastProgressEventTime = 0;
-  FLastProgressMessage = L"";
+  FLastProgressEventDoneFileName = EmptyStr;
+  FLastProgressOverallDone = false;
+  FLastProgressMessage = EmptyStr;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TManagementScript::QueryCancel()
@@ -2331,25 +2333,36 @@ void __fastcall TManagementScript::TerminalOperationProgress(
 
       time_t Time = time(NULL);
 
-      if ((OnProgress != NULL) && WantsProgress &&
-          (DoPrint || (FLastProgressEventTime != Time) || ProgressData.IsTransferDone()))
+      if ((OnProgress != NULL) && WantsProgress)
       {
-        FLastProgressEventTime = Time;
+        int OverallProgress = ProgressData.OverallProgress();
+        bool OverallDone = (OverallProgress == 100);
 
-        TScriptProgress Progress;
-        Progress.Operation = ProgressData.Operation;
-        Progress.Side = ProgressData.Side;
-        Progress.FileName = ProgressData.FullFileName;
-        Progress.Directory = ProgressData.Directory;
-        Progress.OverallProgress = ProgressData.OverallProgress();
-        Progress.FileProgress = ProgressData.TransferProgress();
-        Progress.CPS = ProgressData.CPS();
-        Progress.Cancel = false;
-        OnProgress(this, Progress);
-
-        if (Progress.Cancel)
+        if (DoPrint ||
+            (FLastProgressEventTime != Time) ||
+            (ProgressData.IsTransferDone() && (FLastProgressEventDoneFileName != ProgressData.FullFileName)) ||
+            (OverallDone && !FLastProgressOverallDone))
         {
-          ProgressData.SetCancel(csCancel);
+          FLastProgressEventTime = Time;
+          // When transferring a growing file, we would report the progress constantly
+          FLastProgressEventDoneFileName = ProgressData.IsTransferDone() ? ProgressData.FullFileName : EmptyStr;
+          FLastProgressOverallDone = OverallDone;
+
+          TScriptProgress Progress;
+          Progress.Operation = ProgressData.Operation;
+          Progress.Side = ProgressData.Side;
+          Progress.FileName = ProgressData.FullFileName;
+          Progress.Directory = ProgressData.Directory;
+          Progress.OverallProgress = OverallProgress;
+          Progress.FileProgress = ProgressData.TransferProgress();
+          Progress.CPS = ProgressData.CPS();
+          Progress.Cancel = false;
+          OnProgress(this, Progress);
+
+          if (Progress.Cancel)
+          {
+            ProgressData.SetCancel(csCancel);
+          }
         }
       }
 
