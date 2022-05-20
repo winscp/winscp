@@ -250,6 +250,7 @@ BEGIN
   CREATE_TEMP_DIR_ERROR, "Cannot create temporary directory '%s'. You may change root directory to store temporary files in Preferences."
   OPENSSH_CONFIG_NOT_FOUND, "OpenSSH config file not found."
   OPENSSH_CONFIG_NO_SITES, "No Host directives for specific hosts found in OpenSSH config file."
+  FTP_MALFORMED_RESPONSE, "FTP server returned invalid response '%s'."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"
