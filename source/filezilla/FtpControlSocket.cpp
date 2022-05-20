@@ -1534,10 +1534,16 @@ int CFtpControlSocket::GetReplyCode()
   if (m_RecvBuffer.empty())
     return 0;
   CStringA str = m_RecvBuffer.front();
-  if (str == "")
+  if ((str == "") || (str[0] < '1') || (str[0] > '9'))
+  {
+    UnicodeString Error = FMTLOAD(FTP_MALFORMED_RESPONSE, (UnicodeString(str)));
+    LogMessageRaw(FZ_LOG_WARNING, Error.c_str());
     return 0;
+  }
   else
+  {
     return str[0]-'0';
+  }
 }
 
 void CFtpControlSocket::DoClose(int nError /*=0*/)
