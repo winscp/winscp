@@ -3432,8 +3432,8 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
   // 211 End
 
   // This format is according to RFC 2228.
-  // Is used by ProFTPD when  MultilineRFC2228 is enabled
-  // http://www.proftpd.org/docs/directives/linked/config_ref_MultilineRFC2228.html
+  // Is used by ProFTPD when deprecated MultilineRFC2228 directive is enabled
+  // http://www.proftpd.org/docs/modules/mod_core.html#FileZillaNonASCII
 
   // 211-Features:
   // 211-MDTM
