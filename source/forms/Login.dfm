@@ -1247,6 +1247,9 @@ object LoginDialog: TLoginDialog
       Action = LoginAction
       Default = True
     end
+    object OpeninPuTTY4: TMenuItem
+      Action = PuttyAction
+    end
     object N11: TMenuItem
       Caption = '-'
     end

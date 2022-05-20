@@ -1243,8 +1243,9 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   }
   else if (Action == PuttyAction)
   {
-    TSessionData * Data = GetSessionData();
-    Action->Enabled = (NewSiteSelected || SiteSelected) && CanOpen() && !Data->IsLocalBrowser;
+    Action->Enabled =
+      (IsSiteAndCanOpen() && !GetSessionData()->IsLocalBrowser) ||
+      (IsFolderOrWorkspaceAndCanOpen() && IsFolderNode(SessionTree->Selected));
   }
   else if (Action == SaveSessionAction)
   {
@@ -1318,12 +1319,23 @@ bool __fastcall TLoginDialog::IsCloneToNewSiteDefault()
   return !FEditing && !FRenaming && IsSiteNode(SessionTree->Selected) && !StoredSessions->CanOpen(GetSessionData());
 }
 //---------------------------------------------------------------------------
-bool __fastcall TLoginDialog::CanOpen()
+bool TLoginDialog::IsSiteAndCanOpen()
 {
   TSessionData * Data = GetSessionData();
   return
-    ((Data != NULL) && StoredSessions->CanOpen(Data) && !FEditing) ||
-    (IsFolderOrWorkspaceNode(SessionTree->Selected) && HasNodeAnySession(SessionTree->Selected, true));
+    ((Data != NULL) && StoredSessions->CanOpen(Data) && !FEditing);
+}
+//---------------------------------------------------------------------------
+bool TLoginDialog::IsFolderOrWorkspaceAndCanOpen()
+{
+  return IsFolderOrWorkspaceNode(SessionTree->Selected) && HasNodeAnySession(SessionTree->Selected, true);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TLoginDialog::CanOpen()
+{
+  return
+    IsSiteAndCanOpen() ||
+    IsFolderOrWorkspaceAndCanOpen();
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::Idle()
@@ -3084,10 +3096,15 @@ void __fastcall TLoginDialog::PuttyActionExecute(TObject * /*Sender*/)
   // in case user manages to release it before following finishes
   bool Close = !OpenInNewWindow();
 
-  std::unique_ptr<TSessionData> Data(CloneSelectedSession());
-  // putty does not support resolving environment variables in session settings
-  Data->ExpandEnvironmentVariables();
-  OpenSessionInPutty(GUIConfiguration->PuttyPath, Data.get());
+  std::unique_ptr<TList> DataList(new TList());
+  SaveDataList(DataList.get());
+  for (int Index = 0; Index < DataList->Count; Index++)
+  {
+    TSessionData * Data = reinterpret_cast<TSessionData *>(DataList->Items[Index]);
+    // putty does not support resolving environment variables in session settings
+    Data->ExpandEnvironmentVariables();
+    OpenSessionInPutty(GUIConfiguration->PuttyPath, Data);
+  }
 
   if (Close)
   {

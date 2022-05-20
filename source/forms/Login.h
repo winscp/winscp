@@ -211,6 +211,7 @@ __published:
   TCheckBox *ShowAgainCheck;
   TPanel *BasicS3Panel;
   TCheckBox *S3CredentialsEnvCheck;
+  TMenuItem *OpeninPuTTY4;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionTreeDblClick(TObject *Sender);
@@ -386,6 +387,8 @@ private:
   void __fastcall SaveAsSession(bool ForceDialog);
   void __fastcall InvalidateSessionData();
   bool __fastcall CanOpen();
+  bool IsSiteAndCanOpen();
+  bool IsFolderOrWorkspaceAndCanOpen();
   bool __fastcall IsCloneToNewSiteDefault();
   bool __fastcall IsDefaultResult(TModalResult Result);
   void __fastcall UpdateNodeImage(TTreeNode * Node);
