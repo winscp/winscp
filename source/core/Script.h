@@ -228,6 +228,8 @@ protected:
   UnicodeString FLastProgressMessage;
   time_t FLastProgressTime;
   time_t FLastProgressEventTime;
+  UnicodeString FLastProgressEventDoneFileName;
+  bool FLastProgressOverallDone;
   bool FContinue;
 
   virtual void __fastcall ResetTransfer();
