@@ -2985,7 +2985,7 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
   ADirView->CreateFileList(OnFocused, FullPath, FileList.get());
 
   bool ReloadProperties =
-    (Side == osRemote) && (Operation == foSetProperties) &&
+    !IsSideLocalBrowser(Side) && (Operation == foSetProperties) &&
     DebugAlwaysTrue(HasActiveTerminal()) && Terminal->IsCapable[fcLoadingAdditionalProperties];
 
   bool Result = ExecuteFileOperation(Operation, Side, FileList.get(), NoConfirmation, Param);
