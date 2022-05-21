@@ -1194,7 +1194,6 @@ void __fastcall TLoginDialog::AboutActionExecute(TObject * /*Sender*/)
 void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
       bool &Handled)
 {
-  bool NewSiteSelected = IsNewSiteNode(SessionTree->Selected);
   bool SiteSelected = IsSiteNode(SessionTree->Selected);
   bool FolderOrWorkspaceSelected = IsFolderOrWorkspaceNode(SessionTree->Selected);
   bool WorkspaceSelected = IsWorkspaceNode(SessionTree->Selected);
