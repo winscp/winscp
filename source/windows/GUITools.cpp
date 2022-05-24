@@ -148,12 +148,13 @@ bool __fastcall ExportSessionToPutty(TSessionData * SessionData, bool ReuseExist
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
-  TSessionData * SessionData)
+void OpenSessionInPutty(TSessionData * SessionData)
 {
+  // putty does not support resolving environment variables in session settings
+  SessionData->ExpandEnvironmentVariables();
   // See also TSiteAdvancedDialog::PuttySettingsButtonClick
   UnicodeString Program, AParams, Dir;
-  SplitCommand(PuttyPath, Program, AParams, Dir);
+  SplitCommand(GUIConfiguration->PuttyPath, Program, AParams, Dir);
   Program = ExpandEnvironmentVariables(Program);
   if (FindFile(Program))
   {

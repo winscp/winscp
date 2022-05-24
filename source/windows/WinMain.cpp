@@ -56,10 +56,7 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
       }
       else if (!SessionData->PuttyProtocol.IsEmpty())
       {
-        // putty does not support resolving environment variables in session settings
-        // though it's hardly of any use here.
-        SessionData->ExpandEnvironmentVariables();
-        OpenSessionInPutty(GUIConfiguration->PuttyPath, SessionData);
+        OpenSessionInPutty(SessionData);
         DataList->Clear();
         Abort();
       }

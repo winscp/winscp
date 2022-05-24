@@ -3100,9 +3100,7 @@ void __fastcall TLoginDialog::PuttyActionExecute(TObject * /*Sender*/)
   for (int Index = 0; Index < DataList->Count; Index++)
   {
     TSessionData * Data = reinterpret_cast<TSessionData *>(DataList->Items[Index]);
-    // putty does not support resolving environment variables in session settings
-    Data->ExpandEnvironmentVariables();
-    OpenSessionInPutty(GUIConfiguration->PuttyPath, Data);
+    OpenSessionInPutty(Data);
   }
 
   if (Close)

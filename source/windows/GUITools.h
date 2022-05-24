@@ -24,8 +24,7 @@ extern bool DontCopyCommandToClipboard;
 bool __fastcall CopyCommandToClipboard(const UnicodeString & Command);
 bool DoesSessionExistInPutty(TSessionData * SessionData);
 bool __fastcall ExportSessionToPutty(TSessionData * SessionData, bool ReuseExisting, const UnicodeString & SessionName);
-void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
-  TSessionData * SessionData);
+void OpenSessionInPutty(TSessionData * SessionData);
 bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path);
 UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir,
   const UnicodeString Identity, bool Mask = false);
