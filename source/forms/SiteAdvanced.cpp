@@ -426,7 +426,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     FColor = (TColor)FSessionData->Color;
   }
 
-  EnableControl(PuttyGroup, !DoesSessionExistInPutty(FSessionData));
+  EnableControl(PuttyGroup, !DoesSessionExistInPutty(FSessionData->StorageKey));
 
   UpdateControls();
 }

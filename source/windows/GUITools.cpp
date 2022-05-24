@@ -29,6 +29,7 @@
 #include <vssym32.h>
 #include <DateUtils.hpp>
 #include <IOUtils.hpp>
+#include <Queue.h>
 
 #include "Animations96.h"
 #include "Animations120.h"
@@ -94,11 +95,11 @@ bool __fastcall FindFile(UnicodeString & Path)
   return Result;
 }
 //---------------------------------------------------------------------------
-bool DoesSessionExistInPutty(TSessionData * SessionData)
+bool DoesSessionExistInPutty(const UnicodeString & StorageKey)
 {
   std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(Configuration->PuttySessionsKey));
   Storage->ConfigureForPutty();
-  return Storage->OpenRootKey(true) && Storage->KeyExists(SessionData->StorageKey);
+  return Storage->OpenRootKey(true) && Storage->KeyExists(StorageKey);
 }
 //---------------------------------------------------------------------------
 bool __fastcall ExportSessionToPutty(TSessionData * SessionData, bool ReuseExisting, const UnicodeString & SessionName)
@@ -146,6 +147,112 @@ bool __fastcall ExportSessionToPutty(TSessionData * SessionData, bool ReuseExist
     }
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+class TPuttyCleanupThread : public TSimpleThread
+{
+public:
+  static void Schedule();
+
+protected:
+  virtual void __fastcall Execute();
+  virtual void __fastcall Terminate();
+  bool __fastcall Finished();
+  void DoSchedule();
+
+private:
+  TDateTime FTimer;
+  static TPuttyCleanupThread * FInstance;
+  static std::unique_ptr<TCriticalSection> FSection;
+};
+//---------------------------------------------------------------------------
+TPuttyCleanupThread * TPuttyCleanupThread::FInstance(NULL);
+std::unique_ptr<TCriticalSection> TPuttyCleanupThread::FSection(TraceInitPtr(new TCriticalSection()));
+//---------------------------------------------------------------------------
+void TPuttyCleanupThread::Schedule()
+{
+  TGuard Guard(FSection.get());
+  if (FInstance == NULL)
+  {
+    FInstance = new TPuttyCleanupThread();
+    FInstance->DoSchedule();
+    FInstance->Start();
+  }
+  else
+  {
+    FInstance->DoSchedule();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPuttyCleanupThread::Execute()
+{
+  std::unique_ptr<TStrings> Sessions(new TStringList());
+
+  do
+  {
+    {
+      TGuard Guard(FSection.get());
+      std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(Configuration->PuttySessionsKey));
+      Storage->AccessMode = smReadWrite;
+      Storage->ConfigureForPutty();
+
+      std::unique_ptr<TStringList> Sessions2(new TStringList());
+      if (Storage->OpenRootKey(true))
+      {
+        std::unique_ptr<TStrings> SubKeys(new TStringList());
+        Storage->GetSubKeyNames(SubKeys.get());
+        for (int Index = 0; Index < SubKeys->Count; Index++)
+        {
+          UnicodeString SessionName = SubKeys->Strings[Index];
+          if (StartsStr(GUIConfiguration->PuttySession, SessionName))
+          {
+            Sessions2->Add(SessionName);
+          }
+        }
+
+        Sessions2->Sort();
+        if (!Sessions->Equals(Sessions2.get()))
+        {
+          // Just in case new sessions from another WinSCP instance are added, delay the cleanup
+          // (to avoid having to implement some inter-process communication).
+          // Both instances will attempt to do the cleanup, but that not a problem
+          Sessions->Assign(Sessions2.get());
+          DoSchedule();
+        }
+      }
+
+      if (FTimer < Now())
+      {
+        for (int Index = 0; Index < Sessions->Count; Index++)
+        {
+          UnicodeString SessionName = Sessions->Strings[Index];
+          Storage->RecursiveDeleteSubKey(SessionName);
+        }
+
+        FInstance = NULL;
+        return;
+      }
+    }
+
+    Sleep(1000);
+  }
+  while (true);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPuttyCleanupThread::Terminate()
+{
+  DebugFail();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TPuttyCleanupThread::Finished()
+{
+  // self-destroy
+  return TSimpleThread::Finished() || true;
+}
+//---------------------------------------------------------------------------
+void TPuttyCleanupThread::DoSchedule()
+{
+  FTimer = IncSecond(Now(), 10);
 }
 //---------------------------------------------------------------------------
 void OpenSessionInPutty(TSessionData * SessionData)
@@ -249,13 +356,23 @@ void OpenSessionInPutty(TSessionData * SessionData)
       else
       {
         UnicodeString SessionName;
-        if (ExportSessionToPutty(SessionData, true, GUIConfiguration->PuttySession))
+
+        UnicodeString PuttySession = GUIConfiguration->PuttySession;
+        int Uniq = 1;
+        while (DoesSessionExistInPutty(PuttySession))
+        {
+          Uniq++;
+          PuttySession = FORMAT(L"%s (%d)", (GUIConfiguration->PuttySession, Uniq));
+        }
+
+        if (ExportSessionToPutty(SessionData, true, PuttySession))
         {
           SessionName = SessionData->SessionName;
         }
         else
         {
-          SessionName = GUIConfiguration->PuttySession;
+          SessionName = PuttySession;
+          TPuttyCleanupThread::Schedule();
           if ((SessionData->FSProtocol == fsFTP) &&
               GUIConfiguration->TelnetForFtpInPutty)
           {
