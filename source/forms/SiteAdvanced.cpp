@@ -1723,7 +1723,7 @@ void __fastcall TSiteAdvancedDialog::PuttySettingsTimer(TObject *)
       int Index = FPuttyRegSettings->IndexOfName(Name);
       // Ignoring values we do not know (from future versions of PuTTY),
       // as we cannot tell if they are modified or not.
-      // Ignoring also all value that we export outselves from WinSCP settings
+      // Ignoring also all values that we export ourselves from WinSCP settings
       // (primarily to avoid collecting all those values, when the user forgets to load the temporary site in PuTTY,
       // and only saves the changed terminal settings with the basic session settings set to empty values)
       if ((Index >= 0) &&
