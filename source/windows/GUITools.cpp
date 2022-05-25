@@ -153,6 +153,7 @@ class TPuttyCleanupThread : public TSimpleThread
 {
 public:
   static void Schedule();
+  static void Finalize();
 
 protected:
   virtual void __fastcall Execute();
@@ -166,8 +167,8 @@ private:
   static std::unique_ptr<TCriticalSection> FSection;
 };
 //---------------------------------------------------------------------------
-TPuttyCleanupThread * TPuttyCleanupThread::FInstance(NULL);
 std::unique_ptr<TCriticalSection> TPuttyCleanupThread::FSection(TraceInitPtr(new TCriticalSection()));
+TPuttyCleanupThread * TPuttyCleanupThread::FInstance;
 //---------------------------------------------------------------------------
 void TPuttyCleanupThread::Schedule()
 {
@@ -184,59 +185,85 @@ void TPuttyCleanupThread::Schedule()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPuttyCleanupThread::Execute()
+void TPuttyCleanupThread::Finalize()
 {
-  std::unique_ptr<TStrings> Sessions(new TStringList());
-
-  do
+  while (true)
   {
     {
       TGuard Guard(FSection.get());
-      std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(Configuration->PuttySessionsKey));
-      Storage->AccessMode = smReadWrite;
-      Storage->ConfigureForPutty();
-
-      std::unique_ptr<TStringList> Sessions2(new TStringList());
-      if (Storage->OpenRootKey(true))
+      if (FInstance == NULL)
       {
-        std::unique_ptr<TStrings> SubKeys(new TStringList());
-        Storage->GetSubKeyNames(SubKeys.get());
-        for (int Index = 0; Index < SubKeys->Count; Index++)
-        {
-          UnicodeString SessionName = SubKeys->Strings[Index];
-          if (StartsStr(GUIConfiguration->PuttySession, SessionName))
-          {
-            Sessions2->Add(SessionName);
-          }
-        }
-
-        Sessions2->Sort();
-        if (!Sessions->Equals(Sessions2.get()))
-        {
-          // Just in case new sessions from another WinSCP instance are added, delay the cleanup
-          // (to avoid having to implement some inter-process communication).
-          // Both instances will attempt to do the cleanup, but that not a problem
-          Sessions->Assign(Sessions2.get());
-          DoSchedule();
-        }
-      }
-
-      if (FTimer < Now())
-      {
-        for (int Index = 0; Index < Sessions->Count; Index++)
-        {
-          UnicodeString SessionName = Sessions->Strings[Index];
-          Storage->RecursiveDeleteSubKey(SessionName);
-        }
-
-        FInstance = NULL;
         return;
       }
     }
-
-    Sleep(1000);
+    Sleep(100);
   }
-  while (true);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPuttyCleanupThread::Execute()
+{
+  try
+  {
+    std::unique_ptr<TStrings> Sessions(new TStringList());
+    bool Continue = true;
+
+    do
+    {
+      {
+        TGuard Guard(FSection.get());
+        std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(Configuration->PuttySessionsKey));
+        Storage->AccessMode = smReadWrite;
+        Storage->ConfigureForPutty();
+
+        std::unique_ptr<TStringList> Sessions2(new TStringList());
+        if (Storage->OpenRootKey(true))
+        {
+          std::unique_ptr<TStrings> SubKeys(new TStringList());
+          Storage->GetSubKeyNames(SubKeys.get());
+          for (int Index = 0; Index < SubKeys->Count; Index++)
+          {
+            UnicodeString SessionName = SubKeys->Strings[Index];
+            if (StartsStr(GUIConfiguration->PuttySession, SessionName))
+            {
+              Sessions2->Add(SessionName);
+            }
+          }
+
+          Sessions2->Sort();
+          if (!Sessions->Equals(Sessions2.get()))
+          {
+            // Just in case new sessions from another WinSCP instance are added, delay the cleanup
+            // (to avoid having to implement some inter-process communication).
+            // Both instances will attempt to do the cleanup, but that not a problem
+            Sessions->Assign(Sessions2.get());
+            DoSchedule();
+          }
+        }
+
+        if (FTimer < Now())
+        {
+          for (int Index = 0; Index < Sessions->Count; Index++)
+          {
+            UnicodeString SessionName = Sessions->Strings[Index];
+            Storage->RecursiveDeleteSubKey(SessionName);
+          }
+
+          Continue = false;
+        }
+      }
+
+      if (Continue)
+      {
+        Sleep(1000);
+      }
+    }
+    while (Continue);
+  }
+  __finally
+  {
+    TGuard Guard(FSection.get());
+    FInstance = NULL;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPuttyCleanupThread::Terminate()
@@ -2268,4 +2295,9 @@ void __fastcall FindComponentClass(
 bool CanShowTimeEstimate(TDateTime StartTime)
 {
   return (SecondsBetween(StartTime, Now()) >= 3);
+}
+//---------------------------------------------------------------------------
+void GUIFinalize()
+{
+  TPuttyCleanupThread::Finalize();
 }
