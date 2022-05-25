@@ -7169,6 +7169,7 @@ bool __fastcall TCustomScpExplorerForm::SessionTabSwitched()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SessionsPageControlChange(TObject * /*Sender*/)
 {
+  TWindowLock Lock(this);
   SessionTabSwitched();
 }
 //---------------------------------------------------------------------------
