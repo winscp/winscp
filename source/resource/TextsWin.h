@@ -59,7 +59,7 @@
 #define SHELL_PATTERN_ERROR     1175
 #define PATH_ENV_TOO_LONG       1176
 #define STACK_TRACE             1177
-#define PUTTY_NO_SITES          1180
+#define PUTTY_NO_SITES2         1180
 #define BATCH_SET_NO_MASK       1181
 #define BATCH_SET_NO_SETTINGS   1182
 #define BATCH_SET_NOT_CHANGED   1183

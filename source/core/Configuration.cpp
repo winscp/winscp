@@ -1307,9 +1307,14 @@ UnicodeString __fastcall TConfiguration::GetPuttySessionsSubKey()
   return StoredSessionsSubKey;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TConfiguration::GetPuttySessionsKey()
+UnicodeString TConfiguration::GetPuttySessionsKey(const UnicodeString & RootKey)
 {
-  return PuttyRegistryStorageKey + L"\\" + PuttySessionsSubKey;
+  return RootKey + L"\\" + PuttySessionsSubKey;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::DoGetPuttySessionsKey()
+{
+  return GetPuttySessionsKey(PuttyRegistryStorageKey);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetStoredSessionsSubKey()

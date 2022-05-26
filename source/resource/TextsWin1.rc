@@ -67,7 +67,7 @@ BEGIN
         SHELL_PATTERN_ERROR, "Error executing command \"%s\" (%s)."
         PATH_ENV_TOO_LONG, "Cannot add new path to %PATH%, %PATH% is already too long."
         STACK_TRACE, "Stack trace:"
-        PUTTY_NO_SITES, "No sites found in PuTTY sites registry key (%s)."
+        PUTTY_NO_SITES2, "No sites found in %s sites registry key (%s)."
         BATCH_SET_NO_MASK, "No site mask specified."
         BATCH_SET_NO_SETTINGS, "No site settings specified."
         BATCH_SET_NOT_CHANGED, "Not changed"

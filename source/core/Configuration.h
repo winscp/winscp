@@ -96,7 +96,7 @@ private:
   UnicodeString __fastcall GetCompanyName();
   UnicodeString __fastcall GetFileVersion(TVSFixedFileInfo * Info);
   UnicodeString __fastcall GetStoredSessionsSubKey();
-  UnicodeString __fastcall GetPuttySessionsKey();
+  UnicodeString __fastcall DoGetPuttySessionsKey();
   UnicodeString __fastcall GetPuttySessionsSubKey();
   void __fastcall SetRandomSeedFile(UnicodeString value);
   UnicodeString __fastcall GetRandomSeedFileName();
@@ -278,6 +278,7 @@ public:
   TStoredSessionList * __fastcall SelectKnownHostsSessionsForImport(
     TStrings * Lines, TStoredSessionList * Sessions, UnicodeString & Error);
   TStoredSessionList * SelectOpensshSessionsForImport(TStoredSessionList * Sessions, UnicodeString & Error);
+  UnicodeString GetPuttySessionsKey(const UnicodeString & RootKey);
 
   __property TVSFixedFileInfo *FixedApplicationInfo  = { read=GetFixedApplicationInfo };
   __property void * ApplicationInfo  = { read=GetApplicationInfo };
@@ -285,7 +286,7 @@ public:
   __property bool CollectUsage = { read = GetCollectUsage, write = SetCollectUsage };
   __property UnicodeString StoredSessionsSubKey = {read=GetStoredSessionsSubKey};
   __property UnicodeString PuttyRegistryStorageKey  = { read=FPuttyRegistryStorageKey, write=SetPuttyRegistryStorageKey };
-  __property UnicodeString PuttySessionsKey  = { read=GetPuttySessionsKey };
+  __property UnicodeString PuttySessionsKey  = { read=DoGetPuttySessionsKey };
   __property UnicodeString PuttySessionsSubKey  = { read=GetPuttySessionsSubKey };
   __property UnicodeString RandomSeedFile  = { read=FRandomSeedFile, write=SetRandomSeedFile };
   __property UnicodeString RandomSeedFileName  = { read=GetRandomSeedFileName };
