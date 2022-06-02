@@ -3317,11 +3317,13 @@ Chapter 4: Configuring PuTTY
         -  Selecting `SOCKS 4' or `SOCKS 5' allows you to proxy your
            connections through a SOCKS server.
 
-        -  Many firewalls implement a less formal type of proxy in which
-           a user can make a Telnet connection directly to the firewall
-           machine and enter a command such as `connect myhost.com 22' to
-           connect through to an external host. Selecting `Telnet' allows
-           you to tell PuTTY to use this type of proxy.
+        -  Many firewalls implement a less formal type of proxy in
+           which a user can make a Telnet or TCP connection directly
+           to the firewall machine and enter a command such as
+           `connect myhost.com 22' to connect through to an external host.
+           Selecting `Telnet' allows you to tell PuTTY to use this type
+           of proxy, with the precise command specified as described in
+           section 4.16.5.
 
         -  Selecting `SSH' causes PuTTY to make a secondary SSH connection
            to the proxy host (sometimes called a `jump host' in this
@@ -3426,12 +3428,17 @@ Chapter 4: Configuring PuTTY
 
 4.16.4 Username and password
 
-       If your proxy requires authentication, you can enter a username and
-       a password in the `Username' and `Password' boxes.
+       You can enter a username and a password in the `Username' and
+       `Password' boxes, which will be used if your proxy requires
+       authentication.
 
        Note that if you save your session, the proxy password will be saved
        in plain text, so anyone who can access your PuTTY configuration
        data will be able to discover it.
+
+       If PuTTY discovers that it needs a proxy username or password
+       and you have not specified one here, PuTTY will prompt for it
+       interactively in the terminal window.
 
        Authentication is not fully supported for all forms of proxy:
 
@@ -3452,23 +3459,16 @@ Chapter 4: Configuring PuTTY
 
         -  SSH proxying can use all the same forms of SSH authentication
            supported by PuTTY for its main connection. If the SSH server
-           requests password authentication, the configured proxy password
+           requests password authentication, any configured proxy password
            will be used, but other authentication methods such as public
-           keys will be tried first, just as for a primary SSH connection.
+           keys and GSSAPI will be tried first, just as for a primary
+           SSH connection, and if they require credentials such as a key
+           passphrase, PuTTY will interactively prompt for these.
 
         -  You can specify a way to include a username and password in the
-           Telnet/Local proxy command (see section 4.16.5).
-
-       If PuTTY discovers that it needs a proxy username or password and
-       you have not specified one in the configuration, it will prompt for
-       it interactively in the terminal.
-
-       (For SSH proxying, this will also happen in the case of other
-       interactive SSH login prompts, such as SSH key passphrases or
-       GSSAPI. For the Telnet and Local proxy types, PuTTY will prompt for
-       a username or password if you included `%user' or `%pass' in the
-       command string and did not provide a corresponding configuration
-       entry.)
+           Telnet/Local proxy command (see section 4.16.5). If you do so,
+           and don't also specify the actual username and/or password in
+           the configuration, PuTTY will interactively prompt for them.
 
 4.16.5 Specifying the Telnet or Local proxy command
 
@@ -3488,21 +3488,22 @@ Chapter 4: Configuring PuTTY
        Also, the special strings `%host' and `%port' will be replaced by
        the host name and port number you want to connect to. The strings
        `%user' and `%pass' will be replaced by the proxy username and
-       password you specify. The strings `%proxyhost' and `%proxyport' will
-       be replaced by the host details specified on the _Proxy_ panel, if
-       any (this is most likely to be useful for the Local proxy type). To
-       get a literal `%' sign, enter `%%'.
+       password (which, if not specified in the configuration, will be
+       prompted for). The strings `%proxyhost' and `%proxyport' will be
+       replaced by the host details specified on the _Proxy_ panel, if any
+       (this is most likely to be useful for the Local proxy type). To get
+       a literal `%' sign, enter `%%'.
 
        If a Telnet proxy server prompts for a username and password before
        commands can be sent, you can use a command such as:
 
          %user\n%pass\nconnect %host %port\n
 
-       This will send your username and password as the first two lines
-       to the proxy, followed by a command to connect to the desired host
-       and port. Note that if you do not include the `%user' or `%pass'
-       tokens in the Telnet command, then the `Username' and `Password'
-       configuration fields will be ignored.
+       This will send your username and password as the first two lines to
+       the proxy, followed by a command to connect to the desired host and
+       port. Note that if you do not include the `%user' or `%pass' tokens
+       in the Telnet command, then anything specified in `Username' and
+       `Password' configuration fields will be ignored.
 
 4.16.6 Controlling proxy logging
 
@@ -5208,7 +5209,7 @@ Chapter 5: Using PSCP to transfer files securely
 
          C:\>pscp
          PuTTY Secure Copy client
-         Release 0.76
+         Release 0.77
          Usage: pscp [options] [user@]host:source target
                 pscp [options] source [source...] [user@]host:target
                 pscp [options] -ls [user@]host:filespec
@@ -6130,7 +6131,7 @@ Chapter 7: Using the command-line connection tool Plink
 
          C:\>plink
          Plink: command-line connection utility
-         Release 0.76
+         Release 0.77
          Usage: plink [options] [user@]host [command]
                 ("host" can also be a PuTTY saved session name)
          Options:
@@ -7063,6 +7064,11 @@ Chapter 8: Using public keys for SSH authentication
                Number of parallelisable threads that can be used to decrypt
                the key.
 
+       -E _fptype_
+
+           Algorithm to use when displaying key fingerprints. You can
+           select `sha256' or `md5'. See section 8.2.6.
+
    8.3 Getting ready for public key authentication
 
        Connect to your SSH server using PuTTY with the SSH protocol. When
@@ -7337,51 +7343,12 @@ Chapter 9: Using Pageant for authentication
        c:\Windows\System32\OpenSSH\ssh.exe once you've done this setup -
        but it's just as easy to point it at Plink!
 
- 9.3.4 Unix-domain sockets: integrating with WSL 1
-
-       Pageant can listen on the WinSock implementation of `Unix-domain
-       sockets'. These interoperate with the Unix-domain sockets found in
-       the original Windows Subsystem for Linux (now known as WSL 1). So if
-       you ask Pageant to listen on one of these, then your WSL 1 processes
-       can talk directly to Pageant.
-
-       To configure this, run Pageant with the option `--unix', followed
-       with a pathname. Then, in WSL 1, set the environment variable
-       SSH_AUTH_SOCK to point at the WSL translation of that pathname.
-
-       For example, you might run
-
-         pageant --unix C:\Users\Simon\.ssh\agent.sock
-
-       and in WSL 1, set the environment variable
-
-         SSH_AUTH_SOCK=/mnt/c/Users/Simon/.ssh/agent.sock
-
-       Alternatively, you can add a line to your .ssh/config file inside
-       WSL that says
-
-         IdentityAgent /mnt/c/Users/Simon/.ssh/agent.sock
-
-       although doing it like that may mean that ssh-add commands won't
-       find the agent, even though ssh itself will.
-
-       *Security note*: Unix-domain sockets are protected against access by
-       other users by the file protections on their containing directory.
-       So if your Windows machine is multiuser, make sure you create the
-       socket inside a directory that other users can't access at all. (In
-       fact, that's a good idea on general principles.)
-
-       *Compatibility note*: WSL 2 processes cannot talk to Pageant by this
-       mechanism, because WSL 2's Unix-domain sockets are managed by a
-       separate Linux kernel, and not by the same kernel that WinSock talks
-       to.
-
- 9.3.5 Starting with the key list visible
+ 9.3.4 Starting with the key list visible
 
        Start Pageant with the `--keylist' option to show the main window as
        soon as it starts up.
 
- 9.3.6 Restricting the Windows process ACL
+ 9.3.5 Restricting the Windows process ACL
 
        Pageant supports the same `-restrict-acl' option as the other PuTTY
        utilities to lock down the Pageant process's access control; see
@@ -11448,5 +11415,5 @@ Appendix G: SSH-2 names specified for PuTTY
                user will have to supply a passphrase before the key can be
                used).
 
-       ersionid PuTTY development snapshot 2022-03-28.a101444
+       ersionid PuTTY release 0.77
 

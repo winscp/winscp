@@ -549,6 +549,11 @@ key.
 
 }
 
+\dt \cw{\-E} \e{fptype}
+
+\dd Algorithm to use when displaying key fingerprints. You can
+select \c{sha256} or \c{md5}. See \k{puttygen-fingerprint}.
+
 \H{pubkey-gettingready} Getting ready for public key authentication
 
 Connect to your SSH server using PuTTY with the SSH protocol. When the

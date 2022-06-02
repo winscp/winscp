@@ -293,7 +293,6 @@ void socket_reselect_all(void);
 SockAddr *sk_namedpipe_addr(const char *pipename);
 /* Turn a WinSock error code into a string. */
 const char *winsock_error_string(int error);
-Socket *sk_newlistener_unix(const char *socketpath, Plug *plug);
 
 /*
  * network.c dynamically loads WinSock 2 or WinSock 1 depending on
@@ -333,7 +332,6 @@ const char *do_select(SOCKET skt, bool enable);
  */
 void winselgui_set_hwnd(HWND hwnd);
 void winselgui_clear_hwnd(void);
-void winselgui_response(WPARAM wParam, LPARAM lParam);
 
 void winselcli_setup(void);
 SOCKET winselcli_unique_socket(void);
@@ -758,5 +756,8 @@ AuxMatchOpt aux_match_opt_init(int argc, char **argv, int start_index,
 bool aux_match_arg(AuxMatchOpt *amo, char **val);
 bool aux_match_opt(AuxMatchOpt *amo, char **val, const char *optname, ...);
 bool aux_match_done(AuxMatchOpt *amo);
+
+char *save_screenshot(HWND hwnd, const char *outfile);
+void gui_terminal_ready(HWND hwnd, Seat *seat, Backend *backend);
 
 #endif /* PUTTY_WINDOWS_PLATFORM_H */

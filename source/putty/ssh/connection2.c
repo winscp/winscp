@@ -178,6 +178,7 @@ void ssh2_queue_global_request_handler(
         snew(struct outstanding_global_request);
     ogr->handler = handler;
     ogr->ctx = ctx;
+    ogr->next = NULL;
     if (s->globreq_tail)
         s->globreq_tail->next = ogr;
     else
@@ -372,6 +373,8 @@ static bool ssh2_connection_filter_queue(struct ssh2_connection_state *s)
                 s->globreq_head = s->globreq_head->next;
                 sfree(tmp);
             }
+            if (!s->globreq_head)
+                s->globreq_tail = NULL;
 
             pq_pop(s->ppl.in_pq);
             break;

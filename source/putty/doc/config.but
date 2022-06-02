@@ -1956,10 +1956,11 @@ in \W{http://www.ietf.org/rfc/rfc2817.txt}{RFC 2817}.
 connections through a \i{SOCKS server}.
 
 \b Many firewalls implement a less formal type of proxy in which a
-user can make a Telnet connection directly to the firewall machine
+user can make a Telnet or TCP connection directly to the firewall machine
 and enter a command such as \c{connect myhost.com 22} to connect
 through to an external host. Selecting \I{Telnet proxy}\q{Telnet}
-allows you to tell PuTTY to use this type of proxy.
+allows you to tell PuTTY to use this type of proxy, with the precise           
+command specified as described in \k{config-proxy-command}.
 
 \b Selecting \q{SSH} causes PuTTY to make a secondary SSH connection
 to the proxy host (sometimes called a \q{\i{jump host}} in this
@@ -2069,12 +2070,17 @@ separate GSSAPI library, so PuTTY can't override or reconfigure it.
 
 \S{config-proxy-auth} \I{proxy username}Username and \I{proxy password}password
 
-If your proxy requires \I{proxy authentication}authentication, you can
-enter a username and a password in the \q{Username} and \q{Password} boxes.
+You can enter a username and a password in the \q{Username} and
+\q{Password} boxes, which will be used if your proxy requires
+\I{proxy authentication}authentication.
 
 \I{security hazard}Note that if you save your session, the proxy
 password will be saved in plain text, so anyone who can access your PuTTY
 configuration data will be able to discover it.
+
+If PuTTY discovers that it needs a proxy username or password and you
+have not specified one here, PuTTY will prompt for it interactively in
+the terminal window.
 
 Authentication is not fully supported for all forms of proxy:
 
@@ -2099,22 +2105,16 @@ passwords.
 
 \b SSH proxying can use all the same forms of SSH authentication
 supported by PuTTY for its main connection. If the SSH server requests
-password authentication, the configured proxy password will be used,
-but other authentication methods such as public keys will be tried
-first, just as for a primary SSH connection.
+password authentication, any configured proxy password will be used,
+but other authentication methods such as public keys and GSSAPI will
+be tried first, just as for a primary SSH connection, and if they
+require credentials such as a key passphrase, PuTTY will interactively
+prompt for these.
 
 \b You can specify a way to include a username and password in the
-Telnet/Local proxy command (see \k{config-proxy-command}).
-
-If PuTTY discovers that it needs a proxy username or password and you
-have not specified one in the configuration, it will prompt for it
-interactively in the terminal.
-
-(For SSH proxying, this will also happen in the case of other
-interactive SSH login prompts, such as SSH key passphrases or GSSAPI.
-For the Telnet and Local proxy types, PuTTY will prompt for a username
-or password if you included \c{%user} or \c{%pass} in the command
-string and did not provide a corresponding configuration entry.)
+Telnet/Local proxy command (see \k{config-proxy-command}). If you do
+so, and don't also specify the actual username and/or password in the
+configuration, PuTTY will interactively prompt for them.
 
 \S{config-proxy-command} Specifying the Telnet or Local proxy command
 
@@ -2135,7 +2135,8 @@ itself.
 Also, the special strings \c{%host} and \c{%port} will be replaced
 by the host name and port number you want to connect to. The strings
 \c{%user} and \c{%pass} will be replaced by the proxy username and
-password you specify. The strings \c{%proxyhost} and \c{%proxyport}
+password (which, if not specified in the configuration, will be
+prompted for). The strings \c{%proxyhost} and \c{%proxyport}
 will be replaced by the host details specified on the \e{Proxy} panel,
 if any (this is most likely to be useful for the Local proxy type).
 To get a literal \c{%} sign, enter \c{%%}.
@@ -2148,8 +2149,8 @@ before commands can be sent, you can use a command such as:
 This will send your username and password as the first two lines to
 the proxy, followed by a command to connect to the desired host and
 port. Note that if you do not include the \c{%user} or \c{%pass}
-tokens in the Telnet command, then the \q{Username} and \q{Password}
-configuration fields will be ignored.
+tokens in the Telnet command, then anything specified in \q{Username}
+and \q{Password} configuration fields will be ignored.
 
 \S{config-proxy-logging} Controlling \i{proxy logging}
 
