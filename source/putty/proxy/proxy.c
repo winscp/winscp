@@ -238,6 +238,13 @@ static void proxy_negotiate(ProxySocket *ps)
                                 #endif
                                 );
         ps->pn->reconnect = false;
+        /* If the negotiator has asked us to reconnect, they are
+         * expecting that on the next call their input queue will
+         * consist entirely of data from the _new_ connection, without
+         * any remaining data buffered from the old one. (If they'd
+         * wanted the latter, they could have read it out of the input
+         * queue before asking us to close the connection.) */
+        bufchain_clear(&ps->pending_input_data);
         } // WINSCP
     }
 
