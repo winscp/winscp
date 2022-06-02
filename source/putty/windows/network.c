@@ -24,10 +24,6 @@
 #endif
 #include <ws2tcpip.h>
 
-#if HAVE_AFUNIX_H
-#include <afunix.h>
-#endif
-
 #ifndef NO_IPV6
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -87,28 +83,12 @@ struct NetSocket {
     Socket sock;
 };
 
-/*
- * Top-level discriminator for SockAddr.
- *
- * UNRESOLVED means a host name not yet put through DNS; IP means a
- * resolved IP address (or list of them); UNIX indicates the AF_UNIX
- * network family (which Windows also has); NAMEDPIPE indicates that
- * this SockAddr is phony, holding a Windows named pipe pathname
- * instead of any address WinSock can understand.
- */
-typedef enum SuperFamily {
-    UNRESOLVED,
-    IP,
-#if HAVE_AFUNIX_H
-    UNIX,
-#endif
-    NAMEDPIPE
-} SuperFamily;
-
 struct SockAddr {
     int refcount;
     char *error;
-    SuperFamily superfamily;
+    bool resolved;
+    bool namedpipe; /* indicates that this SockAddr is phony, holding a Windows
+                     * named pipe pathname instead of a network address */
 #ifndef NO_IPV6
     struct addrinfo *ais;              /* Addresses IPv6 style. */
 #endif
@@ -119,27 +99,18 @@ struct SockAddr {
 
 /*
  * Which address family this address belongs to. AF_INET for IPv4;
- * AF_INET6 for IPv6; AF_UNIX for Unix-domain sockets; AF_UNSPEC
- * indicates that name resolution has not been done and a simple host
- * name is held in this SockAddr structure.
+ * AF_INET6 for IPv6; AF_UNSPEC indicates that name resolution has
+ * not been done and a simple host name is held in this SockAddr
+ * structure.
  */
-static inline int sockaddr_family(SockAddr *addr, SockAddrStep step)
-{
-    switch (addr->superfamily) {
-      case IP:
 #ifndef NO_IPV6
-        if (step.ai)
-            return step.ai->ai_family;
+#define SOCKADDR_FAMILY(addr, step) \
+    (!(addr)->resolved ? AF_UNSPEC : \
+     (step).ai ? (step).ai->ai_family : AF_INET)
+#else
+#define SOCKADDR_FAMILY(addr, step) \
+    (!(addr)->resolved ? AF_UNSPEC : AF_INET)
 #endif
-        return AF_INET;
-#if HAVE_AFUNIX_H
-      case UNIX:
-        return AF_UNIX;
-#endif
-      default:
-        return AF_UNSPEC;
-    }
-}
 
 /*
  * Start a SockAddrStep structure to step through multiple
@@ -491,8 +462,9 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
 #ifndef NO_IPV6
     ret->ais = NULL;
 #endif
+    ret->namedpipe = false;
     ret->addresses = NULL;
-    ret->superfamily = UNRESOLVED;
+    ret->resolved = false;
     ret->refcount = 1;
     *realhost = '\0';
 
@@ -516,7 +488,7 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
             }
             if (err == 0)
             {
-                ret->superfamily = IP;
+                ret->resolved = true;
             }
         } else
 #endif
@@ -526,12 +498,12 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
              * (NOTE: we don't use gethostbyname as a fallback!)
              */
             if ( (h = p_gethostbyname(host)) )
-                ret->superfamily = IP;
+                ret->resolved = true;
             else
                 err = p_WSAGetLastError();
         }
 
-        if (ret->superfamily != IP) {
+        if (!ret->resolved) {
             ret->error = (err == WSAENETDOWN ? "Network is down" :
                           err == WSAHOST_NOT_FOUND ? "Host does not exist" :
                           err == WSATRY_AGAIN ? "Host not found" :
@@ -584,7 +556,7 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
         ret->addresses = snewn(1, unsigned long);
         ret->naddresses = 1;
         ret->addresses[0] = p_ntohl(a);
-        ret->superfamily = IP;
+        ret->resolved = true;
         strncpy(realhost, host, sizeof(realhost));
     }
     realhost[lenof(realhost)-1] = '\0';
@@ -592,38 +564,39 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
     return ret;
 }
 
-static SockAddr *sk_special_addr(SuperFamily superfamily, const char *name)
+SockAddr *sk_nonamelookup(const char *host)
 {
     SockAddr *ret = snew(SockAddr);
     ret->error = NULL;
-    ret->superfamily = superfamily;
+    ret->resolved = false;
 #ifndef NO_IPV6
     ret->ais = NULL;
 #endif
+    ret->namedpipe = false;
     ret->addresses = NULL;
     ret->naddresses = 0;
     ret->refcount = 1;
-    strncpy(ret->hostname, name, lenof(ret->hostname));
+    strncpy(ret->hostname, host, lenof(ret->hostname));
     ret->hostname[lenof(ret->hostname)-1] = '\0';
     return ret;
 }
 
-SockAddr *sk_nonamelookup(const char *host)
-{
-    return sk_special_addr(UNRESOLVED, host);
-}
-
 SockAddr *sk_namedpipe_addr(const char *pipename)
 {
-    return sk_special_addr(NAMEDPIPE, pipename);
-}
-
-#if HAVE_AFUNIX_H
-SockAddr *sk_unix_addr(const char *sockpath)
-{
-    return sk_special_addr(UNIX, sockpath);
-}
+    SockAddr *ret = snew(SockAddr);
+    ret->error = NULL;
+    ret->resolved = false;
+#ifndef NO_IPV6
+    ret->ais = NULL;
 #endif
+    ret->namedpipe = true;
+    ret->addresses = NULL;
+    ret->naddresses = 0;
+    ret->refcount = 1;
+    strncpy(ret->hostname, pipename, lenof(ret->hostname));
+    ret->hostname[lenof(ret->hostname)-1] = '\0';
+    return ret;
+}
 
 static bool sk_nextaddr(SockAddr *addr, SockAddrStep *step)
 {
@@ -666,7 +639,7 @@ void sk_getaddr(SockAddr *addr, char *buf, int buflen)
         }
     } else
 #endif
-    if (sockaddr_family(addr, step) == AF_INET) {
+    if (SOCKADDR_FAMILY(addr, step) == AF_INET) {
         struct in_addr a;
         assert(addr->addresses && step.curraddr < addr->naddresses);
         a.s_addr = p_htonl(addr->addresses[step.curraddr]);
@@ -697,7 +670,7 @@ static SockAddr sk_extractaddr_tmp(
 #ifndef NO_IPV6
     toret.ais = step->ai;
 #endif
-    if (sockaddr_family(addr, *step) == AF_INET
+    if (SOCKADDR_FAMILY(addr, *step) == AF_INET
 #ifndef NO_IPV6
         && !toret.ais
 #endif
@@ -709,11 +682,7 @@ static SockAddr sk_extractaddr_tmp(
 
 bool sk_addr_needs_port(SockAddr *addr)
 {
-    return addr->superfamily != NAMEDPIPE
-#if HAVE_AFUNIX_H
-        && addr->superfamily != UNIX
-#endif
-        ;
+    return !addr->namedpipe;
 }
 
 bool sk_hostname_is_local(const char *name)
@@ -761,7 +730,7 @@ bool sk_address_is_local(SockAddr *addr)
     SockAddrStep step;
     int family;
     START_STEP(addr, step);
-    family = sockaddr_family(addr, step);
+    family = SOCKADDR_FAMILY(addr, step);
 
 #ifndef NO_IPV6
     if (family == AF_INET6) {
@@ -797,7 +766,7 @@ int sk_addrtype(SockAddr *addr)
     SockAddrStep step;
     int family;
     START_STEP(addr, step);
-    family = sockaddr_family(addr, step);
+    family = SOCKADDR_FAMILY(addr, step);
 
     return (family == AF_INET ? ADDRTYPE_IPV4 :
 #ifndef NO_IPV6
@@ -811,7 +780,7 @@ void sk_addrcopy(SockAddr *addr, char *buf)
     SockAddrStep step;
     int family;
     START_STEP(addr, step);
-    family = sockaddr_family(addr, step);
+    family = SOCKADDR_FAMILY(addr, step);
 
     assert(family != AF_UNSPEC);
 #ifndef NO_IPV6
@@ -972,7 +941,7 @@ static DWORD try_connect(NetSocket *sock,
     /*
      * Open socket.
      */
-    family = sockaddr_family(sock->addr, sock->step);
+    family = SOCKADDR_FAMILY(sock->addr, sock->step);
 
     /*
      * Remove the socket from the tree before we overwrite its
@@ -1257,26 +1226,21 @@ Socket *sk_new(SockAddr *addr, int port, bool privport, bool oobinline,
     return &ret->sock;
 }
 
-Socket *sk_newlistener_internal(const char *srcaddr, int port, Plug *plug,
-                                bool local_host_only, int orig_address_family)
+Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
+                       bool local_host_only, int orig_address_family)
 {
     SOCKET s;
-    SOCKADDR_IN a;
 #ifndef NO_IPV6
     SOCKADDR_IN6 a6;
 #endif
-#if HAVE_AFUNIX_H
-    SOCKADDR_UN au;
-#endif
-    struct sockaddr *bindaddr;
-    unsigned bindsize;
+    SOCKADDR_IN a;
 
     DWORD err;
     const char *errstr;
     NetSocket *ret;
     int retcode;
 
-    int address_family = orig_address_family;
+    int address_family;
 
     /*
      * Create NetSocket structure.
@@ -1295,6 +1259,16 @@ Socket *sk_newlistener_internal(const char *srcaddr, int port, Plug *plug,
     ret->pending_error = 0;
     ret->parent = ret->child = NULL;
     ret->addr = NULL;
+
+    /*
+     * Translate address_family from platform-independent constants
+     * into local reality.
+     */
+    address_family = (orig_address_family == ADDRTYPE_IPV4 ? AF_INET :
+#ifndef NO_IPV6
+                      orig_address_family == ADDRTYPE_IPV6 ? AF_INET6 :
+#endif
+                      AF_UNSPEC);
 
     /*
      * Our default, if passed the `don't care' value
@@ -1321,100 +1295,85 @@ Socket *sk_newlistener_internal(const char *srcaddr, int port, Plug *plug,
 
     ret->oobinline = false;
 
-#if HAVE_AFUNIX_H
-    if (address_family != AF_UNIX)
-#endif
     {
         BOOL on = true;
         p_setsockopt(s, SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
                      (const char *)&on, sizeof(on));
     }
 
-    switch (address_family) {
 #ifndef NO_IPV6
-      case AF_INET6: {
-        memset(&a6, 0, sizeof(a6));
-        a6.sin6_family = AF_INET6;
-        if (local_host_only)
-            a6.sin6_addr = in6addr_loopback;
-        else
-            a6.sin6_addr = in6addr_any;
-        if (srcaddr != NULL && p_getaddrinfo) {
-            struct addrinfo hints;
-            struct addrinfo *ai;
-            int err;
-
-            memset(&hints, 0, sizeof(hints));
-            hints.ai_family = AF_INET6;
-            hints.ai_flags = 0;
-            {
-                /* strip [] on IPv6 address literals */
-                char *trimmed_addr = host_strduptrim(srcaddr);
-                err = p_getaddrinfo(trimmed_addr, NULL, &hints, &ai);
-                sfree(trimmed_addr);
-            }
-            if (err == 0 && ai->ai_family == AF_INET6) {
-                a6.sin6_addr =
-                    ((struct sockaddr_in6 *)ai->ai_addr)->sin6_addr;
-            }
-        }
-        a6.sin6_port = p_htons(port);
-        bindaddr = (struct sockaddr *)&a6;
-        bindsize = sizeof(a6);
-        break;
-      }
-#endif
-      case AF_INET: {
-        bool got_addr = false;
-        a.sin_family = AF_INET;
-
-        /*
-         * Bind to source address. First try an explicitly
-         * specified one...
-         */
-        if (srcaddr) {
-            a.sin_addr.s_addr = p_inet_addr(srcaddr);
-            if (a.sin_addr.s_addr != INADDR_NONE) {
-                /* Override localhost_only with specified listen addr. */
-                ret->localhost_only = ipv4_is_loopback(a.sin_addr);
-                got_addr = true;
-            }
-        }
-
-        /*
-         * ... and failing that, go with one of the standard ones.
-         */
-        if (!got_addr) {
+        if (address_family == AF_INET6) {
+            memset(&a6, 0, sizeof(a6));
+            a6.sin6_family = AF_INET6;
             if (local_host_only)
-                a.sin_addr.s_addr = p_htonl(INADDR_LOOPBACK);
+                a6.sin6_addr = in6addr_loopback;
             else
-                a.sin_addr.s_addr = p_htonl(INADDR_ANY);
-        }
+                a6.sin6_addr = in6addr_any;
+            if (srcaddr != NULL && p_getaddrinfo) {
+                struct addrinfo hints;
+                struct addrinfo *ai;
+                int err;
 
-        a.sin_port = p_htons((short)port);
-        bindaddr = (struct sockaddr *)&a;
-        bindsize = sizeof(a);
-        break;
-      }
-#if HAVE_AFUNIX_H
-      case AF_UNIX: {
-        au.sun_family = AF_UNIX;
-        strncpy(au.sun_path, srcaddr, sizeof(au.sun_path));
-        bindaddr = (struct sockaddr *)&au;
-        bindsize = sizeof(au);
-        break;
-      }
+                memset(&hints, 0, sizeof(hints));
+                hints.ai_family = AF_INET6;
+                hints.ai_flags = 0;
+                {
+                    /* strip [] on IPv6 address literals */
+                    char *trimmed_addr = host_strduptrim(srcaddr);
+                    err = p_getaddrinfo(trimmed_addr, NULL, &hints, &ai);
+                    sfree(trimmed_addr);
+                }
+                if (err == 0 && ai->ai_family == AF_INET6) {
+                    a6.sin6_addr =
+                        ((struct sockaddr_in6 *)ai->ai_addr)->sin6_addr;
+                }
+            }
+            a6.sin6_port = p_htons(port);
+        } else
 #endif
-      default:
-        unreachable("bad address family in sk_newlistener_internal");
-    }
+        {
+            bool got_addr = false;
+            a.sin_family = AF_INET;
 
-    retcode = p_bind(s, bindaddr, bindsize);
-    if (retcode != SOCKET_ERROR) {
-        err = 0;
-    } else {
-        err = p_WSAGetLastError();
-    }
+            /*
+             * Bind to source address. First try an explicitly
+             * specified one...
+             */
+            if (srcaddr) {
+                a.sin_addr.s_addr = p_inet_addr(srcaddr);
+                if (a.sin_addr.s_addr != INADDR_NONE) {
+                    /* Override localhost_only with specified listen addr. */
+                    ret->localhost_only = ipv4_is_loopback(a.sin_addr);
+                    got_addr = true;
+                }
+            }
+
+            /*
+             * ... and failing that, go with one of the standard ones.
+             */
+            if (!got_addr) {
+                if (local_host_only)
+                    a.sin_addr.s_addr = p_htonl(INADDR_LOOPBACK);
+                else
+                    a.sin_addr.s_addr = p_htonl(INADDR_ANY);
+            }
+
+            a.sin_port = p_htons((short)port);
+        }
+#ifndef NO_IPV6
+        retcode = p_bind(s, (address_family == AF_INET6 ?
+                           (struct sockaddr *) &a6 :
+                           (struct sockaddr *) &a),
+                       (address_family ==
+                        AF_INET6 ? sizeof(a6) : sizeof(a)));
+#else
+        retcode = p_bind(s, (struct sockaddr *) &a, sizeof(a));
+#endif
+        if (retcode != SOCKET_ERROR) {
+            err = 0;
+        } else {
+            err = p_WSAGetLastError();
+        }
 
     if (err) {
         p_closesocket(s);
@@ -1449,9 +1408,9 @@ Socket *sk_newlistener_internal(const char *srcaddr, int port, Plug *plug,
      * If we were given ADDRTYPE_UNSPEC, we must also create an
      * IPv6 listening socket and link it to this one.
      */
-    if (address_family == AF_INET && orig_address_family == AF_UNSPEC) {
-        Socket *other = sk_newlistener_internal(srcaddr, port, plug,
-                                                local_host_only, AF_INET6);
+    if (address_family == AF_INET && orig_address_family == ADDRTYPE_UNSPEC) {
+        Socket *other = sk_newlistener(srcaddr, port, plug,
+                                       local_host_only, ADDRTYPE_IPV6);
 
         if (other) {
             NetSocket *ns = container_of(other, NetSocket, sock);
@@ -1466,33 +1425,6 @@ Socket *sk_newlistener_internal(const char *srcaddr, int port, Plug *plug,
 #endif
 
     return &ret->sock;
-}
-
-Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
-                       bool local_host_only, int orig_address_family)
-{
-    /*
-     * Translate address_family from platform-independent constants
-     * into local reality.
-     */
-    int address_family = (orig_address_family == ADDRTYPE_IPV4 ? AF_INET :
-#ifndef NO_IPV6
-                          orig_address_family == ADDRTYPE_IPV6 ? AF_INET6 :
-#endif
-                          AF_UNSPEC);
-
-    return sk_newlistener_internal(srcaddr, port, plug, local_host_only,
-                                   address_family);
-}
-
-Socket *sk_newlistener_unix(const char *path, Plug *plug)
-{
-#if HAVE_AFUNIX_H
-    return sk_newlistener_internal(path, 0, plug, false, AF_UNIX);
-#else
-    return new_error_socket_fmt(
-        plug, "AF_UNIX support not compiled into this program");
-#endif
 }
 
 static void sk_net_close(Socket *sock)
@@ -1848,7 +1780,7 @@ void select_result(WPARAM wParam, LPARAM lParam)
 #ifdef NO_IPV6
         struct sockaddr_in isa;
 #else
-        struct sockaddr_storage isa; // FIXME: also if Unix and no IPv6
+        struct sockaddr_storage isa;
 #endif
         int addrlen = sizeof(isa);
         SOCKET t;  /* socket of connection */
@@ -1904,7 +1836,7 @@ static SocketPeerInfo *sk_net_peer_info(Socket *sock)
 #ifdef NO_IPV6
     struct sockaddr_in addr;
 #else
-    struct sockaddr_storage addr; // FIXME: also if Unix and no IPv6
+    struct sockaddr_storage addr;
     char buf[INET6_ADDRSTRLEN];
 #endif
     int addrlen = sizeof(addr);
@@ -2031,7 +1963,7 @@ SockAddr *platform_get_x11_unix_address(const char *display, int displaynum)
 {
     SockAddr *ret = snew(SockAddr);
     memset(ret, 0, sizeof(SockAddr));
-    ret->error = "unix sockets for X11 not supported on this platform";
+    ret->error = "unix sockets not supported on this platform";
     ret->refcount = 1;
     return ret;
 }
