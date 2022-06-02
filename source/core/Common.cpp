@@ -1597,7 +1597,15 @@ int __fastcall FileGetAttrFix(const UnicodeString FileName)
   {
     FollowLink = false;
   }
-  int Result = FileGetAttr(FileName, FollowLink);
+  int Result;
+  try
+  {
+    Result = FileGetAttr(FileName, FollowLink);
+  }
+  catch (EOSError & E)
+  {
+    Result = -1;
+  }
   if (Result < 0)
   {
     // When referring to files in some special symlinked locations
