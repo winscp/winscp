@@ -1307,6 +1307,8 @@ static int sessioncmp(const void *av, const void *bv)
     return strcmp(a, b);               /* otherwise, compare normally */
 }
 
+bool sesslist_demo_mode = false;
+
 void get_sesslist(struct sesslist *list, bool allocate)
 {
     int i;
@@ -1316,12 +1318,18 @@ void get_sesslist(struct sesslist *list, bool allocate)
     if (allocate) {
         strbuf *sb = strbuf_new();
 
-        if ((handle = enum_settings_start()) != NULL) {
-            while (enum_settings_next(handle, sb))
-                put_byte(sb, '\0');
-            enum_settings_finish(handle);
+        if (sesslist_demo_mode) {
+            put_asciz(sb, "demo-server");
+            put_asciz(sb, "demo-server-2");
+        } else {
+            if ((handle = enum_settings_start()) != NULL) {
+                while (enum_settings_next(handle, sb))
+                    put_byte(sb, '\0');
+                enum_settings_finish(handle);
+            }
+            put_byte(sb, '\0');
         }
-        put_byte(sb, '\0');
+
         list->buffer = strbuf_to_str(sb);
 
         /*

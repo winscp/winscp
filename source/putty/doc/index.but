@@ -867,6 +867,11 @@ saved sessions from
 \IM{authentication agent} agent, authentication
 
 \IM{-c-pageant} \c{-c} Pageant command-line option
+\IM{--keylist} \c{--keylist} Pageant command-line option
+\IM{--openssh-config} \c{--openssh-config} Pageant command-line option
+
+\IM{Windows OpenSSH} Windows OpenSSH
+\IM{Windows OpenSSH} OpenSSH, on Windows
 
 \IM{FAQ} FAQ
 \IM{FAQ} Frequently Asked Questions
