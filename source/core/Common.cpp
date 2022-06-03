@@ -3021,6 +3021,11 @@ bool __fastcall IsWin10Build(unsigned int BuildNumber)
      (OSVersionInfo.dwBuildNumber >= BuildNumber));
 }
 //---------------------------------------------------------------------------
+bool IsWin11()
+{
+  return IsWin10Build(22000);
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsWine()
 {
   HMODULE NtDll = GetModuleHandle(L"ntdll.dll");

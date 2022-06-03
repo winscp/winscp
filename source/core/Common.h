@@ -141,6 +141,7 @@ bool __fastcall IsWin7();
 bool __fastcall IsWin8();
 bool __fastcall IsWin10();
 bool __fastcall IsWin10Build(unsigned int BuildNumber);
+bool IsWin11();
 bool __fastcall IsWine();
 bool __fastcall IsUWP();
 UnicodeString GetPackageName();

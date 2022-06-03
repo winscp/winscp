@@ -5,6 +5,7 @@
 #include "Common.h"
 #include "FileOperationProgress.h"
 #include "CoreMain.h"
+#include "Interface.h"
 //---------------------------------------------------------------------------
 #define TRANSFER_BUF_SIZE 32768
 //---------------------------------------------------------------------------
@@ -310,7 +311,7 @@ void __fastcall TFileOperationProgressType::Progress()
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::DoProgress()
 {
-  SetThreadExecutionState(ES_SYSTEM_REQUIRED);
+  SystemRequired();
   FOnProgress(*this);
 }
 //---------------------------------------------------------------------------
