@@ -49,6 +49,7 @@ void __fastcall BusyEnd(void * Token);
 const unsigned int GUIUpdateInterval = 100;
 void __fastcall SetNoGUI();
 bool __fastcall ProcessGUI(bool Force = false);
+void SystemRequired();
 UnicodeString __fastcall AppNameString();
 UnicodeString __fastcall SshVersionString();
 void __fastcall CopyToClipboard(UnicodeString Text);

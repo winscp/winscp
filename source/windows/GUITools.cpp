@@ -2297,7 +2297,92 @@ bool CanShowTimeEstimate(TDateTime StartTime)
   return (SecondsBetween(StartTime, Now()) >= 3);
 }
 //---------------------------------------------------------------------------
+class TSystemRequiredThread : public TSignalThread
+{
+public:
+  TSystemRequiredThread();
+  void Required();
+protected:
+  virtual bool __fastcall WaitForEvent();
+  virtual void __fastcall ProcessEvent();
+private:
+  bool FRequired;
+  TDateTime FLastRequired;
+};
+//---------------------------------------------------------------------------
+std::unique_ptr<TCriticalSection> SystemRequiredThreadSection(TraceInitPtr(new TCriticalSection()));
+TSystemRequiredThread * SystemRequiredThread = NULL;
+//---------------------------------------------------------------------------
+TSystemRequiredThread::TSystemRequiredThread() :
+  TSignalThread(true), FRequired(false)
+{
+}
+//---------------------------------------------------------------------------
+void TSystemRequiredThread::Required()
+{
+  // guarded in SystemRequired()
+  FLastRequired = Now();
+  TriggerEvent();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSystemRequiredThread::WaitForEvent()
+{
+  const int ExpireInterval = 5000;
+  bool Result = (TSignalThread::WaitForEvent(ExpireInterval) > 0);
+  if (!Result && !FTerminated)
+  {
+    TGuard Guard(SystemRequiredThreadSection.get());
+    if (!FTerminated && FRequired &&
+        (MilliSecondsBetween(Now(), FLastRequired) > ExpireInterval))
+    {
+      SetThreadExecutionState(ES_CONTINUOUS);
+      FLastRequired = TDateTime();
+      FRequired = false;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSystemRequiredThread::ProcessEvent()
+{
+  TGuard Guard(SystemRequiredThreadSection.get());
+  if (!FRequired &&
+      (FLastRequired != TDateTime()))
+  {
+    SetThreadExecutionState(ES_SYSTEM_REQUIRED | ES_CONTINUOUS);
+    FRequired = true;
+  }
+}
+//---------------------------------------------------------------------------
+void SystemRequired()
+{
+  if (IsWin11())
+  {
+    TGuard Guard(SystemRequiredThreadSection.get());
+    if (SystemRequiredThread == NULL)
+    {
+      SystemRequiredThread = new TSystemRequiredThread();
+      SystemRequiredThread->Start();
+    }
+    SystemRequiredThread->Required();
+  }
+  else
+  {
+    SetThreadExecutionState(ES_SYSTEM_REQUIRED);
+  }
+}
+//---------------------------------------------------------------------------
 void GUIFinalize()
 {
   TPuttyCleanupThread::Finalize();
+
+  TSystemRequiredThread * Thread;
+  {
+    TGuard Guard(SystemRequiredThreadSection.get());
+    Thread = SystemRequiredThread;
+    SystemRequiredThread = NULL;
+  }
+  Thread->Terminate();
+  Thread->WaitFor();
+  delete Thread;
 }
