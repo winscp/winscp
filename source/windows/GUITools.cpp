@@ -29,6 +29,7 @@
 #include <vssym32.h>
 #include <DateUtils.hpp>
 #include <IOUtils.hpp>
+#include <Queue.h>
 
 #include "Animations96.h"
 #include "Animations120.h"
