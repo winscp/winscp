@@ -1759,7 +1759,6 @@ void __fastcall TFTPFileSystem::Source(
     // not used for uploads anyway
     FFileTransferPreserveTime = CopyParam->PreserveTime && (CopyParam->OnTransferIn == NULL);
     FFileTransferRemoveBOM = CopyParam->RemoveBOM;
-    // not used for uploads anyway
     FFileTransferNoList = CanTransferSkipList(Params, Flags, CopyParam);
     // not used for uploads, but we get new name (if any) back in this field
     UserData.FileName = DestFileName;
