@@ -3616,10 +3616,6 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         }
         else
         {
-          // Resetting transfersize here is pointless as we
-          // always provide valid size in call to FileTransfer.
-          // We unnecessary rely on the file being in the directory listing.
-          pData->transferdata.transfersize=-1;
           CString remotefile=pData->transferfile.remotefile;
           if (m_pDirectoryListing)
             for (int i=0; i<m_pDirectoryListing->num; i++)
@@ -6161,7 +6157,7 @@ void CFtpControlSocket::DiscardLine(CStringA line)
 int CFtpControlSocket::FileTransferListState(bool get)
 {
   int Result;
-  if (GetOptionVal(OPTION_MPEXT_NOLIST) && !get)
+  if (GetOptionVal(OPTION_MPEXT_NOLIST))
   {
     Result = FILETRANSFER_TYPE;
   }
