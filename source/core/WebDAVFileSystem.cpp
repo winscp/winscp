@@ -828,14 +828,17 @@ void TWebDAVFileSystem::NeonPropsResult(
   TReadFileData & Data = *static_cast<TReadFileData *>(UserData);
   if (Data.FileList != NULL)
   {
-    UnicodeString FileListPath = Data.FileSystem->AbsolutePath(Data.FileList->Directory, false);
-    if (UnixSamePath(Path, FileListPath))
-    {
-      Path = UnixIncludeTrailingBackslash(UnixIncludeTrailingBackslash(Path) + PARENTDIRECTORY);
-    }
     std::unique_ptr<TRemoteFile> File(new TRemoteFile(NULL));
     File->Terminal = Data.FileSystem->FTerminal;
     Data.FileSystem->ParsePropResultSet(File.get(), Path, Results);
+
+    UnicodeString FileListPath = Data.FileSystem->AbsolutePath(Data.FileList->Directory, false);
+    if (UnixSamePath(File->FullFileName, FileListPath))
+    {
+      File->FileName = PARENTDIRECTORY;
+      File->FullFileName = UnixCombinePaths(Path, PARENTDIRECTORY);
+    }
+
     Data.FileList->AddFile(File.release());
   }
   else
@@ -947,7 +950,9 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
     // so if we see one in the display name, take the name from there.
     // * and % won't help, as OneDrive seem to have bug with % at the end of the filename,
     // and the * (and others) is removed from file names.
-    if (FOneDrive && (ContainsText(File->FileName, L"^") || (wcspbrk(File->DisplayName.c_str(), L"&,+#[]%*") != NULL)))
+    // Filenames with commas (,) get as many additional characters at the end of the filename as there are commas.
+    if (FOneDrive &&
+        (ContainsText(File->FileName, L"^") || ContainsText(File->FileName, L",") || (wcspbrk(File->DisplayName.c_str(), L"&,+#[]%*") != NULL)))
     {
       File->FileName = File->DisplayName;
       File->FullFileName = UnixCombinePaths(UnixExtractFileDir(File->FullFileName), File->FileName);
