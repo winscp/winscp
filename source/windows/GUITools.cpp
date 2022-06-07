@@ -2382,7 +2382,11 @@ void GUIFinalize()
     Thread = SystemRequiredThread;
     SystemRequiredThread = NULL;
   }
-  Thread->Terminate();
-  Thread->WaitFor();
-  delete Thread;
+
+  if (Thread != NULL)
+  {
+    Thread->Terminate();
+    Thread->WaitFor();
+    delete Thread;
+  }
 }
