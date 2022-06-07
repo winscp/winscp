@@ -3604,8 +3604,8 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
             {
               if (m_pDirectoryListing->direntry[i].name==remotefile)
               {
-                  pData->hasRemoteDate = true;
-                  pData->remoteDate = m_pDirectoryListing->direntry[i].date;
+                pData->hasRemoteDate = true;
+                pData->remoteDate = m_pDirectoryListing->direntry[i].date;
                 pData->transferdata.transfersize=m_pDirectoryListing->direntry[i].size;
               }
             }
