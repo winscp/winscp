@@ -1527,12 +1527,16 @@ BOOL CFtpControlSocket::Send(CString str)
   return TRUE;
 }
 
-int CFtpControlSocket::GetReplyCode()
+int CFtpControlSocket::TryGetReplyCode()
 {
   if (m_RecvBuffer.empty())
     return 0;
   CStringA str = m_RecvBuffer.front();
-  if ((str == "") || (str[0] < '1') || (str[0] > '9'))
+  if (str == "")
+  {
+    return -1;
+  }
+  else if ((str[0] < '1') || (str[0] > '9'))
   {
     UnicodeString Error = FMTLOAD(FTP_MALFORMED_RESPONSE, (UnicodeString(str)));
     LogMessageRaw(FZ_LOG_WARNING, Error.c_str());
@@ -1542,6 +1546,18 @@ int CFtpControlSocket::GetReplyCode()
   {
     return str[0]-'0';
   }
+}
+
+int CFtpControlSocket::GetReplyCode()
+{
+  int Result = TryGetReplyCode();
+  if (Result < 0)
+  {
+    UnicodeString Error = FMTLOAD(FTP_MALFORMED_RESPONSE, (UnicodeString()));
+    LogMessageRaw(FZ_LOG_WARNING, Error.c_str());
+    Result = 0;
+  }
+  return Result;
 }
 
 void CFtpControlSocket::DoClose(int nError /*=0*/)
@@ -2922,7 +2938,13 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     ///////////
     //Replies//
     ///////////
-    int code = GetReplyCode();
+    int code = TryGetReplyCode();
+    // We do not always expect a response here, particularly when closing transfer connection (FILETRANSFER_WAITFINISH).
+    // The normalization to 0 is probably not needed.
+    if (code < 0)
+    {
+      code = 0;
+    }
     switch(m_Operation.nOpState)
     {
     case FILETRANSFER_PWD:
