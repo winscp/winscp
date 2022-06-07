@@ -119,6 +119,7 @@ protected:
   void ResetTransferSocket(int Error);
 
   void DoClose(int nError = 0);
+  int TryGetReplyCode();
   int GetReplyCode();
   CString GetReply();
   void LogOnToServer(BOOL bSkipReply = FALSE);
