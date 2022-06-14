@@ -1474,14 +1474,16 @@ void __fastcall TFTPFileSystem::ResetFileTransfer()
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::ReadDirectoryProgress(__int64 Bytes)
 {
+  // with FTP we do not know exactly how many entries we have received,
+  // instead we know number of bytes received only.
+  // so we report approximation based on average size of entry.
+  int Progress = int(Bytes / 80);
   DWORD Ticks = GetTickCount();
-  if (Ticks - FLastReadDirectoryProgress >= 100)
+  if ((Ticks - FLastReadDirectoryProgress >= 100) &&
+      // Cannot call OnReadDirectoryProgress with 0 as it would unmatch the "starting" and "ending" signals for disabling the window
+      (Progress > 0))
   {
     FLastReadDirectoryProgress = Ticks;
-    // with FTP we do not know exactly how many entries we have received,
-    // instead we know number of bytes received only.
-    // so we report approximation based on average size of entry.
-    int Progress = int(Bytes / 80);
     bool Cancel = false;
     FTerminal->DoReadDirectoryProgress(Progress, 0, Cancel);
     if (Cancel)
