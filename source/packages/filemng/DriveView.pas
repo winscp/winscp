@@ -2630,6 +2630,7 @@ begin
       end;
 
       ClearDragFileList(FDragDropFilesEx.FileList);
+      // TDirView.PerformDragDropFileOperation validates the SourcePath and that actually seems correct
       SourceParentPath := ExtractFilePath(ExcludeTrailingBackslash(SourcePath));
     end
       else
