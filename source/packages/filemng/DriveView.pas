@@ -2294,7 +2294,7 @@ begin
         if Assigned(DiscMonitor) and (not DiscMonitor.Active) then
         begin
           DiscMonitor.Open;
-          UpdateDriveNotifications(Drive);
+          UpdateDriveNotifications(DriveStatusPair.Key);
         end;
       end;
 
