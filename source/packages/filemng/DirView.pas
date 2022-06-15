@@ -3244,10 +3244,16 @@ begin
 
               if (Effect = DROPEFFECT_MOVE) or IsRecycleBin then
               try
-                Node := FindNodeToPath(SourcePath);
-                if Assigned(Node) and Assigned(Node.Parent) then
-                  Node := Node.Parent;
-                ValidateDirectory(Node);
+                Node := TryFindNodeToPath(SourcePath);
+                // If the path is not even in the tree, do not bother.
+                // This is particularly for dragging from remote folder, when the source path in %TEMP% and
+                // calling ValidateDirectory would load whole TEMP (and typically also "C:\Users")
+                if Assigned(Node) then
+                begin
+                  if Assigned(Node.Parent) then
+                    Node := Node.Parent;
+                  ValidateDirectory(Node);
+                end;
               except
               end;
             end;

@@ -219,6 +219,7 @@ type
     function NodePathExists(Node: TTreeNode): Boolean; override;
     function NodeColor(Node: TTreeNode): TColor; override;
     function FindPathNode(Path: string): TTreeNode; override;
+    function DoFindNodeToPath(Path: string; ExistingOnly: Boolean): TTreeNode;
     function CreateNode: TTreeNode; override;
 
     function DDSourceEffects: TDropEffectSet; override;
@@ -258,6 +259,7 @@ type
     {Node handling:}
     procedure SetImageIndex(Node: TTreeNode); virtual;
     function FindNodeToPath(Path: string): TTreeNode;
+    function TryFindNodeToPath(Path: string): TTreeNode;
     function RootNode(Node: TTreeNode): TTreeNode;
     function GetDirName(Node: TTreeNode): string;
     function GetDisplayName(Node: TTreeNode): string;
@@ -1653,7 +1655,7 @@ begin {ScanDrive}
   end;
 end; {ScanDrive}
 
-function TDriveView.FindNodeToPath(Path: string): TTreeNode;
+function TDriveView.DoFindNodeToPath(Path: string; ExistingOnly: Boolean): TTreeNode;
 
   function SearchSubDirs(ParentNode: TTreeNode; Path: string): TTreeNode; forward;
 
@@ -1676,7 +1678,7 @@ function TDriveView.FindNodeToPath(Path: string): TTreeNode;
       SetLength(Dir, Pred(Length(Dir)));
 
     Node := ParentNode.GetFirstChild;
-    if not Assigned(Node) then
+    if (not Assigned(Node)) and (not ExistingOnly) then
     begin
       ValidateDirectoryEx(ParentNode, rsRecursiveExisting, True);
       Node := ParentNode.GetFirstChild;
@@ -1706,7 +1708,7 @@ function TDriveView.FindNodeToPath(Path: string): TTreeNode;
     Result := nil;
     if Length(Path) > 0 then
     begin
-      if not TNodeData(ParentNode.Data).Scanned then
+      if (not TNodeData(ParentNode.Data).Scanned) and (not ExistingOnly) then
       begin
         ReadSubDirs(ParentNode, GetDriveTypetoNode(ParentNode));
       end;
@@ -1764,7 +1766,7 @@ begin {FindNodeToPath}
     end;
     if Length(Path) > 0 then
     begin
-      if not GetDriveStatus(Drive).Scanned then
+      if (not GetDriveStatus(Drive).Scanned) and (not ExistingOnly) then
       begin
         ScanDrive(Drive);
       end;
@@ -1773,6 +1775,16 @@ begin {FindNodeToPath}
       else Result := GetDriveStatus(Drive).RootNode;
   end;
 end; {FindNodetoPath}
+
+function TDriveView.FindNodeToPath(Path: string): TTreeNode;
+begin
+  Result := DoFindNodeToPath(Path, False);
+end;
+
+function TDriveView.TryFindNodeToPath(Path: string): TTreeNode;
+begin
+  Result := DoFindNodeToPath(Path, True);
+end;
 
 function TDriveView.CheckForSubDirs(Path: string): Boolean;
 var
@@ -2593,7 +2605,7 @@ var
   SourceParentPath: string;
   SourceIsDirectory: Boolean;
   SaveCursor: TCursor;
-  TargetNode: TTreeNode;
+  SourceNode, TargetNode: TTreeNode;
   TargetPath: string;
   IsRecycleBin: Boolean;
 begin
@@ -2652,7 +2664,10 @@ begin
     {Update source directory, if move-operation was performed:}
     if ((Effect = DROPEFFECT_MOVE) or IsRecycleBin) then
     begin
-      ValidateDirectory(FindNodeToPath(SourceParentPath));
+      // See comment in corresponding operation in TDirView.PerformDragDropFileOperation
+      SourceNode := TryFindNodeToPath(SourceParentPath);
+      if Assigned(SourceNode) then
+        ValidateDirectory(SourceNode);
     end;
 
     {Update subdirectories of target directory:}
