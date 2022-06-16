@@ -91,26 +91,30 @@
 #define CommanderFileBase "Commander"
 #define SelectDirFileBase "Opened bookmark folder-stored session folder"
 
+#define ProgramName "WinSCP"
+#define ProgramAuthor "Martin Prikryl"
+
 [Setup]
 AppId={#AppId}
-AppName=WinSCP
-AppPublisher=Martin Prikryl
+AppName={#ProgramName}
+AppVersion={#Major}.{#Minor}.{#Rev}.{#Build}
+AppVerName={#ProgramName} {#Major}.{#Minor}.{#Rev}.{#Build}
+AppPublisher={#ProgramAuthor}
 AppPublisherURL={#WebRoot}
 AppSupportURL={#WebForum}
 AppUpdatesURL={#WebRoot}eng/download.php
-VersionInfoCompany=Martin Prikryl
-VersionInfoDescription=Setup for WinSCP {#Version} (SFTP, FTP, WebDAV and SCP client)
+VersionInfoCompany={#ProgramAuthor}
+VersionInfoDescription={#ProgramName} (SFTP/FTP/WebDAV/SCP client)
 VersionInfoVersion={#Major}.{#Minor}.{#Rev}.{#Build}
-VersionInfoTextVersion={#Version}
-VersionInfoCopyright=(c) 2000-{#Year} Martin Prikryl
+VersionInfoTextVersion={#Major}.{#Minor}.{#Rev}.{#Build}
+VersionInfoCopyright=2000-{#Year} {#ProgramAuthor}
 VersionInfoOriginalFileName={#BaseFilename}.exe
-DefaultDirName={autopf}\WinSCP
+DefaultDirName={autopf}\{#ProgramName}
 LicenseFile=license.setup.txt
+UninstallDisplayName={#ProgramName}
 UninstallDisplayIcon={app}\WinSCP.exe
 OutputDir={#OutputDir}
 DisableStartupPrompt=yes
-AppVersion={#Version}
-AppVerName=WinSCP {#Version}
 OutputBaseFilename={#BaseFilename}
 SolidCompression=yes
 #ifdef ImagesDir
