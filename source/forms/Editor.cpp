@@ -662,7 +662,7 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   // This way we explicitly bind them to our editor.
   for (int Index = 0; Index < EditorActions->ActionCount; Index++)
   {
-    TEditAction * EditAction = dynamic_cast<TEditAction* >(EditorActions->Actions[Index]);
+    TEditAction * EditAction = dynamic_cast<TEditAction *>(EditorActions->Actions[Index]);
     if (EditAction != NULL)
     {
       EditAction->Control = EditorMemo;
