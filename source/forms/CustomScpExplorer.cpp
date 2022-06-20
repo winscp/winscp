@@ -6628,7 +6628,7 @@ void __fastcall TCustomScpExplorerForm::AddEditLink(TOperationSide Side, bool Ad
       FileName = File->FileName;
       PointTo = File->LinkTo;
     }
-    else
+    else if (!File->IsParentDirectory)
     {
       PointTo = File->FileName;
     }
