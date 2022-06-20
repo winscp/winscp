@@ -518,6 +518,6 @@ initialization
   TPicture.RegisterFileFormat('', '', TPNGObject);
 finalization
   TPicture.UnregisterGraphicClass(TPNGObject);
-{$IFEND}
+{$ENDIF}
 {$IFEND}
 end.
