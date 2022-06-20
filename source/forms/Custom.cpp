@@ -317,6 +317,7 @@ void __fastcall TCustomDialog::AddText(TLabel * Label)
 {
   Label->Parent = GetDefaultParent();
 
+  DebugAssert(Label->AutoSize);
   Label->WordWrap = true;
   Label->Left = FIndent;
   Label->Width = GetMaxControlWidth(Label);
@@ -328,7 +329,15 @@ void __fastcall TCustomDialog::AddText(TLabel * Label)
   DrawText(Label->Canvas->Handle, Label->Caption.c_str(), Label->Caption.Length() + 1, &TextRect,
     DT_EXPANDTABS | DT_CALCRECT | DT_WORDBREAK | DT_NOPREFIX |
     Label->DrawTextBiDiModeFlagsReadingOnly());
-  Label->Height = TextRect.Height();
+  if (TextRect.Height() > Label->Height)
+  {
+    Label->Height = TextRect.Height();
+    Label->AutoSize = false;
+  }
+  else
+  {
+    Label->WordWrap = false;
+  }
 
   AdjustHeight(Label);
 }
@@ -337,8 +346,8 @@ void __fastcall TCustomDialog::AddText(TStaticText * Label)
 {
   Label->Parent = GetDefaultParent();
 
+  DebugAssert(Label->AutoSize);
   Label->Left = FIndent;
-  Label->Width = GetMaxControlWidth(Label);
   Label->Top = FPos;
   Label->ShowAccelChar = false;
 
