@@ -41,12 +41,14 @@ type
     property NumGlyphs stored False;
   end;
 
+{$IFNDEF WINSCP}
 {$IF RTLVersion >= 24.0 }
   TPngBitBtnStyleHook = class(TBitBtnStyleHook)
   strict protected
     procedure DrawButton(ACanvas: TCanvas; AMouseInControl: Boolean); override;
   end;
 {$IFEND}
+{$ENDIF}
 
 implementation
 
@@ -308,6 +310,7 @@ begin
   end;
 end;
 
+{$IFNDEF WINSCP}
 { TPngBitBtnStyleHook }
 {$IF RTLVersion >= 24.0 }
 procedure TPngBitBtnStyleHook.DrawButton(ACanvas: TCanvas;
@@ -384,6 +387,7 @@ begin
   StyleServices.DrawText(ACanvas.Handle, Details, btn.Caption, TextRect, LFormats, LColor);
 
 end;
+{$IFEND}
 {$IFEND}
 
 end.
