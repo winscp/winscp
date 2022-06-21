@@ -1386,7 +1386,7 @@ void __fastcall TScpCommanderForm::AddEditLink(TOperationSide Side, bool Add)
           throw Exception(FMTLOAD(RESOLVE_SHORTCUT_ERROR, (FullName)));
         }
       }
-      else if (!ADirView->ItemIsParentDirectory(ADirView->ItemFocused))
+      else if (!LocalDirView->ItemIsParentDirectory(LocalDirView->ItemFocused))
       {
         PointTo = FileRec->FileName;
       }
