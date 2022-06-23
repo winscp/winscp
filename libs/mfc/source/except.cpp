@@ -45,7 +45,7 @@ static char THIS_FILE[] = __FILE__;
 // AFX_EXCEPTION_CONTEXT (thread global state)
 
 // WINSCP
-AFX_EXCEPTION_CONTEXT m_exceptionContext;
+AFX_EXCEPTION_CONTEXT __thread m_exceptionContext;
 
 inline AFX_EXCEPTION_CONTEXT* AfxGetExceptionContext()
 {
