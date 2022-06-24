@@ -11083,6 +11083,11 @@ void __fastcall TCustomScpExplorerForm::DirViewGetItemColor(
 
   TCustomDirView * DirView = DebugNotNull(dynamic_cast<TCustomDirView *>(Sender));
   bool Local = (dynamic_cast<TUnixDirView *>(DirView) == NULL);
+  // TUnixDirView::ItemFullFileName returns trailing backslash for directories, what filemask cannot deal with
+  if (!Local && Directory)
+  {
+    FileName = UnixExcludeTrailingBackslash(FileName);
+  }
   for (TFileColorData::TList::const_iterator Iter = FFileColors.begin(); Iter != FFileColors.end(); Iter++)
   {
     bool ImplicitMatch;
