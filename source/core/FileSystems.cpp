@@ -20,5 +20,6 @@ __fastcall TCustomFileSystem::~TCustomFileSystem()
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TCustomFileSystem::GetHomeDirectory()
 {
-  throw Exception(L"Not implemented");
+  NotImplemented();
+  return EmptyStr;
 }

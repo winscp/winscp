@@ -1756,7 +1756,6 @@ private:
   UnicodeString FRootKey;
 
   bool __fastcall AllowWrite();
-  void __fastcall NotImplemented();
   bool __fastcall AllowSection(const UnicodeString & Section);
   UnicodeString __fastcall FormatKey(const UnicodeString & Section, const UnicodeString & Ident);
 };
@@ -1771,11 +1770,6 @@ __fastcall TOptionsIniFile::TOptionsIniFile(TStrings * Options, TWriteMode Write
   {
     FRootKey += PathDelim;
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TOptionsIniFile::NotImplemented()
-{
-  throw Exception(L"Not implemented");
 }
 //---------------------------------------------------------------------------
 bool __fastcall TOptionsIniFile::AllowWrite()

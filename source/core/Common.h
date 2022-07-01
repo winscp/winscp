@@ -191,6 +191,7 @@ UnicodeString GetEnvironmentInfo();
 void SetStringValueEvenIfEmpty(TStrings * Strings, const UnicodeString & Name, const UnicodeString & Value);
 UnicodeString __fastcall GetAncestorProcessName(int Levels = 1);
 UnicodeString GetAncestorProcessNames();
+void NotImplemented();
 //---------------------------------------------------------------------------
 struct TSearchRecSmart : public TSearchRec
 {

@@ -4293,3 +4293,9 @@ UnicodeString GetAncestorProcessNames()
   }
   return AncestorProcessNames;
 }
+//---------------------------------------------------------------------------
+void NotImplemented()
+{
+  DebugFail();
+  throw Exception(L"Not implemented");
+}
