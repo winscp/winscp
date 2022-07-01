@@ -1308,9 +1308,10 @@ bool __fastcall TSCPFileSystem::LoadFilesProperties(TStrings * /*FileList*/ )
   return false;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::CalculateFilesChecksum(const UnicodeString & /*Alg*/,
-  TStrings * /*FileList*/, TStrings * /*Checksums*/,
-  TCalculatedChecksumEvent /*OnCalculatedChecksum*/)
+void __fastcall TSCPFileSystem::CalculateFilesChecksum(
+  const UnicodeString & DebugUsedArg(Alg), TStrings * DebugUsedArg(FileList), TStrings * DebugUsedArg(Checksums),
+  TCalculatedChecksumEvent,
+  TFileOperationProgressType *, bool DebugUsedArg(FirstLevel))
 {
   DebugFail();
 }

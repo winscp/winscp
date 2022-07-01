@@ -40,9 +40,11 @@ public:
     const TRemoteFile * File, const TRemoteProperties * Properties,
     TChmodSessionAction & Action);
   virtual bool __fastcall LoadFilesProperties(TStrings * FileList);
-  virtual void __fastcall CalculateFilesChecksum(const UnicodeString & Alg,
-    TStrings * FileList, TStrings * Checksums,
-    TCalculatedChecksumEvent OnCalculatedChecksum);
+  virtual UnicodeString CalculateFilesChecksumInitialize(const UnicodeString & Alg);
+  void __fastcall CalculateFilesChecksum(
+    const UnicodeString & Alg, TStrings * FileList, TStrings * Checksums,
+    TCalculatedChecksumEvent OnCalculatedChecksum,
+    TFileOperationProgressType * OperationProgress, bool FirstLevel);
   virtual void __fastcall CopyToLocal(TStrings * FilesToCopy,
     const UnicodeString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
@@ -199,11 +201,8 @@ protected:
   inline bool __fastcall NeedAutoDetectTimeDifference();
   bool __fastcall LookupUploadModificationTime(
     const UnicodeString & FileName, TDateTime & Modification, TModificationFmt ModificationFmt);
-  UnicodeString __fastcall DoCalculateFileChecksum(bool UsingHashCommand, const UnicodeString & Alg, TRemoteFile * File);
-  void __fastcall DoCalculateFilesChecksum(bool UsingHashCommand, const UnicodeString & Alg,
-    TStrings * FileList, TStrings * Checksums,
-    TCalculatedChecksumEvent OnCalculatedChecksum,
-    TFileOperationProgressType * OperationProgress, bool FirstLevel);
+  UnicodeString __fastcall DoCalculateFileChecksum(const UnicodeString & Alg, TRemoteFile * File);
+  bool UsingHashCommandChecksum(const UnicodeString & Alg);
   void __fastcall HandleFeatReply();
   void __fastcall ResetFeatures();
   void ProcessFeatures();

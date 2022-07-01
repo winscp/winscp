@@ -1098,14 +1098,14 @@ bool __fastcall TFTPFileSystem::LoadFilesProperties(TStrings * /*FileList*/)
   return false;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TFTPFileSystem::DoCalculateFileChecksum(
-  bool UsingHashCommand, const UnicodeString & Alg, TRemoteFile * File)
+UnicodeString __fastcall TFTPFileSystem::DoCalculateFileChecksum(const UnicodeString & Alg, TRemoteFile * File)
 {
   // Overview of server supporting various hash commands is at:
   // https://datatracker.ietf.org/doc/html/draft-bryan-ftpext-hash-02#appendix-B
 
   UnicodeString CommandName;
 
+  bool UsingHashCommand = UsingHashCommandChecksum(Alg);
   if (UsingHashCommand)
   {
     CommandName = HashCommand;
@@ -1215,82 +1215,49 @@ UnicodeString __fastcall TFTPFileSystem::DoCalculateFileChecksum(
   return LowerCase(Hash);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::DoCalculateFilesChecksum(bool UsingHashCommand,
+void __fastcall TFTPFileSystem::CalculateFilesChecksum(
   const UnicodeString & Alg, TStrings * FileList, TStrings * Checksums,
   TCalculatedChecksumEvent OnCalculatedChecksum,
   TFileOperationProgressType * OperationProgress, bool FirstLevel)
 {
-  TOnceDoneOperation OnceDoneOperation; // not used
+  FTerminal->CalculateSubFoldersChecksum(Alg, FileList, OnCalculatedChecksum, OperationProgress, FirstLevel);
 
   int Index = 0;
+  TOnceDoneOperation OnceDoneOperation; // not used
   while ((Index < FileList->Count) && !OperationProgress->Cancel)
   {
     TRemoteFile * File = (TRemoteFile *)FileList->Objects[Index];
     DebugAssert(File != NULL);
 
-    if (File->IsDirectory)
-    {
-      if (FTerminal->CanRecurseToDirectory(File) &&
-          IsRealFile(File->FileName) &&
-          // recurse into subdirectories only if we have callback function
-          (OnCalculatedChecksum != NULL))
-      {
-        OperationProgress->SetFile(File->FileName);
-        TRemoteFileList * SubFiles =
-          FTerminal->CustomReadDirectoryListing(File->FullFileName, false);
-
-        if (SubFiles != NULL)
-        {
-          TStrings * SubFileList = new TStringList();
-          bool Success = false;
-          try
-          {
-            OperationProgress->SetFile(File->FileName);
-
-            for (int Index = 0; Index < SubFiles->Count; Index++)
-            {
-              TRemoteFile * SubFile = SubFiles->Files[Index];
-              SubFileList->AddObject(SubFile->FullFileName, SubFile);
-            }
-
-            // do not collect checksums for files in subdirectories,
-            // only send back checksums via callback
-            DoCalculateFilesChecksum(UsingHashCommand, Alg, SubFileList, NULL,
-              OnCalculatedChecksum, OperationProgress, false);
-
-            Success = true;
-          }
-          __finally
-          {
-            delete SubFiles;
-            delete SubFileList;
-
-            if (FirstLevel)
-            {
-              OperationProgress->Finish(File->FileName, Success, OnceDoneOperation);
-            }
-          }
-        }
-      }
-    }
-    else
+    if (!File->IsDirectory)
     {
       TChecksumSessionAction Action(FTerminal->ActionLog);
       try
       {
         OperationProgress->SetFile(File->FileName);
         Action.FileName(FTerminal->AbsolutePath(File->FullFileName, true));
-
-        UnicodeString Checksum = DoCalculateFileChecksum(UsingHashCommand, Alg, File);
-
-        if (OnCalculatedChecksum != NULL)
+        bool Success = false;
+        try
         {
-          OnCalculatedChecksum(File->FileName, Alg, Checksum);
+          UnicodeString Checksum = DoCalculateFileChecksum(Alg, File);
+
+          if (OnCalculatedChecksum != NULL)
+          {
+            OnCalculatedChecksum(File->FileName, Alg, Checksum);
+          }
+          Action.Checksum(Alg, Checksum);
+          if (Checksums != NULL)
+          {
+            Checksums->Add(Checksum);
+          }
+          Success = true;
         }
-        Action.Checksum(Alg, Checksum);
-        if (Checksums != NULL)
+        __finally
         {
-          Checksums->Add(Checksum);
+          if (FirstLevel)
+          {
+            OperationProgress->Finish(File->FileName, Success, OnceDoneOperation);
+          }
         }
       }
       catch (Exception & E)
@@ -1311,41 +1278,30 @@ void __fastcall TFTPFileSystem::DoCalculateFilesChecksum(bool UsingHashCommand,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::CalculateFilesChecksum(const UnicodeString & Alg,
-  TStrings * FileList, TStrings * Checksums,
-  TCalculatedChecksumEvent OnCalculatedChecksum)
+UnicodeString TFTPFileSystem::CalculateFilesChecksumInitialize(const UnicodeString & Alg)
 {
-  TFileOperationProgressType Progress(&FTerminal->DoProgress, &FTerminal->DoFinished);
-  FTerminal->OperationStart(Progress, foCalculateChecksum, osRemote, FileList->Count);
-
-  try
+  UnicodeString NormalizedAlg = FindIdent(FindIdent(Alg, FHashAlgs.get()), FChecksumAlgs.get());
+  if (UsingHashCommandChecksum(NormalizedAlg))
   {
-    UnicodeString NormalizedAlg = FindIdent(FindIdent(Alg, FHashAlgs.get()), FChecksumAlgs.get());
-
-    bool UsingHashCommand = (FHashAlgs->IndexOf(NormalizedAlg) >= 0);
-    if (UsingHashCommand)
-    {
-      // The server should understand lowercase alg name by spec,
-      // but we should use uppercase anyway
-      SendCommand(FORMAT(L"OPTS %s %s", (HashCommand, UpperCase(NormalizedAlg))));
-      GotReply(WaitForCommandReply(), REPLY_2XX_CODE);
-    }
-    else if (FChecksumAlgs->IndexOf(NormalizedAlg) >= 0)
-    {
-      // will use algorithm-specific command
-    }
-    else
-    {
-      throw Exception(FMTLOAD(UNKNOWN_CHECKSUM, (Alg)));
-    }
-
-    DoCalculateFilesChecksum(UsingHashCommand, NormalizedAlg, FileList, Checksums, OnCalculatedChecksum,
-      &Progress, true);
+    // The server should understand lowercase alg name by spec,
+    // but we should use uppercase anyway
+    SendCommand(FORMAT(L"OPTS %s %s", (HashCommand, UpperCase(NormalizedAlg))));
+    GotReply(WaitForCommandReply(), REPLY_2XX_CODE);
   }
-  __finally
+  else if (FChecksumAlgs->IndexOf(NormalizedAlg) >= 0)
   {
-    FTerminal->OperationStop(Progress);
+    // will use algorithm-specific command
   }
+  else
+  {
+    throw Exception(FMTLOAD(UNKNOWN_CHECKSUM, (Alg)));
+  }
+  return NormalizedAlg;
+}
+//---------------------------------------------------------------------------
+bool TFTPFileSystem::UsingHashCommandChecksum(const UnicodeString & Alg)
+{
+  return (FHashAlgs->IndexOf(Alg) >= 0);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::ConfirmOverwrite(

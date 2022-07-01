@@ -42,9 +42,11 @@ public:
     const TRemoteFile * File, const TRemoteProperties * Properties,
     TChmodSessionAction & Action);
   virtual bool __fastcall LoadFilesProperties(TStrings * FileList);
-  virtual void __fastcall CalculateFilesChecksum(const UnicodeString & Alg,
-    TStrings * FileList, TStrings * Checksums,
-    TCalculatedChecksumEvent OnCalculatedChecksum);
+  virtual UnicodeString CalculateFilesChecksumInitialize(const UnicodeString & Alg);
+  virtual void __fastcall CalculateFilesChecksum(
+    const UnicodeString & Alg, TStrings * FileList, TStrings * Checksums,
+    TCalculatedChecksumEvent OnCalculatedChecksum,
+    TFileOperationProgressType * OperationProgress, bool FirstLevel);
   virtual void __fastcall CopyToLocal(TStrings * FilesToCopy,
     const UnicodeString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
@@ -162,11 +164,6 @@ protected:
   void __fastcall TryOpenDirectory(const UnicodeString Directory);
   bool __fastcall SupportsExtension(const UnicodeString & Extension) const;
   void __fastcall ResetConnection();
-  void __fastcall DoCalculateFilesChecksum(
-    const UnicodeString & Alg, const UnicodeString & SftpAlg,
-    TStrings * FileList, TStrings * Checksums,
-    TCalculatedChecksumEvent OnCalculatedChecksum,
-    TFileOperationProgressType * OperationProgress, bool FirstLevel);
   void __fastcall RegisterChecksumAlg(const UnicodeString & Alg, const UnicodeString & SftpAlg);
   void __fastcall DoDeleteFile(const UnicodeString FileName, unsigned char Type);
 

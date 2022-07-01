@@ -1647,9 +1647,10 @@ bool __fastcall TS3FileSystem::LoadFilesProperties(TStrings * FileList)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TS3FileSystem::CalculateFilesChecksum(const UnicodeString & /*Alg*/,
-    TStrings * /*FileList*/, TStrings * /*Checksums*/,
-    TCalculatedChecksumEvent /*OnCalculatedChecksum*/)
+void __fastcall TS3FileSystem::CalculateFilesChecksum(
+  const UnicodeString & DebugUsedArg(Alg), TStrings * DebugUsedArg(FileList), TStrings * DebugUsedArg(Checksums),
+  TCalculatedChecksumEvent,
+  TFileOperationProgressType *, bool DebugUsedArg(FirstLevel))
 {
   DebugFail();
 }

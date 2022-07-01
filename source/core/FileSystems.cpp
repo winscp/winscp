@@ -23,3 +23,9 @@ UnicodeString __fastcall TCustomFileSystem::GetHomeDirectory()
   NotImplemented();
   return EmptyStr;
 }
+//---------------------------------------------------------------------------
+UnicodeString TCustomFileSystem::CalculateFilesChecksumInitialize(const UnicodeString & DebugUsedArg(Alg))
+{
+  NotImplemented();
+  return EmptyStr;
+}

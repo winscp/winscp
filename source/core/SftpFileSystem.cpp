@@ -4056,68 +4056,30 @@ bool __fastcall TSFTPFileSystem::LoadFilesProperties(TStrings * FileList)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::DoCalculateFilesChecksum(
-  const UnicodeString & Alg, const UnicodeString & SftpAlg,
-  TStrings * FileList, TStrings * Checksums,
+void __fastcall TSFTPFileSystem::CalculateFilesChecksum(
+  const UnicodeString & Alg, TStrings * FileList, TStrings * Checksums,
   TCalculatedChecksumEvent OnCalculatedChecksum,
   TFileOperationProgressType * OperationProgress, bool FirstLevel)
 {
-  TOnceDoneOperation OnceDoneOperation; // not used
-
-  // recurse into subdirectories only if we have callback function
-  if (OnCalculatedChecksum != NULL)
-  {
-    for (int Index = 0; Index < FileList->Count; Index++)
-    {
-      TRemoteFile * File = (TRemoteFile *)FileList->Objects[Index];
-      DebugAssert(File != NULL);
-      if (File->IsDirectory && FTerminal->CanRecurseToDirectory(File) &&
-          IsRealFile(File->FileName))
-      {
-        OperationProgress->SetFile(File->FileName);
-        TRemoteFileList * SubFiles =
-          FTerminal->CustomReadDirectoryListing(File->FullFileName, false);
-
-        if (SubFiles != NULL)
-        {
-          TStrings * SubFileList = new TStringList();
-          bool Success = false;
-          try
-          {
-            OperationProgress->SetFile(File->FileName);
-
-            for (int Index = 0; Index < SubFiles->Count; Index++)
-            {
-              TRemoteFile * SubFile = SubFiles->Files[Index];
-              SubFileList->AddObject(SubFile->FullFileName, SubFile);
-            }
-
-            // do not collect checksums for files in subdirectories,
-            // only send back checksums via callback
-            DoCalculateFilesChecksum(Alg, SftpAlg, SubFileList, NULL,
-              OnCalculatedChecksum, OperationProgress, false);
-
-            Success = true;
-          }
-          __finally
-          {
-            delete SubFiles;
-            delete SubFileList;
-
-            if (FirstLevel)
-            {
-              OperationProgress->Finish(File->FileName, Success, OnceDoneOperation);
-            }
-          }
-        }
-      }
-    }
-  }
+  FTerminal->CalculateSubFoldersChecksum(Alg, FileList, OnCalculatedChecksum, OperationProgress, FirstLevel);
 
   static int CalculateFilesChecksumQueueLen = 5;
   TSFTPCalculateFilesChecksumQueue Queue(this);
+  TOnceDoneOperation OnceDoneOperation; // not used
   try
   {
+    UnicodeString SftpAlg;
+    int Index = FChecksumAlgs->IndexOf(Alg);
+    if (Index >= 0)
+    {
+      SftpAlg = FChecksumSftpAlgs->Strings[Index];
+    }
+    else
+    {
+      // try user-specified alg
+      SftpAlg = Alg;
+    }
+
     if (Queue.Init(CalculateFilesChecksumQueueLen, SftpAlg, FileList))
     {
       TSFTPPacket Packet;
@@ -4191,35 +4153,9 @@ void __fastcall TSFTPFileSystem::DoCalculateFilesChecksum(
   // queue is discarded here
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::CalculateFilesChecksum(const UnicodeString & Alg,
-  TStrings * FileList, TStrings * Checksums,
-  TCalculatedChecksumEvent OnCalculatedChecksum)
+UnicodeString TSFTPFileSystem::CalculateFilesChecksumInitialize(const UnicodeString & Alg)
 {
-  TFileOperationProgressType Progress(&FTerminal->DoProgress, &FTerminal->DoFinished);
-
-  UnicodeString NormalizedAlg = FindIdent(Alg, FChecksumAlgs.get());
-  UnicodeString SftpAlg;
-  int Index = FChecksumAlgs->IndexOf(NormalizedAlg);
-  if (Index >= 0)
-  {
-    SftpAlg = FChecksumSftpAlgs->Strings[Index];
-  }
-  else
-  {
-    // try user-specified alg
-    SftpAlg = NormalizedAlg;
-  }
-
-  FTerminal->OperationStart(Progress, foCalculateChecksum, osRemote, FileList->Count);
-  try
-  {
-    DoCalculateFilesChecksum(NormalizedAlg, SftpAlg, FileList, Checksums, OnCalculatedChecksum,
-      &Progress, true);
-  }
-  __finally
-  {
-    FTerminal->OperationStop(Progress);
-  }
+  return FindIdent(Alg, FChecksumAlgs.get());
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::CustomCommandOnFile(const UnicodeString /*FileName*/,

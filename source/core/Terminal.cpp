@@ -4497,11 +4497,77 @@ bool TTerminal::CalculateFilesSize(TStrings * FileList, __int64 & Size, TCalcula
   return Params.Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::CalculateSubFoldersChecksum(
+  const UnicodeString & Alg, TStrings * FileList, TCalculatedChecksumEvent OnCalculatedChecksum,
+  TFileOperationProgressType * OperationProgress, bool FirstLevel)
+{
+  // recurse into subdirectories only if we have callback function
+  if (OnCalculatedChecksum != NULL)
+  {
+    int Index = 0;
+    TOnceDoneOperation OnceDoneOperation; // unused
+    while ((Index < FileList->Count) && !OperationProgress->Cancel)
+    {
+      TRemoteFile * File = DebugNotNull(dynamic_cast<TRemoteFile *>(FileList->Objects[Index]));
+
+      if (File->IsDirectory &&
+          CanRecurseToDirectory(File) &&
+          IsRealFile(File->FileName))
+      {
+        OperationProgress->SetFile(File->FileName);
+        std::unique_ptr<TRemoteFileList> SubFiles(CustomReadDirectoryListing(File->FullFileName, false));
+
+        if (SubFiles.get() != NULL)
+        {
+          std::unique_ptr<TStrings> SubFileList(new TStringList());
+          bool Success = false;
+          try
+          {
+            OperationProgress->SetFile(File->FileName);
+
+            for (int Index = 0; Index < SubFiles->Count; Index++)
+            {
+              TRemoteFile * SubFile = SubFiles->Files[Index];
+              SubFileList->AddObject(SubFile->FullFileName, SubFile);
+            }
+
+            // do not collect checksums for files in subdirectories,
+            // only send back checksums via callback
+            FFileSystem->CalculateFilesChecksum(Alg, SubFileList.get(), NULL, OnCalculatedChecksum, OperationProgress, false);
+
+            Success = true;
+          }
+          __finally
+          {
+            if (FirstLevel)
+            {
+              OperationProgress->Finish(File->FileName, Success, OnceDoneOperation);
+            }
+          }
+        }
+      }
+      Index++;
+    }
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::CalculateFilesChecksum(const UnicodeString & Alg,
   TStrings * FileList, TStrings * Checksums,
   TCalculatedChecksumEvent OnCalculatedChecksum)
 {
-  FFileSystem->CalculateFilesChecksum(Alg, FileList, Checksums, OnCalculatedChecksum);
+  TFileOperationProgressType Progress(&DoProgress, &DoFinished);
+  OperationStart(Progress, foCalculateChecksum, osRemote, FileList->Count);
+
+  try
+  {
+    UnicodeString NormalizedAlg = FFileSystem->CalculateFilesChecksumInitialize(Alg);
+
+    FFileSystem->CalculateFilesChecksum(NormalizedAlg, FileList, Checksums, OnCalculatedChecksum, &Progress, true);
+  }
+  __finally
+  {
+    OperationStop(Progress);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::RenameFile(const TRemoteFile * File,
