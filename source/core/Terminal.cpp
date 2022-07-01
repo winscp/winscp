@@ -4144,6 +4144,41 @@ void __fastcall TTerminal::CustomCommandOnFile(UnicodeString FileName,
   ReactOnCommand(fsAnyCommand);
 }
 //---------------------------------------------------------------------------
+TCustomFileSystem * TTerminal::GetFileSystemForCapability(TFSCapability Capability, bool NeedCurrentDirectory)
+{
+  TCustomFileSystem * Result;
+  if (IsCapable[Capability])
+  {
+    DebugAssert(FFileSystem != NULL);
+    Result = FFileSystem;
+  }
+  else
+  {
+    DebugAssert(CommandSessionOpened);
+    DebugAssert(FCommandSession->FSProtocol == cfsSCP);
+    LogEvent(L"Performing operation on command session.");
+
+    if (FCommandSession->CurrentDirectory != CurrentDirectory)
+    {
+      FCommandSession->CurrentDirectory = CurrentDirectory;
+      // We are likely in transaction, so ReadCurrentDirectory won't get called
+      // until transaction ends. But we need to know CurrentDirectory to
+      // expand !/ pattern when in CustomCommandOnFiles.
+      // Doing this only, when current directory of the main and secondary shell differs,
+      // what would be the case before the first file in transaction.
+      // Otherwise we would be reading pwd before every time as the
+      // CustomCommandOnFile on its own sets FReadCurrentDirectoryPending
+      if (NeedCurrentDirectory && FCommandSession->FReadCurrentDirectoryPending)
+      {
+        FCommandSession->ReadCurrentDirectory();
+      }
+    }
+
+    Result = FCommandSession->FFileSystem;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::DoCustomCommandOnFile(UnicodeString FileName,
   const TRemoteFile * File, UnicodeString Command, int Params,
   TCaptureOutputEvent OutputEvent)
@@ -4153,36 +4188,10 @@ void __fastcall TTerminal::DoCustomCommandOnFile(UnicodeString FileName,
   {
     try
     {
-      if (IsCapable[fcAnyCommand])
-      {
-        DebugAssert(FFileSystem);
-        DebugAssert(fcShellAnyCommand);
-        FFileSystem->CustomCommandOnFile(FileName, File, Command, Params, OutputEvent);
-      }
-      else
-      {
-        DebugAssert(CommandSessionOpened);
-        DebugAssert(FCommandSession->FSProtocol == cfsSCP);
-        LogEvent(L"Executing custom command on command session.");
+      TCustomFileSystem * FileSystem = GetFileSystemForCapability(fcAnyCommand, true);
+      DebugAssert((FileSystem != FFileSystem) || IsCapable[fcShellAnyCommand]);
 
-        if (FCommandSession->CurrentDirectory != CurrentDirectory)
-        {
-          FCommandSession->CurrentDirectory = CurrentDirectory;
-          // We are likely in transaction, so ReadCurrentDirectory won't get called
-          // until transaction ends. But we need to know CurrentDirectory to
-          // expand !/ pattern.
-          // Doing this only, when current directory of the main and secondary shell differs,
-          // what would be the case before the first file in transaction.
-          // Otherwise we would be reading pwd before every time as the
-          // CustomCommandOnFile on its own sets FReadCurrentDirectoryPending
-          if (FCommandSession->FReadCurrentDirectoryPending)
-          {
-            FCommandSession->ReadCurrentDirectory();
-          }
-        }
-        FCommandSession->FFileSystem->CustomCommandOnFile(FileName, File, Command,
-          Params, OutputEvent);
-      }
+      FileSystem->CustomCommandOnFile(FileName, File, Command, Params, OutputEvent);
     }
     catch(Exception & E)
     {
@@ -4730,18 +4739,7 @@ void __fastcall TTerminal::DoCopyFile(const UnicodeString FileName, const TRemot
     try
     {
       DebugAssert(FFileSystem);
-      if (IsCapable[fcRemoteCopy])
-      {
-        FFileSystem->CopyFile(FileName, File, NewName);
-      }
-      else
-      {
-        DebugAssert(CommandSessionOpened);
-        DebugAssert(FCommandSession->FSProtocol == cfsSCP);
-        LogEvent(L"Copying file on command session.");
-        FCommandSession->CurrentDirectory = CurrentDirectory;
-        FCommandSession->FFileSystem->CopyFile(FileName, File, NewName);
-      }
+      GetFileSystemForCapability(fcRemoteCopy)->CopyFile(FileName, File, NewName);
     }
     catch(Exception & E)
     {
@@ -5088,20 +5086,11 @@ void __fastcall TTerminal::DoAnyCommand(const UnicodeString Command,
   try
   {
     DirectoryModified(CurrentDirectory, false);
-    if (IsCapable[fcAnyCommand])
+    LogEvent(L"Executing user defined command.");
+    TCustomFileSystem * FileSystem = GetFileSystemForCapability(fcAnyCommand);
+    FileSystem->AnyCommand(Command, OutputEvent);
+    if (CommandSessionOpened && (FileSystem == FCommandSession->FFileSystem))
     {
-      LogEvent(L"Executing user defined command.");
-      FFileSystem->AnyCommand(Command, OutputEvent);
-    }
-    else
-    {
-      DebugAssert(CommandSessionOpened);
-      DebugAssert(FCommandSession->FSProtocol == cfsSCP);
-      LogEvent(L"Executing user defined command on command session.");
-
-      FCommandSession->CurrentDirectory = CurrentDirectory;
-      FCommandSession->FFileSystem->AnyCommand(Command, OutputEvent);
-
       FCommandSession->FFileSystem->ReadCurrentDirectory();
 
       // synchronize pwd (by purpose we lose transaction optimization here)

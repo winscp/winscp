@@ -612,6 +612,7 @@ public:
   void __fastcall FillSessionDataForCode(TSessionData * Data);
   void __fastcall UpdateSessionCredentials(TSessionData * Data);
   UnicodeString UploadPublicKey(const UnicodeString & FileName);
+  TCustomFileSystem * GetFileSystemForCapability(TFSCapability Capability, bool NeedCurrentDirectory = false);
 
   const TSessionInfo & __fastcall GetSessionInfo();
   const TFileSystemInfo & __fastcall GetFileSystemInfo(bool Retrieve = false);
