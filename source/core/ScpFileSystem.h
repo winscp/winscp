@@ -110,7 +110,6 @@ private:
   void __fastcall ClearAlias(UnicodeString Alias);
   void __fastcall CustomReadFile(const UnicodeString FileName,
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);
-  static UnicodeString __fastcall DelimitStr(UnicodeString Str);
   void __fastcall DetectReturnVar();
   bool __fastcall IsLastLine(UnicodeString & Line);
   static bool __fastcall IsTotalListingLine(const UnicodeString Line);

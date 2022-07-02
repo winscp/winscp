@@ -290,27 +290,38 @@ UnicodeString RemoveSuffix(const UnicodeString & Str, const UnicodeString & Suff
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString DelimitStr(UnicodeString Str, UnicodeString Chars)
+UnicodeString DelimitStr(const UnicodeString & Str, wchar_t Quote)
 {
-  for (int i = 1; i <= Str.Length(); i++)
+  UnicodeString SpecialChars;
+  if (Quote != L'\'')
   {
-    if (Str.IsDelimiter(Chars, i))
+    SpecialChars = L"$\\";
+    if (Quote == L'"')
     {
-      Str.Insert(L"\\", i);
+      SpecialChars += L"`\"";
+    }
+  }
+  UnicodeString Result(Str);
+  for (int i = 1; i <= Result.Length(); i++)
+  {
+    if (Result.IsDelimiter(SpecialChars, i))
+    {
+      Result.Insert(L"\\", i);
       i++;
     }
   }
-  return Str;
+  if (Result.IsDelimiter(L"-", 1))
+  {
+    Result.Insert(L"./", 1);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString ShellDelimitStr(UnicodeString Str, wchar_t Quote)
+UnicodeString ShellQuoteStr(const UnicodeString & Str)
 {
-  UnicodeString Chars = L"$\\";
-  if (Quote == L'"')
-  {
-    Chars += L"`\"";
-  }
-  return DelimitStr(Str, Chars);
+  wchar_t Quote = L'"';
+  UnicodeString QuoteStr(Quote);
+  return QuoteStr + DelimitStr(Str, Quote) + QuoteStr;
 }
 //---------------------------------------------------------------------------
 UnicodeString ExceptionLogString(Exception *E)
@@ -2974,6 +2985,12 @@ void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, con
     }
     List += Value;
   }
+}
+//---------------------------------------------------------------------------
+void AddToShellFileListCommandLine(UnicodeString & List, const UnicodeString & Value)
+{
+  UnicodeString Arg = ShellQuoteStr(Value);
+  AddToList(List, Arg, L" ");
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsWinVista()

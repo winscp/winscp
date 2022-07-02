@@ -1038,7 +1038,7 @@ UnicodeString __fastcall TCustomCommand::Complete(const UnicodeString & Command,
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommand::DelimitReplacement(UnicodeString & Replacement, wchar_t Quote)
 {
-  Replacement = ShellDelimitStr(Replacement, Quote);
+  Replacement = DelimitStr(Replacement, Quote);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommand::Validate(const UnicodeString & Command)

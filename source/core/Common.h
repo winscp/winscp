@@ -56,8 +56,8 @@ UnicodeString CopyToChars(const UnicodeString & Str, int & From, UnicodeString C
   wchar_t * Delimiter = NULL, bool DoubleDelimiterEscapes = false);
 UnicodeString CopyToChar(const UnicodeString & Str, wchar_t Ch, bool Trim);
 UnicodeString RemoveSuffix(const UnicodeString & Str, const UnicodeString & Suffix, bool RemoveNumbersAfterSuffix = false);
-UnicodeString DelimitStr(UnicodeString Str, UnicodeString Chars);
-UnicodeString ShellDelimitStr(UnicodeString Str, wchar_t Quote);
+UnicodeString DelimitStr(const UnicodeString & Str, wchar_t Quote = L'"');
+UnicodeString ShellQuoteStr(const UnicodeString & Str);
 UnicodeString ExceptionLogString(Exception *E);
 UnicodeString __fastcall MainInstructions(const UnicodeString & S);
 bool __fastcall HasParagraphs(const UnicodeString & S);
@@ -137,6 +137,7 @@ bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
 bool __fastcall CutTokenEx(UnicodeString & Str, UnicodeString & Token,
   UnicodeString * RawToken = NULL, UnicodeString * Separator = NULL);
 void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, const UnicodeString & Delimiter);
+void AddToShellFileListCommandLine(UnicodeString & List, const UnicodeString & Value);
 bool __fastcall IsWinVista();
 bool __fastcall IsWin7();
 bool __fastcall IsWin8();

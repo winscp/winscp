@@ -4222,12 +4222,7 @@ void __fastcall TTerminal::CustomCommandOnFiles(UnicodeString Command,
 
       if (!Dir || FLAGSET(Params, ccApplyToDirectories))
       {
-        if (!FileList.IsEmpty())
-        {
-          FileList += L" ";
-        }
-
-        FileList += L"\"" + ShellDelimitStr(Files->Strings[i], L'"') + L"\"";
+        AddToShellFileListCommandLine(FileList, Files->Strings[i]);
       }
     }
 

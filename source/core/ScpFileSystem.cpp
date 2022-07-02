@@ -476,16 +476,6 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TSCPFileSystem::DelimitStr(UnicodeString Str)
-{
-  if (!Str.IsEmpty())
-  {
-    Str = ::DelimitStr(Str, L"\\`$\"");
-    if (Str[1] == L'-') Str = L"./"+Str;
-  }
-  return Str;
-}
-//---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::EnsureLocation()
 {
   if (!FCachedDirectoryChange.IsEmpty())
@@ -961,7 +951,7 @@ void __fastcall TSCPFileSystem::ChangeDirectory(const UnicodeString Directory)
   if (!Directory.IsEmpty() &&
       ((Directory[1] != L'~') || (Directory.SubString(1, 2) == L"~ ")))
   {
-    ToDir = L"\"" + DelimitStr(Directory) + L"\"";
+    ToDir = ShellQuoteStr(Directory);
   }
   else
   {
