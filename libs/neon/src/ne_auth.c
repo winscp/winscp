@@ -961,6 +961,24 @@ static char *get_digest_h_urp(auth_session *sess, ne_buffer **errmsg,
          * cannot be sent safely. */
         char *esc = ne_strparam("UTF-8", NULL, (unsigned char *)sess->username);
 
+        #ifdef WINSCP
+        if (esc && (parms->userhash == userhash_none || parms->handler->new_creds == NULL)) {
+            const char *p;
+            int ascii = 1;
+            for (p = sess->username; *p; p++) {
+                if (((*p & ~0x7f) != 0) || (!isprint(*p) && !isspace(*p))) {
+                    ascii = 0;
+                    break;
+                }
+            }
+
+            if (ascii) {
+                ne_free(esc);
+                esc = NULL;
+            }
+        }
+        #endif
+
         if (esc) {
             if (parms->userhash == userhash_none
                 || parms->handler->new_creds == NULL) {
