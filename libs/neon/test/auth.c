@@ -1030,6 +1030,7 @@ static int digest_username_star(void)
         const char *username_raw, *username_star;
     } ts[] = {
         { "Aladdin", NULL },
+        { "aladdin@cave.example.com", NULL },
         { "Ałâddín", "UTF-8''A%c5%82%c3%a2dd%c3%adn" },
         { "Jäsøn Doe", "UTF-8''J%c3%a4s%c3%b8n%20Doe" },
         { "foo bar",  "UTF-8''foo%20bar"},
