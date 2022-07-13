@@ -1135,8 +1135,7 @@ bool __fastcall TWebDAVFileSystem::LoadFilesProperties(TStrings * /*FileList*/)
 }
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::CalculateFilesChecksum(
-  const UnicodeString & DebugUsedArg(Alg), TStrings * DebugUsedArg(FileList), TStrings * DebugUsedArg(Checksums),
-  TCalculatedChecksumEvent,
+  const UnicodeString & DebugUsedArg(Alg), TStrings * DebugUsedArg(FileList), TCalculatedChecksumEvent,
   TFileOperationProgressType *, bool DebugUsedArg(FirstLevel))
 {
   DebugFail();

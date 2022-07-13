@@ -1216,8 +1216,7 @@ UnicodeString __fastcall TFTPFileSystem::DoCalculateFileChecksum(const UnicodeSt
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::CalculateFilesChecksum(
-  const UnicodeString & Alg, TStrings * FileList, TStrings * Checksums,
-  TCalculatedChecksumEvent OnCalculatedChecksum,
+  const UnicodeString & Alg, TStrings * FileList, TCalculatedChecksumEvent OnCalculatedChecksum,
   TFileOperationProgressType * OperationProgress, bool FirstLevel)
 {
   FTerminal->CalculateSubFoldersChecksum(Alg, FileList, OnCalculatedChecksum, OperationProgress, FirstLevel);
@@ -1246,10 +1245,6 @@ void __fastcall TFTPFileSystem::CalculateFilesChecksum(
             OnCalculatedChecksum(File->FileName, Alg, Checksum);
           }
           Action.Checksum(Alg, Checksum);
-          if (Checksums != NULL)
-          {
-            Checksums->Add(Checksum);
-          }
           Success = true;
         }
         __finally

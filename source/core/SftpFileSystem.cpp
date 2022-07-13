@@ -4057,8 +4057,7 @@ bool __fastcall TSFTPFileSystem::LoadFilesProperties(TStrings * FileList)
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::CalculateFilesChecksum(
-  const UnicodeString & Alg, TStrings * FileList, TStrings * Checksums,
-  TCalculatedChecksumEvent OnCalculatedChecksum,
+  const UnicodeString & Alg, TStrings * FileList, TCalculatedChecksumEvent OnCalculatedChecksum,
   TFileOperationProgressType * OperationProgress, bool FirstLevel)
 {
   FTerminal->CalculateSubFoldersChecksum(Alg, FileList, OnCalculatedChecksum, OperationProgress, FirstLevel);
@@ -4087,7 +4086,6 @@ void __fastcall TSFTPFileSystem::CalculateFilesChecksum(
       do
       {
         bool Success = false;
-        UnicodeString Checksum;
         TRemoteFile * File = NULL;
 
         try
@@ -4103,7 +4101,7 @@ void __fastcall TSFTPFileSystem::CalculateFilesChecksum(
 
             // skip alg
             Packet.GetAnsiString();
-            Checksum = BytesToHex(reinterpret_cast<const unsigned char*>(Packet.GetNextData(Packet.RemainingLength)), Packet.RemainingLength, false);
+            UnicodeString Checksum = BytesToHex(reinterpret_cast<const unsigned char*>(Packet.GetNextData(Packet.RemainingLength)), Packet.RemainingLength, false);
             if (OnCalculatedChecksum != NULL)
             {
               OnCalculatedChecksum(File->FileName, Alg, Checksum);
@@ -4123,11 +4121,6 @@ void __fastcall TSFTPFileSystem::CalculateFilesChecksum(
             FTerminal->CommandError(&E, Error);
             // TODO: retries? resume?
             Next = false;
-          }
-
-          if (Checksums != NULL)
-          {
-            Checksums->Add(Checksum);
           }
         }
         __finally

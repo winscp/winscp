@@ -55,8 +55,7 @@ public:
     TChmodSessionAction & Action);
   virtual bool __fastcall LoadFilesProperties(TStrings * FileList);
   virtual void __fastcall CalculateFilesChecksum(
-    const UnicodeString & Alg, TStrings * FileList, TStrings * Checksums,
-    TCalculatedChecksumEvent OnCalculatedChecksum,
+    const UnicodeString & Alg, TStrings * FileList, TCalculatedChecksumEvent OnCalculatedChecksum,
     TFileOperationProgressType * OperationProgress, bool FirstLevel);
   virtual void __fastcall CopyToLocal(TStrings * FilesToCopy,
     const UnicodeString TargetDir, const TCopyParamType * CopyParam,

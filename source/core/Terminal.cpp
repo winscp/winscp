@@ -4535,9 +4535,7 @@ void __fastcall TTerminal::CalculateSubFoldersChecksum(
               SubFileList->AddObject(SubFile->FullFileName, SubFile);
             }
 
-            // do not collect checksums for files in subdirectories,
-            // only send back checksums via callback
-            FFileSystem->CalculateFilesChecksum(Alg, SubFileList.get(), NULL, OnCalculatedChecksum, OperationProgress, false);
+            FFileSystem->CalculateFilesChecksum(Alg, SubFileList.get(), OnCalculatedChecksum, OperationProgress, false);
 
             Success = true;
           }
@@ -4555,9 +4553,8 @@ void __fastcall TTerminal::CalculateSubFoldersChecksum(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::CalculateFilesChecksum(const UnicodeString & Alg,
-  TStrings * FileList, TStrings * Checksums,
-  TCalculatedChecksumEvent OnCalculatedChecksum)
+void __fastcall TTerminal::CalculateFilesChecksum(
+  const UnicodeString & Alg, TStrings * FileList, TCalculatedChecksumEvent OnCalculatedChecksum)
 {
   TFileOperationProgressType Progress(&DoProgress, &DoFinished);
   OperationStart(Progress, foCalculateChecksum, osRemote, FileList->Count);
@@ -4566,7 +4563,7 @@ void __fastcall TTerminal::CalculateFilesChecksum(const UnicodeString & Alg,
   {
     UnicodeString NormalizedAlg = FFileSystem->CalculateFilesChecksumInitialize(Alg);
 
-    FFileSystem->CalculateFilesChecksum(NormalizedAlg, FileList, Checksums, OnCalculatedChecksum, &Progress, true);
+    FFileSystem->CalculateFilesChecksum(NormalizedAlg, FileList, OnCalculatedChecksum, &Progress, true);
   }
   __finally
   {

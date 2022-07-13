@@ -1205,6 +1205,12 @@ void __fastcall TScript::StatProc(TScriptProcParams * Parameters)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TScript::DoCalculatedChecksum(
+  const UnicodeString & FileName, const UnicodeString & DebugUsedArg(Alg), const UnicodeString & Hash)
+{
+  PrintLine(FORMAT(L"%s %s", (Hash, FileName)));
+}
+//---------------------------------------------------------------------------
 void __fastcall TScript::ChecksumProc(TScriptProcParams * Parameters)
 {
   CheckSession();
@@ -1214,7 +1220,6 @@ void __fastcall TScript::ChecksumProc(TScriptProcParams * Parameters)
   }
 
   UnicodeString Alg = Parameters->Param[1];
-  std::unique_ptr<TStrings> Checksums(new TStringList());
   TStrings * FileList = CreateFileList(Parameters, 2, 2, fltQueryServer);
   FTerminal->ExceptionOnFail = true;
   try
@@ -1225,12 +1230,7 @@ void __fastcall TScript::ChecksumProc(TScriptProcParams * Parameters)
       throw Exception(FMTLOAD(NOT_FILE_ERROR, (FileList->Strings[0])));
     }
 
-    FTerminal->CalculateFilesChecksum(Alg, FileList, Checksums.get(), NULL);
-
-    if (DebugAlwaysTrue(Checksums->Count == 1))
-    {
-      PrintLine(FORMAT(L"%s %s", (Checksums->Strings[0], FileList->Strings[0])));
-    }
+    FTerminal->CalculateFilesChecksum(Alg, FileList, DoCalculatedChecksum);
   }
   __finally
   {

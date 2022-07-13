@@ -570,8 +570,8 @@ public:
   bool CalculateFilesSize(TStrings * FileList, __int64 & Size, TCalculateSizeParams & Params);
   bool __fastcall CalculateLocalFilesSize(TStrings * FileList, __int64 & Size,
     const TCopyParamType * CopyParam, bool AllowDirs, TStrings * Files, TCalculatedSizes * CalculatedSizes);
-  void __fastcall CalculateFilesChecksum(const UnicodeString & Alg, TStrings * FileList,
-    TStrings * Checksums, TCalculatedChecksumEvent OnCalculatedChecksum);
+  void __fastcall CalculateFilesChecksum(
+    const UnicodeString & Alg, TStrings * FileList, TCalculatedChecksumEvent OnCalculatedChecksum);
   void __fastcall ClearCaches();
   TSynchronizeChecklist * __fastcall SynchronizeCollect(const UnicodeString LocalDirectory,
     const UnicodeString RemoteDirectory, TSynchronizeMode Mode,

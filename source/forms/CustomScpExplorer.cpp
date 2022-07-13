@@ -4501,7 +4501,7 @@ void __fastcall TCustomScpExplorerForm::CalculateChecksum(const UnicodeString & 
 
     try
     {
-      Terminal->CalculateFilesChecksum(Alg, FileList, NULL, OnCalculatedChecksum);
+      Terminal->CalculateFilesChecksum(Alg, FileList, OnCalculatedChecksum);
     }
     catch(...)
     {
