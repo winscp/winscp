@@ -1235,7 +1235,7 @@ void __fastcall TFTPFileSystem::CalculateFilesChecksum(
       try
       {
         OperationProgress->SetFile(File->FileName);
-        Action.FileName(FTerminal->AbsolutePath(File->FullFileName, true));
+        Action.FileName(File->FullFileName);
         bool Success = false;
         try
         {

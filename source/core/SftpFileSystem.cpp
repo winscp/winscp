@@ -4099,7 +4099,7 @@ void __fastcall TSFTPFileSystem::CalculateFilesChecksum(
             DebugAssert(Packet.Type == SSH_FXP_EXTENDED_REPLY);
 
             OperationProgress->SetFile(File->FileName);
-            Action.FileName(FTerminal->AbsolutePath(File->FullFileName, true));
+            Action.FileName(File->FullFileName);
 
             // skip alg
             Packet.GetAnsiString();
