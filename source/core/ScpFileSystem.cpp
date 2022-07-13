@@ -948,6 +948,7 @@ void __fastcall TSCPFileSystem::AnnounceFileListOperation()
 void __fastcall TSCPFileSystem::ChangeDirectory(const UnicodeString Directory)
 {
   UnicodeString ToDir;
+  // This effectivelly disallows entering subdirectories starting with ~ and containing space
   if (!Directory.IsEmpty() &&
       ((Directory[1] != L'~') || (Directory.SubString(1, 2) == L"~ ")))
   {
