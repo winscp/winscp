@@ -1260,9 +1260,7 @@ void __fastcall TFTPFileSystem::CalculateFilesChecksum(
         FTerminal->RollbackAction(Action, OperationProgress, &E);
 
         // Error formatting expanded from inline to avoid strange exceptions
-        UnicodeString Error =
-          FMTLOAD(CHECKSUM_ERROR,
-            (File != NULL ? File->FullFileName : UnicodeString(L"")));
+        UnicodeString Error = FMTLOAD(CHECKSUM_ERROR, (File->FullFileName));
         FTerminal->CommandError(&E, Error);
         // Abort loop.
         // TODO: retries? resume?
