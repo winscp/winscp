@@ -160,6 +160,7 @@ private:
   TSessionData * FSessionData;
   TSessionLog * FLog;
   TActionLog * FActionLog;
+  bool FActionLogOwned;
   TConfiguration * FConfiguration;
   UnicodeString FCurrentDirectory;
   Integer FExceptionOnFail;
@@ -211,6 +212,7 @@ private:
   TNotifyEvent FOnClose;
   TCallbackGuard * FCallbackGuard;
   TFindingFileEvent FOnFindingFile;
+  std::unique_ptr<TStrings> FShellChecksumAlgDefs;
   bool FEnableSecureShellUsage;
   bool FCollectFileSystemUsage;
   bool FRememberedPasswordTried;
@@ -491,6 +493,8 @@ protected:
   void __fastcall CalculateSubFoldersChecksum(
     const UnicodeString & Alg, TStrings * FileList, TCalculatedChecksumEvent OnCalculatedChecksum,
     TFileOperationProgressType * OperationProgress, bool FirstLevel);
+  void GetShellChecksumAlgs(TStrings * Algs);
+  TStrings * GetShellChecksumAlgDefs();
 
   UnicodeString __fastcall EncryptFileName(const UnicodeString & Path, bool EncryptNewFiles);
   UnicodeString __fastcall DecryptFileName(const UnicodeString & Path, bool DecryptFullPath, bool DontCache);
@@ -500,7 +504,7 @@ protected:
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 
 public:
-  __fastcall TTerminal(TSessionData * SessionData, TConfiguration * Configuration);
+  __fastcall TTerminal(TSessionData * SessionData, TConfiguration * Configuration, TActionLog * ActionLog = NULL);
   __fastcall ~TTerminal();
   void __fastcall Open();
   void __fastcall Close();
@@ -673,9 +677,9 @@ public:
 class TSecondaryTerminal : public TTerminal
 {
 public:
-  __fastcall TSecondaryTerminal(TTerminal * MainTerminal,
-    TSessionData * SessionData, TConfiguration * Configuration,
-    const UnicodeString & Name);
+  __fastcall TSecondaryTerminal(
+    TTerminal * MainTerminal, TSessionData * SessionData, TConfiguration * Configuration,
+    const UnicodeString & Name, TActionLog * ActionLog);
 
   void __fastcall UpdateFromMain();
 

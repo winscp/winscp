@@ -1214,28 +1214,37 @@ void __fastcall TScript::DoCalculatedChecksum(
 void __fastcall TScript::ChecksumProc(TScriptProcParams * Parameters)
 {
   CheckSession();
-  if (!FTerminal->IsCapable[fcCalculatingChecksum])
+  if (!FTerminal->IsCapable[fcCalculatingChecksum] &&
+      (!FTerminal->IsCapable[fcSecondaryShell] || FTerminal->IsEncryptingFiles()))
   {
     NotSupported();
   }
 
-  UnicodeString Alg = Parameters->Param[1];
-  TStrings * FileList = CreateFileList(Parameters, 2, 2, fltQueryServer);
-  FTerminal->ExceptionOnFail = true;
-  try
+  // this is used only to log failures to open separate shell session,
+  // the actual call logging is done in TTerminal::CalculateFilesChecksum
+  TChecksumSessionAction Action(FTerminal->ActionLog);
+  if (EnsureCommandSessionFallback(fcCalculatingChecksum, Action))
   {
-    if ((FileList->Count != 1) ||
-        DebugNotNull(dynamic_cast<TRemoteFile *>(FileList->Objects[0]))->IsDirectory)
-    {
-      throw Exception(FMTLOAD(NOT_FILE_ERROR, (FileList->Strings[0])));
-    }
+    Action.Cancel();
 
-    FTerminal->CalculateFilesChecksum(Alg, FileList, DoCalculatedChecksum);
-  }
-  __finally
-  {
-    FTerminal->ExceptionOnFail = false;
-    FreeFileList(FileList);
+    UnicodeString Alg = Parameters->Param[1];
+    TStrings * FileList = CreateFileList(Parameters, 2, 2, fltQueryServer);
+    FTerminal->ExceptionOnFail = true;
+    try
+    {
+      if ((FileList->Count != 1) ||
+          DebugNotNull(dynamic_cast<TRemoteFile *>(FileList->Objects[0]))->IsDirectory)
+      {
+        throw Exception(FMTLOAD(NOT_FILE_ERROR, (FileList->Strings[0])));
+      }
+
+      FTerminal->CalculateFilesChecksum(Alg, FileList, DoCalculatedChecksum);
+    }
+    __finally
+    {
+      FTerminal->ExceptionOnFail = false;
+      FreeFileList(FileList);
+    }
   }
 }
 //---------------------------------------------------------------------------

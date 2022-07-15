@@ -999,15 +999,23 @@ bool TParallelOperation::UpdateFileList(TQueueFileList * UpdateFileList)
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-__fastcall TTerminal::TTerminal(TSessionData * SessionData,
-  TConfiguration * Configuration)
+__fastcall TTerminal::TTerminal(TSessionData * SessionData, TConfiguration * Configuration, TActionLog * ActionLog)
 {
   FConfiguration = Configuration;
   FSessionData = new TSessionData(L"");
   FSessionData->Assign(SessionData);
   TDateTime Started = Now(); // use the same time for session and XML log
   FLog = new TSessionLog(this, Started, FSessionData, Configuration);
-  FActionLog = new TActionLog(this, Started, FSessionData, Configuration);
+  if (ActionLog != NULL)
+  {
+    FActionLog = ActionLog;
+    FActionLogOwned = false;
+  }
+  else
+  {
+    FActionLog = new TActionLog(this, Started, FSessionData, Configuration);
+    FActionLogOwned = true;
+  }
   FFiles = new TRemoteDirectory(this);
   FExceptionOnFail = 0;
   FInTransaction = 0;
@@ -1078,7 +1086,14 @@ __fastcall TTerminal::~TTerminal()
 
   SAFE_DESTROY_EX(TCustomFileSystem, FFileSystem);
   SAFE_DESTROY_EX(TSessionLog, FLog);
-  SAFE_DESTROY_EX(TActionLog, FActionLog);
+  if (FActionLogOwned)
+  {
+    SAFE_DESTROY_EX(TActionLog, FActionLog);
+  }
+  else
+  {
+    FActionLog = NULL;
+  }
   delete FFiles;
   delete FDirectoryCache;
   delete FDirectoryChangesCache;
@@ -4512,6 +4527,7 @@ void __fastcall TTerminal::CalculateSubFoldersChecksum(
     TOnceDoneOperation OnceDoneOperation; // unused
     while ((Index < FileList->Count) && !OperationProgress->Cancel)
     {
+      UnicodeString FileName = FileList->Strings[Index];
       TRemoteFile * File = DebugNotNull(dynamic_cast<TRemoteFile *>(FileList->Objects[Index]));
 
       if (File->IsDirectory &&
@@ -4532,7 +4548,8 @@ void __fastcall TTerminal::CalculateSubFoldersChecksum(
             for (int Index = 0; Index < SubFiles->Count; Index++)
             {
               TRemoteFile * SubFile = SubFiles->Files[Index];
-              SubFileList->AddObject(SubFile->FullFileName, SubFile);
+              UnicodeString SubFileName = UnixCombinePaths(FileName, SubFile->FileName);
+              SubFileList->AddObject(SubFileName, SubFile);
             }
 
             FFileSystem->CalculateFilesChecksum(Alg, SubFileList.get(), OnCalculatedChecksum, OperationProgress, false);
@@ -4561,9 +4578,11 @@ void __fastcall TTerminal::CalculateFilesChecksum(
 
   try
   {
-    UnicodeString NormalizedAlg = FFileSystem->CalculateFilesChecksumInitialize(Alg);
+    TCustomFileSystem * FileSystem = GetFileSystemForCapability(fcCalculatingChecksum);
 
-    FFileSystem->CalculateFilesChecksum(NormalizedAlg, FileList, OnCalculatedChecksum, &Progress, true);
+    UnicodeString NormalizedAlg = FileSystem->CalculateFilesChecksumInitialize(Alg);
+
+    FileSystem->CalculateFilesChecksum(NormalizedAlg, FileList, OnCalculatedChecksum, &Progress, true);
   }
   __finally
   {
@@ -4937,7 +4956,7 @@ bool __fastcall TTerminal::GetCommandSessionOpened()
 //---------------------------------------------------------------------------
 TTerminal * __fastcall TTerminal::CreateSecondarySession(const UnicodeString & Name, TSessionData * SessionData)
 {
-  std::unique_ptr<TTerminal> Result(new TSecondaryTerminal(this, SessionData, Configuration, Name));
+  std::unique_ptr<TTerminal> Result(new TSecondaryTerminal(this, SessionData, Configuration, Name, ActionLog));
 
   Result->AutoReadDirectory = false;
 
@@ -6662,9 +6681,55 @@ const TFileSystemInfo & __fastcall TTerminal::GetFileSystemInfo(bool Retrieve)
   return FFileSystem->GetFileSystemInfo(Retrieve);
 }
 //---------------------------------------------------------------------
+TStrings * TTerminal::GetShellChecksumAlgDefs()
+{
+  if (FShellChecksumAlgDefs.get() == NULL)
+  {
+    UnicodeString ChecksumCommandsDef = Configuration->ChecksumCommands;
+    if (ChecksumCommandsDef.IsEmpty())
+    {
+      UnicodeString Delimiter(L",");
+      AddToList(ChecksumCommandsDef, Sha512ChecksumAlg + L"=sha512sum", Delimiter);
+      AddToList(ChecksumCommandsDef, Sha384ChecksumAlg + L"=sha384sum", Delimiter);
+      AddToList(ChecksumCommandsDef, Sha256ChecksumAlg + L"=sha256sum", Delimiter);
+      AddToList(ChecksumCommandsDef, Sha224ChecksumAlg + L"=sha224sum", Delimiter);
+      AddToList(ChecksumCommandsDef, Sha1ChecksumAlg + L"=sha1sum", Delimiter);
+      AddToList(ChecksumCommandsDef, Md5ChecksumAlg + L"=md5sums", Delimiter);
+    }
+
+    FShellChecksumAlgDefs.reset(new TStringList());
+    FShellChecksumAlgDefs->CommaText = ChecksumCommandsDef;
+  }
+  return FShellChecksumAlgDefs.get();
+}
+//---------------------------------------------------------------------
+void TTerminal::GetShellChecksumAlgs(TStrings * Algs)
+{
+  TStrings * AlgDefs = GetShellChecksumAlgDefs();
+  for (int Index = 0; Index < AlgDefs->Count; Index++)
+  {
+    Algs->Add(AlgDefs->Names[Index]);
+  }
+}
+//---------------------------------------------------------------------
 void __fastcall TTerminal::GetSupportedChecksumAlgs(TStrings * Algs)
 {
-  FFileSystem->GetSupportedChecksumAlgs(Algs);
+  if (!IsCapable[fcCalculatingChecksum] && IsCapable[fcSecondaryShell])
+  {
+    // Both return the same anyway
+    if (CommandSessionOpened)
+    {
+      FCommandSession->GetSupportedChecksumAlgs(Algs);
+    }
+    else
+    {
+      GetShellChecksumAlgs(Algs);
+    }
+  }
+  else
+  {
+    FFileSystem->GetSupportedChecksumAlgs(Algs);
+  }
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TTerminal::GetPassword()
@@ -7789,8 +7854,11 @@ void __fastcall TTerminal::ReflectSettings()
 {
   DebugAssert(FLog != NULL);
   FLog->ReflectSettings();
-  DebugAssert(FActionLog != NULL);
-  FActionLog->ReflectSettings();
+  if (FActionLogOwned)
+  {
+    DebugAssert(FActionLog != NULL);
+    FActionLog->ReflectSettings();
+  }
   // also FTunnelLog ?
 }
 //---------------------------------------------------------------------------
@@ -8371,13 +8439,13 @@ bool TTerminal::IsValidFile(TRemoteFile * File)
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-__fastcall TSecondaryTerminal::TSecondaryTerminal(TTerminal * MainTerminal,
-  TSessionData * ASessionData, TConfiguration * Configuration, const UnicodeString & Name) :
-  TTerminal(ASessionData, Configuration),
+__fastcall TSecondaryTerminal::TSecondaryTerminal(
+  TTerminal * MainTerminal, TSessionData * ASessionData, TConfiguration * Configuration,
+  const UnicodeString & Name, TActionLog * ActionLog) :
+  TTerminal(ASessionData, Configuration, ActionLog),
   FMainTerminal(MainTerminal)
 {
   Log->SetParent(FMainTerminal->Log, Name);
-  ActionLog->Enabled = false;
   SessionData->NonPersistant();
   DebugAssert(FMainTerminal != NULL);
   FMainTerminal->FSecondaryTerminals++;

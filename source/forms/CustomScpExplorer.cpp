@@ -4494,8 +4494,8 @@ void __fastcall TCustomScpExplorerForm::CalculateChecksum(const UnicodeString & 
   TStrings * FileList, TCalculatedChecksumEvent OnCalculatedChecksum,
   bool & Close)
 {
-  // terminal can be already closed (e.g. dropped connection)
-  if (Terminal != NULL)
+  if ((Terminal != NULL) && // terminal can be already closed (e.g. dropped connection)
+      EnsureCommandSessionFallback(fcCalculatingChecksum))
   {
     Configuration->Usage->Inc(L"ChecksumCalculated");
 
@@ -4606,7 +4606,8 @@ bool __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStri
       if (CapableGroupChanging) Flags |= cpGroup;
 
       TCalculateChecksumEvent CalculateChecksumEvent = NULL;
-      if (Terminal->IsCapable[fcCalculatingChecksum])
+      if (Terminal->IsCapable[fcCalculatingChecksum] ||
+          (Terminal->IsCapable[fcSecondaryShell] && !Terminal->IsEncryptingFiles()))
       {
         CalculateChecksumEvent = CalculateChecksum;
       }

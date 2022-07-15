@@ -1213,8 +1213,9 @@ private:
 __fastcall TBackgroundTerminal::TBackgroundTerminal(TTerminal * MainTerminal,
     TSessionData * SessionData, TConfiguration * Configuration, TTerminalItem * Item,
     const UnicodeString & Name) :
-  TSecondaryTerminal(MainTerminal, SessionData, Configuration, Name), FItem(Item)
+  TSecondaryTerminal(MainTerminal, SessionData, Configuration, Name, NULL), FItem(Item)
 {
+  ActionLog->Enabled = false;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TBackgroundTerminal::DoQueryReopen(Exception * /*E*/)

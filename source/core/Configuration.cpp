@@ -120,6 +120,7 @@ void __fastcall TConfiguration::Default()
   FParallelDurationThreshold = 10;
   FMimeTypes = UnicodeString();
   FCertificateStorage = EmptyStr;
+  FChecksumCommands = EmptyStr;
   FDontReloadMoreThanSessions = 1000;
   FScriptProgressFileNameLimit = 25;
   FKeyVersion = 0;

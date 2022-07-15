@@ -30,6 +30,7 @@ public:
     const TRemoteFile * File, const TRemoteProperties * Properties,
     TChmodSessionAction & Action);
   virtual bool __fastcall LoadFilesProperties(TStrings * FileList);
+  virtual UnicodeString CalculateFilesChecksumInitialize(const UnicodeString & Alg);
   virtual void __fastcall CalculateFilesChecksum(
     const UnicodeString & Alg, TStrings * FileList, TCalculatedChecksumEvent OnCalculatedChecksum,
     TFileOperationProgressType * OperationProgress, bool FirstLevel);
@@ -117,6 +118,7 @@ private:
     const UnicodeString & CmdString);
   void __fastcall ExecCommand(TFSCommand Cmd, const TVarRec * args = NULL,
     int size = 0, int Params = -1);
+  void InvalidOutputError(const UnicodeString & Command);
   void __fastcall ReadCommandOutput(int Params, const UnicodeString * Cmd = NULL);
   void __fastcall SCPResponse(bool * GotLastLine = NULL);
   void __fastcall SCPDirectorySource(const UnicodeString DirectoryName,
@@ -145,6 +147,11 @@ private:
     TOperationSide Side,
     const TOverwriteFileParams * FileParams, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress);
+  UnicodeString ParseFileChecksum(
+    const UnicodeString & Line, const UnicodeString & FileName, const UnicodeString & Command);
+  void ProcessFileChecksum(
+    TCalculatedChecksumEvent OnCalculatedChecksum, TChecksumSessionAction & Action, TFileOperationProgressType * OperationProgress,
+    bool FirstLevel, const UnicodeString & FileName, const UnicodeString & Alg, const UnicodeString & Checksum);
 
   static bool __fastcall RemoveLastLine(UnicodeString & Line,
     int & ReturnCode, UnicodeString LastLine = L"");
