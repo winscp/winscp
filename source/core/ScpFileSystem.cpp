@@ -1447,7 +1447,6 @@ void __fastcall TSCPFileSystem::CalculateFilesChecksum(
             UnicodeString FileName = BatchFileList->Strings[BatchIndex];
             OperationProgress->SetFile(FileName);
             Action.FileName(File->FullFileName);
-            bool Success = false;
 
             UnicodeString Checksum;
             try
