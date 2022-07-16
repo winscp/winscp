@@ -823,6 +823,7 @@ class TCollectedFileList : public TObject
 {
 public:
   TCollectedFileList();
+  virtual __fastcall ~TCollectedFileList();
   int Add(const UnicodeString & FileName, TObject * Object, bool Dir);
   void DidNotRecurse(int Index);
   void Delete(int Index);
@@ -836,6 +837,8 @@ public:
   void SetState(int Index, int State);
 
 private:
+  void Deleting(int Index);
+
   struct TFileData
   {
     UnicodeString FileName;

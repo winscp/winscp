@@ -611,6 +611,19 @@ TCollectedFileList::TCollectedFileList()
 {
 }
 //---------------------------------------------------------------------------
+__fastcall TCollectedFileList::~TCollectedFileList()
+{
+  for (size_t Index = 0; Index < FList.size(); Index++)
+  {
+    Deleting(Index);
+  }
+}
+//---------------------------------------------------------------------------
+void TCollectedFileList::Deleting(int Index)
+{
+  delete FList[Index].Object;
+}
+//---------------------------------------------------------------------------
 int TCollectedFileList::Add(const UnicodeString & FileName, TObject * Object, bool Dir)
 {
   TFileData Data;
@@ -630,6 +643,7 @@ void TCollectedFileList::DidNotRecurse(int Index)
 //---------------------------------------------------------------------------
 void TCollectedFileList::Delete(int Index)
 {
+  Deleting(Index);
   FList.erase(FList.begin() + Index);
 }
 //---------------------------------------------------------------------------
@@ -7517,6 +7531,7 @@ bool __fastcall TTerminal::CopyToLocal(
       }
       OperationStop(OperationProgress);
     }
+    Files.reset(NULL);
   }
   __finally
   {
