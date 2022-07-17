@@ -137,7 +137,7 @@ object GlyphsModule: TGlyphsModule
       end
       item
         Background = clWindow
-        Name = 'Rename file'
+        Name = 'Rename 2'
         PngImage.Data = {
           89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
           61000000097048597300000EC400000EC401952B0E1B00000A4F694343505068
@@ -6022,7 +6022,7 @@ object GlyphsModule: TGlyphsModule
       end
       item
         Background = clWindow
-        Name = 'Quit application'
+        Name = 'Quit'
         PngImage.Data = {
           89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
           61000000097048597300000EC300000EC301C76FA864000002754944415478DA
@@ -7733,7 +7733,7 @@ object GlyphsModule: TGlyphsModule
       end
       item
         Background = clWindow
-        Name = 'Duplicate'
+        Name = 'Duplicate L to R'
         PngImage.Data = {
           89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
           61000000097048597300000EC300000EC301C76FA8640000022F4944415478DA
@@ -9061,7 +9061,7 @@ object GlyphsModule: TGlyphsModule
       end
       item
         Background = clWindow
-        Name = 'Clone current session'
+        Name = 'Duplicate Session'
         PngImage.Data = {
           89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
           61000000097048597300000EC300000EC301C76FA864000000664944415478DA
@@ -9857,7 +9857,7 @@ object GlyphsModule: TGlyphsModule
       end
       item
         Background = clWindow
-        Name = 'Move To'
+        Name = 'Move L to R'
         PngImage.Data = {
           89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
           61000000097048597300000EC300000EC301C76FA864000002224944415478DA
@@ -10723,7 +10723,7 @@ object GlyphsModule: TGlyphsModule
     PngImages = <
       item
         Background = clWindow
-        Name = 'Compressed connection status bar indicator (not in use)'
+        Name = 'Compressed connection status bar indicator (unused)'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000010000000100802000000909168
           36000000017352474200AECE1CE9000000097048597300000EC300000EC301C7

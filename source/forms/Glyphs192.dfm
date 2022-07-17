@@ -163,7 +163,7 @@ object Glyphs192Module: TGlyphs192Module
       end
       item
         Background = clWindow
-        Name = 'Rename file'
+        Name = 'Rename 2'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
           F4000000097048597300000EC400000EC401952B0E1B00000A4F694343505068
@@ -6868,7 +6868,7 @@ object Glyphs192Module: TGlyphs192Module
       end
       item
         Background = clWindow
-        Name = 'Quit application'
+        Name = 'Quit'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
           F4000000097048597300000EC300000EC301C76FA8640000045F4944415478DA
@@ -8892,7 +8892,7 @@ object Glyphs192Module: TGlyphs192Module
       end
       item
         Background = clWindow
-        Name = 'Duplicate'
+        Name = 'Duplicate L to R'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
           F4000000097048597300000EC300000EC301C76FA864000004AE4944415478DA
@@ -10502,7 +10502,7 @@ object Glyphs192Module: TGlyphs192Module
       end
       item
         Background = clWindow
-        Name = 'Clone current session'
+        Name = 'Duplicate Session'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
           F4000000097048597300000EC300000EC301C76FA8640000008B4944415478DA
@@ -11552,7 +11552,7 @@ object Glyphs192Module: TGlyphs192Module
       end
       item
         Background = clWindow
-        Name = 'Move To'
+        Name = 'Move L to R'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
           F4000000097048597300000EC300000EC301C76FA864000004834944415478DA
@@ -12856,7 +12856,7 @@ object Glyphs192Module: TGlyphs192Module
     PngImages = <
       item
         Background = clWindow
-        Name = 'Compressed connection status bar indicator (not in use)'
+        Name = 'Compressed connection status bar indicator (unused)'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000020000000200802000000FC18ED
           A3000000017352474200AECE1CE9000000097048597300000EC300000EC301C7

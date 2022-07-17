@@ -151,7 +151,7 @@ object Glyphs144Module: TGlyphs144Module
       end
       item
         Background = clWindow
-        Name = 'Rename file'
+        Name = 'Rename 2'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000018000000180806000000E0773D
           F8000000097048597300000EC400000EC401952B0E1B00000A4F694343505068
@@ -6548,7 +6548,7 @@ object Glyphs144Module: TGlyphs144Module
       end
       item
         Background = clWindow
-        Name = 'Quit application'
+        Name = 'Quit'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000018000000180806000000E0773D
           F8000000097048597300000EC300000EC301C76FA864000003834944415478DA
@@ -8428,7 +8428,7 @@ object Glyphs144Module: TGlyphs144Module
       end
       item
         Background = clWindow
-        Name = 'Duplicate'
+        Name = 'Duplicate L to R'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000018000000180806000000E0773D
           F8000000097048597300000EC300000EC301C76FA864000002F84944415478DA
@@ -9809,7 +9809,7 @@ object Glyphs144Module: TGlyphs144Module
       end
       item
         Background = clWindow
-        Name = 'Clone current session'
+        Name = 'Duplicate Session'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000018000000180806000000E0773D
           F8000000097048597300000EC300000EC301C76FA864000000744944415478DA
@@ -10770,7 +10770,7 @@ object Glyphs144Module: TGlyphs144Module
       end
       item
         Background = clWindow
-        Name = 'Move To'
+        Name = 'Move L to R'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000018000000180806000000E0773D
           F8000000097048597300000EC300000EC301C76FA864000003224944415478DA
@@ -11937,7 +11937,7 @@ object Glyphs144Module: TGlyphs144Module
     PngImages = <
       item
         Background = clWindow
-        Name = 'Compressed connection status bar indicator (not in use)'
+        Name = 'Compressed connection status bar indicator (unused)'
         PngImage.Data = {
           89504E470D0A1A0A0000000D49484452000000180000001808020000006F15AA
           AF000000017352474200AECE1CE9000000097048597300000EC300000EC301C7

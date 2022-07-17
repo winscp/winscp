@@ -850,7 +850,7 @@ object RightsFrame: TRightsFrame
       end
       item
         Background = clWindow
-        Name = 'Paste'
+        Name = 'Paste rights'
         PngImage.Data = {
           89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
           61000000097048597300000EC400000EC401952B0E1B00000A4F694343505068

@@ -1002,7 +1002,7 @@ object LoginDialog: TLoginDialog
       end
       item
         Background = clWindow
-        Name = 'Workspace closed'
+        Name = 'Workspace closed (unused)'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000010000000100802000000909168
           360000000674524E5300FF000000FF89C02F90000000174944415478DA63FCCF
@@ -1117,7 +1117,7 @@ object LoginDialog: TLoginDialog
       end
       item
         Background = clWindow
-        Name = 'Open new session closed'
+        Name = 'Open new session closed (unused)'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000010000000100802000000909168
           36000000017352474200AECE1CE9000000097048597300000EC300000EC301C7
@@ -1569,7 +1569,7 @@ object LoginDialog: TLoginDialog
       end
       item
         Background = clWindow
-        Name = 'Rename'
+        Name = 'Rename 2'
         PngImage.Data = {
           89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
           61000000097048597300000EC400000EC401952B0E1B00000A4F694343505068
@@ -2212,7 +2212,7 @@ object LoginDialog: TLoginDialog
       end
       item
         Background = clWindow
-        Name = 'Workspace closed'
+        Name = 'Workspace closed (unused)'
         PngImage.Data = {
           89504E470D0A1A0A0000000D494844520000001400000014080200000002EB8A
           5A000000017352474200AECE1CE9000000097048597300000EC300000EC301C7
@@ -2248,7 +2248,7 @@ object LoginDialog: TLoginDialog
       end
       item
         Background = clWindow
-        Name = 'Open new session closed'
+        Name = 'Open new session closed (unused)'
         PngImage.Data = {
           89504E470D0A1A0A0000000D494844520000001400000014080200000002EB8A
           5A000000017352474200AECE1CE9000000097048597300000EC300000EC301C7
@@ -2413,7 +2413,7 @@ object LoginDialog: TLoginDialog
       end
       item
         Background = clWindow
-        Name = 'Rename'
+        Name = 'Rename 2'
         PngImage.Data = {
           89504E470D0A1A0A0000000D49484452000000140000001408060000008D891D
           0D000000097048597300000EC300000EC301C76FA864000002984944415478DA
@@ -3001,7 +3001,7 @@ object LoginDialog: TLoginDialog
       end
       item
         Background = clWindow
-        Name = 'Workspace closed'
+        Name = 'Workspace closed (unused)'
         PngImage.Data = {
           89504E470D0A1A0A0000000D49484452000000180000001808020000006F15AA
           AF000000017352474200AECE1CE9000000097048597300000EC300000EC301C7
@@ -3045,7 +3045,7 @@ object LoginDialog: TLoginDialog
       end
       item
         Background = clWindow
-        Name = 'Open new session closed'
+        Name = 'Open new session closed (unused)'
         PngImage.Data = {
           89504E470D0A1A0A0000000D49484452000000180000001808020000006F15AA
           AF000000017352474200AECE1CE9000000097048597300000EC300000EC301C7
@@ -3288,7 +3288,7 @@ object LoginDialog: TLoginDialog
       end
       item
         Background = clWindow
-        Name = 'Workspace closed'
+        Name = 'Workspace closed (unused)'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000020000000200802000000FC18ED
           A3000000097048597300000EC300000EC301C76FA864000000284944415478DA
@@ -3342,7 +3342,7 @@ object LoginDialog: TLoginDialog
       end
       item
         Background = clWindow
-        Name = 'Open new session closed'
+        Name = 'Open new session closed (unused)'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000020000000200802000000FC18ED
           A3000000097048597300000EC300000EC301C76FA864000000284944415478DA
@@ -3530,7 +3530,7 @@ object LoginDialog: TLoginDialog
       end
       item
         Background = clWindow
-        Name = 'Rename'
+        Name = 'Rename 2'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000018000000180806000000E0773D
           F8000000097048597300000EC300000EC301C76FA8640000033D4944415478DA
@@ -4033,7 +4033,7 @@ object LoginDialog: TLoginDialog
       end
       item
         Background = clWindow
-        Name = 'Rename'
+        Name = 'Rename 2'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
           F4000000097048597300000EC300000EC301C76FA864000004524944415478DA
