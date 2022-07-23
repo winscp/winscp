@@ -427,7 +427,13 @@ void __fastcall TPropertiesDialog::SetFileProperties(const TRemoteProperties & v
   GroupOwnerRightsBevel->Visible = HasAnything;
 
   RecursiveCheck2->Checked = value.Recursive;
-  RecursiveCheck2->Visible = (GroupComboBox->Visible || OwnerComboBox->Visible) && FAnyDirectories;
+  RecursiveCheck2->Visible =
+    (GroupComboBox->Visible ||
+     OwnerComboBox->Visible ||
+     // Recursion is always supported for permissions and never for ACL.
+     // If this ever changes we will have to introduce respective capability check.
+     (HasRights && !FLAGSET(FAllowedChanges, cpAcl))) &&
+    FAnyDirectories;
   RecursiveBevel->Visible = RecursiveCheck2->Visible || HasRights;
 
   UpdateControls();
