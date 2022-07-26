@@ -193,7 +193,7 @@ void __fastcall TCopyDialog::AdjustTransferControls()
     if (!FToRemote && FLAGSET(FOutputOptions, cooRemoteTransfer))
     {
       ACaption = LoadStr(REMOTE_COPY_TITLE);
-      ImageName = L"Duplicate";
+      ImageName = L"Duplicate L to R";
     }
     else
     {
@@ -214,7 +214,7 @@ void __fastcall TCopyDialog::AdjustTransferControls()
     if (!FToRemote && FLAGSET(FOutputOptions, cooRemoteTransfer))
     {
       ACaption = LoadStr(COPY_MOVE_CAPTION);
-      ImageName = L"Move To";
+      ImageName = L"Move L to R";
     }
     else
     {

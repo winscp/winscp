@@ -14728,7 +14728,7 @@ object Animations96Module: TAnimations96Module
       end
       item
         Background = clWindow
-        Name = 'Duplicate'
+        Name = 'Duplicate L to R'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
           F4000000097048597300000EC400000EC401952B0E1B00000A4F694343505068
@@ -14856,7 +14856,7 @@ object Animations96Module: TAnimations96Module
       end
       item
         Background = clWindow
-        Name = 'Move To'
+        Name = 'Move L to R'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
           F4000000097048597300000EC300000EC301C76FA864000004474944415478DA
@@ -16003,7 +16003,7 @@ object Animations96Module: TAnimations96Module
       end
       item
         Background = clWindow
-        Name = 'Bulb On n p'
+        Name = 'Bulb On'
         PngImage.Data = {
           89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
           F4000000097048597300000EC400000EC401952B0E1B00000A4F694343505068

@@ -52,7 +52,7 @@ void __fastcall TRemoteTransferDialog::Init(bool Multi, TStrings * Sessions,
   DebugAssert(SessionCombo->Items->Count == FDirectories->Count);
   FAllowDirectCopy = AllowDirectCopy;
   FCurrentSession = CurrentSession;
-  LoadDialogImage(Image, L"Duplicate");
+  LoadDialogImage(Image, L"Duplicate L to R");
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRemoteTransferDialog::Execute(void *& Session, UnicodeString & Target,

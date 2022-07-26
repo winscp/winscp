@@ -825,7 +825,7 @@ __fastcall TRemoteMoveDialog::TRemoteMoveDialog(bool Multi) :
 
   FMulti = Multi;
 
-  AddImage(L"Move To");
+  AddImage(L"Move L to R");
 
   Combo = new THistoryComboBox(this);
   Combo->AutoComplete = false;

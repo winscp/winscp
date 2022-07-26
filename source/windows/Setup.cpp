@@ -2113,7 +2113,7 @@ static void __fastcall ShowTip(bool AutoShow)
   Params.MoreMessagesUrl = TipUrl(TipsData.get());
   Params.Aliases = Aliases;
   Params.AliasesCount = LENOF(Aliases);
-  Params.ImageName = L"Bulb On n p";
+  Params.ImageName = L"Bulb On";
 
   if (AutoShow)
   {
