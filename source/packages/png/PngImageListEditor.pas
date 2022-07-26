@@ -43,6 +43,8 @@ type
     btnOK: TPngBitBtn;
     btnCancel: TPngBitBtn;
     chkUseFilenames: TCheckBox;
+    btnExport: TPngBitBtn;
+    btnSelectAll: TPngBitBtn;
     procedure btnAddClick(Sender: TObject);
     procedure btnClearClick(Sender: TObject);
     procedure btnDeleteClick(Sender: TObject);
@@ -72,6 +74,8 @@ type
     procedure lbxImagesMeasureItem(Control: TWinControl; Index: Integer; var Height: Integer);
     procedure lbxImagesMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure lbxImagesStartDrag(Sender: TObject; var DragObject: TDragObject);
+    procedure btnExportClick(Sender: TObject);
+    procedure btnSelectAllClick(Sender: TObject);
   private
     FDraggingIndex: Integer;
     FImageHeight: Integer;
@@ -98,8 +102,10 @@ var
 
 implementation
 
+{$WARN UNIT_PLATFORM OFF}
 uses
-  SysUtils, Math;
+  SysUtils, Math, FileCtrl, IOUtils;
+{$WARN UNIT_PLATFORM ON}
 
 resourcestring
   SAreYouSureYouWantToDelete = 'Are you sure you want to delete %s?';
@@ -670,6 +676,26 @@ begin
   lbxImagesClick(nil);
 end;
 
+procedure TPngImageListEditorDlg.btnExportClick(Sender: TObject);
+var
+  Directory, FileName: string;
+  Item: TPngImageCollectionItem;
+  I: Integer;
+begin
+  if SelectDirectory('Select directory to save exported images to', '', Directory, [sdNewFolder, sdShowEdit, sdNewUI, sdValidateDir]) then
+  begin
+    for I := 0 to lbxImages.Items.Count - 1 do
+    begin
+      if lbxImages.Selected[I] then
+      begin
+        Item := Images.Items[I];
+        FileName := TPath.Combine(Directory, Item.Name + '.png');
+        Item.PngImage.SaveToFile(FileName);
+      end;
+    end;
+  end;
+end;
+
 procedure TPngImageListEditorDlg.btnReplaceClick(Sender: TObject);
 var
   Item: TPngImageCollectionItem;
@@ -710,6 +736,12 @@ begin
         Png.Free;
       end;
     end;
+end;
+
+procedure TPngImageListEditorDlg.btnSelectAllClick(Sender: TObject);
+begin
+  lbxImages.SelectAll;
+  lbxImagesClick(nil);
 end;
 
 procedure TPngImageListEditorDlg.btnUpClick(Sender: TObject);
@@ -991,6 +1023,8 @@ begin
     btnClear.Enabled := Items.Count > 0;
     btnUp.Enabled := (SelCount > 0) and (FirstSelected > 0);
     btnDown.Enabled := (SelCount > 0) and (LastSelected < Items.Count - 1);
+    btnExport.Enabled := (SelCount > 0);
+    btnSelectAll.Enabled := (SelCount > 0) and (SelCount < Items.Count);
     lblName.Enabled := SelCount = 1;
     edtName.Enabled := SelCount = 1;
     lblBackgroundColor.Enabled := SelCount > 0;
