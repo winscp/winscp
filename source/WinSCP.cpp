@@ -17,6 +17,8 @@ USEFORM("forms\ScpExplorer.cpp", ScpExplorerForm);
 //---------------------------------------------------------------------------
 WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 {
+  AddStartupSequence(L"M");
+  DllHijackingProtection();
   AddStartupSequence(L"T");
   int Result = 0;
   try
