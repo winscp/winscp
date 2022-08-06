@@ -9,6 +9,8 @@ extern TConfiguration *Configuration;
 class TStoredSessionList;
 extern TStoredSessionList *StoredSessions;
 extern bool AnySession;
+class TApplicationLog;
+extern TApplicationLog * AppLog;
 //---------------------------------------------------------------------------
 void CoreInitialize();
 void CoreFinalize();
