@@ -1104,11 +1104,11 @@ UnicodeString __fastcall TSessionLog::LogSensitive(const UnicodeString & Str)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TSessionLog::GetCmdLineLog()
+UnicodeString __fastcall TSessionLog::GetCmdLineLog(TConfiguration * AConfiguration)
 {
   UnicodeString Result = CmdLine;
 
-  if (!Configuration->LogSensitive)
+  if (!AConfiguration->LogSensitive)
   {
     TManagementScript Script(StoredSessions, false);
     Script.MaskPasswordInCommandLine(Result, true);
@@ -1135,76 +1135,88 @@ UnicodeString __fastcall EnumName(T Value, UnicodeString Names)
 
   return L"(unknown)";
 }
-//---------------------------------------------------------------------------
-#define ADSTR(S) DoAdd(llMessage, S, DoAddToSelf);
+#define ADSTR(S) AddLogEntry(S)
 #define ADF(S, F) ADSTR(FORMAT(S, F));
+//---------------------------------------------------------------------------
+void __fastcall TSessionLog::DoAddStartupInfo(TAddLogEntryEvent AddLogEntry, TConfiguration * AConfiguration)
+{
+  ADSTR(GetEnvironmentInfo());
+  THierarchicalStorage * Storage = AConfiguration->CreateConfigStorage();
+  try
+  {
+    ADF(L"Configuration: %s", (Storage->Source));
+  }
+  __finally
+  {
+    delete Storage;
+  }
+
+  wchar_t UserName[UNLEN + 1];
+  unsigned long UserNameSize = LENOF(UserName);
+  if (DebugAlwaysFalse(!GetUserNameEx(NameSamCompatible, UserName, &UserNameSize)))
+  {
+    wcscpy(UserName, L"<Failed to retrieve username>");
+  }
+  UnicodeString LogStr;
+  if (AConfiguration->LogProtocol <= -1)
+  {
+    LogStr = L"Reduced";
+  }
+  else if (AConfiguration->LogProtocol <= 0)
+  {
+    LogStr = L"Normal";
+  }
+  else if (AConfiguration->LogProtocol == 1)
+  {
+    LogStr = L"Debug 1";
+  }
+  else if (AConfiguration->LogProtocol >= 2)
+  {
+    LogStr = L"Debug 2";
+  }
+  if (AConfiguration->LogSensitive)
+  {
+    LogStr += L", Logging passwords";
+  }
+  if (AConfiguration->LogMaxSize > 0)
+  {
+    LogStr += FORMAT(L", Rotating after: %s", (SizeToStr(AConfiguration->LogMaxSize)));
+    if (AConfiguration->LogMaxCount > 0)
+    {
+      LogStr += FORMAT(L", Keeping at most %d logs", (AConfiguration->LogMaxCount));
+    }
+  }
+  ADF(L"Log level: %s", (LogStr));
+  ADF(L"Local account: %s", (UserName));
+  ADF(L"Working directory: %s", (GetCurrentDir()));
+  ADF(L"Process ID: %d", (int(GetCurrentProcessId())));
+  ADF(L"Ancestor processes: %s", (GetAncestorProcessNames()));
+  ADF(L"Command-line: %s", (GetCmdLineLog(AConfiguration)));
+  if (AConfiguration->ActualLogProtocol >= 1)
+  {
+    GetGlobalOptions()->LogOptions(AddLogEntry);
+  }
+  ADF(L"Time zone: %s", (GetTimeZoneLogString()));
+  if (!AdjustClockForDSTEnabled())
+  {
+    ADSTR(L"Warning: System option \"Automatically adjust clock for Daylight Saving Time\" is disabled, timestamps will not be represented correctly");
+  }
+}
+//---------------------------------------------------------------------------
+#undef ADSTR
+#define ADSTR(S) DoAdd(llMessage, S, DoAddToSelf);
+//---------------------------------------------------------------------------
+void __fastcall TSessionLog::DoAddStartupInfoEntry(const UnicodeString & S)
+{
+  ADSTR(S);
+}
 //---------------------------------------------------------------------------
 void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
 {
   if (Data == NULL)
   {
     AddSeparator();
-    ADSTR(GetEnvironmentInfo());
-    THierarchicalStorage * Storage = FConfiguration->CreateConfigStorage();
-    try
-    {
-      ADF(L"Configuration: %s", (Storage->Source));
-    }
-    __finally
-    {
-      delete Storage;
-    }
-
-    wchar_t UserName[UNLEN + 1];
-    unsigned long UserNameSize = LENOF(UserName);
-    if (DebugAlwaysFalse(!GetUserNameEx(NameSamCompatible, UserName, &UserNameSize)))
-    {
-      wcscpy(UserName, L"<Failed to retrieve username>");
-    }
-    UnicodeString LogStr;
-    if (FConfiguration->LogProtocol <= -1)
-    {
-      LogStr = L"Reduced";
-    }
-    else if (FConfiguration->LogProtocol <= 0)
-    {
-      LogStr = L"Normal";
-    }
-    else if (FConfiguration->LogProtocol == 1)
-    {
-      LogStr = L"Debug 1";
-    }
-    else if (FConfiguration->LogProtocol >= 2)
-    {
-      LogStr = L"Debug 2";
-    }
-    if (FConfiguration->LogSensitive)
-    {
-      LogStr += L", Logging passwords";
-    }
-    if (FConfiguration->LogMaxSize > 0)
-    {
-      LogStr += FORMAT(L", Rotating after: %s", (SizeToStr(FConfiguration->LogMaxSize)));
-      if (FConfiguration->LogMaxCount > 0)
-      {
-        LogStr += FORMAT(L", Keeping at most %d logs", (FConfiguration->LogMaxCount));
-      }
-    }
-    ADF(L"Log level: %s", (LogStr));
-    ADF(L"Local account: %s", (UserName));
-    ADF(L"Working directory: %s", (GetCurrentDir()));
-    ADF(L"Process ID: %d", (int(GetCurrentProcessId())));
-    ADF(L"Ancestor processes: %s", (GetAncestorProcessNames()));
-    ADF(L"Command-line: %s", (GetCmdLineLog()));
-    if (FConfiguration->ActualLogProtocol >= 1)
-    {
-      AddOptions(GetGlobalOptions());
-    }
-    ADF(L"Time zone: %s", (GetTimeZoneLogString()));
-    if (!AdjustClockForDSTEnabled())
-    {
-      ADSTR(L"Warning: System option \"Automatically adjust clock for Daylight Saving Time\" is disabled, timestamps will not be represented correctly");
-    }
+    DoAddStartupInfo(DoAddStartupInfoEntry, FConfiguration);
     ADF(L"Login time: %s", (FormatDateTime(L"dddddd tt", Now())));
     AddSeparator();
   }
@@ -1459,16 +1471,6 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     }
     AddSeparator();
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TSessionLog::AddOption(const UnicodeString & LogStr)
-{
-  ADSTR(LogStr);
-}
-//---------------------------------------------------------------------------
-void __fastcall TSessionLog::AddOptions(TOptions * Options)
-{
-  Options->LogOptions(AddOption);
 }
 //---------------------------------------------------------------------------
 #undef ADF
@@ -1753,5 +1755,46 @@ void __fastcall TActionLog::SetEnabled(bool value)
   {
     FEnabled = value;
     ReflectSettings();
+  }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+TApplicationLog::TApplicationLog()
+{
+  FFile = NULL;
+  FCriticalSection.reset(new TCriticalSection());
+}
+//---------------------------------------------------------------------------
+TApplicationLog::~TApplicationLog()
+{
+  if (FFile != NULL)
+  {
+    Log(L"Closing log");
+    fclose(static_cast<FILE *>(FFile));
+    FFile = NULL;
+  }
+}
+//---------------------------------------------------------------------------
+void TApplicationLog::Enable(const UnicodeString & Path)
+{
+  UnicodeString Dummy;
+  FFile = OpenFile(Path, Now(), NULL, false, Dummy);
+}
+//---------------------------------------------------------------------------
+void TApplicationLog::AddStartupInfo()
+{
+  TSessionLog::DoAddStartupInfo(Log, Configuration);
+}
+//---------------------------------------------------------------------------
+void __fastcall TApplicationLog::Log(const UnicodeString & S)
+{
+  if (FFile != NULL)
+  {
+    UnicodeString Timestamp = FormatDateTime(L"yyyy-mm-dd hh:nn:ss.zzz", Now());
+    UnicodeString Line = FORMAT(L"[%s] [%x] %s\r\n", (Timestamp, static_cast<int>(GetCurrentThreadId()), S));
+    UTF8String UtfLine = UTF8String(Line);
+    int Writting = UtfLine.Length();
+    TGuard Guard(FCriticalSection.get());
+    fwrite(UtfLine.c_str(), 1, Writting, static_cast<FILE *>(FFile));
   }
 }

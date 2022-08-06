@@ -246,8 +246,12 @@ public:
   __fastcall TDifferenceSessionAction(TActionLog * Log, const TSynchronizeChecklist::TItem * Item);
 };
 //---------------------------------------------------------------------------
+typedef void __fastcall (__closure *TAddLogEntryEvent)(const UnicodeString & S);
+//---------------------------------------------------------------------------
 class TSessionLog
 {
+friend class TApplicationLog;
+
 public:
   __fastcall TSessionLog(TSessionUI* UI, TDateTime Started, TSessionData * SessionData,
     TConfiguration * Configuration);
@@ -269,6 +273,7 @@ public:
 protected:
   void __fastcall CloseLogFile();
   bool __fastcall LogToFile();
+  static void __fastcall DoAddStartupInfo(TAddLogEntryEvent AddLogEntry, TConfiguration * AConfiguration);
 
 private:
   TConfiguration * FConfiguration;
@@ -295,11 +300,10 @@ private:
   void __fastcall DoAddStartupInfo(TSessionData * Data);
   UnicodeString __fastcall GetTlsVersionName(TTlsVersion TlsVersion);
   UnicodeString __fastcall LogSensitive(const UnicodeString & Str);
-  void __fastcall AddOption(const UnicodeString & LogStr);
-  void __fastcall AddOptions(TOptions * Options);
-  UnicodeString __fastcall GetCmdLineLog();
+  static UnicodeString __fastcall GetCmdLineLog(TConfiguration * AConfiguration);
   void __fastcall CheckSize(__int64 Addition);
   UnicodeString __fastcall LogPartFileName(const UnicodeString & BaseName, int Index);
+  void __fastcall DoAddStartupInfoEntry(const UnicodeString & S);
 };
 //---------------------------------------------------------------------------
 class TActionLog
@@ -352,6 +356,20 @@ private:
   void __fastcall OpenLogFile();
   UnicodeString __fastcall GetLogFileName();
   void __fastcall SetEnabled(bool value);
+};
+//---------------------------------------------------------------------------
+class TApplicationLog
+{
+public:
+  TApplicationLog();
+  ~TApplicationLog();
+  void Enable(const UnicodeString & Path);
+  void AddStartupInfo();
+  void __fastcall Log(const UnicodeString & S);
+
+private:
+  void * FFile;
+  std::unique_ptr<TCriticalSection> FCriticalSection;
 };
 //---------------------------------------------------------------------------
 #endif
