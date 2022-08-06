@@ -1719,22 +1719,40 @@ namespace WinSCP
         [ComRegisterFunction]
         private static void ComRegister(Type t)
         {
-            string subKey = GetTypeLibKey(t);
             Assembly assembly = Assembly.GetAssembly(t);
-            object[] attributes = assembly.GetCustomAttributes(typeof(GuidAttribute), false);
-            if (attributes.Length == 0)
-            {
-                throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, "Cannot find {0} attribute for assembly {1}", typeof(GuidAttribute), assembly));
-            }
-            GuidAttribute guidAttribute = (GuidAttribute)attributes[0];
-            Registry.ClassesRoot.CreateSubKey(subKey).SetValue(null, guidAttribute.Value);
+
+            string guid = Marshal.GetTypeLibGuidForAssembly(assembly).ToString();
+
+            int major, minor;
+            Marshal.GetTypeLibVersionForAssembly(assembly, out major, out minor);
+            string version = $"{major}.{minor}";
+
+            RegistryKey root = Registry.ClassesRoot;
+            root.CreateSubKey(GetTypeLibKey(t)).SetValue(null, guid);
+            root.CreateSubKey(GetVersionKey(t)).SetValue(null, version);
         }
 
         [ComUnregisterFunction]
         private static void ComUnregister(Type t)
         {
-            string subKey = GetTypeLibKey(t);
-            Registry.ClassesRoot.DeleteSubKey(subKey, false);
+            RegistryKey root = Registry.ClassesRoot;
+            root.DeleteSubKey(GetTypeLibKey(t), false);
+            root.DeleteSubKey(GetVersionKey(t), false);
+        }
+
+        private static string GetClsidKey(Type t)
+        {
+            return "CLSID\\" + t.GUID.ToString("B").ToUpperInvariant();
+        }
+
+        private static string GetTypeLibKey(Type t)
+        {
+            return GetClsidKey(t) + "\\TypeLib";
+        }
+
+        private static string GetVersionKey(Type t)
+        {
+            return GetClsidKey(t) + "\\Version";
         }
 #endif
 
@@ -2525,12 +2543,6 @@ namespace WinSCP
             }
         }
 
-#if !NETSTANDARD
-        private static string GetTypeLibKey(Type t)
-        {
-            return "CLSID\\{" + t.GUID.ToString().ToUpperInvariant() + "}\\TypeLib";
-        }
-#endif
 
         FieldInfo IReflect.GetField(string name, BindingFlags bindingAttr)
         {
