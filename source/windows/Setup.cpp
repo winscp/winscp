@@ -2836,7 +2836,6 @@ public:
   }
 
 protected:
-  #pragma warn -hid
   virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID ClassId, void ** Intf)
   {
     AppLog(L"Querying IAsyncOperationCompletedHandler interface");
@@ -2855,7 +2854,6 @@ protected:
     }
     return Result;
   }
-  #pragma warn .hid
 
   virtual ULONG STDMETHODCALLTYPE AddRef()
   {
@@ -2869,6 +2867,7 @@ protected:
     return -1;
   }
 
+  #pragma warn -inl
   virtual HRESULT STDMETHODCALLTYPE Invoke(IAsyncOperation_RT<IStoreAppLicense *> * AsyncInfo, AsyncStatus Status)
   {
     AppLog(L"Invoking IAsyncOperationCompletedHandler");
@@ -2957,6 +2956,7 @@ protected:
     AppLog(L"IAsyncOperationCompletedHandler done");
     return S_OK;
   }
+  #pragma warn .inl
 
   virtual bool __fastcall Finished()
   {
@@ -2969,6 +2969,7 @@ protected:
     DebugFail();
   }
 
+  #pragma warn -inl
   virtual void __fastcall Execute()
   {
     AppLog("Started store data collection thread");
@@ -3081,6 +3082,7 @@ protected:
       AppLogFmt("Failed while collecting store data: %s", (E.Message));
     }
   }
+  #pragma warn .inl
 
 private:
   HANDLE FEvent;
