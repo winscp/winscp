@@ -38,5 +38,6 @@ UnicodeString GetNetCoreVersionStr();
 UnicodeString GetPowerShellVersionStr();
 UnicodeString GetPowerShellCoreVersionStr();
 int ComRegistration(TConsole * Console);
+void CollectStoreData();
 //---------------------------------------------------------------------------
 #endif

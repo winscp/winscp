@@ -34,6 +34,8 @@
 #include <Soap.HTTPUtil.hpp>
 #include <Web.HTTPApp.hpp>
 #include <System.IOUtils.hpp>
+#include <WinApi.h>
+#include <Queue.h>
 //---------------------------------------------------------------------------
 #define KEY _T("SYSTEM\\CurrentControlSet\\Control\\") \
             _T("Session Manager\\Environment")
@@ -2816,4 +2818,283 @@ int ComRegistration(TConsole * Console)
     Console->WaitBeforeExit();
   }
   return Result;
+}
+#define StringModuleName L"api-ms-win-core-winrt-string-l1-1-0.dll"
+//---------------------------------------------------------------------------
+class TCollectStoreDataThread : public TSimpleThread, IAsyncOperationCompletedHandler<IStoreAppLicense *>
+{
+public:
+  TCollectStoreDataThread()
+  {
+    FEvent = CreateEvent(NULL, false, false, NULL);
+  }
+
+  virtual __fastcall ~TCollectStoreDataThread()
+  {
+    CloseHandle(FEvent);
+    AppLog("Destroying store data collection thread");
+  }
+
+protected:
+  #pragma warn -hid
+  virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID ClassId, void ** Intf)
+  {
+    AppLog(L"Querying IAsyncOperationCompletedHandler interface");
+    HRESULT Result = S_OK;
+    if (ClassId == IID_IUnknown)
+    {
+      *Intf = static_cast<IUnknown *>(this);
+    }
+    else if (ClassId == System::Sysutils::StringToGUID(IAsyncOperationCompletedHandlerStoreAppLicenseGUID))
+    {
+      *Intf = static_cast<IAsyncOperationCompletedHandler<IStoreAppLicense *> *>(this);
+    }
+    else
+    {
+      Result = E_NOINTERFACE;
+    }
+    return Result;
+  }
+  #pragma warn .hid
+
+  virtual ULONG STDMETHODCALLTYPE AddRef()
+  {
+    AppLog(L"Adding IAsyncOperationCompletedHandler reference");
+    return -1;
+  }
+
+  virtual ULONG STDMETHODCALLTYPE Release()
+  {
+    AppLog(L"Releasing IAsyncOperationCompletedHandler reference");
+    return -1;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE Invoke(IAsyncOperation_RT<IStoreAppLicense *> * AsyncInfo, AsyncStatus Status)
+  {
+    AppLog(L"Invoking IAsyncOperationCompletedHandler");
+    try
+    {
+      if (Status != AsyncStatus::Completed)
+      {
+        AppLogFmt(L"Unexpected status: %d", (static_cast<int>(Status)));
+      }
+      else
+      {
+        AppLog(L"Completed");
+        IStoreAppLicense * AppLicense;
+        HRESULT Result = AsyncInfo->GetResults(&AppLicense);
+        if (FAILED(Result))
+        {
+          AppLogFmt(L"Failed to get results [%d]", (Result));
+        }
+        else
+        {
+          AppLog(L"Got results");
+          try
+          {
+            HSTRING SkuStoreId = 0;
+            Result = AppLicense->get_SkuStoreId(&SkuStoreId);
+            if (FAILED(Result))
+            {
+              AppLogFmt(L"Failed to get Store ID [%d]", (Result));
+            }
+            else
+            {
+              if (SkuStoreId == NULL)
+              {
+                AppLog(L"Got NULL Store ID");
+              }
+              else
+              {
+                AppLog(L"Got Store ID");
+                typedef PCWSTR (* TWindowsGetStringRawBuffer)(HSTRING string, UINT32  *length);
+                TWindowsGetStringRawBuffer WindowsGetStringRawBuffer =
+                  (TWindowsGetStringRawBuffer)GetProcAddress(GetModuleHandle(StringModuleName), "WindowsGetStringRawBuffer");
+                AppLog(L"Resolved function");
+                UINT32 Length;
+                PCWSTR Buffer = WindowsGetStringRawBuffer(SkuStoreId, &Length);
+                UnicodeString StoreID(Buffer);
+                AppLogFmt(L"Store ID: %s", (StoreID));
+              }
+            }
+
+            boolean Active = 0;
+            Result = AppLicense->get_IsActive(&Active);
+            if (FAILED(Result))
+            {
+              AppLogFmt(L"Failed to get Active [%d]", (Result));
+            }
+            else
+            {
+              AppLogFmt(L"Active: %s", (BooleanToEngStr(Active != 0)));
+            }
+
+            boolean Trial = 0;
+            Result = AppLicense->get_IsTrial(&Trial);
+            if (FAILED(Result))
+            {
+              AppLogFmt(L"Failed to get Trial [%d]", (Result));
+            }
+            else
+            {
+              AppLogFmt(L"Trial: %s", (BooleanToEngStr(Trial != 0)));
+            }
+          }
+          __finally
+          {
+            AppLog(L"Releasing license");
+            AppLicense->Release();
+          }
+        }
+      }
+    }
+    catch (Exception & E)
+    {
+      AppLogFmt("Failed in IAsyncOperationCompletedHandler: %s", (E.Message));
+    }
+    AppLog(L"Setting event");
+    SetEvent(FEvent);
+    AppLog(L"IAsyncOperationCompletedHandler done");
+    return S_OK;
+  }
+
+  virtual bool __fastcall Finished()
+  {
+    // self-destroy
+    return true;
+  }
+
+  void __fastcall Terminate()
+  {
+    DebugFail();
+  }
+
+  virtual void __fastcall Execute()
+  {
+    AppLog("Started store data collection thread");
+    try
+    {
+      CoInitialize(NULL);
+      AppLog("Initialized COM library");
+      typedef HRESULT (* TRoGetActivationFactory)(HSTRING activatableClassId, REFIID  iid, void **factory);
+      TRoGetActivationFactory RoGetActivationFactory =
+        (TRoGetActivationFactory)GetProcAddress(GetModuleHandle(L"Combase.dll"), "RoGetActivationFactory");
+      typedef HRESULT (* TWindowsCreateString)(PCNZWCH sourceString, UINT32 length, HSTRING *string);
+      HMODULE StringModule = GetModuleHandle(StringModuleName);
+      TWindowsCreateString WindowsCreateString =
+        (TWindowsCreateString)GetProcAddress(StringModule, "WindowsCreateString");
+      typedef HRESULT (* TWindowsDeleteString)(HSTRING string);
+      TWindowsDeleteString WindowsDeleteString =
+        (TWindowsDeleteString)GetProcAddress(StringModule, "WindowsDeleteString");
+      if ((RoGetActivationFactory != NULL) && (WindowsCreateString != NULL) && (WindowsDeleteString != NULL))
+      {
+        AppLog(L"Resolved store functions");
+        const wchar_t * StoreContextStr = L"Windows.Services.Store.StoreContext";
+        HSTRING StoreContextString;
+        HRESULT Result = WindowsCreateString(StoreContextStr, wcslen(StoreContextStr), &StoreContextString);
+        if (DebugAlwaysFalse(FAILED(Result)))
+        {
+          AppLogFmt(L"Failed to created store context service string [%d]", (Result));
+        }
+        else
+        {
+          AppLog(L"Created store context service string");
+          try
+          {
+            TGUID IID_IStoreContextStatics(System::Sysutils::StringToGUID(IStoreContextStaticsGUID));
+            IStoreContextStatics * StoreContextStatics;
+            Result = RoGetActivationFactory(StoreContextString, IID_IStoreContextStatics, &static_cast<void *>(StoreContextStatics));
+            if (FAILED(Result))
+            {
+              AppLogFmt(L"Failed to retrieve store context service activation factory [%d]", (Result));
+            }
+            else
+            {
+              AppLog(L"Got store context service activation factory");
+              try
+              {
+                IStoreContext * StoreContext;
+                Result = StoreContextStatics->GetDefault(&StoreContext);
+                if (FAILED(Result))
+                {
+                  AppLogFmt(L"Failed to retrieve default store context [%d]", (Result));
+                }
+                else
+                {
+                  AppLog(L"Got default store context");
+                  try
+                  {
+                    IAsyncOperation_RT<IStoreAppLicense *> * GetLicenseOperation;
+                    Result = StoreContext->GetAppLicenseAsync(&static_cast<IUnknown *>(GetLicenseOperation));
+                    if (FAILED(Result))
+                    {
+                      AppLogFmt(L"Failed to retrieve store license [%d]", (Result));
+                    }
+                    else
+                    {
+                      AppLog(L"Got store license");
+                      try
+                      {
+                        GetLicenseOperation->put_Completed(this);
+                        AppLog(L"Added handler, waiting for response");
+                        DWORD WaitResult = WaitForSingleObject(FEvent, 60000);
+                        if (WaitResult != WAIT_OBJECT_0)
+                        {
+                          AppLogFmt(L"Could not wait for store data [%d]", (WaitResult));
+                        }
+                        else
+                        {
+                          AppLog("Done waiting for store data");
+                        }
+                      }
+                      __finally
+                      {
+                        AppLog(L"Releasing store license");
+                        GetLicenseOperation->Release();
+                      }
+                    }
+                  }
+                  __finally
+                  {
+                    AppLog(L"Releasing store context");
+                    StoreContext->Release();
+                  }
+                }
+              }
+              __finally
+              {
+                AppLog(L"Releasing factory");
+                StoreContextStatics->Release();
+              }
+            }
+          }
+          __finally
+          {
+            AppLog(L"Deleting string");
+            DebugCheck(SUCCEEDED(WindowsDeleteString(StoreContextString)));
+          }
+        }
+      }
+    }
+    catch (Exception & E)
+    {
+      AppLogFmt("Failed while collecting store data: %s", (E.Message));
+    }
+  }
+
+private:
+  HANDLE FEvent;
+};
+//---------------------------------------------------------------------------
+void CollectStoreData()
+{
+  if (!Configuration->ExperimentalFeatures)
+  {
+    AppLog(L"Not contacting store, experimental features disabled");
+  }
+  else
+  {
+    AppLog("Starting store data collection thread");
+    new TCollectStoreDataThread()->Start();
+  }
 }
