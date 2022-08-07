@@ -18,7 +18,7 @@
 //---------------------------------------------------------------------------
 TConfiguration * Configuration = NULL;
 TStoredSessionList * StoredSessions = NULL;
-TApplicationLog * AppLog = NULL;
+TApplicationLog * ApplicationLog = NULL;
 bool AnySession = false;
 //---------------------------------------------------------------------------
 TQueryButtonAlias::TQueryButtonAlias()

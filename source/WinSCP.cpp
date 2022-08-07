@@ -17,14 +17,14 @@ USEFORM("forms\ScpExplorer.cpp", ScpExplorerForm);
 //---------------------------------------------------------------------------
 WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 {
-  AppLog = new TApplicationLog();
+  ApplicationLog = new TApplicationLog();
   TProgramParams * Params = TProgramParams::Instance();
   UnicodeString AppLogPath;
   if (Params->FindSwitch(L"applog", AppLogPath))
   {
-    AppLog->Enable(AppLogPath);
+    ApplicationLog->Enable(AppLogPath);
   }
-  AppLog->Log(L"Starting...");
+  AppLog(L"Starting...");
 
   AddStartupSequence(L"M");
   DllHijackingProtection();
@@ -39,7 +39,7 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
     SetEnvironmentVariable(L"WINSCP_PATH",
       ExcludeTrailingBackslash(ExtractFilePath(Application->ExeName)).c_str());
     CoreInitialize();
-    AppLog->AddStartupInfo(); // Needs Configuration
+    ApplicationLog->AddStartupInfo(); // Needs Configuration
     InitializeWinHelp();
     InitializeSystemSettings();
     AddStartupSequence(L"S");
@@ -52,9 +52,9 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
         SetupInitialize();
 
         Application->Title = AppName;
-        AppLog->Log(L"Executing...");
+        AppLog(L"Executing...");
         Result = Execute();
-        AppLog->Log(L"Execution done");
+        AppLog(L"Execution done");
       }
       catch (Exception & E)
       {
@@ -68,14 +68,14 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
     }
     __finally
     {
-      AppLog->Log(L"Finalizing");
+      AppLog(L"Finalizing");
       GUIFinalize();
       FinalizeSystemSettings();
       FinalizeWinHelp();
       CoreFinalize();
       WinFinalize();
-      AppLog->Log(L"Finalizing done");
-      SAFE_DESTROY_EX(TApplicationLog, AppLog);
+      AppLog(L"Finalizing done");
+      SAFE_DESTROY_EX(TApplicationLog, ApplicationLog);
     }
   }
   catch (Exception &E)

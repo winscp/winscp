@@ -10,7 +10,9 @@ class TStoredSessionList;
 extern TStoredSessionList *StoredSessions;
 extern bool AnySession;
 class TApplicationLog;
-extern TApplicationLog * AppLog;
+extern TApplicationLog * ApplicationLog;
+#define AppLog(S) ApplicationLog->Log(S)
+#define AppLogFmt(S, F) ApplicationLog->Log(Format(S, ARRAYOFCONST(F)))
 //---------------------------------------------------------------------------
 void CoreInitialize();
 void CoreFinalize();
