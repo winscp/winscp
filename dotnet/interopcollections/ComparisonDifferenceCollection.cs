@@ -9,6 +9,10 @@ namespace WinSCP
     [ComVisible(true)]
     public class ComparisonDifferenceCollection : ICollection<ComparisonDifference>
     {
+        internal ComparisonDifferenceCollection()
+        {
+        }
+
         public ComparisonDifference this[int index]
         {
             get

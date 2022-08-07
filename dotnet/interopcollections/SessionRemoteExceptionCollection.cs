@@ -9,6 +9,10 @@ namespace WinSCP
     [ComVisible(true)]
     public class SessionRemoteExceptionCollection : ICollection<SessionRemoteException>
     {
+        internal SessionRemoteExceptionCollection()
+        {
+        }
+
         public SessionRemoteException this[int index]
         {
             get
