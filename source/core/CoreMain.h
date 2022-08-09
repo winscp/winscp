@@ -11,8 +11,8 @@ extern TStoredSessionList *StoredSessions;
 extern bool AnySession;
 class TApplicationLog;
 extern TApplicationLog * ApplicationLog;
-#define AppLog(S) ApplicationLog->Log(S)
-#define AppLogFmt(S, F) ApplicationLog->Log(Format(S, ARRAYOFCONST(F)))
+#define AppLog(S) if (ApplicationLog->Logging) ApplicationLog->Log(S)
+#define AppLogFmt(S, F) AppLog(FORMAT(S, F))
 //---------------------------------------------------------------------------
 void CoreInitialize();
 void CoreFinalize();
