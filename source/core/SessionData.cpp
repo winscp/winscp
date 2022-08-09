@@ -2061,7 +2061,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   TStoredSessionList * StoredSessions, bool & DefaultsOnly, UnicodeString * FileName,
   bool * AProtocolDefined, UnicodeString * MaskedUrl, int Flags)
 {
-  bool ProtocolDefined = false;
+  bool ProtocolDefined = true;
   bool PortNumberDefined = false;
   TFSProtocol AFSProtocol;
   int DefaultProtocolPortNumber;
@@ -2072,39 +2072,29 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
   {
     AFSProtocol = fsSCPonly;
     DefaultProtocolPortNumber = SshPortNumber;
-    MoveStr(Url, MaskedUrl, ProtocolLen);
-    ProtocolDefined = true;
   }
   else if (IsProtocolUrl(Url, SftpProtocol, ProtocolLen))
   {
     AFSProtocol = fsSFTPonly;
     DefaultProtocolPortNumber = SshPortNumber;
-    MoveStr(Url, MaskedUrl, ProtocolLen);
-    ProtocolDefined = true;
   }
   else if (IsProtocolUrl(Url, FtpProtocol, ProtocolLen))
   {
     AFSProtocol = fsFTP;
     Ftps = ftpsNone;
     DefaultProtocolPortNumber = FtpPortNumber;
-    MoveStr(Url, MaskedUrl, ProtocolLen);
-    ProtocolDefined = true;
   }
   else if (IsProtocolUrl(Url, FtpsProtocol, ProtocolLen))
   {
     AFSProtocol = fsFTP;
     AFtps = ftpsImplicit;
     DefaultProtocolPortNumber = FtpsImplicitPortNumber;
-    MoveStr(Url, MaskedUrl, ProtocolLen);
-    ProtocolDefined = true;
   }
   else if (IsProtocolUrl(Url, FtpesProtocol, ProtocolLen))
   {
     AFSProtocol = fsFTP;
     AFtps = ftpsExplicitTls;
     DefaultProtocolPortNumber = FtpPortNumber;
-    MoveStr(Url, MaskedUrl, ProtocolLen);
-    ProtocolDefined = true;
   }
   else if (IsProtocolUrl(Url, WebDAVProtocol, ProtocolLen) ||
            (HttpForWebdav && IsProtocolUrl(Url, HttpProtocol, ProtocolLen)))
@@ -2112,8 +2102,6 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     AFSProtocol = fsWebDAV;
     AFtps = ftpsNone;
     DefaultProtocolPortNumber = HTTPPortNumber;
-    MoveStr(Url, MaskedUrl, ProtocolLen);
-    ProtocolDefined = true;
   }
   else if (IsProtocolUrl(Url, WebDAVSProtocol, ProtocolLen) ||
            (HttpForWebdav && IsProtocolUrl(Url, HttpsProtocol, ProtocolLen)))
@@ -2121,8 +2109,6 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     AFSProtocol = fsWebDAV;
     AFtps = ftpsImplicit;
     DefaultProtocolPortNumber = HTTPSPortNumber;
-    MoveStr(Url, MaskedUrl, ProtocolLen);
-    ProtocolDefined = true;
   }
   else if (IsProtocolUrl(Url, S3Protocol, ProtocolLen) ||
            IsProtocolUrl(Url, HttpProtocol, ProtocolLen) || // sic
@@ -2131,8 +2117,6 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     AFSProtocol = fsS3;
     AFtps = ftpsImplicit;
     DefaultProtocolPortNumber = HTTPSPortNumber;
-    MoveStr(Url, MaskedUrl, ProtocolLen);
-    ProtocolDefined = true;
   }
   else if (IsProtocolUrl(Url, SshProtocol, ProtocolLen))
   {
@@ -2141,8 +2125,15 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     AFSProtocol = fsSFTPonly;
     PuttyProtocol = PuttySshProtocol;
     DefaultProtocolPortNumber = SshPortNumber;
+  }
+  else
+  {
+    ProtocolDefined = false;
+  }
+
+  if (ProtocolDefined)
+  {
     MoveStr(Url, MaskedUrl, ProtocolLen);
-    ProtocolDefined = true;
   }
 
   if (ProtocolDefined && (Url.SubString(1, 2) == L"//"))
