@@ -1203,6 +1203,7 @@ void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront)
   CancelDrag();
   if (GetCapture() != 0) SendMessage(GetCapture(), WM_CANCELMODE, 0, 0);
   ReleaseCapture();
+  Application->ModalStarted();
   (static_cast<TPublicForm*>(Form))->FFormState << fsModal;
 
   TShowAsModalStorage * AStorage = new TShowAsModalStorage;
@@ -1276,6 +1277,8 @@ void __fastcall HideAsModal(TForm * Form, void *& Storage)
   RestoreFocusState(AStorage->FocusState);
 
   (static_cast<TPublicForm*>(Form))->FFormState >> fsModal;
+
+  Application->ModalFinished();
 
   delete AStorage;
 }
