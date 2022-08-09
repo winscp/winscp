@@ -1762,6 +1762,7 @@ void __fastcall TActionLog::SetEnabled(bool value)
 TApplicationLog::TApplicationLog()
 {
   FFile = NULL;
+  FLogging = false;
   FCriticalSection.reset(new TCriticalSection());
 }
 //---------------------------------------------------------------------------
@@ -1773,12 +1774,14 @@ TApplicationLog::~TApplicationLog()
     fclose(static_cast<FILE *>(FFile));
     FFile = NULL;
   }
+  FLogging = false;
 }
 //---------------------------------------------------------------------------
 void TApplicationLog::Enable(const UnicodeString & Path)
 {
   UnicodeString Dummy;
   FFile = OpenFile(Path, Now(), NULL, false, Dummy);
+  FLogging = true;
 }
 //---------------------------------------------------------------------------
 void TApplicationLog::AddStartupInfo()

@@ -366,9 +366,11 @@ public:
   void Enable(const UnicodeString & Path);
   void AddStartupInfo();
   void __fastcall Log(const UnicodeString & S);
+  __property bool Logging = { read = FLogging };
 
 private:
   void * FFile;
+  bool FLogging;
   std::unique_ptr<TCriticalSection> FCriticalSection;
 };
 //---------------------------------------------------------------------------
