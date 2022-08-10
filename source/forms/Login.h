@@ -290,6 +290,7 @@ __published:
   void __fastcall SearchSiteActionExecute(TObject *Sender);
   void __fastcall PanelMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift, int X, int Y);
   void __fastcall S3CredentialsEnvCheckClick(TObject *Sender);
+  void __fastcall EncryptionComboChange(TObject *Sender);
 
 private:
   int NoUpdate;
@@ -411,6 +412,7 @@ private:
   void UpdateS3Credentials();
   void UpdateLoginButton();
   void FloodFill(TBitmap * Bitmap, int X, int Y);
+  void UpdatePortWithProtocol();
 
 protected:
   void __fastcall Default();

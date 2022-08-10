@@ -263,7 +263,7 @@ object LoginDialog: TLoginDialog
           Height = 21
           Style = csDropDownList
           TabOrder = 2
-          OnChange = TransferProtocolComboChange
+          OnChange = EncryptionComboChange
           Items.Strings = (
             'No encryption'
             'TLS/SSL Implicit encryptionX'
@@ -276,7 +276,7 @@ object LoginDialog: TLoginDialog
           Height = 21
           Style = csDropDownList
           TabOrder = 3
-          OnChange = TransferProtocolComboChange
+          OnChange = EncryptionComboChange
           Items.Strings = (
             'No encryptionX'
             'TLS/SSL Implicit encryptionX')

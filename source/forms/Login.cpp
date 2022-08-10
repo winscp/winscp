@@ -128,7 +128,7 @@ void __fastcall TLoginDialog::InitControls()
   int FtpsNoneIndex = FtpsToIndex(ftpsNone);
   int FtpsImplicitIndex = FtpsToIndex(ftpsImplicit);
   // Items item setter is implemented as deleting and re-adding the item. If we do it for the last item
-  // (explicit for FTP, implicit for WebDAV), the ItemIndex is effectivelly reset to -1.
+  // (explicit for FTP, implicit for WebDAV/S3), the ItemIndex is effectivelly reset to -1.
   // This happens when TLS is set in the default session settings.
   // Also as TransferProtocolComboChange is not triggered it results in currupted state in respect to protocol/tls to port number sync.
   int Index = FtpsCombo->ItemIndex;
@@ -651,9 +651,9 @@ void __fastcall TLoginDialog::UpdateControls()
     // session
     FtpsCombo->Visible = Editable && FtpProtocol;
     FtpsLabel->Visible = FtpProtocol;
-    WebDavsCombo->Visible = Editable && WebDavProtocol;
-    WebDavsLabel->Visible = WebDavProtocol;
-    EncryptionView->Visible = !Editable && (FtpProtocol || WebDavProtocol);
+    WebDavsCombo->Visible = Editable && (WebDavProtocol || S3Protocol);
+    WebDavsLabel->Visible = WebDavProtocol || S3Protocol;
+    EncryptionView->Visible = !Editable && (FtpProtocol || WebDavProtocol || S3Protocol);
 
     BasicSshPanel->Visible = SshProtocol;
     BasicFtpPanel->Visible = FtpProtocol && Editable;
@@ -2128,7 +2128,8 @@ int __fastcall TLoginDialog::FtpsToIndex(TFtps Ftps)
 //---------------------------------------------------------------------------
 TFtps __fastcall TLoginDialog::GetFtps()
 {
-  int Index = ((GetFSProtocol(false) == fsWebDAV) ? WebDavsCombo->ItemIndex : FtpsCombo->ItemIndex);
+  TFSProtocol FSProtocol = GetFSProtocol(false);
+  int Index = (((FSProtocol == fsWebDAV) || (FSProtocol == fsS3)) ? WebDavsCombo->ItemIndex : FtpsCombo->ItemIndex);
   TFtps Ftps;
   switch (Index)
   {
@@ -2187,7 +2188,7 @@ void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
     {
       // Note that this happens even when loading the session
       // But the values will get overwritten.
-      FtpsCombo->ItemIndex = FtpsToIndex(ftpsImplicit);
+      WebDavsCombo->ItemIndex = FtpsToIndex(ftpsImplicit);
       HostNameEdit->Text = S3HostName;
     }
     else
@@ -2220,6 +2221,12 @@ void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
     S3CredentialsEnvCheck->Checked = false;
   }
 
+  UpdatePortWithProtocol();
+  DataChange(Sender);
+}
+//---------------------------------------------------------------------------
+void TLoginDialog::UpdatePortWithProtocol()
+{
   int ADefaultPort = DefaultPort();
   if (!NoUpdate && FUpdatePortWithProtocol)
   {
@@ -2237,6 +2244,11 @@ void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
     }
   }
   FDefaultPort = ADefaultPort;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::EncryptionComboChange(TObject * Sender)
+{
+  UpdatePortWithProtocol();
   DataChange(Sender);
 }
 //---------------------------------------------------------------------------

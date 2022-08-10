@@ -1911,11 +1911,11 @@ namespace WinSCP
         {
             using (Logger.CreateCallstack())
             {
-                if (sessionOptions.WebdavSecure)
+                if (sessionOptions.Secure)
                 {
-                    if (sessionOptions.Protocol != Protocol.Webdav)
+                    if ((sessionOptions.Protocol != Protocol.Webdav) && (sessionOptions.Protocol != Protocol.S3))
                     {
-                        throw Logger.WriteException(new ArgumentException("SessionOptions.WebdavSecure is set, but SessionOptions.Protocol is not Protocol.Webdav."));
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.Secure is set, but SessionOptions.Protocol is not Protocol.Webdav nor Protocol.S3."));
                     }
                 }
 
@@ -1935,7 +1935,7 @@ namespace WinSCP
                         break;
 
                     case Protocol.Webdav:
-                        if (!sessionOptions.WebdavSecure)
+                        if (!sessionOptions.Secure)
                         {
                             head = "dav://";
                         }
@@ -1946,7 +1946,14 @@ namespace WinSCP
                         break;
 
                     case Protocol.S3:
-                        head = "s3://";
+                        if (!sessionOptions.Secure)
+                        {
+                            head = "s3plain://";
+                        }
+                        else
+                        {
+                            head = "s3://";
+                        }
                         break;
 
                     default:
@@ -2101,7 +2108,7 @@ namespace WinSCP
                 {
                     if (!sessionOptions.IsTls)
                     {
-                        throw Logger.WriteException(new ArgumentException("SessionOptions.TlsClientCertificatePath is set, but neither SessionOptions.FtpSecure nor SessionOptions.WebdavSecure is enabled nor is the protocol S3."));
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.TlsClientCertificatePath is set, but neither SessionOptions.FtpSecure nor SessionOptions.Secure is enabled."));
                     }
                     switches.Add(FormatSwitch("clientcert", sessionOptions.TlsClientCertificatePath));
                 }
@@ -2134,7 +2141,7 @@ namespace WinSCP
                 {
                     if (!sessionOptions.IsTls)
                     {
-                        throw Logger.WriteException(new ArgumentException("SessionOptions.TlsHostCertificateFingerprint or SessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate is set, but neither SessionOptions.FtpSecure nor SessionOptions.WebdavSecure is enabled nor is the protocol S3."));
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.TlsHostCertificateFingerprint or SessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate is set, but neither SessionOptions.FtpSecure nor SessionOptions.Secure is enabled."));
                     }
                     string tlsHostCertificateFingerprint = sessionOptions.TlsHostCertificateFingerprint;
                     if (sessionOptions.GiveUpSecurityAndAcceptAnyTlsHostCertificate)

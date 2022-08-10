@@ -1248,9 +1248,12 @@ static S3Status setup_neon(Request *request,
 
     // WINSCP (neon sets "nodelay" unconditionally)
 
-    // WINSCP (we should verify peer always)
-    ne_ssl_set_verify(request->NeonSession, neon_ssl_callback, request);
-    ne_ssl_trust_default_ca(request->NeonSession);
+    if (params->bucketContext.protocol == S3ProtocolHTTPS)
+    {
+      // WINSCP (we should verify peer always)
+      ne_ssl_set_verify(request->NeonSession, neon_ssl_callback, request);
+      ne_ssl_trust_default_ca(request->NeonSession);
+    }
 
     // Follow any redirection directives that S3 sends
     // TODO

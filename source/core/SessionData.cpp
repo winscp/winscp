@@ -66,6 +66,7 @@ const UnicodeString FtpesProtocol(L"ftpes");
 const UnicodeString WebDAVProtocol(L"dav");
 const UnicodeString WebDAVSProtocol(L"davs");
 const UnicodeString S3Protocol(L"s3");
+const UnicodeString S3PlainProtocol(L"s3plain");
 const UnicodeString SshProtocol(L"ssh");
 const UnicodeString WinSCPProtocolPrefix(L"winscp-");
 const wchar_t UrlParamSeparator = L';';
@@ -2110,8 +2111,14 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
     AFtps = ftpsImplicit;
     DefaultProtocolPortNumber = HTTPSPortNumber;
   }
+  else if (IsProtocolUrl(Url, S3PlainProtocol, ProtocolLen) ||
+           IsProtocolUrl(Url, HttpProtocol, ProtocolLen))
+  {
+    AFSProtocol = fsS3;
+    AFtps = ftpsNone;
+    DefaultProtocolPortNumber = HTTPPortNumber;
+  }
   else if (IsProtocolUrl(Url, S3Protocol, ProtocolLen) ||
-           IsProtocolUrl(Url, HttpProtocol, ProtocolLen) || // sic
            IsProtocolUrl(Url, HttpsProtocol, ProtocolLen))
   {
     AFSProtocol = fsS3;
@@ -3402,7 +3409,14 @@ UnicodeString __fastcall TSessionData::GetProtocolUrl(bool HttpForWebDAV)
       break;
 
     case fsS3:
-      Url = S3Protocol;
+      if (Ftps == ftpsImplicit)
+      {
+        Url = S3Protocol;
+      }
+      else
+      {
+        Url = S3PlainProtocol;
+      }
       break;
   }
 

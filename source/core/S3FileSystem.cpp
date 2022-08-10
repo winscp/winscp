@@ -228,7 +228,7 @@ void __fastcall TS3FileSystem::Open()
   FHostName = UTF8String(Data->HostNameExpanded);
   FPortSuffix = UTF8String();
   int ADefaultPort = FTerminal->SessionData->GetDefaultPort();
-  DebugAssert(ADefaultPort == HTTPSPortNumber);
+  DebugAssert((ADefaultPort == HTTPSPortNumber) || (ADefaultPort == HTTPPortNumber));
   if (FTerminal->SessionData->PortNumber != ADefaultPort)
   {
     FPortSuffix = UTF8String(FORMAT(L":%d", (FTerminal->SessionData->PortNumber)));
