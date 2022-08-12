@@ -1104,11 +1104,11 @@ UnicodeString __fastcall TSessionLog::LogSensitive(const UnicodeString & Str)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TSessionLog::GetCmdLineLog(TConfiguration * AConfiguration)
+UnicodeString __fastcall TSessionLog::GetCmdLineLog()
 {
   UnicodeString Result = CmdLine;
 
-  if (!AConfiguration->LogSensitive)
+  if (!Configuration->LogSensitive)
   {
     TManagementScript Script(StoredSessions, false);
     Script.MaskPasswordInCommandLine(Result, true);
@@ -1191,7 +1191,9 @@ void __fastcall TSessionLog::DoAddStartupInfo(TAddLogEntryEvent AddLogEntry, TCo
   ADF(L"Working directory: %s", (GetCurrentDir()));
   ADF(L"Process ID: %d", (int(GetCurrentProcessId())));
   ADF(L"Ancestor processes: %s", (GetAncestorProcessNames()));
-  ADF(L"Command-line: %s", (GetCmdLineLog(AConfiguration)));
+  // This logs even passwords, contrary to a session log.
+  // GetCmdLineLog requires master password, but we do not know it yet atm.
+  ADF(L"Command-line: %s", (CmdLine));
   if (AConfiguration->ActualLogProtocol >= 1)
   {
     GetGlobalOptions()->LogOptions(AddLogEntry);
