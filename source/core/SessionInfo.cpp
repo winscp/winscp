@@ -1104,11 +1104,11 @@ UnicodeString __fastcall TSessionLog::LogSensitive(const UnicodeString & Str)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TSessionLog::GetCmdLineLog()
+UnicodeString __fastcall TSessionLog::GetCmdLineLog(TConfiguration * AConfiguration)
 {
   UnicodeString Result = CmdLine;
 
-  if (!Configuration->LogSensitive)
+  if (!AConfiguration->LogSensitive)
   {
     TManagementScript Script(StoredSessions, false);
     Script.MaskPasswordInCommandLine(Result, true);
@@ -1138,7 +1138,7 @@ UnicodeString __fastcall EnumName(T Value, UnicodeString Names)
 #define ADSTR(S) AddLogEntry(S)
 #define ADF(S, F) ADSTR(FORMAT(S, F));
 //---------------------------------------------------------------------------
-void __fastcall TSessionLog::DoAddStartupInfo(TAddLogEntryEvent AddLogEntry, TConfiguration * AConfiguration)
+void __fastcall TSessionLog::DoAddStartupInfo(TAddLogEntryEvent AddLogEntry, TConfiguration * AConfiguration, bool DoNotMaskPaswords)
 {
   ADSTR(GetEnvironmentInfo());
   THierarchicalStorage * Storage = AConfiguration->CreateConfigStorage();
@@ -1193,7 +1193,16 @@ void __fastcall TSessionLog::DoAddStartupInfo(TAddLogEntryEvent AddLogEntry, TCo
   ADF(L"Ancestor processes: %s", (GetAncestorProcessNames()));
   // This logs even passwords, contrary to a session log.
   // GetCmdLineLog requires master password, but we do not know it yet atm.
-  ADF(L"Command-line: %s", (CmdLine));
+  UnicodeString ACmdLine;
+  if (DoNotMaskPaswords)
+  {
+    ACmdLine = CmdLine;
+  }
+  else
+  {
+    ACmdLine = GetCmdLineLog(AConfiguration);
+  }
+  ADF(L"Command-line: %s", (ACmdLine));
   if (AConfiguration->ActualLogProtocol >= 1)
   {
     GetGlobalOptions()->LogOptions(AddLogEntry);
@@ -1218,7 +1227,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
   if (Data == NULL)
   {
     AddSeparator();
-    DoAddStartupInfo(DoAddStartupInfoEntry, FConfiguration);
+    DoAddStartupInfo(DoAddStartupInfoEntry, FConfiguration, false);
     ADF(L"Login time: %s", (FormatDateTime(L"dddddd tt", Now())));
     AddSeparator();
   }
@@ -1790,7 +1799,7 @@ void TApplicationLog::AddStartupInfo()
 {
   if (Logging)
   {
-    TSessionLog::DoAddStartupInfo(Log, Configuration);
+    TSessionLog::DoAddStartupInfo(Log, Configuration, true);
   }
 }
 //---------------------------------------------------------------------------

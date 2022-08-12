@@ -273,7 +273,7 @@ public:
 protected:
   void __fastcall CloseLogFile();
   bool __fastcall LogToFile();
-  static void __fastcall DoAddStartupInfo(TAddLogEntryEvent AddLogEntry, TConfiguration * AConfiguration);
+  static void __fastcall DoAddStartupInfo(TAddLogEntryEvent AddLogEntry, TConfiguration * AConfiguration, bool DoNotMaskPaswords);
 
 private:
   TConfiguration * FConfiguration;
@@ -300,7 +300,7 @@ private:
   void __fastcall DoAddStartupInfo(TSessionData * Data);
   UnicodeString __fastcall GetTlsVersionName(TTlsVersion TlsVersion);
   UnicodeString __fastcall LogSensitive(const UnicodeString & Str);
-  UnicodeString __fastcall GetCmdLineLog();
+  static UnicodeString __fastcall GetCmdLineLog(TConfiguration * AConfiguration);
   void __fastcall CheckSize(__int64 Addition);
   UnicodeString __fastcall LogPartFileName(const UnicodeString & BaseName, int Index);
   void __fastcall DoAddStartupInfoEntry(const UnicodeString & S);
