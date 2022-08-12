@@ -300,7 +300,7 @@ private:
   void __fastcall DoAddStartupInfo(TSessionData * Data);
   UnicodeString __fastcall GetTlsVersionName(TTlsVersion TlsVersion);
   UnicodeString __fastcall LogSensitive(const UnicodeString & Str);
-  static UnicodeString __fastcall GetCmdLineLog(TConfiguration * AConfiguration);
+  UnicodeString __fastcall GetCmdLineLog();
   void __fastcall CheckSize(__int64 Addition);
   UnicodeString __fastcall LogPartFileName(const UnicodeString & BaseName, int Index);
   void __fastcall DoAddStartupInfoEntry(const UnicodeString & S);
