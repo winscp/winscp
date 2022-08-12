@@ -1788,7 +1788,10 @@ void TApplicationLog::Enable(const UnicodeString & Path)
 //---------------------------------------------------------------------------
 void TApplicationLog::AddStartupInfo()
 {
-  TSessionLog::DoAddStartupInfo(Log, Configuration);
+  if (Logging)
+  {
+    TSessionLog::DoAddStartupInfo(Log, Configuration);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TApplicationLog::Log(const UnicodeString & S)
