@@ -124,7 +124,6 @@ void __fastcall TConfiguration::Default()
   FScriptProgressFileNameLimit = 25;
   FKeyVersion = 0;
   CollectUsage = FDefaultCollectUsage;
-  FExperimentalFeatures = false;
 
   FLogging = false;
   FPermanentLogging = false;
@@ -262,7 +261,6 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(Integer,  KeyVersion); \
     KEY(Bool,     CollectUsage); \
     KEY(String,   CertificateStorage); \
-    KEY(Bool,     ExperimentalFeatures); \
   ); \
   BLOCK(L"Logging", CANCREATE, \
     KEYEX(Bool,  PermanentLogging, L"Logging"); \
