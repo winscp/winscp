@@ -82,7 +82,6 @@ private:
   int FKeyVersion;
   UnicodeString FCertificateStorage;
   UnicodeString FChecksumCommands;
-  bool FExperimentalFeatures;
 
   bool FDisablePasswordStoring;
   bool FForceBanners;
@@ -286,7 +285,6 @@ public:
   __property void * ApplicationInfo  = { read=GetApplicationInfo };
   __property TUsage * Usage = { read = FUsage };
   __property bool CollectUsage = { read = GetCollectUsage, write = SetCollectUsage };
-  __property bool ExperimentalFeatures = { read = FExperimentalFeatures, write = FExperimentalFeatures };
   __property UnicodeString StoredSessionsSubKey = {read=GetStoredSessionsSubKey};
   __property UnicodeString PuttyRegistryStorageKey  = { read=FPuttyRegistryStorageKey, write=SetPuttyRegistryStorageKey };
   __property UnicodeString PuttySessionsKey  = { read=DoGetPuttySessionsKey };
