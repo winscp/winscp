@@ -1447,7 +1447,6 @@ void TWebDAVFileSystem::NeonCreateRequest(
   ne_request * Request, void * UserData, const char * /*Method*/, const char * /*Uri*/)
 {
   TSessionContext * SessionContext = static_cast<TSessionContext *>(UserData);
-  TWebDAVFileSystem * FileSystem = SessionContext->FileSystem;
   ne_set_request_private(Request, SESSION_CONTEXT_KEY, SessionContext);
   ne_add_response_body_reader(Request, NeonBodyAccepter, NeonBodyReader, Request);
   SessionContext->NtlmAuthenticationFailed = false;
