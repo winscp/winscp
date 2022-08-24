@@ -289,6 +289,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   SessionsPageControl->Images = FSessionColors;
   UpdateQueueLabel();
   FRemoteDirViewWasFocused = true;
+  CheckStoreTransition();
 
   CreateHiddenWindow();
   StartUpdates();
@@ -958,6 +959,70 @@ void __fastcall TCustomScpExplorerForm::UpdateQueueLabel()
     }
   }
   QueueLabel->Caption = Caption;
+}
+//---------------------------------------------------------------------------
+void TCustomScpExplorerForm::CheckStoreTransition()
+{
+  if (WinConfiguration->StoreTransition == stInit)
+  {
+    if (IsUWP())
+    {
+      WinConfiguration->StoreTransition = stStoreFresh;
+      AppLog(L"Fresh UWP/store installation");
+    }
+    else
+    {
+      WinConfiguration->StoreTransition = stStandard;
+      AppLog(L"Fresh standard installation");
+    }
+  }
+  else if ((WinConfiguration->StoreTransition == stStandard) && IsUWP())
+  {
+    WinConfiguration->StoreTransition = stStoreMigrated;
+    AppLog(L"Standard installation migrated to store installation");
+  }
+
+  if (WinConfiguration->StoreTransition == stStoreMigrated)
+  {
+    TTBXToolbar * Toolbar = new TTBXToolbar(MessageDock);
+    Toolbar->Parent = MessageDock;
+    Toolbar->FullSize = true;
+    Toolbar->Color = Application->HintColor;
+
+    TTBXLabelItem * LabelItem;
+    LabelItem = new TTBXLabelItem(Toolbar);
+    LabelItem->Margin = ScaleByTextHeight(MessageDock, 2); // Is this automatically rescaled?
+    LabelItem->Caption = LoadStr(STORE_MIGRATION_THANKS);
+    Toolbar->Items->Add(LabelItem);
+
+    TTBXCustomItem * LinkItem = new TTBXItem(Toolbar);
+    LinkItem->FontSettings->Color = LinkColor;
+    LinkItem->Caption = LoadStr(STORE_MIGRATION_LEARN);
+    LinkItem->OnClick = StoreTransitionLinkClick;
+    Toolbar->Items->Add(LinkItem);
+
+    AddMenuSeparator(Toolbar->Items);
+
+    TTBCustomItem * CloseItem = new TTBXItem(Toolbar);
+    CloseItem->Caption = LoadStr(MESSAGE_DISMISS);
+    CloseItem->OnClick = StoreTransitionCloseClick;
+    Toolbar->Items->Add(CloseItem);
+    GiveTBItemPriority(CloseItem);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::StoreTransitionLinkClick(TObject *)
+{
+  ShowHelp(HELP_STORE_TRANSITION);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::StoreTransitionCloseClick(TObject * Sender)
+{
+  TTBCustomItem * Item = DebugNotNull(dynamic_cast<TTBCustomItem *>(Sender));
+  TTBXToolbar * Toolbar = DebugNotNull(dynamic_cast<TTBXToolbar *>(DebugNotNull(DebugNotNull(Item->Parent)->ParentComponent)));
+  delete Toolbar;
+  WinConfiguration->StoreTransition = stStoreAcknowledged;
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateTransferList()
@@ -5317,6 +5382,10 @@ void __fastcall TCustomScpExplorerForm::FixControlsPlacement()
   QueueFileListSplitter->Visible = QueueFileList->Visible;
   RemotePanelSplitter->Visible = RemoteDrivePanel->Visible;
 
+  TControl * TopControlsOrder[] =
+    { TopDock, MessageDock, SessionsPageControl };
+  SetVerticalControlsOrder(TopControlsOrder, LENOF(TopControlsOrder));
+
   TControl * QueueControlsOrder[] =
     { QueueDock, QueueView3, QueueFileListSplitter, QueueFileList };
   SetVerticalControlsOrder(QueueControlsOrder, LENOF(QueueControlsOrder));
@@ -8085,7 +8154,7 @@ void __fastcall TCustomScpExplorerForm::QueueView3ContextPopup(
 //---------------------------------------------------------------------------
 /*virtual*/ int __fastcall TCustomScpExplorerForm::GetStaticComponentsHeight()
 {
-  return TopDock->Height + QueueSplitter->Height;
+  return TopDock->Height + (MessageDock->Visible ? MessageDock->Height : 0) + QueueSplitter->Height;
 }
 //---------------------------------------------------------------------------
 int __fastcall TCustomScpExplorerForm::GetStaticQueuePanelComponentsHeight()
@@ -8839,6 +8908,8 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
     }
 
     reinterpret_cast<TTBCustomItem *>(GetComponent(fcRemotePathComboBox))->Enabled = HasTerminal;
+
+    MessageDock->Visible = (MessageDock->ToolbarCount > 0);
   }
 }
 //---------------------------------------------------------------------------
@@ -11143,3 +11214,9 @@ bool __fastcall TCustomScpExplorerForm::HasActiveTerminal()
 {
   return IsActiveTerminal(Terminal);
 }
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::MessageDockRequestDock(TObject *, TTBCustomDockableWindow *, bool & Accept)
+{
+  Accept = false;
+}
+//---------------------------------------------------------------------------

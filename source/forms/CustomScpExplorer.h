@@ -108,6 +108,7 @@ __published:
   TTBXItem *TBXItem254;
   TSplitter *QueueFileListSplitter;
   TListView *QueueFileList;
+  TTBXDock *MessageDock;
   void __fastcall ApplicationMinimize(TObject * Sender);
   void __fastcall ApplicationRestore(TObject * Sender);
   void __fastcall RemoteDirViewContextPopup(TObject *Sender,
@@ -216,6 +217,7 @@ __published:
   void __fastcall QueueFileListData(TObject *Sender, TListItem *Item);
   void __fastcall QueueFileListCustomDrawItem(TCustomListView *Sender, TListItem *Item, TCustomDrawState State, bool &DefaultDraw);
   void __fastcall QueueFileListResize(TObject *Sender);
+  void __fastcall MessageDockRequestDock(TObject *Sender, TTBCustomDockableWindow *Bar, bool &Accept);
 
 private:
   TManagedTerminal * FTerminal;
@@ -353,6 +355,8 @@ private:
   void __fastcall UpdateQueueFileList();
   void __fastcall QueueFileListColumnAutoSize();
   void __fastcall AdjustQueueLayout();
+  void __fastcall StoreTransitionCloseClick(TObject * Sender);
+  void __fastcall StoreTransitionLinkClick(TObject * Sender);
 
 protected:
   TOperationSide FCurrentSide;
@@ -650,6 +654,7 @@ protected:
   bool __fastcall CanCommandLineFromAnotherInstance();
   void __fastcall SetQueueProgress();
   void __fastcall UpdateQueueLabel();
+  void CheckStoreTransition();
   void __fastcall SetTaskbarListProgressState(TBPFLAG Flags);
   void __fastcall SetTaskbarListProgressValue(int Progress);
   void __fastcall SetTaskbarListProgressValue(TFileOperationProgressType * ProgressData);

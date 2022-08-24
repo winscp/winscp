@@ -70,5 +70,6 @@
 #define HELP_CLOSE_SESSION_WORKSPACE "workspace"
 #define HELP_ADD_EXTENSION           "ui_pref_commands#extensions"
 #define HELP_TOO_MANY_SESSIONS       "ui_sessiontabs"
+#define HELP_STORE_TRANSITION        "microsoft_store#transitioning"
 
 #endif // TextsWin

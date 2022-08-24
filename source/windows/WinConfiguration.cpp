@@ -622,6 +622,7 @@ void __fastcall TWinConfiguration::Default()
   TimeoutShellIconRetrieval = false;
   UseIconUpdateThread = true;
   AllowWindowPrint = false;
+  StoreTransition = stInit;
 
   FEditor.Font.FontName = DefaultFixedWidthFontName;
   FEditor.Font.FontSize = DefaultFixedWidthFontSize;
@@ -1070,6 +1071,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     TimeoutShellIconRetrieval); \
     KEY(Bool,     UseIconUpdateThread); \
     KEY(Bool,     AllowWindowPrint); \
+    KEY(Integer,  StoreTransition); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
     KEYEX(String,   Editor.Font.FontName, L"FontName2"); \
@@ -2734,6 +2736,11 @@ void __fastcall TWinConfiguration::SetUseIconUpdateThread(bool value)
 void __fastcall TWinConfiguration::SetAllowWindowPrint(bool value)
 {
   SET_CONFIG_PROPERTY(AllowWindowPrint);
+}
+//---------------------------------------------------------------------------
+void TWinConfiguration::SetStoreTransition(TStoreTransition value)
+{
+  SET_CONFIG_PROPERTY(StoreTransition);
 }
 //---------------------------------------------------------------------------
 TStringList * __fastcall TWinConfiguration::LoadJumpList(
