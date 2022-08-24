@@ -408,7 +408,7 @@ void __fastcall TCopyDialog::FormShow(TObject * /*Sender*/)
 
   InstallPathWordBreakProc(RemoteDirectoryEdit);
   InstallPathWordBreakProc(LocalDirectoryEdit);
-  // Does not work when set from a contructor
+  // Does not work when set from a constructor
   ShortCutHintPanel->Color = Application->HintColor;
 }
 //---------------------------------------------------------------------------
