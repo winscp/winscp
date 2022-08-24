@@ -1108,6 +1108,8 @@ inherited ScpExplorerForm: TScpExplorerForm
       Width = 442
       Height = 71
       inherited RemoteDirView: TUnixDirView
+        Width = 442
+        Height = 71
         OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
         OnPathChange = RemoteDirViewPathChange
       end
@@ -1115,6 +1117,9 @@ inherited ScpExplorerForm: TScpExplorerForm
     inherited RemoteDrivePanel: TPanel
       Height = 71
       Constraints.MinWidth = 40
+      inherited RemoteDriveView: TUnixDriveView
+        Height = 71
+      end
     end
     object BottomDock: TTBXDock
       Left = 0
