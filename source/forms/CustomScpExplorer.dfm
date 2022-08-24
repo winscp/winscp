@@ -36,9 +36,9 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   end
   object RemotePanel: TPanel
     Left = 0
-    Top = 30
+    Top = 39
     Width = 620
-    Height = 259
+    Height = 250
     Align = alClient
     BevelOuter = bvNone
     Color = clWindow
@@ -47,7 +47,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     object RemotePanelSplitter: TSplitter
       Left = 169
       Top = 0
-      Height = 240
+      Height = 231
       Cursor = crSizeWE
       AutoSnap = False
       MinSize = 70
@@ -55,7 +55,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     end
     object RemoteStatusBar: TTBXStatusBar
       Left = 0
-      Top = 240
+      Top = 231
       Width = 620
       Height = 19
       Panels = <>
@@ -69,7 +69,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       Left = 172
       Top = 0
       Width = 448
-      Height = 240
+      Height = 231
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 1
@@ -77,7 +77,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         Left = 0
         Top = 0
         Width = 448
-        Height = 240
+        Height = 231
         Align = alClient
         DoubleBuffered = True
         FullDrag = True
@@ -139,7 +139,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       Left = 0
       Top = 0
       Width = 169
-      Height = 240
+      Height = 231
       Align = alLeft
       BevelOuter = bvNone
       TabOrder = 2
@@ -147,7 +147,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         Left = 0
         Top = 0
         Width = 169
-        Height = 240
+        Height = 231
         DirView = RemoteDirView
         OnDDDragFileName = RemoteFileControlDDDragFileName
         OnDDEnd = RemoteFileControlDDEnd
@@ -376,7 +376,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   end
   object SessionsPageControl: TThemePageControl
     Left = 0
-    Top = 9
+    Top = 18
     Width = 620
     Height = 21
     ActivePage = TabSheet1
@@ -398,6 +398,17 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     object TabSheet1: TThemeTabSheet
       Caption = 'TabSheet1'
     end
+  end
+  object MessageDock: TTBXDock
+    Tag = 1
+    Left = 0
+    Top = 9
+    Width = 620
+    Height = 9
+    AllowDrag = False
+    FixAlign = True
+    Visible = False
+    OnRequestDock = MessageDockRequestDock
   end
   object ApplicationEvents: TApplicationEvents
     OnDeactivate = ApplicationEventsDeactivate

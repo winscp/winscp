@@ -351,6 +351,7 @@ enum TSessionTabNameFormat { stnfNone, stnfShortPath, stnfShortPathTrunc };
 // constants must be compatible with legacy CopyOnDoubleClick
 enum TDoubleClickAction { dcaOpen = 0, dcaCopy = 1, dcaEdit = 2 };
 enum TResolvedDoubleClickAction { rdcaNone, rdcaChangeDir, rdcaOpen, rdcaCopy, rdcaEdit };
+enum TStoreTransition { stInit, stStandard, stStoreFresh, stStoreMigrated, stStoreAcknowledged };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TMasterPasswordPromptEvent)();
 //---------------------------------------------------------------------------
@@ -470,6 +471,7 @@ private:
   bool FTimeoutShellIconRetrieval;
   bool FUseIconUpdateThread;
   bool FAllowWindowPrint;
+  TStoreTransition FStoreTransition;
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
   bool FMasterPasswordSessionAsked;
@@ -586,6 +588,7 @@ private:
   void __fastcall SetTimeoutShellIconRetrieval(bool value);
   void __fastcall SetUseIconUpdateThread(bool value);
   void __fastcall SetAllowWindowPrint(bool value);
+  void SetStoreTransition(TStoreTransition value);
   int __fastcall GetLocaleCompletenessTreshold();
 
   bool __fastcall GetDDExtInstalled();
@@ -784,6 +787,7 @@ public:
   __property bool TimeoutShellIconRetrieval = { read = FTimeoutShellIconRetrieval, write = SetTimeoutShellIconRetrieval };
   __property bool UseIconUpdateThread = { read = FUseIconUpdateThread, write = SetUseIconUpdateThread };
   __property bool AllowWindowPrint = { read = FAllowWindowPrint, write = SetAllowWindowPrint };
+  __property TStoreTransition StoreTransition = { read = FStoreTransition, write = SetStoreTransition };
   __property LCID DefaultLocale = { read = FDefaultLocale };
   __property int LocaleCompletenessTreshold = { read = GetLocaleCompletenessTreshold };
 };

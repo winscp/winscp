@@ -306,6 +306,9 @@
 #define USAGE_STDOUT            1592
 #define USAGE_STDIN             1593
 #define QUEUE_DELETING          1594
+#define STORE_MIGRATION_THANKS  1595
+#define STORE_MIGRATION_LEARN   1596
+#define MESSAGE_DISMISS         1597
 
 #define WIN_FORMS_STRINGS       1600
 #define COPY_FILE               1605

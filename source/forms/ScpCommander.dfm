@@ -11,9 +11,9 @@ inherited ScpCommanderForm: TScpCommanderForm
   TextHeight = 13
   object Splitter: TSplitter [0]
     Left = 435
-    Top = 177
+    Top = 186
     Width = 5
-    Height = 298
+    Height = 289
     Cursor = crSizeWE
     Hint = 
       '|Drag to change ratio of file panels. Double click to make width' +
@@ -1069,9 +1069,9 @@ inherited ScpCommanderForm: TScpCommanderForm
   end
   inherited RemotePanel: TPanel
     Left = 440
-    Top = 177
+    Top = 186
     Width = 458
-    Height = 298
+    Height = 289
     Constraints.MinHeight = 220
     Constraints.MinWidth = 185
     ParentColor = True
@@ -1104,7 +1104,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Align = alTop
     end
     inherited RemoteStatusBar: TTBXStatusBar
-      Top = 279
+      Top = 270
       Width = 458
       Panels = <
         item
@@ -1140,11 +1140,11 @@ inherited ScpCommanderForm: TScpCommanderForm
       Left = 0
       Top = 146
       Width = 458
-      Height = 124
+      Height = 115
       Constraints.MinHeight = 70
       inherited RemoteDirView: TUnixDirView
         Width = 280
-        Height = 124
+        Height = 115
         NortonLike = nlOn
         OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
         PathLabel = RemotePathLabel
@@ -1160,7 +1160,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Left = 280
         Top = 0
         Width = 178
-        Height = 124
+        Height = 115
         Align = alRight
         Constraints.MinHeight = 70
         DoubleBuffered = True
@@ -1431,7 +1431,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object RemoteBottomDock: TTBXDock
       Left = 0
-      Top = 270
+      Top = 261
       Width = 458
       Height = 9
       FixAlign = True
@@ -1465,14 +1465,14 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
   end
   inherited SessionsPageControl: TThemePageControl
-    Top = 156
+    Top = 165
     Width = 898
   end
   object LocalPanel: TPanel [6]
     Left = 0
-    Top = 177
+    Top = 186
     Width = 435
-    Height = 298
+    Height = 289
     Align = alLeft
     BevelOuter = bvNone
     Constraints.MinHeight = 220
@@ -1512,7 +1512,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalStatusBar: TTBXStatusBar
       Left = 0
-      Top = 279
+      Top = 270
       Width = 435
       Height = 19
       Panels = <
@@ -1553,7 +1553,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Left = 0
       Top = 146
       Width = 435
-      Height = 124
+      Height = 115
       Align = alClient
       Constraints.MinHeight = 70
       DoubleBuffered = True
@@ -1804,7 +1804,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalBottomDock: TTBXDock
       Left = 0
-      Top = 270
+      Top = 261
       Width = 435
       Height = 9
       FixAlign = True
@@ -1944,6 +1944,10 @@ inherited ScpCommanderForm: TScpCommanderForm
     BevelEdges = [beBottom]
     BevelKind = bkFlat
     TabOrder = 7
+  end
+  inherited MessageDock: TTBXDock
+    Top = 156
+    Width = 898
   end
   inherited ApplicationEvents: TApplicationEvents
     Left = 72

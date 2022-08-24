@@ -311,6 +311,9 @@ BEGIN
         USAGE_STDOUT, "Allows streaming files to stdout (and redirects status output to stderr)"
         USAGE_STDIN, "Allows streaming files from stdin"
         QUEUE_DELETING, "Deleting..."
+        STORE_MIGRATION_THANKS, "Thanks for buying WinSCP."
+        STORE_MIGRATION_LEARN, "Learn about transitioning from classic installation."
+        MESSAGE_DISMISS, "Dismiss"
 
         WIN_FORMS_STRINGS, "WIN_FORMS_STRINGS"
         COPY_FILE, "%s file '%s' to %s:"
