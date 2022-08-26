@@ -982,7 +982,7 @@ void TCustomScpExplorerForm::CheckStoreTransition()
     AppLog(L"Standard installation migrated to store installation");
   }
 
-  if (WinConfiguration->StoreTransition == stStoreMigrated)
+  if ((WinConfiguration->StoreTransition == stStoreMigrated) && WinConfiguration->ExperimentalFeatures)
   {
     TTBXToolbar * Toolbar = new TTBXToolbar(MessageDock);
     Toolbar->Parent = MessageDock;
