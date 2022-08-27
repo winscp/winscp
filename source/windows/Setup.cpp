@@ -2817,7 +2817,3 @@ int ComRegistration(TConsole * Console)
   }
   return Result;
 }
-  #pragma warn -inl
-  #pragma warn .inl
-  #pragma warn -inl
-  #pragma warn .inl
