@@ -939,7 +939,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
       {
         if (Updates.Period == TDateTime(0))
         {
-          Updates.Period = 7;
+          Updates.Period = DefaultUpdatesPeriod;
         }
       }
       else

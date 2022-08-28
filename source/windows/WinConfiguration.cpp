@@ -30,6 +30,7 @@ TWinConfiguration * WinConfiguration = NULL;
 static UnicodeString NotepadName(L"notepad.exe");
 static UnicodeString ToolbarsLayoutKey(L"ToolbarsLayout2");
 static UnicodeString ToolbarsLayoutOldKey(L"ToolbarsLayout");
+TDateTime DefaultUpdatesPeriod(7);
 //---------------------------------------------------------------------------
 static const wchar_t FileColorDataSeparator = L':';
 TFileColorData::TFileColorData() :
@@ -625,6 +626,7 @@ void __fastcall TWinConfiguration::Default()
   UseIconUpdateThread = true;
   AllowWindowPrint = false;
   StoreTransition = stInit;
+  FirstRun = StandardDatestamp();
 
   FEditor.Font.FontName = DefaultFixedWidthFontName;
   FEditor.Font.FontSize = DefaultFixedWidthFontSize;
@@ -1078,6 +1080,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     UseIconUpdateThread); \
     KEY(Bool,     AllowWindowPrint); \
     KEY(Integer,  StoreTransition); \
+    KEY(String,   FirstRun); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
     KEYEX(String,   Editor.Font.FontName, L"FontName2"); \
@@ -2761,6 +2764,11 @@ void __fastcall TWinConfiguration::SetAllowWindowPrint(bool value)
 void TWinConfiguration::SetStoreTransition(TStoreTransition value)
 {
   SET_CONFIG_PROPERTY(StoreTransition);
+}
+//---------------------------------------------------------------------------
+void TWinConfiguration::SetFirstRun(const UnicodeString & value)
+{
+  SET_CONFIG_PROPERTY(FirstRun);
 }
 //---------------------------------------------------------------------------
 TStringList * __fastcall TWinConfiguration::LoadJumpList(

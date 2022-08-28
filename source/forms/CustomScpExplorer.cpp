@@ -999,6 +999,7 @@ void TCustomScpExplorerForm::CheckStoreTransition()
   else if ((WinConfiguration->StoreTransition == stStandard) && IsUWP())
   {
     WinConfiguration->StoreTransition = stStoreMigrated;
+    WinConfiguration->FirstRun = WinConfiguration->FirstRun + L"=>" + StandardDatestamp();
     AppLog(L"Standard installation migrated to store installation");
   }
 
@@ -9148,40 +9149,59 @@ void __fastcall TCustomScpExplorerForm::StartUpdates()
   // first run after installation
   if (double(Updates.LastCheck) == 0)
   {
+    AppLog(L"First run, scheduling updates check for the next run");
     // make sure next time there will be an update (if enabled)
     Updates.LastCheck = TDateTime(1);
     WinConfiguration->Updates = Updates;
   }
-  else if ((double(Updates.Period) > 0) &&
-           (Now() - Updates.LastCheck >= Updates.Period))
+  else
   {
-    TThreadMethod OnUpdatesChecked = NULL;
-    if (!IsUWP())
+    TDateTime Period;
+    if (IsUWP() && !IsOfficialPackage())
     {
-      OnUpdatesChecked = UpdatesChecked;
+      Period = DefaultUpdatesPeriod;
+      AppLog(L"Thirdparty UWP package, using default updates check period");
     }
-    StartUpdateThread(OnUpdatesChecked);
+    else
+    {
+      Period = Updates.Period;
+    }
+    AppLogFmt(L"Updates check period: %.2f", (double(Period)));
+    if (double(Period) > 0)
+    {
+      TDateTime Interval = Now() - Updates.LastCheck;
+      AppLogFmt(L"Interval since the last updates check: %.2f", (double(Interval)));
+      if (Interval >= Period)
+      {
+        StartUpdateThread(UpdatesChecked);
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdatesChecked()
 {
+  AppLog(L"Updates check done");
   UnicodeString Message;
   bool New;
   TQueryType Type;
   GetUpdatesMessage(Message, New, Type, false);
   if (!Message.IsEmpty())
   {
+    AppLogFmt(L"Updates check message: %s", (Message));
     if (New)
     {
+      AppLog(L"New version detected");
       Message = FMTLOAD(NEW_VERSION_CLICK, (Message));
     }
     if (!New && (Type != qtWarning))
     {
+      AppLog(L"Posting non-critical updates note");
       PostNote(UnformatMessage(Message), 0, UpdatesNoteClicked, NULL);
     }
     else
     {
+      AppLog(L"Posting new version or critical message notification");
       Notify(NULL, Message, Type, true, UpdatesNoteClicked);
     }
 

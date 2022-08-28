@@ -210,6 +210,7 @@ struct TUpdatesData
 };
 //---------------------------------------------------------------------------
 enum TConnectionType { ctDirect, ctAuto, ctProxy };
+extern TDateTime DefaultUpdatesPeriod;
 //---------------------------------------------------------------------------
 struct TUpdatesConfiguration
 {
@@ -472,6 +473,7 @@ private:
   bool FUseIconUpdateThread;
   bool FAllowWindowPrint;
   TStoreTransition FStoreTransition;
+  UnicodeString FFirstRun;
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
   bool FMasterPasswordSessionAsked;
@@ -589,6 +591,7 @@ private:
   void __fastcall SetUseIconUpdateThread(bool value);
   void __fastcall SetAllowWindowPrint(bool value);
   void SetStoreTransition(TStoreTransition value);
+  void SetFirstRun(const UnicodeString & value);
   int __fastcall GetLocaleCompletenessTreshold();
 
   bool __fastcall GetDDExtInstalled();
@@ -788,6 +791,7 @@ public:
   __property bool UseIconUpdateThread = { read = FUseIconUpdateThread, write = SetUseIconUpdateThread };
   __property bool AllowWindowPrint = { read = FAllowWindowPrint, write = SetAllowWindowPrint };
   __property TStoreTransition StoreTransition = { read = FStoreTransition, write = SetStoreTransition };
+  __property UnicodeString FirstRun = { read = FFirstRun, write = SetFirstRun };
   __property LCID DefaultLocale = { read = FDefaultLocale };
   __property int LocaleCompletenessTreshold = { read = GetLocaleCompletenessTreshold };
 };
