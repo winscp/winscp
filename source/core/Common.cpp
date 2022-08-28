@@ -17,6 +17,7 @@
 #include <tlhelp32.h>
 #include <psapi.h>
 #include <CoreMain.h>
+#include <SessionInfo.h>
 #include <openssl/pkcs12.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
@@ -38,6 +39,7 @@ const wchar_t TokenReplacement = wchar_t(true);
 const UnicodeString LocalInvalidChars(TraceInitStr(L"/\\:*?\"<>|"));
 const UnicodeString PasswordMask(TraceInitStr(L"***"));
 const UnicodeString Ellipsis(TraceInitStr(L"..."));
+const UnicodeString OfficialPackage(TraceInitStr(L"MartinPikryl.WinSCP_tvv458r3h9r5m"));
 //---------------------------------------------------------------------------
 UnicodeString ReplaceChar(UnicodeString Str, wchar_t A, wchar_t B)
 {
@@ -3052,6 +3054,7 @@ static void NeedUWPData()
         (GetCurrentPackageFamilyName(&NameLen, NULL) == ERROR_INSUFFICIENT_BUFFER))
     {
       GIsUWP = 1;
+      AppLog(L"Is UWP application");
       GPackageName.SetLength(NameLen);
       if (GetCurrentPackageFamilyName(&NameLen, GPackageName.c_str()) == ERROR_SUCCESS)
       {
@@ -3061,6 +3064,11 @@ static void NeedUWPData()
       {
         GPackageName = L"err";
       }
+      AppLogFmt(L"Package name: %s", (GPackageName));
+    }
+    else
+    {
+      AppLog(L"Is not UWP application");
     }
   }
 }
@@ -3075,6 +3083,11 @@ UnicodeString GetPackageName()
 {
   NeedUWPData();
   return GPackageName;
+}
+//---------------------------------------------------------------------------
+bool IsOfficialPackage()
+{
+  return (GetPackageName() == OfficialPackage);
 }
 //---------------------------------------------------------------------------
 LCID __fastcall GetDefaultLCID()

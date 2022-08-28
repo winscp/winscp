@@ -145,6 +145,7 @@ bool IsWin11();
 bool __fastcall IsWine();
 bool __fastcall IsUWP();
 UnicodeString GetPackageName();
+bool IsOfficialPackage();
 TLibModule * __fastcall FindModule(void * Instance);
 __int64 __fastcall Round(double Number);
 bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, bool Add);
