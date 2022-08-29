@@ -173,6 +173,7 @@ protected:
   void __fastcall EMStreamIn(TMessage & Message);
   bool __stdcall StreamLoad(TRichEditStreamInfo * StreamInfo,
     unsigned char * Buff, long Read, long & WasRead);
+  DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
 
 private:
   HINSTANCE FLibrary;
@@ -570,6 +571,30 @@ bool __fastcall TEditorRichEdit::LoadFromStream(TStream * Stream, TEncoding * En
     EncodingError = FStreamLoadEncodingError;
   }
   return !FStreamLoadError;
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorRichEdit::KeyDown(Word & Key, TShiftState Shift)
+{
+  if ((// Block Center/Left/Justify alignment (Right alignment is overriden by the Reload command)
+       (Key == L'E') || (Key == L'L') || (Key == L'J') ||
+       // Line spacing
+       (Key == L'1') || (Key == L'2') || (Key == L'5')
+      ) &&
+      Shift.Contains(ssCtrl) && !Shift.Contains(ssAlt) && !Shift.Contains(ssShift))
+  {
+    Key = 0;
+  }
+  // Fiddle bullet style
+  if ((Key == L'L') && Shift.Contains(ssCtrl) && Shift.Contains(ssShift) && !Shift.Contains(ssAlt))
+  {
+    Key = 0;
+  }
+  // Superscript/Subscript (depending on the ssShift => +/=)
+  if ((Key == VK_OEM_PLUS) && Shift.Contains(ssCtrl) && !Shift.Contains(ssAlt))
+  {
+    Key = 0;
+  }
+  TNewRichEdit::KeyDown(Key, Shift);
 }
 //---------------------------------------------------------------------------
 class TFindDialogEx : public TFindDialog
