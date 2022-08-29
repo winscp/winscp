@@ -8958,7 +8958,13 @@ void __fastcall TCustomScpExplorerForm::StartUpdates()
       AppLogFmt(L"Interval since the last updates check: %.2f", (double(Interval)));
       if (Interval >= Period)
       {
-        StartUpdateThread(UpdatesChecked);
+        TThreadMethod OnUpdatesChecked = NULL;
+        if (WinConfiguration->ExperimentalFeatures)
+        {
+          AppLog(L"Experimental features enabled, will process updates check results");
+          OnUpdatesChecked = UpdatesChecked;
+        }
+        StartUpdateThread(OnUpdatesChecked);
       }
     }
   }
