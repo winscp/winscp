@@ -3068,7 +3068,7 @@ void __fastcall TPreferencesDialog::CustomIniFileStorageEditExit(TObject * /*Sen
   }
   else
   {
-    // Reset the value to prevent accidental overwide of an INI file, in case the dialog cancel does not complete
+    // Reset the value to prevent accidental overwrite of an INI file, in case the dialog cancel does not complete
     CustomIniFileStorageEdit->Text = FCustomIniFileStorageName;
   }
 }
@@ -3086,7 +3086,7 @@ void __fastcall TPreferencesDialog::CustomIniFileStorageEditAfterDialog(TObject 
 void __fastcall TPreferencesDialog::CustomIniFileStorageButtonClick(TObject * /*Sender*/)
 {
   UpdateControls();
-  // Handler is shown also when Checked is set from LoadConfiguration
+  // Handler is called also when Checked is set from LoadConfiguration
   if (FNoUpdate == 0)
   {
     // Focus to force validation
