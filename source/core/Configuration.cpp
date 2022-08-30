@@ -1279,7 +1279,7 @@ UnicodeString __fastcall TConfiguration::GetIniFileStorageName(bool ReadingOnly)
   }
   else if (!FCustomIniFileStorageName.IsEmpty())
   {
-    Result = FCustomIniFileStorageName;
+    Result = ExpandEnvironmentVariables(FCustomIniFileStorageName);
   }
   else
   {
@@ -1342,6 +1342,7 @@ void __fastcall TConfiguration::MoveStorage(TStorage AStorage, const UnicodeStri
 {
   if ((FStorage != AStorage) ||
       ((FStorage == stIniFile) && !FIniFileStorageName.IsEmpty()) ||
+      // Not expanding, as we want to allow change from explicit path to path with variables and vice versa
       !IsPathToSameFile(FCustomIniFileStorageName, ACustomIniFileStorageName))
   {
     TStorage StorageBak = FStorage;

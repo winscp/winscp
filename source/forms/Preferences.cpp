@@ -3027,11 +3027,13 @@ UnicodeString __fastcall TPreferencesDialog::GetCustomIniFileStorageName()
 void __fastcall TPreferencesDialog::CustomIniFileStorageChanged()
 {
   UnicodeString CustomIniFileStorageName = GetCustomIniFileStorageName();
+  UnicodeString CustomIniFileStorageNameExpanded = ExpandEnvironmentVariables(CustomIniFileStorageName);
   if (!CustomIniFileStorageName.IsEmpty() &&
+      // Not expanding, as we want to allow change from explicit path to path with variables and vice versa
       !IsPathToSameFile(CustomIniFileStorageName, FCustomIniFileStorageName) &&
-      FileExists(CustomIniFileStorageName))
+      FileExists(CustomIniFileStorageNameExpanded))
   {
-    UnicodeString Message = FORMAT(LoadStrPart(CUSTOM_INI_FILE_OVERWRITE, 1), (CustomIniFileStorageName));
+    UnicodeString Message = FORMAT(LoadStrPart(CUSTOM_INI_FILE_OVERWRITE, 1), (CustomIniFileStorageNameExpanded));
     TMessageParams Params;
     TQueryButtonAlias Aliases[2];
     Aliases[0].Button = qaYes;
@@ -3048,7 +3050,7 @@ void __fastcall TPreferencesDialog::CustomIniFileStorageChanged()
     else if (Result == qaNo)
     {
       // Similar to TLoginDialog::ImportActionExecute
-      Configuration->ScheduleCustomIniFileStorageUse(GetCustomIniFileStorageName());
+      Configuration->ScheduleCustomIniFileStorageUse(CustomIniFileStorageName);
       ExecuteSelf(EmptyStr);
       TerminateApplication();
     }
