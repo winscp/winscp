@@ -189,6 +189,10 @@ void __fastcall THierarchicalStorage::ConfigureForPutty()
 //---------------------------------------------------------------------------
 bool __fastcall THierarchicalStorage::OpenRootKey(bool CanCreate)
 {
+  // This do not seem to be doing what it advertises.
+  // It probably "works" only when used as a first "Open". So let's verify that by this assertion.
+  DebugAssert(CurrentSubKey.IsEmpty());
+
   return OpenSubKey(UnicodeString(), CanCreate);
 }
 //---------------------------------------------------------------------------
@@ -1150,15 +1154,6 @@ bool __fastcall TCustomIniFileStorage::DoOpenSubKey(const UnicodeString & SubKey
     CanCreate ||
     DoKeyExistsInternal(SubKey);
   return Result;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TCustomIniFileStorage::OpenRootKey(bool CanCreate)
-{
-  // Not supported with master storage.
-  // Actually currently, we use OpenRootKey with TRegistryStorage only.
-  DebugAssert(FMasterStorage.get() == NULL);
-
-  return THierarchicalStorage::OpenRootKey(CanCreate);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomIniFileStorage::OpenSubKey(const UnicodeString & Key, bool CanCreate)
