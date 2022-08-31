@@ -3139,6 +3139,18 @@ void __fastcall TSessionData::SetPublicKeyFile(UnicodeString value)
   }
 }
 //---------------------------------------------------------------------
+UnicodeString TSessionData::ResolvePublicKeyFile()
+{
+  UnicodeString Result = PublicKeyFile;
+  if (Result.IsEmpty())
+  {
+    Result = Configuration->DefaultKeyFile;
+  }
+  // StripPathQuotes should not be needed as we do not feed quotes anymore
+  Result = StripPathQuotes(::ExpandEnvironmentVariables(Result));
+  return Result;
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetPassphrase(UnicodeString avalue)
 {
   RawByteString value = EncryptPassword(avalue, PublicKeyFile);

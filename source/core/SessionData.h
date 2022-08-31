@@ -528,6 +528,7 @@ public:
   bool __fastcall HasSessionName();
   bool HasAutoCredentials();
   int GetDefaultPort();
+  UnicodeString ResolvePublicKeyFile();
 
   UnicodeString __fastcall GenerateOpenCommandArgs(bool Rtf);
   void __fastcall GenerateAssemblyCode(TAssemblyLanguage Language, UnicodeString & Head, UnicodeString & Tail, int & Indent);

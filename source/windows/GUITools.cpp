@@ -351,9 +351,10 @@ void OpenSessionInPutty(TSessionData * SessionData)
 
         if (!Telnet)
         {
-          if (!SessionData->PublicKeyFile.IsEmpty())
+          UnicodeString PublicKeyFile = SessionData->ResolvePublicKeyFile();
+          if (!PublicKeyFile.IsEmpty())
           {
-            AddToList(PuttyParams, FORMAT(L"-i \"%s\"", (SessionData->PublicKeyFile)), L" ");
+            AddToList(PuttyParams, FORMAT(L"-i \"%s\"", (PublicKeyFile)), L" ");
           }
           AddToList(PuttyParams, (SessionData->TryAgent ? L"-agent" : L"-noagent"), L" ");
           if (SessionData->TryAgent)
