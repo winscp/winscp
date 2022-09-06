@@ -5304,7 +5304,7 @@ void __fastcall TSFTPFileSystem::Sink(
           ResumeTransfer = !PartialBiggerThanSource;
           if (!ResumeTransfer)
           {
-            FTerminal->LogEvent(L"Partially transferred file is bigger that original file.");
+            FTerminal->LogEvent(L"Partially transferred file is bigger than original file.");
           }
         }
 
