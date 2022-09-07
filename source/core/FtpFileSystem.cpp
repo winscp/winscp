@@ -3155,7 +3155,7 @@ UnicodeString __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned i
         }
 
         bool RetryTransfer = false;
-        if (FLastCode == 425)
+        if ((FLastCode == 425) || (FLastCode == 426))
         {
           if (FAnyTransferSucceeded)
           {
