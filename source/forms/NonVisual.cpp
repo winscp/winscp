@@ -302,7 +302,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(ForumPageAction, true)
   UPDACT(CheckForUpdatesAction, ShowUpdatesUpdate())
   UPD(UpdatesPreferencesAction, true)
-  UPD(DonatePageAction, true)
+  UPDEX1(DonatePageAction, true, DonatePageAction->Visible = !IsUWP())
   UPD(DownloadPageAction, true)
   UPDEX1(TipsAction, true, TipsAction->Visible = AnyTips())
 
