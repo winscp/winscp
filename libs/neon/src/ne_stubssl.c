@@ -102,7 +102,7 @@ void ne_ssl_context_set_flag(ne_ssl_context *ctx, int flag, int value) {}
 
 void ne_ssl_context_destroy(ne_ssl_context *ctx) {}
 
-int ne_ssl_cert_digest(const ne_ssl_certificate *cert, char digest[60])
+int ne_ssl_cert_digest(const ne_ssl_certificate *cert, char *digest)
 {
     return -1;
 }

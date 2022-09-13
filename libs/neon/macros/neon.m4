@@ -137,7 +137,7 @@ AC_DEFUN([NE_VERSIONS_BUNDLED], [
 # Define the current versions.
 NE_VERSION_MAJOR=0
 NE_VERSION_MINOR=32
-NE_VERSION_PATCH=2
+NE_VERSION_PATCH=4
 NE_VERSION_TAG=
 
 # 0.32.x is backwards-compatible to 0.27.x, so AGE=5
@@ -658,7 +658,7 @@ NE_LARGEFILE
 AC_REPLACE_FUNCS(strcasecmp)
 
 AC_CHECK_FUNCS([signal setvbuf setsockopt stpcpy poll fcntl getsockopt \
-                explicit_bzero sendmsg])
+                explicit_bzero sendmsg gettimeofday])
 
 if test "x${ac_cv_func_poll}${ac_cv_header_sys_poll_h}y" = "xyesyesy"; then
   AC_DEFINE([NE_USE_POLL], 1, [Define if poll() should be used])
@@ -901,8 +901,8 @@ AC_DEFUN([NE_PKG_CONFIG], [
 
 m4_define([ne_cvar], m4_translit(ne_cv_pkg_[$2], [.-], [__]))dnl
 
-AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
-if test "$PKG_CONFIG" = "no"; then
+AC_PATH_TOOL(PKG_CONFIG, pkg-config, no)
+if test "x$PKG_CONFIG" = "xno"; then
    : Not using pkg-config
    $4
 else
@@ -1034,6 +1034,7 @@ gnutls)
                   gnutls_certificate_get_x509_cas \
                   gnutls_x509_crt_sign2 \
                   gnutls_certificate_set_retrieve_function2 \
+                  gnutls_certificate_set_x509_system_trust \
                   gnutls_privkey_import_ext])
 
    # fail if gnutls_x509_crt_sign2 is not found (it was introduced in 1.2.0, which is required)

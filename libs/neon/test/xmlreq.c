@@ -75,8 +75,7 @@ static int success(void)
     
     ne_xml_destroy(parser);
     ne_request_destroy(req);
-    ne_session_destroy(sess);
-    return await_server();
+    return destroy_and_wait(sess);
 }
 
 static int failure(void)
@@ -105,8 +104,7 @@ static int failure(void)
 
     ne_xml_destroy(parser);
     ne_request_destroy(req);
-    ne_session_destroy(sess);
-    return await_server();
+    return destroy_and_wait(sess);
 }
 
 static int types(void)

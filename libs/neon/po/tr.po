@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: sitecopy-0.10.10\n"
 "Report-Msgid-Bugs-To: neon@lists.manyfish.co.uk\n"
-"POT-Creation-Date: 2021-09-20 10:49+0100\n"
+"POT-Creation-Date: 2022-09-11 08:33+0100\n"
 "PO-Revision-Date: 2001-01-03 HO:MI+ZONE\n"
 "Last-Translator: A. Sinan Unur <sinan@unur.com>\n"
 "Language-Team: tr\n"
@@ -25,131 +25,131 @@ msgstr ""
 "Invalid HTTP status line in status element at line %d of response:\n"
 "Status line was: %s"
 
-#: src/ne_auth.c:165
+#: src/ne_auth.c:151
 #, fuzzy, c-format
 msgid "Could not authenticate to server: %s"
 msgstr "Sunucuyla baðlantý kurulamadý"
 
-#: src/ne_auth.c:170
+#: src/ne_auth.c:156
 #, fuzzy, c-format
 msgid "Could not authenticate to proxy server: %s"
 msgstr "Ara sunucuyla baðlantý kurulamadý"
 
-#: src/ne_auth.c:428
+#: src/ne_auth.c:410
 #, c-format
 msgid "rejected %s challenge"
 msgstr ""
 
-#: src/ne_auth.c:469
+#: src/ne_auth.c:451
 msgid "missing realm in Basic challenge"
 msgstr ""
 
-#: src/ne_auth.c:483
+#: src/ne_auth.c:465
 msgid "cannot handle Basic challenge for username containing colon"
 msgstr ""
 
-#: src/ne_auth.c:588
+#: src/ne_auth.c:570
 msgid "invalid Negotiate token"
 msgstr ""
 
-#: src/ne_auth.c:611
+#: src/ne_auth.c:593
 msgid "GSSAPI authentication error: "
 msgstr ""
 
-#: src/ne_auth.c:624
+#: src/ne_auth.c:606
 #, c-format
 msgid "GSSAPI failure (code %u)"
 msgstr ""
 
-#: src/ne_auth.c:659
+#: src/ne_auth.c:641
 msgid "ignoring empty Negotiate continuation"
 msgstr ""
 
-#: src/ne_auth.c:674
+#: src/ne_auth.c:656
 #, c-format
 msgid "Negotiate response verification failed: invalid response header token"
 msgstr ""
 
-#: src/ne_auth.c:696
+#: src/ne_auth.c:678
 #, c-format
 msgid "Negotiate response verification failure: %s"
 msgstr ""
 
-#: src/ne_auth.c:760
+#: src/ne_auth.c:742
 #, c-format
 msgid "SSPI response verification failed: invalid response header token"
 msgstr ""
 
-#: src/ne_auth.c:918
+#: src/ne_auth.c:928
 #, fuzzy
 msgid "could not handle non-ASCII username in Digest challenge"
 msgstr "Parça boyutu anlaþýlamadý"
 
-#: src/ne_auth.c:947
+#: src/ne_auth.c:956
 msgid "unknown algorithm in Digest challenge"
 msgstr ""
 
-#: src/ne_auth.c:951
-msgid "incompatible algorithm in Digest challenge"
-msgstr ""
-
-#: src/ne_auth.c:955
-msgid "missing parameter in Digest challenge"
-msgstr ""
-
-#: src/ne_auth.c:959
-msgid "initial Digest challenge was stale"
-msgstr ""
-
-#: src/ne_auth.c:966
-msgid "stale Digest challenge with new algorithm or realm"
-msgstr ""
-
-#: src/ne_auth.c:971
+#: src/ne_auth.c:963
 msgid "legacy Digest challenge not supported"
 msgstr ""
 
-#: src/ne_auth.c:979
+#: src/ne_auth.c:967
+msgid "incompatible algorithm in Digest challenge"
+msgstr ""
+
+#: src/ne_auth.c:971
+msgid "missing parameter in Digest challenge"
+msgstr ""
+
+#: src/ne_auth.c:975
+msgid "initial Digest challenge was stale"
+msgstr ""
+
+#: src/ne_auth.c:982
+msgid "stale Digest challenge with new algorithm or realm"
+msgstr ""
+
+#: src/ne_auth.c:989
 #, c-format
 msgid "%s algorithm in Digest challenge not supported"
 msgstr ""
 
-#: src/ne_auth.c:993
+#: src/ne_auth.c:1003
 #, fuzzy
 msgid "could not parse domain in Digest challenge"
 msgstr "Parça boyutu anlaþýlamadý"
 
-#: src/ne_auth.c:1272
+#: src/ne_auth.c:1281
 #, c-format
 msgid "Digest mutual authentication failure: missing parameters"
 msgstr ""
 
-#: src/ne_auth.c:1277
+#: src/ne_auth.c:1286
 #, c-format
 msgid "Digest mutual authentication failure: client nonce mismatch"
 msgstr ""
 
-#: src/ne_auth.c:1287
+#: src/ne_auth.c:1296
 #, c-format
 msgid "Digest mutual authentication failure: could not parse nonce count"
 msgstr ""
 
-#: src/ne_auth.c:1292
+#: src/ne_auth.c:1301
 #, c-format
 msgid "Digest mutual authentication failure: nonce count mismatch (%u not %u)"
 msgstr ""
 
-#: src/ne_auth.c:1319
+#: src/ne_auth.c:1328
 #, c-format
 msgid "Digest mutual authentication failure: request-digest mismatch"
 msgstr ""
 
-#: src/ne_auth.c:1457
+#: src/ne_auth.c:1466
 #, c-format
 msgid "ignored %s challenge"
 msgstr ""
 
-#: src/ne_auth.c:1562
+#: src/ne_auth.c:1563
 #, fuzzy
 msgid "could not parse challenge"
 msgstr "Parça boyutu anlaþýlamadý"
@@ -212,7 +212,7 @@ msgstr ""
 msgid "unrecognized errors (%u)"
 msgstr ""
 
-#: src/ne_gnutls.c:952 src/ne_openssl.c:483
+#: src/ne_gnutls.c:952 src/ne_openssl.c:484
 #, c-format
 msgid "Server certificate was missing commonName attribute in subject name"
 msgstr ""
@@ -222,17 +222,17 @@ msgstr ""
 msgid "Could not verify server certificate: %s"
 msgstr "%s dosyasýna yazým yapýlamadý"
 
-#: src/ne_gnutls.c:985 src/ne_openssl.c:470
+#: src/ne_gnutls.c:985 src/ne_openssl.c:471
 #, c-format
 msgid "Certificate verification error: %s"
 msgstr ""
 
-#: src/ne_gnutls.c:1018 src/ne_openssl.c:719
+#: src/ne_gnutls.c:1018 src/ne_openssl.c:720
 #, c-format
 msgid "SSL handshake failed, client certificate was requested: %s"
 msgstr ""
 
-#: src/ne_gnutls.c:1023 src/ne_openssl.c:724
+#: src/ne_gnutls.c:1023 src/ne_openssl.c:725
 #, fuzzy, c-format
 msgid "SSL handshake failed: %s"
 msgstr "%s dosyasýna yazým yapýlamadý"
@@ -256,7 +256,7 @@ msgstr ""
 msgid "No activelock for <%s> returned in LOCK refresh response"
 msgstr ""
 
-#: src/ne_openssl.c:744
+#: src/ne_openssl.c:745
 #, c-format
 msgid "SSL server did not present certificate"
 msgstr ""
@@ -503,32 +503,32 @@ msgstr "Sunucu bulunamadý"
 msgid "Connection timed out"
 msgstr "%s: baðlantý bekleme sýnýrý aþýldý."
 
-#: src/ne_socket.c:1530
+#: src/ne_socket.c:1536
 msgid "Socket descriptor number exceeds FD_SETSIZE"
 msgstr ""
 
-#: src/ne_socket.c:1592
+#: src/ne_socket.c:1598
 msgid "Socket family not supported"
 msgstr ""
 
-#: src/ne_socket.c:1823
+#: src/ne_socket.c:1835
 msgid "Client certificate verification failed"
 msgstr ""
 
-#: src/ne_socket.c:1839
+#: src/ne_socket.c:1851
 msgid "SSL disabled due to lack of entropy"
 msgstr ""
 
-#: src/ne_socket.c:1845
+#: src/ne_socket.c:1857
 #, fuzzy
 msgid "Could not create SSL structure"
 msgstr "SSL baðlantýsý kurulamadý"
 
-#: src/ne_socket.c:2017
+#: src/ne_socket.c:2029
 msgid "Missing flags for socket shutdown"
 msgstr ""
 
-#: src/ne_socket.c:2035 src/ne_socket.c:2046 src/ne_socket.c:2061
+#: src/ne_socket.c:2047 src/ne_socket.c:2058 src/ne_socket.c:2073
 msgid "Incomplete TLS closure"
 msgstr ""
 
