@@ -82,6 +82,9 @@ clean:
 	rm -f $(NEON_TARGET) *.o *.lo *.bbg *.bb *.gc*
 	rm -rf .libs
 
+mktable: mktable.lo
+	$(LINK) -o $@ mktable.lo
+
 c++.c:
 	find . -name ne_\*.h -print | sed 's/.*/#include "&"/;/ne_priv/d' > $@
 	echo "int main(void) {}" >> $@

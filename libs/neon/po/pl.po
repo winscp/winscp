@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Neon 0.30.0\n"
 "Report-Msgid-Bugs-To: neon@lists.manyfish.co.uk\n"
-"POT-Creation-Date: 2021-09-20 10:49+0100\n"
+"POT-Creation-Date: 2022-09-11 08:33+0100\n"
 "PO-Revision-Date: 2009-09-04 02:00+0200\n"
 "Last-Translator: Arfrever Frehtes Taifersar Arahesis <Arfrever.FTA@gmail."
 "com>\n"
@@ -27,142 +27,142 @@ msgstr ""
 "Niewłaściwa linia statusu HTTP w elemencie statusu w linii %d odpowiedzi:\n"
 "Linia statusu była: %s"
 
-#: src/ne_auth.c:165
+#: src/ne_auth.c:151
 #, c-format
 msgid "Could not authenticate to server: %s"
 msgstr "Nie można autentykować się do serwera: %s"
 
-#: src/ne_auth.c:170
+#: src/ne_auth.c:156
 #, c-format
 msgid "Could not authenticate to proxy server: %s"
 msgstr "Nie można autentykować się do serwera proxy: %s"
 
-#: src/ne_auth.c:428
+#: src/ne_auth.c:410
 #, c-format
 msgid "rejected %s challenge"
 msgstr "odrzucone wezwanie %s"
 
-#: src/ne_auth.c:469
+#: src/ne_auth.c:451
 msgid "missing realm in Basic challenge"
 msgstr "brakująca domena w wezwaniu Basic"
 
-#: src/ne_auth.c:483
+#: src/ne_auth.c:465
 msgid "cannot handle Basic challenge for username containing colon"
 msgstr ""
 
-#: src/ne_auth.c:588
+#: src/ne_auth.c:570
 msgid "invalid Negotiate token"
 msgstr "niewłaściwy żeton Negotiate"
 
-#: src/ne_auth.c:611
+#: src/ne_auth.c:593
 msgid "GSSAPI authentication error: "
 msgstr "Błąd autentykacji GSSAPI: "
 
-#: src/ne_auth.c:624
+#: src/ne_auth.c:606
 #, c-format
 msgid "GSSAPI failure (code %u)"
 msgstr "Porażka GSSAPI (kod %u)"
 
-#: src/ne_auth.c:659
+#: src/ne_auth.c:641
 msgid "ignoring empty Negotiate continuation"
 msgstr "ignorowanie pustej kontynuacji Negotiate"
 
-#: src/ne_auth.c:674
+#: src/ne_auth.c:656
 #, c-format
 msgid "Negotiate response verification failed: invalid response header token"
 msgstr ""
 "weryfikacja odpowiedzi Negotiate nie udała się: niewłaściwy żeton nagłówka "
 "odpowiedzi"
 
-#: src/ne_auth.c:696
+#: src/ne_auth.c:678
 #, c-format
 msgid "Negotiate response verification failure: %s"
 msgstr "porażka weryfikacji odpowiedzi Negotiate: %s"
 
-#: src/ne_auth.c:760
+#: src/ne_auth.c:742
 #, fuzzy, c-format
 msgid "SSPI response verification failed: invalid response header token"
 msgstr ""
 "weryfikacja odpowiedzi Negotiate nie udała się: niewłaściwy żeton nagłówka "
 "odpowiedzi"
 
-#: src/ne_auth.c:918
+#: src/ne_auth.c:928
 #, fuzzy
 msgid "could not handle non-ASCII username in Digest challenge"
 msgstr "nie można parsować domeny w wezwaniu Digest"
 
-#: src/ne_auth.c:947
+#: src/ne_auth.c:956
 msgid "unknown algorithm in Digest challenge"
 msgstr "nieznany algorytm w wezwaniu Digest"
 
-#: src/ne_auth.c:951
-msgid "incompatible algorithm in Digest challenge"
-msgstr "niekompatybilny algorytm w wezwaniu Digest"
-
-#: src/ne_auth.c:955
-msgid "missing parameter in Digest challenge"
-msgstr "brakujący parametr w wezwaniu Digest"
-
-#: src/ne_auth.c:959
-msgid "initial Digest challenge was stale"
-msgstr "początkowe wezwanie Digest było nieaktualne"
-
-#: src/ne_auth.c:966
-msgid "stale Digest challenge with new algorithm or realm"
-msgstr "nieaktualne wezwanie Digest z nowym algorytmem lub domeną"
-
-#: src/ne_auth.c:971
+#: src/ne_auth.c:963
 #, fuzzy
 msgid "legacy Digest challenge not supported"
 msgstr "początkowe wezwanie Digest było nieaktualne"
 
-#: src/ne_auth.c:979
+#: src/ne_auth.c:967
+msgid "incompatible algorithm in Digest challenge"
+msgstr "niekompatybilny algorytm w wezwaniu Digest"
+
+#: src/ne_auth.c:971
+msgid "missing parameter in Digest challenge"
+msgstr "brakujący parametr w wezwaniu Digest"
+
+#: src/ne_auth.c:975
+msgid "initial Digest challenge was stale"
+msgstr "początkowe wezwanie Digest było nieaktualne"
+
+#: src/ne_auth.c:982
+msgid "stale Digest challenge with new algorithm or realm"
+msgstr "nieaktualne wezwanie Digest z nowym algorytmem lub domeną"
+
+#: src/ne_auth.c:989
 #, fuzzy, c-format
 msgid "%s algorithm in Digest challenge not supported"
 msgstr "nieznany algorytm w wezwaniu Digest"
 
-#: src/ne_auth.c:993
+#: src/ne_auth.c:1003
 msgid "could not parse domain in Digest challenge"
 msgstr "nie można parsować domeny w wezwaniu Digest"
 
-#: src/ne_auth.c:1272
+#: src/ne_auth.c:1281
 #, c-format
 msgid "Digest mutual authentication failure: missing parameters"
 msgstr "Porażka wzajemnego uwierzytelniania Digest: brakujące parametry"
 
-#: src/ne_auth.c:1277
+#: src/ne_auth.c:1286
 #, c-format
 msgid "Digest mutual authentication failure: client nonce mismatch"
 msgstr ""
 "Porażka wzajemnego uwierzytelniania Digest: niezgodność posłańca klienta"
 
-#: src/ne_auth.c:1287
+#: src/ne_auth.c:1296
 #, c-format
 msgid "Digest mutual authentication failure: could not parse nonce count"
 msgstr ""
 "Porażka wzajemnego uwierzytelniania Digest: nie można parsować licznika "
 "posłańca"
 
-#: src/ne_auth.c:1292
+#: src/ne_auth.c:1301
 #, c-format
 msgid "Digest mutual authentication failure: nonce count mismatch (%u not %u)"
 msgstr ""
 "Porażka wzajemnego uwierzytelniania Digest: niezgodność licznika posłańca "
 "(%u nie %u)"
 
-#: src/ne_auth.c:1319
+#: src/ne_auth.c:1328
 #, c-format
 msgid "Digest mutual authentication failure: request-digest mismatch"
 msgstr ""
 "Porażka wzajemnego uwierzytelniania Digest: niezgodność request-digest "
 "mismatch"
 
-#: src/ne_auth.c:1457
+#: src/ne_auth.c:1466
 #, c-format
 msgid "ignored %s challenge"
 msgstr "wezwanie %s zignorowane"
 
-#: src/ne_auth.c:1562
+#: src/ne_auth.c:1563
 msgid "could not parse challenge"
 msgstr "nie można parsować wezwania"
 
@@ -222,7 +222,7 @@ msgstr "podpisane przy użyciu niebezpiecznego algorytmu"
 msgid "unrecognized errors (%u)"
 msgstr "nierozpoznane błędy (%u)"
 
-#: src/ne_gnutls.c:952 src/ne_openssl.c:483
+#: src/ne_gnutls.c:952 src/ne_openssl.c:484
 #, c-format
 msgid "Server certificate was missing commonName attribute in subject name"
 msgstr "Certyfikat serwera nie posiada atrybutu commonName w nazwie tematu"
@@ -232,17 +232,17 @@ msgstr "Certyfikat serwera nie posiada atrybutu commonName w nazwie tematu"
 msgid "Could not verify server certificate: %s"
 msgstr "Nie można zweryfikować certyfikatu serwera: %s"
 
-#: src/ne_gnutls.c:985 src/ne_openssl.c:470
+#: src/ne_gnutls.c:985 src/ne_openssl.c:471
 #, c-format
 msgid "Certificate verification error: %s"
 msgstr "Błąd weryfikacji certyfikatu: %s"
 
-#: src/ne_gnutls.c:1018 src/ne_openssl.c:719
+#: src/ne_gnutls.c:1018 src/ne_openssl.c:720
 #, c-format
 msgid "SSL handshake failed, client certificate was requested: %s"
 msgstr "Uzgodnienie SSL nie udało się, certyfikat klienta został zażądany: %s"
 
-#: src/ne_gnutls.c:1023 src/ne_openssl.c:724
+#: src/ne_gnutls.c:1023 src/ne_openssl.c:725
 #, c-format
 msgid "SSL handshake failed: %s"
 msgstr "Uzgodnienie SSL nie udało się: %s"
@@ -267,7 +267,7 @@ msgid "No activelock for <%s> returned in LOCK refresh response"
 msgstr ""
 "Nie zwrócono żadnej aktywnej blokady dla <%s> w odpowiedzi LOCK refresh"
 
-#: src/ne_openssl.c:744
+#: src/ne_openssl.c:745
 #, c-format
 msgid "SSL server did not present certificate"
 msgstr "Serwer SSL nie przedstawił certyfikatu"
@@ -509,31 +509,31 @@ msgstr "Host nieznaleziony"
 msgid "Connection timed out"
 msgstr "Czas połączenia się skończył"
 
-#: src/ne_socket.c:1530
+#: src/ne_socket.c:1536
 msgid "Socket descriptor number exceeds FD_SETSIZE"
 msgstr "Numer deskryptoru gniazda przekracza FD_SETSIZE"
 
-#: src/ne_socket.c:1592
+#: src/ne_socket.c:1598
 msgid "Socket family not supported"
 msgstr "Rodzina gniazda niewspierana"
 
-#: src/ne_socket.c:1823
+#: src/ne_socket.c:1835
 msgid "Client certificate verification failed"
 msgstr "Weryfikacja certyfikatu klienta nie powiodła się"
 
-#: src/ne_socket.c:1839
+#: src/ne_socket.c:1851
 msgid "SSL disabled due to lack of entropy"
 msgstr "SSL wyłączone z powodu braku entropii"
 
-#: src/ne_socket.c:1845
+#: src/ne_socket.c:1857
 msgid "Could not create SSL structure"
 msgstr "Nie można utworzyć struktury SSL"
 
-#: src/ne_socket.c:2017
+#: src/ne_socket.c:2029
 msgid "Missing flags for socket shutdown"
 msgstr ""
 
-#: src/ne_socket.c:2035 src/ne_socket.c:2046 src/ne_socket.c:2061
+#: src/ne_socket.c:2047 src/ne_socket.c:2058 src/ne_socket.c:2073
 msgid "Incomplete TLS closure"
 msgstr ""
 
