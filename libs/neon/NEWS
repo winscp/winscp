@@ -1,3 +1,16 @@
+Changes in release 0.32.4:
+* Fix Digest regression in allowing implicit algorithm= (issue #88)
+* Fix Digest to safely allow spaces in usernames (without userhash)
+* ne_ssl_trust_default_ca() now uses the system's trusted CAs
+  with GnuTLS where supported (matching behaviour of OpenSSL)
+
+Changes in release 0.32.3:
+* Improvements and fixes to Windows build (Chun-wei Fan)
+* Fix finding pkg-config when cross-compiling (Hugh McMaster)
+* Fix Digest cnonce entropy sources in non-SSL builds
+* Fix cases where Digest usernames were rejected as non-ASCII
+* Fix build failures with OpenSSL 1.1 on some platforms
+
 Changes in release 0.32.2:
 * Fix auth handling for request-target of "*" (regressed since 0.31.x)
 * Fix bindtextdomain() detection on OS X (Daniel Macks)

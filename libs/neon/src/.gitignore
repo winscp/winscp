@@ -15,4 +15,4 @@ checkincl.c
 *.bbg
 *.[is]
 *.gc*
-
+mktable

@@ -1084,6 +1084,10 @@ void ne_ssl_trust_default_ca(ne_session *sess)
     gnutls_certificate_set_x509_trust_file(sess->ssl_context->cred,
                                            NE_SSL_CA_BUNDLE,
                                            GNUTLS_X509_FMT_PEM);
+#elif defined(HAVE_GNUTLS_CERTIFICATE_SET_X509_SYSTEM_TRUST)
+    int rv = gnutls_certificate_set_x509_system_trust(sess->ssl_context->cred);
+
+    NE_DEBUG(NE_DBG_SSL, "ssl: System certificates trusted (%d)\n", rv);
 #endif
 }
 

@@ -758,6 +758,7 @@ static int strparam(void)
         const char *expect;
     } ts[] = {
         { "UTF-8", NULL, "foobar", NULL },
+        { "UTF-8", NULL, "foo12345bar", NULL },
         { "UTF-8", NULL, "foo@bar", "UTF-8''foo%40bar" },
         { "UTF-8", NULL, "foo bar", "UTF-8''foo%20bar" },
         { "iso-8859-1", "en", "\xA3 rates", "iso-8859-1'en'%a3%20rates" },
@@ -770,7 +771,8 @@ static int strparam(void)
         char *act = ne_strparam(ts[n].charset, ts[n].lang, (const unsigned char *)ts[n].value);
 
         if (ts[n].expect == NULL) {
-            ONV(act != NULL, ("expected NULL output for '%s'", ts[n].value));
+            ONV(act != NULL, ("expected NULL output for '%s', got '%s'",
+                              ts[n].value, act));
         }
         else {
             ONCMP(act, ts[n].expect);

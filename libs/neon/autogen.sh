@@ -12,7 +12,7 @@ if test ! -f .version; then
 fi
 set -e
 printf  "libtoolize... "
-LIBTOOLIZE=${LIBTOOLIZE:-`which libtoolize || which glibtoolize`}
+: "${LIBTOOLIZE:="$(command -v libtoolize || command -v glibtoolize)"}"
 if ${LIBTOOLIZE} --help | grep -- --install > /dev/null; then
    ${LIBTOOLIZE} --copy --force --install >/dev/null;
 else

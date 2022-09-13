@@ -99,11 +99,9 @@ static int check_redir(struct redir_args *args, const char *expect)
     ONV(strcmp(unp, expect), ("redirected to `%s' not `%s'", unp, expect));
     ne_free(unp);
 
-    ne_session_destroy(sess);
-    CALL(await_server());
     if (full_expect) ne_free(full_expect);
 
-    return OK;
+    return destroy_and_wait(sess);
 }
 
 #define DEST "http://foo.com/blah/blah/bar"
@@ -191,10 +189,8 @@ static int no_redirect(void)
     ONN("redirect non-NULL after non-redir req", ne_redirect_location(sess));
 
     CALL(process_redir(sess, "/foo", &loc));
-    CALL(await_server());
 
-    ne_session_destroy(sess);
-    return OK;
+    return destroy_and_wait(sess);
 }
 
 ne_test tests[] = {
