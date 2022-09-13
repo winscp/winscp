@@ -25,7 +25,7 @@
 
 #ifdef WIN32
 
-#define NEON_VERSION "0.32.1"
+#define NEON_VERSION "0.32.4"
 #define NE_VERSION_MAJOR (0)
 #define NE_VERSION_MINOR (32)
 
@@ -44,8 +44,13 @@
 /* Define to enable debugging */
 #define NE_DEBUGGING 1
 
+#ifdef _WIN64
+#define NE_FMT_SIZE_T "I64u"
+#define NE_FMT_SSIZE_T "I64d"
+#else
 #define NE_FMT_SIZE_T "u"
 #define NE_FMT_SSIZE_T "d"
+#endif
 #define NE_FMT_OFF_T "ld"
 #define NE_FMT_OFF64_T "I64d"
 #define NE_FMT_NE_OFF_T NE_FMT_OFF_T
@@ -54,12 +59,14 @@
 #define NE_FMT_XML_SIZE "d"
 #endif
 
-/* needs adjusting for Win64... */
 #define SIZEOF_INT 4
 #define SIZEOF_LONG 4
 
 /* Win32 uses a underscore, so we use a macro to eliminate that. */
+/* VS2015 has this already defined */
+#if (_MSC_VER < 1900)
 #define snprintf			_snprintf
+#endif
 /* VS2008 has this already defined */
 #if (_MSC_VER < 1500)
 #define vsnprintf			_vsnprintf
@@ -74,12 +81,22 @@
 #endif
 #if defined(_MSC_VER) && _MSC_VER >= 1300
 #define HAVE_STRTOLL
+/* VS2013 has this already defined */
+#if _MSC_VER < 1800
 #define strtoll				_strtoi64
 #endif
+#endif
 #ifndef __BORLANDC__
+#ifdef _WIN64
+#define ssize_t				__int64
+#else
 #define ssize_t				int
 #endif
+#endif
+/* VS2015 has this already defined */
+#if defined (_MSC_VER) && (_MSC_VER < 1900)
 #define inline                          __inline
+#endif
 #if defined(NE_LFS)
 #ifdef __BORLANDC__
 #define lseek64				_lseeki64
@@ -100,6 +117,7 @@
 
 // WINSCP
 #define HAVE_CRYPTO_SET_IDPTR_CALLBACK
+#define NE_FMT_TIME_T "ld"
 
 typedef int socklen_t;
 
