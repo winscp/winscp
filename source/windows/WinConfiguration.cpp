@@ -697,8 +697,8 @@ void __fastcall TWinConfiguration::Default()
        "Preferences=1:TopDock:4+0,"
        "Sort=0:TopDock:5+0,"
        "Address=1:TopDock:1+0,"
-       "Updates=1:TopDock:4+416,"
-       "Transfer=1:TopDock:4+194,"
+       "Updates=1:TopDock:4+393,"
+       "Transfer=1:TopDock:4+171,"
        "CustomCommands=0:TopDock:7+0,") +
     PixelsPerInchToolbarValue;
   FScpExplorer.ToolbarsButtons = UnicodeString();
@@ -729,8 +729,8 @@ void __fastcall TWinConfiguration::Default()
        "Session=0:TopDock:1+602,"
        "Sort=0:TopDock:2+0,"
        "Commands=1:TopDock:1+0,"
-       "Updates=1:TopDock:1+619,"
-       "Transfer=1:TopDock:1+364,"
+       "Updates=1:TopDock:1+596,"
+       "Transfer=1:TopDock:1+341,"
        "CustomCommands=0:TopDock:3+0,"
        "RemoteHistory=1:RemoteTopDock:0+172,"
        "RemoteNavigation=1:RemoteTopDock:0+252,"
