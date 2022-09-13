@@ -5244,6 +5244,7 @@ void TCustomScpExplorerForm::DoOpenFolderOrWorkspace(
 {
   TTerminalManager * Manager = TTerminalManager::Instance();
   std::unique_ptr<TObjectList> DataList(new TObjectList());
+  // This asks for a master password. Maybe we should postpone asking until a connection is actually opened.
   StoredSessions->GetFolderOrWorkspace(Name, DataList.get());
   if (!CheckMaxSessions || (DataList->Count <= WinConfiguration->MaxSessions))
   {
