@@ -273,9 +273,9 @@ void TWebDAVFileSystem::NeonClientOpenSessionInternal(UnicodeString & CorrectedU
     FSessionInfo.CSCipher = EmptyStr;
     FSessionInfo.SCCipher = EmptyStr;
 
-    UTF8String Path;
+    UTF8String Path, DiscardQuery;
     DebugAssert(FSessionContext == NULL);
-    FSessionContext = NeonOpen(Url, Path);
+    FSessionContext = NeonOpen(Url, Path, DiscardQuery);
 
     bool Ssl = IsTlsSession(FSessionContext->NeonSession);
     FSessionInfo.SecurityProtocolName = Ssl ? LoadStr(FTPS_IMPLICIT) : EmptyStr;
@@ -335,7 +335,7 @@ void __fastcall TWebDAVFileSystem::InitSession(TSessionContext * SessionContext,
   ne_set_session_flag(Session, NE_SESSFLAG_LIBERAL_ESCAPING, Data->WebDavLiberalEscaping || FOneDrive);
 }
 //---------------------------------------------------------------------------
-TWebDAVFileSystem::TSessionContext * TWebDAVFileSystem::NeonOpen(const UnicodeString & Url, UTF8String & Path)
+TWebDAVFileSystem::TSessionContext * TWebDAVFileSystem::NeonOpen(const UnicodeString & Url, UTF8String & Path, UTF8String & Query)
 {
   ne_uri uri;
   NeonParseUrl(Url, uri);
@@ -350,6 +350,7 @@ TWebDAVFileSystem::TSessionContext * TWebDAVFileSystem::NeonOpen(const UnicodeSt
   InitSession(Result.get(), Result->NeonSession);
 
   Path = uri.path;
+  Query = uri.query;
   bool Ssl = IsTlsUri(uri);
   ne_uri_free(&uri);
   ne_set_aux_request_init(Result->NeonSession, NeonAuxRequestInit, Result.get());
@@ -1772,9 +1773,14 @@ void __fastcall TWebDAVFileSystem::Sink(
       if (IsValidRedirect(NeonStatus, DiscardPath))
       {
         UnicodeString CorrectedUrl = GetRedirectUrl();
-        UTF8String CorrectedFileName;
-        std::unique_ptr<TSessionContext> CorrectedSessionContext(NeonOpen(CorrectedUrl, CorrectedFileName));
-        NeonStatus = ne_get(CorrectedSessionContext->NeonSession, CorrectedFileName.c_str(), FD);
+        UTF8String CorrectedFileName, Query;
+        std::unique_ptr<TSessionContext> CorrectedSessionContext(NeonOpen(CorrectedUrl, CorrectedFileName, Query));
+        UTF8String RedirectUrl = CorrectedFileName;
+        if (!Query.IsEmpty())
+        {
+          RedirectUrl += L"?" + Query;
+        }
+        NeonStatus = ne_get(CorrectedSessionContext->NeonSession, RedirectUrl.c_str(), FD);
         CheckStatus(CorrectedSessionContext.get(), NeonStatus);
       }
       else
