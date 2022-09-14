@@ -14,7 +14,7 @@ THttp * __fastcall CreateHttp();
 void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New, TQueryType & Type, bool Force);
 bool __fastcall CheckForUpdates(bool CachedResults);
 bool __fastcall QueryUpdates(TUpdatesConfiguration & Updates);
-UnicodeString __fastcall FormatUpdatesMessage(const UnicodeString & Message, const TUpdatesConfiguration & Updates);
+void FormatUpdatesMessage(UnicodeString & UpdatesMessage, const UnicodeString & AMessage, const TUpdatesConfiguration & Updates);
 void __fastcall EnableAutomaticUpdates();
 void __fastcall RegisterForDefaultProtocols();
 void __fastcall UnregisterForProtocols();

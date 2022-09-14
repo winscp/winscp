@@ -2554,10 +2554,10 @@ void __fastcall TPreferencesDialog::UpdatesAuthenticationEmailEditExit(TObject *
           QueryUpdates(Updates);
         }
 
-        UnicodeString AuthenticationError = Updates.Results.AuthenticationError;
-        if (!AuthenticationError.IsEmpty())
+        if (!Updates.Results.AuthenticationError.IsEmpty())
         {
-          AuthenticationError = FormatUpdatesMessage(AuthenticationError, Updates);
+          UnicodeString AuthenticationError;
+          FormatUpdatesMessage(AuthenticationError, Updates.Results.AuthenticationError, Updates);
           if (HasParagraphs(AuthenticationError))
           {
             AuthenticationError = MainInstructionsFirstParagraph(AuthenticationError);
