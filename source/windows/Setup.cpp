@@ -1124,7 +1124,8 @@ static void __fastcall DoQueryUpdates(bool CollectUsage)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall FormatUpdatesMessage(const UnicodeString & AMessage, const TUpdatesConfiguration & Updates)
+void FormatUpdatesMessage(
+  UnicodeString & UpdatesMessage, const UnicodeString & AMessage, const TUpdatesConfiguration & Updates)
 {
   UnicodeString Message = AMessage;
   Message = ReplaceStr(Message, "%UPDATE_UNAUTHORIZED%", LoadStr(UPDATE_UNAUTHORIZED));
@@ -1138,7 +1139,16 @@ UnicodeString __fastcall FormatUpdatesMessage(const UnicodeString & AMessage, co
   Message = ReplaceStr(Message, "%UPDATE_MISSING_ADDRESS%", Buf);
   Message = ReplaceStr(Message, "%UPDATE_TOO_LOW%", LoadStr(UPDATE_TOO_LOW));
   Message = ReplaceStr(Message, L"|", L"\n");
-  return Message;
+
+  if (!Message.IsEmpty())
+  {
+    UpdatesMessage = TrimRight(UpdatesMessage);
+    if (!UpdatesMessage.IsEmpty())
+    {
+      UpdatesMessage += L"\n \n";
+    }
+    UpdatesMessage += Message;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New,
@@ -1188,14 +1198,12 @@ void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New,
 
     if (!Updates.Results.Message.IsEmpty())
     {
-      Message +=
-        FMTLOAD(UPDATE_MESSAGE, (FormatUpdatesMessage(Updates.Results.Message, Updates)));
+      FormatUpdatesMessage(Message, Updates.Results.Message, Updates);
     }
 
     if (!Updates.Results.AuthenticationError.IsEmpty() && !IsUWP())
     {
-      Message +=
-        FMTLOAD(UPDATE_MESSAGE, (FormatUpdatesMessage(Updates.Results.AuthenticationError, Updates)));
+      FormatUpdatesMessage(Message, Updates.Results.AuthenticationError, Updates);
     }
     Type = (Updates.Results.Critical ? qtWarning : qtInformation);
   }
