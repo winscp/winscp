@@ -1029,7 +1029,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   // Windows XP (not sure about Vista) does not support Hair space.
   // For Windows XP, we still keep the existing hack by using hard-coded spaces
   // in resource string
-  if (CheckWin32Version(6, 1))
+  if (IsWin7())
   {
     // Have to be padding with spaces (the smallest space defined, hair space = 1px),
     // as tabs actually do not tab, just expand to 8 spaces.
