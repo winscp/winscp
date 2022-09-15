@@ -1660,20 +1660,27 @@ void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Enable)
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::UpdatePortFwdSocket(SOCKET value, bool Enable)
 {
-  if (Configuration->ActualLogProtocol >= 2)
+  if (value != INVALID_SOCKET)
   {
-    LogEvent(FORMAT(L"Updating forwarding socket %d (%d)", (int(value), int(Enable))));
-  }
+    if (Configuration->ActualLogProtocol >= 2)
+    {
+      LogEvent(FORMAT(L"Updating forwarding socket %d (%d)", (int(value), int(Enable))));
+    }
 
-  SocketEventSelect(value, FSocketEvent, Enable);
+    SocketEventSelect(value, FSocketEvent, Enable);
 
-  if (Enable)
-  {
-    FPortFwdSockets.insert(value);
+    if (Enable)
+    {
+      FPortFwdSockets.insert(value);
+    }
+    else
+    {
+      FPortFwdSockets.erase(value);
+    }
   }
   else
   {
-    FPortFwdSockets.erase(value);
+    DebugAssert(FSessionData->AgentFwd);
   }
 }
 //---------------------------------------------------------------------------

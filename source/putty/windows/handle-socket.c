@@ -400,6 +400,7 @@ Socket *make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
     hs->send_H = send_H;
     hs->send_h = handle_output_new(callback_set, hs->send_H, handle_sentdata, hs, flags); // WINSCP
     hs->stderr_H = stderr_H;
+    hs->stderr_h = NULL; // WINSCP
     if (hs->stderr_H)
         hs->stderr_h = handle_input_new(callback_set, hs->stderr_H, handle_stderr, // WINSCP
                                         hs, flags);
