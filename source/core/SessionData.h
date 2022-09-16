@@ -494,6 +494,7 @@ public:
     const TSessionData * Default = NULL);
   void __fastcall SaveRecryptedPasswords(THierarchicalStorage * Storage);
   void __fastcall RecryptPasswords();
+  void ReadPasswordsFromFiles();
   bool __fastcall HasPassword();
   bool __fastcall HasAnySessionPassword();
   bool __fastcall HasAnyPassword();
