@@ -1194,6 +1194,11 @@ bool __fastcall TCustomIniFileStorage::OpenSubKey(const UnicodeString & Key, boo
 //---------------------------------------------------------------------------
 void __fastcall TCustomIniFileStorage::DoCloseSubKey()
 {
+  // noop
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomIniFileStorage::CloseSubKey()
+{
   // What we are called to restore previous key from OpenSubKey,
   // when opening path component fails, the master storage was not involved yet
   if (!FOpeningSubKey && (FMasterStorage.get() != NULL))
@@ -1207,6 +1212,8 @@ void __fastcall TCustomIniFileStorage::DoCloseSubKey()
       FMasterStorage->CloseSubKey();
     }
   }
+
+  THierarchicalStorage::CloseSubKey();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomIniFileStorage::DoDeleteSubKey(const UnicodeString & SubKey)
@@ -1575,6 +1582,37 @@ UnicodeString __fastcall TCustomIniFileStorage::DoReadRootAccessString()
   else
   {
     Result = DefaultAccessString;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+unsigned int __fastcall TCustomIniFileStorage::GetCurrentAccess()
+{
+  unsigned int Result;
+  // The way THierarchicalStorage::OpenSubKey is implemented, the access will be zero for non-existing keys in
+  // configuration overrides => delegating access handling to the master storage (which still should read overriden access keys)
+  if (FMasterStorage.get() != NULL)
+  {
+    Result = FMasterStorage->GetCurrentAccess();
+  }
+  else
+  {
+    Result = THierarchicalStorage::GetCurrentAccess();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomIniFileStorage::HasAccess(unsigned int Access)
+{
+  bool Result;
+  // Avoid the FFakeReadOnlyOpens assertion in THierarchicalStorage::HasAccess, which is not valid for overriden configuration
+  if (HandleByMasterStorage())
+  {
+    Result = FMasterStorage->HasAccess(Access);
+  }
+  else
+  {
+    Result = THierarchicalStorage::HasAccess(Access);
   }
   return Result;
 }

@@ -134,10 +134,10 @@ protected:
   size_t __fastcall BinaryDataSize(const UnicodeString & Name);
   UnicodeString __fastcall ReadAccessString();
   unsigned int __fastcall ReadAccess(unsigned int CurrentAccess);
-  inline bool __fastcall HasAccess(unsigned int Access);
+  virtual bool __fastcall HasAccess(unsigned int Access);
   inline bool __fastcall CanRead();
   inline bool __fastcall CanWrite();
-  unsigned int __fastcall GetCurrentAccess();
+  virtual unsigned int __fastcall GetCurrentAccess();
 };
 //---------------------------------------------------------------------------
 extern TIntMapping AutoSwitchMapping;
@@ -201,6 +201,7 @@ public:
   virtual __fastcall ~TCustomIniFileStorage();
 
   virtual bool __fastcall OpenSubKey(const UnicodeString & SubKey, bool CanCreate);
+  virtual void __fastcall CloseSubKey();
 
 private:
   UnicodeString __fastcall GetCurrentSection();
@@ -246,6 +247,8 @@ protected:
   virtual size_t __fastcall DoReadBinaryData(const UnicodeString & Name, void * Buffer, size_t Size);
 
   virtual UnicodeString __fastcall DoReadRootAccessString();
+  virtual unsigned int __fastcall GetCurrentAccess();
+  virtual bool __fastcall HasAccess(unsigned int Access);
 
   void __fastcall CacheSections();
   void __fastcall ResetCache();
