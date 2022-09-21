@@ -450,6 +450,7 @@ private:
   void __fastcall CopyStateData(TSessionData * SourceData);
   void __fastcall CopyNonCoreData(TSessionData * SourceData);
   UnicodeString __fastcall GetNormalizedPuttyProtocol() const;
+  void ReadPasswordsFromFiles();
   static RawByteString __fastcall EncryptPassword(const UnicodeString & Password, UnicodeString Key);
   static UnicodeString __fastcall DecryptPassword(const RawByteString & Password, UnicodeString Key);
   static RawByteString __fastcall StronglyRecryptPassword(const RawByteString & Password, UnicodeString Key);
@@ -498,7 +499,6 @@ public:
     const TSessionData * Default = NULL);
   void __fastcall SaveRecryptedPasswords(THierarchicalStorage * Storage);
   void __fastcall RecryptPasswords();
-  void ReadPasswordsFromFiles();
   bool __fastcall HasPassword();
   bool __fastcall HasAnySessionPassword();
   bool __fastcall HasAnyPassword();

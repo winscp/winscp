@@ -313,6 +313,7 @@ BEGIN
         STORE_MIGRATION_THANKS, "Thanks for buying WinSCP."
         STORE_MIGRATION_LEARN, "Learn about transitioning from classic installation."
         MESSAGE_DISMISS, "Dismiss"
+        USAGE_PASSWORDSFROMFILES, "Read all passwords from files"
 
         WIN_FORMS_STRINGS, "WIN_FORMS_STRINGS"
         COPY_FILE, "%s file '%s' to %s:"

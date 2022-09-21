@@ -2715,11 +2715,6 @@ void __fastcall TManagementScript::Connect(const UnicodeString Session,
 
     try
     {
-      if (Options->FindSwitch(L"passwordsfromfiles"))
-      {
-        Data->ReadPasswordsFromFiles();
-      }
-
       if (CheckParams)
       {
         if (Options->ParamCount > 1)

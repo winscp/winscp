@@ -2521,6 +2521,10 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
         ApplyRawSettings(RawSettings.get(), Unsafe);
       }
     }
+    if (Options->FindSwitch(PASSWORDSFROMFILES_SWITCH))
+    {
+      ReadPasswordsFromFiles();
+    }
   }
 
   return true;
