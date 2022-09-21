@@ -1902,7 +1902,8 @@ begin {CallBackValidateDir}
         SubDirList.Add(TNodeData(WorkNode.Data).DirName);
         WorkNode := Node.GetNextChild(WorkNode);
       end;
-      {Sorting not required, because the subnodes are already sorted!}
+      // Nodes are sorted using natural sorting, while TStringList.Find uses simple sorting
+      SubDirList.Sort;
 
       SRecList := TStringList.Create;
       SRecList.CaseSensitive := True;
@@ -1948,7 +1949,6 @@ begin {CallBackValidateDir}
             TNodeData(WorkNode.Data).ShortName := ExtractShortPathName(NodePathName(WorkNode));
             WorkNode.Text := SrecList[Index];
           end;
-          SrecList.Delete(Index);
           WorkNode := Node.GetNextChild(WorkNode);
         end;
       end;
@@ -2029,7 +2029,12 @@ begin
       SaveCanChange := FCanChange;
       FCanChange := True;
       FChangeFlag := False;
-      IterateSubTree(Node, CallBackValidateDir, Recurse, coScanStartNode, Info);
+      Items.BeginUpdate;
+      try
+        IterateSubTree(Node, CallBackValidateDir, Recurse, coScanStartNode, Info);
+      finally
+        Items.EndUpdate;
+      end;
       FValidateFlag := False;
       if (not Assigned(Selected)) and (Length(SelDir) > 0) then
         Directory := ExtractFileDrive(SelDir);
