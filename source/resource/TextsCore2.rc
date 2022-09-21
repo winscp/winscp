@@ -61,7 +61,7 @@ BEGIN
     "  Closes all sessions and terminates the program.\n"
     "alias:\n"
     "  bye\n"
-  SCRIPT_OPEN_HELP11,
+  SCRIPT_OPEN_HELP10,
     "open <site>\n"
     "open sftp|scp|ftp[es]|dav[s]|s3 :// [ <user> [ :password ] @ ] <host> [ :<port> ]\n"
     "  Establishes connection to given host. Use either name of the site or\n"
@@ -84,7 +84,6 @@ BEGIN
     "                     as in an INI file\n"
     "  -filezilla         Load <site> from FileZilla site manager\n"
     "  -newpassword=<password> Changes password to <password>\n"
-    "  -passwordsfromfiles Read all passwords from files\n"
     "examples:\n"
     "  open\n"
     "  open sftp://martin@example.com:2222 -privatekey=mykey.ppk\n"

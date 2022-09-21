@@ -1804,32 +1804,6 @@ void __fastcall TSessionData::RecryptPasswords()
   EncryptKey = EncryptKey;
 }
 //---------------------------------------------------------------------
-static UnicodeString ReadPasswordFromFile(const UnicodeString & FileName)
-{
-  UnicodeString Result = FileName;
-  if (!Result.IsEmpty())
-  {
-    std::unique_ptr<TStrings> Lines(new TStringList());
-    LoadScriptFromFile(Result, Lines.get());
-    if (Lines->Count > 0)
-    {
-      Result = Lines->Strings[0];
-    }
-  }
-  return Result;
-}
-//---------------------------------------------------------------------
-void TSessionData::ReadPasswordsFromFiles()
-{
-  Password = ReadPasswordFromFile(Password);
-  NewPassword = ReadPasswordFromFile(NewPassword);
-  ProxyPassword = ReadPasswordFromFile(ProxyPassword);
-  TunnelPassword = ReadPasswordFromFile(TunnelPassword);
-  TunnelPassphrase = ReadPasswordFromFile(TunnelPassphrase);
-  Passphrase = ReadPasswordFromFile(Passphrase);
-  EncryptKey = ReadPasswordFromFile(EncryptKey);
-}
-//---------------------------------------------------------------------
 bool __fastcall TSessionData::HasPassword()
 {
   return !FPassword.IsEmpty();
