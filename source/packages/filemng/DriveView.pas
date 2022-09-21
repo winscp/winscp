@@ -2074,7 +2074,7 @@ begin
       DiscMonitor.SetDirectory(DriveInfo.GetDriveRoot(Drive));
       DiscMonitor.Open;
     end;
-    UpdateDriveNotifications(Drive); // probably noop, as the monitor is not enabled yet
+    UpdateDriveNotifications(Drive);
   end;
 end; {CreateWatchThread}
 
