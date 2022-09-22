@@ -71,6 +71,9 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXItem41: TTBXItem
           Action = NonVisualDataModule.RemotePropertiesAction2
         end
+        object TBXItem61: TTBXItem
+          Action = NonVisualDataModule.CalculateDirectorySizesAction
+        end
         object TBXSeparatorItem8: TTBXSeparatorItem
         end
         object TBXItem30: TTBXSubmenuItem
