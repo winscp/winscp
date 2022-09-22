@@ -29,12 +29,12 @@ TCopyLocalDialog::TCopyLocalDialog(TComponent * Owner, bool Move, int Options)
   UnicodeString ImageName;
   if (!Move)
   {
-    ImageName = L"Upload File"; // TODO
+    ImageName = L"Duplicate L to R";
     ACaption = LoadStr(COPY_LOCAL_COPY_CAPTION);
   }
   else
   {
-    ImageName = L"Upload File Remove Original"; // TODO
+    ImageName = L"Move L to R";
     ACaption = LoadStr(COPY_LOCAL_MOVE_CAPTION);
   }
   Caption = ACaption;
