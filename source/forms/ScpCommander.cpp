@@ -2938,3 +2938,8 @@ UnicodeString TScpCommanderForm::GetNewTabHintDetails()
   }
   return Result;
 }
+//---------------------------------------------------------------------------
+bool TScpCommanderForm::SupportedSession(TSessionData *)
+{
+  return true;
+}

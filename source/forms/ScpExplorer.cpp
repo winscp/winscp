@@ -417,3 +417,7 @@ void __fastcall TScpExplorerForm::UpdateImages()
   UnixPathComboBox->SubMenuImages = ImageList;
 }
 //---------------------------------------------------------------------------
+bool TScpExplorerForm::SupportedSession(TSessionData * SessionData)
+{
+  return !SessionData->IsLocalBrowser;
+}

@@ -672,6 +672,7 @@ public:
   virtual int GetNewTabActionImageIndex();
   virtual int GetNewTabTabImageIndex(TOperationSide Side);
   virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
+  virtual bool SupportedSession(TSessionData * SessionData);
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

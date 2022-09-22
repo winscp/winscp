@@ -373,6 +373,7 @@ public:
   virtual void __fastcall ChangePath(TOperationSide Side);
   virtual void __fastcall GoToAddress();
   virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
+  virtual bool SupportedSession(TSessionData * SessionData);
 };
 //---------------------------------------------------------------------------
 #endif

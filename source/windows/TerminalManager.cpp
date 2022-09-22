@@ -243,18 +243,21 @@ TManagedTerminal * __fastcall TTerminalManager::NewSessions(TList * DataList)
   for (int Index = 0; Index < DataList->Count; Index++)
   {
     TSessionData * Data = reinterpret_cast<TSessionData *>(DataList->Items[Index]);
-    TManagedTerminal * Session = DoNewSession(Data);
-    // When opening workspace/folder, keep the sessions open, even if they fail to connect.
-    // We cannot detect a folder here, so we "guess" it by a session set size.
-    // After all, no one will have a folder with a one session only (while a workspace with one session is likely).
-    // And when when opening a folder with a one session only, it's not that big problem, if we treat it the same way
-    // as when opening the session only.
-    // Also closing a workspace session will remove the session from the workspace.
-    // While closing a folder session won't remove the session from the folder.
-    Session->Permanent = Data->IsWorkspace || (DataList->Count > 1);
-    if (Index == 0)
+    if (ScpExplorer->SupportedSession(Data))
     {
-      Result = Session;
+      TManagedTerminal * Session = DoNewSession(Data);
+      // When opening workspace/folder, keep the sessions open, even if they fail to connect.
+      // We cannot detect a folder here, so we "guess" it by a session set size.
+      // After all, no one will have a folder with a one session only (while a workspace with one session is likely).
+      // And when when opening a folder with a one session only, it's not that big problem, if we treat it the same way
+      // as when opening the session only.
+      // Also closing a workspace session will remove the session from the workspace.
+      // While closing a folder session won't remove the session from the folder.
+      Session->Permanent = Data->IsWorkspace || (DataList->Count > 1);
+      if (Result == NULL)
+      {
+        Result = Session;
+      }
     }
   }
   DoSessionListChanged();
