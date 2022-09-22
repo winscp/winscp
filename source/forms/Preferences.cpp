@@ -130,6 +130,8 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
 
   AutomaticIniFileStorageLabel->Caption = ExpandEnvironmentVariables(Configuration->GetAutomaticIniFileStorageName(false));
 
+  QueueTransferLimitEdit->MaxValue = WinConfiguration->QueueTransferLimitMax;
+
   if (IsUWP())
   {
     UpdatesSheet->Caption = LoadStr(PREFERENCES_STATISTICS_CAPTION);

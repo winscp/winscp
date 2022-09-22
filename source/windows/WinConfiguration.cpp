@@ -626,6 +626,7 @@ void __fastcall TWinConfiguration::Default()
   UseIconUpdateThread = true;
   AllowWindowPrint = false;
   StoreTransition = stInit;
+  QueueTransferLimitMax = 9;
   FirstRun = StandardDatestamp();
 
   FEditor.Font.FontName = DefaultFixedWidthFontName;
@@ -1080,6 +1081,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     UseIconUpdateThread); \
     KEY(Bool,     AllowWindowPrint); \
     KEY(Integer,  StoreTransition); \
+    KEY(Integer,  QueueTransferLimitMax); \
     KEY(String,   FirstRun); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
@@ -2764,6 +2766,11 @@ void __fastcall TWinConfiguration::SetAllowWindowPrint(bool value)
 void TWinConfiguration::SetStoreTransition(TStoreTransition value)
 {
   SET_CONFIG_PROPERTY(StoreTransition);
+}
+//---------------------------------------------------------------------------
+void TWinConfiguration::SetQueueTransferLimitMax(int value)
+{
+  SET_CONFIG_PROPERTY(QueueTransferLimitMax);
 }
 //---------------------------------------------------------------------------
 void TWinConfiguration::SetFirstRun(const UnicodeString & value)

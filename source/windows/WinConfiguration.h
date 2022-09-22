@@ -473,6 +473,7 @@ private:
   bool FUseIconUpdateThread;
   bool FAllowWindowPrint;
   TStoreTransition FStoreTransition;
+  int FQueueTransferLimitMax;
   UnicodeString FFirstRun;
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
@@ -591,6 +592,7 @@ private:
   void __fastcall SetUseIconUpdateThread(bool value);
   void __fastcall SetAllowWindowPrint(bool value);
   void SetStoreTransition(TStoreTransition value);
+  void SetQueueTransferLimitMax(int value);
   void SetFirstRun(const UnicodeString & value);
   int __fastcall GetLocaleCompletenessTreshold();
 
@@ -791,6 +793,7 @@ public:
   __property bool UseIconUpdateThread = { read = FUseIconUpdateThread, write = SetUseIconUpdateThread };
   __property bool AllowWindowPrint = { read = FAllowWindowPrint, write = SetAllowWindowPrint };
   __property TStoreTransition StoreTransition = { read = FStoreTransition, write = SetStoreTransition };
+  __property int QueueTransferLimitMax = { read = FQueueTransferLimitMax, write = SetQueueTransferLimitMax };
   __property UnicodeString FirstRun = { read = FFirstRun, write = SetFirstRun };
   __property LCID DefaultLocale = { read = FDefaultLocale };
   __property int LocaleCompletenessTreshold = { read = GetLocaleCompletenessTreshold };
