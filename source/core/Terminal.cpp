@@ -2954,11 +2954,16 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(
       BatchOverwrite = ABatchOverwrite;
     }
 
-    if (BatchOverwrite == boNo)
+    if (BatchOverwrite != boNo)
+    {
+      LogEvent(1, FORMAT(L"Batch operation mode [%d] is effective", (int(BatchOverwrite))));
+    }
+    else
     {
       // particularly with parallel transfers, the overal operation can be already cancelled by other parallel operation
       if (OperationProgress->Cancel > csContinue)
       {
+        LogEvent(1, L"Transfer cancelled in parallel operation");
         Result = qaCancel;
       }
       else
@@ -3023,16 +3028,19 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(
     switch (BatchOverwrite)
     {
       case boAll:
+        LogEvent(1, L"Overwritting all files");
         Result = qaYes;
         break;
 
       case boNone:
+        LogEvent(1, L"Not overwritting any file");
         Result = qaNo;
         break;
 
       case boOlder:
         if (FileParams == NULL)
         {
+          LogEvent(1, L"Not overwritting due to lack of file information");
           Result = qaNo;
         }
         else
@@ -3056,14 +3064,17 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(
 
       case boAlternateResume:
         DebugAssert(CanAlternateResume);
+        LogEvent(1, L"Alternate resume mode");
         Result = qaSkip; // ugh
         break;
 
       case boAppend:
+        LogEvent(1, L"Appending file");
         Result = qaRetry;
         break;
 
       case boResume:
+        LogEvent(1, L"Resuming file transfer");
         Result = qaRetry;
         break;
     }
