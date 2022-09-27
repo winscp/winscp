@@ -1242,8 +1242,9 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   }
   else if (Action == PuttyAction)
   {
+    TSessionData * Data = GetSessionData();
     Action->Enabled =
-      (IsSiteAndCanOpen() && !GetSessionData()->IsLocalBrowser) ||
+      (IsSiteAndCanOpen() && !Data->IsLocalBrowser && !Data->Tunnel) ||
       (IsFolderOrWorkspaceAndCanOpen() && IsFolderNode(SessionTree->Selected));
   }
   else if (Action == SaveSessionAction)
