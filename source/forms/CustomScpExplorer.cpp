@@ -596,9 +596,9 @@ void __fastcall TCustomScpExplorerForm::SessionChanging()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SessionChanged(bool Replaced)
 {
-  if (Terminal != NULL)
+  if (ManagedSession != NULL)
   {
-    UpdateSessionColor((TColor)Terminal->StateData->Color);
+    UpdateSessionColor(static_cast<TColor>(ManagedSession->StateData->Color));
   }
   if (!TTerminalManager::Instance()->Updating)
   {
