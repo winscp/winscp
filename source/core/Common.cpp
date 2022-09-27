@@ -4101,26 +4101,45 @@ UnicodeString __fastcall AssemblyAddRawSettings(
 //---------------------------------------------------------------------------
 void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines, bool FallbackToAnsi)
 {
-  std::auto_ptr<TFileStream> Stream(new TFileStream(ApiPath(FileName), fmOpenRead | fmShareDenyWrite));
-  Lines->DefaultEncoding = TEncoding::UTF8;
+  std::unique_ptr<TFileStream> Stream(new TFileStream(ApiPath(FileName), fmOpenRead | fmShareDenyWrite));
+
+  // Simple stream reading, to make it work with named pipes too, not only with physical files
+  TBytes Buffer;
+  Buffer.Length = 10*1024;
+  int Read;
+  int Offset = 0;
+  do
+  {
+    Read = Stream->Read(Buffer, Offset, Buffer.Length - Offset);
+    Offset += Read;
+    if (Offset > Buffer.Length / 2)
+    {
+      Buffer.Length = Buffer.Length * 2;
+    }
+  }
+  while (Read > 0);
+  Buffer.Length = Offset;
+
+  TEncoding * Encoding = NULL;
+  int PreambleSize = TEncoding::GetBufferEncoding(Buffer, Encoding, TEncoding::UTF8);
+  UnicodeString S;
   try
   {
-    Lines->LoadFromStream(Stream.get());
+    S = Encoding->GetString(Buffer, PreambleSize, Buffer.Length - PreambleSize);
   }
   catch (EEncodingError & E)
   {
     if (FallbackToAnsi)
     {
-      Lines->DefaultEncoding = TEncoding::ANSI;
-      Lines->Clear();
-      Stream->Position = 0;
-      Lines->LoadFromStream(Stream.get());
+      S = TEncoding::ANSI->GetString(Buffer);
     }
     else
     {
       throw ExtException(LoadStr(TEXT_FILE_ENCODING), &E);
     }
   }
+
+  Lines->Text = S;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall StripEllipsis(const UnicodeString & S)

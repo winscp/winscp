@@ -1811,16 +1811,30 @@ void __fastcall TSessionData::RecryptPasswords()
   EncryptKey = EncryptKey;
 }
 //---------------------------------------------------------------------
+static std::unique_ptr<TCriticalSection> PasswordFilesCacheSection(TraceInitPtr(new TCriticalSection()));
+typedef std::map<UnicodeString, UnicodeString> TPasswordFilesCache;
+static TPasswordFilesCache PasswordFilesCache;
+//---------------------------------------------------------------------
 static UnicodeString ReadPasswordFromFile(const UnicodeString & FileName)
 {
-  UnicodeString Result = FileName;
-  if (!Result.IsEmpty())
+  UnicodeString Result;
+  if (!FileName.IsEmpty())
   {
-    std::unique_ptr<TStrings> Lines(new TStringList());
-    LoadScriptFromFile(Result, Lines.get());
-    if (Lines->Count > 0)
+    TGuard Guard(PasswordFilesCacheSection.get());
+    TPasswordFilesCache::const_iterator I = PasswordFilesCache.find(FileName);
+    if (I != PasswordFilesCache.end())
     {
-      Result = Lines->Strings[0];
+      Result = I->second;
+    }
+    else
+    {
+      std::unique_ptr<TStrings> Lines(new TStringList());
+      LoadScriptFromFile(FileName, Lines.get());
+      if (Lines->Count > 0)
+      {
+        Result = Lines->Strings[0];
+      }
+      PasswordFilesCache[FileName] = Result;
     }
   }
   return Result;
