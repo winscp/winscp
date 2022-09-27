@@ -1213,7 +1213,7 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   }
   else if (Action == PuttyAction)
   {
-    Action->Enabled = (NewSiteSelected || SiteSelected) && CanLogin();
+    Action->Enabled = (NewSiteSelected || SiteSelected) && CanLogin() && !GetSessionData()->Tunnel;
   }
   else if (Action == SaveSessionAction)
   {
