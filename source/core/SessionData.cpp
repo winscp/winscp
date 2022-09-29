@@ -1811,6 +1811,8 @@ void __fastcall TSessionData::RecryptPasswords()
   EncryptKey = EncryptKey;
 }
 //---------------------------------------------------------------------
+// Caching read password files, particularly when the file is actually a named pipe
+// that does not support repeated reading.
 static std::unique_ptr<TCriticalSection> PasswordFilesCacheSection(TraceInitPtr(new TCriticalSection()));
 typedef std::map<UnicodeString, UnicodeString> TPasswordFilesCache;
 static TPasswordFilesCache PasswordFilesCache;
