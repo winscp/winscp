@@ -4098,18 +4098,16 @@ void __fastcall TTerminal::DeleteFile(UnicodeString FileName,
   }
   else
   {
-    LogEvent(FORMAT(L"Deleting file \"%s\".", (FileName)));
-    FileModified(File, FileName, true);
     DoDeleteFile(FileName, File, Params);
-    // Forget if file was or was not encrypted and use user preferences, if we ever recreate it.
-    FEncryptedFileNames.erase(AbsolutePath(FileName, true));
-    ReactOnCommand(fsDeleteFile);
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoDeleteFile(const UnicodeString FileName,
   const TRemoteFile * File, int Params)
 {
+  LogEvent(FORMAT(L"Deleting file \"%s\".", (FileName)));
+  FileModified(File, FileName, true);
+
   TRetryOperationLoop RetryLoop(this);
   do
   {
@@ -4130,6 +4128,10 @@ void __fastcall TTerminal::DoDeleteFile(const UnicodeString FileName,
     }
   }
   while (RetryLoop.Retry());
+
+  // Forget if file was or was not encrypted and use user preferences, if we ever recreate it.
+  FEncryptedFileNames.erase(AbsolutePath(FileName, true));
+  ReactOnCommand(fsDeleteFile);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::DeleteFiles(TStrings * FilesToDelete, int Params)
@@ -4615,18 +4617,47 @@ void __fastcall TTerminal::CalculateFilesChecksum(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::RenameFile(const TRemoteFile * File,
-  const UnicodeString NewName, bool CheckExistence)
+void __fastcall TTerminal::RenameFile(const TRemoteFile * File, const UnicodeString & NewName)
 {
-  DebugAssert(File && File->Directory == FFiles);
-  bool Proceed = true;
-  // if filename doesn't contain path, we check for existence of file
-  if ((File->FileName != NewName) && CheckExistence &&
-      Configuration->ConfirmOverwriting &&
-      UnixSamePath(CurrentDirectory, FFiles->Directory))
+  // Already checked in TUnixDirView::InternalEdit
+  if (DebugAlwaysTrue(File->FileName != NewName))
   {
-    TRemoteFile * DuplicateFile = FFiles->FindFile(NewName);
-    if (DuplicateFile)
+    FileModified(File, File->FileName);
+    LogEvent(FORMAT(L"Renaming file \"%s\" to \"%s\".", (File->FileName, NewName)));
+    if (DoRenameFile(File->FileName, File, NewName, false))
+    {
+      ReactOnCommand(fsRenameFile);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminal::DoRenameFile(const UnicodeString FileName, const TRemoteFile * File,
+  const UnicodeString NewName, bool Move)
+{
+  bool IsBatchMove = (OperationProgress != NULL) && DebugAlwaysTrue(OperationProgress->Operation == foRemoteMove);
+  TBatchOverwrite BatchOverwrite = (IsBatchMove ? OperationProgress->BatchOverwrite : boNo);
+  UnicodeString AbsoluteNewName = AbsolutePath(NewName, true);
+  bool Result = true;
+  bool ExistenceKnown = false;
+  TRemoteFile * DuplicateFile = NULL;
+  std::unique_ptr<TRemoteFile> DuplicateFileOwner(DuplicateFile);
+  if (BatchOverwrite == boNone)
+  {
+    Result = !FileExists(AbsoluteNewName);
+    ExistenceKnown = true;
+  }
+  else if (BatchOverwrite == boAll)
+  {
+    // noop
+  }
+  else if (DebugAlwaysTrue(BatchOverwrite == boNo) &&
+           Configuration->ConfirmOverwriting)
+  {
+    FileExists(AbsoluteNewName, &DuplicateFile);
+    DuplicateFileOwner.reset(DuplicateFile);
+    ExistenceKnown = true;
+
+    if (DuplicateFile != NULL)
     {
       UnicodeString QuestionFmt;
       if (DuplicateFile->IsDirectory)
@@ -4639,49 +4670,87 @@ void __fastcall TTerminal::RenameFile(const TRemoteFile * File,
       }
       TQueryParams Params(qpNeverAskAgainCheck);
       UnicodeString Question = MainInstructions(FORMAT(QuestionFmt, (NewName)));
-      unsigned int Result = QueryUser(Question, NULL,
-        qaYes | qaNo, &Params);
-      if (Result == qaNeverAskAgain)
+      unsigned int Answers = qaYes | qaNo | FLAGMASK(OperationProgress != NULL, qaCancel) | FLAGMASK(IsBatchMove, qaYesToAll | qaNoToAll);
+      unsigned int Answer = QueryUser(Question, NULL, Answers, &Params);
+      switch (Answer)
       {
-        Proceed = true;
-        Configuration->ConfirmOverwriting = false;
-      }
-      else
-      {
-        Proceed = (Result == qaYes);
+        case qaNeverAskAgain:
+          Configuration->ConfirmOverwriting = false;
+          Result = true;
+          break;
+
+        case qaYes:
+          Result = true;
+          break;
+
+        case qaNo:
+          Result = false;
+          break;
+
+        case qaYesToAll:
+          Result = true;
+          if (DebugAlwaysTrue(IsBatchMove))
+          {
+            OperationProgress->SetBatchOverwrite(boAll);
+          }
+          break;
+
+        case qaNoToAll:
+          Result = false;
+          if (DebugAlwaysTrue(IsBatchMove))
+          {
+            OperationProgress->SetBatchOverwrite(boNone);
+          }
+          break;
+
+        case qaCancel:
+          Result = false;
+          OperationProgress->SetCancel(csCancel);
+          break;
+
+        default:
+          Result = false;
+          DebugFail();
+          break;
       }
     }
   }
 
-  if (Proceed)
+  if (Result)
   {
-    FileModified(File, File->FileName);
-    LogEvent(FORMAT(L"Renaming file \"%s\" to \"%s\".", (File->FileName, NewName)));
-    DoRenameFile(File->FileName, File, NewName, false);
-    ReactOnCommand(fsRenameFile);
-  }
-}
-//---------------------------------------------------------------------------
-bool __fastcall TTerminal::DoRenameFile(const UnicodeString FileName, const TRemoteFile * File,
-  const UnicodeString NewName, bool Move)
-{
-  TRetryOperationLoop RetryLoop(this);
-  do
-  {
-    TMvSessionAction Action(ActionLog, AbsolutePath(FileName, true), AbsolutePath(NewName, true));
-    try
+    if (!IsCapable[fcMoveOverExistingFile])
     {
-      DebugAssert(FFileSystem);
-      FFileSystem->RenameFile(FileName, File, NewName);
+      if (!ExistenceKnown)
+      {
+        FileExists(AbsoluteNewName, &DuplicateFile);
+        DuplicateFileOwner.reset(DuplicateFile);
+      }
+
+      if (DuplicateFile != NULL)
+      {
+        DoDeleteFile(AbsoluteNewName, DuplicateFile, 0);
+      }
     }
-    catch(Exception & E)
+
+    TRetryOperationLoop RetryLoop(this);
+    do
     {
-      UnicodeString Message = FMTLOAD(Move ? MOVE_FILE_ERROR : RENAME_FILE_ERROR, (FileName, NewName));
-      RetryLoop.Error(E, Action, Message);
+      TMvSessionAction Action(ActionLog, AbsolutePath(FileName, true), AbsoluteNewName);
+      try
+      {
+        DebugAssert(FFileSystem);
+        FFileSystem->RenameFile(FileName, File, NewName);
+      }
+      catch(Exception & E)
+      {
+        UnicodeString Message = FMTLOAD(Move ? MOVE_FILE_ERROR : RENAME_FILE_ERROR, (FileName, NewName));
+        RetryLoop.Error(E, Action, Message);
+      }
     }
+    while (RetryLoop.Retry());
+    Result = RetryLoop.Succeeded();
   }
-  while (RetryLoop.Retry());
-  return RetryLoop.Succeeded();
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::DoMoveFile(const UnicodeString & FileName, const TRemoteFile * File, /*const TMoveFileParams*/ void * Param)

@@ -376,6 +376,7 @@ void __fastcall TFTPFileSystem::Open()
   FMVS = false;
   FVMS = false;
   FFileZilla = false;
+  FIIS = false;
   FTransferActiveImmediately = (Data->FtpTransferActiveImmediately == asOn);
   FVMSAllRevisions = Data->VMSAllRevisions;
 
@@ -652,8 +653,7 @@ void __fastcall TFTPFileSystem::CollectUsage()
   // 220 Microsoft FTP Service
   // SYST
   // 215 Windows_NT
-  else if (ContainsText(FWelcomeMessage, L"Microsoft FTP Service") ||
-           ContainsText(FSystem, L"Windows_NT"))
+  else if (FIIS)
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPIIS");
   }
@@ -1878,6 +1878,9 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
 
     case fcCheckingSpaceAvailable:
       return FBytesAvailableSupported || SupportsCommand(AvblCommand) || SupportsCommand(XQuotaCommand);
+
+    case fcMoveOverExistingFile:
+      return !FIIS;
 
     case fcAclChangingFiles:
     case fcModeChangingUpload:
@@ -3433,6 +3436,11 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
           FTerminal->LogEvent(L"The server requires TLS/SSL handshake on transfer connection before responding 1yz to STOR/APPE");
           FTransferActiveImmediately = true;
         }
+        if (ContainsText(FWelcomeMessage, L"Microsoft FTP Service") && !FIIS)
+        {
+          FTerminal->LogEvent(L"IIS detected.");
+          FIIS = true;
+        }
       }
     }
     else if (FLastCommand == PASS)
@@ -3470,6 +3478,11 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
         {
           FTerminal->LogEvent(L"The server is probably running Windows, assuming that directory listing timestamps are affected by DST.");
           FWindowsServer = true;
+          if (!FIIS)
+          {
+            FTerminal->LogEvent(L"IIS detected.");
+            FIIS = true;
+          }
         }
         // VMS system type. VMS V5.5-2.
         // VMS VAX/VMS V6.1 on node nsrp14

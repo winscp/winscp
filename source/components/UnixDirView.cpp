@@ -957,7 +957,7 @@ void __fastcall TUnixDirView::InternalEdit(const tagLVITEMW & HItem)
   if (ITEMFILE->FileName != HItem.pszText)
   {
     FSelectFile = HItem.pszText;
-    Terminal->RenameFile(ITEMFILE, HItem.pszText, true);
+    Terminal->RenameFile(ITEMFILE, HItem.pszText);
   }
 #else
   DebugUsedParam(HItem);

@@ -296,6 +296,7 @@ private:
   bool FMVS;
   bool FVMS;
   bool FFileZilla;
+  bool FIIS;
   bool FFileTransferAny;
   bool FLoggedIn;
   bool FVMSAllRevisions;

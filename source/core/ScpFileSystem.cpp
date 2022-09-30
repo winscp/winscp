@@ -443,6 +443,7 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
     case fcRemoveCtrlZUpload:
     case fcRemoveBOMUpload:
     case fcCalculatingChecksum:
+    case fcMoveOverExistingFile:
       return true;
 
     case fcTextMode:

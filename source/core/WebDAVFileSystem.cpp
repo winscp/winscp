@@ -602,6 +602,7 @@ bool __fastcall TWebDAVFileSystem::IsCapable(int Capability) const
     case fcSkipTransfer:
     case fcParallelTransfers:
     case fcRemoteCopy:
+    case fcMoveOverExistingFile:
       return true;
 
     case fcUserGroupListing:
@@ -1096,8 +1097,8 @@ void __fastcall TWebDAVFileSystem::DeleteFile(const UnicodeString FileName,
 int __fastcall TWebDAVFileSystem::RenameFileInternal(const UnicodeString & FileName,
   const UnicodeString & NewName)
 {
-  // 0 = no overwrite
-  return ne_move(FSessionContext->NeonSession, 0, PathToNeon(FileName), PathToNeon(NewName));
+  const int Overwrite = 1;
+  return ne_move(FSessionContext->NeonSession, Overwrite, PathToNeon(FileName), PathToNeon(NewName));
 }
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::RenameFile(const UnicodeString FileName, const TRemoteFile * /*File*/,

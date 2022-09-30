@@ -767,6 +767,7 @@ bool __fastcall TS3FileSystem::IsCapable(int Capability) const
     case fcParallelTransfers:
     case fcLoadingAdditionalProperties:
     case fcAclChangingFiles:
+    case fcMoveOverExistingFile:
       return true;
 
     case fcPreservingTimestampUpload:
