@@ -159,6 +159,7 @@ void __fastcall TMessageForm::KeyDown(Word & Key, TShiftState Shift)
 {
   if (Shift.Contains(ssCtrl) && (Key == L'C'))
   {
+    AppLog(L"Copying message to clipboard");
     TInstantOperationVisualizer Visualizer;
     CopyToClipboard(GetFormText());
   }

@@ -1132,6 +1132,7 @@ void __fastcall CopyToClipboard(UnicodeString Text)
   HANDLE Data;
   void * DataPtr;
 
+  AppLogFmt("Copying text to clipboard [%d]", (Text.Length()));
   if (OpenClipboard(0))
   {
     try
@@ -1162,6 +1163,7 @@ void __fastcall CopyToClipboard(UnicodeString Text)
     {
       CloseClipboard();
     }
+    AppLogFmt("Copied text to clipboard [%d]", (Text.Length()));
   }
   else
   {
