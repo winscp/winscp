@@ -2629,6 +2629,8 @@ begin
 end;
 
 procedure TCustomDirView.WMUserRename(var Message: TMessage);
+var
+  Dummy: Boolean;
 begin
   if Assigned(ItemFocused) then
   begin
@@ -2636,6 +2638,11 @@ begin
     ListView_EditLabel(Handle, ItemFocused.Index);
     SetWindowText(ListView_GetEditControl(Self.Handle),
       PChar(FLastRenameName));
+    // This was called already by VCL.
+    // But we do it again for the base-name selection side effect this has in TCustomScpExplorerForm::DirViewEditing,
+    // after we have updated the text above.
+    if Assigned(OnEditing) then
+      OnEditing(Self, ItemFocused, Dummy);
   end;
 end;
 
