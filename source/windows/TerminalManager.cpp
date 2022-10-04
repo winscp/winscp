@@ -237,13 +237,33 @@ TManagedTerminal * __fastcall TTerminalManager::NewManagedTerminal(TSessionData 
   return DebugNotNull(dynamic_cast<TManagedTerminal *>(NewTerminal(Data)));
 }
 //---------------------------------------------------------------------------
+bool TTerminalManager::SupportedSession(TSessionData * Data)
+{
+  bool Result;
+  // When main window exists already, ask it if it supports the session
+  // (we cannot decide based on configuration,
+  // as the user might have changed the interface in the preferences after the main window was created)
+  // If not, assume based on configuration.
+  if (ScpExplorer != NULL)
+  {
+    Result = ScpExplorer->SupportedSession(Data);
+  }
+  else
+  {
+    Result =
+      (WinConfiguration->Interface != ifExplorer) ||
+      !Data->IsLocalBrowser;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 TManagedTerminal * __fastcall TTerminalManager::NewSessions(TList * DataList)
 {
   TManagedTerminal * Result = NULL;
   for (int Index = 0; Index < DataList->Count; Index++)
   {
     TSessionData * Data = reinterpret_cast<TSessionData *>(DataList->Items[Index]);
-    if (ScpExplorer->SupportedSession(Data))
+    if (SupportedSession(Data))
     {
       TManagedTerminal * Session = DoNewSession(Data);
       // When opening workspace/folder, keep the sessions open, even if they fail to connect.

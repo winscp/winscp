@@ -194,6 +194,7 @@ private:
   TManagedTerminal * __fastcall CreateManagedTerminal(TSessionData * Data);
   TManagedTerminal * __fastcall GetSession(int Index);
   bool IsUpdating();
+  bool SupportedSession(TSessionData * Data);
 };
 //---------------------------------------------------------------------------
 #endif
