@@ -893,6 +893,7 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
   {
     UnicodeString URL = ProgramUrl(LoadStr(UPDATES_URL));
     URL = WantBetaUrl(URL, false);
+    // Update the regex pattern in updates.php when modifying the URI (CLEAN_INLINE)
     URL += L"&dotnet=" + Updates.DotNetVersion;
     URL += L"&console=" + Updates.ConsoleVersion;
     UnicodeString LocaleVersion = WinConfiguration->AppliedLocaleVersion();
