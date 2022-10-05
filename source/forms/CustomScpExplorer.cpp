@@ -3813,13 +3813,29 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
           FullFileName = ListFileName;
         }
 
+        TObject * Object = FileList->Objects[i];
+
         TFileMasks::TParams MaskParams;
         MaskParams.Size = DView->ItemFileSize(Item);
         TDateTimePrecision Precision;
         MaskParams.Modification = DView->ItemFileTime(Item, Precision);
 
-        ExecuteFile(Side, ExecuteFileBy, ExternalEditor, FullFileName,
-          FileList->Objects[i], MaskParams);
+        std::unique_ptr<TRemoteFile> FileOwner;
+        if (!IsSideLocalBrowser(Side))
+        {
+          TRemoteFile * File = NULL;
+          Terminal->FileExists(FullFileName, &File);
+          if (File != NULL)
+          {
+            File->FullFileName = FullFileName;
+            Object = File;
+            FileOwner.reset(File);
+            MaskParams.Size = File->Size;
+            MaskParams.Modification = File->Modification;
+          }
+        }
+
+        ExecuteFile(Side, ExecuteFileBy, ExternalEditor, FullFileName, Object, MaskParams);
       }
     }
   }
