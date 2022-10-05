@@ -5379,7 +5379,7 @@ void __fastcall TStoredSessionList::ImportHostKeys(
   if (OpenHostKeysSubKey(SourceStorage, false) &&
       OpenHostKeysSubKey(TargetStorage, true))
   {
-    std::auto_ptr<TStringList> KeyList(new TStringList());
+    std::unique_ptr<TStringList> KeyList(new TStringList());
     SourceStorage->GetValueNames(KeyList.get());
 
     DebugAssert(Sessions != NULL);
@@ -5405,8 +5405,8 @@ void __fastcall TStoredSessionList::ImportHostKeys(
 void __fastcall TStoredSessionList::ImportHostKeys(
   const UnicodeString & SourceKey, TStoredSessionList * Sessions, bool OnlySelected)
 {
-  std::auto_ptr<THierarchicalStorage> TargetStorage(CreateHostKeysStorageForWritting());
-  std::auto_ptr<THierarchicalStorage> SourceStorage(new TRegistryStorage(SourceKey));
+  std::unique_ptr<THierarchicalStorage> TargetStorage(CreateHostKeysStorageForWritting());
+  std::unique_ptr<THierarchicalStorage> SourceStorage(new TRegistryStorage(SourceKey));
 
   ImportHostKeys(SourceStorage.get(), TargetStorage.get(), Sessions, OnlySelected);
 }

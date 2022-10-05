@@ -1735,7 +1735,7 @@ struct TLibS3TransferObjectDataCallbackData : TLibS3CallbackData
   UnicodeString FileName;
   TStream * Stream;
   TFileOperationProgressType * OperationProgress;
-  std::auto_ptr<Exception> Exception;
+  std::unique_ptr<Exception> Exception;
 };
 //---------------------------------------------------------------------------
 struct TLibS3PutObjectDataCallbackData : TLibS3TransferObjectDataCallbackData

@@ -72,7 +72,7 @@ private:
   bool FUtfStrings;
   DWORD FLastSendBufferUpdate;
   int FSendBuf;
-  std::auto_ptr<callback_set> FCallbackSet;
+  callback_set * FCallbackSet;
   ScpLogPolicy * FLogPolicy;
   ScpSeat * FSeat;
   LogContext * FLogCtx;

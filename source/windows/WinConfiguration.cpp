@@ -2814,7 +2814,7 @@ void __fastcall TWinConfiguration::UpdateEntryInJumpList(
 {
   try
   {
-    std::auto_ptr<THierarchicalStorage> Storage(CreateConfigStorage());
+    std::unique_ptr<THierarchicalStorage> Storage(CreateConfigStorage());
     TAutoNestingCounter DontDecryptPasswordsCounter(FDontDecryptPasswords);
 
     Storage->AccessMode = smReadWrite;

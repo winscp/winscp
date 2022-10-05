@@ -75,8 +75,8 @@ __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
   FSimple = false;
   FCollectPrivateKeyUsage = false;
   FWaitingForData = 0;
-  FCallbackSet.reset(new callback_set());
-  memset(FCallbackSet.get(), 0, sizeof(callback_set));
+  FCallbackSet = new callback_set();
+  memset(FCallbackSet, 0, sizeof(*FCallbackSet));
   FCallbackSet->ready_event = INVALID_HANDLE_VALUE;
 }
 //---------------------------------------------------------------------------
@@ -89,6 +89,7 @@ __fastcall TSecureShell::~TSecureShell()
   }
   ResetConnection();
   CloseHandle(FSocketEvent);
+  delete FCallbackSet;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::ResetConnection()
@@ -626,7 +627,7 @@ void __fastcall TSecureShell::Init()
 //---------------------------------------------------------------------------
 struct callback_set * TSecureShell::GetCallbackSet()
 {
-  return FCallbackSet.get();
+  return FCallbackSet;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TSecureShell::ConvertFromPutty(const char * Str, int Length)
@@ -1692,10 +1693,10 @@ void __fastcall TSecureShell::FreeBackend()
     FBackendHandle = NULL;
 
     // After destroying backend, ic_pktin_free should be the only remaining callback.
-    if (is_idempotent_callback_pending(FCallbackSet.get(), FCallbackSet->ic_pktin_free))
+    if (is_idempotent_callback_pending(FCallbackSet, FCallbackSet->ic_pktin_free))
     {
       // This releases the callback and should be noop otherwise.
-      run_toplevel_callbacks(FCallbackSet.get());
+      run_toplevel_callbacks(FCallbackSet);
     }
 
     sfree(FCallbackSet->ic_pktin_free);
@@ -1719,7 +1720,7 @@ void __fastcall TSecureShell::FreeBackend()
       while (count234(FCallbackSet->handlewaits_tree_real) > 0)
       {
         HandleWait * AHandleWait = static_cast<HandleWait *>(index234(FCallbackSet->handlewaits_tree_real, 0));
-        delete_handle_wait(FCallbackSet.get(), AHandleWait);
+        delete_handle_wait(FCallbackSet, AHandleWait);
       }
 
       freetree234(FCallbackSet->handlewaits_tree_real);
@@ -2035,7 +2036,7 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
           handle_wait_list_free(WaitList);
         }
         // It returns only busy handles, so the set can change with every call to run_toplevel_callbacks.
-        WaitList = get_handle_wait_list(FCallbackSet.get());
+        WaitList = get_handle_wait_list(FCallbackSet);
         DebugAssert(WaitList->nhandles < MAXIMUM_WAIT_OBJECTS);
         WaitList->handles[WaitList->nhandles] = FSocketEvent;
         WaitResult = WaitForMultipleObjects(WaitList->nhandles + 1, WaitList->handles, FALSE, TimeoutStep);
@@ -2056,7 +2057,7 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
 
       if (WaitResult < WAIT_OBJECT_0 + WaitList->nhandles)
       {
-        if (handle_wait_activate(FCallbackSet.get(), WaitList, WaitResult - WAIT_OBJECT_0))
+        if (handle_wait_activate(FCallbackSet, WaitList, WaitResult - WAIT_OBJECT_0))
         {
           Result = true;
         }

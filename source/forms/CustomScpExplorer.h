@@ -304,7 +304,7 @@ private:
   TTerminal * FFileFindTerminal;
   UnicodeString FFileColorsCurrent;
   bool FInvalid;
-  std::auto_ptr<TQueueFileList> FQueueFileList;
+  std::unique_ptr<TQueueFileList> FQueueFileList;
   bool FShowingChanged;
   bool FStarted;
   bool FUpdatingSessionTabs;
