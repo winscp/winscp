@@ -37,7 +37,7 @@
 ; OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 ; USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#define expatVer "2.4.8"
+#define expatVer "2.4.9"
 
 [Setup]
 AppName=Expat
@@ -91,7 +91,7 @@ Flags: ignoreversion; Source: cmake\expat-config.cmake.in;  DestDir: "{app}\Sour
 Flags: ignoreversion; Source: fuzz\*.c;                     DestDir: "{app}\Source\fuzz"
 Flags: ignoreversion; Source: lib\*.c;                      DestDir: "{app}\Source\lib"
 Flags: ignoreversion; Source: lib\*.h;                      DestDir: "{app}\Source\lib"
-Flags: ignoreversion; Source: lib\*.def;                    DestDir: "{app}\Source\lib"
+Flags: ignoreversion; Source: lib\*.def.cmake;              DestDir: "{app}\Source\lib"
 Flags: ignoreversion; Source: examples\*.c;                 DestDir: "{app}\Source\examples"
 Flags: ignoreversion; Source: tests\*.c;                    DestDir: "{app}\Source\tests"
 Flags: ignoreversion; Source: tests\*.cpp;                  DestDir: "{app}\Source\tests"

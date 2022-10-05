@@ -94,7 +94,7 @@
 
 #if ! defined(_WIN32)
 /* Define to include code reading entropy from `/dev/urandom'. */
-  #cmakedefine XML_DEV_URANDOM
+#cmakedefine XML_DEV_URANDOM
 #endif
 
 /* Define to make parameter entity parsing functionality available. */
