@@ -1361,7 +1361,7 @@ void __fastcall TWebDAVFileSystem::Source(
       SetFilePointer(Handle.Handle, 0, NULL, FILE_BEGIN);
 
       FD = _open_osfhandle((intptr_t)Handle.Handle, O_BINARY);
-      if (FD < 0)
+      if (FD < 0) // can happen only if there are no free slots in handle-FD table
       {
         throw ESkipFile();
       }
