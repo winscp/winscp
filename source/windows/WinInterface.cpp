@@ -1691,6 +1691,7 @@ void __fastcall ::TTrayIcon::PopupBalloon(UnicodeString Title,
     Timeout = 30000;
   }
   FTrayIcon->uFlags |= NIF_INFO;
+  AppLogFmt("Tray popup balloon: %s - %s", (Title, Str));
   Title = Title + TitleSeparator + AppNameString();
   StrPLCopy(FTrayIcon->szInfoTitle, Title, LENOF(FTrayIcon->szInfoTitle) - 1);
   UnicodeString Info = Str;

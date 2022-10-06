@@ -674,6 +674,7 @@ void __fastcall TWinConfiguration::Default()
   FUpdates.BetaVersions = asAuto;
   FUpdates.ShowOnStartup = true;
   FUpdates.AuthenticationEmail = L"";
+  FUpdates.Mode = EmptyStr;
   // for backward compatibility the default is decided based on value of ProxyHost
   FUpdates.ConnectionType = (TConnectionType)-1;
   FUpdates.ProxyHost = L""; // keep empty (see above)
@@ -1126,6 +1127,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  FUpdates.BetaVersions); \
     KEY(Bool,     FUpdates.ShowOnStartup); \
     KEY(String,   FUpdates.AuthenticationEmail); \
+    KEY(String,   FUpdates.Mode); \
     KEY(Integer,  FUpdates.ConnectionType); \
     KEY(String,   FUpdates.ProxyHost); \
     KEY(Integer,  FUpdates.ProxyPort); \

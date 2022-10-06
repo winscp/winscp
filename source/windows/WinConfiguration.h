@@ -222,6 +222,7 @@ struct TUpdatesConfiguration
   TAutoSwitch BetaVersions;
   bool ShowOnStartup;
   UnicodeString AuthenticationEmail;
+  UnicodeString Mode;
   bool HaveResults;
   bool ShownResults;
   UnicodeString DotNetVersion;
@@ -230,7 +231,7 @@ struct TUpdatesConfiguration
 
   bool __fastcall operator !=(TUpdatesConfiguration & rhc)
     { return C(Period) C(LastCheck) C(ConnectionType) C(ProxyHost) C(ProxyPort)
-        C(BetaVersions) C(ShowOnStartup) C(AuthenticationEmail)
+        C(BetaVersions) C(ShowOnStartup) C(AuthenticationEmail) C(Mode)
         C(HaveResults) C(ShownResults) C(DotNetVersion)
         C(ConsoleVersion) C(Results)  0; };
 

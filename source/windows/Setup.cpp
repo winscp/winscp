@@ -916,6 +916,10 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
     {
       URL += L"&package=" + EncodeUrlString(GetPackageName());
     }
+    if (!Updates.Mode.IsEmpty())
+    {
+      URL += L"&mode=" + EncodeUrlString(Updates.Mode);
+    }
 
     AppLogFmt(L"Updates check URL: %s", (URL));
     CheckForUpdatesHTTP->URL = URL;
