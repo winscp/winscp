@@ -8959,7 +8959,11 @@ void __fastcall TCustomScpExplorerForm::StartUpdates()
       if (Interval >= Period)
       {
         TThreadMethod OnUpdatesChecked = NULL;
-        if (WinConfiguration->ExperimentalFeatures)
+        if (!IsUWP())
+        {
+          OnUpdatesChecked = UpdatesChecked;
+        }
+        else if (WinConfiguration->ExperimentalFeatures)
         {
           AppLog(L"Experimental features enabled, will process updates check results");
           OnUpdatesChecked = UpdatesChecked;
