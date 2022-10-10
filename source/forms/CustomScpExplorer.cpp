@@ -933,6 +933,7 @@ void __fastcall TCustomScpExplorerForm::SetQueueProgress()
 
   if ((FTaskbarList != NULL) && (FProgressForm == NULL))
   {
+    // Do not animate task bar button, when items are queued, but processing is disabled
     if ((FQueueStatus != NULL) && (FQueueStatus->ActivePrimaryCount > 0))
     {
       if (FQueueStatus->IsOnlyOneActiveAndNoPending())
