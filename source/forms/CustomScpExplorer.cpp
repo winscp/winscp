@@ -933,7 +933,7 @@ void __fastcall TCustomScpExplorerForm::SetQueueProgress()
 
   if ((FTaskbarList != NULL) && (FProgressForm == NULL))
   {
-    if ((FQueueStatus != NULL) && (FQueueStatus->ActiveAndPendingPrimaryCount > 0))
+    if ((FQueueStatus != NULL) && (FQueueStatus->ActivePrimaryCount > 0))
     {
       if (FQueueStatus->IsOnlyOneActiveAndNoPending())
       {
