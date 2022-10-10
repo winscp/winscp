@@ -132,6 +132,9 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
 
   QueueTransferLimitEdit->MaxValue = WinConfiguration->QueueTransferLimitMax;
 
+  CommanderDescriptionLabel2->Caption = Bullet(CommanderDescriptionLabel2->Caption);
+  ExplorerDescriptionLabel->Caption = Bullet(ExplorerDescriptionLabel->Caption);
+
   if (IsUWP())
   {
     UpdatesSheet->Caption = LoadStr(PREFERENCES_STATISTICS_CAPTION);
@@ -3233,5 +3236,19 @@ void __fastcall TPreferencesDialog::LocalPortNumberMaxEditExit(TObject *)
       LocalPortNumberMinEdit->Value = LocalPortNumberMinEdit->MinValue;
     }
   }
+}
+//---------------------------------------------------------------------------
+UnicodeString TPreferencesDialog::Bullet(const UnicodeString & S)
+{
+  // Keep in sync with similar function in installer
+  UnicodeString Result = S;
+  UnicodeString Dash(L"-");
+  UnicodeString Bullet(L"\u2022 ");
+  if (StartsStr(Dash, Result))
+  {
+    Result = Bullet + Result.SubString(Dash.Length() + 1, Result.Length() - Dash.Length());
+  }
+  Result = ReplaceStr(Result, sLineBreak + Dash, sLineBreak + Bullet);
+  return Result;
 }
 //---------------------------------------------------------------------------

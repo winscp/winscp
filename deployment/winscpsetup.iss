@@ -816,6 +816,7 @@ begin
   Result := True;
 end;
 
+// Keep in sync with similar function on Preferences dialog
 function Bullet(S: string): string;
 begin
   if Copy(S, 1, 1) = '-' then S := #$2022'  ' + Trim(Copy(S, 2, Length(S) - 1));

@@ -529,6 +529,7 @@ protected:
   void __fastcall FileColorMove(int Source, int Dest);
   void __fastcall UpdateFileColorsView();
   void __fastcall AddEditFileColor(bool Edit);
+  UnicodeString Bullet(const UnicodeString & S);
 
   INTERFACE_HOOK;
 };
