@@ -4366,6 +4366,9 @@ void __fastcall TTerminal::ChangeFilesProperties(TStrings * FileList,
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::LoadFilesProperties(TStrings * FileList)
 {
+  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor);
+  FUseBusyCursor = false;
+
   // see comment in TSFTPFileSystem::IsCapable
   bool Result =
     IsCapable[fcLoadingAdditionalProperties] &&
