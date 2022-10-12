@@ -4167,7 +4167,6 @@ UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName)
 //---------------------------------------------------------------------------
 TStrings * TlsCipherList()
 {
-  // OpenSSL initialization happens in NeonInitialize
   std::unique_ptr<TStrings> Result(new TStringList());
   const SSL_METHOD * Method = DTLS_client_method();
   SSL_CTX * Ctx = SSL_CTX_new(Method);
