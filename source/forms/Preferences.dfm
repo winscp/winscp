@@ -3081,10 +3081,10 @@ object PreferencesDialog: TPreferencesDialog
           398)
         object InternalEditorGroup: TGroupBox
           Left = 8
-          Top = 14
+          Top = 8
           Width = 389
           Height = 146
-          Anchors = [akLeft, akRight, akBottom]
+          Anchors = [akLeft, akTop, akRight]
           Caption = 'Display'
           TabOrder = 0
           DesignSize = (
@@ -3143,10 +3143,10 @@ object PreferencesDialog: TPreferencesDialog
         end
         object FontGroup: TGroupBox
           Left = 8
-          Top = 166
+          Top = 160
           Width = 389
           Height = 118
-          Anchors = [akLeft, akRight, akBottom]
+          Anchors = [akLeft, akTop, akRight]
           Caption = 'Font'
           TabOrder = 1
           DesignSize = (
