@@ -2095,39 +2095,46 @@ begin
     begin
       Result := fEqual;
 
-      case AOwner.DirColProperties.SortDirColumn of
-        dvName:
-          ; // fallback
-
-        dvSize:
-          if P1.Size < P2.Size then Result := fLess
-            else
-          if P1.Size > P2.Size then Result := fGreater
-            else ; // fallback
-
-        dvType:
-          Result := CompareFileType(I1, I2, P1, P2);
-
-        dvChanged:
-          Result := CompareFileTime(P1, P2);
-
-        dvAttr:
-          if P1.Attr < P2.Attr then Result := fLess
-            else
-          if P1.Attr > P2.Attr then Result := fGreater
-            else ; // fallback
-
-        dvExt:
-          if not P1.isDirectory then
-          begin
-            Result := CompareLogicalTextPas(
-              P1.FileExt + ' ' + P1.DisplayName, P2.FileExt + ' ' + P2.DisplayName,
-              AOwner.NaturalOrderNumericalSorting);
-          end
-            else ; //fallback
-
+      if P1.isDirectory and AOwner.AlwaysSortDirectoriesByName then
+      begin
+        // fallback
+      end
         else
-          ; // fallback
+      begin
+        case AOwner.DirColProperties.SortDirColumn of
+          dvName:
+            ; // fallback
+
+          dvSize:
+            if P1.Size < P2.Size then Result := fLess
+              else
+            if P1.Size > P2.Size then Result := fGreater
+              else ; // fallback
+
+          dvType:
+            Result := CompareFileType(I1, I2, P1, P2);
+
+          dvChanged:
+            Result := CompareFileTime(P1, P2);
+
+          dvAttr:
+            if P1.Attr < P2.Attr then Result := fLess
+              else
+            if P1.Attr > P2.Attr then Result := fGreater
+              else ; // fallback
+
+          dvExt:
+            if not P1.isDirectory then
+            begin
+              Result := CompareLogicalTextPas(
+                P1.FileExt + ' ' + P1.DisplayName, P2.FileExt + ' ' + P2.DisplayName,
+                AOwner.NaturalOrderNumericalSorting);
+            end
+              else ; //fallback
+
+          else
+            ; // fallback
+        end;
       end;
 
       if Result = fEqual then

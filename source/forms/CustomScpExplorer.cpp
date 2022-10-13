@@ -1125,6 +1125,7 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
   RemoteDirView->FormatSizeBytes = WinConfiguration->FormatSizeBytes;
   RemoteDirView->ShowInaccesibleDirectories = WinConfiguration->ShowInaccesibleDirectories;
   RemoteDirView->NaturalOrderNumericalSorting = WinConfiguration->NaturalOrderNumericalSorting;
+  RemoteDirView->AlwaysSortDirectoriesByName = WinConfiguration->AlwaysSortDirectoriesByName;
 
   UpdateRowSelect(RemoteDirView);
 

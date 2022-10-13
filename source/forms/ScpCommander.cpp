@@ -787,6 +787,9 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
   OtherLocalDirView->NaturalOrderNumericalSorting = WinConfiguration->NaturalOrderNumericalSorting;
   OtherLocalDriveView->NaturalOrderNumericalSorting = WinConfiguration->NaturalOrderNumericalSorting;
 
+  LocalDirView->AlwaysSortDirectoriesByName = WinConfiguration->AlwaysSortDirectoriesByName;
+  OtherLocalDirView->AlwaysSortDirectoriesByName = WinConfiguration->AlwaysSortDirectoriesByName;
+
   LocalDirView->TimeoutShellIconRetrieval = WinConfiguration->TimeoutShellIconRetrieval;
   LocalDirView->UseIconUpdateThread = WinConfiguration->UseIconUpdateThread;
   OtherLocalDirView->TimeoutShellIconRetrieval = WinConfiguration->TimeoutShellIconRetrieval;

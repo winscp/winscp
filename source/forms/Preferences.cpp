@@ -293,6 +293,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(ConfirmTemporaryDirectoryCleanup);
     BOOLPROP(FullRowSelect);
     BOOLPROP(NaturalOrderNumericalSorting);
+    BOOLPROP(AlwaysSortDirectoriesByName);
 
     ConfirmClosingSessionCheck2->Checked = WinConfiguration->ConfirmClosingSession;
 
@@ -708,6 +709,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(ConfirmTemporaryDirectoryCleanup);
     BOOLPROP(FullRowSelect);
     BOOLPROP(NaturalOrderNumericalSorting);
+    BOOLPROP(AlwaysSortDirectoriesByName);
 
     WinConfiguration->ConfirmClosingSession = ConfirmClosingSessionCheck2->Checked;
 

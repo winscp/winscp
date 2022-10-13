@@ -166,6 +166,7 @@ type
     FOnGetItemColor: TDirViewGetItemColorEvent;
     FMask: string;
     FNaturalOrderNumericalSorting: Boolean;
+    FAlwaysSortDirectoriesByName: Boolean;
     FDarkMode: Boolean;
     FScrollOnDragOver: TListViewScrollOnDragOver;
     FStatusFileInfo: TStatusFileInfo;
@@ -313,6 +314,7 @@ type
     function EnableDragOnClick: Boolean; override;
     procedure SetMask(Value: string); virtual;
     procedure SetNaturalOrderNumericalSorting(Value: Boolean);
+    procedure SetAlwaysSortDirectoriesByName(Value: Boolean);
     procedure SetDarkMode(Value: Boolean);
     procedure ScrollOnDragOverBeforeUpdate(ObjectToValidate: TObject);
     procedure ScrollOnDragOverAfterUpdate;
@@ -432,6 +434,7 @@ type
     {filemask, multiple filters are possible: '*.pas;*.dfm'}
     property Mask: string read FMask write SetMask;
     property NaturalOrderNumericalSorting: Boolean read FNaturalOrderNumericalSorting write SetNaturalOrderNumericalSorting;
+    property AlwaysSortDirectoriesByName: Boolean read FAlwaysSortDirectoriesByName write SetAlwaysSortDirectoriesByName;
     property DarkMode: Boolean read FDarkMode write SetDarkMode;
 
     property OnContextPopup;
@@ -868,6 +871,7 @@ begin
   FExeDrag := False;
   FMask := '';
   FNaturalOrderNumericalSorting := True;
+  FAlwaysSortDirectoriesByName := False;
   FDarkMode := False;
   FDoubleBufferedScrollingWorkaround := not IsVistaHard();
 
@@ -3367,6 +3371,15 @@ begin
   if NaturalOrderNumericalSorting <> Value then
   begin
     FNaturalOrderNumericalSorting := Value;
+    SortItems;
+  end;
+end;
+
+procedure TCustomDirView.SetAlwaysSortDirectoriesByName(Value: Boolean);
+begin
+  if AlwaysSortDirectoriesByName <> Value then
+  begin
+    FAlwaysSortDirectoriesByName := Value;
     SortItems;
   end;
 end;

@@ -588,6 +588,7 @@ void __fastcall TWinConfiguration::Default()
   FPanelFont.FontStyle = 0;
   FPanelFont.FontCharset = DEFAULT_CHARSET;
   FNaturalOrderNumericalSorting = true;
+  FAlwaysSortDirectoriesByName = false;
   FFullRowSelect = false;
   FOfferedEditorAutoConfig = false;
   FVersionHistory = L"";
@@ -1046,6 +1047,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEYEX(Integer,PanelFont.FontStyle, L"PanelFontStyle"); \
     KEYEX(Integer,PanelFont.FontCharset, L"PanelFontCharset"); \
     KEY(Bool,     NaturalOrderNumericalSorting); \
+    KEY(Bool,     AlwaysSortDirectoriesByName); \
     KEY(Bool,     FullRowSelect); \
     KEY(Bool,     OfferedEditorAutoConfig); \
     KEY(Integer,  LastMonitor); \
@@ -2299,6 +2301,11 @@ void __fastcall TWinConfiguration::SetPanelFont(const TFontConfiguration & value
 void __fastcall TWinConfiguration::SetNaturalOrderNumericalSorting(bool value)
 {
   SET_CONFIG_PROPERTY(NaturalOrderNumericalSorting);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetAlwaysSortDirectoriesByName(bool value)
+{
+  SET_CONFIG_PROPERTY(AlwaysSortDirectoriesByName);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetFullRowSelect(bool value)

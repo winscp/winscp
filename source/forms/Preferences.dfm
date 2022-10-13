@@ -6,7 +6,7 @@ object PreferencesDialog: TPreferencesDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Preferences'
-  ClientHeight = 495
+  ClientHeight = 519
   ClientWidth = 545
   Color = clBtnFace
   ParentFont = True
@@ -16,12 +16,12 @@ object PreferencesDialog: TPreferencesDialog
   OnShow = FormShow
   DesignSize = (
     545
-    495)
+    519)
   PixelsPerInch = 96
   TextHeight = 13
   object OKButton: TButton
     Left = 282
-    Top = 414
+    Top = 438
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -32,7 +32,7 @@ object PreferencesDialog: TPreferencesDialog
   end
   object CloseButton: TButton
     Left = 370
-    Top = 414
+    Top = 438
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -45,7 +45,7 @@ object PreferencesDialog: TPreferencesDialog
     Left = 0
     Top = 0
     Width = 545
-    Height = 408
+    Height = 432
     Align = alTop
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
@@ -54,7 +54,7 @@ object PreferencesDialog: TPreferencesDialog
       Left = 132
       Top = 0
       Width = 413
-      Height = 408
+      Height = 432
       ActivePage = PreferencesSheet
       Align = alClient
       MultiLine = True
@@ -71,7 +71,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object CommonPreferencesGroup: TGroupBox
           Left = 8
           Top = 8
@@ -270,7 +270,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object LoggingGroup: TGroupBox
           Left = 8
           Top = 8
@@ -502,7 +502,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object InterfaceChangeLabel: TLabel
           Left = 8
           Top = 280
@@ -515,13 +515,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 66
           Width = 389
-          Height = 208
+          Height = 232
           Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'User Interface'
           TabOrder = 1
           DesignSize = (
             389
-            208)
+            232)
           object CommanderDescriptionLabel2: TLabel
             Left = 132
             Top = 20
@@ -630,21 +630,21 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object PanelsCommonGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 389
-          Height = 222
+          Height = 246
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Common'
           TabOrder = 0
           DesignSize = (
             389
-            222)
+            246)
           object Label1: TLabel
             Left = 16
-            Top = 167
+            Top = 191
             Width = 84
             Height = 13
             Caption = 'Show file si&zes in:'
@@ -653,7 +653,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object Label2: TLabel
             Left = 16
-            Top = 194
+            Top = 218
             Width = 96
             Height = 13
             Caption = '&Incremental search:'
@@ -712,7 +712,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object FormatSizeBytesCombo: TComboBox
             Left = 264
-            Top = 164
+            Top = 188
             Width = 108
             Height = 21
             Style = csDropDownList
@@ -737,7 +737,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object PanelSearchCombo: TComboBox
             Left = 196
-            Top = 191
+            Top = 215
             Width = 176
             Height = 21
             Style = csDropDownList
@@ -750,10 +750,20 @@ object PreferencesDialog: TPreferencesDialog
               'Any part of name'
               'All columns')
           end
+          object AlwaysSortDirectoriesByNameCheck: TCheckBox
+            Left = 16
+            Top = 165
+            Width = 357
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Always sort &directories by name'
+            TabOrder = 8
+            OnClick = ControlChange
+          end
         end
         object DoubleClickGroup: TGroupBox
           Left = 8
-          Top = 236
+          Top = 260
           Width = 389
           Height = 74
           Anchors = [akLeft, akTop, akRight]
@@ -798,7 +808,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object PanelFontGroup: TGroupBox
           Left = 8
-          Top = 316
+          Top = 340
           Width = 389
           Height = 82
           Anchors = [akLeft, akTop, akRight]
@@ -851,7 +861,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object Label3: TLabel
           Left = 8
           Top = 8
@@ -1002,7 +1012,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object Label4: TLabel
           Left = 8
           Top = 8
@@ -1046,23 +1056,23 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object EditorPreferenceGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 389
-          Height = 380
+          Height = 404
           Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'Editor preference'
           TabOrder = 0
           DesignSize = (
             389
-            380)
+            404)
           object EditorListView3: TListView
             Left = 16
             Top = 24
             Width = 356
-            Height = 283
+            Height = 307
             Anchors = [akLeft, akTop, akRight, akBottom]
             Columns = <
               item
@@ -1098,7 +1108,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object AddEditorButton: TButton
             Left = 16
-            Top = 313
+            Top = 337
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -1108,7 +1118,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object EditEditorButton: TButton
             Left = 112
-            Top = 313
+            Top = 337
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -1118,7 +1128,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object UpEditorButton: TButton
             Left = 290
-            Top = 313
+            Top = 337
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1128,7 +1138,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DownEditorButton: TButton
             Left = 290
-            Top = 344
+            Top = 368
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1138,7 +1148,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object RemoveEditorButton: TButton
             Left = 16
-            Top = 344
+            Top = 368
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -1157,7 +1167,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object ShellIconsGroup: TGroupBox
           Left = 8
           Top = 8
@@ -1235,23 +1245,23 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object CustomCommandsGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 389
-          Height = 380
+          Height = 404
           Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'Custom commands'
           TabOrder = 0
           DesignSize = (
             389
-            380)
+            404)
           object CustomCommandsView: TListView
             Left = 16
             Top = 24
             Width = 356
-            Height = 283
+            Height = 307
             Anchors = [akLeft, akTop, akRight, akBottom]
             Columns = <
               item
@@ -1290,7 +1300,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object AddCommandButton: TButton
             Left = 16
-            Top = 313
+            Top = 337
             Width = 98
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -1302,7 +1312,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object RemoveCommandButton: TButton
             Left = 16
-            Top = 344
+            Top = 368
             Width = 98
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -1312,7 +1322,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object UpCommandButton: TButton
             Left = 290
-            Top = 313
+            Top = 337
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1322,7 +1332,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DownCommandButton: TButton
             Left = 290
-            Top = 344
+            Top = 368
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1332,7 +1342,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object EditCommandButton: TButton
             Left = 127
-            Top = 313
+            Top = 337
             Width = 98
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -1342,7 +1352,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfigureCommandButton: TButton
             Left = 127
-            Top = 313
+            Top = 337
             Width = 98
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -1361,7 +1371,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object DragDropDownloadsGroup: TGroupBox
           Left = 8
           Top = 8
@@ -1483,7 +1493,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object QueueGroup: TGroupBox
           Left = 8
           Top = 8
@@ -1637,7 +1647,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object StorageGroup: TGroupBox
           Left = 8
           Top = 8
@@ -1869,7 +1879,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object ResumeBox: TGroupBox
           Left = 8
           Top = 8
@@ -2087,7 +2097,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object UpdatesGroup2: TGroupBox
           Left = 8
           Top = 8
@@ -2299,21 +2309,21 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object CopyParamListGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 389
-          Height = 380
+          Height = 404
           Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'Transfer settings presets'
           TabOrder = 0
           DesignSize = (
             389
-            380)
+            404)
           object CopyParamLabel: TLabel
             Left = 18
-            Top = 228
+            Top = 252
             Width = 354
             Height = 53
             Anchors = [akLeft, akRight, akBottom]
@@ -2327,7 +2337,7 @@ object PreferencesDialog: TPreferencesDialog
             Left = 16
             Top = 24
             Width = 356
-            Height = 198
+            Height = 222
             Anchors = [akLeft, akTop, akRight, akBottom]
             Columns = <
               item
@@ -2360,7 +2370,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object AddCopyParamButton: TButton
             Left = 16
-            Top = 287
+            Top = 311
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -2370,7 +2380,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object RemoveCopyParamButton: TButton
             Left = 16
-            Top = 319
+            Top = 343
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -2380,7 +2390,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object UpCopyParamButton: TButton
             Left = 289
-            Top = 287
+            Top = 311
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -2390,7 +2400,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DownCopyParamButton: TButton
             Left = 289
-            Top = 319
+            Top = 343
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -2400,7 +2410,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object EditCopyParamButton: TButton
             Left = 112
-            Top = 287
+            Top = 311
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -2410,7 +2420,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DuplicateCopyParamButton: TButton
             Left = 112
-            Top = 319
+            Top = 343
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -2420,7 +2430,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object CopyParamAutoSelectNoticeCheck: TCheckBox
             Left = 18
-            Top = 350
+            Top = 374
             Width = 354
             Height = 17
             Anchors = [akLeft, akRight, akBottom]
@@ -2439,7 +2449,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object PathInCaptionGroup: TGroupBox
           Left = 8
           Top = 131
@@ -2603,7 +2613,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object MasterPasswordGroup: TGroupBox
           Left = 8
           Top = 8
@@ -2667,7 +2677,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object ExternalAppsGroup: TGroupBox
           Left = 8
           Top = 8
@@ -2775,7 +2785,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object ExternalIpAddressGroupBox2: TGroupBox
           Left = 8
           Top = 8
@@ -2891,7 +2901,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object PanelsRemoteDirectoryGroup: TGroupBox
           Left = 8
           Top = 8
@@ -2965,7 +2975,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object LocalPanelGroup: TGroupBox
           Left = 8
           Top = 8
@@ -3016,21 +3026,21 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object LanguagesGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 389
-          Height = 380
+          Height = 404
           Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'Languages'
           TabOrder = 0
           DesignSize = (
             389
-            380)
+            404)
           object LanguageChangeLabel: TLabel
             Left = 16
-            Top = 349
+            Top = 373
             Width = 177
             Height = 13
             Anchors = [akLeft, akBottom]
@@ -3041,7 +3051,7 @@ object PreferencesDialog: TPreferencesDialog
             Left = 16
             Top = 24
             Width = 356
-            Height = 314
+            Height = 338
             Anchors = [akLeft, akTop, akRight, akBottom]
             Columns = <
               item
@@ -3060,7 +3070,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object LanguagesGetMoreButton: TButton
             Left = 273
-            Top = 344
+            Top = 368
             Width = 100
             Height = 25
             Anchors = [akRight, akBottom]
@@ -3078,7 +3088,7 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object InternalEditorGroup: TGroupBox
           Left = 8
           Top = 8
@@ -3207,23 +3217,23 @@ object PreferencesDialog: TPreferencesDialog
         TabVisible = False
         DesignSize = (
           405
-          398)
+          422)
         object FileColorsGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 389
-          Height = 380
+          Height = 404
           Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'File colors'
           TabOrder = 0
           DesignSize = (
             389
-            380)
+            404)
           object FileColorsView: TListView
             Left = 16
             Top = 24
             Width = 356
-            Height = 283
+            Height = 307
             Anchors = [akLeft, akTop, akRight, akBottom]
             Columns = <
               item
@@ -3253,7 +3263,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object AddFileColorButton: TButton
             Left = 16
-            Top = 313
+            Top = 337
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -3263,7 +3273,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object RemoveFileColorButton: TButton
             Left = 16
-            Top = 344
+            Top = 368
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -3273,7 +3283,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object UpFileColorButton: TButton
             Left = 290
-            Top = 313
+            Top = 337
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -3283,7 +3293,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DownFileColorButton: TButton
             Left = 290
-            Top = 344
+            Top = 368
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -3293,7 +3303,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object EditFileColorButton: TButton
             Left = 112
-            Top = 313
+            Top = 337
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -3308,18 +3318,18 @@ object PreferencesDialog: TPreferencesDialog
       Left = 0
       Top = 0
       Width = 132
-      Height = 408
+      Height = 432
       Align = alLeft
       BevelOuter = bvNone
       TabOrder = 0
       DesignSize = (
         132
-        408)
+        432)
       object NavigationTree: TTreeView
         Left = 8
         Top = 9
         Width = 116
-        Height = 398
+        Height = 422
         Anchors = [akLeft, akTop, akRight, akBottom]
         DoubleBuffered = True
         HideSelection = False
@@ -3379,7 +3389,7 @@ object PreferencesDialog: TPreferencesDialog
   end
   object HelpButton: TButton
     Left = 458
-    Top = 414
+    Top = 438
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -3389,7 +3399,7 @@ object PreferencesDialog: TPreferencesDialog
   end
   object ComponentsPanel: TPanel
     Left = 0
-    Top = 445
+    Top = 469
     Width = 545
     Height = 50
     Align = alBottom
@@ -3400,7 +3410,7 @@ object PreferencesDialog: TPreferencesDialog
   end
   object RegisterAsUrlHandlerMenu: TPopupMenu
     Left = 56
-    Top = 443
+    Top = 470
     object RegisterAsUrlHandlerItem: TMenuItem
       Caption = 'Register'
       OnClick = RegisterAsUrlHandlerItemClick
@@ -3416,7 +3426,7 @@ object PreferencesDialog: TPreferencesDialog
   end
   object AddCommandMenu: TPopupMenu
     Left = 208
-    Top = 443
+    Top = 470
     object AddCustomCommandMenuItem: TMenuItem
       Caption = 'Add &Custom Command...'
       OnClick = AddCustomCommandMenuItemClick

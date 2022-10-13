@@ -766,59 +766,66 @@ int __stdcall CompareFile(TListItem * Item1, TListItem * Item2, TUnixDirView * D
   {
     Result = 0;
 
-    switch (DirView->SortColumn)
+    if (File1->IsDirectory && DirView->AlwaysSortDirectoriesByName)
     {
-      case uvName:
-        // fallback
-        break;
-
-      case uvSize:
-        Result = COMPARE_NUMBER(File1->Size, File2->Size);
-        break;
-
-      case uvChanged:
-        Result = COMPARE_NUMBER(File1->Modification, File2->Modification);
-        break;
-
-      case uvRights:
-        Result = AnsiCompareText(File1->RightsStr, File2->RightsStr);
-        break;
-
-      case uvOwner:
-        Result = File1->Owner.Compare(File2->Owner);
-        break;
-
-      case uvGroup:
-        Result = File1->Group.Compare(File2->Group);
-        break;
-
-      case uvExt:
-        // Duplicated in uvType branch
-        if (!File1->IsDirectory)
-        {
-          Result = CompareLogicalText(File1->Extension, File2->Extension, DirView->NaturalOrderNumericalSorting);
-        }
-        else
-        {
+      // fallback
+    }
+    else
+    {
+      switch (DirView->SortColumn)
+      {
+        case uvName:
           // fallback
-        }
-        break;
+          break;
 
-      case uvLinkTarget:
-        Result = CompareLogicalText(File1->LinkTo, File2->LinkTo, DirView->NaturalOrderNumericalSorting);
-        break;
+        case uvSize:
+          Result = COMPARE_NUMBER(File1->Size, File2->Size);
+          break;
 
-      case uvType:
-        Result = CompareLogicalText(File1->TypeName, File2->TypeName, DirView->NaturalOrderNumericalSorting);
-        // fallback to uvExt
-        if ((Result == 0) && !File1->IsDirectory)
-        {
-          Result = CompareLogicalText(File1->Extension, File2->Extension, DirView->NaturalOrderNumericalSorting);
-        }
-        break;
+        case uvChanged:
+          Result = COMPARE_NUMBER(File1->Modification, File2->Modification);
+          break;
 
-      default:
-        DebugFail();
+        case uvRights:
+          Result = AnsiCompareText(File1->RightsStr, File2->RightsStr);
+          break;
+
+        case uvOwner:
+          Result = File1->Owner.Compare(File2->Owner);
+          break;
+
+        case uvGroup:
+          Result = File1->Group.Compare(File2->Group);
+          break;
+
+        case uvExt:
+          // Duplicated in uvType branch
+          if (!File1->IsDirectory)
+          {
+            Result = CompareLogicalText(File1->Extension, File2->Extension, DirView->NaturalOrderNumericalSorting);
+          }
+          else
+          {
+            // fallback
+          }
+          break;
+
+        case uvLinkTarget:
+          Result = CompareLogicalText(File1->LinkTo, File2->LinkTo, DirView->NaturalOrderNumericalSorting);
+          break;
+
+        case uvType:
+          Result = CompareLogicalText(File1->TypeName, File2->TypeName, DirView->NaturalOrderNumericalSorting);
+          // fallback to uvExt
+          if ((Result == 0) && !File1->IsDirectory)
+          {
+            Result = CompareLogicalText(File1->Extension, File2->Extension, DirView->NaturalOrderNumericalSorting);
+          }
+          break;
+
+        default:
+          DebugFail();
+      }
     }
 
     if (Result == 0)

@@ -340,6 +340,7 @@ __published:
   TLabel *LocalPortNumberRangeLabel;
   TUpDownEdit *LocalPortNumberMinEdit;
   TUpDownEdit *LocalPortNumberMaxEdit;
+  TCheckBox *AlwaysSortDirectoriesByNameCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
