@@ -801,7 +801,7 @@ object PreferencesDialog: TPreferencesDialog
           Top = 316
           Width = 389
           Height = 82
-          Anchors = [akLeft, akRight, akBottom]
+          Anchors = [akLeft, akTop, akRight]
           Caption = 'Panel font'
           TabOrder = 2
           DesignSize = (
