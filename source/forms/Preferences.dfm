@@ -76,16 +76,16 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 295
+          Height = 305
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Confirmations'
           TabOrder = 0
           DesignSize = (
             389
-            295)
+            305)
           object SynchronizeSummaryCheck: TCheckBox
             Left = 16
-            Top = 244
+            Top = 253
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -95,7 +95,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmOverwritingCheck: TCheckBox
             Left = 16
-            Top = 67
+            Top = 69
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -105,7 +105,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmDeletingCheck: TCheckBox
             Left = 16
-            Top = 129
+            Top = 133
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -115,7 +115,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmClosingSessionCheck2: TCheckBox
             Left = 16
-            Top = 175
+            Top = 181
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -125,7 +125,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DDTransferConfirmationCheck2: TCheckBox
             Left = 32
-            Top = 44
+            Top = 45
             Width = 341
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -135,7 +135,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ContinueOnErrorCheck: TCheckBox
             Left = 16
-            Top = 267
+            Top = 277
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -145,7 +145,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmExitOnCompletionCheck: TCheckBox
             Left = 16
-            Top = 198
+            Top = 205
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -155,7 +155,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmResumeCheck: TCheckBox
             Left = 16
-            Top = 90
+            Top = 93
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -165,7 +165,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmCommandSessionCheck: TCheckBox
             Left = 16
-            Top = 221
+            Top = 229
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -175,7 +175,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmRecyclingCheck: TCheckBox
             Left = 16
-            Top = 152
+            Top = 157
             Width = 357
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -195,7 +195,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object BackgroundConfirmationsLink: TStaticText
             Left = 32
-            Top = 111
+            Top = 114
             Width = 345
             Height = 17
             Alignment = taRightJustify
@@ -208,7 +208,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object NotificationsGroup: TGroupBox
           Left = 8
-          Top = 309
+          Top = 319
           Width = 389
           Height = 73
           Anchors = [akLeft, akTop, akRight]
@@ -251,7 +251,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object BalloonNotificationsCheck: TCheckBox
             Left = 16
-            Top = 46
+            Top = 45
             Width = 364
             Height = 17
             Anchors = [akLeft, akTop, akRight]
