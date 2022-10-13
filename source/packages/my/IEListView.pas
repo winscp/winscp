@@ -91,12 +91,15 @@ type
 
     procedure CreateWnd; override;
     procedure ColClick(Column: TListColumn); override;
+    procedure SetSort(Column: Integer; Ascending: Boolean);
     procedure WMNotify(var Msg: TWMNotify); message WM_NOTIFY;
     procedure CMRecreateWnd(var Message: TMessage); message CM_RECREATEWND;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure SetColumnImages; virtual;
+
+    procedure SortBy(Column: Integer);
 
     property DragImageList: TDragImageList read FDragImageList;
     property ParentForm: TCustomForm read FParentForm;
@@ -378,16 +381,28 @@ begin
   SetDateTimeFormatString;
 end; {Create}
 
-procedure TCustomIEListView.SetSortColumn(Value: Integer);
+procedure TCustomIEListView.SetSort(Column: Integer; Ascending: Boolean);
 begin
-  if Value <> SortColumn then
+  if (SortColumn <> Column) or (SortAscending <> Ascending) then
   begin
-    FSortColumn := Value;
-    FSortAscending := True;
-    if Items.Count > 0 then
-      SortItems;
+    FSortColumn := Column;
+    FSortAscending := Ascending;
+
+    if Items.Count > 0 then SortItems;
+
     SetColumnImages;
   end;
+end;
+
+procedure TCustomIEListView.SortBy(Column: Integer);
+begin
+  if Column = SortColumn then SetSort(SortColumn, not SortAscending)
+    else SetSort(Column, SortAscendingByDefault(Column));
+end;
+
+procedure TCustomIEListView.SetSortColumn(Value: Integer);
+begin
+  SetSort(Value, True);
 end; {SetSortColumn}
 
 procedure TCustomIEListView.SetViewStyle(Value: TViewStyle);
@@ -402,13 +417,7 @@ end; {SetViewStyle}
 
 procedure TCustomIEListView.SetSortAscending(Value: Boolean);
 begin
-  if SortAscending <> Value then
-  begin
-    FSortAscending := Value;
-    if Items.Count > 0 then
-      SortItems;
-    SetColumnImages;
-  end;
+  SetSort(SortColumn, Value);
 end; {SetSortAscending}
 
 procedure TCustomIEListView.SetColumnImages;
@@ -498,17 +507,7 @@ end;
 
 procedure TCustomIEListView.ColClick(Column: TListColumn);
 begin
-  if Column.Index = SortColumn then FSortAscending := not FSortAscending
-    else
-  begin
-    FSortColumn := Column.Index;
-    FSortAscending := SortAscendingByDefault(Column.Index);
-  end;
-
-  if Items.Count > 0 then SortItems;
-
-  SetColumnImages;
-
+  SortBy(Column.Index);
   inherited;
 end; {ColClick}
 

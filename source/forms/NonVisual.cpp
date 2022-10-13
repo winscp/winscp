@@ -55,13 +55,7 @@ TNonVisualDataModule *NonVisualDataModule;
     Action->Checked = false \
   )
 #define EXESORT(SIDE, NAME, LCOL, RCOL, NUM) \
-  EXE(SIDE ## SortBy ## NAME ## Action ## NUM, \
-    int Col = (ScpExplorer->IsSideLocalBrowser(os ## SIDE) ? LCOL : RCOL); \
-    if (COLPROPS(SIDE)->SortColumn == Col) \
-      COLPROPS(SIDE)->SortAscending = !COLPROPS(SIDE)->SortAscending; \
-    else \
-      COLPROPS(SIDE)->SortColumn = Col; \
-  )
+  EXE(SIDE ## SortBy ## NAME ## Action ## NUM, ScpExplorer->DirView(os ## SIDE)->SortBy(ScpExplorer->IsSideLocalBrowser(os ## SIDE) ? LCOL : RCOL))
 #define UPDSORTA(SIDE, NUM) if (Action == SIDE ## SortAscendingAction ## NUM) { \
   SIDE ## SortAscendingAction ## NUM->Enabled = true; Handled = true; \
   SIDE ## SortAscendingAction ## NUM->Checked = COLPROPS(SIDE)->SortAscending; } else
