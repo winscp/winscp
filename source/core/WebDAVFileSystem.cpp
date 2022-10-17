@@ -1203,6 +1203,10 @@ void __fastcall TWebDAVFileSystem::ConfirmOverwrite(
   switch (Answer)
   {
     case qaYes:
+    // Can happen when moving to background (and the server manages to commit the interrupeted foreground transfer).
+    // WebDAV does not support resumable uploads.
+    // Resumable downloads are not implemented.
+    case qaRetry:
       // noop
       break;
 
