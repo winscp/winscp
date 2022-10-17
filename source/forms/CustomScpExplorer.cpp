@@ -11702,7 +11702,7 @@ void TCustomScpExplorerForm::CalculateDirectorySizes()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::DirectorySizeCalculated(TOperationSide Side, const UnicodeString & FileName, bool)
+void __fastcall TCustomScpExplorerForm::DirectorySizeCalculated(TOperationSide Side, const UnicodeString & FileName, bool Success)
 {
   DebugAlwaysTrue(FCalculateSizeOperation != NULL);
 
@@ -11727,7 +11727,7 @@ void __fastcall TCustomScpExplorerForm::DirectorySizeCalculated(TOperationSide S
       Index = I - FCalculateSizeOperation->ListItems.begin();
     }
   }
-  if (DebugAlwaysTrue(Index >= 0))
+  if (DebugAlwaysTrue(Index >= 0) && Success)
   {
     __int64 Size = (*FCalculateSizeOperation->Stats.CalculatedSizes)[Index];
     ADirView->SetItemCalculatedSize(Item, Size);
