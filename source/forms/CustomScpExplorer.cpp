@@ -3381,6 +3381,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
       }
 
       FEditorManager->AddFileInternal(FileName, Data.release(), Editor);
+      AppLogFmt(L"Opened internal editor with \"%s\"", (FileName));
     }
     else
     {
@@ -3442,6 +3443,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
     if (!IsSideLocalBrowser(Side))
     {
       FEditorManager->AddFileExternal(FileName, Data.release(), Process);
+      AppLogFmt(L"Opened external editor with remote file \"%s\".", (FileName));
     }
   }
 }

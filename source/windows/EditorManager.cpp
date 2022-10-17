@@ -437,10 +437,10 @@ bool __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
   if (FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE)
   {
     FileData->Closed = true;
+    AppLogFmt(L"Opened/edited file \"%s\" has been closed, but the file is still being uploaded.", (FileData->FileName));
   }
   else
   {
-    UnicodeString FileName = FileData->FileName;
     UnicodeString LocalRootDirectory = FileData->Data->LocalRootDirectory;
 
     ReleaseFile(Index);
@@ -454,6 +454,11 @@ bool __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
       {
         throw Exception(FMTLOAD(DELETE_TEMP_EXECUTE_FILE_ERROR, (LocalRootDirectory)));
       }
+      AppLogFmt(L"Deleted opened/edited file [%s] folder \"%s\".", (FileData->FileName, LocalRootDirectory));
+    }
+    else
+    {
+      AppLogFmt(L"Opened/edited file \"%s\" has been closed.", (FileData->FileName));
     }
   }
   return Result;
