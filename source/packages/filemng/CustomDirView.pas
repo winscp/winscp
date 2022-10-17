@@ -3469,8 +3469,16 @@ end;
 
 procedure TCustomDirView.ItemCalculatedSizeUpdated(Item: TListItem; OldSize, NewSize: Int64);
 begin
-  if OldSize >= 0 then Dec(FFilesSize, OldSize);
-  if NewSize >= 0 then Inc(FFilesSize, NewSize);
+  if OldSize >= 0 then
+  begin
+    Dec(FFilesSize, OldSize);
+    if Item.Selected then Dec(FFilesSelSize, OldSize);
+  end;
+  if NewSize >= 0 then
+  begin
+    Inc(FFilesSize, NewSize);
+    if Item.Selected then Inc(FFilesSelSize, NewSize);
+  end;
   Item.Update;
   UpdateStatusBar;
 end;
