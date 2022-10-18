@@ -40,6 +40,7 @@
 #define fcLocalPopup       0x26
 #define fcRemotePathComboBox 0x27
 #define fcQueueFileList    0x28
+#define fcMenu             0x29
 
 #define fcExplorerMenuBand        0x31
 #define fcExplorerAddressBand     0x32

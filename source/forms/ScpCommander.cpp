@@ -1194,6 +1194,7 @@ TControl * __fastcall TScpCommanderForm::GetComponent(Byte Component)
     case fcTransferLabel: return reinterpret_cast<TControl*>(TransferLabel);
     case fcLocalPopup: return reinterpret_cast<TControl *>(NonVisualDataModule->LocalFilePopup);
     case fcRemotePathComboBox: return reinterpret_cast<TControl*>(RemotePathComboBox);
+    case fcMenu: return MenuToolbar;
 
     case fcCommanderMenuBand: return MenuToolbar;
     case fcCommanderSessionBand: return SessionToolbar2;

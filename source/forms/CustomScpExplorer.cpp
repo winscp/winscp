@@ -4979,6 +4979,13 @@ void __fastcall TCustomScpExplorerForm::Idle()
         }
       }
     }
+
+    // TB2 shows accels on Alt key down, but hides it only after menu modal loop finishes.
+    // But if Alt is used to switch apps or for keyboard shortcut, the menu modal loop does not happen and accelerators stay displayed.
+    // It's difficult to fix this in TB2, as there's no "up" equivalent to CM_DIALOGKEY, which shows the accels.
+    // And the Alt key can be released even when other window or application is active, so handling the key up in explorer window won't do either.
+    TTBCustomToolbar * MenuToolbar = DebugNotNull(dynamic_cast<TTBCustomToolbar *>(GetComponent(fcMenu)));
+    MenuToolbar->Idle();
   }
 
   if (FShowing || StandaloneOperation)

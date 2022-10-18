@@ -213,6 +213,7 @@ TControl * __fastcall TScpExplorerForm::GetComponent(Byte Component)
     case fcTransferList: return reinterpret_cast<TControl*>(TransferList);
     case fcTransferLabel: return reinterpret_cast<TControl*>(TransferLabel);
     case fcRemotePathComboBox: return reinterpret_cast<TControl*>(UnixPathComboBox);
+    case fcMenu: return MenuToolbar;
 
     case fcExplorerMenuBand: return MenuToolbar;
     case fcExplorerAddressBand: return AddressToolbar;

@@ -177,6 +177,7 @@ type
     procedure ReadPositionData(var S: string); override;
     function WritePositionData: string; override;
     procedure GetChildren(Proc: TGetChildProc; Root: TComponent); override;
+    procedure Idle;
 
     property ChevronHint: String read GetChevronHint write SetChevronHint stored IsChevronHintStored;
     property ChevronMoveItems: Boolean read FChevronMoveItems write SetChevronMoveItems default True;
@@ -844,6 +845,16 @@ begin
   if (Message.CharCode = VK_MENU) and FMenuBar then
     FView.SetAccelsVisibility(True);
   inherited;
+end;
+
+procedure TTBCustomToolbar.Idle;
+begin
+  if FMenuBar and
+     (not (vsModal in FView.State)) and
+     ((GetAsyncKeyState(VK_MENU) and $8000) = 0) then
+  begin
+    FView.SetAccelsVisibility(False);
+  end;
 end;
 
 procedure TTBCustomToolbar.CMDialogChar(var Message: TCMDialogChar);
