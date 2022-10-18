@@ -160,7 +160,7 @@ __published:
   TTBXItem *TBXItem21;
   TTBXToolbar *AddressToolbar;
   TTBXLabelItem *TBXLabelItem1;
-  TTBXItem *TBXItem22;
+  TTBXSubmenuItem *RemoteOpenDirButton;
   TTBXToolbar *ButtonsToolbar;
   TTBXSubmenuItem *BackButton;
   TTBXSubmenuItem *ForwardButton;
@@ -339,6 +339,7 @@ __published:
           bool FromLink);
   void __fastcall RemoteStatusBarPanelClick(TTBXCustomStatusBar *Sender, TTBXStatusPanel *Panel);
   void __fastcall AddressToolbarEndModal(TObject *Sender);
+  void __fastcall RemoteOpenDirButtonPopup(TTBCustomItem *Sender, bool FromLink);
 
 private:
   UnicodeString FStatusBarFileText;

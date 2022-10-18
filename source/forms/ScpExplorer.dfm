@@ -932,8 +932,10 @@ inherited ScpExplorerForm: TScpExplorerForm
         OnMeasureWidth = RemotePathComboBoxMeasureWidth
         OnCancel = RemotePathComboBoxCancel
       end
-      object TBXItem22: TTBXItem
+      object RemoteOpenDirButton: TTBXSubmenuItem
         Action = NonVisualDataModule.RemoteOpenDirAction
+        DropdownCombo = True
+        OnPopup = RemoteOpenDirButtonPopup
       end
       object TBXItem229: TTBXSubmenuItem
         Action = NonVisualDataModule.RemoteFilterAction

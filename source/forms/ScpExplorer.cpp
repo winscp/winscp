@@ -421,3 +421,9 @@ bool TScpExplorerForm::SupportedSession(TSessionData * SessionData)
 {
   return !SessionData->IsLocalBrowser;
 }
+//---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::RemoteOpenDirButtonPopup(TTBCustomItem *, bool DebugUsedArg(FromLink))
+{
+  CreateOpenDirMenu(RemoteOpenDirButton, osRemote);
+}
+//---------------------------------------------------------------------------
