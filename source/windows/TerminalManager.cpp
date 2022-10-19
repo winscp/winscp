@@ -1854,6 +1854,10 @@ void __fastcall TTerminalManager::SaveWorkspace(TList * DataList)
   {
     TManagedTerminal * ManagedTerminal = Sessions[Index];
     TSessionData * Data = StoredSessions->SaveWorkspaceData(ManagedTerminal->StateData, Index);
+    if (ManagedTerminal->Active)
+    {
+      ManagedTerminal->UpdateSessionCredentials(Data);
+    }
     DataList->Add(Data);
   }
 }
