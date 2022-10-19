@@ -412,6 +412,51 @@ static UnicodeString ColorToRGBStr(TColor Color)
   return Result;
 }
 //---------------------------------------------------------------------------
+class TStartupThread : public TSimpleThread
+{
+public:
+  TStartupThread();
+
+  int GetStartupSeconds();
+
+  virtual void __fastcall Terminate();
+
+protected:
+  virtual void __fastcall Execute();
+
+  int FMilliseconds;
+  bool FStop;
+};
+//---------------------------------------------------------------------------
+TStartupThread::TStartupThread()
+{
+  FMilliseconds = 0;
+  FStop = false;
+  Start();
+}
+//---------------------------------------------------------------------------
+int TStartupThread::GetStartupSeconds()
+{
+  DebugAssert(!FStop);
+  return FMilliseconds / 1000;
+}
+//---------------------------------------------------------------------------
+void __fastcall TStartupThread::Terminate()
+{
+  FStop = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TStartupThread::Execute()
+{
+  while (!FStop)
+  {
+    const int Step = 250;
+    Sleep(Step);
+    FMilliseconds += Step;
+  }
+}
+//---------------------------------------------------------------------------
+TStartupThread * StartupThread(new TStartupThread());
 TDateTime Started(Now());
 TDateTime LastStartupStartupSequence(Now());
 UnicodeString StartupSequence;
@@ -420,6 +465,7 @@ int LifetimeRuns = -1;
 void InterfaceStartDontMeasure()
 {
   Started = TDateTime();
+  StartupThread->Terminate();
 }
 //---------------------------------------------------------------------------
 void AddStartupSequence(const UnicodeString & Tag)
@@ -435,6 +481,7 @@ void InterfaceStarted()
   {
     // deliberate downcast
     int StartupSeconds = static_cast<int>(SecondsBetween(Now(), Started));
+    int StartupSecondsReal = DebugNotNull(StartupThread)->GetStartupSeconds();
     if (LifetimeRuns == 1)
     {
       Configuration->Usage->Set(L"StartupSeconds1", StartupSeconds);
@@ -444,9 +491,11 @@ void InterfaceStarted()
       Configuration->Usage->Set(L"StartupSeconds2", StartupSeconds);
     }
     Configuration->Usage->Set(L"StartupSecondsLast", StartupSeconds);
+    Configuration->Usage->Set(L"StartupSecondsLastReal", StartupSecondsReal);
     AddStartupSequence(L"I");
     Configuration->Usage->Set(L"StartupSequenceLast", StartupSequence);
   }
+  StartupThread->Terminate();
 }
 //---------------------------------------------------------------------------
 void __fastcall UpdateStaticUsage()
@@ -578,6 +627,7 @@ void __fastcall UpdateFinalStaticUsage()
 void __fastcall MaintenanceTask()
 {
   CoreMaintenanceTask();
+  InterfaceStartDontMeasure();
 }
 //---------------------------------------------------------------------------
 typedef std::vector<HWND> THandles;
@@ -903,6 +953,7 @@ int __fastcall Execute()
 
   if (Mode != cmNone)
   {
+    InterfaceStartDontMeasure();
     return Console(Mode);
   }
 
@@ -1249,6 +1300,7 @@ int __fastcall Execute()
                   {
                     Configuration->Usage->Inc(L"CommandLineOperation");
                     ScpExplorer->StandaloneOperation = true;
+                    InterfaceStartDontMeasure();
                   }
 
                   if (ParamCommand == pcUpload)
@@ -1330,6 +1382,7 @@ int __fastcall Execute()
     GlyphsModule = NULL;
     TTerminalManager::DestroyInstance();
     delete CommandParams;
+    delete StartupThread;
   }
 
   return 0;
