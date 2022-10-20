@@ -10366,7 +10366,8 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlMouseDown(
       // to actually release the button, "mouse down" is still raised,
       // but we do not get "mouse up" event, so dragging is not cancelled,
       // prevent that by not beginning dragging in the first place.
-      if (IsKeyPressed(VK_LBUTTON))
+      int Key = ((GetSystemMetrics(SM_SWAPBUTTON) == 0) ? VK_LBUTTON : VK_RBUTTON);
+      if (IsKeyPressed(Key))
       {
         // when user clicks the "+", we get mouse down only after the session
         // is closed, when new session tab is already on X:Y, so dragging
