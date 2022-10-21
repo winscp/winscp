@@ -438,7 +438,7 @@ TStartupThread::TStartupThread()
 //---------------------------------------------------------------------------
 __fastcall TStartupThread::~TStartupThread()
 {
-//  Close();
+  Close();
 }
 //---------------------------------------------------------------------------
 int TStartupThread::GetStartupSeconds()
