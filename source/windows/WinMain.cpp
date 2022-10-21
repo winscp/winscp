@@ -416,6 +416,7 @@ class TStartupThread : public TSimpleThread
 {
 public:
   TStartupThread();
+  virtual __fastcall ~TStartupThread();
 
   int GetStartupSeconds();
 
@@ -433,6 +434,11 @@ TStartupThread::TStartupThread()
   FMilliseconds = 0;
   FStop = false;
   Start();
+}
+//---------------------------------------------------------------------------
+__fastcall TStartupThread::~TStartupThread()
+{
+//  Close();
 }
 //---------------------------------------------------------------------------
 int TStartupThread::GetStartupSeconds()

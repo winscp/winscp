@@ -306,6 +306,7 @@ __fastcall TSimpleThread::TSimpleThread() :
 //---------------------------------------------------------------------------
 __fastcall TSimpleThread::~TSimpleThread()
 {
+  // This is turn calls pure virtual Terminate, what does not work as intended, do not rely on it and remove the call eventually
   Close();
 
   if (FThread != NULL)
