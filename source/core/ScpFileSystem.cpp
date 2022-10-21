@@ -54,9 +54,6 @@ struct TCommandType
 #define FIRST_LINE L"WinSCP: this is begin-of-file"
 extern const TCommandType DefaultCommandSet[];
 
-#define NationalVarCount 10
-extern const wchar_t NationalVars[NationalVarCount][15];
-
 #define CHECK_CMD DebugAssert((Cmd >=0) && (Cmd <= MaxShellCommand))
 
 class TSessionData;
@@ -99,9 +96,9 @@ public:
   __property UnicodeString ReturnVar  = { read=GetReturnVar, write=FReturnVar };
 };
 //===========================================================================
-const wchar_t NationalVars[NationalVarCount][15] =
+const wchar_t NationalVars[][15] =
   {L"LANG", L"LANGUAGE", L"LC_CTYPE", L"LC_COLLATE", L"LC_MONETARY", L"LC_NUMERIC",
-   L"LC_TIME", L"LC_MESSAGES", L"LC_ALL", L"HUMAN_BLOCKS" };
+   L"LC_TIME", L"LC_MESSAGES", L"LC_ALL", L"HUMAN_BLOCKS", L"BLOCK_SIZE", L"LS_BLOCK_SIZE" };
 const wchar_t FullTimeOption[] = L"--full-time";
 //---------------------------------------------------------------------------
 #define F false
@@ -916,7 +913,7 @@ void __fastcall TSCPFileSystem::UnsetNationalVars()
   try
   {
     FTerminal->LogEvent(L"Clearing national user variables.");
-    for (int Index = 0; Index < NationalVarCount; Index++)
+    for (size_t Index = 0; Index < LENOF(NationalVars); Index++)
     {
       ExecCommand(fsUnset, ARRAYOFCONST((NationalVars[Index])), false);
     }
