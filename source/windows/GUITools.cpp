@@ -2221,7 +2221,7 @@ void __fastcall TNewRichEdit::CreateParams(TCreateParams & Params)
   SetErrorMode(OldError);
 
   // No fallback, MSFTEDIT.DLL is available since Windows XP
-  // https://docs.microsoft.com/en-us/archive/blogs/murrays/richedit-versions
+  // https://learn.microsoft.com/en-us/archive/blogs/murrays/richedit-versions
   if (FLibrary == 0)
   {
     throw Exception(FORMAT(L"Cannot load %s", (RichEditModuleName)));
@@ -2229,7 +2229,7 @@ void __fastcall TNewRichEdit::CreateParams(TCreateParams & Params)
 
   TCustomMemo::CreateParams(Params);
   // MSDN says that we should use MSFTEDIT_CLASS to load Rich Edit 4.1:
-  // https://docs.microsoft.com/en-us/windows/win32/controls/about-rich-edit-controls
+  // https://learn.microsoft.com/en-us/windows/win32/controls/about-rich-edit-controls
   // But MSFTEDIT_CLASS is defined as "RICHEDIT50W",
   // so not sure what version we are loading.
   // Seem to work on Windows XP SP3.
