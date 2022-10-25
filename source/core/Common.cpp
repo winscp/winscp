@@ -3218,7 +3218,7 @@ UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDat
   {
     Result = IntToStr(int(DateTime)) + L", ";
   }
-  // days are decremented, because when there are to many of them,
+  // days are decremented, because when there are too many of them,
   // "integer overflow" error occurs
   Result += FormatDateTime(TimeFormat, DateTime - int(DateTime));
   return Result;
