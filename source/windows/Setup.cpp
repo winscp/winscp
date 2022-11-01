@@ -1652,8 +1652,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
       Configuration->Usage->Inc(L"UpdateDisplaysNew");
     }
 
-    if (Updates.HaveResults &&
-        (double(Updates.Period) > 0) &&
+    if ((double(Updates.Period) > 0) &&
         // do not show next check time, if we have new version info
         !New)
     {
