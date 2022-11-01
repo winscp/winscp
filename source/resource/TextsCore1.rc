@@ -465,6 +465,7 @@ BEGIN
   COPY_INFO_EXCLUDE_EMPTY_DIRS, "Exclude empty directories"
   PUBLIC_KEY_UPLOADED, "**Public key \"%s\" was installed.**\n\nYou can now login to the server using the key pair."
   PUBLIC_KEY_PERMISSIONS, "Though potentially wrong permissions of \"%s\" file and/or its parent folder were detected. Please check them."
+  TIME_RELATIVE, "just now|today|yesterday|tomorrow|one second ago|%d seconds ago|one minute ago|%d minutes ago|one hour ago|%d hours ago|one day ago|%d days ago|one week ago|%d weeks ago|one month ago|%d months ago|one year ago|%d years ago"
 
   CORE_VARIABLE_STRINGS, "CORE_VARIABLE"
   PUTTY_BASED_ON, "SSH and SCP code based on PuTTY %s"

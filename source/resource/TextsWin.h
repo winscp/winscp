@@ -309,6 +309,7 @@
 #define STORE_MIGRATION_LEARN   1596
 #define MESSAGE_DISMISS         1597
 #define USAGE_PASSWORDSFROMFILES 1598
+#define UPDATE_CURRENT          1599
 
 #define WIN_FORMS_STRINGS       1600
 #define COPY_FILE               1605

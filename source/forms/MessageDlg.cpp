@@ -209,7 +209,7 @@ UnicodeString __fastcall TMessageForm::GetFormText()
 {
   UnicodeString DividerLine, ButtonCaptions;
 
-  DividerLine = UnicodeString::StringOfChar(L'-', 27) + sLineBreak;
+  DividerLine = GetDividerLine() + sLineBreak;
   for (int i = 0; i < ComponentCount - 1; i++)
   {
     if (dynamic_cast<TButton*>(Components[i]) != NULL)
@@ -224,19 +224,13 @@ UnicodeString __fastcall TMessageForm::GetFormText()
   {
     MoreMessages = MessageMemo->Text + DividerLine;
   }
-  else if (MessageBrowser != NULL)
+  else if ((MessageBrowser != NULL) && CopyTextFromBrowser(MessageBrowser, MoreMessages))
   {
-    MessageBrowser->SelectAll();
-    MessageBrowser->CopyToClipBoard();
-    if (NonEmptyTextFromClipboard(MoreMessages))
+    if (!EndsStr(sLineBreak, MoreMessages))
     {
-      if (!EndsStr(sLineBreak, MoreMessages))
-      {
-        MoreMessages += sLineBreak;
-      }
-      MoreMessages += DividerLine;
+      MoreMessages += sLineBreak;
     }
-    MessageBrowser->DoCommand(L"UNSELECT");
+    MoreMessages += DividerLine;
   }
   UnicodeString MessageCaption = NormalizeNewLines(MessageText);
   UnicodeString Result = FORMAT(L"%s%s%s%s%s%s%s%s%s%s%s", (DividerLine, Caption, sLineBreak,

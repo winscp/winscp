@@ -1444,6 +1444,15 @@ void HideBrowserScrollbars(TWebBrowserEx * WebBrowser)
   }
 }
 //---------------------------------------------------------------------------
+bool CopyTextFromBrowser(TWebBrowserEx * WebBrowser, UnicodeString & Text)
+{
+  WebBrowser->SelectAll();
+  WebBrowser->CopyToClipBoard();
+  bool Result = NonEmptyTextFromClipboard(Text);
+  WebBrowser->DoCommand(L"UNSELECT");
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString GenerateAppHtmlPage(TFont * Font, TPanel * Parent, const UnicodeString & Body, bool Seamless)
 {
   UnicodeString Result =

@@ -58,6 +58,7 @@ void __fastcall NavigateBrowserToUrl(TWebBrowserEx * WebBrowser, const UnicodeSt
 void ReadyBrowserForStreaming(TWebBrowserEx * WebBrowser);
 void WaitBrowserToIdle(TWebBrowserEx * WebBrowser);
 void HideBrowserScrollbars(TWebBrowserEx * WebBrowser);
+bool CopyTextFromBrowser(TWebBrowserEx * WebBrowser, UnicodeString & Text);
 UnicodeString GenerateAppHtmlPage(TFont * Font, TPanel * Parent, const UnicodeString & Body, bool Seamless);
 void LoadBrowserDocument(TWebBrowserEx * WebBrowser, const UnicodeString & Document);
 TComponent * __fastcall FindComponentRecursively(TComponent * Root, const UnicodeString & Name);

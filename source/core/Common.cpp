@@ -3224,6 +3224,116 @@ UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDat
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString FormatRelativeTime(const TDateTime & ANow, const TDateTime & AThen, bool DateOnly)
+{
+  UnicodeString Result;
+  if (DateOnly)
+  {
+    if (IsSameDay(AThen, ANow - 1))
+    {
+      Result = LoadStrPart(TIME_RELATIVE, 3);
+    }
+    else if (IsSameDay(AThen, ANow))
+    {
+      Result = LoadStrPart(TIME_RELATIVE, 2);
+    }
+  }
+
+  if (Result.IsEmpty())
+  {
+    int Part, Num;
+
+    Num = YearsBetween(ANow, AThen);
+    if (Num > 1)
+    {
+      Part = 18;
+    }
+    else if (Num == 1)
+    {
+      Part = 17;
+    }
+    else
+    {
+      Num = MonthsBetween(ANow, AThen);
+      if (Num > 1)
+      {
+        Part = 16;
+      }
+      else if (Num == 1)
+      {
+        Part = 15;
+      }
+      else
+      {
+        Num = DaysBetween(ANow, AThen);
+        if (Num > 1)
+        {
+          Part = 12;
+        }
+        else if (Num == 1)
+        {
+          Part = 11;
+        }
+        else
+        {
+          Num = static_cast<int>(HoursBetween(ANow, AThen));
+          if (Num > 1)
+          {
+            Part = 10;
+          }
+          else if (Num == 1)
+          {
+            Part = 9;
+          }
+          else
+          {
+            Num = static_cast<int>(MinutesBetween(ANow, AThen));
+            if (Num > 1)
+            {
+              Part = 8;
+            }
+            else if (Num == 1)
+            {
+              Part = 7;
+            }
+            else
+            {
+              Num = static_cast<int>(SecondsBetween(ANow, AThen));
+              if (Num > 1)
+              {
+                Part = 6;
+              }
+              else if (Num == 1)
+              {
+                Part = 5;
+              }
+              else if (Num == 0)
+              {
+                Part = 1;
+              }
+              else
+              {
+                DebugFail();
+                Part = -1;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (DebugAlwaysTrue(Part >= 0))
+    {
+      Result = FORMAT(LoadStrPart(TIME_RELATIVE, Part), (abs(Num)));
+    }
+    else
+    {
+      Result = FormatDateTime(L"ddddd", AThen);
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall ExtractFileBaseName(const UnicodeString & Path)
 {
   return ChangeFileExt(ExtractFileName(Path), L"");
@@ -4346,4 +4456,9 @@ void NotImplemented()
 {
   DebugFail();
   throw Exception(L"Not implemented");
+}
+//---------------------------------------------------------------------------
+UnicodeString GetDividerLine()
+{
+  return UnicodeString::StringOfChar(L'-', 27);
 }

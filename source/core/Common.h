@@ -194,6 +194,7 @@ void SetStringValueEvenIfEmpty(TStrings * Strings, const UnicodeString & Name, c
 UnicodeString __fastcall GetAncestorProcessName(int Levels = 1);
 UnicodeString GetAncestorProcessNames();
 void NotImplemented();
+UnicodeString GetDividerLine();
 //---------------------------------------------------------------------------
 struct TSearchRecSmart : public TSearchRec
 {
@@ -267,6 +268,7 @@ int __fastcall TimeToMSec(TDateTime T);
 int __fastcall TimeToSeconds(TDateTime T);
 int __fastcall TimeToMinutes(TDateTime T);
 UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDateTime DateTime);
+UnicodeString FormatRelativeTime(const TDateTime & ANow, const TDateTime & AThen, bool DateOnly);
 TStrings * TlsCipherList();
 //---------------------------------------------------------------------------
 template<class MethodT>

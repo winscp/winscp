@@ -1659,6 +1659,11 @@ bool __fastcall CheckForUpdates(bool CachedResults)
       Message += L"\n\n" +
         FMTLOAD(UPDATE_NEXT, (FormatDateTime("ddddd", Updates.LastCheck + Updates.Period)));
     }
+    else if (New)
+    {
+      UnicodeString Version = Configuration->FormatVersionStr(false);
+      Message += L"\n\n" + FMTLOAD(UPDATE_CURRENT, (Version));
+    }
 
     int Answers = qaOK |
       // show "what's new" button only when change list URL was not provided in results

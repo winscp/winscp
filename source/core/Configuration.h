@@ -270,6 +270,7 @@ public:
   bool RegistryPathExists(const UnicodeString & RegistryPath);
   bool HasLocalPortNumberLimits();
   virtual UnicodeString TemporaryDir(bool Mask = false) = 0;
+  UnicodeString FormatVersionStr(bool IncludeOfficialBuildNumber);
 
   TStoredSessionList * __fastcall SelectFilezillaSessionsForImport(
     TStoredSessionList * Sessions, UnicodeString & Error);
