@@ -1,5 +1,8 @@
 /* expat_config.h.cmake.  Based upon generated expat_config.h.in.  */
 
+#ifndef EXPAT_CONFIG_H
+#define EXPAT_CONFIG_H 1
+
 /* 1234 = LIL_ENDIAN, 4321 = BIGENDIAN */
 #cmakedefine BYTEORDER @BYTEORDER@
 
@@ -113,3 +116,5 @@
 
 /* Define to `unsigned' if <sys/types.h> does not define. */
 #cmakedefine size_t @SIZE_T@
+
+#endif // ndef EXPAT_CONFIG_H
