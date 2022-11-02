@@ -38,7 +38,7 @@ cmake_minimum_required(VERSION 3.1.3)
 
 project(expat
     VERSION
-        2.4.9
+        2.5.0
     LANGUAGES
         C
 )
@@ -436,9 +436,9 @@ foreach(build_type_upper
     set_property(TARGET expat PROPERTY ${build_type_upper}_POSTFIX ${EXPAT_${build_type_upper}_POSTFIX})
 endforeach()
 
-set(LIBCURRENT 9)   # sync
-set(LIBREVISION 9)  # with
-set(LIBAGE 8)       # configure.ac!
+set(LIBCURRENT 9)    # sync
+set(LIBREVISION 10)  # with
+set(LIBAGE 8)        # configure.ac!
 math(EXPR LIBCURRENT_MINUS_AGE "${LIBCURRENT} - ${LIBAGE}")
 
 if(NOT WIN32)
@@ -459,7 +459,7 @@ if(NOT WIN32)
     endif()
 endif()
 
-if(MINGW)
+if(MINGW AND EXPAT_SHARED_LIBS)
     set_target_properties(expat PROPERTIES SUFFIX "-${LIBCURRENT_MINUS_AGE}.dll")
 endif()
 
@@ -469,7 +469,7 @@ if(WIN32 AND NOT MINGW)
     #       Everything but MSVC is already adding prefix "lib", automatically.
     # NOTE: "set_property(TARGET expat PROPERTY PREFIX lib)" would only affect *.dll
     #       files but not *.lib files, so we have to rely on property OUTPUT_NAME, instead.
-    #       Property CMAKE_*_POSTFIX still applies.
+    #       Target property <CONFIG>_POSTFIX still applies.
     set(_EXPAT_OUTPUT_NAME libexpat)
     set_property(TARGET expat PROPERTY OUTPUT_NAME ${_EXPAT_OUTPUT_NAME})
 else()
@@ -520,8 +520,8 @@ if(EXPAT_BUILD_PKGCONFIG)
     foreach(_build_type ${CMAKE_BUILD_TYPE} Debug Release RelWithDebInfo MinSizeRel)
         string(TOLOWER "${_build_type}" _build_type_lower)
         string(TOUPPER "${_build_type}" _build_type_upper)
-        set_property(TARGET expat PROPERTY "pkgconfig_${_build_type_lower}_name" "expat${CMAKE_${_build_type_upper}_POSTFIX}")
-        set_property(TARGET expat PROPERTY "pkgconfig_${_build_type_lower}_output_name" "${_EXPAT_OUTPUT_NAME}${CMAKE_${_build_type_upper}_POSTFIX}")
+        set_property(TARGET expat PROPERTY "pkgconfig_${_build_type_lower}_name" "expat${EXPAT_${_build_type_upper}_POSTFIX}")
+        set_property(TARGET expat PROPERTY "pkgconfig_${_build_type_lower}_output_name" "${_EXPAT_OUTPUT_NAME}${EXPAT_${_build_type_upper}_POSTFIX}")
         if(_EXPAT_LIBM_FOUND)
             set_property(TARGET expat PROPERTY "pkgconfig_libm" "-lm")
         else()
@@ -580,12 +580,12 @@ endif()
 #
 if(EXPAT_BUILD_EXAMPLES)
     add_executable(elements examples/elements.c)
-    set_property(TARGET elements PROPERTY RUNTIME_OUTPUT_DIRECTORY examples)
-    target_link_libraries(elements expat)
-
     add_executable(outline examples/outline.c)
-    set_property(TARGET outline PROPERTY RUNTIME_OUTPUT_DIRECTORY examples)
-    target_link_libraries(outline expat)
+
+    foreach(_target elements outline)
+        set_property(TARGET ${_target} PROPERTY RUNTIME_OUTPUT_DIRECTORY examples)
+        target_link_libraries(${_target} expat)
+    endforeach()
 endif()
 
 #
