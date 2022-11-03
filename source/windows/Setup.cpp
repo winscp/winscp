@@ -1661,7 +1661,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
     }
     else if (New)
     {
-      UnicodeString Version = Configuration->FormatVersionStr(false);
+      UnicodeString Version = Configuration->GetVersionStrHuman();
       Message += L"\n\n" + FMTLOAD(UPDATE_CURRENT, (Version));
     }
 

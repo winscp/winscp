@@ -195,6 +195,7 @@ protected:
   void __fastcall SaveCustomIniFileStorageName();
   UnicodeString __fastcall GetRegistryStorageOverrideKey();
   TStrings * GetCaches();
+  UnicodeString GetFullVersion();
 
   virtual UnicodeString __fastcall ModuleFileName();
 
@@ -270,7 +271,7 @@ public:
   bool RegistryPathExists(const UnicodeString & RegistryPath);
   bool HasLocalPortNumberLimits();
   virtual UnicodeString TemporaryDir(bool Mask = false) = 0;
-  UnicodeString FormatVersionStr(bool IncludeOfficialBuildNumber);
+  UnicodeString GetVersionStrHuman();
 
   TStoredSessionList * __fastcall SelectFilezillaSessionsForImport(
     TStoredSessionList * Sessions, UnicodeString & Error);

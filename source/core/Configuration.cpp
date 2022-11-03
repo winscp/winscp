@@ -1001,79 +1001,70 @@ bool __fastcall TConfiguration::GetIsUnofficial()
   #endif
 }
 //---------------------------------------------------------------------------
-UnicodeString TConfiguration::FormatVersionStr(bool Verbose)
+static TDateTime GetBuildDate()
+{
+  UnicodeString BuildDateStr = __DATE__;
+  UnicodeString MonthStr = CutToChar(BuildDateStr, L' ', true);
+  int Month = ParseShortEngMonthName(MonthStr);
+  int Day = StrToInt(CutToChar(BuildDateStr, L' ', true));
+  int Year = StrToInt(Trim(BuildDateStr));
+  TDateTime Result = EncodeDateVerbose(static_cast<Word>(Year), static_cast<Word>(Month), static_cast<Word>(Day));
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString TConfiguration::GetFullVersion()
+{
+  UnicodeString Result = Version;
+
+  UnicodeString AReleaseType = GetReleaseType();
+  if (DebugAlwaysTrue(!AReleaseType.IsEmpty()) &&
+      !SameText(AReleaseType, L"stable") &&
+      !SameText(AReleaseType, L"development"))
+  {
+    Result += L" " + AReleaseType;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+static UnicodeString GetUnofficialBuildTag()
+{
+  DebugAssert(Configuration->IsUnofficial);
+  UnicodeString Result;
+  #ifdef _DEBUG
+  Result = LoadStr(VERSION_DEBUG_BUILD);
+  #else
+  Result = LoadStr(VERSION_DEV_BUILD);
+  #endif
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString TConfiguration::GetVersionStrHuman()
 {
   TGuard Guard(FCriticalSection);
   try
   {
-    UnicodeString BuildStr;
-    if (!IsUnofficial || Verbose)
-    {
-      if (!IsUnofficial)
-      {
-        BuildStr = LoadStr(VERSION_BUILD);
-      }
-      else
-      {
-        #ifdef _DEBUG
-        BuildStr = LoadStr(VERSION_DEBUG_BUILD);
-        #else
-        BuildStr = LoadStr(VERSION_DEV_BUILD);
-        #endif
-      }
+    TDateTime BuildDate = GetBuildDate();
 
-      int Build = LOWORD(FixedApplicationInfo->dwFileVersionLS);
-      if (Build > 0)
-      {
-        BuildStr += L" " + IntToStr(Build);
-      }
+    UnicodeString FullVersion = GetFullVersion();
+
+    if (IsUnofficial)
+    {
+      UnicodeString BuildStr = GetUnofficialBuildTag();
+      FullVersion += L" " + BuildStr;
     }
 
-    UnicodeString BuildDateStr = __DATE__;
-    UnicodeString MonthStr = CutToChar(BuildDateStr, L' ', true);
-    int Month = ParseShortEngMonthName(MonthStr);
-    int Day = StrToInt(CutToChar(BuildDateStr, L' ', true));
-    int Year = StrToInt(Trim(BuildDateStr));
-    TDateTime BuildDate = EncodeDateVerbose(static_cast<Word>(Year), static_cast<Word>(Month), static_cast<Word>(Day));
-
-    UnicodeString FullVersion = Version;
-
-    UnicodeString AReleaseType = GetReleaseType();
-    if (DebugAlwaysTrue(!AReleaseType.IsEmpty()) &&
-        !SameText(AReleaseType, L"stable") &&
-        !SameText(AReleaseType, L"development"))
-    {
-      FullVersion += L" " + AReleaseType;
-    }
-
-    UnicodeString Fmt;
     UnicodeString DateStr;
-    if (Verbose)
+    TDateTime ANow = Now();
+    if (BuildDate < ANow)
     {
-      DateStr = FormatDateTime(L"yyyy-mm-dd", BuildDate);
-      Fmt = LoadStr(VERSION2);
+      DateStr = FormatRelativeTime(ANow, BuildDate, true);
     }
     else
     {
-      TDateTime ANow = Now();
-      if (BuildDate < ANow)
-      {
-        DateStr = FormatRelativeTime(ANow, BuildDate, true);
-      }
-      else
-      {
-        DateStr = FormatDateTime(L"ddddd", BuildDate);
-      }
-
-      Fmt = L"%s (%s)";
+      DateStr = FormatDateTime(L"ddddd", BuildDate);
     }
-    AddToList(BuildStr, DateStr, L" ");
-    UnicodeString Result = FORMAT(Fmt, (FullVersion, BuildStr));
 
-    if (!IsUnofficial && Verbose)
-    {
-      Result += L" " + LoadStr(VERSION_DONT_DISTRIBUTE);
-    }
+    UnicodeString Result = FORMAT(L"%s (%s)", (FullVersion, DateStr));
 
     return Result;
   }
@@ -1085,7 +1076,43 @@ UnicodeString TConfiguration::FormatVersionStr(bool Verbose)
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetVersionStr()
 {
-  return FormatVersionStr(true);
+  TGuard Guard(FCriticalSection);
+  try
+  {
+    UnicodeString BuildStr;
+    if (!IsUnofficial)
+    {
+      BuildStr = LoadStr(VERSION_BUILD);
+    }
+    else
+    {
+      BuildStr = GetUnofficialBuildTag();
+    }
+
+    UnicodeString FullVersion = GetFullVersion();
+
+    int Build = LOWORD(FixedApplicationInfo->dwFileVersionLS);
+    if (Build > 0)
+    {
+      BuildStr += L" " + IntToStr(Build);
+    }
+
+    UnicodeString DateStr = FormatDateTime(L"yyyy-mm-dd", GetBuildDate());
+    AddToList(BuildStr, DateStr, L" ");
+
+    UnicodeString Result = FMTLOAD(VERSION2, (FullVersion, BuildStr));
+
+    if (IsUnofficial)
+    {
+      Result += L" " + LoadStr(VERSION_DONT_DISTRIBUTE);
+    }
+
+    return Result;
+  }
+  catch (Exception &E)
+  {
+    throw ExtException(&E, L"Can't get application version");
+  }
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetFileVersion(const UnicodeString & FileName)
