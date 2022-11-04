@@ -700,9 +700,6 @@ end;
 
 #endif
 
-const
-  fsSurface = 0;
-
 procedure LoadBitmap(Image: TBitmapImage; FileName: string; BackgroundColor: TColor);
 var
   Bitmap: TBitmap;
