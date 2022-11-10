@@ -1046,6 +1046,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 213
             Height = 21
             Anchors = [akLeft, akTop, akRight]
+            DropDownCount = 16
             MaxLength = 32
             TabOrder = 0
             Text = 'S3DefaultRegionCombo'
