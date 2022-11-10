@@ -2617,6 +2617,78 @@ void CFtpControlSocket::ResetTransferSocket(int Error)
   }
 }
 
+int CFtpControlSocket::OpenTransferFile(CFileTransferData * pData)
+{
+  int nReplyError = 0;
+  if (m_pDataFile != NULL)
+  {
+    delete m_pDataFile;
+    m_pDataFile = NULL;
+  }
+  bool res;
+  if (pData->transferfile.get)
+  {
+    if (pData->transferfile.OnTransferOut == NULL)
+    {
+      m_pDataFile = new CFile();
+      if (pData->transferdata.bResume)
+        res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeCreate|CFile::modeWrite|CFile::modeNoTruncate|CFile::shareDenyWrite);
+      else
+        res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeWrite|CFile::modeCreate|CFile::shareDenyWrite);
+    }
+    else
+    {
+      res = true;
+    }
+  }
+  else
+  {
+    if (pData->transferfile.OnTransferIn == NULL)
+    {
+      m_pDataFile = new CFile();
+      res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeRead|CFile::shareDenyNone);
+    }
+    else
+    {
+      res = true;
+    }
+  }
+  if (!res)
+  {
+    wchar_t * Error = m_pTools->LastSysErrorMessage();
+    //Error opening the file
+    CString str;
+    str.Format(IDS_ERRORMSG_FILEOPENFAILED,pData->transferfile.localfile);
+    str += L"\n";
+    str += Error;
+    free(Error);
+    ShowStatus(str,FZ_LOG_ERROR);
+    nReplyError = FZ_REPLY_ERROR;
+  }
+  else
+  {
+    m_pTransferSocket->m_pFile = m_pDataFile;
+    m_pTransferSocket->m_OnTransferOut = pData->transferfile.OnTransferOut;
+    m_pTransferSocket->m_OnTransferIn = pData->transferfile.OnTransferIn;
+  }
+
+  return nReplyError;
+}
+
+int CFtpControlSocket::ActivateTransferSocket(CFileTransferData * pData)
+{
+  int nReplyError = 0;
+  if (pData->transferfile.get)
+  {
+    nReplyError = OpenTransferFile(pData);
+  }
+  if (!nReplyError)
+  {
+    m_pTransferSocket->SetActive();
+  }
+  return nReplyError;
+}
+
 void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFinish/*=FALSE*/,int nError/*=0*/)
 {
   USES_CONVERSION;
@@ -3528,52 +3600,6 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
           m_Operation.nOpState = FILETRANSFER_REST;
         else
           m_Operation.nOpState = FILETRANSFER_RETRSTOR;
-        BOOL res;
-        if (m_pDataFile != NULL)
-        {
-          delete m_pDataFile;
-          m_pDataFile = NULL;
-        }
-        if (pData->transferfile.get)
-        {
-          if (pData->transferfile.OnTransferOut == NULL)
-          {
-            m_pDataFile = new CFile();
-            if (pData->transferdata.bResume)
-              res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeCreate|CFile::modeWrite|CFile::modeNoTruncate|CFile::shareDenyWrite);
-            else
-              res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeWrite|CFile::modeCreate|CFile::shareDenyWrite);
-          }
-          else
-          {
-            res = TRUE;
-          }
-        }
-        else
-        {
-          if (pData->transferfile.OnTransferIn == NULL)
-          {
-            m_pDataFile = new CFile();
-            res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeRead|CFile::shareDenyNone);
-          }
-          else
-          {
-            res = TRUE;
-          }
-        }
-        if (!res)
-        {
-          wchar_t * Error = m_pTools->LastSysErrorMessage();
-          //Error opening the file
-          CString str;
-          str.Format(IDS_ERRORMSG_FILEOPENFAILED,pData->transferfile.localfile);
-          str += L"\n";
-          str += Error;
-          free(Error);
-          ShowStatus(str,FZ_LOG_ERROR);
-          nReplyError = FZ_REPLY_ERROR;
-          break;
-        }
 
         if (!m_pTransferSocket)
         {
@@ -3581,11 +3607,14 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
           break;
         }
 
-        m_pTransferSocket->m_pFile = m_pDataFile;
-        m_pTransferSocket->m_OnTransferOut = pData->transferfile.OnTransferOut;
-        m_pTransferSocket->m_OnTransferIn = pData->transferfile.OnTransferIn;
         if (!pData->transferfile.get)
         {
+          nReplyError = OpenTransferFile(pData);
+          if (nReplyError)
+          {
+            break;
+          }
+
           if (m_pDataFile != NULL)
           {
             // See comment in !get branch below
@@ -3776,12 +3805,12 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
           }
           if (!nReplyError && !GetOptionVal(OPTION_MPEXT_TRANSFER_ACTIVE_IMMEDIATELY))
           {
-            m_pTransferSocket->SetActive();
+            nReplyError = ActivateTransferSocket(pData);
           }
         }
-        else if (pData->bPasv && !GetOptionVal(OPTION_MPEXT_TRANSFER_ACTIVE_IMMEDIATELY))
+        else if (!nReplyError && pData->bPasv && !GetOptionVal(OPTION_MPEXT_TRANSFER_ACTIVE_IMMEDIATELY))
         {
-          m_pTransferSocket->SetActive();
+          nReplyError = ActivateTransferSocket(pData);
         }
       }
       break;
@@ -4309,7 +4338,10 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     m_pTransferSocket->m_transferdata=pData->transferdata;
     if (GetOptionVal(OPTION_MPEXT_TRANSFER_ACTIVE_IMMEDIATELY) || !pData->bPasv)
     {
-      m_pTransferSocket->SetActive();
+      if (ActivateTransferSocket(pData))
+      {
+        bError = TRUE;
+      }
     }
     CString filename;
 
