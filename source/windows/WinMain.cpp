@@ -603,6 +603,7 @@ void __fastcall UpdateStaticUsage()
   bool InProgramFiles = AnsiSameText(ExeName.SubString(1, ProgramsFolder.Length()), ProgramsFolder);
   Configuration->Usage->Set(L"InProgramFiles", InProgramFiles);
   Configuration->Usage->Set(L"IsInstalled", IsInstalled());
+  Configuration->Usage->Set(L"IsInstalledMsi", IsInstalledMsi());
   Configuration->Usage->Set(L"Wine", IsWine());
   Configuration->Usage->Set(L"NetFrameworkVersion", GetNetVersionStr());
   Configuration->Usage->Set(L"NetCoreVersion", GetNetCoreVersionStr());

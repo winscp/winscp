@@ -34,6 +34,7 @@
 #include <Soap.HTTPUtil.hpp>
 #include <Web.HTTPApp.hpp>
 #include <System.IOUtils.hpp>
+#include <WinApi.h>
 //---------------------------------------------------------------------------
 #define KEY _T("SYSTEM\\CurrentControlSet\\Control\\") \
             _T("Session Manager\\Environment")
@@ -805,11 +806,12 @@ UnicodeString __fastcall ProgramUrl(UnicodeString URL)
     FORMAT(L"%d.%d.%d.%d",
       (HIWORD(FileInfo->dwFileVersionMS), LOWORD(FileInfo->dwFileVersionMS),
        HIWORD(FileInfo->dwFileVersionLS), LOWORD(FileInfo->dwFileVersionLS)));
+  int IsInstalledFlag = (IsInstalled() ? 1 : (IsInstalledMsi() ? 2 : 0));
   UnicodeString Params =
     FORMAT(L"v=%s&lang=%s&isinstalled=%d",
       (CurrentVersionStr,
       GUIConfiguration->AppliedLocaleHex,
-      int(IsInstalled())));
+      IsInstalledFlag));
 
   if (Configuration->IsUnofficial)
   {
@@ -1983,6 +1985,12 @@ bool __fastcall AnyOtherInstanceOfSelf()
   return Result;
 }
 //---------------------------------------------------------------------------
+static bool DoIsPathToExe(const UnicodeString & Path)
+{
+  UnicodeString ExePath = ExcludeTrailingBackslash(ExtractFilePath(Application->ExeName));
+  return IsPathToSameFile(ExePath, Path);
+}
+//---------------------------------------------------------------------------
 static bool __fastcall DoIsInstalled(HKEY RootKey)
 {
   std::unique_ptr<TRegistry> Registry(new TRegistry(KEY_READ));
@@ -1992,19 +2000,50 @@ static bool __fastcall DoIsInstalled(HKEY RootKey)
   if (Result)
   {
     UnicodeString InstallPath = ExcludeTrailingBackslash(Registry->ReadString(L"Inno Setup: App Path"));
-    UnicodeString ExePath = ExcludeTrailingBackslash(ExtractFilePath(Application->ExeName));
     Result =
       !InstallPath.IsEmpty() &&
-      IsPathToSameFile(ExePath, InstallPath);
+      DoIsPathToExe(InstallPath);
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall IsInstalled()
+bool IsInstalled()
 {
   return
     DoIsInstalled(HKEY_LOCAL_MACHINE) ||
     DoIsInstalled(HKEY_CURRENT_USER);
+}
+//---------------------------------------------------------------------------
+static int GIsInstalledMsi = -1;
+bool IsInstalledMsi()
+{
+  if (GIsInstalledMsi < 0)
+  {
+    GIsInstalledMsi = 0;
+    wchar_t ProductCode[MAX_GUID_CHARS + 1];
+    if (MsiEnumRelatedProducts(L"{029F9450-CFEF-4408-A2BB-B69ECE29EB18}", 0, 0, ProductCode) == ERROR_SUCCESS)
+    {
+      UnicodeString InstallPath;
+      InstallPath.SetLength(MAX_PATH);
+      unsigned long Size = InstallPath.Length() + 1;
+      int ErrorCode = MsiGetProductInfo(ProductCode, INSTALLPROPERTY_INSTALLLOCATION, InstallPath.c_str(), &Size);
+      if (ErrorCode == ERROR_MORE_DATA)
+      {
+        InstallPath.SetLength(Size);
+        Size++;
+        ErrorCode = MsiGetProductInfo(ProductCode, INSTALLPROPERTY_INSTALLLOCATION, InstallPath.c_str(), &Size);
+      }
+      if (ErrorCode == ERROR_SUCCESS)
+      {
+        InstallPath.SetLength(Size);
+        if (DoIsPathToExe(InstallPath))
+        {
+          GIsInstalledMsi = 1;
+        }
+      }
+    }
+  }
+  return (GIsInstalledMsi > 0);
 }
 //---------------------------------------------------------------------------
 static TStringList * __fastcall TextToTipList(const UnicodeString & Text)

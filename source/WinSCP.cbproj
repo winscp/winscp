@@ -49,7 +49,7 @@
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Base)'!=''">
 		<_TCHARMapping>wchar_t</_TCHARMapping>
-		<AllPackageLibs>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;My.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib;jcl.lib;vclie.lib;urlmon.lib;shlwapi.lib;powrprof.lib;soaprtl.lib;fmx.lib;dbrtl.lib;inet.lib;psapi.lib</AllPackageLibs>
+		<AllPackageLibs>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;My.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib;jcl.lib;vclie.lib;urlmon.lib;shlwapi.lib;powrprof.lib;soaprtl.lib;fmx.lib;dbrtl.lib;inet.lib;psapi.lib;msi.lib</AllPackageLibs>
 		<BCC_AllWarnings>true</BCC_AllWarnings>
 		<BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
 		<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
