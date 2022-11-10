@@ -700,7 +700,7 @@ end;
 
 #endif
 
-procedure LoadBitmap(Image: TBitmapImage; FileName: string; BackgroundColor: TColor);
+procedure LoadBitmap(Image: TBitmapImage; FileName: string);
 var
   Bitmap: TBitmap;
 begin
@@ -709,16 +709,15 @@ begin
   Bitmap.LoadFromFile(FileName);
   Image.Bitmap := Bitmap;
   Bitmap.Free;
-  Image.BackColor := BackgroundColor;
 end;
 
-procedure LoadEmbededBitmap(Image: TBitmapImage; Name: string; BackgroundColor: TColor);
+procedure LoadEmbededBitmap(Image: TBitmapImage; Name: string);
 var
   FileName: string;
 begin
   ExtractTemporaryFile(Name);
   FileName := ExpandConstant('{tmp}\' + Name);
-  LoadBitmap(Image, FileName, BackgroundColor);
+  LoadBitmap(Image, FileName);
   // we won't need this anymore
   DeleteFile(FileName);
 end;
@@ -733,12 +732,12 @@ begin
     else Result := 100;
 end;
 
-procedure LoadEmbededScaledIcon(Image: TBitmapImage; NameBase: string; SizeBase: Integer; BackgroundColor: TColor);
+procedure LoadEmbededScaledIcon(Image: TBitmapImage; NameBase: string; SizeBase: Integer);
 var
   Name: String;
 begin
   Name := Format('%s %d.bmp', [NameBase, SizeBase * GetScalingFactor div 100]);
-  LoadEmbededBitmap(Image, Name, BackgroundColor);
+  LoadEmbededBitmap(Image, Name);
   Image.AutoSize := True;
 end;
 
@@ -1014,7 +1013,7 @@ begin
   Image.Top := GetBottom(CommanderRadioButton) + ScaleY(6);
   Image.Left := CommanderRadioButton.Left + ScaleX(45);
   Image.Parent := InterfacePage.Surface;
-  LoadEmbededScaledIcon(Image, '{#CommanderFileBase}', 32, InterfacePage.Surface.Color);
+  LoadEmbededScaledIcon(Image, '{#CommanderFileBase}', 32);
   Image.OnClick := @ImageClick;
   Image.Tag := Integer(CommanderRadioButton);
 #endif
@@ -1047,7 +1046,7 @@ begin
   Image.Top := GetBottom(ExplorerRadioButton) + ScaleY(6);
   Image.Left := ExplorerRadioButton.Left + ScaleX(45);
   Image.Parent := InterfacePage.Surface;
-  LoadEmbededScaledIcon(Image, '{#ExplorerFileBase}', 32, InterfacePage.Surface.Color);
+  LoadEmbededScaledIcon(Image, '{#ExplorerFileBase}', 32);
   Image.OnClick := @ImageClick;
   Image.Tag := Integer(ExplorerRadioButton);
 #endif
@@ -1120,7 +1119,7 @@ begin
 
 #ifdef ImagesDir
   Image := TBitmapImage.Create(DonationPanel);
-  LoadEmbededBitmap(Image, '{#PayPalCardImage}', DonationPanel.Color);
+  LoadEmbededBitmap(Image, '{#PayPalCardImage}');
   Image.AutoSize := True;
   Image.Cursor := crHand;
   Image.Parent := DonationPanel;
@@ -1143,7 +1142,7 @@ begin
   // Text does not scale as quick as with DPI,
   // so the icon may overlap the labels. Shift them.
   P := WizardForm.SelectDirBitmapImage.Width;
-  LoadEmbededScaledIcon(WizardForm.SelectDirBitmapImage, '{#SelectDirFileBase}', 32, WizardForm.SelectDirPage.Color);
+  LoadEmbededScaledIcon(WizardForm.SelectDirBitmapImage, '{#SelectDirFileBase}', 32);
   P := (WizardForm.SelectDirBitmapImage.Width - P);
   // Vertical change should be the same as horizontal
   WizardForm.SelectDirLabel.Left := WizardForm.SelectDirLabel.Left + P;
@@ -1735,7 +1734,7 @@ begin
                 SponsorImage.ShowHint := True;
                 SponsorImage.Stretch := True;
                 try
-                  LoadBitmap(SponsorImage, ImagePath, SponsorPage.Surface.Color);
+                  LoadBitmap(SponsorImage, ImagePath);
                 except
                   Log('Error loading sponsor image: ' + GetExceptionMessage);
                   SponsorStatus := 'I';
