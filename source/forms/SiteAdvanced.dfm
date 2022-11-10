@@ -1064,6 +1064,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'cn-north-1'
               'cn-northwest-1'
               'eu-central-1'
+              'eu-central-2'
               'eu-north-1'
               'eu-south-1'
               'eu-west-1'
