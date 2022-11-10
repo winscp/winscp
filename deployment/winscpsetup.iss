@@ -813,6 +813,17 @@ begin
     end;
   end;
 
+  try
+    if IsMsiProductInstalled('{029F9450-CFEF-4408-A2BB-B69ECE29EB18}', 0) and
+       (not CmdLineParamExists('/OverrideMsi')) then
+    begin
+      MsgBox(CustomMessage('MsiInstallation'), mbError, MB_OK);
+      Abort;
+    end;
+  except
+    Log('Error checking for MSI installation: ' + GetExceptionMessage);
+  end;
+
   Result := True;
 end;
 
