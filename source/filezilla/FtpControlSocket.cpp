@@ -2620,11 +2620,6 @@ void CFtpControlSocket::ResetTransferSocket(int Error)
 int CFtpControlSocket::OpenTransferFile(CFileTransferData * pData)
 {
   int nReplyError = 0;
-  if (m_pDataFile != NULL)
-  {
-    delete m_pDataFile;
-    m_pDataFile = NULL;
-  }
   bool res;
   if (pData->transferfile.get)
   {
@@ -2678,7 +2673,7 @@ int CFtpControlSocket::OpenTransferFile(CFileTransferData * pData)
 int CFtpControlSocket::ActivateTransferSocket(CFileTransferData * pData)
 {
   int nReplyError = 0;
-  if (pData->transferfile.get)
+  if (pData->transferfile.get && (m_pDataFile == NULL))
   {
     nReplyError = OpenTransferFile(pData);
   }
@@ -3601,6 +3596,12 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         else
           m_Operation.nOpState = FILETRANSFER_RETRSTOR;
 
+        if (m_pDataFile != NULL)
+        {
+          delete m_pDataFile;
+          m_pDataFile = NULL;
+        }
+
         if (!m_pTransferSocket)
         {
           nReplyError=FZ_REPLY_ERROR;
@@ -3645,6 +3646,15 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         }
         else
         {
+          if (pData->transferdata.bResume)
+          {
+            nReplyError = OpenTransferFile(pData);
+            if (nReplyError)
+            {
+              break;
+            }
+          }
+
           CString remotefile=pData->transferfile.remotefile;
           if (m_pDirectoryListing)
             for (int i=0; i<m_pDirectoryListing->num; i++)
