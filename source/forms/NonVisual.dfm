@@ -647,6 +647,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Disconnect Session'
       HelpKeyword = 'task_connections#closing'
       Hint = 'Disconnect the current session, but keep the tab opened'
+      ImageIndex = 116
     end
     object ReconnectSessionAction: TAction
       Tag = 15
