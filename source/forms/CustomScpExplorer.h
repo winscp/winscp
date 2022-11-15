@@ -570,11 +570,11 @@ protected:
     const UnicodeString & FullFileName, TRemoteFile * File, TExecuteFileBy ExecuteFileBy);
   void __fastcall TemporaryFileCopyParam(TCopyParamType & CopyParam);
   void __fastcall TemporaryDirectoryForRemoteFiles(
-    UnicodeString RemoteDirectory, TCopyParamType CopyParam,
+    const UnicodeString & RemoteDirectory, const TCopyParamType & CopyParam, bool Simple,
     UnicodeString & Result, UnicodeString & RootDirectory);
   void __fastcall TemporarilyDownloadFiles(TStrings * FileList, bool ForceText,
     UnicodeString & RootTempDir, UnicodeString & TempDir, bool GetTargetNames,
-    bool AutoOperation);
+    bool AutoOperation, bool SimpleTempDir);
   void __fastcall LocalEditorClosed(TObject * Sender, bool Forced);
   TTBXPopupMenu * __fastcall HistoryMenu(TOperationSide Side, bool Back);
   UnicodeString __fastcall FileStatusBarText(const TStatusFileInfo & FileInfo, TOperationSide Side);

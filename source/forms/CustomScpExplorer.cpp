@@ -2145,7 +2145,7 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
     bool RemoteFiles = FLAGSET(ACommand.Params, ccRemoteFiles);
     if (!RemoteFiles)
     {
-      TemporarilyDownloadFiles(FileList, false, RootTempDir, TempDir, false, true);
+      TemporarilyDownloadFiles(FileList, false, RootTempDir, TempDir, false, true, true);
     }
 
     try
@@ -3261,7 +3261,7 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
         {
           RemoteDirectory = UnixExtractFilePath(Name);
           TemporaryDirectoryForRemoteFiles(
-            RemoteDirectory, GUIConfiguration->CurrentCopyParam, TempDir, RootTempDir);
+            RemoteDirectory, GUIConfiguration->CurrentCopyParam, false, TempDir, RootTempDir);
 
           TargetFileName = UnixExtractFileName(Name);
           TCopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
@@ -3502,10 +3502,10 @@ void __fastcall TCustomScpExplorerForm::LocalEditorClosed(TObject * Sender, bool
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TemporaryDirectoryForRemoteFiles(
-  UnicodeString RemoteDirectory, TCopyParamType CopyParam,
+  const UnicodeString & RemoteDirectory, const TCopyParamType & CopyParam, bool Simple,
   UnicodeString & Result, UnicodeString & RootDirectory)
 {
-  if (!WinConfiguration->TemporaryDirectoryDeterministic)
+  if (!WinConfiguration->TemporaryDirectoryDeterministic || Simple)
   {
     RootDirectory = IncludeTrailingBackslash(WinConfiguration->TemporaryDir());
     Result = RootDirectory;
@@ -3517,18 +3517,19 @@ void __fastcall TCustomScpExplorerForm::TemporaryDirectoryForRemoteFiles(
     Result = IncludeTrailingBackslash(Result);
   }
 
-  if (WinConfiguration->TemporaryDirectoryAppendSession)
+  if (WinConfiguration->TemporaryDirectoryAppendSession && !Simple)
   {
     Result = IncludeTrailingBackslash(Result + MakeValidFileName(Terminal->SessionData->SessionName));
   }
 
-  if (WinConfiguration->TemporaryDirectoryAppendPath)
+  if (WinConfiguration->TemporaryDirectoryAppendPath && !Simple)
   {
-    if (!RemoteDirectory.IsEmpty() && (RemoteDirectory[1] == L'/'))
+    UnicodeString ARemoteDirectory = RemoteDirectory;
+    if (!ARemoteDirectory.IsEmpty() && (ARemoteDirectory[1] == L'/'))
     {
-      RemoteDirectory.Delete(1, 1);
+      ARemoteDirectory.Delete(1, 1);
     }
-    Result = IncludeTrailingBackslash(Result + CopyParam.ValidLocalPath(FromUnixPath(RemoteDirectory)));
+    Result = IncludeTrailingBackslash(Result + CopyParam.ValidLocalPath(FromUnixPath(ARemoteDirectory)));
   }
 
   if (!ForceDirectories(ApiPath(Result)))
@@ -3539,7 +3540,7 @@ void __fastcall TCustomScpExplorerForm::TemporaryDirectoryForRemoteFiles(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
   TStrings * FileList, bool ForceText, UnicodeString & RootTempDir, UnicodeString & TempDir,
-  bool GetTargetNames, bool AutoOperation)
+  bool GetTargetNames, bool AutoOperation, bool SimpleTempDir)
 {
   DebugAssert(!IsLocalBrowserMode());
   TCopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
@@ -3551,7 +3552,7 @@ void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
 
   if (TempDir.IsEmpty())
   {
-    TemporaryDirectoryForRemoteFiles(Terminal->CurrentDirectory, CopyParam, TempDir, RootTempDir);
+    TemporaryDirectoryForRemoteFiles(Terminal->CurrentDirectory, CopyParam, SimpleTempDir, TempDir, RootTempDir);
   }
 
   DebugAssert(!FAutoOperation);
@@ -3721,7 +3722,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
         FileList1->AddObject(FullFileName, Object);
         TemporarilyDownloadFiles(FileList1,
           RemoteExecuteForceText(ExecuteFileBy, ExternalEditor),
-          LocalRootDirectory, LocalDirectory, true, true);
+          LocalRootDirectory, LocalDirectory, true, true, false);
         LocalFileName = LocalDirectory + FileList1->Strings[0];
       }
       __finally
@@ -4015,7 +4016,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileReload(
     UnicodeString RootTempDir = Data->LocalRootDirectory;
     UnicodeString TempDir = ExtractFilePath(FileName);
 
-    TemporarilyDownloadFiles(FileList.get(), Data->ForceText, RootTempDir, TempDir, true, true);
+    TemporarilyDownloadFiles(FileList.get(), Data->ForceText, RootTempDir, TempDir, true, true, false);
 
     // sanity check, the target file name should be still the same
     DebugAssert(ExtractFileName(FileName) == FileList->Strings[0]);
@@ -4416,7 +4417,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferFiles(
       UnicodeString RootTempDir;
       UnicodeString TempDir;
 
-      TemporarilyDownloadFiles(FileList, false, RootTempDir, TempDir, false, false);
+      TemporarilyDownloadFiles(FileList, false, RootTempDir, TempDir, false, false, true);
 
       TStrings * TemporaryFilesList = new TStringList();
 
