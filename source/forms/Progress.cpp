@@ -223,15 +223,21 @@ void __fastcall TProgressForm::UpdateControls()
         Animation = "SetProperties";
         break;
 
+      case foRemoteCopy:
+        Animation = "DuplicateLtoR";
+        break;
+
+      case foRemoteMove:
+        Animation = "MoveLtoR";
+        break;
+
       default:
         DebugAssert(
           (FData.Operation == foCustomCommand) ||
           (FData.Operation == foGetProperties) ||
           (FData.Operation == foCalculateChecksum) ||
           (FData.Operation == foLock) ||
-          (FData.Operation == foUnlock) ||
-          (FData.Operation == foRemoteCopy) ||
-          (FData.Operation == foRemoteMove));
+          (FData.Operation == foUnlock));
         break;
     }
 
