@@ -82,14 +82,11 @@ UnicodeString GetS3ConfigValue(const UnicodeString & Name, UnicodeString * Sourc
         }
 
         UnicodeString ConfigFileName = GetEnvironmentVariable(AWS_CONFIG_FILE);
-        if (Result.IsEmpty())
+        UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
+        UnicodeString DefaultConfigFileName = IncludeTrailingBackslash(ProfilePath) + L".aws\\credentials";
+        if (FileExists(DefaultConfigFileName))
         {
-          UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
-          UnicodeString DefaultConfigFileName = IncludeTrailingBackslash(ProfilePath) + L".aws\\credentials";
-          if (FileExists(DefaultConfigFileName))
-          {
-            ConfigFileName = DefaultConfigFileName;
-          }
+          ConfigFileName = DefaultConfigFileName;
         }
 
         S3ConfigFile.reset(new TMemIniFile(ConfigFileName));
