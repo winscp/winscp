@@ -84,6 +84,7 @@ UnicodeString GetS3ConfigValue(const UnicodeString & Name, UnicodeString * Sourc
         UnicodeString ConfigFileName = GetEnvironmentVariable(AWS_CONFIG_FILE);
         UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
         UnicodeString DefaultConfigFileName = IncludeTrailingBackslash(ProfilePath) + L".aws\\credentials";
+        // "aws" cli really prefers the default location over location specificed by AWS_CONFIG_FILE
         if (FileExists(DefaultConfigFileName))
         {
           ConfigFileName = DefaultConfigFileName;
