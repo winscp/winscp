@@ -94,13 +94,13 @@ object LoginDialog: TLoginDialog
         Left = 2
         Top = 12
         Width = 347
-        Height = 255
+        Height = 260
         Anchors = [akLeft, akTop, akRight]
         Caption = 'Session'
         TabOrder = 0
         DesignSize = (
           347
-          255)
+          260)
         object Label1: TLabel
           Left = 12
           Top = 72
@@ -162,22 +162,32 @@ object LoginDialog: TLoginDialog
           Left = 12
           Top = 195
           Width = 324
-          Height = 26
+          Height = 31
           Anchors = [akLeft, akTop, akRight]
           BevelOuter = bvNone
           TabOrder = 11
           DesignSize = (
             324
-            26)
-          object S3CredentialsEnvCheck: TCheckBox
+            31)
+          object S3CredentialsEnvCheck2: TCheckBox
             Left = 0
-            Top = 0
+            Top = 2
             Width = 324
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Read credentials from AWS CLI configuration'
+            Caption = '&Credentials from AWS CLI:'
             TabOrder = 0
-            OnClick = S3CredentialsEnvCheckClick
+            OnClick = S3CredentialsEnvCheck2Click
+          end
+          object S3ProfileCombo: TComboBox
+            Left = 200
+            Top = 0
+            Width = 124
+            Height = 21
+            DropDownCount = 16
+            TabOrder = 1
+            Text = 'S3ProfileCombo'
+            OnChange = S3ProfileComboChange
           end
         end
         object EncryptionView: TEdit
@@ -310,7 +320,7 @@ object LoginDialog: TLoginDialog
         end
         object AdvancedButton: TButton
           Left = 238
-          Top = 219
+          Top = 224
           Width = 98
           Height = 25
           Action = SessionAdvancedAction
@@ -321,7 +331,7 @@ object LoginDialog: TLoginDialog
         end
         object SaveButton: TButton
           Left = 12
-          Top = 219
+          Top = 224
           Width = 98
           Height = 25
           Action = SaveSessionAction
@@ -332,7 +342,7 @@ object LoginDialog: TLoginDialog
         end
         object EditCancelButton: TButton
           Left = 116
-          Top = 219
+          Top = 224
           Width = 82
           Height = 25
           Action = EditCancelAction
@@ -342,7 +352,7 @@ object LoginDialog: TLoginDialog
         end
         object EditButton: TButton
           Left = 12
-          Top = 219
+          Top = 224
           Width = 98
           Height = 25
           Action = EditSessionAction
@@ -353,20 +363,20 @@ object LoginDialog: TLoginDialog
       end
       object NoteGroup: TGroupBox
         Left = 2
-        Top = 273
+        Top = 278
         Width = 347
-        Height = 70
+        Height = 65
         Anchors = [akLeft, akTop, akRight, akBottom]
         Caption = 'Note'
         TabOrder = 1
         DesignSize = (
           347
-          70)
+          65)
         object NoteMemo: TMemo
           Left = 7
           Top = 15
           Width = 333
-          Height = 46
+          Height = 41
           TabStop = False
           Anchors = [akLeft, akTop, akRight, akBottom]
           BevelInner = bvNone

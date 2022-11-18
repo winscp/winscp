@@ -230,7 +230,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     {
       try
       {
-        S3SessionToken = S3EnvSessionToken();
+        S3SessionToken = S3EnvSessionToken(FSessionData->S3Profile);
       }
       catch (...)
       {

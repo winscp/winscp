@@ -269,8 +269,9 @@ void __fastcall TSessionData::DefaultSettings()
   NotUtf = asAuto;
 
   // S3
-  S3DefaultRegion = L"";
-  S3SessionToken = L"";
+  S3DefaultRegion = EmptyStr;
+  S3SessionToken = EmptyStr;
+  S3Profile = EmptyStr;
   S3UrlStyle = s3usVirtualHost;
   S3MaxKeys = asAuto;
   S3CredentialsEnv = false;
@@ -435,6 +436,7 @@ void __fastcall TSessionData::NonPersistant()
   \
   PROPERTY(S3DefaultRegion); \
   PROPERTY(S3SessionToken); \
+  PROPERTY(S3Profile); \
   PROPERTY(S3UrlStyle); \
   PROPERTY(S3MaxKeys); \
   PROPERTY(S3CredentialsEnv); \
@@ -778,6 +780,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
 
   S3DefaultRegion = Storage->ReadString(L"S3DefaultRegion", S3DefaultRegion);
   S3SessionToken = Storage->ReadString(L"S3SessionToken", S3SessionToken);
+  S3Profile = Storage->ReadString(L"S3Profile", S3Profile);
   S3UrlStyle = (TS3UrlStyle)Storage->ReadInteger(L"S3UrlStyle", S3UrlStyle);
   S3MaxKeys = Storage->ReadEnum(L"S3MaxKeys", S3MaxKeys, AutoSwitchMapping);
   S3CredentialsEnv = Storage->ReadBool(L"S3CredentialsEnv", S3CredentialsEnv);
@@ -1143,6 +1146,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(Integer, InternalEditorEncoding);
     WRITE_DATA(String, S3DefaultRegion);
     WRITE_DATA(String, S3SessionToken);
+    WRITE_DATA(String, S3Profile);
     WRITE_DATA(Integer, S3UrlStyle);
     WRITE_DATA(Integer, S3MaxKeys);
     WRITE_DATA(Bool, S3CredentialsEnv);
@@ -2844,7 +2848,7 @@ UnicodeString __fastcall TSessionData::GetUserNameExpanded()
   UnicodeString Result = ::ExpandEnvironmentVariables(UserName);
   if (Result.IsEmpty() && HasS3AutoCredentials())
   {
-    Result = S3EnvUserName();
+    Result = S3EnvUserName(S3Profile);
   }
   return Result;
 }
@@ -2854,7 +2858,7 @@ UnicodeString TSessionData::GetUserNameSource()
   UnicodeString Result;
   if (UserName.IsEmpty() && HasS3AutoCredentials())
   {
-    S3EnvUserName(&Result);
+    S3EnvUserName(S3Profile, &Result);
   }
   if (Result.IsEmpty() && (UserName != UserNameExpanded))
   {
@@ -4493,6 +4497,11 @@ void __fastcall TSessionData::SetS3DefaultRegion(UnicodeString value)
 void __fastcall TSessionData::SetS3SessionToken(UnicodeString value)
 {
   SET_SESSION_PROPERTY(S3SessionToken);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetS3Profile(UnicodeString value)
+{
+  SET_SESSION_PROPERTY(S3Profile);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetS3UrlStyle(TS3UrlStyle value)

@@ -669,6 +669,7 @@ BEGIN
         PROPERTIES_S3_EVERYONE, "&Everyone"
         PROPERTIES_S3_R_ACL_HINT, "Read ACL"
         PROPERTIES_S3_W_ACL_HINT, "Write ACL"
+        LOGIN_S3_GENERAL_CREDENTIALS, "General"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000–2022 Martin Prikryl"

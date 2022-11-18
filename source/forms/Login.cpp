@@ -554,7 +554,8 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * SessionData)
           UnicodeString::StringOfChar(L'?', 16) : UnicodeString();
     }
 
-    S3CredentialsEnvCheck->Checked = SessionData->S3CredentialsEnv;
+    S3CredentialsEnvCheck2->Checked = SessionData->S3CredentialsEnv;
+    S3ProfileCombo->Text = DefaultStr(SessionData->S3Profile, GetS3GeneralName());
     UpdateS3Credentials();
 
     NoteGroup->Visible = !Trim(SessionData->Note).IsEmpty();
@@ -604,7 +605,8 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * SessionData)
 
   if (SessionData->FSProtocol == fsS3)
   {
-    SessionData->S3CredentialsEnv = S3CredentialsEnvCheck->Checked;
+    SessionData->S3CredentialsEnv = S3CredentialsEnvCheck2->Checked;
+    SessionData->S3Profile = GetS3Profile();
   }
 
   if (SessionData->HasAutoCredentials())
@@ -636,6 +638,28 @@ bool __fastcall TLoginDialog::IsEditable()
   return IsNewSiteNode(SessionTree->Selected) || FEditing;
 }
 //---------------------------------------------------------------------
+UnicodeString TLoginDialog::GetS3GeneralName()
+{
+  return LoadStr(LOGIN_S3_GENERAL_CREDENTIALS);
+}
+//---------------------------------------------------------------------
+UnicodeString TLoginDialog::GetS3Profile()
+{
+  UnicodeString Result;
+  if (S3ProfileCombo->Text != GetS3GeneralName())
+  {
+    Result = S3ProfileCombo->Text;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+void TLoginDialog::LoadS3Profiles()
+{
+  std::unique_ptr<TStrings> Profiles(GetS3Profiles());
+  Profiles->Insert(0, GetS3GeneralName());
+  S3ProfileCombo->Items = Profiles.get();
+}
+//---------------------------------------------------------------------
 void __fastcall TLoginDialog::UpdateControls()
 {
   if (Visible && FInitialized)
@@ -658,6 +682,10 @@ void __fastcall TLoginDialog::UpdateControls()
     BasicSshPanel->Visible = SshProtocol;
     BasicFtpPanel->Visible = FtpProtocol && Editable;
     BasicS3Panel->Visible = S3Protocol && Editable;
+    if (BasicS3Panel->Visible && (S3ProfileCombo->Items->Count == 0))
+    {
+      LoadS3Profiles();
+    }
     // we do not support more than one at the same time
     DebugAssert((int(BasicSshPanel->Visible) + int(BasicFtpPanel->Visible) + int(BasicS3Panel->Visible)) <= 1);
     BasicGroup->Height =
@@ -678,16 +706,18 @@ void __fastcall TLoginDialog::UpdateControls()
     ReadOnlyControl(PortNumberEdit, !Editable);
     PortNumberEdit->ButtonsVisible = Editable;
     // FSessionData may be NULL temporary even when Editable while switching nodes
+    bool S3CredentialsEnv = S3Protocol && S3CredentialsEnvCheck2->Checked;
     bool NoAuth =
       Editable && (FSessionData != NULL) &&
       ((SshProtocol && FSessionData->SshNoUserAuth) ||
-       (S3Protocol && S3CredentialsEnvCheck->Checked));
+       S3CredentialsEnv);
     ReadOnlyAndEnabledControl(UserNameEdit, !Editable, !NoAuth);
     EnableControl(UserNameLabel, UserNameEdit->Enabled);
     ReadOnlyAndEnabledControl(PasswordEdit, !Editable, !NoAuth);
     EnableControl(PasswordLabel, PasswordEdit->Enabled);
     UserNameLabel->Caption = S3Protocol ? LoadStr(S3_ACCESS_KEY_ID_PROMPT) : FUserNameLabel;
     PasswordLabel->Caption = S3Protocol ? LoadStr(S3_SECRET_ACCESS_KEY_PROMPT) : FPasswordLabel;
+    EnableControl(S3ProfileCombo, S3CredentialsEnv);
 
     // sites
     if (SitesIncrementalSearchLabel->Visible != !FSitesIncrementalSearch.IsEmpty())
@@ -2168,15 +2198,16 @@ int __fastcall TLoginDialog::DefaultPort()
 //---------------------------------------------------------------------------
 void TLoginDialog::UpdateS3Credentials()
 {
-  if (S3CredentialsEnvCheck->Checked)
+  if (S3CredentialsEnvCheck2->Checked)
   {
-    UserNameEdit->Text = S3EnvUserName();
-    PasswordEdit->Text = S3EnvPassword();
+    UnicodeString S3Profile = GetS3Profile();
+    UserNameEdit->Text = S3EnvUserName(S3Profile);
+    PasswordEdit->Text = S3EnvPassword(S3Profile);
     // Is not set when viewing stored session.
     // We do this, so that when the checkbox is checked and unchecked, the token is preserved, the way username and password are.
     if (FSessionData != NULL)
     {
-      FSessionData->S3SessionToken = S3EnvSessionToken();
+      FSessionData->S3SessionToken = S3EnvSessionToken(S3Profile);
     }
   }
 }
@@ -2196,19 +2227,20 @@ void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
     {
       try
       {
+        UnicodeString S3Profile = GetS3Profile();
         if (HostNameEdit->Text == S3HostName)
         {
           HostNameEdit->Clear();
         }
-        if (UserNameEdit->Text == S3EnvUserName())
+        if (UserNameEdit->Text == S3EnvUserName(S3Profile))
         {
           UserNameEdit->Clear();
         }
-        if (PasswordEdit->Text == S3EnvPassword())
+        if (PasswordEdit->Text == S3EnvPassword(S3Profile))
         {
           PasswordEdit->Clear();
         }
-        if ((FSessionData != NULL) && (FSessionData->S3SessionToken == S3EnvSessionToken()))
+        if ((FSessionData != NULL) && (FSessionData->S3SessionToken == S3EnvSessionToken(S3Profile)))
         {
           FSessionData->S3SessionToken = UnicodeString();
         }
@@ -2219,7 +2251,7 @@ void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
       }
     }
 
-    S3CredentialsEnvCheck->Checked = false;
+    S3CredentialsEnvCheck2->Checked = false;
   }
 
   UpdatePortWithProtocol();
@@ -3259,7 +3291,13 @@ void __fastcall TLoginDialog::PanelMouseDown(TObject *, TMouseButton, TShiftStat
   CountClicksForWindowPrint(this);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::S3CredentialsEnvCheckClick(TObject *)
+void __fastcall TLoginDialog::S3CredentialsEnvCheck2Click(TObject *)
+{
+  UpdateS3Credentials();
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::S3ProfileComboChange(TObject *)
 {
   UpdateS3Credentials();
   UpdateControls();

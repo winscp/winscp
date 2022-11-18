@@ -210,8 +210,9 @@ __published:
   TPanel *ShowAgainPanel;
   TCheckBox *ShowAgainCheck;
   TPanel *BasicS3Panel;
-  TCheckBox *S3CredentialsEnvCheck;
+  TCheckBox *S3CredentialsEnvCheck2;
   TMenuItem *OpeninPuTTY4;
+  TComboBox *S3ProfileCombo;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionTreeDblClick(TObject *Sender);
@@ -289,8 +290,9 @@ __published:
   void __fastcall SearchSiteNameActionExecute(TObject *Sender);
   void __fastcall SearchSiteActionExecute(TObject *Sender);
   void __fastcall PanelMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift, int X, int Y);
-  void __fastcall S3CredentialsEnvCheckClick(TObject *Sender);
+  void __fastcall S3CredentialsEnvCheck2Click(TObject *Sender);
   void __fastcall EncryptionComboChange(TObject *Sender);
+  void __fastcall S3ProfileComboChange(TObject *Sender);
 
 private:
   int NoUpdate;
@@ -413,6 +415,9 @@ private:
   void UpdateLoginButton();
   void FloodFill(TBitmap * Bitmap, int X, int Y);
   void UpdatePortWithProtocol();
+  void LoadS3Profiles();
+  UnicodeString GetS3GeneralName();
+  UnicodeString GetS3Profile();
 
 protected:
   void __fastcall Default();

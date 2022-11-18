@@ -227,6 +227,7 @@ private:
   int FInternalEditorEncoding;
   UnicodeString FS3DefaultRegion;
   UnicodeString FS3SessionToken;
+  UnicodeString FS3Profile;
   TS3UrlStyle FS3UrlStyle;
   TAutoSwitch FS3MaxKeys;
   bool FS3CredentialsEnv;
@@ -416,6 +417,7 @@ private:
   void __fastcall SetInternalEditorEncoding(int value);
   void __fastcall SetS3DefaultRegion(UnicodeString value);
   void __fastcall SetS3SessionToken(UnicodeString value);
+  void __fastcall SetS3Profile(UnicodeString value);
   void __fastcall SetS3UrlStyle(TS3UrlStyle value);
   void __fastcall SetS3MaxKeys(TAutoSwitch value);
   void __fastcall SetS3CredentialsEnv(bool value);
@@ -696,6 +698,7 @@ public:
   __property int InternalEditorEncoding = { read = FInternalEditorEncoding, write = SetInternalEditorEncoding };
   __property UnicodeString S3DefaultRegion = { read = FS3DefaultRegion, write = SetS3DefaultRegion };
   __property UnicodeString S3SessionToken = { read = FS3SessionToken, write = SetS3SessionToken };
+  __property UnicodeString S3Profile = { read = FS3Profile, write = SetS3Profile };
   __property TS3UrlStyle S3UrlStyle = { read = FS3UrlStyle, write = SetS3UrlStyle };
   __property TAutoSwitch S3MaxKeys = { read = FS3MaxKeys, write = SetS3MaxKeys };
   __property bool S3CredentialsEnv = { read = FS3CredentialsEnv, write = SetS3CredentialsEnv };
