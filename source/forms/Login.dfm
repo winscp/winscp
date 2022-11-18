@@ -165,7 +165,7 @@ object LoginDialog: TLoginDialog
           Height = 26
           Anchors = [akLeft, akTop, akRight]
           BevelOuter = bvNone
-          TabOrder = 15
+          TabOrder = 11
           DesignSize = (
             324
             26)
@@ -316,7 +316,7 @@ object LoginDialog: TLoginDialog
           Action = SessionAdvancedAction
           Anchors = [akRight, akBottom]
           Style = bsSplitButton
-          TabOrder = 14
+          TabOrder = 15
           OnDropDownClick = AdvancedButtonDropDownClick
         end
         object SaveButton: TButton
@@ -327,7 +327,7 @@ object LoginDialog: TLoginDialog
           Action = SaveSessionAction
           Anchors = [akLeft, akBottom]
           Style = bsSplitButton
-          TabOrder = 11
+          TabOrder = 12
           OnDropDownClick = SaveButtonDropDownClick
         end
         object EditCancelButton: TButton
@@ -337,7 +337,7 @@ object LoginDialog: TLoginDialog
           Height = 25
           Action = EditCancelAction
           Anchors = [akLeft, akBottom]
-          TabOrder = 13
+          TabOrder = 14
           OnDropDownClick = SaveButtonDropDownClick
         end
         object EditButton: TButton
@@ -347,7 +347,7 @@ object LoginDialog: TLoginDialog
           Height = 25
           Action = EditSessionAction
           Anchors = [akLeft, akBottom]
-          TabOrder = 12
+          TabOrder = 13
           OnDropDownClick = SaveButtonDropDownClick
         end
       end
