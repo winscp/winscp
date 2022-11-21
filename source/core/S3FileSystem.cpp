@@ -91,7 +91,9 @@ UnicodeString GetS3Profile()
 TStrings * GetS3Profiles()
 {
   NeedS3Config();
-  std::unique_ptr<TStrings> Result(new TStringList());
+  // S3 allegedly treats the section case-sensitivelly, but our GetS3ConfigValue (ReadString) does not,
+  // so consistently we return case-insensitive list.
+  std::unique_ptr<TStrings> Result(CreateSortedStringList());
   if (S3ConfigFile.get() != NULL)
   {
     S3ConfigFile->ReadSections(Result.get());
@@ -222,7 +224,7 @@ void __fastcall TS3FileSystem::Open()
   if (!S3Profile.IsEmpty() && !FTerminal->SessionData->FingerprintScan)
   {
     std::unique_ptr<TStrings> S3Profiles(GetS3Profiles());
-    if (S3Profiles->IndexOf(S3Profile))
+    if (S3Profiles->IndexOf(S3Profile) < 0)
     {
       throw Exception(MainInstructions(FMTLOAD(S3_PROFILE_NOT_EXIST, (S3Profile))));
     }
