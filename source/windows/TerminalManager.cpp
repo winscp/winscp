@@ -1771,12 +1771,12 @@ bool __fastcall TTerminalManager::IsActiveTerminalForSite(TTerminal * Terminal, 
   return Result;
 }
 //---------------------------------------------------------------------------
-TTerminal * __fastcall TTerminalManager::FindActiveTerminalForSite(TSessionData * Data)
+TManagedTerminal * __fastcall TTerminalManager::FindActiveTerminalForSite(TSessionData * Data)
 {
-  TTerminal * Result = NULL;
+  TManagedTerminal * Result = NULL;
   for (int Index = 0; (Result == NULL) && (Index < Count); Index++)
   {
-    TTerminal * Terminal = Terminals[Index];
+    TManagedTerminal * Terminal = Terminals[Index];
     if (IsActiveTerminalForSite(Terminal, Data))
     {
       Result = Terminal;

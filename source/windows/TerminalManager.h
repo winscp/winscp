@@ -71,7 +71,7 @@ public:
   void __fastcall SaveWorkspace(TList * DataList);
   void __fastcall QueueStatusUpdated();
   bool __fastcall IsActiveTerminalForSite(TTerminal * Terminal, TSessionData * Data);
-  TTerminal * __fastcall FindActiveTerminalForSite(TSessionData * Data);
+  TManagedTerminal * __fastcall FindActiveTerminalForSite(TSessionData * Data);
   TTerminalQueue * __fastcall FindQueueForTerminal(TTerminal * Terminal);
   bool __fastcall UploadPublicKey(TTerminal * Terminal, TSessionData * Data, UnicodeString & FileName);
 
