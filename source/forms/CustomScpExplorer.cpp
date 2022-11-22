@@ -3947,7 +3947,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
     }
 
     int Params = cpNoConfirmation | cpTemporary;
-    if (Terminal->IsCapable[fcBackgroundTransfers])
+    if (Data->Terminal->IsCapable[fcBackgroundTransfers])
     {
       DebugAssert(Data->Queue != NULL);
 
@@ -3964,7 +3964,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
       }
       else
       {
-        Terminal->CopyToRemote(FileList, Data->RemoteDirectory, &CopyParam, Params, NULL);
+        Data->Terminal->CopyToRemote(FileList, Data->RemoteDirectory, &CopyParam, Params, NULL);
         SetEvent(UploadCompleteEvent);
       }
     }
