@@ -3874,7 +3874,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
       UnicodeString EditInactiveSessionReopenRejectedCounter = L"EditInactiveSessionReopenRejected";
       if (Data->Terminal == NULL)
       {
-        TTerminal * SameSiteTerminal = Manager->FindActiveTerminalForSite(Data->SessionData);
+        TManagedTerminal * SameSiteTerminal = Manager->FindActiveTerminalForSite(Data->SessionData);
         if (SameSiteTerminal != NULL)
         {
           UnicodeString Message =
@@ -3882,9 +3882,9 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
               (FileNameOnly, Data->SessionName, FileNameOnly));
           if (MessageDialog(Message, qtConfirmation, qaOK | qaCancel) == qaOK)
           {
-            Data->Terminal = Terminal;
-            Data->Queue = Manager->FindQueueForTerminal(Terminal);
-            Data->SessionName = Terminal->SessionData->SessionName;
+            Data->Terminal = SameSiteTerminal;
+            Data->Queue = Manager->FindQueueForTerminal(SameSiteTerminal);
+            Data->SessionName = SameSiteTerminal->SessionData->SessionName;
             // We might also overwrite session data
             Configuration->Usage->Inc(EditInactiveSessionReopenAcceptedCounter);
           }
