@@ -3928,7 +3928,8 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
   {
     FileList->Add(FileName);
 
-    // consider using the same settings (preset) as when the file was downloaded
+    // Consider using the same settings (preset) as when the file was downloaded.
+    // More over this does not reflect the actual session that will do the upload.
     TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
     TemporaryFileCopyParam(CopyParam);
     if (Data->ForceText)
