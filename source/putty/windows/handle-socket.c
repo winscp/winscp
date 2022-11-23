@@ -388,6 +388,13 @@ Socket *make_handle_socket(HANDLE send_H, HANDLE recv_H, HANDLE stderr_H,
     return &hs->sock;
 }
 
+void handle_socket_set_psb_prefix(Socket *s, const char *prefix)
+{
+    HandleSocket *hs = container_of(s, HandleSocket, sock);
+    assert(hs->sock.vt == &HandleSocket_sockvt);
+    psb_set_prefix(&hs->psb, prefix);
+}
+
 static void sk_handle_deferred_close(Socket *s)
 {
     HandleSocket *hs = container_of(s, HandleSocket, sock);

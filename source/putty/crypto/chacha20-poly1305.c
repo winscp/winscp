@@ -869,6 +869,7 @@ struct ccp_context {
     BinarySink_IMPLEMENTATION;
     ssh_cipher ciph;
     ssh2_mac mac_if;
+    bool ciph_allocated, mac_allocated;
 };
 
 static ssh2_mac *poly_ssh2_new(
@@ -876,13 +877,27 @@ static ssh2_mac *poly_ssh2_new(
 {
     struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
     ctx->mac_if.vt = alg;
+    ctx->mac_allocated = true;
     BinarySink_DELEGATE_INIT(&ctx->mac_if, ctx);
     return &ctx->mac_if;
 }
 
+static void ccp_common_free(struct ccp_context *ctx)
+{
+    if (ctx->ciph_allocated || ctx->mac_allocated)
+        return;
+
+    smemclr(&ctx->a_cipher, sizeof(ctx->a_cipher));
+    smemclr(&ctx->b_cipher, sizeof(ctx->b_cipher));
+    smemclr(&ctx->mac, sizeof(ctx->mac));
+    sfree(ctx);
+}
+
 static void poly_ssh2_free(ssh2_mac *mac)
 {
-    /* Not allocated, just forwarded, no need to free */
+    struct ccp_context *ctx = container_of(mac, struct ccp_context, mac_if);
+    ctx->mac_allocated = false;
+    ccp_common_free(ctx);
 }
 
 static void poly_setkey(ssh2_mac *mac, ptrlen key)
@@ -949,6 +964,7 @@ const ssh2_macalg ssh2_poly1305 = {
     .setkey = poly_setkey,
     .start = poly_start,
     .genresult = poly_genresult,
+    .next_message = nullmac_next_message,
     .text_name = poly_text_name,
     .name = "",
     .etm_name = "", /* Not selectable individually, just part of
@@ -963,16 +979,16 @@ static ssh_cipher *ccp_new(const ssh_cipheralg *alg)
     BinarySink_INIT(ctx, poly_BinarySink_write);
     poly1305_init(&ctx->mac);
     ctx->ciph.vt = alg;
+    ctx->ciph_allocated = true;
+    ctx->mac_allocated = false;
     return &ctx->ciph;
 }
 
 static void ccp_free(ssh_cipher *cipher)
 {
     struct ccp_context *ctx = container_of(cipher, struct ccp_context, ciph);
-    smemclr(&ctx->a_cipher, sizeof(ctx->a_cipher));
-    smemclr(&ctx->b_cipher, sizeof(ctx->b_cipher));
-    smemclr(&ctx->mac, sizeof(ctx->mac));
-    sfree(ctx);
+    ctx->ciph_allocated = false;
+    ccp_common_free(ctx);
 }
 
 static void ccp_iv(ssh_cipher *cipher, const void *iv)
@@ -1046,6 +1062,7 @@ const ssh_cipheralg ssh2_chacha20_poly1305 = {
     .decrypt = ccp_decrypt,
     .encrypt_length = ccp_encrypt_length,
     .decrypt_length = ccp_decrypt_length,
+    .next_message = nullcipher_next_message,
     .ssh2_id = "chacha20-poly1305@openssh.com",
     .blksize = 1,
     .real_keybits = 512,

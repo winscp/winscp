@@ -62,9 +62,9 @@ The key types supported by PuTTY are described in \k{puttygen-keytype}.
 \H{pubkey-puttygen} Using \i{PuTTYgen}, the PuTTY key generator
 
 PuTTYgen is a key generator. It \I{generating keys}generates pairs of
-public and private keys to be used with PuTTY, PSCP, and Plink, as well
-as the PuTTY authentication agent, Pageant (see \k{pageant}).  PuTTYgen
-generates RSA, DSA, ECDSA, and EdDSA keys.
+public and private keys to be used with PuTTY, PSCP, PSFTP, and Plink,
+as well as the PuTTY authentication agent, Pageant (see \k{pageant}).
+PuTTYgen generates RSA, DSA, ECDSA, and EdDSA keys.
 
 When you run PuTTYgen you will see a window where you have two main
 choices: \q{Generate}, to generate a new public/private key pair, or
@@ -132,10 +132,13 @@ The \q{Number of bits} input box allows you to choose the strength
 of the key PuTTYgen will generate.
 
 \b For RSA and DSA, 2048 bits should currently be sufficient for most
-purposes.
+purposes. (Smaller keys of these types are no longer considered
+secure, and PuTTYgen will warn if you try to generate them.)
 
-\b For ECDSA, only 256, 384, and 521 bits are supported. (ECDSA offers
-equivalent security to RSA with smaller key sizes.)
+\b For ECDSA, only 256, 384, and 521 bits are supported, corresponding
+to \i{NIST}-standardised elliptic curves. (Elliptic-curve keys do not
+need as many bits as RSA keys for equivalent security, so these numbers
+are smaller than the RSA recommendations.)
 
 \b For EdDSA, the only valid sizes are 255 bits (these keys are also
 known as \q{\i{Ed25519}} and are commonly used) and 448 bits
@@ -145,6 +148,9 @@ the same as 255.)
 
 \S{puttygen-primes} Selecting the \i{prime generation method}
 
+(This is entirely optional. Unless you know better, it's entirely
+sensible to skip this and use the default settings.)
+
 On the \q{Key} menu, you can also optionally change the method for
 generating the prime numbers used in the generated key. This is used
 for RSA and DSA keys only. (The other key types don't require
@@ -153,9 +159,6 @@ generating prime numbers at all.)
 The prime-generation method does not affect compatibility: a key
 generated with any of these methods will still work with all the same
 SSH servers.
-
-If you don't care about this, it's entirely sensible to leave it on the
-default setting.
 
 The available methods are:
 
@@ -239,9 +242,9 @@ a particular fingerprint. So some utilities, such as the Pageant key
 list box (see \k{pageant-mainwin-keylist}) and the Unix \c{ssh-add}
 utility, will list key fingerprints rather than the whole public key.
 
-By default, PuTTYgen will display fingerprints in the \q{SHA256}
-format. If you need to see the fingerprint in the older \q{MD5} format
-(which looks like \c{aa:bb:cc:...}), you can choose
+By default, PuTTYgen will display SSH-2 key fingerprints in the
+\q{SHA256} format. If you need to see the fingerprint in the older
+\q{MD5} format (which looks like \c{aa:bb:cc:...}), you can choose
 \q{Show fingerprint as MD5} from the \q{Key} menu, but bear in mind
 that this is less cryptographically secure; it may be feasible for
 an attacker to create a key with the same fingerprint as yours.
@@ -306,6 +309,48 @@ cuts down the possibilities a lot and you should use a longer one as
 a result.
 
 \e{Do not forget your passphrase}. There is no way to recover it.
+
+\S{puttygen-cert} Adding a \i{certificate} to your key
+
+In some environments, user authentication keys can be signed in turn
+by a \q{certifying authority} (\q{CA} for short), and user accounts on
+an SSH server can be configured to automatically trust any key that's
+certified by the right signature.
+
+This can be a convenient setup if you have a very large number of
+servers. When you change your key pair, you might otherwise have to
+edit the \cw{authorized_keys} file on every server individually, to
+make them all accept the new key. But if instead you configure all
+those servers \e{once} to accept keys signed as yours by a CA, then
+when you change your public key, all you have to do is to get the new
+key certified by the same CA as before, and then all your servers will
+automatically accept it without needing individual reconfiguration.
+
+To get your key signed by a CA, you'll probably send the CA the new
+\e{public} key (not the private half), and get back a modified version
+of the public key with the certificate included.
+
+If you want to incorporate the certificate into your PPK file for
+convenience, you can use the \q{Add certificate to key} menu option in
+PuTTYgen's \q{Key} menu. This will give you a single file containing
+your private key and the certificate, which is everything you need to
+authenticate to a server prepared to accept that certificate. 
+
+To remove the certificate again and restore the uncertified PPK file,
+there's also a \q{Remove certificate from key} option.
+
+(However, you don't \e{have} to incorporate the certificate into your
+PPK file. You can equally well use it separately, via the
+\q{Certificate to use with the private key} option in PuTTY itself.
+See \k{config-ssh-cert}. It's up to you which you find more
+convenient.)
+
+When the currently loaded key in PuTTYgen contains a certificate, the
+large \q{Public key for pasting} edit box (see \k{puttygen-pastekey})
+is replaced by a button that brings up an information box telling you
+about the certificate, such as who it certifies your key as belonging
+to, when it expires (if ever), and the fingerprint of the CA key that
+signed it in turn.
 
 \S{puttygen-savepriv} Saving your private key to a disk file
 
@@ -493,7 +538,8 @@ The options supported on the command line are:
 \dt \cw{\-t} \e{keytype}
 
 \dd Type of key to generate. You can select \c{rsa}, \c{dsa},
-\c{ecdsa}, \c{eddsa} or \c{rsa1}. See \k{puttygen-keytype}.
+\c{ecdsa}, \c{eddsa}, \c{ed25519}, \c{ed448}, or \c{rsa1}.
+See \k{puttygen-keytype}.
 
 \dt \cw{\-b} \e{bits}
 

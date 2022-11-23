@@ -397,8 +397,10 @@ void backend_socket_log(Seat *seat, LogContext *logctx,
 typedef struct ProxyStderrBuf {
     char buf[8192];
     size_t size;
+    const char *prefix;                /* must be statically allocated */
 } ProxyStderrBuf;
 void psb_init(ProxyStderrBuf *psb);
+void psb_set_prefix(ProxyStderrBuf *psb, const char *prefix);
 void log_proxy_stderr(
     Plug *plug, ProxyStderrBuf *psb, const void *vdata, size_t len);
 
@@ -428,5 +430,7 @@ struct DeferredSocketOpenerVtable {
 };
 static inline void deferred_socket_opener_free(DeferredSocketOpener *dso)
 { dso->vt->free(dso); }
+
+DeferredSocketOpener *null_deferred_socket_opener(void);
 
 #endif

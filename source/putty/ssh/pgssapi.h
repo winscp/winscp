@@ -53,9 +53,9 @@ typedef struct gss_channel_bindings_struct {
     gss_buffer_desc application_data;
 } *gss_channel_bindings_t;
 
-typedef void * gss_ctx_id_t;
-typedef void * gss_name_t;
-typedef void * gss_cred_id_t;
+typedef void *gss_ctx_id_t;
+typedef void *gss_name_t;
+typedef void *gss_cred_id_t;
 
 typedef OM_uint32 gss_qop_t;
 typedef int gss_cred_usage_t;

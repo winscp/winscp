@@ -112,3 +112,17 @@ void strbuf_finalise_agent_query(strbuf *buf_o)
     assert(buf->visible.len >= 5);
     PUT_32BIT_MSB_FIRST(buf->visible.u, buf->visible.len - 4);
 }
+
+strbuf *strbuf_dup(ptrlen string)
+{
+    strbuf *buf = strbuf_new();
+    put_datapl(buf, string);
+    return buf;
+}
+
+strbuf *strbuf_dup_nm(ptrlen string)
+{
+    strbuf *buf = strbuf_new_nm();
+    put_datapl(buf, string);
+    return buf;
+}

@@ -91,8 +91,6 @@ typedef struct winSsh_gss_ctx {
 
 const Ssh_gss_buf gss_mech_krb5={9,"\x2A\x86\x48\x86\xF7\x12\x01\x02\x02"};
 
-const char *gsslogmsg = NULL;
-
 static void ssh_sspi_bind_fns(struct ssh_gss_library *lib);
 
 static tree234 *libraries_to_never_unload;
@@ -227,7 +225,8 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf)
         lib->gsslogmsg = "Using SSPI from SECUR32.DLL";
         lib->handle = (void *)module;
 
-        GET_WINDOWS_FUNCTION(module, AcquireCredentialsHandleA);
+        /* No typecheck because Winelib thinks one PVOID is a PLUID */
+        GET_WINDOWS_FUNCTION_NO_TYPECHECK(module, AcquireCredentialsHandleA);
         GET_WINDOWS_FUNCTION(module, InitializeSecurityContextA);
         GET_WINDOWS_FUNCTION(module, FreeContextBuffer);
         GET_WINDOWS_FUNCTION(module, FreeCredentialsHandle);
@@ -664,8 +663,8 @@ static Ssh_gss_stat ssh_sspi_verify_mic(struct ssh_gss_library *lib,
     InputSecurityToken[1].pvBuffer = mic->value;
 
     winctx->maj_stat = p_VerifySignature(&winctx->context,
-                                       &InputBufferDescriptor,
-                                       0, &qop);
+                                         &InputBufferDescriptor,
+                                         0, &qop);
     return winctx->maj_stat;
 }
 

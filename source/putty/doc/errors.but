@@ -39,6 +39,9 @@ the one PuTTY has cached for this server}, means that PuTTY has
 connected to the SSH server before, knows what its host key
 \e{should} be, but has found a different one.
 
+(If the message instead talks about a \q{certified host key}, see
+instead \k{errors-cert-mismatch}.)
+
 This may mean that a malicious attacker has replaced your server
 with a different one, or has redirected your network connection to
 their own machine. On the other hand, it may simply mean that the
@@ -51,6 +54,41 @@ expect the host key to have changed. If so, verify the new host key
 in the same way as you would if it was new.
 
 See \k{gs-hostkey} for more information on host keys.
+
+\H{errors-cert-mismatch} \q{This server presented a certified host key
+which was signed by a different certification authority ...}
+
+If you've configured PuTTY to trust at least one
+\I{certificate}certification authority for signing host keys (see
+\k{config-ssh-kex-cert}), then it will ask the SSH server to send it
+any available certified host keys. If the server sends back a
+certified key signed by a \e{different} certification authority, PuTTY
+will present this variant of the host key prompt, preceded by
+\q{WARNING - POTENTIAL SECURITY BREACH!}
+
+One reason why this can happen is a deliberate attack. Just like an
+ordinary man-in-the-middle attack which substitutes a wrong host key,
+a particularly ambitious attacker might substitute an entire wrong
+certification authority, and hope that you connect anyway.
+
+But it's also possible in some situations that this error might arise
+legitimately. For example, if your organisation's IT department has
+just rolled out a new CA key which you haven't yet entered in PuTTY's
+configuration, or if your CA configuration involves two overlapping
+domains, or something similar.
+
+So, unfortunately, you'll have to work out what to do about it
+yourself: make an exception for this specific case, or abandon this
+connection and install a new CA key before trying again (if you're
+really sure you trust the CA), or edit your configuration in some
+other way, or just stop trying to use this server.
+
+If you're convinced that this particular server is legitimate even
+though the CA is not one you trust, PuTTY will let you cache the
+certified host key, treating it in the same way as an uncertified one.
+Then that particular certificate will be accepted for future
+connections to this specific server, even though other certificates
+signed by the same CA will still be rejected.
 
 \H{errors-ssh-protocol} \q{SSH protocol version 2 required by our
 configuration but remote only provides (old, insecure) SSH-1}

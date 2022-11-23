@@ -82,6 +82,14 @@ mp_int *mp_new(size_t maxbits)
     return mp_make_sized(words);
 }
 
+mp_int *mp_resize(mp_int *mp, size_t newmaxbits)
+{
+    mp_int *copy = mp_new(newmaxbits);
+    mp_copy_into(copy, mp);
+    mp_free(mp);
+    return copy;
+}
+
 mp_int *mp_from_integer(uintmax_t n)
 {
     mp_int *x = mp_make_sized(

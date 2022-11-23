@@ -12,3 +12,9 @@ const uint8_t aes_key_setup_round_constants[10] = {
      * regardless of the key. */
     0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36,
 };
+
+void aesgcm_cipher_crypt_length(
+    ssh_cipher *cipher, void *blk, int len, unsigned long seq)
+{
+    /* Do nothing: lengths are sent in clear for this cipher. */
+}

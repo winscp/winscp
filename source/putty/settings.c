@@ -17,6 +17,7 @@
 static const struct keyvalwhere ciphernames[] = {
     { "aes",        CIPHER_AES,             -1, -1 },
     { "chacha20",   CIPHER_CHACHA20,        CIPHER_AES, +1 },
+    { "aesgcm",     CIPHER_AESGCM,          CIPHER_CHACHA20, +1 },
     { "3des",       CIPHER_3DES,            -1, -1 },
     { "WARN",       CIPHER_WARN,            -1, -1 },
     { "des",        CIPHER_DES,             -1, -1 },
@@ -28,12 +29,24 @@ static const struct keyvalwhere ciphernames[] = {
  * compatibility warts in load_open_settings(), and should be kept
  * in sync with those. */
 static const struct keyvalwhere kexnames[] = {
+    { "ntru-curve25519",    KEX_NTRU_HYBRID, -1, +1 },
     { "ecdh",               KEX_ECDH,       -1, +1 },
     /* This name is misleading: it covers both SHA-256 and SHA-1 variants */
     { "dh-gex-sha1",        KEX_DHGEX,      -1, -1 },
+    /* Again, this covers both SHA-256 and SHA-1, despite the name: */
     { "dh-group14-sha1",    KEX_DHGROUP14,  -1, -1 },
+    /* This one really is only SHA-1, though: */
     { "dh-group1-sha1",     KEX_DHGROUP1,   KEX_WARN, +1 },
     { "rsa",                KEX_RSA,        KEX_WARN, -1 },
+    /* Larger fixed DH groups: prefer the larger 15 and 16 over 14,
+     * but by default the even larger 17 and 18 go below 16.
+     * Rationale: diminishing returns of improving the DH strength are
+     * outweighed by increased CPU cost. Group 18 is painful on a slow
+     * machine. Users can override if they need to. */
+    { "dh-group15-sha512",  KEX_DHGROUP15,  KEX_DHGROUP14, -1 },
+    { "dh-group16-sha512",  KEX_DHGROUP16,  KEX_DHGROUP15, -1 },
+    { "dh-group17-sha512",  KEX_DHGROUP17,  KEX_DHGROUP16, +1 },
+    { "dh-group18-sha512",  KEX_DHGROUP18,  KEX_DHGROUP17, +1 },
     { "WARN",               KEX_WARN,       -1, -1 }
 };
 
@@ -624,6 +637,8 @@ void save_open_settings(settings_w *sesskey, Conf *conf)
     write_setting_s(sesskey, "LogHost", conf_get_str(conf, CONF_loghost));
     write_setting_b(sesskey, "SSH2DES", conf_get_bool(conf, CONF_ssh2_des_cbc));
     write_setting_filename(sesskey, "PublicKeyFile", conf_get_filename(conf, CONF_keyfile));
+    write_setting_filename(sesskey, "DetachedCertificate", conf_get_filename(conf, CONF_detached_cert));
+    write_setting_s(sesskey, "AuthPlugin", conf_get_str(conf, CONF_auth_plugin));
     write_setting_s(sesskey, "RemoteCommand", conf_get_str(conf, CONF_remote_cmd));
     write_setting_b(sesskey, "RFCEnviron", conf_get_bool(conf, CONF_rfc_environ));
     write_setting_b(sesskey, "PassiveTelnet", conf_get_bool(conf, CONF_passive_telnet));
@@ -771,6 +786,7 @@ void save_open_settings(settings_w *sesskey, Conf *conf)
     write_setting_i(sesskey, "BugWinadj", 2-conf_get_int(conf, CONF_sshbug_winadj));
     write_setting_i(sesskey, "BugChanReq", 2-conf_get_int(conf, CONF_sshbug_chanreq));
     write_setting_i(sesskey, "BugDropStart", 2-conf_get_int(conf, CONF_sshbug_dropstart));
+    write_setting_i(sesskey, "BugFilterKexinit", 2-conf_get_int(conf, CONF_sshbug_filter_kexinit));
     write_setting_b(sesskey, "StampUtmp", conf_get_bool(conf, CONF_stamp_utmp));
     write_setting_b(sesskey, "LoginShell", conf_get_bool(conf, CONF_login_shell));
     write_setting_b(sesskey, "ScrollbarOnLeft", conf_get_bool(conf, CONF_scrollbar_on_left));
@@ -968,9 +984,9 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
          * a server which offered it then choked, but we never got
          * a server version string or any other reports. */
         const char *default_kexes,
-                   *normal_default = "ecdh,dh-gex-sha1,dh-group14-sha1,rsa,"
+                   *normal_default = "ecdh,dh-gex-sha1,dh-group18-sha512,dh-group17-sha512,dh-group16-sha512,dh-group15-sha512,dh-group14-sha1,rsa,"
                        "WARN,dh-group1-sha1",
-                   *bugdhgex2_default = "ecdh,dh-group14-sha1,rsa,"
+                   *bugdhgex2_default = "ecdh,dh-group18-sha512,dh-group17-sha512,dh-group16-sha512,dh-group15-sha512,dh-group14-sha1,rsa,"
                        "WARN,dh-group1-sha1,dh-gex-sha1";
         char *raw;
         i = 2 - gppi_raw(sesskey, "BugDHGEx2", 0);
@@ -1041,6 +1057,8 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
 #endif
     gppb(sesskey, "SshNoShell", false, conf, CONF_ssh_no_shell);
     gppfile(sesskey, "PublicKeyFile", conf, CONF_keyfile);
+    gppfile(sesskey, "DetachedCertificate", conf, CONF_detached_cert);
+    gpps(sesskey, "AuthPlugin", "", conf, CONF_auth_plugin);
     gpps(sesskey, "RemoteCommand", "", conf, CONF_remote_cmd);
     gppb(sesskey, "RFCEnviron", false, conf, CONF_rfc_environ);
     gppb(sesskey, "PassiveTelnet", false, conf, CONF_passive_telnet);
@@ -1249,6 +1267,7 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
     i = gppi_raw(sesskey, "BugWinadj", 0); conf_set_int(conf, CONF_sshbug_winadj, 2-i);
     i = gppi_raw(sesskey, "BugChanReq", 0); conf_set_int(conf, CONF_sshbug_chanreq, 2-i);
     i = gppi_raw(sesskey, "BugDropStart", 1); conf_set_int(conf, CONF_sshbug_dropstart, 2-i);
+    i = gppi_raw(sesskey, "BugFilterKexinit", 1); conf_set_int(conf, CONF_sshbug_filter_kexinit, 2-i);
     conf_set_bool(conf, CONF_ssh_simple, false);
     gppb(sesskey, "StampUtmp", true, conf, CONF_stamp_utmp);
     gppb(sesskey, "LoginShell", true, conf, CONF_login_shell);

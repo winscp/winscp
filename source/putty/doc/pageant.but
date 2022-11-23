@@ -64,21 +64,24 @@ The large list box in the Pageant main window lists the private keys
 that are currently loaded into Pageant. The list might look
 something like this:
 
-\c ssh-ed25519  SHA256:TddlQk20DVs4LRcAsIfDN9pInKpY06D+h4kSHwWAj4w
-\c ssh-rsa 2048 SHA256:8DFtyHm3kQihgy52nzX96qMcEVOq7/yJmmwQQhBWYFg
+\c Ed25519    SHA256:TddlQk20DVs4LRcAsIfDN9pInKpY06D+h4kSHwWAj4w
+\c RSA  2048  SHA256:8DFtyHm3kQihgy52nzX96qMcEVOq7/yJmmwQQhBWYFg
 
 For each key, the list box will tell you:
 
 \b The type of the key. Currently, this can be
-\c{ssh-rsa} (an RSA key for use with the SSH-2 protocol),
-\c{ssh-dss} (a DSA key for use with the SSH-2 protocol),
-\c{ecdsa-sha2-*} (an ECDSA key for use with the SSH-2 protocol),
-\c{ssh-ed25519} (an Ed25519 key for use with the SSH-2 protocol),
-\c{ssh-ed448} (an Ed448 key for use with the SSH-2 protocol),
-or \c{ssh1} (an RSA key for use with the old SSH-1 protocol).
+\q{RSA} (an RSA key for use with the SSH-2 protocol),
+\q{DSA} (a DSA key for use with the SSH-2 protocol),
+\q{\i{NIST}} (an ECDSA key for use with the SSH-2 protocol),
+\q{Ed25519} (an Ed25519 key for use with the SSH-2 protocol),
+\q{Ed448} (an Ed448 key for use with the SSH-2 protocol),
+or \q{SSH-1} (an RSA key for use with the old SSH-1 protocol).
+(If the key has an associated certificate, this is shown here with a
+\q{cert} suffix.)
 
 \b The size (in bits) of the key, for key types that come in different
-sizes.
+sizes. (For ECDSA \q{NIST} keys, this is indicated as \q{p256} or
+\q{p384} or \q{p521}.)
 
 \b The \I{key fingerprint}fingerprint for the public key. This should be
 the same fingerprint given by PuTTYgen, and (hopefully) also the same
@@ -86,10 +89,20 @@ fingerprint shown by remote utilities such as \i\c{ssh-keygen} when
 applied to your \c{authorized_keys} file.
 
 \lcont{
-By default this is shown in the \q{SHA256} format. You can change to the
-older \q{MD5} format (which looks like \c{aa:bb:cc:...}) with the
-\q{Fingerprint type} drop-down, but bear in mind that this format is
-less secure and should be avoided for comparison purposes where possible.
+For SSH-2 keys, by default this is shown in the \q{SHA256} format. You
+can change to the older \q{MD5} format (which looks like \c{aa:bb:cc:...})
+with the \q{Fingerprint type} drop-down, but bear in mind that this
+format is less secure and should be avoided for comparison purposes
+where possible.
+
+If some of the keys loaded into Pageant have certificates attached,
+then Pageant will default to showing the fingerprint of the underlying
+key. This way, a certified and uncertified version of the same key
+will have the same fingerprint, so you can see that they match. You
+can instead use the \q{Fingerprint type} drop-down to ask for a
+different fingerprint to be shown for certified keys, which includes
+the certificate as part of the fingerprinted data. That way you can
+tell two certificates apart.
 }
 
 \b The comment attached to the key.
@@ -216,6 +229,45 @@ Pageant, you'll have to set the environment variable \cw{GIT_SSH}, to
 point at a different program. You could point it at
 \cw{c:\\Windows\\System32\\OpenSSH\\ssh.exe} once you've done this
 setup \dash but it's just as easy to point it at Plink!
+
+\S{pageant-cmdline-unix} Unix-domain sockets: integrating with WSL 1
+
+Pageant can listen on the WinSock implementation of \q{Unix-domain
+sockets}. These interoperate with the Unix-domain sockets found in the
+original Windows Subsystem for Linux (now known as WSL 1). So if you
+ask Pageant to listen on one of these, then your WSL 1 processes can
+talk directly to Pageant.
+
+To configure this, run Pageant with the option \c{--unix}, followed
+with a pathname. Then, in WSL 1, set the environment variable
+\cw{SSH_AUTH_SOCK} to point at the WSL translation of that pathname.
+
+For example, you might run
+
+\c pageant --unix C:\Users\Simon\.ssh\agent.sock
+
+and in WSL 1, set the environment variable
+
+\c SSH_AUTH_SOCK=/mnt/c/Users/Simon/.ssh/agent.sock
+
+Alternatively, you can add a line to your \cw{.ssh/config} file inside
+WSL that says
+
+\c IdentityAgent /mnt/c/Users/Simon/.ssh/agent.sock
+
+although doing it like that may mean that \cw{ssh-add} commands won't
+find the agent, even though \cw{ssh} itself will.
+
+\s{Security note}: Unix-domain sockets are protected against access by
+other users by the file protections on their containing directory. So
+if your Windows machine is multiuser, make sure you create the socket
+inside a directory that other users can't access at all. (In fact,
+that's a good idea on general principles.)
+
+\s{Compatibility note}: WSL 2 processes cannot talk to Pageant by this
+mechanism, because WSL 2's Unix-domain sockets are managed by a
+separate Linux kernel, and not by the same kernel that WinSock talks
+to.
 
 \S{pageant-cmdline-keylist} Starting with the key list visible
 

@@ -116,6 +116,9 @@ typedef struct LogPolicyVtable LogPolicyVtable;
 
 typedef struct Seat Seat;
 typedef struct SeatVtable SeatVtable;
+typedef struct SeatDialogText SeatDialogText;
+typedef struct SeatDialogTextItem SeatDialogTextItem;
+typedef struct SeatDialogPromptDescriptions SeatDialogPromptDescriptions;
 typedef struct SeatPromptResult SeatPromptResult;
 
 typedef struct cmdline_get_passwd_input_state cmdline_get_passwd_input_state;
@@ -143,6 +146,8 @@ typedef struct Channel Channel;
 typedef struct SshChannel SshChannel;
 typedef struct mainchan mainchan;
 
+typedef struct CertExprBuilder CertExprBuilder;
+
 typedef struct ssh_sharing_state ssh_sharing_state;
 typedef struct ssh_sharing_connstate ssh_sharing_connstate;
 typedef struct share_channel share_channel;
@@ -169,12 +174,19 @@ typedef struct ssh_cipher ssh_cipher;
 typedef struct ssh2_ciphers ssh2_ciphers;
 typedef struct dh_ctx dh_ctx;
 typedef struct ecdh_key ecdh_key;
+typedef struct ecdh_keyalg ecdh_keyalg;
+typedef struct NTRUKeyPair NTRUKeyPair;
+typedef struct NTRUEncodeSchedule NTRUEncodeSchedule;
 
 typedef struct dlgparam dlgparam;
+typedef struct dlgcontrol dlgcontrol;
 
 typedef struct settings_w settings_w;
 typedef struct settings_r settings_r;
 typedef struct settings_e settings_e;
+typedef struct ca_options ca_options;
+typedef struct host_ca host_ca;
+typedef struct host_ca_enum host_ca_enum;
 
 typedef struct SessionSpecial SessionSpecial;
 
@@ -242,5 +254,15 @@ struct unicode_data;
 #define STR(x) STR_INNER(x)
 #define CAT_INNER(x,y) x ## y
 #define CAT(x,y) CAT_INNER(x,y)
+
+/*
+ * Structure shared between ssh.h and storage.h, giving strictness
+ * options relating to checking of an OpenSSH certificate. It's a bit
+ * cheaty to put something so specific in here, but more painful to
+ * put it in putty.h.
+ */
+struct ca_options {
+    bool permit_rsa_sha1, permit_rsa_sha256, permit_rsa_sha512;
+};
 
 #endif /* PUTTY_DEFS_H */
