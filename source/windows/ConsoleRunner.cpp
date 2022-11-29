@@ -2505,7 +2505,7 @@ int __fastcall BatchSettings(TConsole * Console, TProgramParams * Params)
             Matches++;
             std::unique_ptr<TSessionData> OriginalData(new TSessionData(L""));
             OriginalData->CopyDataNoRecrypt(Data);
-            Data->ApplyRawSettings(OptionsStorage.get(), false);
+            Data->ApplyRawSettings(OptionsStorage.get(), false, true);
             bool Changed = !OriginalData->IsSame(Data, false);
             if (Changed)
             {

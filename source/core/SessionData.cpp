@@ -656,7 +656,7 @@ bool __fastcall TSessionData::IsInFolderOrWorkspace(UnicodeString AFolder)
   return StartsText(UnixIncludeTrailingBackslash(AFolder), Name);
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyImport, bool & RewritePassword, bool Unsafe)
+void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyImport, bool & RewritePassword, bool Unsafe, bool RespectDisablePasswordStoring)
 {
   // Make sure we only ever use methods supported by TOptionsStorage
   // (implemented by TOptionsIniFile)
@@ -678,7 +678,8 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
       SET_SESSION_PROPERTY_FROM(PROP, A##PROP); \
     }
   #define LOAD_PASSWORD(PROP, PLAIN_NAME) LOAD_PASSWORD_EX(PROP, PLAIN_NAME, TEXT(#PROP), RewritePassword = true;)
-  if (!Configuration->DisablePasswordStoring)
+  bool LoadPasswords = !Configuration->DisablePasswordStoring || !RespectDisablePasswordStoring;
+  if (LoadPasswords)
   {
     LOAD_PASSWORD(Password, L"PasswordPlain");
   }
@@ -863,14 +864,14 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   // must be loaded after TunnelUserName,
   // because TunnelHostName may be in format user@host
   TunnelHostName = Storage->ReadString(L"TunnelHostName", TunnelHostName);
-  if (!Configuration->DisablePasswordStoring)
+  if (LoadPasswords)
   {
     LOAD_PASSWORD(TunnelPassword, L"TunnelPasswordPlain");
   }
   TunnelPublicKeyFile = Storage->ReadString(L"TunnelPublicKeyFile", TunnelPublicKeyFile);
   // Contrary to main session passphrase (which has -passphrase switch in scripting),
   // we are loading tunnel passphrase, as there's no other way to provide it in scripting
-  if (!Configuration->DisablePasswordStoring)
+  if (LoadPasswords)
   {
     LOAD_PASSWORD(TunnelPassphrase, L"TunnelPassphrasePlain");
   }
@@ -978,7 +979,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage, bool PuttyImp
     ClearSessionPasswords();
     FProxyPassword = L"";
 
-    DoLoad(Storage, PuttyImport, RewritePassword, false);
+    DoLoad(Storage, PuttyImport, RewritePassword, false, true);
 
     Storage->CloseSubKey();
   }
@@ -2562,13 +2563,13 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
 void __fastcall TSessionData::ApplyRawSettings(TStrings * RawSettings, bool Unsafe)
 {
   std::unique_ptr<TOptionsStorage> OptionsStorage(new TOptionsStorage(RawSettings, false));
-  ApplyRawSettings(OptionsStorage.get(), Unsafe);
+  ApplyRawSettings(OptionsStorage.get(), Unsafe, false);
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::ApplyRawSettings(THierarchicalStorage * Storage, bool Unsafe)
+void __fastcall TSessionData::ApplyRawSettings(THierarchicalStorage * Storage, bool Unsafe, bool RespectDisablePasswordStoring)
 {
   bool Dummy;
-  DoLoad(Storage, false, Dummy, Unsafe);
+  DoLoad(Storage, false, Dummy, Unsafe, RespectDisablePasswordStoring);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::ConfigureTunnel(int APortNumber)
