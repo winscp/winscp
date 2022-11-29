@@ -1036,8 +1036,17 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
 
   WRITE_DATA(String, HostName);
   WRITE_DATA(Integer, PortNumber);
-  WRITE_DATA_EX(Integer, L"PingInterval", PingInterval / SecsPerMin, );
-  WRITE_DATA_EX(Integer, L"PingIntervalSecs", PingInterval % SecsPerMin, );
+  if ((PingType == ptOff) && PuttyExport)
+  {
+    // Deleting would do too
+    Storage->WriteInteger(L"PingInterval", 0);
+    Storage->WriteInteger(L"PingIntervalSecs", 0);
+  }
+  else
+  {
+    WRITE_DATA_EX(Integer, L"PingInterval", PingInterval / SecsPerMin, );
+    WRITE_DATA_EX(Integer, L"PingIntervalSecs", PingInterval % SecsPerMin, );
+  }
   Storage->DeleteValue(L"PingIntervalSec"); // obsolete
   WRITE_DATA(Integer, PingType);
   WRITE_DATA(Integer, Timeout);
