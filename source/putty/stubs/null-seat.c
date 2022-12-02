@@ -22,7 +22,7 @@ char *nullseat_get_ttymode(Seat *seat, const char *mode) { return NULL; }
 void nullseat_set_busy_status(Seat *seat, BusyStatus status) {}
 SeatPromptResult nullseat_confirm_ssh_host_key(
     Seat *seat, const char *host, int port, const char *keytype,
-    char *keystr, const char *keydisp, char **key_fingerprints, bool mismatch,
+    char *keystr, SeatDialogText *text, HelpCtx helpctx,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx)
 { return SPR_SW_ABORT("this seat can't handle interactive prompts"); }
 SeatPromptResult nullseat_confirm_weak_crypto_primitive(
@@ -52,3 +52,14 @@ bool nullseat_verbose_yes(Seat *seat) { return true; }
 bool nullseat_interactive_no(Seat *seat) { return false; }
 bool nullseat_interactive_yes(Seat *seat) { return true; }
 bool nullseat_get_cursor_position(Seat *seat, int *x, int *y) { return false; }
+
+const SeatDialogPromptDescriptions *nullseat_prompt_descriptions(Seat *seat)
+{
+    static const SeatDialogPromptDescriptions descs = {
+        .hk_accept_action = "",
+        .hk_connect_once_action = "",
+        .hk_cancel_action = "",
+        .hk_cancel_action_Participle = "",
+    };
+    return &descs;
+}

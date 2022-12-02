@@ -351,7 +351,7 @@ static void mainchan_open_failure(Channel *chan, const char *errtext)
 }
 
 static size_t mainchan_send(Channel *chan, bool is_stderr,
-                         const void *data, size_t length)
+                            const void *data, size_t length)
 {
     pinitassert(chan->vt == &mainchan_channelvt);
     mainchan *mc = container_of(chan, mainchan, chan);
