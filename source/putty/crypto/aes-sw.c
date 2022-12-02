@@ -1136,10 +1136,10 @@ static inline void aes_gcm_sw(
     /*WINSCP static*/ void aes##len##_sw_sdctr(                    \
         ssh_cipher *ciph, void *vblk, int blklen)       \
     { aes_sdctr_sw(ciph, vblk, blklen); }               \
-    static void aes##len##_sw_gcm(                      \
+    /*WINSCP static*/ void aes##len##_sw_gcm(                      \
         ssh_cipher *ciph, void *vblk, int blklen)       \
     { aes_gcm_sw(ciph, vblk, blklen); }                 \
-    static void aes##len##_sw_encrypt_ecb_block(        \
+    /*WINSCP static*/ void aes##len##_sw_encrypt_ecb_block(        \
         ssh_cipher *ciph, void *vblk)                   \
     { aes_encrypt_ecb_block_sw(ciph, vblk); }
 
@@ -1152,6 +1152,10 @@ static inline void aes_gcm_sw(
         ssh_cipher *ciph, void *vblk, int blklen);      \
     void aes##len##_sw_sdctr(                           \
         ssh_cipher *ciph, void *vblk, int blklen);      \
+    void aes##len##_sw_gcm(                      \
+        ssh_cipher *ciph, void *vblk, int blklen);       \
+    void aes##len##_sw_encrypt_ecb_block(        \
+        ssh_cipher *ciph, void *vblk);                   \
 
 #endif // WINSCP_VS
 

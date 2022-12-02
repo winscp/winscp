@@ -76,11 +76,12 @@ static const struct dh_extra extra_group1 = {
 };
 
 const ssh_kex ssh_diffiehellman_group1_sha1 = {
-    .name = "diffie-hellman-group1-sha1",
-    .groupname = "group1",
-    .main_type = KEXTYPE_DH,
-    .hash = &ssh_sha1,
-    .extra = &extra_group1,
+    /*.name =*/ "diffie-hellman-group1-sha1",
+    /*.groupname =*/ "group1",
+    /*.main_type =*/ KEXTYPE_DH,
+    /*.hash =*/ &ssh_sha1,
+    NULL, // WINSCP
+    /*.extra =*/ &extra_group1,
 };
 
 static const ssh_kex *const group1_list[] = {
@@ -94,11 +95,12 @@ static const struct dh_extra extra_group18 = {
 };
 
 const ssh_kex ssh_diffiehellman_group18_sha512 = {
-    .name = "diffie-hellman-group18-sha512",
-    .groupname = "group18",
-    .main_type = KEXTYPE_DH,
-    .hash = &ssh_sha512,
-    .extra = &extra_group18,
+    /*.name =*/ "diffie-hellman-group18-sha512",
+    /*.groupname =*/ "group18",
+    /*.main_type =*/ KEXTYPE_DH,
+    /*.hash =*/ &ssh_sha512,
+    NULL, // WINSCP
+    /*.extra =*/ &extra_group18,
 };
 
 static const ssh_kex *const group18_list[] = {
@@ -114,11 +116,12 @@ static const struct dh_extra extra_group17 = {
 };
 
 const ssh_kex ssh_diffiehellman_group17_sha512 = {
-    .name = "diffie-hellman-group17-sha512",
-    .groupname = "group17",
-    .main_type = KEXTYPE_DH,
-    .hash = &ssh_sha512,
-    .extra = &extra_group17,
+    /*.name =*/ "diffie-hellman-group17-sha512",
+    /*.groupname =*/ "group17",
+    /*.main_type =*/ KEXTYPE_DH,
+    /*.hash =*/ &ssh_sha512,
+    NULL, // WINSCP
+    /*.extra =*/ &extra_group17,
 };
 
 static const ssh_kex *const group17_list[] = {
@@ -134,11 +137,12 @@ static const struct dh_extra extra_group16 = {
 };
 
 const ssh_kex ssh_diffiehellman_group16_sha512 = {
-    .name = "diffie-hellman-group16-sha512",
-    .groupname = "group16",
-    .main_type = KEXTYPE_DH,
-    .hash = &ssh_sha512,
-    .extra = &extra_group16,
+    /*.name =*/ "diffie-hellman-group16-sha512",
+    /*.groupname =*/ "group16",
+    /*.main_type =*/ KEXTYPE_DH,
+    /*.hash =*/ &ssh_sha512,
+    NULL, // WINSCP
+    /*.extra =*/ &extra_group16,
 };
 
 static const ssh_kex *const group16_list[] = {
@@ -154,11 +158,12 @@ static const struct dh_extra extra_group15 = {
 };
 
 const ssh_kex ssh_diffiehellman_group15_sha512 = {
-    .name = "diffie-hellman-group15-sha512",
-    .groupname = "group15",
-    .main_type = KEXTYPE_DH,
-    .hash = &ssh_sha512,
-    .extra = &extra_group15,
+    /*.name =*/ "diffie-hellman-group15-sha512",
+    /*.groupname =*/ "group15",
+    /*.main_type =*/ KEXTYPE_DH,
+    /*.hash =*/ &ssh_sha512,
+    NULL, // WINSCP
+    /*.extra =*/ &extra_group15,
 };
 
 static const ssh_kex *const group15_list[] = {
@@ -174,19 +179,21 @@ static const struct dh_extra extra_group14 = {
 };
 
 const ssh_kex ssh_diffiehellman_group14_sha256 = {
-    .name = "diffie-hellman-group14-sha256",
-    .groupname = "group14",
-    .main_type = KEXTYPE_DH,
-    .hash = &ssh_sha256,
-    .extra = &extra_group14,
+    /*.name =*/ "diffie-hellman-group14-sha256",
+    /*.groupname =*/ "group14",
+    /*.main_type =*/ KEXTYPE_DH,
+    /*.hash =*/ &ssh_sha256,
+    NULL, // WINSCP
+    /*.extra =*/ &extra_group14,
 };
 
 const ssh_kex ssh_diffiehellman_group14_sha1 = {
-    .name = "diffie-hellman-group14-sha1",
-    .groupname = "group14",
-    .main_type = KEXTYPE_DH,
-    .hash = &ssh_sha1,
-    .extra = &extra_group14,
+    /*.name =*/ "diffie-hellman-group14-sha1",
+    /*.groupname =*/ "group14",
+    /*.main_type =*/ KEXTYPE_DH,
+    /*.hash =*/ &ssh_sha1,
+    NULL, // WINSCP
+    /*.extra =*/ &extra_group14,
 };
 
 static const ssh_kex *const group14_list[] = {
@@ -201,19 +208,21 @@ const ssh_kexes ssh_diffiehellman_group14 = {
 static const struct dh_extra extra_gex = { true };
 
 static const ssh_kex ssh_diffiehellman_gex_sha256 = {
-    .name = "diffie-hellman-group-exchange-sha256",
-    .groupname = NULL,
-    .main_type = KEXTYPE_DH,
-    .hash = &ssh_sha256,
-    .extra = &extra_gex,
+    /*.name =*/ "diffie-hellman-group-exchange-sha256",
+    /*.groupname =*/ NULL,
+    /*.main_type =*/ KEXTYPE_DH,
+    /*.hash =*/ &ssh_sha256,
+    NULL, // WINSCP
+    /*.extra =*/ &extra_gex,
 };
 
 static const ssh_kex ssh_diffiehellman_gex_sha1 = {
-    .name = "diffie-hellman-group-exchange-sha1",
-    .groupname = NULL,
-    .main_type = KEXTYPE_DH,
-    .hash = &ssh_sha1,
-    .extra = &extra_gex,
+    /*.name =*/ "diffie-hellman-group-exchange-sha1",
+    /*.groupname =*/ NULL,
+    /*.main_type =*/ KEXTYPE_DH,
+    /*.hash =*/ &ssh_sha1,
+    NULL, // WINSCP
+    /*.extra =*/ &extra_gex,
 };
 
 static const ssh_kex *const gex_list[] = {
@@ -224,51 +233,57 @@ static const ssh_kex *const gex_list[] = {
 const ssh_kexes ssh_diffiehellman_gex = { lenof(gex_list), gex_list };
 
 static const ssh_kex ssh_gssk5_diffiehellman_gex_sha1 = {
-    .name = "gss-gex-sha1-" GSS_KRB5_OID_HASH,
-    .groupname = NULL,
-    .main_type = KEXTYPE_GSS,
-    .hash = &ssh_sha1,
-    .extra = &extra_gex,
+    /*.name =*/ "gss-gex-sha1-" GSS_KRB5_OID_HASH,
+    /*.groupname =*/ NULL,
+    /*.main_type =*/ KEXTYPE_GSS,
+    /*.hash =*/ &ssh_sha1,
+    NULL, // WINSCP
+    /*.extra =*/ &extra_gex,
 };
 
 static const ssh_kex ssh_gssk5_diffiehellman_group18_sha512 = {
-    .name = "gss-group18-sha512-" GSS_KRB5_OID_HASH,
-    .groupname = "group18",
-    .main_type = KEXTYPE_GSS,
-    .hash = &ssh_sha512,
-    .extra = &extra_group18,
+    /*.name =*/ "gss-group18-sha512-" GSS_KRB5_OID_HASH,
+    /*.groupname =*/ "group18",
+    /*.main_type =*/ KEXTYPE_GSS,
+    /*.hash =*/ &ssh_sha512,
+    NULL, // WINSCP
+    /*.extra =*/ &extra_group18,
 };
 
 static const ssh_kex ssh_gssk5_diffiehellman_group17_sha512 = {
-    .name = "gss-group17-sha512-" GSS_KRB5_OID_HASH,
-    .groupname = "group17",
-    .main_type = KEXTYPE_GSS,
-    .hash = &ssh_sha512,
-    .extra = &extra_group17,
+    /*.name =*/ "gss-group17-sha512-" GSS_KRB5_OID_HASH,
+    /*.groupname =*/ "group17",
+    /*.main_type =*/ KEXTYPE_GSS,
+    /*.hash =*/ &ssh_sha512,
+    NULL, // WINSCP
+    /*.extra =*/ &extra_group17,
 };
 
 static const ssh_kex ssh_gssk5_diffiehellman_group16_sha512 = {
-    .name = "gss-group16-sha512-" GSS_KRB5_OID_HASH,
-    .groupname = "group16",
-    .main_type = KEXTYPE_GSS,
-    .hash = &ssh_sha512,
-    .extra = &extra_group16,
+    /*.name =*/ "gss-group16-sha512-" GSS_KRB5_OID_HASH,
+    /*.groupname =*/ "group16",
+    /*.main_type =*/ KEXTYPE_GSS,
+    /*.hash =*/ &ssh_sha512,
+    NULL, // WINSCP
+    /*.extra =*/ &extra_group16,
 };
 
 static const ssh_kex ssh_gssk5_diffiehellman_group15_sha512 = {
-    .name = "gss-group15-sha512-" GSS_KRB5_OID_HASH,
-    .groupname = "group15",
-    .main_type = KEXTYPE_GSS,
-    .hash = &ssh_sha512,
-    .extra = &extra_group15,
+    /*.name =*/ "gss-group15-sha512-" GSS_KRB5_OID_HASH,
+    /*.groupname =*/ "group15",
+    /*.main_type =*/ KEXTYPE_GSS,
+    /*.hash =*/ &ssh_sha512,
+    NULL, // WINSCP
+    /*.extra =*/ &extra_group15,
 };
 
 static const ssh_kex ssh_gssk5_diffiehellman_group14_sha256 = {
-    .name = "gss-group14-sha256-" GSS_KRB5_OID_HASH,
-    .groupname = "group14",
-    .main_type = KEXTYPE_GSS,
-    .hash = &ssh_sha256,
-    .extra = &extra_group14,
+    /*.name =*/ "gss-group14-sha256-" GSS_KRB5_OID_HASH,
+    /*.groupname =*/ "group14",
+    /*.main_type =*/ KEXTYPE_GSS,
+    /*.hash =*/ &ssh_sha256,
+    NULL, // WINSCP
+    /*.extra =*/ &extra_group14,
 };
 
 static const ssh_kex *const gssk5_sha2_kex_list[] = {
@@ -284,19 +299,21 @@ const ssh_kexes ssh_gssk5_sha2_kex = {
 };
 
 static const ssh_kex ssh_gssk5_diffiehellman_group14_sha1 = {
-    .name = "gss-group14-sha1-" GSS_KRB5_OID_HASH,
-    .groupname = "group14",
-    .main_type = KEXTYPE_GSS,
-    .hash = &ssh_sha1,
-    .extra = &extra_group14,
+    /*.name =*/ "gss-group14-sha1-" GSS_KRB5_OID_HASH,
+    /*.groupname =*/ "group14",
+    /*.main_type =*/ KEXTYPE_GSS,
+    /*.hash =*/ &ssh_sha1,
+    NULL, // WINSCP
+    /*.extra =*/ &extra_group14,
 };
 
 static const ssh_kex ssh_gssk5_diffiehellman_group1_sha1 = {
-    .name = "gss-group1-sha1-" GSS_KRB5_OID_HASH,
-    .groupname = "group1",
-    .main_type = KEXTYPE_GSS,
-    .hash = &ssh_sha1,
-    .extra = &extra_group1,
+    /*.name =*/ "gss-group1-sha1-" GSS_KRB5_OID_HASH,
+    /*.groupname =*/ "group1",
+    /*.main_type =*/ KEXTYPE_GSS,
+    /*.hash =*/ &ssh_sha1,
+    NULL, // WINSCP
+    /*.extra =*/ &extra_group1,
 };
 
 static const ssh_kex *const gssk5_sha1_kex_list[] = {

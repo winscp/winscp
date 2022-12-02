@@ -100,17 +100,24 @@ static value128_t pmul(uint64_t x, uint64_t y)
     value128_t r;
     r.hi = r.lo = 0;
 
+    { // WINSCP
     uint64_t bit = 1 & y;
     r.lo ^= x & -bit;
 
-    for (unsigned i = 1; i < 64; i++) {
+    { // WINSCP
+    unsigned i;
+    for (i = 1; i < 64; i++) {
         bit = 1 & (y >> i);
+        { // WINSCP
         uint64_t z = x & -bit;
         r.lo ^= z << i;
         r.hi ^= z >> (64-i);
+        } // WINSCP
     }
+    } // WINSCP
 
     return r;
+    } // WINSCP
 }
 
 /*
@@ -222,10 +229,12 @@ static void aesgcm_ref_poly_setkey_impl(aesgcm_ref_poly *ctx,
     ctx->var.hi = GET_64BIT_MSB_FIRST(var);
     ctx->var.lo = GET_64BIT_MSB_FIRST(var + 8);
 
+    { // WINSCP
     uint64_t bit = 1 & (ctx->var.hi >> 63);
     ctx->var.hi = (ctx->var.hi << 1) ^ (ctx->var.lo >> 63);
     ctx->var.lo = (ctx->var.lo << 1) ^ bit;
-    ctx->var.hi ^= 0xC200000000000000 & -bit;
+    ctx->var.hi ^= 0xC200000000000000LL & -bit; // WINSCP
+    } // WINSCP
 }
 
 static inline void aesgcm_ref_poly_setup(aesgcm_ref_poly *ctx,
@@ -290,6 +299,7 @@ static inline void aesgcm_ref_poly_coeff(aesgcm_ref_poly *ctx,
      * This involves more bookkeeping instructions like XORs, but with
      * any luck those are faster than the main multiplication.
      */
+    { // WINSCP
     uint64_t ah = ctx->acc.hi, al = ctx->acc.lo;
     uint64_t bh = ctx->var.hi, bl = ctx->var.lo;
     /* Compute the outer two terms */
@@ -336,18 +346,23 @@ static inline void aesgcm_ref_poly_coeff(aesgcm_ref_poly *ctx,
 
     /* First step, adding to the middle two words of our number. After
      * this the lowest word (in lo.lo) is ignored. */
-    value128_t r1 = pmul(0xC200000000000000, lo.lo);
+    { // WINSCP
+    value128_t r1 = pmul(0xC200000000000000LL, lo.lo); // WINSCP
     hi.lo ^= r1.hi ^ lo.lo;
     lo.hi ^= r1.lo;
 
     /* Second of those steps, adding to the top two words, and
      * discarding lo.hi. */
-    value128_t r2 = pmul(0xC200000000000000, lo.hi);
+    { // WINSCP
+    value128_t r2 = pmul(0xC200000000000000LL, lo.hi);
     hi.hi ^= r2.hi ^ lo.hi;
     hi.lo ^= r2.lo;
 
     /* Now 'hi' is precisely what we have left. */
     ctx->acc = hi;
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
 static inline void aesgcm_ref_poly_output(aesgcm_ref_poly *ctx,

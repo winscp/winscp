@@ -193,6 +193,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
       case cipDES: pcipher = CIPHER_DES; break;
       case cipArcfour: pcipher = CIPHER_ARCFOUR; break;
       case cipChaCha20: pcipher = CIPHER_CHACHA20; break;
+      case cipAESGCM: pcipher = CIPHER_AESGCM; break;
       default: DebugFail();
     }
     conf_set_int_int(conf, CONF_ssh_cipherlist, c, pcipher);
@@ -206,6 +207,10 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
       case kexWarn: pkex = KEX_WARN; break;
       case kexDHGroup1: pkex = KEX_DHGROUP1; break;
       case kexDHGroup14: pkex = KEX_DHGROUP14; break;
+      case kexDHGroup15: pkex = KEX_DHGROUP15; break;
+      case kexDHGroup16: pkex = KEX_DHGROUP16; break;
+      case kexDHGroup17: pkex = KEX_DHGROUP17; break;
+      case kexDHGroup18: pkex = KEX_DHGROUP18; break;
       case kexDHGEx: pkex = KEX_DHGEX; break;
       case kexRSA: pkex = KEX_RSA; break;
       case kexECDH: pkex = KEX_ECDH; break;

@@ -961,6 +961,7 @@ SeatPromptResult verify_ssh_host_key(
      * The key is either missing from the cache, or does not match.
      * Either way, fall back to an interactive prompt from the Seat.
      */
+    { // WINSCP
     SeatDialogText *text = seat_dialog_text_new();
     const SeatDialogPromptDescriptions *pds =
         seat_prompt_descriptions(iseat.seat);
@@ -971,6 +972,7 @@ SeatPromptResult verify_ssh_host_key(
     seat_dialog_text_append(
         text, SDT_TITLE, "%s Security Alert", appname);
 
+    { // WINSCP
     HelpCtx helpctx;
 
     if (key && ssh_key_alg(key)->is_certificate) {
@@ -1106,10 +1108,15 @@ SeatPromptResult verify_ssh_host_key(
                                 fingerprints[SSH_FPTYPE_MD5]);
     }
 
+    { // WINSCP
     SeatPromptResult toret = seat_confirm_ssh_host_key(
-        iseat, host, port, keytype, keystr, text, helpctx, callback, ctx);
+        iseat, host, port, keytype, keystr, text, helpctx, callback, ctx,
+        fingerprints); // WINSCP
     seat_dialog_text_free(text);
     return toret;
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
     } // WINSCP
 }
 

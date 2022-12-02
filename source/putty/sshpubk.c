@@ -1894,6 +1894,7 @@ char *ssh2_double_fingerprint_blob(ptrlen blob, FingerprintType fptype)
     if (ssh_fptype_is_cert(fptype))
         fptype = ssh_fptype_from_cert(fptype);
 
+    { // WINSCP
     char *fp = ssh2_fingerprint_blob(blob, fptype);
     char *p = strrchr(fp, ' ');
     char *hash = p ? p + 1 : fp;
@@ -1910,6 +1911,7 @@ char *ssh2_double_fingerprint_blob(ptrlen blob, FingerprintType fptype)
 
     sfree(fpc);
     return fp;
+    } // WINSCP
 }
 
 char **ssh2_all_fingerprints_for_blob(ptrlen blob)
@@ -1935,9 +1937,11 @@ char *ssh2_double_fingerprint(ssh_key *data, FingerprintType fptype)
 {
     strbuf *blob = strbuf_new();
     ssh_key_public_blob(data, BinarySink_UPCAST(blob));
+    { // WINSCP
     char *ret = ssh2_double_fingerprint_blob(ptrlen_from_strbuf(blob), fptype);
     strbuf_free(blob);
     return ret;
+    } // WINSCP
 }
 
 char **ssh2_all_fingerprints(ssh_key *data)

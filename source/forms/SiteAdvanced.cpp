@@ -254,7 +254,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     CompressionCheck->Checked = FSessionData->Compression;
 
     CipherListBox->Items->Clear();
-    DebugAssert(CIPHER_NAME_WARN+CIPHER_COUNT-1 == CIPHER_NAME_CHACHA20);
+    DebugAssert(CIPHER_NAME_WARN+CIPHER_COUNT-1 == CIPHER_NAME_AESGCM);
     for (int Index = 0; Index < CIPHER_COUNT; Index++)
     {
       CipherListBox->Items->AddObject(

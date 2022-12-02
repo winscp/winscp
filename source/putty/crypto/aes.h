@@ -59,7 +59,7 @@ static inline void aes_encrypt_ecb_block(ssh_cipher *ciph, void *blk)
         /* WINSCP */ \
         /*.check_available =*/ aes ## impl_c ## _available,                 \
         /*.mut =*/ &aes ## impl_c ## _extra_mut,                            \
-        .encrypt_ecb_block = &aes ## bits ## impl_c ## _encrypt_ecb_block, \
+        /*.encrypt_ecb_block =*/ &aes ## bits ## impl_c ## _encrypt_ecb_block, \
     }
 
 #define AES_EXTRA(impl_c)                       \
@@ -82,9 +82,9 @@ static inline void aes_encrypt_ecb_block(ssh_cipher *ciph, void *blk)
         /*.setkey =*/ aes ## impl_c ## _setkey,                             \
         /*.encrypt =*/ aes ## bits ## impl_c ## _cbc_encrypt,               \
         /*.decrypt =*/ aes ## bits ## impl_c ## _cbc_decrypt,               \
-        .next_message = nullcipher_next_message,                        \
         NULL, \
         NULL, \
+        /*.next_message =*/ nullcipher_next_message,                        \
         /*.ssh2_id =*/ ssh_aes ## bits ## _cbc ## impl_c ## ssh2_id, /*WINSCP*/ \
         /*.blksize =*/ 16,                                                  \
         /*.real_keybits =*/ bits,                                           \
@@ -108,7 +108,7 @@ static inline void aes_encrypt_ecb_block(ssh_cipher *ciph, void *blk)
         /*.decrypt =*/ aes ## bits ## impl_c ## _sdctr,                     \
         NULL, \
         NULL, \
-        .next_message = nullcipher_next_message,                        \
+        /*.next_message =*/ nullcipher_next_message,                        \
         /*.ssh2_id =*/ ssh_aes ## bits ## _sdctr ## impl_c ## ssh2_id, /*WINSCP*/ \
         /*.blksize =*/ 16,                                                  \
         /*.real_keybits =*/ bits,                                           \
@@ -120,27 +120,29 @@ static inline void aes_encrypt_ecb_block(ssh_cipher *ciph, void *blk)
     }
 
 #define AES_GCM_VTABLE(impl_c, impl_display, bits)                      \
+    const char ssh_aes ## bits ## _gcm ## impl_c ## ssh2_id[] = "aes" #bits "-gcm@openssh.com"; /*WINSCP*/ \
+    const char ssh_aes ## bits ## _gcm ## impl_c ## text_name[] = "AES-" #bits " GCM (" impl_display ")"; /*WINSCP*/ \
     const ssh_cipheralg ssh_aes ## bits ## _gcm ## impl_c = {           \
-        .new = aes ## impl_c ## _new,                                   \
-        .free = aes ## impl_c ## _free,                                 \
-        .setiv = aes ## impl_c ## _setiv_gcm,                           \
-        .setkey = aes ## impl_c ## _setkey,                             \
-        .encrypt = aes ## bits ## impl_c ## _gcm,                       \
-        .decrypt = aes ## bits ## impl_c ## _gcm,                       \
-        .encrypt_length = aesgcm_cipher_crypt_length,                   \
-        .decrypt_length = aesgcm_cipher_crypt_length,                   \
-        .next_message = aes ## impl_c ## _next_message_gcm,             \
+        /*.new =*/ aes ## impl_c ## _new,                                   \
+        /*.free =*/ aes ## impl_c ## _free,                                 \
+        /*.setiv =*/ aes ## impl_c ## _setiv_gcm,                           \
+        /*.setkey =*/ aes ## impl_c ## _setkey,                             \
+        /*.encrypt =*/ aes ## bits ## impl_c ## _gcm,                       \
+        /*.decrypt =*/ aes ## bits ## impl_c ## _gcm,                       \
+        /*.encrypt_length =*/ aesgcm_cipher_crypt_length,                   \
+        /*.decrypt_length =*/ aesgcm_cipher_crypt_length,                   \
+        /*.next_message =*/ aes ## impl_c ## _next_message_gcm,             \
         /* 192-bit AES-GCM is included only so that testcrypt can run   \
          * standard test vectors against it. OpenSSH doesn't define a   \
          * protocol id for it. So we set its ssh2_id to NULL. */        \
-        .ssh2_id = bits==192 ? NULL : "aes" #bits "-gcm@openssh.com",   \
-        .blksize = 16,                                                  \
-        .real_keybits = bits,                                           \
-        .padded_keybytes = bits/8,                                      \
-        .flags = SSH_CIPHER_SEPARATE_LENGTH,                            \
-        .text_name = "AES-" #bits " GCM (" impl_display ")",            \
-        .required_mac = &ssh2_aesgcm_mac,                               \
-        .extra = &aes ## bits ## impl_c ## _extra,                      \
+        /*.ssh2_id =*/ bits==192 ? NULL : ssh_aes ## bits ## _gcm ## impl_c ## ssh2_id,   \
+        /*.blksize =*/ 16,                                                  \
+        /*.real_keybits =*/ bits,                                           \
+        /*.padded_keybytes =*/ bits/8,                                      \
+        /*.flags =*/ SSH_CIPHER_SEPARATE_LENGTH,                            \
+        /*.text_name =*/ ssh_aes ## bits ## _gcm ## impl_c ## text_name,            \
+        /*.required_mac =*/ &ssh2_aesgcm_mac,                               \
+        /*.extra =*/ &aes ## bits ## impl_c ## _extra,                      \
     }
 
 #define AES_ALL_VTABLES(impl_c, impl_display)           \

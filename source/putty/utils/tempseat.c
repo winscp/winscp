@@ -249,7 +249,8 @@ static size_t tempseat_banner(Seat *seat, const void *data, size_t len)
 static SeatPromptResult tempseat_confirm_ssh_host_key(
     Seat *seat, const char *host, int port, const char *keytype,
     char *keystr, SeatDialogText *text, HelpCtx helpctx,
-    void (*callback)(void *ctx, SeatPromptResult result), void *ctx)
+    void (*callback)(void *ctx, SeatPromptResult result), void *ctx,
+    char **fingerprints) // WINSCP
 {
     unreachable("confirm_ssh_host_key should never be called on TempSeat");
 }
@@ -334,7 +335,7 @@ static const struct SeatVtable tempseat_vt = {
     /*.confirm_ssh_host_key =*/ tempseat_confirm_ssh_host_key,
     /*.confirm_weak_crypto_primitive =*/ tempseat_confirm_weak_crypto_primitive,
     /*.confirm_weak_cached_hostkey =*/ tempseat_confirm_weak_cached_hostkey,
-    .prompt_descriptions = tempseat_prompt_descriptions,
+    /*.prompt_descriptions =*/ tempseat_prompt_descriptions,
     /*.is_utf8 =*/ tempseat_is_utf8,
     /*.echoedit_update =*/ tempseat_echoedit_update,
     /*.get_x_display =*/ tempseat_get_x_display,

@@ -429,7 +429,9 @@ enum {
     KEX_DHGEX,
     KEX_RSA,
     KEX_ECDH,
+#ifndef WINSCP
     KEX_NTRU_HYBRID,
+#endif
     KEX_MAX
 };
 
@@ -1283,7 +1285,8 @@ struct SeatVtable {
     SeatPromptResult (*confirm_ssh_host_key)(
         Seat *seat, const char *host, int port, const char *keytype,
         char *keystr, SeatDialogText *text, HelpCtx helpctx,
-        void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
+        void (*callback)(void *ctx, SeatPromptResult result), void *ctx,
+        char **fingerprints); // WINSCP
 
     /*
      * Check with the seat whether it's OK to use a cryptographic
@@ -1439,9 +1442,11 @@ static inline void seat_set_busy_status(Seat *seat, BusyStatus status)
 static inline SeatPromptResult seat_confirm_ssh_host_key(
     InteractionReadySeat iseat, const char *h, int p, const char *ktyp,
     char *kstr, SeatDialogText *text, HelpCtx helpctx,
-    void (*cb)(void *ctx, SeatPromptResult result), void *ctx)
+    void (*cb)(void *ctx, SeatPromptResult result), void *ctx,
+    char **fingerprints) // WINSCP
 { return iseat.seat->vt->confirm_ssh_host_key(
-        iseat.seat, h, p, ktyp, kstr, text, helpctx, cb, ctx); }
+        iseat.seat, h, p, ktyp, kstr, text, helpctx, cb, ctx,
+        fingerprints); }
 static inline SeatPromptResult seat_confirm_weak_crypto_primitive(
     InteractionReadySeat iseat, const char *atyp, const char *aname,
     void (*cb)(void *ctx, SeatPromptResult result), void *ctx)

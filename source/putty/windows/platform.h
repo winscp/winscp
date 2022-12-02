@@ -25,8 +25,11 @@
 
 #include "tree234.h"
 
-#ifndef MPEXT
+#ifndef WINSCP
 #include "help.h"
+#else
+typedef const char *HelpCtx;
+#define HELPCTX(x) #x
 #endif
 
 #if defined _M_IX86 || defined _M_AMD64
@@ -42,7 +45,11 @@
 #elif defined _MSC_VER
 #define THREADLOCAL __declspec(thread)
 #else
+#ifdef WINSCP
+#define THREADLOCAL __thread
+#else
 #error Do not know how to declare thread-local storage with this toolchain
+#endif
 #endif
 
 /* Randomly-chosen dwData value identifying a WM_COPYDATA message as
@@ -743,16 +750,23 @@ char *get_jumplist_registry_entries(void);
 #define CLIPUI_DEFAULT_INS CLIPUI_EXPLICIT
 
 /* In utils */
+int reg_override_winscp(void);
 HKEY open_regkey_fn(bool create, HKEY base, const char *path, ...);
+HKEY open_regkey_fn_winscp(bool create, HKEY base, const char *path, ...);
 #define open_regkey(create, base, ...) \
-    open_regkey_fn(create, base, __VA_ARGS__, (const char *)NULL)
+    reg_override_winscp() ? open_regkey_fn_winscp(create, base, __VA_ARGS__, (const char *)NULL) : open_regkey_fn(create, base, __VA_ARGS__, (const char *)NULL)
 void close_regkey(HKEY key);
+void close_regkey_winscp(HKEY key);
 void del_regkey(HKEY key, const char *name);
 char *enum_regkey(HKEY key, int index);
 bool get_reg_dword(HKEY key, const char *name, DWORD *out);
+bool get_reg_dword_winscp(HKEY key, const char *name, DWORD *out);
 bool put_reg_dword(HKEY key, const char *name, DWORD value);
+bool put_reg_dword_winscp(HKEY key, const char *name, DWORD value);
 char *get_reg_sz(HKEY key, const char *name);
+char *get_reg_sz_winscp(HKEY key, const char *name);
 bool put_reg_sz(HKEY key, const char *name, const char *str);
+bool put_reg_sz_winscp(HKEY key, const char *name, const char *str);
 strbuf *get_reg_multi_sz(HKEY key, const char *name);
 bool put_reg_multi_sz(HKEY key, const char *name, strbuf *str);
 

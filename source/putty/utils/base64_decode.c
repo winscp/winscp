@@ -9,7 +9,9 @@ void base64_decode_bs(BinarySink *bs, ptrlen input)
         char b64atom[4];
         unsigned char binatom[3];
 
-        for (size_t i = 0; i < 4 ;) {
+        { // WINSCP
+        size_t i;
+        for (i = 0; i < 4 ;) {
             char c = get_byte(src);
             if (get_err(src))
                 c = '=';
@@ -17,6 +19,7 @@ void base64_decode_bs(BinarySink *bs, ptrlen input)
                 continue;
             b64atom[i++] = c;
         }
+        } // WINSCP
 
         put_data(bs, binatom, base64_decode_atom(b64atom, binatom));
     }

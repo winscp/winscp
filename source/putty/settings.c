@@ -29,7 +29,9 @@ static const struct keyvalwhere ciphernames[] = {
  * compatibility warts in load_open_settings(), and should be kept
  * in sync with those. */
 static const struct keyvalwhere kexnames[] = {
+#ifndef WINSCP
     { "ntru-curve25519",    KEX_NTRU_HYBRID, -1, +1 },
+#endif
     { "ecdh",               KEX_ECDH,       -1, +1 },
     /* This name is misleading: it covers both SHA-256 and SHA-1 variants */
     { "dh-gex-sha1",        KEX_DHGEX,      -1, -1 },
@@ -1330,6 +1332,7 @@ static int sessioncmp(const void *av, const void *bv)
 
 bool sesslist_demo_mode = false;
 
+#ifndef WINSCP
 void get_sesslist(struct sesslist *list, bool allocate)
 {
     int i;
@@ -1389,3 +1392,4 @@ void get_sesslist(struct sesslist *list, bool allocate)
         list->sessions = NULL;
     }
 }
+#endif

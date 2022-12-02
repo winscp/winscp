@@ -3,20 +3,6 @@
  * defined in storage.h.
  */
 
-#ifdef MPEXT
-
-#include "puttyexp.h"
-
-#pragma option push -w-dup
-#define RegOpenKey reg_open_winscp_key
-#define RegCreateKey reg_create_winscp_key
-#define RegQueryValueEx reg_query_winscp_value_ex
-#define RegSetValueEx reg_set_winscp_value_ex
-#define RegCloseKey reg_close_winscp_key
-#pragma option pop
-
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -53,9 +39,11 @@ settings_w *open_settings_w(const char *sessionname, char **errmsg)
     if (!sessionname || !*sessionname)
         sessionname = "Default Settings";
 
+    { // WINSCP
     strbuf *sb = strbuf_new();
     escape_registry_key(sessionname, sb);
 
+    { // WINSCP
     HKEY sesskey = open_regkey(true, HKEY_CURRENT_USER, puttystr, sb->s);
     if (!sesskey) {
         *errmsg = dupprintf("Unable to create registry key\n"
@@ -69,6 +57,8 @@ settings_w *open_settings_w(const char *sessionname, char **errmsg)
     settings_w *toret = snew(settings_w);
     toret->sesskey = sesskey;
     return toret;
+    } // WINSCP
+    } // WINSCP
     } // WINSCP
 }
 
@@ -99,8 +89,10 @@ settings_r *open_settings_r(const char *sessionname)
     if (!sessionname || !*sessionname)
         sessionname = "Default Settings";
 
+    { // WINSCP
     strbuf *sb = strbuf_new();
     escape_registry_key(sessionname, sb);
+    { // WINSCP
     HKEY sesskey = open_regkey(false, HKEY_CURRENT_USER, puttystr, sb->s);
     strbuf_free(sb);
 
@@ -111,6 +103,8 @@ settings_r *open_settings_r(const char *sessionname)
     settings_r *toret = snew(settings_r);
     toret->sesskey = sesskey;
     return toret;
+    } // WINSCP
+    } // WINSCP
     } // WINSCP
 }
 
@@ -212,12 +206,14 @@ void close_settings_r(settings_r *handle)
     }
 }
 
+#ifndef WINSCP
 void del_settings(const char *sessionname)
 {
     HKEY rkey = open_regkey(false, HKEY_CURRENT_USER, puttystr);
     if (!rkey)
         return;
 
+    { // WINSCP
     strbuf *sb = strbuf_new();
     escape_registry_key(sessionname, sb);
     del_regkey(rkey, sb->s);
@@ -226,6 +222,7 @@ void del_settings(const char *sessionname)
     close_regkey(rkey);
 
     remove_session_from_jumplist(sessionname);
+    } // WINSCP
 }
 
 struct settings_e {
@@ -239,6 +236,7 @@ settings_e *enum_settings_start(void)
     if (!key)
         return NULL;
 
+    { // WINSCP
     settings_e *ret = snew(settings_e);
     if (ret) {
         ret->key = key;
@@ -246,6 +244,7 @@ settings_e *enum_settings_start(void)
     }
 
     return ret;
+    } // WINSCP
 }
 
 bool enum_settings_next(settings_e *e, strbuf *sb)
@@ -265,6 +264,7 @@ void enum_settings_finish(settings_e *e)
     close_regkey(e->key);
     sfree(e);
 }
+#endif
 
 static void hostkey_regname(strbuf *sb, const char *hostname,
                             int port, const char *keytype)
@@ -281,16 +281,13 @@ int check_stored_host_key(const char *hostname, int port,
                           const char *keytype, const char *key)
 #endif
 {
-#ifdef MPEXT
-    len = maxlen;
-#else
-#endif
     /*
      * Read a saved key in from the registry and see what it says.
      */
     strbuf *regname = strbuf_new();
     hostkey_regname(regname, hostname, port, keytype);
 
+    { // WINSCP
     HKEY rkey = open_regkey(false, HKEY_CURRENT_USER,
                             PUTTY_REG_POS "\\SshHostKeys");
     if (!rkey) {
@@ -298,6 +295,7 @@ int check_stored_host_key(const char *hostname, int port,
         return 1;                      /* key does not exist in registry */
     }
 
+    { // WINSCP
     char *otherstr = get_reg_sz(rkey, regname->s);
     if (!otherstr && !strcmp(keytype, "rsa")) {
         /*
@@ -362,13 +360,15 @@ int check_stored_host_key(const char *hostname, int port,
     close_regkey(rkey);
 
 #ifdef MPEXT
-    // make sure it is zero terminated, what it is not, particularly when
-    // RegQueryValueEx fails (the key is unknown)
-    otherstr[len - 1] = '\0';
-#endif
-#ifdef MPEXT
-    strncpy(key, otherstr, maxlen);
-    key[maxlen - 1] = '\0';
+    if (otherstr)
+    {
+        strncpy(key, otherstr, maxlen);
+        key[maxlen - 1] = '\0';
+    }
+    else
+    {
+        key[0] = '\0';
+    }
 #else
     int compare = otherstr ? strcmp(otherstr, key) : -1;
 #endif
@@ -384,6 +384,8 @@ int check_stored_host_key(const char *hostname, int port,
 #endif
     else
         return 0;                      /* key matched OK in registry */
+    } // WINSCP
+    } // WINSCP
 }
 
 #ifndef MPEXT
@@ -404,6 +406,7 @@ void store_host_key(const char *hostname, int port,
     strbuf *regname = strbuf_new();
     hostkey_regname(regname, hostname, port, keytype);
 
+    { // WINSCP
     HKEY rkey = open_regkey(true, HKEY_CURRENT_USER,
                             PUTTY_REG_POS "\\SshHostKeys");
     if (rkey) {
@@ -412,6 +415,7 @@ void store_host_key(const char *hostname, int port,
     } /* else key does not exist in registry */
 
     strbuf_free(regname);
+    } // WINSCP
 }
 
 struct host_ca_enum {
@@ -452,6 +456,7 @@ void enum_host_ca_finish(host_ca_enum *e)
     sfree(e);
 }
 
+#ifndef WINSCP
 host_ca *host_ca_load(const char *name)
 {
     strbuf *sb;
@@ -459,15 +464,18 @@ host_ca *host_ca_load(const char *name)
 
     sb = strbuf_new();
     escape_registry_key(name, sb);
+    { // WINSCP
     HKEY rkey = open_regkey(false, HKEY_CURRENT_USER, host_ca_key, sb->s);
     strbuf_free(sb);
 
     if (!rkey)
         return NULL;
 
+    { // WINSCP
     host_ca *hca = host_ca_new();
     hca->name = dupstr(name);
 
+    { // WINSCP
     DWORD val;
 
     if ((s = get_reg_sz(rkey, "PublicKey")) != NULL)
@@ -479,6 +487,7 @@ host_ca *host_ca_load(const char *name)
     } else if ((sb = get_reg_multi_sz(rkey, "MatchHosts")) != NULL) {
         BinarySource src[1];
         BinarySource_BARE_INIT_PL(src, ptrlen_from_strbuf(sb));
+        { // WINSCP
         CertExprBuilder *eb = cert_expr_builder_new();
 
         const char *wc;
@@ -487,6 +496,7 @@ host_ca *host_ca_load(const char *name)
 
         hca->validity_expression = cert_expr_expression(eb);
         cert_expr_builder_free(eb);
+        } // WINSCP
     }
 
     if (get_reg_dword(rkey, "PermitRSASHA1", &val))
@@ -498,15 +508,21 @@ host_ca *host_ca_load(const char *name)
 
     close_regkey(rkey);
     return hca;
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
+#endif
 
 char *host_ca_save(host_ca *hca)
 {
     if (!*hca->name)
         return dupstr("CA record must have a name");
 
+    { // WINSCP
     strbuf *sb = strbuf_new();
     escape_registry_key(hca->name, sb);
+    { // WINSCP
     HKEY rkey = open_regkey(true, HKEY_CURRENT_USER, host_ca_key, sb->s);
     if (!rkey) {
         char *err = dupprintf("Unable to create registry key\n"
@@ -516,11 +532,13 @@ char *host_ca_save(host_ca *hca)
     }
     strbuf_free(sb);
 
+    { // WINSCP
     strbuf *base64_pubkey = base64_encode_sb(
         ptrlen_from_strbuf(hca->ca_public_key), 0);
     put_reg_sz(rkey, "PublicKey", base64_pubkey->s);
     strbuf_free(base64_pubkey);
 
+    { // WINSCP
     strbuf *validity = percent_encode_sb(
         ptrlen_from_asciz(hca->validity_expression), NULL);
     put_reg_sz(rkey, "Validity", validity->s);
@@ -532,21 +550,29 @@ char *host_ca_save(host_ca *hca)
 
     close_regkey(rkey);
     return NULL;
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
+#ifndef WINSCP
 char *host_ca_delete(const char *name)
 {
     HKEY rkey = open_regkey(false, HKEY_CURRENT_USER, host_ca_key);
     if (!rkey)
         return NULL;
 
+    { // WINSCP
     strbuf *sb = strbuf_new();
     escape_registry_key(name, sb);
     del_regkey(rkey, sb->s);
     strbuf_free(sb);
 
     return NULL;
+    } // WINSCP
 }
+#endif
 
 /*
  * Open (or delete) the random seed file.
@@ -717,6 +743,7 @@ void write_random_seed(void *data, int len)
     }
 }
 
+#ifndef WINSCP
 /*
  * Internal function supporting the jump list registry code. All the
  * functions to add, remove and read the list have substantially
@@ -734,6 +761,7 @@ static int transform_jumplist_registry(
         return JUMPLISTREG_ERROR_KEYOPENCREATE_FAILURE;
 
     /* Get current list of saved sessions in the registry. */
+    { // WINSCP
     strbuf *oldlist = get_reg_multi_sz(rkey, reg_jumplist_value);
     if (!oldlist) {
         /* Start again with the empty list. */
@@ -744,10 +772,12 @@ static int transform_jumplist_registry(
     /*
      * Modify the list, if we're modifying.
      */
+    { // WINSCP
     bool write_failure = false;
     if (add || rem) {
         BinarySource src[1];
         BinarySource_BARE_INIT_PL(src, ptrlen_from_strbuf(oldlist));
+        { // WINSCP
         strbuf *newlist = strbuf_new();
 
         /* First add the new item to the beginning of the list. */
@@ -776,6 +806,7 @@ static int transform_jumplist_registry(
 
         strbuf_free(oldlist);
         oldlist = newlist;
+        } // WINSCP
     }
 
     close_regkey(rkey);
@@ -789,6 +820,8 @@ static int transform_jumplist_registry(
         return JUMPLISTREG_ERROR_VALUEWRITE_FAILURE;
     else
         return JUMPLISTREG_OK;
+    } // WINSCP
+    } // WINSCP
 }
 
 /* Adds a new entry to the jumplist entries in the registry. */
@@ -857,6 +890,7 @@ void cleanup_all(void)
     /*
      * Open the main PuTTY registry key and remove everything in it.
      */
+    { // WINSCP
     HKEY key = open_regkey(false, HKEY_CURRENT_USER, PUTTY_REG_POS);
     if (key) {
         registry_recursive_remove(key);
@@ -870,6 +904,7 @@ void cleanup_all(void)
     if ((key = open_regkey(false, HKEY_CURRENT_USER,
                            PUTTY_REG_PARENT)) != NULL) {
         del_regkey(key, PUTTY_REG_PARENT_CHILD);
+        { // WINSCP
         char *name = enum_regkey(key, 0);
         close_regkey(key);
 
@@ -887,8 +922,11 @@ void cleanup_all(void)
                 close_regkey(key);
             }
         }
+        } // WINSCP
     }
     /*
      * Now we're done.
      */
+    } // WINSCP
 }
+#endif // WINSCP

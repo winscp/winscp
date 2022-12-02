@@ -1479,19 +1479,21 @@ const ssh_keyalg ssh_ecdsa_ed25519 = {
     /*.public_blob =*/ eddsa_public_blob,
     /*.private_blob =*/ eddsa_private_blob,
     /*.openssh_blob =*/ eddsa_openssh_blob,
-    .has_private = eddsa_has_private,
+    /*.has_private =*/ eddsa_has_private,
     /*.cache_str =*/ eddsa_cache_str,
     /*.components =*/ eddsa_components,
+    /*.base_key =*/ nullkey_base_key,
+    NULL, NULL, NULL, NULL, // WINSCP
     /*.pubkey_bits =*/ ec_shared_pubkey_bits,
-    .base_key = nullkey_base_key,
+    /*.supported_flags =*/ nullkey_supported_flags,
+    /*.alternate_ssh_id =*/ nullkey_alternate_ssh_id,
+    /*.alg_desc =*/ ec_alg_desc,
+    /*.variable_size =*/ nullkey_variable_size_no,
+    NULL, // WINSCP
     /*.ssh_id =*/ "ssh-ed25519",
     /*.cache_id =*/ "ssh-ed25519",
     /*.extra =*/ &sign_extra_ed25519,
-    0, // WINSCP
-    .supported_flags = nullkey_supported_flags,
-    .alternate_ssh_id = nullkey_alternate_ssh_id,
-    .alg_desc = ec_alg_desc,
-    .variable_size = nullkey_variable_size_no,
+    false, NULL, // WINSCP
 };
 
 static const struct ecsign_extra sign_extra_ed448 = {
@@ -1510,19 +1512,21 @@ const ssh_keyalg ssh_ecdsa_ed448 = {
     /*.public_blob =*/ eddsa_public_blob,
     /*.private_blob =*/ eddsa_private_blob,
     /*.openssh_blob =*/ eddsa_openssh_blob,
-    .has_private = eddsa_has_private,
+    /*.has_private =*/ eddsa_has_private,
     /*.cache_str =*/ eddsa_cache_str,
     /*.components =*/ eddsa_components,
+    /*.base_key =*/ nullkey_base_key,
+    NULL, NULL, NULL, NULL, // WINSCP
     /*.pubkey_bits =*/ ec_shared_pubkey_bits,
-    .base_key = nullkey_base_key,
+    /*.supported_flags =*/ nullkey_supported_flags,
+    /*.alternate_ssh_id =*/ nullkey_alternate_ssh_id,
+    /*.alg_desc =*/ ec_alg_desc,
+    /*.variable_size =*/ nullkey_variable_size_no,
+    NULL, // WINSCP
     /*.ssh_id =*/ "ssh-ed448",
     /*.cache_id =*/ "ssh-ed448",
     /*.extra =*/ &sign_extra_ed448,
-    0, // WINSCP
-    .supported_flags = nullkey_supported_flags,
-    .alternate_ssh_id = nullkey_alternate_ssh_id,
-    .alg_desc = ec_alg_desc,
-    .variable_size = nullkey_variable_size_no,
+    false, NULL, // WINSCP
 };
 
 /* OID: 1.2.840.10045.3.1.7 (ansiX9p256r1) */
@@ -1545,19 +1549,21 @@ const ssh_keyalg ssh_ecdsa_nistp256 = {
     /*.public_blob =*/ ecdsa_public_blob,
     /*.private_blob =*/ ecdsa_private_blob,
     /*.openssh_blob =*/ ecdsa_openssh_blob,
-    .has_private = ecdsa_has_private,
+    /*.has_private =*/ ecdsa_has_private,
     /*.cache_str =*/ ecdsa_cache_str,
     /*.components =*/ ecdsa_components,
+    /*.base_key =*/ nullkey_base_key,
+    NULL, NULL, NULL, NULL, // WINSC
     /*.pubkey_bits =*/ ec_shared_pubkey_bits,
-    .base_key = nullkey_base_key,
+    /*.supported_flags =*/ nullkey_supported_flags,
+    /*.alternate_ssh_id =*/ nullkey_alternate_ssh_id,
+    /*.alg_desc =*/ ec_alg_desc,
+    /*.variable_size =*/ nullkey_variable_size_no,
+    NULL, // WINSCP
     /*.ssh_id =*/ "ecdsa-sha2-nistp256",
     /*.cache_id =*/ "ecdsa-sha2-nistp256",
     /*.extra =*/ &sign_extra_nistp256,
-    0, // WINSCP
-    .supported_flags = nullkey_supported_flags,
-    .alternate_ssh_id = nullkey_alternate_ssh_id,
-    .alg_desc = ec_alg_desc,
-    .variable_size = nullkey_variable_size_no,
+    false, NULL, // WINSCP
 };
 
 /* OID: 1.3.132.0.34 (secp384r1) */
@@ -1580,19 +1586,21 @@ const ssh_keyalg ssh_ecdsa_nistp384 = {
     /*.public_blob =*/ ecdsa_public_blob,
     /*.private_blob =*/ ecdsa_private_blob,
     /*.openssh_blob =*/ ecdsa_openssh_blob,
-    .has_private = ecdsa_has_private,
+    /*.has_private =*/ ecdsa_has_private,
     /*.cache_str =*/ ecdsa_cache_str,
     /*.components =*/ ecdsa_components,
+    /*.base_key =*/ nullkey_base_key,
+    NULL, NULL, NULL, NULL, // WINSCP
     /*.pubkey_bits =*/ ec_shared_pubkey_bits,
-    .base_key = nullkey_base_key,
+    /*.supported_flags =*/ nullkey_supported_flags,
+    /*.alternate_ssh_id =*/ nullkey_alternate_ssh_id,
+    /*.alg_desc =*/ ec_alg_desc,
+    /*.variable_size =*/ nullkey_variable_size_no,
+    NULL, // WINSCP
     /*.ssh_id =*/ "ecdsa-sha2-nistp384",
     /*.cache_id =*/ "ecdsa-sha2-nistp384",
     /*.extra =*/ &sign_extra_nistp384,
-    0, // WINSCP
-    .supported_flags = nullkey_supported_flags,
-    .alternate_ssh_id = nullkey_alternate_ssh_id,
-    .alg_desc = ec_alg_desc,
-    .variable_size = nullkey_variable_size_no,
+    false, NULL, // WINSCP
 };
 
 /* OID: 1.3.132.0.35 (secp521r1) */
@@ -1615,19 +1623,21 @@ const ssh_keyalg ssh_ecdsa_nistp521 = {
     /*.public_blob =*/ ecdsa_public_blob,
     /*.private_blob =*/ ecdsa_private_blob,
     /*.openssh_blob =*/ ecdsa_openssh_blob,
-    .has_private = ecdsa_has_private,
+    /*.has_private =*/ ecdsa_has_private,
     /*.cache_str =*/ ecdsa_cache_str,
     /*.components =*/ ecdsa_components,
+    /*.base_key =*/ nullkey_base_key,
+    NULL, NULL, NULL, NULL, // WINSCP
     /*.pubkey_bits =*/ ec_shared_pubkey_bits,
-    .base_key = nullkey_base_key,
+    /*.supported_flags =*/ nullkey_supported_flags,
+    /*.alternate_ssh_id =*/ nullkey_alternate_ssh_id,
+    /*.alg_desc =*/ ec_alg_desc,
+    /*.variable_size =*/ nullkey_variable_size_no,
+    NULL, // WINSCP
     /*.ssh_id =*/ "ecdsa-sha2-nistp521",
     /*.cache_id =*/ "ecdsa-sha2-nistp521",
     /*.extra =*/ &sign_extra_nistp521,
-    0, // WINSCP
-    .supported_flags = nullkey_supported_flags,
-    .alternate_ssh_id = nullkey_alternate_ssh_id,
-    .alg_desc = ec_alg_desc,
-    .variable_size = nullkey_variable_size_no,
+    false, NULL, // WINSCP
 };
 
 /* ----------------------------------------------------------------------
@@ -1666,6 +1676,7 @@ static ecdh_key *ssh_ecdhkex_w_new(const ssh_kex *kex, bool is_server)
     dhw->extra = extra;
     dhw->curve = curve;
 
+    { // WINSCP
     mp_int *one = mp_from_integer(1);
     dhw->private = mp_random_in_range(one, dhw->curve->w.G_order);
     mp_free(one);
@@ -1673,6 +1684,7 @@ static ecdh_key *ssh_ecdhkex_w_new(const ssh_kex *kex, bool is_server)
     dhw->w_public = ecc_weierstrass_multiply(dhw->curve->w.G, dhw->private);
 
     return &dhw->ek;
+    } // WINSCP
 }
 
 static ecdh_key *ssh_ecdhkex_m_new(const ssh_kex *kex, bool is_server)
@@ -1685,6 +1697,7 @@ static ecdh_key *ssh_ecdhkex_m_new(const ssh_kex *kex, bool is_server)
     dhm->extra = extra;
     dhm->curve = curve;
 
+    { // WINSCP
     strbuf *bytes = strbuf_new_nm();
     random_read(strbuf_append(bytes, dhm->curve->fieldBytes),
                 dhm->curve->fieldBytes);
@@ -1708,6 +1721,7 @@ static ecdh_key *ssh_ecdhkex_m_new(const ssh_kex *kex, bool is_server)
     dhm->m_public = ecc_montgomery_multiply(dhm->curve->m.G, dhm->private);
 
     return &dhm->ek;
+    } // WINSCP
 }
 
 static void ssh_ecdhkex_w_getpublic(ecdh_key *dh, BinarySink *bs)
@@ -1850,101 +1864,111 @@ static char *ssh_ecdhkex_description(const ssh_kex *kex)
 static const struct eckex_extra kex_extra_curve25519 = { ec_curve25519 };
 
 static const ecdh_keyalg ssh_ecdhkex_m_alg = {
-    .new = ssh_ecdhkex_m_new,
-    .free = ssh_ecdhkex_m_free,
-    .getpublic = ssh_ecdhkex_m_getpublic,
-    .getkey = ssh_ecdhkex_m_getkey,
-    .description = ssh_ecdhkex_description,
+    /*.new =*/ ssh_ecdhkex_m_new,
+    /*.free =*/ ssh_ecdhkex_m_free,
+    /*.getpublic =*/ ssh_ecdhkex_m_getpublic,
+    /*.getkey =*/ ssh_ecdhkex_m_getkey,
+    /*.description =*/ ssh_ecdhkex_description,
 };
 const ssh_kex ssh_ec_kex_curve25519 = {
-    .name = "curve25519-sha256",
-    .main_type = KEXTYPE_ECDH,
-    .hash = &ssh_sha256,
-    .ecdh_vt = &ssh_ecdhkex_m_alg,
-    .extra = &kex_extra_curve25519,
+    /*.name =*/ "curve25519-sha256",
+    NULL, // WINSCP
+    /*.main_type =*/ KEXTYPE_ECDH,
+    /*.hash =*/ &ssh_sha256,
+    /*.ecdh_vt =*/ &ssh_ecdhkex_m_alg,
+    /*.extra =*/ &kex_extra_curve25519,
 };
 /* Pre-RFC alias */
 static const ssh_kex ssh_ec_kex_curve25519_libssh = {
-    .name = "curve25519-sha256@libssh.org",
-    .main_type = KEXTYPE_ECDH,
-    .hash = &ssh_sha256,
-    .ecdh_vt = &ssh_ecdhkex_m_alg,
-    .extra = &kex_extra_curve25519,
+    /*.name =*/ "curve25519-sha256@libssh.org",
+    NULL, // WINSCP
+    /*.main_type =*/ KEXTYPE_ECDH,
+    /*.hash =*/ &ssh_sha256,
+    /*.ecdh_vt =*/ &ssh_ecdhkex_m_alg,
+    /*.extra =*/ &kex_extra_curve25519,
 };
 /* GSSAPI variant */
 static const ssh_kex ssh_ec_kex_curve25519_gss = {
-    .name = "gss-curve25519-sha256-" GSS_KRB5_OID_HASH,
-    .main_type = KEXTYPE_GSS_ECDH,
-    .hash = &ssh_sha256,
-    .ecdh_vt = &ssh_ecdhkex_m_alg,
-    .extra = &kex_extra_curve25519,
+    /*.name =*/ "gss-curve25519-sha256-" GSS_KRB5_OID_HASH,
+    NULL, // WINSCP
+    /*.main_type =*/ KEXTYPE_GSS_ECDH,
+    /*.hash =*/ &ssh_sha256,
+    /*.ecdh_vt =*/ &ssh_ecdhkex_m_alg,
+    /*.extra =*/ &kex_extra_curve25519,
 };
 
 static const struct eckex_extra kex_extra_curve448 = { ec_curve448 };
 const ssh_kex ssh_ec_kex_curve448 = {
-    .name = "curve448-sha512",
-    .main_type = KEXTYPE_ECDH,
-    .hash = &ssh_sha512,
-    .ecdh_vt = &ssh_ecdhkex_m_alg,
-    .extra = &kex_extra_curve448,
+    /*.name =*/ "curve448-sha512",
+    NULL, // WINSCP
+    /*.main_type =*/ KEXTYPE_ECDH,
+    /*.hash =*/ &ssh_sha512,
+    /*.ecdh_vt =*/ &ssh_ecdhkex_m_alg,
+    /*.extra =*/ &kex_extra_curve448,
 };
 
 static const ecdh_keyalg ssh_ecdhkex_w_alg = {
-    .new = ssh_ecdhkex_w_new,
-    .free = ssh_ecdhkex_w_free,
-    .getpublic = ssh_ecdhkex_w_getpublic,
-    .getkey = ssh_ecdhkex_w_getkey,
-    .description = ssh_ecdhkex_description,
+    /*.new =*/ ssh_ecdhkex_w_new,
+    /*.free =*/ ssh_ecdhkex_w_free,
+    /*.getpublic =*/ ssh_ecdhkex_w_getpublic,
+    /*.getkey =*/ ssh_ecdhkex_w_getkey,
+    /*.description =*/ ssh_ecdhkex_description,
 };
 static const struct eckex_extra kex_extra_nistp256 = { ec_p256 };
 const ssh_kex ssh_ec_kex_nistp256 = {
-    .name = "ecdh-sha2-nistp256",
-    .main_type = KEXTYPE_ECDH,
-    .hash = &ssh_sha256,
-    .ecdh_vt = &ssh_ecdhkex_w_alg,
-    .extra = &kex_extra_nistp256,
+    /*.name =*/ "ecdh-sha2-nistp256",
+    NULL, // WINSCP
+    /*.main_type =*/ KEXTYPE_ECDH,
+    /*.hash =*/ &ssh_sha256,
+    /*.ecdh_vt =*/ &ssh_ecdhkex_w_alg,
+    /*.extra =*/ &kex_extra_nistp256,
 };
 /* GSSAPI variant */
 static const ssh_kex ssh_ec_kex_nistp256_gss = {
-    .name = "gss-nistp256-sha256-" GSS_KRB5_OID_HASH,
-    .main_type = KEXTYPE_GSS_ECDH,
-    .hash = &ssh_sha256,
-    .ecdh_vt = &ssh_ecdhkex_w_alg,
-    .extra = &kex_extra_nistp256,
+    /*.name =*/ "gss-nistp256-sha256-" GSS_KRB5_OID_HASH,
+    NULL, // WINSCP
+    /*.main_type =*/ KEXTYPE_GSS_ECDH,
+    /*.hash =*/ &ssh_sha256,
+    /*.ecdh_vt =*/ &ssh_ecdhkex_w_alg,
+    /*.extra =*/ &kex_extra_nistp256,
 };
 
 static const struct eckex_extra kex_extra_nistp384 = { ec_p384 };
 const ssh_kex ssh_ec_kex_nistp384 = {
-    .name = "ecdh-sha2-nistp384",
-    .main_type = KEXTYPE_ECDH,
-    .hash = &ssh_sha384,
-    .ecdh_vt = &ssh_ecdhkex_w_alg,
-    .extra = &kex_extra_nistp384,
+    /*.name =*/ "ecdh-sha2-nistp384",
+    NULL, // WINSCP
+    /*.main_type =*/ KEXTYPE_ECDH,
+    /*.hash =*/ &ssh_sha384,
+    /*.ecdh_vt =*/ &ssh_ecdhkex_w_alg,
+    /*.extra =*/ &kex_extra_nistp384,
 };
 /* GSSAPI variant */
 static const ssh_kex ssh_ec_kex_nistp384_gss = {
-    .name = "gss-nistp384-sha384-" GSS_KRB5_OID_HASH,
-    .main_type = KEXTYPE_GSS_ECDH,
-    .hash = &ssh_sha384,
-    .ecdh_vt = &ssh_ecdhkex_w_alg,
-    .extra = &kex_extra_nistp384,
+    /*.name =*/ "gss-nistp384-sha384-" GSS_KRB5_OID_HASH,
+    NULL, // WINSCP
+    /*.main_type =*/ KEXTYPE_GSS_ECDH,
+    /*.hash =*/ &ssh_sha384,
+    /*.ecdh_vt =*/ &ssh_ecdhkex_w_alg,
+    /*.extra =*/ &kex_extra_nistp384,
 };
 
 static const struct eckex_extra kex_extra_nistp521 = { ec_p521 };
 const ssh_kex ssh_ec_kex_nistp521 = {
-    .name = "ecdh-sha2-nistp521",
-    .main_type = KEXTYPE_ECDH,
-    .hash = &ssh_sha512,
-    .ecdh_vt = &ssh_ecdhkex_w_alg,
-    .extra = &kex_extra_nistp521,
+    /*.name =*/ "ecdh-sha2-nistp521",
+    NULL, // WINSCP
+    /*.main_type =*/ KEXTYPE_ECDH,
+    /*.hash =*/ &ssh_sha512,
+    /*.ecdh_vt =*/ &ssh_ecdhkex_w_alg,
+    /*.extra =*/ &kex_extra_nistp521,
 };
 /* GSSAPI variant */
 static const ssh_kex ssh_ec_kex_nistp521_gss = {
-    .name = "gss-nistp521-sha512-" GSS_KRB5_OID_HASH,
-    .main_type = KEXTYPE_GSS_ECDH,
-    .hash = &ssh_sha512,
-    .ecdh_vt = &ssh_ecdhkex_w_alg,
-    .extra = &kex_extra_nistp521,
+    /*.name =*/ "gss-nistp521-sha512-" GSS_KRB5_OID_HASH,
+    NULL, // WINSCP
+    /*.main_type =*/ KEXTYPE_GSS_ECDH,
+    /*.hash =*/ &ssh_sha512,
+    /*.ecdh_vt =*/ &ssh_ecdhkex_w_alg,
+    /*.extra =*/ &kex_extra_nistp521,
 };
 
 static const ssh_kex *const ec_kex_list[] = {

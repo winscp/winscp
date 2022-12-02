@@ -524,16 +524,18 @@ const ssh_keyalg ssh_dsa = {
     /*.public_blob =*/ dsa_public_blob,
     /*.private_blob =*/ dsa_private_blob,
     /*.openssh_blob =*/ dsa_openssh_blob,
-    .has_private = dsa_has_private,
+    /*.has_private =*/ dsa_has_private,
     /*.cache_str =*/ dsa_cache_str,
     /*.components =*/ dsa_components,
-    .base_key = nullkey_base_key,
+    /*.base_key =*/ nullkey_base_key,
+    NULL, NULL, NULL, NULL, // WINSCP
     /*.pubkey_bits =*/ dsa_pubkey_bits,
+    /*.supported_flags =*/ nullkey_supported_flags,
+    /*.alternate_ssh_id =*/ nullkey_alternate_ssh_id,
+    /*.alg_desc =*/ dsa_alg_desc,
+    /*.variable_size =*/ nullkey_variable_size_yes,
+    NULL, // WINSCP
     /*.ssh_id =*/ "ssh-dss",
     /*.cache_id =*/ "dss",
-    NULL,
-    .supported_flags = nullkey_supported_flags,
-    .alternate_ssh_id = nullkey_alternate_ssh_id,
-    .alg_desc = dsa_alg_desc,
-    .variable_size = nullkey_variable_size_yes,
+    NULL, false, NULL, // WINSCP
 };

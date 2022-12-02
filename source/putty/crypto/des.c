@@ -699,7 +699,7 @@ const ssh_cipheralg ssh_des = {
     /*.encrypt =*/ des_cbc_encrypt,
     /*.decrypt =*/ des_cbc_decrypt,
     NULL, NULL, // WINSCP
-    .next_message = nullcipher_next_message,
+    /*.next_message =*/ nullcipher_next_message,
     /*.ssh2_id =*/ "des-cbc",
     /*.blksize =*/ 8,
     /*.real_keybits =*/ 56,
@@ -719,7 +719,7 @@ const ssh_cipheralg ssh_des_sshcom_ssh2 = {
     /*.encrypt =*/ des_cbc_encrypt,
     /*.decrypt =*/ des_cbc_decrypt,
     NULL, NULL, // WINSCP
-    .next_message = nullcipher_next_message,
+    /*.next_message =*/ nullcipher_next_message,
     /*.ssh2_id =*/ "des-cbc@ssh.com",
     /*.blksize =*/ 8,
     /*.real_keybits =*/ 56,
@@ -831,7 +831,7 @@ const ssh_cipheralg ssh_3des_ssh2 = {
     /*.encrypt =*/ des3_cbc1_cbc_encrypt,
     /*.decrypt =*/ des3_cbc1_cbc_decrypt,
     NULL, NULL, // WINSCP
-    .next_message = nullcipher_next_message,
+    /*.next_message =*/ nullcipher_next_message,
     /*.ssh2_id =*/ "3des-cbc",
     /*.blksize =*/ 8,
     /*.real_keybits =*/ 168,
@@ -941,7 +941,7 @@ const ssh_cipheralg ssh_3des_ssh2_ctr = {
     /*.encrypt =*/ des3_sdctr_encrypt_decrypt,
     /*.decrypt =*/ des3_sdctr_encrypt_decrypt,
     NULL, NULL, // WINSCP
-    .next_message = nullcipher_next_message,
+    /*.next_message =*/ nullcipher_next_message,
     /*.ssh2_id =*/ "3des-ctr",
     /*.blksize =*/ 8,
     /*.real_keybits =*/ 168,
@@ -1086,7 +1086,7 @@ const ssh_cipheralg ssh_3des_ssh1 = {
     /*.encrypt =*/ des3_cbc3_cbc_encrypt,
     /*.decrypt =*/ des3_cbc3_cbc_decrypt,
     NULL, NULL, // WINSCP
-    .next_message = nullcipher_next_message,
+    /*.next_message =*/ nullcipher_next_message,
     NULL, // WINSCP
     /*.blksize =*/ 8,
     /*.real_keybits =*/ 168,

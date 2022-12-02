@@ -56,7 +56,8 @@ bool ptrlen_endswith(ptrlen whole, ptrlen suffix, ptrlen *tail)
 
 bool ptrlen_contains(ptrlen input, const char *characters)
 {
-    for (const char *p = input.ptr, *end = p + input.len; p < end; p++)
+    const char *p, *end; // WINSCP
+    for (p = input.ptr, end = p + input.len; p < end; p++)
         if (strchr(characters, *p))
             return true;
     return false;
@@ -64,7 +65,8 @@ bool ptrlen_contains(ptrlen input, const char *characters)
 
 bool ptrlen_contains_only(ptrlen input, const char *characters)
 {
-    for (const char *p = input.ptr, *end = p + input.len; p < end; p++)
+    const char *p, *end; // WINSCP
+    for (p = input.ptr, end = p + input.len; p < end; p++)
         if (!strchr(characters, *p))
             return false;
     return true;

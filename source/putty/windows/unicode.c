@@ -1328,6 +1328,9 @@ int wc_to_mb(int codepage, int flags, const wchar_t *wcstr, int wclen,
 int mb_to_wc(int codepage, int flags, const char *mbstr, int mblen,
              wchar_t *wcstr, int wclen)
 {
+    #ifdef WINSCP
+    pinitassert(codepage == DEFAULT_CODEPAGE);
+    #else
     if (codepage >= 65536) {
         /* Character set not known to Windows, so we'll have to
          * translate it ourself */
@@ -1356,6 +1359,7 @@ int mb_to_wc(int codepage, int flags, const char *mbstr, int mblen,
 
         return p - wcstr;
     }
+    #endif
 
     int ret = MultiByteToWideChar(codepage, flags, mbstr, mblen, wcstr, wclen);
     if (ret)

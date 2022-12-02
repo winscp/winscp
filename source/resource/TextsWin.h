@@ -452,19 +452,6 @@
 #define SPECIAL_FOLDER_DESKTOP  1791
 #define COMMAND_LINE_LABEL      1792
 #define COPY_PARAM_SAVE_SETTINGS 1793
-#define CIPHER_NAME_WARN        1794
-#define CIPHER_NAME_3DES        1795
-#define CIPHER_NAME_BLOWFISH    1796
-#define CIPHER_NAME_AES2        1797
-#define CIPHER_NAME_DES         1798
-#define CIPHER_NAME_ARCFOUR2    1799
-#define CIPHER_NAME_CHACHA20    1800
-#define KEX_NAME_WARN           1801
-#define KEX_NAME_DHGROUP1       1802
-#define KEX_NAME_DHGROUP14      1803
-#define KEX_NAME_DHGEX          1804
-#define KEX_NAME_RSA            1805
-#define KEX_NAME_ECDH           1806
 #define LOGIN_SELECT_LOCAL_PROXY 1807
 #define LOGIN_PROXY_COMMAND_PATTERNS_HINT 1808
 #define LOGIN_DUPLICATE_SESSION_FOLDER_WORKSPACE 1809
@@ -666,6 +653,25 @@
 #define PROPERTIES_S3_W_ACL_HINT 6051
 #define LOGIN_S3_GENERAL_CREDENTIALS 6052
 #define GENERATE_URL_PS_ARG_PASSING 6053
+#define CIPHER_NAME_WARN        6054
+#define CIPHER_NAME_3DES        6055
+#define CIPHER_NAME_BLOWFISH    6056
+#define CIPHER_NAME_AES2        6057
+#define CIPHER_NAME_DES         6058
+#define CIPHER_NAME_ARCFOUR2    6059
+#define CIPHER_NAME_CHACHA20    6060
+#define CIPHER_NAME_AESGCM      6061
+#define KEX_NAME_WARN           6070
+#define KEX_NAME_DHGROUP1       6071
+#define KEX_NAME_DHGROUP14      6072
+#define KEX_NAME_DHGROUP15      6073
+#define KEX_NAME_DHGROUP16      6074
+#define KEX_NAME_DHGROUP17      6075
+#define KEX_NAME_DHGROUP18      6076
+#define KEX_NAME_DHGEX          6077
+#define KEX_NAME_RSA            6078
+#define KEX_NAME_ECDH           6079
+// Keep few indexes unused for future algos
 
 // 2xxx is reserved for TextsFileZilla.h
 

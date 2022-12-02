@@ -727,7 +727,11 @@ static inline void ssh_cipher_next_message(ssh_cipher *c)
 static inline const struct ssh_cipheralg *ssh_cipher_alg(ssh_cipher *c)
 { return c->vt; }
 
+#endif
+
 void nullcipher_next_message(ssh_cipher *);
+
+#ifndef WINSCP_VS
 
 struct ssh2_ciphers {
     int nciphers;
@@ -857,10 +861,12 @@ struct ssh_kex {
     const void *extra;                 /* private to the kex methods */
 };
 
+#ifndef __cplusplus // WINSCP not needed and won't compile, as KEYTYPE_* needs type
 static inline bool kex_is_gss(const struct ssh_kex *kex)
 {
     return kex->main_type == KEXTYPE_GSS || kex->main_type == KEXTYPE_GSS_ECDH;
 }
+#endif
 
 struct ssh_kexes {
     int nkexes;
@@ -1236,7 +1242,9 @@ extern const ssh2_macalg ssh_hmac_sha1_96;
 extern const ssh2_macalg ssh_hmac_sha1_96_buggy;
 extern const ssh2_macalg ssh_hmac_sha256;
 extern const ssh2_macalg ssh2_poly1305;
+#endif
 extern const ssh2_macalg ssh2_aesgcm_mac;
+#ifndef WINSCP_VS
 extern const ssh2_macalg ssh2_aesgcm_mac_sw;
 extern const ssh2_macalg ssh2_aesgcm_mac_ref_poly;
 extern const ssh2_macalg ssh2_aesgcm_mac_clmul;
@@ -1568,6 +1576,7 @@ static inline bool ssh_fptype_is_cert(FingerprintType fptype)
 {
     return fptype >= SSH_FPTYPE_MD5_CERT;
 }
+#ifndef __cplusplus // WINSCP not needed and won't compile
 static inline FingerprintType ssh_fptype_from_cert(FingerprintType fptype)
 {
     if (ssh_fptype_is_cert(fptype))
@@ -1580,6 +1589,7 @@ static inline FingerprintType ssh_fptype_to_cert(FingerprintType fptype)
         fptype += (SSH_FPTYPE_MD5_CERT - SSH_FPTYPE_MD5);
     return fptype;
 }
+#endif
 
 #define SSH_N_FPTYPES (SSH_FPTYPE_SHA256_CERT + 1)
 #define SSH_FPTYPE_DEFAULT SSH_FPTYPE_SHA256

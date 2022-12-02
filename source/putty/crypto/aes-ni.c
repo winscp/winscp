@@ -273,7 +273,7 @@ static void aes_ni_next_message_gcm(ssh_cipher *ciph)
     msg_counter <<= 32;
     msg_counter |= (uint32_t)_mm_extract_epi32(ctx->iv, 1);
     msg_counter++;
-    ctx->iv = _mm_set_epi32(fixed, msg_counter >> 32, msg_counter, 1);
+    ctx->iv = _mm_set_epi32(fixed, (int)(msg_counter >> 32), (int)msg_counter, 1); // WINSCP
 }
 
 typedef __m128i (*aes_ni_fn)(__m128i v, const __m128i *keysched);
@@ -332,6 +332,9 @@ static inline void aes_encrypt_ecb_block_ni(
     __m128i ciphertext = encrypt(plaintext, ctx->keysched_e);
     _mm_storeu_si128(blk, ciphertext);
 }
+
+// WINSCP (fixes linker alignment issues for the following function)
+const __m128i DUMMY; // WINSCP
 
 static inline void aes_gcm_ni(
     ssh_cipher *ciph, void *vblk, int blklen, aes_ni_fn encrypt)

@@ -156,6 +156,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
                 return;
             }
         }
+        { // WINSCP
         mp_int *K = dh_find_K(s->dh_ctx, s->f);
         put_mp_ssh2(s->kex_shared_secret, K);
         mp_free(K);
@@ -184,6 +185,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
             mp_free(s->g); s->g = NULL;
             mp_free(s->p); s->p = NULL;
         }
+        } // WINSCP
     } else if (s->kex_alg->main_type == KEXTYPE_ECDH) {
         char *desc = ecdh_keyalg_description(s->kex_alg);
         ppl_logevent("Doing %s, using hash %s", desc,
@@ -228,6 +230,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
         {
             ptrlen keydata = get_string(pktin);
             put_stringpl(s->exhash, keydata);
+            { // WINSCP
             bool ok = ecdh_key_getkey(s->ecdh_key, keydata,
                                       BinarySink_UPCAST(s->kex_shared_secret));
             if (!get_err(pktin) && !ok) {
@@ -236,6 +239,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
                 *aborted = true;
                 return;
             }
+            } // WINSCP
         }
 
         s->sigdata = get_string(pktin);
@@ -282,10 +286,12 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
         if (s->kex_alg->main_type == KEXTYPE_GSS_ECDH) {
             s->ecdh_key = ecdh_key_new(s->kex_alg, false);
 
+            { // WINSCP
             char *desc = ecdh_keyalg_description(s->kex_alg);
             ppl_logevent("Doing GSSAPI (with Kerberos V5) %s with hash %s",
                          desc, ssh_hash_alg(s->exhash)->text_name);
             sfree(desc);
+            } // WINSCP
         } else if (dh_is_gex(s->kex_alg)) {
             /*
              * Work out how big a DH group we will need to allow that
@@ -516,9 +522,11 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
                 *aborted = true;
                 return;
             }
+            { // WINSCP
             mp_int *K = dh_find_K(s->dh_ctx, s->f);
             put_mp_ssh2(s->kex_shared_secret, K);
             mp_free(K);
+            } // WINSCP
         }
 
         /* We assume everything from now on will be quick, and it might
@@ -899,9 +907,11 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
                 }
             }
 
+            { // WINSCP
             ssh2_userkey uk; // WINSCP
             uk.key = s->hkey; // WINSCP
             uk.comment = NULL; // WINSCP
+            { // WINSCP
             char **fingerprints = ssh2_all_fingerprints(s->hkey);
 
             FingerprintType fptype_default =
@@ -924,18 +934,28 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
                 ppl_logevent("%s", base_fp);
                 sfree(base_fp);
 
+                { // WINSCP
                 strbuf *id_string = strbuf_new();
+                #ifndef WINSCP
                 StripCtrlChars *id_string_scc = stripctrl_new(
                     BinarySink_UPCAST(id_string), false, L'\0');
+                #endif
                 ssh_key_cert_id_string(
-                    s->hkey, BinarySink_UPCAST(id_string_scc));
+                    s->hkey, BinarySink_UPCAST(id_string/*WINSCP _scc*/));
+                #ifndef WINSCP
                 stripctrl_free(id_string_scc);
+                #endif
                 ppl_logevent("Certificate ID string is \"%s\"", id_string->s);
                 strbuf_free(id_string);
 
+                { // WINSCP
                 strbuf *ca_pub = strbuf_new();
                 ssh_key_ca_public_blob(s->hkey, BinarySink_UPCAST(ca_pub));
-                host_ca hca_search = { .ca_public_key = ca_pub };
+                { // WINSCP
+                host_ca hca_search;
+                smemclr(&hca_search, sizeof(hca_search));
+                hca_search.ca_public_key = ca_pub;
+                { // WINSCP
                 host_ca *hca_found = find234(s->host_cas, &hca_search, NULL);
 
                 char *ca_fp = ssh2_fingerprint_blob(ptrlen_from_strbuf(ca_pub),
@@ -946,6 +966,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
 
                 strbuf_free(ca_pub);
 
+                { // WINSCP
                 strbuf *error = strbuf_new();
                 bool cert_ok = false;
 
@@ -973,6 +994,11 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
                     strbuf_free(error);
                     /* now fall through into normal host key checking */
                 }
+                } // WINSCP
+                } // WINSCP
+                } // WINSCP
+                } // WINSCP
+                } // WINSCP
             }
 
             {
@@ -1021,6 +1047,8 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
              */
             strbuf_clear(s->hostkeyblob);
             ssh_key_public_blob(s->hkey, BinarySink_UPCAST(s->hostkeyblob));
+            } // WINSCP
+            } // WINSCP
         } else if (s->cross_certifying) {
             assert(s->hkey);
             assert(ssh_key_alg(s->hkey) == s->cross_certifying);
@@ -1050,6 +1078,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
              */
             strbuf *thisblob = strbuf_new();
             ssh_key_public_blob(s->hkey, BinarySink_UPCAST(thisblob));
+            { // WINSCP
             bool match = ptrlen_eq_ptrlen(ptrlen_from_strbuf(thisblob),
                                           ptrlen_from_strbuf(s->hostkeyblob));
             strbuf_free(thisblob);
@@ -1061,6 +1090,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
                 return;
 #endif
             }
+            } // WINSCP
         }
 
     sfree(s->keystr);

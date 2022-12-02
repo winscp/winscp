@@ -484,6 +484,7 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
 {
     *canonicalname = NULL;
 
+    { // WINSCP
     SockAddr *addr = snew(SockAddr);
     memset(addr, 0, sizeof(SockAddr));
     addr->superfamily = UNRESOLVED;
@@ -505,6 +506,7 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
         hints.ai_socktype = SOCK_STREAM;
 
         /* strip [] on IPv6 address literals */
+        { // WINSCP
         char *trimmed_host = host_strduptrim(host);
         int err = p_getaddrinfo(trimmed_host, NULL, &hints, &addr->ais);
         sfree(trimmed_host);
@@ -519,6 +521,7 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
             addr->error = namelookup_strerror(err);
         }
         return addr;
+        } // WINSCP
     }
 #endif
 
@@ -528,6 +531,7 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
      * old-fashioned approach, which is to start by manually checking
      * for an IPv4 literal and then use gethostbyname.
      */
+    { // WINSCP
     unsigned long a = p_inet_addr(host);
     if (a != (unsigned long) INADDR_NONE) {
         addr->addresses = snew(unsigned long);
@@ -538,10 +542,12 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
         return addr;
     }
 
+    { // WINSCP
     struct hostent *h = p_gethostbyname(host);
     if (h) {
         addr->superfamily = IP;
 
+        { // WINSCP
         size_t n;
         for (n = 0; h->h_addr_list[n]; n++);
         addr->addresses = snewn(n, unsigned long);
@@ -553,11 +559,15 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
         }
 
         *canonicalname = dupstr(h->h_name);
+        } // WINSCP
     } else {
         DWORD err = p_WSAGetLastError();
         addr->error = namelookup_strerror(err);
     }
     return addr;
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
 static SockAddr *sk_special_addr(SuperFamily superfamily, const char *name)

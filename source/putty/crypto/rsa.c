@@ -922,44 +922,55 @@ static const struct ssh2_rsa_extra
     /*.public_blob =*/ rsa2_public_blob,            \
     /*.private_blob =*/ rsa2_private_blob,          \
     /*.openssh_blob =*/ rsa2_openssh_blob,          \
+    /*.has_private =*/ rsa2_has_private,            \
     /*.cache_str =*/ rsa2_cache_str,                \
-    .has_private = rsa2_has_private,            \
     /*.components =*/ rsa2_components,              \
-    /*.pubkey_bits =*/ rsa2_pubkey_bits             \
-    .base_key = nullkey_base_key,               \
-    .alg_desc = rsa2_alg_desc,                  \
-    .variable_size = nullkey_variable_size_yes,
+    /*.base_key =*/ nullkey_base_key,               \
+    NULL, NULL, NULL, NULL, \
+    /*.pubkey_bits =*/ rsa2_pubkey_bits
+#define COMMON_KEYALG_FIELDS1a \
+    /*.alg_desc =*/ rsa2_alg_desc,                  \
+    /*.variable_size =*/ nullkey_variable_size_yes, \
+    NULL
 #define COMMON_KEYALG_FIELDS2 \
     /*.cache_id =*/ "rsa2"
+#define COMMON_KEYALG_FIELDS3 \
+    false, NULL
 
 const ssh_keyalg ssh_rsa = {
     // WINSCP
     COMMON_KEYALG_FIELDS,
+    /*.supported_flags =*/ ssh_rsa_supported_flags,
+    /*.alternate_ssh_id =*/ ssh_rsa_alternate_ssh_id,
+    COMMON_KEYALG_FIELDS1a,
     /*.ssh_id =*/ "ssh-rsa",
     COMMON_KEYALG_FIELDS2,
-    /*.supported_flags =*/ ssh_rsa_supported_flags,
-    .alternate_ssh_id = ssh_rsa_alternate_ssh_id,
     /*.extra =*/ &rsa_extra,
+    COMMON_KEYALG_FIELDS3,
 };
 
 const ssh_keyalg ssh_rsa_sha256 = {
     // WINSCP
     COMMON_KEYALG_FIELDS,
+    /*.supported_flags =*/ nullkey_supported_flags,
+    /*.alternate_ssh_id =*/ nullkey_alternate_ssh_id,
+    COMMON_KEYALG_FIELDS1a,
     /*.ssh_id =*/ "rsa-sha2-256",
     COMMON_KEYALG_FIELDS2,
     /*.extra =*/ &rsa_sha256_extra,
-    /*.supported_flags =*/ nullkey_supported_flags,
-    .alternate_ssh_id = nullkey_alternate_ssh_id,
+    COMMON_KEYALG_FIELDS3,
 };
 
 const ssh_keyalg ssh_rsa_sha512 = {
     // WINSCP
     COMMON_KEYALG_FIELDS,
+    /*.supported_flags =*/ nullkey_supported_flags,
+    /*.alternate_ssh_id =*/ nullkey_alternate_ssh_id,
+    COMMON_KEYALG_FIELDS1a,
     /*.ssh_id =*/ "rsa-sha2-512",
     COMMON_KEYALG_FIELDS2,
     /*.extra =*/ &rsa_sha512_extra,
-    /*.supported_flags =*/ nullkey_supported_flags,
-    .alternate_ssh_id = nullkey_alternate_ssh_id,
+    COMMON_KEYALG_FIELDS3,
 };
 
 RSAKey *ssh_rsakex_newkey(ptrlen data)
@@ -1175,17 +1186,21 @@ static const struct ssh_rsa_kex_extra ssh_rsa_kex_extra_sha1 = { 1024 };
 static const struct ssh_rsa_kex_extra ssh_rsa_kex_extra_sha256 = { 2048 };
 
 static const ssh_kex ssh_rsa_kex_sha1 = {
-    .name = "rsa1024-sha1",
-    .main_type = KEXTYPE_RSA,
-    .hash = &ssh_sha1,
-    .extra = &ssh_rsa_kex_extra_sha1,
+    /*.name =*/ "rsa1024-sha1",
+    NULL,
+    /*.main_type =*/ KEXTYPE_RSA,
+    /*.hash =*/ &ssh_sha1,
+    NULL, // WINSCP
+    /*.extra =*/ &ssh_rsa_kex_extra_sha1,
 };
 
 static const ssh_kex ssh_rsa_kex_sha256 = {
-    .name = "rsa2048-sha256",
-    .main_type = KEXTYPE_RSA,
-    .hash = &ssh_sha256,
-    .extra = &ssh_rsa_kex_extra_sha256,
+    /*.name =*/ "rsa2048-sha256",
+    NULL,
+    /*.main_type =*/ KEXTYPE_RSA,
+    /*.hash =*/ &ssh_sha256,
+    NULL, // WINSCP
+    /*.extra =*/ &ssh_rsa_kex_extra_sha256,
 };
 
 static const ssh_kex *const rsa_kex_list[] = {

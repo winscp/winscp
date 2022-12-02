@@ -185,10 +185,12 @@ static inline ptrlen make_ptrlen_startend(const void *startv, const void *endv)
 {
     const char *start = (const char *)startv, *end = (const char *)endv;
     assert(end >= start);
+    { // WINSCP
     ptrlen pl;
     pl.ptr = start;
     pl.len = end - start;
     return pl;
+    } // WINSCP
 }
 
 static inline ptrlen ptrlen_from_asciz(const char *str)

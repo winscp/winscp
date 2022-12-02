@@ -230,7 +230,9 @@ static void ssh2_transport_free(PacketProtocolLayer *ppl)
         ssh_key_free(s->hkey);
         s->hkey = NULL;
     }
-    for (size_t i = 0; i < NKEXLIST; i++)
+    { // WINSCP
+    size_t i;
+    for (i = 0; i < NKEXLIST; i++)
         sfree(s->kexlists[i].algs);
     if (s->f) mp_free(s->f);
     if (s->p) mp_free(s->p);
@@ -256,6 +258,7 @@ static void ssh2_transport_free(PacketProtocolLayer *ppl)
 
     expire_timer_context(s);
     sfree(s);
+    } // WINSCP
 }
 
 /*
@@ -327,14 +330,17 @@ static void ssh2_mkkey(
 static struct kexinit_algorithm *ssh2_kexinit_addalg_pl(
     struct kexinit_algorithm_list *list, ptrlen name)
 {
-    for (size_t i = 0; i < list->nalgs; i++)
+    size_t i; // WINSCP
+    for (i = 0; i < list->nalgs; i++)
         if (ptrlen_eq_ptrlen(list->algs[i].name, name))
             return &list->algs[i];
 
     sgrowarray(list->algs, list->algsize, list->nalgs);
+    { // WINSCP
     struct kexinit_algorithm *entry = &list->algs[list->nalgs++];
     entry->name = name;
     return entry;
+    } // WINSCP
 }
 
 static struct kexinit_algorithm *ssh2_kexinit_addalg(
@@ -576,10 +582,12 @@ static void ssh2_write_kexinit_lists(
             preferred_kex[n_preferred_kex++] =
                 &ssh_ecdh_kex;
             break;
+          #ifndef WINSCP
           case KEX_NTRU_HYBRID:
             preferred_kex[n_preferred_kex++] =
                 &ssh_ntru_hybrid_kex;
             break;
+          #endif
           case KEX_WARN:
             /* Flag for later. Don't bother if it's the last in
              * the list. */
@@ -679,12 +687,15 @@ static void ssh2_write_kexinit_lists(
             alg->u.hk.hkflags = 0;
             alg->u.hk.warn = false;
 
+            { // WINSCP
             uint32_t supported_flags = ssh_keyalg_supported_flags(keyalg);
             static const uint32_t try_flags[] = {
                 SSH_AGENT_RSA_SHA2_256,
                 SSH_AGENT_RSA_SHA2_512,
             };
-            for (size_t i = 0; i < lenof(try_flags); i++) {
+            { // WINSCP
+            size_t i;
+            for (i = 0; i < lenof(try_flags); i++) {
                 if (try_flags[i] & ~supported_flags)
                     continue;          /* these flags not supported */
 
@@ -696,6 +707,8 @@ static void ssh2_write_kexinit_lists(
                 alg->u.hk.hkflags = try_flags[i];
                 alg->u.hk.warn = false;
             }
+            } // WINSCP
+            } // WINSCP
         }
     } else if (first_time) {
         /*
@@ -713,6 +726,7 @@ static void ssh2_write_kexinit_lists(
          */
 
         bool accept_certs = false;
+        #ifndef WINSCP
         {
             host_ca_enum *handle = enum_host_ca_start();
             if (handle) {
@@ -735,6 +749,7 @@ static void ssh2_write_kexinit_lists(
                 strbuf_free(name);
             }
         }
+        #endif
 
         if (accept_certs) {
             /* Add all the certificate algorithms first, in preference order */
@@ -1247,14 +1262,19 @@ static void filter_outgoing_kexinit(struct ssh2_transport_state *s)
      * lists the same as the rest. In the rest of this code base we
      * ignore those.
      */
+    { // WINSCP
     strbuf *out = strbuf_new();
-    for (size_t i = 0; i < NKEXLIST+2; i++) {
+    size_t i; // WINSCP
+    for (i = 0; i < NKEXLIST+2; i++) {
         strbuf_clear(out);
+        { // WINSCP
         ptrlen olist = get_string(osrc), ilist = get_string(isrc);
-        for (ptrlen oword; get_commasep_word(&olist, &oword) ;) {
+        ptrlen oword; // WINSCP
+        for (; get_commasep_word(&olist, &oword) ;) {
             ptrlen ilist_copy = ilist;
             bool add = false;
-            for (ptrlen iword; get_commasep_word(&ilist_copy, &iword) ;) {
+            ptrlen iword; // WINSCP
+            for (; get_commasep_word(&ilist_copy, &iword) ;) {
                 if (ptrlen_eq_ptrlen(oword, iword)) {
                     /* Found this word in the incoming list. */
                     add = true;
@@ -1278,6 +1298,7 @@ static void filter_outgoing_kexinit(struct ssh2_transport_state *s)
                 add_to_commasep_pl(out, oword);
         }
         put_stringpl(pktout, ptrlen_from_strbuf(out));
+        } // WINSCP
     }
     strbuf_free(out);
 
@@ -1296,6 +1317,7 @@ static void filter_outgoing_kexinit(struct ssh2_transport_state *s)
     strbuf_shrink_to(s->outgoing_kexinit, 1); /* keep the type byte */
     put_datapl(s->outgoing_kexinit, ptrlen_from_strbuf(pktout));
     strbuf_free(pktout);
+    } // WINSCP
 }
 
 void ssh2transport_finalise_exhash(struct ssh2_transport_state *s)
@@ -1497,7 +1519,9 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
          */
         s->n_uncert_hostkeys = 0;
 
-        for (int i = 0; i < hks.n; i++) {
+        { // WINSCP
+        int i;
+        for (i = 0; i < hks.n; i++) {
             int j = hks.indices[i];
             if (ssh2_hostkey_algs[j].alg != s->hostkey_alg &&
                 ssh2_hostkey_algs[j].alg->cache_id &&
@@ -1508,6 +1532,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
         }
 
         sfree(hks.indices);
+        } // WINSCP
     }
 
     if (s->warn_kex) {
@@ -2454,14 +2479,14 @@ void call_ssh_timer(Backend * be)
 }
 
 // WINSCP
-void get_hostkey_algs(int * count, cp_ssh_keyalg * SignKeys)
+void get_hostkey_algs(int * count, cp_ssh_keyalg ** sign_keys)
 {
     int i;
-    assert(lenof(ssh2_hostkey_algs) <= *count);
     *count = lenof(ssh2_hostkey_algs);
+    *sign_keys = snewn(*count, cp_ssh_keyalg *);
     for (i = 0; i < *count; i++)
     {
-        *(SignKeys + i) = ssh2_hostkey_algs[i].alg;
+        *((*sign_keys) + i) = ssh2_hostkey_algs[i].alg;
     }
 }
 

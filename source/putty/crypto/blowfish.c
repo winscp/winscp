@@ -656,7 +656,7 @@ const ssh_cipheralg ssh_blowfish_ssh1 = {
     /*.encrypt =*/ blowfish_ssh1_encrypt_blk,
     /*.decrypt =*/ blowfish_ssh1_decrypt_blk,
     NULL, NULL, // WINSCP
-    .next_message = nullcipher_next_message,
+    /*.next_message =*/ nullcipher_next_message,
     NULL, // WINSCP
     /*.blksize =*/ 8,
     /*.real_keybits =*/ 128,
@@ -675,7 +675,7 @@ const ssh_cipheralg ssh_blowfish_ssh2 = {
     /*.encrypt =*/ blowfish_ssh2_encrypt_blk,
     /*.decrypt =*/ blowfish_ssh2_decrypt_blk,
     NULL, NULL, // WINSCP
-    .next_message = nullcipher_next_message,
+    /*.next_message =*/ nullcipher_next_message,
     /*.ssh2_id =*/ "blowfish-cbc",
     /*.blksize =*/ 8,
     /*.real_keybits =*/ 128,
@@ -694,7 +694,7 @@ const ssh_cipheralg ssh_blowfish_ssh2_ctr = {
     /*.encrypt =*/ blowfish_ssh2_sdctr,
     /*.decrypt =*/ blowfish_ssh2_sdctr,
     NULL, NULL, // WINSCP
-    .next_message = nullcipher_next_message,
+    /*.next_message =*/ nullcipher_next_message,
     /*.ssh2_id =*/ "blowfish-ctr",
     /*.blksize =*/ 8,
     /*.real_keybits =*/ 256,
