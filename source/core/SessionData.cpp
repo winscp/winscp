@@ -35,7 +35,7 @@ const UnicodeString CipherNames[CIPHER_COUNT] = {L"WARN", L"3des", L"blowfish", 
 const UnicodeString KexNames[KEX_COUNT] = {L"WARN", L"dh-group1-sha1", L"dh-group14-sha1", L"dh-group15-sha512", L"dh-group16-sha512", L"dh-group17-sha512", L"dh-group18-sha512", L"dh-gex-sha1", L"rsa", L"ecdh"};
 const UnicodeString HostKeyNames[HOSTKEY_COUNT] = {L"WARN", L"rsa", L"dsa", L"ecdsa", L"ed25519", L"ed448"};
 const UnicodeString GssLibNames[GSSLIB_COUNT] = {L"gssapi32", L"sspi", L"custom"};
-// Update also order in Ssh2CipherList()
+// Update also order in SshCipherList()
 const TCipher DefaultCipherList[CIPHER_COUNT] =
   { cipAES, cipChaCha20, cipAESGCM, cip3DES, cipWarn, cipDES, cipBlowfish, cipArcfour };
 // Update also order in SshKexList()
