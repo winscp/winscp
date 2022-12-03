@@ -547,7 +547,7 @@ bool get_reg_dword_winscp(HKEY, const char * DebugUsedArg(Name), DWORD * DebugUs
     DebugFail();
     Result = false;
   }
-  return false;
+  return Result;
 }
 //---------------------------------------------------------------------------
 char * get_reg_sz_winscp(HKEY Key, const char * Name)
