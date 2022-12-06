@@ -40,7 +40,7 @@ const TCipher DefaultCipherList[CIPHER_COUNT] =
   { cipAES, cipChaCha20, cipAESGCM, cip3DES, cipWarn, cipDES, cipBlowfish, cipArcfour };
 // Update also order in SshKexList()
 const TKex DefaultKexList[KEX_COUNT] =
-  { kexECDH, kexDHGEx, kexDHGroup14, kexRSA, kexDHGroup15, kexDHGroup16, kexDHGroup17, kexDHGroup18, kexWarn, kexDHGroup1 };
+  { kexECDH, kexDHGEx, kexDHGroup18, kexDHGroup17, kexDHGroup16, kexDHGroup15, kexDHGroup14, kexRSA, kexWarn, kexDHGroup1 };
 const THostKey DefaultHostKeyList[HOSTKEY_COUNT] =
   { hkED448, hkED25519, hkECDSA, hkRSA, hkDSA, hkWarn };
 const TGssLib DefaultGssLibList[GSSLIB_COUNT] =
