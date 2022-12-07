@@ -947,7 +947,7 @@ static void __fastcall DoNormalizeFingerprint(UnicodeString & Fingerprint, Unico
   int Count;
   // We may use find_pubkey_alg, but it gets complicated with normalized fingerprint
   // as the names have different number of dashes
-  get_hostkey_algs(&Count, &SignKeys);
+  get_hostkey_algs(-1, &Count, &SignKeys);
   try
   {
     for (int Index = 0; Index < Count; Index++)
@@ -1151,24 +1151,44 @@ TStrings * SshKexList()
   return Result.release();
 }
 //---------------------------------------------------------------------------
+int HostKeyToPutty(THostKey HostKey)
+{
+  int Result;
+  switch (HostKey)
+  {
+    case hkWarn: Result = HK_WARN; break;
+    case hkRSA: Result = HK_RSA; break;
+    case hkDSA: Result = hkDSA; break;
+    case hkECDSA: Result = HK_ECDSA; break;
+    case hkED25519: Result = HK_ED25519; break;
+    case hkED448: Result = HK_ED448; break;
+    default: Result = -1; DebugFail();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 TStrings * SshHostKeyList()
 {
   std::unique_ptr<TStrings> Result(new TStringList());
-  cp_ssh_keyalg * SignKeys;
-  int Count;
-  get_hostkey_algs(&Count, &SignKeys);
-  try
+  for (int DefaultIndex = 0; DefaultIndex < HOSTKEY_COUNT; DefaultIndex++)
   {
-    for (int Index = 0; Index < Count; Index++)
+    int Type = HostKeyToPutty(DefaultHostKeyList[DefaultIndex]);
+    cp_ssh_keyalg * SignKeys;
+    int Count;
+    get_hostkey_algs(Type, &Count, &SignKeys);
+    try
     {
-      cp_ssh_keyalg SignKey = SignKeys[Index];
-      UnicodeString Name = UnicodeString(SignKey->ssh_id);
-      Result->Add(Name);
+      for (int Index = 0; Index < Count; Index++)
+      {
+        cp_ssh_keyalg SignKey = SignKeys[Index];
+        UnicodeString Name = UnicodeString(SignKey->ssh_id);
+        Result->Add(Name);
+      }
     }
-  }
-  __finally
-  {
-    sfree(SignKeys);
+    __finally
+    {
+      sfree(SignKeys);
+    }
   }
   return Result.release();
 }

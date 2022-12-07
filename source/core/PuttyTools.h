@@ -2,6 +2,8 @@
 #ifndef PuttyToolsH
 #define PuttyToolsH
 //---------------------------------------------------------------------------
+#include <SessionData.h>
+//---------------------------------------------------------------------------
 enum TKeyType
 {
   ktUnopenable, ktUnknown,
@@ -43,6 +45,7 @@ bool IsOpenSSH(const UnicodeString & SshImplementation);
 //---------------------------------------------------------------------------
 TStrings * SshCipherList();
 TStrings * SshKexList();
+int HostKeyToPutty(THostKey HostKey);
 TStrings * SshHostKeyList();
 TStrings * SshMacList();
 //---------------------------------------------------------------------------

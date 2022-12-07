@@ -222,16 +222,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   DebugAssert(HK_MAX == HOSTKEY_COUNT);
   for (int h = 0; h < HOSTKEY_COUNT; h++)
   {
-    int phk;
-    switch (Data->HostKeys[h]) {
-      case hkWarn: phk = HK_WARN; break;
-      case hkRSA: phk = HK_RSA; break;
-      case hkDSA: phk = hkDSA; break;
-      case hkECDSA: phk = HK_ECDSA; break;
-      case hkED25519: phk = HK_ED25519; break;
-      case hkED448: phk = HK_ED448; break;
-      default: DebugFail();
-    }
+    int phk = HostKeyToPutty(Data->HostKeys[h]);
     conf_set_int_int(conf, CONF_ssh_hklist, h, phk);
   }
 
