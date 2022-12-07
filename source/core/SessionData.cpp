@@ -913,57 +913,6 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   CustomParam2 = Storage->ReadString(L"CustomParam2", CustomParam2);
 
   #undef LOAD_PASSWORD
-
-#ifdef TEST
-  #define KEX_TEST(VALUE, EXPECTED) KexList = VALUE; DebugAssert(KexList == EXPECTED);
-  #define KEX_DEFAULT L"ecdh,dh-gex-sha1,dh-group14-sha1,rsa,WARN,dh-group1-sha1"
-  // Empty source should result in default list
-  KEX_TEST(L"", KEX_DEFAULT);
-  // Default of pre 5.8.1
-  KEX_TEST(L"dh-gex-sha1,dh-group14-sha1,dh-group1-sha1,rsa,WARN", L"ecdh,dh-gex-sha1,dh-group14-sha1,dh-group1-sha1,rsa,WARN");
-  // Missing first two priority algos, and last non-priority algo
-  KEX_TEST(L"dh-group14-sha1,dh-group1-sha1,WARN", L"ecdh,dh-gex-sha1,dh-group14-sha1,dh-group1-sha1,rsa,WARN");
-  // Missing first two priority algos, last non-priority algo and WARN
-  KEX_TEST(L"dh-group14-sha1,dh-group1-sha1", L"ecdh,dh-gex-sha1,dh-group14-sha1,dh-group1-sha1,rsa,WARN");
-  // Old algos, with all but the first below WARN
-  KEX_TEST(L"dh-gex-sha1,WARN,dh-group14-sha1,dh-group1-sha1,rsa", L"ecdh,dh-gex-sha1,WARN,dh-group14-sha1,dh-group1-sha1,rsa");
-  // Unknown algo at front
-  KEX_TEST(L"unknown,ecdh,dh-gex-sha1,dh-group14-sha1,rsa,WARN,dh-group1-sha1", KEX_DEFAULT);
-  // Unknown algo at back
-  KEX_TEST(L"ecdh,dh-gex-sha1,dh-group14-sha1,rsa,WARN,dh-group1-sha1,unknown", KEX_DEFAULT);
-  // Unknown algo in the middle
-  KEX_TEST(L"ecdh,dh-gex-sha1,dh-group14-sha1,unknown,rsa,WARN,dh-group1-sha1", KEX_DEFAULT);
-  #undef KEX_DEFAULT
-  #undef KEX_TEST
-
-  #define CIPHER_TEST(VALUE, EXPECTED) CipherList = VALUE; DebugAssert(CipherList == EXPECTED);
-  #define CIPHER_DEFAULT L"aes,chacha20,blowfish,3des,WARN,arcfour,des"
-  // Empty source should result in default list
-  CIPHER_TEST(L"", CIPHER_DEFAULT);
-  // Default of pre 5.8.1
-  CIPHER_TEST(L"aes,blowfish,3des,WARN,arcfour,des", L"aes,blowfish,3des,chacha20,WARN,arcfour,des");
-  // Missing priority algo
-  CIPHER_TEST(L"chacha20,blowfish,3des,WARN,arcfour,des", CIPHER_DEFAULT);
-  // Missing non-priority algo
-  CIPHER_TEST(L"aes,chacha20,3des,WARN,arcfour,des", L"aes,chacha20,3des,blowfish,WARN,arcfour,des");
-  // Missing last warn algo
-  CIPHER_TEST(L"aes,blowfish,chacha20,3des,WARN,arcfour", L"aes,blowfish,chacha20,3des,WARN,arcfour,des");
-  // Missing first warn algo
-  CIPHER_TEST(L"aes,blowfish,chacha20,3des,WARN,des", L"aes,blowfish,chacha20,3des,WARN,des,arcfour");
-  #undef CIPHER_DEFAULT
-  #undef CIPHER_TEST
-
-  #define HOSTKEY_TEST(VALUE, EXPECTED) HostKeyList = VALUE; DebugAssert(HostKeyList == EXPECTED);
-  #define HOSTKEY_DEFAULT L"ed25519,ecdsa,rsa,dsa,WARN"
-  // Empty source should result in default list
-  HOSTKEY_TEST(L"", HOSTKEY_DEFAULT);
-  // Missing priority algo
-  HOSTKEY_TEST(L"ecdsa,rsa,dsa,WARN", HOSTKEY_DEFAULT);
-  // Missing non-priority algo
-  HOSTKEY_TEST(L"ed25519,ecdsa,dsa,WARN", L"ed25519,ecdsa,dsa,rsa,WARN");
-  #undef HOSTKEY_DEFAULT
-  #undef HOSTKEY_TEST
-#endif
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::Load(THierarchicalStorage * Storage, bool PuttyImport)
