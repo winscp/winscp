@@ -1490,7 +1490,6 @@ void TWebDAVFileSystem::NeonPreSend(
     // Without it files like .001 return 404 (Not found) HTTP code.
     // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wdv/e37a9543-9290-4843-8c04-66457c60fa0a
     // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wdvse/501879f9-3875-4d7a-ab88-3cecab440034
-    // http://lists.manyfish.co.uk/pipermail/neon/2012-April/000582.html
     // It's also supported by Oracle server:
     // https://docs.oracle.com/cd/E19146-01/821-1828/gczya/index.html
     // We do not know yet of any server that fails when the header is used,
