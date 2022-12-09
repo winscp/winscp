@@ -1,3 +1,4 @@
+#ifndef WINSCP
 /*
  * Public key type for OpenSSH certificates.
  */
@@ -1222,3 +1223,4 @@ static void opensshcert_sign(ssh_key *key, ptrlen data, unsigned flags,
     opensshcert_key *ck = container_of(key, opensshcert_key, sshk);
     ssh_key_sign(ck->basekey, data, flags, bs);
 }
+#endif

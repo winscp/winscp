@@ -618,6 +618,7 @@ const ssh_keyalg *const all_keyalgs[] = {
     &ssh_ecdsa_nistp521,
     &ssh_ecdsa_ed25519,
     &ssh_ecdsa_ed448,
+#ifndef WINSCP
     &opensshcert_ssh_dsa,
     &opensshcert_ssh_rsa,
     &opensshcert_ssh_rsa_sha256,
@@ -626,6 +627,7 @@ const ssh_keyalg *const all_keyalgs[] = {
     &opensshcert_ssh_ecdsa_nistp256,
     &opensshcert_ssh_ecdsa_nistp384,
     &opensshcert_ssh_ecdsa_nistp521,
+#endif
 };
 const size_t n_keyalgs = lenof(all_keyalgs);
 
