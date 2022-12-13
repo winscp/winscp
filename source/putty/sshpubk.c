@@ -618,7 +618,6 @@ const ssh_keyalg *const all_keyalgs[] = {
     &ssh_ecdsa_nistp521,
     &ssh_ecdsa_ed25519,
     &ssh_ecdsa_ed448,
-#ifndef WINSCP
     &opensshcert_ssh_dsa,
     &opensshcert_ssh_rsa,
     &opensshcert_ssh_rsa_sha256,
@@ -627,7 +626,6 @@ const ssh_keyalg *const all_keyalgs[] = {
     &opensshcert_ssh_ecdsa_nistp256,
     &opensshcert_ssh_ecdsa_nistp384,
     &opensshcert_ssh_ecdsa_nistp521,
-#endif
 };
 const size_t n_keyalgs = lenof(all_keyalgs);
 
@@ -641,9 +639,25 @@ const ssh_keyalg *find_pubkey_alg_len(ptrlen name)
     return NULL;
 }
 
+static const ssh_keyalg *find_pubkey_alg_len_winscp_host(ptrlen name)
+{
+    size_t i;
+    for (i = 0; i < n_keyalgs; i++)
+        if (!all_keyalgs[i]->is_certificate &&
+            ptrlen_eq_string(name, all_keyalgs[i]->ssh_id))
+            return all_keyalgs[i];
+
+    return NULL;
+}
+
 const ssh_keyalg *find_pubkey_alg(const char *name)
 {
     return find_pubkey_alg_len(ptrlen_from_asciz(name));
+}
+
+const ssh_keyalg *find_pubkey_alg_winscp_host(const char *name)
+{
+    return find_pubkey_alg_len_winscp_host(ptrlen_from_asciz(name));
 }
 
 ptrlen pubkey_blob_to_alg_name(ptrlen blob)
@@ -1853,7 +1867,7 @@ char *ssh2_fingerprint_blob(ptrlen blob, FingerprintType fptype)
     { // WINSCP
     ptrlen algname = get_string(src);
     if (!get_err(src)) {
-        const ssh_keyalg *alg = find_pubkey_alg_len(algname);
+        const ssh_keyalg *alg = find_pubkey_alg_len_winscp_host(algname);
         if (alg) {
             int bits = ssh_key_public_bits(alg, blob);
             put_fmt(sb, "%.*s %d ", PTRLEN_PRINTF(algname), bits);

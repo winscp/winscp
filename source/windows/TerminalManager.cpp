@@ -1946,7 +1946,8 @@ bool __fastcall TTerminalManager::UploadPublicKey(
         if (FAuthenticateForm != NULL)
         {
           UnicodeString Comment;
-          GetPublicKeyLine(FileName, Comment);
+          bool UnusedHasCertificate;
+          GetPublicKeyLine(FileName, Comment, UnusedHasCertificate);
           FAuthenticateForm->Log(FMTLOAD(LOGIN_PUBLIC_KEY_UPLOAD, (Comment)));
         }
 

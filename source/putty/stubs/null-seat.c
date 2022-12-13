@@ -23,7 +23,8 @@ void nullseat_set_busy_status(Seat *seat, BusyStatus status) {}
 SeatPromptResult nullseat_confirm_ssh_host_key(
     Seat *seat, const char *host, int port, const char *keytype,
     char *keystr, SeatDialogText *text, HelpCtx helpctx,
-    void (*callback)(void *ctx, SeatPromptResult result), void *ctx)
+    void (*callback)(void *ctx, SeatPromptResult result), void *ctx,
+    char **fingerprints, bool is_certificate) // WINSCP
 { return SPR_SW_ABORT("this seat can't handle interactive prompts"); }
 SeatPromptResult nullseat_confirm_weak_crypto_primitive(
     Seat *seat, const char *algtype, const char *algname,

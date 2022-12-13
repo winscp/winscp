@@ -191,7 +191,8 @@ void __fastcall TSessionData::DefaultSettings()
     GssLib[Index] = DefaultGssLibList[Index];
   }
   GssLibCustom = L"";
-  PublicKeyFile = L"";
+  PublicKeyFile = EmptyStr;
+  DetachedCertificate = EmptyStr;
   Passphrase = L"";
   FPuttyProtocol = L"";
   TcpNoDelay = false;
@@ -356,6 +357,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(UserName); \
   PROPERTY_HANDLER(Password, F); \
   PROPERTY(PublicKeyFile); \
+  PROPERTY(DetachedCertificate); \
   PROPERTY_HANDLER(Passphrase, F); \
   PROPERTY(FSProtocol); \
   PROPERTY(Ftps); \
@@ -727,6 +729,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   }
   GssLibCustom = Storage->ReadString(L"GSSCustom", GssLibCustom);
   PublicKeyFile = Storage->ReadString(L"PublicKeyFile", PublicKeyFile);
+  DetachedCertificate = Storage->ReadString(L"DetachedCertificate", DetachedCertificate);
   AddressFamily = static_cast<TAddressFamily>
     (Storage->ReadInteger(L"AddressFamily", AddressFamily));
   RekeyData = Storage->ReadString(L"RekeyBytes", RekeyData);
@@ -1046,11 +1049,13 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     // PuTTY is started in its binary directory to allow relative paths when opening PuTTY's own stored session.
     // To allow relative paths in our sessions, we have to expand them for PuTTY.
     WRITE_DATA_EX(StringRaw, L"PublicKeyFile", PublicKeyFile, ExpandFileName);
+    WRITE_DATA_EX(StringRaw, L"DetachedCertificate", DetachedCertificate, ExpandFileName);
   }
   else
   {
     WRITE_DATA(String, UserName);
     WRITE_DATA(String, PublicKeyFile);
+    WRITE_DATA(String, DetachedCertificate);
     WRITE_DATA(Integer, FSProtocol);
     WRITE_DATA(String, LocalDirectory);
     WRITE_DATA(String, OtherLocalDirectory);
@@ -2553,6 +2558,7 @@ TSessionData * TSessionData::CreateTunnelData(int TunnelLocalPortNumber)
   TunnelData->UserName = TunnelUserName;
   TunnelData->Password = TunnelPassword;
   TunnelData->PublicKeyFile = TunnelPublicKeyFile;
+  TunnelData->DetachedCertificate = EmptyStr;
   TunnelData->Passphrase = TunnelPassphrase;
   UnicodeString AHostName = HostNameExpanded;
   if (IsIPv6Literal(AHostName))
@@ -2599,6 +2605,7 @@ void __fastcall TSessionData::ExpandEnvironmentVariables()
   HostName = HostNameExpanded;
   UserName = UserNameExpanded;
   PublicKeyFile = ::ExpandEnvironmentVariables(PublicKeyFile);
+  DetachedCertificate = ::ExpandEnvironmentVariables(DetachedCertificate);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::ValidatePath(const UnicodeString Path)
@@ -3146,6 +3153,11 @@ void __fastcall TSessionData::SetPublicKeyFile(UnicodeString value)
     Passphrase = XPassphrase;
     Shred(XPassphrase);
   }
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetDetachedCertificate(UnicodeString value)
+{
+  SET_SESSION_PROPERTY(DetachedCertificate);
 }
 //---------------------------------------------------------------------
 UnicodeString TSessionData::ResolvePublicKeyFile()
@@ -4599,9 +4611,10 @@ void __fastcall TSessionData::DisableAuthentationsExceptPassword()
   AuthKIPassword = false;
   AuthGSSAPI = false;
   AuthGSSAPIKEX = false;
-  PublicKeyFile = L"";
-  TlsCertificateFile = L"";
-  Passphrase = L"";
+  PublicKeyFile = EmptyStr;
+  DetachedCertificate = EmptyStr;
+  TlsCertificateFile = EmptyStr;
+  Passphrase = EmptyStr;
   TryAgent = false;
 }
 //---------------------------------------------------------------------

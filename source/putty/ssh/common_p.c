@@ -1111,7 +1111,7 @@ SeatPromptResult verify_ssh_host_key(
     { // WINSCP
     SeatPromptResult toret = seat_confirm_ssh_host_key(
         iseat, host, port, keytype, keystr, text, helpctx, callback, ctx,
-        fingerprints); // WINSCP
+        fingerprints, key && ssh_key_alg(key)->is_certificate); // WINSCP
     seat_dialog_text_free(text);
     return toret;
     } // WINSCP

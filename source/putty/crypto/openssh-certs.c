@@ -1,4 +1,3 @@
-#ifndef WINSCP
 /*
  * Public key type for OpenSSH certificates.
  */
@@ -725,6 +724,7 @@ static key_components *opensshcert_components(ssh_key *key)
 static SeatDialogText *opensshcert_cert_info(ssh_key *key)
 {
 #ifdef WINSCP
+    assert(false);
     return NULL;
 #else
     opensshcert_key *ck = container_of(key, opensshcert_key, sshk);
@@ -1223,4 +1223,3 @@ static void opensshcert_sign(ssh_key *key, ptrlen data, unsigned flags,
     opensshcert_key *ck = container_of(key, opensshcert_key, sshk);
     ssh_key_sign(ck->basekey, data, flags, bs);
 }
-#endif

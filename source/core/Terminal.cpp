@@ -8423,7 +8423,8 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
     Log->AddSeparator();
 
     UnicodeString Comment;
-    UnicodeString Line = GetPublicKeyLine(FileName, Comment);
+    bool UnusedHasCertificate;
+    UnicodeString Line = GetPublicKeyLine(FileName, Comment, UnusedHasCertificate);
 
     LogEvent(FORMAT(L"Adding public key line to \"%s\" file:\n%s", (AuthorizedKeysFilePath, Line)));
 

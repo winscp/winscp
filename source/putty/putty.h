@@ -1286,7 +1286,7 @@ struct SeatVtable {
         Seat *seat, const char *host, int port, const char *keytype,
         char *keystr, SeatDialogText *text, HelpCtx helpctx,
         void (*callback)(void *ctx, SeatPromptResult result), void *ctx,
-        char **fingerprints); // WINSCP
+        char **fingerprints, bool is_certificate); // WINSCP
 
     /*
      * Check with the seat whether it's OK to use a cryptographic
@@ -1443,10 +1443,10 @@ static inline SeatPromptResult seat_confirm_ssh_host_key(
     InteractionReadySeat iseat, const char *h, int p, const char *ktyp,
     char *kstr, SeatDialogText *text, HelpCtx helpctx,
     void (*cb)(void *ctx, SeatPromptResult result), void *ctx,
-    char **fingerprints) // WINSCP
+    char **fingerprints, bool is_certificate) // WINSCP
 { return iseat.seat->vt->confirm_ssh_host_key(
         iseat.seat, h, p, ktyp, kstr, text, helpctx, cb, ctx,
-        fingerprints); }
+        fingerprints, is_certificate); } // WINSCP
 static inline SeatPromptResult seat_confirm_weak_crypto_primitive(
     InteractionReadySeat iseat, const char *atyp, const char *aname,
     void (*cb)(void *ctx, SeatPromptResult result), void *ctx)
@@ -1539,7 +1539,8 @@ void nullseat_set_busy_status(Seat *seat, BusyStatus status);
 SeatPromptResult nullseat_confirm_ssh_host_key(
     Seat *seat, const char *host, int port, const char *keytype,
     char *keystr, SeatDialogText *text, HelpCtx helpctx,
-    void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
+    void (*callback)(void *ctx, SeatPromptResult result), void *ctx,
+    char **fingerprints, bool is_certificate); // WINSCP
 SeatPromptResult nullseat_confirm_weak_crypto_primitive(
     Seat *seat, const char *algtype, const char *algname,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
@@ -1571,6 +1572,7 @@ bool nullseat_get_cursor_position(Seat *seat, int *x, int *y);
  * support module (console.c in each platform subdirectory).
  */
 
+#ifndef WINSCP
 void console_connection_fatal(Seat *seat, const char *message);
 SeatPromptResult console_confirm_ssh_host_key(
     Seat *seat, const char *host, int port, const char *keytype,
@@ -1588,6 +1590,7 @@ void console_set_trust_status(Seat *seat, bool trusted);
 bool console_can_set_trust_status(Seat *seat);
 bool console_has_mixed_input_stream(Seat *seat);
 const SeatDialogPromptDescriptions *console_prompt_descriptions(Seat *seat);
+#endif
 
 /*
  * Other centralised seat functions.

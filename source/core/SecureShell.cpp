@@ -242,9 +242,13 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   conf_set_filename(conf, CONF_ssh_gss_custom, GssLibCustomFileName);
   filename_free(GssLibCustomFileName);
 
-  Filename * KeyFileFileName = filename_from_str(UTF8String(Data->ResolvePublicKeyFile()).c_str());
-  conf_set_filename(conf, CONF_keyfile, KeyFileFileName);
-  filename_free(KeyFileFileName);
+  Filename * AFileName = filename_from_str(UTF8String(Data->ResolvePublicKeyFile()).c_str());
+  conf_set_filename(conf, CONF_keyfile, AFileName);
+  filename_free(AFileName);
+
+  AFileName = filename_from_str(UTF8String(ExpandEnvironmentVariables(Data->DetachedCertificate)).c_str());
+  conf_set_filename(conf, CONF_detached_cert, AFileName);
+  filename_free(AFileName);
 
   conf_set_bool(conf, CONF_ssh2_des_cbc, Data->Ssh2DES);
   conf_set_bool(conf, CONF_ssh_no_userauth, Data->SshNoUserAuth);

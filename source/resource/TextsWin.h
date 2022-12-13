@@ -671,7 +671,7 @@
 #define KEX_NAME_DHGEX          6077
 #define KEX_NAME_RSA            6078
 #define KEX_NAME_ECDH           6079
-// Keep few indexes unused for future algos
+#define LOGIN_KEY_WITH_CERTIFICATE 7090
 
 // 2xxx is reserved for TextsFileZilla.h
 

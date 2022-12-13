@@ -134,6 +134,7 @@ private:
   bool FVMSAllRevisions;
   UnicodeString FPublicKeyFile;
   UnicodeString FPassphrase;
+  UnicodeString FDetachedCertificate;
   UnicodeString FPuttyProtocol;
   TFSProtocol FFSProtocol;
   bool FModified;
@@ -285,6 +286,7 @@ private:
   void __fastcall SetPublicKeyFile(UnicodeString value);
   UnicodeString __fastcall GetPassphrase() const;
   void __fastcall SetPassphrase(UnicodeString value);
+  void __fastcall SetDetachedCertificate(UnicodeString value);
 
   void __fastcall SetPuttyProtocol(UnicodeString value);
   bool __fastcall GetCanLogin();
@@ -580,6 +582,7 @@ public:
   __property UnicodeString GssLibCustom = { read=FGssLibCustom, write=SetGssLibCustom };
   __property UnicodeString PublicKeyFile  = { read=FPublicKeyFile, write=SetPublicKeyFile };
   __property UnicodeString Passphrase  = { read=GetPassphrase, write=SetPassphrase };
+  __property UnicodeString DetachedCertificate  = { read=FDetachedCertificate, write=SetDetachedCertificate };
   __property UnicodeString PuttyProtocol  = { read=FPuttyProtocol, write=SetPuttyProtocol };
   __property TFSProtocol FSProtocol  = { read=FFSProtocol, write=SetFSProtocol  };
   __property UnicodeString FSProtocolStr  = { read=GetFSProtocolStr };

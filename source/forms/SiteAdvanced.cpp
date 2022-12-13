@@ -51,6 +51,7 @@ __fastcall TSiteAdvancedDialog::TSiteAdvancedDialog(TComponent * AOwner) :
   TForm(AOwner)
 {
   NoUpdate = 0;
+  FKeyHasCertificate = false;
 
   // we need to make sure that window procedure is set asap
   // (so that CM_SHOWINGCHANGED handling is applied)
@@ -248,6 +249,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     GSSAPIFwdTGTCheck->Checked = FSessionData->GSSAPIFwdTGT;
     AgentFwdCheck->Checked = FSessionData->AgentFwd;
     PrivateKeyEdit3->Text = FSessionData->PublicKeyFile;
+    DetachedCertificateEdit->Text = FSessionData->DetachedCertificate;
 
     // SSH page
     Ssh2LegacyDESCheck->Checked = FSessionData->Ssh2DES;
@@ -474,6 +476,9 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   SessionData->GSSAPIFwdTGT = GSSAPIFwdTGTCheck->Checked;
   SessionData->AgentFwd = AgentFwdCheck->Checked;
   SessionData->PublicKeyFile = PrivateKeyEdit3->Text;
+  // When user selectes key with certificate, s/he cannot clear the certificate box anymore as it is disabled,
+  // so let's not save it, in case it causes troubles in PuTTY code.
+  SessionData->DetachedCertificate = !FKeyHasCertificate ? DetachedCertificateEdit->Text : EmptyStr;
 
   // Connection page
   SessionData->FtpPasvMode = FtpPasvModeCheck->Checked;
@@ -855,7 +860,25 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
       AuthenticationGroup->Enabled && (AuthKICheck->Enabled && AuthKICheck->Checked));
     EnableControl(AuthenticationParamsGroup, AuthenticationGroup->Enabled);
     EnableControl(AgentFwdCheck, AuthenticationParamsGroup->Enabled && TryAgentCheck->Checked);
+    if (PrivateKeyEdit3->Text != FLastPrivateKey)
+    {
+      FLastPrivateKey = PrivateKeyEdit3->Text;
+      FKeyHasCertificate = false;
+      if (PrivateKeyEdit3->Enabled && !FLastPrivateKey.IsEmpty())
+      {
+        try
+        {
+          UnicodeString UnusedComment;
+          GetPublicKeyLine(FLastPrivateKey, UnusedComment, FKeyHasCertificate);
+        }
+        catch (...)
+        {
+        }
+      }
+    }
     EnableControl(PrivateKeyViewButton, PrivateKeyEdit3->Enabled && !PrivateKeyEdit3->Text.IsEmpty());
+    EnableControl(DetachedCertificateEdit, PrivateKeyViewButton->Enabled && !FKeyHasCertificate);
+    EnableControl(DetachedCertificateLabel, DetachedCertificateEdit->Enabled);
     EnableControl(AuthGSSAPICheck3, AuthenticationGroup->Enabled);
     EnableControl(GSSAPIFwdTGTCheck,
       AuthGSSAPICheck3->Enabled && AuthGSSAPICheck3->Checked);
@@ -1336,6 +1359,10 @@ void __fastcall TSiteAdvancedDialog::FormCloseQuery(TObject * /*Sender*/,
 void __fastcall TSiteAdvancedDialog::PathEditBeforeDialog(TObject * /*Sender*/,
   UnicodeString & Name, bool & /*Action*/)
 {
+  // Reset key stats, even if new key is not select, this way the clicking browse button gives the user chance to
+  // reload the "certificate" state in case the key file is recreated with certificate
+  FLastPrivateKey = EmptyStr;
+
   FBeforeDialogPath = Name;
   Name = ExpandEnvironmentVariables(Name);
 }
@@ -1609,7 +1636,8 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyViewButtonClick(TObject * /*Sende
   VerifyAndConvertKey(FileName, false);
   PrivateKeyEdit3->Text = FileName;
   UnicodeString CommentDummy;
-  UnicodeString Line = GetPublicKeyLine(FileName, CommentDummy);
+  bool HasCertificate;
+  UnicodeString Line = GetPublicKeyLine(FileName, CommentDummy, HasCertificate);
   std::unique_ptr<TStrings> Messages(TextToStringList(Line));
 
   TClipboardHandler ClipboardHandler;
@@ -1623,7 +1651,7 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyViewButtonClick(TObject * /*Sende
   Params.Aliases = Aliases;
   Params.AliasesCount = LENOF(Aliases);
 
-  UnicodeString Message = LoadStr(LOGIN_AUTHORIZED_KEYS);
+  UnicodeString Message = LoadStr(HasCertificate ? LOGIN_KEY_WITH_CERTIFICATE : LOGIN_AUTHORIZED_KEYS);
   int Answers = qaOK | qaRetry;
   MoreMessageDialog(Message, Messages.get(), qtInformation, Answers, HELP_LOGIN_AUTHORIZED_KEYS, &Params);
 }

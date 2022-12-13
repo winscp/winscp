@@ -259,8 +259,12 @@ static void connection_fatal(Seat * seat, const char * message)
 SeatPromptResult confirm_ssh_host_key(Seat * seat, const char * host, int port, const char * keytype,
   char * keystr, SeatDialogText *, HelpCtx,
   void (*DebugUsedArg(callback))(void *ctx, SeatPromptResult result), void * DebugUsedArg(ctx),
-  char **key_fingerprints)
+  char **key_fingerprints, bool is_certificate)
 {
+  if (DebugAlwaysFalse(is_certificate))
+  {
+    NotImplemented();
+  }
   UnicodeString FingerprintSHA256, FingerprintMD5;
   if (key_fingerprints[SSH_FPTYPE_SHA256] != NULL)
   {
@@ -863,7 +867,8 @@ void FreeKey(TPrivateKey * PrivateKey)
   sfree(Ssh2Key);
 }
 //---------------------------------------------------------------------------
-RawByteString LoadPublicKey(const UnicodeString & FileName, UnicodeString & Algorithm, UnicodeString & Comment)
+RawByteString LoadPublicKey(
+  const UnicodeString & FileName, UnicodeString & Algorithm, UnicodeString & Comment, bool & HasCertificate)
 {
   RawByteString Result;
   UTF8String UtfFileName = UTF8String(FileName);
@@ -880,6 +885,8 @@ RawByteString LoadPublicKey(const UnicodeString & FileName, UnicodeString & Algo
       throw Exception(Error);
     }
     Algorithm = UnicodeString(AnsiString(AlgorithmStr));
+    const ssh_keyalg * KeyAlg = find_pubkey_alg(AlgorithmStr);
+    HasCertificate = (KeyAlg != NULL) && KeyAlg->is_certificate;
     sfree(AlgorithmStr);
     Comment = UnicodeString(AnsiString(CommentStr));
     sfree(CommentStr);
@@ -893,10 +900,10 @@ RawByteString LoadPublicKey(const UnicodeString & FileName, UnicodeString & Algo
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString GetPublicKeyLine(const UnicodeString & FileName, UnicodeString & Comment)
+UnicodeString GetPublicKeyLine(const UnicodeString & FileName, UnicodeString & Comment, bool & HasCertificate)
 {
   UnicodeString Algorithm;
-  RawByteString PublicKey = LoadPublicKey(FileName, Algorithm, Comment);
+  RawByteString PublicKey = LoadPublicKey(FileName, Algorithm, Comment, HasCertificate);
   UnicodeString PublicKeyBase64 = EncodeBase64(PublicKey.c_str(), PublicKey.Length());
   PublicKeyBase64 = ReplaceStr(PublicKeyBase64, L"\r", L"");
   PublicKeyBase64 = ReplaceStr(PublicKeyBase64, L"\n", L"");
@@ -1043,7 +1050,7 @@ UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const s
   {
     try
     {
-      Algorithm = find_pubkey_alg(AlgorithmName);
+      Algorithm = find_pubkey_alg_winscp_host(AlgorithmName);
       if (Algorithm == NULL)
       {
         throw Exception(FORMAT(L"Unknown public key algorithm \"%s\".", (AlgorithmName)));

@@ -2288,13 +2288,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 132
           Width = 393
-          Height = 120
+          Height = 164
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Authentication parameters'
           TabOrder = 2
           DesignSize = (
             393
-            120)
+            164)
           object PrivateKeyLabel: TLabel
             Left = 12
             Top = 42
@@ -2302,6 +2302,14 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Height = 13
             Caption = 'Private &key file:'
             FocusControl = PrivateKeyEdit3
+          end
+          object DetachedCertificateLabel: TLabel
+            Left = 12
+            Top = 117
+            Width = 186
+            Height = 13
+            Caption = 'Certificate to use with the private key:'
+            FocusControl = DetachedCertificateEdit
           end
           object AgentFwdCheck: TCheckBox
             Left = 12
@@ -2350,10 +2358,27 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 2
             OnClick = PrivateKeyViewButtonClick
           end
+          object DetachedCertificateEdit: TFilenameEdit
+            Left = 12
+            Top = 133
+            Width = 372
+            Height = 21
+            AcceptFiles = True
+            OnBeforeDialog = PathEditBeforeDialog
+            OnAfterDialog = PrivateKeyEdit3AfterDialog
+            Filter = 'Public key files (*.pub)|*.pub|All Files (*.*)|*.*'
+            DialogOptions = [ofReadOnly, ofPathMustExist, ofFileMustExist]
+            DialogTitle = 'Select certificate file'
+            ClickKey = 16397
+            Anchors = [akLeft, akTop, akRight]
+            TabOrder = 4
+            Text = 'DetachedCertificateEdit'
+            OnChange = DataChange
+          end
         end
         object GSSAPIGroup: TGroupBox
           Left = 0
-          Top = 258
+          Top = 302
           Width = 393
           Height = 71
           Anchors = [akLeft, akTop, akRight]

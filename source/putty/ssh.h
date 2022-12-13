@@ -1507,6 +1507,7 @@ int rsa1_loadpub_f(const Filename *filename, BinarySink *bs,
 extern const ssh_keyalg *const all_keyalgs[];
 extern const size_t n_keyalgs;
 const ssh_keyalg *find_pubkey_alg(const char *name);
+const ssh_keyalg *find_pubkey_alg_winscp_host(const char *name);
 const ssh_keyalg *find_pubkey_alg_len(ptrlen name);
 
 ptrlen pubkey_blob_to_alg_name(ptrlen blob);
