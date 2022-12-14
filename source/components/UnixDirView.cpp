@@ -231,11 +231,16 @@ UnicodeString __fastcall TUnixDirView::ItemFileName(TListItem * Item)
 #endif
 }
 //---------------------------------------------------------------------------
+inline __int64 GetItemFileSize(TRemoteFile * File)
+{
+  return (File->CalculatedSize >= 0) ? File->CalculatedSize : File->Size;
+}
+//---------------------------------------------------------------------------
 __int64 __fastcall TUnixDirView::ItemFileSize(TListItem * Item)
 {
 #ifndef DESIGN_ONLY
   ASSERT_VALID_ITEM;
-  return (ITEMFILE->CalculatedSize >= 0) ? ITEMFILE->CalculatedSize : ITEMFILE->Size;
+  return GetItemFileSize(ITEMFILE);
 #else
   DebugUsedParam(Item);
   return 0;
@@ -779,7 +784,7 @@ int __stdcall CompareFile(TListItem * Item1, TListItem * Item2, TUnixDirView * D
           break;
 
         case uvSize:
-          Result = COMPARE_NUMBER(File1->Size, File2->Size);
+          Result = COMPARE_NUMBER(GetItemFileSize(File1), GetItemFileSize(File2));
           break;
 
         case uvChanged:

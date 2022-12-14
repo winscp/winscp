@@ -2050,6 +2050,14 @@ begin
     else Result := fEqual; // fallback
 end;
 
+function GetItemFileSize(P: PFileRec): Int64; inline;
+begin
+  Result := 0;
+  if P.Size >= 0 then Result := P.Size
+    else
+  if P.CalculatedSize >= 0 then Result := P.CalculatedSize;
+end;
+
 function CompareFile(I1, I2: TListItem; AOwner: TDirView): Integer; stdcall;
 var
   ConsiderDirection: Boolean;
@@ -2106,9 +2114,9 @@ begin
             ; // fallback
 
           dvSize:
-            if P1.Size < P2.Size then Result := fLess
+            if GetItemFileSize(P1) < GetItemFileSize(P2) then Result := fLess
               else
-            if P1.Size > P2.Size then Result := fGreater
+            if GetItemFileSize(P1) > GetItemFileSize(P2) then Result := fGreater
               else ; // fallback
 
           dvType:
@@ -2972,10 +2980,7 @@ function TDirView.ItemFileSize(Item: TListItem): Int64;
 begin
   Result := 0;
   if Assigned(Item) and Assigned(Item.Data) then
-    with PFileRec(Item.Data)^ do
-      if Size >= 0 then Result := Size
-        else
-      if CalculatedSize >= 0 then Result := CalculatedSize;
+    Result := GetItemFileSize(PFileRec(Item.Data));
 end;
 
 function TDirView.ItemFileTime(Item: TListItem;

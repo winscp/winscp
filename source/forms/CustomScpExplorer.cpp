@@ -11701,7 +11701,7 @@ void TCustomScpExplorerForm::CalculateDirectorySizes()
 
   if (Side == osLocal)
   {
-    Terminal->CalculateLocalFilesSize(FileList.get(), Size, NULL, true, NULL, &CalculatedSizes);
+    ManagedSession->CalculateLocalFilesSize(FileList.get(), Size, NULL, true, NULL, &CalculatedSizes);
   }
   else
   {
