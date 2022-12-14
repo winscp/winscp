@@ -9255,7 +9255,16 @@ void __fastcall TCustomScpExplorerForm::UpdatesNoteClicked(TObject * /*Sender*/)
   if (CanDisplay)
   {
     Configuration->Usage->Inc(L"UpdateNotificationsClicked");
-    CheckForUpdates(true);
+    // Probably not needed as CheckForUpdates is blocking since we started using neon for HTTP implementation.
+    NonVisualDataModule->StartBusy();
+    try
+    {
+      CheckForUpdates(true);
+    }
+    __finally
+    {
+      NonVisualDataModule->EndBusy();
+    }
   }
   else
   {
