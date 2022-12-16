@@ -2706,10 +2706,14 @@ void TDesktopFontManager::UpdateControl(TControl * Control)
 
   // Neither CreateFontIndirect nor RestoreFont set  color, so we should should have the default set by TFont constructor here.
   DebugAssert(DesktopFont->Color == clWindowText);
-  // Preserve color (particularly white color of file panel font in dark mode)
-  DesktopFont->Color = PublicControl->Font->Color;
+  if (!SameFont(DesktopFont.get(), PublicControl->Font) ||
+      (DesktopFont->PixelsPerInch != PublicControl->Font->PixelsPerInch))
+  {
+    // Preserve color (particularly white color of file panel font in dark mode)
+    DesktopFont->Color = PublicControl->Font->Color;
 
-  PublicControl->Font->Assign(DesktopFont.get());
+    PublicControl->Font->Assign(DesktopFont.get());
+  }
 }
 //---------------------------------------------------------------------------
 void TDesktopFontManager::AddControl(TControl * Control)
