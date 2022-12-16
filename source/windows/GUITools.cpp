@@ -1164,6 +1164,7 @@ public:
     // Something keeps the reference behind otherwise and calls it on WM_SETTINGCHANGE.
     // Would make sense with TWebBrowserEx, which leaks. But it happens even with TWebBrowser.
     FCustomDoc->SetUIHandler(NULL);
+    FCustomDoc->Release();
   }
 
 protected:
@@ -1522,6 +1523,7 @@ void LoadBrowserDocument(TWebBrowserEx * WebBrowser, const UnicodeString & Docum
       DebugAlwaysTrue(PersistStreamInit != NULL))
   {
     PersistStreamInit->Load(static_cast<_di_IStream>(*DocumentStreamAdapter));
+    PersistStreamInit->Release();
   }
 }
 //---------------------------------------------------------------------------
