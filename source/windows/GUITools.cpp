@@ -1002,11 +1002,21 @@ UnicodeString FormatIncrementalSearchStatus(const UnicodeString & Text, bool Hav
 class TCustomDocHandler : public TComponent, public ::IDocHostUIHandler
 {
 public:
-  __fastcall TCustomDocHandler(TComponent * Owner) : TComponent(Owner)
+  __fastcall TCustomDocHandler(TComponent * Owner, ICustomDoc * CustomDoc) :
+    TComponent(Owner), FCustomDoc(CustomDoc)
   {
   }
 
+  virtual __fastcall ~TCustomDocHandler()
+  {
+    // Something keeps the reference behind otherwise and calls it on WM_SETTINGCHANGE.
+    // Would make sense with TWebBrowserEx, which leaks. But it happens even with TWebBrowser.
+    FCustomDoc->SetUIHandler(NULL);
+  }
+
 protected:
+  ICustomDoc * FCustomDoc;
+
   #pragma warn -hid
   virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID ClassId, void ** Intf)
   {
@@ -1287,7 +1297,7 @@ void HideBrowserScrollbars(TWebBrowserEx * WebBrowser)
       SUCCEEDED(WebBrowser->Document->QueryInterface(&CustomDoc)) &&
       DebugAlwaysTrue(CustomDoc != NULL))
   {
-    TCustomDocHandler * Handler = new TCustomDocHandler(WebBrowser);
+    TCustomDocHandler * Handler = new TCustomDocHandler(WebBrowser, CustomDoc);
     CustomDoc->SetUIHandler(Handler);
   }
 }
