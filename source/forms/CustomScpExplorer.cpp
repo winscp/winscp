@@ -11681,8 +11681,8 @@ void TCustomScpExplorerForm::CalculateDirectorySizes()
   TCalculateSizeOperation CalculateSizeOperation;
   TOperationSide Side = GetSide(osCurrent);
   TCustomDirView * ADirView = DirView(Side);
-  bool FullPath = IsSideLocalBrowser(Side);
-  std::unique_ptr<TStrings> AllFileList(ADirView->CreateFileList(false, FullPath, NULL, true));
+  bool LocalSide = IsSideLocalBrowser(Side);
+  std::unique_ptr<TStrings> AllFileList(ADirView->CreateFileList(false, LocalSide, NULL, true));
   std::unique_ptr<TStrings> FileList(new TStringList());
   for (int Index = 0; Index < AllFileList->Count; Index++)
   {
@@ -11708,8 +11708,10 @@ void TCustomScpExplorerForm::CalculateDirectorySizes()
   TCalculatedSizes CalculatedSizes;
   CalculateSizeOperation.Stats.CalculatedSizes = &CalculatedSizes;
 
-  if (Side == osLocal)
+  if (LocalSide)
   {
+    TValueRestorer<TOperationSide> ProgressSideRestorer(FProgressSide);
+    FProgressSide = FCurrentSide;
     ManagedSession->CalculateLocalFilesSize(FileList.get(), Size, NULL, true, NULL, &CalculatedSizes);
   }
   else
