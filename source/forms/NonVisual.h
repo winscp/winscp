@@ -691,6 +691,11 @@ __published:    // IDE-managed Components
   TTBXSeparatorItem *TBXSeparatorItem19;
   TTBXItem *TBXItem111;
   TAction *CalculateDirectorySizesAction;
+  TAction *LocalCalculateDirectorySizesAction;
+  TAction *RemoteCalculateDirectorySizesAction;
+  TTBXItem *RemoteCalculateDirectorySizesPopupItem;
+  TTBXItem *LocalCalculateDirectorySizesPopupItem;
+  TTBXItem *TBXItem112;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);

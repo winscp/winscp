@@ -2247,6 +2247,16 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Create file|Create new file and open it in editor'
       ImageIndex = 77
     end
+    object RemoteCalculateDirectorySizesAction: TAction
+      Tag = 12
+      Category = 'Remote Selected Operation'
+      Caption = '&Calculate Directory Sizes'
+      HelpKeyword = 'ui_file_panel#directory_sizes'
+      Hint = 
+        'Calculate sizes of the selected directories and display them in ' +
+        'the file panel'
+      ShortCut = 40973
+    end
     object LocalNewFileAction: TAction
       Tag = 15
       Category = 'Local Selected Operation'
@@ -2343,6 +2353,16 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Move'
       Hint = 'Move the selected file(s) to another directory or rename them'
       ImageIndex = 113
+    end
+    object LocalCalculateDirectorySizesAction: TAction
+      Tag = 12
+      Category = 'Local Selected Operation'
+      Caption = '&Calculate Directory Sizes'
+      HelpKeyword = 'ui_file_panel#directory_sizes'
+      Hint = 
+        'Calculate sizes of the selected directories and display them in ' +
+        'the file panel'
+      ShortCut = 40973
     end
     object LocalLocalCopyFocusedAction: TAction
       Tag = 8
@@ -2822,6 +2842,9 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = FormatSizeBytesShortAction
       end
     end
+    object LocalCalculateDirectorySizesPopupItem: TTBXItem
+      Action = LocalCalculateDirectorySizesAction
+    end
     object TBXSeparatorItem8: TTBXSeparatorItem
     end
     object Showcolumns3: TTBXSubmenuItem
@@ -2843,6 +2866,9 @@ object NonVisualDataModule: TNonVisualDataModule
       object Attributes3: TTBXItem
         Action = ShowHideLocalAttrColumnAction2
       end
+    end
+    object TBXItem112: TTBXItem
+      Action = RemoteCalculateDirectorySizesAction
     end
   end
   object RemoteDirViewColumnPopup: TTBXPopupMenu
@@ -2879,6 +2905,9 @@ object NonVisualDataModule: TNonVisualDataModule
       object TBXItem55: TTBXItem
         Action = FormatSizeBytesShortAction
       end
+    end
+    object RemoteCalculateDirectorySizesPopupItem: TTBXItem
+      Action = RemoteCalculateDirectorySizesAction
     end
     object TBXSeparatorItem7: TTBXSeparatorItem
     end

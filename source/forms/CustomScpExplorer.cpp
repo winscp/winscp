@@ -5633,18 +5633,18 @@ void __fastcall TCustomScpExplorerForm::DirViewColumnRightClick(
   if (Sender == DirView(osOther))
   {
     DirViewColumnMenu = NonVisualDataModule->RemoteDirViewColumnPopup;
-    NonVisualDataModule->RemoteSortByExtColumnPopupItem->Visible =
-      (Column->Index == uvName);
-    NonVisualDataModule->RemoteFormatSizeBytesPopupItem->Visible =
-      (Column->Index == uvSize);
+    NonVisualDataModule->RemoteSortByExtColumnPopupItem->Visible = (Column->Index == uvName);
+    bool SizeColumn = (Column->Index == uvSize);
+    NonVisualDataModule->RemoteFormatSizeBytesPopupItem->Visible = SizeColumn;
+    NonVisualDataModule->RemoteCalculateDirectorySizesPopupItem->Visible = SizeColumn;
   }
   else
   {
     DirViewColumnMenu = NonVisualDataModule->LocalDirViewColumnPopup;
-    NonVisualDataModule->LocalSortByExtColumnPopupItem->Visible =
-      (Column->Index == dvName);
-    NonVisualDataModule->LocalFormatSizeBytesPopupItem->Visible =
-      (Column->Index == dvSize);
+    NonVisualDataModule->LocalSortByExtColumnPopupItem->Visible = (Column->Index == dvName);
+    bool SizeColumn = (Column->Index == dvSize);
+    NonVisualDataModule->LocalFormatSizeBytesPopupItem->Visible = SizeColumn;
+    NonVisualDataModule->LocalCalculateDirectorySizesPopupItem->Visible = SizeColumn;
   }
 
   TCustomListView * ListView = DebugNotNull(dynamic_cast<TCustomListView *>(Sender));
@@ -11676,10 +11676,10 @@ struct TCalculateSizeOperation
   size_t Index;
 };
 //---------------------------------------------------------------------------
-void TCustomScpExplorerForm::CalculateDirectorySizes()
+void TCustomScpExplorerForm::CalculateDirectorySizes(TOperationSide Side)
 {
   TCalculateSizeOperation CalculateSizeOperation;
-  TOperationSide Side = GetSide(osCurrent);
+  Side = GetSide(Side);
   TCustomDirView * ADirView = DirView(Side);
   bool LocalSide = IsSideLocalBrowser(Side);
   std::unique_ptr<TStrings> AllFileList(ADirView->CreateFileList(false, LocalSide, NULL, true));
@@ -11711,7 +11711,7 @@ void TCustomScpExplorerForm::CalculateDirectorySizes()
   if (LocalSide)
   {
     TValueRestorer<TOperationSide> ProgressSideRestorer(FProgressSide);
-    FProgressSide = FCurrentSide;
+    FProgressSide = Side;
     ManagedSession->CalculateLocalFilesSize(FileList.get(), Size, NULL, true, NULL, &CalculatedSizes);
   }
   else

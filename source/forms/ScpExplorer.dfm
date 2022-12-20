@@ -690,9 +690,19 @@ inherited ScpExplorerForm: TScpExplorerForm
       object TBXItem58: TTBXItem
         Action = NonVisualDataModule.RemoteDeleteAction2
       end
-      object TBXItem59: TTBXItem
+      object TBXItem59: TTBXSubmenuItem
         Action = NonVisualDataModule.RemotePropertiesAction2
         DisplayMode = nbdmImageAndText
+        DropdownCombo = True
+        object TBXItem90: TTBXItem
+          Action = NonVisualDataModule.RemotePropertiesAction2
+          Options = [tboDefault]
+        end
+        object TBXSeparatorItem29: TTBXSeparatorItem
+        end
+        object TBXItem22: TTBXItem
+          Action = NonVisualDataModule.RemoteCalculateDirectorySizesAction
+        end
       end
       object TBXItem60: TTBXItem
         Action = NonVisualDataModule.RemoteRenameAction2

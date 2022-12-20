@@ -210,6 +210,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(LocalLocalMoveAction, ScpExplorer->IsLocalBrowserMode() && EnabledLocalSelectedOperation)
   UPD(LocalOtherCopyAction, EnabledOtherSelectedOperation)
   UPD(LocalOtherMoveAction, EnabledOtherSelectedOperation)
+  UPD(LocalCalculateDirectorySizesAction, EnabledLocalSelectedOperation)
   // local focused operation
   UPDEX1(LocalCopyFocusedAction, HasTerminal && EnabledLocalFocusedOperation, Action->Visible = !ScpExplorer->IsLocalBrowserMode())
   UPD(LocalCopyFocusedQueueAction, HasTerminal && EnabledLocalFocusedOperation && ScpExplorer->Terminal->IsCapable[fcBackgroundTransfers])
@@ -231,6 +232,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(RemoteDeleteAction2, EnabledRemoteSelectedOperation || EnabledOtherSelectedOperation)
   UPD(RemotePropertiesAction2, EnabledRemoteSelectedOperation || EnabledOtherSelectedOperation)
   UPD(RemoteAddEditLinkAction3, ScpExplorer->CanAddEditLink(osRemote))
+  UPD(RemoteCalculateDirectorySizesAction, EnabledRemoteSelectedOperation || EnabledOtherSelectedOperation)
   // remote focused operation
   UPD(RemoteCopyFocusedAction, EnabledRemoteFocusedOperation)
   UPD(RemoteCopyFocusedQueueAction, EnabledRemoteFocusedOperation && ScpExplorer->Terminal->IsCapable[fcBackgroundTransfers])
@@ -549,7 +551,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(FileListFromClipboardAction, ScpExplorer->FileListFromClipboard())
     EXE(LockAction, ScpExplorer->ExecuteFileOperationCommand(foLock, osCurrent, false))
     EXE(UnlockAction, ScpExplorer->ExecuteFileOperationCommand(foUnlock, osCurrent, false))
-    EXE(CalculateDirectorySizesAction, ScpExplorer->CalculateDirectorySizes())
+    EXE(CalculateDirectorySizesAction, ScpExplorer->CalculateDirectorySizes(osCurrent))
     // local selected operation
     EXE(LocalCopyAction, ScpExplorer->ExecuteCopyOperationCommand(osLocal, false, ShortCutFlag))
     EXE(LocalCopyQueueAction, ScpExplorer->ExecuteCopyOperationCommand(osLocal, false, cocQueue))
@@ -566,6 +568,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(LocalLocalMoveAction, ScpExplorer->LocalLocalCopyCommand(foMove, osLocal, false, ShortCutFlag))
     EXE(LocalOtherCopyAction, ScpExplorer->LocalLocalCopyCommand(foCopy, osOther, false, ShortCutFlag))
     EXE(LocalOtherMoveAction, ScpExplorer->LocalLocalCopyCommand(foMove, osOther, false, ShortCutFlag))
+    EXE(LocalCalculateDirectorySizesAction, ScpExplorer->CalculateDirectorySizes(osLocal))
     // local focused operation
     EXE(LocalCopyFocusedAction, ScpExplorer->ExecuteCopyOperationCommand(osLocal, true, ShortCutFlag))
     EXE(LocalCopyFocusedQueueAction, ScpExplorer->ExecuteCopyOperationCommand(osLocal, true, cocQueue))
@@ -587,6 +590,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(RemoteMoveToAction, ScpExplorer->ExecuteFileOperationCommand(foRemoteMove, osCurrent, false))
     EXE(RemoteCopyToAction, ScpExplorer->ExecuteFileOperationCommand(foRemoteCopy, osCurrent, false))
     EXE(RemoteAddEditLinkAction3, ScpExplorer->AddEditLink(osRemote, false))
+    EXE(RemoteCalculateDirectorySizesAction, ScpExplorer->CalculateDirectorySizes(osRemote))
     // remote focused operation
     EXE(RemoteCopyFocusedAction, ScpExplorer->ExecuteCopyOperationCommand(osRemote, true, ShortCutFlag))
     EXE(RemoteCopyFocusedQueueAction, ScpExplorer->ExecuteCopyOperationCommand(osRemote, true, cocQueue))

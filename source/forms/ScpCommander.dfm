@@ -1384,9 +1384,19 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem240: TTBXItem
           Action = NonVisualDataModule.RemoteRenameAction2
         end
-        object TBXItem243: TTBXItem
+        object TBXItem243: TTBXSubmenuItem
           Action = NonVisualDataModule.RemotePropertiesAction2
           DisplayMode = nbdmImageAndText
+          DropdownCombo = True
+          object TBXItem259: TTBXItem
+            Action = NonVisualDataModule.RemotePropertiesAction2
+            Options = [tboDefault]
+          end
+          object TBXSeparatorItem71: TTBXSeparatorItem
+          end
+          object TBXItem260: TTBXItem
+            Action = NonVisualDataModule.RemoteCalculateDirectorySizesAction
+          end
         end
         object TBXSeparatorItem56: TTBXSeparatorItem
         end
@@ -1408,11 +1418,11 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
       end
       object RemoteSelectionToolbar: TTBXToolbar
-        Left = 370
-        Top = 53
+        Left = 295
+        Top = 27
         Caption = 'Remote Selection'
-        DockPos = 347
-        DockRow = 2
+        DockPos = 282
+        DockRow = 1
         Images = GlyphsModule.ExplorerImages
         Options = [tboShowHint]
         ParentShowHint = False
@@ -1733,9 +1743,19 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem233: TTBXItem
           Action = NonVisualDataModule.LocalRenameAction2
         end
-        object TBXItem236: TTBXItem
+        object TBXItem236: TTBXSubmenuItem
           Action = NonVisualDataModule.LocalPropertiesAction2
           DisplayMode = nbdmImageAndText
+          DropdownCombo = True
+          object TBXItem258: TTBXItem
+            Action = NonVisualDataModule.LocalPropertiesAction2
+            Options = [tboDefault]
+          end
+          object TBXSeparatorItem70: TTBXSeparatorItem
+          end
+          object TBXItem113: TTBXItem
+            Action = NonVisualDataModule.LocalCalculateDirectorySizesAction
+          end
         end
         object TBXSeparatorItem35: TTBXSeparatorItem
         end
@@ -1757,11 +1777,11 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
       end
       object LocalSelectionToolbar: TTBXToolbar
-        Left = 353
-        Top = 53
+        Left = 217
+        Top = 27
         Caption = 'Local Selection'
-        DockPos = 329
-        DockRow = 2
+        DockPos = 217
+        DockRow = 1
         Images = GlyphsModule.ExplorerImages
         Options = [tboShowHint]
         ParentShowHint = False
