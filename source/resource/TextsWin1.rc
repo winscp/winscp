@@ -679,7 +679,7 @@ BEGIN
         LOGIN_KEY_WITH_CERTIFICATE, "**This key contains an OpenSSH certificate.**\nIt is not supposed to be added to OpenSSH authorized_keys file."
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
-        WINSCP_COPYRIGHT, "Copyright © 2000–2022 Martin Prikryl"
+        WINSCP_COPYRIGHT, "Copyright © 2000–2023 Martin Prikryl"
         HOMEPAGE_URL, "https://winscp.net/"
         HISTORY_URL, "https://winscp.net/eng/docs/history"
         FORUM_URL, "https://winscp.net/forum/"
