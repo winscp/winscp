@@ -17,6 +17,7 @@ struct TPrivateKey;
 TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const UnicodeString & Passphrase);
 UnicodeString TestKey(TKeyType KeyType, const UnicodeString & FileName);
 void ChangeKeyComment(TPrivateKey * PrivateKey, const UnicodeString & Comment);
+void AddCertificateToKey(TPrivateKey * PrivateKey, const UnicodeString & CertificateFileName);
 void SaveKey(TKeyType KeyType, const UnicodeString & FileName,
   const UnicodeString & Passphrase, TPrivateKey * PrivateKey);
 void FreeKey(TPrivateKey * PrivateKey);

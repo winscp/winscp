@@ -278,7 +278,7 @@
 #define USAGE_RAWSETTINGS       1565
 #define USAGE_UPDATE            1566
 #define USAGE_HELP              1567
-#define USAGE_KEYGEN            1568
+#define USAGE_KEYGEN2           1568
 #define KEYGEN_PASSPHRASE       1569
 #define KEYGEN_PASSPHRASE2      1570
 #define KEYGEN_SAVED            1571

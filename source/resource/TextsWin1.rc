@@ -283,7 +283,7 @@ BEGIN
         USAGE_RAWSETTINGS, "Configures any session settings using a raw format as in an INI file."
         USAGE_UPDATE, "Queries application homepage for updates."
         USAGE_HELP, "Prints this usage."
-        USAGE_KEYGEN, "Converts private key to .ppk format or edits key. Use %s to specify output file. Use %s to change or set passphrase. Use %s to change or set comment."
+        USAGE_KEYGEN2, "Converts private key to .ppk format or edits key. Use %s to specify output file. Use %s to change or set passphrase. Use %s to change or set comment. Use %s to add certificate."
         KEYGEN_PASSPHRASE, "Enter passphrase to save key:"
         KEYGEN_PASSPHRASE2, "Re-enter passphrase to verify:"
         KEYGEN_SAVED, "Key saved to \"%s\"."

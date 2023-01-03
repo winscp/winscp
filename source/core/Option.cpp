@@ -69,8 +69,14 @@ void __fastcall TOptions::Add(UnicodeString Value)
           ValueDelimiter = Value[Index];
           break;
         }
-        // this is to treat /home/martin as parameter, not as switch
-        else if ((Value[Index] != L'?') && !IsLetter(Value[Index]))
+        // This is to treat /home/martin as parameter, not as switch.
+        else if ((Value[Index] == L'?') ||
+                 IsLetter(Value[Index]) ||
+                 ((Index == 2) && (Value[1] == L'-') && (Value[Index] == L'-'))) // allow --certificate
+        {
+          // noop
+        }
+        else
         {
           Switch = false;
           break;

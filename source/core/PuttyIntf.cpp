@@ -821,6 +821,111 @@ void ChangeKeyComment(TPrivateKey * PrivateKey, const UnicodeString & Comment)
   Ssh2Key->comment = dupstr(AnsiComment.c_str());
 }
 //---------------------------------------------------------------------------
+// Based on cmdgen.c
+void AddCertificateToKey(TPrivateKey * PrivateKey, const UnicodeString & CertificateFileName)
+{
+  struct ssh2_userkey * Ssh2Key = reinterpret_cast<struct ssh2_userkey *>(PrivateKey);
+
+  TKeyType Type = KeyType(CertificateFileName);
+  int Error = errno;
+  if ((Type != SSH_KEYTYPE_SSH2_PUBLIC_RFC4716) &&
+      (Type != SSH_KEYTYPE_SSH2_PUBLIC_OPENSSH))
+  {
+    if (Type == ktUnopenable)
+    {
+      throw EOSExtException(FMTLOAD(CERTIFICATE_UNOPENABLE, (CertificateFileName)), Error);
+    }
+    else
+    {
+      throw Exception(FMTLOAD(KEYGEN_NOT_PUBLIC, (CertificateFileName)));
+    }
+  }
+
+  UTF8String UtfCertificateFileName = UTF8String(CertificateFileName);
+  Filename * CertFilename = filename_from_str(UtfCertificateFileName.c_str());
+
+  LoadedFile * CertLoadedFile;
+  try
+  {
+    const char * ErrorStr = NULL;
+    CertLoadedFile = lf_load_keyfile(CertFilename, &ErrorStr);
+    if (CertLoadedFile == NULL)
+    {
+      // not capturing errno, as this in unlikely file access error, after we have passed KeyType above
+      throw ExtException(FMTLOAD(CERTIFICATE_UNOPENABLE, (CertificateFileName)), Error);
+    }
+  }
+  __finally
+  {
+    filename_free(CertFilename);
+  }
+
+  strbuf * Pub = strbuf_new();
+  char * AlgorithmName = NULL;
+  try
+  {
+    const char * ErrorStr = NULL;
+    char * CommentStr = NULL;
+    if (!ppk_loadpub_s(BinarySource_UPCAST(CertLoadedFile), &AlgorithmName,
+                       BinarySink_UPCAST(Pub), &CommentStr, &ErrorStr))
+    {
+      UnicodeString Error = AnsiString(ErrorStr);
+      throw ExtException(FMTLOAD(CERTIFICATE_LOAD_ERROR, (CertificateFileName)), Error);
+    }
+    sfree(CommentStr);
+  }
+  __finally
+  {
+    lf_free(CertLoadedFile);
+  }
+
+  const ssh_keyalg * KeyAlg;
+  try
+  {
+    KeyAlg = find_pubkey_alg(AlgorithmName);
+    if (KeyAlg == NULL)
+    {
+      throw Exception(FMTLOAD(PUB_KEY_UNKNOWN, (AlgorithmName)));
+    }
+
+    // Check the two public keys match apart from certificates
+    strbuf * OldBasePub = strbuf_new();
+    ssh_key_public_blob(ssh_key_base_key(Ssh2Key->key), BinarySink_UPCAST(OldBasePub));
+
+    ssh_key * NewPubKey = ssh_key_new_pub(KeyAlg, ptrlen_from_strbuf(Pub));
+    strbuf * NewBasePub = strbuf_new();
+    ssh_key_public_blob(ssh_key_base_key(NewPubKey), BinarySink_UPCAST(NewBasePub));
+    ssh_key_free(NewPubKey);
+
+    bool Match = ptrlen_eq_ptrlen(ptrlen_from_strbuf(OldBasePub), ptrlen_from_strbuf(NewBasePub));
+    strbuf_free(OldBasePub);
+    strbuf_free(NewBasePub);
+
+    if (!Match)
+    {
+      throw Exception(FMTLOAD(CERTIFICATE_NOT_MATCH, (CertificateFileName)));
+    }
+
+    strbuf * Priv = strbuf_new_nm();
+    ssh_key_private_blob(Ssh2Key->key, BinarySink_UPCAST(Priv));
+    ssh_key * NewKey = ssh_key_new_priv(KeyAlg, ptrlen_from_strbuf(Pub), ptrlen_from_strbuf(Priv));
+    strbuf_free(Priv);
+
+    if (NewKey == NULL)
+    {
+      throw Exception(FMTLOAD(CERTIFICATE_CANNOT_COMBINE, (CertificateFileName)));
+    }
+
+    ssh_key_free(Ssh2Key->key);
+    Ssh2Key->key = NewKey;
+  }
+  __finally
+  {
+    strbuf_free(Pub);
+    sfree(AlgorithmName);
+  }
+}
+//---------------------------------------------------------------------------
 void SaveKey(TKeyType KeyType, const UnicodeString & FileName,
   const UnicodeString & Passphrase, TPrivateKey * PrivateKey)
 {
@@ -1053,7 +1158,7 @@ UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const s
       Algorithm = find_pubkey_alg_winscp_host(AlgorithmName);
       if (Algorithm == NULL)
       {
-        throw Exception(FORMAT(L"Unknown public key algorithm \"%s\".", (AlgorithmName)));
+        throw Exception(FMTLOAD(PUB_KEY_UNKNOWN, (AlgorithmName)));
       }
 
       ptrlen PtrLen = { PubBlobBuf->s, PubBlobBuf->len };
