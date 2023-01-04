@@ -1275,6 +1275,24 @@ static void __fastcall ConvertKey(UnicodeString & FileName, TKeyType Type)
 
   try
   {
+    AppLogFmt(L"Loaded key from \"%s\".", (FileName));
+
+    UnicodeString CertificateMessage;
+    UnicodeString CertificateFileName = FileName + L"-cert.pub";
+    if (FileExists(CertificateFileName))
+    {
+      try
+      {
+        AddCertificateToKey(PrivateKey, CertificateFileName);
+        AppLogFmt(L"Added certificate from auto-detected \"%s\".", (CertificateFileName));
+        CertificateMessage = L"\n" + FMTLOAD(CERTIFICATE_ADDED, (CertificateFileName));
+      }
+      catch (Exception & E)
+      {
+        AppLogFmt(L"Cannot add certificate from auto-detected \"%s\": %s", (CertificateFileName, E.Message));
+      }
+    }
+
     FileName = GetConvertedKeyFileName(FileName);
 
     if (!SaveDialog(LoadStr(CONVERTKEY_SAVE_TITLE), LoadStr(CONVERTKEY_SAVE_FILTER), PuttyKeyExt, FileName))
@@ -1283,8 +1301,12 @@ static void __fastcall ConvertKey(UnicodeString & FileName, TKeyType Type)
     }
 
     SaveKey(ktSSH2, FileName, Passphrase, PrivateKey);
+    AppLogFmt(L"Saved converted key to \"%s\".", (FileName));
 
-    MessageDialog(MainInstructions(FMTLOAD(CONVERTKEY_SAVED, (FileName))), qtInformation, qaOK);
+    UnicodeString Message =
+      MainInstructions(FMTLOAD(CONVERTKEY_SAVED, (FileName))) +
+      CertificateMessage;
+    MessageDialog(Message, qtInformation, qaOK);
   }
   __finally
   {

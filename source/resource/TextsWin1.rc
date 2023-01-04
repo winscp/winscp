@@ -677,6 +677,7 @@ BEGIN
         KEX_NAME_RSA, "RSA-based key exchange"
         KEX_NAME_ECDH, "ECDH key exchange"
         LOGIN_KEY_WITH_CERTIFICATE, "**This key contains an OpenSSH certificate.**\nIt is not supposed to be added to OpenSSH authorized_keys file."
+        CERTIFICATE_ADDED, "Matching certificate was detected in '%s' and added to the converted key file."
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000–2023 Martin Prikryl"
