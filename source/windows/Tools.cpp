@@ -1255,6 +1255,32 @@ UnicodeString GetConvertedKeyFileName(const UnicodeString & FileName)
   return ChangeFileExt(FileName, FORMAT(L".%s", (PuttyKeyExt)));
 }
 //---------------------------------------------------------------------------
+UnicodeString AddMatchingKeyCertificate(TPrivateKey * PrivateKey, const UnicodeString & FileName)
+{
+  UnicodeString CertificateFileName = FileName;
+  UnicodeString S = FORMAT(L".%s", (PuttyKeyExt));
+  if (EndsText(S, CertificateFileName))
+  {
+    CertificateFileName.SetLength(CertificateFileName.Length() - S.Length());
+  }
+  CertificateFileName += L"-cert.pub";
+
+  UnicodeString Result;
+  if (FileExists(CertificateFileName))
+  {
+    try
+    {
+      AddCertificateToKey(PrivateKey, CertificateFileName);
+      Result = CertificateFileName;
+    }
+    catch (Exception & E)
+    {
+      AppLogFmt(L"Cannot add certificate from auto-detected \"%s\": %s", (CertificateFileName, E.Message));
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 static void __fastcall ConvertKey(UnicodeString & FileName, TKeyType Type)
 {
   UnicodeString Passphrase;
@@ -1278,19 +1304,11 @@ static void __fastcall ConvertKey(UnicodeString & FileName, TKeyType Type)
     AppLogFmt(L"Loaded key from \"%s\".", (FileName));
 
     UnicodeString CertificateMessage;
-    UnicodeString CertificateFileName = FileName + L"-cert.pub";
-    if (FileExists(CertificateFileName))
+    UnicodeString CertificateFileName = AddMatchingKeyCertificate(PrivateKey, FileName);
+    if (!CertificateFileName.IsEmpty())
     {
-      try
-      {
-        AddCertificateToKey(PrivateKey, CertificateFileName);
-        AppLogFmt(L"Added certificate from auto-detected \"%s\".", (CertificateFileName));
-        CertificateMessage = L"\n" + FMTLOAD(CERTIFICATE_ADDED, (CertificateFileName));
-      }
-      catch (Exception & E)
-      {
-        AppLogFmt(L"Cannot add certificate from auto-detected \"%s\": %s", (CertificateFileName, E.Message));
-      }
+      AppLogFmt(L"Added certificate from auto-detected \"%s\".", (CertificateFileName));
+      CertificateMessage = L"\n" + FMTLOAD(CERTIFICATE_ADDED, (CertificateFileName));
     }
 
     FileName = GetConvertedKeyFileName(FileName);

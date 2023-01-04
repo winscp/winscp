@@ -816,6 +816,20 @@ void __fastcall TSiteAdvancedDialog::UpdateNavigationTree()
   }
 }
 //---------------------------------------------------------------------
+bool TSiteAdvancedDialog::HasCertificate(const UnicodeString & FileName)
+{
+  bool Result = false;
+  try
+  {
+    UnicodeString UnusedComment;
+    GetPublicKeyLine(FileName, UnusedComment, Result);
+  }
+  catch (...)
+  {
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
 void __fastcall TSiteAdvancedDialog::UpdateControls()
 {
   if (Visible)
@@ -863,18 +877,10 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     if (PrivateKeyEdit3->Text != FLastPrivateKey)
     {
       FLastPrivateKey = PrivateKeyEdit3->Text;
-      FKeyHasCertificate = false;
-      if (PrivateKeyEdit3->Enabled && !FLastPrivateKey.IsEmpty())
-      {
-        try
-        {
-          UnicodeString UnusedComment;
-          GetPublicKeyLine(FLastPrivateKey, UnusedComment, FKeyHasCertificate);
-        }
-        catch (...)
-        {
-        }
-      }
+      FKeyHasCertificate =
+        PrivateKeyEdit3->Enabled &&
+        !FLastPrivateKey.IsEmpty() &&
+        HasCertificate(FLastPrivateKey);
     }
     EnableControl(PrivateKeyViewButton, PrivateKeyEdit3->Enabled && !PrivateKeyEdit3->Text.IsEmpty());
     EnableControl(DetachedCertificateEdit, PrivateKeyViewButton->Enabled && !FKeyHasCertificate);
@@ -1339,6 +1345,30 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyEdit3AfterDialog(TObject * Sender
   if (Name != Edit->Text)
   {
     VerifyAndConvertKey(Name, true);
+
+    if (!Name.IsEmpty() && !HasCertificate(Name))
+    {
+      try
+      {
+        UnicodeString FileName = ExpandEnvironmentVariables(Name);
+        TKeyType Type = KeyType(FileName);
+        // This gonna fail for encrypted keys
+        TPrivateKey * PrivateKey = LoadKey(Type, FileName, EmptyStr);
+        try
+        {
+          UnicodeString CertificateFileName = AddMatchingKeyCertificate(PrivateKey, FileName);
+          DetachedCertificateEdit->Text = CertificateFileName;
+        }
+        __finally
+        {
+          FreeKey(PrivateKey);
+        }
+      }
+      catch (Exception & E)
+      {
+        // swallow
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------

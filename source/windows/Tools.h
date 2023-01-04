@@ -72,6 +72,8 @@ void __fastcall ShutDownWindows();
 void __fastcall SuspendWindows();
 void __fastcall EditSelectBaseName(HWND Edit);
 UnicodeString GetConvertedKeyFileName(const UnicodeString & FileName);
+struct TPrivateKey;
+UnicodeString AddMatchingKeyCertificate(TPrivateKey * PrivateKey, const UnicodeString & FileName);
 void __fastcall VerifyAndConvertKey(UnicodeString & FileName, bool CanIgnore);
 void __fastcall VerifyKey(const UnicodeString & FileName);
 void __fastcall VerifyCertificate(const UnicodeString & FileName);

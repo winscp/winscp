@@ -379,6 +379,7 @@ private:
   UnicodeString __fastcall GetPuttySiteKey();
   void __fastcall ClosePuttySettings();
   void SerializePuttyRegistry(const UnicodeString & Key, TStrings * Values);
+  bool HasCertificate(const UnicodeString & FileName);
 
   INTERFACE_HOOK;
 };
