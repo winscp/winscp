@@ -427,6 +427,8 @@ void __fastcall TTerminalManager::TerminalThreadIdle(void * /*Data*/, TObject * 
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalManager::ConnectActiveTerminalImpl(bool Reopen)
 {
+  ActiveTerminal->CollectUsage();
+
   TTerminalPendingAction Action;
   bool Result;
   do
@@ -489,8 +491,6 @@ void __fastcall TTerminalManager::DisconnectActiveTerminalIfPermanentFreeOtherwi
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalManager::ConnectActiveTerminal()
 {
-  ActiveTerminal->CollectUsage();
-
   // add only stored sessions to the jump list,
   // ad-hoc session cannot be reproduced from just a session name
   if (StoredSessions->FindSame(ActiveTerminal->SessionData) != NULL)
