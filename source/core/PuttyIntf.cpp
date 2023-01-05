@@ -1227,21 +1227,55 @@ bool IsOpenSSH(const UnicodeString & SshImplementation)
     (SshImplementation.Pos(L"Sun_SSH") == 1);
 }
 //---------------------------------------------------------------------------
+// Same order as DefaultCipherList
+struct TCipherGroup
+{
+  int CipherGroup;
+  const ssh2_ciphers * Cipher;
+};
+TCipherGroup Ciphers[] =
+  {
+    { CIPHER_AES, &ssh2_aes },
+    { CIPHER_CHACHA20, &ssh2_ccp },
+    { CIPHER_AESGCM, &ssh2_aesgcm },
+    { CIPHER_3DES, &ssh2_3des },
+    { CIPHER_DES, &ssh2_des },
+    { CIPHER_BLOWFISH, &ssh2_blowfish },
+    { CIPHER_ARCFOUR, &ssh2_arcfour },
+  };
+//---------------------------------------------------------------------------
 TStrings * SshCipherList()
 {
   std::unique_ptr<TStrings> Result(new TStringList());
-  // Same order as DefaultCipherList
-  const ssh2_ciphers * Ciphers[] = {
-    &ssh2_aes, &ssh2_ccp, &ssh2_aesgcm, &ssh2_3des, &ssh2_des, &ssh2_blowfish, &ssh2_arcfour };
   for (unsigned int Index = 0; Index < LENOF(Ciphers); Index++)
   {
-    for (int Index2 = 0; Index2 < Ciphers[Index]->nciphers; Index2++)
+    const ssh2_ciphers * Cipher = Ciphers[Index].Cipher;
+    for (int Index2 = 0; Index2 < Cipher->nciphers; Index2++)
     {
-      UnicodeString Name = UnicodeString(Ciphers[Index]->list[Index2]->ssh2_id);
+      UnicodeString Name = UnicodeString(Cipher->list[Index2]->ssh2_id);
       Result->Add(Name);
     }
   }
   return Result.release();
+}
+//---------------------------------------------------------------------------
+int GetCipherGroup(const ssh_cipher * TheCipher)
+{
+  DebugAssert(strlen(TheCipher->vt->ssh2_id) > 0);
+  for (unsigned int Index = 0; Index < LENOF(Ciphers); Index++)
+  {
+    TCipherGroup & CipherGroup = Ciphers[Index];
+    const ssh2_ciphers * Cipher = CipherGroup.Cipher;
+    for (int Index2 = 0; Index2 < Cipher->nciphers; Index2++)
+    {
+      if (strcmp(TheCipher->vt->ssh2_id, Cipher->list[Index2]->ssh2_id) == 0)
+      {
+        return CipherGroup.CipherGroup;
+      }
+    }
+  }
+  DebugFail();
+  return -1;
 }
 //---------------------------------------------------------------------------
 TStrings * SshKexList()

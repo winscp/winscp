@@ -185,6 +185,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   for (int c = 0; c < CIPHER_COUNT; c++)
   {
     int pcipher;
+    // Update also CollectUsage
     switch (Data->Cipher[c]) {
       case cipWarn: pcipher = CIPHER_WARN; break;
       case cip3DES: pcipher = CIPHER_3DES; break;
@@ -2831,6 +2832,19 @@ void __fastcall TSecureShell::CollectUsage()
   else
   {
     Configuration->Usage->Inc(L"OpenedSessionsSSHOther");
+  }
+
+  int CipherGroup = GetCipherGroup(get_cscipher(FBackendHandle));
+  switch (CipherGroup)
+  {
+    case CIPHER_3DES: Configuration->Usage->Inc(L"OpenedSessionsSSHCipher3DES"); break;
+    case CIPHER_BLOWFISH: Configuration->Usage->Inc(L"OpenedSessionsSSHCipherBlowfish"); break;
+    case CIPHER_AES: Configuration->Usage->Inc(L"OpenedSessionsSSHCipherAES"); break;
+    case CIPHER_DES: Configuration->Usage->Inc(L"OpenedSessionsSSHDES"); break;
+    case CIPHER_ARCFOUR: Configuration->Usage->Inc(L"OpenedSessionsSSHArcfour"); break;
+    case CIPHER_CHACHA20: Configuration->Usage->Inc(L"OpenedSessionsSSHChaCha20"); break;
+    case CIPHER_AESGCM: Configuration->Usage->Inc(L"OpenedSessionsSSHAESGCM"); break;
+    default: DebugFail(); break;
   }
 }
 //---------------------------------------------------------------------------
