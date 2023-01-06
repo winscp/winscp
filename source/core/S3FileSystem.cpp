@@ -82,12 +82,6 @@ static void NeedS3Config()
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString GetS3Profile()
-{
-  NeedS3Config();
-  return S3Profile;
-}
-//---------------------------------------------------------------------------
 TStrings * GetS3Profiles()
 {
   NeedS3Config();
