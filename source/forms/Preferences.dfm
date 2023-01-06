@@ -515,13 +515,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 66
           Width = 389
-          Height = 232
-          Anchors = [akLeft, akTop, akRight, akBottom]
+          Height = 208
+          Anchors = [akLeft, akTop, akRight]
           Caption = 'User Interface'
           TabOrder = 1
           DesignSize = (
             389
-            232)
+            208)
           object CommanderDescriptionLabel2: TLabel
             Left = 132
             Top = 20
