@@ -221,6 +221,7 @@ __published:
   void __fastcall SessionsPageControlResize(TObject *Sender);
   void __fastcall SessionsPageControlTabHint(TPageControl *Sender, int Index, UnicodeString &Hint);
   void __fastcall MessageDockRequestDock(TObject *Sender, TTBCustomDockableWindow *Bar, bool &Accept);
+  void __fastcall QueueView3EndDrag(TObject *Sender, TObject *Target, int X, int Y);
 
 private:
   TManagedTerminal * FManagedSession;
@@ -259,6 +260,7 @@ private:
   bool FRefreshRemoteDirectory;
   TListItem * FQueueActedItem;
   TQueueController * FQueueController;
+  TListViewScrollOnDragOver * FQueueScrollOnDragOver;
   int FLastDropEffect;
   bool FPendingTempSpaceWarn;
   TEditorManager * FEditorManager;

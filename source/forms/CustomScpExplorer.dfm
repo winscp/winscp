@@ -261,6 +261,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       OnChange = QueueView3Change
       OnContextPopup = QueueView3ContextPopup
       OnDeletion = QueueView3Deletion
+      OnEndDrag = QueueView3EndDrag
       OnEnter = QueueView3Enter
       OnExit = QueueView3Exit
       OnDragDrop = QueueView3DragDrop

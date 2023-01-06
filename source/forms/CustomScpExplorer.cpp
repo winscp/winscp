@@ -232,6 +232,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FQueueStatusUpdating = false;
   FQueueActedItem = NULL;
   FQueueController = new TQueueController(QueueView3);
+  FQueueScrollOnDragOver = new TListViewScrollOnDragOver(QueueView3, true);
 
   FUserActionTimer = new TTimer(this);
   FUserActionTimer->Enabled = false;
@@ -347,6 +348,8 @@ __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
   DebugAssert(NonVisualDataModule && (NonVisualDataModule->ScpExplorer == this));
   NonVisualDataModule->ScpExplorer = NULL;
 
+  delete FQueueScrollOnDragOver;
+  FQueueScrollOnDragOver = NULL;
   delete FQueueController;
   FQueueController = NULL;
   delete FQueueStatusSection;
@@ -8478,6 +8481,13 @@ void __fastcall TCustomScpExplorerForm::QueueView3StartDrag(TObject * /*Sender*/
   TDragObject *& /*DragObject*/)
 {
   FQueueActedItem = QueueView3->ItemFocused;
+  FQueueScrollOnDragOver->StartDrag();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::QueueView3EndDrag(
+  TObject *, TObject * DebugUsedArg(Target), int DebugUsedArg(X), int DebugUsedArg(Y))
+{
+  FQueueScrollOnDragOver->EndDrag();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::QueueView3DragOver(TObject * /*Sender*/,
@@ -8499,6 +8509,7 @@ void __fastcall TCustomScpExplorerForm::QueueView3DragOver(TObject * /*Sender*/,
         (QueueItem->Status == TQueueItem::qsPending) &&
         (DestQueueItem->Status == TQueueItem::qsPending);
     }
+    FQueueScrollOnDragOver->DragOver(TPoint(X, Y));
   }
 }
 //---------------------------------------------------------------------------
