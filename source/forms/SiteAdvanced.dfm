@@ -2108,13 +2108,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 6
           Width = 393
-          Height = 158
+          Height = 222
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Key exchange algorithm options'
           TabOrder = 0
           DesignSize = (
             393
-            158)
+            222)
           object Label28: TLabel
             Left = 12
             Top = 19
@@ -2127,7 +2127,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Left = 12
             Top = 36
             Width = 285
-            Height = 89
+            Height = 153
             Anchors = [akLeft, akTop, akRight]
             DragMode = dmAutomatic
             ItemHeight = 13
@@ -2159,7 +2159,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object AuthGSSAPIKEXCheck: TCheckBox
             Left = 12
-            Top = 131
+            Top = 195
             Width = 285
             Height = 17
             Caption = 'Attempt &GSSAPI key exchange'
@@ -2169,7 +2169,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         end
         object KexReexchangeGroup: TGroupBox
           Left = 0
-          Top = 171
+          Top = 235
           Width = 393
           Height = 69
           Anchors = [akLeft, akTop, akRight]

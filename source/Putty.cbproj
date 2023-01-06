@@ -175,6 +175,9 @@
 		<CppCompile Include="putty\crypto\mpint.c">
 			<BuildOrder>28</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\crypto\ntru.c">
+			<BuildOrder>163</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\crypto\openssh-certs.c">
 			<BuildOrder>163</BuildOrder>
 		</CppCompile>

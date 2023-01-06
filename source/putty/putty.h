@@ -429,9 +429,7 @@ enum {
     KEX_DHGEX,
     KEX_RSA,
     KEX_ECDH,
-#ifndef WINSCP
     KEX_NTRU_HYBRID,
-#endif
     KEX_MAX
 };
 

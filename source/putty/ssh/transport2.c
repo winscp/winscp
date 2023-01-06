@@ -582,12 +582,10 @@ static void ssh2_write_kexinit_lists(
             preferred_kex[n_preferred_kex++] =
                 &ssh_ecdh_kex;
             break;
-          #ifndef WINSCP
           case KEX_NTRU_HYBRID:
             preferred_kex[n_preferred_kex++] =
                 &ssh_ntru_hybrid_kex;
             break;
-          #endif
           case KEX_WARN:
             /* Flag for later. Don't bother if it's the last in
              * the list. */

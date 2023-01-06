@@ -671,8 +671,9 @@
 #define KEX_NAME_DHGEX          6077
 #define KEX_NAME_RSA            6078
 #define KEX_NAME_ECDH           6079
-#define LOGIN_KEY_WITH_CERTIFICATE 6080
-#define CERTIFICATE_ADDED       6081
+#define KEX_NAME_NTRU_HYBRID    6080
+#define LOGIN_KEY_WITH_CERTIFICATE 6090
+#define CERTIFICATE_ADDED       6091
 
 // 2xxx is reserved for TextsFileZilla.h
 
