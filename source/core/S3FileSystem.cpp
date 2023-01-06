@@ -53,32 +53,42 @@ UnicodeString __fastcall S3LibDefaultRegion()
   return StrFromS3(S3_DEFAULT_REGION);
 }
 //---------------------------------------------------------------------------
-bool S3ConfigFileTried = false;
+UnicodeString S3ConfigFileName;
+TDateTime S3ConfigTimestamp;
 std::unique_ptr<TCustomIniFile> S3ConfigFile;
 UnicodeString S3Profile;
 //---------------------------------------------------------------------------
 static void NeedS3Config()
 {
-  if (!S3ConfigFileTried)
+  TGuard Guard(LibS3Section.get());
+  if (S3Profile.IsEmpty())
   {
-    S3ConfigFileTried = true;
-
     S3Profile = GetEnvironmentVariable(AWS_PROFILE);
     if (S3Profile.IsEmpty())
     {
       S3Profile = AWS_PROFILE_DEFAULT;
     }
+  }
 
-    UnicodeString ConfigFileName = GetEnvironmentVariable(AWS_CONFIG_FILE);
+  if (S3ConfigFileName.IsEmpty())
+  {
+    S3ConfigFileName = GetEnvironmentVariable(AWS_CONFIG_FILE);
     UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
     UnicodeString DefaultConfigFileName = IncludeTrailingBackslash(ProfilePath) + L".aws\\credentials";
-    // "aws" cli really prefers the default location over location specificed by AWS_CONFIG_FILE
+    // "aws" cli really prefers the default location over location specified by AWS_CONFIG_FILE
     if (FileExists(DefaultConfigFileName))
     {
-      ConfigFileName = DefaultConfigFileName;
+      S3ConfigFileName = DefaultConfigFileName;
     }
+  }
 
-    S3ConfigFile.reset(new TMemIniFile(ConfigFileName));
+  TDateTime Timestamp;
+  FileAge(S3ConfigFileName, Timestamp);
+  if (S3ConfigTimestamp != Timestamp)
+  {
+    S3ConfigTimestamp = Timestamp;
+    // TMemIniFile silently ignores empty paths or non-existing files
+    S3ConfigFile.reset(new TMemIniFile(S3ConfigFileName));
   }
 }
 //---------------------------------------------------------------------------
