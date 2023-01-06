@@ -1450,6 +1450,8 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(ActionsLogFileNameEdit, EnableActionsLoggingCheck->Checked);
     EnableControl(ActionsLogFileNameHintText, ActionsLogFileNameEdit->Enabled);
 
+    LogProtocolHintLabel->Visible = (LogProtocolCombo2->ItemIndex - BelowNormalLogLevels >= 2);
+
     // interface
     InterfaceChangeLabel->Visible =
       !CustomWinConfiguration->CanApplyInterfaceImmediately &&

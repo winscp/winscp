@@ -341,6 +341,7 @@ __published:
   TUpDownEdit *LocalPortNumberMinEdit;
   TUpDownEdit *LocalPortNumberMaxEdit;
   TCheckBox *AlwaysSortDirectoriesByNameCheck;
+  TLabel *LogProtocolHintLabel;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

@@ -55,7 +55,7 @@ object PreferencesDialog: TPreferencesDialog
       Top = 0
       Width = 413
       Height = 432
-      ActivePage = PreferencesSheet
+      ActivePage = LogSheet
       Align = alClient
       MultiLine = True
       Style = tsButtons
@@ -271,6 +271,18 @@ object PreferencesDialog: TPreferencesDialog
         DesignSize = (
           405
           422)
+        object LogProtocolHintLabel: TLabel
+          Left = 8
+          Top = 303
+          Width = 389
+          Height = 33
+          AutoSize = False
+          Caption = 
+            'The selected logging level severely degrades performance. Use it' +
+            ' when troubleshooting only.'
+          ShowAccelChar = False
+          WordWrap = True
+        end
         object LoggingGroup: TGroupBox
           Left = 8
           Top = 8
@@ -505,7 +517,7 @@ object PreferencesDialog: TPreferencesDialog
           422)
         object InterfaceChangeLabel: TLabel
           Left = 8
-          Top = 280
+          Top = 282
           Width = 177
           Height = 13
           Caption = 'Changes will apply on the next start.'
