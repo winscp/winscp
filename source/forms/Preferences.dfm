@@ -55,7 +55,7 @@ object PreferencesDialog: TPreferencesDialog
       Top = 0
       Width = 413
       Height = 432
-      ActivePage = LogSheet
+      ActivePage = PreferencesSheet
       Align = alClient
       MultiLine = True
       Style = tsButtons
