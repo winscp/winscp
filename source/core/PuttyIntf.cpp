@@ -1283,6 +1283,7 @@ TStrings * SshKexList()
   std::unique_ptr<TStrings> Result(new TStringList());
   // Same order as DefaultKexList
   const ssh_kexes * Kexes[] = {
+    &ssh_gssk5_ecdh_kex, &ssh_gssk5_sha2_kex, &ssh_gssk5_sha1_kex,
     &ssh_ntru_hybrid_kex, &ssh_ecdh_kex, &ssh_diffiehellman_gex,
     &ssh_diffiehellman_group18, &ssh_diffiehellman_group17, &ssh_diffiehellman_group16, &ssh_diffiehellman_group15, &ssh_diffiehellman_group14,
     &ssh_rsa_kex, &ssh_diffiehellman_group1 };
