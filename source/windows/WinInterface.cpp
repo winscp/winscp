@@ -1621,10 +1621,6 @@ void __fastcall WinInitialize()
   OnApiPath = ApiPath;
   MainThread = GetCurrentThreadId();
   Application->OnGetMainFormHandle = MakeMethod<TGetHandleEvent>(NULL, AppGetMainFormHandle);
-
-#pragma warn -8111
-#pragma warn .8111
-
 }
 //---------------------------------------------------------------------------
 void __fastcall WinFinalize()
