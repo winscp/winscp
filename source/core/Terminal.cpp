@@ -76,6 +76,7 @@ struct TMoveFileParams
 {
   UnicodeString Target;
   UnicodeString FileMask;
+  bool DontOverwrite;
 };
 //---------------------------------------------------------------------------
 struct TFilesFindParams
@@ -4038,6 +4039,7 @@ bool __fastcall TTerminal::RecycleFile(const UnicodeString & AFileName, const TR
     TMoveFileParams Params;
     Params.Target = SessionData->RecycleBinPath;
     Params.FileMask = FORMAT(L"*-%s.*", (FormatDateTime(L"yyyymmdd-hhnnss", Now())));
+    Params.DontOverwrite = false;
 
     Result = DoMoveFile(FileName, File, &Params);
 
@@ -4627,15 +4629,15 @@ void __fastcall TTerminal::RenameFile(const TRemoteFile * File, const UnicodeStr
   {
     FileModified(File, File->FileName);
     LogEvent(FORMAT(L"Renaming file \"%s\" to \"%s\".", (File->FileName, NewName)));
-    if (DoRenameFile(File->FileName, File, NewName, false))
+    if (DoRenameFile(File->FileName, File, NewName, false, false))
     {
       ReactOnCommand(fsRenameFile);
     }
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::DoRenameFile(const UnicodeString FileName, const TRemoteFile * File,
-  const UnicodeString NewName, bool Move)
+bool __fastcall TTerminal::DoRenameFile(
+  const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool Move, bool DontOverwrite)
 {
   // Can be foDelete when recycling (and overwrite should not happen in this case)
   bool IsBatchMove = (OperationProgress != NULL) && (OperationProgress->Operation == foRemoteMove);
@@ -4647,6 +4649,7 @@ bool __fastcall TTerminal::DoRenameFile(const UnicodeString FileName, const TRem
   std::unique_ptr<TRemoteFile> DuplicateFileOwner(DuplicateFile);
   if (BatchOverwrite == boNone)
   {
+    DebugAssert(!DontOverwrite); // unsupported combination
     Result = !FileExists(AbsoluteNewName);
     ExistenceKnown = true;
   }
@@ -4655,7 +4658,8 @@ bool __fastcall TTerminal::DoRenameFile(const UnicodeString FileName, const TRem
     // noop
   }
   else if (DebugAlwaysTrue(BatchOverwrite == boNo) &&
-           Configuration->ConfirmOverwriting)
+           Configuration->ConfirmOverwriting &&
+           !DontOverwrite)
   {
     FileExists(AbsoluteNewName, &DuplicateFile);
     DuplicateFileOwner.reset(DuplicateFile);
@@ -4722,7 +4726,7 @@ bool __fastcall TTerminal::DoRenameFile(const UnicodeString FileName, const TRem
 
   if (Result)
   {
-    if (!IsCapable[fcMoveOverExistingFile])
+    if (!IsCapable[fcMoveOverExistingFile] && !DontOverwrite)
     {
       if (!ExistenceKnown)
       {
@@ -4766,7 +4770,7 @@ bool __fastcall TTerminal::DoMoveFile(const UnicodeString & FileName, const TRem
     MaskFileName(UnixExtractFileName(FileName), Params.FileMask);
   LogEvent(FORMAT(L"Moving file \"%s\" to \"%s\".", (FileName, NewName)));
   FileModified(File, FileName);
-  bool Result = DoRenameFile(FileName, File, NewName, true);
+  bool Result = DoRenameFile(FileName, File, NewName, true, Params.DontOverwrite);
   if (Result)
   {
     ReactOnCommand(fsMoveFile);
@@ -4779,12 +4783,13 @@ void __fastcall TTerminal::MoveFile(const UnicodeString FileName, const TRemoteF
   DoMoveFile(FileName, File, Param);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::MoveFiles(TStrings * FileList, const UnicodeString Target,
-  const UnicodeString FileMask)
+bool __fastcall TTerminal::MoveFiles(
+  TStrings * FileList, const UnicodeString & Target, const UnicodeString & FileMask, bool DontOverwrite)
 {
   TMoveFileParams Params;
   Params.Target = Target;
   Params.FileMask = FileMask;
+  Params.DontOverwrite = DontOverwrite;
   bool Result;
   BeginTransaction();
   try
@@ -4877,6 +4882,7 @@ bool __fastcall TTerminal::CopyFiles(TStrings * FileList, const UnicodeString Ta
   TMoveFileParams Params;
   Params.Target = Target;
   Params.FileMask = FileMask;
+  Params.DontOverwrite = false; // not used
   DirectoryModified(Target, true);
   return ProcessFiles(FileList, foRemoteCopy, CopyFile, &Params);
 }

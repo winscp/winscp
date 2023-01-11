@@ -276,8 +276,8 @@ protected:
     int Params);
   void __fastcall DoCustomCommandOnFile(UnicodeString FileName,
     const TRemoteFile * File, UnicodeString Command, int Params, TCaptureOutputEvent OutputEvent);
-  bool __fastcall DoRenameFile(const UnicodeString FileName, const TRemoteFile * File,
-    const UnicodeString NewName, bool Move);
+  bool __fastcall DoRenameFile(
+    const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool Move, bool DontOverwrite);
   bool __fastcall DoMoveFile(const UnicodeString & FileName, const TRemoteFile * File, /*const TMoveFileParams*/ void * Param);
   void __fastcall DoCopyFile(const UnicodeString FileName, const TRemoteFile * File, const UnicodeString NewName);
   void __fastcall DoChangeFileProperties(const UnicodeString FileName,
@@ -565,8 +565,8 @@ public:
   void __fastcall RenameFile(const TRemoteFile * File, const UnicodeString & NewName);
   void __fastcall MoveFile(const UnicodeString FileName, const TRemoteFile * File,
     /*const TMoveFileParams*/ void * Param);
-  bool __fastcall MoveFiles(TStrings * FileList, const UnicodeString Target,
-    const UnicodeString FileMask);
+  bool __fastcall MoveFiles(
+    TStrings * FileList, const UnicodeString & Target, const UnicodeString & FileMask, bool DontOverwrite);
   void __fastcall CopyFile(const UnicodeString FileName, const TRemoteFile * File,
     /*const TMoveFileParams*/ void * Param);
   bool __fastcall CopyFiles(TStrings * FileList, const UnicodeString Target,

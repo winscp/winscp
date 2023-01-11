@@ -4468,7 +4468,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferFiles(
         {
           Configuration->Usage->Inc("RemoteMove");
 
-          Terminal->MoveFiles(FileList, Target, FileMask);
+          Terminal->MoveFiles(FileList, Target, FileMask, false);
         }
         else
         {
@@ -6198,7 +6198,7 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeMove(
     RemoteDirView->SaveSelectedNames();
     try
     {
-      Terminal->MoveFiles(FileList.get(), Target, FileMask);
+      Terminal->MoveFiles(FileList.get(), Target, FileMask, false);
     }
     catch(...)
     {

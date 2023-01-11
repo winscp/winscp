@@ -1393,7 +1393,8 @@ void __fastcall TScript::DoMvOrCp(TScriptProcParams * Parameters, TFSCapability 
     }
     else
     {
-      FTerminal->MoveFiles(FileList, TargetDirectory, FileMask);
+      bool DontOverwrite = true; // might use FConfirm eventually, but that would be breaking change
+      FTerminal->MoveFiles(FileList, TargetDirectory, FileMask, DontOverwrite);
     }
   }
   __finally
