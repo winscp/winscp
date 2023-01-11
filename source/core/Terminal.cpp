@@ -4637,7 +4637,7 @@ void __fastcall TTerminal::RenameFile(const TRemoteFile * File, const UnicodeStr
 bool __fastcall TTerminal::DoRenameFile(const UnicodeString FileName, const TRemoteFile * File,
   const UnicodeString NewName, bool Move)
 {
-  // Can be foDelete when recycling (ands overwrite should not happen in this case)
+  // Can be foDelete when recycling (and overwrite should not happen in this case)
   bool IsBatchMove = (OperationProgress != NULL) && (OperationProgress->Operation == foRemoteMove);
   TBatchOverwrite BatchOverwrite = (IsBatchMove ? OperationProgress->BatchOverwrite : boNo);
   UnicodeString AbsoluteNewName = AbsolutePath(NewName, true);
