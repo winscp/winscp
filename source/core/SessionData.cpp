@@ -5354,9 +5354,10 @@ THierarchicalStorage * __fastcall TStoredSessionList::CreateHostKeysStorageForWr
   return Storage.release();
 }
 //---------------------------------------------------------------------------
-void __fastcall TStoredSessionList::ImportHostKeys(
+int __fastcall TStoredSessionList::ImportHostKeys(
   THierarchicalStorage * SourceStorage, THierarchicalStorage * TargetStorage, TStoredSessionList * Sessions, bool OnlySelected)
 {
+  int Result = 0;
   if (OpenHostKeysSubKey(SourceStorage, false) &&
       OpenHostKeysSubKey(TargetStorage, true))
   {
@@ -5376,11 +5377,13 @@ void __fastcall TStoredSessionList::ImportHostKeys(
           if (EndsText(HostKeyName, KeyName))
           {
             TargetStorage->WriteStringRaw(KeyName, SourceStorage->ReadStringRaw(KeyName, L""));
+            Result++;
           }
         }
       }
     }
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TStoredSessionList::ImportHostKeys(

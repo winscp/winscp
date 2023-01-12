@@ -111,7 +111,11 @@ bool __fastcall ExportSessionToPutty(TSessionData * SessionData, bool ReuseExist
   if (Storage->OpenRootKey(true))
   {
     Result = ReuseExisting && Storage->KeyExists(SessionData->StorageKey);
-    if (!Result)
+    if (Result)
+    {
+      AppLogFmt(L"Reusing existing PuTTY session: %s", (SessionData->StorageKey));
+    }
+    else
     {
       std::unique_ptr<TRegistryStorage> SourceStorage(new TRegistryStorage(Configuration->PuttySessionsKey));
       SourceStorage->ConfigureForPutty();
@@ -144,6 +148,7 @@ bool __fastcall ExportSessionToPutty(TSessionData * SessionData, bool ReuseExist
       }
 
       ExportData->Save(Storage.get(), true);
+      AppLogFmt(L"Exported site settings to PuTTY session: %s", (SessionName));
     }
   }
   return Result;
@@ -290,6 +295,8 @@ void OpenSessionInPutty(TSessionData * SessionData)
   UnicodeString Program, AParams, Dir;
   SplitCommand(GUIConfiguration->PuttyPath, Program, AParams, Dir);
   Program = ExpandEnvironmentVariables(Program);
+  AppLogFmt(L"PuTTY program: %s", (Program));
+  AppLogFmt(L"Params: %s", (AParams));
   if (FindFile(Program))
   {
 
@@ -315,6 +322,7 @@ void OpenSessionInPutty(TSessionData * SessionData)
     UnicodeString Params =
       LocalCustomCommand.Complete(InteractiveCustomCommand.Complete(AParams, false), true);
     UnicodeString PuttyParams;
+    AppLogFmt(L"Expanded params: %s", (Params));
 
     if (!LocalCustomCommand.IsSiteCommand(AParams))
     {
@@ -327,7 +335,8 @@ void OpenSessionInPutty(TSessionData * SessionData)
         std::unique_ptr<TStoredSessionList> HostKeySessionList(new TStoredSessionList());
         HostKeySessionList->OwnsObjects = false;
         HostKeySessionList->Add(SessionData);
-        TStoredSessionList::ImportHostKeys(SourceHostKeyStorage.get(), TargetHostKeyStorage.get(), HostKeySessionList.get(), false);
+        int Imported = TStoredSessionList::ImportHostKeys(SourceHostKeyStorage.get(), TargetHostKeyStorage.get(), HostKeySessionList.get(), false);
+        AppLogFmt(L"Imported host keys: %d", (Imported));
       }
 
       if (IsUWP())
@@ -380,6 +389,8 @@ void OpenSessionInPutty(TSessionData * SessionData)
         {
           AddToList(PuttyParams, L"-6", L" ");
         }
+
+        AppLogFmt(L"Using command-line instead of stored session in UWP: %s", (PuttyParams));
       }
       else
       {
@@ -537,6 +548,7 @@ bool __fastcall CopyCommandToClipboard(const UnicodeString & Command)
   if (Result)
   {
     TInstantOperationVisualizer Visualizer;
+    AppLogFmt(L"Copied command to the clipboard: %s", (Command));
     CopyToClipboard(Command);
   }
   return Result;
@@ -570,6 +582,7 @@ static bool __fastcall DoExecuteShell(const UnicodeString Path, const UnicodeStr
     ExecuteInfo.lpDirectory = (ChangeWorkingDirectory ? Directory.c_str() : NULL);
     ExecuteInfo.nShow = SW_SHOW;
 
+    AppLogFmt(L"Executing program \"%s\" with params: %s", (Path, Params));
     Result = (ShellExecuteEx(&ExecuteInfo) != 0);
     if (Result)
     {

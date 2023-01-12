@@ -767,7 +767,7 @@ public:
   __property TSessionData * Sessions[int Index]  = { read=AtSession };
   __property TSessionData * DefaultSettings  = { read=FDefaultSettings, write=SetDefaultSettings };
 
-  static void __fastcall ImportHostKeys(
+  static int __fastcall ImportHostKeys(
     THierarchicalStorage * SourceStorage, THierarchicalStorage * TargetStorage, TStoredSessionList * Sessions, bool OnlySelected);
   static void __fastcall ImportHostKeys(
     const UnicodeString & SourceKey, TStoredSessionList * Sessions, bool OnlySelected);
