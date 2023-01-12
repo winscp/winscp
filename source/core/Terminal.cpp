@@ -8036,6 +8036,11 @@ void __fastcall TTerminal::CollectUsage()
     Configuration->Usage->Inc(L"OpenedSessionsEncrypted");
   }
 
+  if (SessionData->SendBuf == 0)
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsNoSendBuf");
+  }
+
   FCollectFileSystemUsage = true;
 }
 //---------------------------------------------------------------------------
