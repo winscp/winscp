@@ -162,6 +162,7 @@ private:
   void UnloadSSL();
   void PrintLastErrorMsg();
   bool HandleSession(SSL_SESSION * Session);
+  int ProcessSendBuffer();
 
   void TriggerEvents();
 
