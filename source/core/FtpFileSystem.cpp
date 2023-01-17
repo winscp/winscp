@@ -2816,6 +2816,9 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_MPEXT_COMPLETE_TLS_SHUTDOWN:
+      // As of FileZilla Server 1.6.1 this does not seem to be needed. It's still needed with 1.5.1.
+      // It was possibly fixed by 1.6.0 (2022-12-06) change:
+      // Fixed an issue in the networking code when dealing with TLS close_notify alerts
       Result = FFileZilla ? FALSE : TRUE;
       break;
 
