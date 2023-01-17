@@ -19,6 +19,7 @@
 #include <StrUtils.hpp>
 #include <DateUtils.hpp>
 #include <openssl/x509_vfy.h>
+#include <limits>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -2823,8 +2824,21 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_MPEXT_WORK_FROM_CWD:
-       Result = (FWorkFromCwd == asOn);
-       break;
+      Result = (FWorkFromCwd == asOn);
+      break;
+
+    case OPTION_MPEXT_TRANSFER_SIZE:
+      {
+        __int64 TransferSize = 0;
+        if ((FTerminal->OperationProgress != NULL) &&
+            (FTerminal->OperationProgress->Operation == foCopy) &&
+            (FTerminal->OperationProgress->Side == osLocal))
+        {
+          TransferSize = FTerminal->OperationProgress->TransferSize - FTerminal->OperationProgress->TransferredSize;
+        }
+        Result = static_cast<int>(static_cast<unsigned int>(TransferSize & std::numeric_limits<unsigned int>::max()));
+      }
+      break;
 
     default:
       DebugFail();
