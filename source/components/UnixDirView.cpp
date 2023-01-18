@@ -231,10 +231,12 @@ UnicodeString __fastcall TUnixDirView::ItemFileName(TListItem * Item)
 #endif
 }
 //---------------------------------------------------------------------------
+#ifndef DESIGN_ONLY
 inline __int64 GetItemFileSize(TRemoteFile * File)
 {
   return (File->CalculatedSize >= 0) ? File->CalculatedSize : File->Size;
 }
+#endif
 //---------------------------------------------------------------------------
 __int64 __fastcall TUnixDirView::ItemFileSize(TListItem * Item)
 {
