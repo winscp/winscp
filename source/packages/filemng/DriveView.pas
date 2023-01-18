@@ -44,7 +44,7 @@ uses
   Windows, Messages, SysUtils, Classes,  Graphics, Controls, Forms, ComObj,
   Dialogs, ComCtrls, ShellApi, CommCtrl, ExtCtrls, ActiveX,  ShlObj,
   DirView, ShellDialogs, DragDrop, DragDropFilesEx, FileChanges, FileOperator,
-  DiscMon, IEDriveInfo, IEListView, PIDL, BaseUtils, ListExt, CustomDirView,
+  DiscMon, IEDriveInfo, IEListView, PIDL, BaseUtils, CustomDirView,
   CustomDriveView, System.Generics.Collections;
 
 const

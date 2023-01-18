@@ -143,10 +143,6 @@
 			<BuildOrder>38</BuildOrder>
 			<BuildOrder>22</BuildOrder>
 		</DelphiCompile>
-		<DelphiCompile Include="packages\filemng\ListExt.pas">
-			<BuildOrder>56</BuildOrder>
-			<BuildOrder>2</BuildOrder>
-		</DelphiCompile>
 		<DelphiCompile Include="packages\filemng\ShellDialogs.pas">
 			<BuildOrder>41</BuildOrder>
 			<BuildOrder>3</BuildOrder>

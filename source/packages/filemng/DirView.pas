@@ -38,7 +38,7 @@ interface
 {$WARN SYMBOL_PLATFORM OFF}
 
 uses
-  Windows, ShlObj, ComCtrls, CompThread, CustomDirView, ListExt,
+  Windows, ShlObj, ComCtrls, CompThread, CustomDirView,
   ExtCtrls, Graphics, FileOperator, DiscMon, Classes, DirViewColProperties,
   DragDrop, Messages, ListViewColProperties, CommCtrl, DragDropFilesEx,
   FileCtrl, SysUtils, BaseUtils, Controls, CustomDriveView, System.Generics.Collections, Winapi.ShellAPI;
@@ -84,14 +84,6 @@ type
     CalculatedSize: Int64;
   end;
 
-  {Record for fileinfo caching:}
-  PInfoCache = ^TInfoCache;
-  TInfoCache = record
-    FileExt: string;
-    TypeName: string;
-    ImageIndex: Integer;
-  end;
-
 {Additional events:}
 type
   TDirViewFileSizeChanged = procedure(Sender: TObject; Item: TListItem) of object;
@@ -134,8 +126,6 @@ type
   private
     FConfirmDelete: Boolean;
     FConfirmOverwrite: Boolean;
-    FUseIconCache: Boolean;
-    FInfoCacheList: TListExt;
     FDriveView: TCustomDriveView;
     FChangeTimer: TTimer;
     FChangeInterval: Cardinal;
@@ -282,9 +272,6 @@ type
     procedure StopIconUpdateThread;
     procedure TerminateThreads;
 
-    {Other additional functions: }
-    procedure ClearIconCache;
-
     {Create a new subdirectory:}
     procedure CreateDirectory(DirName: string); override;
     {Delete all selected files:}
@@ -363,12 +350,6 @@ type
     {Fetch shell icons by thread:}
     property UseIconUpdateThread: Boolean
       read FUseIconUpdateThread write FUseIconUpdateThread default False;
-    {Enables or disables icon caching for registered file extensions. Caching enabled
-     enhances the performance but does not take care about installed icon handlers, wich
-     may modify the display icon for registered files. Only the iconindex is cached not the
-     icon itself:}
-    property UseIconCache: Boolean
-      read FUseIconCache write FUseIconCache default False;
     {Watch current directory for filename changes (create, rename, delete files)}
     property WatchForChanges;
 
@@ -425,14 +406,6 @@ procedure Register;
 begin
   RegisterComponents('DriveDir', [TDirView]);
 end; {Register}
-
-function CompareInfoCacheItems(I1, I2: Pointer): Integer;
-begin
-  if PInfoCache(I1)^.FileExt < PInfoCache(I2)^.FileExt then Result := fLess
-    else
-  if PInfoCache(I1)^.FileExt > PInfoCache(I2)^.FileExt then Result := fGreater
-    else Result := fEqual;
-end; {CompareInfoCacheItems}
 
 function MatchesFileExt(Ext: string; const FileExtList: string): Boolean;
 begin
@@ -825,9 +798,7 @@ constructor TDirView.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 
-  FInfoCacheList := TListExt.Create(SizeOf(TInfoCache));
   FDriveType := DRIVE_UNKNOWN;
-  FUseIconCache := False;
   FConfirmDelete := True;
   FParentFolder := nil;
   FDesktopFolder := nil;
@@ -871,7 +842,6 @@ begin
   if Assigned(PIDLRecycle) then FreePIDL(PIDLRecycle);
 
   FLastPath.Free;
-  FInfoCacheList.Free;
   FFileOperator.Free;
   FChangeTimer.Free;
 
@@ -1461,7 +1431,6 @@ begin
 
   finally
     //if Assigned(Animate) then Animate.Free;
-    FInfoCacheList.Sort(CompareInfoCacheItems);
   end; {Finally}
 end;
 
@@ -1759,12 +1728,6 @@ begin
     else inherited;
 end; {ReLoad}
 
-procedure TDirView.ClearIconCache;
-begin
-  if Assigned(FInfoCacheList) then
-    FInfoCacheList.Clear;
-end; {ClearIconCache}
-
 function TDirView.FormatFileTime(FileTime: TFileTime): string;
 begin
   Result := FormatDateTime(DateTimeFormatStr,
@@ -1811,9 +1774,6 @@ end;
 procedure TDirView.GetDisplayData(Item: TListItem; FetchIcon: Boolean);
 var
   FileInfo: TShFileInfo;
-  Index: Integer;
-  PExtItem: PInfoCache;
-  CacheItem: TInfoCache;
   IsSpecialExt: Boolean;
   ForceByName: Boolean;
   Eaten: ULONG;
@@ -1824,18 +1784,6 @@ begin
   with PFileRec(Item.Data)^ do
   begin
     IsSpecialExt := MatchesFileExt(FileExt, SpecialExtensions);
-    if FUseIconCache and not IsSpecialExt and not IsDirectory then
-    begin
-      CacheItem.FileExt := FileExt;
-      Index := FInfoCacheList.FindSequential(Addr(CacheItem), CompareInfoCacheItems);
-      if Index >= 0 then
-      begin
-        TypeName := PInfoCache(FInfoCacheList[Index])^.TypeName;
-        ImageIndex  := PInfoCache(FInfoCacheList[Index])^.ImageIndex;
-        Empty := False;
-        IconEmpty := False;
-      end;
-    end;
 
     FetchIcon := IconEmpty and (FetchIcon or not IsSpecialExt);
 
@@ -1939,19 +1887,8 @@ begin
           end; {Except}
         end;
 
-        if (Length(TypeName) > 0) then
-        begin
-          {Fill FileInfoCache:}
-          if FUseIconCache and not IsSpecialExt and not IconEmpty and not IsDirectory then
-          begin
-            GetMem(PExtItem, SizeOf(TInfoCache));
-            PExtItem.FileExt := FileExt;
-            PExtItem.TypeName := TypeName;
-            PExtItem.ImageIndex := ImageIndex;
-            FInfoCacheList.Add(PExtItem);
-          end;
-        end
-          else TypeName := Format(STextFileExt, [FileExt]);
+        if Length(TypeName) = 0 then
+          TypeName := Format(STextFileExt, [FileExt]);
       end {If FetchIcon}
         else
       begin
@@ -2044,10 +1981,10 @@ var
 begin
   Time1 := Int64(P1.FileTime.dwHighDateTime) shl 32 + P1.FileTime.dwLowDateTime;
   Time2 := Int64(P2.FileTime.dwHighDateTime) shl 32 + P2.FileTime.dwLowDateTime;
-  if Time1 < Time2 then Result := fLess
+  if Time1 < Time2 then Result := -1
     else
-  if Time1 > Time2 then Result := fGreater
-    else Result := fEqual; // fallback
+  if Time1 > Time2 then Result := 1
+    else Result := 0; // fallback
 end;
 
 function GetItemFileSize(P: PFileRec): Int64; inline;
@@ -2064,24 +2001,24 @@ var
   P1, P2: PFileRec;
 begin
   ConsiderDirection := True;
-  if I1 = I2 then Result := fEqual
+  if I1 = I2 then Result := 0
     else
-  if I1 = nil then Result := fLess
+  if I1 = nil then Result := -1
     else
-  if I2 = nil then Result := fGreater
+  if I2 = nil then Result := 1
     else
   begin
     P1 := PFileRec(I1.Data);
     P2 := PFileRec(I2.Data);
     if P1.isParentDir then
     begin
-      Result := fLess;
+      Result := -1;
       ConsiderDirection := False;
     end
       else
     if P2.isParentDir then
     begin
-      Result := fGreater;
+      Result := 1;
       ConsiderDirection := False;
     end
       else
@@ -2090,18 +2027,18 @@ begin
     begin
       if P1.isDirectory then
       begin
-        Result := fLess;
+        Result := -1;
         ConsiderDirection := False;
       end
         else
       begin
-        Result := fGreater;
+        Result := 1;
         ConsiderDirection := False;
       end;
     end
       else
     begin
-      Result := fEqual;
+      Result := 0;
 
       if P1.isDirectory and AOwner.AlwaysSortDirectoriesByName then
       begin
@@ -2114,9 +2051,9 @@ begin
             ; // fallback
 
           dvSize:
-            if GetItemFileSize(P1) < GetItemFileSize(P2) then Result := fLess
+            if GetItemFileSize(P1) < GetItemFileSize(P2) then Result := -1
               else
-            if GetItemFileSize(P1) > GetItemFileSize(P2) then Result := fGreater
+            if GetItemFileSize(P1) > GetItemFileSize(P2) then Result := 1
               else ; // fallback
 
           dvType:
@@ -2126,9 +2063,9 @@ begin
             Result := CompareFileTime(P1, P2);
 
           dvAttr:
-            if P1.Attr < P2.Attr then Result := fLess
+            if P1.Attr < P2.Attr then Result := -1
               else
-            if P1.Attr > P2.Attr then Result := fGreater
+            if P1.Attr > P2.Attr then Result := 1
               else ; // fallback
 
           dvExt:
@@ -2145,7 +2082,7 @@ begin
         end;
       end;
 
-      if Result = fEqual then
+      if Result = 0 then
       begin
         Result := CompareLogicalTextPas(P1.DisplayName, P2.DisplayName, AOwner.NaturalOrderNumericalSorting)
       end;
