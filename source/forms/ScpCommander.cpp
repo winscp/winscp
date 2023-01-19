@@ -2118,7 +2118,7 @@ void __fastcall TScpCommanderForm::RemotePathLabelPathClick(
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalDirViewFileIconForName(
-  TObject * /*Sender*/, TListItem * /*Item*/, UnicodeString & FileName)
+  TObject * /*Sender*/, UnicodeString & FileName)
 {
   UnicodeString PartialExt = Configuration->PartialExt;
   if (AnsiSameText(ExtractFileExt(FileName), PartialExt))

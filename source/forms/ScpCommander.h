@@ -487,7 +487,7 @@ __published:
   void __fastcall RemotePathLabelPathClick(TCustomPathLabel *Sender,
     UnicodeString Path);
   void __fastcall LocalDirViewFileIconForName(TObject *Sender,
-          TListItem *Item, UnicodeString &FileName);
+          UnicodeString &FileName);
   void __fastcall LocalDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
