@@ -2,12 +2,12 @@
 .\"     Title: ne_request_create
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 11 September 2022
+.\"      Date: 21 January 2023
 .\"    Manual: neon API reference
-.\"    Source: neon 0.32.4
+.\"    Source: neon 0.32.5
 .\"  Language: English
 .\"
-.TH "NE_REQUEST_CREATE" "3" "11 September 2022" "neon 0.32.4" "neon API reference"
+.TH "NE_REQUEST_CREATE" "3" "21 January 2023" "neon 0.32.5" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -76,7 +76,7 @@ and
 ne_print_request_header
 can be used\&. To include a message body with the request, one of the functions
 \fBne_set_request_body_buffer\fR,
-ne_set_request_body_fd, or
+\fBne_set_request_body_fd\fR, or
 \fBne_set_request_body_provider\fR
 can be used\&.
 .PP
@@ -93,7 +93,7 @@ object produces undefined behaviour\&. Once all processing associated with the r
 \fBne_request_destroy\fR
 function to destroy the resources associated with it\&. Any subsequent use of the request object produces undefined behaviour\&.
 .PP
-If a request is being using a non\-idempotent method such as
+For a request with a non\-idempotent method such as
 POST, the
 NE_REQFLAG_IDEMPOTENT
 flag should be disabled; see
@@ -170,7 +170,7 @@ ne_set_request_body_buffer,
 ne_set_request_flag\&.
 .SH "AUTHOR"
 .PP
-\fBJoe Orton\fR <\&neon@lists.manyfish.co.uk\&>
+\fBJoe Orton\fR
 .RS 4
 Author.
 .RE

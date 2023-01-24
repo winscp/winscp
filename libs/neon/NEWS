@@ -1,3 +1,11 @@
+Changes in release 0.32.5:
+* NOTE: Since 0.32.0 the "$KRB5_CONFIG" environment variable is ignored
+  when running configure. Use KRB5_CONF_TOOL instead to specify an
+  alternative to /usr/bin/krb5-config.
+* Fail for configure --with-gssapi if GSSAPI can't be enabled (issue #102)
+* Add Georgian translation (NorwayFun)
+* Fixes for Windows MSYS2/MinGW build, including cross-build (Jim Klimov)
+
 Changes in release 0.32.4:
 * Fix Digest regression in allowing implicit algorithm= (issue #88)
 * Fix Digest to safely allow spaces in usernames (without userhash)
