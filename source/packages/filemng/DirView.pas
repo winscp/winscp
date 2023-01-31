@@ -675,6 +675,7 @@ var
   IsSpecialExt: Boolean;
   TypeName: string;
 begin
+  CoInitialize(nil); // needed for SHGetFileInfo
   if Assigned(FOwner.TopItem) then FIndex := FOwner.TopItem.Index
     else FIndex := 0;
 
