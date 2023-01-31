@@ -2370,7 +2370,7 @@ bool __fastcall TSystemRequiredThread::WaitForEvent()
     if (!FTerminated && FRequired &&
         (MilliSecondsBetween(Now(), FLastRequired) > ExpireInterval))
     {
-      AppLog("System is not required");
+      AppLog(L"System is not required");
       SetThreadExecutionState(ES_CONTINUOUS);
       FLastRequired = TDateTime();
       FRequired = false;
@@ -2385,7 +2385,7 @@ void __fastcall TSystemRequiredThread::ProcessEvent()
   if (!FRequired &&
       (FLastRequired != TDateTime()))
   {
-    AppLog("System is required");
+    AppLog(L"System is required");
     SetThreadExecutionState(ES_SYSTEM_REQUIRED | ES_CONTINUOUS);
     FRequired = true;
   }
@@ -2398,7 +2398,7 @@ void SystemRequired()
     TGuard Guard(SystemRequiredThreadSection.get());
     if (SystemRequiredThread == NULL)
     {
-      AppLog("Starting system required thread");
+      AppLog(L"Starting system required thread");
       SystemRequiredThread = new TSystemRequiredThread();
       SystemRequiredThread->Start();
     }
@@ -2423,7 +2423,7 @@ void GUIFinalize()
 
   if (Thread != NULL)
   {
-    AppLog("Stopping system required thread");
+    AppLog(L"Stopping system required thread");
     Thread->Terminate();
     Thread->WaitFor();
     delete Thread;
