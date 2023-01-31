@@ -2773,7 +2773,7 @@ static bool __fastcall FormActivationHook(void * Data, TMessage & Message)
   // do not get activated. So we do it explicitly here.
   // We cannot do this from TApplication::OnActivate because
   // TApplication.WndProc resets focus to the last active window afterwards.
-  // So we override CM_ACTIVATE implementation here completelly.
+  // So we override CM_ACTIVATE implementation here completely.
   if (Message.Msg == CM_ACTIVATE)
   {
     TCustomForm * Form = static_cast<TCustomForm *>(Data);

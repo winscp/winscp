@@ -2568,7 +2568,7 @@ var
 begin
   // When rename is confirmed by clicking outside of the edit box, and the actual rename operation
   // displays error message or simply pumps a message queue (like during lenghty remote directory reload),
-  // drag mouse selection start. It posssibly happens only on the remote panel due to it being completelly reloaded.
+  // drag mouse selection start. It posssibly happens only on the remote panel due to it being completely reloaded.
   ReleaseCapture;
 
   if Length(HItem.pszText) = 0 then LoadEnabled := True

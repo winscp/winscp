@@ -1071,7 +1071,7 @@ static void __fastcall DoNormalizeFingerprint(UnicodeString & Fingerprint, Unico
         UnicodeString Rest = Fingerprint.SubString(Name.Length() + 2, Fingerprint.Length() - Name.Length() - 1);
         int Space = Rest.Pos(L" ");
         // If not a number, it's an invalid input,
-        // either something completelly wrong, or it can be OpenSSH base64 public key,
+        // either something completely wrong, or it can be OpenSSH base64 public key,
         // that got here from TPasteKeyHandler::Paste
         if (IsNumber(Rest.SubString(1, Space - 1)))
         {

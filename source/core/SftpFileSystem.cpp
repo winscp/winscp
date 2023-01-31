@@ -1616,7 +1616,7 @@ protected:
 
     if (Response->Capacity > 0)
     {
-      // particularly when uploading a file that completelly fits into send buffer
+      // particularly when uploading a file that completely fits into send buffer
       // over slow line, we may end up seemingly completing the transfer immediatelly
       // but hanging the application for a long time waiting for responses
       // (common is that the progress window would not even manage to draw itself,
@@ -2785,7 +2785,7 @@ UnicodeString __fastcall TSFTPFileSystem::RealPath(const UnicodeString & Path)
       // While we really do not care much, we anyway set the flag to ~ & 0x01 to make the request fail.
       // First for consistency.
       // Second to workaround a bug in ProFTPD/mod_sftp version 1.3.5rc1 through 1.3.5-stable
-      // that sends a completelly malformed response for non-existing paths,
+      // that sends a completely malformed response for non-existing paths,
       // when SSH_FXP_REALPATH_NO_CHECK (even implicitly) is used.
       // See http://bugs.proftpd.org/show_bug.cgi?id=4160
 

@@ -9538,7 +9538,7 @@ void __fastcall TCustomScpExplorerForm::ThemeChanged()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMSettingChange(TMessage & Message)
 {
-  // Do not handle, when shutting down anyway (maybe also when not setup completelly yet?)
+  // Do not handle, when shutting down anyway (maybe also when not setup completely yet?)
   if (!FInvalid &&
       (Message.LParam != 0) &&
       (wcscmp(reinterpret_cast<LPCWCH>(Message.LParam), L"ImmersiveColorSet") == 0))
@@ -10776,7 +10776,7 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlContextPopup(TObject 
         // explicit popup instead of using PopupMenu property
         // to avoid menu to popup somewhere within SessionTabSwitched above,
         // while connecting yet not-connected session and hence
-        // allowing an access to commands over not-completelly connected session
+        // allowing an access to commands over not-completely connected session
         PopupMenu = Session->LocalBrowser ? NonVisualDataModule->LocalBrowserPopup : NonVisualDataModule->SessionsPopup;
       }
     }
