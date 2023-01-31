@@ -4726,37 +4726,46 @@ bool __fastcall TTerminal::DoRenameFile(
 
   if (Result)
   {
-    if (!IsCapable[fcMoveOverExistingFile] && !DontOverwrite)
+    // Prevent destroying TRemoteFile between delete and rename
+    BeginTransaction();
+    try
     {
-      if (!ExistenceKnown)
+      if (!IsCapable[fcMoveOverExistingFile] && !DontOverwrite)
       {
-        FileExists(AbsoluteNewName, &DuplicateFile);
-        DuplicateFileOwner.reset(DuplicateFile);
+        if (!ExistenceKnown)
+        {
+          FileExists(AbsoluteNewName, &DuplicateFile);
+          DuplicateFileOwner.reset(DuplicateFile);
+        }
+
+        if (DuplicateFile != NULL)
+        {
+          DoDeleteFile(AbsoluteNewName, DuplicateFile, 0);
+        }
       }
 
-      if (DuplicateFile != NULL)
+      TRetryOperationLoop RetryLoop(this);
+      do
       {
-        DoDeleteFile(AbsoluteNewName, DuplicateFile, 0);
+        TMvSessionAction Action(ActionLog, AbsolutePath(FileName, true), AbsoluteNewName);
+        try
+        {
+          DebugAssert(FFileSystem);
+          FFileSystem->RenameFile(FileName, File, NewName);
+        }
+        catch(Exception & E)
+        {
+          UnicodeString Message = FMTLOAD(Move ? MOVE_FILE_ERROR : RENAME_FILE_ERROR, (FileName, NewName));
+          RetryLoop.Error(E, Action, Message);
+        }
       }
+      while (RetryLoop.Retry());
+      Result = RetryLoop.Succeeded();
     }
-
-    TRetryOperationLoop RetryLoop(this);
-    do
+    __finally
     {
-      TMvSessionAction Action(ActionLog, AbsolutePath(FileName, true), AbsoluteNewName);
-      try
-      {
-        DebugAssert(FFileSystem);
-        FFileSystem->RenameFile(FileName, File, NewName);
-      }
-      catch(Exception & E)
-      {
-        UnicodeString Message = FMTLOAD(Move ? MOVE_FILE_ERROR : RENAME_FILE_ERROR, (FileName, NewName));
-        RetryLoop.Error(E, Action, Message);
-      }
+      EndTransaction();
     }
-    while (RetryLoop.Retry());
-    Result = RetryLoop.Succeeded();
   }
   return Result;
 }
