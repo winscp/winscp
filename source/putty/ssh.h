@@ -1423,7 +1423,7 @@ int x11_identify_auth_proto(ptrlen protoname);
 void *x11_dehexify(ptrlen hex, int *outlen);
 bool x11_parse_ip(const char *addr_string, unsigned long *ip);
 
-Channel *agentf_new(SshChannel *c, Plug *plug); // WINSCP
+Channel *agentf_new(SshChannel *c, struct callback_set *callback_set); // WINSCP
 
 bool dh_is_gex(const ssh_kex *kex);
 dh_ctx *dh_setup_group(const ssh_kex *kex);
