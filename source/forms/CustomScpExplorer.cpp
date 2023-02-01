@@ -426,6 +426,7 @@ void __fastcall TCustomScpExplorerForm::WMCopyData(TMessage & Message)
 {
   PCOPYDATASTRUCT CopyData = reinterpret_cast<PCOPYDATASTRUCT>(Message.LParam);
 
+  AppLogFmt(L"Received copy data message with size %d", (int(CopyData->cbData)));
   size_t MessageSize = sizeof(TCopyDataMessage);
   bool Result = DebugAlwaysTrue(CopyData->cbData == MessageSize);
   if (Result)
@@ -440,6 +441,14 @@ void __fastcall TCustomScpExplorerForm::WMCopyData(TMessage & Message)
       {
         case TCopyDataMessage::CommandCanCommandLine:
           Result = CanCommandLineFromAnotherInstance();
+          if (Result)
+          {
+            AppLog(L"Can process command-line from other instance");
+          }
+          else
+          {
+            AppLog(L"Cannot process command-line from other instance");
+          }
           break;
 
         case TCopyDataMessage::CommandCommandLine:
