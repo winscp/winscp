@@ -644,6 +644,7 @@ BOOL __stdcall EnumOtherInstances(HWND Handle, LPARAM AParam)
 {
   TProcesses & Processes = *reinterpret_cast<TProcesses *>(AParam);
 
+  // This should be optimized to query class name already here
   unsigned long ProcessId;
   if (GetWindowThreadProcessId(Handle, &ProcessId) != 0)
   {
