@@ -259,6 +259,7 @@ class TIniFileStorage : public TCustomIniFileStorage
 {
 public:
   static TIniFileStorage * __fastcall CreateFromPath(const UnicodeString & AStorage);
+  static TIniFileStorage * __fastcall CreateNul();
   virtual __fastcall ~TIniFileStorage();
 
   virtual void __fastcall Flush();

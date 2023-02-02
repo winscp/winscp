@@ -1626,6 +1626,14 @@ TIniFileStorage * __fastcall TIniFileStorage::CreateFromPath(const UnicodeString
   return new TIniFileStorage(AStorage, IniFile);
 }
 //---------------------------------------------------------------------------
+TIniFileStorage * __fastcall TIniFileStorage::CreateNul()
+{
+  // Before we passed "nul", but we have report of a system, where opening "nul" file fails.
+  // Passing an empty string is even more efficient, as it does not even try to read the file.
+  TMemIniFile * IniFile = new TMemIniFile(EmptyStr);
+  return new TIniFileStorage(INI_NUL, IniFile);
+}
+//---------------------------------------------------------------------------
 __fastcall TIniFileStorage::TIniFileStorage(const UnicodeString & AStorage, TCustomIniFile * IniFile):
   TCustomIniFileStorage(AStorage, IniFile)
 {
@@ -1640,7 +1648,7 @@ void __fastcall TIniFileStorage::Flush()
   {
     FMasterStorage->Flush();
   }
-  if (FOriginal != NULL)
+  if ((FOriginal != NULL) && !FIniFile->FileName.IsEmpty())
   {
     std::unique_ptr<TStrings> Strings(new TStringList);
     std::unique_ptr<TStrings> Original(FOriginal);

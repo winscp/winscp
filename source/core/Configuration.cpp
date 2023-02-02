@@ -192,7 +192,7 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool & SessionList)
   }
   else if (Storage == stNul)
   {
-    Result = TIniFileStorage::CreateFromPath(INI_NUL);
+    Result = TIniFileStorage::CreateNul();
   }
   else
   {
