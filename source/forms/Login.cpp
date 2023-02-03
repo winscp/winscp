@@ -924,7 +924,7 @@ void __fastcall TLoginDialog::SessionTreeKeyPress(TObject * /*Sender*/, System::
       {
         Configuration->Usage->Inc(L"SiteIncrementalSearches");
       }
-      if (!SitesIncrementalSearch(FSitesIncrementalSearch + Key, false, false))
+      if (!SitesIncrementalSearch(FSitesIncrementalSearch + Key, false, false, false))
       {
         MessageBeep(MB_ICONHAND);
       }
@@ -942,7 +942,7 @@ void __fastcall TLoginDialog::SessionTreeKeyPress(TObject * /*Sender*/, System::
         {
           UnicodeString NewText =
             FSitesIncrementalSearch.SubString(1, FSitesIncrementalSearch.Length() - 1);
-          SitesIncrementalSearch(NewText, false, false);
+          SitesIncrementalSearch(NewText, false, false, false);
         }
         Key = 0;
       }
@@ -1676,7 +1676,7 @@ void __fastcall TLoginDialog::CMDialogKey(TWMKeyDown & Message)
     {
       TShiftState Shift = KeyDataToShiftState(Message.KeyData);
       bool Reverse = Shift.Contains(ssShift);
-      if (!SitesIncrementalSearch(FSitesIncrementalSearch, true, Reverse))
+      if (!SitesIncrementalSearch(FSitesIncrementalSearch, true, Reverse, true))
       {
         MessageBeep(MB_ICONHAND);
       }
@@ -2761,10 +2761,14 @@ void __fastcall TLoginDialog::ResetSitesIncrementalSearch()
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TLoginDialog::SitesIncrementalSearch(const UnicodeString & Text,
-  bool SkipCurrent, bool Reverse)
+bool __fastcall TLoginDialog::SitesIncrementalSearch(
+  const UnicodeString & Text, bool SkipCurrent, bool Reverse, bool Expanding)
 {
-  TTreeNode * Node = SearchSite(Text, false, SkipCurrent, Reverse);
+  TTreeNode * Node = NULL;
+  if (!Expanding)
+  {
+    Node = SearchSite(Text, false, SkipCurrent, Reverse);
+  }
   if (Node == NULL)
   {
     Node = SearchSite(Text, true, SkipCurrent, Reverse);

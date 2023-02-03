@@ -374,8 +374,7 @@ private:
   inline TSessionData * __fastcall GetNodeSession(TTreeNode * Node);
   void __fastcall ReloadSessions(const UnicodeString & SelectSite);
   void __fastcall ResetSitesIncrementalSearch();
-  bool __fastcall SitesIncrementalSearch(const UnicodeString & Text,
-    bool SkipCurrent, bool Reverse);
+  bool __fastcall SitesIncrementalSearch(const UnicodeString & Text, bool SkipCurrent, bool Reverse, bool Expanding);
   TTreeNode * __fastcall SearchSite(const UnicodeString & Text,
     bool AllowExpanding, bool SkipCurrent, bool Reverse);
   TTreeNode * __fastcall GetNextNode(TTreeNode * Node, bool Reverse);
