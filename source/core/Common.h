@@ -231,7 +231,7 @@ int __fastcall FindNextChecked(TSearchRecChecked & F);
 int __fastcall FindNextUnchecked(TSearchRecChecked & F);
 void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   TProcessLocalFileEvent CallBackFunc, void * Param = NULL, int FindAttrs = -1);
-int __fastcall FileGetAttrFix(const UnicodeString FileName);
+int __fastcall FileGetAttrFix(const UnicodeString & FileName);
 //---------------------------------------------------------------------------
 extern const wchar_t * DSTModeNames;
 enum TDSTMode

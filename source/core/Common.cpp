@@ -1599,32 +1599,54 @@ void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   }
 }
 //---------------------------------------------------------------------------
-int __fastcall FileGetAttrFix(const UnicodeString FileName)
+int __fastcall FileGetAttrFix(const UnicodeString & FileName)
 {
-  // The default for FileGetAttr is to follow links
-  bool FollowLink = true;
-  // WORKAROUND:
-  // But the FileGetAttr when called for link with FollowLink set will always fail
-  // as it calls InternalGetFileNameFromSymLink, which test for CheckWin32Version(6, 0)
-  if (!IsWinVista())
-  {
-    FollowLink = false;
-  }
+  // Already called with ApiPath
+
   int Result;
-  try
+  int Tries = 2;
+  do
   {
-    Result = FileGetAttr(FileName, FollowLink);
+    // WORKAROUND:
+    // FileGetAttr when called for link with FollowLink set (default) will always fail on pre-Vista
+    // as it calls InternalGetFileNameFromSymLink, which test for CheckWin32Version(6, 0)
+    Result = GetFileAttributes(FileName.c_str());
+    if ((Result >= 0) && FLAGSET(Result, faSymLink) && IsWinVista())
+    {
+      try
+      {
+        UnicodeString TargetName;
+        // WORKAROUND:
+        // On Samba, InternalGetFileNameFromSymLink fails and returns true but empty target.
+        // That confuses FileGetAttr, which returns attributes of the parent folder instead.
+        // Using FileGetSymLinkTarget solves the problem, as it returns false.
+        if (!FileGetSymLinkTarget(FileName, TargetName))
+        {
+          // FileGetAttr would return faInvalid (-1), but we want to allow an upload from Samba,
+          // so returning the symlink attributes => noop
+        }
+        else
+        {
+          Result = GetFileAttributes(ApiPath(TargetName).c_str());
+        }
+      }
+      catch (EOSError & E)
+      {
+        Result = -1;
+      }
+      catch (EDirectoryNotFoundException & E) // throws by FileSystemAttributes
+      {
+        Result = -1;
+      }
+    }
+    Tries--;
   }
-  catch (EOSError & E)
-  {
-    Result = -1;
-  }
-  if (Result < 0)
-  {
-    // When referring to files in some special symlinked locations
-    // (like a deduplicated drive or a commvault archive), the first call to GetFileAttributes fails.
-    Result = FileGetAttr(FileName, FollowLink);
-  }
+  // When referring to files in some special symlinked locations
+  // (like a deduplicated drive or a commvault archive), the first call to FileGetAttr failed.
+  // Possibly this issue is resolved by our re-implementation of FileGetAttr above.
+  // But as we have no way to test it, keeping the retry here.
+  while ((Result < 0) && (Tries > 0));
+
   return Result;
 }
 //---------------------------------------------------------------------------
