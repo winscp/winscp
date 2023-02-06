@@ -202,6 +202,7 @@ const UnicodeString AvblCommand(L"AVBL");
 const UnicodeString XQuotaCommand(L"XQUOTA");
 const UnicodeString MdtmCommand(L"MDTM");
 const UnicodeString SizeCommand(L"SIZE");
+const UnicodeString CsidCommand(L"CSID");
 const UnicodeString DirectoryHasBytesPrefix(L"226-Directory has");
 //---------------------------------------------------------------------------
 class TFileListHelper
@@ -445,8 +446,9 @@ void __fastcall TFTPFileSystem::Open()
     FDetectTimeDifference = Data->TimeDifferenceAuto;
     FTimeDifference = 0;
     ResetFeatures();
-    FSystem = L"";
-    FWelcomeMessage = L"";
+    FSystem = EmptyStr;
+    FServerID = EmptyStr;
+    FWelcomeMessage = EmptyStr;
     FFileSystemInfoValid = false;
 
     // TODO: the same for account? it ever used?
@@ -1829,6 +1831,44 @@ void __fastcall TFTPFileSystem::DoStartup()
     delete PostLoginCommands;
   }
 
+  if (SupportsCommand(CsidCommand))
+  {
+    UnicodeString NameFact = L"Name";
+    UnicodeString VersionFact = L"Version";
+    UnicodeString Command =
+      FORMAT(L"%s %s=%s;%s=%s", (CsidCommand, NameFact, AppNameString(), VersionFact, FTerminal->Configuration->Version));
+    SendCommand(Command);
+    TStrings * Response = NULL;
+    GotReply(WaitForCommandReply(), REPLY_2XX_CODE, EmptyStr, NULL, &Response);
+    std::unique_ptr<TStrings> ResponseOwner(Response);
+    // Not using REPLY_SINGLE_LINE to make it robust
+    if (Response->Count == 1)
+    {
+      UnicodeString ResponseText = Response->Strings[0];
+      UnicodeString Name, Version;
+      while (!ResponseText.IsEmpty())
+      {
+        UnicodeString Token = CutToChar(ResponseText, L';', true);
+        UnicodeString Fact = CutToChar(Token, L'=', true);
+        if (SameText(Fact, NameFact))
+        {
+          Name = Token;
+        }
+        else if (SameText(Fact, VersionFact))
+        {
+          Version = Token;
+        }
+      }
+
+      if (!Name.IsEmpty())
+      {
+        FServerID = Name;
+        AddToList(FServerID, Version, L" ");
+        FTerminal->LogEvent(FORMAT("Server: %s", (FServerID)));
+      }
+    }
+  }
+
   // retrieve initialize working directory to save it as home directory
   ReadCurrentDirectory();
   FHomeDirectory = FCurrentDirectory;
@@ -2587,8 +2627,10 @@ const TFileSystemInfo & __fastcall TFTPFileSystem::GetFileSystemInfo(bool /*Retr
 {
   if (!FFileSystemInfoValid)
   {
-    FFileSystemInfo.RemoteSystem = FSystem;
-    FFileSystemInfo.RemoteSystem.Unique();
+    UnicodeString RemoteSystem = FSystem;
+    AddToList(RemoteSystem, FServerID, L", ");
+    RemoteSystem.Unique();
+    FFileSystemInfo.RemoteSystem = RemoteSystem;
 
     if (FFeatures->Count == 0)
     {

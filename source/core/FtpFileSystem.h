@@ -248,6 +248,7 @@ private:
   TStrings * FLastErrorResponse;
   TStrings * FLastError;
   UnicodeString FSystem;
+  UnicodeString FServerID;
   TStrings * FFeatures;
   UnicodeString FCurrentDirectory;
   bool FReadCurrentDirectory;
