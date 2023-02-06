@@ -1210,7 +1210,7 @@ UnicodeString __fastcall TFTPFileSystem::DoCalculateFileChecksum(const UnicodeSt
 
   if (Hash.IsEmpty())
   {
-    throw Exception(FMTLOAD(FTP_RESPONSE_ERROR, (CommandName, FLastResponse->Text)));
+    throw Exception(FMTLOAD(FTP_RESPONSE_ERROR, (CommandName, ResponseText)));
   }
 
   return LowerCase(Hash);
