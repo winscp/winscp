@@ -197,6 +197,7 @@ protected:
     const TCopyParamType * CopyParam, TStream * FileStream, TFileBuffer & BlockBuf, const UnicodeString & LocalFileName,
     TFileOperationProgressType * OperationProgress);
   bool __fastcall DoesFileLookLikeSymLink(TRemoteFile * File);
+  void DoCloseRemoteIfOpened(const RawByteString & Handle);
 };
 //---------------------------------------------------------------------------
 #endif // SftpFileSystemH

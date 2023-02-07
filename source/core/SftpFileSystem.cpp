@@ -152,6 +152,7 @@
 #define SFTP_EXT_HARDLINK L"hardlink@openssh.com"
 #define SFTP_EXT_HARDLINK_VALUE_V1 L"1"
 #define SFTP_EXT_COPY_FILE L"copy-file"
+#define SFTP_EXT_COPY_DATA L"copy-data"
 #define SFTP_EXT_LIMITS L"limits@openssh.com"
 //---------------------------------------------------------------------------
 #define OGQ_LIST_OWNERS 0x01
@@ -2170,7 +2171,9 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
 
     case fcRemoteCopy:
       return
+        // Implemented by ProFTPD/mod_sftp, OpenSSH (since 9.0) and Bitvise WinSSHD (without announcing it)
         SupportsExtension(SFTP_EXT_COPY_FILE) ||
+        SupportsExtension(SFTP_EXT_COPY_DATA) ||
         // see above
         (FSecureShell->SshImplementation == sshiBitvise);
 
@@ -2190,7 +2193,12 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
 //---------------------------------------------------------------------------
 bool __fastcall TSFTPFileSystem::SupportsExtension(const UnicodeString & Extension) const
 {
-  return FSupport->Loaded && (FSupport->Extensions->IndexOf(Extension) >= 0);
+  return
+    // OpenSSH announce extensions directly in the SSH_FXP_VERSION packet only.
+    // Bitvise uses "supported2" extension for some (mostly the standard ones) and SSH_FXP_VERSION for other.
+    // ProFTPD uses "supported2" extension for the standard extensions. And repeats them along with non-standard in the SSH_FXP_VERSION.
+    (FExtensions->IndexOfName(Extension) >= 0) ||
+    (FSupport->Loaded && (FSupport->Extensions->IndexOf(Extension) >= 0));
 }
 //---------------------------------------------------------------------------
 inline void __fastcall TSFTPFileSystem::BusyStart()
@@ -3220,6 +3228,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
       }
       // See the comment in SupportsExtension
       else if ((ExtensionName == SFTP_EXT_COPY_FILE) ||
+               (ExtensionName == SFTP_EXT_COPY_DATA) ||
                (ExtensionName == SFTP_EXT_SPACE_AVAILABLE) ||
                (ExtensionName == SFTP_EXT_CHECK_FILE))
       {
@@ -3830,19 +3839,64 @@ void __fastcall TSFTPFileSystem::RenameFile(const UnicodeString FileName, const 
   SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::CopyFile(const UnicodeString FileName, const TRemoteFile * /*File*/,
-  const UnicodeString NewName)
+void TSFTPFileSystem::DoCloseRemoteIfOpened(const RawByteString & Handle)
 {
-  // Implemented by ProFTPD/mod_sftp and Bitvise WinSSHD (without announcing it)
-  DebugAssert(SupportsExtension(SFTP_EXT_COPY_FILE) || (FSecureShell->SshImplementation == sshiBitvise));
-  TSFTPPacket Packet(SSH_FXP_EXTENDED);
-  Packet.AddString(SFTP_EXT_COPY_FILE);
-  UnicodeString RealName = Canonify(FileName);
-  bool Encrypted = FTerminal->IsFileEncrypted(RealName);
-  AddPathString(Packet, RealName);
-  AddPathString(Packet, Canonify(NewName), Encrypted);
-  Packet.AddBool(false);
-  SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
+  if (!Handle.IsEmpty())
+  {
+    TSFTPPacket Packet(SSH_FXP_CLOSE);
+    Packet.AddString(Handle);
+    SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSFTPFileSystem::CopyFile(
+  const UnicodeString FileName, const TRemoteFile * File, const UnicodeString NewName)
+{
+  UnicodeString FileNameCanonical = Canonify(FileName);
+  bool Encrypted = FTerminal->IsFileEncrypted(FileNameCanonical);
+  UnicodeString NewNameCanonical = Canonify(NewName);
+
+  if (SupportsExtension(SFTP_EXT_COPY_FILE) || (FSecureShell->SshImplementation == sshiBitvise))
+  {
+    TSFTPPacket Packet(SSH_FXP_EXTENDED);
+    Packet.AddString(SFTP_EXT_COPY_FILE);
+    AddPathString(Packet, FileNameCanonical);
+    AddPathString(Packet, NewNameCanonical, Encrypted);
+    Packet.AddBool(false);
+    SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
+  }
+  else
+  {
+    DebugAssert(SupportsExtension(SFTP_EXT_COPY_DATA));
+
+    __int64 Size = DebugAlwaysTrue(File != NULL) ? File->Size : -1;
+    RawByteString SourceRemoteHandle, DestRemoteHandle;
+    try
+    {
+      SourceRemoteHandle = SFTPOpenRemoteFile(FileNameCanonical, SSH_FXF_READ, Encrypted, Size);
+      // SFTP_EXT_COPY_FILE does not allow overwritting existing files
+      // (the specification does not mandate it, but it is implemented like that both in ProFTPD and Bitvise).
+      // So using SSH_FXF_EXCL for consistency.
+      DestRemoteHandle = SFTPOpenRemoteFile(NewNameCanonical, SSH_FXF_WRITE | SSH_FXF_CREAT | SSH_FXF_EXCL, Encrypted, Size);
+
+      TSFTPPacket Packet(SSH_FXP_EXTENDED);
+      Packet.AddString(SFTP_EXT_COPY_DATA);
+      Packet.AddString(SourceRemoteHandle);
+      Packet.AddInt64(0);
+      Packet.AddInt64(0); // until EOF
+      Packet.AddString(DestRemoteHandle);
+      Packet.AddInt64(0);
+      SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
+    }
+    __finally
+    {
+      if (FTerminal->Active)
+      {
+        DoCloseRemoteIfOpened(SourceRemoteHandle);
+        DoCloseRemoteIfOpened(DestRemoteHandle);
+      }
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::CreateDirectory(const UnicodeString & DirName, bool Encrypt)
