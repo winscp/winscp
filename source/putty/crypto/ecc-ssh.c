@@ -117,19 +117,20 @@ static void initialise_ecurve(
     curve->e.G_order = mp_copy(G_order);
 }
 
+#define WINSCP_CURVE_CLEANUP(TYPE) \
+    if (ec_curve_cleanup) \
+    { \
+        if (initialised) finalize_##TYPE##curve(&curve); \
+        initialised = 0; \
+        return NULL; \
+    }
+
 static struct ec_curve *ec_p256(void)
 {
     static struct ec_curve curve = { 0 };
     static bool initialised = false;
 
-    #ifdef MPEXT
-    if (ec_curve_cleanup)
-    {
-        if (initialised) finalize_wcurve(&curve);
-        initialised = 0;
-        return NULL;
-    }
-    #endif
+    WINSCP_CURVE_CLEANUP(w);
 
     if (!initialised)
     {
@@ -163,14 +164,7 @@ static struct ec_curve *ec_p384(void)
     static struct ec_curve curve = { 0 };
     static bool initialised = false;
 
-    #ifdef MPEXT
-    if (ec_curve_cleanup)
-    {
-        if (initialised) finalize_wcurve(&curve);
-        initialised = 0;
-        return NULL;
-    }
-    #endif
+    WINSCP_CURVE_CLEANUP(w);
 
     if (!initialised)
     {
@@ -204,14 +198,7 @@ static struct ec_curve *ec_p521(void)
     static struct ec_curve curve = { 0 };
     static bool initialised = false;
 
-    #ifdef MPEXT
-    if (ec_curve_cleanup)
-    {
-        if (initialised) finalize_wcurve(&curve);
-        initialised = 0;
-        return NULL;
-    }
-    #endif
+    WINSCP_CURVE_CLEANUP(w);
 
     if (!initialised)
     {
@@ -245,14 +232,7 @@ static struct ec_curve *ec_curve25519(void)
     static struct ec_curve curve = { 0 };
     static bool initialised = false;
 
-    #ifdef MPEXT
-    if (ec_curve_cleanup)
-    {
-        if (initialised) finalize_mcurve(&curve);
-        initialised = 0;
-        return NULL;
-    }
-    #endif
+    WINSCP_CURVE_CLEANUP(m);
 
     if (!initialised)
     {
@@ -283,6 +263,8 @@ static struct ec_curve *ec_curve448(void)
     static struct ec_curve curve = { 0 };
     static bool initialised = false;
 
+    WINSCP_CURVE_CLEANUP(m);
+
     if (!initialised)
     {
         mp_int *p = MP_LITERAL(0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
@@ -312,14 +294,7 @@ static struct ec_curve *ec_ed25519(void)
     static struct ec_curve curve = { 0 };
     static bool initialised = false;
 
-    #ifdef MPEXT
-    if (ec_curve_cleanup)
-    {
-        if (initialised) finalize_ecurve(&curve);
-        initialised = 0;
-        return NULL;
-    }
-    #endif
+    WINSCP_CURVE_CLEANUP(e);
 
     if (!initialised)
     {
@@ -2069,6 +2044,7 @@ void ec_cleanup(void)
   ec_p521();
   ec_curve25519();
   ec_ed25519();
+  ec_curve448();
   // in case we want to restart (unlikely)
   ec_curve_cleanup = 0;
 }
