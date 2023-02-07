@@ -3218,6 +3218,13 @@ void __fastcall TSFTPFileSystem::DoStartup()
         UnicodeString LimitsVersion = AnsiToString(ExtensionData);
         FTerminal->LogEvent(FORMAT(L"Supports %s extension version %s", (ExtensionName, LimitsVersion)));
       }
+      // See the comment in SupportsExtension
+      else if ((ExtensionName == SFTP_EXT_COPY_FILE) ||
+               (ExtensionName == SFTP_EXT_SPACE_AVAILABLE) ||
+               (ExtensionName == SFTP_EXT_CHECK_FILE))
+      {
+        FTerminal->LogEvent(FORMAT(L"Supports extension %s=%s", (ExtensionName, ExtensionDisplayData)));
+      }
       else
       {
         FTerminal->LogEvent(0, FORMAT(L"Unknown server extension %s=%s", (ExtensionName, ExtensionDisplayData)));
