@@ -2905,9 +2905,13 @@ int TScpCommanderForm::GetNewTabTabImageIndex(TOperationSide Side)
 UnicodeString TScpCommanderForm::GetTabHintDetails(TManagedTerminal * ASession)
 {
   UnicodeString Result;
+  if (!ASession->LocalBrowser)
+  {
+    Result = GetTabHintSessionDetails(ASession);
+  }
   if (!ASession->LocalBrowser && !ASession->Active)
   {
-    Result = LoadStr(STATUS_NOT_CONNECTED2);
+    Result += LoadStr(STATUS_NOT_CONNECTED2);
   }
   else
   {
@@ -2918,11 +2922,11 @@ UnicodeString TScpCommanderForm::GetTabHintDetails(TManagedTerminal * ASession)
     UnicodeString Sep = L"\n";
     if (!WinConfiguration->ScpCommander.SwappedPanels)
     {
-      Result = Local + Sep + Other;
+      Result += Local + Sep + Other;
     }
     else
     {
-      Result = Other + Sep + Local;
+      Result += Other + Sep + Local;
     }
   }
   return Result;

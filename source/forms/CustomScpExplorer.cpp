@@ -11646,16 +11646,31 @@ UnicodeString TCustomScpExplorerForm::GetSessionPath(TManagedTerminal * ASession
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString TCustomScpExplorerForm::GetTabHintDetails(TManagedTerminal * ASession)
+UnicodeString TCustomScpExplorerForm::GetTabHintSessionDetails(TManagedTerminal * ASession)
 {
-  UnicodeString Result;
-  if (!ASession->Active)
+  UnicodeString Title = TTerminalManager::Instance()->GetSessionTitle(ASession, false);
+  UnicodeString Result = ASession->SessionData->DefaultSessionName;
+  if (Title == Result)
   {
-    Result = LoadStr(STATUS_NOT_CONNECTED2);
+    Result = EmptyStr;
   }
   else
   {
-    Result = GetSessionPath(ASession, osRemote);
+    Result += L"\n";
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString TCustomScpExplorerForm::GetTabHintDetails(TManagedTerminal * ASession)
+{
+  UnicodeString Result = GetTabHintSessionDetails(ASession);
+  if (!ASession->Active)
+  {
+    Result += LoadStr(STATUS_NOT_CONNECTED2);
+  }
+  else
+  {
+    Result += GetSessionPath(ASession, osRemote);
   }
   return Result;
 }

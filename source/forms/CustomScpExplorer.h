@@ -745,6 +745,7 @@ protected:
   void __fastcall UpdateDarkMode();
   virtual UnicodeString GetTabHintDetails(TManagedTerminal * ASession);
   virtual UnicodeString GetNewTabHintDetails();
+  UnicodeString GetTabHintSessionDetails(TManagedTerminal * ASession);
   UnicodeString GetSessionPath(TManagedTerminal * ASession, TOperationSide Side);
   void __fastcall DirectorySizeCalculated(TOperationSide Side, const UnicodeString & FileName, bool Success);
   TListItem * VisualiseOperationFinished(TOperationSide Side, const UnicodeString & FileName, bool Unselect);
