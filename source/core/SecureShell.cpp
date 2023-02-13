@@ -2841,6 +2841,7 @@ void __fastcall TSecureShell::CollectUsage()
     case CIPHER_3DES: Configuration->Usage->Inc(L"OpenedSessionsSSHCipher3DES"); break;
     case CIPHER_BLOWFISH: Configuration->Usage->Inc(L"OpenedSessionsSSHCipherBlowfish"); break;
     case CIPHER_AES: Configuration->Usage->Inc(L"OpenedSessionsSSHCipherAES"); break;
+    // All following miss "Cipher"
     case CIPHER_DES: Configuration->Usage->Inc(L"OpenedSessionsSSHDES"); break;
     case CIPHER_ARCFOUR: Configuration->Usage->Inc(L"OpenedSessionsSSHArcfour"); break;
     case CIPHER_CHACHA20: Configuration->Usage->Inc(L"OpenedSessionsSSHChaCha20"); break;
