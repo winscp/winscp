@@ -5168,7 +5168,7 @@ UnicodeString __fastcall TCustomScpExplorerForm::CreateHiddenDuplicateSession()
   return SaveHiddenDuplicateSession(SessionData.get());
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::DuplicateSession()
+void __fastcall TCustomScpExplorerForm::DuplicateTab()
 {
   if (OpenInNewWindow())
   {
@@ -5191,10 +5191,10 @@ void __fastcall TCustomScpExplorerForm::DuplicateSession()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::RenameSession()
+void __fastcall TCustomScpExplorerForm::RenameTab()
 {
   UnicodeString Name = ManagedSession->SessionData->SessionName;
-  if (InputDialog(LoadStr(RENAME_SESSION_TITLE), LoadStr(RENAME_SESSION_PROMPT), Name, HELP_SESSION_RENAME) &&
+  if (InputDialog(LoadStr(RENAME_TAB_TITLE), LoadStr(RENAME_TAB_PROMPT), Name, HELP_TAB_RENAME) &&
       // When submitting the default name, do not fix it
       (Name != ManagedSession->SessionData->SessionName))
   {
@@ -5227,7 +5227,7 @@ bool __fastcall TCustomScpExplorerForm::CanCloseQueue()
   return CanCloseQueue(FQueue);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::CloseSession()
+void __fastcall TCustomScpExplorerForm::CloseTab()
 {
   if (CanCloseQueue())
   {
@@ -11070,7 +11070,7 @@ void __fastcall TCustomScpExplorerForm::CloseSessionTab(int Index)
 {
   if (Index == SessionsPageControl->TabIndex)
   {
-    CloseSession();
+    CloseTab();
   }
   else
   {

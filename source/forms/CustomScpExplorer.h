@@ -792,9 +792,9 @@ public:
 
   void __fastcall NewSession(const UnicodeString & SessionUrl = L"");
   virtual void NewTab(TOperationSide Side = osCurrent);
-  void __fastcall DuplicateSession();
-  void __fastcall RenameSession();
-  void __fastcall CloseSession();
+  void __fastcall DuplicateTab();
+  void __fastcall RenameTab();
+  void __fastcall CloseTab();
   void __fastcall DisconnectSession();
   void __fastcall ReconnectSession();
   void __fastcall OpenDirectory(TOperationSide Side);
