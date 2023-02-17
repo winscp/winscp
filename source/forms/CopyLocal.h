@@ -8,6 +8,7 @@
 #include <Vcl.Forms.hpp>
 #include "HistoryComboBox.hpp"
 #include <Vcl.ExtCtrls.hpp>
+#include <GUITools.h>
 //---------------------------------------------------------------------------
 class TCopyLocalDialog : public TForm
 {
@@ -37,6 +38,8 @@ private:
   UnicodeString GetDirectory();
   UnicodeString GetFileMask();
   void SetDirectoryAndFileMask(const UnicodeString & Directory, const UnicodeString & FileMask);
+
+  INTERFACE_HOOK;
 
 public:
   TCopyLocalDialog(TComponent * Owner, bool Move, int Options);

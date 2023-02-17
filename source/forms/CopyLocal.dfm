@@ -32,6 +32,7 @@ object CopyLocalDialog: TCopyLocalDialog
     Width = 61
     Height = 13
     Caption = '&Target path:'
+    FocusControl = DirectoryEdit
   end
   object DirectoryEdit: THistoryComboBox
     Left = 46
