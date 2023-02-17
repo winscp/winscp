@@ -655,9 +655,12 @@ UnicodeString TLoginDialog::GetS3Profile()
 //---------------------------------------------------------------------
 void TLoginDialog::LoadS3Profiles()
 {
+  std::unique_ptr<TStringList> Items(new TStringList());
   std::unique_ptr<TStrings> Profiles(GetS3Profiles());
-  Profiles->Insert(0, GetS3GeneralName());
-  S3ProfileCombo->Items = Profiles.get();
+  Items->AddStrings(Profiles.get());
+  Items->Sort();
+  Items->Insert(0, GetS3GeneralName());
+  S3ProfileCombo->Items = Items.get();
 }
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::UpdateControls()
