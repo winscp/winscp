@@ -634,7 +634,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Tab'
       Caption = '&Close Tab'
-      HelpKeyword = 'task_connections#closing'
+      HelpKeyword = 'ui_tabs#working'
       Hint = 'Close the current tab'
       ImageIndex = 26
       SecondaryShortCuts.Strings = (
@@ -1386,7 +1386,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Tab'
       Caption = '&Opened Tabs'
-      HelpKeyword = 'task_connections#switch'
+      HelpKeyword = 'ui_tabs#switch'
       Hint = 'Select tab|Select tab to activate'
       ImageIndex = 62
     end
@@ -1394,7 +1394,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Tab'
       Caption = 'Du&plicate Tab'
-      HelpKeyword = 'ui_sessiontabs'
+      HelpKeyword = 'ui_tabs'
       Hint = 
         'Duplicate tab|Open new tab with the same folder (hold down Shift' +
         ' to open the tab in new window)'
@@ -2276,7 +2276,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Tab'
       Caption = '&Rename Tab'
-      HelpKeyword = 'ui_sessiontabs'
+      HelpKeyword = 'ui_tabs#renaming'
       Hint = 'Rename tab|Changes the name of the current tab'
     end
     object CurrentCopyToClipboardAction2: TAction
@@ -2382,7 +2382,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Tab'
       Caption = '&New Tab'
-      HelpKeyword = 'ui_tabs#new'
+      HelpKeyword = 'ui_tabs#working'
       Hint = 'Open new tab'
       ImageIndex = 115
     end
@@ -2390,7 +2390,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 11
       Category = 'Tab'
       Caption = '&Local Tab'
-      HelpKeyword = 'ui_tabs#new'
+      HelpKeyword = 'ui_tabs#working'
       Hint = 'Open new tab with two local panels'
       ImageIndex = 115
       ShortCut = 24654
@@ -2399,7 +2399,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 11
       Category = 'Tab'
       Caption = '&Remote Tab'
-      HelpKeyword = 'ui_tabs#new'
+      HelpKeyword = 'ui_tabs#working'
       Hint = 'Open new tab with one local panel and one remote session panel'
       ImageIndex = 25
       ShortCut = 16462
