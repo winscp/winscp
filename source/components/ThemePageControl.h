@@ -65,6 +65,7 @@ protected:
   DYNAMIC void __fastcall Change();
   DYNAMIC void __fastcall MouseMove(TShiftState Shift, int X, int Y);
   virtual void __fastcall Dispatch(void * Message);
+  void TabChanged(int Index);
   #ifdef _DEBUG
   virtual void __fastcall RequestAlign();
   #endif

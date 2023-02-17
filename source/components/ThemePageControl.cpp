@@ -130,6 +130,7 @@ void TThemeTabSheet::UpdateCaption()
     }
   }
   Caption = ACaption;
+  ParentPageControl->TabChanged(TabIndex);
 }
 //----------------------------------------------------------------------------------------------------------
 UnicodeString TThemeTabSheet::GetBaseCaption()
@@ -517,6 +518,18 @@ bool TThemePageControl::IsHotButton(int Index)
   // This was an attempt to allow tracking close buttons, even while drop down button menu is popped,
   // but MouseMove does not trigger then.
   return (Index == FClickedButton) || (Index == FHotTabButton);
+}
+//----------------------------------------------------------------------------------------------------------
+void TThemePageControl::TabChanged(int Index)
+{
+  // When the "clicked" tab changes, it's probably not anymore the tab that was actually clicked.
+  // For example, when the last tab is closed, it's replaced with either local-local tab (without the X button),
+  // or removed altogether. The Login dialog pops up and when new session is opened, its tab's X button is rendered clicked,
+  // until connection openning finishes (and WMLButtonDown finishes).
+  if (Index == FClickedButton)
+  {
+    UpdateHotButton(FClickedButton, -1);
+  }
 }
 //----------------------------------------------------------------------------------------------------------
 void TThemePageControl::UpdateHotButton(int & Ref, int Index)
