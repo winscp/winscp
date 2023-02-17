@@ -409,7 +409,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
       object TBXSubmenuItem19: TTBXSubmenuItem
         Caption = '&Session'
-        HelpKeyword = 'ui_commander_menu#session'
+        HelpKeyword = 'ui_commander_menu#tab'
         Hint = 'Session commands'
         object TBXItem113: TTBXItem
           Action = NonVisualDataModule.NewSessionAction

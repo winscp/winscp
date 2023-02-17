@@ -636,7 +636,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Session'
       Caption = '&Close Session'
-      HelpKeyword = 'task_connections#closing'
+      HelpKeyword = 'ui_tabs#working'
       Hint = 'Terminate the current session and close the tab'
       ImageIndex = 26
       SecondaryShortCuts.Strings = (
@@ -1397,7 +1397,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Session'
       Caption = '&Opened Sessions'
-      HelpKeyword = 'task_connections#switch'
+      HelpKeyword = 'ui_tabs#switch'
       Hint = 'Select session|Select opened session to activate'
       ImageIndex = 62
     end
@@ -1405,7 +1405,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Session'
       Caption = 'Du&plicate Session'
-      HelpKeyword = 'task_connections'
+      HelpKeyword = 'ui_tabs'
       Hint = 
         'Duplicate session|Opens the same session again (hold down Shift ' +
         'to open session in new window)'
@@ -2277,7 +2277,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Session'
       Caption = '&Rename Session'
-      HelpKeyword = 'task_connections#renaming'
+      HelpKeyword = 'ui_tabs#renaming'
       Hint = 'Rename session|Changes name of the current session'
     end
     object CurrentCopyToClipboardAction: TAction
