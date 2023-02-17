@@ -176,7 +176,7 @@ int __fastcall TThemePageControl::GetTabsHeight()
     TRect Rect = TabRect(0);
     int Result2 = Rect.Bottom + 1;
     // On Windows 10 with 200% scaling, the first is 40, the second is 42.
-    // With 250% scaling its 50 vs 53.
+    // With 250% scaling it's 50 vs 53.
     // Using the larger.
     if (Result2 > Result)
     {
