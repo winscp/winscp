@@ -3850,7 +3850,13 @@ void __fastcall TSessionData::GenerateAssemblyCode(
 
   SessionData->CopyNonCoreData(FactoryDefaults.get());
 
-  if (SessionData->Ftps != FactoryDefaults->Ftps)
+  TFtps DefaultFtps = FactoryDefaults->Ftps;
+  if (FSProtocol == fsS3)
+  {
+    DefaultFtps = ftpsImplicit;
+  }
+
+  if (SessionData->Ftps != DefaultFtps)
   {
     // SessionData->FSProtocol is reset already
     switch (FSProtocol)
@@ -3861,7 +3867,8 @@ void __fastcall TSessionData::GenerateAssemblyCode(
           switch (SessionData->Ftps)
           {
             case ftpsNone:
-              // noop
+              DebugFail();
+              FtpSecureMember = L"None";
               break;
 
             case ftpsImplicit:
@@ -3882,19 +3889,16 @@ void __fastcall TSessionData::GenerateAssemblyCode(
         break;
 
       case fsWebDAV:
-        AddAssemblyProperty(Head, Language, L"WebdavSecure", (SessionData->Ftps != ftpsNone));
-        break;
-
       case fsS3:
-        // implicit
+        AddAssemblyProperty(Head, Language, L"Secure", (SessionData->Ftps != ftpsNone));
         break;
 
       default:
         DebugFail();
         break;
     }
-    SessionData->Ftps = FactoryDefaults->Ftps;
   }
+  SessionData->Ftps = FactoryDefaults->Ftps;
 
   if (SessionData->HostKey != FactoryDefaults->HostKey)
   {
