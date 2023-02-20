@@ -30,8 +30,8 @@ inherited ScpExplorerForm: TScpExplorerForm
       Stretch = True
       TabOrder = 0
       object TBXSubmenuItem5: TTBXSubmenuItem
-        Caption = '&File'
-        HelpKeyword = 'ui_explorer_menu#file'
+        Caption = '&Files'
+        HelpKeyword = 'ui_explorer_menu#files'
         Hint = 'File operations'
         object TBXSubmenuItem26: TTBXSubmenuItem
           Caption = '&New'
