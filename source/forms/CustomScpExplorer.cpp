@@ -5290,13 +5290,18 @@ void TCustomScpExplorerForm::DoOpenFolderOrWorkspace(
   if (!CheckMaxSessions || (DataList->Count <= WinConfiguration->MaxSessions))
   {
     TManagedTerminal * FirstSession = Manager->NewSessions(DataList.get());
-    // FirstSession can be null, if some of the
-    if (!ConnectFirstTerminal && (FirstSession != NULL))
+    // FirstSession can be null, if none of the workspace sites exist anymore
+    // or if all workspace sessions are not suported by the interface
+    // (when trying to open all local-local workspace in "explorer" interface)
+    if (FirstSession != NULL)
     {
-      FirstSession->Disconnected = true;
-      FirstSession->DisconnectedTemporarily = true;
+      if (!ConnectFirstTerminal)
+      {
+        FirstSession->Disconnected = true;
+        FirstSession->DisconnectedTemporarily = true;
+      }
+      Manager->ActiveSession = FirstSession;
     }
-    Manager->ActiveSession = FirstSession;
   }
 }
 //---------------------------------------------------------------------------
