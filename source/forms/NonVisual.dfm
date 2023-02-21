@@ -2266,7 +2266,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Category = 'Tab'
       Caption = '&Rename Tab'
       HelpKeyword = 'ui_tabs#renaming'
-      Hint = 'Rename tab|Changes the name of the current tab'
+      Hint = 'Rename tab|Change the name of the current tab'
     end
     object CurrentCopyToClipboardAction2: TAction
       Tag = 15
@@ -2311,7 +2311,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 14
       Category = 'Remote Directory'
       Caption = '&Explore Directory'
-      Hint = 'Opens Windows File Explorer with the current local directory'
+      Hint = 'Open Windows File Explorer with the current local directory'
       ImageIndex = 56
       ShortCut = 49221
     end
