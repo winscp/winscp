@@ -410,7 +410,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
       end
       object TBXSubmenuItem29: TTBXSubmenuItem
-        Caption = '&Tab'
+        Caption = '&Tabs'
         HelpKeyword = 'ui_commander_menu#tab'
         Hint = 'Tab commands'
         object TBXSubmenuItem30: TTBXSubmenuItem
