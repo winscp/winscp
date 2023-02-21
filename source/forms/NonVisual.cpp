@@ -410,7 +410,6 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(BestFitColumnAction, (ListColumn != NULL))
 
   // SESSION
-  UPD(NewSessionAction, true)
   UPDACT(NewTabAction, Action->ImageIndex = ScpExplorer->GetNewTabActionImageIndex())
   UPD(NewRemoteTabAction, true)
   UPD(NewLocalTabAction, true)
@@ -752,7 +751,6 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     #undef COLVIEWPROPS
 
     // SESSION
-    EXE(NewSessionAction, ScpExplorer->NewSession())
     EXE(NewTabAction, ScpExplorer->NewTab())
     EXE(NewRemoteTabAction, ScpExplorer->NewTab(osRemote))
     EXE(NewLocalTabAction, ScpExplorer->NewTab(osLocal))
@@ -880,6 +878,7 @@ void __fastcall TNonVisualDataModule::ExplorerShortcuts()
   // commands
   NewFileAction->ShortCut = ShortCut(L'E', CTRLSHIFT);
   RemoteFindFilesAction2->ShortCut = ShortCut(VK_F3, NONE);
+  NewTabAction->ShortCut = ShortCut(L'N', CTRL);
 
   CloseApplicationAction2->ShortCut = ShortCut(VK_F4, ALT);
 

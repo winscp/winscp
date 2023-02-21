@@ -109,7 +109,6 @@ __published:    // IDE-managed Components
   TAction *ExplorerSelectionBandAction;
   TAction *ClearSelectionAction;
   TTimer *SessionIdleTimer;
-  TAction *NewSessionAction;
   TAction *SiteManagerAction;
   TAction *CloseTabAction;
   TAction *SavedSessionsAction2;

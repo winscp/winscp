@@ -610,17 +610,6 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_toolbars'
       Hint = 'Hide/show custom commands toolbar'
     end
-    object NewSessionAction: TAction
-      Tag = 15
-      Category = 'Session'
-      Caption = '&New Session...'
-      HelpKeyword = 'task_connections#opening_additional_connection'
-      Hint = 
-        'New session|Opens new session (hold down Shift to open session i' +
-        'n new window)'
-      ImageIndex = 25
-      ShortCut = 16462
-    end
     object SiteManagerAction: TAction
       Tag = 15
       Category = 'Session'

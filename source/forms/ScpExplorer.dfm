@@ -290,6 +290,9 @@ inherited ScpExplorerForm: TScpExplorerForm
         Caption = '&Tab'
         HelpKeyword = 'ui_explorer_menu#tab'
         Hint = 'Tab commands'
+        object TBXItem113: TTBXItem
+          Action = NonVisualDataModule.NewTabAction
+        end
         object TBXItem166: TTBXItem
           Action = NonVisualDataModule.CloseTabAction
         end
@@ -307,23 +310,6 @@ inherited ScpExplorerForm: TScpExplorerForm
         end
         object TBXSeparatorItem49: TTBXSeparatorItem
         end
-        object TBXSubmenuItem9: TTBXSubmenuItem
-          Action = NonVisualDataModule.OpenedTabsAction
-        end
-        object TBXSubmenuItem10: TTBXSubmenuItem
-          Action = NonVisualDataModule.WorkspacesAction
-        end
-        object TBXItem168: TTBXItem
-          Action = NonVisualDataModule.SaveWorkspaceAction
-        end
-      end
-      object TBXSubmenuItem19: TTBXSubmenuItem
-        Caption = '&Session'
-        HelpKeyword = 'ui_explorer_menu#session'
-        Hint = 'Session commands'
-        object TBXItem113: TTBXItem
-          Action = NonVisualDataModule.NewSessionAction
-        end
         object TBXItem162: TTBXItem
           Action = NonVisualDataModule.DisconnectSessionAction
         end
@@ -333,7 +319,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXItem114: TTBXItem
           Action = NonVisualDataModule.SaveCurrentSessionAction2
         end
-        object TBXSeparatorItem37: TTBXSeparatorItem
+        object TBXSeparatorItem50: TTBXSeparatorItem
         end
         object TBXItem56: TTBXItem
           Action = NonVisualDataModule.FileSystemInfoAction
@@ -346,6 +332,17 @@ inherited ScpExplorerForm: TScpExplorerForm
         end
         object TBXItem14: TTBXItem
           Action = NonVisualDataModule.PrivateKeyUploadAction
+        end
+        object TBXSeparatorItem37: TTBXSeparatorItem
+        end
+        object TBXSubmenuItem9: TTBXSubmenuItem
+          Action = NonVisualDataModule.OpenedTabsAction
+        end
+        object TBXSubmenuItem10: TTBXSubmenuItem
+          Action = NonVisualDataModule.WorkspacesAction
+        end
+        object TBXItem168: TTBXItem
+          Action = NonVisualDataModule.SaveWorkspaceAction
         end
         object TBXSeparatorItem53: TTBXSeparatorItem
         end
@@ -785,7 +782,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       ShowHint = True
       TabOrder = 4
       object TBXItem123: TTBXItem
-        Action = NonVisualDataModule.NewSessionAction
+        Action = NonVisualDataModule.NewTabAction
         DisplayMode = nbdmImageAndText
       end
       object TBXItem125: TTBXItem

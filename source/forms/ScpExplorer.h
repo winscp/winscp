@@ -83,7 +83,6 @@ __published:
   TTBXItem *TBXItem55;
   TTBXSeparatorItem *TBXSeparatorItem14;
   TTBXItem *TBXItem57;
-  TTBXSubmenuItem *TBXSubmenuItem19;
   TTBXItem *TBXItem113;
   TTBXSubmenuItem *TBXSubmenuItem20;
   TTBXItem *TBXItem114;
@@ -331,6 +330,7 @@ __published:
   TTBXItem *TBXItem22;
   TTBXSeparatorItem *TBXSeparatorItem29;
   TTBXItem *TBXItem90;
+  TTBXSeparatorItem *TBXSeparatorItem50;
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
   void __fastcall UnixPathComboBoxBeginEdit(TTBEditItem *Sender,
