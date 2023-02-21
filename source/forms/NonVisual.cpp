@@ -518,7 +518,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
   }
   ScpExplorer->BeforeAction();
 
-  unsigned int ShortCutFlag = FLAGMASK((Action->ActionComponent == NULL), cocShortCutHint);
+  bool ExecutedByShortcut = (Action->ActionComponent == NULL);
+  unsigned int ShortCutFlag = FLAGMASK(ExecutedByShortcut, cocShortCutHint);
 
   {
     TAutoNestingCounter Counter(FBusy);
@@ -751,7 +752,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     #undef COLVIEWPROPS
 
     // SESSION
-    EXE(NewTabAction, ScpExplorer->NewTab())
+    EXE(NewTabAction, ScpExplorer->NewTab(osCurrent, !ExecutedByShortcut))
     EXE(NewRemoteTabAction, ScpExplorer->NewTab(osRemote))
     EXE(NewLocalTabAction, ScpExplorer->NewTab(osLocal))
     EXE(DefaultToNewRemoteTabAction, WinConfiguration->DefaultToNewRemoteTab = !WinConfiguration->DefaultToNewRemoteTab)

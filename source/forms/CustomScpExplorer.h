@@ -791,7 +791,7 @@ public:
   virtual bool SupportedSession(TSessionData * SessionData) = 0;
 
   void __fastcall NewSession(const UnicodeString & SessionUrl = L"");
-  virtual void NewTab(TOperationSide Side = osCurrent);
+  virtual void NewTab(TOperationSide Side = osCurrent, bool AllowReverse = true);
   void __fastcall DuplicateTab();
   void __fastcall RenameTab();
   void __fastcall CloseTab();

@@ -674,7 +674,7 @@ public:
     ::TFileOperation Operation, TOperationSide Side, bool OnFocused, bool NoConfirmation, bool DragDrop, unsigned int Flags);
   virtual UnicodeString GetLocalBrowserSessionTitle(TManagedTerminal * Session);
   virtual TManagedTerminal * GetReplacementForLastSession();
-  virtual void NewTab(TOperationSide Side);
+  virtual void NewTab(TOperationSide Side, bool AllowReverse);
   virtual int GetNewTabActionImageIndex();
   virtual int GetNewTabTabImageIndex(TOperationSide Side);
   virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();

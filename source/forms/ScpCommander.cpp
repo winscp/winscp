@@ -430,12 +430,12 @@ TManagedTerminal * TScpCommanderForm::GetReplacementForLastSession()
   return TTerminalManager::Instance()->NewLocalBrowser();
 }
 //---------------------------------------------------------------------------
-void TScpCommanderForm::NewTab(TOperationSide Side)
+void TScpCommanderForm::NewTab(TOperationSide Side, bool AllowReverse)
 {
   if (Side == osCurrent)
   {
     bool Remote = WinConfiguration->DefaultToNewRemoteTab;
-    if (IsKeyPressed(VK_CONTROL))
+    if (IsKeyPressed(VK_CONTROL) && AllowReverse)
     {
       Remote = !Remote;
     }

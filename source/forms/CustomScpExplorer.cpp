@@ -5145,7 +5145,7 @@ void __fastcall TCustomScpExplorerForm::NewSession(const UnicodeString & Session
   }
 }
 //---------------------------------------------------------------------------
-void TCustomScpExplorerForm::NewTab(TOperationSide)
+void TCustomScpExplorerForm::NewTab(TOperationSide, bool)
 {
   NewSession();
 }
