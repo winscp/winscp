@@ -47,6 +47,8 @@ __fastcall TCustomCommandDialog::TCustomCommandDialog(TComponent* Owner,
   FOnValidate = OnValidate;
   std::unique_ptr<TStrings> HintStrings(TextToStringList(LoadStr(CUSTOM_COMMAND_PATTERNS_HINT5)));
   HintStrings->Insert(6, LoadStr(CUSTOM_COMMAND_PATTERNS_HINT6));
+  HintStrings->Insert(11, LoadStr(PATTERNS_HINT_K));
+  HintStrings->Insert(18, LoadStr(PATTERNS_HINT_BACKSLASH));
   HintLabel(HintText, TrimRight(StringsToText(HintStrings.get())));
 
   int CaptionRes;

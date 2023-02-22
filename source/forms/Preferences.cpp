@@ -104,7 +104,9 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
 
   HintLabel(ShellIconsText2);
   HotTrackLabel(CopyParamLabel);
-  HintLabel(PuttyPathHintText, LoadStr(PUTTY_PATTERNS_HINT2));
+  std::unique_ptr<TStrings> PuttyPathHintStrings(TextToStringList(LoadStr(PUTTY_PATTERNS_HINT2)));
+  PuttyPathHintStrings->Insert(7, LoadStr(PATTERNS_HINT_K));
+  HintLabel(PuttyPathHintText, TrimRight(StringsToText(PuttyPathHintStrings.get())));
 
   EditorEncodingCombo->Items->Add(DefaultEncodingName());
   EditorEncodingCombo->Items->Add(LoadStr(UTF8_NAME));

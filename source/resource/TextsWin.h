@@ -310,6 +310,8 @@
 #define MESSAGE_DISMISS         1597
 #define USAGE_PASSWORDSFROMFILES 1598
 #define UPDATE_CURRENT          1599
+#define PATTERNS_HINT_K         7000
+#define PATTERNS_HINT_BACKSLASH 7001
 
 #define WIN_FORMS_STRINGS       1600
 #define COPY_FILE               1605

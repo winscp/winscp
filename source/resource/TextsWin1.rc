@@ -315,6 +315,8 @@ BEGIN
         MESSAGE_DISMISS, "Dismiss"
         USAGE_PASSWORDSFROMFILES, "Read all passwords from files"
         UPDATE_CURRENT, "Your version: %s"
+        PATTERNS_HINT_K, "!K expands to current session private key path"
+        PATTERNS_HINT_BACKSLASH, "!\\ expands to current local path"
 
         WIN_FORMS_STRINGS, "WIN_FORMS_STRINGS"
         COPY_FILE, "%s file '%s' to %s:"
