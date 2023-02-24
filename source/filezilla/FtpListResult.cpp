@@ -318,7 +318,10 @@ BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_dir
 
 bool CFtpListResult::IsNewLineChar(char C) const
 {
-  return (C == '\r') || (C == '\n');
+  return
+    (C == '\r') || (C == '\n') ||
+    // Some of the parsing code cannot handle null characters, so if a malformed server sends some, treat is as a newline
+    (C == '\0');
 }
 
 void CFtpListResult::AddData(const char * Data, int Size)
