@@ -440,6 +440,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'task_navigate#special_commands'
       Hint = 'Parent directory|Go to parent directory'
       ImageIndex = 12
+      ShortCut = 8
     end
     object RemoteRootDirAction: TAction
       Tag = 12
@@ -695,6 +696,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'task_navigate#special_commands'
       Hint = 'Parent directory|Go to parent directory'
       ImageIndex = 12
+      ShortCut = 8
     end
     object LocalRootDirAction: TAction
       Tag = 8

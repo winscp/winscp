@@ -189,6 +189,7 @@ type
     procedure CMRecreateWnd(var Message: TMessage); message CM_RECREATEWND;
     procedure CMDPIChanged(var Message: TMessage); message CM_DPICHANGED;
     procedure CMEnabledChanged(var Message: TMessage); message CM_ENABLEDCHANGED;
+    procedure CNKeyDown(var Message: TWMKeyDown); message CN_KEYDOWN;
 
     procedure DumbCustomDrawItem(Sender: TCustomListView; Item: TListItem;
       State: TCustomDrawState; var DefaultDraw: Boolean);
@@ -1532,6 +1533,17 @@ end;
 procedure TCustomDirView.DoExecuteParentDirectory;
 begin
   BusyOperation(ExecuteParentDirectory);
+end;
+
+procedure TCustomDirView.CNKeyDown(var Message: TWMKeyDown);
+begin
+  // Prevent Backspace being handled via "Parent directory" command in the context menu.
+  // We want it handled here in KeyDown
+  // (among other as the mechanism there makes sure it works differently while incrementally searching).
+  if Message.CharCode <> VK_BACK then
+  begin
+    inherited;
+  end;
 end;
 
 procedure TCustomDirView.KeyDown(var Key: Word; Shift: TShiftState);
