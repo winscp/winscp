@@ -424,7 +424,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(WorkspacesAction, StoredSessions->HasAnyWorkspace())
   UPD(OpenedTabsAction, HasManagedSession)
   UPD(SaveCurrentSessionAction2, HasTerminal)
-  UPD(SaveWorkspaceAction, HasTerminal)
+  UPD(SaveWorkspaceAction, HasManagedSession)
 
   // COMMAND
   UPD(CompareDirectoriesAction2, HasTerminal)
