@@ -427,7 +427,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(SaveWorkspaceAction, HasManagedSession)
 
   // COMMAND
-  UPD(CompareDirectoriesAction2, HasTerminal)
+  UPD(CompareDirectoriesAction2, HasManagedSession) // Or simply true, as the command is in Commander only and it always has a managed session
   UPD(SynchronizeAction, HasTerminal)
   UPD(FullSynchronizeAction, HasTerminal)
   UPD(ConsoleAction, ScpExplorer->CanConsole())
