@@ -188,6 +188,9 @@ private:
 // https://stackoverflow.com/q/4685863/850848
 class TUIStateAwareLabel : public TLabel
 {
+public:
+  __fastcall virtual TUIStateAwareLabel(TComponent * AOwner);
+
 protected:
   DYNAMIC void __fastcall DoDrawText(TRect & Rect, int Flags);
 };

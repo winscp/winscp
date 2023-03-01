@@ -175,7 +175,7 @@ TCheckBox * __fastcall TCustomDialog::CreateAndAddCheckBox(const UnicodeString &
 //---------------------------------------------------------------------------
 TLabel * __fastcall TCustomDialog::CreateLabel(UnicodeString Label)
 {
-  TLabel * Result = new TLabel(this);
+  TLabel * Result = new TUIStateAwareLabel(this);
   Result->Caption = Label;
   return Result;
 }
@@ -462,7 +462,7 @@ void __fastcall TSaveSessionDialog::Init(bool CanSavePassword,
   DebugAssert(!Folders->CaseSensitive);
   Folders->Sort();
 
-  FolderCombo = new TComboBox(this);
+  FolderCombo = new TUIStateAwareComboBox(this);
   AddComboBox(FolderCombo, CreateLabel(LoadStr(SAVE_SESSION_FOLDER)));
   FolderCombo->DropDownCount = Max(FolderCombo->DropDownCount, 16);
   FolderCombo->Items->Add(FRootFolder);
@@ -669,7 +669,7 @@ __fastcall TSaveWorkspaceDialog::TSaveWorkspaceDialog(
 {
   Caption = LoadStr(SAVE_WORKSPACE_CAPTION);
 
-  WorkspaceNameCombo = new TComboBox(this);
+  WorkspaceNameCombo = new TUIStateAwareComboBox(this);
   WorkspaceNameCombo->AutoComplete = false;
   AddComboBox(WorkspaceNameCombo, CreateLabel(LoadStr(SAVE_WORKSPACE_PROMPT)));
   WorkspaceNameCombo->DropDownCount = Max(WorkspaceNameCombo->DropDownCount, 16);
@@ -767,7 +767,7 @@ __fastcall TShortCutDialog::TShortCutDialog(const TShortCuts & ShortCuts, Unicod
 {
   Caption = LoadStr(SHORTCUT_CAPTION);
 
-  ShortCutCombo = new TComboBox(this);
+  ShortCutCombo = new TUIStateAwareComboBox(this);
   AddShortCutComboBox(ShortCutCombo, CreateLabel(LoadStr(SHORTCUT_LABEL)), ShortCuts);
 }
 //---------------------------------------------------------------------------
@@ -1022,7 +1022,7 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
       }
       else if (Option.Kind == TCustomCommandType::okDropDownList)
       {
-        TComboBox * ComboBox = new TComboBox(this);
+        TComboBox * ComboBox = new TUIStateAwareComboBox(this);
         ComboBox->Style = csDropDownList;
 
         AddOptionComboBox(ComboBox, Value, Option, Values);
@@ -1031,7 +1031,7 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
       }
       else if (Option.Kind == TCustomCommandType::okComboBox)
       {
-        TComboBox * ComboBox = new TComboBox(this);
+        TComboBox * ComboBox = new TUIStateAwareComboBox(this);
         ComboBox->Style = csDropDown;
 
         AddOptionComboBox(ComboBox, Value, Option, Values);
@@ -1078,7 +1078,7 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
     {
       AddSeparator();
     }
-    FShortCutCombo = new TComboBox(this);
+    FShortCutCombo = new TUIStateAwareComboBox(this);
     AddShortCutComboBox(FShortCutCombo, CreateLabel(LoadStr(EXTENSION_SHORTCUT)), *ShortCuts);
   }
 }
@@ -1387,16 +1387,12 @@ __fastcall TUsageStatisticsDialog::TUsageStatisticsDialog() :
   Caption = LoadStr(USAGE_CAPTION);
   Width = ScaleByTextHeight(this, 400);
 
-  TLabel * Label = new TLabel(this);
   // UnformatMessage is called, because previously, ** markup was used and translations may still contain that
-  Label->Caption = UnformatMessage(LoadStr(USAGE_DATA2));
-  AddText(Label);
+  AddText(CreateLabel(UnformatMessage(LoadStr(USAGE_DATA2))));
 
   FilterEdit = new TEdit(this);
   FilterEdit->Width = ScaleByTextHeight(this, 250);
-  TLabel * FilterLabel = new TLabel(this);
-  FilterLabel->Caption = LoadStr(USAGE_FILTER);
-  AddEdit(FilterEdit, FilterLabel, true);
+  AddEdit(FilterEdit, CreateLabel(LoadStr(USAGE_FILTER)), true);
 
   UsageMemo = new TMemo(this);
   UsageMemo->Height = ScaleByTextHeight(this, 300);
@@ -1552,7 +1548,7 @@ void __fastcall TSiteRawDialog::AddButtonClick(TObject *)
 
   std::unique_ptr<TCustomDialog> AddDialog(new TCustomDialog(HelpKeyword));
   AddDialog->Caption = LoadStr(SITE_RAW_ADD_CAPTION);
-  TComboBox * AddComboBox = new TComboBox(AddDialog.get());
+  TComboBox * AddComboBox = new TUIStateAwareComboBox(AddDialog.get());
   AddComboBox->Style = csDropDownList;
   AddComboBox->DropDownCount = Max(AddComboBox->DropDownCount, 16);
   AddDialog->AddComboBox(AddComboBox, CreateLabel(LoadStr(SITE_RAW_ADD_LABEL)), Names.get(), true);

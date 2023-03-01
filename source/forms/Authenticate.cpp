@@ -209,7 +209,7 @@ void __fastcall TAuthenticateForm::AdjustControls()
 //---------------------------------------------------------------------------
 TLabel * __fastcall TAuthenticateForm::GenerateLabel(int Current, UnicodeString Caption)
 {
-  TLabel * Result = new TLabel(this);
+  TLabel * Result = new TUIStateAwareLabel(this);
   Result->Parent = FPromptParent;
 
   Result->Anchors = TAnchors() << akLeft << akTop << akRight;

@@ -2305,6 +2305,11 @@ static int HideAccelFlag(TControl * Control)
   return Result;
 }
 //---------------------------------------------------------------------------
+__fastcall TUIStateAwareLabel::TUIStateAwareLabel(TComponent * AOwner) :
+  TLabel(AOwner)
+{
+}
+//---------------------------------------------------------------------------
 void __fastcall TUIStateAwareLabel::DoDrawText(TRect & Rect, int Flags)
 {
   if (ShowAccelChar)
