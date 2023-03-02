@@ -70,7 +70,6 @@ type
     FOnSecondaryColumnHeader: TListViewSecondaryColumnHeaderEvent;
 
     FDateTimeFormatStr: string;
-    FDateFormatStr: string;
     FDateTimeDisplay: TDateTimeDisplay;
     FDragImageList: TDragImageList;
 
@@ -105,7 +104,6 @@ type
     property ParentForm: TCustomForm read FParentForm;
     property DateTimeFormatStr: string
       read FDateTimeFormatStr write FDateTimeFormatStr stored False;
-    property DateFormatStr: string read FDateFormatStr;
     {Set the sort column of the listview}
     property SortColumn: Integer read FSortColumn write SetSortColumn;
     {Show the sorting symbol in the listview's header:}
@@ -626,8 +624,6 @@ begin
   begin
     FDateTimeFormatStr := FormatSettings.ShortDateFormat;
   end;
-
-  FDateFormatStr := FDateTimeFormatStr;
 
   if FDateTimeDisplay = dtdDateTimeSec then
       FDateTimeFormatStr := FDateTimeFormatStr + '  ' + FormatSettings.LongTimeFormat
