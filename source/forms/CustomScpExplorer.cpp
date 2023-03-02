@@ -11624,8 +11624,9 @@ void TCustomScpExplorerForm::LocalLocalCopyCommand(TFileOperation Operation, TOp
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SessionsPageControlResize(TObject *)
 {
-  // Changing tab list triggers the OnResize.
-  if (!FUpdatingSessionTabs)
+  // 1) Changing tab list triggers the OnResize.
+  // 2) Is called in TForm constructor, when we are not ready to call SessionListChanged (particularly when starting with colored session)
+  if (!FUpdatingSessionTabs && (FSessionColors != NULL))
   {
     // UpdateTabsCaptionTruncation should be enough
     SessionListChanged(true);
