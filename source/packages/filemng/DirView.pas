@@ -294,7 +294,6 @@ type
     procedure Reload(CacheIcons : Boolean); override;
     procedure Reload2;
 
-    function FormatFileTime(FileTime: TFileTime): string; virtual;
     function GetAttrString(Attr: Integer): string; virtual;
 
     constructor Create(AOwner: TComponent); override;
@@ -1705,12 +1704,6 @@ begin
     else inherited;
 end; {ReLoad}
 
-function TDirView.FormatFileTime(FileTime: TFileTime): string;
-begin
-  Result := FormatDateTime(DateTimeFormatStr,
-    FileTimeToDateTime(FileTime));
-end; {FormatFileTime}
-
 function TDirView.GetAttrString(Attr: Integer): string;
 const
   Attrs: array[1..5] of Integer =
@@ -2454,7 +2447,8 @@ begin
           dvType: {FileType: }
             Value := TypeName;
           dvChanged: {Date}
-            Value := FormatFileTime(FileTime);
+            // Keep consistent with UserModificationStr
+            Value := FormatDateTime('ddddd tt', FileTimeToDateTime(FileTime));
           dvAttr: {Attrs:}
             Value := GetAttrString(Attr);
           dvExt:
