@@ -1162,8 +1162,7 @@ int __fastcall Execute()
       bool NewInstance = Params->FindSwitch(NEWINSTANCE_SWICH);
       if (Params->ParamCount > 0)
       {
-        AutoStartSession = Params->Param[1];
-        Params->ParamsProcessed(1, 1);
+        AutoStartSession = Params->ConsumeParam();
 
         if ((ParamCommand == pcNone) &&
             (WinConfiguration->ExternalSessionInExistingInstance != OpenInNewWindow()) &&

@@ -138,6 +138,13 @@ UnicodeString __fastcall TOptions::GetParam(int Index)
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString TOptions::ConsumeParam()
+{
+  UnicodeString Result = Param[1];
+  ParamsProcessed(1, 1);
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall TOptions::GetEmpty()
 {
   return FOptions.empty();
