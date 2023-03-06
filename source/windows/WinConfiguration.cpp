@@ -650,6 +650,7 @@ void __fastcall TWinConfiguration::Default()
   FEditor.Encoding = CP_ACP;
   FEditor.WarnOnEncodingFallback = true;
   FEditor.WarnOrLargeFileSize = true;
+  FEditor.AutoFont = true;
 
   FQueueView.Height = 140;
   FQueueView.HeightPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
@@ -1108,6 +1109,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  Editor.Encoding); \
     KEY(Bool,     Editor.WarnOnEncodingFallback); \
     KEY(Bool,     Editor.WarnOrLargeFileSize); \
+    KEY(Bool,     Editor.AutoFont); \
   ); \
   BLOCK(L"Interface\\QueueView", CANCREATE, \
     KEY(Integer,  QueueView.Height); \

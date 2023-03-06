@@ -166,6 +166,7 @@ protected:
   friend unsigned long __stdcall StreamLoad(DWORD_PTR Cookie, unsigned char * Buff, long Read, long * WasRead);
 
   virtual void __fastcall CreateParams(TCreateParams & Params);
+  virtual void __fastcall CreateWnd();
   void __fastcall Dispatch(void * Message);
   bool __fastcall GetCanRedo();
   void __fastcall SetTabSize(unsigned int TabSize);
@@ -296,6 +297,17 @@ void __fastcall TEditorRichEdit::CreateParams(TCreateParams & Params)
     (HideSelection ? 0 : ES_NOHIDESEL);
   Params.WindowClass.style = Params.WindowClass.style &
     ~(CS_HREDRAW | CS_VREDRAW);
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorRichEdit::CreateWnd()
+{
+  TNewRichEdit::CreateWnd();
+  if (!WinConfiguration->Editor.AutoFont)
+  {
+    int LangOptions = SendMessage(Handle, EM_GETLANGOPTIONS, 0, 0);
+    LangOptions = (LangOptions & ~IMF_AUTOFONT) | IMF_AUTOKEYBOARD;
+    SendMessage(Handle, EM_SETLANGOPTIONS, 0, LangOptions);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorRichEdit::WMPaste()
