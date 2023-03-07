@@ -288,7 +288,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       end
       object TBXSubmenuItem29: TTBXSubmenuItem
         Caption = '&Tabs'
-        HelpKeyword = 'ui_explorer_menu#tab'
+        HelpKeyword = 'ui_explorer_menu#tabs'
         Hint = 'Tab commands'
         object TBXItem113: TTBXItem
           Action = NonVisualDataModule.NewTabAction
