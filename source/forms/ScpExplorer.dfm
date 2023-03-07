@@ -285,7 +285,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       end
       object TBXSubmenuItem19: TTBXSubmenuItem
         Caption = '&Session'
-        HelpKeyword = 'ui_explorer_menu#session'
+        HelpKeyword = 'ui_explorer_menu#tabs'
         Hint = 'Session commands'
         object TBXItem113: TTBXItem
           Action = NonVisualDataModule.NewSessionAction
