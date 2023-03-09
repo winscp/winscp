@@ -603,7 +603,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(NewDirAction, ScpExplorer->CreateDirectory(osCurrent))
     EXE(RemoteFindFilesAction2, ScpExplorer->RemoteFindFiles())
     //selection
-    EXE(SelectOneAction, DirView(osCurrent)->SelectCurrentItem(DirView(osCurrent)->NortonLike))
+    EXE(SelectOneAction, DirView(osCurrent)->SelectCurrentItem(DirView(osCurrent)->NortonLike != nlOff))
     EXE(SelectAction, ScpExplorer->SelectByMask(osCurrent, true))
     EXE(UnselectAction, ScpExplorer->SelectByMask(osCurrent, false))
     EXE(SelectAllAction, ScpExplorer->SelectAll(osCurrent, smAll))
