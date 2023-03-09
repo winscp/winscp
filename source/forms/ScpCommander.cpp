@@ -2131,21 +2131,30 @@ void __fastcall TScpCommanderForm::LocalDirViewFileIconForName(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::LocalDirViewUpdateStatusBar(
-  TObject * /*Sender*/, const TStatusFileInfo & FileInfo)
+void __fastcall TScpCommanderForm::DoUpdateFileStatusBar(
+  TObject * Sender, TTBXStatusBar * StatusBar, const TStatusFileInfo & FileInfo, TOperationSide Side)
 {
-  UpdateFileStatusBar(LocalStatusBar, FileInfo, osLocal);
+  TCustomDirView * DirView = dynamic_cast<TCustomDirView *>(Sender);
+  // Prevent hidden "right" panel from messing with the status bar
+  if (DirView->Visible)
+  {
+    UpdateFileStatusBar(StatusBar, FileInfo, Side);
+  }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::RemoteDirViewUpdateStatusBar(
-  TObject * /*Sender*/, const TStatusFileInfo & FileInfo)
+void __fastcall TScpCommanderForm::LocalDirViewUpdateStatusBar(TObject * Sender, const TStatusFileInfo & FileInfo)
 {
-  UpdateFileStatusBar(RemoteStatusBar, FileInfo, osRemote);
+  DoUpdateFileStatusBar(Sender, LocalStatusBar, FileInfo, osLocal);
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::OtherLocalDirViewUpdateStatusBar(TObject *, const TStatusFileInfo & FileInfo)
+void __fastcall TScpCommanderForm::RemoteDirViewUpdateStatusBar(TObject * Sender, const TStatusFileInfo & FileInfo)
 {
-  UpdateFileStatusBar(RemoteStatusBar, FileInfo, osOther);
+  DoUpdateFileStatusBar(Sender, RemoteStatusBar, FileInfo, osRemote);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::OtherLocalDirViewUpdateStatusBar(TObject * Sender, const TStatusFileInfo & FileInfo)
+{
+  DoUpdateFileStatusBar(Sender, RemoteStatusBar, FileInfo, osOther);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalStatusBarClick(TObject * /*Sender*/)

@@ -556,6 +556,8 @@ private:
   void __fastcall LocalDefaultDirectory();
   TOperationSide __fastcall GetOtherSize(TOperationSide Side);
   void __fastcall DoLocalDirViewContextPopup(TOperationSide Side, TPoint & MousePos, bool & Handled);
+  void __fastcall DoUpdateFileStatusBar(
+    TObject * Sender, TTBXStatusBar * StatusBar, const TStatusFileInfo & FileInfo, TOperationSide Side);
 
 protected:
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
