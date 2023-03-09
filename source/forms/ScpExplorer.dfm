@@ -58,7 +58,7 @@ inherited ScpExplorerForm: TScpExplorerForm
           OnPopup = EditMenuItemPopup
         end
         object TBXItem4: TTBXItem
-          Action = NonVisualDataModule.RemoteAddEditLinkAction3
+          Action = NonVisualDataModule.CurrentAddEditLinkAction
         end
         object TBXSeparatorItem7: TTBXSeparatorItem
         end
