@@ -5110,6 +5110,8 @@ void __fastcall TTerminal::FillSessionDataForCode(TSessionData * Data)
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::UpdateSessionCredentials(TSessionData * Data)
 {
+  // Only if it differs from the original session data?
+  // Because this way, we persist the username redundantly in workspace session linked to a stored site.
   Data->UserName = UserName;
   Data->Password = Password;
   if (!FRememberedPassword.IsEmpty() && (FRememberedPasswordKind == pkPassphrase))
