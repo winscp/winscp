@@ -3317,7 +3317,7 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
           false, MaskParams);
 
         CustomExecuteFile(Side, ExecuteFileBy, LocalFileName, TargetFileName,
-          ExternalEditor, RootTempDir, RemoteDirectory, NewFile);
+          ExternalEditor, RootTempDir, RemoteDirectory, NewFile, TDateTime());
       }
     }
   }
@@ -3338,7 +3338,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteExecuteForceText(
 void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
   TExecuteFileBy ExecuteFileBy, UnicodeString FileName, UnicodeString OriginalFileName,
   const TEditorData * ExternalEditor, UnicodeString LocalRootDirectory,
-  UnicodeString RemoteDirectory, bool NewFile)
+  UnicodeString RemoteDirectory, bool NewFile, const TDateTime & SourceTimestamp)
 {
   DebugAssert(!WinConfiguration->DisableOpenEdit);
   DebugAssert((ExecuteFileBy == efExternalEditor) ==
@@ -3359,6 +3359,11 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
     Data->LocalRootDirectory = LocalRootDirectory;
     Data->OriginalFileName = OriginalFileName;
     Data->Command = L""; // will be changed later for external editor
+    // Empty SourceTimestamp indicates that checking was disabled when the file was opened
+    if (WinConfiguration->EditorCheckNotModified)
+    {
+      Data->SourceTimestamp = SourceTimestamp;
+    }
   }
 
   if (ExecuteFileBy == efInternalEditor)
@@ -3784,7 +3789,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
     Configuration->Usage->Inc(Counter);
 
     CustomExecuteFile(Side, ExecuteFileBy, LocalFileName, OriginalFileName,
-      ExternalEditor, LocalRootDirectory, RemoteDirectory, false);
+      ExternalEditor, LocalRootDirectory, RemoteDirectory, false, MaskParams.Modification);
   }
 }
 //---------------------------------------------------------------------------
@@ -3865,6 +3870,11 @@ void __fastcall TCustomScpExplorerForm::TemporaryFileCopyParam(TCopyParamType & 
   CopyParam.FileMask = L"";
 }
 //---------------------------------------------------------------------------
+bool TCustomScpExplorerForm::EditorCheckNotModified(const TEditedFileData * Data)
+{
+  return WinConfiguration->EditorCheckNotModified && (Data->SourceTimestamp != TDateTime());
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
   const UnicodeString & FileName, TEditedFileData * Data, HANDLE UploadCompleteEvent, bool & Retry)
 {
@@ -3927,6 +3937,25 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
     }
   }
 
+  if (EditorCheckNotModified(Data))
+  {
+    UnicodeString RemoteFilePath = UnixCombinePaths(Data->RemoteDirectory, Data->OriginalFileName);
+    std::unique_ptr<TRemoteFile> File(Terminal->TryReadFile(RemoteFilePath));
+    if (File.get() != NULL)
+    {
+      AppLogFmt(L"Edited remote file timestamp: %s, Original timestamp: %s", (StandardTimestamp(File->Modification), StandardTimestamp(Data->SourceTimestamp)));
+
+      if (File->Modification != Data->SourceTimestamp)
+      {
+        UnicodeString Message = MainInstructions(LoadStr(EDIT_CHANGED_EXTERNALLY));
+        if (MessageDialog(Message, qtConfirmation, qaOK | qaCancel) != qaOK)
+        {
+          Abort();
+        }
+      }
+    }
+  }
+
   TStrings * FileList = new TStringList();
   try
   {
@@ -3981,7 +4010,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ExecutedFileReload(
-  const UnicodeString FileName, const TEditedFileData * Data)
+  const UnicodeString & FileName, TEditedFileData * Data)
 {
   // Sanity check, we should not be busy otherwise user would not be able to click Reload button.
   DebugAssert(!NonVisualDataModule->Busy);
@@ -4020,6 +4049,11 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileReload(
     UnicodeString TempDir = ExtractFilePath(FileName);
 
     TemporarilyDownloadFiles(FileList.get(), Data->ForceText, RootTempDir, TempDir, true, true, false);
+
+    if (EditorCheckNotModified(Data))
+    {
+      Data->SourceTimestamp = File->Modification;
+    }
 
     // sanity check, the target file name should be still the same
     DebugAssert(ExtractFileName(FileName) == FileList->Strings[0]);
@@ -4156,8 +4190,19 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileEarlyClosed(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::ExecutedFileUploadComplete(TObject * Sender)
+void __fastcall TCustomScpExplorerForm::ExecutedFileUploadComplete(TEditedFileData * Data, TObject * Sender)
 {
+  if (EditorCheckNotModified(Data))
+  {
+    UnicodeString RemoteFilePath = UnixCombinePaths(Data->RemoteDirectory, Data->OriginalFileName);
+    std::unique_ptr<TRemoteFile> File(Terminal->TryReadFile(RemoteFilePath));
+    if (File.get() != NULL)
+    {
+      Data->SourceTimestamp = File->Modification;
+      AppLogFmt(L"Uploaded edited remote file timestamp: %s: ", (StandardTimestamp(Data->SourceTimestamp)));
+    }
+  }
+
   EditorFormFileUploadComplete(DebugNotNull(dynamic_cast<TForm *>(Sender)));
 }
 //---------------------------------------------------------------------------

@@ -403,7 +403,7 @@ void __fastcall TEditorManager::UploadComplete(int Index)
     }
     else if ((FileData->Token != NULL) && (FOnFileUploadComplete != NULL))
     {
-      FOnFileUploadComplete(FileData->Token);
+      FOnFileUploadComplete(FileData->Data, FileData->Token);
     }
   }
 }

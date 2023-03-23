@@ -21,16 +21,17 @@ struct TEditedFileData
   UnicodeString SessionName;
   UnicodeString OriginalFileName;
   UnicodeString Command;
+  TDateTime SourceTimestamp;
 };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TEditedFileChangedEvent)
   (const UnicodeString & FileName, TEditedFileData * Data, HANDLE CompleteEvent, bool & Retry);
 typedef void __fastcall (__closure * TEditedFileReloadEvent)
-  (const UnicodeString FileName, const TEditedFileData * Data);
+  (const UnicodeString & FileName, TEditedFileData * Data);
 typedef void __fastcall (__closure * TEditedFileEarlyClosedEvent)
   (const TEditedFileData * Data, bool & KeepOpen);
 typedef void __fastcall (__closure * TEditedFileUploadComplete)
-  (TObject * Token);
+  (TEditedFileData * Data, TObject * Token);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TEditedFileProcessEvent)
   (const UnicodeString FileName, TEditedFileData * Data, TObject * Token, void * Arg);

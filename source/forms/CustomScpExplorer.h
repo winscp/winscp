@@ -461,11 +461,11 @@ protected:
   void __fastcall OperationComplete(const TDateTime & StartTime);
   void __fastcall ExecutedFileChanged(
     const UnicodeString & FileName, TEditedFileData * Data, HANDLE UploadCompleteEvent, bool & Retry);
-  void __fastcall ExecutedFileReload(const UnicodeString FileName,
-    const TEditedFileData * Data);
+  void __fastcall ExecutedFileReload(const UnicodeString & FileName, TEditedFileData * Data);
   void __fastcall ExecutedFileEarlyClosed(const TEditedFileData * Data,
     bool & KeepOpen);
-  void __fastcall ExecutedFileUploadComplete(TObject * Sender);
+  void __fastcall ExecutedFileUploadComplete(TEditedFileData * Data, TObject * Sender);
+  bool EditorCheckNotModified(const TEditedFileData * Data);
   void __fastcall CMDialogChar(TMessage & AMessage);
   inline void __fastcall WMAppCommand(TMessage & Message);
   inline void __fastcall WMSysCommand(TMessage & Message);
@@ -558,7 +558,7 @@ protected:
   void __fastcall CustomExecuteFile(TOperationSide Side,
     TExecuteFileBy ExecuteFileBy, UnicodeString FileName, UnicodeString OriginalFileName,
     const TEditorData * ExternalEditor, UnicodeString LocalRootDirectory,
-    UnicodeString RemoteDirectory, bool NewFile);
+    UnicodeString RemoteDirectory, bool NewFile, const TDateTime & SourceTimestamp);
   void __fastcall ExecuteFile(TOperationSide Side,
     TExecuteFileBy ExecuteFileBy, const TEditorData * ExternalEditor,
     UnicodeString FullFileName, TObject * Object,

@@ -1073,18 +1073,18 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 404
+          Height = 344
           Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'Editor preference'
           TabOrder = 0
           DesignSize = (
             389
-            404)
+            344)
           object EditorListView3: TListView
             Left = 16
             Top = 24
             Width = 356
-            Height = 307
+            Height = 247
             Anchors = [akLeft, akTop, akRight, akBottom]
             Columns = <
               item
@@ -1120,7 +1120,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object AddEditorButton: TButton
             Left = 16
-            Top = 337
+            Top = 277
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -1130,7 +1130,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object EditEditorButton: TButton
             Left = 112
-            Top = 337
+            Top = 277
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
@@ -1140,7 +1140,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object UpEditorButton: TButton
             Left = 290
-            Top = 337
+            Top = 277
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1150,7 +1150,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DownEditorButton: TButton
             Left = 290
-            Top = 368
+            Top = 308
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1160,13 +1160,34 @@ object PreferencesDialog: TPreferencesDialog
           end
           object RemoveEditorButton: TButton
             Left = 16
-            Top = 368
+            Top = 308
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
             Caption = '&Remove'
             TabOrder = 5
             OnClick = RemoveEditorButtonClick
+          end
+        end
+        object EditingOptionsGroup: TGroupBox
+          Left = 8
+          Top = 358
+          Width = 389
+          Height = 54
+          Caption = 'Editing options'
+          TabOrder = 1
+          DesignSize = (
+            389
+            54)
+          object EditorCheckNotModifiedCheck: TCheckBox
+            Left = 16
+            Top = 21
+            Width = 357
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Check that edited remote file has not changed before saving it'
+            TabOrder = 0
+            OnClick = ControlChange
           end
         end
       end

@@ -342,6 +342,8 @@ __published:
   TUpDownEdit *LocalPortNumberMaxEdit;
   TCheckBox *AlwaysSortDirectoriesByNameCheck;
   TLabel *LogProtocolHintLabel;
+  TGroupBox *EditingOptionsGroup;
+  TCheckBox *EditorCheckNotModifiedCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

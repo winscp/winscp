@@ -397,6 +397,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     FEditorBackgroundColor = WinConfiguration->Editor.BackgroundColor;
     (*FEditorList) = *WinConfiguration->EditorList;
     UpdateEditorListView();
+    BOOLPROP(EditorCheckNotModified);
 
     FCopyParams = GUIConfiguration->DefaultCopyParam;
     ResumeOnButton->Checked = GUIConfiguration->DefaultCopyParam.ResumeSupport == rsOn;
@@ -788,6 +789,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     WinConfiguration->Editor.FontColor = FEditorFont->Color;
     WinConfiguration->Editor.BackgroundColor = FEditorBackgroundColor;
     WinConfiguration->EditorList = FEditorList;
+    BOOLPROP(EditorCheckNotModified);
 
     // overwrites only TCopyParamType fields
     CopyParam = FCopyParams;

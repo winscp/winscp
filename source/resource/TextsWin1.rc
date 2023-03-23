@@ -165,6 +165,7 @@ BEGIN
         CLOSE_SESSION_WORKSPACE, "Terminate session '%s' and close application without saving a workspace?"
         CLOSE_WORKSPACE, "Close application without saving a workspace?"
         TOO_MANY_SESSIONS, "**Do you really want to open another tab?**\nYou have %d tabs opened already. Please consider closing some tabs first to free resources of your computer."
+        EDIT_CHANGED_EXTERNALLY, "The remote file has been changed while you were editing it. Do you want to overwrite it anyway?"
 
         WIN_INFORMATION_STRINGS, "WIN_INFORMATION"
         COMPARE_NO_DIFFERENCES, "No differences found."
