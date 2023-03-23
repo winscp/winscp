@@ -527,8 +527,9 @@ public:
   TRemoteFileList * __fastcall ReadDirectoryListing(UnicodeString Directory, const TFileMasks & Mask);
   TRemoteFileList * __fastcall CustomReadDirectoryListing(UnicodeString Directory, bool UseCache);
   TRemoteFile * __fastcall ReadFileListing(UnicodeString Path);
-  void __fastcall ReadFile(const UnicodeString FileName, TRemoteFile *& File);
-  bool __fastcall FileExists(const UnicodeString FileName, TRemoteFile ** File = NULL);
+  TRemoteFile * ReadFile(const UnicodeString & FileName);
+  TRemoteFile * TryReadFile(const UnicodeString & FileName);
+  bool FileExists(const UnicodeString & FileName);
   void __fastcall ReadSymlink(TRemoteFile * SymlinkFile, TRemoteFile *& File);
   bool __fastcall CopyToLocal(
     TStrings * FilesToCopy, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,

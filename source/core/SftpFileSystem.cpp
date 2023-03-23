@@ -3610,9 +3610,7 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
           FTerminal->ExceptionOnFail = true;
           try
           {
-            File = NULL;
-            FTerminal->ReadFile(
-              UnixIncludeTrailingBackslash(FileList->Directory) + PARENTDIRECTORY, File);
+            File = FTerminal->ReadFile(UnixCombinePaths(FileList->Directory, PARENTDIRECTORY));
           }
           __finally
           {

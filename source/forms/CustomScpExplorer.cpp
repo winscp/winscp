@@ -3254,20 +3254,14 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
       {
         Name = AbsolutePath(Terminal->CurrentDirectory, Name);
 
-        TRemoteFile * File = NULL;
-        if (Terminal->FileExists(Name, &File) &&
+        std::unique_ptr<TRemoteFile> File(Terminal->TryReadFile(Name));
+        if ((File.get() != NULL) &&
             !File->IsDirectory)
         {
-          try
-          {
-            ExecuteRemoteFile(Name, File, efDefaultEditor);
-            ExistingFile = true;
-          }
-          __finally
-          {
-            delete File;
-          }
+          ExecuteRemoteFile(Name, File.get(), efDefaultEditor);
+          ExistingFile = true;
         }
+        File.reset(NULL);
 
         if (!ExistingFile)
         {
@@ -3837,16 +3831,14 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
         TDateTimePrecision Precision;
         MaskParams.Modification = DView->ItemFileTime(Item, Precision);
 
-        std::unique_ptr<TRemoteFile> FileOwner;
+        std::unique_ptr<TRemoteFile> File;
         if (!IsSideLocalBrowser(Side))
         {
-          TRemoteFile * File = NULL;
-          Terminal->FileExists(FullFileName, &File);
-          if (File != NULL)
+          File.reset(Terminal->TryReadFile(FullFileName));
+          if (File.get() != NULL)
           {
             File->FullFileName = FullFileName;
-            Object = File;
-            FileOwner.reset(File);
+            Object = File.get();
             MaskParams.Size = File->Size;
             MaskParams.Modification = File->Modification;
           }
@@ -4011,9 +4003,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileReload(
     Terminal->ExceptionOnFail = true;
     try
     {
-      TRemoteFile * AFile = NULL;
-      Terminal->ReadFile(RemoteFileName, AFile);
-      File.reset(AFile);
+      File.reset(Terminal->ReadFile(RemoteFileName));
       if (!File->HaveFullFileName)
       {
         File->FullFileName = RemoteFileName;
@@ -6433,13 +6423,10 @@ void __fastcall TCustomScpExplorerForm::StandaloneEdit(const UnicodeString & Fil
 {
   UnicodeString FullFileName = AbsolutePath(Terminal->CurrentDirectory, FileName);
 
-  TRemoteFile * File = NULL;
-  Terminal->ReadFile(FullFileName, File);
-  if (File != NULL)
+  std::unique_ptr<TRemoteFile> File(Terminal->ReadFile(FullFileName));
+  if (File.get() != NULL)
   {
-    std::unique_ptr<TRemoteFile> FileOwner(File);
-
-    ExecuteRemoteFile(FullFileName, File, efInternalEditor);
+    ExecuteRemoteFile(FullFileName, File.get(), efInternalEditor);
 
     Application->ShowMainForm = false;
 

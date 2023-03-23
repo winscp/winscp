@@ -130,7 +130,7 @@ void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName, int
     Terminal->ExceptionOnFail = true;
     try
     {
-      Terminal->ReadFile(FileName, File);
+      File = Terminal->ReadFile(FileName);
     }
     __finally
     {

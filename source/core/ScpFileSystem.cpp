@@ -1048,10 +1048,7 @@ void __fastcall TSCPFileSystem::ReadDirectory(TRemoteFileList * FileList)
         {
           // Empty file list -> probably "permission denied", we
           // at least get link to parent directory ("..")
-          TRemoteFile * File;
-          FTerminal->ReadFile(
-            UnixIncludeTrailingBackslash(FTerminal->FFiles->Directory) +
-              PARENTDIRECTORY, File);
+          TRemoteFile * File = FTerminal->ReadFile(UnixCombinePaths(FTerminal->FFiles->Directory, PARENTDIRECTORY));
           Empty = (File == NULL);
           if (!Empty)
           {

@@ -658,7 +658,7 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
             FTerminal->ExceptionOnFail = true;
             try
             {
-              FTerminal->ReadFile(UnixExcludeTrailingBackslash(FileName), File);
+              File = FTerminal->ReadFile(UnixExcludeTrailingBackslash(FileName));
               if (!File->HaveFullFileName)
               {
                 File->FullFileName = FileName;

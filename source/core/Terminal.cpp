@@ -3579,7 +3579,7 @@ TRemoteFile * __fastcall TTerminal::ReadFileListing(UnicodeString Path)
     {
       // reset caches
       AnnounceFileListOperation();
-      ReadFile(Path, File);
+      File = ReadFile(Path);
       Action.File(File);
     }
     catch(Exception & E)
@@ -3755,64 +3755,60 @@ void __fastcall TTerminal::ReadSymlink(TRemoteFile * SymlinkFile,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::ReadFile(const UnicodeString FileName,
-  TRemoteFile *& File)
+TRemoteFile * TTerminal::ReadFile(const UnicodeString & FileName)
 {
   DebugAssert(FFileSystem);
-  File = NULL;
+  std::unique_ptr<TRemoteFile> File;
   try
   {
     LogEvent(FORMAT(L"Listing file \"%s\".", (FileName)));
-    FFileSystem->ReadFile(FileName, File);
+    TRemoteFile * AFile = NULL;
+    FFileSystem->ReadFile(FileName, AFile);
+    File.reset(AFile);
     ReactOnCommand(fsListFile);
-    LogRemoteFile(File);
+    LogRemoteFile(File.get());
   }
   catch (Exception &E)
   {
-    if (File) delete File;
-    File = NULL;
+    File.reset(NULL);
     CommandError(&E, FMTLOAD(CANT_GET_ATTRS, (FileName)));
   }
+  return File.release();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::FileExists(const UnicodeString FileName, TRemoteFile ** AFile)
+TRemoteFile * TTerminal::TryReadFile(const UnicodeString & FileName)
 {
-  bool Result;
-  TRemoteFile * File = NULL;
+  TRemoteFile * File;
   try
   {
     ExceptionOnFail = true;
     try
     {
-      ReadFile(UnixExcludeTrailingBackslash(FileName), File);
+      File = ReadFile(UnixExcludeTrailingBackslash(FileName));
     }
     __finally
     {
       ExceptionOnFail = false;
     }
-
-    if (AFile != NULL)
-    {
-      *AFile = File;
-    }
-    else
-    {
-      delete File;
-    }
-    Result = true;
   }
   catch(...)
   {
     if (Active)
     {
-      Result = false;
+      File = NULL;
     }
     else
     {
       throw;
     }
   }
-  return Result;
+  return File;
+}
+//---------------------------------------------------------------------------
+bool TTerminal::FileExists(const UnicodeString & FileName)
+{
+  std::unique_ptr<TRemoteFile> File(TryReadFile(FileName));
+  return (File.get() != NULL);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::AnnounceFileListOperation()
@@ -4645,8 +4641,7 @@ bool __fastcall TTerminal::DoRenameFile(
   UnicodeString AbsoluteNewName = AbsolutePath(NewName, true);
   bool Result = true;
   bool ExistenceKnown = false;
-  TRemoteFile * DuplicateFile = NULL;
-  std::unique_ptr<TRemoteFile> DuplicateFileOwner(DuplicateFile);
+  std::unique_ptr<TRemoteFile> DuplicateFile;
   if (BatchOverwrite == boNone)
   {
     DebugAssert(!DontOverwrite); // unsupported combination
@@ -4661,11 +4656,10 @@ bool __fastcall TTerminal::DoRenameFile(
            Configuration->ConfirmOverwriting &&
            !DontOverwrite)
   {
-    FileExists(AbsoluteNewName, &DuplicateFile);
-    DuplicateFileOwner.reset(DuplicateFile);
+    DuplicateFile.reset(TryReadFile(AbsoluteNewName));
     ExistenceKnown = true;
 
-    if (DuplicateFile != NULL)
+    if (DuplicateFile.get() != NULL)
     {
       UnicodeString QuestionFmt;
       if (DuplicateFile->IsDirectory)
@@ -4734,13 +4728,12 @@ bool __fastcall TTerminal::DoRenameFile(
       {
         if (!ExistenceKnown)
         {
-          FileExists(AbsoluteNewName, &DuplicateFile);
-          DuplicateFileOwner.reset(DuplicateFile);
+          DuplicateFile.reset(TryReadFile(AbsoluteNewName));
         }
 
-        if (DuplicateFile != NULL)
+        if (DuplicateFile.get() != NULL)
         {
-          DoDeleteFile(AbsoluteNewName, DuplicateFile, 0);
+          DoDeleteFile(AbsoluteNewName, DuplicateFile.get(), 0);
         }
       }
 
@@ -7251,11 +7244,11 @@ void __fastcall TTerminal::SourceRobust(
 bool __fastcall TTerminal::CreateTargetDirectory(
   const UnicodeString & DirectoryPath, int Attrs, const TCopyParamType * CopyParam)
 {
-  TRemoteFile * File = NULL;
+  std::unique_ptr<TRemoteFile> File(TryReadFile(DirectoryPath));
   bool DoCreate =
-    !FileExists(DirectoryPath, &File) ||
+    (File.get() == NULL) ||
     !File->IsDirectory; // just try to create and make it fail
-  delete File;
+  File.reset(NULL);
   if (DoCreate)
   {
     TRemoteProperties Properties;
@@ -8403,13 +8396,11 @@ UnicodeString __fastcall TTerminal::DecryptFileName(const UnicodeString & Path, 
 //---------------------------------------------------------------------------
 TRemoteFile * TTerminal::CheckRights(const UnicodeString & EntryType, const UnicodeString & FileName, bool & WrongRights)
 {
-  std::unique_ptr<TRemoteFile> FileOwner;
-  TRemoteFile * File;
+  std::unique_ptr<TRemoteFile> File;
   try
   {
     LogEvent(FORMAT(L"Checking %s \"%s\"...", (LowerCase(EntryType), FileName)));
-    ReadFile(FileName, File);
-    FileOwner.reset(File);
+    File.reset(ReadFile(FileName));
     int ForbiddenRights = TRights::rfGroupWrite | TRights::rfOtherWrite;
     if ((File->Rights->Number & ForbiddenRights) != 0)
     {
@@ -8424,7 +8415,7 @@ TRemoteFile * TTerminal::CheckRights(const UnicodeString & EntryType, const Unic
   catch (Exception & E)
   {
   }
-  return FileOwner.release();
+  return File.release();
 }
 //---------------------------------------------------------------------------
 UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
