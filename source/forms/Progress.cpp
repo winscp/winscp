@@ -350,7 +350,8 @@ void __fastcall TProgressForm::UpdateControls()
     if (FData.TotalSizeSet)
     {
       UnicodeString TimeLeftCaption;
-      if (CanShowTimeEstimate(FData.StartTime))
+      bool CanShow = CanShowTimeEstimate(FData.StartTime);
+      if (CanShow)
       {
         TDateTime TimeLeft;
         if (SynchronizeProgress != NULL)
@@ -369,9 +370,11 @@ void __fastcall TProgressForm::UpdateControls()
       }
       TimeLeftLabel->Caption = TimeLeftCaption;
     }
-    TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, FData.TimeElapsed());
+    TDateTime Elapsed = FData.TimeElapsed();
+    TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, Elapsed);
     BytesTransferredLabel->Caption = FormatBytes(FData.TotalTransferred);
-    CPSLabel->Caption = FORMAT(L"%s/s", (FormatBytes(FData.CPS())));
+    int CPS = FData.CPS();
+    CPSLabel->Caption = FORMAT(L"%s/s", (FormatBytes(CPS)));
     FileProgress->Position = FData.TransferProgress();
     FileProgress->Hint = FORMAT(L"%d%%", (FileProgress->Position));
   }
