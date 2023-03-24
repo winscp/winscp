@@ -2704,7 +2704,7 @@ void TDesktopFontManager::UpdateControl(TControl * Control)
     DesktopFont->PixelsPerInch = PublicControl->Font->PixelsPerInch;
   }
 
-  // Neither CreateFontIndirect nor RestoreFont set  color, so we should should have the default set by TFont constructor here.
+  // Neither CreateFontIndirect nor RestoreFont set color, so we should have the default set by TFont constructor here.
   DebugAssert(DesktopFont->Color == clWindowText);
   if (!SameFont(DesktopFont.get(), PublicControl->Font) ||
       (DesktopFont->PixelsPerInch != PublicControl->Font->PixelsPerInch))
