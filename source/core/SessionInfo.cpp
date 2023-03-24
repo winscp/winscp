@@ -1304,7 +1304,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
         ADF(L"Local command: %s", (Data->ProxyLocalCommand));
       }
     }
-    if (Data->UsesSsh || (Data->FSProtocol == fsFTP))
+    if (Data->UsesSsh || (Data->FSProtocol == fsFTP) || (Data->FSProtocol == fsS3))
     {
       ADF(L"Send buffer: %d", (Data->SendBuf));
     }
