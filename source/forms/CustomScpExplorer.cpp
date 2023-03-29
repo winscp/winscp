@@ -4190,9 +4190,9 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileEarlyClosed(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::ExecutedFileUploadComplete(TEditedFileData * Data, TObject * Sender)
+void __fastcall TCustomScpExplorerForm::ExecutedFileUploadComplete(TEditedFileData * Data, TObject * Sender, bool Failed)
 {
-  if (EditorCheckNotModified(Data))
+  if (!Failed && EditorCheckNotModified(Data))
   {
     UnicodeString RemoteFilePath = UnixCombinePaths(Data->RemoteDirectory, Data->OriginalFileName);
     std::unique_ptr<TRemoteFile> File(Terminal->TryReadFile(RemoteFilePath));
@@ -4203,7 +4203,10 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileUploadComplete(TEditedFileDa
     }
   }
 
-  EditorFormFileUploadComplete(DebugNotNull(dynamic_cast<TForm *>(Sender)));
+  if (Sender != NULL)
+  {
+    EditorFormFileUploadComplete(DebugNotNull(dynamic_cast<TForm *>(Sender)));
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteDirViewEnter(TObject * /*Sender*/)

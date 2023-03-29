@@ -297,7 +297,7 @@ void __fastcall TEditorManager::Check()
 
       if (Index >= 0)
       {
-        UploadComplete(Index);
+        UploadComplete(Index, false); // To be improved: do not know if it really succeeded
       }
     }
     while ((Index >= 0) && (FUploadCompleteEvents.size() > 0));
@@ -379,7 +379,7 @@ void __fastcall TEditorManager::AddFile(TFileData & FileData, TEditedFileData * 
   Data.release(); // ownership passed
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorManager::UploadComplete(int Index)
+void __fastcall TEditorManager::UploadComplete(int Index, bool Failed)
 {
   TFileData * FileData = &FFiles[Index];
 
@@ -401,9 +401,9 @@ void __fastcall TEditorManager::UploadComplete(int Index)
       FileData->Reupload = false;
       CheckFileChange(Index, true);
     }
-    else if ((FileData->Token != NULL) && (FOnFileUploadComplete != NULL))
+    else if (FOnFileUploadComplete != NULL)
     {
-      FOnFileUploadComplete(FileData->Data, FileData->Token);
+      FOnFileUploadComplete(FileData->Data, FileData->Token, Failed);
     }
   }
 }
@@ -549,7 +549,7 @@ void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)
           OnFileChange(FileData->FileName, FileData->Data, FileData->UploadCompleteEvent, Retry);
           if (Retry)
           {
-            UploadComplete(Index);
+            UploadComplete(Index, true);
             FileData->Timestamp = PrevTimestamp;
           }
         }
@@ -558,7 +558,7 @@ void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)
           // upload failed (was not even started)
           if (FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE)
           {
-            UploadComplete(Index);
+            UploadComplete(Index, true);
           }
           throw;
         }

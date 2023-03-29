@@ -464,7 +464,7 @@ protected:
   void __fastcall ExecutedFileReload(const UnicodeString & FileName, TEditedFileData * Data);
   void __fastcall ExecutedFileEarlyClosed(const TEditedFileData * Data,
     bool & KeepOpen);
-  void __fastcall ExecutedFileUploadComplete(TEditedFileData * Data, TObject * Sender);
+  void __fastcall ExecutedFileUploadComplete(TEditedFileData * Data, TObject * Sender, bool Failed);
   bool EditorCheckNotModified(const TEditedFileData * Data);
   void __fastcall CMDialogChar(TMessage & AMessage);
   inline void __fastcall WMAppCommand(TMessage & Message);

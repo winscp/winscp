@@ -31,7 +31,7 @@ typedef void __fastcall (__closure * TEditedFileReloadEvent)
 typedef void __fastcall (__closure * TEditedFileEarlyClosedEvent)
   (const TEditedFileData * Data, bool & KeepOpen);
 typedef void __fastcall (__closure * TEditedFileUploadComplete)
-  (TEditedFileData * Data, TObject * Token);
+  (TEditedFileData * Data, TObject * Token, bool Failed);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TEditedFileProcessEvent)
   (const UnicodeString FileName, TEditedFileData * Data, TObject * Token, void * Arg);
@@ -94,7 +94,7 @@ private:
   TEditedFileUploadComplete FOnFileUploadComplete;
 
   void __fastcall AddFile(TFileData & FileData, TEditedFileData * Data);
-  void __fastcall UploadComplete(int Index);
+  void __fastcall UploadComplete(int Index, bool Failed);
   bool __fastcall CloseFile(int Index, bool IgnoreErrors, bool Delete);
   void __fastcall CloseProcess(int Index);
   bool __fastcall EarlyClose(int Index);
