@@ -442,6 +442,7 @@ bool __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
   else
   {
     UnicodeString LocalRootDirectory = FileData->Data->LocalRootDirectory;
+    UnicodeString FileName = FileData->FileName; // Before it's released
 
     ReleaseFile(Index);
     FFiles.erase(FFiles.begin() + Index);
@@ -454,11 +455,11 @@ bool __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
       {
         throw Exception(FMTLOAD(DELETE_TEMP_EXECUTE_FILE_ERROR, (LocalRootDirectory)));
       }
-      AppLogFmt(L"Deleted opened/edited file [%s] folder \"%s\".", (FileData->FileName, LocalRootDirectory));
+      AppLogFmt(L"Deleted opened/edited file [%s] folder \"%s\".", (FileName, LocalRootDirectory));
     }
     else
     {
-      AppLogFmt(L"Opened/edited file \"%s\" has been closed.", (FileData->FileName));
+      AppLogFmt(L"Opened/edited file \"%s\" has been closed.", (FileName));
     }
   }
   return Result;
