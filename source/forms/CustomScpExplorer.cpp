@@ -291,6 +291,9 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
 
   CreateHiddenWindow();
   StartUpdates();
+  // Start loading drive data, so that they are ready once we need them for StartCreationDirectoryMonitorsOnEachDrive
+  // (necessary for "explorer" only, as "commander" loads it for its drive menu)
+  DriveInfo->NeedData();
 }
 //---------------------------------------------------------------------------
 __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
