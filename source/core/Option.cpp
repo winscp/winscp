@@ -72,7 +72,7 @@ void __fastcall TOptions::Add(UnicodeString Value)
         // This is to treat /home/martin as parameter, not as switch.
         else if ((Value[Index] == L'?') ||
                  IsLetter(Value[Index]) ||
-                 ((Index == 2) && (Value[1] == L'-') && (Value[Index] == L'-'))) // allow --certificate
+                 ((Value[Index] == L'-') && (SwitchMark == L'-') && (Value[2] == L'-'))) // allow --puttygen-switches
         {
           // noop
         }

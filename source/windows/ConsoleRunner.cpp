@@ -2536,7 +2536,9 @@ int __fastcall BatchSettings(TConsole * Console, TProgramParams * Params)
 bool __fastcall FindPuttygenCompatibleSwitch(
   TProgramParams * Params, const UnicodeString & Name, const UnicodeString & PuttygenName, UnicodeString & Value, bool & Set)
 {
-  bool Result = Params->FindSwitch(Name, Value, Set);
+  bool Result =
+    !Name.IsEmpty() &&
+    Params->FindSwitch(Name, Value, Set);
   if (!Result)
   {
     std::unique_ptr<TStrings> Args(new TStringList());
@@ -2574,14 +2576,24 @@ int __fastcall KeyGen(TConsole * Console, TProgramParams * Params)
     UnicodeString NewComment;
     FindPuttygenCompatibleSwitch(Params, KEYGEN_COMMENT_SWITCH, L"C", NewComment, ValueSet);
 
+    bool ChangePassphrase;
     bool NewPassphraseSet;
-    bool ChangePassphrase =
-      FindPuttygenCompatibleSwitch(Params, KEYGEN_CHANGE_PASSPHRASE_SWITCH, L"P", NewPassphrase, NewPassphraseSet);
+    if (Params->FindSwitchCaseSensitive(L"P"))
+    {
+      ChangePassphrase = true;
+      FindPuttygenCompatibleSwitch(Params, EmptyStr, L"-new-passphrase", NewPassphrase, NewPassphraseSet);
+    }
+    else
+    {
+      ChangePassphrase = Params->FindSwitch(KEYGEN_CHANGE_PASSPHRASE_SWITCH, NewPassphrase, NewPassphraseSet);
+    }
 
     bool CertificateSet;
     UnicodeString Certificate;
     // It's --certificate in puttygen
     FindPuttygenCompatibleSwitch(Params, KEYGEN_CERTIFICATE_SWITCH, L"-certificate", Certificate, CertificateSet);
+
+    FindPuttygenCompatibleSwitch(Params, PassphraseOption, L"-old-passphrase", Passphrase, ValueSet);
 
     if (Params->ParamCount > 0)
     {
@@ -2629,17 +2641,14 @@ int __fastcall KeyGen(TConsole * Console, TProgramParams * Params)
     }
 
     UnicodeString Comment;
-    if (IsKeyEncrypted(Type, InputFileName, Comment))
+    if (IsKeyEncrypted(Type, InputFileName, Comment) &&
+        Passphrase.IsEmpty())
     {
-      Passphrase = Params->SwitchValue(PassphraseOption);
-      if (Passphrase.IsEmpty())
+      Console->Print(StripHotkey(FMTLOAD(PROMPT_KEY_PASSPHRASE, (Comment))) + L" ");
+      if (!Console->Input(Passphrase, false, 0) ||
+          Passphrase.IsEmpty())
       {
-        Console->Print(StripHotkey(FMTLOAD(PROMPT_KEY_PASSPHRASE, (Comment))) + L" ");
-        if (!Console->Input(Passphrase, false, 0) ||
-            Passphrase.IsEmpty())
-        {
-          Abort();
-        }
+        Abort();
       }
     }
 
