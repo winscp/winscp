@@ -299,6 +299,10 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
 __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
 {
   FInvalid = true;
+  if (FClipboardTerminal != NULL)
+  {
+    ClipboardClear(); // implies ClipboardStop
+  }
   // this has to be one of the very first things to do
   StopUpdateThread();
   // This is needed when shuting down Windows only. Otherwise it's already set NULL from Execute()
