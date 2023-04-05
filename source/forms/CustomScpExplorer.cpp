@@ -3916,15 +3916,25 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
           }
         }
       }
-      // foreground session should reconnect itself
-      else if (Terminal != Data->Terminal)
+      // Foreground session should reconnect itself (except for those disconnected explicitly by the user)
+      else if (DebugAlwaysTrue(Terminal->Disconnected || (Terminal != Data->Terminal)))
       {
         UnicodeString Message =
           MainInstructions(
             FMTLOAD(EDIT_SESSION_RECONNECT, (Data->SessionName, FileNameOnly)));
         if (MessageDialog(Message, qtConfirmation, qaOK | qaCancel) == qaOK)
         {
-          Manager->SetActiveTerminalWithAutoReconnect(Data->Terminal);
+          if (Terminal->Disconnected)
+          {
+            Manager->ActiveSession = Terminal;
+            ReconnectSession();
+            DebugAssert(Terminal == Data->Terminal);
+            Data->Queue = Manager->FindQueueForTerminal(Terminal);
+          }
+          else
+          {
+            Manager->SetActiveTerminalWithAutoReconnect(Data->Terminal);
+          }
           Configuration->Usage->Inc(EditInactiveSessionReopenAcceptedCounter);
         }
         else
@@ -7091,8 +7101,6 @@ void __fastcall TCustomScpExplorerForm::ExecuteCurrentFileWith(bool OnFocused)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DetachTerminal(TObject * ATerminal)
 {
-  FEditorManager->ProcessFiles(FileTerminalRemoved, ATerminal);
-
   if (FFileFindTerminal == ATerminal)
   {
     FFileFindTerminal = NULL;
@@ -7113,6 +7121,7 @@ void __fastcall TCustomScpExplorerForm::DetachTerminal(TObject * ATerminal)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TerminalRemoved(TObject * Sender)
 {
+  FEditorManager->ProcessFiles(FileTerminalRemoved, Sender);
   DetachTerminal(Sender);
 }
 //---------------------------------------------------------------------------
