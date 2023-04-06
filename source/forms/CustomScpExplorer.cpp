@@ -11259,6 +11259,7 @@ void __fastcall TCustomScpExplorerForm::ClipboardFakeCreated(TObject * /*Sender*
   if (DebugAlwaysTrue(!FClipboardFakeDirectory.IsEmpty()) &&
       SameText(ExtractFileName(FileName), ExtractFileName(FClipboardFakeDirectory)))
   {
+    AppLogFmt(L"Fake clipboard directory pasted to \"%s\"", (FileName));
     // Can fail as it can be e.g. locked by AV, so we retry that later
     bool Removed = RemoveDir(ApiPath(FileName));
 
