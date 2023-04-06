@@ -680,15 +680,22 @@ namespace WinSCP
                 mask = "*";
             }
 
-            return
-                new Regex(
-                    '^' +
-                    mask
-                        .Replace(".", "[.]")
-                        .Replace("*", ".*")
-                        .Replace("?", ".") +
-                    '$',
-                    RegexOptions.IgnoreCase);
+            string r = "^";
+            foreach (var c in mask)
+            {
+                string p;
+                switch (c)
+                {
+                    case '.': p = "[.]"; break;
+                    case '*': p = ".*"; break;
+                    case '?': p = "."; break;
+                    default: p = Regex.Escape(new string(c, 1)); break;
+                }
+                r += p;
+            }
+            r += "$";
+
+            return new Regex(r, RegexOptions.IgnoreCase);
         }
 
         public TransferOperationResult PutFiles(string localPath, string remotePath, bool remove = false, TransferOptions options = null)
