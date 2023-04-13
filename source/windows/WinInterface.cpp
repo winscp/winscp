@@ -655,9 +655,9 @@ unsigned int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
     Message, MoreMessages, Type, Answers, HelpKeyword, Params);
 }
 //---------------------------------------------------------------------------
-unsigned int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
-  int SessionReopenTimeout, const UnicodeString MessageFormat, unsigned int Answers,
-  UnicodeString HelpKeyword, const TMessageParams * Params)
+unsigned int __fastcall FatalExceptionMessageDialog(
+  Exception * E, TQueryType Type, const UnicodeString & MessageFormat, unsigned int Answers,
+  const UnicodeString & HelpKeyword, const TMessageParams * Params)
 {
   DebugAssert(FLAGCLEAR(Answers, qaRetry));
   Answers |= qaRetry;
@@ -670,14 +670,6 @@ unsigned int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Ty
   if (Params != NULL)
   {
     AParams = *Params;
-  }
-  DebugAssert(AParams.Timeout == 0);
-  // the condition is de facto excess
-  if (SessionReopenTimeout > 0)
-  {
-    AParams.Timeout = SessionReopenTimeout;
-    AParams.TimeoutAnswer = qaRetry;
-    AParams.TimeoutResponse = AParams.TimeoutAnswer;
   }
   DebugAssert(AParams.Aliases == NULL);
   AParams.Aliases = Aliases;

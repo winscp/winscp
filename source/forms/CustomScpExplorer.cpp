@@ -3886,7 +3886,14 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
   const UnicodeString & FileName, TEditedFileData * Data, HANDLE UploadCompleteEvent, bool & Retry)
 {
   TTerminalManager * Manager = TTerminalManager::Instance();
-  if (!IsActiveTerminal(Data->Terminal))
+
+  if ((Manager->ActiveTerminal == Data->Terminal) &&
+      Manager->ScheduleTerminalReconnnect(Data->Terminal))
+  {
+    AppLog(L"Scheduled session reconnect, will retry the upload later");
+    Retry = true;
+  }
+  else if (!IsActiveTerminal(Data->Terminal))
   {
     if (!NonVisualDataModule->Busy)
     {
@@ -3954,75 +3961,78 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
     }
   }
 
-  if (EditorCheckNotModified(Data))
+  if (!Retry)
   {
-    UnicodeString RemoteFilePath = UnixCombinePaths(Data->RemoteDirectory, Data->OriginalFileName);
-    std::unique_ptr<TRemoteFile> File(Terminal->TryReadFile(RemoteFilePath));
-    if (File.get() != NULL)
+    if (EditorCheckNotModified(Data))
     {
-      AppLogFmt(L"Edited remote file timestamp: %s, Original timestamp: %s", (StandardTimestamp(File->Modification), StandardTimestamp(Data->SourceTimestamp)));
-
-      if (File->Modification != Data->SourceTimestamp)
+      UnicodeString RemoteFilePath = UnixCombinePaths(Data->RemoteDirectory, Data->OriginalFileName);
+      std::unique_ptr<TRemoteFile> File(Terminal->TryReadFile(RemoteFilePath));
+      if (File.get() != NULL)
       {
-        UnicodeString Message = MainInstructions(LoadStr(EDIT_CHANGED_EXTERNALLY));
-        if (MessageDialog(Message, qtConfirmation, qaOK | qaCancel) != qaOK)
+        AppLogFmt(L"Edited remote file timestamp: %s, Original timestamp: %s", (StandardTimestamp(File->Modification), StandardTimestamp(Data->SourceTimestamp)));
+
+        if (File->Modification != Data->SourceTimestamp)
         {
-          Abort();
+          UnicodeString Message = MainInstructions(LoadStr(EDIT_CHANGED_EXTERNALLY));
+          if (MessageDialog(Message, qtConfirmation, qaOK | qaCancel) != qaOK)
+          {
+            Abort();
+          }
         }
       }
     }
-  }
 
-  TStrings * FileList = new TStringList();
-  try
-  {
-    FileList->Add(FileName);
+    TStrings * FileList = new TStringList();
+    try
+    {
+      FileList->Add(FileName);
 
-    // Consider using the same settings (preset) as when the file was downloaded.
-    // More over this does not reflect the actual session that will do the upload.
-    TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
-    TemporaryFileCopyParam(CopyParam);
-    if (Data->ForceText)
-    {
-      CopyParam.TransferMode = tmAscii;
-    }
-    // so i do not need to worry if masking algorithm works in all cases
-    // ("" means "copy file name", no masking is actually done)
-    if (ExtractFileName(FileName) == Data->OriginalFileName)
-    {
-      CopyParam.FileMask = L"";
-    }
-    else
-    {
-      CopyParam.FileMask = DelimitFileNameMask(Data->OriginalFileName);
-    }
-
-    int Params = cpNoConfirmation | cpTemporary;
-    if (Data->Terminal->IsCapable[fcBackgroundTransfers])
-    {
-      DebugAssert(Data->Queue != NULL);
-
-      TQueueItem * QueueItem = new TUploadQueueItem(Data->Terminal, FileList,
-        Data->RemoteDirectory, &CopyParam, Params, true, false);
-      QueueItem->CompleteEvent = UploadCompleteEvent;
-      AddQueueItem(Data->Queue, QueueItem, Data->Terminal);
-    }
-    else
-    {
-      if (NonVisualDataModule->Busy)
+      // Consider using the same settings (preset) as when the file was downloaded.
+      // More over this does not reflect the actual session that will do the upload.
+      TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
+      TemporaryFileCopyParam(CopyParam);
+      if (Data->ForceText)
       {
-        Retry = true;
+        CopyParam.TransferMode = tmAscii;
+      }
+      // so i do not need to worry if masking algorithm works in all cases
+      // ("" means "copy file name", no masking is actually done)
+      if (ExtractFileName(FileName) == Data->OriginalFileName)
+      {
+        CopyParam.FileMask = L"";
       }
       else
       {
-        Data->Terminal->CopyToRemote(FileList, Data->RemoteDirectory, &CopyParam, Params, NULL);
-        SetEvent(UploadCompleteEvent);
+        CopyParam.FileMask = DelimitFileNameMask(Data->OriginalFileName);
+      }
+
+      int Params = cpNoConfirmation | cpTemporary;
+      if (Data->Terminal->IsCapable[fcBackgroundTransfers])
+      {
+        DebugAssert(Data->Queue != NULL);
+
+        TQueueItem * QueueItem = new TUploadQueueItem(Data->Terminal, FileList,
+          Data->RemoteDirectory, &CopyParam, Params, true, false);
+        QueueItem->CompleteEvent = UploadCompleteEvent;
+        AddQueueItem(Data->Queue, QueueItem, Data->Terminal);
+      }
+      else
+      {
+        if (NonVisualDataModule->Busy)
+        {
+          Retry = true;
+        }
+        else
+        {
+          Data->Terminal->CopyToRemote(FileList, Data->RemoteDirectory, &CopyParam, Params, NULL);
+          SetEvent(UploadCompleteEvent);
+        }
       }
     }
-  }
-  __finally
-  {
-    delete FileList;
+    __finally
+    {
+      delete FileList;
+    }
   }
 }
 //---------------------------------------------------------------------------

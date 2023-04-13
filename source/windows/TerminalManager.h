@@ -80,6 +80,9 @@ public:
   TTerminalQueue * __fastcall FindQueueForTerminal(TTerminal * Terminal);
   bool __fastcall UploadPublicKey(TTerminal * Terminal, TSessionData * Data, UnicodeString & FileName);
   UnicodeString GetPathForSessionTabName(const UnicodeString & Result);
+  bool HookFatalExceptionMessageDialog(TMessageParams & Params);
+  void UnhookFatalExceptionMessageDialog();
+  bool ScheduleTerminalReconnnect(TTerminal * Terminal);
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
   __property TManagedTerminal * ActiveSession = { read = FActiveSession, write = SetActiveSession };
@@ -100,6 +103,8 @@ private:
   static TTerminalManager * FInstance;
   TCustomScpExplorerForm * FScpExplorer;
   TManagedTerminal * FActiveSession;
+  TManagedTerminal * FTerminalWithFatalExceptionTimer;
+  bool FTerminalReconnnecteScheduled;
   TTerminal * FLocalTerminal;
   bool FDestroying;
   TTerminalPendingAction FTerminalPendingAction;
@@ -195,6 +200,7 @@ private:
   TManagedTerminal * __fastcall GetSession(int Index);
   bool IsUpdating();
   bool SupportedSession(TSessionData * Data);
+  void __fastcall TerminalFatalExceptionTimer(unsigned int & Result);
 };
 //---------------------------------------------------------------------------
 #endif

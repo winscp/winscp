@@ -141,9 +141,9 @@ unsigned int __fastcall MoreMessageDialog(const UnicodeString Message,
 unsigned int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
   const UnicodeString MessageFormat = L"", unsigned int Answers = qaOK,
   UnicodeString HelpKeyword = HELP_NONE, const TMessageParams * Params = NULL);
-unsigned int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
-  int SessionReopenTimeout, const UnicodeString MessageFormat = L"", unsigned int Answers = qaOK,
-  UnicodeString HelpKeyword = HELP_NONE, const TMessageParams * Params = NULL);
+unsigned int __fastcall FatalExceptionMessageDialog(
+  Exception * E, TQueryType Type, const UnicodeString & MessageFormat, unsigned int Answers,
+  const UnicodeString & HelpKeyword, const TMessageParams * Params);
 
 // forms\Custom.cpp
 TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,

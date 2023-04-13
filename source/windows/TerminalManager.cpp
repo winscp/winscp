@@ -67,6 +67,7 @@ __fastcall TTerminalManager::TTerminalManager() :
 {
   FQueueSection = new TCriticalSection();
   FActiveSession = NULL;
+  FTerminalWithFatalExceptionTimer = NULL;
   FScpExplorer = NULL;
   FDestroying = false;
   FTerminalPendingAction = tpNull;
@@ -1981,4 +1982,46 @@ bool __fastcall TTerminalManager::UploadPublicKey(
 bool TTerminalManager::IsUpdating()
 {
   return (FUpdating > 0);
+}
+//---------------------------------------------------------------------------
+bool TTerminalManager::HookFatalExceptionMessageDialog(TMessageParams & Params)
+{
+  bool Result =
+    DebugAlwaysTrue(ActiveTerminal != NULL) &&
+    DebugAlwaysTrue(Params.Timer == 0) &&
+    DebugAlwaysTrue(Params.TimerEvent == NULL) &&
+    DebugAlwaysTrue(FTerminalWithFatalExceptionTimer == NULL);
+  if (Result)
+  {
+    Params.Timer = MSecsPerSec / 4;
+    Params.TimerEvent = TerminalFatalExceptionTimer;
+    FTerminalWithFatalExceptionTimer = ActiveTerminal;
+    FTerminalReconnnecteScheduled = false;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void TTerminalManager::UnhookFatalExceptionMessageDialog()
+{
+  DebugAssert(FTerminalWithFatalExceptionTimer != NULL);
+  FTerminalWithFatalExceptionTimer = NULL;
+}
+//---------------------------------------------------------------------------
+bool TTerminalManager::ScheduleTerminalReconnnect(TTerminal * Terminal)
+{
+  bool Result = (FTerminalWithFatalExceptionTimer == Terminal);
+  if (Result)
+  {
+    FTerminalReconnnecteScheduled = true;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::TerminalFatalExceptionTimer(unsigned int & Result)
+{
+  if (FTerminalReconnnecteScheduled)
+  {
+    Result = qaRetry;
+    FTerminalReconnnecteScheduled = false;
+  }
 }
