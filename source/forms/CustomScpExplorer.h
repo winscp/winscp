@@ -66,6 +66,7 @@ const TOperationSide osOther = osRemote;
 class TCustomScpExplorerForm : public TForm
 {
 friend class TAutoBatch;
+friend class TEditorUploadQueueItem;
 __published:
   TPanel *RemotePanel;
   TTBXStatusBar *RemoteStatusBar;
@@ -459,12 +460,13 @@ protected:
   void __fastcall DestroyProgressForm();
   virtual void __fastcall FileOperationProgress(TFileOperationProgressType & ProgressData);
   void __fastcall OperationComplete(const TDateTime & StartTime);
+  void EditedFileUploaded(TTerminal * ATerminal, HANDLE UploadCompleteEvent);
   void __fastcall ExecutedFileChanged(
     const UnicodeString & FileName, TEditedFileData * Data, HANDLE UploadCompleteEvent, bool & Retry);
   void __fastcall ExecutedFileReload(const UnicodeString & FileName, TEditedFileData * Data);
   void __fastcall ExecutedFileEarlyClosed(const TEditedFileData * Data,
     bool & KeepOpen);
-  void __fastcall ExecutedFileUploadComplete(TEditedFileData * Data, TObject * Sender, bool Failed);
+  void __fastcall ExecutedFileUploadComplete(TObject * Sender);
   bool EditorCheckNotModified(const TEditedFileData * Data);
   void __fastcall CMDialogChar(TMessage & AMessage);
   inline void __fastcall WMAppCommand(TMessage & Message);

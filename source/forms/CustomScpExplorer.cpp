@@ -3882,6 +3882,55 @@ bool TCustomScpExplorerForm::EditorCheckNotModified(const TEditedFileData * Data
   return WinConfiguration->EditorCheckNotModified && (Data->SourceTimestamp != TDateTime());
 }
 //---------------------------------------------------------------------------
+class TEditorUploadQueueItem : public TUploadQueueItem
+{
+public:
+  __fastcall TEditorUploadQueueItem(
+      TTerminal * Terminal, TStrings * FilesToCopy, const UnicodeString & TargetDir,
+      const TCopyParamType * CopyParam, int Params) :
+    TUploadQueueItem(Terminal, FilesToCopy, TargetDir, CopyParam, Params, true, false)
+  {
+  }
+
+protected:
+  virtual void __fastcall DoTransferExecute(TTerminal * Terminal, TParallelOperation * ParallelOperation)
+  {
+    TUploadQueueItem::DoTransferExecute(Terminal, ParallelOperation);
+    TTerminalManager::Instance()->ScpExplorer->EditedFileUploaded(Terminal, CompleteEvent);
+  }
+};
+//---------------------------------------------------------------------------
+void TCustomScpExplorerForm::EditedFileUploaded(TTerminal * ATerminal, HANDLE UploadCompleteEvent)
+{
+  if (WinConfiguration->EditorCheckNotModified) // optimization
+  {
+    UnicodeString RemoteFilePath;
+    {
+      TGuard Guard(FEditorManager->Section);
+      TEditedFileData * Data = FEditorManager->FindByUploadCompleteEvent(UploadCompleteEvent);
+      if (DebugAlwaysTrue(Data != NULL) &&
+          EditorCheckNotModified(Data))
+      {
+        RemoteFilePath = UnixCombinePaths(Data->RemoteDirectory, Data->OriginalFileName);
+      }
+    }
+    if (!RemoteFilePath.IsEmpty())
+    {
+      std::unique_ptr<TRemoteFile> File(ATerminal->TryReadFile(RemoteFilePath));
+      if (File.get() != NULL)
+      {
+        TGuard Guard(FEditorManager->Section);
+        TEditedFileData * Data = FEditorManager->FindByUploadCompleteEvent(UploadCompleteEvent);
+        if (DebugAlwaysTrue(Data != NULL))
+        {
+          Data->SourceTimestamp = File->Modification;
+          AppLogFmt(L"Uploaded edited remote file timestamp: %s: ", (StandardTimestamp(Data->SourceTimestamp)));
+        }
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
   const UnicodeString & FileName, TEditedFileData * Data, HANDLE UploadCompleteEvent, bool & Retry)
 {
@@ -3961,9 +4010,13 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
     }
   }
 
-  if (!Retry)
+  if (!Retry && EditorCheckNotModified(Data))
   {
-    if (EditorCheckNotModified(Data))
+    if (NonVisualDataModule->Busy)
+    {
+      Retry = true;
+    }
+    else
     {
       UnicodeString RemoteFilePath = UnixCombinePaths(Data->RemoteDirectory, Data->OriginalFileName);
       std::unique_ptr<TRemoteFile> File(Terminal->TryReadFile(RemoteFilePath));
@@ -3981,7 +4034,10 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
         }
       }
     }
+  }
 
+  if (!Retry)
+  {
     TStrings * FileList = new TStringList();
     try
     {
@@ -4011,8 +4067,8 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
       {
         DebugAssert(Data->Queue != NULL);
 
-        TQueueItem * QueueItem = new TUploadQueueItem(Data->Terminal, FileList,
-          Data->RemoteDirectory, &CopyParam, Params, true, false);
+        TQueueItem * QueueItem =
+          new TEditorUploadQueueItem(Data->Terminal, FileList, Data->RemoteDirectory, &CopyParam, Params);
         QueueItem->CompleteEvent = UploadCompleteEvent;
         AddQueueItem(Data->Queue, QueueItem, Data->Terminal);
       }
@@ -4217,23 +4273,9 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileEarlyClosed(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::ExecutedFileUploadComplete(TEditedFileData * Data, TObject * Sender, bool Failed)
+void __fastcall TCustomScpExplorerForm::ExecutedFileUploadComplete(TObject * Sender)
 {
-  if (!Failed && EditorCheckNotModified(Data))
-  {
-    UnicodeString RemoteFilePath = UnixCombinePaths(Data->RemoteDirectory, Data->OriginalFileName);
-    std::unique_ptr<TRemoteFile> File(Terminal->TryReadFile(RemoteFilePath));
-    if (File.get() != NULL)
-    {
-      Data->SourceTimestamp = File->Modification;
-      AppLogFmt(L"Uploaded edited remote file timestamp: %s: ", (StandardTimestamp(Data->SourceTimestamp)));
-    }
-  }
-
-  if (Sender != NULL)
-  {
-    EditorFormFileUploadComplete(DebugNotNull(dynamic_cast<TForm *>(Sender)));
-  }
+  EditorFormFileUploadComplete(DebugNotNull(dynamic_cast<TForm *>(Sender)));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteDirViewEnter(TObject * /*Sender*/)

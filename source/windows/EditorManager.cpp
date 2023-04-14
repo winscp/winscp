@@ -28,6 +28,7 @@ TEditedFileData::~TEditedFileData()
 //---------------------------------------------------------------------------
 __fastcall TEditorManager::TEditorManager()
 {
+  FSection = new TCriticalSection();
   FOnFileChange = NULL;
   FOnFileReload = NULL;
   FOnFileEarlyClosed = NULL;
@@ -52,10 +53,12 @@ __fastcall TEditorManager::~TEditorManager()
       }
     }
   }
+  delete FSection;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TEditorManager::Empty(bool IgnoreClosed)
 {
+  TGuard Guard(FSection);
   bool Result;
 
   if (!IgnoreClosed)
@@ -83,6 +86,7 @@ bool __fastcall TEditorManager::CanAddFile(const UnicodeString RemoteDirectory,
   TObject *& Token, UnicodeString & ExistingLocalRootDirectory,
   UnicodeString & ExistingLocalDirectory)
 {
+  TGuard Guard(FSection);
   bool Result = true;
 
   Token = NULL;
@@ -148,8 +152,23 @@ bool __fastcall TEditorManager::CanAddFile(const UnicodeString RemoteDirectory,
   return Result;
 }
 //---------------------------------------------------------------------------
+TEditedFileData * TEditorManager::FindByUploadCompleteEvent(HANDLE UploadCompleteEvent)
+{
+  TGuard Guard(FSection);
+  for (unsigned int i = 0; i < FFiles.size(); i++)
+  {
+    TFileData * FileData = &FFiles[i];
+    if (FileData->UploadCompleteEvent == UploadCompleteEvent)
+    {
+      return FileData->Data;
+    }
+  }
+  return NULL;
+}
+//---------------------------------------------------------------------------
 void __fastcall TEditorManager::ProcessFiles(TEditedFileProcessEvent Callback, void * Arg)
 {
+  TGuard Guard(FSection);
   for (unsigned int i = 0; i < FFiles.size(); i++)
   {
     TFileData * FileData = &FFiles[i];
@@ -160,6 +179,7 @@ void __fastcall TEditorManager::ProcessFiles(TEditedFileProcessEvent Callback, v
 //---------------------------------------------------------------------------
 bool __fastcall TEditorManager::CloseInternalEditors(TNotifyEvent CloseCallback)
 {
+  TGuard Guard(FSection);
   // Traverse from end, as closing internal editor causes deletion of
   // respective file vector element.
   TObject * PrevToken = NULL;
@@ -197,6 +217,7 @@ bool __fastcall TEditorManager::CloseInternalEditors(TNotifyEvent CloseCallback)
 //---------------------------------------------------------------------------
 bool __fastcall TEditorManager::CloseExternalFilesWithoutProcess()
 {
+  TGuard Guard(FSection);
   for (unsigned int i = FFiles.size(); i > 0; i--)
   {
     TFileData * FileData = &FFiles[i - 1];
@@ -213,6 +234,7 @@ bool __fastcall TEditorManager::CloseExternalFilesWithoutProcess()
 void __fastcall TEditorManager::AddFileInternal(const UnicodeString FileName,
   TEditedFileData * AData, TObject * Token)
 {
+  TGuard Guard(FSection);
   std::unique_ptr<TEditedFileData> Data(AData);
   TFileData FileData;
   FileData.FileName = FileName;
@@ -226,6 +248,7 @@ void __fastcall TEditorManager::AddFileInternal(const UnicodeString FileName,
 void __fastcall TEditorManager::AddFileExternal(const UnicodeString FileName,
   TEditedFileData * AData, HANDLE Process)
 {
+  TGuard Guard(FSection);
   std::unique_ptr<TEditedFileData> Data(AData);
   TFileData FileData;
   FileData.FileName = FileName;
@@ -242,6 +265,7 @@ void __fastcall TEditorManager::AddFileExternal(const UnicodeString FileName,
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::Check()
 {
+  TGuard Guard(FSection);
   int Index;
 
   for (Index = 0; Index < static_cast<int>(FFiles.size()); Index++)
@@ -297,7 +321,7 @@ void __fastcall TEditorManager::Check()
 
       if (Index >= 0)
       {
-        UploadComplete(Index, false); // To be improved: do not know if it really succeeded
+        UploadComplete(Index);
       }
     }
     while ((Index >= 0) && (FUploadCompleteEvents.size() > 0));
@@ -329,6 +353,7 @@ bool __fastcall TEditorManager::EarlyClose(int Index)
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::FileChanged(TObject * Token)
 {
+  TGuard Guard(FSection);
   int Index = FindFile(Token);
 
   DebugAssert(Index >= 0);
@@ -339,6 +364,7 @@ void __fastcall TEditorManager::FileChanged(TObject * Token)
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::FileReload(TObject * Token)
 {
+  TGuard Guard(FSection);
   int Index = FindFile(Token);
 
   DebugAssert(Index >= 0);
@@ -352,6 +378,7 @@ void __fastcall TEditorManager::FileReload(TObject * Token)
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::FileClosed(TObject * Token, bool Forced)
 {
+  TGuard Guard(FSection);
   int Index = FindFile(Token);
 
   DebugAssert(Index >= 0);
@@ -379,7 +406,7 @@ void __fastcall TEditorManager::AddFile(TFileData & FileData, TEditedFileData * 
   Data.release(); // ownership passed
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorManager::UploadComplete(int Index, bool Failed)
+void __fastcall TEditorManager::UploadComplete(int Index)
 {
   TFileData * FileData = &FFiles[Index];
 
@@ -401,9 +428,9 @@ void __fastcall TEditorManager::UploadComplete(int Index, bool Failed)
       FileData->Reupload = false;
       CheckFileChange(Index, true);
     }
-    else if (FOnFileUploadComplete != NULL)
+    else if ((FileData->Token != NULL) && (FOnFileUploadComplete != NULL))
     {
-      FOnFileUploadComplete(FileData->Data, FileData->Token, Failed);
+      FOnFileUploadComplete(FileData->Token);
     }
   }
 }
@@ -549,7 +576,7 @@ void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)
           OnFileChange(FileData->FileName, FileData->Data, FileData->UploadCompleteEvent, Retry);
           if (Retry)
           {
-            UploadComplete(Index, true);
+            UploadComplete(Index);
             FileData->Timestamp = PrevTimestamp;
           }
         }
@@ -558,7 +585,7 @@ void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)
           // upload failed (was not even started)
           if (FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE)
           {
-            UploadComplete(Index, true);
+            UploadComplete(Index);
           }
           throw;
         }
