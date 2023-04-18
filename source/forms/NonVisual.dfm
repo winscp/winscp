@@ -569,12 +569,12 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 23
       ShortCut = 24652
     end
-    object ExplorerSessionBandAction: TAction
+    object ExplorerSessionBandAction2: TAction
       Tag = 7
       Category = 'View'
-      Caption = 'Sessio&n Buttons'
+      Caption = 'Sessio&ns and Tabs Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show session toolbar'
+      Hint = 'Hide/show sessions and tabs toolbar'
     end
     object ExplorerPreferencesBandAction: TAction
       Tag = 7
@@ -2429,7 +2429,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = ExplorerSelectionBandAction
     end
     object SessionButtons2: TTBXItem
-      Action = ExplorerSessionBandAction
+      Action = ExplorerSessionBandAction2
     end
     object PreferencesButtons1: TTBXItem
       Action = ExplorerPreferencesBandAction

@@ -77,7 +77,7 @@ TNonVisualDataModule *NonVisualDataModule;
   EMIT_BAND_COMPONENT(ExplorerAddressBand) \
   EMIT_BAND_COMPONENT(ExplorerToolbarBand) \
   EMIT_BAND_COMPONENT(ExplorerSelectionBand) \
-  EMIT_BAND_COMPONENT(ExplorerSessionBand) \
+  EMIT_BAND_COMPONENT2(ExplorerSessionBand, 2) \
   EMIT_BAND_COMPONENT(ExplorerPreferencesBand) \
   EMIT_BAND_COMPONENT(ExplorerSortBand) \
   EMIT_BAND_COMPONENT(ExplorerUpdatesBand) \

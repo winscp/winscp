@@ -368,7 +368,7 @@ inherited ScpExplorerForm: TScpExplorerForm
             Action = NonVisualDataModule.ExplorerSelectionBandAction
           end
           object TBXItem10: TTBXItem
-            Action = NonVisualDataModule.ExplorerSessionBandAction
+            Action = NonVisualDataModule.ExplorerSessionBandAction2
           end
           object TBXItem11: TTBXItem
             Action = NonVisualDataModule.ExplorerPreferencesBandAction
@@ -770,10 +770,10 @@ inherited ScpExplorerForm: TScpExplorerForm
         Action = NonVisualDataModule.RestoreSelectionAction
       end
     end
-    object SessionToolbar: TTBXToolbar
+    object SessionToolbar2: TTBXToolbar
       Left = 0
       Top = 104
-      Caption = 'Session'
+      Caption = 'Sessions and Tabs'
       DockPos = -4
       DockRow = 4
       Images = GlyphsModule.ExplorerImages

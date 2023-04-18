@@ -113,7 +113,7 @@ __published:    // IDE-managed Components
   TAction *CloseTabAction;
   TAction *SavedSessionsAction2;
   TAction *WorkspacesAction;
-  TAction *ExplorerSessionBandAction;
+  TAction *ExplorerSessionBandAction2;
   TAction *PreferencesAction;
   TAction *ExplorerPreferencesBandAction;
   TAction *RemoteChangePathAction2;

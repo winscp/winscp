@@ -206,7 +206,7 @@ bool __fastcall TScpExplorerForm::AllowedAction(TAction * Action, TActionAllowed
 TControl * __fastcall TScpExplorerForm::GetComponent(Byte Component)
 {
   switch (Component) {
-    case fcSessionToolbar: return SessionToolbar;
+    case fcSessionToolbar: return SessionToolbar2;
     case fcCustomCommandsBand: return CustomCommandsToolbar;
     case fcColorMenu: return reinterpret_cast<TControl*>(ColorMenuItem);
     case fcTransferDropDown: return reinterpret_cast<TControl*>(TransferDropDown);
@@ -219,7 +219,7 @@ TControl * __fastcall TScpExplorerForm::GetComponent(Byte Component)
     case fcExplorerAddressBand: return AddressToolbar;
     case fcExplorerToolbarBand: return ButtonsToolbar;
     case fcExplorerSelectionBand: return SelectionToolbar;
-    case fcExplorerSessionBand: return SessionToolbar;
+    case fcExplorerSessionBand: return SessionToolbar2;
     case fcExplorerPreferencesBand: return PreferencesToolbar;
     case fcExplorerSortBand: return SortToolbar;
     case fcExplorerUpdatesBand: return UpdatesToolbar;

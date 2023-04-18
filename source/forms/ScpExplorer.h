@@ -186,7 +186,7 @@ __published:
   TTBXItem *TBXItem68;
   TTBXItem *TBXItem69;
   TTBXItem *TBXItem70;
-  TTBXToolbar *SessionToolbar;
+  TTBXToolbar *SessionToolbar2;
   TTBXItem *TBXItem123;
   TTBXSeparatorItem *TBXSeparatorItem34;
   TTBXItem *TBXItem124;
