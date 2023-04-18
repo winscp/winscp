@@ -81,5 +81,10 @@ BEGIN
   NEW_5_20_SHA2, "Support for rsa-sha2-256 and rsa-sha2-512 SSH public key algorithms"
   NEW_5_20_OPENSSH_IMPORT, "It is possible to import sessions from OpenSSH config file"
 
-  NEW_6_0_TDB, "TDB"
+  NEW_6_0_FILE_MANAGER, "Local file manager mode (two local panels)"
+  NEW_6_0_WIN11_ICONS, "Windows 11 flat style graphics"
+  NEW_6_0_OPENSSH_CERT, "Support for OpenSSH certificates"
+  NEW_6_0_NTRU_AESGCM, "Support for NTRU Prime post-quantum key exchange and AES-GCM ciphers"
+  NEW_6_0_BACKGROUND_DELETE, "Ongoing delete operation can be moved to background queue"
+  NEW_6_0_DIR_SIZE, "Directory sizes can be shown in file panel"
 END
