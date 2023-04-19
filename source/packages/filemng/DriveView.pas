@@ -165,6 +165,7 @@ type
 
     {Callback-functions used by iteratesubtree:}
     function CallBackValidateDir(var Node: TTreeNode; Data: Pointer): Boolean;
+    procedure DeleteNode(Node: TTreeNode);
 
     { Notification procedures used by component TDiscMonitor: }
     procedure ChangeDetected(Sender: TObject; const Directory: string;
@@ -1847,6 +1848,25 @@ begin
   Application.ProcessMessages;
 end; {ReadSubDirs}
 
+procedure TDriveView.DeleteNode(Node: TTreeNode);
+var
+  ValidNode: TTreeNode;
+begin
+  if Assigned(Selected) and Assigned(Node.Parent) and
+     ((Selected = Node) or Selected.HasAsParent(Node)) then
+  begin
+    ValidNode := Node.Parent;
+    while (not DirectoryExists(NodePathName(ValidNode))) and Assigned(ValidNode.Parent) do
+      ValidNode := ValidNode.Parent;
+    Selected := ValidNode;
+  end;
+
+  if DropTarget = Node then
+    DropTarget := nil;
+
+  Node.Delete;
+end;
+
 function TDriveView.CallBackValidateDir(var Node: TTreeNode; Data: Pointer): Boolean;
 var
   WorkNode: TTreeNode;
@@ -1873,12 +1893,7 @@ begin {CallBackValidateDir}
   if Assigned(Node.Parent) and (ScanDirInfo^.StartNode = Node) then
     if not DirectoryExists(NodePathName(Node)) then
     begin
-      WorkNode := Node.Parent;
-      if Selected = Node then
-        Selected := WorkNode;
-      if DropTarget = Node then
-        DropTarget := nil;
-      Node.Delete;
+      DeleteNode(Node);
       Node := nil;
       Exit;
     end;
@@ -1937,7 +1952,7 @@ begin {CallBackValidateDir}
         begin
           DelNode := WorkNode;
           WorkNode := Node.GetNextChild(WorkNode);
-          DelNode.Delete;
+          DeleteNode(DelNode);
         end
           else
         begin
