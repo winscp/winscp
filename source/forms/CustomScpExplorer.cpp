@@ -57,6 +57,7 @@
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 #define WM_COMPONENT_HIDE (WM_WINSCP_USER + 4)
+#define WM_PASTE_FILES (WM_WINSCP_USER + 14)
 static const int SessionPanelCount = 3;
 //---------------------------------------------------------------------------
 class TMutexGuard
@@ -9757,6 +9758,10 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
       CMDialogKey(*reinterpret_cast<TWMKeyDown *>(M));
       break;
 
+    case WM_PASTE_FILES:
+      PasteFiles();
+      break;
+
     default:
       TForm::Dispatch(Message);
       break;
@@ -11304,16 +11309,16 @@ void __fastcall TCustomScpExplorerForm::ClipboardDownload(const UnicodeString & 
   ExecuteFileOperation(foCopy, osRemote, FClipboardFileList.get(), NoConfirmation, &Params);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::ClipboardFakeCreated(TObject * /*Sender*/, const UnicodeString FileName)
+void TCustomScpExplorerForm::PasteFiles()
 {
-  // It can actually rarelly happen that some random file is created, while we are shutting down the monitor
-  // (as it pumps a Windows message queue while being shutted down)
-  if (DebugAlwaysTrue(!FClipboardFakeDirectory.IsEmpty()) &&
-      SameText(ExtractFileName(FileName), ExtractFileName(FClipboardFakeDirectory)))
+  // Guard against possible race conditions
+  if (!FClipboardPasteTarget.IsEmpty())
   {
-    AppLogFmt(L"Fake clipboard directory pasted to \"%s\"", (FileName));
+    // ClipboardFakeCreated might be called while we are here, so make sure we finish operating on the same path we started with
+    UnicodeString Target = FClipboardPasteTarget;
+    FClipboardPasteTarget = EmptyStr;
     // Can fail as it can be e.g. locked by AV, so we retry that later
-    bool Removed = RemoveDir(ApiPath(FileName));
+    bool Removed = RemoveDir(ApiPath(Target));
 
     try
     {
@@ -11323,16 +11328,31 @@ void __fastcall TCustomScpExplorerForm::ClipboardFakeCreated(TObject * /*Sender*
         FClipboardFakeMonitorsPendingReset = false;
         bool NoConfirmation = (WinConfiguration->DDTransferConfirmation == asOff);
         TAutoFlag Flag(FDownloadingFromClipboard);
-        ClipboardDownload(ExtractFilePath(FileName), NoConfirmation, true);
+        ClipboardDownload(ExtractFilePath(Target), NoConfirmation, true);
       }
     }
     __finally
     {
       if (!Removed)
       {
-        RemoveDir(ApiPath(FileName));
+        RemoveDir(ApiPath(Target));
       }
     }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ClipboardFakeCreated(TObject * /*Sender*/, const UnicodeString FileName)
+{
+  // It can actually rarelly happen that some random file is created, while we are shutting down the monitor
+  // (as it pumps a Windows message queue while being shutted down)
+  if (DebugAlwaysTrue(!FClipboardFakeDirectory.IsEmpty()) &&
+      SameText(ExtractFileName(FileName), ExtractFileName(FClipboardFakeDirectory)))
+  {
+    AppLogFmt(L"Fake clipboard directory pasted to \"%s\"", (FileName));
+    FClipboardPasteTarget = FileName;
+    // Particularly when pasting to external HDD, the fake directory is strangely recreated if removed here in the monitor callback.
+    // Postponing removing (or actually whole pasting operation) seems to help.
+    PostMessage(Handle, WM_PASTE_FILES, 0, 0);
   }
 }
 //---------------------------------------------------------------------------

@@ -243,6 +243,7 @@ private:
   UnicodeString FDragFakeDirectory;
   TObjectList * FDragFakeMonitors;
   UnicodeString FClipboardFakeDirectory;
+  UnicodeString FClipboardPasteTarget;
   std::unique_ptr<TObjectList> FClipboardFakeMonitors;
   bool FDownloadingFromClipboard;
   bool FClipboardFakeMonitorsPendingReset;
@@ -753,6 +754,7 @@ protected:
   TListItem * VisualiseOperationFinished(TOperationSide Side, const UnicodeString & FileName, bool Unselect);
   void __fastcall FileDeleted(TOperationSide Side, const UnicodeString & FileName, bool Success);
   void LoadFilesProperties(TStrings * FileList);
+  void PasteFiles();
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
