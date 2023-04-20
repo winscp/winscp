@@ -124,7 +124,7 @@ namespace WinSCP
             }
         }
 
-        private IDisposable CreateCallstackAndLock()
+        private CallstackAndLock CreateCallstackAndLock()
         {
             var result = Logger.CreateCallstackAndLock();
             if ((_process != null) && (_process.StdOut != null))
