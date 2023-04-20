@@ -507,10 +507,11 @@ void __fastcall TScript::Command(UnicodeString Cmd)
 
         if (Configuration->ActualLogProtocol >= 1)
         {
+          UnicodeString LogCmdParams = LogCmd;
           UnicodeString DummyLogCmd;
-          if (DebugAlwaysTrue(CutToken(LogCmd, DummyLogCmd)))
+          if (DebugAlwaysTrue(CutToken(LogCmdParams, DummyLogCmd)))
           {
-            std::unique_ptr<TScriptProcParams> Parameters(new TScriptProcParams(FCommands->ResolveCommand(Cmd), LogCmd));
+            std::unique_ptr<TScriptProcParams> Parameters(new TScriptProcParams(FCommands->ResolveCommand(Cmd), LogCmdParams));
             Parameters->LogOptions(LogOption);
           }
         }
