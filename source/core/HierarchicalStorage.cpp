@@ -1637,8 +1637,15 @@ TIniFileStorage * __fastcall TIniFileStorage::CreateNul()
 __fastcall TIniFileStorage::TIniFileStorage(const UnicodeString & AStorage, TCustomIniFile * IniFile):
   TCustomIniFileStorage(AStorage, IniFile)
 {
-  FOriginal = new TStringList();
-  dynamic_cast<TMemIniFile *>(FIniFile)->GetStrings(FOriginal);
+  if (!FIniFile->FileName.IsEmpty())
+  {
+    FOriginal = new TStringList();
+    dynamic_cast<TMemIniFile *>(FIniFile)->GetStrings(FOriginal);
+  }
+  else
+  {
+    FOriginal = NULL;
+  }
   ApplyOverrides();
 }
 //---------------------------------------------------------------------------
@@ -1648,6 +1655,7 @@ void __fastcall TIniFileStorage::Flush()
   {
     FMasterStorage->Flush();
   }
+  // This does not seem correct, if storage is written after it is flushed (though we probably never do that currently)
   if ((FOriginal != NULL) && !FIniFile->FileName.IsEmpty())
   {
     std::unique_ptr<TStrings> Strings(new TStringList);
