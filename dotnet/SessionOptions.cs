@@ -69,6 +69,7 @@ namespace WinSCP
         public string PrivateKeyPassphrase { get { return GetPassword(_securePrivateKeyPassphrase); } set { SetPassword(ref _securePrivateKeyPassphrase, value); } }
         public SecureString SecurePrivateKeyPassphrase { get { return _securePrivateKeyPassphrase; } set { _securePrivateKeyPassphrase = value; } }
         public string RootPath { get { return _rootPath; } set { SetRootPath(value); } }
+        public bool Secure { get; set; }
 
         // SSH
         public string SshHostKeyFingerprint { get { return _sshHostKeyFingerprint; } set { SetSshHostKeyFingerprint(value); } }
@@ -85,7 +86,8 @@ namespace WinSCP
         public FtpSecure FtpSecure { get; set; }
 
         // WebDAV
-        public bool WebdavSecure { get; set; }
+        [Obsolete("Use Secure")]
+        public bool WebdavSecure { get { return Secure; } set { Secure = value; } }
         [Obsolete("Use RootPath")]
         public string WebdavRoot { get { return RootPath; } set { RootPath = value; } }
 
@@ -304,7 +306,12 @@ namespace WinSCP
                      protocol.Equals("https", StringComparison.OrdinalIgnoreCase))
             {
                 Protocol = Protocol.Webdav;
-                WebdavSecure = true;
+                Secure = true;
+            }
+            else if (protocol.Equals("s3plain", StringComparison.OrdinalIgnoreCase))
+            {
+                Protocol = Protocol.S3;
+                Secure = false;
             }
             else if (protocol.Equals("s3", StringComparison.OrdinalIgnoreCase))
             {
@@ -359,8 +366,7 @@ namespace WinSCP
         {
             return
                 ((Protocol == Protocol.Ftp) && (FtpSecure != FtpSecure.None)) ||
-                ((Protocol == Protocol.Webdav) && WebdavSecure) ||
-                (Protocol == Protocol.S3);
+                (((Protocol == Protocol.Webdav) || (Protocol == Protocol.S3)) && Secure);
         }
 
         private void SetSshHostKeyFingerprint(string s)
@@ -419,6 +425,7 @@ namespace WinSCP
             if ((_protocol == Protocol.S3) && string.IsNullOrEmpty(HostName))
             {
                 HostName = "s3.amazonaws.com";
+                Secure = true;
             }
         }
 

@@ -397,3 +397,43 @@ void __fastcall TAboutDialog::Dispatch(void * Message)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TAboutDialog::FormKeyDown(TObject *, WORD & Key, TShiftState Shift)
+{
+  if ((Key == L'C') && Shift.Contains(ssCtrl))
+  {
+    if ((FThirdPartyWebBrowser != NULL) &&
+        FThirdPartyWebBrowser->Focused() &&
+        (FThirdPartyWebBrowser->SelLength() > 0))
+    {
+      // Let the browser handle the Ctrl+C
+    }
+    else
+    {
+      UnicodeString Text =
+        ApplicationLabel->Caption + sLineBreak +
+        VersionLabel->Caption + sLineBreak +
+        sLineBreak +
+        WinSCPCopyrightLabel->Caption + sLineBreak +
+        HomepageLabel->Caption + sLineBreak +
+        sLineBreak +
+        ProductSpecificMessageLabel->Caption + sLineBreak +
+        ForumUrlLabel->Caption + sLineBreak;
+
+      UnicodeString ThirdPartyText;
+      if ((FThirdPartyWebBrowser != NULL) &&
+          CopyTextFromBrowser(FThirdPartyWebBrowser, ThirdPartyText))
+      {
+        Text +=
+          sLineBreak +
+          GetDividerLine() + sLineBreak +
+          Label3->Caption + sLineBreak +
+          ThirdPartyText + sLineBreak;
+      }
+
+      TInstantOperationVisualizer Visualizer;
+      CopyToClipboard(Text);
+      Key = 0;
+    }
+  }
+}
+//---------------------------------------------------------------------------

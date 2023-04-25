@@ -1252,7 +1252,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     }
     ADF(L"User name: %s (Password: %s, Key file: %s, Passphrase: %s)",
       (UserName, LogSensitive(Data->Password),
-       LogSensitive(Data->PublicKeyFile), LogSensitive(Data->Passphrase)));
+       LogSensitive(Data->ResolvePublicKeyFile()), LogSensitive(Data->Passphrase)));
     if (Data->UsesSsh)
     {
       ADF(L"Tunnel: %s", (BooleanToEngStr(Data->Tunnel)));
@@ -1304,7 +1304,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
         ADF(L"Local command: %s", (Data->ProxyLocalCommand));
       }
     }
-    if (Data->UsesSsh || (Data->FSProtocol == fsFTP))
+    if (Data->UsesSsh || (Data->FSProtocol == fsFTP) || (Data->FSProtocol == fsS3))
     {
       ADF(L"Send buffer: %d", (Data->SendBuf));
     }

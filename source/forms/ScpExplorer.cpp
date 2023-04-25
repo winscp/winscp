@@ -174,11 +174,10 @@ void __fastcall TScpExplorerForm::DoShow()
   // See comment in TScpCommanderForm::DoShow()
   UpdateControls();
 
-  if (RemoteDirView->Enabled)
+  if (DirView(osOther)->Enabled)
   {
-    RemoteDirView->SetFocus();
+    DirView(osOther)->SetFocus();
   }
-  FRemoteDirViewWasFocused = true;
 
   TCustomScpExplorerForm::DoShow();
   AddStartupSequence(L"O");
@@ -207,19 +206,20 @@ bool __fastcall TScpExplorerForm::AllowedAction(TAction * Action, TActionAllowed
 TControl * __fastcall TScpExplorerForm::GetComponent(Byte Component)
 {
   switch (Component) {
-    case fcSessionToolbar: return SessionToolbar;
+    case fcSessionToolbar: return SessionToolbar2;
     case fcCustomCommandsBand: return CustomCommandsToolbar;
     case fcColorMenu: return reinterpret_cast<TControl*>(ColorMenuItem);
     case fcTransferDropDown: return reinterpret_cast<TControl*>(TransferDropDown);
     case fcTransferList: return reinterpret_cast<TControl*>(TransferList);
     case fcTransferLabel: return reinterpret_cast<TControl*>(TransferLabel);
     case fcRemotePathComboBox: return reinterpret_cast<TControl*>(UnixPathComboBox);
+    case fcMenu: return MenuToolbar;
 
     case fcExplorerMenuBand: return MenuToolbar;
     case fcExplorerAddressBand: return AddressToolbar;
     case fcExplorerToolbarBand: return ButtonsToolbar;
     case fcExplorerSelectionBand: return SelectionToolbar;
-    case fcExplorerSessionBand: return SessionToolbar;
+    case fcExplorerSessionBand: return SessionToolbar2;
     case fcExplorerPreferencesBand: return PreferencesToolbar;
     case fcExplorerSortBand: return SortToolbar;
     case fcExplorerUpdatesBand: return UpdatesToolbar;
@@ -416,5 +416,15 @@ void __fastcall TScpExplorerForm::UpdateImages()
   TImageList * ImageList = ShellImageListForControl(this, ilsSmall);
   UnixPathComboBox->Images = ImageList;
   UnixPathComboBox->SubMenuImages = ImageList;
+}
+//---------------------------------------------------------------------------
+bool TScpExplorerForm::SupportedSession(TSessionData * SessionData)
+{
+  return !SessionData->IsLocalBrowser;
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::RemoteOpenDirButtonPopup(TTBCustomItem *, bool DebugUsedArg(FromLink))
+{
+  CreateOpenDirMenu(RemoteOpenDirButton, osRemote);
 }
 //---------------------------------------------------------------------------

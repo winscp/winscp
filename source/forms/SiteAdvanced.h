@@ -281,6 +281,8 @@ __published:
   TCheckBox *VMSAllRevisionsCheck;
   TLabel *Label5;
   TComboBox *SFTPRealPathCombo;
+  TLabel *DetachedCertificateLabel;
+  TFilenameEdit *DetachedCertificateEdit;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);
@@ -346,6 +348,8 @@ private:
   TFSProtocol FFSProtocol;
   TSessionData * FSessionData;
   TColor FColor;
+  UnicodeString FLastPrivateKey;
+  bool FKeyHasCertificate;
   std::unique_ptr<TPopupMenu> FColorPopupMenu;
   std::unique_ptr<TObjectList> FPrivateKeyMonitors;
   std::unique_ptr<TStrings> FPuttyRegSettings;
@@ -375,6 +379,7 @@ private:
   UnicodeString __fastcall GetPuttySiteKey();
   void __fastcall ClosePuttySettings();
   void SerializePuttyRegistry(const UnicodeString & Key, TStrings * Values);
+  bool HasCertificate(const UnicodeString & FileName);
 
   INTERFACE_HOOK;
 };

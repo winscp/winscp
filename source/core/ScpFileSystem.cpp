@@ -54,9 +54,6 @@ struct TCommandType
 #define FIRST_LINE L"WinSCP: this is begin-of-file"
 extern const TCommandType DefaultCommandSet[];
 
-#define NationalVarCount 10
-extern const wchar_t NationalVars[NationalVarCount][15];
-
 #define CHECK_CMD DebugAssert((Cmd >=0) && (Cmd <= MaxShellCommand))
 
 class TSessionData;
@@ -99,9 +96,9 @@ public:
   __property UnicodeString ReturnVar  = { read=GetReturnVar, write=FReturnVar };
 };
 //===========================================================================
-const wchar_t NationalVars[NationalVarCount][15] =
+const wchar_t NationalVars[][15] =
   {L"LANG", L"LANGUAGE", L"LC_CTYPE", L"LC_COLLATE", L"LC_MONETARY", L"LC_NUMERIC",
-   L"LC_TIME", L"LC_MESSAGES", L"LC_ALL", L"HUMAN_BLOCKS" };
+   L"LC_TIME", L"LC_MESSAGES", L"LC_ALL", L"HUMAN_BLOCKS", L"BLOCK_SIZE", L"LS_BLOCK_SIZE" };
 const wchar_t FullTimeOption[] = L"--full-time";
 //---------------------------------------------------------------------------
 #define F false
@@ -442,6 +439,8 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
     case fcRemoteCopy:
     case fcRemoveCtrlZUpload:
     case fcRemoveBOMUpload:
+    case fcCalculatingChecksum:
+    case fcMoveOverExistingFile:
       return true;
 
     case fcTextMode:
@@ -454,7 +453,6 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
     case fcLoadingAdditionalProperties:
     case fcCheckingSpaceAvailable:
     case fcIgnorePermErrors:
-    case fcCalculatingChecksum:
     case fcSecondaryShell: // has fcShellAnyCommand
     case fcGroupOwnerChangingByID: // by name
     case fcMoveToQueue:
@@ -474,16 +472,6 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
       DebugFail();
       return false;
   }
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall TSCPFileSystem::DelimitStr(UnicodeString Str)
-{
-  if (!Str.IsEmpty())
-  {
-    Str = ::DelimitStr(Str, L"\\`$\"");
-    if (Str[1] == L'-') Str = L"./"+Str;
-  }
-  return Str;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::EnsureLocation()
@@ -691,6 +679,11 @@ void __fastcall TSCPFileSystem::ExecCommand(const UnicodeString & Cmd, int Param
   ReadCommandOutput(COParams, &CmdString);
 }
 //---------------------------------------------------------------------------
+void TSCPFileSystem::InvalidOutputError(const UnicodeString & Command)
+{
+  FTerminal->TerminalError(FMTLOAD(INVALID_OUTPUT_ERROR, (Command, Output->Text)));
+}
+//---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::ExecCommand(TFSCommand Cmd, const TVarRec * args,
   int size, int Params)
 {
@@ -705,8 +698,7 @@ void __fastcall TSCPFileSystem::ExecCommand(TFSCommand Cmd, const TVarRec * args
     if (((MinL >= 0) && (MinL > FOutput->Count)) ||
         ((MaxL >= 0) && (MaxL > FOutput->Count)))
     {
-      FTerminal->TerminalError(FmtLoadStr(INVALID_OUTPUT_ERROR,
-        ARRAYOFCONST((FullCommand, Output->Text))));
+      InvalidOutputError(FullCommand);
     }
   }
 }
@@ -921,7 +913,7 @@ void __fastcall TSCPFileSystem::UnsetNationalVars()
   try
   {
     FTerminal->LogEvent(L"Clearing national user variables.");
-    for (int Index = 0; Index < NationalVarCount; Index++)
+    for (size_t Index = 0; Index < LENOF(NationalVars); Index++)
     {
       ExecCommand(fsUnset, ARRAYOFCONST((NationalVars[Index])), false);
     }
@@ -958,10 +950,11 @@ void __fastcall TSCPFileSystem::AnnounceFileListOperation()
 void __fastcall TSCPFileSystem::ChangeDirectory(const UnicodeString Directory)
 {
   UnicodeString ToDir;
+  // This effectivelly disallows entering subdirectories starting with ~ and containing space
   if (!Directory.IsEmpty() &&
       ((Directory[1] != L'~') || (Directory.SubString(1, 2) == L"~ ")))
   {
-    ToDir = L"\"" + DelimitStr(Directory) + L"\"";
+    ToDir = ShellQuoteStr(Directory);
   }
   else
   {
@@ -1055,10 +1048,7 @@ void __fastcall TSCPFileSystem::ReadDirectory(TRemoteFileList * FileList)
         {
           // Empty file list -> probably "permission denied", we
           // at least get link to parent directory ("..")
-          TRemoteFile * File;
-          FTerminal->ReadFile(
-            UnixIncludeTrailingBackslash(FTerminal->FFiles->Directory) +
-              PARENTDIRECTORY, File);
+          TRemoteFile * File = FTerminal->ReadFile(UnixCombinePaths(FTerminal->FFiles->Directory, PARENTDIRECTORY));
           Empty = (File == NULL);
           if (!Empty)
           {
@@ -1308,11 +1298,183 @@ bool __fastcall TSCPFileSystem::LoadFilesProperties(TStrings * /*FileList*/ )
   return false;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::CalculateFilesChecksum(const UnicodeString & /*Alg*/,
-  TStrings * /*FileList*/, TStrings * /*Checksums*/,
-  TCalculatedChecksumEvent /*OnCalculatedChecksum*/)
+UnicodeString TSCPFileSystem::CalculateFilesChecksumInitialize(const UnicodeString & Alg)
 {
-  DebugFail();
+  std::unique_ptr<TStrings> Algs(new TStringList());
+  GetSupportedChecksumAlgs(Algs.get());
+  return FindIdent(Alg, Algs.get());
+}
+//---------------------------------------------------------------------------
+UnicodeString TSCPFileSystem::ParseFileChecksum(
+  const UnicodeString & Line, const UnicodeString & FileName, const UnicodeString & Command)
+{
+  int P = Line.Pos(L" ");
+  if ((P < 0) ||
+      (P == Line.Length()) ||
+      ((Line[P + 1] != L' ') && (Line[P + 1] != L'*')) ||
+      (Line.SubString(P + 2, Line.Length() - P - 1) != FileName))
+  {
+    InvalidOutputError(Command);
+  }
+  return Line.SubString(1, P - 1);
+}
+//---------------------------------------------------------------------------
+void TSCPFileSystem::ProcessFileChecksum(
+  TCalculatedChecksumEvent OnCalculatedChecksum, TChecksumSessionAction & Action, TFileOperationProgressType * OperationProgress,
+  bool FirstLevel, const UnicodeString & FileName, const UnicodeString & Alg, const UnicodeString & Checksum)
+{
+  bool Success = !Checksum.IsEmpty();
+  if (Success)
+  {
+    if (OnCalculatedChecksum != NULL)
+    {
+      OnCalculatedChecksum(UnixExtractFileName(FileName), Alg, Checksum);
+    }
+    Action.Checksum(Alg, Checksum);
+  }
+  if (FirstLevel)
+  {
+    TOnceDoneOperation OnceDoneOperation; // not used
+    OperationProgress->Finish(FileName, Success, OnceDoneOperation);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSCPFileSystem::CalculateFilesChecksum(
+  const UnicodeString & Alg, TStrings * FileList, TCalculatedChecksumEvent OnCalculatedChecksum,
+  TFileOperationProgressType * OperationProgress, bool FirstLevel)
+{
+  FTerminal->CalculateSubFoldersChecksum(Alg, FileList, OnCalculatedChecksum, OperationProgress, FirstLevel);
+
+  TStrings * AlgDefs = FTerminal->GetShellChecksumAlgDefs();
+  int AlgIndex = AlgDefs->IndexOfName(Alg);
+  UnicodeString AlgCommand = (AlgIndex >= 0) ? AlgDefs->ValueFromIndex[AlgIndex] : Alg;
+
+  int Index = 0;
+  while ((Index < FileList->Count) && !OperationProgress->Cancel)
+  {
+    std::unique_ptr<TStrings> BatchFileList(new TStringList());
+    UnicodeString FileListCommandLine;
+    __int64 BatchSize = 0;
+    while (Index < FileList->Count)
+    {
+      TRemoteFile * File = DebugNotNull(dynamic_cast<TRemoteFile *>(FileList->Objects[Index]));
+      if (!File->IsDirectory)
+      {
+        UnicodeString FileName = FileList->Strings[Index];
+        UnicodeString FileListCommandLineBak = FileListCommandLine;
+        AddToShellFileListCommandLine(FileListCommandLine, FileName);
+        BatchSize += File->Size;
+        if (!FileListCommandLineBak.IsEmpty() &&
+            ((FileListCommandLine.Length() > 2048) ||
+             (BatchSize > 1024*1024*1024)))
+        {
+          FileListCommandLine = FileListCommandLineBak;
+          break;
+        }
+        else
+        {
+          BatchFileList->AddObject(FileName, File);
+        }
+      }
+      Index++;
+    }
+
+    if (!FileListCommandLine.IsEmpty())
+    {
+      bool IndividualCommands = false;
+      std::unique_ptr<TStrings> BatchChecksums(new TStringList());
+      try
+      {
+        UnicodeString BatchCommand = FORMAT(L"%s %s", (AlgCommand, FileListCommandLine));
+        AnyCommand(BatchCommand, NULL);
+        if (Output->Count != BatchFileList->Count)
+        {
+          InvalidOutputError(BatchCommand);
+        }
+
+        // First do everything that can throw.
+        // Only once everything is checked, distribute the results.
+        for (int BatchIndex = 0; BatchIndex < BatchFileList->Count; BatchIndex++)
+        {
+          UnicodeString FileName = BatchFileList->Strings[BatchIndex];
+          UnicodeString Line = Output->Strings[BatchIndex];
+          UnicodeString Checksum = ParseFileChecksum(Line, FileName, BatchCommand);
+          BatchChecksums->Add(Checksum);
+        }
+      }
+      catch (Exception & E)
+      {
+        if (!FTerminal->Active)
+        {
+          throw;
+        }
+        else
+        {
+          IndividualCommands = true;
+        }
+      }
+
+      if (!IndividualCommands)
+      {
+        // None of this should throw
+        for (int BatchIndex = 0; BatchIndex < BatchFileList->Count; BatchIndex++)
+        {
+          UnicodeString FileName = BatchFileList->Strings[BatchIndex];
+          TRemoteFile * File = DebugNotNull(dynamic_cast<TRemoteFile *>(BatchFileList->Objects[BatchIndex]));
+          TChecksumSessionAction Action(FTerminal->ActionLog);
+          Action.FileName(File->FullFileName);
+          OperationProgress->SetFile(FileName);
+          UnicodeString Checksum = BatchChecksums->Strings[BatchIndex];
+          ProcessFileChecksum(OnCalculatedChecksum, Action, OperationProgress, FirstLevel, FileName, Alg, Checksum);
+        }
+      }
+      else
+      {
+        FTerminal->LogEvent(
+          L"Batch checksum calculation failed, falling back to calculating checksum individually for each file...");
+
+        for (int BatchIndex = 0; BatchIndex < BatchFileList->Count; BatchIndex++)
+        {
+          TRemoteFile * File = DebugNotNull(dynamic_cast<TRemoteFile *>(BatchFileList->Objects[BatchIndex]));
+          TChecksumSessionAction Action(FTerminal->ActionLog);
+          try
+          {
+            UnicodeString FileName = BatchFileList->Strings[BatchIndex];
+            OperationProgress->SetFile(FileName);
+            Action.FileName(File->FullFileName);
+
+            UnicodeString Checksum;
+            try
+            {
+              UnicodeString Command = FORMAT(L"%s %s", (AlgCommand, ShellQuoteStr(FileName)));
+              AnyCommand(Command, NULL);
+              if (Output->Count != 1)
+              {
+                InvalidOutputError(Command);
+              }
+              UnicodeString Line = Output->Strings[0];
+              Checksum = ParseFileChecksum(Line, FileName, Command);
+            }
+            __finally
+            {
+              ProcessFileChecksum(OnCalculatedChecksum, Action, OperationProgress, FirstLevel, FileName, Alg, Checksum);
+            }
+          }
+          catch (Exception & E)
+          {
+            FTerminal->RollbackAction(Action, OperationProgress, &E);
+
+            UnicodeString Error = FMTLOAD(CHECKSUM_ERROR, (File->FullFileName));
+            FTerminal->CommandError(&E, Error);
+            // Abort loop.
+            // TODO: retries? resume?
+            BatchIndex = BatchFileList->Count;
+            Index = FileList->Count;
+          }
+        }
+      }
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::CustomCommandOnFile(const UnicodeString FileName,
@@ -2677,9 +2839,9 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::GetSupportedChecksumAlgs(TStrings * /*Algs*/)
+void __fastcall TSCPFileSystem::GetSupportedChecksumAlgs(TStrings * Algs)
 {
-  // NOOP
+  FTerminal->GetShellChecksumAlgs(Algs);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::LockFile(const UnicodeString & /*FileName*/, const TRemoteFile * /*File*/)

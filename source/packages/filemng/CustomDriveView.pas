@@ -86,6 +86,7 @@ type
     procedure NeedImageLists(Recreate: Boolean);
     procedure DoCompare(Sender: TObject; Node1, Node2: TTreeNode; Data: Integer; var Compare: Integer);
     function DoCompareText(Text1, Text2: string): Integer;
+    procedure UpdateItemHeight;
 
     procedure CNNotify(var Msg: TWMNotify); message CN_NOTIFY;
     procedure CMColorChanged(var Msg: TMessage); message CM_COLORCHANGED;
@@ -97,6 +98,7 @@ type
     procedure WMContextMenu(var Msg: TWMContextMenu); message WM_CONTEXTMENU;
     procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
     procedure CMDPIChanged(var Message: TMessage); message CM_DPICHANGED;
+    procedure CMFontChanged(var Message: TMessage); message CM_FONTCHANGED;
 
     procedure Delete(Node: TTreeNode); override;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
@@ -230,7 +232,7 @@ type
 implementation
 
 uses
-  SysUtils, ShellApi, ImgList, ActiveX,
+  SysUtils, ShellApi, ImgList, ActiveX, Math,
   IEListView, BaseUtils;
 
 constructor TCustomDriveView.Create(AOwner: TComponent);
@@ -306,9 +308,25 @@ begin
   inherited Destroy;
 end;
 
+procedure TCustomDriveView.UpdateItemHeight;
+var
+  ImageHeight: Integer;
+  TextHeight: Integer;
+begin
+  ImageHeight := (Images.Width * 9) div 8;
+  // 16 seems to be the system default tree view item height
+  TextHeight := ScaleByControlTextHeightRunTime(Canvas, 16);
+  TreeView_SetItemHeight(Handle, Max(ImageHeight, TextHeight));
+end;
+
+procedure TCustomDriveView.CMFontChanged(var Message: TMessage);
+begin
+  inherited;
+  UpdateItemHeight;
+end;
+
 procedure TCustomDriveView.NeedImageLists(Recreate: Boolean);
 var
-  MinHeight: Integer;
   AImages: TImageList;
 begin
   if not Assigned(Images) then
@@ -331,9 +349,7 @@ begin
     FImageList := OverlayImageList(Images.Width);
   end;
 
-  MinHeight := ScaleByTextHeight(Self, 18);
-  if TreeView_GetItemHeight(Handle) < MinHeight then
-    TreeView_SetItemHeight(Handle, MinHeight);
+  UpdateItemHeight;
 end;
 
 procedure TCustomDriveView.CMDPIChanged(var Message: TMessage);

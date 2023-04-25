@@ -472,7 +472,7 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateScript(UnicodeString & Scri
     UnicodeString PsArgPassingLink(L"https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_preference_variables#psnativecommandargumentpassing");
 
     Result =
-      RtfLink(PsArgPassingLink, RtfScriptComment(FORMAT(L"# %s", (L"PowerShell >=7.3")))) + RtfPara +
+      RtfLink(PsArgPassingLink, RtfScriptComment(FORMAT(L"# %s", (LoadStr(GENERATE_URL_PS_ARG_PASSING))))) + RtfPara +
       RtfLink(PsArgPassingLink, L"$PSNativeCommandArgumentPassing") + L" = " + AssemblyString(alPowerShell, L"Legacy") + RtfPara +
       RtfPara +
       RtfText(L"& \"" + ComExeName + "\" `") + RtfPara +

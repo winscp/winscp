@@ -88,7 +88,7 @@ typedef off_t ne_off_t;
 #endif
 
 #ifndef NE_BUFSIZ
-#define NE_BUFSIZ 8192
+#define NE_BUFSIZ 65536
 #endif
 
 #ifndef NE_VAR

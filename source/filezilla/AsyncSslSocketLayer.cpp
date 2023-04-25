@@ -153,26 +153,12 @@ void CAsyncSslSocketLayer::OnReceive(int nErrorCode)
       }
     }
 
-    if (m_pRetrySendBuffer)
+    if (m_pRetrySendBuffer != NULL)
     {
-      int numwrite = BIO_write(m_sslbio, m_pRetrySendBuffer, m_nRetrySendBufferLen);
-      if (numwrite >= 0)
+      if (ProcessSendBuffer() == -2)
       {
-        BIO_ctrl(m_sslbio, BIO_CTRL_FLUSH, 0, NULL);
-        delete [] m_pRetrySendBuffer;
-        m_pRetrySendBuffer = 0;
-      }
-      else if (numwrite == -1)
-      {
-        if (!BIO_should_retry(m_sslbio))
-        {
-          delete [] m_pRetrySendBuffer;
-          m_pRetrySendBuffer = 0;
-
-          ::SetLastError(WSAECONNABORTED);
-          TriggerEvent(FD_CLOSE, 0, TRUE);
-          return;
-        }
+        TriggerEvent(FD_CLOSE, 0, TRUE);
+        return;
       }
     }
 
@@ -208,6 +194,34 @@ void CAsyncSslSocketLayer::OnReceive(int nErrorCode)
   else
   {
     TriggerEvent(FD_READ, nErrorCode, TRUE);
+  }
+}
+
+int CAsyncSslSocketLayer::ProcessSendBuffer()
+{
+  int numwrite = BIO_write(m_sslbio, m_pRetrySendBuffer, m_nRetrySendBufferLen);
+  if (numwrite >= 0)
+  {
+    BIO_ctrl(m_sslbio, BIO_CTRL_FLUSH, 0, NULL);
+    delete [] m_pRetrySendBuffer;
+    m_pRetrySendBuffer = 0;
+    return numwrite;
+  }
+  else
+  {
+    DebugAssert(numwrite == -1);
+    if (!BIO_should_retry(m_sslbio))
+    {
+      delete [] m_pRetrySendBuffer;
+      m_pRetrySendBuffer = 0;
+
+      ::SetLastError(WSAECONNABORTED);
+      return -2;
+    }
+    else
+    {
+      return -1;
+    }
   }
 }
 
@@ -311,26 +325,12 @@ void CAsyncSslSocketLayer::OnSend(int nErrorCode)
       }
     }
 
-    if (m_pRetrySendBuffer)
+    if (m_pRetrySendBuffer != NULL)
     {
-      int numwrite = BIO_write(m_sslbio, m_pRetrySendBuffer, m_nRetrySendBufferLen);
-      if (numwrite >= 0)
+      if (ProcessSendBuffer() == -2)
       {
-        BIO_ctrl(m_sslbio, BIO_CTRL_FLUSH, 0, NULL);
-        delete [] m_pRetrySendBuffer;
-        m_pRetrySendBuffer = 0;
-      }
-      else if (numwrite == -1)
-      {
-        if (!BIO_should_retry(m_sslbio))
-        {
-          delete [] m_pRetrySendBuffer;
-          m_pRetrySendBuffer = 0;
-
-          ::SetLastError(WSAECONNABORTED);
-          TriggerEvent(FD_CLOSE, 0, TRUE);
-          return;
-        }
+        TriggerEvent(FD_CLOSE, 0, TRUE);
+        return;
       }
     }
 
@@ -405,45 +405,32 @@ int CAsyncSslSocketLayer::Send(const void* lpBuf, int nBufLen, int nFlags)
     m_nRetrySendBufferLen = nBufLen;
     memcpy(m_pRetrySendBuffer, lpBuf, nBufLen);
 
-    int numwrite = BIO_write(m_sslbio, m_pRetrySendBuffer, m_nRetrySendBufferLen);
-    if (numwrite >= 0)
+    int ProcessResult = ProcessSendBuffer();
+    if (ProcessResult == -2)
     {
-      BIO_ctrl(m_sslbio, BIO_CTRL_FLUSH, 0, NULL);
-      delete [] m_pRetrySendBuffer;
-      m_pRetrySendBuffer = 0;
-    }
-    else if (numwrite == -1)
-    {
-      if (BIO_should_retry(m_sslbio))
-      {
-        if (GetLayerState() == closed)
-        {
-          return 0;
-        }
-        else if (GetLayerState() != connected)
-        {
-          SetLastError(m_nNetworkError);
-          return SOCKET_ERROR;
-        }
-
-        TriggerEvents();
-
-        return nBufLen;
-      }
-      else
-      {
-        delete [] m_pRetrySendBuffer;
-        m_pRetrySendBuffer = 0;
-
-        ::SetLastError(WSAECONNABORTED);
-      }
       return SOCKET_ERROR;
+    }
+    else if (ProcessResult == -1)
+    {
+      if (GetLayerState() == closed)
+      {
+        return 0;
+      }
+      else if (GetLayerState() != connected)
+      {
+        SetLastError(m_nNetworkError);
+        return SOCKET_ERROR;
+      }
+
+      TriggerEvents();
+
+      return nBufLen;
     }
 
     m_mayTriggerWriteUp = true;
     TriggerEvents();
 
-    return numwrite;
+    return ProcessResult;
   }
   else
   {
@@ -810,7 +797,34 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
 
   //Create bios
   m_sslbio = BIO_new(BIO_f_ssl());
-  BIO_new_bio_pair(&m_ibio, 32768, &m_nbio, 32768);
+  // WORKAROUND: Upload over TLS 1.3 fails for specific sizes in relation to OpenSSL buffer size.
+  // For 32768 buffer, the sizes are 32725-32746, 65471-65492, 98217-98238 (tested up to 1048576)
+  // Do not know how to fix that, so as a workaround, using buffer size that does not result in the problem.
+  unsigned long TransferSize = 0;
+  if (main != NULL)
+  {
+    TransferSize = static_cast<unsigned long>(GetSocketOptionVal(OPTION_MPEXT_TRANSFER_SIZE));
+  }
+  unsigned BufferKBs = 32;
+  unsigned long BufferSize;
+  do
+  {
+    BufferSize = BufferKBs * 1024;
+    int Remainder = TransferSize % BufferSize;
+    int BufferCount = (TransferSize / BufferSize) + (Remainder > 0 ? 1 : 0);
+    int ProblemHigh = BufferSize - (BufferCount * 22);
+    int ProblemLow = ProblemHigh - 21;
+    if ((ProblemLow <= Remainder) && (Remainder <= ProblemHigh))
+    {
+      BufferKBs++;
+    }
+    else
+    {
+      break;
+    }
+  }
+  while (true);
+  BIO_new_bio_pair(&m_ibio, BufferSize, &m_nbio, BufferSize);
 
   if (!m_sslbio || !m_nbio || !m_ibio)
   {
@@ -1155,7 +1169,6 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
       sprintf(buffer + strlen(buffer), " [%s]", debug);
       OPENSSL_free(debug);
     }
-    USES_CONVERSION;
     pLayer->LogSocketMessageRaw(FZ_LOG_INFO, A2T(buffer));
     delete[] buffer;
   }

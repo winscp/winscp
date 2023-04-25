@@ -9,6 +9,10 @@ namespace WinSCP
     [ComVisible(true)]
     public class TransferEventArgsCollection : ICollection<TransferEventArgs>
     {
+        internal TransferEventArgsCollection()
+        {
+        }
+
         public TransferEventArgs this[int index]
         {
             get

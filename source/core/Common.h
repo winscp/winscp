@@ -29,6 +29,7 @@ extern const wchar_t TokenReplacement;
 extern const UnicodeString LocalInvalidChars;
 extern const UnicodeString PasswordMask;
 extern const UnicodeString Ellipsis;
+extern const UnicodeString TitleSeparator;
 //---------------------------------------------------------------------------
 extern const UnicodeString HttpProtocol;
 extern const UnicodeString HttpsProtocol;
@@ -55,8 +56,8 @@ UnicodeString CopyToChars(const UnicodeString & Str, int & From, UnicodeString C
   wchar_t * Delimiter = NULL, bool DoubleDelimiterEscapes = false);
 UnicodeString CopyToChar(const UnicodeString & Str, wchar_t Ch, bool Trim);
 UnicodeString RemoveSuffix(const UnicodeString & Str, const UnicodeString & Suffix, bool RemoveNumbersAfterSuffix = false);
-UnicodeString DelimitStr(UnicodeString Str, UnicodeString Chars);
-UnicodeString ShellDelimitStr(UnicodeString Str, wchar_t Quote);
+UnicodeString DelimitStr(const UnicodeString & Str, wchar_t Quote = L'"');
+UnicodeString ShellQuoteStr(const UnicodeString & Str);
 UnicodeString ExceptionLogString(Exception *E);
 UnicodeString __fastcall MainInstructions(const UnicodeString & S);
 bool __fastcall HasParagraphs(const UnicodeString & S);
@@ -136,6 +137,7 @@ bool __fastcall CutToken(UnicodeString & Str, UnicodeString & Token,
 bool __fastcall CutTokenEx(UnicodeString & Str, UnicodeString & Token,
   UnicodeString * RawToken = NULL, UnicodeString * Separator = NULL);
 void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, const UnicodeString & Delimiter);
+void AddToShellFileListCommandLine(UnicodeString & List, const UnicodeString & Value);
 bool __fastcall IsWinVista();
 bool __fastcall IsWin7();
 bool __fastcall IsWin8();
@@ -191,6 +193,8 @@ UnicodeString GetEnvironmentInfo();
 void SetStringValueEvenIfEmpty(TStrings * Strings, const UnicodeString & Name, const UnicodeString & Value);
 UnicodeString __fastcall GetAncestorProcessName(int Levels = 1);
 UnicodeString GetAncestorProcessNames();
+void NotImplemented();
+UnicodeString GetDividerLine();
 //---------------------------------------------------------------------------
 struct TSearchRecSmart : public TSearchRec
 {
@@ -227,7 +231,7 @@ int __fastcall FindNextChecked(TSearchRecChecked & F);
 int __fastcall FindNextUnchecked(TSearchRecChecked & F);
 void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   TProcessLocalFileEvent CallBackFunc, void * Param = NULL, int FindAttrs = -1);
-int __fastcall FileGetAttrFix(const UnicodeString FileName);
+int __fastcall FileGetAttrFix(const UnicodeString & FileName);
 //---------------------------------------------------------------------------
 extern const wchar_t * DSTModeNames;
 enum TDSTMode
@@ -264,6 +268,7 @@ int __fastcall TimeToMSec(TDateTime T);
 int __fastcall TimeToSeconds(TDateTime T);
 int __fastcall TimeToMinutes(TDateTime T);
 UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDateTime DateTime);
+UnicodeString FormatRelativeTime(const TDateTime & ANow, const TDateTime & AThen, bool DateOnly);
 TStrings * TlsCipherList();
 //---------------------------------------------------------------------------
 template<class MethodT>

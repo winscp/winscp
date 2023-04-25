@@ -83,13 +83,9 @@ __published:
   TTBXItem *TBXItem55;
   TTBXSeparatorItem *TBXSeparatorItem14;
   TTBXItem *TBXItem57;
-  TTBXSubmenuItem *TBXSubmenuItem19;
   TTBXItem *TBXItem113;
   TTBXSubmenuItem *TBXSubmenuItem20;
-  TTBXSeparatorItem *TBXSeparatorItem29;
-  TTBXSubmenuItem *TBXSubmenuItem21;
   TTBXItem *TBXItem114;
-  TTBXItem *TBXItem115;
   TTBXSubmenuItem *TBXSubmenuItem14;
   TTBXItem *TBXItem77;
   TTBXItem *TBXItem78;
@@ -163,7 +159,7 @@ __published:
   TTBXItem *TBXItem21;
   TTBXToolbar *AddressToolbar;
   TTBXLabelItem *TBXLabelItem1;
-  TTBXItem *TBXItem22;
+  TTBXSubmenuItem *RemoteOpenDirButton;
   TTBXToolbar *ButtonsToolbar;
   TTBXSubmenuItem *BackButton;
   TTBXSubmenuItem *ForwardButton;
@@ -176,7 +172,7 @@ __published:
   TTBXSubmenuItem *TBXItem42;
   TTBXItem *TBXItem45;
   TTBXItem *TBXItem58;
-  TTBXItem *TBXItem59;
+  TTBXSubmenuItem *TBXItem59;
   TTBXItem *TBXItem60;
   TTBXSeparatorItem *TBXSeparatorItem16;
   TTBXItem *TBXItem63;
@@ -190,7 +186,7 @@ __published:
   TTBXItem *TBXItem68;
   TTBXItem *TBXItem69;
   TTBXItem *TBXItem70;
-  TTBXToolbar *SessionToolbar;
+  TTBXToolbar *SessionToolbar2;
   TTBXItem *TBXItem123;
   TTBXSeparatorItem *TBXSeparatorItem34;
   TTBXItem *TBXItem124;
@@ -259,14 +255,11 @@ __published:
   TTBXItem *TBXItem4;
   TTBXToolbar *CustomCommandsToolbar;
   TTBXItem *TBXItem28;
-  TTBXColorItem *ColorMenuItem;
-  TTBXSeparatorItem *TBXSeparatorItem23;
   TTBXDropDownItem *TransferDropDown;
   TTBXStringList *TransferList;
   TTBXLabelItem *TransferLabel;
   TTBXSeparatorItem *TBXSeparatorItem52;
   TTBXItem *TBXItem189;
-  TTBXItem *TBXItem90;
   TTBXItem *TBXItem137;
   TTBXComboBoxItem *UnixPathComboBox;
   TTBXComboBoxItem *QueueSpeedComboBoxItem;
@@ -278,8 +271,6 @@ __published:
   TTBXItem *TBXItem3;
   TTBXItem *TBXItem139;
   TTBXSeparatorItem *TBXSeparatorItem53;
-  TTBXItem *TBXItem230;
-  TTBXSubmenuItem *TBXSubmenuItem231;
   TTBXSeparatorItem *TBXSeparatorItem24;
   TTBXLabelItem *TransferSettingsLabelItem;
   TTBXItem *TBXItem140;
@@ -314,7 +305,6 @@ __published:
   TTBXItem *TBXItem244;
   TTBXItem *TBXItem246;
   TTBXItem *TBXItem14;
-  TTBXItem *TBXItem61;
   TTBXSeparatorItem *TBXSeparatorItem42;
   TTBXItem *TBXItem62;
   TTBXItem *TBXItem127;
@@ -325,6 +315,22 @@ __published:
   TTBXItem *TBXItem164;
   TTBXItem *TBXItem165;
   TTBXSeparatorItem *TBXSeparatorItem44;
+  TTBXSubmenuItem *TBXSubmenuItem29;
+  TTBXItem *TBXItem166;
+  TTBXItem *TBXItem218;
+  TTBXItem *TBXItem167;
+  TTBXSeparatorItem *TBXSeparatorItem47;
+  TTBXColorItem *ColorMenuItem;
+  TTBXSeparatorItem *TBXSeparatorItem49;
+  TTBXSubmenuItem *TBXSubmenuItem9;
+  TTBXSubmenuItem *TBXSubmenuItem10;
+  TTBXItem *TBXItem168;
+  TTBXSeparatorItem *TBXSeparatorItem23;
+  TTBXItem *TBXItem61;
+  TTBXItem *TBXItem22;
+  TTBXSeparatorItem *TBXSeparatorItem29;
+  TTBXItem *TBXItem90;
+  TTBXSeparatorItem *TBXSeparatorItem50;
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
   void __fastcall UnixPathComboBoxBeginEdit(TTBEditItem *Sender,
@@ -336,6 +342,7 @@ __published:
           bool FromLink);
   void __fastcall RemoteStatusBarPanelClick(TTBXCustomStatusBar *Sender, TTBXStatusPanel *Panel);
   void __fastcall AddressToolbarEndModal(TObject *Sender);
+  void __fastcall RemoteOpenDirButtonPopup(TTBCustomItem *Sender, bool FromLink);
 
 private:
   UnicodeString FStatusBarFileText;
@@ -371,6 +378,7 @@ public:
   virtual void __fastcall ChangePath(TOperationSide Side);
   virtual void __fastcall GoToAddress();
   virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
+  virtual bool SupportedSession(TSessionData * SessionData);
 };
 //---------------------------------------------------------------------------
 #endif

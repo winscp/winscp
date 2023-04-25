@@ -26,7 +26,8 @@ strbuf *chap_response(ptrlen challenge, ptrlen password)
     return sb;
 }
 
-void BinarySink_put_hex_data(BinarySink *bs, const void *vptr, size_t len)
+static void BinarySink_put_hex_data(BinarySink *bs, const void *vptr,
+                                    size_t len)
 {
     const unsigned char *p = (const unsigned char *)vptr;
     const char *hexdigits = "0123456789abcdef";

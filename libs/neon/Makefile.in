@@ -47,7 +47,7 @@ transform = @program_transform_name@
 LIBTOOL = @LIBTOOL@
 XMLTO = xmlto
 GCOV = gcov
-XGETTEXT_OPTS = --keyword=_ --keyword=N_ --msgid-bugs-address=neon@lists.manyfish.co.uk \
+XGETTEXT_OPTS = --keyword=_ --keyword=N_ --msgid-bugs-address=https://github.com/notroj/neon \
 		--default-domain=neon --flag ne_print_request_header:3:c-format \
 		--flag ne_snprintf:3:c-format --flag ne_vsnprintf:3:c-format \
 		--flag ne_set_error:2:c-format

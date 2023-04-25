@@ -255,11 +255,8 @@ t_directory::t_direntry * CFtpListResult::getList(int & Num)
   return Result;
 }
 
-BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_directory::t_direntry &direntry, int &nFTPServerType)
+BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_directory::t_direntry &direntry)
 {
-  USES_CONVERSION;
-
-  nFTPServerType = 0;
   direntry.ownergroup = L"";
   direntry.owner = L"";
   direntry.group = L"";
@@ -321,7 +318,10 @@ BOOL CFtpListResult::parseLine(const char *lineToParse, const int linelen, t_dir
 
 bool CFtpListResult::IsNewLineChar(char C) const
 {
-  return (C == '\r') || (C == '\n');
+  return
+    (C == '\r') || (C == '\n') ||
+    // Some of the parsing code cannot handle null characters, so if a malformed server sends some, treat is as a newline
+    (C == '\0');
 }
 
 void CFtpListResult::AddData(const char * Data, int Size)
@@ -369,7 +369,6 @@ void CFtpListResult::AddData(const char * Data, int Size)
         FirstLineEnd = Pos;
       }
       t_directory::t_direntry DirEntry;
-      int ServerType;
       RawByteString Line = Record;
       for (int Index = 1; Index <= Line.Length(); Index++)
       {
@@ -378,12 +377,8 @@ void CFtpListResult::AddData(const char * Data, int Size)
           Line[Index] = ' ';
         }
       }
-      if (parseLine(Line.c_str(), Line.Length(), DirEntry, ServerType))
+      if (parseLine(Line.c_str(), Line.Length(), DirEntry))
       {
-        if (ServerType != 0)
-        {
-          m_server.nServerType |= ServerType;
-        }
         if ((DirEntry.name != L".") && (DirEntry.name != L".."))
         {
           AddLine(DirEntry);
@@ -942,9 +937,6 @@ BOOL CFtpListResult::parseAsEPLF(const char *line, const int linelen, t_director
 
 BOOL CFtpListResult::parseAsMlsd(const char *line, const int linelen, t_directory::t_direntry &direntry)
 {
-  #ifdef _DEBUG
-  USES_CONVERSION;
-  #endif
   // MLSD format as described here: https://datatracker.ietf.org/doc/html/rfc3659
   // Parsing is done strict, abort on slightest error.
 
@@ -1215,6 +1207,7 @@ void CFtpListResult::GuessYearIfUnknown(t_directory::t_direntry::t_date & Date)
 
 BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_directory::t_direntry &direntry)
 {
+  USES_CONVERSION;
   int pos = 0;
   int tokenlen = 0;
 
@@ -1340,7 +1333,6 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
     tmpstr[tokenlen] = 0;
     strlwr(tmpstr);
 
-    USES_CONVERSION;
     iter = m_MonthNamesMap.find(A2T(tmpstr));
     delete [] tmpstr;
     if (iter != m_MonthNamesMap.end())
@@ -1695,7 +1687,6 @@ BOOL CFtpListResult::parseAsUnix(const char *line, const int linelen, t_director
   else
   {
     //Try if we can recognize the month name
-    USES_CONVERSION;
     iter = m_MonthNamesMap.find(A2T(lwr));
     delete [] lwr;
     if (iter == m_MonthNamesMap.end())

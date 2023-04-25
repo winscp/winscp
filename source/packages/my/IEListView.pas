@@ -49,9 +49,6 @@ type
   end;
 
 type
-  TDateTimeDisplay = (dtdDateTimeSec, dtdDateTime, dtdDate);
-
-type
   TCustomIEListView = class;
 
   TListViewSecondaryColumnHeaderEvent =
@@ -69,9 +66,6 @@ type
     FOnRecreate: TNotifyEvent;
     FOnSecondaryColumnHeader: TListViewSecondaryColumnHeaderEvent;
 
-    FDateTimeFormatStr: string;
-    FDateFormatStr: string;
-    FDateTimeDisplay: TDateTimeDisplay;
     FDragImageList: TDragImageList;
 
   protected
@@ -82,8 +76,6 @@ type
     procedure SetSortAscending(Value: Boolean); virtual;
     procedure SortItems; virtual;
     procedure SetViewStyle(Value: TViewStyle); override; // CLEAN virtual
-    procedure SetDateTimeDisplay(Value: TDateTimeDisplay); virtual;
-    procedure SetDateTimeFormatString; virtual;
     procedure HeaderEndDrag(Sender: TObject); virtual;
     function SecondaryColumnHeader(Index: Integer): Integer;
     function NewColProperties: TCustomListViewColProperties; override;
@@ -91,6 +83,7 @@ type
 
     procedure CreateWnd; override;
     procedure ColClick(Column: TListColumn); override;
+    procedure SetSort(Column: Integer; Ascending: Boolean);
     procedure WMNotify(var Msg: TWMNotify); message WM_NOTIFY;
     procedure CMRecreateWnd(var Message: TMessage); message CM_RECREATEWND;
   public
@@ -98,11 +91,10 @@ type
     destructor Destroy; override;
     procedure SetColumnImages; virtual;
 
+    procedure SortBy(Column: Integer);
+
     property DragImageList: TDragImageList read FDragImageList;
     property ParentForm: TCustomForm read FParentForm;
-    property DateTimeFormatStr: string
-      read FDateTimeFormatStr write FDateTimeFormatStr stored False;
-    property DateFormatStr: string read FDateFormatStr;
     {Set the sort column of the listview}
     property SortColumn: Integer read FSortColumn write SetSortColumn;
     {Show the sorting symbol in the listview's header:}
@@ -115,9 +107,6 @@ type
       read FOnSecondaryColumnHeader write FOnSecondaryColumnHeader;
 
   published
-    {Display format of the date/time of the files:}
-    property DateTimeDisplay: TDateTimeDisplay
-      read FDateTimeDisplay write SetDateTimeDisplay default dtdDateTimeSec;
     property OnHeaderEndDrag: TNotifyEvent
       read  FOnHeaderEndDrag write FOnHeaderEndDrag;
     property OnHeaderEndTrack: TNotifyEvent
@@ -375,19 +364,30 @@ begin
   FShowColumnIcon := True;
   FSortColumn := 0;
   FSortAscending := True;
-  SetDateTimeFormatString;
 end; {Create}
+
+procedure TCustomIEListView.SetSort(Column: Integer; Ascending: Boolean);
+begin
+  if (SortColumn <> Column) or (SortAscending <> Ascending) then
+  begin
+    FSortColumn := Column;
+    FSortAscending := Ascending;
+
+    if Items.Count > 0 then SortItems;
+
+    SetColumnImages;
+  end;
+end;
+
+procedure TCustomIEListView.SortBy(Column: Integer);
+begin
+  if Column = SortColumn then SetSort(SortColumn, not SortAscending)
+    else SetSort(Column, SortAscendingByDefault(Column));
+end;
 
 procedure TCustomIEListView.SetSortColumn(Value: Integer);
 begin
-  if Value <> SortColumn then
-  begin
-    FSortColumn := Value;
-    FSortAscending := True;
-    if Items.Count > 0 then
-      SortItems;
-    SetColumnImages;
-  end;
+  SetSort(Value, True);
 end; {SetSortColumn}
 
 procedure TCustomIEListView.SetViewStyle(Value: TViewStyle);
@@ -402,13 +402,7 @@ end; {SetViewStyle}
 
 procedure TCustomIEListView.SetSortAscending(Value: Boolean);
 begin
-  if SortAscending <> Value then
-  begin
-    FSortAscending := Value;
-    if Items.Count > 0 then
-      SortItems;
-    SetColumnImages;
-  end;
+  SetSort(SortColumn, Value);
 end; {SetSortAscending}
 
 procedure TCustomIEListView.SetColumnImages;
@@ -498,17 +492,7 @@ end;
 
 procedure TCustomIEListView.ColClick(Column: TListColumn);
 begin
-  if Column.Index = SortColumn then FSortAscending := not FSortAscending
-    else
-  begin
-    FSortColumn := Column.Index;
-    FSortAscending := SortAscendingByDefault(Column.Index);
-  end;
-
-  if Items.Count > 0 then SortItems;
-
-  SetColumnImages;
-
+  SortBy(Column.Index);
   inherited;
 end; {ColClick}
 
@@ -593,49 +577,6 @@ begin
 
   inherited;
 end; {Destroy}
-
-procedure TCustomIEListView.SetDateTimeDisplay(Value: TDateTimeDisplay);
-begin
-  if Value <> FDateTimeDisplay then
-  begin
-    FDateTimeDisplay := Value;
-    SetDateTimeFormatString;
-    Invalidate;
-  end;
-end; {SetDateTimeDisplay}
-
-procedure TCustomIEListView.SetDateTimeFormatString;
-var
-  ShortDate: string;
-begin
-  ShortDate := UpperCase(FormatSettings.ShortDateFormat);
-  {Create DateTime format string:}
-  if (Pos('YYYY', UpperCase(ShortDate)) = 0) and
-     (Pos('YY', UpperCase(ShortDate)) <> 0) then
-  begin
-    if Copy(UpperCase(ShortDate), Length(ShortDate) - 1, 2) = 'YY' then
-    begin
-      FDateTimeFormatStr := FormatSettings.ShortDateFormat + 'yy'
-    end
-      else
-    if Copy(UpperCase(ShortDate), 1, 2) = 'YY' then
-    begin
-      FDateTimeFormatStr := 'yy' + FormatSettings.ShortDateFormat;
-    end
-  end
-    else
-  begin
-    FDateTimeFormatStr := FormatSettings.ShortDateFormat;
-  end;
-
-  FDateFormatStr := FDateTimeFormatStr;
-
-  if FDateTimeDisplay = dtdDateTimeSec then
-      FDateTimeFormatStr := FDateTimeFormatStr + '  ' + FormatSettings.LongTimeFormat
-    else
-  if fDateTimeDisplay = dtdDateTime then
-    FDateTimeFormatStr := FDateTimeFormatStr + '  ' + FormatSettings.ShortTimeFormat;
-end; {SetDateTimeFormatString}
 
 procedure TCustomIEListView.SortItems;
 begin

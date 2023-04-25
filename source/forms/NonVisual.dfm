@@ -48,7 +48,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXSeparatorItem12: TTBXSeparatorItem
     end
     object TBXItem82: TTBXItem
-      Action = CurrentCopyToClipboardFocusedAction
+      Action = CurrentCopyToClipboardFocusedAction2
     end
     object N45: TTBXSeparatorItem
     end
@@ -251,7 +251,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'Go to Comma&nd Line'
       HelpKeyword = 'ui_commander#command_line'
       Hint = 'Go to command line'
-      ShortCut = 24654
+      ShortCut = 24653
     end
     object QueueItemDeleteAction: TAction
       Tag = 12
@@ -286,14 +286,14 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Rename|Rename selected file'
       ImageIndex = 3
     end
-    object LocalSortAscendingAction: TAction
+    object LocalSortAscendingAction2: TAction
       Tag = 9
       Category = 'Sort'
       Caption = '&Ascending'
       HelpKeyword = 'ui_file_panel#sorting_files'
       Hint = 
-        'Ascending/descending|Toggle ascending/descending sort of local p' +
-        'anel'
+        'Ascending/descending|Toggle ascending/descending sorting of file' +
+        's in the panel'
       ImageIndex = 37
     end
     object CurrentEditAction: TAction
@@ -431,7 +431,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'Comma&nd Line'
       HelpKeyword = 'ui_commander#command_line'
       Hint = 'Hide/show command line'
-      ShortCut = 24654
+      ShortCut = 24653
     end
     object RemoteParentDirAction: TAction
       Tag = 12
@@ -440,6 +440,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'task_navigate#special_commands'
       Hint = 'Parent directory|Go to parent directory'
       ImageIndex = 12
+      ShortCut = 8
     end
     object RemoteRootDirAction: TAction
       Tag = 12
@@ -479,11 +480,11 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'Status &Bar'
       Hint = 'Hide/show status bar'
     end
-    object SessionsTabsAction: TAction
+    object SessionsTabsAction2: TAction
       Tag = 15
       Category = 'View'
-      Caption = 'Sessions Tabs'
-      Hint = 'Hide/show sessions tabs'
+      Caption = 'T&abs'
+      Hint = 'Hide/show tabs'
     end
     object ExplorerAddressBandAction: TAction
       Tag = 7
@@ -568,12 +569,12 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 23
       ShortCut = 24652
     end
-    object ExplorerSessionBandAction: TAction
+    object ExplorerSessionBandAction2: TAction
       Tag = 7
       Category = 'View'
-      Caption = 'Sessio&n Buttons'
+      Caption = 'Sessio&ns and Tabs Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show session toolbar'
+      Hint = 'Hide/show sessions and tabs toolbar'
     end
     object ExplorerPreferencesBandAction: TAction
       Tag = 7
@@ -610,19 +611,6 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_toolbars'
       Hint = 'Hide/show custom commands toolbar'
     end
-    object NewSessionAction: TAction
-      Tag = 15
-      Category = 'Session'
-      Caption = '&New Session...'
-      HelpKeyword = 'task_connections#opening_additional_connection'
-      Hint = 
-        'New session|Opens new session (hold down Shift to open session i' +
-        'n new window)'
-      ImageIndex = 25
-      SecondaryShortCuts.Strings = (
-        'Ctrl+Shift+N')
-      ShortCut = 16462
-    end
     object SiteManagerAction: TAction
       Tag = 15
       Category = 'Session'
@@ -632,12 +620,12 @@ object NonVisualDataModule: TNonVisualDataModule
         'Site Manager|Opens site manager (hold down Shift to open site ma' +
         'nager in new window)'
     end
-    object CloseSessionAction2: TAction
+    object CloseTabAction: TAction
       Tag = 15
-      Category = 'Session'
-      Caption = '&Close Session'
+      Category = 'Tab'
+      Caption = '&Close Tab'
       HelpKeyword = 'ui_tabs#working'
-      Hint = 'Terminate the current session and close the tab'
+      Hint = 'Close the current tab'
       ImageIndex = 26
       SecondaryShortCuts.Strings = (
         'Ctrl+W')
@@ -649,6 +637,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Disconnect Session'
       HelpKeyword = 'task_connections#closing'
       Hint = 'Disconnect the current session, but keep the tab opened'
+      ImageIndex = 116
     end
     object ReconnectSessionAction: TAction
       Tag = 15
@@ -668,7 +657,7 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object WorkspacesAction: TAction
       Tag = 15
-      Category = 'Session'
+      Category = 'Tab'
       Caption = '&Workspaces'
       HelpKeyword = 'workspace'
       Hint = 'Open workspace'
@@ -683,12 +672,12 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 28
       ShortCut = 49232
     end
-    object RemoteChangePathAction: TAction
+    object RemoteChangePathAction2: TAction
       Tag = 11
       Category = 'Remote Directory'
       Caption = '&Change Directory'
       HelpKeyword = 'task_navigate'
-      Hint = 'Allows selection of different directory for remote panel'
+      Hint = 'Allows selection of different directory for panel'
       ImageIndex = 29
       ShortCut = 32881
     end
@@ -707,6 +696,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'task_navigate#special_commands'
       Hint = 'Parent directory|Go to parent directory'
       ImageIndex = 12
+      ShortCut = 8
     end
     object LocalRootDirAction: TAction
       Tag = 8
@@ -742,12 +732,12 @@ object NonVisualDataModule: TNonVisualDataModule
         'rk'
       ImageIndex = 18
     end
-    object LocalChangePathAction: TAction
+    object LocalChangePathAction2: TAction
       Tag = 11
       Category = 'Local Directory'
       Caption = '&Change Drive'
       HelpKeyword = 'task_navigate'
-      Hint = 'Allows selection of different drive for local panel'
+      Hint = 'Allows selection of different drive for panel'
       ImageIndex = 30
       ShortCut = 32880
     end
@@ -765,12 +755,12 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_toolbars'
       Hint = 'Hide/show menu'
     end
-    object CommanderSessionBandAction: TAction
+    object CommanderSessionBandAction2: TAction
       Tag = 11
       Category = 'View'
-      Caption = 'Sessio&n Buttons'
+      Caption = 'Sessio&ns and Tabs Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show session toolbar'
+      Hint = 'Hide/show sessions and tabs toolbar'
     end
     object CommanderPreferencesBandAction: TAction
       Tag = 11
@@ -814,206 +804,208 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_toolbars'
       Hint = 'Hide/show custom commands toolbar'
     end
-    object CommanderLocalHistoryBandAction: TAction
+    object CommanderLocalHistoryBandAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = '&History Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show local history toolbar'
+      Hint = 'Hide/show history toolbar'
     end
-    object CommanderLocalNavigationBandAction: TAction
+    object CommanderLocalNavigationBandAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = '&Navigation Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show local navigation toolbar'
+      Hint = 'Hide/show navigation toolbar'
     end
-    object CommanderLocalFileBandAction: TAction
+    object CommanderLocalFileBandAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = '&File Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show local file toolbar'
+      Hint = 'Hide/show file toolbar'
     end
-    object CommanderLocalSelectionBandAction: TAction
+    object CommanderLocalSelectionBandAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = 'Se&lection Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show local selection toolbar'
+      Hint = 'Hide/show selection toolbar'
     end
-    object CommanderRemoteHistoryBandAction: TAction
+    object CommanderRemoteHistoryBandAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = '&History Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show remote history toolbar'
+      Hint = 'Hide/show history toolbar'
     end
-    object CommanderRemoteNavigationBandAction: TAction
+    object CommanderRemoteNavigationBandAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = '&Navigation Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show remote navigation toolbar'
+      Hint = 'Hide/show navigation toolbar'
     end
-    object CommanderRemoteFileBandAction: TAction
+    object CommanderRemoteFileBandAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = '&File Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show remote file toolbar'
+      Hint = 'Hide/show file toolbar'
     end
-    object CommanderRemoteSelectionBandAction: TAction
+    object CommanderRemoteSelectionBandAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = 'Se&lection Buttons'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Hide/show remote selection toolbar'
+      Hint = 'Hide/show selection toolbar'
     end
-    object LocalStatusBarAction: TAction
+    object LocalStatusBarAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = 'Status &Bar'
-      Hint = 'Hide/show local panel status bar'
+      Hint = 'Hide/show panel status bar'
     end
-    object RemoteStatusBarAction: TAction
+    object RemoteStatusBarAction2: TAction
       Tag = 11
       Category = 'View'
       Caption = 'Status &Bar'
-      Hint = 'Hide/show remote panel status bar'
+      Hint = 'Hide/show panel status bar'
     end
-    object LocalSortByNameAction: TAction
+    object LocalSortByNameAction2: TAction
       Tag = 9
       Category = 'Sort'
       Caption = 'By &Name'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by name|Sort local panel by name'
+      Hint = 'Sort by name|Sort panel by name'
       ImageIndex = 31
       ShortCut = 16498
     end
-    object LocalSortByExtAction: TAction
+    object LocalSortByExtAction2: TAction
       Tag = 9
       Category = 'Sort'
       Caption = 'By &Extension'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by extension|Sort local panel by file name extension'
+      Hint = 'Sort by extension|Sort panel by file name extension'
       ImageIndex = 32
       ShortCut = 16499
     end
-    object LocalSortBySizeAction: TAction
+    object LocalSortBySizeAction2: TAction
       Tag = 9
       Category = 'Sort'
       Caption = 'By &Size'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by size|Sort local panel by file size'
+      Hint = 'Sort by size|Sort panel by file size'
       ImageIndex = 35
       ShortCut = 16501
     end
-    object LocalSortByAttrAction: TAction
+    object LocalSortByAttrAction2: TAction
       Tag = 9
       Category = 'Sort'
       Caption = 'By A&ttributes'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by attributes|Sort local panel by attributes'
+      Hint = 'Sort by attributes|Sort panel by attributes'
       ImageIndex = 36
       ShortCut = 16502
     end
-    object LocalSortByTypeAction: TAction
+    object LocalSortByTypeAction2: TAction
       Tag = 9
       Category = 'Sort'
       Caption = 'By &Type'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by type|Sort local panel by file type'
+      Hint = 'Sort by type|Sort panel by file type'
       ImageIndex = 34
     end
-    object LocalSortByChangedAction: TAction
+    object LocalSortByChangedAction2: TAction
       Tag = 9
       Category = 'Sort'
       Caption = 'By &Modification'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by time|Sort local panel by last modification time'
+      Hint = 'Sort by time|Sort panel by last modification time'
       ImageIndex = 33
       ShortCut = 16500
     end
-    object RemoteSortAscendingAction: TAction
+    object RemoteSortAscendingAction2: TAction
       Tag = 14
       Category = 'Sort'
       Caption = '&Ascending'
       HelpKeyword = 'ui_file_panel#sorting_files'
       Hint = 
-        'Ascending/descending|Toggle ascending/descending sort of remote ' +
-        'panel'
+        'Ascending/descending|Toggle ascending/descending sorting of file' +
+        's in the panel'
       ImageIndex = 37
     end
-    object RemoteSortByNameAction: TAction
+    object RemoteSortByNameAction2: TAction
       Tag = 14
       Category = 'Sort'
       Caption = 'By &Name'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by name|Sort remote panel by name'
+      Hint = 'Sort by name|Sort panel by name'
       ImageIndex = 31
       ShortCut = 16498
     end
-    object RemoteSortByExtAction: TAction
+    object RemoteSortByExtAction2: TAction
       Tag = 14
       Category = 'Sort'
       Caption = 'By &Extension'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by extension|Sort remote panel by file name extension'
+      Hint = 'Sort by extension|Sort panel by file name extension'
       ImageIndex = 32
       ShortCut = 16499
     end
-    object RemoteSortBySizeAction: TAction
+    object RemoteSortBySizeAction2: TAction
       Tag = 14
       Category = 'Sort'
       Caption = 'By &Size'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by size|Sort remote panel by file size'
+      Hint = 'Sort by size|Sort panel by file size'
       ImageIndex = 35
       ShortCut = 16501
     end
-    object RemoteSortByRightsAction: TAction
+    object RemoteSortByRightsAction2: TAction
       Tag = 14
       Category = 'Sort'
-      Caption = 'By &Permissions'
+      Caption = 'By &Permissions/Attributes'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by permissions|Sort remote panel by permissions'
+      Hint = 
+        'Sort by attributes/permissions|Sort panel by attributes/permissi' +
+        'ons'
       ImageIndex = 36
       ShortCut = 16502
     end
-    object RemoteSortByChangedAction: TAction
+    object RemoteSortByChangedAction2: TAction
       Tag = 14
       Category = 'Sort'
       Caption = 'By &Modification'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by time|Sort remote panel by last modification time'
+      Hint = 'Sort by time|Sort panel by last modification time'
       ImageIndex = 33
       ShortCut = 16500
     end
-    object RemoteSortByOwnerAction: TAction
+    object RemoteSortByOwnerAction2: TAction
       Tag = 14
       Category = 'Sort'
       Caption = 'By &Owner'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by owner|Sort remote panel by file owner'
+      Hint = 'Sort by owner|Sort panel by file owner'
       ImageIndex = 38
       ShortCut = 16503
     end
-    object RemoteSortByGroupAction: TAction
+    object RemoteSortByGroupAction2: TAction
       Tag = 14
       Category = 'Sort'
       Caption = 'By &Group'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by group|Sort remote panel by file group'
+      Hint = 'Sort by group|Sort panel by file group'
       ImageIndex = 39
       ShortCut = 16504
     end
-    object RemoteSortByTypeAction: TAction
+    object RemoteSortByTypeAction2: TAction
       Tag = 14
       Category = 'Sort'
       Caption = 'By &Type'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by type|Sort remote panel by file type'
+      Hint = 'Sort by type|Sort panel by file type'
       ImageIndex = 34
     end
     object CurrentSortAscendingAction: TAction
@@ -1053,18 +1045,18 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 35
       ShortCut = 16501
     end
-    object CurrentSortByTypeAction: TAction
+    object CurrentSortByTypeAction2: TAction
       Tag = 15
       Category = 'Sort'
       Caption = 'By &Type'
       HelpKeyword = 'ui_file_panel#sorting_files'
-      Hint = 'Sort by type|Sort current panel by file type (local panel only)'
+      Hint = 'Sort by type|Sort current panel by file type'
       ImageIndex = 34
     end
     object CurrentSortByRightsAction: TAction
       Tag = 15
       Category = 'Sort'
-      Caption = 'By &Attributes'
+      Caption = 'By &Permissions/Attributes'
       HelpKeyword = 'ui_file_panel#sorting_files'
       Hint = 
         'Sort by attributes/permissions|Sort current panel by attributes/' +
@@ -1140,142 +1132,132 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Save session as site|Save current session as site'
       ImageIndex = 43
     end
-    object ShowHideRemoteNameColumnAction: TAction
+    object ShowHideRemoteNameColumnAction2: TAction
       Tag = 15
       Category = 'Columns'
       Caption = '&Name'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 'Show/hide name|Show/hide name column on remote panel'
+      Hint = 'Show/hide name column'
       ImageIndex = 44
     end
-    object ShowHideRemoteExtColumnAction: TAction
+    object ShowHideRemoteExtColumnAction2: TAction
       Tag = 15
       Category = 'Columns'
       Caption = '&Extension'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 'Show/hide extension|Show/hide extension column on remote panel'
+      Hint = 'Show/hide extension column'
       ImageIndex = 45
     end
-    object ShowHideRemoteSizeColumnAction: TAction
+    object ShowHideRemoteSizeColumnAction2: TAction
       Tag = 15
       Category = 'Columns'
       Caption = '&Size'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 'Show/hide size|Show/hide size column on remote panel'
+      Hint = 'Show/hide size column'
       ImageIndex = 47
     end
-    object ShowHideRemoteChangedColumnAction: TAction
+    object ShowHideRemoteChangedColumnAction2: TAction
       Tag = 15
       Category = 'Columns'
       Caption = '&Modification'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 
-        'Show/hide modification|Show/hide modification column on remote p' +
-        'anel'
+      Hint = 'Show/hide modification column'
       ImageIndex = 48
     end
-    object ShowHideRemoteRightsColumnAction: TAction
+    object ShowHideRemoteRightsColumnAction2: TAction
       Tag = 15
       Category = 'Columns'
       Caption = '&Permissions'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 
-        'Show/hide permissions|Show/hide permissions column on remote pan' +
-        'el'
+      Hint = 'Show/hide permissions column'
       ImageIndex = 49
     end
-    object ShowHideRemoteOwnerColumnAction: TAction
+    object ShowHideRemoteOwnerColumnAction2: TAction
       Tag = 15
       Category = 'Columns'
       Caption = '&Owner'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 'Show/hide owner|Show/hide owner column on remote panel'
+      Hint = 'Show/hide owner column'
       ImageIndex = 50
     end
-    object ShowHideRemoteGroupColumnAction: TAction
+    object ShowHideRemoteGroupColumnAction2: TAction
       Tag = 15
       Category = 'Columns'
       Caption = '&Group'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 'Show/hide group|Show/hide group column on remote panel'
+      Hint = 'Show/hide group column'
       ImageIndex = 51
     end
-    object ShowHideRemoteLinkTargetColumnAction: TAction
+    object ShowHideRemoteLinkTargetColumnAction2: TAction
       Tag = 15
       Category = 'Columns'
       Caption = '&Link Target'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 
-        'Show/hide link target|Show/hide link target column on remote pan' +
-        'el'
+      Hint = 'Show/hide link target column'
       ImageIndex = 82
     end
-    object ShowHideRemoteTypeColumnAction: TAction
+    object ShowHideRemoteTypeColumnAction2: TAction
       Tag = 15
       Category = 'Columns'
       Caption = '&Type'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 'Show/hide type|Show/hide type column on remote panel'
+      Hint = 'Show/hide type column'
       ImageIndex = 46
     end
-    object ShowHideLocalNameColumnAction: TAction
+    object ShowHideLocalNameColumnAction2: TAction
       Tag = 15
       Category = 'Columns'
       Caption = '&Name'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 'Show/hide name|Show/hide name column on local panel'
+      Hint = 'Show/hide name column'
       ImageIndex = 44
     end
-    object ShowHideLocalExtColumnAction: TAction
+    object ShowHideLocalExtColumnAction2: TAction
       Tag = 15
       Category = 'Columns'
       Caption = '&Extension'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 'Show/hide extension|Show/hide extension column on local panel'
+      Hint = 'Show/hide extension column'
       ImageIndex = 45
     end
-    object ShowHideLocalTypeColumnAction: TAction
+    object ShowHideLocalTypeColumnAction2: TAction
       Tag = 15
       Category = 'Columns'
       Caption = '&Type'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 'Show/hide type|Show/hide type column on local panel'
+      Hint = 'Show/hide type column'
       ImageIndex = 46
     end
-    object ShowHideLocalSizeColumnAction: TAction
+    object ShowHideLocalSizeColumnAction2: TAction
       Tag = 15
       Category = 'Columns'
       Caption = '&Size'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 'Show/hide size|Show/hide size column on local panel'
+      Hint = 'Show/hide size column'
       ImageIndex = 47
     end
-    object ShowHideLocalChangedColumnAction: TAction
+    object ShowHideLocalChangedColumnAction2: TAction
       Tag = 15
       Category = 'Columns'
       Caption = '&Modification'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 
-        'Show/hide modification|Show/hide modification column on local pa' +
-        'nel'
+      Hint = 'Show/hide modification column'
       ImageIndex = 48
     end
-    object ShowHideLocalAttrColumnAction: TAction
+    object ShowHideLocalAttrColumnAction2: TAction
       Tag = 15
       Category = 'Columns'
       Caption = '&Attributes'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 'Show/hide attributes|Show/hide attributes column on local panel'
+      Hint = 'Show/hide attributes column'
       ImageIndex = 49
     end
-    object CompareDirectoriesAction: TAction
+    object CompareDirectoriesAction2: TAction
       Tag = 11
       Category = 'Command'
       Caption = '&Compare Directories'
       HelpKeyword = 'task_compare_directories'
-      Hint = 
-        'Compare directories|Mark different files in local and remote dir' +
-        'ectory'
+      Hint = 'Compare directories|Mark different files between files panels'
       ImageIndex = 52
       ShortCut = 8305
     end
@@ -1296,21 +1278,21 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Support Forum'
       Hint = 'Opens web browser and points it to support forum page'
     end
-    object LocalAddBookmarkAction: TAction
+    object LocalAddBookmarkAction2: TAction
       Tag = 9
       Category = 'Local Directory'
       Caption = '&Add Path to Bookmarks'
       HelpKeyword = 'task_navigate#bookmarks'
-      Hint = 'Add to bookmarks|Add current local directory to bookmark list'
+      Hint = 'Add to bookmarks|Add the current directory to bookmark list'
       ImageIndex = 54
       ShortCut = 16450
     end
-    object RemoteAddBookmarkAction: TAction
+    object RemoteAddBookmarkAction2: TAction
       Tag = 14
       Category = 'Remote Directory'
       Caption = '&Add Path to Bookmarks'
       HelpKeyword = 'task_navigate#bookmarks'
-      Hint = 'Add to bookmarks|Add current remote directory to bookmark list'
+      Hint = 'Add to bookmarks|Add the current directory to bookmark list'
       ImageIndex = 54
       ShortCut = 16450
     end
@@ -1337,10 +1319,10 @@ object NonVisualDataModule: TNonVisualDataModule
       ShortCut = 16464
     end
     object LocalExploreDirectoryAction: TAction
-      Tag = 15
+      Tag = 9
       Category = 'Local Directory'
       Caption = '&Explore Directory'
-      Hint = 'Opens Windows File Explorer with current local directory'
+      Hint = 'Opens Windows File Explorer with the current local directory'
       ImageIndex = 56
       ShortCut = 49221
     end
@@ -1354,15 +1336,13 @@ object NonVisualDataModule: TNonVisualDataModule
         'd with document type'
       ImageIndex = 58
     end
-    object SynchronizeBrowsingAction: TAction
+    object SynchronizeBrowsingAction2: TAction
       Tag = 11
       Category = 'Command'
       AutoCheck = True
       Caption = 'Synchronize &Browsing'
       HelpKeyword = 'task_navigate#synchronize_browsing'
-      Hint = 
-        'Synchronize browsing|Synchronize local and remote directory brow' +
-        'sing'
+      Hint = 'Synchronize browsing|Synchronize browsing between both panels'
       ImageIndex = 59
       ShortCut = 49218
     end
@@ -1384,31 +1364,31 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Edit link|Edit selected link/shortcut'
       ImageIndex = 60
     end
-    object CloseApplicationAction: TAction
+    object CloseApplicationAction2: TAction
       Tag = 15
       Category = 'Command'
       Caption = '&Quit'
       Hint = 
-        'Exit application|Terminate opened session(s) and close applicati' +
-        'on'
+        'Exit application|Close application (any opened sessions are clos' +
+        'ed)'
       ImageIndex = 61
     end
-    object OpenedSessionsAction: TAction
+    object OpenedTabsAction: TAction
       Tag = 15
-      Category = 'Session'
-      Caption = '&Opened Sessions'
+      Category = 'Tab'
+      Caption = '&Opened Tabs'
       HelpKeyword = 'ui_tabs#switch'
-      Hint = 'Select session|Select opened session to activate'
+      Hint = 'Select tab|Select tab to activate'
       ImageIndex = 62
     end
-    object DuplicateSessionAction: TAction
+    object DuplicateTabAction: TAction
       Tag = 15
-      Category = 'Session'
-      Caption = 'Du&plicate Session'
+      Category = 'Tab'
+      Caption = 'Du&plicate Tab'
       HelpKeyword = 'ui_tabs'
       Hint = 
-        'Duplicate session|Opens the same session again (hold down Shift ' +
-        'to open session in new window)'
+        'Duplicate tab|Open new tab with the same folder (hold down Shift' +
+        ' to open the tab in new window)'
       ImageIndex = 91
     end
     object NewLinkAction: TAction
@@ -1532,19 +1512,19 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_pref_panels#common'
       Hint = 'Show files sizes in bytes'
     end
-    object LocalPathToClipboardAction: TAction
+    object LocalPathToClipboardAction2: TAction
       Tag = 15
       Category = 'Local Directory'
       Caption = 'Copy &Path to Clipboard'
       HelpKeyword = 'filenames#cwd'
-      Hint = 'Copy current local path to clipboard'
+      Hint = 'Copy the current path to the clipboard'
     end
-    object RemotePathToClipboardAction: TAction
+    object RemotePathToClipboardAction2: TAction
       Tag = 15
       Category = 'Remote Directory'
       Caption = 'Copy &Path to Clipboard'
       HelpKeyword = 'filenames#cwd'
-      Hint = 'Copy current remote path to clipboard'
+      Hint = 'Copy the current path to the clipboard'
     end
     object FileListToCommandLineAction: TAction
       Tag = 11
@@ -1643,15 +1623,15 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Customize queue list'
       ImageIndex = 28
     end
-    object PasteAction2: TAction
+    object PasteAction3: TAction
       Tag = 15
       Category = 'Command'
-      Caption = '&Paste'
+      Caption = '&Paste from Clipboard'
       HelpKeyword = 'clipboard'
       Hint = 
-        'Paste files from clipboard to current directory in active panel;' +
-        ' or opens path from clipboard in active panel; or opens session ' +
-        'URL from clipboard'
+        'Paste files from the clipboard to the current directory in the a' +
+        'ctive panel; or open a path from the clipboard in the active pan' +
+        'el; or open a session URL from the clipboard'
       ImageIndex = 75
       ShortCut = 16470
     end
@@ -1795,12 +1775,12 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_toolbars'
       Hint = 'Hide/show custom commands toolbar'
     end
-    object ColorMenuAction: TAction
+    object ColorMenuAction2: TAction
       Tag = 15
       Category = 'View'
       Caption = 'C&olor'
       HelpKeyword = 'task_connections#session_color'
-      Hint = 'Change color of current session'
+      Hint = 'Change color of the current tab'
     end
     object AutoReadDirectoryAfterOpAction: TAction
       Tag = 15
@@ -1877,28 +1857,28 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 86
       ShortCut = 24659
     end
-    object LocalSelectAction: TAction
+    object LocalSelectAction2: TAction
       Tag = 12
       Category = 'Selection'
       Caption = 'Sele&ct Files...'
       HelpKeyword = 'ui_select'
-      Hint = 'Select|Select local files by mask'
+      Hint = 'Select|Select files by mask'
       ImageIndex = 19
     end
-    object LocalUnselectAction: TAction
+    object LocalUnselectAction2: TAction
       Tag = 12
       Category = 'Selection'
       Caption = '&Unselect Files...'
       HelpKeyword = 'ui_select'
-      Hint = 'Unselect|Unselect local files by mask'
+      Hint = 'Unselect|Unselect files by mask'
       ImageIndex = 20
     end
-    object LocalSelectAllAction: TAction
+    object LocalSelectAllAction2: TAction
       Tag = 12
       Category = 'Selection'
       Caption = 'Select &All'
       HelpKeyword = 'ui_file_panel#selecting_files'
-      Hint = 'Select all local files'
+      Hint = 'Select all files'
       ImageIndex = 21
     end
     object CurrentEditFocusedAction: TAction
@@ -1991,12 +1971,12 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 92
       ShortCut = 49222
     end
-    object RemoteFindFilesAction: TAction
+    object RemoteFindFilesAction2: TAction
       Tag = 15
       Category = 'Remote Directory'
       Caption = '&Find Files...'
       HelpKeyword = 'task_find'
-      Hint = 'Find files|Find remote files and directories'
+      Hint = 'Find files|Find files and directories'
       ImageIndex = 95
     end
     object CurrentEditInternalAction: TAction
@@ -2008,26 +1988,26 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object SaveWorkspaceAction: TAction
       Tag = 15
-      Category = 'Session'
+      Category = 'Tab'
       Caption = 'Save Wor&kspace...'
       HelpKeyword = 'workspace'
       Hint = 'Save workspace|Save workspace'
       ImageIndex = 102
     end
-    object LocalRenameAction: TAction
+    object LocalRenameAction2: TAction
       Tag = 12
       Category = 'Local Selected Operation'
       Caption = '&Rename'
       HelpKeyword = 'task_rename'
-      Hint = 'Rename|Rename selected local file'
+      Hint = 'Rename|Rename selected file'
       ImageIndex = 3
     end
-    object LocalEditAction: TAction
+    object LocalEditAction2: TAction
       Tag = 12
       Category = 'Local Selected Operation'
       Caption = '&Edit'
       HelpKeyword = 'task_edit'
-      Hint = 'Edit|Edit selected local file(s)'
+      Hint = 'Edit|Edit selected file(s)'
       ImageIndex = 57
     end
     object LocalMoveAction: TAction
@@ -2040,54 +2020,54 @@ object NonVisualDataModule: TNonVisualDataModule
         'ory and delete original'
       ImageIndex = 98
     end
-    object LocalCreateDirAction2: TAction
+    object LocalCreateDirAction3: TAction
       Tag = 12
       Category = 'Local Selected Operation'
       Caption = '&Directory...'
       HelpKeyword = 'task_create_directory'
-      Hint = 'Create directory|Create new local directory'
+      Hint = 'Create directory|Create new directory'
       ImageIndex = 5
     end
-    object LocalDeleteAction: TAction
+    object LocalDeleteAction2: TAction
       Tag = 12
       Category = 'Local Selected Operation'
       Caption = '&Delete'
       HelpKeyword = 'task_delete'
-      Hint = 'Delete|Delete selected local file(s)'
+      Hint = 'Delete|Delete selected file(s)'
       ImageIndex = 2
     end
-    object LocalPropertiesAction: TAction
+    object LocalPropertiesAction2: TAction
       Tag = 12
       Category = 'Local Selected Operation'
       Caption = '&Properties'
       HelpKeyword = 'task_properties'
-      Hint = 'Properties|Display/change properties of selected local file(s)'
+      Hint = 'Properties|Display/change properties of selected file(s)'
       ImageIndex = 4
     end
-    object LocalAddEditLinkAction2: TAction
+    object LocalAddEditLinkAction3: TAction
       Tag = 12
       Category = 'Local Selected Operation'
       Caption = '&Shortcut...'
       HelpKeyword = 'task_link'
       Hint = 
-        'Add/edit shortcut|Add new local shortcut or edit selected local ' +
-        'shortcut'
+        'Add/edit link|Add new link/shortcut or edit selected link/shortc' +
+        'ut'
       ImageIndex = 60
     end
-    object RemoteRenameAction: TAction
+    object RemoteRenameAction2: TAction
       Tag = 12
       Category = 'Remote Selected Operation'
       Caption = '&Rename'
       HelpKeyword = 'task_rename'
-      Hint = 'Rename|Rename selected remote file'
+      Hint = 'Rename|Rename selected file'
       ImageIndex = 3
     end
-    object RemoteEditAction: TAction
+    object RemoteEditAction2: TAction
       Tag = 12
       Category = 'Remote Selected Operation'
       Caption = '&Edit'
       HelpKeyword = 'task_edit'
-      Hint = 'Edit|Edit selected remote file(s)'
+      Hint = 'Edit|Edit selected file(s)'
       ImageIndex = 57
     end
     object RemoteMoveAction: TAction
@@ -2100,62 +2080,62 @@ object NonVisualDataModule: TNonVisualDataModule
         'rectory and delete original'
       ImageIndex = 97
     end
-    object RemoteCreateDirAction2: TAction
+    object RemoteCreateDirAction3: TAction
       Tag = 12
       Category = 'Remote Selected Operation'
       Caption = '&Directory...'
       HelpKeyword = 'task_create_directory'
-      Hint = 'Create directory|Create new remote directory'
+      Hint = 'Create directory|Create new directory'
       ImageIndex = 5
     end
-    object RemoteDeleteAction: TAction
+    object RemoteDeleteAction2: TAction
       Tag = 12
       Category = 'Remote Selected Operation'
       Caption = '&Delete'
       HelpKeyword = 'task_delete'
-      Hint = 'Delete|Delete selected remote file(s)'
+      Hint = 'Delete|Delete selected file(s)'
       ImageIndex = 2
     end
-    object RemotePropertiesAction: TAction
+    object RemotePropertiesAction2: TAction
       Tag = 12
       Category = 'Remote Selected Operation'
       Caption = '&Properties'
       HelpKeyword = 'task_properties'
-      Hint = 
-        'Properties|Display/change permissions, ownership or other proper' +
-        'ties of selected remote file(s) '
+      Hint = 'Properties|Display/change properties of selected file(s)'
       ImageIndex = 4
     end
-    object RemoteAddEditLinkAction2: TAction
+    object RemoteAddEditLinkAction3: TAction
       Tag = 12
       Category = 'Remote Selected Operation'
       Caption = '&Link...'
       HelpKeyword = 'task_link'
-      Hint = 'Add/edit link|Add new remote link or edit selected remote link'
+      Hint = 
+        'Add/edit link|Add new link/shortcut or edit selected link/shortc' +
+        'ut'
       ImageIndex = 60
     end
-    object RemoteSelectAction: TAction
+    object RemoteSelectAction2: TAction
       Tag = 12
       Category = 'Selection'
       Caption = 'Sele&ct Files...'
       HelpKeyword = 'ui_select'
-      Hint = 'Select|Select remote files by mask'
+      Hint = 'Select|Select files by mask'
       ImageIndex = 19
     end
-    object RemoteUnselectAction: TAction
+    object RemoteUnselectAction2: TAction
       Tag = 12
       Category = 'Selection'
       Caption = '&Unselect Files...'
       HelpKeyword = 'ui_select'
-      Hint = 'Unselect|Unselect remote files by mask'
+      Hint = 'Unselect|Unselect files by mask'
       ImageIndex = 20
     end
-    object RemoteSelectAllAction: TAction
+    object RemoteSelectAllAction2: TAction
       Tag = 12
       Category = 'Selection'
       Caption = 'Select &All'
       HelpKeyword = 'ui_file_panel#selecting_files'
-      Hint = 'Select all remote files'
+      Hint = 'Select all files'
       ImageIndex = 21
     end
     object LocalMoveFocusedAction: TAction
@@ -2258,6 +2238,16 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Create file|Create new file and open it in editor'
       ImageIndex = 77
     end
+    object RemoteCalculateDirectorySizesAction: TAction
+      Tag = 12
+      Category = 'Remote Selected Operation'
+      Caption = '&Calculate Directory Sizes'
+      HelpKeyword = 'ui_file_panel#directory_sizes'
+      Hint = 
+        'Calculate sizes of the selected directories and display them in ' +
+        'the file panel'
+      ShortCut = 40973
+    end
     object LocalNewFileAction: TAction
       Tag = 15
       Category = 'Local Selected Operation'
@@ -2273,19 +2263,19 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_toolbars'
       Hint = 'Show/hide toolbar buttons'
     end
-    object RenameSessionAction: TAction
+    object RenameTabAction: TAction
       Tag = 15
-      Category = 'Session'
-      Caption = '&Rename Session'
+      Category = 'Tab'
+      Caption = '&Rename Tab'
       HelpKeyword = 'ui_tabs#renaming'
-      Hint = 'Rename session|Changes name of the current session'
+      Hint = 'Rename tab|Change the name of the current tab'
     end
-    object CurrentCopyToClipboardAction: TAction
+    object CurrentCopyToClipboardAction2: TAction
       Tag = 15
       Category = 'Selected Operation'
-      Caption = '&Copy'
+      Caption = '&Copy to Clipboard'
       HelpKeyword = 'clipboard#copy'
-      Hint = 'Copy|Copy the selected files to clipboard'
+      Hint = 'Copy the selected files to the clipboard'
       ImageIndex = 111
       ShortCut = 16451
     end
@@ -2296,14 +2286,132 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_pref_file_colors'
       Hint = 'Configure file color rules'
     end
-    object CurrentCopyToClipboardFocusedAction: TAction
+    object CurrentCopyToClipboardFocusedAction2: TAction
       Tag = 12
       Category = 'Focused Operation'
-      Caption = '&Copy'
+      Caption = '&Copy to Clipboard'
       HelpKeyword = 'clipboard#copy'
-      Hint = 'Copy|Copy the selected files to clipboard'
+      Hint = 'Copy the selected files to the clipboard'
       ImageIndex = 111
       ShortCut = 16451
+    end
+    object CommanderLocalPanelAction: TAction
+      Tag = 11
+      Category = 'View'
+      Caption = '&Left Panel'
+      HelpKeyword = 'ui_file_panel'
+      Hint = 'Change left panel layout'
+    end
+    object CommanderRemotePanelAction: TAction
+      Tag = 11
+      Category = 'View'
+      Caption = '&Right Panel'
+      HelpKeyword = 'ui_file_panel'
+      Hint = 'Change right panel layout'
+    end
+    object RemoteExploreDirectoryAction: TAction
+      Tag = 14
+      Category = 'Remote Directory'
+      Caption = '&Explore Directory'
+      Hint = 'Open Windows File Explorer with the current local directory'
+      ImageIndex = 56
+      ShortCut = 49221
+    end
+    object LocalLocalCopyAction: TAction
+      Tag = 9
+      Category = 'Local Selected Operation'
+      Caption = '&Copy...'
+      Hint = 'Copy the selected file(s) to another directory or another name'
+      ImageIndex = 78
+    end
+    object LocalLocalMoveAction: TAction
+      Tag = 9
+      Category = 'Local Selected Operation'
+      Caption = '&Move...'
+      Hint = 'Move the selected file(s) to another directory or rename them'
+      ImageIndex = 100
+    end
+    object LocalOtherCopyAction: TAction
+      Tag = 14
+      Category = 'Local Selected Operation'
+      Caption = '&Copy...'
+      Hint = 'Copy the selected file(s) to another directory or another name'
+      ImageIndex = 112
+    end
+    object LocalOtherMoveAction: TAction
+      Tag = 14
+      Category = 'Local Selected Operation'
+      Caption = '&Move...'
+      Hint = 'Move the selected file(s) to another directory or rename them'
+      ImageIndex = 113
+    end
+    object LocalCalculateDirectorySizesAction: TAction
+      Tag = 12
+      Category = 'Local Selected Operation'
+      Caption = '&Calculate Directory Sizes'
+      HelpKeyword = 'ui_file_panel#directory_sizes'
+      Hint = 
+        'Calculate sizes of the selected directories and display them in ' +
+        'the file panel'
+      ShortCut = 40973
+    end
+    object LocalLocalCopyFocusedAction: TAction
+      Tag = 8
+      Category = 'Local Focused Operation'
+      Caption = '&Copy...'
+      Hint = 'Copy the selected file(s) to another directory or another name'
+      ImageIndex = 78
+    end
+    object LocalLocalMoveFocusedAction: TAction
+      Tag = 8
+      Category = 'Local Focused Operation'
+      Caption = '&Move...'
+      Hint = 'Move the selected file(s) to another directory or rename them'
+      ImageIndex = 100
+    end
+    object NewTabAction: TAction
+      Tag = 15
+      Category = 'Tab'
+      Caption = '&New Tab'
+      HelpKeyword = 'ui_tabs#working'
+      Hint = 'Open new tab'
+      ImageIndex = 115
+    end
+    object NewLocalTabAction: TAction
+      Tag = 11
+      Category = 'Tab'
+      Caption = '&Local Tab'
+      HelpKeyword = 'ui_tabs#working'
+      Hint = 'Open new tab with two local panels'
+      ImageIndex = 115
+      ShortCut = 24654
+    end
+    object NewRemoteTabAction: TAction
+      Tag = 11
+      Category = 'Tab'
+      Caption = '&Remote Tab'
+      HelpKeyword = 'ui_tabs#working'
+      Hint = 'Open new tab with one local panel and one remote session panel'
+      ImageIndex = 25
+      ShortCut = 16462
+    end
+    object DefaultToNewRemoteTabAction: TAction
+      Tag = 11
+      Category = 'Tab'
+      Caption = '&Default to Remote Tab'
+      Hint = 
+        'When turned on, the New Tab command opens a new remote tab. Othe' +
+        'rwise it opens a new local tab.'
+    end
+    object CalculateDirectorySizesAction: TAction
+      Tag = 15
+      Category = 'Selected Operation'
+      Caption = '&Calculate Directory Sizes'
+      HelpKeyword = 'ui_file_panel#directory_sizes'
+      Hint = 
+        'Calculate sizes of the selected directories and display them in ' +
+        'the file panel'
+      ShortCut = 40973
     end
   end
   object ExplorerBarPopup: TTBXPopupMenu
@@ -2321,7 +2429,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = ExplorerSelectionBandAction
     end
     object SessionButtons2: TTBXItem
-      Action = ExplorerSessionBandAction
+      Action = ExplorerSessionBandAction2
     end
     object PreferencesButtons1: TTBXItem
       Action = ExplorerPreferencesBandAction
@@ -2349,8 +2457,8 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object N5: TTBXSeparatorItem
     end
-    object SessionsTabsAction2: TTBXItem
-      Action = SessionsTabsAction
+    object SessionsTabs2: TTBXItem
+      Action = SessionsTabsAction2
     end
     object StatusBar2: TTBXItem
       Action = StatusBarAction
@@ -2407,7 +2515,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = CommanderCommandsBandAction
     end
     object SessionButtons5: TTBXItem
-      Action = CommanderSessionBandAction
+      Action = CommanderSessionBandAction2
     end
     object PreferencesButtons4: TTBXItem
       Action = CommanderPreferencesBandAction
@@ -2435,8 +2543,8 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object N26: TTBXSeparatorItem
     end
-    object SessionsTabsAction1: TTBXItem
-      Action = SessionsTabsAction
+    object SessionsTabs1: TTBXItem
+      Action = SessionsTabsAction2
     end
     object CommandLine2: TTBXItem
       Action = CommandLinePanelAction
@@ -2450,20 +2558,18 @@ object NonVisualDataModule: TNonVisualDataModule
     object N27: TTBXSeparatorItem
     end
     object LocalPanel1: TTBXSubmenuItem
-      Caption = '&Local Panel'
-      HelpKeyword = 'ui_file_panel'
-      Hint = 'Change local panel layout'
+      Action = CommanderLocalPanelAction
       object HistoryButtons3: TTBXItem
-        Action = CommanderLocalHistoryBandAction
+        Action = CommanderLocalHistoryBandAction2
       end
       object NavigationButtons3: TTBXItem
-        Action = CommanderLocalNavigationBandAction
+        Action = CommanderLocalNavigationBandAction2
       end
       object TBXItem40: TTBXItem
-        Action = CommanderLocalFileBandAction
+        Action = CommanderLocalFileBandAction2
       end
       object TBXItem43: TTBXItem
-        Action = CommanderLocalSelectionBandAction
+        Action = CommanderLocalSelectionBandAction2
       end
       object N23: TTBXSeparatorItem
       end
@@ -2473,24 +2579,22 @@ object NonVisualDataModule: TNonVisualDataModule
       object N77: TTBXSeparatorItem
       end
       object StatusBar6: TTBXItem
-        Action = LocalStatusBarAction
+        Action = LocalStatusBarAction2
       end
     end
     object RemotePanel2: TTBXSubmenuItem
-      Caption = '&Remote Panel'
-      HelpKeyword = 'ui_file_panel'
-      Hint = 'Change remote panel layout'
+      Action = CommanderRemotePanelAction
       object HistoryButtons4: TTBXItem
-        Action = CommanderRemoteHistoryBandAction
+        Action = CommanderRemoteHistoryBandAction2
       end
       object NavigationButtons4: TTBXItem
-        Action = CommanderRemoteNavigationBandAction
+        Action = CommanderRemoteNavigationBandAction2
       end
       object TBXItem41: TTBXItem
-        Action = CommanderRemoteFileBandAction
+        Action = CommanderRemoteFileBandAction2
       end
       object TBXItem42: TTBXItem
-        Action = CommanderRemoteSelectionBandAction
+        Action = CommanderRemoteSelectionBandAction2
       end
       object N25: TTBXSeparatorItem
       end
@@ -2500,7 +2604,7 @@ object NonVisualDataModule: TNonVisualDataModule
       object N78: TTBXSeparatorItem
       end
       object StatusBar7: TTBXItem
-        Action = RemoteStatusBarAction
+        Action = RemoteStatusBarAction2
       end
     end
     object Options1: TTBXSubmenuItem
@@ -2546,6 +2650,9 @@ object NonVisualDataModule: TNonVisualDataModule
       object TBXItem86: TTBXItem
         Action = RemoteOpenDirAction
       end
+      object TBXItem99: TTBXItem
+        Action = RemoteExploreDirectoryAction
+      end
       object TBXSeparatorItem13: TTBXSeparatorItem
       end
       object TBXItem87: TTBXItem
@@ -2570,27 +2677,27 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = RemoteRefreshAction
     end
     object TBXItem30: TTBXItem
-      Action = RemoteAddBookmarkAction
+      Action = RemoteAddBookmarkAction2
     end
     object TBXItem26: TTBXItem
       Action = RemoteFilterAction
     end
     object CopyPathtoClipboard1: TTBXItem
-      Action = RemotePathToClipboardAction
+      Action = RemotePathToClipboardAction2
     end
     object N51: TTBXSeparatorItem
     end
     object HistoryButtons5: TTBXItem
-      Action = CommanderRemoteHistoryBandAction
+      Action = CommanderRemoteHistoryBandAction2
     end
     object NavigationButtons5: TTBXItem
-      Action = CommanderRemoteNavigationBandAction
+      Action = CommanderRemoteNavigationBandAction2
     end
     object TBXItem14: TTBXItem
-      Action = CommanderRemoteFileBandAction
+      Action = CommanderRemoteFileBandAction2
     end
     object TBXItem45: TTBXItem
-      Action = CommanderRemoteSelectionBandAction
+      Action = CommanderRemoteSelectionBandAction2
     end
     object TBXItem37: TTBXItem
       Action = LockToolbarsAction
@@ -2609,7 +2716,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object N75: TTBXSeparatorItem
     end
     object StatusBar9: TTBXItem
-      Action = RemoteStatusBarAction
+      Action = RemoteStatusBarAction2
     end
   end
   object LocalPanelPopup: TTBXPopupMenu
@@ -2654,24 +2761,24 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = LocalFilterAction
     end
     object TBXItem31: TTBXItem
-      Action = LocalAddBookmarkAction
+      Action = LocalAddBookmarkAction2
     end
     object CopyPathtoClipboard2: TTBXItem
-      Action = LocalPathToClipboardAction
+      Action = LocalPathToClipboardAction2
     end
     object N52: TTBXSeparatorItem
     end
     object HistoryButtons6: TTBXItem
-      Action = CommanderLocalHistoryBandAction
+      Action = CommanderLocalHistoryBandAction2
     end
     object NavigationButtons6: TTBXItem
-      Action = CommanderLocalNavigationBandAction
+      Action = CommanderLocalNavigationBandAction2
     end
     object TBXItem39: TTBXItem
-      Action = CommanderLocalFileBandAction
+      Action = CommanderLocalFileBandAction2
     end
     object TBXItem44: TTBXItem
-      Action = CommanderLocalSelectionBandAction
+      Action = CommanderLocalSelectionBandAction2
     end
     object TBXItem38: TTBXItem
       Action = LockToolbarsAction
@@ -2690,7 +2797,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object N76: TTBXSeparatorItem
     end
     object StatusBar10: TTBXItem
-      Action = LocalStatusBarAction
+      Action = LocalStatusBarAction2
     end
   end
   object LocalDirViewColumnPopup: TTBXPopupMenu
@@ -2705,7 +2812,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = SortColumnDescendingAction
     end
     object LocalSortByExtColumnPopupItem: TTBXItem
-      Action = LocalSortByExtAction
+      Action = LocalSortByExtAction2
     end
     object Hidecolumn1: TTBXItem
       Action = HideColumnAction
@@ -2726,6 +2833,9 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = FormatSizeBytesShortAction
       end
     end
+    object LocalCalculateDirectorySizesPopupItem: TTBXItem
+      Action = LocalCalculateDirectorySizesAction
+    end
     object TBXSeparatorItem8: TTBXSeparatorItem
     end
     object Showcolumns3: TTBXSubmenuItem
@@ -2733,20 +2843,23 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_file_panel#selecting_columns'
       Hint = 'Select columns to show in panel'
       object Name3: TTBXItem
-        Action = ShowHideLocalNameColumnAction
+        Action = ShowHideLocalNameColumnAction2
       end
       object Size3: TTBXItem
-        Action = ShowHideLocalSizeColumnAction
+        Action = ShowHideLocalSizeColumnAction2
       end
       object Type2: TTBXItem
-        Action = ShowHideLocalTypeColumnAction
+        Action = ShowHideLocalTypeColumnAction2
       end
       object Modification3: TTBXItem
-        Action = ShowHideLocalChangedColumnAction
+        Action = ShowHideLocalChangedColumnAction2
       end
       object Attributes3: TTBXItem
-        Action = ShowHideLocalAttrColumnAction
+        Action = ShowHideLocalAttrColumnAction2
       end
+    end
+    object TBXItem112: TTBXItem
+      Action = RemoteCalculateDirectorySizesAction
     end
   end
   object RemoteDirViewColumnPopup: TTBXPopupMenu
@@ -2763,7 +2876,7 @@ object NonVisualDataModule: TNonVisualDataModule
       RadioItem = True
     end
     object RemoteSortByExtColumnPopupItem: TTBXItem
-      Action = RemoteSortByExtAction
+      Action = RemoteSortByExtAction2
     end
     object Hidecolumn2: TTBXItem
       Action = HideColumnAction
@@ -2784,6 +2897,9 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = FormatSizeBytesShortAction
       end
     end
+    object RemoteCalculateDirectorySizesPopupItem: TTBXItem
+      Action = RemoteCalculateDirectorySizesAction
+    end
     object TBXSeparatorItem7: TTBXSeparatorItem
     end
     object Showcolumns4: TTBXSubmenuItem
@@ -2791,28 +2907,28 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_file_panel#selecting_columns'
       Hint = 'Select columns to show in panel'
       object Name4: TTBXItem
-        Action = ShowHideRemoteNameColumnAction
+        Action = ShowHideRemoteNameColumnAction2
       end
       object Size4: TTBXItem
-        Action = ShowHideRemoteSizeColumnAction
+        Action = ShowHideRemoteSizeColumnAction2
       end
       object TBXItem8: TTBXItem
-        Action = ShowHideRemoteTypeColumnAction
+        Action = ShowHideRemoteTypeColumnAction2
       end
       object Modification4: TTBXItem
-        Action = ShowHideRemoteChangedColumnAction
+        Action = ShowHideRemoteChangedColumnAction2
       end
       object Permissions1: TTBXItem
-        Action = ShowHideRemoteRightsColumnAction
+        Action = ShowHideRemoteRightsColumnAction2
       end
       object Owner2: TTBXItem
-        Action = ShowHideRemoteOwnerColumnAction
+        Action = ShowHideRemoteOwnerColumnAction2
       end
       object Group2: TTBXItem
-        Action = ShowHideRemoteGroupColumnAction
+        Action = ShowHideRemoteGroupColumnAction2
       end
       object TBXItem1: TTBXItem
-        Action = ShowHideRemoteLinkTargetColumnAction
+        Action = ShowHideRemoteLinkTargetColumnAction2
       end
     end
   end
@@ -2820,7 +2936,7 @@ object NonVisualDataModule: TNonVisualDataModule
     Images = GlyphsModule.ExplorerImages
     OnPopup = QueuePopupPopup
     Options = [tboShowHint]
-    Left = 392
+    Left = 360
     Top = 176
     object ShowQuery1: TTBXItem
       Action = QueueItemQueryAction
@@ -2946,6 +3062,9 @@ object NonVisualDataModule: TNonVisualDataModule
       object OpenDirectoryBookmark3: TTBXItem
         Action = RemoteOpenDirAction
       end
+      object TBXItem100: TTBXItem
+        Action = RemoteExploreDirectoryAction
+      end
       object N81: TTBXSeparatorItem
       end
       object ParentDirectory4: TTBXItem
@@ -2970,13 +3089,13 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = RemoteRefreshAction
     end
     object AddToBookmarks4: TTBXItem
-      Action = RemoteAddBookmarkAction
+      Action = RemoteAddBookmarkAction2
     end
     object TBXItem35: TTBXItem
       Action = RemoteFilterAction
     end
     object CopyPathtoClipboard6: TTBXItem
-      Action = RemotePathToClipboardAction
+      Action = RemotePathToClipboardAction2
     end
     object N79: TTBXSeparatorItem
     end
@@ -2995,7 +3114,7 @@ object NonVisualDataModule: TNonVisualDataModule
       end
     end
     object TBXItem75: TTBXItem
-      Action = PasteAction2
+      Action = PasteAction3
     end
     object RemoteDirViewPopupCustomCommandsMenu: TTBXSubmenuItem
       Action = CustomCommandsNonFileAction
@@ -3044,10 +3163,10 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = LocalFilterAction
     end
     object AddToBookmarks5: TTBXItem
-      Action = LocalAddBookmarkAction
+      Action = LocalAddBookmarkAction2
     end
     object CopyPathtoClipboard7: TTBXItem
-      Action = LocalPathToClipboardAction
+      Action = LocalPathToClipboardAction2
     end
     object N82: TTBXSeparatorItem
     end
@@ -3063,7 +3182,7 @@ object NonVisualDataModule: TNonVisualDataModule
       end
     end
     object TBXItem76: TTBXItem
-      Action = PasteAction2
+      Action = PasteAction3
     end
   end
   object RemoteAddressPopup: TTBXPopupMenu
@@ -3075,10 +3194,10 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = RemoteRefreshAction
     end
     object TBXItem24: TTBXItem
-      Action = RemoteAddBookmarkAction
+      Action = RemoteAddBookmarkAction2
     end
     object TBXItem25: TTBXItem
-      Action = RemotePathToClipboardAction
+      Action = RemotePathToClipboardAction2
     end
     object TBXSeparatorItem1: TTBXSeparatorItem
     end
@@ -3111,22 +3230,30 @@ object NonVisualDataModule: TNonVisualDataModule
   object SessionsPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
     Options = [tboShowHint]
-    Left = 480
+    Left = 456
     Top = 176
     object TBXItem124: TTBXItem
-      Action = CloseSessionAction2
+      Action = CloseTabAction
+    end
+    object TBXItem219: TTBXItem
+      Action = DuplicateTabAction
+    end
+    object TBXItem78: TTBXItem
+      Action = RenameTabAction
+    end
+    object TBXSeparatorItem17: TTBXSeparatorItem
+    end
+    object ColorMenuItem: TTBXColorItem
+      Action = ColorMenuAction2
+      Color = clNone
+    end
+    object TBXSeparatorItem52: TTBXSeparatorItem
     end
     object TBXItem79: TTBXItem
       Action = DisconnectSessionAction
     end
     object TBXItem80: TTBXItem
       Action = ReconnectSessionAction
-    end
-    object TBXItem219: TTBXItem
-      Action = DuplicateSessionAction
-    end
-    object TBXItem78: TTBXItem
-      Action = RenameSessionAction
     end
     object TBXItem125: TTBXItem
       Action = SaveCurrentSessionAction2
@@ -3139,16 +3266,22 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem52: TTBXItem
       Action = SessionGenerateUrlAction2
     end
-    object TBXSeparatorItem52: TTBXSeparatorItem
-    end
-    object ColorMenuItem: TTBXColorItem
-      Action = ColorMenuAction
-      Color = clNone
-    end
     object TBXSeparatorItem34: TTBXSeparatorItem
     end
-    object TBXItem123: TTBXItem
-      Action = NewSessionAction
+    object SessionsNewTabItem: TTBXSubmenuItem
+      Action = NewTabAction
+      DropdownCombo = True
+      object TBXItem104: TTBXItem
+        Action = NewRemoteTabAction
+      end
+      object TBXItem105: TTBXItem
+        Action = NewLocalTabAction
+      end
+      object TBXSeparatorItem18: TTBXSeparatorItem
+      end
+      object TBXItem106: TTBXItem
+        Action = DefaultToNewRemoteTabAction
+      end
     end
     object TBXSubmenuItem23: TTBXSubmenuItem
       Action = SavedSessionsAction2
@@ -3156,8 +3289,8 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXSeparatorItem35: TTBXSeparatorItem
     end
-    object SessionsTabsAction4: TTBXItem
-      Action = SessionsTabsAction
+    object SessionsTabs4: TTBXItem
+      Action = SessionsTabsAction2
     end
   end
   object LocalFilePopup: TTBXPopupMenu
@@ -3188,6 +3321,12 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = LocalMoveFocusedAction
       end
     end
+    object LocalLocalCopyMenuItem: TTBXItem
+      Action = LocalLocalCopyFocusedAction
+    end
+    object TBXItem101: TTBXItem
+      Action = LocalLocalMoveFocusedAction
+    end
     object TBXItem57: TTBXItem
       Action = CurrentDeleteFocusedAction
     end
@@ -3197,7 +3336,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXSeparatorItem11: TTBXSeparatorItem
     end
     object TBXItem81: TTBXItem
-      Action = CurrentCopyToClipboardFocusedAction
+      Action = CurrentCopyToClipboardFocusedAction2
     end
     object TBXSeparatorItem3: TTBXSeparatorItem
     end
@@ -3227,6 +3366,64 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXItem50: TTBXItem
       Action = CurrentSystemMenuFocusedAction
+    end
+  end
+  object LocalBrowserPopup: TTBXPopupMenu
+    Images = GlyphsModule.ExplorerImages
+    Options = [tboShowHint]
+    Left = 552
+    Top = 176
+    object TBXItem62: TTBXItem
+      Action = CloseTabAction
+    end
+    object TBXItem102: TTBXItem
+      Action = DuplicateTabAction
+    end
+    object TBXItem103: TTBXItem
+      Action = RenameTabAction
+    end
+    object TBXSeparatorItem21: TTBXSeparatorItem
+    end
+    object TBXSubmenuItem12: TTBXSubmenuItem
+      Action = NewTabAction
+      DropdownCombo = True
+      object TBXItem107: TTBXItem
+        Action = NewRemoteTabAction
+      end
+      object TBXItem108: TTBXItem
+        Action = NewLocalTabAction
+      end
+      object TBXSeparatorItem19: TTBXSeparatorItem
+      end
+      object TBXItem111: TTBXItem
+        Action = DefaultToNewRemoteTabAction
+      end
+    end
+    object TBXSubmenuItem11: TTBXSubmenuItem
+      Action = SavedSessionsAction2
+      Options = [tboDropdownArrow]
+    end
+    object TBXSeparatorItem22: TTBXSeparatorItem
+    end
+    object TBXItem110: TTBXItem
+      Action = SessionsTabsAction2
+    end
+  end
+  object NewTabPopup: TTBXPopupMenu
+    Images = GlyphsModule.ExplorerImages
+    Options = [tboShowHint]
+    Left = 256
+    Top = 176
+    object NewRemoteTabItem: TTBXItem
+      Action = NewRemoteTabAction
+    end
+    object NewLocalTabItem: TTBXItem
+      Action = NewLocalTabAction
+    end
+    object TBXSeparatorItem67: TTBXSeparatorItem
+    end
+    object TBXItem232: TTBXItem
+      Action = DefaultToNewRemoteTabAction
     end
   end
 end

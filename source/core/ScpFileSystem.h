@@ -30,9 +30,10 @@ public:
     const TRemoteFile * File, const TRemoteProperties * Properties,
     TChmodSessionAction & Action);
   virtual bool __fastcall LoadFilesProperties(TStrings * FileList);
-  virtual void __fastcall CalculateFilesChecksum(const UnicodeString & Alg,
-    TStrings * FileList, TStrings * Checksums,
-    TCalculatedChecksumEvent OnCalculatedChecksum);
+  virtual UnicodeString CalculateFilesChecksumInitialize(const UnicodeString & Alg);
+  virtual void __fastcall CalculateFilesChecksum(
+    const UnicodeString & Alg, TStrings * FileList, TCalculatedChecksumEvent OnCalculatedChecksum,
+    TFileOperationProgressType * OperationProgress, bool FirstLevel);
   virtual void __fastcall CopyToLocal(TStrings * FilesToCopy,
     const UnicodeString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
@@ -109,7 +110,6 @@ private:
   void __fastcall ClearAlias(UnicodeString Alias);
   void __fastcall CustomReadFile(const UnicodeString FileName,
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);
-  static UnicodeString __fastcall DelimitStr(UnicodeString Str);
   void __fastcall DetectReturnVar();
   bool __fastcall IsLastLine(UnicodeString & Line);
   static bool __fastcall IsTotalListingLine(const UnicodeString Line);
@@ -118,6 +118,7 @@ private:
     const UnicodeString & CmdString);
   void __fastcall ExecCommand(TFSCommand Cmd, const TVarRec * args = NULL,
     int size = 0, int Params = -1);
+  void InvalidOutputError(const UnicodeString & Command);
   void __fastcall ReadCommandOutput(int Params, const UnicodeString * Cmd = NULL);
   void __fastcall SCPResponse(bool * GotLastLine = NULL);
   void __fastcall SCPDirectorySource(const UnicodeString DirectoryName,
@@ -146,6 +147,11 @@ private:
     TOperationSide Side,
     const TOverwriteFileParams * FileParams, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress);
+  UnicodeString ParseFileChecksum(
+    const UnicodeString & Line, const UnicodeString & FileName, const UnicodeString & Command);
+  void ProcessFileChecksum(
+    TCalculatedChecksumEvent OnCalculatedChecksum, TChecksumSessionAction & Action, TFileOperationProgressType * OperationProgress,
+    bool FirstLevel, const UnicodeString & FileName, const UnicodeString & Alg, const UnicodeString & Checksum);
 
   static bool __fastcall RemoveLastLine(UnicodeString & Line,
     int & ReturnCode, UnicodeString LastLine = L"");

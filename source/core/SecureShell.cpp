@@ -75,8 +75,8 @@ __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
   FSimple = false;
   FCollectPrivateKeyUsage = false;
   FWaitingForData = 0;
-  FCallbackSet.reset(new callback_set());
-  memset(FCallbackSet.get(), 0, sizeof(callback_set));
+  FCallbackSet = new callback_set();
+  memset(FCallbackSet, 0, sizeof(*FCallbackSet));
   FCallbackSet->ready_event = INVALID_HANDLE_VALUE;
 }
 //---------------------------------------------------------------------------
@@ -89,6 +89,7 @@ __fastcall TSecureShell::~TSecureShell()
   }
   ResetConnection();
   CloseHandle(FSocketEvent);
+  delete FCallbackSet;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::ResetConnection()
@@ -184,6 +185,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   for (int c = 0; c < CIPHER_COUNT; c++)
   {
     int pcipher;
+    // Update also CollectUsage
     switch (Data->Cipher[c]) {
       case cipWarn: pcipher = CIPHER_WARN; break;
       case cip3DES: pcipher = CIPHER_3DES; break;
@@ -192,6 +194,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
       case cipDES: pcipher = CIPHER_DES; break;
       case cipArcfour: pcipher = CIPHER_ARCFOUR; break;
       case cipChaCha20: pcipher = CIPHER_CHACHA20; break;
+      case cipAESGCM: pcipher = CIPHER_AESGCM; break;
       default: DebugFail();
     }
     conf_set_int_int(conf, CONF_ssh_cipherlist, c, pcipher);
@@ -205,9 +208,14 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
       case kexWarn: pkex = KEX_WARN; break;
       case kexDHGroup1: pkex = KEX_DHGROUP1; break;
       case kexDHGroup14: pkex = KEX_DHGROUP14; break;
+      case kexDHGroup15: pkex = KEX_DHGROUP15; break;
+      case kexDHGroup16: pkex = KEX_DHGROUP16; break;
+      case kexDHGroup17: pkex = KEX_DHGROUP17; break;
+      case kexDHGroup18: pkex = KEX_DHGROUP18; break;
       case kexDHGEx: pkex = KEX_DHGEX; break;
       case kexRSA: pkex = KEX_RSA; break;
       case kexECDH: pkex = KEX_ECDH; break;
+      case kexNTRUHybrid: pkex = KEX_NTRU_HYBRID; break;
       default: DebugFail();
     }
     conf_set_int_int(conf, CONF_ssh_kexlist, k, pkex);
@@ -216,16 +224,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   DebugAssert(HK_MAX == HOSTKEY_COUNT);
   for (int h = 0; h < HOSTKEY_COUNT; h++)
   {
-    int phk;
-    switch (Data->HostKeys[h]) {
-      case hkWarn: phk = HK_WARN; break;
-      case hkRSA: phk = HK_RSA; break;
-      case hkDSA: phk = hkDSA; break;
-      case hkECDSA: phk = HK_ECDSA; break;
-      case hkED25519: phk = HK_ED25519; break;
-      case hkED448: phk = HK_ED448; break;
-      default: DebugFail();
-    }
+    int phk = HostKeyToPutty(Data->HostKeys[h]);
     conf_set_int_int(conf, CONF_ssh_hklist, h, phk);
   }
 
@@ -245,13 +244,13 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   conf_set_filename(conf, CONF_ssh_gss_custom, GssLibCustomFileName);
   filename_free(GssLibCustomFileName);
 
-  UnicodeString SPublicKeyFile = Data->PublicKeyFile;
-  if (SPublicKeyFile.IsEmpty()) SPublicKeyFile = Configuration->DefaultKeyFile;
-  // StripPathQuotes should not be needed as we do not feed quotes anymore
-  SPublicKeyFile = StripPathQuotes(ExpandEnvironmentVariables(SPublicKeyFile));
-  Filename * KeyFileFileName = filename_from_str(UTF8String(SPublicKeyFile).c_str());
-  conf_set_filename(conf, CONF_keyfile, KeyFileFileName);
-  filename_free(KeyFileFileName);
+  Filename * AFileName = filename_from_str(UTF8String(Data->ResolvePublicKeyFile()).c_str());
+  conf_set_filename(conf, CONF_keyfile, AFileName);
+  filename_free(AFileName);
+
+  AFileName = filename_from_str(UTF8String(ExpandEnvironmentVariables(Data->DetachedCertificate)).c_str());
+  conf_set_filename(conf, CONF_detached_cert, AFileName);
+  filename_free(AFileName);
 
   conf_set_bool(conf, CONF_ssh2_des_cbc, Data->Ssh2DES);
   conf_set_bool(conf, CONF_ssh_no_userauth, Data->SshNoUserAuth);
@@ -630,7 +629,7 @@ void __fastcall TSecureShell::Init()
 //---------------------------------------------------------------------------
 struct callback_set * TSecureShell::GetCallbackSet()
 {
-  return FCallbackSet.get();
+  return FCallbackSet;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TSecureShell::ConvertFromPutty(const char * Str, int Length)
@@ -709,6 +708,7 @@ TPromptKind __fastcall TSecureShell::IdentifyPromptKind(UnicodeString & Name)
     { L"SSH password", PASSWORD_TITLE },
     { L"New SSH password", NEW_PASSWORD_TITLE },
     { L"SOCKS proxy authentication", PROXY_AUTH_TITLE },
+    { L"HTTP proxy authentication", PROXY_AUTH_TITLE },
   };
 
   int Index = TranslatePuttyMessage(NameTranslation, LENOF(NameTranslation), Name);
@@ -742,7 +742,7 @@ TPromptKind __fastcall TSecureShell::IdentifyPromptKind(UnicodeString & Name)
   {
     PromptKind = pkNewPassword;
   }
-  else if (Index == 8)
+  else if ((Index == 8) || (Index == 9))
   {
     PromptKind = pkProxyAuth;
   }
@@ -1696,10 +1696,10 @@ void __fastcall TSecureShell::FreeBackend()
     FBackendHandle = NULL;
 
     // After destroying backend, ic_pktin_free should be the only remaining callback.
-    if (is_idempotent_callback_pending(FCallbackSet.get(), FCallbackSet->ic_pktin_free))
+    if (is_idempotent_callback_pending(FCallbackSet, FCallbackSet->ic_pktin_free))
     {
       // This releases the callback and should be noop otherwise.
-      run_toplevel_callbacks(FCallbackSet.get());
+      run_toplevel_callbacks(FCallbackSet);
     }
 
     sfree(FCallbackSet->ic_pktin_free);
@@ -1723,7 +1723,7 @@ void __fastcall TSecureShell::FreeBackend()
       while (count234(FCallbackSet->handlewaits_tree_real) > 0)
       {
         HandleWait * AHandleWait = static_cast<HandleWait *>(index234(FCallbackSet->handlewaits_tree_real, 0));
-        delete_handle_wait(FCallbackSet.get(), AHandleWait);
+        delete_handle_wait(FCallbackSet, AHandleWait);
       }
 
       freetree234(FCallbackSet->handlewaits_tree_real);
@@ -2039,7 +2039,7 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
           handle_wait_list_free(WaitList);
         }
         // It returns only busy handles, so the set can change with every call to run_toplevel_callbacks.
-        WaitList = get_handle_wait_list(FCallbackSet.get());
+        WaitList = get_handle_wait_list(FCallbackSet);
         DebugAssert(WaitList->nhandles < MAXIMUM_WAIT_OBJECTS);
         WaitList->handles[WaitList->nhandles] = FSocketEvent;
         WaitResult = WaitForMultipleObjects(WaitList->nhandles + 1, WaitList->handles, FALSE, TimeoutStep);
@@ -2060,7 +2060,7 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
 
       if (WaitResult < WAIT_OBJECT_0 + WaitList->nhandles)
       {
-        if (handle_wait_activate(FCallbackSet.get(), WaitList, WaitResult - WAIT_OBJECT_0))
+        if (handle_wait_activate(FCallbackSet, WaitList, WaitResult - WAIT_OBJECT_0))
         {
           Result = true;
         }
@@ -2834,6 +2834,20 @@ void __fastcall TSecureShell::CollectUsage()
   else
   {
     Configuration->Usage->Inc(L"OpenedSessionsSSHOther");
+  }
+
+  int CipherGroup = GetCipherGroup(get_cscipher(FBackendHandle));
+  switch (CipherGroup)
+  {
+    case CIPHER_3DES: Configuration->Usage->Inc(L"OpenedSessionsSSHCipher3DES"); break;
+    case CIPHER_BLOWFISH: Configuration->Usage->Inc(L"OpenedSessionsSSHCipherBlowfish"); break;
+    case CIPHER_AES: Configuration->Usage->Inc(L"OpenedSessionsSSHCipherAES"); break;
+    // All following miss "Cipher"
+    case CIPHER_DES: Configuration->Usage->Inc(L"OpenedSessionsSSHDES"); break;
+    case CIPHER_ARCFOUR: Configuration->Usage->Inc(L"OpenedSessionsSSHArcfour"); break;
+    case CIPHER_CHACHA20: Configuration->Usage->Inc(L"OpenedSessionsSSHChaCha20"); break;
+    case CIPHER_AESGCM: Configuration->Usage->Inc(L"OpenedSessionsSSHAESGCM"); break;
+    default: DebugFail(); break;
   }
 }
 //---------------------------------------------------------------------------

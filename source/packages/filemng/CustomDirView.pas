@@ -166,6 +166,7 @@ type
     FOnGetItemColor: TDirViewGetItemColorEvent;
     FMask: string;
     FNaturalOrderNumericalSorting: Boolean;
+    FAlwaysSortDirectoriesByName: Boolean;
     FDarkMode: Boolean;
     FScrollOnDragOver: TListViewScrollOnDragOver;
     FStatusFileInfo: TStatusFileInfo;
@@ -188,6 +189,7 @@ type
     procedure CMRecreateWnd(var Message: TMessage); message CM_RECREATEWND;
     procedure CMDPIChanged(var Message: TMessage); message CM_DPICHANGED;
     procedure CMEnabledChanged(var Message: TMessage); message CM_ENABLEDCHANGED;
+    procedure CNKeyDown(var Message: TWMKeyDown); message CN_KEYDOWN;
 
     procedure DumbCustomDrawItem(Sender: TCustomListView; Item: TListItem;
       State: TCustomDrawState; var DefaultDraw: Boolean);
@@ -220,6 +222,7 @@ type
     FWatchForChanges: Boolean;
     FInvalidNameChars: string;
     FDragDrive: string;
+    FAnnouncedState: TObject;
 
     procedure AddToDragFileList(FileList: TFileList; Item: TListItem); virtual;
     function CanEdit(Item: TListItem): Boolean; override;
@@ -312,6 +315,7 @@ type
     function EnableDragOnClick: Boolean; override;
     procedure SetMask(Value: string); virtual;
     procedure SetNaturalOrderNumericalSorting(Value: Boolean);
+    procedure SetAlwaysSortDirectoriesByName(Value: Boolean);
     procedure SetDarkMode(Value: Boolean);
     procedure ScrollOnDragOverBeforeUpdate(ObjectToValidate: TObject);
     procedure ScrollOnDragOverAfterUpdate;
@@ -336,6 +340,8 @@ type
     procedure UpdateDarkMode;
     procedure DoUpdateStatusBar(Force: Boolean = False);
     procedure DoCustomDrawItem(Item: TListItem; Stage: TCustomDrawStage);
+    procedure RestoreFocus(FocusedItem: string);
+    procedure ItemCalculatedSizeUpdated(Item: TListItem; OldSize, NewSize: Int64);
     property ImageList16: TImageList read FImageList16;
     property ImageList32: TImageList read FImageList32;
   public
@@ -343,7 +349,8 @@ type
     destructor Destroy; override;
     procedure Reload(CacheIcons: Boolean); virtual;
     function CreateFocusedFileList(FullPath: Boolean; FileList: TStrings = nil): TStrings;
-    function CreateFileList(Focused: Boolean; FullPath: Boolean; FileList: TStrings = nil): TStrings;
+    function CreateFileList(Focused: Boolean; FullPath: Boolean; FileList: TStrings = nil;
+      ItemObject: Boolean = False): TStrings;
     function AnyFileSelected(OnlyFocused: Boolean; FilesOnly: Boolean;
       FocusedFileOnlyWhenFocused: Boolean): Boolean;
     procedure SelectFiles(Filter: TFileFilter; Select: Boolean);
@@ -361,6 +368,7 @@ type
     function ItemFileSize(Item: TListItem): Int64; virtual; abstract;
     function ItemFileTime(Item: TListItem; var Precision: TDateTimePrecision): TDateTime; virtual; abstract;
     function ItemData(Item: TListItem): TObject; virtual;
+    procedure SetItemCalculatedSize(Item: TListItem; Size: Int64); virtual; abstract;
     procedure ReloadDirectory; virtual; abstract;
     procedure DisplayPropertiesMenu; virtual; abstract;
     function CreateChangedFileList(DirView: TCustomDirView; FullPath: Boolean;
@@ -376,9 +384,9 @@ type
     procedure ContinueSession(Continue: Boolean);
     function CanPasteFromClipBoard: Boolean; dynamic;
     function PasteFromClipBoard(TargetPath: string = ''): Boolean; virtual; abstract;
-    function SaveState: TObject;
-    procedure RestoreState(AState: TObject);
-    procedure ClearState;
+    function SaveState: TObject; virtual;
+    procedure RestoreState(AState: TObject); virtual;
+    procedure AnnounceState(AState: TObject); virtual;
     procedure DisplayContextMenu(Where: TPoint); virtual; abstract;
     procedure DisplayContextMenuInSitu;
     procedure UpdateStatusBar;
@@ -427,6 +435,7 @@ type
     {filemask, multiple filters are possible: '*.pas;*.dfm'}
     property Mask: string read FMask write SetMask;
     property NaturalOrderNumericalSorting: Boolean read FNaturalOrderNumericalSorting write SetNaturalOrderNumericalSorting;
+    property AlwaysSortDirectoriesByName: Boolean read FAlwaysSortDirectoriesByName write SetAlwaysSortDirectoriesByName;
     property DarkMode: Boolean read FDarkMode write SetDarkMode;
 
     property OnContextPopup;
@@ -610,6 +619,7 @@ end;
 type
   TDirViewState = class(TObject)
   public
+    constructor Create;
     destructor Destroy; override;
 
   private
@@ -619,6 +629,11 @@ type
     Mask: string;
     FocusedItem: string;
   end;
+
+constructor TDirViewState.Create;
+begin
+  inherited;
+end;
 
 destructor TDirViewState.Destroy;
 begin
@@ -857,6 +872,7 @@ begin
   FExeDrag := False;
   FMask := '';
   FNaturalOrderNumericalSorting := True;
+  FAlwaysSortDirectoriesByName := False;
   FDarkMode := False;
   FDoubleBufferedScrollingWorkaround := not IsVistaHard();
 
@@ -1519,6 +1535,17 @@ begin
   BusyOperation(ExecuteParentDirectory);
 end;
 
+procedure TCustomDirView.CNKeyDown(var Message: TWMKeyDown);
+begin
+  // Prevent Backspace being handled via "Parent directory" command in the context menu.
+  // We want it handled here in KeyDown
+  // (among other as the mechanism there makes sure it works differently while incrementally searching).
+  if Message.CharCode <> VK_BACK then
+  begin
+    inherited;
+  end;
+end;
+
 procedure TCustomDirView.KeyDown(var Key: Word; Shift: TShiftState);
 var
   AKey: Word;
@@ -2057,6 +2084,10 @@ begin
 
         if DoFocusSomething then
         begin
+          if FAnnouncedState is TDirViewState then
+          begin
+            RestoreFocus(TDirViewState(FAnnouncedState).FocusedItem);
+          end;
           FocusSomething;
         end;
 
@@ -2348,9 +2379,9 @@ begin
 end;
 
 function TCustomDirView.CreateFileList(Focused: Boolean; FullPath: Boolean;
-  FileList: TStrings): TStrings;
+  FileList: TStrings; ItemObject: Boolean): TStrings;
 begin
-  Result := CustomCreateFileList(Focused, False, FullPath, FileList);
+  Result := CustomCreateFileList(Focused, False, FullPath, FileList, ItemObject);
 end;
 
 procedure TCustomDirView.DDDrop(DataObj: IDataObject; grfKeyState: Integer;
@@ -2549,7 +2580,7 @@ var
 begin
   // When rename is confirmed by clicking outside of the edit box, and the actual rename operation
   // displays error message or simply pumps a message queue (like during lenghty remote directory reload),
-  // drag mouse selection start. It posssibly happens only on the remote panel due to it being completelly reloaded.
+  // drag mouse selection start. It posssibly happens only on the remote panel due to it being completely reloaded.
   ReleaseCapture;
 
   if Length(HItem.pszText) = 0 then LoadEnabled := True
@@ -2614,6 +2645,8 @@ begin
 end;
 
 procedure TCustomDirView.WMUserRename(var Message: TMessage);
+var
+  Dummy: Boolean;
 begin
   if Assigned(ItemFocused) then
   begin
@@ -2621,6 +2654,11 @@ begin
     ListView_EditLabel(Handle, ItemFocused.Index);
     SetWindowText(ListView_GetEditControl(Self.Handle),
       PChar(FLastRenameName));
+    // This was called already by VCL.
+    // But we do it again for the base-name selection side effect this has in TCustomScpExplorerForm::DirViewEditing,
+    // after we have updated the text above.
+    if Assigned(OnEditing) then
+      OnEditing(Self, ItemFocused, Dummy);
   end;
 end;
 
@@ -2883,12 +2921,21 @@ begin
   if FCaseSensitive then CompareFunc := CompareStr
     else CompareFunc := CompareText;
 
-  for Index := 0 to Items.Count - 1 do
+  // Optimization to avoid duplicate lookups in consequent RestoreFocus calls from Load and RestoreState.
+  if Assigned(ItemFocused) and (CompareFunc(FileName, ItemFileName(ItemFocused)) = 0) then
   begin
-    if CompareFunc(FileName, ItemFileName(Items[Index])) = 0 then
+    Result := ItemFocused;
+    Exit;
+  end
+    else
+  begin
+    for Index := 0 to Items.Count - 1 do
     begin
-      Result := Items[Index];
-      Exit;
+      if CompareFunc(FileName, ItemFileName(Items[Index])) = 0 then
+      begin
+        Result := Items[Index];
+        Exit;
+      end;
     end;
   end;
   Result := nil;
@@ -3249,6 +3296,11 @@ begin
     else FLastPath := '';
 end;
 
+procedure TCustomDirView.AnnounceState(AState: TObject);
+begin
+  FAnnouncedState := AState;
+end;
+
 function TCustomDirView.SaveState: TObject;
 var
   State: TDirViewState;
@@ -3268,31 +3320,13 @@ begin
   Result := State;
 end;
 
-procedure TCustomDirView.RestoreState(AState: TObject);
+procedure TCustomDirView.RestoreFocus(FocusedItem: string);
 var
-  State: TDirViewState;
-  DirColProperties: TCustomDirViewColProperties;
   ListItem: TListItem;
 begin
-  Assert(AState is TDirViewState);
-  State := AState as TDirViewState;
-  Assert(Assigned(State));
-
-  if Assigned(State.HistoryPaths) then
-    FHistoryPaths.Assign(State.HistoryPaths);
-  FBackCount := State.BackCount;
-  DoHistoryChange;
-  if State.SortStr <> '' then
+  if FocusedItem <> '' then
   begin
-    // TCustomDirViewColProperties should not be here
-    DirColProperties := ColProperties as TCustomDirViewColProperties;
-    Assert(Assigned(DirColProperties));
-    DirColProperties.SortStr := State.SortStr;
-  end;
-  Mask := State.Mask;
-  if State.FocusedItem <> '' then
-  begin
-    ListItem := FindFileItem(State.FocusedItem);
+    ListItem := FindFileItem(FocusedItem);
     if Assigned(ListItem) then
     begin
       ItemFocused := ListItem;
@@ -3301,11 +3335,37 @@ begin
   end;
 end;
 
-procedure TCustomDirView.ClearState;
+procedure TCustomDirView.RestoreState(AState: TObject);
+var
+  State: TDirViewState;
+  DirColProperties: TCustomDirViewColProperties;
 begin
-  FHistoryPaths.Clear;
-  FBackCount := 0;
-  DoHistoryChange;
+  if Assigned(AState) then
+  begin
+    Assert(AState is TDirViewState);
+    State := AState as TDirViewState;
+    Assert(Assigned(State));
+
+    if Assigned(State.HistoryPaths) then
+      FHistoryPaths.Assign(State.HistoryPaths);
+    FBackCount := State.BackCount;
+    DoHistoryChange;
+    if State.SortStr <> '' then
+    begin
+      // TCustomDirViewColProperties should not be here
+      DirColProperties := ColProperties as TCustomDirViewColProperties;
+      Assert(Assigned(DirColProperties));
+      DirColProperties.SortStr := State.SortStr;
+    end;
+    Mask := State.Mask;
+    RestoreFocus(State.FocusedItem);
+  end
+    else
+  begin
+    FHistoryPaths.Clear;
+    FBackCount := 0;
+    DoHistoryChange;
+  end;
 end;
 
 procedure TCustomDirView.SetMask(Value: string);
@@ -3323,6 +3383,15 @@ begin
   if NaturalOrderNumericalSorting <> Value then
   begin
     FNaturalOrderNumericalSorting := Value;
+    SortItems;
+  end;
+end;
+
+procedure TCustomDirView.SetAlwaysSortDirectoriesByName(Value: Boolean);
+begin
+  if AlwaysSortDirectoriesByName <> Value then
+  begin
+    FAlwaysSortDirectoriesByName := Value;
     SortItems;
   end;
 end;
@@ -3408,6 +3477,22 @@ begin
     finally
       EndBusy;
     end;
+end;
+
+procedure TCustomDirView.ItemCalculatedSizeUpdated(Item: TListItem; OldSize, NewSize: Int64);
+begin
+  if OldSize >= 0 then
+  begin
+    Dec(FFilesSize, OldSize);
+    if Item.Selected then Dec(FFilesSelSize, OldSize);
+  end;
+  if NewSize >= 0 then
+  begin
+    Inc(FFilesSize, NewSize);
+    if Item.Selected then Inc(FFilesSelSize, NewSize);
+  end;
+  Item.Update;
+  UpdateStatusBar;
 end;
 
 initialization

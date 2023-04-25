@@ -3,7 +3,7 @@ unit PasTools;
 interface
 
 uses
-  Windows, Types, Classes, ComCtrls, ExtCtrls, Controls, Dialogs, Forms, Messages;
+  Windows, Types, Classes, ComCtrls, ExtCtrls, Controls, Dialogs, Forms, Messages, Graphics;
 
 function Construct(ComponentClass: TComponentClass; Owner: TComponent): TComponent;
 
@@ -60,6 +60,7 @@ function SaveDefaultPixelsPerInch: string;
 
 function ScaleByTextHeight(Control: TControl; Dimension: Integer): Integer;
 function ScaleByTextHeightRunTime(Control: TControl; Dimension: Integer): Integer;
+function ScaleByControlTextHeightRunTime(Canvas: TCanvas; Dimension: Integer): Integer;
 
 function GetSystemMetricsForControl(Control: TControl; nIndex: Integer): Integer;
 
@@ -152,7 +153,7 @@ type
 implementation
 
 uses
-  SysUtils, StdCtrls, Graphics, MultiMon, ShellAPI, Generics.Collections, CommCtrl, ImgList, Registry;
+  SysUtils, StdCtrls, MultiMon, ShellAPI, Generics.Collections, CommCtrl, ImgList, Registry;
 
 const
   DDExpandDelay = 15000000;
@@ -393,7 +394,6 @@ type
   TFormHelper = class helper for TCustomForm
   public
     function RetrieveTextHeight: Integer;
-    function CalculateTextHeight: Integer;
   end;
 
 function TFormHelper.RetrieveTextHeight: Integer;
@@ -401,24 +401,32 @@ begin
   Result := Self.FTextHeight;
 end;
 
-function TFormHelper.CalculateTextHeight: Integer;
+function CalculateTextHeight(Canvas: TCanvas): Integer;
 begin
-  Result := Self.GetTextHeight;
+  // RTL_COPY (TCustomForm.GetTextHeight)
+  Result := Canvas.TextHeight('0');
 end;
 
-function ScaleByTextHeightImpl(Control: TControl; Dimension: Integer; TextHeight: Integer): Integer;
+function ScaleByTextHeightImpl(Canvas: TCanvas; Dimension: Integer; TextHeight: Integer): Integer; overload;
 var
-  Form: TCustomForm;
   NewTextHeight: Integer;
 begin
   // RTL_COPY (TCustomForm.ReadState)
-  Form := ValidParentForm(Control);
-  NewTextHeight := Form.CalculateTextHeight;
+  NewTextHeight := CalculateTextHeight(Canvas);
   if TextHeight <> NewTextHeight then
   begin
     Dimension := MulDiv(Dimension, NewTextHeight, TextHeight);
   end;
   Result := Dimension;
+end;
+
+function ScaleByTextHeightImpl(Control: TControl; Dimension: Integer; TextHeight: Integer): Integer; overload;
+var
+  Form: TCustomForm;
+begin
+  // RTL_COPY (TCustomForm.ReadState)
+  Form := ValidParentForm(Control);
+  Result := ScaleByTextHeightImpl(Form.Canvas, Dimension, TextHeight);
 end;
 
 const
@@ -457,7 +465,7 @@ end;
 
 procedure GetFormScaleRatio(Form: TForm; var M, D: Integer);
 begin
-  M := Form.CalculateTextHeight;
+  M := CalculateTextHeight(Form.Canvas);
   D := Form.RetrieveTextHeight;
 end;
 
@@ -466,6 +474,11 @@ end;
 function ScaleByTextHeightRunTime(Control: TControl; Dimension: Integer): Integer;
 begin
   Result := ScaleByTextHeightImpl(Control, Dimension, OurDesignTimeTextHeight);
+end;
+
+function ScaleByControlTextHeightRunTime(Canvas: TCanvas; Dimension: Integer): Integer;
+begin
+  Result := ScaleByTextHeightImpl(Canvas, Dimension, OurDesignTimeTextHeight);
 end;
 
 function GetSystemMetricsForControl(Control: TControl; nIndex: Integer): Integer;

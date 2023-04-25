@@ -35,6 +35,7 @@ private:
   bool __fastcall GetActive();
   TCustomUnixDriveView * FDriveView;
   TNotifyEvent FOnRead;
+  TObject * FAnnouncedDriveViewState;
   void __fastcall SetTerminal(TTerminal *value);
   void __fastcall DoSetTerminal(TTerminal *value, bool Replace);
   void __fastcall SetShowInaccesibleDirectories(bool value);
@@ -95,10 +96,14 @@ public:
   virtual bool __fastcall ItemIsParentDirectory(TListItem * Item);
   virtual UnicodeString __fastcall ItemFullFileName(TListItem * Item);
   virtual __int64 __fastcall ItemFileSize(TListItem * Item);
+  virtual void __fastcall SetItemCalculatedSize(TListItem * Item, __int64 Size);
   virtual bool __fastcall PasteFromClipBoard(UnicodeString TargetPath = L"");
   void __fastcall UpdateFiles();
   void __fastcall DisplayContextMenu(const TPoint &Where);
   void __fastcall ReplaceTerminal(TTerminal * value);
+  virtual void __fastcall AnnounceState(TObject * State);
+  virtual void __fastcall RestoreState(TObject * State);
+  virtual TObject * __fastcall SaveState();
 
   __property bool Active = { read = GetActive };
   __property TTerminal *Terminal = { read = FTerminal, write = SetTerminal };

@@ -9,6 +9,10 @@ namespace WinSCP
     [ComVisible(true)]
     public class StringCollection : ICollection<string>
     {
+        internal StringCollection()
+        {
+        }
+
         public string this[int index]
         {
             get

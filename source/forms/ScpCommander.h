@@ -50,8 +50,7 @@ __published:
   TTBXStatusBar *StatusBar;
   TDriveView *LocalDriveView;
   TSplitter *LocalPanelSplitter;
-  TTBXToolbar *SessionToolbar;
-  TTBXItem *TBXItem123;
+  TTBXToolbar *SessionToolbar2;
   TTBXSeparatorItem *TBXSeparatorItem34;
   TTBXItem *TBXItem124;
   TTBXSubmenuItem *TBXSubmenuItem23;
@@ -129,9 +128,9 @@ __published:
   TTBXItem *TBXItem29;
   TTBXSeparatorItem *TBXSeparatorItem7;
   TTBXSubmenuItem *CurrentCopyItem;
-  TTBXItem *TBXItem31;
+  TTBXItem *CurrentCopyToItem;
   TTBXItem *CurrentMoveItem;
-  TTBXItem *TBXItem33;
+  TTBXItem *CurrentMoveToItem;
   TTBXItem *TBXItem34;
   TTBXItem *TBXItem35;
   TTBXItem *TBXItem36;
@@ -169,8 +168,6 @@ __published:
   TTBXItem *TBXItem57;
   TTBXSeparatorItem *TBXSeparatorItem15;
   TTBXItem *TBXItem58;
-  TTBXSubmenuItem *TBXSubmenuItem19;
-  TTBXItem *TBXItem113;
   TTBXSubmenuItem *TBXSubmenuItem20;
   TTBXSeparatorItem *TBXSeparatorItem29;
   TTBXSubmenuItem *TBXSubmenuItem21;
@@ -350,26 +347,25 @@ __published:
   TTBXItem *TBXItem210;
   TTBXSubmenuItem *TBXItem228;
   TTBXSubmenuItem *TBXItem229;
-  TTBXSeparatorItem *TBXSeparatorItem53;
   TTBXItem *TBXItem230;
   TTBXSubmenuItem *TBXSubmenuItem231;
   TTBXToolbar *LocalFileToolbar;
-  TTBXSubmenuItem *TBXItem231;
-  TTBXItem *TBXItem232;
+  TTBXSubmenuItem *LocalCopyItem;
+  TTBXItem *LocalMoveItem;
   TTBXItem *TBXItem233;
   TTBXItem *TBXItem234;
   TTBXSubmenuItem *TBXItem235;
   TTBXSeparatorItem *TBXSeparatorItem35;
-  TTBXItem *TBXItem236;
+  TTBXSubmenuItem *TBXItem236;
   TTBXSeparatorItem *TBXSeparatorItem54;
   TTBXToolbar *RemoteFileToolbar;
-  TTBXSubmenuItem *TBXItem238;
-  TTBXItem *TBXItem239;
+  TTBXSubmenuItem *RemoteCopyItem;
+  TTBXItem *RemoteMoveItem;
   TTBXSeparatorItem *TBXSeparatorItem55;
   TTBXItem *TBXItem240;
   TTBXItem *TBXItem241;
   TTBXSubmenuItem *TBXItem242;
-  TTBXItem *TBXItem243;
+  TTBXSubmenuItem *TBXItem243;
   TTBXSeparatorItem *TBXSeparatorItem56;
   TTBXItem *TBXItem59;
   TTBXItem *TBXItem136;
@@ -438,6 +434,30 @@ __published:
   TTBXItem *TBXItem255;
   TTBXSeparatorItem *TBXSeparatorItem65;
   TTBXItem *TBXItem256;
+  TDriveView *OtherLocalDriveView;
+  TDirView *OtherLocalDirView;
+  TTBXItem *TBXItem257;
+  TTBXSubmenuItem *TBXSubmenuItem29;
+  TTBXSeparatorItem *TBXSeparatorItem53;
+  TTBXSeparatorItem *TBXSeparatorItem66;
+  TTBXItem *TBXItem31;
+  TTBXSubmenuItem *TBXSubmenuItem30;
+  TTBXItem *TBXItem33;
+  TTBXSubmenuItem *TBXSubmenuItem31;
+  TTBXItem *TBXItem123;
+  TTBXItem *TBXItem231;
+  TTBXSeparatorItem *TBXSeparatorItem67;
+  TTBXItem *TBXItem232;
+  TTBXSeparatorItem *TBXSeparatorItem68;
+  TTBXItem *TBXItem238;
+  TTBXItem *TBXItem239;
+  TTBXSeparatorItem *TBXSeparatorItem69;
+  TTBXItem *TBXItem113;
+  TTBXItem *TBXItem258;
+  TTBXSeparatorItem *TBXSeparatorItem70;
+  TTBXItem *TBXItem259;
+  TTBXSeparatorItem *TBXSeparatorItem71;
+  TTBXItem *TBXItem260;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -467,7 +487,7 @@ __published:
   void __fastcall RemotePathLabelPathClick(TCustomPathLabel *Sender,
     UnicodeString Path);
   void __fastcall LocalDirViewFileIconForName(TObject *Sender,
-          TListItem *Item, UnicodeString &FileName);
+          UnicodeString &FileName);
   void __fastcall LocalDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
@@ -495,6 +515,11 @@ __published:
   void __fastcall LocalPathLabelMaskClick(TObject *Sender);
   void __fastcall LocalOpenDirButtonPopup(TTBCustomItem *Sender, bool FromLink);
   void __fastcall RemoteOpenDirButtonPopup(TTBCustomItem *Sender, bool FromLink);
+  void __fastcall OtherLocalDirViewEnter(TObject *Sender);
+  void __fastcall OtherLocalDriveViewEnter(TObject *Sender);
+  void __fastcall OtherLocalDirViewContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
+  void __fastcall OtherLocalDirViewUpdateStatusBar(TObject *Sender, const TStatusFileInfo &FileInfo);
+  void __fastcall OtherLocalDirViewPathChange(TCustomDirView *Sender);
   void __fastcall LocalDriveViewNeedHiddenDirectories(TObject *Sender);
 
 private:
@@ -527,8 +552,12 @@ private:
   void __fastcall UpdateToolbar2ItemCaption(TTBCustomItem * Item);
   void __fastcall SetShortcuts();
   void __fastcall UpdatePanelsPathLabelsStatus();
+  void __fastcall DoLocalDefaultDirectory(TDirView * DirView, const UnicodeString & LastPath);
   void __fastcall LocalDefaultDirectory();
   TOperationSide __fastcall GetOtherSize(TOperationSide Side);
+  void __fastcall DoLocalDirViewContextPopup(TOperationSide Side, TPoint & MousePos, bool & Handled);
+  void __fastcall DoUpdateFileStatusBar(
+    TObject * Sender, TTBXStatusBar * StatusBar, const TStatusFileInfo & FileInfo, TOperationSide Side);
 
 protected:
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
@@ -548,10 +577,9 @@ protected:
     TScpCommanderPanelConfiguration & PanelConfiguration);
   virtual void __fastcall RestoreParams();
   virtual void __fastcall FixControlsPlacement();
-  virtual void __fastcall TerminalChanged(bool Replaced);
+  virtual void __fastcall SessionChanged(bool Replaced);
   virtual void __fastcall ConfigurationChanged();
   virtual bool __fastcall GetHasDirView(TOperationSide Side);
-  virtual bool IsSideLocalBrowser(TOperationSide Side);
   virtual TCustomDirView * GetCurrentLocalBrowser();
   virtual void __fastcall UpdateControls();
   virtual void __fastcall FileOperationProgress(
@@ -589,7 +617,7 @@ protected:
   void __fastcall CreateLocalDirectory(const UnicodeString & Path);
   void __fastcall CreateRemoteDirectory(const UnicodeString & Path);
   void __fastcall LocalPathComboUpdateDrives();
-  void __fastcall LocalPathComboUpdate();
+  void __fastcall LocalPathComboUpdate(TCustomDirView * ADirView, TTBXComboBoxItem * PathComboBox);
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   void __fastcall DoOpenBookmark(UnicodeString Local, UnicodeString Remote);
   virtual bool __fastcall OpenBookmark(TOperationSide Side, TBookmark * Bookmark);
@@ -598,10 +626,24 @@ protected:
   virtual bool __fastcall EligibleForImageDisplayMode(TTBCustomItem * Item);
   virtual bool __fastcall UpdateToolbarDisplayMode();
   virtual void __fastcall QueueLabelUpdateStatus();
-  virtual void __fastcall StartingDisconnected();
+  virtual void __fastcall StartingWithoutSession();
   virtual void __fastcall UpdateImages();
   virtual void __fastcall FileColorsChanged();
   virtual void __fastcall ThemeChanged();
+  void __fastcall DoPathLabelPathClick(TOperationSide Side, const UnicodeString & Path);
+  virtual void __fastcall DoRemotePathComboBoxAdjustImageIndex(
+    TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex, int & ImageIndex);
+  virtual void __fastcall DoRemotePathComboBoxCancel(TObject * Sender);
+  void __fastcall DoLocalDirViewPathChange(TCustomDirView * Sender, TTBXComboBoxItem * PathComboBox);
+  void __fastcall DoLocalPathComboBoxAdjustImageIndex(TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex, int & ImageIndex);
+  void __fastcall DoLocalPathComboBoxItemClick(TDirView * ADirView, TTBXComboBoxItem * PathComboBox);
+  virtual void __fastcall DoRemotePathComboBoxItemClick(TObject * Sender);
+  virtual void __fastcall UpdateRemotePathComboBox(bool TextOnly);
+  void __fastcall SetToolbar2ItemAction(TTBXItem * Item, TBasicAction * Action);
+  virtual void __fastcall NeedSession(bool Startup);
+  void RestoreSessionLocalDirView(TDirView * ALocalDirView, const UnicodeString & LocalDirectory, TObject * State);
+  virtual UnicodeString GetTabHintDetails(TManagedTerminal * ASession);
+  virtual UnicodeString GetNewTabHintDetails();
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);
@@ -611,11 +653,11 @@ public:
   virtual bool __fastcall AllowedAction(TAction * Action, TActionAllowed Allowed);
   virtual void __fastcall ChangePath(TOperationSide Side);
   virtual void __fastcall CompareDirectories();
-  virtual void __fastcall UpdateTerminal(TManagedTerminal * Terminal);
+  virtual void __fastcall UpdateSession(TManagedTerminal * Terminal);
   virtual void __fastcall SynchronizeDirectories();
   virtual void __fastcall FullSynchronizeDirectories();
   virtual void __fastcall StoreParams();
-  virtual void __fastcall ExploreLocalDirectory();
+  virtual void __fastcall ExploreLocalDirectory(TOperationSide Side);
   virtual void __fastcall GoToCommandLine();
   virtual void __fastcall GoToTree();
   virtual void __fastcall OpenConsole(UnicodeString Command = L"");
@@ -627,7 +669,18 @@ public:
   virtual void __fastcall CopyFilesToClipboard(TOperationSide Side, bool OnFocused);
   virtual void __fastcall PasteFromClipBoard();
   virtual void __fastcall BrowseFile();
+  virtual bool SupportsLocalBrowser();
+  virtual bool IsSideLocalBrowser(TOperationSide Side);
+  virtual bool IsLocalBrowserMode();
+  virtual void LocalLocalCopy(
+    ::TFileOperation Operation, TOperationSide Side, bool OnFocused, bool NoConfirmation, bool DragDrop, unsigned int Flags);
+  virtual UnicodeString GetLocalBrowserSessionTitle(TManagedTerminal * Session);
+  virtual TManagedTerminal * GetReplacementForLastSession();
+  virtual void NewTab(TOperationSide Side, bool AllowReverse);
+  virtual int GetNewTabActionImageIndex();
+  virtual int GetNewTabTabImageIndex(TOperationSide Side);
   virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
+  virtual bool SupportedSession(TSessionData * SessionData);
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

@@ -1062,6 +1062,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'ap-southeast-1'
               'ap-southeast-2'
               'ap-southeast-3'
+              'ap-southeast-4'
               'ca-central-1'
               'cn-north-1'
               'cn-northwest-1'
@@ -2108,13 +2109,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 6
           Width = 393
-          Height = 158
+          Height = 222
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Key exchange algorithm options'
           TabOrder = 0
           DesignSize = (
             393
-            158)
+            222)
           object Label28: TLabel
             Left = 12
             Top = 19
@@ -2127,7 +2128,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Left = 12
             Top = 36
             Width = 285
-            Height = 89
+            Height = 153
             Anchors = [akLeft, akTop, akRight]
             DragMode = dmAutomatic
             ItemHeight = 13
@@ -2159,7 +2160,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
           object AuthGSSAPIKEXCheck: TCheckBox
             Left = 12
-            Top = 131
+            Top = 195
             Width = 285
             Height = 17
             Caption = 'Attempt &GSSAPI key exchange'
@@ -2169,7 +2170,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         end
         object KexReexchangeGroup: TGroupBox
           Left = 0
-          Top = 171
+          Top = 235
           Width = 393
           Height = 69
           Anchors = [akLeft, akTop, akRight]
@@ -2288,13 +2289,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 132
           Width = 393
-          Height = 120
+          Height = 164
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Authentication parameters'
           TabOrder = 2
           DesignSize = (
             393
-            120)
+            164)
           object PrivateKeyLabel: TLabel
             Left = 12
             Top = 42
@@ -2302,6 +2303,14 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Height = 13
             Caption = 'Private &key file:'
             FocusControl = PrivateKeyEdit3
+          end
+          object DetachedCertificateLabel: TLabel
+            Left = 12
+            Top = 117
+            Width = 186
+            Height = 13
+            Caption = 'Certificate to &use with the private key:'
+            FocusControl = DetachedCertificateEdit
           end
           object AgentFwdCheck: TCheckBox
             Left = 12
@@ -2350,10 +2359,27 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 2
             OnClick = PrivateKeyViewButtonClick
           end
+          object DetachedCertificateEdit: TFilenameEdit
+            Left = 12
+            Top = 133
+            Width = 372
+            Height = 21
+            AcceptFiles = True
+            OnBeforeDialog = PathEditBeforeDialog
+            OnAfterDialog = PrivateKeyEdit3AfterDialog
+            Filter = 'Public key files (*.pub)|*.pub|All Files (*.*)|*.*'
+            DialogOptions = [ofReadOnly, ofPathMustExist, ofFileMustExist]
+            DialogTitle = 'Select certificate file'
+            ClickKey = 16397
+            Anchors = [akLeft, akTop, akRight]
+            TabOrder = 4
+            Text = 'DetachedCertificateEdit'
+            OnChange = DataChange
+          end
         end
         object GSSAPIGroup: TGroupBox
           Left = 0
-          Top = 258
+          Top = 302
           Width = 393
           Height = 71
           Anchors = [akLeft, akTop, akRight]

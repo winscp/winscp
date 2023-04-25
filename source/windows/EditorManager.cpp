@@ -28,6 +28,7 @@ TEditedFileData::~TEditedFileData()
 //---------------------------------------------------------------------------
 __fastcall TEditorManager::TEditorManager()
 {
+  FSection = new TCriticalSection();
   FOnFileChange = NULL;
   FOnFileReload = NULL;
   FOnFileEarlyClosed = NULL;
@@ -52,10 +53,12 @@ __fastcall TEditorManager::~TEditorManager()
       }
     }
   }
+  delete FSection;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TEditorManager::Empty(bool IgnoreClosed)
 {
+  TGuard Guard(FSection);
   bool Result;
 
   if (!IgnoreClosed)
@@ -83,6 +86,7 @@ bool __fastcall TEditorManager::CanAddFile(const UnicodeString RemoteDirectory,
   TObject *& Token, UnicodeString & ExistingLocalRootDirectory,
   UnicodeString & ExistingLocalDirectory)
 {
+  TGuard Guard(FSection);
   bool Result = true;
 
   Token = NULL;
@@ -148,8 +152,23 @@ bool __fastcall TEditorManager::CanAddFile(const UnicodeString RemoteDirectory,
   return Result;
 }
 //---------------------------------------------------------------------------
+TEditedFileData * TEditorManager::FindByUploadCompleteEvent(HANDLE UploadCompleteEvent)
+{
+  TGuard Guard(FSection);
+  for (unsigned int i = 0; i < FFiles.size(); i++)
+  {
+    TFileData * FileData = &FFiles[i];
+    if (FileData->UploadCompleteEvent == UploadCompleteEvent)
+    {
+      return FileData->Data;
+    }
+  }
+  return NULL;
+}
+//---------------------------------------------------------------------------
 void __fastcall TEditorManager::ProcessFiles(TEditedFileProcessEvent Callback, void * Arg)
 {
+  TGuard Guard(FSection);
   for (unsigned int i = 0; i < FFiles.size(); i++)
   {
     TFileData * FileData = &FFiles[i];
@@ -160,6 +179,7 @@ void __fastcall TEditorManager::ProcessFiles(TEditedFileProcessEvent Callback, v
 //---------------------------------------------------------------------------
 bool __fastcall TEditorManager::CloseInternalEditors(TNotifyEvent CloseCallback)
 {
+  TGuard Guard(FSection);
   // Traverse from end, as closing internal editor causes deletion of
   // respective file vector element.
   TObject * PrevToken = NULL;
@@ -197,6 +217,7 @@ bool __fastcall TEditorManager::CloseInternalEditors(TNotifyEvent CloseCallback)
 //---------------------------------------------------------------------------
 bool __fastcall TEditorManager::CloseExternalFilesWithoutProcess()
 {
+  TGuard Guard(FSection);
   for (unsigned int i = FFiles.size(); i > 0; i--)
   {
     TFileData * FileData = &FFiles[i - 1];
@@ -213,6 +234,7 @@ bool __fastcall TEditorManager::CloseExternalFilesWithoutProcess()
 void __fastcall TEditorManager::AddFileInternal(const UnicodeString FileName,
   TEditedFileData * AData, TObject * Token)
 {
+  TGuard Guard(FSection);
   std::unique_ptr<TEditedFileData> Data(AData);
   TFileData FileData;
   FileData.FileName = FileName;
@@ -226,6 +248,7 @@ void __fastcall TEditorManager::AddFileInternal(const UnicodeString FileName,
 void __fastcall TEditorManager::AddFileExternal(const UnicodeString FileName,
   TEditedFileData * AData, HANDLE Process)
 {
+  TGuard Guard(FSection);
   std::unique_ptr<TEditedFileData> Data(AData);
   TFileData FileData;
   FileData.FileName = FileName;
@@ -242,6 +265,7 @@ void __fastcall TEditorManager::AddFileExternal(const UnicodeString FileName,
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::Check()
 {
+  TGuard Guard(FSection);
   int Index;
 
   for (Index = 0; Index < static_cast<int>(FFiles.size()); Index++)
@@ -329,6 +353,7 @@ bool __fastcall TEditorManager::EarlyClose(int Index)
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::FileChanged(TObject * Token)
 {
+  TGuard Guard(FSection);
   int Index = FindFile(Token);
 
   DebugAssert(Index >= 0);
@@ -339,6 +364,7 @@ void __fastcall TEditorManager::FileChanged(TObject * Token)
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::FileReload(TObject * Token)
 {
+  TGuard Guard(FSection);
   int Index = FindFile(Token);
 
   DebugAssert(Index >= 0);
@@ -352,6 +378,7 @@ void __fastcall TEditorManager::FileReload(TObject * Token)
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::FileClosed(TObject * Token, bool Forced)
 {
+  TGuard Guard(FSection);
   int Index = FindFile(Token);
 
   DebugAssert(Index >= 0);
@@ -437,11 +464,12 @@ bool __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
   if (FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE)
   {
     FileData->Closed = true;
+    AppLogFmt(L"Opened/edited file \"%s\" has been closed, but the file is still being uploaded.", (FileData->FileName));
   }
   else
   {
-    UnicodeString FileName = FileData->FileName;
     UnicodeString LocalRootDirectory = FileData->Data->LocalRootDirectory;
+    UnicodeString FileName = FileData->FileName; // Before it's released
 
     ReleaseFile(Index);
     FFiles.erase(FFiles.begin() + Index);
@@ -454,6 +482,11 @@ bool __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
       {
         throw Exception(FMTLOAD(DELETE_TEMP_EXECUTE_FILE_ERROR, (LocalRootDirectory)));
       }
+      AppLogFmt(L"Deleted opened/edited file [%s] folder \"%s\".", (FileName, LocalRootDirectory));
+    }
+    else
+    {
+      AppLogFmt(L"Opened/edited file \"%s\" has been closed.", (FileName));
     }
   }
   return Result;

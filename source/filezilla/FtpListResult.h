@@ -39,7 +39,7 @@ private:
   typedef std::list<t_directory::t_direntry> tEntryList;
   tEntryList m_EntryList;
 
-  BOOL parseLine(const char * lineToParse, const int linelen, t_directory::t_direntry & direntry, int & nFTPServerType);
+  BOOL parseLine(const char * lineToParse, const int linelen, t_directory::t_direntry & direntry);
 
   BOOL parseAsVMS(const char * line, const int linelen, t_directory::t_direntry & direntry);
   BOOL parseAsEPLF(const char * line, const int linelen, t_directory::t_direntry & direntry);

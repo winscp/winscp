@@ -306,6 +306,7 @@ __fastcall TSimpleThread::TSimpleThread() :
 //---------------------------------------------------------------------------
 __fastcall TSimpleThread::~TSimpleThread()
 {
+  // This is turn calls pure virtual Terminate, what does not work as intended, do not rely on it and remove the call eventually
   Close();
 
   if (FThread != NULL)
@@ -1213,8 +1214,9 @@ private:
 __fastcall TBackgroundTerminal::TBackgroundTerminal(TTerminal * MainTerminal,
     TSessionData * SessionData, TConfiguration * Configuration, TTerminalItem * Item,
     const UnicodeString & Name) :
-  TSecondaryTerminal(MainTerminal, SessionData, Configuration, Name), FItem(Item)
+  TSecondaryTerminal(MainTerminal, SessionData, Configuration, Name, NULL), FItem(Item)
 {
+  ActionLog->Enabled = false;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TBackgroundTerminal::DoQueryReopen(Exception * /*E*/)
@@ -2134,9 +2136,9 @@ __fastcall TTransferQueueItem::TTransferQueueItem(TTerminal * Terminal,
   FFilesToCopy = new TStringList();
   for (int Index = 0; Index < FilesToCopy->Count; Index++)
   {
-    FFilesToCopy->AddObject(FilesToCopy->Strings[Index],
-      ((FilesToCopy->Objects[Index] == NULL) || (Side == osLocal)) ? NULL :
-        dynamic_cast<TRemoteFile*>(FilesToCopy->Objects[Index])->Duplicate());
+    UnicodeString FileName = FilesToCopy->Strings[Index];
+    TRemoteFile * File = dynamic_cast<TRemoteFile *>(FilesToCopy->Objects[Index]);
+    FFilesToCopy->AddObject(FileName, ((File == NULL) || (Side == osLocal)) ? NULL : File->Duplicate());
   }
 
   FTargetDir = TargetDir;
@@ -2358,6 +2360,15 @@ void __fastcall TParallelTransferQueueItem::DoExecute(TTerminal * Terminal)
 //---------------------------------------------------------------------------
 // TDownloadQueueItem
 //---------------------------------------------------------------------------
+static void ExtractRemoteSourcePath(TTerminal * Terminal, TStrings * Files, UnicodeString & Path)
+{
+  if (!UnixExtractCommonPath(Files, Path))
+  {
+    Path = Terminal->CurrentDirectory;
+  }
+  Path = UnixExcludeTrailingBackslash(Path);
+}
+//---------------------------------------------------------------------------
 __fastcall TDownloadQueueItem::TDownloadQueueItem(TTerminal * Terminal,
   TStrings * FilesToCopy, const UnicodeString & TargetDir,
   const TCopyParamType * CopyParam, int Params, bool SingleFile, bool Parallel) :
@@ -2365,11 +2376,7 @@ __fastcall TDownloadQueueItem::TDownloadQueueItem(TTerminal * Terminal,
 {
   if (FilesToCopy->Count > 1)
   {
-    if (!UnixExtractCommonPath(FilesToCopy, FInfo->Source))
-    {
-      FInfo->Source = Terminal->CurrentDirectory;
-    }
-    FInfo->Source = UnixExcludeTrailingBackslash(FInfo->Source);
+    ExtractRemoteSourcePath(Terminal, FilesToCopy, FInfo->Source);
     FInfo->ModifiedRemote = FLAGCLEAR(Params, cpDelete) ? UnicodeString() :
       UnixIncludeTrailingBackslash(FInfo->Source);
   }
@@ -2406,6 +2413,30 @@ __fastcall TDownloadQueueItem::TDownloadQueueItem(TTerminal * Terminal,
 void __fastcall TDownloadQueueItem::DoTransferExecute(TTerminal * Terminal, TParallelOperation * ParallelOperation)
 {
   Terminal->CopyToLocal(FFilesToCopy, FTargetDir, FCopyParam, FParams, ParallelOperation);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+TDeleteQueueItem::TDeleteQueueItem(TTerminal * Terminal, TStrings * FilesToDelete, int Params) :
+  TLocatedQueueItem(Terminal)
+{
+  FInfo->Operation = foDelete;
+  FInfo->Side = osRemote;
+
+  DebugAssert(FilesToDelete != NULL);
+  FFilesToDelete.reset(TRemoteFileList::CloneStrings(FilesToDelete));
+  ExtractRemoteSourcePath(Terminal, FilesToDelete, FInfo->Source);
+
+  FInfo->ModifiedRemote = FInfo->Source;
+
+  FParams = Params;
+}
+//---------------------------------------------------------------------------
+void __fastcall TDeleteQueueItem::DoExecute(TTerminal * Terminal)
+{
+  TLocatedQueueItem::DoExecute(Terminal);
+
+  DebugAssert(Terminal != NULL);
+  Terminal->DeleteFiles(FFilesToDelete.get(), FParams);
 }
 //---------------------------------------------------------------------------
 // TTerminalThread

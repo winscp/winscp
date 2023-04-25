@@ -597,6 +597,7 @@ var
   X, Y: Integer;
   Two: Integer;
 begin
+  // See TThemePageControl::DrawTabItem with ttbDropDown
   with ARect, Canvas do
   begin
     X := (Left + Right) div 2;

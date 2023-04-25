@@ -62,6 +62,54 @@ bool __fastcall DoCopyDialog(
   return Result;
 }
 //---------------------------------------------------------------------------
+bool CopyDialogValidateLocalDirectory(const UnicodeString & Directory, THistoryComboBox * DirectoryEdit)
+{
+  bool Result = true;
+  UnicodeString Drive = ExtractFileDrive(Directory);
+  if (!DirectoryExistsFix(Directory))
+  {
+    if (MessageDialog(MainInstructions(FMTLOAD(CREATE_LOCAL_DIRECTORY, (Directory))),
+          qtConfirmation, qaOK | qaCancel, HELP_NONE) != qaCancel)
+    {
+      if (!ForceDirectories(ApiPath(Directory)))
+      {
+        SimpleErrorDialog(FMTLOAD(CREATE_LOCAL_DIR_ERROR, (Directory)));
+        Result = false;
+      }
+    }
+    else
+    {
+      Result = False;
+    }
+  }
+
+  if (!Result)
+  {
+    DirectoryEdit->SelectAll();
+    DirectoryEdit->SetFocus();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool CopyDialogValidateFileMask(
+  const UnicodeString & FileMask, THistoryComboBox * DirectoryEdit, bool MultipleFiles, bool RemotePaths)
+{
+  bool Result = true;
+  if (!IsFileNameMask(FileMask) && MultipleFiles)
+  {
+    UnicodeString Message =
+      FormatMultiFilesToOneConfirmation(DirectoryEdit->Text, RemotePaths);
+    Result = (MessageDialog(Message, qtConfirmation, qaOK | qaCancel, HELP_NONE) != qaCancel);
+  }
+
+  if (!Result)
+  {
+    DirectoryEdit->SelectAll();
+    DirectoryEdit->SetFocus();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 __fastcall TCopyDialog::TCopyDialog(
   TComponent* Owner, bool ToRemote, bool Move, TStrings * FileList, int Options,
   int CopyParamAttrs, TSessionData * SessionData) : TForm(Owner)
@@ -145,7 +193,7 @@ void __fastcall TCopyDialog::AdjustTransferControls()
     if (!FToRemote && FLAGSET(FOutputOptions, cooRemoteTransfer))
     {
       ACaption = LoadStr(REMOTE_COPY_TITLE);
-      ImageName = L"Duplicate";
+      ImageName = L"Duplicate L to R";
     }
     else
     {
@@ -166,7 +214,7 @@ void __fastcall TCopyDialog::AdjustTransferControls()
     if (!FToRemote && FLAGSET(FOutputOptions, cooRemoteTransfer))
     {
       ACaption = LoadStr(COPY_MOVE_CAPTION);
-      ImageName = L"Move To";
+      ImageName = L"Move L to R";
     }
     else
     {
@@ -360,7 +408,7 @@ void __fastcall TCopyDialog::FormShow(TObject * /*Sender*/)
 
   InstallPathWordBreakProc(RemoteDirectoryEdit);
   InstallPathWordBreakProc(LocalDirectoryEdit);
-  // Does not work when set from a contructor
+  // Does not work when set from a constructor
   ShortCutHintPanel->Color = Application->HintColor;
 }
 //---------------------------------------------------------------------------
@@ -407,38 +455,12 @@ void __fastcall TCopyDialog::FormCloseQuery(TObject * /*Sender*/,
 
     if (!RemotePaths() && ((FOptions & coTemp) == 0))
     {
-      UnicodeString Dir = Directory;
-      UnicodeString Drive = ExtractFileDrive(Dir);
-      if (!DirectoryExists(ApiPath(Dir)))
-      {
-        if (MessageDialog(MainInstructions(FMTLOAD(CREATE_LOCAL_DIRECTORY, (Dir))),
-              qtConfirmation, qaOK | qaCancel, HELP_NONE) != qaCancel)
-        {
-          if (!ForceDirectories(ApiPath(Dir)))
-          {
-            SimpleErrorDialog(FMTLOAD(CREATE_LOCAL_DIR_ERROR, (Dir)));
-            CanClose = false;
-          }
-        }
-        else
-        {
-          CanClose = False;
-        }
-      }
-
-      if (!CanClose)
-      {
-        DirectoryEdit->SelectAll();
-        DirectoryEdit->SetFocus();
-      }
+      CanClose = CopyDialogValidateLocalDirectory(Directory, DirectoryEdit);
     }
 
-    if (CanClose && !IsFileNameMask(GetFileMask()) && (FFileList->Count > 1))
+    if (CanClose)
     {
-      UnicodeString Message =
-        FormatMultiFilesToOneConfirmation(DirectoryEdit->Text, RemotePaths());
-      CanClose =
-        (MessageDialog(Message, qtConfirmation, qaOK | qaCancel, HELP_NONE) != qaCancel);
+      CanClose = CopyDialogValidateFileMask(GetFileMask(), DirectoryEdit, (FFileList->Count > 1), RemotePaths());
     }
   }
 }

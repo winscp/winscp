@@ -9,6 +9,10 @@ namespace WinSCP
     [ComVisible(true)]
     public class RemoteFileInfoCollection : ICollection<RemoteFileInfo>
     {
+        internal RemoteFileInfoCollection()
+        {
+        }
+
         public RemoteFileInfo this[int index]
         {
             get

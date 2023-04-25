@@ -235,8 +235,7 @@ static int rsa1_load_s_internal(BinarySource *src, RSAKey *key, bool pub_only,
         if (enclen & 7)
             goto end;
 
-        buf = strbuf_new_nm();
-        put_datapl(buf, get_data(src, enclen));
+        buf = strbuf_dup_nm(get_data(src, enclen));
 
         { // WINSCP
         unsigned char keybuf[16];
@@ -619,6 +618,14 @@ const ssh_keyalg *const all_keyalgs[] = {
     &ssh_ecdsa_nistp521,
     &ssh_ecdsa_ed25519,
     &ssh_ecdsa_ed448,
+    &opensshcert_ssh_dsa,
+    &opensshcert_ssh_rsa,
+    &opensshcert_ssh_rsa_sha256,
+    &opensshcert_ssh_rsa_sha512,
+    &opensshcert_ssh_ecdsa_ed25519,
+    &opensshcert_ssh_ecdsa_nistp256,
+    &opensshcert_ssh_ecdsa_nistp384,
+    &opensshcert_ssh_ecdsa_nistp521,
 };
 const size_t n_keyalgs = lenof(all_keyalgs);
 
@@ -632,9 +639,37 @@ const ssh_keyalg *find_pubkey_alg_len(ptrlen name)
     return NULL;
 }
 
+static const ssh_keyalg *find_pubkey_alg_len_winscp_host(ptrlen name)
+{
+    size_t i;
+    for (i = 0; i < n_keyalgs; i++)
+        if (!all_keyalgs[i]->is_certificate &&
+            ptrlen_eq_string(name, all_keyalgs[i]->ssh_id))
+            return all_keyalgs[i];
+
+    return NULL;
+}
+
 const ssh_keyalg *find_pubkey_alg(const char *name)
 {
     return find_pubkey_alg_len(ptrlen_from_asciz(name));
+}
+
+const ssh_keyalg *find_pubkey_alg_winscp_host(const char *name)
+{
+    return find_pubkey_alg_len_winscp_host(ptrlen_from_asciz(name));
+}
+
+ptrlen pubkey_blob_to_alg_name(ptrlen blob)
+{
+    BinarySource src[1];
+    BinarySource_BARE_INIT_PL(src, blob);
+    return get_string(src);
+}
+
+const ssh_keyalg *pubkey_blob_to_alg(ptrlen blob)
+{
+    return find_pubkey_alg_len(pubkey_blob_to_alg_name(blob));
 }
 
 struct ppk_cipher {
@@ -1291,7 +1326,7 @@ bool ppk_loadpub_s(BinarySource *src, char **algorithm, BinarySink *bs,
         bool ret = openssh_loadpub(src, algorithm, bs, commentptr, errorstr);
         return ret;
     } else if (type != SSH_KEYTYPE_SSH2) {
-        error = "not a PuTTY SSH-2 private key";
+        error = "not a public key or a PuTTY SSH-2 private key";
         goto error;
     }
 
@@ -1303,7 +1338,7 @@ bool ppk_loadpub_s(BinarySource *src, char **algorithm, BinarySink *bs,
         if (0 == strncmp(header, "PuTTY-User-Key-File-", 20))
             error = "PuTTY key format too new";
         else
-            error = "not a PuTTY SSH-2 private key";
+            error = "not a public key or a PuTTY SSH-2 private key";
         goto error;
     }
     error = "file format error";
@@ -1447,37 +1482,6 @@ int base64_lines(int datalen)
 {
     /* When encoding, we use 64 chars/line, which equals 48 real chars. */
     return (datalen + 47) / 48;
-}
-
-static void base64_encode_s(BinarySink *bs, const unsigned char *data,
-                            int datalen, int cpl)
-{
-    int linelen = 0;
-    char out[4];
-    int n, i;
-
-    while (datalen > 0) {
-        n = (datalen < 3 ? datalen : 3);
-        base64_encode_atom(data, n, out);
-        data += n;
-        datalen -= n;
-        for (i = 0; i < 4; i++) {
-            if (linelen >= cpl) {
-                linelen = 0;
-                put_byte(bs, '\n');
-            }
-            put_byte(bs, out[i]);
-            linelen++;
-        }
-    }
-    put_byte(bs, '\n');
-}
-
-void base64_encode(FILE *fp, const unsigned char *data, int datalen, int cpl)
-{
-    stdio_sink ss;
-    stdio_sink_init(&ss, fp);
-    base64_encode_s(BinarySink_UPCAST(&ss), data, datalen, cpl);
 }
 
 const ppk_save_parameters ppk_save_default_parameters = {
@@ -1629,7 +1633,7 @@ strbuf *ppk_save_sb(ssh2_userkey *key, const char *passphrase,
     put_fmt(out, "Encryption: %s\n", cipherstr);
     put_fmt(out, "Comment: %s\n", key->comment);
     put_fmt(out, "Public-Lines: %d\n", base64_lines(pub_blob->len));
-    base64_encode_s(BinarySink_UPCAST(out), pub_blob->u, pub_blob->len, 64);
+    base64_encode_bs(BinarySink_UPCAST(out), ptrlen_from_strbuf(pub_blob), 64);
     if (params.fmt_version == 3 && ciphertype->keylen != 0) {
         put_fmt(out, "Key-Derivation: %s\n",
                 params.argon2_flavour == Argon2d ? "Argon2d" :
@@ -1648,8 +1652,8 @@ strbuf *ppk_save_sb(ssh2_userkey *key, const char *passphrase,
         } // WINSCP
     }
     put_fmt(out, "Private-Lines: %d\n", base64_lines(priv_encrypted_len));
-    base64_encode_s(BinarySink_UPCAST(out),
-                    priv_blob_encrypted, priv_encrypted_len, 64);
+    base64_encode_bs(BinarySink_UPCAST(out),
+                     make_ptrlen(priv_blob_encrypted, priv_encrypted_len), 64);
     put_fmt(out, "Private-MAC: ");
     for (i = 0; i < macalg->len; i++)
         put_fmt(out, "%02x", priv_mac[i]);
@@ -1850,6 +1854,7 @@ static void ssh2_fingerprint_blob_sha256(ptrlen blob, strbuf *sb)
 char *ssh2_fingerprint_blob(ptrlen blob, FingerprintType fptype)
 {
     strbuf *sb = strbuf_new();
+    strbuf *tmp = NULL;
 
     /*
      * Identify the key algorithm, if possible.
@@ -1862,26 +1867,67 @@ char *ssh2_fingerprint_blob(ptrlen blob, FingerprintType fptype)
     { // WINSCP
     ptrlen algname = get_string(src);
     if (!get_err(src)) {
-        const ssh_keyalg *alg = find_pubkey_alg_len(algname);
+        const ssh_keyalg *alg = find_pubkey_alg_len_winscp_host(algname);
         if (alg) {
             int bits = ssh_key_public_bits(alg, blob);
             put_fmt(sb, "%.*s %d ", PTRLEN_PRINTF(algname), bits);
+
+            if (!ssh_fptype_is_cert(fptype) && alg->is_certificate) {
+                ssh_key *key = ssh_key_new_pub(alg, blob);
+                if (key) {
+                    tmp = strbuf_new();
+                    ssh_key_public_blob(ssh_key_base_key(key),
+                                        BinarySink_UPCAST(tmp));
+                    blob = ptrlen_from_strbuf(tmp);
+                    ssh_key_free(key);
+                }
+            }
         } else {
             put_fmt(sb, "%.*s ", PTRLEN_PRINTF(algname));
         }
     }
     } // WINSCP
 
-    switch (fptype) {
+    switch (ssh_fptype_from_cert(fptype)) {
       case SSH_FPTYPE_MD5:
         ssh2_fingerprint_blob_md5(blob, sb);
         break;
       case SSH_FPTYPE_SHA256:
         ssh2_fingerprint_blob_sha256(blob, sb);
         break;
+      default:
+        unreachable("ssh_fptype_from_cert ruled out the other values");
     }
 
+    if (tmp)
+        strbuf_free(tmp);
+
     return strbuf_to_str(sb);
+}
+
+char *ssh2_double_fingerprint_blob(ptrlen blob, FingerprintType fptype)
+{
+    if (ssh_fptype_is_cert(fptype))
+        fptype = ssh_fptype_from_cert(fptype);
+
+    { // WINSCP
+    char *fp = ssh2_fingerprint_blob(blob, fptype);
+    char *p = strrchr(fp, ' ');
+    char *hash = p ? p + 1 : fp;
+
+    char *fpc = ssh2_fingerprint_blob(blob, ssh_fptype_to_cert(fptype));
+    char *pc = strrchr(fpc, ' ');
+    char *hashc = pc ? pc + 1 : fpc;
+
+    if (strcmp(hash, hashc)) {
+        char *tmp = dupprintf("%s (with certificate: %s)", fp, hashc);
+        sfree(fp);
+        fp = tmp;
+    }
+
+    sfree(fpc);
+    return fp;
+    } // WINSCP
 }
 
 char **ssh2_all_fingerprints_for_blob(ptrlen blob)
@@ -1901,6 +1947,17 @@ char *ssh2_fingerprint(ssh_key *data, FingerprintType fptype)
     ret = ssh2_fingerprint_blob(ptrlen_from_strbuf(blob), fptype);
     strbuf_free(blob);
     return ret;
+}
+
+char *ssh2_double_fingerprint(ssh_key *data, FingerprintType fptype)
+{
+    strbuf *blob = strbuf_new();
+    ssh_key_public_blob(data, BinarySink_UPCAST(blob));
+    { // WINSCP
+    char *ret = ssh2_double_fingerprint_blob(ptrlen_from_strbuf(blob), fptype);
+    strbuf_free(blob);
+    return ret;
+    } // WINSCP
 }
 
 char **ssh2_all_fingerprints(ssh_key *data)
@@ -1962,7 +2019,7 @@ static int key_type_s_internal(BinarySource *src)
     if (find_pubkey_alg_len(get_nonchars(src, " \n")) > 0 &&
         get_chars(src, " ").len == 1 &&
         get_chars(src, "0123456789ABCDEFGHIJKLMNOPQRSTUV"
-                   "WXYZabcdefghijklmnopqrstuvwxyz+/=").len > 0 &&
+                  "WXYZabcdefghijklmnopqrstuvwxyz+/=").len > 0 &&
         get_nonchars(src, " \n").len == 0)
         return SSH_KEYTYPE_SSH2_PUBLIC_OPENSSH;
 
@@ -2030,55 +2087,4 @@ const char *key_type_to_str(int type)
       default:
         unreachable("bad key type in key_type_to_str");
     }
-}
-
-key_components *key_components_new(void)
-{
-    key_components *kc = snew(key_components);
-    kc->ncomponents = 0;
-    kc->componentsize = 0;
-    kc->components = NULL;
-    return kc;
-}
-
-void key_components_add_text(key_components *kc,
-                             const char *name, const char *value)
-{
-    sgrowarray(kc->components, kc->componentsize, kc->ncomponents);
-    { // WINSCP
-    size_t n = kc->ncomponents++;
-    kc->components[n].name = dupstr(name);
-    kc->components[n].is_mp_int = false;
-    kc->components[n].text = dupstr(value);
-    } // WINSCP
-}
-
-void key_components_add_mp(key_components *kc,
-                           const char *name, mp_int *value)
-{
-    sgrowarray(kc->components, kc->componentsize, kc->ncomponents);
-    { // WINSCP
-    size_t n = kc->ncomponents++;
-    kc->components[n].name = dupstr(name);
-    kc->components[n].is_mp_int = true;
-    kc->components[n].mp = mp_copy(value);
-    } // WINSCP
-}
-
-void key_components_free(key_components *kc)
-{
-    { // WINSCP
-    size_t i;
-    for (i = 0; i < kc->ncomponents; i++) {
-        sfree(kc->components[i].name);
-        if (kc->components[i].is_mp_int) {
-            mp_free(kc->components[i].mp);
-        } else {
-            smemclr(kc->components[i].text, strlen(kc->components[i].text));
-            sfree(kc->components[i].text);
-        }
-    }
-    sfree(kc->components);
-    sfree(kc);
-    } // WINSCP
 }

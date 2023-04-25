@@ -160,6 +160,7 @@ private:
   TSessionData * FSessionData;
   TSessionLog * FLog;
   TActionLog * FActionLog;
+  bool FActionLogOwned;
   TConfiguration * FConfiguration;
   UnicodeString FCurrentDirectory;
   Integer FExceptionOnFail;
@@ -211,6 +212,7 @@ private:
   TNotifyEvent FOnClose;
   TCallbackGuard * FCallbackGuard;
   TFindingFileEvent FOnFindingFile;
+  std::unique_ptr<TStrings> FShellChecksumAlgDefs;
   bool FEnableSecureShellUsage;
   bool FCollectFileSystemUsage;
   bool FRememberedPasswordTried;
@@ -274,8 +276,8 @@ protected:
     int Params);
   void __fastcall DoCustomCommandOnFile(UnicodeString FileName,
     const TRemoteFile * File, UnicodeString Command, int Params, TCaptureOutputEvent OutputEvent);
-  bool __fastcall DoRenameFile(const UnicodeString FileName, const TRemoteFile * File,
-    const UnicodeString NewName, bool Move);
+  bool __fastcall DoRenameFile(
+    const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool Move, bool DontOverwrite);
   bool __fastcall DoMoveFile(const UnicodeString & FileName, const TRemoteFile * File, /*const TMoveFileParams*/ void * Param);
   void __fastcall DoCopyFile(const UnicodeString FileName, const TRemoteFile * File, const UnicodeString NewName);
   void __fastcall DoChangeFileProperties(const UnicodeString FileName,
@@ -488,6 +490,11 @@ protected:
   void __fastcall UpdateTargetTime(HANDLE Handle, TDateTime Modification, TDSTMode DSTMode);
   TRemoteFile * CheckRights(const UnicodeString & EntryType, const UnicodeString & FileName, bool & WrongRights);
   bool IsValidFile(TRemoteFile * File);
+  void __fastcall CalculateSubFoldersChecksum(
+    const UnicodeString & Alg, TStrings * FileList, TCalculatedChecksumEvent OnCalculatedChecksum,
+    TFileOperationProgressType * OperationProgress, bool FirstLevel);
+  void GetShellChecksumAlgs(TStrings * Algs);
+  TStrings * GetShellChecksumAlgDefs();
 
   UnicodeString __fastcall EncryptFileName(const UnicodeString & Path, bool EncryptNewFiles);
   UnicodeString __fastcall DecryptFileName(const UnicodeString & Path, bool DecryptFullPath, bool DontCache);
@@ -497,7 +504,7 @@ protected:
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 
 public:
-  __fastcall TTerminal(TSessionData * SessionData, TConfiguration * Configuration);
+  __fastcall TTerminal(TSessionData * SessionData, TConfiguration * Configuration, TActionLog * ActionLog = NULL);
   __fastcall ~TTerminal();
   void __fastcall Open();
   void __fastcall Close();
@@ -520,8 +527,9 @@ public:
   TRemoteFileList * __fastcall ReadDirectoryListing(UnicodeString Directory, const TFileMasks & Mask);
   TRemoteFileList * __fastcall CustomReadDirectoryListing(UnicodeString Directory, bool UseCache);
   TRemoteFile * __fastcall ReadFileListing(UnicodeString Path);
-  void __fastcall ReadFile(const UnicodeString FileName, TRemoteFile *& File);
-  bool __fastcall FileExists(const UnicodeString FileName, TRemoteFile ** File = NULL);
+  TRemoteFile * ReadFile(const UnicodeString & FileName);
+  TRemoteFile * TryReadFile(const UnicodeString & FileName);
+  bool FileExists(const UnicodeString & FileName);
   void __fastcall ReadSymlink(TRemoteFile * SymlinkFile, TRemoteFile *& File);
   bool __fastcall CopyToLocal(
     TStrings * FilesToCopy, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
@@ -555,22 +563,20 @@ public:
   void __fastcall TerminalError(Exception * E, UnicodeString Msg, UnicodeString HelpKeyword = L"");
   void __fastcall ReloadDirectory();
   void __fastcall RefreshDirectory();
-  void __fastcall RenameFile(const TRemoteFile * File, const UnicodeString NewName, bool CheckExistence);
+  void __fastcall RenameFile(const TRemoteFile * File, const UnicodeString & NewName);
   void __fastcall MoveFile(const UnicodeString FileName, const TRemoteFile * File,
     /*const TMoveFileParams*/ void * Param);
-  bool __fastcall MoveFiles(TStrings * FileList, const UnicodeString Target,
-    const UnicodeString FileMask);
+  bool __fastcall MoveFiles(
+    TStrings * FileList, const UnicodeString & Target, const UnicodeString & FileMask, bool DontOverwrite);
   void __fastcall CopyFile(const UnicodeString FileName, const TRemoteFile * File,
     /*const TMoveFileParams*/ void * Param);
   bool __fastcall CopyFiles(TStrings * FileList, const UnicodeString Target,
     const UnicodeString FileMask);
-  bool __fastcall CalculateFilesSize(TStrings * FileList, __int64 & Size,
-    int Params, const TCopyParamType * CopyParam, bool AllowDirs,
-    TCalculateSizeStats & Stats);
+  bool CalculateFilesSize(TStrings * FileList, __int64 & Size, TCalculateSizeParams & Params);
   bool __fastcall CalculateLocalFilesSize(TStrings * FileList, __int64 & Size,
     const TCopyParamType * CopyParam, bool AllowDirs, TStrings * Files, TCalculatedSizes * CalculatedSizes);
-  void __fastcall CalculateFilesChecksum(const UnicodeString & Alg, TStrings * FileList,
-    TStrings * Checksums, TCalculatedChecksumEvent OnCalculatedChecksum);
+  void __fastcall CalculateFilesChecksum(
+    const UnicodeString & Alg, TStrings * FileList, TCalculatedChecksumEvent OnCalculatedChecksum);
   void __fastcall ClearCaches();
   TSynchronizeChecklist * __fastcall SynchronizeCollect(const UnicodeString LocalDirectory,
     const UnicodeString RemoteDirectory, TSynchronizeMode Mode,
@@ -611,6 +617,7 @@ public:
   void __fastcall FillSessionDataForCode(TSessionData * Data);
   void __fastcall UpdateSessionCredentials(TSessionData * Data);
   UnicodeString UploadPublicKey(const UnicodeString & FileName);
+  TCustomFileSystem * GetFileSystemForCapability(TFSCapability Capability, bool NeedCurrentDirectory = false);
 
   const TSessionInfo & __fastcall GetSessionInfo();
   const TFileSystemInfo & __fastcall GetFileSystemInfo(bool Retrieve = false);
@@ -671,9 +678,9 @@ public:
 class TSecondaryTerminal : public TTerminal
 {
 public:
-  __fastcall TSecondaryTerminal(TTerminal * MainTerminal,
-    TSessionData * SessionData, TConfiguration * Configuration,
-    const UnicodeString & Name);
+  __fastcall TSecondaryTerminal(
+    TTerminal * MainTerminal, TSessionData * SessionData, TConfiguration * Configuration,
+    const UnicodeString & Name, TActionLog * ActionLog);
 
   void __fastcall UpdateFromMain();
 
@@ -731,15 +738,21 @@ struct TCalculateSizeStats
 //---------------------------------------------------------------------------
 struct TCalculateSizeParams
 {
+friend class TTerminal;
+
+public:
   TCalculateSizeParams();
 
-  __int64 Size;
   int Params;
   const TCopyParamType * CopyParam;
   TCalculateSizeStats * Stats;
   bool AllowDirs;
+  bool UseCache;
+
+private:
   TCollectedFileList * Files;
   UnicodeString LastDirPath;
+  __int64 Size;
   bool Result;
 };
 //---------------------------------------------------------------------------
@@ -811,6 +824,7 @@ class TCollectedFileList : public TObject
 {
 public:
   TCollectedFileList();
+  virtual __fastcall ~TCollectedFileList();
   int Add(const UnicodeString & FileName, TObject * Object, bool Dir);
   void DidNotRecurse(int Index);
   void Delete(int Index);
@@ -824,6 +838,8 @@ public:
   void SetState(int Index, int State);
 
 private:
+  void Deleting(int Index);
+
   struct TFileData
   {
     UnicodeString FileName;

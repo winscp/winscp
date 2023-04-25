@@ -249,7 +249,8 @@ public:
   bool __fastcall UsingInternalTranslation();
   UnicodeString __fastcall AppliedLocaleCopyright();
   UnicodeString __fastcall AppliedLocaleVersion();
-  TStoredSessionList * __fastcall SelectPuttySessionsForImport(TStoredSessionList * Sessions, UnicodeString & Error);
+  TStoredSessionList * __fastcall SelectPuttySessionsForImport(
+    const UnicodeString & RootKey, const UnicodeString & Source, TStoredSessionList * Sessions, UnicodeString & Error);
   bool __fastcall AnyPuttySessionForImport(TStoredSessionList * Sessions);
 
   __property bool ContinueOnError = { read = FContinueOnError, write = FContinueOnError };

@@ -28,11 +28,15 @@
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 const int SiteImageIndex = 1;
-const int OpenFolderImageIndex = 2;
+const int OpenedFolderImageIndex = 2;
 const int ClosedFolderImageIndex = 3;
 const int WorkspaceImageIndex = 4;
 const int NewSiteImageIndex = 6;
 const int SiteColorMaskImageIndex = 8;
+//---------------------------------------------------------------------------
+const int LoginImageIndex = 0;
+const int OpenWorkspaceImageIndex = 5;
+const int OpenFolderImageIndex = 6;
 //---------------------------------------------------------------------------
 bool __fastcall DoLoginDialog(TList * DataList, TForm * LinkedForm)
 {
@@ -124,7 +128,7 @@ void __fastcall TLoginDialog::InitControls()
   int FtpsNoneIndex = FtpsToIndex(ftpsNone);
   int FtpsImplicitIndex = FtpsToIndex(ftpsImplicit);
   // Items item setter is implemented as deleting and re-adding the item. If we do it for the last item
-  // (explicit for FTP, implicit for WebDAV), the ItemIndex is effectivelly reset to -1.
+  // (explicit for FTP, implicit for WebDAV/S3), the ItemIndex is effectivelly reset to -1.
   // This happens when TLS is set in the default session settings.
   // Also as TransferProtocolComboChange is not triggered it results in currupted state in respect to protocol/tls to port number sync.
   int Index = FtpsCombo->ItemIndex;
@@ -153,7 +157,6 @@ void __fastcall TLoginDialog::InitControls()
   MenuButton(ManageButton);
 
   FixButtonImage(LoginButton);
-  CenterButtonImage(LoginButton);
 
   SelectScaledImageList(SessionImageList);
   SelectScaledImageList(ActionImageList);
@@ -166,6 +169,23 @@ void __fastcall TLoginDialog::InitControls()
   }
 }
 //---------------------------------------------------------------------
+void TLoginDialog::UpdateLoginButton()
+{
+  TAction * Action = DebugNotNull(dynamic_cast<TAction *>(LoginButton->Action));
+  int ImageIndex = Action->ImageIndex;
+  if (FButtonImagesMap.find(ImageIndex) == FButtonImagesMap.end())
+  {
+    int LoginIndex = AddLoginButtonImage(ImageIndex, true);
+    FButtonImagesMap.insert(std::make_pair(ImageIndex, LoginIndex));
+    AddLoginButtonImage(ImageIndex, false);
+  }
+
+  LoginButton->ImageIndex = FButtonImagesMap[ImageIndex];
+  LoginButton->DisabledImageIndex = FButtonImagesMap[ImageIndex] + 1;
+
+  CenterButtonImage(LoginButton);
+}
+//---------------------------------------------------------------------
 void __fastcall TLoginDialog::GenerateImages()
 {
   // Generate button images.
@@ -174,9 +194,8 @@ void __fastcall TLoginDialog::GenerateImages()
   FButtonImageList.reset(new TImageList(this));
   FButtonImageList->SetSize(ActionImageList->Width, ActionImageList->Height);
   LoginButton->Images = FButtonImageList.get();
-
-  LoginButton->ImageIndex = AddLoginButtonImage(true);
-  LoginButton->DisabledImageIndex = AddLoginButtonImage(false);
+  FButtonImagesMap.clear();
+  UpdateLoginButton();
 
   SessionImageList->BeginUpdate();
   try
@@ -193,25 +212,32 @@ void __fastcall TLoginDialog::GenerateImages()
   }
 }
 //---------------------------------------------------------------------
-int __fastcall TLoginDialog::AddLoginButtonImage(bool Enabled)
+void TLoginDialog::FloodFill(TBitmap * Bitmap, int X, int Y)
+{
+  // A background is white, but there's also white used on the image itself.
+  // So we first replace the background white with a unique color,
+  // setting it as a transparent later.
+  // This is obviously a hack specific to this particular image.
+  // 16x16 version does not have any background
+  if (Bitmap->Canvas->Pixels[X][Y] == clWhite)
+  {
+    Bitmap->Canvas->FloodFill(X, Y, clWhite, fsSurface);
+  }
+}
+//---------------------------------------------------------------------
+int TLoginDialog::AddLoginButtonImage(int Index, bool Enabled)
 {
   std::unique_ptr<TBitmap> Bitmap(new TBitmap());
   Bitmap->SetSize(ActionImageList->Width, ActionImageList->Height);
 
-  ActionImageList->Draw(Bitmap->Canvas, 0, 0, LoginAction->ImageIndex, Enabled);
+  ActionImageList->Draw(Bitmap->Canvas, 0, 0, Index, Enabled);
 
   const TColor TransparentColor = clFuchsia;
 
-  // 16x16 version does not have any background
-  if (Bitmap->Canvas->Pixels[0][0] == clWhite)
-  {
-    // A background is white, but there's also white used on the image itself.
-    // So we first replace the background white with a unique color,
-    // setting it as a transparent later.
-    // This is obviously a hack specific to this particular image.
-    Bitmap->Canvas->Brush->Color = TransparentColor;
-    Bitmap->Canvas->FloodFill(0, 0, Bitmap->Canvas->Pixels[0][0], fsSurface);
-  }
+  Bitmap->Canvas->Brush->Color = TransparentColor;
+  FloodFill(Bitmap.get(), 0, 0);
+  FloodFill(Bitmap.get(), Bitmap->Width - 1, Bitmap->Height - 1);
+  FloodFill(Bitmap.get(), Bitmap->Width - 1, 0);
 
   return FButtonImageList->AddMasked(Bitmap.get(), TransparentColor);
 }
@@ -434,8 +460,8 @@ void __fastcall TLoginDialog::LoadSessions()
 void __fastcall TLoginDialog::UpdateFolderNode(TTreeNode * Node)
 {
   DebugAssert((Node->ImageIndex == 0) ||
-    (Node->ImageIndex == OpenFolderImageIndex) || (Node->ImageIndex == ClosedFolderImageIndex));
-  SetNodeImage(Node, (Node->Expanded ? OpenFolderImageIndex : ClosedFolderImageIndex));
+    (Node->ImageIndex == OpenedFolderImageIndex) || (Node->ImageIndex == ClosedFolderImageIndex));
+  SetNodeImage(Node, (Node->Expanded ? OpenedFolderImageIndex : ClosedFolderImageIndex));
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::NewSite()
@@ -528,7 +554,8 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * SessionData)
           UnicodeString::StringOfChar(L'?', 16) : UnicodeString();
     }
 
-    S3CredentialsEnvCheck->Checked = SessionData->S3CredentialsEnv;
+    S3CredentialsEnvCheck2->Checked = SessionData->S3CredentialsEnv;
+    S3ProfileCombo->Text = DefaultStr(SessionData->S3Profile, GetS3GeneralName());
     UpdateS3Credentials();
 
     NoteGroup->Visible = !Trim(SessionData->Note).IsEmpty();
@@ -578,7 +605,8 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * SessionData)
 
   if (SessionData->FSProtocol == fsS3)
   {
-    SessionData->S3CredentialsEnv = S3CredentialsEnvCheck->Checked;
+    SessionData->S3CredentialsEnv = S3CredentialsEnvCheck2->Checked;
+    SessionData->S3Profile = GetS3Profile();
   }
 
   if (SessionData->HasAutoCredentials())
@@ -610,6 +638,31 @@ bool __fastcall TLoginDialog::IsEditable()
   return IsNewSiteNode(SessionTree->Selected) || FEditing;
 }
 //---------------------------------------------------------------------
+UnicodeString TLoginDialog::GetS3GeneralName()
+{
+  return LoadStr(LOGIN_S3_GENERAL_CREDENTIALS);
+}
+//---------------------------------------------------------------------
+UnicodeString TLoginDialog::GetS3Profile()
+{
+  UnicodeString Result;
+  if (S3ProfileCombo->Text != GetS3GeneralName())
+  {
+    Result = S3ProfileCombo->Text;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+void TLoginDialog::LoadS3Profiles()
+{
+  std::unique_ptr<TStringList> Items(new TStringList());
+  std::unique_ptr<TStrings> Profiles(GetS3Profiles());
+  Items->AddStrings(Profiles.get());
+  Items->Sort();
+  Items->Insert(0, GetS3GeneralName());
+  S3ProfileCombo->Items = Items.get();
+}
+//---------------------------------------------------------------------
 void __fastcall TLoginDialog::UpdateControls()
 {
   if (Visible && FInitialized)
@@ -625,13 +678,17 @@ void __fastcall TLoginDialog::UpdateControls()
     // session
     FtpsCombo->Visible = Editable && FtpProtocol;
     FtpsLabel->Visible = FtpProtocol;
-    WebDavsCombo->Visible = Editable && WebDavProtocol;
-    WebDavsLabel->Visible = WebDavProtocol;
-    EncryptionView->Visible = !Editable && (FtpProtocol || WebDavProtocol);
+    WebDavsCombo->Visible = Editable && (WebDavProtocol || S3Protocol);
+    WebDavsLabel->Visible = WebDavProtocol || S3Protocol;
+    EncryptionView->Visible = !Editable && (FtpProtocol || WebDavProtocol || S3Protocol);
 
     BasicSshPanel->Visible = SshProtocol;
     BasicFtpPanel->Visible = FtpProtocol && Editable;
     BasicS3Panel->Visible = S3Protocol && Editable;
+    if (BasicS3Panel->Visible && (S3ProfileCombo->Items->Count == 0))
+    {
+      LoadS3Profiles();
+    }
     // we do not support more than one at the same time
     DebugAssert((int(BasicSshPanel->Visible) + int(BasicFtpPanel->Visible) + int(BasicS3Panel->Visible)) <= 1);
     BasicGroup->Height =
@@ -652,16 +709,18 @@ void __fastcall TLoginDialog::UpdateControls()
     ReadOnlyControl(PortNumberEdit, !Editable);
     PortNumberEdit->ButtonsVisible = Editable;
     // FSessionData may be NULL temporary even when Editable while switching nodes
+    bool S3CredentialsEnv = S3Protocol && S3CredentialsEnvCheck2->Checked;
     bool NoAuth =
       Editable && (FSessionData != NULL) &&
       ((SshProtocol && FSessionData->SshNoUserAuth) ||
-       (S3Protocol && S3CredentialsEnvCheck->Checked));
+       S3CredentialsEnv);
     ReadOnlyAndEnabledControl(UserNameEdit, !Editable, !NoAuth);
     EnableControl(UserNameLabel, UserNameEdit->Enabled);
     ReadOnlyAndEnabledControl(PasswordEdit, !Editable, !NoAuth);
     EnableControl(PasswordLabel, PasswordEdit->Enabled);
     UserNameLabel->Caption = S3Protocol ? LoadStr(S3_ACCESS_KEY_ID_PROMPT) : FUserNameLabel;
     PasswordLabel->Caption = S3Protocol ? LoadStr(S3_SECRET_ACCESS_KEY_PROMPT) : FPasswordLabel;
+    EnableControl(S3ProfileCombo, S3CredentialsEnv);
 
     // sites
     if (SitesIncrementalSearchLabel->Visible != !FSitesIncrementalSearch.IsEmpty())
@@ -799,7 +858,7 @@ void __fastcall TLoginDialog::SessionTreeDblClick(TObject * /*Sender*/)
   // as that may pop-up modal box.
   if (Node == SessionTree->Selected)
   {
-    // EnsureNotEditing must be before CanLogin, as CanLogin checks for FEditing
+    // EnsureNotEditing must be before CanOpen, as CanOpen checks for FEditing
     if (EnsureNotEditing())
     {
       if (IsCloneToNewSiteDefault())
@@ -809,7 +868,7 @@ void __fastcall TLoginDialog::SessionTreeDblClick(TObject * /*Sender*/)
       // this can hardly be false
       // (after editing and clone tests above)
       // (except for empty folders, but those do not pass a condition below)
-      else if (CanLogin())
+      else if (CanOpen())
       {
         if (IsSessionNode(Node) || IsWorkspaceNode(Node))
         {
@@ -868,7 +927,7 @@ void __fastcall TLoginDialog::SessionTreeKeyPress(TObject * /*Sender*/, System::
       {
         Configuration->Usage->Inc(L"SiteIncrementalSearches");
       }
-      if (!SitesIncrementalSearch(FSitesIncrementalSearch + Key, false, false))
+      if (!SitesIncrementalSearch(FSitesIncrementalSearch + Key, false, false, false))
       {
         MessageBeep(MB_ICONHAND);
       }
@@ -886,7 +945,7 @@ void __fastcall TLoginDialog::SessionTreeKeyPress(TObject * /*Sender*/, System::
         {
           UnicodeString NewText =
             FSitesIncrementalSearch.SubString(1, FSitesIncrementalSearch.Length() - 1);
-          SitesIncrementalSearch(NewText, false, false);
+          SitesIncrementalSearch(NewText, false, false, false);
         }
         Key = 0;
       }
@@ -1168,9 +1227,9 @@ void __fastcall TLoginDialog::AboutActionExecute(TObject * /*Sender*/)
 void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
       bool &Handled)
 {
-  bool NewSiteSelected = IsNewSiteNode(SessionTree->Selected);
   bool SiteSelected = IsSiteNode(SessionTree->Selected);
   bool FolderOrWorkspaceSelected = IsFolderOrWorkspaceNode(SessionTree->Selected);
+  bool WorkspaceSelected = IsWorkspaceNode(SessionTree->Selected);
 
   TAction * Action = DebugNotNull(dynamic_cast<TAction *>(BasicAction));
   bool PrevEnabled = Action->Enabled;
@@ -1209,11 +1268,17 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   }
   else if (Action == LoginAction)
   {
-    LoginAction->Enabled = CanLogin();
+    LoginAction->Enabled = CanOpen();
+    LoginAction->Caption = FolderOrWorkspaceSelected ? LoadStr(LOGIN_OPEN) : LoadStr(LOGIN_LOGIN);
+    LoginAction->ImageIndex = FolderOrWorkspaceSelected ? (WorkspaceSelected ? OpenWorkspaceImageIndex : OpenFolderImageIndex) : LoginImageIndex;
+    UpdateLoginButton();
   }
   else if (Action == PuttyAction)
   {
-    Action->Enabled = (NewSiteSelected || SiteSelected) && CanLogin() && !GetSessionData()->Tunnel;
+    TSessionData * Data = GetSessionData();
+    Action->Enabled =
+      (IsSiteAndCanOpen() && !Data->IsLocalBrowser && !Data->Tunnel) ||
+      (IsFolderOrWorkspaceAndCanOpen() && IsFolderNode(SessionTree->Selected));
   }
   else if (Action == SaveSessionAction)
   {
@@ -1284,15 +1349,26 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
 //---------------------------------------------------------------------------
 bool __fastcall TLoginDialog::IsCloneToNewSiteDefault()
 {
-  return !FEditing && !FRenaming && IsSiteNode(SessionTree->Selected) && !StoredSessions->CanLogin(GetSessionData());
+  return !FEditing && !FRenaming && IsSiteNode(SessionTree->Selected) && !StoredSessions->CanOpen(GetSessionData());
 }
 //---------------------------------------------------------------------------
-bool __fastcall TLoginDialog::CanLogin()
+bool TLoginDialog::IsSiteAndCanOpen()
 {
   TSessionData * Data = GetSessionData();
   return
-    ((Data != NULL) && StoredSessions->CanLogin(Data) && !FEditing) ||
-    (IsFolderOrWorkspaceNode(SessionTree->Selected) && HasNodeAnySession(SessionTree->Selected, true));
+    ((Data != NULL) && StoredSessions->CanOpen(Data) && !FEditing);
+}
+//---------------------------------------------------------------------------
+bool TLoginDialog::IsFolderOrWorkspaceAndCanOpen()
+{
+  return IsFolderOrWorkspaceNode(SessionTree->Selected) && HasNodeAnySession(SessionTree->Selected, true);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TLoginDialog::CanOpen()
+{
+  return
+    IsSiteAndCanOpen() ||
+    IsFolderOrWorkspaceAndCanOpen();
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::Idle()
@@ -1342,8 +1418,8 @@ bool __fastcall TLoginDialog::Execute(TList * DataList)
   // Not calling LoadState here.
   // It's redundant and does not work anyway, see comment in the method.
   int AResult = ShowModal();
-  // When CanLogin is false, the DefaultResult() will fail finding a default button.
-  bool Result = CanLogin() && (AResult == DefaultResult());
+  // When CanOpen is false, the DefaultResult() will fail finding a default button.
+  bool Result = CanOpen() && (AResult == DefaultResult());
   SaveState();
   if (Result)
   {
@@ -1603,7 +1679,7 @@ void __fastcall TLoginDialog::CMDialogKey(TWMKeyDown & Message)
     {
       TShiftState Shift = KeyDataToShiftState(Message.KeyData);
       bool Reverse = Shift.Contains(ssShift);
-      if (!SitesIncrementalSearch(FSitesIncrementalSearch, true, Reverse))
+      if (!SitesIncrementalSearch(FSitesIncrementalSearch, true, Reverse, true))
       {
         MessageBeep(MB_ICONHAND);
       }
@@ -1797,7 +1873,7 @@ void __fastcall TLoginDialog::SendToHookActionExecute(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TLoginDialog::HasNodeAnySession(TTreeNode * Node, bool NeedCanLogin)
+bool __fastcall TLoginDialog::HasNodeAnySession(TTreeNode * Node, bool NeedCanOpen)
 {
   bool Result = false;
   TTreeNode * ANode = Node->GetNext();
@@ -1805,7 +1881,7 @@ bool __fastcall TLoginDialog::HasNodeAnySession(TTreeNode * Node, bool NeedCanLo
   {
     Result =
       IsSessionNode(ANode) &&
-      (!NeedCanLogin || StoredSessions->CanLogin(GetNodeSession(ANode)));
+      (!NeedCanOpen || StoredSessions->CanOpen(GetNodeSession(ANode)));
     ANode = ANode->GetNext();
   }
   return Result;
@@ -1861,8 +1937,8 @@ void __fastcall TLoginDialog::FormCloseQuery(TObject * /*Sender*/,
   // CanClose test is now probably redundant,
   // once we have a fallback to LoginButton in DefaultResult
   CanClose = EnsureNotEditing();
-  // When CanLogin is false, the DefaultResult() will fail finding a default button
-  if (CanClose && CanLogin() && (ModalResult == DefaultResult()))
+  // When CanOpen is false, the DefaultResult() will fail finding a default button
+  if (CanClose && CanOpen() && (ModalResult == DefaultResult()))
   {
     SaveDataList(FDataList);
   }
@@ -2086,7 +2162,8 @@ int __fastcall TLoginDialog::FtpsToIndex(TFtps Ftps)
 //---------------------------------------------------------------------------
 TFtps __fastcall TLoginDialog::GetFtps()
 {
-  int Index = ((GetFSProtocol(false) == fsWebDAV) ? WebDavsCombo->ItemIndex : FtpsCombo->ItemIndex);
+  TFSProtocol FSProtocol = GetFSProtocol(false);
+  int Index = (((FSProtocol == fsWebDAV) || (FSProtocol == fsS3)) ? WebDavsCombo->ItemIndex : FtpsCombo->ItemIndex);
   TFtps Ftps;
   switch (Index)
   {
@@ -2124,15 +2201,16 @@ int __fastcall TLoginDialog::DefaultPort()
 //---------------------------------------------------------------------------
 void TLoginDialog::UpdateS3Credentials()
 {
-  if (S3CredentialsEnvCheck->Checked)
+  if (S3CredentialsEnvCheck2->Checked)
   {
-    UserNameEdit->Text = S3EnvUserName();
-    PasswordEdit->Text = S3EnvPassword();
+    UnicodeString S3Profile = GetS3Profile();
+    UserNameEdit->Text = S3EnvUserName(S3Profile);
+    PasswordEdit->Text = S3EnvPassword(S3Profile);
     // Is not set when viewing stored session.
     // We do this, so that when the checkbox is checked and unchecked, the token is preserved, the way username and password are.
     if (FSessionData != NULL)
     {
-      FSessionData->S3SessionToken = S3EnvSessionToken();
+      FSessionData->S3SessionToken = S3EnvSessionToken(S3Profile);
     }
   }
 }
@@ -2145,26 +2223,27 @@ void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
     {
       // Note that this happens even when loading the session
       // But the values will get overwritten.
-      FtpsCombo->ItemIndex = FtpsToIndex(ftpsImplicit);
+      WebDavsCombo->ItemIndex = FtpsToIndex(ftpsImplicit);
       HostNameEdit->Text = S3HostName;
     }
     else
     {
       try
       {
+        UnicodeString S3Profile = GetS3Profile();
         if (HostNameEdit->Text == S3HostName)
         {
           HostNameEdit->Clear();
         }
-        if (UserNameEdit->Text == S3EnvUserName())
+        if (UserNameEdit->Text == S3EnvUserName(S3Profile))
         {
           UserNameEdit->Clear();
         }
-        if (PasswordEdit->Text == S3EnvPassword())
+        if (PasswordEdit->Text == S3EnvPassword(S3Profile))
         {
           PasswordEdit->Clear();
         }
-        if ((FSessionData != NULL) && (FSessionData->S3SessionToken == S3EnvSessionToken()))
+        if ((FSessionData != NULL) && (FSessionData->S3SessionToken == S3EnvSessionToken(S3Profile)))
         {
           FSessionData->S3SessionToken = UnicodeString();
         }
@@ -2175,9 +2254,15 @@ void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
       }
     }
 
-    S3CredentialsEnvCheck->Checked = false;
+    S3CredentialsEnvCheck2->Checked = false;
   }
 
+  UpdatePortWithProtocol();
+  DataChange(Sender);
+}
+//---------------------------------------------------------------------------
+void TLoginDialog::UpdatePortWithProtocol()
+{
   int ADefaultPort = DefaultPort();
   if (!NoUpdate && FUpdatePortWithProtocol)
   {
@@ -2195,6 +2280,11 @@ void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
     }
   }
   FDefaultPort = ADefaultPort;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::EncryptionComboChange(TObject * Sender)
+{
+  UpdatePortWithProtocol();
   DataChange(Sender);
 }
 //---------------------------------------------------------------------------
@@ -2656,7 +2746,7 @@ void __fastcall TLoginDialog::ImportActionExecute(TObject * /*Sender*/)
       SessionTree->Items->Clear();
       Configuration->Import(OpenDialog->FileName);
       // Similar to TPreferencesDialog::CustomIniFileStorageChanged
-      ExecuteShellChecked(Application->ExeName, EmptyStr);
+      ExecuteSelf(EmptyStr);
       TerminateApplication();
     }
   }
@@ -2674,10 +2764,14 @@ void __fastcall TLoginDialog::ResetSitesIncrementalSearch()
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TLoginDialog::SitesIncrementalSearch(const UnicodeString & Text,
-  bool SkipCurrent, bool Reverse)
+bool __fastcall TLoginDialog::SitesIncrementalSearch(
+  const UnicodeString & Text, bool SkipCurrent, bool Reverse, bool Expanding)
 {
-  TTreeNode * Node = SearchSite(Text, false, SkipCurrent, Reverse);
+  TTreeNode * Node = NULL;
+  if (!Expanding)
+  {
+    Node = SearchSite(Text, false, SkipCurrent, Reverse);
+  }
   if (Node == NULL)
   {
     Node = SearchSite(Text, true, SkipCurrent, Reverse);
@@ -3053,10 +3147,13 @@ void __fastcall TLoginDialog::PuttyActionExecute(TObject * /*Sender*/)
   // in case user manages to release it before following finishes
   bool Close = !OpenInNewWindow();
 
-  std::unique_ptr<TSessionData> Data(CloneSelectedSession());
-  // putty does not support resolving environment variables in session settings
-  Data->ExpandEnvironmentVariables();
-  OpenSessionInPutty(GUIConfiguration->PuttyPath, Data.get());
+  std::unique_ptr<TList> DataList(new TList());
+  SaveDataList(DataList.get());
+  for (int Index = 0; Index < DataList->Count; Index++)
+  {
+    TSessionData * Data = reinterpret_cast<TSessionData *>(DataList->Items[Index]);
+    OpenSessionInPutty(Data);
+  }
 
   if (Close)
   {
@@ -3201,7 +3298,13 @@ void __fastcall TLoginDialog::PanelMouseDown(TObject *, TMouseButton, TShiftStat
   CountClicksForWindowPrint(this);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::S3CredentialsEnvCheckClick(TObject *)
+void __fastcall TLoginDialog::S3CredentialsEnvCheck2Click(TObject *)
+{
+  UpdateS3Credentials();
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::S3ProfileComboChange(TObject *)
 {
   UpdateS3Credentials();
   UpdateControls();

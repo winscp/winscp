@@ -60,21 +60,19 @@ char *dupvprintf_inner(char *buf, size_t oldlen, size_t *sizeptr,
 {
     size_t size = *sizeptr;
     sgrowarrayn_nm(buf, size, oldlen, 512);
+#if defined _DEBUG && defined IDE
+    // WORKAROUND
+    // CodeGuard breaks execution when vsnprintf function returns -1.
+    // Prevent that by making the buffer large enough not to ever return -1.
+    // (particularly when called from verify_ssh_host_key for keydisp)
+    sgrowarrayn_nm(buf, size, oldlen, 2048);
+#endif
 
     while (1) {
         va_list aq;
         va_copy(aq, ap);
         { // WINSCP
-#if defined _DEBUG && defined IDE
-// CodeGuard hangs in v*printf functions. But while it's possible to disable CodeGuard in vsprintf, it's not possible for vsnprintf.
-// We never want to distribute this version of the code, hence the IDE condition.
-// Put this into WinSCP.cgi along with WinSCP.exe
-// [vsprintf]
-// Disable=yes
-        int len = vsprintf(buf + oldlen, fmt, aq);
-#else
         int len = vsnprintf(buf + oldlen, size - oldlen, fmt, aq);
-#endif
         va_end(aq);
 
         if (len >= 0 && len < size) {

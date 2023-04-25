@@ -17,6 +17,7 @@
 #include <shlobj.h>
 #include <System.IOUtils.hpp>
 #include <System.StrUtils.hpp>
+#include <System.DateUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -120,11 +121,11 @@ void __fastcall TConfiguration::Default()
   FParallelDurationThreshold = 10;
   FMimeTypes = UnicodeString();
   FCertificateStorage = EmptyStr;
+  FChecksumCommands = EmptyStr;
   FDontReloadMoreThanSessions = 1000;
   FScriptProgressFileNameLimit = 25;
   FKeyVersion = 0;
   CollectUsage = FDefaultCollectUsage;
-  FExperimentalFeatures = false;
 
   FLogging = false;
   FPermanentLogging = false;
@@ -191,7 +192,7 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool & SessionList)
   }
   else if (Storage == stNul)
   {
-    Result = TIniFileStorage::CreateFromPath(INI_NUL);
+    Result = TIniFileStorage::CreateNul();
   }
   else
   {
@@ -262,7 +263,6 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(Integer,  KeyVersion); \
     KEY(Bool,     CollectUsage); \
     KEY(String,   CertificateStorage); \
-    KEY(Bool,     ExperimentalFeatures); \
   ); \
   BLOCK(L"Logging", CANCREATE, \
     KEYEX(Bool,  PermanentLogging, L"Logging"); \
@@ -1001,6 +1001,79 @@ bool __fastcall TConfiguration::GetIsUnofficial()
   #endif
 }
 //---------------------------------------------------------------------------
+static TDateTime GetBuildDate()
+{
+  UnicodeString BuildDateStr = __DATE__;
+  UnicodeString MonthStr = CutToChar(BuildDateStr, L' ', true);
+  int Month = ParseShortEngMonthName(MonthStr);
+  int Day = StrToInt(CutToChar(BuildDateStr, L' ', true));
+  int Year = StrToInt(Trim(BuildDateStr));
+  TDateTime Result = EncodeDateVerbose(static_cast<Word>(Year), static_cast<Word>(Month), static_cast<Word>(Day));
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString TConfiguration::GetFullVersion()
+{
+  UnicodeString Result = Version;
+
+  UnicodeString AReleaseType = GetReleaseType();
+  if (DebugAlwaysTrue(!AReleaseType.IsEmpty()) &&
+      !SameText(AReleaseType, L"stable") &&
+      !SameText(AReleaseType, L"development"))
+  {
+    Result += L" " + AReleaseType;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+static UnicodeString GetUnofficialBuildTag()
+{
+  DebugAssert(Configuration->IsUnofficial);
+  UnicodeString Result;
+  #ifdef _DEBUG
+  Result = LoadStr(VERSION_DEBUG_BUILD);
+  #else
+  Result = LoadStr(VERSION_DEV_BUILD);
+  #endif
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString TConfiguration::GetVersionStrHuman()
+{
+  TGuard Guard(FCriticalSection);
+  try
+  {
+    TDateTime BuildDate = GetBuildDate();
+
+    UnicodeString FullVersion = GetFullVersion();
+
+    if (IsUnofficial)
+    {
+      UnicodeString BuildStr = GetUnofficialBuildTag();
+      FullVersion += L" " + BuildStr;
+    }
+
+    UnicodeString DateStr;
+    TDateTime ANow = Now();
+    if (BuildDate < ANow)
+    {
+      DateStr = FormatRelativeTime(ANow, BuildDate, true);
+    }
+    else
+    {
+      DateStr = FormatDateTime(L"ddddd", BuildDate);
+    }
+
+    UnicodeString Result = FORMAT(L"%s (%s)", (FullVersion, DateStr));
+
+    return Result;
+  }
+  catch (Exception &E)
+  {
+    throw ExtException(&E, L"Can't get application version");
+  }
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetVersionStr()
 {
   TGuard Guard(FCriticalSection);
@@ -1013,12 +1086,10 @@ UnicodeString __fastcall TConfiguration::GetVersionStr()
     }
     else
     {
-      #ifdef _DEBUG
-      BuildStr = LoadStr(VERSION_DEBUG_BUILD);
-      #else
-      BuildStr = LoadStr(VERSION_DEV_BUILD);
-      #endif
+      BuildStr = GetUnofficialBuildTag();
     }
+
+    UnicodeString FullVersion = GetFullVersion();
 
     int Build = LOWORD(FixedApplicationInfo->dwFileVersionLS);
     if (Build > 0)
@@ -1026,29 +1097,15 @@ UnicodeString __fastcall TConfiguration::GetVersionStr()
       BuildStr += L" " + IntToStr(Build);
     }
 
-    UnicodeString BuildDate = __DATE__;
-    UnicodeString MonthStr = CutToChar(BuildDate, L' ', true);
-    int Month = ParseShortEngMonthName(MonthStr);
-    int Day = StrToInt(CutToChar(BuildDate, L' ', true));
-    int Year = StrToInt(Trim(BuildDate));
-    UnicodeString DateStr = FORMAT(L"%d-%2.2d-%2.2d", (Year, Month, Day));
+    UnicodeString DateStr = FormatDateTime(L"yyyy-mm-dd", GetBuildDate());
     AddToList(BuildStr, DateStr, L" ");
-
-    UnicodeString FullVersion = Version;
-
-    UnicodeString AReleaseType = GetReleaseType();
-    if (DebugAlwaysTrue(!AReleaseType.IsEmpty()) &&
-        !SameText(AReleaseType, L"stable") &&
-        !SameText(AReleaseType, L"development"))
-    {
-      FullVersion += L" " + AReleaseType;
-    }
 
     UnicodeString Result = FMTLOAD(VERSION2, (FullVersion, BuildStr));
 
-    #ifndef BUILD_OFFICIAL
-    Result += L" " + LoadStr(VERSION_DONT_DISTRIBUTE);
-    #endif
+    if (IsUnofficial)
+    {
+      Result += L" " + LoadStr(VERSION_DONT_DISTRIBUTE);
+    }
 
     return Result;
   }
@@ -1280,7 +1337,7 @@ UnicodeString __fastcall TConfiguration::GetIniFileStorageName(bool ReadingOnly)
   }
   else if (!FCustomIniFileStorageName.IsEmpty())
   {
-    Result = FCustomIniFileStorageName;
+    Result = ExpandEnvironmentVariables(FCustomIniFileStorageName);
   }
   else
   {
@@ -1309,9 +1366,14 @@ UnicodeString __fastcall TConfiguration::GetPuttySessionsSubKey()
   return StoredSessionsSubKey;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TConfiguration::GetPuttySessionsKey()
+UnicodeString TConfiguration::GetPuttySessionsKey(const UnicodeString & RootKey)
 {
-  return PuttyRegistryStorageKey + L"\\" + PuttySessionsSubKey;
+  return RootKey + L"\\" + PuttySessionsSubKey;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TConfiguration::DoGetPuttySessionsKey()
+{
+  return GetPuttySessionsKey(PuttyRegistryStorageKey);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetStoredSessionsSubKey()
@@ -1338,6 +1400,7 @@ void __fastcall TConfiguration::MoveStorage(TStorage AStorage, const UnicodeStri
 {
   if ((FStorage != AStorage) ||
       ((FStorage == stIniFile) && !FIniFileStorageName.IsEmpty()) ||
+      // Not expanding, as we want to allow change from explicit path to path with variables and vice versa
       !IsPathToSameFile(FCustomIniFileStorageName, ACustomIniFileStorageName))
   {
     TStorage StorageBak = FStorage;
@@ -1461,8 +1524,8 @@ bool __fastcall TConfiguration::AnyFilezillaSessionForImport(TStoredSessionList 
   try
   {
     UnicodeString Error;
-    std::unique_ptr<TStoredSessionList> Sesssions(SelectFilezillaSessionsForImport(Sessions, Error));
-    return (Sesssions->Count > 0);
+    std::unique_ptr<TStoredSessionList> SessionsForImport(SelectFilezillaSessionsForImport(Sessions, Error));
+    return (SessionsForImport->Count > 0);
   }
   catch (...)
   {

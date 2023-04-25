@@ -64,7 +64,7 @@ UnicodeString __fastcall TProgressForm::ProgressStr(
   UnicodeString Result = LoadStr(Id);
   if (SynchronizeProgress != NULL)
   {
-    Result = FORMAT(L"%s - %s", (LoadStr(SYNCHRONIZE_PROGRESS_SYNCHRONIZE2), Result));
+    Result = LoadStr(SYNCHRONIZE_PROGRESS_SYNCHRONIZE2) + TitleSeparator + Result;
   }
   if (!IsIndeterminate(SynchronizeProgress, ProgressData))
   {
@@ -210,6 +210,7 @@ void __fastcall TProgressForm::UpdateControls()
 
       case foDelete:
         Animation = ((FData.Side == osRemote) ? DeleteRemoteToRecycleBin : DeleteLocalToRecycleBin) ? L"Recycle" : L"Delete";
+        MoveToQueueImageIndex = 10;
         break;
 
       case foCalculateSize:
@@ -222,15 +223,21 @@ void __fastcall TProgressForm::UpdateControls()
         Animation = "SetProperties";
         break;
 
+      case foRemoteCopy:
+        Animation = "DuplicateLtoR";
+        break;
+
+      case foRemoteMove:
+        Animation = "MoveLtoR";
+        break;
+
       default:
         DebugAssert(
           (FData.Operation == foCustomCommand) ||
           (FData.Operation == foGetProperties) ||
           (FData.Operation == foCalculateChecksum) ||
           (FData.Operation == foLock) ||
-          (FData.Operation == foUnlock) ||
-          (FData.Operation == foRemoteCopy) ||
-          (FData.Operation == foRemoteMove));
+          (FData.Operation == foUnlock));
         break;
     }
 
@@ -262,6 +269,7 @@ void __fastcall TProgressForm::UpdateControls()
     PathLabel->Caption =
       LoadStr((FData.Operation == foCalculateSize) ? PROGRESS_PATH_LABEL : PROGRESS_FILE_LABEL);
 
+    DebugAssert(!MoveToQueueItem->Visible || (MoveToQueueImageIndex >= 0));
     MoveToQueueItem->ImageIndex = MoveToQueueImageIndex;
 
     FLastOperation = FData.Operation;
@@ -342,7 +350,8 @@ void __fastcall TProgressForm::UpdateControls()
     if (FData.TotalSizeSet)
     {
       UnicodeString TimeLeftCaption;
-      if (CanShowTimeEstimate(FData.StartTime))
+      bool CanShow = CanShowTimeEstimate(FData.StartTime);
+      if (CanShow)
       {
         TDateTime TimeLeft;
         if (SynchronizeProgress != NULL)
@@ -361,9 +370,11 @@ void __fastcall TProgressForm::UpdateControls()
       }
       TimeLeftLabel->Caption = TimeLeftCaption;
     }
-    TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, FData.TimeElapsed());
+    TDateTime Elapsed = FData.TimeElapsed();
+    TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, Elapsed);
     BytesTransferredLabel->Caption = FormatBytes(FData.TotalTransferred);
-    CPSLabel->Caption = FORMAT(L"%s/s", (FormatBytes(FData.CPS())));
+    int CPS = FData.CPS();
+    CPSLabel->Caption = FORMAT(L"%s/s", (FormatBytes(CPS)));
     FileProgress->Position = FData.TransferProgress();
     FileProgress->Hint = FORMAT(L"%d%%", (FileProgress->Position));
   }

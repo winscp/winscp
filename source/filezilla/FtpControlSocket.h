@@ -107,6 +107,7 @@ public:
   virtual void OnSend(int nErrorCode);
 
 protected:
+  class CFileTransferData;
   // Called by OnTimer()
   void ResumeTransfer();
   void CheckForTimeout();
@@ -117,6 +118,8 @@ protected:
   void SetVerifyCertResult(int nResult, t_SslCertData * pData);
   void ResetOperation(int nSuccessful = -1);
   void ResetTransferSocket(int Error);
+  int OpenTransferFile(CFileTransferData * pData);
+  int ActivateTransferSocket(CFileTransferData * pData);
 
   void DoClose(int nError = 0);
   int TryGetReplyCode();
@@ -188,7 +191,6 @@ protected:
   class CLogonData;
   class CListData;
   class CListFileData;
-  class CFileTransferData;
   class CMakeDirData;
 
 #ifndef MPEXT_NO_ZLIB

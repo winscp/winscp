@@ -39,6 +39,7 @@ __published:
   void __fastcall OKButtonMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift,
           int X, int Y);
   void __fastcall IconPaintBoxPaint(TObject *Sender);
+  void __fastcall FormKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
 private:
   TConfiguration * FConfiguration;
   TNotifyEvent FOnRegistrationLink;

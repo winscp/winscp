@@ -85,7 +85,6 @@ type
     procedure ResetDrive(Drive: string);
     procedure SetHonorDrivePolicy(Value: Boolean);
     function GetFirstFixedDrive: Char;
-    procedure NeedData;
     procedure Load;
     function AddDrive(Drive: string): TDriveInfoRec;
 
@@ -93,6 +92,7 @@ type
     function Get(Drive: string): TDriveInfoRec;
     property SpecialFolder[Folder: TSpecialFolder]: PSpecialFolderRec read GetFolder;
 
+    procedure NeedData;
     function AnyValidPath: string;
     function GetDriveKey(Path: string): string;
     function GetDriveRoot(Drive: string): string;
@@ -466,6 +466,10 @@ end;
 function TDriveInfo.Get(Drive: string): TDriveInfoRec;
 begin
   NeedData;
+
+  // We might want to wait for ReadyDrives to beempty before returning
+  // (or even better do that only in DriveReady getter)
+
   if not FData.TryGetValue(Drive, Result) then
   begin
     Assert(IsUncPath(Drive));

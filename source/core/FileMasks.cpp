@@ -1038,7 +1038,7 @@ UnicodeString __fastcall TCustomCommand::Complete(const UnicodeString & Command,
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommand::DelimitReplacement(UnicodeString & Replacement, wchar_t Quote)
 {
-  Replacement = ShellDelimitStr(Replacement, Quote);
+  Replacement = DelimitStr(Replacement, Quote);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommand::Validate(const UnicodeString & Command)
@@ -1298,6 +1298,7 @@ int __fastcall TFileCustomCommand::PatternLen(const UnicodeString & Command, int
     case L'@':
     case L'u':
     case L'p':
+    case L'k':
     case L'#':
     case L'/':
     case L'&':
@@ -1357,6 +1358,13 @@ bool __fastcall TFileCustomCommand::PatternReplacement(
     if (FData.SessionData != NULL)
     {
       Replacement = IntToStr(FData.SessionData->PortNumber);
+    }
+  }
+  else if (SameText(Pattern, L"!k"))
+  {
+    if (FData.SessionData != NULL)
+    {
+      Replacement = FData.SessionData->ResolvePublicKeyFile();
     }
   }
   else if (Pattern == L"!/")

@@ -53,6 +53,7 @@ __fastcall TUnixDirView::TUnixDirView(TComponent* Owner)
   FFullLoad = false;
   FDriveView = NULL;
   FInvalidNameChars = L"/";
+  FAnnouncedDriveViewState = NULL;
   DragDropFilesEx->PreferCopy = true;
 }
 //---------------------------------------------------------------------------
@@ -107,14 +108,15 @@ void __fastcall TUnixDirView::ExecuteFile(TListItem * Item)
 {
 #ifndef DESIGN_ONLY
   ASSERT_VALID_ITEM;
-  if (ITEMFILE->IsDirectory ||
-      (!Terminal->ResolvingSymlinks && !Terminal->IsEncryptingFiles()))
+  TResolvedDoubleClickAction Action = WinConfiguration->ResolveDoubleClickAction(ITEMFILE->IsDirectory, Terminal);
+  if (Action == rdcaChangeDir)
   {
     PathChanging(true);
     ChangeDirectory(ITEMFILE->FileName);
   }
   else
   {
+    DebugAssert(Action == rdcaOpen);
     if (ItemFocused != Item) ItemFocused = Item;
     DisplayPropertiesMenu();
   }
@@ -229,11 +231,18 @@ UnicodeString __fastcall TUnixDirView::ItemFileName(TListItem * Item)
 #endif
 }
 //---------------------------------------------------------------------------
+#ifndef DESIGN_ONLY
+inline __int64 GetItemFileSize(TRemoteFile * File)
+{
+  return (File->CalculatedSize >= 0) ? File->CalculatedSize : File->Size;
+}
+#endif
+//---------------------------------------------------------------------------
 __int64 __fastcall TUnixDirView::ItemFileSize(TListItem * Item)
 {
 #ifndef DESIGN_ONLY
   ASSERT_VALID_ITEM;
-  return ITEMFILE->Size;
+  return GetItemFileSize(ITEMFILE);
 #else
   DebugUsedParam(Item);
   return 0;
@@ -358,7 +367,7 @@ void __fastcall TUnixDirView::LoadFiles()
         {
           Item->Caption = File->FileName;
         }
-        if (FFullLoad)
+        if (DebugAlwaysFalse(FFullLoad))
         {
           // this is out of date
           // (missing columns and does not update then file properties are loaded)
@@ -398,10 +407,20 @@ void __fastcall TUnixDirView::GetDisplayInfo(TListItem * Item, tagLVITEMW &DispI
       switch (DispInfo.iSubItem) {
         case uvName: Value = File->FileName; break;
         case uvSize:
-          // expanded from ?: to avoid memory leaks
-          if (!File->IsDirectory)
           {
-            Value = FormatPanelBytes(File->Size, FormatSizeBytes);
+            __int64 Size;
+            if (!File->IsDirectory)
+            {
+              Size = File->Size;
+            }
+            else
+            {
+              Size = File->CalculatedSize;
+            }
+            if (Size >= 0)
+            {
+              Value = FormatPanelBytes(Size, FormatSizeBytes);
+            }
           }
           break;
         case uvChanged: Value = File->UserModificationStr; break;
@@ -575,6 +594,64 @@ void __fastcall TUnixDirView::ReplaceTerminal(TTerminal * value)
 }
 #endif
 //---------------------------------------------------------------------------
+class TUnixDirViewState : public TObject
+{
+public:
+  std::unique_ptr<TObject> CustomDirViewState;
+  std::unique_ptr<TObject> DriveViewState;
+};
+//---------------------------------------------------------------------------
+TObject * __fastcall TUnixDirView::SaveState()
+{
+  TUnixDirViewState * State = new TUnixDirViewState();
+  State->CustomDirViewState.reset(TCustomUnixDirView::SaveState());
+  if (FDriveView != NULL)
+  {
+    State->DriveViewState.reset(FDriveView->SaveState());
+  }
+  return State;
+}
+//---------------------------------------------------------------------------
+void __fastcall TUnixDirView::AnnounceState(TObject * State)
+{
+  TObject * CustomDirViewState = NULL;
+  FAnnouncedDriveViewState = NULL;
+  if (State != NULL)
+  {
+    TUnixDirViewState * UnixDirViewState = dynamic_cast<TUnixDirViewState *>(State);
+    if (UnixDirViewState != NULL)
+    {
+      FAnnouncedDriveViewState = UnixDirViewState->DriveViewState.get();
+      CustomDirViewState = UnixDirViewState->CustomDirViewState.get();
+    }
+    else
+    {
+      // It might be TCustomDirView state from CreateDirViewStateForFocusedItem.
+      CustomDirViewState = State;
+    }
+  }
+  TCustomDirView::AnnounceState(CustomDirViewState);
+}
+//---------------------------------------------------------------------------
+void __fastcall TUnixDirView::RestoreState(TObject * State)
+{
+  TObject * CustomDirViewState = NULL;
+  if (State != NULL)
+  {
+    TUnixDirViewState * UnixDirViewState = dynamic_cast<TUnixDirViewState *>(State);
+    if (UnixDirViewState != NULL)
+    {
+      CustomDirViewState = UnixDirViewState->CustomDirViewState.get();
+    }
+    else
+    {
+      // See the comment in AnnounceState
+      CustomDirViewState = State;
+    }
+  }
+  TCustomDirView::RestoreState(CustomDirViewState);
+}
+//---------------------------------------------------------------------------
 void __fastcall TUnixDirView::DoStartReadDirectory(TObject * /*Sender*/)
 {
   DebugAssert(!FLoading);
@@ -696,59 +773,66 @@ int __stdcall CompareFile(TListItem * Item1, TListItem * Item2, TUnixDirView * D
   {
     Result = 0;
 
-    switch (DirView->SortColumn)
+    if (File1->IsDirectory && DirView->AlwaysSortDirectoriesByName)
     {
-      case uvName:
-        // fallback
-        break;
-
-      case uvSize:
-        Result = COMPARE_NUMBER(File1->Size, File2->Size);
-        break;
-
-      case uvChanged:
-        Result = COMPARE_NUMBER(File1->Modification, File2->Modification);
-        break;
-
-      case uvRights:
-        Result = AnsiCompareText(File1->RightsStr, File2->RightsStr);
-        break;
-
-      case uvOwner:
-        Result = File1->Owner.Compare(File2->Owner);
-        break;
-
-      case uvGroup:
-        Result = File1->Group.Compare(File2->Group);
-        break;
-
-      case uvExt:
-        // Duplicated in uvType branch
-        if (!File1->IsDirectory)
-        {
-          Result = CompareLogicalText(File1->Extension, File2->Extension, DirView->NaturalOrderNumericalSorting);
-        }
-        else
-        {
+      // fallback
+    }
+    else
+    {
+      switch (DirView->SortColumn)
+      {
+        case uvName:
           // fallback
-        }
-        break;
+          break;
 
-      case uvLinkTarget:
-        Result = CompareLogicalText(File1->LinkTo, File2->LinkTo, DirView->NaturalOrderNumericalSorting);
-        break;
+        case uvSize:
+          Result = COMPARE_NUMBER(GetItemFileSize(File1), GetItemFileSize(File2));
+          break;
 
-      case uvType:
-        Result = CompareLogicalText(File1->TypeName, File2->TypeName, DirView->NaturalOrderNumericalSorting);
-        // fallback to uvExt
-        if ((Result == 0) && !File1->IsDirectory)
-        {
-          Result = CompareLogicalText(File1->Extension, File2->Extension, DirView->NaturalOrderNumericalSorting);
-        }
-        break;
+        case uvChanged:
+          Result = COMPARE_NUMBER(File1->Modification, File2->Modification);
+          break;
 
-      default:
-        DebugFail();
+        case uvRights:
+          Result = AnsiCompareText(File1->RightsStr, File2->RightsStr);
+          break;
+
+        case uvOwner:
+          Result = File1->Owner.Compare(File2->Owner);
+          break;
+
+        case uvGroup:
+          Result = File1->Group.Compare(File2->Group);
+          break;
+
+        case uvExt:
+          // Duplicated in uvType branch
+          if (!File1->IsDirectory)
+          {
+            Result = CompareLogicalText(File1->Extension, File2->Extension, DirView->NaturalOrderNumericalSorting);
+          }
+          else
+          {
+            // fallback
+          }
+          break;
+
+        case uvLinkTarget:
+          Result = CompareLogicalText(File1->LinkTo, File2->LinkTo, DirView->NaturalOrderNumericalSorting);
+          break;
+
+        case uvType:
+          Result = CompareLogicalText(File1->TypeName, File2->TypeName, DirView->NaturalOrderNumericalSorting);
+          // fallback to uvExt
+          if ((Result == 0) && !File1->IsDirectory)
+          {
+            Result = CompareLogicalText(File1->Extension, File2->Extension, DirView->NaturalOrderNumericalSorting);
+          }
+          break;
+
+        default:
+          DebugFail();
+      }
     }
 
     if (Result == 0)
@@ -887,7 +971,7 @@ void __fastcall TUnixDirView::InternalEdit(const tagLVITEMW & HItem)
   if (ITEMFILE->FileName != HItem.pszText)
   {
     FSelectFile = HItem.pszText;
-    Terminal->RenameFile(ITEMFILE, HItem.pszText, true);
+    Terminal->RenameFile(ITEMFILE, HItem.pszText);
   }
 #else
   DebugUsedParam(HItem);
@@ -1026,4 +1110,16 @@ void __fastcall TUnixDirView::UpdatePathLabelCaption()
     PathLabel->Caption = UnicodeString();
     PathLabel->Mask = UnicodeString();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TUnixDirView::SetItemCalculatedSize(TListItem * Item, __int64 Size)
+{
+  __int64 OldSize;
+  #ifndef DESIGN_ONLY
+  OldSize = ITEMFILE->CalculatedSize;
+  ITEMFILE->CalculatedSize = Size;
+  #else
+  OldSize = -1;
+  #endif
+  ItemCalculatedSizeUpdated(Item, OldSize, Size);
 }

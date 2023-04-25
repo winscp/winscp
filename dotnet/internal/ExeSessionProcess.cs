@@ -27,6 +27,7 @@ namespace WinSCP
         public int ExitCode { get { return _process.ExitCode; } }
         public PipeStream StdOut { get; set; }
         public Stream StdIn { get; set; }
+        public string ExecutablePath { get; }
 
         public static ExeSessionProcess CreateForSession(Session session)
         {
@@ -46,9 +47,9 @@ namespace WinSCP
 
             using (_logger.CreateCallstack())
             {
-                string executablePath = GetExecutablePath();
+                ExecutablePath = GetExecutablePath();
 
-                _logger.WriteLine("EXE executable path resolved to {0}", executablePath);
+                _logger.WriteLine("EXE executable path resolved to {0}", ExecutablePath);
 
                 string assemblyFilePath = _logger.GetAssemblyFilePath();
                 FileVersionInfo assemblyVersion = null;
@@ -57,7 +58,7 @@ namespace WinSCP
                     assemblyVersion = FileVersionInfo.GetVersionInfo(assemblyFilePath);
                 }
 
-                CheckVersion(executablePath, assemblyVersion);
+                CheckVersion(ExecutablePath, assemblyVersion);
 
                 string configSwitch;
                 if (_session.DefaultConfigurationInternal)
@@ -117,8 +118,8 @@ namespace WinSCP
                 }
 
                 _process = new Process();
-                _process.StartInfo.FileName = executablePath;
-                _process.StartInfo.WorkingDirectory = Path.GetDirectoryName(executablePath);
+                _process.StartInfo.FileName = ExecutablePath;
+                _process.StartInfo.WorkingDirectory = Path.GetDirectoryName(ExecutablePath);
                 _process.StartInfo.Arguments = arguments;
                 _process.StartInfo.UseShellExecute = false;
                 _process.Exited += ProcessExited;
@@ -924,29 +925,39 @@ namespace WinSCP
                 }
                 else
                 {
-                    if (!TryFindExecutableInPath(GetAssemblyPath(), out executablePath) &&
-                        !TryFindExecutableInPath(GetEntryAssemblyPath(), out executablePath) &&
-#if !NETSTANDARD
-                        !TryFindExecutableInPath(GetInstallationPath(RegistryHive.CurrentUser), out executablePath) &&
-                        !TryFindExecutableInPath(GetInstallationPath(RegistryHive.LocalMachine), out executablePath) &&
-#endif
-                        !TryFindExecutableInPath(GetDefaultInstallationPath(), out executablePath))
-                    {
-                        string entryAssemblyDesc = string.Empty;
-                        Assembly entryAssembly = Assembly.GetEntryAssembly();
-                        if (entryAssembly != null)
-                        {
-                            entryAssemblyDesc = $", nor the entry assembly {entryAssembly.GetName().Name} ({GetEntryAssemblyPath()})";
-                        }
-                        throw _logger.WriteException(
-                            new SessionLocalException(_session,
-                                string.Format(CultureInfo.CurrentCulture,
-                                    "The {0} executable was not found at location of the assembly {1} ({2}){3}, nor in an installation path. You may use Session.ExecutablePath property to explicitly set path to {0}.",
-                                    ExeExecutableFileName, Assembly.GetExecutingAssembly().GetName().Name, GetAssemblyPath(), entryAssemblyDesc)));
-                    }
+                    executablePath = FindExecutable(_session);
                 }
                 return executablePath;
             }
+        }
+
+        // Should be moved to Session class
+        internal static string FindExecutable(Session session)
+        {
+            Logger logger = session.Logger;
+            string executablePath;
+            if (!TryFindExecutableInPath(logger, GetAssemblyPath(logger), out executablePath) &&
+                !TryFindExecutableInPath(logger, GetEntryAssemblyPath(logger), out executablePath) &&
+#if !NETSTANDARD
+                !TryFindExecutableInPath(logger, GetInstallationPath(RegistryHive.CurrentUser), out executablePath) &&
+                !TryFindExecutableInPath(logger, GetInstallationPath(RegistryHive.LocalMachine), out executablePath) &&
+#endif
+                !TryFindExecutableInPath(logger, GetDefaultInstallationPath(), out executablePath))
+            {
+                string entryAssemblyDesc = string.Empty;
+                Assembly entryAssembly = Assembly.GetEntryAssembly();
+                if (entryAssembly != null)
+                {
+                    entryAssemblyDesc = $", nor the entry assembly {entryAssembly.GetName().Name} ({GetEntryAssemblyPath(logger)})";
+                }
+                throw logger.WriteException(
+                    new SessionLocalException(session,
+                        string.Format(CultureInfo.CurrentCulture,
+                            "The {0} executable was not found at location of the assembly {1} ({2}){3}, nor in an installation path. You may use Session.ExecutablePath property to explicitly set path to {0}.",
+                            ExeExecutableFileName, Assembly.GetExecutingAssembly().GetName().Name, GetAssemblyPath(logger), entryAssemblyDesc)));
+            }
+
+            return executablePath;
         }
 
         private static string GetDefaultInstallationPath()
@@ -973,7 +984,7 @@ namespace WinSCP
         }
 #endif
 
-        private bool TryFindExecutableInPath(string path, out string result)
+        private static bool TryFindExecutableInPath(Logger logger, string path, out string result)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -985,25 +996,25 @@ namespace WinSCP
                 if (File.Exists(executablePath))
                 {
                     result = executablePath;
-                    _logger.WriteLine("Executable found in {0}", executablePath);
+                    logger.WriteLine("Executable found in {0}", executablePath);
                 }
                 else
                 {
                     result = null;
-                    _logger.WriteLine("Executable not found in {0}", executablePath);
+                    logger.WriteLine("Executable not found in {0}", executablePath);
                 }
             }
             return (result != null);
         }
 
-        private string GetAssemblyPath()
+        private static string GetAssemblyPath(Logger logger)
         {
-            return DoGetAssemblyPath(_logger.GetAssemblyFilePath());
+            return DoGetAssemblyPath(logger.GetAssemblyFilePath());
         }
 
-        private string GetEntryAssemblyPath()
+        private static string GetEntryAssemblyPath(Logger logger)
         {
-            return DoGetAssemblyPath(_logger.GetEntryAssemblyFilePath());
+            return DoGetAssemblyPath(logger.GetEntryAssemblyFilePath());
         }
 
         private static string DoGetAssemblyPath(string codeBasePath)
@@ -1195,8 +1206,7 @@ namespace WinSCP
 
         public void WriteStatus()
         {
-            string executablePath = GetExecutablePath();
-            _logger.WriteLine("{0} - exists [{1}]", executablePath, File.Exists(executablePath));
+            _logger.WriteLine("{0} - exists [{1}]", ExecutablePath, File.Exists(ExecutablePath));
         }
 
         public void RequestCallstack()

@@ -548,6 +548,7 @@ void __fastcall TWinConfiguration::Default()
   FConfirmClosingSession = true;
   FDoubleClickAction = dcaEdit;
   FCopyOnDoubleClickConfirmation = false;
+  FAlwaysRespectDoubleClickAction = false;
   FDimmHiddenFiles = true;
   FRenameWholeName = false;
   FAutoStartSession = L"";
@@ -587,6 +588,7 @@ void __fastcall TWinConfiguration::Default()
   FPanelFont.FontStyle = 0;
   FPanelFont.FontCharset = DEFAULT_CHARSET;
   FNaturalOrderNumericalSorting = true;
+  FAlwaysSortDirectoriesByName = false;
   FFullRowSelect = false;
   FOfferedEditorAutoConfig = false;
   FVersionHistory = L"";
@@ -604,6 +606,7 @@ void __fastcall TWinConfiguration::Default()
   FExternalSessionInExistingInstance = true;
   FShowLoginWhenNoSession = true;
   FKeepOpenWhenNoSession = true;
+  FDefaultToNewRemoteTab = true;
   FLocalIconsByExt = false;
   FFlashTaskbar = true;
   FMaxSessions = 100;
@@ -624,6 +627,8 @@ void __fastcall TWinConfiguration::Default()
   UseIconUpdateThread = true;
   AllowWindowPrint = false;
   StoreTransition = stInit;
+  QueueTransferLimitMax = 9;
+  EditorCheckNotModified = false;
   FirstRun = StandardDatestamp();
 
   FEditor.Font.FontName = DefaultFixedWidthFontName;
@@ -646,6 +651,7 @@ void __fastcall TWinConfiguration::Default()
   FEditor.Encoding = CP_ACP;
   FEditor.WarnOnEncodingFallback = true;
   FEditor.WarnOrLargeFileSize = true;
+  FEditor.AutoFont = true;
 
   FQueueView.Height = 140;
   FQueueView.HeightPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
@@ -671,6 +677,7 @@ void __fastcall TWinConfiguration::Default()
   FUpdates.BetaVersions = asAuto;
   FUpdates.ShowOnStartup = true;
   FUpdates.AuthenticationEmail = L"";
+  FUpdates.Mode = EmptyStr;
   // for backward compatibility the default is decided based on value of ProxyHost
   FUpdates.ConnectionType = (TConnectionType)-1;
   FUpdates.ProxyHost = L""; // keep empty (see above)
@@ -695,8 +702,8 @@ void __fastcall TWinConfiguration::Default()
        "Preferences=1:TopDock:4+0,"
        "Sort=0:TopDock:5+0,"
        "Address=1:TopDock:1+0,"
-       "Updates=1:TopDock:4+416,"
-       "Transfer=1:TopDock:4+194,"
+       "Updates=1:TopDock:4+393,"
+       "Transfer=1:TopDock:4+171,"
        "CustomCommands=0:TopDock:7+0,") +
     PixelsPerInchToolbarValue;
   FScpExplorer.ToolbarsButtons = UnicodeString();
@@ -727,8 +734,8 @@ void __fastcall TWinConfiguration::Default()
        "Session=0:TopDock:1+602,"
        "Sort=0:TopDock:2+0,"
        "Commands=1:TopDock:1+0,"
-       "Updates=1:TopDock:1+619,"
-       "Transfer=1:TopDock:1+364,"
+       "Updates=1:TopDock:1+596,"
+       "Transfer=1:TopDock:1+341,"
        "CustomCommands=0:TopDock:3+0,"
        "RemoteHistory=1:RemoteTopDock:0+172,"
        "RemoteNavigation=1:RemoteTopDock:0+252,"
@@ -766,6 +773,8 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.LocalPanel.DriveViewWidth = 100;
   FScpCommander.LocalPanel.DriveViewWidthPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
   FScpCommander.LocalPanel.LastPath = UnicodeString();
+  FScpCommander.OtherLocalPanelDirViewParams = FScpCommander.LocalPanel.DirViewParams;
+  FScpCommander.OtherLocalPanelLastPath = UnicodeString();
 
   FBookmarks->Clear();
 }
@@ -985,6 +994,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
   BLOCK(L"Interface", CANCREATE, \
     KEYEX(Integer,DoubleClickAction, L"CopyOnDoubleClick"); \
     KEY(Bool,     CopyOnDoubleClickConfirmation); \
+    KEY(Bool,     AlwaysRespectDoubleClickAction); \
     KEY(Bool,     DDDisableMove); \
     KEYEX(Integer, DDTransferConfirmation, L"DDTransferConfirmation2"); \
     KEY(String,   DDTemporaryDirectory); \
@@ -1039,6 +1049,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEYEX(Integer,PanelFont.FontStyle, L"PanelFontStyle"); \
     KEYEX(Integer,PanelFont.FontCharset, L"PanelFontCharset"); \
     KEY(Bool,     NaturalOrderNumericalSorting); \
+    KEY(Bool,     AlwaysSortDirectoriesByName); \
     KEY(Bool,     FullRowSelect); \
     KEY(Bool,     OfferedEditorAutoConfig); \
     KEY(Integer,  LastMonitor); \
@@ -1053,6 +1064,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     ExternalSessionInExistingInstance); \
     KEY(Bool,     ShowLoginWhenNoSession); \
     KEY(Bool,     KeepOpenWhenNoSession); \
+    KEY(Bool,     DefaultToNewRemoteTab); \
     KEY(Bool,     LocalIconsByExt); \
     KEY(Bool,     FlashTaskbar); \
     KEY(Integer,  MaxSessions); \
@@ -1074,6 +1086,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     UseIconUpdateThread); \
     KEY(Bool,     AllowWindowPrint); \
     KEY(Integer,  StoreTransition); \
+    KEY(Integer,  QueueTransferLimitMax); \
+    KEY(Bool,     EditorCheckNotModified); \
     KEY(String,   FirstRun); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
@@ -1097,6 +1111,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  Editor.Encoding); \
     KEY(Bool,     Editor.WarnOnEncodingFallback); \
     KEY(Bool,     Editor.WarnOrLargeFileSize); \
+    KEY(Bool,     Editor.AutoFont); \
   ); \
   BLOCK(L"Interface\\QueueView", CANCREATE, \
     KEY(Integer,  QueueView.Height); \
@@ -1118,6 +1133,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  FUpdates.BetaVersions); \
     KEY(Bool,     FUpdates.ShowOnStartup); \
     KEY(String,   FUpdates.AuthenticationEmail); \
+    KEY(String,   FUpdates.Mode); \
     KEY(Integer,  FUpdates.ConnectionType); \
     KEY(String,   FUpdates.ProxyHost); \
     KEY(Integer,  FUpdates.ProxyPort); \
@@ -1197,6 +1213,10 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer, ScpCommander.RemotePanel.DriveViewWidth); \
     KEY(Integer, ScpCommander.RemotePanel.DriveViewWidthPixelsPerInch); \
     KEY(String,  ScpCommander.RemotePanel.LastPath); \
+  ); \
+  BLOCK(L"Interface\\Commander\\OtherLocalPanel", CANCREATE, \
+    KEYEX(String, ScpCommander.OtherLocalPanelDirViewParams, L"DirViewParams"); \
+    KEYEX(String, ScpCommander.OtherLocalPanelLastPath, L"LastPath"); \
   ); \
   BLOCK(L"Security", CANCREATE, \
     KEY(Bool,    FUseMasterPassword); \
@@ -2104,6 +2124,11 @@ void __fastcall TWinConfiguration::SetCopyOnDoubleClickConfirmation(bool value)
   SET_CONFIG_PROPERTY(CopyOnDoubleClickConfirmation);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetAlwaysRespectDoubleClickAction(bool value)
+{
+  SET_CONFIG_PROPERTY(AlwaysRespectDoubleClickAction);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDimmHiddenFiles(bool value)
 {
   SET_CONFIG_PROPERTY(DimmHiddenFiles);
@@ -2282,6 +2307,11 @@ void __fastcall TWinConfiguration::SetNaturalOrderNumericalSorting(bool value)
   SET_CONFIG_PROPERTY(NaturalOrderNumericalSorting);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetAlwaysSortDirectoriesByName(bool value)
+{
+  SET_CONFIG_PROPERTY(AlwaysSortDirectoriesByName);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetFullRowSelect(bool value)
 {
   SET_CONFIG_PROPERTY(FullRowSelect);
@@ -2335,6 +2365,11 @@ void __fastcall TWinConfiguration::SetShowLoginWhenNoSession(bool value)
 void __fastcall TWinConfiguration::SetKeepOpenWhenNoSession(bool value)
 {
   SET_CONFIG_PROPERTY(KeepOpenWhenNoSession);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetDefaultToNewRemoteTab(bool value)
+{
+  SET_CONFIG_PROPERTY(DefaultToNewRemoteTab);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetLocalIconsByExt(bool value)
@@ -2746,6 +2781,16 @@ void TWinConfiguration::SetStoreTransition(TStoreTransition value)
   SET_CONFIG_PROPERTY(StoreTransition);
 }
 //---------------------------------------------------------------------------
+void TWinConfiguration::SetQueueTransferLimitMax(int value)
+{
+  SET_CONFIG_PROPERTY(QueueTransferLimitMax);
+}
+//---------------------------------------------------------------------------
+void TWinConfiguration::SetEditorCheckNotModified(bool value)
+{
+  SET_CONFIG_PROPERTY(EditorCheckNotModified);
+}
+//---------------------------------------------------------------------------
 void TWinConfiguration::SetFirstRun(const UnicodeString & value)
 {
   SET_CONFIG_PROPERTY(FirstRun);
@@ -2787,7 +2832,7 @@ void __fastcall TWinConfiguration::UpdateEntryInJumpList(
 {
   try
   {
-    std::auto_ptr<THierarchicalStorage> Storage(CreateConfigStorage());
+    std::unique_ptr<THierarchicalStorage> Storage(CreateConfigStorage());
     TAutoNestingCounter DontDecryptPasswordsCounter(FDontDecryptPasswords);
 
     Storage->AccessMode = smReadWrite;
@@ -2881,6 +2926,7 @@ void __fastcall TWinConfiguration::UpdateStaticUsage()
   Usage->Set(L"ShowingTips", ShowTips);
   Usage->Set(L"KeepingOpenWhenNoSession", KeepOpenWhenNoSession);
   Usage->Set(L"ShowingLoginWhenNoSession", ShowLoginWhenNoSession);
+  Usage->Set(L"DefaultingToNewRemoteTab", DefaultToNewRemoteTab);
   TipsUpdateStaticUsage();
 
   Usage->Set(L"CommanderNortonLikeMode", int(ScpCommander.NortonLikeMode));
@@ -2952,6 +2998,51 @@ void __fastcall TWinConfiguration::StoreFont(
   Configuration.FontSize = Font->Size;
   Configuration.FontCharset = Font->Charset;
   Configuration.FontStyle = FontStylesToInt(Font->Style);
+}
+//---------------------------------------------------------------------------
+TResolvedDoubleClickAction TWinConfiguration::ResolveDoubleClickAction(bool IsDirectory, TTerminal * Terminal)
+{
+  TResolvedDoubleClickAction Result;
+  // Anything special is done on files only (not directories)
+  if (IsDirectory)
+  {
+    Result = rdcaChangeDir;
+  }
+  else
+  {
+    Result = rdcaNone;
+    if (Terminal != NULL)
+    {
+      if (!Terminal->ResolvingSymlinks && !Terminal->IsEncryptingFiles() && !AlwaysRespectDoubleClickAction)
+      {
+        Result = rdcaChangeDir;
+      }
+    }
+
+    if (Result == rdcaNone)
+    {
+      switch (DoubleClickAction)
+      {
+        case dcaOpen:
+          Result = rdcaOpen;
+          break;
+
+        case dcaCopy:
+          Result = rdcaCopy;
+          break;
+
+        case dcaEdit:
+          Result = rdcaEdit;
+          break;
+
+        default:
+          DebugFail();
+          Abort();
+          break;
+      }
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

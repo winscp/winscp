@@ -2307,6 +2307,7 @@ void __fastcall Usage(TConsole * Console)
     PrintUsageSyntax(Console, FORMAT(L"[mysession] [/%s=<file> [/%s=<passphrase>]]", (LowerCase(PRIVATEKEY_SWITCH), PassphraseOption)));
     PrintUsageSyntax(Console, L"[mysession] [/hostkey=<fingerprint>]");
     PrintUsageSyntax(Console, FORMAT(L"[mysession] [/%s=<user> [/%s=<password>]]", (LowerCase(USERNAME_SWITCH), LowerCase(PASSWORD_SWITCH))));
+    PrintUsageSyntax(Console, FORMAT(L"[mysession] [/%s]", (LowerCase(PASSWORDSFROMFILES_SWITCH))));
     PrintUsageSyntax(Console, FORMAT(L"[mysession] [/clientcert=<file> [/%s=<passphrase>]]", (PassphraseOption)));
     PrintUsageSyntax(Console, L"[mysession] [/certificate=<fingerprint>]");
     PrintUsageSyntax(Console, L"[mysession] [/passive[=on|off]] [/implicit|explicit]");
@@ -2337,8 +2338,10 @@ void __fastcall Usage(TConsole * Console)
   PrintUsageSyntax(Console, FORMAT(L"[/%s config1=value1 config2=value2 ...]", (LowerCase(RAW_CONFIG_SWITCH))));
   PrintUsageSyntax(Console, FORMAT(L"[/%s setting1=value1 setting2=value2 ...]", (LowerCase(RAWTRANSFERSETTINGS_SWITCH))));
   PrintUsageSyntax(Console, L"/batchsettings <site_mask> setting1=value1 setting2=value2 ...");
-  PrintUsageSyntax(Console, FORMAT(L"/%s keyfile [/%s=<file>] [/%s] [/%s=<text>]",
-    (LowerCase(KEYGEN_SWITCH), LowerCase(KEYGEN_OUTPUT_SWITCH), LowerCase(KEYGEN_CHANGE_PASSPHRASE_SWITCH), LowerCase(KEYGEN_COMMENT_SWITCH))));
+  PrintUsageSyntax(Console, FORMAT(L"/%s keyfile [/%s=<file>] [/%s]", (
+    LowerCase(KEYGEN_SWITCH), LowerCase(KEYGEN_OUTPUT_SWITCH), LowerCase(KEYGEN_CHANGE_PASSPHRASE_SWITCH))));
+  PrintUsageSyntax(Console, FORMAT(L"/%s keyfile [/%s=<text>] [/%s=<file>]",
+    (LowerCase(KEYGEN_SWITCH), LowerCase(KEYGEN_COMMENT_SWITCH), LowerCase(KEYGEN_CERTIFICATE_SWITCH))));
   if (!CommandLineOnly)
   {
     PrintUsageSyntax(Console, L"/update");
@@ -2364,6 +2367,7 @@ void __fastcall Usage(TConsole * Console)
     RegisterSwitch(SwitchesUsage, L"/hostkey=", USAGE_HOSTKEY);
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(USERNAME_SWITCH), USAGE_USERNAME);
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(PASSWORD_SWITCH), USAGE_PASSWORD);
+    RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(PASSWORDSFROMFILES_SWITCH), USAGE_PASSWORDSFROMFILES);
     RegisterSwitch(SwitchesUsage, L"/clientcert=", USAGE_CLIENTCERT);
     RegisterSwitch(SwitchesUsage, L"/certificate=", USAGE_CERTIFICATE);
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(PassphraseOption) + L"=", USAGE_PASSPHRASE);
@@ -2396,10 +2400,11 @@ void __fastcall Usage(TConsole * Console)
   RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(RAWTRANSFERSETTINGS_SWITCH), USAGE_RAWTRANSFERSETTINGS);
   RegisterSwitch(SwitchesUsage, L"/batchsettings", USAGE_BATCHSETTINGS);
   UnicodeString KeyGenDesc =
-    FMTLOAD(USAGE_KEYGEN, (
+    FMTLOAD(USAGE_KEYGEN2, (
       TProgramParams::FormatSwitch(LowerCase(KEYGEN_OUTPUT_SWITCH)) + L"=",
       TProgramParams::FormatSwitch(LowerCase(KEYGEN_CHANGE_PASSPHRASE_SWITCH)),
-      TProgramParams::FormatSwitch(LowerCase(KEYGEN_COMMENT_SWITCH)) + L"="));
+      TProgramParams::FormatSwitch(LowerCase(KEYGEN_COMMENT_SWITCH)) + L"=",
+      TProgramParams::FormatSwitch(LowerCase(KEYGEN_CERTIFICATE_SWITCH)) + L"="));
   RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(KEYGEN_SWITCH), KeyGenDesc);
   if (!CommandLineOnly)
   {
@@ -2503,14 +2508,14 @@ int __fastcall BatchSettings(TConsole * Console, TProgramParams * Params)
             Matches++;
             std::unique_ptr<TSessionData> OriginalData(new TSessionData(L""));
             OriginalData->CopyDataNoRecrypt(Data);
-            Data->ApplyRawSettings(OptionsStorage.get(), false);
+            Data->ApplyRawSettings(OptionsStorage.get(), false, true);
             bool Changed = !OriginalData->IsSame(Data, false);
             if (Changed)
             {
               Changes++;
             }
             UnicodeString StateStr = LoadStr(Changed ? BATCH_SET_CHANGED : BATCH_SET_NOT_CHANGED);
-            Console->PrintLine(FORMAT(L"%s - %s", (Data->Name, StateStr)));
+            Console->PrintLine(Data->Name + TitleSeparator + StateStr);
           }
         }
 
@@ -2531,7 +2536,9 @@ int __fastcall BatchSettings(TConsole * Console, TProgramParams * Params)
 bool __fastcall FindPuttygenCompatibleSwitch(
   TProgramParams * Params, const UnicodeString & Name, const UnicodeString & PuttygenName, UnicodeString & Value, bool & Set)
 {
-  bool Result = Params->FindSwitch(Name, Value, Set);
+  bool Result =
+    !Name.IsEmpty() &&
+    Params->FindSwitch(Name, Value, Set);
   if (!Result)
   {
     std::unique_ptr<TStrings> Args(new TStringList());
@@ -2569,9 +2576,24 @@ int __fastcall KeyGen(TConsole * Console, TProgramParams * Params)
     UnicodeString NewComment;
     FindPuttygenCompatibleSwitch(Params, KEYGEN_COMMENT_SWITCH, L"C", NewComment, ValueSet);
 
+    bool ChangePassphrase;
     bool NewPassphraseSet;
-    bool ChangePassphrase =
-      FindPuttygenCompatibleSwitch(Params, KEYGEN_CHANGE_PASSPHRASE_SWITCH, L"P", NewPassphrase, NewPassphraseSet);
+    if (Params->FindSwitchCaseSensitive(L"P"))
+    {
+      ChangePassphrase = true;
+      FindPuttygenCompatibleSwitch(Params, EmptyStr, L"-new-passphrase", NewPassphrase, NewPassphraseSet);
+    }
+    else
+    {
+      ChangePassphrase = Params->FindSwitch(KEYGEN_CHANGE_PASSPHRASE_SWITCH, NewPassphrase, NewPassphraseSet);
+    }
+
+    bool CertificateSet;
+    UnicodeString Certificate;
+    // It's --certificate in puttygen
+    FindPuttygenCompatibleSwitch(Params, KEYGEN_CERTIFICATE_SWITCH, L"-certificate", Certificate, CertificateSet);
+
+    FindPuttygenCompatibleSwitch(Params, PassphraseOption, L"-old-passphrase", Passphrase, ValueSet);
 
     if (Params->ParamCount > 0)
     {
@@ -2586,7 +2608,7 @@ int __fastcall KeyGen(TConsole * Console, TProgramParams * Params)
         throw Exception(LoadStr(KEYGEN_SSH1));
 
       case ktSSH2:
-        if (NewComment.IsEmpty() && !ChangePassphrase &&
+        if (NewComment.IsEmpty() && !ChangePassphrase && Certificate.IsEmpty() &&
             (Configuration->KeyVersion == 0)) // We should better check for version change
         {
           throw Exception(LoadStr(KEYGEN_NO_ACTION));
@@ -2619,17 +2641,14 @@ int __fastcall KeyGen(TConsole * Console, TProgramParams * Params)
     }
 
     UnicodeString Comment;
-    if (IsKeyEncrypted(Type, InputFileName, Comment))
+    if (IsKeyEncrypted(Type, InputFileName, Comment) &&
+        Passphrase.IsEmpty())
     {
-      Passphrase = Params->SwitchValue(PassphraseOption);
-      if (Passphrase.IsEmpty())
+      Console->Print(StripHotkey(FMTLOAD(PROMPT_KEY_PASSPHRASE, (Comment))) + L" ");
+      if (!Console->Input(Passphrase, false, 0) ||
+          Passphrase.IsEmpty())
       {
-        Console->Print(StripHotkey(FMTLOAD(PROMPT_KEY_PASSPHRASE, (Comment))) + L" ");
-        if (!Console->Input(Passphrase, false, 0) ||
-            Passphrase.IsEmpty())
-        {
-          Abort();
-        }
+        Abort();
       }
     }
 
@@ -2640,6 +2659,11 @@ int __fastcall KeyGen(TConsole * Console, TProgramParams * Params)
       if (!NewComment.IsEmpty())
       {
         ChangeKeyComment(PrivateKey, NewComment);
+      }
+
+      if (!Certificate.IsEmpty())
+      {
+        AddCertificateToKey(PrivateKey, Certificate);
       }
 
       if (ChangePassphrase)

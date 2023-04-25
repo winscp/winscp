@@ -23,17 +23,16 @@ void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command, TProcess
 TObjectList * StartCreationDirectoryMonitorsOnEachDrive(unsigned int Filter, TFileChangedEvent OnChanged);
 extern bool DontCopyCommandToClipboard;
 bool __fastcall CopyCommandToClipboard(const UnicodeString & Command);
-bool DoesSessionExistInPutty(TSessionData * SessionData);
+bool DoesSessionExistInPutty(const UnicodeString & StorageKey);
 bool __fastcall ExportSessionToPutty(TSessionData * SessionData, bool ReuseExisting, const UnicodeString & SessionName);
-void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
-  TSessionData * SessionData);
+void OpenSessionInPutty(TSessionData * SessionData);
 bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path);
 UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir,
   const UnicodeString Identity, bool Mask = false);
 bool __fastcall DeleteDirectory(const UnicodeString DirName);
 int __fastcall GetSessionColorImage(TCustomImageList * ImageList, TColor Color, int MaskIndex);
 void __fastcall RegenerateSessionColorsImageList(TCustomImageList * ImageList, int MaskIndex);
-void __fastcall SetSubmenu(TTBXCustomItem * Item);
+void __fastcall SetSubmenu(TTBXCustomItem * Item, bool Enable);
 typedef int __fastcall (*TCalculateWidth)(UnicodeString Text, void * Arg);
 void __fastcall ApplyTabs(
   UnicodeString & Text, wchar_t Padding,
@@ -59,6 +58,7 @@ void __fastcall NavigateBrowserToUrl(TWebBrowserEx * WebBrowser, const UnicodeSt
 void ReadyBrowserForStreaming(TWebBrowserEx * WebBrowser);
 void WaitBrowserToIdle(TWebBrowserEx * WebBrowser);
 void HideBrowserScrollbars(TWebBrowserEx * WebBrowser);
+bool CopyTextFromBrowser(TWebBrowserEx * WebBrowser, UnicodeString & Text);
 UnicodeString GenerateAppHtmlPage(TFont * Font, TPanel * Parent, const UnicodeString & Body, bool Seamless);
 void LoadBrowserDocument(TWebBrowserEx * WebBrowser, const UnicodeString & Document);
 TComponent * __fastcall FindComponentRecursively(TComponent * Root, const UnicodeString & Name);
@@ -188,6 +188,9 @@ private:
 // https://stackoverflow.com/q/4685863/850848
 class TUIStateAwareLabel : public TLabel
 {
+public:
+  __fastcall virtual TUIStateAwareLabel(TComponent * AOwner);
+
 protected:
   DYNAMIC void __fastcall DoDrawText(TRect & Rect, int Flags);
 };

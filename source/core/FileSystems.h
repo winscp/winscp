@@ -47,9 +47,10 @@ public:
     const TRemoteFile * File, const TRemoteProperties * Properties,
     TChmodSessionAction & Action) = 0;
   virtual bool __fastcall LoadFilesProperties(TStrings * FileList) = 0;
-  virtual void __fastcall CalculateFilesChecksum(const UnicodeString & Alg,
-    TStrings * FileList, TStrings * Checksums,
-    TCalculatedChecksumEvent OnCalculatedChecksum) = 0;
+  virtual UnicodeString CalculateFilesChecksumInitialize(const UnicodeString & Alg);
+  virtual void __fastcall CalculateFilesChecksum(
+    const UnicodeString & Alg, TStrings * FileList, TCalculatedChecksumEvent OnCalculatedChecksum,
+    TFileOperationProgressType * OperationProgress, bool FirstLevel) = 0;
   virtual void __fastcall CopyToLocal(TStrings * FilesToCopy,
     const UnicodeString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,

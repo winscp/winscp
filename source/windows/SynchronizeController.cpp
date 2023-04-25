@@ -131,7 +131,7 @@ void __fastcall TSynchronizeController::SynchronizeChange(
     if (FOnSynchronize != NULL)
     {
       TSynchronizeOptions DefaultOptions; // Just as a container for the Files field
-      // this is completelly wrong as the options structure
+      // this is completely wrong as the options structure
       // can contain non-root specific options in future
       TSynchronizeOptions * Options =
         ((LocalDirectory == RootLocalDirectory) ? FOptions : &DefaultOptions);

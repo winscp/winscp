@@ -10,8 +10,10 @@ object AboutDialog: TAboutDialog
   ClientWidth = 410
   Color = clBtnFace
   ParentFont = True
+  KeyPreview = True
   OldCreateOrder = True
   Position = poOwnerFormCenter
+  OnKeyDown = FormKeyDown
   DesignSize = (
     410
     501)
