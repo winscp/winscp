@@ -2309,7 +2309,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Top = 117
             Width = 186
             Height = 13
-            Caption = 'Certificate to use with the private key:'
+            Caption = 'Certificate to &use with the private key:'
             FocusControl = DetachedCertificateEdit
           end
           object AgentFwdCheck: TCheckBox

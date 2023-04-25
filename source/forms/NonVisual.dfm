@@ -968,8 +968,8 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'By &Permissions/Attributes'
       HelpKeyword = 'ui_file_panel#sorting_files'
       Hint = 
-        'Sort by attributes/permissions|Sort current panel by attributes/' +
-        'permissions'
+        'Sort by attributes/permissions|Sort panel by attributes/permissi' +
+        'ons'
       ImageIndex = 36
       ShortCut = 16502
     end
@@ -1342,7 +1342,7 @@ object NonVisualDataModule: TNonVisualDataModule
       AutoCheck = True
       Caption = 'Synchronize &Browsing'
       HelpKeyword = 'task_navigate#synchronize_browsing'
-      Hint = 'Synchronize browsing|Synchronize browsing between panels'
+      Hint = 'Synchronize browsing|Synchronize browsing between both panels'
       ImageIndex = 59
       ShortCut = 49218
     end
@@ -2320,28 +2320,28 @@ object NonVisualDataModule: TNonVisualDataModule
     object LocalLocalCopyAction: TAction
       Tag = 9
       Category = 'Local Selected Operation'
-      Caption = '&Copy'
+      Caption = '&Copy...'
       Hint = 'Copy the selected file(s) to another directory or another name'
       ImageIndex = 78
     end
     object LocalLocalMoveAction: TAction
       Tag = 9
       Category = 'Local Selected Operation'
-      Caption = '&Move'
+      Caption = '&Move...'
       Hint = 'Move the selected file(s) to another directory or rename them'
       ImageIndex = 100
     end
     object LocalOtherCopyAction: TAction
       Tag = 14
       Category = 'Local Selected Operation'
-      Caption = '&Copy'
+      Caption = '&Copy...'
       Hint = 'Copy the selected file(s) to another directory or another name'
       ImageIndex = 112
     end
     object LocalOtherMoveAction: TAction
       Tag = 14
       Category = 'Local Selected Operation'
-      Caption = '&Move'
+      Caption = '&Move...'
       Hint = 'Move the selected file(s) to another directory or rename them'
       ImageIndex = 113
     end
@@ -2358,14 +2358,14 @@ object NonVisualDataModule: TNonVisualDataModule
     object LocalLocalCopyFocusedAction: TAction
       Tag = 8
       Category = 'Local Focused Operation'
-      Caption = '&Copy'
+      Caption = '&Copy...'
       Hint = 'Copy the selected file(s) to another directory or another name'
       ImageIndex = 78
     end
     object LocalLocalMoveFocusedAction: TAction
       Tag = 8
       Category = 'Local Focused Operation'
-      Caption = '&Move'
+      Caption = '&Move...'
       Hint = 'Move the selected file(s) to another directory or rename them'
       ImageIndex = 100
     end
