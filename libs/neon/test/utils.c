@@ -34,7 +34,7 @@
 #include "tests.h"
 #include "utils.h"
 
-static int serve_response(ne_socket *s, const char *response)
+int serve_response(ne_socket *s, const char *response)
 {
     CALL(discard_request(s));
     CALL(discard_body(s));
@@ -99,15 +99,29 @@ int any_request(ne_session *sess, const char *uri)
     return ret;
 }
 
-int any_2xx_request(ne_session *sess, const char *uri)
+int any_2xx_request_method(ne_session *sess, const char *method, const char *uri)
 {
-    ne_request *req = ne_request_create(sess, "GET", uri);
+    ne_request *req = ne_request_create(sess, method, uri);
     int ret = ne_request_dispatch(req);
     int klass = ne_get_status(req)->klass;
+    const char *context = ne_get_response_header(req, "X-Neon-Context");
+    if (ret != NE_OK || klass != 2) {
+        if (context)
+            t_context("request failed, server error: %s", context);
+        else
+            t_context("request failed: %s", ne_get_error(sess));
+        ret = FAIL;
+    }
+    else {
+        ret = OK;
+    }
     ne_request_destroy(req);
-    ONV(ret != NE_OK || klass != 2,
-	("request failed: %s", ne_get_error(sess)));
     return ret;
+}
+
+int any_2xx_request(ne_session *sess, const char *uri)
+{
+    return any_2xx_request_method(sess, "GET", uri);
 }
 
 int any_2xx_request_body(ne_session *sess, const char *uri)
@@ -221,11 +235,20 @@ int fakeproxied_session_server(ne_session **sess, const char *scheme,
                                const char *host, unsigned int fakeport,
                                server_fn fn, void *userdata)
 {
+    return fakeproxied_multi_session_server(1, sess, scheme, host, fakeport,
+                                            fn, userdata);
+}
+
+int fakeproxied_multi_session_server(int count,
+                                     ne_session **sess, const char *scheme,
+                                     const char *host, unsigned int fakeport,
+                                     server_fn fn, void *userdata)
+{
     unsigned int port;
     ne_inet_addr *addr;
     const ne_inet_addr *alist[1];
     
-    CALL(new_spawn_server2(1, fn, userdata, &addr, &port));
+    CALL(new_spawn_server2(count, fn, userdata, &addr, &port));
     
     alist[0] = addr;
 

@@ -29,42 +29,16 @@
 # Copyright (c) 2020      Gulliver <gulliver@traumkristalle.net>
 # Copyright (c) 2020      Thomas Beutlich <tc@tbeu.de>
 # Copyright (c) 2021      Alex Richardson <Alexander.Richardson@cl.cam.ac.uk>
+# Copyright (c) 2022      Johnny Jazeix <jazeix@gmail.com>
+# Copyright (c) 2022      David Faure <david.faure@kdab.com>
 # Unlike most of Expat,
 # this file is copyrighted under the BSD-license for buildsystem files of KDE.
 
 cmake_minimum_required(VERSION 3.1.3)
 
-# This allows controlling documented build time switches
-# when Expat is pulled in using the add_subdirectory function, e.g.
-#
-#   set(EXPAT_BUILD_DOCS OFF)
-#   set(EXPAT_BUILD_TOOLS OFF)
-#   add_subdirectory(${expat_SOURCE_DIR}/expat ${expat_BINARY_DIR})
-#
-# would disable compilation of the xmlwf CLI and its man page.
-# Without activating behaviour NEW for policy CMP0077 here,
-# a user with -Wdev enabled would see warning
-#
-#   Policy CMP0077 is not set: option() honors normal variables.  Run "cmake
-#   --help-policy CMP0077" for policy details.  Use the cmake_policy command to
-#   set the policy and suppress this warning.
-#
-#   For compatibility with older versions of CMake, option is clearing the
-#   normal variable 'EXPAT_BUILD_DOCS'.
-#
-# and effectively not be able to adjust option EXPAT_BUILD_DOCS.
-#
-# For more details please see:
-# - https://cmake.org/cmake/help/latest/policy/CMP0077.html
-# - https://github.com/libexpat/libexpat/pull/419
-#
-if(POLICY CMP0077)
-    cmake_policy(SET CMP0077 NEW)
-endif()
-
 project(expat
     VERSION
-        2.4.6
+        2.5.0
     LANGUAGES
         C
 )
@@ -107,52 +81,87 @@ else()
     set(_EXPAT_SHARED_LIBS_DEFAULT ON)
 endif()
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE NoConfig)  # so that accessing CMAKE_*_POSTFIX will be waterproof
+    set(CMAKE_BUILD_TYPE NoConfig)  # so that accessing EXPAT_*_POSTFIX will be waterproof
 endif()
 string(TOUPPER "${CMAKE_BUILD_TYPE}" _EXPAT_BUILD_TYPE_UPPER)
 
 #
 # Configuration
 #
-option(EXPAT_BUILD_TOOLS "build the xmlwf tool for expat library" ${_EXPAT_BUILD_TOOLS_DEFAULT})
-option(EXPAT_BUILD_EXAMPLES "build the examples for expat library" ON)
-option(EXPAT_BUILD_TESTS "build the tests for expat library" ON)
-option(EXPAT_SHARED_LIBS "build a shared expat library" ${_EXPAT_SHARED_LIBS_DEFAULT})
-option(EXPAT_BUILD_DOCS "build man page for xmlwf" ${_EXPAT_BUILD_DOCS_DEFAULT})
-option(EXPAT_BUILD_FUZZERS "build fuzzers for the expat library" OFF)
-option(EXPAT_BUILD_PKGCONFIG "build pkg-config file" ${_EXPAT_BUILD_PKGCONFIG_DEFAULT})
-option(EXPAT_OSSFUZZ_BUILD "build fuzzers via ossfuzz for the expat library" OFF)
+
+macro(expat_shy_set var default cache type desc)
+    # Macro expat_shy_set came into life because:
+    # - Expat was previously using an inconsistent mix of CMake's native set()
+    #   and option() to define public build time options.
+    # - option() is more friendly than set() with regard to configuring an
+    #   external project that is pulled in by means of add_subdirectory() --
+    #   see comments in issue #597 -- so we wanted to get away from set().
+    # - option() auto-converts non-bool values to bool when writing to the CMake
+    #   cache, so we needed something that supports non-bool better and hence
+    #   wanted to get away from plain option(), too.
+    #
+    # As a result, this function serves as a hybrid between CMake's regular set()
+    # and option(): from set() it takes support for non-bool types and the function
+    # name and signature whereas from option() (with policy CMP0077 mode NEW) it
+    # takes being shy when a value has previously been defined for that variable.
+    #
+    # So that resolves all need for set(.. FORCE) when pulling in Expat by means of
+    # add_subdirectory().
+    #
+    if(NOT ${cache} STREQUAL "CACHE")
+        message(SEND_ERROR "Macro usage is: expat_shy_set(var default CACHE type desc)")
+    endif()
+
+    if(DEFINED ${var})
+        # NOTE: The idea is to (ideally) only add to the cache if
+        #       there is no cache entry, yet.  "if(DEFINED CACHE{var})"
+        #       requires CMake >=3.14.
+        if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.14" AND NOT DEFINED "CACHE{${var}}")
+            set("${var}" "${${var}}" CACHE "${type}" "${desc}")
+        endif()
+    else()
+        set("${var}" "${default}" CACHE "${type}" "${desc}")
+    endif()
+endmacro()
+
+expat_shy_set(EXPAT_BUILD_TOOLS ${_EXPAT_BUILD_TOOLS_DEFAULT} CACHE BOOL "Build the xmlwf tool for expat library")
+expat_shy_set(EXPAT_BUILD_EXAMPLES ON CACHE BOOL "Build the examples for expat library")
+expat_shy_set(EXPAT_BUILD_TESTS ON CACHE BOOL "Build the tests for expat library")
+expat_shy_set(EXPAT_SHARED_LIBS ${_EXPAT_SHARED_LIBS_DEFAULT} CACHE BOOL "Build a shared expat library")
+expat_shy_set(EXPAT_BUILD_DOCS ${_EXPAT_BUILD_DOCS_DEFAULT} CACHE BOOL "Build man page for xmlwf")
+expat_shy_set(EXPAT_BUILD_FUZZERS OFF CACHE BOOL "Build fuzzers for the expat library")
+expat_shy_set(EXPAT_BUILD_PKGCONFIG ${_EXPAT_BUILD_PKGCONFIG_DEFAULT} CACHE BOOL "Build pkg-config file")
+expat_shy_set(EXPAT_OSSFUZZ_BUILD OFF CACHE BOOL "Build fuzzers via ossfuzz for the expat library")
 if(UNIX OR _EXPAT_HELP)
-    option(EXPAT_WITH_LIBBSD "utilize libbsd (for arc4random_buf)" OFF)
+    expat_shy_set(EXPAT_WITH_LIBBSD OFF CACHE BOOL "Utilize libbsd (for arc4random_buf)")
 endif()
-option(EXPAT_ENABLE_INSTALL "install expat files in cmake install target" ON)
-set(EXPAT_CONTEXT_BYTES 1024 CACHE STRING "Define to specify how much context to retain around the current parse point")
+expat_shy_set(EXPAT_ENABLE_INSTALL ON CACHE BOOL "Install expat files in cmake install target")
+expat_shy_set(EXPAT_CONTEXT_BYTES 1024 CACHE STRING "Define to specify how much context to retain around the current parse point")
 mark_as_advanced(EXPAT_CONTEXT_BYTES)
-option(EXPAT_DTD "Define to make parameter entity parsing functionality available" ON)
+expat_shy_set(EXPAT_DTD ON CACHE BOOL "Define to make parameter entity parsing functionality available")
 mark_as_advanced(EXPAT_DTD)
-option(EXPAT_NS "Define to make XML Namespaces functionality available" ON)
+expat_shy_set(EXPAT_NS ON CACHE BOOL "Define to make XML Namespaces functionality available")
 mark_as_advanced(EXPAT_NS)
-option(EXPAT_WARNINGS_AS_ERRORS "Treat all compiler warnings as errors" OFF)
+expat_shy_set(EXPAT_WARNINGS_AS_ERRORS OFF CACHE BOOL "Treat all compiler warnings as errors")
 if(UNIX OR _EXPAT_HELP)
-    option(EXPAT_DEV_URANDOM "Define to include code reading entropy from `/dev/urandom'." ON)
-    set(EXPAT_WITH_GETRANDOM "AUTO" CACHE STRING
-            "Make use of getrandom function (ON|OFF|AUTO) [default=AUTO]")
-    set(EXPAT_WITH_SYS_GETRANDOM "AUTO" CACHE STRING
-            "Make use of syscall SYS_getrandom (ON|OFF|AUTO) [default=AUTO]")
+    expat_shy_set(EXPAT_DEV_URANDOM ON CACHE BOOL "Define to include code reading entropy from `/dev/urandom'.")
+    expat_shy_set(EXPAT_WITH_GETRANDOM "AUTO" CACHE STRING "Make use of getrandom function (ON|OFF|AUTO) [default=AUTO]")
+    expat_shy_set(EXPAT_WITH_SYS_GETRANDOM "AUTO" CACHE STRING "Make use of syscall SYS_getrandom (ON|OFF|AUTO) [default=AUTO]")
     mark_as_advanced(EXPAT_DEV_URANDOM)
 endif()
-set(EXPAT_CHAR_TYPE "char" CACHE STRING "Character type to use (char|ushort|wchar_t) [default=char]")
-option(EXPAT_ATTR_INFO "Define to allow retrieving the byte offsets for attribute names and values" OFF)
+expat_shy_set(EXPAT_CHAR_TYPE "char" CACHE STRING "Character type to use (char|ushort|wchar_t) [default=char]")
+expat_shy_set(EXPAT_ATTR_INFO OFF CACHE BOOL "Define to allow retrieving the byte offsets for attribute names and values")
 mark_as_advanced(EXPAT_ATTR_INFO)
-option(EXPAT_LARGE_SIZE "Make XML_GetCurrent* functions return <(unsigned) long long> rather than <(unsigned) long>" OFF)
+expat_shy_set(EXPAT_LARGE_SIZE OFF CACHE BOOL "Make XML_GetCurrent* functions return <(unsigned) long long> rather than <(unsigned) long>")
 mark_as_advanced(EXPAT_LARGE_SIZE)
-option(EXPAT_MIN_SIZE "Get a smaller (but slower) parser (in particular avoid multiple copies of the tokenizer)" OFF)
+expat_shy_set(EXPAT_MIN_SIZE OFF CACHE BOOL "Get a smaller (but slower) parser (in particular avoid multiple copies of the tokenizer)")
 mark_as_advanced(EXPAT_MIN_SIZE)
 if(MSVC OR _EXPAT_HELP)
-    set(EXPAT_MSVC_STATIC_CRT OFF CACHE BOOL "Use /MT flag (static CRT) when compiling in MSVC")
+    expat_shy_set(EXPAT_MSVC_STATIC_CRT OFF CACHE BOOL "Use /MT flag (static CRT) when compiling in MSVC")
 endif()
 if(NOT _EXPAT_HELP)
-    set(_EXPAT_M32 OFF CACHE BOOL "(Unofficial!) Produce 32bit code with -m32")
+    expat_shy_set(_EXPAT_M32 OFF CACHE BOOL "(Unofficial!) Produce 32bit code with -m32")
+    mark_as_advanced(_EXPAT_M32)
 endif()
 
 if(EXPAT_BUILD_TESTS)
@@ -288,7 +297,9 @@ if(FLAG_NO_STRICT_ALIASING)
     set(EXTRA_COMPILE_FLAGS "${EXTRA_COMPILE_FLAGS} -fno-strict-aliasing")
 endif()
 if(FLAG_VISIBILITY)
-  add_definitions(-DXML_ENABLE_VISIBILITY=1)
+  if(EXPAT_SHARED_LIBS)
+     add_definitions(-DXML_ENABLE_VISIBILITY=1)
+  endif()
   set(EXTRA_COMPILE_FLAGS "${EXTRA_COMPILE_FLAGS} -fvisibility=hidden")
 endif()
 if(MINGW)
@@ -348,6 +359,51 @@ if(MSVC)
 endif()
 
 #
+# C library
+#
+set(_EXPAT_C_SOURCES
+    lib/xmlparse.c
+    lib/xmlrole.c
+    lib/xmltok.c
+# NOTE: ISO C forbids an empty translation unit
+#   lib/xmltok_impl.c
+#   lib/xmltok_ns.c
+)
+
+if(EXPAT_SHARED_LIBS)
+    set(_SHARED SHARED)
+    if(WIN32)
+        macro(_expat_def_file_toggle source_var target_var)
+            if(${source_var})
+                set(${target_var} " ")  # i.e. not commented out, a single space
+            else()
+                set(${target_var} ";")  # i.e. commented out
+            endif()
+        endmacro()
+
+        _expat_def_file_toggle(EXPAT_DTD _EXPAT_COMMENT_DTD)
+        _expat_def_file_toggle(EXPAT_ATTR_INFO _EXPAT_COMMENT_ATTR_INFO)
+
+        configure_file("${CMAKE_CURRENT_SOURCE_DIR}/lib/libexpat.def.cmake" "${CMAKE_CURRENT_BINARY_DIR}/lib/libexpat.def")
+        set(_EXPAT_EXTRA_SOURCES ${_EXPAT_EXTRA_SOURCES} "${CMAKE_CURRENT_BINARY_DIR}/lib/libexpat.def")
+
+        # Add DLL version
+        string(REPLACE "." "," _EXPAT_DLL_VERSION ${PROJECT_VERSION}.0)
+        set(_EXPAT_EXTRA_SOURCES ${_EXPAT_EXTRA_SOURCES} win32/version.rc)
+    endif()
+else()
+    set(_SHARED STATIC)
+endif()
+
+add_library(expat ${_SHARED} ${_EXPAT_C_SOURCES} ${_EXPAT_EXTRA_SOURCES})
+if(_EXPAT_LIBM_FOUND)
+    target_link_libraries(expat m)
+endif()
+if(EXPAT_WITH_LIBBSD)
+    target_link_libraries(expat ${LIB_BSD})
+endif()
+
+#
 # Library filename postfix
 #
 if(_EXPAT_UNICODE)
@@ -362,69 +418,62 @@ if(MSVC AND NOT EXPAT_SHARED_LIBS)
     endif()
 endif()
 
-foreach(postfix_var
-        CMAKE_${_EXPAT_BUILD_TYPE_UPPER}_POSTFIX
-        CMAKE_DEBUG_POSTFIX
-        CMAKE_RELEASE_POSTFIX
-        CMAKE_MINSIZEREL_POSTFIX
-        CMAKE_RELWITHDEBINFO_POSTFIX
+foreach(build_type_upper
+        ${_EXPAT_BUILD_TYPE_UPPER}
+        DEBUG
+        RELEASE
+        MINSIZEREL
+        RELWITHDEBINFO
         )
-    if(WIN32 AND postfix_var STREQUAL "CMAKE_DEBUG_POSTFIX")
+    if(WIN32 AND build_type_upper STREQUAL "DEBUG")
         set(_POSTFIX_DEBUG "d")
     else()
         set(_POSTFIX_DEBUG "")  # needs a reset because of being looped
     endif()
 
-    set(${postfix_var} "${_POSTFIX_WIDE}${_POSTFIX_DEBUG}${_POSTFIX_CRT}" CACHE STRING "Library filename postfix, e.g. libexpat<postfix=[w][d][MD|MT]>.lib")
+    expat_shy_set(EXPAT_${build_type_upper}_POSTFIX "${_POSTFIX_WIDE}${_POSTFIX_DEBUG}${_POSTFIX_CRT}" CACHE STRING "Library filename postfix for build type ${build_type_upper}; yields filenames libexpat<postfix=[w][d][MD|MT]>.(dll|dylib|lib|so)")
+    mark_as_advanced(EXPAT_${build_type_upper}_POSTFIX)
+    set_property(TARGET expat PROPERTY ${build_type_upper}_POSTFIX ${EXPAT_${build_type_upper}_POSTFIX})
 endforeach()
 
-#
-# C library
-#
-set(expat_SRCS
-    lib/xmlparse.c
-    lib/xmlrole.c
-    lib/xmltok.c
-# NOTE: ISO C forbids an empty translation unit
-#   lib/xmltok_impl.c
-#   lib/xmltok_ns.c
-)
-
-if(EXPAT_SHARED_LIBS)
-    set(_SHARED SHARED)
-    if(MSVC)
-        set(expat_SRCS ${expat_SRCS} lib/libexpat.def)
-    endif()
-else()
-    set(_SHARED STATIC)
-endif()
-
-add_library(expat ${_SHARED} ${expat_SRCS})
-if(_EXPAT_LIBM_FOUND)
-    target_link_libraries(expat m)
-endif()
-if(EXPAT_WITH_LIBBSD)
-    target_link_libraries(expat ${LIB_BSD})
-endif()
-
-set(LIBCURRENT 9)   # sync
-set(LIBREVISION 6)  # with
-set(LIBAGE 8)       # configure.ac!
+set(LIBCURRENT 9)    # sync
+set(LIBREVISION 10)  # with
+set(LIBAGE 8)        # configure.ac!
 math(EXPR LIBCURRENT_MINUS_AGE "${LIBCURRENT} - ${LIBAGE}")
 
 if(NOT WIN32)
     set_property(TARGET expat PROPERTY VERSION ${LIBCURRENT_MINUS_AGE}.${LIBAGE}.${LIBREVISION})
     set_property(TARGET expat PROPERTY SOVERSION ${LIBCURRENT_MINUS_AGE})
     set_property(TARGET expat PROPERTY NO_SONAME ${NO_SONAME})
+
+    if(APPLE)
+        if(NOT CMAKE_VERSION VERSION_GREATER_EQUAL 3.17)
+            message(FATAL_ERROR "Expat requires CMake >=3.17 on platform \"APPLE\".")
+        endif()
+
+        # NOTE: This intends to talk CMake into compatiblity with GNU Libtool
+        math(EXPR _EXPAT_MACHO_COMPATIBILITY_VERSION "${LIBCURRENT} + 1")
+        set(_EXPAT_MACHO_CURRENT_VERSION "${_EXPAT_MACHO_COMPATIBILITY_VERSION}.${LIBREVISION}")
+        set_property(TARGET expat PROPERTY MACHO_COMPATIBILITY_VERSION ${_EXPAT_MACHO_COMPATIBILITY_VERSION})
+        set_property(TARGET expat PROPERTY MACHO_CURRENT_VERSION ${_EXPAT_MACHO_CURRENT_VERSION})
+    endif()
 endif()
+
+if(MINGW AND EXPAT_SHARED_LIBS)
+    set_target_properties(expat PROPERTIES SUFFIX "-${LIBCURRENT_MINUS_AGE}.dll")
+endif()
+
 if(WIN32 AND NOT MINGW)
     # NOTE: This avoids a name collision with Expat.dll of Perl's XML::Parser::Expat
     #       on Windows by resorting to filename libexpat.dll since Expat 1.95.3.
     #       Everything but MSVC is already adding prefix "lib", automatically.
     # NOTE: "set_property(TARGET expat PROPERTY PREFIX lib)" would only affect *.dll
     #       files but not *.lib files, so we have to rely on property OUTPUT_NAME, instead.
-    #       Property CMAKE_*_POSTFIX still applies.
-    set_property(TARGET expat PROPERTY OUTPUT_NAME libexpat)
+    #       Target property <CONFIG>_POSTFIX still applies.
+    set(_EXPAT_OUTPUT_NAME libexpat)
+    set_property(TARGET expat PROPERTY OUTPUT_NAME ${_EXPAT_OUTPUT_NAME})
+else()
+    set(_EXPAT_OUTPUT_NAME expat)
 endif()
 
 target_include_directories(expat
@@ -434,8 +483,8 @@ target_include_directories(expat
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-if(NOT EXPAT_SHARED_LIBS AND WIN32)
-    target_compile_definitions(expat PUBLIC -DXML_STATIC)
+if(WIN32 AND EXPAT_SHARED_LIBS)
+    target_compile_definitions(expat PRIVATE VER_FILEVERSION=${_EXPAT_DLL_VERSION})
 endif()
 
 expat_install(TARGETS expat EXPORT expat
@@ -471,7 +520,8 @@ if(EXPAT_BUILD_PKGCONFIG)
     foreach(_build_type ${CMAKE_BUILD_TYPE} Debug Release RelWithDebInfo MinSizeRel)
         string(TOLOWER "${_build_type}" _build_type_lower)
         string(TOUPPER "${_build_type}" _build_type_upper)
-        set_property(TARGET expat PROPERTY "pkgconfig_${_build_type_lower}_name" "expat${CMAKE_${_build_type_upper}_POSTFIX}")
+        set_property(TARGET expat PROPERTY "pkgconfig_${_build_type_lower}_name" "expat${EXPAT_${_build_type_upper}_POSTFIX}")
+        set_property(TARGET expat PROPERTY "pkgconfig_${_build_type_lower}_output_name" "${_EXPAT_OUTPUT_NAME}${EXPAT_${_build_type_upper}_POSTFIX}")
         if(_EXPAT_LIBM_FOUND)
             set_property(TARGET expat PROPERTY "pkgconfig_libm" "-lm")
         else()
@@ -530,12 +580,12 @@ endif()
 #
 if(EXPAT_BUILD_EXAMPLES)
     add_executable(elements examples/elements.c)
-    set_property(TARGET elements PROPERTY RUNTIME_OUTPUT_DIRECTORY examples)
-    target_link_libraries(elements expat)
-
     add_executable(outline examples/outline.c)
-    set_property(TARGET outline PROPERTY RUNTIME_OUTPUT_DIRECTORY examples)
-    target_link_libraries(outline expat)
+
+    foreach(_target elements outline)
+        set_property(TARGET ${_target} PROPERTY RUNTIME_OUTPUT_DIRECTORY examples)
+        target_link_libraries(${_target} expat)
+    endforeach()
 endif()
 
 #
@@ -550,7 +600,7 @@ if(EXPAT_BUILD_TESTS)
         tests/memcheck.c
         tests/minicheck.c
         tests/structdata.c
-        ${expat_SRCS}
+        ${_EXPAT_C_SOURCES}
     )
 
     if(NOT MSVC)
@@ -568,25 +618,27 @@ if(EXPAT_BUILD_TESTS)
         endif()
     endfunction()
 
-    add_executable(runtests tests/runtests.c ${test_SRCS})
-    set_property(TARGET runtests PROPERTY RUNTIME_OUTPUT_DIRECTORY tests)
-    expat_add_test(runtests $<TARGET_FILE:runtests>)
-
+    set(_EXPAT_TEST_TARGETS runtests runtestspp)
+    add_executable(runtests   tests/runtests.c     ${test_SRCS})
     add_executable(runtestspp tests/runtestspp.cpp ${test_SRCS})
-    set_property(TARGET runtestspp PROPERTY RUNTIME_OUTPUT_DIRECTORY tests)
-    expat_add_test(runtestspp $<TARGET_FILE:runtestspp>)
 
-    if(_EXPAT_LIBM_FOUND)
-        target_link_libraries(runtests m)
-        target_link_libraries(runtestspp m)
-    endif()
+    foreach(_target ${_EXPAT_TEST_TARGETS})
+        set_property(TARGET ${_target} PROPERTY RUNTIME_OUTPUT_DIRECTORY tests)
+        expat_add_test(${_target} $<TARGET_FILE:${_target}>)
 
-    if(EXPAT_WITH_LIBBSD)
-        target_link_libraries(runtests ${LIB_BSD})
-        target_link_libraries(runtestspp ${LIB_BSD})
-    endif()
+        if(_EXPAT_LIBM_FOUND)
+            target_link_libraries(${_target} m)
+        endif()
+
+        if(EXPAT_WITH_LIBBSD)
+            target_link_libraries(${_target} ${LIB_BSD})
+        endif()
+    endforeach()
 endif()
 
+#
+# Fuzzers
+#
 if(EXPAT_BUILD_FUZZERS)
     if(NOT "${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
         message(SEND_ERROR
@@ -619,7 +671,7 @@ if(EXPAT_BUILD_FUZZERS)
     set(encoding_types UTF-16 UTF-8 ISO-8859-1 US-ASCII UTF-16BE UTF-16LE)
     set(fuzz_targets xml_parse_fuzzer xml_parsebuffer_fuzzer)
 
-    add_library(fuzzpat STATIC ${expat_SRCS})
+    add_library(fuzzpat STATIC ${_EXPAT_C_SOURCES})
     if(NOT EXPAT_OSSFUZZ_BUILD)
         target_compile_options(fuzzpat PRIVATE -fsanitize=fuzzer-no-link)
     endif()
@@ -652,6 +704,23 @@ else()
                 "This is likely in error - consider adding "
                 "-DEXPAT_BUILD_FUZZERS=ON to your cmake execution.")
     endif()
+endif()
+
+#
+# C/C++ config affecting multiple targets
+#
+if(WIN32)
+    set(_EXPAT_STATIC_TARGETS ${_EXPAT_TEST_TARGETS})
+    if(NOT EXPAT_SHARED_LIBS)
+        list(APPEND _EXPAT_STATIC_TARGETS expat)
+    endif()
+    if(EXPAT_BUILD_FUZZERS)
+        list(APPEND _EXPAT_STATIC_TARGETS fuzzpat)
+    endif()
+
+    foreach(_target ${_EXPAT_STATIC_TARGETS})
+        target_compile_definitions(${_target} PUBLIC -DXML_STATIC)
+    endforeach()
 endif()
 
 #
@@ -808,7 +877,7 @@ if(MSVC)
 endif()
 message(STATUS "  Character type ............. ${_EXPAT_CHAR_TYPE_SUMMARY}")
 if(NOT _EXPAT_GENERATOR_IS_MULTI_CONFIG)
-    message(STATUS "  Library name postfix ....... ${CMAKE_${_EXPAT_BUILD_TYPE_UPPER}_POSTFIX}")
+    message(STATUS "  Library name postfix ....... ${EXPAT_${_EXPAT_BUILD_TYPE_UPPER}_POSTFIX}")
 endif()
 message(STATUS "")
 message(STATUS "  Build documentation ........ ${EXPAT_BUILD_DOCS}")

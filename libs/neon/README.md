@@ -1,5 +1,6 @@
 
-[![Travis CI Build Status](https://travis-ci.org/notroj/neon.svg?branch=0.31.x)](https://travis-ci.org/notroj/neon)
+[![Travis CI Build Status](https://travis-ci.com/notroj/neon.svg?branch=master)](https://travis-ci.com/github/notroj/neon)
+[![Build and test](https://github.com/notroj/neon/actions/workflows/ci.yml/badge.svg)](https://github.com/notroj/neon/actions/workflows/ci.yml)
 
 # neon
 
@@ -8,7 +9,7 @@ _neon_ is an HTTP and WebDAV client library, with a C language API.
 Mailing list: neon@lists.manyfish.co.uk || Web site: https://notroj.github.io/neon/
 
 The neon API and ABI are stable and maintain backwards compatibility
-from 0.27.x through 0.31.x.
+since 0.27 through to current releases.
 
 Features:
 
@@ -16,17 +17,18 @@ Features:
  - Low-level interface to HTTP request handling, to allow implementing
    new methods easily.
  - Persistent connection support (HTTP/1.1 and HTTP/1.0 aware)
- - Basic and digest authentication (RFC2617) (including auth-int, md5-sess)
- - Proxy support (including basic/digest authentication)
- - SSL/TLS support using OpenSSL (including client certificate support)
+ - Basic and Digest authentication (RFC 7616/7617, including SHA-2, userhash)
+ - Kerberos (Negotiate) and SSPI/NTLM authentication (Unix and Windows)
+ - HTTP and SOCKS (v4/5) proxy support (including authentication)
+ - SSL/TLS support using OpenSSL or GnuTLS (client certs via files or PKCS#11)
  - Generic WebDAV 207 XML response handling mechanism
- - XML parsing using expat or libxml (1.x or 2.x) parser
+ - XML parsing using expat or libxml2
  - Easy generation of error messages from 207 error responses
  - Basic HTTP/1.1 methods: GET, PUT, HEAD, OPTIONS, conditional PUT
  - WebDAV resource manipulation: MOVE, COPY, DELETE, MKCOL.
  - WebDAV metadata support: set and remove properties (PROPPATCH), query
    any set of properties (PROPFIND).
- - WebDAV locking support
+ - WebDAV locking and ACL (RFC 3744) support
  - Autoconf macros supplied for easily embedding neon directly inside 
    an application source tree.
 
@@ -41,7 +43,7 @@ The autoconf macros in the "macros" directory are under a less
 restrictive license, see each file for details.
 
 ~~~
-neon is Copyright (C) 1999-2008 Joe Orton
+neon is Copyright (C) 1999-2021 Joe Orton
 Portions are:
 Copyright (C) Aleix Conchillo Flaque
 Copyright (C) Arfrever Frehtes Taifersar Arahesis

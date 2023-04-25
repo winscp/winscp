@@ -29,6 +29,7 @@ ALL_LINGUAS=`echo po/*.po | sed 's,po/,,g;s,\.po,,g'`
 tmp=`mktemp /tmp/neon-XXXXXX`
 sed -e 's,@SET_MAKE@,,;s,@SHELL@,/bin/sh,' \
     -e "s,@top_srcdir@,`pwd`," \
+    -e "s,@srcdir@,`pwd`," \
     -e "s,@ALL_LINGUAS@,${ALL_LINGUAS}," \
     < Makefile.in > $tmp
 make -f $tmp docs compile-gmo

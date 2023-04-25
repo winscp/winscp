@@ -29,6 +29,8 @@
 
 int single_serve_string(ne_socket *s, void *userdata);
 
+int serve_response(ne_socket *s, const char *response);
+
 struct many_serve_args {
     int count;
     const char *str;
@@ -47,6 +49,10 @@ int any_2xx_request(ne_session *sess, const char *uri);
 
 /* As above but with a request body. */
 int any_2xx_request_body(ne_session *sess, const char *uri);
+
+/* As any_2xx_request but with a specified method. */
+int any_2xx_request_method(ne_session *sess, const char *method,
+                           const char *uri);
 
 /* makes *session, spawns server which will run 'fn(userdata,
  * socket)'.  sets error context if returns non-zero, i.e use like:
@@ -137,6 +143,13 @@ int proxied_session_server(ne_session **sess, const char *scheme,
 int fakeproxied_session_server(ne_session **sess, const char *scheme,
                                const char *host, unsigned int fakeport,
                                server_fn fn, void *userdata);
+
+/* As per fakeproxied_session_server, but also takes an iteration
+ * count. */
+int fakeproxied_multi_session_server(int count,
+                                     ne_session **sess, const char *scheme,
+                                     const char *host, unsigned int fakeport,
+                                     server_fn fn, void *userdata);
 
 /* Read contents of file 'filename' into buffer 'buf'. */
 int file_to_buffer(const char *filename, ne_buffer *buf);

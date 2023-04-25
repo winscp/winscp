@@ -41,7 +41,7 @@ use Plink:
 
 \c C:\>plink
 \c Plink: command-line connection utility
-\c Release 0.74
+\c Release 0.77
 \c Usage: plink [options] [user@]host [command]
 \c        ("host" can also be a PuTTY saved session name)
 \c Options:
@@ -51,6 +51,8 @@ use Plink:
 \c   -load sessname  Load settings from saved session
 \c   -ssh -telnet -rlogin -raw -serial
 \c             force use of a particular protocol
+\c   -ssh-connection
+\c             force use of the bare ssh-connection protocol
 \c   -P port   connect to specified port
 \c   -l user   connect with specified username
 \c   -batch    disable all interactive prompts
@@ -59,7 +61,7 @@ use Plink:
 \c   -sercfg configuration-string (e.g. 19200,8,n,1,X)
 \c             Specify the serial configuration (serial only)
 \c The following options only apply to SSH connections:
-\c   -pw passw login with specified password
+\c   -pwfile file   login with password read from specified file
 \c   -D [listen-IP:]listen-port
 \c             Dynamic SOCKS-based port forwarding
 \c   -L [listen-IP:]listen-port:host:port
@@ -69,15 +71,17 @@ use Plink:
 \c   -X -x     enable / disable X11 forwarding
 \c   -A -a     enable / disable agent forwarding
 \c   -t -T     enable / disable pty allocation
-\c   -1 -2     force use of particular protocol version
+\c   -1 -2     force use of particular SSH protocol version
 \c   -4 -6     force use of IPv4 or IPv6
 \c   -C        enable compression
 \c   -i key    private key file for user authentication
 \c   -noagent  disable use of Pageant
 \c   -agent    enable use of Pageant
+\c   -no-trivial-auth
+\c             disconnect if SSH authentication succeeds trivially
 \c   -noshare  disable use of connection sharing
 \c   -share    enable use of connection sharing
-\c   -hostkey aa:bb:cc:...
+\c   -hostkey keyid
 \c             manually specify a host key (may be repeated)
 \c   -sanitise-stderr, -sanitise-stdout, -no-sanitise-stderr, -no-sanitise-stdout
 \c             do/don't strip control chars from standard output/error
@@ -90,6 +94,9 @@ use Plink:
 \c   -sshlog file
 \c   -sshrawlog file
 \c             log protocol details to a file
+\c   -logoverwrite
+\c   -logappend
+\c             control what happens when a log file already exists
 \c   -shareexists
 \c             test whether a connection-sharing upstream exists
 
@@ -114,8 +121,8 @@ characters appearing in your window. Interactive connections like
 this are not the main point of Plink.
 
 In order to connect with a different protocol, you can give the
-command line options \c{-ssh}, \c{-telnet}, \c{-rlogin} or \c{-raw}.
-To make an SSH connection, for example:
+command line options \c{-ssh}, \c{-ssh-connection}, \c{-telnet},
+\c{-rlogin}, or \c{-raw}. To make an SSH connection, for example:
 
 \c C:\>plink -ssh login.example.com
 \c login as:
@@ -163,12 +170,14 @@ key of the server you're connecting to, to enter a user name, or to
 enter a password.
 
 To avoid being prompted for the server host key when using Plink for
-an automated connection, you should first make a \e{manual}
+an automated connection, you can first make a \e{manual}
 connection (using either of PuTTY or Plink) to the same server,
 verify the host key (see \k{gs-hostkey} for more information), and
-select Yes to add the host key to the Registry. After that, Plink
-commands connecting to that server should not give a host key prompt
-unless the host key changes.
+select \q{Accept} to add the host key to the Registry. After that,
+Plink commands connecting to that server should not give a host key
+prompt unless the host key changes. Alternatively, you can specify
+the appropriate host key(s) on Plink's command line every time you
+use it; see \k{using-cmdline-hostkey}.
 
 To avoid being prompted for a user name, you can:
 
@@ -310,26 +319,26 @@ But in case Plink guesses wrong about whether you want this
 sanitisation, you can override it in either direction, using one of
 these options:
 
-\dd \c{-sanitise-stderr}
+\dt \c{-sanitise-stderr}
 
-\dt Sanitise server data written to Plink's standard error channel,
+\dd Sanitise server data written to Plink's standard error channel,
 regardless of terminals and consoles and remote ptys.
 
-\dd \c{-no-sanitise-stderr}
+\dt \c{-no-sanitise-stderr}
 
-\dt Do not sanitise server data written to Plink's standard error
+\dd Do not sanitise server data written to Plink's standard error
 channel.
 
-\dd \c{-sanitise-stdout}
+\dt \c{-sanitise-stdout}
 
-\dt Sanitise server data written to Plink's standard output channel.
+\dd Sanitise server data written to Plink's standard output channel.
 
-\dd \c{-no-sanitise-stdout}
+\dt \c{-no-sanitise-stdout}
 
-\dt Do not sanitise server data written to Plink's standard output
+\dd Do not sanitise server data written to Plink's standard output
 channel.
 
-\S2{plink-option-antispoof} \I{-no-antispoof}: turn off authentication spoofing protection prompt
+\S2{plink-option-antispoof} \i{-no-antispoof}: turn off authentication spoofing protection prompt
 
 In SSH, some possible server authentication methods require user input
 (for example, password authentication, or entering a private key

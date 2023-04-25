@@ -1,0 +1,212 @@
+\cfg{man-identity}{psftp}{1}{2004-03-24}{PuTTY tool suite}{PuTTY tool suite}
+
+\H{psftp-manpage} Man page for PSFTP
+
+\S{psftp-manpage-name} NAME
+
+\cw{psftp} \- interactive SFTP (secure file transfer protocol) client
+
+\S{psftp-manpage-synopsis} SYNOPSIS
+
+\c psftp [options] [user@]host
+\e bbbbb  iiiiiii   iiiib iiii
+
+\S{psftp-manpage-description} DESCRIPTION
+
+\cw{psftp} is an interactive text-based client for the SSH-based SFTP
+(secure file transfer) protocol.
+
+\S{psftp-manpage-options} OPTIONS
+
+The command-line options supported by \cw{psftp} are:
+
+\dt \cw{-V}
+
+\dd Show version information and exit.
+
+\dt \cw{-pgpfp}
+
+\dd Display the fingerprints of the PuTTY PGP Master Keys and exit,
+to aid in verifying new files released by the PuTTY team.
+
+\dt \cw{-b} \e{batchfile}
+
+\dd Use specified batchfile.
+
+\dt \cw{-bc}
+
+\dd Output batchfile commands.
+
+\dt \cw{-be}
+
+\dd Don't stop batchfile processing on errors.
+
+\dt \cw{-v}
+
+\dd Show verbose messages.
+
+\dt \cw{-load} \e{session}
+
+\dd Load settings from saved session.
+
+\dt \cw{-P} \e{port}
+
+\dd Connect to port \e{port}.
+
+\dt \cw{\-proxycmd} \e{command}
+
+\dd Instead of making a TCP connection, use \e{command} as a proxy;
+network traffic will be redirected to the standard input and output
+of \e{command}. \e{command} must be a single word, so is likely to
+need quoting by the shell.
+
+\lcont{
+The special strings \cw{%host} and \cw{%port} in \e{command} will be
+replaced by the hostname and port number you want to connect to; to get
+a literal \c{%} sign, enter \c{%%}.
+
+Backslash escapes are also supported, such as sequences like \c{\\n}
+being replaced by a literal newline; to get a literal backslash,
+enter \c{\\\\}. (Further escaping may be required by the shell.)
+
+(See the main PuTTY manual for full details of the supported \cw{%}-
+and backslash-delimited tokens, although most of them are probably not
+very useful in this context.)
+}
+
+\dt \cw{-l} \e{user}
+
+\dd Set remote username to \e{user}.
+
+\dt \cw{-batch}
+
+\dd Disable interactive prompts.
+
+\dt \cw{-no-sanitise-stderr}
+
+\dd By default, PSFTP will filter control characters from the standard error
+channel from the server, to prevent remote processes sending confusing
+escape sequences. This option forces the standard error channel to not be
+filtered.
+
+\dt \cw{-pwfile} \e{filename}
+
+\dd Open the specified file, and use the first line of text read from
+it as the remote password.
+
+\dt \cw{-pw} \e{password}
+
+\dd Set remote password to \e{password}. \e{CAUTION:} this will likely
+make the password visible to other users of the local machine (via
+commands such as \q{\c{ps}} or \q{\c{w}}). Use \cw{-pwfile} instead.
+
+\dt \cw{-1}
+
+\dd Force use of SSH protocol version 1.
+
+\dt \cw{-2}
+
+\dd Force use of SSH protocol version 2.
+
+\dt \cw{-ssh-connection}
+
+\dd Force use of the \q{bare \cw{ssh-connection}} protocol. This is
+only likely to be useful when connecting to a \cw{psusan}(\e{1})
+server, most likely with an absolute path to a Unix-domain socket in
+place of \e{host}.
+
+\dt \cw{-ssh}
+
+\dd Force use of the SSH protocol. (This is usually not needed; it's
+only likely to be useful if you need to override some other
+configuration of the \q{bare \cw{ssh-connection}} protocol.)
+
+\dt \cw{-4}, \cw{-6}
+
+\dd Force use of IPv4 or IPv6 for network connections.
+
+\dt \cw{-C}
+
+\dd Enable SSH compression.
+
+\dt \cw{-i} \e{keyfile}
+
+\dd Private key file for user authentication. For SSH-2 keys, this key
+file must be in PuTTY's PPK format, not OpenSSH's format or anyone
+else's.
+
+\lcont{ If you are using an authentication agent, you can also specify
+a \e{public} key here (in RFC 4716 or OpenSSH format), to identify
+which of the agent's keys to use. }
+
+\dt \cw{\-noagent}
+
+\dd Don't try to use an authentication agent.
+
+\dt \cw{\-agent}
+
+\dd Allow use of an authentication agent. (This option is only necessary
+to override a setting in a saved session.)
+
+\dt \cw{\-no\-trivial\-auth}
+
+\dd Disconnect from any SSH server which accepts authentication without
+ever having asked for any kind of password or signature or token. (You
+might want to enable this for a server you always expect to challenge
+you, for instance to ensure you don't accidentally type your key file's
+passphrase into a compromised server spoofing PSFTP's passphrase
+prompt.)
+
+\dt \cw{\-hostkey} \e{key}
+
+\dd Specify an acceptable host public key. This option may be specified
+multiple times; each key can be either a fingerprint (\cw{SHA256:AbCdE...},
+\cw{99:aa:bb:...}, etc) or a base64-encoded blob in OpenSSH's one-line
+format.
+
+\lcont{ Specifying this option overrides automated host key
+management; \e{only} the key(s) specified on the command-line will be
+accepted (unless a saved session also overrides host keys, in which
+case those will be added to), and the host key cache will not be
+written. }
+
+\dt \cw{\-sshlog} \e{logfile}
+
+\dt \cw{\-sshrawlog} \e{logfile}
+
+\dd These options make \cw{psftp} log protocol details to a file.
+(Some of these may be sensitive, although by default an effort is made
+to suppress obvious passwords.)
+
+\lcont{
+\cw{\-sshlog} logs decoded SSH packets and other events (those that
+\cw{\-v} would print). \cw{\-sshrawlog} additionally logs the raw
+encrypted packet data.
+}
+
+\dt \cw{\-logoverwrite}
+
+\dd If PSFTP is configured to write to a log file that already exists,
+discard the existing file.
+
+\dt \cw{\-logappend}
+
+\dd If PSFTP is configured to write to a log file that already exists,
+append new log data to the existing file.
+
+\S{psftp-manpage-commands} COMMANDS
+
+For a list of commands available inside \cw{psftp}, type \cw{help}
+at the \cw{psftp>} prompt.
+
+\S{psftp-manpage-more-information} MORE INFORMATION
+
+For more information on \cw{psftp} it's probably best to go and look at
+the manual on the PuTTY web page:
+
+\cw{https://www.chiark.greenend.org.uk/~sgtatham/putty/}
+
+\S{psftp-manpage-bugs} BUGS
+
+This man page isn't terribly complete. See the above web link for
+better documentation.

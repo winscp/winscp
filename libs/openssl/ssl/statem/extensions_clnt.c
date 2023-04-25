@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2022 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the OpenSSL license (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -118,6 +118,8 @@ static int use_ecc(SSL *s)
     int i, end, ret = 0;
     unsigned long alg_k, alg_a;
     STACK_OF(SSL_CIPHER) *cipher_stack = NULL;
+    const uint16_t *pgroups = NULL;
+    size_t num_groups, j;
 
     /* See if we support any ECC ciphersuites */
     if (s->version == SSL3_VERSION)
@@ -139,7 +141,19 @@ static int use_ecc(SSL *s)
     }
 
     sk_SSL_CIPHER_free(cipher_stack);
-    return ret;
+    if (!ret)
+        return 0;
+
+    /* Check we have at least one EC supported group */
+    tls1_get_supported_groups(s, &pgroups, &num_groups);
+    for (j = 0; j < num_groups; j++) {
+        uint16_t ctmp = pgroups[j];
+
+        if (tls_curve_allowed(s, ctmp, SSL_SECOP_CURVE_SUPPORTED))
+            return 1;
+    }
+
+    return 0;
 }
 
 EXT_RETURN tls_construct_ctos_ec_pt_formats(SSL *s, WPACKET *pkt,
@@ -988,7 +1002,7 @@ EXT_RETURN tls_construct_ctos_psk(SSL *s, WPACKET *pkt, unsigned int context,
                                   X509 *x, size_t chainidx)
 {
 #ifndef OPENSSL_NO_TLS1_3
-    uint32_t now, agesec, agems = 0;
+    uint32_t agesec, agems = 0;
     size_t reshashsize = 0, pskhashsize = 0, binderoffset, msglen;
     unsigned char *resbinder = NULL, *pskbinder = NULL, *msgstart = NULL;
     const EVP_MD *handmd = NULL, *mdres = NULL, *mdpsk = NULL;
@@ -1045,8 +1059,7 @@ EXT_RETURN tls_construct_ctos_psk(SSL *s, WPACKET *pkt, unsigned int context,
          * this in multiple places in the code, so portability shouldn't be an
          * issue.
          */
-        now = (uint32_t)time(NULL);
-        agesec = now - (uint32_t)s->session->time;
+        agesec = (uint32_t)(time(NULL) - s->session->time);
         /*
          * We calculate the age in seconds but the server may work in ms. Due to
          * rounding errors we could overestimate the age by up to 1s. It is

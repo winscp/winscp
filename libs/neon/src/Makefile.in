@@ -33,8 +33,8 @@ NEON_LINK_FLAGS = @NEON_LINK_FLAGS@
 LIBS = @NEON_LIBS@ @NEON_LTLIBS@
 
 COMPILE = $(CC) $(CPPFLAGS) $(CFLAGS)
-LT_COMPILE = $(LIBTOOL) --quiet --mode=compile $(COMPILE)
-LINK = $(LIBTOOL) --quiet --mode=link $(CC) -no-undefined $(LDFLAGS)
+LT_COMPILE = $(LIBTOOL) --quiet --mode=compile --tag=CC $(COMPILE)
+LINK = $(LIBTOOL) --quiet --mode=link --tag=CC $(CC) -no-undefined $(LDFLAGS)
 
 NEON_BASEOBJS = ne_request.@NEON_OBJEXT@ ne_session.@NEON_OBJEXT@	\
 	ne_basic.@NEON_OBJEXT@ ne_string.@NEON_OBJEXT@			\
@@ -81,6 +81,9 @@ libneon.a: $(OBJECTS)
 clean:
 	rm -f $(NEON_TARGET) *.o *.lo *.bbg *.bb *.gc*
 	rm -rf .libs
+
+mktable: mktable.lo
+	$(LINK) -o $@ mktable.lo
 
 c++.c:
 	find . -name ne_\*.h -print | sed 's/.*/#include "&"/;/ne_priv/d' > $@

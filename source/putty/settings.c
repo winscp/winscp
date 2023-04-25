@@ -8,8 +8,8 @@
 #include "putty.h"
 #include "storage.h"
 #ifndef NO_GSSAPI
-#include "sshgssc.h"
-#include "sshgss.h"
+#include "ssh/gssc.h"
+#include "ssh/gss.h"
 #endif
 
 
@@ -39,6 +39,7 @@ static const struct keyvalwhere kexnames[] = {
 
 static const struct keyvalwhere hknames[] = {
     { "ed25519",    HK_ED25519,             -1, +1 },
+    { "ed448",      HK_ED448,               -1, +1 },
     { "ecdsa",      HK_ECDSA,               -1, -1 },
     { "dsa",        HK_DSA,                 -1, -1 },
     { "rsa",        HK_RSA,                 -1, -1 },
@@ -48,9 +49,9 @@ static const struct keyvalwhere hknames[] = {
 /*
  * All the terminal modes that we know about for the "TerminalModes"
  * setting. (Also used by config.c for the drop-down list.)
- * This is currently precisely the same as the set in ssh.c, but could
- * in principle differ if other backends started to support tty modes
- * (e.g., the pty backend).
+ * This is currently precisely the same as the set in
+ * ssh/ttymode-list.h, but could in principle differ if other backends
+ * started to support tty modes (e.g., the pty backend).
  * The set of modes in in this array is currently significant for
  * settings migration from old versions; if they change, review the
  * gppmap() invocation for "TerminalModes".
@@ -69,6 +70,10 @@ const char *const ttymodes[] = {
     "CS7",      "CS8",      "PARENB",   "PARODD",   NULL
 };
 
+static int default_protocol, default_port;
+void settings_set_default_protocol(int newval) { default_protocol = newval; }
+void settings_set_default_port(int newval) { default_port = newval; }
+
 /*
  * Convenience functions to access the backends[] array
  * (which is only present in tools that manage settings).
@@ -78,7 +83,7 @@ const struct BackendVtable *backend_vt_from_name(const char *name)
 {
     const struct BackendVtable *const *p;
     for (p = backends; *p != NULL; p++)
-        if (!strcmp((*p)->name, name))
+        if (!strcmp((*p)->id, name))
             return *p;
     return NULL;
 }
@@ -488,13 +493,12 @@ static void write_clip_setting(settings_w *sesskey, const char *savekey,
       case CLIPUI_EXPLICIT:
         write_setting_s(sesskey, savekey, "explicit");
         break;
-      case CLIPUI_CUSTOM:
-        {
-            char *sval = dupcat("custom:", conf_get_str(conf, strconfkey));
-            write_setting_s(sesskey, savekey, sval);
-            sfree(sval);
-        }
+      case CLIPUI_CUSTOM: {
+        char *sval = dupcat("custom:", conf_get_str(conf, strconfkey));
+        write_setting_s(sesskey, savekey, sval);
+        sfree(sval);
         break;
+      }
     }
 }
 
@@ -553,7 +557,7 @@ void save_open_settings(settings_w *sesskey, Conf *conf)
         const struct BackendVtable *vt =
             backend_vt_from_proto(conf_get_int(conf, CONF_protocol));
         if (vt)
-            p = vt->name;
+            p = vt->id;
     }
     write_setting_s(sesskey, "Protocol", p);
     write_setting_i(sesskey, "PortNumber", conf_get_int(conf, CONF_port));
@@ -605,6 +609,7 @@ void save_open_settings(settings_w *sesskey, Conf *conf)
 #endif
     write_setting_s(sesskey, "RekeyBytes", conf_get_str(conf, CONF_ssh_rekey_data));
     write_setting_b(sesskey, "SshNoAuth", conf_get_bool(conf, CONF_ssh_no_userauth));
+    write_setting_b(sesskey, "SshNoTrivialAuth", conf_get_bool(conf, CONF_ssh_no_trivial_userauth));
     write_setting_b(sesskey, "SshBanner", conf_get_bool(conf, CONF_ssh_show_banner));
     write_setting_b(sesskey, "AuthTIS", conf_get_bool(conf, CONF_try_tis_auth));
     write_setting_b(sesskey, "AuthKI", conf_get_bool(conf, CONF_try_ki_auth));
@@ -625,6 +630,7 @@ void save_open_settings(settings_w *sesskey, Conf *conf)
     write_setting_b(sesskey, "BackspaceIsDelete", conf_get_bool(conf, CONF_bksp_is_delete));
     write_setting_b(sesskey, "RXVTHomeEnd", conf_get_bool(conf, CONF_rxvt_homeend));
     write_setting_i(sesskey, "LinuxFunctionKeys", conf_get_int(conf, CONF_funky_type));
+    write_setting_i(sesskey, "ShiftedArrowKeys", conf_get_int(conf, CONF_sharrow_type));
     write_setting_b(sesskey, "NoApplicationKeys", conf_get_bool(conf, CONF_no_applic_k));
     write_setting_b(sesskey, "NoApplicationCursors", conf_get_bool(conf, CONF_no_applic_c));
     write_setting_b(sesskey, "NoMouseReporting", conf_get_bool(conf, CONF_no_mouse_rep));
@@ -764,6 +770,7 @@ void save_open_settings(settings_w *sesskey, Conf *conf)
     write_setting_i(sesskey, "BugOldGex2", 2-conf_get_int(conf, CONF_sshbug_oldgex2));
     write_setting_i(sesskey, "BugWinadj", 2-conf_get_int(conf, CONF_sshbug_winadj));
     write_setting_i(sesskey, "BugChanReq", 2-conf_get_int(conf, CONF_sshbug_chanreq));
+    write_setting_i(sesskey, "BugDropStart", 2-conf_get_int(conf, CONF_sshbug_dropstart));
     write_setting_b(sesskey, "StampUtmp", conf_get_bool(conf, CONF_stamp_utmp));
     write_setting_b(sesskey, "LoginShell", conf_get_bool(conf, CONF_login_shell));
     write_setting_b(sesskey, "ScrollbarOnLeft", conf_get_bool(conf, CONF_scrollbar_on_left));
@@ -783,6 +790,14 @@ void save_open_settings(settings_w *sesskey, Conf *conf)
     write_setting_b(sesskey, "ConnectionSharingUpstream", conf_get_bool(conf, CONF_ssh_connection_sharing_upstream));
     write_setting_b(sesskey, "ConnectionSharingDownstream", conf_get_bool(conf, CONF_ssh_connection_sharing_downstream));
     wmap(sesskey, "SSHManualHostKeys", conf, CONF_ssh_manual_hostkeys, false);
+
+    /*
+     * SUPDUP settings
+     */
+    write_setting_s(sesskey, "SUPDUPLocation", conf_get_str(conf, CONF_supdup_location));
+    write_setting_i(sesskey, "SUPDUPCharset", conf_get_int(conf, CONF_supdup_ascii_set));
+    write_setting_b(sesskey, "SUPDUPMoreProcessing", conf_get_bool(conf, CONF_supdup_more));
+    write_setting_b(sesskey, "SUPDUPScrolling", conf_get_bool(conf, CONF_supdup_scroll));
 }
 
 bool load_settings(const char *section, Conf *conf)
@@ -1013,6 +1028,7 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
     gpps(sesskey, "LogHost", "", conf, CONF_loghost);
     gppb(sesskey, "SSH2DES", false, conf, CONF_ssh2_des_cbc);
     gppb(sesskey, "SshNoAuth", false, conf, CONF_ssh_no_userauth);
+    gppb(sesskey, "SshNoTrivialAuth", false, conf, CONF_ssh_no_trivial_userauth);
     gppb(sesskey, "SshBanner", true, conf, CONF_ssh_show_banner);
     gppb(sesskey, "AuthTIS", false, conf, CONF_try_tis_auth);
     gppb(sesskey, "AuthKI", true, conf, CONF_try_ki_auth);
@@ -1031,6 +1047,8 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
     gppb(sesskey, "BackspaceIsDelete", true, conf, CONF_bksp_is_delete);
     gppb(sesskey, "RXVTHomeEnd", false, conf, CONF_rxvt_homeend);
     gppi(sesskey, "LinuxFunctionKeys", 0, conf, CONF_funky_type);
+    gppi(sesskey, "ShiftedArrowKeys", SHARROW_APPLICATION, conf,
+         CONF_sharrow_type);
     gppb(sesskey, "NoApplicationKeys", false, conf, CONF_no_applic_k);
     gppb(sesskey, "NoApplicationCursors", false, conf, CONF_no_applic_c);
     gppb(sesskey, "NoMouseReporting", false, conf, CONF_no_mouse_rep);
@@ -1230,6 +1248,7 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
     i = gppi_raw(sesskey, "BugOldGex2", 0); conf_set_int(conf, CONF_sshbug_oldgex2, 2-i);
     i = gppi_raw(sesskey, "BugWinadj", 0); conf_set_int(conf, CONF_sshbug_winadj, 2-i);
     i = gppi_raw(sesskey, "BugChanReq", 0); conf_set_int(conf, CONF_sshbug_chanreq, 2-i);
+    i = gppi_raw(sesskey, "BugDropStart", 1); conf_set_int(conf, CONF_sshbug_dropstart, 2-i);
     conf_set_bool(conf, CONF_ssh_simple, false);
     gppb(sesskey, "StampUtmp", true, conf, CONF_stamp_utmp);
     gppb(sesskey, "LoginShell", true, conf, CONF_login_shell);
@@ -1253,6 +1272,14 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
     gppb(sesskey, "ConnectionSharingDownstream", true,
          conf, CONF_ssh_connection_sharing_downstream);
     gppmap(sesskey, "SSHManualHostKeys", conf, CONF_ssh_manual_hostkeys);
+
+    /*
+     * SUPDUP settings
+     */
+    gpps(sesskey, "SUPDUPLocation", "The Internet", conf, CONF_supdup_location);
+    gppi(sesskey, "SUPDUPCharset", false, conf, CONF_supdup_ascii_set);
+    gppb(sesskey, "SUPDUPMoreProcessing", false, conf, CONF_supdup_more);
+    gppb(sesskey, "SUPDUPScrolling", false, conf, CONF_supdup_scroll);
 }
 
 bool do_defaults(const char *session, Conf *conf)
@@ -1280,6 +1307,8 @@ static int sessioncmp(const void *av, const void *bv)
     return strcmp(a, b);               /* otherwise, compare normally */
 }
 
+bool sesslist_demo_mode = false;
+
 void get_sesslist(struct sesslist *list, bool allocate)
 {
     int i;
@@ -1289,12 +1318,18 @@ void get_sesslist(struct sesslist *list, bool allocate)
     if (allocate) {
         strbuf *sb = strbuf_new();
 
-        if ((handle = enum_settings_start()) != NULL) {
-            while (enum_settings_next(handle, sb))
-                put_byte(sb, '\0');
-            enum_settings_finish(handle);
+        if (sesslist_demo_mode) {
+            put_asciz(sb, "demo-server");
+            put_asciz(sb, "demo-server-2");
+        } else {
+            if ((handle = enum_settings_start()) != NULL) {
+                while (enum_settings_next(handle, sb))
+                    put_byte(sb, '\0');
+                enum_settings_finish(handle);
+            }
+            put_byte(sb, '\0');
         }
-        put_byte(sb, '\0');
+
         list->buffer = strbuf_to_str(sb);
 
         /*

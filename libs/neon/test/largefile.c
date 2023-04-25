@@ -181,9 +181,8 @@ static int read_large_response(void)
     ne_request_destroy(req);
 
     CALL(any_2xx_request(sess, "/bar"));
-    CALL(await_server());
-    ne_session_destroy(sess);
-    return OK;
+
+    return destroy_and_wait(sess);
 }
 
 ne_test tests[] = {

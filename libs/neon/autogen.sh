@@ -8,21 +8,21 @@ if test ! -f .version; then
    echo 0.0.0-dev > .version
    # for the documentation:
    date +"%e %B %Y" | tr -d '\n' > doc/date.xml
-   echo -n 0.0.0-dev > doc/version.xml
+   echo 0.0.0-dev > doc/version.xml
 fi
 set -e
-echo -n "libtoolize... "
-LIBTOOLIZE=${LIBTOOLIZE:-libtoolize}
+printf  "libtoolize... "
+: "${LIBTOOLIZE:="$(command -v libtoolize || command -v glibtoolize)"}"
 if ${LIBTOOLIZE} --help | grep -- --install > /dev/null; then
    ${LIBTOOLIZE} --copy --force --install >/dev/null;
 else
    ${LIBTOOLIZE} --copy --force >/dev/null
 fi
-echo -n "aclocal... "
+printf  "aclocal... "
 ${ACLOCAL:-aclocal} -I macros
-echo -n "autoheader... "
+printf  "autoheader... "
 ${AUTOHEADER:-autoheader}
-echo -n "autoconf... "
+printf  "autoconf... "
 ${AUTOCONF:-autoconf} -Wall
 echo okay.
 # remove the autoconf cache

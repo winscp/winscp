@@ -1,0 +1,74 @@
+    <refentry id="refparam">
+
+      <refmeta>
+	<refentrytitle>ne_strparam</refentrytitle>
+	<manvolnum>3</manvolnum>
+      </refmeta>
+
+      <refnamediv>
+	<refname id="ne_strparam">ne_strparam</refname>
+	<refpurpose>HTTP extended parameter value encoding</refpurpose>
+      </refnamediv>
+
+      <refsynopsisdiv>
+
+	<funcsynopsis>
+          <funcsynopsisinfo>#include &lt;ne_string.h&gt;</funcsynopsisinfo>
+
+	  <funcprototype>
+	    <funcdef>char *<function>ne_strparam</function></funcdef>
+	    <paramdef>const char *<parameter>charset</parameter></paramdef>
+	    <paramdef>const char *<parameter>lang</parameter></paramdef>
+	    <paramdef>const char *<parameter>value</parameter></paramdef>
+	  </funcprototype>
+	</funcsynopsis>
+
+      </refsynopsisdiv>
+
+      <refsect1>
+	<title>Description</title>
+
+	<para>The <function>ne_strparam</function> function can be
+	used to encode an extended parameter value for an HTTP header,
+	as defined in RFC 5987.  The function takes as arguments the
+	<parameter>value</parameter> to encode, using a given MIME
+	<parameter>charset</parameter> character set, and
+	<parameter>lang</parameter> language tag.  The extended
+	parameter encoding is used in HTTP protocol specifications to
+	allow easily embedding special characters (such as quote
+	marks, separators or non-ASCII) in header values.</para>
+
+        <para>In accordance with RFC 5987, the
+        <parameter>charset</parameter> argument must be either
+        <constant>"UTF-8"</constant> or
+        <constant>"IS0-8859-1"</constant>, but the
+        <parameter>lang</parameter> argument may be &null;.</para>
+      </refsect1>
+
+      <refsect1>
+	<title>Return value</title>
+
+        <para>The return value is either:
+
+	<variablelist>
+	  <varlistentry>
+            <term>&null;</term>
+            <listitem><simpara>if the value parameter is a "regular
+            parameter" and does not need extended
+            encoding</simpara></listitem> </varlistentry>
+            <varlistentry>
+            <term>non-&null;</term>
+            <listitem><simpara>the encoding of the input value as an
+            extended parameter as a NUL-terminated, malloc-allocated
+            string</simpara></listitem>
+	  </varlistentry>
+        </variablelist></para>
+      </refsect1>
+
+  <refsect1>
+    <title>See also</title>
+
+    <para><ulink url="https://tools.ietf.org/html/rfc5987"/></para>
+  </refsect1>
+
+</refentry>

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: neon 0.29.x\n"
 "Report-Msgid-Bugs-To: neon@lists.manyfish.co.uk\n"
-"POT-Creation-Date: 2020-02-25 08:20+0000\n"
+"POT-Creation-Date: 2022-09-11 08:33+0100\n"
 "PO-Revision-Date: 2008-03-03 11:20+0800\n"
 "Last-Translator: Dongsheng Song <dongsheng.song@gmail.com>\n"
 "Language-Team: neon@webdav.org\n"
@@ -27,112 +27,131 @@ msgstr ""
 "响应信息中 %d 行的状态元素中发现非法 HTTP 状态行：\n"
 "状态行是: %s"
 
-#: src/ne_auth.c:139
+#: src/ne_auth.c:151
 #, c-format
 msgid "Could not authenticate to server: %s"
 msgstr "不能认证到服务器: %s"
 
-#: src/ne_auth.c:144
+#: src/ne_auth.c:156
 #, c-format
 msgid "Could not authenticate to proxy server: %s"
 msgstr "不能认证到代理服务器: %s"
 
-#: src/ne_auth.c:384
+#: src/ne_auth.c:410
 #, c-format
 msgid "rejected %s challenge"
 msgstr "被拒绝的 %s 挑战"
 
-#: src/ne_auth.c:400
+#: src/ne_auth.c:451
 msgid "missing realm in Basic challenge"
 msgstr "在基本挑战中丢失了领域"
 
-#: src/ne_auth.c:495
+#: src/ne_auth.c:465
+msgid "cannot handle Basic challenge for username containing colon"
+msgstr ""
+
+#: src/ne_auth.c:570
 msgid "invalid Negotiate token"
 msgstr "非法磋商令牌"
 
-#: src/ne_auth.c:518
+#: src/ne_auth.c:593
 msgid "GSSAPI authentication error: "
 msgstr "GSSAPI 认证错误: "
 
-#: src/ne_auth.c:531
+#: src/ne_auth.c:606
 #, c-format
 msgid "GSSAPI failure (code %u)"
 msgstr "GSSAPI 失败(代码 %u)"
 
-#: src/ne_auth.c:566
+#: src/ne_auth.c:641
 msgid "ignoring empty Negotiate continuation"
 msgstr "忽略后续的空磋商"
 
-#: src/ne_auth.c:581
+#: src/ne_auth.c:656
 #, c-format
 msgid "Negotiate response verification failed: invalid response header token"
 msgstr "校验协商响应失败：非法响应头令牌"
 
-#: src/ne_auth.c:603
+#: src/ne_auth.c:678
 #, c-format
 msgid "Negotiate response verification failure: %s"
 msgstr "磋商响应校验失败: %s"
 
-#: src/ne_auth.c:667
+#: src/ne_auth.c:742
 #, fuzzy, c-format
 msgid "SSPI response verification failed: invalid response header token"
 msgstr "校验协商响应失败：非法响应头令牌"
 
-#: src/ne_auth.c:800
+#: src/ne_auth.c:928
+#, fuzzy
+msgid "could not handle non-ASCII username in Digest challenge"
+msgstr "在摘要挑战中的不能解析域"
+
+#: src/ne_auth.c:956
 msgid "unknown algorithm in Digest challenge"
 msgstr "在摘要挑战中的算法不可识别"
 
-#: src/ne_auth.c:804
+#: src/ne_auth.c:963
+#, fuzzy
+msgid "legacy Digest challenge not supported"
+msgstr "陈旧的初始化摘要挑战"
+
+#: src/ne_auth.c:967
 msgid "incompatible algorithm in Digest challenge"
 msgstr "在摘要挑战中的算法不兼容"
 
-#: src/ne_auth.c:808
+#: src/ne_auth.c:971
 msgid "missing parameter in Digest challenge"
 msgstr "在摘要挑战中的参数丢失"
 
-#: src/ne_auth.c:812
+#: src/ne_auth.c:975
 msgid "initial Digest challenge was stale"
 msgstr "陈旧的初始化摘要挑战"
 
-#: src/ne_auth.c:819
+#: src/ne_auth.c:982
 msgid "stale Digest challenge with new algorithm or realm"
 msgstr "陈旧的摘要挑战用于新算法或新领域"
 
-#: src/ne_auth.c:831
+#: src/ne_auth.c:989
+#, fuzzy, c-format
+msgid "%s algorithm in Digest challenge not supported"
+msgstr "在摘要挑战中的算法不可识别"
+
+#: src/ne_auth.c:1003
 msgid "could not parse domain in Digest challenge"
 msgstr "在摘要挑战中的不能解析域"
 
-#: src/ne_auth.c:1140
+#: src/ne_auth.c:1281
 #, c-format
 msgid "Digest mutual authentication failure: missing parameters"
 msgstr "摘要互相认证失败：参数遗漏"
 
-#: src/ne_auth.c:1145
+#: src/ne_auth.c:1286
 #, c-format
 msgid "Digest mutual authentication failure: client nonce mismatch"
 msgstr "摘要互相认证失败：客户现时不匹配"
 
-#: src/ne_auth.c:1155
+#: src/ne_auth.c:1296
 #, c-format
 msgid "Digest mutual authentication failure: could not parse nonce count"
 msgstr "摘要互相认证失败：不能解析现时计数"
 
-#: src/ne_auth.c:1160
+#: src/ne_auth.c:1301
 #, c-format
 msgid "Digest mutual authentication failure: nonce count mismatch (%u not %u)"
 msgstr "摘要互相认证失败：现时计算不匹配 (应该是 %u，不是 %u)"
 
-#: src/ne_auth.c:1203
+#: src/ne_auth.c:1328
 #, c-format
 msgid "Digest mutual authentication failure: request-digest mismatch"
 msgstr "摘要互相认证失败：请求摘要不匹配"
 
-#: src/ne_auth.c:1334
+#: src/ne_auth.c:1466
 #, c-format
 msgid "ignored %s challenge"
 msgstr "被忽略的 %s 挑战"
 
-#: src/ne_auth.c:1413
+#: src/ne_auth.c:1563
 msgid "could not parse challenge"
 msgstr "不能解析挑战"
 
@@ -169,55 +188,55 @@ msgstr "解压数据失败"
 msgid "Could not initialize zlib"
 msgstr "初始化 zlib 失败"
 
-#: src/ne_gnutls.c:183
+#: src/ne_gnutls.c:184
 #, c-format
 msgid "[unprintable:#%lu]"
 msgstr "[非打印字符:#%lu]"
 
-#: src/ne_gnutls.c:212
+#: src/ne_gnutls.c:213
 msgid "[unprintable]"
 msgstr "[非打印字符]"
 
-#: src/ne_gnutls.c:659
+#: src/ne_gnutls.c:660
 #, c-format
 msgid "Failed to import private key: %s"
 msgstr ""
 
-#: src/ne_gnutls.c:903
+#: src/ne_gnutls.c:904
 msgid "signed using insecure algorithm"
 msgstr ""
 
-#: src/ne_gnutls.c:906
+#: src/ne_gnutls.c:907
 #, c-format
 msgid "unrecognized errors (%u)"
 msgstr ""
 
-#: src/ne_gnutls.c:951 src/ne_openssl.c:481
+#: src/ne_gnutls.c:952 src/ne_openssl.c:484
 #, c-format
 msgid "Server certificate was missing commonName attribute in subject name"
 msgstr "服务器证书在主题名称遗漏了属性 commonName"
 
-#: src/ne_gnutls.c:965
+#: src/ne_gnutls.c:966
 #, fuzzy, c-format
 msgid "Could not verify server certificate: %s"
 msgstr "不能写入文件：%s"
 
-#: src/ne_gnutls.c:984 src/ne_openssl.c:468
+#: src/ne_gnutls.c:985 src/ne_openssl.c:471
 #, c-format
 msgid "Certificate verification error: %s"
 msgstr "证书校验失败：%s"
 
-#: src/ne_gnutls.c:1017 src/ne_openssl.c:717
+#: src/ne_gnutls.c:1018 src/ne_openssl.c:720
 #, c-format
 msgid "SSL handshake failed, client certificate was requested: %s"
 msgstr ""
 
-#: src/ne_gnutls.c:1022 src/ne_openssl.c:722
+#: src/ne_gnutls.c:1023 src/ne_openssl.c:725
 #, fuzzy, c-format
 msgid "SSL handshake failed: %s"
 msgstr "SSL 协商失败：%s"
 
-#: src/ne_gnutls.c:1032
+#: src/ne_gnutls.c:1033
 #, c-format
 msgid "Server did not send certificate chain"
 msgstr "服务器不能发送证书链"
@@ -236,7 +255,7 @@ msgstr "锁定 %s 的响应遗漏了主动锁"
 msgid "No activelock for <%s> returned in LOCK refresh response"
 msgstr "刷新锁定 %s 的响应没有返回主动锁"
 
-#: src/ne_openssl.c:742
+#: src/ne_openssl.c:745
 #, c-format
 msgid "SSL server did not present certificate"
 msgstr "SSL 服务器不能呈现证书"
@@ -250,144 +269,149 @@ msgstr "响应超过了属性的最大计数"
 msgid "Could not parse redirect destination URL"
 msgstr "不能解析重定向 URL"
 
-#: src/ne_request.c:194
+#: src/ne_request.c:196
 #, c-format
 msgid "%s: connection was closed by proxy server"
 msgstr "%s: 连接被代理服务器关闭"
 
-#: src/ne_request.c:197
+#: src/ne_request.c:199
 #, c-format
 msgid "%s: connection was closed by server"
 msgstr "%s: 连接被服务器关闭"
 
-#: src/ne_request.c:202
+#: src/ne_request.c:204
 #, c-format
 msgid "%s: connection timed out"
 msgstr "%s: 连接超时"
 
-#: src/ne_request.c:305
+#: src/ne_request.c:307
 #, c-format
 msgid "Premature EOF in request body file"
 msgstr ""
 
-#: src/ne_request.c:312
+#: src/ne_request.c:314
 #, c-format
 msgid "Failed reading request body file: %s"
 msgstr ""
 
-#: src/ne_request.c:332
+#: src/ne_request.c:334
 msgid "offset invalid"
 msgstr "非法偏移"
 
-#: src/ne_request.c:337
+#: src/ne_request.c:339
 #, c-format
 msgid "Could not seek to offset %s of request body file: %s"
 msgstr "在请求主体文件不能定位到偏移 %s： %s"
 
-#: src/ne_request.c:423
+#: src/ne_request.c:425
 msgid "Could not send request body"
 msgstr "不能发送请求主体"
 
-#: src/ne_request.c:450
+#: src/ne_request.c:452
 #, fuzzy
 msgid "Could not send chunked request terminator"
 msgstr "不能发送请求"
 
-#: src/ne_request.c:785
+#: src/ne_request.c:788
 msgid "Could not read chunk size"
 msgstr "不能读块大小"
 
-#: src/ne_request.c:792
+#: src/ne_request.c:795
 msgid "Could not parse chunk size"
 msgstr "不能解析块大小"
 
-#: src/ne_request.c:829
+#: src/ne_request.c:832
 msgid "Could not read response body"
 msgstr "不能读取响应主体"
 
-#: src/ne_request.c:845
+#: src/ne_request.c:848
 msgid "Could not read chunk delimiter"
 msgstr "不能读块分割符"
 
-#: src/ne_request.c:848
+#: src/ne_request.c:851
 msgid "Chunk delimiter was invalid"
 msgstr "非法的分割符"
 
-#: src/ne_request.c:960
+#: src/ne_request.c:964
 msgid "Could not read status line (TLS client certificate was requested)"
 msgstr ""
 
-#: src/ne_request.c:961
+#: src/ne_request.c:965
 msgid "Could not read status line"
 msgstr "不能读状态行"
 
-#: src/ne_request.c:984
+#: src/ne_request.c:988
 msgid "Could not parse response status line"
 msgstr "不能解析响应状态行"
 
-#: src/ne_request.c:996
+#: src/ne_request.c:1000
 msgid "Could not read interim response headers"
 msgstr "不能读临时响应头"
 
-#: src/ne_request.c:1030
+#: src/ne_request.c:1035
 msgid "Could not send request"
 msgstr "不能发送请求"
 
-#: src/ne_request.c:1078 src/ne_request.c:1096 src/ne_request.c:1106
+#: src/ne_request.c:1069
+#, fuzzy
+msgid "Too many interim responses"
+msgstr "不能读临时响应头"
+
+#: src/ne_request.c:1089 src/ne_request.c:1107 src/ne_request.c:1117
 msgid "Error reading response headers"
 msgstr "读取响应头出错"
 
-#: src/ne_request.c:1124
+#: src/ne_request.c:1135
 #, c-format
 msgid "Response header too long"
 msgstr "响应头太长"
 
-#: src/ne_request.c:1206
+#: src/ne_request.c:1217
 msgid "Response exceeded maximum number of header fields"
 msgstr "响应头的域数量超出了最大数量"
 
-#: src/ne_request.c:1221
+#: src/ne_request.c:1232
 #, c-format
 msgid "Could not resolve hostname `%s': %s"
 msgstr "不能解析主机名称 “%s”: %s"
 
-#: src/ne_request.c:1352
+#: src/ne_request.c:1362
 msgid "Unknown transfer-coding in response"
 msgstr "响应中的传输代码未知"
 
-#: src/ne_request.c:1365
+#: src/ne_request.c:1377
 msgid "Invalid Content-Length in response"
 msgstr "非法的 Content-Length 响应域"
 
-#: src/ne_request.c:1438
+#: src/ne_request.c:1452
 #, c-format
 msgid "Could not write to file: %s"
 msgstr "不能写入文件：%s"
 
-#: src/ne_request.c:1511
+#: src/ne_request.c:1525
 #, c-format
 msgid "Could not create SSL connection through proxy server: %s"
 msgstr "不能通过代理服务器 “%s” 创建 SSL 连接"
 
-#: src/ne_request.c:1550
+#: src/ne_request.c:1564
 #, c-format
 msgid "Could not create socket"
 msgstr "不能创建套接字"
 
-#: src/ne_request.c:1584
+#: src/ne_request.c:1598
 msgid "Could not connect to server"
 msgstr "不能连接到服务器"
 
-#: src/ne_request.c:1586
+#: src/ne_request.c:1600
 msgid "Could not connect to proxy server"
 msgstr "不能连接到代理服务器"
 
-#: src/ne_request.c:1629
+#: src/ne_request.c:1643
 #, c-format
 msgid "Could not find IPv4 address of hostname %s for SOCKS v4 proxy"
 msgstr ""
 
-#: src/ne_request.c:1687
+#: src/ne_request.c:1701
 #, fuzzy, c-format
 msgid "Could not establish connection from SOCKS proxy (%s:%u): %s"
 msgstr "不能通过代理服务器 “%s” 创建 SSL 连接"
@@ -426,68 +450,81 @@ msgstr "证书已经过时"
 msgid "Server certificate verification failed: "
 msgstr "服务器证书校验失败"
 
-#: src/ne_socket.c:525 src/ne_socket.c:660 src/ne_socket.c:770
+#: src/ne_socket.c:522 src/ne_socket.c:674 src/ne_socket.c:804
 msgid "Connection closed"
 msgstr "连接关闭"
 
-#: src/ne_socket.c:664
+#: src/ne_socket.c:679
 msgid "Retry operation"
 msgstr ""
 
-#: src/ne_socket.c:674 src/ne_socket.c:784
+#: src/ne_socket.c:693 src/ne_socket.c:708 src/ne_socket.c:818
 msgid "Secure connection truncated"
 msgstr "安全连接切断"
 
-#: src/ne_socket.c:686 src/ne_socket.c:796
+#: src/ne_socket.c:699
+#, fuzzy
+msgid "Secure connection reset"
+msgstr "安全连接切断"
+
+#: src/ne_socket.c:720 src/ne_socket.c:834
 #, c-format
 msgid "SSL error: %s"
 msgstr "SSL 错误：%s"
 
-#: src/ne_socket.c:689
+#: src/ne_socket.c:723
 #, c-format
 msgid "SSL error code %d/%d/%lu"
 msgstr "SSL 错误代码 %d/%d/%lu"
 
-#: src/ne_socket.c:775
+#: src/ne_socket.c:809
 #, c-format
 msgid "SSL alert received: %s"
 msgstr "收到 SSL 警报： %s"
 
-#: src/ne_socket.c:792
+#: src/ne_socket.c:830
 msgid "SSL socket read failed"
 msgstr "SSL 套接字读取失败"
 
-#: src/ne_socket.c:923
+#: src/ne_socket.c:961
 msgid "Line too long"
 msgstr "行太长"
 
-#: src/ne_socket.c:1084 src/ne_socket.c:1090
+#: src/ne_socket.c:1122 src/ne_socket.c:1128
 msgid "Host not found"
 msgstr "没有发现主机"
 
-#: src/ne_socket.c:1299
+#: src/ne_socket.c:1337
 msgid "Connection timed out"
 msgstr "连接超时"
 
-#: src/ne_socket.c:1492
+#: src/ne_socket.c:1536
 msgid "Socket descriptor number exceeds FD_SETSIZE"
 msgstr "套接字数量超过 FD_SETSIZE"
 
-#: src/ne_socket.c:1554
+#: src/ne_socket.c:1598
 msgid "Socket family not supported"
 msgstr ""
 
-#: src/ne_socket.c:1785
+#: src/ne_socket.c:1835
 msgid "Client certificate verification failed"
 msgstr "客户证书校验失败"
 
-#: src/ne_socket.c:1801
+#: src/ne_socket.c:1851
 msgid "SSL disabled due to lack of entropy"
 msgstr "由于缺少熵，SSL 已经禁用"
 
-#: src/ne_socket.c:1807
+#: src/ne_socket.c:1857
 msgid "Could not create SSL structure"
 msgstr "不能创建 SSL 结构"
+
+#: src/ne_socket.c:2029
+msgid "Missing flags for socket shutdown"
+msgstr ""
+
+#: src/ne_socket.c:2047 src/ne_socket.c:2058 src/ne_socket.c:2073
+msgid "Incomplete TLS closure"
+msgstr ""
 
 #: src/ne_socks.c:65
 msgid "failure"

@@ -1,0 +1,408 @@
+\A{ppk} PPK file format
+
+This appendix documents the file format used by PuTTY to store private
+keys.
+
+In this appendix, binary data structures are described using data type
+representations such as \cq{uint32}, \cq{string} and \cq{mpint} as
+used in the SSH protocol standards themselves. These are defined
+authoritatively by
+\W{https://tools.ietf.org/html/rfc4251#section-5}{RFC 4251 section 5},
+\q{Data Type Representations Used in the SSH Protocols}.
+
+\H{ppk-overview} Overview
+
+A PPK file stores a private key, and the corresponding public key.
+Both are contained in the same file.
+
+The file format can be completely unencrypted, or it can encrypt the
+private key. The \e{public} key is stored in cleartext in both cases.
+(This enables PuTTY to send the public key to an SSH server to see
+whether it will accept it, and not bother prompting for the passphrase
+unless the server says yes.)
+
+When the key file is encrypted, the encryption key is derived from a
+passphrase. An encrypted PPK file is also tamper-proofed using a MAC
+(authentication code), also derived from the same passphrase. The MAC
+protects the encrypted private key data, but it also covers the
+cleartext parts of the file. So you can't edit the public half of the
+key without invalidating the MAC and causing the key file as a whole
+to become useless.
+
+This MAC protects the key file against active cryptographic attacks in
+which the public half of a key pair is modified in a controlled way
+that allows an attacker to deduce information about the private half
+from the resulting corrupted signatures. Any attempt to do that to a
+PPK file should be reliably caught by the MAC failing to validate.
+
+(Such an attack would only be useful if the key file was stored in a
+location where the attacker could modify it without also having full
+access to the process that you type passphrases into. But that's not
+impossible; for example, if your home directory was on a network file
+server, then the file server's administrator could access the key file
+but not processes on the client machine.)
+
+The MAC also covers the \e{comment} on the key. This stops an attacker
+from swapping keys with each other and editing the comments to
+disguise the fact. As a consequence, PuTTYgen cannot edit the comment
+on a key unless you decrypt the key with your passphrase first.
+
+(The circumstances in which \e{that} attack would be useful are even
+more restricted. One example might be that the different keys trigger
+specific actions on the server you're connecting to and one of those
+actions is more useful to the attacker than the other. But once you
+have a MAC at all, it's no extra effort to make it cover as much as
+possible, and usually sensible.)
+
+\H{ppk-outer} Outer layer
+
+The outer layer of a PPK file is text-based. The PuTTY tools will
+always use LF line termination when writing PPK files, but will
+tolerate CR+LF and CR-only on input.
+
+The first few lines identify it as a PPK, and give some initial data
+about what's stored in it and how. They look like this:
+
+\c PuTTY-User-Key-File-version: algorithm-name
+\e                     bbbbbbb  bbbbbbbbbbbbbb
+\c Encryption: encryption-type
+\e             bbbbbbbbbbbbbbb
+\c Comment: key-comment-string
+\e          bbbbbbbbbbbbbbbbbb
+
+\s{version} is a decimal number giving the version number of the file
+format itself. The current file format version is 3.
+
+\s{algorithm-name} is the SSH protocol identifier for the public key
+algorithm that this key is used for (such as \cq{ssh-dss} or
+\cq{ecdsa-sha2-nistp384}).
+
+\s{encryption-type} indicates whether this key is stored encrypted,
+and if so, by what method. Currently the only supported encryption
+types are \cq{aes256-cbc} and \cq{none}.
+
+\s{key-comment-string} is a free text field giving the comment. This
+can contain any byte values other than 13 and 10 (CR and LF).
+
+The next part of the file gives the public key. This is stored
+unencrypted but base64-encoded
+(\W{https://tools.ietf.org/html/rfc4648}{RFC 4648}), and is preceded
+by a header line saying how many lines of base64 data are shown,
+looking like this:
+
+\c Public-Lines: number-of-lines
+\e               bbbbbbbbbbbbbbb
+\c that many lines of base64 data
+\e bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+The base64-encoded data in this blob is formatted in exactly the same
+way as an SSH public key sent over the wire in the SSH protocol
+itself. That is also the same format as the base64 data stored in
+OpenSSH's \c{authorized_keys} file, except that in a PPK file the
+base64 data is split across multiple lines. But if you remove the
+newlines from the middle of this section, the resulting base64 blob is
+in the right format to go in an \c{authorized_keys} line.
+
+If the key is encrypted (i.e. \s{encryption-type} is not \cq{none}),
+then the next thing that appears is a sequence of lines specifying how
+the keys for encrypting the file are to be derived from the
+passphrase:
+
+\c Key-Derivation: argon2-flavour
+\e                 bbbbbbbbbbbbbb
+\c Argon2-Memory: decimal-integer
+\e                bbbbbbbbbbbbbbb
+\c Argon2-Passes: decimal-integer
+\e                bbbbbbbbbbbbbbb
+\c Argon2-Parallelism: decimal-integer
+\e                     bbbbbbbbbbbbbbb
+\c Argon2-Salt: hex-string
+\e              bbbbbbbbbb
+
+\s{argon2-flavour} is one of the identifiers \cq{Argon2d},
+\cq{Argon2i} or \cq{Argon2id}, all describing variants of the Argon2
+password-hashing function.
+
+The three integer values are used as parameters for Argon2, which
+allows you to configure the amount of memory used (in Kbyte), the number
+of passes of the algorithm to run (to tune its running time), and the
+degree of parallelism required by the hash function. The salt is
+decoded into a sequence of binary bytes and used as an additional
+input to Argon2. (It is chosen randomly when the key file is written,
+so that a guessing attack can't be mounted in parallel against
+multiple key files.)
+
+The next part of the file gives the private key. This is
+base64-encoded in the same way:
+
+\c Private-Lines: number-of-lines
+\e                bbbbbbbbbbbbbbb
+\c that many lines of base64 data
+\e bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+The binary data represented in this base64 blob may be encrypted,
+depending on the \e{encryption-type} field in the key file header
+shown above:
+
+\b If \s{encryption-type} is \cq{none}, then this data is stored in
+plain text.
+
+\b If \s{encryption-type} is \cq{aes256-cbc}, then this data is
+encrypted using AES, with a 256-bit key length, in the CBC cipher
+mode. The key and initialisation vector are derived from the
+passphrase: see \k{ppk-keys}.
+
+\lcont{
+
+In order to encrypt the private key data with AES, it must be a
+multiple of 16 bytes (the AES cipher block length). This is achieved
+by appending random padding to the data before encrypting it. When
+decoding it after decryption, the random data can be ignored: the
+internal structure of the data is enough to tell you when you've
+reached the end of the meaningful part.
+
+}
+
+Unlike public keys, the binary encoding of private keys is not
+specified at all in the SSH standards. See \k{ppk-privkeys} for
+details of the private key format for each key type supported by
+PuTTY.
+
+The final thing in the key file is the MAC:
+
+\c Private-MAC: hex-mac-data
+\e              bbbbbbbbbbbb
+
+\s{hex-mac-data} is a hexadecimal-encoded value, 64 digits long (i.e.
+32 bytes), generated using the HMAC-SHA-256 algorithm with the
+following binary data as input:
+
+\b \cw{string}: the \s{algorithm-name} header field.
+
+\b \cw{string}: the \s{encryption-type} header field.
+
+\b \cw{string}: the \s{key-comment-string} header field.
+
+\b \cw{string}: the binary public key data, as decoded from the base64
+lines after the \cq{Public-Lines} header.
+
+\b \cw{string}: the plaintext of the binary private key data, as
+decoded from the base64 lines after the \cq{Private-Lines} header. If
+that data was stored encrypted, then the decrypted version of it is
+used in this MAC preimage, \e{including} the random padding mentioned
+above.
+
+The MAC key is derived from the passphrase: see \k{ppk-keys}.
+
+\H{ppk-privkeys} Private key encodings
+
+This section describes the private key format for each key type
+supported by PuTTY.
+
+Because the PPK format also contains the public key (and both public
+and private key are protected by the same MAC to ensure they can't be
+made inconsistent), there is no need for the private key section of
+the file to repeat data from the public section. So some of these
+formats are very short.
+
+In all cases, a decoding application can begin reading from the start
+of the decrypted private key data, and know when it has read all that
+it needs. This allows random padding after the meaningful data to be
+safely ignored.
+
+\S{ppk-privkey-rsa} RSA
+
+RSA keys are stored using an \s{algorithm-name} of \cq{ssh-rsa}. (Keys
+stored like this are also used by the updated RSA signature schemes
+that use hashes other than SHA-1.)
+
+The public key data has already provided the key modulus and the
+public encoding exponent. The private data stores:
+
+\b \cw{mpint}: the private decoding exponent of the key.
+
+\b \cw{mpint}: one prime factor \e{p} of the key.
+
+\b \cw{mpint}: the other prime factor \e{q} of the key. (RSA keys
+stored in this format are expected to have exactly two prime factors.)
+
+\b \cw{mpint}: the multiplicative inverse of \e{q} modulo \e{p}.
+
+\S{ppk-privkey-dsa} DSA
+
+DSA keys are stored using an \s{algorithm-name} of \cq{ssh-dss}.
+
+The public key data has already provided the key parameters (the large
+prime \e{p}, the small prime \e{q} and the group generator \e{g}), and
+the public key \e{y}. The private key stores:
+
+\b \cw{mpint}: the private key \e{x}, which is the discrete logarithm
+of \e{y} in the group generated by \e{g} mod \e{p}.
+
+\S{ppk-privkey-ecdsa} NIST elliptic-curve keys
+
+NIST elliptic-curve keys are stored using one of the following
+\s{algorithm-name} values, each corresponding to a different elliptic
+curve and key size:
+
+\b \cq{ecdsa-sha2-nistp256}
+
+\b \cq{ecdsa-sha2-nistp384}
+
+\b \cq{ecdsa-sha2-nistp521}
+
+The public key data has already provided the public elliptic curve
+point. The private key stores:
+
+\b \cw{mpint}: the private exponent, which is the discrete log of the
+public point.
+
+\S{ppk-privkey-eddsa} EdDSA elliptic-curve keys (Ed25519 and Ed448)
+
+EdDSA elliptic-curve keys are stored using one of the following
+\s{algorithm-name} values, each corresponding to a different elliptic
+curve and key size:
+
+\b \cq{ssh-ed25519}
+
+\b \cq{ssh-ed448}
+
+The public key data has already provided the public elliptic curve
+point. The private key stores:
+
+\b \cw{mpint}: the private exponent, which is the discrete log of the
+public point.
+
+\H{ppk-keys} Key derivation
+
+When a key file is encrypted, there are three pieces of key material
+that need to be computed from the passphrase:
+
+\b the key for the symmetric cipher used to encrypt the private key
+
+\b the initialisation vector for that cipher encryption
+
+\b the key for the MAC.
+
+If \s{encryption-type} is \cq{aes256-cbc}, then the symmetric cipher
+key is 32 bytes long, and the initialisation vector is 16 bytes (one
+cipher block). The length of the MAC key is also chosen to be 32
+bytes.
+
+If \s{encryption-type} is \cq{none}, then all three of these pieces of
+data have zero length. (The MAC is still generated and checked in the
+key file format, but it has a zero-length key.)
+
+If the amount of key material required is not zero, then the
+passphrase is fed to the Argon2 key derivation function, in whichever
+mode is described in the \cq{Key-Derivation} header in the key file,
+with parameters derived from the various
+\q{\cw{Argon2-}\e{Parameter}\cw{:}} headers.
+
+(If the key is unencrypted, then all those headers are omitted, and
+Argon2 is not run at all.)
+
+Argon2 takes two extra string inputs in addition to the passphrase and
+the salt: a secret key, and some \q{associated data}. In PPK's use of
+Argon2, these are both set to the empty string.
+
+The \q{tag length} parameter to Argon2 (i.e. the amount of data it is
+asked to output) is set to the sum of the lengths of all of the data
+items required, i.e. (cipher key length + IV length + MAC key length).
+The output data is interpreted as the concatenation of the cipher key,
+the IV and the MAC key, in that order.
+
+So, for \cq{aes256-cbc}, the tag length will be 32+16+32\_=\_80 bytes;
+of the 80 bytes of output data, the first 32 bytes are used as the
+256-bit AES key, the next 16 as the CBC IV, and the final 32 bytes as
+the HMAC-SHA-256 key.
+
+\H{ppk-old} Older versions of the PPK format
+
+\S{ppk-v2} Version 2
+
+PPK version 2 was used by PuTTY 0.52 to 0.74 inclusive.
+
+In PPK version 2, the MAC algorithm used was HMAC-SHA-1 (so the
+\cw{Private-MAC} line contained only 40 hex digits).
+
+The \cq{Key-Derivation:} header and all the
+\q{\cw{Argon2-}\e{Parameter}\cw{:}} headers were absent. Instead of
+using Argon2, the key material for encrypting the private blob was
+derived from the passphrase in a totally different way, as follows.
+
+The cipher key for \cq{aes256-cbc} was constructed by generating two
+SHA-1 hashes, concatenating them, and taking the first 32 bytes of the
+result. (So you'd get all 20 bytes of the first hash output, and the
+first 12 of the second). Each hash preimage was as follows:
+
+\b \cw{uint32}: a sequence number. This is 0 in the first hash, and 1
+in the second. (The idea was to extend this mechanism to further
+hashes by continuing to increment the sequence number, if future
+changes required even longer keys.)
+
+\b the passphrase, without any prefix length field.
+
+In PPK v2, the CBC initialisation vector was all zeroes.
+
+The MAC key was 20 bytes long, and was a single SHA-1 hash of the
+following data:
+
+\b the fixed string \cq{putty-private-key-file-mac-key}, without any
+prefix length field.
+
+\b the passphrase, without any prefix length field. (If the key is
+stored unencrypted, the passphrase was taken to be the empty string
+for these purposes.)
+
+\S{ppk-v1} Version 1
+
+PPK version 1 was a badly designed format, only used during initial
+development, and not recommended for production use.
+
+PPK version 1 was never used by a released version of PuTTY. It was
+only emitted by some early development snapshots between version 0.51
+(which did not support SSH-2 public keys at all) and 0.52 (which
+already used version 2 of this file format). I \e{hope} there are no
+PPK v1 files in use anywhere. But just in case, the old badly designed
+format is documented here anyway.
+
+In PPK version 1, the input to the MAC does not include any of the
+header fields or the public key. It is simply the private key data
+(still in plaintext and including random padding), all by itself
+(without a wrapping \cw{string}).
+
+PPK version 1 keys must therefore be rigorously validated after
+loading, to ensure that the public and private parts of the key were
+consistent with each other.
+
+PPK version 1 only supported the RSA and DSA key types. For RSA, this
+validation can be done using only the provided data (since the private
+key blob contains enough information to reconstruct the public values
+anyway). But for DSA, that isn't quite enough.
+
+Hence, PPK version 1 DSA keys extended the private data so that
+immediately after \e{x} was stored an extra value:
+
+\b \cw{string}: a SHA-1 hash of the public key data, whose preimage
+consists of
+
+\lcont{
+
+\b \cw{string}: the large prime \e{p}
+
+\b \cw{string}: the small prime \e{q}
+
+\b \cw{string}: the group generator \e{g}
+
+}
+
+The idea was that checking this hash would verify that the key
+parameters had not been tampered with, and then the loading
+application could directly verify that
+\e{g}\cw{^}\e{x}\cw{\_=\_}\e{y}.
+
+In an \e{unencrypted} version 1 key file, the MAC is replaced by a
+plain SHA-1 hash of the private key data. This is indicated by the
+\cq{Private-MAC:} header being replaced with \cq{Private-Hash:}
+instead.

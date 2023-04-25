@@ -65,3 +65,66 @@ They have been superseded by \cw{rsa1024-sha1} and \cw{rsa2048-sha256}.
 
 \dd These were used in drafts of what eventually became RFC\_4345.
 They have been superseded by \cw{arcfour128} and \cw{arcfour256}.
+
+\H{sshnames-agent} Agent extension request names
+
+The SSH agent protocol, which is only specified in an Internet-Draft
+at the time of writing
+(\W{https://tools.ietf.org/html/draft-miller-ssh-agent}\cw{draft-miller-ssh-agent}),
+defines an extension mechanism. These names can be sent in an
+\cw{SSH_AGENTC_EXTENSION} message.
+
+\dt \cw{add-ppk@putty.projects.tartarus.org}
+
+\dd The payload is a single SSH-2 \cw{string} containing a keypair in
+the PPK format defined in \k{ppk}. Compared to the standard
+\cw{SSH_AGENTC_ADD_IDENTITY}, this extension allows adding keys in
+encrypted form, with the agent requesting a decryption passphrase from
+the user on demand, and able to revert the key to encrypted form.
+
+\dt \cw{reencrypt@putty.projects.tartarus.org}
+
+\dd The payload is a single SSH-2 \cw{string} specifying a public key
+blob, as in \cw{SSH_AGENTC_REMOVE_IDENTITY}. Requests that the agent
+forget any cleartext form of a specific key. 
+
+\lcont{
+Returns \cw{SSH_AGENT_SUCCESS} if the agent ended up holding the key
+only in encrypted form (even if it was already encrypted); returns
+\cw{SSH_AGENT_EXTENSION_FAILURE} if not (if it wasn't held by the
+agent at all, or only in cleartext form).
+}
+
+\dt \cw{reencrypt-all@putty.projects.tartarus.org}
+
+\dd No payload. Requests that the agent forget the cleartext form of
+any keys for which it holds an encrypted form.
+
+\lcont{
+If the agent holds any keys with an encrypted form (or no keys at all),
+returns \cw{SSH_AGENT_SUCCESS} to indicate that no such keys are now
+held in cleartext form, followed by a \cw{uint32} specifying how many keys
+remain in cleartext form (because the agent didn't hold an encrypted
+form for them). If the agent holds nothing but keys in cleartext form,
+returns \cw{SSH_AGENT_EXTENSION_FAILURE}.
+}
+
+\dt \cw{list-extended@putty.projects.tartarus.org}
+
+\dd No payload. Returns \cw{SSH_AGENT_SUCCESS} followed by a list of
+identities similar to \cw{SSH_AGENT_IDENTITIES_ANSWER}, except that
+each key has an extra SSH-2 \cw{string} at the end. Currently that
+\cw{string} contains a single \cw{uint32} flags word, with the
+following bits defined:
+
+\lcont{
+\dt Bit 0
+
+\dd If set, key is held with an encrypted form (so that the
+\c{reencrypt} extension can do something useful with it).
+
+\dt Bit 1
+
+\dd If set, key's cleartext form is not currently held (so the
+user will have to supply a passphrase before the key can be used).
+}

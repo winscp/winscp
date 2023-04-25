@@ -81,6 +81,11 @@ void logflush(LogContext *ctx)
             fflush(ctx->lgfp);
 }
 
+LogPolicy *log_get_policy(LogContext *ctx)
+{
+    return ctx->lp;
+}
+
 static void logfopen_callback(void *vctx, int mode)
 {
     LogContext *ctx = (LogContext *)vctx;
@@ -364,7 +369,7 @@ void log_packet(LogContext *ctx, int direction, int type,
                 c = 'X';
                 sprintf(smalldata, "XX");
             } else {  /* PKTLOG_EMIT */
-                c = ((unsigned char *)data)[p];
+                c = ((const unsigned char *)data)[p];
                 sprintf(smalldata, "%02x", c);
             }
             dumpdata[10+2+3*(p%16)] = smalldata[0];

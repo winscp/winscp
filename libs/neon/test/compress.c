@@ -289,12 +289,9 @@ static int retry_compress_helper(ne_accept_response acceptor,
 
     ONN("got bad response body", failed != f_complete);
 
-    CALL(await_server());
-
     ne_request_destroy(req);
-    ne_session_destroy(sess);
 
-    return OK;
+    return destroy_and_wait(sess);
 }
 
 #define SSTRING(x) { x, sizeof(x) - 1 }

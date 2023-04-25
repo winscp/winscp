@@ -19,7 +19,7 @@ int random_active = 0;
  */
 void random_add_noise(NoiseSourceId source, const void *noise, int length) { }
 void random_ref(void) { }
-void random_setup_special(void) { }
+void random_setup_custom(const ssh_hashalg *hash) { }
 void random_unref(void) { }
 void random_read(void *out, size_t size)
 {
@@ -97,10 +97,10 @@ void random_ref(void)
         random_create(&ssh_sha256);
 }
 
-void random_setup_special()
+void random_setup_custom(const ssh_hashalg *hash)
 {
     random_active++;
-    random_create(&ssh_sha512);
+    random_create(hash);
 }
 
 void random_reseed(ptrlen seed)

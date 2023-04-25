@@ -101,11 +101,16 @@ channel from the server, to prevent remote processes sending confusing
 escape sequences. This option forces the standard error channel to not be
 filtered.
 
+\dt \cw{-pwfile} \e{filename}
+
+\dd Open the specified file, and use the first line of text read from
+it as the remote password.
+
 \dt \cw{-pw} \e{password}
 
 \dd Set remote password to \e{password}. \e{CAUTION:} this will likely
 make the password visible to other users of the local machine (via
-commands such as \q{\c{w}}).
+commands such as \q{\c{ps}} or \q{\c{w}}). Use \cw{-pwfile} instead.
 
 \dt \cw{-1}
 
@@ -114,6 +119,19 @@ commands such as \q{\c{w}}).
 \dt \cw{-2}
 
 \dd Force use of SSH protocol version 2.
+
+\dt \cw{-ssh-connection}
+
+\dd Force use of the \q{bare \cw{ssh-connection}} protocol. This is
+only likely to be useful when connecting to a \cw{psusan}(\e{1})
+server, most likely with an absolute path to a Unix-domain socket in
+place of \e{host}.
+
+\dt \cw{-ssh}
+
+\dd Force use of the SSH protocol. (This is usually not needed; it's
+only likely to be useful if you need to override some other
+configuration of the \q{bare \cw{ssh-connection}} protocol.)
 
 \dt \cw{-4}, \cw{-6}
 
@@ -142,11 +160,20 @@ which of the agent's keys to use. }
 \dd Allow use of an authentication agent. (This option is only necessary
 to override a setting in a saved session.)
 
+\dt \cw{\-no\-trivial\-auth}
+
+\dd Disconnect from any SSH server which accepts authentication without
+ever having asked for any kind of password or signature or token. (You
+might want to enable this for a server you always expect to challenge
+you, for instance to ensure you don't accidentally type your key file's
+passphrase into a compromised server spoofing PSCP's passphrase prompt.)
+
 \dt \cw{\-hostkey} \e{key}
 
 \dd Specify an acceptable host public key. This option may be specified
-multiple times; each key can be either a fingerprint (\cw{99:aa:bb:...}) or
-a base64-encoded blob in OpenSSH's one-line format.
+multiple times; each key can be either a fingerprint (\cw{SHA256:AbCdE...},
+\cw{99:aa:bb:...}, etc) or a base64-encoded blob in OpenSSH's one-line
+format.
 
 \lcont{ Specifying this option overrides automated host key
 management; \e{only} the key(s) specified on the command-line will be
@@ -175,6 +202,16 @@ to suppress obvious passwords.)
 \cw{\-v} would print). \cw{\-sshrawlog} additionally logs the raw
 encrypted packet data.
 }
+
+\dt \cw{\-logoverwrite}
+
+\dd If PSCP is configured to write to a log file that already exists,
+discard the existing file.
+
+\dt \cw{\-logappend}
+
+\dd If PSCP is configured to write to a log file that already exists,
+append new log data to the existing file.
 
 \S{pscp-manpage-more-information} MORE INFORMATION
 

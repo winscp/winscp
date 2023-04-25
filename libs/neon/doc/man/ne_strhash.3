@@ -1,0 +1,106 @@
+'\" t
+.\"     Title: ne_strhash
+.\"    Author: 
+.\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
+.\"      Date: 11 September 2022
+.\"    Manual: neon API reference
+.\"    Source: neon 0.32.4
+.\"  Language: English
+.\"
+.TH "NE_STRHASH" "3" "11 September 2022" "neon 0.32.4" "neon API reference"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ne_strhash, ne_vstrhash \- string hash interface
+.SH "SYNOPSIS"
+.sp
+.ft B
+.nf
+#include <ne_string\&.h>
+.fi
+.ft
+.HP \w'char\ *ne_strhash('u
+.BI "char *ne_strhash(unsigned\ int\ " "flags" ", " "\&.\&.\&." ");"
+.HP \w'char\ *ne_vstrhash('u
+.BI "char *ne_vstrhash(unsigned\ int\ " "flags" ", va_list\ " "ap" ");"
+.SH "DESCRIPTION"
+.PP
+The
+\fBne_strhash\fR
+and
+\fBne_vstrhash\fR
+functions can be used to create hashes\&. The varargs argument list must be
+\fBconst char *\fR
+strings followed by a
+NULL
+terminator\&. The
+\fIflags\fR
+argument must select exactly one hash algorithm from the list below, which can be optionally bitwise\-ORed with one of the formatting option\&. The hash is calculated for the concatenation of the argument list, without separators\&.
+.SS "Hash algorithms"
+.PP
+The following hash algorithms are available:
+.PP
+\fBNE_HASH_MD5\fR
+.RS 4
+MD5
+.RE
+.PP
+\fBNE_HASH_SHA256\fR
+.RS 4
+SHA\-256 (SHA\-2)
+.RE
+.PP
+\fBNE_HASH_SHA512\fR
+.RS 4
+SHA\-512 (SHA\-2)
+.RE
+.PP
+\fBNE_HASH_SHA256_256\fR
+.RS 4
+SHA\-512/256 (SHA\-2)
+.RE
+.SS "Formatting options"
+.PP
+By default, the hash is returned as a hexadecimal lower\-case character string\&. The following formatting options are available:
+.PP
+\fBNE_HASH_COLON\fR
+.RS 4
+colon\-separated hex pairs, e\&.g\&.
+"aa:11:22\&.\&.\&."
+.RE
+.PP
+\fBNE_HASH_SPACE\fR
+.RS 4
+space\-separated hex pairs, e\&.g\&.
+"aa 11 22\&.\&.\&."
+.RE
+.SH "RETURN VALUE"
+.PP
+The return value is the ASCII hexadecimal representation of the hash as a malloc\-allocated, NUL\-terminated string, or
+NULL
+if the hash cannot be created\&. The string length is determined by the hash algorithm (and formatting options used)\&. Support for hash algorithms is specific to the SSL toolkit with which neon is compiled\&. Some systems will further restrict hash availability at runtime, e\&.g\&. due to FIPS mode\&.
+.SH "AUTHOR"
+.PP
+\fBJoe Orton\fR <\&neon@lists.manyfish.co.uk\&>
+.RS 4
+Author.
+.RE
+.SH "COPYRIGHT"
+.br

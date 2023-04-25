@@ -1,6 +1,6 @@
 /* 
    Stubs for SSL support when no SSL library has been configured
-   Copyright (C) 2002-2006, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 2002-2021, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -102,9 +102,14 @@ void ne_ssl_context_set_flag(ne_ssl_context *ctx, int flag, int value) {}
 
 void ne_ssl_context_destroy(ne_ssl_context *ctx) {}
 
-int ne_ssl_cert_digest(const ne_ssl_certificate *cert, char digest[60])
+int ne_ssl_cert_digest(const ne_ssl_certificate *cert, char *digest)
 {
     return -1;
+}
+
+char *ne_ssl_cert_hdigest(const ne_ssl_certificate *cert, unsigned int flags)
+{
+    return NULL;
 }
 
 void ne_ssl_cert_validity_time(const ne_ssl_certificate *cert,

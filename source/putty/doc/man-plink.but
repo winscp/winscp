@@ -1,0 +1,323 @@
+\cfg{man-identity}{plink}{1}{2004-03-24}{PuTTY tool suite}{PuTTY tool suite}
+
+\H{plink-manpage} Man page for Plink
+
+\S{plink-manpage-name} NAME
+
+\cw{plink} \- PuTTY link, command line network connection tool
+
+\S{plink-manpage-synopsis} SYNOPSIS
+
+\c plink [options] [user@]host [command]
+\e bbbbb  iiiiiii   iiiib iiii  iiiiiii
+
+\S{plink-manpage-description} DESCRIPTION
+
+\cw{plink} is a network connection tool supporting several protocols.
+
+\S{plink-manpage-options} OPTIONS
+
+The command-line options supported by \cw{plink} are:
+
+\dt \cw{-V}
+
+\dd Show version information and exit.
+
+\dt \cw{-pgpfp}
+
+\dd Display the fingerprints of the PuTTY PGP Master Keys and exit,
+to aid in verifying new files released by the PuTTY team.
+
+\dt \cw{-v}
+
+\dd Show verbose messages.
+
+\dt \cw{-load} \e{session}
+
+\dd Load settings from saved session.
+
+\dt \cw{-ssh}
+
+\dd Force use of SSH protocol (default).
+
+\dt \cw{-telnet}
+
+\dd Force use of Telnet protocol.
+
+\dt \cw{-rlogin}
+
+\dd Force use of rlogin protocol.
+
+\dt \cw{-raw}
+
+\dd Force raw mode.
+
+\dt \cw{-serial}
+
+\dd Force serial mode.
+
+\dt \cw{-ssh-connection}
+
+\dd Force use of the \q{bare \cw{ssh-connection}} protocol. This is
+only likely to be useful when connecting to a \cw{psusan}(\e{1})
+server, most likely with an absolute path to a Unix-domain socket in
+place of \e{host}.
+
+\dt \cw{\-proxycmd} \e{command}
+
+\dd Instead of making a TCP connection, use \e{command} as a proxy;
+network traffic will be redirected to the standard input and output
+of \e{command}. \e{command} must be a single word, so is likely to
+need quoting by the shell.
+
+\lcont{
+The special strings \cw{%host} and \cw{%port} in \e{command} will be
+replaced by the hostname and port number you want to connect to; to get
+a literal \c{%} sign, enter \c{%%}.
+
+Backslash escapes are also supported, such as sequences like \c{\\n}
+being replaced by a literal newline; to get a literal backslash,
+enter \c{\\\\}. (Further escaping may be required by the shell.)
+
+(See the main PuTTY manual for full details of the supported \cw{%}-
+and backslash-delimited tokens, although most of them are probably not
+very useful in this context.)
+}
+
+\dt \cw{-P} \e{port}
+
+\dd Connect to port \e{port}.
+
+\dt \cw{-l} \e{user}
+
+\dd Set remote username to \e{user}.
+
+\dt \cw{-m} \e{path}
+
+\dd Read remote command(s) from local file \e{path}.
+
+\dt \cw{-batch}
+
+\dd Disable interactive prompts.
+
+\dt \cw{-sanitise-stderr}
+
+\dt \cw{-sanitise-stdout}
+
+\dt \cw{-no-sanitise-stderr}
+
+\dt \cw{-no-sanitise-stdout}
+
+\dd By default, Plink can choose to filter control characters if that
+seems appropriate, to prevent remote processes sending confusing escape
+sequences. These options override Plink's default behaviour to enable
+or disabling such filtering on the standard error and standard output
+channels.
+
+\dt \cw{-pwfile} \e{filename}
+
+\dd Open the specified file, and use the first line of text read from
+it as the remote password.
+
+\dt \cw{-pw} \e{password}
+
+\dd Set remote password to \e{password}. \e{CAUTION:} this will likely
+make the password visible to other users of the local machine (via
+commands such as \q{\c{ps}} or \q{\c{w}}). Use \cw{-pwfile} instead.
+
+\dt \cw{\-L} \cw{[}\e{srcaddr}\cw{:]}\e{srcport}\cw{:}\e{desthost}\cw{:}\e{destport}
+
+\dd Set up a local port forwarding: listen on \e{srcport} (or
+\e{srcaddr}:\e{srcport} if specified), and forward any connections
+over the SSH connection to the destination address
+\e{desthost}:\e{destport}. Only works in SSH.
+
+\dt \cw{\-R} \cw{[}\e{srcaddr}\cw{:]}\e{srcport}\cw{:}\e{desthost}\cw{:}\e{destport}
+
+\dd Set up a remote port forwarding: ask the SSH server to listen on
+\e{srcport} (or \e{srcaddr}:\e{srcport} if specified), and to
+forward any connections back over the SSH connection where the
+client will pass them on to the destination address
+\e{desthost}:\e{destport}. Only works in SSH.
+
+\dt \cw{\-D} [\e{srcaddr}:]\e{srcport}
+
+\dd Set up dynamic port forwarding. The client listens on
+\e{srcport} (or \e{srcaddr}:\e{srcport} if specified), and
+implements a SOCKS server. So you can point SOCKS-aware applications
+at this port and they will automatically use the SSH connection to
+tunnel all their connections. Only works in SSH.
+
+\dt \cw{-X}
+
+\dd Enable X11 forwarding.
+
+\dt \cw{-x}
+
+\dd Disable X11 forwarding (default).
+
+\dt \cw{-A}
+
+\dd Enable agent forwarding.
+
+\dt \cw{-a}
+
+\dd Disable agent forwarding (default).
+
+\dt \cw{-t}
+
+\dd Enable pty allocation (default if a command is NOT specified).
+
+\dt \cw{-T}
+
+\dd Disable pty allocation (default if a command is specified).
+
+\dt \cw{-1}
+
+\dd Force use of SSH protocol version 1.
+
+\dt \cw{-2}
+
+\dd Force use of SSH protocol version 2.
+
+\dt \cw{-4}, \cw{-6}
+
+\dd Force use of IPv4 or IPv6 for network connections.
+
+\dt \cw{-C}
+
+\dd Enable SSH compression.
+
+\dt \cw{-i} \e{keyfile}
+
+\dd Private key file for user authentication. For SSH-2 keys, this key
+file must be in PuTTY's PPK format, not OpenSSH's format or anyone
+else's.
+
+\lcont{ If you are using an authentication agent, you can also specify
+a \e{public} key here (in RFC 4716 or OpenSSH format), to identify
+which of the agent's keys to use. }
+
+\dt \cw{\-noagent}
+
+\dd Don't try to use an authentication agent for local authentication.
+(This doesn't affect agent forwarding.)
+
+\dt \cw{\-agent}
+
+\dd Allow use of an authentication agent. (This option is only necessary
+to override a setting in a saved session.)
+
+\dt \cw{\-no\-trivial\-auth}
+
+\dd Disconnect from any SSH server which accepts authentication without
+ever having asked for any kind of password or signature or token. (You
+might want to enable this for a server you always expect to challenge
+you, for instance to ensure you don't accidentally type your key file's
+passphrase into a compromised server spoofing Plink's passphrase
+prompt.)
+
+\dt \cw{\-noshare}
+
+\dd Don't test and try to share an existing connection, always make
+a new connection.
+
+\dt \cw{\-share}
+
+\dd Test and try to share an existing connection.
+
+\dt \cw{\-hostkey} \e{key}
+
+\dd Specify an acceptable host public key. This option may be specified
+multiple times; each key can be either a fingerprint (\cw{SHA256:AbCdE...},
+\cw{99:aa:bb:...}, etc) or a base64-encoded blob in OpenSSH's one-line
+format.
+
+\lcont{ Specifying this option overrides automated host key
+management; \e{only} the key(s) specified on the command-line will be
+accepted (unless a saved session also overrides host keys, in which
+case those will be added to), and the host key cache will not be
+written. }
+
+\dt \cw{-s}
+
+\dd Remote command is SSH subsystem (SSH-2 only).
+
+\dt \cw{-N}
+
+\dd Don't start a remote command or shell at all (SSH-2 only).
+
+\dt \cw{\-nc} \e{host}:\e{port}
+
+\dd Make a remote network connection from the server instead of
+starting a shell or command.
+
+\dt \cw{\-sercfg} \e{configuration-string}
+
+\dd Specify the configuration parameters for the serial port, in
+\cw{-serial} mode. \e{configuration-string} should be a
+comma-separated list of configuration parameters as follows:
+
+\lcont{
+
+\b Any single digit from 5 to 9 sets the number of data bits.
+
+\b \cq{1}, \cq{1.5} or \cq{2} sets the number of stop bits.
+
+\b Any other numeric string is interpreted as a baud rate.
+
+\b A single lower-case letter specifies the parity: \cq{n} for none,
+\cq{o} for odd, \cq{e} for even, \cq{m} for mark and \cq{s} for space.
+
+\b A single upper-case letter specifies the flow control: \cq{N} for
+none, \cq{X} for XON/XOFF, \cq{R} for RTS/CTS and \cq{D} for
+DSR/DTR.
+
+}
+
+\dt \cw{\-sshlog} \e{logfile}
+
+\dt \cw{\-sshrawlog} \e{logfile}
+
+\dd For SSH connections, these options make \cw{plink} log protocol
+details to a file. (Some of these may be sensitive, although by default
+an effort is made to suppress obvious passwords.)
+
+\lcont{
+\cw{\-sshlog} logs decoded SSH packets and other events (those that
+\cw{\-v} would print). \cw{\-sshrawlog} additionally logs the raw
+encrypted packet data.
+}
+
+\dt \cw{\-logoverwrite}
+
+\dd If Plink is configured to write to a log file that already exists,
+discard the existing file.
+
+\dt \cw{\-logappend}
+
+\dd If Plink is configured to write to a log file that already exists,
+append new log data to the existing file.
+
+\dt \cw{\-shareexists}
+
+\dd Instead of making a new connection, test for the presence of an
+existing connection that can be shared. The desired session can be
+specified in any of the usual ways.
+
+\lcont{
+Returns immediately with a zero exit status if a suitable \q{upstream}
+exists, nonzero otherwise.
+}
+
+\S{plink-manpage-more-information} MORE INFORMATION
+
+For more information on plink, it's probably best to go and look at
+the manual on the PuTTY web page:
+
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/}\cw{https://www.chiark.greenend.org.uk/~sgtatham/putty/}
+
+\S{plink-manpage-bugs} BUGS
+
+This man page isn't terribly complete. See the above web link for
+better documentation.

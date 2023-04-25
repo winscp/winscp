@@ -36,10 +36,7 @@ static int test_acl(const char *uri, ne_acl_entry *es, int nume)
     
     ON(ne_acl3744_set(sess, uri, es, nume));
     
-    CALL(await_server());
-    ne_session_destroy(sess);
-    
-    return OK;
+    return destroy_and_wait(sess);
 }
 
 static int grant_all(void)

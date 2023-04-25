@@ -580,12 +580,10 @@ static int fail_discover(void)
                       "</parse this, my friend>\n"));
     
     ret = ne_lock_discover(sess, "/foo", dummy_discover, NULL);
-    CALL(await_server());
 
     ONN("discovery okay for response with invalid XML!?", ret != NE_ERROR);
 
-    ne_session_destroy(sess);
-    return OK;
+    return destroy_and_wait(sess);
 }
 
 static int no_creds(void *ud, const char *realm, int attempt,
@@ -626,10 +624,7 @@ static int fail_lockauth(void)
          ret, ne_get_error(sess)));
     ne_lock_destroy(lock);
 
-    CALL(await_server());
-    ne_session_destroy(sess);
-
-    return OK;
+    return destroy_and_wait(sess);
 }
 
 /* Regression test for neon 0.25.0 regression in ne_lock() error

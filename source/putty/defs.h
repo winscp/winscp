@@ -11,13 +11,30 @@
 #ifndef PUTTY_DEFS_H
 #define PUTTY_DEFS_H
 
+#ifdef NDEBUG
+/*
+ * PuTTY is a security project, so assertions are important - if an
+ * assumption is violated, proceeding anyway may have far worse
+ * consequences than simple program termination. This check and #error
+ * should arrange that we don't ever accidentally compile assertions
+ * out.
+ */
+#error Do not compile this code base with NDEBUG defined!
+#endif
+
+#if HAVE_CMAKE_H
+#include "cmake.h"
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>                     /* for __MINGW_PRINTF_FORMAT */
 #include <stdbool.h>
 
 #if defined _MSC_VER && _MSC_VER < 1800
 /* Work around lack of inttypes.h and strtoumax in older MSVC */
 #define PRIx32 "x"
+#define PRIu32 "u"
 #define PRIu64 "I64u"
 #define PRIdMAX "I64d"
 #define PRIXMAX "I64X"
@@ -25,6 +42,8 @@
 #define SIZEx "Ix"
 #define SIZEu "Iu"
 uintmax_t strtoumax(const char *nptr, char **endptr, int base);
+/* Also, define a LEGACY_WINDOWS flag to enable other workarounds */
+#define LEGACY_WINDOWS
 #else
 #include <inttypes.h>
 /* Because we still support older MSVC libraries which don't recognise the
@@ -64,6 +83,7 @@ typedef struct FontSpec FontSpec;
 typedef struct bufchain_tag bufchain;
 
 typedef struct strbuf strbuf;
+typedef struct LoadedFile LoadedFile;
 
 typedef struct RSAKey RSAKey;
 
@@ -80,9 +100,14 @@ typedef struct SockAddr SockAddr;
 typedef struct Socket Socket;
 typedef struct Plug Plug;
 typedef struct SocketPeerInfo SocketPeerInfo;
+typedef struct DeferredSocketOpener DeferredSocketOpener;
+typedef struct DeferredSocketOpenerVtable DeferredSocketOpenerVtable;
 
 typedef struct Backend Backend;
 typedef struct BackendVtable BackendVtable;
+typedef struct Interactor Interactor;
+typedef struct InteractorVtable InteractorVtable;
+typedef struct InteractionReadySeat InteractionReadySeat;
 
 typedef struct Ldisc_tag Ldisc;
 typedef struct LogContext LogContext;
@@ -91,6 +116,9 @@ typedef struct LogPolicyVtable LogPolicyVtable;
 
 typedef struct Seat Seat;
 typedef struct SeatVtable SeatVtable;
+typedef struct SeatPromptResult SeatPromptResult;
+
+typedef struct cmdline_get_passwd_input_state cmdline_get_passwd_input_state;
 
 typedef struct TermWin TermWin;
 typedef struct TermWinVtable TermWinVtable;
@@ -152,6 +180,8 @@ typedef struct SessionSpecial SessionSpecial;
 
 typedef struct StripCtrlChars StripCtrlChars;
 
+typedef struct BidiContext BidiContext;
+
 /*
  * A small structure wrapping up a (pointer, length) pair so that it
  * can be conveniently passed to or from a function.
@@ -165,6 +195,8 @@ typedef struct logblank_t logblank_t;
 
 typedef struct BinaryPacketProtocol BinaryPacketProtocol;
 typedef struct PacketProtocolLayer PacketProtocolLayer;
+
+struct unicode_data;
 
 /* Do a compile-time type-check of 'to_check' (without evaluating it),
  * as a side effect of returning the value 'to_return'. Note that
@@ -181,36 +213,34 @@ typedef struct PacketProtocolLayer PacketProtocolLayer;
 
 #if defined __GNUC__ || defined __clang__
 #define NORETURN __attribute__((__noreturn__))
+#elif defined _MSC_VER
+#define NORETURN __declspec(noreturn)
 #else
 #define NORETURN
 #endif
 
-/* ----------------------------------------------------------------------
- * Platform-specific definitions.
+/*
+ * Standard macro definitions. STR() behaves like the preprocessor
+ * stringification # operator, and CAT() behaves like the token paste
+ * ## operator, except that each one macro-expands its argument(s)
+ * first, unlike the raw version. E.g.
  *
- * Most of these live in the per-platform header files, of which
- * puttyps.h selects the appropriate one. But some of the sources
- * (particularly standalone test applications) would prefer not to
- * have to include a per-platform header at all, because that makes it
- * more portable to platforms not supported by the code base as a
- * whole (for example, compiling purely computational parts of the
- * code for specialist platforms for test and analysis purposes). So
- * any definition that has to affect even _those_ modules will have to
- * go here, with the key constraint being that this code has to come
- * to _some_ decision even if the compilation platform is not a
- * recognised one at all.
+ *   #__LINE__               ->    "__LINE__"
+ *   STR(__LINE__)           ->    "1234"             (or whatever)
+ *
+ * and similarly,
+ *
+ *   foo ## __LINE__         ->    foo__LINE__
+ *   CAT(foo, __LINE__)      ->    foo1234            (or whatever)
+ *
+ * The expansion is achieved by having each macro pass its arguments
+ * to a secondary inner macro, because parameter lists of a macro call
+ * get expanded before the called macro is invoked. So STR(__LINE__)
+ * -> STR_INNER(1234) -> #1234 -> "1234", and similarly for CAT.
  */
-
-/* Purely computational code uses smemclr(), so we have to make the
- * decision here about whether that's provided by utils.c or by a
- * platform implementation. We define PLATFORM_HAS_SMEMCLR to suppress
- * utils.c's definition. */
-#ifdef _WINDOWS
-/* Windows provides the API function 'SecureZeroMemory', which we use
- * unless the user has told us not to by defining NO_SECUREZEROMEMORY. */
-#ifndef NO_SECUREZEROMEMORY
-#define PLATFORM_HAS_SMEMCLR
-#endif
-#endif
+#define STR_INNER(x) #x
+#define STR(x) STR_INNER(x)
+#define CAT_INNER(x,y) x ## y
+#define CAT(x,y) CAT_INNER(x,y)
 
 #endif /* PUTTY_DEFS_H */

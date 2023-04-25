@@ -1,0 +1,349 @@
+\cfg{man-identity}{putty}{1}{2004-03-24}{PuTTY tool suite}{PuTTY tool suite}
+
+\H{putty-manpage} Man page for PuTTY
+
+\S{putty-manpage-name} NAME
+
+\cw{putty} - GUI SSH, Telnet, Rlogin, and SUPDUP client for X
+
+\S{putty-manpage-synopsis} SYNOPSIS
+
+\c putty [ options ] [ host ]
+\e bbbbb   iiiiiii     iiii
+
+\S{putty-manpage-description} DESCRIPTION
+
+\cw{putty} is a graphical SSH, Telnet, Rlogin, and SUPDUP client for
+X. It is a direct port of the Windows SSH client of the same name.
+
+\S{putty-manpage-options} OPTIONS
+
+The command-line options supported by \cw{putty} are:
+
+\dt \cw{\-\-display} \e{display\-name}
+
+\dd Specify the X display on which to open \cw{putty}. (Note this
+option has a double minus sign, even though none of the others do.
+This is because this option is supplied automatically by GTK.
+Sorry.)
+
+\dt \cw{\-fn} \e{font-name}
+
+\dd Specify the font to use for normal text displayed in the terminal.
+For example, \cw{\-fn\_fixed}, \cw{\-fn\_"Monospace\_12"}.
+
+\dt \cw{\-fb} \e{font-name}
+
+\dd Specify the font to use for bold text displayed in the terminal.
+If the \cw{BoldAsColour} resource is set to 1 (the default), bold
+text will be displayed in different colours instead of a different
+font, so this option will be ignored. If \cw{BoldAsColour} is set to
+0 or 2 and you do not specify a bold font, \cw{putty} will overprint the
+normal font to make it look bolder.
+
+\dt \cw{\-fw} \e{font-name}
+
+\dd Specify the font to use for double-width characters (typically
+Chinese, Japanese and Korean text) displayed in the terminal.
+
+\dt \cw{\-fwb} \e{font-name}
+
+\dd Specify the font to use for bold double-width characters
+(typically Chinese, Japanese and Korean text). Like \cw{-fb}, this
+will be ignored unless the \cw{BoldAsColour} resource is set to 0 or 2.
+
+\dt \cw{\-geometry} \e{geometry}
+
+\dd Specify the size of the terminal, in rows and columns of text.
+See \cw{X}(\e{7}) for more information on the syntax of geometry
+specifications.
+
+\dt \cw{\-sl} \e{lines}
+
+\dd Specify the number of lines of scrollback to save off the top of the
+terminal.
+
+\dt \cw{\-fg} \e{colour}
+
+\dd Specify the foreground colour to use for normal text.
+
+\dt \cw{\-bg} \e{colour}
+
+\dd Specify the background colour to use for normal text.
+
+\dt \cw{\-bfg} \e{colour}
+
+\dd Specify the foreground colour to use for bold text, if the
+\cw{BoldAsColour} resource is set to 1 (the default) or 2.
+
+\dt \cw{\-bbg} \e{colour}
+
+\dd Specify the foreground colour to use for bold reverse-video
+text, if the \cw{BoldAsColour} resource is set to 1 (the default) or 2.
+(This colour is best thought of as the bold version of the
+background colour; so it only appears when text is displayed \e{in}
+the background colour.)
+
+\dt \cw{\-cfg} \e{colour}
+
+\dd Specify the foreground colour to use for text covered by the cursor.
+
+\dt \cw{\-cbg} \e{colour}
+
+\dd Specify the background colour to use for text covered by the cursor.
+In other words, this is the main colour of the cursor.
+
+\dt \cw{\-title} \e{title}
+
+\dd Specify the initial title of the terminal window. (This can be
+changed under control of the server.)
+
+\dt \cw{\-sb\-} or \cw{+sb}
+
+\dd Tells \cw{putty} not to display a scroll bar.
+
+\dt \cw{\-sb}
+
+\dd Tells \cw{putty} to display a scroll bar: this is the opposite of
+\cw{\-sb\-}. This is the default option: you will probably only need
+to specify it explicitly if you have changed the default using the
+\cw{ScrollBar} resource.
+
+\dt \cw{\-log} \e{logfile}, \cw{\-sessionlog} \e{logfile}
+
+\dd This option makes \cw{putty} log all the terminal output to a file
+as well as displaying it in the terminal.
+
+\dt \cw{\-sshlog} \e{logfile}
+
+\dt \cw{\-sshrawlog} \e{logfile}
+
+\dd For SSH connections, these options make \cw{putty} log protocol
+details to a file. (Some of these may be sensitive, although by default
+an effort is made to suppress obvious passwords.)
+
+\lcont{
+\cw{\-sshlog} logs decoded SSH packets and other events (those that
+\cw{\-v} would print). \cw{\-sshrawlog} additionally logs the raw
+encrypted packet data.
+}
+
+\dt \cw{\-logoverwrite}
+
+\dd If \cw{putty} is configured to write to a log file that already exists,
+discard the existing file.
+
+\dt \cw{\-logappend}
+
+\dd If \cw{putty} is configured to write to a log file that already exists,
+append new log data to the existing file.
+
+\dt \cw{\-cs} \e{charset}
+
+\dd This option specifies the character set in which \cw{putty}
+should assume the session is operating. This character set will be
+used to interpret all the data received from the session, and all
+input you type or paste into \cw{putty} will be converted into
+this character set before being sent to the session.
+
+\lcont{ Any character set name which is valid in a MIME header (and
+supported by \cw{putty}) should be valid here (examples are
+\q{\cw{ISO-8859-1}}, \q{\cw{windows-1252}} or \q{\cw{UTF-8}}). Also,
+any character encoding which is valid in an X logical font
+description should be valid (\q{\cw{ibm-cp437}}, for example).
+
+\cw{putty}'s default behaviour is to use the same character
+encoding as its primary font. If you supply a Unicode
+(\cw{iso10646-1}) font, it will default to the UTF-8 character set.
+
+Character set names are case-insensitive.
+}
+
+\dt \cw{\-nethack}
+
+\dd Tells \cw{putty} to enable NetHack keypad mode, in which the
+numeric keypad generates the NetHack \c{hjklyubn} direction keys.
+This enables you to play NetHack with the numeric keypad without
+having to use the NetHack \c{number_pad} option (which requires you
+to press \q{\cw{n}} before any repeat count). So you can move with
+the numeric keypad, and enter repeat counts with the normal number
+keys.
+
+\dt \cw{\-help}, \cw{\-\-help}
+
+\dd Display a message summarizing the available options.
+
+\dt \cw{\-pgpfp}
+
+\dd Display the fingerprints of the PuTTY PGP Master Keys, to aid
+in verifying new files released by the PuTTY team.
+
+\dt \cw{\-load} \e{session}
+
+\dd Load a saved session by name. This allows you to run a saved session
+straight from the command line without having to go through the
+configuration box first.
+
+\dt \cw{\-ssh}, \cw{\-telnet}, \cw{\-rlogin}, \cw{\-supdup}, \cw{\-raw},
+\cw{-ssh-connection}, \cw{\-serial}
+
+\dd Select the protocol \cw{putty} will use to make the connection.
+
+\dt \cw{\-proxycmd} \e{command}
+
+\dd Instead of making a TCP connection, use \e{command} as a proxy;
+network traffic will be redirected to the standard input and output
+of \e{command}. \e{command} must be a single word, so is likely to
+need quoting by the shell.
+
+\lcont{
+The special strings \cw{%host} and \cw{%port} in \e{command} will be
+replaced by the hostname and port number you want to connect to; to get
+a literal \c{%} sign, enter \c{%%}.
+
+Backslash escapes are also supported, such as sequences like \c{\\n}
+being replaced by a literal newline; to get a literal backslash,
+enter \c{\\\\}. (Further escaping may be required by the shell.)
+
+(See the main PuTTY manual for full details of the supported \cw{%}-
+and backslash-delimited tokens, although most of them are probably not
+very useful in this context.)
+}
+
+\dt \cw{\-l} \e{username}
+
+\dd Specify the username to use when logging in to the server.
+
+\dt \cw{\-L} \cw{[}\e{srcaddr}\cw{:]}\e{srcport}\cw{:}\e{desthost}\cw{:}\e{destport}
+
+\dd Set up a local port forwarding: listen on \e{srcport} (or
+\e{srcaddr}:\e{srcport} if specified), and forward any connections
+over the SSH connection to the destination address
+\e{desthost}:\e{destport}. Only works in SSH.
+
+\dt \cw{\-R} \cw{[}\e{srcaddr}\cw{:]}\e{srcport}\cw{:}\e{desthost}\cw{:}\e{destport}
+
+\dd Set up a remote port forwarding: ask the SSH server to listen on
+\e{srcport} (or \e{srcaddr}:\e{srcport} if specified), and to
+forward any connections back over the SSH connection where the
+client will pass them on to the destination address
+\e{desthost}:\e{destport}. Only works in SSH.
+
+\dt \cw{\-D} [\e{srcaddr}:]\e{srcport}
+
+\dd Set up dynamic port forwarding. The client listens on
+\e{srcport} (or \e{srcaddr}:\e{srcport} if specified), and
+implements a SOCKS server. So you can point SOCKS-aware applications
+at this port and they will automatically use the SSH connection to
+tunnel all their connections. Only works in SSH.
+
+\dt \cw{\-P} \e{port}
+
+\dd Specify the port to connect to the server on.
+
+\dt \cw{\-A}, \cw{\-a}
+
+\dd Enable (\cw{\-A}) or disable (\cw{\-a}) SSH agent forwarding.
+Currently this only works with OpenSSH and SSH-1.
+
+\dt \cw{\-X}, \cw{\-x}
+
+\dd Enable (\cw{\-X}) or disable (\cw{\-x}) X11 forwarding.
+
+\dt \cw{\-T}, \cw{\-t}
+
+\dd Enable (\cw{\-t}) or disable (\cw{\-T}) the allocation of a
+pseudo-terminal at the server end.
+
+\dt \cw{\-C}
+
+\dd Enable zlib-style compression on the connection.
+
+\dt \cw{\-1}, \cw{\-2}
+
+\dd Select SSH protocol version 1 or 2.
+
+\dt \cw{-4}, \cw{-6}
+
+\dd Force use of IPv4 or IPv6 for network connections.
+
+\dt \cw{\-i} \e{keyfile}
+
+\dd Private key file for user authentication. For SSH-2 keys, this key
+file must be in PuTTY's PPK format, not OpenSSH's format or anyone
+else's.
+
+\lcont{ If you are using an authentication agent, you can also specify
+a \e{public} key here (in RFC 4716 or OpenSSH format), to identify
+which of the agent's keys to use. }
+
+\dt \cw{\-noagent}
+
+\dd Don't try to use an authentication agent for local authentication.
+(This doesn't affect agent forwarding.)
+
+\dt \cw{\-agent}
+
+\dd Allow use of an authentication agent. (This option is only necessary
+to override a setting in a saved session.)
+
+\dt \cw{\-no\-trivial\-auth}
+
+\dd Disconnect from any SSH server which accepts authentication without
+ever having asked for any kind of password or signature or token. (You
+might want to enable this for a server you always expect to challenge
+you, for instance to ensure you don't accidentally type your key file's
+passphrase into a compromised server spoofing PuTTY's passphrase
+prompt.)
+
+\dt \cw{\-hostkey} \e{key}
+
+\dd Specify an acceptable host public key. This option may be specified
+multiple times; each key can be either a fingerprint (\cw{SHA256:AbCdE...},
+\cw{99:aa:bb:...}, etc) or a base64-encoded blob in OpenSSH's one-line
+format.
+
+\lcont{ Specifying this option overrides automated host key
+management; \e{only} the key(s) specified on the command-line will be
+accepted (unless a saved session also overrides host keys, in which
+case those will be added to), and the host key cache will not be
+written. }
+
+\dt \cw{\-sercfg} \e{configuration-string}
+
+\dd Specify the configuration parameters for the serial port, in
+\cw{-serial} mode. \e{configuration-string} should be a
+comma-separated list of configuration parameters as follows:
+
+\lcont{
+
+\b Any single digit from 5 to 9 sets the number of data bits.
+
+\b \cq{1}, \cq{1.5} or \cq{2} sets the number of stop bits.
+
+\b Any other numeric string is interpreted as a baud rate.
+
+\b A single lower-case letter specifies the parity: \cq{n} for none,
+\cq{o} for odd, \cq{e} for even, \cq{m} for mark and \cq{s} for space.
+
+\b A single upper-case letter specifies the flow control: \cq{N} for
+none, \cq{X} for XON/XOFF, \cq{R} for RTS/CTS and \cq{D} for
+DSR/DTR.
+
+}
+
+\S{putty-manpage-saved-sessions} SAVED SESSIONS
+
+Saved sessions are stored in a \cw{.putty/sessions} subdirectory in
+your home directory.
+
+\S{putty-manpage-more-information} MORE INFORMATION
+
+For more information on PuTTY, it's probably best to go and look at
+the manual on the web page:
+
+\W{https://www.chiark.greenend.org.uk/~sgtatham/putty/}\cw{https://www.chiark.greenend.org.uk/~sgtatham/putty/}
+
+\S{putty-manpage-bugs} BUGS
+
+This man page isn't terribly complete.

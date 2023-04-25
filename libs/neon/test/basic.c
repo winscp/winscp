@@ -144,6 +144,7 @@ static int do_range(off_t start, off_t end, const char *fail,
     ret = ne_get_range(sess, "/foo", &range, fd);
 
     close(fd);
+    ne_close_connection(sess);
     CALL(await_server());
     
     if (fail) {
@@ -242,9 +243,7 @@ static int dav_capabilities(void)
 	ONV(c.dav_executable != caps[n].exec,
 	    ("class2 was %d not %d", c.dav_executable, caps[n].exec));
 
-	CALL(await_server());
-
-        ne_session_destroy(sess);
+	CALL(destroy_and_wait(sess));
     }
 
     return OK;	
@@ -265,10 +264,7 @@ static int get(void)
     ONREQ(ne_get(sess, "/getit", fd));
     close(fd);
 
-    ne_session_destroy(sess);
-    CALL(await_server());
-
-    return OK;
+    return destroy_and_wait(sess);
 }
 
 #define CLASS_12 (NE_CAP_DAV_CLASS1 | NE_CAP_DAV_CLASS2)
@@ -309,9 +305,7 @@ static int options2(void)
             ("capabilities for 'DAV: %s' were 0x%x, expected 0x%x", 
              ts[n].hdrs, caps, ts[n].caps));
 
-        CALL(await_server());
-
-        ne_session_destroy(sess);
+        CALL(destroy_and_wait(sess));
     }
 
     return OK;  

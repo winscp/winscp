@@ -1,0 +1,425 @@
+\cfg{man-identity}{pageant}{1}{2015-05-19}{PuTTY tool suite}{PuTTY tool suite}
+
+\H{pageant-manpage} Man page for Pageant
+
+\S{pageant-manpage-name} NAME
+
+\cw{pageant} - PuTTY SSH authentication agent
+
+\S{pageant-manpage-synopsis} SYNOPSIS
+
+\c pageant ( -X | -T | --permanent | --debug ) [ [ --encrypted ] key-file... ]
+\e bbbbbbb   bb   bb   bbbbbbbbbbb   bbbbbbb       bbbbbbbbbbb   iiiiiiii
+\c pageant [ [ --encrypted ] key-file... ] --exec command [ args... ]
+\e bbbbbbb       bbbbbbbbb   iiiiiiii      bbbbbb iiiiiii   iiii
+\c pageant -a [ --encrypted ] key-file...
+\e bbbbbbb bb   bbbbbbbbbbb   iiiiiiii
+\c pageant ( -d | -r | --public | --public-openssh ) key-identifier...
+\e bbbbbbb   bb   bb   bbbbbbbb   bbbbbbbbbbbbbbbb   iiiiiiiiiiiiii
+\c pageant ( -D | -R )
+\e bbbbbbb   bb   bb
+\c pageant -l [ --fptype format ]
+\e bbbbbbb bb   bbbbbbbb iiiiii
+\c pageant --askpass prompt
+\e bbbbbbb bbbbbbbbb iiiiii
+
+\S{pageant-manpage-description} DESCRIPTION
+
+\c{pageant} is both an SSH authentication agent, and also a tool for
+communicating with an already-running agent.
+
+When running as an SSH agent, it listens on a Unix-domain socket for
+connections from client processes running under your user id. Clients
+can load SSH private keys into the agent, or request signatures on a
+given message from a key already in the agent. This permits one-touch
+authentication by SSH client programs, if Pageant is holding a key
+that the server they are connecting to will accept.
+
+\c{pageant} can also act as a client program itself, communicating
+with an already-running agent to add or remove keys, list the keys, or
+extract their public half.
+
+The agent protocol used by \c{pageant} is compatible with the PuTTY
+tools and also with other implementations such as OpenSSH's SSH client
+and \cw{ssh-agent}(\e{1}). Some \c{pageant} features are implemented with
+protocol extensions, so will only work if \c{pageant} is on both ends.
+
+To run \c{pageant} as an agent, you must provide an option to tell it
+what its \e{lifetime} should be. Typically you would probably want
+Pageant to last for the duration of a login session, in which case you
+should use either \cw{-X} or \cw{-T}, depending on whether your login
+session is GUI or purely terminal-based respectively. For example, in
+your X session startup script you might write
+
+\c eval $(pageant -X)
+\e bbbbbbbbbbbbbbbbbb
+
+which will cause Pageant to start running, monitor the X server to
+notice when your session terminates (and then it will terminate too),
+and print on standard output some shell commands to set environment
+variables that client processes will need to find the running agent.
+
+In a terminal-based login, you could do almost exactly the same thing
+but with \cw{-T}:
+
+\c eval $(pageant -T)
+\e bbbbbbbbbbbbbbbbbb
+
+This will cause Pageant to tie its lifetime to that of your
+controlling terminal: when you log out, and the terminal device ceases
+to be associated with your session, Pageant will notice that it has no
+controlling terminal any more, and will terminate automatically.
+
+In either of these modes, you can also add one or more private keys as
+extra command-line arguments, e.g.
+
+\c eval $(pageant -T ~/.ssh/key.ppk)
+\e bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+in which case Pageant will immediately prompt for the keys' passphrases
+(if any) and start the agent with those keys already loaded in
+cleartext form. Passphrase prompts will use the controlling terminal if
+one is available, or failing that the GUI if one of those is available.
+(The prompt method can be overridden with the \cw{--gui-prompt} or
+\cw{--tty-prompt} options.) If neither is available, no passphrase
+prompting can be done.
+
+Alternatively, you can start an agent with keys stored in encrypted
+form:
+
+\c eval $(pageant -T --encrypted ~/.ssh/key.ppk)
+\e bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+In this case, Pageant will not prompt for a passphrase at startup;
+instead, it will prompt the first time a client tries to use the key.
+(Pageant will need access to a GUI so that it can pop up a passphrase
+prompt when required, unless it's running in \cw{--debug} mode.)
+
+To use Pageant to talk to an existing agent, you can add new keys
+using \cw{-a}, list the current set of keys' fingerprints and comments
+with \cw{-l}, extract the full public half of any key using
+\cw{--public} or \cw{--public-openssh}, delete a specific key or
+all keys using \cw{-d} or \cw{-D} respectively, or request
+re-encryption of a specific key or all keys using \cw{-r} or \cw{-R}
+respectively.
+
+\S{pageant-manpage-lifetime} LIFETIME
+
+The following options are called \e{lifetime modes}. They all request
+Pageant to operate in agent mode; each one specifies a different
+method for Pageant to start up and know when to shut down.
+
+\dt \cw{-X}
+
+\dd Pageant will open a connection to your X display, and when that
+connection is lost, it will terminate. This gives it the same lifetime
+as your GUI login session, so in this mode it is suitable for running
+from a startup script such as \cw{.xsession}. The actual agent will be
+a subprocess; the main Pageant process will terminate immediately,
+after printing environment-variable setting commands on standard
+output which should be installed in any process wanting to communicate
+with the agent.
+
+\lcont{
+
+The usual approach would be to run
+
+\c eval $(pageant -X)
+\e bbbbbbbbbbbbbbbbbb
+
+in an X session startup script. However, other possibilities exist,
+such as directing the standard output of \cq{pageant -X} to a file
+which is then sourced by any new shell.
+
+}
+
+\dt \cw{-T}
+
+\dd Pageant will tie its lifetime to that of the login session running
+on its controlling terminal, by noticing when it ceases to have a
+controlling terminal (which will automatically happen as a side effect
+of the session leader process terminating). Like \cw{-X}, Pageant will
+print environment-variable commands on standard output.
+
+\dt \cw{--exec} \e{command}
+
+\dd Pageant will run the provided command as a subprocess, preloaded
+with the appropriate environment variables to access the agent it
+starts up. When the subprocess terminates, Pageant will terminate as
+well.
+
+\lcont{
+
+All arguments on Pageant's command line after \cw{--exec} will be
+treated as part of the command to run, even if they look like other
+valid Pageant options or key files.
+
+}
+
+\dt \cw{--permanent}
+
+\dd Pageant will fork off a subprocess to be the agent, and print
+environment-variable commands on standard output, like \cw{-X} and
+\cw{-T}. However, in this case, it will make no effort to limit its
+lifetime in any way; it will simply run permanently, unless manually
+killed. The environment variable \cw{SSH_AGENT_PID}, set by the
+commands printed by Pageant, permits the agent process to be found for
+this purpose.
+
+\lcont{
+
+This option is not recommended, because any method of manually killing
+the agent carries the risk of the session terminating unexpectedly
+before it manages to happen.
+
+}
+
+\dt \cw{--debug}
+
+\dd Pageant will run in the foreground, without forking. It will print
+its environment variable setup commands on standard output, and then it
+will log all agent activity to standard output as well; any passphrase
+prompts will need to be answered on standard input. This is useful
+for debugging what Pageant itself is doing, or what another process is
+doing to it.
+
+\S{pageant-manpage-client} CLIENT OPTIONS
+
+The following options tell Pageant to operate in client mode,
+contacting an existing agent via environment variables that it should
+already have set.
+
+\dt \cw{-a} \e{key-files}
+
+\dd Load the specified private key file(s) and add them to the
+already-running agent. Unless \cw{--encrypted} is also specified,
+\c{pageant} will decrypt them if necessary by prompting for their
+passphrases (with the same choice of user interfaces as in agent
+mode).
+
+\lcont{
+The private key files must be in PuTTY's \cw{.ppk} file format.
+}
+
+\dt \cw{-l}
+
+\dd List the keys currently in the running agent. Each key's
+fingerprint and comment string will be shown. (Use the \cw{-E}
+option to change the fingerprint format.)
+
+\lcont{
+Keys that will require a passphrase on their next use are listed as
+\q{encrypted}. Keys that can be returned to this state with \cw{-r}
+are listed as \q{re-encryptable}.
+}
+
+\dt \cw{--public} \e{key-identifiers}
+
+\dd Print the public half of each specified key, in the RFC 4716
+standard format (multiple lines, starting with \cq{---- BEGIN SSH2
+PUBLIC KEY ----}).
+
+\lcont{
+
+Each \e{key-identifier} can be any of the following:
+
+\b The name of a file containing the key, either the whole key (again
+in \cw{.ppk} format) or just its public half.
+
+\b The key's comment string, as shown by \cw{pageant -l}.
+
+\b Enough of one of the key's fingerprint formats to be unique among
+keys currently loaded into the agent.
+
+If Pageant can uniquely identify one key by interpreting the
+\e{key-identifier} in any of these ways, it will assume that key was
+the one you meant. If it cannot, you will have to specify more detail.
+
+If you find that your desired \e{key-identifier} string can be validly
+interpreted as more than one of the above \e{kinds} of identification,
+you can disambiguate by prefixing it as follows:
+
+\dt \cq{file:}
+
+\dd to indicate that it is a filename
+
+\dt \cq{comment:}
+
+\dd to indicate that it is a comment string
+
+\dt \cq{fp:}
+
+\dd to indicate that it is a fingerprint; any fingerprint format will
+be matched
+
+\dt \cq{sha256:} or \cq{md5:}
+
+\dd to indicate that it is a fingerprint of a specific format
+
+}
+
+\dt \cw{--public-openssh} \e{key-identifiers}, \cw{-L} \e{key-identifiers}
+
+\dd Print the public half of each specified key, in the one-line
+format used by OpenSSH, suitable for putting in
+\cw{.ssh/authorized_keys} files.
+
+\dt \cw{-d} \e{key-identifiers}
+
+\dd Delete each specified key from the agent's memory, so that the
+agent will no longer serve it to clients unless it is loaded in again
+using \cw{pageant -a}.
+
+\dt \cw{-D}
+
+\dd Delete all keys from the agent's memory, leaving it completely
+empty.
+
+\dt \cw{-r} \e{key-identifiers}
+
+\dd \q{Re-encrypt} each specified key in the agent's memory -
+that is, forget any cleartext version, so that the user will be
+prompted for a passphrase again next time the key is used.
+(For this to be possible, the key must previously have been added
+with the \cw{--encrypted} option.)
+
+\lcont{
+(Holding encrypted keys is a Pageant extension, so this option and
+\cw{-R} are unlikely to work with other agents.)
+}
+
+\dt \cw{-R}
+
+\dd \q{Re-encrypt} all possible keys in the agent's memory.
+(This may leave some keys in cleartext, if they were not previously
+added with the \cw{--encrypted} option.)
+
+\dt \cw{--test-sign} \e{key-identifier}
+
+\dt \cw{--test-sign-with-flags=}\e{flags} \e{key-identifier}
+
+\dd Sign arbitrary data with the given key. This mode is only likely
+to be useful when testing \c{pageant} itself.
+
+\lcont{
+
+The data to sign is taken from standard input, signed by the agent
+with the key identified by \e{key-identifier}, and the resulting
+signature emitted on standard output (as a binary blob in the format
+defined by the SSH specifications).
+
+\e{flags} is a number representing a combination of flag bits defined
+by the SSH agent protocol.
+
+}
+
+\S{pageant-manpage-askpass} SSH-ASKPASS REPLACEMENT
+
+\dt \cw{--askpass} \e{prompt}
+
+\dd With this option, \c{pageant} acts as an \cw{ssh-askpass}(\e{1})
+replacement, rather than performing any SSH agent functionality. This
+may be useful if you prefer Pageant's GUI prompt style, which
+minimises information leakage about your passphrase length in its
+visual feedback, compared to other \cw{ssh-askpass}(\e{1}) implementations.
+
+\lcont{
+
+\c{pageant --askpass} implements the standard \cw{ssh-askpass}(\e{1})
+interface: it can be passed a prompt to display (as a single argument)
+and, if successful, prints the passphrase on standard output and
+returns a zero exit status. Typically you would use the environment
+variable \cw{SSH_ASKPASS} to tell other programs to use \c{pageant} in
+this way.
+
+}
+
+\S{pageant-manpage-options} OPTIONS
+
+\dt \cw{-v}
+
+\dd Verbose mode. When Pageant runs in agent mode, this option causes
+it to log all agent activity to its standard error. For example, you
+might run
+
+\lcont{
+
+\c eval $(pageant -X -v 2>~/.pageant.log)
+\e bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+and expect a list of all signatures requested by agent clients to
+build up in that log file.
+
+The log information is the same as that produced by the \cw{--debug}
+lifetime option, but \cw{--debug} sends it to standard output (since
+that is the main point of debugging mode) whereas \cw{-v} in all other
+lifetime modes sends the same log data to standard error (being a
+by-product of the program's main purpose). Using \cw{-v} in
+\cw{--debug} mode has no effect: the log still goes to standard
+output.
+
+}
+
+\dt \cw{-s}, \cw{-c}
+
+\dd Force Pageant to output its environment setup commands in the
+style of POSIX / Bourne shells (\cw{-s}) or C shells (\cw{-c})
+respectively. If neither option is given, Pageant will guess based on
+whether the environment variable \cw{SHELL} has a value ending in
+\cq{csh}.
+
+\dt \cw{--symlink} \e{fixed-path}
+
+\dd When operating in agent mode, as well as creating a uniquely named
+listening socket, \c{pageant} will also create (or update) a symbolic
+link at \e{fixed-path} pointing to that socket.
+
+\lcont{
+This allows access to an agent instance by setting the
+\c{SSH_AUTH_SOCK} environment variable to \e{fixed-path}, rather than
+having to use the value invented by \c{pageant} when it starts. It's
+mainly expected to be useful for debugging.
+}
+
+\dt \cw{--encrypted}, \cw{--no-decrypt}
+
+\dd When adding keys to the agent (at startup or later), keep them
+in encrypted form until the first attempt to use them; the user will
+be prompted for a passphrase then. Once decrypted, a key that was
+added in this way can be \q{re-encrypted} with the \cw{-r} or \cw{-R}
+client options.
+
+\lcont{
+The \cw{--encrypted} option makes no difference for key files which
+do not have a passphrase.
+
+(Storing keys in encrypted form is a Pageant extension; other agent
+implementations are unlikely to support it.)
+}
+
+\dt \cw{-E} \e{fingerprint-type}, \cw{--fptype} \e{fingerprint-type}
+
+\dd Specify the fingerprint format to print. Only applicable when
+listing fingerprints with \cw{-l}. The available formats are
+\cw{sha256} (the default) and \cw{md5}.
+
+\dt \cw{--gui-prompt}, \cw{--tty-prompt}
+
+\dd Force Pageant to prompt for key passphrases with a particular
+method (GUI or terminal) rather than trying to guess the most
+appropriate method as described above. (These options are relevant
+whenever a key file is specified to \c{pageant} that needs
+immediate decryption, and in \c{--askpass} mode.)
+
+\dt \cw{--help}
+
+\dd Print a brief summary of command-line options and terminate.
+
+\dt \cw{--version}, \cw{-V}
+
+\dd Print the version of Pageant.
+
+\dt \cw{--}
+
+\dd Cause all subsequent arguments to be treated as key file names,
+even if they look like options.
