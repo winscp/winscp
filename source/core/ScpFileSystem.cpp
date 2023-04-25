@@ -447,6 +447,7 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
     case fcTextMode:
       return FTerminal->SessionData->EOLType != FTerminal->Configuration->LocalEOLType;
 
+    case fcAclChangingFiles:
     case fcNativeTextMode:
     case fcNewerOnlyUpload:
     case fcTimestampChanging:
@@ -650,7 +651,14 @@ void __fastcall TSCPFileSystem::ReadCommandOutput(int Params, const UnicodeStrin
         if (WrongOutput || WrongReturnCode)
         {
           DebugAssert(Cmd != NULL);
-          FTerminal->TerminalError(FMTLOAD(COMMAND_FAILED, (*Cmd, ReturnCode, Message)));
+          if (Message.IsEmpty())
+          {
+            FTerminal->TerminalError(FMTLOAD(COMMAND_FAILED_CODEONLY, (ReturnCode)));
+          }
+          else
+          {
+            throw ETerminal(MainInstructions(FMTLOAD(COMMAND_FAILED2, (*Cmd, ReturnCode))), Message);
+          }
         }
       }
     }
@@ -1002,8 +1010,6 @@ void __fastcall TSCPFileSystem::ReadDirectory(TRemoteFileList * FileList)
           Params);
       }
 
-      TRemoteFile * File;
-
       // If output is not empty, we have successfully got file listing,
       // otherwise there was an error, in case it was "permission denied"
       // we try to get at least parent directory (see "else" statement below)
@@ -1029,8 +1035,11 @@ void __fastcall TSCPFileSystem::ReadDirectory(TRemoteFileList * FileList)
             UnicodeString OutputLine = OutputCopy->Strings[Index];
             if (!OutputLine.IsEmpty())
             {
-              File = CreateRemoteFile(OutputCopy->Strings[Index]);
-              FileList->AddFile(File);
+              std::unique_ptr<TRemoteFile> File(CreateRemoteFile(OutputCopy->Strings[Index]));
+              if (FTerminal->IsValidFile(File.get()))
+              {
+                FileList->AddFile(File.release());
+              }
             }
           }
         }
@@ -1046,6 +1055,7 @@ void __fastcall TSCPFileSystem::ReadDirectory(TRemoteFileList * FileList)
         {
           // Empty file list -> probably "permission denied", we
           // at least get link to parent directory ("..")
+          TRemoteFile * File;
           FTerminal->ReadFile(
             UnixIncludeTrailingBackslash(FTerminal->FFiles->Directory) +
               PARENTDIRECTORY, File);
@@ -1977,7 +1987,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
         Rights);
     }
 
-    FTerminal->LogFileDone(OperationProgress, AbsoluteFileName);
+    FTerminal->LogFileDone(OperationProgress, AbsoluteFileName, Action);
     // Stream is disposed here
   }
 
@@ -2637,7 +2647,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
             FILE_OPERATION_LOOP_END(FMTLOAD(CANT_SET_ATTRS, (DestFileName)));
           }
 
-          FTerminal->LogFileDone(OperationProgress, DestFileName);
+          FTerminal->LogFileDone(OperationProgress, DestFileName, Action);
         }
       }
     }

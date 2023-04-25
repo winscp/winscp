@@ -72,6 +72,7 @@ struct TMessageParams
   TQueryType TimerQueryType;
   unsigned int Timeout;
   unsigned int TimeoutAnswer;
+  unsigned int TimeoutResponse;
   UnicodeString NeverAskAgainTitle;
   unsigned int NeverAskAgainAnswer;
   bool NeverAskAgainCheckedInitially;
@@ -118,7 +119,7 @@ Tbx::TTBXSeparatorItem * __fastcall AddMenuSeparator(Tb2item::TTBCustomItem * Me
 void __fastcall AddMenuLabel(Tb2item::TTBCustomItem * Menu, const UnicodeString & Label);
 void __fastcall ClickToolbarItem(Tb2item::TTBCustomItem * Item, bool PositionCursor);
 
-void InitiateDialogTimeout(TForm * Dialog, unsigned int Timeout, TButton * Button);
+void InitiateDialogTimeout(TForm * Dialog, unsigned int Timeout, TButton * Button, unsigned int Answer = 0);
 
 // windows\WinHelp.cpp
 void __fastcall InitializeWinHelp();
@@ -296,6 +297,7 @@ struct TCalculateSizeStats;
 const cpMode =  0x01;
 const cpOwner = 0x02;
 const cpGroup = 0x04;
+const cpAcl =   0x08;
 typedef void __fastcall (__closure *TCalculateSizeEvent)
   (TStrings * FileList, __int64 & Size, TCalculateSizeStats & Stats,
    bool & Close);
@@ -534,6 +536,7 @@ UnicodeString DumpCallstackFileName(int ProcessId);
 void CheckConfigurationForceSave();
 void InterfaceStarted();
 void InterfaceStartDontMeasure();
+void AddStartupSequence(const UnicodeString & Tag);
 //---------------------------------------------------------------------------
 #define HIDDEN_WINDOW_NAME L"WinSCPHiddenWindow3"
 //---------------------------------------------------------------------------

@@ -243,7 +243,7 @@ private:
   bool FMultiLineResponse;
   int FLastCode;
   int FLastCodeClass;
-  int FLastReadDirectoryProgress;
+  DWORD FLastReadDirectoryProgress;
   UnicodeString FTimeoutStatus;
   UnicodeString FDisconnectStatus;
   TStrings * FLastResponse;
@@ -294,13 +294,13 @@ private:
   bool FTransferActiveImmediately;
   bool FWindowsServer;
   __int64 FBytesAvailable;
-  bool FBytesAvailableSuppoted;
+  bool FBytesAvailableSupported;
   bool FMVS;
   bool FVMS;
   bool FFileZilla;
   bool FFileTransferAny;
   bool FLoggedIn;
-  bool FVmsAllRevisions;
+  bool FVMSAllRevisions;
   bool FForceReadSymlink;
   mutable UnicodeString FOptionScratch;
 };

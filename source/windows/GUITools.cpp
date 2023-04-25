@@ -29,6 +29,7 @@
 #include <vssym32.h>
 #include <DateUtils.hpp>
 #include <IOUtils.hpp>
+#include <Queue.h>
 
 #include "Animations96.h"
 #include "Animations120.h"
@@ -229,8 +230,7 @@ void __fastcall OpenSessionInPutty(const UnicodeString PuttyPath,
           {
             AddToList(PuttyParams, L"-C", L" ");
           }
-          AddToList(PuttyParams,
-            ((SessionData->SshProt == ssh1only || SessionData->SshProt == ssh1deprecated) ? L"-1" : L"-2"), L" ");
+          AddToList(PuttyParams, L"-2", L" ");
           if (!SessionData->LogicalHostName.IsEmpty())
           {
             AddToList(PuttyParams, FORMAT(L"-loghost \"%s\"", (SessionData->LogicalHostName)), L" ");
@@ -350,10 +350,11 @@ TObjectList * StartCreationDirectoryMonitorsOnEachDrive(unsigned int Filter, TFi
   {
     if (ExcludedDrives.Pos(Drive) == 0)
     {
+      // Not calling ReadDriveStatus(... dsSize), relying on drive ready status cached by the background thread
       TDriveInfoRec * DriveInfoRec = DriveInfo->Get(Drive);
-      if (DriveInfoRec->Valid &&
+      if (DriveInfoRec->Valid && DriveInfoRec->DriveReady &&
           (DriveInfoRec->DriveType != DRIVE_CDROM) &&
-          ((DriveInfoRec->DriveType != DRIVE_REMOVABLE) || (Drive >= FirstFixedDrive)))
+          ((DriveInfoRec->DriveType != DRIVE_REMOVABLE) || (Drive >= DriveInfo->FirstFixedDrive)))
       {
         Drives->Add(Drive);
       }
@@ -1001,11 +1002,21 @@ UnicodeString FormatIncrementalSearchStatus(const UnicodeString & Text, bool Hav
 class TCustomDocHandler : public TComponent, public ::IDocHostUIHandler
 {
 public:
-  __fastcall TCustomDocHandler(TComponent * Owner) : TComponent(Owner)
+  __fastcall TCustomDocHandler(TComponent * Owner, ICustomDoc * CustomDoc) :
+    TComponent(Owner), FCustomDoc(CustomDoc)
   {
   }
 
+  virtual __fastcall ~TCustomDocHandler()
+  {
+    // Something keeps the reference behind otherwise and calls it on WM_SETTINGCHANGE.
+    // Would make sense with TWebBrowserEx, which leaks. But it happens even with TWebBrowser.
+    FCustomDoc->SetUIHandler(NULL);
+  }
+
 protected:
+  ICustomDoc * FCustomDoc;
+
   #pragma warn -hid
   virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID ClassId, void ** Intf)
   {
@@ -1286,7 +1297,7 @@ void HideBrowserScrollbars(TWebBrowserEx * WebBrowser)
       SUCCEEDED(WebBrowser->Document->QueryInterface(&CustomDoc)) &&
       DebugAlwaysTrue(CustomDoc != NULL))
   {
-    TCustomDocHandler * Handler = new TCustomDocHandler(WebBrowser);
+    TCustomDocHandler * Handler = new TCustomDocHandler(WebBrowser, CustomDoc);
     CustomDoc->SetUIHandler(Handler);
   }
 }
@@ -1877,10 +1888,13 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
 
   const int ScreenTipTextOnlyWidth = ScaleByTextHeight(HintControl, cScreenTipTextOnlyWidth);
 
-  if (!LongHint.IsEmpty())
+  int LongHintMargin = 0; // shut up
+  bool HasLongHint = !LongHint.IsEmpty();
+  if (HasLongHint)
   {
     // double-margin on the right
-    MaxWidth = ScreenTipTextOnlyWidth - (3 * Margin);
+    LongHintMargin = (3 * Margin);
+    MaxWidth = ScreenTipTextOnlyWidth - LongHintMargin;
   }
 
   // Multi line short hints can be twice as wide, to not break the individual lines unless really necessary.
@@ -1907,7 +1921,7 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
 
   TRect Result;
 
-  if (LongHint.IsEmpty())
+  if (!HasLongHint)
   {
     Result = ShortRect;
 
@@ -1928,7 +1942,7 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
     TRect LongRect(0, 0, MaxWidth - LongIndentation, 0);
     CalcHintTextRect(this, Canvas, LongRect, LongHint);
 
-    Result.Right = ScreenTipTextOnlyWidth;
+    Result.Right = Max(ScreenTipTextOnlyWidth, LongRect.Right + LongIndentation + LongHintMargin);
     Result.Bottom = Margin + ShortRect.Height() + (Margin / 3 * 5) + LongRect.Height() + Margin;
   }
 
@@ -2065,7 +2079,7 @@ void __fastcall TNewRichEdit::CreateParams(TCreateParams & Params)
   SetErrorMode(OldError);
 
   // No fallback, MSFTEDIT.DLL is available since Windows XP
-  // https://docs.microsoft.com/en-us/archive/blogs/murrays/richedit-versions
+  // https://learn.microsoft.com/en-us/archive/blogs/murrays/richedit-versions
   if (FLibrary == 0)
   {
     throw Exception(FORMAT(L"Cannot load %s", (RichEditModuleName)));
@@ -2073,7 +2087,7 @@ void __fastcall TNewRichEdit::CreateParams(TCreateParams & Params)
 
   TCustomMemo::CreateParams(Params);
   // MSDN says that we should use MSFTEDIT_CLASS to load Rich Edit 4.1:
-  // https://docs.microsoft.com/en-us/windows/win32/controls/about-rich-edit-controls
+  // https://learn.microsoft.com/en-us/windows/win32/controls/about-rich-edit-controls
   // But MSFTEDIT_CLASS is defined as "RICHEDIT50W",
   // so not sure what version we are loading.
   // Seem to work on Windows XP SP3.
@@ -2140,4 +2154,99 @@ void __fastcall FindComponentClass(
 bool CanShowTimeEstimate(TDateTime StartTime)
 {
   return (SecondsBetween(StartTime, Now()) >= 3);
+}
+class TSystemRequiredThread : public TSignalThread
+{
+public:
+  TSystemRequiredThread();
+  void Required();
+protected:
+  virtual bool __fastcall WaitForEvent();
+  virtual void __fastcall ProcessEvent();
+private:
+  bool FRequired;
+  TDateTime FLastRequired;
+};
+//---------------------------------------------------------------------------
+std::unique_ptr<TCriticalSection> SystemRequiredThreadSection(TraceInitPtr(new TCriticalSection()));
+TSystemRequiredThread * SystemRequiredThread = NULL;
+//---------------------------------------------------------------------------
+TSystemRequiredThread::TSystemRequiredThread() :
+  TSignalThread(true), FRequired(false)
+{
+}
+//---------------------------------------------------------------------------
+void TSystemRequiredThread::Required()
+{
+  // guarded in SystemRequired()
+  FLastRequired = Now();
+  TriggerEvent();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSystemRequiredThread::WaitForEvent()
+{
+  const int ExpireInterval = 5000;
+  bool Result = (TSignalThread::WaitForEvent(ExpireInterval) > 0);
+  if (!Result && !FTerminated)
+  {
+    TGuard Guard(SystemRequiredThreadSection.get());
+    if (!FTerminated && FRequired &&
+        (MilliSecondsBetween(Now(), FLastRequired) > ExpireInterval))
+    {
+      AppLog("System is not required");
+      SetThreadExecutionState(ES_CONTINUOUS);
+      FLastRequired = TDateTime();
+      FRequired = false;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSystemRequiredThread::ProcessEvent()
+{
+  TGuard Guard(SystemRequiredThreadSection.get());
+  if (!FRequired &&
+      (FLastRequired != TDateTime()))
+  {
+    AppLog("System is required");
+    SetThreadExecutionState(ES_SYSTEM_REQUIRED | ES_CONTINUOUS);
+    FRequired = true;
+  }
+}
+//---------------------------------------------------------------------------
+void SystemRequired()
+{
+  if (IsWin11())
+  {
+    TGuard Guard(SystemRequiredThreadSection.get());
+    if (SystemRequiredThread == NULL)
+    {
+      AppLog("Starting system required thread");
+      SystemRequiredThread = new TSystemRequiredThread();
+      SystemRequiredThread->Start();
+    }
+    SystemRequiredThread->Required();
+  }
+  else
+  {
+    SetThreadExecutionState(ES_SYSTEM_REQUIRED);
+  }
+}
+//---------------------------------------------------------------------------
+void GUIFinalize()
+{
+  TSystemRequiredThread * Thread;
+  {
+    TGuard Guard(SystemRequiredThreadSection.get());
+    Thread = SystemRequiredThread;
+    SystemRequiredThread = NULL;
+  }
+
+  if (Thread != NULL)
+  {
+    AppLog("Stopping system required thread");
+    Thread->Terminate();
+    Thread->WaitFor();
+    delete Thread;
+  }
 }

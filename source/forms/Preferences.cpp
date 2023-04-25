@@ -939,7 +939,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
       {
         if (Updates.Period == TDateTime(0))
         {
-          Updates.Period = 7;
+          Updates.Period = DefaultUpdatesPeriod;
         }
       }
       else
@@ -2554,10 +2554,10 @@ void __fastcall TPreferencesDialog::UpdatesAuthenticationEmailEditExit(TObject *
           QueryUpdates(Updates);
         }
 
-        UnicodeString AuthenticationError = Updates.Results.AuthenticationError;
-        if (!AuthenticationError.IsEmpty())
+        if (!Updates.Results.AuthenticationError.IsEmpty())
         {
-          AuthenticationError = FormatUpdatesMessage(AuthenticationError);
+          UnicodeString AuthenticationError;
+          FormatUpdatesMessage(AuthenticationError, Updates.Results.AuthenticationError, Updates);
           if (HasParagraphs(AuthenticationError))
           {
             AuthenticationError = MainInstructionsFirstParagraph(AuthenticationError);
@@ -2668,7 +2668,9 @@ void __fastcall TPreferencesDialog::AddExtension()
           Url = ProgramUrl(Url);
           // The EncodeUrlString should not be necessary, but as we get the value from registry, let's be safe
           Url = AppendUrlParams(Url, FORMAT(L"netframework=%s", (EncodeUrlString(GetNetVersionStr()))));
+          Url = AppendUrlParams(Url, FORMAT(L"netcore=%s", (EncodeUrlString(GetNetCoreVersionStr()))));
           Url = AppendUrlParams(Url, FORMAT(L"powershell=%s", (EncodeUrlString(GetPowerShellVersionStr()))));
+          Url = AppendUrlParams(Url, FORMAT(L"pwsh=%s", (EncodeUrlString(GetPowerShellCoreVersionStr()))));
           Url = AppendUrlParams(Url, FORMAT(L"windows=%s", (EncodeUrlString(WindowsVersion()))));
           Url = CampaignUrl(Url);
         }
@@ -3045,6 +3047,7 @@ void __fastcall TPreferencesDialog::CustomIniFileStorageChanged()
     }
     else if (Result == qaNo)
     {
+      // Similar to TLoginDialog::ImportActionExecute
       Configuration->ScheduleCustomIniFileStorageUse(GetCustomIniFileStorageName());
       ExecuteNewInstance(L"");
       TerminateApplication();

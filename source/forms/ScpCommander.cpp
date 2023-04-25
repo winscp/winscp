@@ -388,6 +388,7 @@ void __fastcall TScpCommanderForm::DoShow()
   }
 
   TCustomScpExplorerForm::DoShow();
+  AddStartupSequence(L"O");
 }
 //---------------------------------------------------------------------------
 Boolean __fastcall TScpCommanderForm::AllowedAction(TAction * Action, TActionAllowed Allowed)
@@ -1085,7 +1086,7 @@ void __fastcall TScpCommanderForm::FileOperationProgress(
   // reloaded
   if (!ProgressData.InProgress && FProgressForm &&
       IsFileControl(FDDTargetControl, osLocal) &&
-      ((ProgressData.Operation == ::foCopy) || (ProgressData.Operation == ::foMove)))
+      ProgressData.IsTransfer())
   {
     ReloadLocalDirectory();
   }
@@ -1385,7 +1386,7 @@ void __fastcall TScpCommanderForm::AddEditLink(TOperationSide Side, bool Add)
           throw Exception(FMTLOAD(RESOLVE_SHORTCUT_ERROR, (FullName)));
         }
       }
-      else
+      else if (!LocalDirView->ItemIsParentDirectory(LocalDirView->ItemFocused))
       {
         PointTo = FileRec->FileName;
       }
@@ -1481,7 +1482,8 @@ void __fastcall TScpCommanderForm::DoOpenBookmark(UnicodeString Local, UnicodeSt
   {
     if (!Local.IsEmpty())
     {
-      LocalDirView->Path = Local;
+      DebugAssert(!IsLocalBrowserMode());
+      LocalDirView->Path = ExpandEnvironmentVariables(Local);
     }
   }
   __finally
@@ -2034,13 +2036,23 @@ void __fastcall TScpCommanderForm::LocalPathComboBoxItemClick(TObject * /*Sender
   DebugAssert((LocalPathComboBox->ItemIndex >= 0) && (LocalPathComboBox->ItemIndex < FLocalPathComboBoxPaths->Count));
 
   UnicodeString Path = FLocalPathComboBoxPaths->Strings[LocalPathComboBox->ItemIndex];
-  if (LocalPathComboBox->ItemIndex >= FLocalSpecialPaths)
+  try
   {
-    LocalDirView->ExecuteDrive(DriveInfo->GetDriveKey(Path));
+    if (LocalPathComboBox->ItemIndex >= FLocalSpecialPaths)
+    {
+      LocalDirView->ExecuteDrive(DriveInfo->GetDriveKey(Path));
+    }
+    else
+    {
+      LocalDirView->Path = Path;
+    }
   }
-  else
+  catch (...)
   {
-    LocalDirView->Path = Path;
+    // Changing the path failed, reset the combo box back.
+    // Does not recurse, so infinite recursion should not happen.
+    LocalPathComboUpdate();
+    throw;
   }
 }
 //---------------------------------------------------------------------------

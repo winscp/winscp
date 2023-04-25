@@ -71,43 +71,12 @@ object PropertiesDialog: TPropertiesDialog
         Caption = 'Location:'
         ShowAccelChar = False
       end
-      object LocationLabel: TPathLabel
-        Left = 85
-        Top = 58
-        Width = 243
-        Height = 13
-        UnixPath = True
-        IndentHorizontal = 0
-        IndentVertical = 0
-        Align = alNone
-        Anchors = [akLeft, akTop, akRight]
-        AutoSize = False
-      end
-      object FileLabel: TLabel
-        Left = 85
-        Top = 18
-        Width = 241
-        Height = 13
-        AutoSize = False
-        Caption = 'FileLabel'
-        ShowAccelChar = False
-      end
       object Label2: TLabel
         Left = 8
         Top = 80
         Width = 23
         Height = 13
         Caption = 'Size:'
-        ShowAccelChar = False
-      end
-      object SizeLabel: TLabel
-        Left = 85
-        Top = 80
-        Width = 160
-        Height = 13
-        Anchors = [akLeft, akTop, akRight]
-        AutoSize = False
-        Caption = 'SizeLabel'
         ShowAccelChar = False
       end
       object LinksToLabelLabel: TLabel
@@ -118,18 +87,6 @@ object PropertiesDialog: TPropertiesDialog
         Caption = 'Links to:'
         ShowAccelChar = False
       end
-      object LinksToLabel: TPathLabel
-        Left = 85
-        Top = 102
-        Width = 240
-        Height = 13
-        UnixPath = True
-        IndentHorizontal = 0
-        IndentVertical = 0
-        Align = alNone
-        Anchors = [akLeft, akTop, akRight]
-        AutoSize = False
-      end
       object Bevel2: TBevel
         Left = 8
         Top = 125
@@ -138,7 +95,7 @@ object PropertiesDialog: TPropertiesDialog
         Anchors = [akLeft, akTop, akRight]
         Shape = bsTopLine
       end
-      object Label3: TLabel
+      object RightsLabel: TLabel
         Left = 8
         Top = 203
         Width = 59
@@ -146,7 +103,7 @@ object PropertiesDialog: TPropertiesDialog
         Caption = 'Permissions:'
         FocusControl = RightsFrame
       end
-      object Bevel3: TBevel
+      object GroupOwnerRightsBevel: TBevel
         Left = 8
         Top = 193
         Width = 320
@@ -154,17 +111,17 @@ object PropertiesDialog: TPropertiesDialog
         Anchors = [akLeft, akTop, akRight]
         Shape = bsTopLine
       end
-      object Label4: TLabel
+      object GroupLabel: TLabel
         Left = 8
-        Top = 138
+        Top = 166
         Width = 33
         Height = 13
         Caption = 'Group:'
         FocusControl = GroupComboBox
       end
-      object Label5: TLabel
+      object OwnerLabel: TLabel
         Left = 8
-        Top = 166
+        Top = 138
         Width = 36
         Height = 13
         Caption = 'Owner:'
@@ -185,14 +142,98 @@ object PropertiesDialog: TPropertiesDialog
         Anchors = [akLeft, akTop, akRight]
         Shape = bsTopLine
       end
+      object LocationLabel: TEdit
+        Left = 85
+        Top = 58
+        Width = 241
+        Height = 17
+        TabStop = False
+        Anchors = [akLeft, akTop, akRight]
+        AutoSize = False
+        BorderStyle = bsNone
+        TabOrder = 7
+        Text = 'LocationLabel'
+      end
+      object FileLabel: TEdit
+        Left = 85
+        Top = 18
+        Width = 241
+        Height = 17
+        TabStop = False
+        Anchors = [akLeft, akTop, akRight]
+        AutoSize = False
+        BorderStyle = bsNone
+        TabOrder = 8
+        Text = 'FileLabel'
+      end
+      object SizeLabel: TEdit
+        Left = 85
+        Top = 80
+        Width = 160
+        Height = 17
+        TabStop = False
+        Anchors = [akLeft, akTop, akRight]
+        AutoSize = False
+        BorderStyle = bsNone
+        TabOrder = 9
+        Text = 'SizeLabel'
+      end
+      object LinksToLabel: TEdit
+        Left = 85
+        Top = 102
+        Width = 241
+        Height = 17
+        TabStop = False
+        Anchors = [akLeft, akTop, akRight]
+        AutoSize = False
+        BorderStyle = bsNone
+        TabOrder = 10
+        Text = 'LinksToLabel'
+      end
+      object GroupView: TEdit
+        Left = 85
+        Top = 166
+        Width = 241
+        Height = 17
+        TabStop = False
+        Anchors = [akLeft, akTop, akRight]
+        BorderStyle = bsNone
+        MaxLength = 50
+        TabOrder = 4
+        Text = 'GroupView'
+      end
+      object OwnerView: TEdit
+        Left = 85
+        Top = 138
+        Width = 241
+        Height = 17
+        TabStop = False
+        Anchors = [akLeft, akTop, akRight]
+        BorderStyle = bsNone
+        MaxLength = 50
+        TabOrder = 2
+        Text = 'OwnerView'
+      end
       inline RightsFrame: TRightsFrame
-        Left = 84
-        Top = 200
-        Width = 244
+        Left = 81
+        Top = 199
+        Width = 247
         Height = 109
-        TabOrder = 3
+        TabOrder = 5
       end
       object GroupComboBox: TComboBox
+        Left = 85
+        Top = 163
+        Width = 161
+        Height = 21
+        DropDownCount = 16
+        MaxLength = 50
+        TabOrder = 3
+        Text = 'GroupComboBox'
+        OnChange = ControlChange
+        OnExit = GroupComboBoxExit
+      end
+      object OwnerComboBox: TComboBox
         Left = 85
         Top = 135
         Width = 161
@@ -200,30 +241,18 @@ object PropertiesDialog: TPropertiesDialog
         DropDownCount = 16
         MaxLength = 50
         TabOrder = 1
-        Text = 'GroupComboBox'
-        OnChange = ControlChange
-        OnExit = GroupComboBoxExit
-      end
-      object OwnerComboBox: TComboBox
-        Left = 85
-        Top = 163
-        Width = 161
-        Height = 21
-        DropDownCount = 16
-        MaxLength = 50
-        TabOrder = 2
         Text = 'OwnerComboBox'
         OnChange = ControlChange
         OnExit = OwnerComboBoxExit
       end
-      object RecursiveCheck: TCheckBox
+      object RecursiveCheck2: TCheckBox
         Left = 12
         Top = 322
         Width = 317
         Height = 17
         Anchors = [akLeft, akTop, akRight]
-        Caption = 'Set group, owner and permissions &recursively'
-        TabOrder = 4
+        Caption = 'Set owner, group and permissions &recursively'
+        TabOrder = 6
         OnClick = ControlChange
       end
       object CalculateSizeButton: TButton

@@ -30,6 +30,7 @@ TWinConfiguration * WinConfiguration = NULL;
 static UnicodeString NotepadName(L"notepad.exe");
 static UnicodeString ToolbarsLayoutKey(L"ToolbarsLayout2");
 static UnicodeString ToolbarsLayoutOldKey(L"ToolbarsLayout");
+TDateTime DefaultUpdatesPeriod(7);
 //---------------------------------------------------------------------------
 static const wchar_t FileColorDataSeparator = L':';
 TFileColorData::TFileColorData() :
@@ -604,6 +605,7 @@ void __fastcall TWinConfiguration::Default()
   FShowLoginWhenNoSession = true;
   FKeepOpenWhenNoSession = true;
   FLocalIconsByExt = false;
+  FFlashTaskbar = true;
   FMaxSessions = 100;
   FBidiModeOverride = lfoLanguageIfRecommended;
   FFlipChildrenOverride = lfoLanguageIfRecommended;
@@ -616,10 +618,13 @@ void __fastcall TWinConfiguration::Default()
   FLockedInterface = false;
 
   HonorDrivePolicy = true;
+  UseABDrives = true;
   TimeoutShellOperations = true;
   TimeoutShellIconRetrieval = false;
   UseIconUpdateThread = true;
   AllowWindowPrint = false;
+  StoreTransition = stInit;
+  FirstRun = StandardDatestamp();
 
   FEditor.Font.FontName = DefaultFixedWidthFontName;
   FEditor.Font.FontSize = DefaultFixedWidthFontSize;
@@ -840,6 +845,48 @@ bool __fastcall TWinConfiguration::CanWriteToStorage()
   return Result;
 }
 //---------------------------------------------------------------------------
+bool TWinConfiguration::DetectStorage(bool SafeOnly)
+{
+  bool Result;
+  if (FileExists(ApiPath(IniFileStorageNameForReading)))
+  {
+    Result = !SafeOnly;
+    if (Result)
+    {
+      FStorage = stIniFile;
+    }
+  }
+  else
+  {
+    if (DetectRegistryStorage(HKEY_CURRENT_USER) ||
+        DetectRegistryStorage(HKEY_LOCAL_MACHINE))
+    {
+      FStorage = stRegistry;
+      Result = true;
+    }
+    else
+    {
+      if (SafeOnly)
+      {
+        Result = false;
+      }
+      else
+      {
+        FStorage = stIniFile;
+        // As we fall back to user profile folder, when application folder
+        // is not writtable, it is actually unlikely that the below test ever fails.
+        if (!CanWriteToStorage())
+        {
+          FStorage = stRegistry;
+        }
+        // With !SafeOnly we always return true, so this result is actually never considered
+        Result = true;
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 TStorage __fastcall TWinConfiguration::GetStorage()
 {
   if (FStorage == stDetect)
@@ -859,22 +906,17 @@ TStorage __fastcall TWinConfiguration::GetStorage()
       }
     }
 
-    FStorage = stIniFile;
-    if (!FileExists(ApiPath(IniFileStorageNameForReading)))
-    {
-      if (DetectRegistryStorage(HKEY_CURRENT_USER) ||
-          DetectRegistryStorage(HKEY_LOCAL_MACHINE) ||
-          // FStorage is now stIniFile, so this tests writing to an INI file.
-          // As we fall back to user profile folder, when application folder
-          // is not writtable, it is actually unlikely that the below test ever fails.
-          !CanWriteToStorage())
-      {
-        FStorage = stRegistry;
-      }
-    }
+    DebugCheck(DetectStorage(false));
   }
+  // Meaning any inherited autodetection basically does not happen, so the below call returns FStorage
+  DebugAssert(FStorage != stDetect);
   TStorage Result = TCustomWinConfiguration::GetStorage();
   return Result;
+}
+//---------------------------------------------------------------------------
+bool TWinConfiguration::TrySetSafeStorage()
+{
+  return DetectStorage(true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::Saved()
@@ -1012,6 +1054,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     ShowLoginWhenNoSession); \
     KEY(Bool,     KeepOpenWhenNoSession); \
     KEY(Bool,     LocalIconsByExt); \
+    KEY(Bool,     FlashTaskbar); \
     KEY(Integer,  MaxSessions); \
     KEY(Integer,  BidiModeOverride); \
     KEY(Integer,  FlipChildrenOverride); \
@@ -1021,6 +1064,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(String,   FileColors); \
     KEY(Integer,  RunsSinceLastTip); \
     KEY(Bool,     HonorDrivePolicy); \
+    KEY(Bool,     UseABDrives); \
     KEY(Integer,  LastMachineInstallations); \
     KEY(String,   FExtensionsDeleted); \
     KEY(String,   FExtensionsOrder); \
@@ -1029,6 +1073,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     TimeoutShellIconRetrieval); \
     KEY(Bool,     UseIconUpdateThread); \
     KEY(Bool,     AllowWindowPrint); \
+    KEY(Integer,  StoreTransition); \
+    KEY(String,   FirstRun); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \
     KEYEX(String,   Editor.Font.FontName, L"FontName2"); \
@@ -1175,6 +1221,15 @@ void __fastcall TWinConfiguration::SaveData(THierarchicalStorage * Storage, bool
   if ((All && !FCustomCommandsDefaults) || FCustomCommandList->Modified)
   {
     FCustomCommandList->Save(Storage);
+
+    if (FCustomCommandList->Count == 0)
+    {
+      Storage->WriteBool(L"CustomCommandsNone", true);
+    }
+    else
+    {
+      Storage->DeleteValue(L"CustomCommandsNone");
+    }
   }
 
   if ((All || FCustomCommandOptionsModified) &&
@@ -1507,7 +1562,8 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
     Storage->CloseSubKey();
   }
 
-  if (Storage->KeyExists(L"CustomCommands"))
+  if (Storage->KeyExists(L"CustomCommands") ||
+      Storage->ReadBool(L"CustomCommandsNone", false))
   {
     FCustomCommandList->Load(Storage);
     FCustomCommandsDefaults = false;
@@ -2286,6 +2342,11 @@ void __fastcall TWinConfiguration::SetLocalIconsByExt(bool value)
   SET_CONFIG_PROPERTY(LocalIconsByExt);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetFlashTaskbar(bool value)
+{
+  SET_CONFIG_PROPERTY(FlashTaskbar);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetBidiModeOverride(TLocaleFlagOverride value)
 {
   SET_CONFIG_PROPERTY(BidiModeOverride);
@@ -2331,6 +2392,20 @@ void __fastcall TWinConfiguration::SetHonorDrivePolicy(bool value)
   if (HonorDrivePolicy != value)
   {
     DriveInfo->HonorDrivePolicy = value;
+    Changed();
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::GetUseABDrives()
+{
+  return DriveInfo->UseABDrives;
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetUseABDrives(bool value)
+{
+  if (UseABDrives != value)
+  {
+    DriveInfo->UseABDrives = value;
     Changed();
   }
 }
@@ -2456,7 +2531,7 @@ UnicodeString __fastcall TWinConfiguration::ExpandedTemporaryDirectory()
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TWinConfiguration::TemporaryDir(bool Mask)
+UnicodeString TWinConfiguration::TemporaryDir(bool Mask)
 {
   return UniqTempDir(ExpandedTemporaryDirectory(), L"scp", Mask);
 }
@@ -2664,6 +2739,16 @@ void __fastcall TWinConfiguration::SetUseIconUpdateThread(bool value)
 void __fastcall TWinConfiguration::SetAllowWindowPrint(bool value)
 {
   SET_CONFIG_PROPERTY(AllowWindowPrint);
+}
+//---------------------------------------------------------------------------
+void TWinConfiguration::SetStoreTransition(TStoreTransition value)
+{
+  SET_CONFIG_PROPERTY(StoreTransition);
+}
+//---------------------------------------------------------------------------
+void TWinConfiguration::SetFirstRun(const UnicodeString & value)
+{
+  SET_CONFIG_PROPERTY(FirstRun);
 }
 //---------------------------------------------------------------------------
 TStringList * __fastcall TWinConfiguration::LoadJumpList(
@@ -3039,9 +3124,17 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines, const Unicod
           {
             Failed = (CompareVersion(Value, GetNetVersionStr()) > 0);
           }
+          else if (Dependency == L".netcore")
+          {
+            Failed = (CompareVersion(Value, GetNetCoreVersionStr()) > 0);
+          }
           else if (Dependency == L"powershell")
           {
             Failed = (CompareVersion(Value, GetPowerShellVersionStr()) > 0);
+          }
+          else if (Dependency == L"pwsh")
+          {
+            Failed = (CompareVersion(Value, GetPowerShellCoreVersionStr()) > 0);
           }
           else if (Dependency == L"windows")
           {

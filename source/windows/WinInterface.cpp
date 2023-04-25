@@ -64,6 +64,7 @@ TMessageParams::TMessageParams(const TQueryParams * AParams)
     TimerQueryType = AParams->TimerQueryType;
     Timeout = AParams->Timeout;
     TimeoutAnswer = AParams->TimeoutAnswer;
+    TimeoutResponse = AParams->TimeoutResponse;
 
     if (FLAGSET(AParams->Params, qpNeverAskAgainCheck))
     {
@@ -88,6 +89,7 @@ inline void TMessageParams::Reset()
   TimerQueryType = static_cast<TQueryType>(-1);
   Timeout = 0;
   TimeoutAnswer = 0;
+  TimeoutResponse = 0;
   NeverAskAgainTitle = L"";
   NeverAskAgainAnswer = 0;
   NeverAskAgainCheckedInitially = false;
@@ -323,7 +325,7 @@ void __fastcall TMessageTimer::DoTimer(TObject * /*Sender*/)
 class TMessageTimeout : public TTimer
 {
 public:
-  __fastcall TMessageTimeout(TComponent * AOwner, unsigned int Timeout, TButton * Button);
+  __fastcall TMessageTimeout(TComponent * AOwner, unsigned int Timeout, TButton * Button, unsigned int Answer);
 
 protected:
   unsigned int FOrigTimeout;
@@ -332,6 +334,7 @@ protected:
   UnicodeString FOrigCaption;
   TPoint FOrigCursorPos;
   std::unique_ptr<TApplicationEvents> FApplicationEvents;
+  unsigned int FAnswer;
 
   void __fastcall DoTimer(TObject * Sender);
   void __fastcall UpdateButton();
@@ -341,8 +344,8 @@ protected:
 };
 //---------------------------------------------------------------------------
 __fastcall TMessageTimeout::TMessageTimeout(TComponent * AOwner,
-  unsigned int Timeout, TButton * Button) :
-  TTimer(AOwner), FOrigTimeout(Timeout), FTimeout(Timeout), FButton(Button)
+  unsigned int Timeout, TButton * Button, unsigned int Answer) :
+  TTimer(AOwner), FOrigTimeout(Timeout), FTimeout(Timeout), FButton(Button), FAnswer(Answer)
 {
   OnTimer = DoTimer;
   Interval = MSecsPerSec;
@@ -407,7 +410,19 @@ void __fastcall TMessageTimeout::DoTimer(TObject * /*Sender*/)
 
     // Needed particularly for "keep up to date" dialog, which does not close on the button click
     Enabled = false;
-    FButton->Click();
+    TModalResult PrevModalResult = FButton->ModalResult;
+    if (FAnswer != 0)
+    {
+      FButton->ModalResult = FAnswer;
+    }
+    try
+    {
+      FButton->Click();
+    }
+    __finally
+    {
+      FButton->ModalResult = PrevModalResult;
+    }
   }
   else
   {
@@ -416,9 +431,9 @@ void __fastcall TMessageTimeout::DoTimer(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-void InitiateDialogTimeout(TForm * Dialog, unsigned int Timeout, TButton * Button)
+void InitiateDialogTimeout(TForm * Dialog, unsigned int Timeout, TButton * Button, unsigned int Answer)
 {
-  TMessageTimeout * MessageTimeout = new TMessageTimeout(Application, Timeout, Button);
+  TMessageTimeout * MessageTimeout = new TMessageTimeout(Application, Timeout, Button, Answer);
   MessageTimeout->Name = L"MessageTimeout";
   Dialog->InsertComponent(MessageTimeout);
 }
@@ -471,7 +486,7 @@ TForm * __fastcall CreateMoreMessageDialogEx(const UnicodeString Message, TStrin
   {
     if (Params->Timeout > 0)
     {
-      InitiateDialogTimeout(Dialog.get(), Params->Timeout, TimeoutButton);
+      InitiateDialogTimeout(Dialog.get(), Params->Timeout, TimeoutButton, Params->TimeoutResponse);
     }
   }
 
@@ -662,6 +677,7 @@ unsigned int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Ty
   {
     AParams.Timeout = SessionReopenTimeout;
     AParams.TimeoutAnswer = qaRetry;
+    AParams.TimeoutResponse = AParams.TimeoutAnswer;
   }
   DebugAssert(AParams.Aliases == NULL);
   AParams.Aliases = Aliases;
@@ -1283,7 +1299,7 @@ void __fastcall CenterButtonImage(TButton * Button)
     // so we have to set it to a double of desired padding.
     // The original formula is - 2 * ((CaptionWidth / 2) - (ImageWidth / 2) + ScaleByTextHeight(Button, 2))
     // the one below is equivalent, but with reduced rouding.
-    // Without the change, the rouding caused the space between icon and caption too
+    // Without the change, the rounding caused the space between icon and caption too
     // small on 200% zoom.
     // Note that (CaptionWidth / 2) - (ImageWidth / 2)
     // is approximatelly same as half of caption width before padding.

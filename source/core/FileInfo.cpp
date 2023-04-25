@@ -42,17 +42,11 @@ unsigned int VERSION_GetFileVersionInfo_PE(const wchar_t * FileName, unsigned in
     {
       HRSRC Rsrc = FindResource(Module, MAKEINTRESOURCE(VS_VERSION_INFO),
         MAKEINTRESOURCE(VS_FILE_INFO));
-      if (Rsrc == NULL)
-      {
-      }
-      else
+      if (Rsrc != NULL)
       {
         Len = SizeofResource(Module, Rsrc);
         HANDLE Mem = LoadResource(Module, Rsrc);
-        if (Mem == NULL)
-        {
-        }
-        else
+        if (Mem != NULL)
         {
           try
           {
@@ -128,7 +122,6 @@ bool GetFileVersionInfoFix(const wchar_t * FileName, unsigned long Handle,
   {
     VS_VERSION_INFO_STRUCT32 * VersionInfo = (VS_VERSION_INFO_STRUCT32*)Data;
 
-
     unsigned int Len = VERSION_GetFileVersionInfo_PE(FileName, DataSize, Data);
 
     Result = (Len != 0);
@@ -160,7 +153,6 @@ void * __fastcall CreateFileInfo(UnicodeString FileName)
   unsigned int Size;
   void * Result = NULL;
 
-
   // Get file version info block size
   Size = GetFileVersionInfoSizeFix(FileName.c_str(), &Handle);
   // If size is valid
@@ -173,9 +165,6 @@ void * __fastcall CreateFileInfo(UnicodeString FileName)
       delete[] Result;
       Result = NULL;
     }
-  }
-  else
-  {
   }
   return Result;
 }
@@ -195,7 +184,9 @@ PVSFixedFileInfo __fastcall GetFixedFileInfo(void * FileInfo)
   UINT Len;
   PVSFixedFileInfo Result;
   if (!VerQueryValue(FileInfo, L"\\", (void**)&Result, &Len))
+  {
     throw Exception(L"Fixed file info not available");
+  }
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -205,7 +196,9 @@ unsigned __fastcall GetTranslationCount(void * FileInfo)
   PTranslations P;
   UINT Len;
   if (!VerQueryValue(FileInfo, L"\\VarFileInfo\\Translation", (void**)&P, &Len))
+  {
     throw Exception(L"File info translations not available");
+  }
   return Len / 4;
 }
 //---------------------------------------------------------------------------
@@ -216,9 +209,13 @@ TTranslation __fastcall GetTranslation(void * FileInfo, unsigned i)
   UINT Len;
 
   if (!VerQueryValue(FileInfo, L"\\VarFileInfo\\Translation", (void**)&P, &Len))
+  {
     throw Exception(L"File info translations not available");
+  }
   if (i * sizeof(TTranslation) >= Len)
+  {
     throw Exception(L"Specified translation not available");
+  }
   return P[i];
 }
 //---------------------------------------------------------------------------
@@ -230,7 +227,9 @@ UnicodeString __fastcall GetLanguage(Word Language)
 
   Len = VerLanguageName(Language, P, LENOF(P));
   if (Len > LENOF(P))
+  {
     throw Exception(L"Language not available");
+  }
   return UnicodeString(P, Len);
 }
 //---------------------------------------------------------------------------
@@ -243,10 +242,9 @@ UnicodeString __fastcall GetFileInfoString(void * FileInfo,
   wchar_t * P;
   UINT Len;
 
-  if (!VerQueryValue(FileInfo, (UnicodeString(L"\\StringFileInfo\\") +
-    IntToHex(Translation.Language, 4) +
-    IntToHex(Translation.CharSet, 4) +
-    L"\\" + StringName).c_str(), (void**)&P, &Len))
+  UnicodeString SubBlock =
+    UnicodeString(L"\\StringFileInfo\\") + IntToHex(Translation.Language, 4) + IntToHex(Translation.CharSet, 4) + L"\\" + StringName;
+  if (!VerQueryValue(FileInfo, SubBlock.c_str(), (void**)&P, &Len))
   {
     if (!AllowEmpty)
     {

@@ -12,6 +12,7 @@ class TOptions
 {
 public:
   __fastcall TOptions();
+  __fastcall TOptions(const TOptions & Source);
 
   void __fastcall Add(UnicodeString Option);
   void __fastcall Parse(const UnicodeString & CmdLine);
@@ -31,7 +32,7 @@ public:
   bool __fastcall SwitchValue(const UnicodeString Switch, bool Default);
   bool __fastcall SwitchValue(const UnicodeString Switch, bool Default, bool DefaultOnNonExistence);
   bool __fastcall UnusedSwitch(UnicodeString & Switch);
-  bool __fastcall WasSwitchAdded(UnicodeString & Switch, wchar_t & SwitchMark);
+  bool __fastcall WasSwitchAdded(UnicodeString & Switch, UnicodeString & Value, wchar_t & SwitchMark);
 
   void __fastcall LogOptions(TLogOptionEvent OnEnumOption);
 

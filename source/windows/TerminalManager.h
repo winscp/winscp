@@ -71,7 +71,7 @@ public:
   void __fastcall SaveWorkspace(TList * DataList);
   void __fastcall QueueStatusUpdated();
   bool __fastcall IsActiveTerminalForSite(TTerminal * Terminal, TSessionData * Data);
-  TTerminal * __fastcall FindActiveTerminalForSite(TSessionData * Data);
+  TManagedTerminal * __fastcall FindActiveTerminalForSite(TSessionData * Data);
   TTerminalQueue * __fastcall FindQueueForTerminal(TTerminal * Terminal);
   bool __fastcall UploadPublicKey(TTerminal * Terminal, TSessionData * Data, UnicodeString & FileName);
 
@@ -118,6 +118,7 @@ private:
   bool FAuthenticationCancelled;
   std::unique_ptr<TApplicationEvents> FApplicationsEvents;
   bool FKeepAuthenticateForm;
+  int FMaxSessions;
 
   bool __fastcall ConnectActiveTerminalImpl(bool Reopen);
   bool __fastcall ConnectActiveTerminal();
@@ -182,8 +183,6 @@ private:
   void __fastcall SetupTerminal(TTerminal * Terminal);
   void __fastcall CloseAutheticateForm();
   void __fastcall AuthenticatingDone();
-  TRemoteFile * __fastcall CheckRights(
-    TTerminal * Terminal, const UnicodeString & EntryType, const UnicodeString & FileName, bool & WrongRights);
   TManagedTerminal * __fastcall CreateManagedTerminal(TSessionData * Data);
   TManagedTerminal * __fastcall GetTerminal(int Index);
 };

@@ -12,8 +12,8 @@ set_target_properties(expat::expat PROPERTIES
   IMPORTED_SONAME_NOCONFIG "libexpat.so.@SO_MAJOR@"
   )
 
-list(APPEND _IMPORT_CHECK_TARGETS expat::expat )
-list(APPEND _IMPORT_CHECK_FILES_FOR_expat::expat "${_IMPORT_PREFIX}/@LIBDIR_BASENAME@/libexpat.so.@SO_MAJOR@.@SO_MINOR@.@SO_PATCH@" )
+list(APPEND _cmake_import_check_targets expat::expat )
+list(APPEND _cmake_import_check_files_for_expat::expat "${_IMPORT_PREFIX}/@LIBDIR_BASENAME@/libexpat.so.@SO_MAJOR@.@SO_MINOR@.@SO_PATCH@" )
 
 # Commands beyond this point should not need to know the version.
 set(CMAKE_IMPORT_FILE_VERSION)

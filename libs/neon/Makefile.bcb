@@ -11,7 +11,7 @@ LIB_CFLAG=$(OPENSSL_CFLAG) $(EXPAT_CFLAG1) $(EXPAT_CFLAG2)
 SRC_D=.
 
 # The output directory for everything intersting
-OUT_D=..\lib
+OUT_D=$(LIB_PATH)
 # The output directory for all the temporary muck
 TMP_D=tmp
 

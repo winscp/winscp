@@ -91,7 +91,7 @@ UnicodeString __fastcall UnixExtractFileDir(const UnicodeString Path)
   }
   else
   {
-    return (Pos == 1) ? UnicodeString(L"/") : UnicodeString();
+    return (Pos == 1) ? UnicodeString(ROOTDIRECTORY) : UnicodeString();
   }
 }
 //---------------------------------------------------------------------------
@@ -171,18 +171,32 @@ bool __fastcall ExtractCommonPath(TStrings * Files, UnicodeString & Path)
   return Result;
 }
 //---------------------------------------------------------------------------
+static UnicodeString GetFileListItemPath(TStrings * Files, int Index)
+{
+  UnicodeString Result;
+  if (Files->Objects[Index] != NULL)
+  {
+    Result = DebugNotNull(dynamic_cast<TRemoteFile *>(Files->Objects[Index]))->FullFileName;
+  }
+  else
+  {
+    Result = Files->Strings[Index];
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall UnixExtractCommonPath(TStrings * Files, UnicodeString & Path)
 {
   DebugAssert(Files->Count > 0);
 
-  Path = UnixExtractFilePath(Files->Strings[0]);
+  Path = UnixExtractFilePath(GetFileListItemPath(Files, 0));
   bool Result = !Path.IsEmpty();
   if (Result)
   {
     for (int Index = 1; Index < Files->Count; Index++)
     {
       while (!Path.IsEmpty() &&
-        (Files->Strings[Index].SubString(1, Path.Length()) != Path))
+        (GetFileListItemPath(Files, Index).SubString(1, Path.Length()) != Path))
       {
         int PrevLen = Path.Length();
         Path = UnixExtractFilePath(UnixExcludeTrailingBackslash(Path));
@@ -383,6 +397,7 @@ TDateTime __fastcall ReduceDateTimePrecision(TDateTime DateTime,
     DecodeTime(DateTime, H, N, S, MS);
     switch (Precision)
     {
+      case mfYMDHM:
       case mfMDHM:
         S = 0;
         MS = 0;
@@ -419,6 +434,7 @@ UnicodeString __fastcall UserModificationStr(TDateTime DateTime,
       return L"";
     case mfMDY:
       return FormatDateTime(L"ddddd", DateTime);
+    case mfYMDHM:
     case mfMDHM:
       return FormatDateTime(L"ddddd t", DateTime);
     case mfFull:
@@ -444,6 +460,10 @@ UnicodeString __fastcall ModificationStr(TDateTime DateTime,
     case mfMDHM:
       return FORMAT(L"%3s %2d %2d:%2.2d",
         (EngShortMonthNames[Month-1], Day, Hour, Min));
+
+    case mfYMDHM:
+      return FORMAT(L"%3s %2d %2d:%2.2d %4d",
+        (EngShortMonthNames[Month-1], Day, Hour, Min, Year));
 
     default:
       DebugFail();
@@ -998,7 +1018,7 @@ bool __fastcall TRemoteFile::IsTimeShiftingApplicable()
 //---------------------------------------------------------------------------
 bool __fastcall TRemoteFile::IsTimeShiftingApplicable(TModificationFmt ModificationFmt)
 {
-  return (ModificationFmt == mfMDHM) || (ModificationFmt == mfFull);
+  return (ModificationFmt == mfMDHM) || (ModificationFmt == mfYMDHM) || (ModificationFmt == mfFull);
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteFile::ShiftTimeInSeconds(__int64 Seconds)
@@ -1270,7 +1290,7 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
             {
               Year = (Word)StrToInt(Col);
               if (Year > 10000) Abort();
-              // When we don't got time we assume midnight
+              // When we didn't get time we assume midnight
               Hour = 0; Min = 0; Sec = 0;
               FModificationFmt = mfMDY;
             }
@@ -1280,7 +1300,9 @@ void __fastcall TRemoteFile::SetListingStr(UnicodeString value)
         FModification = EncodeDateVerbose(Year, Month, Day) + EncodeTimeVerbose(Hour, Min, Sec, 0);
         // adjust only when time is known,
         // adjusting default "midnight" time makes no sense
-        if ((FModificationFmt == mfMDHM) || (FModificationFmt == mfFull))
+        if ((FModificationFmt == mfMDHM) ||
+             DebugAlwaysFalse(FModificationFmt == mfYMDHM) ||
+             (FModificationFmt == mfFull))
         {
           DebugAssert(Terminal != NULL);
           FModification = AdjustDateTimeFromUnix(FModification,
@@ -1437,20 +1459,29 @@ UnicodeString __fastcall TRemoteFile::GetListingStr()
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TRemoteFile::GetFullFileName() const
 {
+  UnicodeString Result;
   if (FFullFileName.IsEmpty())
   {
     DebugAssert(Terminal);
     DebugAssert(Directory != NULL);
-    UnicodeString Path;
-    if (IsParentDirectory) Path = Directory->ParentPath;
-    else if (IsDirectory) Path = UnixIncludeTrailingBackslash(Directory->FullDirectory + FileName);
-    else Path = Directory->FullDirectory + FileName;
-    return Terminal->TranslateLockedPath(Path, true);
+    if (IsParentDirectory)
+    {
+      Result = Directory->ParentPath;
+    }
+    else if (IsDirectory)
+    {
+      Result = UnixIncludeTrailingBackslash(Directory->FullDirectory + FileName);
+    }
+    else
+    {
+      Result = Directory->FullDirectory + FileName;
+    }
   }
   else
   {
-    return FFullFileName;
+    Result = FFullFileName;
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRemoteFile::GetHaveFullFileName() const
@@ -1799,11 +1830,11 @@ void __fastcall TRemoteDirectoryCache::DoClearFileList(UnicodeString Directory, 
   }
   if (SubDirs)
   {
-    Directory = UnixIncludeTrailingBackslash(Directory);
+    UnicodeString DirectoryWithSlash = UnixIncludeTrailingBackslash(Directory); // optimization
     Index = Count-1;
     while (Index >= 0)
     {
-      if (Strings[Index].SubString(1, Directory.Length()) == Directory)
+      if (UnixIsChildPath(DirectoryWithSlash, Strings[Index]))
       {
         Delete(Index);
       }
@@ -2037,9 +2068,45 @@ void __fastcall TRights::Assign(const TRights * Source)
   FUnknown = Source->FUnknown;
 }
 //---------------------------------------------------------------------------
+TRights::TRight TRights::CalculateRight(TRightGroup Group, TRightLevel Level)
+{
+  int Result;
+  if (Level == rlSpecial)
+  {
+    Result = rrUserIDExec + Group;
+  }
+  else
+  {
+    DebugAssert(rlRead == 0);
+    Result = rrUserRead + Level + (Group * 3);
+  }
+  return static_cast<TRight>(Result);
+}
+//---------------------------------------------------------------------------
 TRights::TFlag __fastcall TRights::RightToFlag(TRights::TRight Right)
 {
   return static_cast<TFlag>(1 << (rrLast - Right));
+}
+//---------------------------------------------------------------------------
+TRights::TFlag TRights::CalculateFlag(TRightGroup Group, TRightLevel Level)
+{
+  return RightToFlag(CalculateRight(Group, Level));
+}
+//---------------------------------------------------------------------------
+unsigned short TRights::CalculatePermissions(TRightGroup Group, TRightLevel Level, TRightLevel Level2, TRightLevel Level3)
+{
+  unsigned int Permissions = CalculateFlag(Group, Level);
+  if (Level2 != rlNone)
+  {
+    Permissions |= CalculateFlag(Group, Level2);
+  }
+  if (Level3 != rlNone)
+  {
+    Permissions |= CalculateFlag(Group, Level3);
+  }
+  unsigned short Result = static_cast<unsigned short>(Permissions);
+  DebugAssert((Permissions - Result) == 0);
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRights::operator ==(const TRights & rhr) const
@@ -2225,6 +2292,15 @@ void __fastcall TRights::SetText(const UnicodeString & value)
   FUnknown = false;
 }
 //---------------------------------------------------------------------------
+void TRights::SetTextOverride(const UnicodeString & value)
+{
+  if (FText != value)
+  {
+    FText = value;
+    FUnknown = false;
+  }
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall TRights::GetText() const
 {
   if (!FText.IsEmpty())
@@ -2309,6 +2385,7 @@ void __fastcall TRights::SetOctal(UnicodeString value)
       ((AValue[2] - L'0') << 6) +
       ((AValue[3] - L'0') << 3) +
       ((AValue[4] - L'0') << 0));
+    FText = L"";
   }
   FUnknown = false;
 }
@@ -2518,6 +2595,7 @@ void __fastcall TRights::AddExecute()
         (RightUndef[static_cast<TRight>(rrUserWrite + (Group * 3))] == rsYes))
     {
       Right[static_cast<TRight>(rrUserExec + (Group * 3))] = true;
+      FText = L"";
     }
   }
   FUnknown = false;
@@ -2547,6 +2625,14 @@ __fastcall TRights::operator unsigned short() const
 __fastcall TRights::operator unsigned long() const
 {
   return Number;
+}
+//---------------------------------------------------------------------------
+TRights TRights::Combine(const TRights & Other) const
+{
+  TRights Result = (*this);
+  Result |= Other.NumberSet;
+  Result &= (unsigned short)~Other.NumberUnset;
+  return Result;
 }
 //=== TRemoteProperties -------------------------------------------------------
 __fastcall TRemoteProperties::TRemoteProperties()
@@ -2614,12 +2700,15 @@ TRemoteProperties __fastcall TRemoteProperties::CommonProperties(TStrings * File
     DebugAssert(File);
     if (!Index)
     {
-      CommonProperties.Rights = *(File->Rights);
-      // previously we allowed undef implicitly for directories,
-      // now we do it explicitly in properties dialog and only in combination
-      // with "recursive" option
-      CommonProperties.Rights.AllowUndef = File->Rights->IsUndef;
-      CommonProperties.Valid << vpRights;
+      if (!File->Rights->Unknown)
+      {
+        CommonProperties.Rights = *(File->Rights);
+        // previously we allowed undef implicitly for directories,
+        // now we do it explicitly in properties dialog and only in combination
+        // with "recursive" option
+        CommonProperties.Rights.AllowUndef = File->Rights->IsUndef;
+        CommonProperties.Valid << vpRights;
+      }
       if (File->Owner.IsSet)
       {
         CommonProperties.Owner = File->Owner;
@@ -2966,7 +3055,7 @@ __int64 TSynchronizeProgress::GetProcessed(const TFileOperationProgressType * Cu
   DebugAssert(!TFileOperationProgressType::IsIndeterminateOperation(CurrentItemOperationProgress->Operation));
 
   // Need to calculate the total size on the first call only,
-  // as at the time the contrusctor it called, we usually do not have sizes of folders caculated yet.
+  // as at the time the constructor it called, we usually do not have sizes of folders caculated yet.
   if (FTotalSize < 0)
   {
     FTotalSize = 0;

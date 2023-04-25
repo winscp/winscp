@@ -582,6 +582,7 @@ bool __fastcall TWebDAVFileSystem::IsCapable(int Capability) const
     case fcUserGroupListing:
     case fcModeChanging:
     case fcModeChangingUpload:
+    case fcAclChangingFiles:
     case fcGroupChanging:
     case fcOwnerChanging:
     case fcAnyCommand:
@@ -827,14 +828,17 @@ void TWebDAVFileSystem::NeonPropsResult(
   TReadFileData & Data = *static_cast<TReadFileData *>(UserData);
   if (Data.FileList != NULL)
   {
-    UnicodeString FileListPath = Data.FileSystem->AbsolutePath(Data.FileList->Directory, false);
-    if (UnixSamePath(Path, FileListPath))
-    {
-      Path = UnixIncludeTrailingBackslash(UnixIncludeTrailingBackslash(Path) + PARENTDIRECTORY);
-    }
     std::unique_ptr<TRemoteFile> File(new TRemoteFile(NULL));
     File->Terminal = Data.FileSystem->FTerminal;
     Data.FileSystem->ParsePropResultSet(File.get(), Path, Results);
+
+    UnicodeString FileListPath = Data.FileSystem->AbsolutePath(Data.FileList->Directory, false);
+    if (UnixSamePath(File->FullFileName, FileListPath))
+    {
+      File->FileName = PARENTDIRECTORY;
+      File->FullFileName = UnixCombinePaths(Path, PARENTDIRECTORY);
+    }
+
     Data.FileList->AddFile(File.release());
   }
   else
@@ -891,6 +895,7 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
           EncodeDateVerbose((unsigned short)Year, (unsigned short)Month, (unsigned short)Day) +
           EncodeTimeVerbose((unsigned short)Hour, (unsigned short)Min, (unsigned short)Sec, 0);
         File->Modification = ConvertTimestampFromUTC(Modification);
+        // Should use mfYMDHM or mfMDY when appropriate according to Filled
         File->ModificationFmt = mfFull;
       }
       else
@@ -945,7 +950,9 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
     // so if we see one in the display name, take the name from there.
     // * and % won't help, as OneDrive seem to have bug with % at the end of the filename,
     // and the * (and others) is removed from file names.
-    if (FOneDrive && (ContainsText(File->FileName, L"^") || (wcspbrk(File->DisplayName.c_str(), L"&,+#[]%*") != NULL)))
+    // Filenames with commas (,) get as many additional characters at the end of the filename as there are commas.
+    if (FOneDrive &&
+        (ContainsText(File->FileName, L"^") || ContainsText(File->FileName, L",") || (wcspbrk(File->DisplayName.c_str(), L"&,+#[]%*") != NULL)))
     {
       File->FileName = File->DisplayName;
       File->FullFileName = UnixCombinePaths(UnixExtractFileDir(File->FullFileName), File->FileName);
@@ -1164,6 +1171,10 @@ void __fastcall TWebDAVFileSystem::ConfirmOverwrite(
   switch (Answer)
   {
     case qaYes:
+    // Can happen when moving to background (and the server manages to commit the interrupeted foreground transfer).
+    // WebDAV does not support resumable uploads.
+    // Resumable downloads are not implemented.
+    case qaRetry:
       // noop
       break;
 
@@ -1441,9 +1452,8 @@ void TWebDAVFileSystem::NeonPreSend(
     // Needed by IIS server to make it download source code, not code output,
     // and mainly to even allow downloading file with unregistered extensions.
     // Without it files like .001 return 404 (Not found) HTTP code.
-    // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wdv/e37a9543-9290-4843-8c04-66457c60fa0a
-    // https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-wdvse/501879f9-3875-4d7a-ab88-3cecab440034
-    // http://lists.manyfish.co.uk/pipermail/neon/2012-April/000582.html
+    // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wdv/e37a9543-9290-4843-8c04-66457c60fa0a
+    // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-wdvse/501879f9-3875-4d7a-ab88-3cecab440034
     // It's also supported by Oracle server:
     // https://docs.oracle.com/cd/E19146-01/821-1828/gczya/index.html
     // We do not know yet of any server that fails when the header is used,

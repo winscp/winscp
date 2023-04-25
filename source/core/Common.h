@@ -95,6 +95,8 @@ UnicodeString __fastcall EscapePuttyCommandParam(UnicodeString Param);
 UnicodeString __fastcall StringsToParams(TStrings * Strings);
 UnicodeString __fastcall ExpandEnvironmentVariables(const UnicodeString & Str);
 bool __fastcall SamePaths(const UnicodeString & Path1, const UnicodeString & Path2);
+UnicodeString GetNormalizedPath(const UnicodeString & Path);
+UnicodeString GetCanonicalPath(const UnicodeString & Path);
 bool __fastcall IsPathToSameFile(const UnicodeString & Path1, const UnicodeString & Path2);
 int __fastcall CompareLogicalText(
   const UnicodeString & S1, const UnicodeString & S2, bool NaturalOrderNumericalSorting);
@@ -139,8 +141,11 @@ bool __fastcall IsWin7();
 bool __fastcall IsWin8();
 bool __fastcall IsWin10();
 bool __fastcall IsWin10Build(unsigned int BuildNumber);
+bool IsWin11();
 bool __fastcall IsWine();
 bool __fastcall IsUWP();
+UnicodeString GetPackageName();
+bool IsOfficialPackage();
 TLibModule * __fastcall FindModule(void * Instance);
 __int64 __fastcall Round(double Number);
 bool __fastcall TryRelativeStrToDateTime(UnicodeString S, TDateTime & DateTime, bool Add);
@@ -219,6 +224,7 @@ int __fastcall FindCheck(int Result, const UnicodeString & Path);
 int __fastcall FindFirstUnchecked(const UnicodeString & Path, int Attr, TSearchRecChecked & F);
 int __fastcall FindFirstChecked(const UnicodeString & Path, int Attr, TSearchRecChecked & F);
 int __fastcall FindNextChecked(TSearchRecChecked & F);
+int __fastcall FindNextUnchecked(TSearchRecChecked & F);
 void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   TProcessLocalFileEvent CallBackFunc, void * Param = NULL, int FindAttrs = -1);
 int __fastcall FileGetAttrFix(const UnicodeString FileName);

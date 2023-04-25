@@ -27,6 +27,7 @@
 #define RAWTRANSFERSETTINGS_SWITCH L"rawtransfersettings"
 #define USERNAME_SWITCH L"username"
 #define PASSWORD_SWITCH L"password"
+#define PRIVATEKEY_SWITCH L"privatekey"
 extern const wchar_t * TransferModeNames[];
 extern const int TransferModeNamesCount;
 extern const wchar_t * ToggleNames[];
@@ -48,6 +49,7 @@ void __fastcall BusyEnd(void * Token);
 const unsigned int GUIUpdateInterval = 100;
 void __fastcall SetNoGUI();
 bool __fastcall ProcessGUI(bool Force = false);
+void SystemRequired();
 UnicodeString __fastcall AppNameString();
 UnicodeString __fastcall SshVersionString();
 void __fastcall CopyToClipboard(UnicodeString Text);
@@ -125,6 +127,7 @@ struct TQueryParams
   TQueryType TimerQueryType;
   unsigned int Timeout;
   unsigned int TimeoutAnswer;
+  unsigned int TimeoutResponse;
   unsigned int NoBatchAnswers;
   UnicodeString HelpKeyword;
 };
@@ -139,7 +142,8 @@ enum TPromptKind
   pkCryptoCard,
   pkKeybInteractive,
   pkPassword,
-  pkNewPassword
+  pkNewPassword,
+  pkProxyAuth
 };
 
 enum TPromptUserParam { pupEcho = 0x01, pupRemember = 0x02 };

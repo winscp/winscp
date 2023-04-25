@@ -15,6 +15,7 @@ using System.Security;
 #endif
 using System.Text.RegularExpressions;
 using System.Linq;
+using System.Text;
 
 namespace WinSCP
 {
@@ -238,12 +239,7 @@ namespace WinSCP
         {
             using (CreateCallstackAndLock())
             {
-                CheckNotDisposed();
-
-                if (Opened)
-                {
-                    throw Logger.WriteException(new InvalidOperationException("Session is already opened"));
-                }
+                CheckNotOpened();
 
                 if (sessionOptions == null)
                 {
@@ -423,12 +419,7 @@ namespace WinSCP
 
                 string result;
 
-                CheckNotDisposed();
-
-                if (Opened)
-                {
-                    throw Logger.WriteException(new InvalidOperationException("Session is already opened"));
-                }
+                CheckNotOpened();
 
                 try
                 {
@@ -800,10 +791,7 @@ namespace WinSCP
                     filemask = "*";
                 }
                 string localPath = Path.Combine(localDirectory, filemask);
-                const string remoteSeparator = "/";
-                string remotePath =
-                    remoteDirectory +
-                    (remoteDirectory.EndsWith(remoteSeparator, StringComparison.Ordinal) ? string.Empty : remoteSeparator);
+                string remotePath = RemotePath.AddDirectorySeparator(remoteDirectory);
                 return PutFiles(localPath, remotePath, remove, options);
             }
         }
@@ -1553,7 +1541,7 @@ namespace WinSCP
             }
         }
 
-        public bool FileExists(string path)
+        public bool TryGetFileInfo(string path, out RemoteFileInfo fileInfo)
         {
             using (CreateCallstackAndLock())
             {
@@ -1564,7 +1552,7 @@ namespace WinSCP
                     _ignoreFailed = true;
                     try
                     {
-                        DoGetFileInfo(path);
+                        fileInfo = DoGetFileInfo(path);
                     }
                     finally
                     {
@@ -1574,9 +1562,15 @@ namespace WinSCP
                 }
                 catch (SessionRemoteException)
                 {
+                    fileInfo = null;
                     return false;
                 }
             }
+        }
+
+        public bool FileExists(string path)
+        {
+            return TryGetFileInfo(path, out _);
         }
 
         public byte[] CalculateFileChecksum(string algorithm, string path)
@@ -1725,22 +1719,40 @@ namespace WinSCP
         [ComRegisterFunction]
         private static void ComRegister(Type t)
         {
-            string subKey = GetTypeLibKey(t);
             Assembly assembly = Assembly.GetAssembly(t);
-            object[] attributes = assembly.GetCustomAttributes(typeof(GuidAttribute), false);
-            if (attributes.Length == 0)
-            {
-                throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, "Cannot find {0} attribute for assembly {1}", typeof(GuidAttribute), assembly));
-            }
-            GuidAttribute guidAttribute = (GuidAttribute)attributes[0];
-            Registry.ClassesRoot.CreateSubKey(subKey).SetValue(null, guidAttribute.Value);
+
+            string guid = Marshal.GetTypeLibGuidForAssembly(assembly).ToString();
+
+            int major, minor;
+            Marshal.GetTypeLibVersionForAssembly(assembly, out major, out minor);
+            string version = $"{major}.{minor}";
+
+            RegistryKey root = Registry.ClassesRoot;
+            root.CreateSubKey(GetTypeLibKey(t)).SetValue(null, guid);
+            root.CreateSubKey(GetVersionKey(t)).SetValue(null, version);
         }
 
         [ComUnregisterFunction]
         private static void ComUnregister(Type t)
         {
-            string subKey = GetTypeLibKey(t);
-            Registry.ClassesRoot.DeleteSubKey(subKey, false);
+            RegistryKey root = Registry.ClassesRoot;
+            root.DeleteSubKey(GetTypeLibKey(t), false);
+            root.DeleteSubKey(GetVersionKey(t), false);
+        }
+
+        private static string GetClsidKey(Type t)
+        {
+            return "CLSID\\" + t.GUID.ToString("B").ToUpperInvariant();
+        }
+
+        private static string GetTypeLibKey(Type t)
+        {
+            return GetClsidKey(t) + "\\TypeLib";
+        }
+
+        private static string GetVersionKey(Type t)
+        {
+            return GetClsidKey(t) + "\\Version";
         }
 #endif
 
@@ -2061,13 +2073,28 @@ namespace WinSCP
                     }
                 }
 
-                if (!string.IsNullOrEmpty(sessionOptions.SshPrivateKeyPath) && !scanFingerprint)
+                bool hasSshPrivateKeyPath = !string.IsNullOrEmpty(sessionOptions.SshPrivateKeyPath);
+                bool hasSshPrivateKey = !string.IsNullOrEmpty(sessionOptions.SshPrivateKey);
+                if ((hasSshPrivateKeyPath || hasSshPrivateKey) && !scanFingerprint)
                 {
                     if (!sessionOptions.IsSsh)
                     {
-                        throw Logger.WriteException(new ArgumentException("SessionOptions.SshPrivateKeyPath is set, but SessionOptions.Protocol is neither Protocol.Sftp nor Protocol.Scp."));
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.SshPrivateKeyPath or SessionOptions.SshPrivateKey is set, but SessionOptions.Protocol is neither Protocol.Sftp nor Protocol.Scp."));
                     }
-                    switches.Add(FormatSwitch("privatekey", sessionOptions.SshPrivateKeyPath));
+                    if (hasSshPrivateKeyPath && hasSshPrivateKey)
+                    {
+                        throw Logger.WriteException(new ArgumentException("Set only one of SessionOptions.SshPrivateKeyPath or SessionOptions.SshPrivateKey."));
+                    }
+                    string privateKey;
+                    if (hasSshPrivateKeyPath)
+                    {
+                        privateKey = sessionOptions.SshPrivateKeyPath;
+                    }
+                    else
+                    {
+                        privateKey = "@" + GenerateInMemoryPrivateKey(sessionOptions);
+                    }
+                    switches.Add(FormatSwitch("privatekey", privateKey));
                 }
 
                 if (!string.IsNullOrEmpty(sessionOptions.TlsClientCertificatePath) && !scanFingerprint)
@@ -2129,9 +2156,11 @@ namespace WinSCP
 
                 if ((sessionOptions.SecurePrivateKeyPassphrase != null) && !scanFingerprint)
                 {
-                    if (string.IsNullOrEmpty(sessionOptions.SshPrivateKeyPath) && string.IsNullOrEmpty(sessionOptions.TlsClientCertificatePath))
+                    if (string.IsNullOrEmpty(sessionOptions.SshPrivateKeyPath) &&
+                        string.IsNullOrEmpty(sessionOptions.SshPrivateKey) &&
+                        string.IsNullOrEmpty(sessionOptions.TlsClientCertificatePath))
                     {
-                        throw Logger.WriteException(new ArgumentException("SessionOptions.PrivateKeyPassphrase is set, but neither SessionOptions.SshPrivateKeyPath nor SessionOptions.TlsClientCertificatePath is set."));
+                        throw Logger.WriteException(new ArgumentException("SessionOptions.PrivateKeyPassphrase is set, but neither SessionOptions.SshPrivateKeyPath, SessionOptions.SshPrivateKey nor SessionOptions.TlsClientCertificatePath is set."));
                     }
                     switches.Add(FormatSwitch("passphrase", sessionOptions.PrivateKeyPassphrase));
                     logSwitches.Add(FormatSwitch("passphrase", "***"));
@@ -2150,6 +2179,12 @@ namespace WinSCP
                 arguments = string.Join(" ", switches.ToArray());
                 logArguments = string.Join(" ", logSwitches.ToArray());
             }
+        }
+
+        internal static string GenerateInMemoryPrivateKey(SessionOptions sessionOptions)
+        {
+            byte[] bytes = Encoding.Default.GetBytes(sessionOptions.SshPrivateKey);
+            return BitConverter.ToString(bytes).Replace("-", "");
         }
 
         private static string AddStarToList(string list)
@@ -2508,12 +2543,6 @@ namespace WinSCP
             }
         }
 
-#if !NETSTANDARD
-        private static string GetTypeLibKey(Type t)
-        {
-            return "CLSID\\{" + t.GUID.ToString().ToUpperInvariant() + "}\\TypeLib";
-        }
-#endif
 
         FieldInfo IReflect.GetField(string name, BindingFlags bindingAttr)
         {

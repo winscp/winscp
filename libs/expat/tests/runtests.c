@@ -11,7 +11,7 @@
    Copyright (c) 2005-2007 Steven Solie <steven@solie.ca>
    Copyright (c) 2005-2012 Karl Waclawek <karl@waclawek.net>
    Copyright (c) 2016-2022 Sebastian Pipping <sebastian@pipping.org>
-   Copyright (c) 2017-2018 Rhodri James <rhodri@wildebeest.org.uk>
+   Copyright (c) 2017-2022 Rhodri James <rhodri@wildebeest.org.uk>
    Copyright (c) 2017      Joe Orton <jorton@redhat.com>
    Copyright (c) 2017      José Gutiérrez de la Concha <jose@zeroc.com>
    Copyright (c) 2018      Marco Maggi <marco.maggi-ipsu@poste.it>
@@ -54,7 +54,6 @@
 #include <ctype.h>
 #include <limits.h>
 #include <stdint.h> /* intptr_t uint64_t */
-#include <math.h>   /* NAN, INFINITY, isnan */
 
 #if ! defined(__cplusplus)
 #  include <stdbool.h>
@@ -4991,6 +4990,78 @@ START_TEST(test_suspend_resume_internal_entity) {
 }
 END_TEST
 
+static void XMLCALL
+suspending_comment_handler(void *userData, const XML_Char *data) {
+  UNUSED_P(data);
+  XML_Parser parser = (XML_Parser)userData;
+  XML_StopParser(parser, XML_TRUE);
+}
+
+START_TEST(test_suspend_resume_internal_entity_issue_629) {
+  const char *const text
+      = "<!DOCTYPE a [<!ENTITY e '<!--COMMENT-->a'>]><a>&e;<b>\n"
+        "<"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "/>"
+        "</b></a>";
+  const size_t firstChunkSizeBytes = 54;
+
+  XML_Parser parser = XML_ParserCreate(NULL);
+  XML_SetUserData(parser, parser);
+  XML_SetCommentHandler(parser, suspending_comment_handler);
+
+  if (XML_Parse(parser, text, (int)firstChunkSizeBytes, XML_FALSE)
+      != XML_STATUS_SUSPENDED)
+    xml_failure(parser);
+  if (XML_ResumeParser(parser) != XML_STATUS_OK)
+    xml_failure(parser);
+  if (XML_Parse(parser, text + firstChunkSizeBytes,
+                (int)(strlen(text) - firstChunkSizeBytes), XML_TRUE)
+      != XML_STATUS_OK)
+    xml_failure(parser);
+  XML_ParserFree(parser);
+}
+END_TEST
+
 /* Test syntax error is caught at parse resumption */
 START_TEST(test_resume_entity_with_syntax_error) {
   const char *text = "<!DOCTYPE doc [\n"
@@ -6663,6 +6734,102 @@ START_TEST(test_empty_element_abort) {
 }
 END_TEST
 
+/* Regression test for GH issue #612: unfinished m_declAttributeType
+ * allocation in ->m_tempPool can corrupt following allocation.
+ */
+static int XMLCALL
+external_entity_unfinished_attlist(XML_Parser parser, const XML_Char *context,
+                                   const XML_Char *base,
+                                   const XML_Char *systemId,
+                                   const XML_Char *publicId) {
+  const char *text = "<!ELEMENT barf ANY>\n"
+                     "<!ATTLIST barf my_attr (blah|%blah;a|foo) #REQUIRED>\n"
+                     "<!--COMMENT-->\n";
+  XML_Parser ext_parser;
+
+  UNUSED_P(base);
+  UNUSED_P(publicId);
+  if (systemId == NULL)
+    return XML_STATUS_OK;
+
+  ext_parser = XML_ExternalEntityParserCreate(parser, context, NULL);
+  if (ext_parser == NULL)
+    fail("Could not create external entity parser");
+
+  if (_XML_Parse_SINGLE_BYTES(ext_parser, text, (int)strlen(text), XML_TRUE)
+      == XML_STATUS_ERROR)
+    xml_failure(ext_parser);
+
+  XML_ParserFree(ext_parser);
+  return XML_STATUS_OK;
+}
+
+START_TEST(test_pool_integrity_with_unfinished_attr) {
+  const char *text = "<?xml version='1.0' encoding='UTF-8'?>\n"
+                     "<!DOCTYPE foo [\n"
+                     "<!ELEMENT foo ANY>\n"
+                     "<!ENTITY % entp SYSTEM \"external.dtd\">\n"
+                     "%entp;\n"
+                     "]>\n"
+                     "<a></a>\n";
+  const XML_Char *expected = XCS("COMMENT");
+  CharData storage;
+
+  CharData_Init(&storage);
+  XML_SetParamEntityParsing(g_parser, XML_PARAM_ENTITY_PARSING_ALWAYS);
+  XML_SetExternalEntityRefHandler(g_parser, external_entity_unfinished_attlist);
+  XML_SetAttlistDeclHandler(g_parser, dummy_attlist_decl_handler);
+  XML_SetCommentHandler(g_parser, accumulate_comment);
+  XML_SetUserData(g_parser, &storage);
+  if (_XML_Parse_SINGLE_BYTES(g_parser, text, (int)strlen(text), XML_TRUE)
+      == XML_STATUS_ERROR)
+    xml_failure(g_parser);
+  CharData_CheckXMLChars(&storage, expected);
+}
+END_TEST
+
+typedef struct {
+  XML_Parser parser;
+  CharData *storage;
+} ParserPlusStorage;
+
+static void XMLCALL
+accumulate_and_suspend_comment_handler(void *userData, const XML_Char *data) {
+  ParserPlusStorage *const parserPlusStorage = (ParserPlusStorage *)userData;
+  accumulate_comment(parserPlusStorage->storage, data);
+  XML_StopParser(parserPlusStorage->parser, XML_TRUE);
+}
+
+START_TEST(test_nested_entity_suspend) {
+  const char *const text = "<!DOCTYPE a [\n"
+                           "  <!ENTITY e1 '<!--e1-->'>\n"
+                           "  <!ENTITY e2 '<!--e2 head-->&e1;<!--e2 tail-->'>\n"
+                           "  <!ENTITY e3 '<!--e3 head-->&e2;<!--e3 tail-->'>\n"
+                           "]>\n"
+                           "<a><!--start-->&e3;<!--end--></a>";
+  const XML_Char *const expected = XCS("start") XCS("e3 head") XCS("e2 head")
+      XCS("e1") XCS("e2 tail") XCS("e3 tail") XCS("end");
+  CharData storage;
+  XML_Parser parser = XML_ParserCreate(NULL);
+  ParserPlusStorage parserPlusStorage = {parser, &storage};
+
+  CharData_Init(&storage);
+  XML_SetParamEntityParsing(parser, XML_PARAM_ENTITY_PARSING_ALWAYS);
+  XML_SetCommentHandler(parser, accumulate_and_suspend_comment_handler);
+  XML_SetUserData(parser, &parserPlusStorage);
+
+  enum XML_Status status = XML_Parse(parser, text, (int)strlen(text), XML_TRUE);
+  while (status == XML_STATUS_SUSPENDED) {
+    status = XML_ResumeParser(parser);
+  }
+  if (status != XML_STATUS_OK)
+    xml_failure(parser);
+
+  CharData_CheckXMLChars(&storage, expected);
+  XML_ParserFree(parser);
+}
+END_TEST
+
 /*
  * Namespaces tests.
  */
@@ -7407,16 +7574,18 @@ START_TEST(test_ns_separator_in_uri) {
   struct test_case {
     enum XML_Status expectedStatus;
     const char *doc;
+    XML_Char namesep;
   };
   struct test_case cases[] = {
-      {XML_STATUS_OK, "<doc xmlns='one_two' />"},
-      {XML_STATUS_ERROR, "<doc xmlns='one&#x0A;two' />"},
+      {XML_STATUS_OK, "<doc xmlns='one_two' />", XCS('\n')},
+      {XML_STATUS_ERROR, "<doc xmlns='one&#x0A;two' />", XCS('\n')},
+      {XML_STATUS_OK, "<doc xmlns='one:two' />", XCS(':')},
   };
 
   size_t i = 0;
   size_t failCount = 0;
   for (; i < sizeof(cases) / sizeof(cases[0]); i++) {
-    XML_Parser parser = XML_ParserCreateNS(NULL, '\n');
+    XML_Parser parser = XML_ParserCreateNS(NULL, cases[i].namesep);
     XML_SetElementHandler(parser, dummy_start_element, dummy_end_element);
     if (XML_Parse(parser, cases[i].doc, (int)strlen(cases[i].doc),
                   /*isFinal*/ XML_TRUE)
@@ -7588,7 +7757,7 @@ START_TEST(test_misc_version) {
     fail("Version mismatch");
 
 #if ! defined(XML_UNICODE) || defined(XML_UNICODE_WCHAR_T)
-  if (xcstrcmp(version_text, XCS("expat_2.4.6"))) /* needs bump on releases */
+  if (xcstrcmp(version_text, XCS("expat_2.5.0"))) /* needs bump on releases */
     fail("XML_*_VERSION in expat.h out of sync?\n");
 #else
   /* If we have XML_UNICODE defined but not XML_UNICODE_WCHAR_T
@@ -7797,6 +7966,28 @@ START_TEST(test_misc_deny_internal_entity_closing_doctype_issue_317) {
 
     XML_ParserFree(parser);
   }
+}
+END_TEST
+
+START_TEST(test_misc_tag_mismatch_reset_leak) {
+#ifdef XML_NS
+  const char *const text = "<open xmlns='https://namespace1.test'></close>";
+  XML_Parser parser = XML_ParserCreateNS(NULL, XCS('\n'));
+
+  if (XML_Parse(parser, text, (int)strlen(text), XML_TRUE) != XML_STATUS_ERROR)
+    fail("Call to parse was expected to fail");
+  if (XML_GetErrorCode(parser) != XML_ERROR_TAG_MISMATCH)
+    fail("Call to parse was expected to fail from a closing tag mismatch");
+
+  XML_ParserReset(parser, NULL);
+
+  if (XML_Parse(parser, text, (int)strlen(text), XML_TRUE) != XML_STATUS_ERROR)
+    fail("Call to parse was expected to fail");
+  if (XML_GetErrorCode(parser) != XML_ERROR_TAG_MISMATCH)
+    fail("Call to parse was expected to fail from a closing tag mismatch");
+
+  XML_ParserFree(parser);
+#endif
 }
 END_TEST
 
@@ -10017,6 +10208,53 @@ START_TEST(test_alloc_long_notation) {
 }
 END_TEST
 
+static int XMLCALL
+external_entity_parser_create_alloc_fail_handler(XML_Parser parser,
+                                                 const XML_Char *context,
+                                                 const XML_Char *base,
+                                                 const XML_Char *systemId,
+                                                 const XML_Char *publicId) {
+  UNUSED_P(base);
+  UNUSED_P(systemId);
+  UNUSED_P(publicId);
+
+  if (context != NULL)
+    fail("Unexpected non-NULL context");
+
+  // The following number intends to fail the upcoming allocation in line
+  // "parser->m_protocolEncodingName = copyString(encodingName,
+  // &(parser->m_mem));" in function parserInit.
+  allocation_count = 3;
+
+  const XML_Char *const encodingName = XCS("UTF-8"); // needs something non-NULL
+  const XML_Parser ext_parser
+      = XML_ExternalEntityParserCreate(parser, context, encodingName);
+  if (ext_parser != NULL)
+    fail(
+        "Call to XML_ExternalEntityParserCreate was expected to fail out-of-memory");
+
+  allocation_count = ALLOC_ALWAYS_SUCCEED;
+  return XML_STATUS_ERROR;
+}
+
+START_TEST(test_alloc_reset_after_external_entity_parser_create_fail) {
+  const char *const text = "<!DOCTYPE doc SYSTEM 'foo'><doc/>";
+
+  XML_SetExternalEntityRefHandler(
+      g_parser, external_entity_parser_create_alloc_fail_handler);
+  XML_SetParamEntityParsing(g_parser, XML_PARAM_ENTITY_PARSING_ALWAYS);
+
+  if (XML_Parse(g_parser, text, (int)strlen(text), XML_TRUE)
+      != XML_STATUS_ERROR)
+    fail("Call to parse was expected to fail");
+
+  if (XML_GetErrorCode(g_parser) != XML_ERROR_EXTERNAL_ENTITY_HANDLING)
+    fail("Call to parse was expected to fail from the external entity handler");
+
+  XML_ParserReset(g_parser, NULL);
+}
+END_TEST
+
 static void
 nsalloc_setup(void) {
   XML_Memory_Handling_Suite memsuite = {duff_allocator, duff_reallocator, free};
@@ -11762,6 +12000,16 @@ START_TEST(test_accounting_precision) {
 }
 END_TEST
 
+static float
+portableNAN(void) {
+  return strtof("nan", NULL);
+}
+
+static float
+portableINFINITY(void) {
+  return strtof("infinity", NULL);
+}
+
 START_TEST(test_billion_laughs_attack_protection_api) {
   XML_Parser parserWithoutParent = XML_ParserCreate(NULL);
   XML_Parser parserWithParent
@@ -11780,7 +12028,7 @@ START_TEST(test_billion_laughs_attack_protection_api) {
       == XML_TRUE)
     fail("Call with non-root parser is NOT supposed to succeed");
   if (XML_SetBillionLaughsAttackProtectionMaximumAmplification(
-          parserWithoutParent, NAN)
+          parserWithoutParent, portableNAN())
       == XML_TRUE)
     fail("Call with NaN limit is NOT supposed to succeed");
   if (XML_SetBillionLaughsAttackProtectionMaximumAmplification(
@@ -11802,7 +12050,7 @@ START_TEST(test_billion_laughs_attack_protection_api) {
       == XML_FALSE)
     fail("Call with positive limit >=1.0 is supposed to succeed");
   if (XML_SetBillionLaughsAttackProtectionMaximumAmplification(
-          parserWithoutParent, INFINITY)
+          parserWithoutParent, portableINFINITY())
       == XML_FALSE)
     fail("Call with positive limit >=1.0 is supposed to succeed");
 
@@ -12005,6 +12253,8 @@ make_suite(void) {
   tcase_add_test(tc_basic, test_partial_char_in_epilog);
   tcase_add_test(tc_basic, test_hash_collision);
   tcase_add_test__ifdef_xml_dtd(tc_basic, test_suspend_resume_internal_entity);
+  tcase_add_test__ifdef_xml_dtd(tc_basic,
+                                test_suspend_resume_internal_entity_issue_629);
   tcase_add_test__ifdef_xml_dtd(tc_basic, test_resume_entity_with_syntax_error);
   tcase_add_test__ifdef_xml_dtd(tc_basic, test_suspend_resume_parameter_entity);
   tcase_add_test(tc_basic, test_restart_on_error);
@@ -12084,6 +12334,9 @@ make_suite(void) {
   tcase_add_test(tc_basic, test_bad_notation);
   tcase_add_test(tc_basic, test_default_doctype_handler);
   tcase_add_test(tc_basic, test_empty_element_abort);
+  tcase_add_test__ifdef_xml_dtd(tc_basic,
+                                test_pool_integrity_with_unfinished_attr);
+  tcase_add_test(tc_basic, test_nested_entity_suspend);
 
   suite_add_tcase(s, tc_namespace);
   tcase_add_checked_fixture(tc_namespace, namespace_setup, namespace_teardown);
@@ -12136,6 +12389,7 @@ make_suite(void) {
   tcase_add_test(tc_misc, test_misc_stop_during_end_handler_issue_240_2);
   tcase_add_test__ifdef_xml_dtd(
       tc_misc, test_misc_deny_internal_entity_closing_doctype_issue_317);
+  tcase_add_test(tc_misc, test_misc_tag_mismatch_reset_leak);
 
   suite_add_tcase(s, tc_alloc);
   tcase_add_checked_fixture(tc_alloc, alloc_setup, alloc_teardown);
@@ -12194,6 +12448,8 @@ make_suite(void) {
   tcase_add_test(tc_alloc, test_alloc_long_public_id);
   tcase_add_test(tc_alloc, test_alloc_long_entity_value);
   tcase_add_test(tc_alloc, test_alloc_long_notation);
+  tcase_add_test__ifdef_xml_dtd(
+      tc_alloc, test_alloc_reset_after_external_entity_parser_create_fail);
 
   suite_add_tcase(s, tc_nsalloc);
   tcase_add_checked_fixture(tc_nsalloc, nsalloc_setup, nsalloc_teardown);

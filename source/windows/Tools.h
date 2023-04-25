@@ -70,8 +70,9 @@ void __fastcall CopyToClipboard(TStrings * Strings);
 void __fastcall ShutDownWindows();
 void __fastcall SuspendWindows();
 void __fastcall EditSelectBaseName(HWND Edit);
-void __fastcall VerifyAndConvertKey(UnicodeString & FileName, TSshProt SshProt, bool CanIgnore);
-void __fastcall VerifyKey(UnicodeString FileName, TSshProt SshProt);
+UnicodeString GetConvertedKeyFileName(const UnicodeString & FileName);
+void __fastcall VerifyAndConvertKey(UnicodeString & FileName, bool CanIgnore);
+void __fastcall VerifyKey(const UnicodeString & FileName);
 void __fastcall VerifyCertificate(const UnicodeString & FileName);
 TStrings * __fastcall GetUnwrappedMemoLines(TMemo * Memo);
 bool __fastcall DetectSystemExternalEditor(

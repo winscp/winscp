@@ -5,7 +5,7 @@ object LoginDialog: TLoginDialog
   HelpKeyword = 'ui_login'
   BorderIcons = [biSystemMenu, biMinimize, biHelp]
   Caption = 'Login'
-  ClientHeight = 385
+  ClientHeight = 411
   ClientWidth = 873
   Color = clBtnFace
   Constraints.MinHeight = 399
@@ -22,7 +22,7 @@ object LoginDialog: TLoginDialog
     Left = 512
     Top = 0
     Width = 361
-    Height = 361
+    Height = 387
     Align = alRight
     BevelOuter = bvNone
     TabOrder = 0
@@ -30,25 +30,25 @@ object LoginDialog: TLoginDialog
       Left = 0
       Top = 0
       Width = 361
-      Height = 320
+      Height = 346
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 0
       Visible = False
       DesignSize = (
         361
-        320)
+        346)
       object ContentsGroupBox: TGroupBox
         Left = 2
         Top = 12
         Width = 347
-        Height = 305
+        Height = 331
         Anchors = [akLeft, akTop, akBottom]
         Caption = 'ContentsGroupBox'
         TabOrder = 0
         DesignSize = (
           347
-          305)
+          331)
         object ContentsLabel: TLabel
           Left = 12
           Top = 20
@@ -70,7 +70,7 @@ object LoginDialog: TLoginDialog
           Left = 12
           Top = 42
           Width = 324
-          Height = 251
+          Height = 277
           Anchors = [akLeft, akTop, akRight, akBottom]
           Lines.Strings = (
             'ContentsMemo')
@@ -82,25 +82,25 @@ object LoginDialog: TLoginDialog
       Left = 0
       Top = 0
       Width = 361
-      Height = 320
+      Height = 346
       Align = alClient
       Anchors = [akTop, akRight, akBottom]
       BevelOuter = bvNone
       TabOrder = 1
       DesignSize = (
         361
-        320)
+        346)
       object BasicGroup: TGroupBox
         Left = 2
         Top = 12
         Width = 347
-        Height = 229
+        Height = 255
         Anchors = [akLeft, akTop, akRight]
         Caption = 'Session'
         TabOrder = 0
         DesignSize = (
           347
-          229)
+          255)
         object Label1: TLabel
           Left = 12
           Top = 72
@@ -158,6 +158,28 @@ object LoginDialog: TLoginDialog
           Caption = '&Encryption:'
           FocusControl = WebDavsCombo
         end
+        object BasicS3Panel: TPanel
+          Left = 12
+          Top = 195
+          Width = 324
+          Height = 26
+          Anchors = [akLeft, akTop, akRight]
+          BevelOuter = bvNone
+          TabOrder = 15
+          DesignSize = (
+            324
+            26)
+          object S3CredentialsEnvCheck: TCheckBox
+            Left = 0
+            Top = 0
+            Width = 324
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Read credentials from AWS CLI configuration'
+            TabOrder = 0
+            OnClick = S3CredentialsEnvCheckClick
+          end
+        end
         object EncryptionView: TEdit
           Left = 163
           Top = 39
@@ -169,7 +191,7 @@ object LoginDialog: TLoginDialog
         object TransferProtocolView: TEdit
           Left = 12
           Top = 39
-          Width = 137
+          Width = 145
           Height = 21
           TabOrder = 1
           OnChange = TransferProtocolComboChange
@@ -288,7 +310,7 @@ object LoginDialog: TLoginDialog
         end
         object AdvancedButton: TButton
           Left = 238
-          Top = 193
+          Top = 219
           Width = 98
           Height = 25
           Action = SessionAdvancedAction
@@ -299,7 +321,7 @@ object LoginDialog: TLoginDialog
         end
         object SaveButton: TButton
           Left = 12
-          Top = 193
+          Top = 219
           Width = 98
           Height = 25
           Action = SaveSessionAction
@@ -310,7 +332,7 @@ object LoginDialog: TLoginDialog
         end
         object EditCancelButton: TButton
           Left = 116
-          Top = 193
+          Top = 219
           Width = 82
           Height = 25
           Action = EditCancelAction
@@ -320,7 +342,7 @@ object LoginDialog: TLoginDialog
         end
         object EditButton: TButton
           Left = 12
-          Top = 193
+          Top = 219
           Width = 98
           Height = 25
           Action = EditSessionAction
@@ -331,7 +353,7 @@ object LoginDialog: TLoginDialog
       end
       object NoteGroup: TGroupBox
         Left = 2
-        Top = 247
+        Top = 273
         Width = 347
         Height = 70
         Anchors = [akLeft, akTop, akRight, akBottom]
@@ -359,7 +381,7 @@ object LoginDialog: TLoginDialog
     end
     object ButtonPanel: TPanel
       Left = 0
-      Top = 320
+      Top = 346
       Width = 361
       Height = 41
       Align = alBottom
@@ -410,18 +432,18 @@ object LoginDialog: TLoginDialog
     Left = 0
     Top = 0
     Width = 512
-    Height = 361
+    Height = 387
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 2
     DesignSize = (
       512
-      361)
+      387)
     object SessionTree: TTreeView
       Left = 11
       Top = 12
       Width = 490
-      Height = 312
+      Height = 338
       Anchors = [akLeft, akTop, akRight, akBottom]
       DoubleBuffered = True
       DragMode = dmAutomatic
@@ -457,8 +479,8 @@ object LoginDialog: TLoginDialog
     end
     object SitesIncrementalSearchLabel: TStaticText
       Left = 14
-      Top = 304
-      Width = 385
+      Top = 330
+      Width = 142
       Height = 17
       Anchors = [akLeft, akRight, akBottom]
       BorderStyle = sbsSingle
@@ -469,7 +491,7 @@ object LoginDialog: TLoginDialog
     end
     object ManageButton: TButton
       Left = 403
-      Top = 330
+      Top = 356
       Width = 98
       Height = 25
       Anchors = [akRight, akBottom]
@@ -479,7 +501,7 @@ object LoginDialog: TLoginDialog
     end
     object ToolsMenuButton: TButton
       Left = 11
-      Top = 330
+      Top = 356
       Width = 98
       Height = 25
       Anchors = [akLeft, akBottom]
@@ -490,7 +512,7 @@ object LoginDialog: TLoginDialog
   end
   object ShowAgainPanel: TPanel
     Left = 0
-    Top = 361
+    Top = 387
     Width = 873
     Height = 24
     Align = alBottom

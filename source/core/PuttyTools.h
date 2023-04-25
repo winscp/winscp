@@ -13,6 +13,7 @@ TKeyType KeyType(UnicodeString FileName);
 bool IsKeyEncrypted(TKeyType KeyType, const UnicodeString & FileName, UnicodeString & Comment);
 struct TPrivateKey;
 TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const UnicodeString & Passphrase);
+UnicodeString TestKey(TKeyType KeyType, const UnicodeString & FileName);
 void ChangeKeyComment(TPrivateKey * PrivateKey, const UnicodeString & Comment);
 void SaveKey(TKeyType KeyType, const UnicodeString & FileName,
   const UnicodeString & Passphrase, TPrivateKey * PrivateKey);
@@ -37,7 +38,6 @@ void __fastcall DllHijackingProtection();
 UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const struct ssh_keyalg *& Algorithm);
 //---------------------------------------------------------------------------
 UnicodeString __fastcall GetKeyTypeHuman(const UnicodeString & KeyType);
-UnicodeString __fastcall GetSsh1KeyType();
 //---------------------------------------------------------------------------
 bool IsOpenSSH(const UnicodeString & SshImplementation);
 //---------------------------------------------------------------------------

@@ -143,7 +143,7 @@ std::list<CFtpControlSocket::t_ActiveList> CFtpControlSocket::m_InstanceList[2];
 CTime CFtpControlSocket::m_CurrentTransferTime[2] = { CTime::GetCurrentTime(), CTime::GetCurrentTime() };
 _int64 CFtpControlSocket::m_CurrentTransferLimit[2] = {0, 0};
 
-CCriticalSection CFtpControlSocket::m_SpeedLimitSync;
+CCriticalSectionWrapper CFtpControlSocket::m_SpeedLimitSync;
 
 #define BUFSIZE 16384
 
@@ -384,17 +384,7 @@ bool CFtpControlSocket::InitConnect()
 
     m_pSslLayer->SetClientCertificate(m_CurrentServer.Certificate, m_CurrentServer.PrivateKey);
 
-    TCHAR buffer[1000];
-    GetModuleFileName(NULL, buffer, 1000);
-    CString filename = buffer;
-    int pos = filename.ReverseFind(L'\\');
-    if (pos != -1)
-    {
-      filename = filename.Left(pos + 1);
-      filename += L"cacert.pem";
-    }
-    else
-      filename = L"cacert.pem";
+    CString filename = GetOption(OPTION_MPEXT_CERT_STORAGE);
     m_pSslLayer->SetCertStorage(filename);
   }
 
@@ -1539,15 +1529,37 @@ BOOL CFtpControlSocket::Send(CString str)
   return TRUE;
 }
 
-int CFtpControlSocket::GetReplyCode()
+int CFtpControlSocket::TryGetReplyCode()
 {
   if (m_RecvBuffer.empty())
     return 0;
   CStringA str = m_RecvBuffer.front();
   if (str == "")
+  {
+    return -1;
+  }
+  else if ((str[0] < '1') || (str[0] > '9'))
+  {
+    UnicodeString Error = FMTLOAD(FTP_MALFORMED_RESPONSE, (UnicodeString(str)));
+    LogMessageRaw(FZ_LOG_WARNING, Error.c_str());
     return 0;
+  }
   else
+  {
     return str[0]-'0';
+  }
+}
+
+int CFtpControlSocket::GetReplyCode()
+{
+  int Result = TryGetReplyCode();
+  if (Result < 0)
+  {
+    UnicodeString Error = FMTLOAD(FTP_MALFORMED_RESPONSE, (UnicodeString()));
+    LogMessageRaw(FZ_LOG_WARNING, Error.c_str());
+    Result = 0;
+  }
+  return Result;
 }
 
 void CFtpControlSocket::DoClose(int nError /*=0*/)
@@ -1606,9 +1618,16 @@ void CFtpControlSocket::CheckForTimeout()
   int delay=GetOptionVal(OPTION_TIMEOUTLENGTH);
   if (m_pTransferSocket)
   {
-    int res=m_pTransferSocket->CheckForTimeout(delay);
-    if (res)
+    int res = m_pTransferSocket->CheckForTimeout(delay);
+    if (res != 0)
+    {
+      if (res == 1)
+      {
+        // avoid trying to set keepalive command right after the transfer finishes
+        m_LastSendTime = CTime::GetCurrentTime();
+      }
       return;
+    }
   }
   CTimeSpan span=CTime::GetCurrentTime()-m_LastRecvTime;
   if (span.GetTotalSeconds()>=delay)
@@ -2844,10 +2863,14 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     DebugAssert(!m_Operation.nOpMode);
     DebugAssert(!m_Operation.pData);
 
-    CString str;
-    str.Format(transferfile->get?IDS_STATUSMSG_DOWNLOADSTART:IDS_STATUSMSG_UPLOADSTART,
-          transferfile->get ? transferfile->remotepath.FormatFilename(transferfile->remotefile) : transferfile->localfile);
-    ShowStatus(str,FZ_LOG_STATUS);
+    if ((transferfile->OnTransferOut == NULL) &&
+        (transferfile->OnTransferIn == NULL))
+    {
+      CString str;
+      str.Format(transferfile->get?IDS_STATUSMSG_DOWNLOADSTART:IDS_STATUSMSG_UPLOADSTART,
+            transferfile->get ? transferfile->remotepath.FormatFilename(transferfile->remotefile) : transferfile->localfile);
+      ShowStatus(str,FZ_LOG_STATUS);
+    }
 
     m_Operation.nOpMode=CSMODE_TRANSFER|(transferfile->get?CSMODE_DOWNLOAD:CSMODE_UPLOAD);
 
@@ -2898,25 +2921,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         }
         if (m_pDirectoryListing && i==m_pDirectoryListing->num)
         {
-          nReplyError = CheckOverwriteFile();
-          if (!nReplyError)
-          {
-            if (pData->transferfile.get)
-            {
-              CString path=pData->transferfile.localfile;
-              if (path.ReverseFind(L'\\')!=-1)
-              {
-                path=path.Left(path.ReverseFind(L'\\')+1);
-                CString path2;
-                while (path!=L"")
-                {
-                  path2+=path.Left(path.Find( L"\\" )+1);
-                  path=path.Mid(path.Find( L"\\" )+1);
-                  CreateDirectory(path2, 0);
-                }
-              }
-            }
-          }
+          nReplyError = CheckOverwriteFileAndCreateTarget();
         }
       }
       else
@@ -2926,7 +2931,9 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     }
     else
     {
-      if (path.IsEmpty())
+      if (pData->transferfile.remotepath.IsEmpty() && GetOptionVal(OPTION_MPEXT_WORK_FROM_CWD))
+        m_Operation.nOpState = FileTransferListState(pData->transferfile.get);
+      else if (path.IsEmpty())
         m_Operation.nOpState = FILETRANSFER_PWD;
       else
         m_Operation.nOpState = FILETRANSFER_CWD;
@@ -2937,7 +2944,13 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     ///////////
     //Replies//
     ///////////
-    int code = GetReplyCode();
+    int code = TryGetReplyCode();
+    // We do not always expect a response here, particularly when closing transfer connection (FILETRANSFER_WAITFINISH).
+    // The normalization to 0 is probably not needed.
+    if (code < 0)
+    {
+      code = 0;
+    }
     switch(m_Operation.nOpState)
     {
     case FILETRANSFER_PWD:
@@ -3313,31 +3326,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         else
           listing.path = pData->transferfile.remotepath;
 
-        SetDirectoryListing(&listing);
-
-        m_Operation.nOpState = FILETRANSFER_TYPE;
-        delete m_pTransferSocket;
-        m_pTransferSocket = 0;
-
-        nReplyError = CheckOverwriteFile();
-        if (!nReplyError)
-        {
-          if (pData->transferfile.get)
-          {
-            CString path=pData->transferfile.localfile;
-            if (path.ReverseFind(L'\\')!=-1)
-            {
-              path=path.Left(path.ReverseFind(L'\\')+1);
-              CString path2;
-              while (path!=L"")
-              {
-                path2+=path.Left(path.Find( L"\\" )+1);
-                path=path.Mid(path.Find( L"\\" )+1);
-                CreateDirectory(path2, 0);
-              }
-            }
-          }
-        }
+        nReplyError = FileTransferHandleDirectoryListing(&listing);
       }
       else if (code==4 || code==5) //LIST failed, try getting file information using SIZE and MDTM
       {
@@ -3367,29 +3356,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       }
       if (pData->nGotTransferEndReply && pData->pDirectoryListing)
       {
-        SetDirectoryListing(pData->pDirectoryListing);
-        delete m_pTransferSocket;
-        m_pTransferSocket=0;
-        m_Operation.nOpState=FILETRANSFER_TYPE;
-        nReplyError = CheckOverwriteFile();
-        if (!nReplyError)
-        {
-          if (pData->transferfile.get)
-          {
-            CString path=pData->transferfile.localfile;
-            if (path.ReverseFind(L'\\')!=-1)
-            {
-              path=path.Left(path.ReverseFind(L'\\')+1);
-              CString path2;
-              while (path!=L"")
-              {
-                path2+=path.Left(path.Find( L"\\" )+1);
-                path=path.Mid(path.Find( L"\\" )+1);
-                CreateDirectory(path2, 0);
-              }
-            }
-          }
-        }
+        nReplyError = FileTransferHandleDirectoryListing(pData->pDirectoryListing);
         pData->nGotTransferEndReply=0;
       }
       break;
@@ -3567,18 +3534,39 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
           m_Operation.nOpState = FILETRANSFER_REST;
         else
           m_Operation.nOpState = FILETRANSFER_RETRSTOR;
-        BOOL res = FALSE;
-        if (!m_pDataFile)
-          m_pDataFile = new CFile;
+        BOOL res;
+        if (m_pDataFile != NULL)
+        {
+          delete m_pDataFile;
+          m_pDataFile = NULL;
+        }
         if (pData->transferfile.get)
         {
-          if (pData->transferdata.bResume)
-            res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeCreate|CFile::modeWrite|CFile::modeNoTruncate|CFile::shareDenyWrite);
+          if (pData->transferfile.OnTransferOut == NULL)
+          {
+            m_pDataFile = new CFile();
+            if (pData->transferdata.bResume)
+              res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeCreate|CFile::modeWrite|CFile::modeNoTruncate|CFile::shareDenyWrite);
+            else
+              res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeWrite|CFile::modeCreate|CFile::shareDenyWrite);
+          }
           else
-            res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeWrite|CFile::modeCreate|CFile::shareDenyWrite);
+          {
+            res = TRUE;
+          }
         }
         else
-          res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeRead|CFile::shareDenyNone);
+        {
+          if (pData->transferfile.OnTransferIn == NULL)
+          {
+            m_pDataFile = new CFile();
+            res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeRead|CFile::shareDenyNone);
+          }
+          else
+          {
+            res = TRUE;
+          }
+        }
         if (!res)
         {
           wchar_t * Error = m_pTools->LastSysErrorMessage();
@@ -3600,11 +3588,16 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         }
 
         m_pTransferSocket->m_pFile = m_pDataFile;
+        m_pTransferSocket->m_OnTransferOut = pData->transferfile.OnTransferOut;
+        m_pTransferSocket->m_OnTransferIn = pData->transferfile.OnTransferIn;
         if (!pData->transferfile.get)
         {
-          // See comment in !get branch below
-          pData->transferdata.transfersize=GetLength64(*m_pDataFile);
-          pData->transferdata.transferleft=pData->transferdata.transfersize;
+          if (m_pDataFile != NULL)
+          {
+            // See comment in !get branch below
+            pData->transferdata.transfersize=GetLength64(*m_pDataFile);
+            pData->transferdata.transferleft=pData->transferdata.transfersize;
+          }
           if (pData->transferdata.bResume)
           {
             CString remotefile=pData->transferfile.remotefile;
@@ -3629,10 +3622,6 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         }
         else
         {
-          // Resetting transfersize here is pointless as we
-          // always provide valid size in call to FileTransfer.
-          // We unnecessary reply on the file being in the directory listing.
-          pData->transferdata.transfersize=-1;
           CString remotefile=pData->transferfile.remotefile;
           if (m_pDirectoryListing)
             for (int i=0; i<m_pDirectoryListing->num; i++)
@@ -4419,6 +4408,7 @@ bool CFtpControlSocket::HandleMdtm(int code, t_directory::t_direntry::t_date & d
             date.minute = m;
             date.second = s;
             date.hastime = true;
+            date.hasyear = true;
             date.hasseconds = hasseconds;
             date.hasdate = true;
             date.utc = true;
@@ -4449,8 +4439,10 @@ void CFtpControlSocket::TransferFinished(bool preserveFileTimeForUploads)
 {
   CFileTransferData *pData=static_cast<CFileTransferData *>(m_Operation.pData);
 
-  if (GetOptionVal(OPTION_PRESERVEDOWNLOADFILETIME) && m_pDataFile &&
-        pData->transferfile.get)
+  if (GetOptionVal(OPTION_PRESERVEDOWNLOADFILETIME) &&
+      m_pDataFile &&
+      pData->transferfile.get &&
+      DebugAlwaysTrue(pData->transferfile.OnTransferOut == NULL))
   {
     m_pTools->PreserveDownloadFileTime(
       (HANDLE)m_pDataFile->m_hFile, reinterpret_cast<void *>(pData->transferfile.nUserData));
@@ -4458,7 +4450,8 @@ void CFtpControlSocket::TransferFinished(bool preserveFileTimeForUploads)
   if (!pData->transferfile.get &&
       GetOptionVal(OPTION_MPEXT_PRESERVEUPLOADFILETIME) && preserveFileTimeForUploads &&
       ((m_serverCapabilities.GetCapability(mfmt_command) == yes) ||
-       (m_serverCapabilities.GetCapability(mdtm_command) == yes)))
+       (m_serverCapabilities.GetCapability(mdtm_command) == yes)) &&
+      DebugAlwaysTrue(pData->transferfile.OnTransferIn == NULL))
   {
     CString filename =
       pData->transferfile.remotepath.FormatFilename(pData->transferfile.remotefile, !pData->bUseAbsolutePaths);
@@ -4914,6 +4907,42 @@ public:
   }
 }
 
+int CFtpControlSocket::FileTransferHandleDirectoryListing(t_directory * pDirectory)
+{
+  SetDirectoryListing(pDirectory);
+
+  m_Operation.nOpState = FILETRANSFER_TYPE;
+  delete m_pTransferSocket;
+  m_pTransferSocket = 0;
+
+  return CheckOverwriteFileAndCreateTarget();
+}
+
+int CFtpControlSocket::CheckOverwriteFileAndCreateTarget()
+{
+  int nReplyError = CheckOverwriteFile();
+  if (!nReplyError)
+  {
+    CFileTransferData * pData = static_cast<CFileTransferData *>(m_Operation.pData);
+    if (pData->transferfile.get && (pData->transferfile.OnTransferOut == NULL))
+    {
+      CString path = pData->transferfile.localfile;
+      if (path.ReverseFind(L'\\') != -1)
+      {
+        path = path.Left(path.ReverseFind(L'\\')+1);
+        CString path2;
+        while (path != L"")
+        {
+          path2 += path.Left(path.Find(L"\\") + 1);
+          path = path.Mid(path.Find(L"\\") + 1);
+          CreateDirectory(path2, 0);
+        }
+      }
+    }
+  }
+  return nReplyError;
+}
+
 int CFtpControlSocket::CheckOverwriteFile()
 {
   if (!m_Operation.pData)
@@ -4925,8 +4954,12 @@ int CFtpControlSocket::CheckOverwriteFile()
 
   int nReplyError = 0;
   CFileStatus64 status;
-  BOOL res = GetStatus64(pData->transferfile.localfile, status);
-  if (!res)
+  if ((pData->transferfile.OnTransferOut != NULL) ||
+      (pData->transferfile.OnTransferIn != NULL))
+  {
+    m_Operation.nOpState = FILETRANSFER_TYPE;
+  }
+  else if (!GetStatus64(pData->transferfile.localfile, status))
   {
     if (!pData->transferfile.get)
     {
@@ -6133,7 +6166,7 @@ void CFtpControlSocket::DiscardLine(CStringA line)
 int CFtpControlSocket::FileTransferListState(bool get)
 {
   int Result;
-  if (GetOptionVal(OPTION_MPEXT_NOLIST) && !get)
+  if (GetOptionVal(OPTION_MPEXT_NOLIST))
   {
     Result = FILETRANSFER_TYPE;
   }

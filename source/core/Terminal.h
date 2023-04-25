@@ -145,8 +145,6 @@ public:
   static const int spCaseSensitive = 0x2000;
   static const int spDefault = TTerminal::spNoConfirmation | TTerminal::spPreviewChanges;
 
-// for TranslateLockedPath()
-friend class TRemoteFile;
 // for ReactOnCommand()
 friend class TSCPFileSystem;
 friend class TSFTPFileSystem;
@@ -164,7 +162,6 @@ private:
   TActionLog * FActionLog;
   TConfiguration * FConfiguration;
   UnicodeString FCurrentDirectory;
-  UnicodeString FLockDirectory;
   Integer FExceptionOnFail;
   TRemoteDirectory * FFiles;
   int FInTransaction;
@@ -304,7 +301,6 @@ protected:
   bool __fastcall DeleteContentsIfDirectory(
     const UnicodeString & FileName, const TRemoteFile * File, int Params, TRmSessionAction & Action);
   void __fastcall AnnounceFileListOperation();
-  UnicodeString __fastcall TranslateLockedPath(UnicodeString Path, bool Lock);
   void __fastcall ReadDirectory(TRemoteFileList * FileList);
   void __fastcall CustomReadDirectory(TRemoteFileList * FileList);
   void __fastcall DoCreateLink(const UnicodeString FileName, const UnicodeString PointTo, bool Symbolic);
@@ -428,7 +424,9 @@ protected:
   UnicodeString __fastcall FormatFileDetailsForLog(
     const UnicodeString & FileName, TDateTime Modification, __int64 Size, const TRemoteFile * LinkedFile = NULL);
   void __fastcall LogFileDetails(const UnicodeString & FileName, TDateTime Modification, __int64 Size, const TRemoteFile * LinkedFile = NULL);
-  void __fastcall LogFileDone(TFileOperationProgressType * OperationProgress, const UnicodeString & DestFileName);
+  void __fastcall LogFileDone(
+    TFileOperationProgressType * OperationProgress, const UnicodeString & DestFileName,
+    TTransferSessionAction & Action);
   void __fastcall LogTotalTransferDetails(
     const UnicodeString TargetDir, const TCopyParamType * CopyParam,
     TFileOperationProgressType * OperationProgress, bool Parallel, TStrings * Files);
@@ -488,6 +486,8 @@ protected:
   void __fastcall UpdateTargetAttrs(
     const UnicodeString & DestFullName, const TRemoteFile * File, const TCopyParamType * CopyParam, int Attrs);
   void __fastcall UpdateTargetTime(HANDLE Handle, TDateTime Modification, TDSTMode DSTMode);
+  TRemoteFile * CheckRights(const UnicodeString & EntryType, const UnicodeString & FileName, bool & WrongRights);
+  bool IsValidFile(TRemoteFile * File);
 
   UnicodeString __fastcall EncryptFileName(const UnicodeString & Path, bool EncryptNewFiles);
   UnicodeString __fastcall DecryptFileName(const UnicodeString & Path, bool DecryptFullPath, bool DontCache);
@@ -610,6 +610,7 @@ public:
   TTerminal * __fastcall CreateSecondarySession(const UnicodeString & Name, TSessionData * SessionData);
   void __fastcall FillSessionDataForCode(TSessionData * Data);
   void __fastcall UpdateSessionCredentials(TSessionData * Data);
+  UnicodeString UploadPublicKey(const UnicodeString & FileName);
 
   const TSessionInfo & __fastcall GetSessionInfo();
   const TFileSystemInfo & __fastcall GetFileSystemInfo(bool Retrieve = false);

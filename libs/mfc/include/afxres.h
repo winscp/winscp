@@ -11,6 +11,7 @@
 #ifndef __AFXRES_H__
 #define __AFXRES_H__
 
+#ifndef WINSCP
 #ifdef RC_INVOKED
 #ifndef _INC_WINDOWS
 #define _INC_WINDOWS
@@ -317,8 +318,11 @@
 #define AFX_IDS_UNTITLED                0xF003
 #define AFX_IDS_SAVEFILECOPY            0xF004
 #define AFX_IDS_PREVIEW_CLOSE           0xF005
+#endif // WINSCP 
 #define AFX_IDS_UNNAMED_FILE            0xF006
+#ifndef WINSCP
 #define AFX_IDS_HIDE                    0xF011
+#endif // WINSCP 
 
 // MFC Standard Exception Error messages
 #define AFX_IDP_NO_ERROR_AVAILABLE      0xF020
@@ -327,6 +331,7 @@
 #define AFX_IDS_MEMORY_EXCEPTION        0xF023
 #define AFX_IDS_USER_EXCEPTION          0xF024
 
+#ifndef  WINSCP 
 // Printing and print preview strings
 #define AFX_IDS_PRINTONPORT             0xF040
 #define AFX_IDS_ONEPAGE                 0xF041
@@ -432,6 +437,7 @@
 #define AFX_IDP_FAILED_MAPI_LOAD        0xF190
 #define AFX_IDP_INVALID_MAPI_DLL        0xF191
 #define AFX_IDP_FAILED_MAPI_SEND        0xF192
+#endif // WINSCP
 
 #define AFX_IDP_FILE_NONE               0xF1A0
 #define AFX_IDP_FILE_GENERIC            0xF1A1
@@ -449,6 +455,7 @@
 #define AFX_IDP_FILE_DISKFULL           0xF1AD
 #define AFX_IDP_FILE_EOF                0xF1AE
 
+#ifndef WINSCP
 #define AFX_IDP_ARCH_NONE               0xF1B0
 #define AFX_IDP_ARCH_GENERIC            0xF1B1
 #define AFX_IDP_ARCH_READONLY           0xF1B2
@@ -769,6 +776,7 @@
 #pragma component(minrebuild, on)
 #endif
 
+#endif // WINSCP
 #endif //__AFXRES_H__
 
 /////////////////////////////////////////////////////////////////////////////

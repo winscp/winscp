@@ -4,11 +4,7 @@
 #include "FileZillaIntf.h"
 #include "FileZillaIntern.h"
 //---------------------------------------------------------------------------
-#ifndef _DEBUG
 #pragma comment(lib, "uafxcw.lib")
-#else
-#pragma comment(lib, "uafxcwd.lib")
-#endif
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -24,10 +20,7 @@ void __fastcall TFileZillaIntf::Finalize()
 //---------------------------------------------------------------------------
 void __fastcall TFileZillaIntf::SetResourceModule(void * ResourceHandle)
 {
-  // set afx resource handles, taken from AfxWinInit (mfc/appinit.cpp)
-  AFX_MODULE_STATE * ModuleState = AfxGetModuleState();
-  ModuleState->m_hCurrentInstanceHandle = (HINSTANCE)ResourceHandle;
-  ModuleState->m_hCurrentResourceHandle = (HINSTANCE)ResourceHandle;
+  afxCurrentResourceHandle = (HINSTANCE)ResourceHandle;
 }
 //---------------------------------------------------------------------------
 __fastcall TFileZillaIntf::TFileZillaIntf() :
@@ -225,9 +218,10 @@ bool __fastcall TFileZillaIntf::ListFile(const wchar_t * FileName, const wchar_t
   return Check(FFileZillaApi->ListFile(FileName, Path), L"listfile");
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFileZillaIntf::FileTransfer(const wchar_t * LocalFile,
-  const wchar_t * RemoteFile, const wchar_t * RemotePath, bool Get, __int64 Size,
-  int Type, void * UserData)
+bool __fastcall TFileZillaIntf::FileTransfer(
+  const wchar_t * LocalFile, const wchar_t * RemoteFile,
+  const wchar_t * RemotePath, bool Get, __int64 Size, int Type, void * UserData,
+  TTransferOutEvent OnTransferOut, TTransferInEvent OnTransferIn)
 {
   t_transferfile Transfer;
 
@@ -240,6 +234,8 @@ bool __fastcall TFileZillaIntf::FileTransfer(const wchar_t * LocalFile,
   // 1 = ascii, 2 = binary
   Transfer.nType = Type;
   Transfer.nUserData = reinterpret_cast<int>(UserData);
+  Transfer.OnTransferOut = OnTransferOut;
+  Transfer.OnTransferIn = OnTransferIn;
 
   return Check(FFileZillaApi->FileTransfer(Transfer), L"filetransfer");
 }
@@ -300,6 +296,7 @@ void __fastcall CopyFileTime(TRemoteFileTime & Dest, const t_directory::t_dirent
   Dest.Second = Source.second;
   Dest.HasTime = Source.hastime;
   Dest.HasDate = Source.hasdate;
+  Dest.HasYear = Source.hasyear;
   Dest.HasSeconds = Source.hasseconds;
   Dest.Utc = Source.utc;
 }

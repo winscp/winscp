@@ -86,7 +86,14 @@ void __fastcall TRichEditWithLinks::Dispatch(void * AMessage)
         if (DebugAlwaysTrue(ENLink.chrg.cpMax < AText.Length()))
         {
           UnicodeString Url = AText.SubString(ENLink.chrg.cpMin + 1, ENLink.chrg.cpMax - ENLink.chrg.cpMin);
-          ShowHelp(Url);
+          if (IsHttpOrHttpsUrl(Url))
+          {
+            OpenBrowser(Url);
+          }
+          else
+          {
+            ShowHelp(Url);
+          }
         }
       }
     }
@@ -461,7 +468,13 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateScript(UnicodeString & Scri
   }
   else if (ScriptFormatCombo->ItemIndex == sfPowerShell)
   {
+    // https://stackoverflow.com/q/74440303/850848
+    UnicodeString PsArgPassingLink(L"https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_preference_variables#psnativecommandargumentpassing");
+
     Result =
+      RtfLink(PsArgPassingLink, RtfScriptComment(FORMAT(L"# %s", (L"PowerShell >=7.3")))) + RtfPara +
+      RtfLink(PsArgPassingLink, L"$PSNativeCommandArgumentPassing") + L" = " + AssemblyString(alPowerShell, L"Legacy") + RtfPara +
+      RtfPara +
       RtfText(L"& \"" + ComExeName + "\" `") + RtfPara +
       RtfText(L"  ") + LogParameter + L" " + IniParameter + RtfText(L" `") + RtfPara +
       RtfText(L"  ") + CommandParameter;

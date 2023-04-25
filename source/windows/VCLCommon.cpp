@@ -1328,6 +1328,21 @@ bool __fastcall SelectDirectory(UnicodeString & Path, const UnicodeString Prompt
   return Result;
 }
 //---------------------------------------------------------------------------
+void SelectDirectoryForEdit(THistoryComboBox * Edit)
+{
+  UnicodeString OriginalDirectory = ExpandEnvironmentVariables(Edit->Text);
+  UnicodeString Directory = OriginalDirectory;
+  if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY), true) &&
+      !SamePaths(OriginalDirectory, Directory))
+  {
+    Edit->Text = Directory;
+    if (Edit->OnChange != NULL)
+    {
+      Edit->OnChange(Edit);
+    }
+  }
+}
+//---------------------------------------------------------------------------
 bool __fastcall ListViewAnyChecked(TListView * ListView, bool Checked)
 {
   bool AnyChecked = false;
@@ -2887,5 +2902,18 @@ void AutoSizeButton(TButton * Button)
       Button->Left = Button->Left - (MinWidth - Button->Width);
     }
     Button->Width = MinWidth;
+  }
+}
+//---------------------------------------------------------------------------
+void GiveTBItemPriority(TTBCustomItem * Item)
+{
+  DebugAssert(Item->GetTopComponent() != NULL);
+  TTBCustomToolbar * ToolbarComponent = dynamic_cast<TTBCustomToolbar *>(Item->GetTopComponent());
+  if ((ToolbarComponent != NULL) &&
+      // Only for top-level buttons on custom command toolbar, not for submenus of the custom commands menu in the main menu
+      (Item->Parent == ToolbarComponent->Items))
+  {
+    TTBItemViewer * Viewer = ToolbarComponent->View->Find(Item);
+    ToolbarComponent->View->GivePriority(Viewer);
   }
 }

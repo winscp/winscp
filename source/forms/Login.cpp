@@ -20,6 +20,7 @@
 #include "WinConfiguration.h"
 #include "ProgParams.h"
 #include "WinApi.h"
+#include "S3FileSystem.h"
 //---------------------------------------------------------------------
 #pragma link "ComboEdit"
 #pragma link "PasswordEdit"
@@ -81,7 +82,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FFixedSessionImages = SessionImageList->Count;
   DebugAssert(SiteColorMaskImageIndex == FFixedSessionImages - 1);
 
-  FBasicGroupBaseHeight = BasicGroup->Height - BasicSshPanel->Height - BasicFtpPanel->Height;
+  FBasicGroupBaseHeight = BasicGroup->Height - BasicSshPanel->Height - BasicFtpPanel->Height - BasicS3Panel->Height;
   FNoteGroupOffset = NoteGroup->Top - (BasicGroup->Top + BasicGroup->Height);
   FUserNameLabel = UserNameLabel->Caption;
   FPasswordLabel = PasswordLabel->Caption;
@@ -136,6 +137,7 @@ void __fastcall TLoginDialog::InitControls()
   WebDavsCombo->ItemIndex = Index;
 
   BasicSshPanel->Top = BasicFtpPanel->Top;
+  BasicS3Panel->Top = BasicFtpPanel->Top;
 
   SitesIncrementalSearchLabel->AutoSize = false;
   SitesIncrementalSearchLabel->Left = SessionTree->Left;
@@ -498,8 +500,21 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * SessionData)
   WinConfiguration->BeginMasterPasswordSession();
   try
   {
-    UserNameEdit->Text = SessionData->UserName;
     PortNumberEdit->AsInteger = SessionData->PortNumber;
+
+    int FtpsIndex = FtpsToIndex(SessionData->Ftps);
+    FtpsCombo->ItemIndex = FtpsIndex;
+    WebDavsCombo->ItemIndex = FtpsIndex;
+    EncryptionView->Text =
+      DebugAlwaysTrue(FtpsCombo->ItemIndex >= WebDavsCombo->ItemIndex) ? FtpsCombo->Text : WebDavsCombo->Text;
+
+    bool AllowScpFallback;
+    TransferProtocolCombo->ItemIndex = FSProtocolToIndex(SessionData->FSProtocol, AllowScpFallback);
+    TransferProtocolView->Text = TransferProtocolCombo->Text;
+
+    // Only after loading TransferProtocolCombo, so that we do not overwrite it with S3 defaults in TransferProtocolComboChange
+    HostNameEdit->Text = SessionData->HostName;
+    UserNameEdit->Text = SessionData->UserName;
 
     bool Editable = IsEditable();
     if (Editable)
@@ -513,18 +528,8 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * SessionData)
           UnicodeString::StringOfChar(L'?', 16) : UnicodeString();
     }
 
-    int FtpsIndex = FtpsToIndex(SessionData->Ftps);
-    FtpsCombo->ItemIndex = FtpsIndex;
-    WebDavsCombo->ItemIndex = FtpsIndex;
-    EncryptionView->Text =
-      DebugAlwaysTrue(FtpsCombo->ItemIndex >= WebDavsCombo->ItemIndex) ? FtpsCombo->Text : WebDavsCombo->Text;
-
-    bool AllowScpFallback;
-    TransferProtocolCombo->ItemIndex = FSProtocolToIndex(SessionData->FSProtocol, AllowScpFallback);
-    TransferProtocolView->Text = TransferProtocolCombo->Text;
-
-    // Only after loading TransferProtocolCombo, so that we do not overwrite it with default S3 hostname
-    HostNameEdit->Text = SessionData->HostName;
+    S3CredentialsEnvCheck->Checked = SessionData->S3CredentialsEnv;
+    UpdateS3Credentials();
 
     NoteGroup->Visible = !Trim(SessionData->Note).IsEmpty();
     NoteMemo->Lines->Text = SessionData->Note;
@@ -567,22 +572,37 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * SessionData)
     SessionData->Assign(FSessionData);
   }
 
-  // Basic page
-  SessionData->UserName = UserNameEdit->Text.Trim();
-  SessionData->PortNumber = PortNumberEdit->AsInteger;
-  // must be loaded after UserName, because HostName may be in format user@host
-  SessionData->HostName = HostNameEdit->Text.Trim();
-  SessionData->Password = PasswordEdit->Text;
-  SessionData->Ftps = GetFtps();
-
   SessionData->FSProtocol =
     // requiring SCP fallback distinction
     GetFSProtocol(true);
 
+  if (SessionData->FSProtocol == fsS3)
+  {
+    SessionData->S3CredentialsEnv = S3CredentialsEnvCheck->Checked;
+  }
+
+  if (SessionData->HasAutoCredentials())
+  {
+    SessionData->UserName = UnicodeString();
+    SessionData->Password = UnicodeString();
+    SessionData->S3SessionToken = UnicodeString();
+  }
+  else
+  {
+    SessionData->UserName = UserNameEdit->Text.Trim();
+    SessionData->Password = PasswordEdit->Text;
+  }
+
+  SessionData->PortNumber = PortNumberEdit->AsInteger;
+  // Must be set after UserName, because HostName may be in format user@host,
+  // Though now we parse the hostname right on this dialog (see HostNameEdit), this is unlikely to ever be triggered.
+  SessionData->HostName = HostNameEdit->Text.Trim();
+  SessionData->Ftps = GetFtps();
+
   TSessionData * EditingSessionData = GetEditingSessionData();
   SessionData->Name =
     (EditingSessionData != NULL) ? EditingSessionData->Name :
-        (FNewSiteKeepName ? SessionData->Name : SessionData->DefaultSessionName);
+      (FNewSiteKeepName ? SessionData->Name : SessionData->DefaultSessionName);
 }
 //---------------------------------------------------------------------
 bool __fastcall TLoginDialog::IsEditable()
@@ -611,12 +631,14 @@ void __fastcall TLoginDialog::UpdateControls()
 
     BasicSshPanel->Visible = SshProtocol;
     BasicFtpPanel->Visible = FtpProtocol && Editable;
-    // we do not support both at the same time
-    DebugAssert(!BasicSshPanel->Visible || !BasicFtpPanel->Visible);
+    BasicS3Panel->Visible = S3Protocol && Editable;
+    // we do not support more than one at the same time
+    DebugAssert((int(BasicSshPanel->Visible) + int(BasicFtpPanel->Visible) + int(BasicS3Panel->Visible)) <= 1);
     BasicGroup->Height =
       FBasicGroupBaseHeight +
       (BasicSshPanel->Visible ? BasicSshPanel->Height : 0) +
-      (BasicFtpPanel->Visible ? BasicFtpPanel->Height : 0);
+      (BasicFtpPanel->Visible ? BasicFtpPanel->Height : 0) +
+      (BasicS3Panel->Visible ? BasicS3Panel->Height : 0);
     int NoteGroupTop = (BasicGroup->Top + BasicGroup->Height) + FNoteGroupOffset;
     NoteGroup->SetBounds(
       NoteGroup->Left, (BasicGroup->Top + BasicGroup->Height) + FNoteGroupOffset,
@@ -630,7 +652,10 @@ void __fastcall TLoginDialog::UpdateControls()
     ReadOnlyControl(PortNumberEdit, !Editable);
     PortNumberEdit->ButtonsVisible = Editable;
     // FSessionData may be NULL temporary even when Editable while switching nodes
-    bool NoAuth = Editable && SshProtocol && (FSessionData != NULL) && FSessionData->SshNoUserAuth;
+    bool NoAuth =
+      Editable && (FSessionData != NULL) &&
+      ((SshProtocol && FSessionData->SshNoUserAuth) ||
+       (S3Protocol && S3CredentialsEnvCheck->Checked));
     ReadOnlyAndEnabledControl(UserNameEdit, !Editable, !NoAuth);
     EnableControl(UserNameLabel, UserNameEdit->Enabled);
     ReadOnlyAndEnabledControl(PasswordEdit, !Editable, !NoAuth);
@@ -1188,7 +1213,7 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   }
   else if (Action == PuttyAction)
   {
-    Action->Enabled = (NewSiteSelected || SiteSelected) && CanLogin();
+    Action->Enabled = (NewSiteSelected || SiteSelected) && CanLogin() && !GetSessionData()->Tunnel;
   }
   else if (Action == SaveSessionAction)
   {
@@ -1222,13 +1247,13 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
   {
     TSessionData * Data = GetSessionData();
     // URL without hostname is pointless
-    Action->Enabled = (Data != NULL) && !Data->HostName.IsEmpty() && !FEditing;
+    Action->Enabled = (Data != NULL) && !Data->HostNameExpanded.IsEmpty() && !FEditing;
   }
   else if (Action == CopyParamRuleAction)
   {
     TSessionData * Data = GetSessionData();
     // without hostname it's pointless
-    Action->Enabled = (Data != NULL) && !Data->HostName.IsEmpty();
+    Action->Enabled = (Data != NULL) && !Data->HostNameExpanded.IsEmpty();
   }
   else if (Action == SearchSiteNameStartOnlyAction)
   {
@@ -2097,15 +2122,60 @@ int __fastcall TLoginDialog::DefaultPort()
   return ::DefaultPort(GetFSProtocol(false), GetFtps());
 }
 //---------------------------------------------------------------------------
+void TLoginDialog::UpdateS3Credentials()
+{
+  if (S3CredentialsEnvCheck->Checked)
+  {
+    UserNameEdit->Text = S3EnvUserName();
+    PasswordEdit->Text = S3EnvPassword();
+    // Is not set when viewing stored session.
+    // We do this, so that when the checkbox is checked and unchecked, the token is preserved, the way username and password are.
+    if (FSessionData != NULL)
+    {
+      FSessionData->S3SessionToken = S3EnvSessionToken();
+    }
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
 {
   if (!NoUpdate)
   {
     if (GetFSProtocol(false) == fsS3)
     {
+      // Note that this happens even when loading the session
+      // But the values will get overwritten.
       FtpsCombo->ItemIndex = FtpsToIndex(ftpsImplicit);
       HostNameEdit->Text = S3HostName;
     }
+    else
+    {
+      try
+      {
+        if (HostNameEdit->Text == S3HostName)
+        {
+          HostNameEdit->Clear();
+        }
+        if (UserNameEdit->Text == S3EnvUserName())
+        {
+          UserNameEdit->Clear();
+        }
+        if (PasswordEdit->Text == S3EnvPassword())
+        {
+          PasswordEdit->Clear();
+        }
+        if ((FSessionData != NULL) && (FSessionData->S3SessionToken == S3EnvSessionToken()))
+        {
+          FSessionData->S3SessionToken = UnicodeString();
+        }
+      }
+      catch (...)
+      {
+        // noop
+      }
+    }
+
+    S3CredentialsEnvCheck->Checked = false;
   }
 
   int ADefaultPort = DefaultPort();
@@ -2571,7 +2641,7 @@ void __fastcall TLoginDialog::ExportActionExecute(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::ImportActionExecute(TObject * /*Sender*/)
 {
-  if (MessageDialog(MainInstructions(LoadStr(IMPORT_CONFIGURATION)),
+  if (MessageDialog(LoadStr(IMPORT_CONFIGURATION2),
         qtWarning, qaOK | qaCancel, HELP_IMPORT_CONFIGURATION) == qaOK)
   {
     std::unique_ptr<TOpenDialog> OpenDialog(new TOpenDialog(Application));
@@ -2582,15 +2652,12 @@ void __fastcall TLoginDialog::ImportActionExecute(TObject * /*Sender*/)
 
     if (OpenDialog->Execute())
     {
-      // before the session list gets destroyed
+      // Before the session list gets destroyed
       SessionTree->Items->Clear();
       Configuration->Import(OpenDialog->FileName);
-      ReloadSessions(L"");
-
-      if (SessionTree->Items->Count > 0)
-      {
-        SessionTree->Items->GetFirstNode()->MakeVisible();
-      }
+      // Similar to TPreferencesDialog::CustomIniFileStorageChanged
+      ExecuteShellChecked(Application->ExeName, EmptyStr);
+      TerminateApplication();
     }
   }
 }
@@ -3010,9 +3077,8 @@ void __fastcall TLoginDialog::ParseUrl(const UnicodeString & Url)
 
   // We do not want to pass in StoredSessions as we do not want the URL be
   // parsed as pointing to a stored site.
-  // It also prevents resetting to defaults (do we want this?)
   bool DefaultsOnly; // unused
-  SessionData->ParseUrl(Url, NULL, NULL, DefaultsOnly, NULL, NULL, NULL, 0);
+  SessionData->ParseUrl(Url, NULL, NULL, DefaultsOnly, NULL, NULL, NULL, pufPreferProtocol);
 
   LoadSession(SessionData.get());
 }
@@ -3133,5 +3199,11 @@ void __fastcall TLoginDialog::ChangeScale(int M, int D)
 void __fastcall TLoginDialog::PanelMouseDown(TObject *, TMouseButton, TShiftState, int, int)
 {
   CountClicksForWindowPrint(this);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::S3CredentialsEnvCheckClick(TObject *)
+{
+  UpdateS3Credentials();
+  UpdateControls();
 }
 //---------------------------------------------------------------------------

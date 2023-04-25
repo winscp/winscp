@@ -207,6 +207,7 @@ struct TUpdatesData
 };
 //---------------------------------------------------------------------------
 enum TConnectionType { ctDirect, ctAuto, ctProxy };
+extern TDateTime DefaultUpdatesPeriod;
 //---------------------------------------------------------------------------
 struct TUpdatesConfiguration
 {
@@ -347,6 +348,7 @@ enum TPathInCaption { picShort, picFull, picNone };
 enum TSessionTabNameFormat { stnfNone, stnfShortPath, stnfShortPathTrunc };
 // constants must be compatible with legacy CopyOnDoubleClick
 enum TDoubleClickAction { dcaOpen = 0, dcaCopy = 1, dcaEdit = 2 };
+enum TStoreTransition { stInit, stStandard, stStoreFresh, stStoreMigrated, stStoreAcknowledged };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TMasterPasswordPromptEvent)();
 //---------------------------------------------------------------------------
@@ -451,6 +453,7 @@ private:
   bool FShowLoginWhenNoSession;
   bool FKeepOpenWhenNoSession;
   bool FLocalIconsByExt;
+  bool FFlashTaskbar;
   int FMaxSessions;
   TLocaleFlagOverride FBidiModeOverride;
   TLocaleFlagOverride FFlipChildrenOverride;
@@ -463,6 +466,8 @@ private:
   bool FTimeoutShellIconRetrieval;
   bool FUseIconUpdateThread;
   bool FAllowWindowPrint;
+  TStoreTransition FStoreTransition;
+  UnicodeString FFirstRun;
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
   bool FMasterPasswordSessionAsked;
@@ -556,6 +561,7 @@ private:
   void __fastcall SetShowLoginWhenNoSession(bool value);
   void __fastcall SetKeepOpenWhenNoSession(bool value);
   void __fastcall SetLocalIconsByExt(bool value);
+  void __fastcall SetFlashTaskbar(bool value);
   void __fastcall SetBidiModeOverride(TLocaleFlagOverride value);
   void __fastcall SetFlipChildrenOverride(TLocaleFlagOverride value);
   void __fastcall SetShowTips(bool value);
@@ -565,6 +571,8 @@ private:
   void __fastcall SetRunsSinceLastTip(int value);
   bool __fastcall GetHonorDrivePolicy();
   void __fastcall SetHonorDrivePolicy(bool value);
+  bool __fastcall GetUseABDrives();
+  void __fastcall SetUseABDrives(bool value);
   bool __fastcall GetIsBeta();
   TStrings * __fastcall GetCustomCommandOptions();
   void __fastcall SetCustomCommandOptions(TStrings * value);
@@ -574,6 +582,8 @@ private:
   void __fastcall SetTimeoutShellIconRetrieval(bool value);
   void __fastcall SetUseIconUpdateThread(bool value);
   void __fastcall SetAllowWindowPrint(bool value);
+  void SetStoreTransition(TStoreTransition value);
+  void SetFirstRun(const UnicodeString & value);
   int __fastcall GetLocaleCompletenessTreshold();
 
   bool __fastcall GetDDExtInstalled();
@@ -591,6 +601,7 @@ private:
 
 protected:
   virtual TStorage __fastcall GetStorage();
+  bool DetectStorage(bool SafeOnly);
   virtual void __fastcall SaveData(THierarchicalStorage * Storage, bool All);
   virtual void __fastcall LoadData(THierarchicalStorage * Storage);
   virtual void __fastcall LoadFrom(THierarchicalStorage * Storage);
@@ -625,7 +636,7 @@ public:
   virtual void __fastcall Default();
   void __fastcall ClearTemporaryLoginData();
   virtual THierarchicalStorage * CreateScpStorage(bool & SessionList);
-  UnicodeString __fastcall TemporaryDir(bool Mask = false);
+  virtual UnicodeString TemporaryDir(bool Mask = false);
   TStrings * __fastcall FindTemporaryFolders();
   bool __fastcall AnyTemporaryFolders();
   void __fastcall CleanupTemporaryFolders();
@@ -658,6 +669,7 @@ public:
   bool __fastcall IsDDExtRunning();
   bool __fastcall IsDDExtBroken();
   bool __fastcall UseDarkTheme();
+  bool TrySetSafeStorage();
 
   static void __fastcall RestoreFont(const TFontConfiguration & Configuration, TFont * Font);
   static void __fastcall StoreFont(TFont * Font, TFontConfiguration & Configuration);
@@ -749,6 +761,7 @@ public:
   __property bool ShowLoginWhenNoSession = { read = FShowLoginWhenNoSession, write = SetShowLoginWhenNoSession };
   __property bool KeepOpenWhenNoSession = { read = FKeepOpenWhenNoSession, write = SetKeepOpenWhenNoSession };
   __property bool LocalIconsByExt = { read = FLocalIconsByExt, write = SetLocalIconsByExt };
+  __property bool FlashTaskbar = { read = FFlashTaskbar, write = SetFlashTaskbar };
   __property int MaxSessions = { read = FMaxSessions, write = FMaxSessions };
   __property TLocaleFlagOverride BidiModeOverride = { read = FBidiModeOverride, write = SetBidiModeOverride };
   __property TLocaleFlagOverride FlipChildrenOverride = { read = FFlipChildrenOverride, write = SetFlipChildrenOverride };
@@ -758,6 +771,7 @@ public:
   __property UnicodeString FileColors = { read = FFileColors, write = SetFileColors };
   __property int RunsSinceLastTip = { read = FRunsSinceLastTip, write = SetRunsSinceLastTip };
   __property bool HonorDrivePolicy = { read = GetHonorDrivePolicy, write = SetHonorDrivePolicy };
+  __property bool UseABDrives = { read = GetUseABDrives, write = SetUseABDrives };
   __property TMasterPasswordPromptEvent OnMasterPasswordPrompt = { read = FOnMasterPasswordPrompt, write = FOnMasterPasswordPrompt };
   __property TStrings * CustomCommandOptions = { read = GetCustomCommandOptions, write = SetCustomCommandOptions };
   __property bool LockedInterface = { read = FLockedInterface, write = SetLockedInterface };
@@ -765,6 +779,8 @@ public:
   __property bool TimeoutShellIconRetrieval = { read = FTimeoutShellIconRetrieval, write = SetTimeoutShellIconRetrieval };
   __property bool UseIconUpdateThread = { read = FUseIconUpdateThread, write = SetUseIconUpdateThread };
   __property bool AllowWindowPrint = { read = FAllowWindowPrint, write = SetAllowWindowPrint };
+  __property TStoreTransition StoreTransition = { read = FStoreTransition, write = SetStoreTransition };
+  __property UnicodeString FirstRun = { read = FFirstRun, write = SetFirstRun };
   __property LCID DefaultLocale = { read = FDefaultLocale };
   __property int LocaleCompletenessTreshold = { read = GetLocaleCompletenessTreshold };
 };

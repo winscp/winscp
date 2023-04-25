@@ -41,7 +41,7 @@ const
   dsDisplayName = 4;  {Fetch drives displayname}
   dsAll = dsImageIndex or dsSize or dsDisplayName;
   FirstDrive          = 'A';
-  FirstFixedDrive     = 'C';
+  SystemDrive         = 'C';
   LastDrive           = 'Z';
   FirstSpecialFolder  = CSIDL_DESKTOP;
   LastSpecialFolder   = CSIDL_PRINTHOOD;
@@ -78,11 +78,13 @@ type
     FDesktop: IShellFolder;
     FFolders: array[TSpecialFolder] of TSpecialFolderRec;
     FHonorDrivePolicy: Boolean;
+    FUseABDrives: Boolean;
     FLoaded: Boolean;
     function GetFolder(Folder: TSpecialFolder): PSpecialFolderRec;
     procedure ReadDriveBasicStatus(Drive: string);
     procedure ResetDrive(Drive: string);
     procedure SetHonorDrivePolicy(Value: Boolean);
+    function GetFirstFixedDrive: Char;
     procedure NeedData;
     procedure Load;
     function AddDrive(Drive: string): TDriveInfoRec;
@@ -102,6 +104,9 @@ type
     function GetPrettyName(Drive: string): string;
     function ReadDriveStatus(Drive: string; Flags: Integer): Boolean;
     property HonorDrivePolicy: Boolean read FHonorDrivePolicy write SetHonorDrivePolicy;
+    property FirstFixedDrive: Char read GetFirstFixedDrive;
+    property UseABDrives: Boolean read FUseABDrives write FUseABDrives;
+
     constructor Create;
     destructor Destroy; override;
   end;
@@ -122,13 +127,64 @@ resourceString
 implementation
 
 uses
-  Math, PIDL, OperationWithTimeout, PasTools;
+  Math, PIDL, OperationWithTimeout, PasTools, CompThread;
+
+var
+  ThreadLock: TRTLCriticalSection;
+  ReadyDrives: string;
+
+type
+  TDriveInfoThread = class(TCompThread)
+  public
+    constructor Create(Drives: string);
+  protected
+    procedure Execute; override;
+  private
+    FDrives: string;
+  end;
+
+constructor TDriveInfoThread.Create(Drives: string);
+begin
+  inherited Create(True);
+  FDrives := Drives;
+  FreeOnTerminate := True;
+  Resume;
+end;
+
+procedure TDriveInfoThread.Execute;
+var
+  I: Integer;
+  FreeSpace, Size: Int64;
+  DriveRoot: string;
+  Drive: Char;
+begin
+  if Length(FDrives) = 1 then
+  begin
+    Drive := FDrives[1];
+    DriveRoot := DriveInfo.GetDriveRoot(Drive);
+    if GetDiskFreeSpaceEx(PChar(DriveRoot), FreeSpace, Size, nil) then
+    begin
+      EnterCriticalSection(ThreadLock);
+      ReadyDrives := ReadyDrives + Drive;
+      LeaveCriticalSection(ThreadLock);
+    end;
+  end
+    else
+  begin
+    for I := 1 to Length(FDrives) do
+    begin
+      TDriveInfoThread.Create(FDrives[I]);
+      Sleep(100);
+    end;
+  end;
+end;
 
 constructor TDriveInfo.Create;
 begin
   inherited;
 
   FHonorDrivePolicy := True;
+  FUseABDrives := True;
   FLoaded := False;
   FData := TObjectDictionary<string, TDriveInfoRec>.Create([doOwnsValues]);
 end; {TDriveInfo.Create}
@@ -140,11 +196,27 @@ begin
 end; {TDriveInfo.Destroy}
 
 procedure TDriveInfo.NeedData;
+var
+  I: Integer;
+  Drive: Char;
 begin
   if not FLoaded then
   begin
     Load;
     FLoaded := True;
+  end;
+
+  EnterCriticalSection(ThreadLock);
+  try
+    for I := 1 to Length(ReadyDrives) do
+    begin
+      Drive := ReadyDrives[I];
+      Assert(FData.ContainsKey(Drive));
+      FData[Drive].DriveReady := True;
+    end;
+    ReadyDrives := '';
+  finally
+    LeaveCriticalSection(ThreadLock);
   end;
 end;
 
@@ -152,20 +224,21 @@ function TDriveInfo.AnyValidPath: string;
 var
   Drive: TRealDrive;
 begin
-  for Drive := FirstFixedDrive to LastDrive do
+  // Fallback to A:/B: if no other drive is found?
+  for Drive := SystemDrive to LastDrive do
     if Get(Drive).Valid and
        (Get(Drive).DriveType = DRIVE_FIXED) and
-       DirectoryExists(ApiPath(DriveInfo.GetDriveRoot(Drive))) then
+       DirectoryExists(ApiPath(GetDriveRoot(Drive))) then
     begin
-      Result := DriveInfo.GetDriveRoot(Drive);
+      Result := GetDriveRoot(Drive);
       Exit;
     end;
-  for Drive := FirstFixedDrive to LastDrive do
+  for Drive := SystemDrive to LastDrive do
     if Get(Drive).Valid and
        (Get(Drive).DriveType = DRIVE_REMOTE) and
-       DirectoryExists(ApiPath(DriveInfo.GetDriveRoot(Drive))) then
+       DirectoryExists(ApiPath(GetDriveRoot(Drive))) then
     begin
-      Result := DriveInfo.GetDriveRoot(Drive);
+      Result := GetDriveRoot(Drive);
       Exit;
     end;
   raise Exception.Create(SNoValidPath);
@@ -267,12 +340,18 @@ begin
   end;
 end;
 
+function TDriveInfo.GetFirstFixedDrive: Char;
+begin
+  if UseABDrives then Result := FirstDrive
+    else Result := SystemDrive;
+end;
+
 procedure TDriveInfo.ReadDriveBasicStatus(Drive: string);
 begin
   Assert(FData.ContainsKey(Drive));
   with FData[Drive] do
   begin
-    DriveType := Windows.GetDriveType(PChar(DriveInfo.GetDriveRoot(Drive)));
+    DriveType := Windows.GetDriveType(PChar(GetDriveRoot(Drive)));
     Valid :=
       ((not IsRealDrive(Drive)) or (not FHonorDrivePolicy) or (not Bool((1 shl (Ord(Drive[1]) - 65)) and FNoDrives))) and
       (DriveType in [DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_CDROM, DRIVE_RAMDISK, DRIVE_REMOTE]);
@@ -297,6 +376,7 @@ var
   Drive: TRealDrive;
   Reg: TRegistry;
   Folder: TSpecialFolder;
+  Drives: string;
 begin
   FNoDrives := 0;
   Reg := TRegistry.Create;
@@ -313,10 +393,15 @@ begin
 
   FDesktop := nil;
 
+  Drives := EmptyStr;
   for Drive := FirstDrive to LastDrive do
   begin
-    AddDrive(Drive);
+    if AddDrive(Drive).Valid then
+      Drives := Drives + Drive;
   end;
+
+  if Length(Drives) > 0 then
+    TDriveInfoThread.Create(Drives);
 
   for Folder := Low(FFolders) to High(FFolders) do
     FFolders[Folder].Valid := False;
@@ -404,10 +489,13 @@ var
   DriveInfoRec: TDriveInfoRec;
   S: string;
 begin
+  // Among other, this makes sure the pending drive-ready status from the background thread are collected,
+  // before we overwrite it with fresh status here.
+  NeedData;
   if not Assigned(FDesktop) then
     SHGetDesktopFolder(FDesktop);
 
-  DriveRoot := DriveInfo.GetDriveRoot(Drive);
+  DriveRoot := GetDriveRoot(Drive);
 
   // When this method is called, the entry always exists already
   Assert(FData.ContainsKey(Drive));
@@ -464,7 +552,7 @@ begin
       end;
 
       {DisplayName:}
-      if (Flags and dsDisplayName <> 0) then
+      if (Flags and dsDisplayName) <> 0 then
       begin
         {Fetch drives displayname:}
         SimpleName := GetSimpleName(Drive);
@@ -501,7 +589,7 @@ begin
       end;
 
       {ImageIndex:}
-      if ((Flags and dsImageIndex) <> 0) and (ImageIndex < 5) then
+      if (Flags and dsImageIndex) <> 0 then
       begin
         if Assigned(PIDL) then
         begin
@@ -658,6 +746,7 @@ begin
 end;
 
 initialization
+  InitializeCriticalSection(ThreadLock);
   if not Assigned(DriveInfo) then
     DriveInfo := TDriveInfo.Create;
 
@@ -667,4 +756,5 @@ finalization
     DriveInfo.Free;
     DriveInfo := nil;
   end;
+  DeleteCriticalSection(ThreadLock);
 end.

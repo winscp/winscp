@@ -28,7 +28,6 @@ BEGIN
   FUNCTIONS_DOCUMENTATION, "A comprehensive WinSCP documentation and an active user forum are freely accessible at WinSCP site"
 
   STORE_BUYING, "By buying official WinSCP from Microsoft Store you support WinSCP development. Thank you!"
-  STORE_TITLE, "WinSCP - SFTP, FTP, WebDAV, SCP and S3 client"
 
   KEYWORD_SFTP_CLIENT, "sftp client"
   KEYWORD_FTP_CLIENT, "ftp client"
@@ -76,4 +75,8 @@ BEGIN
   NEW_5_18_STREAMING, "A streaming support in scripting and .NET assembly"
   NEW_5_18_REMOTE_SYNC, "An extension for synchronizing two remote servers"
   NEW_5_18_TLS, "Enabled TLS 1.3 and added support for SHA-256 TLS/SSL fingerprints"
+
+  NEW_5_20_S3_ACL, "Support for ACL for S3 protocol"
+  NEW_5_20_SHA2, "Support for rsa-sha2-256 and rsa-sha2-512 SSH public key algorithms"
+  NEW_5_20_OPENSSH_IMPORT, "It is possible to import sessions from OpenSSH config file"
 END

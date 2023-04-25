@@ -33,6 +33,7 @@
 #include <OperationWithTimeout.hpp>
 #include <Soap.HTTPUtil.hpp>
 #include <Web.HTTPApp.hpp>
+#include <System.IOUtils.hpp>
 //---------------------------------------------------------------------------
 #define KEY _T("SYSTEM\\CurrentControlSet\\Control\\") \
             _T("Session Manager\\Environment")
@@ -44,7 +45,9 @@
 UnicodeString LastPathError;
 //---------------------------------------------------------------------------
 UnicodeString NetVersionStr;
+UnicodeString NetCoreVersionStr;
 UnicodeString PowerShellVersionStr;
+UnicodeString PowerShellCoreVersionStr;
 //---------------------------------------------------------------------------
 // Display the error "err_msg".
 void err_out(LPCTSTR err_msg)
@@ -492,7 +495,7 @@ static void __fastcall RegisterProtocolForDefaultPrograms(HKEY RootKey, const Un
   // application is registered for the protocol (i.e. RegisterProtocol would be enough)
   RegisterAsUrlHandler(RootKey, Protocol);
 
-  // see https://docs.microsoft.com/en-us/windows/win32/shell/default-programs#registering-an-application-for-use-with-default-programs
+  // see https://learn.microsoft.com/en-us/windows/win32/shell/default-programs#registering-an-application-for-use-with-default-programs
   std::unique_ptr<TRegistry> Registry(CreateRegistry(RootKey));
 
   // create capabilities record
@@ -679,7 +682,7 @@ void __fastcall LaunchAdvancedAssociationUI()
 
   RegisterForDefaultPrograms();
   NotifyChangedAssociations();
-  // sleep recommended by https://docs.microsoft.com/en-us/windows/win32/shell/default-programs#becoming-the-default-browser
+  // sleep recommended by https://learn.microsoft.com/en-us/windows/win32/shell/default-programs#becoming-the-default-browser
   Sleep(1000);
 
   if (IsWin10())
@@ -898,14 +901,23 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
       URL += L"&localever=" + LocaleVersion;
       URL += L"&localecompl=" + LoadStr(TRANSLATION_COMPLETENESS);
     }
-    // Even if donor email is inherited from normal installation,
-    // do not use it as this all is merely to report usage statistics, not to check for updates, in UWP.
-    if (!Updates.AuthenticationEmail.IsEmpty() && !IsUWP())
+    URL += L"&firstrun=" + EncodeUrlString(WinConfiguration->FirstRun);
+    if (!IsUWP())
     {
-      RawByteString AuthenticationEmailBuf = RawByteString(UTF8String(Updates.AuthenticationEmail.LowerCase()));
-      URL += L"&authentication=" + Sha256(AuthenticationEmailBuf.c_str(), AuthenticationEmailBuf.Length()).LowerCase();
+      // Even if donor email is inherited from normal installation,
+      // do not use it as this all is merely to report usage statistics, not to check for updates, in UWP.
+      if (!Updates.AuthenticationEmail.IsEmpty())
+      {
+        RawByteString AuthenticationEmailBuf = RawByteString(UTF8String(Updates.AuthenticationEmail.LowerCase()));
+        URL += L"&authentication=" + Sha256(AuthenticationEmailBuf.c_str(), AuthenticationEmailBuf.Length()).LowerCase();
+      }
+    }
+    else
+    {
+      URL += L"&package=" + EncodeUrlString(GetPackageName());
     }
 
+    AppLogFmt(L"Updates check URL: %s", (URL));
     CheckForUpdatesHTTP->URL = URL;
     // sanity check
     CheckForUpdatesHTTP->ResponseLimit = 102400;
@@ -931,6 +943,7 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
       throw;
     }
     Response = CheckForUpdatesHTTP->Response;
+    AppLogFmt(L"Updates check response: %s", (Response));
   }
   __finally
   {
@@ -1111,15 +1124,31 @@ static void __fastcall DoQueryUpdates(bool CollectUsage)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall FormatUpdatesMessage(UnicodeString Message)
+void FormatUpdatesMessage(
+  UnicodeString & UpdatesMessage, const UnicodeString & AMessage, const TUpdatesConfiguration & Updates)
 {
+  UnicodeString Message = AMessage;
   Message = ReplaceStr(Message, "%UPDATE_UNAUTHORIZED%", LoadStr(UPDATE_UNAUTHORIZED));
   Message = ReplaceStr(Message, "%UPDATE_EXPIRED%", LoadStr(UPDATE_EXPIRED));
   Message = ReplaceStr(Message, "%UPDATE_TOO_MANY%", LoadStr(UPDATE_TOO_MANY));
-  Message = ReplaceStr(Message, "%UPDATE_MISSING_ADDRESS%", LoadStr(UPDATE_MISSING_ADDRESS2));
+  UnicodeString Buf = LoadStr(UPDATE_MISSING_ADDRESS2);
+  if (!Updates.AuthenticationEmail.IsEmpty())
+  {
+    Buf += L"\n\n" + FMTLOAD(UPDATE_MISSING_ADDRESS3, (Updates.AuthenticationEmail, L"WinSCP donation receipt"));
+  }
+  Message = ReplaceStr(Message, "%UPDATE_MISSING_ADDRESS%", Buf);
   Message = ReplaceStr(Message, "%UPDATE_TOO_LOW%", LoadStr(UPDATE_TOO_LOW));
   Message = ReplaceStr(Message, L"|", L"\n");
-  return Message;
+
+  if (!Message.IsEmpty())
+  {
+    UpdatesMessage = TrimRight(UpdatesMessage);
+    if (!UpdatesMessage.IsEmpty())
+    {
+      UpdatesMessage += L"\n \n";
+    }
+    UpdatesMessage += Message;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New,
@@ -1139,19 +1168,26 @@ void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New,
     }
     else
     {
-      New = (Updates.Results.Version > 0);
-      if (New)
+      if (IsUWP())
       {
-        UnicodeString Version = VersionStrFromCompoundVersion(Updates.Results.Version);
-        if (!Updates.Results.Release.IsEmpty())
-        {
-          Version = FORMAT(L"%s %s", (Version, Updates.Results.Release));
-        }
-        Message = FMTLOAD(NEW_VERSION4, (Version));
+        New = false;
       }
       else
       {
-        Message = LoadStr(NO_NEW_VERSION);
+        New = (Updates.Results.Version > 0);
+        if (New)
+        {
+          UnicodeString Version = VersionStrFromCompoundVersion(Updates.Results.Version);
+          if (!Updates.Results.Release.IsEmpty())
+          {
+            Version = FORMAT(L"%s %s", (Version, Updates.Results.Release));
+          }
+          Message = FMTLOAD(NEW_VERSION4, (Version));
+        }
+        else
+        {
+          Message = LoadStr(NO_NEW_VERSION);
+        }
       }
     }
 
@@ -1162,14 +1198,12 @@ void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New,
 
     if (!Updates.Results.Message.IsEmpty())
     {
-      Message +=
-        FMTLOAD(UPDATE_MESSAGE, (FormatUpdatesMessage(Updates.Results.Message)));
+      FormatUpdatesMessage(Message, Updates.Results.Message, Updates);
     }
 
-    if (!Updates.Results.AuthenticationError.IsEmpty())
+    if (!Updates.Results.AuthenticationError.IsEmpty() && !IsUWP())
     {
-      Message +=
-        FMTLOAD(UPDATE_MESSAGE, (FormatUpdatesMessage(Updates.Results.AuthenticationError)));
+      FormatUpdatesMessage(Message, Updates.Results.AuthenticationError, Updates);
     }
     Type = (Updates.Results.Critical ? qtWarning : qtInformation);
   }
@@ -2174,7 +2208,7 @@ static void ReadNetVersion(TRegistryStorage * Registry)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall GetNetVersionStr()
+UnicodeString GetNetVersionStr()
 {
   if (NetVersionStr.IsEmpty())
   {
@@ -2212,11 +2246,70 @@ UnicodeString __fastcall GetNetVersionStr()
   return NetVersionStr;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall GetPowerShellVersionStr()
+UnicodeString GetNetCoreVersionStr()
+{
+  if (NetCoreVersionStr.IsEmpty())
+  {
+    NetCoreVersionStr = L"0"; // not to retry on failure
+
+    UnicodeString ProgramsFolder = DefaultStr(GetEnvironmentVariable(L"ProgramW6432"), GetEnvironmentVariable(L"ProgramFiles"));
+    if (ProgramsFolder.IsEmpty())
+    {
+      ::SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
+    }
+    UnicodeString RuntimeFolder = L"shared\\Microsoft.NETCore.App";
+    UnicodeString DotNetPath = TPath::Combine(TPath::Combine(ProgramsFolder, L"dotnet"), RuntimeFolder);
+    if (!DirectoryExistsFix(DotNetPath))
+    {
+      UnicodeString DotNetExe = L"dotnet.exe";
+      if (FindFile(DotNetExe))
+      {
+        DotNetPath = TPath::Combine(ExtractFilePath(DotNetExe), RuntimeFolder);
+      }
+    }
+    if (DirectoryExistsFix(DotNetPath))
+    {
+      TSearchRecChecked SearchRec;
+      DotNetPath = TPath::Combine(DotNetPath, L"*.*");
+      if (FindFirstUnchecked(ApiPath(DotNetPath), faDirectory, SearchRec) == 0)
+      {
+        do
+        {
+          if (SearchRec.IsRealFile())
+          {
+            UnicodeString Name = SearchRec.Name;
+            // 1.0.0-preview2-003131
+            UnicodeString VersionStr = CutToChar(Name, L'-', true);
+            if (!VersionStr.IsEmpty() && IsDigit(VersionStr[1]) && (VersionStr.Pos(L".") >= 2))
+            {
+              for (int I = 1; I <= VersionStr.Length(); I++)
+              {
+                if (!IsDigit(VersionStr[I]) && (VersionStr[I] != L'.'))
+                {
+                  VersionStr = EmptyStr;
+                }
+              }
+
+              if (!VersionStr.IsEmpty() && (CompareVersion(VersionStr, NetCoreVersionStr) > 0))
+              {
+                NetCoreVersionStr = VersionStr;
+              }
+            }
+          }
+        }
+        while (FindNextUnchecked(SearchRec) == 0);
+      }
+    }
+  }
+
+  return NetCoreVersionStr;
+}
+//---------------------------------------------------------------------------
+UnicodeString GetPowerShellVersionStr()
 {
   if (PowerShellVersionStr.IsEmpty())
   {
-    PowerShellVersionStr = 0; // not to retry on failure
+    PowerShellVersionStr = L"0"; // not to retry on failure
 
     std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(L"SOFTWARE\\Microsoft\\PowerShell", HKEY_LOCAL_MACHINE));
     if (Registry->OpenRootKey(false))
@@ -2241,6 +2334,41 @@ UnicodeString __fastcall GetPowerShellVersionStr()
   }
 
   return PowerShellVersionStr;
+}
+//---------------------------------------------------------------------------
+UnicodeString GetPowerShellCoreVersionStr()
+{
+  if (PowerShellCoreVersionStr.IsEmpty())
+  {
+    PowerShellCoreVersionStr = L"0"; // not to retry on failure
+
+    // TRegistryStorage does not support KEY_WOW64_64KEY
+    unsigned int Access = KEY_READ | FLAGMASK(IsWin64(), KEY_WOW64_64KEY);
+    std::unique_ptr<TRegistry> Registry(new TRegistry(Access));
+    Registry->RootKey = HKEY_LOCAL_MACHINE;
+    UnicodeString RootKey(L"SOFTWARE\\Microsoft\\PowerShellCore\\InstalledVersions");
+    if (Registry->OpenKeyReadOnly(RootKey))
+    {
+      std::unique_ptr<TStringList> Keys(new TStringList());
+      Registry->GetKeyNames(Keys.get());
+      Registry->CloseKey();
+      for (int Index = 0; Index < Keys->Count; Index++)
+      {
+        UnicodeString Key = RootKey + L"\\" + Keys->Strings[Index];
+        if (Registry->OpenKeyReadOnly(Key))
+        {
+          UnicodeString VersionStr = Registry->ReadString(L"SemanticVersion");
+          if (!VersionStr.IsEmpty() && (CompareVersion(VersionStr, PowerShellCoreVersionStr) > 0))
+          {
+            PowerShellCoreVersionStr = VersionStr;
+          }
+          Registry->CloseKey();
+        }
+      }
+    }
+  }
+
+  return PowerShellCoreVersionStr;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 /* 
    HTTP utility functions
-   Copyright (C) 1999-2006, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1999-2021, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -106,11 +106,11 @@ void ne_debug_init(FILE *stream, int mask);
 
 /* The current debug mask and stream set by the last call to
  * ne_debug_init. */
-extern int ne_debug_mask;
+NE_VAR int ne_debug_mask;
+NE_VAR FILE *ne_debug_stream;
 
 #ifndef WINSCP
 
-extern FILE *ne_debug_stream;
 
 /* Produce debug output if any of channels 'ch' is enabled for
  * debugging. */

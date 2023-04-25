@@ -523,6 +523,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_select'
       Hint = 'Select|Select files by mask'
       ImageIndex = 19
+      ShortCut = 107
     end
     object UnselectAction: TAction
       Tag = 15
@@ -531,6 +532,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_select'
       Hint = 'Unselect|Unselect files by mask'
       ImageIndex = 20
+      ShortCut = 109
     end
     object SelectAllAction: TAction
       Tag = 15
@@ -539,6 +541,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_file_panel#selecting_files'
       Hint = 'Select all files'
       ImageIndex = 21
+      ShortCut = 16449
     end
     object InvertSelectionAction: TAction
       Tag = 15
@@ -547,6 +550,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_file_panel#selecting_files'
       Hint = 'Invert selection'
       ImageIndex = 22
+      ShortCut = 106
     end
     object ExplorerSelectionBandAction: TAction
       Tag = 7
@@ -562,6 +566,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_file_panel#selecting_files'
       Hint = 'Clear selection'
       ImageIndex = 23
+      ShortCut = 24652
     end
     object ExplorerSessionBandAction: TAction
       Tag = 7
@@ -631,7 +636,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Session'
       Caption = '&Close Session'
-      HelpKeyword = 'task_connections#closing'
+      HelpKeyword = 'ui_tabs#working'
       Hint = 'Terminate the current session and close the tab'
       ImageIndex = 26
       SecondaryShortCuts.Strings = (
@@ -651,6 +656,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Reconnect Session'
       HelpKeyword = 'task_connections'
       Hint = 'Reconnect the current disconnected session'
+      ShortCut = 24658
     end
     object SavedSessionsAction2: TAction
       Tag = 15
@@ -1385,12 +1391,13 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 
         'Exit application|Terminate opened session(s) and close applicati' +
         'on'
+      ImageIndex = 61
     end
     object OpenedSessionsAction: TAction
       Tag = 15
       Category = 'Session'
       Caption = '&Opened Sessions'
-      HelpKeyword = 'task_connections#switch'
+      HelpKeyword = 'ui_tabs#switch'
       Hint = 'Select session|Select opened session to activate'
       ImageIndex = 62
     end
@@ -1398,7 +1405,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Session'
       Caption = 'Du&plicate Session'
-      HelpKeyword = 'task_connections'
+      HelpKeyword = 'ui_tabs'
       Hint = 
         'Duplicate session|Opens the same session again (hold down Shift ' +
         'to open session in new window)'
@@ -1868,6 +1875,7 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_file_panel#selecting_files'
       Hint = 'Restore previous selection'
       ImageIndex = 86
+      ShortCut = 24659
     end
     object LocalSelectAction: TAction
       Tag = 12
@@ -2269,7 +2277,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Session'
       Caption = '&Rename Session'
-      HelpKeyword = 'task_connections#renaming'
+      HelpKeyword = 'ui_tabs#renaming'
       Hint = 'Rename session|Changes name of the current session'
     end
     object CurrentCopyToClipboardAction: TAction

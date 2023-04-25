@@ -22,6 +22,8 @@ static char THIS_FILE[] = __FILE__;
 
 #define new DEBUG_NEW
 
+HINSTANCE afxCurrentResourceHandle;
+
 /////////////////////////////////////////////////////////////////////////////
 // static class data, special inlines
 

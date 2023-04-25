@@ -43,6 +43,9 @@ const UnicodeString DirectoryStatisticsCacheKey(L"DirectoryStatisticsCache");
 const UnicodeString CDCacheKey(L"CDCache");
 const UnicodeString BannersKey(L"Banners");
 //---------------------------------------------------------------------------
+const UnicodeString OpensshFolderName(L".ssh");
+const UnicodeString OpensshAuthorizedKeysFileName(L"authorized_keys");
+//---------------------------------------------------------------------------
 const int BelowNormalLogLevels = 1;
 //---------------------------------------------------------------------------
 __fastcall TConfiguration::TConfiguration()
@@ -116,9 +119,12 @@ void __fastcall TConfiguration::Default()
   FTryFtpWhenSshFails = true;
   FParallelDurationThreshold = 10;
   FMimeTypes = UnicodeString();
+  FCertificateStorage = EmptyStr;
   FDontReloadMoreThanSessions = 1000;
   FScriptProgressFileNameLimit = 25;
+  FKeyVersion = 0;
   CollectUsage = FDefaultCollectUsage;
+  FExperimentalFeatures = false;
 
   FLogging = false;
   FPermanentLogging = false;
@@ -253,7 +259,10 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(String,   MimeTypes); \
     KEY(Integer,  DontReloadMoreThanSessions); \
     KEY(Integer,  ScriptProgressFileNameLimit); \
+    KEY(Integer,  KeyVersion); \
     KEY(Bool,     CollectUsage); \
+    KEY(String,   CertificateStorage); \
+    KEY(Bool,     ExperimentalFeatures); \
   ); \
   BLOCK(L"Logging", CANCREATE, \
     KEYEX(Bool,  PermanentLogging, L"Logging"); \
@@ -401,6 +410,8 @@ void __fastcall TConfiguration::Import(const UnicodeString & FileName)
     Default();
     LoadFrom(ImportStorage);
 
+    Storage->RecursiveDeleteSubKey(Configuration->StoredSessionsSubKey);
+
     if (ImportStorage->OpenSubKey(Configuration->StoredSessionsSubKey, false))
     {
       StoredSessions->Clear();
@@ -416,6 +427,8 @@ void __fastcall TConfiguration::Import(const UnicodeString & FileName)
 
   // save all and explicit
   DoSave(true, true);
+
+  FDontSave = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::LoadData(THierarchicalStorage * Storage)
@@ -1132,7 +1145,7 @@ UnicodeString __fastcall TConfiguration::GetFileMimeType(const UnicodeString & F
       UnicodeString Token = CutToChar(AMimeTypes, L',', true);
       UnicodeString MaskStr = CutToChar(Token, L'=', true);
       TFileMasks Mask(MaskStr);
-      if (Mask.Matches(FileNameOnly))
+      if (Mask.MatchesFileName(FileNameOnly))
       {
         Result = Token.Trim();
         Found = true;
@@ -1156,11 +1169,6 @@ UnicodeString __fastcall TConfiguration::GetRegistryStorageKey()
 void __fastcall TConfiguration::SetNulStorage()
 {
   FStorage = stNul;
-}
-//---------------------------------------------------------------------------
-void __fastcall TConfiguration::SetDefaultStorage()
-{
-  FStorage = stDetect;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetExplicitIniFileStorageName(const UnicodeString & FileName)
@@ -1411,17 +1419,21 @@ TStorage __fastcall TConfiguration::GetStorage()
   return FStorage;
 }
 //---------------------------------------------------------------------
+static TStoredSessionList * CreateSessionsForImport(TStoredSessionList * Sessions)
+{
+  std::unique_ptr<TStoredSessionList> Result(new TStoredSessionList(true));
+  Result->DefaultSettings = Sessions->DefaultSettings;
+  return Result.release();
+}
+//---------------------------------------------------------------------
 TStoredSessionList * __fastcall TConfiguration::SelectFilezillaSessionsForImport(
   TStoredSessionList * Sessions, UnicodeString & Error)
 {
-  std::unique_ptr<TStoredSessionList> ImportSessionList(new TStoredSessionList(true));
-  ImportSessionList->DefaultSettings = Sessions->DefaultSettings;
+  std::unique_ptr<TStoredSessionList> ImportSessionList(CreateSessionsForImport(Sessions));
 
   UnicodeString AppDataPath = GetShellFolderPath(CSIDL_APPDATA);
-  UnicodeString FilezillaSiteManagerFile =
-    IncludeTrailingBackslash(AppDataPath) + L"FileZilla\\sitemanager.xml";
-  UnicodeString FilezillaConfigurationFile =
-    IncludeTrailingBackslash(AppDataPath) + L"FileZilla\\filezilla.xml";
+  UnicodeString FilezillaSiteManagerFile = TPath::Combine(AppDataPath, L"FileZilla\\sitemanager.xml");
+  UnicodeString FilezillaConfigurationFile = TPath::Combine(AppDataPath, L"FileZilla\\filezilla.xml");
 
   if (FileExists(ApiPath(FilezillaSiteManagerFile)))
   {
@@ -1458,14 +1470,18 @@ bool __fastcall TConfiguration::AnyFilezillaSessionForImport(TStoredSessionList 
   }
 }
 //---------------------------------------------------------------------
+static UnicodeString GetOpensshFolder()
+{
+  UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
+  UnicodeString Result = TPath::Combine(ProfilePath, OpensshFolderName);
+  return Result;
+}
+//---------------------------------------------------------------------
 TStoredSessionList * __fastcall TConfiguration::SelectKnownHostsSessionsForImport(
   TStoredSessionList * Sessions, UnicodeString & Error)
 {
-  std::unique_ptr<TStoredSessionList> ImportSessionList(new TStoredSessionList(true));
-  ImportSessionList->DefaultSettings = Sessions->DefaultSettings;
-
-  UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
-  UnicodeString KnownHostsFile = IncludeTrailingBackslash(ProfilePath) + L".ssh\\known_hosts";
+  std::unique_ptr<TStoredSessionList> ImportSessionList(CreateSessionsForImport(Sessions));
+  UnicodeString KnownHostsFile = TPath::Combine(GetOpensshFolder(), L"known_hosts");
 
   try
   {
@@ -1491,8 +1507,7 @@ TStoredSessionList * __fastcall TConfiguration::SelectKnownHostsSessionsForImpor
 TStoredSessionList * __fastcall TConfiguration::SelectKnownHostsSessionsForImport(
   TStrings * Lines, TStoredSessionList * Sessions, UnicodeString & Error)
 {
-  std::unique_ptr<TStoredSessionList> ImportSessionList(new TStoredSessionList(true));
-  ImportSessionList->DefaultSettings = Sessions->DefaultSettings;
+  std::unique_ptr<TStoredSessionList> ImportSessionList(CreateSessionsForImport(Sessions));
 
   try
   {
@@ -1501,6 +1516,42 @@ TStoredSessionList * __fastcall TConfiguration::SelectKnownHostsSessionsForImpor
   catch (Exception & E)
   {
     Error = E.Message;
+  }
+
+  return ImportSessionList.release();
+}
+//---------------------------------------------------------------------------
+TStoredSessionList * TConfiguration::SelectOpensshSessionsForImport(
+  TStoredSessionList * Sessions, UnicodeString & Error)
+{
+  std::unique_ptr<TStoredSessionList> ImportSessionList(CreateSessionsForImport(Sessions));
+  UnicodeString ConfigFile = TPath::Combine(GetOpensshFolder(), L"config");
+
+  try
+  {
+    if (FileExists(ApiPath(ConfigFile)))
+    {
+      std::unique_ptr<TStrings> Lines(new TStringList());
+      LoadScriptFromFile(ConfigFile, Lines.get(), true);
+      ImportSessionList->ImportFromOpenssh(Lines.get());
+
+      if (ImportSessionList->Count > 0)
+      {
+        ImportSessionList->SelectSessionsToImport(Sessions, true);
+      }
+      else
+      {
+        throw Exception(LoadStr(OPENSSH_CONFIG_NO_SITES));
+      }
+    }
+    else
+    {
+      throw Exception(LoadStr(OPENSSH_CONFIG_NOT_FOUND));
+    }
+  }
+  catch (Exception & E)
+  {
+    Error = FORMAT(L"%s\n(%s)", (E.Message, ConfigFile));
   }
 
   return ImportSessionList.release();
@@ -1617,6 +1668,25 @@ void TConfiguration::SetLocalPortNumberMax(int value)
 void __fastcall TConfiguration::SetMimeTypes(UnicodeString value)
 {
   SET_CONFIG_PROPERTY(MimeTypes);
+}
+//---------------------------------------------------------------------
+void TConfiguration::SetCertificateStorage(const UnicodeString & value)
+{
+  SET_CONFIG_PROPERTY(CertificateStorage);
+}
+//---------------------------------------------------------------------
+UnicodeString TConfiguration::GetCertificateStorageExpanded()
+{
+  UnicodeString Result = FCertificateStorage;
+  if (Result.IsEmpty())
+  {
+    UnicodeString DefaultCertificateStorage = TPath::Combine(ExtractFilePath(ModuleFileName()), L"cacert.pem");
+    if (FileExists(DefaultCertificateStorage))
+    {
+      Result = DefaultCertificateStorage;
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetTryFtpWhenSshFails(bool value)

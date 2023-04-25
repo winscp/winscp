@@ -43,10 +43,10 @@
 		<BCC_wrch>false</BCC_wrch>
 		<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
 		<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
-		<Defines>_WIN32;$(Defines)</Defines>
+		<Defines>WINSCP;_WIN32;$(Defines)</Defines>
 		<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
 		<ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-		<IncludePath>filezilla\misc\;filezilla\;resource;core;..\libs\openssl\include;$(BDS)\include;$(BDS)\include\windows\vcl;$(BDS)\include\mfc;$(IncludePath)</IncludePath>
+		<IncludePath>filezilla\misc\;filezilla\;resource;core;..\libs\openssl\include;..\libs\mfc\include;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
 		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
 		<Manifest_File>None</Manifest_File>
 		<Multithreaded>true</Multithreaded>

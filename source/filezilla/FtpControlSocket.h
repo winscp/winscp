@@ -65,7 +65,6 @@ public:
 
   void SetAsyncRequestResult(int nAction, CAsyncRequestData * pData);
 
-  int CheckOverwriteFile();
   BOOL Create();
   void TransfersocketListenFinished(unsigned int ip, unsigned short port);
 
@@ -120,6 +119,7 @@ protected:
   void ResetTransferSocket(int Error);
 
   void DoClose(int nError = 0);
+  int TryGetReplyCode();
   int GetReplyCode();
   CString GetReply();
   void LogOnToServer(BOOL bSkipReply = FALSE);
@@ -164,11 +164,14 @@ protected:
   static std::list<t_ActiveList> m_InstanceList[2];
   static CTime m_CurrentTransferTime[2];
   static _int64 m_CurrentTransferLimit[2];
-  static CCriticalSection m_SpeedLimitSync;
+  static CCriticalSectionWrapper m_SpeedLimitSync;
   _int64 GetAbleToUDSize(bool & beenWaiting, CTime & curTime, _int64 & curLimit, std::list<t_ActiveList>::iterator & iter, enum transferDirection direction, int nBufSize);
   _int64 GetSpeedLimit(CTime & time, int valType, int valValue);
 
   void SetDirectoryListing(t_directory * pDirectory, bool bSetWorkingDir = true);
+  int CheckOverwriteFile();
+  int CheckOverwriteFileAndCreateTarget();
+  int FileTransferHandleDirectoryListing(t_directory * pDirectory);
   t_directory * m_pDirectoryListing;
 
   CMainThread * m_pOwner;

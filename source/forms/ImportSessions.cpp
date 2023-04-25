@@ -19,26 +19,37 @@
 //---------------------------------------------------------------------
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
-const int KnownHostsIndex = 2;
+const int OpensshIndex = 2;
+const int KnownHostsIndex = 3;
 //---------------------------------------------------------------------
 bool __fastcall DoImportSessionsDialog(TList * Imported)
 {
   std::unique_ptr<TStrings> Errors(new TStringList());
+  std::unique_ptr<TList> SessionListsList(new TList());
   UnicodeString Error;
+
   std::unique_ptr<TStoredSessionList> PuttyImportSessionList(
     GUIConfiguration->SelectPuttySessionsForImport(StoredSessions, Error));
-  Errors->Add(Error);
-  std::unique_ptr<TStoredSessionList> FilezillaImportSessionList(
-    Configuration->SelectFilezillaSessionsForImport(StoredSessions, Error));
-  Errors->Add(Error);
-  std::unique_ptr<TStoredSessionList> KnownHostsImportSessionList(
-    Configuration->SelectKnownHostsSessionsForImport(StoredSessions, Error));
+  SessionListsList->Add(PuttyImportSessionList.get());
   Errors->Add(Error);
 
-  std::unique_ptr<TList> SessionListsList(new TList());
-  SessionListsList->Add(PuttyImportSessionList.get());
+  std::unique_ptr<TStoredSessionList> FilezillaImportSessionList(
+    Configuration->SelectFilezillaSessionsForImport(StoredSessions, Error));
   SessionListsList->Add(FilezillaImportSessionList.get());
+  Errors->Add(Error);
+
+  std::unique_ptr<TStoredSessionList> OpensshImportSessionList(
+    Configuration->SelectOpensshSessionsForImport(StoredSessions, Error));
+  SessionListsList->Add(OpensshImportSessionList.get());
+  Errors->Add(Error);
+
+  std::unique_ptr<TStoredSessionList> KnownHostsImportSessionList(
+    Configuration->SelectKnownHostsSessionsForImport(StoredSessions, Error));
+  DebugAssert(KnownHostsIndex == SessionListsList->Count);
   SessionListsList->Add(KnownHostsImportSessionList.get());
+  Errors->Add(Error);
+
+  DebugAssert(SessionListsList->Count == Errors->Count);
 
   std::unique_ptr<TImportSessionsDialog> ImportSessionsDialog(
     SafeFormCreate<TImportSessionsDialog>(Application));
@@ -52,18 +63,21 @@ bool __fastcall DoImportSessionsDialog(TList * Imported)
     // Particularly when importing known_hosts, there is no feedback.
     TInstantOperationVisualizer Visualizer;
 
-    StoredSessions->Import(PuttyImportSessionList.get(), true, Imported);
-    StoredSessions->Import(FilezillaImportSessionList.get(), true, Imported);
-
-    UnicodeString SourceKey = Configuration->PuttyRegistryStorageKey;
-
-    TStoredSessionList::ImportHostKeys(SourceKey, PuttyImportSessionList.get(), true);
-
-    // Filezilla uses PuTTY's host key store
-    TStoredSessionList::ImportHostKeys(SourceKey, FilezillaImportSessionList.get(), true);
-
+    UnicodeString PuttyHostKeysSourceKey = Configuration->PuttyRegistryStorageKey;
     TStoredSessionList * AKnownHostsImportSessionList =
       static_cast<TStoredSessionList *>(SessionListsList->Items[KnownHostsIndex]);
+
+    StoredSessions->Import(PuttyImportSessionList.get(), true, Imported);
+    TStoredSessionList::ImportHostKeys(PuttyHostKeysSourceKey, PuttyImportSessionList.get(), true);
+
+    StoredSessions->Import(FilezillaImportSessionList.get(), true, Imported);
+    // FileZilla uses PuTTY's host key store
+    TStoredSessionList::ImportHostKeys(PuttyHostKeysSourceKey, FilezillaImportSessionList.get(), true);
+
+    StoredSessions->Import(OpensshImportSessionList.get(), true, Imported);
+    // The actual import will be done by ImportSelectedKnownHosts
+    TStoredSessionList::SelectKnownHostsForSelectedSessions(AKnownHostsImportSessionList, OpensshImportSessionList.get());
+
     TStoredSessionList::ImportSelectedKnownHosts(AKnownHostsImportSessionList);
   }
   return Result;
@@ -129,12 +143,17 @@ void __fastcall TImportSessionsDialog::ClearSelections()
   }
 }
 //---------------------------------------------------------------------
+TSessionData * TImportSessionsDialog::GetSessionData(TListItem * Item)
+{
+  return DebugNotNull(static_cast<TSessionData *>(Item->Data));
+}
+//---------------------------------------------------------------------
 void __fastcall TImportSessionsDialog::SaveSelection()
 {
   for (int Index = 0; Index < SessionListView2->Items->Count; Index++)
   {
-    ((TSessionData*)SessionListView2->Items->Item[Index]->Data)->Selected =
-      SessionListView2->Items->Item[Index]->Checked;
+    TListItem * Item = SessionListView2->Items->Item[Index];
+    GetSessionData(Item)->Selected = Item->Checked;
   }
 }
 //---------------------------------------------------------------------
@@ -177,7 +196,7 @@ void __fastcall TImportSessionsDialog::LoadSessions()
 void __fastcall TImportSessionsDialog::SessionListView2InfoTip(
       TObject * /*Sender*/, TListItem * Item, UnicodeString & InfoTip)
 {
-  TSessionData * Data = DebugNotNull(reinterpret_cast<TSessionData *>(Item->Data));
+  TSessionData * Data = GetSessionData(Item);
   if (SourceComboBox->ItemIndex == KnownHostsIndex)
   {
     UnicodeString Algs;
@@ -227,6 +246,68 @@ void __fastcall TImportSessionsDialog::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
+bool TImportSessionsDialog::ConvertKeyFile(
+  UnicodeString & KeyFile, TStrings * ConvertedKeyFiles, TStrings * NotConvertedKeyFiles)
+{
+  bool ConvertedSession = false;
+  if (!KeyFile.IsEmpty() &&
+      FileExists(ApiPath(KeyFile)))
+  {
+    UnicodeString CanonicalPath = GetCanonicalPath(KeyFile);
+    // Reuses the already converted keys saved under a custom name
+    // (when saved under the default name they would be captured by the later condition based on GetConvertedKeyFileName)
+    int CanonicalIndex = ConvertedKeyFiles->IndexOfName(CanonicalPath);
+    if (CanonicalIndex >= 0)
+    {
+      KeyFile = ConvertedKeyFiles->ValueFromIndex[CanonicalIndex];
+      ConvertedSession = true;
+    }
+    // Prevents asking about converting the same key again, when the user refuses the conversion.
+    else if (NotConvertedKeyFiles->IndexOf(CanonicalPath) >= 0)
+    {
+      // noop
+    }
+    else
+    {
+      UnicodeString ConvertedFilename = GetConvertedKeyFileName(KeyFile);
+      UnicodeString FileName;
+      if (FileExists(ApiPath(ConvertedFilename)))
+      {
+        FileName = ConvertedFilename;
+        ConvertedSession = true;
+      }
+      else
+      {
+        FileName = KeyFile;
+        TDateTime TimestampBefore, TimestampAfter;
+        FileAge(FileName, TimestampBefore);
+        try
+        {
+          VerifyAndConvertKey(FileName, true);
+          FileAge(FileName, TimestampAfter);
+          if ((KeyFile != FileName) ||
+              // should never happen as cancelling the saving throws EAbort
+              DebugAlwaysTrue(TimestampBefore != TimestampAfter))
+          {
+            ConvertedSession = true;
+          }
+        }
+        catch (EAbort &)
+        {
+          NotConvertedKeyFiles->Add(CanonicalPath);
+        }
+      }
+
+      if (ConvertedSession)
+      {
+        KeyFile = FileName;
+        ConvertedKeyFiles->Values[CanonicalPath] = FileName;
+      }
+    }
+  }
+  return ConvertedSession;
+}
+//---------------------------------------------------------------------------
 bool __fastcall TImportSessionsDialog::Execute()
 {
   bool Result = (ShowModal() == DefaultResult(this));
@@ -235,6 +316,50 @@ bool __fastcall TImportSessionsDialog::Execute()
   {
     ClearSelections();
     SaveSelection();
+
+    if (SourceComboBox->ItemIndex == OpensshIndex)
+    {
+      std::unique_ptr<TStrings> ConvertedSessions(new TStringList());
+      std::unique_ptr<TStrings> ConvertedKeyFiles(new TStringList());
+      std::unique_ptr<TStrings> NotConvertedKeyFiles(CreateSortedStringList());
+      for (int Index = 0; Index < SessionListView2->Items->Count; Index++)
+      {
+        TListItem * Item = SessionListView2->Items->Item[Index];
+        if (Item->Checked)
+        {
+          TSessionData * Data = GetSessionData(Item);
+          UnicodeString SessionKeys;
+
+          UnicodeString PublicKeyFile = Data->PublicKeyFile;
+          if (ConvertKeyFile(PublicKeyFile, ConvertedKeyFiles.get(), NotConvertedKeyFiles.get()))
+          {
+            Data->PublicKeyFile = PublicKeyFile;
+            SessionKeys = PublicKeyFile;
+          }
+
+          UnicodeString TunnelPublicKeyFile = Data->TunnelPublicKeyFile;
+          if (ConvertKeyFile(TunnelPublicKeyFile, ConvertedKeyFiles.get(), NotConvertedKeyFiles.get()))
+          {
+            Data->TunnelPublicKeyFile = TunnelPublicKeyFile;
+            if (SessionKeys != TunnelPublicKeyFile)
+            {
+              AddToList(SessionKeys, TunnelPublicKeyFile, L", ");
+            }
+          }
+
+          if (!SessionKeys.IsEmpty())
+          {
+            ConvertedSessions->Add(FORMAT(L"%s (%s)", (Data->Name, SessionKeys)));
+          }
+        }
+      }
+
+      if (ConvertedSessions->Count > 0)
+      {
+        UnicodeString Message = MainInstructions(FMTLOAD(IMPORT_CONVERTED_KEYS, (ConvertedKeyFiles->Count, ConvertedSessions->Count)));
+        MoreMessageDialog(Message, ConvertedSessions.get(), qtInformation, qaOK, HelpKeyword);
+      }
+    }
   }
 
   return Result;

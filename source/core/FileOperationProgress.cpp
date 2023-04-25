@@ -5,6 +5,7 @@
 #include "Common.h"
 #include "FileOperationProgress.h"
 #include "CoreMain.h"
+#include "Interface.h"
 //---------------------------------------------------------------------------
 #define TRANSFER_BUF_SIZE 32768
 //---------------------------------------------------------------------------
@@ -23,6 +24,11 @@ TFileOperationProgressType::TPersistence::TPersistence()
 bool TFileOperationProgressType::IsIndeterminateOperation(TFileOperation Operation)
 {
   return (Operation == foCalculateSize);
+}
+//---------------------------------------------------------------------------
+bool TFileOperationProgressType::IsTransferOperation(TFileOperation Operation)
+{
+  return (Operation == foCopy) || (Operation == foMove);
 }
 //---------------------------------------------------------------------------
 void TFileOperationProgressType::TPersistence::Clear(bool Batch, bool Speed)
@@ -289,7 +295,7 @@ int __fastcall TFileOperationProgressType::OverallProgress() const
 {
   if (TotalSizeSet)
   {
-    DebugAssert((Operation == foCopy) || (Operation == foMove));
+    DebugAssert(IsTransfer());
     return TotalTransferProgress();
   }
   else
@@ -305,7 +311,7 @@ void __fastcall TFileOperationProgressType::Progress()
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::DoProgress()
 {
-  SetThreadExecutionState(ES_SYSTEM_REQUIRED);
+  SystemRequired();
   FOnProgress(*this);
 }
 //---------------------------------------------------------------------------
@@ -329,7 +335,7 @@ void __fastcall TFileOperationProgressType::Succeeded(int Count)
 {
   if (FPersistence.Statistics != NULL)
   {
-    if ((Operation == foCopy) || (Operation == foMove))
+    if (IsTransfer())
     {
       __int64 Transferred = FTransferredSize - FSkippedSize;
       if (Side == osLocal)
@@ -818,6 +824,7 @@ bool TFileOperationProgressType::IsTransferDoneChecked()
   return IsTransferDone();
 }
 //---------------------------------------------------------------------------
+// Note that this does not work correctly, if the file is larger than expected (at least with the FTP protocol)
 bool TFileOperationProgressType::IsTransferDone()
 {
   return (TransferredSize == TransferSize);
@@ -838,6 +845,20 @@ unsigned int __fastcall TFileOperationProgressType::CPS()
 {
   TGuard Guard(FSection);
   return GetCPS();
+}
+//---------------------------------------------------------------------------
+inline static unsigned int CalculateCPS(__int64 Transferred, unsigned int MSecElapsed)
+{
+  unsigned int Result;
+  if (MSecElapsed == 0)
+  {
+    Result = 0;
+  }
+  else
+  {
+    Result = (unsigned int)(Transferred * MSecsPerSec / MSecElapsed);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 // Has to be called from a guarded method
@@ -862,15 +883,8 @@ unsigned int __fastcall TFileOperationProgressType::GetCPS()
       TimeSpan = (Ticks - FPersistence.Ticks.front());
     }
 
-    if (TimeSpan == 0)
-    {
-      Result = 0;
-    }
-    else
-    {
-      __int64 Transferred = (FPersistence.TotalTransferred - FPersistence.TotalTransferredThen.front());
-      Result = (unsigned int)(Transferred * MSecsPerSec / TimeSpan);
-    }
+    __int64 Transferred = (FPersistence.TotalTransferred - FPersistence.TotalTransferredThen.front());
+    Result = CalculateCPS(Transferred, TimeSpan);
   }
   return Result;
 }
@@ -950,7 +964,7 @@ void __fastcall TFileOperationProgressType::UnlockUserSelections()
 UnicodeString __fastcall TFileOperationProgressType::GetLogStr(bool Done)
 {
   UnicodeString Transferred = FormatSize(TotalTransferred);
-  UnicodeString Left;
+
   TDateTime Time;
   UnicodeString TimeLabel;
   if (!Done && TotalSizeSet)
@@ -964,7 +978,19 @@ UnicodeString __fastcall TFileOperationProgressType::GetLogStr(bool Done)
     TimeLabel = L"Elapsed";
   }
   UnicodeString TimeStr = FormatDateTimeSpan(Configuration->TimeFormat, Time);
-  UnicodeString CPSStr = FormatSize(CPS());
+
+  unsigned int ACPS;
+  if (!Done)
+  {
+    ACPS = CPS();
+  }
+  else
+  {
+    unsigned int Elapsed = TimeToMSec(TimeElapsed());
+    ACPS = CalculateCPS(TotalTransferred, Elapsed);
+  }
+  UnicodeString CPSStr = FormatSize(ACPS);
+
   return FORMAT(L"Transferred: %s, %s: %s, CPS: %s/s", (Transferred, TimeLabel, TimeStr, CPSStr));
 }
 //---------------------------------------------------------------------------
@@ -980,4 +1006,16 @@ void __fastcall TFileOperationProgressType::Restore(TPersistence & Persistence)
   TGuard Guard(FSection);
   FPersistence = Persistence;
   FRestored = true;
+}
+//---------------------------------------------------------------------------
+bool TFileOperationProgressType::IsIndeterminate() const
+{
+  return
+    IsIndeterminateOperation(FOperation) ||
+    (!TotalSizeSet && (FCount == 1));
+}
+//---------------------------------------------------------------------------
+bool TFileOperationProgressType::IsTransfer() const
+{
+  return IsTransferOperation(Operation);
 }

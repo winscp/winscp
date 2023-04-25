@@ -18,7 +18,7 @@ The library is primarily intended for advanced automation tasks that require con
 For documentation and examples of use, see project website.
 
 The NuGet package includes the assembly itself and a required WinSCP executable. When installed, it adds the assembly as reference to your project and sets up WinSCP executable to be copied to project output directory, so that it can be found on run-time.</description>
-    <copyright>Copyright © 2012–2022 Martin Prikryl</copyright>
+    <copyright>Copyright © 2012–2023 Martin Prikryl</copyright>
     <tags>winscp sftp ftp ftps webdav s3 scp transfer</tags>
     <dependencies>
       <group targetFramework=".NETStandard2.0"/>
@@ -30,6 +30,7 @@ The NuGet package includes the assembly itself and a required WinSCP executable.
     <file src="$DotNetBuildConfigDir$\netstandard2.0\WinSCPnet.dll" target="lib\netstandard2.0"/>
     <file src="$BuildConfigDir$\WinSCP.exe" target="tools"/>
     <file src="WinSCP.targets" target="build"/>
+    <file src="WinSCP.targets" target="buildTransitive"/>
     <file src="winscp64.png" target=""/>
   </files>
 </package>

@@ -107,7 +107,7 @@ CG=0
 
 # Lib directory
 !ifndef LIBDIR
-LIBDIR=..\..\LIB
+LIBDIR=$(LIB_PATH)
 !endif
 
 # Lib Path
@@ -117,7 +117,7 @@ LPATH=..\..\LIB;..\..\LIB\PSDK
 
 # MFC Include directory base
 !ifndef MFCINCL
-MFCINCL=..\..\include\mfc
+MFCINCL=..\include
 !endif
 
 # BC Include directory
@@ -138,7 +138,10 @@ NO_CLEAN_PCH=0
 
 BASE=W
 MODEL=U
-TARGDEFS=/D_UNICODE /DUNICODE /D_AFX_NO_OLEDB_SUPPORT /D_AFX_NO_OCC_SUPPORT
+TARGDEFS=/D_UNICODE /DUNICODE /DWINSCP \
+         /D_AFX_NO_OLEDB_SUPPORT /D_AFX_NO_OCC_SUPPORT /D_AFX_NO_OCX_SUPPORT /D_AFX_NO_DB_SUPPORT \
+         /D_AFX_NO_AFXCMN_SUPPORT /D_AFX_NO_RICHEDIT_SUPPORT /D_AFX_NO_INET_SUPPORT /D_AFX_NO_DHTML_SUPPORT \
+         /D_AFX_NO_OLE_SUPPORT /D_AFX_NO_SOCKET_SUPPORT /D_AFX_NO_SYNC_SUPPORT
 !if "$(MBCS)" != "0"
 TARGDEFS=$(TARGDEFS) /D_MBCS
 !endif
@@ -279,78 +282,15 @@ DEFS=$(DEFS) $(DEBDEFS) $(TARGDEFS)
 #############################################################################
 # Library Components
 
-OBJECT=objcore.obj except.obj \
-	validadd.obj dumpcont.obj dumpflt.obj \
-	arccore.obj arcobj.obj arcex.obj arcstrm.obj
+OBJECT=objcore.obj except.obj validadd.obj \
+	
+FILES=filecore.obj filex.obj filest.obj
 
-# non-shared diagnostics
-OBJDIAG=dumpinit.obj dumpout.obj \
-	afxasert.obj afxmem.obj afxabort.obj
+MISC=	strcore.obj strex.obj timecore.obj \
+	fixalloc.obj \
+        plex.obj
 
-FILES=filecore.obj filetxt.obj filemem.obj fileshrd.obj \
-	filex.obj filest.obj
-
-COLL1=array_b.obj array_d.obj array_p.obj array_o.obj \
-	array_s.obj array_u.obj array_w.obj \
-	list_o.obj list_p.obj list_s.obj
-
-COLL2=map_pp.obj map_pw.obj map_so.obj \
-	map_sp.obj map_ss.obj map_wo.obj map_wp.obj plex.obj
-
-MISC=\
-	strcore.obj strex.obj timecore.obj \
-	afxdbcs.obj afxstate.obj afxtls.obj fixalloc.obj \
-        mtcore.obj mtex.obj
-
-WINDOWS=winhand.obj
-
-DIALOG=
-
-WINMISC=afxcrit.obj winstr.obj winutil.obj auxdata.obj wingdi.obj
-
-DOCVIEW=
-
-INTERNET=inet.obj filefind.obj
-!if "$(UNICODE)" == "1"
-#INTERNET=$(INTERNET) isapimix.obj
-!endif
-
-APPLICATION=appterm.obj appui1.obj appinit.obj apphelp.obj thrdcore.obj
-
-!if "$(DLL)" != "2"
-#APPLICATION=$(APPLICATION) app3ds.obj \
-#	nolib.obj appmodul.obj dllmodul.obj oleexp.obj dumpstak.obj
-!endif
-
-# ODBC components:
-#DB=\
-#	dbcore.obj dbrfx.obj dbview.obj dbflt.obj \
-#	dblong.obj dbvar.obj
-
-#
-# DAO is not supported under Borland C++
-#
-#DB= $(DB) daocore.obj daodfx.obj daoview.obj viewoled.obj
-#
-
-SOCKETS=sockcore.obj
-
-OLEREQ=olelock.obj
-
-OLE=olevar.obj oleunk.obj
-
-OLECTL=
-
-!if "$(DEBUG)" == "1"
-OLECTL=$(OLECTL) ctlinl.obj
-!endif
-
-# Borland enhancement:
-!if "$(DEBUG)" == "1" && "$(MONOLITHIC)" == "1"
-OLE=$(OLE) dllole.obj
-!endif
-
-OLEDLL=$(OLE) $(OLECTL) $(OLEASM)
+WINMISC= winstr.obj apphelp.obj 
 
 !if "$(DEBUG)" == "1"
 INLINES = afxinl1.obj afxinl2.obj afxinl3.obj
@@ -358,9 +298,8 @@ INLINES = afxinl1.obj afxinl2.obj afxinl3.obj
 INLINES =
 !endif
 
-CPP_OBJS=$(OBJECT) $(OBJDIAG) $(INLINES) $(FILES) $(COLL1) $(COLL2) $(MISC) \
-	$(WINDOWS) $(DIALOG) $(WINMISC) $(DOCVIEW) $(APPLICATION) \
-	$(SOCKETS) $(OLEREQ) $(OLE) $(DAO) $(DB) $(INTERNET) $(OLECTL)
+CPP_OBJS=$(OBJECT) $(INLINES) $(FILES)  $(MISC) \
+	$(WINMISC)
 
 
 OBJS=$(CPP_OBJS) $(OLEASM)
@@ -501,8 +440,8 @@ $(CPPFLAGS) -I$(BCINCL);$(MFCINCL) /c $(PCH_CPP).cpp
 $(LIBDIR)\$(GOAL).lib: $(D)\$(OBJS)
 	# @-if exist $@ erase $@
 	@$(LIB32) $@ /P2048 @&&!
-+-$(**: = &^
-+-)
++$(**: = &^
++)
 !
 
 !endif #DLL!=2

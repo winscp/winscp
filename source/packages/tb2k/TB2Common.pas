@@ -297,7 +297,7 @@ begin
       begin
         {MP}
         // Trim trailing artificial accelerators typical for asian translation
-        // e.g. "ローカル(&L)"
+        // e.g. "foobar (&L)"
         if IncludingStandaloneKey and
            (I = Length(Result) - 2) and
            (Result[I - 1] = '(') and

@@ -551,12 +551,7 @@ void __fastcall TOpenDirectoryDialog::BookmarksListKeyDown(TObject * Sender,
 void __fastcall TOpenDirectoryDialog::LocalDirectoryBrowseButtonClick(
   TObject * /*Sender*/)
 {
-  UnicodeString Directory = LocalDirectoryEdit->Text;
-  if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY), true))
-  {
-    LocalDirectoryEdit->Text = Directory;
-    DirectoryEditChange(NULL);
-  }
+  SelectDirectoryForEdit(LocalDirectoryEdit);
 }
 //---------------------------------------------------------------------------
 void __fastcall TOpenDirectoryDialog::SwitchButtonClick(TObject * /*Sender*/)

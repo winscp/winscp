@@ -45,7 +45,6 @@ private:
   bool FStoredPasswordTried;
   bool FStoredPasswordTriedForKI;
   bool FStoredPassphraseTried;
-  int FSshVersion;
   bool FOpened;
   bool FClosed;
   int FWaiting;
@@ -77,6 +76,7 @@ private:
   ScpLogPolicy * FLogPolicy;
   ScpSeat * FSeat;
   LogContext * FLogCtx;
+  std::set<UnicodeString> FLoggedKnownHostKeys;
 
   void __fastcall Init();
   void __fastcall SetActive(bool value);
@@ -100,6 +100,7 @@ private:
   void __fastcall DispatchSendBuffer(int BufSize);
   void __fastcall SendBuffer(unsigned int & Result);
   unsigned int __fastcall TimeoutPrompt(TQueryParamsTimerEvent PoolEvent);
+  void TimeoutAbort(unsigned int Answer);
   bool __fastcall TryFtp();
   UnicodeString __fastcall ConvertInput(const RawByteString & Input);
   void __fastcall GetRealHost(UnicodeString & Host, int & Port);
@@ -110,6 +111,7 @@ private:
     const UnicodeString & StoredKeys, const UnicodeString & KeyStr, const UnicodeString & FingerprintMD5, const UnicodeString & FingerprintSHA256);
   UnicodeString StoreHostKey(
     const UnicodeString & Host, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr);
+  bool HasLocalProxy();
 
 protected:
   TCaptureOutputEvent FOnCaptureOutput;
@@ -123,6 +125,7 @@ protected:
   void __fastcall inline LogEvent(const UnicodeString & Str);
   void __fastcall FatalError(UnicodeString Error, UnicodeString HelpKeyword = L"");
   UnicodeString __fastcall FormatKeyStr(UnicodeString KeyStr);
+  void ParseFingerprint(const UnicodeString & Fingerprint, UnicodeString & SignKeyType, UnicodeString & Hash);
   static Conf * __fastcall StoreToConfig(TSessionData * Data, bool Simple);
 
 public:
@@ -168,7 +171,7 @@ public:
   const UnicodeString & __fastcall GetStdError();
   void __fastcall VerifyHostKey(
     const UnicodeString & Host, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr,
-    const UnicodeString & Fingerprint);
+    const UnicodeString & FingerprintSHA256, const UnicodeString & FingerprintMD5);
   bool __fastcall HaveHostKey(UnicodeString Host, int Port, const UnicodeString KeyType);
   void __fastcall AskAlg(UnicodeString AlgType, UnicodeString AlgName);
   void __fastcall DisplayBanner(const UnicodeString & Banner);
@@ -177,7 +180,7 @@ public:
   UnicodeString __fastcall ConvertFromPutty(const char * Str, int Length);
   struct callback_set * GetCallbackSet();
 
-  __property bool Active = { read = FActive, write = SetActive };
+  __property bool Active = { read = FActive };
   __property bool Ready = { read = GetReady };
   __property TCaptureOutputEvent OnCaptureOutput = { read = FOnCaptureOutput, write = FOnCaptureOutput };
   __property TDateTime LastDataSent = { read = FLastDataSent };

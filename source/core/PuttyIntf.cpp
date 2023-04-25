@@ -2,7 +2,6 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#define PUTTY_DO_GLOBALS
 #include "PuttyIntf.h"
 #include "Interface.h"
 #include "SecureShell.h"
@@ -26,7 +25,7 @@ THierarchicalStorage * PuttyStorage = NULL;
 //---------------------------------------------------------------------------
 extern "C"
 {
-#include <winstuff.h>
+#include <windows\platform.h>
 }
 const UnicodeString OriginalPuttyRegistryStorageKey(_T(PUTTY_REG_POS));
 const UnicodeString KittyRegistryStorageKey(L"Software\\9bis.com\\KiTTY");
@@ -44,8 +43,6 @@ void __fastcall PuttyInitialize()
   // make sure random generator is initialised, so random_save_seed()
   // in destructor can proceed
   random_ref();
-
-  flags = FLAG_VERBOSE | FLAG_SYNCAGENT; // verbose log
 
   sk_init();
 
@@ -95,6 +92,18 @@ bool RandomSeedExists()
     FileExists(ApiPath(Configuration->RandomSeedFileName));
 }
 //---------------------------------------------------------------------------
+TSecureShell * GetSeatSecureShell(Seat * seat)
+{
+  DebugAssert(seat != NULL);
+  if (is_tempseat(seat))
+  {
+    seat = tempseat_get_real(seat);
+  }
+
+  TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
+  return SecureShell;
+}
+//---------------------------------------------------------------------------
 TSecureShell * GetSecureShell(Plug * plug, bool & pfwd)
 {
   if (!is_ssh(plug) && !is_pfwd(plug))
@@ -116,9 +125,7 @@ TSecureShell * GetSecureShell(Plug * plug, bool & pfwd)
     seat = get_ssh_seat(plug);
   }
   DebugAssert(seat != NULL);
-
-  TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
-  return SecureShell;
+  return GetSeatSecureShell(seat);
 }
 //---------------------------------------------------------------------------
 struct callback_set * get_callback_set(Plug * plug)
@@ -130,11 +137,11 @@ struct callback_set * get_callback_set(Plug * plug)
 //---------------------------------------------------------------------------
 struct callback_set * get_seat_callback_set(Seat * seat)
 {
-  TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
+  TSecureShell * SecureShell = GetSeatSecureShell(seat);
   return SecureShell->GetCallbackSet();
 }
 //---------------------------------------------------------------------------
-extern "C" char * do_select(Plug * plug, SOCKET skt, bool enable)
+extern "C" const char * do_select(Plug * plug, SOCKET skt, bool enable)
 {
   bool pfwd;
   TSecureShell * SecureShell = GetSecureShell(plug, pfwd);
@@ -150,14 +157,14 @@ extern "C" char * do_select(Plug * plug, SOCKET skt, bool enable)
   return NULL;
 }
 //---------------------------------------------------------------------------
-static size_t output(Seat * seat, bool is_stderr, const void * data, size_t len)
+static size_t output(Seat * seat, SeatOutputType type, const void * data, size_t len)
 {
   TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
-  if (static_cast<int>(static_cast<char>(is_stderr)) == -1)
+  if (static_cast<int>(static_cast<char>(type)) == -1)
   {
     SecureShell->CWrite(reinterpret_cast<const char *>(data), len);
   }
-  else if (!is_stderr)
+  else if (type != SEAT_OUTPUT_STDERR)
   {
     SecureShell->FromBackend(reinterpret_cast<const unsigned char *>(data), len);
   }
@@ -173,13 +180,13 @@ static bool eof(Seat *)
   return false;
 }
 //---------------------------------------------------------------------------
-static int get_userpass_input(Seat * seat, prompts_t * p, bufchain * DebugUsedArg(input))
+static SeatPromptResult get_userpass_input(Seat * seat, prompts_t * p)
 {
   DebugAssert(p != NULL);
   TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
   DebugAssert(SecureShell != NULL);
 
-  int Result;
+  SeatPromptResult Result;
   TStrings * Prompts = new TStringList();
   TStrings * Results = new TStringList();
   try
@@ -226,11 +233,11 @@ static int get_userpass_input(Seat * seat, prompts_t * p, bufchain * DebugUsedAr
         }
         prompt_set_result(Prompt, S.c_str());
       }
-      Result = 1;
+      Result = SPR_OK;
     }
     else
     {
-      Result = 0;
+      Result = SPR_USER_ABORT;
     }
   }
   __finally
@@ -249,15 +256,24 @@ static void connection_fatal(Seat * seat, const char * message)
   SecureShell->PuttyFatalError(UnicodeString(AnsiString(message)));
 }
 //---------------------------------------------------------------------------
-int verify_ssh_host_key(Seat * seat, const char * host, int port, const char * keytype,
-  char * keystr, char * fingerprint, void (*/*callback*/)(void * ctx, int result),
-  void * /*ctx*/)
+SeatPromptResult confirm_ssh_host_key(Seat * seat, const char * host, int port, const char * keytype,
+  char * keystr, const char * DebugUsedArg(keydisp), char ** key_fingerprints, bool DebugUsedArg(mismatch),
+  void (*DebugUsedArg(callback))(void *ctx, SeatPromptResult result), void * DebugUsedArg(ctx))
 {
+  UnicodeString FingerprintSHA256, FingerprintMD5;
+  if (key_fingerprints[SSH_FPTYPE_SHA256] != NULL)
+  {
+    FingerprintSHA256 = key_fingerprints[SSH_FPTYPE_SHA256];
+  }
+  if (DebugAlwaysTrue(key_fingerprints[SSH_FPTYPE_MD5] != NULL))
+  {
+    FingerprintMD5 = key_fingerprints[SSH_FPTYPE_MD5];
+  }
   TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
-  SecureShell->VerifyHostKey(host, port, keytype, keystr, fingerprint);
+  SecureShell->VerifyHostKey(host, port, keytype, keystr, FingerprintSHA256, FingerprintMD5);
 
   // We should return 0 when key was not confirmed, we throw exception instead.
-  return 1;
+  return SPR_OK;
 }
 //---------------------------------------------------------------------------
 bool have_ssh_host_key(Seat * seat, const char * hostname, int port,
@@ -267,20 +283,20 @@ bool have_ssh_host_key(Seat * seat, const char * hostname, int port,
   return SecureShell->HaveHostKey(hostname, port, keytype) ? 1 : 0;
 }
 //---------------------------------------------------------------------------
-int confirm_weak_crypto_primitive(Seat * seat, const char * algtype, const char * algname,
-  void (*/*callback*/)(void * ctx, int result), void * /*ctx*/)
+SeatPromptResult confirm_weak_crypto_primitive(Seat * seat, const char * algtype, const char * algname,
+  void (*/*callback*/)(void * ctx, SeatPromptResult result), void * /*ctx*/)
 {
   TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
   SecureShell->AskAlg(algtype, algname);
 
   // We should return 0 when alg was not confirmed, we throw exception instead.
-  return 1;
+  return SPR_OK;
 }
 //---------------------------------------------------------------------------
-int confirm_weak_cached_hostkey(Seat *, const char * /*algname*/, const char * /*betteralgs*/,
-  void (*/*callback*/)(void *ctx, int result), void * /*ctx*/)
+SeatPromptResult confirm_weak_cached_hostkey(Seat *, const char * /*algname*/, const char * /*betteralgs*/,
+  void (*/*callback*/)(void *ctx, SeatPromptResult result), void * /*ctx*/)
 {
-  return 1;
+  return SPR_OK;
 }
 //---------------------------------------------------------------------------
 void old_keyfile_warning(void)
@@ -288,11 +304,22 @@ void old_keyfile_warning(void)
   // no reference to TSecureShell instance available
 }
 //---------------------------------------------------------------------------
-void display_banner(Seat * seat, const char * banner, int size)
+size_t banner(Seat * seat, const void * data, size_t len)
 {
   TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
-  UnicodeString Banner(UTF8String(banner, size));
+  UnicodeString Banner(UTF8String(static_cast<const char *>(data), len));
   SecureShell->DisplayBanner(Banner);
+  return 0; // PuTTY never uses the value
+}
+//---------------------------------------------------------------------------
+uintmax_t strtoumax(const char *nptr, char **endptr, int base)
+{
+  if (DebugAlwaysFalse(endptr != NULL) ||
+      DebugAlwaysFalse(base != 10))
+  {
+    Abort();
+  }
+  return StrToInt64(UnicodeString(AnsiString(nptr)));
 }
 //---------------------------------------------------------------------------
 static void SSHFatalError(const char * Format, va_list Param)
@@ -378,13 +405,17 @@ static const SeatVtable ScpSeatVtable =
   {
     output,
     eof,
+    nullseat_sent,
+    banner,
     get_userpass_input,
+    nullseat_notify_session_started,
     nullseat_notify_remote_exit,
+    nullseat_notify_remote_disconnect,
     connection_fatal,
     nullseat_update_specials_menu,
     nullseat_get_ttymode,
     nullseat_set_busy_status,
-    verify_ssh_host_key,
+    confirm_ssh_host_key,
     confirm_weak_crypto_primitive,
     confirm_weak_cached_hostkey,
     nullseat_is_always_utf8,
@@ -393,7 +424,12 @@ static const SeatVtable ScpSeatVtable =
     nullseat_get_windowid,
     nullseat_get_window_pixel_size,
     nullseat_stripctrl_new,
-    nullseat_set_trust_status_vacuously
+    nullseat_set_trust_status,
+    nullseat_can_set_trust_status_yes,
+    nullseat_has_mixed_input_stream_yes,
+    nullseat_verbose_yes,
+    nullseat_interactive_no,
+    nullseat_get_cursor_position,
   };
 //---------------------------------------------------------------------------
 ScpSeat::ScpSeat(TSecureShell * ASecureShell)
@@ -609,7 +645,7 @@ bool IsKeyEncrypted(TKeyType KeyType, const UnicodeString & FileName, UnicodeStr
     switch (KeyType)
     {
       case ktSSH2:
-        Result = (ssh2_userkey_encrypted(KeyFile, &CommentStr) != 0);
+        Result = (ppk_encrypted_f(KeyFile, &CommentStr) != 0);
         break;
 
       case ktOpenSSHPEM:
@@ -643,7 +679,7 @@ bool IsKeyEncrypted(TKeyType KeyType, const UnicodeString & FileName, UnicodeStr
   return Result;
 }
 //---------------------------------------------------------------------------
-TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const UnicodeString & Passphrase)
+TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const UnicodeString & Passphrase, UnicodeString & Error)
 {
   UTF8String UtfFileName = UTF8String(FileName);
   Filename * KeyFile = filename_from_str(UtfFileName.c_str());
@@ -655,7 +691,7 @@ TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const Un
     switch (KeyType)
     {
       case ktSSH2:
-        Ssh2Key = ssh2_load_userkey(KeyFile, AnsiPassphrase.c_str(), &ErrorStr);
+        Ssh2Key = ppk_load_f(KeyFile, AnsiPassphrase.c_str(), &ErrorStr);
         break;
 
       case ktOpenSSHPEM:
@@ -677,19 +713,48 @@ TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const Un
 
   if (Ssh2Key == NULL)
   {
-    UnicodeString Error = AnsiString(ErrorStr);
     // While theoretically we may get "unable to open key file" and
     // so we should check system error code,
     // we actully never get here unless we call KeyType previously
     // and handle ktUnopenable accordingly.
-    throw Exception(Error);
+    Error = AnsiString(ErrorStr);
   }
   else if (Ssh2Key == SSH2_WRONG_PASSPHRASE)
   {
-    throw Exception(LoadStr(AUTH_TRANSL_WRONG_PASSPHRASE));
+    Error = EmptyStr;
+    Ssh2Key = NULL;
   }
 
   return reinterpret_cast<TPrivateKey *>(Ssh2Key);
+}
+//---------------------------------------------------------------------------
+TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const UnicodeString & Passphrase)
+{
+  UnicodeString Error;
+  TPrivateKey * Result = LoadKey(KeyType, FileName, Passphrase, Error);
+  if (Result == NULL)
+  {
+    if (!Error.IsEmpty())
+    {
+      throw Exception(Error);
+    }
+    else
+    {
+      throw Exception(LoadStr(AUTH_TRANSL_WRONG_PASSPHRASE));
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString TestKey(TKeyType KeyType, const UnicodeString & FileName)
+{
+  UnicodeString Result;
+  TPrivateKey * Key = LoadKey(KeyType, FileName, EmptyStr, Result);
+  if (Key != NULL)
+  {
+    FreeKey(Key);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void ChangeKeyComment(TPrivateKey * PrivateKey, const UnicodeString & Comment)
@@ -715,8 +780,10 @@ void SaveKey(TKeyType KeyType, const UnicodeString & FileName,
       case ktSSH2:
         {
           ppk_save_parameters Params = ppk_save_default_parameters;
-          // Other parameters are probably not relevant for version 2
-          Params.fmt_version = 2;
+          if (Configuration->KeyVersion != 0)
+          {
+            Params.fmt_version = Configuration->KeyVersion;
+          }
           if (!ppk_save_f(KeyFile, Ssh2Key, PassphrasePtr, &Params))
           {
             int Error = errno;
@@ -740,6 +807,7 @@ void FreeKey(TPrivateKey * PrivateKey)
 {
   struct ssh2_userkey * Ssh2Key = reinterpret_cast<struct ssh2_userkey *>(PrivateKey);
   ssh_key_free(Ssh2Key->key);
+  sfree(Ssh2Key->comment);
   sfree(Ssh2Key);
 }
 //---------------------------------------------------------------------------
@@ -754,7 +822,7 @@ RawByteString LoadPublicKey(const UnicodeString & FileName, UnicodeString & Algo
     char * CommentStr = NULL;
     const char * ErrorStr = NULL;
     strbuf * PublicKeyBuf = strbuf_new();
-    if (!ssh2_userkey_loadpub(KeyFile, &AlgorithmStr, BinarySink_UPCAST(PublicKeyBuf), &CommentStr, &ErrorStr))
+    if (!ppk_loadpub_f(KeyFile, &AlgorithmStr, BinarySink_UPCAST(PublicKeyBuf), &CommentStr, &ErrorStr))
     {
       UnicodeString Error = UnicodeString(AnsiString(ErrorStr));
       throw Exception(Error);
@@ -945,15 +1013,10 @@ UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const s
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall GetSsh1KeyType()
-{
-  return UnicodeString(ssh_rsa.cache_id);
-}
-//---------------------------------------------------------------------------
 UnicodeString __fastcall GetKeyTypeHuman(const UnicodeString & KeyType)
 {
   UnicodeString Result;
-  if (KeyType == ssh_dss.cache_id)
+  if (KeyType == ssh_dsa.cache_id)
   {
     Result = L"DSA";
   }

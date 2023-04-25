@@ -32,7 +32,7 @@ struct TSessionInfo
   bool CertificateVerifiedManually;
 };
 //---------------------------------------------------------------------------
-enum TFSCapability { fcUserGroupListing, fcModeChanging, fcGroupChanging,
+enum TFSCapability { fcUserGroupListing, fcModeChanging, fcAclChangingFiles, fcGroupChanging,
   fcOwnerChanging, fcGroupOwnerChangingByID, fcAnyCommand, fcHardLink,
   fcSymbolicLink,
   // With WebDAV this is always true, to avoid double-click on
@@ -132,13 +132,21 @@ public:
   void __fastcall Destination(const UnicodeString & Destination);
 };
 //---------------------------------------------------------------------------
-class TUploadSessionAction : public TFileLocationSessionAction
+class TTransferSessionAction : public TFileLocationSessionAction
+{
+public:
+  TTransferSessionAction(TActionLog * Log, TLogAction Action);
+
+  void Size(__int64 Size);
+};
+//---------------------------------------------------------------------------
+class TUploadSessionAction : public TTransferSessionAction
 {
 public:
   __fastcall TUploadSessionAction(TActionLog * Log);
 };
 //---------------------------------------------------------------------------
-class TDownloadSessionAction : public TFileLocationSessionAction
+class TDownloadSessionAction : public TTransferSessionAction
 {
 public:
   __fastcall TDownloadSessionAction(TActionLog * Log);
@@ -238,8 +246,12 @@ public:
   __fastcall TDifferenceSessionAction(TActionLog * Log, const TSynchronizeChecklist::TItem * Item);
 };
 //---------------------------------------------------------------------------
+typedef void __fastcall (__closure *TAddLogEntryEvent)(const UnicodeString & S);
+//---------------------------------------------------------------------------
 class TSessionLog
 {
+friend class TApplicationLog;
+
 public:
   __fastcall TSessionLog(TSessionUI* UI, TDateTime Started, TSessionData * SessionData,
     TConfiguration * Configuration);
@@ -261,6 +273,7 @@ public:
 protected:
   void __fastcall CloseLogFile();
   bool __fastcall LogToFile();
+  static void __fastcall DoAddStartupInfo(TAddLogEntryEvent AddLogEntry, TConfiguration * AConfiguration, bool DoNotMaskPaswords);
 
 private:
   TConfiguration * FConfiguration;
@@ -287,11 +300,10 @@ private:
   void __fastcall DoAddStartupInfo(TSessionData * Data);
   UnicodeString __fastcall GetTlsVersionName(TTlsVersion TlsVersion);
   UnicodeString __fastcall LogSensitive(const UnicodeString & Str);
-  void __fastcall AddOption(const UnicodeString & LogStr);
-  void __fastcall AddOptions(TOptions * Options);
-  UnicodeString __fastcall GetCmdLineLog();
+  static UnicodeString __fastcall GetCmdLineLog(TConfiguration * AConfiguration);
   void __fastcall CheckSize(__int64 Addition);
   UnicodeString __fastcall LogPartFileName(const UnicodeString & BaseName, int Index);
+  void __fastcall DoAddStartupInfoEntry(const UnicodeString & S);
 };
 //---------------------------------------------------------------------------
 class TActionLog
@@ -344,6 +356,22 @@ private:
   void __fastcall OpenLogFile();
   UnicodeString __fastcall GetLogFileName();
   void __fastcall SetEnabled(bool value);
+};
+//---------------------------------------------------------------------------
+class TApplicationLog
+{
+public:
+  TApplicationLog();
+  ~TApplicationLog();
+  void Enable(const UnicodeString & Path);
+  void AddStartupInfo();
+  void __fastcall Log(const UnicodeString & S);
+  __property bool Logging = { read = FLogging };
+
+private:
+  void * FFile;
+  bool FLogging;
+  std::unique_ptr<TCriticalSection> FCriticalSection;
 };
 //---------------------------------------------------------------------------
 #endif

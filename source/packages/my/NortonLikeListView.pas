@@ -52,6 +52,7 @@ type
   protected
     { Protected declarations }
     FClearingItems: Boolean;
+    FInsertingNewUnselectedItem: Boolean;
     FUpdatingSelection: Integer;
     FNextCharToIgnore: Word;
     FHeaderHandle: HWND;
@@ -76,6 +77,8 @@ type
     function CanEdit(Item: TListItem): Boolean; override;
     function GetPopupMenu: TPopupMenu; override;
     procedure ChangeScale(M, D: Integer); override;
+    procedure SetItemSelectedByIndex(Index: Integer; Select: Boolean);
+    function GetItemSelectedByIndex(Index: Integer): Boolean;
   public
     { Public declarations }
     constructor Create(AOwner: TComponent); override;
@@ -113,6 +116,7 @@ begin
   FFirstSelected := -1;
   FLastSelected := -1;
   FClearingItems := False;
+  FInsertingNewUnselectedItem := False;
   MultiSelect := True;
   FDontSelectItem := False;
   FDontUnSelectItem := False;
@@ -220,7 +224,7 @@ begin
   begin
     Index := Item.Index;
 
-    if Item.Selected then
+    if GetItemSelectedByIndex(Index) then
       ItemUnselected(Item, Index);
 
     if FManageSelection then
@@ -297,13 +301,13 @@ begin
   if Assigned(Item) and (Item.Selected or ((NortonLike <> nlOff) and (SelCount = 0))) then
   begin
     Index := Item.Index + 1;
-    while (Index < Items.Count) and Items[Index].Selected do Inc(Index);
-    if (Index >= Items.Count) or Items[Index].Selected then
+    while (Index < Items.Count) and GetItemSelectedByIndex(Index) do Inc(Index);
+    if (Index >= Items.Count) or GetItemSelectedByIndex(Index) then
     begin
       Index := Item.Index - 1;
-      while (Index >= 0) and Items[Index].Selected do Dec(Index);
+      while (Index >= 0) and GetItemSelectedByIndex(Index) do Dec(Index);
     end;
-    if (Index >= 0) and (Index < Items.Count) and (not Items[Index].Selected) then
+    if (Index >= 0) and (Index < Items.Count) and (not GetItemSelectedByIndex(Index)) then
       Result := Items[Index]
     else
       Result := nil;
@@ -547,8 +551,9 @@ procedure TCustomNortonLikeListView.WMSysCommand(var Message: TWMSysCommand);
 begin
   // Ugly workaround to avoid Windows beeping when Alt+Grey +/- are pressed
   // (for (Us)Select File with Same Ext commands)
+  // The same for Alt+Enter (for Properties)
   if (Message.CmdType = SC_KEYMENU) and
-     ((Message.Key = Word('+')) or (Message.Key = Word('-'))) then
+     ((Message.Key = Word('+')) or (Message.Key = Word('-')) or (Message.Key = VK_RETURN)) then
   begin
     Message.Result := 1;
   end
@@ -678,22 +683,64 @@ begin
     ItemFocused := Item;
 end;
 
+// TListItem.Selected needs an index, which is expensively looked up.
+// If we know it already, avoid that loop up.
+procedure TCustomNortonLikeListView.SetItemSelectedByIndex(Index: Integer; Select: Boolean);
+var
+  State: Integer;
+begin
+  if Select then State := LVIS_SELECTED
+    else State := 0;
+  ListView_SetItemState(Handle, Index, State, LVIS_SELECTED);
+end;
+
+function TCustomNortonLikeListView.GetItemSelectedByIndex(Index: Integer): Boolean;
+begin
+  Result := (ListView_GetItemState(Handle, Index, LVIS_SELECTED) and LVIS_SELECTED) <> 0;
+end;
+
 procedure TCustomNortonLikeListView.SelectAll(Mode: TSelectMode; Exclude: TListItem);
 var
   Index: Integer;
   Item: TListItem;
+  NewState: Boolean;
 begin
   BeginSelectionUpdate;
   try
-    for Index := 0 to Items.Count - 1 do
+    // Setting/Querying selected state is expensive.
+    // This optimization is important for call from TCustomNortonLikeListView.WMLButtonUp in nlKeyboard mode.
+    if (Mode = smNone) and
+       // If there are too many, plain iteration is more effective then using GetNextItem
+       // (though that can be optimized too, by passing index in and out instead of an item pointer)
+       (FSelCount < Items.Count div 4) then
     begin
-      Item := Items[Index];
-      if Item <> Exclude then
+      Item := GetNextItem(nil, sdAll, [isSelected]);
+      while Assigned(Item) do
       begin
-        case Mode of
-          smAll: Item.Selected := True;
-          smNone: Item.Selected := False;
-          smInvert: Item.Selected := not Item.Selected;
+        if Item <> Exclude then
+          Item.Selected := False;
+        Item := GetNextItem(Item, sdAll, [isSelected]);
+      end;
+    end
+      else
+    begin
+      for Index := 0 to Items.Count - 1 do
+      begin
+        Item := Items[Index];
+        if Item <> Exclude then
+        begin
+          case Mode of
+            smAll: NewState := True;
+            smNone: NewState := False;
+            smInvert: NewState := not GetItemSelectedByIndex(Index);
+              else
+            begin
+              Assert(False);
+              NewState := False;
+            end;
+          end;
+
+          SetItemSelectedByIndex(Index, NewState);
         end;
       end;
     end;
@@ -861,7 +908,7 @@ begin
           else
         begin
           Index := First;
-          while (Index <= Last) and (not (Items[Index].Selected)) do
+          while (Index <= Last) and (not GetItemSelectedByIndex(Index)) do
           begin
             Inc(Index);
           end;
@@ -870,7 +917,7 @@ begin
           begin
             Result := nil;
 
-            if Assigned(StartItem) and StartItem.Selected then
+            if (Start >= 0) and GetItemSelectedByIndex(Start) then
             begin
               Assert((FLastSelected < 0) or (FLastSelected = Start));
               FLastSelected := Start;
@@ -879,7 +926,7 @@ begin
             else
           begin
             Result := Items[Index];
-            Assert(Result.Selected);
+            Assert(GetItemSelectedByIndex(Index));
 
             if not Assigned(StartItem) then
             begin
@@ -924,8 +971,12 @@ end;
 procedure TCustomNortonLikeListView.InsertItem(Item: TListItem);
 begin
   inherited;
-  if Item.Selected then
+
+  if (not FInsertingNewUnselectedItem) and // Optimization to avoid expensive Item.Selected
+     Item.Selected then
+  begin
     ItemSelected(Item, -1);
+  end;
 end;
 
 function TCustomNortonLikeListView.GetItemFromHItem(const Item: TLVItem): TListItem;

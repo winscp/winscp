@@ -301,10 +301,10 @@ object AuthenticateForm: TAuthenticateForm
       Caption = '&Copy'
       OnExecute = LabelCopyActionExecute
     end
-    object LabelOpenLinkAction: TAction
+    object LabelOpenLinkAction2: TAction
       Category = 'Label'
-      Caption = '&Open'
-      OnExecute = LabelOpenLinkActionExecute
+      Caption = '&Open Link'
+      OnExecute = LabelOpenLinkAction2Execute
     end
   end
   object BannerPopupMenu: TPopupMenu
@@ -333,7 +333,7 @@ object AuthenticateForm: TAuthenticateForm
       Caption = '-'
     end
     object Open1: TMenuItem
-      Action = LabelOpenLinkAction
+      Action = LabelOpenLinkAction2
       Default = True
     end
   end

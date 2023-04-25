@@ -10,6 +10,7 @@ class TSessionData;
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure* TProcessMessagesEvent)();
 //---------------------------------------------------------------------------
+void GUIFinalize();
 bool __fastcall FindFile(UnicodeString & Path);
 bool __fastcall FindTool(const UnicodeString & Name, UnicodeString & Path);
 void __fastcall ExecuteTool(const UnicodeString & Name);

@@ -31,7 +31,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       TabOrder = 0
       object TBXSubmenuItem5: TTBXSubmenuItem
         Caption = '&File'
-        HelpKeyword = 'ui_explorer_menu#file'
+        HelpKeyword = 'ui_explorer_menu#files'
         Hint = 'File operations'
         object TBXSubmenuItem26: TTBXSubmenuItem
           Caption = '&New'
@@ -285,7 +285,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       end
       object TBXSubmenuItem19: TTBXSubmenuItem
         Caption = '&Session'
-        HelpKeyword = 'ui_explorer_menu#session'
+        HelpKeyword = 'ui_explorer_menu#tabs'
         Hint = 'Session commands'
         object TBXItem113: TTBXItem
           Action = NonVisualDataModule.NewSessionAction
@@ -1021,6 +1021,8 @@ inherited ScpExplorerForm: TScpExplorerForm
       Left = 299
       Top = 182
       Caption = 'Custom Commands'
+      ChevronMenu = True
+      ChevronPriorityForNewItems = tbcpLowest
       DockPos = 193
       DockRow = 7
       Images = GlyphsModule.ExplorerImages
@@ -1032,19 +1034,19 @@ inherited ScpExplorerForm: TScpExplorerForm
   end
   inherited RemotePanel: TPanel
     Left = 9
-    Top = 230
+    Top = 239
     Width = 614
-    Height = 102
-    Constraints.MinHeight = 100
+    Height = 93
+    Constraints.MinHeight = 93
     Constraints.MinWidth = 210
     inherited RemotePanelSplitter: TSplitter
-      Height = 71
+      Height = 62
       Hint = 
         'Drag to resize directory tree. Double click to hide directory tr' +
         'ee.'
     end
     inherited RemoteStatusBar: TTBXStatusBar
-      Top = 80
+      Top = 71
       Width = 614
       Height = 22
       Images = GlyphsModule.SessionImages
@@ -1104,19 +1106,24 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     inherited RemoteDirPanel: TPanel
       Width = 442
-      Height = 71
+      Height = 62
       inherited RemoteDirView: TUnixDirView
+        Width = 442
+        Height = 62
         OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
         OnPathChange = RemoteDirViewPathChange
       end
     end
     inherited RemoteDrivePanel: TPanel
-      Height = 71
+      Height = 62
       Constraints.MinWidth = 40
+      inherited RemoteDriveView: TUnixDriveView
+        Height = 62
+      end
     end
     object BottomDock: TTBXDock
       Left = 0
-      Top = 71
+      Top = 62
       Width = 614
       Height = 9
       Color = clBtnFace
@@ -1144,21 +1151,25 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
   end
   inherited SessionsPageControl: TThemePageControl
-    Top = 209
+    Top = 218
     Width = 632
   end
   object LeftDock: TTBXDock [5]
     Left = 0
-    Top = 230
+    Top = 239
     Width = 9
-    Height = 102
+    Height = 93
     Position = dpLeft
   end
   object RightDock: TTBXDock [6]
     Left = 623
-    Top = 230
+    Top = 239
     Width = 9
-    Height = 102
+    Height = 93
     Position = dpRight
+  end
+  inherited MessageDock: TTBXDock
+    Top = 209
+    Width = 632
   end
 end

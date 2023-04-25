@@ -387,7 +387,7 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
       }
       else if (ProgressData->Operation == foCalculateSize)
       {
-        ProgressStr = LoadStr(QUEUE_CALCULATING_SIZE);
+        ProgressStr = LoadStr(QUEUE_LISTING);
       }
     }
     Values[5] = ProgressStr;

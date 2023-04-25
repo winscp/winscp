@@ -55,7 +55,7 @@ __published:
   TPopupMenu *LabelPopupMenu;
   TMenuItem *N2;
   TAction *LabelCopyAction;
-  TAction *LabelOpenLinkAction;
+  TAction *LabelOpenLinkAction2;
   TMenuItem *Open1;
   TMenuItem *Copy1;
   void __fastcall FormShow(TObject *Sender);
@@ -67,7 +67,7 @@ __published:
   void __fastcall BannerMonospacedFontActionExecute(TObject *Sender);
   void __fastcall LogViewMouseMove(TObject *Sender, TShiftState Shift, int X, int Y);
   void __fastcall LabelCopyActionExecute(TObject *Sender);
-  void __fastcall LabelOpenLinkActionExecute(TObject *Sender);
+  void __fastcall LabelOpenLinkAction2Execute(TObject *Sender);
 
 public:
   __fastcall TAuthenticateForm(TComponent * Owner);

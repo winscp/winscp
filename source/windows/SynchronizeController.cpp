@@ -57,6 +57,7 @@ void __fastcall TSynchronizeController::StartStop(TObject * Sender,
       }
 
       FCopyParam = CopyParam;
+      FCopyParam.IncludeFileMask.SetRoots(Params.LocalDirectory, Params.RemoteDirectory);
       FSynchronizeParams = Params;
 
       DebugAssert(OnAbort);

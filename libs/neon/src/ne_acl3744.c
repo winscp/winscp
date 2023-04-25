@@ -1,6 +1,6 @@
 /*
    Access control
-   Copyright (C) 2001-2006, 2008, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 2001-2021, Joe Orton <joe@manyfish.co.uk>
    Copyright (C) 2001, Arun Garg <arung@pspl.co.in>
    Copyright (C) 2007 Henrik Holst <henrik.holst2@gmail.com>
 

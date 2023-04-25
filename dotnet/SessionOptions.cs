@@ -76,6 +76,7 @@ namespace WinSCP
         [Obsolete("Use SshHostKeyPolicy")]
         public bool GiveUpSecurityAndAcceptAnySshHostKey { get { return GetGiveUpSecurityAndAcceptAnySshHostKey(); } set { SetGiveUpSecurityAndAcceptAnySshHostKey(value); } }
         public string SshPrivateKeyPath { get; set; }
+        public string SshPrivateKey { get; set; }
         [Obsolete("Use PrivateKeyPassphrase")]
         public string SshPrivateKeyPassphrase { get { return PrivateKeyPassphrase; } set { PrivateKeyPassphrase = value; } }
 

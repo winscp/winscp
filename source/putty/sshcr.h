@@ -18,24 +18,25 @@
  * Edit and Continue debugging feature causes their compiler to
  * violate ANSI C. To disable Edit and Continue debugging:
  *
- *  - right-click ssh.c in the FileView
  *  - click Settings
  *  - select the C/C++ tab and the General category
  *  - under `Debug info:', select anything _other_ than `Program
  *    Database for Edit and Continue'.
  */
 
-#define crBegin(v)      { int *crLine = &v; switch(v) { case 0:;
+#define crBegin(v)      do { int *crLine = &v; switch(v) { case 0:
 #define crBeginState    crBegin(s->crLine)
 #define crStateP(t, v)                          \
     struct t *s;                                \
     if (!(v)) { s = (v) = snew(struct t); s->crLine = 0; }      \
     s = (v);
 #define crState(t)      crStateP(t, ssh->t)
-#define crFinish(z)     } *crLine = 0; return (z); }
-#define crFinishV       } *crLine = 0; return; }
-#define crFinishFree(z) } sfree(s); return (z); }
-#define crFinishFreeV   } sfree(s); return; }
+#define crFinish(z)     } *crLine = 0; return (z); } while (0)
+#define crFinishV       } *crLine = 0; return; } while (0)
+#define crFinishFreed(z) } return (z); } while (0)
+#define crFinishFreedV   } return; } while (0)
+#define crFinishFree(z) } sfree(s); return (z); } while (0)
+#define crFinishFreeV   } sfree(s); return; } while (0)
 #define crReturn(z)     \
         do {\
             *crLine =__LINE__; return (z); case __LINE__:;\

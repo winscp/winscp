@@ -17,15 +17,14 @@ enum TFSProtocol { fsSCPonly = 0, fsSFTP = 1, fsSFTPonly = 2, fsFTP = 5, fsWebDA
 #define FSPROTOCOL_COUNT (fsS3+1)
 extern const wchar_t * ProxyMethodNames;
 enum TProxyMethod { pmNone, pmSocks4, pmSocks5, pmHTTP, pmTelnet, pmCmd };
-enum TSshProt { ssh1only, ssh1deprecated, ssh2deprecated, ssh2only };
 enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGEx, kexRSA, kexECDH };
 #define KEX_COUNT (kexECDH+1)
-enum THostKey { hkWarn, hkRSA, hkDSA, hkECDSA, hkED25519, hkMax };
+enum THostKey { hkWarn, hkRSA, hkDSA, hkECDSA, hkED25519, hkED448, hkMax };
 #define HOSTKEY_COUNT (hkMax)
 enum TGssLib { gssGssApi32, gssSspi, gssCustom };
 #define GSSLIB_COUNT (gssCustom+1)
 // names have to match PuTTY registry entries (see settings.c)
-enum TSshBug { sbIgnore1, sbPlainPW1, sbRSA1, sbHMAC2, sbDeriveKey2, sbRSAPad2,
+enum TSshBug { sbHMAC2, sbDeriveKey2, sbRSAPad2,
   sbPKSessID2, sbRekey2, sbMaxPkt2, sbIgnore2, sbOldGex2, sbWinAdj, sbChanReq };
 #define BUG_COUNT (sbChanReq+1)
 enum TSftpBug { sbSymlink, sbSignedTS };
@@ -55,6 +54,7 @@ enum TParseUrlFlags
 {
   pufAllowStoredSiteWithProtocol = 0x01,
   pufUnsafe = 0x02,
+  pufPreferProtocol = 0x04,
 };
 //---------------------------------------------------------------------------
 extern const UnicodeString CipherNames[CIPHER_COUNT];
@@ -114,7 +114,6 @@ private:
   bool FTryAgent;
   bool FAgentFwd;
   UnicodeString FListingCommand;
-  bool FAuthTIS;
   bool FAuthKI;
   bool FAuthKIPassword;
   bool FAuthGSSAPI;
@@ -122,7 +121,6 @@ private:
   bool FGSSAPIFwdTGT;
   bool FChangeUsername;
   bool FCompression;
-  TSshProt FSshProt;
   bool FSsh2DES;
   bool FSshNoUserAuth;
   TCipher FCiphers[CIPHER_COUNT];
@@ -133,6 +131,7 @@ private:
   bool FClearAliases;
   TEOLType FEOLType;
   bool FTrimVMSVersions;
+  bool FVMSAllRevisions;
   UnicodeString FPublicKeyFile;
   UnicodeString FPassphrase;
   UnicodeString FPuttyProtocol;
@@ -140,10 +139,10 @@ private:
   bool FModified;
   UnicodeString FLocalDirectory;
   UnicodeString FRemoteDirectory;
-  bool FLockInHome;
   bool FSpecial;
   bool FSynchronizeBrowsing;
   bool FUpdateDirectories;
+  bool FRequireDirectories;
   bool FCacheDirectories;
   bool FCacheDirectoryChanges;
   bool FPreserveDirectoryChanges;
@@ -209,6 +208,7 @@ private:
   UnicodeString FTunnelUserName;
   RawByteString FTunnelPassword;
   UnicodeString FTunnelPublicKeyFile;
+  RawByteString FTunnelPassphrase;
   int FTunnelLocalPortNumber;
   UnicodeString FTunnelPortFwd;
   UnicodeString FTunnelHostKey;
@@ -228,6 +228,7 @@ private:
   UnicodeString FS3SessionToken;
   TS3UrlStyle FS3UrlStyle;
   TAutoSwitch FS3MaxKeys;
+  bool FS3CredentialsEnv;
   bool FIsWorkspace;
   UnicodeString FLink;
   UnicodeString FNameOverride;
@@ -261,7 +262,6 @@ private:
   void __fastcall SetPingInterval(int value);
   void __fastcall SetTryAgent(bool value);
   void __fastcall SetAgentFwd(bool value);
-  void __fastcall SetAuthTIS(bool value);
   void __fastcall SetAuthKI(bool value);
   void __fastcall SetAuthKIPassword(bool value);
   void __fastcall SetAuthGSSAPI(bool value);
@@ -269,7 +269,6 @@ private:
   void __fastcall SetGSSAPIFwdTGT(bool value);
   void __fastcall SetChangeUsername(bool value);
   void __fastcall SetCompression(bool value);
-  void __fastcall SetSshProt(TSshProt value);
   void __fastcall SetSsh2DES(bool value);
   void __fastcall SetSshNoUserAuth(bool value);
   void __fastcall SetCipher(int Index, TCipher value);
@@ -306,7 +305,6 @@ private:
   void __fastcall SetCacheDirectories(bool value);
   void __fastcall SetCacheDirectoryChanges(bool value);
   void __fastcall SetPreserveDirectoryChanges(bool value);
-  void __fastcall SetLockInHome(bool value);
   void __fastcall SetSpecial(bool value);
   UnicodeString __fastcall GetInfoTip();
   bool __fastcall GetDefaultShell();
@@ -317,6 +315,7 @@ private:
   void __fastcall SetDefaultShell(bool value);
   void __fastcall SetEOLType(TEOLType value);
   void __fastcall SetTrimVMSVersions(bool value);
+  void __fastcall SetVMSAllRevisions(bool value);
   void __fastcall SetLookupUserGroups(TAutoSwitch value);
   void __fastcall SetReturnVar(UnicodeString value);
   void __fastcall SetExitCode1IsError(bool value);
@@ -331,7 +330,6 @@ private:
   void __fastcall SetSourceAddress(const UnicodeString & value);
   void __fastcall SetProtocolFeatures(const UnicodeString & value);
   void __fastcall SetSshSimple(bool value);
-  UnicodeString __fastcall GetSshProtStr();
   bool __fastcall GetUsesSsh();
   void __fastcall SetCipherList(UnicodeString value);
   UnicodeString __fastcall GetCipherList() const;
@@ -394,6 +392,8 @@ private:
   void __fastcall SetTunnelPassword(UnicodeString value);
   UnicodeString __fastcall GetTunnelPassword() const;
   void __fastcall SetTunnelPublicKeyFile(UnicodeString value);
+  void __fastcall SetTunnelPassphrase(UnicodeString value);
+  UnicodeString __fastcall GetTunnelPassphrase() const;
   void __fastcall SetTunnelPortFwd(UnicodeString value);
   void __fastcall SetTunnelLocalPortNumber(int value);
   bool __fastcall GetTunnelAutoassignLocalPortNumber();
@@ -414,6 +414,7 @@ private:
   void __fastcall SetS3SessionToken(UnicodeString value);
   void __fastcall SetS3UrlStyle(TS3UrlStyle value);
   void __fastcall SetS3MaxKeys(TAutoSwitch value);
+  void __fastcall SetS3CredentialsEnv(bool value);
   void __fastcall SetLogicalHostName(UnicodeString value);
   void __fastcall SetIsWorkspace(bool value);
   void __fastcall SetLink(UnicodeString value);
@@ -469,6 +470,7 @@ private:
     const UnicodeString & Name, bool Value);
   TStrings * __fastcall GetRawSettingsForUrl();
   void __fastcall DoCopyData(TSessionData * SourceData, bool NoRecrypt);
+  bool HasS3AutoCredentials();
   template<class AlgoT>
   void __fastcall SetAlgoList(AlgoT * List, const AlgoT * DefaultList, const UnicodeString * Names,
     int Count, AlgoT WarnAlgo, UnicodeString value);
@@ -487,6 +489,7 @@ public:
   void __fastcall ApplyRawSettings(TStrings * RawSettings, bool Unsafe);
   void __fastcall ApplyRawSettings(THierarchicalStorage * Storage, bool Unsafe);
   void __fastcall ImportFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
+  void ImportFromOpenssh(TStrings * Lines);
   void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport,
     const TSessionData * Default = NULL);
   void __fastcall SaveRecryptedPasswords(THierarchicalStorage * Storage);
@@ -509,6 +512,7 @@ public:
   TStrings * __fastcall SaveToOptions(const TSessionData * Default, bool SaveName, bool PuttyExport);
   void __fastcall ConfigureTunnel(int PortNumber);
   void __fastcall RollbackTunnel();
+  TSessionData * CreateTunnelData(int TunnelLocalPortNumber);
   void __fastcall ExpandEnvironmentVariables();
   void __fastcall DisableAuthentationsExceptPassword();
   bool __fastcall IsSame(const TSessionData * Default, bool AdvancedOnly);
@@ -518,6 +522,8 @@ public:
   UnicodeString __fastcall GenerateSessionUrl(unsigned int Flags);
   bool __fastcall HasRawSettingsForUrl();
   bool __fastcall HasSessionName();
+  bool HasAutoCredentials();
+  int GetDefaultPort();
 
   UnicodeString __fastcall GenerateOpenCommandArgs(bool Rtf);
   void __fastcall GenerateAssemblyCode(TAssemblyLanguage Language, UnicodeString & Head, UnicodeString & Tail, int & Indent);
@@ -529,7 +535,7 @@ public:
   static UnicodeString __fastcall ExtractLocalName(const UnicodeString & Name);
   static UnicodeString __fastcall ExtractFolderName(const UnicodeString & Name);
   static UnicodeString __fastcall ComposePath(const UnicodeString & Path, const UnicodeString & Name);
-  static bool __fastcall IsSensitiveOption(const UnicodeString & Option);
+  static bool __fastcall IsSensitiveOption(const UnicodeString & Option, const UnicodeString & Value);
   static bool __fastcall IsOptionWithParameters(const UnicodeString & Option);
   static bool __fastcall MaskPasswordInOptionParameter(const UnicodeString & Option, UnicodeString & Param);
   static UnicodeString __fastcall FormatSiteKey(const UnicodeString & HostName, int PortNumber);
@@ -549,7 +555,6 @@ public:
   __property bool TryAgent  = { read=FTryAgent, write=SetTryAgent };
   __property bool AgentFwd  = { read=FAgentFwd, write=SetAgentFwd };
   __property UnicodeString ListingCommand = { read = FListingCommand, write = SetListingCommand };
-  __property bool AuthTIS  = { read=FAuthTIS, write=SetAuthTIS };
   __property bool AuthKI  = { read=FAuthKI, write=SetAuthKI };
   __property bool AuthKIPassword  = { read=FAuthKIPassword, write=SetAuthKIPassword };
   __property bool AuthGSSAPI  = { read=FAuthGSSAPI, write=SetAuthGSSAPI };
@@ -557,7 +562,6 @@ public:
   __property bool GSSAPIFwdTGT = { read=FGSSAPIFwdTGT, write=SetGSSAPIFwdTGT };
   __property bool ChangeUsername  = { read=FChangeUsername, write=SetChangeUsername };
   __property bool Compression  = { read=FCompression, write=SetCompression };
-  __property TSshProt SshProt  = { read=FSshProt, write=SetSshProt };
   __property bool UsesSsh = { read = GetUsesSsh };
   __property bool Ssh2DES  = { read=FSsh2DES, write=SetSsh2DES };
   __property bool SshNoUserAuth  = { read=FSshNoUserAuth, write=SetSshNoUserAuth };
@@ -585,10 +589,10 @@ public:
   __property UnicodeString RemoteDirectory  = { read=FRemoteDirectory, write=SetRemoteDirectory };
   __property bool SynchronizeBrowsing = { read=FSynchronizeBrowsing, write=SetSynchronizeBrowsing };
   __property bool UpdateDirectories = { read=FUpdateDirectories, write=SetUpdateDirectories };
+  __property bool RequireDirectories = { read=FRequireDirectories, write=FRequireDirectories };
   __property bool CacheDirectories = { read=FCacheDirectories, write=SetCacheDirectories };
   __property bool CacheDirectoryChanges = { read=FCacheDirectoryChanges, write=SetCacheDirectoryChanges };
   __property bool PreserveDirectoryChanges = { read=FPreserveDirectoryChanges, write=SetPreserveDirectoryChanges };
-  __property bool LockInHome = { read=FLockInHome, write=SetLockInHome };
   __property bool Special = { read=FSpecial, write=SetSpecial };
   __property bool Selected  = { read=FSelected, write=FSelected };
   __property UnicodeString InfoTip  = { read=GetInfoTip };
@@ -596,6 +600,7 @@ public:
   __property bool DetectReturnVar = { read = GetDetectReturnVar, write = SetDetectReturnVar };
   __property TEOLType EOLType = { read = FEOLType, write = SetEOLType };
   __property bool TrimVMSVersions = { read = FTrimVMSVersions, write = SetTrimVMSVersions };
+  __property bool VMSAllRevisions = { read = FVMSAllRevisions, write = SetVMSAllRevisions };
   __property TAutoSwitch LookupUserGroups = { read = FLookupUserGroups, write = SetLookupUserGroups };
   __property UnicodeString ReturnVar = { read = FReturnVar, write = SetReturnVar };
   __property bool ExitCode1IsError = { read = FExitCode1IsError, write = SetExitCode1IsError };
@@ -611,7 +616,6 @@ public:
   __property UnicodeString SourceAddress = { read=FSourceAddress, write=SetSourceAddress };
   __property UnicodeString ProtocolFeatures = { read=FProtocolFeatures, write=SetProtocolFeatures };
   __property bool SshSimple  = { read=FSshSimple, write=SetSshSimple };
-  __property UnicodeString SshProtStr  = { read=GetSshProtStr };
   __property UnicodeString CipherList  = { read=GetCipherList, write=SetCipherList };
   __property UnicodeString KexList  = { read=GetKexList, write=SetKexList };
   __property UnicodeString HostKeyList  = { read=GetHostKeyList, write=SetHostKeyList };
@@ -662,6 +666,7 @@ public:
   __property UnicodeString TunnelUserName = { read = FTunnelUserName, write = SetTunnelUserName };
   __property UnicodeString TunnelPassword = { read = GetTunnelPassword, write = SetTunnelPassword };
   __property UnicodeString TunnelPublicKeyFile = { read = FTunnelPublicKeyFile, write = SetTunnelPublicKeyFile };
+  __property UnicodeString TunnelPassphrase = { read = GetTunnelPassphrase, write = SetTunnelPassphrase };
   __property bool TunnelAutoassignLocalPortNumber = { read = GetTunnelAutoassignLocalPortNumber };
   __property int TunnelLocalPortNumber = { read = FTunnelLocalPortNumber, write = SetTunnelLocalPortNumber };
   __property UnicodeString TunnelPortFwd = { read = FTunnelPortFwd, write = SetTunnelPortFwd };
@@ -684,6 +689,7 @@ public:
   __property UnicodeString S3SessionToken = { read = FS3SessionToken, write = SetS3SessionToken };
   __property TS3UrlStyle S3UrlStyle = { read = FS3UrlStyle, write = SetS3UrlStyle };
   __property TAutoSwitch S3MaxKeys = { read = FS3MaxKeys, write = SetS3MaxKeys };
+  __property bool S3CredentialsEnv = { read = FS3CredentialsEnv, write = SetS3CredentialsEnv };
   __property bool IsWorkspace = { read = FIsWorkspace, write = SetIsWorkspace };
   __property UnicodeString Link = { read = FLink, write = SetLink };
   __property UnicodeString NameOverride = { read = FNameOverride, write = SetNameOverride };
@@ -714,6 +720,7 @@ public:
   void __fastcall Saved();
   void __fastcall ImportFromFilezilla(const UnicodeString FileName, const UnicodeString ConfigurationFileName);
   void __fastcall ImportFromKnownHosts(TStrings * Lines);
+  void ImportFromOpenssh(TStrings * Lines);
   void __fastcall Export(const UnicodeString FileName);
   void __fastcall Load(THierarchicalStorage * Storage, bool AsModified = false,
     bool UseDefaults = false, bool PuttyImport = false);
@@ -751,6 +758,7 @@ public:
     const UnicodeString & SourceKey, TStoredSessionList * Sessions, bool OnlySelected);
   static void __fastcall ImportSelectedKnownHosts(TStoredSessionList * Sessions);
   static bool __fastcall OpenHostKeysSubKey(THierarchicalStorage * Storage, bool CanCreate);
+  static void SelectKnownHostsForSelectedSessions(TStoredSessionList * KnownHosts, TStoredSessionList * Sessions);
 
 private:
   TSessionData * FDefaultSettings;

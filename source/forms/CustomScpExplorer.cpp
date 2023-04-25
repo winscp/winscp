@@ -160,6 +160,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
     FFormRestored(false),
     TForm(Owner)
 {
+  AddStartupSequence(L"F");
   FInvalid = false;
   FCurrentSide = osRemote;
   FEverShown = false;
@@ -288,6 +289,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   SessionsPageControl->Images = FSessionColors;
   UpdateQueueLabel();
   FRemoteDirViewWasFocused = true;
+  CheckStoreTransition();
 
   CreateHiddenWindow();
   StartUpdates();
@@ -894,7 +896,7 @@ void __fastcall TCustomScpExplorerForm::SetTaskbarListProgressValue(TFileOperati
   {
     OverallProgress = FProgressForm->SynchronizeProgress->Progress(ProgressData);
   }
-  else if (!TFileOperationProgressType::IsIndeterminateOperation(ProgressData->Operation))
+  else if (!ProgressData->IsIndeterminate())
   {
     OverallProgress = ProgressData->OverallProgress();
   }
@@ -957,6 +959,71 @@ void __fastcall TCustomScpExplorerForm::UpdateQueueLabel()
     }
   }
   QueueLabel->Caption = Caption;
+}
+//---------------------------------------------------------------------------
+void TCustomScpExplorerForm::CheckStoreTransition()
+{
+  if (WinConfiguration->StoreTransition == stInit)
+  {
+    if (IsUWP())
+    {
+      WinConfiguration->StoreTransition = stStoreFresh;
+      AppLog(L"Fresh UWP/store installation");
+    }
+    else
+    {
+      WinConfiguration->StoreTransition = stStandard;
+      AppLog(L"Fresh standard installation");
+    }
+  }
+  else if ((WinConfiguration->StoreTransition == stStandard) && IsUWP())
+  {
+    WinConfiguration->StoreTransition = stStoreMigrated;
+    WinConfiguration->FirstRun = WinConfiguration->FirstRun + L"=>" + StandardDatestamp();
+    AppLog(L"Standard installation migrated to store installation");
+  }
+
+  if ((WinConfiguration->StoreTransition == stStoreMigrated) && WinConfiguration->ExperimentalFeatures)
+  {
+    TTBXToolbar * Toolbar = new TTBXToolbar(MessageDock);
+    Toolbar->Parent = MessageDock;
+    Toolbar->FullSize = true;
+    Toolbar->Color = Application->HintColor;
+
+    TTBXLabelItem * LabelItem;
+    LabelItem = new TTBXLabelItem(Toolbar);
+    LabelItem->Margin = ScaleByTextHeight(MessageDock, 2); // Is this automatically rescaled?
+    LabelItem->Caption = LoadStr(STORE_MIGRATION_THANKS);
+    Toolbar->Items->Add(LabelItem);
+
+    TTBXCustomItem * LinkItem = new TTBXItem(Toolbar);
+    LinkItem->FontSettings->Color = LinkColor;
+    LinkItem->Caption = LoadStr(STORE_MIGRATION_LEARN);
+    LinkItem->OnClick = StoreTransitionLinkClick;
+    Toolbar->Items->Add(LinkItem);
+
+    AddMenuSeparator(Toolbar->Items);
+
+    TTBCustomItem * CloseItem = new TTBXItem(Toolbar);
+    CloseItem->Caption = LoadStr(MESSAGE_DISMISS);
+    CloseItem->OnClick = StoreTransitionCloseClick;
+    Toolbar->Items->Add(CloseItem);
+    GiveTBItemPriority(CloseItem);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::StoreTransitionLinkClick(TObject *)
+{
+  ShowHelp(HELP_STORE_TRANSITION);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::StoreTransitionCloseClick(TObject * Sender)
+{
+  TTBCustomItem * Item = DebugNotNull(dynamic_cast<TTBCustomItem *>(Sender));
+  TTBXToolbar * Toolbar = DebugNotNull(dynamic_cast<TTBXToolbar *>(DebugNotNull(DebugNotNull(Item->Parent)->ParentComponent)));
+  delete Toolbar;
+  WinConfiguration->StoreTransition = stStoreAcknowledged;
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateTransferList()
@@ -1077,7 +1144,7 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
   }
 
   // show only when keeping queue items forever,
-  // otherwise, its enough to have in in the context menu
+  // otherwise, it's enough to have it in the context menu
   QueueDeleteAllDoneQueueToolbarItem->Visible =
     WinConfiguration->QueueKeepDoneItems && (WinConfiguration->QueueKeepDoneItemsFor < 0);
 
@@ -1224,7 +1291,7 @@ void __fastcall TCustomScpExplorerForm::ClearTransferSourceSelection(TTransferDi
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::AddQueueItem(
   TTerminalQueue * Queue, TTransferDirection Direction, TStrings * FileList,
-  const UnicodeString TargetDirectory, const TGUICopyParamType & CopyParam,
+  const UnicodeString TargetDirectory, TGUICopyParamType & CopyParam,
   int Params)
 {
   DebugAssert(Queue != NULL);
@@ -1247,11 +1314,13 @@ void __fastcall TCustomScpExplorerForm::AddQueueItem(
   TQueueItem * QueueItem;
   if (Direction == tdToRemote)
   {
+    CopyParam.IncludeFileMask.SetRoots(FileList, TargetDirectory);
     QueueItem = new TUploadQueueItem(Terminal, FileList, TargetDirectory,
       &CopyParam, Params, SingleFile, CopyParam.QueueParallel);
   }
   else
   {
+    CopyParam.IncludeFileMask.SetRoots(TargetDirectory, FileList);
     QueueItem = new TDownloadQueueItem(Terminal, FileList, TargetDirectory,
       &CopyParam, Params, SingleFile, CopyParam.QueueParallel);
   }
@@ -1537,7 +1606,7 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
 
     if ((FTransferResumeList != NULL) &&
         ProgressData.InProgress &&
-        ((ProgressData.Operation == foCopy) || (ProgressData.Operation == foMove)) &&
+        ProgressData.IsTransfer() &&
         !ProgressData.FullFileName.IsEmpty())
     {
       if ((FTransferResumeList->Count == 0) ||
@@ -1627,7 +1696,7 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(
       }
     }
 
-    if ((Operation == foCopy) || (Operation == foMove))
+    if (TFileOperationProgressType::IsTransferOperation(Operation))
     {
       DebugAssert(!IsLocalBrowserMode());
       if (Side == osLocal)
@@ -2008,7 +2077,7 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
     bool RemoteFiles = FLAGSET(ACommand.Params, ccRemoteFiles);
     if (!RemoteFiles)
     {
-      TemporarilyDownloadFiles(FileList, false, RootTempDir, TempDir, false, false, true);
+      TemporarilyDownloadFiles(FileList, false, RootTempDir, TempDir, false, true);
     }
 
     try
@@ -2668,6 +2737,9 @@ bool __fastcall TCustomScpExplorerForm::ExecuteCopyMoveFileOperation(
           PermanentFileList = FileList;
 
           Params |= FLAGMASK(Param.Temp, cpTemporary);
+
+          CopyParam.IncludeFileMask.SetRoots(FileList, Param.TargetDirectory);
+
           Terminal->CopyToRemote(FileList, Param.TargetDirectory, &CopyParam, Params, NULL);
           if (Operation == foMove)
           {
@@ -2690,6 +2762,8 @@ bool __fastcall TCustomScpExplorerForm::ExecuteCopyMoveFileOperation(
 
           try
           {
+            CopyParam.IncludeFileMask.SetRoots(Param.TargetDirectory, FileList);
+
             Terminal->CopyToLocal(FileList, Param.TargetDirectory, &CopyParam, Params, NULL);
           }
           __finally
@@ -2830,7 +2904,7 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
 {
   TAutoBatch AutoBatch(this);
   bool Result;
-  if ((Operation == foCopy) || (Operation == foMove))
+  if (TFileOperationProgressType::IsTransferOperation(Operation))
   {
     Result = ExecuteCopyMoveFileOperation(Operation, Side, FileList, NoConfirmation, Param);
   }
@@ -2898,16 +2972,35 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
   TOperationSide Side, bool OnFocused, bool NoConfirmation, void * Param)
 {
   Side = GetSide(Side);
+  bool FullPath = IsSideLocalBrowser(Side);
+  TCustomDirView * ADirView = DirView(Side);
+  std::unique_ptr<TStringList> FileList(new TStringList());
+  ADirView->CreateFileList(OnFocused, FullPath, FileList.get());
 
-  bool Result;
-  TStrings * FileList = DirView(Side)->CreateFileList(OnFocused, IsSideLocalBrowser(Side), NULL);
-  try
+  bool ReloadProperties =
+    (Side == osRemote) && (Operation == foSetProperties) &&
+    DebugAlwaysTrue(HasActiveTerminal()) && Terminal->IsCapable[fcLoadingAdditionalProperties];
+
+  bool Result = ExecuteFileOperation(Operation, Side, FileList.get(), NoConfirmation, Param);
+
+  if (Result && ReloadProperties)
   {
-    Result = ExecuteFileOperation(Operation, Side, FileList, NoConfirmation, Param);
-  }
-  __finally
-  {
-    delete FileList;
+    std::unique_ptr<TStringList> FileList2(new TStringList());
+
+    FileList->CaseSensitive = true;
+    FileList->Sort();
+    for (int Index = 0; Index < ADirView->Items->Count; Index++)
+    {
+      TListItem * Item = ADirView->Items->Item[Index];
+      UnicodeString FileName = ADirView->ItemFileName(Item);
+      int Index2;
+      if (FileList->Find(FileName, Index2))
+      {
+        FileList2->AddObject(FileName, ADirView->ItemData(Item));
+      }
+    }
+
+    LoadFilesProperties(FileList2.get());
   }
   return Result;
 }
@@ -2918,7 +3011,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperationCommand(
 {
   if (ExecuteFileOperation(Operation, Side, OnFocused, NoConfirmation, Param))
   {
-    if ((Operation == foCopy) || (Operation == foMove))
+    if (TFileOperationProgressType::IsTransferOperation(Operation))
     {
       DebugAssert(!IsLocalBrowserMode());
       if (GetSide(Side) == osLocal)
@@ -2959,6 +3052,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteCopyOperationCommand(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::HandleErrorList(TStringList *& ErrorList)
 {
+  int Count = ErrorList->Count;
   try
   {
     if (ErrorList->Count)
@@ -2971,7 +3065,7 @@ void __fastcall TCustomScpExplorerForm::HandleErrorList(TStringList *& ErrorList
         int Index = 0;
         do
         {
-          DebugAssert(Index >= 0 && Index < ErrorList->Count);
+          DebugAssert(Index >= 0 && Index < Count);
           TQueryButtonAlias Aliases[2];
           Aliases[0].Button = qaYes;
           Aliases[0].Alias = LoadStr(PREV_BUTTON);
@@ -2981,10 +3075,21 @@ void __fastcall TCustomScpExplorerForm::HandleErrorList(TStringList *& ErrorList
           Params.Aliases = Aliases;
           Params.AliasesCount = LENOF(Aliases);
 
+          int No = Index + 1;
+
+          UnicodeString Message = ErrorList->Strings[Index];
+          UnicodeString AMainInstructions;
+          UnicodeString Details;
+          if (ExtractMainInstructions(Message, AMainInstructions))
+          {
+            Details = Message;
+            Message = AMainInstructions;
+          }
+          Message = MainInstructions(FMTLOAD(ERROR_LIST_NUMBER, (No, Count, Message))) + Details;
           Answer = MoreMessageDialog(
-            FMTLOAD(ERROR_LIST_NUMBER, (Index+1, ErrorList->Count, ErrorList->Strings[Index])),
+            Message,
             dynamic_cast<TStrings *>(ErrorList->Objects[Index]), qtError,
-            (Index ? qaYes : 0) | (Index < ErrorList->Count - 1 ? qaNo : 0) |
+            (Index ? qaYes : 0) | (Index < Count - 1 ? qaNo : 0) |
             qaOK, HELP_NONE, &Params);
 
           if (Answer == qaNo)
@@ -3004,7 +3109,7 @@ void __fastcall TCustomScpExplorerForm::HandleErrorList(TStringList *& ErrorList
   {
     TStrings * List = ErrorList;
     ErrorList = NULL;
-    for (int i = 0; i < List->Count; i++)
+    for (int i = 0; i < Count; i++)
     {
       delete List->Objects[i];
     }
@@ -3184,20 +3289,12 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
       TForm * Editor;
       try
       {
-        TNotifyEvent OnFileChanged = NULL;
-        TNotifyEvent OnSaveAll = NULL;
-        TAnyModifiedEvent OnAnyModified = NULL;
-        // Edited files are uploaded in background queue, what we do not support with encrypted files
-        if (Terminal->IsCapable[fcBackgroundTransfers])
-        {
-          OnFileChanged = FEditorManager->FileChanged;
-          OnSaveAll = SaveAllInternalEditors;
-          OnAnyModified = AnyInternalEditorModified;
-        }
-        Editor = ShowEditorForm(FileName, this, OnFileChanged,
-          FEditorManager->FileReload, FEditorManager->FileClosed,
-          OnSaveAll, OnAnyModified,
-          Caption, StandaloneOperation, SessionColor, Terminal->SessionData->InternalEditorEncoding, NewFile);
+        Editor =
+          ShowEditorForm(
+            FileName, this,
+            FEditorManager->FileChanged, FEditorManager->FileReload, FEditorManager->FileClosed,
+            SaveAllInternalEditors, AnyInternalEditorModified,
+            Caption, StandaloneOperation, SessionColor, Terminal->SessionData->InternalEditorEncoding, NewFile);
       }
       catch(...)
       {
@@ -3365,7 +3462,7 @@ void __fastcall TCustomScpExplorerForm::TemporaryDirectoryForRemoteFiles(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
   TStrings * FileList, bool ForceText, UnicodeString & RootTempDir, UnicodeString & TempDir,
-  bool AllFiles, bool GetTargetNames, bool AutoOperation)
+  bool GetTargetNames, bool AutoOperation)
 {
   DebugAssert(!IsLocalBrowserMode());
   TCopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
@@ -3374,10 +3471,6 @@ void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
     CopyParam.TransferMode = tmAscii;
   }
   TemporaryFileCopyParam(CopyParam);
-  if (AllFiles)
-  {
-    CopyParam.IncludeFileMask = TFileMasks();
-  }
 
   if (TempDir.IsEmpty())
   {
@@ -3551,7 +3644,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
         FileList1->AddObject(FullFileName, Object);
         TemporarilyDownloadFiles(FileList1,
           RemoteExecuteForceText(ExecuteFileBy, ExternalEditor),
-          LocalRootDirectory, LocalDirectory, true, true, true);
+          LocalRootDirectory, LocalDirectory, true, true);
         LocalFileName = LocalDirectory + FileList1->Strings[0];
       }
       __finally
@@ -3674,8 +3767,8 @@ void __fastcall TCustomScpExplorerForm::TemporaryFileCopyParam(TCopyParamType & 
   CopyParam.FileMask = L"";
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const UnicodeString FileName,
-  TEditedFileData * Data, HANDLE UploadCompleteEvent)
+void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
+  const UnicodeString & FileName, TEditedFileData * Data, HANDLE UploadCompleteEvent, bool & Retry)
 {
   TTerminalManager * Manager = TTerminalManager::Instance();
   if (!IsActiveTerminal(Data->Terminal))
@@ -3687,7 +3780,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const UnicodeString 
       UnicodeString EditInactiveSessionReopenRejectedCounter = L"EditInactiveSessionReopenRejected";
       if (Data->Terminal == NULL)
       {
-        TTerminal * SameSiteTerminal = Manager->FindActiveTerminalForSite(Data->SessionData);
+        TManagedTerminal * SameSiteTerminal = Manager->FindActiveTerminalForSite(Data->SessionData);
         if (SameSiteTerminal != NULL)
         {
           UnicodeString Message =
@@ -3695,9 +3788,9 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const UnicodeString 
               (FileNameOnly, Data->SessionName, FileNameOnly));
           if (MessageDialog(Message, qtConfirmation, qaOK | qaCancel) == qaOK)
           {
-            Data->Terminal = Terminal;
-            Data->Queue = Manager->FindQueueForTerminal(Terminal);
-            Data->SessionName = Terminal->SessionData->SessionName;
+            Data->Terminal = SameSiteTerminal;
+            Data->Queue = Manager->FindQueueForTerminal(SameSiteTerminal);
+            Data->SessionName = SameSiteTerminal->SessionData->SessionName;
             // We might also overwrite session data
             Configuration->Usage->Inc(EditInactiveSessionReopenAcceptedCounter);
           }
@@ -3759,13 +3852,28 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const UnicodeString 
       CopyParam.FileMask = DelimitFileNameMask(Data->OriginalFileName);
     }
 
-    DebugAssert(Data->Queue != NULL);
-
     int Params = cpNoConfirmation | cpTemporary;
-    TQueueItem * QueueItem = new TUploadQueueItem(Data->Terminal, FileList,
-      Data->RemoteDirectory, &CopyParam, Params, true, false);
-    QueueItem->CompleteEvent = UploadCompleteEvent;
-    AddQueueItem(Data->Queue, QueueItem, Data->Terminal);
+    if (Data->Terminal->IsCapable[fcBackgroundTransfers])
+    {
+      DebugAssert(Data->Queue != NULL);
+
+      TQueueItem * QueueItem = new TUploadQueueItem(Data->Terminal, FileList,
+        Data->RemoteDirectory, &CopyParam, Params, true, false);
+      QueueItem->CompleteEvent = UploadCompleteEvent;
+      AddQueueItem(Data->Queue, QueueItem, Data->Terminal);
+    }
+    else
+    {
+      if (NonVisualDataModule->Busy)
+      {
+        Retry = true;
+      }
+      else
+      {
+        Data->Terminal->CopyToRemote(FileList, Data->RemoteDirectory, &CopyParam, Params, NULL);
+        SetEvent(UploadCompleteEvent);
+      }
+    }
   }
   __finally
   {
@@ -3814,8 +3922,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileReload(
     UnicodeString RootTempDir = Data->LocalRootDirectory;
     UnicodeString TempDir = ExtractFilePath(FileName);
 
-    TemporarilyDownloadFiles(FileList.get(), Data->ForceText, RootTempDir,
-      TempDir, true, true, true);
+    TemporarilyDownloadFiles(FileList.get(), Data->ForceText, RootTempDir, TempDir, true, true);
 
     // sanity check, the target file name should be still the same
     DebugAssert(ExtractFileName(FileName) == FileList->Strings[0]);
@@ -4152,7 +4259,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferFiles(
       UnicodeString RootTempDir;
       UnicodeString TempDir;
 
-      TemporarilyDownloadFiles(FileList, false, RootTempDir, TempDir, false, false, false);
+      TemporarilyDownloadFiles(FileList, false, RootTempDir, TempDir, false, false);
 
       TStrings * TemporaryFilesList = new TStringList();
 
@@ -4282,9 +4389,7 @@ bool __fastcall TCustomScpExplorerForm::OpenBookmark(TOperationSide Side, TBookm
   bool Result = !Path.IsEmpty();
   if (Result)
   {
-    // While we might get here when the session is closed (from location profiles),
-    // it's not a problem as the Path setter is noop then
-    DirView(Side)->Path = Path;
+    TryOpenDirectory(Side, Path);
   }
   return Result;
 }
@@ -4335,6 +4440,14 @@ void __fastcall TCustomScpExplorerForm::CalculateChecksum(const UnicodeString & 
   }
 }
 //---------------------------------------------------------------------------
+void TCustomScpExplorerForm::LoadFilesProperties(TStrings * FileList)
+{
+  if (Terminal->LoadFilesProperties(FileList))
+  {
+    RemoteDirView->Invalidate();
+  }
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStrings * FileList)
 {
   bool Result;
@@ -4347,10 +4460,7 @@ bool __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStri
     {
       TRemoteProperties CurrentProperties;
 
-      if (Terminal->LoadFilesProperties(FileList))
-      {
-        RemoteDirView->Invalidate();
-      }
+      LoadFilesProperties(FileList);
 
       bool CapableGroupChanging = Terminal->IsCapable[fcGroupChanging];
       bool CapableOwnerChanging = Terminal->IsCapable[fcOwnerChanging];
@@ -4405,8 +4515,19 @@ bool __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStri
 
       CurrentProperties = TRemoteProperties::CommonProperties(FileList);
 
+      bool CapableAclChanging = Terminal->IsCapable[fcAclChangingFiles];
+      for (int Index = 0; (Index < FileList->Count) && CapableAclChanging; Index++)
+      {
+        if (dynamic_cast<TRemoteFile *>(FileList->Objects[Index])->IsDirectory)
+        {
+          CapableAclChanging = false;
+          CurrentProperties.Valid = CurrentProperties.Valid >> vpRights;
+        }
+      }
+
       int Flags = 0;
       if (Terminal->IsCapable[fcModeChanging]) Flags |= cpMode;
+      if (CapableAclChanging) Flags |= cpAcl;
       if (CapableOwnerChanging) Flags |= cpOwner;
       if (CapableGroupChanging) Flags |= cpGroup;
 
@@ -4472,61 +4593,64 @@ void __fastcall TCustomScpExplorerForm::CheckCustomCommandShortCut(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::KeyDown(Word & Key, Classes::TShiftState Shift)
 {
-  if (QueueView3->Focused() && (QueueView3->OnKeyDown != NULL))
+  if (!NonVisualDataModule->Busy)
   {
-    QueueView3->OnKeyDown(QueueView3, Key, Shift);
-  }
-
-  if ((Key != 0) && !DirView(osCurrent)->IsEditing())
-  {
-    TShortCut KeyShortCut = ShortCut(Key, Shift);
-    for (int Index = 0; Index < NonVisualDataModule->ExplorerActions->ActionCount; Index++)
+    if (QueueView3->Focused() && (QueueView3->OnKeyDown != NULL))
     {
-      TAction * Action = (TAction *)NonVisualDataModule->ExplorerActions->Actions[Index];
-      if (((Action->ShortCut == KeyShortCut) ||
-           (Action->SecondaryShortCuts->IndexOfShortCut(KeyShortCut) >= 0)) &&
-          AllowedAction(Action, aaShortCut))
+      QueueView3->OnKeyDown(QueueView3, Key, Shift);
+    }
+
+    if ((Key != 0) && !DirView(osCurrent)->IsEditing())
+    {
+      TShortCut KeyShortCut = ShortCut(Key, Shift);
+      for (int Index = 0; Index < NonVisualDataModule->ExplorerActions->ActionCount; Index++)
       {
-        // Has to be called before the action as the dialog char is already in queue.
-        // So when the action consumes message queue, we already need to have the
-        // FIgnoreNextDialogChar set
-        KeyProcessed(Key, Shift);
-        // Reset reference to previous component (when menu/toolbar was clicked).
-        // Needed to detect that action was invoked by keyboard shortcut
-        // in TNonVisualDataModule::ExplorerActionsExecute
-        Action->ActionComponent = NULL;
-        Action->Execute();
-        return;
+        TAction * Action = (TAction *)NonVisualDataModule->ExplorerActions->Actions[Index];
+        if (((Action->ShortCut == KeyShortCut) ||
+             (Action->SecondaryShortCuts->IndexOfShortCut(KeyShortCut) >= 0)) &&
+            AllowedAction(Action, aaShortCut))
+        {
+          // Has to be called before the action as the dialog char is already in queue.
+          // So when the action consumes message queue, we already need to have the
+          // FIgnoreNextDialogChar set
+          KeyProcessed(Key, Shift);
+          // Reset reference to previous component (when menu/toolbar was clicked).
+          // Needed to detect that action was invoked by keyboard shortcut
+          // in TNonVisualDataModule::ExplorerActionsExecute
+          Action->ActionComponent = NULL;
+          Action->Execute();
+          return;
+        }
       }
-    }
-    for (int i = 0; i < TTerminalManager::Instance()->Count; i++)
-    {
-      if (NonVisualDataModule->OpenSessionShortCut(i) == KeyShortCut)
+      for (int i = 0; i < TTerminalManager::Instance()->Count; i++)
       {
-        KeyProcessed(Key, Shift);
-        TTerminalManager::Instance()->ActiveTerminalIndex = i;
-        return;
-      }
-    }
-    if (Key == VK_TAB && Shift.Contains(ssCtrl))
-    {
-      KeyProcessed(Key, Shift);
-      TTerminalManager::Instance()->CycleTerminals(!Shift.Contains(ssShift));
-    }
-
-    TShortCut CustomShortCut = NormalizeCustomShortCut(KeyShortCut);
-    if (IsCustomShortCut(CustomShortCut))
-    {
-      CheckCustomCommandShortCut(WinConfiguration->CustomCommandList, Key, Shift, CustomShortCut);
-      CheckCustomCommandShortCut(WinConfiguration->ExtensionList, Key, Shift, CustomShortCut);
-
-      if (WinConfiguration->SharedBookmarks != NULL)
-      {
-        TBookmark * Bookmark = WinConfiguration->SharedBookmarks->FindByShortCut(CustomShortCut);
-        if ((Bookmark != NULL) &&
-            OpenBookmark(FCurrentSide, Bookmark))
+        if (NonVisualDataModule->OpenSessionShortCut(i) == KeyShortCut)
         {
           KeyProcessed(Key, Shift);
+          TTerminalManager::Instance()->ActiveTerminalIndex = i;
+          return;
+        }
+      }
+      if (Key == VK_TAB && Shift.Contains(ssCtrl))
+      {
+        KeyProcessed(Key, Shift);
+        TTerminalManager::Instance()->CycleTerminals(!Shift.Contains(ssShift));
+      }
+
+      TShortCut CustomShortCut = NormalizeCustomShortCut(KeyShortCut);
+      if (IsCustomShortCut(CustomShortCut))
+      {
+        CheckCustomCommandShortCut(WinConfiguration->CustomCommandList, Key, Shift, CustomShortCut);
+        CheckCustomCommandShortCut(WinConfiguration->ExtensionList, Key, Shift, CustomShortCut);
+
+        if (WinConfiguration->SharedBookmarks != NULL)
+        {
+          TBookmark * Bookmark = WinConfiguration->SharedBookmarks->FindByShortCut(CustomShortCut);
+          if ((Bookmark != NULL) &&
+              OpenBookmark(FCurrentSide, Bookmark))
+          {
+            KeyProcessed(Key, Shift);
+          }
         }
       }
     }
@@ -4625,8 +4749,10 @@ void __fastcall TCustomScpExplorerForm::Idle()
 {
 
   if (FShowing ||
-      // Particularly to detect closed connection and automatically reconnect it while waiting for changes
-      // while "keeping remote directory up to date"
+      // Particularly for
+      // - Standalone editing
+      // - Detecting closed connection and automatically reconnect it while waiting for changes
+      //   while "keeping remote directory up to date".
       StandaloneOperation)
   {
     FEditorManager->Check();
@@ -4845,7 +4971,7 @@ void __fastcall TCustomScpExplorerForm::DuplicateSession()
     ATerminal->Disconnected = Terminal->Disconnected;
     // Not sure about these two
     ATerminal->Permanent = Terminal->Permanent;
-    ATerminal->DisconnectedTemporarily = Terminal->DisconnectedTemporarily; // maybe
+    ATerminal->DisconnectedTemporarily = Terminal->DisconnectedTemporarily;
     Manager->ActiveTerminal = ATerminal;
   }
 }
@@ -4942,7 +5068,7 @@ void TCustomScpExplorerForm::DoOpenFolderOrWorkspace(
     TManagedTerminal * FirstTerminal = Manager->NewTerminals(DataList.get());
     // FirstTerminal can be null, if some of the
     if (!ConnectFirstTerminal && (FirstTerminal != NULL))
-      {
+    {
       FirstTerminal->Disconnected = true;
       FirstTerminal->DisconnectedTemporarily = true;
     }
@@ -4982,8 +5108,9 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
         ActiveSessions++;
       }
     }
-    // Confirm, when there's at least one active remote session
-    if ((ActiveSessions > 0) &&
+    // Confirm, when there's at least one active remote session or
+    // when there are multiple (inactive or local) sessions and auto workspace saving is not enabled.
+    if (((ActiveSessions > 0) || ((Manager->Count > 1) && !WinConfiguration->AutoSaveWorkspace)) &&
         WinConfiguration->ConfirmClosingSession)
     {
       unsigned int Result;
@@ -5004,7 +5131,7 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
         Message = FORMAT(Message, (Terminal->SessionData->SessionName));
       }
       // Multiple active sessions or one active session, but it's not the current one
-      else if (DebugAlwaysTrue(ActiveSessions > 0))
+      else if (ActiveSessions > 0)
       {
         if (!WinConfiguration->AutoSaveWorkspace)
         {
@@ -5014,6 +5141,13 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
         {
           Message = LoadStr(CLOSE_SESSIONS);
         }
+      }
+      // Multiple tabs, but all are inactive or local, and saving of worspace is not enabled
+      else
+      {
+        DebugAlwaysTrue(Manager->Count > 1);
+        DebugAlwaysTrue(!WinConfiguration->AutoSaveWorkspace);
+        Message = LoadStr(CLOSE_WORKSPACE);
       }
 
       UnicodeString Note;
@@ -5248,6 +5382,10 @@ void __fastcall TCustomScpExplorerForm::FixControlsPlacement()
   QueueSplitter->Visible = QueuePanel->Visible;
   QueueFileListSplitter->Visible = QueueFileList->Visible;
   RemotePanelSplitter->Visible = RemoteDrivePanel->Visible;
+
+  TControl * TopControlsOrder[] =
+    { TopDock, MessageDock, SessionsPageControl };
+  SetVerticalControlsOrder(TopControlsOrder, LENOF(TopControlsOrder));
 
   TControl * QueueControlsOrder[] =
     { QueueDock, QueueView3, QueueFileListSplitter, QueueFileList };
@@ -5926,6 +6064,7 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
   if (Continue)
   {
     Configuration->Usage->Inc(L"Synchronizations");
+    CopyParam.IncludeFileMask.SetRoots(LocalDirectory, RemoteDirectory);
     UpdateCopyParamCounters(CopyParam);
 
     TSynchronizeOptions SynchronizeOptions;
@@ -6559,7 +6698,7 @@ void __fastcall TCustomScpExplorerForm::AddEditLink(TOperationSide Side, bool Ad
       FileName = File->FileName;
       PointTo = File->LinkTo;
     }
-    else
+    else if (!File->IsParentDirectory)
     {
       PointTo = File->FileName;
     }
@@ -7052,7 +7191,7 @@ void __fastcall TCustomScpExplorerForm::WMQueryEndSession(TMessage & Message)
   // Do not call default handling as that triggers OnCloseQuery,
   // where our implementation will popup confirmation dialogs, what we do not want,
   // as per Vista guidelines:
-  // https://docs.microsoft.com/en-us/windows/win32/shutdown/shutting-down
+  // https://learn.microsoft.com/en-us/windows/win32/shutdown/shutting-down
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMEndSession(TWMEndSession & Message)
@@ -7814,10 +7953,11 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDTargetDrop()
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DDDownload(
-  TStrings * FilesToCopy, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params)
+  TStrings * FilesToCopy, const UnicodeString & TargetDir, TCopyParamType * CopyParam, int Params)
 {
   DebugAssert(!IsLocalBrowserMode());
   TAutoBatch AutoBatch(this);
+  CopyParam->IncludeFileMask.SetRoots(TargetDir, FilesToCopy);
   UpdateCopyParamCounters(*CopyParam);
   Terminal->CopyToLocal(FilesToCopy, TargetDir, CopyParam, Params, NULL);
   if (FLAGSET(Params, cpDelete) && (DropSourceControl == RemoteDriveView))
@@ -8015,7 +8155,7 @@ void __fastcall TCustomScpExplorerForm::QueueView3ContextPopup(
 //---------------------------------------------------------------------------
 /*virtual*/ int __fastcall TCustomScpExplorerForm::GetStaticComponentsHeight()
 {
-  return TopDock->Height + QueueSplitter->Height;
+  return TopDock->Height + (MessageDock->Visible ? MessageDock->Height : 0) + QueueSplitter->Height;
 }
 //---------------------------------------------------------------------------
 int __fastcall TCustomScpExplorerForm::GetStaticQueuePanelComponentsHeight()
@@ -8386,8 +8526,9 @@ void __fastcall TCustomScpExplorerForm::DirViewMatchMask(
   FDirViewMatchMask = Masks;
   bool ImplicitMatch;
   Matches =
-    // RecurseInclude parameter has no effect as the Path is empty
-    FDirViewMatchMask.Matches(FileName, Directory, UnicodeString(L""), &MaskParams, true, ImplicitMatch) &&
+    // Local and RecurseInclude parameters have no effect as there's no path.
+    // This should use potential MatchesFileName overload with ImplicitMatch argument.
+    FDirViewMatchMask.Matches(FileName, false, Directory, &MaskParams, true, ImplicitMatch) &&
     (AllowImplicitMatches || !ImplicitMatch);
 }
 //---------------------------------------------------------------------------
@@ -8454,10 +8595,10 @@ void __fastcall TCustomScpExplorerForm::PasteFromClipBoard()
     {
       DebugAssert(!IsLocalBrowserMode());
       TTerminalManager * Manager = TTerminalManager::Instance();
-      TTerminal * TergetTerminal = Manager->ActiveTerminal;
+      TTerminal * TargetTerminal = Manager->ActiveTerminal;
       Manager->ActiveTerminal = FClipboardTerminal;
 
-      ExecuteFileOperation(foRemoteCopy, osRemote, FClipboardFileList.get(), false, TergetTerminal);
+      ExecuteFileOperation(foRemoteCopy, osRemote, FClipboardFileList.get(), false, TargetTerminal);
     }
   }
   else if (CanPasteToDirViewFromClipBoard())
@@ -8699,7 +8840,7 @@ TColor __fastcall TCustomScpExplorerForm::DisabledPanelColor()
 void __fastcall TCustomScpExplorerForm::UpdateControls()
 {
   TTerminalManager::Instance()->UpdateAppTitle();
-  // WORAKRDOUND: Disabling list view when it is not showing yet does not set its
+  // WORKAROUND: Disabling list view when it is not showing yet does not set its
   // background to gray on Windows 7 (works on Windows 10).
   // See also EnableControl
   if (Showing)
@@ -8768,6 +8909,8 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
     }
 
     reinterpret_cast<TTBCustomItem *>(GetComponent(fcRemotePathComboBox))->Enabled = HasTerminal;
+
+    MessageDock->Visible = (MessageDock->ToolbarCount > 0);
   }
 }
 //---------------------------------------------------------------------------
@@ -8791,40 +8934,69 @@ void __fastcall TCustomScpExplorerForm::StartUpdates()
   // first run after installation
   if (double(Updates.LastCheck) == 0)
   {
+    AppLog(L"First run, scheduling updates check for the next run");
     // make sure next time there will be an update (if enabled)
     Updates.LastCheck = TDateTime(1);
     WinConfiguration->Updates = Updates;
   }
-  else if ((double(Updates.Period) > 0) &&
-           (Now() - Updates.LastCheck >= Updates.Period))
+  else
   {
-    TThreadMethod OnUpdatesChecked = NULL;
-    if (!IsUWP())
+    TDateTime Period;
+    if (IsUWP() && !IsOfficialPackage())
     {
-      OnUpdatesChecked = UpdatesChecked;
+      Period = DefaultUpdatesPeriod;
+      AppLog(L"Thirdparty UWP package, using default updates check period");
     }
-    StartUpdateThread(OnUpdatesChecked);
+    else
+    {
+      Period = Updates.Period;
+    }
+    AppLogFmt(L"Updates check period: %.2f", (double(Period)));
+    if (double(Period) > 0)
+    {
+      TDateTime Interval = Now() - Updates.LastCheck;
+      AppLogFmt(L"Interval since the last updates check: %.2f", (double(Interval)));
+      if (Interval >= Period)
+      {
+        TThreadMethod OnUpdatesChecked = NULL;
+        if (!IsUWP())
+        {
+          OnUpdatesChecked = UpdatesChecked;
+        }
+        else if (WinConfiguration->ExperimentalFeatures)
+        {
+          AppLog(L"Experimental features enabled, will process updates check results");
+          OnUpdatesChecked = UpdatesChecked;
+        }
+        StartUpdateThread(OnUpdatesChecked);
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdatesChecked()
 {
+  AppLog(L"Updates check done");
   UnicodeString Message;
   bool New;
   TQueryType Type;
   GetUpdatesMessage(Message, New, Type, false);
   if (!Message.IsEmpty())
   {
+    AppLogFmt(L"Updates check message: %s", (Message));
     if (New)
     {
+      AppLog(L"New version detected");
       Message = FMTLOAD(NEW_VERSION_CLICK, (Message));
     }
     if (!New && (Type != qtWarning))
     {
+      AppLog(L"Posting non-critical updates note");
       PostNote(UnformatMessage(Message), 0, UpdatesNoteClicked, NULL);
     }
     else
     {
+      AppLog(L"Posting new version or critical message notification");
       Notify(NULL, Message, Type, true, UpdatesNoteClicked);
     }
 
@@ -9259,6 +9431,11 @@ void __fastcall TCustomScpExplorerForm::WMClose(TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CMShowingChanged(TMessage & Message)
 {
+  if (!FShowingChanged)
+  {
+    AddStartupSequence(L"D");
+    FShowingChanged = true;
+  }
   TForm::Dispatch(&Message);
 
   // Now the window is visible (TForm::Dispatch is what usually takes long, like when loading a "local" network directory)
@@ -9519,11 +9696,12 @@ void __fastcall TCustomScpExplorerForm::SynchronizeBrowsingChanged()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ToggleShowHiddenFiles()
 {
-  PostNote(FORMAT(LoadStrPart(SHOW_HIDDEN_FILES_TOGGLE, 1),
-    (LoadStrPart(SHOW_HIDDEN_FILES_TOGGLE,
-      (WinConfiguration->ShowHiddenFiles ? 2 : 3)))), 0, NULL, NULL);
+  bool NewShowHiddenFiles = !WinConfiguration->ShowHiddenFiles;
+  UnicodeString Note =
+    FORMAT(LoadStrPart(SHOW_HIDDEN_FILES_TOGGLE, 1), (LoadStrPart(SHOW_HIDDEN_FILES_TOGGLE, (NewShowHiddenFiles ? 2 : 3))));
+  PostNote(Note, 0, NULL, NULL);
   GetComponent(fcStatusBar)->Repaint(); // toggling ShowHiddenFiles takes time, force repaint beforehand
-  WinConfiguration->ShowHiddenFiles = !WinConfiguration->ShowHiddenFiles;
+  WinConfiguration->ShowHiddenFiles = NewShowHiddenFiles;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SetFormatSizeBytes(TFormatBytesStyle Style)
@@ -9928,7 +10106,7 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlMouseDown(
   {
     if (Button == mbLeft)
     {
-      // "Mouse down" is raised only after tab is switched.
+      // WORKAROUND: "Mouse down" is raised only after tab is switched.
       // If switching tab (switching session) takes long enough for user
       // to actually release the button, "mouse down" is still raised,
       // but we do not get "mouse up" event, so dragging is not cancelled,
@@ -10501,14 +10679,19 @@ bool __fastcall TCustomScpExplorerForm::TryOpenDirectory(TOperationSide Side, co
   bool Result = true;
   try
   {
+    UnicodeString APath = Path;
     if (Side == osRemote)
     {
       Terminal->ExceptionOnFail = true;
     }
+    else
+    {
+      APath = ExpandEnvironmentVariables(Path);
+    }
 
     try
     {
-      DirView(Side)->Path = Path;
+      DirView(Side)->Path = APath;
     }
     __finally
     {
@@ -10660,7 +10843,7 @@ void __fastcall TCustomScpExplorerForm::ClipboardDownload(const UnicodeString & 
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ClipboardFakeCreated(TObject * /*Sender*/, const UnicodeString FileName)
 {
-  // It can actually rarelly happen that some random file is created, while we are shuttting down the monitor
+  // It can actually rarelly happen that some random file is created, while we are shutting down the monitor
   // (as it pumps a Windows message queue while being shutted down)
   if (DebugAlwaysTrue(!FClipboardFakeDirectory.IsEmpty()) &&
       SameText(ExtractFileName(FileName), ExtractFileName(FClipboardFakeDirectory)))
@@ -10697,10 +10880,16 @@ void __fastcall TCustomScpExplorerForm::DirViewGetItemColor(
   MaskParams.Modification = Modification;
 
   TCustomDirView * DirView = DebugNotNull(dynamic_cast<TCustomDirView *>(Sender));
+  bool Local = (dynamic_cast<TUnixDirView *>(DirView) == NULL);
+  // TUnixDirView::ItemFullFileName returns trailing backslash for directories, what filemask cannot deal with
+  if (!Local && Directory)
+  {
+    FileName = UnixExcludeTrailingBackslash(FileName);
+  }
   for (TFileColorData::TList::const_iterator Iter = FFileColors.begin(); Iter != FFileColors.end(); Iter++)
   {
     bool ImplicitMatch;
-    if (Iter->FileMask.Matches(FileName, Directory, DirView->PathName, &MaskParams, false, ImplicitMatch) &&
+    if (Iter->FileMask.Matches(FileName, Local, Directory, &MaskParams, false, ImplicitMatch) &&
         !ImplicitMatch)
     {
       Color = Iter->Color;
@@ -10841,10 +11030,10 @@ TListItem * __fastcall TCustomScpExplorerForm::SearchFile(const UnicodeString & 
       switch (WinConfiguration->PanelSearch)
       {
         case isNameStartOnly:
-          Matches = ContainsTextSemiCaseSensitive(Item->Caption.SubString(1, Text.Length()), Text);
+          Matches = ContainsTextSemiCaseSensitive(ADirView->ItemFileName(Item).SubString(1, Text.Length()), Text);
           break;
         case isName:
-          Matches = ContainsTextSemiCaseSensitive(Item->Caption, Text);
+          Matches = ContainsTextSemiCaseSensitive(ADirView->ItemFileName(Item), Text);
           break;
         case isAll:
           int ColCount = (ADirView->ViewStyle == vsReport) ? ADirView->ColProperties->Count : 1;
@@ -11055,3 +11244,9 @@ bool __fastcall TCustomScpExplorerForm::HasActiveTerminal()
 {
   return IsActiveTerminal(Terminal);
 }
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::MessageDockRequestDock(TObject *, TTBCustomDockableWindow *, bool & Accept)
+{
+  Accept = false;
+}
+//---------------------------------------------------------------------------

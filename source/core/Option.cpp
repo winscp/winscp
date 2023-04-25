@@ -20,6 +20,16 @@ __fastcall TOptions::TOptions()
   FParamCount = 0;
 }
 //---------------------------------------------------------------------------
+__fastcall TOptions::TOptions(const TOptions & Source)
+{
+  FSwitchMarks = Source.FSwitchMarks;
+  FSwitchValueDelimiters = Source.FSwitchValueDelimiters;
+  FOptions = Source.FOptions;
+  FOriginalOptions = Source.FOriginalOptions;
+  FNoMoreSwitches = Source.FNoMoreSwitches;
+  FParamCount = Source.FParamCount;
+}
+//---------------------------------------------------------------------------
 void __fastcall TOptions::Parse(const UnicodeString & CmdLine)
 {
   UnicodeString ACmdLine = CmdLine;
@@ -313,7 +323,7 @@ bool __fastcall TOptions::UnusedSwitch(UnicodeString & Switch)
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TOptions::WasSwitchAdded(UnicodeString & Switch, wchar_t & SwitchMark)
+bool __fastcall TOptions::WasSwitchAdded(UnicodeString & Switch, UnicodeString & Value, wchar_t & SwitchMark)
 {
   bool Result =
     DebugAlwaysTrue(FOptions.size() > 0) &&
@@ -322,6 +332,7 @@ bool __fastcall TOptions::WasSwitchAdded(UnicodeString & Switch, wchar_t & Switc
   {
     TOption & Option = FOptions.back();
     Switch = Option.Name;
+    Value = Option.Value;
     SwitchMark = Option.SwitchMark;
   }
   return Result;

@@ -302,7 +302,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(ForumPageAction, true)
   UPDACT(CheckForUpdatesAction, ShowUpdatesUpdate())
   UPD(UpdatesPreferencesAction, true)
-  UPD(DonatePageAction, true)
+  UPDEX1(DonatePageAction, true, DonatePageAction->Visible = !IsUWP())
   UPD(DownloadPageAction, true)
   UPDEX1(TipsAction, true, TipsAction->Visible = AnyTips())
 
@@ -841,13 +841,6 @@ void __fastcall TNonVisualDataModule::ExplorerShortcuts()
   // selected operation
   CurrentDeleteAlternativeAction->ShortCut = ShortCut(VK_DELETE, SHIFT);
   RemoteMoveToAction->ShortCut = ShortCut(L'M', CTRLALT);
-  // selection
-  SelectAction->ShortCut = ShortCut(VK_ADD, NONE);
-  UnselectAction->ShortCut = ShortCut(VK_SUBTRACT, NONE);
-  SelectAllAction->ShortCut = ShortCut(L'A', CTRL);
-  InvertSelectionAction->ShortCut = ShortCut(VK_MULTIPLY, NONE);
-  ClearSelectionAction->ShortCut = ShortCut(L'L', CTRLSHIFT);
-  RestoreSelectionAction->ShortCut = ShortCut(L'R', CTRLSHIFT);
   // commands
   NewFileAction->ShortCut = ShortCut(L'E', CTRLSHIFT);
   RemoteFindFilesAction->ShortCut = ShortCut(VK_F3, NONE);
@@ -894,12 +887,6 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
   RemoteCopyToAction->ShortCut = ShortCut(VK_F5, SHIFT);
   // selection
   SelectOneAction->ShortCut = VK_INSERT;
-  SelectAction->ShortCut = ShortCut(VK_ADD, NONE);
-  UnselectAction->ShortCut = ShortCut(VK_SUBTRACT, NONE);
-  SelectAllAction->ShortCut = ShortCut(L'A', CTRL);
-  InvertSelectionAction->ShortCut = ShortCut(VK_MULTIPLY, NONE);
-  ClearSelectionAction->ShortCut = ShortCut(L'L', CTRLSHIFT);
-  RestoreSelectionAction->ShortCut = ShortCut(L'R', CTRLSHIFT);
   // commands
   NewFileAction->ShortCut = ShortCut(VK_F4, SHIFT);
   RemoteFindFilesAction->ShortCut =
@@ -1125,6 +1112,7 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
     Item = new TTBXItem(Menu);
     Item->Action = OnFocused ? CustomCommandsEnterFocusedAction : CustomCommandsEnterAction;
     Menu->Add(Item);
+    GiveTBItemPriority(Item);
 
     Item = new TTBXItem(Menu);
     Item->Action = OnFocused ? CustomCommandsLastFocusedAction : CustomCommandsLastAction;
@@ -1133,6 +1121,7 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
       Item->Caption = EscapeHotkey(StripHotkey(LoadStr(CUSTOM_COMMAND_LAST_SHORT)));
     }
     Menu->Add(Item);
+    GiveTBItemPriority(Item);
   }
 
   TTBXSeparatorItem * Separator = AddMenuSeparator(Menu);
@@ -1163,6 +1152,7 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
     Item = new TTBXItem(Menu);
     Item->Action = CustomCommandsBandAction;
     Menu->Add(Item);
+    GiveTBItemPriority(Item);
   }
 
   Item = new TTBXItem(Menu);
@@ -1173,6 +1163,7 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
     Item->OnClick = CustomCommandsCustomize;
   }
   Menu->Add(Item);
+  GiveTBItemPriority(Item);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(

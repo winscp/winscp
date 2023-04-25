@@ -40,7 +40,7 @@ BEGIN
     "Cancel. Pressing Cancel is the ONLY guaranteed safe "
     "choice."
   OLD_KEY,
-    "You are loading an SSH-2 private key which has an "
+    "You are loading a private key which has an "
     "old version of the file format. This means your key "
     "file is not fully tamperproof. We recommend you convert "
     "your key to the new format.\n"

@@ -134,24 +134,25 @@
 
 #define SFTP_MAX_PACKET_LEN   1024000
 //---------------------------------------------------------------------------
-#define SFTP_EXT_OWNER_GROUP "owner-group-query@generic-extensions"
-#define SFTP_EXT_OWNER_GROUP_REPLY "owner-group-query-reply@generic-extensions"
-#define SFTP_EXT_NEWLINE "newline"
-#define SFTP_EXT_SUPPORTED "supported"
-#define SFTP_EXT_SUPPORTED2 "supported2"
-#define SFTP_EXT_FSROOTS "fs-roots@vandyke.com"
-#define SFTP_EXT_VENDOR_ID "vendor-id"
-#define SFTP_EXT_VERSIONS "versions"
-#define SFTP_EXT_SPACE_AVAILABLE "space-available"
-#define SFTP_EXT_CHECK_FILE "check-file"
-#define SFTP_EXT_CHECK_FILE_NAME "check-file-name"
-#define SFTP_EXT_STATVFS "statvfs@openssh.com"
+#define SFTP_EXT_OWNER_GROUP L"owner-group-query@generic-extensions"
+#define SFTP_EXT_OWNER_GROUP_REPLY L"owner-group-query-reply@generic-extensions"
+#define SFTP_EXT_NEWLINE L"newline"
+#define SFTP_EXT_SUPPORTED L"supported"
+#define SFTP_EXT_SUPPORTED2 L"supported2"
+#define SFTP_EXT_FSROOTS L"fs-roots@vandyke.com"
+#define SFTP_EXT_VENDOR_ID L"vendor-id"
+#define SFTP_EXT_VERSIONS L"versions"
+#define SFTP_EXT_SPACE_AVAILABLE L"space-available"
+#define SFTP_EXT_CHECK_FILE L"check-file"
+#define SFTP_EXT_CHECK_FILE_NAME L"check-file-name"
+#define SFTP_EXT_STATVFS L"statvfs@openssh.com"
 #define SFTP_EXT_STATVFS_VALUE_V2 L"2"
 #define SFTP_EXT_STATVFS_ST_RDONLY 0x1
 #define SFTP_EXT_STATVFS_ST_NOSUID 0x2
-#define SFTP_EXT_HARDLINK "hardlink@openssh.com"
+#define SFTP_EXT_HARDLINK L"hardlink@openssh.com"
 #define SFTP_EXT_HARDLINK_VALUE_V1 L"1"
-#define SFTP_EXT_COPY_FILE "copy-file"
+#define SFTP_EXT_COPY_FILE L"copy-file"
+#define SFTP_EXT_LIMITS L"limits@openssh.com"
 //---------------------------------------------------------------------------
 #define OGQ_LIST_OWNERS 0x01
 #define OGQ_LIST_GROUPS 0x02
@@ -490,9 +491,7 @@ public:
       if (Properties->Valid.Contains(vpRights))
       {
         Valid = (TValid)(Valid | valRights);
-        TRights Rights = BaseRights;
-        Rights |= Properties->Rights.NumberSet;
-        Rights &= (unsigned short)~Properties->Rights.NumberUnset;
+        TRights Rights = TRights(BaseRights).Combine(Properties->Rights);
         if (IsDirectory && Properties->AddXToDirectories)
         {
           Rights.AddExecute();
@@ -2072,6 +2071,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
     case fcAnyCommand:
     case fcShellAnyCommand:
     case fcLocking:
+    case fcAclChangingFiles: // pending implementation
       return false;
 
     case fcNewerOnlyUpload:
@@ -2135,7 +2135,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
       // This is here only because of VShell
       // (it supports owner/group, but does not include them into response to
       // SSH_FXP_READDIR)
-      // and Bitwise (the same as VShell, but it does not even bother to provide "supported" extension until 6.21)
+      // and Bitvise (the same as VShell, but it does not even bother to provide "supported" extension until 6.21)
       // No other use is known.
       return
         (FSupport->Loaded &&
@@ -2151,7 +2151,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
         SupportsExtension(SFTP_EXT_SPACE_AVAILABLE) ||
         // extension announced by proprietary SFTP_EXT_STATVFS extension
         FSupportsStatVfsV2 ||
-        // Bitwise (until 6.21) fails to report it's supported extensions.
+        // Bitvise (until 6.21) fails to report it's supported extensions.
         (FSecureShell->SshImplementation == sshiBitvise);
 
     case fcCalculatingChecksum:
@@ -3134,7 +3134,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
         {
           FFixedPaths->Clear();
           FTerminal->LogEvent(FORMAT(L"Failed to decode %s extension",
-            (SFTP_EXT_FSROOTS)));
+            (ExtensionName)));
           FTerminal->HandleException(&E);
         }
       }
@@ -3164,11 +3164,11 @@ void __fastcall TSFTPFileSystem::DoStartup()
         if (StatVfsVersion == SFTP_EXT_STATVFS_VALUE_V2)
         {
           FSupportsStatVfsV2 = true;
-          FTerminal->LogEvent(FORMAT(L"Supports %s extension version %s", (ExtensionName, ExtensionDisplayData)));
+          FTerminal->LogEvent(FORMAT(L"Supports %s extension version %s", (ExtensionName, StatVfsVersion)));
         }
         else
         {
-          FTerminal->LogEvent(FORMAT(L"Unsupported %s extension version %s", (ExtensionName, ExtensionDisplayData)));
+          FTerminal->LogEvent(FORMAT(L"Unsupported %s extension version %s", (ExtensionName, StatVfsVersion)));
         }
       }
       else if (ExtensionName == SFTP_EXT_HARDLINK)
@@ -3177,12 +3177,17 @@ void __fastcall TSFTPFileSystem::DoStartup()
         if (HardlinkVersion == SFTP_EXT_HARDLINK_VALUE_V1)
         {
           FSupportsHardlink = true;
-          FTerminal->LogEvent(FORMAT(L"Supports %s extension version %s", (ExtensionName, ExtensionDisplayData)));
+          FTerminal->LogEvent(FORMAT(L"Supports %s extension version %s", (ExtensionName, HardlinkVersion)));
         }
         else
         {
-          FTerminal->LogEvent(FORMAT(L"Unsupported %s extension version %s", (ExtensionName, ExtensionDisplayData)));
+          FTerminal->LogEvent(FORMAT(L"Unsupported %s extension version %s", (ExtensionName, HardlinkVersion)));
         }
+      }
+      else if (ExtensionName == SFTP_EXT_LIMITS)
+      {
+        UnicodeString LimitsVersion = AnsiToString(ExtensionData);
+        FTerminal->LogEvent(FORMAT(L"Supports %s extension version %s", (ExtensionName, LimitsVersion)));
       }
       else
       {
@@ -3473,40 +3478,44 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
         int ResolvedLinks = 0;
         for (unsigned long Index = 0; !isEOF && (Index < Count); Index++)
         {
-          File = LoadFile(&ListingPacket, NULL, L"", FileList);
-          FileList->AddFile(File);
-          if (FTerminal->IsEncryptingFiles() && // optimization
-              IsRealFile(File->FileName))
+          std::unique_ptr<TRemoteFile> AFile(LoadFile(&ListingPacket, NULL, L"", FileList));
+          TRemoteFile * File = AFile.get();
+          if (FTerminal->IsValidFile(File))
           {
-            UnicodeString FullFileName = UnixExcludeTrailingBackslash(File->FullFileName);
-            UnicodeString FileName = UnixExtractFileName(FTerminal->DecryptFileName(FullFileName, false, false));
-            if (File->FileName != FileName)
+            FileList->AddFile(AFile.release());
+            if (FTerminal->IsEncryptingFiles() && // optimization
+                IsRealFile(File->FileName))
             {
-              File->SetEncrypted();
+              UnicodeString FullFileName = UnixExcludeTrailingBackslash(File->FullFileName);
+              UnicodeString FileName = UnixExtractFileName(FTerminal->DecryptFileName(FullFileName, false, false));
+              if (File->FileName != FileName)
+              {
+                File->SetEncrypted();
+              }
+              File->FileName = FileName;
             }
-            File->FileName = FileName;
-          }
-          if (FTerminal->Configuration->ActualLogProtocol >= 1)
-          {
-            FTerminal->LogEvent(FORMAT(L"Read file '%s' from listing", (File->FileName)));
-          }
-          if (File->LinkedFile != NULL)
-          {
-            ResolvedLinks++;
-          }
-          if (File->IsParentDirectory)
-          {
-            HasParentDirectory = true;
-          }
-          Total++;
-
-          if (Total % 10 == 0)
-          {
-            FTerminal->DoReadDirectoryProgress(Total, ResolvedLinks, isEOF);
-            if (isEOF)
+            if (FTerminal->Configuration->ActualLogProtocol >= 1)
             {
-              FTerminal->LogEvent(L"Listing directory cancelled.");
-              FTerminal->DoReadDirectoryProgress(-2, 0, isEOF);
+              FTerminal->LogEvent(FORMAT(L"Read file '%s' from listing", (File->FileName)));
+            }
+            if (File->LinkedFile != NULL)
+            {
+              ResolvedLinks++;
+            }
+            if (File->IsParentDirectory)
+            {
+              HasParentDirectory = true;
+            }
+            Total++;
+
+            if (Total % 10 == 0)
+            {
+              FTerminal->DoReadDirectoryProgress(Total, ResolvedLinks, isEOF);
+              if (isEOF)
+              {
+                FTerminal->LogEvent(L"Listing directory cancelled.");
+                FTerminal->DoReadDirectoryProgress(-2, 0, isEOF);
+              }
             }
           }
         }
@@ -5338,7 +5347,7 @@ void __fastcall TSFTPFileSystem::Sink(
           ResumeTransfer = !PartialBiggerThanSource;
           if (!ResumeTransfer)
           {
-            FTerminal->LogEvent(L"Partially transferred file is bigger that original file.");
+            FTerminal->LogEvent(L"Partially transferred file is bigger than original file.");
           }
         }
 

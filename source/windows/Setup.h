@@ -14,7 +14,7 @@ THttp * __fastcall CreateHttp();
 void __fastcall GetUpdatesMessage(UnicodeString & Message, bool & New, TQueryType & Type, bool Force);
 bool __fastcall CheckForUpdates(bool CachedResults);
 bool __fastcall QueryUpdates(TUpdatesConfiguration & Updates);
-UnicodeString __fastcall FormatUpdatesMessage(UnicodeString Message);
+void FormatUpdatesMessage(UnicodeString & UpdatesMessage, const UnicodeString & AMessage, const TUpdatesConfiguration & Updates);
 void __fastcall EnableAutomaticUpdates();
 void __fastcall RegisterForDefaultProtocols();
 void __fastcall UnregisterForProtocols();
@@ -33,8 +33,10 @@ void __fastcall ShowTips();
 UnicodeString __fastcall FirstUnshownTip();
 void __fastcall TipsUpdateStaticUsage();
 int __fastcall GetNetVersion();
-UnicodeString __fastcall GetNetVersionStr();
-UnicodeString __fastcall GetPowerShellVersionStr();
+UnicodeString GetNetVersionStr();
+UnicodeString GetNetCoreVersionStr();
+UnicodeString GetPowerShellVersionStr();
+UnicodeString GetPowerShellCoreVersionStr();
 int ComRegistration(TConsole * Console);
 //---------------------------------------------------------------------------
 #endif

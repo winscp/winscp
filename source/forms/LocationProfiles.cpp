@@ -533,8 +533,9 @@ bool __fastcall TLocationProfilesDialog::AddAsBookmark(TObject * Sender, bool In
         if (Initial)
         {
           WinConfiguration->UseSharedBookmarks = Shared;
-          BookmarkList = GetBookmarkList(GetProfilesSheet());
-          ProfilesView = GetProfilesView(GetProfilesSheet());
+          PageControl->ActivePage = GetProfilesSheet();
+          BookmarkList = GetBookmarkList(PageControl->ActivePage);
+          ProfilesView = GetProfilesView(PageControl->ActivePage);
         }
 
         TBookmark * Bookmark = BookmarkList->FindByName(SelectedNode, BookmarkName);
@@ -952,12 +953,7 @@ void __fastcall TLocationProfilesDialog::ProfilesViewGetSelectedIndex(
 void __fastcall TLocationProfilesDialog::LocalDirectoryBrowseButtonClick(
   TObject * /*Sender*/)
 {
-  UnicodeString Directory = LocalDirectoryEdit->Text;
-  if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY), true))
-  {
-    LocalDirectoryEdit->Text = Directory;
-    DirectoryEditChange(LocalDirectoryEdit);
-  }
+  SelectDirectoryForEdit(LocalDirectoryEdit);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLocationProfilesDialog::SwitchButtonClick(TObject * /*Sender*/)

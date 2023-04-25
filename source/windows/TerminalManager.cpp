@@ -96,6 +96,8 @@ __fastcall TTerminalManager::TTerminalManager() :
   FOnTerminalListChanged = NULL;
 
   FTerminalList = new TStringList();
+  FMaxSessions = WinConfiguration->MaxSessions;
+
   FQueues = new TList();
   FTerminationMessages = new TStringList();
   std::unique_ptr<TSessionData> DummyData(new TSessionData(L""));
@@ -176,6 +178,15 @@ void __fastcall TTerminalManager::SetupTerminal(TTerminal * Terminal)
 //---------------------------------------------------------------------------
 TManagedTerminal * __fastcall TTerminalManager::DoNewTerminal(TSessionData * Data)
 {
+  if (Count >= FMaxSessions)
+  {
+    UnicodeString Msg = FMTLOAD(TOO_MANY_SESSIONS, (Count));
+    if (MessageDialog(Msg, qtConfirmation, qaOK | qaCancel, HELP_TOO_MANY_SESSIONS) == qaCancel)
+    {
+      Abort();
+    }
+    FMaxSessions = FMaxSessions * 3 / 2; // increase limit before the next warning by 50%
+  }
   TManagedTerminal * Terminal = DebugNotNull(dynamic_cast<TManagedTerminal *>(TTerminalList::NewTerminal(Data)));
   try
   {
@@ -668,81 +679,95 @@ void __fastcall TTerminalManager::DoSetActiveTerminal(TManagedTerminal * value, 
 {
   if (ActiveTerminal != value)
   {
-    // here used to be call to TCustomScpExporer::UpdateSessionData (now UpdateTerminal)
-    // but it seems to be duplicate to call from TCustomScpExporer::TerminalChanging
-
-    TManagedTerminal * PActiveTerminal = ActiveTerminal;
-    FActiveTerminal = value;
-    // moved from else block of next if (ActiveTerminal) statement
-    // so ScpExplorer can update its caption
-    UpdateAppTitle();
-    if (ScpExplorer)
+    if (NonVisualDataModule != NULL)
     {
-      if (ActiveTerminal && ((ActiveTerminal->Status == ssOpened) || ActiveTerminal->Disconnected))
-      {
-        TerminalReady();
-      }
-      else
-      {
-        ScpExplorer->Terminal = NULL;
-        ScpExplorer->Queue = NULL;
-      }
+      NonVisualDataModule->StartBusy();
     }
-
-    if (PActiveTerminal != NULL)
+    try
     {
-      if (PActiveTerminal->DisconnectedTemporarily && DebugAlwaysTrue(PActiveTerminal->Disconnected))
-      {
-        PActiveTerminal->Disconnected = false;
-        PActiveTerminal->DisconnectedTemporarily = false;
-      }
+      // here used to be call to TCustomScpExporer::UpdateSessionData (now UpdateTerminal)
+      // but it seems to be duplicate to call from TCustomScpExporer::TerminalChanging
 
-      if (!PActiveTerminal->Active)
+      TManagedTerminal * PActiveTerminal = ActiveTerminal;
+      FActiveTerminal = value;
+      // moved from else block of next if (ActiveTerminal) statement
+      // so ScpExplorer can update its caption
+      UpdateAppTitle();
+      if (ScpExplorer)
       {
-        SaveTerminal(PActiveTerminal);
-      }
-    }
-
-    if (ActiveTerminal)
-    {
-      int Index = ActiveTerminalIndex;
-      if (!ActiveTerminal->Active && !FTerminationMessages->Strings[Index].IsEmpty())
-      {
-        UnicodeString Message = FTerminationMessages->Strings[Index];
-        FTerminationMessages->Strings[Index] = L"";
-        if (AutoReconnect)
+        if (ActiveTerminal && ((ActiveTerminal->Status == ssOpened) || ActiveTerminal->Disconnected))
         {
-          ReconnectActiveTerminal();
+          TerminalReady();
         }
         else
         {
-          Exception * E = new ESshFatal(NULL, Message);
-          try
+          ScpExplorer->Terminal = NULL;
+          ScpExplorer->Queue = NULL;
+        }
+      }
+
+      if (PActiveTerminal != NULL)
+      {
+        if (PActiveTerminal->DisconnectedTemporarily && DebugAlwaysTrue(PActiveTerminal->Disconnected))
+        {
+          PActiveTerminal->Disconnected = false;
+          PActiveTerminal->DisconnectedTemporarily = false;
+        }
+
+        if (!PActiveTerminal->Active)
+        {
+          SaveTerminal(PActiveTerminal);
+        }
+      }
+
+      if (ActiveTerminal)
+      {
+        int Index = ActiveTerminalIndex;
+        if (!ActiveTerminal->Active && !FTerminationMessages->Strings[Index].IsEmpty())
+        {
+          UnicodeString Message = FTerminationMessages->Strings[Index];
+          FTerminationMessages->Strings[Index] = L"";
+          if (AutoReconnect)
           {
-            // finally show pending terminal message,
-            // this gives user also possibility to reconnect
-            ActiveTerminal->ShowExtendedException(E);
+            ReconnectActiveTerminal();
           }
-          __finally
+          else
           {
-            delete E;
+            Exception * E = new ESshFatal(NULL, Message);
+            try
+            {
+              // finally show pending terminal message,
+              // this gives user also possibility to reconnect
+              ActiveTerminal->ShowExtendedException(E);
+            }
+            __finally
+            {
+              delete E;
+            }
           }
         }
       }
-    }
-    else
-    {
-      if (OnLastTerminalClosed)
+      else
       {
-        OnLastTerminalClosed(this);
+        if (OnLastTerminalClosed)
+        {
+          OnLastTerminalClosed(this);
+        }
+      }
+
+
+      if ((ActiveTerminal != NULL) && !ActiveTerminal->Active &&
+          !ActiveTerminal->Disconnected)
+      {
+        ConnectActiveTerminal();
       }
     }
-
-
-    if ((ActiveTerminal != NULL) && !ActiveTerminal->Active &&
-        !ActiveTerminal->Disconnected)
+    __finally
     {
-      ConnectActiveTerminal();
+      if (NonVisualDataModule != NULL)
+      {
+        NonVisualDataModule->EndBusy();
+      }
     }
   }
 }
@@ -1746,12 +1771,12 @@ bool __fastcall TTerminalManager::IsActiveTerminalForSite(TTerminal * Terminal, 
   return Result;
 }
 //---------------------------------------------------------------------------
-TTerminal * __fastcall TTerminalManager::FindActiveTerminalForSite(TSessionData * Data)
+TManagedTerminal * __fastcall TTerminalManager::FindActiveTerminalForSite(TSessionData * Data)
 {
-  TTerminal * Result = NULL;
+  TManagedTerminal * Result = NULL;
   for (int Index = 0; (Result == NULL) && (Index < Count); Index++)
   {
-    TTerminal * Terminal = Terminals[Index];
+    TManagedTerminal * Terminal = Terminals[Index];
     if (IsActiveTerminalForSite(Terminal, Data))
     {
       Result = Terminal;
@@ -1764,33 +1789,6 @@ TTerminalQueue * __fastcall TTerminalManager::FindQueueForTerminal(TTerminal * T
 {
   int Index = IndexOf(Terminal);
   return reinterpret_cast<TTerminalQueue *>(FQueues->Items[Index]);
-}
-//---------------------------------------------------------------------------
-TRemoteFile * __fastcall TTerminalManager::CheckRights(
-  TTerminal * Terminal, const UnicodeString & EntryType, const UnicodeString & FileName, bool & WrongRights)
-{
-  std::unique_ptr<TRemoteFile> FileOwner;
-  TRemoteFile * File;
-  try
-  {
-    Terminal->LogEvent(FORMAT(L"Checking %s \"%s\"...", (LowerCase(EntryType), FileName)));
-    Terminal->ReadFile(FileName, File);
-    FileOwner.reset(File);
-    int ForbiddenRights = TRights::rfGroupWrite | TRights::rfOtherWrite;
-    if ((File->Rights->Number & ForbiddenRights) != 0)
-    {
-      Terminal->LogEvent(FORMAT(L"%s \"%s\" exists, but has incorrect permissions %s.", (EntryType, FileName, File->Rights->Octal)));
-      WrongRights = true;
-    }
-    else
-    {
-      Terminal->LogEvent(FORMAT(L"%s \"%s\" exists and has correct permissions %s.", (EntryType, FileName, File->Rights->Octal)));
-    }
-  }
-  catch (Exception & E)
-  {
-  }
-  return FileOwner.release();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalManager::UploadPublicKey(
@@ -1808,18 +1806,7 @@ bool __fastcall TTerminalManager::UploadPublicKey(
     Configuration->Usage->Inc(L"PublicKeyInstallation");
     FileName = OpenDialog->FileName;
 
-    bool AutoReadDirectory;
-    bool ExceptionOnFail;
-    UnicodeString TemporaryDir;
-
-    const UnicodeString SshFolder = L".ssh";
-    const UnicodeString AuthorizedKeysFile = L"authorized_keys";
-    UnicodeString AuthorizedKeysFilePath = FORMAT(L"%s/%s", (SshFolder, AuthorizedKeysFile));
-
-    VerifyAndConvertKey(FileName, ssh2only, false);
-
-    UnicodeString Comment;
-    UnicodeString Line = GetPublicKeyLine(FileName, Comment);
+    VerifyAndConvertKey(FileName, false);
 
     bool AdHocTerminal = (Terminal == NULL);
     std::unique_ptr<TTerminal> TerminalOwner;
@@ -1844,130 +1831,31 @@ bool __fastcall TTerminalManager::UploadPublicKey(
       }
     }
 
-    bool Installed = false;
-    bool WrongRights = false;
-
-    AutoReadDirectory = Terminal->AutoReadDirectory;
-    ExceptionOnFail = Terminal->ExceptionOnFail;
-
+    UnicodeString Installed;
     try
     {
-      Terminal->AutoReadDirectory = false;
-      Terminal->ExceptionOnFail = true;
-
       UnicodeString SshImplementation = Terminal->GetSessionInfo().SshImplementation;
       UnicodeString NotOpenSSHMessage = FMTLOAD(LOGIN_NOT_OPENSSH, (SshImplementation));
       if (IsOpenSSH(SshImplementation) ||
           (MessageDialog(NotOpenSSHMessage, qtConfirmation, qaOK | qaCancel, HELP_LOGIN_AUTHORIZED_KEYS) == qaOK))
       {
-        Terminal->Log->AddSeparator();
-        Terminal->LogEvent(FORMAT(L"Adding public key line to \"%s\" file:\n%s", (AuthorizedKeysFilePath, Line)));
-
         // Ad-hoc terminal
         if (FAuthenticateForm != NULL)
         {
+          UnicodeString Comment;
+          GetPublicKeyLine(FileName, Comment);
           FAuthenticateForm->Log(FMTLOAD(LOGIN_PUBLIC_KEY_UPLOAD, (Comment)));
         }
 
-        UnicodeString SshFolderAbsolutePath = UnixIncludeTrailingBackslash(Terminal->GetHomeDirectory()) + SshFolder;
-        std::unique_ptr<TRemoteFile> SshFolderFile(CheckRights(Terminal, L"Folder", SshFolderAbsolutePath, WrongRights));
-        if (SshFolderFile.get() == NULL)
-        {
-          TRights SshFolderRights;
-          SshFolderRights.Number = TRights::rfUserRead | TRights::rfUserWrite | TRights::rfUserExec;
-          TRemoteProperties SshFolderProperties;
-          SshFolderProperties.Rights = SshFolderRights;
-          SshFolderProperties.Valid = TValidProperties() << vpRights;
-
-          Terminal->LogEvent(FORMAT(L"Trying to create \"%s\" folder with permissions %s...", (SshFolder, SshFolderRights.Octal)));
-          Terminal->CreateDirectory(SshFolderAbsolutePath, &SshFolderProperties);
-        }
-
-        TemporaryDir = ExcludeTrailingBackslash(WinConfiguration->TemporaryDir());
-        if (!ForceDirectories(ApiPath(TemporaryDir)))
-        {
-          throw EOSExtException(FMTLOAD(CREATE_TEMP_DIR_ERROR, (TemporaryDir)));
-        }
-        UnicodeString TemporaryAuthorizedKeysFile = IncludeTrailingBackslash(TemporaryDir) + AuthorizedKeysFile;
-
-        UnicodeString AuthorizedKeysFileAbsolutePath = UnixIncludeTrailingBackslash(SshFolderAbsolutePath) + AuthorizedKeysFile;
-
-        bool Updated = true;
-        TCopyParamType CopyParam; // Use factory defaults
-        CopyParam.ResumeSupport = rsOff; // not to break the permissions
-        CopyParam.PreserveTime = false; // not needed
-
-        UnicodeString AuthorizedKeys;
-        std::unique_ptr<TRemoteFile> AuthorizedKeysFileFile(CheckRights(Terminal, L"File", AuthorizedKeysFileAbsolutePath, WrongRights));
-        if (AuthorizedKeysFileFile.get() != NULL)
-        {
-          AuthorizedKeysFileFile->FullFileName = AuthorizedKeysFileAbsolutePath;
-          std::unique_ptr<TStrings> Files(new TStringList());
-          Files->AddObject(AuthorizedKeysFileAbsolutePath, AuthorizedKeysFileFile.get());
-          Terminal->LogEvent(FORMAT(L"Downloading current \"%s\" file...", (AuthorizedKeysFile)));
-          Terminal->CopyToLocal(Files.get(), TemporaryDir, &CopyParam, cpNoConfirmation, NULL);
-          // Overload with Encoding parameter work incorrectly, when used on a file without BOM
-          AuthorizedKeys = TFile::ReadAllText(TemporaryAuthorizedKeysFile);
-
-          std::unique_ptr<TStrings> AuthorizedKeysLines(TextToStringList(AuthorizedKeys));
-          int P = Line.Pos(L" ");
-          if (DebugAlwaysTrue(P > 0))
-          {
-            P = PosEx(L" ", Line, P + 1);
-          }
-          UnicodeString Prefix = Line.SubString(1, P); // including the space
-          for (int Index = 0; Index < AuthorizedKeysLines->Count; Index++)
-          {
-            if (StartsStr(Prefix, AuthorizedKeysLines->Strings[Index]))
-            {
-              Terminal->LogEvent(FORMAT(L"\"%s\" file already contains public key line:\n%s", (AuthorizedKeysFile, AuthorizedKeysLines->Strings[Index])));
-              Updated = false;
-            }
-          }
-
-          if (Updated)
-          {
-            Terminal->LogEvent(FORMAT(L"\"%s\" file does not contain the public key line yet.", (AuthorizedKeysFile)));
-            if (!EndsStr(L"\n", AuthorizedKeys))
-            {
-              Terminal->LogEvent(FORMAT(L"Adding missing trailing new line to \"%s\" file...", (AuthorizedKeysFile)));
-              AuthorizedKeys += L"\n";
-            }
-          }
-        }
-        else
-        {
-          Terminal->LogEvent(FORMAT(L"Creating new \"%s\" file...", (AuthorizedKeysFile)));
-          CopyParam.PreserveRights = true;
-          CopyParam.Rights.Number = TRights::rfUserRead | TRights::rfUserWrite;
-        }
-
-        if (Updated)
-        {
-          AuthorizedKeys += Line + L"\n";
-          // Overload without Encoding parameter uses TEncoding::UTF8, but does not write BOM, what we want
-          TFile::WriteAllText(TemporaryAuthorizedKeysFile, AuthorizedKeys);
-          std::unique_ptr<TStrings> Files(new TStringList());
-          Files->Add(TemporaryAuthorizedKeysFile);
-          Terminal->LogEvent(FORMAT(L"Uploading updated \"%s\" file...", (AuthorizedKeysFile)));
-          Terminal->CopyToRemote(Files.get(), SshFolderAbsolutePath, &CopyParam, cpNoConfirmation, NULL);
-        }
-
-        Installed = true;
+        Installed = Terminal->UploadPublicKey(FileName);
       }
     }
     __finally
     {
-      Terminal->AutoReadDirectory = AutoReadDirectory;
-      Terminal->ExceptionOnFail = ExceptionOnFail;
-      if (!TemporaryDir.IsEmpty())
-      {
-        RecursiveDeleteFile(ExcludeTrailingBackslash(TemporaryDir), false);
-      }
       CloseAutheticateForm(); // When uploading from Login dialog
     }
 
-    if (Installed)
+    if (!Installed.IsEmpty())
     {
       Terminal->LogEvent(L"Public key installation done.");
       if (AdHocTerminal)
@@ -1979,13 +1867,7 @@ bool __fastcall TTerminalManager::UploadPublicKey(
         Terminal->Log->AddSeparator();
       }
 
-      UnicodeString Message = FMTLOAD(LOGIN_PUBLIC_KEY_UPLOADED, (Comment));
-      if (WrongRights)
-      {
-        Message += L"\n\n" + FMTLOAD(LOGIN_PUBLIC_KEY_PERMISSIONS, (AuthorizedKeysFilePath));
-      }
-
-      MessageDialog(Message, qtInformation, qaOK, HELP_LOGIN_AUTHORIZED_KEYS);
+      MessageDialog(Installed, qtInformation, qaOK, HELP_LOGIN_AUTHORIZED_KEYS);
     }
   }
 

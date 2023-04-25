@@ -44,10 +44,13 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // AFX_EXCEPTION_CONTEXT (thread global state)
 
+// WINSCP
+AFX_EXCEPTION_CONTEXT __thread m_exceptionContext;
+
 inline AFX_EXCEPTION_CONTEXT* AfxGetExceptionContext()
 {
 	DWORD lError = GetLastError();
-	AFX_EXCEPTION_CONTEXT* pContext = &_afxThreadState->m_exceptionContext;
+	AFX_EXCEPTION_CONTEXT* pContext = &m_exceptionContext;
 	SetLastError(lError);
 	return pContext;
 }
@@ -97,8 +100,9 @@ BOOL CException::GetErrorMessage(LPTSTR lpszError, UINT nMaxError,
 	return FALSE;
 }
 
-int CException::ReportError(UINT nType /* = MB_OK */,
-	UINT nError /* = 0 */)
+#ifndef WINSCP
+int CException::ReportError(UINT nType ,
+	UINT nError)
 {
 	TCHAR   szErrorMessage[512];
 	int     nDisposition;
@@ -114,6 +118,7 @@ int CException::ReportError(UINT nType /* = MB_OK */,
 	}
 	return nDisposition;
 }
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // AFX_EXCEPTION_LINK linked 'jmpbuf' and out-of-line helpers
@@ -266,11 +271,13 @@ BOOL AFXAPI AfxCatchProc(CRuntimeClass* pClass)
 
 IMPLEMENT_DYNAMIC(CException, CObject)
 
+#ifndef WINSCP
 IMPLEMENT_DYNAMIC(CMemoryException, CException)
 CMemoryException _simpleMemoryException(FALSE, AFX_IDS_MEMORY_EXCEPTION);
 
 IMPLEMENT_DYNAMIC(CNotSupportedException, CException)
 CNotSupportedException _simpleNotSupportedException(FALSE, AFX_IDS_NOT_SUPPORTED_EXCEPTION);
+#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Standard exceptions
@@ -310,13 +317,16 @@ BOOL CSimpleException::GetErrorMessage(LPTSTR lpszError, UINT nMaxError,
 
 void AFXAPI AfxThrowMemoryException()
 {
-	THROW(&_simpleMemoryException);
+	// WINSCP   
+	THROW(new CMessageException(L"Out of memory."));
 }
 
+#ifndef WINSCP
 void AFXAPI AfxThrowNotSupportedException()
 {
 	THROW(&_simpleNotSupportedException);
 }
+#endif
 
 #ifdef AFX_INIT_SEG
 #pragma code_seg(AFX_INIT_SEG)
@@ -332,6 +342,18 @@ CSimpleException::~CSimpleException()
 	{ }
 
 #endif
+#endif
+
+#ifdef WINSCP
+CMessageException::CMessageException(LPCTSTR Message)
+{
+    mMessage = Message;
+}
+
+BOOL CMessageException::GetErrorMessage(LPTSTR lpszError, UINT nMaxError, PUINT pnHelpContext)
+{
+    lstrcpyn(lpszError, mMessage, nMaxError);
+}
 #endif
 
 /////////////////////////////////////////////////////////////////////////////

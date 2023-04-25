@@ -1,6 +1,6 @@
 /* 
    Date manipulation routines
-   Copyright (C) 1999-2006, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1999-2021, Joe Orton <joe@manyfish.co.uk>
    Copyright (C) 2004 Jiang Lei <tristone@deluxe.ocn.ne.jp>
 
    This library is free software; you can redistribute it and/or
@@ -124,34 +124,33 @@ time_t ne_iso8601_parse(const char *date)
     int off_hour, off_min;
     double sec;
     off_t fix;
-    int n;
     time_t result;
 
     /*  it goes: ISO8601: 2001-01-01T12:30:00+03:30 */
-    if ((n = sscanf(date, ISO8601_FORMAT_P,
-		    &gmt.tm_year, &gmt.tm_mon, &gmt.tm_mday,
-		    &gmt.tm_hour, &gmt.tm_min, &sec,
-		    &off_hour, &off_min)) == 8) {
-      gmt.tm_sec = (int)sec;
-      fix = - off_hour * 3600 - off_min * 60;
+    if (sscanf(date, ISO8601_FORMAT_P,
+               &gmt.tm_year, &gmt.tm_mon, &gmt.tm_mday,
+               &gmt.tm_hour, &gmt.tm_min, &sec,
+               &off_hour, &off_min) == 8) {
+        gmt.tm_sec = (int)sec;
+        fix = - off_hour * 3600 - off_min * 60;
     }
     /*  it goes: ISO8601: 2001-01-01T12:30:00-03:30 */
-    else if ((n = sscanf(date, ISO8601_FORMAT_M,
-			 &gmt.tm_year, &gmt.tm_mon, &gmt.tm_mday,
-			 &gmt.tm_hour, &gmt.tm_min, &sec,
-			 &off_hour, &off_min)) == 8) {
-      gmt.tm_sec = (int)sec;
-      fix = off_hour * 3600 + off_min * 60;
+    else if (sscanf(date, ISO8601_FORMAT_M,
+                    &gmt.tm_year, &gmt.tm_mon, &gmt.tm_mday,
+                    &gmt.tm_hour, &gmt.tm_min, &sec,
+                    &off_hour, &off_min) == 8) {
+        gmt.tm_sec = (int)sec;
+        fix = off_hour * 3600 + off_min * 60;
     }
     /*  it goes: ISO8601: 2001-01-01T12:30:00Z */
-    else if ((n = sscanf(date, ISO8601_FORMAT_Z,
-			 &gmt.tm_year, &gmt.tm_mon, &gmt.tm_mday,
-			 &gmt.tm_hour, &gmt.tm_min, &sec)) == 6) {
-      gmt.tm_sec = (int)sec;
-      fix = 0;
+    else if (sscanf(date, ISO8601_FORMAT_Z,
+                    &gmt.tm_year, &gmt.tm_mon, &gmt.tm_mday,
+                    &gmt.tm_hour, &gmt.tm_min, &sec) == 6) {
+        gmt.tm_sec = (int)sec;
+        fix = 0;
     }
     else {
-      return (time_t)-1;
+        return (time_t)-1;
     }
 
     gmt.tm_year -= 1900;

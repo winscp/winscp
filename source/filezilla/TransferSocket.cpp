@@ -30,6 +30,8 @@ CTransferSocket::CTransferSocket(CFtpControlSocket *pOwner, int nMode)
 #endif
   m_bufferpos = 0;
   m_pFile = 0;
+  m_OnTransferOut = NULL;
+  m_OnTransferIn = NULL;
   m_bListening = FALSE;
   m_bSentClose = FALSE;
   m_nInternalMessageID = 0;
@@ -235,7 +237,7 @@ void CTransferSocket::OnReceive(int nErrorCode)
         CloseAndEnsureSendClose(CSMODE_TRANSFERERROR);
       }
 
-      UpdateStatusBar(false);
+      UpdateStatusBar(true);
       return;
     }
 
@@ -256,7 +258,7 @@ void CTransferSocket::OnReceive(int nErrorCode)
         int res = inflate(&m_zlibStream, 0);
         while (res == Z_OK)
         {
-          m_pFile->Write(m_pBuffer2, BUFSIZE - m_zlibStream.avail_out);
+          WriteData(m_pBuffer2, BUFSIZE - m_zlibStream.avail_out);
           written += BUFSIZE - m_zlibStream.avail_out;
           m_zlibStream.next_out = (Bytef *)m_pBuffer2;
           m_zlibStream.avail_out = BUFSIZE;
@@ -264,7 +266,7 @@ void CTransferSocket::OnReceive(int nErrorCode)
         }
         if (res == Z_STREAM_END)
         {
-          m_pFile->Write(m_pBuffer2, BUFSIZE - m_zlibStream.avail_out);
+          WriteData(m_pBuffer2, BUFSIZE - m_zlibStream.avail_out);
           written += BUFSIZE - m_zlibStream.avail_out;
         }
         else if (res != Z_OK && res != Z_BUF_ERROR)
@@ -277,7 +279,7 @@ void CTransferSocket::OnReceive(int nErrorCode)
       else
 #endif
       {
-        m_pFile->Write(m_pBuffer, numread);
+        WriteData(m_pBuffer, numread);
         written = numread;
       }
     }
@@ -658,7 +660,7 @@ void CTransferSocket::OnSend(int nErrorCode)
           LogError(nError);
           CloseOnShutDownOrError(CSMODE_TRANSFERERROR);
         }
-        UpdateStatusBar(false);
+        UpdateStatusBar(true);
         return;
       }
 
@@ -689,7 +691,7 @@ void CTransferSocket::OnSend(int nErrorCode)
   else
 #endif
   {
-    if (!m_pFile)
+    if (!m_pFile && (m_OnTransferIn == NULL))
     {
       return;
     }
@@ -773,7 +775,7 @@ void CTransferSocket::OnSend(int nErrorCode)
           LogError(nError);
           CloseOnShutDownOrError(CSMODE_TRANSFERERROR);
         }
-        UpdateStatusBar(false);
+        UpdateStatusBar(true);
         return;
       }
       else
@@ -1098,6 +1100,33 @@ bool CTransferSocket::InitZlib(int level)
 }
 #endif
 
+void CTransferSocket::WriteData(const char * buffer, int len)
+{
+  if (m_OnTransferOut != NULL)
+  {
+    m_OnTransferOut(NULL, m_pBuffer, len);
+  }
+  else
+  {
+    m_pFile->Write(m_pBuffer, len);
+  }
+}
+
+int CTransferSocket::ReadData(char * buffer, int len)
+{
+  int result;
+  if (m_OnTransferIn != NULL)
+  {
+    result = m_OnTransferIn(NULL, buffer, len);
+  }
+  else
+  {
+    result = m_pFile->Read(buffer, len);
+  }
+  LogMessage(FZ_LOG_INFO, L"Read %d bytes from file", result);
+  return result;
+}
+
 int CTransferSocket::ReadDataFromFile(char *buffer, int len)
 {
   TRY
@@ -1105,13 +1134,13 @@ int CTransferSocket::ReadDataFromFile(char *buffer, int len)
     // Comparing to Filezilla 2, we do not do any translation locally,
     // leaving it onto the server (what Filezilla 3 seems to do too)
     const char Bom[3] = "\xEF\xBB\xBF";
-    int read = m_pFile->Read(buffer, len);
+    int read = ReadData(buffer, len);
     if (GetOptionVal(OPTION_MPEXT_REMOVE_BOM) &&
         m_transferdata.bType && (read >= sizeof(Bom)) && (memcmp(buffer, Bom, sizeof(Bom)) == 0))
     {
       memcpy(buffer, buffer + sizeof(Bom), read - sizeof(Bom));
       read -= sizeof(Bom);
-      int read2 = m_pFile->Read(buffer + read, sizeof(Bom));
+      int read2 = ReadData(buffer + read, sizeof(Bom));
       if (read2 > 0)
       {
         read += read2;
@@ -1170,7 +1199,7 @@ void CTransferSocket::CloseOnShutDownOrError(int Mode)
   {
     // It would probably be correct to remove this call, and wait for OnClose (FD_CLOSE),
     // where CloseAndEnsureSendClose is called too.
-    // See https://docs.microsoft.com/en-us/windows/win32/winsock/graceful-shutdown-linger-options-and-socket-closure-2
+    // See https://learn.microsoft.com/en-us/windows/win32/winsock/graceful-shutdown-linger-options-and-socket-closure-2
     CloseAndEnsureSendClose(Mode);
   }
   else

@@ -7,7 +7,7 @@
 #define WebForum WebRoot+"forum/"
 #define WebDocumentation WebRoot+"eng/docs/"
 #define WebReport "https://winscp.net/install.php"
-#define Year 2022
+#define Year 2023
 #define EnglishLang "English"
 #define SetupTypeData "SetupType"
 #define InnoSetupReg "Software\Microsoft\Windows\CurrentVersion\Uninstall\" + AppId + "_is1"
@@ -196,7 +196,7 @@ Name: main; Description: {cm:ApplicationComponent}; \
 ; Because the files for the component have Check parameters, they are ignored for the size calculation
 Name: shellext; Description: {cm:ShellExtComponent}; \
   ExtraDiskSpaceRequired: {#Max(FileSize(ShellExtFileSource), FileSize(ShellExt64FileSource))}; \
-  Types: full compact; 
+  Types: full compact;
 Name: pageant; Description: {cm:PageantComponent}; \
   Types: full
 Name: puttygen; Description: {cm:PuTTYgenComponent}; \
@@ -811,6 +811,17 @@ begin
     begin
       Abort;
     end;
+  end;
+
+  try
+    if IsMsiProductInstalled('{029F9450-CFEF-4408-A2BB-B69ECE29EB18}', 0) and
+       (not CmdLineParamExists('/OverrideMsi')) then
+    begin
+      MsgBox(CustomMessage('MsiInstallation'), mbError, MB_OK);
+      Abort;
+    end;
+  except
+    Log('Error checking for MSI installation: ' + GetExceptionMessage);
   end;
 
   Result := True;

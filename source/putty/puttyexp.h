@@ -9,7 +9,6 @@ int is_ssh(Plug * plug);
 int get_ssh_version(Backend * be);
 Seat * get_ssh_seat(Plug * plug);
 #ifdef WINSCP_SSH
-const ssh_cipher * get_cipher(Backend * be);
 const ssh_cipher * get_cscipher(Backend * be);
 const ssh_cipher * get_sccipher(Backend * be);
 #endif
@@ -27,9 +26,7 @@ int have_any_ssh2_hostkey(Seat * seat, const char * host, int port);
 
 // from wingss.c
 
-#ifndef SSH2_GSS_OIDTYPE
-#include "sshgss.h"
-#endif
+#include "ssh\gss.h"
 
 void wingss_cleanup(void);
 
@@ -40,7 +37,7 @@ Seat * get_pfwd_seat(Plug * plug);
 
 // for winstore.c
 
-#include "winstuff.h"
+#include <windows.h>
 
 long reg_open_winscp_key(HKEY Key, const char * SubKey, HKEY * Result);
 long reg_create_winscp_key(HKEY Key, const char * SubKey, HKEY * Result);

@@ -158,7 +158,7 @@ int CFileZillaApi::List(const CServerPath& path)
     return FZ_REPLY_NOTINITIALIZED;
   if (IsConnected()==FZ_REPLY_NOTCONNECTED)
     return FZ_REPLY_NOTCONNECTED;
-  if (path.IsEmpty())
+  if (path.IsEmpty() && !m_pMainThread->GetIntern()->GetOptionVal(OPTION_MPEXT_WORK_FROM_CWD))
     return FZ_REPLY_INVALIDPARAM;
 
   if (m_pMainThread->IsBusy())
@@ -200,7 +200,7 @@ int CFileZillaApi::FileTransfer(const t_transferfile &TransferFile)
     return FZ_REPLY_NOTINITIALIZED;
   if (IsConnected()==FZ_REPLY_NOTCONNECTED)
     return FZ_REPLY_NOTCONNECTED;
-  if (TransferFile.remotefile==L"" || TransferFile.localfile==L"" || TransferFile.remotepath.IsEmpty())
+  if (TransferFile.remotefile==L"" || TransferFile.localfile==L"" || (TransferFile.remotepath.IsEmpty() && !m_pMainThread->GetIntern()->GetOptionVal(OPTION_MPEXT_WORK_FROM_CWD)))
     return FZ_REPLY_INVALIDPARAM;
   if (IsBusy()==FZ_REPLY_BUSY)
     return FZ_REPLY_BUSY;

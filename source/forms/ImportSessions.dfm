@@ -104,6 +104,7 @@ object ImportSessionsDialog: TImportSessionsDialog
     Items.Strings = (
       'PuTTY'
       'FileZilla'
+      'OpenSSH'
       'known_hosts')
   end
   object ErrorPanel: TPanel

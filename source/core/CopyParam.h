@@ -73,9 +73,6 @@ private:
   TOnceDoneOperation FOnceDoneOperation;
   TTransferOutEvent FOnTransferOut;
   TTransferInEvent FOnTransferIn;
-  static const wchar_t TokenPrefix = L'%';
-  static const wchar_t NoReplacement = wchar_t(false);
-  static const wchar_t TokenReplacement = wchar_t(true);
 
   void __fastcall SetLocalInvalidChars(UnicodeString value);
   bool __fastcall GetReplaceInvalidChars() const;

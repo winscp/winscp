@@ -77,12 +77,16 @@ __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
   FWaitingForData = 0;
   FCallbackSet.reset(new callback_set());
   memset(FCallbackSet.get(), 0, sizeof(callback_set));
+  FCallbackSet->ready_event = INVALID_HANDLE_VALUE;
 }
 //---------------------------------------------------------------------------
 __fastcall TSecureShell::~TSecureShell()
 {
   DebugAssert(FWaiting == 0);
-  Active = false;
+  if (Active)
+  {
+    Close();
+  }
   ResetConnection();
   CloseHandle(FSocketEvent);
 }
@@ -112,6 +116,7 @@ void __fastcall TSecureShell::ResetConnection()
   }
   FLogCtx = NULL;
   FClosed = false;
+  FLoggedKnownHostKeys.clear();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::ResetSessionInfo()
@@ -123,27 +128,16 @@ inline void __fastcall TSecureShell::UpdateSessionInfo()
 {
   if (!FSessionInfoValid)
   {
-    FSshVersion = get_ssh_version(FBackendHandle);
+    DebugAssert(get_ssh_version(FBackendHandle) == 2);
     FSessionInfo.ProtocolBaseName = L"SSH";
     FSessionInfo.ProtocolName =
       FORMAT(L"%s-%d", (FSessionInfo.ProtocolBaseName, get_ssh_version(FBackendHandle)));
     FSessionInfo.SecurityProtocolName = FSessionInfo.ProtocolName;
 
-    if (FSshVersion == 1)
-    {
-      FSessionInfo.CSCipher = GetCipherName(get_cipher(FBackendHandle));
-      FSessionInfo.SCCipher = FSessionInfo.CSCipher;
-      // Retrieval of compression is not implemented for SSH-1
-      FSessionInfo.CSCompression = UnicodeString();
-      FSessionInfo.SCCompression = UnicodeString();
-    }
-    else
-    {
-      FSessionInfo.CSCipher = GetCipherName(get_cscipher(FBackendHandle));
-      FSessionInfo.SCCipher = GetCipherName(get_sccipher(FBackendHandle));
-      FSessionInfo.CSCompression = GetCompressorName(get_cscomp(FBackendHandle));
-      FSessionInfo.SCCompression = GetDecompressorName(get_sccomp(FBackendHandle));
-    }
+    FSessionInfo.CSCipher = GetCipherName(get_cscipher(FBackendHandle));
+    FSessionInfo.SCCipher = GetCipherName(get_sccipher(FBackendHandle));
+    FSessionInfo.CSCompression = GetCompressorName(get_cscomp(FBackendHandle));
+    FSessionInfo.SCCompression = GetDecompressorName(get_sccomp(FBackendHandle));
 
     FSessionInfoValid = true;
   }
@@ -229,6 +223,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
       case hkDSA: phk = hkDSA; break;
       case hkECDSA: phk = HK_ECDSA; break;
       case hkED25519: phk = HK_ED25519; break;
+      case hkED448: phk = HK_ED448; break;
       default: DebugFail();
     }
     conf_set_int_int(conf, CONF_ssh_hklist, h, phk);
@@ -258,10 +253,8 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   conf_set_filename(conf, CONF_keyfile, KeyFileFileName);
   filename_free(KeyFileFileName);
 
-  conf_set_int(conf, CONF_sshprot, Data->SshProt);
   conf_set_bool(conf, CONF_ssh2_des_cbc, Data->Ssh2DES);
   conf_set_bool(conf, CONF_ssh_no_userauth, Data->SshNoUserAuth);
-  conf_set_bool(conf, CONF_try_tis_auth, Data->AuthTIS);
   conf_set_bool(conf, CONF_try_ki_auth, Data->AuthKI);
   conf_set_bool(conf, CONF_try_gssapi_auth, Data->AuthGSSAPI);
   conf_set_bool(conf, CONF_try_gssapi_kex, Data->AuthGSSAPIKEX);
@@ -284,9 +277,6 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
   conf_set_int(conf, CONF_proxy_dns, Data->ProxyDNS);
   conf_set_bool(conf, CONF_even_proxy_localhost, Data->ProxyLocalhost);
 
-  conf_set_int(conf, CONF_sshbug_ignore1, Data->Bug[sbIgnore1]);
-  conf_set_int(conf, CONF_sshbug_plainpw1, Data->Bug[sbPlainPW1]);
-  conf_set_int(conf, CONF_sshbug_rsa1, Data->Bug[sbRSA1]);
   conf_set_int(conf, CONF_sshbug_hmac2, Data->Bug[sbHMAC2]);
   conf_set_int(conf, CONF_sshbug_derivekey2, Data->Bug[sbDeriveKey2]);
   conf_set_int(conf, CONF_sshbug_rsapad2, Data->Bug[sbRSAPad2]);
@@ -408,6 +398,7 @@ static const LogPolicyVtable ScpLogPolicyVTable =
     eventlog,
     NULL, // Should never be called
     NULL, // Should never be called
+    null_lp_verbose_no, // Should never be called
   };
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::Open()
@@ -421,7 +412,7 @@ void __fastcall TSecureShell::Open()
   // do not use UTF-8 until decided otherwise (see TSCPFileSystem::DetectUtf())
   FUtfStrings = false;
 
-  Active = false;
+  FActive = false;
 
   FAuthenticationLog = L"";
   FNoConnectionResponse = false;
@@ -457,6 +448,10 @@ void __fastcall TSecureShell::Open()
       PuttyFatalError(InitError);
     }
     FUI->Information(LoadStr(STATUS_CONNECT), true);
+    if (!Active && DebugAlwaysTrue(HasLocalProxy()))
+    {
+      FActive = true;
+    }
     Init();
 
     CheckConnection(CONNECTION_FAILED);
@@ -661,10 +656,6 @@ const UnicodeString FailedMsg(L" failed:");
 void __fastcall TSecureShell::PuttyLogEvent(const char * AStr)
 {
   UnicodeString Str = ConvertFromPutty(AStr, strlen(AStr));
-  if (Str.Pos(L"failed") > 0)
-  {
-    Str += L"";
-  }
   // Gross hack
   if (StartsStr(ServerVersionMsg, Str))
   {
@@ -703,27 +694,6 @@ void __fastcall TSecureShell::PuttyLogEvent(const char * AStr)
     FLastTunnelError = Str;
   }
   LogEvent(Str);
-  if (SameText(Str, L"Server refused our key") &&
-      // This occurs before FSshImplementation is initialized
-      IsOpenSSH(GetSessionInfo().SshImplementation))
-  {
-    UnicodeString SshImplementation = GetSessionInfo().SshImplementation;
-    int P = SshImplementation.LastDelimiter(L"_");
-    if (P > 0)
-    {
-      UnicodeString Version = SshImplementation.SubString(P + 1, SshImplementation.Length() - P);
-      int P = Version.Pos(L".");
-      if (P > 0)
-      {
-        int Major = StrToIntDef(Version.SubString(1, P - 1), 0);
-        int Minor = StrToIntDef(Version.SubString(P + 1, Version.Length() - P), 0);
-        if ((Major > 8) || ((Major == 8) && (Minor >= 6)))
-        {
-          LogEvent(L"See https://winscp.net/tracker/1952");
-        }
-      }
-    }
-  }
 }
 //---------------------------------------------------------------------------
 TPromptKind __fastcall TSecureShell::IdentifyPromptKind(UnicodeString & Name)
@@ -738,6 +708,7 @@ TPromptKind __fastcall TSecureShell::IdentifyPromptKind(UnicodeString & Name)
     { L"SSH server authentication", SERVER_PROMPT_TITLE },
     { L"SSH password", PASSWORD_TITLE },
     { L"New SSH password", NEW_PASSWORD_TITLE },
+    { L"SOCKS proxy authentication", PROXY_AUTH_TITLE },
   };
 
   int Index = TranslatePuttyMessage(NameTranslation, LENOF(NameTranslation), Name);
@@ -770,6 +741,10 @@ TPromptKind __fastcall TSecureShell::IdentifyPromptKind(UnicodeString & Name)
   else if (Index == 7)
   {
     PromptKind = pkNewPassword;
+  }
+  else if (Index == 8)
+  {
+    PromptKind = pkProxyAuth;
   }
   else
   {
@@ -875,6 +850,16 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
     PromptTranslationCount = LENOF(NewPasswordPromptTranslation);
     PromptDesc = L"new password";
   }
+  else if (PromptKind == pkProxyAuth)
+  {
+    static const TPuttyTranslation ProxyAuthPromptTranslation[] = {
+      { L"Proxy username: ", PROXY_AUTH_USERNAME_PROMPT },
+      { L"Proxy password: ", PROXY_AUTH_PASSWORD_PROMPT },
+    };
+    PromptTranslation = ProxyAuthPromptTranslation;
+    PromptTranslationCount = LENOF(ProxyAuthPromptTranslation);
+    PromptDesc = L"proxy authentication";
+  }
   else
   {
     PromptDesc = L"unknown";
@@ -885,7 +870,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
     (Instructions.IsEmpty() ? UnicodeString(L"<no instructions>") : FORMAT(L"\"%s\"", (Instructions)));
   UnicodeString PromptsLog =
     (Prompts->Count > 0 ? FORMAT(L"\"%s\"", (Prompts->Strings[0])) : UnicodeString(L"<no prompt>")) +
-    (Prompts->Count > 1 ? FORMAT(L"%d more", (Prompts->Count - 1)) : UnicodeString());
+    (Prompts->Count > 1 ? FORMAT(L" + %d more", (Prompts->Count - 1)) : UnicodeString());
   LogEvent(FORMAT(L"Prompt (%s, \"%s\", %s, %s)", (PromptDesc, AName, InstructionsLog, PromptsLog)));
 
   Name = Name.Trim();
@@ -973,15 +958,24 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
 
   if (!Result)
   {
+    LogEvent(L"Prompting user for the credentials.");
     Result = FUI->PromptUser(FSessionData,
       PromptKind, Name, Instructions, Prompts, Results);
 
-    if (Result)
+    if (!Result)
+    {
+      LogEvent(L"Prompt cancelled.");
+    }
+    else
     {
       if ((Prompts->Count >= 1) &&
           (FLAGSET(int(Prompts->Objects[0]), pupEcho) || Configuration->LogSensitive))
       {
         LogEvent(FORMAT(L"Response: \"%s\"", (Results->Strings[0])));
+      }
+      else
+      {
+        LogEvent("Prompt responded.");
       }
 
       if ((PromptKind == pkUserName) && (Prompts->Count == 1))
@@ -1276,6 +1270,7 @@ unsigned int __fastcall TSecureShell::TimeoutPrompt(TQueryParamsTimerEvent PoolE
     {
       Params.Timeout = FConfiguration->SessionReopenAutoStall;
       Params.TimeoutAnswer = qaAbort;
+      Params.TimeoutResponse = qaNo;
     }
     Answer = FUI->QueryUser(MainInstructions(FMTLOAD(CONFIRM_PROLONG_TIMEOUT3, (FSessionData->Timeout))),
       NULL, qaRetry | qaAbort, &Params);
@@ -1308,6 +1303,11 @@ void __fastcall TSecureShell::SendBuffer(unsigned int & Result)
       Result = qaRetry;
     }
   }
+}
+//---------------------------------------------------------------------------
+void TSecureShell::TimeoutAbort(unsigned int Answer)
+{
+  FatalError(MainInstructions(LoadStr(Answer == qaAbort ? USER_TERMINATED : TIMEOUT_ERROR)));
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::DispatchSendBuffer(int BufSize)
@@ -1348,7 +1348,8 @@ void __fastcall TSecureShell::DispatchSendBuffer(int BufSize)
           // fallthru
 
         case qaAbort:
-          FatalError(MainInstructions(LoadStr(USER_TERMINATED)));
+        case qaNo:
+          TimeoutAbort(Answer);
           break;
       }
     }
@@ -1359,7 +1360,8 @@ void __fastcall TSecureShell::DispatchSendBuffer(int BufSize)
 void __fastcall TSecureShell::Send(const unsigned char * Buf, Integer Len)
 {
   CheckConnection();
-  int BufSize = backend_send(FBackendHandle, const_cast<char *>(reinterpret_cast<const char *>(Buf)), Len);
+  backend_send(FBackendHandle, const_cast<char *>(reinterpret_cast<const char *>(Buf)), Len);
+  int BufSize = backend_sendbuffer(FBackendHandle);
   if (Configuration->ActualLogProtocol >= 1)
   {
     LogEvent(FORMAT(L"Sent %u bytes", (static_cast<int>(Len))));
@@ -1616,6 +1618,11 @@ void __fastcall TSecureShell::SocketEventSelect(SOCKET Socket, HANDLE Event, boo
   }
 }
 //---------------------------------------------------------------------------
+bool TSecureShell::HasLocalProxy()
+{
+  return (FSessionData->ProxyMethod == pmCmd);
+}
+//---------------------------------------------------------------------------
 void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Enable)
 {
   if (!FActive && !Enable)
@@ -1639,7 +1646,7 @@ void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Enable)
     }
     else
     {
-      DebugAssert(FSessionData->ProxyMethod == pmCmd);
+      DebugAssert(HasLocalProxy());
     }
 
     if (Enable)
@@ -1657,35 +1664,27 @@ void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Enable)
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::UpdatePortFwdSocket(SOCKET value, bool Enable)
 {
-  if (Configuration->ActualLogProtocol >= 2)
+  if (value != INVALID_SOCKET)
   {
-    LogEvent(FORMAT(L"Updating forwarding socket %d (%d)", (int(value), int(Enable))));
-  }
-
-  SocketEventSelect(value, FSocketEvent, Enable);
-
-  if (Enable)
-  {
-    FPortFwdSockets.insert(value);
-  }
-  else
-  {
-    FPortFwdSockets.erase(value);
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TSecureShell::SetActive(bool value)
-{
-  if (FActive != value)
-  {
-    if (value)
+    if (Configuration->ActualLogProtocol >= 2)
     {
-      Open();
+      LogEvent(FORMAT(L"Updating forwarding socket %d (%d)", (int(value), int(Enable))));
+    }
+
+    SocketEventSelect(value, FSocketEvent, Enable);
+
+    if (Enable)
+    {
+      FPortFwdSockets.insert(value);
     }
     else
     {
-      Close();
+      FPortFwdSockets.erase(value);
     }
+  }
+  else
+  {
+    DebugAssert(FSessionData->AgentFwd);
   }
 }
 //---------------------------------------------------------------------------
@@ -1716,6 +1715,25 @@ void __fastcall TSecureShell::FreeBackend()
       DebugAssert(FCallbackSet->pktin_freeq_head->next == FCallbackSet->pktin_freeq_head);
       sfree(FCallbackSet->pktin_freeq_head);
       FCallbackSet->pktin_freeq_head = NULL;
+    }
+
+    if (FCallbackSet->handlewaits_tree_real != NULL)
+    {
+      DebugAssert(count234(FCallbackSet->handlewaits_tree_real) <= 1);
+      while (count234(FCallbackSet->handlewaits_tree_real) > 0)
+      {
+        HandleWait * AHandleWait = static_cast<HandleWait *>(index234(FCallbackSet->handlewaits_tree_real, 0));
+        delete_handle_wait(FCallbackSet.get(), AHandleWait);
+      }
+
+      freetree234(FCallbackSet->handlewaits_tree_real);
+      FCallbackSet->handlewaits_tree_real = NULL;
+    }
+
+    if (FCallbackSet->ready_event != INVALID_HANDLE_VALUE)
+    {
+      CloseHandle(FCallbackSet->ready_event);
+      FCallbackSet->ready_event = INVALID_HANDLE_VALUE;
     }
   }
 }
@@ -1889,7 +1907,8 @@ void __fastcall TSecureShell::WaitForData()
           // fallthru
 
         case qaAbort:
-          FatalError(MainInstructions(LoadStr(USER_TERMINATED)));
+        case qaNo:
+          TimeoutAbort(Answer);
           break;
       }
     }
@@ -1990,8 +2009,6 @@ bool __fastcall TSecureShell::ProcessNetworkEvents(SOCKET Socket)
 bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventRequired,
   WSANETWORKEVENTS * Events)
 {
-  CheckConnection();
-
   bool Result = false;
 
   do
@@ -2001,8 +2018,8 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
       LogEvent(L"Looking for network events");
     }
     unsigned int TicksBefore = GetTickCount();
-    int HandleCount;
-    HANDLE * Handles = NULL;
+    HandleWaitList * WaitList = NULL;
+
     try
     {
       unsigned int Timeout = MSec;
@@ -2017,17 +2034,15 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
           TimeoutStep = 0;
         }
         Timeout -= TimeoutStep;
-        if (Handles != NULL)
+        if (WaitList != NULL)
         {
-          sfree(Handles);
+          handle_wait_list_free(WaitList);
         }
-        // Note that this returns all handles, not only the this-session-related handles,
-        // so we can possibly be processing handles of other sessions, what may be very wrong.
         // It returns only busy handles, so the set can change with every call to run_toplevel_callbacks.
-        Handles = handle_get_events(&HandleCount);
-        Handles = sresize(Handles, HandleCount + 1, HANDLE);
-        Handles[HandleCount] = FSocketEvent;
-        WaitResult = WaitForMultipleObjects(HandleCount + 1, Handles, FALSE, TimeoutStep);
+        WaitList = get_handle_wait_list(FCallbackSet.get());
+        DebugAssert(WaitList->nhandles < MAXIMUM_WAIT_OBJECTS);
+        WaitList->handles[WaitList->nhandles] = FSocketEvent;
+        WaitResult = WaitForMultipleObjects(WaitList->nhandles + 1, WaitList->handles, FALSE, TimeoutStep);
         FUI->ProcessGUI();
         // run_toplevel_callbacks can cause processing of pending raw data, so:
         // 1) Check for changes in our pending buffer - wait criteria in Receive()
@@ -2043,20 +2058,21 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
         }
       } while ((WaitResult == WAIT_TIMEOUT) && (Timeout > 0) && !Result);
 
-      if (WaitResult < WAIT_OBJECT_0 + HandleCount)
+      if (WaitResult < WAIT_OBJECT_0 + WaitList->nhandles)
       {
-        if (handle_got_event(Handles[WaitResult - WAIT_OBJECT_0]))
+        if (handle_wait_activate(FCallbackSet.get(), WaitList, WaitResult - WAIT_OBJECT_0))
         {
           Result = true;
         }
       }
-      else if (WaitResult == WAIT_OBJECT_0 + HandleCount)
+      else if (WaitResult == WAIT_OBJECT_0 + WaitList->nhandles)
       {
         if (Configuration->ActualLogProtocol >= 1)
         {
           LogEvent(L"Detected network event");
         }
 
+        DebugAssert(FSocket != INVALID_SOCKET);
         if (Events == NULL)
         {
           if (ProcessNetworkEvents(FSocket))
@@ -2102,7 +2118,10 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
     }
     __finally
     {
-      sfree(Handles);
+      if (WaitList != NULL)
+      {
+        handle_wait_list_free(WaitList);
+      }
     }
 
 
@@ -2121,7 +2140,8 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
       }
     }
 
-    if ((FSendBuf > 0) && (TicksAfter - FLastSendBufferUpdate >= 1000))
+    if ((FSocket != INVALID_SOCKET) &&
+        (FSendBuf > 0) && (TicksAfter - FLastSendBufferUpdate >= 1000))
     {
       DWORD BufferLen = 0;
       DWORD OutLen = 0;
@@ -2178,14 +2198,7 @@ unsigned long __fastcall TSecureShell::MaxPacketSize()
     UpdateSessionInfo();
   }
 
-  if (FSshVersion == 1)
-  {
-    return 0;
-  }
-  else
-  {
-    return winscp_query(FBackendHandle, WINSCP_QUERY_REMMAXPKT);
-  }
+  return winscp_query(FBackendHandle, WINSCP_QUERY_REMMAXPKT);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TSecureShell::FormatKeyStr(UnicodeString KeyStr)
@@ -2415,13 +2428,22 @@ UnicodeString TSecureShell::StoreHostKey(
   return Storage->Source;
 }
 //---------------------------------------------------------------------------
+void TSecureShell::ParseFingerprint(const UnicodeString & Fingerprint, UnicodeString & SignKeyType, UnicodeString & Hash)
+{
+  UnicodeString Buf = Fingerprint;
+  UnicodeString SignKeyAlg = CutToChar(Buf, L' ', false);
+  UnicodeString SignKeySize = CutToChar(Buf, L' ', false);
+  SignKeyType = SignKeyAlg + L' ' + SignKeySize;
+  Hash = Buf;
+}
+//---------------------------------------------------------------------------
 void __fastcall TSecureShell::VerifyHostKey(
   const UnicodeString & AHost, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr,
-  const UnicodeString & Fingerprint)
+  const UnicodeString & AFingerprintSHA256, const UnicodeString & AFingerprintMD5)
 {
   if (Configuration->ActualLogProtocol >= 1)
   {
-    LogEvent(FORMAT(L"Verifying host key %s %s with fingerprints %s", (KeyType, FormatKeyStr(KeyStr), Fingerprint)));
+    LogEvent(FORMAT(L"Verifying host key %s %s with fingerprints %s, %s", (KeyType, FormatKeyStr(KeyStr), AFingerprintSHA256, AFingerprintMD5)));
   }
 
   GotHostKey();
@@ -2431,30 +2453,22 @@ void __fastcall TSecureShell::VerifyHostKey(
   UnicodeString Host = AHost;
   GetRealHost(Host, Port);
 
-  UnicodeString Buf = Fingerprint;
-  UnicodeString SignKeyAlg, SignKeySize, MD5, SHA256;
-  if (get_ssh_version(FBackendHandle) == 1)
+  UnicodeString SignKeyType, MD5, SHA256;
+  ParseFingerprint(AFingerprintMD5, SignKeyType, MD5);
+
+  DebugAssert(get_ssh_version(FBackendHandle) == 2);
+  UnicodeString SignKeyTypeSHA256;
+  ParseFingerprint(AFingerprintSHA256, SignKeyTypeSHA256, SHA256);
+  DebugAssert(SignKeyTypeSHA256 == SignKeyType);
+  if (DebugAlwaysTrue(StartsText(L"SHA256:", SHA256)))
   {
-    SignKeyAlg = GetSsh1KeyType();
+    CutToChar(SHA256, L':', false);
   }
-  else
-  {
-    SignKeyAlg = CutToChar(Buf, L' ', false);
-  }
-  SignKeySize = CutToChar(Buf, L' ', false);
-  MD5 = CutToChar(Buf, L' ', false);
-  if (get_ssh_version(FBackendHandle) == 1)
-  {
-    SHA256 = L"-";
-    DebugAssert(Buf.IsEmpty());
-  }
-  else
-  {
-    SHA256 = Buf;
-  }
-  UnicodeString SignKeyType = SignKeyAlg + L' ' + SignKeySize;
+
   UnicodeString FingerprintMD5 = SignKeyType + L' ' + MD5;
+  DebugAssert(AFingerprintMD5 == FingerprintMD5);
   UnicodeString FingerprintSHA256 = SignKeyType + L' ' + SHA256;
+  DebugAssert(ReplaceStr(AFingerprintSHA256, L"SHA256:", EmptyStr) == FingerprintSHA256);
 
   FSessionInfo.HostKeyFingerprintSHA256 = FingerprintSHA256;
   FSessionInfo.HostKeyFingerprintMD5 = FingerprintMD5;
@@ -2685,9 +2699,13 @@ bool __fastcall TSecureShell::HaveHostKey(UnicodeString Host, int Port, const Un
     }
   }
 
-  if (Result)
+  if (Result &&
+      (FLoggedKnownHostKeys.find(KeyType) == FLoggedKnownHostKeys.end()))
   {
     LogEvent(FORMAT(L"Have a known host key of type %s", (KeyType)));
+    // This is called multiple times for the same cached key since PuTTY 0.76 (support for rsa-sha2*?).
+    // Avoid repeated log entries.
+    FLoggedKnownHostKeys.insert(KeyType);
   }
 
   return Result;
@@ -2717,7 +2735,11 @@ void __fastcall TSecureShell::AskAlg(UnicodeString AlgType, UnicodeString AlgNam
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::DisplayBanner(const UnicodeString & Banner)
 {
-  FUI->DisplayBanner(Banner);
+  // Since 0.77 PuTTY calls this again with CRLF if the actual banner does not end with one.
+  if (!Banner.Trim().IsEmpty())
+  {
+    FUI->DisplayBanner(Banner);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::OldKeyfileWarning()
@@ -2743,14 +2765,7 @@ void __fastcall TSecureShell::CollectUsage()
     Configuration->Usage->Inc(L"OpenedSessionsPrivateKey2");
   }
 
-  if (FSshVersion == 1)
-  {
-    Configuration->Usage->Inc(L"OpenedSessionsSSH1");
-  }
-  else if (FSshVersion == 2)
-  {
-    Configuration->Usage->Inc(L"OpenedSessionsSSH2");
-  }
+  Configuration->Usage->Inc(L"OpenedSessionsSSH2");
 
   if (SshImplementation == sshiOpenSSH)
   {

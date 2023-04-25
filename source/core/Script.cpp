@@ -574,9 +574,9 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
   int End, TFileListType ListType)
 {
   TStrings * Result = new TStringList();
-  TStrings * FileLists = NULL;
   try
   {
+    TStrings * FileLists = NULL;
     try
     {
       for (int i = Start; i <= End; i++)
@@ -636,7 +636,7 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
               Params.Size = File->Size;
               Params.Modification = File->Modification;
               if (IsRealFile(File->FileName) &&
-                  Mask.Matches(File->FileName, false, UnicodeString(), &Params))
+                  Mask.MatchesFileName(File->FileName, false, &Params))
               {
                 Result->AddObject(FileDirectory + File->FileName,
                   FLAGSET(ListType, fltQueryServer) ? File->Duplicate() : NULL);
@@ -673,57 +673,57 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
         }
       }
     }
-    catch(...)
+    __finally
     {
-      FreeFileList(Result);
-      throw;
-    }
-  }
-  __finally
-  {
-    if (FileLists != NULL)
-    {
-      for (int i = 0; i < FileLists->Count; i++)
+      if (FileLists != NULL)
       {
-        delete FileLists->Objects[i];
-      }
-      delete FileLists;
-    }
-  }
-
-  if (FLAGSET(ListType, fltLatest) && (Result->Count > 1))
-  {
-    // otherwise we do not have TRemoteFile's
-    DebugAssert(FLAGSET(ListType, fltQueryServer));
-    int LatestIndex = 0;
-
-    for (int Index = 1; Index < Result->Count; Index++)
-    {
-      TRemoteFile * File = dynamic_cast<TRemoteFile *>(Result->Objects[Index]);
-      if (dynamic_cast<TRemoteFile *>(Result->Objects[LatestIndex])->Modification < File->Modification)
-      {
-        LatestIndex = Index;
+        for (int i = 0; i < FileLists->Count; i++)
+        {
+          delete FileLists->Objects[i];
+        }
+        delete FileLists;
       }
     }
 
-    TRemoteFile * File = dynamic_cast<TRemoteFile *>(Result->Objects[LatestIndex]);
-    UnicodeString Path = Result->Strings[LatestIndex];
-    Result->Delete(LatestIndex);
-    FreeFiles(Result);
-    Result->Clear();
-    Result->AddObject(Path, File);
-  }
-
-  if (FLAGSET(ListType, fltOnlyFile))
-  {
-    for (int Index = 0; Index < Result->Count; Index++)
+    if (FLAGSET(ListType, fltLatest) && (Result->Count > 1))
     {
-      TRemoteFile * File = dynamic_cast<TRemoteFile *>(Result->Objects[Index]);
-      if (File->IsDirectory)
+      // otherwise we do not have TRemoteFile's
+      DebugAssert(FLAGSET(ListType, fltQueryServer));
+      int LatestIndex = 0;
+
+      for (int Index = 1; Index < Result->Count; Index++)
       {
-        throw Exception(FMTLOAD(NOT_FILE_ERROR, (File->FileName)));
+        TRemoteFile * File = dynamic_cast<TRemoteFile *>(Result->Objects[Index]);
+        if (dynamic_cast<TRemoteFile *>(Result->Objects[LatestIndex])->Modification < File->Modification)
+        {
+          LatestIndex = Index;
+        }
+      }
+
+      TRemoteFile * File = dynamic_cast<TRemoteFile *>(Result->Objects[LatestIndex]);
+      UnicodeString Path = Result->Strings[LatestIndex];
+      Result->Delete(LatestIndex);
+      FreeFiles(Result);
+      Result->Clear();
+      Result->AddObject(Path, File);
+    }
+
+    if (FLAGSET(ListType, fltOnlyFile))
+    {
+      for (int Index = 0; Index < Result->Count; Index++)
+      {
+        TRemoteFile * File = dynamic_cast<TRemoteFile *>(Result->Objects[Index]);
+        if (File->IsDirectory)
+        {
+          throw Exception(FMTLOAD(NOT_FILE_ERROR, (File->FileName)));
+        }
       }
     }
+  }
+  catch (...)
+  {
+    FreeFileList(Result);
+    throw;
   }
 
   return Result;
@@ -1498,6 +1498,7 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
     }
 
     CheckParams(Parameters);
+    CopyParam.IncludeFileMask.SetRoots(TargetDirectory, FileList);
 
     FTerminal->CopyToLocal(FileList, TargetDirectory, &CopyParam, Params, NULL);
   }
@@ -1569,6 +1570,7 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
     }
 
     CheckParams(Parameters);
+    CopyParam.IncludeFileMask.SetRoots(FileList, TargetDirectory);
 
     FTerminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params, NULL);
   }
@@ -1973,6 +1975,7 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
     UnicodeString RemoteDirectory;
 
     SynchronizeDirectories(Parameters, LocalDirectory, RemoteDirectory, 2);
+    CopyParam.IncludeFileMask.SetRoots(LocalDirectory, RemoteDirectory);
 
     CheckDefaultSynchronizeParams();
     int SynchronizeParams = FSynchronizeParams | TTerminal::spNoConfirmation;
@@ -2239,10 +2242,12 @@ void __fastcall TManagementScript::PrintProgress(bool First, const UnicodeString
 void __fastcall TManagementScript::ResetTransfer()
 {
   TScript::ResetTransfer();
-  FLastProgressFile = L"";
+  FLastProgressFile = EmptyStr;
   FLastProgressTime = 0;
   FLastProgressEventTime = 0;
-  FLastProgressMessage = L"";
+  FLastProgressEventDoneFileName = EmptyStr;
+  FLastProgressOverallDone = false;
+  FLastProgressMessage = EmptyStr;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TManagementScript::QueryCancel()
@@ -2302,8 +2307,7 @@ void __fastcall TManagementScript::ShowPendingProgress()
 void __fastcall TManagementScript::TerminalOperationProgress(
   TFileOperationProgressType & ProgressData)
 {
-  if ((ProgressData.Operation == foCopy) ||
-      (ProgressData.Operation == foMove))
+  if (ProgressData.IsTransfer())
   {
     if (ProgressData.InProgress  && ProgressData.FileInProgress &&
         !ProgressData.FileName.IsEmpty())
@@ -2329,25 +2333,36 @@ void __fastcall TManagementScript::TerminalOperationProgress(
 
       time_t Time = time(NULL);
 
-      if ((OnProgress != NULL) && WantsProgress &&
-          (DoPrint || (FLastProgressEventTime != Time) || ProgressData.IsTransferDone()))
+      if ((OnProgress != NULL) && WantsProgress)
       {
-        FLastProgressEventTime = Time;
+        int OverallProgress = ProgressData.OverallProgress();
+        bool OverallDone = (OverallProgress == 100);
 
-        TScriptProgress Progress;
-        Progress.Operation = ProgressData.Operation;
-        Progress.Side = ProgressData.Side;
-        Progress.FileName = ProgressData.FullFileName;
-        Progress.Directory = ProgressData.Directory;
-        Progress.OverallProgress = ProgressData.OverallProgress();
-        Progress.FileProgress = ProgressData.TransferProgress();
-        Progress.CPS = ProgressData.CPS();
-        Progress.Cancel = false;
-        OnProgress(this, Progress);
-
-        if (Progress.Cancel)
+        if (DoPrint ||
+            (FLastProgressEventTime != Time) ||
+            (ProgressData.IsTransferDone() && (FLastProgressEventDoneFileName != ProgressData.FullFileName)) ||
+            (OverallDone && !FLastProgressOverallDone))
         {
-          ProgressData.SetCancel(csCancel);
+          FLastProgressEventTime = Time;
+          // When transferring a growing file, we would report the progress constantly
+          FLastProgressEventDoneFileName = ProgressData.IsTransferDone() ? ProgressData.FullFileName : EmptyStr;
+          FLastProgressOverallDone = OverallDone;
+
+          TScriptProgress Progress;
+          Progress.Operation = ProgressData.Operation;
+          Progress.Side = ProgressData.Side;
+          Progress.FileName = ProgressData.FullFileName;
+          Progress.Directory = ProgressData.Directory;
+          Progress.OverallProgress = OverallProgress;
+          Progress.FileProgress = ProgressData.TransferProgress();
+          Progress.CPS = ProgressData.CPS();
+          Progress.Cancel = false;
+          OnProgress(this, Progress);
+
+          if (Progress.Cancel)
+          {
+            ProgressData.SetCancel(csCancel);
+          }
         }
       }
 
@@ -2412,7 +2427,7 @@ void __fastcall TManagementScript::TerminalOperationFinished(
 {
   if (Success &&
       (Operation != foCalculateSize) && (Operation != foCalculateChecksum) &&
-      (Operation != foCopy) && (Operation != foMove))
+      !TFileOperationProgressType::IsTransferOperation(Operation))
   {
     ShowPendingProgress();
     // For FKeepingUpToDate we should send events to synchronize controller eventually.
@@ -2557,12 +2572,12 @@ void __fastcall TManagementScript::MaskPasswordInCommandLine(UnicodeString & Com
     {
       UnicodeString & MaskedParams = Url.IsEmpty() ? MaskedParamsPre : MaskedParamsPost;
 
-      UnicodeString Switch;
+      UnicodeString Switch, Value;
       wchar_t SwitchMark;
-      if (Options.WasSwitchAdded(Switch, SwitchMark))
+      if (Options.WasSwitchAdded(Switch, Value, SwitchMark))
       {
         OptionWithParameters = L"";
-        if (TSessionData::IsSensitiveOption(Switch))
+        if (TSessionData::IsSensitiveOption(Switch, Value))
         {
           // We should use something like TProgramParams::FormatSwitch here
           RawParam = FORMAT(L"%s%s=%s", (SwitchMark, Switch, PasswordMask));

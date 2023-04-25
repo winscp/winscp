@@ -79,6 +79,9 @@ private:
   UnicodeString FMimeTypes;
   int FDontReloadMoreThanSessions;
   int FScriptProgressFileNameLimit;
+  int FKeyVersion;
+  UnicodeString FCertificateStorage;
+  bool FExperimentalFeatures;
 
   bool FDisablePasswordStoring;
   bool FForceBanners;
@@ -144,6 +147,8 @@ private:
   void __fastcall SetTryFtpWhenSshFails(bool value);
   void __fastcall SetParallelDurationThreshold(int value);
   void __fastcall SetMimeTypes(UnicodeString value);
+  void SetCertificateStorage(const UnicodeString & value);
+  UnicodeString GetCertificateStorageExpanded();
   bool __fastcall GetCollectUsage();
   void __fastcall SetCollectUsage(bool value);
   bool __fastcall GetIsUnofficial();
@@ -221,7 +226,6 @@ public:
   void __fastcall ScheduleCustomIniFileStorageUse(const UnicodeString & ACustomIniFileStorageName);
   void __fastcall SetExplicitIniFileStorageName(const UnicodeString & FileName);
   void __fastcall SetNulStorage();
-  void __fastcall SetDefaultStorage();
   UnicodeString __fastcall GetAutomaticIniFileStorageName(bool ReadingOnly);
   UnicodeString __fastcall GetDefaultIniFileExportPath();
   UnicodeString __fastcall GetIniFileParamValue();
@@ -265,6 +269,7 @@ public:
   UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName);
   bool RegistryPathExists(const UnicodeString & RegistryPath);
   bool HasLocalPortNumberLimits();
+  virtual UnicodeString TemporaryDir(bool Mask = false) = 0;
 
   TStoredSessionList * __fastcall SelectFilezillaSessionsForImport(
     TStoredSessionList * Sessions, UnicodeString & Error);
@@ -273,11 +278,13 @@ public:
     TStoredSessionList * Sessions, UnicodeString & Error);
   TStoredSessionList * __fastcall SelectKnownHostsSessionsForImport(
     TStrings * Lines, TStoredSessionList * Sessions, UnicodeString & Error);
+  TStoredSessionList * SelectOpensshSessionsForImport(TStoredSessionList * Sessions, UnicodeString & Error);
 
   __property TVSFixedFileInfo *FixedApplicationInfo  = { read=GetFixedApplicationInfo };
   __property void * ApplicationInfo  = { read=GetApplicationInfo };
   __property TUsage * Usage = { read = FUsage };
   __property bool CollectUsage = { read = GetCollectUsage, write = SetCollectUsage };
+  __property bool ExperimentalFeatures = { read = FExperimentalFeatures, write = FExperimentalFeatures };
   __property UnicodeString StoredSessionsSubKey = {read=GetStoredSessionsSubKey};
   __property UnicodeString PuttyRegistryStorageKey  = { read=FPuttyRegistryStorageKey, write=SetPuttyRegistryStorageKey };
   __property UnicodeString PuttySessionsKey  = { read=GetPuttySessionsKey };
@@ -323,6 +330,8 @@ public:
   __property int CacheDirectoryChangesMaxSize = { read = FCacheDirectoryChangesMaxSize, write = SetCacheDirectoryChangesMaxSize };
   __property bool ShowFtpWelcomeMessage = { read = FShowFtpWelcomeMessage, write = SetShowFtpWelcomeMessage };
   __property UnicodeString ExternalIpAddress = { read = FExternalIpAddress, write = SetExternalIpAddress };
+  __property UnicodeString CertificateStorage = { read = FCertificateStorage, write = SetCertificateStorage };
+  __property UnicodeString CertificateStorageExpanded = { read = GetCertificateStorageExpanded };
   __property int LocalPortNumberMin = { read = FLocalPortNumberMin, write = SetLocalPortNumberMin };
   __property int LocalPortNumberMax = { read = FLocalPortNumberMax, write = SetLocalPortNumberMax };
   __property bool TryFtpWhenSshFails = { read = FTryFtpWhenSshFails, write = SetTryFtpWhenSshFails };
@@ -330,6 +339,7 @@ public:
   __property UnicodeString MimeTypes = { read = FMimeTypes, write = SetMimeTypes };
   __property int DontReloadMoreThanSessions = { read = FDontReloadMoreThanSessions, write = FDontReloadMoreThanSessions };
   __property int ScriptProgressFileNameLimit = { read = FScriptProgressFileNameLimit, write = FScriptProgressFileNameLimit };
+  __property int KeyVersion = { read = FKeyVersion, write = FKeyVersion };
 
   __property UnicodeString TimeFormat = { read = GetTimeFormat };
   __property TStorage Storage  = { read=GetStorage };
@@ -380,5 +390,8 @@ extern const UnicodeString FtpsCertificateStorageKey;
 extern const UnicodeString HttpsCertificateStorageKey;
 //---------------------------------------------------------------------------
 extern const int BelowNormalLogLevels;
+//---------------------------------------------------------------------------
+extern const UnicodeString OpensshFolderName;
+extern const UnicodeString OpensshAuthorizedKeysFileName;
 //---------------------------------------------------------------------------
 #endif

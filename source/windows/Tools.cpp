@@ -1225,7 +1225,7 @@ void __fastcall SuspendWindows()
 {
   AcquireShutDownPrivileges();
 
-  // https://docs.microsoft.com/en-us/windows/win32/api/powrprof/nf-powrprof-setsuspendstate
+  // https://learn.microsoft.com/en-us/windows/win32/api/powrprof/nf-powrprof-setsuspendstate
   Win32Check(SetSuspendState(false, false, false));
 }
 //---------------------------------------------------------------------------
@@ -1242,6 +1242,11 @@ void __fastcall EditSelectBaseName(HWND Edit)
     // initialized yet
     PostMessage(Edit, EM_SETSEL, 0, P - 1);
   }
+}
+//---------------------------------------------------------------------------
+UnicodeString GetConvertedKeyFileName(const UnicodeString & FileName)
+{
+  return ChangeFileExt(FileName, FORMAT(L".%s", (PuttyKeyExt)));
 }
 //---------------------------------------------------------------------------
 static void __fastcall ConvertKey(UnicodeString & FileName, TKeyType Type)
@@ -1264,7 +1269,7 @@ static void __fastcall ConvertKey(UnicodeString & FileName, TKeyType Type)
 
   try
   {
-    FileName = ChangeFileExt(FileName, FORMAT(L".%s", (PuttyKeyExt)));
+    FileName = GetConvertedKeyFileName(FileName);
 
     if (!SaveDialog(LoadStr(CONVERTKEY_SAVE_TITLE), LoadStr(CONVERTKEY_SAVE_FILTER), PuttyKeyExt, FileName))
     {
@@ -1281,19 +1286,17 @@ static void __fastcall ConvertKey(UnicodeString & FileName, TKeyType Type)
   }
 }
 //---------------------------------------------------------------------------
-static void __fastcall DoVerifyKey(
-  UnicodeString & FileName, TSshProt SshProt, bool Convert, bool CanIgnore)
+void DoVerifyKey(UnicodeString & FileName, bool Convert, UnicodeString & Message, TStrings *& MoreMessages, UnicodeString & HelpKeyword)
 {
+  std::unique_ptr<TStrings> AMoreMessages;
   if (!FileName.Trim().IsEmpty())
   {
     FileName = ExpandEnvironmentVariables(FileName);
     TKeyType Type = KeyType(FileName);
     // reason _wfopen failed
     int Error = errno;
-    UnicodeString Message;
-    UnicodeString HelpKeyword = HELP_LOGIN_KEY_TYPE;
+    HelpKeyword = HELP_LOGIN_KEY_TYPE;
     UnicodeString PuttygenPath;
-    std::unique_ptr<TStrings> MoreMessages;
     switch (Type)
     {
       case ktOpenSSHPEM:
@@ -1306,8 +1309,8 @@ static void __fastcall DoVerifyKey(
           if (Convert)
           {
             Configuration->Usage->Inc(L"PrivateKeyConvertSuggestionsNative");
-            UnicodeString ConvertMessage = FMTLOAD(KEY_TYPE_CONVERT3, (TypeName, RemoveMainInstructionsTag(Message)));
-            Message = UnicodeString();
+            UnicodeString ConvertMessage = FMTLOAD(KEY_TYPE_CONVERT4, (TypeName, RemoveMainInstructionsTag(Message)));
+            Message = EmptyStr;
             if (MoreMessageDialog(ConvertMessage, NULL, qtConfirmation, qaOK | qaCancel, HelpKeyword) == qaOK)
             {
               ConvertKey(FileName, Type);
@@ -1326,28 +1329,24 @@ static void __fastcall DoVerifyKey(
         break;
 
       case ktSSH1:
+        Message = MainInstructions(FMTLOAD(KEY_TYPE_SSH1, (FileName)));
+        break;
+
       case ktSSH2:
-        if ((Type == ktSSH1) != (SshProt == ssh1only))
-        {
-          Message =
-            MainInstructions(
-              FMTLOAD(KEY_TYPE_DIFFERENT_SSH,
-                (FileName, (Type == ktSSH1 ? L"SSH-1" : L"PuTTY SSH-2"))));
-        }
+        Message = TestKey(Type, FileName);
         break;
 
       case ktSSH1Public:
       case ktSSH2PublicRFC4716:
       case ktSSH2PublicOpenSSH:
         // noop
-        // Do not even bother checking SSH protocol version
         break;
 
       case ktUnopenable:
         Message = MainInstructions(FMTLOAD(KEY_TYPE_UNOPENABLE, (FileName)));
         if (Error != ERROR_SUCCESS)
         {
-          MoreMessages.reset(TextToStringList(SysErrorMessageForError(Error)));
+          AMoreMessages.reset(TextToStringList(SysErrorMessageForError(Error)));
         }
         break;
 
@@ -1358,27 +1357,38 @@ static void __fastcall DoVerifyKey(
         Message = MainInstructions(FMTLOAD(KEY_TYPE_UNKNOWN2, (FileName)));
         break;
     }
+  }
+  MoreMessages = AMoreMessages.release();
+}
 
-    if (!Message.IsEmpty())
+//---------------------------------------------------------------------------
+static void __fastcall DoVerifyKey(UnicodeString & FileName, bool Convert, bool CanIgnore)
+{
+  TStrings * AMoreMessages;
+  UnicodeString Message;
+  UnicodeString HelpKeyword;
+  DoVerifyKey(FileName, Convert, Message, AMoreMessages, HelpKeyword);
+  std::unique_ptr<TStrings> MoreMessages(AMoreMessages);
+  if (!Message.IsEmpty())
+  {
+    Configuration->Usage->Inc(L"PrivateKeySelectErrors");
+    unsigned int Answers = (CanIgnore ? (qaIgnore | qaAbort) : qaOK);
+    if (MoreMessageDialog(Message, MoreMessages.get(), qtWarning, Answers, HelpKeyword) != qaIgnore)
     {
-      Configuration->Usage->Inc(L"PrivateKeySelectErrors");
-      unsigned int Answers = (CanIgnore ? (qaIgnore | qaAbort) : qaOK);
-      if (MoreMessageDialog(Message, MoreMessages.get(), qtWarning, Answers, HelpKeyword) != qaIgnore)
-      {
-        Abort();
-      }
+      Abort();
     }
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall VerifyAndConvertKey(UnicodeString & FileName, TSshProt SshProt, bool CanIgnore)
+void __fastcall VerifyAndConvertKey(UnicodeString & FileName, bool CanIgnore)
 {
-  DoVerifyKey(FileName, SshProt, true, CanIgnore);
+  DoVerifyKey(FileName, true, CanIgnore);
 }
 //---------------------------------------------------------------------------
-void __fastcall VerifyKey(UnicodeString FileName, TSshProt SshProt)
+void __fastcall VerifyKey(const UnicodeString & FileName)
 {
-  DoVerifyKey(FileName, SshProt, false, true);
+  UnicodeString AFileName(FileName);
+  DoVerifyKey(AFileName, false, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall VerifyCertificate(const UnicodeString & FileName)

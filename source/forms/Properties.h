@@ -26,23 +26,23 @@ __published:
   TPageControl *PageControl;
   TTabSheet *CommonSheet;
   TBevel *Bevel1;
-  TLabel *FileLabel;
+  TEdit *FileLabel;
   TLabel *Label1;
-  TPathLabel *LocationLabel;
+  TEdit *LocationLabel;
   TLabel *Label2;
-  TLabel *SizeLabel;
+  TEdit *SizeLabel;
   TLabel *LinksToLabelLabel;
-  TPathLabel *LinksToLabel;
+  TEdit *LinksToLabel;
   TBevel *Bevel2;
-  TLabel *Label3;
-  TBevel *Bevel3;
-  TLabel *Label4;
+  TLabel *RightsLabel;
+  TBevel *GroupOwnerRightsBevel;
+  TLabel *GroupLabel;
   TComboBox *GroupComboBox;
-  TLabel *Label5;
+  TLabel *OwnerLabel;
   TComboBox *OwnerComboBox;
   TImage *FileIconImage;
   TBevel *RecursiveBevel;
-  TCheckBox *RecursiveCheck;
+  TCheckBox *RecursiveCheck2;
   TButton *CalculateSizeButton;
   TRightsFrame *RightsFrame;
   TButton *HelpButton;
@@ -56,6 +56,8 @@ __published:
   TPopupMenu *ListViewMenu;
   TMenuItem *Copy;
   TLabel *ChecksumUnknownLabel;
+  TEdit *OwnerView;
+  TEdit *GroupView;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall CalculateSizeButtonClick(TObject *Sender);
@@ -79,6 +81,7 @@ private:
   TStrings * FChecksumAlgs;
   TRemoteProperties FOrigProperties;
   bool FMultiple;
+  bool FAnyDirectories;
   bool FAllowCalculateStats;
   bool FStatsNotCalculated;
   TCalculateSizeEvent FOnCalculateSize;
@@ -102,7 +105,8 @@ protected:
   void __fastcall LoadInfo();
   void __fastcall LoadRemoteTokens(TComboBox * ComboBox, const TRemoteTokenList * List);
   UnicodeString __fastcall LoadRemoteToken(const TRemoteToken & Token);
-  void __fastcall LoadRemoteToken(TComboBox * ComboBox, bool Valid, const TRemoteToken & Token);
+  void __fastcall LoadRemoteToken(
+    TComboBox * ComboBox, TEdit * View, TLabel * Label, bool Valid, const TRemoteToken & Token, int Change);
   TRemoteToken __fastcall StoreRemoteToken(const TRemoteToken & Orig,
     UnicodeString Text, int Message, const TRemoteTokenList * List);
   void __fastcall StoreRemoteToken(TComboBox * ComboBox,

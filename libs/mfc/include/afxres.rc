@@ -34,6 +34,7 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
+#ifndef WINSCP
 #ifndef _AFX_NO_APPMENU_RESOURCES
 	AFX_IDS_OPENFILE,               "Open"
 	AFX_IDS_SAVEFILE,               "Save As"
@@ -41,12 +42,14 @@ BEGIN
 	AFX_IDS_UNTITLED,               "Untitled"
 	AFX_IDS_HIDE,                   "&Hide"
 #endif // !_AFX_NO_APPMENUSTRING_RESOURCES
+#endif /// WINSCP
 
 	AFX_IDS_MEMORY_EXCEPTION,       "Out of memory."
 	AFX_IDS_NOT_SUPPORTED_EXCEPTION,"An unsupported operation was attempted."
 	AFX_IDS_RESOURCE_EXCEPTION,     "A required resource was unavailable."
 	AFX_IDS_USER_EXCEPTION,         "An unknown error has occurred."
 
+#ifndef WINSCP
 	// General error prompts
 #ifndef _AFX_NO_FILECMD_RESOURCES
 	AFX_IDP_INVALID_FILENAME,       "Invalid filename."
@@ -100,6 +103,7 @@ BEGIN
 #endif //!_AFX_NO_OLE_RESOURCES
 
 	AFX_IDP_NO_ERROR_AVAILABLE      "No error message is available."
+#endif // WINSCP
 
 #ifndef _AFX_NO_CFILE_RESOURCES
 	AFX_IDP_FILE_NONE                "No error occurred."
@@ -120,6 +124,7 @@ BEGIN
 	AFX_IDS_UNNAMED_FILE             "an unnamed file"
 #endif // !_AFX_NO_CFILE_RESOURCES
 
+#ifndef WINSCP
 	AFX_IDP_ARCH_NONE               "No error occurred."
 	AFX_IDP_ARCH_GENERIC                "An unknown error occurred while accessing %1."
 	AFX_IDP_ARCH_READONLY           "An attempt was made to write to the reading %1."
@@ -139,7 +144,10 @@ BEGIN
 #ifndef _AFX_NO_OCC_RESOURCES
 	AFX_IDS_OCC_SCALEUNITS_PIXELS   "pixels"
 #endif //!_AFX_NO_OCC_RESOURCES
+#endif // WINSCP
 END
+
+#ifndef WINSCP
 
 /////////////////////////////////////////////////////////////////////////////
 // Cursors
@@ -195,6 +203,7 @@ AFX_IDB_CHECKLISTBOX_NT     BITMAP  DISCARDABLE     "res\\ntcheck.bmp"
 AFX_IDB_CHECKLISTBOX_95     BITMAP  DISCARDABLE     "res\\95check.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
+#endif // WINSCP
 
 #endif //!_AFXDLL
 #endif //!__AFXRES_RC__

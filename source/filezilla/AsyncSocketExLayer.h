@@ -118,6 +118,7 @@ protected:
   int SendNext(const void * lpBuf, int nBufLen, int nFlags = 0);
 
   CAsyncSocketEx *m_pOwnerSocket;
+  int m_nCriticalError;
 
   // Calls OnLayerCallback on owner socket
   int DoLayerCallback(int nType, int nParam1, int nParam2, char * str = 0);
@@ -154,7 +155,6 @@ private:
   void CallEvent(int nEvent, int nErrorCode);
 
   int m_nPendingEvents;
-  int m_nCriticalError;
 
   void Init(CAsyncSocketExLayer * pPrevLayer, CAsyncSocketEx * pOwnerSocket);
   CAsyncSocketExLayer * AddLayer(CAsyncSocketExLayer * pLayer, CAsyncSocketEx * pOwnerSocket);

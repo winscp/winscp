@@ -1,6 +1,6 @@
 /* 
    String utility functions
-   Copyright (C) 1999-2009, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1999-2021, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -46,11 +46,13 @@ char *ne_shave(char *str, const char *whitespace);
 
 /* Cleanse 'str' of non-printable (e.g. control) characters.  'str' is
  * modified in-place, and returned. */
-char *ne_strclean(char *str);
+char *ne_strclean(char *str)
+    ne_attribute((nonnull));
 
 /* Encode 'len' bytes of 'text' to base64.  Returns malloc-allocated
  * NUL-terminated buffer which the caller must free(). */
-char *ne_base64(const unsigned char *text, size_t len);
+char *ne_base64(const unsigned char *text, size_t len)
+    ne_attribute_malloc;
 
 /* Decode NUL-terminated base64-encoded string 'data', placing
  * malloc-allocated raw decoder output in '*out'.  Returns length, or
@@ -142,12 +144,37 @@ strncpy(dest, src, ne__nm1); dest[ne__nm1] = '\0'; } while (0)
 /* Return a malloc-allocated copy of 'data', of length 'len', with all
  * non-ASCII bytes, and ASCII control characters escaped.  (Note that
  * the escaping includes the NUL byte). */
-char *ne_strnqdup(const unsigned char *data, size_t len);
+char *ne_strnqdup(const unsigned char *data, size_t len)
+    ne_attribute_malloc;
 
 /* Return malloc-allocated concatenation of all NUL-terminated string
  * arguments, up to a terminating NULL pointer. */
 char *ne_concat(const char *str, ...)
     ne_attribute_sentinel;
+
+/* Hash algorithms: */
+#define NE_HASH_MD5        (0x0001) /* MD5 */
+#define NE_HASH_SHA256     (0x0002) /* SHA-256 (SHA-2) */
+#define NE_HASH_SHA512     (0x0003) /* SHA-512 (SHA-2) */
+#define NE_HASH_SHA512_256 (0x0004) /* SHA-512/256 (SHA-2) */
+
+/* Optional hash output formatting options: */
+#define NE_HASH_COLON      (0x1000) /* Colon-separated pairs */
+#define NE_HASH_SPACE      (0x2000) /* Space-separated pairs */
+
+/* Calculate hash over concatenation of NUL-terminated const char *
+ * string arguments, up to a terminating NULL pointer, and return as a
+ * malloc-allocated ASCII hex string.  'flags' comprises exactly one
+ * of the algorithms indicated by the NE_HASH_* values above, which
+ * may optionally be combined with the formatting options.  Returns
+ * NULL if the hash type is not supported or an internal error
+ * occurs. */
+char *ne_strhash(unsigned int flags, ...)
+    ne_attribute_sentinel ne_attribute_malloc;
+/* Equivalent of ne_strhash(), taking va_list argument; the behaviour
+ * is otherwise identical. */
+char *ne_vstrhash(unsigned int flags, va_list ap)
+    ne_attribute_malloc;
 
 /* Wrapper for snprintf: always NUL-terminates returned buffer, and
  * returns strlen(str). */
@@ -183,6 +210,15 @@ const unsigned char *ne_tolower_array(void) ne_attribute((const));
 /* Convert an integer in the range 0..15 to the equivalent (lowercase)
  * ASCII hexadecimal equivalent character, in the range '0..9,'a..f' */
 #define NE_HEX2ASC(x) ((char) ((x) > 9 ? ((x) - 10 + 'a') : ((x) + '0')))
+
+/* Encodes a extended parameter value for HTTP headers, as defined in
+ * RFC 5987.  Returns a malloc-allocated string if the parameter
+ * 'value' needs to be encoded as an extended parameter, or NULL if it
+ * can be used as a regular parameter.  The charset must be either
+ * "UTF-8" or "ISO-8859-1", but the language value can be NULL. */
+char *ne_strparam(const char *charset, const char *lang,
+                  const unsigned char *value)
+    ne_attribute((nonnull (1, 3))) ne_attribute_malloc;
 
 NE_END_DECLS
 

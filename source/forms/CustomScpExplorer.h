@@ -52,7 +52,7 @@ class TBookmark;
 class TManagedTerminal;
 //---------------------------------------------------------------------------
 enum TActionAllowed { aaShortCut, aaUpdate, aaExecute };
-enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4 , afCommander = 8 };
+enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4, afCommander = 8 };
 enum TExecuteFileBy { efShell = 1, efInternalEditor = 2, efExternalEditor = 3, efDefaultEditor = 100 };
 enum TPanelExport { pePath, peFileList, peFullFileList };
 enum TPanelExportDestination { pedClipboard, pedCommandLine };
@@ -108,6 +108,7 @@ __published:
   TTBXItem *TBXItem254;
   TSplitter *QueueFileListSplitter;
   TListView *QueueFileList;
+  TTBXDock *MessageDock;
   void __fastcall ApplicationMinimize(TObject * Sender);
   void __fastcall ApplicationRestore(TObject * Sender);
   void __fastcall RemoteDirViewContextPopup(TObject *Sender,
@@ -216,6 +217,7 @@ __published:
   void __fastcall QueueFileListData(TObject *Sender, TListItem *Item);
   void __fastcall QueueFileListCustomDrawItem(TCustomListView *Sender, TListItem *Item, TCustomDrawState State, bool &DefaultDraw);
   void __fastcall QueueFileListResize(TObject *Sender);
+  void __fastcall MessageDockRequestDock(TObject *Sender, TTBCustomDockableWindow *Bar, bool &Accept);
 
 private:
   TManagedTerminal * FTerminal;
@@ -296,6 +298,7 @@ private:
   UnicodeString FFileColorsCurrent;
   bool FInvalid;
   std::auto_ptr<TQueueFileList> FQueueFileList;
+  bool FShowingChanged;
   bool FStarted;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
@@ -316,9 +319,10 @@ private:
   void __fastcall SetDockAllowDrag(bool value);
   void __fastcall QueueSplitterDblClick(TObject * Sender);
   void __fastcall QueueFileListSplitterDblClick(TObject * Sender);
-  void __fastcall AddQueueItem(TTerminalQueue * Queue, TTransferDirection Direction,
+  void __fastcall AddQueueItem(
+    TTerminalQueue * Queue, TTransferDirection Direction,
     TStrings * FileList, const UnicodeString TargetDirectory,
-    const TGUICopyParamType & CopyParam, int Params);
+    TGUICopyParamType & CopyParam, int Params);
   void __fastcall AddQueueItem(TTerminalQueue * Queue, TQueueItem * QueueItem, TManagedTerminal * Terminal);
   void __fastcall ClearTransferSourceSelection(TTransferDirection Direction);
   void __fastcall SessionsDDDragOver(int KeyState, const TPoint & Point, int & Effect, int PreferredEffect);
@@ -351,6 +355,8 @@ private:
   void __fastcall UpdateQueueFileList();
   void __fastcall QueueFileListColumnAutoSize();
   void __fastcall AdjustQueueLayout();
+  void __fastcall StoreTransitionCloseClick(TObject * Sender);
+  void __fastcall StoreTransitionLinkClick(TObject * Sender);
 
 protected:
   TOperationSide FCurrentSide;
@@ -441,8 +447,8 @@ protected:
   void __fastcall DestroyProgressForm();
   virtual void __fastcall FileOperationProgress(TFileOperationProgressType & ProgressData);
   void __fastcall OperationComplete(const TDateTime & StartTime);
-  void __fastcall ExecutedFileChanged(const UnicodeString FileName,
-    TEditedFileData * Data, HANDLE UploadCompleteEvent);
+  void __fastcall ExecutedFileChanged(
+    const UnicodeString & FileName, TEditedFileData * Data, HANDLE UploadCompleteEvent, bool & Retry);
   void __fastcall ExecutedFileReload(const UnicodeString FileName,
     const TEditedFileData * Data);
   void __fastcall ExecutedFileEarlyClosed(const TEditedFileData * Data,
@@ -530,7 +536,7 @@ protected:
   bool __fastcall RemoteFileControlFileOperation(TObject * Sender,
     TFileOperation Operation, bool NoConfirmation, void * Param);
   void __fastcall DDDownload(
-    TStrings * FilesToCopy, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params);
+    TStrings * FilesToCopy, const UnicodeString & TargetDir, TCopyParamType * CopyParam, int Params);
   bool __fastcall EnsureCommandSessionFallback(TFSCapability Capability);
   bool __fastcall CommandSessionFallback();
   void __fastcall FileTerminalRemoved(const UnicodeString FileName,
@@ -557,7 +563,7 @@ protected:
     UnicodeString RemoteDirectory, TCopyParamType CopyParam,
     UnicodeString & Result, UnicodeString & RootDirectory);
   void __fastcall TemporarilyDownloadFiles(TStrings * FileList, bool ForceText,
-    UnicodeString & RootTempDir, UnicodeString & TempDir, bool AllFiles, bool GetTargetNames,
+    UnicodeString & RootTempDir, UnicodeString & TempDir, bool GetTargetNames,
     bool AutoOperation);
   void __fastcall LocalEditorClosed(TObject * Sender, bool Forced);
   TTBXPopupMenu * __fastcall HistoryMenu(TOperationSide Side, bool Back);
@@ -648,6 +654,7 @@ protected:
   bool __fastcall CanCommandLineFromAnotherInstance();
   void __fastcall SetQueueProgress();
   void __fastcall UpdateQueueLabel();
+  void CheckStoreTransition();
   void __fastcall SetTaskbarListProgressState(TBPFLAG Flags);
   void __fastcall SetTaskbarListProgressValue(int Progress);
   void __fastcall SetTaskbarListProgressValue(TFileOperationProgressType * ProgressData);
@@ -716,6 +723,7 @@ protected:
   void __fastcall DetachTerminal(TObject * ATerminal);
   bool __fastcall IsActiveTerminal(TTerminal * Terminal);
   void __fastcall UpdateDarkMode();
+  void LoadFilesProperties(TStrings * FileList);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

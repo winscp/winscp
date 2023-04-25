@@ -560,6 +560,8 @@ private:
   bool FWantsProgress;
   bool FInteractive;
   unsigned int FMaxSend;
+  // Particularly FTP calls TransferOut/In from other thread
+  std::unique_ptr<TCriticalSection> FSection;
 
   inline TConsoleCommStruct * __fastcall GetCommStruct();
   inline void __fastcall FreeCommStruct(TConsoleCommStruct * CommStruct);
@@ -591,6 +593,8 @@ __fastcall TExternalConsole::TExternalConsole(
     // we get terminated as well
     CloseHandle(Job);
   }
+
+  FSection.reset(new TCriticalSection());
 
   TConsoleCommStruct * CommStruct = GetCommStruct();
   try
@@ -686,6 +690,7 @@ UnicodeString __fastcall TExternalConsole::FinalLogMessage()
 //---------------------------------------------------------------------------
 void __fastcall TExternalConsole::Print(UnicodeString Str, bool FromBeginning, bool Error)
 {
+  TGuard Guard(FSection.get());
   // need to do at least one iteration, even when Str is empty (new line)
   do
   {
@@ -721,6 +726,7 @@ void __fastcall TExternalConsole::Print(UnicodeString Str, bool FromBeginning, b
 //---------------------------------------------------------------------------
 bool __fastcall TExternalConsole::Input(UnicodeString & Str, bool Echo, unsigned int Timer)
 {
+  TGuard Guard(FSection.get());
   TConsoleCommStruct * CommStruct = GetCommStruct();
   try
   {
@@ -757,6 +763,7 @@ int __fastcall TExternalConsole::Choice(
   UnicodeString Options, int Cancel, int Break, int Continue, int Timeouted, bool Timeouting, unsigned int Timer,
   UnicodeString Message)
 {
+  TGuard Guard(FSection.get());
   TConsoleCommStruct * CommStruct = GetCommStruct();
   try
   {
@@ -803,6 +810,7 @@ bool __fastcall TExternalConsole::PendingAbort()
 //---------------------------------------------------------------------------
 void __fastcall TExternalConsole::SetTitle(UnicodeString Title)
 {
+  TGuard Guard(FSection.get());
   TConsoleCommStruct * CommStruct = GetCommStruct();
   try
   {
@@ -822,6 +830,7 @@ void __fastcall TExternalConsole::SetTitle(UnicodeString Title)
 //---------------------------------------------------------------------------
 void __fastcall TExternalConsole::Init()
 {
+  TGuard Guard(FSection.get());
   TConsoleCommStruct * CommStruct = GetCommStruct();
   try
   {
@@ -897,6 +906,7 @@ void __fastcall TExternalConsole::WaitBeforeExit()
 //---------------------------------------------------------------------------
 void __fastcall TExternalConsole::Progress(TScriptProgress & Progress)
 {
+  TGuard Guard(FSection.get());
   TConsoleCommStruct * CommStruct = GetCommStruct();
 
   typedef TConsoleCommStruct::TProgressEvent TProgressEvent;
@@ -907,15 +917,9 @@ void __fastcall TExternalConsole::Progress(TScriptProgress & Progress)
 
     CommStruct->Event = TConsoleCommStruct::PROGRESS;
 
-    switch (Progress.Operation)
+    if (DebugAlwaysTrue(TFileOperationProgressType::IsTransferOperation(Progress.Operation)))
     {
-      case foCopy:
-      case foMove:
-        ProgressEvent.Operation = TProgressEvent::COPY;
-        break;
-
-      default:
-        DebugFail();
+      ProgressEvent.Operation = TProgressEvent::COPY;
     }
 
     switch (Progress.Side)
@@ -963,6 +967,7 @@ void __fastcall TExternalConsole::Progress(TScriptProgress & Progress)
 //---------------------------------------------------------------------------
 void __fastcall TExternalConsole::TransferOut(const unsigned char * Data, size_t Len)
 {
+  TGuard Guard(FSection.get());
   DebugAssert((Data == NULL) == (Len == 0));
   size_t Offset = 0;
   do
@@ -987,6 +992,7 @@ void __fastcall TExternalConsole::TransferOut(const unsigned char * Data, size_t
 //---------------------------------------------------------------------------
 size_t __fastcall TExternalConsole::TransferIn(unsigned char * Data, size_t Len)
 {
+  TGuard Guard(FSection.get());
   size_t Offset = 0;
   size_t Result = 0;
   while ((Result == Offset) && (Offset < Len))
@@ -1412,6 +1418,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   unsigned int Timer = 0;
   unsigned int Timeout = 0;
   unsigned int TimeoutA = 0;
+  unsigned int TimeoutR = 0;
   unsigned int NoBatchA = 0;
 
   if (Params != NULL)
@@ -1420,6 +1427,8 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
     {
       Timeout = Params->Timeout;
       TimeoutA = Params->TimeoutAnswer;
+      TimeoutR = Params->TimeoutResponse;
+      DebugAssert((TimeoutA != 0) && (TimeoutR != 0));
     }
 
     if (Params->Timer > 0)
@@ -1449,8 +1458,10 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
       Timeout = InputTimeout();
       if (Timeout != 0)
       {
+        DebugAssert((TimeoutA == 0) && (TimeoutR == 0));
         // See a duplicate AbortAnswer call below
         TimeoutA = AbortAnswer(Answers & ~NoBatchA);
+        TimeoutR = TimeoutA;
       }
     }
   }
@@ -1669,6 +1680,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
       else if (Timeouting && (Timeout < MSecsPerSec))
       {
         AnswerIndex = TimeoutIndex;
+        Answer = TimeoutR;
       }
       else
       {
@@ -2292,7 +2304,7 @@ void __fastcall Usage(TConsole * Console)
     PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s [local_dir] [remote_dir] [/%s]", (LowerCase(SYNCHRONIZE_SWITCH), LowerCase(DEFAULTS_SWITCH))));
     PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s [local_dir] [remote_dir] [/%s]", (LowerCase(KEEP_UP_TO_DATE_SWITCH), LowerCase(DEFAULTS_SWITCH))));
     PrintUsageSyntax(Console, FORMAT(L"[mysession] /%s [path]", (LowerCase(REFRESH_SWITCH))));
-    PrintUsageSyntax(Console, FORMAT(L"[mysession] [/privatekey=<file> [/%s=<passphrase>]]", (PassphraseOption)));
+    PrintUsageSyntax(Console, FORMAT(L"[mysession] [/%s=<file> [/%s=<passphrase>]]", (LowerCase(PRIVATEKEY_SWITCH), PassphraseOption)));
     PrintUsageSyntax(Console, L"[mysession] [/hostkey=<fingerprint>]");
     PrintUsageSyntax(Console, FORMAT(L"[mysession] [/%s=<user> [/%s=<password>]]", (LowerCase(USERNAME_SWITCH), LowerCase(PASSWORD_SWITCH))));
     PrintUsageSyntax(Console, FORMAT(L"[mysession] [/clientcert=<file> [/%s=<passphrase>]]", (PassphraseOption)));
@@ -2348,7 +2360,7 @@ void __fastcall Usage(TConsole * Console)
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(KEEP_UP_TO_DATE_SWITCH), USAGE_KEEPUPTODATE);
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(REFRESH_SWITCH), USAGE_REFRESH);
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(DEFAULTS_SWITCH), USAGE_DEFAULTS);
-    RegisterSwitch(SwitchesUsage, L"/privatekey=", USAGE_PRIVATEKEY);
+    RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(PRIVATEKEY_SWITCH) + L"=", USAGE_PRIVATEKEY);
     RegisterSwitch(SwitchesUsage, L"/hostkey=", USAGE_HOSTKEY);
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(USERNAME_SWITCH), USAGE_USERNAME);
     RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(PASSWORD_SWITCH), USAGE_PASSWORD);
@@ -2561,6 +2573,11 @@ int __fastcall KeyGen(TConsole * Console, TProgramParams * Params)
     bool ChangePassphrase =
       FindPuttygenCompatibleSwitch(Params, KEYGEN_CHANGE_PASSPHRASE_SWITCH, L"P", NewPassphrase, NewPassphraseSet);
 
+    if (Params->ParamCount > 0)
+    {
+      throw Exception(LoadStr(TOO_MANY_PARAMS_ERROR));
+    }
+
     TKeyType Type = KeyType(InputFileName);
     int Error = errno;
     switch (Type)
@@ -2569,7 +2586,8 @@ int __fastcall KeyGen(TConsole * Console, TProgramParams * Params)
         throw Exception(LoadStr(KEYGEN_SSH1));
 
       case ktSSH2:
-        if (NewComment.IsEmpty() && !ChangePassphrase)
+        if (NewComment.IsEmpty() && !ChangePassphrase &&
+            (Configuration->KeyVersion == 0)) // We should better check for version change
         {
           throw Exception(LoadStr(KEYGEN_NO_ACTION));
         }
@@ -2950,7 +2968,15 @@ int __fastcall Console(TConsoleMode Mode)
           Session = Params->Param[1];
           if (Params->ParamCount > 1)
           {
-            Runner->PrintMessage(LoadStr(SCRIPT_CMDLINE_PARAMETERS));
+            // Check if the pending parameters will be consumed by ParseUrl (/rawsettings) in TManagementScript::Connect.
+            // This way we parse the options twice, but we do not want to refactor the code just for nicer test for this minor warning.
+            TOptions OptionsCopy(*Params);
+            bool DefaultsOnly = false;
+            StoredSessions->ParseUrl(Session, &OptionsCopy, DefaultsOnly);
+            if (OptionsCopy.ParamCount > 1)
+            {
+              Runner->PrintMessage(LoadStr(SCRIPT_CMDLINE_PARAMETERS));
+            }
           }
         }
 

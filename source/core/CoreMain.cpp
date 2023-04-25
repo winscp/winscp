@@ -18,6 +18,8 @@
 //---------------------------------------------------------------------------
 TConfiguration * Configuration = NULL;
 TStoredSessionList * StoredSessions = NULL;
+TApplicationLog * ApplicationLog = NULL;
+bool AnySession = false;
 //---------------------------------------------------------------------------
 TQueryButtonAlias::TQueryButtonAlias()
 {
@@ -77,6 +79,7 @@ TQueryParams::TQueryParams(unsigned int AParams, UnicodeString AHelpKeyword)
   TimerQueryType = static_cast<TQueryType>(-1);
   Timeout = 0;
   TimeoutAnswer = 0;
+  TimeoutResponse = 0;
   NoBatchAnswers = 0;
   HelpKeyword = AHelpKeyword;
 }
@@ -208,6 +211,14 @@ void CoreSetResourceModule(void * ResourceHandle)
 void CoreMaintenanceTask()
 {
   DontSaveRandomSeed();
+}
+//---------------------------------------------------------------------------
+void CoreUpdateFinalStaticUsage()
+{
+  if (!AnySession)
+  {
+    Configuration->Usage->Inc(L"RunsWithoutSession");
+  }
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

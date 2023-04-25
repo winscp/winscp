@@ -242,6 +242,11 @@ public:
     Parameter(L"destination", Destination);
   }
 
+  void Size(__int64 Size)
+  {
+    Parameter(L"size", Size);
+  }
+
   void __fastcall Rights(const TRights & Rights)
   {
     Parameter(L"permissions", Rights.Text);
@@ -558,14 +563,28 @@ void __fastcall TFileLocationSessionAction::Destination(const UnicodeString & De
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+TTransferSessionAction::TTransferSessionAction(TActionLog * Log, TLogAction Action) :
+  TFileLocationSessionAction(Log, Action)
+{
+}
+//---------------------------------------------------------------------------
+void TTransferSessionAction::Size(__int64 Size)
+{
+  if (FRecord != NULL)
+  {
+    FRecord->Size(Size);
+  }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 __fastcall TUploadSessionAction::TUploadSessionAction(TActionLog * Log) :
-  TFileLocationSessionAction(Log, laUpload)
+  TTransferSessionAction(Log, laUpload)
 {
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 __fastcall TDownloadSessionAction::TDownloadSessionAction(TActionLog * Log) :
-  TFileLocationSessionAction(Log, laDownload)
+  TTransferSessionAction(Log, laDownload)
 {
 }
 //---------------------------------------------------------------------------
@@ -1085,11 +1104,11 @@ UnicodeString __fastcall TSessionLog::LogSensitive(const UnicodeString & Str)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TSessionLog::GetCmdLineLog()
+UnicodeString __fastcall TSessionLog::GetCmdLineLog(TConfiguration * AConfiguration)
 {
   UnicodeString Result = CmdLine;
 
-  if (!Configuration->LogSensitive)
+  if (!AConfiguration->LogSensitive)
   {
     TManagementScript Script(StoredSessions, false);
     Script.MaskPasswordInCommandLine(Result, true);
@@ -1116,76 +1135,99 @@ UnicodeString __fastcall EnumName(T Value, UnicodeString Names)
 
   return L"(unknown)";
 }
-//---------------------------------------------------------------------------
-#define ADSTR(S) DoAdd(llMessage, S, DoAddToSelf);
+#define ADSTR(S) AddLogEntry(S)
 #define ADF(S, F) ADSTR(FORMAT(S, F));
+//---------------------------------------------------------------------------
+void __fastcall TSessionLog::DoAddStartupInfo(TAddLogEntryEvent AddLogEntry, TConfiguration * AConfiguration, bool DoNotMaskPaswords)
+{
+  ADSTR(GetEnvironmentInfo());
+  THierarchicalStorage * Storage = AConfiguration->CreateConfigStorage();
+  try
+  {
+    ADF(L"Configuration: %s", (Storage->Source));
+  }
+  __finally
+  {
+    delete Storage;
+  }
+
+  wchar_t UserName[UNLEN + 1];
+  unsigned long UserNameSize = LENOF(UserName);
+  if (DebugAlwaysFalse(!GetUserNameEx(NameSamCompatible, UserName, &UserNameSize)))
+  {
+    wcscpy(UserName, L"<Failed to retrieve username>");
+  }
+  UnicodeString LogStr;
+  if (AConfiguration->LogProtocol <= -1)
+  {
+    LogStr = L"Reduced";
+  }
+  else if (AConfiguration->LogProtocol <= 0)
+  {
+    LogStr = L"Normal";
+  }
+  else if (AConfiguration->LogProtocol == 1)
+  {
+    LogStr = L"Debug 1";
+  }
+  else if (AConfiguration->LogProtocol >= 2)
+  {
+    LogStr = L"Debug 2";
+  }
+  if (AConfiguration->LogSensitive)
+  {
+    LogStr += L", Logging passwords";
+  }
+  if (AConfiguration->LogMaxSize > 0)
+  {
+    LogStr += FORMAT(L", Rotating after: %s", (SizeToStr(AConfiguration->LogMaxSize)));
+    if (AConfiguration->LogMaxCount > 0)
+    {
+      LogStr += FORMAT(L", Keeping at most %d logs", (AConfiguration->LogMaxCount));
+    }
+  }
+  ADF(L"Log level: %s", (LogStr));
+  ADF(L"Local account: %s", (UserName));
+  ADF(L"Working directory: %s", (GetCurrentDir()));
+  ADF(L"Process ID: %d", (int(GetCurrentProcessId())));
+  ADF(L"Ancestor processes: %s", (GetAncestorProcessNames()));
+  // This logs even passwords, contrary to a session log.
+  // GetCmdLineLog requires master password, but we do not know it yet atm.
+  UnicodeString ACmdLine;
+  if (DoNotMaskPaswords)
+  {
+    ACmdLine = CmdLine;
+  }
+  else
+  {
+    ACmdLine = GetCmdLineLog(AConfiguration);
+  }
+  ADF(L"Command-line: %s", (ACmdLine));
+  if (AConfiguration->ActualLogProtocol >= 1)
+  {
+    GetGlobalOptions()->LogOptions(AddLogEntry);
+  }
+  ADF(L"Time zone: %s", (GetTimeZoneLogString()));
+  if (!AdjustClockForDSTEnabled())
+  {
+    ADSTR(L"Warning: System option \"Automatically adjust clock for Daylight Saving Time\" is disabled, timestamps will not be represented correctly");
+  }
+}
+//---------------------------------------------------------------------------
+#undef ADSTR
+#define ADSTR(S) DoAdd(llMessage, S, DoAddToSelf);
+//---------------------------------------------------------------------------
+void __fastcall TSessionLog::DoAddStartupInfoEntry(const UnicodeString & S)
+{
+  ADSTR(S);
+}
 //---------------------------------------------------------------------------
 void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
 {
   if (Data == NULL)
   {
     AddSeparator();
-    ADSTR(GetEnvironmentInfo());
-    THierarchicalStorage * Storage = FConfiguration->CreateConfigStorage();
-    try
-    {
-      ADF(L"Configuration: %s", (Storage->Source));
-    }
-    __finally
-    {
-      delete Storage;
-    }
-
-    wchar_t UserName[UNLEN + 1];
-    unsigned long UserNameSize = LENOF(UserName);
-    if (DebugAlwaysFalse(!GetUserNameEx(NameSamCompatible, UserName, &UserNameSize)))
-    {
-      wcscpy(UserName, L"<Failed to retrieve username>");
-    }
-    UnicodeString LogStr;
-    if (FConfiguration->LogProtocol <= -1)
-    {
-      LogStr = L"Reduced";
-    }
-    else if (FConfiguration->LogProtocol <= 0)
-    {
-      LogStr = L"Normal";
-    }
-    else if (FConfiguration->LogProtocol == 1)
-    {
-      LogStr = L"Debug 1";
-    }
-    else if (FConfiguration->LogProtocol >= 2)
-    {
-      LogStr = L"Debug 2";
-    }
-    if (FConfiguration->LogSensitive)
-    {
-      LogStr += L", Logging passwords";
-    }
-    if (FConfiguration->LogMaxSize > 0)
-    {
-      LogStr += FORMAT(L", Rotating after: %s", (SizeToStr(FConfiguration->LogMaxSize)));
-      if (FConfiguration->LogMaxCount > 0)
-      {
-        LogStr += FORMAT(L", Keeping at most %d logs", (FConfiguration->LogMaxCount));
-      }
-    }
-    ADF(L"Log level: %s", (LogStr));
-    ADF(L"Local account: %s", (UserName));
-    ADF(L"Working directory: %s", (GetCurrentDir()));
-    ADF(L"Process ID: %d", (int(GetCurrentProcessId())));
-    ADF(L"Ancestor processes: %s", (GetAncestorProcessNames()));
-    ADF(L"Command-line: %s", (GetCmdLineLog()));
-    if (FConfiguration->ActualLogProtocol >= 1)
-    {
-      AddOptions(GetGlobalOptions());
-    }
-    ADF(L"Time zone: %s", (GetTimeZoneLogString()));
-    if (!AdjustClockForDSTEnabled())
-    {
-      ADSTR(L"Warning: System option \"Automatically adjust clock for Daylight Saving Time\" is disabled, timestamps will not be represented correctly");
-    }
+    DoAddStartupInfo(DoAddStartupInfoEntry, FConfiguration, false);
     ADF(L"Login time: %s", (FormatDateTime(L"dddddd tt", Now())));
     AddSeparator();
   }
@@ -1272,12 +1314,11 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     }
     if (Data->UsesSsh)
     {
-      ADF(L"SSH protocol version: %s; Compression: %s",
-        (Data->SshProtStr, BooleanToEngStr(Data->Compression)));
+      ADF(L"Compression: %s", (BooleanToEngStr(Data->Compression)));
       ADF(L"Bypass authentication: %s",
        (BooleanToEngStr(Data->SshNoUserAuth)));
-      ADF(L"Try agent: %s; Agent forwarding: %s; TIS/CryptoCard: %s; KI: %s; GSSAPI: %s",
-        (BooleanToEngStr(Data->TryAgent), BooleanToEngStr(Data->AgentFwd), BooleanToEngStr(Data->AuthTIS),
+      ADF(L"Try agent: %s; Agent forwarding: %s; KI: %s; GSSAPI: %s",
+        (BooleanToEngStr(Data->TryAgent), BooleanToEngStr(Data->AgentFwd),
          BooleanToEngStr(Data->AuthKI), BooleanToEngStr(Data->AuthGSSAPI)));
       if (Data->AuthGSSAPI)
       {
@@ -1408,10 +1449,10 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       (BooleanToEngStr(Data->DeleteToRecycleBin),
        BooleanToEngStr(Data->OverwrittenToRecycleBin),
        Data->RecycleBinPath));
-    if (Data->TrimVMSVersions)
+    if (Data->TrimVMSVersions || Data->VMSAllRevisions)
     {
-      ADF(L"Trim VMS versions: %s",
-        (BooleanToEngStr(Data->TrimVMSVersions)));
+      ADF(L"Trim VMS versions: %s; VMS all revisions: %s",
+        (BooleanToEngStr(Data->TrimVMSVersions), BooleanToEngStr(Data->VMSAllRevisions)));
     }
     UnicodeString TimeInfo;
     if ((Data->FSProtocol == fsSFTP) || (Data->FSProtocol == fsSFTPonly) || (Data->FSProtocol == fsSCPonly) || (Data->FSProtocol == fsWebDAV))
@@ -1441,16 +1482,6 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     }
     AddSeparator();
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TSessionLog::AddOption(const UnicodeString & LogStr)
-{
-  ADSTR(LogStr);
-}
-//---------------------------------------------------------------------------
-void __fastcall TSessionLog::AddOptions(TOptions * Options)
-{
-  Options->LogOptions(AddOption);
 }
 //---------------------------------------------------------------------------
 #undef ADF
@@ -1735,5 +1766,52 @@ void __fastcall TActionLog::SetEnabled(bool value)
   {
     FEnabled = value;
     ReflectSettings();
+  }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+TApplicationLog::TApplicationLog()
+{
+  FFile = NULL;
+  FLogging = false;
+  FCriticalSection.reset(new TCriticalSection());
+}
+//---------------------------------------------------------------------------
+TApplicationLog::~TApplicationLog()
+{
+  if (FFile != NULL)
+  {
+    Log(L"Closing log");
+    fclose(static_cast<FILE *>(FFile));
+    FFile = NULL;
+  }
+  FLogging = false;
+}
+//---------------------------------------------------------------------------
+void TApplicationLog::Enable(const UnicodeString & Path)
+{
+  UnicodeString Dummy;
+  FFile = OpenFile(Path, Now(), NULL, false, Dummy);
+  FLogging = true;
+}
+//---------------------------------------------------------------------------
+void TApplicationLog::AddStartupInfo()
+{
+  if (Logging)
+  {
+    TSessionLog::DoAddStartupInfo(Log, Configuration, true);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TApplicationLog::Log(const UnicodeString & S)
+{
+  if (FFile != NULL)
+  {
+    UnicodeString Timestamp = FormatDateTime(L"yyyy-mm-dd hh:nn:ss.zzz", Now());
+    UnicodeString Line = FORMAT(L"[%s] [%x] %s\r\n", (Timestamp, static_cast<int>(GetCurrentThreadId()), S));
+    UTF8String UtfLine = UTF8String(Line);
+    int Writting = UtfLine.Length();
+    TGuard Guard(FCriticalSection.get());
+    fwrite(UtfLine.c_str(), 1, Writting, static_cast<FILE *>(FFile));
   }
 }

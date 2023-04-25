@@ -1033,7 +1033,6 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   FOperationProgressOnceDoneOperation = odoIdle;
 
   FUseBusyCursor = True;
-  FLockDirectory = L"";
   FDirectoryCache = new TRemoteDirectoryCache();
   FDirectoryChangesCache = NULL;
   FFSProtocol = cfsUnknown;
@@ -1238,6 +1237,8 @@ void __fastcall TTerminal::FingerprintScan(UnicodeString & SHA256, UnicodeString
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::Open()
 {
+  AnySession = true;
+  Configuration->Usage->Inc(L"SessionOpens");
   TAutoNestingCounter OpeningCounter(FOpening);
   ReflectSettings();
   try
@@ -1504,54 +1505,7 @@ void __fastcall TTerminal::OpenTunnel()
 
   try
   {
-    FTunnelData = new TSessionData(L"");
-    FTunnelData->Assign(StoredSessions->DefaultSettings);
-    FTunnelData->Name = FMTLOAD(TUNNEL_SESSION_NAME, (FSessionData->SessionName));
-    FTunnelData->Tunnel = false;
-    FTunnelData->HostName = FSessionData->TunnelHostName;
-    FTunnelData->PortNumber = FSessionData->TunnelPortNumber;
-    FTunnelData->UserName = FSessionData->TunnelUserName;
-    FTunnelData->Password = FSessionData->TunnelPassword;
-    FTunnelData->PublicKeyFile = FSessionData->TunnelPublicKeyFile;
-    UnicodeString HostName = FSessionData->HostNameExpanded;
-    if (IsIPv6Literal(HostName))
-    {
-      HostName = EscapeIPv6Literal(HostName);
-    }
-    FTunnelData->TunnelPortFwd = FORMAT(L"L%d\t%s:%d",
-      (FTunnelLocalPortNumber, HostName, FSessionData->PortNumber));
-    FTunnelData->HostKey = FSessionData->TunnelHostKey;
-
-    // inherit proxy options on the main session
-    FTunnelData->ProxyMethod = FSessionData->ProxyMethod;
-    FTunnelData->ProxyHost = FSessionData->ProxyHost;
-    FTunnelData->ProxyPort = FSessionData->ProxyPort;
-    FTunnelData->ProxyUsername = FSessionData->ProxyUsername;
-    FTunnelData->ProxyPassword = FSessionData->ProxyPassword;
-    FTunnelData->ProxyTelnetCommand = FSessionData->ProxyTelnetCommand;
-    FTunnelData->ProxyLocalCommand = FSessionData->ProxyLocalCommand;
-    FTunnelData->ProxyDNS = FSessionData->ProxyDNS;
-    FTunnelData->ProxyLocalhost = FSessionData->ProxyLocalhost;
-
-    // inherit most SSH options of the main session (except for private key and bugs)
-    FTunnelData->Compression = FSessionData->Compression;
-    FTunnelData->SshProt = FSessionData->SshProt;
-    FTunnelData->CipherList = FSessionData->CipherList;
-    FTunnelData->Ssh2DES = FSessionData->Ssh2DES;
-
-    FTunnelData->KexList = FSessionData->KexList;
-    FTunnelData->RekeyData = FSessionData->RekeyData;
-    FTunnelData->RekeyTime = FSessionData->RekeyTime;
-
-    FTunnelData->SshNoUserAuth = FSessionData->SshNoUserAuth;
-    FTunnelData->AuthGSSAPI = FSessionData->AuthGSSAPI;
-    FTunnelData->AuthGSSAPIKEX = FSessionData->AuthGSSAPIKEX;
-    FTunnelData->GSSAPIFwdTGT = FSessionData->GSSAPIFwdTGT;
-    FTunnelData->TryAgent = FSessionData->TryAgent;
-    FTunnelData->AgentFwd = FSessionData->AgentFwd;
-    FTunnelData->AuthTIS = FSessionData->AuthTIS;
-    FTunnelData->AuthKI = FSessionData->AuthKI;
-    FTunnelData->AuthKIPassword = FSessionData->AuthKIPassword;
+    FTunnelData = FSessionData->CreateTunnelData(FTunnelLocalPortNumber);
 
     // The Started argument is not used with Parent being set
     FTunnelLog = new TSessionLog(this, TDateTime(), FTunnelData, Configuration);
@@ -1674,7 +1628,11 @@ void __fastcall TTerminal::Reopen(int Params)
   {
     FReadCurrentDirectoryPending = false;
     FReadDirectoryPending = false;
-    FSuspendTransaction = true;
+    // Not sure why we are suspeding the transaction in the first place,
+    // but definitelly when set while connecting auto loaded workspace session, it causes loading the directory twice.
+    // (when reconnecting lost connection, it's usually prevented by cached directory)
+    // Preventing that by suspeding transaction only when there is one.
+    FSuspendTransaction = (FInTransaction > 0);
     FExceptionOnFail = 0;
     // typically, we avoid reading directory, when there is operation ongoing,
     // for file list which may reference files from current directory
@@ -2013,7 +1971,7 @@ void __fastcall TTerminal::DoProgress(TFileOperationProgressType & ProgressData)
 {
 
   if ((Configuration->ActualLogProtocol >= 1) &&
-      ((ProgressData.Operation == foCopy) || (ProgressData.Operation == foMove)))
+      ProgressData.IsTransfer())
   {
     DWORD Now = GetTickCount();
     if (Now - FLastProgressLogged >= 1000)
@@ -2189,6 +2147,7 @@ bool __fastcall TTerminal::DoQueryReopen(Exception * E)
     TQueryParams Params(qpAllowContinueOnError);
     Params.Timeout = Configuration->SessionReopenAuto;
     Params.TimeoutAnswer = qaRetry;
+    Params.TimeoutResponse = Params.TimeoutAnswer;
     TQueryButtonAlias Aliases[1];
     Aliases[0].Button = qaRetry;
     Aliases[0].Alias = LoadStr(RECONNECT_BUTTON);
@@ -2377,26 +2336,6 @@ int __fastcall TTerminal::FileOperationLoop(TFileOperationEvent CallBackFunc,
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TTerminal::TranslateLockedPath(UnicodeString Path, bool Lock)
-{
-  if (SessionData->LockInHome && !Path.IsEmpty() && (Path[1] == L'/'))
-  {
-    if (Lock)
-    {
-      if (Path.SubString(1, FLockDirectory.Length()) == FLockDirectory)
-      {
-        Path.Delete(1, FLockDirectory.Length());
-        if (Path.IsEmpty()) Path = L"/";
-      }
-    }
-    else
-    {
-      Path = UnixExcludeTrailingBackslash(FLockDirectory + Path);
-    }
-  }
-  return Path;
-}
-//---------------------------------------------------------------------------
 void __fastcall TTerminal::ClearCaches()
 {
   FDirectoryCache->Clear();
@@ -2468,7 +2407,6 @@ TRemoteFileList * __fastcall TTerminal::DirectoryFileList(const UnicodeString Pa
 void __fastcall TTerminal::SetCurrentDirectory(UnicodeString value)
 {
   DebugAssert(FFileSystem);
-  value = TranslateLockedPath(value, false);
   if (value != FFileSystem->CurrentDirectory)
   {
     ChangeDirectory(value);
@@ -2490,8 +2428,7 @@ UnicodeString __fastcall TTerminal::GetCurrentDirectory()
     }
   }
 
-  UnicodeString Result = TranslateLockedPath(FCurrentDirectory, true);
-  return Result;
+  return FCurrentDirectory;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TTerminal::PeekCurrentDirectory()
@@ -2501,8 +2438,7 @@ UnicodeString __fastcall TTerminal::PeekCurrentDirectory()
     FCurrentDirectory = FFileSystem->CurrentDirectory;
   }
 
-  UnicodeString Result = TranslateLockedPath(FCurrentDirectory, true);
-  return Result;
+  return FCurrentDirectory;
 }
 //---------------------------------------------------------------------------
 const TRemoteTokenList * __fastcall TTerminal::GetGroups()
@@ -3290,10 +3226,13 @@ void __fastcall TTerminal::DoStartup()
         }
         catch (...)
         {
-          if (!Active)
+          if (!Active || SessionData->RequireDirectories)
+          {
+            throw;
+          }
+          else
           {
             LogEvent(L"Configured initial remote directory cannot be opened, staying in the home directory.");
-            throw;
           }
         }
         ExceptionOnFail = false;
@@ -3339,11 +3278,6 @@ void __fastcall TTerminal::ReadCurrentDirectory()
       FLastDirectoryChange = L"";
     }
 
-    if (OldDirectory.IsEmpty())
-    {
-      FLockDirectory = (SessionData->LockInHome ?
-        FFileSystem->CurrentDirectory : UnicodeString(L""));
-    }
     if (OldDirectory != FFileSystem->CurrentDirectory) DoChangeDirectory();
   }
   catch (Exception &E)
@@ -3478,7 +3412,9 @@ void __fastcall TTerminal::LogFileDetails(const UnicodeString & FileName, TDateT
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::LogFileDone(TFileOperationProgressType * OperationProgress, const UnicodeString & DestFileName)
+void __fastcall TTerminal::LogFileDone(
+  TFileOperationProgressType * OperationProgress, const UnicodeString & DestFileName,
+  TTransferSessionAction & Action)
 {
   if (FDestFileName.IsEmpty())
   {
@@ -3489,11 +3425,14 @@ void __fastcall TTerminal::LogFileDone(TFileOperationProgressType * OperationPro
     FMultipleDestinationFiles = true;
   }
 
+  __int64 Size = OperationProgress->TransferredSize;
   // optimization
   if (Log->Logging)
   {
-    LogEvent(FORMAT("Transfer done: '%s' => '%s' [%s]", (OperationProgress->FullFileName, DestFileName, IntToStr(OperationProgress->TransferredSize))));
+    LogEvent(FORMAT("Transfer done: '%s' => '%s' [%s]", (OperationProgress->FullFileName, DestFileName, IntToStr(Size))));
   }
+
+  Action.Size(Size);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CustomReadDirectory(TRemoteFileList * FileList)
@@ -3565,9 +3504,7 @@ TRemoteFileList * __fastcall TTerminal::ReadDirectoryListing(UnicodeString Direc
           TFileMasks::TParams Params;
           Params.Size = File->Resolve()->Size;
           Params.Modification = File->Modification;
-          // Have to use UnicodeString(), instead of L"", as with that
-          // overload with (UnicodeString, bool, bool, TParams*) wins
-          if (!Mask.Matches(File->FileName, false, UnicodeString(), &Params))
+          if (!Mask.MatchesFileName(File->FileName, false, &Params))
           {
             FileList->Delete(Index);
           }
@@ -4978,6 +4915,15 @@ void __fastcall TTerminal::FillSessionDataForCode(TSessionData * Data)
   else if (SessionInfo.CertificateVerifiedManually && DebugAlwaysTrue(!SessionInfo.CertificateFingerprintSHA256.IsEmpty()))
   {
     Data->HostKey = SessionInfo.CertificateFingerprintSHA256;
+  }
+
+  if (FTunnel != NULL)
+  {
+    const TSessionInfo & TunnelSessionInfo = FTunnel->GetSessionInfo();
+    if (DebugAlwaysTrue(!TunnelSessionInfo.HostKeyFingerprintSHA256.IsEmpty()))
+    {
+      Data->TunnelHostKey = TunnelSessionInfo.HostKeyFingerprintSHA256;
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -6736,10 +6682,6 @@ int __fastcall TTerminal::CopyToParallel(TParallelOperation * ParallelOperation,
     std::unique_ptr<TStrings> FilesToCopy(new TStringList());
     FilesToCopy->AddObject(FileName, Object);
 
-    if (ParallelOperation->Side == osLocal)
-    {
-      TargetDir = TranslateLockedPath(TargetDir, false);
-    }
     // OnceDoneOperation is not supported
     TOnceDoneOperation OnceDoneOperation = odoIdle;
 
@@ -6924,7 +6866,6 @@ bool __fastcall TTerminal::CopyToRemote(
         OperationProgress.SetTotalSize(Size);
       }
 
-      UnicodeString UnlockedTargetDir = TranslateLockedPath(TargetDir, false);
       BeginTransaction();
       try
       {
@@ -6934,13 +6875,13 @@ bool __fastcall TTerminal::CopyToRemote(
         if (Parallel)
         {
           // OnceDoneOperation is not supported
-          ParallelOperation->Init(Files.release(), UnlockedTargetDir, CopyParam, Params, &OperationProgress, Log->Name);
+          ParallelOperation->Init(Files.release(), TargetDir, CopyParam, Params, &OperationProgress, Log->Name);
           CopyParallel(ParallelOperation, &OperationProgress);
         }
         else
         {
-          FFileSystem->CopyToRemote(FilesToCopy, UnlockedTargetDir,
-            CopyParam, Params, &OperationProgress, OnceDoneOperation);
+          FFileSystem->CopyToRemote(
+            FilesToCopy, TargetDir, CopyParam, Params, &OperationProgress, OnceDoneOperation);
         }
 
         LogTotalTransferDone(&OperationProgress);
@@ -7324,7 +7265,7 @@ void __fastcall TTerminal::Source(
     FFileSystem->Source(
       Handle, TargetDir, DestFileName, CopyParam, Params, OperationProgress, Flags, Action, ChildError);
 
-    LogFileDone(OperationProgress, AbsolutePath(TargetDir + DestFileName, true));
+    LogFileDone(OperationProgress, AbsolutePath(TargetDir + DestFileName, true), Action);
     OperationProgress->Succeeded();
   }
 
@@ -7735,7 +7676,7 @@ void __fastcall TTerminal::Sink(
     FFileSystem->Sink(
       FileName, File, TargetDir, DestFileName, Attrs, CopyParam, Params, OperationProgress, Flags, Action);
 
-    LogFileDone(OperationProgress, LogFileName);
+    LogFileDone(OperationProgress, LogFileName, Action);
     OperationProgress->Succeeded();
   }
 }
@@ -7873,6 +7814,11 @@ void __fastcall TTerminal::CollectUsage()
   if (IsEncryptingFiles())
   {
     Configuration->Usage->Inc(L"OpenedSessionsEncrypted");
+  }
+
+  if (SessionData->SendBuf == 0)
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsNoSendBuf");
   }
 
   FCollectFileSystemUsage = true;
@@ -8222,6 +8168,164 @@ UnicodeString __fastcall TTerminal::DecryptFileName(const UnicodeString & Path, 
     }
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+TRemoteFile * TTerminal::CheckRights(const UnicodeString & EntryType, const UnicodeString & FileName, bool & WrongRights)
+{
+  std::unique_ptr<TRemoteFile> FileOwner;
+  TRemoteFile * File;
+  try
+  {
+    LogEvent(FORMAT(L"Checking %s \"%s\"...", (LowerCase(EntryType), FileName)));
+    ReadFile(FileName, File);
+    FileOwner.reset(File);
+    int ForbiddenRights = TRights::rfGroupWrite | TRights::rfOtherWrite;
+    if ((File->Rights->Number & ForbiddenRights) != 0)
+    {
+      LogEvent(FORMAT(L"%s \"%s\" exists, but has incorrect permissions %s.", (EntryType, FileName, File->Rights->Octal)));
+      WrongRights = true;
+    }
+    else
+    {
+      LogEvent(FORMAT(L"%s \"%s\" exists and has correct permissions %s.", (EntryType, FileName, File->Rights->Octal)));
+    }
+  }
+  catch (Exception & E)
+  {
+  }
+  return FileOwner.release();
+}
+//---------------------------------------------------------------------------
+UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
+{
+  UnicodeString Result;
+
+  UnicodeString TemporaryDir;
+  bool PrevAutoReadDirectory = AutoReadDirectory;
+  bool PrevExceptionOnFail = ExceptionOnFail;
+
+  UnicodeString AuthorizedKeysFilePath = FORMAT(L"%s/%s", (OpensshFolderName, OpensshAuthorizedKeysFileName));
+
+  try
+  {
+    AutoReadDirectory = false;
+    ExceptionOnFail = true;
+
+    Log->AddSeparator();
+
+    UnicodeString Comment;
+    UnicodeString Line = GetPublicKeyLine(FileName, Comment);
+
+    LogEvent(FORMAT(L"Adding public key line to \"%s\" file:\n%s", (AuthorizedKeysFilePath, Line)));
+
+    UnicodeString SshFolderAbsolutePath = UnixIncludeTrailingBackslash(GetHomeDirectory()) + OpensshFolderName;
+    bool WrongRights = false;
+    std::unique_ptr<TRemoteFile> SshFolderFile(CheckRights(L"Folder", SshFolderAbsolutePath, WrongRights));
+    if (SshFolderFile.get() == NULL)
+    {
+      TRights SshFolderRights;
+      SshFolderRights.Number = TRights::rfUserRead | TRights::rfUserWrite | TRights::rfUserExec;
+      TRemoteProperties SshFolderProperties;
+      SshFolderProperties.Rights = SshFolderRights;
+      SshFolderProperties.Valid = TValidProperties() << vpRights;
+
+      LogEvent(FORMAT(L"Trying to create \"%s\" folder with permissions %s...", (OpensshFolderName, SshFolderRights.Octal)));
+      CreateDirectory(SshFolderAbsolutePath, &SshFolderProperties);
+    }
+
+    TemporaryDir = ExcludeTrailingBackslash(Configuration->TemporaryDir());
+    if (!ForceDirectories(ApiPath(TemporaryDir)))
+    {
+      throw EOSExtException(FMTLOAD(CREATE_TEMP_DIR_ERROR, (TemporaryDir)));
+    }
+    UnicodeString TemporaryAuthorizedKeysFile = IncludeTrailingBackslash(TemporaryDir) + OpensshAuthorizedKeysFileName;
+
+    UnicodeString AuthorizedKeysFileAbsolutePath = UnixIncludeTrailingBackslash(SshFolderAbsolutePath) + OpensshAuthorizedKeysFileName;
+
+    bool Updated = true;
+    TCopyParamType CopyParam; // Use factory defaults
+    CopyParam.ResumeSupport = rsOff; // not to break the permissions
+    CopyParam.PreserveTime = false; // not needed
+
+    UnicodeString AuthorizedKeys;
+    std::unique_ptr<TRemoteFile> AuthorizedKeysFileFile(CheckRights(L"File", AuthorizedKeysFileAbsolutePath, WrongRights));
+    if (AuthorizedKeysFileFile.get() != NULL)
+    {
+      AuthorizedKeysFileFile->FullFileName = AuthorizedKeysFileAbsolutePath;
+      std::unique_ptr<TStrings> Files(new TStringList());
+      Files->AddObject(AuthorizedKeysFileAbsolutePath, AuthorizedKeysFileFile.get());
+      LogEvent(FORMAT(L"Downloading current \"%s\" file...", (OpensshAuthorizedKeysFileName)));
+      CopyToLocal(Files.get(), TemporaryDir, &CopyParam, cpNoConfirmation, NULL);
+      // Overload with Encoding parameter work incorrectly, when used on a file without BOM
+      AuthorizedKeys = TFile::ReadAllText(TemporaryAuthorizedKeysFile);
+
+      std::unique_ptr<TStrings> AuthorizedKeysLines(TextToStringList(AuthorizedKeys));
+      int P = Line.Pos(L" ");
+      if (DebugAlwaysTrue(P > 0))
+      {
+        P = PosEx(L" ", Line, P + 1);
+      }
+      UnicodeString Prefix = Line.SubString(1, P); // including the space
+      for (int Index = 0; Index < AuthorizedKeysLines->Count; Index++)
+      {
+        if (StartsStr(Prefix, AuthorizedKeysLines->Strings[Index]))
+        {
+          LogEvent(FORMAT(L"\"%s\" file already contains public key line:\n%s", (OpensshAuthorizedKeysFileName, AuthorizedKeysLines->Strings[Index])));
+          Updated = false;
+        }
+      }
+
+      if (Updated)
+      {
+        LogEvent(FORMAT(L"\"%s\" file does not contain the public key line yet.", (OpensshAuthorizedKeysFileName)));
+        if (!EndsStr(L"\n", AuthorizedKeys))
+        {
+          LogEvent(FORMAT(L"Adding missing trailing new line to \"%s\" file...", (OpensshAuthorizedKeysFileName)));
+          AuthorizedKeys += L"\n";
+        }
+      }
+    }
+    else
+    {
+      LogEvent(FORMAT(L"Creating new \"%s\" file...", (OpensshAuthorizedKeysFileName)));
+      CopyParam.PreserveRights = true;
+      CopyParam.Rights.Number = TRights::rfUserRead | TRights::rfUserWrite;
+    }
+
+    if (Updated)
+    {
+      AuthorizedKeys += Line + L"\n";
+      // Overload without Encoding parameter uses TEncoding::UTF8, but does not write BOM, what we want
+      TFile::WriteAllText(TemporaryAuthorizedKeysFile, AuthorizedKeys);
+      std::unique_ptr<TStrings> Files(new TStringList());
+      Files->Add(TemporaryAuthorizedKeysFile);
+      LogEvent(FORMAT(L"Uploading updated \"%s\" file...", (OpensshAuthorizedKeysFileName)));
+      CopyToRemote(Files.get(), SshFolderAbsolutePath, &CopyParam, cpNoConfirmation, NULL);
+    }
+
+    Result = FMTLOAD(PUBLIC_KEY_UPLOADED, (Comment));
+    if (WrongRights)
+    {
+      Result += L"\n\n" + FMTLOAD(PUBLIC_KEY_PERMISSIONS, (AuthorizedKeysFilePath));
+    }
+  }
+  __finally
+  {
+    AutoReadDirectory = PrevAutoReadDirectory;
+    ExceptionOnFail = PrevExceptionOnFail;
+    if (!TemporaryDir.IsEmpty())
+    {
+      RecursiveDeleteFile(ExcludeTrailingBackslash(TemporaryDir), false);
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool TTerminal::IsValidFile(TRemoteFile * File)
+{
+  return
+    !File->FileName.IsEmpty() &&
+    (IsUnixRootPath(File->FileName) || UnixExtractFileDir(File->FileName).IsEmpty());
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

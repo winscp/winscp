@@ -110,9 +110,8 @@ void InitNeonSession(ne_session * Session, TProxyMethod ProxyMethod, const Unico
 
   ne_redirect_register(Session);
   ne_set_useragent(Session, StrToNeon(FORMAT(L"%s/%s", (AppNameString(), Configuration->Version))));
-
-  UnicodeString CertificateStorage = IncludeTrailingBackslash(ExtractFilePath(ParamStr(0))) + L"cacert.pem";
-  if (FileExists(CertificateStorage))
+  UnicodeString CertificateStorage = Configuration->CertificateStorageExpanded;
+  if (!CertificateStorage.IsEmpty())
   {
     ne_ssl_set_certificates_storage(Session, StrToNeon(CertificateStorage));
     if (Terminal != NULL)
@@ -444,20 +443,37 @@ void __fastcall UnregisterFromNeonDebug(TTerminal * Terminal)
 void __fastcall RetrieveNeonCertificateData(
   int Failures, const ne_ssl_certificate * Certificate, TNeonCertificateData & Data)
 {
-  char Fingerprint[NE_SSL_DIGESTLEN];
-  Fingerprint[0] = '\0';
-  if (ne_ssl_cert_digest(Certificate, Fingerprint, 0) != 0)
+  UnicodeString Unknown(L"<unknown>");
+  char FingerprintSHA1[NE_SSL_DIGESTLEN];
+  FingerprintSHA1[0] = '\0';
+  if (DebugAlwaysFalse(ne_ssl_cert_digest(Certificate, FingerprintSHA1) != 0))
   {
-    strcpy(Fingerprint, "<unknown>");
+    Data.FingerprintSHA1 = Unknown;
   }
-  Data.FingerprintSHA1 = StrFromNeon(Fingerprint);
+  else
+  {
+    Data.FingerprintSHA1 = StrFromNeon(FingerprintSHA1);
+  }
 
-  Fingerprint[0] = '\0';
-  if (ne_ssl_cert_digest(Certificate, Fingerprint, 1) != 0)
+  char * FingeprintSHA256 = ne_ssl_cert_hdigest(Certificate, NE_HASH_SHA256);
+  if (DebugAlwaysFalse(FingeprintSHA256 == NULL))
   {
-    strcpy(Fingerprint, "<unknown>");
+    Data.FingerprintSHA256 = Unknown;
   }
-  Data.FingerprintSHA256 = StrFromNeon(Fingerprint);
+  else
+  {
+    UnicodeString Buf = StrFromNeon(FingeprintSHA256);
+    if (DebugAlwaysTrue(Buf.Length() > 2) &&
+        DebugAlwaysTrue((Buf.Length() % 2) == 0))
+    {
+      for (int Index = 3; Index < Buf.Length(); Index += 3)
+      {
+        Buf.Insert(L":", Index);
+      }
+    }
+    Data.FingerprintSHA256 = Buf;
+    ne_free(FingeprintSHA256);
+  }
 
   Data.AsciiCert = NeonExportCertificate(Certificate);
 

@@ -11,6 +11,7 @@
 #include <HelpWin.h>
 #include <VCLCommon.h>
 #include <Cryptography.h>
+#include <S3FileSystem.h>
 
 #include "WinInterface.h"
 #include "SiteAdvanced.h"
@@ -62,9 +63,6 @@ void __fastcall TSiteAdvancedDialog::InitControls()
 {
   ComboAutoSwitchInitialize(UtfCombo);
 
-  ComboAutoSwitchInitialize(BugIgnore1Combo);
-  ComboAutoSwitchInitialize(BugPlainPW1Combo);
-  ComboAutoSwitchInitialize(BugRSA1Combo);
   ComboAutoSwitchInitialize(BugHMAC2Combo);
   ComboAutoSwitchInitialize(BugDeriveKey2Combo);
   ComboAutoSwitchInitialize(BugRSAPad2Combo);
@@ -74,6 +72,7 @@ void __fastcall TSiteAdvancedDialog::InitControls()
   ComboAutoSwitchInitialize(BugIgnore2Combo);
   ComboAutoSwitchInitialize(BugWinAdjCombo);
 
+  ComboAutoSwitchInitialize(SFTPRealPathCombo);
   ComboAutoSwitchInitialize(SFTPBugSymlinkCombo);
   ComboAutoSwitchInitialize(SFTPBugSignedTSCombo);
 
@@ -174,6 +173,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     TimeDifferenceAutoCheck->Checked = FSessionData->TimeDifferenceAuto;
 
     TrimVMSVersionsCheck->Checked = FSessionData->TrimVMSVersions;
+    VMSAllRevisionsCheck->Checked = FSessionData->VMSAllRevisions;
 
     PuttySettingsEdit->Text = FSessionData->PuttySettings;
 
@@ -199,6 +199,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
 
     SFTPMaxVersionCombo->ItemIndex = FSessionData->SFTPMaxVersion;
 
+    ComboAutoSwitchLoad(SFTPRealPathCombo, FSessionData->SFTPRealPath);
     #define LOAD_SFTP_BUG_COMBO(BUG) \
       ComboAutoSwitchLoad(SFTPBug ## BUG ## Combo, FSessionData->SFTPBug[sb ## BUG])
     LOAD_SFTP_BUG_COMBO(Symlink);
@@ -223,12 +224,24 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     {
       S3UrlStyleCombo->ItemIndex = 0;
     }
-    S3SessionTokenMemo->Lines->Text = FSessionData->S3SessionToken;
+
+    UnicodeString S3SessionToken = FSessionData->S3SessionToken;
+    if (FSessionData->HasAutoCredentials())
+    {
+      try
+      {
+        S3SessionToken = S3EnvSessionToken();
+      }
+      catch (...)
+      {
+        // noop
+      }
+    }
+    S3SessionTokenMemo->Lines->Text = S3SessionToken;
 
     // Authentication page
     SshNoUserAuthCheck->Checked = FSessionData->SshNoUserAuth;
     TryAgentCheck->Checked = FSessionData->TryAgent;
-    AuthTISCheck->Checked = FSessionData->AuthTIS;
     AuthKICheck->Checked = FSessionData->AuthKI;
     AuthKIPasswordCheck->Checked = FSessionData->AuthKIPassword;
     AuthGSSAPICheck3->Checked = FSessionData->AuthGSSAPI;
@@ -239,14 +252,6 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     // SSH page
     Ssh2LegacyDESCheck->Checked = FSessionData->Ssh2DES;
     CompressionCheck->Checked = FSessionData->Compression;
-    if (FSessionData->SshProt == ssh1only)
-    {
-      SshProtCombo2->ItemIndex = 0;
-    }
-    else
-    {
-      SshProtCombo2->ItemIndex = 1;
-    }
 
     CipherListBox->Items->Clear();
     DebugAssert(CIPHER_NAME_WARN+CIPHER_COUNT-1 == CIPHER_NAME_CHACHA20);
@@ -373,9 +378,6 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     // Bugs page
     #define LOAD_BUG_COMBO(BUG) \
       ComboAutoSwitchLoad(Bug ## BUG ## Combo, FSessionData->Bug[sb ## BUG])
-    LOAD_BUG_COMBO(Ignore1);
-    LOAD_BUG_COMBO(PlainPW1);
-    LOAD_BUG_COMBO(RSA1);
     LOAD_BUG_COMBO(HMAC2);
     LOAD_BUG_COMBO(DeriveKey2);
     LOAD_BUG_COMBO(RSAPad2);
@@ -429,11 +431,6 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
   UpdateControls();
 }
 //---------------------------------------------------------------------
-TSshProt __fastcall TSiteAdvancedDialog::GetSshProt()
-{
-  return (SshProtCombo2->ItemIndex == 0) ? ssh1only : ssh2only;
-}
-//---------------------------------------------------------------------
 bool TSiteAdvancedDialog::IsDefaultSftpServer()
 {
   return
@@ -450,8 +447,6 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   // SSH page
   SessionData->Compression = CompressionCheck->Checked;
   SessionData->Ssh2DES = Ssh2LegacyDESCheck->Checked;
-
-  SessionData->SshProt = GetSshProt();
 
   for (int Index = 0; Index < CIPHER_COUNT; Index++)
   {
@@ -473,7 +468,6 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   // Authentication page
   SessionData->SshNoUserAuth = SshNoUserAuthCheck->Checked;
   SessionData->TryAgent = TryAgentCheck->Checked;
-  SessionData->AuthTIS = AuthTISCheck->Checked;
   SessionData->AuthKI = AuthKICheck->Checked;
   SessionData->AuthKIPassword = AuthKIPasswordCheck->Checked;
   SessionData->AuthGSSAPI = AuthGSSAPICheck3->Checked;
@@ -570,6 +564,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   SessionData->TimeDifferenceAuto = TimeDifferenceAutoCheck->Checked;
 
   SessionData->TrimVMSVersions = TrimVMSVersionsCheck->Checked;
+  SessionData->VMSAllRevisions = VMSAllRevisionsCheck->Checked;
 
   SessionData->PuttySettings = PuttySettingsEdit->Text;
 
@@ -611,6 +606,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
     }
   }
 
+  FSessionData->SFTPRealPath = ComboAutoSwitchSave(SFTPRealPathCombo);
   #define SAVE_SFTP_BUG_COMBO(BUG) SessionData->SFTPBug[sb ## BUG] = ComboAutoSwitchSave(SFTPBug ## BUG ## Combo);
   SAVE_SFTP_BUG_COMBO(Symlink);
   SAVE_SFTP_BUG_COMBO(SignedTS);
@@ -634,8 +630,15 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   {
     SessionData->S3UrlStyle = s3usVirtualHost;
   }
-  // Trim not to try to authenticate with a stray new-line
-  SessionData->S3SessionToken = S3SessionTokenMemo->Lines->Text.Trim();
+  if (SessionData->HasAutoCredentials())
+  {
+    SessionData->S3SessionToken = EmptyStr;
+  }
+  else
+  {
+    // Trim not to try to authenticate with a stray new-line
+    SessionData->S3SessionToken = S3SessionTokenMemo->Lines->Text.Trim();
+  }
 
   // Proxy page
   SessionData->ProxyMethod = GetProxyMethod();
@@ -651,9 +654,6 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
 
   // Bugs page
   #define SAVE_BUG_COMBO(BUG) SessionData->Bug[sb ## BUG] = ComboAutoSwitchSave(Bug ## BUG ## Combo)
-  SAVE_BUG_COMBO(Ignore1);
-  SAVE_BUG_COMBO(PlainPW1);
-  SAVE_BUG_COMBO(RSA1);
   SAVE_BUG_COMBO(HMAC2);
   SAVE_BUG_COMBO(DeriveKey2);
   SAVE_BUG_COMBO(RSAPad2);
@@ -836,7 +836,7 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
       FtpPasvModeCheck->Checked = true;
       MessageDialog(MainInstructions(LoadStr(FTP_PASV_MODE_REQUIRED)), qtInformation, qaOK);
     }
-    EnableControl(BufferSizeCheck, SshProtocol || FtpProtocol);
+    EnableControl(BufferSizeCheck, SshProtocol || FtpProtocol || S3Protocol);
     PingGroup->Visible = !FtpProtocol;
     EnableControl(PingGroup, SshProtocol);
     EnableControl(PingIntervalSecEdit, PingGroup->Enabled && !PingOffButton->Checked);
@@ -849,20 +849,14 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
 
     // ssh/authentication sheet
     AuthSheet->Enabled = SshProtocol;
-    EnableControl(SshNoUserAuthCheck, (GetSshProt() == ssh2only));
     EnableControl(AuthenticationGroup,
       !SshNoUserAuthCheck->Enabled || !SshNoUserAuthCheck->Checked);
-    EnableControl(AuthTISCheck, AuthenticationGroup->Enabled && (GetSshProt() == ssh1only));
-    EnableControl(AuthKICheck, AuthenticationGroup->Enabled && (GetSshProt() == ssh2only));
     EnableControl(AuthKIPasswordCheck,
-      AuthenticationGroup->Enabled &&
-      ((AuthTISCheck->Enabled && AuthTISCheck->Checked) ||
-       (AuthKICheck->Enabled && AuthKICheck->Checked)));
+      AuthenticationGroup->Enabled && (AuthKICheck->Enabled && AuthKICheck->Checked));
     EnableControl(AuthenticationParamsGroup, AuthenticationGroup->Enabled);
     EnableControl(AgentFwdCheck, AuthenticationParamsGroup->Enabled && TryAgentCheck->Checked);
     EnableControl(PrivateKeyViewButton, PrivateKeyEdit3->Enabled && !PrivateKeyEdit3->Text.IsEmpty());
-    EnableControl(AuthGSSAPICheck3,
-      AuthenticationGroup->Enabled && (GetSshProt() == ssh2only));
+    EnableControl(AuthGSSAPICheck3, AuthenticationGroup->Enabled);
     EnableControl(GSSAPIFwdTGTCheck,
       AuthGSSAPICheck3->Enabled && AuthGSSAPICheck3->Checked);
 
@@ -871,39 +865,15 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     EnableControl(CipherUpButton, CipherListBox->ItemIndex > 0);
     EnableControl(CipherDownButton, CipherListBox->ItemIndex >= 0 &&
       CipherListBox->ItemIndex < CipherListBox->Items->Count-1);
-    EnableControl(Ssh2LegacyDESCheck, (GetSshProt() == ssh2only));
 
     // ssh/kex sheet
-    KexSheet->Enabled = SshProtocol && (GetSshProt() == ssh2only) &&
-      (BugRekey2Combo->ItemIndex != 2);
+    KexSheet->Enabled = SshProtocol && (BugRekey2Combo->ItemIndex != 2);
     EnableControl(KexUpButton, KexListBox->ItemIndex > 0);
     EnableControl(KexDownButton, KexListBox->ItemIndex >= 0 &&
       KexListBox->ItemIndex < KexListBox->Items->Count-1);
 
     // ssh/bugs sheet
     BugsSheet->Enabled = SshProtocol;
-    EnableControl(BugIgnore1Combo, (GetSshProt() == ssh1only));
-    EnableControl(BugIgnore1Label, BugIgnore1Combo->Enabled);
-    EnableControl(BugPlainPW1Combo, (GetSshProt() == ssh1only));
-    EnableControl(BugPlainPW1Label, BugPlainPW1Combo->Enabled);
-    EnableControl(BugRSA1Combo, (GetSshProt() == ssh1only));
-    EnableControl(BugRSA1Label, BugRSA1Combo->Enabled);
-    EnableControl(BugHMAC2Combo, (GetSshProt() == ssh2only));
-    EnableControl(BugHMAC2Label, BugHMAC2Combo->Enabled);
-    EnableControl(BugDeriveKey2Combo, (GetSshProt() == ssh2only));
-    EnableControl(BugDeriveKey2Label, BugDeriveKey2Combo->Enabled);
-    EnableControl(BugRSAPad2Combo, (GetSshProt() == ssh2only));
-    EnableControl(BugRSAPad2Label, BugRSAPad2Combo->Enabled);
-    EnableControl(BugPKSessID2Combo, (GetSshProt() == ssh2only));
-    EnableControl(BugPKSessID2Label, BugPKSessID2Combo->Enabled);
-    EnableControl(BugRekey2Combo, (GetSshProt() == ssh2only));
-    EnableControl(BugRekey2Label, BugRekey2Combo->Enabled);
-    EnableControl(BugMaxPkt2Combo, (GetSshProt() == ssh2only));
-    EnableControl(BugMaxPkt2Label, BugMaxPkt2Combo->Enabled);
-    EnableControl(BugIgnore2Combo, (GetSshProt() == ssh2only));
-    EnableControl(BugIgnore2Label, BugIgnore2Combo->Enabled);
-    EnableControl(BugWinAdjCombo, (GetSshProt() == ssh2only));
-    EnableControl(BugWinAdjLabel, BugWinAdjCombo->Enabled);
 
     // connection/proxy sheet
     // this is probaqbly overkill, now we do not allow changing protocol on
@@ -1050,6 +1020,8 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
 
     // environment/s3
     S3Sheet->Enabled = S3Protocol;
+    EnableControl(S3SessionTokenMemo, S3Sheet->Enabled && !FSessionData->HasAutoCredentials());
+    EnableControl(S3SessionTokenLabel, S3SessionTokenMemo->Enabled);
 
     // tunnel sheet
     TunnelSheet->Enabled = SshProtocol;
@@ -1343,7 +1315,7 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyEdit3AfterDialog(TObject * Sender
   TFilenameEdit * Edit = dynamic_cast<TFilenameEdit *>(Sender);
   if (Name != Edit->Text)
   {
-    VerifyAndConvertKey(Name, GetSshProt(), true);
+    VerifyAndConvertKey(Name, true);
   }
 }
 //---------------------------------------------------------------------------
@@ -1353,9 +1325,8 @@ void __fastcall TSiteAdvancedDialog::FormCloseQuery(TObject * /*Sender*/,
   if (ModalResult == DefaultResult(this))
   {
     // StripPathQuotes should not be needed as we do not feed quotes anymore
-    VerifyKey(StripPathQuotes(PrivateKeyEdit3->Text), GetSshProt());
-    // for tunnel SSH version is not configurable
-    VerifyKey(StripPathQuotes(TunnelPrivateKeyEdit3->Text), ssh2only);
+    VerifyKey(StripPathQuotes(PrivateKeyEdit3->Text));
+    VerifyKey(StripPathQuotes(TunnelPrivateKeyEdit3->Text));
     VerifyCertificate(StripPathQuotes(TlsCertificateFileEdit->Text));
     // Particularly for EncryptKey*Edit's
     ExitActiveControl(this);
@@ -1605,7 +1576,7 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyToolsButtonClick(TObject * /*Send
 {
   UnicodeString Dummy;
   PrivateKeyGenerateItem->Enabled = FindTool(PuttygenTool, Dummy);
-  PrivateKeyUploadItem->Enabled = (GetSshProt() == ssh2only) && (NormalizeFSProtocol(FSessionData->FSProtocol) == fsSFTP);
+  PrivateKeyUploadItem->Enabled = (NormalizeFSProtocol(FSessionData->FSProtocol) == fsSFTP);
   MenuPopup(PrivateKeyMenu, PrivateKeyToolsButton);
 }
 //---------------------------------------------------------------------------
@@ -1635,7 +1606,7 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyUploadItemClick(TObject * /*Sende
 void __fastcall TSiteAdvancedDialog::PrivateKeyViewButtonClick(TObject * /*Sender*/)
 {
   UnicodeString FileName = PrivateKeyEdit3->Text;
-  VerifyAndConvertKey(FileName, GetSshProt(), false);
+  VerifyAndConvertKey(FileName, false);
   PrivateKeyEdit3->Text = FileName;
   UnicodeString CommentDummy;
   UnicodeString Line = GetPublicKeyLine(FileName, CommentDummy);
