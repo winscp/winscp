@@ -12,10 +12,12 @@
 \e bbbbbbbb   iiiiiii   bb iiiiiii   bb iiii     bbbbbbbb iiiiii     bb
 \c          [ -C new-comment ] [ -P ] [ --reencrypt ]
 \e            bb iiiiiiiiiii     bb     bbbbbbbbbbb
-\c          [ -O output-type | -l | -L | -p | --dump ] [ -E fptype ]
-\e            bb iiiiiiiiiii   bb   bb   bb   bbbbbb     bb iiiiii
-\c             [ --ppk-param key=value,... ]
-\e               bbbbbbbbbbb iiibiiiiib
+\c          [ --certificate cert-file | --remove-certificate ]
+\e            bbbbbbbbbbbbb iiiiiiiii   bbbbbbbbbbbbbbbbbbbb
+\c          [ -O output-type | -l | -L | -p | --dump | --cert-info ]
+\e            bb iiiiiiiiiii   bb   bb   bb   bbbbbb   bbbbbbbbbbb  
+\c             [ --ppk-param key=value,... | -E fptype ]
+\e               bbbbbbbbbbb iiibiiiiib      bb iiiiii
 \c          [ -o output-file ]
 \e            bb iiiiiiiiiii
 
@@ -58,8 +60,9 @@ ssh.com's implementation.
 
 You can also specify a file containing only a \e{public} key here.
 The operations you can do are limited to outputting another public
-key format or a fingerprint. Public keys can be in RFC 4716 or
-OpenSSH format, or the standard SSH-1 format.
+key format (possibly removing an attached certificate first), or a
+fingerprint. Public keys can be in RFC 4716 or OpenSSH format, or
+the standard SSH-1 format.
 
 }
 
@@ -142,6 +145,19 @@ to type).
 \dd Indicate that you want to change the key's passphrase. This is
 automatic when you are generating a new key, but not when you are
 modifying an existing key.
+
+\dt \cw{\-\-certificate} \e{certificate-file}
+
+\dd Adds an OpenSSH-style certificate to the public half of the key,
+so that the output file contains a certified public key with the same
+private key. If the input file already contained a certificate, it
+will be replaced with the new one. (Use \cq{-} to read a certificate
+from standard input.)
+
+\dt \cw{\-\-remove\-certificate}
+
+\dd Removes any certificate that was part of the key, to recover the
+uncertified version of the underlying key.
 
 \dt \cw{\-\-reencrypt}
 
@@ -260,6 +276,13 @@ newer format even for RSA, DSA, and ECDSA keys.
 \dd Save an SSH-2 private key in ssh.com's format. This option is not
 permitted for SSH-1 keys.
 
+\dt \cw{cert-info}
+
+\dd Save a textual dump of information about the certificate on the
+key, if any: whether it's a host or a user certificate, what host(s)
+or user(s) it's certified to be, its validity period, ID and serial
+number, and the fingerprint of the signing CA.
+
 \dt \cw{text}
 
 \dd Save a textual dump of the numeric components comprising the key
@@ -269,8 +292,9 @@ SSH.
 
 \lcont{
 The output consists of a series of \cw{name=value} lines, where each
-\c{value} is either a C-like string literal in double quotes, or a
-hexadecimal number starting with \cw{0x...}
+\c{value} is either a C-like string literal in double quotes, a
+hexadecimal number starting with \cw{0x...}, or a binary blob
+encoded with base64, denoted by \cw{b64("...")}.
 }
 
 If no output type is specified, the default is \c{private}.
@@ -283,8 +307,9 @@ If no output type is specified, the default is \c{private}.
 this option is not specified, \c{puttygen} will assume you want to
 overwrite the original file if the input and output file types are
 the same (changing a comment or passphrase), and will assume you
-want to output to stdout if you are asking for a public key or
-fingerprint. Otherwise, the \c{\-o} option is required.
+want to output to stdout if you are asking for a public key,
+fingerprint, or one of the textual dump types. Otherwise, the
+\c{\-o} option is required.
 
 \dt \cw{\-l}
 
@@ -298,6 +323,10 @@ fingerprint. Otherwise, the \c{\-o} option is required.
 
 \dd Synonym for \q{\cw{-O public}}.
 
+\dt \cw{\-\-cert\-info}
+
+\dd Synonym for \q{\cw{-O cert-info}}.
+
 \dt \cw{\-\-dump}
 
 \dd Synonym for \q{\cw{-O text}}.
@@ -305,7 +334,18 @@ fingerprint. Otherwise, the \c{\-o} option is required.
 \dt \cw{-E} \e{fptype}
 
 \dd Specify the algorithm to use if generating a fingerprint. The
-options are \cw{sha256} (the default) and \cw{md5}.
+available algorithms are are \cw{sha256} (the default) and \cw{md5}.
+
+\lcont{
+
+By default, when showing the fingerprint of a public key that includes
+a certificate, \c{puttygen} will not include the certificate, so that
+the fingerprint shown will be the same as the underlying public key.
+If you want the fingerprint including the certificate (for example, so
+as to tell two certified keys apart), you can specify \cw{sha256-cert}
+or \cw{md5-cert} as the fingerprint type.
+
+}
 
 \dt \cw{\-\-new\-passphrase} \e{file}
 

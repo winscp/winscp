@@ -1024,6 +1024,19 @@ This option is equivalent to the \q{Private key file for
 authentication} box in the Auth panel of the PuTTY configuration box
 (see \k{config-ssh-privkey}).
 
+\S2{using-cmdline-cert} \i\c{-cert}: specify an SSH \i{certificate}
+
+The \c{-cert} option allows you to specify the name of a certificate
+file containing a signed version of your public key. If you specify
+this option, PuTTY will present that certificate in place of the plain
+public key, whenever it tries to authenticate with a key that matches.
+(This applies whether the key is stored in Pageant or loaded directly
+from a file by PuTTY.)
+
+This option is equivalent to the \q{Certificate to use with the
+private key} box in the Auth panel of the PuTTY configuration box (see
+\k{config-ssh-cert}).
+
 \S2{using-cmdline-no-trivial-auth} \i\c{-no-trivial-auth}: disconnect
 if SSH authentication succeeds trivially
 
@@ -1162,3 +1175,12 @@ the extra protection), so it's reasonable to want to run Pageant but
 not PuTTY with the ACL restrictions. You can force Pageant to start
 subsidiary PuTTY processes with a restricted ACL if you also pass the
 \i\c{-restrict-putty-acl} option.
+
+\S2{using-cmdline-host-ca} \i{\c{-host-ca}}: launch the
+\I{certificate}host CA configuration
+
+If you start PuTTY with the \c{-host-ca} option, it will not launch a
+session at all. Instead, it will just display the configuration dialog
+box for host certification authorities, as described in
+\k{config-ssh-kex-cert}. When you dismiss that dialog box, PuTTY will
+terminate.

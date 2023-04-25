@@ -266,7 +266,6 @@ struct sesslist {
 };
 
 struct unicode_data {
-    char **uni_tbl;
     bool dbcs_screenfont;
     int font_codepage;
     int line_codepage;
@@ -423,9 +422,14 @@ enum {
     KEX_WARN,
     KEX_DHGROUP1,
     KEX_DHGROUP14,
+    KEX_DHGROUP15,
+    KEX_DHGROUP16,
+    KEX_DHGROUP17,
+    KEX_DHGROUP18,
     KEX_DHGEX,
     KEX_RSA,
     KEX_ECDH,
+    KEX_NTRU_HYBRID,
     KEX_MAX
 };
 
@@ -453,6 +457,7 @@ enum {
     CIPHER_DES,
     CIPHER_ARCFOUR,
     CIPHER_CHACHA20,
+    CIPHER_AESGCM,
     CIPHER_MAX                         /* no. ciphers (inc warn) */
 };
 
@@ -474,7 +479,8 @@ enum {
      * Proxy types.
      */
     PROXY_NONE, PROXY_SOCKS4, PROXY_SOCKS5,
-    PROXY_HTTP, PROXY_TELNET, PROXY_CMD, PROXY_SSH,
+    PROXY_HTTP, PROXY_TELNET, PROXY_CMD, PROXY_SSH_TCPIP,
+    PROXY_SSH_EXEC, PROXY_SSH_SUBSYSTEM,
     PROXY_FUZZ
 };
 
@@ -1084,6 +1090,24 @@ typedef enum SeatOutputType {
     SEAT_OUTPUT_STDOUT, SEAT_OUTPUT_STDERR
 } SeatOutputType;
 
+typedef enum SeatDialogTextType {
+    SDT_PARA, SDT_DISPLAY, SDT_SCARY_HEADING,
+    SDT_TITLE, SDT_PROMPT, SDT_BATCH_ABORT,
+    SDT_MORE_INFO_KEY, SDT_MORE_INFO_VALUE_SHORT, SDT_MORE_INFO_VALUE_BLOB
+} SeatDialogTextType;
+struct SeatDialogTextItem {
+    SeatDialogTextType type;
+    char *text;
+};
+struct SeatDialogText {
+    size_t nitems, itemsize;
+    SeatDialogTextItem *items;
+};
+SeatDialogText *seat_dialog_text_new(void);
+void seat_dialog_text_free(SeatDialogText *sdt);
+PRINTF_LIKE(3, 4) void seat_dialog_text_append(
+    SeatDialogText *sdt, SeatDialogTextType type, const char *fmt, ...);
+
 /*
  * Data type 'Seat', which is an API intended to contain essentially
  * everything that a back end might need to talk to its client for:
@@ -1258,9 +1282,8 @@ struct SeatVtable {
      */
     SeatPromptResult (*confirm_ssh_host_key)(
         Seat *seat, const char *host, int port, const char *keytype,
-        char *keystr, const char *keydisp, char **key_fingerprints,
-        bool mismatch, void (*callback)(void *ctx, SeatPromptResult result),
-        void *ctx);
+        char *keystr, SeatDialogText *text, HelpCtx helpctx,
+        void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 
     /*
      * Check with the seat whether it's OK to use a cryptographic
@@ -1286,6 +1309,13 @@ struct SeatVtable {
     SeatPromptResult (*confirm_weak_cached_hostkey)(
         Seat *seat, const char *algname, const char *betteralgs,
         void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
+
+    /*
+     * Some snippets of text describing the UI actions in host key
+     * prompts / dialog boxes, to be used in ssh/common.c when it
+     * assembles the full text of those prompts.
+     */
+    const SeatDialogPromptDescriptions *(*prompt_descriptions)(Seat *seat);
 
     /*
      * Indicates whether the seat is expecting to interact with the
@@ -1408,10 +1438,10 @@ static inline void seat_set_busy_status(Seat *seat, BusyStatus status)
 { seat->vt->set_busy_status(seat, status); }
 static inline SeatPromptResult seat_confirm_ssh_host_key(
     InteractionReadySeat iseat, const char *h, int p, const char *ktyp,
-    char *kstr, const char *kdsp, char **fps, bool mis,
+    char *kstr, SeatDialogText *text, HelpCtx helpctx,
     void (*cb)(void *ctx, SeatPromptResult result), void *ctx)
 { return iseat.seat->vt->confirm_ssh_host_key(
-        iseat.seat, h, p, ktyp, kstr, kdsp, fps, mis, cb, ctx); }
+        iseat.seat, h, p, ktyp, kstr, text, helpctx, cb, ctx); }
 static inline SeatPromptResult seat_confirm_weak_crypto_primitive(
     InteractionReadySeat iseat, const char *atyp, const char *aname,
     void (*cb)(void *ctx, SeatPromptResult result), void *ctx)
@@ -1422,6 +1452,9 @@ static inline SeatPromptResult seat_confirm_weak_cached_hostkey(
     void (*cb)(void *ctx, SeatPromptResult result), void *ctx)
 { return iseat.seat->vt->confirm_weak_cached_hostkey(
         iseat.seat, aname, better, cb, ctx); }
+static inline const SeatDialogPromptDescriptions *seat_prompt_descriptions(
+    Seat *seat)
+{ return seat->vt->prompt_descriptions(seat); }
 static inline bool seat_is_utf8(Seat *seat)
 { return seat->vt->is_utf8(seat); }
 static inline void seat_echoedit_update(Seat *seat, bool ec, bool ed)
@@ -1467,6 +1500,12 @@ static inline size_t seat_stderr_pl(Seat *seat, ptrlen data)
 static inline size_t seat_banner_pl(InteractionReadySeat iseat, ptrlen data)
 { return iseat.seat->vt->banner(iseat.seat, data.ptr, data.len); }
 
+struct SeatDialogPromptDescriptions {
+    const char *hk_accept_action;
+    const char *hk_connect_once_action;
+    const char *hk_cancel_action, *hk_cancel_action_Participle;
+};
+
 /* In the utils subdir: print a message to the Seat which can't be
  * spoofed by server-supplied auth-time output such as SSH banners */
 void seat_antispoof_msg(InteractionReadySeat iseat, const char *msg);
@@ -1494,7 +1533,7 @@ char *nullseat_get_ttymode(Seat *seat, const char *mode);
 void nullseat_set_busy_status(Seat *seat, BusyStatus status);
 SeatPromptResult nullseat_confirm_ssh_host_key(
     Seat *seat, const char *host, int port, const char *keytype,
-    char *keystr, const char *keydisp, char **key_fingerprints, bool mismatch,
+    char *keystr, SeatDialogText *text, HelpCtx helpctx,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 SeatPromptResult nullseat_confirm_weak_crypto_primitive(
     Seat *seat, const char *algtype, const char *algname,
@@ -1502,6 +1541,7 @@ SeatPromptResult nullseat_confirm_weak_crypto_primitive(
 SeatPromptResult nullseat_confirm_weak_cached_hostkey(
     Seat *seat, const char *algname, const char *betteralgs,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
+const SeatDialogPromptDescriptions *nullseat_prompt_descriptions(Seat *seat);
 bool nullseat_is_never_utf8(Seat *seat);
 bool nullseat_is_always_utf8(Seat *seat);
 void nullseat_echoedit_update(Seat *seat, bool echoing, bool editing);
@@ -1509,7 +1549,7 @@ const char *nullseat_get_x_display(Seat *seat);
 bool nullseat_get_windowid(Seat *seat, long *id_out);
 bool nullseat_get_window_pixel_size(Seat *seat, int *width, int *height);
 StripCtrlChars *nullseat_stripctrl_new(
-        Seat *seat, BinarySink *bs_out, SeatInteractionContext sic);
+    Seat *seat, BinarySink *bs_out, SeatInteractionContext sic);
 void nullseat_set_trust_status(Seat *seat, bool trusted);
 bool nullseat_can_set_trust_status_yes(Seat *seat);
 bool nullseat_can_set_trust_status_no(Seat *seat);
@@ -1529,7 +1569,7 @@ bool nullseat_get_cursor_position(Seat *seat, int *x, int *y);
 void console_connection_fatal(Seat *seat, const char *message);
 SeatPromptResult console_confirm_ssh_host_key(
     Seat *seat, const char *host, int port, const char *keytype,
-    char *keystr, const char *keydisp, char **key_fingerprints, bool mismatch,
+    char *keystr, SeatDialogText *text, HelpCtx helpctx,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 SeatPromptResult console_confirm_weak_crypto_primitive(
     Seat *seat, const char *algtype, const char *algname,
@@ -1538,10 +1578,11 @@ SeatPromptResult console_confirm_weak_cached_hostkey(
     Seat *seat, const char *algname, const char *betteralgs,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 StripCtrlChars *console_stripctrl_new(
-        Seat *seat, BinarySink *bs_out, SeatInteractionContext sic);
+    Seat *seat, BinarySink *bs_out, SeatInteractionContext sic);
 void console_set_trust_status(Seat *seat, bool trusted);
 bool console_can_set_trust_status(Seat *seat);
 bool console_has_mixed_input_stream(Seat *seat);
+const SeatDialogPromptDescriptions *console_prompt_descriptions(Seat *seat);
 
 /*
  * Other centralised seat functions.
@@ -1634,6 +1675,17 @@ struct TermWinVtable {
 
     void (*refresh)(TermWin *);
 
+    /* request_resize asks the front end if the terminal can please be
+     * resized to (w,h) in characters. The front end MAY call
+     * term_size() in response to tell the terminal its new size
+     * (which MAY be the requested size, or some other size if the
+     * requested one can't be achieved). The front end MAY also not
+     * call term_size() at all. But the front end MUST reply to this
+     * request by calling term_resize_request_completed(), after the
+     * responding resize event has taken place (if any).
+     *
+     * The calls to term_size and term_resize_request_completed may be
+     * synchronous callbacks from within the call to request_resize(). */
     void (*request_resize)(TermWin *, int w, int h);
 
     void (*set_title)(TermWin *, const char *title, int codepage);
@@ -1778,6 +1830,8 @@ NORETURN void cleanup_exit(int);
     X(BOOL, NONE, change_username) /* allow username switching in SSH-2 */ \
     X(INT, INT, ssh_cipherlist) \
     X(FILENAME, NONE, keyfile) \
+    X(FILENAME, NONE, detached_cert) \
+    X(STR, NONE, auth_plugin) \
     /* \
      * Which SSH protocol to use. \
      * For historical reasons, the current legal values for CONF_sshprot \
@@ -1969,6 +2023,7 @@ NORETURN void cleanup_exit(int);
     X(INT, NONE, sshbug_winadj) \
     X(INT, NONE, sshbug_chanreq) \
     X(INT, NONE, sshbug_dropstart) \
+    X(INT, NONE, sshbug_filter_kexinit) \
     /*                                                                \
      * ssh_simple means that we promise never to open any channel     \
      * other than the main one, which means it can safely use a very  \
@@ -2130,6 +2185,7 @@ FontSpec *platform_default_fontspec(const char *name);
 Terminal *term_init(Conf *, struct unicode_data *, TermWin *);
 void term_free(Terminal *);
 void term_size(Terminal *, int, int, int);
+void term_resize_request_completed(Terminal *);
 void term_paint(Terminal *, int, int, int, int, bool);
 void term_scroll(Terminal *, int, int);
 void term_scroll_to_selection(Terminal *, int);
@@ -2160,7 +2216,7 @@ char *term_get_ttymode(Terminal *term, const char *mode);
 SeatPromptResult term_get_userpass_input(Terminal *term, prompts_t *p);
 void term_set_trust_status(Terminal *term, bool trusted);
 void term_keyinput(Terminal *, int codepage, const void *buf, int len);
-void term_keyinputw(Terminal *, const wchar_t * widebuf, int len);
+void term_keyinputw(Terminal *, const wchar_t *widebuf, int len);
 void term_get_cursor_position(Terminal *term, int *x, int *y);
 void term_setup_window_titles(Terminal *term, const char *title_hostname);
 void term_notify_minimised(Terminal *term, bool minimised);
@@ -2176,7 +2232,9 @@ int format_arrow_key(char *buf, Terminal *term, int xkey,
                      bool shift, bool ctrl, bool alt, bool *consumed_alt);
 int format_function_key(char *buf, Terminal *term, int key_number,
                         bool shift, bool ctrl, bool alt, bool *consumed_alt);
-int format_small_keypad_key(char *buf, Terminal *term, SmallKeypadKey key);
+int format_small_keypad_key(char *buf, Terminal *term, SmallKeypadKey key,
+                            bool shift, bool ctrl, bool alt,
+                            bool *consumed_alt);
 int format_numeric_keypad_key(char *buf, Terminal *term, char key,
                               bool shift, bool ctrl);
 
@@ -2421,14 +2479,13 @@ bool is_dbcs_leadbyte(int codepage, char byte);
 int mb_to_wc(int codepage, int flags, const char *mbstr, int mblen,
              wchar_t *wcstr, int wclen);
 int wc_to_mb(int codepage, int flags, const wchar_t *wcstr, int wclen,
-             char *mbstr, int mblen, const char *defchr,
-             struct unicode_data *ucsdata);
+             char *mbstr, int mblen, const char *defchr);
 wchar_t xlat_uskbd2cyrllic(int ch);
 int check_compose(int first, int second);
-int decode_codepage(char *cp_name);
+int decode_codepage(const char *cp_name);
 const char *cp_enumerate (int index);
 const char *cp_name(int codepage);
-void get_unitab(int codepage, wchar_t * unitab, int ftype);
+void get_unitab(int codepage, wchar_t *unitab, int ftype);
 
 /*
  * Exports from wcwidth.c
@@ -2572,21 +2629,68 @@ void cmdline_error(const char *, ...) PRINTF_LIKE(1, 2);
  * Exports from config.c.
  */
 struct controlbox;
-union control;
-void conf_radiobutton_handler(union control *ctrl, dlgparam *dlg,
+void conf_radiobutton_handler(dlgcontrol *ctrl, dlgparam *dlg,
                               void *data, int event);
 #define CHECKBOX_INVERT (1<<30)
-void conf_checkbox_handler(union control *ctrl, dlgparam *dlg,
+void conf_checkbox_handler(dlgcontrol *ctrl, dlgparam *dlg,
                            void *data, int event);
-void conf_editbox_handler(union control *ctrl, dlgparam *dlg,
+void conf_editbox_handler(dlgcontrol *ctrl, dlgparam *dlg,
                           void *data, int event);
-void conf_filesel_handler(union control *ctrl, dlgparam *dlg,
+void conf_filesel_handler(dlgcontrol *ctrl, dlgparam *dlg,
                           void *data, int event);
-void conf_fontsel_handler(union control *ctrl, dlgparam *dlg,
+void conf_fontsel_handler(dlgcontrol *ctrl, dlgparam *dlg,
                           void *data, int event);
+
+struct conf_editbox_handler_type {
+    /* Structure passed as context2 to conf_editbox_handler */
+    enum { EDIT_STR, EDIT_INT, EDIT_FIXEDPOINT } type;
+    union {
+        /*
+         * EDIT_STR means the edit box is connected to a string
+         * field in Conf. No further parameters needed.
+         */
+
+        /*
+         * EDIT_INT means the edit box is connected to an int field in
+         * Conf, and the input string is interpreted as decimal. No
+         * further parameters needed. (But we could add one here later
+         * if for some reason we wanted int fields in hex.)
+         */
+
+        /*
+         * EDIT_FIXEDPOINT means the edit box is connected to an int
+         * field in Conf, but the input string is interpreted as
+         * _floating point_, and converted to/from the output int by
+         * means of a fixed denominator. That is,
+         *
+         *   (floating value in edit box) * denominator = value in Conf
+         */
+        struct {
+            double denominator;
+        };
+    };
+};
+
+extern const struct conf_editbox_handler_type conf_editbox_str;
+extern const struct conf_editbox_handler_type conf_editbox_int;
+#define ED_STR CP(&conf_editbox_str)
+#define ED_INT CP(&conf_editbox_int)
 
 void setup_config_box(struct controlbox *b, bool midsession,
                       int protocol, int protcfginfo);
+
+void setup_ca_config_box(struct controlbox *b);
+
+/* Platforms provide this to be called from config.c */
+void show_ca_config_box(dlgparam *dlg);
+extern const bool has_ca_config_box; /* false if, e.g., we're PuTTYtel */
+
+/* Visible outside config.c so that platforms can use it to recognise
+ * the proxy type control */
+void proxy_type_handler(dlgcontrol *ctrl, dlgparam *dlg,
+                        void *data, int event);
+/* And then they'll set this flag in its generic.context.i */
+#define PROXY_UI_FLAG_LOCAL 1 /* has a local proxy */
 
 /*
  * Exports from bidi.c.
@@ -2789,6 +2893,16 @@ void queue_idempotent_callback(struct IdempotentCallback *ic);
 typedef void (*toplevel_callback_notify_fn_t)(void *ctx);
 void request_callback_notifications(toplevel_callback_notify_fn_t notify,
                                     void *ctx);
+
+/*
+ * Facility provided by the platform to spawn a parallel subprocess
+ * and present its stdio via a Socket.
+ *
+ * 'prefix' indicates the prefix that should appear on messages passed
+ * to plug_log to provide stderr output from the process.
+ */
+Socket *platform_start_subprocess(const char *cmd, Plug *plug,
+                                  const char *prefix);
 
 /*
  * Define no-op macros for the jump list functions, on platforms that

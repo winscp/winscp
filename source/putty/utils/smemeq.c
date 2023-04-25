@@ -8,7 +8,7 @@
 #include "defs.h"
 #include "misc.h"
 
-bool smemeq(const void *av, const void *bv, size_t len)
+unsigned smemeq(const void *av, const void *bv, size_t len)
 {
     const unsigned char *a = (const unsigned char *)av;
     const unsigned char *b = (const unsigned char *)bv;

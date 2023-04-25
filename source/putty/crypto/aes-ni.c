@@ -138,6 +138,16 @@ static inline __m128i aes_ni_sdctr_increment(__m128i v)
 }
 
 /*
+ * Much simpler auxiliary routine to increment the counter for GCM
+ * mode. This only has to increment the low word.
+ */
+static inline __m128i aes_ni_gcm_increment(__m128i v)
+{
+    const __m128i ONE  = _mm_setr_epi32(1,0,0,0);
+    return _mm_add_epi32(v, ONE);
+}
+
+/*
  * Auxiliary routine to reverse the byte order of a vector, so that
  * the SDCTR IV can be made big-endian for feeding to the cipher.
  */
@@ -214,6 +224,25 @@ static void aes_ni_setiv_sdctr(ssh_cipher *ciph, const void *iv)
     ctx->iv = aes_ni_sdctr_reverse(counter);
 }
 
+static void aes_ni_setiv_gcm(ssh_cipher *ciph, const void *iv)
+{
+    aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
+    __m128i counter = _mm_loadu_si128(iv);
+    ctx->iv = aes_ni_sdctr_reverse(counter);
+    ctx->iv = _mm_insert_epi32(ctx->iv, 1, 0);
+}
+
+static void aes_ni_next_message_gcm(ssh_cipher *ciph)
+{
+    aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
+    uint32_t fixed = _mm_extract_epi32(ctx->iv, 3);
+    uint64_t msg_counter = _mm_extract_epi32(ctx->iv, 2);
+    msg_counter <<= 32;
+    msg_counter |= (uint32_t)_mm_extract_epi32(ctx->iv, 1);
+    msg_counter++;
+    ctx->iv = _mm_set_epi32(fixed, msg_counter >> 32, msg_counter, 1);
+}
+
 typedef __m128i (*aes_ni_fn)(__m128i v, const __m128i *keysched);
 
 static inline void aes_cbc_ni_encrypt(
@@ -262,6 +291,31 @@ static inline void aes_sdctr_ni(
     }
 }
 
+static inline void aes_encrypt_ecb_block_ni(
+    ssh_cipher *ciph, void *blk, aes_ni_fn encrypt)
+{
+    aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
+    __m128i plaintext = _mm_loadu_si128(blk);
+    __m128i ciphertext = encrypt(plaintext, ctx->keysched_e);
+    _mm_storeu_si128(blk, ciphertext);
+}
+
+static inline void aes_gcm_ni(
+    ssh_cipher *ciph, void *vblk, int blklen, aes_ni_fn encrypt)
+{
+    aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
+
+    for (uint8_t *blk = (uint8_t *)vblk, *finish = blk + blklen;
+         blk < finish; blk += 16) {
+        __m128i counter = aes_ni_sdctr_reverse(ctx->iv);
+        __m128i keystream = encrypt(counter, ctx->keysched_e);
+        __m128i input = _mm_loadu_si128((const __m128i *)blk);
+        __m128i output = _mm_xor_si128(input, keystream);
+        _mm_storeu_si128((__m128i *)blk, output);
+        ctx->iv = aes_ni_gcm_increment(ctx->iv);
+    }
+}
+
 #define NI_ENC_DEC(len)                                                 \
     static void aes##len##_ni_cbc_encrypt(                              \
         ssh_cipher *ciph, void *vblk, int blklen)                       \
@@ -272,6 +326,12 @@ static inline void aes_sdctr_ni(
     static void aes##len##_ni_sdctr(                                    \
         ssh_cipher *ciph, void *vblk, int blklen)                       \
     { aes_sdctr_ni(ciph, vblk, blklen, aes_ni_##len##_e); }             \
+    static void aes##len##_ni_gcm(                                      \
+        ssh_cipher *ciph, void *vblk, int blklen)                       \
+    { aes_gcm_ni(ciph, vblk, blklen, aes_ni_##len##_e); }               \
+    static void aes##len##_ni_encrypt_ecb_block(                        \
+        ssh_cipher *ciph, void *vblk)                                   \
+    { aes_encrypt_ecb_block_ni(ciph, vblk, aes_ni_##len##_e); }
 
 NI_ENC_DEC(128)
 NI_ENC_DEC(192)

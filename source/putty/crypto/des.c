@@ -296,7 +296,7 @@ static inline uint32_t des_S(uint32_t si6420, uint32_t si7531)
         s73 ^= c73 & t->t73; c73 += 0x00080008;
     }
     debug("S out: s40=%08"PRIx32" s62=%08"PRIx32
-           " s51=%08"PRIx32" s73=%08"PRIx32"\n", s40, s62, s51, s73);
+          " s51=%08"PRIx32" s73=%08"PRIx32"\n", s40, s62, s51, s73);
 
     /* Final selection within each pair */
     s40 ^= (s40 << 4) & ((0xf000/0x004) * (c40 & 0x00040004));
@@ -689,6 +689,7 @@ const ssh_cipheralg ssh_des = {
     .setkey = des_cbc_setkey,
     .encrypt = des_cbc_encrypt,
     .decrypt = des_cbc_decrypt,
+    .next_message = nullcipher_next_message,
     .ssh2_id = "des-cbc",
     .blksize = 8,
     .real_keybits = 56,
@@ -705,6 +706,7 @@ const ssh_cipheralg ssh_des_sshcom_ssh2 = {
     .setkey = des_cbc_setkey,
     .encrypt = des_cbc_encrypt,
     .decrypt = des_cbc_decrypt,
+    .next_message = nullcipher_next_message,
     .ssh2_id = "des-cbc@ssh.com",
     .blksize = 8,
     .real_keybits = 56,
@@ -808,6 +810,7 @@ const ssh_cipheralg ssh_3des_ssh2 = {
     .setkey = des3_cbc1_setkey,
     .encrypt = des3_cbc1_cbc_encrypt,
     .decrypt = des3_cbc1_cbc_decrypt,
+    .next_message = nullcipher_next_message,
     .ssh2_id = "3des-cbc",
     .blksize = 8,
     .real_keybits = 168,
@@ -905,6 +908,7 @@ const ssh_cipheralg ssh_3des_ssh2_ctr = {
     .setkey = des3_sdctr_setkey,
     .encrypt = des3_sdctr_encrypt_decrypt,
     .decrypt = des3_sdctr_encrypt_decrypt,
+    .next_message = nullcipher_next_message,
     .ssh2_id = "3des-ctr",
     .blksize = 8,
     .real_keybits = 168,
@@ -1040,6 +1044,7 @@ const ssh_cipheralg ssh_3des_ssh1 = {
     .setkey = des3_cbc3_setkey,
     .encrypt = des3_cbc3_cbc_encrypt,
     .decrypt = des3_cbc3_cbc_decrypt,
+    .next_message = nullcipher_next_message,
     .blksize = 8,
     .real_keybits = 168,
     .padded_keybytes = 24,

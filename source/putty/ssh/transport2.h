@@ -18,9 +18,8 @@
 #define DH_MIN_SIZE 1024
 #define DH_MAX_SIZE 8192
 
-#define MAXKEXLIST 16
 struct kexinit_algorithm {
-    const char *name;
+    ptrlen name;
     union {
         struct {
             const ssh_kex *kex;
@@ -45,17 +44,30 @@ struct kexinit_algorithm {
         } comp;
     } u;
 };
+struct kexinit_algorithm_list {
+    struct kexinit_algorithm *algs;
+    size_t nalgs, algsize;
+};
 
-#define HOSTKEY_ALGORITHMS(X)                   \
-    X(HK_ED25519, ssh_ecdsa_ed25519)            \
-    X(HK_ED448, ssh_ecdsa_ed448)                \
-    X(HK_ECDSA, ssh_ecdsa_nistp256)             \
-    X(HK_ECDSA, ssh_ecdsa_nistp384)             \
-    X(HK_ECDSA, ssh_ecdsa_nistp521)             \
-    X(HK_DSA, ssh_dsa)                          \
-    X(HK_RSA, ssh_rsa_sha512)                   \
-    X(HK_RSA, ssh_rsa_sha256)                   \
-    X(HK_RSA, ssh_rsa)                          \
+#define HOSTKEY_ALGORITHMS(X)                                   \
+    X(HK_ED25519, ssh_ecdsa_ed25519)                            \
+    X(HK_ED448, ssh_ecdsa_ed448)                                \
+    X(HK_ECDSA, ssh_ecdsa_nistp256)                             \
+    X(HK_ECDSA, ssh_ecdsa_nistp384)                             \
+    X(HK_ECDSA, ssh_ecdsa_nistp521)                             \
+    X(HK_DSA, ssh_dsa)                                          \
+    X(HK_RSA, ssh_rsa_sha512)                                   \
+    X(HK_RSA, ssh_rsa_sha256)                                   \
+    X(HK_RSA, ssh_rsa)                                          \
+    X(HK_ED25519, opensshcert_ssh_ecdsa_ed25519)                \
+    /* OpenSSH defines no certified version of Ed448 */         \
+    X(HK_ECDSA, opensshcert_ssh_ecdsa_nistp256)                 \
+    X(HK_ECDSA, opensshcert_ssh_ecdsa_nistp384)                 \
+    X(HK_ECDSA, opensshcert_ssh_ecdsa_nistp521)                 \
+    X(HK_DSA, opensshcert_ssh_dsa)                              \
+    X(HK_RSA, opensshcert_ssh_rsa_sha512)                       \
+    X(HK_RSA, opensshcert_ssh_rsa_sha256)                       \
+    X(HK_RSA, opensshcert_ssh_rsa)                              \
     /* end of list */
 #define COUNT_HOSTKEY_ALGORITHM(type, alg) +1
 #define N_HOSTKEY_ALGORITHMS (0 HOSTKEY_ALGORITHMS(COUNT_HOSTKEY_ALGORITHM))
@@ -128,7 +140,6 @@ struct ssh2_transport_state {
 
     const ssh_kex *kex_alg;
     const ssh_keyalg *hostkey_alg;
-    char *hostkey_str; /* string representation, for easy checking in rekeys */
     unsigned char session_id[MAX_HASH_LEN];
     int session_id_len;
     int dh_min_size, dh_max_size;
@@ -142,7 +153,7 @@ struct ssh2_transport_state {
 
     char *client_greeting, *server_greeting;
 
-    bool kex_in_progress;
+    bool kex_in_progress, kexinit_delayed;
     unsigned long next_rekey, last_rekey;
     const char *deferred_rekey_reason;
     bool higher_layer_ok;
@@ -165,15 +176,20 @@ struct ssh2_transport_state {
 
     bool gss_kex_used;
 
+    tree234 *host_cas;
+
     int nbits, pbits;
     bool warn_kex, warn_hk, warn_cscipher, warn_sccipher;
-    mp_int *p, *g, *e, *f, *K;
+    mp_int *p, *g, *e, *f;
+    strbuf *ebuf, *fbuf;
+    strbuf *kex_shared_secret;
     strbuf *outgoing_kexinit, *incoming_kexinit;
     strbuf *client_kexinit, *server_kexinit; /* aliases to the above */
     int kex_init_value, kex_reply_value;
     transport_direction in, out, *cstrans, *sctrans;
     ptrlen hostkeydata, sigdata;
-    strbuf *hostkeyblob;
+    strbuf *hostkeyblob; /* used in server to construct host key to
+                          * send to client; in client to check in rekeys */
     char *keystr;
     ssh_key *hkey;                     /* actual host key */
     unsigned hkflags;                  /* signing flags, used in server */
@@ -189,7 +205,7 @@ struct ssh2_transport_state {
     SeatPromptResult spr;
     bool guessok;
     bool ignorepkt;
-    struct kexinit_algorithm kexlists[NKEXLIST][MAXKEXLIST];
+    struct kexinit_algorithm_list kexlists[NKEXLIST];
 #ifndef NO_GSSAPI
     Ssh_gss_buf gss_buf;
     Ssh_gss_buf gss_rcvtok, gss_sndtok;

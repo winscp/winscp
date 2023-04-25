@@ -1,0 +1,6 @@
+\# If you want to do a Halibut build of the CHM file by hand, without
+\# the help of the CMake edifice, then include this file which will
+\# refer to chm.css. The CMake edifice builds its own with a different
+\# pathname in it, for the sake of out-of-tree builds.
+
+\cfg{chm-extra-file}{chm.css}

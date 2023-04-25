@@ -98,7 +98,13 @@
 	      requests</simpara>
 	    </listitem>
 	  </varlistentry>
-
+	  <varlistentry>
+            <term><constant>NE_SESSFLAG_SHAREPOINT</constant></term>
+	    <listitem>
+	      <simpara>enable this flag to use various workarounds to
+	      improve interoperability with SharePoint</simpara>
+	    </listitem>
+	  </varlistentry>
         </variablelist>
   </refsect1>
 

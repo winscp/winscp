@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Neon 0.30.0\n"
-"Report-Msgid-Bugs-To: neon@lists.manyfish.co.uk\n"
-"POT-Creation-Date: 2022-09-11 08:33+0100\n"
+"Report-Msgid-Bugs-To: https://github.com/notroj/neon\n"
+"POT-Creation-Date: 2023-01-03 14:02+0000\n"
 "PO-Revision-Date: 2009-09-04 02:00+0200\n"
 "Last-Translator: Arfrever Frehtes Taifersar Arahesis <Arfrever.FTA@gmail."
 "com>\n"
@@ -461,79 +461,79 @@ msgstr "certyfikat został unieważniony"
 msgid "Server certificate verification failed: "
 msgstr "Weryfikacja certyfikatu serwera nie powiodła się: "
 
-#: src/ne_socket.c:522 src/ne_socket.c:674 src/ne_socket.c:804
+#: src/ne_socket.c:524 src/ne_socket.c:676 src/ne_socket.c:806
 msgid "Connection closed"
 msgstr "Połączenie zamknięte"
 
-#: src/ne_socket.c:679
+#: src/ne_socket.c:681
 msgid "Retry operation"
 msgstr ""
 
-#: src/ne_socket.c:693 src/ne_socket.c:708 src/ne_socket.c:818
+#: src/ne_socket.c:695 src/ne_socket.c:710 src/ne_socket.c:820
 msgid "Secure connection truncated"
 msgstr "Bezpieczne połączenie obcięte"
 
-#: src/ne_socket.c:699
+#: src/ne_socket.c:701
 #, fuzzy
 msgid "Secure connection reset"
 msgstr "Bezpieczne połączenie obcięte"
 
-#: src/ne_socket.c:720 src/ne_socket.c:834
+#: src/ne_socket.c:722 src/ne_socket.c:836
 #, c-format
 msgid "SSL error: %s"
 msgstr "Błąd SSL: %s"
 
-#: src/ne_socket.c:723
+#: src/ne_socket.c:725
 #, c-format
 msgid "SSL error code %d/%d/%lu"
 msgstr "Kod błędu SSL %d/%d/%lu"
 
-#: src/ne_socket.c:809
+#: src/ne_socket.c:811
 #, c-format
 msgid "SSL alert received: %s"
 msgstr "Alarm SSL otrzymany: %s"
 
-#: src/ne_socket.c:830
+#: src/ne_socket.c:832
 msgid "SSL socket read failed"
 msgstr "Odczytywanie gniazda SSL nie powiodło się"
 
-#: src/ne_socket.c:961
+#: src/ne_socket.c:963
 msgid "Line too long"
 msgstr "Linia zbyt długa"
 
-#: src/ne_socket.c:1122 src/ne_socket.c:1128
+#: src/ne_socket.c:1124 src/ne_socket.c:1130
 msgid "Host not found"
 msgstr "Host nieznaleziony"
 
-#: src/ne_socket.c:1337
+#: src/ne_socket.c:1339
 msgid "Connection timed out"
 msgstr "Czas połączenia się skończył"
 
-#: src/ne_socket.c:1536
+#: src/ne_socket.c:1538
 msgid "Socket descriptor number exceeds FD_SETSIZE"
 msgstr "Numer deskryptoru gniazda przekracza FD_SETSIZE"
 
-#: src/ne_socket.c:1598
+#: src/ne_socket.c:1600
 msgid "Socket family not supported"
 msgstr "Rodzina gniazda niewspierana"
 
-#: src/ne_socket.c:1835
+#: src/ne_socket.c:1837
 msgid "Client certificate verification failed"
 msgstr "Weryfikacja certyfikatu klienta nie powiodła się"
 
-#: src/ne_socket.c:1851
+#: src/ne_socket.c:1853
 msgid "SSL disabled due to lack of entropy"
 msgstr "SSL wyłączone z powodu braku entropii"
 
-#: src/ne_socket.c:1857
+#: src/ne_socket.c:1859
 msgid "Could not create SSL structure"
 msgstr "Nie można utworzyć struktury SSL"
 
-#: src/ne_socket.c:2029
+#: src/ne_socket.c:2031
 msgid "Missing flags for socket shutdown"
 msgstr ""
 
-#: src/ne_socket.c:2047 src/ne_socket.c:2058 src/ne_socket.c:2073
+#: src/ne_socket.c:2049 src/ne_socket.c:2060 src/ne_socket.c:2075
 msgid "Incomplete TLS closure"
 msgstr ""
 

@@ -688,6 +688,16 @@ saved sessions from
 \IM{group exchange} Diffie-Hellman group exchange
 \IM{group exchange} group exchange, Diffie-Hellman
 
+\IM{ECDH} \q{ECDH} (elliptic-curve Diffie-Hellman)
+\IM{ECDH} elliptic-curve Diffie-Hellman key exchange
+\IM{ECDH} key exchange, elliptic-curve Diffie-Hellman
+\IM{ECDH} Diffie-Hellman key exchange, with elliptic curves
+
+\IM{Streamlined NTRU Prime} Streamlined NTRU Prime
+\IM{Streamlined NTRU Prime} NTRU Prime
+
+\IM{quantum attacks} quantum attacks, resistance to
+
 \IM{repeat key exchange} repeat key exchange
 \IM{repeat key exchange} key exchange, repeat
 
@@ -819,6 +829,12 @@ saved sessions from
 \IM{DSA} DSA
 \IM{DSA} Digital Signature Standard
 
+\IM{ECDSA} ECDSA
+\IM{ECDSA} elliptic-curve DSA
+
+\IM{NIST} NIST-standardised elliptic curves
+\IM{NIST} elliptic curves, NIST-standardised
+
 \IM{EdDSA} EdDSA
 \IM{EdDSA} Edwards-curve DSA
 
@@ -942,3 +958,11 @@ saved sessions from
 
 \IM{shifted arrow keys} arrow keys, shifted
 \IM{shifted arrow keys} shifted arrow keys
+
+\IM{certificate}{certificates} certificates, SSH
+\IM{certificate}{certificates} SSH certificates
+\IM{certificate}{certificates} OpenSSH certificates
+\IM{certificate}{certificates} CA (certification authority)
+
+\IM{Microsoft Store} Microsoft Store
+\IM{Microsoft Store} Windows Store

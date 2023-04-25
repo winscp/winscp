@@ -84,10 +84,10 @@ static inline bool chan_want_close(Channel *ch, bool leof, bool reof)
 static inline bool chan_rcvd_exit_status(Channel *ch, int status)
 { return ch->vt->rcvd_exit_status(ch, status); }
 static inline bool chan_rcvd_exit_signal(
-        Channel *ch, ptrlen sig, bool core, ptrlen msg)
+    Channel *ch, ptrlen sig, bool core, ptrlen msg)
 { return ch->vt->rcvd_exit_signal(ch, sig, core, msg); }
 static inline bool chan_rcvd_exit_signal_numeric(
-        Channel *ch, int sig, bool core, ptrlen msg)
+    Channel *ch, int sig, bool core, ptrlen msg)
 { return ch->vt->rcvd_exit_signal_numeric(ch, sig, core, msg); }
 static inline bool chan_run_shell(Channel *ch)
 { return ch->vt->run_shell(ch); }

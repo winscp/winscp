@@ -2,12 +2,12 @@
 .\"     Title: ne_set_session_flag
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 11 September 2022
+.\"      Date: 21 January 2023
 .\"    Manual: neon API reference
-.\"    Source: neon 0.32.4
+.\"    Source: neon 0.32.5
 .\"  Language: English
 .\"
-.TH "NE_SET_SESSION_FLAG" "3" "11 September 2022" "neon 0.32.4" "neon API reference"
+.TH "NE_SET_SESSION_FLAG" "3" "21 January 2023" "neon 0.32.5" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -86,6 +86,11 @@ enable this flag to enable the request flag
 \fBNE_REQFLAG_EXPECT100\fR
 for new requests
 .RE
+.PP
+\fBNE_SESSFLAG_SHAREPOINT\fR
+.RS 4
+enable this flag to use various workarounds to improve interoperability with SharePoint
+.RE
 .SH "RETURN VALUE"
 .PP
 The
@@ -97,7 +102,7 @@ ne_session_create,
 ne_set_request_flag\&.
 .SH "AUTHOR"
 .PP
-\fBJoe Orton\fR <\&neon@lists.manyfish.co.uk\&>
+\fBJoe Orton\fR
 .RS 4
 Author.
 .RE

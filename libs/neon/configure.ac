@@ -4,14 +4,14 @@ dnl Extract the version (sans LF) from .version, created at release-time.
 m4_define(ne_version, [m4_translit(m4_include(.version), [
 ])])
 
-AC_INIT(neon, ne_version, [neon@lists.manyfish.co.uk])
+AC_INIT(neon, ne_version,,,[https://notroj.github.io/neon/])
 
-AC_COPYRIGHT([Copyright 2000-2010 Joe Orton and others
+AC_COPYRIGHT([Copyright 2000-2022 Joe Orton and others
 This configure script may be copied, distributed and modified under the 
 terms of the GNU Library General Public license; see src/COPYING.LIB for
 more details.])
 
-AC_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SRCDIR(src/ne_request.c)
 
 NEON_WITH_LIBS
@@ -172,7 +172,7 @@ if test x${enable_shared} = xno; then
 fi
 
 # Bundled language catalogs
-ALL_LINGUAS="cs de fr ja nn pl ru tr zh_CN"
+ALL_LINGUAS="cs de fr ja ka nn pl ru tr zh_CN"
 AC_SUBST(ALL_LINGUAS)
 
 AC_CONFIG_FILES([neon-config], [chmod +x neon-config])
@@ -199,6 +199,7 @@ AC_MSG_NOTICE([Configured to build AC_PACKAGE_STRING:
   XML Parser:      ${neon_xml_parser_message}
   SSL library:     ${ne_SSL_message}
   zlib support:    ${ne_ZLIB_message}
+  GSSAPI support:  ${ne_GSSAPI_message}
   Build libraries: Shared=${enable_shared}, Static=${enable_static}
 ])
 
