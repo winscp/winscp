@@ -1102,7 +1102,7 @@ void __fastcall CreateSessionColorMenu(TComponent * AOwner, TColor Color,
 {
   CreateColorMenu(
     AOwner, Color, OnColorChange, true,
-    LoadStr(COLOR_TRUE_DEFAULT_CAPTION), LoadStr(EDITOR_BACKGROUND_COLOR_HINT),
+    LoadStr(COLOR_TRUE_DEFAULT_CAPTION), LoadStr(COLOR_DEFAULT_HINT),
     HELP_COLOR, LoadStr(COLOR_PICK_HINT));
 }
 //---------------------------------------------------------------------------
