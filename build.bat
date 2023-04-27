@@ -1,9 +1,18 @@
 @echo off
 rem See 'readme' file
-if "%PROCESSOR_ARCHITECTURE%"=="x86" set PROGRAMFILES32=%ProgramFiles%
-if "%PROCESSOR_ARCHITECTURE%"=="AMD64" set PROGRAMFILES32=%ProgramFiles(x86)%
+if "%PROCESSOR_ARCHITECTURE%"=="x86" (
+  set PROGRAMFILES32=%ProgramFiles%
+  set PROGRAMFILES64=%ProgramW6432%
+) else if "%PROCESSOR_ARCHITECTURE%"=="AMD64" (
+  set PROGRAMFILES32=%ProgramFiles(x86)%
+  set PROGRAMFILES64=%ProgramFiles%
+) else (
+  echo Unrecognized architecture %PROCESSOR_ARCHITECTURE%
+  exit
+)
+
 set BDS=%PROGRAMFILES32%\Embarcadero\Studio\14.0
-set MSBUILD=%PROGRAMFILES32%\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\MSBuild.exe
+set MSBUILD=%PROGRAMFILES64%\Microsoft Visual Studio\2022\BuildTools\MSBuild\Current\Bin\MSBuild.exe
 
 set WITH_DOTNET=1
 if "%BUILD_TARGET%"=="" set BUILD_TARGET=Build
