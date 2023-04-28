@@ -976,7 +976,7 @@ void __fastcall TExternalConsole::TransferOut(const unsigned char * Data, size_t
     try
     {
       CommStruct->Event = TConsoleCommStruct::TRANSFEROUT;
-      size_t BlockLen = std::min(Len - Offset, sizeof(CommStruct->TransferEvent.Data));
+      unsigned int BlockLen = std::min(Len - Offset, sizeof(CommStruct->TransferEvent.Data));
       memcpy(CommStruct->TransferEvent.Data, Data + Offset, BlockLen);
       CommStruct->TransferEvent.Len = BlockLen;
       Offset += BlockLen;

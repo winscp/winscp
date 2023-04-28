@@ -376,6 +376,7 @@ namespace WinSCP
 #if NETSTANDARD
             WriteLine("Operating system information: {0} {1} {2}", RuntimeInformation.OSDescription, RuntimeInformation.OSArchitecture, RuntimeInformation.ProcessArchitecture);
 #endif
+            WriteLine("Bitness: {0}", Environment.Is64BitProcess ? "64-bit" : "32-bit");
             TimeSpan offset = TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow);
             WriteLine(
                 "Timezone: {0}; {1}",

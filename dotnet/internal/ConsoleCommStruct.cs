@@ -96,7 +96,7 @@ namespace WinSCP
     {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 20480)]
         public byte[] Data;
-        public UIntPtr Len;
+        public uint Len;
         [MarshalAs(UnmanagedType.I1)]
         public bool Error; // TransferIn only
     }
