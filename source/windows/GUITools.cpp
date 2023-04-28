@@ -2319,6 +2319,31 @@ void __fastcall TUIStateAwareLabel::DoDrawText(TRect & Rect, int Flags)
   TLabel::DoDrawText(Rect, Flags);
 }
 //---------------------------------------------------------------------------
+void __fastcall TUIStateAwareLabel::Dispatch(void * AMessage)
+{
+  TMessage * Message = static_cast<TMessage*>(AMessage);
+  // WORKAROUND: Particularly when focusing csDropDownList-style combobox via label, there's no visual feedback
+  // that the combobox was selected (strangely, there is, when the previous focus was on TTreeView).
+  // For consistency, we enable focus display for all controls types (like checkboxes).
+  if (Message->Msg == CM_DIALOGCHAR)
+  {
+    bool WasFocused = (FocusControl != NULL) ? FocusControl->Focused() : false;
+    TLabel::Dispatch(AMessage);
+    if (!WasFocused && (FocusControl != NULL) && FocusControl->Focused())
+    {
+      TCustomForm * ParentForm = GetParentForm(this);
+      if (ParentForm != NULL)
+      {
+        ParentForm->Perform(WM_CHANGEUISTATE, MAKELONG(UIS_CLEAR, UISF_HIDEFOCUS), 0);
+      }
+    }
+  }
+  else
+  {
+    TLabel::Dispatch(AMessage);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall FindComponentClass(
   void *, TReader *, const UnicodeString DebugUsedArg(ClassName), TComponentClass & ComponentClass)
 {
