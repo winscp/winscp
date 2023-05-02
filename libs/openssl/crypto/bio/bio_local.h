@@ -1,15 +1,14 @@
 /*
- * Copyright 2005-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2005-2022 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
  */
 
-#include "e_os.h"
+#include "internal/e_os.h"
 #include "internal/sockets.h"
-#include "internal/refcount.h"
 
 /* BEGIN BIO_ADDRINFO/BIO_ADDR stuff. */
 
@@ -30,15 +29,8 @@
 # ifdef OSSL_INTERNAL_CRYPTLIB_H
 #  error internal/cryptlib.h included before bio_local.h
 # endif
-# ifdef HEADER_BIO_H
+# ifdef OPENSSL_BIO_H
 #  error openssl/bio.h included before bio_local.h
-# endif
-
-/*
- * Undefine AF_UNIX on systems that define it but don't support it.
- */
-# if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_VMS)
-#  undef AF_UNIX
 # endif
 
 # ifdef AI_PASSIVE
@@ -74,11 +66,11 @@ struct bio_addrinfo_st {
 
 union bio_addr_st {
     struct sockaddr sa;
-# ifdef AF_INET6
+# if OPENSSL_USE_IPV6
     struct sockaddr_in6 s_in6;
 # endif
     struct sockaddr_in s_in;
-# ifdef AF_UNIX
+# ifndef OPENSSL_NO_UNIX_SOCK
     struct sockaddr_un s_un;
 # endif
 };
@@ -88,6 +80,7 @@ union bio_addr_st {
 
 #include "internal/cryptlib.h"
 #include "internal/bio.h"
+#include "internal/refcount.h"
 
 typedef struct bio_f_buffer_ctx_struct {
     /*-
@@ -113,9 +106,12 @@ typedef struct bio_f_buffer_ctx_struct {
 } BIO_F_BUFFER_CTX;
 
 struct bio_st {
+    OSSL_LIB_CTX *libctx;
     const BIO_METHOD *method;
     /* bio, mode, argp, argi, argl, ret */
+#ifndef OPENSSL_NO_DEPRECATED_3_0
     BIO_callback_fn callback;
+#endif
     BIO_callback_fn_ex callback_ex;
     char *cb_arg;               /* first argument for the callback */
     int init;
@@ -152,7 +148,7 @@ extern CRYPTO_RWLOCK *bio_type_lock;
 
 void bio_sock_cleanup_int(void);
 
-#if BIO_FLAGS_UPLINK==0
+#if BIO_FLAGS_UPLINK_INTERNAL==0
 /* Shortcut UPLINK calls on most platforms... */
 # define UP_stdin        stdin
 # define UP_stdout       stdout

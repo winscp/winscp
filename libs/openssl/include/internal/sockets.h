@@ -1,15 +1,17 @@
 /*
  * Copyright 1995-2022 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
  */
 
-
 #ifndef OSSL_INTERNAL_SOCKETS_H
 # define OSSL_INTERNAL_SOCKETS_H
+# pragma once
+
+# include <openssl/opensslconf.h>
 
 # if defined(OPENSSL_SYS_VXWORKS) || defined(OPENSSL_SYS_UEFI)
 #  define NO_SYS_PARAM_H
@@ -26,6 +28,8 @@
 
 # elif defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_MSDOS)
 #  if defined(__DJGPP__)
+#   define WATT32
+#   define WATT32_NO_OLDIES
 #   include <sys/socket.h>
 #   include <sys/un.h>
 #   include <tcp.h>
@@ -73,7 +77,7 @@ struct servent *PASCAL getservbyname(const char *, const char *);
 #   include <inet.h>
 #  else
 #   include <sys/socket.h>
-#   ifndef NO_SYS_UN_H
+#   if !defined(NO_SYS_UN_H) && defined(AF_UNIX) && !defined(OPENSSL_NO_UNIX_SOCK)
 #    include <sys/un.h>
 #    ifndef UNIX_PATH_MAX
 #     define UNIX_PATH_MAX sizeof(((struct sockaddr_un *)NULL)->sun_path)
@@ -121,6 +125,15 @@ struct servent *PASCAL getservbyname(const char *, const char *);
 #  endif
 # endif
 
+/*
+ * Some platforms define AF_UNIX, but don't support it
+ */
+# if !defined(OPENSSL_NO_UNIX_SOCK)
+#  if !defined(AF_UNIX) || defined(NO_SYS_UN_H)
+#   define OPENSSL_NO_UNIX_SOCK
+#  endif
+# endif
+
 # define get_last_socket_error() errno
 # define clear_socket_error()    errno=0
 
@@ -132,8 +145,6 @@ struct servent *PASCAL getservbyname(const char *, const char *);
 #  define readsocket(s,b,n)       recv((s),(b),(n),0)
 #  define writesocket(s,b,n)      send((s),(b),(n),0)
 # elif defined(__DJGPP__)
-#  define WATT32
-#  define WATT32_NO_OLDIES
 #  define closesocket(s)          close_s(s)
 #  define readsocket(s,b,n)       read_s(s,b,n)
 #  define writesocket(s,b,n)      send(s,b,n,0)
@@ -147,11 +158,29 @@ struct servent *PASCAL getservbyname(const char *, const char *);
 #  define closesocket(s)              close(s)
 #  define readsocket(s,b,n)           read((s),(b),(n))
 #  define writesocket(s,b,n)          write((s),(char *)(b),(n))
+# elif defined(OPENSSL_SYS_TANDEM)
+#  if defined(OPENSSL_TANDEM_FLOSS)
+#   include <floss.h(floss_read, floss_write)>
+#   define readsocket(s,b,n)       floss_read((s),(b),(n))
+#   define writesocket(s,b,n)      floss_write((s),(b),(n))
+#  else
+#   define readsocket(s,b,n)       read((s),(b),(n))
+#   define writesocket(s,b,n)      write((s),(b),(n))
+#  endif
+#  define ioctlsocket(a,b,c)      ioctl(a,b,c)
+#  define closesocket(s)          close(s)
 # else
 #  define ioctlsocket(a,b,c)      ioctl(a,b,c)
 #  define closesocket(s)          close(s)
 #  define readsocket(s,b,n)       read((s),(b),(n))
 #  define writesocket(s,b,n)      write((s),(b),(n))
+# endif
+
+/* also in apps/include/apps.h */
+# if defined(OPENSSL_SYS_WIN32) || defined(OPENSSL_SYS_WINCE)
+#  define openssl_fdset(a, b) FD_SET((unsigned int)(a), b)
+# else
+#  define openssl_fdset(a, b) FD_SET(a, b)
 # endif
 
 #endif
