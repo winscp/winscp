@@ -193,6 +193,7 @@ public:
 
 protected:
   DYNAMIC void __fastcall DoDrawText(TRect & Rect, int Flags);
+  virtual void __fastcall Dispatch(void * AMessage);
 };
 // FindComponentClass takes parameter by reference and as such it cannot be implemented in
 // an inline method without a compiler warning, which we cannot suppress in a macro.

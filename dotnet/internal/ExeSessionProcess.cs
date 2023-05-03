@@ -593,7 +593,7 @@ namespace WinSCP
                     int len = (int)e.Len;
                     len = StdIn.Read(e.Data, 0, len);
                     _logger.WriteLine("{0} bytes read", len);
-                    e.Len = (UIntPtr)len;
+                    e.Len = (uint)len;
                 }
                 catch (Exception ex)
                 {

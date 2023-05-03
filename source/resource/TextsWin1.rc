@@ -537,7 +537,6 @@ BEGIN
         LOGIN_SHELL_PAGE, "Shell"
         LOGIN_SCP_SHELL_PAGE, "SCP/Shell"
         EDITOR_CAPTION, "Editor"
-        COLOR_DEFAULT_CAPTION, "&No Color"
         COLOR_DEFAULT_HINT, "Reset session (panel) color to system default"
         COLOR_PICK_CAPTION, "&More Colors..."
         COLOR_PICK_HINT, "Choose any session (panel) color"
