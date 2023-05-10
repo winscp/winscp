@@ -17,21 +17,22 @@ USEFORM("forms\ScpExplorer.cpp", ScpExplorerForm);
 //---------------------------------------------------------------------------
 WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 {
-  ApplicationLog = new TApplicationLog();
-  TProgramParams * Params = TProgramParams::Instance();
-  UnicodeString AppLogPath;
-  if (Params->FindSwitch(L"applog", AppLogPath))
-  {
-    ApplicationLog->Enable(AppLogPath);
-  }
-  AppLog(L"Starting...");
-
-  AddStartupSequence(L"M");
-  DllHijackingProtection();
-  AddStartupSequence(L"T");
   int Result = 0;
   try
   {
+    TProgramParams * Params = TProgramParams::Instance();
+    ApplicationLog = new TApplicationLog();
+    UnicodeString AppLogPath;
+    if (Params->FindSwitch(L"applog", AppLogPath))
+    {
+      ApplicationLog->Enable(AppLogPath);
+    }
+    AppLog(L"Starting...");
+
+    AddStartupSequence(L"M");
+    DllHijackingProtection();
+    AddStartupSequence(L"T");
+
     WinInitialize();
     Application->Initialize();
     Application->MainFormOnTaskBar = true;
