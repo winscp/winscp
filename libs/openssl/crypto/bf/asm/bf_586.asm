@@ -1,3 +1,4 @@
+
 %ifidn __OUTPUT_FORMAT__,obj
 section	code	use32 class=code align=256
 %elifidn __OUTPUT_FORMAT__,win32
@@ -781,21 +782,56 @@ L$004PIC_point:
 	xor	edx,edx
 	jmp	ebp
 L$006ej7:
+	
+
+
+
+
 	mov	dh,BYTE [6+esi]
 	shl	edx,8
 L$007ej6:
+	
+
+
+
+
 	mov	dh,BYTE [5+esi]
 L$008ej5:
+	
+
+
+
+
 	mov	dl,BYTE [4+esi]
 L$009ej4:
+	
+
+
+
+
 	mov	ecx,DWORD [esi]
 	jmp	NEAR L$010ejend
 L$011ej3:
+	
+
+
+
+
 	mov	ch,BYTE [2+esi]
 	shl	ecx,8
 L$012ej2:
+	
+
+
+
+
 	mov	ch,BYTE [1+esi]
 L$013ej1:
+	
+
+
+
+
 	mov	cl,BYTE [esi]
 L$010ejend:
 	xor	eax,ecx
