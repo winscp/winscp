@@ -116,6 +116,8 @@ struct trace_category_st {
     const char * const name;
     const int num;
 };
+#define TRACE_CATEGORY_(name)       { #name, OSSL_TRACE_CATEGORY_##name }
+
 static const struct trace_category_st
     trace_categories[OSSL_TRACE_CATEGORY_NUM] = {
     TRACE_CATEGORY_(ALL),
