@@ -7,6 +7,7 @@ namespace WinSCP
     [Guid("574FF430-FD40-41F9-9A04-971D3CF844B7")]
     [ClassInterface(Constants.ClassInterface)]
     [ComVisible(true)]
+    [ComDefaultInterface(typeof(IEnumerable))]
     public class RemovalEventArgsCollection : ICollection<RemovalEventArgs>
     {
         internal RemovalEventArgsCollection()
@@ -66,7 +67,7 @@ namespace WinSCP
 
         #region IEnumerable<RemovalEventArgs> Members
 
-        IEnumerator<RemovalEventArgs> IEnumerable<RemovalEventArgs>.GetEnumerator()
+        public IEnumerator<RemovalEventArgs> GetEnumerator()
         {
             return _helper.GetEnumerator();
         }
@@ -75,7 +76,7 @@ namespace WinSCP
 
         #region IEnumerable Members
 
-        public IEnumerator GetEnumerator()
+        IEnumerator IEnumerable.GetEnumerator()
         {
             return _helper.GetEnumerator();
         }

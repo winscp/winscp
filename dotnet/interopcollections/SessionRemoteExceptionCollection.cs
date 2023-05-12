@@ -7,6 +7,7 @@ namespace WinSCP
     [Guid("2309282F-B89B-4F6B-AEB1-D3E1629B7033")]
     [ClassInterface(Constants.ClassInterface)]
     [ComVisible(true)]
+    [ComDefaultInterface(typeof(IEnumerable))]
     public class SessionRemoteExceptionCollection : ICollection<SessionRemoteException>
     {
         internal SessionRemoteExceptionCollection()
@@ -66,7 +67,7 @@ namespace WinSCP
 
         #region IEnumerable<SessionRemoteException> Members
 
-        IEnumerator<SessionRemoteException> IEnumerable<SessionRemoteException>.GetEnumerator()
+        public IEnumerator<SessionRemoteException> GetEnumerator()
         {
             return _helper.GetEnumerator();
         }
@@ -75,7 +76,7 @@ namespace WinSCP
 
         #region IEnumerable Members
 
-        public IEnumerator GetEnumerator()
+        IEnumerator IEnumerable.GetEnumerator()
         {
             return _helper.GetEnumerator();
         }

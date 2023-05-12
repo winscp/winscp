@@ -7,6 +7,7 @@ namespace WinSCP
     [Guid("E402CB1F-6219-4C79-9EDF-1914D9589909")]
     [ClassInterface(Constants.ClassInterface)]
     [ComVisible(true)]
+    [ComDefaultInterface(typeof(IEnumerable))]
     public class StringCollection : ICollection<string>
     {
         internal StringCollection()
@@ -66,7 +67,7 @@ namespace WinSCP
 
         #region IEnumerable<SessionRemoteException> Members
 
-        IEnumerator<string> IEnumerable<string>.GetEnumerator()
+        public IEnumerator<string> GetEnumerator()
         {
             return _helper.GetEnumerator();
         }
@@ -75,7 +76,7 @@ namespace WinSCP
 
         #region IEnumerable Members
 
-        public IEnumerator GetEnumerator()
+        IEnumerator IEnumerable.GetEnumerator()
         {
             return _helper.GetEnumerator();
         }

@@ -7,6 +7,7 @@ namespace WinSCP
     [Guid("0285917B-581A-4F6F-9A9D-1C34ABFB4E38")]
     [ClassInterface(Constants.ClassInterface)]
     [ComVisible(true)]
+    [ComDefaultInterface(typeof(IEnumerable))]
     public class TransferEventArgsCollection : ICollection<TransferEventArgs>
     {
         internal TransferEventArgsCollection()
@@ -66,7 +67,7 @@ namespace WinSCP
 
         #region IEnumerable<SessionRemoteException> Members
 
-        IEnumerator<TransferEventArgs> IEnumerable<TransferEventArgs>.GetEnumerator()
+        public IEnumerator<TransferEventArgs> GetEnumerator()
         {
             return _helper.GetEnumerator();
         }
@@ -75,7 +76,7 @@ namespace WinSCP
 
         #region IEnumerable Members
 
-        public IEnumerator GetEnumerator()
+        IEnumerator IEnumerable.GetEnumerator()
         {
             return _helper.GetEnumerator();
         }

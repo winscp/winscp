@@ -7,6 +7,7 @@ namespace WinSCP
     [Guid("28957CC8-DEBC-48D0-841B-48AD3CB3B49F")]
     [ClassInterface(Constants.ClassInterface)]
     [ComVisible(true)]
+    [ComDefaultInterface(typeof(IEnumerable))]
     public class ComparisonDifferenceCollection : ICollection<ComparisonDifference>
     {
         internal ComparisonDifferenceCollection()
@@ -66,7 +67,7 @@ namespace WinSCP
 
         #region IEnumerable<ComparisonDifference> Members
 
-        IEnumerator<ComparisonDifference> IEnumerable<ComparisonDifference>.GetEnumerator()
+        public IEnumerator<ComparisonDifference> GetEnumerator()
         {
             return _helper.GetEnumerator();
         }
@@ -75,7 +76,7 @@ namespace WinSCP
 
         #region IEnumerable Members
 
-        public IEnumerator GetEnumerator()
+        IEnumerator IEnumerable.GetEnumerator()
         {
             return _helper.GetEnumerator();
         }

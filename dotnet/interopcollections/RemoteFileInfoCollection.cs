@@ -7,6 +7,7 @@ namespace WinSCP
     [Guid("39AA3D00-578C-49AF-B3E4-16CE26C710C6")]
     [ClassInterface(Constants.ClassInterface)]
     [ComVisible(true)]
+    [ComDefaultInterface(typeof(IEnumerable))]
     public class RemoteFileInfoCollection : ICollection<RemoteFileInfo>
     {
         internal RemoteFileInfoCollection()
@@ -66,7 +67,7 @@ namespace WinSCP
 
         #region IEnumerable<RemoteFileInfo> Members
 
-        IEnumerator<RemoteFileInfo> IEnumerable<RemoteFileInfo>.GetEnumerator()
+        public IEnumerator<RemoteFileInfo> GetEnumerator()
         {
             return _helper.GetEnumerator();
         }
@@ -75,7 +76,7 @@ namespace WinSCP
 
         #region IEnumerable Members
 
-        public IEnumerator GetEnumerator()
+        IEnumerator IEnumerable.GetEnumerator()
         {
             return _helper.GetEnumerator();
         }
