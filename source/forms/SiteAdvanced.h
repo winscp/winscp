@@ -225,12 +225,12 @@ __published:
   TImageList *ColorImageList;
   TButton *ColorButton;
   TTabSheet *SslSheet;
-  TGroupBox *SslGroup;
-  TLabel *Label1;
+  TGroupBox *TlsGroup;
+  TLabel *MinTlsVersionLabel;
   TComboBox *MinTlsVersionCombo;
-  TLabel *Label2;
+  TLabel *MaxTlsVersionLabel;
   TComboBox *MaxTlsVersionCombo;
-  TCheckBox *SslSessionReuseCheck;
+  TCheckBox *SslSessionReuseCheck2;
   TLabel *BugWinAdjLabel;
   TComboBox *BugWinAdjCombo;
   TButton *ProxyAutodetectButton;

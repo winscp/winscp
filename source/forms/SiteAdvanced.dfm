@@ -1889,31 +1889,31 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         DesignSize = (
           401
           382)
-        object SslGroup: TGroupBox
+        object TlsGroup: TGroupBox
           Left = 0
           Top = 6
           Width = 393
           Height = 99
           Anchors = [akLeft, akTop, akRight]
-          Caption = 'TLS/SSL options'
+          Caption = 'TLS options'
           TabOrder = 0
           DesignSize = (
             393
             99)
-          object Label1: TLabel
+          object MinTlsVersionLabel: TLabel
             Left = 12
             Top = 20
-            Width = 123
+            Width = 102
             Height = 13
-            Caption = 'Mi&nimum TLS/SSL version:'
+            Caption = 'Mi&nimum TLS version:'
             FocusControl = MinTlsVersionCombo
           end
-          object Label2: TLabel
+          object MaxTlsVersionLabel: TLabel
             Left = 12
             Top = 44
-            Width = 127
+            Width = 106
             Height = 13
-            Caption = 'Ma&ximum TLS/SSL version:'
+            Caption = 'Ma&ximum TLS version:'
             FocusControl = MaxTlsVersionCombo
           end
           object MinTlsVersionCombo: TComboBox
@@ -1926,7 +1926,6 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 0
             OnChange = MinTlsVersionComboChange
             Items.Strings = (
-              'SSL 3.0'
               'TLS 1.0'
               'TLS 1.1'
               'TLS 1.2'
@@ -1942,19 +1941,18 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 1
             OnChange = MaxTlsVersionComboChange
             Items.Strings = (
-              'SSL 3.0'
               'TLS 1.0'
               'TLS 1.1'
               'TLS 1.2'
               'TLS 1.3')
           end
-          object SslSessionReuseCheck: TCheckBox
+          object SslSessionReuseCheck2: TCheckBox
             Left = 12
             Top = 68
             Width = 365
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Reuse TLS/SSL session ID for data connections'
+            Caption = '&Reuse TLS session ID for data connections'
             TabOrder = 2
             OnClick = DataChange
           end

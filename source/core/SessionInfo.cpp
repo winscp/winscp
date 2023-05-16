@@ -1078,9 +1078,7 @@ UnicodeString __fastcall TSessionLog::GetTlsVersionName(TTlsVersion TlsVersion)
     default:
       DebugFail();
     case ssl2:
-      return "SSLv2";
     case ssl3:
-      return "SSLv3";
     case tls10:
       return "TLSv1.0";
     case tls11:

@@ -411,7 +411,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     // connection/tls/ssl page
     MinTlsVersionCombo->ItemIndex = TlsVersionToIndex(FSessionData->MinTlsVersion);
     MaxTlsVersionCombo->ItemIndex = TlsVersionToIndex(FSessionData->MaxTlsVersion);
-    SslSessionReuseCheck->Checked = FSessionData->SslSessionReuse;
+    SslSessionReuseCheck2->Checked = FSessionData->SslSessionReuse;
     TlsCertificateFileEdit->Text = FSessionData->TlsCertificateFile;
 
     // Note page
@@ -688,7 +688,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   // connection/tls/ssl page
   SessionData->MinTlsVersion = IndexToTlsVersion(MinTlsVersionCombo->ItemIndex);
   SessionData->MaxTlsVersion = IndexToTlsVersion(MaxTlsVersionCombo->ItemIndex);
-  SessionData->SslSessionReuse = SslSessionReuseCheck->Checked;
+  SessionData->SslSessionReuse = SslSessionReuseCheck2->Checked;
   SessionData->TlsCertificateFile = TlsCertificateFileEdit->Text;
 
   // Note page
@@ -1061,8 +1061,8 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
 
     // connection/ssl/tls
     SslSheet->Enabled = Ssl;
-    // TLS/SSL session reuse is not configurable for WebDAV/S3 yet
-    SslSessionReuseCheck->Enabled = SslSheet->Enabled && FtpProtocol;
+    // TLS session reuse is not configurable for WebDAV/S3 yet
+    SslSessionReuseCheck2->Enabled = SslSheet->Enabled && FtpProtocol;
     TlsAuthenticationGroup->Visible = Ssl && (FtpProtocol || WebDavProtocol);
 
     // encryption sheet
@@ -1533,14 +1533,12 @@ TTlsVersion __fastcall TSiteAdvancedDialog::IndexToTlsVersion(int Index)
     default:
       DebugFail();
     case 0:
-      return ssl3;
-    case 1:
       return tls10;
-    case 2:
+    case 1:
       return tls11;
-    case 3:
+    case 2:
       return tls12;
-    case 4:
+    case 3:
       return tls13;
   }
 }
@@ -1553,15 +1551,14 @@ int __fastcall TSiteAdvancedDialog::TlsVersionToIndex(TTlsVersion TlsVersion)
       DebugFail();
     case ssl2:
     case ssl3:
-      return 0;
     case tls10:
-      return 1;
+      return 0;
     case tls11:
-      return 2;
+      return 1;
     case tls12:
-      return 3;
+      return 2;
     case tls13:
-      return 4;
+      return 3;
   }
 }
 //---------------------------------------------------------------------------
