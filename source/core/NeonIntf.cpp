@@ -542,15 +542,21 @@ UnicodeString __fastcall NeonTlsSessionInfo(
 //---------------------------------------------------------------------------
 void SetupSsl(ssl_st * Ssl, TTlsVersion MinTlsVersion, TTlsVersion MaxTlsVersion)
 {
+  MaxTlsVersion = (TTlsVersion)std::max(MaxTlsVersion, tls10); // the lowest currently supported version
   #define MASK_TLS_VERSION(VERSION, FLAG) ((MinTlsVersion > VERSION) || (MaxTlsVersion < VERSION) ? FLAG : 0)
   int Options =
-    MASK_TLS_VERSION(ssl3, SSL_OP_NO_SSLv3) |
     MASK_TLS_VERSION(tls10, SSL_OP_NO_TLSv1) |
     MASK_TLS_VERSION(tls11, SSL_OP_NO_TLSv1_1) |
     MASK_TLS_VERSION(tls12, SSL_OP_NO_TLSv1_2) |
     MASK_TLS_VERSION(tls13, SSL_OP_NO_TLSv1_3);
   // adds flags (not sets)
   SSL_set_options(Ssl, Options);
+
+  // Since OpenSSL 3, SSL 3.0, TLS 1.0 and 1.1 are enabled on security level 0 only
+  if (MinTlsVersion <= tls11)
+  {
+    SSL_set_security_level(Ssl, 0);
+  }
 }
 //---------------------------------------------------------------------------
 void UpdateNeonDebugMask()
