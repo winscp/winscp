@@ -311,7 +311,7 @@ void __fastcall TSessionData::DefaultSettings()
   FtpPingType = ptDummyCommand;
   FtpTransferActiveImmediately = asAuto;
   Ftps = ftpsNone;
-  MinTlsVersion = tls10;
+  MinTlsVersion = tls12;
   MaxTlsVersion = tls13;
   FtpListAll = asAuto;
   FtpHost = asAuto;
