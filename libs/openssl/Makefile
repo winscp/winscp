@@ -156,10 +156,10 @@ CRYPTOOBJ= \
     $(OBJ_D)\bio_lib.obj $(OBJ_D)\bio_cb.obj $(OBJ_D)\bio_err.obj $(OBJ_D)\bss_mem.obj \
     $(OBJ_D)\bss_null.obj $(OBJ_D)\bss_fd.obj $(OBJ_D)\bss_file.obj $(OBJ_D)\bss_sock.obj \
     $(OBJ_D)\bf_null.obj $(OBJ_D)\bf_buff.obj $(OBJ_D)\bf_nbio.obj $(OBJ_D)\bf_prefix.obj \
-    $(OBJ_D)\bio_addr.obj $(OBJ_D)\bio_dump.obj $(OBJ_D)\bio_meth.obj $(OBJ_D)\bio_print.obj \
-    $(OBJ_D)\bio_sock.obj $(OBJ_D)\bio_sock2.obj $(OBJ_D)\bss_bio.obj $(OBJ_D)\bss_conn.obj \
-    $(OBJ_D)\bss_log.obj $(OBJ_D)\bss_acpt.obj $(OBJ_D)\bf_readbuff.obj $(OBJ_D)\ossl_core_bio.obj \
-    $(OBJ_D)\bss_core.obj \
+    $(OBJ_D)\bf_readbuff.obj $(OBJ_D)\bio_addr.obj $(OBJ_D)\bio_dump.obj $(OBJ_D)\bio_meth.obj \
+    $(OBJ_D)\bio_print.obj $(OBJ_D)\bio_sock.obj $(OBJ_D)\bio_sock2.obj $(OBJ_D)\bss_bio.obj \
+    $(OBJ_D)\bss_conn.obj $(OBJ_D)\bss_log.obj $(OBJ_D)\bss_acpt.obj $(OBJ_D)\bss_core.obj \
+    $(OBJ_D)\ossl_core_bio.obj \
     $(OBJ_D)\stack.obj \
     $(OBJ_D)\lhash.obj $(OBJ_D)\lh_stats.obj \
     $(OBJ_D)\rand_lib.obj $(OBJ_D)\rand_err.obj $(OBJ_D)\rand_egd.obj $(OBJ_D)\rand_win.obj \
@@ -1104,6 +1104,9 @@ $(OBJ_D)\bf_nbio.obj: $(SRC_D)\crypto\bio\bf_nbio.c
 $(OBJ_D)\bf_prefix.obj: $(SRC_D)\crypto\bio\bf_prefix.c
     $(CC) -o$(OBJ_D)\bf_prefix.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\bio\bf_prefix.c
 
+$(OBJ_D)\bf_readbuff.obj: $(SRC_D)\crypto\bio\bf_readbuff.c
+    $(CC) -o$(OBJ_D)\bf_readbuff.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\bio\bf_readbuff.c
+
 $(OBJ_D)\bio_addr.obj: $(SRC_D)\crypto\bio\bio_addr.c
     $(CC) -o$(OBJ_D)\bio_addr.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\bio\bio_addr.c
 
@@ -1134,14 +1137,11 @@ $(OBJ_D)\bss_log.obj: $(SRC_D)\crypto\bio\bss_log.c
 $(OBJ_D)\bss_acpt.obj: $(SRC_D)\crypto\bio\bss_acpt.c
     $(CC) -o$(OBJ_D)\bss_acpt.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\bio\bss_acpt.c
 
-$(OBJ_D)\bf_readbuff.obj: $(SRC_D)\crypto\bio\bf_readbuff.c
-    $(CC) -o$(OBJ_D)\bf_readbuff.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\bio\bf_readbuff.c
+$(OBJ_D)\bss_core.obj: $(SRC_D)\crypto\bio\bss_core.c
+    $(CC) -o$(OBJ_D)\bss_core.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\bio\bss_core.c
 
 $(OBJ_D)\ossl_core_bio.obj: $(SRC_D)\crypto\bio\ossl_core_bio.c
     $(CC) -o$(OBJ_D)\ossl_core_bio.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\bio\ossl_core_bio.c
-
-$(OBJ_D)\bss_core.obj: $(SRC_D)\crypto\bio\bss_core.c
-    $(CC) -o$(OBJ_D)\bss_core.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\bio\bss_core.c
 
 $(OBJ_D)\stack.obj: $(SRC_D)\crypto\stack\stack.c
     $(CC) -o$(OBJ_D)\stack.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\stack\stack.c
