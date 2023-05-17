@@ -117,8 +117,7 @@ CRYPTOOBJ= \
     $(OBJ_D)\set_key.obj $(OBJ_D)\ecb_enc.obj $(OBJ_D)\cbc_enc.obj $(OBJ_D)\ecb3_enc.obj \
     $(OBJ_D)\cfb64enc.obj $(OBJ_D)\cfb64ede.obj $(OBJ_D)\cfb_enc.obj $(OBJ_D)\ofb64ede.obj \
     $(OBJ_D)\ofb64enc.obj $(OBJ_D)\ofb_enc.obj $(OBJ_D)\str2key.obj $(OBJ_D)\pcbc_enc.obj \
-    $(OBJ_D)\qud_cksm.obj $(OBJ_D)\rand_key.obj $(OBJ_D)\fcrypt.obj $(OBJ_D)\xcbc_enc.obj \
-    $(OBJ_D)\cbc_cksm.obj \
+    $(OBJ_D)\qud_cksm.obj $(OBJ_D)\rand_key.obj $(OBJ_D)\xcbc_enc.obj $(OBJ_D)\cbc_cksm.obj \
     $(OBJ_D)\rc2_ecb.obj $(OBJ_D)\rc2_skey.obj $(OBJ_D)\rc2_cbc.obj $(OBJ_D)\rc2cfb64.obj \
     $(OBJ_D)\rc2ofb64.obj \
     $(OBJ_D)\rc4_skey.obj $(OBJ_D)\rc4_enc.obj \
@@ -323,7 +322,7 @@ CRYPTOOBJ= \
     $(OBJ_D)\decode_pvk2key.obj $(OBJ_D)\decode_spki2typespki.obj $(OBJ_D)\encode_key2any.obj $(OBJ_D)\encode_key2blob.obj \
     $(OBJ_D)\encode_key2ms.obj $(OBJ_D)\encode_key2text.obj $(OBJ_D)\endecoder_common.obj \
     $(OBJ_D)\file_store.obj $(OBJ_D)\file_store_any2obj.obj \
-    $(OBJ_D)\des_586.obj $(OBJ_D)\crypt586.obj \
+    $(OBJ_D)\des_586.obj \
     $(OBJ_D)\bf_586.obj \
     $(OBJ_D)\cast_586.obj \
     $(OBJ_D)\md5_586.obj \
@@ -705,9 +704,6 @@ $(OBJ_D)\qud_cksm.obj: $(SRC_D)\crypto\des\qud_cksm.c
 
 $(OBJ_D)\rand_key.obj: $(SRC_D)\crypto\des\rand_key.c
     $(CC) -o$(OBJ_D)\rand_key.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\des\rand_key.c
-
-$(OBJ_D)\fcrypt.obj: $(SRC_D)\crypto\des\fcrypt.c
-    $(CC) -o$(OBJ_D)\fcrypt.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\des\fcrypt.c
 
 $(OBJ_D)\xcbc_enc.obj: $(SRC_D)\crypto\des\xcbc_enc.c
     $(CC) -o$(OBJ_D)\xcbc_enc.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\des\xcbc_enc.c
@@ -2784,9 +2780,6 @@ $(OBJ_D)\file_store_any2obj.obj: $(SRC_D)\providers\implementations\storemgmt\fi
 
 $(OBJ_D)\des_586.obj: $(SRC_D)\crypto\des\asm\des_586.asm
     $(ASM) -o$(OBJ_D)\des_586.obj $(SRC_D)\crypto\des\asm\des_586.asm
-
-$(OBJ_D)\crypt586.obj: $(SRC_D)\crypto\des\asm\crypt586.asm
-    $(ASM) -o$(OBJ_D)\crypt586.obj $(SRC_D)\crypto\des\asm\crypt586.asm
 
 $(OBJ_D)\bf_586.obj: $(SRC_D)\crypto\bf\asm\bf_586.asm
     $(ASM) -o$(OBJ_D)\bf_586.obj $(SRC_D)\crypto\bf\asm\bf_586.asm
