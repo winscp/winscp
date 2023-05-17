@@ -18,11 +18,10 @@ CC=bcc32
 CFLAG= \
     -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu \
     -w-rvl  -c -tWC -tWM -O2 -ff -fp \
-    -DBN_ASM -DMD5_ASM -DSHA1_ASM \
-    -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_RC5 -DOPENSSL_NO_MDC2 \
-    -DOPENSSL_NO_DGRAM -DOPENSSL_NO_WHIRLPOOL \
+    -DMD5_ASM -DSHA1_ASM \
+    -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_RC5 -DOPENSSL_NO_MDC2 -DOPENSSL_NO_WHIRLPOOL \
     -DOPENSSL_NO_SEED -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_ENGINE \
-    -DNO_CHMOD -DNO_INTERLOCKEDOR64 \
+    -DNO_INTERLOCKEDOR64 \
     -DWINSCP
 
 # Copied from generated OpenSSL "makefile"
