@@ -241,5 +241,4 @@ static ossl_inline int ossl_is_absolute_path(const char *path)
     return path[0] == '/';
 }
 
-
 #endif
