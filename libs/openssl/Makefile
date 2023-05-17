@@ -21,6 +21,7 @@ CFLAG= \
     -DMD5_ASM -DSHA1_ASM \
     -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_RC5 -DOPENSSL_NO_MDC2 -DOPENSSL_NO_WHIRLPOOL \
     -DOPENSSL_NO_SEED -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_ENGINE \
+    -DOPENSSL_BN_ASM_PART_WORDS -DOPENSSL_BN_ASM_MONT -DOPENSSL_BN_ASM_GF2m \
     -DNO_INTERLOCKEDOR64 \
     -DWINSCP
 
@@ -131,11 +132,10 @@ CRYPTOOBJ= \
     $(OBJ_D)\bn_ctx.obj $(OBJ_D)\bn_mul.obj $(OBJ_D)\bn_mod.obj $(OBJ_D)\bn_print.obj \
     $(OBJ_D)\bn_rand.obj $(OBJ_D)\bn_shift.obj $(OBJ_D)\bn_word.obj $(OBJ_D)\bn_blind.obj \
     $(OBJ_D)\bn_kron.obj $(OBJ_D)\bn_sqrt.obj $(OBJ_D)\bn_gcd.obj $(OBJ_D)\bn_prime.obj \
-    $(OBJ_D)\bn_err.obj $(OBJ_D)\bn_sqr.obj $(OBJ_D)\bn_asm.obj $(OBJ_D)\bn_recp.obj \
-    $(OBJ_D)\bn_mont.obj $(OBJ_D)\bn_mpi.obj $(OBJ_D)\bn_exp2.obj $(OBJ_D)\bn_gf2m.obj \
-    $(OBJ_D)\bn_nist.obj $(OBJ_D)\bn_depr.obj $(OBJ_D)\bn_const.obj $(OBJ_D)\bn_intern.obj \
-    $(OBJ_D)\bn_dh.obj $(OBJ_D)\bn_srp.obj $(OBJ_D)\bn_conv.obj $(OBJ_D)\rsa_sup_mul.obj \
-    $(OBJ_D)\bn_rsa_fips186_4.obj \
+    $(OBJ_D)\bn_err.obj $(OBJ_D)\bn_sqr.obj $(OBJ_D)\bn_recp.obj $(OBJ_D)\bn_mont.obj \
+    $(OBJ_D)\bn_mpi.obj $(OBJ_D)\bn_exp2.obj $(OBJ_D)\bn_gf2m.obj $(OBJ_D)\bn_nist.obj \
+    $(OBJ_D)\bn_depr.obj $(OBJ_D)\bn_const.obj $(OBJ_D)\bn_intern.obj $(OBJ_D)\bn_dh.obj \
+    $(OBJ_D)\bn_srp.obj $(OBJ_D)\bn_conv.obj $(OBJ_D)\rsa_sup_mul.obj $(OBJ_D)\bn_rsa_fips186_4.obj \
     $(OBJ_D)\rsa_ossl.obj $(OBJ_D)\rsa_gen.obj $(OBJ_D)\rsa_lib.obj $(OBJ_D)\rsa_sign.obj \
     $(OBJ_D)\rsa_saos.obj $(OBJ_D)\rsa_err.obj $(OBJ_D)\rsa_pk1.obj $(OBJ_D)\rsa_none.obj \
     $(OBJ_D)\rsa_oaep.obj $(OBJ_D)\rsa_chk.obj $(OBJ_D)\rsa_pss.obj $(OBJ_D)\rsa_x931.obj \
@@ -327,7 +327,8 @@ CRYPTOOBJ= \
     $(OBJ_D)\bf_586.obj \
     $(OBJ_D)\cast_586.obj \
     $(OBJ_D)\md5_586.obj \
-    $(OBJ_D)\sha1_586.obj
+    $(OBJ_D)\sha1_586.obj \
+    $(OBJ_D)\bn_586.obj $(OBJ_D)\x86_mont.obj $(OBJ_D)\x86_gf2m.obj $(OBJ_D)\co_586.obj
 ###################################################################
 all: banner $(TMP_D) lib
 
@@ -851,9 +852,6 @@ $(OBJ_D)\bn_err.obj: $(SRC_D)\crypto\bn\bn_err.c
 
 $(OBJ_D)\bn_sqr.obj: $(SRC_D)\crypto\bn\bn_sqr.c
     $(CC) -o$(OBJ_D)\bn_sqr.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\bn\bn_sqr.c
-
-$(OBJ_D)\bn_asm.obj: $(SRC_D)\crypto\bn\bn_asm.c
-    $(CC) -o$(OBJ_D)\bn_asm.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\bn\bn_asm.c
 
 $(OBJ_D)\bn_recp.obj: $(SRC_D)\crypto\bn\bn_recp.c
     $(CC) -o$(OBJ_D)\bn_recp.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\bn\bn_recp.c
@@ -2801,6 +2799,18 @@ $(OBJ_D)\md5_586.obj: $(SRC_D)\crypto\md5\asm\md5_586.asm
 
 $(OBJ_D)\sha1_586.obj: $(SRC_D)\crypto\sha\asm\sha1_586.asm
     $(ASM) -o$(OBJ_D)\sha1_586.obj $(SRC_D)\crypto\sha\asm\sha1_586.asm
+
+$(OBJ_D)\bn_586.obj: $(SRC_D)\crypto\bn\asm\bn_586.asm
+    $(ASM) -o$(OBJ_D)\bn_586.obj $(SRC_D)\crypto\bn\asm\bn_586.asm
+
+$(OBJ_D)\x86_mont.obj: $(SRC_D)\crypto\bn\asm\x86_mont.asm
+    $(ASM) -o$(OBJ_D)\x86_mont.obj $(SRC_D)\crypto\bn\asm\x86_mont.asm
+
+$(OBJ_D)\x86_gf2m.obj: $(SRC_D)\crypto\bn\asm\x86_gf2m.asm
+    $(ASM) -o$(OBJ_D)\x86_gf2m.obj $(SRC_D)\crypto\bn\asm\x86_gf2m.asm
+
+$(OBJ_D)\co_586.obj: $(SRC_D)\crypto\bn\asm\co_586.asm
+    $(ASM) -o$(OBJ_D)\co_586.obj $(SRC_D)\crypto\bn\asm\co_586.asm
 
 $(O_SSL): $(SSLOBJ)
     -if exist $(O_SSL) $(RM) $(O_SSL)
