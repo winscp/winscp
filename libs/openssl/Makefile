@@ -18,7 +18,7 @@ CC=bcc32
 CFLAG= \
     -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu \
     -w-rvl  -c -tWC -tWM -O2 -ff -fp \
-    -DMD5_ASM -DSHA1_ASM \
+    -DMD5_ASM -DSHA1_ASM -DSHA256_ASM -DSHA512_ASM -DRMD160_ASM \
     -DOPENSSL_BN_ASM_PART_WORDS -DOPENSSL_BN_ASM_MONT -DOPENSSL_BN_ASM_GF2m \
     -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_RC5 -DOPENSSL_NO_MDC2 -DOPENSSL_NO_WHIRLPOOL \
     -DOPENSSL_NO_SEED -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_ENGINE \
@@ -327,7 +327,9 @@ CRYPTOOBJ= \
     $(OBJ_D)\cast_586.obj \
     $(OBJ_D)\md5_586.obj \
     $(OBJ_D)\sha1_586.obj \
-    $(OBJ_D)\bn_586.obj $(OBJ_D)\x86_mont.obj $(OBJ_D)\x86_gf2m.obj $(OBJ_D)\co_586.obj
+    $(OBJ_D)\bn_586.obj $(OBJ_D)\x86_mont.obj $(OBJ_D)\x86_gf2m.obj $(OBJ_D)\co_586.obj \
+    $(OBJ_D)\rmd_586.obj \
+    $(OBJ_D)\sha256_586.obj $(OBJ_D)\sha512_586.obj
 ###################################################################
 all: banner $(TMP_D) lib
 
@@ -2804,6 +2806,15 @@ $(OBJ_D)\x86_gf2m.obj: $(SRC_D)\crypto\bn\asm\x86_gf2m.asm
 
 $(OBJ_D)\co_586.obj: $(SRC_D)\crypto\bn\asm\co_586.asm
     $(ASM) -o$(OBJ_D)\co_586.obj $(SRC_D)\crypto\bn\asm\co_586.asm
+
+$(OBJ_D)\rmd_586.obj: $(SRC_D)\crypto\ripemd\asm\rmd_586.asm
+    $(ASM) -o$(OBJ_D)\rmd_586.obj $(SRC_D)\crypto\ripemd\asm\rmd_586.asm
+
+$(OBJ_D)\sha256_586.obj: $(SRC_D)\crypto\sha\asm\sha256_586.asm
+    $(ASM) -o$(OBJ_D)\sha256_586.obj $(SRC_D)\crypto\sha\asm\sha256_586.asm
+
+$(OBJ_D)\sha512_586.obj: $(SRC_D)\crypto\sha\asm\sha512_586.asm
+    $(ASM) -o$(OBJ_D)\sha512_586.obj $(SRC_D)\crypto\sha\asm\sha512_586.asm
 
 $(O_SSL): $(SSLOBJ)
     -if exist $(O_SSL) $(RM) $(O_SSL)
