@@ -2030,6 +2030,7 @@ NORETURN void cleanup_exit(int);
     X(INT, NONE, sshbug_chanreq) \
     X(INT, NONE, sshbug_dropstart) \
     X(INT, NONE, sshbug_filter_kexinit) \
+    X(INT, NONE, sshbug_rsa_sha2_cert_userauth) \
     /*                                                                \
      * ssh_simple means that we promise never to open any channel     \
      * other than the main one, which means it can safely use a very  \
