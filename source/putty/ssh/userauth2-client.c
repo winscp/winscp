@@ -133,6 +133,9 @@ static bool ssh2_userauth_ki_run_prompts(struct ssh2_userauth_state *s);
 static void ssh2_userauth_ki_write_responses(
     struct ssh2_userauth_state *s, BinarySink *bs);
 
+static ptrlen workaround_rsa_sha2_cert_userauth(
+    struct ssh2_userauth_state *s, ptrlen id);
+
 static const PacketProtocolLayerVtable ssh2_userauth_vtable = {
     .free = ssh2_userauth_free,
     .process_queue = ssh2_userauth_process_queue,
@@ -2359,7 +2362,28 @@ static void ssh2_userauth_add_alg_and_publickey(
             ppl_logevent("Sending public key with certificate from \"%s\"",
                          filename_to_str(s->detached_cert_file));
         }
-        put_stringz(pkt, ssh_keyalg_related_alg(certalg, pkalg)->ssh_id);
+        {
+            /* Strip off any existing certificate-nature from pkalg,
+             * for the case where we're replacing a cert embedded in
+             * the key with the detached one. The second argument of
+             * ssh_keyalg_related_alg is expected to be one of the
+             * bare key algorithms, or nothing useful will happen. */
+            const ssh_keyalg *pkalg_base =
+                pkalg->base_alg ? pkalg->base_alg : pkalg;
+
+            /* Construct an algorithm string that includes both the
+             * signature subtype (e.g. rsa-sha2-512) and the
+             * certificate-ness. Exception: in earlier versions of
+             * OpenSSH we don't want to do that, and must send just
+             * ssh-rsa-cert-... even when we're delivering a non-SHA-1
+             * signature. */
+            const ssh_keyalg *output_alg =
+                ssh_keyalg_related_alg(certalg, pkalg_base);
+            ptrlen output_id = ptrlen_from_asciz(output_alg->ssh_id);
+            output_id = workaround_rsa_sha2_cert_userauth(s, output_id);
+
+            put_stringpl(pkt, output_id);
+        }
         put_stringpl(pkt, ptrlen_from_strbuf(s->detached_cert_blob));
         done = true;
         goto out;
@@ -2405,9 +2429,28 @@ static void ssh2_userauth_add_alg_and_publickey(
             return;
     }
 
-    /* In all other cases, just put in what we were given. */
+    /* In all other cases, basically just put in what we were given -
+     * except for the same bug workaround as above. */
+    alg = workaround_rsa_sha2_cert_userauth(s, alg);
     put_stringpl(pkt, alg);
     put_stringpl(pkt, pkblob);
+}
+
+static ptrlen workaround_rsa_sha2_cert_userauth(
+    struct ssh2_userauth_state *s, ptrlen id)
+{
+    if (!(s->ppl.remote_bugs & BUG_RSA_SHA2_CERT_USERAUTH))
+        return id;
+/*
+     * No need to try to do this in a general way based on the
+     * relations between ssh_keyalgs; we know there are a limited
+     * number of affected versions of OpenSSH, so this doesn't have to
+     * be futureproof against later additions to the family.
+     */
+    if (ptrlen_eq_string(id, "rsa-sha2-256-cert-v01@openssh.com") ||
+        ptrlen_eq_string(id, "rsa-sha2-512-cert-v01@openssh.com"))
+        return PTRLEN_LITERAL("ssh-rsa-cert-v01@openssh.com");
+    return id;
 }
 
 /*
