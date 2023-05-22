@@ -8201,6 +8201,13 @@ bool TTerminal::VerifyOrConfirmHttpCertificate(
   {
     LogEvent(0, CertificateVerificationMessage(Data));
 
+    UnicodeString WindowsValidatedMessage;
+    // Side effect is that NE_SSL_UNTRUSTED is removed from Failure, before we call VerifyCertificate,
+    // as it compares failures against a cached failures that do not include NE_SSL_UNTRUSTED
+    // (if the certificate is trusted by Windows certificate store).
+    // But we will log that result only if we actually use it for the decision.
+    bool WindowsValidated = NeonWindowsValidateCertificateWithMessage(Data, WindowsValidatedMessage);
+
     UnicodeString SiteKey = TSessionData::FormatSiteKey(AHostName, APortNumber);
     Result =
       VerifyCertificate(
@@ -8212,9 +8219,8 @@ bool TTerminal::VerifyOrConfirmHttpCertificate(
     }
     else
     {
-      UnicodeString Message;
-      Result = NeonWindowsValidateCertificateWithMessage(Data, Message);
-      LogEvent(0, Message);
+      Result = WindowsValidated;
+      LogEvent(0, WindowsValidatedMessage);
     }
 
     SessionInfo.Certificate = CertificateSummary(Data, AHostName);
