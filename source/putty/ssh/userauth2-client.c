@@ -264,6 +264,7 @@ static void ssh2_userauth_handle_banner_packet(struct ssh2_userauth_state *s,
     if (!s->show_banner)
         return;
 
+    { // WINSCP
     ptrlen string = get_string(pktin);
     if (string.len > BANNER_LIMIT - bufchain_size(&s->banner))
         string.len = BANNER_LIMIT - bufchain_size(&s->banner);
@@ -280,6 +281,7 @@ static void ssh2_userauth_handle_banner_packet(struct ssh2_userauth_state *s,
         put_datapl(s->banner_scc, string);
     else
         put_datapl(&s->banner_bs, string);
+    } // WINSCP
 }
 
 static void ssh2_userauth_filter_queue(struct ssh2_userauth_state *s)
@@ -2160,6 +2162,7 @@ static void ssh2_userauth_print_banner(struct ssh2_userauth_state *s)
             seat_set_trust_status(s->ppl.seat, false);
         }
 
+        { // WINSCP
         bool mid_line = false;
         while (bufchain_size(&s->banner) > 0) {
             ptrlen data = bufchain_prefix(&s->banner);
@@ -2179,6 +2182,7 @@ static void ssh2_userauth_print_banner(struct ssh2_userauth_state *s)
             seat_antispoof_msg(ppl_get_iseat(&s->ppl),
                                "End of banner message from server");
         }
+        } // WINSCP
     }
 }
 
@@ -2701,7 +2705,8 @@ static void ssh2_userauth_final_output(PacketProtocolLayer *ppl)
      * in our queue just before the server closed the connection, and
      * add them to our banner buffer.
      */
-    for (PktIn *pktin = pq_first(s->ppl.in_pq); pktin != NULL;
+    PktIn *pktin; // WINSCP
+    for (pktin = pq_first(s->ppl.in_pq); pktin != NULL;
          pktin = pq_next(s->ppl.in_pq, pktin)) {
         if (pktin->type == SSH2_MSG_USERAUTH_BANNER)
             ssh2_userauth_handle_banner_packet(s, pktin);
