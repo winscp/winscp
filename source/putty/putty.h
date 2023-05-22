@@ -363,11 +363,12 @@ typedef enum {
     MBT_NOTHING,
     MBT_LEFT, MBT_MIDDLE, MBT_RIGHT,   /* `raw' button designations */
     MBT_SELECT, MBT_EXTEND, MBT_PASTE, /* `cooked' button designations */
-    MBT_WHEEL_UP, MBT_WHEEL_DOWN       /* mouse wheel */
+    MBT_WHEEL_UP, MBT_WHEEL_DOWN,      /* vertical mouse wheel */
+    MBT_WHEEL_LEFT, MBT_WHEEL_RIGHT    /* horizontal mouse wheel */
 } Mouse_Button;
 
 typedef enum {
-    MA_NOTHING, MA_CLICK, MA_2CLK, MA_3CLK, MA_DRAG, MA_RELEASE
+    MA_NOTHING, MA_CLICK, MA_2CLK, MA_3CLK, MA_DRAG, MA_RELEASE, MA_MOVE
 } Mouse_Action;
 
 /* Keyboard modifiers -- keys the user is actually holding down */

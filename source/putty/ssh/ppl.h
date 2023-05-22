@@ -19,6 +19,7 @@ struct PacketProtocolLayerVtable {
         PacketProtocolLayer *ppl, SessionSpecialCode code, int arg);
     void (*reconfigure)(PacketProtocolLayer *ppl, Conf *conf);
     size_t (*queued_data_size)(PacketProtocolLayer *ppl);
+    void (*final_output)(PacketProtocolLayer *ppl);
 
     /* Protocol-level name of this layer. */
     const char *name;
@@ -68,6 +69,8 @@ static inline void ssh_ppl_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
 { ppl->vt->reconfigure(ppl, conf); }
 static inline size_t ssh_ppl_queued_data_size(PacketProtocolLayer *ppl)
 { return ppl->vt->queued_data_size(ppl); }
+static inline void ssh_ppl_final_output(PacketProtocolLayer *ppl)
+{ ppl->vt->final_output(ppl); }
 
 static inline InteractionReadySeat ppl_get_iseat(PacketProtocolLayer *ppl)
 { return interactor_announce(ppl->interactor); }
@@ -92,6 +95,9 @@ void ssh_ppl_replace(PacketProtocolLayer *old, PacketProtocolLayer *new);
  * sizes of all the packets in pq_out. A layer can override this if it
  * has other things to take into account as well. */
 size_t ssh_ppl_default_queued_data_size(PacketProtocolLayer *ppl);
+
+/* Default implementation of final_output which outputs nothing. */
+void ssh_ppl_default_final_output(PacketProtocolLayer *ppl);
 
 PacketProtocolLayer *ssh1_login_new(
     Conf *conf, const char *host, int port,

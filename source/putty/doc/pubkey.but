@@ -367,7 +367,7 @@ will need to tell PuTTY to use for authentication (see
 \k{pageant-mainwin-addkey}).
 
 (You can optionally change some details of the PPK format for your saved
-key files; see \k{puttygen-save-params}. But The defaults should be
+key files; see \k{puttygen-save-params}. But the defaults should be
 fine for most purposes.)
 
 \S{puttygen-savepub} Saving your public key to a disk file

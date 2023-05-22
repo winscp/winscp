@@ -1033,12 +1033,14 @@ static bool opensshcert_check_cert(
      */
     if (time < ck->valid_after) {
         put_fmt(error, "Certificate is not valid until ");
-        opensshcert_time_to_iso8601(BinarySink_UPCAST(error), time);
+        opensshcert_time_to_iso8601(BinarySink_UPCAST(error),
+                                    ck->valid_after);
         goto out;
     }
     if (time >= ck->valid_before) {
         put_fmt(error, "Certificate expired at ");
-        opensshcert_time_to_iso8601(BinarySink_UPCAST(error), time);
+        opensshcert_time_to_iso8601(BinarySink_UPCAST(error),
+                                    ck->valid_before);
         goto out;
     }
 

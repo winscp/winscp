@@ -160,6 +160,22 @@ static const char *hmac_text_name(ssh2_mac *mac)
     return ctx->text_name->s;
 }
 
+static const struct hmac_extra ssh_hmac_sha512_extra = { &ssh_sha512, "" };
+const ssh2_macalg ssh_hmac_sha512 = {
+    .new = hmac_new,
+    .free = hmac_free,
+    .setkey = hmac_key,
+    .start = hmac_start,
+    .genresult = hmac_genresult,
+    .next_message = nullmac_next_message,
+    .text_name = hmac_text_name,
+    .name = "hmac-sha2-512",
+    .etm_name = "hmac-sha2-512-etm@openssh.com",
+    .len = 64,
+    .keylen = 64,
+    .extra = &ssh_hmac_sha512_extra,
+};
+
 static const struct hmac_extra ssh_hmac_sha256_extra = { &ssh_sha256, "" };
 const ssh2_macalg ssh_hmac_sha256 = {
     .new = hmac_new,

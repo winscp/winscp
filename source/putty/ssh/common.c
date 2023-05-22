@@ -742,6 +742,10 @@ size_t ssh_ppl_default_queued_data_size(PacketProtocolLayer *ppl)
     return ppl->out_pq->pqb.total_size;
 }
 
+void ssh_ppl_default_final_output(PacketProtocolLayer *ppl)
+{
+}
+
 static void ssh_ppl_prompts_callback(void *ctx)
 {
     ssh_ppl_process_queue((PacketProtocolLayer *)ctx);
@@ -1023,6 +1027,12 @@ SeatPromptResult verify_ssh_host_key(
             text, SDT_PARA, "If you trust this host, %s to add the key to "
             "%s's cache and carry on connecting.",
             pds->hk_accept_action, appname);
+        if (key && ssh_key_alg(key)->is_certificate) {
+            seat_dialog_text_append(
+                text, SDT_PARA, "(Storing this certified key in the cache "
+                "will NOT cause its certification authority to be trusted "
+                "for any other key or host.)");
+        }
         seat_dialog_text_append(
             text, SDT_PARA, "If you want to carry on connecting just once, "
             "without adding the key to the cache, %s.",

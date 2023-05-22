@@ -1071,9 +1071,11 @@ static int check_compose_internal(int first, int second, int recurse)
     if (recurse == 0) {
         nc = check_compose_internal(second, first, 1);
         if (nc == -1)
-            nc = check_compose_internal(toupper(first), toupper(second), 1);
+            nc = check_compose_internal(toupper((unsigned char)first),
+                                        toupper((unsigned char)second), 1);
         if (nc == -1)
-            nc = check_compose_internal(toupper(second), toupper(first), 1);
+            nc = check_compose_internal(toupper((unsigned char)second),
+                                        toupper((unsigned char)first), 1);
     }
     return nc;
 }
@@ -1097,9 +1099,9 @@ int decode_codepage(const char *cp_name)
         s = cp_name;
         d = cpi->name;
         for (;;) {
-            while (*s && !isalnum(*s) && *s != ':')
+            while (*s && !isalnum((unsigned char)*s) && *s != ':')
                 s++;
-            while (*d && !isalnum(*d) && *d != ':')
+            while (*d && !isalnum((unsigned char)*d) && *d != ':')
                 d++;
             if (*s == 0) {
                 codepage = cpi->codepage;

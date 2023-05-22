@@ -516,24 +516,18 @@ static char *read_body(BinarySource *src)
 
 static bool read_blob(BinarySource *src, int nlines, BinarySink *bs)
 {
-    unsigned char *blob;
     char *line;
     int linelen;
     int i, j, k;
 
     /* We expect at most 64 base64 characters, ie 48 real bytes, per line. */
-    assert(nlines < MAX_KEY_BLOB_LINES);
-    blob = snewn(48 * nlines, unsigned char);
 
     for (i = 0; i < nlines; i++) {
         line = read_body(src);
-        if (!line) {
-            sfree(blob);
+        if (!line)
             return false;
-        }
         linelen = strlen(line);
         if (linelen % 4 != 0 || linelen > 64) {
-            sfree(blob);
             sfree(line);
             return false;
         }
@@ -542,14 +536,12 @@ static bool read_blob(BinarySource *src, int nlines, BinarySink *bs)
             k = base64_decode_atom(line + j, decoded);
             if (!k) {
                 sfree(line);
-                sfree(blob);
                 return false;
             }
             put_data(bs, decoded, k);
         }
         sfree(line);
     }
-    sfree(blob);
     return true;
 }
 
