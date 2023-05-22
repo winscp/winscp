@@ -136,7 +136,9 @@ static bool ssh2_userauth_ki_setup_prompts(
 static bool ssh2_userauth_ki_run_prompts(struct ssh2_userauth_state *s);
 static void ssh2_userauth_ki_write_responses(
     struct ssh2_userauth_state *s, BinarySink *bs);
+static void ssh2_userauth_final_output(PacketProtocolLayer *ppl);
 
+static void ssh2_userauth_print_banner(struct ssh2_userauth_state *s);
 static ptrlen workaround_rsa_sha2_cert_userauth(
     struct ssh2_userauth_state *s, ptrlen id);
 
@@ -148,6 +150,7 @@ static const PacketProtocolLayerVtable ssh2_userauth_vtable = {
     /*.special_cmd =*/ ssh2_userauth_special_cmd,
     /*.reconfigure =*/ ssh2_userauth_reconfigure,
     /*.queued_data_size =*/ ssh_ppl_default_queued_data_size,
+    /*.final_output =*/ ssh2_userauth_final_output,
     /*.name =*/ "ssh-userauth",
     NULL, // WINSCP
 };
@@ -255,33 +258,38 @@ static void ssh2_userauth_free(PacketProtocolLayer *ppl)
     sfree(s);
 }
 
+static void ssh2_userauth_handle_banner_packet(struct ssh2_userauth_state *s,
+                                               PktIn *pktin)
+{
+    if (!s->show_banner)
+        return;
+
+    ptrlen string = get_string(pktin);
+    if (string.len > BANNER_LIMIT - bufchain_size(&s->banner))
+        string.len = BANNER_LIMIT - bufchain_size(&s->banner);
+
+    if (!s->banner_scc_initialised) {
+        s->banner_scc = seat_stripctrl_new(
+            s->ppl.seat, BinarySink_UPCAST(&s->banner_bs), SIC_BANNER);
+        if (s->banner_scc)
+            stripctrl_enable_line_limiting(s->banner_scc);
+        s->banner_scc_initialised = true;
+    }
+
+    if (s->banner_scc)
+        put_datapl(s->banner_scc, string);
+    else
+        put_datapl(&s->banner_bs, string);
+}
+
 static void ssh2_userauth_filter_queue(struct ssh2_userauth_state *s)
 {
     PktIn *pktin;
-    ptrlen string;
 
     while ((pktin = pq_peek(s->ppl.in_pq)) != NULL) {
         switch (pktin->type) {
           case SSH2_MSG_USERAUTH_BANNER:
-            if (!s->show_banner) {
-                pq_pop(s->ppl.in_pq);
-                break;
-            }
-
-            string = get_string(pktin);
-            if (string.len > BANNER_LIMIT - bufchain_size(&s->banner))
-                string.len = BANNER_LIMIT - bufchain_size(&s->banner);
-            if (!s->banner_scc_initialised) {
-                s->banner_scc = seat_stripctrl_new(
-                    s->ppl.seat, BinarySink_UPCAST(&s->banner_bs), SIC_BANNER);
-                if (s->banner_scc)
-                    stripctrl_enable_line_limiting(s->banner_scc);
-                s->banner_scc_initialised = true;
-            }
-            if (s->banner_scc)
-                put_datapl(s->banner_scc, string);
-            else
-                put_datapl(&s->banner_bs, string);
+            ssh2_userauth_handle_banner_packet(s, pktin);
             pq_pop(s->ppl.in_pq);
             break;
 
@@ -875,37 +883,9 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
              * point, but we still need to precede and follow it with
              * anti-spoofing header lines.
              */
-            if (bufchain_size(&s->banner) &&
-                (seat_verbose(s->ppl.seat) || seat_interactive(s->ppl.seat))) {
-                if (s->banner_scc) {
-                    seat_antispoof_msg(
-                        ppl_get_iseat(&s->ppl),
-                        "Pre-authentication banner message from server:");
-                    seat_set_trust_status(s->ppl.seat, false);
-                }
-
+            ssh2_userauth_print_banner(s);
                 { // WINSCP
-                bool mid_line = false;
-                while (bufchain_size(&s->banner) > 0) {
-                    ptrlen data = bufchain_prefix(&s->banner);
-                    seat_banner_pl(ppl_get_iseat(&s->ppl), data);
-                    mid_line =
-                        (((const char *)data.ptr)[data.len-1] != '\n');
-                    bufchain_consume(&s->banner, data.len);
-                }
-                bufchain_clear(&s->banner);
-
-                if (mid_line)
-                    seat_banner_pl(ppl_get_iseat(&s->ppl),
-                                   PTRLEN_LITERAL("\r\n"));
-
-                if (s->banner_scc) {
-                    seat_set_trust_status(s->ppl.seat, true);
-                    seat_antispoof_msg(ppl_get_iseat(&s->ppl),
-                                       "End of banner message from server");
-                }
                 } // WINSCP
-            }
 
             if (pktin && pktin->type == SSH2_MSG_USERAUTH_SUCCESS) {
                 ppl_logevent("Access granted");
@@ -2169,6 +2149,39 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
     crFinishV;
 }
 
+static void ssh2_userauth_print_banner(struct ssh2_userauth_state *s)
+{
+    if (bufchain_size(&s->banner) &&
+        (seat_verbose(s->ppl.seat) || seat_interactive(s->ppl.seat))) {
+        if (s->banner_scc) {
+            seat_antispoof_msg(
+                ppl_get_iseat(&s->ppl),
+                "Pre-authentication banner message from server:");
+            seat_set_trust_status(s->ppl.seat, false);
+        }
+
+        bool mid_line = false;
+        while (bufchain_size(&s->banner) > 0) {
+            ptrlen data = bufchain_prefix(&s->banner);
+            seat_banner_pl(ppl_get_iseat(&s->ppl), data);
+            mid_line =
+                (((const char *)data.ptr)[data.len-1] != '\n');
+            bufchain_consume(&s->banner, data.len);
+        }
+        bufchain_clear(&s->banner);
+
+        if (mid_line)
+            seat_banner_pl(ppl_get_iseat(&s->ppl),
+                           PTRLEN_LITERAL("\r\n"));
+
+        if (s->banner_scc) {
+            seat_set_trust_status(s->ppl.seat, true);
+            seat_antispoof_msg(ppl_get_iseat(&s->ppl),
+                               "End of banner message from server");
+        }
+    }
+}
+
 static bool ssh2_userauth_ki_setup_prompts(
     struct ssh2_userauth_state *s, BinarySource *src, bool plugin)
 {
@@ -2537,7 +2550,7 @@ static ptrlen workaround_rsa_sha2_cert_userauth(
 {
     if (!(s->ppl.remote_bugs & BUG_RSA_SHA2_CERT_USERAUTH))
         return id;
-/*
+    /*
      * No need to try to do this in a general way based on the
      * relations between ssh_keyalgs; we know there are a limited
      * number of affected versions of OpenSSH, so this doesn't have to
@@ -2676,4 +2689,24 @@ static void ssh2_userauth_reconfigure(PacketProtocolLayer *ppl, Conf *conf)
     struct ssh2_userauth_state *s =
         container_of(ppl, struct ssh2_userauth_state, ppl);
     ssh_ppl_reconfigure(s->successor_layer, conf);
+}
+
+static void ssh2_userauth_final_output(PacketProtocolLayer *ppl)
+{
+    struct ssh2_userauth_state *s =
+        container_of(ppl, struct ssh2_userauth_state, ppl);
+
+    /*
+     * Check for any unconsumed banner packets that might have landed
+     * in our queue just before the server closed the connection, and
+     * add them to our banner buffer.
+     */
+    for (PktIn *pktin = pq_first(s->ppl.in_pq); pktin != NULL;
+         pktin = pq_next(s->ppl.in_pq, pktin)) {
+        if (pktin->type == SSH2_MSG_USERAUTH_BANNER)
+            ssh2_userauth_handle_banner_packet(s, pktin);
+    }
+
+    /* And now make sure we've shown the banner, before exiting */
+    ssh2_userauth_print_banner(s);
 }
