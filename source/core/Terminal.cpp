@@ -25,6 +25,7 @@
 #include "CoreMain.h"
 #include "Queue.h"
 #include "Cryptography.h"
+#include "NeonIntf.h"
 #include <openssl/pkcs12.h>
 #include <openssl/err.h>
 
@@ -8180,6 +8181,55 @@ void __fastcall TTerminal::CacheCertificate(
   {
     Storage->WriteString(SiteKey, CertificateData);
   }
+}
+//---------------------------------------------------------------------------
+// Shared implementation for WebDAV and S3
+bool TTerminal::VerifyOrConfirmHttpCertificate(
+  const UnicodeString & AHostName, int APortNumber, const TNeonCertificateData & AData, bool CanRemember,
+  TSessionInfo & SessionInfo)
+{
+  TNeonCertificateData Data = AData;
+  SessionInfo.CertificateFingerprintSHA1 = Data.FingerprintSHA1;
+  SessionInfo.CertificateFingerprintSHA256 = Data.FingerprintSHA256;
+
+  bool Result;
+  if (SessionData->FingerprintScan)
+  {
+    Result = false;
+  }
+  else
+  {
+    LogEvent(0, CertificateVerificationMessage(Data));
+
+    UnicodeString SiteKey = TSessionData::FormatSiteKey(AHostName, APortNumber);
+    Result =
+      VerifyCertificate(
+        HttpsCertificateStorageKey, SiteKey, Data.FingerprintSHA1, Data.FingerprintSHA256, Data.Subject, Data.Failures);
+
+    if (Result)
+    {
+      SessionInfo.CertificateVerifiedManually = true;
+    }
+    else
+    {
+      UnicodeString Message;
+      Result = NeonWindowsValidateCertificateWithMessage(Data, Message);
+      LogEvent(0, Message);
+    }
+
+    SessionInfo.Certificate = CertificateSummary(Data, AHostName);
+
+    if (!Result)
+    {
+      if (ConfirmCertificate(SessionInfo, Data.Failures, HttpsCertificateStorageKey, CanRemember))
+      {
+        Result = true;
+        SessionInfo.CertificateVerifiedManually = true;
+      }
+    }
+  }
+
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CollectTlsUsage(const UnicodeString & TlsVersionStr)

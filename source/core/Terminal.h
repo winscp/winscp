@@ -30,6 +30,7 @@ class TCallbackGuard;
 class TParallelOperation;
 class TCollectedFileList;
 struct TLocalFileHandle;
+struct TNeonCertificateData;
 typedef std::vector<__int64> TCalculatedSizes;
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TQueryUserEvent)
@@ -444,6 +445,9 @@ protected:
     int Failures);
   bool __fastcall ConfirmCertificate(
     TSessionInfo & SessionInfo, int Failures, const UnicodeString & CertificateStorageKey, bool CanRemember);
+  bool VerifyOrConfirmHttpCertificate(
+    const UnicodeString & AHostName, int APortNumber, const TNeonCertificateData & Data, bool CanRemember,
+    TSessionInfo & SessionInfo);
   void __fastcall CollectTlsUsage(const UnicodeString & TlsVersionStr);
   bool __fastcall LoadTlsCertificate(X509 *& Certificate, EVP_PKEY *& PrivateKey);
   bool __fastcall TryStartOperationWithFile(

@@ -1827,52 +1827,15 @@ void __fastcall TWebDAVFileSystem::Sink(
   FTerminal->UpdateTargetAttrs(DestFullName, File, CopyParam, Attrs);
 }
 //---------------------------------------------------------------------------
-// Similar to TS3FileSystem::VerifyCertificate
 bool TWebDAVFileSystem::VerifyCertificate(TSessionContext * SessionContext, TNeonCertificateData Data, bool Aux)
 {
-  FSessionInfo.CertificateFingerprintSHA1 = Data.FingerprintSHA1;
-  FSessionInfo.CertificateFingerprintSHA256 = Data.FingerprintSHA256;
+  bool Result =
+    FTerminal->VerifyOrConfirmHttpCertificate(
+      SessionContext->HostName, SessionContext->PortNumber, Data, !Aux, FSessionInfo);
 
-  bool Result;
-  if (FTerminal->SessionData->FingerprintScan)
+  if (Result && !Aux && (SessionContext == FSessionContext))
   {
-    Result = false;
-  }
-  else
-  {
-    FTerminal->LogEvent(0, CertificateVerificationMessage(Data));
-
-    UnicodeString SiteKey = TSessionData::FormatSiteKey(SessionContext->HostName, SessionContext->PortNumber);
-    Result =
-      FTerminal->VerifyCertificate(
-        HttpsCertificateStorageKey, SiteKey, Data.FingerprintSHA1, Data.FingerprintSHA256, Data.Subject, Data.Failures);
-
-    if (Result)
-    {
-      FSessionInfo.CertificateVerifiedManually = true;
-    }
-    else
-    {
-      UnicodeString Message;
-      Result = NeonWindowsValidateCertificateWithMessage(Data, Message);
-      FTerminal->LogEvent(0, Message);
-    }
-
-    FSessionInfo.Certificate = CertificateSummary(Data, SessionContext->HostName);
-
-    if (!Result)
-    {
-      if (FTerminal->ConfirmCertificate(FSessionInfo, Data.Failures, HttpsCertificateStorageKey, !Aux))
-      {
-        Result = true;
-        FSessionInfo.CertificateVerifiedManually = true;
-      }
-    }
-
-    if (Result && !Aux && (SessionContext == FSessionContext))
-    {
-      CollectTLSSessionInfo();
-    }
+    CollectTLSSessionInfo();
   }
 
   return Result;
