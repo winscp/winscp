@@ -1127,6 +1127,7 @@ begin
 #ifdef ImagesDir
   Image := TBitmapImage.Create(DonationPanel);
   LoadEmbededBitmap(Image, '{#PayPalCardImage}');
+  Image.BackColor := DonationPanel.Color;
   Image.AutoSize := True;
   Image.Cursor := crHand;
   Image.Parent := DonationPanel;
