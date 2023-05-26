@@ -5,7 +5,7 @@ BEGIN
   // GitHub organization description
   // <meta name="description">
   DESCRIPTION_80_LETTERS3, "WinSCP is a free file manager for Windows supporting FTP, SFTP, S3 and WebDAV."
-  // REGISTERED_APP_DESC3
+  // REGISTERED_APP_DESC4
   // GitHub repository description
   // Facebook <meta property="og:description">
   DESCRIPTION_250_LETTERS3, "WinSCP is a popular free SFTP and FTP client for Windows, a powerful file manager that will improve your productivity. It supports also local-local mode and FTPS, S3, SCP and WebDAV protocols. Power users can automate WinSCP using .NET assembly."

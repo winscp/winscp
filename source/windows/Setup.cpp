@@ -510,7 +510,7 @@ static void __fastcall RegisterProtocolForDefaultPrograms(HKEY RootKey, const Un
     Abort();
   }
 
-  UnicodeString Description = LoadStr(REGISTERED_APP_DESC3);
+  UnicodeString Description = LoadStr(REGISTERED_APP_DESC4);
   Registry->WriteString(L"ApplicationDescription", Description);
 
   if (!Registry->OpenKey(L"UrlAssociations", true))
