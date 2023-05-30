@@ -134,7 +134,7 @@ CRYPTOOBJ= \
     $(OBJ_D)\bn_err.obj $(OBJ_D)\bn_sqr.obj $(OBJ_D)\bn_recp.obj $(OBJ_D)\bn_mont.obj \
     $(OBJ_D)\bn_mpi.obj $(OBJ_D)\bn_exp2.obj $(OBJ_D)\bn_gf2m.obj $(OBJ_D)\bn_nist.obj \
     $(OBJ_D)\bn_depr.obj $(OBJ_D)\bn_const.obj $(OBJ_D)\bn_intern.obj $(OBJ_D)\bn_dh.obj \
-    $(OBJ_D)\bn_srp.obj $(OBJ_D)\bn_conv.obj $(OBJ_D)\rsa_sup_mul.obj $(OBJ_D)\bn_rsa_fips186_4.obj \
+    $(OBJ_D)\bn_srp.obj $(OBJ_D)\bn_conv.obj $(OBJ_D)\bn_rsa_fips186_4.obj \
     $(OBJ_D)\rsa_ossl.obj $(OBJ_D)\rsa_gen.obj $(OBJ_D)\rsa_lib.obj $(OBJ_D)\rsa_sign.obj \
     $(OBJ_D)\rsa_saos.obj $(OBJ_D)\rsa_err.obj $(OBJ_D)\rsa_pk1.obj $(OBJ_D)\rsa_none.obj \
     $(OBJ_D)\rsa_oaep.obj $(OBJ_D)\rsa_chk.obj $(OBJ_D)\rsa_pss.obj $(OBJ_D)\rsa_x931.obj \
@@ -886,9 +886,6 @@ $(OBJ_D)\bn_srp.obj: $(SRC_D)\crypto\bn\bn_srp.c
 
 $(OBJ_D)\bn_conv.obj: $(SRC_D)\crypto\bn\bn_conv.c
     $(CC) -o$(OBJ_D)\bn_conv.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\bn\bn_conv.c
-
-$(OBJ_D)\rsa_sup_mul.obj: $(SRC_D)\crypto\bn\rsa_sup_mul.c
-    $(CC) -o$(OBJ_D)\rsa_sup_mul.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\bn\rsa_sup_mul.c
 
 $(OBJ_D)\bn_rsa_fips186_4.obj: $(SRC_D)\crypto\bn\bn_rsa_fips186_4.c
     $(CC) -o$(OBJ_D)\bn_rsa_fips186_4.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\bn\bn_rsa_fips186_4.c
