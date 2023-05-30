@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2011-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -21,6 +21,7 @@
 #include "crypto/rand_pool.h"
 #include "prov/provider_ctx.h"
 #include "prov/providercommon.h"
+#include "prov/fipscommon.h"
 #include "crypto/context.h"
 
 /*
@@ -257,7 +258,7 @@ static void cleanup_entropy(PROV_DRBG *drbg, unsigned char *out, size_t outlen)
     } else if (drbg->parent_clear_seed != NULL) {
         if (!ossl_drbg_lock_parent(drbg))
             return;
-        drbg->parent_clear_seed(drbg, out, outlen);
+        drbg->parent_clear_seed(drbg->parent, out, outlen);
         ossl_drbg_unlock_parent(drbg);
     }
 }
@@ -924,5 +925,33 @@ int ossl_drbg_set_ctx_params(PROV_DRBG *drbg, const OSSL_PARAM params[])
     p = OSSL_PARAM_locate_const(params, OSSL_DRBG_PARAM_RESEED_TIME_INTERVAL);
     if (p != NULL && !OSSL_PARAM_get_time_t(p, &drbg->reseed_time_interval))
         return 0;
+    return 1;
+}
+
+/* Confirm digest is allowed to be used with a DRBG */
+int ossl_drbg_verify_digest(ossl_unused OSSL_LIB_CTX *libctx, const EVP_MD *md)
+{
+#ifdef FIPS_MODULE
+    /* FIPS 140-3 IG D.R limited DRBG digests to a specific set */
+    static const char *const allowed_digests[] = {
+        "SHA1",                     /* SHA 1 allowed */
+        "SHA2-256", "SHA2-512",     /* non-truncated SHA2 allowed */
+        "SHA3-256", "SHA3-512",     /* non-truncated SHA3 allowed */
+    };
+    size_t i;
+
+    if (FIPS_restricted_drbg_digests_enabled(libctx)) {
+        for (i = 0; i < OSSL_NELEM(allowed_digests); i++)
+            if (EVP_MD_is_a(md, allowed_digests[i]))
+                return 1;
+        ERR_raise(ERR_LIB_PROV, PROV_R_DIGEST_NOT_ALLOWED);
+        return 0;
+    }
+#endif
+    /* Outside of FIPS, any digests that are not XOF are allowed */
+    if ((EVP_MD_get_flags(md) & EVP_MD_FLAG_XOF) != 0) {
+        ERR_raise(ERR_LIB_PROV, PROV_R_XOF_DIGESTS_NOT_ALLOWED);
+        return 0;
+    }
     return 1;
 }

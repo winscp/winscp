@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -65,9 +65,6 @@ static ossl_inline void objs_free_locks(void)
 
 DEFINE_RUN_ONCE_STATIC(obj_lock_initialise)
 {
-    /* Make sure we've loaded config before checking for any "added" objects */
-    OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CONFIG, NULL);
-
     ossl_obj_lock = CRYPTO_THREAD_lock_new();
     if (ossl_obj_lock == NULL)
         return 0;
@@ -84,6 +81,8 @@ DEFINE_RUN_ONCE_STATIC(obj_lock_initialise)
 
 static ossl_inline int ossl_init_added_lock(void)
 {
+    /* Make sure we've loaded config before checking for any "added" objects */
+    OPENSSL_init_crypto(OPENSSL_INIT_LOAD_CONFIG, NULL);
     return RUN_ONCE(&ossl_obj_lock_init, obj_lock_initialise);
 }
 
@@ -311,10 +310,9 @@ ASN1_OBJECT *OBJ_nid2obj(int n)
     ADDED_OBJ ad, *adp = NULL;
     ASN1_OBJECT ob;
 
-    if (n == NID_undef)
-        return NULL;
-    if (n >= 0 && n < NUM_NID && nid_objs[n].nid != NID_undef)
-            return (ASN1_OBJECT *)&(nid_objs[n]);
+    if (n == NID_undef
+        || (n > 0 && n < NUM_NID && nid_objs[n].nid != NID_undef))
+        return (ASN1_OBJECT *)&(nid_objs[n]);
 
     ad.type = ADDED_NID;
     ad.obj = &ob;
@@ -479,6 +477,25 @@ int OBJ_obj2txt(char *buf, int buf_len, const ASN1_OBJECT *a, int no_name)
 
     first = 1;
     bl = NULL;
+
+    /*
+     * RFC 2578 (STD 58) says this about OBJECT IDENTIFIERs:
+     *
+     * > 3.5. OBJECT IDENTIFIER values
+     * >
+     * > An OBJECT IDENTIFIER value is an ordered list of non-negative
+     * > numbers. For the SMIv2, each number in the list is referred to as a
+     * > sub-identifier, there are at most 128 sub-identifiers in a value,
+     * > and each sub-identifier has a maximum value of 2^32-1 (4294967295
+     * > decimal).
+     *
+     * So a legitimate OID according to this RFC is at most (32 * 128 / 7),
+     * i.e. 586 bytes long.
+     *
+     * Ref: https://datatracker.ietf.org/doc/html/rfc2578#section-3.5
+     */
+    if (len > 586)
+        goto err;
 
     while (len > 0) {
         l = 0;
@@ -743,16 +760,17 @@ int OBJ_create(const char *oid, const char *sn, const char *ln)
     if ((sn != NULL && OBJ_sn2nid(sn) != NID_undef)
             || (ln != NULL && OBJ_ln2nid(ln) != NID_undef)) {
         ERR_raise(ERR_LIB_OBJ, OBJ_R_OID_EXISTS);
-        goto err;
+        return 0;
     }
 
     /* Convert numerical OID string to an ASN1_OBJECT structure */
     tmpoid = OBJ_txt2obj(oid, 1);
     if (tmpoid == NULL)
-        goto err;
+        return 0;
 
     if (!ossl_obj_write_lock(1)) {
         ERR_raise(ERR_LIB_OBJ, ERR_R_UNABLE_TO_GET_WRITE_LOCK);
+        ASN1_OBJECT_free(tmpoid);
         return 0;
     }
 
