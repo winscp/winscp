@@ -3571,16 +3571,22 @@ UnicodeString __fastcall TCustomCommandType::GetCommandWithExpandedOptions(
     {
       UnicodeString OptionKey = GetOptionKey(Option, Site);
       UnicodeString OptionValue;
+      bool NeedEscape;
       if (CustomCommandOptions->IndexOfName(OptionKey) >= 0)
       {
         OptionValue = CustomCommandOptions->Values[OptionKey];
+        NeedEscape = true;
       }
       else
       {
         OptionValue = Option.Default;
+        NeedEscape = !Option.CanHavePatterns(); // approximation only?
       }
       UnicodeString OptionCommand = GetOptionCommand(Option, OptionValue);
-      OptionCommand = TCustomCommand::Escape(OptionCommand);
+      if (NeedEscape)
+      {
+        OptionCommand = TCustomCommand::Escape(OptionCommand);
+      }
       Result = ReplaceText(Result, FORMAT(L"%%%s%%", (Option.Id)), OptionCommand);
     }
   }
@@ -3627,23 +3633,27 @@ bool __fastcall TCustomCommandType::TOption::GetIsControl() const
   return (Id != L"-");
 }
 //---------------------------------------------------------------------------
-bool TCustomCommandType::TOption::HasPatterns(TCustomCommand * CustomCommandForOptions) const
+bool TCustomCommandType::TOption::CanHavePatterns() const
 {
-  bool CanHavePatterns;
+  bool Result;
   switch (Kind)
   {
     case okTextBox:
     case okFile:
-      CanHavePatterns = true;
+      Result = true;
       break;
 
     default:
-      CanHavePatterns = false;
+      Result = false;
       break;
   }
-
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool TCustomCommandType::TOption::HasPatterns(TCustomCommand * CustomCommandForOptions) const
+{
   bool Result =
-    CanHavePatterns &&
+    CanHavePatterns() &&
     FLAGSET(Flags, TCustomCommandType::ofRun) &&
     FLAGCLEAR(Flags, TCustomCommandType::ofConfig) &&
     CustomCommandForOptions->HasAnyPatterns(Default);
