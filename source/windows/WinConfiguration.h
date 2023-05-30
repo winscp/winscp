@@ -835,6 +835,7 @@ public:
 
     bool operator==(const TOption & Other) const;
     __property bool IsControl = { read = GetIsControl };
+    bool CanHavePatterns() const;
     bool HasPatterns(TCustomCommand * CustomCommandForOptions) const;
 
   private:
