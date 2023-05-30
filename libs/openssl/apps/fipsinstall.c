@@ -34,18 +34,20 @@ static int quiet = 0;
 
 typedef enum OPTION_choice {
     OPT_COMMON,
-    OPT_IN, OPT_OUT, OPT_MODULE,
+    OPT_IN, OPT_OUT, OPT_MODULE, OPT_PEDANTIC,
     OPT_PROV_NAME, OPT_SECTION_NAME, OPT_MAC_NAME, OPT_MACOPT, OPT_VERIFY,
     OPT_NO_LOG, OPT_CORRUPT_DESC, OPT_CORRUPT_TYPE, OPT_QUIET, OPT_CONFIG,
     OPT_NO_CONDITIONAL_ERRORS,
     OPT_NO_SECURITY_CHECKS,
     OPT_TLS_PRF_EMS_CHECK,
+    OPT_DISALLOW_DRGB_TRUNC_DIGEST,
     OPT_SELF_TEST_ONLOAD, OPT_SELF_TEST_ONINSTALL
 } OPTION_CHOICE;
 
 const OPTIONS fipsinstall_options[] = {
     OPT_SECTION("General"),
     {"help", OPT_HELP, '-', "Display this summary"},
+    {"pedantic", OPT_PEDANTIC, '-', "Set options for strict FIPS compliance"},
     {"verify", OPT_VERIFY, '-',
         "Verify a config file instead of generating one"},
     {"module", OPT_MODULE, '<', "File name of the provider module"},
@@ -63,14 +65,16 @@ const OPTIONS fipsinstall_options[] = {
      "Forces self tests to run once on module installation"},
     {"ems_check", OPT_TLS_PRF_EMS_CHECK, '-',
      "Enable the run-time FIPS check for EMS during TLS1_PRF"},
+    {"no_drbg_truncated_digests", OPT_DISALLOW_DRGB_TRUNC_DIGEST, '-',
+     "Disallow truncated digests with Hash and HMAC DRBGs"},
     OPT_SECTION("Input"),
     {"in", OPT_IN, '<', "Input config file, used when verifying"},
 
     OPT_SECTION("Output"),
     {"out", OPT_OUT, '>', "Output config file, used when generating"},
     {"mac_name", OPT_MAC_NAME, 's', "MAC name"},
-    {"macopt", OPT_MACOPT, 's', "MAC algorithm parameters in n:v form. "
-                                "See 'PARAMETER NAMES' in the EVP_MAC_ docs"},
+    {"macopt", OPT_MACOPT, 's', "MAC algorithm parameters in n:v form."},
+    {OPT_MORE_STR, 0, 0, "See 'PARAMETER NAMES' in the EVP_MAC_ docs"},
     {"noout", OPT_NO_LOG, '-', "Disable logging of self test events"},
     {"corrupt_desc", OPT_CORRUPT_DESC, 's', "Corrupt a self test by description"},
     {"corrupt_type", OPT_CORRUPT_TYPE, 's', "Corrupt a self test by type"},
@@ -78,6 +82,41 @@ const OPTIONS fipsinstall_options[] = {
     {"quiet", OPT_QUIET, '-', "No messages, just exit status"},
     {NULL}
 };
+
+typedef struct {
+    unsigned int self_test_onload : 1;
+    unsigned int conditional_errors : 1;
+    unsigned int security_checks : 1;
+    unsigned int tls_prf_ems_check : 1;
+    unsigned int drgb_no_trunc_dgst : 1;
+} FIPS_OPTS;
+
+/* Pedantic FIPS compliance */
+static const FIPS_OPTS pedantic_opts = {
+    1,      /* self_test_onload */
+    1,      /* conditional_errors */
+    1,      /* security_checks */
+    1,      /* tls_prf_ems_check */
+    1,      /* drgb_no_trunc_dgst */
+};
+
+/* Default FIPS settings for backward compatibility */
+static FIPS_OPTS fips_opts = {
+    1,      /* self_test_onload */
+    1,      /* conditional_errors */
+    1,      /* security_checks */
+    0,      /* tls_prf_ems_check */
+    0,      /* drgb_no_trunc_dgst */
+};
+
+static int check_non_pedantic_fips(int pedantic, const char *name)
+{
+    if (pedantic) {
+        BIO_printf(bio_err, "Cannot specify -%s after -pedantic\n", name);
+        return 0;
+    }
+    return 1;
+}
 
 static int do_mac(EVP_MAC_CTX *ctx, unsigned char *tmp, BIO *in,
                   unsigned char *out, size_t *out_len)
@@ -173,9 +212,7 @@ static int write_config_header(BIO *out, const char *prov_name,
 static int write_config_fips_section(BIO *out, const char *section,
                                      unsigned char *module_mac,
                                      size_t module_mac_len,
-                                     int conditional_errors,
-                                     int security_checks,
-                                     int ems_check,
+                                     const FIPS_OPTS *opts,
                                      unsigned char *install_mac,
                                      size_t install_mac_len)
 {
@@ -186,11 +223,13 @@ static int write_config_fips_section(BIO *out, const char *section,
         || BIO_printf(out, "%s = %s\n", OSSL_PROV_FIPS_PARAM_INSTALL_VERSION,
                       VERSION_VAL) <= 0
         || BIO_printf(out, "%s = %s\n", OSSL_PROV_FIPS_PARAM_CONDITIONAL_ERRORS,
-                      conditional_errors ? "1" : "0") <= 0
+                      opts->conditional_errors ? "1" : "0") <= 0
         || BIO_printf(out, "%s = %s\n", OSSL_PROV_FIPS_PARAM_SECURITY_CHECKS,
-                      security_checks ? "1" : "0") <= 0
+                      opts->security_checks ? "1" : "0") <= 0
         || BIO_printf(out, "%s = %s\n", OSSL_PROV_FIPS_PARAM_TLS1_PRF_EMS_CHECK,
-                      ems_check ? "1" : "0") <= 0
+                      opts->tls_prf_ems_check ? "1" : "0") <= 0
+        || BIO_printf(out, "%s = %s\n", OSSL_PROV_PARAM_DRBG_TRUNC_DIGEST,
+                      opts->drgb_no_trunc_dgst ? "1" : "0") <= 0
         || !print_mac(out, OSSL_PROV_FIPS_PARAM_MODULE_MAC, module_mac,
                       module_mac_len))
         goto end;
@@ -211,9 +250,7 @@ static CONF *generate_config_and_load(const char *prov_name,
                                       const char *section,
                                       unsigned char *module_mac,
                                       size_t module_mac_len,
-                                      int conditional_errors,
-                                      int security_checks,
-                                      int ems_check)
+                                      const FIPS_OPTS *opts)
 {
     BIO *mem_bio = NULL;
     CONF *conf = NULL;
@@ -224,10 +261,7 @@ static CONF *generate_config_and_load(const char *prov_name,
     if (!write_config_header(mem_bio, prov_name, section)
          || !write_config_fips_section(mem_bio, section,
                                        module_mac, module_mac_len,
-                                       conditional_errors,
-                                       security_checks,
-                                       ems_check,
-                                       NULL, 0))
+                                       opts, NULL, 0))
         goto end;
 
     conf = app_load_config_bio(mem_bio, NULL);
@@ -322,9 +356,7 @@ end:
 
 int fipsinstall_main(int argc, char **argv)
 {
-    int ret = 1, verify = 0, gotkey = 0, gotdigest = 0, self_test_onload = 1;
-    int enable_conditional_errors = 1, enable_security_checks = 1;
-    int enable_tls_prf_ems_check = 0; /* This is off by default */
+    int ret = 1, verify = 0, gotkey = 0, gotdigest = 0, pedantic = 0;
     const char *section_name = "fips_sect";
     const char *mac_name = "HMAC";
     const char *prov_name = "fips";
@@ -364,14 +396,25 @@ opthelp:
         case OPT_OUT:
             out_fname = opt_arg();
             break;
+        case OPT_PEDANTIC:
+            fips_opts = pedantic_opts;
+            pedantic = 1;
+            break;
         case OPT_NO_CONDITIONAL_ERRORS:
-            enable_conditional_errors = 0;
+            if (!check_non_pedantic_fips(pedantic, "no_conditional_errors"))
+                goto end;
+            fips_opts.conditional_errors = 0;
             break;
         case OPT_NO_SECURITY_CHECKS:
-            enable_security_checks = 0;
+            if (!check_non_pedantic_fips(pedantic, "no_security_checks"))
+                goto end;
+            fips_opts.security_checks = 0;
             break;
         case OPT_TLS_PRF_EMS_CHECK:
-            enable_tls_prf_ems_check = 1;
+            fips_opts.tls_prf_ems_check = 1;
+            break;
+        case OPT_DISALLOW_DRGB_TRUNC_DIGEST:
+            fips_opts.drgb_no_trunc_dgst = 1;
             break;
         case OPT_QUIET:
             quiet = 1;
@@ -412,10 +455,12 @@ opthelp:
             verify = 1;
             break;
         case OPT_SELF_TEST_ONLOAD:
-            self_test_onload = 1;
+            fips_opts.self_test_onload = 1;
             break;
         case OPT_SELF_TEST_ONINSTALL:
-            self_test_onload = 0;
+            if (!check_non_pedantic_fips(pedantic, "self_test_oninstall"))
+                goto end;
+            fips_opts.self_test_onload = 0;
             break;
         }
     }
@@ -509,7 +554,7 @@ opthelp:
     if (!do_mac(ctx, read_buffer, module_bio, module_mac, &module_mac_len))
         goto end;
 
-    if (self_test_onload == 0) {
+    if (fips_opts.self_test_onload == 0) {
         mem_bio = BIO_new_mem_buf((const void *)INSTALL_STATUS_VAL,
                                   strlen(INSTALL_STATUS_VAL));
         if (mem_bio == NULL) {
@@ -531,10 +576,7 @@ opthelp:
     } else {
 
         conf = generate_config_and_load(prov_name, section_name, module_mac,
-                                        module_mac_len,
-                                        enable_conditional_errors,
-                                        enable_security_checks,
-                                        enable_tls_prf_ems_check);
+                                        module_mac_len, &fips_opts);
         if (conf == NULL)
             goto end;
         if (!load_fips_prov_and_run_self_test(prov_name))
@@ -548,10 +590,7 @@ opthelp:
             goto end;
         }
         if (!write_config_fips_section(fout, section_name,
-                                       module_mac, module_mac_len,
-                                       enable_conditional_errors,
-                                       enable_security_checks,
-                                       enable_tls_prf_ems_check,
+                                       module_mac, module_mac_len, &fips_opts,
                                        install_mac, install_mac_len))
             goto end;
         if (!quiet)

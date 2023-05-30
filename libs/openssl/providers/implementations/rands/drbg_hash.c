@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2011-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -468,10 +468,8 @@ static int drbg_hash_set_ctx_params(void *vctx, const OSSL_PARAM params[])
 
     md = ossl_prov_digest_md(&hash->digest);
     if (md != NULL) {
-        if ((EVP_MD_get_flags(md) & EVP_MD_FLAG_XOF) != 0) {
-            ERR_raise(ERR_LIB_PROV, PROV_R_XOF_DIGESTS_NOT_ALLOWED);
-            return 0;
-        }
+        if (!ossl_drbg_verify_digest(libctx, md))
+            return 0;   /* Error already raised for us */
 
         /* These are taken from SP 800-90 10.1 Table 2 */
         hash->blocklen = EVP_MD_get_size(md);

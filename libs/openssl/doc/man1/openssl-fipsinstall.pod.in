@@ -19,9 +19,11 @@ B<openssl fipsinstall>
 [B<-macopt> I<nm>:I<v>]
 [B<-noout>]
 [B<-quiet>]
+[B<-pedantic>]
 [B<-no_conditional_errors>]
 [B<-no_security_checks>]
 [B<-ems_check>]
+[B<-no_drbg_truncated_digests>]
 [B<-self_test_onload>]
 [B<-self_test_oninstall>]
 [B<-corrupt_desc> I<selftest_description>]
@@ -157,6 +159,14 @@ The default digest is SHA-256.
 
 Disable logging of the self tests.
 
+=item B<-pedantic>
+
+Configure the module so that it is strictly FIPS compliant rather
+than being backwards compatible.  This enables conditional errors,
+security checks etc.  Note that any previous configuration options will
+be overwritten and any subsequent configuration options that violate
+FIPS compliance will result in an error.
+
 =item B<-no_conditional_errors>
 
 Configure the module to not enter an error state if a conditional self test
@@ -174,6 +184,11 @@ turn off the check at compile time.
 Configure the module to enable a run-time Extended Master Secret (EMS) check
 when using the TLS1_PRF KDF algorithm. This check is disabled by default.
 See RFC 7627 for information related to EMS.
+
+=item B<-no_drbg_truncated_digests>
+
+Configure the module to not allow truncated digests to be used with Hash and
+HMAC DRBGs.  See FIPS 140-3 IG D.R for details.
 
 =item B<-self_test_onload>
 

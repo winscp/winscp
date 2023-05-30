@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -405,6 +405,13 @@ static int test_handshake(int idx)
     test_ctx = SSL_TEST_CTX_create(conf, test_app, libctx);
     if (!TEST_ptr(test_ctx))
         goto err;
+
+    /* Verify that the FIPS provider supports this test */
+    if (test_ctx->fips_version != NULL
+                && !fips_provider_version_match(libctx, test_ctx->fips_version)) {
+            ret = TEST_skip("FIPS provider unable to run this test");
+            goto err;
+    }
 
 #ifndef OPENSSL_NO_DTLS
     if (test_ctx->method == SSL_TEST_METHOD_DTLS) {

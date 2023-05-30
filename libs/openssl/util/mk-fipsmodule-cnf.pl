@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2021 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2021-2023 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -8,9 +8,14 @@
 
 use Getopt::Long;
 
-my $activate = 1;
+# Module options for pedantic FIPS mode
+# self_test_onload happens if install_mac isn't included, don't add it below
 my $conditional_errors = 1;
 my $security_checks = 1;
+my $ems_check = 0;
+my $drgb_no_trunc_dgst = 0;
+
+my $activate = 1;
 my $mac_key;
 my $module_name;
 my $section_name = "fips_sect";
@@ -40,5 +45,7 @@ print <<_____;
 activate = $activate
 conditional-errors = $conditional_errors
 security-checks = $security_checks
+ems_check = $ems_check
+drgb_no_trunc_dgst = $drgb_no_trunc_dgst
 module-mac = $module_mac
 _____
