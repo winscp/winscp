@@ -1692,7 +1692,9 @@ end;
 procedure TCustomDirView.UpdatePathLabelCaption;
 begin
   PathLabel.Caption := PathName;
-  PathLabel.Mask := Mask;
+  // Do not display mask on otherwise empty label (i.e. on a disconnected remote panel)
+  if PathLabel.Caption <> '' then PathLabel.Mask := Mask
+    else PathLabel.Mask := '';
 end;
 
 procedure TCustomDirView.UpdatePathLabel;
