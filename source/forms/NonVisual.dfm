@@ -2413,6 +2413,22 @@ object NonVisualDataModule: TNonVisualDataModule
         'the file panel'
       ShortCut = 40973
     end
+    object LocalOtherDirAction: TAction
+      Tag = 9
+      Category = 'Local Directory'
+      Caption = 'Path fro&m Other Panel'
+      HelpKeyword = 'task_navigate#manual'
+      Hint = 'Open the same directory as in the other panel'
+      ShortCut = 16574
+    end
+    object RemoteOtherDirAction: TAction
+      Tag = 14
+      Category = 'Remote Directory'
+      Caption = 'Path fro&m Other Panel'
+      HelpKeyword = 'task_navigate#manual'
+      Hint = 'Open the same directory as in the other panel'
+      ShortCut = 16574
+    end
   end
   object ExplorerBarPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
@@ -2664,6 +2680,9 @@ object NonVisualDataModule: TNonVisualDataModule
       object TBXItem89: TTBXItem
         Action = RemoteHomeDirAction
       end
+      object TBXItem109: TTBXItem
+        Action = RemoteOtherDirAction
+      end
       object TBXSeparatorItem14: TTBXSeparatorItem
       end
       object TBXItem90: TTBXItem
@@ -2744,6 +2763,9 @@ object NonVisualDataModule: TNonVisualDataModule
       end
       object TBXItem96: TTBXItem
         Action = LocalHomeDirAction
+      end
+      object TBXItem113: TTBXItem
+        Action = LocalOtherDirAction
       end
       object TBXSeparatorItem16: TTBXSeparatorItem
       end

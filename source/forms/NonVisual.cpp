@@ -293,6 +293,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     UPD(SIDE ## HomeDirAction, DirViewEnabled(os ## SIDE)) \
     UPD(SIDE ## RefreshAction, DirViewEnabled(os ## SIDE) && DirView(os ## SIDE)->DirOK) \
     UPD(SIDE ## OpenDirAction, DirViewEnabled(os ## SIDE)) \
+    UPD(SIDE ## OtherDirAction, ScpExplorer->IsLocalBrowserMode() && !SamePaths(DirView(osLocal)->Path, DirView(osOther)->Path)) \
     UPD(SIDE ## ChangePathAction2, DirViewEnabled(os ## SIDE)) \
     UPD(SIDE ## AddBookmarkAction2, DirViewEnabled(os ## SIDE)) \
     UPD(SIDE ## PathToClipboardAction2, DirViewEnabled(os ## SIDE)) \
@@ -641,6 +642,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
       EXE(SIDE ## HomeDirAction, ScpExplorer->HomeDirectory(os ## SIDE)) \
       EXE(SIDE ## RefreshAction, ScpExplorer->ReloadDirectory(os ## SIDE)) \
       EXE(SIDE ## OpenDirAction, ScpExplorer->OpenDirectory(os ## SIDE)) \
+      EXE(SIDE ## OtherDirAction, DirView(os ## SIDE)->Path = DirView(ScpExplorer->GetOtherSide(os ## SIDE))->Path) \
       EXE(SIDE ## ChangePathAction2, ScpExplorer->ChangePath(os ## SIDE)) \
       EXE(SIDE ## AddBookmarkAction2, ScpExplorer->AddBookmark(os ## SIDE)) \
       EXE(SIDE ## PathToClipboardAction2, ScpExplorer->PanelExport(os ## SIDE, pePath, pedClipboard)) \

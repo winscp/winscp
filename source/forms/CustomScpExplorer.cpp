@@ -3063,6 +3063,24 @@ TOperationSide __fastcall TCustomScpExplorerForm::GetSide(TOperationSide Side)
   return Side;
 }
 //---------------------------------------------------------------------------
+TOperationSide TCustomScpExplorerForm::GetOtherSide(TOperationSide Side)
+{
+  TOperationSide Result;
+  switch (GetSide(Side))
+  {
+    case osLocal:
+      Result = osOther;
+      break;
+    case osOther:
+      Result = osLocal;
+      break;
+    default:
+      DebugFail();
+      Abort();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Operation,
   TOperationSide Side, bool OnFocused, bool NoConfirmation, void * Param)
 {

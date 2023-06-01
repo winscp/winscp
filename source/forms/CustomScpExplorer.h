@@ -793,6 +793,7 @@ public:
   bool CanCloseSession(TManagedTerminal * Session);
   virtual UnicodeString __fastcall DefaultDownloadTargetDirectory() = 0;
   virtual bool SupportedSession(TSessionData * SessionData) = 0;
+  TOperationSide GetOtherSide(TOperationSide Side);
 
   void __fastcall NewSession(const UnicodeString & SessionUrl = L"");
   virtual void NewTab(TOperationSide Side = osCurrent, bool AllowReverse = true);

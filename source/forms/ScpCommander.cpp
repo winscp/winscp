@@ -2785,19 +2785,7 @@ void TScpCommanderForm::LocalLocalCopy(
       Abort();
   }
 
-  TOperationSide OtherSide;
-  switch (GetSide(Side))
-  {
-    case osLocal:
-      OtherSide = osOther;
-      break;
-    case osOther:
-      OtherSide = osLocal;
-      break;
-    default:
-      DebugFail();
-      Abort();
-  }
+  TOperationSide OtherSide = GetOtherSide(GetSide(Side));
 
   TCustomDirView * SourceDirView = DirView(Side);
   UnicodeString DestinationDir = DirView(OtherSide)->PathName;

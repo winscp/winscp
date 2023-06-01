@@ -70,6 +70,9 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXItem6: TTBXItem
             Action = NonVisualDataModule.LocalHomeDirAction
           end
+          object TBXItem262: TTBXItem
+            Action = NonVisualDataModule.LocalOtherDirAction
+          end
           object TBXSeparatorItem3: TTBXSeparatorItem
           end
           object TBXItem7: TTBXItem
@@ -672,6 +675,9 @@ inherited ScpCommanderForm: TScpCommanderForm
           end
           object TBXItem87: TTBXItem
             Action = NonVisualDataModule.RemoteHomeDirAction
+          end
+          object TBXItem261: TTBXItem
+            Action = NonVisualDataModule.RemoteOtherDirAction
           end
           object TBXSeparatorItem26: TTBXSeparatorItem
           end

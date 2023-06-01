@@ -695,6 +695,10 @@ __published:    // IDE-managed Components
   TTBXItem *RemoteCalculateDirectorySizesPopupItem;
   TTBXItem *LocalCalculateDirectorySizesPopupItem;
   TTBXItem *TBXItem112;
+  TAction *LocalOtherDirAction;
+  TAction *RemoteOtherDirAction;
+  TTBXItem *TBXItem109;
+  TTBXItem *TBXItem113;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);
