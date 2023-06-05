@@ -282,5 +282,6 @@ protected:
 //---------------------------------------------------------------------------
 UnicodeString __fastcall PuttyMungeStr(const UnicodeString & Str);
 AnsiString PuttyStr(const UnicodeString & Str);
+TIntMapping CreateIntMappingFromEnumNames(const UnicodeString & Names);
 //---------------------------------------------------------------------------
 #endif

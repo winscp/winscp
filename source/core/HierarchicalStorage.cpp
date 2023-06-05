@@ -129,6 +129,20 @@ TIntMapping CreateIntMapping(
   return Result;
 }
 //---------------------------------------------------------------------------
+TIntMapping CreateIntMappingFromEnumNames(const UnicodeString & ANames)
+{
+  UnicodeString Names(ANames);
+  TIntMapping Result;
+  int Index = 0;
+  while (!Names.IsEmpty())
+  {
+    UnicodeString Name = CutToChar(Names, L';', true);
+    Result.insert(std::make_pair(Name, Index));
+    Index++;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 TIntMapping AutoSwitchMapping = CreateIntMapping(L"on", asOn, L"off", asOff, L"auto", asAuto);
 TIntMapping AutoSwitchReversedMapping = CreateIntMapping(L"on", asOff, L"off", asOn, L"auto", asAuto);
 TIntMapping BoolMapping = CreateIntMapping(L"on", true, L"off", false);

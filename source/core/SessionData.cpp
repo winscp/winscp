@@ -30,6 +30,7 @@
 //---------------------------------------------------------------------------
 const wchar_t * PingTypeNames = L"Off;Null;Dummy";
 const wchar_t * ProxyMethodNames = L"None;SOCKS4;SOCKS5;HTTP;Telnet;Cmd";
+TIntMapping ProxyMethodMapping = CreateIntMappingFromEnumNames(LowerCase(ProxyMethodNames));
 const wchar_t * DefaultName = L"Default Settings";
 const UnicodeString CipherNames[CIPHER_COUNT] = {L"WARN", L"3des", L"blowfish", L"aes", L"des", L"arcfour", L"chacha20", "aesgcm"};
 const UnicodeString KexNames[KEX_COUNT] = {L"WARN", L"dh-group1-sha1", L"dh-group14-sha1", L"dh-group15-sha512", L"dh-group16-sha512", L"dh-group17-sha512", L"dh-group18-sha512", L"dh-gex-sha1", L"rsa", L"ecdh", L"ntru-curve25519"};
@@ -799,7 +800,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   ProtocolFeatures = Storage->ReadString(L"ProtocolFeatures", ProtocolFeatures);
   SshSimple = Storage->ReadBool(L"SshSimple", SshSimple);
 
-  ProxyMethod = (TProxyMethod)Storage->ReadInteger(L"ProxyMethod", ProxyMethod);
+  ProxyMethod = Storage->ReadEnum(L"ProxyMethod", ProxyMethod, ProxyMethodMapping);
   ProxyHost = Storage->ReadString(L"ProxyHost", ProxyHost);
   ProxyPort = Storage->ReadInteger(L"ProxyPort", ProxyPort);
   ProxyUsername = Storage->ReadString(L"ProxyUsername", ProxyUsername);
