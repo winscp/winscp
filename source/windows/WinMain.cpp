@@ -830,6 +830,7 @@ bool __fastcall ShowUpdatesIfAvailable()
 //---------------------------------------------------------------------------
 int __fastcall Execute()
 {
+  std::unique_ptr<TStartupThread> StartupThreadOwner(StartupThread);
   AddStartupSequence(L"E");
   DebugAssert(StoredSessions);
   TProgramParams * Params = TProgramParams::Instance();
@@ -1389,7 +1390,6 @@ int __fastcall Execute()
     GlyphsModule = NULL;
     TTerminalManager::DestroyInstance();
     delete CommandParams;
-    delete StartupThread;
   }
 
   return 0;
