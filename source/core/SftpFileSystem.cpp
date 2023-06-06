@@ -3251,8 +3251,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
       Packet.AddInt64(LOWORD(FTerminal->Configuration->FixedApplicationInfo->dwFileVersionLS));
       SendPacket(&Packet);
       // we are not interested in the response, do not wait for it
-      ReceiveResponse(&Packet, &Packet);
-      //ReserveResponse(&Packet, NULL);
+      ReserveResponse(&Packet, NULL);
     }
   }
 
