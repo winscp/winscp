@@ -1455,7 +1455,11 @@ void __fastcall TFTPFileSystem::DoFileTransferProgress(__int64 TransferSize,
 
   if (FFileTransferResumed > 0)
   {
-    OperationProgress->AddResumed(FFileTransferResumed);
+    // Bytes will be 0, if resume was not possible
+    if (Bytes >= FFileTransferResumed)
+    {
+      OperationProgress->AddResumed(FFileTransferResumed);
+    }
     FFileTransferResumed = 0;
   }
 
