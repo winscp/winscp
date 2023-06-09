@@ -154,6 +154,7 @@
 #define SFTP_EXT_COPY_FILE L"copy-file"
 #define SFTP_EXT_COPY_DATA L"copy-data"
 #define SFTP_EXT_LIMITS L"limits@openssh.com"
+#define SFTP_EXT_LIMITS_VALUE_V1 L"1"
 //---------------------------------------------------------------------------
 #define OGQ_LIST_OWNERS 0x01
 #define OGQ_LIST_GROUPS 0x02
@@ -3046,6 +3047,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
   FSupport->Loaded = false;
   FSupportsStatVfsV2 = false;
   FSupportsHardlink = false;
+  bool SupportsLimits = false;
   SAFE_DESTROY(FFixedPaths);
 
   if (FVersion >= 3)
@@ -3224,7 +3226,15 @@ void __fastcall TSFTPFileSystem::DoStartup()
       else if (ExtensionName == SFTP_EXT_LIMITS)
       {
         UnicodeString LimitsVersion = AnsiToString(ExtensionData);
-        FTerminal->LogEvent(FORMAT(L"Supports %s extension version %s", (ExtensionName, LimitsVersion)));
+        if (LimitsVersion == SFTP_EXT_LIMITS_VALUE_V1)
+        {
+          SupportsLimits = true;
+          FTerminal->LogEvent(FORMAT(L"Supports %s extension version %s", (ExtensionName, LimitsVersion)));
+        }
+        else
+        {
+          FTerminal->LogEvent(FORMAT(L"Unsupported %s extension version %s", (ExtensionName, LimitsVersion)));
+        }
       }
       // See the comment in SupportsExtension
       else if ((ExtensionName == SFTP_EXT_COPY_FILE) ||
@@ -3311,9 +3321,20 @@ void __fastcall TSFTPFileSystem::DoStartup()
   FMaxPacketSize = FTerminal->SessionData->SFTPMaxPacketSize;
   if (FMaxPacketSize == 0)
   {
-    if ((FSecureShell->SshImplementation == sshiOpenSSH) && (FVersion == 3) && !FSupport->Loaded)
+    unsigned int PacketPayload = 4;
+    if (SupportsLimits)
     {
-      FMaxPacketSize = 4 + (256 * 1024); // len + 256kB payload
+      TSFTPPacket Packet(SSH_FXP_EXTENDED);
+      Packet.AddString(SFTP_EXT_LIMITS);
+      SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_EXTENDED_REPLY);
+      unsigned int MaxPacketSize = std::min(static_cast<__int64>(std::numeric_limits<unsigned long>::max()), Packet.GetInt64());
+      FTerminal->LogEvent(FORMAT(L"Limiting packet size to server's limit of %d + %d bytes",
+        (static_cast<int>(MaxPacketSize), static_cast<int>(PacketPayload))));
+      FMaxPacketSize = MaxPacketSize + PacketPayload;
+    }
+    else if ((FSecureShell->SshImplementation == sshiOpenSSH) && (FVersion == 3) && !FSupport->Loaded)
+    {
+      FMaxPacketSize = PacketPayload + (256 * 1024); // len + 256kB payload
       FTerminal->LogEvent(FORMAT(L"Limiting packet size to OpenSSH sftp-server limit of %d bytes",
         (int(FMaxPacketSize))));
     }
@@ -3321,7 +3342,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
     // possibly it is sshlib-related
     else if (GetSessionInfo().SshImplementation.Pos(L"Momentum SSH Server") != 0)
     {
-      FMaxPacketSize = 4 + (32 * 1024);
+      FMaxPacketSize = PacketPayload + (32 * 1024);
       FTerminal->LogEvent(FORMAT(L"Limiting packet size to Momentum sftp-server limit of %d bytes",
         (int(FMaxPacketSize))));
     }
