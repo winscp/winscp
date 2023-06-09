@@ -112,11 +112,6 @@ bool __fastcall TEditorData::operator==(const TEditorData & rhd) const
 //---------------------------------------------------------------------------
 void __fastcall TEditorData::ExternalEditorOptionsAutodetect()
 {
-  // By default we use default transfer mode (binary),
-  // as all reasonable 3rd party editors support all EOL styles.
-  // A notable exception is Windows Notepad, so here's an exception for it.
-  // Notepad support unix line endings since Windows 10 1809. Once that's widespread, remove this.
-
   UnicodeString Command = ExternalEditor;
   ReformatFileNameCommand(Command);
   UnicodeString ProgramName = ExtractProgramName(Command);
@@ -126,7 +121,11 @@ void __fastcall TEditorData::ExternalEditorOptionsAutodetect()
   UnicodeString NotepadProgramName = ExtractProgramName(NotepadName);
   if (SameText(ProgramName, NotepadProgramName))
   {
-    ExternalEditorText = true;
+    // By default we use default transfer mode (binary),
+    // as all reasonable 3rd party editors support all EOL styles.
+    // A notable exception is Windows Notepad before Windows 10 1809, so here's an exception for it.
+    ExternalEditorText = !IsWin10Build(17763);
+
     SDIExternalEditor = true;
   }
 }
