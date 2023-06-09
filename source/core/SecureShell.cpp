@@ -1803,7 +1803,14 @@ void inline __fastcall TSecureShell::CheckConnection(int Message)
     {
       Str += L" " + FMTLOAD(SSH_EXITCODE, (ExitCode));
     }
-    FatalError(Str, HelpKeyword);
+    if (!FClosed)
+    {
+      FatalError(Str, HelpKeyword);
+    }
+    else
+    {
+      LogEvent(FORMAT(L"Ignoring closed connection: %s", (Str)));
+    }
   }
 }
 //---------------------------------------------------------------------------
