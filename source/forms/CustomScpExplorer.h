@@ -906,6 +906,7 @@ public:
   virtual int GetNewTabActionImageIndex();
   virtual int GetNewTabTabImageIndex(TOperationSide Side);
   void CalculateDirectorySizes(TOperationSide Side);
+  void AutoSizeColumns(TOperationSide Side);
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

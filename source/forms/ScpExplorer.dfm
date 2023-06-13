@@ -540,10 +540,9 @@ inherited ScpExplorerForm: TScpExplorerForm
             GroupIndex = 1
           end
         end
-        object TBXSubmenuItem17: TTBXSubmenuItem
-          Caption = 'Show &Columns'
+        object ColumndsSubmenuItem: TTBXSubmenuItem
+          Caption = '&Columns'
           HelpKeyword = 'ui_file_panel#selecting_columns'
-          Hint = 'Select columns to show in panel'
           object TBXItem101: TTBXItem
             Action = NonVisualDataModule.ShowHideRemoteNameColumnAction2
           end
@@ -567,6 +566,11 @@ inherited ScpExplorerForm: TScpExplorerForm
           end
           object TBXItem76: TTBXItem
             Action = NonVisualDataModule.ShowHideRemoteLinkTargetColumnAction2
+          end
+          object TBXSeparatorItem73: TTBXSeparatorItem
+          end
+          object TBXItem264: TTBXItem
+            Action = NonVisualDataModule.AutoSizeRemoteColumnsAction
           end
         end
         object TBXItem138: TTBXItem

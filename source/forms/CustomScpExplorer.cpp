@@ -11943,3 +11943,17 @@ void __fastcall TCustomScpExplorerForm::MessageDockRequestDock(TObject *, TTBCus
   Accept = false;
 }
 //---------------------------------------------------------------------------
+void TCustomScpExplorerForm::AutoSizeColumns(TOperationSide Side)
+{
+  // Send Ctrl+Gray+ to the list view
+  TKeyboardState KeyState;
+  GetKeyboardState(KeyState);
+  TKeyboardState NewKeyState;
+  memset(NewKeyState, 0, sizeof(NewKeyState));
+  NewKeyState[VK_CONTROL] = 0x81;
+  SetKeyboardState(NewKeyState);
+
+  SendMessage(DirView(Side)->Handle, WM_KEYDOWN, VK_ADD, 0);
+  SetKeyboardState(KeyState);
+}
+//---------------------------------------------------------------------------

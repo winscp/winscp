@@ -86,6 +86,14 @@ object NonVisualDataModule: TNonVisualDataModule
     OnUpdate = ExplorerActionsUpdate
     Left = 440
     Top = 24
+    object AutoSizeRemoteColumnsAction: TAction
+      Tag = 12
+      Category = 'Columns'
+      Caption = 'Size &Automatically'
+      HelpKeyword = 'ui_file_panel#selecting_columns'
+      Hint = 'Adjust columns width to fit their contents'
+      ShortCut = 16491
+    end
     object RemoteCopyQueueAction: TAction
       Tag = 14
       Category = 'Remote Selected Operation'
@@ -188,11 +196,13 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Download|Download selected remote file(s) to local directory'
       ImageIndex = 89
     end
-    object BestFitColumnAction: TAction
-      Tag = 15
+    object AutoSizeLocalColumnsAction: TAction
+      Tag = 8
       Category = 'Columns'
-      Caption = '&Best Fit'
-      Hint = 'Best fit|Adjust column width to fit its content'
+      Caption = 'Size &Automatically'
+      HelpKeyword = 'ui_file_panel#selecting_columns'
+      Hint = 'Adjust columns width to fit their contents'
+      ShortCut = 16491
     end
     object GoToTreeAction: TAction
       Tag = 15
@@ -2860,10 +2870,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXSeparatorItem8: TTBXSeparatorItem
     end
-    object Showcolumns3: TTBXSubmenuItem
-      Caption = 'Show &Columns'
+    object LocalColumnsSubmenuItem: TTBXSubmenuItem
+      Caption = '&Columns'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 'Select columns to show in panel'
       object Name3: TTBXItem
         Action = ShowHideLocalNameColumnAction2
       end
@@ -2878,6 +2887,11 @@ object NonVisualDataModule: TNonVisualDataModule
       end
       object Attributes3: TTBXItem
         Action = ShowHideLocalAttrColumnAction2
+      end
+      object TBXSeparatorItem73: TTBXSeparatorItem
+      end
+      object TBXItem264: TTBXItem
+        Action = AutoSizeLocalColumnsAction
       end
     end
   end
@@ -2921,10 +2935,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXSeparatorItem7: TTBXSeparatorItem
     end
-    object Showcolumns4: TTBXSubmenuItem
-      Caption = 'Show &Columns'
+    object RemoteColumnsSubmenuItem: TTBXSubmenuItem
+      Caption = '&Columns'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 'Select columns to show in panel'
       object Name4: TTBXItem
         Action = ShowHideRemoteNameColumnAction2
       end
@@ -2948,6 +2961,11 @@ object NonVisualDataModule: TNonVisualDataModule
       end
       object TBXItem1: TTBXItem
         Action = ShowHideRemoteLinkTargetColumnAction2
+      end
+      object TBXSeparatorItem20: TTBXSeparatorItem
+      end
+      object TBXItem114: TTBXItem
+        Action = AutoSizeRemoteColumnsAction
       end
     end
   end

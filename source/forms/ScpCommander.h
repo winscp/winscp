@@ -108,7 +108,7 @@ __published:
   TTBXItem *TBXItem16;
   TTBXItem *TBXItem17;
   TTBXItem *TBXItem18;
-  TTBXSubmenuItem *TBXSubmenuItem4;
+  TTBXSubmenuItem *LocalColumnsSubmenuItem;
   TTBXItem *TBXItem19;
   TTBXItem *TBXItem20;
   TTBXItem *TBXItem21;
@@ -233,7 +233,7 @@ __published:
   TTBXItem *TBXItem98;
   TTBXItem *TBXItem99;
   TTBXItem *TBXItem100;
-  TTBXSubmenuItem *TBXSubmenuItem17;
+  TTBXSubmenuItem *RemoteColumnsSubmenuItem;
   TTBXItem *TBXItem101;
   TTBXItem *TBXItem102;
   TTBXItem *TBXItem103;
@@ -460,6 +460,10 @@ __published:
   TTBXItem *TBXItem260;
   TTBXItem *TBXItem261;
   TTBXItem *TBXItem262;
+  TTBXSeparatorItem *TBXSeparatorItem72;
+  TTBXItem *TBXItem263;
+  TTBXSeparatorItem *TBXSeparatorItem73;
+  TTBXItem *TBXItem264;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);

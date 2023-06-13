@@ -388,6 +388,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDEX(SortColumnDescendingAction, (ListColumn != NULL), SortColumnDescendingAction->Checked =
     (COLVIEWPROPS->SortColumn == ListColumn->Index) && !COLVIEWPROPS->SortAscending, )
   #undef COLVIEWPROPS
+  UPD(AutoSizeLocalColumnsAction, DirViewEnabled(osLocal));
+  UPD(AutoSizeRemoteColumnsAction, DirViewEnabled(osRemote));
 
   // SHOW/HIDE COLUMN
   #define UPDSHCOLL(NAME) UPDSHCOL(Local, NAME, dv ## NAME, -1)
@@ -408,7 +410,6 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDSHCOL(Remote, LinkTarget, -1, uvLinkTarget)
   UPDSHCOL(Remote, Type, dvType, uvType)
   UPD(HideColumnAction, (ListColumn != NULL))
-  UPD(BestFitColumnAction, (ListColumn != NULL))
 
   // SESSION
   UPDACT(NewTabAction, Action->ImageIndex = ScpExplorer->GetNewTabActionImageIndex())
@@ -729,6 +730,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
       COLVIEWPROPS->SortColumn = ListColumn->Index; COLVIEWPROPS->SortAscending = true; ListColumn = NULL )
     EXE(SortColumnDescendingAction, DebugAssert(ListColumn);
       COLVIEWPROPS->SortColumn = ListColumn->Index; COLVIEWPROPS->SortAscending = false; ListColumn = NULL )
+    EXE(AutoSizeLocalColumnsAction, ScpExplorer->AutoSizeColumns(osLocal))
+    EXE(AutoSizeRemoteColumnsAction, ScpExplorer->AutoSizeColumns(osRemote))
 
     // SHOW/HIDE COLUMN
     #define EXESHCOLL(NAME) EXESHCOL(Local, NAME, dv ## NAME, -1)
@@ -750,7 +753,6 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXESHCOL(Remote, Type, dvType, uvType)
     EXE(HideColumnAction, DebugAssert(ListColumn);
       COLVIEWPROPS->Visible[ListColumn->Index] = false; ListColumn = NULL )
-    EXE(BestFitColumnAction, DebugAssert(ListColumn); ListColumn = NULL ) // TODO
     #undef COLVIEWPROPS
 
     // SESSION
