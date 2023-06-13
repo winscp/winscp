@@ -2858,9 +2858,6 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = ShowHideLocalAttrColumnAction2
       end
     end
-    object TBXItem112: TTBXItem
-      Action = RemoteCalculateDirectorySizesAction
-    end
   end
   object RemoteDirViewColumnPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
