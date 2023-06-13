@@ -694,7 +694,6 @@ __published:    // IDE-managed Components
   TAction *RemoteCalculateDirectorySizesAction;
   TTBXItem *RemoteCalculateDirectorySizesPopupItem;
   TTBXItem *LocalCalculateDirectorySizesPopupItem;
-  TTBXItem *TBXItem112;
   TAction *LocalOtherDirAction;
   TAction *RemoteOtherDirAction;
   TTBXItem *TBXItem109;
