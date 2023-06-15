@@ -39,23 +39,9 @@ void __fastcall TFileBuffer::SetSize(int value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileBuffer::SetPosition(int value)
+void TFileBuffer::Reset()
 {
-  FMemory->Position = value;
-}
-//---------------------------------------------------------------------------
-int __fastcall TFileBuffer::GetPosition() const
-{
-  return (int)FMemory->Position;
-}
-//---------------------------------------------------------------------------
-void __fastcall TFileBuffer::SetMemory(TMemoryStream * value)
-{
-  if (FMemory != value)
-  {
-    if (FMemory) delete FMemory;
-    FMemory = value;
-  }
+  FMemory->Position = 0;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileBuffer::ProcessRead(DWORD Len, DWORD Result)
@@ -67,22 +53,27 @@ void __fastcall TFileBuffer::ProcessRead(DWORD Len, DWORD Result)
   FMemory->Seek(Result, soCurrent);
 }
 //---------------------------------------------------------------------------
+void TFileBuffer::NeedSpace(DWORD Size)
+{
+  Size = GetPosition() + Size;
+}
+//---------------------------------------------------------------------------
 DWORD __fastcall TFileBuffer::ReadStream(TStream * Stream, const DWORD Len, bool ForceLen)
 {
   DWORD Result;
   try
   {
-    Size = Position + Len;
+    NeedSpace(Len);
     // C++5
     // FMemory->SetSize(FMemory->Position + Len);
     if (ForceLen)
     {
-      Stream->ReadBuffer(Data + Position, Len);
+      Stream->ReadBuffer(GetPointer(), Len);
       Result = Len;
     }
     else
     {
-      Result = Stream->Read(Data + Position, Len);
+      Result = Stream->Read(GetPointer(), Len);
     }
     ProcessRead(Len, Result);
   }
@@ -102,9 +93,9 @@ DWORD __fastcall TFileBuffer::LoadStream(TStream * Stream, const DWORD Len, bool
 DWORD __fastcall TFileBuffer::LoadFromIn(TTransferInEvent OnTransferIn, TObject * Sender, DWORD Len)
 {
   FMemory->Seek(0, soFromBeginning);
-  DebugAssert(Position == 0);
-  Size = Position + Len;
-  size_t Result = OnTransferIn(Sender, reinterpret_cast<unsigned char *>(Data) + Position, Len);
+  DebugAssert(GetPosition() == 0);
+  NeedSpace(Len);
+  size_t Result = OnTransferIn(Sender, reinterpret_cast<unsigned char *>(GetPointer()), Len);
   ProcessRead(Len, Result);
   return Result;
 }
@@ -240,7 +231,7 @@ void __fastcall TFileBuffer::WriteToStream(TStream * Stream, const DWORD Len)
 {
   try
   {
-    Stream->WriteBuffer(Data + Position, Len);
+    Stream->WriteBuffer(GetPointer(), Len);
     FMemory->Seek(Len, soCurrent);
   }
   catch(EWriteError &)
@@ -251,7 +242,7 @@ void __fastcall TFileBuffer::WriteToStream(TStream * Stream, const DWORD Len)
 //---------------------------------------------------------------------------
 void __fastcall TFileBuffer::WriteToOut(TTransferOutEvent OnTransferOut, TObject * Sender, const DWORD Len)
 {
-  OnTransferOut(Sender, reinterpret_cast<const unsigned char *>(Data) + Position, Len);
+  OnTransferOut(Sender, reinterpret_cast<const unsigned char *>(GetPointer()), Len);
   FMemory->Seek(Len, soCurrent);
 }
 //---------------------------------------------------------------------------

@@ -2716,7 +2716,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
                 do
                 {
                   BlockBuf.Size = OperationProgress->TransferBlockSize();
-                  BlockBuf.Position = 0;
+                  BlockBuf.Reset();
 
                   FSecureShell->Receive(reinterpret_cast<unsigned char *>(BlockBuf.Data), BlockBuf.Size);
                   OperationProgress->AddTransferred(BlockBuf.Size);
