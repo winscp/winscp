@@ -5,6 +5,7 @@
 #include "Http.h"
 #include "NeonIntf.h"
 #include "Exceptions.h"
+#include "CoreMain.h"
 #include "ne_request.h"
 #include "TextsCore.h"
 #include <openssl/ssl.h>
@@ -234,12 +235,22 @@ int THttp::NeonServerSSLCallbackImpl(int Failures, const ne_ssl_certificate * Ce
   UnicodeString WindowsCertificateError;
   if (Failures != 0)
   {
-    NeonWindowsValidateCertificate(Failures, AsciiCert, WindowsCertificateError);
+    AppLogFmt(L"TLS failure: %s (%d)", (NeonCertificateFailuresErrorStr(Failures, FHostName), Failures));
+    AppLogFmt(L"Hostname: %s, Certificate: %s", (FHostName, AsciiCert, AsciiCert));
+    if (NeonWindowsValidateCertificate(Failures, AsciiCert, WindowsCertificateError))
+    {
+      AppLogFmt(L"Certificate trusted by Windows certificate store (%d)", (Failures));
+    }
+    if (!WindowsCertificateError.IsEmpty())
+    {
+      AppLogFmt(L"Error from Windows certificate store: %s", (WindowsCertificateError));
+    }
   }
 
   if (Failures != 0)
   {
     FCertificateError = NeonCertificateFailuresErrorStr(Failures, FHostName);
+    AppLogFmt(L"TLS certificate error: %s", (FCertificateError));
     AddToList(FCertificateError, WindowsCertificateError, L"\n");
   }
 

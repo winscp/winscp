@@ -875,6 +875,10 @@ static THttp * __fastcall CreateHttp(const TUpdatesConfiguration & Updates)
       break;
   }
 
+  if (!ProxyHost.IsEmpty())
+  {
+    AppLogFmt("Using proxy: %s:%d", (ProxyHost, ProxyPort));
+  }
   Http->ProxyHost = ProxyHost;
   Http->ProxyPort = ProxyPort;
 
@@ -944,6 +948,7 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
     {
       if (CheckForUpdatesHTTP->IsCertificateError())
       {
+        AppLog(L"Certificate error detected.");
         Configuration->Usage->Inc(L"UpdateCertificateErrors");
       }
       throw;

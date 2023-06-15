@@ -1628,6 +1628,7 @@ bool __fastcall AutodetectProxy(UnicodeString & HostName, int & PortNumber)
     {
       HostName = CutToChar(Proxy, L':', true);
       PortNumber = StrToIntDef(Proxy, ProxyPortNumber);
+      AppLogFmt("Proxy autodetected: %s:%d", (HostName, PortNumber));
     }
   }
 
