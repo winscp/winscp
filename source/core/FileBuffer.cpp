@@ -64,8 +64,6 @@ DWORD __fastcall TFileBuffer::ReadStream(TStream * Stream, const DWORD Len, bool
   try
   {
     NeedSpace(Len);
-    // C++5
-    // FMemory->SetSize(FMemory->Position + Len);
     if (ForceLen)
     {
       Stream->ReadBuffer(GetPointer(), Len);
