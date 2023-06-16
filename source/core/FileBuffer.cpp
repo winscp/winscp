@@ -53,9 +53,9 @@ void __fastcall TFileBuffer::ProcessRead(DWORD Len, DWORD Result)
   FMemory->Seek(Result, soCurrent);
 }
 //---------------------------------------------------------------------------
-void TFileBuffer::NeedSpace(DWORD Size)
+void TFileBuffer::NeedSpace(DWORD Len)
 {
-  Size = GetPosition() + Size;
+  Size = GetPosition() + Len;
 }
 //---------------------------------------------------------------------------
 DWORD __fastcall TFileBuffer::ReadStream(TStream * Stream, const DWORD Len, bool ForceLen)
