@@ -139,7 +139,8 @@ void DestroyNeonSession(ne_session * Session)
 //---------------------------------------------------------------------------
 UnicodeString GetNeonError(ne_session * Session)
 {
-  return StrFromNeon(ne_get_error(Session));
+  // The error may contain localized Windows error messages (in legacy Ansi encoding)
+  return UnicodeString(AnsiString(ne_get_error(Session)));
 }
 //---------------------------------------------------------------------------
 void CheckNeonStatus(ne_session * Session, int NeonStatus,
