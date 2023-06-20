@@ -207,6 +207,9 @@ void CheckNeonStatus(ne_session * Session, int NeonStatus,
       }
     }
 
+    UnicodeString LogError(Error);
+    AddToList(LogError, NeonError, sLineBreak);
+    AppLogFmt(L"HTTP request failed: %s", (LogError));
     throw ExtException(Error, NeonError);
   }
 }

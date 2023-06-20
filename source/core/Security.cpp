@@ -217,11 +217,13 @@ bool WindowsValidateCertificate(const unsigned char * Certificate, size_t Len, U
         }
         else
         {
+          int PolicyError = PolicyStatus.dwError;
           // Windows thinks the certificate is valid.
-          Result = (PolicyStatus.dwError == S_OK);
+          Result = (PolicyError == S_OK);
           if (!Result)
           {
-            Error = FORMAT(L"Error: %x, Chain index: %d, Element index: %d", (PolicyStatus.dwError, PolicyStatus.lChainIndex, PolicyStatus.lElementIndex));
+            UnicodeString ErrorStr = SysErrorMessage(PolicyError);
+            Error = FORMAT(L"Error: %x (%s), Chain index: %d, Element index: %d", (PolicyError, ErrorStr, PolicyStatus.lChainIndex, PolicyStatus.lElementIndex));
           }
         }
 
