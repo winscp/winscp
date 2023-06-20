@@ -1033,6 +1033,9 @@ void TCustomScpExplorerForm::CheckStoreTransition()
 
     TTBXLabelItem * LabelItem;
     LabelItem = new TTBXLabelItem(Toolbar);
+    // Convert to explicit RGB "black" color, to make sure it is contrasting even in Dark theme
+    // (TTBXOfficeXPTheme.GetStandardColor would convert clWindow to "white" in dark theme)
+    LabelItem->FontSettings->Color = static_cast<TColor>(GetSysColor(clWindow));
     LabelItem->Margin = ScaleByTextHeight(MessageDock, 2); // Is this automatically rescaled?
     LabelItem->Caption = LoadStr(STORE_MIGRATION_THANKS);
     Toolbar->Items->Add(LabelItem);
@@ -1045,7 +1048,8 @@ void TCustomScpExplorerForm::CheckStoreTransition()
 
     AddMenuSeparator(Toolbar->Items);
 
-    TTBCustomItem * CloseItem = new TTBXItem(Toolbar);
+    TTBXCustomItem * CloseItem = new TTBXItem(Toolbar);
+    CloseItem->FontSettings->Color = static_cast<TColor>(GetSysColor(clWindow));
     CloseItem->Caption = LoadStr(MESSAGE_DISMISS);
     CloseItem->OnClick = StoreTransitionCloseClick;
     Toolbar->Items->Add(CloseItem);
