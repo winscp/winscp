@@ -14,6 +14,7 @@ USEFORM("forms\ScpExplorer.cpp", ScpExplorerForm);
 #include <Setup.h>
 #include <PuttyTools.h>
 #include <GUITools.h>
+#include <Tools.h>
 //---------------------------------------------------------------------------
 WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 {
@@ -31,6 +32,21 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 
     AddStartupSequence(L"M");
     DllHijackingProtection();
+    AppLogFmt(L"Process: %d", (GetCurrentProcessId()));
+    AppLogFmt(L"Mouse: %s", (BooleanToEngStr(Mouse->MousePresent)));
+    AppLogFmt(L"Mouse wheel: %s, msg: %d, scroll lines: %d", (BooleanToEngStr(Mouse->WheelPresent), int(Mouse->RegWheelMessage), Mouse->WheelScrollLines));
+    AppLogFmt(L"ACP: %d", (static_cast<int>(GetACP())));
+    AppLogFmt(L"Win32 platform: %d", (Win32Platform));
+    DWORD Type;
+    if (GetWindowsProductType(Type))
+    {
+      AppLogFmt(L"Windows product type: %x", (static_cast<int>(Type)));
+    }
+    else
+    {
+      AppLog(L"No Windows product type");
+    }
+    AppLogFmt(L"Win64: %s", (BooleanToEngStr(IsWin64())));
     AddStartupSequence(L"T");
 
     WinInitialize();
