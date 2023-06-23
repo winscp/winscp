@@ -40,6 +40,10 @@ void __fastcall PuttyInitialize()
   InitializeCriticalSection(&putty_section);
 
   HadRandomSeed = FileExists(ApiPath(Configuration->RandomSeedFileName));
+  if (HadRandomSeed)
+  {
+    AppLog(L"Random seed file exists");
+  }
   // make sure random generator is initialised, so random_save_seed()
   // in destructor can proceed
   random_ref();
@@ -63,12 +67,14 @@ void __fastcall PuttyFinalize()
 {
   if (SaveRandomSeed)
   {
+    AppLog(L"Saving random seed file");
     random_save_seed();
   }
   random_unref();
   // random_ref in PuttyInitialize creates the seed file. Delete it, if we didn't want to create it.
   if (DeleteRandomSeedOnExit())
   {
+    AppLog(L"Deleting unwanted random seed file");
     DeleteFile(ApiPath(Configuration->RandomSeedFileName));
   }
 
