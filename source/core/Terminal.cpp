@@ -944,7 +944,7 @@ int TParallelOperation::GetNext(TTerminal * Terminal, UnicodeString & FileName, 
         {
           OnlyFileName = UnixExtractFileName(FileName);
         }
-        OnlyFileName = Terminal->ChangeFileName(FCopyParam, OnlyFileName, osRemote, FirstLevel);
+        OnlyFileName = Terminal->ChangeFileName(FCopyParam, OnlyFileName, FSide, FirstLevel);
         if (FSide == osLocal)
         {
           DirectoryData.OppositePath = UnixCombinePaths(TargetDir, OnlyFileName);
