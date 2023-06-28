@@ -4779,7 +4779,7 @@ void __fastcall TSFTPFileSystem::Source(
         FTerminal->LogEvent(L"Resuming file transfer (append style).");
         ResumeOffset = OpenParams.DestFileSize;
       }
-      FileSeek((THandle)Handle.Handle, ResumeOffset, 0);
+      FileSeek((THandle)Handle.Handle, ResumeOffset, soBeginning);
       OperationProgress->AddResumed(ResumeOffset);
     }
 
@@ -5401,7 +5401,7 @@ void __fastcall TSFTPFileSystem::Sink(
         else
         {
           FTerminal->LogEvent(L"Resuming file transfer.");
-          FileSeek((THandle)LocalHandle, ResumeOffset, 0);
+          FileSeek((THandle)LocalHandle, ResumeOffset, soBeginning);
           OperationProgress->AddResumed(ResumeOffset);
         }
       }
@@ -5499,7 +5499,7 @@ void __fastcall TSFTPFileSystem::Sink(
           FTerminal->OpenLocalFile(DestFullName, GENERIC_WRITE, NULL, &LocalHandle, NULL, NULL, NULL, NULL);
         }
         ResumeAllowed = false;
-        FileSeek((THandle)LocalHandle, DestFileSize, 0);
+        FileSeek((THandle)LocalHandle, DestFileSize, soBeginning);
         if (OverwriteMode == omAppend)
         {
           FTerminal->LogEvent(L"Appending to file.");
