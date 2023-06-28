@@ -9,6 +9,7 @@
 #include "Interface.h"
 #include <StrUtils.hpp>
 #include <DateUtils.hpp>
+#include <System.IOUtils.hpp>
 #include <math.h>
 #include <shlobj.h>
 #include <limits>
@@ -28,6 +29,7 @@
 const wchar_t * DSTModeNames = L"Win;Unix;Keep";
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+const UnicodeString AnyMask = L"*.*";
 const wchar_t EngShortMonthNames[12][4] =
   {L"Jan", L"Feb", L"Mar", L"Apr", L"May", L"Jun",
    L"Jul", L"Aug", L"Sep", L"Oct", L"Nov", L"Dec"};
@@ -1486,6 +1488,11 @@ bool TSearchRecSmart::IsHidden() const
   return FLAGSET(Attr, faHidden);
 }
 //---------------------------------------------------------------------------
+UnicodeString TSearchRecChecked::GetFilePath() const
+{
+  return TPath::Combine(Dir, Name);
+}
+//---------------------------------------------------------------------------
 TSearchRecOwned::~TSearchRecOwned()
 {
   if (Opened)
@@ -1514,6 +1521,7 @@ int __fastcall FindCheck(int Result, const UnicodeString & Path)
 int __fastcall FindFirstUnchecked(const UnicodeString & Path, int Attr, TSearchRecChecked & F)
 {
   F.Path = Path;
+  F.Dir = ExtractFilePath(Path);
   int Result = FindFirst(ApiPath(Path), Attr, F);
   F.Opened = (Result == 0);
   return Result;
@@ -1584,15 +1592,14 @@ void __fastcall ProcessLocalDirectory(UnicodeString DirName,
     FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
   }
 
-  DirName = IncludeTrailingBackslash(DirName);
   TSearchRecOwned SearchRec;
-  if (FindFirstChecked(DirName + L"*.*", FindAttrs, SearchRec) == 0)
+  if (FindFirstChecked(TPath::Combine(DirName, AnyMask), FindAttrs, SearchRec) == 0)
   {
     do
     {
       if (SearchRec.IsRealFile())
       {
-        CallBackFunc(DirName + SearchRec.Name, SearchRec, Param);
+        CallBackFunc(SearchRec.GetFilePath(), SearchRec, Param);
       }
 
     } while (FindNextChecked(SearchRec) == 0);
@@ -2545,7 +2552,7 @@ static bool __fastcall DoRecursiveDeleteFile(
           {
             do
             {
-              UnicodeString FileName2 = FileName + L"\\" + SearchRec.Name;
+              UnicodeString FileName2 = SearchRec.GetFilePath();
               if (SearchRec.IsDirectory())
               {
                 if (SearchRec.IsRealFile())

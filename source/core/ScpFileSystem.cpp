@@ -2200,7 +2200,7 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const UnicodeString Directory
 
     while (FindOK && !OperationProgress->Cancel)
     {
-      UnicodeString FileName = IncludeTrailingBackslash(DirectoryName) + SearchRec.Name;
+      UnicodeString FileName = SearchRec.GetFilePath();
       try
       {
         if (SearchRec.IsRealFile())

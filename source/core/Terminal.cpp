@@ -5818,7 +5818,7 @@ bool __fastcall TTerminal::IsEmptyLocalDirectory(
   {
     do
     {
-      UnicodeString FullLocalFileName = IncludeTrailingBackslash(Path) + SearchRec.Name;
+      UnicodeString FullLocalFileName = SearchRec.GetFilePath();
       if (SearchRec.IsRealFile() &&
           DoAllowLocalFileTransfer(FullLocalFileName, SearchRec, CopyParam, true))
       {
@@ -5885,7 +5885,7 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
       do
       {
         UnicodeString FileName = SearchRec.Name;
-        UnicodeString FullLocalFileName = Data.LocalDirectory + FileName;
+        UnicodeString FullLocalFileName = SearchRec.GetFilePath();
         UnicodeString RemoteFileName = ChangeFileName(CopyParam, FileName, osLocal, false);
         if (SearchRec.IsRealFile() &&
             DoAllowLocalFileTransfer(FullLocalFileName, SearchRec, CopyParam, true) &&
@@ -7297,7 +7297,7 @@ void __fastcall TTerminal::DirectorySource(
     bool FindOK = LocalFindFirstLoop(DirectoryName + L"*.*", SearchRec);
     while (FindOK && !OperationProgress->Cancel)
     {
-      UnicodeString FileName = DirectoryName + SearchRec.Name;
+      UnicodeString FileName = SearchRec.GetFilePath();
       try
       {
         if (SearchRec.IsRealFile())

@@ -16,7 +16,6 @@ UnicodeString FileMasksDelimiters = L";,";
 static UnicodeString AllFileMasksDelimiters = FileMasksDelimiters + IncludeExcludeFileMasksDelimiter;
 static UnicodeString DirectoryMaskDelimiters = L"/\\";
 static UnicodeString FileMasksDelimiterStr = UnicodeString(FileMasksDelimiters[1]) + L' ';
-UnicodeString AnyMask = L"*.*";
 static UnicodeString MaskSymbols = L"?*[";
 //---------------------------------------------------------------------------
 __fastcall EFileMasksException::EFileMasksException(

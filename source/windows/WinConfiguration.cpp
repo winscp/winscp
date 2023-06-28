@@ -1369,7 +1369,7 @@ void __fastcall TWinConfiguration::DoLoadExtensionList(
 
           try
           {
-            CustomCommand->LoadExtension(IncludeTrailingBackslash(Path) + SearchRec.Name);
+            CustomCommand->LoadExtension(SearchRec.GetFilePath());
             FExtensionList->Add(CustomCommand.release());
           }
           catch (...)
@@ -2575,14 +2575,13 @@ TStrings * __fastcall TWinConfiguration::DoFindTemporaryFolders(bool OnlyFirst)
   std::unique_ptr<TStrings> Result(new TStringList());
   TSearchRecOwned SRec;
   UnicodeString Mask = TemporaryDir(true);
-  UnicodeString Directory = ExtractFilePath(Mask);
   if (FindFirstUnchecked(Mask, faDirectory | faHidden, SRec) == 0)
   {
     do
     {
       if (SRec.IsDirectory())
       {
-        Result->Add(Directory + SRec.Name);
+        Result->Add(SRec.GetFilePath());
       }
     }
     while ((FindNextChecked(SRec) == 0) && (!OnlyFirst || Result->Count == 0));

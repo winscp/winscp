@@ -21,6 +21,7 @@
 #define PARENTDIRECTORY L".."
 #define THISDIRECTORY L"."
 //---------------------------------------------------------------------------
+extern const UnicodeString AnyMask;
 extern const wchar_t EngShortMonthNames[12][4];
 extern const char Bom[3];
 extern const wchar_t TokenPrefix;
@@ -217,7 +218,9 @@ void CopySearchRec(const TSearchRec & Source, TSearchRec & Dest);
 struct TSearchRecChecked : public TSearchRecSmart
 {
   UnicodeString Path;
+  UnicodeString Dir;
   bool Opened;
+  UnicodeString GetFilePath() const;
 };
 struct TSearchRecOwned : public TSearchRecChecked
 {

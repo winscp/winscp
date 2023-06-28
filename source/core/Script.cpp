@@ -760,12 +760,11 @@ TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameter
         bool AnyFound = false;
         if (FindFirstUnchecked(FileName, FindAttrs, SearchRec) == 0)
         {
-          UnicodeString Directory = ExtractFilePath(FileName);
           do
           {
             if (SearchRec.IsRealFile())
             {
-              UnicodeString FileName = Directory + SearchRec.Name;
+              UnicodeString FileName = SearchRec.GetFilePath();
               TLocalFile * LocalFile = new TLocalFile;
               CopySearchRec(SearchRec, LocalFile->SearchRec);
               Result->AddObject(FileName, LocalFile);
