@@ -1246,8 +1246,9 @@ bool __fastcall IsCustomShortCut(TShortCut ShortCut)
 class TMasterPasswordDialog : public TCustomDialog
 {
 public:
-  __fastcall TMasterPasswordDialog(bool Current);
+  __fastcall TMasterPasswordDialog(TComponent * AOwner);
 
+  void Init(bool Current);
   bool __fastcall Execute(UnicodeString & CurrentPassword, UnicodeString & NewPassword);
 
 protected:
@@ -1260,9 +1261,15 @@ private:
   TPasswordEdit * ConfirmEdit;
 };
 //---------------------------------------------------------------------------
-__fastcall TMasterPasswordDialog::TMasterPasswordDialog(bool Current) :
-  TCustomDialog(Current ? HELP_MASTER_PASSWORD_CURRENT : HELP_MASTER_PASSWORD_CHANGE)
+// Need to have an Owner argument for SafeFormCreate
+__fastcall TMasterPasswordDialog::TMasterPasswordDialog(TComponent *) :
+  TCustomDialog(EmptyStr)
 {
+}
+//---------------------------------------------------------------------------
+void TMasterPasswordDialog::Init(bool Current)
+{
+  HelpKeyword = Current ? HELP_MASTER_PASSWORD_CURRENT : HELP_MASTER_PASSWORD_CHANGE;
   Caption = LoadStr(MASTER_PASSWORD_CAPTION);
 
   CurrentEdit = new TPasswordEdit(this);
@@ -1359,9 +1366,11 @@ static bool __fastcall DoMasterPasswordDialog(bool Current,
   UnicodeString & NewPassword)
 {
   bool Result;
-  TMasterPasswordDialog * Dialog = new TMasterPasswordDialog(Current);
+  // This can be a standalone dialog when opening session from commandline
+  TMasterPasswordDialog * Dialog = SafeFormCreate<TMasterPasswordDialog>();
   try
   {
+    Dialog->Init(Current);
     UnicodeString CurrentPassword;
     Result = Dialog->Execute(CurrentPassword, NewPassword);
     if (Result)
