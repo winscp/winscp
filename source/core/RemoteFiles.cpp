@@ -30,7 +30,7 @@ bool __fastcall UnixIsAbsolutePath(const UnicodeString & Path)
     IsUnixStyleWindowsPath(Path);
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall UnixIncludeTrailingBackslash(const UnicodeString Path)
+UnicodeString __fastcall UnixIncludeTrailingBackslash(const UnicodeString & Path)
 {
   // it used to return "/" when input path was empty
   if (!Path.IsEmpty() && !Path.IsDelimiter(L"/", Path.Length()))
@@ -44,7 +44,7 @@ UnicodeString __fastcall UnixIncludeTrailingBackslash(const UnicodeString Path)
 }
 //---------------------------------------------------------------------------
 // Keeps "/" for root path
-UnicodeString __fastcall UnixExcludeTrailingBackslash(const UnicodeString Path, bool Simple)
+UnicodeString __fastcall UnixExcludeTrailingBackslash(const UnicodeString & Path, bool Simple)
 {
   if (Path.IsEmpty() ||
       (Path == L"/") ||
@@ -59,7 +59,7 @@ UnicodeString __fastcall UnixExcludeTrailingBackslash(const UnicodeString Path, 
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall SimpleUnixExcludeTrailingBackslash(const UnicodeString Path)
+UnicodeString __fastcall SimpleUnixExcludeTrailingBackslash(const UnicodeString & Path)
 {
   return UnixExcludeTrailingBackslash(Path, true);
 }
@@ -69,19 +69,19 @@ UnicodeString __fastcall UnixCombinePaths(const UnicodeString & Path1, const Uni
   return UnixIncludeTrailingBackslash(Path1) + Path2;
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall UnixSamePath(const UnicodeString Path1, const UnicodeString Path2)
+Boolean __fastcall UnixSamePath(const UnicodeString & Path1, const UnicodeString & Path2)
 {
   return (UnixIncludeTrailingBackslash(Path1) == UnixIncludeTrailingBackslash(Path2));
 }
 //---------------------------------------------------------------------------
-bool __fastcall UnixIsChildPath(UnicodeString Parent, UnicodeString Child)
+bool __fastcall UnixIsChildPath(const UnicodeString & AParent, const UnicodeString & AChild)
 {
-  Parent = UnixIncludeTrailingBackslash(Parent);
-  Child = UnixIncludeTrailingBackslash(Child);
+  UnicodeString Parent = UnixIncludeTrailingBackslash(AParent);
+  UnicodeString Child = UnixIncludeTrailingBackslash(AChild);
   return (Child.SubString(1, Parent.Length()) == Parent);
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall UnixExtractFileDir(const UnicodeString Path)
+UnicodeString __fastcall UnixExtractFileDir(const UnicodeString & Path)
 {
   int Pos = Path.LastDelimiter(L'/');
   // it used to return Path when no slash was found
@@ -96,7 +96,7 @@ UnicodeString __fastcall UnixExtractFileDir(const UnicodeString Path)
 }
 //---------------------------------------------------------------------------
 // must return trailing backslash
-UnicodeString __fastcall UnixExtractFilePath(const UnicodeString Path)
+UnicodeString __fastcall UnixExtractFilePath(const UnicodeString & Path)
 {
   int Pos = Path.LastDelimiter(L'/');
   // it used to return Path when no slash was found
@@ -110,7 +110,7 @@ UnicodeString __fastcall UnixExtractFilePath(const UnicodeString Path)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall UnixExtractFileName(const UnicodeString Path)
+UnicodeString __fastcall UnixExtractFileName(const UnicodeString & Path)
 {
   int Pos = Path.LastDelimiter(L'/');
   UnicodeString Result;
@@ -125,7 +125,7 @@ UnicodeString __fastcall UnixExtractFileName(const UnicodeString Path)
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall UnixExtractFileExt(const UnicodeString Path)
+UnicodeString __fastcall UnixExtractFileExt(const UnicodeString & Path)
 {
   UnicodeString FileName = UnixExtractFileName(Path);
   int Pos = FileName.LastDelimiter(L".");
@@ -222,12 +222,12 @@ bool __fastcall UnixExtractCommonPath(TStrings * Files, UnicodeString & Path)
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall IsUnixRootPath(const UnicodeString Path)
+bool __fastcall IsUnixRootPath(const UnicodeString & Path)
 {
   return Path.IsEmpty() || (Path == ROOTDIRECTORY);
 }
 //---------------------------------------------------------------------------
-bool __fastcall IsUnixHiddenFile(const UnicodeString FileName)
+bool __fastcall IsUnixHiddenFile(const UnicodeString & FileName)
 {
   return IsRealFile(FileName) && !FileName.IsEmpty() && (FileName[1] == L'.');
 }
@@ -272,12 +272,12 @@ UnicodeString __fastcall AbsolutePath(const UnicodeString & Base, const UnicodeS
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall FromUnixPath(const UnicodeString Path)
+UnicodeString __fastcall FromUnixPath(const UnicodeString & Path)
 {
   return ReplaceStr(Path, L"/", L"\\");
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall ToUnixPath(const UnicodeString Path)
+UnicodeString __fastcall ToUnixPath(const UnicodeString & Path)
 {
   return ReplaceStr(Path, L"\\", L"/");
 }
@@ -323,7 +323,7 @@ static void __fastcall CutFirstDirectory(UnicodeString & S, bool Unix)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall MinimizeName(const UnicodeString FileName, int MaxLen, bool Unix)
+UnicodeString __fastcall MinimizeName(const UnicodeString & FileName, int MaxLen, bool Unix)
 {
   UnicodeString Drive, Dir, Name, Result;
   UnicodeString Sep = Unix ? L"/" : L"\\";

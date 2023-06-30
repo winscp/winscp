@@ -654,7 +654,7 @@ bool __fastcall TSessionData::IsSameSite(const TSessionData * Other)
     (UserName == Other->UserName);
 }
 //---------------------------------------------------------------------
-bool __fastcall TSessionData::IsInFolderOrWorkspace(UnicodeString AFolder)
+bool __fastcall TSessionData::IsInFolderOrWorkspace(const UnicodeString & AFolder)
 {
   return StartsText(UnixIncludeTrailingBackslash(AFolder), Name);
 }
@@ -5447,37 +5447,39 @@ void TStoredSessionList::SelectKnownHostsForSelectedSessions(
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TStoredSessionList::IsFolderOrWorkspace(
-  const UnicodeString & Name, bool Workspace)
+TSessionData * TStoredSessionList::GetFirstFolderOrWorkspaceSession(const UnicodeString & Name)
 {
-  bool Result = false;
-  TSessionData * FirstData = NULL;
+  TSessionData * Result = NULL;
   if (!Name.IsEmpty())
   {
-    for (int Index = 0; !Result && (Index < Count); Index++)
+    UnicodeString NameWithSlash = UnixIncludeTrailingBackslash(Name); // optimization
+    for (int Index = 0; (Result == NULL) && (Index < Count); Index++)
     {
-      Result = Sessions[Index]->IsInFolderOrWorkspace(Name);
-      if (Result)
+      if (Sessions[Index]->IsInFolderOrWorkspace(NameWithSlash))
       {
-        FirstData = Sessions[Index];
+        Result = Sessions[Index];
       }
     }
   }
 
-  return
-    Result &&
-    DebugAlwaysTrue(FirstData != NULL) &&
-    (FirstData->IsWorkspace == Workspace);
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TStoredSessionList::IsFolderOrWorkspace(const UnicodeString & Name)
+{
+  return (GetFirstFolderOrWorkspaceSession(Name) != NULL);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TStoredSessionList::IsFolder(const UnicodeString & Name)
 {
-  return IsFolderOrWorkspace(Name, false);
+  TSessionData * SessionData = GetFirstFolderOrWorkspaceSession(Name);
+  return (SessionData != NULL) && !SessionData->IsWorkspace;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TStoredSessionList::IsWorkspace(const UnicodeString & Name)
 {
-  return IsFolderOrWorkspace(Name, true);
+  TSessionData * SessionData = GetFirstFolderOrWorkspaceSession(Name);
+  return (SessionData != NULL) && SessionData->IsWorkspace;
 }
 //---------------------------------------------------------------------------
 TSessionData * __fastcall TStoredSessionList::CheckIsInFolderOrWorkspaceAndResolve(

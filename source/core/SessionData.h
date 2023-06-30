@@ -527,7 +527,7 @@ public:
   bool __fastcall IsSame(const TSessionData * Default, bool AdvancedOnly);
   bool __fastcall IsSameDecrypted(const TSessionData * Default);
   bool __fastcall IsSameSite(const TSessionData * Default);
-  bool __fastcall IsInFolderOrWorkspace(UnicodeString Name);
+  bool __fastcall IsInFolderOrWorkspace(const UnicodeString & Name);
   UnicodeString __fastcall GenerateSessionUrl(unsigned int Flags);
   bool __fastcall HasRawSettingsForUrl();
   bool __fastcall HasSessionName();
@@ -754,6 +754,7 @@ public:
   void __fastcall NewWorkspace(UnicodeString Name, TList * DataList);
   bool __fastcall IsFolder(const UnicodeString & Name);
   bool __fastcall IsWorkspace(const UnicodeString & Name);
+  bool __fastcall IsFolderOrWorkspace(const UnicodeString & Name);
   TSessionData * __fastcall ParseUrl(UnicodeString Url, TOptions * Options, bool & DefaultsOnly,
     UnicodeString * FileName = NULL, bool * ProtocolDefined = NULL, UnicodeString * MaskedUrl = NULL, int Flags = 0);
   bool __fastcall IsUrl(UnicodeString Url);
@@ -788,7 +789,7 @@ private:
     TSessionData * Data, bool All, bool RecryptPasswordOnly,
     TSessionData * FactoryDefaults);
   TSessionData * __fastcall ResolveWorkspaceData(TSessionData * Data);
-  bool __fastcall IsFolderOrWorkspace(const UnicodeString & Name, bool Workspace);
+  TSessionData * GetFirstFolderOrWorkspaceSession(const UnicodeString & Name);
   TSessionData * __fastcall CheckIsInFolderOrWorkspaceAndResolve(
     TSessionData * Data, const UnicodeString & Name);
   void __fastcall ImportLevelFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
