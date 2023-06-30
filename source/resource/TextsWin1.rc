@@ -64,7 +64,6 @@ BEGIN
         CONSOLE_SEND_PIPE, "External console output is redirected to a pipe. Make sure the pipe is being read from."
         WORKSPACE_NOT_FOLDER, "'%s' is workspace, not site folder."
         FOLDER_NOT_WORKSPACE, "'%s' is site folder, not workspace."
-        SHELL_PATTERN_ERROR, "Error executing command \"%s\" (%s)."
         PATH_ENV_TOO_LONG, "Cannot add new path to %PATH%, %PATH% is already too long."
         STACK_TRACE, "Stack trace:"
         PUTTY_NO_SITES2, "No sites found in %s sites registry key (%s)."

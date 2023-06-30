@@ -56,7 +56,6 @@
 #define CONSOLE_SEND_PIPE       1172
 #define WORKSPACE_NOT_FOLDER    1173
 #define FOLDER_NOT_WORKSPACE    1174
-#define SHELL_PATTERN_ERROR     1175
 #define PATH_ENV_TOO_LONG       1176
 #define STACK_TRACE             1177
 #define PUTTY_NO_SITES2         1180

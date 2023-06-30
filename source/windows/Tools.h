@@ -10,6 +10,7 @@
 #include <Vcl.Graphics.hpp>
 //---------------------------------------------------------------------------
 void __fastcall CenterFormOn(TForm * Form, TControl * CenterOn);
+void ExecuteProcessAndReadOutput(const UnicodeString & Command, UnicodeString & Output, DWORD & ExitCode, bool ReadStdErr);
 void __fastcall ExecuteProcessChecked(
   const UnicodeString & Command, const UnicodeString & HelpKeyword, UnicodeString * Output);
 void __fastcall ExecuteProcessCheckedAndWait(
