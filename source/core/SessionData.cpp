@@ -2209,9 +2209,11 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
 
     UnicodeString ARemoteDirectory;
 
+    bool ParseOnly = FLAGSET(Flags, pufParseOnly);
     if (Data != NULL)
     {
-      Assign(Data);
+      DoCopyData(Data, ParseOnly);
+      FSource = Data->FSource;
       int P = 1;
       while (!AnsiSameText(DecodeUrlChars(Url.SubString(1, P)), Data->Name))
       {
@@ -2220,7 +2222,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       }
       ARemoteDirectory = Url.SubString(P + 1, Url.Length() - P);
 
-      if (Data->Hidden)
+      if (Data->Hidden && !ParseOnly)
       {
         Data->Remove();
         StoredSessions->Remove(Data);
@@ -2242,7 +2244,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       // This happens when pasting URL on Login dialog
       if (StoredSessions != NULL)
       {
-        CopyData(StoredSessions->DefaultSettings);
+        DoCopyData(StoredSessions->DefaultSettings, ParseOnly);
       }
       Name = L"";
 

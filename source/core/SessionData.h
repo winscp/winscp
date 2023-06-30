@@ -55,6 +55,7 @@ enum TParseUrlFlags
   pufAllowStoredSiteWithProtocol = 0x01,
   pufUnsafe = 0x02,
   pufPreferProtocol = 0x04,
+  pufParseOnly = 0x08,
 };
 //---------------------------------------------------------------------------
 extern const UnicodeString CipherNames[CIPHER_COUNT];

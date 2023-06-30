@@ -23,13 +23,24 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+UnicodeString GetFolderOrWorkspaceName(const UnicodeString & SessionName)
+{
+  UnicodeString FolderOrWorkspaceName = DecodeUrlChars(SessionName);
+  UnicodeString Result;
+  if (StoredSessions->IsFolderOrWorkspace(FolderOrWorkspaceName))
+  {
+    Result = FolderOrWorkspaceName;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
   TObjectList * DataList, UnicodeString & DownloadFile, bool NeedSession, TForm * LinkedForm, int Flags)
 {
   bool DefaultsOnly = false;
 
-  UnicodeString FolderOrWorkspaceName = DecodeUrlChars(SessionName);
-  if (StoredSessions->IsFolderOrWorkspace(FolderOrWorkspaceName))
+  UnicodeString FolderOrWorkspaceName = GetFolderOrWorkspaceName(SessionName);
+  if (!FolderOrWorkspaceName.IsEmpty())
   {
     StoredSessions->GetFolderOrWorkspace(FolderOrWorkspaceName, DataList);
   }
@@ -1164,9 +1175,28 @@ int __fastcall Execute()
       {
         AutoStartSession = Params->ConsumeParam();
 
-        if ((ParamCommand == pcNone) &&
-            (WinConfiguration->ExternalSessionInExistingInstance != OpenInNewWindow()) &&
-            !NewInstance &&
+        bool TrySendToAnotherInstance =
+          (ParamCommand == pcNone) &&
+          (WinConfiguration->ExternalSessionInExistingInstance != OpenInNewWindow()) &&
+          !NewInstance;
+
+        if (TrySendToAnotherInstance &&
+            !AutoStartSession.IsEmpty() &&
+            (AutoStartSession.Pos(L"/") > 0) && // optimization
+            GetFolderOrWorkspaceName(AutoStartSession).IsEmpty())
+        {
+          bool DummyDefaultsOnly = false;
+          UnicodeString DownloadFile2;
+          int Flags = GetCommandLineParseUrlFlags(Params) | pufParseOnly;
+          std::unique_ptr<TSessionData> SessionData(
+            StoredSessions->ParseUrl(AutoStartSession, Params, DummyDefaultsOnly, &DownloadFile2, NULL, NULL, Flags));
+          if (!DownloadFile2.IsEmpty())
+          {
+            TrySendToAnotherInstance = false;
+          }
+        }
+
+        if (TrySendToAnotherInstance &&
             SendToAnotherInstance())
         {
           Configuration->Usage->Inc(L"SendToAnotherInstance");
