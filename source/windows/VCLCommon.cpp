@@ -400,7 +400,14 @@ TForm * __fastcall GetMainForm()
 //---------------------------------------------------------------------------
 bool __fastcall IsMainFormHidden()
 {
-  bool Result = (GetMainForm() != NULL) && !GetMainForm()->Visible;
+  bool Result = false;
+  TForm * MainForm = GetMainForm();
+  if (MainForm != NULL)
+  {
+    Result =
+      !MainForm->Visible ||
+      (MainForm->Perform(WM_IS_HIDDEN, 0, 0) == 1);
+  }
   // we do not expect this to return true when MainLikeForm is set
   DebugAssert(!Result || (MainLikeForm == NULL));
   return Result;

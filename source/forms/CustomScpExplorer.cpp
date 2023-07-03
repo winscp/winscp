@@ -9784,6 +9784,12 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
       PasteFiles();
       break;
 
+    case WM_IS_HIDDEN:
+      // To treat master password prompt as a main window while showing it when workspace is loading while
+      // the exporer is showing up (Visible is true already)
+      M->Result = !FShowing;
+      break;
+
     default:
       TForm::Dispatch(Message);
       break;
