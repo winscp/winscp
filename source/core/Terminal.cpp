@@ -3270,6 +3270,7 @@ void __fastcall TTerminal::DoStartup()
         {
           if (!Active || SessionData->RequireDirectories)
           {
+            ExceptionOnFail = false;
             throw;
           }
           else
