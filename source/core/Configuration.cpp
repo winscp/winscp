@@ -124,6 +124,8 @@ void __fastcall TConfiguration::Default()
   FChecksumCommands = EmptyStr;
   FDontReloadMoreThanSessions = 1000;
   FScriptProgressFileNameLimit = 25;
+  FQueueTransfersLimit = 2;
+  FParallelTransferThreshold = -1; // default (currently off), 0 = explicitly off
   FKeyVersion = 0;
   CollectUsage = FDefaultCollectUsage;
 
@@ -260,6 +262,8 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(String,   MimeTypes); \
     KEY(Integer,  DontReloadMoreThanSessions); \
     KEY(Integer,  ScriptProgressFileNameLimit); \
+    KEY(Integer,  QueueTransfersLimit); \
+    KEY(Integer,  ParallelTransferThreshold); \
     KEY(Integer,  KeyVersion); \
     KEY(Bool,     CollectUsage); \
     KEY(String,   CertificateStorage); \
@@ -2015,11 +2019,6 @@ UnicodeString __fastcall TConfiguration::GetTimeFormat()
   return L"h:nn:ss";
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TConfiguration::GetPartialExt() const
-{
-  return PARTIAL_EXT;
-}
-//---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetDefaultKeyFile()
 {
   return L"";
@@ -2068,6 +2067,11 @@ void __fastcall TConfiguration::SetCacheDirectoryChangesMaxSize(int value)
 void __fastcall TConfiguration::SetShowFtpWelcomeMessage(bool value)
 {
   SET_CONFIG_PROPERTY(ShowFtpWelcomeMessage);
+}
+//---------------------------------------------------------------------------
+void TConfiguration::SetQueueTransfersLimit(int value)
+{
+  SET_CONFIG_PROPERTY(QueueTransfersLimit);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TConfiguration::GetPersistent()

@@ -344,6 +344,9 @@ __published:
   TLabel *LogProtocolHintLabel;
   TGroupBox *EditingOptionsGroup;
   TCheckBox *EditorCheckNotModifiedCheck;
+  TCheckBox *ParallelTransferCheck;
+  TComboBox *ParallelTransferThresholdCombo;
+  TLabel *ParallelTransferThresholdUnitLabel;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -433,7 +436,7 @@ __published:
   void __fastcall BackgroundConfirmationsLinkClick(TObject *Sender);
   void __fastcall ConfigureCommandButtonClick(TObject *Sender);
   void __fastcall LanguagesViewCustomDrawItem(TCustomListView * Sender, TListItem * Item, TCustomDrawState State, bool & DefaultDraw);
-  void __fastcall LogMaxSizeComboExit(TObject *Sender);
+  void __fastcall SizeComboExit(TObject *Sender);
   void __fastcall PuttyPathEditExit(TObject *Sender);
   void __fastcall AutomaticIniFileStorageLabelGetStatus(TCustomPathLabel *Sender, bool &Active);
   void __fastcall CustomIniFileStorageEditExit(TObject *Sender);

@@ -321,6 +321,11 @@ UnicodeString DelimitStr(const UnicodeString & Str, wchar_t Quote)
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString MidStr(const UnicodeString & Text, int Start)
+{
+  return Text.SubString(Start, Text.Length() - Start + 1);
+}
+//---------------------------------------------------------------------------
 UnicodeString ShellQuoteStr(const UnicodeString & Str)
 {
   wchar_t Quote = L'"';
@@ -467,8 +472,16 @@ UnicodeString RemoveEmptyLines(const UnicodeString & S)
 //---------------------------------------------------------------------------
 bool IsNumber(const UnicodeString Str)
 {
-  int Value;
-  return TryStrToInt(Str, Value);
+  bool Result = (Str.Length() > 0);
+  for (int Index = 1; (Index < Str.Length()) && Result; Index++)
+  {
+    wchar_t C = Str[Index];
+    if ((C < L'0') || (C > L'9'))
+    {
+      Result = false;
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString Base64ToUrlSafe(const UnicodeString & S)

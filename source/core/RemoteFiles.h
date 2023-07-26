@@ -12,7 +12,7 @@ enum TModificationFmt { mfNone, mfMDHM, mfYMDHM, mfMDY, mfFull };
 #define FILETYPE_DEFAULT L'-'
 #define FILETYPE_SYMLINK L'L'
 #define FILETYPE_DIRECTORY L'D'
-#define PARTIAL_EXT L".filepart"
+extern const UnicodeString PartialExt;
 //---------------------------------------------------------------------------
 class TTerminal;
 class TRights;
@@ -589,6 +589,7 @@ UnicodeString __fastcall UserModificationStr(TDateTime DateTime,
   TModificationFmt Precision);
 UnicodeString __fastcall ModificationStr(TDateTime DateTime,
   TModificationFmt Precision);
+int GetPartialFileExtLen(const UnicodeString & FileName);
 int __fastcall FakeFileImageIndex(UnicodeString FileName, unsigned long Attrs = 0,
   UnicodeString * TypeName = NULL);
 bool __fastcall SameUserName(const UnicodeString & UserName1, const UnicodeString & UserName2);

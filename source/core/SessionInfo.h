@@ -45,7 +45,9 @@ enum TFSCapability { fcUserGroupListing, fcModeChanging, fcAclChangingFiles, fcG
   fcModeChangingUpload, fcPreservingTimestampUpload, fcShellAnyCommand,
   fcSecondaryShell, fcRemoveCtrlZUpload, fcRemoveBOMUpload, fcMoveToQueue,
   fcLocking, fcPreservingTimestampDirs, fcResumeSupport,
-  fcChangePassword, fcSkipTransfer, fcParallelTransfers, fcBackgroundTransfers,
+  fcChangePassword, fcSkipTransfer,
+  fcParallelTransfers, fcParallelFileTransfers,
+  fcBackgroundTransfers,
   fcTransferOut, fcTransferIn,
   fcMoveOverExistingFile,
   fcCount };

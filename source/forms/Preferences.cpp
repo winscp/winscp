@@ -6,6 +6,7 @@
 #include <System.IOUtils.hpp>
 #include <Common.h>
 #include <math.h>
+#include <limits>
 
 #include "Preferences.h"
 #include "Custom.h"
@@ -436,11 +437,15 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     SelectPuttyRegistryStorageKey(GUIConfiguration->PuttyRegistryStorageKey);
 
     // Queue
-    QueueTransferLimitEdit->AsInteger = GUIConfiguration->QueueTransfersLimit;
+    QueueTransferLimitEdit->AsInteger = Configuration->QueueTransfersLimit;
     EnableQueueByDefaultCheck->Checked = WinConfiguration->EnableQueueByDefault;
     QueueAutoPopupCheck->Checked = GUIConfiguration->QueueAutoPopup;
     QueueCheck->Checked = GUIConfiguration->DefaultCopyParam.Queue;
     QueueParallelCheck->Checked = GUIConfiguration->DefaultCopyParam.QueueParallel;
+    ParallelTransferCheck->Checked = (Configuration->ParallelTransferThreshold > 0);
+    __int64 ParallelTransferThreshold = static_cast<__int64>(Configuration->ParallelTransferThreshold) * 1024;
+    ParallelTransferThresholdCombo->Text =
+      SizeToStr((ParallelTransferThreshold > 0) ? ParallelTransferThreshold : 100*1024*1024);
     QueueNoConfirmationCheck->Checked = GUIConfiguration->DefaultCopyParam.QueueNoConfirmation;
     if (!GUIConfiguration->QueueKeepDoneItems)
     {
@@ -821,11 +826,21 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     }
 
     // Queue
-    GUIConfiguration->QueueTransfersLimit = QueueTransferLimitEdit->AsInteger;
+    Configuration->QueueTransfersLimit = QueueTransferLimitEdit->AsInteger;
     WinConfiguration->EnableQueueByDefault = EnableQueueByDefaultCheck->Checked;
     GUIConfiguration->QueueAutoPopup = QueueAutoPopupCheck->Checked;
     CopyParam.Queue = QueueCheck->Checked;
     CopyParam.QueueParallel = QueueParallelCheck->Checked;
+    __int64 ParallelTransferThreshold;
+    if (ParallelTransferCheck->Checked && TryStrToSize(ParallelTransferThresholdCombo->Text, ParallelTransferThreshold))
+    {
+      Configuration->ParallelTransferThreshold = std::min(ParallelTransferThreshold / 1024, static_cast<__int64>(std::numeric_limits<int>::max()));
+    }
+    else
+    {
+      // In future, we might set it to 0, if -1 will actually mean some default threshold
+      Configuration->ParallelTransferThreshold = -1;
+    }
     CopyParam.QueueNoConfirmation = QueueNoConfirmationCheck->Checked;
     GUIConfiguration->QueueKeepDoneItems = (QueueKeepDoneItemsForCombo->ItemIndex != 0);
     switch (QueueKeepDoneItemsForCombo->ItemIndex)
@@ -1460,6 +1475,11 @@ void __fastcall TPreferencesDialog::UpdateControls()
     InterfaceChangeLabel->Visible =
       !CustomWinConfiguration->CanApplyInterfaceImmediately &&
       (GetInterface() != CustomWinConfiguration->AppliedInterface);
+
+    // background
+    EnableControl(ParallelTransferCheck, QueueParallelCheck->Checked);
+    EnableControl(ParallelTransferThresholdCombo, ParallelTransferCheck->Enabled && ParallelTransferCheck->Checked);
+    EnableControl(ParallelTransferThresholdUnitLabel, ParallelTransferThresholdCombo->Enabled);
   }
 }
 //---------------------------------------------------------------------------
@@ -2987,19 +3007,20 @@ void __fastcall TPreferencesDialog::LanguagesViewCustomDrawItem(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::LogMaxSizeComboExit(TObject * /*Sender*/)
+void __fastcall TPreferencesDialog::SizeComboExit(TObject * Sender)
 {
   __int64 Size;
   if (!IsCancelButtonBeingClicked(this))
   {
-    if (!TryStrToSize(LogMaxSizeCombo->Text, Size))
+    TComboBox * ComboBox = DebugNotNull(dynamic_cast<TComboBox *>(Sender));
+    if (!TryStrToSize(ComboBox->Text, Size))
     {
-      LogMaxSizeCombo->SetFocus();
-      throw Exception(FMTLOAD(SIZE_INVALID, (LogMaxSizeCombo->Text)));
+      ComboBox->SetFocus();
+      throw Exception(FMTLOAD(SIZE_INVALID, (ComboBox->Text)));
     }
     else
     {
-      LogMaxSizeCombo->Text = SizeToStr(Size);
+      ComboBox->Text = SizeToStr(Size);
     }
   }
 }

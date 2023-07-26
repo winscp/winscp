@@ -80,6 +80,8 @@ private:
   int FDontReloadMoreThanSessions;
   int FScriptProgressFileNameLimit;
   int FKeyVersion;
+  int FQueueTransfersLimit;
+  int FParallelTransferThreshold;
   UnicodeString FCertificateStorage;
   UnicodeString FChecksumCommands;
 
@@ -131,7 +133,6 @@ private:
   UnicodeString __fastcall GetIniFileStorageName(bool ReadingOnly);
   void __fastcall SetOptionsStorage(TStrings * value);
   TStrings * __fastcall GetOptionsStorage();
-  UnicodeString __fastcall GetPartialExt() const;
   UnicodeString __fastcall GetFileInfoString(const UnicodeString Key);
   void __fastcall SetSessionReopenAuto(int value);
   void __fastcall SetSessionReopenBackground(int value);
@@ -155,6 +156,7 @@ private:
   bool __fastcall GetPersistent();
   void SetLocalPortNumberMin(int value);
   void SetLocalPortNumberMax(int value);
+  void SetQueueTransfersLimit(int value);
 
 protected:
   TStorage FStorage;
@@ -322,7 +324,6 @@ public:
   __property bool ConfirmResume = { read = GetConfirmResume, write = SetConfirmResume};
   __property bool AutoReadDirectoryAfterOp = { read = GetAutoReadDirectoryAfterOp, write = SetAutoReadDirectoryAfterOp};
   __property bool RememberPassword = { read = GetRememberPassword };
-  __property UnicodeString PartialExt = {read=GetPartialExt};
   __property int SessionReopenAuto = { read = FSessionReopenAuto, write = SetSessionReopenAuto };
   __property int SessionReopenBackground = { read = FSessionReopenBackground, write = SetSessionReopenBackground };
   __property int SessionReopenTimeout = { read = FSessionReopenTimeout, write = SetSessionReopenTimeout };
@@ -342,6 +343,8 @@ public:
   __property UnicodeString MimeTypes = { read = FMimeTypes, write = SetMimeTypes };
   __property int DontReloadMoreThanSessions = { read = FDontReloadMoreThanSessions, write = FDontReloadMoreThanSessions };
   __property int ScriptProgressFileNameLimit = { read = FScriptProgressFileNameLimit, write = FScriptProgressFileNameLimit };
+  __property int QueueTransfersLimit = { read = FQueueTransfersLimit, write = SetQueueTransfersLimit };
+  __property int ParallelTransferThreshold = { read = FParallelTransferThreshold, write = FParallelTransferThreshold };
   __property int KeyVersion = { read = FKeyVersion, write = FKeyVersion };
 
   __property UnicodeString TimeFormat = { read = GetTimeFormat };

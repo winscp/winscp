@@ -556,7 +556,6 @@ void __fastcall TGUIConfiguration::Default()
   FSynchronizeMode = TTerminal::smRemote;
   FMaxWatchDirectories = 500;
   FSynchronizeOptions = soRecurse | soSynchronizeAsk;
-  FQueueTransfersLimit = 2;
   FQueueBootstrap = false;
   FQueueKeepDoneItems = true;
   FQueueKeepDoneItemsFor = 15;
@@ -636,7 +635,6 @@ void __fastcall TGUIConfiguration::UpdateStaticUsage()
     KEY(Integer,  SynchronizeModeAuto); \
     KEY(Integer,  SynchronizeMode); \
     KEY(Integer,  MaxWatchDirectories); \
-    KEY(Integer,  QueueTransfersLimit); \
     KEY(Bool,     QueueBootstrap); \
     KEY(Integer,  QueueKeepDoneItems); \
     KEY(Integer,  QueueKeepDoneItemsFor); \
@@ -1348,11 +1346,6 @@ void __fastcall TGUIConfiguration::SetNewDirectoryProperties(
   const TRemoteProperties & value)
 {
   SET_CONFIG_PROPERTY(NewDirectoryProperties);
-}
-//---------------------------------------------------------------------------
-void __fastcall TGUIConfiguration::SetQueueTransfersLimit(int value)
-{
-  SET_CONFIG_PROPERTY(QueueTransfersLimit);
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SetQueueBootstrap(bool value)

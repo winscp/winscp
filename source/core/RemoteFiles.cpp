@@ -17,6 +17,8 @@
 #include "Cryptography.h"
 /* TODO 1 : Path class instead of UnicodeString (handle relativity...) */
 //---------------------------------------------------------------------------
+const UnicodeString PartialExt(L".filepart");
+//---------------------------------------------------------------------------
 bool __fastcall IsUnixStyleWindowsPath(const UnicodeString & Path)
 {
   return (Path.Length() >= 3) && IsLetter(Path[1]) && (Path[2] == L':') && (Path[3] == L'/');
@@ -486,6 +488,28 @@ UnicodeString __fastcall ModificationStr(TDateTime DateTime,
   }
 }
 //---------------------------------------------------------------------------
+int GetPartialFileExtLen(const UnicodeString & FileName)
+{
+  int Result = 0;
+  if (EndsText(PartialExt, FileName))
+  {
+    Result = PartialExt.Length();
+  }
+  else
+  {
+    int P = FileName.LastDelimiter(L".");
+    if ((P > 0) && (P < FileName.Length()))
+    {
+      if (IsNumber(MidStr(FileName, P + 1)) &&
+          EndsText(PartialExt, FileName.SubString(1, P - 1)))
+      {
+        Result = PartialExt.Length() + (FileName.Length() - P + 1);
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 int __fastcall FakeFileImageIndex(UnicodeString FileName, unsigned long Attrs,
   UnicodeString * TypeName)
 {
@@ -501,10 +525,10 @@ int __fastcall FakeFileImageIndex(UnicodeString FileName, unsigned long Attrs,
   }
   // this should be somewhere else, probably in TUnixDirView,
   // as the "partial" overlay is added there too
-  if (SameText(UnixExtractFileExt(FileName), PARTIAL_EXT))
+  int PartialFileExtLen = GetPartialFileExtLen(FileName);
+  if (GetPartialFileExtLen(FileName) > 0)
   {
-    static const size_t PartialExtLen = LENOF(PARTIAL_EXT) - 1;
-    FileName.SetLength(FileName.Length() - PartialExtLen);
+    FileName.SetLength(FileName.Length() - PartialFileExtLen);
   }
 
   int Icon;

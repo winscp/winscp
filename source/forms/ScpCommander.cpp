@@ -2120,10 +2120,10 @@ void __fastcall TScpCommanderForm::RemotePathLabelPathClick(
 void __fastcall TScpCommanderForm::LocalDirViewFileIconForName(
   TObject * /*Sender*/, UnicodeString & FileName)
 {
-  UnicodeString PartialExt = Configuration->PartialExt;
-  if (AnsiSameText(ExtractFileExt(FileName), PartialExt))
+  int PartialFileExtLen = GetPartialFileExtLen(FileName);
+  if (PartialFileExtLen > 0)
   {
-    FileName.SetLength(FileName.Length() - PartialExt.Length());
+    FileName.SetLength(FileName.Length() - PartialFileExtLen);
   }
   if (WinConfiguration->LocalIconsByExt)
   {

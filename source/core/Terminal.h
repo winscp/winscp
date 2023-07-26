@@ -156,6 +156,7 @@ friend class TTunnelUI;
 friend class TCallbackGuard;
 friend class TSecondaryTerminal;
 friend class TRetryOperationLoop;
+friend class TParallelOperation;
 
 private:
   TSessionData * FSessionData;
@@ -473,10 +474,15 @@ protected:
     const UnicodeString & DirectoryName, const UnicodeString & TargetDir, const UnicodeString & DestDirectoryName,
     int Attrs, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, unsigned int Flags);
+  bool UseAsciiTransfer(
+    const UnicodeString & BaseFileName, TOperationSide Side, const TCopyParamType * CopyParam,
+    const TFileMasks::TParams & MaskParams);
   void __fastcall SelectTransferMode(
     const UnicodeString & BaseFileName, TOperationSide Side, const TCopyParamType * CopyParam,
     const TFileMasks::TParams & MaskParams);
   void __fastcall SelectSourceTransferMode(const TLocalFileHandle & Handle, const TCopyParamType * CopyParam);
+  void DoDeleteLocalFile(const UnicodeString & FileName);
+  void DoRenameLocalFileForce(const UnicodeString & OldName, const UnicodeString & NewName);
   void __fastcall UpdateSource(const TLocalFileHandle & Handle, const TCopyParamType * CopyParam, int Params);
   void __fastcall DoCopyToLocal(
     TStrings * FilesToCopy, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
@@ -492,6 +498,9 @@ protected:
   void __fastcall UpdateTargetAttrs(
     const UnicodeString & DestFullName, const TRemoteFile * File, const TCopyParamType * CopyParam, int Attrs);
   void __fastcall UpdateTargetTime(HANDLE Handle, TDateTime Modification, TDSTMode DSTMode);
+  void CheckParallelFileTransfer(
+    const UnicodeString & TargetDir, TStringList * Files, const TCopyParamType * CopyParam, int Params,
+    UnicodeString & ParallelFileName, __int64 & ParallelFileSize, TFileOperationProgressType * OperationProgress);
   TRemoteFile * CheckRights(const UnicodeString & EntryType, const UnicodeString & FileName, bool & WrongRights);
   bool IsValidFile(TRemoteFile * File);
   void __fastcall CalculateSubFoldersChecksum(
@@ -866,7 +875,8 @@ public:
 
   void Init(
     TStrings * AFiles, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * MainOperationProgress, const UnicodeString & MainName);
+    TFileOperationProgressType * MainOperationProgress, const UnicodeString & MainName,
+    __int64 ParallelFileSize);
 
   bool IsInitialized();
   void WaitFor();
@@ -874,17 +884,23 @@ public:
   void AddClient();
   void RemoveClient();
   int GetNext(
-    TTerminal * Terminal, UnicodeString & FileName, TObject *& Object, UnicodeString & TargetDir,
-    bool & Dir, bool & Recursed);
-  void Done(const UnicodeString & FileName, bool Dir, bool Success);
+    TTerminal * Terminal, UnicodeString & FileName, TObject *& Object, UnicodeString & TargetDir, bool & Dir,
+    bool & Recursed, TCopyParamType *& CustomCopyParam);
+  void Done(
+    const UnicodeString & FileName, bool Dir, bool Success, const UnicodeString & TargetDir,
+    const TCopyParamType * CopyParam, TTerminal * Terminal);
   bool UpdateFileList(TQueueFileList * UpdateFileList);
 
+  static bool GetOnlyFile(TStrings * FileList, UnicodeString & FileName, TObject *& Object);
+  static TCollectedFileList * GetFileList(TStrings * FileList, int Index);
+  static UnicodeString GetPartPrefix(const UnicodeString & FileName);
   __property TOperationSide Side = { read = FSide };
   __property const TCopyParamType * CopyParam = { read = FCopyParam };
   __property int Params = { read = FParams };
   __property UnicodeString TargetDir = { read = FTargetDir };
   __property TFileOperationProgressType * MainOperationProgress = { read = FMainOperationProgress };
   __property UnicodeString MainName = { read = FMainName };
+  __property bool IsParallelFileTransfer = { read = FIsParallelFileTransfer };
 
 private:
   struct TDirectoryData
@@ -908,6 +924,16 @@ private:
   TOperationSide FSide;
   UnicodeString FMainName;
   int FVersion;
+  bool FIsParallelFileTransfer;
+  __int64 FParallelFileSize;
+  __int64 FParallelFileOffset;
+  int FParallelFileCount;
+  UnicodeString FParallelFileTargetName;
+  typedef std::vector<__int64> TParallelFileOffsets;
+  TParallelFileOffsets FParallelFileOffsets;
+  std::vector<bool> FParallelFileDones;
+  bool FParallelFileMerging;
+  int FParallelFileMerged;
 
   bool CheckEnd(TCollectedFileList * Files);
   TCollectedFileList * GetFileList(int Index);

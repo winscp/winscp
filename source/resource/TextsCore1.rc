@@ -258,6 +258,7 @@ BEGIN
   CERTIFICATE_NOT_MATCH, "Certificate in \"%s\" does not match public key in the key file."
   CERTIFICATE_CANNOT_COMBINE, "Unable to combine certificate in \"%s\" with private key."
   KEYGEN_NOT_PUBLIC, "File \"%s\" is not a public key in a known format."
+  INCONSISTENT_SIZE, "File part \"%s\" size is %s, but %s was expected."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"

@@ -58,6 +58,7 @@ UnicodeString CopyToChars(const UnicodeString & Str, int & From, UnicodeString C
 UnicodeString CopyToChar(const UnicodeString & Str, wchar_t Ch, bool Trim);
 UnicodeString RemoveSuffix(const UnicodeString & Str, const UnicodeString & Suffix, bool RemoveNumbersAfterSuffix = false);
 UnicodeString DelimitStr(const UnicodeString & Str, wchar_t Quote = L'"');
+UnicodeString MidStr(const UnicodeString & Text, int Start);
 UnicodeString ShellQuoteStr(const UnicodeString & Str);
 UnicodeString ExceptionLogString(Exception *E);
 UnicodeString __fastcall MainInstructions(const UnicodeString & S);

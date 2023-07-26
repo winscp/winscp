@@ -8951,17 +8951,7 @@ void __fastcall TCustomScpExplorerForm::DirViewGetOverlay(
   TObject * Sender, TListItem * Item, WORD & Indexes)
 {
   TCustomDirView * DirView = reinterpret_cast<TCustomDirView *>(Sender);
-  UnicodeString Ext;
-  if (dynamic_cast<TUnixDirView *>(DirView) != NULL)
-  {
-    Ext = UnixExtractFileExt(DirView->ItemFileName(Item));
-  }
-  else
-  {
-    Ext = ExtractFileExt(DirView->ItemFileName(Item));
-  }
-
-  if (SameText(Ext, Configuration->PartialExt))
+  if (GetPartialFileExtLen(DirView->ItemFileName(Item)) > 0)
   {
     Indexes |= oiPartial;
   }

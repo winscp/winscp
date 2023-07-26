@@ -1437,11 +1437,12 @@ public:
   }
   virtual __fastcall ~TSFTPDownloadQueue(){}
 
-  bool __fastcall Init(int QueueLen, const RawByteString & AHandle,__int64 ATransferred,
-    TFileOperationProgressType * AOperationProgress)
+  bool __fastcall Init(
+    int QueueLen, const RawByteString & AHandle, __int64 ATransferred, __int64 PartSize, TFileOperationProgressType * AOperationProgress)
   {
     FHandle = AHandle;
     FTransferred = ATransferred;
+    FPartSize = PartSize;
     OperationProgress = AOperationProgress;
 
     return TSFTPFixedLenQueue::Init(QueueLen);
@@ -1465,10 +1466,23 @@ protected:
   virtual bool __fastcall InitRequest(TSFTPQueuePacket * Request)
   {
     unsigned int BlockSize = FFileSystem->DownloadBlockSize(OperationProgress);
-    InitRequest(Request, FTransferred, BlockSize);
-    Request->Token = reinterpret_cast<void*>(BlockSize);
-    FTransferred += BlockSize;
-    return true;
+    if (FPartSize >= 0)
+    {
+      __int64 Remaining = FPartSize - FTransferred;
+      if (Remaining < BlockSize)
+      {
+        // It's lower, so the cast is safe
+        BlockSize = static_cast<unsigned int>(Remaining);
+      }
+    }
+    bool Result = (BlockSize > 0);
+    if (Result)
+    {
+      InitRequest(Request, FTransferred, BlockSize);
+      Request->Token = reinterpret_cast<void*>(BlockSize);
+      FTransferred += BlockSize;
+    }
+    return Result;
   }
 
   void __fastcall InitRequest(TSFTPPacket * Request, __int64 Offset,
@@ -1488,6 +1502,7 @@ protected:
 private:
   TFileOperationProgressType * OperationProgress;
   __int64 FTransferred;
+  __int64 FPartSize;
   RawByteString FHandle;
 };
 //---------------------------------------------------------------------------
@@ -1548,20 +1563,20 @@ protected:
     if (Result)
     {
       bool Last;
-      if (FOnTransferIn != NULL)
-      {
-        size_t Read = BlockBuf.LoadFromIn(FOnTransferIn, FTerminal, BlockSize);
-        Last = (Read < BlockSize);
-      }
-      else
+        if (FOnTransferIn != NULL)
+        {
+          size_t Read = BlockBuf.LoadFromIn(FOnTransferIn, FTerminal, BlockSize);
+          Last = (Read < BlockSize);
+        }
+        else
       {
         FILE_OPERATION_LOOP_BEGIN
         {
           BlockBuf.LoadStream(FStream, BlockSize, false);
         }
         FILE_OPERATION_LOOP_END(FMTLOAD(READ_ERROR, (FFileName)));
-        Last = (FStream->Position >= FStream->Size);
-      }
+          Last = (FStream->Position >= FStream->Size);
+        }
 
       FEnd = (BlockBuf.Size == 0);
       Result = !FEnd;
@@ -2017,7 +2032,7 @@ const TFileSystemInfo & __fastcall TSFTPFileSystem::GetFileSystemInfo(bool /*Ret
 //---------------------------------------------------------------------------
 bool __fastcall TSFTPFileSystem::TemporaryTransferFile(const UnicodeString & FileName)
 {
-  return SameText(UnixExtractFileExt(FileName), PARTIAL_EXT);
+  return (GetPartialFileExtLen(FileName) > 0);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSFTPFileSystem::GetStoredCredentialsTried()
@@ -2095,6 +2110,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
     case fcResumeSupport:
     case fcSkipTransfer:
     case fcParallelTransfers:
+    case fcParallelFileTransfers:
       return !FTerminal->IsEncryptingFiles();
 
     case fcRename:
@@ -4587,7 +4603,7 @@ void __fastcall TSFTPFileSystem::Source(
 
   if (ResumeAllowed)
   {
-    DestPartialFullName = DestFullName + FTerminal->Configuration->PartialExt;
+    DestPartialFullName = DestFullName + PartialExt;
 
     if (FLAGCLEAR(Flags, tfNewDirectory))
     {
@@ -4680,7 +4696,7 @@ void __fastcall TSFTPFileSystem::Source(
             {
               // update paths in case user changes the file name
               DestFullName = LocalCanonify(TargetDir + DestFileName);
-              DestPartialFullName = DestFullName + FTerminal->Configuration->PartialExt;
+              DestPartialFullName = DestFullName + PartialExt;
               FTerminal->LogEvent(L"Checking existence of new file.");
               DestFileExists = RemoteFileExists(DestFullName, NULL);
             }
@@ -5346,7 +5362,8 @@ void __fastcall TSFTPFileSystem::Sink(
     !OperationProgress->AsciiTransfer &&
     CopyParam->AllowResume(OperationProgress->TransferSize, DestFileName) &&
     !FTerminal->IsEncryptingFiles() &&
-    (CopyParam->OnTransferOut == NULL);
+    (CopyParam->OnTransferOut == NULL) &&
+    (CopyParam->PartOffset < 0);
 
   HANDLE LocalHandle = NULL;
   TStream * FileStream = NULL;
@@ -5363,7 +5380,7 @@ void __fastcall TSFTPFileSystem::Sink(
 
     if (ResumeAllowed)
     {
-      DestPartialFullName = DestFullName + FTerminal->Configuration->PartialExt;
+      DestPartialFullName = DestFullName + PartialExt;
       LocalFileName = DestPartialFullName;
 
       FTerminal->LogEvent(L"Checking existence of partially transferred file.");
@@ -5392,11 +5409,7 @@ void __fastcall TSFTPFileSystem::Sink(
         {
           CloseHandle(LocalHandle);
           LocalHandle = NULL;
-          FILE_OPERATION_LOOP_BEGIN
-          {
-            THROWOSIFFALSE(Sysutils::DeleteFile(ApiPath(DestPartialFullName)));
-          }
-          FILE_OPERATION_LOOP_END(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (DestPartialFullName)));
+          FTerminal->DoDeleteLocalFile(DestPartialFullName);
         }
         else
         {
@@ -5462,16 +5475,12 @@ void __fastcall TSFTPFileSystem::Sink(
       if (PrevDestFileName != DestFileName)
       {
         DestFullName = TargetDir + DestFileName;
-        DestPartialFullName = DestFullName + FTerminal->Configuration->PartialExt;
+        DestPartialFullName = DestFullName + PartialExt;
         if (ResumeAllowed)
         {
           if (FileExists(ApiPath(DestPartialFullName)))
           {
-            FILE_OPERATION_LOOP_BEGIN
-            {
-              THROWOSIFFALSE(Sysutils::DeleteFile(ApiPath(DestPartialFullName)));
-            }
-            FILE_OPERATION_LOOP_END(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (DestPartialFullName)));
+            FTerminal->DoDeleteLocalFile(DestPartialFullName);
           }
           LocalFileName = DestPartialFullName;
         }
@@ -5550,7 +5559,8 @@ void __fastcall TSFTPFileSystem::Sink(
         {
           QueueLen = 1;
         }
-        Queue.Init(QueueLen, RemoteHandle, OperationProgress->TransferredSize, OperationProgress);
+        __int64 Offset = OperationProgress->TransferredSize + std::max(CopyParam->PartOffset, 0LL);
+        Queue.Init(QueueLen, RemoteHandle, Offset, CopyParam->PartSize, OperationProgress);
 
         bool Eof = false;
         bool PrevIncomplete = false;
@@ -5567,7 +5577,7 @@ void __fastcall TSFTPFileSystem::Sink(
         {
           if (Missing > 0)
           {
-            Queue.InitFillGapRequest(OperationProgress->TransferredSize, Missing, &DataPacket);
+            Queue.InitFillGapRequest(Offset + OperationProgress->TransferredSize, Missing, &DataPacket);
             GapFillCount++;
             SendPacketAndReceiveResponse(&DataPacket, &DataPacket, SSH_FXP_DATA, asEOF);
           }
@@ -5641,6 +5651,12 @@ void __fastcall TSFTPFileSystem::Sink(
               Eof = DataPacket.GetBool();
             }
 
+            if ((CopyParam->PartSize >= 0) &&
+                (OperationProgress->TransferredSize >= CopyParam->PartSize))
+            {
+              Eof = true;
+            }
+
             if (OperationProgress->AsciiTransfer)
             {
               DebugAssert(!ResumeTransfer && !ResumeAllowed);
@@ -5705,6 +5721,7 @@ void __fastcall TSFTPFileSystem::Sink(
 
       if (ResumeAllowed)
       {
+        // See also DoRenameLocalFileForce
         FILE_OPERATION_LOOP_BEGIN
         {
           if (FileExists(ApiPath(DestFullName)))
@@ -5737,14 +5754,11 @@ void __fastcall TSFTPFileSystem::Sink(
     if (DeleteLocalFile && (!ResumeAllowed || OperationProgress->LocallyUsed == 0) &&
         (OverwriteMode == omOverwrite))
     {
-      FILE_OPERATION_LOOP_BEGIN
-      {
-        THROWOSIFFALSE(Sysutils::DeleteFile(ApiPath(LocalFileName)));
-      }
-      FILE_OPERATION_LOOP_END(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (LocalFileName)));
+      FTerminal->DoDeleteLocalFile(LocalFileName);
     }
 
-    // if the transfer was finished, the file is closed already
+    // if the transfer was finished, the file is usually closed already
+    // (except for special cases like SFTPv6 EOF indication or partial file downlaod)
     if (FTerminal->Active && !RemoteHandle.IsEmpty())
     {
       // do not wait for response

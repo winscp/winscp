@@ -58,6 +58,8 @@ void __fastcall TCopyParamType::Default()
   ExcludeHiddenFiles = false;
   ExcludeEmptyDirectories = false;
   Size = -1;
+  PartOffset = -1;
+  PartSize = -1;
   OnceDoneOperation = odoIdle;
   OnTransferOut = NULL;
   OnTransferIn = NULL;
@@ -576,6 +578,8 @@ void __fastcall TCopyParamType::Assign(const TCopyParamType * Source)
   COPY(ExcludeHiddenFiles);
   COPY(ExcludeEmptyDirectories);
   COPY(Size);
+  COPY(PartOffset);
+  COPY(PartSize);
   COPY(OnceDoneOperation);
   COPY(OnTransferOut);
   COPY(OnTransferIn);
@@ -778,7 +782,7 @@ int __fastcall TCopyParamType::LocalFileAttrs(const TRights & Rights) const
 bool __fastcall TCopyParamType::AllowResume(__int64 Size, const UnicodeString & FileName) const
 {
   bool Result;
-  if (FileName.Length() + UnicodeString(PARTIAL_EXT).Length() > 255) // it's a different limit than MAX_PATH
+  if (FileName.Length() + PartialExt.Length() > 255) // it's a different limit than MAX_PATH
   {
     Result = false;
   }
@@ -912,6 +916,8 @@ void __fastcall TCopyParamType::Load(THierarchicalStorage * Storage)
   ExcludeHiddenFiles = Storage->ReadBool(L"ExcludeHiddenFiles", ExcludeHiddenFiles);
   ExcludeEmptyDirectories = Storage->ReadBool(L"ExcludeEmptyDirectories", ExcludeEmptyDirectories);
   Size = -1;
+  PartOffset = -1;
+  PartSize = -1;
   OnceDoneOperation = odoIdle;
   OnTransferOut = NULL;
   OnTransferIn = NULL;
@@ -962,6 +968,8 @@ void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage, const TCopy
   WRITE_DATA(Bool, ExcludeHiddenFiles);
   WRITE_DATA(Bool, ExcludeEmptyDirectories);
   DebugAssert(Size < 0);
+  DebugAssert(PartOffset < 0);
+  DebugAssert(PartSize < 0);
   DebugAssert(OnceDoneOperation == odoIdle);
   DebugAssert(OnTransferOut == NULL);
   DebugAssert(OnTransferIn == NULL);
@@ -1004,6 +1012,8 @@ bool __fastcall TCopyParamType::operator==(const TCopyParamType & rhp) const
     C(ExcludeHiddenFiles) &&
     C(ExcludeEmptyDirectories) &&
     C(Size) &&
+    C(PartOffset) &&
+    C(PartSize) &&
     C(OnceDoneOperation) &&
     true;
 }

@@ -631,6 +631,7 @@ bool __fastcall TWebDAVFileSystem::IsCapable(int Capability) const
     case fcChangePassword:
     case fcTransferOut:
     case fcTransferIn:
+    case fcParallelFileTransfers:
       return false;
 
     case fcLocking:
@@ -1814,11 +1815,7 @@ void __fastcall TWebDAVFileSystem::Sink(
 
       if (DeleteLocalFile)
       {
-        FILE_OPERATION_LOOP_BEGIN
-        {
-          THROWOSIFFALSE(Sysutils::DeleteFile(ApiPath(DestFullName)));
-        }
-        FILE_OPERATION_LOOP_END(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (DestFullName)));
+        FTerminal->DoDeleteLocalFile(DestFullName);
       }
     }
   }

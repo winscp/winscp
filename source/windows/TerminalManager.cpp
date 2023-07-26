@@ -131,7 +131,7 @@ __fastcall TTerminalManager::~TTerminalManager()
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::SetQueueConfiguration(TTerminalQueue * Queue)
 {
-  Queue->TransfersLimit = GUIConfiguration->QueueTransfersLimit;
+  Queue->TransfersLimit = Configuration->QueueTransfersLimit;
   Queue->KeepDoneItemsFor =
     (GUIConfiguration->QueueKeepDoneItems ? GUIConfiguration->QueueKeepDoneItemsFor : 0);
 }
