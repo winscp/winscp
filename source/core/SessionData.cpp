@@ -95,25 +95,43 @@ static bool ParseOpensshDirective(const UnicodeString & ALine, UnicodeString & D
   bool Result = IsValidOpensshLine(ALine);
   if (Result)
   {
-    int From = 1;
-    wchar_t Equal = L'=';
-    UnicodeString Delimiters(UnicodeString(L" \t") + Equal);
-    wchar_t Delimiter;
     UnicodeString Line = Trim(ALine);
-    Directive = CopyToChars(Line, From, Delimiters, false, &Delimiter, false);
-    Result = !Directive.IsEmpty();
-    if (Result)
+    if (Line.SubString(1, 1) == "\"")
     {
-      Value = Line;
-      Value.Delete(1, Directive.Length() + 1);
-      Value = Trim(Value);
-      if ((Delimiter != Equal) && !Value.IsEmpty() && (Value[1] == Equal))
+      Line.Delete(1, 1);
+      int P = Line.Pos("\"");
+      Result = (P > 0);
+      if (Result)
       {
-        Value.Delete(1, 1);
-        Value = Trim(Value); // not sure about this, but for the directives we support it does not matter
+        Directive = Line.SubString(1, P - 1);
+        Line = MidStr(Line, P + 1).Trim();
       }
-      Result = !Value.IsEmpty();
     }
+    else
+    {
+      wchar_t Equal = L'=';
+      UnicodeString Whitespaces(L" \t");
+      UnicodeString Delimiters(Whitespaces + Equal);
+      int P = FindDelimiter(Delimiters, Line);
+      Result = (P > 0);
+      if (Result)
+      {
+        Directive = Line.SubString(1, P - 1);
+        Line.Delete(1, P - 1);
+        UnicodeString TrimChars = Delimiters;
+        while (!Line.IsEmpty() && Line.IsDelimiter(TrimChars, 1))
+        {
+          if (Line[1] == Equal)
+          {
+            TrimChars = Whitespaces;
+          }
+          Line.Delete(1, 1);
+        }
+      }
+    }
+
+    Value = Line;
+    Result = !Value.IsEmpty();
   }
   return Result;
 }
@@ -1554,13 +1572,44 @@ bool OpensshBoolValue(const UnicodeString & Value)
 //---------------------------------------------------------------------
 UnicodeString CutOpensshToken(UnicodeString & S)
 {
-  DebugAssert(!S.IsEmpty() && (S == Trim(S)));
-  int From = 1;
-  UnicodeString Result = CopyToChars(S, From, L" \t", false);
-  S.Delete(1, Result.Length());
-  S = Trim(S);
-  DebugAssert(!Result.IsEmpty() && (Result == Trim(Result)));
-  Result = Trim(Result);
+  const wchar_t NoQuote = L'\0';
+  wchar_t Quote = NoQuote;
+  UnicodeString Result;
+  int P = 1;
+  while (P <= S.Length())
+  {
+    wchar_t C = S[P];
+    if ((C == L'\\') &&
+        (P < S.Length()) &&
+        ((S[P + 1] == L'\'') ||
+         (S[P + 1] == L'\"') ||
+         (S[P + 1] == L'\\') ||
+         ((Quote == NoQuote) && S[P + 1] == L' ')))
+    {
+      Result += S[P + 1];
+      P++;
+    }
+    else if ((Quote == NoQuote) && ((C == L' ') || (C == L'\t')))
+    {
+      break;
+    }
+    else if ((Quote == NoQuote) && ((C == L'\'') || (C == L'"')))
+    {
+      Quote = C;
+    }
+    else if ((Quote != NoQuote) && (Quote == C))
+    {
+      Quote = NoQuote;
+    }
+    else
+    {
+      Result += C;
+    }
+    P++;
+  }
+
+  S = MidStr(S, P).Trim();
+
   return Result;
 }
 //---------------------------------------------------------------------
@@ -1571,17 +1620,15 @@ void TSessionData::ImportFromOpenssh(TStrings * Lines)
   for (int Index = 0; Index < Lines->Count; Index++)
   {
     UnicodeString Line = Lines->Strings[Index];
-    UnicodeString Directive, Value;
-    if (ParseOpensshDirective(Line, Directive, Value))
+    UnicodeString Directive, Args;
+    if (ParseOpensshDirective(Line, Directive, Args))
     {
       if (SameText(Directive, OpensshHostDirective))
       {
-        DebugAssert(!Value.IsEmpty() && (Value == Trim(Value)));
-
         SkippingSection = true;
-        while (!Value.IsEmpty())
+        while (!Args.IsEmpty())
         {
-          UnicodeString M = CutOpensshToken(Value);
+          UnicodeString M = CutOpensshToken(Args);
           bool Negated = DebugAlwaysTrue(!M.IsEmpty()) && (M[1] == L'!');
           if (Negated)
           {
@@ -1613,95 +1660,100 @@ void TSessionData::ImportFromOpenssh(TStrings * Lines)
       }
       else if (!SkippingSection && (UsedDirectives->IndexOf(Directive) < 0))
       {
-        if (SameText(Directive, L"AddressFamily"))
+        UnicodeString Value = CutOpensshToken(Args);
+        // All the directives we support allow only one token
+        if (Args.IsEmpty())
         {
-          if (SameText(Value, L"inet"))
+          if (SameText(Directive, L"AddressFamily"))
           {
-            AddressFamily = afIPv4;
-          }
-          else if (SameText(Value, L"inet6"))
-          {
-            AddressFamily = afIPv6;
-          }
-          else
-          {
-            AddressFamily = afAuto;
-          }
-        }
-        else if (SameText(Directive, L"BindAddress"))
-        {
-          SourceAddress = Value;
-        }
-        else if (SameText(Directive, L"Compression"))
-        {
-          Compression = OpensshBoolValue(Value);
-        }
-        else if (SameText(Directive, L"ForwardAgent"))
-        {
-          AgentFwd = OpensshBoolValue(Value);
-        }
-        else if (SameText(Directive, L"GSSAPIAuthentication"))
-        {
-          AuthGSSAPI = OpensshBoolValue(Value);
-        }
-        else if (SameText(Directive, L"GSSAPIDelegateCredentials"))
-        {
-          AuthGSSAPIKEX = OpensshBoolValue(Value);
-        }
-        else if (SameText(Directive, L"Hostname"))
-        {
-          HostName = Value;
-        }
-        else if (SameText(Directive, L"IdentityFile"))
-        {
-          // It's likely there would be forward slashes in OpenSSH config file and our load/save dialogs
-          // (e.g. when converting keys) work suboptimally when working with forward slashes.
-          UnicodeString Path = GetNormalizedPath(Value);
-          const UnicodeString HomePathPrefix = L"~";
-          if (StartsStr(HomePathPrefix, Path + L"\\"))
-          {
-            Path =
-              GetShellFolderPath(CSIDL_PROFILE) +
-              Path.SubString(HomePathPrefix.Length() + 1, Path.Length() - HomePathPrefix.Length());
-          }
-          PublicKeyFile = Path;
-        }
-        else if (SameText(Directive, L"KbdInteractiveAuthentication"))
-        {
-          AuthKI = OpensshBoolValue(Value);
-        }
-        else if (SameText(Directive, L"Port"))
-        {
-          PortNumber = StrToInt(Value);
-        }
-        else if (SameText(Directive, L"User"))
-        {
-          UserName = Value;
-        }
-        else if (SameText(Directive, L"ProxyJump"))
-        {
-          UnicodeString Jump = Value;
-          // multiple jumps are not supported
-          if (Jump.Pos(L",") == 0)
-          {
-            std::unique_ptr<TSessionData> JumpData(new TSessionData(EmptyStr));
-            bool DefaultsOnly;
-            if ((JumpData->ParseUrl(Jump, NULL, NULL, DefaultsOnly, NULL, NULL, NULL, 0)) &&
-                !JumpData->HostName.IsEmpty())
+            if (SameText(Value, L"inet"))
             {
-              JumpData->Name = JumpData->HostName;
-              JumpData->ImportFromOpenssh(Lines);
-
-              Tunnel = true;
-              TunnelHostName = JumpData->HostName;
-              TunnelPortNumber = JumpData->PortNumber;
-              TunnelUserName = JumpData->UserName;
-              TunnelPassword = JumpData->Password;
-              TunnelPublicKeyFile = JumpData->PublicKeyFile;
+              AddressFamily = afIPv4;
+            }
+            else if (SameText(Value, L"inet6"))
+            {
+              AddressFamily = afIPv6;
+            }
+            else
+            {
+              AddressFamily = afAuto;
             }
           }
+          else if (SameText(Directive, L"BindAddress"))
+          {
+            SourceAddress = Value;
+          }
+          else if (SameText(Directive, L"Compression"))
+          {
+            Compression = OpensshBoolValue(Value);
+          }
+          else if (SameText(Directive, L"ForwardAgent"))
+          {
+            AgentFwd = OpensshBoolValue(Value);
+          }
+          else if (SameText(Directive, L"GSSAPIAuthentication"))
+          {
+            AuthGSSAPI = OpensshBoolValue(Value);
+          }
+          else if (SameText(Directive, L"GSSAPIDelegateCredentials"))
+          {
+            AuthGSSAPIKEX = OpensshBoolValue(Value);
+          }
+          else if (SameText(Directive, L"Hostname"))
+          {
+            HostName = Value;
+          }
+          else if (SameText(Directive, L"IdentityFile"))
+          {
+            // It's likely there would be forward slashes in OpenSSH config file and our load/save dialogs
+            // (e.g. when converting keys) work suboptimally when working with forward slashes.
+            UnicodeString Path = GetNormalizedPath(Value);
+            const UnicodeString HomePathPrefix = L"~";
+            if (StartsStr(HomePathPrefix, Path + L"\\"))
+            {
+              Path =
+                GetShellFolderPath(CSIDL_PROFILE) +
+                Path.SubString(HomePathPrefix.Length() + 1, Path.Length() - HomePathPrefix.Length());
+            }
+            PublicKeyFile = Path;
+          }
+          else if (SameText(Directive, L"KbdInteractiveAuthentication"))
+          {
+            AuthKI = OpensshBoolValue(Value);
+          }
+          else if (SameText(Directive, L"Port"))
+          {
+            PortNumber = StrToInt(Value);
+          }
+          else if (SameText(Directive, L"User"))
+          {
+            UserName = Value;
+          }
+          else if (SameText(Directive, L"ProxyJump"))
+          {
+            UnicodeString Jump = Value;
+            // multiple jumps are not supported
+            if (Jump.Pos(L",") == 0)
+            {
+              std::unique_ptr<TSessionData> JumpData(new TSessionData(EmptyStr));
+              bool DefaultsOnly;
+              if ((JumpData->ParseUrl(Jump, NULL, NULL, DefaultsOnly, NULL, NULL, NULL, 0)) &&
+                  !JumpData->HostName.IsEmpty())
+              {
+                JumpData->Name = JumpData->HostName;
+                JumpData->ImportFromOpenssh(Lines);
+
+                Tunnel = true;
+                TunnelHostName = JumpData->HostName;
+                TunnelPortNumber = JumpData->PortNumber;
+                TunnelUserName = JumpData->UserName;
+                TunnelPassword = JumpData->Password;
+                TunnelPublicKeyFile = JumpData->PublicKeyFile;
+              }
+            }
+          }
+          UsedDirectives->Add(Directive);
         }
-        UsedDirectives->Add(Directive);
       }
     }
   }
