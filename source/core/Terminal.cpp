@@ -28,6 +28,7 @@
 #include "NeonIntf.h"
 #include <openssl/pkcs12.h>
 #include <openssl/err.h>
+#include <algorithm>
 
 #ifndef AUTO_WINSOCK
 #include <winsock2.h>
