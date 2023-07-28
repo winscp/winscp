@@ -873,8 +873,6 @@ void TParallelOperation::Done(
 
             if (!FParallelFileMerging)
             {
-              TFileOperationProgressType * OperationProgress = Terminal->OperationProgress;
-
               // Once we obtain "merging" semaphor, we won't leave until everything is merged
               TAutoFlag MergingFlag(FParallelFileMerging);
 
