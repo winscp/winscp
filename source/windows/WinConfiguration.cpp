@@ -2625,7 +2625,7 @@ void __fastcall TWinConfiguration::CleanupTemporaryFolders(TStrings * Folders)
   UnicodeString ErrorList;
   for (int i = 0; i < Folders->Count; i++)
   {
-    if (!DeleteDirectory(Folders->Strings[i]))
+    if (!RecursiveDeleteFile(Folders->Strings[i]))
     {
       if (!ErrorList.IsEmpty())
       {

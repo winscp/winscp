@@ -2388,7 +2388,7 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
       FAutoOperation = false;
       if (!RootTempDir.IsEmpty() && DebugAlwaysTrue(!RemoteFiles))
       {
-        RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir), false);
+        RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir));
       }
     }
   }
@@ -3330,7 +3330,7 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
           {
             if (!RootTempDir.IsEmpty())
             {
-              RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir), false);
+              RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir));
             }
             throw Exception(FMTLOAD(CREATE_FILE_ERROR, (LocalFileName)));
           }
@@ -3416,7 +3416,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
       {
         if (!LocalRootDirectory.IsEmpty())
         {
-          RecursiveDeleteFile(ExcludeTrailingBackslash(LocalRootDirectory), false);
+          RecursiveDeleteFile(ExcludeTrailingBackslash(LocalRootDirectory));
         }
         throw;
       }
@@ -3621,7 +3621,7 @@ void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
     {
       if (!RootTempDir.IsEmpty())
       {
-        RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir), false);
+        RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir));
       }
       throw;
     }
@@ -4592,7 +4592,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferFiles(
         FAutoOperation = false;
         if (!RootTempDir.IsEmpty())
         {
-          RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir), false);
+          RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir));
         }
       }
     }
@@ -8242,7 +8242,7 @@ void __fastcall TCustomScpExplorerForm::DoDelayedDeletion(TObject * Sender)
     if ((N >= Alert) || (Sender == NULL))
     {
       Directory = FDelayedDeletionList->Strings[Index];
-      if (DeleteDirectory(ExcludeTrailingBackslash(Directory)))
+      if (RecursiveDeleteFile(ExcludeTrailingBackslash(Directory)))
       {
         FDelayedDeletionList->Delete(Index);
       }

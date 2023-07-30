@@ -8890,7 +8890,7 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
     ExceptionOnFail = PrevExceptionOnFail;
     if (!TemporaryDir.IsEmpty())
     {
-      RecursiveDeleteFile(ExcludeTrailingBackslash(TemporaryDir), false);
+      RecursiveDeleteFile(ExcludeTrailingBackslash(TemporaryDir));
     }
   }
   return Result;

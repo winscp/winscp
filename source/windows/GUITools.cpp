@@ -689,45 +689,6 @@ UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir, const UnicodeS
   return TempDir;
 }
 //---------------------------------------------------------------------------
-bool __fastcall DeleteDirectory(const UnicodeString DirName)
-{
-  TSearchRecOwned sr;
-  bool retval = true;
-  if (FindFirstUnchecked(DirName + L"\\*", faAnyFile, sr) == 0) // VCL Function
-  {
-    if (sr.IsDirectory())
-    {
-      if (sr.IsRealFile())
-        retval = DeleteDirectory(DirName + L"\\" + sr.Name);
-    }
-    else
-    {
-      retval = DeleteFile(ApiPath(DirName + L"\\" + sr.Name));
-    }
-
-    if (retval)
-    {
-      while (FindNextChecked(sr) == 0)
-      { // VCL Function
-        if (sr.IsDirectory())
-        {
-          if (sr.IsRealFile())
-            retval = DeleteDirectory(DirName + L"\\" + sr.Name);
-        }
-        else
-        {
-          retval = DeleteFile(ApiPath(DirName + L"\\" + sr.Name));
-        }
-
-        if (!retval) break;
-      }
-    }
-  }
-  sr.Close();
-  if (retval) retval = RemoveDir(ApiPath(DirName)); // VCL function
-  return retval;
-}
-//---------------------------------------------------------------------------
 class TSessionColors : public TComponent
 {
 public:

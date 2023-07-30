@@ -2543,11 +2543,11 @@ static bool __fastcall DoRecursiveDeleteFile(
 
   if (!ToRecycleBin)
   {
-    TSearchRecChecked SearchRec;
-    Result = FileSearchRec(FileName, SearchRec);
+    TSearchRecChecked InitialSearchRec;
+    Result = FileSearchRec(FileName, InitialSearchRec);
     if (Result)
     {
-      if (!SearchRec.IsDirectory())
+      if (!InitialSearchRec.IsDirectory())
       {
         Result = DeleteFile(ApiPath(FileName));
         if (Result)
@@ -2557,41 +2557,35 @@ static bool __fastcall DoRecursiveDeleteFile(
       }
       else
       {
+        TSearchRecOwned SearchRec;
         Result = (FindFirstUnchecked(FileName + L"\\*", faAnyFile, SearchRec) == 0);
 
         if (Result)
         {
-          try
+          do
           {
-            do
+            UnicodeString FileName2 = SearchRec.GetFilePath();
+            if (SearchRec.IsDirectory())
             {
-              UnicodeString FileName2 = SearchRec.GetFilePath();
-              if (SearchRec.IsDirectory())
+              if (SearchRec.IsRealFile())
               {
-                if (SearchRec.IsRealFile())
-                {
-                  Result = DoRecursiveDeleteFile(FileName2, DebugAlwaysFalse(ToRecycleBin), AErrorPath, Deleted);
-                }
+                Result = DoRecursiveDeleteFile(FileName2, DebugAlwaysFalse(ToRecycleBin), AErrorPath, Deleted);
+              }
+            }
+            else
+            {
+              Result = DeleteFile(ApiPath(FileName2));
+              if (!Result)
+              {
+                AErrorPath = FileName2;
               }
               else
               {
-                Result = DeleteFile(ApiPath(FileName2));
-                if (!Result)
-                {
-                  AErrorPath = FileName2;
-                }
-                else
-                {
-                  Deleted++;
-                }
+                Deleted++;
               }
             }
-            while (Result && (FindNextUnchecked(SearchRec) == 0));
           }
-          __finally
-          {
-            FindClose(SearchRec);
-          }
+          while (Result && (FindNextUnchecked(SearchRec) == 0));
 
           if (Result)
           {

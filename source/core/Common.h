@@ -124,7 +124,7 @@ UnicodeString __fastcall EncodeUrlString(UnicodeString S);
 UnicodeString __fastcall EncodeUrlPath(UnicodeString S);
 UnicodeString __fastcall AppendUrlParams(UnicodeString URL, UnicodeString Params);
 UnicodeString __fastcall ExtractFileNameFromUrl(const UnicodeString & Url);
-bool __fastcall RecursiveDeleteFile(const UnicodeString & FileName, bool ToRecycleBin);
+bool __fastcall RecursiveDeleteFile(const UnicodeString & FileName, bool ToRecycleBin = false);
 int __fastcall RecursiveDeleteFileChecked(const UnicodeString & FileName, bool ToRecycleBin);
 void __fastcall DeleteFileChecked(const UnicodeString & FileName);
 unsigned int __fastcall CancelAnswer(unsigned int Answers);
