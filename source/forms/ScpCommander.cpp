@@ -378,6 +378,7 @@ bool __fastcall TScpCommanderForm::CopyParamDialog(TTransferDirection Direction,
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::DoShow()
 {
+  AddStartupSequence(L"W");
   // Make sure the RemoteDirView is disabled (if not connected yet)
   // before the focusing below,
   // otherwise we disable the view while setting it focused
@@ -401,6 +402,7 @@ void __fastcall TScpCommanderForm::DoShow()
     DirView(osOther)->SetFocus();
   }
 
+  AddStartupSequence(L"U");
   TCustomScpExplorerForm::DoShow();
 
   // Need to do do this before the main window really displays.

@@ -171,6 +171,7 @@ bool __fastcall TScpExplorerForm::CopyParamDialog(TTransferDirection Direction,
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::DoShow()
 {
+  AddStartupSequence(L"W");
   // See comment in TScpCommanderForm::DoShow()
   UpdateControls();
 
@@ -179,6 +180,7 @@ void __fastcall TScpExplorerForm::DoShow()
     DirView(osOther)->SetFocus();
   }
 
+  AddStartupSequence(L"U");
   TCustomScpExplorerForm::DoShow();
   AddStartupSequence(L"O");
 }
