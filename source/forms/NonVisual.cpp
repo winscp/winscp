@@ -390,6 +390,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   #undef COLVIEWPROPS
   UPD(AutoSizeLocalColumnsAction, DirViewEnabled(osLocal));
   UPD(AutoSizeRemoteColumnsAction, DirViewEnabled(osRemote));
+  UPD(ResetLayoutLocalColumnsAction, true);
+  UPD(ResetLayoutRemoteColumnsAction, true);
 
   // SHOW/HIDE COLUMN
   #define UPDSHCOLL(NAME) UPDSHCOL(Local, NAME, dv ## NAME, -1)
@@ -505,6 +507,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDACT(QueueFileListAction,
     Action->Enabled = ScpExplorer->ComponentVisible[fcQueueView];
     Action->Checked = ScpExplorer->ComponentVisible[fcQueueFileList])
+  UPD(QueueResetLayoutColumnsAction, ScpExplorer->ComponentVisible[fcQueueView]);
   ;
 }
 //---------------------------------------------------------------------------
@@ -732,6 +735,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
       COLVIEWPROPS->SortColumn = ListColumn->Index; COLVIEWPROPS->SortAscending = false; ListColumn = NULL )
     EXE(AutoSizeLocalColumnsAction, ScpExplorer->AutoSizeColumns(osLocal))
     EXE(AutoSizeRemoteColumnsAction, ScpExplorer->AutoSizeColumns(osRemote))
+    EXE(ResetLayoutLocalColumnsAction, ScpExplorer->ResetLayoutColumns(osLocal))
+    EXE(ResetLayoutRemoteColumnsAction, ScpExplorer->ResetLayoutColumns(osRemote))
 
     // SHOW/HIDE COLUMN
     #define EXESHCOLL(NAME) EXESHCOL(Local, NAME, dv ## NAME, -1)
@@ -834,6 +839,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(QueueShutDownOnceEmptyAction2, SetQueueOnceEmptyAction(QueueShutDownOnceEmptyAction2))
     EXECOMP(QueueToolbar)
     EXECOMP(QueueFileList)
+    EXE(QueueResetLayoutColumnsAction, ScpExplorer->QueueResetLayoutColumns());
     EXE(QueueItemSpeedAction, )
     ;
   }

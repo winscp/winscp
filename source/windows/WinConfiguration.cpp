@@ -31,6 +31,13 @@ static UnicodeString NotepadName(L"notepad.exe");
 static UnicodeString ToolbarsLayoutKey(L"ToolbarsLayout2");
 static UnicodeString ToolbarsLayoutOldKey(L"ToolbarsLayout");
 TDateTime DefaultUpdatesPeriod(7);
+// WORKAROUND (the semicolon, see TCustomListViewColProperties.GetParamsStr, and see other instances below)
+const UnicodeString ScpExplorerDirViewParamsDefault =
+  L"0;1;0|150,1;70,1;150,1;79,1;62,1;55,0;20,0;150,0;125,0;@" + SaveDefaultPixelsPerInch() + L"|6;7;8;0;1;2;3;4;5";
+const UnicodeString ScpCommanderRemotePanelDirViewParamsDefault = ScpExplorerDirViewParamsDefault;
+const UnicodeString ScpCommanderLocalPanelDirViewParamsDefault =
+  L"0;1;0|150,1;70,1;120,1;150,1;55,0;55,0;@" + SaveDefaultPixelsPerInch() + L"|5;0;1;2;3;4";
+UnicodeString QueueViewLayoutDefault;
 //---------------------------------------------------------------------------
 static const wchar_t FileColorDataSeparator = L':';
 TFileColorData::TFileColorData() :
@@ -654,11 +661,15 @@ void __fastcall TWinConfiguration::Default()
 
   FQueueView.Height = 140;
   FQueueView.HeightPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
-  // with 1000 pixels wide screen, both interfaces are wide enough to fit wider queue
-  FQueueView.Layout =
-    UnicodeString((WorkAreaWidthScaled > 1000) ? L"70,250,250,80,80,80,100" : L"70,160,160,80,80,80,100") +
-    // WORKAROUND (the comma), see GetListViewStr
-    L",;" + SaveDefaultPixelsPerInch();
+  if (QueueViewLayoutDefault.IsEmpty())
+  {
+    // with 1000 pixels wide screen, both interfaces are wide enough to fit wider queue
+    QueueViewLayoutDefault =
+      UnicodeString((WorkAreaWidthScaled > 1000) ? L"70,250,250,80,80,80,100" : L"70,160,160,80,80,80,100") +
+      // WORKAROUND (the comma), see GetListViewStr
+      L",;" + SaveDefaultPixelsPerInch();
+  }
+  FQueueView.Layout = QueueViewLayoutDefault;
   FQueueView.Show = qvHideWhenEmpty;
   FQueueView.LastHideShow = qvHideWhenEmpty;
   FQueueView.ToolBar = true;
@@ -689,8 +700,7 @@ void __fastcall TWinConfiguration::Default()
   int ExplorerHeight = Min(WorkAreaHeightScaled - 30, 720);
   FScpExplorer.WindowParams = FormatDefaultWindowParams(ExplorerWidth, ExplorerHeight);
 
-  // WORKAROUND (the semicolon, see TCustomListViewColProperties.GetParamsStr, and see other instances below)
-  FScpExplorer.DirViewParams = L"0;1;0|150,1;70,1;150,1;79,1;62,1;55,0;20,0;150,0;125,0;@" + SaveDefaultPixelsPerInch() + L"|6;7;8;0;1;2;3;4;5";
+  FScpExplorer.DirViewParams = ScpExplorerDirViewParamsDefault;
   FScpExplorer.ToolbarsLayout =
     UnicodeString(
       L"Queue=1::0+-1,"
@@ -756,7 +766,7 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.TreeOnLeft = false;
   FScpCommander.ExplorerKeyboardShortcuts = false;
   FScpCommander.SystemContextMenu = false;
-  FScpCommander.RemotePanel.DirViewParams = L"0;1;0|150,1;70,1;150,1;79,1;62,1;55,0;20,0;150,0;125,0;@" + SaveDefaultPixelsPerInch() + L"|6;7;8;0;1;2;3;4;5";
+  FScpCommander.RemotePanel.DirViewParams = ScpCommanderRemotePanelDirViewParamsDefault;
   FScpCommander.RemotePanel.StatusBar = true;
   FScpCommander.RemotePanel.DriveView = false;
   FScpCommander.RemotePanel.DriveViewHeight = 100;
@@ -764,7 +774,7 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.RemotePanel.DriveViewWidth = 100;
   FScpCommander.RemotePanel.DriveViewWidthPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
   FScpCommander.RemotePanel.LastPath = UnicodeString();
-  FScpCommander.LocalPanel.DirViewParams = L"0;1;0|150,1;70,1;120,1;150,1;55,0;55,0;@" + SaveDefaultPixelsPerInch() + L"|5;0;1;2;3;4";
+  FScpCommander.LocalPanel.DirViewParams = ScpCommanderLocalPanelDirViewParamsDefault;
   FScpCommander.LocalPanel.StatusBar = true;
   FScpCommander.LocalPanel.DriveView = false;
   FScpCommander.LocalPanel.DriveViewHeight = 100;

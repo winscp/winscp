@@ -424,6 +424,11 @@ inherited ScpExplorerForm: TScpExplorerForm
           object TBXItem164: TTBXItem
             Action = NonVisualDataModule.QueueFileListAction
           end
+          object TBXSeparatorItem51: TTBXSeparatorItem
+          end
+          object TBXItem115: TTBXItem
+            Action = NonVisualDataModule.QueueResetLayoutColumnsAction
+          end
           object TBXSeparatorItem22: TTBXSeparatorItem
           end
           object TBXSubmenuItem8: TTBXSubmenuItem

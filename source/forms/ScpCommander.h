@@ -464,6 +464,10 @@ __published:
   TTBXItem *TBXItem263;
   TTBXSeparatorItem *TBXSeparatorItem73;
   TTBXItem *TBXItem264;
+  TTBXItem *TBXItem265;
+  TTBXItem *TBXItem266;
+  TTBXSeparatorItem *TBXSeparatorItem74;
+  TTBXItem *TBXItem267;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -687,6 +691,7 @@ public:
   virtual int GetNewTabTabImageIndex(TOperationSide Side);
   virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
   virtual bool SupportedSession(TSessionData * SessionData);
+  virtual void ResetLayoutColumns(TOperationSide Side);
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

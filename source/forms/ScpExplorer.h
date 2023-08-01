@@ -333,6 +333,8 @@ __published:
   TTBXSeparatorItem *TBXSeparatorItem50;
   TTBXSeparatorItem *TBXSeparatorItem73;
   TTBXItem *TBXItem264;
+  TTBXSeparatorItem *TBXSeparatorItem51;
+  TTBXItem *TBXItem115;
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
   void __fastcall UnixPathComboBoxBeginEdit(TTBEditItem *Sender,
@@ -381,6 +383,7 @@ public:
   virtual void __fastcall GoToAddress();
   virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
   virtual bool SupportedSession(TSessionData * SessionData);
+  virtual void ResetLayoutColumns(TOperationSide Side);
 };
 //---------------------------------------------------------------------------
 #endif

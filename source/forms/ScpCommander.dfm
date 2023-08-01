@@ -156,6 +156,9 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXItem263: TTBXItem
             Action = NonVisualDataModule.AutoSizeLocalColumnsAction
           end
+          object TBXItem265: TTBXItem
+            Action = NonVisualDataModule.ResetLayoutLocalColumnsAction
+          end
         end
         object TBXItem221: TTBXItem
           Action = NonVisualDataModule.LocalFilterAction
@@ -620,6 +623,11 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXItem255: TTBXItem
             Action = NonVisualDataModule.QueueFileListAction
           end
+          object TBXSeparatorItem74: TTBXSeparatorItem
+          end
+          object TBXItem267: TTBXItem
+            Action = NonVisualDataModule.QueueResetLayoutColumnsAction
+          end
           object TBXSeparatorItem22: TTBXSeparatorItem
           end
           object TBXSubmenuItem8: TTBXSubmenuItem
@@ -783,6 +791,9 @@ inherited ScpCommanderForm: TScpCommanderForm
           end
           object TBXItem264: TTBXItem
             Action = NonVisualDataModule.AutoSizeRemoteColumnsAction
+          end
+          object TBXItem266: TTBXItem
+            Action = NonVisualDataModule.ResetLayoutRemoteColumnsAction
           end
         end
         object TBXItem220: TTBXItem

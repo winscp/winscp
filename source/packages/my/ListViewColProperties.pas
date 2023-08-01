@@ -145,20 +145,33 @@ procedure TCustomListViewColProperties.SetWidthsStr(Value: string; PixelsPerInch
 var
   ColStr: string;
   Index: Integer;
+  NeedInvalidate, NewVisible: Boolean;
 begin
   Index := 0;
+  NeedInvalidate := False;
   BeginUpdate;
   try
     while (Value <> '') and (Index < Count) do
     begin
       ColStr := CutToChar(Value, ';', True);
       Widths[Index] := LoadDimension(StrToInt(CutToChar(ColStr, ',', True)), PixelsPerInch, FListView);
-      Visible[Index] := Boolean(StrToInt(CutToChar(ColStr, ',', True)));
+      NewVisible := Boolean(StrToInt(CutToChar(ColStr, ',', True)));
+      if Visible[Index] <> NewVisible then
+      begin
+        Visible[Index] := NewVisible;
+        NeedInvalidate := True;
+      end;
       Inc(Index);
     end;
   finally
     EndUpdate;
   end;
+
+  // When visibility changes (particularly while reseting layout) redraw is needed
+  // (Invalidate is called in SetVisible too, but maybe it has no effect there, because it is within BeginUpdate/EndUpdate)
+  if NeedInvalidate and FListView.HandleAllocated then
+    FListView.Invalidate;
+
 end;
 
 function TCustomListViewColProperties.GetWidthsStr: string;

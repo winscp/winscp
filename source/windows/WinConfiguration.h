@@ -212,6 +212,10 @@ struct TUpdatesData
 //---------------------------------------------------------------------------
 enum TConnectionType { ctDirect, ctAuto, ctProxy };
 extern TDateTime DefaultUpdatesPeriod;
+extern const UnicodeString ScpExplorerDirViewParamsDefault;
+extern const UnicodeString ScpCommanderRemotePanelDirViewParamsDefault;
+extern const UnicodeString ScpCommanderLocalPanelDirViewParamsDefault;
+extern UnicodeString QueueViewLayoutDefault;
 //---------------------------------------------------------------------------
 struct TUpdatesConfiguration
 {

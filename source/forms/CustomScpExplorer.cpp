@@ -11957,3 +11957,7 @@ void TCustomScpExplorerForm::AutoSizeColumns(TOperationSide Side)
   SetKeyboardState(KeyState);
 }
 //---------------------------------------------------------------------------
+void TCustomScpExplorerForm::QueueResetLayoutColumns()
+{
+  LoadListViewStr(QueueView3, QueueViewLayoutDefault);
+}

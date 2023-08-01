@@ -204,6 +204,13 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Adjust columns width to fit their contents'
       ShortCut = 16491
     end
+    object ResetLayoutRemoteColumnsAction: TAction
+      Tag = 15
+      Category = 'Columns'
+      Caption = '&Reset Layout'
+      HelpKeyword = 'ui_file_panel#selecting_columns'
+      Hint = 'Reset to the default layout of file panel columns'
+    end
     object GoToTreeAction: TAction
       Tag = 15
       Category = 'View'
@@ -238,6 +245,13 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_queue#manage'
       Hint = 'Show pending query of selected queue item'
       ImageIndex = 67
+    end
+    object ResetLayoutLocalColumnsAction: TAction
+      Tag = 15
+      Category = 'Columns'
+      Caption = '&Reset Layout'
+      HelpKeyword = 'ui_file_panel#selecting_columns'
+      Hint = 'Reset to the default layout of file panel columns'
     end
     object QueueItemErrorAction: TAction
       Tag = 12
@@ -1625,6 +1639,12 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&File List'
       Hint = 'Hide/show full queue file list'
     end
+    object QueueResetLayoutColumnsAction: TAction
+      Tag = 12
+      Category = 'Queue'
+      Caption = '&Reset Columns Layout'
+      Hint = 'Reset to the default layout of list columns'
+    end
     object QueuePreferencesAction: TAction
       Tag = 12
       Category = 'Queue'
@@ -2893,6 +2913,9 @@ object NonVisualDataModule: TNonVisualDataModule
       object TBXItem264: TTBXItem
         Action = AutoSizeLocalColumnsAction
       end
+      object TBXItem112: TTBXItem
+        Action = ResetLayoutLocalColumnsAction
+      end
     end
   end
   object RemoteDirViewColumnPopup: TTBXPopupMenu
@@ -2966,6 +2989,9 @@ object NonVisualDataModule: TNonVisualDataModule
       end
       object TBXItem114: TTBXItem
         Action = AutoSizeRemoteColumnsAction
+      end
+      object TBXItem115: TTBXItem
+        Action = ResetLayoutRemoteColumnsAction
       end
     end
   end
@@ -3078,6 +3104,11 @@ object NonVisualDataModule: TNonVisualDataModule
       end
       object TBXItem83: TTBXItem
         Action = QueueFileListAction
+      end
+      object TBXSeparatorItem23: TTBXSeparatorItem
+      end
+      object TBXItem116: TTBXItem
+        Action = QueueResetLayoutColumnsAction
       end
       object N65: TTBXSeparatorItem
       end

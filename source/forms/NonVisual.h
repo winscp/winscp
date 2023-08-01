@@ -703,6 +703,13 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem264;
   TTBXSeparatorItem *TBXSeparatorItem20;
   TTBXItem *TBXItem114;
+  TAction *ResetLayoutRemoteColumnsAction;
+  TAction *ResetLayoutLocalColumnsAction;
+  TTBXItem *TBXItem112;
+  TTBXItem *TBXItem115;
+  TAction *QueueResetLayoutColumnsAction;
+  TTBXSeparatorItem *TBXSeparatorItem23;
+  TTBXItem *TBXItem116;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);

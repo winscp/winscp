@@ -2950,3 +2950,11 @@ bool TScpCommanderForm::SupportedSession(TSessionData *)
 {
   return true;
 }
+//---------------------------------------------------------------------------
+void TScpCommanderForm::ResetLayoutColumns(TOperationSide Side)
+{
+  UnicodeString DirViewParamsDefault =
+    IsSideLocalBrowser(Side) ? ScpCommanderLocalPanelDirViewParamsDefault : ScpCommanderRemotePanelDirViewParamsDefault;
+
+  DirView(Side)->ColProperties->ParamsStr = DirViewParamsDefault;
+}
