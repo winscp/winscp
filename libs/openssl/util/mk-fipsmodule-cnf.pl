@@ -12,8 +12,8 @@ use Getopt::Long;
 # self_test_onload happens if install_mac isn't included, don't add it below
 my $conditional_errors = 1;
 my $security_checks = 1;
-my $ems_check = 0;
-my $drgb_no_trunc_dgst = 0;
+my $ems_check = 1;
+my $drgb_no_trunc_dgst = 1;
 
 my $activate = 1;
 my $mac_key;
@@ -45,7 +45,7 @@ print <<_____;
 activate = $activate
 conditional-errors = $conditional_errors
 security-checks = $security_checks
-ems_check = $ems_check
-drgb_no_trunc_dgst = $drgb_no_trunc_dgst
+tls1-prf-ems-check = $ems_check
+drbg-no-trunc-md = $drgb_no_trunc_dgst
 module-mac = $module_mac
 _____

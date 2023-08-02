@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -141,7 +141,7 @@ static const PROV_GCM_HW aes_gcm = {
 # include "cipher_aes_gcm_hw_t4.inc"
 #elif defined(AES_PMULL_CAPABLE) && defined(AES_GCM_ASM)
 # include "cipher_aes_gcm_hw_armv8.inc"
-#elif defined(PPC_AES_GCM_CAPABLE)
+#elif defined(PPC_AES_GCM_CAPABLE) && defined(_ARCH_PPC64)
 # include "cipher_aes_gcm_hw_ppc.inc"
 #elif defined(RV64I_ZKND_ZKNE_CAPABLE)
 # include "cipher_aes_gcm_hw_rv64i_zknd_zkne.inc"
