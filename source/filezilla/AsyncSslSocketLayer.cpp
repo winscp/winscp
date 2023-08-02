@@ -20,7 +20,6 @@ CCriticalSectionWrapper CAsyncSslSocketLayer::m_sCriticalSection;
 
 CAsyncSslSocketLayer::t_SslLayerList* CAsyncSslSocketLayer::m_pSslLayerList = 0;
 int CAsyncSslSocketLayer::m_nSslRefCount = 0;
-std::map<SSL_CTX *, int> CAsyncSslSocketLayer::m_contextRefCount;
 
 CAsyncSslSocketLayer::CAsyncSslSocketLayer()
 {
@@ -701,8 +700,7 @@ int CAsyncSslSocketLayer::NewSessionCallback(struct ssl_st * Ssl, SSL_SESSION * 
 
 int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
   CAsyncSslSocketLayer* main, bool sessionreuse, const CString & host,
-  CFileZillaTools * tools,
-  void* pSslContext /*=0*/)
+  CFileZillaTools * tools)
 {
   if (m_bUseSSL)
     return 0;
@@ -711,26 +709,7 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
     return res;
 
   m_sCriticalSection.Lock();
-  if ((SSL_CTX*)pSslContext)
-  {
-    if (m_ssl_ctx)
-    {
-      m_sCriticalSection.Unlock();
-      ResetSslSession();
-      return SSL_FAILURE_INITSSL;
-    }
-
-    std::map<SSL_CTX *, int>::iterator iter = m_contextRefCount.find((SSL_CTX*)pSslContext);
-    if (iter == m_contextRefCount.end() || iter->second < 1)
-    {
-      m_sCriticalSection.Unlock();
-      ResetSslSession();
-      return SSL_FAILURE_INITSSL;
-    }
-    m_ssl_ctx = (SSL_CTX*)pSslContext;
-    iter->second++;
-  }
-  else if (!m_ssl_ctx)
+  if (!m_ssl_ctx)
   {
     // Create new context if none given
     if (!(m_ssl_ctx = SSL_CTX_new( SSLv23_method())))
@@ -739,7 +718,6 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
       ResetSslSession();
       return SSL_FAILURE_INITSSL;
     }
-    m_contextRefCount[m_ssl_ctx] = 1;
 
     if (clientMode)
     {
@@ -939,17 +917,7 @@ void CAsyncSslSocketLayer::ResetSslSession()
 
   if (m_ssl_ctx)
   {
-    std::map<SSL_CTX *, int>::iterator iter = m_contextRefCount.find(m_ssl_ctx);
-    if (iter != m_contextRefCount.end())
-    {
-      if (iter->second <= 1)
-      {
-        SSL_CTX_free(m_ssl_ctx);
-        m_contextRefCount.erase(iter);
-      }
-      else
-        iter->second--;
-    }
+    SSL_CTX_free(m_ssl_ctx);
     m_ssl_ctx = 0;
   }
 

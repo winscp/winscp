@@ -134,8 +134,7 @@ public:
   bool IsUsingSSL();
   int InitSSLConnection(bool clientMode,
     CAsyncSslSocketLayer * main,
-    bool sessionreuse, const CString & host, CFileZillaTools * tools,
-    void* pContext = 0);
+    bool sessionreuse, const CString & host, CFileZillaTools * tools);
 
   // Send raw text, useful to send a confirmation after the ssl connection
   // has been initialized
@@ -200,7 +199,6 @@ private:
 
   // SSL data
   SSL_CTX* m_ssl_ctx;  // SSL context
-  static std::map<SSL_CTX *, int> m_contextRefCount;
   SSL* m_ssl;      // current session handle
   SSL_SESSION * m_sessionid;
   bool m_sessionreuse;
