@@ -1438,10 +1438,11 @@ public:
   virtual __fastcall ~TSFTPDownloadQueue(){}
 
   bool __fastcall Init(
-    int QueueLen, const RawByteString & AHandle, __int64 ATransferred, __int64 PartSize, TFileOperationProgressType * AOperationProgress)
+    int QueueLen, const RawByteString & AHandle, __int64 Offset, __int64 PartSize, TFileOperationProgressType * AOperationProgress)
   {
     FHandle = AHandle;
-    FTransferred = ATransferred;
+    FOffset = Offset;
+    FTransferred = Offset;
     FPartSize = PartSize;
     OperationProgress = AOperationProgress;
 
@@ -1468,7 +1469,7 @@ protected:
     unsigned int BlockSize = FFileSystem->DownloadBlockSize(OperationProgress);
     if (FPartSize >= 0)
     {
-      __int64 Remaining = FPartSize - FTransferred;
+      __int64 Remaining = (FOffset + FPartSize) - FTransferred;
       if (Remaining < BlockSize)
       {
         // It's lower, so the cast is safe
@@ -1501,6 +1502,7 @@ protected:
 
 private:
   TFileOperationProgressType * OperationProgress;
+  __int64 FOffset;
   __int64 FTransferred;
   __int64 FPartSize;
   RawByteString FHandle;
