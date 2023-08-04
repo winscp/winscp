@@ -862,7 +862,7 @@ void TParallelOperation::Done(
 
       try
       {
-        if (DebugAlwaysTrue(FSide == osRemote))
+        if (Success && DebugAlwaysTrue(FSide == osRemote))
         {
           TParallelFileOffsets::const_iterator I = std::find(FParallelFileOffsets.begin(), FParallelFileOffsets.end(), CopyParam->PartOffset);
           if (DebugAlwaysTrue(I != FParallelFileOffsets.end()))
