@@ -915,8 +915,8 @@ void TParallelOperation::Done(
                     {
                       {
                         Terminal->LogEvent(FORMAT(L"Appending part %d of \"%s\" to \"%s\"...", (Index, FileNameOnly, TargetNamePartialOnly)));
-                        std::unique_ptr<TFileStream> SourceStream(new TFileStream(ApiPath(TargetPartName), fmOpenRead | fmShareDenyWrite));
-                        std::unique_ptr<TFileStream> DestStream(new TFileStream(ApiPath(TargetNamePartial), fmOpenWrite | fmShareDenyWrite));
+                        std::unique_ptr<THandleStream> SourceStream(TSafeHandleStream::CreateFromFile(TargetPartName, fmOpenRead | fmShareDenyWrite));
+                        std::unique_ptr<THandleStream> DestStream(TSafeHandleStream::CreateFromFile(TargetNamePartial, fmOpenWrite | fmShareDenyWrite));
                         HANDLE DestHandle = reinterpret_cast<HANDLE>(DestStream->Handle);
                         FILETIME WrTime;
                         bool GotWrTime = GetFileTime(DestHandle, NULL, NULL, &WrTime);

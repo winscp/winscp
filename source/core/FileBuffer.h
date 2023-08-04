@@ -49,10 +49,16 @@ class TSafeHandleStream : public THandleStream
 {
 public:
   __fastcall TSafeHandleStream(int AHandle);
+  __fastcall TSafeHandleStream(THandleStream * Source, bool Own);
+  static TSafeHandleStream * CreateFromFile(const UnicodeString & FileName, unsigned short Mode);
+  virtual __fastcall ~TSafeHandleStream();
   virtual int __fastcall Read(void * Buffer, int Count);
   virtual int __fastcall Write(const void * Buffer, int Count);
   virtual int __fastcall Read(System::DynamicArray<System::Byte> Buffer, int Offset, int Count);
   virtual int __fastcall Write(const System::DynamicArray<System::Byte> Buffer, int Offset, int Count);
+private:
+  THandleStream * FSource;
+  bool FOwned;
 };
 //---------------------------------------------------------------------------
 char * __fastcall EOLToStr(TEOLType EOLType);

@@ -246,8 +246,25 @@ void __fastcall TFileBuffer::WriteToOut(TTransferOutEvent OnTransferOut, TObject
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 __fastcall TSafeHandleStream::TSafeHandleStream(int AHandle) :
-  THandleStream(AHandle)
+  THandleStream(AHandle),
+  FSource(NULL)
 {
+}
+//---------------------------------------------------------------------------
+__fastcall TSafeHandleStream::TSafeHandleStream(THandleStream * Source, bool Own) :
+  THandleStream(Source->Handle)
+{
+  FSource = Own ? Source : NULL;
+}
+//---------------------------------------------------------------------------
+TSafeHandleStream * TSafeHandleStream::CreateFromFile(const UnicodeString & FileName, unsigned short Mode)
+{
+  return new TSafeHandleStream(new TFileStream(ApiPath(FileName), Mode), true);
+}
+//---------------------------------------------------------------------------
+__fastcall TSafeHandleStream::~TSafeHandleStream()
+{
+  SAFE_DESTROY(FSource);
 }
 //---------------------------------------------------------------------------
 int __fastcall TSafeHandleStream::Read(void * Buffer, int Count)
@@ -272,7 +289,7 @@ int __fastcall TSafeHandleStream::Write(const void * Buffer, int Count)
 //---------------------------------------------------------------------------
 int __fastcall TSafeHandleStream::Read(System::DynamicArray<System::Byte> Buffer, int Offset, int Count)
 {
-  DebugFail(); // untested
+  // This is invoked for example via CopyFrom from TParallelOperation::Done
   int Result = FileRead(FHandle, Buffer, Offset, Count);
   if (Result == -1)
   {
@@ -283,7 +300,7 @@ int __fastcall TSafeHandleStream::Read(System::DynamicArray<System::Byte> Buffer
 //---------------------------------------------------------------------------
 int __fastcall TSafeHandleStream::Write(const System::DynamicArray<System::Byte> Buffer, int Offset, int Count)
 {
-  // This is invoked for example by TIniFileStorage::Flush
+  // This is invoked for example by TIniFileStorage::Flush or via CopyFrom from TParallelOperation::Done
   int Result = FileWrite(FHandle, Buffer, Offset, Count);
   if (Result == -1)
   {
