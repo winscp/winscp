@@ -115,7 +115,6 @@ struct t_SslCertData
   int priv_data; //Internal data, do not modify
 };
 //---------------------------------------------------------------------------
-class CCriticalSectionWrapper;
 class CFileZillaTools;
 //---------------------------------------------------------------------------
 class CAsyncSslSocketLayer : public CAsyncSocketExLayer
@@ -158,7 +157,6 @@ private:
   void PrintSessionInfo();
   BOOL ShutDownComplete();
   int InitSSL();
-  void UnloadSSL();
   void PrintLastErrorMsg();
   bool HandleSession(SSL_SESSION * Session);
   int ProcessSendBuffer();
@@ -177,11 +175,10 @@ private:
   BOOL m_bFailureSent;
 
   // Critical section for thread synchronization
-  static CCriticalSectionWrapper m_sCriticalSection;
+  static std::unique_ptr<TCriticalSection> m_sCriticalSection;
 
   // Status variables
-  static int m_nSslRefCount;
-  BOOL m_bSslInitialized;
+  static bool m_bSslInitialized;
   int m_nShutDown;
   int m_nNetworkError;
   int m_nSslAsyncNotifyId;
