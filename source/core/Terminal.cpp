@@ -4853,18 +4853,21 @@ bool __fastcall TTerminal::DoRenameFile(
     if (DuplicateFile.get() != NULL)
     {
       UnicodeString QuestionFmt;
+      TQueryType QueryType;
       if (DuplicateFile->IsDirectory)
       {
-        QuestionFmt = LoadStr(DIRECTORY_OVERWRITE);
+        QuestionFmt = MainInstructions(LoadStr(DIRECTORY_OVERWRITE)) + LoadStr(DIRECTORY_OVERWRITE_WARNING);
+        QueryType = qtWarning;
       }
       else
       {
-        QuestionFmt = LoadStr(FILE_OVERWRITE);
+        QuestionFmt = MainInstructions(LoadStr(FILE_OVERWRITE));
+        QueryType = qtConfirmation;
       }
       TQueryParams Params(qpNeverAskAgainCheck);
-      UnicodeString Question = MainInstructions(FORMAT(QuestionFmt, (NewName)));
+      UnicodeString Question = FORMAT(QuestionFmt, (NewName));
       unsigned int Answers = qaYes | qaNo | FLAGMASK(OperationProgress != NULL, qaCancel) | FLAGMASK(IsBatchMove, qaYesToAll | qaNoToAll);
-      unsigned int Answer = QueryUser(Question, NULL, Answers, &Params);
+      unsigned int Answer = QueryUser(Question, NULL, Answers, &Params, QueryType);
       switch (Answer)
       {
         case qaNeverAskAgain:

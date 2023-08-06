@@ -755,6 +755,7 @@ protected:
   void __fastcall FileDeleted(TOperationSide Side, const UnicodeString & FileName, bool Success);
   void LoadFilesProperties(TStrings * FileList);
   void PasteFiles();
+  bool DoDirectoryExists(void * Session, const UnicodeString & Directory);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

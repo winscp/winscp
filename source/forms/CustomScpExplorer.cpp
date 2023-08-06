@@ -4450,6 +4450,18 @@ void __fastcall TCustomScpExplorerForm::LockFiles(TStrings * FileList, bool Lock
   RemoteDirView->RestoreSelection();
 }
 //---------------------------------------------------------------------------
+bool TCustomScpExplorerForm::DoDirectoryExists(void * Session, const UnicodeString & Directory)
+{
+  bool Result = false;
+  TTerminal * ATerminal = (Session == NULL) ? Terminal : reinterpret_cast<TTerminal *>(Session);
+  if (IsActiveTerminal(ATerminal))
+  {
+    std::unique_ptr<TRemoteFile> File(ATerminal->TryReadFile(Directory));
+    Result = File && File->IsDirectory;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *& Session,
   TStrings * FileList, UnicodeString & Target, UnicodeString & FileMask, bool & DirectCopy,
   bool NoConfirmation, bool Move)
@@ -4501,7 +4513,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
 
     if (Move)
     {
-      Result = DoRemoteMoveDialog(Multi, Target, FileMask);
+      Result = DoRemoteMoveDialog(Multi, Target, FileMask, DoDirectoryExists);
     }
     else
     {
@@ -4537,7 +4549,8 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
       }
       void * ASession = Session;
       Result = DoRemoteCopyDialog(
-        Sessions.get(), Directories.get(), AllowDirectCopy, Multi, ASession, Target, FileMask, DirectCopy, Terminal);
+        Sessions.get(), Directories.get(), AllowDirectCopy, Multi, ASession, Target, FileMask, DirectCopy, Terminal,
+        DoDirectoryExists);
       Session = static_cast<TManagedTerminal *>(ASession);
     }
   }

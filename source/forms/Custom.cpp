@@ -802,7 +802,7 @@ bool __fastcall DoShortCutDialog(TShortCut & ShortCut,
 class TRemoteMoveDialog : public TCustomDialog
 {
 public:
-  __fastcall TRemoteMoveDialog(bool Multi);
+  __fastcall TRemoteMoveDialog(bool Multi, TDirectoryExistsEvent OnDirectoryExists);
 
   bool __fastcall Execute(UnicodeString & Target, UnicodeString & FileMask);
 
@@ -814,9 +814,10 @@ protected:
 private:
   THistoryComboBox * Combo;
   bool FMulti;
+  TDirectoryExistsEvent FOnDirectoryExists;
 };
 //---------------------------------------------------------------------------
-__fastcall TRemoteMoveDialog::TRemoteMoveDialog(bool Multi) :
+__fastcall TRemoteMoveDialog::TRemoteMoveDialog(bool Multi, TDirectoryExistsEvent OnDirectoryExists) :
   TCustomDialog(HELP_REMOTE_MOVE)
 {
   Caption = LoadStr(REMOTE_MOVE_TITLE);
@@ -824,6 +825,7 @@ __fastcall TRemoteMoveDialog::TRemoteMoveDialog(bool Multi) :
   ClientWidth = ScaleByTextHeight(this, 420);
 
   FMulti = Multi;
+  FOnDirectoryExists = OnDirectoryExists;
 
   AddImage(L"Move L to R");
 
@@ -860,6 +862,11 @@ void __fastcall TRemoteMoveDialog::DoShow()
 //---------------------------------------------------------------------------
 void __fastcall TRemoteMoveDialog::DoValidate()
 {
+  if (FOnDirectoryExists(NULL, Combo->Text))
+  {
+    Combo->Text = UnixCombinePaths(Combo->Text, AnyMask);
+  }
+
   if (!IsFileNameMask(GetFileMask()) && FMulti)
   {
     UnicodeString Message =
@@ -873,9 +880,10 @@ void __fastcall TRemoteMoveDialog::DoValidate()
   TCustomDialog::DoValidate();
 }
 //---------------------------------------------------------------------------
-bool __fastcall DoRemoteMoveDialog(bool Multi, UnicodeString & Target, UnicodeString & FileMask)
+bool __fastcall DoRemoteMoveDialog(
+  bool Multi, UnicodeString & Target, UnicodeString & FileMask, TDirectoryExistsEvent OnDirectoryExists)
 {
-  std::unique_ptr<TRemoteMoveDialog> Dialog(new TRemoteMoveDialog(Multi));
+  std::unique_ptr<TRemoteMoveDialog> Dialog(new TRemoteMoveDialog(Multi, OnDirectoryExists));
   return Dialog->Execute(Target, FileMask);
 }
 //---------------------------------------------------------------------------

@@ -1736,7 +1736,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
           unsigned int Answer;
           if (File->IsDirectory)
           {
-            UnicodeString Message = FMTLOAD(DIRECTORY_OVERWRITE, (FileNameOnly));
+            UnicodeString Message = MainInstructions(FMTLOAD(DIRECTORY_OVERWRITE, (FileNameOnly)));
             TQueryParams QueryParams(qpNeverAskAgainCheck);
 
             TSuspendFileOperationProgress Suspend(OperationProgress);

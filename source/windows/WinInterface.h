@@ -324,11 +324,14 @@ bool __fastcall DoPropertiesDialog(TStrings * FileList,
     int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
     TCalculateChecksumEvent OnCalculateChecksum);
 
-bool __fastcall DoRemoteMoveDialog(bool Multi, UnicodeString & Target, UnicodeString & FileMask);
+typedef bool (__closure * TDirectoryExistsEvent)(void * Session, const UnicodeString & Directory);
+bool __fastcall DoRemoteMoveDialog(
+  bool Multi, UnicodeString & Target, UnicodeString & FileMask, TDirectoryExistsEvent OnDirectoryExists);
 enum TDirectRemoteCopy { drcDisallow, drcAllow, drcConfirmCommandSession };
-bool __fastcall DoRemoteCopyDialog(TStrings * Sessions, TStrings * Directories,
-  TDirectRemoteCopy AllowDirectCopy, bool Multi, void *& Session,
-  UnicodeString & Target, UnicodeString & FileMask, bool & DirectCopy, void * CurrentSession);
+bool __fastcall DoRemoteCopyDialog(
+  TStrings * Sessions, TStrings * Directories,
+  TDirectRemoteCopy AllowDirectCopy, bool Multi, void *& Session, UnicodeString & Target, UnicodeString & FileMask,
+  bool & DirectCopy, void * CurrentSession, TDirectoryExistsEvent OnDirectoryExists);
 
 // forms\SelectMask.cpp
 bool __fastcall DoSelectMaskDialog(TControl * Parent, bool Select, TFileFilter & Filter);

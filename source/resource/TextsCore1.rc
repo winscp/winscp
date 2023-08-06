@@ -315,6 +315,7 @@ BEGIN
   PROXY_AUTH_TITLE, "Proxy authentication"
   PROXY_AUTH_USERNAME_PROMPT, "Proxy &username:"
   PROXY_AUTH_PASSWORD_PROMPT, "Proxy &password:"
+  DIRECTORY_OVERWRITE_WARNING, "All files in the target directory will be deleted!"
 
   CORE_INFORMATION_STRINGS, "CORE_INFORMATION"
   YES_STR, "Yes"
