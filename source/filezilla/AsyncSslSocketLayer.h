@@ -158,6 +158,7 @@ private:
   BOOL ShutDownComplete();
   int InitSSL();
   void PrintLastErrorMsg();
+  void SetSession(SSL_SESSION * Session);
   bool HandleSession(SSL_SESSION * Session);
   int ProcessSendBuffer();
 
@@ -176,6 +177,7 @@ private:
 
   // Critical section for thread synchronization
   static std::unique_ptr<TCriticalSection> m_sCriticalSection;
+  std::unique_ptr<TCriticalSection> m_CriticalSection;
 
   // Status variables
   static bool m_bSslInitialized;
@@ -198,6 +200,8 @@ private:
   SSL_CTX* m_ssl_ctx;  // SSL context
   SSL* m_ssl;      // current session handle
   SSL_SESSION * m_sessionid;
+  int m_sessionidSerializedLen;
+  unsigned char * m_sessionidSerialized;
   bool m_sessionreuse;
   bool m_sessionreuse_failed;
   CAsyncSslSocketLayer * m_Main;
