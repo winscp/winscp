@@ -2665,11 +2665,11 @@ void __fastcall TScpCommanderForm::BrowseFile()
   }
   TScpCommanderConfiguration ScpCommander = WinConfiguration->ScpCommander;
   // Select the panel that has the file, with preference on the remote panel
-  if (RemoteDirView->ItemFocused->Selected)
+  if ((RemoteDirView->ItemFocused != NULL) && RemoteDirView->ItemFocused->Selected)
   {
     ScpCommander.CurrentPanel = osRemote;
   }
-  else if (LocalDirView->ItemFocused->Selected)
+  else if ((LocalDirView->ItemFocused != NULL) && LocalDirView->ItemFocused->Selected)
   {
     ScpCommander.CurrentPanel = osLocal;
   }
