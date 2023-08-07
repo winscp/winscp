@@ -1188,8 +1188,10 @@ int __fastcall Execute()
           bool DummyDefaultsOnly = false;
           UnicodeString DownloadFile2;
           int Flags = GetCommandLineParseUrlFlags(Params) | pufParseOnly;
+          // Make copy, as ParseUrl consumes /rawsettings
+          TOptions Options(*Params);
           std::unique_ptr<TSessionData> SessionData(
-            StoredSessions->ParseUrl(AutoStartSession, Params, DummyDefaultsOnly, &DownloadFile2, NULL, NULL, Flags));
+            StoredSessions->ParseUrl(AutoStartSession, &Options, DummyDefaultsOnly, &DownloadFile2, NULL, NULL, Flags));
           if (!DownloadFile2.IsEmpty())
           {
             TrySendToAnotherInstance = false;
