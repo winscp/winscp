@@ -124,9 +124,9 @@ extern "C" {
 /* Generate 80386 code? */
 # undef I386_ONLY
 
-#define ENGINESDIR "%ProgramFiles(86)%\\OpenSSL\\lib\\engines-3"
-#define MODULESDIR "%ProgramFiles(86)%\\OpenSSL\\lib\\ossl-modules"
-#define OPENSSLDIR "%CommonProgramFiles(86)%\\SSL"
+#define ENGINESDIR "C:\\Program Files (x86)\\OpenSSL\\lib\\engines-3"
+#define MODULESDIR "C:\\Program Files (x86)\\OpenSSL\\lib\\ossl-modules"
+#define OPENSSLDIR "C:\\Program Files (x86)\\Common Files\\SSL"
 
 /*
  * The following are cipher-specific, but are part of the public API.
