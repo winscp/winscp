@@ -11646,12 +11646,21 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewResize(TObject *)
   CenterReconnectToolbar();
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::BrowseFile()
+void TCustomScpExplorerForm::DoBrowseFile(TCustomDirView * DirView, const UnicodeString & FileName)
 {
-  if (RemoteDirView->ItemFocused != NULL)
+  if (!FileName.IsEmpty())
   {
-    RemoteDirView->ItemFocused->Selected = true;
+    DirView->RestoreFocus(FileName);
+    if (DirView->ItemFocused != NULL)
+    {
+      DirView->ItemFocused->Selected = true;
+    }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::BrowseFile(const UnicodeString & FileName)
+{
+  DoBrowseFile(RemoteDirView, FileName);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateQueueFileList()

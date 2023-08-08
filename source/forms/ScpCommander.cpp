@@ -2655,14 +2655,11 @@ void __fastcall TScpCommanderForm::FileColorsChanged()
   DoFileColorsChanged(OtherLocalDirView);
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::BrowseFile()
+void __fastcall TScpCommanderForm::BrowseFile(const UnicodeString & FileName)
 {
   DebugAssert(!IsLocalBrowserMode());
-  TCustomScpExplorerForm::BrowseFile();
-  if (LocalDirView->ItemFocused != NULL)
-  {
-    LocalDirView->ItemFocused->Selected = true;
-  }
+  TCustomScpExplorerForm::BrowseFile(FileName);
+  DoBrowseFile(LocalDirView, FileName);
   TScpCommanderConfiguration ScpCommander = WinConfiguration->ScpCommander;
   // Select the panel that has the file, with preference on the remote panel
   if ((RemoteDirView->ItemFocused != NULL) && RemoteDirView->ItemFocused->Selected)

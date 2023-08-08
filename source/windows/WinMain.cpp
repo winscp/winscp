@@ -131,7 +131,7 @@ void __fastcall Upload(TTerminal * Terminal, TStrings * FileList, int UseDefault
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName, int UseDefaults)
+void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName, int UseDefaults, bool & Browse, UnicodeString & BrowseFile)
 {
   TRemoteFile * File = NULL;
 
@@ -169,33 +169,45 @@ void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName, int
     std::unique_ptr<TStrings> FileListFriendly(new TStringList());
     FileListFriendly->AddObject(FriendyFileName, File);
 
-    int Options = coDisableQueue;
+    int Options = coDisableQueue | coBrowse;
     int CopyParamAttrs = Terminal->UsableCopyParamAttrs(0).Download;
+    int OutputOptions = 0;
     if ((UseDefaults == 0) ||
         DoCopyDialog(false, false, FileListFriendly.get(), TargetDirectory, &CopyParam,
-          Options, CopyParamAttrs, NULL, NULL, UseDefaults))
+          Options, CopyParamAttrs, NULL, &OutputOptions, UseDefaults))
     {
-      // Setting parameter overrides only now, otherwise the dialog would present the parametes as non-default
-
-      if (CustomDisplayName)
+      if (FLAGCLEAR(OutputOptions, cooBrowse))
       {
-        // Set only now, so that it is not redundantly displayed on the copy dialog.
-        // We should escape the * and ?'s.
-        CopyParam.FileMask = DisplayName;
+        // Setting parameter overrides only now, otherwise the dialog would present the parametes as non-default
+
+        if (CustomDisplayName)
+        {
+          // Set only now, so that it is not redundantly displayed on the copy dialog.
+          // We should escape the * and ?'s.
+          CopyParam.FileMask = DisplayName;
+        }
+
+        CopyParam.OnceDoneOperation = odoDisconnect;
+
+        std::unique_ptr<TStrings> FileList(new TStringList());
+        FileList->AddObject(FileName, File);
+        CopyParam.IncludeFileMask.SetRoots(TargetDirectory, FileList.get());
+
+        Terminal->CopyToLocal(FileList.get(), TargetDirectory, &CopyParam, 0, NULL);
       }
-
-      CopyParam.OnceDoneOperation = odoDisconnect;
-
-      std::unique_ptr<TStrings> FileList(new TStringList());
-      FileList->AddObject(FileName, File);
-      CopyParam.IncludeFileMask.SetRoots(TargetDirectory, FileList.get());
-
-      Terminal->CopyToLocal(FileList.get(), TargetDirectory, &CopyParam, 0, NULL);
+      else
+      {
+        UnicodeString Directory = UnixExtractFilePath(FileName);
+        BrowseFile = UnixExtractFileName(FileName);
+        Browse = true;
+        Terminal->AutoReadDirectory = true;
+        Terminal->ChangeDirectory(Directory);
+      }
     }
-
-    UnicodeString Directory = UnixExtractFilePath(FileName);
-    Terminal->AutoReadDirectory = true;
-    Terminal->ChangeDirectory(Directory);
+    else
+    {
+      Abort();
+    }
   }
   __finally
   {
@@ -1279,10 +1291,10 @@ int __fastcall Execute()
 
               bool CanStart;
               bool Browse = false;
+              UnicodeString BrowseFile;
               if (DataList->Count > 0)
               {
                 TManagedTerminal * Session = TerminalManager->NewSessions(DataList.get());
-                UnicodeString BrowseFile;
                 if (Params->FindSwitch(BROWSE_SWITCH, BrowseFile) &&
                     (!BrowseFile.IsEmpty() || !DownloadFile.IsEmpty()))
                 {
@@ -1290,10 +1302,6 @@ int __fastcall Execute()
                   {
                     BrowseFile = DownloadFile;
                   }
-                  DebugAssert(Session->RemoteExplorerState == NULL);
-                  Session->RemoteExplorerState = CreateDirViewStateForFocusedItem(BrowseFile);
-                  DebugAssert(Session->LocalExplorerState == NULL);
-                  Session->LocalExplorerState = CreateDirViewStateForFocusedItem(BrowseFile);
                   DownloadFile = UnicodeString();
                   Browse = true;
                 }
@@ -1362,8 +1370,8 @@ int __fastcall Execute()
                   }
                   else if (!DownloadFile.IsEmpty())
                   {
-                    Download(TerminalManager->ActiveSession, DownloadFile,
-                      UseDefaults);
+                    Download(
+                      TerminalManager->ActiveSession, DownloadFile, UseDefaults, Browse, BrowseFile);
                   }
                   else
                   {
@@ -1377,7 +1385,7 @@ int __fastcall Execute()
 
                   if (Browse)
                   {
-                    ScpExplorer->BrowseFile();
+                    ScpExplorer->BrowseFile(BrowseFile);
                   }
 
                   AddStartupSequence(L"R");

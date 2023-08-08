@@ -678,7 +678,7 @@ public:
   virtual void __fastcall GoToAddress();
   virtual void __fastcall CopyFilesToClipboard(TOperationSide Side, bool OnFocused);
   virtual void __fastcall PasteFromClipBoard();
-  virtual void __fastcall BrowseFile();
+  virtual void __fastcall BrowseFile(const UnicodeString & FileName);
   virtual bool SupportsLocalBrowser();
   virtual bool IsSideLocalBrowser(TOperationSide Side);
   virtual bool IsLocalBrowserMode();

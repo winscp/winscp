@@ -756,6 +756,7 @@ protected:
   void LoadFilesProperties(TStrings * FileList);
   void PasteFiles();
   bool DoDirectoryExists(void * Session, const UnicodeString & Directory);
+  void DoBrowseFile(TCustomDirView * DirView, const UnicodeString & FileName);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -899,7 +900,7 @@ public:
   void __fastcall PrivateKeyUpload();
   bool __fastcall IsComponentPossible(Byte Component);
   void __fastcall ReplaceTerminal(TManagedTerminal * value);
-  virtual void __fastcall BrowseFile();
+  virtual void __fastcall BrowseFile(const UnicodeString & FileName);
   void __fastcall CloseApp();
   virtual bool SupportsLocalBrowser();
   virtual bool IsSideLocalBrowser(TOperationSide Side);

@@ -220,9 +220,11 @@ const coAllowRemoteTransfer = 0x100;
 const coNoQueue             = 0x200;
 const coShortCutHint        = 0x800;
 const coAllFiles            = 0x1000;
+const coBrowse              = 0x2000;
 const cooDoNotShowAgain     = 0x01;
 const cooRemoteTransfer     = 0x02;
 const cooSaveSettings       = 0x04;
+const cooBrowse             = 0x08;
 bool __fastcall DoCopyDialog(
   bool ToRemote, bool Move, TStrings * FileList, UnicodeString & TargetDirectory,
   TGUICopyParamType * Params, int Options, int CopyParamAttrs,
