@@ -105,6 +105,9 @@ TStrings * GetS3Profiles()
     while (Index < Result->Count)
     {
       UnicodeString Section = Result->Strings[Index];
+      // This is not consistent with AWS CLI.
+      // AWS CLI fails if one of AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY is set and other is missing:
+      // "Partial credentials found in env, missing: AWS_SECRET_ACCESS_KEY"
       if (S3ConfigFile->ReadString(Section, AWS_ACCESS_KEY_ID, EmptyStr).IsEmpty() &&
           S3ConfigFile->ReadString(Section, AWS_SECRET_ACCESS_KEY, EmptyStr).IsEmpty() &&
           S3ConfigFile->ReadString(Section, AWS_SESSION_TOKEN, EmptyStr).IsEmpty())
@@ -143,6 +146,9 @@ UnicodeString GetS3ConfigValue(const UnicodeString & Profile, const UnicodeStrin
       if (S3ConfigFile.get() != NULL)
       {
         UnicodeString AProfile = DefaultStr(Profile, S3Profile);
+        // This is not consistent with AWS CLI.
+        // AWS CLI fails if one of aws_access_key_id or aws_secret_access_key is set and other is missing:
+        // "Partial credentials found in shared-credentials-file, missing: aws_secret_access_key"
         Result = S3ConfigFile->ReadString(AProfile, Name, EmptyStr);
         if (!Result.IsEmpty())
         {
