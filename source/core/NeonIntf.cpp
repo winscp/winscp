@@ -110,15 +110,6 @@ void InitNeonSession(ne_session * Session, TProxyMethod ProxyMethod, const Unico
 
   ne_redirect_register(Session);
   ne_set_useragent(Session, StrToNeon(FORMAT(L"%s/%s", (AppNameString(), Configuration->Version))));
-  UnicodeString CertificateStorage = Configuration->CertificateStorageExpanded;
-  if (!CertificateStorage.IsEmpty())
-  {
-    ne_ssl_set_certificates_storage(Session, StrToNeon(CertificateStorage));
-    if (Terminal != NULL)
-    {
-      Terminal->LogEvent(FORMAT(L"Using certificate store \"%s\"", (CertificateStorage)));
-    }
-  }
 
   if (Terminal != NULL)
   {
@@ -260,9 +251,31 @@ void ne_init_ssl_session(struct ssl_st * Ssl, ne_session * Session)
 //---------------------------------------------------------------------------
 void SetNeonTlsInit(ne_session * Session, TNeonTlsInit OnNeonTlsInit)
 {
+  // As the OnNeonTlsInit always only calls SetupSsl, we can simplify this with one shared implementation
   TMethod & Method = *(TMethod*)&OnNeonTlsInit;
   ne_set_session_private(Session, SESSION_TLS_INIT_KEY, Method.Code);
   ne_set_session_private(Session, SESSION_TLS_INIT_DATA_KEY, Method.Data);
+}
+//---------------------------------------------------------------------------
+void InitNeonTls(
+  ne_session * Session, TNeonTlsInit OnNeonTlsInit, ne_ssl_verify_fn VerifyCallback, void * VerifyContext,
+  TTerminal * Terminal)
+{
+  UnicodeString CertificateStorage = Configuration->CertificateStorageExpanded;
+  if (!CertificateStorage.IsEmpty())
+  {
+    ne_ssl_set_certificates_storage(Session, StrToNeon(CertificateStorage));
+    if (Terminal != NULL)
+    {
+      Terminal->LogEvent(FORMAT(L"Using certificate store \"%s\"", (CertificateStorage)));
+    }
+  }
+
+  SetNeonTlsInit(Session, OnNeonTlsInit);
+
+  ne_ssl_set_verify(Session, VerifyCallback, VerifyContext);
+
+  ne_ssl_trust_default_ca(Session);
 }
 //---------------------------------------------------------------------------
 AnsiString NeonExportCertificate(const ne_ssl_certificate * Certificate)

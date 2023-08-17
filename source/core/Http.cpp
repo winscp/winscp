@@ -73,11 +73,7 @@ void THttp::SendRequest(const char * Method, const UnicodeString & Request)
 
       if (IsTls)
       {
-        SetNeonTlsInit(NeonSession, InitSslSession);
-
-        ne_ssl_set_verify(NeonSession, NeonServerSSLCallback, this);
-
-        ne_ssl_trust_default_ca(NeonSession);
+        InitNeonTls(NeonSession, InitSslSession, NeonServerSSLCallback, this, NULL);
       }
 
       ne_request_s * NeonRequest = ne_request_create(NeonSession, Method, StrToNeon(Uri));
