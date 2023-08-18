@@ -5750,7 +5750,7 @@ UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TDateTime Starte
     {
       UnicodeString Replacement;
       // keep consistent with TFileCustomCommand::PatternReplacement
-      switch (tolower(ANewFileName[Index + 1]))
+      switch (towlower(ANewFileName[Index + 1]))
       {
         case L'y':
           Replacement = FormatDateTime(L"yyyy", Started);

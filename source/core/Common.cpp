@@ -1402,8 +1402,8 @@ RawByteString __fastcall HexToBytes(const UnicodeString Hex)
   {
     for (int i = 1; i <= Hex.Length(); i += 2)
     {
-      P1 = Digits.Pos((wchar_t)toupper(Hex[i]));
-      P2 = Digits.Pos((wchar_t)toupper(Hex[i + 1]));
+      P1 = Digits.Pos(towupper(Hex[i]));
+      P2 = Digits.Pos(towupper(Hex[i + 1]));
       if (P1 <= 0 || P2 <= 0)
       {
         Result = L"";
@@ -1422,8 +1422,8 @@ unsigned char __fastcall HexToByte(const UnicodeString Hex)
 {
   static UnicodeString Digits = L"0123456789ABCDEF";
   DebugAssert(Hex.Length() == 2);
-  int P1 = Digits.Pos((wchar_t)toupper(Hex[1]));
-  int P2 = Digits.Pos((wchar_t)toupper(Hex[2]));
+  int P1 = Digits.Pos(towupper(Hex[1]));
+  int P2 = Digits.Pos(towupper(Hex[2]));
 
   return
     static_cast<unsigned char>(((P1 <= 0) || (P2 <= 0)) ? 0 : (((P1 - 1) << 4) + (P2 - 1)));
@@ -2081,7 +2081,7 @@ bool __fastcall TryStrToSize(UnicodeString SizeStr, __int64 & Size)
       Result = (SizeStr.Length() == 1);
       if (Result)
       {
-        wchar_t Unit = (wchar_t)toupper(SizeStr[1]);
+        wchar_t Unit = towupper(SizeStr[1]);
         switch (Unit)
         {
           case GigaSize:

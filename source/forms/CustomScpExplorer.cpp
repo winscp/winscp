@@ -7551,7 +7551,7 @@ void __fastcall TCustomScpExplorerForm::CMDialogChar(TMessage & AMessage)
 {
   TCMDialogChar & Message = reinterpret_cast<TCMDialogChar &>(AMessage);
   if ((FIgnoreNextDialogChar != 0) &&
-      (toupper(Message.CharCode) == toupper(FIgnoreNextDialogChar)))
+      (towupper(Message.CharCode) == towupper(FIgnoreNextDialogChar)))
   {
     Message.Result = 1;
   }

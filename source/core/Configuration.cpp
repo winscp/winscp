@@ -229,7 +229,7 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
   // no longer useful
   int P = Property.LastDelimiter(L".>");
   UnicodeString Result = Property.SubString(P + 1, Property.Length() - P);
-  if ((Result[1] == L'F') && ((wchar_t)toupper(Result[2]) == Result[2]))
+  if ((Result[1] == L'F') && (towupper(Result[2]) == Result[2]))
   {
     Result.Delete(1, 1);
   }

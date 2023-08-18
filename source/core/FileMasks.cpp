@@ -1072,7 +1072,7 @@ bool __fastcall TCustomCommand::FindPattern(const UnicodeString & Command,
     int Len;
     wchar_t APatternCmd;
     GetToken(Command, Index, Len, APatternCmd);
-    if (((PatternCmd != L'!') && (tolower(PatternCmd) == tolower(APatternCmd))) ||
+    if (((PatternCmd != L'!') && (towlower(PatternCmd) == towlower(APatternCmd))) ||
         ((PatternCmd == L'!') && (Len == 1) && (APatternCmd != TEXT_TOKEN)) ||
         ((PatternCmd == L'\0') && (APatternCmd != TEXT_TOKEN)))
     {
@@ -1289,7 +1289,7 @@ TFileCustomCommand::TFileCustomCommand(const TCustomCommandData & Data,
 int __fastcall TFileCustomCommand::PatternLen(const UnicodeString & Command, int Index)
 {
   int Len;
-  wchar_t PatternCmd = (Index < Command.Length()) ? tolower(Command[Index + 1]) : L'\0';
+  wchar_t PatternCmd = (Index < Command.Length()) ? towlower(Command[Index + 1]) : L'\0';
   switch (PatternCmd)
   {
     case L's':

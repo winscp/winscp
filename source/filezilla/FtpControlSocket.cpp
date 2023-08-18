@@ -705,7 +705,7 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
       ftp_capabilities_t cap = m_serverCapabilities.GetCapabilityString(opts_mlst_command);
       if (cap == unknown)
       {
-        std::transform(facts.begin(), facts.end(), facts.begin(), ::tolower);
+        std::transform(facts.begin(), facts.end(), facts.begin(), ::towlower);
         bool had_unset = false;
         std::string opts_facts;
         // Create a list of all facts understood by both FZ and the server.

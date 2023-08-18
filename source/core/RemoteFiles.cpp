@@ -990,7 +990,7 @@ Boolean __fastcall TRemoteFile::GetIsDirectory() const
   }
   else
   {
-    return (toupper(Type) == FILETYPE_DIRECTORY);
+    return (towupper(Type) == FILETYPE_DIRECTORY);
   }
 }
 //---------------------------------------------------------------------------

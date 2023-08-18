@@ -65,10 +65,10 @@ void err_out_sys(LPCTSTR base_err_msg, LONG sys_err)
 //---------------------------------------------------------------------------
 // Works as "strcmp" but the comparison is not case sensitive.
 int tcharicmp(LPCTSTR str1, LPCTSTR str2){
-    for (; tolower(*str1) == tolower(*str2); ++str1, ++str2)
+    for (; towlower(*str1) == towlower(*str2); ++str1, ++str2)
         if (*str1 == L'\0')
             return 0;
-    return tolower(*str1) - tolower(*str2);
+    return towlower(*str1) - towlower(*str2);
 }
 //---------------------------------------------------------------------------
 // Returns un unquoted copy of "str" (or a copy of "str" if the quotes are
