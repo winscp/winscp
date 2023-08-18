@@ -249,17 +249,7 @@ void ne_init_ssl_session(struct ssl_st * Ssl, ne_session * Session)
 
 } // extern "C"
 //---------------------------------------------------------------------------
-void SetNeonTlsInit(ne_session * Session, TNeonTlsInit OnNeonTlsInit)
-{
-  // As the OnNeonTlsInit always only calls SetupSsl, we can simplify this with one shared implementation
-  TMethod & Method = *(TMethod*)&OnNeonTlsInit;
-  ne_set_session_private(Session, SESSION_TLS_INIT_KEY, Method.Code);
-  ne_set_session_private(Session, SESSION_TLS_INIT_DATA_KEY, Method.Data);
-}
-//---------------------------------------------------------------------------
-void InitNeonTls(
-  ne_session * Session, TNeonTlsInit OnNeonTlsInit, ne_ssl_verify_fn VerifyCallback, void * VerifyContext,
-  TTerminal * Terminal)
+void SetNeonTlsInit(ne_session * Session, TNeonTlsInit OnNeonTlsInit, TTerminal * Terminal)
 {
   UnicodeString CertificateStorage = Configuration->CertificateStorageExpanded;
   if (!CertificateStorage.IsEmpty())
@@ -271,7 +261,17 @@ void InitNeonTls(
     }
   }
 
-  SetNeonTlsInit(Session, OnNeonTlsInit);
+  // As the OnNeonTlsInit always only calls SetupSsl, we can simplify this with one shared implementation
+  TMethod & Method = *(TMethod*)&OnNeonTlsInit;
+  ne_set_session_private(Session, SESSION_TLS_INIT_KEY, Method.Code);
+  ne_set_session_private(Session, SESSION_TLS_INIT_DATA_KEY, Method.Data);
+}
+//---------------------------------------------------------------------------
+void InitNeonTls(
+  ne_session * Session, TNeonTlsInit OnNeonTlsInit, ne_ssl_verify_fn VerifyCallback, void * VerifyContext,
+  TTerminal * Terminal)
+{
+  SetNeonTlsInit(Session, OnNeonTlsInit, Terminal);
 
   ne_ssl_set_verify(Session, VerifyCallback, VerifyContext);
 
