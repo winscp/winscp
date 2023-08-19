@@ -362,7 +362,7 @@ void TS3FileSystem::LibS3SessionCallback(ne_session_s * Session, void * Callback
     Session, Data->ProxyMethod, Data->ProxyHost, Data->ProxyPort,
     Data->ProxyUsername, Data->ProxyPassword, FileSystem->FTerminal);
 
-  SetNeonTlsInit(Session, FileSystem->InitSslSession);
+  SetNeonTlsInit(Session, FileSystem->InitSslSession, FileSystem->FTerminal);
 
   ne_set_session_flag(Session, SE_SESSFLAG_SNDBUF, Data->SendBuf);
 
