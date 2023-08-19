@@ -78,6 +78,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FLinkedForm = NULL;
   FRestoring = false;
   FPrevPos = TPoint(std::numeric_limits<LONG>::min(), std::numeric_limits<LONG>::min());
+  FWasEverS3 = false;
 
   // we need to make sure that window procedure is set asap
   // (so that CM_SHOWINGCHANGED handling is applied)
@@ -674,6 +675,10 @@ void __fastcall TLoginDialog::UpdateControls()
     bool FtpProtocol = (FSProtocol == fsFTP);
     bool WebDavProtocol = (FSProtocol == fsWebDAV);
     bool S3Protocol = (FSProtocol == fsS3);
+    if (S3Protocol)
+    {
+      FWasEverS3 = true;
+    }
 
     // session
     FtpsCombo->Visible = Editable && FtpProtocol;
@@ -2235,17 +2240,22 @@ void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
         {
           HostNameEdit->Clear();
         }
-        if (UserNameEdit->Text == S3EnvUserName(S3Profile))
+        // Optimization to avoid querying AWS metadata service.
+        // Smarter would be to tell S3EnvXXX functions not to do expensive queries.
+        if (FWasEverS3)
         {
-          UserNameEdit->Clear();
-        }
-        if (PasswordEdit->Text == S3EnvPassword(S3Profile))
-        {
-          PasswordEdit->Clear();
-        }
-        if ((FSessionData != NULL) && (FSessionData->S3SessionToken == S3EnvSessionToken(S3Profile)))
-        {
-          FSessionData->S3SessionToken = UnicodeString();
+          if (UserNameEdit->Text == S3EnvUserName(S3Profile))
+          {
+            UserNameEdit->Clear();
+          }
+          if (PasswordEdit->Text == S3EnvPassword(S3Profile))
+          {
+            PasswordEdit->Clear();
+          }
+          if ((FSessionData != NULL) && (FSessionData->S3SessionToken == S3EnvSessionToken(S3Profile)))
+          {
+            FSessionData->S3SessionToken = UnicodeString();
+          }
         }
       }
       catch (...)

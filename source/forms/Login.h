@@ -326,6 +326,7 @@ private:
   UnicodeString FPasswordLabel;
   int FFixedSessionImages;
   bool FRestoring;
+  bool FWasEverS3;
 
   void __fastcall LoadSession(TSessionData * SessionData);
   void __fastcall LoadContents();

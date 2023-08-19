@@ -13,6 +13,8 @@ class THttp;
 typedef void __fastcall (__closure * THttpDownloadEvent)(THttp * Sender, __int64 Size, bool & Cancel);
 typedef void __fastcall (__closure * THttpErrorEvent)(THttp * Sender, int Status, const UnicodeString & Message);
 //---------------------------------------------------------------------------
+extern const int BasicHttpResponseLimit;
+//---------------------------------------------------------------------------
 class THttp
 {
 public:

@@ -83,6 +83,7 @@ private:
   int FQueueTransfersLimit;
   int FParallelTransferThreshold;
   UnicodeString FCertificateStorage;
+  UnicodeString FAWSMetadataService;
   UnicodeString FChecksumCommands;
 
   bool FDisablePasswordStoring;
@@ -150,6 +151,7 @@ private:
   void __fastcall SetMimeTypes(UnicodeString value);
   void SetCertificateStorage(const UnicodeString & value);
   UnicodeString GetCertificateStorageExpanded();
+  void SetAWSMetadataService(const UnicodeString & value);
   bool __fastcall GetCollectUsage();
   void __fastcall SetCollectUsage(bool value);
   bool __fastcall GetIsUnofficial();
@@ -335,6 +337,7 @@ public:
   __property UnicodeString ExternalIpAddress = { read = FExternalIpAddress, write = SetExternalIpAddress };
   __property UnicodeString CertificateStorage = { read = FCertificateStorage, write = SetCertificateStorage };
   __property UnicodeString CertificateStorageExpanded = { read = GetCertificateStorageExpanded };
+  __property UnicodeString AWSMetadataService = { read = FAWSMetadataService, write = SetAWSMetadataService };
   __property UnicodeString ChecksumCommands = { read = FChecksumCommands };
   __property int LocalPortNumberMin = { read = FLocalPortNumberMin, write = SetLocalPortNumberMin };
   __property int LocalPortNumberMax = { read = FLocalPortNumberMax, write = SetLocalPortNumberMax };

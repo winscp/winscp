@@ -1426,6 +1426,10 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       {
         ADF(L"S3: Session token: %s", (Data->S3SessionToken));
       }
+      if (Data->S3CredentialsEnv)
+      {
+        ADF(L"S3: Credentials from AWS environment: %s", (DefaultStr(Data->S3Profile, L"General")));
+      }
     }
     if (FtpsOn)
     {

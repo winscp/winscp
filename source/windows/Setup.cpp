@@ -930,7 +930,7 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
     AppLogFmt(L"Updates check URL: %s", (URL));
     CheckForUpdatesHTTP->URL = URL;
     // sanity check
-    CheckForUpdatesHTTP->ResponseLimit = 102400;
+    CheckForUpdatesHTTP->ResponseLimit = BasicHttpResponseLimit;
     try
     {
       if (CollectUsage)

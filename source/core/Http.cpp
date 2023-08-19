@@ -10,6 +10,8 @@
 #include "TextsCore.h"
 #include <openssl/ssl.h>
 //---------------------------------------------------------------------------
+const int BasicHttpResponseLimit = 102400;
+//---------------------------------------------------------------------------
 THttp::THttp()
 {
   FProxyPort = 0;
