@@ -1400,10 +1400,15 @@ void __fastcall TUpdateDownloadThread::UpdateDownloaded()
   {
     Params += L" /OpenGettingStarted";
   }
+  if (ApplicationLog->Logging)
+  {
+    Params += FORMAT(" /LOG=\"%s\"", (ApplicationLog->Path + L".setup"));
+  }
 
   ExecuteShellChecked(SetupPath, Params);
 
   Configuration->Usage->Inc(L"UpdateRuns");
+  AppLog(L"Terminating to allow installation...");
   TerminateApplication();
 }
 //---------------------------------------------------------------------------

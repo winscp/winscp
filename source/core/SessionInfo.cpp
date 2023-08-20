@@ -1793,7 +1793,8 @@ TApplicationLog::~TApplicationLog()
 void TApplicationLog::Enable(const UnicodeString & Path)
 {
   UnicodeString Dummy;
-  FFile = OpenFile(Path, Now(), NULL, false, Dummy);
+  FPath = Path;
+  FFile = OpenFile(FPath, Now(), NULL, false, Dummy);
   FLogging = true;
 }
 //---------------------------------------------------------------------------

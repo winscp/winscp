@@ -370,8 +370,10 @@ public:
   void AddStartupInfo();
   void __fastcall Log(const UnicodeString & S);
   __property bool Logging = { read = FLogging };
+  __property UnicodeString Path = { read = FPath };
 
 private:
+  UnicodeString FPath;
   void * FFile;
   bool FLogging;
   std::unique_ptr<TCriticalSection> FCriticalSection;
