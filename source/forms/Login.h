@@ -210,7 +210,7 @@ __published:
   TPanel *ShowAgainPanel;
   TCheckBox *ShowAgainCheck;
   TPanel *BasicS3Panel;
-  TCheckBox *S3CredentialsEnvCheck2;
+  TCheckBox *S3CredentialsEnvCheck3;
   TMenuItem *OpeninPuTTY4;
   TComboBox *S3ProfileCombo;
   void __fastcall DataChange(TObject *Sender);
@@ -290,7 +290,7 @@ __published:
   void __fastcall SearchSiteNameActionExecute(TObject *Sender);
   void __fastcall SearchSiteActionExecute(TObject *Sender);
   void __fastcall PanelMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift, int X, int Y);
-  void __fastcall S3CredentialsEnvCheck2Click(TObject *Sender);
+  void __fastcall S3CredentialsEnvCheck3Click(TObject *Sender);
   void __fastcall EncryptionComboChange(TObject *Sender);
   void __fastcall S3ProfileComboChange(TObject *Sender);
 

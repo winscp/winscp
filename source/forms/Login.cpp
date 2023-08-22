@@ -555,7 +555,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * SessionData)
           UnicodeString::StringOfChar(L'?', 16) : UnicodeString();
     }
 
-    S3CredentialsEnvCheck2->Checked = SessionData->S3CredentialsEnv;
+    S3CredentialsEnvCheck3->Checked = SessionData->S3CredentialsEnv;
     S3ProfileCombo->Text = DefaultStr(SessionData->S3Profile, GetS3GeneralName());
     UpdateS3Credentials();
 
@@ -606,7 +606,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * SessionData)
 
   if (SessionData->FSProtocol == fsS3)
   {
-    SessionData->S3CredentialsEnv = S3CredentialsEnvCheck2->Checked;
+    SessionData->S3CredentialsEnv = S3CredentialsEnvCheck3->Checked;
     SessionData->S3Profile = GetS3Profile();
   }
 
@@ -714,7 +714,7 @@ void __fastcall TLoginDialog::UpdateControls()
     ReadOnlyControl(PortNumberEdit, !Editable);
     PortNumberEdit->ButtonsVisible = Editable;
     // FSessionData may be NULL temporary even when Editable while switching nodes
-    bool S3CredentialsEnv = S3Protocol && S3CredentialsEnvCheck2->Checked;
+    bool S3CredentialsEnv = S3Protocol && S3CredentialsEnvCheck3->Checked;
     bool NoAuth =
       Editable && (FSessionData != NULL) &&
       ((SshProtocol && FSessionData->SshNoUserAuth) ||
@@ -2206,7 +2206,7 @@ int __fastcall TLoginDialog::DefaultPort()
 //---------------------------------------------------------------------------
 void TLoginDialog::UpdateS3Credentials()
 {
-  if (S3CredentialsEnvCheck2->Checked)
+  if (S3CredentialsEnvCheck3->Checked)
   {
     UnicodeString S3Profile = GetS3Profile();
     UserNameEdit->Text = S3EnvUserName(S3Profile);
@@ -2264,7 +2264,7 @@ void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
       }
     }
 
-    S3CredentialsEnvCheck2->Checked = false;
+    S3CredentialsEnvCheck3->Checked = false;
   }
 
   UpdatePortWithProtocol();
@@ -3308,7 +3308,7 @@ void __fastcall TLoginDialog::PanelMouseDown(TObject *, TMouseButton, TShiftStat
   CountClicksForWindowPrint(this);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::S3CredentialsEnvCheck2Click(TObject *)
+void __fastcall TLoginDialog::S3CredentialsEnvCheck3Click(TObject *)
 {
   UpdateS3Credentials();
   UpdateControls();

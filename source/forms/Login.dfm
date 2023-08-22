@@ -169,15 +169,15 @@ object LoginDialog: TLoginDialog
           DesignSize = (
             324
             31)
-          object S3CredentialsEnvCheck2: TCheckBox
+          object S3CredentialsEnvCheck3: TCheckBox
             Left = 0
             Top = 2
             Width = 324
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Credentials from AWS CLI:'
+            Caption = '&Credentials from AWS environment:'
             TabOrder = 0
-            OnClick = S3CredentialsEnvCheck2Click
+            OnClick = S3CredentialsEnvCheck3Click
           end
           object S3ProfileCombo: TComboBox
             Left = 200
