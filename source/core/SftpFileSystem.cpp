@@ -4720,7 +4720,7 @@ void __fastcall TSFTPFileSystem::Source(
   OpenParams.CopyParam = CopyParam;
   OpenParams.Params = Params;
   OpenParams.FileParams = &FileParams;
-  OpenParams.Confirmed = (CopyParam->OnTransferIn != NULL);
+  OpenParams.Confirmed = (CopyParam->OnTransferIn != NULL) && FLAGCLEAR(Params, cpAppend);
   OpenParams.DontRecycle = false;
   OpenParams.Recycled = false;
 
