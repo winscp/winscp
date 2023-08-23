@@ -98,13 +98,13 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
   CopyPopup(LocalPathLabel, LocalTopDock);
   CopyPopup(LocalStatusBar, LocalTopDock);
   CopyPopup(LocalDriveView, LocalTopDock);
-  CopyPopup(OtherLocalDriveView, LocalTopDock);
   CopyPopup(LocalBottomDock, LocalTopDock);
 
   RemoteTopDock->PopupMenu = NonVisualDataModule->RemotePanelPopup;
   CopyPopup(RemotePathLabel, RemoteTopDock);
   CopyPopup(RemoteStatusBar, RemoteTopDock);
   CopyPopup(RemoteDriveView, RemoteTopDock);
+  CopyPopup(OtherLocalDriveView, RemoteTopDock);
   CopyPopup(RemoteBottomDock, RemoteTopDock);
 
   SetShortcuts();
