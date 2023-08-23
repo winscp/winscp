@@ -810,8 +810,8 @@ static void __fastcall FormShowingChanged(TForm * Form, TWndMethod WndProc, TMes
     // At least on single monitor setup, monitor DPI is 100% but system DPI is higher,
     // WM_DPICHANGED is not sent. But VCL scales the form using system DPI.
     // Also we have to do this always for implicitly placed forms (poDefaultPosOnly), like TEditorForm,
-    // as thay never get the WM_DPICHANGED.
-    // Call this before WndProc below, i.e. before OnShow event (particularly important for the TEditorForm::FormShow.
+    // as they never get the WM_DPICHANGED.
+    // Call this before WndProc below, i.e. before OnShow event (particularly important for the TEditorForm::FormShow).
 
     // GetControlPixelsPerInch would return Form.PixelsPerInch, but we want to get a new DPI of the form monitor.
     ChangeFormPixelsPerInch(Form, GetMonitorPixelsPerInch(GetMonitorFromControl(Form)));
