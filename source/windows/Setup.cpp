@@ -1240,6 +1240,33 @@ static int __fastcall DownloadSizeToProgress(__int64 Size)
   return static_cast<int>(Size / 1024);
 }
 //---------------------------------------------------------------------------
+static UnicodeString GetInstallationPath(HKEY RootKey)
+{
+  std::unique_ptr<TRegistry> Registry(new TRegistry(KEY_READ));
+  Registry->RootKey = RootKey;
+  UnicodeString Result;
+  if (Registry->OpenKey(L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\winscp3_is1", false))
+  {
+    Result = ExcludeTrailingBackslash(Registry->ReadString(L"Inno Setup: App Path"));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+static bool DoIsPathToExe(const UnicodeString & Path)
+{
+  UnicodeString ExePath = ExcludeTrailingBackslash(ExtractFilePath(Application->ExeName));
+  return IsPathToSameFile(ExePath, Path);
+}
+//---------------------------------------------------------------------------
+static bool DoIsInstalled(HKEY RootKey)
+{
+  UnicodeString InstallPath = GetInstallationPath(RootKey);
+  bool Result =
+    !InstallPath.IsEmpty() &&
+    DoIsPathToExe(InstallPath);
+  return Result;
+}
+//---------------------------------------------------------------------------
 class TUpdateDownloadThread : public TCompThread
 {
 public:
@@ -1403,6 +1430,21 @@ void __fastcall TUpdateDownloadThread::UpdateDownloaded()
   if (ApplicationLog->Logging)
   {
     Params += FORMAT(" /LOG=\"%s\"", (ApplicationLog->Path + L".setup"));
+  }
+  if (!GetInstallationPath(HKEY_LOCAL_MACHINE).IsEmpty() &&
+      !GetInstallationPath(HKEY_CURRENT_USER).IsEmpty())
+  {
+    UnicodeString Mode;
+    if (DoIsInstalled(HKEY_LOCAL_MACHINE))
+    {
+      Mode = L" /ALLUSERS";
+    }
+    else if (DebugAlwaysTrue(DoIsInstalled(HKEY_CURRENT_USER)))
+    {
+      Mode = L" /CURRENTUSER";
+    }
+    AppLogFmt(L"Both administrative and non-administrative installation found, explicitly requesting this installation mode:%s", (Mode));
+    Params += Mode;
   }
 
   ExecuteShellChecked(SetupPath, Params);
@@ -1974,28 +2016,6 @@ bool __fastcall AnyOtherInstanceOfSelf()
     CloseHandle(Snapshot);
   }
 
-  return Result;
-}
-//---------------------------------------------------------------------------
-static bool DoIsPathToExe(const UnicodeString & Path)
-{
-  UnicodeString ExePath = ExcludeTrailingBackslash(ExtractFilePath(Application->ExeName));
-  return IsPathToSameFile(ExePath, Path);
-}
-//---------------------------------------------------------------------------
-static bool __fastcall DoIsInstalled(HKEY RootKey)
-{
-  std::unique_ptr<TRegistry> Registry(new TRegistry(KEY_READ));
-  Registry->RootKey = RootKey;
-  bool Result =
-    Registry->OpenKey(L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\winscp3_is1", false);
-  if (Result)
-  {
-    UnicodeString InstallPath = ExcludeTrailingBackslash(Registry->ReadString(L"Inno Setup: App Path"));
-    Result =
-      !InstallPath.IsEmpty() &&
-      DoIsPathToExe(InstallPath);
-  }
   return Result;
 }
 //---------------------------------------------------------------------------
