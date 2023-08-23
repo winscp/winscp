@@ -85,7 +85,7 @@ namespace WinSCP
         public int ReconnectTimeInMilliseconds { get { return Tools.TimeSpanToMilliseconds(ReconnectTime); } set { ReconnectTime = Tools.MillisecondsToTimeSpan(value); } }
         public string DebugLogPath { get { CheckNotDisposed(); return Logger.LogPath; } set { CheckNotDisposed(); Logger.LogPath = value; } }
         public int DebugLogLevel { get { CheckNotDisposed(); return Logger.LogLevel; } set { CheckNotDisposed(); Logger.LogLevel = value; } }
-        public string SessionLogPath { get { return _sessionLogPath; } set { CheckNotOpened(); _sessionLogPath = value; } }
+        public string SessionLogPath { get => _sessionLogPath; set => SetSessionLogPath(value); }
         public string XmlLogPath { get { return _xmlLogPath; } set { CheckNotOpened(); _xmlLogPath = value; } }
         public bool XmlLogPreserve { get; set; }
         #if DEBUG
@@ -2581,6 +2581,16 @@ namespace WinSCP
             return result;
         }
 
+        private void SetSessionLogPath(string value)
+        {
+            CheckNotOpened();
+            const string XmlExtension = ".xml";
+            if (Path.GetExtension(value).Equals(XmlExtension, StringComparison.OrdinalIgnoreCase))
+            {
+                throw Logger.WriteException(new ArgumentException($"Session log cannot have {XmlExtension} extension"));
+            }
+            _sessionLogPath = value;
+        }
 
         FieldInfo IReflect.GetField(string name, BindingFlags bindingAttr)
         {
