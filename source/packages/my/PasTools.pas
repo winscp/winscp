@@ -11,19 +11,13 @@ function IsVistaHard: Boolean;
 
 function IsVista: Boolean;
 
-// Prevent name conflict with C++ IsWin8.
-{$HPPEMIT '#define IsWin7 IsWin7Pas'}
-{$HPPEMIT END '#undef IsWin7'}
+{$EXTERNALSYM IsWin7}
 function IsWin7: Boolean;
 
-// Prevent name conflict with C++ IsWin8.
-{$HPPEMIT '#define IsWin8 IsWin8Pas'}
-{$HPPEMIT END '#undef IsWin8'}
+{$EXTERNALSYM IsWin8}
 function IsWin8: Boolean;
 
-// Prevent name conflict with C++ CutToChar.
-{$HPPEMIT '#define CutToChar CutToCharPas'}
-{$HPPEMIT END '#undef CutToChar'}
+{$EXTERNALSYM CutToChar}
 function CutToChar(var Str: string; Ch: Char; Trim: Boolean): string;
 
 procedure FilterToFileTypes(Filter: string; FileTypes: TFileTypeItems);
@@ -96,10 +90,7 @@ type
 var
   OnApiPath: TApiPathEvent = nil;
 
-// Prevent name conflict with C++ ApiPath.
-// We would not want to call this implementation in any case anyway.
-{$HPPEMIT '#define ApiPath ApiPathPas'}
-{$HPPEMIT END '#undef ApiPath'}
+{$EXTERNALSYM ApiPath}
 function ApiPath(Path: string): string;
 
 type
