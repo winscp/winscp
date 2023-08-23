@@ -5463,6 +5463,7 @@ void __fastcall TCustomScpExplorerForm::OpenFolderOrWorkspace(const UnicodeStrin
 void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
       bool &CanClose)
 {
+  AppLog(L"Windows close query");
   // See the comment in CloseApp()
   if (NonVisualDataModule->Busy)
   {
@@ -7580,6 +7581,7 @@ void __fastcall TCustomScpExplorerForm::WMSysCommand(TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMQueryEndSession(TMessage & Message)
 {
+  AppLog(L"Windows session end query");
   // We were actually never able to make ENDSESSION_CRITICAL happen.
   // Also there no point returning TRUE as we are not able to
   // handle the abrupt termination caused by subsequent WM_ENDSESSION cleanly.
@@ -7601,6 +7603,7 @@ void __fastcall TCustomScpExplorerForm::WMQueryEndSession(TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMEndSession(TWMEndSession & Message)
 {
+  AppLog(L"Windows session end");
   if (Message.EndSession && IsApplicationMinimized())
   {
     // WORKAROUND
@@ -9822,6 +9825,7 @@ void __fastcall TCustomScpExplorerForm::WMDpiChanged(TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMClose(TMessage & Message)
 {
+  AppLog(L"Main window WM_CLOSE");
   // Cannot close window while we are busy.
   // We cannot test this in FormCloseQuery as that is called also from
   // Close(), which is called by CloseApplicationAction. So we can be busy
@@ -10676,6 +10680,7 @@ void __fastcall TCustomScpExplorerForm::FormClose(TObject * /*Sender*/, TCloseAc
     WinConfiguration->LastStoredSession = Name;
   }
 
+  AppLog(L"Closing main window");
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteDirViewRead(TObject * /*Sender*/)

@@ -11,6 +11,7 @@
 #include <GUITools.h>
 #include <Tools.h>
 #include <CustomWinConfiguration.h>
+#include <CoreMain.h>
 
 #include <Vcl.StdActns.hpp>
 #include <PasswordEdit.hpp>
@@ -663,6 +664,7 @@ static void __fastcall ChangeFormPixelsPerInch(TForm * Form, int PixelsPerInch)
   if ((Form->PixelsPerInch != PixelsPerInch) && // optimization
       !FormRescaleComponent->Rescaling)
   {
+    AppLogFmt(L"Scaling window %s", (Form->Caption));
     TAutoFlag RescalingFlag(FormRescaleComponent->Rescaling);
 
     int M, D;
