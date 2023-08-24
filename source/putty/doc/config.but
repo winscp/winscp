@@ -214,12 +214,15 @@ digits.
 \b \c{&T} will be replaced by the current time, as six digits
 (HHMMSS) with no punctuation.
 
-\b \c{&H} will be replaced by the host name you are connecting to.
+\b \c{&H} will be replaced by the host name you are connecting to
+(or the serial line, for a serial connection).
 
 \b \c{&P} will be replaced by the port number you are connecting to on
 the target host.
 
-For example, if you enter the host name
+(These are all case-insensitive.)
+
+For example, if you enter the file name
 \c{c:\\puttylogs\\log-&h-&y&m&d-&t.dat}, you will end up with files looking
 like
 
@@ -3029,6 +3032,9 @@ identify the key to Pageant, but of course if Pageant isn't present
 PuTTY can't fall back to using this file itself.
 
 \S{config-ssh-cert} \q{\ii{Certificate} to use with the private key}
+
+(This is optional. If you don't know you need it, you can leave this
+blank.)
 
 In some environments, user authentication keys can be signed in turn
 by a \q{certifying authority} (\q{CA} for short), and user accounts on

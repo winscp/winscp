@@ -507,13 +507,17 @@ passphrase in beforehand, and you will be warned if you are about to
 save a key without a passphrase.
 
 For OpenSSH there are two options. Modern OpenSSH actually has two
-formats it uses for storing private keys. \q{Export OpenSSH key}
+formats it uses for storing private keys: an older (\q{\i{PEM-style}})
+format, and a newer \q{native} format with better resistance to
+passphrase guessing and support for comments. \q{Export OpenSSH key}
 will automatically choose the oldest format supported for the key
 type, for maximum backward compatibility with older versions of
 OpenSSH; for newer key types like Ed25519, it will use the newer
 format as that is the only legal option. If you have some specific
 reason for wanting to use OpenSSH's newer format even for RSA, DSA,
-or ECDSA keys, you can choose \q{Export OpenSSH key (force new file
+or ECDSA keys \dash for instance, you know your file will only be
+used by OpenSSH 6.5 or newer (released in 2014), and want the extra
+security \dash you can choose \q{Export OpenSSH key (force new file
 format)}.
 
 Most clients for the older SSH-1 protocol use a standard format for
