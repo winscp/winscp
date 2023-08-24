@@ -379,6 +379,9 @@
 		<CppCompile Include="putty\utils\conf.c">
 			<BuildOrder>82</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\utils\conf_dest.c">
+			<BuildOrder>164</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\utils\conf_launchable.c">
 			<BuildOrder>83</BuildOrder>
 		</CppCompile>
