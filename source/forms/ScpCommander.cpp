@@ -2448,13 +2448,33 @@ void __fastcall TScpCommanderForm::CommandLineComboEditWndProc(TMessage & Messag
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::LocalDriveViewRefreshDrives(TObject * /*Sender*/)
+void __fastcall TScpCommanderForm::LocalDriveViewRefreshDrives(TObject * Sender, bool Global)
 {
-  LocalPathComboUpdateDrives();
-  LocalPathComboUpdate(LocalDirView, LocalPathComboBox);
-  if (IsLocalBrowserMode())
+  // Process global drive notifications from only one drive view
+  if (!Global || (Sender == LocalDriveView))
   {
-    LocalPathComboUpdate(OtherLocalDirView, RemotePathComboBox);
+    LocalPathComboUpdateDrives();
+    LocalPathComboUpdate(LocalDirView, LocalPathComboBox);
+    if (IsLocalBrowserMode())
+    {
+      LocalPathComboUpdate(OtherLocalDirView, RemotePathComboBox);
+    }
+  }
+
+  if (!Global)
+  {
+    TDriveView * TheOtherLocalDriveView;
+    if (Sender == LocalDriveView)
+    {
+      TheOtherLocalDriveView = OtherLocalDriveView;
+    }
+    else
+    {
+      DebugAssert(Sender == OtherLocalDriveView);
+      TheOtherLocalDriveView = LocalDriveView;
+    }
+    // Or rather an immediate refresh?
+    TheOtherLocalDriveView->ScheduleDriveRefresh();
   }
 }
 //---------------------------------------------------------------------------

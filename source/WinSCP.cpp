@@ -16,6 +16,11 @@ USEFORM("forms\ScpExplorer.cpp", ScpExplorerForm);
 #include <GUITools.h>
 #include <Tools.h>
 //---------------------------------------------------------------------------
+void __fastcall AppLogImpl(UnicodeString S)
+{
+  AppLog(S);
+}
+//---------------------------------------------------------------------------
 WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 {
   int Result = 0;
@@ -27,6 +32,7 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
     if (Params->FindSwitch(L"applog", AppLogPath))
     {
       ApplicationLog->Enable(AppLogPath);
+      OnAppLog = AppLogImpl;
     }
     AppLog(L"Starting...");
 
@@ -92,6 +98,7 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
       CoreFinalize();
       WinFinalize();
       AppLog(L"Finalizing done");
+      OnAppLog = NULL;
       SAFE_DESTROY_EX(TApplicationLog, ApplicationLog);
     }
   }

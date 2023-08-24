@@ -94,6 +94,15 @@ var
 function ApiPath(Path: string): string;
 
 type
+  TAppLogEvent = procedure(S: string);
+
+var
+  OnAppLog: TAppLogEvent = nil;
+
+{$EXTERNALSYM AppLog}
+procedure AppLog(S: string);
+
+type
   TControlScrollBeforeUpdate = procedure(ObjectToValidate: TObject) of object;
   TControlScrollAfterUpdate = procedure of object;
 
@@ -683,6 +692,14 @@ begin
   if Control.HandleAllocated then
   begin
     RedrawWindow(Control.Handle, nil, 0, RDW_INVALIDATE or RDW_FRAME);
+  end;
+end;
+
+procedure AppLog(S: string);
+begin
+  if Assigned(OnAppLog) then
+  begin
+    OnAppLog(S);
   end;
 end;
 
