@@ -1431,6 +1431,7 @@ void __fastcall TUpdateDownloadThread::UpdateDownloaded()
   {
     Params += FORMAT(" /LOG=\"%s\"", (ApplicationLog->Path + L".setup"));
   }
+  // This condition is not necessary, it's here to reduce an impact of the change only
   if (!GetInstallationPath(HKEY_LOCAL_MACHINE).IsEmpty() &&
       !GetInstallationPath(HKEY_CURRENT_USER).IsEmpty())
   {
@@ -1735,7 +1736,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
   if (!Updates.Results.DownloadUrl.IsEmpty())
   {
     Aliases[3].OnSubmit = MakeMethod<TButtonSubmitEvent>(NULL, DownloadUpdate);
-    Aliases[3].ElevationRequired = true;
+    Aliases[3].ElevationRequired = DoIsInstalled(HKEY_LOCAL_MACHINE);
   }
 
   TMessageParams Params;
