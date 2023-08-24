@@ -353,8 +353,7 @@ void __fastcall TS3FileSystem::Open()
     if (!FTerminal->PromptUser(Data, pkUserName, LoadStr(S3_ACCESS_KEY_ID_TITLE), L"",
           LoadStr(S3_ACCESS_KEY_ID_PROMPT), true, 0, AccessKeyId))
     {
-      // note that we never get here actually
-      throw Exception(L"");
+      FTerminal->FatalError(NULL, LoadStr(CREDENTIALS_NOT_SPECIFIED));
     }
   }
   FAccessKeyId = UTF8String(AccessKeyId);
@@ -379,8 +378,7 @@ void __fastcall TS3FileSystem::Open()
     if (!FTerminal->PromptUser(Data, pkPassword, LoadStr(S3_SECRET_ACCESS_KEY_TITLE), L"",
           LoadStr(S3_SECRET_ACCESS_KEY_PROMPT), false, 0, SecretAccessKey))
     {
-      // note that we never get here actually
-      throw Exception(L"");
+      FTerminal->FatalError(NULL, LoadStr(CREDENTIALS_NOT_SPECIFIED));
     }
   }
   FSecretAccessKey = UTF8String(SecretAccessKey);

@@ -107,6 +107,7 @@ void __fastcall TSecureShell::ResetConnection()
   FStoredPasswordTried = false;
   FStoredPasswordTriedForKI = false;
   FStoredPassphraseTried = false;
+  FAuthenticationCancelled = false;
   delete FLogPolicy;
   FLogPolicy = NULL;
   delete FSeat;
@@ -447,6 +448,7 @@ void __fastcall TSecureShell::Open()
       PuttyFatalError(InitError);
     }
     FUI->Information(LoadStr(STATUS_CONNECT), true);
+    FAuthenticationCancelled = false;
     if (!Active && DebugAlwaysTrue(HasLocalProxy()))
     {
       FActive = true;
@@ -965,6 +967,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
     if (!Result)
     {
       LogEvent(L"Prompt cancelled.");
+      FAuthenticationCancelled = true;
     }
     else
     {
@@ -1786,19 +1789,28 @@ void inline __fastcall TSecureShell::CheckConnection(int Message)
     UnicodeString Str;
     UnicodeString HelpKeyword;
 
+    int ExitCode = backend_exitcode(FBackendHandle);
     if (Message >= 0)
     {
       Str = LoadStr(Message);
     }
     else
     {
-      Str = LoadStr(NOT_CONNECTED);
-      HelpKeyword = HELP_NOT_CONNECTED;
+      if ((ExitCode == 0) && FAuthenticationCancelled)
+      {
+        Str = LoadStr(CREDENTIALS_NOT_SPECIFIED);
+        // The 0 code is not coming from the server
+        ExitCode = -1;
+      }
+      else
+      {
+        Str = LoadStr(NOT_CONNECTED);
+        HelpKeyword = HELP_NOT_CONNECTED;
+      }
     }
 
     Str = MainInstructions(Str);
 
-    int ExitCode = backend_exitcode(FBackendHandle);
     if (ExitCode >= 0)
     {
       Str += L" " + FMTLOAD(SSH_EXITCODE, (ExitCode));

@@ -1904,7 +1904,6 @@ int TWebDAVFileSystem::NeonRequestAuth(
       if (!Terminal->PromptUser(SessionData, pkUserName, LoadStr(USERNAME_TITLE), L"",
             LoadStr(USERNAME_PROMPT2), true, NE_ABUFSIZ, FileSystem->FUserName))
       {
-        // note that we never get here actually
         Result = false;
       }
     }
@@ -1946,7 +1945,6 @@ int TWebDAVFileSystem::NeonRequestAuth(
       {
         // Asking for password (or using configured password) the first time,
         // and asking for password.
-        // Note that we never get false here actually
         Terminal->LogEvent(L"Password prompt");
         Result =
           Terminal->PromptUser(

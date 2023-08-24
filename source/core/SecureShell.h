@@ -45,6 +45,7 @@ private:
   bool FStoredPasswordTried;
   bool FStoredPasswordTriedForKI;
   bool FStoredPassphraseTried;
+  bool FAuthenticationCancelled;
   bool FOpened;
   bool FClosed;
   int FWaiting;

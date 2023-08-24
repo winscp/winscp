@@ -468,7 +468,7 @@ void __fastcall TFTPFileSystem::Open()
       if (!FTerminal->PromptUser(Data, pkUserName, LoadStr(USERNAME_TITLE), L"",
             LoadStr(USERNAME_PROMPT2), true, 0, UserName))
       {
-        FTerminal->FatalError(NULL, LoadStr(AUTHENTICATION_FAILED));
+        FTerminal->FatalError(NULL, LoadStr(CREDENTIALS_NOT_SPECIFIED));
       }
       else
       {
@@ -487,7 +487,7 @@ void __fastcall TFTPFileSystem::Open()
       if (!FTerminal->PromptUser(Data, pkPassword, LoadStr(PASSWORD_TITLE), L"",
             LoadStr(PASSWORD_PROMPT), false, 0, Password))
       {
-        FTerminal->FatalError(NULL, LoadStr(AUTHENTICATION_FAILED));
+        FTerminal->FatalError(NULL, LoadStr(CREDENTIALS_NOT_SPECIFIED));
       }
     }
 
