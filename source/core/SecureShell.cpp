@@ -1798,7 +1798,16 @@ void inline __fastcall TSecureShell::CheckConnection(int Message)
     {
       if ((ExitCode == 0) && FAuthenticationCancelled)
       {
-        Str = LoadStr(CREDENTIALS_NOT_SPECIFIED);
+        // This should be improved to check if the prompt for specific credential
+        // was cancelled after it was unsuccessfully answered before
+        if (GetStoredCredentialsTried())
+        {
+          Str = LoadStr(AUTHENTICATION_FAILED);
+        }
+        else
+        {
+          Str = LoadStr(CREDENTIALS_NOT_SPECIFIED);
+        }
         // The 0 code is not coming from the server
         ExitCode = -1;
       }
