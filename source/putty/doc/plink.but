@@ -41,7 +41,7 @@ use Plink:
 
 \c C:\>plink
 \c Plink: command-line connection utility
-\c Release 0.78
+\c Release 0.79
 \c Usage: plink [options] [user@]host [command]
 \c        ("host" can also be a PuTTY saved session name)
 \c Options:
