@@ -3,7 +3,6 @@
 
 #define UNKNOWN_KEY4    1
 #define DIFFERENT_KEY5  2
-#define OLD_KEY         3
 
 #define SCRIPT_HELP_HELP        4
 #define SCRIPT_EXIT_HELP        5

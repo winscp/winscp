@@ -2770,12 +2770,6 @@ void __fastcall TSecureShell::DisplayBanner(const UnicodeString & Banner)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::OldKeyfileWarning()
-{
-  // actually never called, see Net.cpp
-  FUI->QueryUser(LoadStr(OLD_KEY), NULL, qaOK, NULL, qtWarning);
-}
-//---------------------------------------------------------------------------
 bool __fastcall TSecureShell::GetStoredCredentialsTried()
 {
   return FStoredPasswordTried || FStoredPasswordTriedForKI || FStoredPassphraseTried;

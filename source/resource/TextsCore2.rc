@@ -39,14 +39,6 @@ BEGIN
     "If you want to abandon the connection completely, press "
     "Cancel. Pressing Cancel is the ONLY guaranteed safe "
     "choice."
-  OLD_KEY,
-    "You are loading a private key which has an "
-    "old version of the file format. This means your key "
-    "file is not fully tamperproof. We recommend you convert "
-    "your key to the new format.\n"
-    "\n"
-    "You can perform this conversion by loading the key "
-    "into PuTTYgen and then saving it again."
   SCRIPT_HELP_HELP,
     "help [ <command> [ <command2> ... ] ]\n"
     "  Displays list of commands when no parameters are specified.\n"

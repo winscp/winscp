@@ -323,7 +323,7 @@ const SeatDialogPromptDescriptions * prompt_descriptions(Seat *)
 //---------------------------------------------------------------------------
 void old_keyfile_warning(void)
 {
-  // no reference to TSecureShell instance available
+  // no reference to TSecureShell instance available - and we already warn on Login dialog
 }
 //---------------------------------------------------------------------------
 size_t banner(Seat * seat, const void * data, size_t len)
