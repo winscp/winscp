@@ -11,6 +11,7 @@
 #include "HelpCore.h"
 #include "CoreMain.h"
 #include <StrUtils.hpp>
+#include <Consts.hpp>
 
 #ifndef AUTO_WINSOCK
 #include <winsock2.h>
@@ -2609,45 +2610,102 @@ void __fastcall TSecureShell::VerifyHostKey(
 
       bool Unknown = StoredKeys.IsEmpty();
 
+      UnicodeString AcceptButton = LoadStr(HOSTKEY_ACCEPT_BUTTON);
+      UnicodeString OnceButton = LoadStr(HOSTKEY_ONCE_BUTTON);
+      UnicodeString CancelButton = Vcl_Consts_SMsgDlgCancel;
+      UnicodeString UpdateButton = LoadStr(UPDATE_KEY_BUTTON);
+      UnicodeString AddButton = LoadStr(ADD_KEY_BUTTON);
       int Answers;
-      int AliasesCount;
-      TQueryButtonAlias Aliases[4];
-      Aliases[0].Button = qaRetry;
-      Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
-      Aliases[0].ActionAlias = LoadStr(COPY_KEY_ACTION);
-      Aliases[0].OnSubmit = &ClipboardHandler.Copy;
-      Aliases[1].Button = qaIgnore;
-      Aliases[1].Alias = LoadStr(PASTE_KEY_BUTTON);
-      Aliases[1].OnSubmit = &PasteKeyHandler.Paste;
-      Aliases[1].GroupWith = qaYes;
-      Answers = qaYes | qaCancel | qaRetry | qaIgnore;
-      AliasesCount = 2;
+      std::vector<TQueryButtonAlias> Aliases;
+
+      TQueryButtonAlias CopyAlias;
+      CopyAlias.Button = qaRetry;
+      CopyAlias.Alias = LoadStr(COPY_KEY_BUTTON);
+      CopyAlias.ActionAlias = LoadStr(COPY_KEY_ACTION);
+      CopyAlias.OnSubmit = &ClipboardHandler.Copy;
+      Aliases.push_back(CopyAlias);
+
+      TQueryButtonAlias PasteAlias;
+      PasteAlias.Button = qaIgnore;
+      PasteAlias.Alias = LoadStr(PASTE_KEY_BUTTON);
+      PasteAlias.OnSubmit = &PasteKeyHandler.Paste;
+      PasteAlias.GroupWith = qaYes;
+      Aliases.push_back(PasteAlias);
+
+      TQueryButtonAlias OnceAlias;
+      OnceAlias.Button = qaOK;
+      OnceAlias.Alias = OnceButton;
+      OnceAlias.GroupWith = qaYes;
+      Aliases.push_back(OnceAlias);
+
+      Answers = qaYes | qaOK | qaCancel | qaRetry | qaIgnore;
       if (!Unknown)
       {
-        Aliases[2].Button = qaYes;
-        Aliases[2].Alias = LoadStr(UPDATE_KEY_BUTTON);
-        Aliases[3].Button = qaOK;
-        Aliases[3].Alias = LoadStr(ADD_KEY_BUTTON);
-        AliasesCount += 2;
-        Answers |= qaSkip | qaOK;
+        TQueryButtonAlias UpdateAlias;
+        UpdateAlias.Button = qaYes;
+        UpdateAlias.Alias = UpdateButton;
+        Aliases.push_back(UpdateAlias);
+
+        TQueryButtonAlias AddAlias;
+        AddAlias.Button = qaNo;
+        AddAlias.Alias = AddButton;
+        AddAlias.GroupWith = qaYes;
+        Aliases.push_back(AddAlias);
+
+        Answers |= qaNo;
       }
       else
       {
-        Answers |= qaNo;
+        TQueryButtonAlias AcceptAlias;
+        AcceptAlias.Button = qaYes;
+        AcceptAlias.Alias = AcceptButton;
+        Aliases.push_back(AcceptAlias);
       }
 
       TQueryParams Params(qpWaitInBatch);
-      Params.NoBatchAnswers = qaYes | qaRetry | qaSkip | qaOK;
+      Params.NoBatchAnswers = qaYes | qaNo | qaRetry | qaIgnore | qaOK;
       Params.HelpKeyword = (Unknown ? HELP_UNKNOWN_KEY : HELP_DIFFERENT_KEY);
-      Params.Aliases = Aliases;
-      Params.AliasesCount = AliasesCount;
+      Params.Aliases = &Aliases[0];
+      Params.AliasesCount = Aliases.size();
 
+      UnicodeString NewLine = L"\n";
+      UnicodeString Para = NewLine + NewLine;
+      UnicodeString Message;
+      UnicodeString ServerPara = FMTLOAD(HOSTKEY_SERVER, (Host, Port)) + Para;
       UnicodeString KeyTypeHuman = GetKeyTypeHuman(KeyType);
-      UnicodeString KeyDetails = FMTLOAD(KEY_DETAILS, (SignKeyType, SHA256, MD5));
-      UnicodeString Message = FMTLOAD((Unknown ? UNKNOWN_KEY4 : DIFFERENT_KEY5), (KeyTypeHuman, KeyDetails));
+      UnicodeString Nbsp = L"\xA0";
+      UnicodeString Indent = Nbsp + Nbsp + Nbsp + Nbsp;
+      UnicodeString FingerprintPara =
+        Indent + FMTLOAD(HOSTKEY_FINGERPRINT, (KeyTypeHuman)) + NewLine +
+        Indent + ReplaceStr(FingerprintSHA256, L" ", Nbsp) + Para;
+      if (Unknown)
+      {
+        Message =
+          MainInstructions(LoadStr(HOSTKEY_UNKNOWN)) + Para +
+          LoadStr(HOSTKEY_NOT_CACHED) + NewLine +
+          ServerPara +
+          LoadStr(HOSTKEY_NO_GUARANTEE) + Para +
+          FingerprintPara +
+          FMTLOAD(HOSTKEY_ACCEPT_NEW, (StripHotkey(AcceptButton))) + NewLine +
+          FMTLOAD(HOSTKEY_ONCE_NEW, (StripHotkey(OnceButton))) + NewLine +
+          FMTLOAD(HOSTKEY_CANCEL_NEW, (StripHotkey(CancelButton)));
+      }
+      else
+      {
+        Message =
+          MainInstructions(LoadStr(HOSTKEY_SECURITY_BREACH)) + Para +
+          LoadStr(HOSTKEY_DOESNT_MATCH) + NewLine +
+          ServerPara +
+          FMTLOAD(HOSTKEY_TWO_EXPLANATIONS, (LoadStr(HOSTKEY_ADMINISTRATOR_CHANGED), LoadStr(HOSTKEY_ANOTHER_COMPUTER))) + Para +
+          FingerprintPara +
+          FMTLOAD(HOSTKEY_ACCEPT_CHANGE, (StripHotkey(UpdateButton), StripHotkey(AddButton))) + NewLine +
+          FMTLOAD(HOSTKEY_ONCE_CHANGE, (StripHotkey(OnceButton))) + NewLine +
+          FMTLOAD(HOSTKEY_CANCEL_CHANGE, (StripHotkey(CancelButton), StripHotkey(CancelButton)));
+      }
+
       if (Configuration->Scripting)
       {
-        AddToList(Message, LoadStr(SCRIPTING_USE_HOSTKEY), L"\n");
+        AddToList(Message, LoadStr(SCRIPTING_USE_HOSTKEY), Para);
       }
 
       unsigned int R =
@@ -2655,7 +2713,7 @@ void __fastcall TSecureShell::VerifyHostKey(
       UnicodeString StoreKeyStr = KeyStr;
 
       switch (R) {
-        case qaOK:
+        case qaNo:
           DebugAssert(!Unknown);
           StoreKeyStr = (StoredKeys + HostKeyDelimiter + StoreKeyStr);
           // fall thru
