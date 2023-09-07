@@ -1186,7 +1186,10 @@ bool __fastcall TCustomIniFileStorage::OpenSubKey(const UnicodeString & Key, boo
   {
     if (FMasterStorageOpenFailures > 0)
     {
-      FMasterStorageOpenFailures++;
+      if (Result)
+      {
+        FMasterStorageOpenFailures++;
+      }
     }
     else
     {
