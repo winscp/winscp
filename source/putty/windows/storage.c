@@ -418,6 +418,7 @@ void store_host_key(const char *hostname, int port,
     } // WINSCP
 }
 
+#ifndef WINSCP
 struct host_ca_enum {
     HKEY key;
     int i;
@@ -456,7 +457,6 @@ void enum_host_ca_finish(host_ca_enum *e)
     sfree(e);
 }
 
-#ifndef WINSCP
 host_ca *host_ca_load(const char *name)
 {
     strbuf *sb;
@@ -512,7 +512,6 @@ host_ca *host_ca_load(const char *name)
     } // WINSCP
     } // WINSCP
 }
-#endif
 
 char *host_ca_save(host_ca *hca)
 {
@@ -556,7 +555,6 @@ char *host_ca_save(host_ca *hca)
     } // WINSCP
 }
 
-#ifndef WINSCP
 char *host_ca_delete(const char *name)
 {
     HKEY rkey = open_regkey(false, HKEY_CURRENT_USER, host_ca_key);

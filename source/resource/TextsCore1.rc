@@ -260,6 +260,10 @@ BEGIN
   KEYGEN_NOT_PUBLIC, "File \"%s\" is not a public key in a known format."
   INCONSISTENT_SIZE, "File part \"%s\" size is %s, but %s was expected."
   CREDENTIALS_NOT_SPECIFIED, "Credentials were not specified."
+  SSH_HOST_CA_DECODE_ERROR, "Cannot decode key: %s"
+  SSH_HOST_CA_NO_KEY_TYPE, "Invalid key (no key type)."
+  SSH_HOST_CA_CERTIFICATE, "CA key may not be a certificate (type is '%s')."
+  SSH_HOST_CA_INVALID, "Invalid '%s' key data."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"
@@ -335,6 +339,12 @@ BEGIN
   HOSTKEY_ACCEPT_CHANGE, "If you were expecting this change, trust the new key and want to continue connecting to the server, either select %s to update cache, or select %s to add the new key to the cache while keeping the old one(s)."
   HOSTKEY_ONCE_CHANGE, "If you want to carry on connecting but without updating the cache, select %s."
   HOSTKEY_CANCEL_CHANGE, "If you want to abandon the connection completely, select %s to cancel. Selecting %s is the ONLY guaranteed safe choice."
+  HOSTKEY_CERTIFIED1, "This server presented a certified host key:"
+  HOSTKEY_CERTIFIED2, "which was signed by a different certification authority from the one(s) WinSCP is configured to trust for this server."
+  HOSTKEY_CERTIFIED_DOESNT_MATCH_ALSO, "Also, that key does not match the key WinSCP had previously cached for this server."
+  HOSTKEY_CERTIFIED_ANOTHER, "another certification authority is operating in this realm"
+  HOSTKEY_CERTIFIED_DOESNT_MATCH, "which does not match the certified key WinSCP had previously cached for this server."
+  HOSTKEY_CERTIFIED_TRUST, "(Storing this certified key in the cache will NOT cause its certification authority to be trusted for any other key or host.)"
 
   CORE_INFORMATION_STRINGS, "CORE_INFORMATION"
   YES_STR, "Yes"

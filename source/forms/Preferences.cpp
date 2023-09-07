@@ -640,6 +640,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     // security
     UseMasterPasswordCheck->Checked = WinConfiguration->UseMasterPassword;
     SessionRememberPasswordCheck->Checked = GUIConfiguration->SessionRememberPassword;
+    FSshHostCAPlainList = Configuration->SshHostCAList->GetList();
 
     // network
     RetrieveExternalIpAddressButton->Checked = Configuration->ExternalIpAddress.IsEmpty();
@@ -1000,6 +1001,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     // security
     GUIConfiguration->SessionRememberPassword = SessionRememberPasswordCheck->Checked;
+    std::unique_ptr<TSshHostCAList> SshHostCAList(new TSshHostCAList(FSshHostCAPlainList));
+    Configuration->SshHostCAList = SshHostCAList.get();
 
     // logging
     Configuration->Logging = EnableLoggingCheck->Checked && !LogFileNameEdit3->Text.IsEmpty();
@@ -1426,7 +1429,12 @@ void __fastcall TPreferencesDialog::UpdateControls()
       AnyPuttyPath && !IsSiteCommand && !IsUWP());
     EnableControl(PuttyRegistryStorageKeyLabel, PuttyRegistryStorageKeyEdit->Enabled);
 
+    // security
     EnableControl(SetMasterPasswordButton, WinConfiguration->UseMasterPassword);
+    UpdateSshHostCAsViewView();
+    bool SshHostCASelected = (SshHostCAsView->Selected != NULL);
+    EnableControl(EditSshHostCAButton, SshHostCASelected);
+    EnableControl(RemoveSshHostCAButton, SshHostCASelected);
 
     // network
     EnableControl(CustomExternalIpAddressEdit, CustomExternalIpAddressButton->Checked);
@@ -3279,5 +3287,69 @@ UnicodeString TPreferencesDialog::Bullet(const UnicodeString & S)
   }
   Result = ReplaceStr(Result, sLineBreak + Dash, sLineBreak + Bullet);
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::SshHostCAsViewDblClick(TObject *)
+{
+  if (EditSshHostCAButton->Enabled)
+  {
+    EditSshHostCAButtonClick(NULL);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::SshHostCAsViewKeyDown(TObject *, WORD & Key, TShiftState)
+{
+  if (RemoveSshHostCAButton->Enabled && (Key == VK_DELETE))
+  {
+    RemoveSshHostCAButtonClick(NULL);
+  }
+
+  if (AddSshHostCAButton->Enabled && (Key == VK_INSERT))
+  {
+    AddSshHostCAButtonClick(NULL);
+  }
+}
+//---------------------------------------------------------------------------
+void TPreferencesDialog::UpdateSshHostCAsViewView()
+{
+  SshHostCAsView->Items->Count = FSshHostCAPlainList.size();
+  AutoSizeListColumnsWidth(SshHostCAsView, 1);
+  SshHostCAsView->Invalidate();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AddSshHostCAButtonClick(TObject *)
+{
+  TSshHostCA SshHostCA;
+  if (DoSshHostCADialog(true, SshHostCA))
+  {
+    FSshHostCAPlainList.push_back(SshHostCA);
+    UpdateSshHostCAsViewView();
+    SshHostCAsView->ItemIndex = FSshHostCAPlainList.size() - 1;
+    SshHostCAsView->ItemFocused->MakeVisible(false);
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::SshHostCAsViewData(TObject *, TListItem * Item)
+{
+  TSshHostCA & SshHostCA = FSshHostCAPlainList[Item->Index];
+  Item->Caption = SshHostCA.Name;
+  Item->SubItems->Add(SshHostCA.ValidityExpression);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::EditSshHostCAButtonClick(TObject *)
+{
+  if (DoSshHostCADialog(true, FSshHostCAPlainList[SshHostCAsView->ItemIndex]))
+  {
+    UpdateSshHostCAsViewView();
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::RemoveSshHostCAButtonClick(TObject *)
+{
+  FSshHostCAPlainList.erase(FSshHostCAPlainList.begin() + SshHostCAsView->ItemIndex);
+  UpdateSshHostCAsViewView();
+  UpdateControls();
 }
 //---------------------------------------------------------------------------

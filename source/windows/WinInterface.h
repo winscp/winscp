@@ -162,6 +162,7 @@ bool __fastcall DoCustomCommandOptionsDialog(
   TCustomCommand * CustomCommandForOptions, const UnicodeString & Site, const TShortCuts * ShortCuts);
 void __fastcall DoUsageStatisticsDialog();
 void __fastcall DoSiteRawDialog(TSessionData * Data);
+bool DoSshHostCADialog(bool Add, TSshHostCA & SshHostCA);
 
 // windows\UserInterface.cpp
 bool __fastcall DoMasterPasswordDialog();

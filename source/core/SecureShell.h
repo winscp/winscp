@@ -172,7 +172,8 @@ public:
   const UnicodeString & __fastcall GetStdError();
   void __fastcall VerifyHostKey(
     const UnicodeString & Host, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr,
-    const UnicodeString & FingerprintSHA256, const UnicodeString & FingerprintMD5);
+    const UnicodeString & FingerprintSHA256, const UnicodeString & FingerprintMD5,
+    bool IsCertificate, int CACount, bool AlreadyVerified);
   bool __fastcall HaveHostKey(UnicodeString Host, int Port, const UnicodeString KeyType);
   void __fastcall AskAlg(UnicodeString AlgType, UnicodeString AlgName);
   void __fastcall DisplayBanner(const UnicodeString & Banner);

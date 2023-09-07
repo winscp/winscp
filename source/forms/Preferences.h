@@ -347,6 +347,11 @@ __published:
   TCheckBox *ParallelTransferCheck;
   TComboBox *ParallelTransferThresholdCombo;
   TLabel *ParallelTransferThresholdUnitLabel;
+  TGroupBox *SshHostCAsGroup;
+  TListView *SshHostCAsView;
+  TButton *AddSshHostCAButton;
+  TButton *RemoveSshHostCAButton;
+  TButton *EditSshHostCAButton;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -453,6 +458,12 @@ __published:
   void __fastcall CopyParamListViewDragOver(TObject *Sender, TObject *Source, int X, int Y, TDragState State, bool &Accept);
   void __fastcall LocalPortNumberMinEditExit(TObject *Sender);
   void __fastcall LocalPortNumberMaxEditExit(TObject *Sender);
+  void __fastcall SshHostCAsViewDblClick(TObject *Sender);
+  void __fastcall SshHostCAsViewKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
+  void __fastcall AddSshHostCAButtonClick(TObject *Sender);
+  void __fastcall SshHostCAsViewData(TObject *Sender, TListItem *Item);
+  void __fastcall EditSshHostCAButtonClick(TObject *Sender);
+  void __fastcall RemoveSshHostCAButtonClick(TObject *Sender);
 
 private:
   TPreferencesMode FPreferencesMode;
@@ -485,6 +496,7 @@ private:
   std::unique_ptr<TStringList> FCustomCommandOptions;
   UnicodeString FCustomIniFileStorageName;
   TFileColorData::TList FFileColors;
+  TSshHostCA::TList FSshHostCAPlainList;
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
   void __fastcall CMDpiChanged(TMessage & Message);
@@ -537,6 +549,7 @@ protected:
   void __fastcall UpdateFileColorsView();
   void __fastcall AddEditFileColor(bool Edit);
   UnicodeString Bullet(const UnicodeString & S);
+  void UpdateSshHostCAsViewView();
 
   INTERFACE_HOOK;
 };

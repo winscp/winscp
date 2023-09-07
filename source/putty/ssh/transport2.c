@@ -727,7 +727,6 @@ static void ssh2_write_kexinit_lists(
          */
 
         bool accept_certs = false;
-        #ifndef WINSCP
         {
             host_ca_enum *handle = enum_host_ca_start();
             if (handle) {
@@ -750,7 +749,6 @@ static void ssh2_write_kexinit_lists(
                 strbuf_free(name);
             }
         }
-        #endif
 
         if (accept_certs) {
             /* Add all the certificate algorithms first, in preference order */

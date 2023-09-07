@@ -19,6 +19,7 @@
 #include <psapi.h>
 #include <CoreMain.h>
 #include <SessionInfo.h>
+#include <Soap.EncdDecd.hpp>
 #include <openssl/pkcs12.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
@@ -482,6 +483,21 @@ bool IsNumber(const UnicodeString Str)
     }
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString EncodeStrToBase64(const RawByteString & Str)
+{
+  UnicodeString Result = EncodeBase64(Str.c_str(), Str.Length());
+  Result = ReplaceStr(Result, sLineBreak, EmptyStr);
+  return Result;
+}
+//---------------------------------------------------------------------------
+RawByteString DecodeBase64ToStr(const UnicodeString & Str)
+{
+  TBytes Bytes = DecodeBase64(Str);
+  // This might be the same as TEncoding::ASCII->GetString.
+  // const_cast: The operator[] const is (badly?) implemented to return by value
+  return RawByteString(reinterpret_cast<const char *>(&const_cast<TBytes &>(Bytes)[0]), Bytes.Length);
 }
 //---------------------------------------------------------------------------
 UnicodeString Base64ToUrlSafe(const UnicodeString & S)

@@ -60,15 +60,15 @@ struct kexinit_algorithm_list {
     X(HK_RSA, ssh_rsa_sha256)                                   \
     X(HK_RSA, ssh_rsa)                                          \
     /* WINSCP */ \
-    /*X(HK_ED25519, opensshcert_ssh_ecdsa_ed25519)*/                \
+    X(HK_ED25519, opensshcert_ssh_ecdsa_ed25519)                \
     /* OpenSSH defines no certified version of Ed448 */         \
-    /*X(HK_ECDSA, opensshcert_ssh_ecdsa_nistp256)*/                 \
-    /*X(HK_ECDSA, opensshcert_ssh_ecdsa_nistp384)*/                 \
-    /*X(HK_ECDSA, opensshcert_ssh_ecdsa_nistp521)*/                 \
-    /*X(HK_DSA, opensshcert_ssh_dsa)*/                              \
-    /*X(HK_RSA, opensshcert_ssh_rsa_sha512)*/                       \
-    /*X(HK_RSA, opensshcert_ssh_rsa_sha256)*/                       \
-    /*X(HK_RSA, opensshcert_ssh_rsa)*/                              \
+    X(HK_ECDSA, opensshcert_ssh_ecdsa_nistp256)                 \
+    X(HK_ECDSA, opensshcert_ssh_ecdsa_nistp384)                 \
+    X(HK_ECDSA, opensshcert_ssh_ecdsa_nistp521)                 \
+    X(HK_DSA, opensshcert_ssh_dsa)                              \
+    X(HK_RSA, opensshcert_ssh_rsa_sha512)                       \
+    X(HK_RSA, opensshcert_ssh_rsa_sha256)                       \
+    X(HK_RSA, opensshcert_ssh_rsa)                              \
     /* end of list */
 #define COUNT_HOSTKEY_ALGORITHM(type, alg) +1
 #define N_HOSTKEY_ALGORITHMS (0 HOSTKEY_ALGORITHMS(COUNT_HOSTKEY_ALGORITHM))

@@ -15,6 +15,7 @@
 #include <ProgParams.h>
 #include <Tools.h>
 #include <GUITools.h>
+#include <PuttyTools.h>
 #include <HistoryComboBox.hpp>
 #include <Math.hpp>
 
@@ -311,6 +312,17 @@ void __fastcall TCustomDialog::AddButtonControl(TButtonControl * Control)
   {
     PublicControl->OnClick = Change;
   }
+}
+//---------------------------------------------------------------------------
+void TCustomDialog::AddButtonNextToEdit(TButton * Button, TWinControl * Edit)
+{
+  Button->Parent = GetDefaultParent();
+  Button->Width = HelpButton->Width;
+  Button->Left = GetDefaultParent()->ClientWidth - Button->Width - HorizontalMargin;
+  Edit->Width = Button->Left - Edit->Left - ScaleByTextHeight(this, 6);
+  Button->Top = Edit->Top - ScaleByTextHeight(this, 2);
+  ScaleButtonControl(Button);
+  AddWinControl(Button);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomDialog::AddText(TLabel * Label)
@@ -1016,16 +1028,10 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
       {
         THistoryComboBox * ComboBox = CreateHistoryComboBox(Option, Value);
         TButton * Button = new TButton(this);
-        Button->Parent = GetDefaultParent();
-        Button->Width = HelpButton->Width;
-        Button->Left = GetDefaultParent()->ClientWidth - Button->Width - HorizontalMargin;
-        ComboBox->Width = Button->Left - ComboBox->Left - ScaleByTextHeight(this, 6);
-        Button->Top = ComboBox->Top - ScaleByTextHeight(this, 2);
+        AddButtonNextToEdit(Button, ComboBox);
         Button->Tag = Tag;
         Button->Caption = LoadStr(EXTENSION_OPTIONS_BROWSE);
         Button->OnClick = BrowseButtonClick;
-        ScaleButtonControl(Button);
-        AddWinControl(Button);
         Control = ComboBox;
       }
       else if (Option.Kind == TCustomCommandType::okDropDownList)
@@ -1594,4 +1600,206 @@ void __fastcall DoSiteRawDialog(TSessionData * Data)
 {
   std::unique_ptr<TSiteRawDialog> Dialog(new TSiteRawDialog());
   Dialog->Execute(Data);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TSshHostCADialog : public TCustomDialog
+{
+public:
+  TSshHostCADialog(bool Add);
+  bool Execute(TSshHostCA & SshHostCA);
+
+protected:
+  virtual void __fastcall DoChange(bool & CanSubmit);
+  virtual void __fastcall DoValidate();
+
+private:
+  TEdit * NameEdit;
+  TEdit * PublicKeyEdit;
+  TEdit * PublicKeyLabel;
+  TEdit * ValidityExpressionEdit;
+  TCheckBox * PermitRsaSha1Check;
+  TCheckBox * PermitRsaSha256Check;
+  TCheckBox * PermitRsaSha512Check;
+
+  void __fastcall BrowseButtonClick(TObject * Sender);
+  TCheckBox * AddValidityCheckBox(int CaptionStrPart);
+  bool ValidatePublicKey(UnicodeString & Status);
+};
+//---------------------------------------------------------------------------
+TSshHostCADialog::TSshHostCADialog(bool Add) :
+  TCustomDialog(HELP_SSH_HOST_CA)
+{
+  ClientWidth = ScaleByTextHeight(this, 520);
+  Caption = LoadStr(Add ? SSH_HOST_CA_ADD : SSH_HOST_CA_EDIT);
+
+  NameEdit = new TEdit(this);
+  AddEdit(NameEdit, CreateLabel(LoadStr(SSH_HOST_CA_NAME)));
+
+  PublicKeyEdit = new TEdit(this);
+  AddEdit(PublicKeyEdit, CreateLabel(LoadStr(SSH_HOST_CA_PUBLIC_KEY)));
+
+  TButton * BrowseButton = new TButton(this);
+  BrowseButton->Caption = LoadStr(SSH_HOST_CA_BROWSE);
+  BrowseButton->OnClick = BrowseButtonClick;
+  AddButtonNextToEdit(BrowseButton, PublicKeyEdit);
+  NameEdit->Width = PublicKeyEdit->Width;
+
+  PublicKeyLabel = new TEdit(this);
+  ReadOnlyControl(PublicKeyLabel);
+  PublicKeyLabel->BorderStyle = bsNone;
+  AddEditLikeControl(PublicKeyLabel, NULL);
+
+  ValidityExpressionEdit = new TEdit(this);
+  AddEdit(ValidityExpressionEdit, CreateLabel(LoadStr(SSH_HOST_CA_PUBLIC_HOSTS)));
+
+  TLabel * Label = CreateLabel(LoadStr(SSH_HOST_CA_SIGNATURE_TYPES));
+  AddText(Label);
+
+  PermitRsaSha1Check = AddValidityCheckBox(1);
+  int PermitCheckBoxTop = Label->Top - (PermitRsaSha1Check->Height - Label->Height) / 2;
+  PermitRsaSha1Check->Left = OKButton->Left + 1;
+  PermitRsaSha1Check->Top = PermitCheckBoxTop;
+  PermitRsaSha256Check = AddValidityCheckBox(2);
+  PermitRsaSha256Check->Left = CancelButton->Left + 1;
+  PermitRsaSha256Check->Top = PermitCheckBoxTop;
+  PermitRsaSha512Check = AddValidityCheckBox(3);
+  PermitRsaSha512Check->Left = HelpButton->Left + 1;
+  PermitRsaSha512Check->Top = PermitCheckBoxTop;
+}
+//---------------------------------------------------------------------------
+TCheckBox * TSshHostCADialog::AddValidityCheckBox(int CaptionStrPart)
+{
+  TCheckBox * Result = new TCheckBox(this);
+  Result->Parent = this;
+  Result->Caption = LoadStrPart(SSH_HOST_CA_SIGNATURES, CaptionStrPart);
+  ScaleButtonControl(Result);
+  Result->Left = Left;
+  Result->OnClick = Change;
+  AddWinControl(Result);
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool TSshHostCADialog::ValidatePublicKey(UnicodeString & Status)
+{
+  bool Result = false;
+  UnicodeString PublicKeyText = PublicKeyEdit->Text.Trim();
+  if (PublicKeyText.IsEmpty())
+  {
+    Status = LoadStr(SSH_HOST_CA_NO_KEY);
+  }
+  else
+  {
+    RawByteString PublicKeyDummy;
+    try
+    {
+      ParseCertificatePublicKey(PublicKeyText, PublicKeyDummy, Status);
+      Result = true;
+    }
+    catch (Exception & E)
+    {
+      Status = E.Message;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSshHostCADialog::DoChange(bool & CanSubmit)
+{
+  TCustomDialog::DoChange(CanSubmit);
+
+  UnicodeString PublicKeyStatus;
+  ValidatePublicKey(PublicKeyStatus);
+  // Should drop "SHA256:" prefix, the way we do in TSecureShell::VerifyHostKey
+  PublicKeyLabel->Text = PublicKeyStatus;
+
+  CanSubmit = !NameEdit->Text.Trim().IsEmpty() && !PublicKeyEdit->Text.Trim().IsEmpty();
+}
+//---------------------------------------------------------------------
+void __fastcall TSshHostCADialog::DoValidate()
+{
+  TCustomDialog::DoValidate();
+
+  UnicodeString PublicKeyStatus;
+  if (!ValidatePublicKey(PublicKeyStatus))
+  {
+    PublicKeyEdit->SetFocus();
+    throw Exception(MainInstructions(PublicKeyStatus));
+  }
+
+  if (ValidityExpressionEdit->Text.Trim().IsEmpty())
+  {
+    ValidityExpressionEdit->SetFocus();
+    throw Exception(MainInstructions(LoadStr(SSH_HOST_CA_NO_HOSTS)));
+  }
+
+  UnicodeString Error;
+  int ErrorStart, ErrorLen;
+  if (!IsCertificateValidityExpressionValid(ValidityExpressionEdit->Text, Error, ErrorStart, ErrorLen))
+  {
+    std::unique_ptr<TStrings> MoreMessages(TextToStringList(Error));
+    MoreMessageDialog(MainInstructions(LoadStr(SSH_HOST_CA_HOSTS_INVALID)), MoreMessages.get(), qtError, qaOK, HelpKeyword);
+
+    ValidityExpressionEdit->SetFocus();
+    ValidityExpressionEdit->SelStart = ErrorStart;
+    ValidityExpressionEdit->SelLength = ErrorLen;
+    Abort();
+  }
+}
+//---------------------------------------------------------------------------
+bool TSshHostCADialog::Execute(TSshHostCA & SshHostCA)
+{
+  NameEdit->Text = SshHostCA.Name;
+  RawByteString PublicKey = SshHostCA.PublicKey;
+  PublicKeyEdit->Text = EncodeStrToBase64(PublicKey);
+  ValidityExpressionEdit->Text = SshHostCA.ValidityExpression;
+  PermitRsaSha1Check->Checked = SshHostCA.PermitRsaSha1;
+  PermitRsaSha256Check->Checked = SshHostCA.PermitRsaSha256;
+  PermitRsaSha512Check->Checked = SshHostCA.PermitRsaSha512;
+  bool Result = TCustomDialog::Execute();
+  if (Result)
+  {
+    SshHostCA.Name = NameEdit->Text;
+    SshHostCA.PublicKey = DecodeBase64ToStr(PublicKeyEdit->Text);
+    SshHostCA.ValidityExpression = ValidityExpressionEdit->Text;
+    SshHostCA.PermitRsaSha1 = PermitRsaSha1Check->Checked;
+    SshHostCA.PermitRsaSha256 = PermitRsaSha256Check->Checked;
+    SshHostCA.PermitRsaSha512 = PermitRsaSha512Check->Checked;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSshHostCADialog::BrowseButtonClick(TObject *)
+{
+  std::unique_ptr<TOpenDialog> OpenDialog(new TOpenDialog(Application));
+  OpenDialog->Title = LoadStr(SSH_HOST_CA_BROWSE_TITLE);
+  OpenDialog->Filter = LoadStr(SSH_HOST_CA_BROWSE_FILTER);
+  bool Result = OpenDialog->Execute();
+  if (Result)
+  {
+    UnicodeString FileName = OpenDialog->FileName;
+    UnicodeString Algorithm, Comment;
+    bool HasCertificate;
+    RawByteString PublicKey;
+    try
+    {
+      PublicKey = LoadPublicKey(FileName, Algorithm, Comment, HasCertificate);
+    }
+    catch (Exception & E)
+    {
+      throw ExtException(&E, MainInstructions(FMTLOAD(SSH_HOST_CA_LOAD_ERROR, (FileName))));
+    }
+
+    if (NameEdit->Text.IsEmpty())
+    {
+      NameEdit->Text = Comment;
+    }
+    PublicKeyEdit->Text = EncodeStrToBase64(PublicKey);
+  }
+}
+//---------------------------------------------------------------------------
+bool DoSshHostCADialog(bool Add, TSshHostCA & SshHostCA)
+{
+  std::unique_ptr<TSshHostCADialog> Dialog(new TSshHostCADialog(Add));
+  return Dialog->Execute(SshHostCA);
 }

@@ -3,6 +3,7 @@
 #define ConfigurationH
 
 #include <set>
+#include <list>
 #include "RemoteFiles.h"
 #include "FileBuffer.h"
 #include "HierarchicalStorage.h"
@@ -19,6 +20,42 @@ enum TAutoSwitch { asOn, asOff, asAuto }; // Has to match PuTTY FORCE_ON, FORCE_
 //---------------------------------------------------------------------------
 class TStoredSessionList;
 class TCopyParamType;
+//---------------------------------------------------------------------------
+class TSshHostCA
+{
+public:
+  TSshHostCA();
+  void Save(THierarchicalStorage * Storage) const;
+  void Load(THierarchicalStorage * Storage);
+
+  UnicodeString Name;
+  RawByteString PublicKey;
+  UnicodeString ValidityExpression;
+  bool PermitRsaSha1;
+  bool PermitRsaSha256;
+  bool PermitRsaSha512;
+
+  typedef std::vector<TSshHostCA> TList;
+};
+//---------------------------------------------------------------------------
+class TSshHostCAList
+{
+public:
+  TSshHostCAList();
+  TSshHostCAList(const TSshHostCA::TList & List);
+  TSshHostCAList & operator =(const TSshHostCAList & other);
+  void Default();
+  TSshHostCA::TList GetList() const;
+  int GetCount() const;
+  const TSshHostCA * Get(int Index) const;
+  const TSshHostCA * Find(const UnicodeString & Name) const;
+
+  void Save(THierarchicalStorage * Storage);
+  void Load(THierarchicalStorage * Storage);
+
+private:
+  TSshHostCA::TList FList;
+};
 //---------------------------------------------------------------------------
 class TConfiguration : public TObject
 {
@@ -85,6 +122,7 @@ private:
   UnicodeString FCertificateStorage;
   UnicodeString FAWSMetadataService;
   UnicodeString FChecksumCommands;
+  std::unique_ptr<TSshHostCAList> FSshHostCAList;
 
   bool FDisablePasswordStoring;
   bool FForceBanners;
@@ -159,6 +197,8 @@ private:
   void SetLocalPortNumberMin(int value);
   void SetLocalPortNumberMax(int value);
   void SetQueueTransfersLimit(int value);
+  const TSshHostCAList * GetSshHostCAList();
+  void SetSshHostCAList(const TSshHostCAList * value);
 
 protected:
   TStorage FStorage;
@@ -181,6 +221,7 @@ protected:
   void __fastcall SetBannerData(const UnicodeString & SessionKey, const UnicodeString & BannerHash, unsigned int Params);
   void __fastcall GetBannerData(const UnicodeString & SessionKey, UnicodeString & BannerHash, unsigned int & Params);
   static UnicodeString __fastcall PropertyToKey(const UnicodeString & Property);
+  void DoSave(THierarchicalStorage * AStorage, bool All);
   virtual void __fastcall DoSave(bool All, bool Explicit);
   UnicodeString __fastcall FormatFingerprintKey(const UnicodeString & SiteKey, const UnicodeString & FingerprintType);
   THierarchicalStorage * OpenDirectoryStatisticsCache(bool CanCreate);
@@ -349,6 +390,7 @@ public:
   __property int QueueTransfersLimit = { read = FQueueTransfersLimit, write = SetQueueTransfersLimit };
   __property int ParallelTransferThreshold = { read = FParallelTransferThreshold, write = FParallelTransferThreshold };
   __property int KeyVersion = { read = FKeyVersion, write = FKeyVersion };
+  __property TSshHostCAList * SshHostCAList = { read = GetSshHostCAList, write = SetSshHostCAList };
 
   __property UnicodeString TimeFormat = { read = GetTimeFormat };
   __property TStorage Storage  = { read=GetStorage };

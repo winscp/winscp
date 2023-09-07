@@ -41,6 +41,7 @@ const UnicodeString FtpsCertificateStorageKey(L"FtpsCertificates");
 const UnicodeString HttpsCertificateStorageKey(L"HttpsCertificates");
 const UnicodeString LastFingerprintsStorageKey(L"LastFingerprints");
 const UnicodeString DirectoryStatisticsCacheKey(L"DirectoryStatisticsCache");
+const UnicodeString SshHostCAsKey(L"SshHostCAs");
 const UnicodeString CDCacheKey(L"CDCache");
 const UnicodeString BannersKey(L"Banners");
 //---------------------------------------------------------------------------
@@ -48,6 +49,120 @@ const UnicodeString OpensshFolderName(L".ssh");
 const UnicodeString OpensshAuthorizedKeysFileName(L"authorized_keys");
 //---------------------------------------------------------------------------
 const int BelowNormalLogLevels = 1;
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+TSshHostCA::TSshHostCA()
+{
+  PermitRsaSha1 = false;
+  PermitRsaSha256 = true;
+  PermitRsaSha512 = true;
+}
+//---------------------------------------------------------------------------
+void TSshHostCA::Load(THierarchicalStorage * Storage)
+{
+  PublicKey = DecodeBase64ToStr(Storage->ReadString(L"PublicKey", PublicKey));
+  ValidityExpression = Storage->ReadString(L"Validity", ValidityExpression);
+  PermitRsaSha1 = Storage->ReadBool(L"PermitRSASHA1", PermitRsaSha1);
+  PermitRsaSha256 = Storage->ReadBool(L"PermitRSASHA256", PermitRsaSha256);
+  PermitRsaSha512 = Storage->ReadBool(L"PermitRSASHA512", PermitRsaSha512);
+}
+//---------------------------------------------------------------------------
+void TSshHostCA::Save(THierarchicalStorage * Storage) const
+{
+  Storage->WriteString(L"PublicKey", EncodeStrToBase64(PublicKey));
+  Storage->WriteString(L"Validity", ValidityExpression);
+  Storage->WriteBool(L"PermitRSASHA1", PermitRsaSha1);
+  Storage->WriteBool(L"PermitRSASHA256", PermitRsaSha256);
+  Storage->WriteBool(L"PermitRSASHA512", PermitRsaSha512);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+TSshHostCAList::TSshHostCAList()
+{
+}
+//---------------------------------------------------------------------------
+TSshHostCAList::TSshHostCAList(const TSshHostCA::TList & List)
+{
+  FList = List;
+}
+//---------------------------------------------------------------------------
+void TSshHostCAList::Default()
+{
+  FList.clear();
+}
+//---------------------------------------------------------------------------
+void TSshHostCAList::Save(THierarchicalStorage * Storage)
+{
+  Storage->ClearSubKeys();
+  TSshHostCA::TList::const_iterator I = FList.begin();
+  while (I != FList.end())
+  {
+    const TSshHostCA & SshHostCA = *I;
+    if (Storage->OpenSubKey(SshHostCA.Name, true))
+    {
+      SshHostCA.Save(Storage);
+      Storage->CloseSubKey();
+    }
+    ++I;
+  }
+}
+//---------------------------------------------------------------------------
+void TSshHostCAList::Load(THierarchicalStorage * Storage)
+{
+  FList.clear();
+  std::unique_ptr<TStrings> SubKeys(new TStringList());
+  Storage->GetSubKeyNames(SubKeys.get());
+
+  for (int Index = 0; Index < SubKeys->Count; Index++)
+  {
+    TSshHostCA SshHostCA;
+    SshHostCA.Name = SubKeys->Strings[Index];
+    if (Storage->OpenSubKey(SshHostCA.Name, false))
+    {
+      SshHostCA.Load(Storage);
+      Storage->CloseSubKey();
+
+      FList.push_back(SshHostCA);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+int TSshHostCAList::GetCount() const
+{
+  return FList.size();
+}
+//---------------------------------------------------------------------------
+const TSshHostCA * TSshHostCAList::Get(int Index) const
+{
+  return &FList[Index];
+}
+//---------------------------------------------------------------------------
+const TSshHostCA * TSshHostCAList::Find(const UnicodeString & Name) const
+{
+  TSshHostCA::TList::const_iterator I = FList.begin();
+  while (I != FList.end())
+  {
+    const TSshHostCA & SshHostCA = *I;
+    if (SameStr(SshHostCA.Name, Name))
+    {
+      return &SshHostCA;
+    }
+    ++I;
+  }
+  return NULL;
+}
+//---------------------------------------------------------------------------
+TSshHostCA::TList TSshHostCAList::GetList() const
+{
+  return FList;
+}
+//---------------------------------------------------------------------------
+TSshHostCAList & TSshHostCAList::operator =(const TSshHostCAList & other)
+{
+  FList = other.FList;
+  return *this;
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 __fastcall TConfiguration::TConfiguration()
 {
@@ -60,6 +175,7 @@ __fastcall TConfiguration::TConfiguration()
   FUsage = new TUsage(this);
   FDefaultCollectUsage = false;
   FScripting = false;
+  FSshHostCAList.reset(new TSshHostCAList());
 
   UnicodeString RandomSeedPath;
   if (!GetEnvironmentVariable(L"APPDATA").IsEmpty())
@@ -128,6 +244,7 @@ void __fastcall TConfiguration::Default()
   FQueueTransfersLimit = 2;
   FParallelTransferThreshold = -1; // default (currently off), 0 = explicitly off
   FKeyVersion = 0;
+  FSshHostCAList->Default();
   CollectUsage = FDefaultCollectUsage;
 
   FLogging = false;
@@ -307,6 +424,21 @@ void __fastcall TConfiguration::SaveExplicit()
   DoSave(false, true);
 }
 //---------------------------------------------------------------------------
+void TConfiguration::DoSave(THierarchicalStorage * AStorage, bool All)
+{
+  if (AStorage->OpenSubKey(ConfigurationSubKey, true))
+  {
+    SaveData(AStorage, All);
+    AStorage->CloseSubKey();
+  }
+
+  if (AStorage->OpenSubKey(SshHostCAsKey, true))
+  {
+    FSshHostCAList->Save(AStorage);
+    AStorage->CloseSubKey();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TConfiguration::DoSave(bool All, bool Explicit)
 {
   if (FDontSave) return;
@@ -317,13 +449,10 @@ void __fastcall TConfiguration::DoSave(bool All, bool Explicit)
     AStorage->AccessMode = smReadWrite;
     AStorage->Explicit = Explicit;
     AStorage->ForceSave = FForceSave;
-    if (AStorage->OpenSubKey(ConfigurationSubKey, true))
-    {
-      // if saving to TOptionsStorage, make sure we save everything so that
-      // all configuration is properly transferred to the master storage
-      bool ConfigAll = All || AStorage->Temporary;
-      SaveData(AStorage, ConfigAll);
-    }
+    // if saving to TOptionsStorage, make sure we save everything so that
+    // all configuration is properly transferred to the master storage
+    bool ConfigAll = All || AStorage->Temporary;
+    DoSave(AStorage, ConfigAll);
   }
   __finally
   {
@@ -384,10 +513,7 @@ void __fastcall TConfiguration::Export(const UnicodeString & FileName)
 
     CopyData(Storage, ExportStorage);
 
-    if (ExportStorage->OpenSubKey(ConfigurationSubKey, true))
-    {
-      SaveData(ExportStorage, true);
-    }
+    DoSave(ExportStorage, true);
   }
   __finally
   {
@@ -473,6 +599,11 @@ void __fastcall TConfiguration::LoadFrom(THierarchicalStorage * Storage)
   if (Storage->OpenSubKey(ConfigurationSubKey, false))
   {
     LoadData(Storage);
+    Storage->CloseSubKey();
+  }
+  if (Storage->OpenSubKey(SshHostCAsKey, false))
+  {
+    FSshHostCAList->Load(Storage);
     Storage->CloseSubKey();
   }
 }
@@ -2079,6 +2210,16 @@ void __fastcall TConfiguration::SetShowFtpWelcomeMessage(bool value)
 void TConfiguration::SetQueueTransfersLimit(int value)
 {
   SET_CONFIG_PROPERTY(QueueTransfersLimit);
+}
+//---------------------------------------------------------------------------
+const TSshHostCAList * TConfiguration::GetSshHostCAList()
+{
+  return FSshHostCAList.get();
+}
+//---------------------------------------------------------------------------
+void TConfiguration::SetSshHostCAList(const TSshHostCAList * value)
+{
+  *FSshHostCAList = *value;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TConfiguration::GetPersistent()

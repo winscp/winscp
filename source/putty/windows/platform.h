@@ -252,7 +252,7 @@ SeatPromptResult win_seat_confirm_ssh_host_key(
     Seat *seat, const char *host, int port, const char *keytype,
     char *keystr, SeatDialogText *text, HelpCtx helpctx,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx,
-    char **fingerprints, bool is_certificate); // WINSCP
+    char **fingerprints, bool is_certificate, int ca_count, bool already_verified); // WINSCP
 SeatPromptResult win_seat_confirm_weak_crypto_primitive(
     Seat *seat, const char *algtype, const char *algname,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);

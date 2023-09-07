@@ -65,7 +65,7 @@ char *dupvprintf_inner(char *buf, size_t oldlen, size_t *sizeptr,
     // CodeGuard breaks execution when vsnprintf function returns -1.
     // Prevent that by making the buffer large enough not to ever return -1.
     // (particularly when called from verify_ssh_host_key for keydisp)
-    sgrowarrayn_nm(buf, size, oldlen, 2048);
+    sgrowarrayn_nm(buf, size, oldlen, 4096);
 #endif
 
     while (1) {

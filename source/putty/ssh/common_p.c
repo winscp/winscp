@@ -1010,7 +1010,7 @@ SeatPromptResult verify_ssh_host_key(
                     "pretending to be the server.");
             }
         } else {
-            assert(storage_status == 2);
+            // assert(storage_status == 2); WINSCP
             seat_dialog_text_append(
                 text, SDT_PARA, "which does not match the certified key %s "
                 "had previously cached for this server.", appname);
@@ -1121,7 +1121,7 @@ SeatPromptResult verify_ssh_host_key(
     { // WINSCP
     SeatPromptResult toret = seat_confirm_ssh_host_key(
         iseat, host, port, keytype, keystr, text, helpctx, callback, ctx,
-        fingerprints, key && ssh_key_alg(key)->is_certificate); // WINSCP
+        fingerprints, key && ssh_key_alg(key)->is_certificate, ca_count, false); // WINSCP
     seat_dialog_text_free(text);
     return toret;
     } // WINSCP

@@ -2737,6 +2737,77 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 0
           end
         end
+        object SshHostCAsGroup: TGroupBox
+          Left = 8
+          Top = 164
+          Width = 389
+          Height = 205
+          Anchors = [akLeft, akTop, akRight, akBottom]
+          Caption = 'Trusted host certification authorities'
+          TabOrder = 2
+          DesignSize = (
+            389
+            205)
+          object SshHostCAsView: TListView
+            Left = 16
+            Top = 24
+            Width = 356
+            Height = 139
+            Anchors = [akLeft, akTop, akRight, akBottom]
+            Columns = <
+              item
+                Caption = 'Name'
+                Width = 100
+              end
+              item
+                Caption = 'Hosts'
+                Width = 100
+              end>
+            ColumnClick = False
+            DoubleBuffered = True
+            HideSelection = False
+            OwnerData = True
+            ReadOnly = True
+            RowSelect = True
+            ParentDoubleBuffered = False
+            TabOrder = 0
+            ViewStyle = vsReport
+            OnData = SshHostCAsViewData
+            OnDblClick = SshHostCAsViewDblClick
+            OnKeyDown = SshHostCAsViewKeyDown
+            OnSelectItem = ListViewSelectItem
+          end
+          object AddSshHostCAButton: TButton
+            Left = 16
+            Top = 169
+            Width = 83
+            Height = 25
+            Anchors = [akLeft, akBottom]
+            Caption = '&Add...'
+            TabOrder = 1
+            OnClick = AddSshHostCAButtonClick
+          end
+          object RemoveSshHostCAButton: TButton
+            Left = 208
+            Top = 169
+            Width = 83
+            Height = 25
+            Anchors = [akLeft, akBottom]
+            Caption = '&Remove'
+            TabOrder = 3
+            OnClick = RemoveSshHostCAButtonClick
+          end
+          object EditSshHostCAButton: TButton
+            Left = 112
+            Top = 169
+            Width = 83
+            Height = 25
+            Anchors = [akLeft, akBottom]
+            Caption = '&Edit...'
+            TabOrder = 2
+            OnClick = EditSshHostCAButtonClick
+          end
+        end
       end
       object IntegrationAppSheet: TTabSheet
         Tag = 18

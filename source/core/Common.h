@@ -71,6 +71,8 @@ UnicodeString RemoveInteractiveMsgTag(UnicodeString S);
 UnicodeString RemoveEmptyLines(const UnicodeString & S);
 bool IsNumber(const UnicodeString Str);
 extern const wchar_t NormalizedFingerprintSeparator;
+UnicodeString EncodeStrToBase64(const RawByteString & Str);
+RawByteString DecodeBase64ToStr(const UnicodeString & Str);
 UnicodeString Base64ToUrlSafe(const UnicodeString & S);
 UnicodeString MD5ToUrlSafe(const UnicodeString & S);
 bool SameChecksum(const UnicodeString & AChecksum1, const UnicodeString & AChecksum2, bool Base64);

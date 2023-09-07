@@ -1285,7 +1285,7 @@ struct SeatVtable {
         Seat *seat, const char *host, int port, const char *keytype,
         char *keystr, SeatDialogText *text, HelpCtx helpctx,
         void (*callback)(void *ctx, SeatPromptResult result), void *ctx,
-        char **fingerprints, bool is_certificate); // WINSCP
+        char **fingerprints, bool is_certificate, int ca_count, bool already_verified); // WINSCP
 
     /*
      * Check with the seat whether it's OK to use a cryptographic
@@ -1442,10 +1442,10 @@ static inline SeatPromptResult seat_confirm_ssh_host_key(
     InteractionReadySeat iseat, const char *h, int p, const char *ktyp,
     char *kstr, SeatDialogText *text, HelpCtx helpctx,
     void (*cb)(void *ctx, SeatPromptResult result), void *ctx,
-    char **fingerprints, bool is_certificate) // WINSCP
+    char **fingerprints, bool is_certificate, int ca_count, bool already_verified) // WINSCP
 { return iseat.seat->vt->confirm_ssh_host_key(
         iseat.seat, h, p, ktyp, kstr, text, helpctx, cb, ctx,
-        fingerprints, is_certificate); } // WINSCP
+        fingerprints, is_certificate, ca_count, already_verified); } // WINSCP
 static inline SeatPromptResult seat_confirm_weak_crypto_primitive(
     InteractionReadySeat iseat, const char *atyp, const char *aname,
     void (*cb)(void *ctx, SeatPromptResult result), void *ctx)
@@ -1539,7 +1539,7 @@ SeatPromptResult nullseat_confirm_ssh_host_key(
     Seat *seat, const char *host, int port, const char *keytype,
     char *keystr, SeatDialogText *text, HelpCtx helpctx,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx,
-    char **fingerprints, bool is_certificate); // WINSCP
+    char **fingerprints, bool is_certificate, int ca_count, bool already_verified); // WINSCP
 SeatPromptResult nullseat_confirm_weak_crypto_primitive(
     Seat *seat, const char *algtype, const char *algname,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);

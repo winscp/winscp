@@ -367,6 +367,9 @@
 		<CppCompile Include="putty\utils\base64_encode_atom.c">
 			<BuildOrder>80</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\utils\base64_valid.c">
+			<BuildOrder>165</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\utils\bufchain.c">
 			<BuildOrder>81</BuildOrder>
 		</CppCompile>
