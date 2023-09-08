@@ -2707,6 +2707,11 @@ UnicodeString __fastcall TSessionData::DecryptPassword(const RawByteString & Pas
   return Result;
 }
 //---------------------------------------------------------------------
+UnicodeString TSessionData::GetSessionPasswordEncryptionKey() const
+{
+  return UserName + HostName;
+}
+//---------------------------------------------------------------------
 bool __fastcall TSessionData::GetCanLogin()
 {
   return !FHostName.IsEmpty();
@@ -2890,24 +2895,24 @@ UnicodeString TSessionData::GetUserNameSource()
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetPassword(UnicodeString avalue)
 {
-  RawByteString value = EncryptPassword(avalue, UserName+HostName);
+  RawByteString value = EncryptPassword(avalue, GetSessionPasswordEncryptionKey());
   SET_SESSION_PROPERTY(Password);
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetPassword() const
 {
-  return DecryptPassword(FPassword, UserName+HostName);
+  return DecryptPassword(FPassword, GetSessionPasswordEncryptionKey());
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetNewPassword(UnicodeString avalue)
 {
-  RawByteString value = EncryptPassword(avalue, UserName+HostName);
+  RawByteString value = EncryptPassword(avalue, GetSessionPasswordEncryptionKey());
   SET_SESSION_PROPERTY(NewPassword);
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetNewPassword() const
 {
-  return DecryptPassword(FNewPassword, UserName+HostName);
+  return DecryptPassword(FNewPassword, GetSessionPasswordEncryptionKey());
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetChangePassword(bool value)
@@ -4581,12 +4586,12 @@ void __fastcall TSessionData::SetWinTitle(UnicodeString value)
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetEncryptKey() const
 {
-  return DecryptPassword(FEncryptKey, UserName+HostName);
+  return DecryptPassword(FEncryptKey, GetSessionPasswordEncryptionKey());
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetEncryptKey(UnicodeString avalue)
 {
-  RawByteString value = EncryptPassword(avalue, UserName+HostName);
+  RawByteString value = EncryptPassword(avalue, GetSessionPasswordEncryptionKey());
   SET_SESSION_PROPERTY(EncryptKey);
 }
 //---------------------------------------------------------------------

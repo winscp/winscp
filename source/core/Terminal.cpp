@@ -1344,7 +1344,7 @@ void __fastcall TTerminal::Idle()
 //---------------------------------------------------------------------
 RawByteString __fastcall TTerminal::EncryptPassword(const UnicodeString & Password)
 {
-  return Configuration->EncryptPassword(Password, SessionData->SessionName);
+  return Configuration->EncryptPassword(Password, SessionData->GetSessionPasswordEncryptionKey());
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TTerminal::DecryptPassword(const RawByteString & Password)
@@ -1352,7 +1352,7 @@ UnicodeString __fastcall TTerminal::DecryptPassword(const RawByteString & Passwo
   UnicodeString Result;
   try
   {
-    Result = Configuration->DecryptPassword(Password, SessionData->SessionName);
+    Result = Configuration->DecryptPassword(Password, SessionData->GetSessionPasswordEncryptionKey());
   }
   catch(EAbort &)
   {
