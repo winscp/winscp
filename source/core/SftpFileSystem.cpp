@@ -2241,12 +2241,13 @@ inline void __fastcall TSFTPFileSystem::BusyEnd()
   }
 }
 //---------------------------------------------------------------------------
+// size + message number + type
+const unsigned long SFTPPacketOverhead = 4 + 4 + 1;
+//---------------------------------------------------------------------------
 unsigned long __fastcall TSFTPFileSystem::TransferBlockSize(
   unsigned long Overhead, TFileOperationProgressType * OperationProgress)
 {
   const unsigned long MinPacketSize = 32768;
-  // size + message number + type
-  const unsigned long SFTPPacketOverhead = 4 + 4 + 1;
   unsigned long AMaxPacketSize = FSecureShell->MaxPacketSize();
   bool MaxPacketSizeValid = (AMaxPacketSize > 0);
   unsigned long CPSRounded = TEncryption::RoundToBlock(OperationProgress->CPS());
@@ -2315,6 +2316,11 @@ unsigned long __fastcall TSFTPFileSystem::DownloadBlockSize(
       (Result > FSupport->MaxReadSize))
   {
     Result = FSupport->MaxReadSize;
+  }
+  // Never ask for more than we can accept (overhead here should correctly not include the "size" field)
+  if (Result + SFTPPacketOverhead > SFTP_MAX_PACKET_LEN)
+  {
+    Result = SFTP_MAX_PACKET_LEN - SFTPPacketOverhead;
   }
   return Result;
 }
