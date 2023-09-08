@@ -402,6 +402,7 @@ private:
   bool __fastcall IsEditable();
   TSessionData * __fastcall CloneSelectedSession();
   void __fastcall CloneToNewSite();
+  void DoParseUrl(TSessionData * SessionData, const UnicodeString & Url);
   void __fastcall ParseUrl(const UnicodeString & Url);
   void __fastcall ParseHostName();
   void __fastcall ResetNewSiteData();

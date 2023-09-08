@@ -624,7 +624,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * SessionData)
 
   SessionData->PortNumber = PortNumberEdit->AsInteger;
   // Must be set after UserName, because HostName may be in format user@host,
-  // Though now we parse the hostname right on this dialog (see HostNameEdit), this is unlikely to ever be triggered.
+  // Though now we parse the hostname right on this dialog (see HostNameEditExit), this is unlikely to ever be triggered.
   SessionData->HostName = HostNameEdit->Text.Trim();
   SessionData->Ftps = GetFtps();
 
@@ -3176,16 +3176,22 @@ void __fastcall TLoginDialog::LoginButtonDropDownClick(TObject * /*Sender*/)
   MenuPopup(LoginDropDownMenu, LoginButton);
 }
 //---------------------------------------------------------------------------
+void TLoginDialog::DoParseUrl(TSessionData * SessionData, const UnicodeString & Url)
+{
+  // We do not want to pass in StoredSessions as we do not want the URL be
+  // parsed as pointing to a stored site.
+  bool DefaultsOnly; // unused
+  SessionData->ParseUrl(Url, NULL, NULL, DefaultsOnly, NULL, NULL, NULL, pufPreferProtocol);
+  SessionData->RequireDirectories = false;
+}
+//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::ParseUrl(const UnicodeString & Url)
 {
   std::unique_ptr<TSessionData> SessionData(new TSessionData(L""));
 
   SaveSession(SessionData.get());
 
-  // We do not want to pass in StoredSessions as we do not want the URL be
-  // parsed as pointing to a stored site.
-  bool DefaultsOnly; // unused
-  SessionData->ParseUrl(Url, NULL, NULL, DefaultsOnly, NULL, NULL, NULL, pufPreferProtocol);
+  DoParseUrl(SessionData.get(), Url);
 
   LoadSession(SessionData.get());
 }
@@ -3215,11 +3221,20 @@ void __fastcall TLoginDialog::PasteUrlActionExecute(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::ParseHostName()
 {
-  UnicodeString HostName = HostNameEdit->Text;
-  if (!HostName.IsEmpty() &&
-      (StoredSessions->IsUrl(HostName) || (HostName.Pos(L"@") > 0)))
+  UnicodeString HostName = HostNameEdit->Text.Trim();
+  if (!HostName.IsEmpty())
   {
-    ParseUrl(HostName);
+    // All this check is probably unnecessary, keeping it just to be safe
+    std::unique_ptr<TSessionData> SessionData(new TSessionData(EmptyStr));
+    DoParseUrl(SessionData.get(), HostName);
+    std::unique_ptr<TSessionData> HostNameSessionData(new TSessionData(EmptyStr));
+    HostNameSessionData->HostName = HostName;
+    std::unique_ptr<TStringList> DifferentProperties(CreateSortedStringList());
+    if ((HostNameSessionData->HostName != HostName) || // Has legacy HostName property parsing intervened?
+       (!SessionData->IsSameDecrypted(HostNameSessionData.get())))
+    {
+      ParseUrl(HostName);
+    }
   }
 }
 //---------------------------------------------------------------------------
