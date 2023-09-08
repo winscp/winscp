@@ -2241,8 +2241,8 @@ inline void __fastcall TSFTPFileSystem::BusyEnd()
   }
 }
 //---------------------------------------------------------------------------
-unsigned long __fastcall TSFTPFileSystem::TransferBlockSize(unsigned long Overhead,
-  TFileOperationProgressType * OperationProgress, unsigned long MaxPacketSize)
+unsigned long __fastcall TSFTPFileSystem::TransferBlockSize(
+  unsigned long Overhead, TFileOperationProgressType * OperationProgress)
 {
   const unsigned long MinPacketSize = 32768;
   // size + message number + type
@@ -2251,13 +2251,6 @@ unsigned long __fastcall TSFTPFileSystem::TransferBlockSize(unsigned long Overhe
   bool MaxPacketSizeValid = (AMaxPacketSize > 0);
   unsigned long CPSRounded = TEncryption::RoundToBlock(OperationProgress->CPS());
   unsigned long Result = CPSRounded;
-
-  if ((MaxPacketSize > 0) &&
-      ((MaxPacketSize < AMaxPacketSize) || !MaxPacketSizeValid))
-  {
-    AMaxPacketSize = MaxPacketSize;
-    MaxPacketSizeValid = true;
-  }
 
   if ((FMaxPacketSize > 0) &&
       ((FMaxPacketSize < AMaxPacketSize) || !MaxPacketSizeValid))

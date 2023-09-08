@@ -184,8 +184,8 @@ protected:
   char * __fastcall GetEOL() const;
   inline void __fastcall BusyStart();
   inline void __fastcall BusyEnd();
-  inline unsigned long __fastcall TransferBlockSize(unsigned long Overhead,
-    TFileOperationProgressType * OperationProgress, unsigned long MaxPacketSize = 0);
+  inline unsigned long __fastcall TransferBlockSize(
+    unsigned long Overhead, TFileOperationProgressType * OperationProgress);
   inline unsigned long __fastcall UploadBlockSize(const RawByteString & Handle,
     TFileOperationProgressType * OperationProgress);
   inline unsigned long __fastcall DownloadBlockSize(
