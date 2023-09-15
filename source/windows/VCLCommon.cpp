@@ -480,7 +480,7 @@ friend TCanvas * CreateControlCanvas(TControl * Control);
 class TPublicForm : public TForm
 {
 friend void __fastcall ChangeFormPixelsPerInch(TForm * Form, int PixelsPerInch);
-friend void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront);
+friend void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront, bool TriggerModalStarted);
 friend void __fastcall HideAsModal(TForm * Form, void *& Storage);
 friend void __fastcall ShowFormNoActivate(TForm * Form);
 };
@@ -1199,6 +1199,7 @@ void __fastcall ResetSystemSettings(TCustomForm * /*Control*/)
 //---------------------------------------------------------------------------
 struct TShowAsModalStorage
 {
+  bool TriggerModalFinished;
   void * FocusWindowList;
   HWND FocusActiveWindow;
   TFocusState FocusState;
@@ -1206,17 +1207,21 @@ struct TShowAsModalStorage
   int SaveCount;
 };
 //---------------------------------------------------------------------------
-void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront)
+void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront, bool TriggerModalStarted)
 {
   SetCorrectFormParent(Form);
   CancelDrag();
   if (GetCapture() != 0) SendMessage(GetCapture(), WM_CANCELMODE, 0, 0);
   ReleaseCapture();
-  Application->ModalStarted();
+  if (TriggerModalStarted)
+  {
+    Application->ModalStarted();
+  }
   (static_cast<TPublicForm*>(Form))->FFormState << fsModal;
 
   TShowAsModalStorage * AStorage = new TShowAsModalStorage;
 
+  AStorage->TriggerModalFinished = TriggerModalStarted;
   AStorage->FocusActiveWindow = GetActiveWindow();
   AStorage->FocusState = SaveFocusState();
   Screen->SaveFocusedList->Insert(0, Screen->FocusedForm);
@@ -1287,7 +1292,10 @@ void __fastcall HideAsModal(TForm * Form, void *& Storage)
 
   (static_cast<TPublicForm*>(Form))->FFormState >> fsModal;
 
-  Application->ModalFinished();
+  if (AStorage->TriggerModalFinished)
+  {
+    Application->ModalFinished();
+  }
 
   delete AStorage;
 }

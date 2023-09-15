@@ -1590,8 +1590,8 @@ void __fastcall TCustomScpExplorerForm::CreateProgressForm(TSynchronizeProgress 
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DestroyProgressForm()
 {
-  SAFE_DESTROY(FProgressForm);
   UnlockWindow();
+  SAFE_DESTROY(FProgressForm);
   SetQueueProgress();
 }
 //---------------------------------------------------------------------------
