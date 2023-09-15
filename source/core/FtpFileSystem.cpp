@@ -2647,8 +2647,7 @@ const TFileSystemInfo & __fastcall TFTPFileSystem::GetFileSystemInfo(bool /*Retr
         FORMAT(L"%s\r\n", (LoadStr(FTP_FEATURE_INFO)));
       for (int Index = 0; Index < FFeatures->Count; Index++)
       {
-        // For TrimLeft, refer to HandleFeatReply
-        FFileSystemInfo.AdditionalInfo += FORMAT(L"  %s\r\n", (TrimLeft(FFeatures->Strings[Index])));
+        FFileSystemInfo.AdditionalInfo += FORMAT(L"  %s\r\n", (FFeatures->Strings[Index]));
       }
     }
 
@@ -3600,85 +3599,9 @@ void __fastcall TFTPFileSystem::ResetFeatures()
   FSupportsAnyChecksumFeature = false;
 }
 //---------------------------------------------------------------------------
-UnicodeString TFTPFileSystem::CutFeature(UnicodeString & Buf)
-{
-  UnicodeString Result;
-  if (Buf.SubString(1, 1) == L"\"")
-  {
-    Buf.Delete(1, 1);
-    int P = Buf.Pos(L"\",");
-    if (P == 0)
-    {
-      Result = Buf;
-      Buf = UnicodeString();
-      // there should be the ending quote, but if not, just do nothing
-      if (Result.SubString(Result.Length(), 1) == L"\"")
-      {
-        Result.SetLength(Result.Length() - 1);
-      }
-    }
-    else
-    {
-      Result = Buf.SubString(1, P - 1);
-      Buf.Delete(1, P + 1);
-    }
-    Buf = Buf.TrimLeft();
-  }
-  else
-  {
-    Result = CutToChar(Buf, L',', true);
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 void TFTPFileSystem::ProcessFeatures()
 {
-  std::unique_ptr<TStrings> Features(new TStringList());
-  UnicodeString FeaturesOverride = FTerminal->SessionData->ProtocolFeatures.Trim();
-  if (FeaturesOverride.SubString(1, 1) == L"*")
-  {
-    FeaturesOverride.Delete(1, 1);
-    while (!FeaturesOverride.IsEmpty())
-    {
-      UnicodeString Feature = CutFeature(FeaturesOverride);
-      Features->Add(Feature);
-    }
-  }
-  else
-  {
-    std::unique_ptr<TStrings> DeleteFeatures(CreateSortedStringList());
-    std::unique_ptr<TStrings> AddFeatures(new TStringList());
-    while (!FeaturesOverride.IsEmpty())
-    {
-      UnicodeString Feature = CutFeature(FeaturesOverride);
-      if (Feature.SubString(1, 1) == L"-")
-      {
-        Feature.Delete(1, 1);
-        DeleteFeatures->Add(Feature.LowerCase());
-      }
-      else
-      {
-        if (Feature.SubString(1, 1) == L"+")
-        {
-          Feature.Delete(1, 1);
-        }
-        AddFeatures->Add(Feature);
-      }
-    }
-
-    for (int Index = 0; Index < FFeatures->Count; Index++)
-    {
-      // IIS 2003 indents response by 4 spaces, instead of one,
-      // see example in HandleReplyStatus
-      UnicodeString Feature = FFeatures->Strings[Index].Trim();
-      if (DeleteFeatures->IndexOf(Feature) < 0)
-      {
-        Features->Add(Feature);
-      }
-    }
-
-    Features->AddStrings(AddFeatures.get());
-  }
+  std::unique_ptr<TStrings> Features(FTerminal->ProcessFeatures(FFeatures));
 
   for (int Index = 0; Index < Features->Count; Index++)
   {
@@ -3739,7 +3662,10 @@ void __fastcall TFTPFileSystem::HandleFeatReply()
   {
     FLastResponse->Delete(0);
     FLastResponse->Delete(FLastResponse->Count - 1);
-    FFeatures->Assign(FLastResponse);
+    for (int Index = 0; Index < FLastResponse->Count; Index++)
+    {
+      FFeatures->Add(FLastResponse->Strings[Index].Trim());
+    }
   }
 }
 //---------------------------------------------------------------------------

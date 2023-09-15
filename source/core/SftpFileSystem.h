@@ -118,7 +118,8 @@ protected:
   int FBusy;
   void * FBusyToken;
   bool FAvoidBusy;
-  TStrings * FExtensions;
+  UnicodeString FExtensions;
+  std::unique_ptr<TStrings> FSupportedExtensions;
   TSFTPSupport * FSupport;
   TAutoSwitch FUtfStrings;
   bool FUtfDisablingAnnounced;

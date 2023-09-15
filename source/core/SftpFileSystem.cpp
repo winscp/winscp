@@ -190,8 +190,7 @@ const int asAll = 0xFFFF;
 struct TSFTPSupport
 {
   TSFTPSupport() :
-    AttribExtensions(new TStringList()),
-    Extensions(new TStringList())
+    AttribExtensions(new TStringList())
   {
     Reset();
   }
@@ -199,7 +198,6 @@ struct TSFTPSupport
   ~TSFTPSupport()
   {
     delete AttribExtensions;
-    delete Extensions;
   }
 
   void Reset()
@@ -212,7 +210,6 @@ struct TSFTPSupport
     OpenBlockVector = 0;
     BlockVector = 0;
     AttribExtensions->Clear();
-    Extensions->Clear();
     Loaded = false;
   }
 
@@ -224,7 +221,6 @@ struct TSFTPSupport
   unsigned int OpenBlockVector;
   unsigned int BlockVector;
   TStrings * AttribExtensions;
-  TStrings * Extensions;
   bool Loaded;
 };
 //---------------------------------------------------------------------------
@@ -1901,7 +1897,6 @@ __fastcall TSFTPFileSystem::TSFTPFileSystem(TTerminal * ATerminal,
   FUtfDisablingAnnounced = true;
   FSignedTS = false;
   FSupport = new TSFTPSupport();
-  FExtensions = new TStringList();
   FFixedPaths = NULL;
   FFileSystemInfoValid = false;
 
@@ -1923,7 +1918,6 @@ __fastcall TSFTPFileSystem::~TSFTPFileSystem()
   delete FSupport;
   ResetConnection();
   delete FPacketReservations;
-  delete FExtensions;
   delete FFixedPaths;
   delete FSecureShell;
 }
@@ -1995,27 +1989,11 @@ const TFileSystemInfo & __fastcall TSFTPFileSystem::GetFileSystemInfo(bool /*Ret
       FFileSystemInfo.AdditionalInfo += LoadStr(FS_RENAME_NOT_SUPPORTED) + L"\r\n\r\n";
     }
 
-    if (FExtensions->Count > 0)
+    if (!FExtensions.IsEmpty())
     {
-      UnicodeString Name;
-      UnicodeString Value;
-      UnicodeString Line;
-      FFileSystemInfo.AdditionalInfo += LoadStr(SFTP_EXTENSION_INFO) + L"\r\n";
-      for (int Index = 0; Index < FExtensions->Count; Index++)
-      {
-        UnicodeString Name = FExtensions->Names[Index];
-        UnicodeString Value = FExtensions->Values[Name];
-        UnicodeString Line;
-        if (Value.IsEmpty())
-        {
-          Line = Name;
-        }
-        else
-        {
-          Line = FORMAT(L"%s=%s", (Name, Value));
-        }
-        FFileSystemInfo.AdditionalInfo += FORMAT(L"  %s\r\n", (Line));
-      }
+      FFileSystemInfo.AdditionalInfo +=
+        LoadStr(SFTP_EXTENSION_INFO) + L"\r\n" +
+        FExtensions;
     }
     else
     {
@@ -2212,12 +2190,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
 //---------------------------------------------------------------------------
 bool __fastcall TSFTPFileSystem::SupportsExtension(const UnicodeString & Extension) const
 {
-  return
-    // OpenSSH announce extensions directly in the SSH_FXP_VERSION packet only.
-    // Bitvise uses "supported2" extension for some (mostly the standard ones) and SSH_FXP_VERSION for other.
-    // ProFTPD uses "supported2" extension for the standard extensions. And repeats them along with non-standard in the SSH_FXP_VERSION.
-    (FExtensions->IndexOfName(Extension) >= 0) ||
-    (FSupport->Loaded && (FSupport->Extensions->IndexOf(Extension) >= 0));
+  return (FSupportedExtensions->IndexOf(Extension) >= 0);
 }
 //---------------------------------------------------------------------------
 inline void __fastcall TSFTPFileSystem::BusyStart()
@@ -3059,13 +3032,17 @@ void __fastcall TSFTPFileSystem::DoStartup()
       (FVersion, SFTPMinVersion, SFTPMaxVersion)));
   }
 
-  FExtensions->Clear();
+  FExtensions = EmptyStr;
   FEOL = "\r\n";
   FSupport->Loaded = false;
   FSupportsStatVfsV2 = false;
   FSupportsHardlink = false;
   bool SupportsLimits = false;
   SAFE_DESTROY(FFixedPaths);
+  // OpenSSH announce extensions directly in the SSH_FXP_VERSION packet only.
+  // Bitvise uses "supported2" extension for some (mostly the standard ones) and SSH_FXP_VERSION for other.
+  // ProFTPD uses "supported2" extension for the standard extensions. And repeats them along with non-standard in the SSH_FXP_VERSION.
+  std::unique_ptr<TStrings> SupportedExtensions(new TStringList());
 
   if (FVersion >= 3)
   {
@@ -3097,11 +3074,14 @@ void __fastcall TSFTPFileSystem::DoStartup()
         FSupport->OpenFlags = SupportedStruct.GetCardinal();
         FSupport->AccessMask = SupportedStruct.GetCardinal();
         FSupport->MaxReadSize = SupportedStruct.GetCardinal();
+        std::unique_ptr<TStrings> ExtensionsLog(new TStringList());
         if (ExtensionName == SFTP_EXT_SUPPORTED)
         {
           while (SupportedStruct.GetNextData() != NULL)
           {
-            FSupport->Extensions->Add(SupportedStruct.GetAnsiString());
+            UnicodeString Extension = SupportedStruct.GetAnsiString();
+            ExtensionsLog->Add(Extension);
+            SupportedExtensions->Add(Extension);
           }
         }
         else
@@ -3120,7 +3100,9 @@ void __fastcall TSFTPFileSystem::DoStartup()
           ExtensionCount = SupportedStruct.GetCardinal();
           for (unsigned int i = 0; i < ExtensionCount; i++)
           {
-            FSupport->Extensions->Add(SupportedStruct.GetAnsiString());
+            UnicodeString Extension = SupportedStruct.GetAnsiString();
+            SupportedExtensions->Add(Extension);
+            ExtensionsLog->Add(Extension);
           }
         }
 
@@ -3144,11 +3126,11 @@ void __fastcall TSFTPFileSystem::DoStartup()
             FTerminal->LogEvent(
               FORMAT(L"    %s", (FSupport->AttribExtensions->Strings[Index])));
           }
-          FTerminal->LogEvent(FORMAT(L"  Extensions (%d)\n", (FSupport->Extensions->Count)));
-          for (int Index = 0; Index < FSupport->Extensions->Count; Index++)
+          FTerminal->LogEvent(FORMAT(L"  Extensions (%d)\n", (ExtensionsLog->Count)));
+          for (int Index = 0; Index < ExtensionsLog->Count; Index++)
           {
             FTerminal->LogEvent(
-              FORMAT(L"    %s", (FSupport->Extensions->Strings[Index])));
+              FORMAT(L"    %s", (ExtensionsLog->Strings[Index])));
           }
         }
       }
@@ -3265,20 +3247,15 @@ void __fastcall TSFTPFileSystem::DoStartup()
       {
         FTerminal->LogEvent(0, FORMAT(L"Unknown server extension %s=%s", (ExtensionName, ExtensionDisplayData)));
       }
-      FExtensions->Values[ExtensionName] = ExtensionDisplayData;
-    }
 
-    if (SupportsExtension(SFTP_EXT_VENDOR_ID))
-    {
-      TSFTPPacket Packet(SSH_FXP_EXTENDED);
-      Packet.AddString(SFTP_EXT_VENDOR_ID);
-      Packet.AddString(FTerminal->Configuration->CompanyName);
-      Packet.AddString(FTerminal->Configuration->ProductName);
-      Packet.AddString(FTerminal->Configuration->ProductVersion);
-      Packet.AddInt64(LOWORD(FTerminal->Configuration->FixedApplicationInfo->dwFileVersionLS));
-      SendPacket(&Packet);
-      // we are not interested in the response, do not wait for it
-      ReserveResponse(&Packet, NULL);
+      UnicodeString Line = ExtensionName;
+      if (!ExtensionDisplayData.IsEmpty())
+      {
+        Line += FORMAT(L"=%s", (ExtensionDisplayData));
+      }
+      FExtensions += FORMAT(L"  %s\r\n", (Line));
+
+      SupportedExtensions->Add(ExtensionName);
     }
   }
 
@@ -3364,6 +3341,22 @@ void __fastcall TSFTPFileSystem::DoStartup()
         (int(FMaxPacketSize))));
     }
   }
+
+  FSupportedExtensions.reset(FTerminal->ProcessFeatures(SupportedExtensions.get()));
+
+  if (SupportsExtension(SFTP_EXT_VENDOR_ID))
+  {
+    TSFTPPacket Packet(SSH_FXP_EXTENDED);
+    Packet.AddString(SFTP_EXT_VENDOR_ID);
+    Packet.AddString(FTerminal->Configuration->CompanyName);
+    Packet.AddString(FTerminal->Configuration->ProductName);
+    Packet.AddString(FTerminal->Configuration->ProductVersion);
+    Packet.AddInt64(LOWORD(FTerminal->Configuration->FixedApplicationInfo->dwFileVersionLS));
+    SendPacket(&Packet);
+    // we are not interested in the response, do not wait for it
+    ReserveResponse(&Packet, NULL);
+  }
+
 }
 //---------------------------------------------------------------------------
 char * __fastcall TSFTPFileSystem::GetEOL() const

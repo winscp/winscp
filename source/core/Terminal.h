@@ -260,6 +260,7 @@ private:
   inline bool __fastcall InTransaction();
   void __fastcall SaveCapabilities(TFileSystemInfo & FileSystemInfo);
   bool __fastcall CreateTargetDirectory(const UnicodeString & DirectoryPath, int Attrs, const TCopyParamType * CopyParam);
+  UnicodeString CutFeature(UnicodeString & Buf);
   static UnicodeString __fastcall SynchronizeModeStr(TSynchronizeMode Mode);
   static UnicodeString __fastcall SynchronizeParamsStr(int Params);
 
@@ -508,6 +509,7 @@ protected:
     TFileOperationProgressType * OperationProgress, bool FirstLevel);
   void GetShellChecksumAlgs(TStrings * Algs);
   TStrings * GetShellChecksumAlgDefs();
+  TStrings * ProcessFeatures(TStrings * Features);
 
   UnicodeString __fastcall EncryptFileName(const UnicodeString & Path, bool EncryptNewFiles);
   UnicodeString __fastcall DecryptFileName(const UnicodeString & Path, bool DecryptFullPath, bool DontCache);
