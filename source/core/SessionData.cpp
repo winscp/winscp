@@ -2362,7 +2362,8 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
         if ((AFSProtocol == fsWebDAV) &&
             (IsDomainOrSubdomain(HostName, S3LibDefaultHostName()) ||
              IsDomainOrSubdomain(HostName, L"digitaloceanspaces.com") ||
-             IsDomainOrSubdomain(HostName, L"storage.googleapis.com")))
+             IsDomainOrSubdomain(HostName, L"storage.googleapis.com") ||
+             IsDomainOrSubdomain(HostName, L"r2.cloudflarestorage.com")))
         {
           AFSProtocol = fsS3;
         }
