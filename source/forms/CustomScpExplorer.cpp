@@ -3929,7 +3929,7 @@ void TCustomScpExplorerForm::EditedFileUploaded(TTerminal * ATerminal, HANDLE Up
         if (DebugAlwaysTrue(Data != NULL))
         {
           Data->SourceTimestamp = File->Modification;
-          AppLogFmt(L"Uploaded edited remote file timestamp: %s: ", (StandardTimestamp(Data->SourceTimestamp)));
+          AppLogFmt(L"Uploaded edited remote file timestamp: %s", (StandardTimestamp(Data->SourceTimestamp)));
         }
       }
     }
