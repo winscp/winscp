@@ -15,7 +15,6 @@
 #include <WinInterface.h>
 #include <TbxUtils.hpp>
 #include <Math.hpp>
-#include <WebBrowserEx.hpp>
 #include <Tools.h>
 #include "PngImageList.hpp"
 #include <StrUtils.hpp>
@@ -287,6 +286,124 @@ void TPuttyCleanupThread::DoSchedule()
   FTimer = IncSecond(Now(), 10);
 }
 //---------------------------------------------------------------------------
+class TPuttyPasswordThread : public TSimpleThread
+{
+public:
+  TPuttyPasswordThread(const UnicodeString & Password, const UnicodeString & PipeName);
+  virtual __fastcall ~TPuttyPasswordThread();
+
+protected:
+  virtual void __fastcall Execute();
+  virtual void __fastcall Terminate();
+  virtual bool __fastcall Finished();
+
+private:
+  HANDLE FPipe;
+  AnsiString FPassword;
+
+  void DoSleep(int & Timeout);
+};
+//---------------------------------------------------------------------------
+TPuttyPasswordThread::TPuttyPasswordThread(const UnicodeString & Password, const UnicodeString & PipeName)
+{
+  DWORD OpenMode = PIPE_ACCESS_OUTBOUND | FILE_FLAG_FIRST_PIPE_INSTANCE;
+  DWORD PipeMode = PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_NOWAIT | PIPE_REJECT_REMOTE_CLIENTS;
+  DWORD BufferSize = 16 * 1024;
+  FPipe = CreateNamedPipe(PipeName.c_str(), OpenMode, PipeMode, 1, BufferSize, BufferSize, NMPWAIT_USE_DEFAULT_WAIT, NULL);
+  if (FPipe == INVALID_HANDLE_VALUE)
+  {
+    throw EOSExtException(L"Cannot create password pipe");
+  }
+  FPassword = AnsiString(Password);
+  Start();
+}
+//---------------------------------------------------------------------------
+__fastcall TPuttyPasswordThread::~TPuttyPasswordThread()
+{
+  DebugAlwaysTrue(FFinished);
+  AppLog(L"Disconnecting and closing password pipe");
+  DisconnectNamedPipe(FPipe);
+  CloseHandle(FPipe);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPuttyPasswordThread::Terminate()
+{
+  // noop - the thread always self-terminates
+}
+//---------------------------------------------------------------------------
+bool __fastcall TPuttyPasswordThread::Finished()
+{
+  return true;
+}
+//---------------------------------------------------------------------------
+void TPuttyPasswordThread::DoSleep(int & Timeout)
+{
+  unsigned int Step = 50;
+  Sleep(Step);
+  Timeout -= Step;
+  if (Timeout <= 0)
+  {
+    AppLog(L"Timeout waiting for PuTTY");
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPuttyPasswordThread::Execute()
+{
+  AppLog(L"Waiting for PuTTY to connect to password pipe");
+  int Timeout = MSecsPerSec * SecsPerMin;
+  while (Timeout > 0)
+  {
+    if (ConnectNamedPipe(FPipe, NULL))
+    {
+      AppLog(L"Password pipe is ready");
+    }
+    else
+    {
+      int Error = GetLastError();
+      if (Error == ERROR_PIPE_CONNECTED)
+      {
+        AppLog(L"PuTTY has connected to password pipe");
+        int Pos = 0;
+        while ((Timeout > 0) && (Pos < FPassword.Length()))
+        {
+          DWORD Written = 0;
+          if (!WriteFile(FPipe, FPassword.c_str() + Pos, FPassword.Length() - Pos, &Written, NULL))
+          {
+            AppLog(L"Error writting password pipe");
+            Timeout = 0;
+          }
+          else
+          {
+            Pos += Written;
+            if (Pos >= FPassword.Length())
+            {
+              FlushFileBuffers(FPipe);
+              AppLog(L"Complete password was written to pipe");
+              Timeout = 0;
+            }
+            else
+            {
+              AppLog(L"Part of password was written to pipe");
+              DoSleep(Timeout);
+            }
+          }
+        }
+      }
+      else if (Error == ERROR_PIPE_LISTENING)
+      {
+        DoSleep(Timeout);
+      }
+      else
+      {
+        AppLogFmt(L"Password pipe error %d", (Error));
+        Timeout = 0;
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+unsigned int PipeCounter = 0;
+//---------------------------------------------------------------------------
 void OpenSessionInPutty(TSessionData * SessionData)
 {
   // putty does not support resolving environment variables in session settings
@@ -432,7 +549,42 @@ void OpenSessionInPutty(TSessionData * SessionData)
     if (!Password.IsEmpty() && !LocalCustomCommand.IsPasswordCommand(AParams))
     {
       Password = NormalizeString(Password); // if password is empty, we should quote it always
-      AddToList(PuttyParams, FORMAT(L"-pw %s", (EscapePuttyCommandParam(Password))), L" ");
+      bool UsePuttyPwFile;
+      if (GUIConfiguration->UsePuttyPwFile == asAuto)
+      {
+        UsePuttyPwFile = false;
+        if (SameText(ExtractFileName(Program), OriginalPuttyExecutable))
+        {
+          unsigned int Version = GetFileVersion(Program);
+          if (Version != static_cast<unsigned int>(-1))
+          {
+            int MajorVersion = HIWORD(Version);
+            int MinorVersion = LOWORD(Version);
+            if (CalculateCompoundVersion(MajorVersion, MinorVersion) >= CalculateCompoundVersion(0, 77))
+            {
+              UsePuttyPwFile = true;
+            }
+          }
+        }
+      }
+      else
+      {
+        UsePuttyPwFile = (GUIConfiguration->UsePuttyPwFile == asOn);
+      }
+
+      UnicodeString PasswordParam;
+      if (UsePuttyPwFile)
+      {
+        PipeCounter++;
+        UnicodeString PipeName = FORMAT(L"\\\\.\\PIPE\\WinSCPPuTTYPassword.%.8x.%.8x.%.4x", (GetCurrentProcessId(), PipeCounter, rand()));
+        new TPuttyPasswordThread(Password, PipeName);
+        PasswordParam = FORMAT(L"-pwfile \"%s\"", (PipeName));
+      }
+      else
+      {
+        PasswordParam = FORMAT(L"-pw %s", (EscapePuttyCommandParam(Password)));
+      }
+      AddToList(PuttyParams, PasswordParam, L" ");
     }
 
     AddToList(PuttyParams, Params, L" ");
@@ -1257,6 +1409,9 @@ protected:
     return E_NOTIMPL;
   }
 };
+//---------------------------------------------------------------------------
+// Included only here as it defines ambiguous LONG_PTR, causing INVALID_HANDLE_VALUE to be unusable
+#include <WebBrowserEx.hpp>
 //---------------------------------------------------------------------------
 class TBrowserViewer : public TWebBrowserEx
 {

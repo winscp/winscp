@@ -159,6 +159,7 @@ private:
   bool FContinueOnError;
   bool FConfirmCommandSession;
   UnicodeString FPuttyPath;
+  TAutoSwitch FUsePuttyPwFile;
   bool FPuttyPassword;
   bool FTelnetForFtpInPutty;
   UnicodeString FPuttySession;
@@ -268,6 +269,7 @@ public:
   __property UnicodeString AppliedLocaleHex = { read = GetAppliedLocaleHex };
   __property TObjectList * Locales = { read = GetLocales };
   __property UnicodeString PuttyPath = { read = FPuttyPath, write = FPuttyPath };
+  __property TAutoSwitch UsePuttyPwFile = { read = FUsePuttyPwFile, write = FUsePuttyPwFile };
   __property UnicodeString DefaultPuttyPath = { read = FDefaultPuttyPath };
   __property bool PuttyPassword = { read = FPuttyPassword, write = FPuttyPassword };
   __property bool TelnetForFtpInPutty = { read = FTelnetForFtpInPutty, write = FTelnetForFtpInPutty };

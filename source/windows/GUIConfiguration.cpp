@@ -566,6 +566,7 @@ void __fastcall TGUIConfiguration::Default()
   FDefaultPuttyPathOnly = IncludeTrailingBackslash(ProgramsFolder) + L"PuTTY\\" + OriginalPuttyExecutable;
   FDefaultPuttyPath = L"%ProgramFiles%\\PuTTY\\" + OriginalPuttyExecutable;
   FPuttyPath = FormatCommand(FDefaultPuttyPath, L"");
+  FUsePuttyPwFile = asAuto;
   FPuttyPassword = false;
   FTelnetForFtpInPutty = true;
   FPuttySession = L"WinSCP temporary session";
@@ -642,6 +643,7 @@ void __fastcall TGUIConfiguration::UpdateStaticUsage()
     KEYEX(Bool,   SessionRememberPassword, L"QueueRememberPassword"); \
     KEY(String,   PuttySession); \
     KEY(String,   PuttyPath); \
+    KEY(Integer,  UsePuttyPwFile); \
     KEY(Bool,     PuttyPassword); \
     KEY(Bool,     TelnetForFtpInPutty); \
     KEY(DateTime, IgnoreCancelBeforeFinish); \
