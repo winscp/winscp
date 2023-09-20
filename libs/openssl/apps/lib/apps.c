@@ -940,7 +940,7 @@ int load_key_certs_crls(const char *uri, int format, int maybe_stdin,
         BIO *bio;
 
         if (!maybe_stdin) {
-            BIO_printf(bio_err, "No filename or uri specified for loading");
+            BIO_printf(bio_err, "No filename or uri specified for loading\n");
             goto end;
         }
         uri = "<stdin>";
@@ -956,10 +956,8 @@ int load_key_certs_crls(const char *uri, int format, int maybe_stdin,
         ctx = OSSL_STORE_open_ex(uri, libctx, propq, get_ui_method(), &uidata,
                                  params, NULL, NULL);
     }
-    if (ctx == NULL) {
-        BIO_printf(bio_err, "Could not open file or uri for loading");
+    if (ctx == NULL)
         goto end;
-    }
     if (expect > 0 && !OSSL_STORE_expect(ctx, expect))
         goto end;
 
@@ -1940,16 +1938,17 @@ X509_NAME *parse_name(const char *cp, int chtype, int canmulti,
         nid = OBJ_txt2nid(typestr);
         if (nid == NID_undef) {
             BIO_printf(bio_err,
-                       "%s: Skipping unknown %s name attribute \"%s\"\n",
+                       "%s warning: Skipping unknown %s name attribute \"%s\"\n",
                        opt_getprog(), desc, typestr);
             if (ismulti)
                 BIO_printf(bio_err,
-                           "Hint: a '+' in a value string needs be escaped using '\\' else a new member of a multi-valued RDN is expected\n");
+                           "%s hint: a '+' in a value string needs be escaped using '\\' else a new member of a multi-valued RDN is expected\n",
+                           opt_getprog());
             continue;
         }
         if (*valstr == '\0') {
             BIO_printf(bio_err,
-                       "%s: No value provided for %s name attribute \"%s\", skipped\n",
+                       "%s warning: No value provided for %s name attribute \"%s\", skipped\n",
                        opt_getprog(), desc, typestr);
             continue;
         }

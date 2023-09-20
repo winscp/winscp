@@ -19,6 +19,11 @@ OpenSSL Releases
 OpenSSL 3.1
 -----------
 
+### Major changes between OpenSSL 3.1.2 and OpenSSL 3.1.3 [19 Sep 2023]
+
+  * Fix POLY1305 MAC implementation corrupting XMM registers on Windows
+    ([CVE-2023-4807])
+
 ### Major changes between OpenSSL 3.1.1 and OpenSSL 3.1.2 [1 Aug 2023]
 
   * Fix excessive time spent checking DH q parameter value ([CVE-2023-3817])
@@ -1464,6 +1469,7 @@ OpenSSL 0.9.x
 
 <!-- Links -->
 
+[CVE-2023-4807]: https://www.openssl.org/news/vulnerabilities.html#CVE-2023-4807
 [CVE-2023-3817]: https://www.openssl.org/news/vulnerabilities.html#CVE-2023-3817
 [CVE-2023-3446]: https://www.openssl.org/news/vulnerabilities.html#CVE-2023-3446
 [CVE-2023-2975]: https://www.openssl.org/news/vulnerabilities.html#CVE-2023-2975

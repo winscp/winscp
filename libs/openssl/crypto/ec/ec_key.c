@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2002-2023 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -539,11 +539,6 @@ int ossl_ec_key_public_check(const EC_KEY *eckey, BN_CTX *ctx)
         goto err;
     }
     /* 5.6.2.3.3 (Step 4) : pub_key * order is the point at infinity. */
-    if (!EC_POINT_mul(eckey->group, point, NULL, eckey->pub_key, order, ctx)) {
-        ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
-        goto err;
-    }
-    /* Perform a second check on the public key */
     if (!EC_POINT_mul(eckey->group, point, NULL, eckey->pub_key, order, ctx)) {
         ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
         goto err;
