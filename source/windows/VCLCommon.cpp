@@ -2896,7 +2896,7 @@ bool IsButtonBeingClicked(TButtonControl * Button)
 }
 //---------------------------------------------------------------------------
 // When using this in OnExit handers, it's still possible that the user does not actually click the
-// CanceButton (for example, when the button is released out of the button).
+// CancelButton (for example, when the button is released out of the button).
 // Then the validation is bypassed. Consequently, all dialogs that uses this must still
 // gracefully handle submission with non-validated data.
 bool IsCancelButtonBeingClicked(TControl * Control)
