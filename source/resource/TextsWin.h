@@ -689,6 +689,7 @@
 #define SSH_HOST_CA_SIGNATURES  6203
 #define SSH_HOST_CA_NO_HOSTS    6204
 #define SSH_HOST_CA_HOSTS_INVALID 6205
+#define LOGIN_NOT_SHOWING_AGAIN 6206
 
 // 2xxx is reserved for TextsFileZilla.h
 

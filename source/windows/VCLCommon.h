@@ -15,6 +15,8 @@ void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrin
 void __fastcall EnableControl(TControl* Control, bool Enable);
 void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly = true);
 void __fastcall ReadOnlyAndEnabledControl(TControl * Control, bool ReadOnly, bool Enabled);
+int CalculateCheckBoxWidth(TControl * Control, const UnicodeString & Caption);
+void AutoSizeCheckBox(TCheckBox * CheckBox);
 void __fastcall InitializeSystemSettings();
 void __fastcall FinalizeSystemSettings();
 void __fastcall LocalSystemSettings(TCustomForm * Control);

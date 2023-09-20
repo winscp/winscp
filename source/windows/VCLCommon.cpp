@@ -382,6 +382,18 @@ void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
   DoReadOnlyControl(Control, ReadOnly, true);
 }
 //---------------------------------------------------------------------------
+int CalculateCheckBoxWidth(TControl * Control, const UnicodeString & Caption)
+{
+  return
+    ScaleByTextHeight(Control, 13 + 3 + 8) + // checkbox, padding and buffer
+    GetParentForm(Control)->Canvas->TextWidth(StripHotkey(Caption));
+}
+//---------------------------------------------------------------------------
+void AutoSizeCheckBox(TCheckBox * CheckBox)
+{
+  CheckBox->Width = CalculateCheckBoxWidth(CheckBox, CheckBox->Caption);
+}
+//---------------------------------------------------------------------------
 // Some of MainFormLike code can now be obsolete, thanks to Application->OnGetMainFormHandle.
 static TForm * MainLikeForm = NULL;
 //---------------------------------------------------------------------------

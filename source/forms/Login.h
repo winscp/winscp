@@ -293,6 +293,7 @@ __published:
   void __fastcall S3CredentialsEnvCheck3Click(TObject *Sender);
   void __fastcall EncryptionComboChange(TObject *Sender);
   void __fastcall S3ProfileComboChange(TObject *Sender);
+  void __fastcall ShowAgainCheckClick(TObject *Sender);
 
 private:
   int NoUpdate;

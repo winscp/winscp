@@ -93,6 +93,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FPasswordLabel = PasswordLabel->Caption;
 
   FSiteButtonsPadding = SitesPanel->ClientHeight - ToolsMenuButton->Top - ToolsMenuButton->Height;
+  AutoSizeCheckBox(ShowAgainCheck);
 }
 //---------------------------------------------------------------------
 __fastcall TLoginDialog::~TLoginDialog()
@@ -1739,6 +1740,7 @@ void __fastcall TLoginDialog::CMDpiChanged(TMessage & Message)
   TForm::Dispatch(&Message);
   GenerateImages();
   CenterButtonImage(LoginButton);
+  AutoSizeCheckBox(ShowAgainCheck);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::Dispatch(void * Message)
@@ -3333,5 +3335,16 @@ void __fastcall TLoginDialog::S3ProfileComboChange(TObject *)
 {
   UpdateS3Credentials();
   UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::ShowAgainCheckClick(TObject *)
+{
+  if (!ShowAgainCheck->Checked)
+  {
+    if (MessageDialog(LoadStr(LOGIN_NOT_SHOWING_AGAIN), qtConfirmation, qaOK | qaCancel, HELP_SHOW_LOGIN) != qaOK)
+    {
+      ShowAgainCheck->Checked = true;
+    }
+  }
 }
 //---------------------------------------------------------------------------

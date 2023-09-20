@@ -137,6 +137,8 @@ __fastcall TCopyDialog::TCopyDialog(
     OkButton->Style = TCustomButton::bsSplitButton;
   }
 
+  AutoSizeCheckBox(NeverShowAgainCheck);
+
   UseSystemSettings(this);
 }
 //---------------------------------------------------------------------------
@@ -626,5 +628,16 @@ void __fastcall TCopyDialog::BrowseItemClick(TObject *)
 void __fastcall TCopyDialog::OkButtonDropDownClick(TObject *)
 {
   MenuPopup(OkMenu, OkButton);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyDialog::Dispatch(void * Message)
+{
+  TMessage * M = reinterpret_cast<TMessage*>(Message);
+  if (M->Msg == CM_DPICHANGED)
+  {
+    AutoSizeCheckBox(NeverShowAgainCheck);
+  }
+
+  TForm::Dispatch(Message);
 }
 //---------------------------------------------------------------------------

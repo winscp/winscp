@@ -113,7 +113,7 @@ object CopyDialog: TCopyDialog
   object NeverShowAgainCheck: TCheckBox
     Left = 12
     Top = 167
-    Width = 493
+    Width = 253
     Height = 17
     Caption = '&Do not show this dialog box again'
     TabOrder = 10

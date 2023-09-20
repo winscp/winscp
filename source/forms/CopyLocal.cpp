@@ -47,6 +47,8 @@ TCopyLocalDialog::TCopyLocalDialog(TComponent * Owner, bool Move, int Options)
     ClientHeight = ClientHeight - ShortCutHintPanel->Height;
   }
 
+  AutoSizeCheckBox(NeverShowAgainCheck);
+
   UseSystemSettings(this);
 }
 //---------------------------------------------------------------------------
@@ -152,5 +154,16 @@ void __fastcall TCopyLocalDialog::LocalDirectoryBrowseButtonClick(TObject *)
     SetDirectoryAndFileMask(ADirectory, GetFileMask());
     UpdateControls();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyLocalDialog::Dispatch(void * Message)
+{
+  TMessage * M = reinterpret_cast<TMessage*>(Message);
+  if (M->Msg == CM_DPICHANGED)
+  {
+    AutoSizeCheckBox(NeverShowAgainCheck);
+  }
+
+  TForm::Dispatch(Message);
 }
 //---------------------------------------------------------------------------

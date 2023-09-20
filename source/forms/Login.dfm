@@ -529,21 +529,18 @@ object LoginDialog: TLoginDialog
     BevelOuter = bvNone
     TabOrder = 1
     OnMouseDown = PanelMouseDown
-    DesignSize = (
-      873
-      24)
     object ShowAgainCheck: TCheckBox
       Left = 12
       Top = 0
-      Width = 849
+      Width = 405
       Height = 17
-      Anchors = [akLeft, akTop, akRight]
       Caption = 
         '&Show Login dialog on startup and when the last session is close' +
         'd'
       Checked = True
       State = cbChecked
       TabOrder = 0
+      OnClick = ShowAgainCheckClick
     end
   end
   object ActionList: TActionList
