@@ -694,7 +694,7 @@ BEGIN
         SSH_HOST_CA_SIGNATURES, "SHA-&1|SHA-&256|SHA-&512"
         SSH_HOST_CA_NO_HOSTS, "No validity expression configured."
         SSH_HOST_CA_HOSTS_INVALID, "Error in validity expression."
-        LOGIN_NOT_SHOWING_AGAIN, "**Stop showing Login dialog automatically?** Please confirm if you really want to WinSCP stop showing Login dialog automatically on startup and when the last session is closed.\n\nIf you change your mind later, you can revert this in Preferences on Environment > Window page."
+        LOGIN_NOT_SHOWING_AGAIN, "**Stop showing Login dialog automatically?** Please confirm if you really want to WinSCP stop showing Login dialog automatically on startup and when the last session is closed.\n\nIf you change your mind later, you can revert this in Preferences on Environment > Window page.\n\nTo open the Login dialog manually, go to Tabs > New Tab [> Remote Tab] or use corresponding toolbar button."
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000–2023 Martin Prikryl"
