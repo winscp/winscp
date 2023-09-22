@@ -12,6 +12,7 @@ typedef void __fastcall (__closure* TProcessMessagesEvent)();
 //---------------------------------------------------------------------------
 void GUIFinalize();
 bool __fastcall FindFile(UnicodeString & Path);
+UnicodeString FindPuttyPath();
 bool __fastcall FindTool(const UnicodeString & Name, UnicodeString & Path);
 void __fastcall ExecuteTool(const UnicodeString & Name);
 void __fastcall ExecuteShellChecked(const UnicodeString Path, const UnicodeString Params,

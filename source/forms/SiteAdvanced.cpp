@@ -1844,16 +1844,12 @@ void __fastcall TSiteAdvancedDialog::PuttySettingsButtonClick(TObject *)
   SessionData->PuttySettings = PuttySettings;
   ExportSessionToPutty(SessionData.get(), false, SiteName);
 
-  UnicodeString Program, Params, Dir;
-  SplitCommand(GUIConfiguration->PuttyPath, Program, Params, Dir);
-  Program = ExpandEnvironmentVariables(Program);
-  if (!FindFile(Program))
-  {
-    throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Program)));
-  }
+  UnicodeString Program = FindPuttyPath();
 
   ExecuteShellChecked(Program, L"");
 
+  // Maybe replace this with update on WM_ACTIVATE,
+  // the way it works with certificate authorities on Preferences dialog
   FPuttySettingsTimer.reset(new TTimer(this));
   FPuttySettingsTimer->OnTimer = PuttySettingsTimer;
   FPuttySettingsTimer->Interval = MSecsPerSec;

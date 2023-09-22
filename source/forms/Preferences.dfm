@@ -2741,16 +2741,16 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 164
           Width = 389
-          Height = 205
+          Height = 228
           Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'Trusted host certification authorities'
           TabOrder = 2
           DesignSize = (
             389
-            205)
+            228)
           object SshHostCAsView: TListView
             Left = 16
-            Top = 24
+            Top = 47
             Width = 356
             Height = 139
             Anchors = [akLeft, akTop, akRight, akBottom]
@@ -2770,7 +2770,7 @@ object PreferencesDialog: TPreferencesDialog
             ReadOnly = True
             RowSelect = True
             ParentDoubleBuffered = False
-            TabOrder = 0
+            TabOrder = 1
             ViewStyle = vsReport
             OnData = SshHostCAsViewData
             OnDblClick = SshHostCAsViewDblClick
@@ -2779,33 +2779,52 @@ object PreferencesDialog: TPreferencesDialog
           end
           object AddSshHostCAButton: TButton
             Left = 16
-            Top = 169
+            Top = 192
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
             Caption = '&Add...'
-            TabOrder = 1
+            TabOrder = 2
             OnClick = AddSshHostCAButtonClick
           end
           object RemoveSshHostCAButton: TButton
             Left = 208
-            Top = 169
+            Top = 192
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
             Caption = '&Remove'
-            TabOrder = 3
+            TabOrder = 4
             OnClick = RemoveSshHostCAButtonClick
           end
           object EditSshHostCAButton: TButton
             Left = 112
-            Top = 169
+            Top = 192
             Width = 83
             Height = 25
             Anchors = [akLeft, akBottom]
             Caption = '&Edit...'
-            TabOrder = 2
+            TabOrder = 3
             OnClick = EditSshHostCAButtonClick
+          end
+          object SshHostCAsFromPuTTYCheck: TCheckBox
+            Left = 16
+            Top = 24
+            Width = 356
+            Height = 17
+            Caption = '&Load authorities from PuTTY'
+            TabOrder = 0
+            OnClick = SshHostCAsFromPuTTYCheckClick
+          end
+          object ConfigureSshHostCAsButton: TButton
+            Left = 16
+            Top = 192
+            Width = 125
+            Height = 25
+            Anchors = [akLeft, akBottom]
+            Caption = '&Edit in PuTTY...'
+            TabOrder = 5
+            OnClick = ConfigureSshHostCAsButtonClick
           end
         end
       end

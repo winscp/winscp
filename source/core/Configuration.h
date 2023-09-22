@@ -26,7 +26,7 @@ class TSshHostCA
 public:
   TSshHostCA();
   void Save(THierarchicalStorage * Storage) const;
-  void Load(THierarchicalStorage * Storage);
+  bool Load(THierarchicalStorage * Storage);
 
   UnicodeString Name;
   RawByteString PublicKey;
@@ -45,7 +45,7 @@ public:
   TSshHostCAList(const TSshHostCA::TList & List);
   TSshHostCAList & operator =(const TSshHostCAList & other);
   void Default();
-  TSshHostCA::TList GetList() const;
+  const TSshHostCA::TList & GetList() const;
   int GetCount() const;
   const TSshHostCA * Get(int Index) const;
   const TSshHostCA * Find(const UnicodeString & Name) const;
@@ -123,6 +123,8 @@ private:
   UnicodeString FAWSMetadataService;
   UnicodeString FChecksumCommands;
   std::unique_ptr<TSshHostCAList> FSshHostCAList;
+  std::unique_ptr<TSshHostCAList> FPuttySshHostCAList;
+  bool FSshHostCAsFromPuTTY;
 
   bool FDisablePasswordStoring;
   bool FForceBanners;
@@ -199,6 +201,8 @@ private:
   void SetQueueTransfersLimit(int value);
   const TSshHostCAList * GetSshHostCAList();
   void SetSshHostCAList(const TSshHostCAList * value);
+  const TSshHostCAList * GetPuttySshHostCAList();
+  const TSshHostCAList * GetActiveSshHostCAList();
 
 protected:
   TStorage FStorage;
@@ -211,6 +215,7 @@ protected:
   virtual void __fastcall LoadFrom(THierarchicalStorage * Storage);
   virtual void __fastcall CopyData(THierarchicalStorage * Source, THierarchicalStorage * Target);
   virtual void __fastcall LoadAdmin(THierarchicalStorage * Storage);
+  void LoadSshHostCAList(TSshHostCAList * SshHostCAList, THierarchicalStorage * Storage);
   virtual UnicodeString __fastcall GetDefaultKeyFile();
   virtual void __fastcall Saved();
   void __fastcall CleanupRegistry(const UnicodeString & RegistryPath);
@@ -327,6 +332,7 @@ public:
     TStrings * Lines, TStoredSessionList * Sessions, UnicodeString & Error);
   TStoredSessionList * SelectOpensshSessionsForImport(TStoredSessionList * Sessions, UnicodeString & Error);
   UnicodeString GetPuttySessionsKey(const UnicodeString & RootKey);
+  void RefreshPuttySshHostCAList();
 
   __property TVSFixedFileInfo *FixedApplicationInfo  = { read=GetFixedApplicationInfo };
   __property void * ApplicationInfo  = { read=GetApplicationInfo };
@@ -391,6 +397,9 @@ public:
   __property int ParallelTransferThreshold = { read = FParallelTransferThreshold, write = FParallelTransferThreshold };
   __property int KeyVersion = { read = FKeyVersion, write = FKeyVersion };
   __property TSshHostCAList * SshHostCAList = { read = GetSshHostCAList, write = SetSshHostCAList };
+  __property TSshHostCAList * PuttySshHostCAList = { read = GetPuttySshHostCAList };
+  __property TSshHostCAList * ActiveSshHostCAList = { read = GetActiveSshHostCAList };
+  __property bool SshHostCAsFromPuTTY = { read = FSshHostCAsFromPuTTY, write = FSshHostCAsFromPuTTY };
 
   __property UnicodeString TimeFormat = { read = GetTimeFormat };
   __property TStorage Storage  = { read=GetStorage };

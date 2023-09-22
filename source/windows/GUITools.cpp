@@ -402,22 +402,39 @@ void __fastcall TPuttyPasswordThread::Execute()
   }
 }
 //---------------------------------------------------------------------------
+void SplitPuttyCommand(UnicodeString & Program, UnicodeString & Params)
+{
+  // See also TSiteAdvancedDialog::PuttySettingsButtonClick
+  UnicodeString Dir;
+  SplitCommand(GUIConfiguration->PuttyPath, Program, Params, Dir);
+  Program = ExpandEnvironmentVariables(Program);
+  Params = ExpandEnvironmentVariables(Params);
+}
+//---------------------------------------------------------------------------
+UnicodeString FindPuttyPath()
+{
+  UnicodeString Program, Params;
+  SplitPuttyCommand(Program, Params);
+  if (!FindFile(Program))
+  {
+    throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Program)));
+  }
+  return Program;
+}
+//---------------------------------------------------------------------------
 unsigned int PipeCounter = 0;
 //---------------------------------------------------------------------------
 void OpenSessionInPutty(TSessionData * SessionData)
 {
   // putty does not support resolving environment variables in session settings
   SessionData->ExpandEnvironmentVariables();
-  // See also TSiteAdvancedDialog::PuttySettingsButtonClick
-  UnicodeString Program, AParams, Dir;
-  SplitCommand(GUIConfiguration->PuttyPath, Program, AParams, Dir);
-  Program = ExpandEnvironmentVariables(Program);
+  UnicodeString Program, AParams;
+  SplitPuttyCommand(Program, AParams);
   AppLogFmt(L"PuTTY program: %s", (Program));
   AppLogFmt(L"Params: %s", (AParams));
   if (FindFile(Program))
   {
 
-    AParams = ExpandEnvironmentVariables(AParams);
     UnicodeString Password;
     if (GUIConfiguration->PuttyPassword)
     {

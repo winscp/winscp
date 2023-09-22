@@ -1518,6 +1518,7 @@ struct host_ca_enum
 //---------------------------------------------------------------------------
 host_ca_enum * enum_host_ca_start()
 {
+  Configuration->RefreshPuttySshHostCAList();
   host_ca_enum * Result = new host_ca_enum();
   Result->Index = 0;
   return Result;
@@ -1525,7 +1526,7 @@ host_ca_enum * enum_host_ca_start()
 //---------------------------------------------------------------------------
 bool enum_host_ca_next(host_ca_enum * Enum, strbuf * StrBuf)
 {
-  const TSshHostCAList * SshHostCAList = Configuration->SshHostCAList;
+  const TSshHostCAList * SshHostCAList = Configuration->ActiveSshHostCAList;
   bool Result = (Enum->Index < SshHostCAList->GetCount());
   if (Result)
   {
@@ -1544,7 +1545,7 @@ host_ca * host_ca_load(const char * NameStr)
 {
   host_ca * Result = NULL;
   UnicodeString Name = UTF8String(NameStr);
-  const TSshHostCA * SshHostCA = Configuration->SshHostCAList->Find(Name);
+  const TSshHostCA * SshHostCA = Configuration->ActiveSshHostCAList->Find(Name);
   if (DebugAlwaysTrue(SshHostCA != NULL))
   {
     Result = host_ca_new();

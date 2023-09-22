@@ -640,7 +640,9 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     // security
     UseMasterPasswordCheck->Checked = WinConfiguration->UseMasterPassword;
     SessionRememberPasswordCheck->Checked = GUIConfiguration->SessionRememberPassword;
+    SshHostCAsFromPuTTYCheck->Checked = Configuration->SshHostCAsFromPuTTY;
     FSshHostCAPlainList = Configuration->SshHostCAList->GetList();
+    Configuration->RefreshPuttySshHostCAList();
 
     // network
     RetrieveExternalIpAddressButton->Checked = Configuration->ExternalIpAddress.IsEmpty();
@@ -1001,6 +1003,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     // security
     GUIConfiguration->SessionRememberPassword = SessionRememberPasswordCheck->Checked;
+    Configuration->SshHostCAsFromPuTTY = SshHostCAsFromPuTTYCheck->Checked;
     std::unique_ptr<TSshHostCAList> SshHostCAList(new TSshHostCAList(FSshHostCAPlainList));
     Configuration->SshHostCAList = SshHostCAList.get();
 
@@ -1432,9 +1435,14 @@ void __fastcall TPreferencesDialog::UpdateControls()
     // security
     EnableControl(SetMasterPasswordButton, WinConfiguration->UseMasterPassword);
     UpdateSshHostCAsViewView();
+    EnableControl(SshHostCAsView, !SshHostCAsFromPuTTYCheck->Checked);
+    AddSshHostCAButton->Visible = SshHostCAsView->Enabled;
     bool SshHostCASelected = (SshHostCAsView->Selected != NULL);
+    EditSshHostCAButton->Visible = AddSshHostCAButton->Visible;
     EnableControl(EditSshHostCAButton, SshHostCASelected);
+    RemoveSshHostCAButton->Visible = AddSshHostCAButton->Visible;
     EnableControl(RemoveSshHostCAButton, SshHostCASelected);
+    ConfigureSshHostCAsButton->Visible = !AddSshHostCAButton->Visible;
 
     // network
     EnableControl(CustomExternalIpAddressEdit, CustomExternalIpAddressButton->Checked);
@@ -2218,6 +2226,15 @@ void __fastcall TPreferencesDialog::CMDpiChanged(TMessage & Message)
   TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
+void TPreferencesDialog::WMActivate(TWMActivate & Message)
+{
+  if ((Message.Active != WA_INACTIVE) && (PageControl->ActivePage == SecuritySheet))
+  {
+    SshHostCAsRefresh();
+  }
+  TForm::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::Dispatch(void *Message)
 {
   TMessage * M = reinterpret_cast<TMessage*>(Message);
@@ -2233,6 +2250,10 @@ void __fastcall TPreferencesDialog::Dispatch(void *Message)
   else if (M->Msg == WM_HELP)
   {
     WMHelp(*((TWMHelp *)Message));
+  }
+  else if (M->Msg == WM_ACTIVATE)
+  {
+    WMActivate(*((TWMActivate *)Message));
   }
   else
   {
@@ -2557,6 +2578,10 @@ void __fastcall TPreferencesDialog::NavigationTreeChanging(TObject * /*Sender*/,
   if (Sheet == LanguagesSheet)
   {
     LoadLanguages();
+  }
+  else if (Sheet == SecuritySheet)
+  {
+    SshHostCAsRefresh();
   }
 }
 //---------------------------------------------------------------------------
@@ -3312,8 +3337,12 @@ void __fastcall TPreferencesDialog::SshHostCAsViewKeyDown(TObject *, WORD & Key,
 //---------------------------------------------------------------------------
 void TPreferencesDialog::UpdateSshHostCAsViewView()
 {
-  SshHostCAsView->Items->Count = FSshHostCAPlainList.size();
+  SshHostCAsView->Items->Count = GetSshHostCAPlainList().size();
   AutoSizeListColumnsWidth(SshHostCAsView, 1);
+  if (SshHostCAsFromPuTTYCheck->Checked)
+  {
+    SshHostCAsView->Items->Item[0]->MakeVisible(false);
+  }
   SshHostCAsView->Invalidate();
 }
 //---------------------------------------------------------------------------
@@ -3332,7 +3361,7 @@ void __fastcall TPreferencesDialog::AddSshHostCAButtonClick(TObject *)
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::SshHostCAsViewData(TObject *, TListItem * Item)
 {
-  TSshHostCA & SshHostCA = FSshHostCAPlainList[Item->Index];
+  const TSshHostCA & SshHostCA = GetSshHostCAPlainList()[Item->Index];
   Item->Caption = SshHostCA.Name;
   Item->SubItems->Add(SshHostCA.ValidityExpression);
 }
@@ -3351,5 +3380,30 @@ void __fastcall TPreferencesDialog::RemoveSshHostCAButtonClick(TObject *)
   FSshHostCAPlainList.erase(FSshHostCAPlainList.begin() + SshHostCAsView->ItemIndex);
   UpdateSshHostCAsViewView();
   UpdateControls();
+}
+//---------------------------------------------------------------------------
+const TSshHostCA::TList & TPreferencesDialog::GetSshHostCAPlainList()
+{
+  return SshHostCAsFromPuTTYCheck->Checked ? Configuration->PuttySshHostCAList->GetList() : FSshHostCAPlainList;
+}
+//---------------------------------------------------------------------------
+void TPreferencesDialog::SshHostCAsRefresh()
+{
+  if (SshHostCAsFromPuTTYCheck->Checked)
+  {
+    Configuration->RefreshPuttySshHostCAList();
+  }
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::SshHostCAsFromPuTTYCheckClick(TObject *)
+{
+  SshHostCAsRefresh();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::ConfigureSshHostCAsButtonClick(TObject *)
+{
+  UnicodeString Program = FindPuttyPath();
+  ExecuteShellChecked(Program, L"-host-ca");
 }
 //---------------------------------------------------------------------------

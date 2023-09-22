@@ -352,6 +352,8 @@ __published:
   TButton *AddSshHostCAButton;
   TButton *RemoveSshHostCAButton;
   TButton *EditSshHostCAButton;
+  TCheckBox *SshHostCAsFromPuTTYCheck;
+  TButton *ConfigureSshHostCAsButton;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -464,6 +466,8 @@ __published:
   void __fastcall SshHostCAsViewData(TObject *Sender, TListItem *Item);
   void __fastcall EditSshHostCAButtonClick(TObject *Sender);
   void __fastcall RemoveSshHostCAButtonClick(TObject *Sender);
+  void __fastcall SshHostCAsFromPuTTYCheckClick(TObject *Sender);
+  void __fastcall ConfigureSshHostCAsButtonClick(TObject *Sender);
 
 private:
   TPreferencesMode FPreferencesMode;
@@ -500,6 +504,7 @@ private:
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
   void __fastcall CMDpiChanged(TMessage & Message);
+  void WMActivate(TWMActivate & Message);
   UnicodeString __fastcall TabSample(UnicodeString Values);
   void __fastcall AddEditCopyParam(TCopyParamPresetMode Mode);
   const TCopyParamType * GetCopyParam(int Index);
@@ -513,6 +518,7 @@ private:
   int __fastcall GetListCommandIndex(TCustomCommandList * List);
   UnicodeString __fastcall GetSessionKey();
   void __fastcall ExtensionHttpError(THttp * Sender, int Status, const UnicodeString & Message);
+  const TSshHostCA::TList & GetSshHostCAPlainList();
 public:
   virtual __fastcall ~TPreferencesDialog();
   bool __fastcall Execute(TPreferencesDialogData * DialogData);
@@ -550,6 +556,7 @@ protected:
   void __fastcall AddEditFileColor(bool Edit);
   UnicodeString Bullet(const UnicodeString & S);
   void UpdateSshHostCAsViewView();
+  void SshHostCAsRefresh();
 
   INTERFACE_HOOK;
 };

@@ -58,13 +58,14 @@ TSshHostCA::TSshHostCA()
   PermitRsaSha512 = true;
 }
 //---------------------------------------------------------------------------
-void TSshHostCA::Load(THierarchicalStorage * Storage)
+bool TSshHostCA::Load(THierarchicalStorage * Storage)
 {
   PublicKey = DecodeBase64ToStr(Storage->ReadString(L"PublicKey", PublicKey));
   ValidityExpression = Storage->ReadString(L"Validity", ValidityExpression);
   PermitRsaSha1 = Storage->ReadBool(L"PermitRSASHA1", PermitRsaSha1);
   PermitRsaSha256 = Storage->ReadBool(L"PermitRSASHA256", PermitRsaSha256);
   PermitRsaSha512 = Storage->ReadBool(L"PermitRSASHA512", PermitRsaSha512);
+  return !PublicKey.IsEmpty() && !ValidityExpression.IsEmpty();
 }
 //---------------------------------------------------------------------------
 void TSshHostCA::Save(THierarchicalStorage * Storage) const
@@ -119,10 +120,12 @@ void TSshHostCAList::Load(THierarchicalStorage * Storage)
     SshHostCA.Name = SubKeys->Strings[Index];
     if (Storage->OpenSubKey(SshHostCA.Name, false))
     {
-      SshHostCA.Load(Storage);
-      Storage->CloseSubKey();
+      if (SshHostCA.Load(Storage))
+      {
+        FList.push_back(SshHostCA);
+      }
 
-      FList.push_back(SshHostCA);
+      Storage->CloseSubKey();
     }
   }
 }
@@ -152,7 +155,7 @@ const TSshHostCA * TSshHostCAList::Find(const UnicodeString & Name) const
   return NULL;
 }
 //---------------------------------------------------------------------------
-TSshHostCA::TList TSshHostCAList::GetList() const
+const TSshHostCA::TList & TSshHostCAList::GetList() const
 {
   return FList;
 }
@@ -245,6 +248,8 @@ void __fastcall TConfiguration::Default()
   FParallelTransferThreshold = -1; // default (currently off), 0 = explicitly off
   FKeyVersion = 0;
   FSshHostCAList->Default();
+  RefreshPuttySshHostCAList();
+  FSshHostCAsFromPuTTY = false;
   CollectUsage = FDefaultCollectUsage;
 
   FLogging = false;
@@ -383,6 +388,7 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(Integer,  QueueTransfersLimit); \
     KEY(Integer,  ParallelTransferThreshold); \
     KEY(Integer,  KeyVersion); \
+    KEY(Bool,     SshHostCAsFromPuTTY); \
     KEY(Bool,     CollectUsage); \
     KEY(String,   CertificateStorage); \
     KEY(String,   AWSMetadataService); \
@@ -594,6 +600,15 @@ void __fastcall TConfiguration::LoadAdmin(THierarchicalStorage * Storage)
   FDefaultCollectUsage = Storage->ReadBool(L"DefaultCollectUsage", FDefaultCollectUsage);
 }
 //---------------------------------------------------------------------------
+void TConfiguration::LoadSshHostCAList(TSshHostCAList * SshHostCAList, THierarchicalStorage * Storage)
+{
+  if (Storage->OpenSubKey(SshHostCAsKey, false))
+  {
+    SshHostCAList->Load(Storage);
+    Storage->CloseSubKey();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TConfiguration::LoadFrom(THierarchicalStorage * Storage)
 {
   if (Storage->OpenSubKey(ConfigurationSubKey, false))
@@ -601,11 +616,7 @@ void __fastcall TConfiguration::LoadFrom(THierarchicalStorage * Storage)
     LoadData(Storage);
     Storage->CloseSubKey();
   }
-  if (Storage->OpenSubKey(SshHostCAsKey, false))
-  {
-    FSshHostCAList->Load(Storage);
-    Storage->CloseSubKey();
-  }
+  LoadSshHostCAList(FSshHostCAList.get(), Storage);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetRegistryStorageOverrideKey()
@@ -1906,7 +1917,8 @@ void __fastcall TConfiguration::SetParallelDurationThreshold(int value)
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetPuttyRegistryStorageKey(UnicodeString value)
 {
-  SET_CONFIG_PROPERTY(PuttyRegistryStorageKey);
+  SET_CONFIG_PROPERTY_EX(PuttyRegistryStorageKey,
+    RefreshPuttySshHostCAList());
 }
 //---------------------------------------------------------------------------
 TEOLType __fastcall TConfiguration::GetLocalEOLType()
@@ -2220,6 +2232,28 @@ const TSshHostCAList * TConfiguration::GetSshHostCAList()
 void TConfiguration::SetSshHostCAList(const TSshHostCAList * value)
 {
   *FSshHostCAList = *value;
+}
+//---------------------------------------------------------------------------
+const TSshHostCAList * TConfiguration::GetPuttySshHostCAList()
+{
+  if (FPuttySshHostCAList.get() == NULL)
+  {
+    std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(PuttyRegistryStorageKey));
+    Storage->ConfigureForPutty();
+    FPuttySshHostCAList.reset(new TSshHostCAList());
+    LoadSshHostCAList(FPuttySshHostCAList.get(), Storage.get());
+  }
+  return FPuttySshHostCAList.get();
+}
+//---------------------------------------------------------------------------
+void TConfiguration::RefreshPuttySshHostCAList()
+{
+  FPuttySshHostCAList.reset(NULL);
+}
+//---------------------------------------------------------------------------
+const TSshHostCAList * TConfiguration::GetActiveSshHostCAList()
+{
+  return FSshHostCAsFromPuTTY ? PuttySshHostCAList : SshHostCAList;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TConfiguration::GetPersistent()
