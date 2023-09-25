@@ -3339,7 +3339,7 @@ void TPreferencesDialog::UpdateSshHostCAsViewView()
 {
   SshHostCAsView->Items->Count = GetSshHostCAPlainList().size();
   AutoSizeListColumnsWidth(SshHostCAsView, 1);
-  if (SshHostCAsFromPuTTYCheck->Checked)
+  if (SshHostCAsFromPuTTYCheck->Checked && (SshHostCAsView->Items->Count > 0))
   {
     SshHostCAsView->Items->Item[0]->MakeVisible(false);
   }
