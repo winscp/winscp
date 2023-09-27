@@ -556,9 +556,6 @@
 		<CppCompile Include="putty\windows\utils\defaults.c">
 			<BuildOrder>140</BuildOrder>
 		</CppCompile>
-		<CppCompile Include="putty\windows\utils\dll_hijacking_protection.c">
-			<BuildOrder>141</BuildOrder>
-		</CppCompile>
 		<CppCompile Include="putty\windows\utils\escape_registry_key.c">
 			<BuildOrder>142</BuildOrder>
 		</CppCompile>

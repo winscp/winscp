@@ -1130,10 +1130,23 @@ begin
   Result := (SysDarkTheme > 0);
 end;
 
+const
+  LOAD_LIBRARY_SEARCH_SYSTEM32 = $00000800;
+  LOAD_LIBRARY_SEARCH_USER_DIRS = $00000400;
+
 var
   Lib: THandle;
   OSVersionInfo: TOSVersionInfoEx;
+  SetDefaultDllDirectories: function(DirectoryFlags: DWORD): BOOL; stdcall;
 initialization
+  // Translated from PuTTY's dll_hijacking_protection().
+  // Inno Setup does not use LOAD_LIBRARY_SEARCH_USER_DIRS and falls back to SetDllDirectory.
+  Lib := LoadLibrary(kernel32);
+  SetDefaultDllDirectories := GetProcAddress(Lib, 'SetDefaultDllDirectories');
+  if Assigned(SetDefaultDllDirectories) then
+  begin
+    SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32 or LOAD_LIBRARY_SEARCH_USER_DIRS);
+  end;
   Lib := LoadLibrary('shcore');
   if Lib <> 0 then
   begin

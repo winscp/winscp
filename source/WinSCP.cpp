@@ -37,7 +37,6 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
     AppLog(L"Starting...");
 
     AddStartupSequence(L"M");
-    DllHijackingProtection();
     AppLogFmt(L"Process: %d", (GetCurrentProcessId()));
     AppLogFmt(L"Mouse: %s", (BooleanToEngStr(Mouse->MousePresent)));
     AppLogFmt(L"Mouse wheel: %s, msg: %d, scroll lines: %d", (BooleanToEngStr(Mouse->WheelPresent), int(Mouse->RegWheelMessage), Mouse->WheelScrollLines));

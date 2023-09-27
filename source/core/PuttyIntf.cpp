@@ -1140,11 +1140,6 @@ UnicodeString __fastcall Sha256(const char * Data, size_t Size)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall DllHijackingProtection()
-{
-  dll_hijacking_protection();
-}
-//---------------------------------------------------------------------------
 UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const struct ssh_keyalg *& Algorithm)
 {
   UTF8String UtfLine = UTF8String(Line);
