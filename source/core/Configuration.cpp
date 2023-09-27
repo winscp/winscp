@@ -250,6 +250,7 @@ void __fastcall TConfiguration::Default()
   FSshHostCAList->Default();
   RefreshPuttySshHostCAList();
   FSshHostCAsFromPuTTY = false;
+  FHttpsCertificateValidation = 0;
   CollectUsage = FDefaultCollectUsage;
 
   FLogging = false;
@@ -389,6 +390,7 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(Integer,  ParallelTransferThreshold); \
     KEY(Integer,  KeyVersion); \
     KEY(Bool,     SshHostCAsFromPuTTY); \
+    KEY(Integer,  HttpsCertificateValidation); \
     KEY(Bool,     CollectUsage); \
     KEY(String,   CertificateStorage); \
     KEY(String,   AWSMetadataService); \

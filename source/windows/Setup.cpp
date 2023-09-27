@@ -890,6 +890,16 @@ THttp * __fastcall CreateHttp()
   return CreateHttp(WinConfiguration->Updates);
 }
 //---------------------------------------------------------------------------
+UnicodeString GetUpdatesCertificate()
+{
+  UnicodeString Result = ReadResource(L"UPDATES_ROOT_CA");
+  Result = ReplaceStr(Result, L"-----BEGIN CERTIFICATE-----", EmptyStr);
+  Result = ReplaceStr(Result, L"-----END CERTIFICATE-----", EmptyStr);
+  Result = ReplaceStr(Result, L"\n", EmptyStr);
+  Result = ReplaceStr(Result, L"\r", EmptyStr);
+  return Result;
+}
+//---------------------------------------------------------------------------
 static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool CollectUsage)
 {
   bool Complete = false;
@@ -931,6 +941,7 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
     CheckForUpdatesHTTP->URL = URL;
     // sanity check
     CheckForUpdatesHTTP->ResponseLimit = BasicHttpResponseLimit;
+    CheckForUpdatesHTTP->Certificate = GetUpdatesCertificate();
     try
     {
       if (CollectUsage)

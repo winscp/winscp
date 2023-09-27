@@ -125,6 +125,7 @@ private:
   std::unique_ptr<TSshHostCAList> FSshHostCAList;
   std::unique_ptr<TSshHostCAList> FPuttySshHostCAList;
   bool FSshHostCAsFromPuTTY;
+  int FHttpsCertificateValidation;
 
   bool FDisablePasswordStoring;
   bool FForceBanners;
@@ -400,6 +401,7 @@ public:
   __property TSshHostCAList * PuttySshHostCAList = { read = GetPuttySshHostCAList };
   __property TSshHostCAList * ActiveSshHostCAList = { read = GetActiveSshHostCAList };
   __property bool SshHostCAsFromPuTTY = { read = FSshHostCAsFromPuTTY, write = FSshHostCAsFromPuTTY };
+  __property int HttpsCertificateValidation = { read = FHttpsCertificateValidation, write = FHttpsCertificateValidation };
 
   __property UnicodeString TimeFormat = { read = GetTimeFormat };
   __property TStorage Storage  = { read=GetStorage };
