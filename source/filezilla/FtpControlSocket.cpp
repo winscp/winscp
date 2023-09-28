@@ -6385,7 +6385,8 @@ bool CFtpControlSocket::IsRoutableAddress(const CString & host)
   if (host.Left(3) == L"127" ||
       host.Left(3) == L"10." ||
       host.Left(7) == L"192.168" ||
-      host.Left(7) == L"169.254")
+      host.Left(7) == L"169.254" ||
+      host.Left(2) == L"0.")
   {
     return false;
   }
