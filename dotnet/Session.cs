@@ -228,10 +228,7 @@ namespace WinSCP
                 _aborted = true;
 
                 // double-check
-                if (_process != null)
-                {
-                    _process.Abort();
-                }
+                _process?.Abort();
             }
         }
 
@@ -2339,10 +2336,7 @@ namespace WinSCP
                 {
                     message += " - " + additional;
                 }
-                if (_logReader != null)
-                {
-                    _logReader.SetTimeouted();
-                }
+                _logReader?.SetTimeouted();
                 Cleanup();
                 throw Logger.WriteException(new TimeoutException(message));
             }
