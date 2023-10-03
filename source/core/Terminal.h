@@ -436,7 +436,7 @@ protected:
     const UnicodeString TargetDir, const TCopyParamType * CopyParam,
     TFileOperationProgressType * OperationProgress, bool Parallel, TStrings * Files);
   void __fastcall LogTotalTransferDone(TFileOperationProgressType * OperationProgress);
-  virtual TTerminal * __fastcall GetPasswordSource();
+  virtual TTerminal * __fastcall GetPrimaryTerminal();
   void __fastcall DoEndTransaction(bool Inform);
   bool  __fastcall VerifyCertificate(
     const UnicodeString & CertificateStorageKey, const UnicodeString & SiteKey,
@@ -675,6 +675,7 @@ public:
   __property bool AreCachesEmpty = { read = GetAreCachesEmpty };
   __property bool CommandSessionOpened = { read = GetCommandSessionOpened };
   __property TTerminal * CommandSession = { read = GetCommandSession };
+  __property TTerminal * PrimaryTerminal = { read = GetPrimaryTerminal };
   __property bool AutoReadDirectory = { read = FAutoReadDirectory, write = FAutoReadDirectory };
   __property TStrings * FixedPaths = { read = GetFixedPaths };
   __property bool ResolvingSymlinks = { read = GetResolvingSymlinks };
@@ -705,7 +706,7 @@ protected:
   virtual void __fastcall DirectoryLoaded(TRemoteFileList * FileList);
   virtual void __fastcall DirectoryModified(const UnicodeString Path,
     bool SubDirs);
-  virtual TTerminal * __fastcall GetPasswordSource();
+  virtual TTerminal * __fastcall GetPrimaryTerminal();
 
 private:
   TTerminal * FMainTerminal;

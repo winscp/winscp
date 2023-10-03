@@ -1921,7 +1921,7 @@ bool __fastcall TTerminal::PromptUser(TSessionData * Data, TPromptKind Kind,
   return DoPromptUser(Data, Kind, Name, Instructions, Prompts, Results);
 }
 //---------------------------------------------------------------------------
-TTerminal * __fastcall TTerminal::GetPasswordSource()
+TTerminal * __fastcall TTerminal::GetPrimaryTerminal()
 {
   return this;
 }
@@ -1945,11 +1945,11 @@ bool __fastcall TTerminal::DoPromptUser(TSessionData * /*Data*/, TPromptKind Kin
       UnicodeString APassword;
       if (FTunnelOpening)
       {
-        APassword = GetPasswordSource()->GetRememberedTunnelPassword();
+        APassword = PrimaryTerminal->GetRememberedTunnelPassword();
       }
       else
       {
-        APassword = GetPasswordSource()->GetRememberedPassword();
+        APassword = PrimaryTerminal->GetRememberedPassword();
       }
       FRememberedPasswordUsed = true;
       Results->Strings[0] = APassword;
@@ -1992,12 +1992,12 @@ bool __fastcall TTerminal::DoPromptUser(TSessionData * /*Data*/, TPromptKind Kin
       RawByteString EncryptedPassword = EncryptPassword(Results->Strings[0]);
       if (FTunnelOpening)
       {
-        GetPasswordSource()->FRememberedTunnelPassword = EncryptedPassword;
+        PrimaryTerminal->FRememberedTunnelPassword = EncryptedPassword;
       }
       else
       {
-        GetPasswordSource()->FRememberedPassword = EncryptedPassword;
-        GetPasswordSource()->FRememberedPasswordKind = Kind;
+        PrimaryTerminal->FRememberedPassword = EncryptedPassword;
+        PrimaryTerminal->FRememberedPasswordKind = Kind;
       }
     }
   }
@@ -9030,7 +9030,7 @@ void __fastcall TSecondaryTerminal::DirectoryModified(const UnicodeString Path,
   FMainTerminal->DirectoryModified(Path, SubDirs);
 }
 //---------------------------------------------------------------------------
-TTerminal * __fastcall TSecondaryTerminal::GetPasswordSource()
+TTerminal * __fastcall TSecondaryTerminal::GetPrimaryTerminal()
 {
   return FMainTerminal;
 }

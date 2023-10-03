@@ -7728,7 +7728,7 @@ void __fastcall TCustomScpExplorerForm::PopupTrayBalloon(TTerminal * Terminal,
       Title = LoadResourceString(Captions[Type]);
       if (Terminal != NULL)
       {
-        TManagedTerminal * Session = DebugNotNull(dynamic_cast<TManagedTerminal *>(Terminal));
+        TManagedTerminal * Session = DebugNotNull(dynamic_cast<TManagedTerminal *>(Terminal->PrimaryTerminal));
         Title = TTerminalManager::Instance()->GetSessionTitle(Session, true) + TitleSeparator + Title;
       }
     }
