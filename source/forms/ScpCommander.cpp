@@ -605,6 +605,7 @@ void __fastcall TScpCommanderForm::StartingWithoutSession()
 {
   TCustomScpExplorerForm::StartingWithoutSession();
 
+  AddStartupSequence(L"H");
   LocalDefaultDirectory();
 }
 //---------------------------------------------------------------------------

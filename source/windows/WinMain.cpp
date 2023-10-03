@@ -853,7 +853,7 @@ bool __fastcall ShowUpdatesIfAvailable()
 int __fastcall Execute()
 {
   std::unique_ptr<TStartupThread> StartupThreadOwner(StartupThread);
-  AddStartupSequence(L"E");
+  AddStartupSequence(L"X");
   DebugAssert(StoredSessions);
   TProgramParams * Params = TProgramParams::Instance();
   DebugAssert(Params);

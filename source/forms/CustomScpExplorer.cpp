@@ -9796,6 +9796,14 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
       M->Result = !FShowing;
       break;
 
+    case WM_SHOWWINDOW:
+      if (M->WParam)
+      {
+        AddStartupSequence(L"J");
+      }
+      TForm::Dispatch(Message);
+      break;
+
     default:
       TForm::Dispatch(Message);
       break;
