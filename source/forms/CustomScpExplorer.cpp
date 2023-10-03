@@ -4462,6 +4462,14 @@ bool TCustomScpExplorerForm::DoDirectoryExists(void * Session, const UnicodeStri
   return Result;
 }
 //---------------------------------------------------------------------------
+bool TCustomScpExplorerForm::NeedSecondarySessionForRemoteCopy(TStrings * FileList)
+{
+  bool CopyDirsOnSecondarySession = Terminal->IsCapable[fcSecondaryShell];
+  return
+    !Terminal->IsCapable[fcRemoteCopy] ||
+    (CopyDirsOnSecondarySession && TRemoteFileList::AnyDirectory(FileList));
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *& Session,
   TStrings * FileList, UnicodeString & Target, UnicodeString & FileMask, bool & DirectCopy,
   bool NoConfirmation, bool Move)
@@ -4531,8 +4539,18 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
         }
       }
 
+      bool AnyDirectory = false;
+      bool CopyDirsOnSecondarySession = Terminal->IsCapable[fcSecondaryShell];
+      if (CopyDirsOnSecondarySession && !Terminal->CommandSessionOpened) // optimization
+      {
+        for (int Index = 0; !AnyDirectory && (Index < FileList->Count); Index++)
+        {
+          AnyDirectory = DebugNotNull(dynamic_cast<TRemoteFile *>(FileList->Objects[Index]))->IsDirectory;
+        }
+      }
+
       TDirectRemoteCopy AllowDirectCopy;
-      if (Terminal->IsCapable[fcRemoteCopy] || Terminal->CommandSessionOpened)
+      if (Terminal->CommandSessionOpened || !NeedSecondarySessionForRemoteCopy(FileList))
       {
         DebugAssert(DirectCopy);
         AllowDirectCopy = drcAllow;
@@ -4540,7 +4558,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
       else if (Terminal->IsCapable[fcSecondaryShell])
       {
         DebugAssert(DirectCopy);
-        AllowDirectCopy = drcConfirmCommandSession;
+        AllowDirectCopy = Terminal->IsCapable[fcRemoteCopy] ? drcConfirmCommandSessionDirs : drcConfirmCommandSession;
       }
       else
       {
@@ -4629,7 +4647,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferFiles(
           DebugAssert(DirectCopy);
           DebugAssert(Session == Terminal);
 
-          if (Terminal->IsCapable[fcRemoteCopy] ||
+          if (!NeedSecondarySessionForRemoteCopy(FileList) ||
               Terminal->CommandSessionOpened ||
               CommandSessionFallback())
           {
@@ -4833,13 +4851,10 @@ bool __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStri
       CurrentProperties = TRemoteProperties::CommonProperties(FileList);
 
       bool CapableAclChanging = Terminal->IsCapable[fcAclChangingFiles];
-      for (int Index = 0; (Index < FileList->Count) && CapableAclChanging; Index++)
+      if (CapableAclChanging && TRemoteFileList::AnyDirectory(FileList))
       {
-        if (dynamic_cast<TRemoteFile *>(FileList->Objects[Index])->IsDirectory)
-        {
-          CapableAclChanging = false;
-          CurrentProperties.Valid = CurrentProperties.Valid >> vpRights;
-        }
+        CapableAclChanging = false;
+        CurrentProperties.Valid = CurrentProperties.Valid >> vpRights;
       }
 
       int Flags = 0;

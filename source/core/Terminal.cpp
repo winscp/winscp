@@ -4375,6 +4375,29 @@ void __fastcall TTerminal::CustomCommandOnFile(UnicodeString FileName,
   ReactOnCommand(fsAnyCommand);
 }
 //---------------------------------------------------------------------------
+void TTerminal::PrepareCommandSession(bool NeedCurrentDirectory)
+{
+  DebugAssert(CommandSessionOpened);
+  DebugAssert(FCommandSession->FSProtocol == cfsSCP);
+  LogEvent(L"Performing operation on command session.");
+
+  if (FCommandSession->CurrentDirectory != CurrentDirectory)
+  {
+    FCommandSession->CurrentDirectory = CurrentDirectory;
+    // We are likely in transaction, so ReadCurrentDirectory won't get called
+    // until transaction ends. But we need to know CurrentDirectory to
+    // expand !/ pattern when in CustomCommandOnFiles.
+    // Doing this only, when current directory of the main and secondary shell differs,
+    // what would be the case before the first file in transaction.
+    // Otherwise we would be reading pwd before every time as the
+    // CustomCommandOnFile on its own sets FReadCurrentDirectoryPending
+    if (NeedCurrentDirectory && FCommandSession->FReadCurrentDirectoryPending)
+    {
+      FCommandSession->ReadCurrentDirectory();
+    }
+  }
+}
+//---------------------------------------------------------------------------
 TCustomFileSystem * TTerminal::GetFileSystemForCapability(TFSCapability Capability, bool NeedCurrentDirectory)
 {
   TCustomFileSystem * Result;
@@ -4385,25 +4408,7 @@ TCustomFileSystem * TTerminal::GetFileSystemForCapability(TFSCapability Capabili
   }
   else
   {
-    DebugAssert(CommandSessionOpened);
-    DebugAssert(FCommandSession->FSProtocol == cfsSCP);
-    LogEvent(L"Performing operation on command session.");
-
-    if (FCommandSession->CurrentDirectory != CurrentDirectory)
-    {
-      FCommandSession->CurrentDirectory = CurrentDirectory;
-      // We are likely in transaction, so ReadCurrentDirectory won't get called
-      // until transaction ends. But we need to know CurrentDirectory to
-      // expand !/ pattern when in CustomCommandOnFiles.
-      // Doing this only, when current directory of the main and secondary shell differs,
-      // what would be the case before the first file in transaction.
-      // Otherwise we would be reading pwd before every time as the
-      // CustomCommandOnFile on its own sets FReadCurrentDirectoryPending
-      if (NeedCurrentDirectory && FCommandSession->FReadCurrentDirectoryPending)
-      {
-        FCommandSession->ReadCurrentDirectory();
-      }
-    }
+    PrepareCommandSession(NeedCurrentDirectory);
 
     Result = FCommandSession->FFileSystem;
   }
@@ -5049,7 +5054,19 @@ void __fastcall TTerminal::DoCopyFile(const UnicodeString FileName, const TRemot
     try
     {
       DebugAssert(FFileSystem);
-      GetFileSystemForCapability(fcRemoteCopy)->CopyFile(FileName, File, NewName);
+      bool CopyDirsOnSecondarySession = IsCapable[fcSecondaryShell];
+      TCustomFileSystem * FileSystem;
+      if (CopyDirsOnSecondarySession && File->IsDirectory &&
+          (FCommandSession != NULL)) // Won't be in scripting, there we let is fail later
+      {
+        PrepareCommandSession();
+        FileSystem = FCommandSession->FFileSystem;
+      }
+      else
+      {
+        FileSystem = GetFileSystemForCapability(fcRemoteCopy);
+      }
+      FileSystem->CopyFile(FileName, File, NewName);
     }
     catch(Exception & E)
     {

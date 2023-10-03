@@ -330,7 +330,7 @@ bool __fastcall DoPropertiesDialog(TStrings * FileList,
 typedef bool (__closure * TDirectoryExistsEvent)(void * Session, const UnicodeString & Directory);
 bool __fastcall DoRemoteMoveDialog(
   bool Multi, UnicodeString & Target, UnicodeString & FileMask, TDirectoryExistsEvent OnDirectoryExists);
-enum TDirectRemoteCopy { drcDisallow, drcAllow, drcConfirmCommandSession };
+enum TDirectRemoteCopy { drcDisallow, drcAllow, drcConfirmCommandSession, drcConfirmCommandSessionDirs };
 bool __fastcall DoRemoteCopyDialog(
   TStrings * Sessions, TStrings * Directories,
   TDirectRemoteCopy AllowDirectCopy, bool Multi, void *& Session, UnicodeString & Target, UnicodeString & FileMask,

@@ -223,6 +223,7 @@ public:
   virtual void __fastcall AddFile(TRemoteFile * File);
 
   static TStrings * __fastcall CloneStrings(TStrings * List);
+  static bool AnyDirectory(TStrings * List);
 
   __property UnicodeString Directory = { read = FDirectory, write = SetDirectory };
   __property TRemoteFile * Files[Integer Index] = { read = GetFiles };

@@ -757,6 +757,7 @@ protected:
   void PasteFiles();
   bool DoDirectoryExists(void * Session, const UnicodeString & Directory);
   void DoBrowseFile(TCustomDirView * DirView, const UnicodeString & FileName);
+  bool NeedSecondarySessionForRemoteCopy(TStrings * FileList);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

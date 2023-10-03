@@ -158,13 +158,15 @@ void __fastcall TRemoteTransferDialog::FormCloseQuery(TObject * /*Sender*/,
     }
 
     if (IsCurrentSessionSelected() &&
-        (FAllowDirectCopy == drcConfirmCommandSession) &&
+        ((FAllowDirectCopy == drcConfirmCommandSession) || (FAllowDirectCopy == drcConfirmCommandSessionDirs)) &&
         !NotDirectCopyCheck->Checked &&
         GUIConfiguration->ConfirmCommandSession)
     {
       TMessageParams Params(mpNeverAskAgainCheck);
-      unsigned int Answer = MessageDialog(LoadStr(REMOTE_COPY_COMMAND_SESSION2),
-        qtConfirmation, qaOK | qaCancel, HelpKeyword, &Params);
+      int ObjectNamePart = (FAllowDirectCopy == drcConfirmCommandSession) ? 1 : 2;
+      UnicodeString ObjectName = LoadStrPart(REMOTE_COPY_COMMAND_SESSION_FILES_DIRECTORIES, ObjectNamePart);
+      UnicodeString Message = FMTLOAD(REMOTE_COPY_COMMAND_SESSION3, (ObjectName, ObjectName, ObjectName));
+      unsigned int Answer = MessageDialog(Message, qtConfirmation, qaOK | qaCancel, HelpKeyword, &Params);
       if (Answer == qaNeverAskAgain)
       {
         GUIConfiguration->ConfirmCommandSession = false;

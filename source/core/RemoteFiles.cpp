@@ -1584,6 +1584,16 @@ TStrings * __fastcall TRemoteFileList::CloneStrings(TStrings * List)
   return Result.release();
 }
 //---------------------------------------------------------------------------
+bool TRemoteFileList::AnyDirectory(TStrings * List)
+{
+  bool Result = false;
+  for (int Index = 0; !Result && (Index < List->Count); Index++)
+  {
+    Result = static_cast<TRemoteFile *>(List->Objects[Index])->IsDirectory;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TRemoteFileList::DuplicateTo(TRemoteFileList * Copy)
 {
   Copy->Reset();
