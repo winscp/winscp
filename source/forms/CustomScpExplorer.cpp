@@ -4007,8 +4007,15 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
           {
             Manager->ActiveSession = Terminal;
             ReconnectSession();
-            DebugAssert(Terminal == Data->Terminal);
-            Data->Queue = Manager->FindQueueForTerminal(Terminal);
+            // Was it reconnected? (if not, Data->Terminal should be nulled now)
+            if (IsActiveTerminal(Data->Terminal) && (Terminal == Data->Terminal))
+            {
+              Data->Queue = Manager->FindQueueForTerminal(Terminal);
+            }
+            else
+            {
+              Abort();
+            }
           }
           else
           {
