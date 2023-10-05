@@ -4095,7 +4095,14 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
       int Params = cpNoConfirmation | cpTemporary;
       if (Data->Terminal->IsCapable[fcBackgroundTransfers])
       {
-        DebugAssert(Data->Queue != NULL);
+        if (DebugAlwaysFalse(Data->Queue == NULL))
+        {
+          throw EInvalidOperation(L"Transfer queue invalidated");
+        }
+        if (DebugAlwaysFalse(Data->Queue != Manager->FindQueueForTerminal(Data->Terminal)))
+        {
+          throw EInvalidOperation(L"Transfer queue does not match session");
+        }
 
         TQueueItem * QueueItem =
           new TEditorUploadQueueItem(Data->Terminal, FileList, Data->RemoteDirectory, &CopyParam, Params);
