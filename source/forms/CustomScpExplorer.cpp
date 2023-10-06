@@ -576,6 +576,7 @@ void __fastcall TCustomScpExplorerForm::SetManagedSession(TManagedTerminal * val
 {
   if (FManagedSession != value)
   {
+    TWindowLock Lock(this);
     SessionChanging();
     DoSetManagedSession(value, false);
   }
