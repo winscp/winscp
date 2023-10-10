@@ -90,7 +90,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 12
       Category = 'Columns'
       Caption = 'Size &Automatically'
-      HelpKeyword = 'ui_file_panel#selecting_columns'
+      HelpKeyword = 'ui_file_panel#width'
       Hint = 'Adjust columns width to fit their contents'
       ShortCut = 16491
     end
@@ -200,7 +200,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 8
       Category = 'Columns'
       Caption = 'Size &Automatically'
-      HelpKeyword = 'ui_file_panel#selecting_columns'
+      HelpKeyword = 'ui_file_panel#width'
       Hint = 'Adjust columns width to fit their contents'
       ShortCut = 16491
     end
@@ -208,7 +208,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Columns'
       Caption = '&Reset Layout'
-      HelpKeyword = 'ui_file_panel#selecting_columns'
+      HelpKeyword = 'ui_file_panel#width'
       Hint = 'Reset to the default layout of file panel columns'
     end
     object GoToTreeAction: TAction
@@ -250,7 +250,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Columns'
       Caption = '&Reset Layout'
-      HelpKeyword = 'ui_file_panel#selecting_columns'
+      HelpKeyword = 'ui_file_panel#width'
       Hint = 'Reset to the default layout of file panel columns'
     end
     object QueueItemErrorAction: TAction
@@ -2447,7 +2447,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 9
       Category = 'Local Directory'
       Caption = 'Path fro&m Other Panel'
-      HelpKeyword = 'task_navigate#manual'
+      HelpKeyword = 'task_navigate#special_commands'
       Hint = 'Open the same directory as in the other panel'
       ShortCut = 16574
     end
@@ -2455,7 +2455,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 14
       Category = 'Remote Directory'
       Caption = 'Path fro&m Other Panel'
-      HelpKeyword = 'task_navigate#manual'
+      HelpKeyword = 'task_navigate#special_commands'
       Hint = 'Open the same directory as in the other panel'
       ShortCut = 16574
     end
