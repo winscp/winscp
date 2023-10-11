@@ -577,6 +577,9 @@ inherited ScpExplorerForm: TScpExplorerForm
           object TBXItem264: TTBXItem
             Action = NonVisualDataModule.AutoSizeRemoteColumnsAction
           end
+          object TBXItem266: TTBXItem
+            Action = NonVisualDataModule.ResetLayoutRemoteColumnsAction
+          end
         end
         object TBXItem138: TTBXItem
           Action = NonVisualDataModule.RemoteFilterAction
