@@ -396,6 +396,10 @@ void __fastcall TWebDAVFileSystem::NeonAddAuthentiation(TSessionContext * Sessio
   {
     NeonAuthTypes |= NE_AUTH_NEGOTIATE;
   }
+  if (FTerminal->SessionData->WebDavAuthLegacy)
+  {
+    NeonAuthTypes |= NE_AUTH_LEGACY_DIGEST;
+  }
   ne_add_server_auth(SessionContext->NeonSession, NeonAuthTypes, NeonRequestAuth, SessionContext);
 }
 //---------------------------------------------------------------------------
