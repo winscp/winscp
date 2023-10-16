@@ -501,6 +501,10 @@ void __fastcall TWebDAVFileSystem::CollectUsage()
   {
     Configuration->Usage->Inc(L"OpenedSessionsWebDAVSPassport");
   }
+  else if (SameText(FLastAuthorizationProtocol, L"Basic"))
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsWebDAVAuthBasic");
+  }
 
   UnicodeString RemoteSystem = FFileSystemInfo.RemoteSystem;
   if (ContainsText(RemoteSystem, L"Microsoft-IIS"))
