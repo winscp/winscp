@@ -280,19 +280,6 @@ void __fastcall TThemePageControl::DrawThemesXpTabItem(HDC DC, int Item,
     DrawThemesPart(DCMem, TABP_TABITEM, State, IDS_UTIL_TAB, &RectMem);
   }
 
-  // Init some extra parameters
-  BITMAPINFO BitmapInfo;
-  // Fill local pixel arrays
-  ZeroMemory(&BitmapInfo, sizeof(BITMAPINFO));
-  BITMAPINFOHEADER & BitmapInfoHeader = BitmapInfo.bmiHeader;
-  BitmapInfoHeader.biSize = sizeof(BITMAPINFOHEADER);
-  BitmapInfoHeader.biCompression = BI_RGB;
-  BitmapInfoHeader.biPlanes = 1;
-  // force as RGB: 3 bytes,24 bits -> good for rotating bitmap in any resolution
-  BitmapInfoHeader.biBitCount = 24;
-  BitmapInfoHeader.biWidth = Size.Width;
-  BitmapInfoHeader.biHeight = Size.Height;
-
   if (!Body && (Item >= 0))
   {
     DrawTabItem(DCMem, Item, Rect, RectItemMem, (State == TIS_SELECTED), Shadowed);
