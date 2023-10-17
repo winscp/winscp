@@ -217,6 +217,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FCalculateSizeOperation = NULL;
   FDownloadingFromClipboard = false;
   FClipboardFakeMonitorsPendingReset = false;
+  FHiContrastTheme = NULL;
 
   FEditorManager = new TEditorManager();
   FEditorManager->OnFileChange = ExecutedFileChanged;
@@ -300,6 +301,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
 __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
 {
   FInvalid = true;
+  ReleaseHiContrastTheme();
   if (FClipboardTerminal != NULL)
   {
     ClipboardClear(); // implies ClipboardStop
@@ -390,6 +392,15 @@ __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
     FHiddenWindow = NULL;
   }
 
+}
+//---------------------------------------------------------------------------
+void TCustomScpExplorerForm::ReleaseHiContrastTheme()
+{
+  if (FHiContrastTheme != NULL)
+  {
+    ReleaseTBXTheme(FHiContrastTheme);
+    FHiContrastTheme = NULL;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RefreshPanel(const UnicodeString & Session, const UnicodeString & Path)
@@ -9338,6 +9349,20 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
     if (FImmersiveDarkMode != WinConfiguration->UseDarkTheme())
     {
       UpdateDarkMode();
+    }
+
+    // As the hi-contrast theme is currently used for session tabs only, which currently do not support dark mode,
+    // we always use dark theme. But ultimatelly, we should use an opposite theme to the main one.
+    UnicodeString CurrentHiContrastThemeName = (FHiContrastTheme != NULL) ? FHiContrastTheme->Name : EmptyStr;
+    UnicodeString NewHiContrastThemeName = WinConfiguration->HiContrast ? GetThemeName(true) : EmptyStr;
+    if (CurrentHiContrastThemeName != NewHiContrastThemeName)
+    {
+      ReleaseHiContrastTheme();
+      if (!NewHiContrastThemeName.IsEmpty())
+      {
+        FHiContrastTheme = GetTBXTheme(NewHiContrastThemeName);
+      }
+      SessionsPageControl->ActiveTabTheme = FHiContrastTheme;
     }
 
     reinterpret_cast<TTBCustomItem *>(GetComponent(fcRemotePathComboBox))->Enabled = HasTerminal || IsLocalBrowserMode();

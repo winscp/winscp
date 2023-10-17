@@ -634,6 +634,7 @@ void __fastcall TWinConfiguration::Default()
   AllowWindowPrint = false;
   StoreTransition = stInit;
   QueueTransferLimitMax = 9;
+  HiContrast = false;
   EditorCheckNotModified = false;
   FirstRun = StandardDatestamp();
 
@@ -1096,6 +1097,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     AllowWindowPrint); \
     KEY(Integer,  StoreTransition); \
     KEY(Integer,  QueueTransferLimitMax); \
+    KEY(Bool,     HiContrast); \
     KEY(Bool,     EditorCheckNotModified); \
     KEY(String,   FirstRun); \
   ); \
@@ -2792,6 +2794,11 @@ void TWinConfiguration::SetStoreTransition(TStoreTransition value)
 void TWinConfiguration::SetQueueTransferLimitMax(int value)
 {
   SET_CONFIG_PROPERTY(QueueTransferLimitMax);
+}
+//---------------------------------------------------------------------------
+void TWinConfiguration::SetHiContrast(bool value)
+{
+  SET_CONFIG_PROPERTY(HiContrast);
 }
 //---------------------------------------------------------------------------
 void TWinConfiguration::SetEditorCheckNotModified(bool value)

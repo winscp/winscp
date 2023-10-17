@@ -313,6 +313,7 @@ private:
   bool FStarted;
   bool FUpdatingSessionTabs;
   TCalculateSizeOperation * FCalculateSizeOperation;
+  TTBXTheme * FHiContrastTheme;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side, int FilesOnly);
@@ -758,6 +759,7 @@ protected:
   bool DoDirectoryExists(void * Session, const UnicodeString & Directory);
   void DoBrowseFile(TCustomDirView * DirView, const UnicodeString & FileName);
   bool NeedSecondarySessionForRemoteCopy(TStrings * FileList);
+  void ReleaseHiContrastTheme();
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

@@ -91,6 +91,7 @@ private:
 class TCustomScpExplorerForm;
 TCustomScpExplorerForm * __fastcall CreateScpExplorer();
 
+UnicodeString GetThemeName(bool Dark);
 void __fastcall ConfigureInterface();
 
 void __fastcall DoProductLicense();

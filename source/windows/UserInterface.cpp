@@ -387,6 +387,11 @@ void __fastcall ShowNotification(TTerminal * Terminal, const UnicodeString & Str
   Manager->ScpExplorer->PopupTrayBalloon(Terminal, Str, Type);
 }
 //---------------------------------------------------------------------------
+UnicodeString GetThemeName(bool Dark)
+{
+  return Dark ? L"DarkOfficeXP" : L"OfficeXP";
+}
+//---------------------------------------------------------------------------
 void __fastcall ConfigureInterface()
 {
   DebugAssert(WinConfiguration != NULL);
@@ -394,7 +399,7 @@ void __fastcall ConfigureInterface()
     AdjustLocaleFlag(LoadStr(BIDI_MODE), WinConfiguration->BidiModeOverride, false, bdRightToLeft, bdLeftToRight);
   Application->BiDiMode = static_cast<TBiDiMode>(BidiModeFlag);
   SetTBXSysParam(TSP_XPVISUALSTYLE, XPVS_AUTOMATIC);
-  UnicodeString Theme = WinConfiguration->UseDarkTheme() ? L"DarkOfficeXP" : L"OfficeXP";
+  UnicodeString Theme = GetThemeName(WinConfiguration->UseDarkTheme());
   if (!SameText(TBXCurrentTheme(), Theme))
   {
     TBXSetTheme(Theme);

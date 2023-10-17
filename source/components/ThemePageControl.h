@@ -39,6 +39,10 @@ private:
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TPageControlTabButtonClick)(TPageControl * Sender, int Index);
 typedef void __fastcall (__closure *TPageControlTabHint)(TPageControl * Sender, int Index, UnicodeString & Hint);
+namespace Tbxthemes
+{
+  class TTBXTheme;
+}
 //---------------------------------------------------------------------------
 class TThemePageControl : public TPageControl
 {
@@ -53,6 +57,7 @@ public:
 
   __property TThemeTabSheet * Pages[int Index] = { read = GetPage };
   __property TThemeTabSheet * ActivePage = { read = GetActivePage };
+  __property TTBXTheme * ActiveTabTheme = { read = FActiveTabTheme, write = SetActiveTabTheme };
 
   int __fastcall GetTabsHeight();
   TRect __fastcall TabButtonRect(int Index);
@@ -73,7 +78,7 @@ protected:
 private:
   void __fastcall DrawThemesXpTab(HDC DC, int Tab);
   void __fastcall DrawThemesXpTabItem(HDC DC, int Item, const TRect & Rect, bool Body, int State, bool Selected);
-  void __fastcall DrawTabItem(HDC DC, int Item, TRect TabRect, TRect Rect, bool Selected, bool Shadowed);
+  void __fastcall DrawTabItem(HDC DC, int Item, TRect TabRect, TRect Rect, int State, bool Shadowed);
   void __fastcall DrawThemesPart(HDC DC, int PartId, int StateId, LPCWSTR PartNameID, LPRECT Rect);
   void __fastcall InvalidateTab(int Index);
   int __fastcall TabButtonSize();
@@ -92,6 +97,7 @@ private:
   TThemeTabSheet * GetPage(int Index);
   TThemeTabSheet * GetActivePage();
   void CMHintShow(TCMHintShow & Message);
+  void SetActiveTabTheme(TTBXTheme * value);
 
   int FOldTabIndex;
   int FHotTabButton;
@@ -99,6 +105,7 @@ private:
   TPageControlTabButtonClick FOnTabButtonClick;
   TPageControlTabHint FOnTabHint;
   int FSessionTabShrink;
+  TTBXTheme * FActiveTabTheme;
 };
 //---------------------------------------------------------------------------
 #endif

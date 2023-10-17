@@ -7,6 +7,7 @@
 #include <memory>
 #include <PasTools.hpp>
 #include <TBXOfficeXPTheme.hpp>
+#include <TBX.hpp>
 #include <StrUtils.hpp>
 #include <CustomWinConfiguration.h>
 #include "ThemePageControl.h"
@@ -159,6 +160,7 @@ __fastcall TThemePageControl::TThemePageControl(TComponent * Owner) :
   FSessionTabShrink = 0;
   FOnTabButtonClick = NULL;
   FOnTabHint = NULL;
+  FActiveTabTheme = NULL;
 }
 //----------------------------------------------------------------------------------------------------------
 int __fastcall TThemePageControl::GetTabsHeight()
@@ -253,6 +255,17 @@ void __fastcall TThemePageControl::DrawThemesXpTab(HDC DC, int Tab)
   DrawThemesXpTabItem(DC, Tab, Rect, false, State, Shadowed);
 }
 //----------------------------------------------------------------------------------------------------------
+static TTBXItemInfo GetItemInfo(int State)
+{
+  TTBXItemInfo ItemInfo;
+  memset(&ItemInfo, 0, sizeof(ItemInfo));
+  ItemInfo.Enabled = true;
+  ItemInfo.ViewType =
+    VT_TOOLBAR | TVT_EMBEDDED |
+    FLAGMASK(State == TIS_SELECTED, ISF_SELECTED);
+  return ItemInfo;
+}
+//----------------------------------------------------------------------------------------------------------
 // This function draws Themes Tab control parts: a) Tab-Body and b) Tab-tabs
 void __fastcall TThemePageControl::DrawThemesXpTabItem(HDC DC, int Item,
   const TRect & Rect, bool Body, int State, bool Shadowed)
@@ -266,7 +279,8 @@ void __fastcall TThemePageControl::DrawThemesXpTabItem(HDC DC, int Item,
 
   TRect RectMem(0, 0, Size.Width, Size.Height);
   TRect RectItemMem(RectMem);
-  if (!Body && (State == TIS_SELECTED))
+  bool Selected = (State == TIS_SELECTED);
+  if (!Body && Selected)
   {
     RectMem.Bottom++;
   }
@@ -277,12 +291,21 @@ void __fastcall TThemePageControl::DrawThemesXpTabItem(HDC DC, int Item,
   }
   else
   {
-    DrawThemesPart(DCMem, TABP_TABITEM, State, IDS_UTIL_TAB, &RectMem);
+    if (Selected && (ActiveTabTheme != NULL))
+    {
+      std::unique_ptr<TCanvas> CanvasMem(new TCanvas());
+      CanvasMem->Handle = DCMem;
+      ActiveTabTheme->PaintFrame(CanvasMem.get(), RectMem, GetItemInfo(State));
+    }
+    else
+    {
+      DrawThemesPart(DCMem, TABP_TABITEM, State, IDS_UTIL_TAB, &RectMem);
+    }
   }
 
   if (!Body && (Item >= 0))
   {
-    DrawTabItem(DCMem, Item, Rect, RectItemMem, (State == TIS_SELECTED), Shadowed);
+    DrawTabItem(DCMem, Item, Rect, RectItemMem, State, Shadowed);
   }
 
   // Blit image to the screen
@@ -373,11 +396,12 @@ void TThemePageControl::DrawDropDown(HDC DC, int Radius, int X, int Y, COLORREF 
 //----------------------------------------------------------------------------------------------------------
 // draw tab item context: possible icon and text
 void __fastcall TThemePageControl::DrawTabItem(
-  HDC DC, int Item, TRect TabRect, TRect Rect, bool Selected, bool Shadowed)
+  HDC DC, int Item, TRect TabRect, TRect Rect, int State, bool Shadowed)
 {
   ItemContentsRect(Item, Rect);
 
   UnicodeString Text = Pages[Item]->Caption;
+  bool Selected = (State == TIS_SELECTED);
 
   if (HasItemImage(Item))
   {
@@ -401,6 +425,10 @@ void __fastcall TThemePageControl::DrawTabItem(
   if (!Text.IsEmpty())
   {
     ItemTextRect(Item, Rect);
+    if (Selected && (ActiveTabTheme != NULL))
+    {
+      SetTextColor(DC, ActiveTabTheme->GetItemTextColor(GetItemInfo(State)));
+    }
     HFONT OldFont = (HFONT)SelectObject(DC, Font->Handle);
     wchar_t * Buf = new wchar_t[Text.Length() + 1 + 4];
     wcscpy(Buf, Text.c_str());
@@ -417,21 +445,43 @@ void __fastcall TThemePageControl::DrawTabItem(
       Rect = TabButtonRect(Item);
       Rect.Offset(-TabRect.Left, -TabRect.Top);
 
+      TTBXItemInfo ButtonItemInfo = GetItemInfo(State);
+
       if (IsHotButton(Item))
       {
-        HBRUSH Brush = CreateSolidBrush(GetSelectedBodyColor());
-        FillRect(DC, &Rect, Brush);
-        DeleteObject(Brush);
+        ButtonItemInfo.HoverKind = hkMouseHover;
 
-        HPEN Pen = CreatePen(PS_SOLID, 1, ColorToRGB(clHighlight));
-        HPEN OldPen = static_cast<HPEN>(SelectObject(DC, Pen));
-        Rectangle(DC, Rect.Left, Rect.Top, Rect.Right, Rect.Bottom);
-        SelectObject(DC, OldPen);
-        DeleteObject(Pen);
+        // Untimatelly, merge both branches to use PaintFrame (just with a different theme) (and drop GetSelectedBodyColor)
+        if (Selected && (ActiveTabTheme != NULL))
+        {
+          std::unique_ptr<TCanvas> CanvasMem(new TCanvas());
+          CanvasMem->Handle = DC;
+          CurrentTheme->PaintFrame(CanvasMem.get(), Rect, ButtonItemInfo);
+        }
+        else
+        {
+          HBRUSH Brush = CreateSolidBrush(GetSelectedBodyColor());
+          FillRect(DC, &Rect, Brush);
+          DeleteObject(Brush);
+
+          HPEN Pen = CreatePen(PS_SOLID, 1, ColorToRGB(clHighlight));
+          HPEN OldPen = static_cast<HPEN>(SelectObject(DC, Pen));
+          Rectangle(DC, Rect.Left, Rect.Top, Rect.Right, Rect.Bottom);
+          SelectObject(DC, OldPen);
+          DeleteObject(Pen);
+        }
       }
 
       COLORREF BackColor = GetPixel(DC, Rect.Left + (Rect.Width() / 2), Rect.Top + (Rect.Height() / 2));
-      COLORREF ShapeColor = ColorToRGB(Font->Color);
+      COLORREF ShapeColor;
+      if (Selected && (ActiveTabTheme != NULL))
+      {
+        ShapeColor = ColorToRGB(ActiveTabTheme->GetItemTextColor(ButtonItemInfo));
+      }
+      else
+      {
+        ShapeColor = ColorToRGB(Font->Color);
+      }
       #define BlendValue(FN) (((4 * static_cast<int>(FN(BackColor))) + static_cast<int>(FN(ShapeColor))) / 5)
       COLORREF BlendColor = RGB(BlendValue(GetRValue), BlendValue(GetGValue), BlendValue(GetBValue));
       #undef BlendValue
@@ -753,6 +803,18 @@ void TThemePageControl::UpdateTabsCaptionTruncation()
   {
     Tabs->BeginUpdate();
     EnableAlign();
+  }
+}
+//----------------------------------------------------------------------------------------------------------
+void TThemePageControl::SetActiveTabTheme(TTBXTheme * value)
+{
+  if (FActiveTabTheme != value)
+  {
+    FActiveTabTheme = value;
+    if (ActivePage != NULL)
+    {
+      ActivePage->Invalidate();
+    }
   }
 }
 //----------------------------------------------------------------------------------------------------------
