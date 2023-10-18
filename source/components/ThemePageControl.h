@@ -76,10 +76,9 @@ protected:
   #endif
 
 private:
-  void __fastcall DrawThemesXpTab(HDC DC, int Tab);
-  void __fastcall DrawThemesXpTabItem(HDC DC, int Item, const TRect & Rect, bool Body, int State, bool Selected);
+  void __fastcall DrawThemesXpTab(HDC DC, HTHEME Theme, int Tab);
+  void __fastcall DrawThemesXpTabItem(HDC DC, HTHEME Theme, int Item, const TRect & Rect, int State, bool Selected);
   void __fastcall DrawTabItem(HDC DC, int Item, TRect Rect, int State, bool Shadowed);
-  void __fastcall DrawThemesPart(HDC DC, int PartId, int StateId, LPCWSTR PartNameID, LPRECT Rect);
   void __fastcall InvalidateTab(int Index);
   int __fastcall TabButtonSize();
   int __fastcall GetCrossPadding();

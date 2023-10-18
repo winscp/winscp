@@ -200,6 +200,8 @@ void __fastcall TThemePageControl::PaintWindow(HDC DC)
     return;
   }
 
+  HTHEME Theme = OpenThemeData(NULL, IDS_UTIL_TAB);
+
   // TODO use GetClipBox
 
   TRect PageRect = GetClientRect();
@@ -209,7 +211,7 @@ void __fastcall TThemePageControl::PaintWindow(HDC DC)
   ::SendMessage(Handle, TCM_ADJUSTRECT, FALSE, (LPARAM)&PageRect);
 
   ClientRect.Top = PageRect.Top - 2;
-  DrawThemesXpTabItem(DC, -1, ClientRect, true, 0, false);
+  DrawThemeBackground(Theme, DC, TABP_PANE, 0, &ClientRect, NULL);
 
   // 2nd paint the inactive tabs
 
@@ -219,14 +221,16 @@ void __fastcall TThemePageControl::PaintWindow(HDC DC)
   {
     if (Tab != SelectedIndex)
     {
-      DrawThemesXpTab(DC, Tab);
+      DrawThemesXpTab(DC, Theme, Tab);
     }
   }
 
   if (SelectedIndex >= 0)
   {
-    DrawThemesXpTab(DC, TabIndex);
+    DrawThemesXpTab(DC, Theme, TabIndex);
   }
+
+  CloseThemeData(Theme);
 }
 //----------------------------------------------------------------------------------------------------------
 TThemeTabSheetButtons __fastcall TThemePageControl::GetTabButton(int Index)
@@ -235,7 +239,7 @@ TThemeTabSheetButtons __fastcall TThemePageControl::GetTabButton(int Index)
   return (UseThemes() && (ThemeTabSheet != NULL)) ? ThemeTabSheet->Button : ttbNone;
 }
 //----------------------------------------------------------------------------------------------------------
-void __fastcall TThemePageControl::DrawThemesXpTab(HDC DC, int Tab)
+void __fastcall TThemePageControl::DrawThemesXpTab(HDC DC, HTHEME Theme, int Tab)
 {
   TThemeTabSheet * ThemeTabSheet = dynamic_cast<TThemeTabSheet *>(Pages[Tab]);
   bool Shadowed = (ThemeTabSheet != NULL) ? ThemeTabSheet->Shadowed : false;
@@ -252,7 +256,7 @@ void __fastcall TThemePageControl::DrawThemesXpTab(HDC DC, int Tab)
   {
     State = TIS_SELECTED;
   }
-  DrawThemesXpTabItem(DC, Tab, Rect, false, State, Shadowed);
+  DrawThemesXpTabItem(DC, Theme, Tab, Rect, State, Shadowed);
 }
 //----------------------------------------------------------------------------------------------------------
 static TTBXItemInfo GetItemInfo(int State)
@@ -266,37 +270,29 @@ static TTBXItemInfo GetItemInfo(int State)
   return ItemInfo;
 }
 //----------------------------------------------------------------------------------------------------------
-// This function draws Themes Tab control parts: a) Tab-Body and b) Tab-tabs
-void __fastcall TThemePageControl::DrawThemesXpTabItem(HDC DC, int Item,
-  const TRect & Rect, bool Body, int State, bool Shadowed)
+void __fastcall TThemePageControl::DrawThemesXpTabItem(
+  HDC DC, HTHEME Theme, int Item, const TRect & Rect, int State, bool Shadowed)
 {
-  if (Body)
+  TRect PaintRect = Rect;
+  bool Selected = (State == TIS_SELECTED);
+  if (Selected)
   {
-    DrawThemesPart(DC, TABP_PANE, State, IDS_UTIL_TAB, &Rect);
+    PaintRect.Bottom++;
+  }
+
+  if (Selected && (ActiveTabTheme != NULL))
+  {
+    std::unique_ptr<TCanvas> CanvasMem(new TCanvas());
+    CanvasMem->Handle = DC;
+    ActiveTabTheme->PaintFrame(CanvasMem.get(), PaintRect, GetItemInfo(State));
   }
   else
   {
-    TRect PaintRect = Rect;
-    bool Selected = (State == TIS_SELECTED);
-    if (Selected)
-    {
-      PaintRect.Bottom++;
-    }
-
-    if (Selected && (ActiveTabTheme != NULL))
-    {
-      std::unique_ptr<TCanvas> CanvasMem(new TCanvas());
-      CanvasMem->Handle = DC;
-      ActiveTabTheme->PaintFrame(CanvasMem.get(), PaintRect, GetItemInfo(State));
-    }
-    else
-    {
-      int PartID = (Item == 0) ? TABP_TABITEMLEFTEDGE : TABP_TABITEM;
-      DrawThemesPart(DC, PartID, State, IDS_UTIL_TAB, &PaintRect);
-    }
+    int PartID = (Item == 0) ? TABP_TABITEMLEFTEDGE : TABP_TABITEM;
+    DrawThemeBackground(Theme, DC, PartID, State, &PaintRect, NULL);
   }
 
-  if (!Body && (Item >= 0))
+  if (Item >= 0)
   {
     DrawTabItem(DC, Item, Rect, State, Shadowed);
   }
@@ -588,17 +584,6 @@ int __fastcall TThemePageControl::IndexOfTabButtonAt(int X, int Y)
     Result = -1;
   }
   return Result;
-}
-//----------------------------------------------------------------------------------------------------------
-void __fastcall TThemePageControl::DrawThemesPart(HDC DC, int PartId,
-  int StateId, LPCWSTR PartNameID, LPRECT Rect)
-{
-  HTHEME Theme = OpenThemeData(NULL, PartNameID);
-  if (Theme != 0)
-  {
-    DrawThemeBackground(Theme, DC, PartId, StateId, Rect, NULL);
-    CloseThemeData(Theme);
-  }
 }
 //----------------------------------------------------------------------------------------------------------
 bool __fastcall TThemePageControl::CanChange()
