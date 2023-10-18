@@ -270,49 +270,36 @@ static TTBXItemInfo GetItemInfo(int State)
 void __fastcall TThemePageControl::DrawThemesXpTabItem(HDC DC, int Item,
   const TRect & Rect, bool Body, int State, bool Shadowed)
 {
-  TSize Size = Rect.Size;
-
-  // Draw background
-  HDC DCMem = CreateCompatibleDC(DC);
-  HBITMAP BitmapMem = CreateCompatibleBitmap(DC, Size.Width, Size.Height);
-  HBITMAP BitmapOld = (HBITMAP)SelectObject(DCMem, BitmapMem);
-
-  TRect RectMem(0, 0, Size.Width, Size.Height);
-  TRect RectItemMem(RectMem);
-  bool Selected = (State == TIS_SELECTED);
-  if (!Body && Selected)
-  {
-    RectMem.Bottom++;
-  }
-
   if (Body)
   {
-    DrawThemesPart(DCMem, TABP_PANE, State, IDS_UTIL_TAB, &RectMem);
+    DrawThemesPart(DC, TABP_PANE, State, IDS_UTIL_TAB, &Rect);
   }
   else
   {
+    TRect PaintRect = Rect;
+    bool Selected = (State == TIS_SELECTED);
+    if (Selected)
+    {
+      PaintRect.Bottom++;
+    }
+
     if (Selected && (ActiveTabTheme != NULL))
     {
       std::unique_ptr<TCanvas> CanvasMem(new TCanvas());
-      CanvasMem->Handle = DCMem;
-      ActiveTabTheme->PaintFrame(CanvasMem.get(), RectMem, GetItemInfo(State));
+      CanvasMem->Handle = DC;
+      ActiveTabTheme->PaintFrame(CanvasMem.get(), PaintRect, GetItemInfo(State));
     }
     else
     {
-      DrawThemesPart(DCMem, TABP_TABITEM, State, IDS_UTIL_TAB, &RectMem);
+      int PartID = (Item == 0) ? TABP_TABITEMLEFTEDGE : TABP_TABITEM;
+      DrawThemesPart(DC, PartID, State, IDS_UTIL_TAB, &PaintRect);
     }
   }
 
   if (!Body && (Item >= 0))
   {
-    DrawTabItem(DCMem, Item, Rect, RectItemMem, State, Shadowed);
+    DrawTabItem(DC, Item, Rect, State, Shadowed);
   }
-
-  // Blit image to the screen
-  BitBlt(DC, Rect.Left, Rect.Top, Size.Width, Size.Height, DCMem, 0, 0, SRCCOPY);
-  SelectObject(DCMem, BitmapOld);
-  DeleteObject(BitmapMem);
-  DeleteDC(DCMem);
 }
 //----------------------------------------------------------------------------------------------------------
 void __fastcall TThemePageControl::ItemTabRect(int Item, TRect & Rect)
@@ -395,8 +382,7 @@ void TThemePageControl::DrawDropDown(HDC DC, int Radius, int X, int Y, COLORREF 
 }
 //----------------------------------------------------------------------------------------------------------
 // draw tab item context: possible icon and text
-void __fastcall TThemePageControl::DrawTabItem(
-  HDC DC, int Item, TRect TabRect, TRect Rect, int State, bool Shadowed)
+void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int State, bool Shadowed)
 {
   ItemContentsRect(Item, Rect);
 
@@ -443,7 +429,6 @@ void __fastcall TThemePageControl::DrawTabItem(
     if (Button != ttbNone)
     {
       Rect = TabButtonRect(Item);
-      Rect.Offset(-TabRect.Left, -TabRect.Top);
 
       TTBXItemInfo ButtonItemInfo = GetItemInfo(State);
 
