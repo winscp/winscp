@@ -1512,7 +1512,7 @@ object NonVisualDataModule: TNonVisualDataModule
       ShortCut = 16467
     end
     object RemoteMoveToFocusedAction: TAction
-      Tag = 14
+      Tag = 12
       Category = 'Remote Focused Operation'
       Caption = 'Mo&ve To...'
       HelpKeyword = 'task_move_duplicate#move'
@@ -1682,7 +1682,7 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 28
     end
     object RemoteCopyToFocusedAction: TAction
-      Tag = 14
+      Tag = 12
       Category = 'Remote Focused Operation'
       Caption = '&Duplicate...'
       HelpKeyword = 'task_move_duplicate#duplicate'
