@@ -1356,21 +1356,21 @@ void __fastcall TS3FileSystem::DeleteFile(const UnicodeString AFileName,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TS3FileSystem::RenameFile(const UnicodeString FileName, const TRemoteFile * File,
-  const UnicodeString NewName)
+void __fastcall TS3FileSystem::RenameFile(
+  const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool Overwrite)
 {
   if (DebugAlwaysTrue(File != NULL) && File->IsDirectory)
   {
     throw Exception(LoadStr(NOTSUPPORTED));
   }
-  CopyFile(FileName, File, NewName);
+  CopyFile(FileName, File, NewName, Overwrite);
   TRmSessionAction DummyAction(FTerminal->ActionLog, FileName);
   DeleteFile(FileName, File, dfForceDelete, DummyAction);
   DummyAction.Cancel();
 }
 //---------------------------------------------------------------------------
-void __fastcall TS3FileSystem::CopyFile(const UnicodeString AFileName, const TRemoteFile * File,
-  const UnicodeString ANewName)
+void __fastcall TS3FileSystem::CopyFile(
+  const UnicodeString & AFileName, const TRemoteFile * File, const UnicodeString & ANewName, bool DebugUsedArg(Overwrite))
 {
   if (DebugAlwaysTrue(File != NULL) && File->IsDirectory)
   {

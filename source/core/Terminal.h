@@ -282,7 +282,8 @@ protected:
   bool __fastcall DoRenameFile(
     const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool Move, bool DontOverwrite);
   bool __fastcall DoMoveFile(const UnicodeString & FileName, const TRemoteFile * File, /*const TMoveFileParams*/ void * Param);
-  void __fastcall DoCopyFile(const UnicodeString FileName, const TRemoteFile * File, const UnicodeString NewName);
+  void __fastcall DoCopyFile(
+    const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool DontOverwrite);
   void __fastcall DoChangeFileProperties(const UnicodeString FileName,
     const TRemoteFile * File, const TRemoteProperties * Properties);
   void __fastcall DoChangeDirectory();

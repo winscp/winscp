@@ -4943,7 +4943,7 @@ bool __fastcall TTerminal::DoRenameFile(
         try
         {
           DebugAssert(FFileSystem);
-          FFileSystem->RenameFile(FileName, File, NewName);
+          FFileSystem->RenameFile(FileName, File, NewName, !DontOverwrite);
         }
         catch(Exception & E)
         {
@@ -5044,8 +5044,8 @@ bool __fastcall TTerminal::MoveFiles(
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::DoCopyFile(const UnicodeString FileName, const TRemoteFile * File,
-  const UnicodeString NewName)
+void __fastcall TTerminal::DoCopyFile(
+  const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool DontOverwrite)
 {
   TRetryOperationLoop RetryLoop(this);
   do
@@ -5066,7 +5066,7 @@ void __fastcall TTerminal::DoCopyFile(const UnicodeString FileName, const TRemot
       {
         FileSystem = GetFileSystemForCapability(fcRemoteCopy);
       }
-      FileSystem->CopyFile(FileName, File, NewName);
+      FileSystem->CopyFile(FileName, File, NewName, !DontOverwrite);
     }
     catch(Exception & E)
     {
@@ -5085,7 +5085,7 @@ void __fastcall TTerminal::CopyFile(const UnicodeString FileName,
   UnicodeString NewName = UnixIncludeTrailingBackslash(Params.Target) +
     MaskFileName(UnixExtractFileName(FileName), Params.FileMask);
   LogEvent(FORMAT(L"Copying file \"%s\" to \"%s\".", (FileName, NewName)));
-  DoCopyFile(FileName, File, NewName);
+  DoCopyFile(FileName, File, NewName, Params.DontOverwrite);
   ReactOnCommand(fsCopyFile);
 }
 //---------------------------------------------------------------------------
@@ -5095,7 +5095,7 @@ bool __fastcall TTerminal::CopyFiles(TStrings * FileList, const UnicodeString Ta
   TMoveFileParams Params;
   Params.Target = Target;
   Params.FileMask = FileMask;
-  Params.DontOverwrite = false; // not used
+  Params.DontOverwrite = true; // not used
   DirectoryModified(Target, true);
   return ProcessFiles(FileList, foRemoteCopy, CopyFile, &Params);
 }

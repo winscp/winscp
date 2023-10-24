@@ -1172,14 +1172,14 @@ void __fastcall TSCPFileSystem::DeleteFile(const UnicodeString FileName,
   ExecCommand(fsDeleteFile, ARRAYOFCONST((DelimitStr(FileName))));
 }
 //---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::RenameFile(const UnicodeString FileName, const TRemoteFile * /*File*/,
-  const UnicodeString NewName)
+void __fastcall TSCPFileSystem::RenameFile(
+  const UnicodeString & FileName, const TRemoteFile *, const UnicodeString & NewName, bool DebugUsedArg(Overwrite))
 {
   ExecCommand(fsRenameFile, ARRAYOFCONST((DelimitStr(FileName), DelimitStr(NewName))));
 }
 //---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::CopyFile(const UnicodeString FileName, const TRemoteFile * /*File*/,
-  const UnicodeString NewName)
+void __fastcall TSCPFileSystem::CopyFile(
+  const UnicodeString & FileName, const TRemoteFile *, const UnicodeString & NewName, bool DebugUsedArg(Overwrite))
 {
   UnicodeString DelimitedFileName = DelimitStr(FileName);
   UnicodeString DelimitedNewName = DelimitStr(NewName);

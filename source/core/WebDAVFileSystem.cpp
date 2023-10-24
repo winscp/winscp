@@ -1096,48 +1096,46 @@ void __fastcall TWebDAVFileSystem::DeleteFile(const UnicodeString FileName,
   DiscardLock(Path);
 }
 //---------------------------------------------------------------------------
-int __fastcall TWebDAVFileSystem::RenameFileInternal(const UnicodeString & FileName,
-  const UnicodeString & NewName)
+int __fastcall TWebDAVFileSystem::RenameFileInternal(
+  const UnicodeString & FileName, const UnicodeString & NewName, bool Overwrite)
 {
-  const int Overwrite = 1;
   return ne_move(FSessionContext->NeonSession, Overwrite, PathToNeon(FileName), PathToNeon(NewName));
 }
 //---------------------------------------------------------------------------
-void __fastcall TWebDAVFileSystem::RenameFile(const UnicodeString FileName, const TRemoteFile * /*File*/,
-  const UnicodeString NewName)
+void __fastcall TWebDAVFileSystem::RenameFile(
+  const UnicodeString & FileName, const TRemoteFile *, const UnicodeString & NewName, bool Overwrite)
 {
   ClearNeonError();
   TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
 
   UnicodeString Path = FileName;
-  int NeonStatus = RenameFileInternal(Path, NewName);
+  int NeonStatus = RenameFileInternal(Path, NewName, Overwrite);
   if (IsValidRedirect(NeonStatus, Path))
   {
-    NeonStatus = RenameFileInternal(Path, NewName);
+    NeonStatus = RenameFileInternal(Path, NewName, Overwrite);
   }
   CheckStatus(NeonStatus);
   // See a comment in DeleteFile
   DiscardLock(PathToNeon(Path));
 }
 //---------------------------------------------------------------------------
-int __fastcall TWebDAVFileSystem::CopyFileInternal(const UnicodeString & FileName,
-  const UnicodeString & NewName)
+int __fastcall TWebDAVFileSystem::CopyFileInternal(
+  const UnicodeString & FileName, const UnicodeString & NewName, bool Overwrite)
 {
-  // 0 = no overwrite
-  return ne_copy(FSessionContext->NeonSession, 0, NE_DEPTH_INFINITE, PathToNeon(FileName), PathToNeon(NewName));
+  return ne_copy(FSessionContext->NeonSession, Overwrite, NE_DEPTH_INFINITE, PathToNeon(FileName), PathToNeon(NewName));
 }
 //---------------------------------------------------------------------------
-void __fastcall TWebDAVFileSystem::CopyFile(const UnicodeString FileName, const TRemoteFile * /*File*/,
-  const UnicodeString NewName)
+void __fastcall TWebDAVFileSystem::CopyFile(
+  const UnicodeString & FileName, const TRemoteFile *, const UnicodeString & NewName, bool Overwrite)
 {
   ClearNeonError();
   TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
 
   UnicodeString Path = FileName;
-  int NeonStatus = CopyFileInternal(Path, NewName);
+  int NeonStatus = CopyFileInternal(Path, NewName, Overwrite);
   if (IsValidRedirect(NeonStatus, Path))
   {
-    NeonStatus = CopyFileInternal(Path, NewName);
+    NeonStatus = CopyFileInternal(Path, NewName, Overwrite);
   }
   CheckStatus(NeonStatus);
 }

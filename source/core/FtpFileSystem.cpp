@@ -2519,8 +2519,8 @@ void __fastcall TFTPFileSystem::ReadSymlink(TRemoteFile * SymlinkFile,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::RenameFile(const UnicodeString AFileName, const TRemoteFile * /*File*/,
-  const UnicodeString ANewName)
+void __fastcall TFTPFileSystem::RenameFile(
+  const UnicodeString & AFileName, const TRemoteFile *, const UnicodeString & ANewName, bool DebugUsedArg(Overwrite))
 {
   UnicodeString FileName = AbsolutePath(AFileName, false);
   UnicodeString NewName = AbsolutePath(ANewName, false);
@@ -2541,8 +2541,8 @@ void __fastcall TFTPFileSystem::RenameFile(const UnicodeString AFileName, const 
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::CopyFile(const UnicodeString FileName, const TRemoteFile * /*File*/,
-  const UnicodeString NewName)
+void __fastcall TFTPFileSystem::CopyFile(
+  const UnicodeString & FileName, const TRemoteFile *, const UnicodeString & NewName, bool DebugUsedArg(Overwrite))
 {
   DebugAssert(SupportsSiteCommand(CopySiteCommand));
   EnsureLocation();
