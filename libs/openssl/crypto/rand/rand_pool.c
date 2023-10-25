@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -257,7 +257,11 @@ size_t ossl_rand_pool_bytes_needed(RAND_POOL *pool, unsigned int entropy_factor)
 
     if (bytes_needed > pool->max_len - pool->len) {
         /* not enough space left */
-        ERR_raise(ERR_LIB_RAND, RAND_R_RANDOM_POOL_OVERFLOW);
+        ERR_raise_data(ERR_LIB_RAND, RAND_R_RANDOM_POOL_OVERFLOW,
+                       "entropy_factor=%u, entropy_needed=%zu, bytes_needed=%zu,"
+                       "pool->max_len=%zu, pool->len=%zu",
+                       entropy_factor, entropy_needed, bytes_needed,
+                       pool->max_len, pool->len);
         return 0;
     }
 
