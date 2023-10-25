@@ -1387,13 +1387,13 @@ void __fastcall TScript::DoMvOrCp(TScriptProcParams * Parameters, TFSCapability 
 
     Target = UnixIncludeTrailingBackslash(TargetDirectory) + FileMask;
     CheckMultiFilesToOne(FileList, Target, true);
+    bool DontOverwrite = true; // might use FConfirm eventually, but that would be breaking change
     if (Cp)
     {
-      FTerminal->CopyFiles(FileList, TargetDirectory, FileMask);
+      FTerminal->CopyFiles(FileList, TargetDirectory, FileMask, DontOverwrite);
     }
     else
     {
-      bool DontOverwrite = true; // might use FConfirm eventually, but that would be breaking change
       FTerminal->MoveFiles(FileList, TargetDirectory, FileMask, DontOverwrite);
     }
   }

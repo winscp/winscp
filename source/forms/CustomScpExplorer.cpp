@@ -4677,7 +4677,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferFiles(
               Terminal->CommandSessionOpened ||
               CommandSessionFallback())
           {
-            Terminal->CopyFiles(FileList, Target, FileMask);
+            Terminal->CopyFiles(FileList, Target, FileMask, false);
           }
         }
       }

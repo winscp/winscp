@@ -279,6 +279,9 @@ protected:
     int Params);
   void __fastcall DoCustomCommandOnFile(UnicodeString FileName,
     const TRemoteFile * File, UnicodeString Command, int Params, TCaptureOutputEvent OutputEvent);
+  bool DoRenameOrCopyFile(
+    bool Rename, const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName,
+    bool Move, bool DontOverwrite, bool IsBatchOperation);
   bool __fastcall DoRenameFile(
     const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool Move, bool DontOverwrite);
   bool __fastcall DoMoveFile(const UnicodeString & FileName, const TRemoteFile * File, /*const TMoveFileParams*/ void * Param);
@@ -586,8 +589,8 @@ public:
     TStrings * FileList, const UnicodeString & Target, const UnicodeString & FileMask, bool DontOverwrite);
   void __fastcall CopyFile(const UnicodeString FileName, const TRemoteFile * File,
     /*const TMoveFileParams*/ void * Param);
-  bool __fastcall CopyFiles(TStrings * FileList, const UnicodeString Target,
-    const UnicodeString FileMask);
+  bool __fastcall CopyFiles(
+    TStrings * FileList, const UnicodeString & Target, const UnicodeString & FileMask, bool DontOverwrite);
   bool CalculateFilesSize(TStrings * FileList, __int64 & Size, TCalculateSizeParams & Params);
   bool __fastcall CalculateLocalFilesSize(TStrings * FileList, __int64 & Size,
     const TCopyParamType * CopyParam, bool AllowDirs, TStrings * Files, TCalculatedSizes * CalculatedSizes);

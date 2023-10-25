@@ -4828,12 +4828,11 @@ void __fastcall TTerminal::RenameFile(const TRemoteFile * File, const UnicodeStr
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::DoRenameFile(
-  const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool Move, bool DontOverwrite)
+bool TTerminal::DoRenameOrCopyFile(
+  bool Rename, const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName,
+  bool Move, bool DontOverwrite, bool IsBatchOperation)
 {
-  // Can be foDelete when recycling (and overwrite should not happen in this case)
-  bool IsBatchMove = (OperationProgress != NULL) && (OperationProgress->Operation == foRemoteMove);
-  TBatchOverwrite BatchOverwrite = (IsBatchMove ? OperationProgress->BatchOverwrite : boNo);
+  TBatchOverwrite BatchOverwrite = (IsBatchOperation ? OperationProgress->BatchOverwrite : boNo);
   UnicodeString AbsoluteNewName = AbsolutePath(NewName, true);
   bool Result = true;
   bool ExistenceKnown = false;
@@ -4871,7 +4870,7 @@ bool __fastcall TTerminal::DoRenameFile(
       }
       TQueryParams Params(qpNeverAskAgainCheck);
       UnicodeString Question = FORMAT(QuestionFmt, (NewName));
-      unsigned int Answers = qaYes | qaNo | FLAGMASK(OperationProgress != NULL, qaCancel) | FLAGMASK(IsBatchMove, qaYesToAll | qaNoToAll);
+      unsigned int Answers = qaYes | qaNo | FLAGMASK(OperationProgress != NULL, qaCancel) | FLAGMASK(IsBatchOperation, qaYesToAll | qaNoToAll);
       unsigned int Answer = QueryUser(Question, NULL, Answers, &Params, QueryType);
       switch (Answer)
       {
@@ -4890,7 +4889,7 @@ bool __fastcall TTerminal::DoRenameFile(
 
         case qaYesToAll:
           Result = true;
-          if (DebugAlwaysTrue(IsBatchMove))
+          if (DebugAlwaysTrue(IsBatchOperation))
           {
             OperationProgress->SetBatchOverwrite(boAll);
           }
@@ -4898,7 +4897,7 @@ bool __fastcall TTerminal::DoRenameFile(
 
         case qaNoToAll:
           Result = false;
-          if (DebugAlwaysTrue(IsBatchMove))
+          if (DebugAlwaysTrue(IsBatchOperation))
           {
             OperationProgress->SetBatchOverwrite(boNone);
           }
@@ -4939,16 +4938,44 @@ bool __fastcall TTerminal::DoRenameFile(
       TRetryOperationLoop RetryLoop(this);
       do
       {
-        TMvSessionAction Action(ActionLog, AbsolutePath(FileName, true), AbsoluteNewName);
-        try
+        UnicodeString AbsoluteFileName = AbsolutePath(FileName, true);
+        DebugAssert(FFileSystem != NULL);
+        if (Rename)
         {
-          DebugAssert(FFileSystem);
-          FFileSystem->RenameFile(FileName, File, NewName, !DontOverwrite);
+          TMvSessionAction Action(ActionLog, AbsoluteFileName, AbsoluteNewName);
+          try
+          {
+            FFileSystem->RenameFile(FileName, File, NewName, !DontOverwrite);
+          }
+          catch (Exception & E)
+          {
+            UnicodeString Message = FMTLOAD(Move ? MOVE_FILE_ERROR : RENAME_FILE_ERROR, (FileName, NewName));
+            RetryLoop.Error(E, Action, Message);
+          }
         }
-        catch(Exception & E)
+        else
         {
-          UnicodeString Message = FMTLOAD(Move ? MOVE_FILE_ERROR : RENAME_FILE_ERROR, (FileName, NewName));
-          RetryLoop.Error(E, Action, Message);
+          TCpSessionAction Action(ActionLog, AbsoluteFileName, AbsoluteNewName);
+          try
+          {
+            bool CopyDirsOnSecondarySession = IsCapable[fcSecondaryShell];
+            TCustomFileSystem * FileSystem;
+            if (CopyDirsOnSecondarySession && File->IsDirectory &&
+                (FCommandSession != NULL)) // Won't be in scripting, there we let it fail later
+            {
+              PrepareCommandSession();
+              FileSystem = FCommandSession->FFileSystem;
+            }
+            else
+            {
+              FileSystem = GetFileSystemForCapability(fcRemoteCopy);
+            }
+            FileSystem->CopyFile(FileName, File, NewName, !DontOverwrite);
+          }
+          catch (Exception & E)
+          {
+            RetryLoop.Error(E, Action, FMTLOAD(COPY_FILE_ERROR, (FileName, NewName)));
+          }
         }
       }
       while (RetryLoop.Retry());
@@ -4960,6 +4987,14 @@ bool __fastcall TTerminal::DoRenameFile(
     }
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminal::DoRenameFile(
+  const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool Move, bool DontOverwrite)
+{
+  // Can be foDelete when recycling (and overwrite should not happen in this case)
+  bool IsBatchOperation = (OperationProgress != NULL) && (OperationProgress->Operation == foRemoteMove);
+  return DoRenameOrCopyFile(true, FileName, File, NewName, Move, DontOverwrite, IsBatchOperation);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::DoMoveFile(const UnicodeString & FileName, const TRemoteFile * File, /*const TMoveFileParams*/ void * Param)
@@ -5047,33 +5082,9 @@ bool __fastcall TTerminal::MoveFiles(
 void __fastcall TTerminal::DoCopyFile(
   const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool DontOverwrite)
 {
-  TRetryOperationLoop RetryLoop(this);
-  do
-  {
-    TCpSessionAction Action(ActionLog, AbsolutePath(FileName, true), AbsolutePath(NewName, true));
-    try
-    {
-      DebugAssert(FFileSystem);
-      bool CopyDirsOnSecondarySession = IsCapable[fcSecondaryShell];
-      TCustomFileSystem * FileSystem;
-      if (CopyDirsOnSecondarySession && File->IsDirectory &&
-          (FCommandSession != NULL)) // Won't be in scripting, there we let is fail later
-      {
-        PrepareCommandSession();
-        FileSystem = FCommandSession->FFileSystem;
-      }
-      else
-      {
-        FileSystem = GetFileSystemForCapability(fcRemoteCopy);
-      }
-      FileSystem->CopyFile(FileName, File, NewName, !DontOverwrite);
-    }
-    catch(Exception & E)
-    {
-      RetryLoop.Error(E, Action, FMTLOAD(COPY_FILE_ERROR, (FileName, NewName)));
-    }
-  }
-  while (RetryLoop.Retry());
+  bool IsBatchOperation = DebugAlwaysTrue(OperationProgress != NULL);
+  bool Move = false; // not used
+  DoRenameOrCopyFile(false, FileName, File, NewName, Move, DontOverwrite, IsBatchOperation);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CopyFile(const UnicodeString FileName,
@@ -5089,13 +5100,13 @@ void __fastcall TTerminal::CopyFile(const UnicodeString FileName,
   ReactOnCommand(fsCopyFile);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::CopyFiles(TStrings * FileList, const UnicodeString Target,
-  const UnicodeString FileMask)
+bool __fastcall TTerminal::CopyFiles(
+  TStrings * FileList, const UnicodeString & Target, const UnicodeString & FileMask, bool DontOverwrite)
 {
   TMoveFileParams Params;
   Params.Target = Target;
   Params.FileMask = FileMask;
-  Params.DontOverwrite = true; // not used
+  Params.DontOverwrite = DontOverwrite;
   DirectoryModified(Target, true);
   return ProcessFiles(FileList, foRemoteCopy, CopyFile, &Params);
 }
