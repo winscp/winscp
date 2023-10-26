@@ -672,7 +672,7 @@ void __fastcall TSCPFileSystem::ExecCommand(TFSCommand Cmd, const TVarRec * args
 
   TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
 
-  SendCommand(Command);
+  SendCommand(FullCommand);
 
   int COParams =
     coWaitForLastLine |
@@ -681,7 +681,7 @@ void __fastcall TSCPFileSystem::ExecCommand(TFSCommand Cmd, const TVarRec * args
     FLAGMASK(FLAGSET(Params, ecReadProgress), coReadProgress) |
     FLAGMASK(FLAGSET(Params, ecIgnoreStdErr), coIgnoreStdErr);
 
-  ReadCommandOutput(COParams, &FullCommand);
+  ReadCommandOutput(COParams, &Command);
 
   if (Params & ecRaiseExcept)
   {
