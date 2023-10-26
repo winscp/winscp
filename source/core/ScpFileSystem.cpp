@@ -658,28 +658,6 @@ void __fastcall TSCPFileSystem::ReadCommandOutput(int Params, const UnicodeStrin
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::ExecCommand(const UnicodeString & Cmd, int Params,
-  const UnicodeString & CmdString)
-{
-  if (Params < 0)
-  {
-    Params = ecDefault;
-  }
-
-  TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
-
-  SendCommand(Cmd);
-
-  int COParams =
-    coWaitForLastLine |
-    FLAGMASK(FLAGSET(Params, ecRaiseExcept), coRaiseExcept) |
-    FLAGMASK(FLAGSET(Params, ecIgnoreWarnings), coIgnoreWarnings) |
-    FLAGMASK(FLAGSET(Params, ecReadProgress), coReadProgress) |
-    FLAGMASK(FLAGSET(Params, ecIgnoreStdErr), coIgnoreStdErr);
-
-  ReadCommandOutput(COParams, &CmdString);
-}
-//---------------------------------------------------------------------------
 void TSCPFileSystem::InvalidOutputError(const UnicodeString & Command)
 {
   FTerminal->TerminalError(FMTLOAD(INVALID_OUTPUT_ERROR, (Command, Output->Text)));
@@ -691,7 +669,20 @@ void __fastcall TSCPFileSystem::ExecCommand(TFSCommand Cmd, const TVarRec * args
   if (Params < 0) Params = ecDefault;
   UnicodeString FullCommand = FCommandSet->FullCommand(Cmd, args, size);
   UnicodeString Command = FCommandSet->Command(Cmd, args, size);
-  ExecCommand(FullCommand, Params, Command);
+
+  TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
+
+  SendCommand(Command);
+
+  int COParams =
+    coWaitForLastLine |
+    FLAGMASK(FLAGSET(Params, ecRaiseExcept), coRaiseExcept) |
+    FLAGMASK(FLAGSET(Params, ecIgnoreWarnings), coIgnoreWarnings) |
+    FLAGMASK(FLAGSET(Params, ecReadProgress), coReadProgress) |
+    FLAGMASK(FLAGSET(Params, ecIgnoreStdErr), coIgnoreStdErr);
+
+  ReadCommandOutput(COParams, &FullCommand);
+
   if (Params & ecRaiseExcept)
   {
     Integer MinL = FCommandSet->MinLines[Cmd];

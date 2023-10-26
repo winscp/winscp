@@ -114,8 +114,6 @@ private:
   bool __fastcall IsLastLine(UnicodeString & Line);
   static bool __fastcall IsTotalListingLine(const UnicodeString Line);
   void __fastcall EnsureLocation();
-  void __fastcall ExecCommand(const UnicodeString & Cmd, int Params,
-    const UnicodeString & CmdString);
   void __fastcall ExecCommand(TFSCommand Cmd, const TVarRec * args = NULL,
     int size = 0, int Params = -1);
   void InvalidOutputError(const UnicodeString & Command);
