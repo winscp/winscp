@@ -27,10 +27,11 @@ const int coIgnoreWarnings = 16;
 const int coReadProgress = 32;
 const int coIgnoreStdErr = 64;
 
-const int ecRaiseExcept = 1;
-const int ecIgnoreWarnings = 2;
-const int ecReadProgress = 4;
-const int ecIgnoreStdErr = 8;
+const int ecRaiseExcept = 0x01;
+const int ecIgnoreWarnings = 0x02;
+const int ecReadProgress = 0x04;
+const int ecIgnoreStdErr = 0x08;
+const int ecNoEnsureLocation = 0x10;
 const int ecDefault = ecRaiseExcept;
 //---------------------------------------------------------------------------
 DERIVE_EXT_EXCEPTION(EScpFileSkipped, ESkipFile);
@@ -503,9 +504,12 @@ void __fastcall TSCPFileSystem::EnsureLocation()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::SendCommand(const UnicodeString Cmd)
+void __fastcall TSCPFileSystem::SendCommand(const UnicodeString & Cmd, bool NoEnsureLocation)
 {
-  EnsureLocation();
+  if (!NoEnsureLocation)
+  {
+    EnsureLocation();
+  }
 
   UnicodeString Line;
   FSecureShell->ClearStdError();
@@ -672,7 +676,7 @@ void __fastcall TSCPFileSystem::ExecCommand(TFSCommand Cmd, const TVarRec * args
 
   TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
 
-  SendCommand(FullCommand);
+  SendCommand(FullCommand, FLAGSET(Params, ecNoEnsureLocation));
 
   int COParams =
     coWaitForLastLine |
@@ -939,8 +943,29 @@ void __fastcall TSCPFileSystem::AnnounceFileListOperation()
   // noop
 }
 //---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::ChangeDirectory(const UnicodeString Directory)
+void __fastcall TSCPFileSystem::ChangeDirectory(const UnicodeString ADirectory)
 {
+  int Params = ecDefault;
+  UnicodeString Directory = ADirectory;
+  try
+  {
+    EnsureLocation();
+  }
+  catch (...)
+  {
+    if (FTerminal->Active && DebugAlwaysTrue(!FCachedDirectoryChange.IsEmpty()))
+    {
+      Params |= ecNoEnsureLocation;
+      Directory = ::AbsolutePath(AbsolutePath(FCachedDirectoryChange, true), Directory);
+      FTerminal->LogEvent(
+        FORMAT(L"Cannot locate to cached directory, assuming that target absolute path is \"%s\".", (Directory)));
+    }
+    else
+    {
+      throw;
+    }
+  }
+
   UnicodeString ToDir;
   // This effectivelly disallows entering subdirectories starting with ~ and containing space
   if (!Directory.IsEmpty() &&
@@ -952,7 +977,7 @@ void __fastcall TSCPFileSystem::ChangeDirectory(const UnicodeString Directory)
   {
     ToDir = DelimitStr(Directory);
   }
-  ExecCommand(fsChangeDirectory, ARRAYOFCONST((ToDir)));
+  ExecCommand(fsChangeDirectory, ARRAYOFCONST((ToDir)), Params);
   FCachedDirectoryChange = L"";
 }
 //---------------------------------------------------------------------------

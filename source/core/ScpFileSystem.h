@@ -131,7 +131,7 @@ private:
   void __fastcall SCPSource(const UnicodeString FileName,
     const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, int Level);
-  void __fastcall SendCommand(const UnicodeString Cmd);
+  void __fastcall SendCommand(const UnicodeString & Cmd, bool NoEnsureLocation = false);
   void __fastcall SkipFirstLine();
   void __fastcall SkipStartupMessage();
   void __fastcall UnsetNationalVars();
