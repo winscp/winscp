@@ -1916,7 +1916,7 @@ __fastcall TSFTPFileSystem::TSFTPFileSystem(TTerminal * ATerminal,
 __fastcall TSFTPFileSystem::~TSFTPFileSystem()
 {
   delete FSupport;
-  ResetConnection();
+  NoPacketReservations();
   delete FPacketReservations;
   delete FFixedPaths;
   delete FSecureShell;
@@ -1924,14 +1924,25 @@ __fastcall TSFTPFileSystem::~TSFTPFileSystem()
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::Open()
 {
+  NoPacketReservations();
+  ResetConnection();
   // this is used for reconnects only
   FSecureShell->Open();
+}
+//---------------------------------------------------------------------------
+void TSFTPFileSystem::NoPacketReservations()
+{
+  // After closing, we can only possibly have "discard" reservations of the not-read responses to the last requests
+  // (typocally to SSH_FXP_CLOSE)
+  for (int i = 0; i < FPacketReservations->Count; i++)
+  {
+    DebugAssert(FPacketReservations->Items[i] == NULL);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::Close()
 {
   FSecureShell->Close();
-  ResetConnection();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSFTPFileSystem::GetActive()
@@ -2050,12 +2061,6 @@ void __fastcall TSFTPFileSystem::Idle()
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::ResetConnection()
 {
-  // there must be no valid packet reservation at the end
-  for (int i = 0; i < FPacketReservations->Count; i++)
-  {
-    DebugAssert(FPacketReservations->Items[i] == NULL);
-    delete (TSFTPPacket *)FPacketReservations->Items[i];
-  }
   FPacketReservations->Clear();
   FPacketNumbers = VarArrayCreate(OPENARRAY(int, (0, 1)), varLongWord);
   FNotLoggedRequests.clear();
