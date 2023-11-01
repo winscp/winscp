@@ -60,8 +60,7 @@ UnicodeString TFileColorData::Save() const
 //---------------------------------------------------------------------------
 void TFileColorData::LoadList(const UnicodeString & S, TList & List)
 {
-  std::unique_ptr<TStringList> Strings(new TStringList());
-  Strings->CommaText = S;
+  std::unique_ptr<TStringList> Strings(CommaTextToStringList(S));
 
   List.clear();
   for (int Index = 0; Index < Strings->Count; Index++)

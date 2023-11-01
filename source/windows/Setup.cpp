@@ -2070,19 +2070,12 @@ bool IsInstalledMsi()
   return (GIsInstalledMsi > 0);
 }
 //---------------------------------------------------------------------------
-static TStringList * __fastcall TextToTipList(const UnicodeString & Text)
-{
-  std::unique_ptr<TStringList> List(new TStringList());
-  List->CommaText = Text;
-  return List.release();
-}
-//---------------------------------------------------------------------------
 UnicodeString __fastcall FirstUnshownTip()
 {
   TUpdatesConfiguration Updates = WinConfiguration->Updates;
-  std::unique_ptr<TStringList> Tips(TextToTipList(Updates.Results.Tips));
+  std::unique_ptr<TStringList> Tips(CommaTextToStringList(Updates.Results.Tips));
   Tips->CaseSensitive = false;
-  std::unique_ptr<TStringList> TipsSeen(TextToTipList(WinConfiguration->TipsSeen));
+  std::unique_ptr<TStringList> TipsSeen(CommaTextToStringList(WinConfiguration->TipsSeen));
   TipsSeen->CaseSensitive = false;
 
   int LastTipSeen = -1;
@@ -2149,7 +2142,7 @@ static UnicodeString __fastcall TipUrl(TTipsData * TipsData)
 //---------------------------------------------------------------------------
 static void __fastcall TipSeen(const UnicodeString & Tip)
 {
-  std::unique_ptr<TStringList> TipsSeen(TextToTipList(WinConfiguration->TipsSeen));
+  std::unique_ptr<TStringList> TipsSeen(CommaTextToStringList(WinConfiguration->TipsSeen));
   TipsSeen->Values[Tip] = FormatDateTime(L"yyyy-mm-dd", Now());
   WinConfiguration->TipsSeen = TipsSeen->CommaText;
   WinConfiguration->TipsShown = Now();
@@ -2173,7 +2166,7 @@ static void __fastcall ShowTip(bool AutoShow)
 {
   TUpdatesConfiguration Updates = WinConfiguration->Updates;
   UnicodeString Tip = FirstUnshownTip();
-  std::unique_ptr<TStringList> Tips(TextToTipList(Updates.Results.Tips));
+  std::unique_ptr<TStringList> Tips(CommaTextToStringList(Updates.Results.Tips));
   Tips->CaseSensitive = false;
   int Index;
   if (Tip.IsEmpty())
@@ -2264,9 +2257,9 @@ void __fastcall ShowTips()
 void __fastcall TipsUpdateStaticUsage()
 {
   TUpdatesConfiguration Updates = WinConfiguration->Updates;
-  std::unique_ptr<TStringList> Tips(TextToTipList(Updates.Results.Tips));
+  std::unique_ptr<TStringList> Tips(CommaTextToStringList(Updates.Results.Tips));
   Configuration->Usage->Set(L"TipsCount", Tips->Count);
-  std::unique_ptr<TStringList> TipsSeen(TextToTipList(WinConfiguration->TipsSeen));
+  std::unique_ptr<TStringList> TipsSeen(CommaTextToStringList(WinConfiguration->TipsSeen));
   Configuration->Usage->Set(L"TipsSeen", TipsSeen->Count);
 }
 //---------------------------------------------------------------------------

@@ -1830,14 +1830,18 @@ TStrings * __fastcall TConfiguration::LoadDirectoryStatisticsCache(
   const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam)
 {
   std::unique_ptr<THierarchicalStorage> Storage(OpenDirectoryStatisticsCache(false));
-  std::unique_ptr<TStringList> Result(new TStringList());
+  TStrings * Result;
   if (Storage.get() != NULL)
   {
     UnicodeString Key = GetDirectoryStatisticsCacheKey(SessionKey, Path, CopyParam);
     UnicodeString Buf = Storage->ReadString(Key, UnicodeString());
-    Result->CommaText = Buf;
+    Result = CommaTextToStringList(Buf);
   }
-  return Result.release();
+  else
+  {
+    Result = new TStringList();
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SaveDirectoryStatisticsCache(

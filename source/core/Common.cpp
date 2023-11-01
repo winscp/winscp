@@ -3412,6 +3412,13 @@ UnicodeString __fastcall StringsToText(TStrings * Strings)
   return Result;
 }
 //---------------------------------------------------------------------------
+TStringList * __fastcall CommaTextToStringList(const UnicodeString & CommaText)
+{
+  std::unique_ptr<TStringList> List(new TStringList());
+  List->CommaText = CommaText;
+  return List.release();
+}
+//---------------------------------------------------------------------------
 TStrings * __fastcall CloneStrings(TStrings * Strings)
 {
   std::unique_ptr<TStringList> List(new TStringList());

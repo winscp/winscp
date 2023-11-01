@@ -562,10 +562,9 @@ UnicodeString __fastcall GetToolbarsLayoutStr(TControl * OwnerControl)
 //---------------------------------------------------------------------------
 void __fastcall LoadToolbarsLayoutStr(TControl * OwnerControl, UnicodeString LayoutStr)
 {
-  TStrings * Storage = new TStringList();
+  TStrings * Storage = CommaTextToStringList(LayoutStr);
   try
   {
-    Storage->CommaText = LayoutStr;
     TBCustomLoadPositions(OwnerControl, ToolbarReadInt, ToolbarReadString,
       Storage);
     int PixelsPerInch = GetToolbarLayoutPixelsPerInch(Storage, OwnerControl);

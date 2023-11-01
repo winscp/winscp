@@ -651,8 +651,7 @@ TObjectList * StartCreationDirectoryMonitorsOnEachDrive(unsigned int Filter, TFi
 {
   std::unique_ptr<TStrings> Drives(new TStringList());
 
-  std::unique_ptr<TStrings> DDDrives(new TStringList());
-  DDDrives->CommaText = WinConfiguration->DDDrives;
+  std::unique_ptr<TStrings> DDDrives(CommaTextToStringList(WinConfiguration->DDDrives));
   UnicodeString ExcludedDrives;
   for (int Index = 0; Index < DDDrives->Count; Index++)
   {

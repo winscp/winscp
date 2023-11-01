@@ -7027,8 +7027,7 @@ TStrings * TTerminal::GetShellChecksumAlgDefs()
       AddToList(ChecksumCommandsDef, Md5ChecksumAlg + L"=md5sums", Delimiter);
     }
 
-    FShellChecksumAlgDefs.reset(new TStringList());
-    FShellChecksumAlgDefs->CommaText = ChecksumCommandsDef;
+    FShellChecksumAlgDefs.reset(CommaTextToStringList(ChecksumCommandsDef));
   }
   return FShellChecksumAlgDefs.get();
 }
