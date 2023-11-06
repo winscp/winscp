@@ -4287,12 +4287,12 @@ void __fastcall TTerminal::DeleteFile(UnicodeString FileName,
   }
   else
   {
-    DoDeleteFile(FileName, File, Params);
+    DoDeleteFile(FFileSystem, FileName, File, Params);
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::DoDeleteFile(const UnicodeString FileName,
-  const TRemoteFile * File, int Params)
+void __fastcall TTerminal::DoDeleteFile(
+  TCustomFileSystem * FileSystem, const UnicodeString & FileName, const TRemoteFile * File, int Params)
 {
   LogEvent(FORMAT(L"Deleting file \"%s\".", (FileName)));
   FileModified(File, FileName, true);
@@ -4303,9 +4303,9 @@ void __fastcall TTerminal::DoDeleteFile(const UnicodeString FileName,
     TRmSessionAction Action(ActionLog, AbsolutePath(FileName, true));
     try
     {
-      DebugAssert(FFileSystem);
+      DebugAssert(FileSystem != NULL);
       // 'File' parameter: SFTPFileSystem needs to know if file is file or directory
-      FFileSystem->DeleteFile(FileName, File, Params, Action);
+      FileSystem->DeleteFile(FileName, File, Params, Action);
       if ((OperationProgress != NULL) && (OperationProgress->Operation == foDelete))
       {
         OperationProgress->Succeeded();
@@ -4922,6 +4922,20 @@ bool TTerminal::DoRenameOrCopyFile(
     BeginTransaction();
     try
     {
+      TCustomFileSystem * FileSystem;
+      if (!Rename &&
+          IsCapable[fcSecondaryShell] &&
+          File->IsDirectory &&
+          (FCommandSession != NULL)) // Won't be in scripting, there we let it fail later
+      {
+        PrepareCommandSession();
+        FileSystem = FCommandSession->FFileSystem;
+      }
+      else
+      {
+        FileSystem = GetFileSystemForCapability(fcRemoteCopy);
+      }
+
       if (!IsCapable[fcMoveOverExistingFile] && !DontOverwrite)
       {
         if (!ExistenceKnown)
@@ -4931,7 +4945,7 @@ bool TTerminal::DoRenameOrCopyFile(
 
         if (DuplicateFile.get() != NULL)
         {
-          DoDeleteFile(AbsoluteNewName, DuplicateFile.get(), 0);
+          DoDeleteFile(FileSystem, AbsoluteNewName, DuplicateFile.get(), 0);
         }
       }
 
@@ -4939,13 +4953,13 @@ bool TTerminal::DoRenameOrCopyFile(
       do
       {
         UnicodeString AbsoluteFileName = AbsolutePath(FileName, true);
-        DebugAssert(FFileSystem != NULL);
+        DebugAssert(FileSystem != NULL);
         if (Rename)
         {
           TMvSessionAction Action(ActionLog, AbsoluteFileName, AbsoluteNewName);
           try
           {
-            FFileSystem->RenameFile(FileName, File, NewName, !DontOverwrite);
+            FileSystem->RenameFile(FileName, File, NewName, !DontOverwrite);
           }
           catch (Exception & E)
           {
@@ -4958,18 +4972,6 @@ bool TTerminal::DoRenameOrCopyFile(
           TCpSessionAction Action(ActionLog, AbsoluteFileName, AbsoluteNewName);
           try
           {
-            bool CopyDirsOnSecondarySession = IsCapable[fcSecondaryShell];
-            TCustomFileSystem * FileSystem;
-            if (CopyDirsOnSecondarySession && File->IsDirectory &&
-                (FCommandSession != NULL)) // Won't be in scripting, there we let it fail later
-            {
-              PrepareCommandSession();
-              FileSystem = FCommandSession->FFileSystem;
-            }
-            else
-            {
-              FileSystem = GetFileSystemForCapability(fcRemoteCopy);
-            }
             FileSystem->CopyFile(FileName, File, NewName, !DontOverwrite);
           }
           catch (Exception & E)
