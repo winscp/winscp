@@ -760,6 +760,7 @@ protected:
   void DoBrowseFile(TCustomDirView * DirView, const UnicodeString & FileName);
   bool NeedSecondarySessionForRemoteCopy(TStrings * FileList);
   void ReleaseHiContrastTheme();
+  bool CanCalculateChecksum();
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

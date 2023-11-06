@@ -179,6 +179,7 @@ TFormatSettings __fastcall GetEngFormatSettings();
 int __fastcall ParseShortEngMonthName(const UnicodeString & MonthStr);
 // The defaults are equal to defaults of TStringList class (except for Sorted)
 TStringList * __fastcall CreateSortedStringList(bool CaseSensitive = false, System::Types::TDuplicates Duplicates = dupIgnore);
+bool SameIdent(const UnicodeString & Ident1, const UnicodeString & Ident2);
 UnicodeString __fastcall FindIdent(const UnicodeString & Ident, TStrings * Idents);
 void __fastcall CheckCertificate(const UnicodeString & Path);
 typedef struct x509_st X509;

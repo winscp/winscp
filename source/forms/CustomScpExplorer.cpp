@@ -4809,6 +4809,13 @@ void TCustomScpExplorerForm::LoadFilesProperties(TStrings * FileList)
   }
 }
 //---------------------------------------------------------------------------
+bool TCustomScpExplorerForm::CanCalculateChecksum()
+{
+  return
+    Terminal->IsCapable[fcCalculatingChecksum] ||
+    (Terminal->IsCapable[fcSecondaryShell] && !Terminal->IsEncryptingFiles());
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStrings * FileList)
 {
   bool Result;
@@ -4890,8 +4897,7 @@ bool __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStri
       if (CapableGroupChanging) Flags |= cpGroup;
 
       TCalculateChecksumEvent CalculateChecksumEvent = NULL;
-      if (Terminal->IsCapable[fcCalculatingChecksum] ||
-          (Terminal->IsCapable[fcSecondaryShell] && !Terminal->IsEncryptingFiles()))
+      if (CanCalculateChecksum())
       {
         CalculateChecksumEvent = CalculateChecksum;
       }
@@ -5949,7 +5955,7 @@ bool __fastcall TCustomScpExplorerForm::DoSynchronizeDirectories(
   int UnusedParams =
     (GUIConfiguration->SynchronizeParams &
       (TTerminal::spPreviewChanges | TTerminal::spTimestamp | TTerminal::spNotByTime | TTerminal::spBySize |
-       TTerminal::spCaseSensitive));
+       TTerminal::spCaseSensitive | TTerminal::spMirror | TTerminal::spByChecksum));
   Params.Params = GUIConfiguration->SynchronizeParams & ~UnusedParams;
   Params.Options = GUIConfiguration->SynchronizeOptions;
   bool SaveSettings = false;
@@ -6476,13 +6482,15 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
   bool SaveSettings = false;
   int Options =
     FLAGMASK(!Terminal->IsCapable[fcTimestampChanging], fsoDisableTimestamp) |
+    FLAGMASK(!CanCalculateChecksum(), fsoDisableByChecksum) |
     FLAGMASK(SynchronizeAllowSelectedOnly(), fsoAllowSelectedOnly);
   TCopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
   TUsableCopyParamAttrs CopyParamAttrs = Terminal->UsableCopyParamAttrs(0);
   bool Continue =
-    (UseDefaults == 0) ||
-    DoFullSynchronizeDialog(Mode, Params, LocalDirectory, RemoteDirectory,
-      &CopyParam, SaveSettings, SaveMode, Options, CopyParamAttrs, FullSynchronizeInNewWindow, UseDefaults);
+    ((UseDefaults == 0) ||
+     DoFullSynchronizeDialog(Mode, Params, LocalDirectory, RemoteDirectory,
+       &CopyParam, SaveSettings, SaveMode, Options, CopyParamAttrs, FullSynchronizeInNewWindow, UseDefaults)) &&
+    (FLAGCLEAR(Params, TTerminal::spByChecksum) || EnsureCommandSessionFallback(fcCalculatingChecksum));
   if (Continue)
   {
     Configuration->Usage->Inc(L"Synchronizations");

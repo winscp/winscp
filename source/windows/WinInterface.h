@@ -374,6 +374,7 @@ enum TSynchronizeMode { smRemote, smLocal, smBoth };
 const fsoDisableTimestamp = 0x01;
 const fsoDoNotUsePresets =  0x02;
 const fsoAllowSelectedOnly = 0x04;
+const fsoDisableByChecksum = 0x08;
 typedef void __fastcall (__closure *TFullSynchronizeInNewWindow)
   (TSynchronizeMode Mode, int Params, const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
    const TCopyParamType * CopyParams);

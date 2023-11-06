@@ -6,7 +6,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Synchronize'
-  ClientHeight = 453
+  ClientHeight = 477
   ClientWidth = 481
   Color = clBtnFace
   ParentFont = True
@@ -16,7 +16,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   OnShow = FormShow
   DesignSize = (
     481
-    453)
+    477)
   PixelsPerInch = 96
   TextHeight = 13
   object DirectoriesGroup: TGroupBox
@@ -90,7 +90,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   end
   object OkButton: TButton
     Left = 220
-    Top = 420
+    Top = 444
     Width = 88
     Height = 25
     Anchors = [akRight, akBottom]
@@ -103,7 +103,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   end
   object CancelButton: TButton
     Left = 315
-    Top = 420
+    Top = 444
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -115,26 +115,27 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   object OptionsGroup: TGroupBox
     Left = 8
     Top = 238
-    Width = 303
-    Height = 97
+    Width = 227
+    Height = 121
     Caption = 'Synchronize options'
     TabOrder = 3
     DesignSize = (
-      303
-      97)
+      227
+      121)
     object SynchronizeDeleteCheck: TCheckBox
       Left = 11
       Top = 20
-      Width = 130
+      Width = 210
       Height = 17
+      Anchors = [akLeft, akTop, akRight]
       Caption = '&Delete files'
       TabOrder = 0
       OnClick = ControlChange
     end
     object SynchronizeSelectedOnlyCheck: TCheckBox
-      Left = 155
-      Top = 44
-      Width = 141
+      Left = 11
+      Top = 92
+      Width = 210
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = 'Selected files o&nly'
@@ -142,20 +143,21 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       OnClick = ControlChange
     end
     object SynchronizeExistingOnlyCheck: TCheckBox
-      Left = 155
-      Top = 20
-      Width = 141
+      Left = 11
+      Top = 68
+      Width = 210
       Height = 17
       Anchors = [akLeft, akTop, akRight]
-      Caption = '&Existing files only'
+      Caption = 'E&xisting files only'
       TabOrder = 1
       OnClick = ControlChange
     end
     object SynchronizePreviewChangesCheck: TCheckBox
       Left = 11
       Top = 44
-      Width = 130
+      Width = 210
       Height = 17
+      Anchors = [akLeft, akTop, akRight]
       Caption = 'Pre&view changes'
       TabOrder = 2
       OnClick = ControlChange
@@ -163,7 +165,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   end
   object TransferSettingsButton: TButton
     Left = 8
-    Top = 420
+    Top = 444
     Width = 161
     Height = 25
     Anchors = [akLeft, akBottom]
@@ -188,6 +190,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Caption = '&Both'
       Checked = True
       TabOrder = 0
+      TabStop = True
       OnClick = ControlChange
     end
     object SynchronizeRemoteButton: TRadioButton
@@ -210,20 +213,20 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
     end
   end
   object CompareCriterionsGroup: TGroupBox
-    Left = 317
+    Left = 245
     Top = 238
-    Width = 156
-    Height = 97
+    Width = 228
+    Height = 121
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Comparison criteria'
     TabOrder = 4
     DesignSize = (
-      156
-      97)
+      228
+      121)
     object SynchronizeByTimeCheck: TCheckBox
       Left = 11
       Top = 20
-      Width = 138
+      Width = 210
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = 'M&odification time'
@@ -233,7 +236,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
     object SynchronizeBySizeCheck: TCheckBox
       Left = 11
       Top = 44
-      Width = 138
+      Width = 210
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = 'File si&ze'
@@ -242,18 +245,28 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
     end
     object SynchronizeCaseSensitiveCheck: TCheckBox
       Left = 11
-      Top = 68
-      Width = 138
+      Top = 92
+      Width = 210
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = 'C&ase sensitive'
+      TabOrder = 3
+      OnClick = ControlChange
+    end
+    object SynchronizeByChecksumCheck: TCheckBox
+      Left = 11
+      Top = 68
+      Width = 210
+      Height = 17
+      Anchors = [akLeft, akTop, akRight]
+      Caption = 'C&hecksum'
       TabOrder = 2
       OnClick = ControlChange
     end
   end
   object SaveSettingsCheck: TCheckBox
     Left = 19
-    Top = 341
+    Top = 365
     Width = 454
     Height = 17
     Anchors = [akLeft, akTop, akRight]
@@ -262,7 +275,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   end
   object CopyParamGroup: TGroupBox
     Left = 8
-    Top = 362
+    Top = 386
     Width = 465
     Height = 50
     Anchors = [akLeft, akTop, akRight]
@@ -288,7 +301,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   end
   object HelpButton: TButton
     Left = 397
-    Top = 420
+    Top = 444
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -334,7 +347,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   end
   object OkMenu: TPopupMenu
     Left = 416
-    Top = 360
+    Top = 384
     object Start1: TMenuItem
       Caption = '&Start'
       Default = True

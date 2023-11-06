@@ -26,6 +26,7 @@
 #include "Queue.h"
 #include "Cryptography.h"
 #include "NeonIntf.h"
+#include <PuttyTools.h>
 #include <openssl/pkcs12.h>
 #include <openssl/err.h>
 #include <algorithm>
@@ -5994,6 +5995,7 @@ UnicodeString __fastcall TTerminal::SynchronizeParamsStr(int Params)
   AddFlagName(ParamsStr, Params, spTimestamp, L"Timestamp");
   AddFlagName(ParamsStr, Params, spNotByTime, L"NotByTime");
   AddFlagName(ParamsStr, Params, spBySize, L"BySize");
+  AddFlagName(ParamsStr, Params, spByChecksum, L"ByChecksum");
   AddFlagName(ParamsStr, Params, spCaseSensitive, L"CaseSensitive");
   AddFlagName(ParamsStr, Params, spSelectedOnly, L"*SelectedOnly"); // GUI only
   AddFlagName(ParamsStr, Params, spMirror, L"Mirror");
@@ -6287,6 +6289,55 @@ bool __fastcall TTerminal::IsEmptyRemoteDirectory(
   return Params.Result && (Stats.Files == 0);
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::CollectCalculatedChecksum(
+  const UnicodeString & DebugUsedArg(FileName), const UnicodeString & DebugUsedArg(Alg), const UnicodeString & Hash)
+{
+  DebugAssert(FCollectedCalculatedChecksum.IsEmpty());
+  FCollectedCalculatedChecksum = Hash;
+}
+//---------------------------------------------------------------------------
+bool TTerminal::SameFileChecksum(const UnicodeString & LocalFileName, const TRemoteFile * File)
+{
+  UnicodeString DefaultAlg = Sha256ChecksumAlg;
+  UnicodeString Algs =
+    DefaultStr(Configuration->SynchronizationChecksumAlgs, DefaultAlg + L"," + Sha1ChecksumAlg);
+  std::unique_ptr<TStrings> SupportedAlgs(CreateSortedStringList());
+  GetSupportedChecksumAlgs(SupportedAlgs.get());
+  UnicodeString Alg;
+  while (Alg.IsEmpty() && !Algs.IsEmpty())
+  {
+    UnicodeString A = CutToChar(Algs, L',', true);
+
+    if (SupportedAlgs->IndexOf(A) >= 0)
+    {
+      Alg = A;
+    }
+  }
+
+  if (Alg.IsEmpty())
+  {
+    Alg = DefaultAlg;
+  }
+
+  std::unique_ptr<TStrings> FileList(new TStringList());
+  FileList->AddObject(File->FullFileName, File);
+  DebugAssert(FCollectedCalculatedChecksum.IsEmpty());
+  FCollectedCalculatedChecksum = EmptyStr;
+  CalculateFilesChecksum(Alg, FileList.get(), CollectCalculatedChecksum);
+  UnicodeString RemoteChecksum = FCollectedCalculatedChecksum;
+  FCollectedCalculatedChecksum = EmptyStr;
+
+  UnicodeString LocalChecksum;
+  FILE_OPERATION_LOOP_BEGIN
+  {
+    std::unique_ptr<THandleStream> Stream(TSafeHandleStream::CreateFromFile(LocalFileName, fmOpenRead | fmShareDenyWrite));
+    LocalChecksum = CalculateFileChecksum(Stream.get(), Alg);
+  }
+  FILE_OPERATION_LOOP_END(FMTLOAD(CHECKSUM_ERROR, (LocalFileName)));
+
+  return SameText(RemoteChecksum, LocalChecksum);
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName,
   const TRemoteFile * File, /*TSynchronizeData*/ void * Param)
 {
@@ -6334,6 +6385,7 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
             reinterpret_cast<TSynchronizeFileData *>(Data->LocalFileList->Objects[LocalIndex]);
 
           LocalData->New = false;
+          UnicodeString FullLocalFileName = LocalData->Info.Directory + LocalData->Info.FileName;
 
           if (File->IsDirectory != LocalData->IsDirectory)
           {
@@ -6394,6 +6446,14 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
               Modified = true;
               LocalModified = true;
             }
+            else if (FLAGSET(Data->Params, spByChecksum) &&
+                     FLAGCLEAR(Data->Params, spTimestamp) &&
+                     !SameFileChecksum(FullLocalFileName, File) &&
+                     FLAGCLEAR(Data->Params, spTimestamp))
+            {
+              Modified = true;
+              LocalModified = true;
+            }
 
             if (LocalModified)
             {
@@ -6404,25 +6464,21 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
               // not for sync itself
               LocalData->MatchingRemoteFileFile = File->Duplicate();
               LogEvent(FORMAT(L"Local file %s is modified comparing to remote file %s",
-                (FormatFileDetailsForLog(LocalData->Info.Directory + LocalData->Info.FileName,
-                   LocalData->Info.Modification, LocalData->Info.Size),
-                 FormatFileDetailsForLog(FullRemoteFileName,
-                   File->Modification, File->Size, File->LinkedFile))));
+                (FormatFileDetailsForLog(FullLocalFileName, LocalData->Info.Modification, LocalData->Info.Size),
+                 FormatFileDetailsForLog(FullRemoteFileName, File->Modification, File->Size, File->LinkedFile))));
             }
 
             if (Modified)
             {
               LogEvent(FORMAT(L"Remote file %s is modified comparing to local file %s",
                 (FormatFileDetailsForLog(FullRemoteFileName, File->Modification, File->Size, File->LinkedFile),
-                 FormatFileDetailsForLog(LocalData->Info.Directory + LocalData->Info.FileName,
-                   LocalData->Info.Modification, LocalData->Info.Size))));
+                 FormatFileDetailsForLog(FullLocalFileName, LocalData->Info.Modification, LocalData->Info.Size))));
             }
           }
           else if (FLAGCLEAR(Data->Params, spNoRecurse))
           {
             DoSynchronizeCollectDirectory(
-              Data->LocalDirectory + LocalData->Info.FileName,
-              Data->RemoteDirectory + File->FileName,
+              FullLocalFileName, FullRemoteFileName,
               Data->Mode, Data->CopyParam, Data->Params, Data->OnSynchronizeDirectory,
               Data->Options, (Data->Flags & ~sfFirstLevel),
               Data->Checklist);

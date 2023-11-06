@@ -36,6 +36,8 @@ namespace WinSCP
         None = 0x00,
         Time = 0x01,
         Size = 0x02,
+        Checksum = 0x04,
+        [Obsolete("Use Time | Size")]
         Either = Time | Size,
     }
 
@@ -1265,22 +1267,32 @@ namespace WinSCP
             }
 
             string criteriaName;
-            switch (criteria)
+            if (criteria == SynchronizationCriteria.None)
             {
-                case SynchronizationCriteria.None:
-                    criteriaName = "none";
-                    break;
-                case SynchronizationCriteria.Time:
-                    criteriaName = "time";
-                    break;
-                case SynchronizationCriteria.Size:
-                    criteriaName = "size";
-                    break;
-                case SynchronizationCriteria.Either:
-                    criteriaName = "either";
-                    break;
-                default:
+                criteriaName = "none";
+            }
+            else
+            {
+                var names = new Dictionary<SynchronizationCriteria, string>
+                {
+                    { SynchronizationCriteria.Time, "time" },
+                    { SynchronizationCriteria.Size, "size" },
+                    { SynchronizationCriteria.Checksum, "checksum" }
+                };
+                var c = criteria;
+                criteriaName = string.Empty;
+                foreach (var name in names)
+                {
+                    if (c.HasFlag(name.Key))
+                    {
+                        c -= name.Key;
+                        criteriaName += (criteriaName.Length > 0 ? "," : string.Empty) + name.Value;
+                    }
+                }
+                if (c != 0)
+                {
                     throw Logger.WriteException(new ArgumentOutOfRangeException(nameof(criteria)));
+                }
             }
 
             WriteCommand(

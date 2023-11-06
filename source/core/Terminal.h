@@ -144,6 +144,7 @@ public:
   static const int spSelectedOnly = 0x800; // not used by core
   static const int spMirror = 0x1000;
   static const int spCaseSensitive = 0x2000;
+  static const int spByChecksum = 0x4000; // cannot be combined with spTimestamp and smBoth
   static const int spDefault = TTerminal::spNoConfirmation | TTerminal::spPreviewChanges;
 
 // for ReactOnCommand()
@@ -233,6 +234,7 @@ private:
   RawByteString FEncryptKey;
   TFileOperationProgressType::TPersistence * FOperationProgressPersistence;
   TOnceDoneOperation FOperationProgressOnceDoneOperation;
+  UnicodeString FCollectedCalculatedChecksum;
 
   void __fastcall CommandError(Exception * E, const UnicodeString Msg);
   unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg,
@@ -362,6 +364,9 @@ protected:
     const TRemoteFile * File, /*TSynchronizeData*/ void * Param);
   void __fastcall SynchronizeCollectFile(const UnicodeString FileName,
     const TRemoteFile * File, /*TSynchronizeData*/ void * Param);
+  bool SameFileChecksum(const UnicodeString & LocalFileName, const TRemoteFile * File);
+  void __fastcall CollectCalculatedChecksum(
+    const UnicodeString & FileName, const UnicodeString & Alg, const UnicodeString & Hash);
   void __fastcall SynchronizeRemoteTimestamp(const UnicodeString FileName,
     const TRemoteFile * File, void * Param);
   void __fastcall SynchronizeLocalTimestamp(const UnicodeString FileName,

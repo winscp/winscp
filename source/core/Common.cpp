@@ -3463,29 +3463,17 @@ TStringList * __fastcall CreateSortedStringList(bool CaseSensitive, System::Type
   return Result;
 }
 //---------------------------------------------------------------------------
-static UnicodeString __fastcall NormalizeIdent(UnicodeString Ident)
+bool SameIdent(const UnicodeString & Ident1, const UnicodeString & Ident2)
 {
-  int Index = 1;
-  while (Index <= Ident.Length())
-  {
-    if (Ident[Index] == L'-')
-    {
-      Ident.Delete(Index, 1);
-    }
-    else
-    {
-      Index++;
-    }
-  }
-  return Ident;
+  const UnicodeString Dash(L"-");
+  return SameText(ReplaceStr(Ident1, Dash, EmptyStr), ReplaceStr(Ident2, Dash, EmptyStr));
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall FindIdent(const UnicodeString & Ident, TStrings * Idents)
 {
-  UnicodeString NormalizedIdent(NormalizeIdent(Ident));
   for (int Index = 0; Index < Idents->Count; Index++)
   {
-    if (SameText(NormalizedIdent, NormalizeIdent(Idents->Strings[Index])))
+    if (SameIdent(Ident, Idents->Strings[Index]))
     {
       return Idents->Strings[Index];
     }

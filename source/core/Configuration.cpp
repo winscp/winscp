@@ -251,6 +251,7 @@ void __fastcall TConfiguration::Default()
   RefreshPuttySshHostCAList();
   FSshHostCAsFromPuTTY = false;
   FHttpsCertificateValidation = 0;
+  FSynchronizationChecksumAlgs = EmptyStr;
   CollectUsage = FDefaultCollectUsage;
 
   FLogging = false;
@@ -391,6 +392,7 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(Integer,  KeyVersion); \
     KEY(Bool,     SshHostCAsFromPuTTY); \
     KEY(Integer,  HttpsCertificateValidation); \
+    KEY(String,   SynchronizationChecksumAlgs); \
     KEY(Bool,     CollectUsage); \
     KEY(String,   CertificateStorage); \
     KEY(String,   AWSMetadataService); \

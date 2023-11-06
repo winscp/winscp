@@ -1140,6 +1140,55 @@ UnicodeString __fastcall Sha256(const char * Data, size_t Size)
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString CalculateFileChecksum(TStream * Stream, const UnicodeString & Alg)
+{
+  const ssh_hashalg * HashAlg;
+  if (SameIdent(Alg, Sha256ChecksumAlg))
+  {
+    HashAlg = &ssh_sha256;
+  }
+  else if (SameIdent(Alg, Sha1ChecksumAlg))
+  {
+    HashAlg = &ssh_sha1;
+  }
+  else if (SameIdent(Alg, Md5ChecksumAlg))
+  {
+    HashAlg = &ssh_md5;
+  }
+  else
+  {
+    throw Exception(FMTLOAD(UNKNOWN_CHECKSUM, (Alg)));
+  }
+
+  UnicodeString Result;
+  ssh_hash * Hash = ssh_hash_new(HashAlg);
+  try
+  {
+    const int BlockSize = 32 * 1024;
+    TFileBuffer Buffer;
+    DWORD Read;
+    do
+    {
+      Buffer.Reset();
+      Read = Buffer.LoadStream(Stream, BlockSize, false);
+      if (Read > 0)
+      {
+        put_datapl(Hash, make_ptrlen(Buffer.Data, Read));
+      }
+    }
+    while (Read > 0);
+  }
+  __finally
+  {
+    RawByteString Buf;
+    Buf.SetLength(ssh_hash_alg(Hash)->hlen);
+    ssh_hash_final(Hash, reinterpret_cast<unsigned char *>(Buf.c_str()));
+    Result = BytesToHex(Buf);
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const struct ssh_keyalg *& Algorithm)
 {
   UTF8String UtfLine = UTF8String(Line);
