@@ -1561,20 +1561,20 @@ protected:
     if (Result)
     {
       bool Last;
-        if (FOnTransferIn != NULL)
-        {
-          size_t Read = BlockBuf.LoadFromIn(FOnTransferIn, FTerminal, BlockSize);
-          Last = (Read < BlockSize);
-        }
-        else
+      if (FOnTransferIn != NULL)
+      {
+        size_t Read = BlockBuf.LoadFromIn(FOnTransferIn, FTerminal, BlockSize);
+        Last = (Read < BlockSize);
+      }
+      else
       {
         FILE_OPERATION_LOOP_BEGIN
         {
           BlockBuf.LoadStream(FStream, BlockSize, false);
         }
         FILE_OPERATION_LOOP_END(FMTLOAD(READ_ERROR, (FFileName)));
-          Last = (FStream->Position >= FStream->Size);
-        }
+        Last = (FStream->Position >= FStream->Size);
+      }
 
       FEnd = (BlockBuf.Size == 0);
       Result = !FEnd;
