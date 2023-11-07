@@ -4924,17 +4924,23 @@ bool TTerminal::DoRenameOrCopyFile(
     try
     {
       TCustomFileSystem * FileSystem;
-      if (!Rename &&
-          IsCapable[fcSecondaryShell] &&
-          File->IsDirectory &&
-          (FCommandSession != NULL)) // Won't be in scripting, there we let it fail later
+      if (!Rename)
       {
-        PrepareCommandSession();
-        FileSystem = FCommandSession->FFileSystem;
+        if (IsCapable[fcSecondaryShell] &&
+            File->IsDirectory &&
+            (FCommandSession != NULL)) // Won't be in scripting, there we let it fail later
+        {
+          PrepareCommandSession();
+          FileSystem = FCommandSession->FFileSystem;
+        }
+        else
+        {
+          FileSystem = GetFileSystemForCapability(fcRemoteCopy);
+        }
       }
       else
       {
-        FileSystem = GetFileSystemForCapability(fcRemoteCopy);
+        FileSystem = FFileSystem;
       }
 
       if (!IsCapable[fcMoveOverExistingFile] && !DontOverwrite)
