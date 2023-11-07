@@ -34,14 +34,15 @@ public:
   __fastcall TRemoteTransferDialog(TComponent * Owner);
 
   void __fastcall Init(
-    bool Multi, TStrings * Sessions, TStrings * Directories, TDirectRemoteCopy AllowDirectCopy, void * CurrentSession,
-    TDirectoryExistsEvent OnDirectoryExists);
+    bool Multi, TStrings * Sessions, TStrings * Directories, TDirectRemoteCopy AllowDirectCopy,
+    void * CurrentSession, TDirectoryExistsEvent OnDirectoryExists, bool TargetConfirmed);
   bool __fastcall Execute(void *& Session, UnicodeString & Target,
     UnicodeString & FileMask, bool & DirectCopy);
 
 protected:
   void __fastcall UpdateControls();
-  UnicodeString __fastcall GetFileMask();
+  UnicodeString GetTarget();
+  UnicodeString GetFileMask();
   bool __fastcall IsCurrentSessionSelected();
   void * GetSelectedSession();
   void __fastcall UpdateNotDirectCopyCheck();
@@ -53,6 +54,8 @@ private:
   bool FMulti;
   TDirectRemoteCopy FAllowDirectCopy;
   TDirectoryExistsEvent FOnDirectoryExists;
+  bool FTargetConfirmed;
+  UnicodeString FOriginalTarget;
 
   INTERFACE_HOOK;
 };

@@ -335,7 +335,8 @@ enum TDirectRemoteCopy { drcDisallow, drcAllow, drcConfirmCommandSession, drcCon
 bool __fastcall DoRemoteCopyDialog(
   TStrings * Sessions, TStrings * Directories,
   TDirectRemoteCopy AllowDirectCopy, bool Multi, void *& Session, UnicodeString & Target, UnicodeString & FileMask,
-  bool & DirectCopy, void * CurrentSession, TDirectoryExistsEvent OnDirectoryExists);
+  bool & DirectCopy, void * CurrentSession, TDirectoryExistsEvent OnDirectoryExists,
+  bool TargetConfirmed);
 
 // forms\SelectMask.cpp
 bool __fastcall DoSelectMaskDialog(TControl * Parent, bool Select, TFileFilter & Filter);

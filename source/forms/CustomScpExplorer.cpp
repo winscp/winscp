@@ -4509,16 +4509,19 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
     Session = Terminal;
   }
 
+  bool TargetConfirmed = false;
   if (Session == Terminal)
   {
     if (RemoteDriveView->DropTarget != NULL)
     {
       Target = RemoteDriveView->NodePathName(RemoteDriveView->DropTarget);
+      TargetConfirmed = true;
     }
     else if (RemoteDirView->DropTarget != NULL)
     {
       DebugAssert(RemoteDirView->ItemIsDirectory(RemoteDirView->DropTarget));
       Target = RemoteDirView->ItemFullFileName(RemoteDirView->DropTarget);
+      TargetConfirmed = true;
     }
     else
     {
@@ -4594,7 +4597,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
       void * ASession = Session;
       Result = DoRemoteCopyDialog(
         Sessions.get(), Directories.get(), AllowDirectCopy, Multi, ASession, Target, FileMask, DirectCopy, Terminal,
-        DoDirectoryExists);
+        DoDirectoryExists, TargetConfirmed);
       Session = static_cast<TManagedTerminal *>(ASession);
     }
   }
