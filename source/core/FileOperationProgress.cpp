@@ -977,7 +977,7 @@ UnicodeString __fastcall TFileOperationProgressType::GetLogStr(bool Done)
     Time = TimeElapsed();
     TimeLabel = L"Elapsed";
   }
-  UnicodeString TimeStr = FormatDateTimeSpan(Configuration->TimeFormat, Time);
+  UnicodeString TimeStr = FormatDateTimeSpan(Time);
 
   unsigned int ACPS;
   if (!Done)

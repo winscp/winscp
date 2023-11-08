@@ -5129,7 +5129,7 @@ void __fastcall TCustomScpExplorerForm::UpdateStatusBar()
   if ((ActiveTerminal != NULL) && (ActiveTerminal->Status == ssOpened))
   {
     const TSessionInfo & SessionInfo = ActiveTerminal->GetSessionInfo();
-    LoginTime = FormatDateTimeSpan(Configuration->TimeFormat, Now() - SessionInfo.LoginTime);
+    LoginTime = FormatDateTimeSpan(Now() - SessionInfo.LoginTime);
   }
   TTBXStatusPanel * DurationStatusPanel = SessionStatusBar->Panels->Items[SessionStatusBar->Panels->Count - 1];
   DurationStatusPanel->Caption = LoginTime;
@@ -6339,8 +6339,8 @@ void __fastcall TCustomScpExplorerForm::FullSynchronize(
     TDateTime Elapsed = (Now() - Start);
     Message +=
       L"\n" +
-      FORMAT(LoadStrPart(SYNCHRONIZE_SUMMARY, 5), (FormatDateTimeSpan(Configuration->TimeFormat, Params.CollectElapsed))) + L"\n" +
-      FORMAT(LoadStrPart(SYNCHRONIZE_SUMMARY, 6), (FormatDateTimeSpan(Configuration->TimeFormat, Elapsed)));
+      FORMAT(LoadStrPart(SYNCHRONIZE_SUMMARY, 5), (FormatDateTimeSpan(Params.CollectElapsed))) + L"\n" +
+      FORMAT(LoadStrPart(SYNCHRONIZE_SUMMARY, 6), (FormatDateTimeSpan(Elapsed)));
     TMessageParams Params(mpNeverAskAgainCheck);
     unsigned int Result = MessageDialog(Message, qtInformation, qaOK, HELP_NONE, &Params);
     if (Result == qaNeverAskAgain)

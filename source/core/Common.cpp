@@ -3263,16 +3263,25 @@ UnicodeString __fastcall FormatSize(__int64 Size)
   return FormatNumber(Size);
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDateTime DateTime)
+UnicodeString FormatDateTimeSpan(const TDateTime & DateTime)
 {
   UnicodeString Result;
-  if (int(DateTime) > 0)
+  if ((0 <= DateTime) && (DateTime <= MaxDateTime))
   {
-    Result = IntToStr(int(DateTime)) + L", ";
+    TTimeStamp TimeStamp = DateTimeToTimeStamp(DateTime);
+    int Days = TimeStamp.Date - DateDelta;
+    if (abs(Days) >= 4)
+    {
+      Result = FMTLOAD(DAYS_SPAN, (Days));
+    }
+    else
+    {
+      unsigned short Hour, Min, Sec, Dummy;
+      DecodeTime(DateTime, Hour, Min, Sec, Dummy);
+      int TotalHours = static_cast<int>(Hour) + (Days * HoursPerDay);
+      Result = FORMAT(L"%d%s%.2d%s%.2d", (TotalHours, FormatSettings.TimeSeparator, Min, FormatSettings.TimeSeparator, Sec));
+    }
   }
-  // days are decremented, because when there are too many of them,
-  // "integer overflow" error occurs
-  Result += FormatDateTime(TimeFormat, DateTime - int(DateTime));
   return Result;
 }
 //---------------------------------------------------------------------------

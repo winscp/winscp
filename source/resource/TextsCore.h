@@ -530,6 +530,7 @@
 #define PUBLIC_KEY_UPLOADED     567
 #define PUBLIC_KEY_PERMISSIONS  568
 #define TIME_RELATIVE           569
+#define DAYS_SPAN               570
 
 #define CORE_VARIABLE_STRINGS   600
 #define PUTTY_BASED_ON          601

@@ -362,7 +362,7 @@ void __fastcall TProgressForm::UpdateControls()
         {
           TimeLeft = FData.TotalTimeLeft();
         }
-        TimeLeftCaption = FormatDateTimeSpan(Configuration->TimeFormat, TimeLeft);
+        TimeLeftCaption = FormatDateTimeSpan(TimeLeft);
       }
       else
       {
@@ -371,7 +371,7 @@ void __fastcall TProgressForm::UpdateControls()
       TimeLeftLabel->Caption = TimeLeftCaption;
     }
     TDateTime Elapsed = FData.TimeElapsed();
-    TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, Elapsed);
+    TimeElapsedLabel->Caption = FormatDateTimeSpan(Elapsed);
     BytesTransferredLabel->Caption = FormatBytes(FData.TotalTransferred);
     int CPS = FData.CPS();
     CPSLabel->Caption = FORMAT(L"%s/s", (FormatBytes(CPS)));
