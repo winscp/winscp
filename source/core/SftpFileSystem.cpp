@@ -1365,11 +1365,13 @@ protected:
 class TSFTPAsynchronousQueue : public TSFTPQueue
 {
 public:
+  #pragma option push -vi- // WORKAROUND for internal compiler errors
   __fastcall TSFTPAsynchronousQueue(TSFTPFileSystem * AFileSystem) : TSFTPQueue(AFileSystem)
   {
     FFileSystem->FSecureShell->RegisterReceiveHandler(ReceiveHandler);
     FReceiveHandlerRegistered = true;
   }
+  #pragma option pop
 
   virtual __fastcall ~TSFTPAsynchronousQueue()
   {
@@ -1411,6 +1413,7 @@ protected:
     return true;
   }
 
+  #pragma option push -vi- // See pragma at constructor
   void __fastcall UnregisterReceiveHandler()
   {
     if (FReceiveHandlerRegistered)
@@ -1419,6 +1422,7 @@ protected:
       FFileSystem->FSecureShell->UnregisterReceiveHandler(ReceiveHandler);
     }
   }
+  #pragma option pop
 
 private:
   bool FReceiveHandlerRegistered;
