@@ -78,6 +78,7 @@ const UnicodeString UrlRawSettingsParamNamePrefix(L"x-");
 const UnicodeString PassphraseOption(L"passphrase");
 const UnicodeString RawSettingsOption(L"rawsettings");
 const UnicodeString S3HostName(S3LibDefaultHostName());
+const UnicodeString S3GoogleCloudHostName(L"storage.googleapis.com");
 const UnicodeString OpensshHostDirective(L"Host");
 //---------------------------------------------------------------------
 TDateTime __fastcall SecToDateTime(int Sec)
@@ -2359,7 +2360,7 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
         if ((AFSProtocol == fsWebDAV) &&
             (IsDomainOrSubdomain(HostName, S3HostName) ||
              IsDomainOrSubdomain(HostName, L"digitaloceanspaces.com") ||
-             IsDomainOrSubdomain(HostName, L"storage.googleapis.com") ||
+             IsDomainOrSubdomain(HostName, S3GoogleCloudHostName) ||
              IsDomainOrSubdomain(HostName, L"r2.cloudflarestorage.com")))
         {
           AFSProtocol = fsS3;

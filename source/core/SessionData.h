@@ -96,6 +96,7 @@ extern const UnicodeString UrlHostKeyParamName;
 extern const UnicodeString UrlSaveParamName;
 extern const UnicodeString PassphraseOption;
 extern const UnicodeString S3HostName;
+extern const UnicodeString S3GoogleCloudHostName;
 //---------------------------------------------------------------------------
 class TStoredSessionList;
 //---------------------------------------------------------------------------

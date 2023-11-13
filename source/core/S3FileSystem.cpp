@@ -1166,7 +1166,7 @@ void TS3FileSystem::HandleNonBucketStatus(TLibS3CallbackData & Data, bool & Retr
 //---------------------------------------------------------------------------
 bool TS3FileSystem::IsGoogleCloud()
 {
-  return SameText(L"storage.googleapis.com", FTerminal->SessionData->HostNameExpanded);
+  return SameText(S3GoogleCloudHostName, FTerminal->SessionData->HostNameExpanded);
 }
 //---------------------------------------------------------------------------
 void TS3FileSystem::ReadDirectoryInternal(
