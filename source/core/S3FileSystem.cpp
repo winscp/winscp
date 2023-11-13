@@ -839,7 +839,14 @@ bool __fastcall TS3FileSystem::GetActive()
 //---------------------------------------------------------------------------
 void __fastcall TS3FileSystem::CollectUsage()
 {
-  // noop
+  if (IsDomainOrSubdomain(FTerminal->SessionData->HostNameExpanded, S3HostName))
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsS3Amazon");
+  }
+  else
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsS3Other");
+  }
 }
 //---------------------------------------------------------------------------
 const TSessionInfo & __fastcall TS3FileSystem::GetSessionInfo()
