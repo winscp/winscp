@@ -317,6 +317,7 @@ typedef enum
     S3StatusConnectionFailed                                ,
     S3StatusAbortedByCallback                               ,
     S3StatusNotSupported                                    ,
+    S3StatusUploadIdTooLong                                 , // WINSCP
 
     /**
      * Errors from the S3 service

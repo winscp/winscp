@@ -114,6 +114,7 @@ const char *S3_get_status_name(S3Status status)
         handlecase(ConnectionFailed);
         handlecase(AbortedByCallback);
         handlecase(NotSupported);
+        handlecase(UploadIdTooLong);
         handlecase(ErrorAccessDenied);
         handlecase(ErrorAccountProblem);
         handlecase(ErrorAmbiguousGrantByEmailAddress);
@@ -503,15 +504,14 @@ int snprintf_S(char * s, size_t n, const char * format, size_t len, const char *
     int result;
     if (strcmp(format, "%.*s") == 0)
     {
-        result = 0;
-        while ((n > 0) && (len > 0) && (*data != '\0'))
+        result = len;
+        while ((n > 1) && (len > 0) && (*data != '\0'))
         {
             *s = *data;
             ++s;
             ++data;
             --len;
             --n;
-            ++result;
         }
 
         if (n > 0)
