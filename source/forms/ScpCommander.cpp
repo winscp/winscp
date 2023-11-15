@@ -1023,8 +1023,7 @@ void __fastcall TScpCommanderForm::SetToolbar2ItemAction(TTBXItem * Item, TBasic
 void __fastcall TScpCommanderForm::UpdateControls()
 {
   // Before TCustomScpExplorerForm disables them (when disconnecting)
-  bool DirViewWasFocused = DirView(osOther)->Focused();
-  bool DriveViewWasFocused = DriveView(osOther)->Focused();
+  void * Focus = SaveFocus();
 
   // When implicitly connecting a not-yet-connected session by switching to its tab opened with workspace,
   // Terminal property is still NULL, but ActiveTerminal is already set.
@@ -1124,34 +1123,7 @@ void __fastcall TScpCommanderForm::UpdateControls()
   bool LocalOnLeft = (Panel(true) == LocalPanel);
   LocalMenuButton->Caption = LoadStr(HasTerminal ? LOCAL_MENU_CAPTION : (LocalOnLeft ? LEFT_MENU_CAPTION : RIGHT_MENU_CAPTION));
   RemoteMenuButton->Caption = LoadStr(HasTerminal ? REMOTE_MENU_CAPTION : (LocalOnLeft ? RIGHT_MENU_CAPTION : LEFT_MENU_CAPTION));
-  if (DirViewWasFocused)
-  {
-    if (DirView(osOther)->Enabled)
-    {
-      DirView(osOther)->SetFocus();
-    }
-    else
-    {
-      LocalDirView->SetFocus();
-    }
-  }
-  if (DriveViewWasFocused)
-  {
-    if (DriveView(osOther)->Enabled)
-    {
-      DriveView(osOther)->SetFocus();
-    }
-    else if (LocalDriveView->Visible)
-    {
-      LocalDriveView->SetFocus();
-    }
-    else
-    {
-      // Switching to a disconnected session with local drive view hidden - fallback to the local dir view (should always be visible)
-      DebugAssert(LocalDirView->Visible);
-      LocalDirView->SetFocus();
-    }
-  }
+  RestoreFocus(Focus);
 
   if (RemotePathLabel->FocusControl != DirView(osOther))
   {
@@ -2975,4 +2947,59 @@ void TScpCommanderForm::ResetLayoutColumns(TOperationSide Side)
     IsSideLocalBrowser(Side) ? ScpCommanderLocalPanelDirViewParamsDefault : ScpCommanderRemotePanelDirViewParamsDefault;
 
   DirView(Side)->ColProperties->ParamsStr = DirViewParamsDefault;
+}
+//---------------------------------------------------------------------------
+void * TScpCommanderForm::SaveFocus()
+{
+  // When window is disabled, the ActiveControl might actually not be focusable
+  return ((ActiveControl != NULL) && ActiveControl->Focused()) ? ActiveControl : NULL;
+}
+//---------------------------------------------------------------------------
+void TScpCommanderForm::RestoreFocus(void * Focus)
+{
+  TWinControl * ControlFocus = static_cast<TWinControl *>(Focus);
+  if ((ControlFocus == LocalDirView) || (ControlFocus == LocalDriveView))
+  {
+    DebugAssert(ActiveControl == ControlFocus);
+    DebugAssert(ControlFocus->Enabled);
+    // noop
+  }
+  else if ((ControlFocus == RemoteDirView) || (ControlFocus == OtherLocalDirView))
+  {
+    if (DirView(osOther)->Enabled)
+    {
+      ControlFocus = DirView(osOther);
+    }
+    else
+    {
+      ControlFocus = LocalDirView;
+    }
+  }
+  else if ((ControlFocus == RemoteDriveView) || (ControlFocus == OtherLocalDriveView))
+  {
+    if (DriveView(osOther)->Enabled)
+    {
+      ControlFocus = DriveView(osOther);
+    }
+    else if (LocalDriveView->Visible)
+    {
+      ControlFocus = LocalDriveView;
+    }
+    else
+    {
+      // Switching to a disconnected session with local drive view hidden -
+      // fallback to the local dir view (should always be visible)
+      DebugAssert(LocalDirView->Visible);
+      ControlFocus = LocalDirView;
+    }
+  }
+  else
+  {
+    ControlFocus = NULL;
+  }
+
+  if (ControlFocus != NULL)
+  {
+    ControlFocus->SetFocus();
+  }
 }

@@ -759,6 +759,7 @@ void __fastcall TTerminalManager::DoSetActiveSession(TManagedTerminal * value, b
     {
       NonVisualDataModule->StartBusy();
     }
+    void * Focus = NULL;
     try
     {
       // here used to be call to TCustomScpExporer::UpdateSessionData (now UpdateSession)
@@ -768,6 +769,7 @@ void __fastcall TTerminalManager::DoSetActiveSession(TManagedTerminal * value, b
       FActiveSession = value;
       if (ScpExplorer)
       {
+        Focus = ScpExplorer->SaveFocus();
         if ((ActiveSession != NULL) &&
             ((ActiveSession->Status == ssOpened) || ActiveSession->Disconnected || ActiveSession->LocalBrowser))
         {
@@ -851,6 +853,10 @@ void __fastcall TTerminalManager::DoSetActiveSession(TManagedTerminal * value, b
       if (NonVisualDataModule != NULL)
       {
         NonVisualDataModule->EndBusy();
+      }
+      if ((Focus != NULL) && DebugAlwaysTrue(ScpExplorer != NULL))
+      {
+        ScpExplorer->RestoreFocus(Focus);
       }
     }
   }

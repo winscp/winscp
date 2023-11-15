@@ -915,6 +915,8 @@ public:
   void AutoSizeColumns(TOperationSide Side);
   virtual void ResetLayoutColumns(TOperationSide Side) = 0;
   void QueueResetLayoutColumns();
+  virtual void * SaveFocus();
+  virtual void RestoreFocus(void * Focus);
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

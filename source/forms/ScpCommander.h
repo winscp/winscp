@@ -692,6 +692,8 @@ public:
   virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
   virtual bool SupportedSession(TSessionData * SessionData);
   virtual void ResetLayoutColumns(TOperationSide Side);
+  virtual void * SaveFocus();
+  virtual void RestoreFocus(void * Focus);
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

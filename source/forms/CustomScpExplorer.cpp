@@ -10257,6 +10257,15 @@ void __fastcall TCustomScpExplorerForm::UnlockWindow()
   {
     DebugAssert(FLockSuspendLevel == 0);
     Enabled = true;
+    // VCL_COPY (TCustomForm.SetWindowFocus)
+    if (Active && (ActiveControl != NULL))
+    {
+      ::SetFocus(ActiveControl->Handle);
+      if (GetFocus() == ActiveControl->Handle)
+      {
+        ActiveControl->Perform(CM_UIACTIVATE, 0, 0);
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -12061,4 +12070,14 @@ void TCustomScpExplorerForm::AutoSizeColumns(TOperationSide Side)
 void TCustomScpExplorerForm::QueueResetLayoutColumns()
 {
   LoadListViewStr(QueueView3, QueueViewLayoutDefault);
+}
+//---------------------------------------------------------------------------
+void * TCustomScpExplorerForm::SaveFocus()
+{
+  return NULL;
+}
+//---------------------------------------------------------------------------
+void TCustomScpExplorerForm::RestoreFocus(void * Focus)
+{
+  DebugAssert(Focus == NULL);
 }
