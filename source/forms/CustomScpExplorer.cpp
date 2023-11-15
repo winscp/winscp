@@ -12079,5 +12079,6 @@ void * TCustomScpExplorerForm::SaveFocus()
 //---------------------------------------------------------------------------
 void TCustomScpExplorerForm::RestoreFocus(void * Focus)
 {
+  DebugUsedParam(Focus);
   DebugAssert(Focus == NULL);
 }
