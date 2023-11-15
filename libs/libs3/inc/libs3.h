@@ -1838,7 +1838,7 @@ void S3_set_request_context_verify_peer(S3RequestContext *requestContext,
  * S3 Utility Functions
  ************************************************************************** **/
 
- #ifndef WINSCP
+#ifndef WINSCP
 /**
  * Generates an HTTP authenticated query string, which may then be used by
  * a browser (or other web client) to issue the request.  The request is
