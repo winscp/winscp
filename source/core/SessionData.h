@@ -234,6 +234,7 @@ private:
   TS3UrlStyle FS3UrlStyle;
   TAutoSwitch FS3MaxKeys;
   bool FS3CredentialsEnv;
+  bool FS3RequesterPays;
   bool FIsWorkspace;
   UnicodeString FLink;
   UnicodeString FNameOverride;
@@ -426,6 +427,7 @@ private:
   void __fastcall SetS3UrlStyle(TS3UrlStyle value);
   void __fastcall SetS3MaxKeys(TAutoSwitch value);
   void __fastcall SetS3CredentialsEnv(bool value);
+  void __fastcall SetS3RequesterPays(bool value);
   void __fastcall SetLogicalHostName(UnicodeString value);
   void __fastcall SetIsWorkspace(bool value);
   void __fastcall SetLink(UnicodeString value);
@@ -710,6 +712,7 @@ public:
   __property TS3UrlStyle S3UrlStyle = { read = FS3UrlStyle, write = SetS3UrlStyle };
   __property TAutoSwitch S3MaxKeys = { read = FS3MaxKeys, write = SetS3MaxKeys };
   __property bool S3CredentialsEnv = { read = FS3CredentialsEnv, write = SetS3CredentialsEnv };
+  __property bool S3RequesterPays = { read = FS3RequesterPays, write = SetS3RequesterPays };
   __property bool IsWorkspace = { read = FIsWorkspace, write = SetIsWorkspace };
   __property UnicodeString Link = { read = FLink, write = SetLink };
   __property UnicodeString NameOverride = { read = FNameOverride, write = SetNameOverride };

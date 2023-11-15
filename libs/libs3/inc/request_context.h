@@ -52,6 +52,7 @@ struct S3RequestContext
     void *sslCallbackData;
     S3ResponseDataCallback *responseDataCallback;
     void *responseDataCallbackData;
+    int requesterPays;
 #else
     CURLM *curlm;
     S3CurlMode curl_mode;

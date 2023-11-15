@@ -225,6 +225,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     {
       S3UrlStyleCombo->ItemIndex = 0;
     }
+    S3RequesterPaysCheck->Checked = FSessionData->S3RequesterPays;
 
     UnicodeString S3SessionToken = FSessionData->S3SessionToken;
     if (FSessionData->HasAutoCredentials())
@@ -635,6 +636,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   {
     SessionData->S3UrlStyle = s3usVirtualHost;
   }
+  FSessionData->S3RequesterPays = S3RequesterPaysCheck->Checked;
   if (SessionData->HasAutoCredentials())
   {
     SessionData->S3SessionToken = EmptyStr;

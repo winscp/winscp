@@ -297,6 +297,7 @@ void __fastcall TSessionData::DefaultSettings()
   S3UrlStyle = s3usVirtualHost;
   S3MaxKeys = asAuto;
   S3CredentialsEnv = false;
+  S3RequesterPays = false;
 
   // SFTP
   SftpServer = L"";
@@ -463,6 +464,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(S3UrlStyle); \
   PROPERTY(S3MaxKeys); \
   PROPERTY(S3CredentialsEnv); \
+  PROPERTY(S3RequesterPays); \
   \
   PROPERTY(ProxyMethod); \
   PROPERTY(ProxyHost); \
@@ -810,6 +812,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   S3UrlStyle = (TS3UrlStyle)Storage->ReadInteger(L"S3UrlStyle", S3UrlStyle);
   S3MaxKeys = Storage->ReadEnum(L"S3MaxKeys", S3MaxKeys, AutoSwitchMapping);
   S3CredentialsEnv = Storage->ReadBool(L"S3CredentialsEnv", S3CredentialsEnv);
+  S3RequesterPays = Storage->ReadBool(L"S3RequesterPays", S3RequesterPays);
 
   // PuTTY defaults to TcpNoDelay, but the psftp/pscp ignores this preference, and always set this to off (what is our default too)
   if (!PuttyImport)
@@ -1137,6 +1140,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(Integer, S3UrlStyle);
     WRITE_DATA(Integer, S3MaxKeys);
     WRITE_DATA(Bool, S3CredentialsEnv);
+    WRITE_DATA(Bool, S3RequesterPays);
     WRITE_DATA(Integer, SendBuf);
     WRITE_DATA(String, SourceAddress);
     WRITE_DATA(String, ProtocolFeatures);
@@ -4560,6 +4564,11 @@ void __fastcall TSessionData::SetS3MaxKeys(TAutoSwitch value)
 void __fastcall TSessionData::SetS3CredentialsEnv(bool value)
 {
   SET_SESSION_PROPERTY(S3CredentialsEnv);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetS3RequesterPays(bool value)
+{
+  SET_SESSION_PROPERTY(S3RequesterPays);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetIsWorkspace(bool value)

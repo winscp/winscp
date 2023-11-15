@@ -419,6 +419,8 @@ void __fastcall TS3FileSystem::Open()
     FTerminal->LogEvent(L"Google Cloud detected.");
   }
 
+  S3_set_request_context_requester_pays(FRequestContext, FTerminal->SessionData->S3RequesterPays);
+
   FActive = false;
   try
   {

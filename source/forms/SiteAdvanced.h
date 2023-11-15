@@ -283,6 +283,7 @@ __published:
   TComboBox *SFTPRealPathCombo;
   TLabel *DetachedCertificateLabel;
   TFilenameEdit *DetachedCertificateEdit;
+  TCheckBox *S3RequesterPaysCheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);

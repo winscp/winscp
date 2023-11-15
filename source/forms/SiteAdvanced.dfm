@@ -1017,13 +1017,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 6
           Width = 393
-          Height = 70
+          Height = 97
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Protocol options'
           TabOrder = 0
           DesignSize = (
             393
-            70)
+            97)
           object Label27: TLabel
             Left = 12
             Top = 20
@@ -1099,10 +1099,18 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'Virtual Host'
               'Path')
           end
+          object S3RequesterPaysCheck: TCheckBox
+            Left = 12
+            Top = 68
+            Width = 369
+            Height = 17
+            Caption = 'Requester &pays'
+            TabOrder = 2
+          end
         end
         object S3AuthenticationGroup: TGroupBox
           Left = 1
-          Top = 82
+          Top = 109
           Width = 393
           Height = 143
           Anchors = [akLeft, akTop, akRight]
