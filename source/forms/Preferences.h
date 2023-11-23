@@ -354,6 +354,7 @@ __published:
   TButton *EditSshHostCAButton;
   TCheckBox *SshHostCAsFromPuTTYCheck;
   TButton *ConfigureSshHostCAsButton;
+  TCheckBox *SessionTabCaptionTruncationCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

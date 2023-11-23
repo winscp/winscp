@@ -652,6 +652,8 @@ protected:
   int __fastcall AddSessionColor(TColor Color);
   void UpdateSessionTab(TThemeTabSheet * TabSheet);
   void __fastcall UpdateNewTabTab();
+  TThemeTabSheet * GetNewTabTab();
+  TThemeTabCaptionTruncation GetNewTabTabCaptionTruncation();
   UnicodeString GetNewTabTabCaption();
   void __fastcall AddFixedSessionImages();
   int __fastcall AddFixedSessionImage(int GlyphsSourceIndex);

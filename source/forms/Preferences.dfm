@@ -2563,13 +2563,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 231
           Width = 389
-          Height = 150
+          Height = 174
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Miscellaneous'
           TabOrder = 2
           DesignSize = (
             389
-            150)
+            174)
           object MinimizeToTrayCheck: TCheckBox
             Left = 16
             Top = 21
@@ -2602,12 +2602,12 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ShowTipsCheck: TCheckBox
             Left = 16
-            Top = 117
+            Top = 141
             Width = 361
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Display tips on startup'
-            TabOrder = 4
+            TabOrder = 5
             OnClick = ControlChange
           end
           object ShowLoginWhenNoSessionCheck: TCheckBox
@@ -2620,6 +2620,16 @@ object PreferencesDialog: TPreferencesDialog
               '&Show Login dialog on startup and when the last session is close' +
               'd'
             TabOrder = 2
+            OnClick = ControlChange
+          end
+          object SessionTabCaptionTruncationCheck: TCheckBox
+            Left = 16
+            Top = 117
+            Width = 361
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Truncate tab titles when they do not fit to window'
+            TabOrder = 4
             OnClick = ControlChange
           end
         end

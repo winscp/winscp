@@ -1217,6 +1217,11 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
     FFileColorsCurrent = WinConfiguration->FileColors;
     FileColorsChanged();
   }
+
+  if (GetNewTabTab()->CaptionTruncation != GetNewTabTabCaptionTruncation())
+  {
+    SessionListChanged();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DoFileColorsChanged(TCustomDirView * DirView)
@@ -7363,7 +7368,7 @@ void __fastcall TCustomScpExplorerForm::SessionListChanged(bool ForceTruncationU
       {
         TTerminal * Terminal = Manager->Sessions[Index];
         TabSheet->Tag = reinterpret_cast<int>(Terminal);
-        TabSheet->CaptionTruncation = tttEllipsis;
+        TabSheet->CaptionTruncation = WinConfiguration->SessionTabCaptionTruncation ? tttEllipsis : tttNone;
 
         UpdateSessionTab(TabSheet);
       }
@@ -7372,7 +7377,7 @@ void __fastcall TCustomScpExplorerForm::SessionListChanged(bool ForceTruncationU
         TabSheet->Tag = 0; // not really needed
         TabSheet->Shadowed = false;
         TabSheet->Button = SupportsLocalBrowser() ? ttbDropDown : ttbNone;
-        TabSheet->CaptionTruncation = tttNoText;
+        TabSheet->CaptionTruncation = GetNewTabTabCaptionTruncation();
         // We know that we are at the last page, otherwise we could not call this (it assumes that new session tab is the last one)
         UpdateNewTabTab();
       }
@@ -7392,14 +7397,24 @@ void __fastcall TCustomScpExplorerForm::SessionListChanged(bool ForceTruncationU
   SessionsPageControl->ActivePageIndex = ActiveSessionIndex;
 }
 //---------------------------------------------------------------------------
+TThemeTabCaptionTruncation TCustomScpExplorerForm::GetNewTabTabCaptionTruncation()
+{
+  return WinConfiguration->SessionTabCaptionTruncation ? tttNoText : tttNone;
+}
+//---------------------------------------------------------------------------
 UnicodeString TCustomScpExplorerForm::GetNewTabTabCaption()
 {
   return StripHotkey(StripTrailingPunctuation(NonVisualDataModule->NewTabAction->Caption));
 }
 //---------------------------------------------------------------------------
+TThemeTabSheet * TCustomScpExplorerForm::GetNewTabTab()
+{
+  return SessionsPageControl->Pages[SessionsPageControl->PageCount - 1];
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateNewTabTab()
 {
-  TThemeTabSheet * TabSheet = SessionsPageControl->Pages[SessionsPageControl->PageCount - 1];
+  TThemeTabSheet * TabSheet = GetNewTabTab();
 
   UnicodeString TabCaption;
   if (WinConfiguration->SelectiveToolbarText)
