@@ -2344,7 +2344,8 @@ void __fastcall TS3FileSystem::Sink(
 
       if (CopyParam->PreserveTime)
       {
-        FTerminal->UpdateTargetTime(LocalHandle, File->Modification, FTerminal->SessionData->DSTMode);
+        FTerminal->UpdateTargetTime(
+          LocalHandle, File->Modification, File->ModificationFmt, FTerminal->SessionData->DSTMode);
       }
     }
     __finally

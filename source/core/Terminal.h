@@ -507,7 +507,8 @@ protected:
   void __fastcall SinkFile(UnicodeString FileName, const TRemoteFile * File, void * Param);
   void __fastcall UpdateTargetAttrs(
     const UnicodeString & DestFullName, const TRemoteFile * File, const TCopyParamType * CopyParam, int Attrs);
-  void __fastcall UpdateTargetTime(HANDLE Handle, TDateTime Modification, TDSTMode DSTMode);
+  void __fastcall UpdateTargetTime(
+    HANDLE Handle, TDateTime Modification, TModificationFmt ModificationFmt, TDSTMode DSTMode);
   void CheckParallelFileTransfer(
     const UnicodeString & TargetDir, TStringList * Files, const TCopyParamType * CopyParam, int Params,
     UnicodeString & ParallelFileName, __int64 & ParallelFileSize, TFileOperationProgressType * OperationProgress);

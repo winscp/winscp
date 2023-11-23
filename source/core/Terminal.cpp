@@ -8313,14 +8313,22 @@ void __fastcall TTerminal::UpdateTargetAttrs(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::UpdateTargetTime(HANDLE Handle, TDateTime Modification, TDSTMode DSTMode)
+void __fastcall TTerminal::UpdateTargetTime(
+  HANDLE Handle, TDateTime Modification, TModificationFmt ModificationFmt, TDSTMode DSTMode)
 {
-  LogEvent(FORMAT(L"Preserving timestamp [%s]", (StandardTimestamp(Modification))));
-  FILETIME WrTime = DateTimeToFileTime(Modification, DSTMode);
-  if (!SetFileTime(Handle, NULL, NULL, &WrTime))
+  if (ModificationFmt == mfNone)
   {
-    int Error = GetLastError();
-    LogEvent(FORMAT(L"Preserving timestamp failed, ignoring: %s", (SysErrorMessageForError(Error))));
+    LogEvent(L"Timestamp not known");
+  }
+  else
+  {
+    LogEvent(FORMAT(L"Preserving timestamp [%s]", (StandardTimestamp(Modification))));
+    FILETIME WrTime = DateTimeToFileTime(Modification, DSTMode);
+    if (!SetFileTime(Handle, NULL, NULL, &WrTime))
+    {
+      int Error = GetLastError();
+      LogEvent(FORMAT(L"Preserving timestamp failed, ignoring: %s", (SysErrorMessageForError(Error))));
+    }
   }
 }
 //---------------------------------------------------------------------------
