@@ -1474,6 +1474,7 @@ void __fastcall TLoginDialog::SaveDataList(TList * DataList)
   }
   else
   {
+    ParseHostName();
     DataList->Add(CloneSelectedSession());
   }
 }
