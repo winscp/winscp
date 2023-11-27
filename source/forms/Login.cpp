@@ -2671,6 +2671,12 @@ void __fastcall TLoginDialog::PortNumberEditChange(TObject * Sender)
     TFSProtocol FSProtocol;
     TFtps Ftps = ftpsNone;
 
+    // For ambiguous port numbers, keep the current protocol, even if it is not the default protocol for the port
+    // (e.g. HTTPS vs S3 or FTP vs FTPES).
+    // So for example, when user selects FTPES and then types 2121 port, the protocol is not reset to FTP,
+    // once partial 21 is entered
+    TFSProtocol CurrentFSProtocol = GetFSProtocol(false);
+
     int PortNumber = PortNumberEdit->AsInteger;
     if (PortNumber == SshPortNumber)
     {
@@ -2680,6 +2686,10 @@ void __fastcall TLoginDialog::PortNumberEditChange(TObject * Sender)
     else if (PortNumber == FtpPortNumber)
     {
       FSProtocol = fsFTP;
+      if ((CurrentFSProtocol == FSProtocol) && (GetFtps() == ftpsExplicitTls))
+      {
+        Ftps = ftpsExplicitTls;
+      }
       WellKnownPort = true;
     }
     else if (PortNumber == FtpsImplicitPortNumber)
@@ -2690,12 +2700,12 @@ void __fastcall TLoginDialog::PortNumberEditChange(TObject * Sender)
     }
     else if (PortNumber == HTTPPortNumber)
     {
-      FSProtocol = fsWebDAV;
+      FSProtocol = (CurrentFSProtocol == fsS3) ? fsS3 : fsWebDAV;
       WellKnownPort = true;
     }
     else if (PortNumber == HTTPSPortNumber)
     {
-      FSProtocol = fsWebDAV;
+      FSProtocol = (CurrentFSProtocol == fsS3) ? fsS3 : fsWebDAV;
       Ftps = ftpsImplicit;
       WellKnownPort = true;
     }
