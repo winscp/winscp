@@ -17,10 +17,20 @@
 # include "crypto/ecx.h"
 
 /*
+ * Default PKCS5 PBE KDF salt lengths
+ * In RFC 8018, PBE1 uses 8 bytes (64 bits) for its salt length.
+ * It also specifies to use at least 8 bytes for PBES2.
+ * The NIST requirement for PBKDF2 is 128 bits so we use this as the
+ * default for PBE2 (scrypt and HKDF2)
+ */
+# define PKCS5_DEFAULT_PBE1_SALT_LEN     PKCS5_SALT_LEN
+# define PKCS5_DEFAULT_PBE2_SALT_LEN     16
+/*
  * Don't free up md_ctx->pctx in EVP_MD_CTX_reset, use the reserved flag
  * values in evp.h
  */
 #define EVP_MD_CTX_FLAG_KEEP_PKEY_CTX   0x0400
+#define EVP_MD_CTX_FLAG_FINALISED       0x0800
 
 #define evp_pkey_ctx_is_legacy(ctx)                             \
     ((ctx)->keymgmt == NULL)
@@ -203,7 +213,6 @@ struct evp_mac_st {
     const char *description;
 
     CRYPTO_REF_COUNT refcnt;
-    CRYPTO_RWLOCK *lock;
 
     OSSL_FUNC_mac_newctx_fn *newctx;
     OSSL_FUNC_mac_dupctx_fn *dupctx;
@@ -225,7 +234,6 @@ struct evp_kdf_st {
     char *type_name;
     const char *description;
     CRYPTO_REF_COUNT refcnt;
-    CRYPTO_RWLOCK *lock;
 
     OSSL_FUNC_kdf_newctx_fn *newctx;
     OSSL_FUNC_kdf_dupctx_fn *dupctx;
@@ -270,7 +278,6 @@ struct evp_md_st {
     const char *description;
     OSSL_PROVIDER *prov;
     CRYPTO_REF_COUNT refcnt;
-    CRYPTO_RWLOCK *lock;
     OSSL_FUNC_digest_newctx_fn *newctx;
     OSSL_FUNC_digest_init_fn *dinit;
     OSSL_FUNC_digest_update_fn *dupdate;
@@ -326,7 +333,6 @@ struct evp_cipher_st {
     const char *description;
     OSSL_PROVIDER *prov;
     CRYPTO_REF_COUNT refcnt;
-    CRYPTO_RWLOCK *lock;
     OSSL_FUNC_cipher_newctx_fn *newctx;
     OSSL_FUNC_cipher_encrypt_init_fn *einit;
     OSSL_FUNC_cipher_decrypt_init_fn *dinit;
@@ -646,7 +652,9 @@ union legacy_pkey_st {
 #  endif
 #  ifndef OPENSSL_NO_EC
     struct ec_key_st *ec;   /* ECC */
+#   ifndef OPENSSL_NO_ECX
     ECX_KEY *ecx;           /* X25519, X448, Ed25519, Ed448 */
+#   endif
 #  endif
 };
 
@@ -784,7 +792,7 @@ void *evp_keymgmt_util_export_to_provider(EVP_PKEY *pk, EVP_KEYMGMT *keymgmt,
 OP_CACHE_ELEM *evp_keymgmt_util_find_operation_cache(EVP_PKEY *pk,
                                                      EVP_KEYMGMT *keymgmt,
                                                      int selection);
-int evp_keymgmt_util_clear_operation_cache(EVP_PKEY *pk, int locking);
+int evp_keymgmt_util_clear_operation_cache(EVP_PKEY *pk);
 int evp_keymgmt_util_cache_keydata(EVP_PKEY *pk, EVP_KEYMGMT *keymgmt,
                                    void *keydata, int selection);
 void evp_keymgmt_util_cache_keyinfo(EVP_PKEY *pk);
@@ -813,7 +821,7 @@ int evp_keymgmt_set_params(const EVP_KEYMGMT *keymgmt,
 void *evp_keymgmt_gen_init(const EVP_KEYMGMT *keymgmt, int selection,
                            const OSSL_PARAM params[]);
 int evp_keymgmt_gen_set_template(const EVP_KEYMGMT *keymgmt, void *genctx,
-                                 void *template);
+                                 void *templ);
 int evp_keymgmt_gen_set_params(const EVP_KEYMGMT *keymgmt, void *genctx,
                                const OSSL_PARAM params[]);
 void *evp_keymgmt_gen(const EVP_KEYMGMT *keymgmt, void *genctx,
@@ -892,10 +900,6 @@ EVP_MD_CTX *evp_md_ctx_new_ex(EVP_PKEY *pkey, const ASN1_OCTET_STRING *id,
 int evp_pkey_name2type(const char *name);
 const char *evp_pkey_type2name(int type);
 
-int evp_pkey_ctx_set1_id_prov(EVP_PKEY_CTX *ctx, const void *id, int len);
-int evp_pkey_ctx_get1_id_prov(EVP_PKEY_CTX *ctx, void *id);
-int evp_pkey_ctx_get1_id_len_prov(EVP_PKEY_CTX *ctx, size_t *id_len);
-
 int evp_pkey_ctx_use_cached_data(EVP_PKEY_CTX *ctx);
 # endif /* !defined(FIPS_MODULE) */
 
@@ -958,5 +962,9 @@ size_t evp_rand_get_seed(EVP_RAND_CTX *ctx,
 void evp_rand_clear_seed(EVP_RAND_CTX *ctx,
                          unsigned char *buffer, size_t b_len);
 int evp_signature_get_number(const EVP_SIGNATURE *signature);
+
+int evp_pkey_decrypt_alloc(EVP_PKEY_CTX *ctx, unsigned char **outp,
+                           size_t *outlenp, size_t expected_outlen,
+                           const unsigned char *in, size_t inlen);
 
 #endif /* OSSL_CRYPTO_EVP_H */

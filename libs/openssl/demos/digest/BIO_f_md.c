@@ -1,5 +1,5 @@
 /*-
- * Copyright 2019-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -34,20 +34,19 @@
  * The default digest is SHA3-512
  */
 
-int main(int argc, char * argv[])
+int main(int argc, char *argv[])
 {
-    int result = 1;
+    int ret = EXIT_FAILURE;
     OSSL_LIB_CTX *library_context = NULL;
     BIO *input = NULL;
-    BIO *bio_digest = NULL;
+    BIO *bio_digest = NULL, *reading = NULL;
     EVP_MD *md = NULL;
     unsigned char buffer[512];
-    size_t readct, writect;
     size_t digest_size;
-    char *digest_value=NULL;
+    char *digest_value = NULL;
     int j;
 
-    input = BIO_new_fd( fileno(stdin), 1 );
+    input = BIO_new_fd(fileno(stdin), 1);
     if (input == NULL) {
         fprintf(stderr, "BIO_new_fd() for stdin returned NULL\n");
         goto cleanup;
@@ -63,7 +62,7 @@ int main(int argc, char * argv[])
      * The algorithm name is case insensitive. 
      * See providers(7) for details about algorithm fetching
      */
-    md = EVP_MD_fetch( library_context, "SHA3-512", NULL );
+    md = EVP_MD_fetch(library_context, "SHA3-512", NULL);
     if (md == NULL) {
         fprintf(stderr, "EVP_MD_fetch did not find SHA3-512.\n");
         goto cleanup;
@@ -81,7 +80,7 @@ int main(int argc, char * argv[])
         goto cleanup;
     }
     /* set our bio_digest BIO to digest data */
-    if (BIO_set_md(bio_digest,md) != 1) {
+    if (BIO_set_md(bio_digest, md) != 1) {
            fprintf(stderr, "BIO_set_md failed.\n");
            goto cleanup;
     }
@@ -89,9 +88,9 @@ int main(int argc, char * argv[])
      * We will use BIO chaining so that as we read, the digest gets updated
      * See the man page for BIO_push
      */
-    BIO *reading = BIO_push( bio_digest, input );
-    
-    while( BIO_read(reading, buffer, sizeof(buffer)) > 0 )
+    reading = BIO_push(bio_digest, input);
+
+    while (BIO_read(reading, buffer, sizeof(buffer)) > 0)
         ;
 
     /*-
@@ -102,14 +101,14 @@ int main(int argc, char * argv[])
         fprintf(stderr, "BIO_gets(bio_digest) failed\n");
         goto cleanup;
     }
-    for (j=0; j<digest_size; j++) {
+    for (j = 0; j < digest_size; j++) {
         fprintf(stdout, "%02x", (unsigned char)digest_value[j]);
     }
     fprintf(stdout, "\n");
-    result = 0;
-    
+    ret = EXIT_SUCCESS;
+
 cleanup:
-    if (result != 0) 
+    if (ret != EXIT_SUCCESS)
         ERR_print_errors_fp(stderr);
 
     OPENSSL_free(digest_value);
@@ -118,5 +117,5 @@ cleanup:
     EVP_MD_free(md);
     OSSL_LIB_CTX_free(library_context);
 
-    return result;
+    return ret;
 }

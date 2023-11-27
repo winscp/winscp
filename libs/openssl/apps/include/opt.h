@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2018-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -163,7 +163,11 @@
         OPT_S_CURVES, OPT_S_NAMEDCURVE, OPT_S_CIPHER, OPT_S_CIPHERSUITES, \
         OPT_S_RECORD_PADDING, OPT_S_DEBUGBROKE, OPT_S_COMP, \
         OPT_S_MINPROTO, OPT_S_MAXPROTO, \
-        OPT_S_NO_RENEGOTIATION, OPT_S_NO_MIDDLEBOX, OPT_S_NO_ETM, OPT_S__LAST
+        OPT_S_NO_RENEGOTIATION, OPT_S_NO_MIDDLEBOX, OPT_S_NO_ETM, \
+        OPT_S_NO_EMS, \
+        OPT_S_NO_TX_CERT_COMP, \
+        OPT_S_NO_RX_CERT_COMP, \
+        OPT_S__LAST
 
 # define OPT_S_OPTIONS \
         OPT_SECTION("TLS/SSL"), \
@@ -175,6 +179,8 @@
         {"bugs", OPT_S_BUGS, '-', "Turn on SSL bug compatibility"}, \
         {"no_comp", OPT_S_NO_COMP, '-', "Disable SSL/TLS compression (default)" }, \
         {"comp", OPT_S_COMP, '-', "Use SSL/TLS-level compression" }, \
+        {"no_tx_cert_comp", OPT_S_NO_TX_CERT_COMP, '-', "Disable sending TLSv1.3 compressed certificates" }, \
+        {"no_rx_cert_comp", OPT_S_NO_RX_CERT_COMP, '-', "Disable receiving TLSv1.3 compressed certificates" }, \
         {"no_ticket", OPT_S_NOTICKET, '-', \
             "Disable use of TLS session tickets"}, \
         {"serverpref", OPT_S_SERVERPREF, '-', "Use server's cipher preferences"}, \
@@ -218,7 +224,9 @@
         {"no_middlebox", OPT_S_NO_MIDDLEBOX, '-', \
             "Disable TLSv1.3 middlebox compat mode" }, \
         {"no_etm", OPT_S_NO_ETM, '-', \
-            "Disable Encrypt-then-Mac extension"}
+            "Disable Encrypt-then-Mac extension"}, \
+        {"no_ems", OPT_S_NO_EMS, '-', \
+            "Disable Extended master secret extension"}
 
 # define OPT_S_CASES \
         OPT_S__FIRST: case OPT_S__LAST: break; \
@@ -230,6 +238,8 @@
         case OPT_S_BUGS: \
         case OPT_S_NO_COMP: \
         case OPT_S_COMP: \
+        case OPT_S_NO_TX_CERT_COMP: \
+        case OPT_S_NO_RX_CERT_COMP: \
         case OPT_S_NOTICKET: \
         case OPT_S_SERVERPREF: \
         case OPT_S_LEGACYRENEG: \
@@ -253,7 +263,8 @@
         case OPT_S_MAXPROTO: \
         case OPT_S_DEBUGBROKE: \
         case OPT_S_NO_MIDDLEBOX: \
-        case OPT_S_NO_ETM
+        case OPT_S_NO_ETM: \
+        case OPT_S_NO_EMS
 
 #define IS_NO_PROT_FLAG(o) \
  (o == OPT_S_NOSSL3 || o == OPT_S_NOTLS1 || o == OPT_S_NOTLS1_1 \
@@ -308,11 +319,28 @@ extern const char OPT_PARAM_STR[];
 typedef struct options_st {
     const char *name;
     int retval;
-    /*
-     * value type: - no value (also the value zero), n number, p positive
-     * number, u unsigned, l long, s string, < input file, > output file,
-     * f any format, F der/pem format, E der/pem/engine format identifier.
-     * l, n and u include zero; p does not.
+    /*-
+     * value type:
+     *
+     *   '-' no value (also the value zero)
+     *   'n' number (type 'int')
+     *   'p' positive number (type 'int')
+     *   'u' unsigned number (type 'unsigned long')
+     *   'l' number (type 'unsigned long')
+     *   'M' number (type 'intmax_t')
+     *   'U' unsigned number (type 'uintmax_t')
+     *   's' string
+     *   '<' input file
+     *   '>' output file
+     *   '/' directory
+     *   'f' any format                    [OPT_FMT_ANY]
+     *   'F' der/pem format                [OPT_FMT_PEMDER]
+     *   'A' any ASN1, der/pem/b64 format  [OPT_FMT_ASN1]
+     *   'E' der/pem/engine format         [OPT_FMT_PDE]
+     *   'c' pem/der/smime format          [OPT_FMT_PDS]
+     *
+     * The 'l', 'n' and 'u' value types include the values zero,
+     * the 'p' value type does not.
      */
     int valtype;
     const char *helpstr;
@@ -332,46 +360,54 @@ typedef struct string_int_pair_st {
 } OPT_PAIR, STRINT_PAIR;
 
 /* Flags to pass into opt_format; see FORMAT_xxx, below. */
-# define OPT_FMT_PEMDER          (1L <<  1)
-# define OPT_FMT_PKCS12          (1L <<  2)
-# define OPT_FMT_SMIME           (1L <<  3)
-# define OPT_FMT_ENGINE          (1L <<  4)
-# define OPT_FMT_MSBLOB          (1L <<  5)
-/* (1L <<  6) was OPT_FMT_NETSCAPE, but wasn't used */
-# define OPT_FMT_NSS             (1L <<  7)
-# define OPT_FMT_TEXT            (1L <<  8)
-# define OPT_FMT_HTTP            (1L <<  9)
-# define OPT_FMT_PVK             (1L << 10)
+# define OPT_FMT_PEM             (1L <<  1)
+# define OPT_FMT_DER             (1L <<  2)
+# define OPT_FMT_B64             (1L <<  3)
+# define OPT_FMT_PKCS12          (1L <<  4)
+# define OPT_FMT_SMIME           (1L <<  5)
+# define OPT_FMT_ENGINE          (1L <<  6)
+# define OPT_FMT_MSBLOB          (1L <<  7)
+# define OPT_FMT_NSS             (1L <<  8)
+# define OPT_FMT_TEXT            (1L <<  9)
+# define OPT_FMT_HTTP            (1L << 10)
+# define OPT_FMT_PVK             (1L << 11)
+
+# define OPT_FMT_PEMDER  (OPT_FMT_PEM | OPT_FMT_DER)
+# define OPT_FMT_ASN1    (OPT_FMT_PEM | OPT_FMT_DER | OPT_FMT_B64)
 # define OPT_FMT_PDE     (OPT_FMT_PEMDER | OPT_FMT_ENGINE)
 # define OPT_FMT_PDS     (OPT_FMT_PEMDER | OPT_FMT_SMIME)
 # define OPT_FMT_ANY     ( \
-        OPT_FMT_PEMDER | OPT_FMT_PKCS12 | OPT_FMT_SMIME | \
-        OPT_FMT_ENGINE | OPT_FMT_MSBLOB | OPT_FMT_NSS   | \
-        OPT_FMT_TEXT   | OPT_FMT_HTTP   | OPT_FMT_PVK)
+        OPT_FMT_PEM | OPT_FMT_DER | OPT_FMT_B64 | \
+        OPT_FMT_PKCS12 | OPT_FMT_SMIME |                     \
+        OPT_FMT_ENGINE | OPT_FMT_MSBLOB | OPT_FMT_NSS | \
+        OPT_FMT_TEXT | OPT_FMT_HTTP | OPT_FMT_PVK)
 
 /* Divide options into sections when displaying usage */
 #define OPT_SECTION(sec) { OPT_SECTION_STR, 1, '-', sec " options:\n" }
 #define OPT_PARAMETERS() { OPT_PARAM_STR, 1, '-', "Parameters:\n" }
 
 const char *opt_path_end(const char *filename);
-char *opt_init(int ac, char **av, const OPTIONS * o);
+char *opt_init(int ac, char **av, const OPTIONS *o);
 char *opt_progname(const char *argv0);
 char *opt_appname(const char *argv0);
 char *opt_getprog(void);
-void opt_help(const OPTIONS * list);
+void opt_help(const OPTIONS *list);
 
 void opt_begin(void);
 int opt_next(void);
 char *opt_flag(void);
 char *opt_arg(void);
 char *opt_unknown(void);
+void reset_unknown(void);
 int opt_cipher(const char *name, EVP_CIPHER **cipherp);
 int opt_cipher_any(const char *name, EVP_CIPHER **cipherp);
 int opt_cipher_silent(const char *name, EVP_CIPHER **cipherp);
+int opt_check_md(const char *name);
 int opt_md(const char *name, EVP_MD **mdp);
 int opt_md_silent(const char *name, EVP_MD **mdp);
 
 int opt_int(const char *arg, int *result);
+void opt_set_unknown_name(const char *name);
 int opt_int_arg(void);
 int opt_long(const char *arg, long *result);
 int opt_ulong(const char *arg, unsigned long *result);
@@ -383,7 +419,7 @@ int opt_format(const char *s, unsigned long flags, int *result);
 void print_format_error(int format, unsigned long flags);
 int opt_printf_stderr(const char *fmt, ...);
 int opt_string(const char *name, const char **options);
-int opt_pair(const char *arg, const OPT_PAIR * pairs, int *result);
+int opt_pair(const char *arg, const OPT_PAIR *pairs, int *result);
 
 int opt_verify(int i, X509_VERIFY_PARAM *vpm);
 int opt_rand(int i);
@@ -392,6 +428,7 @@ int opt_provider_option_given(void);
 
 char **opt_rest(void);
 int opt_num_rest(void);
+int opt_check_rest_arg(const char *expected);
 
 /* Returns non-zero if legacy paths are still available */
 int opt_legacy_okay(void);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2006-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -181,6 +181,7 @@ int ts_main(int argc, char **argv)
     if ((vpm = X509_VERIFY_PARAM_new()) == NULL)
         goto end;
 
+    opt_set_unknown_name("digest");
     prog = opt_init(argc, argv, ts_options);
     while ((o = opt_next()) != OPT_EOF) {
         switch (o) {
@@ -204,8 +205,10 @@ int ts_main(int argc, char **argv)
         case OPT_QUERY:
         case OPT_REPLY:
         case OPT_VERIFY:
-            if (mode != OPT_ERR)
+            if (mode != OPT_ERR) {
+                BIO_printf(bio_err, "%s: Must give only one of -query, -reply, or -verify\n", prog);
                 goto opthelp;
+            }
             mode = o;
             break;
         case OPT_DATA:
@@ -288,17 +291,18 @@ int ts_main(int argc, char **argv)
     }
 
     /* No extra arguments. */
-    argc = opt_num_rest();
-    if (argc != 0 || mode == OPT_ERR)
+    if (!opt_check_rest_arg(NULL))
         goto opthelp;
+    if (mode == OPT_ERR) {
+        BIO_printf(bio_err, "%s: Must give one of -query, -reply, or -verify\n", prog);
+        goto opthelp;
+    }
 
     if (!app_RAND_load())
         goto end;
 
-    if (digestname != NULL) {
-        if (!opt_md(digestname, &md))
-            goto opthelp;
-    }
+    if (!opt_md(digestname, &md))
+        goto opthelp;
     if (mode == OPT_REPLY && passin &&
         !app_passwd(passin, NULL, &password, NULL)) {
         BIO_printf(bio_err, "Error getting password.\n");
@@ -371,7 +375,7 @@ static CONF *load_config_file(const char *configfile)
         const char *p;
 
         BIO_printf(bio_err, "Using configuration from %s\n", configfile);
-        p = NCONF_get_string(conf, NULL, ENV_OID_FILE);
+        p = app_conf_try_string(conf, NULL, ENV_OID_FILE);
         if (p != NULL) {
             BIO *oid_bio = BIO_new_file(p, "r");
             if (!oid_bio)
@@ -380,8 +384,7 @@ static CONF *load_config_file(const char *configfile)
                 OBJ_create_objects(oid_bio);
                 BIO_free_all(oid_bio);
             }
-        } else
-            ERR_clear_error();
+        }
         if (!add_oid_section(conf))
             ERR_print_errors(bio_err);
     }

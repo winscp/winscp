@@ -69,8 +69,8 @@ const OPTIONS pkeyutl_options[] = {
     OPT_SECTION("Input"),
     {"in", OPT_IN, '<', "Input file - default stdin"},
     {"rawin", OPT_RAWIN, '-', "Indicate the input data is in raw form"},
-    {"pubin", OPT_PUBIN, '-', "Input is a public key"},
-    {"inkey", OPT_INKEY, 's', "Input private key file"},
+    {"inkey", OPT_INKEY, 's', "Input key, by default private key"},
+    {"pubin", OPT_PUBIN, '-', "Input key is a public key"},
     {"passin", OPT_PASSIN, 's', "Input file pass phrase source"},
     {"peerkey", OPT_PEERKEY, 's', "Peer key file used in key derivation"},
     {"peerform", OPT_PEERFORM, 'E', "Peer key format (DER/PEM/P12/ENGINE)"},
@@ -253,8 +253,7 @@ int pkeyutl_main(int argc, char **argv)
     }
 
     /* No extra arguments. */
-    argc = opt_num_rest();
-    if (argc != 0)
+    if (!opt_check_rest_arg(NULL))
         goto opthelp;
 
     if (!app_RAND_load())
@@ -729,7 +728,7 @@ static int do_raw_keyop(int pkey_op, EVP_MD_CTX *mctx,
             goto end;
         }
         mbuf = app_malloc(filesize, "oneshot sign/verify buffer");
-        switch(pkey_op) {
+        switch (pkey_op) {
         case EVP_PKEY_OP_VERIFY:
             buf_len = BIO_read(in, mbuf, filesize);
             if (buf_len != filesize) {
@@ -754,7 +753,7 @@ static int do_raw_keyop(int pkey_op, EVP_MD_CTX *mctx,
         goto end;
     }
 
-    switch(pkey_op) {
+    switch (pkey_op) {
     case EVP_PKEY_OP_VERIFY:
         for (;;) {
             buf_len = BIO_read(in, tbuf, TBUF_MAXSIZE);

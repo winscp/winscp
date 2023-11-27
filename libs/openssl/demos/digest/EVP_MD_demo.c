@@ -1,5 +1,5 @@
 /*-
- * Copyright 2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2021-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -24,7 +24,7 @@
  * more than once.
  */
 
-const char * hamlet_1 =
+const char *hamlet_1 =
     "To be, or not to be, that is the question,\n"
     "Whether tis nobler in the minde to suffer\n"
     "The ſlings and arrowes of outragious fortune,\n"
@@ -43,7 +43,7 @@ const char * hamlet_1 =
     "The oppressor's wrong, the proud man's Contumely,\n"
     "The pangs of dispised love, the Law's delay,\n"
 ;
-const char * hamlet_2 =
+const char *hamlet_2 =
     "The insolence of Office, and the spurns\n"
     "That patient merit of the'unworthy takes,\n"
     "When he himself might his Quietas make\n"
@@ -62,7 +62,7 @@ const char * hamlet_2 =
     "And lose the name of Action. Soft you now,\n"
     "The fair Ophelia? Nymph in thy Orisons\n"
     "Be all my sins remember'd.\n"
-; 
+;
 
 /* The known value of the SHA3-512 digest of the above soliloqy */
 const unsigned char known_answer[] = {
@@ -79,7 +79,7 @@ const unsigned char known_answer[] = {
 int demonstrate_digest(void)
 {
     OSSL_LIB_CTX *library_context;
-    int result = 0;
+    int ret = 0;
     const char *option_properties = NULL;
     EVP_MD *message_digest = NULL;
     EVP_MD_CTX *digest_context = NULL;
@@ -161,12 +161,11 @@ int demonstrate_digest(void)
         fprintf(stdout, "\nDigest does not match known answer\n");
     } else {
         fprintf(stdout, "Digest computed properly.\n");
-        result = 1;
+        ret = 1;
     }
 
-
 cleanup:
-    if (result != 1)
+    if (ret != 1)
         ERR_print_errors_fp(stderr);
     /* OpenSSL free functions will ignore NULL arguments */
     EVP_MD_CTX_free(digest_context);
@@ -174,10 +173,10 @@ cleanup:
     EVP_MD_free(message_digest);
 
     OSSL_LIB_CTX_free(library_context);
-    return result;
+    return ret;
 }
 
 int main(void)
 {
-    return demonstrate_digest() == 0;
+    return demonstrate_digest() ? EXIT_SUCCESS : EXIT_FAILURE;
 }

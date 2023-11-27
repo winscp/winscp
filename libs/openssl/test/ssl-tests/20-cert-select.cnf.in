@@ -929,7 +929,7 @@ my @tests_tls_1_3_non_fips = (
             "MaxProtocol" => "TLSv1.3"
         },
         test   => {
-            "ExpectedResult" => "ServerFail"
+            "ExpectedResult" => "Success"
         },
     },
 );

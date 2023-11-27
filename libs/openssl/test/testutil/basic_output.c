@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2017-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -22,6 +22,10 @@ BIO *bio_err = NULL;
 static BIO *tap_out = NULL;
 static BIO *tap_err = NULL;
 
+#if defined(OPENSSL_THREADS)
+static CRYPTO_RWLOCK *io_lock = NULL;
+#endif
+
 void test_open_streams(void)
 {
     tap_out = BIO_new_fp(stdout, BIO_NOCLOSE | BIO_FP_TEXT);
@@ -38,8 +42,15 @@ void test_open_streams(void)
     BIO_set_prefix(bio_out, "# ");
     BIO_set_prefix(bio_err, "# ");
 
+#if defined(OPENSSL_THREADS)
+    io_lock = CRYPTO_THREAD_lock_new();
+#endif
+
     OPENSSL_assert(bio_out != NULL);
     OPENSSL_assert(bio_err != NULL);
+#if defined(OPENSSL_THREADS)
+    OPENSSL_assert(io_lock != NULL);
+#endif
 }
 
 void test_adjust_streams_tap_level(int level)
@@ -59,44 +70,110 @@ void test_close_streams(void)
 
     BIO_free_all(tap_out);
     BIO_free_all(tap_err);
+
+#if defined(OPENSSL_THREADS)
+    CRYPTO_THREAD_lock_free(io_lock);
+#endif
+}
+
+static ossl_inline void test_io_lock(void)
+{
+#if defined(OPENSSL_THREADS)
+    OPENSSL_assert(CRYPTO_THREAD_write_lock(io_lock) > 0);
+#endif
+}
+
+static ossl_inline void test_io_unlock(void)
+{
+#if defined(OPENSSL_THREADS)
+    CRYPTO_THREAD_unlock(io_lock);
+#endif
 }
 
 int test_vprintf_stdout(const char *fmt, va_list ap)
 {
-    return BIO_vprintf(bio_out, fmt, ap);
+    int r;
+
+    test_io_lock();
+    r = BIO_vprintf(bio_out, fmt, ap);
+    test_io_unlock();
+
+    return r;
 }
 
 int test_vprintf_stderr(const char *fmt, va_list ap)
 {
-    return BIO_vprintf(bio_err, fmt, ap);
+    int r;
+
+    test_io_lock();
+    r = BIO_vprintf(bio_err, fmt, ap);
+    test_io_unlock();
+
+    return r;
 }
 
 int test_flush_stdout(void)
 {
-    return BIO_flush(bio_out);
+    int r;
+
+    test_io_lock();
+    r = BIO_flush(bio_out);
+    test_io_unlock();
+
+    return r;
 }
 
 int test_flush_stderr(void)
 {
-    return BIO_flush(bio_err);
+    int r;
+
+    test_io_lock();
+    r = BIO_flush(bio_err);
+    test_io_unlock();
+
+    return r;
 }
 
 int test_vprintf_tapout(const char *fmt, va_list ap)
 {
-    return BIO_vprintf(tap_out, fmt, ap);
+    int r;
+
+    test_io_lock();
+    r = BIO_vprintf(tap_out, fmt, ap);
+    test_io_unlock();
+
+    return r;
 }
 
 int test_vprintf_taperr(const char *fmt, va_list ap)
 {
-    return BIO_vprintf(tap_err, fmt, ap);
+    int r;
+
+    test_io_lock();
+    r = BIO_vprintf(tap_err, fmt, ap);
+    test_io_unlock();
+
+    return r;
 }
 
 int test_flush_tapout(void)
 {
-    return BIO_flush(tap_out);
+    int r;
+
+    test_io_lock();
+    r = BIO_flush(tap_out);
+    test_io_unlock();
+
+    return r;
 }
 
 int test_flush_taperr(void)
 {
-    return BIO_flush(tap_err);
+    int r;
+
+    test_io_lock();
+    r = BIO_flush(tap_err);
+    test_io_unlock();
+
+    return r;
 }

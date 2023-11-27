@@ -1,5 +1,5 @@
 /*-
- * Copyright 2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2022-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -102,7 +102,7 @@ cleanup:
 
 int main(int argc, char **argv)
 {
-    int rv = EXIT_FAILURE;
+    int ret = EXIT_FAILURE;
     OSSL_LIB_CTX *libctx = NULL;
     const char *propq = NULL;
     EVP_PKEY *dsaparamskey = NULL;
@@ -191,12 +191,12 @@ int main(int argc, char **argv)
     if (!dsa_print_key(EVP_PKEY_CTX_get0_pkey(ctx2), 0, libctx, propq))
         goto cleanup;
 
-    rv = EXIT_SUCCESS;
+    ret = EXIT_SUCCESS;
 cleanup:
     EVP_PKEY_free(dsaparamskey);
     EVP_PKEY_CTX_free(ctx2);
     EVP_PKEY_CTX_free(ctx1);
     EVP_PKEY_CTX_free(ctx);
     BIO_free(in);
-    return rv;
+    return ret;
 }

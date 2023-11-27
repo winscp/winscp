@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2018-2023 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2018-2019, Oracle and/or its affiliates.  All rights reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -400,6 +400,11 @@ int ossl_rsa_sp800_56b_check_keypair(const RSA *rsa, const BIGNUM *efixed,
     }
     /* (Step 3.b): check the modulus */
     if (nbits != BN_num_bits(rsa->n)) {
+        ERR_raise(ERR_LIB_RSA, RSA_R_INVALID_KEYPAIR);
+        return 0;
+    }
+    /* (Step 3.c): check that the modulus length is a positive even integer */
+    if (nbits <= 0 || (nbits & 0x1)) {
         ERR_raise(ERR_LIB_RSA, RSA_R_INVALID_KEYPAIR);
         return 0;
     }

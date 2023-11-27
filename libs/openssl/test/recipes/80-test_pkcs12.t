@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2016-2021 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2016-2023 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -54,7 +54,7 @@ if (eval { require Win32::API; 1; }) {
 }
 $ENV{OPENSSL_WIN32_UTF8}=1;
 
-plan tests => 13;
+plan tests => 24;
 
 # Test different PKCS#12 formats
 ok(run(test(["pkcs12_format_test"])), "test pkcs12 formats");
@@ -80,6 +80,8 @@ my $outfile2 = "out2.p12";
 my $outfile3 = "out3.p12";
 my $outfile4 = "out4.p12";
 my $outfile5 = "out5.p12";
+my $outfile6 = "out6.p12";
+my $outfile7 = "out7.p12";
 
 # Test the -chain option with -untrusted
 ok(run(app(["openssl", "pkcs12", "-export", "-chain",
@@ -143,9 +145,91 @@ my @pkcs12info = run(app(["openssl", "pkcs12", "-info", "-in", $outfile5,
                           "-passin", "pass:"]), capture => 1);
 
 # Test that with one input certificate, we get one output certificate
-ok(grep(/subject=CN = server.example/, @pkcs12info) == 1,
+ok(grep(/subject=CN\s*=\s*server.example/, @pkcs12info) == 1,
    "test one cert in output");
+
 # Test that the expected friendly name is present in the output
 ok(grep(/testname/, @pkcs12info) == 1, "test friendly name in output");
+
+# Test there's no Oracle Trusted Key Usage bag attribute
+ok(grep(/Trusted key usage (Oracle)/, @pkcs12info) == 0,
+    "test no oracle trusted key usage");
+
+# Test export of PEM file with both cert and key, without password.
+# -nomac necessary to avoid legacy provider requirement
+{
+    ok(run(app(["openssl", "pkcs12", "-export",
+            "-inkey", srctop_file(@path, "cert-key-cert.pem"),
+            "-in", srctop_file(@path, "cert-key-cert.pem"),
+            "-passout", "pass:",
+            "-nomac", "-out", $outfile6], stderr => "outerr6.txt")),
+    "test_export_pkcs12_cert_key_cert_no_pass");
+    open DATA, "outerr6.txt";
+    my @match = grep /:error:/, <DATA>;
+    close DATA;
+    ok(scalar @match > 0 ? 0 : 1, "test_export_pkcs12_outerr6_empty");
+}
+
+# Test with Oracle Trusted Key Usage specified in openssl.cnf
+{
+    ok(run(app(["openssl", "pkcs12", "-export", "-out", $outfile7,
+                "-jdktrust", "anyExtendedKeyUsage", "-in", srctop_file(@path, "ee-cert.pem"),
+                "-nokeys", "-passout", "pass:", "-certpbe", "NONE"])),
+       "test nokeys single cert");
+
+    my @pkcs12info = run(app(["openssl", "pkcs12", "-info", "-in", $outfile7,
+                          "-passin", "pass:"]), capture => 1);
+    ok(grep(/Trusted key usage \(Oracle\): Any Extended Key Usage \(2.5.29.37.0\)/, @pkcs12info) == 1,
+        "test oracle trusted key usage is set");
+
+    delete $ENV{OPENSSL_CONF}
+}
+
+# Tests for pkcs12_parse
+ok(run(test(["pkcs12_api_test",
+             "-in", $outfile1,
+             "-has-ca", 1,
+             ])), "Test pkcs12_parse()");
+
+SKIP: {
+    skip "Skipping PKCS#12 parse test because DES is disabled in this build", 1
+        if disabled("des");
+    ok(run(test(["pkcs12_api_test",
+                 "-in", $outfile2,
+                 "-pass", "v3-certs",
+                 "-has-ca", 1,
+                 ])), "Test pkcs12_parse()");
+}
+
+SKIP: {
+    skip "Skipping PKCS#12 parse test because the required algorithms are disabled", 1
+        if disabled("des") || disabled("rc2") || disabled("legacy");
+    ok(run(test(["pkcs12_api_test",
+                 "-in", $outfile3,
+                 "-pass", "v3-certs",
+                 "-has-ca", 1,
+                 ])), "Test pkcs12_parse()");
+}
+
+ok(run(test(["pkcs12_api_test",
+             "-in", $outfile4,
+             "-pass", "v3-certs",
+             "-has-ca", 1,
+             "-has-key", 1,
+             "-has-cert", 1,
+             ])), "Test pkcs12_parse()");
+
+ok(run(test(["pkcs12_api_test",
+             "-in", $outfile5,
+             "-has-ca", 1,
+             ])), "Test pkcs12_parse()");
+
+ok(run(test(["pkcs12_api_test",
+             "-in", $outfile6,
+             "-pass", "",
+             "-has-ca", 1,
+             "-has-key", 1,
+             "-has-cert", 1,
+             ])), "Test pkcs12_parse()");
 
 SetConsoleOutputCP($savedcp) if (defined($savedcp));

@@ -13,6 +13,7 @@
 #include <openssl/err.h>
 #include <openssl/decoder.h>
 #include "internal/sizes.h"
+#include "crypto/asn1.h"
 #include "crypto/evp.h"
 #include "cms_local.h"
 
@@ -281,8 +282,7 @@ static int ecdh_cms_encrypt(CMS_RecipientInfo *ri)
         if (enckeylen > INT_MAX || enckeylen == 0)
             goto err;
         ASN1_STRING_set0(pubkey, penc, (int)enckeylen);
-        pubkey->flags &= ~(ASN1_STRING_FLAG_BITS_LEFT | 0x07);
-        pubkey->flags |= ASN1_STRING_FLAG_BITS_LEFT;
+        ossl_asn1_string_set_bits_left(pubkey, 0);
 
         penc = NULL;
         (void)X509_ALGOR_set0(talg, OBJ_nid2obj(NID_X9_62_id_ecPublicKey),
@@ -369,9 +369,9 @@ static int ecdh_cms_encrypt(CMS_RecipientInfo *ri)
         goto err;
     ASN1_STRING_set0(wrap_str, penc, penclen);
     penc = NULL;
-    X509_ALGOR_set0(talg, OBJ_nid2obj(kdf_nid), V_ASN1_SEQUENCE, wrap_str);
-
-    rv = 1;
+    rv = X509_ALGOR_set0(talg, OBJ_nid2obj(kdf_nid), V_ASN1_SEQUENCE, wrap_str);
+    if (!rv)
+        ASN1_STRING_free(wrap_str);
 
  err:
     OPENSSL_free(penc);

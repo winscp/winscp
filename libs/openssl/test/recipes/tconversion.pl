@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2015-2021 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2015-2023 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -116,6 +116,7 @@ sub file_contains {
     open(DATA, $_) or return 0;
     $_= join('', <DATA>);
     close(DATA);
+    s/\s+/ /g; # take multiple whitespace (including newline) as single space
     return m/$pattern/ ? 1 : 0;
 }
 
@@ -127,8 +128,26 @@ sub cert_contains {
     my $out = "cert_contains.out";
     run(app(["openssl", "x509", "-noout", "-text", "-in", $cert, "-out", $out]));
     is(file_contains($out, $pattern), $expected, ($name ? "$name: " : "").
-       "$cert should ".($expected ? "" : "not ")."contain $pattern");
+       "$cert should ".($expected ? "" : "not ")."contain: \"$pattern\"");
     # not unlinking $out
+}
+
+sub has_version {
+    my $cert = shift @_;
+    my $expect = shift @_;
+    cert_contains($cert, "Version: $expect", 1);
+}
+
+sub has_SKID {
+    my $cert = shift @_;
+    my $expect = shift @_;
+    cert_contains($cert, "Subject Key Identifier", $expect);
+}
+
+sub has_AKID {
+    my $cert = shift @_;
+    my $expect = shift @_;
+    cert_contains($cert, "Authority Key Identifier", $expect);
 }
 
 sub uniq (@) {

@@ -75,7 +75,7 @@ L<FIPS 140-3 IG D.R|https://csrc.nist.gov/CSRC/media/Projects/cryptographic-modu
 A context for HASH DRBG can be obtained by calling:
 
  EVP_RAND *rand = EVP_RAND_fetch(NULL, "HASH-DRBG", NULL);
- EVP_RAND_CTX *rctx = EVP_RAND_CTX_new(rand);
+ EVP_RAND_CTX *rctx = EVP_RAND_CTX_new(rand, NULL);
 
 =head1 EXAMPLES
 

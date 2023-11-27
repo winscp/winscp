@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -258,7 +258,8 @@ static const char *get_sigtype(int nid)
         return "gost2012_512";
 
     default:
-        return NULL;
+        /* Try to output provider-registered sig alg name */
+        return OBJ_nid2sn(nid);
     }
 }
 
@@ -433,12 +434,15 @@ long bio_dump_callback(BIO *bio, int cmd, const char *argp, size_t len,
                        int argi, long argl, int ret, size_t *processed)
 {
     BIO *out;
+    BIO_MMSG_CB_ARGS *mmsgargs;
+    size_t i;
 
     out = (BIO *)BIO_get_callback_arg(bio);
     if (out == NULL)
         return ret;
 
-    if (cmd == (BIO_CB_READ | BIO_CB_RETURN)) {
+    switch (cmd) {
+    case (BIO_CB_READ | BIO_CB_RETURN):
         if (ret > 0 && processed != NULL) {
             BIO_printf(out, "read from %p [%p] (%zu bytes => %zu (0x%zX))\n",
                        (void *)bio, (void *)argp, len, *processed, *processed);
@@ -447,7 +451,9 @@ long bio_dump_callback(BIO *bio, int cmd, const char *argp, size_t len,
             BIO_printf(out, "read from %p [%p] (%zu bytes => %d)\n",
                        (void *)bio, (void *)argp, len, ret);
         }
-    } else if (cmd == (BIO_CB_WRITE | BIO_CB_RETURN)) {
+        break;
+
+    case (BIO_CB_WRITE | BIO_CB_RETURN):
         if (ret > 0 && processed != NULL) {
             BIO_printf(out, "write to %p [%p] (%zu bytes => %zu (0x%zX))\n",
                        (void *)bio, (void *)argp, len, *processed, *processed);
@@ -456,6 +462,51 @@ long bio_dump_callback(BIO *bio, int cmd, const char *argp, size_t len,
             BIO_printf(out, "write to %p [%p] (%zu bytes => %d)\n",
                        (void *)bio, (void *)argp, len, ret);
         }
+        break;
+
+    case (BIO_CB_RECVMMSG | BIO_CB_RETURN):
+        mmsgargs = (BIO_MMSG_CB_ARGS *)argp;
+        if (ret > 0) {
+            for (i = 0; i < *(mmsgargs->msgs_processed); i++) {
+                BIO_MSG *msg = (BIO_MSG *)((char *)mmsgargs->msg
+                                           + (i * mmsgargs->stride));
+
+                BIO_printf(out, "read from %p [%p] (%zu bytes => %zu (0x%zX))\n",
+                           (void *)bio, (void *)msg->data, msg->data_len,
+                           msg->data_len, msg->data_len);
+                BIO_dump(out, msg->data, msg->data_len);
+            }
+        } else if (mmsgargs->num_msg > 0) {
+            BIO_MSG *msg = mmsgargs->msg;
+
+            BIO_printf(out, "read from %p [%p] (%zu bytes => %d)\n",
+                       (void *)bio, (void *)msg->data, msg->data_len, ret);
+        }
+        break;
+
+    case (BIO_CB_SENDMMSG | BIO_CB_RETURN):
+        mmsgargs = (BIO_MMSG_CB_ARGS *)argp;
+        if (ret > 0) {
+            for (i = 0; i < *(mmsgargs->msgs_processed); i++) {
+                BIO_MSG *msg = (BIO_MSG *)((char *)mmsgargs->msg
+                                           + (i * mmsgargs->stride));
+
+                BIO_printf(out, "write to %p [%p] (%zu bytes => %zu (0x%zX))\n",
+                           (void *)bio, (void *)msg->data, msg->data_len,
+                           msg->data_len, msg->data_len);
+                BIO_dump(out, msg->data, msg->data_len);
+            }
+        } else if (mmsgargs->num_msg > 0) {
+            BIO_MSG *msg = mmsgargs->msg;
+
+            BIO_printf(out, "write to %p [%p] (%zu bytes => %d)\n",
+                       (void *)bio, (void *)msg->data, msg->data_len, ret);
+        }
+        break;
+
+    default:
+        /* do nothing */
+        break;
     }
     return ret;
 }
@@ -559,6 +610,7 @@ static STRINT_PAIR handshakes[] = {
     {", CertificateStatus", SSL3_MT_CERTIFICATE_STATUS},
     {", SupplementalData", SSL3_MT_SUPPLEMENTAL_DATA},
     {", KeyUpdate", SSL3_MT_KEY_UPDATE},
+    {", CompressedCertificate", SSL3_MT_COMPRESSED_CERTIFICATE},
 #ifndef OPENSSL_NO_NEXTPROTONEG
     {", NextProto", SSL3_MT_NEXT_PROTO},
 #endif
@@ -671,6 +723,8 @@ static STRINT_PAIR tlsext_types[] = {
     {"session ticket", TLSEXT_TYPE_session_ticket},
     {"renegotiation info", TLSEXT_TYPE_renegotiate},
     {"signed certificate timestamps", TLSEXT_TYPE_signed_certificate_timestamp},
+    {"client cert type", TLSEXT_TYPE_client_cert_type},
+    {"server cert type", TLSEXT_TYPE_server_cert_type},
     {"TLS padding", TLSEXT_TYPE_padding},
 #ifdef TLSEXT_TYPE_next_proto_neg
     {"next protocol", TLSEXT_TYPE_next_proto_neg},
@@ -685,6 +739,7 @@ static STRINT_PAIR tlsext_types[] = {
 #ifdef TLSEXT_TYPE_extended_master_secret
     {"extended master secret", TLSEXT_TYPE_extended_master_secret},
 #endif
+    {"compress certificate", TLSEXT_TYPE_compress_certificate},
     {"key share", TLSEXT_TYPE_key_share},
     {"supported versions", TLSEXT_TYPE_supported_versions},
     {"psk", TLSEXT_TYPE_psk},
@@ -998,7 +1053,7 @@ void ssl_excert_free(SSL_EXCERT *exc)
     while (exc) {
         X509_free(exc->cert);
         EVP_PKEY_free(exc->key);
-        sk_X509_pop_free(exc->chain, X509_free);
+        OSSL_STACK_OF_X509_free(exc->chain);
         curr = exc;
         exc = exc->next;
         OPENSSL_free(curr);
@@ -1168,7 +1223,7 @@ static char *hexencode(const unsigned char *data, size_t len)
 void print_verify_detail(SSL *s, BIO *bio)
 {
     int mdpth;
-    EVP_PKEY *mspki;
+    EVP_PKEY *mspki = NULL;
     long verify_err = SSL_get_verify_result(s);
 
     if (verify_err == X509_V_OK) {
@@ -1203,12 +1258,15 @@ void print_verify_detail(SSL *s, BIO *bio)
             hexdata = hexencode(data + dlen - TLSA_TAIL_SIZE, TLSA_TAIL_SIZE);
         else
             hexdata = hexencode(data, dlen);
-        BIO_printf(bio, "DANE TLSA %d %d %d %s%s %s at depth %d\n",
+        BIO_printf(bio, "DANE TLSA %d %d %d %s%s ",
                    usage, selector, mtype,
-                   (dlen > TLSA_TAIL_SIZE) ? "..." : "", hexdata,
-                   (mspki != NULL) ? "signed the certificate" :
-                   mdpth ? "matched TA certificate" : "matched EE certificate",
-                   mdpth);
+                   (dlen > TLSA_TAIL_SIZE) ? "..." : "", hexdata);
+        if (SSL_get0_peer_rpk(s) == NULL)
+            BIO_printf(bio, "%s certificate at depth %d\n",
+                       (mspki != NULL) ? "signed the peer" :
+                       mdpth ? "matched the TA" : "matched the EE", mdpth);
+        else
+            BIO_printf(bio, "matched the peer raw public key\n");
         OPENSSL_free(hexdata);
     }
 }
@@ -1216,17 +1274,16 @@ void print_verify_detail(SSL *s, BIO *bio)
 void print_ssl_summary(SSL *s)
 {
     const SSL_CIPHER *c;
-    X509 *peer;
+    X509 *peer = SSL_get0_peer_certificate(s);
+    EVP_PKEY *peer_rpk = SSL_get0_peer_rpk(s);
+    int nid;
 
     BIO_printf(bio_err, "Protocol version: %s\n", SSL_get_version(s));
     print_raw_cipherlist(s);
     c = SSL_get_current_cipher(s);
     BIO_printf(bio_err, "Ciphersuite: %s\n", SSL_CIPHER_get_name(c));
     do_print_sigalgs(bio_err, s, 0);
-    peer = SSL_get0_peer_certificate(s);
     if (peer != NULL) {
-        int nid;
-
         BIO_puts(bio_err, "Peer certificate: ");
         X509_NAME_print_ex(bio_err, X509_get_subject_name(peer),
                            0, get_nameopt());
@@ -1236,8 +1293,13 @@ void print_ssl_summary(SSL *s)
         if (SSL_get_peer_signature_type_nid(s, &nid))
             BIO_printf(bio_err, "Signature type: %s\n", get_sigtype(nid));
         print_verify_detail(s, bio_err);
+    } else if (peer_rpk != NULL) {
+        BIO_printf(bio_err, "Peer used raw public key\n");
+        if (SSL_get_peer_signature_type_nid(s, &nid))
+            BIO_printf(bio_err, "Signature type: %s\n", get_sigtype(nid));
+        print_verify_detail(s, bio_err);
     } else {
-        BIO_puts(bio_err, "No peer certificate\n");
+        BIO_puts(bio_err, "No peer certificate or raw public key\n");
     }
 #ifndef OPENSSL_NO_EC
     ssl_print_point_formats(bio_err, s);
@@ -1564,7 +1626,7 @@ void print_ca_names(BIO *bio, SSL *s)
         return;
     }
 
-    BIO_printf(bio, "---\nAcceptable %s certificate CA names\n",cs);
+    BIO_printf(bio, "---\nAcceptable %s certificate CA names\n", cs);
     for (i = 0; i < sk_X509_NAME_num(sk); i++) {
         X509_NAME_print_ex(bio, sk_X509_NAME_value(sk, i), 0, get_nameopt());
         BIO_write(bio, "\n", 1);
@@ -1579,4 +1641,16 @@ void ssl_print_secure_renegotiation_notes(BIO *bio, SSL *s)
     } else {
         BIO_printf(bio, "This TLS version forbids renegotiation.\n");
     }
+}
+
+int progress_cb(EVP_PKEY_CTX *ctx)
+{
+    BIO *b = EVP_PKEY_CTX_get_app_data(ctx);
+    int p = EVP_PKEY_CTX_get_keygen_info(ctx, 0);
+    static const char symbols[] = ".+*\n";
+    char c = (p >= 0 && (size_t)p <= sizeof(symbols) - 1) ? symbols[p] : '?';
+
+    BIO_write(b, &c, 1);
+    (void)BIO_flush(b);
+    return 1;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2020-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -1381,6 +1381,8 @@ static int drbg_test(int id)
     res = 1;
 err:
     EVP_RAND_CTX_free(ctx);
+    /* Coverity is confused by the upref/free in EVP_RAND_CTX_new() subdue it */
+    /* coverity[pass_freed_arg] */
     EVP_RAND_CTX_free(parent);
     EVP_RAND_free(rand);
     return res;

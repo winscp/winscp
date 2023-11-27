@@ -1,5 +1,5 @@
 /*
- * Copyright 2005-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2005-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -98,10 +98,8 @@ int RSA_verify_PKCS1_PSS_mgf1(RSA *rsa, const unsigned char *mHash,
     maskedDBLen = emLen - hLen - 1;
     H = EM + maskedDBLen;
     DB = OPENSSL_malloc(maskedDBLen);
-    if (DB == NULL) {
-        ERR_raise(ERR_LIB_RSA, ERR_R_MALLOC_FAILURE);
+    if (DB == NULL)
         goto err;
-    }
     if (PKCS1_MGF1(DB, maskedDBLen, H, hLen, mgf1Hash) < 0)
         goto err;
     for (i = 0; i < maskedDBLen; i++)
@@ -219,10 +217,8 @@ int RSA_padding_add_PKCS1_PSS_mgf1(RSA *rsa, unsigned char *EM,
     }
     if (sLen > 0) {
         salt = OPENSSL_malloc(sLen);
-        if (salt == NULL) {
-            ERR_raise(ERR_LIB_RSA, ERR_R_MALLOC_FAILURE);
+        if (salt == NULL)
             goto err;
-        }
         if (RAND_bytes_ex(rsa->libctx, salt, sLen, 0) <= 0)
             goto err;
     }
@@ -335,15 +331,6 @@ int ossl_rsa_pss_params_30_set_hashalg(RSA_PSS_PARAMS_30 *rsa_pss_params,
     if (rsa_pss_params == NULL)
         return 0;
     rsa_pss_params->hash_algorithm_nid = hashalg_nid;
-    return 1;
-}
-
-int ossl_rsa_pss_params_30_set_maskgenalg(RSA_PSS_PARAMS_30 *rsa_pss_params,
-                                          int maskgenalg_nid)
-{
-    if (rsa_pss_params == NULL)
-        return 0;
-    rsa_pss_params->mask_gen.algorithm_nid = maskgenalg_nid;
     return 1;
 }
 

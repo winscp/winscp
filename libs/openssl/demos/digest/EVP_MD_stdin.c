@@ -1,5 +1,5 @@
 /*-
- * Copyright 2019-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -34,8 +34,8 @@
 int demonstrate_digest(BIO *input)
 {
     OSSL_LIB_CTX *library_context = NULL;
-    int result = 0;
-    const char * option_properties = NULL;
+    int ret = 0;
+    const char *option_properties = NULL;
     EVP_MD *message_digest = NULL;
     EVP_MD_CTX *digest_context = NULL;
     unsigned int digest_length;
@@ -103,14 +103,14 @@ int demonstrate_digest(BIO *input)
         fprintf(stderr, "EVP_DigestFinal() failed.\n");
         goto cleanup;
     }
-    result = 1;
+    ret = 1;
     for (ii=0; ii<digest_length; ii++) {
         fprintf(stdout, "%02x", digest_value[ii]);
     }
     fprintf(stdout, "\n");
 
 cleanup:
-    if (result != 1)
+    if (ret != 1)
         ERR_print_errors_fp(stderr);
     /* OpenSSL free functions will ignore NULL arguments */
     EVP_MD_CTX_free(digest_context);
@@ -118,17 +118,19 @@ cleanup:
     EVP_MD_free(message_digest);
 
     OSSL_LIB_CTX_free(library_context);
-    return result;
+    return ret;
 }
 
 int main(void)
 {
-    int result = 1;
-    BIO *input = BIO_new_fd( fileno(stdin), 1 );
+    int ret = EXIT_FAILURE;
+    BIO *input = BIO_new_fd(fileno(stdin), 1);
 
     if (input != NULL) {
-        result = demonstrate_digest(input);
+        ret = (demonstrate_digest(input) ? EXIT_SUCCESS : EXIT_FAILURE);
         BIO_free(input);
     }
-    return result;
+    if (ret != EXIT_SUCCESS)
+        ERR_print_errors_fp(stderr);
+    return ret;
 }

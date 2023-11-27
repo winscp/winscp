@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -24,6 +24,9 @@
 #include <openssl/rsa.h>
 #include <openssl/aes.h>
 #include <openssl/err.h>
+#include <openssl/rand.h>
+#include <openssl/pem.h>
+#include <openssl/evp.h>
 #include "internal/tsan_assist.h"
 #include "internal/nelem.h"
 #include "testutil.h"
@@ -44,7 +47,13 @@ static const char *default_provider[] = { "default", NULL };
 static const char *fips_provider[] = { "fips", NULL };
 static const char *fips_and_default_providers[] = { "default", "fips", NULL };
 
-/* Grab a globally unique integer value */
+static CRYPTO_RWLOCK *global_lock;
+
+#ifdef TSAN_REQUIRES_LOCKING
+static CRYPTO_RWLOCK *tsan_lock;
+#endif
+
+/* Grab a globally unique integer value, return 0 on failure */
 static int get_new_uid(void)
 {
     /*
@@ -52,8 +61,19 @@ static int get_new_uid(void)
      * we generate a new OID.
      */
     static TSAN_QUALIFIER int current_uid = 1 << (sizeof(int) * 8 - 2);
+#ifdef TSAN_REQUIRES_LOCKING
+    int r;
 
+    if (!TEST_true(CRYPTO_THREAD_write_lock(tsan_lock)))
+        return 0;
+    r = ++current_uid;
+    if (!TEST_true(CRYPTO_THREAD_unlock(tsan_lock)))
+        return 0;
+    return r;
+
+#else
     return tsan_counter(&current_uid);
+#endif
 }
 
 static int test_lock(void)
@@ -251,6 +271,19 @@ static void multi_intialise(void)
     memset(multi_provider, 0, sizeof(multi_provider));
 }
 
+static void multi_set_success(int ok)
+{
+    if (CRYPTO_THREAD_write_lock(global_lock) == 0) {
+        /* not synchronized, but better than not reporting failure */
+        multi_success = ok;
+        return;
+    }
+
+    multi_success = ok;
+
+    CRYPTO_THREAD_unlock(global_lock);
+}
+
 static void thead_teardown_libctx(void)
 {
     OSSL_PROVIDER **p;
@@ -392,7 +425,7 @@ static void thread_general_worker(void)
     EVP_CIPHER_free(ciph);
     EVP_PKEY_free(pkey);
     if (!testresult)
-        multi_success = 0;
+        multi_set_success(0);
 }
 
 static void thread_multi_simple_fetch(void)
@@ -402,7 +435,7 @@ static void thread_multi_simple_fetch(void)
     if (md != NULL)
         EVP_MD_free(md);
     else
-        multi_success = 0;
+        multi_set_success(0);
 }
 
 static EVP_PKEY *shared_evp_pkey = NULL;
@@ -451,7 +484,7 @@ static void thread_shared_evp_pkey(void)
  err:
     EVP_PKEY_CTX_free(ctx);
     if (!success)
-        multi_success = 0;
+        multi_set_success(0);
 }
 
 static void thread_provider_load_unload(void)
@@ -460,7 +493,7 @@ static void thread_provider_load_unload(void)
 
     if (!TEST_ptr(deflt)
             || !TEST_true(OSSL_PROVIDER_available(multi_libctx, "default")))
-        multi_success = 0;
+        multi_set_success(0);
 
     OSSL_PROVIDER_unload(deflt);
 }
@@ -517,7 +550,7 @@ static void thread_downgrade_shared_evp_pkey(void)
      * downgrading
      */
     if (EVP_PKEY_get0_RSA(shared_evp_pkey) == NULL)
-        multi_success = 0;
+        multi_set_success(0);
 }
 
 static int test_multi_downgrade_shared_pkey(void)
@@ -567,14 +600,13 @@ static char *multi_load_provider = "legacy";
  * run with a thread sanitizer, should crash if the core provider code
  * doesn't synchronize well enough.
  */
-#define MULTI_LOAD_THREADS 10
 static void test_multi_load_worker(void)
 {
     OSSL_PROVIDER *prov;
 
-    if (!TEST_ptr(prov = OSSL_PROVIDER_load(NULL, multi_load_provider))
+    if (!TEST_ptr(prov = OSSL_PROVIDER_load(multi_libctx, multi_load_provider))
             || !TEST_true(OSSL_PROVIDER_unload(prov)))
-        multi_success = 0;
+        multi_set_success(0);
 }
 
 static int test_multi_default(void)
@@ -614,8 +646,8 @@ static int test_multi_load(void)
     }
     OSSL_PROVIDER_unload(prov);
 
-    return thread_run_test(NULL, MULTI_LOAD_THREADS, &test_multi_load_worker,
-                           0, NULL) && res;
+    return thread_run_test(NULL, MAXIMUM_THREADS, &test_multi_load_worker, 0,
+                          NULL) && res;
 }
 
 static void test_obj_create_one(void)
@@ -627,9 +659,10 @@ static void test_obj_create_one(void)
     BIO_snprintf(oid, sizeof(oid), "1.3.6.1.4.1.16604.%s", tids);
     BIO_snprintf(sn, sizeof(sn), "short-name-%s", tids);
     BIO_snprintf(ln, sizeof(ln), "long-name-%s", tids);
-    if (!TEST_true(id = OBJ_create(oid, sn, ln))
+    if (!TEST_int_ne(id, 0)
+            || !TEST_true(id = OBJ_create(oid, sn, ln))
             || !TEST_true(OBJ_add_sigid(id, NID_sha3_256, NID_rsa)))
-        multi_success = 0;
+        multi_set_success(0);
 }
 
 static int test_obj_add(void)
@@ -642,7 +675,7 @@ static int test_obj_add(void)
 static void test_lib_ctx_load_config_worker(void)
 {
     if (!TEST_int_eq(OSSL_LIB_CTX_load_config(multi_libctx, config_file), 1))
-        multi_success = 0;
+        multi_set_success(0);
 }
 
 static int test_lib_ctx_load_config(void)
@@ -650,6 +683,113 @@ static int test_lib_ctx_load_config(void)
     return thread_run_test(&test_lib_ctx_load_config_worker,
                            MAXIMUM_THREADS, &test_lib_ctx_load_config_worker,
                            1, default_provider);
+}
+
+#if !defined(OPENSSL_NO_DGRAM) && !defined(OPENSSL_NO_SOCK)
+static BIO *multi_bio1, *multi_bio2;
+
+static void test_bio_dgram_pair_worker(void)
+{
+    ossl_unused int r;
+    int ok = 0;
+    uint8_t ch = 0;
+    uint8_t scratch[64];
+    BIO_MSG msg = {0};
+    size_t num_processed = 0;
+
+    if (!TEST_int_eq(RAND_bytes_ex(multi_libctx, &ch, 1, 64), 1))
+        goto err;
+
+    msg.data     = scratch;
+    msg.data_len = sizeof(scratch);
+
+    /*
+     * We do not test for failure here as recvmmsg may fail if no sendmmsg
+     * has been called yet. The purpose of this code is to exercise tsan.
+     */
+    if (ch & 2)
+        r = BIO_sendmmsg(ch & 1 ? multi_bio2 : multi_bio1, &msg,
+                         sizeof(BIO_MSG), 1, 0, &num_processed);
+    else
+        r = BIO_recvmmsg(ch & 1 ? multi_bio2 : multi_bio1, &msg,
+                         sizeof(BIO_MSG), 1, 0, &num_processed);
+
+    ok = 1;
+err:
+    if (ok == 0)
+        multi_set_success(0);
+}
+
+static int test_bio_dgram_pair(void)
+{
+    int r;
+    BIO *bio1 = NULL, *bio2 = NULL;
+
+    r = BIO_new_bio_dgram_pair(&bio1, 0, &bio2, 0);
+    if (!TEST_int_eq(r, 1))
+        goto err;
+
+    multi_bio1 = bio1;
+    multi_bio2 = bio2;
+
+    r  = thread_run_test(&test_bio_dgram_pair_worker,
+                         MAXIMUM_THREADS, &test_bio_dgram_pair_worker,
+                         1, default_provider);
+
+err:
+    BIO_free(bio1);
+    BIO_free(bio2);
+    return r;
+}
+#endif
+
+static const char *pemdataraw[] = {
+    "-----BEGIN RSA PRIVATE KEY-----\n",
+    "MIIBOgIBAAJBAMFcGsaxxdgiuuGmCkVImy4h99CqT7jwY3pexPGcnUFtR2Fh36Bp\n",
+    "oncwtkZ4cAgtvd4Qs8PkxUdp6p/DlUmObdkCAwEAAQJAUR44xX6zB3eaeyvTRzms\n",
+    "kHADrPCmPWnr8dxsNwiDGHzrMKLN+i/HAam+97HxIKVWNDH2ba9Mf1SA8xu9dcHZ\n",
+    "AQIhAOHPCLxbtQFVxlnhSyxYeb7O323c3QulPNn3bhOipElpAiEA2zZpBE8ZXVnL\n",
+    "74QjG4zINlDfH+EOEtjJJ3RtaYDugvECIBtsQDxXytChsRgDQ1TcXdStXPcDppie\n",
+    "dZhm8yhRTTBZAiAZjE/U9rsIDC0ebxIAZfn3iplWh84yGB3pgUI3J5WkoQIhAInE\n",
+    "HTUY5WRj5riZtkyGnbm3DvF+1eMtO2lYV+OuLcfE\n",
+    "-----END RSA PRIVATE KEY-----\n",
+    NULL
+};
+
+static void test_pem_read_one(void)
+{
+    EVP_PKEY *key = NULL;
+    BIO *pem = NULL;
+    char *pemdata;
+    size_t len;
+
+    pemdata = glue_strings(pemdataraw, &len);
+    if (pemdata == NULL) {
+        multi_set_success(0);
+        goto err;
+    }
+
+    pem = BIO_new_mem_buf(pemdata, len);
+    if (pem == NULL) {
+        multi_set_success(0);
+        goto err;
+    }
+
+    key = PEM_read_bio_PrivateKey(pem, NULL, NULL, NULL);
+    if (key == NULL)
+        multi_set_success(0);
+
+ err:
+    EVP_PKEY_free(key);
+    BIO_free(pem);
+    OPENSSL_free(pemdata);
+}
+
+/* Test reading PEM files in multiple threads */
+static int test_pem_read(void)
+{
+    return thread_run_test(&test_pem_read_one, MAXIMUM_THREADS,
+                           &test_pem_read_one, 1, default_provider);
 }
 
 typedef enum OPTION_choice {
@@ -698,6 +838,14 @@ int setup_tests(void)
     if (!TEST_ptr(privkey))
         return 0;
 
+    if (!TEST_ptr(global_lock = CRYPTO_THREAD_lock_new()))
+        return 0;
+
+#ifdef TSAN_REQUIRES_LOCKING
+    if (!TEST_ptr(tsan_lock = CRYPTO_THREAD_lock_new()))
+        return 0;
+#endif
+
     /* Keep first to validate auto creation of default library context */
     ADD_TEST(test_multi_default);
 
@@ -716,10 +864,18 @@ int setup_tests(void)
     ADD_TEST(test_multi_load_unload_provider);
     ADD_TEST(test_obj_add);
     ADD_TEST(test_lib_ctx_load_config);
+#if !defined(OPENSSL_NO_DGRAM) && !defined(OPENSSL_NO_SOCK)
+    ADD_TEST(test_bio_dgram_pair);
+#endif
+    ADD_TEST(test_pem_read);
     return 1;
 }
 
 void cleanup_tests(void)
 {
     OPENSSL_free(privkey);
+#ifdef TSAN_REQUIRES_LOCKING
+    CRYPTO_THREAD_lock_free(tsan_lock);
+#endif
+    CRYPTO_THREAD_lock_free(global_lock);
 }

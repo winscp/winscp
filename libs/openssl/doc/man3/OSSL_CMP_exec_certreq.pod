@@ -13,7 +13,9 @@ OSSL_CMP_P10CR,
 OSSL_CMP_KUR,
 OSSL_CMP_try_certreq,
 OSSL_CMP_exec_RR_ses,
-OSSL_CMP_exec_GENM_ses
+OSSL_CMP_exec_GENM_ses,
+OSSL_CMP_get1_caCerts,
+OSSL_CMP_get1_rootCaKeyUpdate
 - functions implementing CMP client transactions
 
 =head1 SYNOPSIS
@@ -33,7 +35,12 @@ OSSL_CMP_exec_GENM_ses
  int OSSL_CMP_try_certreq(OSSL_CMP_CTX *ctx, int req_type,
                           const OSSL_CRMF_MSG *crm, int *checkAfter);
  int OSSL_CMP_exec_RR_ses(OSSL_CMP_CTX *ctx);
+
  STACK_OF(OSSL_CMP_ITAV) *OSSL_CMP_exec_GENM_ses(OSSL_CMP_CTX *ctx);
+ int OSSL_CMP_get1_caCerts(OSSL_CMP_CTX *ctx, STACK_OF(X509) **out);
+ int OSSL_CMP_get1_rootCaKeyUpdate(OSSL_CMP_CTX *ctx,
+                                   const X509 *oldWithOld, X509 **newWithNew,
+                                   X509 **newWithOld, X509 **oldWithNew);
 
 =head1 DESCRIPTION
 
@@ -99,7 +106,12 @@ a negative value as the I<req_type> argument then OSSL_CMP_try_certreq()
 aborts the CMP transaction by sending an error message to the server.
 
 OSSL_CMP_exec_RR_ses() requests the revocation of the certificate
-specified in the I<ctx> using L<OSSL_CMP_CTX_set1_oldCert(3)>.
+specified in the I<ctx> using the issuer DN and serial number set by
+OSSL_CMP_CTX_set1_issuer(3) and OSSL_CMP_CTX_set1_serialNumber(3), respectively,
+otherwise the issuer DN and serial number
+of the certificate set by L<OSSL_CMP_CTX_set1_oldCert(3)>,
+otherwise the subject DN and public key
+of the certificate signing request set by L<OSSL_CMP_CTX_set1_p10CSR(3)>.
 RFC 4210 is vague in which PKIStatus should be returned by the server.
 We take "accepted" and "grantedWithMods" as clear success and handle
 "revocationWarning" and "revocationNotification" just as warnings because CAs
@@ -107,13 +119,39 @@ typically return them as an indication that the certificate was already revoked.
 "rejection" is a clear error. The values "waiting" and "keyUpdateWarning"
 make no sense for revocation and thus are treated as an error as well.
 
-OSSL_CMP_exec_GENM_ses() sends a general message containing the sequence of
+OSSL_CMP_exec_GENM_ses() sends a genm general message containing the sequence of
 infoType and infoValue pairs (InfoTypeAndValue; short: B<ITAV>)
 optionally provided in the I<ctx> using L<OSSL_CMP_CTX_push0_genm_ITAV(3)>.
 On success it records in I<ctx> the status B<OSSL_CMP_PKISTATUS_accepted>
-and returns the list of B<ITAV>s received in the GENP message.
-This can be used, for instance, to poll for CRLs or CA Key Updates.
+and returns the list of B<ITAV>s received in a genp response message.
+This can be used, for instance,
+with infoType C<signKeyPairTypes> to obtain the set of signature
+algorithm identifiers that the CA will certify for subject public keys.
 See RFC 4210 section 5.3.19 and appendix E.5 for details.
+Functions implementing more specific genm/genp exchanges are described next.
+
+OSSL_CMP_get1_caCerts() uses a genm/genp message exchange with infoType caCerts
+to obtain a list of CA certificates from the CMP server referenced by I<ctx>.
+On success it assigns to I<*out> the list of certificates received,
+which must be freed by the caller.
+NULL output means that no CA certificates were provided by the server.
+
+OSSL_CMP_get1_rootCaKeyUpdate() uses a genm request message
+with infoType rootCaCert to obtain from the CMP server referenced by I<ctx>
+in a genp response message with infoType rootCaKeyUpdate any update of the
+given root CA certificate I<oldWithOld> and verifies it as far as possible.
+See RFC 4210 section 4.4 for details.
+On success it assigns to I<*newWithNew> the root certificate received.
+When the I<newWithOld> and I<oldWithNew> output parameters are not NULL,
+it assigns to them the corresponding transition certificates.
+NULL means that the respective certificate was not provided by the server.
+All certificates obtained this way must be freed by the caller.
+
+B<WARNING:>
+The I<newWithNew> certificate is meant to be a certificate that will be trusted.
+The trust placed in it cannot be stronger than the trust placed in
+the I<oldwithold> certificate if present, otherwise it cannot be stronger than
+the weakest trust in any of the certificates in the trust store of I<ctx>.
 
 =head1 NOTES
 
@@ -123,12 +161,16 @@ The CMP client implementation is limited to one request per CMP message
 (and consequently to at most one response component per CMP message).
 
 When a client obtains from a CMP server CA certificates that it is going to
-trust, for instance via the caPubs field of a certificate response,
+trust, for instance via the caPubs field of a certificate response or using
+functions like OSSL_CMP_get1_caCerts() and OSSL_CMP_get1_rootCaKeyUpdate(),
 authentication of the CMP server is particularly critical.
 So special care must be taken setting up server authentication in I<ctx>
 using functions such as
-L<OSSL_CMP_CTX_set0_trustedStore(3)> (for certificate-based authentication) or
+L<OSSL_CMP_CTX_set0_trusted(3)> (for certificate-based authentication) or
 L<OSSL_CMP_CTX_set1_secretValue(3)> (for MAC-based protection).
+If authentication is certificate-based, L<OSSL_CMP_CTX_get0_validatedSrvCert(3)>
+should be used to obtain the server validated certificate
+and perform an authorization check based on it.
 
 =head1 RETURN VALUES
 
@@ -146,7 +188,9 @@ In the latter case L<OSSL_CMP_CTX_get0_newCert(3)> yields NULL
 and the output parameter I<checkAfter> has been used to
 assign the received value unless I<checkAfter> is NULL.
 
-OSSL_CMP_exec_RR_ses() returns 1 on success, 0 on error.
+OSSL_CMP_exec_RR_ses(), OSSL_CMP_get1_caCerts(),
+and OSSL_CMP_get1_rootCaKeyUpdate()
+return 1 on success, 0 on error.
 
 OSSL_CMP_exec_GENM_ses() returns NULL on error,
 otherwise a pointer to the sequence of B<ITAV> received, which may be empty.
@@ -168,6 +212,9 @@ L<OSSL_CMP_MSG_http_perform(3)>
 =head1 HISTORY
 
 The OpenSSL CMP support was added in OpenSSL 3.0.
+
+OSSL_CMP_get1_caCerts() and OSSL_CMP_get1_rootCaKeyUpdate()
+were added in OpenSSL 3.2.
 
 =head1 COPYRIGHT
 

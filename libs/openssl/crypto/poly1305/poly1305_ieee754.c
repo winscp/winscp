@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -10,7 +10,7 @@
 /*
  * This module is meant to be used as template for non-x87 floating-
  * point assembly modules. The template itself is x86_64-specific
- * though, as it was debugged on x86_64. So that implementor would
+ * though, as it was debugged on x86_64. So that implementer would
  * have to recognize platform-specific parts, UxTOy and inline asm,
  * and act accordingly.
  *

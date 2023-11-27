@@ -65,10 +65,8 @@ static void *siv_dupctx(void *vctx)
         return NULL;
 
     ret = OPENSSL_malloc(sizeof(*ret));
-    if (ret == NULL) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
+    if (ret == NULL)
         return NULL;
-    }
     if (!in->hw->dupctx(in, ret)) {
         OPENSSL_free(ret);
         ret = NULL;
@@ -273,7 +271,7 @@ static int alg##_##kbits##_##lc##_get_params(OSSL_PARAM params[])              \
     return ossl_cipher_generic_get_params(params, EVP_CIPH_##UCMODE##_MODE,    \
                                           flags, 2*kbits, blkbits, ivbits);    \
 }                                                                              \
-static void * alg##kbits##lc##_newctx(void *provctx)                           \
+static void *alg##kbits##lc##_newctx(void *provctx)                            \
 {                                                                              \
     return alg##_##lc##_newctx(provctx, 2*kbits, EVP_CIPH_##UCMODE##_MODE,     \
                                flags);                                         \
@@ -299,7 +297,7 @@ const OSSL_DISPATCH ossl_##alg##kbits##lc##_functions[] = {                    \
       (void (*)(void)) alg##_##lc##_set_ctx_params },                          \
     { OSSL_FUNC_CIPHER_SETTABLE_CTX_PARAMS,                                    \
       (void (*)(void)) alg##_##lc##_settable_ctx_params },                     \
-    { 0, NULL }                                                                \
+    OSSL_DISPATCH_END                                                          \
 };
 
 IMPLEMENT_cipher(aes, siv, SIV, SIV_FLAGS, 128, 8, 0)

@@ -174,7 +174,7 @@ static int client_hello_select_server_ctx(SSL *s, void *arg, int ignore)
     remaining = len;
     servername = (const char *)p;
 
-    if (len == strlen("server2") && strncmp(servername, "server2", len) == 0) {
+    if (len == strlen("server2") && HAS_PREFIX(servername, "server2")) {
         SSL_CTX *new_ctx = arg;
         SSL_set_SSL_CTX(s, new_ctx);
         /*
@@ -188,7 +188,7 @@ static int client_hello_select_server_ctx(SSL *s, void *arg, int ignore)
         ex_data->servername = SSL_TEST_SERVERNAME_SERVER2;
         return 1;
     } else if (len == strlen("server1") &&
-               strncmp(servername, "server1", len) == 0) {
+               HAS_PREFIX(servername, "server1")) {
         ex_data->servername = SSL_TEST_SERVERNAME_SERVER1;
         return 1;
     } else if (ignore) {
@@ -695,6 +695,14 @@ static int configure_handshake_ctx(SSL_CTX *server_ctx, SSL_CTX *server2_ctx,
                                          server2_ctx_data, client_ctx_data))
         goto err;
 #endif  /* !OPENSSL_NO_SRP */
+#ifndef OPENSSL_NO_COMP_ALG
+    if (test->compress_certificates) {
+        if (!TEST_true(SSL_CTX_compress_certs(server_ctx, 0)))
+            goto err;
+        if (server2_ctx != NULL && !TEST_true(SSL_CTX_compress_certs(server2_ctx, 0)))
+            goto err;
+    }
+#endif
     return 1;
 err:
     return 0;
@@ -978,9 +986,15 @@ static void do_reneg_setup_step(const SSL_TEST_CTX *test_ctx, PEER *peer)
         return;
     } else if (test_ctx->handshake_mode == SSL_TEST_HANDSHAKE_POST_HANDSHAKE_AUTH) {
         if (SSL_is_server(peer->ssl)) {
+            SSL_CONNECTION *sc = SSL_CONNECTION_FROM_SSL_ONLY(peer->ssl);
+
+            if (sc == NULL) {
+                peer->status = PEER_ERROR;
+                return;
+            }
             /* Make the server believe it's received the extension */
             if (test_ctx->extra.server.force_pha)
-                peer->ssl->post_handshake_auth = SSL_PHA_EXT_RECEIVED;
+                sc->post_handshake_auth = SSL_PHA_EXT_RECEIVED;
             ret = SSL_verify_client_post_handshake(peer->ssl);
             if (!ret) {
                 peer->status = PEER_ERROR;
@@ -1533,7 +1547,7 @@ static HANDSHAKE_RESULT *do_handshake_internal(
      * The handshake succeeds once both peers have succeeded. If one peer
      * errors out, we also let the other peer retry (and presumably fail).
      */
-    for(;;) {
+    for (;;) {
         if (client_turn) {
             do_connect_step(test_ctx, &client, phase);
             status = handshake_status(client.status, server.status,

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2022 The OpenSSL Project Authors. All Rights Reserved.
+ *  Copyright 2022-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  *  Licensed under the Apache License 2.0 (the "License").  You may not use
  *  this file except in compliance with the License.  You can obtain a copy
@@ -14,6 +14,7 @@
 #include <arpa/inet.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <signal.h>
 
 static const int server_port = 4433;
 
@@ -117,13 +118,13 @@ void configure_client_context(SSL_CTX *ctx)
     }
 }
 
-void usage()
+void usage(void)
 {
     printf("Usage: sslecho s\n");
     printf("       --or--\n");
     printf("       sslecho c ip\n");
     printf("       c=client, s=server, ip=dotted ip of server\n");
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 int main(int argc, char **argv)
@@ -150,6 +151,9 @@ int main(int argc, char **argv)
 
     struct sockaddr_in addr;
     unsigned int addr_len = sizeof(addr);
+
+    /* ignore SIGPIPE so that server can continue running when client pipe closes abruptly */
+    signal(SIGPIPE, SIG_IGN);
 
     /* Splash */
     printf("\nsslecho : Simple Echo Client/Server (OpenSSL 3.0.1-dev) : %s : %s\n\n", __DATE__,
@@ -218,6 +222,8 @@ int main(int argc, char **argv)
                     if ((rxlen = SSL_read(ssl, rxbuf, rxcap)) <= 0) {
                         if (rxlen == 0) {
                             printf("Client closed connection\n");
+                        } else {
+                            printf("SSL_read returned %d\n", rxlen);
                         }
                         ERR_print_errors_fp(stderr);
                         break;
@@ -322,7 +328,7 @@ int main(int argc, char **argv)
             ERR_print_errors_fp(stderr);
         }
     }
-    exit:
+exit:
     /* Close up */
     if (ssl != NULL) {
         SSL_shutdown(ssl);
@@ -340,5 +346,5 @@ int main(int argc, char **argv)
 
     printf("sslecho exiting\n");
 
-    return 0;
+    return EXIT_SUCCESS;
 }

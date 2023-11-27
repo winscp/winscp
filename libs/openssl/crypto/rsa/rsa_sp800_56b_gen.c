@@ -125,7 +125,7 @@ int ossl_rsa_fips186_4_gen_prob_primes(RSA *rsa, RSA_ACVP_TEST *test,
     if (!ossl_bn_rsa_fips186_4_gen_prob_primes(rsa->p, Xpo, p1, p2, Xp, Xp1, Xp2,
                                                nbits, e, ctx, cb))
         goto err;
-    for(;;) {
+    for (;;) {
         /* (Step 5) Generate q, Xq*/
         if (!ossl_bn_rsa_fips186_4_gen_prob_primes(rsa->q, Xqo, q1, q2, Xq, Xq1,
                                                    Xq2, nbits, e, ctx, cb))
@@ -423,7 +423,7 @@ err:
  * See SP800-56Br1 6.3.1.3 (Step 6) Perform a pair-wise consistency test by
  * verifying that: k = (k^e)^d mod n for some integer k where 1 < k < n-1.
  *
- * Returns 1 if the RSA key passes the pairwise test or 0 it it fails.
+ * Returns 1 if the RSA key passes the pairwise test or 0 if it fails.
  */
 int ossl_rsa_sp800_56b_pairwise_test(RSA *rsa, BN_CTX *ctx)
 {

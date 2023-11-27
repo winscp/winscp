@@ -20,11 +20,15 @@ OSSL_CMP_SRV_CTX *ossl_cmp_mock_srv_new(OSSL_LIB_CTX *libctx,
                                         const char *propq);
 void ossl_cmp_mock_srv_free(OSSL_CMP_SRV_CTX *srv_ctx);
 
+int ossl_cmp_mock_srv_set1_refCert(OSSL_CMP_SRV_CTX *srv_ctx, X509 *cert);
 int ossl_cmp_mock_srv_set1_certOut(OSSL_CMP_SRV_CTX *srv_ctx, X509 *cert);
 int ossl_cmp_mock_srv_set1_chainOut(OSSL_CMP_SRV_CTX *srv_ctx,
                                     STACK_OF(X509) *chain);
 int ossl_cmp_mock_srv_set1_caPubsOut(OSSL_CMP_SRV_CTX *srv_ctx,
                                      STACK_OF(X509) *caPubs);
+int ossl_cmp_mock_srv_set1_newWithNew(OSSL_CMP_SRV_CTX *srv_ctx, X509 *cert);
+int ossl_cmp_mock_srv_set1_newWithOld(OSSL_CMP_SRV_CTX *srv_ctx, X509 *cert);
+int ossl_cmp_mock_srv_set1_oldWithNew(OSSL_CMP_SRV_CTX *srv_ctx, X509 *cert);
 int ossl_cmp_mock_srv_set_statusInfo(OSSL_CMP_SRV_CTX *srv_ctx, int status,
                                      int fail_info, const char *text);
 int ossl_cmp_mock_srv_set_sendError(OSSL_CMP_SRV_CTX *srv_ctx, int bodytype);

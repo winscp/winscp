@@ -310,10 +310,8 @@ static int kmac_init(void *vmacctx, const unsigned char *key,
         return 0;
     }
     out = OPENSSL_malloc(out_len);
-    if (out == NULL) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
+    if (out == NULL)
         return 0;
-    }
     res = bytepad(out, NULL, kmac_string, sizeof(kmac_string),
                   kctx->custom, kctx->custom_len, block_len)
           && EVP_DigestUpdate(ctx, out, out_len)
@@ -607,7 +605,7 @@ const OSSL_DISPATCH ossl_kmac128_functions[] = {
     { OSSL_FUNC_MAC_SETTABLE_CTX_PARAMS,
       (void (*)(void))kmac_settable_ctx_params },
     { OSSL_FUNC_MAC_SET_CTX_PARAMS, (void (*)(void))kmac_set_ctx_params },
-    { 0, NULL }
+    OSSL_DISPATCH_END
 };
 
 const OSSL_DISPATCH ossl_kmac256_functions[] = {
@@ -623,5 +621,5 @@ const OSSL_DISPATCH ossl_kmac256_functions[] = {
     { OSSL_FUNC_MAC_SETTABLE_CTX_PARAMS,
       (void (*)(void))kmac_settable_ctx_params },
     { OSSL_FUNC_MAC_SET_CTX_PARAMS, (void (*)(void))kmac_set_ctx_params },
-    { 0, NULL }
+    OSSL_DISPATCH_END
 };

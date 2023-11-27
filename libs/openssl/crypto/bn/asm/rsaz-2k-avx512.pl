@@ -58,7 +58,7 @@ if (!$avx512ifma && `$ENV{CC} -v 2>&1`
         # clang 7.0.0 is Apple clang 10.0.1
         $avx512ifma = ($ver>=10.0001)
     } else {
-        $avx512ifma = ($3>=7.0);
+        $avx512ifma = ($ver>=7.0);
     }
 }
 

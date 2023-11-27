@@ -206,6 +206,10 @@ Traces encoder operations.
 
 Traces decrementing certain ASN.1 structure references.
 
+=item B<OSSL_TRACE_CATEGORY_HTTP>
+
+Traces the HTTP client, such as message headers being sent and received.
+
 =back
 
 There is also B<OSSL_TRACE_CATEGORY_ALL>, which works as a fallback

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -21,10 +21,9 @@ CRYPTO_RWLOCK *CRYPTO_THREAD_lock_new(void)
 {
     CRYPTO_RWLOCK *lock;
 
-    if ((lock = OPENSSL_zalloc(sizeof(unsigned int))) == NULL) {
+    if ((lock = CRYPTO_zalloc(sizeof(unsigned int), NULL, 0)) == NULL)
         /* Don't set error, to avoid recursion blowup. */
         return NULL;
-    }
 
     *(unsigned int *)lock = 1;
 
@@ -145,6 +144,13 @@ int CRYPTO_atomic_or(uint64_t *val, uint64_t op, uint64_t *ret,
 int CRYPTO_atomic_load(uint64_t *val, uint64_t *ret, CRYPTO_RWLOCK *lock)
 {
     *ret  = *val;
+
+    return 1;
+}
+
+int CRYPTO_atomic_load_int(int *val, int *ret, CRYPTO_RWLOCK *lock)
+{
+    *ret = *val;
 
     return 1;
 }

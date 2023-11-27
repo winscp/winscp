@@ -235,14 +235,15 @@ static OSSL_CMP_MSG *process_cert_request(OSSL_CMP_SRV_CTX *srv_ctx,
     msg = ossl_cmp_certrep_new(srv_ctx->ctx, bodytype, certReqId, si,
                                certOut, NULL /* enc */, chainOut, caPubs,
                                srv_ctx->sendUnprotectedErrors);
+    /* When supporting OSSL_CRMF_POPO_KEYENC, "enc" will need to be set */
     if (msg == NULL)
         ERR_raise(ERR_LIB_CMP, CMP_R_ERROR_CREATING_CERTREP);
 
  err:
     OSSL_CMP_PKISI_free(si);
     X509_free(certOut);
-    sk_X509_pop_free(chainOut, X509_free);
-    sk_X509_pop_free(caPubs, X509_free);
+    OSSL_STACK_OF_X509_free(chainOut);
+    OSSL_STACK_OF_X509_free(caPubs);
     return msg;
 }
 
@@ -496,10 +497,8 @@ OSSL_CMP_MSG *OSSL_CMP_SRV_process_request(OSSL_CMP_SRV_CTX *srv_ctx,
     case OSSL_CMP_PKIBODY_GENM:
     case OSSL_CMP_PKIBODY_ERROR:
         if (ctx->transactionID != NULL) {
-            char *tid;
+            char *tid = i2s_ASN1_OCTET_STRING(NULL, ctx->transactionID);
 
-            tid = OPENSSL_buf2hexstr(ctx->transactionID->data,
-                                     ctx->transactionID->length);
             if (tid != NULL)
                 ossl_cmp_log1(WARN, ctx,
                               "Assuming that last transaction with ID=%s got aborted",
@@ -570,6 +569,7 @@ OSSL_CMP_MSG *OSSL_CMP_SRV_process_request(OSSL_CMP_SRV_CTX *srv_ctx,
             rsp = process_pollReq(srv_ctx, req);
         break;
     default:
+        /* Other request message types are not supported */
         ERR_raise(ERR_LIB_CMP, CMP_R_UNEXPECTED_PKIBODY);
         break;
     }
@@ -581,6 +581,7 @@ OSSL_CMP_MSG *OSSL_CMP_SRV_process_request(OSSL_CMP_SRV_CTX *srv_ctx,
         int flags = 0;
         unsigned long err = ERR_peek_error_data(&data, &flags);
         int fail_info = 1 << OSSL_CMP_PKIFAILUREINFO_badRequest;
+        /* fail_info is not very specific */
         OSSL_CMP_PKISI *si = NULL;
 
         if (!req_verified) {
@@ -630,6 +631,8 @@ OSSL_CMP_MSG *OSSL_CMP_SRV_process_request(OSSL_CMP_SRV_CTX *srv_ctx,
     case OSSL_CMP_PKIBODY_PKICONF:
     case OSSL_CMP_PKIBODY_GENP:
     case OSSL_CMP_PKIBODY_ERROR:
+        /* Other terminating response message types are not supported */
+        /* Prepare for next transaction, ignoring any errors here: */
         (void)OSSL_CMP_CTX_set1_transactionID(ctx, NULL);
         (void)OSSL_CMP_CTX_set1_senderNonce(ctx, NULL);
         ctx->status = OSSL_CMP_PKISTATUS_unspecified; /* transaction closed */

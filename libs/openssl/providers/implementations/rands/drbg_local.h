@@ -206,13 +206,13 @@ OSSL_FUNC_rand_get_seed_fn ossl_drbg_get_seed;
 OSSL_FUNC_rand_clear_seed_fn ossl_drbg_clear_seed;
 
 /* Verify that an array of numeric values is all zero */
-#define PROV_DRBG_VERYIFY_ZEROIZATION(v)    \
+#define PROV_DRBG_VERIFY_ZEROIZATION(v)     \
     {                                       \
         size_t i;                           \
                                             \
         for (i = 0; i < OSSL_NELEM(v); i++) \
             if ((v)[i] != 0)                \
-                return 0;                   \
+                goto err;                   \
     }
 
 /* locking api */
@@ -222,9 +222,11 @@ OSSL_FUNC_rand_unlock_fn ossl_drbg_unlock;
 
 /* Common parameters for all of our DRBGs */
 int ossl_drbg_get_ctx_params(PROV_DRBG *drbg, OSSL_PARAM params[]);
+int ossl_drbg_get_ctx_params_no_lock(PROV_DRBG *drbg, OSSL_PARAM params[],
+                                     int *complete);
 int ossl_drbg_set_ctx_params(PROV_DRBG *drbg, const OSSL_PARAM params[]);
 
-#define OSSL_PARAM_DRBG_SETTABLE_CTX_COMMON                                      \
+#define OSSL_PARAM_DRBG_SETTABLE_CTX_COMMON                             \
     OSSL_PARAM_uint(OSSL_DRBG_PARAM_RESEED_REQUESTS, NULL),             \
     OSSL_PARAM_uint64(OSSL_DRBG_PARAM_RESEED_TIME_INTERVAL, NULL)
 

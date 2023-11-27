@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -175,7 +175,7 @@ size_t ossl_pool_acquire_entropy(RAND_POOL *pool)
         /* Get wall clock time, take 8 bits. */
         clock_gettime(CLOCK_REALTIME, &ts);
         v = (unsigned char)(ts.tv_nsec & 0xFF);
-        ossl_rand_pool_add(pool, arg, &v, sizeof(v) , 2);
+        ossl_rand_pool_add(pool, arg, &v, sizeof(v), 2);
     }
     return ossl_rand_pool_entropy_available(pool);
 }
@@ -319,9 +319,7 @@ static ssize_t sysctl_random(char *buf, size_t buflen)
 #     define __NR_getrandom    352
 #    elif defined(__cris__)
 #     define __NR_getrandom    356
-#    elif defined(__aarch64__)
-#     define __NR_getrandom    278
-#    else /* generic */
+#    else /* generic (f.e. aarch64, loongarch, loongarch64) */
 #     define __NR_getrandom    278
 #    endif
 #   endif
@@ -397,6 +395,10 @@ static ssize_t syscall_random(void *buf, size_t buflen)
 #  elif (defined(__DragonFly__)  && __DragonFly_version >= 500700) \
      || (defined(__NetBSD__) && __NetBSD_Version >= 1000000000)
     return getrandom(buf, buflen, 0);
+#  elif defined(__wasi__)
+    if (getentropy(buf, buflen) == 0)
+      return (ssize_t)buflen;
+    return -1;
 #  else
     errno = ENOSYS;
     return -1;
@@ -508,7 +510,7 @@ static int wait_random_seeded(void)
  * So the handle might have been closed or even reused for opening
  * another file.
  */
-static int check_random_device(struct random_device * rd)
+static int check_random_device(struct random_device *rd)
 {
     struct stat st;
 
@@ -526,7 +528,7 @@ static int check_random_device(struct random_device * rd)
 static int get_random_device(size_t n)
 {
     struct stat st;
-    struct random_device * rd = &random_devices[n];
+    struct random_device *rd = &random_devices[n];
 
     /* reuse existing file descriptor if it is (still) valid */
     if (check_random_device(rd))
@@ -555,7 +557,7 @@ static int get_random_device(size_t n)
  */
 static void close_random_device(size_t n)
 {
-    struct random_device * rd = &random_devices[n];
+    struct random_device *rd = &random_devices[n];
 
     if (check_random_device(rd))
         close(rd->fd);

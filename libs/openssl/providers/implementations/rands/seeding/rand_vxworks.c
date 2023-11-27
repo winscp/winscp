@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -116,7 +116,7 @@ size_t ossl_pool_acquire_entropy(RAND_POOL *pool)
             RANDOM_NUM_GEN_STATUS status = randStatus();
 
             if ((status == RANDOM_NUM_GEN_ENOUGH_ENTROPY)
-                    || (status == RANDOM_NUM_GEN_MAX_ENTROPY) ) {
+                    || (status == RANDOM_NUM_GEN_MAX_ENTROPY)) {
                 result = randBytes(buffer, bytes_needed);
                 if (result == OK)
                     ossl_rand_pool_add_end(pool, bytes_needed, 8 * bytes_needed);

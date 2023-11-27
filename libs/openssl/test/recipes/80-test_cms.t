@@ -50,7 +50,7 @@ my ($no_des, $no_dh, $no_dsa, $no_ec, $no_ec2m, $no_rc2, $no_zlib)
 
 $no_rc2 = 1 if disabled("legacy");
 
-plan tests => 18;
+plan tests => 22;
 
 ok(run(test(["pkcs7_test"])), "test pkcs7");
 
@@ -655,7 +655,7 @@ my @smime_cms_param_tests_autodigestmax = (
         "-keyopt", "rsa_padding_mode:pss", "-keyopt", "rsa_pss_saltlen:auto-digestmax",
         "-out", "{output}.cms" ],
       # digest is SHA-512, which produces 64, bytes of output, but an RSA-PSS
-      # signature with a 1024 bit RSA key can only accomodate 62
+      # signature with a 1024 bit RSA key can only accommodate 62
       sub { my %opts = @_; rsapssSaltlen("$opts{output}.cms") == 62; },
       [ "{cmd2}", @defaultprov, "-verify", "-in", "{output}.cms", "-inform", "PEM",
         "-CAfile", $smroot, "-out", "{output}.txt" ],
@@ -993,6 +993,92 @@ subtest "CMS binary input tests\n" => sub {
        "verify binary input with -binary missing -crlfeol");
 };
 
+subtest "CMS signed digest, DER format" => sub {
+    plan tests => 2;
+
+    # Pre-computed SHA256 digest of $smcont in hexadecimal form
+    my $digest = "ff236ef61b396355f75a4cc6e1c306d4c309084ae271a9e2ad6888f10a101b32";
+
+    my $sig_file = "signature.der";
+    ok(run(app(["openssl", "cms", @prov, "-sign", "-digest", $digest,
+                    "-outform", "DER",
+                    "-certfile", catfile($smdir, "smroot.pem"),
+                    "-signer", catfile($smdir, "smrsa1.pem"),
+                    "-out", $sig_file])),
+        "CMS sign pre-computed digest, DER format");
+
+    ok(run(app(["openssl", "cms", @prov, "-verify", "-in", $sig_file,
+                    "-inform", "DER",
+                    "-CAfile", catfile($smdir, "smroot.pem"),
+                    "-content", $smcont])),
+       "Verify CMS signed digest, DER format");
+};
+
+subtest "CMS signed digest, S/MIME format" => sub {
+    plan tests => 2;
+
+    # Pre-computed SHA256 digest of $smcont in hexadecimal form
+    my $digest = "ff236ef61b396355f75a4cc6e1c306d4c309084ae271a9e2ad6888f10a101b32";
+
+    my $sig_file = "signature.smime";
+    ok(run(app(["openssl", "cms", @prov, "-sign", "-digest", $digest,
+                    "-outform", "SMIME",
+                    "-certfile", catfile($smdir, "smroot.pem"),
+                    "-signer", catfile($smdir, "smrsa1.pem"),
+                    "-out", $sig_file])),
+        "CMS sign pre-computed digest, S/MIME format");
+
+    ok(run(app(["openssl", "cms", @prov, "-verify", "-in", $sig_file,
+                    "-inform", "SMIME",
+                    "-CAfile", catfile($smdir, "smroot.pem"),
+                    "-content", $smcont])),
+       "Verify CMS signed digest, S/MIME format");
+};
+
+subtest "CMS code signing test" => sub {
+    plan tests => 7;
+    my $sig_file = "signature.p7s";
+    ok(run(app(["openssl", "cms", @prov, "-sign", "-in", $smcont,
+                   "-certfile", catfile($smdir, "smroot.pem"),
+                   "-signer", catfile($smdir, "smrsa1.pem"),
+                   "-out", $sig_file])),
+       "accept perform CMS signature with smime certificate");
+
+    ok(run(app(["openssl", "cms", @prov, "-verify", "-in", $sig_file,
+                    "-CAfile", catfile($smdir, "smroot.pem"),
+                    "-content", $smcont])),
+       "accept verify CMS signature with smime certificate");
+
+    ok(!run(app(["openssl", "cms", @prov, "-verify", "-in", $sig_file,
+                    "-CAfile", catfile($smdir, "smroot.pem"),
+                    "-purpose", "codesign",
+                    "-content", $smcont])),
+       "fail verify CMS signature with smime certificate for purpose code signing");
+
+    ok(!run(app(["openssl", "cms", @prov, "-verify", "-in", $sig_file,
+                    "-CAfile", catfile($smdir, "smroot.pem"),
+                    "-purpose", "football",
+                    "-content", $smcont])),
+       "fail verify CMS signature with invalid purpose argument");
+
+    ok(run(app(["openssl", "cms", @prov, "-sign", "-in", $smcont,
+                   "-certfile", catfile($smdir, "smroot.pem"),
+                   "-signer", catfile($smdir, "csrsa1.pem"),
+                   "-out", $sig_file])),
+        "accept perform CMS signature with code signing certificate");
+
+    ok(run(app(["openssl", "cms", @prov, "-verify", "-in", $sig_file,
+                    "-CAfile", catfile($smdir, "smroot.pem"),
+                    "-purpose", "codesign",
+                    "-content", $smcont])),
+       "accept verify CMS signature with code signing certificate for purpose code signing");
+
+    ok(!run(app(["openssl", "cms", @prov, "-verify", "-in", $sig_file,
+                    "-CAfile", catfile($smdir, "smroot.pem"),
+                    "-content", $smcont])),
+       "fail verify CMS signature with code signing certificate for purpose smime_sign");
+};
+
 # Test case for missing MD algorithm (must not segfault)
 
 with({ exit_checker => sub { return shift == 4; } },
@@ -1001,7 +1087,15 @@ with({ exit_checker => sub { return shift == 4; } },
                     '-inform', 'PEM',
                     '-in', data_file("pkcs7-md4.pem"),
                    ])),
-            "Check failure of EVP_DigestInit is handled correctly");
+            "Check failure of EVP_DigestInit in PKCS7 signed is handled");
+
+        ok(run(app(['openssl', 'smime', '-decrypt',
+                    '-inform', 'PEM',
+                    '-in', data_file("pkcs7-md4-encrypted.pem"),
+                    '-recip', srctop_file("test", "certs", "ee-cert.pem"),
+                    '-inkey', srctop_file("test", "certs", "ee-key.pem")
+                   ])),
+            "Check failure of EVP_DigestInit in PKCS7 signedAndEnveloped is handled");
     });
 
 sub check_availability {

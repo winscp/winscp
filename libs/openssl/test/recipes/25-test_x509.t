@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2015-2022 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2015-2023 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -16,7 +16,7 @@ use OpenSSL::Test qw/:DEFAULT srctop_file/;
 
 setup("test_x509");
 
-plan tests => 28;
+plan tests => 43;
 
 # Prevent MSys2 filename munging for arguments that look like file paths but
 # aren't
@@ -70,17 +70,24 @@ my $extfile = srctop_file("test", "v3_ca_exts.cnf");
 my $pkey = srctop_file(@certs, "ca-key.pem"); # issuer private key
 my $pubkey = "ca-pubkey.pem"; # the corresponding issuer public key
 # use any (different) key for signing our self-issued cert:
-my $signkey = srctop_file(@certs, "serverkey.pem");
+my $key = srctop_file(@certs, "serverkey.pem");
 my $selfout = "self-issued.out";
 my $testcert = srctop_file(@certs, "ee-cert.pem");
 ok(run(app(["openssl", "pkey", "-in", $pkey, "-pubout", "-out", $pubkey]))
-&& run(app(["openssl", "x509", "-new", "-force_pubkey", $pubkey,
-            "-subj", $subj, "-extfile", $extfile,
-            "-signkey", $signkey, "-out", $selfout]))
+&& run(app(["openssl", "x509", "-new", "-force_pubkey", $pubkey, "-subj", $subj,
+            "-extfile", $extfile, "-key", $key, "-out", $selfout]))
 && run(app(["openssl", "verify", "-no_check_time",
             "-trusted", $selfout, "-partial_chain", $testcert])));
 # not unlinking $pubkey
 # not unlinking $selfout
+
+# simple way of directly producing a CA-signed cert with private/pubkey input
+my $ca = srctop_file(@certs, "ca-cert.pem"); # issuer cert
+my $caout = "ca-issued.out";
+ok(run(app(["openssl", "x509", "-new", "-force_pubkey", $key, "-subj", "/CN=EE",
+            "-extfile", $extfile, "-CA", $ca, "-CAkey", $pkey, "-out", $caout]))
+&& run(app(["openssl", "verify", "-no_check_time",
+            "-trusted", $ca, "-partial_chain", $caout])));
 
 subtest 'x509 -- x.509 v1 certificate' => sub {
     tconversion( -type => 'x509', -prefix => 'x509v1',
@@ -102,6 +109,30 @@ subtest 'x509 -- pathlen' => sub {
 cert_contains(srctop_file(@certs, "fake-gp.pem"),
               "2.16.528.1.1003.1.3.5.5.2-1-0000006666-Z-12345678-01.015-12345678",
               1, 'x500 -- subjectAltName');
+
+cert_contains(srctop_file(@certs, "ext-noAssertion.pem"),
+              "No Assertion",
+              1, 'X.509 Not Assertion Extension');
+
+cert_contains(srctop_file(@certs, "ext-groupAC.pem"),
+              "Group Attribute Certificate",
+              1, 'X.509 Group Attribute Certificate Extension');
+
+cert_contains(srctop_file(@certs, "ext-sOAIdentifier.pem"),
+              "Source of Authority",
+              1, 'X.509 Source of Authority Extension');
+
+cert_contains(srctop_file(@certs, "ext-noRevAvail.pem"),
+              "No Revocation Available",
+              1, 'X.509 No Revocation Available');
+
+cert_contains(srctop_file(@certs, "ext-singleUse.pem"),
+              "Single Use",
+              1, 'X509v3 Single Use');
+
+cert_contains(srctop_file(@certs, "ext-indirectIssuer.pem"),
+              "Indirect Issuer",
+              1, 'X.509 Indirect Issuer');
 
 sub test_errors { # actually tests diagnostics of OSSL_STORE
     my ($expected, $cert, @opts) = @_;
@@ -184,7 +215,7 @@ ok(run(app(["openssl", "x509", "-in", $a_cert, "-CA", $ca_cert,
             "-CAkey", $ca_key, "-set_serial", "1234567890",
             "-preserve_dates", "-sha256", "-text", "-out", $a2_cert])));
 # verify issuer is CA
-ok (get_issuer($a2_cert) =~ /CN = ca.example.com/);
+ok (get_issuer($a2_cert) =~ /CN=ca.example.com/);
 
 # Tests for issue #16080 (fixed in 1.1.1o)
 my $b_key = "b-key.pem";
@@ -200,4 +231,28 @@ ok(run(app(["openssl", "x509", "-req", "-text", "-CAcreateserial",
             "-CA", $ca_cert, "-CAkey", $ca_key,
             "-in", $b_csr, "-out", $b_cert])));
 # Verify issuer is CA
-ok(get_issuer($b_cert) =~ /CN = ca.example.com/);
+ok(get_issuer($b_cert) =~ /CN=ca.example.com/);
+
+# although no explicit extensions given:
+has_version($b_cert, 3);
+has_SKID($b_cert, 1);
+has_AKID($b_cert, 1);
+
+# Tests for https://github.com/openssl/openssl/issues/10442 (fixed in 1.1.1a)
+# (incorrect default `-CAcreateserial` if `-CA` path has a dot in it)
+my $folder_with_dot = "test_x509.folder";
+ok(mkdir $folder_with_dot);
+my $ca_cert_dot_in_dir = File::Spec->catfile($folder_with_dot, "ca-cert.pem");
+ok(copy($ca_cert,$ca_cert_dot_in_dir));
+my $ca_serial_dot_in_dir = File::Spec->catfile($folder_with_dot, "ca-cert.srl");
+
+ok(run(app(["openssl", "x509", "-req", "-text", "-CAcreateserial",
+            "-CA", $ca_cert_dot_in_dir, "-CAkey", $ca_key,
+            "-in", $b_csr])));
+ok(-e $ca_serial_dot_in_dir);
+
+SKIP: {
+    skip "EC is not supported by this OpenSSL build", 1
+        if disabled("ec");
+    ok(run(test(["x509_test"])), "running x509_test");
+}

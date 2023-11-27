@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2006-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -78,7 +78,7 @@ STACK_OF(X509) *TS_CONF_load_certs(const char *file)
 
         if (xi->x509 != NULL) {
             if (!X509_add_cert(othercerts, xi->x509, X509_ADD_FLAG_DEFAULT)) {
-                sk_X509_pop_free(othercerts, X509_free);
+                OSSL_STACK_OF_X509_free(othercerts);
                 othercerts = NULL;
                 goto end;
             }
@@ -233,7 +233,7 @@ int TS_CONF_set_certs(CONF *conf, const char *section, const char *certs,
  end:
     ret = 1;
  err:
-    sk_X509_pop_free(certs_obj, X509_free);
+    OSSL_STACK_OF_X509_free(certs_obj);
     return ret;
 }
 
@@ -481,7 +481,7 @@ int TS_CONF_set_ess_cert_id_digest(CONF *conf, const char *section,
     const char *md = NCONF_get_string(conf, section, ENV_ESS_CERT_ID_ALG);
 
     if (md == NULL)
-        md = "sha1";
+        md = "sha256";
 
     cert_md = EVP_get_digestbyname(md);
     if (cert_md == NULL) {

@@ -403,7 +403,7 @@ static int dh_validate_private(const DH *dh)
     DH_get0_key(dh, NULL, &priv_key);
     if (priv_key == NULL)
         return 0;
-    return ossl_dh_check_priv_key(dh, priv_key, &status);;
+    return ossl_dh_check_priv_key(dh, priv_key, &status);
 }
 
 static int dh_validate(const void *keydata, int selection, int checktype)
@@ -699,7 +699,7 @@ static void *dh_gen(void *genctx, OSSL_CALLBACK *osslcb, void *cbarg)
         return NULL;
 
     /*
-     * If a group name is selected then the type is group regardless of what the
+     * If a group name is selected then the type is group regardless of what
      * the user selected. This overrides rather than errors for backwards
      * compatibility.
      */
@@ -738,10 +738,8 @@ static void *dh_gen(void *genctx, OSSL_CALLBACK *osslcb, void *cbarg)
         } else if (gctx->hindex != 0) {
             ossl_ffc_params_set_h(ffc, gctx->hindex);
         }
-        if (gctx->mdname != NULL) {
-            if (!ossl_ffc_set_digest(ffc, gctx->mdname, gctx->mdprops))
-                goto end;
-        }
+        if (gctx->mdname != NULL)
+            ossl_ffc_set_digest(ffc, gctx->mdname, gctx->mdprops);
         gctx->cb = osslcb;
         gctx->cbarg = cbarg;
         gencb = BN_GENCB_new();
@@ -846,7 +844,7 @@ const OSSL_DISPATCH ossl_dh_keymgmt_functions[] = {
     { OSSL_FUNC_KEYMGMT_EXPORT, (void (*)(void))dh_export },
     { OSSL_FUNC_KEYMGMT_EXPORT_TYPES, (void (*)(void))dh_export_types },
     { OSSL_FUNC_KEYMGMT_DUP, (void (*)(void))dh_dup },
-    { 0, NULL }
+    OSSL_DISPATCH_END
 };
 
 /* For any DH key, we use the "DH" algorithms regardless of sub-type. */
@@ -880,5 +878,5 @@ const OSSL_DISPATCH ossl_dhx_keymgmt_functions[] = {
     { OSSL_FUNC_KEYMGMT_QUERY_OPERATION_NAME,
       (void (*)(void))dhx_query_operation_name },
     { OSSL_FUNC_KEYMGMT_DUP, (void (*)(void))dh_dup },
-    { 0, NULL }
+    OSSL_DISPATCH_END
 };

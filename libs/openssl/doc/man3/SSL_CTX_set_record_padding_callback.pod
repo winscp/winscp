@@ -53,6 +53,10 @@ The B<len> parameter is the current plaintext length of the record before encryp
 The B<arg> parameter is the value set via SSL_CTX_set_record_padding_callback_arg()
 or SSL_set_record_padding_callback_arg().
 
+These functions cannot be used with QUIC SSL objects.
+SSL_set_record_padding_callback() and SSL_set_block_padding() fail if called on
+a QUIC SSL object.
+
 =head1 RETURN VALUES
 
 The SSL_CTX_get_record_padding_callback_arg() and SSL_get_record_padding_callback_arg()
@@ -94,7 +98,7 @@ changed to int in OpenSSL 3.0.
 
 =head1 COPYRIGHT
 
-Copyright 2017-2020 The OpenSSL Project Authors. All Rights Reserved.
+Copyright 2017-2023 The OpenSSL Project Authors. All Rights Reserved.
 
 Licensed under the Apache License 2.0 (the "License").  You may not use
 this file except in compliance with the License.  You can obtain a copy

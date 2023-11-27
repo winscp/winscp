@@ -99,8 +99,8 @@ I<bio_update_fn> is a BIO connect/disconnect callback function with prototype
  BIO *(*OSSL_HTTP_bio_cb_t)(BIO *bio, void *arg, int connect, int detail)
 
 The callback function may modify the BIO provided in the I<bio> argument,
-whereby it may make use of a custom defined argument I<arg>,
-which may for instance point to an B<SSL_CTX> structure.
+whereby it may use an optional custom defined argument I<arg>,
+which can for instance point to an B<SSL_CTX> structure.
 During connection establishment, just after calling BIO_do_connect_retry(), the
 callback function is invoked with the I<connect> argument being 1 and
 I<detail> being 1 if I<use_ssl> is nonzero (i.e., HTTPS is requested), else 0.
@@ -108,7 +108,7 @@ On disconnect I<connect> is 0 and I<detail> is 1 if no error occurred, else 0.
 For instance, on connect the callback may push an SSL BIO to implement HTTPS;
 after disconnect it may do some diagnostic output and pop and free the SSL BIO.
 
-The callback function must return either the potentially modified BIO I<bio>.
+The callback function must return either the potentially modified BIO I<bio>
 or NULL to indicate failure, in which case it should not modify the BIO.
 
 Here is a simple example that supports TLS connections (but not via a proxy):
@@ -135,6 +135,8 @@ Here is a simple example that supports TLS connections (but not via a proxy):
  }
 
 After disconnect the modified BIO will be deallocated using BIO_free_all().
+The optional callback function argument I<arg> is not consumed,
+so must be freed by the caller when not needed any more.
 
 The I<buf_size> parameter specifies the response header maximum line length.
 A value <= 0 means that the B<OSSL_HTTP_DEFAULT_MAX_LINE_LEN> (4KiB) is used.
@@ -172,9 +174,17 @@ else HTTP POST with the contents of I<req> and optional I<content_type>, where
 the length of the data in I<req> does not need to be determined in advance: the
 BIO will be read on-the-fly while sending the request, which supports streaming.
 The optional list I<headers> may contain additional custom HTTP header lines.
-If the parameter I<expected_content_type>
-is not NULL then the client will check that the given content type string
+
+If the I<expected_content_type> argument is not NULL,
+the client will check that the specified content-type string
 is included in the HTTP header of the response and return an error if not.
+In the content-type header line the specified string should be present either
+as a whole, or in case the specified string does not include a C<;> character,
+it is sufficient that the specified string appears as a prefix
+in the header line, followed by a C<;> character and any further text.
+For instance, if I<expected_content_type> specifies C<text/html>,
+this is matched by C<text/html>, C<text/html; charset=UTF-8>, etc.
+
 If the I<expect_asn1> parameter is nonzero,
 a structure in ASN.1 encoding will be expected as response content.
 The I<max_resp_len> parameter specifies the maximum allowed

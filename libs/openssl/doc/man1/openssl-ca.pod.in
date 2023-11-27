@@ -10,6 +10,7 @@ openssl-ca - sample minimal CA application
 B<openssl> B<ca>
 [B<-help>]
 [B<-verbose>]
+[B<-quiet>]
 [B<-config> I<filename>]
 [B<-name> I<section>]
 [B<-section> I<section>]
@@ -70,6 +71,11 @@ B<openssl> B<ca>
 
 This command emulates a CA application.
 See the B<WARNINGS> especially when considering to use it productively.
+
+It generates certificates bearing X.509 version 3.
+Unless specified otherwise,
+key identifier extensions are included as described in L<x509v3_config(5)>.
+
 It can be used to sign certificate requests (CSRs) in a variety of forms
 and generate certificate revocation lists (CRLs).
 It also maintains a text database of issued certificates and their status.
@@ -95,6 +101,11 @@ Print out a usage message.
 
 This prints extra details about the operations being performed.
 
+=item B<-quiet>
+
+This prints fewer details about the operations being performed, which may
+be handy during batch scripts or pipelines.
+
 =item B<-config> I<filename>
 
 Specifies the configuration file to use.
@@ -113,8 +124,8 @@ signed by the CA.
 
 =item B<-inform> B<DER>|B<PEM>
 
-The format of the data in certificate request input files;
-unspecified by default.
+The format to use when loading certificate request (CSR) input files;
+by default PEM is tried first.
 See L<openssl-format-options(1)> for details.
 
 =item B<-ss_cert> I<filename>
@@ -281,8 +292,7 @@ and all certificates will be certified automatically.
 The section of the configuration file containing certificate extensions
 to be added when a certificate is issued (defaults to B<x509_extensions>
 unless the B<-extfile> option is used).
-If no X.509 extensions are specified then a V1 certificate is created,
-else a V3 certificate is created.
+
 See the L<x509v3_config(5)> manual page for details of the
 extension section format.
 
@@ -780,7 +790,7 @@ properly secure the private key(s) used for signing certificates.
 It is advisable to keep them in a secure HW storage such as a smart card or HSM
 and access them via a suitable engine or crypto provider.
 
-This command command is effectively a single user command: no locking
+This command is effectively a single user command: no locking
 is done on the various files and attempts to run more than one B<openssl ca>
 command on the same database can have unpredictable results.
 
@@ -827,6 +837,9 @@ has no effect.
 
 The B<-engine> option was deprecated in OpenSSL 3.0.
 
+Since OpenSSL 3.2, generated certificates bear X.509 version 3,
+and key identifier extensions are included by default.
+
 =head1 SEE ALSO
 
 L<openssl(1)>,
@@ -839,7 +852,7 @@ L<x509v3_config(5)>
 
 =head1 COPYRIGHT
 
-Copyright 2000-2021 The OpenSSL Project Authors. All Rights Reserved.
+Copyright 2000-2023 The OpenSSL Project Authors. All Rights Reserved.
 
 Licensed under the Apache License 2.0 (the "License").  You may not use
 this file except in compliance with the License.  You can obtain a copy

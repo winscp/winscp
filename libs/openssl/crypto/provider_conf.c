@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -158,7 +158,7 @@ static int provider_conf_activate(OSSL_LIB_CTX *libctx, const char *name,
         }
         prov = ossl_provider_find(libctx, name, 1);
         if (prov == NULL)
-            prov = ossl_provider_new(libctx, name, NULL, 1);
+            prov = ossl_provider_new(libctx, name, NULL, NULL, 1);
         if (prov == NULL) {
             CRYPTO_THREAD_unlock(pcgbl->lock);
             if (soft)
@@ -256,17 +256,13 @@ static int provider_conf_load(OSSL_LIB_CTX *libctx, const char *name,
         ok = 1;
         if (name != NULL) {
             entry.name = OPENSSL_strdup(name);
-            if (entry.name == NULL) {
-                ERR_raise(ERR_LIB_CRYPTO, ERR_R_MALLOC_FAILURE);
+            if (entry.name == NULL)
                 ok = 0;
-            }
         }
         if (ok && path != NULL) {
             entry.path = OPENSSL_strdup(path);
-            if (entry.path == NULL) {
-                ERR_raise(ERR_LIB_CRYPTO, ERR_R_MALLOC_FAILURE);
+            if (entry.path == NULL)
                 ok = 0;
-            }
         }
         if (ok)
             ok = provider_conf_params(NULL, &entry, NULL, value, cnf);

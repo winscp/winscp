@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1999-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -53,6 +53,7 @@ static const X509V3_EXT_METHOD *standard_exts[] = {
 #endif
     &ossl_v3_sinfo,
     &ossl_v3_policy_constraints,
+    &ossl_v3_no_rev_avail,
 #ifndef OPENSSL_NO_OCSP
     &ossl_v3_crl_hold,
 #endif
@@ -71,7 +72,12 @@ static const X509V3_EXT_METHOD *standard_exts[] = {
     &ossl_v3_utf8_list[0],
     &ossl_v3_issuer_sign_tool,
     &ossl_v3_tls_feature,
-    &ossl_v3_ext_admission
+    &ossl_v3_ext_admission,
+    &ossl_v3_soa_identifier,
+    &ossl_v3_indirect_issuer,
+    &ossl_v3_no_assertion,
+    &ossl_v3_single_use,
+    &ossl_v3_group_ac
 };
 
 /* Number of standard extensions */

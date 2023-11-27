@@ -31,8 +31,8 @@ extern CRYPTO_RWLOCK *global_engine_lock;
                (void *)(e), (isfunct ? "funct" : "struct"),             \
                ((isfunct)                                               \
                 ? ((e)->funct_ref - (diff))                             \
-                : ((e)->struct_ref - (diff))),                          \
-               ((isfunct) ? (e)->funct_ref : (e)->struct_ref),          \
+                : (eng_struct_ref(e) - (diff))),                        \
+               ((isfunct) ? (e)->funct_ref : eng_struct_ref(e)),        \
                (OPENSSL_FILE), (OPENSSL_LINE))
 
 /*
@@ -157,5 +157,13 @@ struct engine_st {
 typedef struct st_engine_pile ENGINE_PILE;
 
 DEFINE_LHASH_OF_EX(ENGINE_PILE);
+
+static ossl_unused ossl_inline int eng_struct_ref(ENGINE *e)
+{
+    int res;
+
+    CRYPTO_GET_REF(&e->struct_ref, &res);
+    return res;
+}
 
 #endif                          /* OSSL_CRYPTO_ENGINE_ENG_LOCAL_H */

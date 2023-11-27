@@ -1,5 +1,5 @@
 /*
- * Copyright 2008-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2008-2020 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -83,6 +83,7 @@ ASN1_NDEF_SEQUENCE(CMS_SignedData) = {
         ASN1_IMP_SET_OF_OPT(CMS_SignedData, crls, CMS_RevocationInfoChoice, 1),
         ASN1_SET_OF(CMS_SignedData, signerInfos, CMS_SignerInfo)
 } ASN1_NDEF_SEQUENCE_END(CMS_SignedData)
+IMPLEMENT_ASN1_ALLOC_FUNCTIONS(CMS_SignedData)
 
 ASN1_SEQUENCE(CMS_OriginatorInfo) = {
         ASN1_IMP_SET_OF_OPT(CMS_OriginatorInfo, certificates, CMS_CertificateChoices, 0),

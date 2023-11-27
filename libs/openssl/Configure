@@ -27,7 +27,7 @@ use OpenSSL::config;
 my $orig_death_handler = $SIG{__DIE__};
 $SIG{__DIE__} = \&death_handler;
 
-my $usage="Usage: Configure [no-<cipher> ...] [enable-<cipher> ...] [-Dxxx] [-lxxx] [-Lxxx] [-fxxx] [-Kxxx] [no-hw-xxx|no-hw] [[no-]threads] [[no-]shared] [[no-]zlib|zlib-dynamic] [no-asm] [no-egd] [sctp] [386] [--prefix=DIR] [--openssldir=OPENSSLDIR] [--with-xxx[=vvv]] [--config=FILE] os/compiler[:flags]\n";
+my $usage="Usage: Configure [no-<feature> ...] [enable-<feature> ...] [-Dxxx] [-lxxx] [-Lxxx] [-fxxx] [-Kxxx] [no-hw-xxx|no-hw] [[no-]threads] [[no-]thread-pool] [[no-]default-thread-pool] [[no-]shared] [[no-]zlib|zlib-dynamic] [no-asm] [no-egd] [sctp] [386] [--prefix=DIR] [--openssldir=OPENSSLDIR] [--with-xxx[=vvv]] [--config=FILE] os/compiler[:flags]\n";
 
 my $banner = <<"EOF";
 
@@ -81,6 +81,10 @@ EOF
 # [no-]threads  [don't] try to create a library that is suitable for
 #               multithreaded applications (default is "threads" if we
 #               know how to do it)
+# [no-]thread-pool
+#               [don't] allow thread pool functionality
+# [no-]default-thread-pool
+#               [don't] allow default thread pool functionality
 # [no-]shared   [don't] try to create shared libraries when supported.
 # [no-]pic      [don't] try to build position independent code when supported.
 #               If disabled, it also disables shared and dynamic-engine.
@@ -88,8 +92,9 @@ EOF
 # no-egd        do not compile support for the entropy-gathering daemon APIs
 # [no-]zlib     [don't] compile support for zlib compression.
 # zlib-dynamic  Like "zlib", but the zlib library is expected to be a shared
-#               library and will be loaded in run-time by the OpenSSL library.
+#               library and will be loaded at run-time by the OpenSSL library.
 # sctp          include SCTP support
+# no-quic       disable QUIC support
 # no-uplink     Don't build support for UPLINK interface.
 # enable-weak-ssl-ciphers
 #               Enable weak ciphers that are disabled by default.
@@ -161,7 +166,8 @@ my @gcc_devteam_warn = qw(
     -Wsign-compare
     -Wshadow
     -Wformat
-    -Wtype-limits
+    -Wno-type-limits
+    -Wno-tautological-constant-out-of-range-compare
     -Wundef
     -Werror
     -Wmissing-prototypes
@@ -182,6 +188,7 @@ my @clang_devteam_warn = qw(
     -Wno-parentheses-equality
     -Wno-language-extension-token
     -Wno-extended-offsetof
+    -Wno-missing-braces
     -Wconditional-uninitialized
     -Wincompatible-pointer-types-discards-qualifiers
     -Wmissing-variable-declarations
@@ -401,6 +408,8 @@ my @dtls = qw(dtls1 dtls1_2);
 my @disablables = (
     "acvp-tests",
     "afalgeng",
+    "apps",
+    "argon2",
     "aria",
     "asan",
     "asm",
@@ -410,11 +419,14 @@ my @disablables = (
     "autoload-config",
     "bf",
     "blake2",
+    "brotli",
+    "brotli-dynamic",
     "buildtest-c++",
     "bulk",
     "cached-fetch",
     "camellia",
     "capieng",
+    "winstore",
     "cast",
     "chacha",
     "cmac",
@@ -423,11 +435,13 @@ my @disablables = (
     "comp",
     "crypto-mdebug",
     "ct",
+    "default-thread-pool",
     "deprecated",
     "des",
     "devcryptoeng",
     "dgram",
     "dh",
+    "docs",
     "dsa",
     "dso",
     "dtls",
@@ -437,6 +451,7 @@ my @disablables = (
     "ec_nistp_64_gcc_128",
     "ecdh",
     "ecdsa",
+    "ecx",
     "egd",
     "engine",
     "err",
@@ -447,6 +462,7 @@ my @disablables = (
     "fuzz-afl",
     "fuzz-libfuzzer",
     "gost",
+    "http",
     "idea",
     "ktls",
     "legacy",
@@ -467,6 +483,7 @@ my @disablables = (
     "poly1305",
     "posix-io",
     "psk",
+    "quic",
     "rc2",
     "rc4",
     "rc5",
@@ -481,6 +498,7 @@ my @disablables = (
     "siphash",
     "siv",
     "sm2",
+    "sm2-precomp",
     "sm3",
     "sm4",
     "sock",
@@ -492,6 +510,8 @@ my @disablables = (
     "static-engine",
     "stdio",
     "tests",
+    "tfo",
+    "thread-pool",
     "threads",
     "tls",
     "trace",
@@ -504,6 +524,8 @@ my @disablables = (
     "whirlpool",
     "zlib",
     "zlib-dynamic",
+    "zstd",
+    "zstd-dynamic",
     );
 foreach my $proto ((@tls, @dtls))
         {
@@ -535,6 +557,8 @@ my %deprecated_disablables = (
 our %disabled = ( # "what"         => "comment"
                   "fips"                => "default",
                   "asan"                => "default",
+                  "brotli"              => "default",
+                  "brotli-dynamic"      => "default",
                   "buildtest-c++"       => "default",
                   "crypto-mdebug"       => "default",
                   "crypto-mdebug-backtrace" => "default",
@@ -551,12 +575,15 @@ our %disabled = ( # "what"         => "comment"
                   "sctp"                => "default",
                   "ssl3"                => "default",
                   "ssl3-method"         => "default",
+                  "tfo"                 => "default",
                   "trace"               => "default",
                   "ubsan"               => "default",
                   "unit-test"           => "default",
                   "weak-ssl-ciphers"    => "default",
                   "zlib"                => "default",
                   "zlib-dynamic"        => "default",
+                  "zstd"                => "default",
+                  "zstd-dynamic"        => "default",
                 );
 
 # Note: => pair form used for aesthetics, not to truly make a hash table
@@ -576,6 +603,7 @@ my @disable_cascades = (
                              "seed", "siphash", "siv",
                              "sm3", "sm4", "srp",
                              "srtp", "ssl3-method", "ssl-trace",
+                             "tfo",
                              "ts", "ui-console", "whirlpool",
                              "fips-securitychecks" ],
     sub { $config{processor} eq "386" }
@@ -583,10 +611,12 @@ my @disable_cascades = (
     "ssl"               => [ "ssl3" ],
     "ssl3-method"       => [ "ssl3" ],
     "zlib"              => [ "zlib-dynamic" ],
+    "brotli"            => [ "brotli-dynamic" ],
+    "zstd"              => [ "zstd-dynamic" ],
     "des"               => [ "mdc2" ],
-    "ec"                => [ "ec2m", "ecdsa", "ecdh", "sm2", "gost" ],
-    "dgram"             => [ "dtls", "sctp" ],
-    "sock"              => [ "dgram" ],
+    "ec"                => [ "ec2m", "ecdsa", "ecdh", "sm2", "gost", "ecx" ],
+    "dgram"             => [ "dtls", "quic", "sctp" ],
+    "sock"              => [ "dgram", "tfo" ],
     "dtls"              => [ @dtls ],
     sub { 0 == scalar grep { !$disabled{$_} } @dtls }
                         => [ "dtls" ],
@@ -594,6 +624,7 @@ my @disable_cascades = (
     "tls"               => [ @tls ],
     sub { 0 == scalar grep { !$disabled{$_} } @tls }
                         => [ "tls" ],
+    "tls1_3"            => [ "quic" ],
 
     "crypto-mdebug"     => [ "crypto-mdebug-backtrace" ],
 
@@ -625,7 +656,7 @@ my @disable_cascades = (
     "stdio"             => [ "apps", "capieng", "egd" ],
     "apps"              => [ "tests" ],
     "tests"             => [ "external-tests" ],
-    "comp"              => [ "zlib" ],
+    "comp"              => [ "zlib", "brotli", "zstd" ],
     "sm3"               => [ "sm2" ],
     sub { !$disabled{"unit-test"} } => [ "heartbeats" ],
 
@@ -638,7 +669,14 @@ my @disable_cascades = (
 
     "fips"              => [ "fips-securitychecks", "acvp-tests" ],
 
-    "deprecated-3.0"    => [ "engine", "srp" ]
+    "threads"           => [ "thread-pool" ],
+    "thread-pool"       => [ "default-thread-pool" ],
+
+    "blake2"            => [ "argon2" ],
+
+    "deprecated-3.0"    => [ "engine", "srp" ],
+
+    "http"              => [ "ocsp" ]
     );
 
 # Avoid protocol support holes.  Also disable all versions below N, if version
@@ -707,6 +745,7 @@ my @user_crossable = qw ( AR AS CC CXX CPP LD MT RANLIB RC );
 # input, as opposed to the VAR=string option that override the corresponding
 # config target attributes
 my %useradd = (
+    ASFLAGS     => [],
     CPPDEFINES  => [],
     CPPINCLUDES => [],
     CPPFLAGS    => [],
@@ -883,6 +922,14 @@ while (@argvcopy)
                         {
                         delete $disabled{"zlib"};
                         }
+                elsif ($1 eq "brotli-dynamic")
+                        {
+                        delete $disabled{"brotli"};
+                        }
+                elsif ($1 eq "zstd-dynamic")
+                        {
+                        delete $disabled{"zstd"};
+                        }
                 my $algo = $1;
                 delete $disabled{$algo};
 
@@ -933,8 +980,6 @@ while (@argvcopy)
                 if (/^--prefix=(.*)$/)
                         {
                         $config{prefix}=$1;
-                        die "Directory given with --prefix MUST be absolute\n"
-                                unless file_name_is_absolute($config{prefix});
                         }
                 elsif (/^--api=(.*)$/)
                         {
@@ -958,6 +1003,22 @@ while (@argvcopy)
                 elsif (/^--with-zlib-include=(.*)$/)
                         {
                         $withargs{zlib_include}=$1;
+                        }
+                elsif (/^--with-brotli-lib=(.*)$/)
+                        {
+                        $withargs{brotli_lib}=$1;
+                        }
+                elsif (/^--with-brotli-include=(.*)$/)
+                        {
+                        $withargs{brotli_include}=$1;
+                        }
+                elsif (/^--with-zstd-lib=(.*)$/)
+                        {
+                        $withargs{zstd_lib}=$1;
+                        }
+                elsif (/^--with-zstd-include=(.*)$/)
+                        {
+                        $withargs{zstd_include}=$1;
                         }
                 elsif (/^--with-fuzzer-lib=(.*)$/)
                         {
@@ -1377,6 +1438,11 @@ foreach (keys %useradd) {
 # At this point, we can forget everything about %user and %useradd,
 # because it's now all been merged into the corresponding $config entry
 
+if ($config{prefix} && !$config{CROSS_COMPILE}) {
+    die "Directory given with --prefix MUST be absolute\n"
+        unless file_name_is_absolute($config{prefix});
+}
+
 if (grep { $_ =~ /(?:^|\s)-static(?:\s|$)/ } @{$config{LDFLAGS}}) {
     disable('static', 'pic', 'threads');
 }
@@ -1714,6 +1780,12 @@ unless ($disabled{ktls}) {
     }
 }
 
+unless ($disabled{winstore}) {
+    unless ($target =~ /^(?:Cygwin|mingw|VC-|BC-)/) {
+        disable('not-windows', 'winstore');
+    }
+}
+
 push @{$config{openssl_other_defines}}, "OPENSSL_NO_KTLS" if ($disabled{ktls});
 
 # Get the extra flags used when building shared libraries and modules.  We
@@ -1785,7 +1857,7 @@ foreach my $what (sort keys %disabled) {
 
     if (!grep { $what eq $_ } ( 'buildtest-c++', 'fips', 'threads', 'shared',
                                 'module', 'pic', 'dynamic-engine', 'makedepend',
-                                'zlib-dynamic', 'zlib', 'sse2', 'legacy' )) {
+                                'sse2', 'legacy' )) {
         (my $WHAT = uc $what) =~ s|-|_|g;
         my $skipdir = $what;
 
@@ -2374,17 +2446,39 @@ EOF
             } elsif ($dest eq '') {
                 $ddest = '';
             } else {
-                $ddest = cleanfile($sourced, $_, $blddir);
+                $ddest = cleanfile($sourced, $dest, $blddir);
 
                 # If the destination doesn't exist in source, it can only be
                 # a generated file in the build tree.
                 if ($ddest eq $src_configdata || ! -f $ddest) {
-                    $ddest = cleanfile($buildd, $_, $blddir);
+                    $ddest = cleanfile($buildd, $dest, $blddir);
                 }
             }
-            foreach (@{$depends{$dest}}) {
-                my $d = cleanfile($sourced, $_, $blddir);
-                my $d2 = cleanfile($buildd, $_, $blddir);
+            foreach my $f (@{$depends{$dest}}) {
+                # If the dependency destination is generated, dependencies
+                # may have an extra syntax to separate the intended inclusion
+                # directory from the module to be loaded: a | instead of a
+                # / as directory separator.
+                # Do note that this has to be handled in the build file
+                # template as well.
+                # $i = inclusion path in source directory
+                # $i2 = inclusion path in build directory
+                # $m = module path (within the inclusion path)
+                # $i = full module path in source directory
+                # $i2 = full module path in build directory
+                my $i; my $i2; my $m; my $d; my $d2;
+                if ($unified_info{generate}->{$ddest}
+                    && $f =~ m/^(.*?)\|(.*)$/) {
+                    $i = $1;
+                    $m = $2;
+                    $i = cleanfile($sourced, $i, $blddir);
+                    $i2 = cleanfile($buildd, $i, $blddir);
+                    $d = cleanfile($sourced, "$i/$m", $blddir);
+                    $d2 = cleanfile($buildd, "$i/$m", $blddir);
+                } else {
+                    $d = cleanfile($sourced, $f, $blddir);
+                    $d2 = cleanfile($buildd, $f, $blddir);
+                }
 
                 # If we know it's generated, or assume it is because we can't
                 # find it in the source tree, we set file we depend on to be
@@ -2394,13 +2488,20 @@ EOF
                         keys %{$unified_info{generate}})
                     || ! -f $d) {
                     $d = $d2;
+                    $i = $i2;
+                }
+                if ($i) {
+                    # Put together the computed inclusion dir with the
+                    # original module name.  Do note that we conserve the
+                    # Unixly path syntax for the module path.
+                    $d = "$i|$m";
                 }
                 $unified_info{depends}->{$ddest}->{$d} = 1;
 
                 # Fix up associated attributes
                 $unified_info{attributes}->{depends}->{$ddest}->{$d} =
-                    $attributes{depends}->{$dest}->{$_}
-                    if defined $attributes{depends}->{$dest}->{$_};
+                    $attributes{depends}->{$dest}->{$f}
+                    if defined $attributes{depends}->{$dest}->{$f};
             }
         }
 
@@ -2570,7 +2671,9 @@ EOF
         next if $dest eq "";
         foreach my $d (keys %{$unified_info{depends}->{$dest}}) {
             next unless $d =~ /\.(h|pm)$/;
-            my $i = dirname($d);
+            # Take into account when a dependency uses the inclusion|module
+            # syntax
+            my $i = $d =~ m/\|/ ? $` : dirname($d);
             my $spot =
                 $d eq "configdata.pm" || defined($unified_info{generate}->{$d})
                 ? 'build' : 'source';

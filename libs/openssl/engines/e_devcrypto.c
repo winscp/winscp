@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2017-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -634,7 +634,7 @@ static void dump_cipher_info(void)
         fprintf (stderr, "Cipher %s, NID=%d, /dev/crypto info: id=%d, ",
                  name ? name : "unknown", cipher_data[i].nid,
                  cipher_data[i].devcryptoid);
-        if (cipher_driver_info[i].status == DEVCRYPTO_STATUS_NO_CIOCGSESSION ) {
+        if (cipher_driver_info[i].status == DEVCRYPTO_STATUS_NO_CIOCGSESSION) {
             fprintf (stderr, "CIOCGSESSION (session open call) failed\n");
             continue;
         }
@@ -1228,7 +1228,7 @@ static int open_devcrypto(void)
 
     if ((fd = open("/dev/crypto", O_RDWR, 0)) < 0) {
 #ifndef ENGINE_DEVCRYPTO_DEBUG
-        if (errno != ENOENT)
+        if (errno != ENOENT && errno != ENXIO)
 #endif
             fprintf(stderr, "Could not open /dev/crypto: %s\n", strerror(errno));
         return 0;

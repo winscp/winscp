@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2020 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -105,12 +105,14 @@ STACK_OF(X509_EXTENSION) *X509v3_add_ext(STACK_OF(X509_EXTENSION) **x,
 
     if (x == NULL) {
         ERR_raise(ERR_LIB_X509, ERR_R_PASSED_NULL_PARAMETER);
-        goto err2;
+        goto err;
     }
 
     if (*x == NULL) {
-        if ((sk = sk_X509_EXTENSION_new_null()) == NULL)
+        if ((sk = sk_X509_EXTENSION_new_null()) == NULL) {
+            ERR_raise(ERR_LIB_X509, ERR_R_CRYPTO_LIB);
             goto err;
+        }
     } else
         sk = *x;
 
@@ -120,16 +122,18 @@ STACK_OF(X509_EXTENSION) *X509v3_add_ext(STACK_OF(X509_EXTENSION) **x,
     else if (loc < 0)
         loc = n;
 
-    if ((new_ex = X509_EXTENSION_dup(ex)) == NULL)
-        goto err2;
-    if (!sk_X509_EXTENSION_insert(sk, new_ex, loc))
+    if ((new_ex = X509_EXTENSION_dup(ex)) == NULL) {
+        ERR_raise(ERR_LIB_X509, ERR_R_ASN1_LIB);
         goto err;
+    }
+    if (!sk_X509_EXTENSION_insert(sk, new_ex, loc)) {
+        ERR_raise(ERR_LIB_X509, ERR_R_CRYPTO_LIB);
+        goto err;
+    }
     if (*x == NULL)
         *x = sk;
     return sk;
  err:
-    ERR_raise(ERR_LIB_X509, ERR_R_MALLOC_FAILURE);
- err2:
     X509_EXTENSION_free(new_ex);
     if (x != NULL && *x == NULL)
         sk_X509_EXTENSION_free(sk);
@@ -162,7 +166,7 @@ X509_EXTENSION *X509_EXTENSION_create_by_OBJ(X509_EXTENSION **ex,
 
     if ((ex == NULL) || (*ex == NULL)) {
         if ((ret = X509_EXTENSION_new()) == NULL) {
-            ERR_raise(ERR_LIB_X509, ERR_R_MALLOC_FAILURE);
+            ERR_raise(ERR_LIB_X509, ERR_R_ASN1_LIB);
             return NULL;
         }
     } else

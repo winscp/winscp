@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright 2005 Nokia. All rights reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -87,7 +87,7 @@ static int ssl_srp_verify_param_cb(SSL *s, void *arg)
                        "SRP param N and g are not known params, going to check deeper.\n");
 
         /*
-         * The srp_moregroups is a real debugging feature. Implementors
+         * The srp_moregroups is a real debugging feature. Implementers
          * should rather add the value to the known ones. The minimal size
          * has already been tested.
          */
