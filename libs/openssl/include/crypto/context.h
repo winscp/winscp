@@ -24,6 +24,9 @@ void *ossl_rand_crng_ctx_new(OSSL_LIB_CTX *);
 int ossl_thread_register_fips(OSSL_LIB_CTX *);
 void *ossl_thread_event_ctx_new(OSSL_LIB_CTX *);
 void *ossl_fips_prov_ossl_ctx_new(OSSL_LIB_CTX *);
+#if defined(OPENSSL_THREADS)
+void *ossl_threads_ctx_new(OSSL_LIB_CTX *);
+#endif
 
 void ossl_provider_store_free(void *);
 void ossl_property_string_data_free(void *);
@@ -40,3 +43,6 @@ void ossl_rand_crng_ctx_free(void *);
 void ossl_thread_event_ctx_free(void *);
 void ossl_fips_prov_ossl_ctx_free(void *);
 void ossl_release_default_drbg_ctx(void);
+#if defined(OPENSSL_THREADS)
+void ossl_threads_ctx_free(void *);
+#endif

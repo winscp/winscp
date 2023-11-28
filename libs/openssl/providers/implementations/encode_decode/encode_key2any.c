@@ -67,7 +67,7 @@ typedef int write_bio_of_void_fn(BIO *bp, const void *x);
 /* Free the blob allocated during key_to_paramstring_fn */
 static void free_asn1_data(int type, void *data)
 {
-    switch(type) {
+    switch (type) {
     case V_ASN1_OBJECT:
         ASN1_OBJECT_free(data);
         break;
@@ -91,7 +91,7 @@ static PKCS8_PRIV_KEY_INFO *key_to_p8info(const void *key, int key_nid,
         || (derlen = k2d(key, &der)) <= 0
         || !PKCS8_pkey_set0(p8info, OBJ_nid2obj(key_nid), 0,
                             params_type, params, der, derlen)) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_PROV, ERR_R_ASN1_LIB);
         PKCS8_PRIV_KEY_INFO_free(p8info);
         OPENSSL_free(der);
         p8info = NULL;
@@ -154,7 +154,7 @@ static X509_PUBKEY *key_to_pubkey(const void *key, int key_nid,
         || (derlen = k2d(key, &der)) <= 0
         || !X509_PUBKEY_set0_param(xpk, OBJ_nid2obj(key_nid),
                                    params_type, params, der, derlen)) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_PROV, ERR_R_X509_LIB);
         X509_PUBKEY_free(xpk);
         OPENSSL_free(der);
         xpk = NULL;
@@ -380,7 +380,7 @@ static int key_to_type_specific_der_bio(BIO *out, const void *key,
     int ret;
 
     if ((derlen = k2d(key, &der)) <= 0) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_PROV, ERR_R_PROV_LIB);
         return 0;
     }
 
@@ -446,7 +446,7 @@ static int prepare_dh_params(const void *dh, int nid, int save,
     ASN1_STRING *params = ASN1_STRING_new();
 
     if (params == NULL) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_PROV, ERR_R_ASN1_LIB);
         return 0;
     }
 
@@ -456,7 +456,7 @@ static int prepare_dh_params(const void *dh, int nid, int save,
         params->length = i2d_DHparams(dh, &params->data);
 
     if (params->length <= 0) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_PROV, ERR_R_ASN1_LIB);
         ASN1_STRING_free(params);
         return 0;
     }
@@ -550,14 +550,14 @@ static int encode_dsa_params(const void *dsa, int nid,
     ASN1_STRING *params = ASN1_STRING_new();
 
     if (params == NULL) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_PROV, ERR_R_ASN1_LIB);
         return 0;
     }
 
     params->length = i2d_DSAparams(dsa, &params->data);
 
     if (params->length <= 0) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_PROV, ERR_R_ASN1_LIB);
         ASN1_STRING_free(params);
         return 0;
     }
@@ -645,13 +645,13 @@ static int prepare_ec_explicit_params(const void *eckey,
     ASN1_STRING *params = ASN1_STRING_new();
 
     if (params == NULL) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_PROV, ERR_R_ASN1_LIB);
         return 0;
     }
 
     params->length = i2d_ECParameters(eckey, &params->data);
     if (params->length <= 0) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_PROV, ERR_R_ASN1_LIB);
         ASN1_STRING_free(params);
         return 0;
     }
@@ -748,7 +748,7 @@ static int ec_pki_priv_to_der(const void *veckey, unsigned char **pder)
 
 /* ---------------------------------------------------------------------- */
 
-#ifndef OPENSSL_NO_EC
+#ifndef OPENSSL_NO_ECX
 # define prepare_ecx_params NULL
 
 static int ecx_spki_pub_to_der(const void *vecxkey, unsigned char **pder)
@@ -762,10 +762,8 @@ static int ecx_spki_pub_to_der(const void *vecxkey, unsigned char **pder)
     }
 
     keyblob = OPENSSL_memdup(ecxkey->pubkey, ecxkey->keylen);
-    if (keyblob == NULL) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
+    if (keyblob == NULL)
         return 0;
-    }
 
     *pder = keyblob;
     return ecxkey->keylen;
@@ -788,7 +786,7 @@ static int ecx_pki_priv_to_der(const void *vecxkey, unsigned char **pder)
 
     keybloblen = i2d_ASN1_OCTET_STRING(&oct, pder);
     if (keybloblen < 0) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_PROV, ERR_R_ASN1_LIB);
         return 0;
     }
 
@@ -1298,7 +1296,7 @@ static int key2any_encode(struct key2any_ctx_st *ctx, OSSL_CORE_BIO *cout,
           (void (*)(void))impl##_to_##kind##_##output##_free_object },      \
         { OSSL_FUNC_ENCODER_ENCODE,                                         \
           (void (*)(void))impl##_to_##kind##_##output##_encode },           \
-        { 0, NULL }                                                         \
+        OSSL_DISPATCH_END                                                   \
     }
 
 /*
@@ -1396,6 +1394,7 @@ MAKE_ENCODER(sm2, ec, EVP_PKEY_EC, PrivateKeyInfo, pem);
 MAKE_ENCODER(sm2, ec, EVP_PKEY_EC, SubjectPublicKeyInfo, der);
 MAKE_ENCODER(sm2, ec, EVP_PKEY_EC, SubjectPublicKeyInfo, pem);
 # endif
+# ifndef OPENSSL_NO_ECX
 MAKE_ENCODER(ed25519, ecx, EVP_PKEY_ED25519, EncryptedPrivateKeyInfo, der);
 MAKE_ENCODER(ed25519, ecx, EVP_PKEY_ED25519, EncryptedPrivateKeyInfo, pem);
 MAKE_ENCODER(ed25519, ecx, EVP_PKEY_ED25519, PrivateKeyInfo, der);
@@ -1420,6 +1419,7 @@ MAKE_ENCODER(x448, ecx, EVP_PKEY_ED448, PrivateKeyInfo, der);
 MAKE_ENCODER(x448, ecx, EVP_PKEY_ED448, PrivateKeyInfo, pem);
 MAKE_ENCODER(x448, ecx, EVP_PKEY_ED448, SubjectPublicKeyInfo, der);
 MAKE_ENCODER(x448, ecx, EVP_PKEY_ED448, SubjectPublicKeyInfo, pem);
+# endif
 #endif
 
 /*

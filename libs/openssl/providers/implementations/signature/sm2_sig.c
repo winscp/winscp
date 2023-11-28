@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2020-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -122,7 +122,6 @@ static void *sm2sig_newctx(void *provctx, const char *propq)
     ctx->libctx = PROV_LIBCTX_OF(provctx);
     if (propq != NULL && (ctx->propq = OPENSSL_strdup(propq)) == NULL) {
         OPENSSL_free(ctx);
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
         return NULL;
     }
     ctx->mdsize = SM3_DIGEST_LENGTH;
@@ -560,5 +559,5 @@ const OSSL_DISPATCH ossl_sm2_signature_functions[] = {
       (void (*)(void))sm2sig_set_ctx_md_params },
     { OSSL_FUNC_SIGNATURE_SETTABLE_CTX_MD_PARAMS,
       (void (*)(void))sm2sig_settable_ctx_md_params },
-    { 0, NULL }
+    OSSL_DISPATCH_END
 };

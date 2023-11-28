@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2012-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -16,15 +16,11 @@
  * moved out of libssl.
  */
 
-
 /*
  * MD5 and SHA-1 low level APIs are deprecated for public use, but still ok for
  * internal use.
  */
 #include "internal/deprecated.h"
-
-#include "internal/constant_time.h"
-#include "internal/cryptlib.h"
 
 #include <openssl/evp.h>
 #ifndef FIPS_MODULE
@@ -32,37 +28,9 @@
 #endif
 #include <openssl/sha.h>
 
-char ssl3_cbc_record_digest_supported(const EVP_MD_CTX *ctx);
-int ssl3_cbc_digest_record(const EVP_MD *md,
-                           unsigned char *md_out,
-                           size_t *md_out_size,
-                           const unsigned char *header,
-                           const unsigned char *data,
-                           size_t data_size,
-                           size_t data_plus_mac_plus_padding_size,
-                           const unsigned char *mac_secret,
-                           size_t mac_secret_length, char is_sslv3);
-
-# define l2n(l,c)        (*((c)++)=(unsigned char)(((l)>>24)&0xff), \
-                         *((c)++)=(unsigned char)(((l)>>16)&0xff), \
-                         *((c)++)=(unsigned char)(((l)>> 8)&0xff), \
-                         *((c)++)=(unsigned char)(((l)    )&0xff))
-
-# define l2n6(l,c)       (*((c)++)=(unsigned char)(((l)>>40)&0xff), \
-                         *((c)++)=(unsigned char)(((l)>>32)&0xff), \
-                         *((c)++)=(unsigned char)(((l)>>24)&0xff), \
-                         *((c)++)=(unsigned char)(((l)>>16)&0xff), \
-                         *((c)++)=(unsigned char)(((l)>> 8)&0xff), \
-                         *((c)++)=(unsigned char)(((l)    )&0xff))
-
-# define l2n8(l,c)       (*((c)++)=(unsigned char)(((l)>>56)&0xff), \
-                         *((c)++)=(unsigned char)(((l)>>48)&0xff), \
-                         *((c)++)=(unsigned char)(((l)>>40)&0xff), \
-                         *((c)++)=(unsigned char)(((l)>>32)&0xff), \
-                         *((c)++)=(unsigned char)(((l)>>24)&0xff), \
-                         *((c)++)=(unsigned char)(((l)>>16)&0xff), \
-                         *((c)++)=(unsigned char)(((l)>> 8)&0xff), \
-                         *((c)++)=(unsigned char)(((l)    )&0xff))
+#include "internal/ssl3_cbc.h"
+#include "internal/constant_time.h"
+#include "internal/cryptlib.h"
 
 /*
  * MAX_HASH_BIT_COUNT_BYTES is the maximum number of bytes in the hash's
@@ -83,10 +51,10 @@ int ssl3_cbc_digest_record(const EVP_MD *md,
  * little-endian order. The value of p is advanced by four.
  */
 # define u32toLE(n, p) \
-         (*((p)++)=(unsigned char)(n), \
-          *((p)++)=(unsigned char)(n>>8), \
-          *((p)++)=(unsigned char)(n>>16), \
-          *((p)++)=(unsigned char)(n>>24))
+         (*((p)++) = (unsigned char)(n      ), \
+          *((p)++) = (unsigned char)(n >>  8), \
+          *((p)++) = (unsigned char)(n >> 16), \
+          *((p)++) = (unsigned char)(n >> 24))
 
 /*
  * These functions serialize the state of a hash and thus perform the
@@ -96,6 +64,7 @@ int ssl3_cbc_digest_record(const EVP_MD *md,
 static void tls1_md5_final_raw(void *ctx, unsigned char *md_out)
 {
     MD5_CTX *md5 = ctx;
+
     u32toLE(md5->A, md_out);
     u32toLE(md5->B, md_out);
     u32toLE(md5->C, md_out);
@@ -106,6 +75,7 @@ static void tls1_md5_final_raw(void *ctx, unsigned char *md_out)
 static void tls1_sha1_final_raw(void *ctx, unsigned char *md_out)
 {
     SHA_CTX *sha1 = ctx;
+
     l2n(sha1->h0, md_out);
     l2n(sha1->h1, md_out);
     l2n(sha1->h2, md_out);
@@ -118,9 +88,8 @@ static void tls1_sha256_final_raw(void *ctx, unsigned char *md_out)
     SHA256_CTX *sha256 = ctx;
     unsigned i;
 
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 8; i++)
         l2n(sha256->h[i], md_out);
-    }
 }
 
 static void tls1_sha512_final_raw(void *ctx, unsigned char *md_out)
@@ -128,9 +97,8 @@ static void tls1_sha512_final_raw(void *ctx, unsigned char *md_out)
     SHA512_CTX *sha512 = ctx;
     unsigned i;
 
-    for (i = 0; i < 8; i++) {
+    for (i = 0; i < 8; i++)
         l2n8(sha512->h[i], md_out);
-    }
 }
 
 #undef  LARGEST_DIGEST_CTX
@@ -226,14 +194,14 @@ int ssl3_cbc_digest_record(const EVP_MD *md,
         md_transform =
             (void (*)(void *ctx, const unsigned char *block))SHA256_Transform;
         md_size = 224 / 8;
-     } else if (EVP_MD_is_a(md, "SHA2-256")) {
+    } else if (EVP_MD_is_a(md, "SHA2-256")) {
         if (SHA256_Init((SHA256_CTX *)md_state.c) <= 0)
             return 0;
         md_final_raw = tls1_sha256_final_raw;
         md_transform =
             (void (*)(void *ctx, const unsigned char *block))SHA256_Transform;
         md_size = 32;
-     } else if (EVP_MD_is_a(md, "SHA2-384")) {
+    } else if (EVP_MD_is_a(md, "SHA2-384")) {
         if (SHA384_Init((SHA512_CTX *)md_state.c) <= 0)
             return 0;
         md_final_raw = tls1_sha512_final_raw;
@@ -268,10 +236,11 @@ int ssl3_cbc_digest_record(const EVP_MD *md,
 
     header_length = 13;
     if (is_sslv3) {
-        header_length = mac_secret_length + sslv3_pad_length + 8 /* sequence
-                                                                  * number */  +
-            1 /* record type */  +
-            2 /* record length */ ;
+        header_length = mac_secret_length
+                        + sslv3_pad_length
+                        + 8  /* sequence number */
+                        + 1  /* record type */
+                        + 2; /* record length */
     }
 
     /*
@@ -289,7 +258,9 @@ int ssl3_cbc_digest_record(const EVP_MD *md,
      * short and there obviously cannot be this many blocks then
      * variance_blocks can be reduced.
      */
-    variance_blocks = is_sslv3 ? 2 : ( ((255 + 1 + md_size + md_block_size - 1) / md_block_size) + 1);
+    variance_blocks = is_sslv3 ? 2
+                               : (((255 + 1 + md_size + md_block_size - 1)
+                                   / md_block_size) + 1);
     /*
      * From now on we're dealing with the MAC, which conceptually has 13
      * bytes of `header' before the start of the data (TLS) or 71/75 bytes
@@ -431,8 +402,10 @@ int ssl3_cbc_digest_record(const EVP_MD *md,
         unsigned char block[MAX_HASH_BLOCK_SIZE];
         unsigned char is_block_a = constant_time_eq_8_s(i, index_a);
         unsigned char is_block_b = constant_time_eq_8_s(i, index_b);
+
         for (j = 0; j < md_block_size; j++) {
             unsigned char b = 0, is_past_c, is_past_cp1;
+
             if (k < header_length)
                 b = header[k];
             else if (k < data_plus_mac_plus_padding_size + header_length)
@@ -483,7 +456,7 @@ int ssl3_cbc_digest_record(const EVP_MD *md,
     if (md_ctx == NULL)
         goto err;
 
-    if (EVP_DigestInit_ex(md_ctx, md, NULL /* engine */ ) <= 0)
+    if (EVP_DigestInit_ex(md_ctx, md, NULL /* engine */) <= 0)
         goto err;
     if (is_sslv3) {
         /* We repurpose |hmac_pad| to contain the SSLv3 pad2 block. */

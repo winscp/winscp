@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2020-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -17,9 +17,6 @@
 #include "crypto/ecx.h"
 #include "prov/implementations.h"
 #include "prov/providercommon.h"
-#ifdef S390X_EC_ASM
-# include "s390x_arch.h"
-#endif
 
 static OSSL_FUNC_keyexch_newctx_fn x25519_newctx;
 static OSSL_FUNC_keyexch_newctx_fn x448_newctx;
@@ -49,10 +46,8 @@ static void *ecx_newctx(void *provctx, size_t keylen)
         return NULL;
 
     ctx = OPENSSL_zalloc(sizeof(PROV_ECX_CTX));
-    if (ctx == NULL) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
+    if (ctx == NULL)
         return NULL;
-    }
 
     ctx->keylen = keylen;
 
@@ -120,65 +115,8 @@ static int ecx_derive(void *vecxctx, unsigned char *secret, size_t *secretlen,
 
     if (!ossl_prov_is_running())
         return 0;
-
-    if (ecxctx->key == NULL
-            || ecxctx->key->privkey == NULL
-            || ecxctx->peerkey == NULL) {
-        ERR_raise(ERR_LIB_PROV, PROV_R_MISSING_KEY);
-        return 0;
-    }
-
-    if (!ossl_assert(ecxctx->keylen == X25519_KEYLEN
-            || ecxctx->keylen == X448_KEYLEN)) {
-        ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_KEY_LENGTH);
-        return 0;
-    }
-
-    if (secret == NULL) {
-        *secretlen = ecxctx->keylen;
-        return 1;
-    }
-    if (outlen < ecxctx->keylen) {
-        ERR_raise(ERR_LIB_PROV, PROV_R_OUTPUT_BUFFER_TOO_SMALL);
-        return 0;
-    }
-
-    if (ecxctx->keylen == X25519_KEYLEN) {
-#ifdef S390X_EC_ASM
-        if (OPENSSL_s390xcap_P.pcc[1]
-                & S390X_CAPBIT(S390X_SCALAR_MULTIPLY_X25519)) {
-            if (s390x_x25519_mul(secret, ecxctx->peerkey->pubkey,
-                                 ecxctx->key->privkey) == 0) {
-                ERR_raise(ERR_LIB_PROV, PROV_R_FAILED_DURING_DERIVATION);
-                return 0;
-            }
-        } else
-#endif
-        if (ossl_x25519(secret, ecxctx->key->privkey,
-                        ecxctx->peerkey->pubkey) == 0) {
-            ERR_raise(ERR_LIB_PROV, PROV_R_FAILED_DURING_DERIVATION);
-            return 0;
-        }
-    } else {
-#ifdef S390X_EC_ASM
-        if (OPENSSL_s390xcap_P.pcc[1]
-                & S390X_CAPBIT(S390X_SCALAR_MULTIPLY_X448)) {
-            if (s390x_x448_mul(secret, ecxctx->peerkey->pubkey,
-                               ecxctx->key->privkey) == 0) {
-                ERR_raise(ERR_LIB_PROV, PROV_R_FAILED_DURING_DERIVATION);
-                return 0;
-            }
-        } else
-#endif
-        if (ossl_x448(secret, ecxctx->key->privkey,
-                      ecxctx->peerkey->pubkey) == 0) {
-            ERR_raise(ERR_LIB_PROV, PROV_R_FAILED_DURING_DERIVATION);
-            return 0;
-        }
-    }
-
-    *secretlen = ecxctx->keylen;
-    return 1;
+    return ossl_ecx_compute_key(ecxctx->peerkey, ecxctx->key, ecxctx->keylen,
+                                secret, secretlen, outlen);
 }
 
 static void ecx_freectx(void *vecxctx)
@@ -200,10 +138,8 @@ static void *ecx_dupctx(void *vecxctx)
         return NULL;
 
     dstctx = OPENSSL_zalloc(sizeof(*srcctx));
-    if (dstctx == NULL) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
+    if (dstctx == NULL)
         return NULL;
-    }
 
     *dstctx = *srcctx;
     if (dstctx->key != NULL && !ossl_ecx_key_up_ref(dstctx->key)) {
@@ -229,7 +165,7 @@ const OSSL_DISPATCH ossl_x25519_keyexch_functions[] = {
     { OSSL_FUNC_KEYEXCH_SET_PEER, (void (*)(void))ecx_set_peer },
     { OSSL_FUNC_KEYEXCH_FREECTX, (void (*)(void))ecx_freectx },
     { OSSL_FUNC_KEYEXCH_DUPCTX, (void (*)(void))ecx_dupctx },
-    { 0, NULL }
+    OSSL_DISPATCH_END
 };
 
 const OSSL_DISPATCH ossl_x448_keyexch_functions[] = {
@@ -239,5 +175,5 @@ const OSSL_DISPATCH ossl_x448_keyexch_functions[] = {
     { OSSL_FUNC_KEYEXCH_SET_PEER, (void (*)(void))ecx_set_peer },
     { OSSL_FUNC_KEYEXCH_FREECTX, (void (*)(void))ecx_freectx },
     { OSSL_FUNC_KEYEXCH_DUPCTX, (void (*)(void))ecx_dupctx },
-    { 0, NULL }
+    OSSL_DISPATCH_END
 };

@@ -183,7 +183,6 @@ static int s390x_keccakc_final(unsigned char *md, void *vctx, int padding)
     size_t bsz = ctx->block_size;
     size_t num = ctx->bufsz;
     size_t needed = ctx->md_size;
-    static const unsigned char empty[KECCAK1600_WIDTH / 8] = {0};
 
     if (!ossl_prov_is_running())
         return 0;
@@ -193,15 +192,18 @@ static int s390x_keccakc_final(unsigned char *md, void *vctx, int padding)
     ctx->buf[num] = padding;
     ctx->buf[bsz - 1] |= 0x80;
     s390x_kimd(ctx->buf, bsz, ctx->pad, ctx->A);
-    while (needed > bsz) {
-        memcpy(md, ctx->A, bsz);
-        needed -= bsz;
-        md += bsz;
-        s390x_kimd(empty, bsz, ctx->pad, ctx->A);
-    }
-    memcpy(md, ctx->A, needed);
+    num = needed > bsz ? bsz : needed;
+    memcpy(md, ctx->A, num);
+    needed -= num;
+    if (needed > 0)
+        s390x_klmd(NULL, 0, md + bsz, needed, ctx->pad | S390X_KLMD_PS, ctx->A);
 
     return 1;
+}
+
+static int s390x_keccak_final(unsigned char *md, void *vctx)
+{
+    return s390x_keccakc_final(md, vctx, 0x01);
 }
 
 static int s390x_kmac_final(unsigned char *md, void *vctx)
@@ -213,6 +215,12 @@ static PROV_SHA3_METHOD sha3_s390x_md =
 {
     s390x_sha3_absorb,
     s390x_sha3_final
+};
+
+static PROV_SHA3_METHOD keccak_s390x_md =
+{
+    s390x_sha3_absorb,
+    s390x_keccak_final
 };
 
 static PROV_SHA3_METHOD shake_s390x_md =
@@ -238,6 +246,40 @@ static PROV_SHA3_METHOD kmac_s390x_md =
     if (S390_SHA3_CAPABLE(SHAKE_##bitlen)) {                                   \
         ctx->pad = S390X_SHAKE_##bitlen;                                       \
         ctx->meth = kmac_s390x_md;                                             \
+    } else {                                                                   \
+        ctx->meth = sha3_generic_md;                                           \
+    }
+#elif defined(__aarch64__) && defined(KECCAK1600_ASM)
+# include "arm_arch.h"
+
+static sha3_absorb_fn armsha3_sha3_absorb;
+
+size_t SHA3_absorb_cext(uint64_t A[5][5], const unsigned char *inp, size_t len,
+                    size_t r);
+/*-
+ * Hardware-assisted ARMv8.2 SHA3 extension version of the absorb()
+ */
+static size_t armsha3_sha3_absorb(void *vctx, const void *inp, size_t len)
+{
+    KECCAK1600_CTX *ctx = vctx;
+
+    return SHA3_absorb_cext(ctx->A, inp, len, ctx->block_size);
+}
+
+static PROV_SHA3_METHOD sha3_ARMSHA3_md =
+{
+    armsha3_sha3_absorb,
+    generic_sha3_final
+};
+# define SHA3_SET_MD(uname, typ)                                               \
+    if (OPENSSL_armcap_P & ARMV8_HAVE_SHA3_AND_WORTH_USING) {                  \
+        ctx->meth = sha3_ARMSHA3_md;                                           \
+    } else {                                                                   \
+        ctx->meth = sha3_generic_md;                                           \
+    }
+# define KMAC_SET_MD(bitlen)                                                   \
+    if (OPENSSL_armcap_P & ARMV8_HAVE_SHA3_AND_WORTH_USING) {                  \
+        ctx->meth = sha3_ARMSHA3_md;                                           \
     } else {                                                                   \
         ctx->meth = sha3_generic_md;                                           \
     }
@@ -349,6 +391,12 @@ static int shake_set_ctx_params(void *vctx, const OSSL_PARAM params[])
                           SHA3_BLOCKSIZE(bitlen), SHA3_MDSIZE(bitlen),         \
                           SHA3_FLAGS)
 
+#define IMPLEMENT_KECCAK_functions(bitlen)                                     \
+    SHA3_newctx(keccak, KECCAK_##bitlen, keccak_##bitlen, bitlen, '\x01')      \
+    PROV_FUNC_SHA3_DIGEST(keccak_##bitlen, bitlen,                             \
+                          SHA3_BLOCKSIZE(bitlen), SHA3_MDSIZE(bitlen),         \
+                          SHA3_FLAGS)
+
 #define IMPLEMENT_SHAKE_functions(bitlen)                                      \
     SHA3_newctx(shake, SHAKE_##bitlen, shake_##bitlen, bitlen, '\x1f')         \
     PROV_FUNC_SHAKE_DIGEST(shake_##bitlen, bitlen,                             \
@@ -368,6 +416,14 @@ IMPLEMENT_SHA3_functions(256)
 IMPLEMENT_SHA3_functions(384)
 /* ossl_sha3_512_functions */
 IMPLEMENT_SHA3_functions(512)
+/* ossl_keccak_224_functions */
+IMPLEMENT_KECCAK_functions(224)
+/* ossl_keccak_256_functions */
+IMPLEMENT_KECCAK_functions(256)
+/* ossl_keccak_384_functions */
+IMPLEMENT_KECCAK_functions(384)
+/* ossl_keccak_512_functions */
+IMPLEMENT_KECCAK_functions(512)
 /* ossl_shake_128_functions */
 IMPLEMENT_SHAKE_functions(128)
 /* ossl_shake_256_functions */

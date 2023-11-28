@@ -44,7 +44,7 @@ static int collect_numbers(STACK_OF(BIGNUM) *numbers,
     if (numbers == NULL)
         return 0;
 
-    for (i = 0; names[i] != NULL; i++){
+    for (i = 0; names[i] != NULL; i++) {
         p = OSSL_PARAM_locate_const(params, names[i]);
         if (p != NULL) {
             BIGNUM *tmp = NULL;
@@ -389,10 +389,8 @@ RSA *ossl_rsa_dup(const RSA *rsa, int selection)
             const RSA_PRIME_INFO *pinfo = NULL;
             RSA_PRIME_INFO *duppinfo = NULL;
 
-            if ((duppinfo = OPENSSL_zalloc(sizeof(*duppinfo))) == NULL) {
-                ERR_raise(ERR_LIB_RSA, ERR_R_MALLOC_FAILURE);
+            if ((duppinfo = OPENSSL_zalloc(sizeof(*duppinfo))) == NULL)
                 goto err;
-            }
             /* push first so cleanup in error case works */
             (void)sk_RSA_PRIME_INFO_push(dupkey->prime_infos, duppinfo);
 
@@ -514,7 +512,7 @@ int ossl_rsa_pss_get_param_unverified(const RSA_PSS_PARAMS *pss,
     if (pss->trailerField)
         *ptrailerField = ASN1_INTEGER_get(pss->trailerField);
     else
-        *ptrailerField = ossl_rsa_pss_params_30_trailerfield(&pss_params);;
+        *ptrailerField = ossl_rsa_pss_params_30_trailerfield(&pss_params);
 
     return 1;
 }

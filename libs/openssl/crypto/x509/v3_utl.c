@@ -56,8 +56,10 @@ static int x509v3_add_len_value(const char *name, const char *value,
     }
     if ((vtmp = OPENSSL_malloc(sizeof(*vtmp))) == NULL)
         goto err;
-    if (sk_allocated && (*extlist = sk_CONF_VALUE_new_null()) == NULL)
+    if (sk_allocated && (*extlist = sk_CONF_VALUE_new_null()) == NULL) {
+        ERR_raise(ERR_LIB_X509V3, ERR_R_CRYPTO_LIB);
         goto err;
+    }
     vtmp->section = NULL;
     vtmp->name = tname;
     vtmp->value = tvalue;
@@ -65,7 +67,6 @@ static int x509v3_add_len_value(const char *name, const char *value,
         goto err;
     return 1;
  err:
-    ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
     if (sk_allocated) {
         sk_CONF_VALUE_free(*extlist);
         *extlist = NULL;
@@ -146,7 +147,6 @@ static char *bignum_to_string(const BIGNUM *bn)
     len = strlen(tmp) + 3;
     ret = OPENSSL_malloc(len);
     if (ret == NULL) {
-        ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
         OPENSSL_free(tmp);
         return NULL;
     }
@@ -170,9 +170,10 @@ char *i2s_ASN1_ENUMERATED(X509V3_EXT_METHOD *method, const ASN1_ENUMERATED *a)
 
     if (!a)
         return NULL;
-    if ((bntmp = ASN1_ENUMERATED_to_BN(a, NULL)) == NULL
-        || (strtmp = bignum_to_string(bntmp)) == NULL)
-        ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
+    if ((bntmp = ASN1_ENUMERATED_to_BN(a, NULL)) == NULL)
+        ERR_raise(ERR_LIB_X509V3, ERR_R_ASN1_LIB);
+    else if ((strtmp = bignum_to_string(bntmp)) == NULL)
+        ERR_raise(ERR_LIB_X509V3, ERR_R_X509V3_LIB);
     BN_free(bntmp);
     return strtmp;
 }
@@ -184,9 +185,10 @@ char *i2s_ASN1_INTEGER(X509V3_EXT_METHOD *method, const ASN1_INTEGER *a)
 
     if (!a)
         return NULL;
-    if ((bntmp = ASN1_INTEGER_to_BN(a, NULL)) == NULL
-        || (strtmp = bignum_to_string(bntmp)) == NULL)
-        ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
+    if ((bntmp = ASN1_INTEGER_to_BN(a, NULL)) == NULL)
+        ERR_raise(ERR_LIB_X509V3, ERR_R_ASN1_LIB);
+    else if ((strtmp = bignum_to_string(bntmp)) == NULL)
+        ERR_raise(ERR_LIB_X509V3, ERR_R_X509V3_LIB);
     BN_free(bntmp);
     return strtmp;
 }
@@ -204,7 +206,7 @@ ASN1_INTEGER *s2i_ASN1_INTEGER(X509V3_EXT_METHOD *method, const char *value)
     }
     bn = BN_new();
     if (bn == NULL) {
-        ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_X509V3, ERR_R_BN_LIB);
         return NULL;
     }
     if (value[0] == '-') {
@@ -320,10 +322,8 @@ STACK_OF(CONF_VALUE) *X509V3_parse_list(const char *line)
 
     /* We are going to modify the line so copy it first */
     linebuf = OPENSSL_strdup(line);
-    if (linebuf == NULL) {
-        ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
+    if (linebuf == NULL)
         goto err;
-    }
     state = HDR_NAME;
     ntmp = NULL;
     /* Go through all characters */
@@ -715,7 +715,7 @@ static int wildcard_match(const unsigned char *prefix, size_t prefix_len,
     }
     /* IDNA labels cannot match partial wildcards */
     if (!allow_idna &&
-        subject_len >= 4 && OPENSSL_strncasecmp((char *)subject, "xn--", 4) == 0)
+        subject_len >= 4 && HAS_CASE_PREFIX((const char *)subject, "xn--"))
         return 0;
     /* The wildcard may match a literal '*' */
     if (wildcard_end == wildcard_start + 1 && *wildcard_start == '*')
@@ -775,7 +775,7 @@ static const unsigned char *valid_star(const unsigned char *p, size_t len,
                    || ('A' <= p[i] && p[i] <= 'Z')
                    || ('0' <= p[i] && p[i] <= '9')) {
             if ((state & LABEL_START) != 0
-                && len - i >= 4 && OPENSSL_strncasecmp((char *)&p[i], "xn--", 4) == 0)
+                && len - i >= 4 && HAS_CASE_PREFIX((const char *)&p[i], "xn--"))
                 state |= LABEL_IDNA;
             state &= ~(LABEL_HYPHEN | LABEL_START);
         } else if (p[i] == '.') {

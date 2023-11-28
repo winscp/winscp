@@ -171,10 +171,8 @@ static int tree_init(X509_POLICY_TREE **ptree, STACK_OF(X509) *certs,
         return ret;
 
     /* If we get this far initialize the tree */
-    if ((tree = OPENSSL_zalloc(sizeof(*tree))) == NULL) {
-        ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
+    if ((tree = OPENSSL_zalloc(sizeof(*tree))) == NULL)
         return X509_PCY_TREE_INTERNAL;
-    }
 
     /* Limit the growth of the tree to mitigate CVE-2023-0464 */
     tree->node_maximum = OPENSSL_POLICY_TREE_NODES_MAX;
@@ -188,7 +186,6 @@ static int tree_init(X509_POLICY_TREE **ptree, STACK_OF(X509) *certs,
      */
     if ((tree->levels = OPENSSL_zalloc(sizeof(*tree->levels)*(n+1))) == NULL) {
         OPENSSL_free(tree);
-        ERR_raise(ERR_LIB_X509V3, ERR_R_MALLOC_FAILURE);
         return X509_PCY_TREE_INTERNAL;
     }
     tree->nlevel = n+1;
@@ -702,6 +699,7 @@ int X509_policy_check(X509_POLICY_TREE **ptree, int *pexplicit_policy,
 
     if ((calc_ret = tree_calculate_authority_set(tree, &auth_nodes)) == 0)
         goto error;
+    sk_X509_POLICY_NODE_sort(auth_nodes);
     ret = tree_calculate_user_set(tree, policy_oids, auth_nodes);
     if (calc_ret == TREE_CALC_OK_DOFREE)
         sk_X509_POLICY_NODE_free(auth_nodes);

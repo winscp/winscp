@@ -154,14 +154,14 @@ static int rsa_priv_encode(PKCS8_PRIV_KEY_INFO *p8, const EVP_PKEY *pkey)
     rklen = i2d_RSAPrivateKey(pkey->pkey.rsa, &rk);
 
     if (rklen <= 0) {
-        ERR_raise(ERR_LIB_RSA, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_RSA, ERR_R_ASN1_LIB);
         ASN1_STRING_free(str);
         return 0;
     }
 
     if (!PKCS8_pkey_set0(p8, OBJ_nid2obj(pkey->ameth->pkey_id), 0,
                          strtype, str, rk, rklen)) {
-        ERR_raise(ERR_LIB_RSA, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_RSA, ERR_R_ASN1_LIB);
         ASN1_STRING_free(str);
         OPENSSL_clear_free(rk, rklen);
         return 0;
@@ -220,7 +220,7 @@ static int rsa_pss_param_print(BIO *bp, int pss_key, RSA_PSS_PARAMS *pss,
                 return 0;
         }
     } else if (pss == NULL) {
-        if (BIO_puts(bp,"(INVALID PSS PARAMETERS)\n") <= 0)
+        if (BIO_puts(bp, "(INVALID PSS PARAMETERS)\n") <= 0)
             return 0;
         return 1;
     }
@@ -850,7 +850,7 @@ static int rsa_int_import_from(const OSSL_PARAM params[], void *vpctx,
     int ok = 0;
 
     if (rsa == NULL) {
-        ERR_raise(ERR_LIB_DH, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_DH, ERR_R_RSA_LIB);
         return 0;
     }
 

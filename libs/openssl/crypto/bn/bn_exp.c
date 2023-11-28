@@ -169,7 +169,7 @@ int BN_mod_exp(BIGNUM *r, const BIGNUM *a, const BIGNUM *p, const BIGNUM *m,
 int BN_mod_exp_recp(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
                     const BIGNUM *m, BN_CTX *ctx)
 {
-    int i, j, bits, ret = 0, wstart, wend, window, wvalue;
+    int i, j, bits, ret = 0, wstart, wend, window;
     int start = 1;
     BIGNUM *aa;
     /* Table of variables obtained from 'ctx' */
@@ -239,14 +239,23 @@ int BN_mod_exp_recp(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
     start = 1;                  /* This is used to avoid multiplication etc
                                  * when there is only the value '1' in the
                                  * buffer. */
-    wvalue = 0;                 /* The 'value' of the window */
     wstart = bits - 1;          /* The top bit of the window */
     wend = 0;                   /* The bottom bit of the window */
+
+    if (r == p) {
+        BIGNUM *p_dup = BN_CTX_get(ctx);
+
+        if (p_dup == NULL || BN_copy(p_dup, p) == NULL)
+            goto err;
+        p = p_dup;
+    }
 
     if (!BN_one(r))
         goto err;
 
     for (;;) {
+        int wvalue;             /* The 'value' of the window */
+
         if (BN_is_bit_set(p, wstart) == 0) {
             if (!start)
                 if (!BN_mod_mul_reciprocal(r, r, r, &recp, ctx))
@@ -288,7 +297,6 @@ int BN_mod_exp_recp(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
 
         /* move the 'window' down further */
         wstart -= wend + 1;
-        wvalue = 0;
         start = 0;
         if (wstart < 0)
             break;
@@ -304,7 +312,7 @@ int BN_mod_exp_recp(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
 int BN_mod_exp_mont(BIGNUM *rr, const BIGNUM *a, const BIGNUM *p,
                     const BIGNUM *m, BN_CTX *ctx, BN_MONT_CTX *in_mont)
 {
-    int i, j, bits, ret = 0, wstart, wend, window, wvalue;
+    int i, j, bits, ret = 0, wstart, wend, window;
     int start = 1;
     BIGNUM *d, *r;
     const BIGNUM *aa;
@@ -384,7 +392,6 @@ int BN_mod_exp_mont(BIGNUM *rr, const BIGNUM *a, const BIGNUM *p,
     start = 1;                  /* This is used to avoid multiplication etc
                                  * when there is only the value '1' in the
                                  * buffer. */
-    wvalue = 0;                 /* The 'value' of the window */
     wstart = bits - 1;          /* The top bit of the window */
     wend = 0;                   /* The bottom bit of the window */
 
@@ -404,6 +411,8 @@ int BN_mod_exp_mont(BIGNUM *rr, const BIGNUM *a, const BIGNUM *p,
     if (!bn_to_mont_fixed_top(r, BN_value_one(), mont, ctx))
         goto err;
     for (;;) {
+        int wvalue;             /* The 'value' of the window */
+
         if (BN_is_bit_set(p, wstart) == 0) {
             if (!start) {
                 if (!bn_mul_mont_fixed_top(r, r, r, mont, ctx))
@@ -446,7 +455,6 @@ int BN_mod_exp_mont(BIGNUM *rr, const BIGNUM *a, const BIGNUM *p,
 
         /* move the 'window' down further */
         wstart -= wend + 1;
-        wvalue = 0;
         start = 0;
         if (wstart < 0)
             break;
@@ -1303,7 +1311,7 @@ int BN_mod_exp_mont_word(BIGNUM *rr, BN_ULONG a, const BIGNUM *p,
 int BN_mod_exp_simple(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
                       const BIGNUM *m, BN_CTX *ctx)
 {
-    int i, j, bits, ret = 0, wstart, wend, window, wvalue;
+    int i, j, bits, ret = 0, wstart, wend, window;
     int start = 1;
     BIGNUM *d;
     /* Table of variables obtained from 'ctx' */
@@ -1314,6 +1322,11 @@ int BN_mod_exp_simple(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
             || BN_get_flags(m, BN_FLG_CONSTTIME) != 0) {
         /* BN_FLG_CONSTTIME only supported by BN_mod_exp_mont() */
         ERR_raise(ERR_LIB_BN, ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED);
+        return 0;
+    }
+
+    if (r == m) {
+        ERR_raise(ERR_LIB_BN, ERR_R_PASSED_INVALID_ARGUMENT);
         return 0;
     }
 
@@ -1358,14 +1371,23 @@ int BN_mod_exp_simple(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
     start = 1;                  /* This is used to avoid multiplication etc
                                  * when there is only the value '1' in the
                                  * buffer. */
-    wvalue = 0;                 /* The 'value' of the window */
     wstart = bits - 1;          /* The top bit of the window */
     wend = 0;                   /* The bottom bit of the window */
+
+    if (r == p) {
+        BIGNUM *p_dup = BN_CTX_get(ctx);
+
+        if (p_dup == NULL || BN_copy(p_dup, p) == NULL)
+            goto err;
+        p = p_dup;
+    }
 
     if (!BN_one(r))
         goto err;
 
     for (;;) {
+        int wvalue;             /* The 'value' of the window */
+
         if (BN_is_bit_set(p, wstart) == 0) {
             if (!start)
                 if (!BN_mod_mul(r, r, r, m, ctx))
@@ -1407,7 +1429,6 @@ int BN_mod_exp_simple(BIGNUM *r, const BIGNUM *a, const BIGNUM *p,
 
         /* move the 'window' down further */
         wstart -= wend + 1;
-        wvalue = 0;
         start = 0;
         if (wstart < 0)
             break;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2020-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -361,5 +361,5 @@ const OSSL_DISPATCH ossl_rsa_asym_kem_functions[] = {
       (void (*)(void))rsakem_set_ctx_params },
     { OSSL_FUNC_KEM_SETTABLE_CTX_PARAMS,
       (void (*)(void))rsakem_settable_ctx_params },
-    { 0, NULL }
+    OSSL_DISPATCH_END
 };

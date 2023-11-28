@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2020-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -126,7 +126,7 @@ int ecdh_match_params(const EC_KEY *priv, const EC_KEY *peer)
 
     ctx = BN_CTX_new_ex(ossl_ec_key_get_libctx(priv));
     if (ctx == NULL) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_PROV, ERR_R_BN_LIB);
         return 0;
     }
     ret = group_priv != NULL
@@ -378,7 +378,7 @@ int ecdh_get_ctx_params(void *vpecdhctx, OSSL_PARAM params[])
     if (p != NULL
             && !OSSL_PARAM_set_utf8_string(p, pectx->kdf_md == NULL
                                            ? ""
-                                           : EVP_MD_get0_name(pectx->kdf_md))){
+                                           : EVP_MD_get0_name(pectx->kdf_md))) {
         return 0;
     }
 
@@ -451,7 +451,7 @@ int ecdh_plain_derive(void *vpecdhctx, unsigned char *secret,
     }
 
     if ((group = EC_KEY_get0_group(pecdhctx->k)) == NULL
-            || (cofactor = EC_GROUP_get0_cofactor(group)) == NULL )
+            || (cofactor = EC_GROUP_get0_cofactor(group)) == NULL)
         return 0;
 
     /*
@@ -524,10 +524,8 @@ int ecdh_X9_63_kdf_derive(void *vpecdhctx, unsigned char *secret,
     }
     if (!ecdh_plain_derive(vpecdhctx, NULL, &stmplen, 0))
         return 0;
-    if ((stmp = OPENSSL_secure_malloc(stmplen)) == NULL) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
+    if ((stmp = OPENSSL_secure_malloc(stmplen)) == NULL)
         return 0;
-    }
     if (!ecdh_plain_derive(vpecdhctx, stmp, &stmplen, stmplen))
         goto err;
 
@@ -577,5 +575,5 @@ const OSSL_DISPATCH ossl_ecdh_keyexch_functions[] = {
     { OSSL_FUNC_KEYEXCH_GET_CTX_PARAMS, (void (*)(void))ecdh_get_ctx_params },
     { OSSL_FUNC_KEYEXCH_GETTABLE_CTX_PARAMS,
       (void (*)(void))ecdh_gettable_ctx_params },
-    { 0, NULL }
+    OSSL_DISPATCH_END
 };

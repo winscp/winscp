@@ -36,7 +36,7 @@ static int ocsp_verify_signer(X509 *signer, int response,
     int ret = -1;
 
     if (ctx == NULL) {
-        ERR_raise(ERR_LIB_OCSP, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_OCSP, ERR_R_X509_LIB);
         goto end;
     }
     if (!X509_STORE_CTX_init(ctx, st, signer, untrusted)) {
@@ -154,7 +154,7 @@ int OCSP_basic_verify(OCSP_BASICRESP *bs, STACK_OF(X509) *certs,
     }
 
  end:
-    sk_X509_pop_free(chain, X509_free);
+    OSSL_STACK_OF_X509_free(chain);
     sk_X509_free(untrusted);
     return ret;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1999-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -25,3 +25,9 @@ extern const X509V3_EXT_METHOD ossl_v3_tls_feature;
 extern const X509V3_EXT_METHOD ossl_v3_ext_admission;
 extern const X509V3_EXT_METHOD ossl_v3_utf8_list[1];
 extern const X509V3_EXT_METHOD ossl_v3_issuer_sign_tool;
+extern const X509V3_EXT_METHOD ossl_v3_group_ac;
+extern const X509V3_EXT_METHOD ossl_v3_soa_identifier;
+extern const X509V3_EXT_METHOD ossl_v3_no_assertion;
+extern const X509V3_EXT_METHOD ossl_v3_no_rev_avail;
+extern const X509V3_EXT_METHOD ossl_v3_single_use;
+extern const X509V3_EXT_METHOD ossl_v3_indirect_issuer;

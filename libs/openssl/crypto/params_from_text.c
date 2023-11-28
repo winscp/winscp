@@ -8,7 +8,7 @@
  * https://www.openssl.org/source/license.html
  */
 
-#include <string.h>
+#include "internal/common.h" /* for HAS_PREFIX */
 #include <openssl/ebcdic.h>
 #include <openssl/err.h>
 #include <openssl/params.h>
@@ -35,10 +35,7 @@ static int prepare_from_text(const OSSL_PARAM *paramdefs, const char *key,
      * ishex is used to translate legacy style string controls in hex format
      * to octet string parameters.
      */
-    *ishex = strncmp(key, "hex", 3) == 0;
-
-    if (*ishex)
-        key += 3;
+    *ishex = CHECK_AND_SKIP_PREFIX(key, "hex");
 
     p = *paramdef = OSSL_PARAM_locate_const(paramdefs, key);
     if (found != NULL)
@@ -213,10 +210,8 @@ int OSSL_PARAM_allocate_from_text(OSSL_PARAM *to,
                            &paramdef, &ishex, &buf_n, &tmpbn, found))
         goto err;
 
-    if ((buf = OPENSSL_zalloc(buf_n > 0 ? buf_n : 1)) == NULL) {
-        ERR_raise(ERR_LIB_CRYPTO, ERR_R_MALLOC_FAILURE);
+    if ((buf = OPENSSL_zalloc(buf_n > 0 ? buf_n : 1)) == NULL)
         goto err;
-    }
 
     ok = construct_from_text(to, paramdef, value, value_n, ishex,
                              buf, buf_n, tmpbn);

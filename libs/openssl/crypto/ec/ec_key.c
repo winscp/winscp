@@ -24,6 +24,7 @@
 #endif
 #include <openssl/self_test.h>
 #include "prov/providercommon.h"
+#include "prov/ecx.h"
 #include "crypto/bn.h"
 
 static int ecdsa_keygen_pairwise_test(EC_KEY *eckey, OSSL_CALLBACK *cb,
@@ -74,7 +75,7 @@ void EC_KEY_free(EC_KEY *r)
     if (r == NULL)
         return;
 
-    CRYPTO_DOWN_REF(&r->references, &i, r->lock);
+    CRYPTO_DOWN_REF(&r->references, &i);
     REF_PRINT_COUNT("EC_KEY", r);
     if (i > 0)
         return;
@@ -93,7 +94,7 @@ void EC_KEY_free(EC_KEY *r)
 #ifndef FIPS_MODULE
     CRYPTO_free_ex_data(CRYPTO_EX_INDEX_EC_KEY, r, &r->ex_data);
 #endif
-    CRYPTO_THREAD_lock_free(r->lock);
+    CRYPTO_FREE_REF(&r->references);
     EC_GROUP_free(r->group);
     EC_POINT_free(r->pub_key);
     BN_clear_free(r->priv_key);
@@ -193,7 +194,7 @@ int EC_KEY_up_ref(EC_KEY *r)
 {
     int i;
 
-    if (CRYPTO_UP_REF(&r->references, &i, r->lock) <= 0)
+    if (CRYPTO_UP_REF(&r->references, &i) <= 0)
         return 0;
 
     REF_PRINT_COUNT("EC_KEY", r);
@@ -400,6 +401,43 @@ err:
     BN_free(order);
     return ok;
 }
+
+#ifndef FIPS_MODULE
+/*
+ * This is similar to ec_generate_key(), except it uses an ikm to
+ * derive the private key.
+ */
+int ossl_ec_generate_key_dhkem(EC_KEY *eckey,
+                               const unsigned char *ikm, size_t ikmlen)
+{
+    int ok = 0;
+
+    if (eckey->priv_key == NULL) {
+        eckey->priv_key = BN_secure_new();
+        if (eckey->priv_key == NULL)
+            goto err;
+    }
+    if (ossl_ec_dhkem_derive_private(eckey, eckey->priv_key, ikm, ikmlen) <= 0)
+        goto err;
+    if (eckey->pub_key == NULL) {
+        eckey->pub_key = EC_POINT_new(eckey->group);
+        if (eckey->pub_key == NULL)
+            goto err;
+    }
+    if (!ossl_ec_key_simple_generate_public_key(eckey))
+        goto err;
+
+    ok = 1;
+err:
+    if (!ok) {
+        BN_clear_free(eckey->priv_key);
+        eckey->priv_key = NULL;
+        if (eckey->pub_key != NULL)
+            EC_POINT_set_to_infinity(eckey->group, eckey->pub_key);
+    }
+    return ok;
+}
+#endif
 
 int ossl_ec_key_simple_generate_key(EC_KEY *eckey)
 {
@@ -1005,7 +1043,7 @@ int ossl_ec_key_simple_oct2priv(EC_KEY *eckey, const unsigned char *buf,
     if (eckey->priv_key == NULL)
         eckey->priv_key = BN_secure_new();
     if (eckey->priv_key == NULL) {
-        ERR_raise(ERR_LIB_EC, ERR_R_MALLOC_FAILURE);
+        ERR_raise(ERR_LIB_EC, ERR_R_BN_LIB);
         return 0;
     }
     if (BN_bin2bn(buf, len, eckey->priv_key) == NULL) {
@@ -1024,10 +1062,8 @@ size_t EC_KEY_priv2buf(const EC_KEY *eckey, unsigned char **pbuf)
     len = EC_KEY_priv2oct(eckey, NULL, 0);
     if (len == 0)
         return 0;
-    if ((buf = OPENSSL_malloc(len)) == NULL) {
-        ERR_raise(ERR_LIB_EC, ERR_R_MALLOC_FAILURE);
+    if ((buf = OPENSSL_malloc(len)) == NULL)
         return 0;
-    }
     len = EC_KEY_priv2oct(eckey, buf, len);
     if (len == 0) {
         OPENSSL_free(buf);

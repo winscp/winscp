@@ -22,9 +22,8 @@
 #include <openssl/http.h>
 #include <openssl/trace.h>
 #include "internal/sockets.h"
-#include "internal/cryptlib.h" /* for ossl_assert() */
+#include "internal/common.h" /* for ossl_assert() */
 
-#define HAS_PREFIX(str, prefix) (strncmp(str, prefix, sizeof(prefix) - 1) == 0)
 #define HTTP_PREFIX "HTTP/"
 #define HTTP_VERSION_PATT "1." /* allow 1.x */
 #define HTTP_VERSION_STR_LEN sizeof(HTTP_VERSION_PATT) /* == strlen("1.0") */
@@ -57,6 +56,7 @@ struct ossl_http_req_ctx_st {
     BIO *mem;                   /* Mem BIO holding request header or response */
     BIO *req;                   /* BIO holding the request provided by caller */
     int method_POST;            /* HTTP method is POST (else GET) */
+    int text;                   /* Request content type is (likely) text */
     char *expected_ct;          /* Optional expected Content-Type */
     int expect_asn1;            /* Response must be ASN.1-encoded */
     unsigned char *pos;         /* Current position sending data */
@@ -75,16 +75,18 @@ struct ossl_http_req_ctx_st {
 #define OHS_ERROR          (0 | OHS_NOREAD) /* Error condition */
 #define OHS_ADD_HEADERS    (1 | OHS_NOREAD) /* Adding header lines to request */
 #define OHS_WRITE_INIT     (2 | OHS_NOREAD) /* 1st call: ready to start send */
-#define OHS_WRITE_HDR      (3 | OHS_NOREAD) /* Request header being sent */
-#define OHS_WRITE_REQ      (4 | OHS_NOREAD) /* Request contents being sent */
-#define OHS_FLUSH          (5 | OHS_NOREAD) /* Request being flushed */
+#define OHS_WRITE_HDR1     (3 | OHS_NOREAD) /* Request header to be sent */
+#define OHS_WRITE_HDR      (4 | OHS_NOREAD) /* Request header being sent */
+#define OHS_WRITE_REQ      (5 | OHS_NOREAD) /* Request content being sent */
+#define OHS_FLUSH          (6 | OHS_NOREAD) /* Request being flushed */
 #define OHS_FIRSTLINE       1 /* First line of response being read */
 #define OHS_HEADERS         2 /* MIME headers of response being read */
-#define OHS_REDIRECT        3 /* MIME headers being read, expecting Location */
-#define OHS_ASN1_HEADER     4 /* ASN1 sequence header (tag+length) being read */
-#define OHS_ASN1_CONTENT    5 /* ASN1 content octets being read */
-#define OHS_ASN1_DONE      (6 | OHS_NOREAD) /* ASN1 content read completed */
-#define OHS_STREAM         (7 | OHS_NOREAD) /* HTTP content stream to be read */
+#define OHS_HEADERS_ERROR   3 /* MIME headers of resp. being read after error */
+#define OHS_REDIRECT        4 /* MIME headers being read, expecting Location */
+#define OHS_ASN1_HEADER     5 /* ASN1 sequence header (tag+length) being read */
+#define OHS_ASN1_CONTENT    6 /* ASN1 content octets being read */
+#define OHS_ASN1_DONE      (7 | OHS_NOREAD) /* ASN1 content read completed */
+#define OHS_STREAM         (8 | OHS_NOREAD) /* HTTP content stream to be read */
 
 /* Low-level HTTP API implementation */
 
@@ -297,9 +299,14 @@ static int set1_content(OSSL_HTTP_REQ_CTX *rctx,
         return 0;
     }
 
-    if (content_type != NULL
-            && BIO_printf(rctx->mem, "Content-Type: %s\r\n", content_type) <= 0)
-        return 0;
+    if (content_type == NULL) {
+        rctx->text = 1; /* assuming text by default, used just for tracing */
+    } else {
+        if (OPENSSL_strncasecmp(content_type, "text/", 5) == 0)
+            rctx->text = 1;
+        if (BIO_printf(rctx->mem, "Content-Type: %s\r\n", content_type) <= 0)
+            return 0;
+    }
 
     /*
      * BIO_CTRL_INFO yields the data length at least for memory BIOs, but for
@@ -413,10 +420,10 @@ static int parse_http_line1(char *line, int *found_keep_alive)
     int i, retcode, err;
     char *code, *reason, *end;
 
-    if (!HAS_PREFIX(line, HTTP_PREFIX_VERSION))
+    if (!CHECK_AND_SKIP_PREFIX(line, HTTP_PREFIX_VERSION))
         goto err;
     /* above HTTP 1.0, connection persistence is the default */
-    *found_keep_alive = line[strlen(HTTP_PREFIX_VERSION)] > '0';
+    *found_keep_alive = *line > '0';
 
     /* Skip to first whitespace (past protocol info) */
     for (code = line; *code != '\0' && !ossl_isspace(*code); code++)
@@ -488,13 +495,17 @@ static int parse_http_line1(char *line, int *found_keep_alive)
 
 static int check_set_resp_len(OSSL_HTTP_REQ_CTX *rctx, size_t len)
 {
-    if (rctx->max_resp_len != 0 && len > rctx->max_resp_len)
+    if (rctx->max_resp_len != 0 && len > rctx->max_resp_len) {
         ERR_raise_data(ERR_LIB_HTTP, HTTP_R_MAX_RESP_LEN_EXCEEDED,
                        "length=%zu, max=%zu", len, rctx->max_resp_len);
-    if (rctx->resp_len != 0 && rctx->resp_len != len)
+        return 0;
+    }
+    if (rctx->resp_len != 0 && rctx->resp_len != len) {
         ERR_raise_data(ERR_LIB_HTTP, HTTP_R_INCONSISTENT_CONTENT_LENGTH,
                        "ASN.1 length=%zu, Content-Length=%zu",
                        len, rctx->resp_len);
+        return 0;
+    }
     rctx->resp_len = len;
     return 1;
 }
@@ -521,7 +532,7 @@ static int may_still_retry(time_t max_time, int *ptimeout)
 int OSSL_HTTP_REQ_CTX_nbio(OSSL_HTTP_REQ_CTX *rctx)
 {
     int i, found_expected_ct = 0, found_keep_alive = 0;
-    int found_text_ct = 0;
+    int got_text = 1;
     long n;
     size_t resp_len;
     const unsigned char *p;
@@ -545,7 +556,7 @@ int OSSL_HTTP_REQ_CTX_nbio(OSSL_HTTP_REQ_CTX *rctx)
         } else {
             (void)ERR_set_mark();
             n = BIO_gets(rctx->rbio, buf, rctx->buf_size);
-            if (n == -2) { /* unsupported method */
+            if (n == -2) { /* some BIOs, such as SSL, do not support "gets" */
                 (void)ERR_pop_to_mark();
                 n = BIO_get_line(rctx->rbio, buf, rctx->buf_size);
             } else {
@@ -576,30 +587,32 @@ int OSSL_HTTP_REQ_CTX_nbio(OSSL_HTTP_REQ_CTX *rctx)
         /* fall through */
     case OHS_WRITE_INIT:
         rctx->len_to_send = BIO_get_mem_data(rctx->mem, &rctx->pos);
-        rctx->state = OHS_WRITE_HDR;
-        if (OSSL_TRACE_ENABLED(HTTP))
-            OSSL_TRACE(HTTP, "Sending request header:\n");
+        rctx->state = OHS_WRITE_HDR1;
 
         /* fall through */
+    case OHS_WRITE_HDR1:
     case OHS_WRITE_HDR:
         /* Copy some chunk of data from rctx->mem to rctx->wbio */
     case OHS_WRITE_REQ:
         /* Copy some chunk of data from rctx->req to rctx->wbio */
 
         if (rctx->len_to_send > 0) {
-            if (OSSL_TRACE_ENABLED(HTTP)
-                && rctx->state == OHS_WRITE_HDR && rctx->len_to_send <= INT_MAX)
-                OSSL_TRACE2(HTTP, "%.*s", (int)rctx->len_to_send, rctx->pos);
+            size_t sz;
 
-            i = BIO_write(rctx->wbio, rctx->pos, rctx->len_to_send);
-            if (i <= 0) {
+            if (!BIO_write_ex(rctx->wbio, rctx->pos, rctx->len_to_send, &sz)) {
                 if (BIO_should_retry(rctx->wbio))
                     return -1;
                 rctx->state = OHS_ERROR;
                 return 0;
             }
-            rctx->pos += i;
-            rctx->len_to_send -= i;
+            if (OSSL_TRACE_ENABLED(HTTP) && rctx->state == OHS_WRITE_HDR1)
+                OSSL_TRACE(HTTP, "Sending request: [\n");
+            OSSL_TRACE_STRING(HTTP, rctx->state != OHS_WRITE_REQ || rctx->text,
+                              rctx->state != OHS_WRITE_REQ, rctx->pos, sz);
+            if (rctx->state == OHS_WRITE_HDR1)
+                rctx->state = OHS_WRITE_HDR;
+            rctx->pos += sz;
+            rctx->len_to_send -= sz;
             goto next_io;
         }
         if (rctx->state == OHS_WRITE_HDR) {
@@ -618,6 +631,8 @@ int OSSL_HTTP_REQ_CTX_nbio(OSSL_HTTP_REQ_CTX *rctx)
             rctx->len_to_send = n;
             goto next_io;
         }
+        if (OSSL_TRACE_ENABLED(HTTP))
+            OSSL_TRACE(HTTP, "]\n");
         rctx->state = OHS_FLUSH;
 
         /* fall through */
@@ -677,7 +692,7 @@ int OSSL_HTTP_REQ_CTX_nbio(OSSL_HTTP_REQ_CTX *rctx)
         /* dump all response header lines */
         if (OSSL_TRACE_ENABLED(HTTP)) {
             if (rctx->state == OHS_FIRSTLINE)
-                OSSL_TRACE(HTTP, "Received response header:\n");
+                OSSL_TRACE(HTTP, "Received response header: [\n");
             OSSL_TRACE1(HTTP, "%s", buf);
         }
 
@@ -697,8 +712,8 @@ int OSSL_HTTP_REQ_CTX_nbio(OSSL_HTTP_REQ_CTX *rctx)
                 /* redirection is not supported/recommended for POST */
                 /* fall through */
             default:
-                rctx->state = OHS_ERROR;
-                goto next_line;
+                rctx->state = OHS_HEADERS_ERROR;
+                goto next_line; /* continue parsing and reporting header */
             }
         }
         key = buf;
@@ -720,9 +735,18 @@ int OSSL_HTTP_REQ_CTX_nbio(OSSL_HTTP_REQ_CTX *rctx)
                 return 0;
             }
             if (OPENSSL_strcasecmp(key, "Content-Type") == 0) {
+                got_text = OPENSSL_strncasecmp(value, "text/", 5) == 0;
                 if (rctx->state == OHS_HEADERS
                     && rctx->expected_ct != NULL) {
-                    if (OPENSSL_strcasecmp(rctx->expected_ct, value) != 0) {
+                    const char *semicolon;
+
+                    if (OPENSSL_strcasecmp(rctx->expected_ct, value) != 0
+                        /* ignore past ';' unless expected_ct contains ';' */
+                        && (strchr(rctx->expected_ct, ';') != NULL
+                            || (semicolon = strchr(value, ';')) == NULL
+                            || (size_t)(semicolon - value) != strlen(rctx->expected_ct)
+                            || OPENSSL_strncasecmp(rctx->expected_ct, value,
+                                                   semicolon - value) != 0)) {
                         ERR_raise_data(ERR_LIB_HTTP,
                                        HTTP_R_UNEXPECTED_CONTENT_TYPE,
                                        "expected=%s, actual=%s",
@@ -731,8 +755,6 @@ int OSSL_HTTP_REQ_CTX_nbio(OSSL_HTTP_REQ_CTX *rctx)
                     }
                     found_expected_ct = 1;
                 }
-                if (OPENSSL_strncasecmp(value, "text/", 5) == 0)
-                    found_text_ct = 1;
             }
 
             /* https://tools.ietf.org/html/rfc7230#section-6.3 Persistence */
@@ -761,6 +783,8 @@ int OSSL_HTTP_REQ_CTX_nbio(OSSL_HTTP_REQ_CTX *rctx)
         }
         if (*p != '\0') /* not end of headers */
             goto next_line;
+        if (OSSL_TRACE_ENABLED(HTTP))
+            OSSL_TRACE(HTTP, "]\n");
 
         if (rctx->keep_alive != 0 /* do not let server initiate keep_alive */
                 && !found_keep_alive /* otherwise there is no change */) {
@@ -772,10 +796,20 @@ int OSSL_HTTP_REQ_CTX_nbio(OSSL_HTTP_REQ_CTX *rctx)
             rctx->keep_alive = 0;
         }
 
-        if (rctx->state == OHS_ERROR) {
-            if (OSSL_TRACE_ENABLED(HTTP)
-                    && found_text_ct && BIO_get_mem_data(rctx->mem, &p) > 0)
-                OSSL_TRACE1(HTTP, "%s", p);
+        if (rctx->state == OHS_HEADERS_ERROR) {
+            if (OSSL_TRACE_ENABLED(HTTP)) {
+                int printed_final_nl = 0;
+
+                OSSL_TRACE(HTTP, "Received error response body: [\n");
+                while ((n = BIO_read(rctx->rbio, rctx->buf, rctx->buf_size)) > 0
+                       || (OSSL_sleep(100), BIO_should_retry(rctx->rbio))) {
+                    OSSL_TRACE_STRING(HTTP, got_text, 1, rctx->buf, n);
+                    if (n > 0)
+                        printed_final_nl = rctx->buf[n - 1] == '\n';
+                }
+                OSSL_TRACE1(HTTP, "%s]\n", printed_final_nl ? "" : "\n");
+                (void)printed_final_nl; /* avoid warning unless enable-trace */
+            }
             return 0;
         }
 
@@ -1147,13 +1181,12 @@ BIO *OSSL_HTTP_get(const char *url, const char *proxy, const char *no_proxy,
                    const char *expected_ct, int expect_asn1,
                    size_t max_resp_len, int timeout)
 {
-    char *current_url, *redirection_url = NULL;
+    char *current_url;
     int n_redirs = 0;
     char *host;
     char *port;
     char *path;
     int use_ssl;
-    OSSL_HTTP_REQ_CTX *rctx = NULL;
     BIO *resp = NULL;
     time_t max_time = timeout > 0 ? time(NULL) + timeout : 0;
 
@@ -1165,6 +1198,9 @@ BIO *OSSL_HTTP_get(const char *url, const char *proxy, const char *no_proxy,
         return NULL;
 
     for (;;) {
+        OSSL_HTTP_REQ_CTX *rctx;
+        char *redirection_url;
+
         if (!OSSL_HTTP_parse_url(current_url, &use_ssl, NULL /* user */, &host,
                                  &port, NULL /* port_num */, &path, NULL, NULL))
             break;
@@ -1173,6 +1209,7 @@ BIO *OSSL_HTTP_get(const char *url, const char *proxy, const char *no_proxy,
                               use_ssl, bio, rbio, bio_update_fn, arg,
                               buf_size, timeout);
     new_rpath:
+        redirection_url = NULL;
         if (rctx != NULL) {
             if (!OSSL_HTTP_set1_request(rctx, path, headers,
                                         NULL /* content_type */,
@@ -1182,9 +1219,9 @@ BIO *OSSL_HTTP_get(const char *url, const char *proxy, const char *no_proxy,
                                         0 /* no keep_alive */)) {
                 OSSL_HTTP_REQ_CTX_free(rctx);
                 rctx = NULL;
-           } else {
+            } else {
                 resp = OSSL_HTTP_exchange(rctx, &redirection_url);
-           }
+            }
         }
         OPENSSL_free(path);
         if (resp == NULL && redirection_url != NULL) {
@@ -1199,7 +1236,6 @@ BIO *OSSL_HTTP_get(const char *url, const char *proxy, const char *no_proxy,
                         OPENSSL_free(host);
                         OPENSSL_free(port);
                         (void)OSSL_HTTP_close(rctx, 1);
-                        rctx = NULL;
                         BIO_free(resp);
                         OPENSSL_free(current_url);
                         return NULL;
@@ -1209,7 +1245,6 @@ BIO *OSSL_HTTP_get(const char *url, const char *proxy, const char *no_proxy,
                 OPENSSL_free(host);
                 OPENSSL_free(port);
                 (void)OSSL_HTTP_close(rctx, 1);
-                rctx = NULL;
                 continue;
             }
             /* if redirection not allowed, ignore it */
@@ -1219,7 +1254,6 @@ BIO *OSSL_HTTP_get(const char *url, const char *proxy, const char *no_proxy,
         OPENSSL_free(port);
         if (!OSSL_HTTP_close(rctx, resp != NULL)) {
             BIO_free(resp);
-            rctx = NULL;
             resp = NULL;
         }
         break;
@@ -1404,15 +1438,15 @@ int OSSL_HTTP_proxy_connect(BIO *bio, const char *server, const char *port,
             continue;
 
         /* Check for HTTP/1.x */
-        if (!HAS_PREFIX(mbuf, HTTP_PREFIX) != 0) {
+        mbufp = mbuf;
+        if (!CHECK_AND_SKIP_PREFIX(mbufp, HTTP_PREFIX)) {
             ERR_raise(ERR_LIB_HTTP, HTTP_R_HEADER_PARSE_ERROR);
             BIO_printf(bio_err, "%s: HTTP CONNECT failed, non-HTTP response\n",
                        prog);
             /* Wrong protocol, not even HTTP, so stop reading headers */
             goto end;
         }
-        mbufp = mbuf + strlen(HTTP_PREFIX);
-        if (!HAS_PREFIX(mbufp, HTTP_VERSION_PATT) != 0) {
+        if (!HAS_PREFIX(mbufp, HTTP_VERSION_PATT)) {
             ERR_raise(ERR_LIB_HTTP, HTTP_R_RECEIVED_WRONG_HTTP_VERSION);
             BIO_printf(bio_err,
                        "%s: HTTP CONNECT failed, bad HTTP version %.*s\n",
@@ -1423,6 +1457,8 @@ int OSSL_HTTP_proxy_connect(BIO *bio, const char *server, const char *port,
 
         /* RFC 7231 4.3.6: any 2xx status code is valid */
         if (!HAS_PREFIX(mbufp, " 2")) {
+            if (ossl_isspace(*mbufp))
+                mbufp++;
             /* chop any trailing whitespace */
             while (read_len > 0 && ossl_isspace(mbuf[read_len - 1]))
                 read_len--;
@@ -1441,7 +1477,7 @@ int OSSL_HTTP_proxy_connect(BIO *bio, const char *server, const char *port,
     do {
         /*
          * This does not necessarily catch the case when the full
-         * HTTP response came in in more than a single TCP message.
+         * HTTP response came in more than a single TCP message.
          */
         read_len = BIO_gets(fbio, mbuf, BUF_SIZE);
     } while (read_len > 2);

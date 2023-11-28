@@ -1,6 +1,6 @@
 
 /*
- * Copyright 2019-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -146,10 +146,8 @@ static void *aes_xts_dupctx(void *vctx)
             return NULL;
     }
     ret = OPENSSL_malloc(sizeof(*ret));
-    if (ret == NULL) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
+    if (ret == NULL)
         return NULL;
-    }
     in->base.hw->copyctx(&ret->base, &in->base);
     return ret;
 }
@@ -287,7 +285,7 @@ const OSSL_DISPATCH ossl_aes##kbits##xts_functions[] = {                       \
       (void (*)(void))aes_xts_set_ctx_params },                                \
     { OSSL_FUNC_CIPHER_SETTABLE_CTX_PARAMS,                                    \
      (void (*)(void))aes_xts_settable_ctx_params },                            \
-    { 0, NULL }                                                                \
+    OSSL_DISPATCH_END                                                          \
 }
 
 IMPLEMENT_cipher(xts, XTS, 256, AES_XTS_FLAGS);
