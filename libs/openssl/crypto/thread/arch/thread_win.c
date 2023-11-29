@@ -591,9 +591,11 @@ void ossl_crypto_condvar_free(CRYPTO_CONDVAR **cv)
 
 # endif
 
+#ifndef WINSCP
 void ossl_crypto_mem_barrier(void)
 {
     MemoryBarrier();
 }
+#endif
 
 #endif
