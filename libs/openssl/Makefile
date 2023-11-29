@@ -23,6 +23,7 @@ CFLAG= \
     -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_RC5 -DOPENSSL_NO_MDC2 -DOPENSSL_NO_WHIRLPOOL \
     -DOPENSSL_NO_SEED -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_ENGINE -DOPENSSL_NO_ZLIB \
     -DOPENSSL_NO_QUIC -DOPENSSL_NO_BROTLI -DOPENSSL_NO_COMP -DOPENSSL_NO_COMP_ALG \
+    -DOPENSSL_NO_TFO \
     -DNO_INTERLOCKEDOR64 \
     -DWINSCP
 
@@ -243,7 +244,7 @@ CRYPTOOBJ= \
     $(OBJ_D)\p12_crt.obj $(OBJ_D)\p12_decr.obj $(OBJ_D)\p12_init.obj $(OBJ_D)\p12_key.obj \
     $(OBJ_D)\p12_kiss.obj $(OBJ_D)\p12_mutl.obj $(OBJ_D)\p12_utl.obj $(OBJ_D)\p12_npas.obj \
     $(OBJ_D)\pk12err.obj $(OBJ_D)\p12_p8d.obj $(OBJ_D)\p12_p8e.obj $(OBJ_D)\p12_sbag.obj \
-    $(OBJ_D)\comp_lib.obj $(OBJ_D)\comp_err.obj $(OBJ_D)\c_zlib.obj \
+    $(OBJ_D)\comp_lib.obj $(OBJ_D)\comp_err.obj \
     $(OBJ_D)\cmac.obj \
     $(OBJ_D)\ocsp_asn.obj $(OBJ_D)\ocsp_ext.obj $(OBJ_D)\ocsp_http.obj $(OBJ_D)\ocsp_lib.obj \
     $(OBJ_D)\ocsp_cl.obj $(OBJ_D)\ocsp_srv.obj $(OBJ_D)\ocsp_prn.obj $(OBJ_D)\ocsp_vfy.obj \
@@ -2031,9 +2032,6 @@ $(OBJ_D)\comp_lib.obj: $(SRC_D)\crypto\comp\comp_lib.c
 
 $(OBJ_D)\comp_err.obj: $(SRC_D)\crypto\comp\comp_err.c
     $(CC) -o$(OBJ_D)\comp_err.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\comp\comp_err.c
-
-$(OBJ_D)\c_zlib.obj: $(SRC_D)\crypto\comp\c_zlib.c
-    $(CC) -o$(OBJ_D)\c_zlib.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\comp\c_zlib.c
 
 $(OBJ_D)\cmac.obj: $(SRC_D)\crypto\cmac\cmac.c
     $(CC) -o$(OBJ_D)\cmac.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\cmac\cmac.c
