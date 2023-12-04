@@ -17,7 +17,6 @@ struct TEditedFileData
   bool ForceText;
   TManagedTerminal * Terminal;
   TSessionData * SessionData;
-  TTerminalQueue * Queue;
   UnicodeString SessionName;
   UnicodeString OriginalFileName;
   UnicodeString Command;

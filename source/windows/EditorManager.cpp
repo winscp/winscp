@@ -18,7 +18,6 @@ TEditedFileData::TEditedFileData()
   ForceText = false;
   Terminal = NULL;
   SessionData = NULL;
-  Queue = NULL;
 }
 //---------------------------------------------------------------------------
 TEditedFileData::~TEditedFileData()

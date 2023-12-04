@@ -557,6 +557,8 @@ protected:
   bool __fastcall CommandSessionFallback();
   void __fastcall FileTerminalRemoved(const UnicodeString FileName,
     TEditedFileData * Data, TObject * Token, void * Arg);
+  void __fastcall FileTerminalReplaced(
+    const UnicodeString FileName, TEditedFileData * Data, TObject * Token, void * Arg);
   void __fastcall FileConfigurationChanged(const UnicodeString FileName,
     TEditedFileData * Data, TObject * Token, void * Arg);
   void __fastcall CustomExecuteFile(TOperationSide Side,

@@ -615,6 +615,7 @@ void __fastcall TCustomScpExplorerForm::DoSetManagedSession(TManagedTerminal * v
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ReplaceTerminal(TManagedTerminal * value)
 {
+  FEditorManager->ProcessFiles(FileTerminalReplaced, value);
   DoSetManagedSession(value, true);
 }
 //---------------------------------------------------------------------------
@@ -3398,7 +3399,6 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
   if (!IsSideLocalBrowser(Side))
   {
     Data->Terminal = Terminal;
-    Data->Queue = Queue;
     Data->SessionData = CloneCurrentSessionData();
     Data->ForceText = RemoteExecuteForceText(ExecuteFileBy, ExternalEditor);
     Data->RemoteDirectory = RemoteDirectory;
@@ -4000,7 +4000,6 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
           if (MessageDialog(Message, qtConfirmation, qaOK | qaCancel) == qaOK)
           {
             Data->Terminal = SameSiteTerminal;
-            Data->Queue = Manager->FindQueueForTerminal(SameSiteTerminal);
             Data->SessionName = SameSiteTerminal->SessionData->SessionName;
             // We might also overwrite session data
             Configuration->Usage->Inc(EditInactiveSessionReopenAcceptedCounter);
@@ -4025,11 +4024,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
             Manager->ActiveSession = Terminal;
             ReconnectSession();
             // Was it reconnected? (if not, Data->Terminal should be nulled now)
-            if (IsActiveTerminal(Data->Terminal) && (Terminal == Data->Terminal))
-            {
-              Data->Queue = Manager->FindQueueForTerminal(Terminal);
-            }
-            else
+            if (!IsActiveTerminal(Data->Terminal) || (Terminal != Data->Terminal))
             {
               Abort();
             }
@@ -4112,19 +4107,11 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
       int Params = cpNoConfirmation | cpTemporary;
       if (Data->Terminal->IsCapable[fcBackgroundTransfers])
       {
-        if (DebugAlwaysFalse(Data->Queue == NULL))
-        {
-          throw EInvalidOperation(L"Transfer queue invalidated");
-        }
-        if (DebugAlwaysFalse(Data->Queue != Manager->FindQueueForTerminal(Data->Terminal)))
-        {
-          throw EInvalidOperation(L"Transfer queue does not match session");
-        }
-
+        TTerminalQueue * AQueue = Manager->FindQueueForTerminal(Data->Terminal);
         TQueueItem * QueueItem =
           new TEditorUploadQueueItem(Data->Terminal, FileList, Data->RemoteDirectory, &CopyParam, Params);
         QueueItem->CompleteEvent = UploadCompleteEvent;
-        AddQueueItem(Data->Queue, QueueItem, Data->Terminal);
+        AddQueueItem(AQueue, QueueItem, Data->Terminal);
       }
       else
       {
@@ -7269,6 +7256,17 @@ void __fastcall TCustomScpExplorerForm::TerminalRemoved(TObject * Sender)
 {
   FEditorManager->ProcessFiles(FileTerminalRemoved, Sender);
   DetachTerminal(Sender);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::FileTerminalReplaced(
+  const UnicodeString FileName, TEditedFileData * Data, TObject * /*Token*/, void * Arg)
+{
+  TManagedTerminal * ATerminal = static_cast<TManagedTerminal *>(Arg);
+
+  if (Data->Terminal == Terminal)
+  {
+    Data->Terminal = ATerminal;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FileTerminalRemoved(const UnicodeString FileName,
