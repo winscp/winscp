@@ -726,7 +726,7 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
     if (!m_ssl_ctx)
     {
       // Create new context if none given
-      if (!(m_ssl_ctx = SSL_CTX_new( SSLv23_method())))
+      if (!(m_ssl_ctx = SSL_CTX_new( TLS_method())))
       {
         ResetSslSession();
         return SSL_FAILURE_INITSSL;
