@@ -812,5 +812,8 @@ int __fastcall DefaultPort(TFSProtocol FSProtocol, TFtps Ftps);
 bool __fastcall IsIPv6Literal(const UnicodeString & HostName);
 UnicodeString __fastcall EscapeIPv6Literal(const UnicodeString & IP);
 TFSProtocol NormalizeFSProtocol(TFSProtocol FSProtocol);
+bool ParseOpensshDirective(const UnicodeString & ALine, UnicodeString & Directive, UnicodeString & Value);
+UnicodeString CutOpensshToken(UnicodeString & S);
+UnicodeString ConvertPathFromOpenssh(const UnicodeString & Path);
 //---------------------------------------------------------------------------
 #endif

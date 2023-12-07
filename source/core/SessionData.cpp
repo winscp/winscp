@@ -80,7 +80,6 @@ const UnicodeString RawSettingsOption(L"rawsettings");
 const UnicodeString S3HostName(S3LibDefaultHostName());
 const UnicodeString S3GoogleCloudHostName(L"storage.googleapis.com");
 const UnicodeString OpensshHostDirective(L"Host");
-const UnicodeString OpensshIncludeDirective(L"Include");
 //---------------------------------------------------------------------
 TDateTime __fastcall SecToDateTime(int Sec)
 {
@@ -92,7 +91,7 @@ static bool IsValidOpensshLine(const UnicodeString & Line)
   return !Line.IsEmpty() && (Line[1] != L'#');
 }
 //---------------------------------------------------------------------
-static bool ParseOpensshDirective(const UnicodeString & ALine, UnicodeString & Directive, UnicodeString & Value)
+bool ParseOpensshDirective(const UnicodeString & ALine, UnicodeString & Directive, UnicodeString & Value)
 {
   bool Result = IsValidOpensshLine(ALine);
   if (Result)
@@ -1623,16 +1622,8 @@ UnicodeString CutOpensshToken(UnicodeString & S)
   return Result;
 }
 //---------------------------------------------------------------------
-static UnicodeString ConvertPathFromOpenssh(const UnicodeString & Path)
+UnicodeString ConvertPathFromOpenssh(const UnicodeString & Path)
 {
-  // It may be specified the filename only, so check if it exists in the .ssh folder.
-  // If true, return the combined path
-  UnicodeString FilenameOnly = TPath::Combine(Configuration->GetOpensshFolder(), Path);
-  if (FileExists(ApiPath(FilenameOnly)))
-  {
-    return FilenameOnly;
-  }
-
   // It's likely there would be forward slashes in OpenSSH config file and our load/save dialogs
   // (e.g. when converting keys) work suboptimally when working with forward slashes.
   UnicodeString Result = GetNormalizedPath(Path);
@@ -5155,16 +5146,6 @@ void TStoredSessionList::ImportFromOpenssh(TStrings * Lines)
             Add(Data.release());
             Hosts->Add(Name);
           }
-        }
-      }
-      else if (SameText(Directive, OpensshIncludeDirective))
-      {
-        UnicodeString ConfigToInclude = ConvertPathFromOpenssh(CutOpensshToken(Value));
-        if (FileExists(ApiPath(ConfigToInclude)))
-        {
-          std::unique_ptr <TStrings> LinesToInclude(new TStringList());
-          LoadScriptFromFile(ConfigToInclude, LinesToInclude.get(), true);
-          Lines->AddStrings(LinesToInclude.get());
         }
       }
     }
