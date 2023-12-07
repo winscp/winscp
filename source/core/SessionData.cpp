@@ -17,7 +17,7 @@
 #include <Soap.EncdDecd.hpp>
 #include <StrUtils.hpp>
 #include <XMLDoc.hpp>
-#include <StrUtils.hpp>
+#include <System.IOUtils.hpp>
 #include <algorithm>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -80,6 +80,7 @@ const UnicodeString RawSettingsOption(L"rawsettings");
 const UnicodeString S3HostName(S3LibDefaultHostName());
 const UnicodeString S3GoogleCloudHostName(L"storage.googleapis.com");
 const UnicodeString OpensshHostDirective(L"Host");
+const UnicodeString OpensshIncludeDirective(L"Include");
 //---------------------------------------------------------------------
 TDateTime __fastcall SecToDateTime(int Sec)
 {
@@ -1624,6 +1625,14 @@ UnicodeString CutOpensshToken(UnicodeString & S)
 //---------------------------------------------------------------------
 static UnicodeString ConvertPathFromOpenssh(const UnicodeString & Path)
 {
+  // It may be specified the filename only, so check if it exists in the .ssh folder.
+  // If true, return the combined path
+  UnicodeString FilenameOnly = TPath::Combine(Configuration->GetOpensshFolder(), Path);
+  if (FileExists(ApiPath(FilenameOnly)))
+  {
+    return FilenameOnly;
+  }
+
   // It's likely there would be forward slashes in OpenSSH config file and our load/save dialogs
   // (e.g. when converting keys) work suboptimally when working with forward slashes.
   UnicodeString Result = GetNormalizedPath(Path);
@@ -5129,21 +5138,33 @@ void TStoredSessionList::ImportFromOpenssh(TStrings * Lines)
   {
     UnicodeString Line = Lines->Strings[Index];
     UnicodeString Directive, Value;
-    if (ParseOpensshDirective(Line, Directive, Value) &&
-        SameText(Directive, OpensshHostDirective))
+    if (ParseOpensshDirective(Line, Directive, Value))
     {
-      while (!Value.IsEmpty())
+      if (SameText(Directive, OpensshHostDirective))
       {
-        UnicodeString Name = CutOpensshToken(Value);
-        if ((Hosts->IndexOf(Name) < 0) && (Name.LastDelimiter(L"*?") == 0))
+        while (!Value.IsEmpty())
         {
-          std::unique_ptr<TSessionData> Data(new TSessionData(EmptyStr));
-          Data->CopyData(DefaultSettings);
-          Data->Name = Name;
-          Data->HostName = Name;
-          Data->ImportFromOpenssh(Lines);
-          Add(Data.release());
-          Hosts->Add(Name);
+          UnicodeString Name = CutOpensshToken(Value);
+          if ((Hosts->IndexOf(Name) < 0) && (Name.LastDelimiter(L"*?") == 0))
+          {
+            std::unique_ptr <TSessionData> Data(new TSessionData(EmptyStr));
+            Data->CopyData(DefaultSettings);
+            Data->Name = Name;
+            Data->HostName = Name;
+            Data->ImportFromOpenssh(Lines);
+            Add(Data.release());
+            Hosts->Add(Name);
+          }
+        }
+      }
+      else if (SameText(Directive, OpensshIncludeDirective))
+      {
+        UnicodeString ConfigToInclude = ConvertPathFromOpenssh(CutOpensshToken(Value));
+        if (FileExists(ApiPath(ConfigToInclude)))
+        {
+          std::unique_ptr <TStrings> LinesToInclude(new TStringList());
+          LoadScriptFromFile(ConfigToInclude, LinesToInclude.get(), true);
+          Lines->AddStrings(LinesToInclude.get());
         }
       }
     }
