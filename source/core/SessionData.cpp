@@ -1637,7 +1637,7 @@ static UnicodeString ConvertPathFromOpenssh(const UnicodeString & Path)
   // (e.g. when converting keys) work suboptimally when working with forward slashes.
   UnicodeString Result = GetNormalizedPath(Path);
   const UnicodeString HomePathPrefix = L"~";
-  if (StartsStr(HomePathPrefix, Result + L"\\"))
+  if (StartsStr(HomePathPrefix, Result))
   {
     Result =
       GetShellFolderPath(CSIDL_PROFILE) +
