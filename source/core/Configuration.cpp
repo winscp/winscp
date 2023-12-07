@@ -1685,7 +1685,7 @@ bool __fastcall TConfiguration::AnyFilezillaSessionForImport(TStoredSessionList 
   }
 }
 //---------------------------------------------------------------------
-static UnicodeString GetOpensshFolder()
+UnicodeString TConfiguration::GetOpensshFolder()
 {
   UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
   UnicodeString Result = TPath::Combine(ProfilePath, OpensshFolderName);
