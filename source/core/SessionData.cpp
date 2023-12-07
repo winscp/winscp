@@ -5147,7 +5147,7 @@ void TStoredSessionList::ImportFromOpenssh(TStrings * Lines)
           UnicodeString Name = CutOpensshToken(Value);
           if ((Hosts->IndexOf(Name) < 0) && (Name.LastDelimiter(L"*?") == 0))
           {
-            std::unique_ptr <TSessionData> Data(new TSessionData(EmptyStr));
+            std::unique_ptr<TSessionData> Data(new TSessionData(EmptyStr));
             Data->CopyData(DefaultSettings);
             Data->Name = Name;
             Data->HostName = Name;
