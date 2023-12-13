@@ -1470,43 +1470,52 @@ object FileFindDialog: TFileFindDialog
     TabOrder = 2
     OnClick = HelpButtonClick
   end
-  object FileView: TIEListView
+  object FileViewPanel: TPanel
     Left = 8
     Top = 142
     Width = 434
     Height = 252
     Anchors = [akLeft, akTop, akRight, akBottom]
-    FullDrag = True
-    ReadOnly = True
-    RowSelect = True
-    PopupMenu = FileViewPopupMenu
+    BevelOuter = bvNone
     TabOrder = 3
-    ViewStyle = vsReport
-    OnDblClick = FileViewDblClick
-    OnEnter = ControlChange
-    OnExit = ControlChange
-    NortonLike = nlOff
-    Columns = <
-      item
-        Caption = 'Name'
-        Width = 80
-      end
-      item
-        Caption = 'Directory'
-        Width = 120
-      end
-      item
-        Alignment = taRightJustify
-        Caption = 'Size'
-        Width = 80
-      end
-      item
-        Caption = 'Changed'
-        Width = 90
-      end>
-    OnCompare = FileViewCompare
-    OnContextPopup = FileViewContextPopup
-    OnSelectItem = FileViewSelectItem
+    object FileView: TIEListView
+      Left = 0
+      Top = 0
+      Width = 434
+      Height = 252
+      Align = alClient
+      FullDrag = True
+      ReadOnly = True
+      RowSelect = True
+      PopupMenu = FileViewPopupMenu
+      TabOrder = 0
+      ViewStyle = vsReport
+      OnDblClick = FileViewDblClick
+      OnEnter = ControlChange
+      OnExit = ControlChange
+      NortonLike = nlOff
+      Columns = <
+        item
+          Caption = 'Name'
+          Width = 80
+        end
+        item
+          Caption = 'Directory'
+          Width = 120
+        end
+        item
+          Alignment = taRightJustify
+          Caption = 'Size'
+          Width = 80
+        end
+        item
+          Caption = 'Changed'
+          Width = 90
+        end>
+      OnCompare = FileViewCompare
+      OnContextPopup = FileViewContextPopup
+      OnSelectItem = FileViewSelectItem
+    end
   end
   object StatusBar: TStatusBar
     Left = 0
