@@ -817,7 +817,7 @@ void __fastcall TFTPFileSystem::Idle()
     PoolForFatalNonCommandReply();
 
     // Keep session alive
-    if ((FTerminal->SessionData->FtpPingType != ptOff) &&
+    if ((FTerminal->SessionData->FtpPingType == fptDirectoryListing) &&
         (double(Now() - FLastDataSent) > double(FTerminal->SessionData->FtpPingIntervalDT) * 4))
     {
       FTerminal->LogEvent(L"Dummy directory read to keep session alive.");
@@ -2804,7 +2804,7 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_KEEPALIVE:
-      Result = ((Data->FtpPingType != ptOff) ? TRUE : FALSE);
+      Result = ((Data->FtpPingType != fptOff) ? TRUE : FALSE);
       break;
 
     case OPTION_INTERVALLOW:

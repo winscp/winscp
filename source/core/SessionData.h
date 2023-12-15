@@ -31,6 +31,8 @@ enum TSftpBug { sbSymlink, sbSignedTS };
 #define SFTP_BUG_COUNT (sbSignedTS+1)
 extern const wchar_t * PingTypeNames;
 enum TPingType { ptOff, ptNullPacket, ptDummyCommand };
+extern const wchar_t * FtpPingTypeNames;
+enum TFtpPingType { fptOff, fptDummyCommand0, fptDummyCommand, fptDirectoryListing };
 enum TAddressFamily { afAuto, afIPv4, afIPv6 };
 enum TFtps { ftpsNone, ftpsImplicit, ftpsExplicitSsl, ftpsExplicitTls };
 // ssl2 and ssh3 are equivalent of tls10 now
@@ -221,7 +223,7 @@ private:
   TAutoSwitch FFtpUseMlsd;
   UnicodeString FFtpAccount;
   int FFtpPingInterval;
-  TPingType FFtpPingType;
+  TFtpPingType FFtpPingType;
   TAutoSwitch FFtpTransferActiveImmediately;
   TFtps FFtps;
   TTlsVersion FMinTlsVersion;
@@ -414,7 +416,7 @@ private:
   void __fastcall SetFtpUseMlsd(TAutoSwitch value);
   void __fastcall SetFtpAccount(UnicodeString value);
   void __fastcall SetFtpPingInterval(int value);
-  void __fastcall SetFtpPingType(TPingType value);
+  void __fastcall SetFtpPingType(TFtpPingType value);
   void __fastcall SetFtpTransferActiveImmediately(TAutoSwitch value);
   void __fastcall SetFtps(TFtps value);
   void __fastcall SetMinTlsVersion(TTlsVersion value);
@@ -698,7 +700,7 @@ public:
   __property UnicodeString FtpAccount = { read = FFtpAccount, write = SetFtpAccount };
   __property int FtpPingInterval  = { read=FFtpPingInterval, write=SetFtpPingInterval };
   __property TDateTime FtpPingIntervalDT  = { read=GetFtpPingIntervalDT };
-  __property TPingType FtpPingType = { read = FFtpPingType, write = SetFtpPingType };
+  __property TFtpPingType FtpPingType = { read = FFtpPingType, write = SetFtpPingType };
   __property TAutoSwitch FtpTransferActiveImmediately = { read = FFtpTransferActiveImmediately, write = SetFtpTransferActiveImmediately };
   __property TFtps Ftps = { read = FFtps, write = SetFtps };
   __property TTlsVersion MinTlsVersion = { read = FMinTlsVersion, write = SetMinTlsVersion };

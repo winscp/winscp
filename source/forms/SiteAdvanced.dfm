@@ -1224,24 +1224,23 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 0
             OnClick = DataChange
           end
-          object FtpPingNullPacketButton: TRadioButton
+          object FtpPingDummyCommandButton: TRadioButton
             Left = 12
             Top = 42
             Width = 365
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Sending of &null SSH packets'
-            Enabled = False
+            Caption = 'Executing &dummy protocol commands'
             TabOrder = 1
             OnClick = DataChange
           end
-          object FtpPingDummyCommandButton: TRadioButton
+          object FtpPingDirectoryListingButton: TRadioButton
             Left = 12
             Top = 65
             Width = 365
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Executing &dummy protocol commands'
+            Caption = '&And additionally reading the current directory'
             TabOrder = 2
             OnClick = DataChange
           end

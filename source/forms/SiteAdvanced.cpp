@@ -302,8 +302,13 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     PingIntervalSecEdit->AsInteger = FSessionData->PingInterval;
     switch (FSessionData->FtpPingType)
     {
-      case ptDummyCommand:
+      case fptDummyCommand0:
+      case fptDummyCommand:
         FtpPingDummyCommandButton->Checked = true;
+        break;
+
+      case fptDirectoryListing:
+        FtpPingDirectoryListingButton->Checked = true;
         break;
 
       default:
@@ -499,7 +504,18 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
     SessionData->PingType = ptOff;
   }
   SessionData->PingInterval = PingIntervalSecEdit->AsInteger;
-  SessionData->FtpPingType = (FtpPingDummyCommandButton->Checked ? ptDummyCommand : ptOff);
+  if (FtpPingDummyCommandButton->Checked)
+  {
+    SessionData->FtpPingType = fptDummyCommand;
+  }
+  else if (FtpPingDirectoryListingButton->Checked)
+  {
+    SessionData->FtpPingType = fptDirectoryListing;
+  }
+  else
+  {
+    SessionData->FtpPingType = fptOff;
+  }
   SessionData->FtpPingInterval = FtpPingIntervalSecEdit->AsInteger;
   SessionData->Timeout = TimeoutEdit->AsInteger;
 

@@ -189,7 +189,6 @@ __published:
   TLabel *FtpPingIntervalLabel;
   TUpDownEdit *FtpPingIntervalSecEdit;
   TRadioButton *FtpPingOffButton;
-  TRadioButton *FtpPingNullPacketButton;
   TRadioButton *FtpPingDummyCommandButton;
   TLabel *Label23;
   TComboBox *SftpServerEdit;
@@ -284,6 +283,7 @@ __published:
   TLabel *DetachedCertificateLabel;
   TFilenameEdit *DetachedCertificateEdit;
   TCheckBox *S3RequesterPaysCheck;
+  TRadioButton *FtpPingDirectoryListingButton;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);
