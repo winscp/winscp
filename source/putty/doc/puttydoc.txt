@@ -5530,7 +5530,7 @@ Chapter 5: Using PSCP to transfer files securely
 
          C:\>pscp
          PuTTY Secure Copy client
-         Release 0.79
+         Release 0.80
          Usage: pscp [options] [user@]host:source target
                 pscp [options] source [source...] [user@]host:target
                 pscp [options] -ls [user@]host:filespec
@@ -6452,7 +6452,7 @@ Chapter 7: Using the command-line connection tool Plink
 
          C:\>plink
          Plink: command-line connection utility
-         Release 0.79
+         Release 0.80
          Usage: plink [options] [user@]host [command]
                 ("host" can also be a PuTTY saved session name)
          Options:
@@ -12479,4 +12479,4 @@ H.6.12 PLUGIN_AUTH_FAILURE
        Secure Shell Protocol (SSH)' (better known by its wire id `keyboard-
        interactive').
 
-[PuTTY release 0.79]
+[PuTTY release 0.80]

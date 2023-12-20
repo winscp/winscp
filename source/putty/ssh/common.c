@@ -1085,6 +1085,110 @@ SeatPromptResult verify_ssh_host_key(
     return toret;
 }
 
+SeatPromptResult confirm_weak_crypto_primitive(
+    InteractionReadySeat iseat, const char *algtype, const char *algname,
+    void (*callback)(void *ctx, SeatPromptResult result), void *ctx,
+    WeakCryptoReason wcr)
+{
+    SeatDialogText *text = seat_dialog_text_new();
+    const SeatDialogPromptDescriptions *pds =
+        seat_prompt_descriptions(iseat.seat);
+
+    seat_dialog_text_append(text, SDT_TITLE, "%s Security Alert", appname);
+
+    switch (wcr) {
+      case WCR_BELOW_THRESHOLD:
+        seat_dialog_text_append(
+            text, SDT_PARA,
+            "The first %s supported by the server is %s, "
+            "which is below the configured warning threshold.",
+            algtype, algname);
+        break;
+      case WCR_TERRAPIN:
+      case WCR_TERRAPIN_AVOIDABLE:
+        seat_dialog_text_append(
+            text, SDT_PARA,
+            "The %s selected for this session is %s, "
+            "which, with this server, is vulnerable to the 'Terrapin' attack "
+            "CVE-2023-48795, potentially allowing an attacker to modify "
+            "the encrypted session.",
+            algtype, algname);
+        seat_dialog_text_append(
+            text, SDT_PARA,
+            "Upgrading, patching, or reconfiguring this SSH server is the "
+            "best way to avoid this vulnerability, if possible.");
+        if (wcr == WCR_TERRAPIN_AVOIDABLE) {
+            seat_dialog_text_append(
+                text, SDT_PARA,
+                "You can also avoid this vulnerability by abandoning "
+                "this connection, moving ChaCha20 to below the "
+                "'warn below here' line in PuTTY's SSH cipher "
+                "configuration (so that an algorithm without the "
+                "vulnerability will be selected), and starting a new "
+                "connection.");
+        }
+        break;
+      default:
+        unreachable("bad WeakCryptoReason");
+    }
+
+    /* In batch mode, we print the above information and then this
+     * abort message, and stop. */
+    seat_dialog_text_append(text, SDT_BATCH_ABORT, "Connection abandoned.");
+
+    seat_dialog_text_append(
+        text, SDT_PARA, "To accept the risk and continue, %s. "
+        "To abandon the connection, %s.",
+        pds->weak_accept_action, pds->weak_cancel_action);
+
+    seat_dialog_text_append(text, SDT_PROMPT, "Continue with connection?");
+
+    SeatPromptResult toret = seat_confirm_weak_crypto_primitive(
+        iseat, text, callback, ctx);
+    seat_dialog_text_free(text);
+    return toret;
+}
+
+SeatPromptResult confirm_weak_cached_hostkey(
+    InteractionReadySeat iseat, const char *algname, const char **betteralgs,
+    void (*callback)(void *ctx, SeatPromptResult result), void *ctx)
+{
+    SeatDialogText *text = seat_dialog_text_new();
+    const SeatDialogPromptDescriptions *pds =
+        seat_prompt_descriptions(iseat.seat);
+
+    seat_dialog_text_append(text, SDT_TITLE, "%s Security Alert", appname);
+
+    seat_dialog_text_append(
+        text, SDT_PARA,
+        "The first host key type we have stored for this server "
+        "is %s, which is below the configured warning threshold.", algname);
+
+    seat_dialog_text_append(
+        text, SDT_PARA,
+        "The server also provides the following types of host key "
+        "above the threshold, which we do not have stored:");
+
+    for (const char **p = betteralgs; *p; p++)
+        seat_dialog_text_append(text, SDT_DISPLAY, "%s", *p);
+
+    /* In batch mode, we print the above information and then this
+     * abort message, and stop. */
+    seat_dialog_text_append(text, SDT_BATCH_ABORT, "Connection abandoned.");
+
+    seat_dialog_text_append(
+        text, SDT_PARA, "To accept the risk and continue, %s. "
+        "To abandon the connection, %s.",
+        pds->weak_accept_action, pds->weak_cancel_action);
+
+    seat_dialog_text_append(text, SDT_PROMPT, "Continue with connection?");
+
+    SeatPromptResult toret = seat_confirm_weak_cached_hostkey(
+        iseat, text, callback, ctx);
+    seat_dialog_text_free(text);
+    return toret;
+}
+
 /* ----------------------------------------------------------------------
  * Common functions shared between SSH-1 layers.
  */

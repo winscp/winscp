@@ -146,7 +146,7 @@ static void gpps(settings_r *sesskey, const char *name, const char *def,
  * format of a Filename or FontSpec is platform-dependent. So the
  * platform-dependent functions MUST return some sort of value.
  */
-static void gppfont(settings_r *sesskey, char *name,
+static void gppfont(settings_r *sesskey, const char *name,
                     Conf *conf, int primary)
 {
     FontSpec *result = read_setting_fontspec(sesskey, name);
