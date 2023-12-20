@@ -1188,10 +1188,13 @@ SeatPromptResult confirm_weak_crypto_primitive(
 
     seat_dialog_text_append(text, SDT_PROMPT, "Continue with connection?");
 
+    { // WINSCP
     SeatPromptResult toret = seat_confirm_weak_crypto_primitive(
-        iseat, text, callback, ctx);
+        iseat, text, callback, ctx,
+        algtype, algname, wcr); // WINSCP
     seat_dialog_text_free(text);
     return toret;
+    } // WINSCP
 }
 
 SeatPromptResult confirm_weak_cached_hostkey(
@@ -1214,8 +1217,11 @@ SeatPromptResult confirm_weak_cached_hostkey(
         "The server also provides the following types of host key "
         "above the threshold, which we do not have stored:");
 
-    for (const char **p = betteralgs; *p; p++)
+    { // WINSCP
+    const char **p; // WINSCP
+    for (p = betteralgs; *p; p++)
         seat_dialog_text_append(text, SDT_DISPLAY, "%s", *p);
+    } // WINSCP
 
     /* In batch mode, we print the above information and then this
      * abort message, and stop. */
@@ -1228,10 +1234,12 @@ SeatPromptResult confirm_weak_cached_hostkey(
 
     seat_dialog_text_append(text, SDT_PROMPT, "Continue with connection?");
 
+    { // WINSCP
     SeatPromptResult toret = seat_confirm_weak_cached_hostkey(
         iseat, text, callback, ctx);
     seat_dialog_text_free(text);
     return toret;
+    } // WINSCP
 }
 
 /* ----------------------------------------------------------------------

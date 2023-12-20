@@ -257,7 +257,8 @@ static SeatPromptResult tempseat_confirm_ssh_host_key(
 
 static SeatPromptResult tempseat_confirm_weak_crypto_primitive(
     Seat *seat, SeatDialogText *text,
-    void (*callback)(void *ctx, SeatPromptResult result), void *ctx)
+    void (*callback)(void *ctx, SeatPromptResult result), void *ctx,
+    const char *algtype, const char *algname, int wcr) // WINSCP
 {
     unreachable("confirm_weak_crypto_primitive "
                 "should never be called on TempSeat");

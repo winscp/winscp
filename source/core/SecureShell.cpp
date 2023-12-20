@@ -2841,7 +2841,7 @@ bool __fastcall TSecureShell::HaveHostKey(UnicodeString Host, int Port, const Un
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::AskAlg(UnicodeString AlgType, UnicodeString AlgName)
+void TSecureShell::AskAlg(const UnicodeString & AAlgType, const UnicodeString & AlgName, int WeakCryptoReason)
 {
   // beware of changing order
   static const TPuttyTranslation AlgTranslation[] = {
@@ -2852,9 +2852,33 @@ void __fastcall TSecureShell::AskAlg(UnicodeString AlgType, UnicodeString AlgNam
     { L"hostkey type", KEYKEY_TYPE },
   };
 
+  UnicodeString AlgType = AAlgType;
   TranslatePuttyMessage(AlgTranslation, LENOF(AlgTranslation), AlgType);
 
-  UnicodeString Msg = FMTLOAD(ALG_BELOW_TRESHOLD, (AlgType, AlgName));
+  UnicodeString Msg;
+  UnicodeString NewLine = UnicodeString(sLineBreak);
+  switch (WeakCryptoReason)
+  {
+    default:
+      DebugFail();
+    case 0:
+      Msg = FMTLOAD(ALG_BELOW_TRESHOLD2, (AlgType, AlgName));
+      break;
+
+    case 1:
+    case 2:
+      Msg = FMTLOAD(CIPHER_TERRAPIN, (AlgType, AlgName));
+      if (WeakCryptoReason == 2)
+      {
+        Msg += NewLine + NewLine + FMTLOAD(CIPHER_TERRAPIN_AVOID, (AlgName));
+      }
+      break;
+  }
+
+  Msg =
+    MainInstructions(LoadStr(WEAK_ALG_TITLE)) + NewLine + NewLine +
+    Msg + NewLine + NewLine +
+    LoadStr(WEAK_ALG_RISK_CONFIRM);
 
   if (FUI->QueryUser(Msg, NULL, qaYes | qaNo, NULL, qtWarning) == qaNo)
   {

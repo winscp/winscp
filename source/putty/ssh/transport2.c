@@ -1023,7 +1023,8 @@ struct server_hostkeys {
 
 static bool kexinit_keyword_found(ptrlen list, ptrlen keyword)
 {
-    for (ptrlen word; get_commasep_word(&list, &word) ;)
+    ptrlen word; // WINSCP
+    for (; get_commasep_word(&list, &word) ;)
         if (ptrlen_eq_ptrlen(word, keyword))
             return true;
     return false;
@@ -1079,7 +1080,7 @@ static ScanKexinitsResult ssh2_scan_kexinits(
         slists[i] = get_string(server);
         if (get_err(client) || get_err(server)) {
             ScanKexinitsResult skr = {
-                .success = false, .error = SKR_INCOMPLETE,
+                /*.success =*/ false, /*.error =*/ SKR_INCOMPLETE,
             };
             return skr;
         }
@@ -1129,10 +1130,9 @@ static ScanKexinitsResult ssh2_scan_kexinits(
              * produce a reasonably useful message instead of an
              * assertion failure.
              */
-            ScanKexinitsResult skr = {
-                .success = false, .error = SKR_UNKNOWN_ID,
-                .kind = kexlist_descr[i], .desc = found,
-            };
+            ScanKexinitsResult skr;
+                skr.success = false, skr.error = SKR_UNKNOWN_ID,
+                skr.kind = kexlist_descr[i], skr.desc = found;
             return skr;
         }
 
@@ -1188,10 +1188,9 @@ static ScanKexinitsResult ssh2_scan_kexinits(
             /*
              * Otherwise, any match failure _is_ a fatal error.
              */
-            ScanKexinitsResult skr = {
-                .success = false, .error = SKR_UNKNOWN_ID,
-                .kind = kexlist_descr[i], .desc = slists[i],
-            };
+            ScanKexinitsResult skr;
+                skr.success = false, skr.error = SKR_UNKNOWN_ID,
+                skr.kind = kexlist_descr[i], skr.desc = slists[i];
             return skr;
         }
 
@@ -1291,8 +1290,10 @@ static ScanKexinitsResult ssh2_scan_kexinits(
         } // WINSCP
     }
 
-    ScanKexinitsResult skr = { .success = true };
+    { // WINSCP
+    ScanKexinitsResult skr = { /*.success =*/ true };
     return skr;
+    } // WINSCP
 }
 
 static void ssh2_report_scan_kexinits_error(Ssh *ssh, ScanKexinitsResult skr)
@@ -1381,6 +1382,7 @@ static void filter_outgoing_kexinit(struct ssh2_transport_state *s)
                     searchword = kex_strict_c;
             }
 
+            { // WINSCP
             bool add = false;
             ptrlen iword; // WINSCP
             for (; get_commasep_word(&ilist_copy, &iword) ;) {
@@ -1405,6 +1407,7 @@ static void filter_outgoing_kexinit(struct ssh2_transport_state *s)
 
             if (add)
                 add_to_commasep_pl(out, oword);
+            } // WINSCP
         }
         put_stringpl(pktout, ptrlen_from_strbuf(out));
         } // WINSCP
@@ -2697,8 +2700,10 @@ static bool try_to_avoid_terrapin(const struct ssh2_transport_state *s)
      * previously above it. If not, don't do anything - we don't want
      * to _promote_ it.
      */
+    { // WINSCP
     int ccp_pos_now = -1, ccp_pos_wanted = -1;
-    for (int i = 0; i < CIPHER_MAX; i++) {
+    int i; // WINSCP
+    for (i = 0; i < CIPHER_MAX; i++) {
         switch (conf_get_int_int(alt_conf, CONF_ssh_cipherlist,
                                  i)) {
           case CIPHER_CHACHA20:
@@ -2722,6 +2727,7 @@ static bool try_to_avoid_terrapin(const struct ssh2_transport_state *s)
     }
     conf_set_int_int(alt_conf, CONF_ssh_cipherlist,
                      ccp_pos_now + 1, CIPHER_CHACHA20);
+    } // WINSCP
 
     /*
      * Make the outgoing KEXINIT we would have made using this
@@ -2730,7 +2736,7 @@ static bool try_to_avoid_terrapin(const struct ssh2_transport_state *s)
     put_byte(alt_client_kexinit, SSH2_MSG_KEXINIT);
     put_padding(alt_client_kexinit, 16, 'x'); /* fake random padding */
     ssh2_write_kexinit_lists(
-        BinarySink_UPCAST(alt_client_kexinit), alt_kexlists, alt_conf,
+        /*WINSCP*/ s->ppl.seat, BinarySink_UPCAST(alt_client_kexinit), alt_kexlists, alt_conf,
         s->ssc, s->ppl.remote_bugs, s->savedhost, s->savedport, s->hostkey_alg,
         s->thc, s->host_cas, s->hostkeys, s->nhostkeys, !s->got_session_id,
         s->can_gssapi_keyex,
@@ -2742,6 +2748,7 @@ static bool try_to_avoid_terrapin(const struct ssh2_transport_state *s)
      * Re-analyse the incoming KEXINIT with respect to this one, to
      * see what we'd have decided on.
      */
+    { // WINSCP
     transport_direction cstrans, sctrans;
     bool warn_kex, warn_hk, warn_cscipher, warn_sccipher;
     bool can_send_ext_info = false, strict_kex = false;
@@ -2785,12 +2792,16 @@ static bool try_to_avoid_terrapin(const struct ssh2_transport_state *s)
 
   out:
 
-    for (size_t i = 0; i < NKEXLIST; i++)
+    { // WINSCP
+    size_t i;
+    for (i = 0; i < NKEXLIST; i++)
         sfree(alt_kexlists[i].algs);
     strbuf_free(alt_client_kexinit);
     conf_free(alt_conf);
 
     return avoidable;
+    } // WINSCP
+    } // WINSCP
 }
 
 #include "puttyexp.h"

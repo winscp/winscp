@@ -28,7 +28,8 @@ SeatPromptResult nullseat_confirm_ssh_host_key(
 { return SPR_SW_ABORT("this seat can't handle interactive prompts"); }
 SeatPromptResult nullseat_confirm_weak_crypto_primitive(
     Seat *seat, SeatDialogText *text,
-    void (*callback)(void *ctx, SeatPromptResult result), void *ctx)
+    void (*callback)(void *ctx, SeatPromptResult result), void *ctx,
+    const char *algtype, const char *algname, int wcr) // WINSCP
 { return SPR_SW_ABORT("this seat can't handle interactive prompts"); }
 SeatPromptResult nullseat_confirm_weak_cached_hostkey(
     Seat *seat, SeatDialogText *text,
@@ -61,8 +62,8 @@ const SeatDialogPromptDescriptions *nullseat_prompt_descriptions(Seat *seat)
         /*.hk_connect_once_action =*/ "",
         /*.hk_cancel_action =*/ "",
         /*.hk_cancel_action_Participle =*/ "",
-        .weak_accept_action = "",
-        .weak_cancel_action = "",
+        /*.weak_accept_action =*/ "",
+        /*.weak_cancel_action =*/ "",
     };
     return &descs;
 }

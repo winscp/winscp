@@ -1295,7 +1295,8 @@ struct SeatVtable {
      */
     SeatPromptResult (*confirm_weak_crypto_primitive)(
         Seat *seat, SeatDialogText *text,
-        void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
+        void (*callback)(void *ctx, SeatPromptResult result), void *ctx,
+        const char *algtype, const char *algname, int wcr);
 
     /*
      * Variant form of confirm_weak_crypto_primitive, which prints a
@@ -1447,9 +1448,11 @@ static inline SeatPromptResult seat_confirm_ssh_host_key(
         fingerprints, is_certificate, ca_count, already_verified); } // WINSCP
 static inline SeatPromptResult seat_confirm_weak_crypto_primitive(
     InteractionReadySeat iseat, SeatDialogText *text,
-    void (*cb)(void *ctx, SeatPromptResult result), void *ctx)
+    void (*cb)(void *ctx, SeatPromptResult result), void *ctx,
+    const char *algtype, const char *algname, int wcr) // WINSCP 
 { return iseat.seat->vt->confirm_weak_crypto_primitive(
-        iseat.seat, text, cb, ctx); }
+        iseat.seat, text, cb, ctx,
+        algtype, algname, wcr); } // WINSCP
 static inline SeatPromptResult seat_confirm_weak_cached_hostkey(
     InteractionReadySeat iseat, SeatDialogText *text,
     void (*cb)(void *ctx, SeatPromptResult result), void *ctx)
@@ -1542,7 +1545,8 @@ SeatPromptResult nullseat_confirm_ssh_host_key(
     char **fingerprints, bool is_certificate, int ca_count, bool already_verified); // WINSCP
 SeatPromptResult nullseat_confirm_weak_crypto_primitive(
     Seat *seat, SeatDialogText *text,
-    void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
+    void (*callback)(void *ctx, SeatPromptResult result), void *ctx,
+    const char *algtype, const char *algname, int wcr); // WINSCP
 SeatPromptResult nullseat_confirm_weak_cached_hostkey(
     Seat *seat, SeatDialogText *text,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
