@@ -138,12 +138,14 @@ void ssh2_bpp_new_outgoing_crypto(
     BinaryPacketProtocol *bpp,
     const ssh_cipheralg *cipher, const void *ckey, const void *iv,
     const ssh2_macalg *mac, bool etm_mode, const void *mac_key,
-    const ssh_compression_alg *compression, bool delayed_compression);
+    const ssh_compression_alg *compression, bool delayed_compression,
+    bool reset_sequence_number);
 void ssh2_bpp_new_incoming_crypto(
     BinaryPacketProtocol *bpp,
     const ssh_cipheralg *cipher, const void *ckey, const void *iv,
     const ssh2_macalg *mac, bool etm_mode, const void *mac_key,
-    const ssh_compression_alg *compression, bool delayed_compression);
+    const ssh_compression_alg *compression, bool delayed_compression,
+    bool reset_sequence_number);
 
 /*
  * A query method specific to the interface between ssh2transport and

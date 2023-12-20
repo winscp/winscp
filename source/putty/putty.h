@@ -1294,7 +1294,7 @@ struct SeatVtable {
      * confirm_ssh_host_key above.
      */
     SeatPromptResult (*confirm_weak_crypto_primitive)(
-        Seat *seat, const char *algtype, const char *algname,
+        Seat *seat, SeatDialogText *text,
         void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 
     /*
@@ -1305,11 +1305,10 @@ struct SeatVtable {
      * This form is used in the case where we're using a host key
      * below the warning threshold because that's the best one we have
      * cached, but at least one host key algorithm *above* the
-     * threshold is available that we don't have cached. 'betteralgs'
-     * lists the better algorithm(s).
+     * threshold is available that we don't have cached.
      */
     SeatPromptResult (*confirm_weak_cached_hostkey)(
-        Seat *seat, const char *algname, const char *betteralgs,
+        Seat *seat, SeatDialogText *text,
         void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 
     /*
@@ -1447,15 +1446,15 @@ static inline SeatPromptResult seat_confirm_ssh_host_key(
         iseat.seat, h, p, ktyp, kstr, text, helpctx, cb, ctx,
         fingerprints, is_certificate, ca_count, already_verified); } // WINSCP
 static inline SeatPromptResult seat_confirm_weak_crypto_primitive(
-    InteractionReadySeat iseat, const char *atyp, const char *aname,
+    InteractionReadySeat iseat, SeatDialogText *text,
     void (*cb)(void *ctx, SeatPromptResult result), void *ctx)
 { return iseat.seat->vt->confirm_weak_crypto_primitive(
-        iseat.seat, atyp, aname, cb, ctx); }
+        iseat.seat, text, cb, ctx); }
 static inline SeatPromptResult seat_confirm_weak_cached_hostkey(
-    InteractionReadySeat iseat, const char *aname, const char *better,
+    InteractionReadySeat iseat, SeatDialogText *text,
     void (*cb)(void *ctx, SeatPromptResult result), void *ctx)
 { return iseat.seat->vt->confirm_weak_cached_hostkey(
-        iseat.seat, aname, better, cb, ctx); }
+        iseat.seat, text, cb, ctx); }
 static inline const SeatDialogPromptDescriptions *seat_prompt_descriptions(
     Seat *seat)
 { return seat->vt->prompt_descriptions(seat); }
@@ -1508,6 +1507,7 @@ struct SeatDialogPromptDescriptions {
     const char *hk_accept_action;
     const char *hk_connect_once_action;
     const char *hk_cancel_action, *hk_cancel_action_Participle;
+    const char *weak_accept_action, *weak_cancel_action;
 };
 
 /* In the utils subdir: print a message to the Seat which can't be
@@ -1541,10 +1541,10 @@ SeatPromptResult nullseat_confirm_ssh_host_key(
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx,
     char **fingerprints, bool is_certificate, int ca_count, bool already_verified); // WINSCP
 SeatPromptResult nullseat_confirm_weak_crypto_primitive(
-    Seat *seat, const char *algtype, const char *algname,
+    Seat *seat, SeatDialogText *text,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 SeatPromptResult nullseat_confirm_weak_cached_hostkey(
-    Seat *seat, const char *algname, const char *betteralgs,
+    Seat *seat, SeatDialogText *text,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 const SeatDialogPromptDescriptions *nullseat_prompt_descriptions(Seat *seat);
 bool nullseat_is_never_utf8(Seat *seat);
@@ -1578,10 +1578,10 @@ SeatPromptResult console_confirm_ssh_host_key(
     char *keystr, SeatDialogText *text, HelpCtx helpctx,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 SeatPromptResult console_confirm_weak_crypto_primitive(
-    Seat *seat, const char *algtype, const char *algname,
+    Seat *seat, SeatDialogText *text,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 SeatPromptResult console_confirm_weak_cached_hostkey(
-    Seat *seat, const char *algname, const char *betteralgs,
+    Seat *seat, SeatDialogText *text,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 StripCtrlChars *console_stripctrl_new(
     Seat *seat, BinarySink *bs_out, SeatInteractionContext sic);

@@ -254,10 +254,10 @@ SeatPromptResult win_seat_confirm_ssh_host_key(
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx,
     char **fingerprints, bool is_certificate, int ca_count, bool already_verified); // WINSCP
 SeatPromptResult win_seat_confirm_weak_crypto_primitive(
-    Seat *seat, const char *algtype, const char *algname,
+    Seat *seat, SeatDialogText *text,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 SeatPromptResult win_seat_confirm_weak_cached_hostkey(
-    Seat *seat, const char *algname, const char *betteralgs,
+    Seat *seat, SeatDialogText *text,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 const SeatDialogPromptDescriptions *win_seat_prompt_descriptions(Seat *seat);
 
@@ -752,10 +752,14 @@ char *get_jumplist_registry_entries(void);
 
 /* In utils */
 int reg_override_winscp(void);
-HKEY open_regkey_fn(bool create, HKEY base, const char *path, ...);
+HKEY open_regkey_fn(bool create, bool write, HKEY base, const char *path, ...);
 HKEY open_regkey_fn_winscp(bool create, HKEY base, const char *path, ...);
-#define open_regkey(create, base, ...) \
-    reg_override_winscp() ? open_regkey_fn_winscp(create, base, __VA_ARGS__, (const char *)NULL) : open_regkey_fn(create, base, __VA_ARGS__, (const char *)NULL)
+#define open_regkey_ro(base, ...) \
+    open_regkey_fn(false, false, base, __VA_ARGS__, (const char *)NULL)
+#define open_regkey_rw(base, ...) \
+    open_regkey_fn(false, true, base, __VA_ARGS__, (const char *)NULL)
+#define create_regkey(base, ...) \
+    open_regkey_fn(true, true, base, __VA_ARGS__, (const char *)NULL)
 void close_regkey(HKEY key);
 void close_regkey_winscp(HKEY key);
 void del_regkey(HKEY key, const char *name);
