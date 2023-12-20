@@ -475,6 +475,7 @@ int reg_override_winscp()
 //---------------------------------------------------------------------------
 HKEY open_regkey_fn_winscp(bool Create, bool Write, HKEY Key, const char * Path, ...)
 {
+  DebugUsedParam(Write);
   HKEY Result;
   if (PuttyRegistryMode == prmCollect)
   {
