@@ -3116,6 +3116,12 @@ bool __fastcall IsWine()
 int GIsUWP = -1;
 UnicodeString GPackageName;
 //---------------------------------------------------------------------------
+void EnableUWPTestMode()
+{
+  GIsUWP = 1;
+  AppLog(L"UWP test mode");
+}
+//---------------------------------------------------------------------------
 static void NeedUWPData()
 {
   if (GIsUWP < 0)

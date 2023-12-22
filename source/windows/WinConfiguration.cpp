@@ -877,7 +877,8 @@ bool TWinConfiguration::DetectStorage(bool SafeOnly)
   }
   else
   {
-    if (DetectRegistryStorage(HKEY_CURRENT_USER) ||
+    if (IsUWP() ||
+        DetectRegistryStorage(HKEY_CURRENT_USER) ||
         DetectRegistryStorage(HKEY_LOCAL_MACHINE))
     {
       FStorage = stRegistry;

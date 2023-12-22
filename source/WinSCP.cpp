@@ -35,6 +35,10 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
       OnAppLog = AppLogImpl;
     }
     AppLog(L"Starting...");
+    if (Params->FindSwitch(L"IsUWP"))
+    {
+      EnableUWPTestMode();
+    }
 
     AddStartupSequence(L"M");
     AppLogFmt(L"Process: %d", (GetCurrentProcessId()));
