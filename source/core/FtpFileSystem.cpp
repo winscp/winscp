@@ -1469,7 +1469,6 @@ void __fastcall TFTPFileSystem::DoFileTransferProgress(__int64 TransferSize,
     OperationProgress->AddTransferred(Diff);
     FFileTransferAny = true;
   }
-
   if (OperationProgress->Cancel != csContinue)
   {
     if (OperationProgress->ClearCancelFile())
