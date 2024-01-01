@@ -683,7 +683,7 @@ BEGIN
         CERTIFICATE_ADDED, "Matching certificate was detected in '%s' and added to the converted key file."
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
-        WINSCP_COPYRIGHT, "Copyright © 2000–2023 Martin Prikryl"
+        WINSCP_COPYRIGHT, "Copyright © 2000–2024 Martin Prikryl"
         HOMEPAGE_URL, "https://winscp.net/"
         HISTORY_URL, "https://winscp.net/eng/docs/history"
         FORUM_URL, "https://winscp.net/forum/"
