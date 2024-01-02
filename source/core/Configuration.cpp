@@ -716,6 +716,7 @@ void __fastcall TConfiguration::CopyData(THierarchicalStorage * Source,
   }
 
   CopyAllStringsInSubKey(Source, Target, SshHostKeysSubKey);
+  CopyAllStringsInSubKey(Source, Target, SshHostCAsKey);
   CopyAllStringsInSubKey(Source, Target, FtpsCertificateStorageKey);
   CopyAllStringsInSubKey(Source, Target, HttpsCertificateStorageKey);
 }
@@ -953,6 +954,7 @@ TStrings * TConfiguration::GetCaches()
 {
   std::unique_ptr<TStrings> Result(new TStringList());
   Result->Add(SshHostKeysSubKey);
+  Result->Add(SshHostCAsKey);
   Result->Add(FtpsCertificateStorageKey);
   Result->Add(HttpsCertificateStorageKey);
   Result->Add(DirectoryStatisticsCacheKey);
