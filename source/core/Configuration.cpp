@@ -1622,7 +1622,7 @@ TStorage __fastcall TConfiguration::GetStorage()
   TGuard Guard(FCriticalSection);
   if (FStorage == stDetect)
   {
-    DebugFail(); // This is never called, as the detection is completelly overriden by TWinConfiguration
+    DebugFail(); // This is never called, as the detection is completely overriden by TWinConfiguration
     if (FileExists(ApiPath(IniFileStorageNameForReading)))
     {
       FStorage = stIniFile;

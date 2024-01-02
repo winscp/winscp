@@ -1556,7 +1556,7 @@ void __fastcall TFTPFileSystem::CopyToLocal(TStrings * FilesToCopy,
 UnicodeString TFTPFileSystem::RemoteExtractFilePath(const UnicodeString & Path)
 {
   UnicodeString Result;
-  // If the path ends with a slash, FZAPI CServerPath contructor does not identify the path as VMS.
+  // If the path ends with a slash, FZAPI CServerPath constructor does not identify the path as VMS.
   // It is probably ok to use UnixExtractFileDir for all paths passed to FZAPI,
   // but for now, we limit the impact of the change to VMS.
   if (FVMS)
@@ -1710,7 +1710,7 @@ void __fastcall TFTPFileSystem::Source(
   // Support for MDTM does not necessarily mean that the server supports
   // non-standard hack of setting timestamp using
   // MFMT-like (two argument) call to MDTM.
-  // IIS definitelly does.
+  // IIS definitely does.
   if (FFileTransferPreserveTime &&
       ((FServerCapabilities->GetCapability(mfmt_command) == yes) ||
        ((FServerCapabilities->GetCapability(mdtm_command) == yes))))
@@ -3528,7 +3528,7 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
         // (the ... can be "z/OS")
         // https://www.ibm.com/docs/en/zos/latest?topic=2rc-215-mvs-is-operating-system-this-server-ftp-server-is-running-name
         // FZPI has a different incompatible detection.
-        // MVS FTP servers have two separate MVS and Unix file systems cooexisting in the same session.
+        // MVS FTP servers have two separate MVS and Unix file systems coexisting in the same session.
         FMVS = (FSystem.SubString(1, 3) == L"MVS");
         if (FMVS)
         {
@@ -3617,7 +3617,7 @@ void TFTPFileSystem::ProcessFeatures()
     {
       // Serv-U lists all SITE commands in one line like:
       //  SITE PSWD;SET;ZONE;CHMOD;MSG;EXEC;HELP
-      // But ProFTPD lists them separatelly:
+      // But ProFTPD lists them separately:
       //  SITE UTIME
       //  SITE RMDIR
       //  SITE COPY
@@ -4211,7 +4211,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
 
       // TryWindowsSystemCertificateStore is set for the same set of failures
       // as trigger NE_SSL_UNTRUSTED flag in ne_openssl.c's verify_callback().
-      // Use WindowsValidateCertificate only as a last resort (after checking the cached fiungerprint)
+      // Use WindowsValidateCertificate only as a last resort (after checking the cached fingerprint)
       // as it can take a very long time (up to 1 minute).
       if (!VerificationResult && TryWindowsSystemCertificateStore)
       {

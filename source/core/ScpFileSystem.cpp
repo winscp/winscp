@@ -967,7 +967,7 @@ void __fastcall TSCPFileSystem::ChangeDirectory(const UnicodeString ADirectory)
   }
 
   UnicodeString ToDir;
-  // This effectivelly disallows entering subdirectories starting with ~ and containing space
+  // This effectively disallows entering subdirectories starting with ~ and containing space
   if (!Directory.IsEmpty() &&
       ((Directory[1] != L'~') || (Directory.SubString(1, 2) == L"~ ")))
   {
@@ -1991,7 +1991,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
         // We do ASCII transfer: convert EOL of current block
         // (we don't convert whole buffer, cause it would produce
         // huge memory-transfers while inserting/deleting EOL characters)
-        // Than we add current block to file buffer
+        // Then we add current block to file buffer
         if (OperationProgress->AsciiTransfer)
         {
           int ConvertParams =

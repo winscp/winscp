@@ -953,7 +953,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage, bool PuttyImp
     // In case we are re-loading, reset passwords, to avoid pointless
     // re-cryption, while loading username/hostname. And moreover, when
     // the password is wrongly encrypted (using a different master password),
-    // this breaks sites reload and consequently an overal operation,
+    // this breaks sites reload and consequently an overall operation,
     // such as opening Sites menu
     ClearSessionPasswords();
     FProxyPassword = L"";
@@ -1667,7 +1667,7 @@ void TSessionData::ImportFromOpenssh(TStrings * Lines)
           {
             if (Negated)
             {
-              // Skip even if matched by other possitive patterns
+              // Skip even if matched by other positive patterns
               SkippingSection = true;
               break;
             }

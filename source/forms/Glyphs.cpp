@@ -22,7 +22,7 @@ __fastcall TGlyphsModule::TGlyphsModule(TComponent* Owner)
   SetPixelsPerInch(Screen->PixelsPerInch);
 }
 //---------------------------------------------------------------------------
-// Contructor without scaling
+// Constructor without scaling
 __fastcall TGlyphsModule::TGlyphsModule()
   : TDataModule(Application)
 {

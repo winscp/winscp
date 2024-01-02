@@ -86,7 +86,7 @@ void __fastcall TCopyLocalDialog::ShortCutHintLabelClick(TObject *)
 void __fastcall TCopyLocalDialog::FormShow(TObject *)
 {
   InstallPathWordBreakProc(DirectoryEdit);
-  // Does not work when set from a contructor
+  // Does not work when set from a constructor
   ShortCutHintPanel->Color = Application->HintColor;
   UpdateControls();
 }
