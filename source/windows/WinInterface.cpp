@@ -1200,11 +1200,11 @@ void __fastcall CenterButtonImage(TButton * Button)
     // The margins seem to extend the area over which the image is centered,
     // so we have to set it to a double of desired padding.
     // The original formula is - 2 * ((CaptionWidth / 2) - (ImageWidth / 2) + ScaleByTextHeight(Button, 2))
-    // the one below is equivalent, but with reduced rouding.
+    // the one below is equivalent, but with reduced rounding.
     // Without the change, the rounding caused the space between icon and caption too
     // small on 200% zoom.
     // Note that (CaptionWidth / 2) - (ImageWidth / 2)
-    // is approximatelly same as half of caption width before padding.
+    // is approximately same as half of caption width before padding.
     Button->ImageMargins->Left = -(CaptionWidth - ImageWidth + ScaleByTextHeight(Button, 4));
   }
   else
@@ -1492,7 +1492,7 @@ static void __fastcall AppGetMainFormHandle(void * /*Data*/, HWND & Handle)
   TForm * MainForm = GetMainForm();
   // This, among other, causes minimizing of the top-level non-MainForm minimize other child windows.
   // Like clicking "Minimize" on Progress window over Synchronization progress window over Synchronization checklist window.
-  // Would also have a lot of other effects (hopefully possitive) and may render lot of existing MainFormLike code obsolete.
+  // Would also have a lot of other effects (hopefully positive) and may render lot of existing MainFormLike code obsolete.
   if ((MainForm != NULL) && IsMainFormLike(MainForm) && MainForm->HandleAllocated())
   {
     Handle = MainForm->Handle;

@@ -1196,7 +1196,7 @@ void __fastcall TWebDAVFileSystem::ConfirmOverwrite(
   switch (Answer)
   {
     case qaYes:
-    // Can happen when moving to background (and the server manages to commit the interrupeted foreground transfer).
+    // Can happen when moving to background (and the server manages to commit the interrupted foreground transfer).
     // WebDAV does not support resumable uploads.
     // Resumable downloads are not implemented.
     case qaRetry:
@@ -1926,7 +1926,7 @@ int TWebDAVFileSystem::NeonRequestAuth(
     {
       if (FileSystem->FIgnoreAuthenticationFailure == iafPasswordFailed)
       {
-        // Fail PROPFIND /nonexising request...
+        // Fail PROPFIND /nonexisting request...
         Result = false;
       }
       else

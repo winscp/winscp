@@ -383,7 +383,7 @@ void __fastcall THierarchicalStorage::CloseSubKeyPath()
   }
 
   int Levels = FKeyHistory.back().Levels;
-  FKeyHistory.back().Levels = 1; // to satify the assertion in CloseSubKey()
+  FKeyHistory.back().Levels = 1; // to satisfy the assertion in CloseSubKey()
   while (Levels > 0)
   {
     CloseSubKey();
@@ -1208,7 +1208,7 @@ bool __fastcall TCustomIniFileStorage::OpenSubKey(const UnicodeString & Key, boo
 {
   bool Result;
 
-  // To cache root access in advance, otherwise we end up calling outselves, what TAutoFlag does not like
+  // To cache root access in advance, otherwise we end up calling ourselves, what TAutoFlag does not like
   GetCurrentAccess();
 
   {
@@ -1671,7 +1671,7 @@ bool __fastcall TCustomIniFileStorage::HasAccess(unsigned int Access)
 //===========================================================================
 TIniFileStorage * __fastcall TIniFileStorage::CreateFromPath(const UnicodeString & AStorage)
 {
-  // The code was originally inline in the parent contructor call in the TIniFileStorage::TIniFileStorage [public originally].
+  // The code was originally inline in the parent constructor call in the TIniFileStorage::TIniFileStorage [public originally].
   // But if the TMemIniFile constructor throws (e.g. because the INI file is locked), the exception causes access violation.
   // Moving the code to a factory solves this.
   TMemIniFile * IniFile = new TMemIniFile(AStorage);
@@ -1911,7 +1911,7 @@ UnicodeString __fastcall TOptionsIniFile::FormatKey(const UnicodeString & Sectio
   {
     Result += PathDelim;
   }
-  Result += Ident; // Can be empty, when called from a contructor, AllowSection or ReadSection
+  Result += Ident; // Can be empty, when called from a constructor, AllowSection or ReadSection
   if (DebugAlwaysTrue(AllowSection(Section)))
   {
     Result.Delete(1, FRootKey.Length());

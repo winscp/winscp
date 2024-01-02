@@ -779,7 +779,7 @@ TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const Un
   {
     // While theoretically we may get "unable to open key file" and
     // so we should check system error code,
-    // we actully never get here unless we call KeyType previously
+    // we actually never get here unless we call KeyType previously
     // and handle ktUnopenable accordingly.
     Error = AnsiString(ErrorStr);
   }

@@ -4530,7 +4530,7 @@ void CFtpControlSocket::TransferFinished(bool preserveFileTimeForUploads)
         // that the server supports non-standard hack
         // of setting timestamp using
         // MFMT-like (two argument) call to MDTM.
-        // IIS definitelly does.
+        // IIS definitely does.
         command = L"MDTM";
       }
       if (Send( command + L" " + timestr + L" " + filename))

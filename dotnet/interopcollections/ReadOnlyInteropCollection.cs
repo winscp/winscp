@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace WinSCP
 {
-    // Originally, the interop classes were each implemented separatelly. Probably because at the time they were
+    // Originally, the interop classes were each implemented separately. Probably because at the time they were
     // originally implemented, it was not possible to implement them via generic parent class.
     // Now it seems to work (something was improved in in .NET interop meanwhile?)
     //

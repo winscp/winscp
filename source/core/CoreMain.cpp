@@ -143,7 +143,7 @@ void CoreLoad()
     ShowExtendedException(&E);
   }
 
-  // should be noop, unless exception occured above
+  // should be noop, unless exception occurred above
   ConfigStorage->CloseAll();
 
   StoredSessions = new TStoredSessionList();

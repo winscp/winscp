@@ -814,7 +814,7 @@ void TParallelOperation::Done(
       else
       {
         // This is actually not useful at the moment, as when creating directory fails and "Skip" is pressed,
-        // the current code in CopyToRemote/CreateDirectory will behave as, if it succedded, so Successs will be true here.
+        // the current code in CopyToRemote/CreateDirectory will behave as, if it succeded, so Success will be true here.
         FDirectories.erase(DirectoryIterator);
         if (FFileList->Count > FListIndex)
         {
@@ -1655,7 +1655,7 @@ void __fastcall TTerminal::Open()
     }
     __finally
     {
-      // This does not make it through, if terminal thread is abandonded,
+      // This does not make it through, if terminal thread is abandoned,
       // see also TTerminalManager::DoConnectTerminal
       DoInformation(L"", true, 0);
     }
@@ -1841,16 +1841,16 @@ void __fastcall TTerminal::Reopen(int Params)
   bool PrevAutoReadDirectory = FAutoReadDirectory;
   // here used to be a check for FExceptionOnFail being 0
   // but it can happen, e.g. when we are downloading file to execute it.
-  // however I'm not sure why we mind having excaption-on-fail enabled here
+  // however I'm not sure why we mind having exception-on-fail enabled here
   int PrevExceptionOnFail = FExceptionOnFail;
   try
   {
     FReadCurrentDirectoryPending = false;
     FReadDirectoryPending = false;
-    // Not sure why we are suspeding the transaction in the first place,
-    // but definitelly when set while connecting auto loaded workspace session, it causes loading the directory twice.
+    // Not sure why we are suspending the transaction in the first place,
+    // but definitely when set while connecting auto loaded workspace session, it causes loading the directory twice.
     // (when reconnecting lost connection, it's usually prevented by cached directory)
-    // Preventing that by suspeding transaction only when there is one.
+    // Preventing that by suspending transaction only when there is one.
     FSuspendTransaction = (FInTransaction > 0);
     FExceptionOnFail = 0;
     // typically, we avoid reading directory, when there is operation ongoing,
@@ -1917,7 +1917,7 @@ bool __fastcall TTerminal::PromptUser(TSessionData * Data, TPromptKind Kind,
   // If PromptUser is overridden in descendant class, the overridden version
   // is not called when accessed via TSessionIU interface.
   // So this is workaround.
-  // Actually no longer needed as we do not uverride DoPromptUser
+  // Actually no longer needed as we do not override DoPromptUser
   // anymore in TSecondaryTerminal.
   return DoPromptUser(Data, Kind, Name, Instructions, Prompts, Results);
 }
@@ -3152,7 +3152,7 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(
     }
     else
     {
-      // particularly with parallel transfers, the overal operation can be already cancelled by other parallel operation
+      // particularly with parallel transfers, the overall operation can be already cancelled by other parallel operation
       if (OperationProgress->Cancel > csContinue)
       {
         LogEvent(1, L"Transfer cancelled in parallel operation");
@@ -3220,19 +3220,19 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(
     switch (BatchOverwrite)
     {
       case boAll:
-        LogEvent(1, L"Overwritting all files");
+        LogEvent(1, L"Overwriting all files");
         Result = qaYes;
         break;
 
       case boNone:
-        LogEvent(1, L"Not overwritting any file");
+        LogEvent(1, L"Not overwriting any file");
         Result = qaNo;
         break;
 
       case boOlder:
         if (FileParams == NULL)
         {
-          LogEvent(1, L"Not overwritting due to lack of file information");
+          LogEvent(1, L"Not overwriting due to lack of file information");
           Result = qaNo;
         }
         else
@@ -4172,7 +4172,7 @@ TUsableCopyParamAttrs __fastcall TTerminal::UsableCopyParamAttrs(int Params)
     FLAGMASK(FLAGSET(Params, cpDelete), cpaNoClearArchive) |
     FLAGMASK(!IsCapable[fcIgnorePermErrors], cpaNoIgnorePermErrors) |
     // the following three are never supported for download,
-    // so when they are not suppored for upload too,
+    // so when they are not supported for upload too,
     // set them in General flags, so that they do not get enabled on
     // Synchronize dialog.
     FLAGMASK(!IsCapable[fcModeChangingUpload], cpaNoRights) |
@@ -7624,7 +7624,7 @@ void __fastcall TTerminal::DirectorySource(
     CreateTargetDirectory(DestFullName, Attrs, CopyParam);
   }
 
-  // Paralell transfers (cpNoRecurse) won't be allowed if any of these are set anyway (see CanParallel).
+  // Parallel transfers (cpNoRecurse) won't be allowed if any of these are set anyway (see CanParallel).
   // Exception is ClearArchive, which is does not prevent parallel transfer, but is silently ignored for directories.
   if (DoRecurse && !OperationProgress->Cancel)
   {
@@ -7665,7 +7665,7 @@ bool TTerminal::UseAsciiTransfer(
   return
     IsCapable[fcTextMode] &&
     CopyParam->UseAsciiTransfer(BaseFileName, Side, MaskParams) &&
-    // Used either before PartSize is set (to check that file is to be transfered in binary mode, hence allows parallel file transfer),
+    // Used either before PartSize is set (to check that file is to be transferred in binary mode, hence allows parallel file transfer),
     // or later during parallel transfer (which never happens for ascii mode).
     DebugAlwaysTrue(CopyParam->PartSize < 0);
 }
@@ -8223,7 +8223,7 @@ void __fastcall TTerminal::Sink(
 
         FFileSystem->DirectorySunk(DestFullName, File, CopyParam);
 
-        // Do not delete directory if some of its files were skip.
+        // Do not delete directory if some of its files were skipped.
         // Throw "skip file" for the directory to avoid attempt to deletion
         // of any parent directory
         if (FLAGSET(Params, cpDelete) && SinkFileParams.Skipped)

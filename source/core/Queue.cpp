@@ -1323,8 +1323,8 @@ void __fastcall TTerminalItem::ProcessEvent()
     UnicodeString Message;
     if (ExceptionMessageFormatted(&E, Message))
     {
-      // do not show error messages, if task was cancelled anyway
-      // (for example if transfer is cancelled during reconnection attempts)
+      // do not show error messages, if task was canceled anyway
+      // (for example if transfer is canceled during reconnection attempts)
       if (!FCancel &&
           (FTerminal->QueryUserException(L"", &E, qaOK | qaCancel, NULL, qtError) == qaCancel))
       {
@@ -2705,7 +2705,7 @@ void __fastcall TTerminalThread::FatalAbort()
 {
   if (FAbandoned)
   {
-    // We cannot use TTerminal::FatalError as the terminal still runs on a backgroud thread,
+    // We cannot use TTerminal::FatalError as the terminal still runs on a background thread,
     // may have its TCallbackGuard armed right now.
     throw ESshFatal(NULL, L"");
   }

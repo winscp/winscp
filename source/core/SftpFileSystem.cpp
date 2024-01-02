@@ -1636,7 +1636,7 @@ protected:
     if (Response->Capacity > 0)
     {
       // particularly when uploading a file that completely fits into send buffer
-      // over slow line, we may end up seemingly completing the transfer immediatelly
+      // over slow line, we may end up seemingly completing the transfer immediately
       // but hanging the application for a long time waiting for responses
       // (common is that the progress window would not even manage to draw itself,
       // showing that upload finished, before the application "hangs")
@@ -3910,7 +3910,7 @@ void __fastcall TSFTPFileSystem::CopyFile(
     try
     {
       SourceRemoteHandle = SFTPOpenRemoteFile(FileNameCanonical, SSH_FXF_READ, Encrypted, Size);
-      // SFTP_EXT_COPY_FILE does not allow overwritting existing files
+      // SFTP_EXT_COPY_FILE does not allow overwriting existing files
       // (the specification does not mandate it, but it is implemented like that both in ProFTPD and Bitvise).
       // So using SSH_FXF_EXCL for consistency.
       DestRemoteHandle = SFTPOpenRemoteFile(NewNameCanonical, SSH_FXF_WRITE | SSH_FXF_CREAT | SSH_FXF_EXCL, Encrypted, Size);
@@ -3987,7 +3987,7 @@ void __fastcall TSFTPFileSystem::CreateLink(const UnicodeString FileName,
         {
           // ProFTPD/mod_sftp followed OpenSSH symlink bug even for link implementation.
           // This will be fixed with the next release with
-          // SSH version string bumbed to "mod_sftp/1.0.0"
+          // SSH version string bumped to "mod_sftp/1.0.0"
           // http://bugs.proftpd.org/show_bug.cgi?id=4080
           UnicodeString ProFTPDVerStr = GetSessionInfo().SshImplementation;
           CutToChar(ProFTPDVerStr, L'/', false);
@@ -4847,7 +4847,7 @@ void __fastcall TSFTPFileSystem::Source(
     __finally
     {
       // Either queue is empty now (noop call then),
-      // or some error occured (in that case, process remaining responses, ignoring other errors)
+      // or some error occurred (in that case, process remaining responses, ignoring other errors)
       Queue.DisposeSafe();
     }
 
@@ -5038,7 +5038,7 @@ RawByteString __fastcall TSFTPFileSystem::SFTPOpenRemoteFile(
   bool SendSize =
     (Size >= 0) &&
     FLAGSET(OpenType, SSH_FXF_CREAT | SSH_FXF_TRUNC) &&
-    // Particuarly VanDyke VShell (4.0.3) does not support SSH_FILEXFER_ATTR_ALLOCATION_SIZE
+    // Particularly VanDyke VShell (4.0.3) does not support SSH_FILEXFER_ATTR_ALLOCATION_SIZE
     // (it fails open request when the attribute is included).
     // It's SFTP-6 attribute, so support structure should be available.
     // It's actually not with VShell. But VShell supports the SSH_FILEXFER_ATTR_ALLOCATION_SIZE.
@@ -5763,7 +5763,7 @@ void __fastcall TSFTPFileSystem::Sink(
     }
 
     // if the transfer was finished, the file is usually closed already
-    // (except for special cases like SFTPv6 EOF indication or partial file downlaod)
+    // (except for special cases like SFTPv6 EOF indication or partial file download)
     if (FTerminal->Active && !RemoteHandle.IsEmpty())
     {
       // do not wait for response

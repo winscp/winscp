@@ -977,7 +977,7 @@ int __fastcall CompareLogicalText(
   {
     Result = lstrcmpi(S1.c_str(), S2.c_str());
   }
-  // For deterministics results
+  // For deterministic results
   if (Result == 0)
   {
     Result = lstrcmp(S1.c_str(), S2.c_str());
@@ -4204,7 +4204,7 @@ UnicodeString __fastcall AssemblyNewClassInstanceStart(
       // Historically we use Dim .. With instead of object initilizer.
       // But for inline use, we have to use object initialize.
       // We should consistently always use object initilizers.
-      // Unfortunatelly VB.NET object initializer (contrary to C#) does not allow trailing comma.
+      // Unfortunately VB.NET object initializer (contrary to C#) does not allow trailing comma.
       Result += SpaceOrPara + RtfKeyword(L"With");
       if (Inline)
       {

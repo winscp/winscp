@@ -1423,7 +1423,7 @@ void __fastcall TRemoteFile::FindLinkedFile()
     {
       if (LinkedBy->LinkTo == LinkTo)
       {
-        // this is currenly redundant information, because it is used only to
+        // this is currently redundant information, because it is used only to
         // detect broken symlink, which would be otherwise detected
         // by FLinkedFile == NULL
         FCyclicLink = true;
@@ -3102,7 +3102,7 @@ __int64 TSynchronizeProgress::GetProcessed(const TFileOperationProgressType * Cu
   DebugAssert(!TFileOperationProgressType::IsIndeterminateOperation(CurrentItemOperationProgress->Operation));
 
   // Need to calculate the total size on the first call only,
-  // as at the time the constructor it called, we usually do not have sizes of folders caculated yet.
+  // as at the time the constructor it called, we usually do not have sizes of folders calculated yet.
   if (FTotalSize < 0)
   {
     FTotalSize = 0;

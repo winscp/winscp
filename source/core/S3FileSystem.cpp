@@ -105,7 +105,7 @@ static void NeedS3Config()
 TStrings * GetS3Profiles()
 {
   NeedS3Config();
-  // S3 allegedly treats the section case-sensitivelly, but our GetS3ConfigValue (ReadString) does not,
+  // S3 allegedly treats the section case-sensitively, but our GetS3ConfigValue (ReadString) does not,
   // so consistently we return case-insensitive list.
   std::unique_ptr<TStrings> Result(new TStringList());
   if (S3ConfigFile.get() != NULL)
@@ -1237,8 +1237,8 @@ void TS3FileSystem::ReadDirectoryInternal(
       if (Data.IsTruncated)
       {
         // We have report that with max-keys=1, server can return IsTruncated response with no keys,
-        // so we would loop infinitelly. For now, if we do GET request only to check for bucket/folder existence (MaxKeys == -1),
-        // we are happy with a successfull response and never loop, even if IsTruncated.
+        // so we would loop infinitely. For now, if we do GET request only to check for bucket/folder existence (MaxKeys == -1),
+        // we are happy with a successful response and never loop, even if IsTruncated.
         if ((MaxKeys == 0) ||
             ((MaxKeys > 0) && (Data.KeyCount < MaxKeys)))
         {
@@ -1253,7 +1253,7 @@ void TS3FileSystem::ReadDirectoryInternal(
     } while (Continue);
 
     // Listing bucket root directory will report an error if the bucket does not exist.
-    // But there won't be any prefix/ entry, so if the bucket is ampty, the Data.Any is false.
+    // But there won't be any prefix/ entry, so if the bucket is empty, the Data.Any is false.
     // But when listing a prefix, we do not get any error, when the "prefix" does not exist.
     // But when the prefix does exist, there's at least the prefix/ entry. If there's none, it means that the path does not exist.
     // Even an empty-named entry/subprefix (which are ignored for other purposes) still indicate that the prefix exists.
@@ -1662,7 +1662,7 @@ unsigned short TS3FileSystem::AclGrantToPermissions(S3AclGrant & AclGrant, const
     }
     else
     {
-      FTerminal->LogEvent(1, FORMAT(L"Unspported permission for canonical user %s", (StrFromS3(Properties.OwnerId))));
+      FTerminal->LogEvent(1, FORMAT(L"Unsupported permission for canonical user %s", (StrFromS3(Properties.OwnerId))));
     }
   }
   else if (AclGrant.granteeType == S3GranteeTypeAllAwsUsers)

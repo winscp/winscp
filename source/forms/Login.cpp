@@ -130,7 +130,7 @@ void __fastcall TLoginDialog::InitControls()
   int FtpsNoneIndex = FtpsToIndex(ftpsNone);
   int FtpsImplicitIndex = FtpsToIndex(ftpsImplicit);
   // Items item setter is implemented as deleting and re-adding the item. If we do it for the last item
-  // (explicit for FTP, implicit for WebDAV/S3), the ItemIndex is effectivelly reset to -1.
+  // (explicit for FTP, implicit for WebDAV/S3), the ItemIndex is effectively reset to -1.
   // This happens when TLS is set in the default session settings.
   // Also as TransferProtocolComboChange is not triggered it results in currupted state in respect to protocol/tls to port number sync.
   int Index = FtpsCombo->ItemIndex;

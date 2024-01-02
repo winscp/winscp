@@ -1955,7 +1955,7 @@ TTBXPopupMenu * __fastcall TCustomScpExplorerForm::HistoryMenu(
     // workaround
     // In Pascal the size of TTBXPopupMenu is 132, in C++ 136,
     // operator new allocates memory in Pascal code, but calls inline
-    // contructor in C++, leading in problems, the function does
+    // constructor in C++, leading in problems, the function does
     // both in Pascal code
     FHistoryMenu[Side == osLocal][Back] = CreateTBXPopupMenu(this);
     UpdateHistoryMenu(Side, Back);
@@ -5367,7 +5367,7 @@ void __fastcall TCustomScpExplorerForm::DuplicateTab()
     TTerminalManager * Manager = TTerminalManager::Instance();
     TManagedTerminal * ASession = Manager->NewManagedTerminal(SessionData.get());
     DebugAssert(ASession->LocalBrowser == ManagedSession->LocalBrowser);
-    // We definitelly want these
+    // We definitely want these
     ASession->Disconnected = ManagedSession->Disconnected;
     // Not sure about these two
     ASession->Permanent = ManagedSession->Permanent;

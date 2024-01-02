@@ -464,7 +464,7 @@
   SUPPORTS_CLASS_FIELDS          Compiler supports class fields (D9.NET, D10+)
   SUPPORTS_CLASS_HELPERS         Compiler supports class helpers (D9.NET, D10+)
   SUPPORTS_CLASS_OPERATORS       Compiler supports class operators (D9.NET, D10+)
-  SUPPORTS_CLASS_CTORDTORS       Compiler supports class contructors/destructors (D14+)
+  SUPPORTS_CLASS_CTORDTORS       Compiler supports class constructors/destructors (D14+)
   SUPPORTS_STRICT                Compiler supports strict keyword (D9.NET, D10+)
   SUPPORTS_STATIC                Compiler supports static keyword (D9.NET, D10+)
   SUPPORTS_FINAL                 Compiler supports final keyword (D9.NET, D10+)
