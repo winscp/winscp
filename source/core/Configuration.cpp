@@ -939,14 +939,45 @@ bool TConfiguration::RegistryPathExists(const UnicodeString & RegistryPath)
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::CleanupRegistry(const UnicodeString & RegistryPath)
 {
-  std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(RegistryStorageKey));
-
-  UnicodeString ParentKey = ExtractFileDir(RegistryPath);
-  if (ParentKey.IsEmpty() ||
-      Registry->OpenSubKeyPath(ParentKey, false))
+  UnicodeString CompanyKey = GetCompanyRegistryKey();
+  UnicodeString Prefix = IncludeTrailingBackslash(CompanyKey);
+  if (DebugAlwaysTrue(SameStr(LeftStr(RegistryStorageKey, Prefix.Length()), Prefix)))
   {
-    UnicodeString SubKey = ExtractFileName(RegistryPath);
-    Registry->RecursiveDeleteSubKey(SubKey);
+    UnicodeString CompanyParentKey = ExtractFileDir(CompanyKey);
+    std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(CompanyParentKey));
+    UnicodeString RegistryStorageSubKey = MidStr(RegistryStorageKey, CompanyParentKey.Length() + 2);
+    Registry->UnmungedRoot = RegistryStorageSubKey;
+
+    AppLogFmt(L"Cleaning up registry key %s", (RegistryPath));
+    UnicodeString ARegistryPath = TPath::Combine(RegistryStorageSubKey, RegistryPath);
+    UnicodeString Buf = ARegistryPath;
+    while (!Buf.IsEmpty())
+    {
+      UnicodeString ParentKey = ExtractFileDir(Buf);
+      // Actually can be simplified to Registry->OpenSubKeyPath(ParentKey, false)
+      if (ParentKey.IsEmpty() ? Registry->OpenRootKey(false) : Registry->OpenSubKeyPath(ParentKey, false))
+      {
+        UnicodeString SubKey = ExtractFileName(Buf);
+        if (Registry->KeyExists(SubKey))
+        {
+          bool Recursive = (Buf == ARegistryPath);
+          if (Registry->DeleteSubKey(SubKey, Recursive))
+          {
+            AppLogFmt(L"Deleted registry key %s in %s", (SubKey, ParentKey));
+          }
+          else
+          {
+            break;
+          }
+        }
+        Registry->CloseSubKeyPath();
+        Buf = ParentKey;
+      }
+      else
+      {
+        break;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------

@@ -29,7 +29,8 @@ public:
   bool __fastcall HasSubKeys();
   bool __fastcall KeyExists(const UnicodeString & SubKey);
   bool __fastcall ValueExists(const UnicodeString & Value);
-  virtual void __fastcall RecursiveDeleteSubKey(const UnicodeString & Key);
+  bool DeleteSubKey(const UnicodeString & Key, bool Recursive = false);
+  bool RecursiveDeleteSubKey(const UnicodeString & Key);
   virtual void __fastcall ClearSubKeys();
   virtual void __fastcall ReadValues(TStrings* Strings, bool MaintainKeys = false);
   virtual void __fastcall WriteValues(TStrings* Strings, bool MaintainKeys = false);
@@ -72,6 +73,7 @@ public:
   __property bool MungeStringValues = { read = FMungeStringValues, write = FMungeStringValues };
   __property UnicodeString Source = { read = GetSource };
   __property bool Temporary = { read = GetTemporary };
+  __property UnicodeString UnmungedRoot = { read = FUnmungedRoot, write = FUnmungedRoot };
 
 protected:
   enum THierarchicalStorageAccess { hsaRead = 0x01, hsaWrite = 0x02 };
@@ -91,6 +93,7 @@ protected:
   bool FForceAnsi;
   int FFakeReadOnlyOpens;
   int FRootAccess;
+  UnicodeString FUnmungedRoot;
 
   __property bool ForceAnsi = { read = FForceAnsi, write = FForceAnsi };
 
@@ -103,10 +106,11 @@ protected:
   static UnicodeString __fastcall ExcludeTrailingBackslash(const UnicodeString & S);
   virtual bool __fastcall DoOpenSubKey(const UnicodeString & SubKey, bool CanCreate) = 0;
   virtual void __fastcall DoCloseSubKey() = 0;
+  bool MungingKeyName(const UnicodeString & Key);
   UnicodeString __fastcall MungeKeyName(const UnicodeString & Key);
   virtual UnicodeString __fastcall GetSource() = 0;
   virtual bool __fastcall GetTemporary();
-  virtual void __fastcall DoDeleteSubKey(const UnicodeString & SubKey) = 0;
+  virtual bool __fastcall DoDeleteSubKey(const UnicodeString & SubKey) = 0;
   virtual bool __fastcall DoDeleteValue(const UnicodeString & Name) = 0;
 
   virtual void __fastcall DoGetSubKeyNames(TStrings * Strings) = 0;
@@ -167,7 +171,7 @@ protected:
   virtual void __fastcall DoCloseSubKey();
   virtual UnicodeString __fastcall GetSource();
   virtual size_t __fastcall DoBinaryDataSize(const UnicodeString & Name);
-  virtual void __fastcall DoDeleteSubKey(const UnicodeString & SubKey);
+  virtual bool __fastcall DoDeleteSubKey(const UnicodeString & SubKey);
   virtual bool __fastcall DoDeleteValue(const UnicodeString & Name);
 
   virtual void __fastcall DoGetSubKeyNames(TStrings * Strings);
@@ -226,7 +230,7 @@ protected:
   virtual void __fastcall DoCloseSubKey();
   virtual UnicodeString __fastcall GetSource();
   virtual size_t __fastcall DoBinaryDataSize(const UnicodeString & Name);
-  virtual void __fastcall DoDeleteSubKey(const UnicodeString & SubKey);
+  virtual bool __fastcall DoDeleteSubKey(const UnicodeString & SubKey);
   virtual bool __fastcall DoDeleteValue(const UnicodeString & Name);
 
   virtual void __fastcall DoGetSubKeyNames(TStrings * Strings);

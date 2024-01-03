@@ -210,13 +210,27 @@ bool __fastcall THierarchicalStorage::OpenRootKey(bool CanCreate)
   return OpenSubKey(UnicodeString(), CanCreate);
 }
 //---------------------------------------------------------------------------
+bool THierarchicalStorage::MungingKeyName(const UnicodeString & Key)
+{
+  UnicodeString K = CurrentSubKey + Key + L"\\";
+  return UnmungedRoot.IsEmpty() || !SameText(LeftStr(UnmungedRoot + L"\\", K.Length()), K);
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall THierarchicalStorage::MungeKeyName(const UnicodeString & Key)
 {
-  UnicodeString Result = MungeStr(Key, ForceAnsi, false);
-  // if there's already ANSI-munged subkey, keep ANSI munging
-  if ((Result != Key) && !ForceAnsi && CanRead() && DoKeyExists(Key, true))
+  UnicodeString Result;
+  if (!MungingKeyName(Key))
   {
-    Result = MungeStr(Key, true, false);
+    Result = Key;
+  }
+  else
+  {
+    Result = MungeStr(Key, ForceAnsi, false);
+    // if there's already ANSI-munged subkey, keep ANSI munging
+    if ((Result != Key) && !ForceAnsi && CanRead() && DoKeyExists(Key, true))
+    {
+      Result = MungeStr(Key, true, false);
+    }
   }
   return Result;
 }
@@ -415,30 +429,46 @@ void __fastcall THierarchicalStorage::ClearSubKeys()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall THierarchicalStorage::RecursiveDeleteSubKey(const UnicodeString & Key)
+bool THierarchicalStorage::RecursiveDeleteSubKey(const UnicodeString & Key)
+{
+  return DeleteSubKey(Key, true);
+}
+//---------------------------------------------------------------------------
+bool THierarchicalStorage::DeleteSubKey(const UnicodeString & Key, bool Recursive)
 {
   bool CanWriteParent = CanWrite();
-  if (OpenSubKey(Key, false))
+  bool Result = OpenSubKey(Key, false);
+  if (Result)
   {
-    ClearSubKeys();
-
-    // Cannot delete the key itself, but can delete its contents, so at least delete the values
-    // (which would otherwise be deleted implicitly by DoDeleteSubKey)
-    if (!CanWriteParent && CanWrite())
+    if (Recursive)
     {
-      ClearValues();
+      ClearSubKeys();
+
+      // Cannot delete the key itself, but can delete its contents, so at least delete the values
+      // (which would otherwise be deleted implicitly by DoDeleteSubKey)
+      if (!CanWriteParent && CanWrite())
+      {
+        ClearValues();
+      }
+    }
+
+    std::unique_ptr<TStrings> ValueNames(new TStringList());
+    if (!Recursive)
+    {
+      GetValueNames(ValueNames.get());
     }
 
     // Only if all subkeys were successfully deleted in ClearSubKeys
-    bool Delete = CanWriteParent && !HasSubKeys();
+    Result = CanWriteParent && !HasSubKeys() && (ValueNames->Count == 0);
 
     CloseSubKey();
 
-    if (Delete)
+    if (Result)
     {
-      DoDeleteSubKey(Key);
+      Result = DoDeleteSubKey(Key);
     }
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall THierarchicalStorage::HasSubKeys()
@@ -958,7 +988,7 @@ void __fastcall TRegistryStorage::DoCloseSubKey()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TRegistryStorage::DoDeleteSubKey(const UnicodeString & SubKey)
+bool __fastcall TRegistryStorage::DoDeleteSubKey(const UnicodeString & SubKey)
 {
   UnicodeString K;
   if (FKeyHistory.empty())
@@ -966,7 +996,7 @@ void __fastcall TRegistryStorage::DoDeleteSubKey(const UnicodeString & SubKey)
     K = Storage + CurrentSubKey;
   }
   K += MungeKeyName(SubKey);
-  FRegistry->DeleteKey(K);
+  return FRegistry->DeleteKey(K);
 }
 //---------------------------------------------------------------------------
 void __fastcall TRegistryStorage::DoGetSubKeyNames(TStrings * Strings)
@@ -990,7 +1020,11 @@ bool __fastcall TRegistryStorage::DoDeleteValue(const UnicodeString & Name)
 //---------------------------------------------------------------------------
 bool __fastcall TRegistryStorage::DoKeyExists(const UnicodeString & SubKey, bool AForceAnsi)
 {
-  UnicodeString K = MungeStr(SubKey, AForceAnsi, false);
+  UnicodeString K = SubKey;
+  if (MungingKeyName(K))
+  {
+    K = MungeStr(K, AForceAnsi, false);
+  }
   bool Result = FRegistry->KeyExists(K);
   return Result;
 }
@@ -1233,8 +1267,9 @@ void __fastcall TCustomIniFileStorage::CloseSubKey()
   THierarchicalStorage::CloseSubKey();
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomIniFileStorage::DoDeleteSubKey(const UnicodeString & SubKey)
+bool __fastcall TCustomIniFileStorage::DoDeleteSubKey(const UnicodeString & SubKey)
 {
+  bool Result = true;
   try
   {
     ResetCache();
@@ -1245,11 +1280,11 @@ void __fastcall TCustomIniFileStorage::DoDeleteSubKey(const UnicodeString & SubK
   }
   if (HandleByMasterStorage())
   {
-    if (FMasterStorage->CanWrite())
-    {
+    Result =
+      FMasterStorage->CanWrite() &&
       FMasterStorage->DoDeleteSubKey(SubKey);
-    }
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomIniFileStorage::DoGetSubKeyNames(TStrings * Strings)
