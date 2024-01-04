@@ -508,7 +508,8 @@ static void __fastcall RegisterProtocolForDefaultPrograms(HKEY RootKey, const Un
   // Register protocol, if it does not exist yet.
   // Prior to Windows 8, we need to register ourselves as legacy handler to
   // become the default handler. On Windows 8, it's automatic as long as no other
-  // application is registered for the protocol (i.e. RegisterProtocol would be enough)
+  // application is registered for the protocol (i.e. RegisterProtocol would be enough).
+  // Inconsistently with other calls, this does not use UpperCase().
   RegisterAsUrlHandler(RootKey, Protocol);
 
   // see https://learn.microsoft.com/en-us/windows/win32/shell/default-programs#registering-an-application-for-use-with-default-programs
