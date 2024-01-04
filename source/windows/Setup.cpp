@@ -281,6 +281,11 @@ void __fastcall RemoveSearchPath(const UnicodeString Path)
 //---------------------------------------------------------------------------
 static const UnicodeString SoftwareClassesBaseKey = L"Software\\Classes\\";
 //---------------------------------------------------------------------------
+static UnicodeString KeyName(HKEY RootKey, const UnicodeString & Key)
+{
+  return FORMAT(L"%s\\%s", (RootKeyToStr(RootKey, L"Unknown"), Key));
+}
+//---------------------------------------------------------------------------
 static void __fastcall DeleteKeyIfEmpty(TRegistry * Registry, const UnicodeString & Key, bool AllowRootValues)
 {
   if (Registry->OpenKey(Key, false))
@@ -310,6 +315,7 @@ static void __fastcall DeleteKeyIfEmpty(TRegistry * Registry, const UnicodeStrin
 
     Registry->CloseKey();
 
+    UnicodeString AKeyName = KeyName(Registry->RootKey, Key);
     if (CanDelete)
     {
       for (int Index = 0; Index < List->Count; Index++)
@@ -319,6 +325,11 @@ static void __fastcall DeleteKeyIfEmpty(TRegistry * Registry, const UnicodeStrin
 
       // will fail, if not all subkeys got removed
       Registry->DeleteKey(Key);
+      AppLogFmt(L"Deleted key %s", (AKeyName));
+    }
+    else
+    {
+      AppLogFmt(L"Cannot delete non-empty key %s", (AKeyName));
     }
   }
 }
@@ -335,7 +346,8 @@ static void __fastcall RegisterProtocol(TRegistry * Registry,
   UnicodeString ProtocolKey = SoftwareClassesBaseKey + Protocol;
   if (Force || !Registry->KeyExists(ProtocolKey))
   {
-    if (Registry->OpenKey(SoftwareClassesBaseKey + Protocol, true))
+    UnicodeString Key = SoftwareClassesBaseKey + Protocol;
+    if (Registry->OpenKey(Key, true))
     {
       Registry->WriteString(L"", Description);
       Registry->WriteString(L"URL Protocol", L"");
@@ -350,6 +362,7 @@ static void __fastcall RegisterProtocol(TRegistry * Registry,
       {
         Abort();
       }
+      AppLogFmt(L"Created %s", (KeyName(Registry->RootKey, Key)));
     }
     else
     {
@@ -381,13 +394,15 @@ static void __fastcall RegisterAsUrlHandler(HKEY RootKey,
 
   RegisterProtocol(Registry.get(), Protocol, Description, true);
 
-  if (Registry->OpenKey(SoftwareClassesBaseKey + Protocol, false) &&
+  UnicodeString Key = SoftwareClassesBaseKey + Protocol;
+  if (Registry->OpenKey(Key, false) &&
       Registry->OpenKey(L"shell", true) &&
       Registry->OpenKey(L"open", true) &&
       Registry->OpenKey(L"command", true))
   {
     Registry->WriteString(L"", FORMAT(L"\"%s\" %s \"%%1\"", (Application->ExeName, TProgramParams::FormatSwitch(UNSAFE_SWITCH))));
     Registry->CloseKey();
+    AppLogFmt(L"Added command to %s", (KeyName(RootKey, Key)));
   }
   else
   {
@@ -521,15 +536,20 @@ static void __fastcall RegisterProtocolForDefaultPrograms(HKEY RootKey, const Un
   Registry->WriteString(Protocol, GenericUrlHandler);
   Registry->CloseKey();
 
+  AppLogFmt(L"Added capabilities to %s", (KeyName(RootKey, CapabilitiesKey)));
+
   // register application
 
-  if (!Registry->OpenKey(L"Software\\RegisteredApplications", true))
+  UnicodeString ApplicationsKey = L"Software\\RegisteredApplications";
+  if (!Registry->OpenKey(ApplicationsKey, true))
   {
     Abort();
   }
 
-  Registry->WriteString(AppNameString(), CapabilitiesKey);
+  UnicodeString AppName = AppNameString();
+  Registry->WriteString(AppName, CapabilitiesKey);
   Registry->CloseKey();
+  AppLogFmt(L"Registered %s in %s", (AppName, KeyName(RootKey, ApplicationsKey)));
 }
 //---------------------------------------------------------------------------
 static void __fastcall UnregisterProtocolForDefaultPrograms(HKEY RootKey,
@@ -640,16 +660,21 @@ static void __fastcall NotifyChangedAssociations()
 //---------------------------------------------------------------------------
 void __fastcall RegisterForDefaultProtocols()
 {
+  AppLog(L"Registering to handle protocol URL addresses");
   if (IsWinVista())
   {
+    AppLog(L"Registering as default program");
     RegisterForDefaultPrograms();
   }
   else
   {
+    AppLog(L"Registering for non-browser protocols");
     RegisterAsNonBrowserUrlHandler(UnicodeString());
   }
 
+  AppLog(L"Registering for non-browser protocols with prefix");
   RegisterAsNonBrowserUrlHandler(WinSCPProtocolPrefix);
+  AppLog(L"Registering for browser protocols with prefix");
   RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpsProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpesProtocol.UpperCase());
@@ -657,11 +682,14 @@ void __fastcall RegisterForDefaultProtocols()
   RegisterAsUrlHandler(WinSCPProtocolPrefix + HttpsProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + SshProtocol.UpperCase());
 
+  AppLog(L"Notifying about changes");
   NotifyChangedAssociations();
+  AppLog(L"Registration done");
 }
 //---------------------------------------------------------------------------
 void __fastcall UnregisterForProtocols()
 {
+  AppLog(L"Unregistering from handling protocol URL addresses");
   UnregisterAsUrlHandlers(UnicodeString(), false);
   UnregisterAsUrlHandlers(WinSCPProtocolPrefix, true);
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + FtpProtocol.UpperCase(), true);
@@ -674,7 +702,9 @@ void __fastcall UnregisterForProtocols()
   UnregisterProtocolsForDefaultPrograms(HKEY_CURRENT_USER, false);
   UnregisterProtocolsForDefaultPrograms(HKEY_LOCAL_MACHINE, false);
 
+  AppLog(L"Notifying about changes");
   NotifyChangedAssociations();
+  AppLog(L"Unregistration done");
 }
 //---------------------------------------------------------------------------
 void __fastcall LaunchAdvancedAssociationUI()

@@ -137,7 +137,7 @@ UnicodeString MakeValidFileName(UnicodeString FileName)
   return FileName;
 }
 //---------------------------------------------------------------------------
-UnicodeString RootKeyToStr(HKEY RootKey)
+UnicodeString RootKeyToStr(HKEY RootKey, const UnicodeString & Default)
 {
   if (RootKey == HKEY_USERS) return L"HKU";
     else
@@ -151,7 +151,13 @@ UnicodeString RootKeyToStr(HKEY RootKey)
     else
   if (RootKey == HKEY_DYN_DATA) return L"HKDD";
     else
-  {  Abort(); return L""; };
+  {
+    if (Default.IsEmpty())
+    {
+      Abort();
+    }
+    return Default;
+  };
 }
 //---------------------------------------------------------------------------
 UnicodeString BooleanToEngStr(bool B)
