@@ -402,7 +402,7 @@ static void __fastcall RegisterAsUrlHandler(const UnicodeString & Protocol, Unic
   {
     RegisterAsUrlHandler(HKEY_LOCAL_MACHINE, Protocol, Description);
 
-    // get rid of any HKCU registraction that would overrite the HKLM one
+    // get rid of any HKCU registraction that would override the HKLM one
     std::unique_ptr<TRegistry> Registry(CreateRegistry(HKEY_CURRENT_USER));
     if (Registry->KeyExists(SoftwareClassesBaseKey + Protocol))
     {
