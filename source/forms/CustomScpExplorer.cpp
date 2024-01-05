@@ -1219,7 +1219,8 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
     FileColorsChanged();
   }
 
-  if (GetNewTabTab()->CaptionTruncation != GetNewTabTabCaptionTruncation())
+  if ((GetNewTabTab()->CaptionTruncation != GetNewTabTabCaptionTruncation()) &&
+      (FSessionColors != NULL))
   {
     SessionListChanged();
   }
