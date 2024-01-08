@@ -90,5 +90,8 @@ BEGIN
   NEW_6_0_DIR_SIZE, "Directory sizes can be shown in file panel"
   NEW_6_0_EDITING, "Remote file editing improved by allowing session to reconnect and by optionally checking if remote file was modified before overwriting it"
 
-  NEW_6_2_TDB, "TDB"
+  NEW_6_2_PARALLEL_FILE, "Single large file can be downloaded using multiple SFTP connections"
+  NEW_6_2_HOST_CERTIFICATES, "Support for OpenSSH certificates for host verification"
+  NEW_6_2_SYNC_HASH, "File hash can be used as criterion for synchronization"
+  NEW_6_2_MOVE_DUPLICATE, "Improved behaviour when moving and duplicating remote files"
 END
