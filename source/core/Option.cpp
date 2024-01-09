@@ -69,8 +69,14 @@ void __fastcall TOptions::Add(UnicodeString Value)
           ValueDelimiter = Value[Index];
           break;
         }
-        // this is to treat /home/martin as parameter, not as switch
-        else if ((Value[Index] != L'?') && !IsLetter(Value[Index]))
+        // This is to treat /home/martin as parameter, not as switch.
+        else if ((Value[Index] == L'?') ||
+                 IsLetter(Value[Index]) ||
+                 ((Value[Index] == L'-') && (SwitchMark == L'-') && (Value[2] == L'-'))) // allow --puttygen-switches
+        {
+          // noop
+        }
+        else
         {
           Switch = false;
           break;
@@ -129,6 +135,13 @@ UnicodeString __fastcall TOptions::GetParam(int Index)
     ++I;
   }
 
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString TOptions::ConsumeParam()
+{
+  UnicodeString Result = Param[1];
+  ParamsProcessed(1, 1);
   return Result;
 }
 //---------------------------------------------------------------------------

@@ -104,7 +104,9 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
 
   HintLabel(ShellIconsText2);
   HotTrackLabel(CopyParamLabel);
-  HintLabel(PuttyPathHintText, LoadStr(PUTTY_PATTERNS_HINT2));
+  std::unique_ptr<TStrings> PuttyPathHintStrings(TextToStringList(LoadStr(PUTTY_PATTERNS_HINT2)));
+  PuttyPathHintStrings->Insert(7, LoadStr(PATTERNS_HINT_K));
+  HintLabel(PuttyPathHintText, TrimRight(StringsToText(PuttyPathHintStrings.get())));
 
   EditorEncodingCombo->Items->Add(DefaultEncodingName());
   EditorEncodingCombo->Items->Add(LoadStr(UTF8_NAME));
@@ -129,6 +131,11 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   AutoSizeButton(UsageViewButton);
 
   AutomaticIniFileStorageLabel->Caption = ExpandEnvironmentVariables(Configuration->GetAutomaticIniFileStorageName(false));
+
+  QueueTransferLimitEdit->MaxValue = WinConfiguration->QueueTransferLimitMax;
+
+  CommanderDescriptionLabel2->Caption = Bullet(CommanderDescriptionLabel2->Caption);
+  ExplorerDescriptionLabel->Caption = Bullet(ExplorerDescriptionLabel->Caption);
 
   if (IsUWP())
   {
@@ -288,6 +295,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(ConfirmTemporaryDirectoryCleanup);
     BOOLPROP(FullRowSelect);
     BOOLPROP(NaturalOrderNumericalSorting);
+    BOOLPROP(AlwaysSortDirectoriesByName);
 
     ConfirmClosingSessionCheck2->Checked = WinConfiguration->ConfirmClosingSession;
 
@@ -389,6 +397,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     FEditorBackgroundColor = WinConfiguration->Editor.BackgroundColor;
     (*FEditorList) = *WinConfiguration->EditorList;
     UpdateEditorListView();
+    BOOLPROP(EditorCheckNotModified);
 
     FCopyParams = GUIConfiguration->DefaultCopyParam;
     ResumeOnButton->Checked = GUIConfiguration->DefaultCopyParam.ResumeSupport == rsOn;
@@ -703,6 +712,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(ConfirmTemporaryDirectoryCleanup);
     BOOLPROP(FullRowSelect);
     BOOLPROP(NaturalOrderNumericalSorting);
+    BOOLPROP(AlwaysSortDirectoriesByName);
 
     WinConfiguration->ConfirmClosingSession = ConfirmClosingSessionCheck2->Checked;
 
@@ -779,6 +789,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     WinConfiguration->Editor.FontColor = FEditorFont->Color;
     WinConfiguration->Editor.BackgroundColor = FEditorBackgroundColor;
     WinConfiguration->EditorList = FEditorList;
+    BOOLPROP(EditorCheckNotModified);
 
     // overwrites only TCopyParamType fields
     CopyParam = FCopyParams;
@@ -1442,6 +1453,8 @@ void __fastcall TPreferencesDialog::UpdateControls()
 
     EnableControl(ActionsLogFileNameEdit, EnableActionsLoggingCheck->Checked);
     EnableControl(ActionsLogFileNameHintText, ActionsLogFileNameEdit->Enabled);
+
+    LogProtocolHintLabel->Visible = (LogProtocolCombo2->ItemIndex - BelowNormalLogLevels >= 2);
 
     // interface
     InterfaceChangeLabel->Visible =
@@ -3027,11 +3040,13 @@ UnicodeString __fastcall TPreferencesDialog::GetCustomIniFileStorageName()
 void __fastcall TPreferencesDialog::CustomIniFileStorageChanged()
 {
   UnicodeString CustomIniFileStorageName = GetCustomIniFileStorageName();
+  UnicodeString CustomIniFileStorageNameExpanded = ExpandEnvironmentVariables(CustomIniFileStorageName);
   if (!CustomIniFileStorageName.IsEmpty() &&
+      // Not expanding, as we want to allow change from explicit path to path with variables and vice versa
       !IsPathToSameFile(CustomIniFileStorageName, FCustomIniFileStorageName) &&
-      FileExists(CustomIniFileStorageName))
+      FileExists(CustomIniFileStorageNameExpanded))
   {
-    UnicodeString Message = FORMAT(LoadStrPart(CUSTOM_INI_FILE_OVERWRITE, 1), (CustomIniFileStorageName));
+    UnicodeString Message = FORMAT(LoadStrPart(CUSTOM_INI_FILE_OVERWRITE, 1), (CustomIniFileStorageNameExpanded));
     TMessageParams Params;
     TQueryButtonAlias Aliases[2];
     Aliases[0].Button = qaYes;
@@ -3048,8 +3063,8 @@ void __fastcall TPreferencesDialog::CustomIniFileStorageChanged()
     else if (Result == qaNo)
     {
       // Similar to TLoginDialog::ImportActionExecute
-      Configuration->ScheduleCustomIniFileStorageUse(GetCustomIniFileStorageName());
-      ExecuteNewInstance(L"");
+      Configuration->ScheduleCustomIniFileStorageUse(CustomIniFileStorageName);
+      ExecuteSelf(EmptyStr);
       TerminateApplication();
     }
     else
@@ -3068,7 +3083,7 @@ void __fastcall TPreferencesDialog::CustomIniFileStorageEditExit(TObject * /*Sen
   }
   else
   {
-    // Reset the value to prevent accidental overwide of an INI file, in case the dialog cancel does not complete
+    // Reset the value to prevent accidental overwrite of an INI file, in case the dialog cancel does not complete
     CustomIniFileStorageEdit->Text = FCustomIniFileStorageName;
   }
 }
@@ -3086,7 +3101,7 @@ void __fastcall TPreferencesDialog::CustomIniFileStorageEditAfterDialog(TObject 
 void __fastcall TPreferencesDialog::CustomIniFileStorageButtonClick(TObject * /*Sender*/)
 {
   UpdateControls();
-  // Handler is shown also when Checked is set from LoadConfiguration
+  // Handler is called also when Checked is set from LoadConfiguration
   if (FNoUpdate == 0)
   {
     // Focus to force validation
@@ -3229,5 +3244,19 @@ void __fastcall TPreferencesDialog::LocalPortNumberMaxEditExit(TObject *)
       LocalPortNumberMinEdit->Value = LocalPortNumberMinEdit->MinValue;
     }
   }
+}
+//---------------------------------------------------------------------------
+UnicodeString TPreferencesDialog::Bullet(const UnicodeString & S)
+{
+  // Keep in sync with similar function in installer
+  UnicodeString Result = S;
+  UnicodeString Dash(L"-");
+  UnicodeString Bullet(L"\u2022 ");
+  if (StartsStr(Dash, Result))
+  {
+    Result = Bullet + Result.SubString(Dash.Length() + 1, Result.Length() - Dash.Length());
+  }
+  Result = ReplaceStr(Result, sLineBreak + Dash, sLineBreak + Bullet);
+  return Result;
 }
 //---------------------------------------------------------------------------

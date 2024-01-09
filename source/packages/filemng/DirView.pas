@@ -38,7 +38,7 @@ interface
 {$WARN SYMBOL_PLATFORM OFF}
 
 uses
-  Windows, ShlObj, ComCtrls, CompThread, CustomDirView, ListExt,
+  Windows, ShlObj, ComCtrls, CompThread, CustomDirView,
   ExtCtrls, Graphics, FileOperator, DiscMon, Classes, DirViewColProperties,
   DragDrop, Messages, ListViewColProperties, CommCtrl, DragDropFilesEx,
   FileCtrl, SysUtils, BaseUtils, Controls, CustomDriveView, System.Generics.Collections, Winapi.ShellAPI;
@@ -81,20 +81,13 @@ type
     Attr: LongWord;
     FileTime: TFileTime;
     PIDL: PItemIDList; {Fully qualified PIDL}
-  end;
-
-  {Record for fileinfo caching:}
-  PInfoCache = ^TInfoCache;
-  TInfoCache = record
-    FileExt: string;
-    TypeName: string;
-    ImageIndex: Integer;
+    CalculatedSize: Int64;
   end;
 
 {Additional events:}
 type
   TDirViewFileSizeChanged = procedure(Sender: TObject; Item: TListItem) of object;
-  TDirViewFileIconForName = procedure(Sender: TObject; Item: TListItem; var FileName: string) of object;
+  TDirViewFileIconForName = procedure(Sender: TObject; var FileName: string) of object;
 
 type
   TDirView = class;
@@ -133,8 +126,6 @@ type
   private
     FConfirmDelete: Boolean;
     FConfirmOverwrite: Boolean;
-    FUseIconCache: Boolean;
-    FInfoCacheList: TListExt;
     FDriveView: TCustomDriveView;
     FChangeTimer: TTimer;
     FChangeInterval: Cardinal;
@@ -234,7 +225,11 @@ type
     procedure WMDestroy(var Msg: TWMDestroy); message WM_DESTROY;
     procedure CMRecreateWnd(var Message: TMessage); message CM_RECREATEWND;
     procedure Load(DoFocusSomething: Boolean); override;
-    function GetFileInfo(pszPath: LPCWSTR; dwFileAttributes: DWORD; var psfi: TSHFileInfoW; cbFileInfo, uFlags: UINT): DWORD_PTR;
+    procedure DoFetchIcon(
+      FilePath: string; IsSpecialExt: Boolean; CanTimeout: Boolean; FileRec: PFileRec; var ImageIndex: Integer; var TypeName: string);
+    function GetFileInfo(
+      CanUsePIDL: Boolean; PIDL: PItemIDList; Path: string; CanTimeout: Boolean;
+      dwFileAttributes: DWORD; var psfi: TSHFileInfoW; uFlags: UINT): DWORD_PTR;
     function DoCopyToClipboard(Focused: Boolean; Cut: Boolean; Operation: TClipBoardOperation): Boolean;
 
     function HiddenCount: Integer; override;
@@ -270,6 +265,7 @@ type
     function ItemFileName(Item: TListItem): string; override;
     function ItemFileSize(Item: TListItem): Int64; override;
     function ItemFileTime(Item: TListItem; var Precision: TDateTimePrecision): TDateTime; override;
+    procedure SetItemCalculatedSize(Item: TListItem; ASize: Int64); override;
     procedure OpenFallbackPath(Value: string);
 
     {Thread handling: }
@@ -279,9 +275,6 @@ type
     procedure StartIconUpdateThread;
     procedure StopIconUpdateThread;
     procedure TerminateThreads;
-
-    {Other additional functions: }
-    procedure ClearIconCache;
 
     {Create a new subdirectory:}
     procedure CreateDirectory(DirName: string); override;
@@ -301,7 +294,6 @@ type
     procedure Reload(CacheIcons : Boolean); override;
     procedure Reload2;
 
-    function FormatFileTime(FileTime: TFileTime): string; virtual;
     function GetAttrString(Attr: Integer): string; virtual;
 
     constructor Create(AOwner: TComponent); override;
@@ -361,12 +353,6 @@ type
     {Fetch shell icons by thread:}
     property UseIconUpdateThread: Boolean
       read FUseIconUpdateThread write FUseIconUpdateThread default False;
-    {Enables or disables icon caching for registered file extensions. Caching enabled
-     enhances the performance but does not take care about installed icon handlers, wich
-     may modify the display icon for registered files. Only the iconindex is cached not the
-     icon itself:}
-    property UseIconCache: Boolean
-      read FUseIconCache write FUseIconCache default False;
     {Watch current directory for filename changes (create, rename, delete files)}
     property WatchForChanges;
 
@@ -423,14 +409,6 @@ procedure Register;
 begin
   RegisterComponents('DriveDir', [TDirView]);
 end; {Register}
-
-function CompareInfoCacheItems(I1, I2: Pointer): Integer;
-begin
-  if PInfoCache(I1)^.FileExt < PInfoCache(I2)^.FileExt then Result := fLess
-    else
-  if PInfoCache(I1)^.FileExt > PInfoCache(I2)^.FileExt then Result := fGreater
-    else Result := fEqual;
-end; {CompareInfoCacheItems}
 
 function MatchesFileExt(Ext: string; const FileExtList: string): Boolean;
 begin
@@ -538,7 +516,7 @@ begin
     end;
   end;
 
-  FileOperator.Flags := [foAllowUndo, foNoConfirmMkDir];
+  FileOperator.Flags := FileOperatorDefaultFlags;
   if RenameOnCollision then
   begin
     FileOperator.Flags := FileOperator.Flags + [foRenameOnCollision];
@@ -692,13 +670,11 @@ end; {SetIndex}
 
 procedure TIconUpdateThread.Execute;
 var
-  FileInfo: TShFileInfo;
   Count: Integer;
-  Eaten: ULONG;
-  ShAttr: ULONG;
-  FileIconForName: string;
-  ForceByName: Boolean;
+  IsSpecialExt: Boolean;
+  TypeName: string;
 begin
+  CoInitialize(nil); // needed for SHGetFileInfo
   if Assigned(FOwner.TopItem) then FIndex := FOwner.TopItem.Index
     else FIndex := 0;
 
@@ -717,31 +693,8 @@ begin
       CurrentItemData.IconEmpty then
     begin
       try
-        ForceByName := False;
-        FileIconForName := CurrentFilePath;
-        if Assigned(FOwner.FOnFileIconForName) then
-        begin
-          FOwner.FOnFileIconForName(FOwner, nil, FileIconForName);
-          ForceByName := (FileIconForName <> CurrentFilePath);
-        end;
-
-        if not Assigned(CurrentItemData.PIDL) then
-        begin
-          ShAttr := 0;
-          FOwner.FDesktopFolder.ParseDisplayName(FOwner.ParentForm.Handle, nil,
-            PChar(CurrentFilePath), Eaten, CurrentItemData.PIDL, ShAttr);
-        end;
-
-        if (not ForceByName) and Assigned(CurrentItemData.PIDL) then
-        begin
-          SHGetFileInfo(PChar(CurrentItemData.PIDL), 0, FileInfo, SizeOf(FileInfo),
-            SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX or SHGFI_PIDL)
-        end
-          else
-        begin
-          SHGetFileInfo(PChar(FileIconForName), 0, FileInfo, SizeOf(FileInfo),
-            SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX);
-        end;
+        IsSpecialExt := MatchesFileExt(CurrentItemData.FileExt, SpecialExtensions);
+        FOwner.DoFetchIcon(CurrentFilePath, IsSpecialExt, False, @CurrentItemData, FSyncIcon, TypeName);
       except
         {Capture exceptions generated by the shell}
         FSyncIcon := UnKnownFileIcon;
@@ -751,7 +704,6 @@ begin
         FreePIDL(CurrentItemData.PIDL);
         Break;
       end;
-      FSyncIcon := FileInfo.iIcon;
       if FSyncIcon <> CurrentItemData.ImageIndex then
         FNewIcons := True;
       if not Terminated then
@@ -823,9 +775,7 @@ constructor TDirView.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 
-  FInfoCacheList := TListExt.Create(SizeOf(TInfoCache));
   FDriveType := DRIVE_UNKNOWN;
-  FUseIconCache := False;
   FConfirmDelete := True;
   FParentFolder := nil;
   FDesktopFolder := nil;
@@ -836,7 +786,6 @@ begin
   FNotRelative := False;
 
   FFileOperator := TFileOperator.Create(Self);
-  FFileOperator.Flags := [foAllowUndo, foNoConfirmMkDir];
   FDirOK := True;
   FPath := '';
 
@@ -870,7 +819,6 @@ begin
   if Assigned(PIDLRecycle) then FreePIDL(PIDLRecycle);
 
   FLastPath.Free;
-  FInfoCacheList.Free;
   FFileOperator.Free;
   FChangeTimer.Free;
 
@@ -1068,6 +1016,7 @@ begin
     IconEmpty := True;
     if Size > 0 then Inc(FFilesSize, Size);
     PIDL := nil;
+    CalculatedSize := -1;
 
     // Need to add before assigning to .Caption and .OverlayIndex,
     // as the setters these call back to owning view.
@@ -1104,6 +1053,7 @@ begin
     IsRecycleBin := False;
     IsParentDir := True;
     Size := -1;
+    CalculatedSize := -1;
 
     Item.Caption := '..';
 
@@ -1186,8 +1136,7 @@ begin
              FileMatches(DisplayName, SRec)) then
          begin
            {Filetype and icon:}
-           SHGetFileInfo(PChar(FQPIDL), 0, FileInfo, SizeOf(FileInfo),
-            SHGFI_PIDL or SHGFI_TYPENAME or SHGFI_SYSICONINDEX);
+           GetFileInfo(True, FQPIDL, '', False, 0, FileInfo, SHGFI_TYPENAME or SHGFI_SYSICONINDEX);
 
            NewItem := AddItem(Srec);
            NewItem.Caption := DisplayName;
@@ -1458,7 +1407,6 @@ begin
 
   finally
     //if Assigned(Animate) then Animate.Free;
-    FInfoCacheList.Sort(CompareInfoCacheItems);
   end; {Finally}
 end;
 
@@ -1756,18 +1704,6 @@ begin
     else inherited;
 end; {ReLoad}
 
-procedure TDirView.ClearIconCache;
-begin
-  if Assigned(FInfoCacheList) then
-    FInfoCacheList.Clear;
-end; {ClearIconCache}
-
-function TDirView.FormatFileTime(FileTime: TFileTime): string;
-begin
-  Result := FormatDateTime(DateTimeFormatStr,
-    FileTimeToDateTime(FileTime));
-end; {FormatFileTime}
-
 function TDirView.GetAttrString(Attr: Integer): string;
 const
   Attrs: array[1..5] of Integer =
@@ -1793,172 +1729,157 @@ begin
 end; {GetAttrString}
 
 function TDirView.GetFileInfo(
-  pszPath: LPCWSTR; dwFileAttributes: DWORD; var psfi: TSHFileInfoW; cbFileInfo, uFlags: UINT): DWORD_PTR;
+  CanUsePIDL: Boolean; PIDL: PItemIDList; Path: string; CanTimeout: Boolean;
+  dwFileAttributes: DWORD; var psfi: TSHFileInfoW; uFlags: UINT): DWORD_PTR;
+var
+  pszPath: LPCWSTR;
+  cbFileInfo: UINT;
 begin
-  if TimeoutShellIconRetrieval then
+  cbFileInfo := SizeOf(psfi);
+  FillChar(psfi, cbFileInfo, #0);
+
+  if CanUsePIDL and Assigned(PIDL) then
   begin
-     Result := SHGetFileInfoWithTimeout(pszPath, dwFileAttributes, psfi, cbFileInfo, uFlags, MSecsPerSec div 4);
+    pszPath := PChar(PIDL);
+    uFlags := uFlags or SHGFI_PIDL;
+  end
+    else pszPath := PChar(Path);
+
+  // CanTimeout is False in scenarios, where we did not have any reports of hangs, to avoid thread overhead.
+  if TimeoutShellIconRetrieval and CanTimeout then
+  begin
+    Result := SHGetFileInfoWithTimeout(pszPath, dwFileAttributes, psfi, cbFileInfo, uFlags, MSecsPerSec div 4);
   end
     else
   begin
     Result := SHGetFileInfo(pszPath, dwFileAttributes, psfi, cbFileInfo, uFlags);
+  end;
+
+  if Result = 0 then
+  begin
+    psfi.szTypeName[0] := #0;
+    psfi.iIcon := 0;
+  end;
+end;
+
+procedure TDirView.DoFetchIcon(
+  FilePath: string; IsSpecialExt: Boolean; CanTimeout: Boolean; FileRec: PFileRec; var ImageIndex: Integer; var TypeName: string);
+var
+  Eaten: ULONG;
+  shAttr: ULONG;
+  FileInfo: TShFileInfo;
+  ForceByName: Boolean;
+  FileIconForName: string;
+begin
+  {Fetch the Item FQ-PIDL:}
+  if not Assigned(FileRec^.PIDL) and IsSpecialExt then
+  begin
+    try
+      ShAttr := 0;
+      FDesktopFolder.ParseDisplayName(
+        ParentForm.Handle, nil, PChar(FilePath), Eaten, FileRec^.PIDL, ShAttr);
+    except
+    end;
+  end;
+
+  if FileRec^.IsDirectory then
+  begin
+    if FDriveType = DRIVE_FIXED then
+    begin
+      try
+        {Retrieve icon and typename for the directory}
+        GetFileInfo(True, FileRec^.PIDL, FilePath, False, 0, FileInfo, SHGFI_TYPENAME or SHGFI_SYSICONINDEX);
+
+        if (FileInfo.iIcon <= 0) or (FileInfo.iIcon > SmallImages.Count) then
+        begin
+          {Invalid icon returned: retry with access file attribute flag:}
+          GetFileInfo(
+            False, nil, FilePath, False,
+            FILE_ATTRIBUTE_DIRECTORY, FileInfo, SHGFI_TYPENAME or SHGFI_SYSICONINDEX or SHGFI_USEFILEATTRIBUTES);
+        end;
+        TypeName := FileInfo.szTypeName;
+        ImageIndex := FileInfo.iIcon;
+      except
+        {Capture exceptions generated by the shell}
+        TypeName := StdDirTypeName;
+        ImageIndex := StdDirIcon;
+      end;
+    end
+      else
+    begin
+      TypeName := StdDirTypeName;
+      ImageIndex := StdDirIcon;
+    end;
+  end
+    else
+  begin
+    {Retrieve icon and typename for the file}
+    try
+      ForceByName := False;
+      FileIconForName := FilePath;
+      if Assigned(OnFileIconForName) then
+      begin
+        OnFileIconForName(Self, FileIconForName);
+        ForceByName := (FileIconForName <> FilePath);
+      end;
+      // Files with PIDL are typically .exe files.
+      // It may take long to retrieve an icon from exe file.
+      // We typically do not get here, now that we have UseIconUpdateThread enabled.
+      if GetFileInfo(
+           (not ForceByName), FileRec^.PIDL, FileIconForName, CanTimeout, FILE_ATTRIBUTE_NORMAL, FileInfo,
+           SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX) = 0 then
+      begin
+        if Assigned(FileRec^.PIDL) then
+        begin
+          FileInfo.iIcon := DefaultExeIcon;
+        end;
+      end;
+      TypeName := FileInfo.szTypeName;
+      ImageIndex := FileInfo.iIcon;
+
+    except
+      {Capture exceptions generated by the shell}
+      ImageIndex := UnKnownFileIcon;
+    end;
   end;
 end;
 
 procedure TDirView.GetDisplayData(Item: TListItem; FetchIcon: Boolean);
 var
   FileInfo: TShFileInfo;
-  Index: Integer;
-  PExtItem: PInfoCache;
-  CacheItem: TInfoCache;
   IsSpecialExt: Boolean;
-  ForceByName: Boolean;
-  Eaten: ULONG;
-  shAttr: ULONG;
-  FileIconForName, FullName: string;
+  FileRec: PFileRec;
+  FilePath: string;
+  FileAttributes: UINT;
 begin
   Assert(Assigned(Item) and Assigned(Item.Data));
-  with PFileRec(Item.Data)^ do
+  FileRec := PFileRec(Item.Data);
+  with FileRec^ do
   begin
     IsSpecialExt := MatchesFileExt(FileExt, SpecialExtensions);
-    if FUseIconCache and not IsSpecialExt and not IsDirectory then
-    begin
-      CacheItem.FileExt := FileExt;
-      Index := FInfoCacheList.FindSequential(Addr(CacheItem), CompareInfoCacheItems);
-      if Index >= 0 then
-      begin
-        TypeName := PInfoCache(FInfoCacheList[Index])^.TypeName;
-        ImageIndex  := PInfoCache(FInfoCacheList[Index])^.ImageIndex;
-        Empty := False;
-        IconEmpty := False;
-      end;
-    end;
 
     FetchIcon := IconEmpty and (FetchIcon or not IsSpecialExt);
 
     if Empty or FetchIcon then
     begin
+      FilePath := FPath + '\' + FileName;
       if FetchIcon then
       begin
-        {Fetch the Item FQ-PIDL:}
-        if not Assigned(PIDL) and IsSpecialExt then
-        begin
-          try
-            ShAttr := 0;
-            FDesktopFolder.ParseDisplayName(ParentForm.Handle, nil,
-              PChar(FPath + '\' + FileName), Eaten, PIDL, ShAttr);
-          except
-          end;
-        end;
+        DoFetchIcon(FilePath, IsSpecialExt, True, FileRec, ImageIndex, TypeName);
+        IconEmpty := False;
 
-        if IsDirectory then
-        begin
-          if FDriveType = DRIVE_FIXED then
-          begin
-            try
-              {Retrieve icon and typename for the directory}
-              if Assigned(PIDL) then
-              begin
-                SHGetFileInfo(PChar(PIDL), 0, FileInfo, SizeOf(FileInfo),
-                  SHGFI_TYPENAME or SHGFI_SYSICONINDEX or SHGFI_PIDL)
-              end
-                else
-              begin
-                SHGetFileInfo(PChar(FPath + '\' + FileName), 0, FileInfo, SizeOf(FileInfo),
-                  SHGFI_TYPENAME or SHGFI_SYSICONINDEX);
-              end;
-
-              if (FileInfo.iIcon <= 0) or (FileInfo.iIcon > SmallImages.Count) then
-              begin
-                {Invalid icon returned: retry with access file attribute flag:}
-                SHGetFileInfo(PChar(FPath + '\' + FileName), FILE_ATTRIBUTE_DIRECTORY,
-                  FileInfo, SizeOf(FileInfo),
-                  SHGFI_TYPENAME or SHGFI_SYSICONINDEX or SHGFI_USEFILEATTRIBUTES);
-              end;
-              TypeName := FileInfo.szTypeName;
-              if FetchIcon then
-              begin
-                ImageIndex := FileInfo.iIcon;
-                IconEmpty := False;
-              end;
-            {Capture exceptions generated by the shell}
-            except
-              ImageIndex := StdDirIcon;
-              IconEmpty := False;
-            end; {Except}
-          end
-            else
-          begin
-            TypeName := StdDirTypeName;
-            ImageIndex := StdDirIcon;
-            IconEmpty  := False;
-          end;
-        end
-          else
-        begin
-          {Retrieve icon and typename for the file}
-          try
-            ForceByName := False;
-            FullName := FPath + '\' + FileName;
-            FileIconForName := FullName;
-            if Assigned(OnFileIconForName) then
-            begin
-              OnFileIconForName(Self, Item, FileIconForName);
-              ForceByName := (FileIconForName <> FullName);
-            end;
-            if (not ForceByName) and Assigned(PIDL) then
-            begin
-              // Files with PIDL are typically .exe files.
-              // It may take long to retrieve an icon from exe file.
-              // We typically do not get here, now that we have UseIconUpdateThread enabled.
-              if GetFileInfo(
-                   PChar(PIDL), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
-                   SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX or SHGFI_PIDL) = 0 then
-              begin
-                FileInfo.szTypeName[0] := #0;
-                FileInfo.iIcon := DefaultExeIcon;
-              end;
-            end
-              else
-            begin
-              GetFileInfo(PChar(FileIconForName), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
-                SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX);
-            end;
-
-            TypeName := FileInfo.szTypeName;
-            ImageIndex := FileInfo.iIcon;
-            IconEmpty := False;
-
-          {Capture exceptions generated by the shell}
-          except
-            ImageIndex := UnKnownFileIcon;
-            IconEmpty := False;
-          end; {Except}
-        end;
-
-        if (Length(TypeName) > 0) then
-        begin
-          {Fill FileInfoCache:}
-          if FUseIconCache and not IsSpecialExt and not IconEmpty and not IsDirectory then
-          begin
-            GetMem(PExtItem, SizeOf(TInfoCache));
-            PExtItem.FileExt := FileExt;
-            PExtItem.TypeName := TypeName;
-            PExtItem.ImageIndex := ImageIndex;
-            FInfoCacheList.Add(PExtItem);
-          end;
-        end
-          else TypeName := Format(STextFileExt, [FileExt]);
-      end {If FetchIcon}
+        if Length(TypeName) = 0 then
+          TypeName := Format(STextFileExt, [FileExt]);
+      end
         else
       begin
         try
-          if IsDirectory then
-            SHGetFileInfo(PChar(FPath + '\' + FileName), FILE_ATTRIBUTE_DIRECTORY, FileInfo, SizeOf(FileInfo),
-              SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES)
-          else
-            SHGetFileInfo(PChar(FPath + '\' + FileName), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
-              SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES);
+          if IsDirectory then FileAttributes := FILE_ATTRIBUTE_DIRECTORY
+            else FileAttributes := FILE_ATTRIBUTE_NORMAL;
+
+          GetFileInfo(
+            False, nil, FilePath, False, FileAttributes, FileInfo,
+            SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES);
           TypeName := FileInfo.szTypeName;
         except
           {Capture exceptions generated by the shell}
@@ -2041,10 +1962,18 @@ var
 begin
   Time1 := Int64(P1.FileTime.dwHighDateTime) shl 32 + P1.FileTime.dwLowDateTime;
   Time2 := Int64(P2.FileTime.dwHighDateTime) shl 32 + P2.FileTime.dwLowDateTime;
-  if Time1 < Time2 then Result := fLess
+  if Time1 < Time2 then Result := -1
     else
-  if Time1 > Time2 then Result := fGreater
-    else Result := fEqual; // fallback
+  if Time1 > Time2 then Result := 1
+    else Result := 0; // fallback
+end;
+
+function GetItemFileSize(P: PFileRec): Int64; inline;
+begin
+  Result := 0;
+  if P.Size >= 0 then Result := P.Size
+    else
+  if P.CalculatedSize >= 0 then Result := P.CalculatedSize;
 end;
 
 function CompareFile(I1, I2: TListItem; AOwner: TDirView): Integer; stdcall;
@@ -2053,24 +1982,24 @@ var
   P1, P2: PFileRec;
 begin
   ConsiderDirection := True;
-  if I1 = I2 then Result := fEqual
+  if I1 = I2 then Result := 0
     else
-  if I1 = nil then Result := fLess
+  if I1 = nil then Result := -1
     else
-  if I2 = nil then Result := fGreater
+  if I2 = nil then Result := 1
     else
   begin
     P1 := PFileRec(I1.Data);
     P2 := PFileRec(I2.Data);
     if P1.isParentDir then
     begin
-      Result := fLess;
+      Result := -1;
       ConsiderDirection := False;
     end
       else
     if P2.isParentDir then
     begin
-      Result := fGreater;
+      Result := 1;
       ConsiderDirection := False;
     end
       else
@@ -2079,55 +2008,62 @@ begin
     begin
       if P1.isDirectory then
       begin
-        Result := fLess;
+        Result := -1;
         ConsiderDirection := False;
       end
         else
       begin
-        Result := fGreater;
+        Result := 1;
         ConsiderDirection := False;
       end;
     end
       else
     begin
-      Result := fEqual;
+      Result := 0;
 
-      case AOwner.DirColProperties.SortDirColumn of
-        dvName:
-          ; // fallback
-
-        dvSize:
-          if P1.Size < P2.Size then Result := fLess
-            else
-          if P1.Size > P2.Size then Result := fGreater
-            else ; // fallback
-
-        dvType:
-          Result := CompareFileType(I1, I2, P1, P2);
-
-        dvChanged:
-          Result := CompareFileTime(P1, P2);
-
-        dvAttr:
-          if P1.Attr < P2.Attr then Result := fLess
-            else
-          if P1.Attr > P2.Attr then Result := fGreater
-            else ; // fallback
-
-        dvExt:
-          if not P1.isDirectory then
-          begin
-            Result := CompareLogicalTextPas(
-              P1.FileExt + ' ' + P1.DisplayName, P2.FileExt + ' ' + P2.DisplayName,
-              AOwner.NaturalOrderNumericalSorting);
-          end
-            else ; //fallback
-
+      if P1.isDirectory and AOwner.AlwaysSortDirectoriesByName then
+      begin
+        // fallback
+      end
         else
-          ; // fallback
+      begin
+        case AOwner.DirColProperties.SortDirColumn of
+          dvName:
+            ; // fallback
+
+          dvSize:
+            if GetItemFileSize(P1) < GetItemFileSize(P2) then Result := -1
+              else
+            if GetItemFileSize(P1) > GetItemFileSize(P2) then Result := 1
+              else ; // fallback
+
+          dvType:
+            Result := CompareFileType(I1, I2, P1, P2);
+
+          dvChanged:
+            Result := CompareFileTime(P1, P2);
+
+          dvAttr:
+            if P1.Attr < P2.Attr then Result := -1
+              else
+            if P1.Attr > P2.Attr then Result := 1
+              else ; // fallback
+
+          dvExt:
+            if not P1.isDirectory then
+            begin
+              Result := CompareLogicalTextPas(
+                P1.FileExt + ' ' + P1.DisplayName, P2.FileExt + ' ' + P2.DisplayName,
+                AOwner.NaturalOrderNumericalSorting);
+            end
+              else ; //fallback
+
+          else
+            ; // fallback
+        end;
       end;
 
-      if Result = fEqual then
+      if Result = 0 then
       begin
         Result := CompareLogicalTextPas(P1.DisplayName, P2.DisplayName, AOwner.NaturalOrderNumericalSorting)
       end;
@@ -2463,6 +2399,7 @@ procedure TDirView.GetDisplayInfo(ListItem: TListItem;
   var DispInfo: TLVItem);
 var
   Value: string;
+  ASize: Int64;
 begin
   Assert(Assigned(ListItem) and Assigned(ListItem.Data));
   with PFileRec(ListItem.Data)^, DispInfo  do
@@ -2502,11 +2439,16 @@ begin
       begin
         case TDirViewCol(iSubItem) of
           dvSize: {Size:     }
-            if not IsDirectory then Value := FormatPanelBytes(Size, FormatSizeBytes);
+            begin
+              if not IsDirectory then ASize := Size
+                else ASize := CalculatedSize;
+              if ASize >= 0 then Value := FormatPanelBytes(ASize, FormatSizeBytes);
+            end;
           dvType: {FileType: }
             Value := TypeName;
           dvChanged: {Date}
-            Value := FormatFileTime(FileTime);
+            // Keep consistent with UserModificationStr
+            Value := FormatDateTime('ddddd tt', FileTimeToDateTime(FileTime));
           dvAttr: {Attrs:}
             Value := GetAttrString(Attr);
           dvExt:
@@ -2885,7 +2827,7 @@ begin
 
   with FFileOperator do
   begin
-    Flags := [foAllowUndo, foNoConfirmation];
+    Flags := FileOperatorDefaultFlags + [foNoConfirmation];
     Operation := foRename;
     OperandFrom.Clear;
     OperandTo.Clear;
@@ -2957,8 +2899,7 @@ function TDirView.ItemFileSize(Item: TListItem): Int64;
 begin
   Result := 0;
   if Assigned(Item) and Assigned(Item.Data) then
-    with PFileRec(Item.Data)^ do
-      if Size >= 0 then Result := Size;
+    Result := GetItemFileSize(PFileRec(Item.Data));
 end;
 
 function TDirView.ItemFileTime(Item: TListItem;
@@ -3456,6 +3397,19 @@ begin
       ImageIndex := Index;
       IconEmpty := (ImageIndex < 0);
     end;
+end;
+
+procedure TDirView.SetItemCalculatedSize(Item: TListItem; ASize: Int64);
+var
+  OldSize: Int64;
+begin
+  Assert(Assigned(Item) and Assigned(Item.Data));
+  with PFileRec(Item.Data)^ do
+  begin
+    OldSize := CalculatedSize;
+    CalculatedSize := ASize;
+  end;
+  ItemCalculatedSizeUpdated(Item, OldSize, ASize);
 end;
 
 {=================================================================}

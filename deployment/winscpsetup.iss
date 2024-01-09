@@ -7,7 +7,7 @@
 #define WebForum WebRoot+"forum/"
 #define WebDocumentation WebRoot+"eng/docs/"
 #define WebReport "https://winscp.net/install.php"
-#define Year 2023
+#define Year 2024
 #define EnglishLang "English"
 #define SetupTypeData "SetupType"
 #define InnoSetupReg "Software\Microsoft\Windows\CurrentVersion\Uninstall\" + AppId + "_is1"
@@ -121,7 +121,7 @@ ShowTasksTreeLines=yes
 PrivilegesRequired=admin
 PrivilegesRequiredOverridesAllowed=commandline dialog
 ShowLanguageDialog=auto
-UsePreviousLanguage=yes
+UsePreviousLanguage=no
 DisableProgramGroupPage=yes
 SetupIconFile=winscpsetup.ico
 DisableDirPage=no
@@ -700,10 +700,7 @@ end;
 
 #endif
 
-const
-  fsSurface = 0;
-
-procedure LoadBitmap(Image: TBitmapImage; FileName: string; BackgroundColor: TColor);
+procedure LoadBitmap(Image: TBitmapImage; FileName: string);
 var
   Bitmap: TBitmap;
 begin
@@ -712,16 +709,15 @@ begin
   Bitmap.LoadFromFile(FileName);
   Image.Bitmap := Bitmap;
   Bitmap.Free;
-  Image.BackColor := BackgroundColor;
 end;
 
-procedure LoadEmbededBitmap(Image: TBitmapImage; Name: string; BackgroundColor: TColor);
+procedure LoadEmbededBitmap(Image: TBitmapImage; Name: string);
 var
   FileName: string;
 begin
   ExtractTemporaryFile(Name);
   FileName := ExpandConstant('{tmp}\' + Name);
-  LoadBitmap(Image, FileName, BackgroundColor);
+  LoadBitmap(Image, FileName);
   // we won't need this anymore
   DeleteFile(FileName);
 end;
@@ -736,12 +732,12 @@ begin
     else Result := 100;
 end;
 
-procedure LoadEmbededScaledIcon(Image: TBitmapImage; NameBase: string; SizeBase: Integer; BackgroundColor: TColor);
+procedure LoadEmbededScaledIcon(Image: TBitmapImage; NameBase: string; SizeBase: Integer);
 var
   Name: String;
 begin
   Name := Format('%s %d.bmp', [NameBase, SizeBase * GetScalingFactor div 100]);
-  LoadEmbededBitmap(Image, Name, BackgroundColor);
+  LoadEmbededBitmap(Image, Name);
   Image.AutoSize := True;
 end;
 
@@ -813,20 +809,17 @@ begin
     end;
   end;
 
-  try
-    if IsMsiProductInstalled('{029F9450-CFEF-4408-A2BB-B69ECE29EB18}', 0) and
-       (not CmdLineParamExists('/OverrideMsi')) then
-    begin
-      MsgBox(CustomMessage('MsiInstallation'), mbError, MB_OK);
-      Abort;
-    end;
-  except
-    Log('Error checking for MSI installation: ' + GetExceptionMessage);
+  if IsMsiProductInstalled('{029F9450-CFEF-4408-A2BB-B69ECE29EB18}', 0) and
+     (not CmdLineParamExists('/OverrideMsi')) then
+  begin
+    MsgBox(CustomMessage('MsiInstallation'), mbError, MB_OK);
+    Abort;
   end;
 
   Result := True;
 end;
 
+// Keep in sync with similar function on Preferences dialog
 function Bullet(S: string): string;
 begin
   if Copy(S, 1, 1) = '-' then S := #$2022'  ' + Trim(Copy(S, 2, Length(S) - 1));
@@ -1027,7 +1020,7 @@ begin
   Image.Top := GetBottom(CommanderRadioButton) + ScaleY(6);
   Image.Left := CommanderRadioButton.Left + ScaleX(45);
   Image.Parent := InterfacePage.Surface;
-  LoadEmbededScaledIcon(Image, '{#CommanderFileBase}', 32, InterfacePage.Surface.Color);
+  LoadEmbededScaledIcon(Image, '{#CommanderFileBase}', 32);
   Image.OnClick := @ImageClick;
   Image.Tag := Integer(CommanderRadioButton);
 #endif
@@ -1060,7 +1053,7 @@ begin
   Image.Top := GetBottom(ExplorerRadioButton) + ScaleY(6);
   Image.Left := ExplorerRadioButton.Left + ScaleX(45);
   Image.Parent := InterfacePage.Surface;
-  LoadEmbededScaledIcon(Image, '{#ExplorerFileBase}', 32, InterfacePage.Surface.Color);
+  LoadEmbededScaledIcon(Image, '{#ExplorerFileBase}', 32);
   Image.OnClick := @ImageClick;
   Image.Tag := Integer(ExplorerRadioButton);
 #endif
@@ -1133,7 +1126,8 @@ begin
 
 #ifdef ImagesDir
   Image := TBitmapImage.Create(DonationPanel);
-  LoadEmbededBitmap(Image, '{#PayPalCardImage}', DonationPanel.Color);
+  LoadEmbededBitmap(Image, '{#PayPalCardImage}');
+  Image.BackColor := DonationPanel.Color;
   Image.AutoSize := True;
   Image.Cursor := crHand;
   Image.Parent := DonationPanel;
@@ -1156,7 +1150,7 @@ begin
   // Text does not scale as quick as with DPI,
   // so the icon may overlap the labels. Shift them.
   P := WizardForm.SelectDirBitmapImage.Width;
-  LoadEmbededScaledIcon(WizardForm.SelectDirBitmapImage, '{#SelectDirFileBase}', 32, WizardForm.SelectDirPage.Color);
+  LoadEmbededScaledIcon(WizardForm.SelectDirBitmapImage, '{#SelectDirFileBase}', 32);
   P := (WizardForm.SelectDirBitmapImage.Width - P);
   // Vertical change should be the same as horizontal
   WizardForm.SelectDirLabel.Left := WizardForm.SelectDirLabel.Left + P;
@@ -1748,7 +1742,7 @@ begin
                 SponsorImage.ShowHint := True;
                 SponsorImage.Stretch := True;
                 try
-                  LoadBitmap(SponsorImage, ImagePath, SponsorPage.Surface.Color);
+                  LoadBitmap(SponsorImage, ImagePath);
                 except
                   Log('Error loading sponsor image: ' + GetExceptionMessage);
                   SponsorStatus := 'I';

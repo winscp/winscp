@@ -189,6 +189,10 @@ void __fastcall THierarchicalStorage::ConfigureForPutty()
 //---------------------------------------------------------------------------
 bool __fastcall THierarchicalStorage::OpenRootKey(bool CanCreate)
 {
+  // This do not seem to be doing what it advertises.
+  // It probably "works" only when used as a first "Open". So let's verify that by this assertion.
+  DebugAssert(CurrentSubKey.IsEmpty());
+
   return OpenSubKey(UnicodeString(), CanCreate);
 }
 //---------------------------------------------------------------------------
@@ -1152,15 +1156,6 @@ bool __fastcall TCustomIniFileStorage::DoOpenSubKey(const UnicodeString & SubKey
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomIniFileStorage::OpenRootKey(bool CanCreate)
-{
-  // Not supported with master storage.
-  // Actually currently, we use OpenRootKey with TRegistryStorage only.
-  DebugAssert(FMasterStorage.get() == NULL);
-
-  return THierarchicalStorage::OpenRootKey(CanCreate);
-}
-//---------------------------------------------------------------------------
 bool __fastcall TCustomIniFileStorage::OpenSubKey(const UnicodeString & Key, bool CanCreate)
 {
   bool Result;
@@ -1199,6 +1194,11 @@ bool __fastcall TCustomIniFileStorage::OpenSubKey(const UnicodeString & Key, boo
 //---------------------------------------------------------------------------
 void __fastcall TCustomIniFileStorage::DoCloseSubKey()
 {
+  // noop
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomIniFileStorage::CloseSubKey()
+{
   // What we are called to restore previous key from OpenSubKey,
   // when opening path component fails, the master storage was not involved yet
   if (!FOpeningSubKey && (FMasterStorage.get() != NULL))
@@ -1212,6 +1212,8 @@ void __fastcall TCustomIniFileStorage::DoCloseSubKey()
       FMasterStorage->CloseSubKey();
     }
   }
+
+  THierarchicalStorage::CloseSubKey();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomIniFileStorage::DoDeleteSubKey(const UnicodeString & SubKey)
@@ -1583,6 +1585,37 @@ UnicodeString __fastcall TCustomIniFileStorage::DoReadRootAccessString()
   }
   return Result;
 }
+//---------------------------------------------------------------------------
+unsigned int __fastcall TCustomIniFileStorage::GetCurrentAccess()
+{
+  unsigned int Result;
+  // The way THierarchicalStorage::OpenSubKey is implemented, the access will be zero for non-existing keys in
+  // configuration overrides => delegating access handling to the master storage (which still should read overriden access keys)
+  if (FMasterStorage.get() != NULL)
+  {
+    Result = FMasterStorage->GetCurrentAccess();
+  }
+  else
+  {
+    Result = THierarchicalStorage::GetCurrentAccess();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomIniFileStorage::HasAccess(unsigned int Access)
+{
+  bool Result;
+  // Avoid the FFakeReadOnlyOpens assertion in THierarchicalStorage::HasAccess, which is not valid for overriden configuration
+  if (HandleByMasterStorage())
+  {
+    Result = FMasterStorage->HasAccess(Access);
+  }
+  else
+  {
+    Result = THierarchicalStorage::HasAccess(Access);
+  }
+  return Result;
+}
 //===========================================================================
 TIniFileStorage * __fastcall TIniFileStorage::CreateFromPath(const UnicodeString & AStorage)
 {
@@ -1593,11 +1626,26 @@ TIniFileStorage * __fastcall TIniFileStorage::CreateFromPath(const UnicodeString
   return new TIniFileStorage(AStorage, IniFile);
 }
 //---------------------------------------------------------------------------
+TIniFileStorage * __fastcall TIniFileStorage::CreateNul()
+{
+  // Before we passed "nul", but we have report of a system, where opening "nul" file fails.
+  // Passing an empty string is even more efficient, as it does not even try to read the file.
+  TMemIniFile * IniFile = new TMemIniFile(EmptyStr);
+  return new TIniFileStorage(INI_NUL, IniFile);
+}
+//---------------------------------------------------------------------------
 __fastcall TIniFileStorage::TIniFileStorage(const UnicodeString & AStorage, TCustomIniFile * IniFile):
   TCustomIniFileStorage(AStorage, IniFile)
 {
-  FOriginal = new TStringList();
-  dynamic_cast<TMemIniFile *>(FIniFile)->GetStrings(FOriginal);
+  if (!FIniFile->FileName.IsEmpty())
+  {
+    FOriginal = new TStringList();
+    dynamic_cast<TMemIniFile *>(FIniFile)->GetStrings(FOriginal);
+  }
+  else
+  {
+    FOriginal = NULL;
+  }
   ApplyOverrides();
 }
 //---------------------------------------------------------------------------
@@ -1607,7 +1655,8 @@ void __fastcall TIniFileStorage::Flush()
   {
     FMasterStorage->Flush();
   }
-  if (FOriginal != NULL)
+  // This does not seem correct, if storage is written after it is flushed (though we probably never do that currently)
+  if ((FOriginal != NULL) && !FIniFile->FileName.IsEmpty())
   {
     std::unique_ptr<TStrings> Strings(new TStringList);
     std::unique_ptr<TStrings> Original(FOriginal);
@@ -1756,7 +1805,6 @@ private:
   UnicodeString FRootKey;
 
   bool __fastcall AllowWrite();
-  void __fastcall NotImplemented();
   bool __fastcall AllowSection(const UnicodeString & Section);
   UnicodeString __fastcall FormatKey(const UnicodeString & Section, const UnicodeString & Ident);
 };
@@ -1771,11 +1819,6 @@ __fastcall TOptionsIniFile::TOptionsIniFile(TStrings * Options, TWriteMode Write
   {
     FRootKey += PathDelim;
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TOptionsIniFile::NotImplemented()
-{
-  throw Exception(L"Not implemented");
 }
 //---------------------------------------------------------------------------
 bool __fastcall TOptionsIniFile::AllowWrite()

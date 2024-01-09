@@ -66,13 +66,16 @@ struct TScpCommanderConfiguration {
   bool TreeOnLeft;
   bool ExplorerKeyboardShortcuts;
   bool SystemContextMenu;
+  UnicodeString OtherLocalPanelDirViewParams;
+  UnicodeString OtherLocalPanelLastPath;
   bool __fastcall operator !=(TScpCommanderConfiguration & rhc)
     { return C(WindowParams) C(LocalPanelWidth) C(ToolbarsLayout) C(ToolbarsButtons)
       C(SessionsTabs) C(StatusBar)
       C(LocalPanel) C(RemotePanel) C(CurrentPanel)
       C(NortonLikeMode) C(PreserveLocalDirectory)
       C(CompareBySize) C(CompareByTime) C(SwappedPanels)
-      C(TreeOnLeft) C(ExplorerKeyboardShortcuts) C(SystemContextMenu) 0; };
+      C(TreeOnLeft) C(ExplorerKeyboardShortcuts) C(SystemContextMenu)
+      C(OtherLocalPanelDirViewParams) C(OtherLocalPanelLastPath) 0; };
 
   TCompareCriterias __fastcall CompareCriterias()
   {
@@ -127,11 +130,12 @@ struct TEditorConfiguration {
   int Encoding;
   bool WarnOnEncodingFallback;
   bool WarnOrLargeFileSize;
+  bool AutoFont;
   bool __fastcall operator !=(TEditorConfiguration & rhc)
     { return C(Font) C(FontColor) C(BackgroundColor) C(WordWrap) C(FindText) C(ReplaceText)
       C(FindMatchCase) C(FindWholeWord) C(FindDown) C(TabSize)
       C(MaxEditors) C(EarlyClose) C(SDIShellEditor) C(WindowParams)
-      C(Encoding) C(WarnOnEncodingFallback) C(WarnOrLargeFileSize) 0; };
+      C(Encoding) C(WarnOnEncodingFallback) C(WarnOrLargeFileSize) C(AutoFont) 0; };
 };
 //---------------------------------------------------------------------------
 enum TQueueViewShow { qvShow, qvHideWhenEmpty, qvHide };
@@ -219,6 +223,7 @@ struct TUpdatesConfiguration
   TAutoSwitch BetaVersions;
   bool ShowOnStartup;
   UnicodeString AuthenticationEmail;
+  UnicodeString Mode;
   bool HaveResults;
   bool ShownResults;
   UnicodeString DotNetVersion;
@@ -227,7 +232,7 @@ struct TUpdatesConfiguration
 
   bool __fastcall operator !=(TUpdatesConfiguration & rhc)
     { return C(Period) C(LastCheck) C(ConnectionType) C(ProxyHost) C(ProxyPort)
-        C(BetaVersions) C(ShowOnStartup) C(AuthenticationEmail)
+        C(BetaVersions) C(ShowOnStartup) C(AuthenticationEmail) C(Mode)
         C(HaveResults) C(ShownResults) C(DotNetVersion)
         C(ConsoleVersion) C(Results)  0; };
 
@@ -348,6 +353,7 @@ enum TPathInCaption { picShort, picFull, picNone };
 enum TSessionTabNameFormat { stnfNone, stnfShortPath, stnfShortPathTrunc };
 // constants must be compatible with legacy CopyOnDoubleClick
 enum TDoubleClickAction { dcaOpen = 0, dcaCopy = 1, dcaEdit = 2 };
+enum TResolvedDoubleClickAction { rdcaNone, rdcaChangeDir, rdcaOpen, rdcaCopy, rdcaEdit };
 enum TStoreTransition { stInit, stStandard, stStoreFresh, stStoreMigrated, stStoreAcknowledged };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TMasterPasswordPromptEvent)();
@@ -358,6 +364,7 @@ private:
   UnicodeString FAutoStartSession;
   TDoubleClickAction FDoubleClickAction;
   bool FCopyOnDoubleClickConfirmation;
+  bool FAlwaysRespectDoubleClickAction;
   bool FDDDisableMove;
   TAutoSwitch FDDTransferConfirmation;
   bool FDeleteToRecycleBin;
@@ -436,6 +443,7 @@ private:
   TDateTime FRefreshRemotePanelInterval;
   TFontConfiguration FPanelFont;
   bool FNaturalOrderNumericalSorting;
+  bool FAlwaysSortDirectoriesByName;
   bool FFullRowSelect;
   bool FOfferedEditorAutoConfig;
   bool FUseMasterPassword;
@@ -452,6 +460,7 @@ private:
   bool FExternalSessionInExistingInstance;
   bool FShowLoginWhenNoSession;
   bool FKeepOpenWhenNoSession;
+  bool FDefaultToNewRemoteTab;
   bool FLocalIconsByExt;
   bool FFlashTaskbar;
   int FMaxSessions;
@@ -467,6 +476,8 @@ private:
   bool FUseIconUpdateThread;
   bool FAllowWindowPrint;
   TStoreTransition FStoreTransition;
+  int FQueueTransferLimitMax;
+  bool FEditorCheckNotModified;
   UnicodeString FFirstRun;
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
@@ -481,6 +492,7 @@ private:
 
   void __fastcall SetDoubleClickAction(TDoubleClickAction value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);
+  void __fastcall SetAlwaysRespectDoubleClickAction(bool value);
   void __fastcall SetDDDisableMove(bool value);
   void __fastcall SetDDTransferConfirmation(TAutoSwitch value);
   void __fastcall SetDeleteToRecycleBin(bool value);
@@ -547,6 +559,7 @@ private:
   void __fastcall SetRefreshRemotePanelInterval(TDateTime value);
   void __fastcall SetPanelFont(const TFontConfiguration & value);
   void __fastcall SetNaturalOrderNumericalSorting(bool value);
+  void __fastcall SetAlwaysSortDirectoriesByName(bool value);
   void __fastcall SetFullRowSelect(bool value);
   void __fastcall SetOfferedEditorAutoConfig(bool value);
   void __fastcall SetLastMonitor(int value);
@@ -560,6 +573,7 @@ private:
   void __fastcall SetExternalSessionInExistingInstance(bool value);
   void __fastcall SetShowLoginWhenNoSession(bool value);
   void __fastcall SetKeepOpenWhenNoSession(bool value);
+  void __fastcall SetDefaultToNewRemoteTab(bool value);
   void __fastcall SetLocalIconsByExt(bool value);
   void __fastcall SetFlashTaskbar(bool value);
   void __fastcall SetBidiModeOverride(TLocaleFlagOverride value);
@@ -583,6 +597,8 @@ private:
   void __fastcall SetUseIconUpdateThread(bool value);
   void __fastcall SetAllowWindowPrint(bool value);
   void SetStoreTransition(TStoreTransition value);
+  void SetQueueTransferLimitMax(int value);
+  void SetEditorCheckNotModified(bool value);
   void SetFirstRun(const UnicodeString & value);
   int __fastcall GetLocaleCompletenessTreshold();
 
@@ -669,6 +685,7 @@ public:
   bool __fastcall IsDDExtRunning();
   bool __fastcall IsDDExtBroken();
   bool __fastcall UseDarkTheme();
+  TResolvedDoubleClickAction ResolveDoubleClickAction(bool IsDirectory, TTerminal * Terminal);
   bool TrySetSafeStorage();
 
   static void __fastcall RestoreFont(const TFontConfiguration & Configuration, TFont * Font);
@@ -692,6 +709,7 @@ public:
   __property UnicodeString AutoStartSession = { read = FAutoStartSession, write = SetAutoStartSession };
   __property TDoubleClickAction DoubleClickAction = { read = FDoubleClickAction, write = SetDoubleClickAction };
   __property bool CopyOnDoubleClickConfirmation = { read = FCopyOnDoubleClickConfirmation, write = SetCopyOnDoubleClickConfirmation };
+  __property bool AlwaysRespectDoubleClickAction = { read = FAlwaysRespectDoubleClickAction, write = SetAlwaysRespectDoubleClickAction };
   __property bool DDDisableMove = { read = FDDDisableMove, write = SetDDDisableMove };
   __property TAutoSwitch DDTransferConfirmation = { read = FDDTransferConfirmation, write = SetDDTransferConfirmation };
   __property bool DeleteToRecycleBin = { read = FDeleteToRecycleBin, write = SetDeleteToRecycleBin };
@@ -746,6 +764,7 @@ public:
   __property TDateTime RefreshRemotePanelInterval = { read = FRefreshRemotePanelInterval, write = SetRefreshRemotePanelInterval };
   __property TFontConfiguration PanelFont = { read = FPanelFont, write = SetPanelFont };
   __property bool NaturalOrderNumericalSorting = { read = FNaturalOrderNumericalSorting, write = SetNaturalOrderNumericalSorting };
+  __property bool AlwaysSortDirectoriesByName = { read = FAlwaysSortDirectoriesByName, write = SetAlwaysSortDirectoriesByName };
   __property bool FullRowSelect = { read = FFullRowSelect, write = SetFullRowSelect };
   __property bool OfferedEditorAutoConfig = { read = FOfferedEditorAutoConfig, write = SetOfferedEditorAutoConfig };
   __property int LastMonitor = { read = GetLastMonitor, write = SetLastMonitor };
@@ -760,6 +779,7 @@ public:
   __property bool ExternalSessionInExistingInstance = { read = FExternalSessionInExistingInstance, write = SetExternalSessionInExistingInstance };
   __property bool ShowLoginWhenNoSession = { read = FShowLoginWhenNoSession, write = SetShowLoginWhenNoSession };
   __property bool KeepOpenWhenNoSession = { read = FKeepOpenWhenNoSession, write = SetKeepOpenWhenNoSession };
+  __property bool DefaultToNewRemoteTab = { read = FDefaultToNewRemoteTab, write = SetDefaultToNewRemoteTab };
   __property bool LocalIconsByExt = { read = FLocalIconsByExt, write = SetLocalIconsByExt };
   __property bool FlashTaskbar = { read = FFlashTaskbar, write = SetFlashTaskbar };
   __property int MaxSessions = { read = FMaxSessions, write = FMaxSessions };
@@ -780,6 +800,8 @@ public:
   __property bool UseIconUpdateThread = { read = FUseIconUpdateThread, write = SetUseIconUpdateThread };
   __property bool AllowWindowPrint = { read = FAllowWindowPrint, write = SetAllowWindowPrint };
   __property TStoreTransition StoreTransition = { read = FStoreTransition, write = SetStoreTransition };
+  __property int QueueTransferLimitMax = { read = FQueueTransferLimitMax, write = SetQueueTransferLimitMax };
+  __property bool EditorCheckNotModified = { read = FEditorCheckNotModified, write = SetEditorCheckNotModified };
   __property UnicodeString FirstRun = { read = FFirstRun, write = SetFirstRun };
   __property LCID DefaultLocale = { read = FDefaultLocale };
   __property int LocaleCompletenessTreshold = { read = GetLocaleCompletenessTreshold };
@@ -813,6 +835,7 @@ public:
 
     bool operator==(const TOption & Other) const;
     __property bool IsControl = { read = GetIsControl };
+    bool CanHavePatterns() const;
     bool HasPatterns(TCustomCommand * CustomCommandForOptions) const;
 
   private:

@@ -220,7 +220,7 @@ object PngImageListEditorDlg: TPngImageListEditorDlg
       Left = 193
       Top = 173
       Width = 75
-      Height = 178
+      Height = 260
       Anchors = [akLeft]
       BevelOuter = bvNone
       TabOrder = 2
@@ -450,6 +450,32 @@ object PngImageListEditorDlg: TPngImageListEditorDlg
           CC324571CD5C89431580EC3A889119A86DDEFCAC73EC6C480A317F67DCB1577E
           9D11F7885558FC2F80BF4DEB62A8B1E1163C8E5CDAB82C54BCFF7F7EA66A017F
           01C92B1C3633E7F2D20000000049454E44AE426082}
+        PngOptions = [pngBlendOnDisabled, pngGrayscaleOnDisabled]
+      end
+      object btnExport: TPngBitBtn
+        Left = 0
+        Top = 184
+        Width = 75
+        Height = 25
+        Caption = '&Export'
+        Layout = blGlyphTop
+        Margin = 6
+        Spacing = 3
+        TabOrder = 6
+        OnClick = btnExportClick
+        PngOptions = [pngBlendOnDisabled, pngGrayscaleOnDisabled]
+      end
+      object btnSelectAll: TPngBitBtn
+        Left = 0
+        Top = 213
+        Width = 75
+        Height = 25
+        Caption = '&Select All'
+        Layout = blGlyphTop
+        Margin = 6
+        Spacing = 3
+        TabOrder = 7
+        OnClick = btnSelectAllClick
         PngOptions = [pngBlendOnDisabled, pngGrayscaleOnDisabled]
       end
     end

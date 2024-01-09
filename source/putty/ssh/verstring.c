@@ -43,7 +43,7 @@ static void ssh_verstring_handle_input(BinaryPacketProtocol *bpp);
 static void ssh_verstring_handle_output(BinaryPacketProtocol *bpp);
 static PktOut *ssh_verstring_new_pktout(int type);
 static void ssh_verstring_queue_disconnect(BinaryPacketProtocol *bpp,
-                                          const char *msg, int category);
+                                           const char *msg, int category);
 
 static const BinaryPacketProtocolVtable ssh_verstring_vtable = {
     // WINSCP
@@ -310,8 +310,8 @@ void ssh_verstring_handle_input(BinaryPacketProtocol *bpp)
      * a NUL terminator.
      */
     while (s->vstring->len > 0 &&
-           (s->vstring->s[s->vstring->len-1] == '\r' ||
-            s->vstring->s[s->vstring->len-1] == '\n'))
+           (s->vstring->s[s->vstring->len-1] == '\015' ||
+            s->vstring->s[s->vstring->len-1] == '\012'))
         strbuf_shrink_by(s->vstring, 1);
 
     bpp_logevent("Remote version: %s", s->vstring->s);
@@ -606,6 +606,34 @@ static void ssh_detect_bugs(struct ssh_verstring_state *s)
         s->remote_bugs |= BUG_SENDS_LATE_REQUEST_REPLY;
         bpp_logevent("We believe remote version has SSH-2 "
                      "channel request bug");
+    }
+
+    if (conf_get_int(s->conf, CONF_sshbug_filter_kexinit) == FORCE_ON) {
+        s->remote_bugs |= BUG_REQUIRES_FILTERED_KEXINIT;
+        bpp_logevent("We believe remote version requires us to "
+                     "filter our KEXINIT");
+    }
+
+    if (conf_get_int(s->conf, CONF_sshbug_rsa_sha2_cert_userauth) == FORCE_ON ||
+        (conf_get_int(s->conf, CONF_sshbug_rsa_sha2_cert_userauth) == AUTO &&
+         (wc_match("OpenSSH_7.[2-7]*", imp)))) {
+        /*
+         * These versions have the bug in which using RSA/SHA-2
+         * authentication with a certified key requires the key
+         * algorithm to be sent as ssh-rsa-cert-... instead of
+         * rsa-sha2-NNN-cert-...
+         *
+         * OpenSSH 7.8 wants rsa-sha2-NNN-cert-...:
+         * https://github.com/openssh/openssh-portable/commit/4ba0d54794814ec0de1ec87987d0c3b89379b436
+         * (also labelled "OpenBSD-Commit-ID:
+         * c6e9f6d45eed8962ad502d315d7eaef32c419dde")
+         *
+         * OpenSSH 7.2 was the first release supporting RSA/SHA-2
+         * at all, so this bug is irrelevant to anything before that.
+         */
+        s->remote_bugs |= BUG_RSA_SHA2_CERT_USERAUTH;
+        bpp_logevent("We believe remote version has SSH-2 "
+                     "RSA/SHA-2/certificate userauth bug");
     }
 }
 

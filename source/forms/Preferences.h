@@ -340,6 +340,10 @@ __published:
   TLabel *LocalPortNumberRangeLabel;
   TUpDownEdit *LocalPortNumberMinEdit;
   TUpDownEdit *LocalPortNumberMaxEdit;
+  TCheckBox *AlwaysSortDirectoriesByNameCheck;
+  TLabel *LogProtocolHintLabel;
+  TGroupBox *EditingOptionsGroup;
+  TCheckBox *EditorCheckNotModifiedCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -529,6 +533,7 @@ protected:
   void __fastcall FileColorMove(int Source, int Dest);
   void __fastcall UpdateFileColorsView();
   void __fastcall AddEditFileColor(bool Edit);
+  UnicodeString Bullet(const UnicodeString & S);
 
   INTERFACE_HOOK;
 };

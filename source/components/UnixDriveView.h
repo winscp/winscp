@@ -73,10 +73,13 @@ protected:
 
   virtual void __fastcall ValidateDirectoryEx(TTreeNode * Node,
     TRecursiveScan Recurse, bool NewDirs);
+  void LoadNodeState(TTreeNode * Node, const UnicodeString & Path);
 
   virtual void __fastcall RebuildTree();
   virtual void __fastcall DisplayContextMenu(TTreeNode * Node, const TPoint & ScreenPos);
   virtual void __fastcall DisplayPropertiesMenu(TTreeNode * Node);
+
+  TObject * SaveState();
 
   #pragma warn -inl
   BEGIN_MESSAGE_MAP

@@ -41,17 +41,22 @@ type
     property NumGlyphs stored False;
   end;
 
+{$IFNDEF WINSCP}
 {$IF RTLVersion >= 24.0 }
   TPngBitBtnStyleHook = class(TBitBtnStyleHook)
   strict protected
     procedure DrawButton(ACanvas: TCanvas; AMouseInControl: Boolean); override;
   end;
 {$IFEND}
+{$ENDIF}
 
 implementation
 
 uses
   ActnList, Themes, PngButtonFunctions, PngImageList;
+
+const
+  WordBreakFlag: array[Boolean] of Integer = (DT_SINGLELINE, DT_WORDBREAK);
 
 {$IF RTLVersion < 23.0 }
 type
@@ -182,7 +187,9 @@ var
   Flags: Cardinal;
   Button: TThemedButton;
   Details: TThemedElementDetails;
+  dtFlags: Integer;
 begin
+  dtFlags := DrawTextBiDiModeFlags(0) or WordBreakFlag[WordWrap];
   R := ClientRect;
   FCanvas.Handle := Message.DrawItemStruct^.hDC;
   FCanvas.Font := Self.Font;
@@ -243,7 +250,7 @@ begin
 
   //Calculate the position of the PNG glyph
   CalcButtonLayout(FCanvas, FPngImage, ClientRect, IsDown, False, Caption,
-    Layout, Margin, Spacing, GlyphPos, TextPos, DrawTextBiDiModeFlags(0));
+    Layout, Margin, Spacing, GlyphPos, TextPos, dtFlags);
 
   //Draw the image
   if (FPngImage <> nil) and (Kind = bkCustom) and not FPngImage.Empty then begin
@@ -262,14 +269,12 @@ begin
     if not Enabled then begin
       OffsetRect(PaintRect, 1, 1);
       FCanvas.Font.Color := clBtnHighlight;
-      DrawText(FCanvas.Handle, PChar(Caption), -1, PaintRect,
-        DrawTextBiDiModeFlags(0) or DT_TOP or DT_LEFT or DT_SINGLELINE);
+      DrawText(FCanvas.Handle, PChar(Caption), -1, PaintRect, DT_TOP or DT_LEFT or dtFlags);
       OffsetRect(PaintRect, -1, -1);
       FCanvas.Font.Color := clBtnShadow;
     end;
 
-    DrawText(FCanvas.Handle, PChar(Caption), -1, PaintRect,
-      DrawTextBiDiModeFlags(0) or DT_TOP or DT_LEFT or DT_SINGLELINE);
+    DrawText(FCanvas.Handle, PChar(Caption), -1, PaintRect, DT_TOP or DT_LEFT or dtFlags);
   end;
 
   //Draw the focus rectangle
@@ -305,22 +310,23 @@ begin
   end;
 end;
 
+{$IFNDEF WINSCP}
 { TPngBitBtnStyleHook }
 {$IF RTLVersion >= 24.0 }
 procedure TPngBitBtnStyleHook.DrawButton(ACanvas: TCanvas;
   AMouseInControl: Boolean);
-const
-  WordBreakFlag: array[Boolean] of Integer = (0, DT_WORDBREAK);
 var
   Details:  TThemedElementDetails;
   DrawRect, PaintRect, TextRect: TRect;
   State: TButtonState;
   btn : TPngBitBtn;
+  dtFlags: Integer;
   GlyphPos, TextPos: TPoint;
 
   LColor: TColor;
   LFormats: TTextFormat;
 begin
+  dtFlags := btn.DrawTextBiDiModeFlags(0) or WordBreakFlag[btn.WordWrap];
   if not (Control is TPngBitBtn) then
   begin
     inherited;
@@ -347,7 +353,7 @@ begin
 
   //Calculate the position of the PNG glyph
   CalcButtonLayout(ACanvas, btn.FPngImage, btn.ClientRect, FPressed, False, btn.Caption,
-    btn.Layout, btn.Margin, btn.Spacing, GlyphPos, TextPos, btn.DrawTextBiDiModeFlags(0));
+    btn.Layout, btn.Margin, btn.Spacing, GlyphPos, TextPos, dtFlags);
 
   //Draw the image
   if (btn.FPngImage <> nil) and (btn.Kind = bkCustom) and not btn.FPngImage.Empty then begin
@@ -367,13 +373,11 @@ begin
   else
     LColor := ACanvas.Font.Color;
 
-  LFormats := TTextFormatFlags(DT_NOCLIP or DT_CENTER or DT_VCENTER
-    or btn.DrawTextBiDiModeFlags(0) or WordBreakFlag[btn.WordWrap]);
+  LFormats := TTextFormatFlags(DT_NOCLIP or DT_CENTER or DT_VCENTER or dtFlags);
 
   if Length(btn.Caption) > 0 then begin
     TextRect := Rect(0, 0, btn.ClientRect.Right - btn.ClientRect.Left, 0);
-    DrawText(ACanvas.Handle, PChar(btn.Caption), Length(btn.Caption), TextRect,
-      DT_CALCRECT or btn.DrawTextBiDiModeFlags(0));
+    DrawText(ACanvas.Handle, PChar(btn.Caption), Length(btn.Caption), TextRect, DT_CALCRECT or dtFlags);
   end
   else begin
     TextRect := Rect(0, 0, 0, 0);
@@ -383,6 +387,7 @@ begin
   StyleServices.DrawText(ACanvas.Handle, Details, btn.Caption, TextRect, LFormats, LColor);
 
 end;
+{$IFEND}
 {$IFEND}
 
 end.

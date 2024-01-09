@@ -2,6 +2,8 @@
 #ifndef PuttyToolsH
 #define PuttyToolsH
 //---------------------------------------------------------------------------
+#include <SessionData.h>
+//---------------------------------------------------------------------------
 enum TKeyType
 {
   ktUnopenable, ktUnknown,
@@ -15,10 +17,11 @@ struct TPrivateKey;
 TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const UnicodeString & Passphrase);
 UnicodeString TestKey(TKeyType KeyType, const UnicodeString & FileName);
 void ChangeKeyComment(TPrivateKey * PrivateKey, const UnicodeString & Comment);
+void AddCertificateToKey(TPrivateKey * PrivateKey, const UnicodeString & CertificateFileName);
 void SaveKey(TKeyType KeyType, const UnicodeString & FileName,
   const UnicodeString & Passphrase, TPrivateKey * PrivateKey);
 void FreeKey(TPrivateKey * PrivateKey);
-UnicodeString GetPublicKeyLine(const UnicodeString & FileName, UnicodeString & Comment);
+UnicodeString GetPublicKeyLine(const UnicodeString & FileName, UnicodeString & Comment, bool & HasCertificate);
 extern const UnicodeString PuttyKeyExt;
 //---------------------------------------------------------------------------
 bool __fastcall HasGSSAPI(UnicodeString CustomPath);
@@ -43,6 +46,7 @@ bool IsOpenSSH(const UnicodeString & SshImplementation);
 //---------------------------------------------------------------------------
 TStrings * SshCipherList();
 TStrings * SshKexList();
+int HostKeyToPutty(THostKey HostKey);
 TStrings * SshHostKeyList();
 TStrings * SshMacList();
 //---------------------------------------------------------------------------

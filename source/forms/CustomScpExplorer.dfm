@@ -261,6 +261,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       OnChange = QueueView3Change
       OnContextPopup = QueueView3ContextPopup
       OnDeletion = QueueView3Deletion
+      OnEndDrag = QueueView3EndDrag
       OnEnter = QueueView3Enter
       OnExit = QueueView3Exit
       OnDragDrop = QueueView3DragDrop
@@ -383,6 +384,8 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     Align = alTop
     DoubleBuffered = True
     ParentDoubleBuffered = False
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 3
     TabStop = False
     OnChange = SessionsPageControlChange
@@ -390,8 +393,10 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     OnDragDrop = SessionsPageControlDragDrop
     OnDragOver = SessionsPageControlDragOver
     OnMouseDown = SessionsPageControlMouseDown
-    OnCloseButtonClick = SessionsPageControlCloseButtonClick
-    object TabSheet1: TTabSheet
+    OnResize = SessionsPageControlResize
+    OnTabButtonClick = SessionsPageControlTabButtonClick
+    OnTabHint = SessionsPageControlTabHint
+    object TabSheet1: TThemeTabSheet
       Caption = 'TabSheet1'
     end
   end

@@ -144,6 +144,16 @@ UnicodeString __fastcall ExtractFileName(const UnicodeString & Path, bool Unix)
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString ExtractShortName(const UnicodeString & Path, bool Unix)
+{
+  UnicodeString Result = ExtractFileName(Path, Unix);
+  if (Result.IsEmpty())
+  {
+    Result = Path;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall ExtractCommonPath(TStrings * Files, UnicodeString & Path)
 {
   DebugAssert(Files->Count > 0);
@@ -439,6 +449,7 @@ UnicodeString __fastcall UserModificationStr(TDateTime DateTime,
       return FormatDateTime(L"ddddd t", DateTime);
     case mfFull:
     default:
+      // Keep consistent with TDirView.GetDisplayInfo
       return FormatDateTime(L"ddddd tt", DateTime);
   }
 }
@@ -830,6 +841,7 @@ __fastcall TRemoteFile::TRemoteFile(TRemoteFile * ALinkedByFile):
   FDirectory = NULL;
   FIsHidden = -1;
   FIsEncrypted = false;
+  FCalculatedSize = -1;
 }
 //---------------------------------------------------------------------------
 __fastcall TRemoteFile::~TRemoteFile()
@@ -855,6 +867,7 @@ TRemoteFile * __fastcall TRemoteFile::Duplicate(bool Standalone) const
     COPY_FP(Owner);
     COPY_FP(ModificationFmt);
     COPY_FP(Size);
+    COPY_FP(CalculatedSize);
     COPY_FP(FileName);
     COPY_FP(DisplayName);
     COPY_FP(INodeBlocks);

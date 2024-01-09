@@ -17,6 +17,7 @@ void __fastcall ExecuteProcessCheckedAndWait(
 bool __fastcall IsKeyPressed(int VirtualKey);
 bool __fastcall UseAlternativeFunction();
 bool __fastcall OpenInNewWindow();
+void ExecuteSelf(const UnicodeString & Params);
 void __fastcall ExecuteNewInstance(const UnicodeString & Param, const UnicodeString & AdditionalParams = UnicodeString());
 IShellLink * __fastcall CreateAppDesktopShortCut(
   const UnicodeString & Name, const UnicodeString & Params, const UnicodeString & Description,
@@ -71,6 +72,8 @@ void __fastcall ShutDownWindows();
 void __fastcall SuspendWindows();
 void __fastcall EditSelectBaseName(HWND Edit);
 UnicodeString GetConvertedKeyFileName(const UnicodeString & FileName);
+struct TPrivateKey;
+UnicodeString AddMatchingKeyCertificate(TPrivateKey * PrivateKey, const UnicodeString & FileName);
 void __fastcall VerifyAndConvertKey(UnicodeString & FileName, bool CanIgnore);
 void __fastcall VerifyKey(const UnicodeString & FileName);
 void __fastcall VerifyCertificate(const UnicodeString & FileName);

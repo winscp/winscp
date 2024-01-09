@@ -39,6 +39,7 @@ const wchar_t TokenReplacement = wchar_t(true);
 const UnicodeString LocalInvalidChars(TraceInitStr(L"/\\:*?\"<>|"));
 const UnicodeString PasswordMask(TraceInitStr(L"***"));
 const UnicodeString Ellipsis(TraceInitStr(L"..."));
+const UnicodeString TitleSeparator(TraceInitStr(L" \u2013 ")); // En-Dash
 const UnicodeString OfficialPackage(TraceInitStr(L"MartinPikryl.WinSCP_tvv458r3h9r5m"));
 //---------------------------------------------------------------------------
 UnicodeString ReplaceChar(UnicodeString Str, wchar_t A, wchar_t B)
@@ -291,27 +292,38 @@ UnicodeString RemoveSuffix(const UnicodeString & Str, const UnicodeString & Suff
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString DelimitStr(UnicodeString Str, UnicodeString Chars)
+UnicodeString DelimitStr(const UnicodeString & Str, wchar_t Quote)
 {
-  for (int i = 1; i <= Str.Length(); i++)
+  UnicodeString SpecialChars;
+  if (Quote != L'\'')
   {
-    if (Str.IsDelimiter(Chars, i))
+    SpecialChars = L"$\\";
+    if (Quote == L'"')
     {
-      Str.Insert(L"\\", i);
+      SpecialChars += L"`\"";
+    }
+  }
+  UnicodeString Result(Str);
+  for (int i = 1; i <= Result.Length(); i++)
+  {
+    if (Result.IsDelimiter(SpecialChars, i))
+    {
+      Result.Insert(L"\\", i);
       i++;
     }
   }
-  return Str;
+  if (Result.IsDelimiter(L"-", 1))
+  {
+    Result.Insert(L"./", 1);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString ShellDelimitStr(UnicodeString Str, wchar_t Quote)
+UnicodeString ShellQuoteStr(const UnicodeString & Str)
 {
-  UnicodeString Chars = L"$\\";
-  if (Quote == L'"')
-  {
-    Chars += L"`\"";
-  }
-  return DelimitStr(Str, Chars);
+  wchar_t Quote = L'"';
+  UnicodeString QuoteStr(Quote);
+  return QuoteStr + DelimitStr(Str, Quote) + QuoteStr;
 }
 //---------------------------------------------------------------------------
 UnicodeString ExceptionLogString(Exception *E)
@@ -1552,7 +1564,7 @@ bool __fastcall IsRealFile(const UnicodeString & FileName)
 UnicodeString GetOSInfo()
 {
   UnicodeString Result = WindowsVersionLong();
-  AddToList(Result, WindowsProductName(), L" - ");
+  AddToList(Result, WindowsProductName(), TitleSeparator);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -1587,32 +1599,54 @@ void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   }
 }
 //---------------------------------------------------------------------------
-int __fastcall FileGetAttrFix(const UnicodeString FileName)
+int __fastcall FileGetAttrFix(const UnicodeString & FileName)
 {
-  // The default for FileGetAttr is to follow links
-  bool FollowLink = true;
-  // WORKAROUND:
-  // But the FileGetAttr when called for link with FollowLink set will always fail
-  // as it calls InternalGetFileNameFromSymLink, which test for CheckWin32Version(6, 0)
-  if (!IsWinVista())
-  {
-    FollowLink = false;
-  }
+  // Already called with ApiPath
+
   int Result;
-  try
+  int Tries = 2;
+  do
   {
-    Result = FileGetAttr(FileName, FollowLink);
+    // WORKAROUND:
+    // FileGetAttr when called for link with FollowLink set (default) will always fail on pre-Vista
+    // as it calls InternalGetFileNameFromSymLink, which test for CheckWin32Version(6, 0)
+    Result = GetFileAttributes(FileName.c_str());
+    if ((Result >= 0) && FLAGSET(Result, faSymLink) && IsWinVista())
+    {
+      try
+      {
+        UnicodeString TargetName;
+        // WORKAROUND:
+        // On Samba, InternalGetFileNameFromSymLink fails and returns true but empty target.
+        // That confuses FileGetAttr, which returns attributes of the parent folder instead.
+        // Using FileGetSymLinkTarget solves the problem, as it returns false.
+        if (!FileGetSymLinkTarget(FileName, TargetName))
+        {
+          // FileGetAttr would return faInvalid (-1), but we want to allow an upload from Samba,
+          // so returning the symlink attributes => noop
+        }
+        else
+        {
+          Result = GetFileAttributes(ApiPath(TargetName).c_str());
+        }
+      }
+      catch (EOSError & E)
+      {
+        Result = -1;
+      }
+      catch (EDirectoryNotFoundException & E) // throws by FileSystemAttributes
+      {
+        Result = -1;
+      }
+    }
+    Tries--;
   }
-  catch (EOSError & E)
-  {
-    Result = -1;
-  }
-  if (Result < 0)
-  {
-    // When referring to files in some special symlinked locations
-    // (like a deduplicated drive or a commvault archive), the first call to GetFileAttributes fails.
-    Result = FileGetAttr(FileName, FollowLink);
-  }
+  // When referring to files in some special symlinked locations
+  // (like a deduplicated drive or a commvault archive), the first call to FileGetAttr failed.
+  // Possibly this issue is resolved by our re-implementation of FileGetAttr above.
+  // But as we have no way to test it, keeping the retry here.
+  while ((Result < 0) && (Tries > 0));
+
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -2977,6 +3011,12 @@ void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, con
   }
 }
 //---------------------------------------------------------------------------
+void AddToShellFileListCommandLine(UnicodeString & List, const UnicodeString & Value)
+{
+  UnicodeString Arg = ShellQuoteStr(Value);
+  AddToList(List, Arg, L" ");
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsWinVista()
 {
   // Vista is 6.0
@@ -3200,9 +3240,119 @@ UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDat
   {
     Result = IntToStr(int(DateTime)) + L", ";
   }
-  // days are decremented, because when there are to many of them,
+  // days are decremented, because when there are too many of them,
   // "integer overflow" error occurs
   Result += FormatDateTime(TimeFormat, DateTime - int(DateTime));
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString FormatRelativeTime(const TDateTime & ANow, const TDateTime & AThen, bool DateOnly)
+{
+  UnicodeString Result;
+  if (DateOnly)
+  {
+    if (IsSameDay(AThen, ANow - 1))
+    {
+      Result = LoadStrPart(TIME_RELATIVE, 3);
+    }
+    else if (IsSameDay(AThen, ANow))
+    {
+      Result = LoadStrPart(TIME_RELATIVE, 2);
+    }
+  }
+
+  if (Result.IsEmpty())
+  {
+    int Part, Num;
+
+    Num = YearsBetween(ANow, AThen);
+    if (Num > 1)
+    {
+      Part = 18;
+    }
+    else if (Num == 1)
+    {
+      Part = 17;
+    }
+    else
+    {
+      Num = MonthsBetween(ANow, AThen);
+      if (Num > 1)
+      {
+        Part = 16;
+      }
+      else if (Num == 1)
+      {
+        Part = 15;
+      }
+      else
+      {
+        Num = DaysBetween(ANow, AThen);
+        if (Num > 1)
+        {
+          Part = 12;
+        }
+        else if (Num == 1)
+        {
+          Part = 11;
+        }
+        else
+        {
+          Num = static_cast<int>(HoursBetween(ANow, AThen));
+          if (Num > 1)
+          {
+            Part = 10;
+          }
+          else if (Num == 1)
+          {
+            Part = 9;
+          }
+          else
+          {
+            Num = static_cast<int>(MinutesBetween(ANow, AThen));
+            if (Num > 1)
+            {
+              Part = 8;
+            }
+            else if (Num == 1)
+            {
+              Part = 7;
+            }
+            else
+            {
+              Num = static_cast<int>(SecondsBetween(ANow, AThen));
+              if (Num > 1)
+              {
+                Part = 6;
+              }
+              else if (Num == 1)
+              {
+                Part = 5;
+              }
+              else if (Num == 0)
+              {
+                Part = 1;
+              }
+              else
+              {
+                DebugFail();
+                Part = -1;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (DebugAlwaysTrue(Part >= 0))
+    {
+      Result = FORMAT(LoadStrPart(TIME_RELATIVE, Part), (abs(Num)));
+    }
+    else
+    {
+      Result = FormatDateTime(L"ddddd", AThen);
+    }
+  }
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -4083,26 +4233,45 @@ UnicodeString __fastcall AssemblyAddRawSettings(
 //---------------------------------------------------------------------------
 void __fastcall LoadScriptFromFile(UnicodeString FileName, TStrings * Lines, bool FallbackToAnsi)
 {
-  std::auto_ptr<TFileStream> Stream(new TFileStream(ApiPath(FileName), fmOpenRead | fmShareDenyWrite));
-  Lines->DefaultEncoding = TEncoding::UTF8;
+  std::unique_ptr<TFileStream> Stream(new TFileStream(ApiPath(FileName), fmOpenRead | fmShareDenyWrite));
+
+  // Simple stream reading, to make it work with named pipes too, not only with physical files
+  TBytes Buffer;
+  Buffer.Length = 10*1024;
+  int Read;
+  int Offset = 0;
+  do
+  {
+    Read = Stream->Read(Buffer, Offset, Buffer.Length - Offset);
+    Offset += Read;
+    if (Offset > Buffer.Length / 2)
+    {
+      Buffer.Length = Buffer.Length * 2;
+    }
+  }
+  while (Read > 0);
+  Buffer.Length = Offset;
+
+  TEncoding * Encoding = NULL;
+  int PreambleSize = TEncoding::GetBufferEncoding(Buffer, Encoding, TEncoding::UTF8);
+  UnicodeString S;
   try
   {
-    Lines->LoadFromStream(Stream.get());
+    S = Encoding->GetString(Buffer, PreambleSize, Buffer.Length - PreambleSize);
   }
   catch (EEncodingError & E)
   {
     if (FallbackToAnsi)
     {
-      Lines->DefaultEncoding = TEncoding::ANSI;
-      Lines->Clear();
-      Stream->Position = 0;
-      Lines->LoadFromStream(Stream.get());
+      S = TEncoding::ANSI->GetString(Buffer);
     }
     else
     {
       throw ExtException(LoadStr(TEXT_FILE_ENCODING), &E);
     }
   }
+
+  Lines->Text = S;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall StripEllipsis(const UnicodeString & S)
@@ -4130,7 +4299,6 @@ UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName)
 //---------------------------------------------------------------------------
 TStrings * TlsCipherList()
 {
-  // OpenSSL initialization happens in NeonInitialize
   std::unique_ptr<TStrings> Result(new TStringList());
   const SSL_METHOD * Method = DTLS_client_method();
   SSL_CTX * Ctx = SSL_CTX_new(Method);
@@ -4304,4 +4472,15 @@ UnicodeString GetAncestorProcessNames()
     AncestorProcessNames = GetAncestorProcessName(-1);
   }
   return AncestorProcessNames;
+}
+//---------------------------------------------------------------------------
+void NotImplemented()
+{
+  DebugFail();
+  throw Exception(L"Not implemented");
+}
+//---------------------------------------------------------------------------
+UnicodeString GetDividerLine()
+{
+  return UnicodeString::StringOfChar(L'-', 27);
 }

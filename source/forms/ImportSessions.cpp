@@ -19,8 +19,8 @@
 //---------------------------------------------------------------------
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
-const int OpensshIndex = 2;
-const int KnownHostsIndex = 3;
+const int OpensshIndex = 3;
+const int KnownHostsIndex = 4;
 //---------------------------------------------------------------------
 bool __fastcall DoImportSessionsDialog(TList * Imported)
 {
@@ -29,8 +29,13 @@ bool __fastcall DoImportSessionsDialog(TList * Imported)
   UnicodeString Error;
 
   std::unique_ptr<TStoredSessionList> PuttyImportSessionList(
-    GUIConfiguration->SelectPuttySessionsForImport(StoredSessions, Error));
+    GUIConfiguration->SelectPuttySessionsForImport(OriginalPuttyRegistryStorageKey, L"PuTTY", StoredSessions, Error));
   SessionListsList->Add(PuttyImportSessionList.get());
+  Errors->Add(Error);
+
+  std::unique_ptr<TStoredSessionList> KittyImportSessionList(
+    GUIConfiguration->SelectPuttySessionsForImport(KittyRegistryStorageKey, L"KiTTY", StoredSessions, Error));
+  SessionListsList->Add(KittyImportSessionList.get());
   Errors->Add(Error);
 
   std::unique_ptr<TStoredSessionList> FilezillaImportSessionList(
@@ -63,12 +68,15 @@ bool __fastcall DoImportSessionsDialog(TList * Imported)
     // Particularly when importing known_hosts, there is no feedback.
     TInstantOperationVisualizer Visualizer;
 
-    UnicodeString PuttyHostKeysSourceKey = Configuration->PuttyRegistryStorageKey;
+    UnicodeString PuttyHostKeysSourceKey = OriginalPuttyRegistryStorageKey;
     TStoredSessionList * AKnownHostsImportSessionList =
       static_cast<TStoredSessionList *>(SessionListsList->Items[KnownHostsIndex]);
 
     StoredSessions->Import(PuttyImportSessionList.get(), true, Imported);
     TStoredSessionList::ImportHostKeys(PuttyHostKeysSourceKey, PuttyImportSessionList.get(), true);
+
+    StoredSessions->Import(KittyImportSessionList.get(), true, Imported);
+    TStoredSessionList::ImportHostKeys(KittyRegistryStorageKey, KittyImportSessionList.get(), true);
 
     StoredSessions->Import(FilezillaImportSessionList.get(), true, Imported);
     // FileZilla uses PuTTY's host key store

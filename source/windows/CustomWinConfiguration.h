@@ -16,6 +16,7 @@
 #define WM_WANTS_MOUSEWHEEL_INACTIVE (WM_WINSCP_USER + 11)
 #define WM_WANTS_SCREEN_TIPS (WM_WINSCP_USER + 12)
 // WM_USER_SHCHANGENOTIFY + 13 (packages/filemng/DriveView.pas)
+// WM_PASTE_FILES + 14 (forms/CustomScpExplorer.cpp)
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||
 struct TSynchronizeChecklistConfiguration

@@ -69,8 +69,7 @@ combination of the <function>ne_begin_request</function>,
 linkend="ne_add_request_header"/> and <xref
 linkend="ne_print_request_header"/> can be used.  To include a message
 body with the request, one of the functions
-<function>ne_set_request_body_buffer</function>, <xref
-linkend="ne_set_request_body_fd"/>, or
+<function>ne_set_request_body_buffer</function>, <function>ne_set_request_body_fd</function>, or
 <function>ne_set_request_body_provider</function> can be used.</para>
 
 	<para>The return value of
@@ -88,7 +87,7 @@ any processing of the response headers and message body.</para>
         the resources associated with it.  Any subsequent use of the
 	request object produces undefined behaviour.</para>
 
-        <para>If a request is being using a non-idempotent method such
+        <para>For a request with a non-idempotent method such
         as <literal>POST</literal>, the
         <literal>NE_REQFLAG_IDEMPOTENT</literal> flag should be
         disabled; see <xref linkend="ne_set_request_flag"/>.</para>

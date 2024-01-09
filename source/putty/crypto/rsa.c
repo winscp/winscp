@@ -76,6 +76,21 @@ RSAKey *BinarySource_get_rsa_ssh1_priv_agent(BinarySource *src)
     return rsa;
 }
 
+void duprsakey(RSAKey *dst, const RSAKey *src)
+{
+    dst->bits = src->bits;
+    dst->bytes = src->bytes;
+    dst->modulus = mp_copy(src->modulus);
+    dst->exponent = mp_copy(src->exponent);
+    dst->private_exponent = src->private_exponent ?
+        mp_copy(src->private_exponent) : NULL;
+    dst->p = mp_copy(src->p);
+    dst->q = mp_copy(src->q);
+    dst->iqmp = mp_copy(src->iqmp);
+    dst->comment = src->comment ? dupstr(src->comment) : NULL;
+    dst->sshk.vt = src->sshk.vt;
+}
+
 bool rsa_ssh1_encrypt(unsigned char *data, int length, RSAKey *key)
 {
     mp_int *b1, *b2;
@@ -541,6 +556,12 @@ static key_components *rsa2_components(ssh_key *key)
     return rsa_components(rsa);
 }
 
+static bool rsa2_has_private(ssh_key *key)
+{
+    RSAKey *rsa = container_of(key, RSAKey, sshk);
+    return rsa->private_exponent != NULL;
+}
+
 static void rsa2_public_blob(ssh_key *key, BinarySink *bs)
 {
     RSAKey *rsa = container_of(key, RSAKey, sshk);
@@ -561,7 +582,7 @@ static void rsa2_private_blob(ssh_key *key, BinarySink *bs)
 }
 
 static ssh_key *rsa2_new_priv(const ssh_keyalg *self,
-                               ptrlen pub, ptrlen priv)
+                              ptrlen pub, ptrlen priv)
 {
     BinarySource src[1];
     ssh_key *sshk;
@@ -867,6 +888,23 @@ static char *rsa2_invalid(ssh_key *key, unsigned flags)
     return NULL;
 }
 
+static unsigned ssh_rsa_supported_flags(const ssh_keyalg *self)
+{
+    return SSH_AGENT_RSA_SHA2_256 | SSH_AGENT_RSA_SHA2_512;
+}
+
+static const char *ssh_rsa_alternate_ssh_id(
+    const ssh_keyalg *self, unsigned flags)
+{
+    if (flags & SSH_AGENT_RSA_SHA2_512)
+        return ssh_rsa_sha512.ssh_id;
+    if (flags & SSH_AGENT_RSA_SHA2_256)
+        return ssh_rsa_sha256.ssh_id;
+    return self->ssh_id;
+}
+
+static char *rsa2_alg_desc(const ssh_keyalg *self) { return dupstr("RSA"); }
+
 static const struct ssh2_rsa_extra
     rsa_extra = { 0 },
     rsa_sha256_extra = { SSH_AGENT_RSA_SHA2_256 },
@@ -884,37 +922,55 @@ static const struct ssh2_rsa_extra
     /*.public_blob =*/ rsa2_public_blob,            \
     /*.private_blob =*/ rsa2_private_blob,          \
     /*.openssh_blob =*/ rsa2_openssh_blob,          \
+    /*.has_private =*/ rsa2_has_private,            \
     /*.cache_str =*/ rsa2_cache_str,                \
     /*.components =*/ rsa2_components,              \
+    /*.base_key =*/ nullkey_base_key,               \
+    NULL, NULL, NULL, NULL, \
     /*.pubkey_bits =*/ rsa2_pubkey_bits
+#define COMMON_KEYALG_FIELDS1a \
+    /*.alg_desc =*/ rsa2_alg_desc,                  \
+    /*.variable_size =*/ nullkey_variable_size_yes, \
+    NULL
 #define COMMON_KEYALG_FIELDS2 \
     /*.cache_id =*/ "rsa2"
+#define COMMON_KEYALG_FIELDS3 \
+    false, NULL
 
 const ssh_keyalg ssh_rsa = {
     // WINSCP
     COMMON_KEYALG_FIELDS,
+    /*.supported_flags =*/ ssh_rsa_supported_flags,
+    /*.alternate_ssh_id =*/ ssh_rsa_alternate_ssh_id,
+    COMMON_KEYALG_FIELDS1a,
     /*.ssh_id =*/ "ssh-rsa",
     COMMON_KEYALG_FIELDS2,
     /*.extra =*/ &rsa_extra,
-    /*.supported_flags =*/ SSH_AGENT_RSA_SHA2_256 | SSH_AGENT_RSA_SHA2_512,
+    COMMON_KEYALG_FIELDS3,
 };
 
 const ssh_keyalg ssh_rsa_sha256 = {
     // WINSCP
     COMMON_KEYALG_FIELDS,
+    /*.supported_flags =*/ nullkey_supported_flags,
+    /*.alternate_ssh_id =*/ nullkey_alternate_ssh_id,
+    COMMON_KEYALG_FIELDS1a,
     /*.ssh_id =*/ "rsa-sha2-256",
     COMMON_KEYALG_FIELDS2,
     /*.extra =*/ &rsa_sha256_extra,
-    /*.supported_flags =*/ 0,
+    COMMON_KEYALG_FIELDS3,
 };
 
 const ssh_keyalg ssh_rsa_sha512 = {
     // WINSCP
     COMMON_KEYALG_FIELDS,
+    /*.supported_flags =*/ nullkey_supported_flags,
+    /*.alternate_ssh_id =*/ nullkey_alternate_ssh_id,
+    COMMON_KEYALG_FIELDS1a,
     /*.ssh_id =*/ "rsa-sha2-512",
     COMMON_KEYALG_FIELDS2,
     /*.extra =*/ &rsa_sha512_extra,
-    /*.supported_flags =*/ 0,
+    COMMON_KEYALG_FIELDS3,
 };
 
 RSAKey *ssh_rsakex_newkey(ptrlen data)
@@ -1130,13 +1186,21 @@ static const struct ssh_rsa_kex_extra ssh_rsa_kex_extra_sha1 = { 1024 };
 static const struct ssh_rsa_kex_extra ssh_rsa_kex_extra_sha256 = { 2048 };
 
 static const ssh_kex ssh_rsa_kex_sha1 = {
-    "rsa1024-sha1", NULL, KEXTYPE_RSA,
-    &ssh_sha1, &ssh_rsa_kex_extra_sha1,
+    /*.name =*/ "rsa1024-sha1",
+    NULL,
+    /*.main_type =*/ KEXTYPE_RSA,
+    /*.hash =*/ &ssh_sha1,
+    NULL, // WINSCP
+    /*.extra =*/ &ssh_rsa_kex_extra_sha1,
 };
 
 static const ssh_kex ssh_rsa_kex_sha256 = {
-    "rsa2048-sha256", NULL, KEXTYPE_RSA,
-    &ssh_sha256, &ssh_rsa_kex_extra_sha256,
+    /*.name =*/ "rsa2048-sha256",
+    NULL,
+    /*.main_type =*/ KEXTYPE_RSA,
+    /*.hash =*/ &ssh_sha256,
+    NULL, // WINSCP
+    /*.extra =*/ &ssh_rsa_kex_extra_sha256,
 };
 
 static const ssh_kex *const rsa_kex_list[] = {

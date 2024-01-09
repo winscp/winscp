@@ -132,7 +132,7 @@ void __fastcall TSynchronizeChecklistDialog::UpdateCaption()
   UnicodeString StatusTitle = LoadStr(FSynchronizing ? SYNCHRONIZE_PROGRESS_SYNCHRONIZE2 : SYNCHRONIZE_CHECKLIST_CAPTION);
   if (Title.Pos(StatusTitle) <= 0)
   {
-    AddToList(Title, StatusTitle, L" - ");
+    AddToList(Title, StatusTitle, TitleSeparator);
   }
   Caption = Manager->FormatFormCaptionWithSession(this, Title);
 }

@@ -507,10 +507,11 @@ void __fastcall TScript::Command(UnicodeString Cmd)
 
         if (Configuration->ActualLogProtocol >= 1)
         {
+          UnicodeString LogCmdParams = LogCmd;
           UnicodeString DummyLogCmd;
-          if (DebugAlwaysTrue(CutToken(LogCmd, DummyLogCmd)))
+          if (DebugAlwaysTrue(CutToken(LogCmdParams, DummyLogCmd)))
           {
-            std::unique_ptr<TScriptProcParams> Parameters(new TScriptProcParams(FCommands->ResolveCommand(Cmd), LogCmd));
+            std::unique_ptr<TScriptProcParams> Parameters(new TScriptProcParams(FCommands->ResolveCommand(Cmd), LogCmdParams));
             Parameters->LogOptions(LogOption);
           }
         }
@@ -658,7 +659,7 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
             FTerminal->ExceptionOnFail = true;
             try
             {
-              FTerminal->ReadFile(UnixExcludeTrailingBackslash(FileName), File);
+              File = FTerminal->ReadFile(UnixExcludeTrailingBackslash(FileName));
               if (!File->HaveFullFileName)
               {
                 File->FullFileName = FileName;
@@ -1205,37 +1206,46 @@ void __fastcall TScript::StatProc(TScriptProcParams * Parameters)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TScript::DoCalculatedChecksum(
+  const UnicodeString & FileName, const UnicodeString & DebugUsedArg(Alg), const UnicodeString & Hash)
+{
+  PrintLine(FORMAT(L"%s %s", (Hash, FileName)));
+}
+//---------------------------------------------------------------------------
 void __fastcall TScript::ChecksumProc(TScriptProcParams * Parameters)
 {
   CheckSession();
-  if (!FTerminal->IsCapable[fcCalculatingChecksum])
+  if (!FTerminal->IsCapable[fcCalculatingChecksum] &&
+      (!FTerminal->IsCapable[fcSecondaryShell] || FTerminal->IsEncryptingFiles()))
   {
     NotSupported();
   }
 
-  UnicodeString Alg = Parameters->Param[1];
-  std::unique_ptr<TStrings> Checksums(new TStringList());
-  TStrings * FileList = CreateFileList(Parameters, 2, 2, fltQueryServer);
-  FTerminal->ExceptionOnFail = true;
-  try
+  // this is used only to log failures to open separate shell session,
+  // the actual call logging is done in TTerminal::CalculateFilesChecksum
+  TChecksumSessionAction Action(FTerminal->ActionLog);
+  if (EnsureCommandSessionFallback(fcCalculatingChecksum, Action))
   {
-    if ((FileList->Count != 1) ||
-        DebugNotNull(dynamic_cast<TRemoteFile *>(FileList->Objects[0]))->IsDirectory)
-    {
-      throw Exception(FMTLOAD(NOT_FILE_ERROR, (FileList->Strings[0])));
-    }
+    Action.Cancel();
 
-    FTerminal->CalculateFilesChecksum(Alg, FileList, Checksums.get(), NULL);
-
-    if (DebugAlwaysTrue(Checksums->Count == 1))
+    UnicodeString Alg = Parameters->Param[1];
+    TStrings * FileList = CreateFileList(Parameters, 2, 2, fltQueryServer);
+    FTerminal->ExceptionOnFail = true;
+    try
     {
-      PrintLine(FORMAT(L"%s %s", (Checksums->Strings[0], FileList->Strings[0])));
+      if ((FileList->Count != 1) ||
+          DebugNotNull(dynamic_cast<TRemoteFile *>(FileList->Objects[0]))->IsDirectory)
+      {
+        throw Exception(FMTLOAD(NOT_FILE_ERROR, (FileList->Strings[0])));
+      }
+
+      FTerminal->CalculateFilesChecksum(Alg, FileList, DoCalculatedChecksum);
     }
-  }
-  __finally
-  {
-    FTerminal->ExceptionOnFail = false;
-    FreeFileList(FileList);
+    __finally
+    {
+      FTerminal->ExceptionOnFail = false;
+      FreeFileList(FileList);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1384,7 +1394,8 @@ void __fastcall TScript::DoMvOrCp(TScriptProcParams * Parameters, TFSCapability 
     }
     else
     {
-      FTerminal->MoveFiles(FileList, TargetDirectory, FileMask);
+      bool DontOverwrite = true; // might use FConfirm eventually, but that would be breaking change
+      FTerminal->MoveFiles(FileList, TargetDirectory, FileMask, DontOverwrite);
     }
   }
   __finally
@@ -2171,7 +2182,7 @@ __fastcall TManagementScript::TManagementScript(TStoredSessionList * StoredSessi
 
   FCommands->Register(L"exit", SCRIPT_EXIT_DESC, SCRIPT_EXIT_HELP, &ExitProc, 0, 0, false);
   FCommands->Register(L"bye", 0, SCRIPT_EXIT_HELP, &ExitProc, 0, 0, false);
-  FCommands->Register(L"open", SCRIPT_OPEN_DESC, SCRIPT_OPEN_HELP10, &OpenProc, 0, -1, true);
+  FCommands->Register(L"open", SCRIPT_OPEN_DESC, SCRIPT_OPEN_HELP11, &OpenProc, 0, -1, true);
   FCommands->Register(L"close", SCRIPT_CLOSE_DESC, SCRIPT_CLOSE_HELP, &CloseProc, 0, 1, false);
   FCommands->Register(L"session", SCRIPT_SESSION_DESC, SCRIPT_SESSION_HELP, &SessionProc, 0, 1, false);
   FCommands->Register(L"lpwd", SCRIPT_LPWD_DESC, SCRIPT_LPWD_HELP, &LPwdProc, 0, 0, false);

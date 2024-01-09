@@ -54,8 +54,8 @@ struct LZ77InternalContext;
 struct LZ77Context {
     struct LZ77InternalContext *ictx;
     void *userdata;
-    void (*literal) (struct LZ77Context * ctx, unsigned char c);
-    void (*match) (struct LZ77Context * ctx, int distance, int len);
+    void (*literal) (struct LZ77Context *ctx, unsigned char c);
+    void (*match) (struct LZ77Context *ctx, int distance, int len);
 };
 
 /*
@@ -573,7 +573,7 @@ struct ssh_zlib_compressor {
     ssh_compressor sc;
 };
 
-ssh_compressor *zlib_compress_init(void)
+static ssh_compressor *zlib_compress_init(void)
 {
     struct Outbuf *out;
     struct ssh_zlib_compressor *comp = snew(struct ssh_zlib_compressor);
@@ -592,7 +592,7 @@ ssh_compressor *zlib_compress_init(void)
     return &comp->sc;
 }
 
-void zlib_compress_cleanup(ssh_compressor *sc)
+static void zlib_compress_cleanup(ssh_compressor *sc)
 {
     struct ssh_zlib_compressor *comp =
         container_of(sc, struct ssh_zlib_compressor, sc);
@@ -604,10 +604,9 @@ void zlib_compress_cleanup(ssh_compressor *sc)
     sfree(comp);
 }
 
-void zlib_compress_block(ssh_compressor *sc,
-                         const unsigned char *block, int len,
-                         unsigned char **outblock, int *outlen,
-                         int minlen)
+static void zlib_compress_block(
+    ssh_compressor *sc, const unsigned char *block, int len,
+    unsigned char **outblock, int *outlen, int minlen)
 {
     struct ssh_zlib_compressor *comp =
         container_of(sc, struct ssh_zlib_compressor, sc);
@@ -904,7 +903,7 @@ struct zlib_decompress_ctx {
     ssh_decompressor dc;
 };
 
-ssh_decompressor *zlib_decompress_init(void)
+static ssh_decompressor *zlib_decompress_init(void)
 {
     struct zlib_decompress_ctx *dctx = snew(struct zlib_decompress_ctx);
     unsigned char lengths[288];
@@ -927,7 +926,7 @@ ssh_decompressor *zlib_decompress_init(void)
     return &dctx->dc;
 }
 
-void zlib_decompress_cleanup(ssh_decompressor *dc)
+static void zlib_decompress_cleanup(ssh_decompressor *dc)
 {
     struct zlib_decompress_ctx *dctx =
         container_of(dc, struct zlib_decompress_ctx, dc);
@@ -946,7 +945,7 @@ void zlib_decompress_cleanup(ssh_decompressor *dc)
 }
 
 static int zlib_huflookup(unsigned long *bitsp, int *nbitsp,
-                   struct zlib_table *tab)
+                          struct zlib_table *tab)
 {
     unsigned long bits = *bitsp;
     int nbits = *nbitsp;
@@ -986,9 +985,9 @@ static void zlib_emit_char(struct zlib_decompress_ctx *dctx, int c)
 
 #define EATBITS(n) ( dctx->nbits -= (n), dctx->bits >>= (n) )
 
-bool zlib_decompress_block(ssh_decompressor *dc,
-                           const unsigned char *block, int len,
-                           unsigned char **outblock, int *outlen)
+static bool zlib_decompress_block(
+    ssh_decompressor *dc, const unsigned char *block, int len,
+    unsigned char **outblock, int *outlen)
 {
     struct zlib_decompress_ctx *dctx =
         container_of(dc, struct zlib_decompress_ctx, dc);
@@ -1094,7 +1093,7 @@ bool zlib_decompress_block(ssh_decompressor *dc,
             if (dctx->lenptr >= dctx->hlit + dctx->hdist) {
                 dctx->currlentable = zlib_mktable(dctx->lengths, dctx->hlit);
                 dctx->currdisttable = zlib_mktable(dctx->lengths + dctx->hlit,
-                                                  dctx->hdist);
+                                                   dctx->hdist);
                 zlib_freetable(&dctx->lenlentable);
                 dctx->lenlentable = NULL;
                 dctx->state = INBLK;
@@ -1112,7 +1111,7 @@ bool zlib_decompress_block(ssh_decompressor *dc,
                 dctx->lenextrabits = (code == 16 ? 2 : code == 17 ? 3 : 7);
                 dctx->lenaddon = (code == 18 ? 11 : 3);
                 dctx->lenrep = (code == 16 && dctx->lenptr > 0 ?
-                               dctx->lengths[dctx->lenptr - 1] : 0);
+                                dctx->lengths[dctx->lenptr - 1] : 0);
                 dctx->state = TREES_LENREP;
             }
             break;

@@ -421,7 +421,7 @@ UnicodeString __fastcall FormatMainFormCaption(const UnicodeString & Caption, co
   UnicodeString Suffix = AppName;
   if (!SessionName.IsEmpty())
   {
-    Suffix = SessionName + L" - " + Suffix;
+    Suffix = SessionName + TitleSeparator + Suffix;
   }
   UnicodeString Result = Caption;
   if (Result.IsEmpty())
@@ -430,7 +430,7 @@ UnicodeString __fastcall FormatMainFormCaption(const UnicodeString & Caption, co
   }
   else
   {
-    Suffix = L" - " + Suffix;
+    Suffix = TitleSeparator + Suffix;
     if (!EndsStr(Suffix, Result))
     {
       Result += Suffix;
@@ -1203,6 +1203,7 @@ void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront)
   CancelDrag();
   if (GetCapture() != 0) SendMessage(GetCapture(), WM_CANCELMODE, 0, 0);
   ReleaseCapture();
+  Application->ModalStarted();
   (static_cast<TPublicForm*>(Form))->FFormState << fsModal;
 
   TShowAsModalStorage * AStorage = new TShowAsModalStorage;
@@ -1277,6 +1278,8 @@ void __fastcall HideAsModal(TForm * Form, void *& Storage)
 
   (static_cast<TPublicForm*>(Form))->FFormState >> fsModal;
 
+  Application->ModalFinished();
+
   delete AStorage;
 }
 //---------------------------------------------------------------------------
@@ -1301,6 +1304,7 @@ bool __fastcall SelectDirectory(UnicodeString & Path, const UnicodeString Prompt
   {
     UnicodeString Directory;
     UnicodeString FileName;
+    // We do not have any real use for the PreserveFileName
     if (!PreserveFileName || DirectoryExists(ApiPath(Path)))
     {
       Directory = Path;
@@ -2700,12 +2704,16 @@ void TDesktopFontManager::UpdateControl(TControl * Control)
     DesktopFont->PixelsPerInch = PublicControl->Font->PixelsPerInch;
   }
 
-  // Neither CreateFontIndirect nor RestoreFont set  color, so we should should have the default set by TFont constructor here.
+  // Neither CreateFontIndirect nor RestoreFont set color, so we should have the default set by TFont constructor here.
   DebugAssert(DesktopFont->Color == clWindowText);
-  // Preserve color (particularly white color of file panel font in dark mode)
-  DesktopFont->Color = PublicControl->Font->Color;
+  if (!SameFont(DesktopFont.get(), PublicControl->Font) ||
+      (DesktopFont->PixelsPerInch != PublicControl->Font->PixelsPerInch))
+  {
+    // Preserve color (particularly white color of file panel font in dark mode)
+    DesktopFont->Color = PublicControl->Font->Color;
 
-  PublicControl->Font->Assign(DesktopFont.get());
+    PublicControl->Font->Assign(DesktopFont.get());
+  }
 }
 //---------------------------------------------------------------------------
 void TDesktopFontManager::AddControl(TControl * Control)
@@ -2765,7 +2773,7 @@ static bool __fastcall FormActivationHook(void * Data, TMessage & Message)
   // do not get activated. So we do it explicitly here.
   // We cannot do this from TApplication::OnActivate because
   // TApplication.WndProc resets focus to the last active window afterwards.
-  // So we override CM_ACTIVATE implementation here completelly.
+  // So we override CM_ACTIVATE implementation here completely.
   if (Message.Msg == CM_ACTIVATE)
   {
     TCustomForm * Form = static_cast<TCustomForm *>(Data);

@@ -12,7 +12,7 @@
 #include "channel.h"
 
 typedef struct agentf {
-    Plug *plug; // WINSCP
+    struct callback_set * callback_set; // WINSCP
     SshChannel *c;
     bufchain inbuffer;
     agent_pending_query *pending;
@@ -98,7 +98,7 @@ static void agentf_try_forward(agentf *af)
         bufchain_fetch_consume(
             &af->inbuffer, strbuf_append(message, length), length);
         af->pending = agent_query(
-            message, &reply, &replylen, agentf_callback, af, get_callback_set(af->plug)); // WINSCP
+            message, &reply, &replylen, agentf_callback, af, af->callback_set); // WINSCP
         strbuf_free(message);
 
         if (af->pending)
@@ -174,10 +174,10 @@ static const ChannelVtable agentf_channelvt = {
     /*.request_response =*/ chan_no_request_response,
 };
 
-Channel *agentf_new(SshChannel *c, Plug *plug) // WINSCP
+Channel *agentf_new(SshChannel *c, struct callback_set *callback_set) // WINSCP
 {
     agentf *af = snew(agentf);
-    af->plug = plug; // WINSCP
+    af->callback_set = callback_set; // WINSCP
     af->c = c;
     af->chan.vt = &agentf_channelvt;
     af->chan.initial_fixed_window_size = 0;

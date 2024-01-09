@@ -60,6 +60,10 @@ Currency=USD
 ImportSites=Looking for sites to import...
 AcceptButton=&Accept
 IncompleteTranslation=You are about to use an incomplete translation. It is completed by %1%% only.%n%nUntranslated parts of the user interface will be shown in their original English version.%n%nVisit WinSCP website at winscp.net to check, if newer version of the translation is available.
+MsiInstallation=WinSCP is already installed on this system using an MSI installer. Please uninstall that before running this standalone executable installer.
+
+; MSI (sic)
+InnoSetupInstallation=WinSCP is already installed on this system using a standalone executable installer. Please uninstall that before running this MSI installer.
 
 [CustomOptions]
 TranslationCompleteness=100

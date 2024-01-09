@@ -113,12 +113,13 @@ PacketProtocolLayer *ssh2_transport_new(
     const SshServerConfig *ssc);
 PacketProtocolLayer *ssh2_userauth_new(
     PacketProtocolLayer *successor_layer,
-    const char *hostname, const char *fullhostname,
-    Filename *keyfile, bool show_banner, bool tryagent, bool notrivialauth,
+    const char *hostname, int port, const char *fullhostname,
+    Filename *keyfile, Filename *detached_cert,
+    bool show_banner, bool tryagent, bool notrivialauth,
     const char *default_username, bool change_username,
-    bool try_ki_auth,
-    bool try_gssapi_auth, bool try_gssapi_kex_auth,
+    bool try_ki_auth, bool try_gssapi_auth, bool try_gssapi_kex_auth,
     bool gssapi_fwd, struct ssh_connection_shared_gss_state *shgss,
+    const char *auth_plugin,
     const char * loghost, bool change_password, Seat *seat); // WINSCP
 PacketProtocolLayer *ssh2_connection_new(
     Ssh *ssh, ssh_sharing_state *connshare, bool is_simple,

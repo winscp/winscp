@@ -210,7 +210,9 @@ __published:
   TPanel *ShowAgainPanel;
   TCheckBox *ShowAgainCheck;
   TPanel *BasicS3Panel;
-  TCheckBox *S3CredentialsEnvCheck;
+  TCheckBox *S3CredentialsEnvCheck2;
+  TMenuItem *OpeninPuTTY4;
+  TComboBox *S3ProfileCombo;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionTreeDblClick(TObject *Sender);
@@ -288,7 +290,9 @@ __published:
   void __fastcall SearchSiteNameActionExecute(TObject *Sender);
   void __fastcall SearchSiteActionExecute(TObject *Sender);
   void __fastcall PanelMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift, int X, int Y);
-  void __fastcall S3CredentialsEnvCheckClick(TObject *Sender);
+  void __fastcall S3CredentialsEnvCheck2Click(TObject *Sender);
+  void __fastcall EncryptionComboChange(TObject *Sender);
+  void __fastcall S3ProfileComboChange(TObject *Sender);
 
 private:
   int NoUpdate;
@@ -313,6 +317,7 @@ private:
   bool FLoading;
   bool FSortEnablePending;
   std::unique_ptr<TImageList> FButtonImageList;
+  std::map<int, int> FButtonImagesMap;
   TIncrementalSearch FSiteSearch;
   TForm * FLinkedForm;
   TPoint FPrevPos;
@@ -356,7 +361,7 @@ private:
   void __fastcall MasterPasswordRecrypt(TObject * Sender);
   void __fastcall LoadOpenedStoredSessionFolders(
     TTreeNode * Node, TStrings * OpenedStoredSessionFolders);
-  bool __fastcall HasNodeAnySession(TTreeNode * Node, bool NeedCanLogin = false);
+  bool __fastcall HasNodeAnySession(TTreeNode * Node, bool NeedCanOpen = false);
   void __fastcall SaveDataList(TList * DataList);
   inline bool __fastcall IsFolderNode(TTreeNode * Node);
   inline bool __fastcall IsWorkspaceNode(TTreeNode * Node);
@@ -369,8 +374,7 @@ private:
   inline TSessionData * __fastcall GetNodeSession(TTreeNode * Node);
   void __fastcall ReloadSessions(const UnicodeString & SelectSite);
   void __fastcall ResetSitesIncrementalSearch();
-  bool __fastcall SitesIncrementalSearch(const UnicodeString & Text,
-    bool SkipCurrent, bool Reverse);
+  bool __fastcall SitesIncrementalSearch(const UnicodeString & Text, bool SkipCurrent, bool Reverse, bool Expanding);
   TTreeNode * __fastcall SearchSite(const UnicodeString & Text,
     bool AllowExpanding, bool SkipCurrent, bool Reverse);
   TTreeNode * __fastcall GetNextNode(TTreeNode * Node, bool Reverse);
@@ -384,7 +388,9 @@ private:
   TSessionData * __fastcall GetEditingSessionData();
   void __fastcall SaveAsSession(bool ForceDialog);
   void __fastcall InvalidateSessionData();
-  bool __fastcall CanLogin();
+  bool __fastcall CanOpen();
+  bool IsSiteAndCanOpen();
+  bool IsFolderOrWorkspaceAndCanOpen();
   bool __fastcall IsCloneToNewSiteDefault();
   bool __fastcall IsDefaultResult(TModalResult Result);
   void __fastcall UpdateNodeImage(TTreeNode * Node);
@@ -399,12 +405,18 @@ private:
   void __fastcall ParseHostName();
   void __fastcall ResetNewSiteData();
   TModalResult __fastcall DefaultResult();
-  int __fastcall AddLoginButtonImage(bool Enabled);
+  int AddLoginButtonImage(int Index, bool Enabled);
   void __fastcall WMWindowPosChanged(TWMWindowPosChanged & Message);
   void __fastcall CMDpiChanged(TMessage & Message);
   void __fastcall GenerateImages();
   void __fastcall CMVisibleChanged(TMessage & Message);
   void UpdateS3Credentials();
+  void UpdateLoginButton();
+  void FloodFill(TBitmap * Bitmap, int X, int Y);
+  void UpdatePortWithProtocol();
+  void LoadS3Profiles();
+  UnicodeString GetS3GeneralName();
+  UnicodeString GetS3Profile();
 
 protected:
   void __fastcall Default();

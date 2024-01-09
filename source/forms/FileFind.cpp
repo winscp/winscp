@@ -99,7 +99,7 @@ bool __fastcall TFileFindDialog::IsFinding()
 void __fastcall TFileFindDialog::UpdateControls()
 {
   bool Finding = IsFinding();
-  Caption = FORMAT("%s - %s", (LoadStr(Finding ? FIND_FILE_FINDING : FIND_FILE_TITLE), FTerminalName));
+  Caption = LoadStr(Finding ? FIND_FILE_FINDING : FIND_FILE_TITLE) + TitleSeparator + FTerminalName;
   UnicodeString StartStopCaption;
   if (Finding)
   {
@@ -614,19 +614,25 @@ TListItem * __fastcall TFileFindDialog::FileOperationFinished(const UnicodeStrin
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileFindDialog::FileDeleteFinished(const UnicodeString & FileName, bool Success)
+void __fastcall TFileFindDialog::FileDeleteFinished(TOperationSide, const UnicodeString & FileName, bool Success)
 {
-  // Delete in queue not supported
-  DebugAssert(!FileName.IsEmpty());
-  TListItem * Item = FileOperationFinished(FileName);
-  if (DebugAlwaysTrue(Item != NULL) && Success)
+  if (FileName.IsEmpty())
   {
-    ClearItem(Item);
-    Item->Delete();
+    DebugAssert(Success);
+    FileView->SelectAll(smNone);
+  }
+  else
+  {
+    TListItem * Item = FileOperationFinished(FileName);
+    if (DebugAlwaysTrue(Item != NULL) && Success)
+    {
+      ClearItem(Item);
+      Item->Delete();
+    }
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileFindDialog::FileDownloadFinished(const UnicodeString & FileName, bool Success)
+void __fastcall TFileFindDialog::FileDownloadFinished(TOperationSide, const UnicodeString & FileName, bool Success)
 {
   if (FileName.IsEmpty())
   {

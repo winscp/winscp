@@ -10,17 +10,17 @@
 #include "Configuration.h"
 #include <Xml.XMLIntf.hpp>
 //---------------------------------------------------------------------------
-enum TCipher { cipWarn, cip3DES, cipBlowfish, cipAES, cipDES, cipArcfour, cipChaCha20 };
-#define CIPHER_COUNT (cipChaCha20+1)
+enum TCipher { cipWarn, cip3DES, cipBlowfish, cipAES, cipDES, cipArcfour, cipChaCha20, cipAESGCM, cipCount };
+#define CIPHER_COUNT (cipCount)
 // explicit values to skip obsoleted fsExternalSSH, fsExternalSFTP
 enum TFSProtocol { fsSCPonly = 0, fsSFTP = 1, fsSFTPonly = 2, fsFTP = 5, fsWebDAV = 6, fsS3 = 7 };
 #define FSPROTOCOL_COUNT (fsS3+1)
 extern const wchar_t * ProxyMethodNames;
 enum TProxyMethod { pmNone, pmSocks4, pmSocks5, pmHTTP, pmTelnet, pmCmd };
-enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGEx, kexRSA, kexECDH };
-#define KEX_COUNT (kexECDH+1)
-enum THostKey { hkWarn, hkRSA, hkDSA, hkECDSA, hkED25519, hkED448, hkMax };
-#define HOSTKEY_COUNT (hkMax)
+enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGroup15, kexDHGroup16, kexDHGroup17, kexDHGroup18, kexDHGEx, kexRSA, kexECDH, kexNTRUHybrid, kexCount };
+#define KEX_COUNT (kexCount)
+enum THostKey { hkWarn, hkRSA, hkDSA, hkECDSA, hkED25519, hkED448, hkCount };
+#define HOSTKEY_COUNT (hkCount)
 enum TGssLib { gssGssApi32, gssSspi, gssCustom };
 #define GSSLIB_COUNT (gssCustom+1)
 // names have to match PuTTY registry entries (see settings.c)
@@ -34,7 +34,7 @@ enum TPingType { ptOff, ptNullPacket, ptDummyCommand };
 enum TAddressFamily { afAuto, afIPv4, afIPv6 };
 enum TFtps { ftpsNone, ftpsImplicit, ftpsExplicitSsl, ftpsExplicitTls };
 // ssl2 has no effect now
-enum TTlsVersion { ssl2 = 2, ssl3 = 3, tls10 = 10, tls11 = 11, tls12 = 12, tls13 = 13 };
+enum TTlsVersion { ssl2 = 2, ssl3 = 3, tls10 = 10, tls11 = 11, tls12 = 12, tls13 = 13, tlsMax = tls13 };
 // has to match libs3 S3UriStyle
 enum TS3UrlStyle { s3usVirtualHost, s3usPath };
 enum TSessionSource { ssNone, ssStored, ssStoredModified };
@@ -134,11 +134,13 @@ private:
   bool FVMSAllRevisions;
   UnicodeString FPublicKeyFile;
   UnicodeString FPassphrase;
+  UnicodeString FDetachedCertificate;
   UnicodeString FPuttyProtocol;
   TFSProtocol FFSProtocol;
   bool FModified;
   UnicodeString FLocalDirectory;
   UnicodeString FRemoteDirectory;
+  UnicodeString FOtherLocalDirectory;
   bool FSpecial;
   bool FSynchronizeBrowsing;
   bool FUpdateDirectories;
@@ -226,6 +228,7 @@ private:
   int FInternalEditorEncoding;
   UnicodeString FS3DefaultRegion;
   UnicodeString FS3SessionToken;
+  UnicodeString FS3Profile;
   TS3UrlStyle FS3UrlStyle;
   TAutoSwitch FS3MaxKeys;
   bool FS3CredentialsEnv;
@@ -283,9 +286,12 @@ private:
   void __fastcall SetPublicKeyFile(UnicodeString value);
   UnicodeString __fastcall GetPassphrase() const;
   void __fastcall SetPassphrase(UnicodeString value);
+  void __fastcall SetDetachedCertificate(UnicodeString value);
 
   void __fastcall SetPuttyProtocol(UnicodeString value);
   bool __fastcall GetCanLogin();
+  bool __fastcall GetCanOpen();
+  bool __fastcall GetIsLocalBrowser();
   void __fastcall SetPingIntervalDT(TDateTime value);
   TDateTime __fastcall GetPingIntervalDT();
   TDateTime __fastcall GetFtpPingIntervalDT();
@@ -298,6 +304,7 @@ private:
   void __fastcall SetFSProtocol(TFSProtocol value);
   UnicodeString __fastcall GetFSProtocolStr();
   void __fastcall SetLocalDirectory(UnicodeString value);
+  void __fastcall SetOtherLocalDirectory(const UnicodeString & value);
   UnicodeString __fastcall GetLocalDirectoryExpanded();
   void __fastcall SetRemoteDirectory(UnicodeString value);
   void __fastcall SetSynchronizeBrowsing(bool value);
@@ -412,6 +419,7 @@ private:
   void __fastcall SetInternalEditorEncoding(int value);
   void __fastcall SetS3DefaultRegion(UnicodeString value);
   void __fastcall SetS3SessionToken(UnicodeString value);
+  void __fastcall SetS3Profile(UnicodeString value);
   void __fastcall SetS3UrlStyle(TS3UrlStyle value);
   void __fastcall SetS3MaxKeys(TAutoSwitch value);
   void __fastcall SetS3CredentialsEnv(bool value);
@@ -432,7 +440,7 @@ private:
   UnicodeString __fastcall GetFolderName();
   void __fastcall Modify();
   UnicodeString __fastcall GetSource();
-  void __fastcall DoLoad(THierarchicalStorage * Storage, bool PuttyImport, bool & RewritePassword, bool Unsafe);
+  void __fastcall DoLoad(THierarchicalStorage * Storage, bool PuttyImport, bool & RewritePassword, bool Unsafe, bool RespectDisablePasswordStoring);
   void __fastcall DoSave(THierarchicalStorage * Storage,
     bool PuttyExport, const TSessionData * Default, bool DoNotEncryptPasswords);
   UnicodeString __fastcall ReadXmlNode(_di_IXMLNode Node, const UnicodeString & Name, const UnicodeString & Default);
@@ -446,6 +454,7 @@ private:
   void __fastcall CopyStateData(TSessionData * SourceData);
   void __fastcall CopyNonCoreData(TSessionData * SourceData);
   UnicodeString __fastcall GetNormalizedPuttyProtocol() const;
+  void ReadPasswordsFromFiles();
   static RawByteString __fastcall EncryptPassword(const UnicodeString & Password, UnicodeString Key);
   static UnicodeString __fastcall DecryptPassword(const RawByteString & Password, UnicodeString Key);
   static RawByteString __fastcall StronglyRecryptPassword(const RawByteString & Password, UnicodeString Key);
@@ -487,7 +496,7 @@ public:
   void __fastcall NonPersistant();
   void __fastcall Load(THierarchicalStorage * Storage, bool PuttyImport);
   void __fastcall ApplyRawSettings(TStrings * RawSettings, bool Unsafe);
-  void __fastcall ApplyRawSettings(THierarchicalStorage * Storage, bool Unsafe);
+  void __fastcall ApplyRawSettings(THierarchicalStorage * Storage, bool Unsafe, bool RespectDisablePasswordStoring);
   void __fastcall ImportFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
   void ImportFromOpenssh(TStrings * Lines);
   void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport,
@@ -524,6 +533,7 @@ public:
   bool __fastcall HasSessionName();
   bool HasAutoCredentials();
   int GetDefaultPort();
+  UnicodeString ResolvePublicKeyFile();
 
   UnicodeString __fastcall GenerateOpenCommandArgs(bool Rtf);
   void __fastcall GenerateAssemblyCode(TAssemblyLanguage Language, UnicodeString & Head, UnicodeString & Tail, int & Indent);
@@ -572,11 +582,14 @@ public:
   __property UnicodeString GssLibCustom = { read=FGssLibCustom, write=SetGssLibCustom };
   __property UnicodeString PublicKeyFile  = { read=FPublicKeyFile, write=SetPublicKeyFile };
   __property UnicodeString Passphrase  = { read=GetPassphrase, write=SetPassphrase };
+  __property UnicodeString DetachedCertificate  = { read=FDetachedCertificate, write=SetDetachedCertificate };
   __property UnicodeString PuttyProtocol  = { read=FPuttyProtocol, write=SetPuttyProtocol };
   __property TFSProtocol FSProtocol  = { read=FFSProtocol, write=SetFSProtocol  };
   __property UnicodeString FSProtocolStr  = { read=GetFSProtocolStr };
   __property bool Modified  = { read=FModified, write=FModified };
   __property bool CanLogin  = { read=GetCanLogin };
+  __property bool CanOpen = { read=GetCanOpen };
+  __property bool IsLocalBrowser = { read=GetIsLocalBrowser };
   __property bool ClearAliases = { read = FClearAliases, write = SetClearAliases };
   __property TDateTime PingIntervalDT = { read = GetPingIntervalDT, write = SetPingIntervalDT };
   __property TDateTime TimeDifference = { read = FTimeDifference, write = SetTimeDifference };
@@ -586,6 +599,7 @@ public:
   __property UnicodeString DefaultSessionName  = { read=GetDefaultSessionName };
   __property UnicodeString LocalDirectory  = { read=FLocalDirectory, write=SetLocalDirectory };
   __property UnicodeString LocalDirectoryExpanded = { read = GetLocalDirectoryExpanded };
+  __property UnicodeString OtherLocalDirectory = { read=FOtherLocalDirectory, write=SetOtherLocalDirectory };
   __property UnicodeString RemoteDirectory  = { read=FRemoteDirectory, write=SetRemoteDirectory };
   __property bool SynchronizeBrowsing = { read=FSynchronizeBrowsing, write=SetSynchronizeBrowsing };
   __property bool UpdateDirectories = { read=FUpdateDirectories, write=SetUpdateDirectories };
@@ -687,6 +701,7 @@ public:
   __property int InternalEditorEncoding = { read = FInternalEditorEncoding, write = SetInternalEditorEncoding };
   __property UnicodeString S3DefaultRegion = { read = FS3DefaultRegion, write = SetS3DefaultRegion };
   __property UnicodeString S3SessionToken = { read = FS3SessionToken, write = SetS3SessionToken };
+  __property UnicodeString S3Profile = { read = FS3Profile, write = SetS3Profile };
   __property TS3UrlStyle S3UrlStyle = { read = FS3UrlStyle, write = SetS3UrlStyle };
   __property TAutoSwitch S3MaxKeys = { read = FS3MaxKeys, write = SetS3MaxKeys };
   __property bool S3CredentialsEnv = { read = FS3CredentialsEnv, write = SetS3CredentialsEnv };
@@ -742,7 +757,7 @@ public:
   TSessionData * __fastcall ParseUrl(UnicodeString Url, TOptions * Options, bool & DefaultsOnly,
     UnicodeString * FileName = NULL, bool * ProtocolDefined = NULL, UnicodeString * MaskedUrl = NULL, int Flags = 0);
   bool __fastcall IsUrl(UnicodeString Url);
-  bool __fastcall CanLogin(TSessionData * Data);
+  bool __fastcall CanOpen(TSessionData * Data);
   void __fastcall GetFolderOrWorkspace(const UnicodeString & Name, TList * List);
   TStrings * __fastcall GetFolderOrWorkspaceList(const UnicodeString & Name);
   TStrings * __fastcall GetWorkspaces();
@@ -752,7 +767,7 @@ public:
   __property TSessionData * Sessions[int Index]  = { read=AtSession };
   __property TSessionData * DefaultSettings  = { read=FDefaultSettings, write=SetDefaultSettings };
 
-  static void __fastcall ImportHostKeys(
+  static int __fastcall ImportHostKeys(
     THierarchicalStorage * SourceStorage, THierarchicalStorage * TargetStorage, TStoredSessionList * Sessions, bool OnlySelected);
   static void __fastcall ImportHostKeys(
     const UnicodeString & SourceKey, TStoredSessionList * Sessions, bool OnlySelected);

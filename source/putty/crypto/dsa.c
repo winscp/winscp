@@ -327,6 +327,12 @@ static void dsa_openssh_blob(ssh_key *key, BinarySink *bs)
     put_mp_ssh2(bs, dsa->x);
 }
 
+static bool dsa_has_private(ssh_key *key)
+{
+    struct dsa_key *dsa = container_of(key, struct dsa_key, sshk);
+    return dsa->x != NULL;
+}
+
 static int dsa_pubkey_bits(const ssh_keyalg *self, ptrlen pub)
 {
     ssh_key *sshk;
@@ -345,8 +351,8 @@ static int dsa_pubkey_bits(const ssh_keyalg *self, ptrlen pub)
 }
 
 mp_int *dsa_gen_k(const char *id_string, mp_int *modulus,
-                     mp_int *private_key,
-                     unsigned char *digest, int digest_len)
+                  mp_int *private_key,
+                  unsigned char *digest, int digest_len)
 {
     /*
      * The basic DSA signing algorithm is:
@@ -504,6 +510,8 @@ static void dsa_sign(ssh_key *key, ptrlen data, unsigned flags, BinarySink *bs)
     } // WINSCP
 }
 
+static char *dsa_alg_desc(const ssh_keyalg *self) { return dupstr("DSA"); }
+
 const ssh_keyalg ssh_dsa = {
     // WINSCP
     /*.new_pub =*/ dsa_new_pub,
@@ -516,10 +524,18 @@ const ssh_keyalg ssh_dsa = {
     /*.public_blob =*/ dsa_public_blob,
     /*.private_blob =*/ dsa_private_blob,
     /*.openssh_blob =*/ dsa_openssh_blob,
+    /*.has_private =*/ dsa_has_private,
     /*.cache_str =*/ dsa_cache_str,
     /*.components =*/ dsa_components,
+    /*.base_key =*/ nullkey_base_key,
+    NULL, NULL, NULL, NULL, // WINSCP
     /*.pubkey_bits =*/ dsa_pubkey_bits,
+    /*.supported_flags =*/ nullkey_supported_flags,
+    /*.alternate_ssh_id =*/ nullkey_alternate_ssh_id,
+    /*.alg_desc =*/ dsa_alg_desc,
+    /*.variable_size =*/ nullkey_variable_size_yes,
+    NULL, // WINSCP
     /*.ssh_id =*/ "ssh-dss",
     /*.cache_id =*/ "dss",
-    NULL, NULL,
+    NULL, false, NULL, // WINSCP
 };

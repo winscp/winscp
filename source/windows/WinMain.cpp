@@ -56,10 +56,7 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
       }
       else if (!SessionData->PuttyProtocol.IsEmpty())
       {
-        // putty does not support resolving environment variables in session settings
-        // though it's hardly of any use here.
-        SessionData->ExpandEnvironmentVariables();
-        OpenSessionInPutty(GUIConfiguration->PuttyPath, SessionData);
+        OpenSessionInPutty(SessionData);
         DataList->Clear();
         Abort();
       }
@@ -73,17 +70,17 @@ void __fastcall GetLoginData(UnicodeString SessionName, TOptions * Options,
     DataList->Clear();
   }
   else if ((DataList->Count == 0) ||
-      !dynamic_cast<TSessionData *>(DataList->Items[0])->CanLogin ||
+      !dynamic_cast<TSessionData *>(DataList->Items[0])->CanOpen ||
       DefaultsOnly)
   {
-    // Note that GetFolderOrWorkspace never returns sites that !CanLogin,
+    // Note that GetFolderOrWorkspace never returns sites that !CanOpen,
     // so we should not get here with more than one site.
     // Though we should be good, if we ever do.
 
     // We get here when:
     // - we need session for explicit command-line operation
     // - after we handle "save" URL.
-    // - the specified session does not contain enough information to login [= not even hostname]
+    // - the specified session does not contain enough information to open [= not even hostname nor local browser]
 
     DebugAssert(DataList->Count <= 1);
     if (!DoLoginDialog(DataList, LinkedForm))
@@ -133,7 +130,7 @@ void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName, int
     Terminal->ExceptionOnFail = true;
     try
     {
-      Terminal->ReadFile(FileName, File);
+      File = Terminal->ReadFile(FileName);
     }
     __finally
     {
@@ -415,6 +412,57 @@ static UnicodeString ColorToRGBStr(TColor Color)
   return Result;
 }
 //---------------------------------------------------------------------------
+class TStartupThread : public TSimpleThread
+{
+public:
+  TStartupThread();
+  virtual __fastcall ~TStartupThread();
+
+  int GetStartupSeconds();
+
+  virtual void __fastcall Terminate();
+
+protected:
+  virtual void __fastcall Execute();
+
+  int FMilliseconds;
+  bool FStop;
+};
+//---------------------------------------------------------------------------
+TStartupThread::TStartupThread()
+{
+  FMilliseconds = 0;
+  FStop = false;
+  Start();
+}
+//---------------------------------------------------------------------------
+__fastcall TStartupThread::~TStartupThread()
+{
+  Close();
+}
+//---------------------------------------------------------------------------
+int TStartupThread::GetStartupSeconds()
+{
+  DebugAssert(!FStop);
+  return FMilliseconds / 1000;
+}
+//---------------------------------------------------------------------------
+void __fastcall TStartupThread::Terminate()
+{
+  FStop = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TStartupThread::Execute()
+{
+  while (!FStop)
+  {
+    const int Step = 250;
+    Sleep(Step);
+    FMilliseconds += Step;
+  }
+}
+//---------------------------------------------------------------------------
+TStartupThread * StartupThread(new TStartupThread());
 TDateTime Started(Now());
 TDateTime LastStartupStartupSequence(Now());
 UnicodeString StartupSequence;
@@ -423,6 +471,7 @@ int LifetimeRuns = -1;
 void InterfaceStartDontMeasure()
 {
   Started = TDateTime();
+  StartupThread->Terminate();
 }
 //---------------------------------------------------------------------------
 void AddStartupSequence(const UnicodeString & Tag)
@@ -438,6 +487,7 @@ void InterfaceStarted()
   {
     // deliberate downcast
     int StartupSeconds = static_cast<int>(SecondsBetween(Now(), Started));
+    int StartupSecondsReal = DebugNotNull(StartupThread)->GetStartupSeconds();
     if (LifetimeRuns == 1)
     {
       Configuration->Usage->Set(L"StartupSeconds1", StartupSeconds);
@@ -447,9 +497,11 @@ void InterfaceStarted()
       Configuration->Usage->Set(L"StartupSeconds2", StartupSeconds);
     }
     Configuration->Usage->Set(L"StartupSecondsLast", StartupSeconds);
+    Configuration->Usage->Set(L"StartupSecondsLastReal", StartupSecondsReal);
     AddStartupSequence(L"I");
     Configuration->Usage->Set(L"StartupSequenceLast", StartupSequence);
   }
+  StartupThread->Terminate();
 }
 //---------------------------------------------------------------------------
 void __fastcall UpdateStaticUsage()
@@ -551,6 +603,7 @@ void __fastcall UpdateStaticUsage()
   bool InProgramFiles = AnsiSameText(ExeName.SubString(1, ProgramsFolder.Length()), ProgramsFolder);
   Configuration->Usage->Set(L"InProgramFiles", InProgramFiles);
   Configuration->Usage->Set(L"IsInstalled", IsInstalled());
+  Configuration->Usage->Set(L"IsInstalledMsi", IsInstalledMsi());
   Configuration->Usage->Set(L"Wine", IsWine());
   Configuration->Usage->Set(L"NetFrameworkVersion", GetNetVersionStr());
   Configuration->Usage->Set(L"NetCoreVersion", GetNetCoreVersionStr());
@@ -581,6 +634,7 @@ void __fastcall UpdateFinalStaticUsage()
 void __fastcall MaintenanceTask()
 {
   CoreMaintenanceTask();
+  InterfaceStartDontMeasure();
 }
 //---------------------------------------------------------------------------
 typedef std::vector<HWND> THandles;
@@ -590,6 +644,7 @@ BOOL __stdcall EnumOtherInstances(HWND Handle, LPARAM AParam)
 {
   TProcesses & Processes = *reinterpret_cast<TProcesses *>(AParam);
 
+  // This should be optimized to query class name already here
   unsigned long ProcessId;
   if (GetWindowThreadProcessId(Handle, &ProcessId) != 0)
   {
@@ -906,6 +961,7 @@ int __fastcall Execute()
 
   if (Mode != cmNone)
   {
+    InterfaceStartDontMeasure();
     return Console(Mode);
   }
 
@@ -1103,14 +1159,14 @@ int __fastcall Execute()
         }
       }
 
+      bool NewInstance = Params->FindSwitch(NEWINSTANCE_SWICH);
       if (Params->ParamCount > 0)
       {
-        AutoStartSession = Params->Param[1];
-        Params->ParamsProcessed(1, 1);
+        AutoStartSession = Params->ConsumeParam();
 
         if ((ParamCommand == pcNone) &&
             (WinConfiguration->ExternalSessionInExistingInstance != OpenInNewWindow()) &&
-            !Params->FindSwitch(NEWINSTANCE_SWICH) &&
+            !NewInstance &&
             SendToAnotherInstance())
         {
           Configuration->Usage->Inc(L"SendToAnotherInstance");
@@ -1135,6 +1191,10 @@ int __fastcall Execute()
         }
         Configuration->Usage->Inc(CounterName);
       }
+      else if (NewInstance)
+      {
+        // no autostart
+      }
       else if (WinConfiguration->EmbeddedSessions && StoredSessions->Count)
       {
         AutoStartSession = StoredSessions->Sessions[0]->Name;
@@ -1153,7 +1213,7 @@ int __fastcall Execute()
       // from now flash message boxes on background
       SetOnForeground(false);
 
-      bool NeedSession = (ParamCommand != pcNone);
+      bool NeedSession = NewInstance || (ParamCommand != pcNone);
 
       bool Retry;
       do
@@ -1183,13 +1243,13 @@ int __fastcall Execute()
 
             try
             {
-              DebugAssert(!TerminalManager->ActiveTerminal);
+              DebugAssert(TerminalManager->ActiveSession == NULL);
 
               bool CanStart;
               bool Browse = false;
               if (DataList->Count > 0)
               {
-                TManagedTerminal * Terminal = TerminalManager->NewTerminals(DataList.get());
+                TManagedTerminal * Session = TerminalManager->NewSessions(DataList.get());
                 UnicodeString BrowseFile;
                 if (Params->FindSwitch(BROWSE_SWITCH, BrowseFile) &&
                     (!BrowseFile.IsEmpty() || !DownloadFile.IsEmpty()))
@@ -1198,21 +1258,21 @@ int __fastcall Execute()
                   {
                     BrowseFile = DownloadFile;
                   }
-                  DebugAssert(Terminal->RemoteExplorerState == NULL);
-                  Terminal->RemoteExplorerState = CreateDirViewStateForFocusedItem(BrowseFile);
-                  DebugAssert(Terminal->LocalExplorerState == NULL);
-                  Terminal->LocalExplorerState = CreateDirViewStateForFocusedItem(BrowseFile);
+                  DebugAssert(Session->RemoteExplorerState == NULL);
+                  Session->RemoteExplorerState = CreateDirViewStateForFocusedItem(BrowseFile);
+                  DebugAssert(Session->LocalExplorerState == NULL);
+                  Session->LocalExplorerState = CreateDirViewStateForFocusedItem(BrowseFile);
                   DownloadFile = UnicodeString();
                   Browse = true;
                 }
                 if (!DownloadFile.IsEmpty())
                 {
-                  Terminal->AutoReadDirectory = false;
-                  DownloadFile = UnixIncludeTrailingBackslash(Terminal->SessionData->RemoteDirectory) + DownloadFile;
-                  Terminal->SessionData->RemoteDirectory = L"";
-                  Terminal->StateData->RemoteDirectory = Terminal->SessionData->RemoteDirectory;
+                  Session->AutoReadDirectory = false;
+                  DownloadFile = UnixIncludeTrailingBackslash(Session->SessionData->RemoteDirectory) + DownloadFile;
+                  Session->SessionData->RemoteDirectory = L"";
+                  Session->StateData->RemoteDirectory = Session->SessionData->RemoteDirectory;
                 }
-                TerminalManager->ActiveTerminal = Terminal;
+                TerminalManager->ActiveSession = Session;
                 CanStart = (TerminalManager->Count > 0);
               }
               else
@@ -1247,20 +1307,21 @@ int __fastcall Execute()
                   {
                     Configuration->Usage->Inc(L"CommandLineOperation");
                     ScpExplorer->StandaloneOperation = true;
+                    InterfaceStartDontMeasure();
                   }
 
                   if (ParamCommand == pcUpload)
                   {
-                    Upload(TerminalManager->ActiveTerminal, CommandParams, UseDefaults);
+                    Upload(TerminalManager->ActiveSession, CommandParams, UseDefaults);
                   }
                   else if (ParamCommand == pcFullSynchronize)
                   {
-                    FullSynchronize(TerminalManager->ActiveTerminal, ScpExplorer,
+                    FullSynchronize(TerminalManager->ActiveSession, ScpExplorer,
                       CommandParams, UseDefaults);
                   }
                   else if (ParamCommand == pcSynchronize)
                   {
-                    Synchronize(TerminalManager->ActiveTerminal, ScpExplorer,
+                    Synchronize(TerminalManager->ActiveSession, ScpExplorer,
                       CommandParams, UseDefaults);
                   }
                   else if (ParamCommand == pcEdit)
@@ -1269,7 +1330,7 @@ int __fastcall Execute()
                   }
                   else if (!DownloadFile.IsEmpty())
                   {
-                    Download(TerminalManager->ActiveTerminal, DownloadFile,
+                    Download(TerminalManager->ActiveSession, DownloadFile,
                       UseDefaults);
                   }
                   else
@@ -1328,6 +1389,7 @@ int __fastcall Execute()
     GlyphsModule = NULL;
     TTerminalManager::DestroyInstance();
     delete CommandParams;
+    delete StartupThread;
   }
 
   return 0;

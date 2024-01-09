@@ -132,8 +132,8 @@ private:
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall CMDpiChanged(TMessage & Message);
   void __fastcall ClearItem(TListItem * Item);
-  void __fastcall FileDeleteFinished(const UnicodeString & FileName, bool Success);
-  void __fastcall FileDownloadFinished(const UnicodeString & FileName, bool Success);
+  void __fastcall FileDeleteFinished(TOperationSide Side, const UnicodeString & FileName, bool Success);
+  void __fastcall FileDownloadFinished(TOperationSide Side, const UnicodeString & FileName, bool Success);
   TListItem * __fastcall FileOperationFinished(const UnicodeString & FileName);
   void __fastcall FileListOperation(TFileListOperationEvent Operation, TFileOperationFinishedEvent OnFileOperationFinished);
   TIEListViewColProperties * GetColProperties();

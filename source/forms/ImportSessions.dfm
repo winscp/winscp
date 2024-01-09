@@ -103,6 +103,7 @@ object ImportSessionsDialog: TImportSessionsDialog
     OnSelect = SourceComboBoxSelect
     Items.Strings = (
       'PuTTY'
+      'KiTTY'
       'FileZilla'
       'OpenSSH'
       'known_hosts')

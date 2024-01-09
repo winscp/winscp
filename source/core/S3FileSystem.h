@@ -54,9 +54,9 @@ public:
     const TRemoteFile * File, const TRemoteProperties * Properties,
     TChmodSessionAction & Action);
   virtual bool __fastcall LoadFilesProperties(TStrings * FileList);
-  virtual void __fastcall CalculateFilesChecksum(const UnicodeString & Alg,
-    TStrings * FileList, TStrings * Checksums,
-    TCalculatedChecksumEvent OnCalculatedChecksum);
+  virtual void __fastcall CalculateFilesChecksum(
+    const UnicodeString & Alg, TStrings * FileList, TCalculatedChecksumEvent OnCalculatedChecksum,
+    TFileOperationProgressType * OperationProgress, bool FirstLevel);
   virtual void __fastcall CopyToLocal(TStrings * FilesToCopy,
     const UnicodeString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
@@ -192,8 +192,9 @@ protected:
 UnicodeString __fastcall S3LibVersion();
 UnicodeString __fastcall S3LibDefaultHostName();
 UnicodeString __fastcall S3LibDefaultRegion();
-UnicodeString S3EnvUserName(UnicodeString * Source = NULL);
-UnicodeString S3EnvPassword(UnicodeString * Source = NULL);
-UnicodeString S3EnvSessionToken(UnicodeString * Source = NULL);
+TStrings * GetS3Profiles();
+UnicodeString S3EnvUserName(const UnicodeString & Profile, UnicodeString * Source = NULL);
+UnicodeString S3EnvPassword(const UnicodeString & Profile, UnicodeString * Source = NULL);
+UnicodeString S3EnvSessionToken(const UnicodeString & Profile, UnicodeString * Source = NULL);
 //------------------------------------------------------------------------------
 #endif

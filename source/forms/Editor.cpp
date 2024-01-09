@@ -35,7 +35,7 @@ TForm * __fastcall ShowEditorForm(const UnicodeString FileName, TForm * ParentFo
     Dialog->FileName = FileName;
     Dialog->ParentForm = ParentForm;
     UnicodeString ACaption = Caption.IsEmpty() ? FileName : Caption;
-    Dialog->Caption = ACaption + L" - " + LoadStr(EDITOR_CAPTION) + L" - " + AppName;
+    Dialog->Caption = ACaption + TitleSeparator + LoadStr(EDITOR_CAPTION) + TitleSeparator + AppName;
     Dialog->OnFileChanged = OnFileChanged;
     Dialog->OnFileReload = OnFileReload;
     Dialog->OnSaveAll = OnSaveAll;
@@ -166,6 +166,7 @@ protected:
   friend unsigned long __stdcall StreamLoad(DWORD_PTR Cookie, unsigned char * Buff, long Read, long * WasRead);
 
   virtual void __fastcall CreateParams(TCreateParams & Params);
+  virtual void __fastcall CreateWnd();
   void __fastcall Dispatch(void * Message);
   bool __fastcall GetCanRedo();
   void __fastcall SetTabSize(unsigned int TabSize);
@@ -173,6 +174,7 @@ protected:
   void __fastcall EMStreamIn(TMessage & Message);
   bool __stdcall StreamLoad(TRichEditStreamInfo * StreamInfo,
     unsigned char * Buff, long Read, long & WasRead);
+  DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
 
 private:
   HINSTANCE FLibrary;
@@ -295,6 +297,17 @@ void __fastcall TEditorRichEdit::CreateParams(TCreateParams & Params)
     (HideSelection ? 0 : ES_NOHIDESEL);
   Params.WindowClass.style = Params.WindowClass.style &
     ~(CS_HREDRAW | CS_VREDRAW);
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorRichEdit::CreateWnd()
+{
+  TNewRichEdit::CreateWnd();
+  if (!WinConfiguration->Editor.AutoFont)
+  {
+    int LangOptions = SendMessage(Handle, EM_GETLANGOPTIONS, 0, 0);
+    LangOptions = (LangOptions & ~IMF_AUTOFONT) | IMF_AUTOKEYBOARD;
+    SendMessage(Handle, EM_SETLANGOPTIONS, 0, LangOptions);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorRichEdit::WMPaste()
@@ -572,6 +585,30 @@ bool __fastcall TEditorRichEdit::LoadFromStream(TStream * Stream, TEncoding * En
   return !FStreamLoadError;
 }
 //---------------------------------------------------------------------------
+void __fastcall TEditorRichEdit::KeyDown(Word & Key, TShiftState Shift)
+{
+  if ((// Block Center/Left/Justify alignment (Right alignment is overriden by the Reload command)
+       (Key == L'E') || (Key == L'L') || (Key == L'J') ||
+       // Line spacing
+       (Key == L'1') || (Key == L'2') || (Key == L'5')
+      ) &&
+      Shift.Contains(ssCtrl) && !Shift.Contains(ssAlt) && !Shift.Contains(ssShift))
+  {
+    Key = 0;
+  }
+  // Fiddle bullet style
+  if ((Key == L'L') && Shift.Contains(ssCtrl) && Shift.Contains(ssShift) && !Shift.Contains(ssAlt))
+  {
+    Key = 0;
+  }
+  // Superscript/Subscript (depending on the ssShift => +/=)
+  if ((Key == VK_OEM_PLUS) && Shift.Contains(ssCtrl) && !Shift.Contains(ssAlt))
+  {
+    Key = 0;
+  }
+  TNewRichEdit::KeyDown(Key, Shift);
+}
+//---------------------------------------------------------------------------
 class TFindDialogEx : public TFindDialog
 {
 public:
@@ -662,7 +699,7 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   // This way we explicitly bind them to our editor.
   for (int Index = 0; Index < EditorActions->ActionCount; Index++)
   {
-    TEditAction * EditAction = dynamic_cast<TEditAction* >(EditorActions->Actions[Index]);
+    TEditAction * EditAction = dynamic_cast<TEditAction *>(EditorActions->Actions[Index]);
     if (EditAction != NULL)
     {
       EditAction->Control = EditorMemo;
@@ -685,7 +722,7 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   FClosePending = false;
   FReloading = false;
   FInternalEditorEncodingOverride = -1;
-  SetSubmenu(ColorItem);
+  SetSubmenu(ColorItem, true);
 
   InitCodePage();
   SelectScaledImageList(EditorImages);

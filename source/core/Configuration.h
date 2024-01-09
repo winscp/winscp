@@ -81,7 +81,7 @@ private:
   int FScriptProgressFileNameLimit;
   int FKeyVersion;
   UnicodeString FCertificateStorage;
-  bool FExperimentalFeatures;
+  UnicodeString FChecksumCommands;
 
   bool FDisablePasswordStoring;
   bool FForceBanners;
@@ -97,7 +97,7 @@ private:
   UnicodeString __fastcall GetCompanyName();
   UnicodeString __fastcall GetFileVersion(TVSFixedFileInfo * Info);
   UnicodeString __fastcall GetStoredSessionsSubKey();
-  UnicodeString __fastcall GetPuttySessionsKey();
+  UnicodeString __fastcall DoGetPuttySessionsKey();
   UnicodeString __fastcall GetPuttySessionsSubKey();
   void __fastcall SetRandomSeedFile(UnicodeString value);
   UnicodeString __fastcall GetRandomSeedFileName();
@@ -195,6 +195,7 @@ protected:
   void __fastcall SaveCustomIniFileStorageName();
   UnicodeString __fastcall GetRegistryStorageOverrideKey();
   TStrings * GetCaches();
+  UnicodeString GetFullVersion();
 
   virtual UnicodeString __fastcall ModuleFileName();
 
@@ -270,6 +271,7 @@ public:
   bool RegistryPathExists(const UnicodeString & RegistryPath);
   bool HasLocalPortNumberLimits();
   virtual UnicodeString TemporaryDir(bool Mask = false) = 0;
+  UnicodeString GetVersionStrHuman();
 
   TStoredSessionList * __fastcall SelectFilezillaSessionsForImport(
     TStoredSessionList * Sessions, UnicodeString & Error);
@@ -279,15 +281,15 @@ public:
   TStoredSessionList * __fastcall SelectKnownHostsSessionsForImport(
     TStrings * Lines, TStoredSessionList * Sessions, UnicodeString & Error);
   TStoredSessionList * SelectOpensshSessionsForImport(TStoredSessionList * Sessions, UnicodeString & Error);
+  UnicodeString GetPuttySessionsKey(const UnicodeString & RootKey);
 
   __property TVSFixedFileInfo *FixedApplicationInfo  = { read=GetFixedApplicationInfo };
   __property void * ApplicationInfo  = { read=GetApplicationInfo };
   __property TUsage * Usage = { read = FUsage };
   __property bool CollectUsage = { read = GetCollectUsage, write = SetCollectUsage };
-  __property bool ExperimentalFeatures = { read = FExperimentalFeatures, write = FExperimentalFeatures };
   __property UnicodeString StoredSessionsSubKey = {read=GetStoredSessionsSubKey};
   __property UnicodeString PuttyRegistryStorageKey  = { read=FPuttyRegistryStorageKey, write=SetPuttyRegistryStorageKey };
-  __property UnicodeString PuttySessionsKey  = { read=GetPuttySessionsKey };
+  __property UnicodeString PuttySessionsKey  = { read=DoGetPuttySessionsKey };
   __property UnicodeString PuttySessionsSubKey  = { read=GetPuttySessionsSubKey };
   __property UnicodeString RandomSeedFile  = { read=FRandomSeedFile, write=SetRandomSeedFile };
   __property UnicodeString RandomSeedFileName  = { read=GetRandomSeedFileName };
@@ -332,6 +334,7 @@ public:
   __property UnicodeString ExternalIpAddress = { read = FExternalIpAddress, write = SetExternalIpAddress };
   __property UnicodeString CertificateStorage = { read = FCertificateStorage, write = SetCertificateStorage };
   __property UnicodeString CertificateStorageExpanded = { read = GetCertificateStorageExpanded };
+  __property UnicodeString ChecksumCommands = { read = FChecksumCommands };
   __property int LocalPortNumberMin = { read = FLocalPortNumberMin, write = SetLocalPortNumberMin };
   __property int LocalPortNumberMax = { read = FLocalPortNumberMax, write = SetLocalPortNumberMax };
   __property bool TryFtpWhenSshFails = { read = FTryFtpWhenSshFails, write = SetTryFtpWhenSshFails };

@@ -192,4 +192,24 @@ public:
 #define SES_EX_HANDLEFRIENDLYURL (0x100)
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+// msi.h (available, but does not compile)
+extern "C"
+{
+#define MAX_GUID_CHARS  38
+#define INSTALLPROPERTY_INSTALLLOCATION       __TEXT("InstallLocation")
+UINT WINAPI MsiEnumRelatedProductsW(
+  __in LPCWSTR  lpUpgradeCode,                               // upgrade code of products to enumerate
+  __reserved DWORD     dwReserved,                            // reserved, must be 0
+  __in DWORD     iProductIndex,                               // 0-based index into registered products
+  __out_ecount(MAX_GUID_CHARS+1)  LPWSTR   lpProductBuf);    // buffer of char count: 39 (size of string GUID)
+#define MsiEnumRelatedProducts  MsiEnumRelatedProductsW
+//---------------------------------------------------------------------------
+UINT WINAPI MsiGetProductInfoW(
+  __in LPCWSTR   szProduct,                              // product code
+  __in LPCWSTR   szAttribute,                            // attribute name, case-sensitive
+  __out_ecount_opt(*pcchValueBuf) LPWSTR lpValueBuf,     // returned value, NULL if not desired
+  __inout_opt                     LPDWORD pcchValueBuf);  // in/out buffer character count
+#define MsiGetProductInfo  MsiGetProductInfoW
+}
+//---------------------------------------------------------------------------
 #endif  // WinApiH

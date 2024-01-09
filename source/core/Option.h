@@ -27,12 +27,12 @@ public:
   bool __fastcall FindSwitchCaseSensitive(const UnicodeString Switch);
   bool __fastcall FindSwitchCaseSensitive(const UnicodeString Switch, TStrings * Params,
     int ParamsMax = -1);
-  void __fastcall ParamsProcessed(int Position, int Count);
   UnicodeString __fastcall SwitchValue(const UnicodeString Switch, const UnicodeString Default = L"");
   bool __fastcall SwitchValue(const UnicodeString Switch, bool Default);
   bool __fastcall SwitchValue(const UnicodeString Switch, bool Default, bool DefaultOnNonExistence);
   bool __fastcall UnusedSwitch(UnicodeString & Switch);
   bool __fastcall WasSwitchAdded(UnicodeString & Switch, UnicodeString & Value, wchar_t & SwitchMark);
+  UnicodeString ConsumeParam();
 
   void __fastcall LogOptions(TLogOptionEvent OnEnumOption);
 
@@ -48,6 +48,7 @@ protected:
     UnicodeString & Value, int & ParamsStart, int & ParamsCount, bool CaseSensitive, bool & ValueSet);
   bool __fastcall DoFindSwitch(const UnicodeString Switch, TStrings * Params,
     int ParamsMax, bool CaseInsensitive);
+  void __fastcall ParamsProcessed(int Position, int Count);
 
 private:
   struct TOption

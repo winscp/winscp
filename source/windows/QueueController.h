@@ -51,6 +51,7 @@ private:
     TQueueItemProxy * QueueItem, bool Detail, bool OnlyLine);
   TListItem * __fastcall InsertItemFor(TQueueItemProxy * QueueItem, int Index);
   bool __fastcall UseDetailsLine(int ItemIndex, TQueueItemProxy * QueueItem);
+  static bool SimpleOperation(TQueueItemProxy * QueueItem);
 };
 //---------------------------------------------------------------------------
 #endif

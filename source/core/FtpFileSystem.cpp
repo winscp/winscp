@@ -19,6 +19,7 @@
 #include <StrUtils.hpp>
 #include <DateUtils.hpp>
 #include <openssl/x509_vfy.h>
+#include <limits>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -201,6 +202,7 @@ const UnicodeString AvblCommand(L"AVBL");
 const UnicodeString XQuotaCommand(L"XQUOTA");
 const UnicodeString MdtmCommand(L"MDTM");
 const UnicodeString SizeCommand(L"SIZE");
+const UnicodeString CsidCommand(L"CSID");
 const UnicodeString DirectoryHasBytesPrefix(L"226-Directory has");
 //---------------------------------------------------------------------------
 class TFileListHelper
@@ -376,6 +378,7 @@ void __fastcall TFTPFileSystem::Open()
   FMVS = false;
   FVMS = false;
   FFileZilla = false;
+  FIIS = false;
   FTransferActiveImmediately = (Data->FtpTransferActiveImmediately == asOn);
   FVMSAllRevisions = Data->VMSAllRevisions;
 
@@ -443,8 +446,9 @@ void __fastcall TFTPFileSystem::Open()
     FDetectTimeDifference = Data->TimeDifferenceAuto;
     FTimeDifference = 0;
     ResetFeatures();
-    FSystem = L"";
-    FWelcomeMessage = L"";
+    FSystem = EmptyStr;
+    FServerID = EmptyStr;
+    FWelcomeMessage = EmptyStr;
     FFileSystemInfoValid = false;
 
     // TODO: the same for account? it ever used?
@@ -652,8 +656,7 @@ void __fastcall TFTPFileSystem::CollectUsage()
   // 220 Microsoft FTP Service
   // SYST
   // 215 Windows_NT
-  else if (ContainsText(FWelcomeMessage, L"Microsoft FTP Service") ||
-           ContainsText(FSystem, L"Windows_NT"))
+  else if (FIIS)
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsFTPIIS");
   }
@@ -1098,14 +1101,14 @@ bool __fastcall TFTPFileSystem::LoadFilesProperties(TStrings * /*FileList*/)
   return false;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TFTPFileSystem::DoCalculateFileChecksum(
-  bool UsingHashCommand, const UnicodeString & Alg, TRemoteFile * File)
+UnicodeString __fastcall TFTPFileSystem::DoCalculateFileChecksum(const UnicodeString & Alg, TRemoteFile * File)
 {
   // Overview of server supporting various hash commands is at:
   // https://datatracker.ietf.org/doc/html/draft-bryan-ftpext-hash-02#appendix-B
 
   UnicodeString CommandName;
 
+  bool UsingHashCommand = UsingHashCommandChecksum(Alg);
   if (UsingHashCommand)
   {
     CommandName = HashCommand;
@@ -1209,88 +1212,50 @@ UnicodeString __fastcall TFTPFileSystem::DoCalculateFileChecksum(
 
   if (Hash.IsEmpty())
   {
-    throw Exception(FMTLOAD(FTP_RESPONSE_ERROR, (CommandName, FLastResponse->Text)));
+    throw Exception(FMTLOAD(FTP_RESPONSE_ERROR, (CommandName, ResponseText)));
   }
 
   return LowerCase(Hash);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::DoCalculateFilesChecksum(bool UsingHashCommand,
-  const UnicodeString & Alg, TStrings * FileList, TStrings * Checksums,
-  TCalculatedChecksumEvent OnCalculatedChecksum,
+void __fastcall TFTPFileSystem::CalculateFilesChecksum(
+  const UnicodeString & Alg, TStrings * FileList, TCalculatedChecksumEvent OnCalculatedChecksum,
   TFileOperationProgressType * OperationProgress, bool FirstLevel)
 {
-  TOnceDoneOperation OnceDoneOperation; // not used
+  FTerminal->CalculateSubFoldersChecksum(Alg, FileList, OnCalculatedChecksum, OperationProgress, FirstLevel);
 
   int Index = 0;
+  TOnceDoneOperation OnceDoneOperation; // not used
   while ((Index < FileList->Count) && !OperationProgress->Cancel)
   {
     TRemoteFile * File = (TRemoteFile *)FileList->Objects[Index];
     DebugAssert(File != NULL);
 
-    if (File->IsDirectory)
-    {
-      if (FTerminal->CanRecurseToDirectory(File) &&
-          IsRealFile(File->FileName) &&
-          // recurse into subdirectories only if we have callback function
-          (OnCalculatedChecksum != NULL))
-      {
-        OperationProgress->SetFile(File->FileName);
-        TRemoteFileList * SubFiles =
-          FTerminal->CustomReadDirectoryListing(File->FullFileName, false);
-
-        if (SubFiles != NULL)
-        {
-          TStrings * SubFileList = new TStringList();
-          bool Success = false;
-          try
-          {
-            OperationProgress->SetFile(File->FileName);
-
-            for (int Index = 0; Index < SubFiles->Count; Index++)
-            {
-              TRemoteFile * SubFile = SubFiles->Files[Index];
-              SubFileList->AddObject(SubFile->FullFileName, SubFile);
-            }
-
-            // do not collect checksums for files in subdirectories,
-            // only send back checksums via callback
-            DoCalculateFilesChecksum(UsingHashCommand, Alg, SubFileList, NULL,
-              OnCalculatedChecksum, OperationProgress, false);
-
-            Success = true;
-          }
-          __finally
-          {
-            delete SubFiles;
-            delete SubFileList;
-
-            if (FirstLevel)
-            {
-              OperationProgress->Finish(File->FileName, Success, OnceDoneOperation);
-            }
-          }
-        }
-      }
-    }
-    else
+    if (!File->IsDirectory)
     {
       TChecksumSessionAction Action(FTerminal->ActionLog);
       try
       {
         OperationProgress->SetFile(File->FileName);
-        Action.FileName(FTerminal->AbsolutePath(File->FullFileName, true));
-
-        UnicodeString Checksum = DoCalculateFileChecksum(UsingHashCommand, Alg, File);
-
-        if (OnCalculatedChecksum != NULL)
+        Action.FileName(File->FullFileName);
+        bool Success = false;
+        try
         {
-          OnCalculatedChecksum(File->FileName, Alg, Checksum);
+          UnicodeString Checksum = DoCalculateFileChecksum(Alg, File);
+
+          if (OnCalculatedChecksum != NULL)
+          {
+            OnCalculatedChecksum(File->FileName, Alg, Checksum);
+          }
+          Action.Checksum(Alg, Checksum);
+          Success = true;
         }
-        Action.Checksum(Alg, Checksum);
-        if (Checksums != NULL)
+        __finally
         {
-          Checksums->Add(Checksum);
+          if (FirstLevel)
+          {
+            OperationProgress->Finish(File->FileName, Success, OnceDoneOperation);
+          }
         }
       }
       catch (Exception & E)
@@ -1298,9 +1263,7 @@ void __fastcall TFTPFileSystem::DoCalculateFilesChecksum(bool UsingHashCommand,
         FTerminal->RollbackAction(Action, OperationProgress, &E);
 
         // Error formatting expanded from inline to avoid strange exceptions
-        UnicodeString Error =
-          FMTLOAD(CHECKSUM_ERROR,
-            (File != NULL ? File->FullFileName : UnicodeString(L"")));
+        UnicodeString Error = FMTLOAD(CHECKSUM_ERROR, (File->FullFileName));
         FTerminal->CommandError(&E, Error);
         // Abort loop.
         // TODO: retries? resume?
@@ -1311,41 +1274,30 @@ void __fastcall TFTPFileSystem::DoCalculateFilesChecksum(bool UsingHashCommand,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::CalculateFilesChecksum(const UnicodeString & Alg,
-  TStrings * FileList, TStrings * Checksums,
-  TCalculatedChecksumEvent OnCalculatedChecksum)
+UnicodeString TFTPFileSystem::CalculateFilesChecksumInitialize(const UnicodeString & Alg)
 {
-  TFileOperationProgressType Progress(&FTerminal->DoProgress, &FTerminal->DoFinished);
-  FTerminal->OperationStart(Progress, foCalculateChecksum, osRemote, FileList->Count);
-
-  try
+  UnicodeString NormalizedAlg = FindIdent(FindIdent(Alg, FHashAlgs.get()), FChecksumAlgs.get());
+  if (UsingHashCommandChecksum(NormalizedAlg))
   {
-    UnicodeString NormalizedAlg = FindIdent(FindIdent(Alg, FHashAlgs.get()), FChecksumAlgs.get());
-
-    bool UsingHashCommand = (FHashAlgs->IndexOf(NormalizedAlg) >= 0);
-    if (UsingHashCommand)
-    {
-      // The server should understand lowercase alg name by spec,
-      // but we should use uppercase anyway
-      SendCommand(FORMAT(L"OPTS %s %s", (HashCommand, UpperCase(NormalizedAlg))));
-      GotReply(WaitForCommandReply(), REPLY_2XX_CODE);
-    }
-    else if (FChecksumAlgs->IndexOf(NormalizedAlg) >= 0)
-    {
-      // will use algorithm-specific command
-    }
-    else
-    {
-      throw Exception(FMTLOAD(UNKNOWN_CHECKSUM, (Alg)));
-    }
-
-    DoCalculateFilesChecksum(UsingHashCommand, NormalizedAlg, FileList, Checksums, OnCalculatedChecksum,
-      &Progress, true);
+    // The server should understand lowercase alg name by spec,
+    // but we should use uppercase anyway
+    SendCommand(FORMAT(L"OPTS %s %s", (HashCommand, UpperCase(NormalizedAlg))));
+    GotReply(WaitForCommandReply(), REPLY_2XX_CODE);
   }
-  __finally
+  else if (FChecksumAlgs->IndexOf(NormalizedAlg) >= 0)
   {
-    FTerminal->OperationStop(Progress);
+    // will use algorithm-specific command
   }
+  else
+  {
+    throw Exception(FMTLOAD(UNKNOWN_CHECKSUM, (Alg)));
+  }
+  return NormalizedAlg;
+}
+//---------------------------------------------------------------------------
+bool TFTPFileSystem::UsingHashCommandChecksum(const UnicodeString & Alg)
+{
+  return (FHashAlgs->IndexOf(Alg) >= 0);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::ConfirmOverwrite(
@@ -1735,7 +1687,6 @@ void __fastcall TFTPFileSystem::Source(
     // not used for uploads anyway
     FFileTransferPreserveTime = CopyParam->PreserveTime && (CopyParam->OnTransferIn == NULL);
     FFileTransferRemoveBOM = CopyParam->RemoveBOM;
-    // not used for uploads anyway
     FFileTransferNoList = CanTransferSkipList(Params, Flags, CopyParam);
     // not used for uploads, but we get new name (if any) back in this field
     UserData.FileName = DestFileName;
@@ -1880,6 +1831,44 @@ void __fastcall TFTPFileSystem::DoStartup()
     delete PostLoginCommands;
   }
 
+  if (SupportsCommand(CsidCommand))
+  {
+    UnicodeString NameFact = L"Name";
+    UnicodeString VersionFact = L"Version";
+    UnicodeString Command =
+      FORMAT(L"%s %s=%s;%s=%s", (CsidCommand, NameFact, AppNameString(), VersionFact, FTerminal->Configuration->Version));
+    SendCommand(Command);
+    TStrings * Response = NULL;
+    GotReply(WaitForCommandReply(), REPLY_2XX_CODE, EmptyStr, NULL, &Response);
+    std::unique_ptr<TStrings> ResponseOwner(Response);
+    // Not using REPLY_SINGLE_LINE to make it robust
+    if (Response->Count == 1)
+    {
+      UnicodeString ResponseText = Response->Strings[0];
+      UnicodeString Name, Version;
+      while (!ResponseText.IsEmpty())
+      {
+        UnicodeString Token = CutToChar(ResponseText, L';', true);
+        UnicodeString Fact = CutToChar(Token, L'=', true);
+        if (SameText(Fact, NameFact))
+        {
+          Name = Token;
+        }
+        else if (SameText(Fact, VersionFact))
+        {
+          Version = Token;
+        }
+      }
+
+      if (!Name.IsEmpty())
+      {
+        FServerID = Name;
+        AddToList(FServerID, Version, L" ");
+        FTerminal->LogEvent(FORMAT("Server: %s", (FServerID)));
+      }
+    }
+  }
+
   // retrieve initialize working directory to save it as home directory
   ReadCurrentDirectory();
   FHomeDirectory = FCurrentDirectory;
@@ -1930,6 +1919,9 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
 
     case fcCheckingSpaceAvailable:
       return FBytesAvailableSupported || SupportsCommand(AvblCommand) || SupportsCommand(XQuotaCommand);
+
+    case fcMoveOverExistingFile:
+      return !FIIS;
 
     case fcAclChangingFiles:
     case fcModeChangingUpload:
@@ -2635,8 +2627,10 @@ const TFileSystemInfo & __fastcall TFTPFileSystem::GetFileSystemInfo(bool /*Retr
 {
   if (!FFileSystemInfoValid)
   {
-    FFileSystemInfo.RemoteSystem = FSystem;
-    FFileSystemInfo.RemoteSystem.Unique();
+    UnicodeString RemoteSystem = FSystem;
+    AddToList(RemoteSystem, FServerID, L", ");
+    RemoteSystem.Unique();
+    FFileSystemInfo.RemoteSystem = RemoteSystem;
 
     if (FFeatures->Count == 0)
     {
@@ -2865,12 +2859,28 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_MPEXT_COMPLETE_TLS_SHUTDOWN:
+      // As of FileZilla Server 1.6.1 this does not seem to be needed. It's still needed with 1.5.1.
+      // It was possibly fixed by 1.6.0 (2022-12-06) change:
+      // Fixed an issue in the networking code when dealing with TLS close_notify alerts
       Result = FFileZilla ? FALSE : TRUE;
       break;
 
     case OPTION_MPEXT_WORK_FROM_CWD:
-       Result = (FWorkFromCwd == asOn);
-       break;
+      Result = (FWorkFromCwd == asOn);
+      break;
+
+    case OPTION_MPEXT_TRANSFER_SIZE:
+      {
+        __int64 TransferSize = 0;
+        if ((FTerminal->OperationProgress != NULL) &&
+            (FTerminal->OperationProgress->Operation == foCopy) &&
+            (FTerminal->OperationProgress->Side == osLocal))
+        {
+          TransferSize = FTerminal->OperationProgress->TransferSize - FTerminal->OperationProgress->TransferredSize;
+        }
+        Result = static_cast<int>(static_cast<unsigned int>(TransferSize & std::numeric_limits<unsigned int>::max()));
+      }
+      break;
 
     default:
       DebugFail();
@@ -3207,7 +3217,7 @@ UnicodeString __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned i
         }
 
         bool RetryTransfer = false;
-        if (FLastCode == 425)
+        if ((FLastCode == 425) || (FLastCode == 426))
         {
           if (FAnyTransferSucceeded)
           {
@@ -3485,6 +3495,11 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
           FTerminal->LogEvent(L"The server requires TLS/SSL handshake on transfer connection before responding 1yz to STOR/APPE");
           FTransferActiveImmediately = true;
         }
+        if (ContainsText(FWelcomeMessage, L"Microsoft FTP Service") && !FIIS)
+        {
+          FTerminal->LogEvent(L"IIS detected.");
+          FIIS = true;
+        }
       }
     }
     else if (FLastCommand == PASS)
@@ -3522,6 +3537,11 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
         {
           FTerminal->LogEvent(L"The server is probably running Windows, assuming that directory listing timestamps are affected by DST.");
           FWindowsServer = true;
+          if (!FIIS)
+          {
+            FTerminal->LogEvent(L"IIS detected.");
+            FIIS = true;
+          }
         }
         // VMS system type. VMS V5.5-2.
         // VMS VAX/VMS V6.1 on node nsrp14

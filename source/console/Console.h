@@ -77,7 +77,7 @@ struct TConsoleCommStruct
   struct TTransferEvent
   {
     unsigned char Data[20480];
-    size_t Len;
+    unsigned int Len;
     bool Error; // TRANSFERIN only
   };
 

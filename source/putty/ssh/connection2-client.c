@@ -113,13 +113,14 @@ static ChanopenResult chan_open_auth_agent(
         portfwd_raw_setup(ch, skt, sc);
         CHANOPEN_RETURN_SUCCESS(ch);
     } else {
+        struct callback_set *callback_set = get_callback_set(plug); // WINSCP
         portfwd_raw_free(ch);
         /*
          * Otherwise, fall back to the old-fashioned system of parsing the
          * forwarded data stream ourselves for message boundaries, and
          * passing each individual message to the one-off agent_query().
          */
-        CHANOPEN_RETURN_SUCCESS(agentf_new(sc, plug));
+        CHANOPEN_RETURN_SUCCESS(agentf_new(sc, callback_set));
     }
     } // WINSCP
 }

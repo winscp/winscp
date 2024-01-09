@@ -9,6 +9,10 @@ namespace WinSCP
     [ComVisible(true)]
     public class RemovalEventArgsCollection : ICollection<RemovalEventArgs>
     {
+        internal RemovalEventArgsCollection()
+        {
+        }
+
         public RemovalEventArgs this[int index]
         {
             get

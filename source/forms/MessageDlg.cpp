@@ -159,6 +159,7 @@ void __fastcall TMessageForm::KeyDown(Word & Key, TShiftState Shift)
 {
   if (Shift.Contains(ssCtrl) && (Key == L'C'))
   {
+    AppLog(L"Copying message to clipboard");
     TInstantOperationVisualizer Visualizer;
     CopyToClipboard(GetFormText());
   }
@@ -208,7 +209,7 @@ UnicodeString __fastcall TMessageForm::GetFormText()
 {
   UnicodeString DividerLine, ButtonCaptions;
 
-  DividerLine = UnicodeString::StringOfChar(L'-', 27) + sLineBreak;
+  DividerLine = GetDividerLine() + sLineBreak;
   for (int i = 0; i < ComponentCount - 1; i++)
   {
     if (dynamic_cast<TButton*>(Components[i]) != NULL)
@@ -223,19 +224,13 @@ UnicodeString __fastcall TMessageForm::GetFormText()
   {
     MoreMessages = MessageMemo->Text + DividerLine;
   }
-  else if (MessageBrowser != NULL)
+  else if ((MessageBrowser != NULL) && CopyTextFromBrowser(MessageBrowser, MoreMessages))
   {
-    MessageBrowser->SelectAll();
-    MessageBrowser->CopyToClipBoard();
-    if (NonEmptyTextFromClipboard(MoreMessages))
+    if (!EndsStr(sLineBreak, MoreMessages))
     {
-      if (!EndsStr(sLineBreak, MoreMessages))
-      {
-        MoreMessages += sLineBreak;
-      }
-      MoreMessages += DividerLine;
+      MoreMessages += sLineBreak;
     }
-    MessageBrowser->DoCommand(L"UNSELECT");
+    MoreMessages += DividerLine;
   }
   UnicodeString MessageCaption = NormalizeNewLines(MessageText);
   UnicodeString Result = FORMAT(L"%s%s%s%s%s%s%s%s%s%s%s", (DividerLine, Caption, sLineBreak,
@@ -1029,7 +1024,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   // Windows XP (not sure about Vista) does not support Hair space.
   // For Windows XP, we still keep the existing hack by using hard-coded spaces
   // in resource string
-  if (CheckWin32Version(6, 1))
+  if (IsWin7())
   {
     // Have to be padding with spaces (the smallest space defined, hair space = 1px),
     // as tabs actually do not tab, just expand to 8 spaces.

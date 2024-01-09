@@ -84,6 +84,7 @@ private:
   TRemoteToken FOwner;
   TModificationFmt FModificationFmt;
   __int64 FSize;
+  __int64 FCalculatedSize;
   UnicodeString FFileName;
   UnicodeString FDisplayName;
   Integer FINodeBlocks;
@@ -153,6 +154,7 @@ public:
   __property TRemoteFileList * Directory = { read = FDirectory, write = FDirectory };
   __property UnicodeString RightsStr = { read = GetRightsStr };
   __property __int64 Size = { read = GetSize, write = FSize };
+  __property __int64 CalculatedSize = { read = FCalculatedSize, write = FCalculatedSize };
   __property TRemoteToken Owner = { read = FOwner, write = FOwner };
   __property TRemoteToken Group = { read = FGroup, write = FGroup };
   __property UnicodeString FileName = { read = FFileName, write = FFileName };
@@ -565,6 +567,7 @@ UnicodeString __fastcall UnixCombinePaths(const UnicodeString & Path1, const Uni
 UnicodeString __fastcall UnixExtractFileDir(const UnicodeString Path);
 UnicodeString __fastcall UnixExtractFilePath(const UnicodeString Path);
 UnicodeString __fastcall UnixExtractFileName(const UnicodeString Path);
+UnicodeString ExtractShortName(const UnicodeString & Path, bool Unix);
 UnicodeString __fastcall UnixExtractFileExt(const UnicodeString Path);
 Boolean __fastcall UnixSamePath(const UnicodeString Path1, const UnicodeString Path2);
 bool __fastcall UnixIsChildPath(UnicodeString Parent, UnicodeString Child);

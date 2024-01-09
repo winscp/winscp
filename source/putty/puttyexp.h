@@ -20,7 +20,7 @@ const struct ssh_decompressor * get_sccomp(Backend * be);
 unsigned int winscp_query(Backend * be, int query);
 void md5checksum(const char * buffer, int len, unsigned char output[16]);
 typedef const struct ssh_keyalg * cp_ssh_keyalg;
-void get_hostkey_algs(int * count, cp_ssh_keyalg * SignKeys);
+void get_hostkey_algs(int type, int * count, cp_ssh_keyalg ** sign_keys);
 void get_macs(int * count, const struct ssh2_macalg *** amacs);
 int have_any_ssh2_hostkey(Seat * seat, const char * host, int port);
 
@@ -34,19 +34,6 @@ void wingss_cleanup(void);
 
 int is_pfwd(Plug * plug);
 Seat * get_pfwd_seat(Plug * plug);
-
-// for winstore.c
-
-#include <windows.h>
-
-long reg_open_winscp_key(HKEY Key, const char * SubKey, HKEY * Result);
-long reg_create_winscp_key(HKEY Key, const char * SubKey, HKEY * Result);
-long reg_query_winscp_value_ex(HKEY Key, const char * ValueName,
-  unsigned long * Reserved, unsigned long * Type, unsigned char * Data,
-  unsigned long * DataSize);
-long reg_set_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long Reserved,
-  unsigned long Type, const unsigned char * Data, unsigned long DataSize);
-long reg_close_winscp_key(HKEY Key);
 
 // from winnet.c
 

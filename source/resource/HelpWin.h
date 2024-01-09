@@ -61,7 +61,7 @@
 #define HELP_FILTER                  "ui_filter"
 #define HELP_LOGIN_AUTHORIZED_KEYS   "guide_public_key"
 #define HELP_READONLY_INI_FILE       "config#ini_readonly"
-#define HELP_SESSION_RENAME          "ui_tabs#renaming"
+#define HELP_TAB_RENAME              "ui_tabs#renaming"
 #define HELP_DD_TARGET_UNKNOWN       "ui_pref_dragdrop#fake_file"
 #define HELP_FILE_COLORS             "ui_file_color"
 #define HELP_AUTOMATIC_UPDATE        "updates#automatic_upgrade"

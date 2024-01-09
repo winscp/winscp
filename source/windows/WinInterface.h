@@ -9,6 +9,7 @@
 #include <Terminal.h>
 #include <SynchronizeController.h>
 #include <Script.h>
+#include "HistoryComboBox.hpp"
 
 #ifdef LOCALINTERFACE
 #include <LocalInterface.h>
@@ -39,6 +40,7 @@ const int mpAllowContinueOnError = 0x02;
 #define KEYGEN_OUTPUT_SWITCH L"Output"
 #define KEYGEN_COMMENT_SWITCH L"Comment"
 #define KEYGEN_CHANGE_PASSPHRASE_SWITCH L"ChangePassphrase"
+#define KEYGEN_CERTIFICATE_SWITCH L"Certificate"
 #define LOG_SWITCH L"Log"
 #define LOGSIZE_SWITCH L"LogSize"
 #define LOGSIZE_SEPARATOR L"*"
@@ -139,9 +141,9 @@ unsigned int __fastcall MoreMessageDialog(const UnicodeString Message,
 unsigned int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
   const UnicodeString MessageFormat = L"", unsigned int Answers = qaOK,
   UnicodeString HelpKeyword = HELP_NONE, const TMessageParams * Params = NULL);
-unsigned int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
-  int SessionReopenTimeout, const UnicodeString MessageFormat = L"", unsigned int Answers = qaOK,
-  UnicodeString HelpKeyword = HELP_NONE, const TMessageParams * Params = NULL);
+unsigned int __fastcall FatalExceptionMessageDialog(
+  Exception * E, TQueryType Type, const UnicodeString & MessageFormat, unsigned int Answers,
+  const UnicodeString & HelpKeyword, const TMessageParams * Params);
 
 // forms\Custom.cpp
 TSessionData * __fastcall DoSaveSession(TSessionData * SessionData,
@@ -225,6 +227,15 @@ bool __fastcall DoCopyDialog(
   bool ToRemote, bool Move, TStrings * FileList, UnicodeString & TargetDirectory,
   TGUICopyParamType * Params, int Options, int CopyParamAttrs,
   TSessionData * SessionData, int * OutputOptions, int AutoSubmit);
+bool CopyDialogValidateLocalDirectory(const UnicodeString & Directory, THistoryComboBox * DirectoryEdit);
+bool CopyDialogValidateFileMask(
+  const UnicodeString & FileMask, THistoryComboBox * DirectoryEdit, bool MultipleFiles, bool RemotePaths);
+
+// forms\CopyLocal.cpp
+const cloShortCutHint = 0x01;
+const cloMultipleFiles = 0x02;
+const clooDoNotShowAgain = 0x01;
+bool DoCopyLocalDialog(bool Move, int Options, UnicodeString & TargetDirectory, UnicodeString & FileMask, int & OutputOptions);
 
 // forms\CreateDirectory.cpp
 bool __fastcall DoCreateDirectoryDialog(UnicodeString & Directory,
@@ -453,7 +464,7 @@ typedef void __fastcall (__closure *TFindEvent)
 typedef void __fastcall (__closure *TFocusFileEvent)
   (TTerminal * Terminal, const UnicodeString & Path);
 typedef void __fastcall (__closure *TFileOperationFinishedEvent)
-  (const UnicodeString & FileName, bool Success);
+  (TOperationSide Side, const UnicodeString & FileName, bool Success);
 typedef void __fastcall (__closure *TFileListOperationEvent)
   (TTerminal * Terminal, TStrings * FileList, TFileOperationFinishedEvent OnFileOperationFinished);
 void __fastcall ShowFileFindDialog(

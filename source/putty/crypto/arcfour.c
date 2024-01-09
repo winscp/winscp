@@ -112,6 +112,7 @@ const ssh_cipheralg ssh_arcfour128_ssh2 = {
     /*.encrypt =*/ arcfour_ssh2_block,
     /*.decrypt =*/ arcfour_ssh2_block,
     NULL, NULL, // WINSCP
+    /*.next_message =*/ nullcipher_next_message,
     /*.ssh2_id =*/ "arcfour128",
     /*.blksize =*/ 1,
     /*.real_keybits =*/ 128,
@@ -130,6 +131,7 @@ const ssh_cipheralg ssh_arcfour256_ssh2 = {
     /*.encrypt =*/ arcfour_ssh2_block,
     /*.decrypt =*/ arcfour_ssh2_block,
     NULL, NULL, // WINSCP
+    /*.next_message =*/ nullcipher_next_message,
     /*.ssh2_id =*/ "arcfour256",
     /*.blksize =*/ 1,
     /*.real_keybits =*/ 256,

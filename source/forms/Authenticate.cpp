@@ -202,14 +202,14 @@ void __fastcall TAuthenticateForm::AdjustControls()
   }
   else
   {
-    ACaption = FORMAT(L"%s - %s", (FStatus, FSessionData->SessionName));
+    ACaption = FStatus + TitleSeparator + FSessionData->SessionName;
   }
   Caption = FormatFormCaption(this, ACaption);
 }
 //---------------------------------------------------------------------------
 TLabel * __fastcall TAuthenticateForm::GenerateLabel(int Current, UnicodeString Caption)
 {
-  TLabel * Result = new TLabel(this);
+  TLabel * Result = new TUIStateAwareLabel(this);
   Result->Parent = FPromptParent;
 
   Result->Anchors = TAnchors() << akLeft << akTop << akRight;
@@ -684,9 +684,9 @@ bool TAuthenticateForm::ExtractUrl(const UnicodeString & Text, UnicodeString & U
     P = 1;
     while (P <= Url.Length())
     {
-      #pragma warn -8111
+      #pragma warn -dpr
       if (TCharacter::IsWhiteSpace(Url[P]))
-      #pragma warn .8111
+      #pragma warn .dpr
       {
         Url.SetLength(P - 1);
       }

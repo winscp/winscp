@@ -30,7 +30,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       Stretch = True
       TabOrder = 0
       object TBXSubmenuItem5: TTBXSubmenuItem
-        Caption = '&File'
+        Caption = '&Files'
         HelpKeyword = 'ui_explorer_menu#files'
         Hint = 'File operations'
         object TBXSubmenuItem26: TTBXSubmenuItem
@@ -53,23 +53,26 @@ inherited ScpExplorerForm: TScpExplorerForm
           Action = NonVisualDataModule.CurrentOpenAction
         end
         object TBXItem26: TTBXSubmenuItem
-          Action = NonVisualDataModule.RemoteEditAction
+          Action = NonVisualDataModule.RemoteEditAction2
           DropdownCombo = True
           OnPopup = EditMenuItemPopup
         end
         object TBXItem4: TTBXItem
-          Action = NonVisualDataModule.RemoteAddEditLinkAction2
+          Action = NonVisualDataModule.CurrentAddEditLinkAction
         end
         object TBXSeparatorItem7: TTBXSeparatorItem
         end
         object TBXItem34: TTBXItem
-          Action = NonVisualDataModule.RemoteDeleteAction
+          Action = NonVisualDataModule.RemoteDeleteAction2
         end
         object TBXItem35: TTBXItem
-          Action = NonVisualDataModule.RemoteRenameAction
+          Action = NonVisualDataModule.RemoteRenameAction2
         end
         object TBXItem41: TTBXItem
-          Action = NonVisualDataModule.RemotePropertiesAction
+          Action = NonVisualDataModule.RemotePropertiesAction2
+        end
+        object TBXItem61: TTBXItem
+          Action = NonVisualDataModule.CalculateDirectorySizesAction
         end
         object TBXSeparatorItem8: TTBXSeparatorItem
         end
@@ -97,10 +100,10 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXSeparatorItem42: TTBXSeparatorItem
         end
         object TBXItem62: TTBXItem
-          Action = NonVisualDataModule.CurrentCopyToClipboardAction
+          Action = NonVisualDataModule.CurrentCopyToClipboardAction2
         end
         object TBXItem36: TTBXItem
-          Action = NonVisualDataModule.PasteAction2
+          Action = NonVisualDataModule.PasteAction3
         end
         object TBXSeparatorItem9: TTBXSeparatorItem
         end
@@ -134,10 +137,10 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXSeparatorItem1: TTBXSeparatorItem
         end
         object TBXItem1: TTBXItem
-          Action = NonVisualDataModule.CloseSessionAction2
+          Action = NonVisualDataModule.CloseTabAction
         end
         object TBXItem2: TTBXItem
-          Action = NonVisualDataModule.CloseApplicationAction
+          Action = NonVisualDataModule.CloseApplicationAction2
         end
       end
       object TBXSubmenuItem7: TTBXSubmenuItem
@@ -151,7 +154,7 @@ inherited ScpExplorerForm: TScpExplorerForm
           Action = NonVisualDataModule.FullSynchronizeAction
         end
         object TBXItem3: TTBXItem
-          Action = NonVisualDataModule.RemoteFindFilesAction
+          Action = NonVisualDataModule.RemoteFindFilesAction2
         end
         object QueueSubmenuItem: TTBXSubmenuItem
           Caption = 'Q&ueue'
@@ -228,10 +231,10 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXSeparatorItem13: TTBXSeparatorItem
         end
         object TBXItem5: TTBXItem
-          Action = NonVisualDataModule.RemoteAddBookmarkAction
+          Action = NonVisualDataModule.RemoteAddBookmarkAction2
         end
         object TBXItem6: TTBXItem
-          Action = NonVisualDataModule.RemotePathToClipboardAction
+          Action = NonVisualDataModule.RemotePathToClipboardAction2
         end
         object TBXSeparatorItem2: TTBXSeparatorItem
         end
@@ -283,15 +286,29 @@ inherited ScpExplorerForm: TScpExplorerForm
           Action = NonVisualDataModule.UnselectSameExtAction
         end
       end
-      object TBXSubmenuItem19: TTBXSubmenuItem
-        Caption = '&Session'
+      object TBXSubmenuItem29: TTBXSubmenuItem
+        Caption = '&Tabs'
         HelpKeyword = 'ui_explorer_menu#tabs'
-        Hint = 'Session commands'
+        Hint = 'Tab commands'
         object TBXItem113: TTBXItem
-          Action = NonVisualDataModule.NewSessionAction
+          Action = NonVisualDataModule.NewTabAction
         end
-        object TBXItem115: TTBXItem
-          Action = NonVisualDataModule.CloseSessionAction2
+        object TBXItem166: TTBXItem
+          Action = NonVisualDataModule.CloseTabAction
+        end
+        object TBXItem218: TTBXItem
+          Action = NonVisualDataModule.DuplicateTabAction
+        end
+        object TBXItem167: TTBXItem
+          Action = NonVisualDataModule.RenameTabAction
+        end
+        object TBXSeparatorItem47: TTBXSeparatorItem
+        end
+        object ColorMenuItem: TTBXColorItem
+          Action = NonVisualDataModule.ColorMenuAction2
+          Color = clNone
+        end
+        object TBXSeparatorItem49: TTBXSeparatorItem
         end
         object TBXItem162: TTBXItem
           Action = NonVisualDataModule.DisconnectSessionAction
@@ -299,16 +316,10 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXItem163: TTBXItem
           Action = NonVisualDataModule.ReconnectSessionAction
         end
-        object TBXItem90: TTBXItem
-          Action = NonVisualDataModule.DuplicateSessionAction
-        end
-        object TBXItem61: TTBXItem
-          Action = NonVisualDataModule.RenameSessionAction
-        end
         object TBXItem114: TTBXItem
           Action = NonVisualDataModule.SaveCurrentSessionAction2
         end
-        object TBXSeparatorItem37: TTBXSeparatorItem
+        object TBXSeparatorItem50: TTBXSeparatorItem
         end
         object TBXItem56: TTBXItem
           Action = NonVisualDataModule.FileSystemInfoAction
@@ -322,21 +333,15 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXItem14: TTBXItem
           Action = NonVisualDataModule.PrivateKeyUploadAction
         end
-        object TBXSeparatorItem23: TTBXSeparatorItem
+        object TBXSeparatorItem37: TTBXSeparatorItem
         end
-        object ColorMenuItem: TTBXColorItem
-          Action = NonVisualDataModule.ColorMenuAction
-          Color = clNone
+        object TBXSubmenuItem9: TTBXSubmenuItem
+          Action = NonVisualDataModule.OpenedTabsAction
         end
-        object TBXSeparatorItem29: TTBXSeparatorItem
-        end
-        object TBXSubmenuItem21: TTBXSubmenuItem
-          Action = NonVisualDataModule.OpenedSessionsAction
-        end
-        object TBXSubmenuItem231: TTBXSubmenuItem
+        object TBXSubmenuItem10: TTBXSubmenuItem
           Action = NonVisualDataModule.WorkspacesAction
         end
-        object TBXItem230: TTBXItem
+        object TBXItem168: TTBXItem
           Action = NonVisualDataModule.SaveWorkspaceAction
         end
         object TBXSeparatorItem53: TTBXSeparatorItem
@@ -363,7 +368,7 @@ inherited ScpExplorerForm: TScpExplorerForm
             Action = NonVisualDataModule.ExplorerSelectionBandAction
           end
           object TBXItem10: TTBXItem
-            Action = NonVisualDataModule.ExplorerSessionBandAction
+            Action = NonVisualDataModule.ExplorerSessionBandAction2
           end
           object TBXItem11: TTBXItem
             Action = NonVisualDataModule.ExplorerPreferencesBandAction
@@ -389,8 +394,8 @@ inherited ScpExplorerForm: TScpExplorerForm
             Action = NonVisualDataModule.SelectiveToolbarTextAction
           end
         end
-        object SessionsTabsAction3: TTBXItem
-          Action = NonVisualDataModule.SessionsTabsAction
+        object SessionsTabs3: TTBXItem
+          Action = NonVisualDataModule.SessionsTabsAction2
         end
         object TBXItem13: TTBXItem
           Action = NonVisualDataModule.StatusBarAction
@@ -498,40 +503,40 @@ inherited ScpExplorerForm: TScpExplorerForm
           HelpKeyword = 'ui_file_panel#sorting_files'
           Hint = 'Change file order in panel'
           object TBXItem93: TTBXItem
-            Action = NonVisualDataModule.RemoteSortAscendingAction
+            Action = NonVisualDataModule.RemoteSortAscendingAction2
           end
           object TBXSeparatorItem28: TTBXSeparatorItem
           end
           object TBXItem94: TTBXItem
-            Action = NonVisualDataModule.RemoteSortByNameAction
+            Action = NonVisualDataModule.RemoteSortByNameAction2
             GroupIndex = 1
           end
           object TBXItem95: TTBXItem
-            Action = NonVisualDataModule.RemoteSortByExtAction
-            GroupIndex = 1
-          end
-          object TBXItem132: TTBXItem
-            Action = NonVisualDataModule.RemoteSortByTypeAction
-            RadioItem = True
-          end
-          object TBXItem96: TTBXItem
-            Action = NonVisualDataModule.RemoteSortByChangedAction
+            Action = NonVisualDataModule.RemoteSortByExtAction2
             GroupIndex = 1
           end
           object TBXItem97: TTBXItem
-            Action = NonVisualDataModule.RemoteSortBySizeAction
+            Action = NonVisualDataModule.RemoteSortBySizeAction2
+            GroupIndex = 1
+          end
+          object TBXItem132: TTBXItem
+            Action = NonVisualDataModule.RemoteSortByTypeAction2
+            RadioItem = True
+          end
+          object TBXItem96: TTBXItem
+            Action = NonVisualDataModule.RemoteSortByChangedAction2
             GroupIndex = 1
           end
           object TBXItem98: TTBXItem
-            Action = NonVisualDataModule.RemoteSortByRightsAction
+            Action = NonVisualDataModule.RemoteSortByRightsAction2
             GroupIndex = 1
           end
           object TBXItem99: TTBXItem
-            Action = NonVisualDataModule.RemoteSortByOwnerAction
+            Action = NonVisualDataModule.RemoteSortByOwnerAction2
             GroupIndex = 1
           end
           object TBXItem100: TTBXItem
-            Action = NonVisualDataModule.RemoteSortByGroupAction
+            Action = NonVisualDataModule.RemoteSortByGroupAction2
             GroupIndex = 1
           end
         end
@@ -540,28 +545,28 @@ inherited ScpExplorerForm: TScpExplorerForm
           HelpKeyword = 'ui_file_panel#selecting_columns'
           Hint = 'Select columns to show in panel'
           object TBXItem101: TTBXItem
-            Action = NonVisualDataModule.ShowHideRemoteNameColumnAction
+            Action = NonVisualDataModule.ShowHideRemoteNameColumnAction2
           end
           object TBXItem102: TTBXItem
-            Action = NonVisualDataModule.ShowHideRemoteSizeColumnAction
+            Action = NonVisualDataModule.ShowHideRemoteSizeColumnAction2
           end
           object TBXItem131: TTBXItem
-            Action = NonVisualDataModule.ShowHideRemoteTypeColumnAction
+            Action = NonVisualDataModule.ShowHideRemoteTypeColumnAction2
           end
           object TBXItem103: TTBXItem
-            Action = NonVisualDataModule.ShowHideRemoteChangedColumnAction
+            Action = NonVisualDataModule.ShowHideRemoteChangedColumnAction2
           end
           object TBXItem104: TTBXItem
-            Action = NonVisualDataModule.ShowHideRemoteRightsColumnAction
+            Action = NonVisualDataModule.ShowHideRemoteRightsColumnAction2
           end
           object TBXItem105: TTBXItem
-            Action = NonVisualDataModule.ShowHideRemoteOwnerColumnAction
+            Action = NonVisualDataModule.ShowHideRemoteOwnerColumnAction2
           end
           object TBXItem106: TTBXItem
-            Action = NonVisualDataModule.ShowHideRemoteGroupColumnAction
+            Action = NonVisualDataModule.ShowHideRemoteGroupColumnAction2
           end
           object TBXItem76: TTBXItem
-            Action = NonVisualDataModule.ShowHideRemoteLinkTargetColumnAction
+            Action = NonVisualDataModule.ShowHideRemoteLinkTargetColumnAction2
           end
         end
         object TBXItem138: TTBXItem
@@ -647,7 +652,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       object TBXSeparatorItem24: TTBXSeparatorItem
       end
       object TBXItem139: TTBXItem
-        Action = NonVisualDataModule.RemoteFindFilesAction
+        Action = NonVisualDataModule.RemoteFindFilesAction2
         DisplayMode = nbdmImageAndText
       end
       object TBXSeparatorItem15: TTBXSeparatorItem
@@ -671,7 +676,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       object TBXSeparatorItem27: TTBXSeparatorItem
       end
       object TBXItem42: TTBXSubmenuItem
-        Action = NonVisualDataModule.RemoteEditAction
+        Action = NonVisualDataModule.RemoteEditAction2
         DisplayMode = nbdmImageAndText
         DropdownCombo = True
         OnPopup = EditMenuItemPopup
@@ -680,14 +685,24 @@ inherited ScpExplorerForm: TScpExplorerForm
         Action = NonVisualDataModule.CurrentOpenAction
       end
       object TBXItem58: TTBXItem
-        Action = NonVisualDataModule.RemoteDeleteAction
+        Action = NonVisualDataModule.RemoteDeleteAction2
       end
-      object TBXItem59: TTBXItem
-        Action = NonVisualDataModule.RemotePropertiesAction
+      object TBXItem59: TTBXSubmenuItem
+        Action = NonVisualDataModule.RemotePropertiesAction2
         DisplayMode = nbdmImageAndText
+        DropdownCombo = True
+        object TBXItem90: TTBXItem
+          Action = NonVisualDataModule.RemotePropertiesAction2
+          Options = [tboDefault]
+        end
+        object TBXSeparatorItem29: TTBXSeparatorItem
+        end
+        object TBXItem22: TTBXItem
+          Action = NonVisualDataModule.RemoteCalculateDirectorySizesAction
+        end
       end
       object TBXItem60: TTBXItem
-        Action = NonVisualDataModule.RemoteRenameAction
+        Action = NonVisualDataModule.RemoteRenameAction2
       end
       object TBXSeparatorItem16: TTBXSeparatorItem
       end
@@ -701,10 +716,10 @@ inherited ScpExplorerForm: TScpExplorerForm
           Action = NonVisualDataModule.RemoteNewFileAction
         end
         object TBXItem244: TTBXItem
-          Action = NonVisualDataModule.RemoteCreateDirAction2
+          Action = NonVisualDataModule.RemoteCreateDirAction3
         end
         object TBXItem246: TTBXItem
-          Action = NonVisualDataModule.RemoteAddEditLinkAction2
+          Action = NonVisualDataModule.RemoteAddEditLinkAction3
         end
       end
       object TBXItem63: TTBXItem
@@ -755,10 +770,10 @@ inherited ScpExplorerForm: TScpExplorerForm
         Action = NonVisualDataModule.RestoreSelectionAction
       end
     end
-    object SessionToolbar: TTBXToolbar
+    object SessionToolbar2: TTBXToolbar
       Left = 0
       Top = 104
-      Caption = 'Session'
+      Caption = 'Sessions and Tabs'
       DockPos = -4
       DockRow = 4
       Images = GlyphsModule.ExplorerImages
@@ -767,17 +782,19 @@ inherited ScpExplorerForm: TScpExplorerForm
       ShowHint = True
       TabOrder = 4
       object TBXItem123: TTBXItem
-        Action = NonVisualDataModule.NewSessionAction
+        Action = NonVisualDataModule.NewTabAction
         DisplayMode = nbdmImageAndText
-      end
-      object TBXItem137: TTBXItem
-        Action = NonVisualDataModule.DuplicateSessionAction
-      end
-      object TBXItem124: TTBXItem
-        Action = NonVisualDataModule.CloseSessionAction2
       end
       object TBXItem125: TTBXItem
         Action = NonVisualDataModule.SaveCurrentSessionAction2
+      end
+      object TBXSeparatorItem23: TTBXSeparatorItem
+      end
+      object TBXItem137: TTBXItem
+        Action = NonVisualDataModule.DuplicateTabAction
+      end
+      object TBXItem124: TTBXItem
+        Action = NonVisualDataModule.CloseTabAction
       end
       object TBXSeparatorItem34: TTBXSeparatorItem
       end
@@ -868,8 +885,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         Action = NonVisualDataModule.CurrentSortByExtAction
       end
       object TBXItem133: TTBXItem
-        Action = NonVisualDataModule.RemoteSortByTypeAction
-        RadioItem = True
+        Action = NonVisualDataModule.CurrentSortByTypeAction2
       end
       object TBXItem149: TTBXItem
         Action = NonVisualDataModule.CurrentSortByChangedAction
@@ -923,8 +939,10 @@ inherited ScpExplorerForm: TScpExplorerForm
         OnMeasureWidth = RemotePathComboBoxMeasureWidth
         OnCancel = RemotePathComboBoxCancel
       end
-      object TBXItem22: TTBXItem
+      object RemoteOpenDirButton: TTBXSubmenuItem
         Action = NonVisualDataModule.RemoteOpenDirAction
+        DropdownCombo = True
+        OnPopup = RemoteOpenDirButtonPopup
       end
       object TBXItem229: TTBXSubmenuItem
         Action = NonVisualDataModule.RemoteFilterAction
@@ -1073,13 +1091,6 @@ inherited ScpExplorerForm: TScpExplorerForm
         end
         item
           Alignment = taCenter
-          ImageIndex = 1
-          MaxSize = 35
-          Size = 35
-          Tag = 0
-        end
-        item
-          Alignment = taCenter
           MaxSize = 70
           ViewPriority = 98
           Size = 70
@@ -1088,7 +1099,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         end
         item
           Alignment = taCenter
-          ImageIndex = 0
+          ImageIndex = 1
           MaxSize = 35
           Size = 35
           Tag = 0

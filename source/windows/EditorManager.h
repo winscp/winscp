@@ -21,12 +21,13 @@ struct TEditedFileData
   UnicodeString SessionName;
   UnicodeString OriginalFileName;
   UnicodeString Command;
+  TDateTime SourceTimestamp;
 };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TEditedFileChangedEvent)
   (const UnicodeString & FileName, TEditedFileData * Data, HANDLE CompleteEvent, bool & Retry);
 typedef void __fastcall (__closure * TEditedFileReloadEvent)
-  (const UnicodeString FileName, const TEditedFileData * Data);
+  (const UnicodeString & FileName, TEditedFileData * Data);
 typedef void __fastcall (__closure * TEditedFileEarlyClosedEvent)
   (const TEditedFileData * Data, bool & KeepOpen);
 typedef void __fastcall (__closure * TEditedFileUploadComplete)
@@ -61,11 +62,13 @@ public:
   void __fastcall FileClosed(TObject * Token, bool Forced);
 
   void __fastcall ProcessFiles(TEditedFileProcessEvent Callback, void * Arg);
+  TEditedFileData * FindByUploadCompleteEvent(HANDLE UploadCompleteEvent);
 
   __property TEditedFileChangedEvent OnFileChange = { read = FOnFileChange, write = FOnFileChange };
   __property TEditedFileReloadEvent OnFileReload = { read = FOnFileReload, write = FOnFileReload };
   __property TEditedFileEarlyClosedEvent OnFileEarlyClosed = { read = FOnFileEarlyClosed, write = FOnFileEarlyClosed };
   __property TEditedFileUploadComplete OnFileUploadComplete = { read = FOnFileUploadComplete, write = FOnFileUploadComplete };
+  __property TCriticalSection * Section = { read = FSection };
 
 private:
   struct TFileData
@@ -91,6 +94,7 @@ private:
   TEditedFileReloadEvent FOnFileReload;
   TEditedFileEarlyClosedEvent FOnFileEarlyClosed;
   TEditedFileUploadComplete FOnFileUploadComplete;
+  TCriticalSection * FSection;
 
   void __fastcall AddFile(TFileData & FileData, TEditedFileData * Data);
   void __fastcall UploadComplete(int Index);

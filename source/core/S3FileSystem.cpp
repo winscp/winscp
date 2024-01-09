@@ -53,54 +53,100 @@ UnicodeString __fastcall S3LibDefaultRegion()
   return StrFromS3(S3_DEFAULT_REGION);
 }
 //---------------------------------------------------------------------------
-bool S3ConfigFileTried = false;
+UnicodeString S3ConfigFileName;
+TDateTime S3ConfigTimestamp;
 std::unique_ptr<TCustomIniFile> S3ConfigFile;
 UnicodeString S3Profile;
 //---------------------------------------------------------------------------
-UnicodeString GetS3ConfigValue(const UnicodeString & Name, UnicodeString * Source)
+static void NeedS3Config()
+{
+  TGuard Guard(LibS3Section.get());
+  if (S3Profile.IsEmpty())
+  {
+    S3Profile = GetEnvironmentVariable(AWS_PROFILE);
+    if (S3Profile.IsEmpty())
+    {
+      S3Profile = AWS_PROFILE_DEFAULT;
+    }
+  }
+
+  if (S3ConfigFileName.IsEmpty())
+  {
+    S3ConfigFileName = GetEnvironmentVariable(AWS_CONFIG_FILE);
+    UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
+    UnicodeString DefaultConfigFileName = IncludeTrailingBackslash(ProfilePath) + L".aws\\credentials";
+    // "aws" cli really prefers the default location over location specified by AWS_CONFIG_FILE
+    if (FileExists(DefaultConfigFileName))
+    {
+      S3ConfigFileName = DefaultConfigFileName;
+    }
+  }
+
+  TDateTime Timestamp;
+  FileAge(S3ConfigFileName, Timestamp);
+  if (S3ConfigTimestamp != Timestamp)
+  {
+    S3ConfigTimestamp = Timestamp;
+    // TMemIniFile silently ignores empty paths or non-existing files
+    S3ConfigFile.reset(new TMemIniFile(S3ConfigFileName));
+  }
+}
+//---------------------------------------------------------------------------
+TStrings * GetS3Profiles()
+{
+  NeedS3Config();
+  // S3 allegedly treats the section case-sensitivelly, but our GetS3ConfigValue (ReadString) does not,
+  // so consistently we return case-insensitive list.
+  std::unique_ptr<TStrings> Result(new TStringList());
+  if (S3ConfigFile.get() != NULL)
+  {
+    S3ConfigFile->ReadSections(Result.get());
+    int Index = 0;
+    while (Index < Result->Count)
+    {
+      UnicodeString Section = Result->Strings[Index];
+      if (S3ConfigFile->ReadString(Section, AWS_ACCESS_KEY_ID, EmptyStr).IsEmpty() &&
+          S3ConfigFile->ReadString(Section, AWS_SECRET_ACCESS_KEY, EmptyStr).IsEmpty() &&
+          S3ConfigFile->ReadString(Section, AWS_SESSION_TOKEN, EmptyStr).IsEmpty())
+      {
+        Result->Delete(Index);
+      }
+      else
+      {
+        Index++;
+      }
+    }
+  }
+
+  return Result.release();
+}
+//---------------------------------------------------------------------------
+UnicodeString GetS3ConfigValue(const UnicodeString & Profile, const UnicodeString & Name, UnicodeString * Source)
 {
   UnicodeString Result;
   UnicodeString ASource;
   TGuard Guard(LibS3Section.get());
   try
   {
-    Result = GetEnvironmentVariable(Name);
+    if (Profile.IsEmpty())
+    {
+      Result = GetEnvironmentVariable(Name);
+    }
     if (!Result.IsEmpty())
     {
       ASource = FORMAT(L"%%%s%%", (Name));
     }
     else
     {
-      if (!S3ConfigFileTried)
-      {
-        S3ConfigFileTried = true;
-
-        S3Profile = GetEnvironmentVariable(AWS_PROFILE);
-        if (S3Profile.IsEmpty())
-        {
-          S3Profile = AWS_PROFILE_DEFAULT;
-        }
-
-        UnicodeString ConfigFileName = GetEnvironmentVariable(AWS_CONFIG_FILE);
-        if (Result.IsEmpty())
-        {
-          UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
-          UnicodeString DefaultConfigFileName = IncludeTrailingBackslash(ProfilePath) + L".aws\\credentials";
-          if (FileExists(DefaultConfigFileName))
-          {
-            ConfigFileName = DefaultConfigFileName;
-          }
-        }
-
-        S3ConfigFile.reset(new TMemIniFile(ConfigFileName));
-      }
+      NeedS3Config();
 
       if (S3ConfigFile.get() != NULL)
       {
-        Result = S3ConfigFile->ReadString(S3Profile, Name, UnicodeString());
+        UnicodeString AProfile = DefaultStr(Profile, S3Profile);
+        Result = S3ConfigFile->ReadString(AProfile, Name, EmptyStr);
         if (!Result.IsEmpty())
         {
-          ASource = FORMAT(L"%s/%s", (ExtractFileName(S3ConfigFile->FileName), S3Profile));
+          ASource = FORMAT(L"%s/%s", (ExtractFileName(S3ConfigFile->FileName), AProfile));
         }
       }
     }
@@ -116,19 +162,19 @@ UnicodeString GetS3ConfigValue(const UnicodeString & Name, UnicodeString * Sourc
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString S3EnvUserName(UnicodeString * Source)
+UnicodeString S3EnvUserName(const UnicodeString & Profile, UnicodeString * Source)
 {
-  return GetS3ConfigValue(AWS_ACCESS_KEY_ID, Source);
+  return GetS3ConfigValue(Profile, AWS_ACCESS_KEY_ID, Source);
 }
 //---------------------------------------------------------------------------
-UnicodeString S3EnvPassword(UnicodeString * Source)
+UnicodeString S3EnvPassword(const UnicodeString & Profile, UnicodeString * Source)
 {
-  return GetS3ConfigValue(AWS_SECRET_ACCESS_KEY, Source);
+  return GetS3ConfigValue(Profile, AWS_SECRET_ACCESS_KEY, Source);
 }
 //---------------------------------------------------------------------------
-UnicodeString S3EnvSessionToken(UnicodeString * Source)
+UnicodeString S3EnvSessionToken(const UnicodeString & Profile, UnicodeString * Source)
 {
-  return GetS3ConfigValue(AWS_SESSION_TOKEN, Source);
+  return GetS3ConfigValue(Profile, AWS_SESSION_TOKEN, Source);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -174,6 +220,20 @@ void __fastcall TS3FileSystem::Open()
 
   FLibS3Protocol = (Data->Ftps != ftpsNone) ? S3ProtocolHTTPS : S3ProtocolHTTP;
 
+  UnicodeString S3Profile;
+  if (Data->S3CredentialsEnv)
+  {
+    S3Profile = FTerminal->SessionData->S3Profile;
+  }
+  if (!S3Profile.IsEmpty() && !FTerminal->SessionData->FingerprintScan)
+  {
+    std::unique_ptr<TStrings> S3Profiles(GetS3Profiles());
+    if (S3Profiles->IndexOf(S3Profile) < 0)
+    {
+      throw Exception(MainInstructions(FMTLOAD(S3_PROFILE_NOT_EXIST, (S3Profile))));
+    }
+  }
+
   UnicodeString AccessKeyId = Data->UserNameExpanded;
   if (AccessKeyId.IsEmpty() && !FTerminal->SessionData->FingerprintScan)
   {
@@ -194,7 +254,7 @@ void __fastcall TS3FileSystem::Open()
   if (Password.IsEmpty() && Data->S3CredentialsEnv)
   {
     UnicodeString PasswordSource;
-    Password = S3EnvPassword(&PasswordSource);
+    Password = S3EnvPassword(S3Profile, &PasswordSource);
     if (!Password.IsEmpty())
     {
       FTerminal->LogEvent(FORMAT(L"Password (secret access key) read from %s", (PasswordSource)));
@@ -216,7 +276,7 @@ void __fastcall TS3FileSystem::Open()
   if (SessionToken.IsEmpty() && Data->S3CredentialsEnv)
   {
     UnicodeString SessionTokenSource;
-    SessionToken = S3EnvSessionToken(&SessionTokenSource);
+    SessionToken = S3EnvSessionToken(S3Profile, &SessionTokenSource);
     if (!SessionToken.IsEmpty())
     {
       FTerminal->LogEvent(FORMAT(L"Session token read from %s", (SessionTokenSource)));
@@ -228,7 +288,7 @@ void __fastcall TS3FileSystem::Open()
   FHostName = UTF8String(Data->HostNameExpanded);
   FPortSuffix = UTF8String();
   int ADefaultPort = FTerminal->SessionData->GetDefaultPort();
-  DebugAssert(ADefaultPort == HTTPSPortNumber);
+  DebugAssert((ADefaultPort == HTTPSPortNumber) || (ADefaultPort == HTTPPortNumber));
   if (FTerminal->SessionData->PortNumber != ADefaultPort)
   {
     FPortSuffix = UTF8String(FORMAT(L":%d", (FTerminal->SessionData->PortNumber)));
@@ -767,6 +827,7 @@ bool __fastcall TS3FileSystem::IsCapable(int Capability) const
     case fcParallelTransfers:
     case fcLoadingAdditionalProperties:
     case fcAclChangingFiles:
+    case fcMoveOverExistingFile:
       return true;
 
     case fcPreservingTimestampUpload:
@@ -1207,7 +1268,7 @@ void __fastcall TS3FileSystem::DeleteFile(const UnicodeString AFileName,
     {
       if (FTerminal->Active && Dir && !FTerminal->FileExists(AFileName))
       {
-        // Amazon silently ignores attampts to delete non existing folders,
+        // Amazon silently ignores attempts to delete non existing folders,
         // But Google Cloud fails that.
         FTerminal->LogEvent(L"Folder does not exist anymore, it was probably only virtual");
       }
@@ -1647,9 +1708,9 @@ bool __fastcall TS3FileSystem::LoadFilesProperties(TStrings * FileList)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TS3FileSystem::CalculateFilesChecksum(const UnicodeString & /*Alg*/,
-    TStrings * /*FileList*/, TStrings * /*Checksums*/,
-    TCalculatedChecksumEvent /*OnCalculatedChecksum*/)
+void __fastcall TS3FileSystem::CalculateFilesChecksum(
+  const UnicodeString & DebugUsedArg(Alg), TStrings * DebugUsedArg(FileList), TCalculatedChecksumEvent,
+  TFileOperationProgressType *, bool DebugUsedArg(FirstLevel))
 {
   DebugFail();
 }
@@ -1734,7 +1795,7 @@ struct TLibS3TransferObjectDataCallbackData : TLibS3CallbackData
   UnicodeString FileName;
   TStream * Stream;
   TFileOperationProgressType * OperationProgress;
-  std::auto_ptr<Exception> Exception;
+  std::unique_ptr<Exception> Exception;
 };
 //---------------------------------------------------------------------------
 struct TLibS3PutObjectDataCallbackData : TLibS3TransferObjectDataCallbackData

@@ -31,6 +31,7 @@ UnicodeString GetCipherName(const ssh_cipher * Cipher);
 UnicodeString GetCompressorName(const ssh_compressor * Compressor);
 UnicodeString GetDecompressorName(const ssh_decompressor * Decompressor);
 void PuttyDefaults(Conf * conf);
+int GetCipherGroup(const ssh_cipher * TheCipher);
 //---------------------------------------------------------------------------
 class TSecureShell;
 struct ScpSeat : public Seat
