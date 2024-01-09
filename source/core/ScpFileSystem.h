@@ -68,10 +68,10 @@ public:
     TRemoteFile *& File);
   virtual void __fastcall ReadSymlink(TRemoteFile * SymlinkFile,
     TRemoteFile *& File);
-  virtual void __fastcall RenameFile(const UnicodeString FileName, const TRemoteFile * File,
-    const UnicodeString NewName);
-  virtual void __fastcall CopyFile(const UnicodeString FileName, const TRemoteFile * File,
-    const UnicodeString NewName);
+  virtual void __fastcall RenameFile(
+    const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool Overwrite);
+  virtual void __fastcall CopyFile(
+    const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool Overwrite);
   virtual TStrings * __fastcall GetFixedPaths();
   virtual void __fastcall SpaceAvailable(const UnicodeString Path,
     TSpaceAvailable & ASpaceAvailable);
@@ -114,8 +114,6 @@ private:
   bool __fastcall IsLastLine(UnicodeString & Line);
   static bool __fastcall IsTotalListingLine(const UnicodeString Line);
   void __fastcall EnsureLocation();
-  void __fastcall ExecCommand(const UnicodeString & Cmd, int Params,
-    const UnicodeString & CmdString);
   void __fastcall ExecCommand(TFSCommand Cmd, const TVarRec * args = NULL,
     int size = 0, int Params = -1);
   void InvalidOutputError(const UnicodeString & Command);
@@ -133,7 +131,7 @@ private:
   void __fastcall SCPSource(const UnicodeString FileName,
     const UnicodeString TargetDir, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, int Level);
-  void __fastcall SendCommand(const UnicodeString Cmd);
+  void __fastcall SendCommand(const UnicodeString & Cmd, bool NoEnsureLocation = false);
   void __fastcall SkipFirstLine();
   void __fastcall SkipStartupMessage();
   void __fastcall UnsetNationalVars();

@@ -293,6 +293,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     UPD(SIDE ## HomeDirAction, DirViewEnabled(os ## SIDE)) \
     UPD(SIDE ## RefreshAction, DirViewEnabled(os ## SIDE) && DirView(os ## SIDE)->DirOK) \
     UPD(SIDE ## OpenDirAction, DirViewEnabled(os ## SIDE)) \
+    UPD(SIDE ## OtherDirAction, ScpExplorer->IsLocalBrowserMode() && !SamePaths(DirView(osLocal)->Path, DirView(osOther)->Path)) \
     UPD(SIDE ## ChangePathAction2, DirViewEnabled(os ## SIDE)) \
     UPD(SIDE ## AddBookmarkAction2, DirViewEnabled(os ## SIDE)) \
     UPD(SIDE ## PathToClipboardAction2, DirViewEnabled(os ## SIDE)) \
@@ -387,6 +388,10 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDEX(SortColumnDescendingAction, (ListColumn != NULL), SortColumnDescendingAction->Checked =
     (COLVIEWPROPS->SortColumn == ListColumn->Index) && !COLVIEWPROPS->SortAscending, )
   #undef COLVIEWPROPS
+  UPD(AutoSizeLocalColumnsAction, DirViewEnabled(osLocal));
+  UPD(AutoSizeRemoteColumnsAction, DirViewEnabled(osRemote));
+  UPD(ResetLayoutLocalColumnsAction, true);
+  UPD(ResetLayoutRemoteColumnsAction, true);
 
   // SHOW/HIDE COLUMN
   #define UPDSHCOLL(NAME) UPDSHCOL(Local, NAME, dv ## NAME, -1)
@@ -407,7 +412,6 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDSHCOL(Remote, LinkTarget, -1, uvLinkTarget)
   UPDSHCOL(Remote, Type, dvType, uvType)
   UPD(HideColumnAction, (ListColumn != NULL))
-  UPD(BestFitColumnAction, (ListColumn != NULL))
 
   // SESSION
   UPDACT(NewTabAction, Action->ImageIndex = ScpExplorer->GetNewTabActionImageIndex())
@@ -503,6 +507,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDACT(QueueFileListAction,
     Action->Enabled = ScpExplorer->ComponentVisible[fcQueueView];
     Action->Checked = ScpExplorer->ComponentVisible[fcQueueFileList])
+  UPD(QueueResetLayoutColumnsAction, ScpExplorer->ComponentVisible[fcQueueView]);
   ;
 }
 //---------------------------------------------------------------------------
@@ -641,6 +646,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
       EXE(SIDE ## HomeDirAction, ScpExplorer->HomeDirectory(os ## SIDE)) \
       EXE(SIDE ## RefreshAction, ScpExplorer->ReloadDirectory(os ## SIDE)) \
       EXE(SIDE ## OpenDirAction, ScpExplorer->OpenDirectory(os ## SIDE)) \
+      EXE(SIDE ## OtherDirAction, DirView(os ## SIDE)->Path = DirView(ScpExplorer->GetOtherSide(os ## SIDE))->Path) \
       EXE(SIDE ## ChangePathAction2, ScpExplorer->ChangePath(os ## SIDE)) \
       EXE(SIDE ## AddBookmarkAction2, ScpExplorer->AddBookmark(os ## SIDE)) \
       EXE(SIDE ## PathToClipboardAction2, ScpExplorer->PanelExport(os ## SIDE, pePath, pedClipboard)) \
@@ -727,6 +733,10 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
       COLVIEWPROPS->SortColumn = ListColumn->Index; COLVIEWPROPS->SortAscending = true; ListColumn = NULL )
     EXE(SortColumnDescendingAction, DebugAssert(ListColumn);
       COLVIEWPROPS->SortColumn = ListColumn->Index; COLVIEWPROPS->SortAscending = false; ListColumn = NULL )
+    EXE(AutoSizeLocalColumnsAction, ScpExplorer->AutoSizeColumns(osLocal))
+    EXE(AutoSizeRemoteColumnsAction, ScpExplorer->AutoSizeColumns(osRemote))
+    EXE(ResetLayoutLocalColumnsAction, ScpExplorer->ResetLayoutColumns(osLocal))
+    EXE(ResetLayoutRemoteColumnsAction, ScpExplorer->ResetLayoutColumns(osRemote))
 
     // SHOW/HIDE COLUMN
     #define EXESHCOLL(NAME) EXESHCOL(Local, NAME, dv ## NAME, -1)
@@ -748,7 +758,6 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXESHCOL(Remote, Type, dvType, uvType)
     EXE(HideColumnAction, DebugAssert(ListColumn);
       COLVIEWPROPS->Visible[ListColumn->Index] = false; ListColumn = NULL )
-    EXE(BestFitColumnAction, DebugAssert(ListColumn); ListColumn = NULL ) // TODO
     #undef COLVIEWPROPS
 
     // SESSION
@@ -830,6 +839,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(QueueShutDownOnceEmptyAction2, SetQueueOnceEmptyAction(QueueShutDownOnceEmptyAction2))
     EXECOMP(QueueToolbar)
     EXECOMP(QueueFileList)
+    EXE(QueueResetLayoutColumnsAction, ScpExplorer->QueueResetLayoutColumns());
     EXE(QueueItemSpeedAction, )
     ;
   }

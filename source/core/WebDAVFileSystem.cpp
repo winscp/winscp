@@ -306,15 +306,8 @@ void TWebDAVFileSystem::NeonClientOpenSessionInternal(UnicodeString & CorrectedU
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::SetSessionTls(TSessionContext * SessionContext, ne_session_s * Session, bool Aux)
 {
-  SetNeonTlsInit(Session, InitSslSession);
-
-  // When the CA certificate or server certificate has
-  // verification problems, neon will call our verify function before
-  // outright rejection of the connection.
   ne_ssl_verify_fn Callback = Aux ? NeonServerSSLCallbackAux : NeonServerSSLCallbackMain;
-  ne_ssl_set_verify(Session, Callback, SessionContext);
-
-  ne_ssl_trust_default_ca(Session);
+  InitNeonTls(Session, InitSslSession, Callback, SessionContext, FTerminal);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::InitSession(TSessionContext * SessionContext, ne_session_s * Session)
@@ -402,6 +395,10 @@ void __fastcall TWebDAVFileSystem::NeonAddAuthentiation(TSessionContext * Sessio
   if (UseNegotiate)
   {
     NeonAuthTypes |= NE_AUTH_NEGOTIATE;
+  }
+  if (FTerminal->SessionData->WebDavAuthLegacy)
+  {
+    NeonAuthTypes |= NE_AUTH_LEGACY_DIGEST;
   }
   ne_add_server_auth(SessionContext->NeonSession, NeonAuthTypes, NeonRequestAuth, SessionContext);
 }
@@ -507,6 +504,10 @@ void __fastcall TWebDAVFileSystem::CollectUsage()
   if (SameText(FLastAuthorizationProtocol, L"Passport1.4"))
   {
     Configuration->Usage->Inc(L"OpenedSessionsWebDAVSPassport");
+  }
+  else if (SameText(FLastAuthorizationProtocol, L"Basic"))
+  {
+    Configuration->Usage->Inc(L"OpenedSessionsWebDAVAuthBasic");
   }
 
   UnicodeString RemoteSystem = FFileSystemInfo.RemoteSystem;
@@ -631,6 +632,7 @@ bool __fastcall TWebDAVFileSystem::IsCapable(int Capability) const
     case fcChangePassword:
     case fcTransferOut:
     case fcTransferIn:
+    case fcParallelFileTransfers:
       return false;
 
     case fcLocking:
@@ -904,6 +906,7 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
   }
   const char * LastModified = GetProp(Results, PROP_LAST_MODIFIED);
   // We've seen a server (t=24891) that does not set "getlastmodified" for the "this" folder entry.
+  File->ModificationFmt = mfNone; // fallback
   if (LastModified != NULL)
   {
     char WeekDay[4] = { L'\0' };
@@ -930,14 +933,6 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
         // Should use mfYMDHM or mfMDY when appropriate according to Filled
         File->ModificationFmt = mfFull;
       }
-      else
-      {
-        File->ModificationFmt = mfNone;
-      }
-    }
-    else
-    {
-      File->ModificationFmt = mfNone;
     }
   }
 
@@ -1094,48 +1089,46 @@ void __fastcall TWebDAVFileSystem::DeleteFile(const UnicodeString FileName,
   DiscardLock(Path);
 }
 //---------------------------------------------------------------------------
-int __fastcall TWebDAVFileSystem::RenameFileInternal(const UnicodeString & FileName,
-  const UnicodeString & NewName)
+int __fastcall TWebDAVFileSystem::RenameFileInternal(
+  const UnicodeString & FileName, const UnicodeString & NewName, bool Overwrite)
 {
-  const int Overwrite = 1;
   return ne_move(FSessionContext->NeonSession, Overwrite, PathToNeon(FileName), PathToNeon(NewName));
 }
 //---------------------------------------------------------------------------
-void __fastcall TWebDAVFileSystem::RenameFile(const UnicodeString FileName, const TRemoteFile * /*File*/,
-  const UnicodeString NewName)
+void __fastcall TWebDAVFileSystem::RenameFile(
+  const UnicodeString & FileName, const TRemoteFile *, const UnicodeString & NewName, bool Overwrite)
 {
   ClearNeonError();
   TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
 
   UnicodeString Path = FileName;
-  int NeonStatus = RenameFileInternal(Path, NewName);
+  int NeonStatus = RenameFileInternal(Path, NewName, Overwrite);
   if (IsValidRedirect(NeonStatus, Path))
   {
-    NeonStatus = RenameFileInternal(Path, NewName);
+    NeonStatus = RenameFileInternal(Path, NewName, Overwrite);
   }
   CheckStatus(NeonStatus);
   // See a comment in DeleteFile
   DiscardLock(PathToNeon(Path));
 }
 //---------------------------------------------------------------------------
-int __fastcall TWebDAVFileSystem::CopyFileInternal(const UnicodeString & FileName,
-  const UnicodeString & NewName)
+int __fastcall TWebDAVFileSystem::CopyFileInternal(
+  const UnicodeString & FileName, const UnicodeString & NewName, bool Overwrite)
 {
-  // 0 = no overwrite
-  return ne_copy(FSessionContext->NeonSession, 0, NE_DEPTH_INFINITE, PathToNeon(FileName), PathToNeon(NewName));
+  return ne_copy(FSessionContext->NeonSession, Overwrite, NE_DEPTH_INFINITE, PathToNeon(FileName), PathToNeon(NewName));
 }
 //---------------------------------------------------------------------------
-void __fastcall TWebDAVFileSystem::CopyFile(const UnicodeString FileName, const TRemoteFile * /*File*/,
-  const UnicodeString NewName)
+void __fastcall TWebDAVFileSystem::CopyFile(
+  const UnicodeString & FileName, const TRemoteFile *, const UnicodeString & NewName, bool Overwrite)
 {
   ClearNeonError();
   TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
 
   UnicodeString Path = FileName;
-  int NeonStatus = CopyFileInternal(Path, NewName);
+  int NeonStatus = CopyFileInternal(Path, NewName, Overwrite);
   if (IsValidRedirect(NeonStatus, Path))
   {
-    NeonStatus = CopyFileInternal(Path, NewName);
+    NeonStatus = CopyFileInternal(Path, NewName, Overwrite);
   }
   CheckStatus(NeonStatus);
 }
@@ -1203,7 +1196,7 @@ void __fastcall TWebDAVFileSystem::ConfirmOverwrite(
   switch (Answer)
   {
     case qaYes:
-    // Can happen when moving to background (and the server manages to commit the interrupeted foreground transfer).
+    // Can happen when moving to background (and the server manages to commit the interrupted foreground transfer).
     // WebDAV does not support resumable uploads.
     // Resumable downloads are not implemented.
     case qaRetry:
@@ -1796,7 +1789,8 @@ void __fastcall TWebDAVFileSystem::Sink(
 
       if (CopyParam->PreserveTime)
       {
-        FTerminal->UpdateTargetTime(LocalHandle, File->Modification, FTerminal->SessionData->DSTMode);
+        FTerminal->UpdateTargetTime(
+          LocalHandle, File->Modification, File->ModificationFmt, FTerminal->SessionData->DSTMode);
       }
     }
     __finally
@@ -1814,11 +1808,7 @@ void __fastcall TWebDAVFileSystem::Sink(
 
       if (DeleteLocalFile)
       {
-        FILE_OPERATION_LOOP_BEGIN
-        {
-          THROWOSIFFALSE(Sysutils::DeleteFile(ApiPath(DestFullName)));
-        }
-        FILE_OPERATION_LOOP_END(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (DestFullName)));
+        FTerminal->DoDeleteLocalFile(DestFullName);
       }
     }
   }
@@ -1827,52 +1817,15 @@ void __fastcall TWebDAVFileSystem::Sink(
   FTerminal->UpdateTargetAttrs(DestFullName, File, CopyParam, Attrs);
 }
 //---------------------------------------------------------------------------
-// Similar to TS3FileSystem::VerifyCertificate
 bool TWebDAVFileSystem::VerifyCertificate(TSessionContext * SessionContext, TNeonCertificateData Data, bool Aux)
 {
-  FSessionInfo.CertificateFingerprintSHA1 = Data.FingerprintSHA1;
-  FSessionInfo.CertificateFingerprintSHA256 = Data.FingerprintSHA256;
+  bool Result =
+    FTerminal->VerifyOrConfirmHttpCertificate(
+      SessionContext->HostName, SessionContext->PortNumber, Data, !Aux, FSessionInfo);
 
-  bool Result;
-  if (FTerminal->SessionData->FingerprintScan)
+  if (Result && !Aux && (SessionContext == FSessionContext))
   {
-    Result = false;
-  }
-  else
-  {
-    FTerminal->LogEvent(0, CertificateVerificationMessage(Data));
-
-    UnicodeString SiteKey = TSessionData::FormatSiteKey(SessionContext->HostName, SessionContext->PortNumber);
-    Result =
-      FTerminal->VerifyCertificate(
-        HttpsCertificateStorageKey, SiteKey, Data.FingerprintSHA1, Data.FingerprintSHA256, Data.Subject, Data.Failures);
-
-    if (Result)
-    {
-      FSessionInfo.CertificateVerifiedManually = true;
-    }
-    else
-    {
-      UnicodeString Message;
-      Result = NeonWindowsValidateCertificateWithMessage(Data, Message);
-      FTerminal->LogEvent(0, Message);
-    }
-
-    FSessionInfo.Certificate = CertificateSummary(Data, SessionContext->HostName);
-
-    if (!Result)
-    {
-      if (FTerminal->ConfirmCertificate(FSessionInfo, Data.Failures, HttpsCertificateStorageKey, !Aux))
-      {
-        Result = true;
-        FSessionInfo.CertificateVerifiedManually = true;
-      }
-    }
-
-    if (Result && !Aux && (SessionContext == FSessionContext))
-    {
-      CollectTLSSessionInfo();
-    }
+    CollectTLSSessionInfo();
   }
 
   return Result;
@@ -1951,7 +1904,6 @@ int TWebDAVFileSystem::NeonRequestAuth(
       if (!Terminal->PromptUser(SessionData, pkUserName, LoadStr(USERNAME_TITLE), L"",
             LoadStr(USERNAME_PROMPT2), true, NE_ABUFSIZ, FileSystem->FUserName))
       {
-        // note that we never get here actually
         Result = false;
       }
     }
@@ -1974,7 +1926,7 @@ int TWebDAVFileSystem::NeonRequestAuth(
     {
       if (FileSystem->FIgnoreAuthenticationFailure == iafPasswordFailed)
       {
-        // Fail PROPFIND /nonexising request...
+        // Fail PROPFIND /nonexisting request...
         Result = false;
       }
       else
@@ -1993,7 +1945,6 @@ int TWebDAVFileSystem::NeonRequestAuth(
       {
         // Asking for password (or using configured password) the first time,
         // and asking for password.
-        // Note that we never get false here actually
         Terminal->LogEvent(L"Password prompt");
         Result =
           Terminal->PromptUser(

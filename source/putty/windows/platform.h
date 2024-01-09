@@ -244,6 +244,7 @@ void launch_help(HWND hwnd, const char *topic);
 void quit_help(HWND hwnd);
 int has_embedded_chm(void);            /* 1 = yes, 0 = no, -1 = N/A */
 
+#ifndef WINSCP
 /*
  * GUI seat methods in dialog.c, so that the vtable definition in
  * window.c can refer to them.
@@ -251,15 +252,15 @@ int has_embedded_chm(void);            /* 1 = yes, 0 = no, -1 = N/A */
 SeatPromptResult win_seat_confirm_ssh_host_key(
     Seat *seat, const char *host, int port, const char *keytype,
     char *keystr, SeatDialogText *text, HelpCtx helpctx,
-    void (*callback)(void *ctx, SeatPromptResult result), void *ctx,
-    char **fingerprints, bool is_certificate); // WINSCP
+    void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 SeatPromptResult win_seat_confirm_weak_crypto_primitive(
-    Seat *seat, const char *algtype, const char *algname,
+    Seat *seat, SeatDialogText *text,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 SeatPromptResult win_seat_confirm_weak_cached_hostkey(
-    Seat *seat, const char *algname, const char *betteralgs,
+    Seat *seat, SeatDialogText *text,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 const SeatDialogPromptDescriptions *win_seat_prompt_descriptions(Seat *seat);
+#endif
 
 /*
  * Windows-specific clipboard helper function shared with dialog.c,
@@ -752,10 +753,14 @@ char *get_jumplist_registry_entries(void);
 
 /* In utils */
 int reg_override_winscp(void);
-HKEY open_regkey_fn(bool create, HKEY base, const char *path, ...);
-HKEY open_regkey_fn_winscp(bool create, HKEY base, const char *path, ...);
-#define open_regkey(create, base, ...) \
-    reg_override_winscp() ? open_regkey_fn_winscp(create, base, __VA_ARGS__, (const char *)NULL) : open_regkey_fn(create, base, __VA_ARGS__, (const char *)NULL)
+HKEY open_regkey_fn(bool create, bool write, HKEY base, const char *path, ...);
+HKEY open_regkey_fn_winscp(bool create, bool write, HKEY base, const char *path, ...);
+#define open_regkey_ro(base, ...) \
+    reg_override_winscp() ? open_regkey_fn_winscp(false, false, base, __VA_ARGS__, (const char *)NULL) : open_regkey_fn(false, false, base, __VA_ARGS__, (const char *)NULL)
+#define open_regkey_rw(base, ...) \
+    DebugFail();
+#define create_regkey(base, ...) \
+    reg_override_winscp() ? open_regkey_fn_winscp(true, true, base, __VA_ARGS__, (const char *)NULL) : open_regkey_fn(true, true, base, __VA_ARGS__, (const char *)NULL)
 void close_regkey(HKEY key);
 void close_regkey_winscp(HKEY key);
 void del_regkey(HKEY key, const char *name);

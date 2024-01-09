@@ -20,8 +20,6 @@ public:
   bool __fastcall FindSwitch(const UnicodeString Switch);
   bool __fastcall FindSwitch(const UnicodeString Switch, UnicodeString & Value);
   bool __fastcall FindSwitch(const UnicodeString Switch, UnicodeString & Value, bool & ValueSet);
-  bool __fastcall FindSwitch(const UnicodeString Switch, int & ParamsStart,
-    int & ParamsCount);
   bool __fastcall FindSwitch(const UnicodeString Switch, TStrings * Params,
     int ParamsMax = -1);
   bool __fastcall FindSwitchCaseSensitive(const UnicodeString Switch);

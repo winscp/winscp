@@ -6,6 +6,7 @@
 #include <System.IOUtils.hpp>
 #include <Common.h>
 #include <math.h>
+#include <limits>
 
 #include "Preferences.h"
 #include "Custom.h"
@@ -436,11 +437,15 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     SelectPuttyRegistryStorageKey(GUIConfiguration->PuttyRegistryStorageKey);
 
     // Queue
-    QueueTransferLimitEdit->AsInteger = GUIConfiguration->QueueTransfersLimit;
+    QueueTransferLimitEdit->AsInteger = Configuration->QueueTransfersLimit;
     EnableQueueByDefaultCheck->Checked = WinConfiguration->EnableQueueByDefault;
     QueueAutoPopupCheck->Checked = GUIConfiguration->QueueAutoPopup;
     QueueCheck->Checked = GUIConfiguration->DefaultCopyParam.Queue;
     QueueParallelCheck->Checked = GUIConfiguration->DefaultCopyParam.QueueParallel;
+    ParallelTransferCheck->Checked = (Configuration->ParallelTransferThreshold > 0);
+    __int64 ParallelTransferThreshold = static_cast<__int64>(Configuration->ParallelTransferThreshold) * 1024;
+    ParallelTransferThresholdCombo->Text =
+      SizeToStr((ParallelTransferThreshold > 0) ? ParallelTransferThreshold : 100*1024*1024);
     QueueNoConfirmationCheck->Checked = GUIConfiguration->DefaultCopyParam.QueueNoConfirmation;
     if (!GUIConfiguration->QueueKeepDoneItems)
     {
@@ -504,6 +509,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(ExternalSessionInExistingInstance);
     BOOLPROP(ShowLoginWhenNoSession);
     BOOLPROP(KeepOpenWhenNoSession);
+    BOOLPROP(SessionTabCaptionTruncation);
     BOOLPROP(ShowTips);
 
     // panels
@@ -635,6 +641,9 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     // security
     UseMasterPasswordCheck->Checked = WinConfiguration->UseMasterPassword;
     SessionRememberPasswordCheck->Checked = GUIConfiguration->SessionRememberPassword;
+    SshHostCAsFromPuTTYCheck->Checked = Configuration->SshHostCAsFromPuTTY;
+    FSshHostCAPlainList = Configuration->SshHostCAList->GetList();
+    Configuration->RefreshPuttySshHostCAList();
 
     // network
     RetrieveExternalIpAddressButton->Checked = Configuration->ExternalIpAddress.IsEmpty();
@@ -821,11 +830,21 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     }
 
     // Queue
-    GUIConfiguration->QueueTransfersLimit = QueueTransferLimitEdit->AsInteger;
+    Configuration->QueueTransfersLimit = QueueTransferLimitEdit->AsInteger;
     WinConfiguration->EnableQueueByDefault = EnableQueueByDefaultCheck->Checked;
     GUIConfiguration->QueueAutoPopup = QueueAutoPopupCheck->Checked;
     CopyParam.Queue = QueueCheck->Checked;
     CopyParam.QueueParallel = QueueParallelCheck->Checked;
+    __int64 ParallelTransferThreshold;
+    if (ParallelTransferCheck->Checked && TryStrToSize(ParallelTransferThresholdCombo->Text, ParallelTransferThreshold))
+    {
+      Configuration->ParallelTransferThreshold = std::min(ParallelTransferThreshold / 1024, static_cast<__int64>(std::numeric_limits<int>::max()));
+    }
+    else
+    {
+      // In future, we might set it to 0, if -1 will actually mean some default threshold
+      Configuration->ParallelTransferThreshold = -1;
+    }
     CopyParam.QueueNoConfirmation = QueueNoConfirmationCheck->Checked;
     GUIConfiguration->QueueKeepDoneItems = (QueueKeepDoneItemsForCombo->ItemIndex != 0);
     switch (QueueKeepDoneItemsForCombo->ItemIndex)
@@ -889,6 +908,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(ExternalSessionInExistingInstance);
     BOOLPROP(ShowLoginWhenNoSession);
     BOOLPROP(KeepOpenWhenNoSession);
+    BOOLPROP(SessionTabCaptionTruncation);
     BOOLPROP(ShowTips);
 
     // panels
@@ -985,6 +1005,9 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     // security
     GUIConfiguration->SessionRememberPassword = SessionRememberPasswordCheck->Checked;
+    Configuration->SshHostCAsFromPuTTY = SshHostCAsFromPuTTYCheck->Checked;
+    std::unique_ptr<TSshHostCAList> SshHostCAList(new TSshHostCAList(FSshHostCAPlainList));
+    Configuration->SshHostCAList = SshHostCAList.get();
 
     // logging
     Configuration->Logging = EnableLoggingCheck->Checked && !LogFileNameEdit3->Text.IsEmpty();
@@ -1411,7 +1434,17 @@ void __fastcall TPreferencesDialog::UpdateControls()
       AnyPuttyPath && !IsSiteCommand && !IsUWP());
     EnableControl(PuttyRegistryStorageKeyLabel, PuttyRegistryStorageKeyEdit->Enabled);
 
+    // security
     EnableControl(SetMasterPasswordButton, WinConfiguration->UseMasterPassword);
+    UpdateSshHostCAsViewView();
+    EnableControl(SshHostCAsView, !SshHostCAsFromPuTTYCheck->Checked);
+    AddSshHostCAButton->Visible = SshHostCAsView->Enabled;
+    bool SshHostCASelected = (SshHostCAsView->Selected != NULL);
+    EditSshHostCAButton->Visible = AddSshHostCAButton->Visible;
+    EnableControl(EditSshHostCAButton, SshHostCASelected);
+    RemoveSshHostCAButton->Visible = AddSshHostCAButton->Visible;
+    EnableControl(RemoveSshHostCAButton, SshHostCASelected);
+    ConfigureSshHostCAsButton->Visible = !AddSshHostCAButton->Visible;
 
     // network
     EnableControl(CustomExternalIpAddressEdit, CustomExternalIpAddressButton->Checked);
@@ -1460,6 +1493,11 @@ void __fastcall TPreferencesDialog::UpdateControls()
     InterfaceChangeLabel->Visible =
       !CustomWinConfiguration->CanApplyInterfaceImmediately &&
       (GetInterface() != CustomWinConfiguration->AppliedInterface);
+
+    // background
+    EnableControl(ParallelTransferCheck, QueueParallelCheck->Checked);
+    EnableControl(ParallelTransferThresholdCombo, ParallelTransferCheck->Enabled && ParallelTransferCheck->Checked);
+    EnableControl(ParallelTransferThresholdUnitLabel, ParallelTransferThresholdCombo->Enabled);
   }
 }
 //---------------------------------------------------------------------------
@@ -2190,6 +2228,15 @@ void __fastcall TPreferencesDialog::CMDpiChanged(TMessage & Message)
   TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
+void TPreferencesDialog::WMActivate(TWMActivate & Message)
+{
+  if ((Message.Active != WA_INACTIVE) && (PageControl->ActivePage == SecuritySheet))
+  {
+    SshHostCAsRefresh();
+  }
+  TForm::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::Dispatch(void *Message)
 {
   TMessage * M = reinterpret_cast<TMessage*>(Message);
@@ -2205,6 +2252,10 @@ void __fastcall TPreferencesDialog::Dispatch(void *Message)
   else if (M->Msg == WM_HELP)
   {
     WMHelp(*((TWMHelp *)Message));
+  }
+  else if (M->Msg == WM_ACTIVATE)
+  {
+    WMActivate(*((TWMActivate *)Message));
   }
   else
   {
@@ -2529,6 +2580,10 @@ void __fastcall TPreferencesDialog::NavigationTreeChanging(TObject * /*Sender*/,
   if (Sheet == LanguagesSheet)
   {
     LoadLanguages();
+  }
+  else if (Sheet == SecuritySheet)
+  {
+    SshHostCAsRefresh();
   }
 }
 //---------------------------------------------------------------------------
@@ -2987,19 +3042,20 @@ void __fastcall TPreferencesDialog::LanguagesViewCustomDrawItem(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::LogMaxSizeComboExit(TObject * /*Sender*/)
+void __fastcall TPreferencesDialog::SizeComboExit(TObject * Sender)
 {
   __int64 Size;
   if (!IsCancelButtonBeingClicked(this))
   {
-    if (!TryStrToSize(LogMaxSizeCombo->Text, Size))
+    TComboBox * ComboBox = DebugNotNull(dynamic_cast<TComboBox *>(Sender));
+    if (!TryStrToSize(ComboBox->Text, Size))
     {
-      LogMaxSizeCombo->SetFocus();
-      throw Exception(FMTLOAD(SIZE_INVALID, (LogMaxSizeCombo->Text)));
+      ComboBox->SetFocus();
+      throw Exception(FMTLOAD(SIZE_INVALID, (ComboBox->Text)));
     }
     else
     {
-      LogMaxSizeCombo->Text = SizeToStr(Size);
+      ComboBox->Text = SizeToStr(Size);
     }
   }
 }
@@ -3258,5 +3314,98 @@ UnicodeString TPreferencesDialog::Bullet(const UnicodeString & S)
   }
   Result = ReplaceStr(Result, sLineBreak + Dash, sLineBreak + Bullet);
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::SshHostCAsViewDblClick(TObject *)
+{
+  if (EditSshHostCAButton->Enabled)
+  {
+    EditSshHostCAButtonClick(NULL);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::SshHostCAsViewKeyDown(TObject *, WORD & Key, TShiftState)
+{
+  if (RemoveSshHostCAButton->Enabled && (Key == VK_DELETE))
+  {
+    RemoveSshHostCAButtonClick(NULL);
+  }
+
+  if (AddSshHostCAButton->Enabled && (Key == VK_INSERT))
+  {
+    AddSshHostCAButtonClick(NULL);
+  }
+}
+//---------------------------------------------------------------------------
+void TPreferencesDialog::UpdateSshHostCAsViewView()
+{
+  SshHostCAsView->Items->Count = GetSshHostCAPlainList().size();
+  AutoSizeListColumnsWidth(SshHostCAsView, 1);
+  if (SshHostCAsFromPuTTYCheck->Checked && (SshHostCAsView->Items->Count > 0))
+  {
+    SshHostCAsView->Items->Item[0]->MakeVisible(false);
+  }
+  SshHostCAsView->Invalidate();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AddSshHostCAButtonClick(TObject *)
+{
+  TSshHostCA SshHostCA;
+  if (DoSshHostCADialog(true, SshHostCA))
+  {
+    FSshHostCAPlainList.push_back(SshHostCA);
+    UpdateSshHostCAsViewView();
+    SshHostCAsView->ItemIndex = FSshHostCAPlainList.size() - 1;
+    SshHostCAsView->ItemFocused->MakeVisible(false);
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::SshHostCAsViewData(TObject *, TListItem * Item)
+{
+  const TSshHostCA & SshHostCA = GetSshHostCAPlainList()[Item->Index];
+  Item->Caption = SshHostCA.Name;
+  Item->SubItems->Add(SshHostCA.ValidityExpression);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::EditSshHostCAButtonClick(TObject *)
+{
+  if (DoSshHostCADialog(true, FSshHostCAPlainList[SshHostCAsView->ItemIndex]))
+  {
+    UpdateSshHostCAsViewView();
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::RemoveSshHostCAButtonClick(TObject *)
+{
+  FSshHostCAPlainList.erase(FSshHostCAPlainList.begin() + SshHostCAsView->ItemIndex);
+  UpdateSshHostCAsViewView();
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+const TSshHostCA::TList & TPreferencesDialog::GetSshHostCAPlainList()
+{
+  return SshHostCAsFromPuTTYCheck->Checked ? Configuration->PuttySshHostCAList->GetList() : FSshHostCAPlainList;
+}
+//---------------------------------------------------------------------------
+void TPreferencesDialog::SshHostCAsRefresh()
+{
+  if (SshHostCAsFromPuTTYCheck->Checked)
+  {
+    Configuration->RefreshPuttySshHostCAList();
+  }
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::SshHostCAsFromPuTTYCheckClick(TObject *)
+{
+  SshHostCAsRefresh();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::ConfigureSshHostCAsButtonClick(TObject *)
+{
+  UnicodeString Program = FindPuttyPath();
+  ExecuteShellChecked(Program, L"-host-ca");
 }
 //---------------------------------------------------------------------------

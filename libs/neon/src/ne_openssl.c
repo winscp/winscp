@@ -584,7 +584,7 @@ ne_ssl_context *ne_ssl_context_create(int mode)
 {
     ne_ssl_context *ctx = ne_calloc(sizeof *ctx);
     if (mode == NE_SSL_CTX_CLIENT) {
-        ctx->ctx = SSL_CTX_new(SSLv23_client_method());
+        ctx->ctx = SSL_CTX_new(TLS_client_method());
         ctx->sess = NULL;
         /* set client cert callback. */
         SSL_CTX_set_client_cert_cb(ctx->ctx, provide_client_cert);

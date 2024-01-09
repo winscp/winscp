@@ -67,7 +67,7 @@ void __fastcall TAuthenticateForm::ShowAsModal()
   }
 
   // Do not call BringToFront when minimized, so that we do not have to use the same hack as in TMessageForm::SetZOrder
-  ::ShowAsModal(this, FShowAsModalStorage, !FShowNoActivate);
+  ::ShowAsModal(this, FShowAsModalStorage, !FShowNoActivate, true);
   HookFormActivation(this);
 }
 //---------------------------------------------------------------------------

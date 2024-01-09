@@ -589,7 +589,7 @@ __fastcall TExternalConsole::TExternalConsole(
   {
     AssignProcessToJobObject(Job, GetCurrentProcess());
     // winscp.com/winscp.dll keeps the only reference to the job.
-    // once it gets closed (because winscp.com if forcefully terminated),
+    // once it gets closed (because winscp.com is forcefully terminated),
     // we get terminated as well
     CloseHandle(Job);
   }

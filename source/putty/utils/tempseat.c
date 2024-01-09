@@ -250,21 +250,22 @@ static SeatPromptResult tempseat_confirm_ssh_host_key(
     Seat *seat, const char *host, int port, const char *keytype,
     char *keystr, SeatDialogText *text, HelpCtx helpctx,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx,
-    char **fingerprints, bool is_certificate) // WINSCP
+    char **fingerprints, bool is_certificate, int ca_count, bool already_verified) // WINSCP
 {
     unreachable("confirm_ssh_host_key should never be called on TempSeat");
 }
 
 static SeatPromptResult tempseat_confirm_weak_crypto_primitive(
-    Seat *seat, const char *algtype, const char *algname,
-    void (*callback)(void *ctx, SeatPromptResult result), void *ctx)
+    Seat *seat, SeatDialogText *text,
+    void (*callback)(void *ctx, SeatPromptResult result), void *ctx,
+    const char *algtype, const char *algname, int wcr) // WINSCP
 {
     unreachable("confirm_weak_crypto_primitive "
                 "should never be called on TempSeat");
 }
 
 static SeatPromptResult tempseat_confirm_weak_cached_hostkey(
-    Seat *seat, const char *algname, const char *betteralgs,
+    Seat *seat, SeatDialogText *text,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx)
 {
     unreachable("confirm_weak_cached_hostkey "

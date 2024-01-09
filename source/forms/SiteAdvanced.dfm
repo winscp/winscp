@@ -1017,13 +1017,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 6
           Width = 393
-          Height = 70
+          Height = 97
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Protocol options'
           TabOrder = 0
           DesignSize = (
             393
-            70)
+            97)
           object Label27: TLabel
             Left = 12
             Top = 20
@@ -1064,6 +1064,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'ap-southeast-3'
               'ap-southeast-4'
               'ca-central-1'
+              'ca-west-1'
               'cn-north-1'
               'cn-northwest-1'
               'eu-central-1'
@@ -1099,10 +1100,18 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'Virtual Host'
               'Path')
           end
+          object S3RequesterPaysCheck: TCheckBox
+            Left = 12
+            Top = 68
+            Width = 369
+            Height = 17
+            Caption = 'Requester &pays'
+            TabOrder = 2
+          end
         end
         object S3AuthenticationGroup: TGroupBox
           Left = 1
-          Top = 82
+          Top = 109
           Width = 393
           Height = 143
           Anchors = [akLeft, akTop, akRight]
@@ -1216,24 +1225,23 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 0
             OnClick = DataChange
           end
-          object FtpPingNullPacketButton: TRadioButton
+          object FtpPingDummyCommandButton: TRadioButton
             Left = 12
             Top = 42
             Width = 365
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Sending of &null SSH packets'
-            Enabled = False
+            Caption = 'Executing &dummy protocol commands'
             TabOrder = 1
             OnClick = DataChange
           end
-          object FtpPingDummyCommandButton: TRadioButton
+          object FtpPingDirectoryListingButton: TRadioButton
             Left = 12
             Top = 65
             Width = 365
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Executing &dummy protocol commands'
+            Caption = '&And additionally reading the current directory'
             TabOrder = 2
             OnClick = DataChange
           end
@@ -1890,31 +1898,31 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         DesignSize = (
           401
           382)
-        object SslGroup: TGroupBox
+        object TlsGroup: TGroupBox
           Left = 0
           Top = 6
           Width = 393
           Height = 99
           Anchors = [akLeft, akTop, akRight]
-          Caption = 'TLS/SSL options'
+          Caption = 'TLS options'
           TabOrder = 0
           DesignSize = (
             393
             99)
-          object Label1: TLabel
+          object MinTlsVersionLabel: TLabel
             Left = 12
             Top = 20
-            Width = 123
+            Width = 102
             Height = 13
-            Caption = 'Mi&nimum TLS/SSL version:'
+            Caption = 'Mi&nimum TLS version:'
             FocusControl = MinTlsVersionCombo
           end
-          object Label2: TLabel
+          object MaxTlsVersionLabel: TLabel
             Left = 12
             Top = 44
-            Width = 127
+            Width = 106
             Height = 13
-            Caption = 'Ma&ximum TLS/SSL version:'
+            Caption = 'Ma&ximum TLS version:'
             FocusControl = MaxTlsVersionCombo
           end
           object MinTlsVersionCombo: TComboBox
@@ -1927,7 +1935,6 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 0
             OnChange = MinTlsVersionComboChange
             Items.Strings = (
-              'SSL 3.0'
               'TLS 1.0'
               'TLS 1.1'
               'TLS 1.2'
@@ -1943,19 +1950,18 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabOrder = 1
             OnChange = MaxTlsVersionComboChange
             Items.Strings = (
-              'SSL 3.0'
               'TLS 1.0'
               'TLS 1.1'
               'TLS 1.2'
               'TLS 1.3')
           end
-          object SslSessionReuseCheck: TCheckBox
+          object SslSessionReuseCheck2: TCheckBox
             Left = 12
             Top = 68
             Width = 365
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Reuse TLS/SSL session ID for data connections'
+            Caption = '&Reuse TLS session ID for data connections'
             TabOrder = 2
             OnClick = DataChange
           end

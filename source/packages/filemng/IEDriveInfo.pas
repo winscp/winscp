@@ -51,6 +51,7 @@ type
     PIDL        : PItemIDList; {Fully qualyfied PIDL}
     Init        : Boolean;     {Drivestatus was updated once}
     Valid       : Boolean;     {Drivestatus is valid}
+    ValidButHiddenByDrivePolicy: Boolean;
     DriveReady  : Boolean;     {Drive is ready}
     DriveType   : Integer;     {DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_CDROM, DRIVE_RAMDISK, DRIVE_REMOTE}
     DisplayName : string;      {Windows displayname}
@@ -87,6 +88,8 @@ type
     function GetFirstFixedDrive: Char;
     procedure Load;
     function AddDrive(Drive: string): TDriveInfoRec;
+    function GetDriveBitMask(Drive: string): Integer;
+    function DoAnyValidPath(DriveType: Integer; CanBeHidden: Boolean; var Path: string): Boolean;
 
   public
     function Get(Drive: string): TDriveInfoRec;
@@ -103,6 +106,7 @@ type
     function GetDisplayName(Drive: string): string;
     function GetPrettyName(Drive: string): string;
     function ReadDriveStatus(Drive: string; Flags: Integer): Boolean;
+    procedure OverrideDrivePolicy(Drive: string);
     property HonorDrivePolicy: Boolean read FHonorDrivePolicy write SetHonorDrivePolicy;
     property FirstFixedDrive: Char read GetFirstFixedDrive;
     property UseABDrives: Boolean read FUseABDrives write FUseABDrives;
@@ -220,28 +224,36 @@ begin
   end;
 end;
 
-function TDriveInfo.AnyValidPath: string;
+function TDriveInfo.DoAnyValidPath(DriveType: Integer; CanBeHidden: Boolean; var Path: string): Boolean;
 var
   Drive: TRealDrive;
+  DriveInfoRec: TDriveInfoRec;
 begin
-  // Fallback to A:/B: if no other drive is found?
   for Drive := SystemDrive to LastDrive do
-    if Get(Drive).Valid and
-       (Get(Drive).DriveType = DRIVE_FIXED) and
+  begin
+    DriveInfoRec := Get(Drive);
+    if (DriveInfoRec.Valid or
+        (CanBeHidden and DriveInfoRec.ValidButHiddenByDrivePolicy)) and
+       (DriveInfoRec.DriveType = DriveType) and
        DirectoryExists(ApiPath(GetDriveRoot(Drive))) then
     begin
-      Result := GetDriveRoot(Drive);
+      Result := True;
+      Path := GetDriveRoot(Drive);
       Exit;
     end;
-  for Drive := SystemDrive to LastDrive do
-    if Get(Drive).Valid and
-       (Get(Drive).DriveType = DRIVE_REMOTE) and
-       DirectoryExists(ApiPath(GetDriveRoot(Drive))) then
-    begin
-      Result := GetDriveRoot(Drive);
-      Exit;
-    end;
-  raise Exception.Create(SNoValidPath);
+  end;
+
+  Result := False;
+end;
+
+function TDriveInfo.AnyValidPath: string;
+begin
+  if (not DoAnyValidPath(DRIVE_FIXED, False, Result)) and
+     (not DoAnyValidPath(DRIVE_FIXED, True, Result)) and
+     (not DoAnyValidPath(DRIVE_REMOTE, False, Result)) then
+  begin
+    raise Exception.Create(SNoValidPath);
+  end;
 end;
 
 function TDriveInfo.IsRealDrive(Drive: string): Boolean;
@@ -346,15 +358,26 @@ begin
     else Result := SystemDrive;
 end;
 
+function TDriveInfo.GetDriveBitMask(Drive: string): Integer;
+begin
+  Assert(IsRealDrive(Drive));
+  Result := (1 shl (Ord(Drive[1]) - Ord('A')));
+end;
+
 procedure TDriveInfo.ReadDriveBasicStatus(Drive: string);
+var
+  ValidDriveType: Boolean;
+  HiddenByDrivePolicy: Boolean;
 begin
   Assert(FData.ContainsKey(Drive));
   with FData[Drive] do
   begin
     DriveType := Windows.GetDriveType(PChar(GetDriveRoot(Drive)));
-    Valid :=
-      ((not IsRealDrive(Drive)) or (not FHonorDrivePolicy) or (not Bool((1 shl (Ord(Drive[1]) - 65)) and FNoDrives))) and
-      (DriveType in [DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_CDROM, DRIVE_RAMDISK, DRIVE_REMOTE]);
+    ValidDriveType := (DriveType in [DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_CDROM, DRIVE_RAMDISK, DRIVE_REMOTE]);
+    HiddenByDrivePolicy :=
+      FHonorDrivePolicy and IsRealDrive(Drive) and ((GetDriveBitMask(Drive) and FNoDrives) <> 0);
+    ValidButHiddenByDrivePolicy := ValidDriveType and HiddenByDrivePolicy;
+    Valid := ValidDriveType and (not HiddenByDrivePolicy);
   end;
 end;
 
@@ -378,6 +401,7 @@ var
   Folder: TSpecialFolder;
   Drives: string;
 begin
+  AppLog('Loading drives');
   FNoDrives := 0;
   Reg := TRegistry.Create;
   try
@@ -390,6 +414,7 @@ begin
     end;
   end;
   Reg.Free;
+  AppLog(Format('NoDrives mask: %d', [Integer(FNoDrives)]));
 
   FDesktop := nil;
 
@@ -401,7 +426,10 @@ begin
   end;
 
   if Length(Drives) > 0 then
+  begin
+    AppLog(Format('Drives found: %s', [Drives]));
     TDriveInfoThread.Create(Drives);
+  end;
 
   for Folder := Low(FFolders) to High(FFolders) do
     FFolders[Folder].Valid := False;
@@ -615,6 +643,18 @@ begin
     Result := Valid and DriveReady;
   end;
 end; {TDriveInfo.ReadDriveStatus}
+
+procedure TDriveInfo.OverrideDrivePolicy(Drive: string);
+var
+  Mask: DWORD;
+begin
+  Assert(FData.ContainsKey(Drive));
+  Assert(FData[Drive].ValidButHiddenByDrivePolicy);
+  Mask := (not GetDriveBitMask(Drive));
+  FNoDrives := FNoDrives and Mask;
+  ReadDriveBasicStatus(Drive);
+  Assert(FData[Drive].Valid);
+end;
 
 function GetShellFileName(const Name: string): string;
 var

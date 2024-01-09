@@ -95,8 +95,8 @@ static void proxy_socks4_process_queue(ProxyNegotiator *pn)
 
         if (data[0] != SOCKS4_REPLY_VERSION) {
             pn->error = dupprintf("SOCKS proxy response contained reply "
-                                  "version number %d (expected 0)",
-                                  (int)data[0]);
+                                  "version number %d (expected %d)",
+                                  (int)data[0], SOCKS4_REPLY_VERSION);
             crStopV;
         }
 

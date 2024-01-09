@@ -429,7 +429,7 @@ void __fastcall TScript::SetSynchronizeParams(int value)
 {
   const int AcceptedParams =
     TTerminal::spExistingOnly | TTerminal::spTimestamp |
-    TTerminal::spNotByTime | TTerminal::spBySize | TTerminal::spCaseSensitive;
+    TTerminal::spNotByTime | TTerminal::spBySize | TTerminal::spByChecksum | TTerminal::spCaseSensitive;
   FSynchronizeParams = (value & AcceptedParams);
   FWarnNonDefaultSynchronizeParams =
     (FSynchronizeParams != (TTerminal::spDefault & AcceptedParams));
@@ -760,12 +760,11 @@ TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameter
         bool AnyFound = false;
         if (FindFirstUnchecked(FileName, FindAttrs, SearchRec) == 0)
         {
-          UnicodeString Directory = ExtractFilePath(FileName);
           do
           {
             if (SearchRec.IsRealFile())
             {
-              UnicodeString FileName = Directory + SearchRec.Name;
+              UnicodeString FileName = SearchRec.GetFilePath();
               TLocalFile * LocalFile = new TLocalFile;
               CopySearchRec(SearchRec, LocalFile->SearchRec);
               Result->AddObject(FileName, LocalFile);
@@ -1388,13 +1387,13 @@ void __fastcall TScript::DoMvOrCp(TScriptProcParams * Parameters, TFSCapability 
 
     Target = UnixIncludeTrailingBackslash(TargetDirectory) + FileMask;
     CheckMultiFilesToOne(FileList, Target, true);
+    bool DontOverwrite = true; // might use FConfirm eventually, but that would be breaking change
     if (Cp)
     {
-      FTerminal->CopyFiles(FileList, TargetDirectory, FileMask);
+      FTerminal->CopyFiles(FileList, TargetDirectory, FileMask, DontOverwrite);
     }
     else
     {
-      bool DontOverwrite = true; // might use FConfirm eventually, but that would be breaking change
       FTerminal->MoveFiles(FileList, TargetDirectory, FileMask, DontOverwrite);
     }
   }
@@ -2003,37 +2002,67 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
     }
     if (Parameters->FindSwitch(L"criteria", Value))
     {
-      enum { None, Time, Size, Either, EitherBoth };
-      static const wchar_t * CriteriaNames[] = { L"none", L"time", L"size", L"either", L"both" };
+      enum { None, Either, EitherBoth };
+      static const wchar_t * CriteriaNames[] = { L"none", L"either", L"both" };
       int Criteria = TScriptCommands::FindCommand(CriteriaNames, LENOF(CriteriaNames), Value);
-      switch (Criteria)
+      if (Criteria >= 0)
       {
-        case None:
-          SynchronizeParams |= TTerminal::spNotByTime;
-          SynchronizeParams &= ~TTerminal::spBySize;
-          break;
+        switch (Criteria)
+        {
+          case None:
+            SynchronizeParams |= TTerminal::spNotByTime;
+            SynchronizeParams &= ~TTerminal::spBySize;
+            break;
 
-        case Time:
-          SynchronizeParams &= ~(TTerminal::spNotByTime | TTerminal::spBySize);
-          break;
+          case Either:
+          case EitherBoth:
+            SynchronizeParams &= ~TTerminal::spNotByTime;
+            SynchronizeParams |= TTerminal::spBySize;
+            break;
+        }
+      }
+      else
+      {
+        int Params = TTerminal::spNotByTime;
+        while ((Params >= 0) && !Value.IsEmpty())
+        {
+          UnicodeString Token = CutToChar(Value, L',', true);
+          enum { Time, Size, Checksum };
+          static const wchar_t * CriteriaNames[] = { L"time", L"size", L"checksum" };
+          int Criteria = TScriptCommands::FindCommand(CriteriaNames, LENOF(CriteriaNames), Token);
+          switch (Criteria)
+          {
+            case Time:
+              Params &= ~TTerminal::spNotByTime;
+              break;
 
-        case Size:
-          SynchronizeParams |= TTerminal::spNotByTime | TTerminal::spBySize;
-          break;
+            case Size:
+              Params |= TTerminal::spBySize;
+              break;
 
-        case Either:
-        case EitherBoth:
-          SynchronizeParams &= ~TTerminal::spNotByTime;
-          SynchronizeParams |= TTerminal::spBySize;
-          break;
+            case Checksum:
+              Params |= TTerminal::spByChecksum;
+              break;
+
+            default:
+              Params = -1;
+              break;
+          }
+        }
+
+        if (Params >= 0)
+        {
+          SynchronizeParams &= ~(TTerminal::spNotByTime | TTerminal::spBySize | TTerminal::spByChecksum);
+          SynchronizeParams |= Params;
+        }
       }
     }
     bool Preview = Parameters->FindSwitch(L"preview");
 
     // enforce rules
-    if (FSynchronizeMode  == TTerminal::smBoth)
+    if (FSynchronizeMode == TTerminal::smBoth)
     {
-      SynchronizeParams &= ~(TTerminal::spNotByTime | TTerminal::spBySize);
+      SynchronizeParams &= ~(TTerminal::spNotByTime | TTerminal::spBySize | TTerminal::spByChecksum);
     }
 
     CheckParams(Parameters);

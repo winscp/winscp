@@ -520,8 +520,6 @@ begin
 end;
 
 function GetTBXTheme(const AName: string): TTBXTheme;
-const
-  ActiveFlags: array [Boolean] of Integer = (TSC_APPDEACTIVATE, TSC_APPACTIVATE);
 var
   Index: Integer;
   M: TMessage;

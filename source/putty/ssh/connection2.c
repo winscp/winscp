@@ -31,6 +31,7 @@ static const PacketProtocolLayerVtable ssh2_connection_vtable = {
     /*.special_cmd =*/ ssh2_connection_special_cmd,
     /*.reconfigure =*/ ssh2_connection_reconfigure,
     /*.queued_data_size =*/ ssh_ppl_default_queued_data_size,
+    /*.final_output =*/ ssh_ppl_default_final_output,
     /*.name =*/ "ssh-connection",
     ssh2_connection_winscp_query,
 };

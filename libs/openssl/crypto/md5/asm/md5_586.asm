@@ -1,3 +1,4 @@
+
 %ifidn __OUTPUT_FORMAT__,obj
 section	code	use32 class=code align=256
 %elifidn __OUTPUT_FORMAT__,win32
@@ -6,10 +7,10 @@ section	.text	code align=256
 %else
 section	.text	code
 %endif
-global	_md5_block_asm_data_order
+global	_ossl_md5_block_asm_data_order
 align	16
-_md5_block_asm_data_order:
-L$_md5_block_asm_data_order_begin:
+_ossl_md5_block_asm_data_order:
+L$_ossl_md5_block_asm_data_order_begin:
 	push	esi
 	push	edi
 	mov	edi,DWORD [12+esp]

@@ -156,11 +156,6 @@ TNamedObject * __fastcall TNamedObjectList::FindByName(const UnicodeString & Nam
   return NULL;
 }
 //---------------------------------------------------------------------------
-void __fastcall TNamedObjectList::SetCount(int value)
-{
-  TObjectList::SetCount(value/*+HiddenCount*/);
-}
-//---------------------------------------------------------------------------
 int __fastcall TNamedObjectList::GetCount()
 {
   DebugAssert(FHiddenCount >= 0);

@@ -317,6 +317,7 @@ typedef enum
     S3StatusConnectionFailed                                ,
     S3StatusAbortedByCallback                               ,
     S3StatusNotSupported                                    ,
+    S3StatusUploadIdTooLong                                 , // WINSCP
 
     /**
      * Errors from the S3 service
@@ -1700,6 +1701,8 @@ typedef void (S3ResponseDataCallback)(const char *data, size_t size, void *callb
 void S3_set_request_context_response_data_callback(S3RequestContext *requestContext,
                                                    S3ResponseDataCallback responseDataCallback,
                                                    void * responseDataCallbackData);
+
+void S3_set_request_context_requester_pays(S3RequestContext *requestContext, int requesterPays);
 #else
 /**
  * Runs the S3RequestContext until all requests within it have completed,
@@ -1837,7 +1840,7 @@ void S3_set_request_context_verify_peer(S3RequestContext *requestContext,
  * S3 Utility Functions
  ************************************************************************** **/
 
- #ifndef WINSCP
+#ifndef WINSCP
 /**
  * Generates an HTTP authenticated query string, which may then be used by
  * a browser (or other web client) to issue the request.  The request is

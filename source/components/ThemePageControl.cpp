@@ -7,6 +7,7 @@
 #include <memory>
 #include <PasTools.hpp>
 #include <TBXOfficeXPTheme.hpp>
+#include <TBX.hpp>
 #include <StrUtils.hpp>
 #include <CustomWinConfiguration.h>
 #include "ThemePageControl.h"
@@ -159,6 +160,7 @@ __fastcall TThemePageControl::TThemePageControl(TComponent * Owner) :
   FSessionTabShrink = 0;
   FOnTabButtonClick = NULL;
   FOnTabHint = NULL;
+  FActiveTabTheme = NULL;
 }
 //----------------------------------------------------------------------------------------------------------
 int __fastcall TThemePageControl::GetTabsHeight()
@@ -198,6 +200,8 @@ void __fastcall TThemePageControl::PaintWindow(HDC DC)
     return;
   }
 
+  HTHEME Theme = OpenThemeData(NULL, IDS_UTIL_TAB);
+
   // TODO use GetClipBox
 
   TRect PageRect = GetClientRect();
@@ -207,7 +211,7 @@ void __fastcall TThemePageControl::PaintWindow(HDC DC)
   ::SendMessage(Handle, TCM_ADJUSTRECT, FALSE, (LPARAM)&PageRect);
 
   ClientRect.Top = PageRect.Top - 2;
-  DrawThemesXpTabItem(DC, -1, ClientRect, true, 0, false);
+  DrawThemeBackground(Theme, DC, TABP_PANE, 0, &ClientRect, NULL);
 
   // 2nd paint the inactive tabs
 
@@ -217,14 +221,16 @@ void __fastcall TThemePageControl::PaintWindow(HDC DC)
   {
     if (Tab != SelectedIndex)
     {
-      DrawThemesXpTab(DC, Tab);
+      DrawThemesXpTab(DC, Theme, Tab);
     }
   }
 
   if (SelectedIndex >= 0)
   {
-    DrawThemesXpTab(DC, TabIndex);
+    DrawThemesXpTab(DC, Theme, TabIndex);
   }
+
+  CloseThemeData(Theme);
 }
 //----------------------------------------------------------------------------------------------------------
 TThemeTabSheetButtons __fastcall TThemePageControl::GetTabButton(int Index)
@@ -233,7 +239,7 @@ TThemeTabSheetButtons __fastcall TThemePageControl::GetTabButton(int Index)
   return (UseThemes() && (ThemeTabSheet != NULL)) ? ThemeTabSheet->Button : ttbNone;
 }
 //----------------------------------------------------------------------------------------------------------
-void __fastcall TThemePageControl::DrawThemesXpTab(HDC DC, int Tab)
+void __fastcall TThemePageControl::DrawThemesXpTab(HDC DC, HTHEME Theme, int Tab)
 {
   TThemeTabSheet * ThemeTabSheet = dynamic_cast<TThemeTabSheet *>(Pages[Tab]);
   bool Shadowed = (ThemeTabSheet != NULL) ? ThemeTabSheet->Shadowed : false;
@@ -250,59 +256,46 @@ void __fastcall TThemePageControl::DrawThemesXpTab(HDC DC, int Tab)
   {
     State = TIS_SELECTED;
   }
-  DrawThemesXpTabItem(DC, Tab, Rect, false, State, Shadowed);
+  DrawThemesXpTabItem(DC, Theme, Tab, Rect, State, Shadowed);
 }
 //----------------------------------------------------------------------------------------------------------
-// This function draws Themes Tab control parts: a) Tab-Body and b) Tab-tabs
-void __fastcall TThemePageControl::DrawThemesXpTabItem(HDC DC, int Item,
-  const TRect & Rect, bool Body, int State, bool Shadowed)
+static TTBXItemInfo GetItemInfo(int State)
 {
-  TSize Size = Rect.Size;
-
-  // Draw background
-  HDC DCMem = CreateCompatibleDC(DC);
-  HBITMAP BitmapMem = CreateCompatibleBitmap(DC, Size.Width, Size.Height);
-  HBITMAP BitmapOld = (HBITMAP)SelectObject(DCMem, BitmapMem);
-
-  TRect RectMem(0, 0, Size.Width, Size.Height);
-  TRect RectItemMem(RectMem);
-  if (!Body && (State == TIS_SELECTED))
+  TTBXItemInfo ItemInfo;
+  memset(&ItemInfo, 0, sizeof(ItemInfo));
+  ItemInfo.Enabled = true;
+  ItemInfo.ViewType =
+    VT_TOOLBAR | TVT_EMBEDDED |
+    FLAGMASK(State == TIS_SELECTED, ISF_SELECTED);
+  return ItemInfo;
+}
+//----------------------------------------------------------------------------------------------------------
+void __fastcall TThemePageControl::DrawThemesXpTabItem(
+  HDC DC, HTHEME Theme, int Item, const TRect & Rect, int State, bool Shadowed)
+{
+  TRect PaintRect = Rect;
+  bool Selected = (State == TIS_SELECTED);
+  if (Selected)
   {
-    RectMem.Bottom++;
+    PaintRect.Bottom++;
   }
 
-  if (Body)
+  if (Selected && (ActiveTabTheme != NULL))
   {
-    DrawThemesPart(DCMem, TABP_PANE, State, IDS_UTIL_TAB, &RectMem);
+    std::unique_ptr<TCanvas> CanvasMem(new TCanvas());
+    CanvasMem->Handle = DC;
+    ActiveTabTheme->PaintFrame(CanvasMem.get(), PaintRect, GetItemInfo(State));
   }
   else
   {
-    DrawThemesPart(DCMem, TABP_TABITEM, State, IDS_UTIL_TAB, &RectMem);
+    int PartID = (Item == 0) ? TABP_TABITEMLEFTEDGE : TABP_TABITEM;
+    DrawThemeBackground(Theme, DC, PartID, State, &PaintRect, NULL);
   }
 
-  // Init some extra parameters
-  BITMAPINFO BitmapInfo;
-  // Fill local pixel arrays
-  ZeroMemory(&BitmapInfo, sizeof(BITMAPINFO));
-  BITMAPINFOHEADER & BitmapInfoHeader = BitmapInfo.bmiHeader;
-  BitmapInfoHeader.biSize = sizeof(BITMAPINFOHEADER);
-  BitmapInfoHeader.biCompression = BI_RGB;
-  BitmapInfoHeader.biPlanes = 1;
-  // force as RGB: 3 bytes,24 bits -> good for rotating bitmap in any resolution
-  BitmapInfoHeader.biBitCount = 24;
-  BitmapInfoHeader.biWidth = Size.Width;
-  BitmapInfoHeader.biHeight = Size.Height;
-
-  if (!Body && (Item >= 0))
+  if (Item >= 0)
   {
-    DrawTabItem(DCMem, Item, Rect, RectItemMem, (State == TIS_SELECTED), Shadowed);
+    DrawTabItem(DC, Item, Rect, State, Shadowed);
   }
-
-  // Blit image to the screen
-  BitBlt(DC, Rect.Left, Rect.Top, Size.Width, Size.Height, DCMem, 0, 0, SRCCOPY);
-  SelectObject(DCMem, BitmapOld);
-  DeleteObject(BitmapMem);
-  DeleteDC(DCMem);
 }
 //----------------------------------------------------------------------------------------------------------
 void __fastcall TThemePageControl::ItemTabRect(int Item, TRect & Rect)
@@ -385,12 +378,12 @@ void TThemePageControl::DrawDropDown(HDC DC, int Radius, int X, int Y, COLORREF 
 }
 //----------------------------------------------------------------------------------------------------------
 // draw tab item context: possible icon and text
-void __fastcall TThemePageControl::DrawTabItem(
-  HDC DC, int Item, TRect TabRect, TRect Rect, bool Selected, bool Shadowed)
+void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int State, bool Shadowed)
 {
   ItemContentsRect(Item, Rect);
 
   UnicodeString Text = Pages[Item]->Caption;
+  bool Selected = (State == TIS_SELECTED);
 
   if (HasItemImage(Item))
   {
@@ -414,6 +407,10 @@ void __fastcall TThemePageControl::DrawTabItem(
   if (!Text.IsEmpty())
   {
     ItemTextRect(Item, Rect);
+    if (Selected && (ActiveTabTheme != NULL))
+    {
+      SetTextColor(DC, ActiveTabTheme->GetItemTextColor(GetItemInfo(State)));
+    }
     HFONT OldFont = (HFONT)SelectObject(DC, Font->Handle);
     wchar_t * Buf = new wchar_t[Text.Length() + 1 + 4];
     wcscpy(Buf, Text.c_str());
@@ -428,23 +425,44 @@ void __fastcall TThemePageControl::DrawTabItem(
     if (Button != ttbNone)
     {
       Rect = TabButtonRect(Item);
-      Rect.Offset(-TabRect.Left, -TabRect.Top);
+
+      TTBXItemInfo ButtonItemInfo = GetItemInfo(State);
 
       if (IsHotButton(Item))
       {
-        HBRUSH Brush = CreateSolidBrush(GetSelectedBodyColor());
-        FillRect(DC, &Rect, Brush);
-        DeleteObject(Brush);
+        ButtonItemInfo.HoverKind = hkMouseHover;
 
-        HPEN Pen = CreatePen(PS_SOLID, 1, ColorToRGB(clHighlight));
-        HPEN OldPen = static_cast<HPEN>(SelectObject(DC, Pen));
-        Rectangle(DC, Rect.Left, Rect.Top, Rect.Right, Rect.Bottom);
-        SelectObject(DC, OldPen);
-        DeleteObject(Pen);
+        // Untimatelly, merge both branches to use PaintFrame (just with a different theme) (and drop GetSelectedBodyColor)
+        if (Selected && (ActiveTabTheme != NULL))
+        {
+          std::unique_ptr<TCanvas> CanvasMem(new TCanvas());
+          CanvasMem->Handle = DC;
+          CurrentTheme->PaintFrame(CanvasMem.get(), Rect, ButtonItemInfo);
+        }
+        else
+        {
+          HBRUSH Brush = CreateSolidBrush(GetSelectedBodyColor());
+          FillRect(DC, &Rect, Brush);
+          DeleteObject(Brush);
+
+          HPEN Pen = CreatePen(PS_SOLID, 1, ColorToRGB(clHighlight));
+          HPEN OldPen = static_cast<HPEN>(SelectObject(DC, Pen));
+          Rectangle(DC, Rect.Left, Rect.Top, Rect.Right, Rect.Bottom);
+          SelectObject(DC, OldPen);
+          DeleteObject(Pen);
+        }
       }
 
       COLORREF BackColor = GetPixel(DC, Rect.Left + (Rect.Width() / 2), Rect.Top + (Rect.Height() / 2));
-      COLORREF ShapeColor = ColorToRGB(Font->Color);
+      COLORREF ShapeColor;
+      if (Selected && (ActiveTabTheme != NULL))
+      {
+        ShapeColor = ColorToRGB(ActiveTabTheme->GetItemTextColor(ButtonItemInfo));
+      }
+      else
+      {
+        ShapeColor = ColorToRGB(Font->Color);
+      }
       #define BlendValue(FN) (((4 * static_cast<int>(FN(BackColor))) + static_cast<int>(FN(ShapeColor))) / 5)
       COLORREF BlendColor = RGB(BlendValue(GetRValue), BlendValue(GetGValue), BlendValue(GetBValue));
       #undef BlendValue
@@ -566,17 +584,6 @@ int __fastcall TThemePageControl::IndexOfTabButtonAt(int X, int Y)
     Result = -1;
   }
   return Result;
-}
-//----------------------------------------------------------------------------------------------------------
-void __fastcall TThemePageControl::DrawThemesPart(HDC DC, int PartId,
-  int StateId, LPCWSTR PartNameID, LPRECT Rect)
-{
-  HTHEME Theme = OpenThemeData(NULL, PartNameID);
-  if (Theme != 0)
-  {
-    DrawThemeBackground(Theme, DC, PartId, StateId, Rect, NULL);
-    CloseThemeData(Theme);
-  }
 }
 //----------------------------------------------------------------------------------------------------------
 bool __fastcall TThemePageControl::CanChange()
@@ -766,6 +773,18 @@ void TThemePageControl::UpdateTabsCaptionTruncation()
   {
     Tabs->BeginUpdate();
     EnableAlign();
+  }
+}
+//----------------------------------------------------------------------------------------------------------
+void TThemePageControl::SetActiveTabTheme(TTBXTheme * value)
+{
+  if (FActiveTabTheme != value)
+  {
+    FActiveTabTheme = value;
+    if (ActivePage != NULL)
+    {
+      ActivePage->Invalidate();
+    }
   }
 }
 //----------------------------------------------------------------------------------------------------------

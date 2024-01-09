@@ -225,6 +225,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     {
       S3UrlStyleCombo->ItemIndex = 0;
     }
+    S3RequesterPaysCheck->Checked = FSessionData->S3RequesterPays;
 
     UnicodeString S3SessionToken = FSessionData->S3SessionToken;
     if (FSessionData->HasAutoCredentials())
@@ -301,8 +302,13 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     PingIntervalSecEdit->AsInteger = FSessionData->PingInterval;
     switch (FSessionData->FtpPingType)
     {
-      case ptDummyCommand:
+      case fptDummyCommand0:
+      case fptDummyCommand:
         FtpPingDummyCommandButton->Checked = true;
+        break;
+
+      case fptDirectoryListing:
+        FtpPingDirectoryListingButton->Checked = true;
         break;
 
       default:
@@ -411,7 +417,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     // connection/tls/ssl page
     MinTlsVersionCombo->ItemIndex = TlsVersionToIndex(FSessionData->MinTlsVersion);
     MaxTlsVersionCombo->ItemIndex = TlsVersionToIndex(FSessionData->MaxTlsVersion);
-    SslSessionReuseCheck->Checked = FSessionData->SslSessionReuse;
+    SslSessionReuseCheck2->Checked = FSessionData->SslSessionReuse;
     TlsCertificateFileEdit->Text = FSessionData->TlsCertificateFile;
 
     // Note page
@@ -498,7 +504,18 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
     SessionData->PingType = ptOff;
   }
   SessionData->PingInterval = PingIntervalSecEdit->AsInteger;
-  SessionData->FtpPingType = (FtpPingDummyCommandButton->Checked ? ptDummyCommand : ptOff);
+  if (FtpPingDummyCommandButton->Checked)
+  {
+    SessionData->FtpPingType = fptDummyCommand;
+  }
+  else if (FtpPingDirectoryListingButton->Checked)
+  {
+    SessionData->FtpPingType = fptDirectoryListing;
+  }
+  else
+  {
+    SessionData->FtpPingType = fptOff;
+  }
   SessionData->FtpPingInterval = FtpPingIntervalSecEdit->AsInteger;
   SessionData->Timeout = TimeoutEdit->AsInteger;
 
@@ -635,6 +652,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   {
     SessionData->S3UrlStyle = s3usVirtualHost;
   }
+  FSessionData->S3RequesterPays = S3RequesterPaysCheck->Checked;
   if (SessionData->HasAutoCredentials())
   {
     SessionData->S3SessionToken = EmptyStr;
@@ -688,7 +706,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
   // connection/tls/ssl page
   SessionData->MinTlsVersion = IndexToTlsVersion(MinTlsVersionCombo->ItemIndex);
   SessionData->MaxTlsVersion = IndexToTlsVersion(MaxTlsVersionCombo->ItemIndex);
-  SessionData->SslSessionReuse = SslSessionReuseCheck->Checked;
+  SessionData->SslSessionReuse = SslSessionReuseCheck2->Checked;
   SessionData->TlsCertificateFile = TlsCertificateFileEdit->Text;
 
   // Note page
@@ -1061,8 +1079,8 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
 
     // connection/ssl/tls
     SslSheet->Enabled = Ssl;
-    // TLS/SSL session reuse is not configurable for WebDAV/S3 yet
-    SslSessionReuseCheck->Enabled = SslSheet->Enabled && FtpProtocol;
+    // TLS session reuse is not configurable for WebDAV/S3 yet
+    SslSessionReuseCheck2->Enabled = SslSheet->Enabled && FtpProtocol;
     TlsAuthenticationGroup->Visible = Ssl && (FtpProtocol || WebDavProtocol);
 
     // encryption sheet
@@ -1533,14 +1551,12 @@ TTlsVersion __fastcall TSiteAdvancedDialog::IndexToTlsVersion(int Index)
     default:
       DebugFail();
     case 0:
-      return ssl3;
-    case 1:
       return tls10;
-    case 2:
+    case 1:
       return tls11;
-    case 3:
+    case 2:
       return tls12;
-    case 4:
+    case 3:
       return tls13;
   }
 }
@@ -1553,15 +1569,14 @@ int __fastcall TSiteAdvancedDialog::TlsVersionToIndex(TTlsVersion TlsVersion)
       DebugFail();
     case ssl2:
     case ssl3:
-      return 0;
     case tls10:
-      return 1;
+      return 0;
     case tls11:
-      return 2;
+      return 1;
     case tls12:
-      return 3;
+      return 2;
     case tls13:
-      return 4;
+      return 3;
   }
 }
 //---------------------------------------------------------------------------
@@ -1847,16 +1862,12 @@ void __fastcall TSiteAdvancedDialog::PuttySettingsButtonClick(TObject *)
   SessionData->PuttySettings = PuttySettings;
   ExportSessionToPutty(SessionData.get(), false, SiteName);
 
-  UnicodeString Program, Params, Dir;
-  SplitCommand(GUIConfiguration->PuttyPath, Program, Params, Dir);
-  Program = ExpandEnvironmentVariables(Program);
-  if (!FindFile(Program))
-  {
-    throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Program)));
-  }
+  UnicodeString Program = FindPuttyPath();
 
   ExecuteShellChecked(Program, L"");
 
+  // Maybe replace this with update on WM_ACTIVATE,
+  // the way it works with certificate authorities on Preferences dialog
   FPuttySettingsTimer.reset(new TTimer(this));
   FPuttySettingsTimer->OnTimer = PuttySettingsTimer;
   FPuttySettingsTimer->Interval = MSecsPerSec;

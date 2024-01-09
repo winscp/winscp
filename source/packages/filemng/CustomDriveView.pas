@@ -1277,7 +1277,6 @@ end; {GetDirectory}
 procedure TCustomDriveView.SetDirectory(Value: string);
 var
   NewSelected: TTreeNode;
-  Rect: TRect;
 begin
   NewSelected := FindPathNode(Value);
 
@@ -1285,7 +1284,6 @@ begin
   begin
     FCanChange := True;
     NewSelected.MakeVisible;
-    Rect := NewSelected.DisplayRect(False);
 
     Selected := NewSelected;
   end

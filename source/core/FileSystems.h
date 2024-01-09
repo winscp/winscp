@@ -91,10 +91,10 @@ public:
     TRemoteFile *& File) = 0;
   virtual void __fastcall ReadSymlink(TRemoteFile * SymLinkFile,
     TRemoteFile *& File) = 0;
-  virtual void __fastcall RenameFile(const UnicodeString FileName, const TRemoteFile * File,
-    const UnicodeString NewName) = 0;
-  virtual void __fastcall CopyFile(const UnicodeString FileName, const TRemoteFile * File,
-    const UnicodeString NewName) = 0;
+  virtual void __fastcall RenameFile(
+    const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool Overwrite) = 0;
+  virtual void __fastcall CopyFile(
+    const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool Overwrite) = 0;
   virtual TStrings * __fastcall GetFixedPaths() = 0;
   virtual void __fastcall SpaceAvailable(const UnicodeString Path,
     TSpaceAvailable & ASpaceAvailable) = 0;

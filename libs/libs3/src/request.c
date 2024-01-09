@@ -346,6 +346,7 @@ static S3Status append_amz_header(RequestComputedValues *values,
 // to be the count of the total number of x-amz- headers thus created).
 static S3Status compose_amz_headers(const RequestParams *params,
                                     int forceUnsignedPayload,
+                                    int requesterPays, // WINSCP
                                     RequestComputedValues *values)
 {
     const S3PutProperties *properties = params->putProperties;
@@ -425,6 +426,16 @@ static S3Status compose_amz_headers(const RequestParams *params,
     if (params->bucketContext.securityToken) {
         append_amz_header(values, 0, "x-amz-security-token",
                           params->bucketContext.securityToken);
+    }
+
+    // WINSCP
+    if (requesterPays
+        && (params->httpRequestType == HttpRequestTypeDELETE
+            || params->httpRequestType == HttpRequestTypeGET
+            || params->httpRequestType == HttpRequestTypeHEAD
+            || params->httpRequestType == HttpRequestTypePOST
+            || params->httpRequestType == HttpRequestTypePUT)) {
+        append_amz_header(values, 0, "x-amz-request-payer", "requester");
     }
 
     if (!forceUnsignedPayload
@@ -1519,7 +1530,8 @@ void request_api_deinitialize()
 
 static S3Status setup_request(const RequestParams *params,
                               RequestComputedValues *computed,
-                              int forceUnsignedPayload)
+                              int forceUnsignedPayload,
+                              int requesterPays) // WINSCP
 {
     S3Status status;
 
@@ -1550,7 +1562,7 @@ static S3Status setup_request(const RequestParams *params,
              "%Y%m%dT%H%M%SZ", &gmt);
 
     // Compose the amz headers
-    if ((status = compose_amz_headers(params, forceUnsignedPayload, computed))
+    if ((status = compose_amz_headers(params, forceUnsignedPayload, requesterPays, computed)) // WINSCP
         != S3StatusOK) {
         return status;
     }
@@ -1604,7 +1616,7 @@ void request_perform(const RequestParams *params, S3RequestContext *context)
     // These will hold the computed values
     RequestComputedValues computed;
 
-    if ((status = setup_request(params, &computed, 0)) != S3StatusOK) {
+    if ((status = setup_request(params, &computed, 0, context->requesterPays)) != S3StatusOK) { // WINSCP
         return_status(status);
     }
 

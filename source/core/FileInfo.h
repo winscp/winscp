@@ -28,7 +28,7 @@ UnicodeString __fastcall GetLanguage(Word Language);
 UnicodeString __fastcall GetFileInfoString(void * FileInfo,
   TTranslation Translation, UnicodeString StringName, bool AllowEmpty = false);
 
-int __fastcall CalculateCompoundVersion(int MajorVer, int MinorVer, int Release);
+int __fastcall CalculateCompoundVersion(int MajorVer, int MinorVer, int Release = 0);
 int ZeroBuildNumber(int CompoundVersion);
 
 int __fastcall StrToCompoundVersion(UnicodeString S);

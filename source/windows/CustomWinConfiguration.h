@@ -17,6 +17,7 @@
 #define WM_WANTS_SCREEN_TIPS (WM_WINSCP_USER + 12)
 // WM_USER_SHCHANGENOTIFY + 13 (packages/filemng/DriveView.pas)
 // WM_PASTE_FILES + 14 (forms/CustomScpExplorer.cpp)
+#define WM_IS_HIDDEN (WM_WINSCP_USER + 15)
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||
 struct TSynchronizeChecklistConfiguration

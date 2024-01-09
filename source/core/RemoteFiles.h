@@ -12,7 +12,7 @@ enum TModificationFmt { mfNone, mfMDHM, mfYMDHM, mfMDY, mfFull };
 #define FILETYPE_DEFAULT L'-'
 #define FILETYPE_SYMLINK L'L'
 #define FILETYPE_DIRECTORY L'D'
-#define PARTIAL_EXT L".filepart"
+extern const UnicodeString PartialExt;
 //---------------------------------------------------------------------------
 class TTerminal;
 class TRights;
@@ -223,6 +223,7 @@ public:
   virtual void __fastcall AddFile(TRemoteFile * File);
 
   static TStrings * __fastcall CloneStrings(TStrings * List);
+  static bool AnyDirectory(TStrings * List);
 
   __property UnicodeString Directory = { read = FDirectory, write = SetDirectory };
   __property TRemoteFile * Files[Integer Index] = { read = GetFiles };
@@ -560,26 +561,26 @@ private:
 //---------------------------------------------------------------------------
 bool __fastcall IsUnixStyleWindowsPath(const UnicodeString & Path);
 bool __fastcall UnixIsAbsolutePath(const UnicodeString & Path);
-UnicodeString __fastcall UnixIncludeTrailingBackslash(const UnicodeString Path);
-UnicodeString __fastcall UnixExcludeTrailingBackslash(const UnicodeString Path, bool Simple = false);
-UnicodeString __fastcall SimpleUnixExcludeTrailingBackslash(const UnicodeString Path);
+UnicodeString __fastcall UnixIncludeTrailingBackslash(const UnicodeString & Path);
+UnicodeString __fastcall UnixExcludeTrailingBackslash(const UnicodeString & Path, bool Simple = false);
+UnicodeString __fastcall SimpleUnixExcludeTrailingBackslash(const UnicodeString & Path);
 UnicodeString __fastcall UnixCombinePaths(const UnicodeString & Path1, const UnicodeString & Path2);
-UnicodeString __fastcall UnixExtractFileDir(const UnicodeString Path);
-UnicodeString __fastcall UnixExtractFilePath(const UnicodeString Path);
-UnicodeString __fastcall UnixExtractFileName(const UnicodeString Path);
+UnicodeString __fastcall UnixExtractFileDir(const UnicodeString & Path);
+UnicodeString __fastcall UnixExtractFilePath(const UnicodeString & Path);
+UnicodeString __fastcall UnixExtractFileName(const UnicodeString & Path);
 UnicodeString ExtractShortName(const UnicodeString & Path, bool Unix);
-UnicodeString __fastcall UnixExtractFileExt(const UnicodeString Path);
-Boolean __fastcall UnixSamePath(const UnicodeString Path1, const UnicodeString Path2);
-bool __fastcall UnixIsChildPath(UnicodeString Parent, UnicodeString Child);
+UnicodeString __fastcall UnixExtractFileExt(const UnicodeString & Path);
+Boolean __fastcall UnixSamePath(const UnicodeString & Path1, const UnicodeString & Path2);
+bool __fastcall UnixIsChildPath(const UnicodeString & Parent, const UnicodeString & Child);
 bool __fastcall ExtractCommonPath(TStrings * Files, UnicodeString & Path);
 bool __fastcall UnixExtractCommonPath(TStrings * Files, UnicodeString & Path);
 UnicodeString __fastcall ExtractFileName(const UnicodeString & Path, bool Unix);
-bool __fastcall IsUnixRootPath(const UnicodeString Path);
-bool __fastcall IsUnixHiddenFile(const UnicodeString Path);
+bool __fastcall IsUnixRootPath(const UnicodeString & Path);
+bool __fastcall IsUnixHiddenFile(const UnicodeString & Path);
 UnicodeString __fastcall AbsolutePath(const UnicodeString & Base, const UnicodeString & Path);
-UnicodeString __fastcall FromUnixPath(const UnicodeString Path);
-UnicodeString __fastcall ToUnixPath(const UnicodeString Path);
-UnicodeString __fastcall MinimizeName(const UnicodeString FileName, int MaxLen, bool Unix);
+UnicodeString __fastcall FromUnixPath(const UnicodeString & Path);
+UnicodeString __fastcall ToUnixPath(const UnicodeString & Path);
+UnicodeString __fastcall MinimizeName(const UnicodeString & FileName, int MaxLen, bool Unix);
 UnicodeString __fastcall MakeFileList(TStrings * FileList);
 TDateTime __fastcall ReduceDateTimePrecision(TDateTime DateTime,
   TModificationFmt Precision);
@@ -589,6 +590,7 @@ UnicodeString __fastcall UserModificationStr(TDateTime DateTime,
   TModificationFmt Precision);
 UnicodeString __fastcall ModificationStr(TDateTime DateTime,
   TModificationFmt Precision);
+int GetPartialFileExtLen(const UnicodeString & FileName);
 int __fastcall FakeFileImageIndex(UnicodeString FileName, unsigned long Attrs = 0,
   UnicodeString * TypeName = NULL);
 bool __fastcall SameUserName(const UnicodeString & UserName1, const UnicodeString & UserName2);

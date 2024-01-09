@@ -3,6 +3,7 @@
 #define ConfigurationH
 
 #include <set>
+#include <list>
 #include "RemoteFiles.h"
 #include "FileBuffer.h"
 #include "HierarchicalStorage.h"
@@ -19,6 +20,42 @@ enum TAutoSwitch { asOn, asOff, asAuto }; // Has to match PuTTY FORCE_ON, FORCE_
 //---------------------------------------------------------------------------
 class TStoredSessionList;
 class TCopyParamType;
+//---------------------------------------------------------------------------
+class TSshHostCA
+{
+public:
+  TSshHostCA();
+  void Save(THierarchicalStorage * Storage) const;
+  bool Load(THierarchicalStorage * Storage);
+
+  UnicodeString Name;
+  RawByteString PublicKey;
+  UnicodeString ValidityExpression;
+  bool PermitRsaSha1;
+  bool PermitRsaSha256;
+  bool PermitRsaSha512;
+
+  typedef std::vector<TSshHostCA> TList;
+};
+//---------------------------------------------------------------------------
+class TSshHostCAList
+{
+public:
+  TSshHostCAList();
+  TSshHostCAList(const TSshHostCA::TList & List);
+  TSshHostCAList & operator =(const TSshHostCAList & other);
+  void Default();
+  const TSshHostCA::TList & GetList() const;
+  int GetCount() const;
+  const TSshHostCA * Get(int Index) const;
+  const TSshHostCA * Find(const UnicodeString & Name) const;
+
+  void Save(THierarchicalStorage * Storage);
+  void Load(THierarchicalStorage * Storage);
+
+private:
+  TSshHostCA::TList FList;
+};
 //---------------------------------------------------------------------------
 class TConfiguration : public TObject
 {
@@ -80,8 +117,16 @@ private:
   int FDontReloadMoreThanSessions;
   int FScriptProgressFileNameLimit;
   int FKeyVersion;
+  int FQueueTransfersLimit;
+  int FParallelTransferThreshold;
   UnicodeString FCertificateStorage;
+  UnicodeString FAWSMetadataService;
   UnicodeString FChecksumCommands;
+  std::unique_ptr<TSshHostCAList> FSshHostCAList;
+  std::unique_ptr<TSshHostCAList> FPuttySshHostCAList;
+  bool FSshHostCAsFromPuTTY;
+  int FHttpsCertificateValidation;
+  UnicodeString FSynchronizationChecksumAlgs;
 
   bool FDisablePasswordStoring;
   bool FForceBanners;
@@ -131,7 +176,6 @@ private:
   UnicodeString __fastcall GetIniFileStorageName(bool ReadingOnly);
   void __fastcall SetOptionsStorage(TStrings * value);
   TStrings * __fastcall GetOptionsStorage();
-  UnicodeString __fastcall GetPartialExt() const;
   UnicodeString __fastcall GetFileInfoString(const UnicodeString Key);
   void __fastcall SetSessionReopenAuto(int value);
   void __fastcall SetSessionReopenBackground(int value);
@@ -149,12 +193,18 @@ private:
   void __fastcall SetMimeTypes(UnicodeString value);
   void SetCertificateStorage(const UnicodeString & value);
   UnicodeString GetCertificateStorageExpanded();
+  void SetAWSMetadataService(const UnicodeString & value);
   bool __fastcall GetCollectUsage();
   void __fastcall SetCollectUsage(bool value);
   bool __fastcall GetIsUnofficial();
   bool __fastcall GetPersistent();
   void SetLocalPortNumberMin(int value);
   void SetLocalPortNumberMax(int value);
+  void SetQueueTransfersLimit(int value);
+  const TSshHostCAList * GetSshHostCAList();
+  void SetSshHostCAList(const TSshHostCAList * value);
+  const TSshHostCAList * GetPuttySshHostCAList();
+  const TSshHostCAList * GetActiveSshHostCAList();
 
 protected:
   TStorage FStorage;
@@ -167,6 +217,7 @@ protected:
   virtual void __fastcall LoadFrom(THierarchicalStorage * Storage);
   virtual void __fastcall CopyData(THierarchicalStorage * Source, THierarchicalStorage * Target);
   virtual void __fastcall LoadAdmin(THierarchicalStorage * Storage);
+  void LoadSshHostCAList(TSshHostCAList * SshHostCAList, THierarchicalStorage * Storage);
   virtual UnicodeString __fastcall GetDefaultKeyFile();
   virtual void __fastcall Saved();
   void __fastcall CleanupRegistry(const UnicodeString & RegistryPath);
@@ -177,6 +228,7 @@ protected:
   void __fastcall SetBannerData(const UnicodeString & SessionKey, const UnicodeString & BannerHash, unsigned int Params);
   void __fastcall GetBannerData(const UnicodeString & SessionKey, UnicodeString & BannerHash, unsigned int & Params);
   static UnicodeString __fastcall PropertyToKey(const UnicodeString & Property);
+  void DoSave(THierarchicalStorage * AStorage, bool All);
   virtual void __fastcall DoSave(bool All, bool Explicit);
   UnicodeString __fastcall FormatFingerprintKey(const UnicodeString & SiteKey, const UnicodeString & FingerprintType);
   THierarchicalStorage * OpenDirectoryStatisticsCache(bool CanCreate);
@@ -282,6 +334,7 @@ public:
     TStrings * Lines, TStoredSessionList * Sessions, UnicodeString & Error);
   TStoredSessionList * SelectOpensshSessionsForImport(TStoredSessionList * Sessions, UnicodeString & Error);
   UnicodeString GetPuttySessionsKey(const UnicodeString & RootKey);
+  void RefreshPuttySshHostCAList();
 
   __property TVSFixedFileInfo *FixedApplicationInfo  = { read=GetFixedApplicationInfo };
   __property void * ApplicationInfo  = { read=GetApplicationInfo };
@@ -322,7 +375,6 @@ public:
   __property bool ConfirmResume = { read = GetConfirmResume, write = SetConfirmResume};
   __property bool AutoReadDirectoryAfterOp = { read = GetAutoReadDirectoryAfterOp, write = SetAutoReadDirectoryAfterOp};
   __property bool RememberPassword = { read = GetRememberPassword };
-  __property UnicodeString PartialExt = {read=GetPartialExt};
   __property int SessionReopenAuto = { read = FSessionReopenAuto, write = SetSessionReopenAuto };
   __property int SessionReopenBackground = { read = FSessionReopenBackground, write = SetSessionReopenBackground };
   __property int SessionReopenTimeout = { read = FSessionReopenTimeout, write = SetSessionReopenTimeout };
@@ -334,6 +386,7 @@ public:
   __property UnicodeString ExternalIpAddress = { read = FExternalIpAddress, write = SetExternalIpAddress };
   __property UnicodeString CertificateStorage = { read = FCertificateStorage, write = SetCertificateStorage };
   __property UnicodeString CertificateStorageExpanded = { read = GetCertificateStorageExpanded };
+  __property UnicodeString AWSMetadataService = { read = FAWSMetadataService, write = SetAWSMetadataService };
   __property UnicodeString ChecksumCommands = { read = FChecksumCommands };
   __property int LocalPortNumberMin = { read = FLocalPortNumberMin, write = SetLocalPortNumberMin };
   __property int LocalPortNumberMax = { read = FLocalPortNumberMax, write = SetLocalPortNumberMax };
@@ -342,7 +395,15 @@ public:
   __property UnicodeString MimeTypes = { read = FMimeTypes, write = SetMimeTypes };
   __property int DontReloadMoreThanSessions = { read = FDontReloadMoreThanSessions, write = FDontReloadMoreThanSessions };
   __property int ScriptProgressFileNameLimit = { read = FScriptProgressFileNameLimit, write = FScriptProgressFileNameLimit };
+  __property int QueueTransfersLimit = { read = FQueueTransfersLimit, write = SetQueueTransfersLimit };
+  __property int ParallelTransferThreshold = { read = FParallelTransferThreshold, write = FParallelTransferThreshold };
   __property int KeyVersion = { read = FKeyVersion, write = FKeyVersion };
+  __property TSshHostCAList * SshHostCAList = { read = GetSshHostCAList, write = SetSshHostCAList };
+  __property TSshHostCAList * PuttySshHostCAList = { read = GetPuttySshHostCAList };
+  __property TSshHostCAList * ActiveSshHostCAList = { read = GetActiveSshHostCAList };
+  __property bool SshHostCAsFromPuTTY = { read = FSshHostCAsFromPuTTY, write = FSshHostCAsFromPuTTY };
+  __property int HttpsCertificateValidation = { read = FHttpsCertificateValidation, write = FHttpsCertificateValidation };
+  __property UnicodeString SynchronizationChecksumAlgs = { read = FSynchronizationChecksumAlgs, write = FSynchronizationChecksumAlgs };
 
   __property UnicodeString TimeFormat = { read = GetTimeFormat };
   __property TStorage Storage  = { read=GetStorage };

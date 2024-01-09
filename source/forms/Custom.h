@@ -25,7 +25,6 @@ private:
   short FCount;
   TGroupBox * FGroupBox;
 
-  void __fastcall Change(TObject * Sender);
   void __fastcall Changed();
   int __fastcall GetMaxControlWidth(TControl * Control);
   int __fastcall GetParentClientWidth();
@@ -39,6 +38,7 @@ protected:
   virtual void __fastcall DoChange(bool & CanSubmit);
   virtual void __fastcall DoValidate();
   virtual void __fastcall DoHelp();
+  void __fastcall Change(TObject * Sender);
 
 public:
   __fastcall TCustomDialog(UnicodeString HelpKeyword);
@@ -51,6 +51,7 @@ public:
   void __fastcall AddComboBox(TCustomCombo * Combo, TLabel * Label, TStrings * Items = NULL, bool OneLine = false);
   void __fastcall AddShortCutComboBox(TComboBox * Combo, TLabel * Label, const TShortCuts & ShortCuts);
   void __fastcall AddButtonControl(TButtonControl * Control);
+  void AddButtonNextToEdit(TButton * Control, TWinControl * Edit);
   void __fastcall AddImage(const UnicodeString & ImageName);
   void __fastcall AddWinControl(TWinControl * Control);
   void __fastcall AddText(TLabel * Label);

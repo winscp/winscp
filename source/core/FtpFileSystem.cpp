@@ -468,7 +468,7 @@ void __fastcall TFTPFileSystem::Open()
       if (!FTerminal->PromptUser(Data, pkUserName, LoadStr(USERNAME_TITLE), L"",
             LoadStr(USERNAME_PROMPT2), true, 0, UserName))
       {
-        FTerminal->FatalError(NULL, LoadStr(AUTHENTICATION_FAILED));
+        FTerminal->FatalError(NULL, LoadStr(CREDENTIALS_NOT_SPECIFIED));
       }
       else
       {
@@ -487,7 +487,7 @@ void __fastcall TFTPFileSystem::Open()
       if (!FTerminal->PromptUser(Data, pkPassword, LoadStr(PASSWORD_TITLE), L"",
             LoadStr(PASSWORD_PROMPT), false, 0, Password))
       {
-        FTerminal->FatalError(NULL, LoadStr(AUTHENTICATION_FAILED));
+        FTerminal->FatalError(NULL, LoadStr(CREDENTIALS_NOT_SPECIFIED));
       }
     }
 
@@ -817,7 +817,7 @@ void __fastcall TFTPFileSystem::Idle()
     PoolForFatalNonCommandReply();
 
     // Keep session alive
-    if ((FTerminal->SessionData->FtpPingType != ptOff) &&
+    if ((FTerminal->SessionData->FtpPingType == fptDirectoryListing) &&
         (double(Now() - FLastDataSent) > double(FTerminal->SessionData->FtpPingIntervalDT) * 4))
     {
       FTerminal->LogEvent(L"Dummy directory read to keep session alive.");
@@ -1455,7 +1455,11 @@ void __fastcall TFTPFileSystem::DoFileTransferProgress(__int64 TransferSize,
 
   if (FFileTransferResumed > 0)
   {
-    OperationProgress->AddResumed(FFileTransferResumed);
+    // Bytes will be 0, if resume was not possible
+    if (Bytes >= FFileTransferResumed)
+    {
+      OperationProgress->AddResumed(FFileTransferResumed);
+    }
     FFileTransferResumed = 0;
   }
 
@@ -1465,7 +1469,6 @@ void __fastcall TFTPFileSystem::DoFileTransferProgress(__int64 TransferSize,
     OperationProgress->AddTransferred(Diff);
     FFileTransferAny = true;
   }
-
   if (OperationProgress->Cancel != csContinue)
   {
     if (OperationProgress->ClearCancelFile())
@@ -1553,7 +1556,7 @@ void __fastcall TFTPFileSystem::CopyToLocal(TStrings * FilesToCopy,
 UnicodeString TFTPFileSystem::RemoteExtractFilePath(const UnicodeString & Path)
 {
   UnicodeString Result;
-  // If the path ends with a slash, FZAPI CServerPath contructor does not identify the path as VMS.
+  // If the path ends with a slash, FZAPI CServerPath constructor does not identify the path as VMS.
   // It is probably ok to use UnixExtractFileDir for all paths passed to FZAPI,
   // but for now, we limit the impact of the change to VMS.
   if (FVMS)
@@ -1707,7 +1710,7 @@ void __fastcall TFTPFileSystem::Source(
   // Support for MDTM does not necessarily mean that the server supports
   // non-standard hack of setting timestamp using
   // MFMT-like (two argument) call to MDTM.
-  // IIS definitelly does.
+  // IIS definitely does.
   if (FFileTransferPreserveTime &&
       ((FServerCapabilities->GetCapability(mfmt_command) == yes) ||
        ((FServerCapabilities->GetCapability(mdtm_command) == yes))))
@@ -1941,6 +1944,7 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
     case fcPreservingTimestampDirs:
     case fcResumeSupport:
     case fcChangePassword:
+    case fcParallelFileTransfers:
       return false;
 
     default:
@@ -2514,8 +2518,8 @@ void __fastcall TFTPFileSystem::ReadSymlink(TRemoteFile * SymlinkFile,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::RenameFile(const UnicodeString AFileName, const TRemoteFile * /*File*/,
-  const UnicodeString ANewName)
+void __fastcall TFTPFileSystem::RenameFile(
+  const UnicodeString & AFileName, const TRemoteFile *, const UnicodeString & ANewName, bool DebugUsedArg(Overwrite))
 {
   UnicodeString FileName = AbsolutePath(AFileName, false);
   UnicodeString NewName = AbsolutePath(ANewName, false);
@@ -2536,8 +2540,8 @@ void __fastcall TFTPFileSystem::RenameFile(const UnicodeString AFileName, const 
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::CopyFile(const UnicodeString FileName, const TRemoteFile * /*File*/,
-  const UnicodeString NewName)
+void __fastcall TFTPFileSystem::CopyFile(
+  const UnicodeString & FileName, const TRemoteFile *, const UnicodeString & NewName, bool DebugUsedArg(Overwrite))
 {
   DebugAssert(SupportsSiteCommand(CopySiteCommand));
   EnsureLocation();
@@ -2642,8 +2646,7 @@ const TFileSystemInfo & __fastcall TFTPFileSystem::GetFileSystemInfo(bool /*Retr
         FORMAT(L"%s\r\n", (LoadStr(FTP_FEATURE_INFO)));
       for (int Index = 0; Index < FFeatures->Count; Index++)
       {
-        // For TrimLeft, refer to HandleFeatReply
-        FFileSystemInfo.AdditionalInfo += FORMAT(L"  %s\r\n", (TrimLeft(FFeatures->Strings[Index])));
+        FFileSystemInfo.AdditionalInfo += FORMAT(L"  %s\r\n", (FFeatures->Strings[Index]));
       }
     }
 
@@ -2800,7 +2803,7 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_KEEPALIVE:
-      Result = ((Data->FtpPingType != ptOff) ? TRUE : FALSE);
+      Result = ((Data->FtpPingType != fptOff) ? TRUE : FALSE);
       break;
 
     case OPTION_INTERVALLOW:
@@ -3525,7 +3528,7 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
         // (the ... can be "z/OS")
         // https://www.ibm.com/docs/en/zos/latest?topic=2rc-215-mvs-is-operating-system-this-server-ftp-server-is-running-name
         // FZPI has a different incompatible detection.
-        // MVS FTP servers have two separate MVS and Unix file systems cooexisting in the same session.
+        // MVS FTP servers have two separate MVS and Unix file systems coexisting in the same session.
         FMVS = (FSystem.SubString(1, 3) == L"MVS");
         if (FMVS)
         {
@@ -3595,85 +3598,9 @@ void __fastcall TFTPFileSystem::ResetFeatures()
   FSupportsAnyChecksumFeature = false;
 }
 //---------------------------------------------------------------------------
-UnicodeString TFTPFileSystem::CutFeature(UnicodeString & Buf)
-{
-  UnicodeString Result;
-  if (Buf.SubString(1, 1) == L"\"")
-  {
-    Buf.Delete(1, 1);
-    int P = Buf.Pos(L"\",");
-    if (P == 0)
-    {
-      Result = Buf;
-      Buf = UnicodeString();
-      // there should be the ending quote, but if not, just do nothing
-      if (Result.SubString(Result.Length(), 1) == L"\"")
-      {
-        Result.SetLength(Result.Length() - 1);
-      }
-    }
-    else
-    {
-      Result = Buf.SubString(1, P - 1);
-      Buf.Delete(1, P + 1);
-    }
-    Buf = Buf.TrimLeft();
-  }
-  else
-  {
-    Result = CutToChar(Buf, L',', true);
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 void TFTPFileSystem::ProcessFeatures()
 {
-  std::unique_ptr<TStrings> Features(new TStringList());
-  UnicodeString FeaturesOverride = FTerminal->SessionData->ProtocolFeatures.Trim();
-  if (FeaturesOverride.SubString(1, 1) == L"*")
-  {
-    FeaturesOverride.Delete(1, 1);
-    while (!FeaturesOverride.IsEmpty())
-    {
-      UnicodeString Feature = CutFeature(FeaturesOverride);
-      Features->Add(Feature);
-    }
-  }
-  else
-  {
-    std::unique_ptr<TStrings> DeleteFeatures(CreateSortedStringList());
-    std::unique_ptr<TStrings> AddFeatures(new TStringList());
-    while (!FeaturesOverride.IsEmpty())
-    {
-      UnicodeString Feature = CutFeature(FeaturesOverride);
-      if (Feature.SubString(1, 1) == L"-")
-      {
-        Feature.Delete(1, 1);
-        DeleteFeatures->Add(Feature.LowerCase());
-      }
-      else
-      {
-        if (Feature.SubString(1, 1) == L"+")
-        {
-          Feature.Delete(1, 1);
-        }
-        AddFeatures->Add(Feature);
-      }
-    }
-
-    for (int Index = 0; Index < FFeatures->Count; Index++)
-    {
-      // IIS 2003 indents response by 4 spaces, instead of one,
-      // see example in HandleReplyStatus
-      UnicodeString Feature = FFeatures->Strings[Index].Trim();
-      if (DeleteFeatures->IndexOf(Feature) < 0)
-      {
-        Features->Add(Feature);
-      }
-    }
-
-    Features->AddStrings(AddFeatures.get());
-  }
+  std::unique_ptr<TStrings> Features(FTerminal->ProcessFeatures(FFeatures));
 
   for (int Index = 0; Index < Features->Count; Index++)
   {
@@ -3690,7 +3617,7 @@ void TFTPFileSystem::ProcessFeatures()
     {
       // Serv-U lists all SITE commands in one line like:
       //  SITE PSWD;SET;ZONE;CHMOD;MSG;EXEC;HELP
-      // But ProFTPD lists them separatelly:
+      // But ProFTPD lists them separately:
       //  SITE UTIME
       //  SITE RMDIR
       //  SITE COPY
@@ -3734,7 +3661,10 @@ void __fastcall TFTPFileSystem::HandleFeatReply()
   {
     FLastResponse->Delete(0);
     FLastResponse->Delete(FLastResponse->Count - 1);
-    FFeatures->Assign(FLastResponse);
+    for (int Index = 0; Index < FLastResponse->Count; Index++)
+    {
+      FFeatures->Add(FLastResponse->Strings[Index].Trim());
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -4281,7 +4211,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
 
       // TryWindowsSystemCertificateStore is set for the same set of failures
       // as trigger NE_SSL_UNTRUSTED flag in ne_openssl.c's verify_callback().
-      // Use WindowsValidateCertificate only as a last resort (after checking the cached fiungerprint)
+      // Use WindowsValidateCertificate only as a last resort (after checking the cached fingerprint)
       // as it can take a very long time (up to 1 minute).
       if (!VerificationResult && TryWindowsSystemCertificateStore)
       {
@@ -4701,7 +4631,7 @@ void __fastcall TFTPFileSystem::PreserveDownloadFileTime(HANDLE Handle, void * U
 {
   TFileTransferData * Data = static_cast<TFileTransferData *>(UserData);
   DebugAssert(Data->CopyParam->OnTransferOut == NULL);
-  FTerminal->UpdateTargetTime(Handle, Data->Modification, dstmUnix);
+  FTerminal->UpdateTargetTime(Handle, Data->Modification, mfFull, dstmUnix);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::GetFileModificationTimeInUtc(const wchar_t * FileName, struct tm & Time)

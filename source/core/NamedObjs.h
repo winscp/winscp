@@ -29,7 +29,6 @@ private:
   int __fastcall GetCount();
   int __fastcall GetCountIncludingHidden();
   virtual void __fastcall Notify(void *Ptr, TListNotification Action);
-  void __fastcall SetCount(int value);
 protected:
   int FHiddenCount;
   bool FControlledAdd;
@@ -44,7 +43,7 @@ public:
   int __fastcall Add(TObject * AObject);
   virtual TNamedObject * __fastcall AtObject(Integer Index);
   TNamedObject * __fastcall FindByName(const UnicodeString & Name);
-  __property int Count = { read = GetCount, write = SetCount };
+  __property int Count = { read = GetCount };
   __property int CountIncludingHidden = { read = GetCountIncludingHidden };
 };
 //---------------------------------------------------------------------------

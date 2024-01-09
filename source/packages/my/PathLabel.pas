@@ -558,7 +558,7 @@ begin
   VirtualMask := Mask;
   IsVirtualMask := False;
   IsEmptyMask := (VirtualMask = '');
-  if IsEmptyMask and HotTrack then
+  if IsEmptyMask and UseHotTrack then
   begin
     VirtualMask := '*.*';
     IsVirtualMask := not FMouseInView;

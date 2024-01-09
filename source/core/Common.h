@@ -21,6 +21,7 @@
 #define PARENTDIRECTORY L".."
 #define THISDIRECTORY L"."
 //---------------------------------------------------------------------------
+extern const UnicodeString AnyMask;
 extern const wchar_t EngShortMonthNames[12][4];
 extern const char Bom[3];
 extern const wchar_t TokenPrefix;
@@ -47,7 +48,7 @@ void __fastcall Shred(RawByteString & Str);
 UnicodeString AnsiToString(const RawByteString & S);
 UnicodeString AnsiToString(const char * S, size_t Len);
 UnicodeString MakeValidFileName(UnicodeString FileName);
-UnicodeString RootKeyToStr(HKEY RootKey);
+UnicodeString RootKeyToStr(HKEY RootKey, const UnicodeString & Default = EmptyStr);
 UnicodeString BooleanToStr(bool B);
 UnicodeString BooleanToEngStr(bool B);
 UnicodeString DefaultStr(const UnicodeString & Str, const UnicodeString & Default);
@@ -57,6 +58,7 @@ UnicodeString CopyToChars(const UnicodeString & Str, int & From, UnicodeString C
 UnicodeString CopyToChar(const UnicodeString & Str, wchar_t Ch, bool Trim);
 UnicodeString RemoveSuffix(const UnicodeString & Str, const UnicodeString & Suffix, bool RemoveNumbersAfterSuffix = false);
 UnicodeString DelimitStr(const UnicodeString & Str, wchar_t Quote = L'"');
+UnicodeString MidStr(const UnicodeString & Text, int Start);
 UnicodeString ShellQuoteStr(const UnicodeString & Str);
 UnicodeString ExceptionLogString(Exception *E);
 UnicodeString __fastcall MainInstructions(const UnicodeString & S);
@@ -69,6 +71,8 @@ UnicodeString RemoveInteractiveMsgTag(UnicodeString S);
 UnicodeString RemoveEmptyLines(const UnicodeString & S);
 bool IsNumber(const UnicodeString Str);
 extern const wchar_t NormalizedFingerprintSeparator;
+UnicodeString EncodeStrToBase64(const RawByteString & Str);
+RawByteString DecodeBase64ToStr(const UnicodeString & Str);
 UnicodeString Base64ToUrlSafe(const UnicodeString & S);
 UnicodeString MD5ToUrlSafe(const UnicodeString & S);
 bool SameChecksum(const UnicodeString & AChecksum1, const UnicodeString & AChecksum2, bool Base64);
@@ -122,7 +126,8 @@ UnicodeString __fastcall EncodeUrlString(UnicodeString S);
 UnicodeString __fastcall EncodeUrlPath(UnicodeString S);
 UnicodeString __fastcall AppendUrlParams(UnicodeString URL, UnicodeString Params);
 UnicodeString __fastcall ExtractFileNameFromUrl(const UnicodeString & Url);
-bool __fastcall RecursiveDeleteFile(const UnicodeString & FileName, bool ToRecycleBin);
+bool IsDomainOrSubdomain(const UnicodeString & FullDomain, const UnicodeString & Domain);
+bool __fastcall RecursiveDeleteFile(const UnicodeString & FileName, bool ToRecycleBin = false);
 int __fastcall RecursiveDeleteFileChecked(const UnicodeString & FileName, bool ToRecycleBin);
 void __fastcall DeleteFileChecked(const UnicodeString & FileName);
 unsigned int __fastcall CancelAnswer(unsigned int Answers);
@@ -145,6 +150,7 @@ bool __fastcall IsWin10();
 bool __fastcall IsWin10Build(unsigned int BuildNumber);
 bool IsWin11();
 bool __fastcall IsWine();
+void EnableUWPTestMode();
 bool __fastcall IsUWP();
 UnicodeString GetPackageName();
 bool IsOfficialPackage();
@@ -167,6 +173,7 @@ UnicodeString __fastcall FormatSize(__int64 Size);
 UnicodeString __fastcall ExtractFileBaseName(const UnicodeString & Path);
 TStringList * __fastcall TextToStringList(const UnicodeString & Text);
 UnicodeString __fastcall StringsToText(TStrings * Strings);
+TStringList * __fastcall CommaTextToStringList(const UnicodeString & CommaText);
 TStrings * __fastcall CloneStrings(TStrings * Strings);
 UnicodeString __fastcall TrimVersion(UnicodeString Version);
 UnicodeString __fastcall FormatVersion(int MajovVersion, int MinorVersion, int Release);
@@ -174,6 +181,7 @@ TFormatSettings __fastcall GetEngFormatSettings();
 int __fastcall ParseShortEngMonthName(const UnicodeString & MonthStr);
 // The defaults are equal to defaults of TStringList class (except for Sorted)
 TStringList * __fastcall CreateSortedStringList(bool CaseSensitive = false, System::Types::TDuplicates Duplicates = dupIgnore);
+bool SameIdent(const UnicodeString & Ident1, const UnicodeString & Ident2);
 UnicodeString __fastcall FindIdent(const UnicodeString & Ident, TStrings * Idents);
 void __fastcall CheckCertificate(const UnicodeString & Path);
 typedef struct x509_st X509;
@@ -217,7 +225,9 @@ void CopySearchRec(const TSearchRec & Source, TSearchRec & Dest);
 struct TSearchRecChecked : public TSearchRecSmart
 {
   UnicodeString Path;
+  UnicodeString Dir;
   bool Opened;
+  UnicodeString GetFilePath() const;
 };
 struct TSearchRecOwned : public TSearchRecChecked
 {
@@ -267,7 +277,7 @@ int __fastcall CompareFileTime(TDateTime T1, TDateTime T2);
 int __fastcall TimeToMSec(TDateTime T);
 int __fastcall TimeToSeconds(TDateTime T);
 int __fastcall TimeToMinutes(TDateTime T);
-UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDateTime DateTime);
+UnicodeString FormatDateTimeSpan(const TDateTime & DateTime);
 UnicodeString FormatRelativeTime(const TDateTime & ANow, const TDateTime & AThen, bool DateOnly);
 TStrings * TlsCipherList();
 //---------------------------------------------------------------------------

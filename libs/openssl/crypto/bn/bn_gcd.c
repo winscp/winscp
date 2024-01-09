@@ -1,7 +1,7 @@
 /*
- * Copyright 1995-2022 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -520,18 +520,49 @@ BIGNUM *BN_mod_inverse(BIGNUM *in,
     int noinv = 0;
 
     if (ctx == NULL) {
-        ctx = new_ctx = BN_CTX_new();
+        ctx = new_ctx = BN_CTX_new_ex(NULL);
         if (ctx == NULL) {
-            BNerr(BN_F_BN_MOD_INVERSE, ERR_R_MALLOC_FAILURE);
+            ERR_raise(ERR_LIB_BN, ERR_R_BN_LIB);
             return NULL;
         }
     }
 
     rv = int_bn_mod_inverse(in, a, n, ctx, &noinv);
     if (noinv)
-        BNerr(BN_F_BN_MOD_INVERSE, BN_R_NO_INVERSE);
+        ERR_raise(ERR_LIB_BN, BN_R_NO_INVERSE);
     BN_CTX_free(new_ctx);
     return rv;
+}
+
+/*
+ * The numbers a and b are coprime if the only positive integer that is a
+ * divisor of both of them is 1.
+ * i.e. gcd(a,b) = 1.
+ *
+ * Coprimes have the property: b has a multiplicative inverse modulo a
+ * i.e there is some value x such that bx = 1 (mod a).
+ *
+ * Testing the modulo inverse is currently much faster than the constant
+ * time version of BN_gcd().
+ */
+int BN_are_coprime(BIGNUM *a, const BIGNUM *b, BN_CTX *ctx)
+{
+    int ret = 0;
+    BIGNUM *tmp;
+
+    BN_CTX_start(ctx);
+    tmp = BN_CTX_get(ctx);
+    if (tmp == NULL)
+        goto end;
+
+    ERR_set_mark();
+    BN_set_flags(a, BN_FLG_CONSTTIME);
+    ret = (BN_mod_inverse(tmp, a, b, ctx) != NULL);
+    /* Clear any errors (an error is returned if there is no inverse) */
+    ERR_pop_to_mark();
+end:
+    BN_CTX_end(ctx);
+    return ret;
 }
 
 /*-
@@ -611,9 +642,9 @@ int BN_gcd(BIGNUM *r, const BIGNUM *in_a, const BIGNUM *in_b, BN_CTX *ctx)
 
     for (i = 0; i < m; i++) {
         /* conditionally flip signs if delta is positive and g is odd */
-        cond = (-delta >> (8 * sizeof(delta) - 1)) & g->d[0] & 1
+        cond = ((unsigned int)-delta >> (8 * sizeof(delta) - 1)) & g->d[0] & 1
             /* make sure g->top > 0 (i.e. if top == 0 then g == 0 always) */
-            & (~((g->top - 1) >> (sizeof(g->top) * 8 - 1)));
+            & (~((unsigned int)(g->top - 1) >> (sizeof(g->top) * 8 - 1)));
         delta = (-cond & -delta) | ((cond - 1) & delta);
         r->neg ^= cond;
         /* swap */
@@ -625,7 +656,7 @@ int BN_gcd(BIGNUM *r, const BIGNUM *in_a, const BIGNUM *in_b, BN_CTX *ctx)
             goto err;
         BN_consttime_swap(g->d[0] & 1 /* g is odd */
                 /* make sure g->top > 0 (i.e. if top == 0 then g == 0 always) */
-                & (~((g->top - 1) >> (sizeof(g->top) * 8 - 1))),
+                & (~((unsigned int)(g->top - 1) >> (sizeof(g->top) * 8 - 1))),
                 g, temp, top);
         if (!BN_rshift1(g, g))
             goto err;

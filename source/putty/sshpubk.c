@@ -566,24 +566,18 @@ static char *read_body(BinarySource *src)
 
 static bool read_blob(BinarySource *src, int nlines, BinarySink *bs)
 {
-    unsigned char *blob;
     char *line;
     int linelen;
     int i, j, k;
 
     /* We expect at most 64 base64 characters, ie 48 real bytes, per line. */
-    assert(nlines < MAX_KEY_BLOB_LINES);
-    blob = snewn(48 * nlines, unsigned char);
 
     for (i = 0; i < nlines; i++) {
         line = read_body(src);
-        if (!line) {
-            sfree(blob);
+        if (!line)
             return false;
-        }
         linelen = strlen(line);
         if (linelen % 4 != 0 || linelen > 64) {
-            sfree(blob);
             sfree(line);
             return false;
         }
@@ -592,14 +586,12 @@ static bool read_blob(BinarySource *src, int nlines, BinarySink *bs)
             k = base64_decode_atom(line + j, decoded);
             if (!k) {
                 sfree(line);
-                sfree(blob);
                 return false;
             }
             put_data(bs, decoded, k);
         }
         sfree(line);
     }
-    sfree(blob);
     return true;
 }
 
@@ -639,25 +631,9 @@ const ssh_keyalg *find_pubkey_alg_len(ptrlen name)
     return NULL;
 }
 
-static const ssh_keyalg *find_pubkey_alg_len_winscp_host(ptrlen name)
-{
-    size_t i;
-    for (i = 0; i < n_keyalgs; i++)
-        if (!all_keyalgs[i]->is_certificate &&
-            ptrlen_eq_string(name, all_keyalgs[i]->ssh_id))
-            return all_keyalgs[i];
-
-    return NULL;
-}
-
 const ssh_keyalg *find_pubkey_alg(const char *name)
 {
     return find_pubkey_alg_len(ptrlen_from_asciz(name));
-}
-
-const ssh_keyalg *find_pubkey_alg_winscp_host(const char *name)
-{
-    return find_pubkey_alg_len_winscp_host(ptrlen_from_asciz(name));
 }
 
 ptrlen pubkey_blob_to_alg_name(ptrlen blob)
@@ -1867,7 +1843,7 @@ char *ssh2_fingerprint_blob(ptrlen blob, FingerprintType fptype)
     { // WINSCP
     ptrlen algname = get_string(src);
     if (!get_err(src)) {
-        const ssh_keyalg *alg = find_pubkey_alg_len_winscp_host(algname);
+        const ssh_keyalg *alg = find_pubkey_alg_len(algname);
         if (alg) {
             int bits = ssh_key_public_bits(alg, blob);
             put_fmt(sb, "%.*s %d ", PTRLEN_PRINTF(algname), bits);

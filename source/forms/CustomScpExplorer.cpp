@@ -217,6 +217,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FCalculateSizeOperation = NULL;
   FDownloadingFromClipboard = false;
   FClipboardFakeMonitorsPendingReset = false;
+  FHiContrastTheme = NULL;
 
   FEditorManager = new TEditorManager();
   FEditorManager->OnFileChange = ExecutedFileChanged;
@@ -300,6 +301,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
 __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
 {
   FInvalid = true;
+  ReleaseHiContrastTheme();
   if (FClipboardTerminal != NULL)
   {
     ClipboardClear(); // implies ClipboardStop
@@ -390,6 +392,15 @@ __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
     FHiddenWindow = NULL;
   }
 
+}
+//---------------------------------------------------------------------------
+void TCustomScpExplorerForm::ReleaseHiContrastTheme()
+{
+  if (FHiContrastTheme != NULL)
+  {
+    ReleaseTBXTheme(FHiContrastTheme);
+    FHiContrastTheme = NULL;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RefreshPanel(const UnicodeString & Session, const UnicodeString & Path)
@@ -576,6 +587,7 @@ void __fastcall TCustomScpExplorerForm::SetManagedSession(TManagedTerminal * val
 {
   if (FManagedSession != value)
   {
+    TWindowLock Lock(this);
     SessionChanging();
     DoSetManagedSession(value, false);
   }
@@ -603,6 +615,7 @@ void __fastcall TCustomScpExplorerForm::DoSetManagedSession(TManagedTerminal * v
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ReplaceTerminal(TManagedTerminal * value)
 {
+  FEditorManager->ProcessFiles(FileTerminalReplaced, value);
   DoSetManagedSession(value, true);
 }
 //---------------------------------------------------------------------------
@@ -1205,6 +1218,12 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
     FFileColorsCurrent = WinConfiguration->FileColors;
     FileColorsChanged();
   }
+
+  if ((GetNewTabTab()->CaptionTruncation != GetNewTabTabCaptionTruncation()) &&
+      (FSessionColors != NULL))
+  {
+    SessionListChanged();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DoFileColorsChanged(TCustomDirView * DirView)
@@ -1590,8 +1609,8 @@ void __fastcall TCustomScpExplorerForm::CreateProgressForm(TSynchronizeProgress 
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DestroyProgressForm()
 {
-  SAFE_DESTROY(FProgressForm);
   UnlockWindow();
+  SAFE_DESTROY(FProgressForm);
   SetQueueProgress();
 }
 //---------------------------------------------------------------------------
@@ -1937,7 +1956,7 @@ TTBXPopupMenu * __fastcall TCustomScpExplorerForm::HistoryMenu(
     // workaround
     // In Pascal the size of TTBXPopupMenu is 132, in C++ 136,
     // operator new allocates memory in Pascal code, but calls inline
-    // contructor in C++, leading in problems, the function does
+    // constructor in C++, leading in problems, the function does
     // both in Pascal code
     FHistoryMenu[Side == osLocal][Back] = CreateTBXPopupMenu(this);
     UpdateHistoryMenu(Side, Back);
@@ -2388,7 +2407,7 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
       FAutoOperation = false;
       if (!RootTempDir.IsEmpty() && DebugAlwaysTrue(!RemoteFiles))
       {
-        RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir), false);
+        RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir));
       }
     }
   }
@@ -3067,6 +3086,24 @@ TOperationSide __fastcall TCustomScpExplorerForm::GetSide(TOperationSide Side)
   return Side;
 }
 //---------------------------------------------------------------------------
+TOperationSide TCustomScpExplorerForm::GetOtherSide(TOperationSide Side)
+{
+  TOperationSide Result;
+  switch (GetSide(Side))
+  {
+    case osLocal:
+      Result = osOther;
+      break;
+    case osOther:
+      Result = osLocal;
+      break;
+    default:
+      DebugFail();
+      Abort();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Operation,
   TOperationSide Side, bool OnFocused, bool NoConfirmation, void * Param)
 {
@@ -3312,7 +3349,7 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
           {
             if (!RootTempDir.IsEmpty())
             {
-              RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir), false);
+              RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir));
             }
             throw Exception(FMTLOAD(CREATE_FILE_ERROR, (LocalFileName)));
           }
@@ -3363,7 +3400,6 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
   if (!IsSideLocalBrowser(Side))
   {
     Data->Terminal = Terminal;
-    Data->Queue = Queue;
     Data->SessionData = CloneCurrentSessionData();
     Data->ForceText = RemoteExecuteForceText(ExecuteFileBy, ExternalEditor);
     Data->RemoteDirectory = RemoteDirectory;
@@ -3398,7 +3434,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
       {
         if (!LocalRootDirectory.IsEmpty())
         {
-          RecursiveDeleteFile(ExcludeTrailingBackslash(LocalRootDirectory), false);
+          RecursiveDeleteFile(ExcludeTrailingBackslash(LocalRootDirectory));
         }
         throw;
       }
@@ -3603,7 +3639,7 @@ void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
     {
       if (!RootTempDir.IsEmpty())
       {
-        RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir), false);
+        RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir));
       }
       throw;
     }
@@ -3965,7 +4001,6 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
           if (MessageDialog(Message, qtConfirmation, qaOK | qaCancel) == qaOK)
           {
             Data->Terminal = SameSiteTerminal;
-            Data->Queue = Manager->FindQueueForTerminal(SameSiteTerminal);
             Data->SessionName = SameSiteTerminal->SessionData->SessionName;
             // We might also overwrite session data
             Configuration->Usage->Inc(EditInactiveSessionReopenAcceptedCounter);
@@ -3989,8 +4024,11 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
           {
             Manager->ActiveSession = Terminal;
             ReconnectSession();
-            DebugAssert(Terminal == Data->Terminal);
-            Data->Queue = Manager->FindQueueForTerminal(Terminal);
+            // Was it reconnected? (if not, Data->Terminal should be nulled now)
+            if (!IsActiveTerminal(Data->Terminal) || (Terminal != Data->Terminal))
+            {
+              Abort();
+            }
           }
           else
           {
@@ -4070,12 +4108,11 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
       int Params = cpNoConfirmation | cpTemporary;
       if (Data->Terminal->IsCapable[fcBackgroundTransfers])
       {
-        DebugAssert(Data->Queue != NULL);
-
+        TTerminalQueue * AQueue = Manager->FindQueueForTerminal(Data->Terminal);
         TQueueItem * QueueItem =
           new TEditorUploadQueueItem(Data->Terminal, FileList, Data->RemoteDirectory, &CopyParam, Params);
         QueueItem->CompleteEvent = UploadCompleteEvent;
-        AddQueueItem(Data->Queue, QueueItem, Data->Terminal);
+        AddQueueItem(AQueue, QueueItem, Data->Terminal);
       }
       else
       {
@@ -4432,6 +4469,26 @@ void __fastcall TCustomScpExplorerForm::LockFiles(TStrings * FileList, bool Lock
   RemoteDirView->RestoreSelection();
 }
 //---------------------------------------------------------------------------
+bool TCustomScpExplorerForm::DoDirectoryExists(void * Session, const UnicodeString & Directory)
+{
+  bool Result = false;
+  TTerminal * ATerminal = (Session == NULL) ? Terminal : reinterpret_cast<TTerminal *>(Session);
+  if (IsActiveTerminal(ATerminal))
+  {
+    std::unique_ptr<TRemoteFile> File(ATerminal->TryReadFile(Directory));
+    Result = File && File->IsDirectory;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool TCustomScpExplorerForm::NeedSecondarySessionForRemoteCopy(TStrings * FileList)
+{
+  bool CopyDirsOnSecondarySession = Terminal->IsCapable[fcSecondaryShell];
+  return
+    !Terminal->IsCapable[fcRemoteCopy] ||
+    (CopyDirsOnSecondarySession && TRemoteFileList::AnyDirectory(FileList));
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *& Session,
   TStrings * FileList, UnicodeString & Target, UnicodeString & FileMask, bool & DirectCopy,
   bool NoConfirmation, bool Move)
@@ -4445,16 +4502,19 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
     Session = Terminal;
   }
 
+  bool TargetConfirmed = false;
   if (Session == Terminal)
   {
     if (RemoteDriveView->DropTarget != NULL)
     {
       Target = RemoteDriveView->NodePathName(RemoteDriveView->DropTarget);
+      TargetConfirmed = true;
     }
     else if (RemoteDirView->DropTarget != NULL)
     {
       DebugAssert(RemoteDirView->ItemIsDirectory(RemoteDirView->DropTarget));
       Target = RemoteDirView->ItemFullFileName(RemoteDirView->DropTarget);
+      TargetConfirmed = true;
     }
     else
     {
@@ -4483,7 +4543,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
 
     if (Move)
     {
-      Result = DoRemoteMoveDialog(Multi, Target, FileMask);
+      Result = DoRemoteMoveDialog(Multi, Target, FileMask, DoDirectoryExists);
     }
     else
     {
@@ -4501,8 +4561,18 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
         }
       }
 
+      bool AnyDirectory = false;
+      bool CopyDirsOnSecondarySession = Terminal->IsCapable[fcSecondaryShell];
+      if (CopyDirsOnSecondarySession && !Terminal->CommandSessionOpened) // optimization
+      {
+        for (int Index = 0; !AnyDirectory && (Index < FileList->Count); Index++)
+        {
+          AnyDirectory = DebugNotNull(dynamic_cast<TRemoteFile *>(FileList->Objects[Index]))->IsDirectory;
+        }
+      }
+
       TDirectRemoteCopy AllowDirectCopy;
-      if (Terminal->IsCapable[fcRemoteCopy] || Terminal->CommandSessionOpened)
+      if (Terminal->CommandSessionOpened || !NeedSecondarySessionForRemoteCopy(FileList))
       {
         DebugAssert(DirectCopy);
         AllowDirectCopy = drcAllow;
@@ -4510,7 +4580,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
       else if (Terminal->IsCapable[fcSecondaryShell])
       {
         DebugAssert(DirectCopy);
-        AllowDirectCopy = drcConfirmCommandSession;
+        AllowDirectCopy = Terminal->IsCapable[fcRemoteCopy] ? drcConfirmCommandSessionDirs : drcConfirmCommandSession;
       }
       else
       {
@@ -4519,7 +4589,8 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
       }
       void * ASession = Session;
       Result = DoRemoteCopyDialog(
-        Sessions.get(), Directories.get(), AllowDirectCopy, Multi, ASession, Target, FileMask, DirectCopy, Terminal);
+        Sessions.get(), Directories.get(), AllowDirectCopy, Multi, ASession, Target, FileMask, DirectCopy, Terminal,
+        DoDirectoryExists, TargetConfirmed);
       Session = static_cast<TManagedTerminal *>(ASession);
     }
   }
@@ -4574,7 +4645,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferFiles(
         FAutoOperation = false;
         if (!RootTempDir.IsEmpty())
         {
-          RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir), false);
+          RecursiveDeleteFile(ExcludeTrailingBackslash(RootTempDir));
         }
       }
     }
@@ -4598,11 +4669,11 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferFiles(
           DebugAssert(DirectCopy);
           DebugAssert(Session == Terminal);
 
-          if (Terminal->IsCapable[fcRemoteCopy] ||
+          if (!NeedSecondarySessionForRemoteCopy(FileList) ||
               Terminal->CommandSessionOpened ||
               CommandSessionFallback())
           {
-            Terminal->CopyFiles(FileList, Target, FileMask);
+            Terminal->CopyFiles(FileList, Target, FileMask, false);
           }
         }
       }
@@ -4734,6 +4805,13 @@ void TCustomScpExplorerForm::LoadFilesProperties(TStrings * FileList)
   }
 }
 //---------------------------------------------------------------------------
+bool TCustomScpExplorerForm::CanCalculateChecksum()
+{
+  return
+    Terminal->IsCapable[fcCalculatingChecksum] ||
+    (Terminal->IsCapable[fcSecondaryShell] && !Terminal->IsEncryptingFiles());
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStrings * FileList)
 {
   bool Result;
@@ -4802,13 +4880,10 @@ bool __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStri
       CurrentProperties = TRemoteProperties::CommonProperties(FileList);
 
       bool CapableAclChanging = Terminal->IsCapable[fcAclChangingFiles];
-      for (int Index = 0; (Index < FileList->Count) && CapableAclChanging; Index++)
+      if (CapableAclChanging && TRemoteFileList::AnyDirectory(FileList))
       {
-        if (dynamic_cast<TRemoteFile *>(FileList->Objects[Index])->IsDirectory)
-        {
-          CapableAclChanging = false;
-          CurrentProperties.Valid = CurrentProperties.Valid >> vpRights;
-        }
+        CapableAclChanging = false;
+        CurrentProperties.Valid = CurrentProperties.Valid >> vpRights;
       }
 
       int Flags = 0;
@@ -4818,8 +4893,7 @@ bool __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStri
       if (CapableGroupChanging) Flags |= cpGroup;
 
       TCalculateChecksumEvent CalculateChecksumEvent = NULL;
-      if (Terminal->IsCapable[fcCalculatingChecksum] ||
-          (Terminal->IsCapable[fcSecondaryShell] && !Terminal->IsEncryptingFiles()))
+      if (CanCalculateChecksum())
       {
         CalculateChecksumEvent = CalculateChecksum;
       }
@@ -5048,7 +5122,7 @@ void __fastcall TCustomScpExplorerForm::UpdateStatusBar()
   if ((ActiveTerminal != NULL) && (ActiveTerminal->Status == ssOpened))
   {
     const TSessionInfo & SessionInfo = ActiveTerminal->GetSessionInfo();
-    LoginTime = FormatDateTimeSpan(Configuration->TimeFormat, Now() - SessionInfo.LoginTime);
+    LoginTime = FormatDateTimeSpan(Now() - SessionInfo.LoginTime);
   }
   TTBXStatusPanel * DurationStatusPanel = SessionStatusBar->Panels->Items[SessionStatusBar->Panels->Count - 1];
   DurationStatusPanel->Caption = LoginTime;
@@ -5294,7 +5368,7 @@ void __fastcall TCustomScpExplorerForm::DuplicateTab()
     TTerminalManager * Manager = TTerminalManager::Instance();
     TManagedTerminal * ASession = Manager->NewManagedTerminal(SessionData.get());
     DebugAssert(ASession->LocalBrowser == ManagedSession->LocalBrowser);
-    // We definitelly want these
+    // We definitely want these
     ASession->Disconnected = ManagedSession->Disconnected;
     // Not sure about these two
     ASession->Permanent = ManagedSession->Permanent;
@@ -5432,6 +5506,7 @@ void __fastcall TCustomScpExplorerForm::OpenFolderOrWorkspace(const UnicodeStrin
 void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
       bool &CanClose)
 {
+  AppLog(L"Windows close query");
   // See the comment in CloseApp()
   if (NonVisualDataModule->Busy)
   {
@@ -5876,7 +5951,7 @@ bool __fastcall TCustomScpExplorerForm::DoSynchronizeDirectories(
   int UnusedParams =
     (GUIConfiguration->SynchronizeParams &
       (TTerminal::spPreviewChanges | TTerminal::spTimestamp | TTerminal::spNotByTime | TTerminal::spBySize |
-       TTerminal::spCaseSensitive));
+       TTerminal::spCaseSensitive | TTerminal::spMirror | TTerminal::spByChecksum));
   Params.Params = GUIConfiguration->SynchronizeParams & ~UnusedParams;
   Params.Options = GUIConfiguration->SynchronizeOptions;
   bool SaveSettings = false;
@@ -6257,8 +6332,8 @@ void __fastcall TCustomScpExplorerForm::FullSynchronize(
     TDateTime Elapsed = (Now() - Start);
     Message +=
       L"\n" +
-      FORMAT(LoadStrPart(SYNCHRONIZE_SUMMARY, 5), (FormatDateTimeSpan(Configuration->TimeFormat, Params.CollectElapsed))) + L"\n" +
-      FORMAT(LoadStrPart(SYNCHRONIZE_SUMMARY, 6), (FormatDateTimeSpan(Configuration->TimeFormat, Elapsed)));
+      FORMAT(LoadStrPart(SYNCHRONIZE_SUMMARY, 5), (FormatDateTimeSpan(Params.CollectElapsed))) + L"\n" +
+      FORMAT(LoadStrPart(SYNCHRONIZE_SUMMARY, 6), (FormatDateTimeSpan(Elapsed)));
     TMessageParams Params(mpNeverAskAgainCheck);
     unsigned int Result = MessageDialog(Message, qtInformation, qaOK, HELP_NONE, &Params);
     if (Result == qaNeverAskAgain)
@@ -6403,13 +6478,15 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
   bool SaveSettings = false;
   int Options =
     FLAGMASK(!Terminal->IsCapable[fcTimestampChanging], fsoDisableTimestamp) |
+    FLAGMASK(!CanCalculateChecksum(), fsoDisableByChecksum) |
     FLAGMASK(SynchronizeAllowSelectedOnly(), fsoAllowSelectedOnly);
   TCopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
   TUsableCopyParamAttrs CopyParamAttrs = Terminal->UsableCopyParamAttrs(0);
   bool Continue =
-    (UseDefaults == 0) ||
-    DoFullSynchronizeDialog(Mode, Params, LocalDirectory, RemoteDirectory,
-      &CopyParam, SaveSettings, SaveMode, Options, CopyParamAttrs, FullSynchronizeInNewWindow, UseDefaults);
+    ((UseDefaults == 0) ||
+     DoFullSynchronizeDialog(Mode, Params, LocalDirectory, RemoteDirectory,
+       &CopyParam, SaveSettings, SaveMode, Options, CopyParamAttrs, FullSynchronizeInNewWindow, UseDefaults)) &&
+    (FLAGCLEAR(Params, TTerminal::spByChecksum) || EnsureCommandSessionFallback(fcCalculatingChecksum));
   if (Continue)
   {
     Configuration->Usage->Inc(L"Synchronizations");
@@ -7182,6 +7259,17 @@ void __fastcall TCustomScpExplorerForm::TerminalRemoved(TObject * Sender)
   DetachTerminal(Sender);
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::FileTerminalReplaced(
+  const UnicodeString FileName, TEditedFileData * Data, TObject * /*Token*/, void * Arg)
+{
+  TManagedTerminal * ATerminal = static_cast<TManagedTerminal *>(Arg);
+
+  if (Data->Terminal == Terminal)
+  {
+    Data->Terminal = ATerminal;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FileTerminalRemoved(const UnicodeString FileName,
   TEditedFileData * Data, TObject * /*Token*/, void * Arg)
 {
@@ -7279,7 +7367,7 @@ void __fastcall TCustomScpExplorerForm::SessionListChanged(bool ForceTruncationU
       {
         TTerminal * Terminal = Manager->Sessions[Index];
         TabSheet->Tag = reinterpret_cast<int>(Terminal);
-        TabSheet->CaptionTruncation = tttEllipsis;
+        TabSheet->CaptionTruncation = WinConfiguration->SessionTabCaptionTruncation ? tttEllipsis : tttNone;
 
         UpdateSessionTab(TabSheet);
       }
@@ -7288,7 +7376,7 @@ void __fastcall TCustomScpExplorerForm::SessionListChanged(bool ForceTruncationU
         TabSheet->Tag = 0; // not really needed
         TabSheet->Shadowed = false;
         TabSheet->Button = SupportsLocalBrowser() ? ttbDropDown : ttbNone;
-        TabSheet->CaptionTruncation = tttNoText;
+        TabSheet->CaptionTruncation = GetNewTabTabCaptionTruncation();
         // We know that we are at the last page, otherwise we could not call this (it assumes that new session tab is the last one)
         UpdateNewTabTab();
       }
@@ -7308,14 +7396,24 @@ void __fastcall TCustomScpExplorerForm::SessionListChanged(bool ForceTruncationU
   SessionsPageControl->ActivePageIndex = ActiveSessionIndex;
 }
 //---------------------------------------------------------------------------
+TThemeTabCaptionTruncation TCustomScpExplorerForm::GetNewTabTabCaptionTruncation()
+{
+  return WinConfiguration->SessionTabCaptionTruncation ? tttNoText : tttNone;
+}
+//---------------------------------------------------------------------------
 UnicodeString TCustomScpExplorerForm::GetNewTabTabCaption()
 {
   return StripHotkey(StripTrailingPunctuation(NonVisualDataModule->NewTabAction->Caption));
 }
 //---------------------------------------------------------------------------
+TThemeTabSheet * TCustomScpExplorerForm::GetNewTabTab()
+{
+  return SessionsPageControl->Pages[SessionsPageControl->PageCount - 1];
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateNewTabTab()
 {
-  TThemeTabSheet * TabSheet = SessionsPageControl->Pages[SessionsPageControl->PageCount - 1];
+  TThemeTabSheet * TabSheet = GetNewTabTab();
 
   UnicodeString TabCaption;
   if (WinConfiguration->SelectiveToolbarText)
@@ -7520,7 +7618,7 @@ void __fastcall TCustomScpExplorerForm::CMDialogChar(TMessage & AMessage)
 {
   TCMDialogChar & Message = reinterpret_cast<TCMDialogChar &>(AMessage);
   if ((FIgnoreNextDialogChar != 0) &&
-      (toupper(Message.CharCode) == toupper(FIgnoreNextDialogChar)))
+      (towupper(Message.CharCode) == towupper(FIgnoreNextDialogChar)))
   {
     Message.Result = 1;
   }
@@ -7549,6 +7647,7 @@ void __fastcall TCustomScpExplorerForm::WMSysCommand(TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMQueryEndSession(TMessage & Message)
 {
+  AppLog(L"Windows session end query");
   // We were actually never able to make ENDSESSION_CRITICAL happen.
   // Also there no point returning TRUE as we are not able to
   // handle the abrupt termination caused by subsequent WM_ENDSESSION cleanly.
@@ -7570,6 +7669,7 @@ void __fastcall TCustomScpExplorerForm::WMQueryEndSession(TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMEndSession(TWMEndSession & Message)
 {
+  AppLog(L"Windows session end");
   if (Message.EndSession && IsApplicationMinimized())
   {
     // WORKAROUND
@@ -7694,7 +7794,7 @@ void __fastcall TCustomScpExplorerForm::PopupTrayBalloon(TTerminal * Terminal,
       Title = LoadResourceString(Captions[Type]);
       if (Terminal != NULL)
       {
-        TManagedTerminal * Session = DebugNotNull(dynamic_cast<TManagedTerminal *>(Terminal));
+        TManagedTerminal * Session = DebugNotNull(dynamic_cast<TManagedTerminal *>(Terminal->PrimaryTerminal));
         Title = TTerminalManager::Instance()->GetSessionTitle(Session, true) + TitleSeparator + Title;
       }
     }
@@ -8224,7 +8324,7 @@ void __fastcall TCustomScpExplorerForm::DoDelayedDeletion(TObject * Sender)
     if ((N >= Alert) || (Sender == NULL))
     {
       Directory = FDelayedDeletionList->Strings[Index];
-      if (DeleteDirectory(ExcludeTrailingBackslash(Directory)))
+      if (RecursiveDeleteFile(ExcludeTrailingBackslash(Directory)))
       {
         FDelayedDeletionList->Delete(Index);
       }
@@ -8933,17 +9033,7 @@ void __fastcall TCustomScpExplorerForm::DirViewGetOverlay(
   TObject * Sender, TListItem * Item, WORD & Indexes)
 {
   TCustomDirView * DirView = reinterpret_cast<TCustomDirView *>(Sender);
-  UnicodeString Ext;
-  if (dynamic_cast<TUnixDirView *>(DirView) != NULL)
-  {
-    Ext = UnixExtractFileExt(DirView->ItemFileName(Item));
-  }
-  else
-  {
-    Ext = ExtractFileExt(DirView->ItemFileName(Item));
-  }
-
-  if (SameText(Ext, Configuration->PartialExt))
+  if (GetPartialFileExtLen(DirView->ItemFileName(Item)) > 0)
   {
     Indexes |= oiPartial;
   }
@@ -9284,6 +9374,20 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
     if (FImmersiveDarkMode != WinConfiguration->UseDarkTheme())
     {
       UpdateDarkMode();
+    }
+
+    // As the hi-contrast theme is currently used for session tabs only, which currently do not support dark mode,
+    // we always use dark theme. But ultimatelly, we should use an opposite theme to the main one.
+    UnicodeString CurrentHiContrastThemeName = (FHiContrastTheme != NULL) ? FHiContrastTheme->Name : EmptyStr;
+    UnicodeString NewHiContrastThemeName = WinConfiguration->HiContrast ? GetThemeName(true) : EmptyStr;
+    if (CurrentHiContrastThemeName != NewHiContrastThemeName)
+    {
+      ReleaseHiContrastTheme();
+      if (!NewHiContrastThemeName.IsEmpty())
+      {
+        FHiContrastTheme = GetTBXTheme(NewHiContrastThemeName);
+      }
+      SessionsPageControl->ActiveTabTheme = FHiContrastTheme;
     }
 
     reinterpret_cast<TTBCustomItem *>(GetComponent(fcRemotePathComboBox))->Enabled = HasTerminal || IsLocalBrowserMode();
@@ -9766,6 +9870,20 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
       PasteFiles();
       break;
 
+    case WM_IS_HIDDEN:
+      // To treat master password prompt as a main window while showing it when workspace is loading while
+      // the exporer is showing up (Visible is true already)
+      M->Result = !FShowing;
+      break;
+
+    case WM_SHOWWINDOW:
+      if (M->WParam)
+      {
+        AddStartupSequence(L"J");
+      }
+      TForm::Dispatch(Message);
+      break;
+
     default:
       TForm::Dispatch(Message);
       break;
@@ -9795,6 +9913,7 @@ void __fastcall TCustomScpExplorerForm::WMDpiChanged(TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMClose(TMessage & Message)
 {
+  AppLog(L"Main window WM_CLOSE");
   // Cannot close window while we are busy.
   // We cannot test this in FormCloseQuery as that is called also from
   // Close(), which is called by CloseApplicationAction. So we can be busy
@@ -10152,6 +10271,15 @@ void __fastcall TCustomScpExplorerForm::UnlockWindow()
   {
     DebugAssert(FLockSuspendLevel == 0);
     Enabled = true;
+    // VCL_COPY (TCustomForm.SetWindowFocus)
+    if (Active && (ActiveControl != NULL))
+    {
+      ::SetFocus(ActiveControl->Handle);
+      if (GetFocus() == ActiveControl->Handle)
+      {
+        ActiveControl->Perform(CM_UIACTIVATE, 0, 0);
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -10344,7 +10472,7 @@ TDragDropFilesEx * __fastcall TCustomScpExplorerForm::CreateDragDropFilesEx()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateDarkMode()
 {
-  if (IsWin10Build(2004))
+  if (IsWin10Build(19041))
   {
     FImmersiveDarkMode = WinConfiguration->UseDarkTheme();
     BOOL DarkMode = FImmersiveDarkMode ? TRUE : FALSE;
@@ -10649,6 +10777,7 @@ void __fastcall TCustomScpExplorerForm::FormClose(TObject * /*Sender*/, TCloseAc
     WinConfiguration->LastStoredSession = Name;
   }
 
+  AppLog(L"Closing main window");
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteDirViewRead(TObject * /*Sender*/)
@@ -11619,12 +11748,21 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewResize(TObject *)
   CenterReconnectToolbar();
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::BrowseFile()
+void TCustomScpExplorerForm::DoBrowseFile(TCustomDirView * DirView, const UnicodeString & FileName)
 {
-  if (RemoteDirView->ItemFocused != NULL)
+  if (!FileName.IsEmpty())
   {
-    RemoteDirView->ItemFocused->Selected = true;
+    DirView->RestoreFocus(FileName);
+    if (DirView->ItemFocused != NULL)
+    {
+      DirView->ItemFocused->Selected = true;
+    }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::BrowseFile(const UnicodeString & FileName)
+{
+  DoBrowseFile(RemoteDirView, FileName);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateQueueFileList()
@@ -11929,3 +12067,32 @@ void __fastcall TCustomScpExplorerForm::MessageDockRequestDock(TObject *, TTBCus
   Accept = false;
 }
 //---------------------------------------------------------------------------
+void TCustomScpExplorerForm::AutoSizeColumns(TOperationSide Side)
+{
+  // Send Ctrl+Gray+ to the list view
+  TKeyboardState KeyState;
+  GetKeyboardState(KeyState);
+  TKeyboardState NewKeyState;
+  memset(NewKeyState, 0, sizeof(NewKeyState));
+  NewKeyState[VK_CONTROL] = 0x81;
+  SetKeyboardState(NewKeyState);
+
+  SendMessage(DirView(Side)->Handle, WM_KEYDOWN, VK_ADD, 0);
+  SetKeyboardState(KeyState);
+}
+//---------------------------------------------------------------------------
+void TCustomScpExplorerForm::QueueResetLayoutColumns()
+{
+  LoadListViewStr(QueueView3, QueueViewLayoutDefault);
+}
+//---------------------------------------------------------------------------
+void * TCustomScpExplorerForm::SaveFocus()
+{
+  return NULL;
+}
+//---------------------------------------------------------------------------
+void TCustomScpExplorerForm::RestoreFocus(void * Focus)
+{
+  DebugUsedParam(Focus);
+  DebugAssert(Focus == NULL);
+}

@@ -108,7 +108,7 @@ __published:
   TTBXItem *TBXItem16;
   TTBXItem *TBXItem17;
   TTBXItem *TBXItem18;
-  TTBXSubmenuItem *TBXSubmenuItem4;
+  TTBXSubmenuItem *LocalColumnsSubmenuItem;
   TTBXItem *TBXItem19;
   TTBXItem *TBXItem20;
   TTBXItem *TBXItem21;
@@ -233,7 +233,7 @@ __published:
   TTBXItem *TBXItem98;
   TTBXItem *TBXItem99;
   TTBXItem *TBXItem100;
-  TTBXSubmenuItem *TBXSubmenuItem17;
+  TTBXSubmenuItem *RemoteColumnsSubmenuItem;
   TTBXItem *TBXItem101;
   TTBXItem *TBXItem102;
   TTBXItem *TBXItem103;
@@ -458,6 +458,16 @@ __published:
   TTBXItem *TBXItem259;
   TTBXSeparatorItem *TBXSeparatorItem71;
   TTBXItem *TBXItem260;
+  TTBXItem *TBXItem261;
+  TTBXItem *TBXItem262;
+  TTBXSeparatorItem *TBXSeparatorItem72;
+  TTBXItem *TBXItem263;
+  TTBXSeparatorItem *TBXSeparatorItem73;
+  TTBXItem *TBXItem264;
+  TTBXItem *TBXItem265;
+  TTBXItem *TBXItem266;
+  TTBXSeparatorItem *TBXSeparatorItem74;
+  TTBXItem *TBXItem267;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -503,7 +513,7 @@ __published:
           bool FromLink);
   void __fastcall CommandLineComboBeginEdit(TTBEditItem *Sender,
           TTBEditItemViewer *Viewer, TEdit *EditControl);
-  void __fastcall LocalDriveViewRefreshDrives(TObject *Sender);
+  void __fastcall LocalDriveViewRefreshDrives(TObject *Sender, bool Global);
   void __fastcall QueueSubmenuItemPopup(TTBCustomItem *Sender,
           bool FromLink);
   void __fastcall DirViewHistoryGo(TCustomDirView *Sender, int Index,
@@ -668,7 +678,7 @@ public:
   virtual void __fastcall GoToAddress();
   virtual void __fastcall CopyFilesToClipboard(TOperationSide Side, bool OnFocused);
   virtual void __fastcall PasteFromClipBoard();
-  virtual void __fastcall BrowseFile();
+  virtual void __fastcall BrowseFile(const UnicodeString & FileName);
   virtual bool SupportsLocalBrowser();
   virtual bool IsSideLocalBrowser(TOperationSide Side);
   virtual bool IsLocalBrowserMode();
@@ -681,6 +691,9 @@ public:
   virtual int GetNewTabTabImageIndex(TOperationSide Side);
   virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
   virtual bool SupportedSession(TSessionData * SessionData);
+  virtual void ResetLayoutColumns(TOperationSide Side);
+  virtual void * SaveFocus();
+  virtual void RestoreFocus(void * Focus);
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

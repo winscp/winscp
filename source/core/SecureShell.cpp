@@ -11,6 +11,7 @@
 #include "HelpCore.h"
 #include "CoreMain.h"
 #include <StrUtils.hpp>
+#include <Consts.hpp>
 
 #ifndef AUTO_WINSOCK
 #include <winsock2.h>
@@ -107,6 +108,7 @@ void __fastcall TSecureShell::ResetConnection()
   FStoredPasswordTried = false;
   FStoredPasswordTriedForKI = false;
   FStoredPassphraseTried = false;
+  FAuthenticationCancelled = false;
   delete FLogPolicy;
   FLogPolicy = NULL;
   delete FSeat;
@@ -447,6 +449,7 @@ void __fastcall TSecureShell::Open()
       PuttyFatalError(InitError);
     }
     FUI->Information(LoadStr(STATUS_CONNECT), true);
+    FAuthenticationCancelled = false;
     if (!Active && DebugAlwaysTrue(HasLocalProxy()))
     {
       FActive = true;
@@ -965,6 +968,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
     if (!Result)
     {
       LogEvent(L"Prompt cancelled.");
+      FAuthenticationCancelled = true;
     }
     else
     {
@@ -1786,24 +1790,49 @@ void inline __fastcall TSecureShell::CheckConnection(int Message)
     UnicodeString Str;
     UnicodeString HelpKeyword;
 
+    int ExitCode = backend_exitcode(FBackendHandle);
     if (Message >= 0)
     {
       Str = LoadStr(Message);
     }
     else
     {
-      Str = LoadStr(NOT_CONNECTED);
-      HelpKeyword = HELP_NOT_CONNECTED;
+      if ((ExitCode == 0) && FAuthenticationCancelled)
+      {
+        // This should be improved to check if the prompt for specific credential
+        // was cancelled after it was unsuccessfully answered before
+        if (GetStoredCredentialsTried())
+        {
+          Str = LoadStr(AUTHENTICATION_FAILED);
+        }
+        else
+        {
+          Str = LoadStr(CREDENTIALS_NOT_SPECIFIED);
+        }
+        // The 0 code is not coming from the server
+        ExitCode = -1;
+      }
+      else
+      {
+        Str = LoadStr(NOT_CONNECTED);
+        HelpKeyword = HELP_NOT_CONNECTED;
+      }
     }
 
     Str = MainInstructions(Str);
 
-    int ExitCode = backend_exitcode(FBackendHandle);
     if (ExitCode >= 0)
     {
       Str += L" " + FMTLOAD(SSH_EXITCODE, (ExitCode));
     }
-    FatalError(Str, HelpKeyword);
+    if (!FClosed)
+    {
+      FatalError(Str, HelpKeyword);
+    }
+    else
+    {
+      LogEvent(FORMAT(L"Ignoring closed connection: %s", (Str)));
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -2439,11 +2468,13 @@ void TSecureShell::ParseFingerprint(const UnicodeString & Fingerprint, UnicodeSt
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::VerifyHostKey(
   const UnicodeString & AHost, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr,
-  const UnicodeString & AFingerprintSHA256, const UnicodeString & AFingerprintMD5)
+  const UnicodeString & AFingerprintSHA256, const UnicodeString & AFingerprintMD5,
+  bool IsCertificate, int CACount, bool AlreadyVerified)
 {
   if (Configuration->ActualLogProtocol >= 1)
   {
-    LogEvent(FORMAT(L"Verifying host key %s %s with fingerprints %s, %s", (KeyType, FormatKeyStr(KeyStr), AFingerprintSHA256, AFingerprintMD5)));
+    UnicodeString HostKeyAction = AlreadyVerified ? L"Got" : L"Verifying";
+    LogEvent(FORMAT(L"%s host key %s %s with fingerprints %s, %s", (HostKeyAction, KeyType, FormatKeyStr(KeyStr), AFingerprintSHA256, AFingerprintMD5)));
   }
 
   GotHostKey();
@@ -2478,200 +2509,299 @@ void __fastcall TSecureShell::VerifyHostKey(
     Abort();
   }
 
-  bool AcceptNew = HaveAcceptNewHostKeyPolicy();
-  UnicodeString ConfigHostKey;
-  if (!AcceptNew)
+  if (!AlreadyVerified)
   {
-    ConfigHostKey = FSessionData->HostKey;
-  }
-
-  UnicodeString StoredKeys = RetrieveHostKey(Host, Port, KeyType);
-  bool Result = VerifyCachedHostKey(StoredKeys, KeyStr, FingerprintMD5, FingerprintSHA256);
-  if (!Result && AcceptNew)
-  {
-    if (!StoredKeys.IsEmpty()) // optimization + avoiding the log message
+    bool AcceptNew = HaveAcceptNewHostKeyPolicy();
+    UnicodeString ConfigHostKey;
+    if (!AcceptNew)
     {
-      AcceptNew = false;
+      ConfigHostKey = FSessionData->HostKey;
     }
-    else if (have_any_ssh2_hostkey(FSeat, AnsiString(Host).c_str(), Port))
-    {
-      LogEvent(L"Host key not found in the cache, but other key types found, cannot accept new key");
-      AcceptNew = false;
-    }
-  }
 
-  bool ConfiguredKeyNotMatch = false;
-
-  if (!Result && !ConfigHostKey.IsEmpty() &&
-      // Should test have_any_ssh2_hostkey + No need to bother with AcceptNew, as we never get here
-      (StoredKeys.IsEmpty() || FSessionData->OverrideCachedHostKey))
-  {
-    UnicodeString Buf = ConfigHostKey;
-    while (!Result && !Buf.IsEmpty())
+    UnicodeString StoredKeys = RetrieveHostKey(Host, Port, KeyType);
+    bool Result = VerifyCachedHostKey(StoredKeys, KeyStr, FingerprintMD5, FingerprintSHA256);
+    if (!Result && AcceptNew)
     {
-      UnicodeString ExpectedKey = CutToChar(Buf, HostKeyDelimiter, false);
-      if (ExpectedKey == L"*")
+      if (!StoredKeys.IsEmpty()) // optimization + avoiding the log message
       {
-        UnicodeString Message = LoadStr(ANY_HOSTKEY);
-        FUI->Information(Message, true);
-        FLog->Add(llException, Message);
+        AcceptNew = false;
+      }
+      else if (have_any_ssh2_hostkey(FSeat, AnsiString(Host).c_str(), Port))
+      {
+        LogEvent(L"Host key not found in the cache, but other key types found, cannot accept new key");
+        AcceptNew = false;
+      }
+    }
+
+    bool ConfiguredKeyNotMatch = false;
+
+    if (!Result && !ConfigHostKey.IsEmpty() &&
+        // Should test have_any_ssh2_hostkey + No need to bother with AcceptNew, as we never get here
+        (StoredKeys.IsEmpty() || FSessionData->OverrideCachedHostKey))
+    {
+      UnicodeString Buf = ConfigHostKey;
+      while (!Result && !Buf.IsEmpty())
+      {
+        UnicodeString ExpectedKey = CutToChar(Buf, HostKeyDelimiter, false);
+        if (ExpectedKey == L"*")
+        {
+          UnicodeString Message = LoadStr(ANY_HOSTKEY);
+          FUI->Information(Message, true);
+          FLog->Add(llException, Message);
+          Result = true;
+        }
+        else if (VerifyFingerprint(ExpectedKey, FingerprintMD5, FingerprintSHA256))
+        {
+          LogEvent(L"Host key matches configured key fingerprint");
+          Result = true;
+        }
+        else
+        {
+          LogEvent(FORMAT(L"Host key does not match configured key fingerprint %s", (ExpectedKey)));
+        }
+      }
+
+      if (!Result)
+      {
+        ConfiguredKeyNotMatch = true;
+      }
+    }
+
+    if (!Result && AcceptNew && DebugAlwaysTrue(ConfigHostKey.IsEmpty()))
+    {
+      try
+      {
+        UnicodeString StorageSource = StoreHostKey(Host, Port, KeyType, KeyStr);
+        UnicodeString StoredKeys = RetrieveHostKey(Host, Port, KeyType);
+        if (StoredKeys != KeyStr)
+        {
+          throw Exception(UnicodeString());
+        }
+        Configuration->Usage->Inc(L"HostKeyNewAccepted");
+        LogEvent(FORMAT(L"Warning: Stored new host key to %s - This should occur only on the first connection", (StorageSource)));
         Result = true;
       }
-      else if (VerifyFingerprint(ExpectedKey, FingerprintMD5, FingerprintSHA256))
+      catch (Exception & E)
       {
-        LogEvent(L"Host key matches configured key fingerprint");
-        Result = true;
-      }
-      else
-      {
-        LogEvent(FORMAT(L"Host key does not match configured key fingerprint %s", (ExpectedKey)));
+        FUI->FatalError(&E, LoadStr(STORE_NEW_HOSTKEY_ERROR));
       }
     }
 
     if (!Result)
     {
-      ConfiguredKeyNotMatch = true;
-    }
-  }
-
-  if (!Result && AcceptNew && DebugAlwaysTrue(ConfigHostKey.IsEmpty()))
-  {
-    try
-    {
-      UnicodeString StorageSource = StoreHostKey(Host, Port, KeyType, KeyStr);
-      UnicodeString StoredKeys = RetrieveHostKey(Host, Port, KeyType);
-      if (StoredKeys != KeyStr)
+      bool Verified;
+      if (ConfiguredKeyNotMatch || Configuration->DisableAcceptingHostKeys)
       {
-        throw Exception(UnicodeString());
+        Verified = false;
       }
-      Configuration->Usage->Inc(L"HostKeyNewAccepted");
-      LogEvent(FORMAT(L"Warning: Stored new host key to %s - This should occur only on the first connection", (StorageSource)));
-      Result = true;
-    }
-    catch (Exception & E)
-    {
-      FUI->FatalError(&E, LoadStr(STORE_NEW_HOSTKEY_ERROR));
-    }
-  }
-
-  if (!Result)
-  {
-    bool Verified;
-    if (ConfiguredKeyNotMatch || Configuration->DisableAcceptingHostKeys)
-    {
-      Verified = false;
-    }
-    // no point offering manual verification, if we cannot persist the verified key
-    else if (!Configuration->Persistent && Configuration->Scripting)
-    {
-      Verified = false;
-    }
-    else
-    {
-      // We should not offer caching if !Configuration->Persistent,
-      // but as scripting mode is handled earlier and in GUI it hardly happens,
-      // it's a small issue.
-      TClipboardHandler ClipboardHandler;
-      ClipboardHandler.Text = FingerprintSHA256 + L"\n" + FingerprintMD5;
-      TPasteKeyHandler PasteKeyHandler;
-      PasteKeyHandler.KeyStr = KeyStr;
-      PasteKeyHandler.FingerprintMD5 = FingerprintMD5;
-      PasteKeyHandler.FingerprintSHA256 = FingerprintSHA256;
-      PasteKeyHandler.UI = FUI;
-
-      bool Unknown = StoredKeys.IsEmpty();
-
-      int Answers;
-      int AliasesCount;
-      TQueryButtonAlias Aliases[4];
-      Aliases[0].Button = qaRetry;
-      Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
-      Aliases[0].ActionAlias = LoadStr(COPY_KEY_ACTION);
-      Aliases[0].OnSubmit = &ClipboardHandler.Copy;
-      Aliases[1].Button = qaIgnore;
-      Aliases[1].Alias = LoadStr(PASTE_KEY_BUTTON);
-      Aliases[1].OnSubmit = &PasteKeyHandler.Paste;
-      Aliases[1].GroupWith = qaYes;
-      Answers = qaYes | qaCancel | qaRetry | qaIgnore;
-      AliasesCount = 2;
-      if (!Unknown)
-      {
-        Aliases[2].Button = qaYes;
-        Aliases[2].Alias = LoadStr(UPDATE_KEY_BUTTON);
-        Aliases[3].Button = qaOK;
-        Aliases[3].Alias = LoadStr(ADD_KEY_BUTTON);
-        AliasesCount += 2;
-        Answers |= qaSkip | qaOK;
-      }
-      else
-      {
-        Answers |= qaNo;
-      }
-
-      TQueryParams Params(qpWaitInBatch);
-      Params.NoBatchAnswers = qaYes | qaRetry | qaSkip | qaOK;
-      Params.HelpKeyword = (Unknown ? HELP_UNKNOWN_KEY : HELP_DIFFERENT_KEY);
-      Params.Aliases = Aliases;
-      Params.AliasesCount = AliasesCount;
-
-      UnicodeString KeyTypeHuman = GetKeyTypeHuman(KeyType);
-      UnicodeString KeyDetails = FMTLOAD(KEY_DETAILS, (SignKeyType, SHA256, MD5));
-      UnicodeString Message = FMTLOAD((Unknown ? UNKNOWN_KEY4 : DIFFERENT_KEY5), (KeyTypeHuman, KeyDetails));
-      if (Configuration->Scripting)
-      {
-        AddToList(Message, LoadStr(SCRIPTING_USE_HOSTKEY), L"\n");
-      }
-
-      unsigned int R =
-        FUI->QueryUser(Message, NULL, Answers, &Params, qtWarning);
-      UnicodeString StoreKeyStr = KeyStr;
-
-      switch (R) {
-        case qaOK:
-          DebugAssert(!Unknown);
-          StoreKeyStr = (StoredKeys + HostKeyDelimiter + StoreKeyStr);
-          // fall thru
-        case qaYes:
-          StoreHostKey(Host, Port, KeyType, StoreKeyStr);
-          Verified = true;
-          break;
-
-        case qaCancel:
-          Verified = false;
-          break;
-
-        default:
-          Verified = true;
-          break;
-      }
-    }
-
-    if (!Verified)
-    {
-      Configuration->Usage->Inc(L"HostNotVerified");
-
-      UnicodeString Message;
-      if (ConfiguredKeyNotMatch)
-      {
-        Message = FMTLOAD(CONFIGURED_KEY_NOT_MATCH, (ConfigHostKey));
-      }
+      // no point offering manual verification, if we cannot persist the verified key
       else if (!Configuration->Persistent && Configuration->Scripting)
       {
-        Message = LoadStr(HOSTKEY_NOT_CONFIGURED);
+        Verified = false;
       }
       else
       {
-        Message = LoadStr(KEY_NOT_VERIFIED);
+        // We should not offer caching if !Configuration->Persistent,
+        // but as scripting mode is handled earlier and in GUI it hardly happens,
+        // it's a small issue.
+        TClipboardHandler ClipboardHandler;
+        ClipboardHandler.Text = FingerprintSHA256 + L"\n" + FingerprintMD5;
+        TPasteKeyHandler PasteKeyHandler;
+        PasteKeyHandler.KeyStr = KeyStr;
+        PasteKeyHandler.FingerprintMD5 = FingerprintMD5;
+        PasteKeyHandler.FingerprintSHA256 = FingerprintSHA256;
+        PasteKeyHandler.UI = FUI;
+
+        bool Unknown = StoredKeys.IsEmpty();
+
+        UnicodeString AcceptButton = LoadStr(HOSTKEY_ACCEPT_BUTTON);
+        UnicodeString OnceButton = LoadStr(HOSTKEY_ONCE_BUTTON);
+        UnicodeString CancelButton = Vcl_Consts_SMsgDlgCancel;
+        UnicodeString UpdateButton = LoadStr(UPDATE_KEY_BUTTON);
+        UnicodeString AddButton = LoadStr(ADD_KEY_BUTTON);
+        int Answers;
+        std::vector<TQueryButtonAlias> Aliases;
+
+        TQueryButtonAlias CopyAlias;
+        CopyAlias.Button = qaRetry;
+        CopyAlias.Alias = LoadStr(COPY_KEY_BUTTON);
+        CopyAlias.ActionAlias = LoadStr(COPY_KEY_ACTION);
+        CopyAlias.OnSubmit = &ClipboardHandler.Copy;
+        Aliases.push_back(CopyAlias);
+
+        TQueryButtonAlias PasteAlias;
+        PasteAlias.Button = qaIgnore;
+        PasteAlias.Alias = LoadStr(PASTE_KEY_BUTTON);
+        PasteAlias.OnSubmit = &PasteKeyHandler.Paste;
+        PasteAlias.GroupWith = qaYes;
+        Aliases.push_back(PasteAlias);
+
+        TQueryButtonAlias OnceAlias;
+        OnceAlias.Button = qaOK;
+        OnceAlias.Alias = OnceButton;
+        OnceAlias.GroupWith = qaYes;
+        Aliases.push_back(OnceAlias);
+
+        Answers = qaYes | qaOK | qaCancel | qaRetry | qaIgnore;
+        if (!Unknown)
+        {
+          TQueryButtonAlias UpdateAlias;
+          UpdateAlias.Button = qaYes;
+          UpdateAlias.Alias = UpdateButton;
+          Aliases.push_back(UpdateAlias);
+
+          TQueryButtonAlias AddAlias;
+          AddAlias.Button = qaNo;
+          AddAlias.Alias = AddButton;
+          AddAlias.GroupWith = qaYes;
+          Aliases.push_back(AddAlias);
+
+          Answers |= qaNo;
+        }
+        else
+        {
+          TQueryButtonAlias AcceptAlias;
+          AcceptAlias.Button = qaYes;
+          AcceptAlias.Alias = AcceptButton;
+          Aliases.push_back(AcceptAlias);
+        }
+
+        TQueryParams Params(qpWaitInBatch);
+        Params.NoBatchAnswers = qaYes | qaNo | qaRetry | qaIgnore | qaOK;
+        Params.HelpKeyword = (Unknown ? HELP_UNKNOWN_KEY : HELP_DIFFERENT_KEY);
+        Params.Aliases = &Aliases[0];
+        Params.AliasesCount = Aliases.size();
+
+        UnicodeString NewLine = L"\n";
+        UnicodeString Para = NewLine + NewLine;
+        UnicodeString Message;
+        UnicodeString ServerPara = FMTLOAD(HOSTKEY_SERVER, (Host, Port)) + Para;
+        UnicodeString Nbsp = L"\xA0";
+        UnicodeString Indent = Nbsp + Nbsp + Nbsp + Nbsp;
+        UnicodeString FingerprintPara =
+          Indent + FMTLOAD(HOSTKEY_FINGERPRINT, (KeyType)) + NewLine +
+          Indent + ReplaceStr(FingerprintSHA256, L" ", Nbsp) + Para;
+        UnicodeString AdministratorChangerOrAnotherComputerExplanationPara =
+          FMTLOAD(HOSTKEY_TWO_EXPLANATIONS, (LoadStr(HOSTKEY_ADMINISTRATOR_CHANGED), LoadStr(HOSTKEY_ANOTHER_COMPUTER))) + Para;
+        UnicodeString CertifiedTrustLine;
+        if (IsCertificate)
+        {
+          Message =
+            MainInstructions(LoadStr(HOSTKEY_SECURITY_BREACH)) + Para +
+            LoadStr(HOSTKEY_CERTIFIED1) + NewLine +
+            ServerPara;
+          if (CACount > 0)
+          {
+            Message +=
+              LoadStr(HOSTKEY_CERTIFIED2) + Para;
+            if (!Unknown)
+            {
+              Message += LoadStr(HOSTKEY_CERTIFIED_DOESNT_MATCH_ALSO) + Para;
+            }
+            Message +=
+              FMTLOAD(HOSTKEY_TWO_EXPLANATIONS, (LoadStr(HOSTKEY_CERTIFIED_ANOTHER), LoadStr(HOSTKEY_ANOTHER_COMPUTER))) + Para;
+          }
+          else
+          {
+            Message +=
+              LoadStr(HOSTKEY_CERTIFIED_DOESNT_MATCH) + Para +
+              AdministratorChangerOrAnotherComputerExplanationPara;
+          }
+
+          CertifiedTrustLine = LoadStr(HOSTKEY_CERTIFIED_TRUST) + NewLine;
+        }
+        else if (Unknown)
+        {
+          Message =
+            MainInstructions(LoadStr(HOSTKEY_UNKNOWN)) + Para +
+            LoadStr(HOSTKEY_NOT_CACHED) + NewLine +
+            ServerPara +
+            LoadStr(HOSTKEY_NO_GUARANTEE) + Para;
+        }
+        else
+        {
+          Message =
+            MainInstructions(LoadStr(HOSTKEY_SECURITY_BREACH)) + Para +
+            LoadStr(HOSTKEY_DOESNT_MATCH) + NewLine +
+            ServerPara +
+            AdministratorChangerOrAnotherComputerExplanationPara;
+        }
+
+        Message += FingerprintPara;
+
+        if (Unknown)
+        {
+          Message +=
+            FMTLOAD(HOSTKEY_ACCEPT_NEW, (StripHotkey(AcceptButton))) + NewLine +
+            CertifiedTrustLine +
+            FMTLOAD(HOSTKEY_ONCE_NEW, (StripHotkey(OnceButton))) + NewLine +
+            FMTLOAD(HOSTKEY_CANCEL_NEW, (StripHotkey(CancelButton)));
+        }
+        else
+        {
+          Message +=
+            FMTLOAD(HOSTKEY_ACCEPT_CHANGE, (StripHotkey(UpdateButton), StripHotkey(AddButton))) + NewLine +
+            CertifiedTrustLine +
+            FMTLOAD(HOSTKEY_ONCE_CHANGE, (StripHotkey(OnceButton))) + NewLine +
+            FMTLOAD(HOSTKEY_CANCEL_CHANGE, (StripHotkey(CancelButton), StripHotkey(CancelButton)));
+        }
+
+        if (Configuration->Scripting)
+        {
+          AddToList(Message, LoadStr(SCRIPTING_USE_HOSTKEY), Para);
+        }
+
+        unsigned int R =
+          FUI->QueryUser(Message, NULL, Answers, &Params, qtWarning);
+        UnicodeString StoreKeyStr = KeyStr;
+
+        switch (R) {
+          case qaNo:
+            DebugAssert(!Unknown);
+            StoreKeyStr = (StoredKeys + HostKeyDelimiter + StoreKeyStr);
+            // fall thru
+          case qaYes:
+            StoreHostKey(Host, Port, KeyType, StoreKeyStr);
+            Verified = true;
+            break;
+
+          case qaCancel:
+            Verified = false;
+            break;
+
+          default:
+            Verified = true;
+            break;
+        }
       }
 
-      Exception * E = new Exception(MainInstructions(Message));
-      try
+      if (!Verified)
       {
-        FUI->FatalError(E, FMTLOAD(HOSTKEY, (FingerprintSHA256)));
-      }
-      __finally
-      {
-        delete E;
+        Configuration->Usage->Inc(L"HostNotVerified");
+
+        UnicodeString Message;
+        if (ConfiguredKeyNotMatch)
+        {
+          Message = FMTLOAD(CONFIGURED_KEY_NOT_MATCH, (ConfigHostKey));
+        }
+        else if (!Configuration->Persistent && Configuration->Scripting)
+        {
+          Message = LoadStr(HOSTKEY_NOT_CONFIGURED);
+        }
+        else
+        {
+          Message = LoadStr(KEY_NOT_VERIFIED);
+        }
+
+        Exception * E = new Exception(MainInstructions(Message));
+        try
+        {
+          FUI->FatalError(E, FMTLOAD(HOSTKEY, (FingerprintSHA256)));
+        }
+        __finally
+        {
+          delete E;
+        }
       }
     }
   }
@@ -2711,7 +2841,7 @@ bool __fastcall TSecureShell::HaveHostKey(UnicodeString Host, int Port, const Un
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::AskAlg(UnicodeString AlgType, UnicodeString AlgName)
+void TSecureShell::AskAlg(const UnicodeString & AAlgType, const UnicodeString & AlgName, int WeakCryptoReason)
 {
   // beware of changing order
   static const TPuttyTranslation AlgTranslation[] = {
@@ -2722,9 +2852,33 @@ void __fastcall TSecureShell::AskAlg(UnicodeString AlgType, UnicodeString AlgNam
     { L"hostkey type", KEYKEY_TYPE },
   };
 
+  UnicodeString AlgType = AAlgType;
   TranslatePuttyMessage(AlgTranslation, LENOF(AlgTranslation), AlgType);
 
-  UnicodeString Msg = FMTLOAD(ALG_BELOW_TRESHOLD, (AlgType, AlgName));
+  UnicodeString Msg;
+  UnicodeString NewLine = UnicodeString(sLineBreak);
+  switch (WeakCryptoReason)
+  {
+    default:
+      DebugFail();
+    case 0:
+      Msg = FMTLOAD(ALG_BELOW_TRESHOLD2, (AlgType, AlgName));
+      break;
+
+    case 1:
+    case 2:
+      Msg = FMTLOAD(CIPHER_TERRAPIN, (AlgType, AlgName));
+      if (WeakCryptoReason == 2)
+      {
+        Msg += NewLine + NewLine + FMTLOAD(CIPHER_TERRAPIN_AVOID, (AlgName));
+      }
+      break;
+  }
+
+  Msg =
+    MainInstructions(LoadStr(WEAK_ALG_TITLE)) + NewLine + NewLine +
+    Msg + NewLine + NewLine +
+    LoadStr(WEAK_ALG_RISK_CONFIRM);
 
   if (FUI->QueryUser(Msg, NULL, qaYes | qaNo, NULL, qtWarning) == qaNo)
   {
@@ -2740,12 +2894,6 @@ void __fastcall TSecureShell::DisplayBanner(const UnicodeString & Banner)
   {
     FUI->DisplayBanner(Banner);
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TSecureShell::OldKeyfileWarning()
-{
-  // actually never called, see Net.cpp
-  FUI->QueryUser(LoadStr(OLD_KEY), NULL, qaOK, NULL, qtWarning);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSecureShell::GetStoredCredentialsTried()

@@ -13,6 +13,8 @@ class THttp;
 typedef void __fastcall (__closure * THttpDownloadEvent)(THttp * Sender, __int64 Size, bool & Cancel);
 typedef void __fastcall (__closure * THttpErrorEvent)(THttp * Sender, int Status, const UnicodeString & Message);
 //---------------------------------------------------------------------------
+extern const int BasicHttpResponseLimit;
+//---------------------------------------------------------------------------
 class THttp
 {
 public:
@@ -34,6 +36,7 @@ public:
   __property __int64 ResponseLimit = { read = FResponseLimit, write = FResponseLimit };
   __property THttpDownloadEvent OnDownload = { read = FOnDownload, write = FOnDownload };
   __property THttpErrorEvent OnError = { read = FOnError, write = FOnError };
+  __property UnicodeString Certificate = { read = FCertificate, write = FCertificate };
 
 private:
   UnicodeString FURL;
@@ -48,6 +51,7 @@ private:
   UnicodeString FCertificateError;
   TStrings * FRequestHeaders;
   TStrings * FResponseHeaders;
+  UnicodeString FCertificate;
 
   static int NeonBodyReader(void * UserData, const char * Buf, size_t Len);
   int NeonBodyReaderImpl(const char * Buf, size_t Len);

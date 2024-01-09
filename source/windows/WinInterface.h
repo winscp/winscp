@@ -91,6 +91,7 @@ private:
 class TCustomScpExplorerForm;
 TCustomScpExplorerForm * __fastcall CreateScpExplorer();
 
+UnicodeString GetThemeName(bool Dark);
 void __fastcall ConfigureInterface();
 
 void __fastcall DoProductLicense();
@@ -162,6 +163,7 @@ bool __fastcall DoCustomCommandOptionsDialog(
   TCustomCommand * CustomCommandForOptions, const UnicodeString & Site, const TShortCuts * ShortCuts);
 void __fastcall DoUsageStatisticsDialog();
 void __fastcall DoSiteRawDialog(TSessionData * Data);
+bool DoSshHostCADialog(bool Add, TSshHostCA & SshHostCA);
 
 // windows\UserInterface.cpp
 bool __fastcall DoMasterPasswordDialog();
@@ -220,9 +222,11 @@ const coAllowRemoteTransfer = 0x100;
 const coNoQueue             = 0x200;
 const coShortCutHint        = 0x800;
 const coAllFiles            = 0x1000;
+const coBrowse              = 0x2000;
 const cooDoNotShowAgain     = 0x01;
 const cooRemoteTransfer     = 0x02;
 const cooSaveSettings       = 0x04;
+const cooBrowse             = 0x08;
 bool __fastcall DoCopyDialog(
   bool ToRemote, bool Move, TStrings * FileList, UnicodeString & TargetDirectory,
   TGUICopyParamType * Params, int Options, int CopyParamAttrs,
@@ -324,11 +328,15 @@ bool __fastcall DoPropertiesDialog(TStrings * FileList,
     int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
     TCalculateChecksumEvent OnCalculateChecksum);
 
-bool __fastcall DoRemoteMoveDialog(bool Multi, UnicodeString & Target, UnicodeString & FileMask);
-enum TDirectRemoteCopy { drcDisallow, drcAllow, drcConfirmCommandSession };
-bool __fastcall DoRemoteCopyDialog(TStrings * Sessions, TStrings * Directories,
-  TDirectRemoteCopy AllowDirectCopy, bool Multi, void *& Session,
-  UnicodeString & Target, UnicodeString & FileMask, bool & DirectCopy, void * CurrentSession);
+typedef bool (__closure * TDirectoryExistsEvent)(void * Session, const UnicodeString & Directory);
+bool __fastcall DoRemoteMoveDialog(
+  bool Multi, UnicodeString & Target, UnicodeString & FileMask, TDirectoryExistsEvent OnDirectoryExists);
+enum TDirectRemoteCopy { drcDisallow, drcAllow, drcConfirmCommandSession, drcConfirmCommandSessionDirs };
+bool __fastcall DoRemoteCopyDialog(
+  TStrings * Sessions, TStrings * Directories,
+  TDirectRemoteCopy AllowDirectCopy, bool Multi, void *& Session, UnicodeString & Target, UnicodeString & FileMask,
+  bool & DirectCopy, void * CurrentSession, TDirectoryExistsEvent OnDirectoryExists,
+  bool TargetConfirmed);
 
 // forms\SelectMask.cpp
 bool __fastcall DoSelectMaskDialog(TControl * Parent, bool Select, TFileFilter & Filter);
@@ -367,6 +375,7 @@ enum TSynchronizeMode { smRemote, smLocal, smBoth };
 const fsoDisableTimestamp = 0x01;
 const fsoDoNotUsePresets =  0x02;
 const fsoAllowSelectedOnly = 0x04;
+const fsoDisableByChecksum = 0x08;
 typedef void __fastcall (__closure *TFullSynchronizeInNewWindow)
   (TSynchronizeMode Mode, int Params, const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
    const TCopyParamType * CopyParams);

@@ -98,13 +98,13 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
   CopyPopup(LocalPathLabel, LocalTopDock);
   CopyPopup(LocalStatusBar, LocalTopDock);
   CopyPopup(LocalDriveView, LocalTopDock);
-  CopyPopup(OtherLocalDriveView, LocalTopDock);
   CopyPopup(LocalBottomDock, LocalTopDock);
 
   RemoteTopDock->PopupMenu = NonVisualDataModule->RemotePanelPopup;
   CopyPopup(RemotePathLabel, RemoteTopDock);
   CopyPopup(RemoteStatusBar, RemoteTopDock);
   CopyPopup(RemoteDriveView, RemoteTopDock);
+  CopyPopup(OtherLocalDriveView, RemoteTopDock);
   CopyPopup(RemoteBottomDock, RemoteTopDock);
 
   SetShortcuts();
@@ -605,6 +605,7 @@ void __fastcall TScpCommanderForm::StartingWithoutSession()
 {
   TCustomScpExplorerForm::StartingWithoutSession();
 
+  AddStartupSequence(L"H");
   LocalDefaultDirectory();
 }
 //---------------------------------------------------------------------------
@@ -1022,8 +1023,7 @@ void __fastcall TScpCommanderForm::SetToolbar2ItemAction(TTBXItem * Item, TBasic
 void __fastcall TScpCommanderForm::UpdateControls()
 {
   // Before TCustomScpExplorerForm disables them (when disconnecting)
-  bool DirViewWasFocused = DirView(osOther)->Focused();
-  bool DriveViewWasFocused = DriveView(osOther)->Focused();
+  void * Focus = SaveFocus();
 
   // When implicitly connecting a not-yet-connected session by switching to its tab opened with workspace,
   // Terminal property is still NULL, but ActiveTerminal is already set.
@@ -1123,34 +1123,7 @@ void __fastcall TScpCommanderForm::UpdateControls()
   bool LocalOnLeft = (Panel(true) == LocalPanel);
   LocalMenuButton->Caption = LoadStr(HasTerminal ? LOCAL_MENU_CAPTION : (LocalOnLeft ? LEFT_MENU_CAPTION : RIGHT_MENU_CAPTION));
   RemoteMenuButton->Caption = LoadStr(HasTerminal ? REMOTE_MENU_CAPTION : (LocalOnLeft ? RIGHT_MENU_CAPTION : LEFT_MENU_CAPTION));
-  if (DirViewWasFocused)
-  {
-    if (DirView(osOther)->Enabled)
-    {
-      DirView(osOther)->SetFocus();
-    }
-    else
-    {
-      LocalDirView->SetFocus();
-    }
-  }
-  if (DriveViewWasFocused)
-  {
-    if (DriveView(osOther)->Enabled)
-    {
-      DriveView(osOther)->SetFocus();
-    }
-    else if (LocalDriveView->Visible)
-    {
-      LocalDriveView->SetFocus();
-    }
-    else
-    {
-      // Switching to a disconnected session with local drive view hidden - fallback to the local dir view (should always be visible)
-      DebugAssert(LocalDirView->Visible);
-      LocalDirView->SetFocus();
-    }
-  }
+  RestoreFocus(Focus);
 
   if (RemotePathLabel->FocusControl != DirView(osOther))
   {
@@ -2122,10 +2095,10 @@ void __fastcall TScpCommanderForm::RemotePathLabelPathClick(
 void __fastcall TScpCommanderForm::LocalDirViewFileIconForName(
   TObject * /*Sender*/, UnicodeString & FileName)
 {
-  UnicodeString PartialExt = Configuration->PartialExt;
-  if (AnsiSameText(ExtractFileExt(FileName), PartialExt))
+  int PartialFileExtLen = GetPartialFileExtLen(FileName);
+  if (PartialFileExtLen > 0)
   {
-    FileName.SetLength(FileName.Length() - PartialExt.Length());
+    FileName.SetLength(FileName.Length() - PartialFileExtLen);
   }
   if (WinConfiguration->LocalIconsByExt)
   {
@@ -2448,13 +2421,33 @@ void __fastcall TScpCommanderForm::CommandLineComboEditWndProc(TMessage & Messag
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::LocalDriveViewRefreshDrives(TObject * /*Sender*/)
+void __fastcall TScpCommanderForm::LocalDriveViewRefreshDrives(TObject * Sender, bool Global)
 {
-  LocalPathComboUpdateDrives();
-  LocalPathComboUpdate(LocalDirView, LocalPathComboBox);
-  if (IsLocalBrowserMode())
+  // Process global drive notifications from only one drive view
+  if (!Global || (Sender == LocalDriveView))
   {
-    LocalPathComboUpdate(OtherLocalDirView, RemotePathComboBox);
+    LocalPathComboUpdateDrives();
+    LocalPathComboUpdate(LocalDirView, LocalPathComboBox);
+    if (IsLocalBrowserMode())
+    {
+      LocalPathComboUpdate(OtherLocalDirView, RemotePathComboBox);
+    }
+  }
+
+  if (!Global)
+  {
+    TDriveView * TheOtherLocalDriveView;
+    if (Sender == LocalDriveView)
+    {
+      TheOtherLocalDriveView = OtherLocalDriveView;
+    }
+    else
+    {
+      DebugAssert(Sender == OtherLocalDriveView);
+      TheOtherLocalDriveView = LocalDriveView;
+    }
+    // Or rather an immediate refresh?
+    TheOtherLocalDriveView->ScheduleDriveRefresh();
   }
 }
 //---------------------------------------------------------------------------
@@ -2655,21 +2648,18 @@ void __fastcall TScpCommanderForm::FileColorsChanged()
   DoFileColorsChanged(OtherLocalDirView);
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::BrowseFile()
+void __fastcall TScpCommanderForm::BrowseFile(const UnicodeString & FileName)
 {
   DebugAssert(!IsLocalBrowserMode());
-  TCustomScpExplorerForm::BrowseFile();
-  if (LocalDirView->ItemFocused != NULL)
-  {
-    LocalDirView->ItemFocused->Selected = true;
-  }
+  TCustomScpExplorerForm::BrowseFile(FileName);
+  DoBrowseFile(LocalDirView, FileName);
   TScpCommanderConfiguration ScpCommander = WinConfiguration->ScpCommander;
   // Select the panel that has the file, with preference on the remote panel
-  if (RemoteDirView->ItemFocused->Selected)
+  if ((RemoteDirView->ItemFocused != NULL) && RemoteDirView->ItemFocused->Selected)
   {
     ScpCommander.CurrentPanel = osRemote;
   }
-  else if (LocalDirView->ItemFocused->Selected)
+  else if ((LocalDirView->ItemFocused != NULL) && LocalDirView->ItemFocused->Selected)
   {
     ScpCommander.CurrentPanel = osLocal;
   }
@@ -2787,19 +2777,7 @@ void TScpCommanderForm::LocalLocalCopy(
       Abort();
   }
 
-  TOperationSide OtherSide;
-  switch (GetSide(Side))
-  {
-    case osLocal:
-      OtherSide = osOther;
-      break;
-    case osOther:
-      OtherSide = osLocal;
-      break;
-    default:
-      DebugFail();
-      Abort();
-  }
+  TOperationSide OtherSide = GetOtherSide(GetSide(Side));
 
   TCustomDirView * SourceDirView = DirView(Side);
   UnicodeString DestinationDir = DirView(OtherSide)->PathName;
@@ -2961,4 +2939,67 @@ UnicodeString TScpCommanderForm::GetNewTabHintDetails()
 bool TScpCommanderForm::SupportedSession(TSessionData *)
 {
   return true;
+}
+//---------------------------------------------------------------------------
+void TScpCommanderForm::ResetLayoutColumns(TOperationSide Side)
+{
+  UnicodeString DirViewParamsDefault =
+    IsSideLocalBrowser(Side) ? ScpCommanderLocalPanelDirViewParamsDefault : ScpCommanderRemotePanelDirViewParamsDefault;
+
+  DirView(Side)->ColProperties->ParamsStr = DirViewParamsDefault;
+}
+//---------------------------------------------------------------------------
+void * TScpCommanderForm::SaveFocus()
+{
+  // When window is disabled, the ActiveControl might actually not be focusable
+  return ((ActiveControl != NULL) && ActiveControl->Focused()) ? ActiveControl : NULL;
+}
+//---------------------------------------------------------------------------
+void TScpCommanderForm::RestoreFocus(void * Focus)
+{
+  TWinControl * ControlFocus = static_cast<TWinControl *>(Focus);
+  if ((ControlFocus == LocalDirView) || (ControlFocus == LocalDriveView))
+  {
+    DebugAssert(ActiveControl == ControlFocus);
+    DebugAssert(ControlFocus->Enabled);
+    // noop
+  }
+  else if ((ControlFocus == RemoteDirView) || (ControlFocus == OtherLocalDirView))
+  {
+    if (DirView(osOther)->Enabled)
+    {
+      ControlFocus = DirView(osOther);
+    }
+    else
+    {
+      ControlFocus = LocalDirView;
+    }
+  }
+  else if ((ControlFocus == RemoteDriveView) || (ControlFocus == OtherLocalDriveView))
+  {
+    if (DriveView(osOther)->Enabled)
+    {
+      ControlFocus = DriveView(osOther);
+    }
+    else if (LocalDriveView->Visible)
+    {
+      ControlFocus = LocalDriveView;
+    }
+    else
+    {
+      // Switching to a disconnected session with local drive view hidden -
+      // fallback to the local dir view (should always be visible)
+      DebugAssert(LocalDirView->Visible);
+      ControlFocus = LocalDirView;
+    }
+  }
+  else
+  {
+    ControlFocus = NULL;
+  }
+
+  if (ControlFocus != NULL)
+  {
+    ControlFocus->SetFocus();
+  }
 }

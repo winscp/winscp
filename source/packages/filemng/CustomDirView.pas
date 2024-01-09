@@ -340,7 +340,6 @@ type
     procedure UpdateDarkMode;
     procedure DoUpdateStatusBar(Force: Boolean = False);
     procedure DoCustomDrawItem(Item: TListItem; Stage: TCustomDrawStage);
-    procedure RestoreFocus(FocusedItem: string);
     procedure ItemCalculatedSizeUpdated(Item: TListItem; OldSize, NewSize: Int64);
     property ImageList16: TImageList read FImageList16;
     property ImageList32: TImageList read FImageList32;
@@ -387,6 +386,7 @@ type
     function SaveState: TObject; virtual;
     procedure RestoreState(AState: TObject); virtual;
     procedure AnnounceState(AState: TObject); virtual;
+    procedure RestoreFocus(FocusedItem: string);
     procedure DisplayContextMenu(Where: TPoint); virtual; abstract;
     procedure DisplayContextMenuInSitu;
     procedure UpdateStatusBar;
@@ -514,8 +514,6 @@ resourcestring
   SDriveNotReady = 'Drive ''%s:'' is not ready.';
   SDirNotExists = 'Directory ''%s'' doesn''t exist.';
 
-function CreateDirViewStateForFocusedItem(FocusedItem: string): TObject;
-
 {Additional non-component specific functions:}
 
 {Create and resolve a shell link (file shortcut):}
@@ -640,15 +638,6 @@ begin
   HistoryPaths.Free;
 
   inherited;
-end;
-
-function CreateDirViewStateForFocusedItem(FocusedItem: string): TObject;
-var
-  State: TDirViewState;
-begin
-  State := TDirViewState.Create;
-  State.FocusedItem := FocusedItem;
-  Result := State;
 end;
 
 function IsExecutable(FileName: string): Boolean;
@@ -1692,7 +1681,9 @@ end;
 procedure TCustomDirView.UpdatePathLabelCaption;
 begin
   PathLabel.Caption := PathName;
-  PathLabel.Mask := Mask;
+  // Do not display mask on otherwise empty label (i.e. on a disconnected remote panel)
+  if PathLabel.Caption <> '' then PathLabel.Mask := Mask
+    else PathLabel.Mask := '';
 end;
 
 procedure TCustomDirView.UpdatePathLabel;
@@ -3346,17 +3337,13 @@ begin
     State := AState as TDirViewState;
     Assert(Assigned(State));
 
-    if Assigned(State.HistoryPaths) then
-      FHistoryPaths.Assign(State.HistoryPaths);
+    FHistoryPaths.Assign(State.HistoryPaths);
     FBackCount := State.BackCount;
     DoHistoryChange;
-    if State.SortStr <> '' then
-    begin
-      // TCustomDirViewColProperties should not be here
-      DirColProperties := ColProperties as TCustomDirViewColProperties;
-      Assert(Assigned(DirColProperties));
-      DirColProperties.SortStr := State.SortStr;
-    end;
+    // TCustomDirViewColProperties should not be here
+    DirColProperties := ColProperties as TCustomDirViewColProperties;
+    Assert(Assigned(DirColProperties));
+    DirColProperties.SortStr := State.SortStr;
     Mask := State.Mask;
     RestoreFocus(State.FocusedItem);
   end

@@ -11,6 +11,7 @@
 #include <GUITools.h>
 #include <Tools.h>
 #include <CustomWinConfiguration.h>
+#include <CoreMain.h>
 
 #include <Vcl.StdActns.hpp>
 #include <PasswordEdit.hpp>
@@ -381,6 +382,18 @@ void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
   DoReadOnlyControl(Control, ReadOnly, true);
 }
 //---------------------------------------------------------------------------
+int CalculateCheckBoxWidth(TControl * Control, const UnicodeString & Caption)
+{
+  return
+    ScaleByTextHeight(Control, 13 + 3 + 8) + // checkbox, padding and buffer
+    GetParentForm(Control)->Canvas->TextWidth(StripHotkey(Caption));
+}
+//---------------------------------------------------------------------------
+void AutoSizeCheckBox(TCheckBox * CheckBox)
+{
+  CheckBox->Width = CalculateCheckBoxWidth(CheckBox, CheckBox->Caption);
+}
+//---------------------------------------------------------------------------
 // Some of MainFormLike code can now be obsolete, thanks to Application->OnGetMainFormHandle.
 static TForm * MainLikeForm = NULL;
 //---------------------------------------------------------------------------
@@ -400,7 +413,14 @@ TForm * __fastcall GetMainForm()
 //---------------------------------------------------------------------------
 bool __fastcall IsMainFormHidden()
 {
-  bool Result = (GetMainForm() != NULL) && !GetMainForm()->Visible;
+  bool Result = false;
+  TForm * MainForm = GetMainForm();
+  if (MainForm != NULL)
+  {
+    Result =
+      !MainForm->Visible ||
+      (MainForm->Perform(WM_IS_HIDDEN, 0, 0) == 1);
+  }
   // we do not expect this to return true when MainLikeForm is set
   DebugAssert(!Result || (MainLikeForm == NULL));
   return Result;
@@ -472,7 +492,7 @@ friend TCanvas * CreateControlCanvas(TControl * Control);
 class TPublicForm : public TForm
 {
 friend void __fastcall ChangeFormPixelsPerInch(TForm * Form, int PixelsPerInch);
-friend void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront);
+friend void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront, bool TriggerModalStarted);
 friend void __fastcall HideAsModal(TForm * Form, void *& Storage);
 friend void __fastcall ShowFormNoActivate(TForm * Form);
 };
@@ -656,6 +676,7 @@ static void __fastcall ChangeFormPixelsPerInch(TForm * Form, int PixelsPerInch)
   if ((Form->PixelsPerInch != PixelsPerInch) && // optimization
       !FormRescaleComponent->Rescaling)
   {
+    AppLogFmt(L"Scaling window %s", (Form->Caption));
     TAutoFlag RescalingFlag(FormRescaleComponent->Rescaling);
 
     int M, D;
@@ -803,8 +824,8 @@ static void __fastcall FormShowingChanged(TForm * Form, TWndMethod WndProc, TMes
     // At least on single monitor setup, monitor DPI is 100% but system DPI is higher,
     // WM_DPICHANGED is not sent. But VCL scales the form using system DPI.
     // Also we have to do this always for implicitly placed forms (poDefaultPosOnly), like TEditorForm,
-    // as thay never get the WM_DPICHANGED.
-    // Call this before WndProc below, i.e. before OnShow event (particularly important for the TEditorForm::FormShow.
+    // as they never get the WM_DPICHANGED.
+    // Call this before WndProc below, i.e. before OnShow event (particularly important for the TEditorForm::FormShow).
 
     // GetControlPixelsPerInch would return Form.PixelsPerInch, but we want to get a new DPI of the form monitor.
     ChangeFormPixelsPerInch(Form, GetMonitorPixelsPerInch(GetMonitorFromControl(Form)));
@@ -1190,6 +1211,7 @@ void __fastcall ResetSystemSettings(TCustomForm * /*Control*/)
 //---------------------------------------------------------------------------
 struct TShowAsModalStorage
 {
+  bool TriggerModalFinished;
   void * FocusWindowList;
   HWND FocusActiveWindow;
   TFocusState FocusState;
@@ -1197,17 +1219,21 @@ struct TShowAsModalStorage
   int SaveCount;
 };
 //---------------------------------------------------------------------------
-void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront)
+void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront, bool TriggerModalStarted)
 {
   SetCorrectFormParent(Form);
   CancelDrag();
   if (GetCapture() != 0) SendMessage(GetCapture(), WM_CANCELMODE, 0, 0);
   ReleaseCapture();
-  Application->ModalStarted();
+  if (TriggerModalStarted)
+  {
+    Application->ModalStarted();
+  }
   (static_cast<TPublicForm*>(Form))->FFormState << fsModal;
 
   TShowAsModalStorage * AStorage = new TShowAsModalStorage;
 
+  AStorage->TriggerModalFinished = TriggerModalStarted;
   AStorage->FocusActiveWindow = GetActiveWindow();
   AStorage->FocusState = SaveFocusState();
   Screen->SaveFocusedList->Insert(0, Screen->FocusedForm);
@@ -1278,7 +1304,10 @@ void __fastcall HideAsModal(TForm * Form, void *& Storage)
 
   (static_cast<TPublicForm*>(Form))->FFormState >> fsModal;
 
-  Application->ModalFinished();
+  if (AStorage->TriggerModalFinished)
+  {
+    Application->ModalFinished();
+  }
 
   delete AStorage;
 }
@@ -2879,7 +2908,7 @@ bool IsButtonBeingClicked(TButtonControl * Button)
 }
 //---------------------------------------------------------------------------
 // When using this in OnExit handers, it's still possible that the user does not actually click the
-// CanceButton (for example, when the button is released out of the button).
+// CancelButton (for example, when the button is released out of the button).
 // Then the validation is bypassed. Consequently, all dialogs that uses this must still
 // gracefully handle submission with non-validated data.
 bool IsCancelButtonBeingClicked(TControl * Control)

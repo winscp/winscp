@@ -14,6 +14,12 @@ USEFORM("forms\ScpExplorer.cpp", ScpExplorerForm);
 #include <Setup.h>
 #include <PuttyTools.h>
 #include <GUITools.h>
+#include <Tools.h>
+//---------------------------------------------------------------------------
+void __fastcall AppLogImpl(UnicodeString S)
+{
+  AppLog(S);
+}
 //---------------------------------------------------------------------------
 WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 {
@@ -26,11 +32,30 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
     if (Params->FindSwitch(L"applog", AppLogPath))
     {
       ApplicationLog->Enable(AppLogPath);
+      OnAppLog = AppLogImpl;
     }
     AppLog(L"Starting...");
+    if (Params->FindSwitch(L"IsUWP"))
+    {
+      EnableUWPTestMode();
+    }
 
     AddStartupSequence(L"M");
-    DllHijackingProtection();
+    AppLogFmt(L"Process: %d", (GetCurrentProcessId()));
+    AppLogFmt(L"Mouse: %s", (BooleanToEngStr(Mouse->MousePresent)));
+    AppLogFmt(L"Mouse wheel: %s, msg: %d, scroll lines: %d", (BooleanToEngStr(Mouse->WheelPresent), int(Mouse->RegWheelMessage), Mouse->WheelScrollLines));
+    AppLogFmt(L"ACP: %d", (static_cast<int>(GetACP())));
+    AppLogFmt(L"Win32 platform: %d", (Win32Platform));
+    DWORD Type;
+    if (GetWindowsProductType(Type))
+    {
+      AppLogFmt(L"Windows product type: %x", (static_cast<int>(Type)));
+    }
+    else
+    {
+      AppLog(L"No Windows product type");
+    }
+    AppLogFmt(L"Win64: %s", (BooleanToEngStr(IsWin64())));
     AddStartupSequence(L"T");
 
     WinInitialize();
@@ -76,6 +101,7 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
       CoreFinalize();
       WinFinalize();
       AppLog(L"Finalizing done");
+      OnAppLog = NULL;
       SAFE_DESTROY_EX(TApplicationLog, ApplicationLog);
     }
   }

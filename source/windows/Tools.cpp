@@ -359,91 +359,101 @@ UnicodeString __fastcall StoreFormSize(TForm * Form)
   return FORMAT(L"%d,%d,%s", (Form->Width, Form->Height, SavePixelsPerInch(Form)));
 }
 //---------------------------------------------------------------------------
-static void __fastcall ExecuteProcessAndReadOutput(const
-  UnicodeString & Command, const UnicodeString & HelpKeyword, UnicodeString & Output)
+void ExecuteProcessAndReadOutput(const UnicodeString & Command, UnicodeString & Output, DWORD & ExitCode, bool ReadStdErr)
 {
-  if (!CopyCommandToClipboard(Command))
+  SECURITY_ATTRIBUTES SecurityAttributes;
+  ZeroMemory(&SecurityAttributes, sizeof(SecurityAttributes));
+  SecurityAttributes.nLength = sizeof(SECURITY_ATTRIBUTES);
+  SecurityAttributes.bInheritHandle = TRUE;
+  SecurityAttributes.lpSecurityDescriptor = NULL;
+
+  HANDLE PipeRead = INVALID_HANDLE_VALUE;
+  HANDLE PipeWrite = INVALID_HANDLE_VALUE;
+
+  if (!CreatePipe(&PipeRead, &PipeWrite, &SecurityAttributes, 0) ||
+      !SetHandleInformation(PipeRead, HANDLE_FLAG_INHERIT, 0))
   {
-    SECURITY_ATTRIBUTES SecurityAttributes;
-    ZeroMemory(&SecurityAttributes, sizeof(SecurityAttributes));
-    SecurityAttributes.nLength = sizeof(SECURITY_ATTRIBUTES);
-    SecurityAttributes.bInheritHandle = TRUE;
-    SecurityAttributes.lpSecurityDescriptor = NULL;
+    throw EOSExtException(FMTLOAD(EXECUTE_APP_ERROR, (Command)));
+  }
 
-    HANDLE PipeRead = INVALID_HANDLE_VALUE;
-    HANDLE PipeWrite = INVALID_HANDLE_VALUE;
+  PROCESS_INFORMATION ProcessInformation;
+  ZeroMemory(&ProcessInformation, sizeof(ProcessInformation));
 
-    if (!CreatePipe(&PipeRead, &PipeWrite, &SecurityAttributes, 0) ||
-        !SetHandleInformation(PipeRead, HANDLE_FLAG_INHERIT, 0))
-    {
-      throw EOSExtException(FMTLOAD(EXECUTE_APP_ERROR, (Command)));
-    }
-
-    PROCESS_INFORMATION ProcessInformation;
-    ZeroMemory(&ProcessInformation, sizeof(ProcessInformation));
-
+  try
+  {
     try
     {
-      try
+      STARTUPINFO StartupInfo;
+      ZeroMemory(&StartupInfo, sizeof(StartupInfo));
+      StartupInfo.cb = sizeof(STARTUPINFO);
+      if (ReadStdErr)
       {
-        STARTUPINFO StartupInfo;
-        ZeroMemory(&StartupInfo, sizeof(StartupInfo));
-        StartupInfo.cb = sizeof(STARTUPINFO);
         StartupInfo.hStdError = PipeWrite;
-        StartupInfo.hStdOutput = PipeWrite;
-        StartupInfo.wShowWindow = SW_HIDE;
-        StartupInfo.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
-
-        if (!CreateProcess(NULL, Command.c_str(), NULL, NULL, TRUE, 0, NULL, NULL, &StartupInfo, &ProcessInformation))
-        {
-          throw EOSExtException(FMTLOAD(EXECUTE_APP_ERROR, (Command)));
-        }
       }
-      __finally
-      {
-        // If we do not close the handle here, the ReadFile below would get stuck once the app finishes writting,
-        // as it still sees that someone "can" write to the pipe.
-        CloseHandle(PipeWrite);
-      }
+      StartupInfo.hStdOutput = PipeWrite;
+      StartupInfo.wShowWindow = SW_HIDE;
+      StartupInfo.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
 
-      DWORD BytesAvail;
-      while (PeekNamedPipe(PipeRead, NULL, 0, NULL, &BytesAvail, NULL))
+      if (!CreateProcess(NULL, Command.c_str(), NULL, NULL, TRUE, 0, NULL, NULL, &StartupInfo, &ProcessInformation))
       {
-        if (BytesAvail > 0)
-        {
-          char Buffer[4096];
-          DWORD BytesToRead = std::min(BytesAvail, static_cast<unsigned long>(sizeof(Buffer)));
-          DWORD BytesRead;
-          if (ReadFile(PipeRead, Buffer, BytesToRead, &BytesRead, NULL))
-          {
-            Output += UnicodeString(UTF8String(Buffer, BytesRead));
-          }
-        }
-        // Same as in ExecuteShellCheckedAndWait
-        Sleep(50);
-        Application->ProcessMessages();
-      }
-
-      DWORD ExitCode;
-      if (DebugAlwaysTrue(GetExitCodeProcess(ProcessInformation.hProcess, &ExitCode)) &&
-          (ExitCode != 0))
-      {
-        UnicodeString Buf = Output;
-        UnicodeString Buf2;
-        if (ExtractMainInstructions(Buf, Buf2))
-        {
-          throw ExtException(Output, UnicodeString(), HelpKeyword);
-        }
-        else
-        {
-          throw ExtException(MainInstructions(FMTLOAD(COMMAND_FAILED_CODEONLY, (static_cast<int>(ExitCode)))), Output, HelpKeyword);
-        }
+        throw EOSExtException(FMTLOAD(EXECUTE_APP_ERROR, (Command)));
       }
     }
     __finally
     {
-      CloseHandle(ProcessInformation.hProcess);
-      CloseHandle(ProcessInformation.hThread);
+      // If we do not close the handle here, the ReadFile below would get stuck once the app finishes writting,
+      // as it still sees that someone "can" write to the pipe.
+      CloseHandle(PipeWrite);
+    }
+
+    DWORD BytesAvail;
+    while (PeekNamedPipe(PipeRead, NULL, 0, NULL, &BytesAvail, NULL))
+    {
+      if (BytesAvail > 0)
+      {
+        char Buffer[4096];
+        DWORD BytesToRead = std::min(BytesAvail, static_cast<unsigned long>(sizeof(Buffer)));
+        DWORD BytesRead;
+        if (ReadFile(PipeRead, Buffer, BytesToRead, &BytesRead, NULL))
+        {
+          Output += UnicodeString(UTF8String(Buffer, BytesRead));
+        }
+      }
+      // Same as in ExecuteShellCheckedAndWait
+      Sleep(50);
+      Application->ProcessMessages();
+    }
+
+    DebugCheck(GetExitCodeProcess(ProcessInformation.hProcess, &ExitCode));
+  }
+  __finally
+  {
+    CloseHandle(ProcessInformation.hProcess);
+    CloseHandle(ProcessInformation.hThread);
+    CloseHandle(PipeRead);
+  }
+}
+//---------------------------------------------------------------------------
+static void __fastcall DoExecuteProcessAndReadOutput(
+  const UnicodeString & Command, const UnicodeString & HelpKeyword, UnicodeString & Output)
+{
+  if (!CopyCommandToClipboard(Command))
+  {
+    DWORD ExitCode;
+    ExecuteProcessAndReadOutput(Command, Output, ExitCode, true);
+    if (ExitCode != 0)
+    {
+      UnicodeString Buf = Output;
+      UnicodeString Buf2;
+      if (ExtractMainInstructions(Buf, Buf2))
+      {
+        throw ExtException(Output, EmptyStr, HelpKeyword);
+      }
+      else
+      {
+        UnicodeString Message = MainInstructions(FMTLOAD(COMMAND_FAILED_CODEONLY, (static_cast<int>(ExitCode))));
+        throw ExtException(Message, Output, HelpKeyword);
+      }
     }
   }
 }
@@ -457,7 +467,7 @@ void __fastcall ExecuteProcessChecked(
   }
   else
   {
-    ExecuteProcessAndReadOutput(Command, HelpKeyword, *Output);
+    DoExecuteProcessAndReadOutput(Command, HelpKeyword, *Output);
   }
 }
 //---------------------------------------------------------------------------
@@ -470,7 +480,7 @@ void __fastcall ExecuteProcessCheckedAndWait(
   }
   else
   {
-    ExecuteProcessAndReadOutput(Command, HelpKeyword, *Output);
+    DoExecuteProcessAndReadOutput(Command, HelpKeyword, *Output);
   }
 }
 //---------------------------------------------------------------------------
@@ -1628,6 +1638,7 @@ bool __fastcall AutodetectProxy(UnicodeString & HostName, int & PortNumber)
     {
       HostName = CutToChar(Proxy, L':', true);
       PortNumber = StrToIntDef(Proxy, ProxyPortNumber);
+      AppLogFmt("Proxy autodetected: %s:%d", (HostName, PortNumber));
     }
   }
 

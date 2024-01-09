@@ -638,13 +638,13 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarDrawPanel(
       case TSynchronizeChecklist::saUploadUpdate:
         Possible =
           ((FMode == smRemote) || (FMode == smBoth)) &&
-          (FLAGCLEAR(FParams, TTerminal::spNotByTime) || FLAGSET(FParams, TTerminal::spBySize));
+          (FLAGCLEAR(FParams, TTerminal::spNotByTime) || FLAGSET(FParams, TTerminal::spBySize) || FLAGSET(FParams, TTerminal::spByChecksum));
         break;
 
       case TSynchronizeChecklist::saDownloadUpdate:
         Possible =
           ((FMode == smLocal) || (FMode == smBoth)) &&
-          (FLAGCLEAR(FParams, TTerminal::spNotByTime) || FLAGSET(FParams, TTerminal::spBySize));
+          (FLAGCLEAR(FParams, TTerminal::spNotByTime) || FLAGSET(FParams, TTerminal::spBySize) || FLAGSET(FParams, TTerminal::spByChecksum));
         break;
 
       case TSynchronizeChecklist::saDeleteRemote:

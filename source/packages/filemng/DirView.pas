@@ -1317,7 +1317,7 @@ begin
       Drive := DriveInfo.GetDriveKey(FPath);
       DriveInfo.ReadDriveStatus(Drive, dsSize);
       FDriveType := DriveInfo.Get(Drive).DriveType;
-      FDirOK := DriveInfo.Get(Drive).DriveReady and DirectoryExists(FPath);
+      FDirOK := DriveInfo.Get(Drive).DriveReady and DirectoryExists(ApiPath(FPath));
     end
       else
     begin

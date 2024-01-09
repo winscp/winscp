@@ -280,11 +280,11 @@ static UnicodeString GetTime(TFileOperationProgressType * ProgressData)
   UnicodeString Result;
   if (ProgressData->TotalSizeSet)
   {
-    Result = FormatDateTimeSpan(Configuration->TimeFormat, ProgressData->TotalTimeLeft());
+    Result = FormatDateTimeSpan(ProgressData->TotalTimeLeft());
   }
   else
   {
-    Result = FormatDateTimeSpan(Configuration->TimeFormat, ProgressData->TimeElapsed());
+    Result = FormatDateTimeSpan(ProgressData->TimeElapsed());
   }
   return Result;
 }

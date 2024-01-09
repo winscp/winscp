@@ -115,7 +115,6 @@ struct t_SslCertData
   int priv_data; //Internal data, do not modify
 };
 //---------------------------------------------------------------------------
-class CCriticalSectionWrapper;
 class CFileZillaTools;
 //---------------------------------------------------------------------------
 class CAsyncSslSocketLayer : public CAsyncSocketExLayer
@@ -134,8 +133,7 @@ public:
   bool IsUsingSSL();
   int InitSSLConnection(bool clientMode,
     CAsyncSslSocketLayer * main,
-    bool sessionreuse, const CString & host, CFileZillaTools * tools,
-    void* pContext = 0);
+    bool sessionreuse, const CString & host, CFileZillaTools * tools);
 
   // Send raw text, useful to send a confirmation after the ssl connection
   // has been initialized
@@ -159,8 +157,8 @@ private:
   void PrintSessionInfo();
   BOOL ShutDownComplete();
   int InitSSL();
-  void UnloadSSL();
   void PrintLastErrorMsg();
+  void SetSession(SSL_SESSION * Session);
   bool HandleSession(SSL_SESSION * Session);
   int ProcessSendBuffer();
 
@@ -178,11 +176,11 @@ private:
   BOOL m_bFailureSent;
 
   // Critical section for thread synchronization
-  static CCriticalSectionWrapper m_sCriticalSection;
+  static std::unique_ptr<TCriticalSection> m_sCriticalSection;
+  std::unique_ptr<TCriticalSection> m_CriticalSection;
 
   // Status variables
-  static int m_nSslRefCount;
-  BOOL m_bSslInitialized;
+  static bool m_bSslInitialized;
   int m_nShutDown;
   int m_nNetworkError;
   int m_nSslAsyncNotifyId;
@@ -200,9 +198,10 @@ private:
 
   // SSL data
   SSL_CTX* m_ssl_ctx;  // SSL context
-  static std::map<SSL_CTX *, int> m_contextRefCount;
   SSL* m_ssl;      // current session handle
   SSL_SESSION * m_sessionid;
+  int m_sessionidSerializedLen;
+  unsigned char * m_sessionidSerialized;
   bool m_sessionreuse;
   bool m_sessionreuse_failed;
   CAsyncSslSocketLayer * m_Main;

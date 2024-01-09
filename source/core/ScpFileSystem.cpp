@@ -27,10 +27,11 @@ const int coIgnoreWarnings = 16;
 const int coReadProgress = 32;
 const int coIgnoreStdErr = 64;
 
-const int ecRaiseExcept = 1;
-const int ecIgnoreWarnings = 2;
-const int ecReadProgress = 4;
-const int ecIgnoreStdErr = 8;
+const int ecRaiseExcept = 0x01;
+const int ecIgnoreWarnings = 0x02;
+const int ecReadProgress = 0x04;
+const int ecIgnoreStdErr = 0x08;
+const int ecNoEnsureLocation = 0x10;
 const int ecDefault = ecRaiseExcept;
 //---------------------------------------------------------------------------
 DERIVE_EXT_EXCEPTION(EScpFileSkipped, ESkipFile);
@@ -461,6 +462,7 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
     case fcResumeSupport:
     case fcSkipTransfer:
     case fcParallelTransfers: // does not implement cpNoRecurse
+    case fcParallelFileTransfers:
     case fcTransferOut:
     case fcTransferIn:
       return false;
@@ -502,9 +504,12 @@ void __fastcall TSCPFileSystem::EnsureLocation()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::SendCommand(const UnicodeString Cmd)
+void __fastcall TSCPFileSystem::SendCommand(const UnicodeString & Cmd, bool NoEnsureLocation)
 {
-  EnsureLocation();
+  if (!NoEnsureLocation)
+  {
+    EnsureLocation();
+  }
 
   UnicodeString Line;
   FSecureShell->ClearStdError();
@@ -657,28 +662,6 @@ void __fastcall TSCPFileSystem::ReadCommandOutput(int Params, const UnicodeStrin
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::ExecCommand(const UnicodeString & Cmd, int Params,
-  const UnicodeString & CmdString)
-{
-  if (Params < 0)
-  {
-    Params = ecDefault;
-  }
-
-  TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
-
-  SendCommand(Cmd);
-
-  int COParams =
-    coWaitForLastLine |
-    FLAGMASK(FLAGSET(Params, ecRaiseExcept), coRaiseExcept) |
-    FLAGMASK(FLAGSET(Params, ecIgnoreWarnings), coIgnoreWarnings) |
-    FLAGMASK(FLAGSET(Params, ecReadProgress), coReadProgress) |
-    FLAGMASK(FLAGSET(Params, ecIgnoreStdErr), coIgnoreStdErr);
-
-  ReadCommandOutput(COParams, &CmdString);
-}
-//---------------------------------------------------------------------------
 void TSCPFileSystem::InvalidOutputError(const UnicodeString & Command)
 {
   FTerminal->TerminalError(FMTLOAD(INVALID_OUTPUT_ERROR, (Command, Output->Text)));
@@ -690,7 +673,20 @@ void __fastcall TSCPFileSystem::ExecCommand(TFSCommand Cmd, const TVarRec * args
   if (Params < 0) Params = ecDefault;
   UnicodeString FullCommand = FCommandSet->FullCommand(Cmd, args, size);
   UnicodeString Command = FCommandSet->Command(Cmd, args, size);
-  ExecCommand(FullCommand, Params, Command);
+
+  TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
+
+  SendCommand(FullCommand, FLAGSET(Params, ecNoEnsureLocation));
+
+  int COParams =
+    coWaitForLastLine |
+    FLAGMASK(FLAGSET(Params, ecRaiseExcept), coRaiseExcept) |
+    FLAGMASK(FLAGSET(Params, ecIgnoreWarnings), coIgnoreWarnings) |
+    FLAGMASK(FLAGSET(Params, ecReadProgress), coReadProgress) |
+    FLAGMASK(FLAGSET(Params, ecIgnoreStdErr), coIgnoreStdErr);
+
+  ReadCommandOutput(COParams, &Command);
+
   if (Params & ecRaiseExcept)
   {
     Integer MinL = FCommandSet->MinLines[Cmd];
@@ -947,10 +943,31 @@ void __fastcall TSCPFileSystem::AnnounceFileListOperation()
   // noop
 }
 //---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::ChangeDirectory(const UnicodeString Directory)
+void __fastcall TSCPFileSystem::ChangeDirectory(const UnicodeString ADirectory)
 {
+  int Params = ecDefault;
+  UnicodeString Directory = ADirectory;
+  try
+  {
+    EnsureLocation();
+  }
+  catch (...)
+  {
+    if (FTerminal->Active && DebugAlwaysTrue(!FCachedDirectoryChange.IsEmpty()))
+    {
+      Params |= ecNoEnsureLocation;
+      Directory = ::AbsolutePath(AbsolutePath(FCachedDirectoryChange, true), Directory);
+      FTerminal->LogEvent(
+        FORMAT(L"Cannot locate to cached directory, assuming that target absolute path is \"%s\".", (Directory)));
+    }
+    else
+    {
+      throw;
+    }
+  }
+
   UnicodeString ToDir;
-  // This effectivelly disallows entering subdirectories starting with ~ and containing space
+  // This effectively disallows entering subdirectories starting with ~ and containing space
   if (!Directory.IsEmpty() &&
       ((Directory[1] != L'~') || (Directory.SubString(1, 2) == L"~ ")))
   {
@@ -960,7 +977,7 @@ void __fastcall TSCPFileSystem::ChangeDirectory(const UnicodeString Directory)
   {
     ToDir = DelimitStr(Directory);
   }
-  ExecCommand(fsChangeDirectory, ARRAYOFCONST((ToDir)));
+  ExecCommand(fsChangeDirectory, ARRAYOFCONST((ToDir)), Params);
   FCachedDirectoryChange = L"";
 }
 //---------------------------------------------------------------------------
@@ -1171,14 +1188,14 @@ void __fastcall TSCPFileSystem::DeleteFile(const UnicodeString FileName,
   ExecCommand(fsDeleteFile, ARRAYOFCONST((DelimitStr(FileName))));
 }
 //---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::RenameFile(const UnicodeString FileName, const TRemoteFile * /*File*/,
-  const UnicodeString NewName)
+void __fastcall TSCPFileSystem::RenameFile(
+  const UnicodeString & FileName, const TRemoteFile *, const UnicodeString & NewName, bool DebugUsedArg(Overwrite))
 {
   ExecCommand(fsRenameFile, ARRAYOFCONST((DelimitStr(FileName), DelimitStr(NewName))));
 }
 //---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::CopyFile(const UnicodeString FileName, const TRemoteFile * /*File*/,
-  const UnicodeString NewName)
+void __fastcall TSCPFileSystem::CopyFile(
+  const UnicodeString & FileName, const TRemoteFile *, const UnicodeString & NewName, bool DebugUsedArg(Overwrite))
 {
   UnicodeString DelimitedFileName = DelimitStr(FileName);
   UnicodeString DelimitedNewName = DelimitStr(NewName);
@@ -1735,7 +1752,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
           unsigned int Answer;
           if (File->IsDirectory)
           {
-            UnicodeString Message = FMTLOAD(DIRECTORY_OVERWRITE, (FileNameOnly));
+            UnicodeString Message = MainInstructions(FMTLOAD(DIRECTORY_OVERWRITE, (FileNameOnly)));
             TQueryParams QueryParams(qpNeverAskAgainCheck);
 
             TSuspendFileOperationProgress Suspend(OperationProgress);
@@ -1974,7 +1991,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
         // We do ASCII transfer: convert EOL of current block
         // (we don't convert whole buffer, cause it would produce
         // huge memory-transfers while inserting/deleting EOL characters)
-        // Than we add current block to file buffer
+        // Then we add current block to file buffer
         if (OperationProgress->AsciiTransfer)
         {
           int ConvertParams =
@@ -2200,7 +2217,7 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const UnicodeString Directory
 
     while (FindOK && !OperationProgress->Cancel)
     {
-      UnicodeString FileName = IncludeTrailingBackslash(DirectoryName) + SearchRec.Name;
+      UnicodeString FileName = SearchRec.GetFilePath();
       try
       {
         if (SearchRec.IsRealFile())
@@ -2716,7 +2733,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
                 do
                 {
                   BlockBuf.Size = OperationProgress->TransferBlockSize();
-                  BlockBuf.Position = 0;
+                  BlockBuf.Reset();
 
                   FSecureShell->Receive(reinterpret_cast<unsigned char *>(BlockBuf.Data), BlockBuf.Size);
                   OperationProgress->AddTransferred(BlockBuf.Size);
@@ -2776,7 +2793,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
 
               if (FileData.SetTime && CopyParam->PreserveTime)
               {
-                FTerminal->UpdateTargetTime(File, FileData.Modification, FTerminal->SessionData->DSTMode);
+                FTerminal->UpdateTargetTime(File, FileData.Modification, mfFull, FTerminal->SessionData->DSTMode);
               }
             }
             __finally

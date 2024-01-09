@@ -52,6 +52,7 @@ __published:
   TMenuItem *Start1;
   TMenuItem *StartInNewWindowItem;
   TCheckBox *SynchronizeCaseSensitiveCheck;
+  TCheckBox *SynchronizeByChecksumCheck;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall TransferSettingsButtonClick(TObject *Sender);

@@ -120,6 +120,7 @@ protected:
   void ResetTransferSocket(int Error);
   int OpenTransferFile(CFileTransferData * pData);
   int ActivateTransferSocket(CFileTransferData * pData);
+  void CancelTransferResume(CFileTransferData * pData);
 
   void DoClose(int nError = 0);
   int TryGetReplyCode();

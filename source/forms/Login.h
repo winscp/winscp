@@ -210,7 +210,7 @@ __published:
   TPanel *ShowAgainPanel;
   TCheckBox *ShowAgainCheck;
   TPanel *BasicS3Panel;
-  TCheckBox *S3CredentialsEnvCheck2;
+  TCheckBox *S3CredentialsEnvCheck3;
   TMenuItem *OpeninPuTTY4;
   TComboBox *S3ProfileCombo;
   void __fastcall DataChange(TObject *Sender);
@@ -290,9 +290,10 @@ __published:
   void __fastcall SearchSiteNameActionExecute(TObject *Sender);
   void __fastcall SearchSiteActionExecute(TObject *Sender);
   void __fastcall PanelMouseDown(TObject *Sender, TMouseButton Button, TShiftState Shift, int X, int Y);
-  void __fastcall S3CredentialsEnvCheck2Click(TObject *Sender);
+  void __fastcall S3CredentialsEnvCheck3Click(TObject *Sender);
   void __fastcall EncryptionComboChange(TObject *Sender);
   void __fastcall S3ProfileComboChange(TObject *Sender);
+  void __fastcall ShowAgainCheckClick(TObject *Sender);
 
 private:
   int NoUpdate;
@@ -326,6 +327,7 @@ private:
   UnicodeString FPasswordLabel;
   int FFixedSessionImages;
   bool FRestoring;
+  bool FWasEverS3;
 
   void __fastcall LoadSession(TSessionData * SessionData);
   void __fastcall LoadContents();
@@ -401,6 +403,7 @@ private:
   bool __fastcall IsEditable();
   TSessionData * __fastcall CloneSelectedSession();
   void __fastcall CloneToNewSite();
+  void DoParseUrl(TSessionData * SessionData, const UnicodeString & Url);
   void __fastcall ParseUrl(const UnicodeString & Url);
   void __fastcall ParseHostName();
   void __fastcall ResetNewSiteData();

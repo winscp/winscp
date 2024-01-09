@@ -31,10 +31,12 @@ enum TSftpBug { sbSymlink, sbSignedTS };
 #define SFTP_BUG_COUNT (sbSignedTS+1)
 extern const wchar_t * PingTypeNames;
 enum TPingType { ptOff, ptNullPacket, ptDummyCommand };
+extern const wchar_t * FtpPingTypeNames;
+enum TFtpPingType { fptOff, fptDummyCommand0, fptDummyCommand, fptDirectoryListing };
 enum TAddressFamily { afAuto, afIPv4, afIPv6 };
 enum TFtps { ftpsNone, ftpsImplicit, ftpsExplicitSsl, ftpsExplicitTls };
-// ssl2 has no effect now
-enum TTlsVersion { ssl2 = 2, ssl3 = 3, tls10 = 10, tls11 = 11, tls12 = 12, tls13 = 13, tlsMax = tls13 };
+// ssl2 and ssh3 are equivalent of tls10 now
+enum TTlsVersion { ssl2 = 2, ssl3 = 3, tls10 = 10, tls11 = 11, tls12 = 12, tls13 = 13, tlsMin = tls10, tlsDefaultMin = tls12, tlsMax = tls13 };
 // has to match libs3 S3UriStyle
 enum TS3UrlStyle { s3usVirtualHost, s3usPath };
 enum TSessionSource { ssNone, ssStored, ssStoredModified };
@@ -55,6 +57,7 @@ enum TParseUrlFlags
   pufAllowStoredSiteWithProtocol = 0x01,
   pufUnsafe = 0x02,
   pufPreferProtocol = 0x04,
+  pufParseOnly = 0x08,
 };
 //---------------------------------------------------------------------------
 extern const UnicodeString CipherNames[CIPHER_COUNT];
@@ -95,6 +98,7 @@ extern const UnicodeString UrlHostKeyParamName;
 extern const UnicodeString UrlSaveParamName;
 extern const UnicodeString PassphraseOption;
 extern const UnicodeString S3HostName;
+extern const UnicodeString S3GoogleCloudHostName;
 //---------------------------------------------------------------------------
 class TStoredSessionList;
 //---------------------------------------------------------------------------
@@ -219,7 +223,7 @@ private:
   TAutoSwitch FFtpUseMlsd;
   UnicodeString FFtpAccount;
   int FFtpPingInterval;
-  TPingType FFtpPingType;
+  TFtpPingType FFtpPingType;
   TAutoSwitch FFtpTransferActiveImmediately;
   TFtps FFtps;
   TTlsVersion FMinTlsVersion;
@@ -232,6 +236,7 @@ private:
   TS3UrlStyle FS3UrlStyle;
   TAutoSwitch FS3MaxKeys;
   bool FS3CredentialsEnv;
+  bool FS3RequesterPays;
   bool FIsWorkspace;
   UnicodeString FLink;
   UnicodeString FNameOverride;
@@ -242,6 +247,7 @@ private:
   UnicodeString FWinTitle;
   RawByteString FEncryptKey;
   bool FWebDavLiberalEscaping;
+  bool FWebDavAuthLegacy;
 
   UnicodeString FOrigHostName;
   int FOrigPortNumber;
@@ -410,7 +416,7 @@ private:
   void __fastcall SetFtpUseMlsd(TAutoSwitch value);
   void __fastcall SetFtpAccount(UnicodeString value);
   void __fastcall SetFtpPingInterval(int value);
-  void __fastcall SetFtpPingType(TPingType value);
+  void __fastcall SetFtpPingType(TFtpPingType value);
   void __fastcall SetFtpTransferActiveImmediately(TAutoSwitch value);
   void __fastcall SetFtps(TFtps value);
   void __fastcall SetMinTlsVersion(TTlsVersion value);
@@ -423,6 +429,7 @@ private:
   void __fastcall SetS3UrlStyle(TS3UrlStyle value);
   void __fastcall SetS3MaxKeys(TAutoSwitch value);
   void __fastcall SetS3CredentialsEnv(bool value);
+  void __fastcall SetS3RequesterPays(bool value);
   void __fastcall SetLogicalHostName(UnicodeString value);
   void __fastcall SetIsWorkspace(bool value);
   void __fastcall SetLink(UnicodeString value);
@@ -433,6 +440,7 @@ private:
   UnicodeString __fastcall GetEncryptKey() const;
   void __fastcall SetEncryptKey(UnicodeString value);
   void __fastcall SetWebDavLiberalEscaping(bool value);
+  void __fastcall SetWebDavAuthLegacy(bool value);
 
   TDateTime __fastcall GetTimeoutDT();
   void __fastcall SavePasswords(THierarchicalStorage * Storage, bool PuttyExport, bool DoNotEncryptPasswords, bool SaveAll);
@@ -527,13 +535,14 @@ public:
   bool __fastcall IsSame(const TSessionData * Default, bool AdvancedOnly);
   bool __fastcall IsSameDecrypted(const TSessionData * Default);
   bool __fastcall IsSameSite(const TSessionData * Default);
-  bool __fastcall IsInFolderOrWorkspace(UnicodeString Name);
+  bool __fastcall IsInFolderOrWorkspace(const UnicodeString & Name);
   UnicodeString __fastcall GenerateSessionUrl(unsigned int Flags);
   bool __fastcall HasRawSettingsForUrl();
   bool __fastcall HasSessionName();
   bool HasAutoCredentials();
   int GetDefaultPort();
   UnicodeString ResolvePublicKeyFile();
+  UnicodeString GetSessionPasswordEncryptionKey() const;
 
   UnicodeString __fastcall GenerateOpenCommandArgs(bool Rtf);
   void __fastcall GenerateAssemblyCode(TAssemblyLanguage Language, UnicodeString & Head, UnicodeString & Tail, int & Indent);
@@ -691,7 +700,7 @@ public:
   __property UnicodeString FtpAccount = { read = FFtpAccount, write = SetFtpAccount };
   __property int FtpPingInterval  = { read=FFtpPingInterval, write=SetFtpPingInterval };
   __property TDateTime FtpPingIntervalDT  = { read=GetFtpPingIntervalDT };
-  __property TPingType FtpPingType = { read = FFtpPingType, write = SetFtpPingType };
+  __property TFtpPingType FtpPingType = { read = FFtpPingType, write = SetFtpPingType };
   __property TAutoSwitch FtpTransferActiveImmediately = { read = FFtpTransferActiveImmediately, write = SetFtpTransferActiveImmediately };
   __property TFtps Ftps = { read = FFtps, write = SetFtps };
   __property TTlsVersion MinTlsVersion = { read = FMinTlsVersion, write = SetMinTlsVersion };
@@ -705,6 +714,7 @@ public:
   __property TS3UrlStyle S3UrlStyle = { read = FS3UrlStyle, write = SetS3UrlStyle };
   __property TAutoSwitch S3MaxKeys = { read = FS3MaxKeys, write = SetS3MaxKeys };
   __property bool S3CredentialsEnv = { read = FS3CredentialsEnv, write = SetS3CredentialsEnv };
+  __property bool S3RequesterPays = { read = FS3RequesterPays, write = SetS3RequesterPays };
   __property bool IsWorkspace = { read = FIsWorkspace, write = SetIsWorkspace };
   __property UnicodeString Link = { read = FLink, write = SetLink };
   __property UnicodeString NameOverride = { read = FNameOverride, write = SetNameOverride };
@@ -715,6 +725,7 @@ public:
   __property UnicodeString WinTitle = { read = FWinTitle, write = SetWinTitle };
   __property UnicodeString EncryptKey = { read = GetEncryptKey, write = SetEncryptKey };
   __property bool WebDavLiberalEscaping = { read = FWebDavLiberalEscaping, write = SetWebDavLiberalEscaping };
+  __property bool WebDavAuthLegacy = { read = FWebDavAuthLegacy, write = SetWebDavAuthLegacy };
 
   __property UnicodeString StorageKey = { read = GetStorageKey };
   __property UnicodeString SiteKey = { read = GetSiteKey };
@@ -754,6 +765,7 @@ public:
   void __fastcall NewWorkspace(UnicodeString Name, TList * DataList);
   bool __fastcall IsFolder(const UnicodeString & Name);
   bool __fastcall IsWorkspace(const UnicodeString & Name);
+  bool __fastcall IsFolderOrWorkspace(const UnicodeString & Name);
   TSessionData * __fastcall ParseUrl(UnicodeString Url, TOptions * Options, bool & DefaultsOnly,
     UnicodeString * FileName = NULL, bool * ProtocolDefined = NULL, UnicodeString * MaskedUrl = NULL, int Flags = 0);
   bool __fastcall IsUrl(UnicodeString Url);
@@ -788,7 +800,7 @@ private:
     TSessionData * Data, bool All, bool RecryptPasswordOnly,
     TSessionData * FactoryDefaults);
   TSessionData * __fastcall ResolveWorkspaceData(TSessionData * Data);
-  bool __fastcall IsFolderOrWorkspace(const UnicodeString & Name, bool Workspace);
+  TSessionData * GetFirstFolderOrWorkspaceSession(const UnicodeString & Name);
   TSessionData * __fastcall CheckIsInFolderOrWorkspaceAndResolve(
     TSessionData * Data, const UnicodeString & Name);
   void __fastcall ImportLevelFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
@@ -802,5 +814,8 @@ int __fastcall DefaultPort(TFSProtocol FSProtocol, TFtps Ftps);
 bool __fastcall IsIPv6Literal(const UnicodeString & HostName);
 UnicodeString __fastcall EscapeIPv6Literal(const UnicodeString & IP);
 TFSProtocol NormalizeFSProtocol(TFSProtocol FSProtocol);
+bool ParseOpensshDirective(const UnicodeString & ALine, UnicodeString & Directive, UnicodeString & Value);
+UnicodeString CutOpensshToken(UnicodeString & S);
+UnicodeString ConvertPathFromOpenssh(const UnicodeString & Path);
 //---------------------------------------------------------------------------
 #endif

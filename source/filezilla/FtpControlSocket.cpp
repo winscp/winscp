@@ -705,7 +705,7 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
       ftp_capabilities_t cap = m_serverCapabilities.GetCapabilityString(opts_mlst_command);
       if (cap == unknown)
       {
-        std::transform(facts.begin(), facts.end(), facts.begin(), ::tolower);
+        std::transform(facts.begin(), facts.end(), facts.begin(), ::towlower);
         bool had_unset = false;
         std::string opts_facts;
         // Create a list of all facts understood by both FZ and the server.
@@ -2684,6 +2684,12 @@ int CFtpControlSocket::ActivateTransferSocket(CFileTransferData * pData)
   return nReplyError;
 }
 
+void CFtpControlSocket::CancelTransferResume(CFileTransferData * pData)
+{
+  pData->transferdata.transferleft = pData->transferdata.transfersize;
+  pData->transferdata.bResume = FALSE;
+}
+
 void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFinish/*=FALSE*/,int nError/*=0*/)
 {
   USES_CONVERSION;
@@ -2713,6 +2719,10 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
   #define FILETRANSFER_WAIT      20
 
   #define FILETRANSFER_MFMT      21
+  #define FILETRANSFER_OPTS_REST 22
+
+  #define FILETRANSFER_OPTION_COMMAND_2 (NeedOptsCommand() ? FILETRANSFER_OPTS : FILETRANSFER_PORTPASV)
+  #define FILETRANSFER_OPTION_COMMAND_1 (NeedModeCommand() ? FILETRANSFER_MODE : FILETRANSFER_OPTION_COMMAND_2)
 
   //Partial flowchart of FileTransfer
   //
@@ -3444,7 +3454,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     case FILETRANSFER_TYPE:
       if (code!=2 && code!=3)
         nReplyError = FZ_REPLY_ERROR;
-      m_Operation.nOpState = NeedModeCommand() ? FILETRANSFER_MODE : (NeedOptsCommand() ? FILETRANSFER_OPTS : FILETRANSFER_PORTPASV);
+      m_Operation.nOpState = !pData->transferfile.get && pData->transferdata.bResume ? FILETRANSFER_OPTS_REST : FILETRANSFER_OPTION_COMMAND_1;
       break;
     case FILETRANSFER_WAIT:
       if (!pData->nWaitNextOpState)
@@ -3459,7 +3469,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 #else
       if (code == 2 || code == 3)
         m_useZlib = !m_useZlib;
-      m_Operation.nOpState = NeedOptsCommand() ? FILETRANSFER_OPTS : FILETRANSFER_PORTPASV;
+      m_Operation.nOpState = FILETRANSFER_OPTION_COMMAND_2;
 #endif
       break;
     case FILETRANSFER_OPTS:
@@ -3680,6 +3690,15 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         else
           nReplyError = FZ_REPLY_ERROR;
       break;
+    case FILETRANSFER_OPTS_REST:
+      // anything else means the resume is allowed (2xx) or the server does not understand OPTS REST STOR (5xx)
+      if (code == 4)
+      {
+        ShowStatus(L"Resume not allowed by the server, restarting upload from the scratch.", FZ_LOG_PROGRESS);
+        CancelTransferResume(pData);
+      }
+      m_Operation.nOpState = FILETRANSFER_OPTION_COMMAND_1;
+      break;
     case FILETRANSFER_REST:
       { //Resume
         if (code==3 || code==2)
@@ -3719,8 +3738,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
               }
 
               ShowStatus(IDS_ERRORMSG_CANTRESUME, FZ_LOG_ERROR);
-              pData->transferdata.transferleft=pData->transferdata.transfersize;
-              pData->transferdata.bResume=FALSE;
+              CancelTransferResume(pData);
               m_Operation.nOpState=FILETRANSFER_RETRSTOR;
             }
             else
@@ -4325,6 +4343,10 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       }
     }
     break;
+  case FILETRANSFER_OPTS_REST:
+    if (!Send(L"OPTS REST STOR"))
+      bError = TRUE;
+    break;
   case FILETRANSFER_REST:
     DebugAssert(m_pDataFile);
     {
@@ -4508,7 +4530,7 @@ void CFtpControlSocket::TransferFinished(bool preserveFileTimeForUploads)
         // that the server supports non-standard hack
         // of setting timestamp using
         // MFMT-like (two argument) call to MDTM.
-        // IIS definitelly does.
+        // IIS definitely does.
         command = L"MDTM";
       }
       if (Send( command + L" " + timestr + L" " + filename))
@@ -6363,7 +6385,8 @@ bool CFtpControlSocket::IsRoutableAddress(const CString & host)
   if (host.Left(3) == L"127" ||
       host.Left(3) == L"10." ||
       host.Left(7) == L"192.168" ||
-      host.Left(7) == L"169.254")
+      host.Left(7) == L"169.254" ||
+      host.Left(2) == L"0.")
   {
     return false;
   }

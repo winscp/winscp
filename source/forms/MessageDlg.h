@@ -57,6 +57,7 @@ private:
   TForm * FDummyForm;
   bool FShowNoActivate;
   std::map<TObject *, TButtonSubmitEvent> FButtonSubmitEvents;
+  TCheckBox * NeverAskAgainCheck;
 
   void __fastcall HelpButtonSubmit(TObject * Sender, unsigned int & Answer);
   void __fastcall ReportButtonSubmit(TObject * Sender, unsigned int & Answer);

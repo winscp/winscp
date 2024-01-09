@@ -421,9 +421,10 @@ object PreferencesDialog: TPreferencesDialog
             Width = 119
             Height = 21
             Anchors = [akTop, akRight]
+            MaxLength = 20
             TabOrder = 6
             OnChange = ControlChange
-            OnExit = LogMaxSizeComboExit
+            OnExit = SizeComboExit
             Items.Strings = (
               '1M'
               '10M'
@@ -431,9 +432,9 @@ object PreferencesDialog: TPreferencesDialog
               '1G')
           end
           object LogMaxSizeCountCheck: TCheckBox
-            Left = 64
+            Left = 56
             Top = 142
-            Width = 186
+            Width = 194
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Delete old log files, keep'
@@ -1531,13 +1532,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 389
-          Height = 200
+          Height = 251
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Background transfers'
           TabOrder = 0
           DesignSize = (
             389
-            200)
+            251)
           object Label5: TLabel
             Left = 16
             Top = 25
@@ -1548,11 +1549,20 @@ object PreferencesDialog: TPreferencesDialog
           end
           object QueueKeepDoneItemsCheck: TLabel
             Left = 16
-            Top = 172
+            Top = 223
             Width = 198
             Height = 13
             Caption = 'Display &completed transfers in queue for:'
             FocusControl = QueueKeepDoneItemsForCombo
+            OnClick = ControlChange
+          end
+          object ParallelTransferThresholdUnitLabel: TLabel
+            Left = 147
+            Top = 148
+            Width = 27
+            Height = 13
+            Caption = 'bytes'
+            FocusControl = ParallelTransferThresholdCombo
             OnClick = ControlChange
           end
           object QueueTransferLimitEdit: TUpDownEdit
@@ -1569,12 +1579,12 @@ object PreferencesDialog: TPreferencesDialog
           end
           object QueueAutoPopupCheck: TCheckBox
             Left = 16
-            Top = 146
+            Top = 197
             Width = 369
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Automatically popup prompts of background transfers when idle'
-            TabOrder = 5
+            TabOrder = 7
           end
           object QueueCheck: TCheckBox
             Left = 16
@@ -1587,12 +1597,12 @@ object PreferencesDialog: TPreferencesDialog
           end
           object QueueNoConfirmationCheck: TCheckBox
             Left = 16
-            Top = 122
+            Top = 173
             Width = 369
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&No confirmations for background transfers'
-            TabOrder = 4
+            TabOrder = 6
           end
           object QueueParallelCheck: TCheckBox
             Left = 16
@@ -1602,6 +1612,7 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Use multiple connections for single transfer'
             TabOrder = 3
+            OnClick = ControlChange
           end
           object EnableQueueByDefaultCheck: TCheckBox
             Left = 16
@@ -1614,13 +1625,13 @@ object PreferencesDialog: TPreferencesDialog
           end
           object QueueKeepDoneItemsForCombo: TComboBox
             Left = 280
-            Top = 169
+            Top = 220
             Width = 97
             Height = 21
             Style = csDropDownList
             Anchors = [akTop, akRight]
             MaxLength = 1
-            TabOrder = 6
+            TabOrder = 8
             OnChange = ControlChange
             Items.Strings = (
               'Never'
@@ -1630,10 +1641,36 @@ object PreferencesDialog: TPreferencesDialog
               '1 hour'
               'Forever')
           end
+          object ParallelTransferCheck: TCheckBox
+            Left = 32
+            Top = 122
+            Width = 345
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Use multiple connections for single files abo&ve:'
+            TabOrder = 4
+            OnClick = ControlChange
+          end
+          object ParallelTransferThresholdCombo: TComboBox
+            Left = 48
+            Top = 145
+            Width = 93
+            Height = 21
+            Anchors = [akTop, akRight]
+            MaxLength = 20
+            TabOrder = 5
+            OnChange = ControlChange
+            OnExit = SizeComboExit
+            Items.Strings = (
+              '1M'
+              '10M'
+              '100M'
+              '1G')
+          end
         end
         object QueueViewGroup: TGroupBox
           Left = 8
-          Top = 214
+          Top = 265
           Width = 389
           Height = 99
           Anchors = [akLeft, akTop, akRight]
@@ -2526,13 +2563,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 231
           Width = 389
-          Height = 150
+          Height = 174
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Miscellaneous'
           TabOrder = 2
           DesignSize = (
             389
-            150)
+            174)
           object MinimizeToTrayCheck: TCheckBox
             Left = 16
             Top = 21
@@ -2565,12 +2602,12 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ShowTipsCheck: TCheckBox
             Left = 16
-            Top = 117
+            Top = 141
             Width = 361
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Display tips on startup'
-            TabOrder = 4
+            TabOrder = 5
             OnClick = ControlChange
           end
           object ShowLoginWhenNoSessionCheck: TCheckBox
@@ -2583,6 +2620,16 @@ object PreferencesDialog: TPreferencesDialog
               '&Show Login dialog on startup and when the last session is close' +
               'd'
             TabOrder = 2
+            OnClick = ControlChange
+          end
+          object SessionTabCaptionTruncationCheck: TCheckBox
+            Left = 16
+            Top = 117
+            Width = 361
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Truncate tab titles when they do not fit to window'
+            TabOrder = 4
             OnClick = ControlChange
           end
         end
@@ -2698,6 +2745,96 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Remember &password for duration of session'
             TabOrder = 0
+          end
+        end
+        object SshHostCAsGroup: TGroupBox
+          Left = 8
+          Top = 164
+          Width = 389
+          Height = 228
+          Anchors = [akLeft, akTop, akRight, akBottom]
+          Caption = 'Trusted host certification authorities'
+          TabOrder = 2
+          DesignSize = (
+            389
+            228)
+          object SshHostCAsView: TListView
+            Left = 16
+            Top = 47
+            Width = 356
+            Height = 139
+            Anchors = [akLeft, akTop, akRight, akBottom]
+            Columns = <
+              item
+                Caption = 'Name'
+                Width = 100
+              end
+              item
+                Caption = 'Hosts'
+                Width = 100
+              end>
+            ColumnClick = False
+            DoubleBuffered = True
+            HideSelection = False
+            OwnerData = True
+            ReadOnly = True
+            RowSelect = True
+            ParentDoubleBuffered = False
+            TabOrder = 1
+            ViewStyle = vsReport
+            OnData = SshHostCAsViewData
+            OnDblClick = SshHostCAsViewDblClick
+            OnKeyDown = SshHostCAsViewKeyDown
+            OnSelectItem = ListViewSelectItem
+          end
+          object AddSshHostCAButton: TButton
+            Left = 16
+            Top = 192
+            Width = 83
+            Height = 25
+            Anchors = [akLeft, akBottom]
+            Caption = '&Add...'
+            TabOrder = 2
+            OnClick = AddSshHostCAButtonClick
+          end
+          object RemoveSshHostCAButton: TButton
+            Left = 208
+            Top = 192
+            Width = 83
+            Height = 25
+            Anchors = [akLeft, akBottom]
+            Caption = '&Remove'
+            TabOrder = 4
+            OnClick = RemoveSshHostCAButtonClick
+          end
+          object EditSshHostCAButton: TButton
+            Left = 112
+            Top = 192
+            Width = 83
+            Height = 25
+            Anchors = [akLeft, akBottom]
+            Caption = '&Edit...'
+            TabOrder = 3
+            OnClick = EditSshHostCAButtonClick
+          end
+          object SshHostCAsFromPuTTYCheck: TCheckBox
+            Left = 16
+            Top = 24
+            Width = 356
+            Height = 17
+            Caption = '&Load authorities from PuTTY'
+            TabOrder = 0
+            OnClick = SshHostCAsFromPuTTYCheckClick
+          end
+          object ConfigureSshHostCAsButton: TButton
+            Left = 16
+            Top = 192
+            Width = 125
+            Height = 25
+            Anchors = [akLeft, akBottom]
+            Caption = '&Edit in PuTTY...'
+            TabOrder = 5
+            OnClick = ConfigureSshHostCAsButtonClick
           end
         end
       end

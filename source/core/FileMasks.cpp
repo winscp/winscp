@@ -16,7 +16,6 @@ UnicodeString FileMasksDelimiters = L";,";
 static UnicodeString AllFileMasksDelimiters = FileMasksDelimiters + IncludeExcludeFileMasksDelimiter;
 static UnicodeString DirectoryMaskDelimiters = L"/\\";
 static UnicodeString FileMasksDelimiterStr = UnicodeString(FileMasksDelimiters[1]) + L' ';
-UnicodeString AnyMask = L"*.*";
 static UnicodeString MaskSymbols = L"?*[";
 //---------------------------------------------------------------------------
 __fastcall EFileMasksException::EFileMasksException(
@@ -221,9 +220,9 @@ UnicodeString __fastcall TFileMasks::ComposeMaskStr(
     }
   }
 
-  // For directories, the above will add slash ay the end of masks,
+  // For directories, the above will add slash at the end of masks,
   // breaking size and time masks and thus circumverting their validation.
-  // This performes as hoc validation to cover the scenario.
+  // This performes ad hoc validation to cover the scenario.
   // For files this makes no difference, but no harm either
   TFileMasks Temp(Directory ? 1 : 0);
   Temp = ResultNoDirMask;
@@ -1073,7 +1072,7 @@ bool __fastcall TCustomCommand::FindPattern(const UnicodeString & Command,
     int Len;
     wchar_t APatternCmd;
     GetToken(Command, Index, Len, APatternCmd);
-    if (((PatternCmd != L'!') && (tolower(PatternCmd) == tolower(APatternCmd))) ||
+    if (((PatternCmd != L'!') && (towlower(PatternCmd) == towlower(APatternCmd))) ||
         ((PatternCmd == L'!') && (Len == 1) && (APatternCmd != TEXT_TOKEN)) ||
         ((PatternCmd == L'\0') && (APatternCmd != TEXT_TOKEN)))
     {
@@ -1290,7 +1289,7 @@ TFileCustomCommand::TFileCustomCommand(const TCustomCommandData & Data,
 int __fastcall TFileCustomCommand::PatternLen(const UnicodeString & Command, int Index)
 {
   int Len;
-  wchar_t PatternCmd = (Index < Command.Length()) ? tolower(Command[Index + 1]) : L'\0';
+  wchar_t PatternCmd = (Index < Command.Length()) ? towlower(Command[Index + 1]) : L'\0';
   switch (PatternCmd)
   {
     case L's':

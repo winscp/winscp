@@ -159,6 +159,7 @@ private:
   bool FContinueOnError;
   bool FConfirmCommandSession;
   UnicodeString FPuttyPath;
+  TAutoSwitch FUsePuttyPwFile;
   bool FPuttyPassword;
   bool FTelnetForFtpInPutty;
   UnicodeString FPuttySession;
@@ -170,7 +171,6 @@ private:
   TDateTime FIgnoreCancelBeforeFinish;
   bool FQueueAutoPopup;
   bool FSessionRememberPassword;
-  int FQueueTransfersLimit;
   bool FQueueBootstrap;
   bool FQueueKeepDoneItems;
   int FQueueKeepDoneItemsFor;
@@ -220,7 +220,6 @@ protected:
   void __fastcall SetCopyParamCurrent(UnicodeString value);
   void __fastcall SetNewDirectoryProperties(const TRemoteProperties & value);
   virtual void __fastcall Saved();
-  void __fastcall SetQueueTransfersLimit(int value);
   void __fastcall SetQueueBootstrap(bool value);
   void __fastcall SetQueueKeepDoneItems(bool value);
   void __fastcall SetQueueKeepDoneItemsFor(int value);
@@ -260,7 +259,6 @@ public:
   __property int SynchronizeModeAuto = { read = FSynchronizeModeAuto, write = FSynchronizeModeAuto };
   __property int SynchronizeMode = { read = FSynchronizeMode, write = FSynchronizeMode };
   __property int MaxWatchDirectories = { read = FMaxWatchDirectories, write = FMaxWatchDirectories };
-  __property int QueueTransfersLimit = { read = FQueueTransfersLimit, write = SetQueueTransfersLimit };
   __property bool QueueBootstrap = { read = FQueueBootstrap, write = SetQueueBootstrap };
   __property bool QueueKeepDoneItems = { read = FQueueKeepDoneItems, write = SetQueueKeepDoneItems };
   __property int QueueKeepDoneItemsFor = { read = FQueueKeepDoneItemsFor, write = SetQueueKeepDoneItemsFor };
@@ -271,6 +269,7 @@ public:
   __property UnicodeString AppliedLocaleHex = { read = GetAppliedLocaleHex };
   __property TObjectList * Locales = { read = GetLocales };
   __property UnicodeString PuttyPath = { read = FPuttyPath, write = FPuttyPath };
+  __property TAutoSwitch UsePuttyPwFile = { read = FUsePuttyPwFile, write = FUsePuttyPwFile };
   __property UnicodeString DefaultPuttyPath = { read = FDefaultPuttyPath };
   __property bool PuttyPassword = { read = FPuttyPassword, write = FPuttyPassword };
   __property bool TelnetForFtpInPutty = { read = FTelnetForFtpInPutty, write = FTelnetForFtpInPutty };

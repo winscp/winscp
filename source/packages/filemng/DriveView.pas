@@ -117,6 +117,8 @@ type
     procedure Assign(Source: TPersistent); override;
   end;
 
+  TDriveViewRefreshDrives = procedure(Sender: TObject; Global: Boolean) of object;
+
   TDriveView = class(TCustomDriveView)
   private
     FDriveStatus: TObjectDictionary<string, TDriveStatus>;
@@ -145,7 +147,7 @@ type
 
     {Additional events:}
     FOnDisplayContextMenu: TNotifyEvent;
-    FOnRefreshDrives: TNotifyEvent;
+    FOnRefreshDrives: TDriveViewRefreshDrives;
     FOnNeedHiddenDirectories: TNotifyEvent;
 
     {used components:}
@@ -195,7 +197,8 @@ type
     procedure DriveRemoved(Drive: string);
     procedure DriveRemoving(Drive: string);
     procedure CancelDriveRefresh;
-    procedure ScheduleDriveRefresh;
+    procedure DoRefreshDrives(Global: Boolean);
+    procedure RefreshRootNodes(dsFlags: Integer);
 
     function DirAttrMask: Integer;
     function CreateDriveStatus: TDriveStatus;
@@ -254,8 +257,8 @@ type
     function GetDriveToNode(Node: TTreeNode): string;
     function GetDriveText(Drive: string): string;
     procedure ScanDrive(Drive: string);
-    procedure RefreshRootNodes(dsFlags: Integer);
     function GetDrives: TStrings;
+    procedure ScheduleDriveRefresh;
 
     {Node handling:}
     procedure SetImageIndex(Node: TTreeNode); virtual;
@@ -316,8 +319,7 @@ type
     {Additional events:}
     property OnDisplayContextMenu: TNotifyEvent read FOnDisplayContextMenu
       write FOnDisplayContextMenu;
-    property OnRefreshDrives: TNotifyEvent read FOnRefreshDrives
-      write FOnRefreshDrives;
+    property OnRefreshDrives: TDriveViewRefreshDrives read FOnRefreshDrives write FOnRefreshDrives;
     property OnBusy;
 
     property DDLinkOnExeDrag;
@@ -706,8 +708,7 @@ begin
       try
         //DriveInfo.Load;
         RefreshRootNodes(dsAll or dvdsRereadAllways);
-        if Assigned(OnRefreshDrives) then
-          OnRefreshDrives(Self);
+        DoRefreshDrives(True);
       except
         Application.HandleException(Self);
       end;
@@ -715,6 +716,12 @@ begin
 
     Result := DefWindowProc(FInternalWindowHandle, Msg, wParam, lParam);
   end;
+end;
+
+procedure TDriveView.DoRefreshDrives(Global: Boolean);
+begin
+  if Assigned(OnRefreshDrives) then
+    OnRefreshDrives(Self, Global);
 end;
 
 procedure TDriveView.CancelDriveRefresh;
@@ -1561,8 +1568,7 @@ begin
     Result := CreateDriveStatus;
     FDriveStatus.Add(Drive, Result);
     RefreshRootNodes(dsAll or dvdsRereadAllways);
-    if Assigned(OnRefreshDrives) then
-      OnRefreshDrives(Self);
+    DoRefreshDrives(False);
   end;
 end; {GetDriveStatus}
 
@@ -1732,6 +1738,21 @@ begin {FindNodeToPath}
   HandleNeeded;
 
   Drive := DriveInfo.GetDriveKey(Path);
+  if (not Assigned(GetDriveStatus(Drive).RootNode)) and
+     // hidden or possibly recently un-hidden by other drive view (refresh is pending)
+     (DriveInfo.Get(Drive).Valid or DriveInfo.Get(Drive).ValidButHiddenByDrivePolicy) then
+  begin
+    if DriveInfo.Get(Drive).ValidButHiddenByDrivePolicy then
+      DriveInfo.OverrideDrivePolicy(Drive);
+
+    if DriveInfo.Get(Drive).Valid then
+    begin
+      CancelDriveRefresh; // cancel a possible pending refresh (see the previous comment)
+      RefreshRootNodes(dsAll or dvdsRereadAllways); // overkill and is likely already called by GetDriveStatus
+      DoRefreshDrives(False);
+    end;
+  end;
+
   if Assigned(GetDriveStatus(Drive).RootNode) then
   begin
     if DriveInfo.IsRealDrive(Drive) then

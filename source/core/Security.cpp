@@ -151,7 +151,11 @@ bool WindowsValidateCertificate(const unsigned char * Certificate, size_t Len, U
     CertCreateCertificateContext(
       X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, Certificate, Len);
 
-  if (CertContext != NULL)
+  if (CertContext == NULL)
+  {
+    Error = L"Cannot create certificate context";
+  }
+  else
   {
     CERT_CHAIN_PARA ChainPara;
     // Retrieve the certificate chain of the certificate
@@ -182,13 +186,21 @@ bool WindowsValidateCertificate(const unsigned char * Certificate, size_t Len, U
 
     HCERTCHAINENGINE ChainEngine;
     bool ChainEngineResult = CertCreateCertificateChainEngine(&ChainConfig, &ChainEngine);
-    if (ChainEngineResult)
+    if (!ChainEngineResult)
+    {
+      Error = L"Cannot create certificate chain engine";
+    }
+    else
     {
       const CERT_CHAIN_CONTEXT * ChainContext = NULL;
-      if (CertGetCertificateChain(ChainEngine, CertContext, NULL, NULL, &ChainPara,
+      if (!CertGetCertificateChain(ChainEngine, CertContext, NULL, NULL, &ChainPara,
             CERT_CHAIN_CACHE_END_CERT |
             CERT_CHAIN_REVOCATION_CHECK_CHAIN_EXCLUDE_ROOT,
             NULL, &ChainContext))
+      {
+        Error = L"Cannot get certificate chain";
+      }
+      else
       {
         CERT_CHAIN_POLICY_PARA PolicyPara;
 
@@ -199,14 +211,19 @@ bool WindowsValidateCertificate(const unsigned char * Certificate, size_t Len, U
         CERT_CHAIN_POLICY_STATUS PolicyStatus;
         PolicyStatus.cbSize = sizeof(PolicyStatus);
 
-        if (CertVerifyCertificateChainPolicy(CERT_CHAIN_POLICY_SSL,
-              ChainContext, &PolicyPara, &PolicyStatus))
+        if (!CertVerifyCertificateChainPolicy(CERT_CHAIN_POLICY_SSL, ChainContext, &PolicyPara, &PolicyStatus))
         {
+          Error = L"Cannot verify certificate chain policy";
+        }
+        else
+        {
+          int PolicyError = PolicyStatus.dwError;
           // Windows thinks the certificate is valid.
-          Result = (PolicyStatus.dwError == S_OK);
+          Result = (PolicyError == S_OK);
           if (!Result)
           {
-            Error = FORMAT(L"Error: %x, Chain index: %d, Element index: %d", (PolicyStatus.dwError, PolicyStatus.lChainIndex, PolicyStatus.lElementIndex));
+            UnicodeString ErrorStr = SysErrorMessage(PolicyError);
+            Error = FORMAT(L"Error: %x (%s), Chain index: %d, Element index: %d", (PolicyError, ErrorStr, PolicyStatus.lChainIndex, PolicyStatus.lElementIndex));
           }
         }
 
