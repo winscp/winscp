@@ -234,7 +234,7 @@ static const uint32_t sbox3[] = {
 #define ROUND(n) ( xL ^= P[n], t = xL, xL = F(xL) ^ xR, xR = t )
 
 static void blowfish_encrypt(uint32_t xL, uint32_t xR, uint32_t *output,
-                             BlowfishContext * ctx)
+                             BlowfishContext *ctx)
 {
     uint32_t *S0 = ctx->S0;
     uint32_t *S1 = ctx->S1;
@@ -267,7 +267,7 @@ static void blowfish_encrypt(uint32_t xL, uint32_t xR, uint32_t *output,
 }
 
 static void blowfish_decrypt(uint32_t xL, uint32_t xR, uint32_t *output,
-                             BlowfishContext * ctx)
+                             BlowfishContext *ctx)
 {
     uint32_t *S0 = ctx->S0;
     uint32_t *S1 = ctx->S1;
@@ -300,7 +300,7 @@ static void blowfish_decrypt(uint32_t xL, uint32_t xR, uint32_t *output,
 }
 
 static void blowfish_lsb_encrypt_cbc(unsigned char *blk, int len,
-                                     BlowfishContext * ctx)
+                                     BlowfishContext *ctx)
 {
     uint32_t xL, xR, out[2], iv0, iv1;
 
@@ -327,7 +327,7 @@ static void blowfish_lsb_encrypt_cbc(unsigned char *blk, int len,
     ctx->iv1 = iv1;
 }
 
-void blowfish_lsb_encrypt_ecb(void *vblk, int len, BlowfishContext * ctx)
+void blowfish_lsb_encrypt_ecb(void *vblk, int len, BlowfishContext *ctx)
 {
     unsigned char *blk = (unsigned char *)vblk;
     uint32_t xL, xR, out[2];
@@ -346,7 +346,7 @@ void blowfish_lsb_encrypt_ecb(void *vblk, int len, BlowfishContext * ctx)
 }
 
 static void blowfish_lsb_decrypt_cbc(unsigned char *blk, int len,
-                                     BlowfishContext * ctx)
+                                     BlowfishContext *ctx)
 {
     uint32_t xL, xR, out[2], iv0, iv1;
 
@@ -374,7 +374,7 @@ static void blowfish_lsb_decrypt_cbc(unsigned char *blk, int len,
 }
 
 static void blowfish_msb_encrypt_cbc(unsigned char *blk, int len,
-                                     BlowfishContext * ctx)
+                                     BlowfishContext *ctx)
 {
     uint32_t xL, xR, out[2], iv0, iv1;
 
@@ -402,7 +402,7 @@ static void blowfish_msb_encrypt_cbc(unsigned char *blk, int len,
 }
 
 static void blowfish_msb_decrypt_cbc(unsigned char *blk, int len,
-                                     BlowfishContext * ctx)
+                                     BlowfishContext *ctx)
 {
     uint32_t xL, xR, out[2], iv0, iv1;
 
@@ -430,7 +430,7 @@ static void blowfish_msb_decrypt_cbc(unsigned char *blk, int len,
 }
 
 static void blowfish_msb_sdctr(unsigned char *blk, int len,
-                                     BlowfishContext * ctx)
+                               BlowfishContext *ctx)
 {
     uint32_t b[2], iv0, iv1, tmp;
 
@@ -471,7 +471,7 @@ void blowfish_initkey(BlowfishContext *ctx)
     }
 }
 
-void blowfish_expandkey(BlowfishContext * ctx,
+void blowfish_expandkey(BlowfishContext *ctx,
                         const void *vkey, short keybytes,
                         const void *vsalt, short saltbytes)
 {
@@ -654,6 +654,7 @@ const ssh_cipheralg ssh_blowfish_ssh1 = {
     .setkey = blowfish_ssh_setkey,
     .encrypt = blowfish_ssh1_encrypt_blk,
     .decrypt = blowfish_ssh1_decrypt_blk,
+    .next_message = nullcipher_next_message,
     .blksize = 8,
     .real_keybits = 128,
     .padded_keybytes = SSH1_SESSION_KEY_LENGTH,
@@ -668,6 +669,7 @@ const ssh_cipheralg ssh_blowfish_ssh2 = {
     .setkey = blowfish_ssh_setkey,
     .encrypt = blowfish_ssh2_encrypt_blk,
     .decrypt = blowfish_ssh2_decrypt_blk,
+    .next_message = nullcipher_next_message,
     .ssh2_id = "blowfish-cbc",
     .blksize = 8,
     .real_keybits = 128,
@@ -683,6 +685,7 @@ const ssh_cipheralg ssh_blowfish_ssh2_ctr = {
     .setkey = blowfish_ssh_setkey,
     .encrypt = blowfish_ssh2_sdctr,
     .decrypt = blowfish_ssh2_sdctr,
+    .next_message = nullcipher_next_message,
     .ssh2_id = "blowfish-ctr",
     .blksize = 8,
     .real_keybits = 256,

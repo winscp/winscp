@@ -75,6 +75,8 @@ begin
   inherited Paint;
 
   if HasValidPng then begin
+    Canvas.Handle := 0;
+    Canvas.Font := Font;
     //Calculate the position of the PNG glyph
     CalcButtonLayout(Canvas, FPngImage, ClientRect, FState = bsDown, Down,
       Caption, Layout, Margin, Spacing, GlyphPos, TextPos, DrawTextBiDiModeFlags(0));

@@ -45,13 +45,13 @@ tree234 *newtree234(cmpfn234 cmp);
 /*
  * Free a 2-3-4 tree (not including freeing the elements).
  */
-void freetree234(tree234 * t);
+void freetree234(tree234 *t);
 
 /*
  * Add an element e to a sorted 2-3-4 tree t. Returns e on success,
  * or if an existing element compares equal, returns that.
  */
-void *add234(tree234 * t, void *e);
+void *add234(tree234 *t, void *e);
 
 /*
  * Add an element e to an unsorted 2-3-4 tree t. Returns e on
@@ -61,7 +61,7 @@ void *add234(tree234 * t, void *e);
  * Index range can be from 0 to the tree's current element count,
  * inclusive.
  */
-void *addpos234(tree234 * t, void *e, int index);
+void *addpos234(tree234 *t, void *e, int index);
 
 /*
  * Look up the element at a given numeric index in a 2-3-4 tree.
@@ -81,7 +81,7 @@ void *addpos234(tree234 * t, void *e, int index);
  *       consume(p);
  *   }
  */
-void *index234(tree234 * t, int index);
+void *index234(tree234 *t, int index);
 
 /*
  * Find an element e in a sorted 2-3-4 tree t. Returns NULL if not
@@ -126,10 +126,10 @@ void *index234(tree234 * t, int index);
 enum {
     REL234_EQ, REL234_LT, REL234_LE, REL234_GT, REL234_GE
 };
-void *find234(tree234 * t, void *e, cmpfn234 cmp);
-void *findrel234(tree234 * t, void *e, cmpfn234 cmp, int relation);
-void *findpos234(tree234 * t, void *e, cmpfn234 cmp, int *index);
-void *findrelpos234(tree234 * t, void *e, cmpfn234 cmp, int relation,
+void *find234(tree234 *t, void *e, cmpfn234 cmp);
+void *findrel234(tree234 *t, void *e, cmpfn234 cmp, int relation);
+void *findpos234(tree234 *t, void *e, cmpfn234 cmp, int *index);
+void *findrelpos234(tree234 *t, void *e, cmpfn234 cmp, int relation,
                     int *index);
 
 /*
@@ -184,12 +184,12 @@ void search234_step(search234_state *state, int direction);
  * is out of range (delpos234) or the element is already not in the
  * tree (del234) then they return NULL.
  */
-void *del234(tree234 * t, void *e);
-void *delpos234(tree234 * t, int index);
+void *del234(tree234 *t, void *e);
+void *delpos234(tree234 *t, int index);
 
 /*
  * Return the total element count of a tree234.
  */
-int count234(tree234 * t);
+int count234(tree234 *t);
 
 #endif                          /* TREE234_H */

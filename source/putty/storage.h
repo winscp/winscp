@@ -6,6 +6,8 @@
 #ifndef PUTTY_STORAGE_H
 #define PUTTY_STORAGE_H
 
+#include "defs.h"
+
 /* ----------------------------------------------------------------------
  * Functions to save and restore PuTTY sessions. Note that this is
  * only the low-level code to do the reading and writing. The
@@ -90,6 +92,31 @@ int check_stored_host_key(const char *hostname, int port,
  */
 void store_host_key(const char *hostname, int port,
                     const char *keytype, const char *key);
+
+/* ----------------------------------------------------------------------
+ * Functions to access PuTTY's configuration for trusted host
+ * certification authorities. This must be stored separately from the
+ * saved-session data, because the whole point is to avoid having to
+ * configure CAs separately per session.
+ */
+
+struct host_ca {
+    char *name;
+    strbuf *ca_public_key;
+    char *validity_expression;
+    ca_options opts;
+};
+
+host_ca_enum *enum_host_ca_start(void);
+bool enum_host_ca_next(host_ca_enum *handle, strbuf *out);
+void enum_host_ca_finish(host_ca_enum *handle);
+
+host_ca *host_ca_load(const char *name);
+char *host_ca_save(host_ca *);   /* NULL on success, or dynamic error msg */
+char *host_ca_delete(const char *name); /* likewise */
+
+host_ca *host_ca_new(void);  /* initialises to default settings */
+void host_ca_free(host_ca *);
 
 /* ----------------------------------------------------------------------
  * Functions to access PuTTY's random number seed file.

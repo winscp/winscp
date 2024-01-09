@@ -827,6 +827,18 @@ struct aes_sw_context {
             uint8_t keystream[SLICE_PARALLELISM * 16];
             uint8_t *keystream_pos;
         } sdctr;
+        struct {
+            /* In GCM mode, the cipher preimage consists of three
+             * sections: one fixed, one that increments per message
+             * sent and MACed, and one that increments per cipher
+             * block. */
+            uint64_t msg_counter;
+            uint32_t fixed_iv, block_counter;
+            /* But we keep the precomputed keystream chunks just like
+             * SDCTR mode. */
+            uint8_t keystream[SLICE_PARALLELISM * 16];
+            uint8_t *keystream_pos;
+        } gcm;
     } iv;
     ssh_cipher ciph;
 };
@@ -872,6 +884,31 @@ static void aes_sw_setiv_sdctr(ssh_cipher *ciph, const void *viv)
      * currently empty */
     ctx->iv.sdctr.keystream_pos =
         ctx->iv.sdctr.keystream + sizeof(ctx->iv.sdctr.keystream);
+}
+
+static void aes_sw_setiv_gcm(ssh_cipher *ciph, const void *viv)
+{
+    aes_sw_context *ctx = container_of(ciph, aes_sw_context, ciph);
+    const uint8_t *iv = (const uint8_t *)viv;
+
+    ctx->iv.gcm.fixed_iv = GET_32BIT_MSB_FIRST(iv);
+    ctx->iv.gcm.msg_counter = GET_64BIT_MSB_FIRST(iv + 4);
+    ctx->iv.gcm.block_counter = 1;
+
+    /* Set keystream_pos to indicate that the keystream cache is
+     * currently empty */
+    ctx->iv.gcm.keystream_pos =
+        ctx->iv.gcm.keystream + sizeof(ctx->iv.gcm.keystream);
+}
+
+static void aes_sw_next_message_gcm(ssh_cipher *ciph)
+{
+    aes_sw_context *ctx = container_of(ciph, aes_sw_context, ciph);
+
+    ctx->iv.gcm.msg_counter++;
+    ctx->iv.gcm.block_counter = 1;
+    ctx->iv.gcm.keystream_pos =
+        ctx->iv.gcm.keystream + sizeof(ctx->iv.gcm.keystream);
 }
 
 typedef void (*aes_sw_fn)(uint32_t v[4], const uint32_t *keysched);
@@ -1021,6 +1058,56 @@ static inline void aes_sdctr_sw(
     }
 }
 
+static inline void aes_encrypt_ecb_block_sw(ssh_cipher *ciph, void *blk)
+{
+    aes_sw_context *ctx = container_of(ciph, aes_sw_context, ciph);
+    aes_sliced_e_serial(blk, blk, &ctx->sk);
+}
+
+static inline void aes_gcm_sw(
+    ssh_cipher *ciph, void *vblk, int blklen)
+{
+    aes_sw_context *ctx = container_of(ciph, aes_sw_context, ciph);
+
+    /*
+     * GCM encrypt/decrypt looks just like SDCTR, except that the
+     * method of generating more keystream varies slightly.
+     */
+
+    uint8_t *keystream_end =
+        ctx->iv.gcm.keystream + sizeof(ctx->iv.gcm.keystream);
+
+    for (uint8_t *blk = (uint8_t *)vblk, *finish = blk + blklen;
+         blk < finish; blk += 16) {
+
+        if (ctx->iv.gcm.keystream_pos == keystream_end) {
+            /*
+             * Generate some keystream.
+             */
+            for (uint8_t *block = ctx->iv.gcm.keystream;
+                 block < keystream_end; block += 16) {
+                /* Format the counter value into the buffer. */
+                PUT_32BIT_MSB_FIRST(block, ctx->iv.gcm.fixed_iv);
+                PUT_64BIT_MSB_FIRST(block + 4, ctx->iv.gcm.msg_counter);
+                PUT_32BIT_MSB_FIRST(block + 12, ctx->iv.gcm.block_counter);
+
+                /* Increment the counter. */
+                ctx->iv.gcm.block_counter++;
+            }
+
+            /* Encrypt all those counter blocks. */
+            aes_sliced_e_parallel(ctx->iv.gcm.keystream,
+                                  ctx->iv.gcm.keystream, &ctx->sk);
+
+            /* Reset keystream_pos to the start of the buffer. */
+            ctx->iv.gcm.keystream_pos = ctx->iv.gcm.keystream;
+        }
+
+        memxor16(blk, blk, ctx->iv.gcm.keystream_pos);
+        ctx->iv.gcm.keystream_pos += 16;
+    }
+}
+
 #define SW_ENC_DEC(len)                                 \
     static void aes##len##_sw_cbc_encrypt(              \
         ssh_cipher *ciph, void *vblk, int blklen)       \
@@ -1030,7 +1117,13 @@ static inline void aes_sdctr_sw(
     { aes_cbc_sw_decrypt(ciph, vblk, blklen); }         \
     static void aes##len##_sw_sdctr(                    \
         ssh_cipher *ciph, void *vblk, int blklen)       \
-    { aes_sdctr_sw(ciph, vblk, blklen); }
+    { aes_sdctr_sw(ciph, vblk, blklen); }               \
+    static void aes##len##_sw_gcm(                      \
+        ssh_cipher *ciph, void *vblk, int blklen)       \
+    { aes_gcm_sw(ciph, vblk, blklen); }                 \
+    static void aes##len##_sw_encrypt_ecb_block(        \
+        ssh_cipher *ciph, void *vblk)                   \
+    { aes_encrypt_ecb_block_sw(ciph, vblk); }
 
 SW_ENC_DEC(128)
 SW_ENC_DEC(192)

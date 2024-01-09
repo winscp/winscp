@@ -256,6 +256,12 @@ be matched
 
 \dd to indicate that it is a fingerprint of a specific format
 
+\dt \cq{sha256-cert:} or \cq{md5-cert:}
+
+\dd to indicate that it is a fingerprint of a specific format, and
+specifically matches the fingerprint of the public key \e{including} a
+certificate if any
+
 }
 
 \dt \cw{--public-openssh} \e{key-identifiers}, \cw{-L} \e{key-identifiers}

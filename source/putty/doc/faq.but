@@ -150,7 +150,7 @@ data at the server end; it's your guarantee that it hasn't been
 removed and replaced somewhere on the way. Host key checking makes
 the attacker's job \e{astronomically} hard, compared to packet
 sniffing, and even compared to subverting a router. Instead of
-applying a little intelligence and keeping an eye on Bugtraq, the
+applying a little intelligence and keeping an eye on oss-security, the
 attacker must now perform a brute-force attack against at least one
 military-strength cipher. That insignificant host key prompt really
 does make \e{that} much difference.
@@ -220,7 +220,7 @@ Currently, release versions of PuTTY tools only run on Windows
 systems and Unix.
 
 As of 0.68, the supplied PuTTY executables run on versions of Windows
-from XP onwards, up to and including Windows 10; and we know of no
+from XP onwards, up to and including Windows 11; and we know of no
 reason why PuTTY should not continue to work on future versions of
 Windows. We provide 32-bit and 64-bit Windows executables for the
 common x86 processor family; see \k{faq-32bit-64bit} for discussion
@@ -250,8 +250,7 @@ There are Unix ports of most of the traditional PuTTY tools, and also
 one entirely new application.
 
 If you look at the source release, you should find a \c{unix}
-subdirectory. There are a couple of ways of building it,
-including the usual \c{configure}/\c{make}; see the file \c{README}
+subdirectory. You need \c{cmake} to build it; see the file \c{README}
 in the source distribution. This should build you:
 
 \b Unix ports of PuTTY, Plink, PSCP, and PSFTP, which work pretty much
@@ -585,7 +584,7 @@ You can also paste by pressing Shift-Ins.
 keys, proxying, cipher selection, etc.) in PSCP, PSFTP and Plink?
 
 Most major features (e.g., public keys, port forwarding) are available
-through command line options. See the documentation.
+through command line options. See \k{using-general-opts}.
 
 Not all features are accessible from the command line yet, although
 we'd like to fix this. In the meantime, you can use most of
@@ -607,9 +606,16 @@ To use PSCP properly, run it from a Command Prompt window. See
 \S{faq-pscp-spaces}{Question} \I{spaces in filenames}How do I use
 PSCP to copy a file whose name has spaces in?
 
-If PSCP is using the traditional SCP protocol, this is confusing. If
-you're specifying a file at the local end, you just use one set of
-quotes as you would normally do:
+If PSCP is using the newer SFTP protocol (which is usual with most
+modern servers), this is straightforward; all filenames with spaces
+in are specified using a single pair of quotes in the obvious way:
+
+\c pscp "local file" user@host:
+\c pscp user@host:"remote file" .
+
+However, if PSCP is using the older SCP protocol for some reason,
+things are more confusing. If you're specifying a file at the local
+end, you just use one set of quotes as you would normally do:
 
 \c pscp "local filename with spaces" user@host:
 \c pscp user@host:myfile "local filename with spaces"
@@ -632,13 +638,6 @@ command will give an error message:
 Instead, you need to specify the local file name in full:
 
 \c c:\>pscp user@host:"\"oo er\"" "oo er"
-
-If PSCP is using the newer SFTP protocol, none of this is a problem,
-and all filenames with spaces in are specified using a single pair
-of quotes in the obvious way:
-
-\c pscp "local file" user@host:
-\c pscp user@host:"remote file" .
 
 \S{faq-32bit-64bit}{Question} Should I run the 32-bit or the
 64-bit version?
@@ -1153,6 +1152,22 @@ running, but it doesn't stop the process's memory as a whole from
 being swapped completely out to disk when the process is long-term
 inactive. And Pageant spends most of its time inactive.
 
+\S{faq-windowsstore}{Question} Is the version of PuTTY in the
+\i{Microsoft Store} legit?
+
+The free-of-charge \q{PuTTY} application at
+\W{https://apps.microsoft.com/store/detail/putty/XPFNZKSKLBP7RJ}{this link}
+is published and maintained by us. The copy there is the latest
+release, usually updated within a few days of us publishing it on our
+own website.
+
+There have been other copies of PuTTY on the store, some looking quite
+similar, and some charging money. Those were uploaded by other people,
+and we can't guarantee anything about them.
+
+The first version we published to the Microsoft Store was 0.76 (some
+time after its initial release on our website).
+
 \H{faq-admin} Administrative questions
 
 \S{faq-putty-org}{Question} Is \cw{putty.org} your website?
@@ -1287,7 +1302,7 @@ Small donations (tens of dollars or tens of euros) will probably be
 spent on beer or curry, which helps motivate our volunteer team to
 continue doing this for the world. Larger donations will be spent on
 something that actually helps development, if we can find anything
-(perhaps new hardware, or a copy of Windows XP), but if we can't
+(perhaps new hardware, or a new version of Windows), but if we can't
 find anything then we'll just distribute the money among the
 developers. If you want to be sure your donation is going towards
 something worthwhile, ask us first. If you don't like these terms,

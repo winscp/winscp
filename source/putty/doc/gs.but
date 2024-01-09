@@ -80,10 +80,10 @@ PuTTY \I{host key cache}records the host key for each server you
 connect to, in the Windows \i{Registry}. Every time you connect to a
 server, it checks that the host key presented by the server is the
 same host key as it was the last time you connected. If it is not,
-you will see a warning, and you will have the chance to abandon your
-connection before you type any private information (such as a
-password) into it. (See \k{errors-hostkey-wrong} for what that looks
-like.)
+you will see a stronger warning, and you will have the chance to
+abandon your connection before you type any private information (such
+as a password) into it. (See \k{errors-hostkey-wrong} for what that
+looks like.)
 
 However, when you connect to a server you have not connected to
 before, PuTTY has no way of telling whether the host key is the

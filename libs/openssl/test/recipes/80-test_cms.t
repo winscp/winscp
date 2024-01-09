@@ -288,6 +288,13 @@ my @smime_cms_tests = (
 	"-secretkey", "000102030405060708090A0B0C0D0E0F", "-out", "smtst.txt" ]
     ],
 
+    [ "encrypted content test streaming PEM format -noout, 128 bit AES key",
+      [ "-EncryptedData_encrypt", "-in", $smcont, "-outform", "PEM",
+	"-aes128", "-secretkey", "000102030405060708090A0B0C0D0E0F",
+	"-stream", "-noout" ],
+      [ "-help" ]
+    ],
+
 );
 
 my @smime_cms_comp_tests = (
@@ -590,7 +597,7 @@ with({ exit_checker => sub { return shift == 6; } },
     sub {
         ok(run(app(['openssl', 'cms', '-encrypt',
                     '-in', srctop_file("test", "smcont.txt"),
-                    '-stream', '-recip',
+                    '-aes128', '-stream', '-recip',
                     srctop_file("test/smime-certs", "badrsa.pem"),
                    ])),
             "Check failure during BIO setup with -stream is handled correctly");

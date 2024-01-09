@@ -607,11 +607,16 @@ unsigned alloc_channel_id_general(tree234 *channels, size_t localid_offset)
  * lists of protocol identifiers in SSH-2.
  */
 
-void add_to_commasep(strbuf *buf, const char *data)
+void add_to_commasep_pl(strbuf *buf, ptrlen data)
 {
     if (buf->len > 0)
         put_byte(buf, ',');
-    put_data(buf, data, strlen(data));
+    put_datapl(buf, data);
+}
+
+void add_to_commasep(strbuf *buf, const char *data)
+{
+    add_to_commasep_pl(buf, ptrlen_from_asciz(data));
 }
 
 bool get_commasep_word(ptrlen *list, ptrlen *word)
@@ -835,7 +840,7 @@ bool ssh2_bpp_check_unimplemented(BinaryPacketProtocol *bpp, PktIn *pktin)
 
 #undef BITMAP_UNIVERSAL
 #undef BITMAP_CONDITIONAL
-#undef SSH1_BITMAP_WORD
+#undef SSH2_BITMAP_WORD
 
 /* ----------------------------------------------------------------------
  * Centralised component of SSH host key verification.
@@ -850,8 +855,8 @@ bool ssh2_bpp_check_unimplemented(BinaryPacketProtocol *bpp, PktIn *pktin)
 SeatPromptResult verify_ssh_host_key(
     InteractionReadySeat iseat, Conf *conf, const char *host, int port,
     ssh_key *key, const char *keytype, char *keystr, const char *keydisp,
-    char **fingerprints, void (*callback)(void *ctx, SeatPromptResult result),
-    void *ctx)
+    char **fingerprints, int ca_count,
+    void (*callback)(void *ctx, SeatPromptResult result), void *ctx)
 {
     /*
      * First, check if the Conf includes a manual specification of the
@@ -919,10 +924,155 @@ SeatPromptResult verify_ssh_host_key(
      * The key is either missing from the cache, or does not match.
      * Either way, fall back to an interactive prompt from the Seat.
      */
-    bool mismatch = (storage_status != 1);
-    return seat_confirm_ssh_host_key(
-        iseat, host, port, keytype, keystr, keydisp, fingerprints, mismatch,
-        callback, ctx);
+    SeatDialogText *text = seat_dialog_text_new();
+    const SeatDialogPromptDescriptions *pds =
+        seat_prompt_descriptions(iseat.seat);
+
+    FingerprintType fptype_default =
+        ssh2_pick_default_fingerprint(fingerprints);
+
+    seat_dialog_text_append(
+        text, SDT_TITLE, "%s Security Alert", appname);
+
+    HelpCtx helpctx;
+
+    if (key && ssh_key_alg(key)->is_certificate) {
+        seat_dialog_text_append(
+            text, SDT_SCARY_HEADING, "WARNING - POTENTIAL SECURITY BREACH!");
+        seat_dialog_text_append(
+            text, SDT_PARA, "This server presented a certified host key:");
+        seat_dialog_text_append(
+            text, SDT_DISPLAY, "%s (port %d)", host, port);
+        if (ca_count) {
+            seat_dialog_text_append(
+                text, SDT_PARA, "which was signed by a different "
+                "certification authority from the %s %s is configured to "
+                "trust for this server.", ca_count > 1 ? "ones" : "one",
+                appname);
+            if (storage_status == 2) {
+                seat_dialog_text_append(
+                    text, SDT_PARA, "ALSO, that key does not match the key "
+                    "%s had previously cached for this server.", appname);
+                seat_dialog_text_append(
+                    text, SDT_PARA, "This means that either another "
+                    "certification authority is operating in this realm AND "
+                    "the server administrator has changed the host key, or "
+                    "you have actually connected to another computer "
+                    "pretending to be the server.");
+            } else {
+                seat_dialog_text_append(
+                    text, SDT_PARA, "This means that either another "
+                    "certification authority is operating in this realm, or "
+                    "you have actually connected to another computer "
+                    "pretending to be the server.");
+            }
+        } else {
+            assert(storage_status == 2);
+            seat_dialog_text_append(
+                text, SDT_PARA, "which does not match the certified key %s "
+                "had previously cached for this server.", appname);
+            seat_dialog_text_append(
+                text, SDT_PARA, "This means that either the server "
+                "administrator has changed the host key, or you have actually "
+                "connected to another computer pretending to be the server.");
+        }
+        seat_dialog_text_append(
+            text, SDT_PARA, "The new %s key fingerprint is:", keytype);
+        seat_dialog_text_append(
+            text, SDT_DISPLAY, "%s", fingerprints[fptype_default]);
+        helpctx = HELPCTX(errors_cert_mismatch);
+    } else if (storage_status == 1) {
+        seat_dialog_text_append(
+            text, SDT_PARA, "The host key is not cached for this server:");
+        seat_dialog_text_append(
+            text, SDT_DISPLAY, "%s (port %d)", host, port);
+        seat_dialog_text_append(
+            text, SDT_PARA, "You have no guarantee that the server is the "
+            "computer you think it is.");
+        seat_dialog_text_append(
+            text, SDT_PARA, "The server's %s key fingerprint is:", keytype);
+        seat_dialog_text_append(
+            text, SDT_DISPLAY, "%s", fingerprints[fptype_default]);
+        helpctx = HELPCTX(errors_hostkey_absent);
+    } else {
+        seat_dialog_text_append(
+            text, SDT_SCARY_HEADING, "WARNING - POTENTIAL SECURITY BREACH!");
+        seat_dialog_text_append(
+            text, SDT_PARA, "The host key does not match the one %s has "
+            "cached for this server:", appname);
+        seat_dialog_text_append(
+            text, SDT_DISPLAY, "%s (port %d)", host, port);
+        seat_dialog_text_append(
+            text, SDT_PARA, "This means that either the server administrator "
+            "has changed the host key, or you have actually connected to "
+            "another computer pretending to be the server.");
+        seat_dialog_text_append(
+            text, SDT_PARA, "The new %s key fingerprint is:", keytype);
+        seat_dialog_text_append(
+            text, SDT_DISPLAY, "%s", fingerprints[fptype_default]);
+        helpctx = HELPCTX(errors_hostkey_changed);
+    }
+
+    /* The above text is printed even in batch mode. Here's where we stop if
+     * we can't present interactive prompts. */
+    seat_dialog_text_append(
+        text, SDT_BATCH_ABORT, "Connection abandoned.");
+
+    if (storage_status == 1) {
+        seat_dialog_text_append(
+            text, SDT_PARA, "If you trust this host, %s to add the key to "
+            "%s's cache and carry on connecting.",
+            pds->hk_accept_action, appname);
+        seat_dialog_text_append(
+            text, SDT_PARA, "If you want to carry on connecting just once, "
+            "without adding the key to the cache, %s.",
+            pds->hk_connect_once_action);
+        seat_dialog_text_append(
+            text, SDT_PARA, "If you do not trust this host, %s to abandon the "
+            "connection.", pds->hk_cancel_action);
+        seat_dialog_text_append(
+            text, SDT_PROMPT, "Store key in cache?");
+    } else {
+        seat_dialog_text_append(
+            text, SDT_PARA, "If you were expecting this change and trust the "
+            "new key, %s to update %s's cache and carry on connecting.",
+            pds->hk_accept_action, appname);
+        if (key && ssh_key_alg(key)->is_certificate) {
+            seat_dialog_text_append(
+                text, SDT_PARA, "(Storing this certified key in the cache "
+                "will NOT cause its certification authority to be trusted "
+                "for any other key or host.)");
+        }
+        seat_dialog_text_append(
+            text, SDT_PARA, "If you want to carry on connecting but without "
+            "updating the cache, %s.", pds->hk_connect_once_action);
+        seat_dialog_text_append(
+            text, SDT_PARA, "If you want to abandon the connection "
+            "completely, %s to cancel. %s is the ONLY guaranteed safe choice.",
+            pds->hk_cancel_action, pds->hk_cancel_action_Participle);
+        seat_dialog_text_append(
+            text, SDT_PROMPT, "Update cached key?");
+    }
+
+    seat_dialog_text_append(text, SDT_MORE_INFO_KEY,
+                            "Full text of host's public key");
+    seat_dialog_text_append(text, SDT_MORE_INFO_VALUE_BLOB, "%s", keydisp);
+
+    if (fingerprints[SSH_FPTYPE_SHA256]) {
+        seat_dialog_text_append(text, SDT_MORE_INFO_KEY, "SHA256 fingerprint");
+        seat_dialog_text_append(text, SDT_MORE_INFO_VALUE_SHORT, "%s",
+                                fingerprints[SSH_FPTYPE_SHA256]);
+    }
+    if (fingerprints[SSH_FPTYPE_MD5]) {
+        seat_dialog_text_append(text, SDT_MORE_INFO_KEY, "MD5 fingerprint");
+        seat_dialog_text_append(text, SDT_MORE_INFO_VALUE_SHORT, "%s",
+                                fingerprints[SSH_FPTYPE_MD5]);
+    }
+
+    SeatPromptResult toret = seat_confirm_ssh_host_key(
+        iseat, host, port, keytype, keystr, text, helpctx, callback, ctx);
+    seat_dialog_text_free(text);
+    return toret;
 }
 
 /* ----------------------------------------------------------------------

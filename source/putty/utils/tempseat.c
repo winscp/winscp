@@ -204,6 +204,17 @@ static bool tempseat_has_mixed_input_stream(Seat *seat)
     return seat_has_mixed_input_stream(ts->realseat);
 }
 
+static const SeatDialogPromptDescriptions *tempseat_prompt_descriptions(
+    Seat *seat)
+{
+    /* It might be OK to put this in the 'unreachable' category, but I
+     * think it's equally good to put it here, which allows for
+     * someone _preparing_ a prompt right now that they intend to
+     * present once the TempSeat has given way to the real one. */
+    TempSeat *ts = container_of(seat, TempSeat, seat);
+    return seat_prompt_descriptions(ts->realseat);
+}
+
 /* ----------------------------------------------------------------------
  * Methods that should never be called on a TempSeat, so we can put an
  * unreachable() in them.
@@ -237,7 +248,7 @@ static size_t tempseat_banner(Seat *seat, const void *data, size_t len)
 
 static SeatPromptResult tempseat_confirm_ssh_host_key(
     Seat *seat, const char *host, int port, const char *keytype,
-    char *keystr, const char *keydisp, char **key_fingerprints, bool mismatch,
+    char *keystr, SeatDialogText *text, HelpCtx helpctx,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx)
 {
     unreachable("confirm_ssh_host_key should never be called on TempSeat");
@@ -322,6 +333,7 @@ static const struct SeatVtable tempseat_vt = {
     .confirm_ssh_host_key = tempseat_confirm_ssh_host_key,
     .confirm_weak_crypto_primitive = tempseat_confirm_weak_crypto_primitive,
     .confirm_weak_cached_hostkey = tempseat_confirm_weak_cached_hostkey,
+    .prompt_descriptions = tempseat_prompt_descriptions,
     .is_utf8 = tempseat_is_utf8,
     .echoedit_update = tempseat_echoedit_update,
     .get_x_display = tempseat_get_x_display,

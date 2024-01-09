@@ -1,4 +1,4 @@
-# Copyright (C) 1998-2005, 2007 Joe Orton <joe@manyfish.co.uk>    -*- autoconf -*-
+# Copyright (C) 1998-2022 Joe Orton <joe@manyfish.co.uk>    -*- autoconf -*-
 #
 # This file is free software; you may copy and/or distribute it with
 # or without modifications, as long as this notice is preserved.
@@ -12,8 +12,8 @@
 # LGPL, see COPYING.LIB for more details
 
 # This file is part of the neon HTTP/WebDAV client library.
-# See http://www.webdav.org/neon/ for the latest version. 
-# Please send any feedback to <neon@lists.manyfish.co.uk>
+# See https://notroj.github.io/neon/ for the latest version. 
+# Please report feedback via <https://github.com/notroj/neon/>
 
 # Check for XML parser, supporting libxml 2.x and expat 1.95.x,
 # or a bundled copy of expat.

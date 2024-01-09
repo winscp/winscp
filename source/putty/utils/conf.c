@@ -336,7 +336,7 @@ char *conf_get_str_str(Conf *conf, int primary, const char *secondary)
 }
 
 char *conf_get_str_strs(Conf *conf, int primary,
-                       char *subkeyin, char **subkeyout)
+                        char *subkeyin, char **subkeyout)
 {
     struct constkey key;
     struct conf_entry *entry;
@@ -476,7 +476,7 @@ void conf_del_str_str(Conf *conf, int primary, const char *secondary)
         del234(conf->tree, entry);
         free_entry(entry);
     }
- }
+}
 
 void conf_set_filename(Conf *conf, int primary, const Filename *value)
 {

@@ -514,7 +514,7 @@ void portfwd_raw_setup(Channel *pfchan, Socket *s, SshChannel *sc)
 }
 
 /*
- called when someone connects to the local port
+ * called when someone connects to the local port
  */
 
 static int pfl_accepting(Plug *p, accept_fn_t constructor, accept_ctx_t ctx)

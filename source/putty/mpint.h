@@ -43,6 +43,13 @@ void mp_free(mp_int *);
 void mp_clear(mp_int *x);
 
 /*
+ * Resize the physical size of existing mp_int, e.g. so that you have
+ * room to transform it in place to a larger value. Destroys the old
+ * mp_int in the process.
+ */
+mp_int *mp_resize(mp_int *, size_t newmaxbits);
+
+/*
  * Create mp_ints from various sources: little- and big-endian binary
  * data, an ordinary C unsigned integer type, a decimal or hex string
  * (given either as a ptrlen or a C NUL-terminated string), and

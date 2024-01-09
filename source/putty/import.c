@@ -174,17 +174,6 @@ bool export_ssh2(const Filename *filename, int type,
     return false;
 }
 
-/*
- * Strip trailing CRs and LFs at the end of a line of text.
- */
-void strip_crlf(char *str)
-{
-    char *p = str + strlen(str);
-
-    while (p > str && (p[-1] == '\r' || p[-1] == '\n'))
-        *--p = '\0';
-}
-
 /* ----------------------------------------------------------------------
  * Helper routines. (The base64 ones are defined in sshpubk.c.)
  */
@@ -328,7 +317,7 @@ struct openssh_pem_key {
     strbuf *keyblob;
 };
 
-void BinarySink_put_mp_ssh2_from_string(BinarySink *bs, ptrlen str)
+static void BinarySink_put_mp_ssh2_from_string(BinarySink *bs, ptrlen str)
 {
     const unsigned char *bytes = (const unsigned char *)str.ptr;
     size_t nbytes = str.len;
@@ -498,7 +487,7 @@ static struct openssh_pem_key *load_openssh_pem_key(BinarySource *src,
     if (errmsg_p) *errmsg_p = NULL;
     return ret;
 
-    error:
+  error:
     if (line) {
         smemclr(line, strlen(line));
         sfree(line);
@@ -801,7 +790,7 @@ static ssh2_userkey *openssh_pem_read(
     errmsg = NULL;                     /* no error */
     retval = retkey;
 
-    error:
+  error:
     strbuf_free(blob);
     strbuf_free(key->keyblob);
     smemclr(key, sizeof(*key));
@@ -811,7 +800,7 @@ static ssh2_userkey *openssh_pem_read(
 }
 
 static bool openssh_pem_write(
-    const Filename *filename, ssh2_userkey *key, const char *passphrase)
+    const Filename *filename, ssh2_userkey *ukey, const char *passphrase)
 {
     strbuf *pubblob, *privblob, *outblob;
     unsigned char *spareblob;
@@ -825,13 +814,17 @@ static bool openssh_pem_write(
     FILE *fp;
     BinarySource src[1];
 
+    /* OpenSSH's private key files never contain a certificate, so
+     * revert to the underlying base key if necessary */
+    ssh_key *key = ssh_key_base_key(ukey->key);
+
     /*
      * Fetch the key blobs.
      */
     pubblob = strbuf_new();
-    ssh_key_public_blob(key->key, BinarySink_UPCAST(pubblob));
+    ssh_key_public_blob(key, BinarySink_UPCAST(pubblob));
     privblob = strbuf_new_nm();
-    ssh_key_private_blob(key->key, BinarySink_UPCAST(privblob));
+    ssh_key_private_blob(key, BinarySink_UPCAST(privblob));
     spareblob = NULL;
 
     outblob = strbuf_new_nm();
@@ -840,8 +833,8 @@ static bool openssh_pem_write(
      * Encode the OpenSSH key blob, and also decide on the header
      * line.
      */
-    if (ssh_key_alg(key->key) == &ssh_rsa ||
-        ssh_key_alg(key->key) == &ssh_dsa) {
+    if (ssh_key_alg(key) == &ssh_rsa ||
+        ssh_key_alg(key) == &ssh_dsa) {
         strbuf *seq;
 
         /*
@@ -851,7 +844,7 @@ static bool openssh_pem_write(
          * bignums per key type and then construct the actual blob in
          * common code after that.
          */
-        if (ssh_key_alg(key->key) == &ssh_rsa) {
+        if (ssh_key_alg(key) == &ssh_rsa) {
             ptrlen n, e, d, p, q, iqmp, dmp1, dmq1;
             mp_int *bd, *bp, *bq, *bdmp1, *bdmq1;
 
@@ -947,11 +940,11 @@ static bool openssh_pem_write(
         put_ber_id_len(outblob, 16, seq->len, ASN1_CONSTRUCTED);
         put_data(outblob, seq->s, seq->len);
         strbuf_free(seq);
-    } else if (ssh_key_alg(key->key) == &ssh_ecdsa_nistp256 ||
-               ssh_key_alg(key->key) == &ssh_ecdsa_nistp384 ||
-               ssh_key_alg(key->key) == &ssh_ecdsa_nistp521) {
+    } else if (ssh_key_alg(key) == &ssh_ecdsa_nistp256 ||
+               ssh_key_alg(key) == &ssh_ecdsa_nistp384 ||
+               ssh_key_alg(key) == &ssh_ecdsa_nistp521) {
         const unsigned char *oid;
-        struct ecdsa_key *ec = container_of(key->key, struct ecdsa_key, sshk);
+        struct ecdsa_key *ec = container_of(key, struct ecdsa_key, sshk);
         int oidlen;
         int pointlen;
         strbuf *seq, *sub;
@@ -966,7 +959,7 @@ static bool openssh_pem_write(
          *   [1]
          *     BIT STRING (0x00 public key point)
          */
-        oid = ec_alg_oid(ssh_key_alg(key->key), &oidlen);
+        oid = ec_alg_oid(ssh_key_alg(key), &oidlen);
         pointlen = (ec->curve->fieldBits + 7) / 8 * 2;
 
         seq = strbuf_new_nm();
@@ -998,7 +991,7 @@ static bool openssh_pem_write(
 
         /* Append the BIT STRING to the sequence */
         put_ber_id_len(seq, 1, sub->len,
-                         ASN1_CLASS_CONTEXT_SPECIFIC | ASN1_CONSTRUCTED);
+                       ASN1_CLASS_CONTEXT_SPECIFIC | ASN1_CONSTRUCTED);
         put_data(seq, sub->s, sub->len);
         strbuf_free(sub);
 
@@ -1075,12 +1068,12 @@ static bool openssh_pem_write(
             fprintf(fp, "%02X", iv[i]);
         fprintf(fp, "\n\n");
     }
-    base64_encode(fp, outblob->u, outblob->len, 64);
+    base64_encode_fp(fp, ptrlen_from_strbuf(outblob), 64);
     fputs(footer, fp);
     fclose(fp);
     ret = true;
 
-    error:
+  error:
     if (outblob)
         strbuf_free(outblob);
     if (spareblob) {
@@ -1245,8 +1238,8 @@ static struct openssh_new_key *load_openssh_new_key(BinarySource *filesrc,
         ret->kdfopts.bcrypt.rounds = get_uint32(opts);
 
         if (get_err(opts)) {
-          errmsg = "failed to parse bcrypt options string";
-          goto error;
+            errmsg = "failed to parse bcrypt options string";
+            goto error;
         }
         break;
       }
@@ -1294,7 +1287,7 @@ static struct openssh_new_key *load_openssh_new_key(BinarySource *filesrc,
     if (errmsg_p) *errmsg_p = NULL;
     return ret;
 
-    error:
+  error:
     if (line) {
         smemclr(line, strlen(line));
         sfree(line);
@@ -1484,7 +1477,7 @@ static ssh2_userkey *openssh_new_read(
     retval = retkey;
     retkey = NULL;                     /* prevent the free */
 
-    error:
+  error:
     if (retkey) {
         sfree(retkey->comment);
         if (retkey->key)
@@ -1499,7 +1492,7 @@ static ssh2_userkey *openssh_new_read(
 }
 
 static bool openssh_new_write(
-    const Filename *filename, ssh2_userkey *key, const char *passphrase)
+    const Filename *filename, ssh2_userkey *ukey, const char *passphrase)
 {
     strbuf *pubblob, *privblob, *cblob;
     int padvalue;
@@ -1509,13 +1502,17 @@ static bool openssh_new_write(
     const int bcrypt_rounds = 16;
     FILE *fp;
 
+    /* OpenSSH's private key files never contain a certificate, so
+     * revert to the underlying base key if necessary */
+    ssh_key *key = ssh_key_base_key(ukey->key);
+
     /*
      * Fetch the key blobs and find out the lengths of things.
      */
     pubblob = strbuf_new();
-    ssh_key_public_blob(key->key, BinarySink_UPCAST(pubblob));
+    ssh_key_public_blob(key, BinarySink_UPCAST(pubblob));
     privblob = strbuf_new_nm();
-    ssh_key_openssh_blob(key->key, BinarySink_UPCAST(privblob));
+    ssh_key_openssh_blob(key, BinarySink_UPCAST(privblob));
 
     /*
      * Construct the cleartext version of the blob.
@@ -1562,11 +1559,11 @@ static bool openssh_new_write(
 
         /* Private key. The main private blob goes inline, with no string
          * wrapper. */
-        put_stringz(cpblob, ssh_key_ssh_id(key->key));
+        put_stringz(cpblob, ssh_key_ssh_id(key));
         put_data(cpblob, privblob->s, privblob->len);
 
         /* Comment. */
-        put_stringz(cpblob, key->comment);
+        put_stringz(cpblob, ukey->comment);
 
         /* Pad out the encrypted section. */
         padvalue = 1;
@@ -1606,12 +1603,12 @@ static bool openssh_new_write(
     if (!fp)
         goto error;
     fputs("-----BEGIN OPENSSH PRIVATE KEY-----\n", fp);
-    base64_encode(fp, cblob->u, cblob->len, 64);
+    base64_encode_fp(fp, ptrlen_from_strbuf(cblob), 64);
     fputs("-----END OPENSSH PRIVATE KEY-----\n", fp);
     fclose(fp);
     ret = true;
 
-    error:
+  error:
     if (cblob)
         strbuf_free(cblob);
     if (privblob)
@@ -1633,11 +1630,12 @@ static bool openssh_auto_write(
      * assume that anything not in that fixed list is newer, and hence
      * will use the new format.
      */
-    if (ssh_key_alg(key->key) == &ssh_dsa ||
-        ssh_key_alg(key->key) == &ssh_rsa ||
-        ssh_key_alg(key->key) == &ssh_ecdsa_nistp256 ||
-        ssh_key_alg(key->key) == &ssh_ecdsa_nistp384 ||
-        ssh_key_alg(key->key) == &ssh_ecdsa_nistp521)
+    const ssh_keyalg *alg = ssh_key_alg(ssh_key_base_key(key->key));
+    if (alg == &ssh_dsa ||
+        alg == &ssh_rsa ||
+        alg == &ssh_ecdsa_nistp256 ||
+        alg == &ssh_ecdsa_nistp384 ||
+        alg == &ssh_ecdsa_nistp521)
         return openssh_pem_write(filename, key, passphrase);
     else
         return openssh_new_write(filename, key, passphrase);
@@ -1845,7 +1843,7 @@ static struct sshcom_key *load_sshcom_key(BinarySource *src,
     if (errmsg_p) *errmsg_p = NULL;
     return ret;
 
-    error:
+  error:
     if (line) {
         smemclr(line, strlen(line));
         sfree(line);
@@ -1883,7 +1881,7 @@ static bool sshcom_encrypted(BinarySource *filesrc, char **comment)
     if (!ptrlen_eq_string(str, "none"))
         answer = true;
 
-    done:
+  done:
     if (key) {
         *comment = dupstr(key->comment);
         strbuf_free(key->keyblob);
@@ -1895,7 +1893,7 @@ static bool sshcom_encrypted(BinarySource *filesrc, char **comment)
     return answer;
 }
 
-void BinarySink_put_mp_sshcom_from_string(BinarySink *bs, ptrlen str)
+static void BinarySink_put_mp_sshcom_from_string(BinarySink *bs, ptrlen str)
 {
     const unsigned char *bytes = (const unsigned char *)str.ptr;
     size_t nbytes = str.len;
@@ -1979,7 +1977,7 @@ static ssh2_userkey *sshcom_read(
         !memcmp(str.ptr, prefix_rsa, sizeof(prefix_rsa) - 1)) {
         type = RSA;
     } else if (str.len > sizeof(prefix_dsa) - 1 &&
-        !memcmp(str.ptr, prefix_dsa, sizeof(prefix_dsa) - 1)) {
+               !memcmp(str.ptr, prefix_dsa, sizeof(prefix_dsa) - 1)) {
         type = DSA;
     } else {
         errmsg = "key is of unknown type";
@@ -2134,7 +2132,7 @@ static ssh2_userkey *sshcom_read(
     errmsg = NULL; /* no error */
     ret = retkey;
 
-    error:
+  error:
     if (blob) {
         strbuf_free(blob);
     }
@@ -2308,12 +2306,12 @@ static bool sshcom_write(
         }
         fprintf(fp, "%s\"\n", c);
     }
-    base64_encode(fp, outblob->u, outblob->len, 70);
+    base64_encode_fp(fp, ptrlen_from_strbuf(outblob), 70);
     fputs("---- END SSH2 ENCRYPTED PRIVATE KEY ----\n", fp);
     fclose(fp);
     ret = true;
 
-    error:
+  error:
     if (outblob)
         strbuf_free(outblob);
     if (privblob)

@@ -11,8 +11,8 @@
 #include "ssh.h"
 #include "blowfish.h"
 
-BlowfishContext *bcrypt_setup(const unsigned char *key, int keybytes,
-                              const unsigned char *salt, int saltbytes)
+static BlowfishContext *bcrypt_setup(const unsigned char *key, int keybytes,
+                                     const unsigned char *salt, int saltbytes)
 {
     int i;
     BlowfishContext *ctx;
@@ -32,9 +32,9 @@ BlowfishContext *bcrypt_setup(const unsigned char *key, int keybytes,
     return ctx;
 }
 
-void bcrypt_hash(const unsigned char *key, int keybytes,
-                 const unsigned char *salt, int saltbytes,
-                 unsigned char output[32])
+static void bcrypt_hash(const unsigned char *key, int keybytes,
+                        const unsigned char *salt, int saltbytes,
+                        unsigned char output[32])
 {
     BlowfishContext *ctx;
     int i;
@@ -49,10 +49,10 @@ void bcrypt_hash(const unsigned char *key, int keybytes,
     blowfish_free_context(ctx);
 }
 
-void bcrypt_genblock(int counter,
-                     const unsigned char hashed_passphrase[64],
-                     const unsigned char *salt, int saltbytes,
-                     unsigned char output[32])
+static void bcrypt_genblock(int counter,
+                            const unsigned char hashed_passphrase[64],
+                            const unsigned char *salt, int saltbytes,
+                            unsigned char output[32])
 {
     unsigned char hashed_salt[64];
 

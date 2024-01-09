@@ -316,7 +316,7 @@ static inline void BinarySource_INIT__(BinarySource *src, ptrlen data)
 
 #define get_err(src) (BinarySource_UPCAST(src)->err)
 #define get_avail(src) (BinarySource_UPCAST(src)->len - \
-                       BinarySource_UPCAST(src)->pos)
+                        BinarySource_UPCAST(src)->pos)
 #define get_ptr(src)                                                    \
     ((const void *)(                                                    \
         (const unsigned char *)(BinarySource_UPCAST(src)->data) +       \

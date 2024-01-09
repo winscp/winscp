@@ -73,15 +73,6 @@ BinaryPacketProtocol *ssh2_bpp_new(
 
 static void ssh2_bpp_free_outgoing_crypto(struct ssh2_bpp_state *s)
 {
-    /*
-     * We must free the MAC before the cipher, because sometimes the
-     * MAC is not actually separately allocated but just a different
-     * facet of the same object as the cipher, in which case
-     * ssh2_mac_free does nothing and ssh_cipher_free does the actual
-     * freeing. So if we freed the cipher first and then tried to
-     * dereference the MAC's vtable pointer to find out how to free
-     * that too, we'd be accessing freed memory.
-     */
     if (s->out.mac)
         ssh2_mac_free(s->out.mac);
     if (s->out.cipher)
@@ -141,6 +132,12 @@ void ssh2_bpp_new_outgoing_crypto(
     s->out.etm_mode = etm_mode;
     if (mac) {
         s->out.mac = ssh2_mac_new(mac, s->out.cipher);
+        /*
+         * Important that mac_setkey comes after cipher_setkey,
+         * because in the case where the MAC makes use of the cipher
+         * (e.g. AES-GCM), it will need the cipher to be keyed
+         * already.
+         */
         ssh2_mac_setkey(s->out.mac, make_ptrlen(mac_key, mac->keylen));
 
         bpp_logevent("Initialised %s outbound MAC algorithm%s%s",
@@ -198,6 +195,7 @@ void ssh2_bpp_new_incoming_crypto(
     s->in.etm_mode = etm_mode;
     if (mac) {
         s->in.mac = ssh2_mac_new(mac, s->in.cipher);
+        /* MAC setkey has to follow cipher, just as in outgoing_crypto above */
         ssh2_mac_setkey(s->in.mac, make_ptrlen(mac_key, mac->keylen));
 
         bpp_logevent("Initialised %s inbound MAC algorithm%s%s",
@@ -522,6 +520,10 @@ static void ssh2_bpp_handle_input(BinaryPacketProtocol *bpp)
         dts_consume(&s->stats->in, s->packetlen);
 
         s->pktin->sequence = s->in.sequence++;
+        if (s->in.cipher)
+            ssh_cipher_next_message(s->in.cipher);
+        if (s->in.mac)
+            ssh2_mac_next_message(s->in.mac);
 
         s->length = s->packetlen - s->pad;
         assert(s->length >= 0);
@@ -828,6 +830,10 @@ static void ssh2_bpp_format_packet_inner(struct ssh2_bpp_state *s, PktOut *pkt)
     }
 
     s->out.sequence++;       /* whether or not we MACed */
+    if (s->out.cipher)
+        ssh_cipher_next_message(s->out.cipher);
+    if (s->out.mac)
+        ssh2_mac_next_message(s->out.mac);
 
     dts_consume(&s->stats->out, origlen + padding);
 }

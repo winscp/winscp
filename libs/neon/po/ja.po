@@ -5,8 +5,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: sitecopy 0.10.14\n"
-"Report-Msgid-Bugs-To: neon@lists.manyfish.co.uk\n"
-"POT-Creation-Date: 2022-09-11 08:33+0100\n"
+"Report-Msgid-Bugs-To: https://github.com/notroj/neon\n"
+"POT-Creation-Date: 2023-01-03 14:02+0000\n"
 "PO-Revision-Date: 2001-01-16 07:32+0900\n"
 "Last-Translator: Nobuyuki Tsuchimura <tutimura@nn.iij4u.or.jp>\n"
 "Language-Team: ja\n"
@@ -450,83 +450,83 @@ msgstr ""
 msgid "Server certificate verification failed: "
 msgstr ""
 
-#: src/ne_socket.c:522 src/ne_socket.c:674 src/ne_socket.c:804
+#: src/ne_socket.c:524 src/ne_socket.c:676 src/ne_socket.c:806
 #, fuzzy
 msgid "Connection closed"
 msgstr "%s: 接続がサーバーに切られました。"
 
-#: src/ne_socket.c:679
+#: src/ne_socket.c:681
 msgid "Retry operation"
 msgstr ""
 
-#: src/ne_socket.c:693 src/ne_socket.c:708 src/ne_socket.c:818
+#: src/ne_socket.c:695 src/ne_socket.c:710 src/ne_socket.c:820
 #, fuzzy
 msgid "Secure connection truncated"
 msgstr "接続タイムアウト。"
 
-#: src/ne_socket.c:699
+#: src/ne_socket.c:701
 #, fuzzy
 msgid "Secure connection reset"
 msgstr "接続タイムアウト。"
 
-#: src/ne_socket.c:720 src/ne_socket.c:834
+#: src/ne_socket.c:722 src/ne_socket.c:836
 #, c-format
 msgid "SSL error: %s"
 msgstr ""
 
-#: src/ne_socket.c:723
+#: src/ne_socket.c:725
 #, c-format
 msgid "SSL error code %d/%d/%lu"
 msgstr ""
 
-#: src/ne_socket.c:809
+#: src/ne_socket.c:811
 #, c-format
 msgid "SSL alert received: %s"
 msgstr ""
 
-#: src/ne_socket.c:830
+#: src/ne_socket.c:832
 msgid "SSL socket read failed"
 msgstr ""
 
-#: src/ne_socket.c:961
+#: src/ne_socket.c:963
 msgid "Line too long"
 msgstr ""
 
-#: src/ne_socket.c:1122 src/ne_socket.c:1128
+#: src/ne_socket.c:1124 src/ne_socket.c:1130
 msgid "Host not found"
 msgstr ""
 
-#: src/ne_socket.c:1337
+#: src/ne_socket.c:1339
 #, fuzzy
 msgid "Connection timed out"
 msgstr "%s: 接続タイムアウトです。"
 
-#: src/ne_socket.c:1536
+#: src/ne_socket.c:1538
 msgid "Socket descriptor number exceeds FD_SETSIZE"
 msgstr ""
 
-#: src/ne_socket.c:1598
+#: src/ne_socket.c:1600
 msgid "Socket family not supported"
 msgstr ""
 
-#: src/ne_socket.c:1835
+#: src/ne_socket.c:1837
 msgid "Client certificate verification failed"
 msgstr ""
 
-#: src/ne_socket.c:1851
+#: src/ne_socket.c:1853
 msgid "SSL disabled due to lack of entropy"
 msgstr ""
 
-#: src/ne_socket.c:1857
+#: src/ne_socket.c:1859
 #, fuzzy
 msgid "Could not create SSL structure"
 msgstr "プロキシーサーバーに SSL 接続できません"
 
-#: src/ne_socket.c:2029
+#: src/ne_socket.c:2031
 msgid "Missing flags for socket shutdown"
 msgstr ""
 
-#: src/ne_socket.c:2047 src/ne_socket.c:2058 src/ne_socket.c:2073
+#: src/ne_socket.c:2049 src/ne_socket.c:2060 src/ne_socket.c:2075
 msgid "Incomplete TLS closure"
 msgstr ""
 

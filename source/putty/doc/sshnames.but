@@ -70,7 +70,7 @@ They have been superseded by \cw{arcfour128} and \cw{arcfour256}.
 
 The SSH agent protocol, which is only specified in an Internet-Draft
 at the time of writing
-(\W{https://tools.ietf.org/html/draft-miller-ssh-agent}\cw{draft-miller-ssh-agent}),
+(\W{https://datatracker.ietf.org/doc/html/draft-miller-ssh-agent}\cw{draft-miller-ssh-agent}),
 defines an extension mechanism. These names can be sent in an
 \cw{SSH_AGENTC_EXTENSION} message.
 

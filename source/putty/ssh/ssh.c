@@ -253,8 +253,10 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
                 char *username = get_remote_username(ssh->conf);
 
                 userauth_layer = ssh2_userauth_new(
-                    connection_layer, ssh->savedhost, ssh->fullhostname,
+                    connection_layer, ssh->savedhost, ssh->savedport,
+                    ssh->fullhostname,
                     conf_get_filename(ssh->conf, CONF_keyfile),
+                    conf_get_filename(ssh->conf, CONF_detached_cert),
                     conf_get_bool(ssh->conf, CONF_ssh_show_banner),
                     conf_get_bool(ssh->conf, CONF_tryagent),
                     conf_get_bool(ssh->conf, CONF_ssh_no_trivial_userauth),
@@ -265,14 +267,14 @@ static void ssh_got_ssh_version(struct ssh_version_receiver *rcv,
                     conf_get_bool(ssh->conf, CONF_try_gssapi_auth),
                     conf_get_bool(ssh->conf, CONF_try_gssapi_kex),
                     conf_get_bool(ssh->conf, CONF_gssapifwd),
-                    &ssh->gss_state
+                    &ssh->gss_state,
 #else
                     false,
                     false,
                     false,
-                    NULL
+                    NULL,
 #endif
-                    );
+                    conf_get_str(ssh->conf, CONF_auth_plugin));
                 ssh_connect_ppl(ssh, userauth_layer);
                 transport_child_layer = userauth_layer;
 

@@ -1943,14 +1943,14 @@ it must always be explicitly configured.
 
 \S{config-proxy-type} Setting the proxy type
 
-The \q{Proxy type} radio buttons allow you to configure what type of
+The \q{Proxy type} drop-down allows you to configure what type of
 proxy you want PuTTY to use for its network connections. The default
 setting is \q{None}; in this mode no proxy is used for any
 connection.
 
-\b Selecting \I{HTTP proxy}\q{HTTP} allows you to proxy your connections
-through a web server supporting the HTTP \cw{CONNECT} command, as documented
-in \W{http://www.ietf.org/rfc/rfc2817.txt}{RFC 2817}.
+\b Selecting \I{HTTP proxy}\q{HTTP CONNECT} allows you to proxy your
+connections through a web server supporting the HTTP \cw{CONNECT} command,
+as documented in \W{https://www.rfc-editor.org/rfc/rfc2817}{RFC 2817}.
 
 \b Selecting \q{SOCKS 4} or \q{SOCKS 5} allows you to proxy your
 connections through a \i{SOCKS server}.
@@ -1962,10 +1962,9 @@ through to an external host. Selecting \I{Telnet proxy}\q{Telnet}
 allows you to tell PuTTY to use this type of proxy, with the precise           
 command specified as described in \k{config-proxy-command}.
 
-\b Selecting \q{SSH} causes PuTTY to make a secondary SSH connection
-to the proxy host (sometimes called a \q{\i{jump host}} in this
-context), and then open a port-forwarding channel to the
-final destination host. 
+\b There are several ways to use a SSH server as a proxy. All of
+these cause PuTTY to make a secondary SSH connection to the proxy host
+(sometimes called a \q{\i{jump host}} in this context).
 
 \lcont{
 The \q{Proxy hostname} field will be interpreted as the name of a
@@ -1973,6 +1972,20 @@ PuTTY saved session if one exists, or a hostname if not. This
 allows multi-hop jump paths, if the referenced saved session is
 itself configured to use an SSH proxy; and it allows combining SSH
 and non-SSH proxying.
+
+\b \q{SSH to proxy and use port forwarding} causes PuTTY to use the
+secondary SSH connection to open a port-forwarding channel to the
+final destination host (similar to OpenSSH's \cw{-J} option).
+
+\b \q{SSH to proxy and execute a command} causes PuTTY to run an
+arbitrary remote command on the proxy SSH server and use that
+command's standard input and output streams to run the primary
+connection over. The remote command line is specified as described in
+\k{config-proxy-command}.
+
+\b \q{SSH to proxy and invoke a subsystem} is similar but causes PuTTY
+to start an SSH \q{\i{subsystem}} rather than an ordinary command line.
+This might be useful with a specially set up SSH proxy server.
 }
 
 \b Selecting \I{Local proxy}\q{Local} allows you to specify an arbitrary
@@ -2116,15 +2129,20 @@ Telnet/Local proxy command (see \k{config-proxy-command}). If you do
 so, and don't also specify the actual username and/or password in the
 configuration, PuTTY will interactively prompt for them.
 
-\S{config-proxy-command} Specifying the Telnet or Local proxy command
+\S{config-proxy-command} Specifying the Telnet, SSH, or Local proxy command
 
 If you are using the \i{Telnet proxy} type, the usual command required
 by the firewall's Telnet server is \c{connect}, followed by a host
 name and a port number. If your proxy needs a different command,
-you can enter an alternative here.
+you can enter an alternative in the \q{Command to send to proxy} box.
 
 If you are using the \i{Local proxy} type, the local command to run
 is specified here.
+
+If you are using the \q{SSH to proxy and execute a command} type, the
+command to run on the SSH proxy server is specified here. Similarly, if
+you are using \q{SSH to proxy and invoke a subsystem}, the subsystem
+name is constructed as specified here.
 
 In this string, you can use \c{\\n} to represent a new-line, \c{\\r}
 to represent a carriage return, \c{\\t} to represent a tab
@@ -2133,13 +2151,15 @@ other character. \c{\\\\} is used to encode the \c{\\} character
 itself.
 
 Also, the special strings \c{%host} and \c{%port} will be replaced
-by the host name and port number you want to connect to. The strings
-\c{%user} and \c{%pass} will be replaced by the proxy username and
-password (which, if not specified in the configuration, will be
-prompted for). The strings \c{%proxyhost} and \c{%proxyport}
+by the host name and port number you want to connect to. For Telnet
+and Local proxy types, the strings \c{%user} and \c{%pass} will be
+replaced by the proxy username and password (which, if not specified
+in the configuration, will be prompted for) \dash this does not happen
+with SSH proxy types (because the proxy username/password are used
+for SSH authentication). The strings \c{%proxyhost} and \c{%proxyport}
 will be replaced by the host details specified on the \e{Proxy} panel,
-if any (this is most likely to be useful for the Local proxy type).
-To get a literal \c{%} sign, enter \c{%%}.
+if any (this is most likely to be useful for proxy types using a
+local or remote command). To get a literal \c{%} sign, enter \c{%%}.
 
 If a Telnet proxy server prompts for a username and password
 before commands can be sent, you can use a command such as:
@@ -2327,24 +2347,51 @@ cipher selection (see \k{config-ssh-encryption}).
 
 PuTTY currently supports the following key exchange methods:
 
-\b \q{ECDH}: \i{elliptic curve} \i{Diffie-Hellman key exchange}.
+\b \q{NTRU Prime / Curve25519 hybrid}: \q{\i{Streamlined NTRU Prime}}
+is a lattice-based algorithm intended to resist \i{quantum attacks}.
+In this key exchange method, it is run in parallel with a conventional
+Curve25519-based method (one of those included in \q{ECDH}), in such
+a way that it should be no \e{less} secure than that commonly-used
+method, and hopefully also resistant to a new class of attacks.
 
-\b \q{Group 14}: Diffie-Hellman key exchange with a well-known
-2048-bit group.
+\b \q{\i{ECDH}}: elliptic curve Diffie-Hellman key exchange,
+with a variety of standard curves and hash algorithms.
 
-\b \q{Group 1}: Diffie-Hellman key exchange with a well-known
-1024-bit group. We no longer recommend using this method, and it's
-not used by default in new installations; however, it may be the
-only method supported by very old server software.
+\b The original form of \i{Diffie-Hellman key exchange}, with a
+variety of well-known groups and hashes:
 
-\b \q{\ii{Group exchange}}: with this method, instead of using a fixed
-group, PuTTY requests that the server suggest a group to use for key
-exchange; the server can avoid groups known to be weak, and possibly
-invent new ones over time, without any changes required to PuTTY's
-configuration. We recommend use of this method instead of the
-well-known groups, if possible.
+\lcont{
+\b \q{Group 18}, a well-known 8192-bit group, used with the SHA-512
+hash function.
 
-\b \q{\i{RSA key exchange}}: this requires much less computational
+\b \q{Group 17}, a well-known 6144-bit group, used with the SHA-512
+hash function.
+
+\b \q{Group 16}, a well-known 4096-bit group, used with the SHA-512
+hash function.
+
+\b \q{Group 15}, a well-known 3072-bit group, used with the SHA-512
+hash function.
+
+\b \q{Group 14}: a well-known 2048-bit group, used with the SHA-256
+hash function or, if the server doesn't support that, SHA-1.
+
+\b \q{Group 1}: a well-known 1024-bit group, used with the SHA-1
+hash function. Neither we nor current SSH standards recommend using
+this method any longer, and it's not used by default in new
+installations; however, it may be the only method supported by very
+old server software.
+}
+
+\b \q{Diffie-Hellman \i{group exchange}}: with this method, instead
+of using a fixed group, PuTTY requests that the server suggest a group
+to use for a subsequent Diffie-Hellman key exchange; the server can
+avoid groups known to be weak, and possibly invent new ones over time,
+without any changes required to PuTTY's configuration. This key
+exchange method uses the SHA-256 hash or, if the server doesn't
+support that, SHA-1.
+
+\b \q{\i{RSA-based key exchange}}: this requires much less computational
 effort on the part of the client, and somewhat less on the part of
 the server, than Diffie-Hellman key exchange.
 
@@ -2366,6 +2413,10 @@ when using Kerberos V5, and not other GSSAPI mechanisms. If the user
 running PuTTY has current Kerberos V5 credentials, then PuTTY will
 select the GSSAPI key exchange methods in preference to any of the
 ordinary SSH key exchange methods configured in the preference list.
+There's a GSSAPI-based equivalent to most of the ordinary methods
+listed in \k{config-ssh-kex-order}; server support determines which
+one will be used. (PuTTY's preference order for GSSAPI-authenticated
+key exchange methods is fixed, not controlled by the preference list.)
 
 The advantage of doing GSSAPI authentication as part of the SSH key
 exchange is apparent when you are using credential delegation (see
@@ -2380,7 +2431,8 @@ support GSSAPI in the SSH user authentication phase. This will still
 let you log in using your Kerberos credentials, but will only allow
 you to delegate the credentials that are active at the beginning of
 the session; they can't be refreshed automatically later, in a
-long-running session.
+long-running session. See \k{config-ssh-auth-gssapi} for how to
+control GSSAPI user authentication in PuTTY.
 
 Another effect of GSSAPI key exchange is that it replaces the usual
 SSH mechanism of permanent host keys described in \k{gs-hostkey}.
@@ -2494,7 +2546,7 @@ larger elliptic curve with a 448-bit instead of 255-bit modulus (so it
 has a higher security level than Ed25519).
 
 \b \q{ECDSA}: \i{elliptic curve} \i{DSA} using one of the
-NIST-standardised elliptic curves.
+\i{NIST}-standardised elliptic curves.
 
 \b \q{DSA}: straightforward \i{DSA} using modular exponentiation.
 
@@ -2590,6 +2642,146 @@ neither read \e{nor written}, unless you explicitly do so.
 If the box is empty (as it usually is), then PuTTY's automated host
 key management will work as normal.
 
+\S{config-ssh-kex-cert} Configuring PuTTY to accept host \i{certificates}
+
+In some environments, the SSH host keys for a lot of servers will all
+be signed in turn by a central \q{certification authority} (\q{CA} for
+short). This simplifies host key configuration for users, because if
+they configure their SSH client to accept host keys certified by that
+CA, then they don't need to individually confirm each host key the
+first time they connect to that server.
+
+In order to do this, press the \q{Configure host CAs} button in the
+\q{Host keys} configuration panel. This will launch a secondary
+configuration dialog box where you can configure what CAs PuTTY will
+accept signatures from.
+
+\s{Note that this configuration is common to all saved sessions}.
+Everything in the main PuTTY configuration is specific to one saved
+session, and you can prepare a separate session with all the
+configuration different. But there's only one copy of the host CA
+configuration, and it applies to all sessions PuTTY runs, whether
+saved or not.
+
+(Otherwise, it would be useless \dash configuring a CA by hand for
+each new host wouldn't be any more convenient than pressing the
+\q{confirm} button for each new host's host key.)
+
+To set up a new CA using this config box:
+
+First, load the CA's public key from a file, or paste it directly into
+the \q{Public key of certification authority} edit box. If your
+organisation signs its host keys in this way, they will publish the
+public key of their CA so that SSH users can include it in their
+configuration.
+
+Next, in the \q{Valid hosts this key is trusted to certify} box,
+configure at least one hostname wildcard to say what servers PuTTY
+should trust this CA to speak for. For example, suppose you work for
+Example Corporation (\cw{example.com}), and the Example Corporation IT
+department has advertised a CA that signs all the Example internal
+machines' host keys. Then probably you want to trust that CA to sign
+host keys for machines in the domain \cw{example.com}, but not for
+anything else. So you might enter \cq{*.example.com} into the \q{Valid
+hosts} box.
+
+\s{It's important to limit what the CA key is allowed to sign}. Don't
+just enter \cq{*} in that box! If you do that, you're saying that
+Example Corporation IT department is authorised to sign a host key for
+\e{anything at all} you might decide to connect to \dash even if
+you're connecting out of the company network to a machine somewhere
+else, such as your own personal server. So that configuration would
+enable the Example IT department to act as a \q{man-in-the-middle}
+between your PuTTY process and your server, and listen in to your
+communications \dash exactly the thing SSH is supposed to avoid.
+
+So, if the CA was provided to you by the sysadmins responsible for
+\cw{example.com} (or whatever), make sure PuTTY will \e{only} trust it
+for machines in the \cw{example.com} domain.
+
+For the full syntax of the \q{Valid hosts} expression, see
+\k{config-ssh-cert-valid-expr}.
+
+Finally, choose an identifying name for this CA; enter that name in
+the \q{Name for this CA} edit box at the top of the window, and press
+\q{Save} to record the CA in your configuration. The name you chose
+will appear in the list of saved CAs to the left of the \q{Save}
+button.
+
+The identifying name can be anything you like. It's there so that if
+you store multiple certificates you can tell which is which later when
+you want to edit or delete them. It also appears in the PuTTY Event
+Log when a server presents a certificate signed by that CA.
+
+To reload an existing CA configuration, select it in the list box and
+press \q{Load}. Then you can make changes, and save it again.
+
+To remove a CA from your configuration completely, select it in the
+list and press \q{Delete}.
+
+\S2{config-ssh-cert-valid-expr} Expressions you can enter in \q{Valid
+hosts}
+
+The simplest thing you can enter in the \q{Valid hosts this key is
+trusted to certify} edit box is just a hostname wildcard such as
+\cq{*.example.com}. This matches any host in any subdomain, so
+both \cq{ssh.example.com} and \cq{login.dept.example.com} would
+match, but \cq{prod.example.net} would not.
+
+But you can also enter multiple host name wildcards, and port number
+ranges, and make complicated Boolean expressions out of them using the
+operators \cq{&&} for \q{and}, \cq{||} for \q{or}, \cq{!} for \q{not},
+and parentheses.
+
+For example, here are some other things you could enter.
+
+\b \cq{*.foo.example.com || *.bar.example.com}. This means the CA is
+trusted to sign the host key for a connection if the host name matches
+\q{*.foo.example.com} \e{or} it matches \q{*.bar.example.com}. In
+other words, the CA has authority over those two particular subdomains
+of \cw{example.com}, but not for anything else, like
+\cw{www.example.com}.
+
+\b \cq{*.example.com && ! *.extrasecure.example.com}. This means the
+CA is trusted to sign the host key for a connection if the host name
+matches \q{*.example.com} \e{but does not} match
+\q{*.extrasecure.example.com}. (Imagine if there was one top-secret
+set of servers in your company that the main IT department didn't have
+security clearance to administer.)
+
+\b \cq{*.example.com && port:22}. This means the CA is trusted to sign
+the host key for a connection if the host name matches
+\q{*.example.com} \e{and} the port number is 22. SSH servers running
+on other ports would not be covered.
+
+\b \cq{(*.foo.example.com || *.bar.example.com) && port:0-1023}. This
+matches two subdomains of \cw{example.com}, as before, but \e{also}
+restricts the port number to the range 0-1023.
+
+A certificate configuration expression consists of one or more
+individual requirements which can each be a hostname wildcard, a
+single port number, or a port number range, combined together with
+these Boolean operators.
+
+Unlike other languages such as C, there is no implied priority between
+\cq{&&} and \cq{||}. If you write \cq{A && B || C} (where \cw{A},
+\cw{B} and \cw{C} are some particular requirements), then PuTTY will
+report a syntax error, because you haven't said which of the \cq{&&}
+and \cq{||} takes priority tightly. You will have to write either
+\cq{(A && B) || C}, meaning \q{both of \cw{A} and \cw{B}, or
+alternatively just \cw{C}}, or \cq{A && (B || C)} (\q{\cw{A}, and also
+at least one of \cw{B} and \cw{C}}), to make it clear.
+
+\S2{config-ssh-cert-rsa-hash} RSA signature types in certificates
+
+RSA keys can be used to generate signatures with a choice of secure
+hash function. Typically, any version of OpenSSH new enough to support
+certificates at all will also be new enough to avoid using SHA-1, so
+the default settings of accepting the more modern SHA-256 and SHA-512
+should be suitable for nearly all cases. For completeness, however,
+you can configure which types of RSA signature PuTTY will accept in a
+certificate from a CA using an RSA key.
+
 \H{config-ssh-encryption} The Cipher panel
 
 PuTTY supports a variety of different \i{encryption algorithm}s, and
@@ -2604,7 +2796,8 @@ PuTTY currently supports the following algorithms:
 
 \b \i{ChaCha20-Poly1305}, a combined cipher and \i{MAC} (SSH-2 only)
 
-\b \i{AES} (Rijndael) - 256, 192, or 128-bit SDCTR or CBC (SSH-2 only)
+\b \i{AES} (Rijndael) - 256, 192, or 128-bit SDCTR or CBC, or
+256 or 128-bit GCM (SSH-2 only)
 
 \b \i{Arcfour} (RC4) - 256 or 128-bit stream cipher (SSH-2 only)
 
@@ -2808,6 +3001,12 @@ username more than once, in case the server complains. If you know
 your server can cope with it, you can enable the \q{Allow attempted
 changes of username} option to modify PuTTY's behaviour.
 
+\H{config-ssh-auth-creds} The Credentials panel
+
+This subpane of the Auth panel contains configuration options that
+specify actual \e{credentials} to present to the server: key files and
+certificates.
+
 \S{config-ssh-privkey} \q{\ii{Private key} file for authentication}
 
 This box is where you enter the name of your private key file if you
@@ -2828,6 +3027,54 @@ for a passphrase as normal. You can also specify a \e{public} key file
 in this case (in RFC 4716 or OpenSSH format), as that's sufficient to
 identify the key to Pageant, but of course if Pageant isn't present
 PuTTY can't fall back to using this file itself.
+
+\S{config-ssh-cert} \q{\ii{Certificate} to use with the private key}
+
+In some environments, user authentication keys can be signed in turn
+by a \q{certifying authority} (\q{CA} for short), and user accounts on
+an SSH server can be configured to automatically trust any key that's
+certified by the right signature.
+
+This can be a convenient setup if you have a very large number of
+servers. When you change your key pair, you might otherwise have to
+edit the \cw{authorized_keys} file on every server individually, to
+make them all accept the new key. But if instead you configure all
+those servers \e{once} to accept keys signed as yours by a CA, then
+when you change your public key, all you have to do is to get the new
+key certified by the same CA as before, and then all your servers will
+automatically accept it without needing individual reconfiguration.
+
+One way to use a certificate is to incorporate it into your private
+key file. \K{puttygen-cert} explains how to do that using PuTTYgen.
+But another approach is to tell PuTTY itself where to find the public
+certificate file, and then it will automatically present that
+certificate when authenticating with the corresponding private key.
+
+To do this, enter the pathname of the certificate file into the
+\q{Certificate to use with the private key} file selector.
+
+When this setting is configured, PuTTY will honour it no matter
+whether the private key is found in a file, or loaded into Pageant.
+
+\S{config-ssh-authplugin} \q{\ii{Plugin} to provide authentication responses}
+
+An SSH server can use the \q{keyboard-interactive} protocol to present
+a series of arbitrary questions and answers. Sometimes this is used
+for ordinary passwords, but sometimes the server will use the same
+mechanism for something more complicated, such as a one-time password
+system.
+
+Some of these systems can be automated. For this purpose, PuTTY allows
+you to provide a separate program to act as a \q{plugin} which will
+take over the authentication and send answers to the questions on your
+behalf.
+
+If you have been provided with a plugin of this type, you can
+configure it here, by entering a full command line in the \q{Plugin
+command to run} box.
+
+(If you want to \e{write} a plugin of this type, see \k{authplugin}
+for the full specification of how the plugin is expected to behave.)
 
 \H{config-ssh-auth-gssapi} The \i{GSSAPI} panel
 
@@ -3387,6 +3634,32 @@ Note that this bug flag can never be automatically detected, since
 auto-detection relies on the version string in the server's greeting,
 and PuTTY has to decide whether to expect this bug \e{before} it sees
 the server's greeting. So this is a manual workaround only.
+
+\S{config-ssh-bug-filter-kexinit} \q{Chokes on PuTTY's full \cw{KEXINIT}}
+
+At the start of an SSH connection, the client and server exchange long
+messages of type \cw{SSH_MSG_KEXINIT}, containing lists of all the
+cryptographic algorithms they're prepared to use. This is used to
+negotiate a set of algorithms that both ends can speak.
+
+Occasionally, a badly written server might have a length limit on the
+list it's prepared to receive, and refuse to make a connection simply
+because PuTTY is giving it too many choices.
+
+A workaround is to enable this flag, which will make PuTTY wait to
+send \cw{KEXINIT} until after it receives the one from the server, and
+then filter its own \cw{KEXINIT} to leave out any algorithm the server
+doesn't also announce support for. This will generally make PuTTY's
+\cw{KEXINIT} at most the size of the server's, and will otherwise make
+no difference to the algorithm negotiation.
+
+This flag is a minor violation of the SSH protocol, because both sides
+are supposed to send \cw{KEXINIT} proactively. It still works provided
+\e{one} side sends its \cw{KEXINIT} without waiting, but if both
+client and server waited for the other one to speak first, the
+connection would deadlock. We don't know of any servers that do this,
+but if there is one, then this flag will make PuTTY unable to speak to
+them at all.
 
 \S{config-ssh-bug-sig} \q{Requires padding on SSH-2 \i{RSA} \i{signatures}}
 

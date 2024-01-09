@@ -435,11 +435,116 @@ static const struct cp_list_item cp_list[] = {
     {0, 0}
 };
 
-static void link_font(WCHAR * line_tbl, WCHAR * font_tbl, WCHAR attr);
+static void link_font(WCHAR *line_tbl, WCHAR *font_tbl, WCHAR attr);
+
+/*
+ * We keep a collection of reverse mappings from Unicode back to code pages,
+ * in the form of array[256] of array[256] of char. These live forever in a
+ * local tree234, and we just make a new one whenever we find a need.
+ */
+typedef struct reverse_mapping {
+    int codepage;
+    char **blocks;
+} reverse_mapping;
+static tree234 *reverse_mappings = NULL;
+
+static int reverse_mapping_cmp(void *av, void *bv)
+{
+    const reverse_mapping *a = (const reverse_mapping *)av;
+    const reverse_mapping *b = (const reverse_mapping *)bv;
+    if (a->codepage < b->codepage)
+        return -1;
+    if (a->codepage > b->codepage)
+        return +1;
+    return 0;
+}
+
+static int reverse_mapping_find(void *av, void *bv)
+{
+    const reverse_mapping *a = (const reverse_mapping *)av;
+    int b_codepage = *(const int *)bv;
+    if (a->codepage < b_codepage)
+        return -1;
+    if (a->codepage > b_codepage)
+        return +1;
+    return 0;
+}
+
+static reverse_mapping *get_existing_reverse_mapping(int codepage)
+{
+    if (!reverse_mappings)
+        return NULL;
+    return find234(reverse_mappings, &codepage, reverse_mapping_find);
+}
+
+static reverse_mapping *make_reverse_mapping_inner(
+    int codepage, const wchar_t *mapping)
+{
+    if (!reverse_mappings)
+        reverse_mappings = newtree234(reverse_mapping_cmp);
+
+    reverse_mapping *rmap = snew(reverse_mapping);
+    rmap->blocks = snewn(256, char *);
+    memset(rmap->blocks, 0, 256 * sizeof(char *));
+
+    for (size_t i = 0; i < 256; i++) {
+        /* These special kinds of value correspond to no Unicode character */
+        if (DIRECT_CHAR(mapping[i]))
+            continue;
+        if (DIRECT_FONT(mapping[i]))
+            continue;
+
+        size_t chr = mapping[i];
+        size_t block = chr >> 8, index = chr & 0xFF;
+
+        if (!rmap->blocks[block]) {
+            rmap->blocks[block] = snewn(256, char);
+            memset(rmap->blocks[block], 0, 256);
+        }
+        rmap->blocks[block][index] = i;
+    }
+
+    rmap->codepage = codepage;
+    reverse_mapping *added = add234(reverse_mappings, rmap);
+    assert(added == rmap); /* we already checked it wasn't already in there */
+    return added;
+}
+
+static void make_reverse_mapping(int codepage, const wchar_t *mapping)
+{
+    if (get_existing_reverse_mapping(codepage))
+        return;                        /* we've already got this one */
+    make_reverse_mapping_inner(codepage, mapping);
+}
+
+static reverse_mapping *get_reverse_mapping(int codepage)
+{
+    /*
+     * Try harder to get a reverse mapping for a codepage we implement
+     * internally via a translation table, by hastily making it if it doesn't
+     * already exist.
+     */
+
+    reverse_mapping *rmap = get_existing_reverse_mapping(codepage);
+    if (rmap)
+        return rmap;
+
+    if (codepage < 65536)
+        return NULL;
+    if (codepage >= 65536 + lenof(cp_list))
+        return NULL;
+    const struct cp_list_item *cp = &cp_list[codepage - 65536];
+    if (!cp->cp_table)
+        return NULL;
+
+    wchar_t mapping[256];
+    get_unitab(codepage, mapping, 0);
+    return make_reverse_mapping_inner(codepage, mapping);
+}
 
 void init_ucs(Conf *conf, struct unicode_data *ucsdata)
 {
-    int i, j;
+    int i;
     bool used_dtf = false;
     int vtmode;
 
@@ -522,31 +627,9 @@ void init_ucs(Conf *conf, struct unicode_data *ucsdata)
            sizeof(unitab_xterm_std));
     ucsdata->unitab_xterm['_'] = ' ';
 
-    /* Generate UCS ->line page table. */
-    if (ucsdata->uni_tbl) {
-        for (i = 0; i < 256; i++)
-            if (ucsdata->uni_tbl[i])
-                sfree(ucsdata->uni_tbl[i]);
-        sfree(ucsdata->uni_tbl);
-        ucsdata->uni_tbl = 0;
-    }
     if (!used_dtf) {
-        for (i = 0; i < 256; i++) {
-            if (DIRECT_CHAR(ucsdata->unitab_line[i]))
-                continue;
-            if (DIRECT_FONT(ucsdata->unitab_line[i]))
-                continue;
-            if (!ucsdata->uni_tbl) {
-                ucsdata->uni_tbl = snewn(256, char *);
-                memset(ucsdata->uni_tbl, 0, 256 * sizeof(char *));
-            }
-            j = ((ucsdata->unitab_line[i] >> 8) & 0xFF);
-            if (!ucsdata->uni_tbl[j]) {
-                ucsdata->uni_tbl[j] = snewn(256, char);
-                memset(ucsdata->uni_tbl[j], 0, 256 * sizeof(char));
-            }
-            ucsdata->uni_tbl[j][ucsdata->unitab_line[i] & 0xFF] = i;
-        }
+        /* Make sure a reverse mapping exists for this code page. */
+        make_reverse_mapping(ucsdata->line_codepage, ucsdata->unitab_line);
     }
 
     /* Find the line control characters. */
@@ -598,7 +681,7 @@ void init_ucs(Conf *conf, struct unicode_data *ucsdata)
         for (i = 96; i < 127; i++)
             if (!DIRECT_FONT(ucsdata->unitab_xterm[i]))
                 ucsdata->unitab_xterm[i] =
-            (WCHAR) (CSET_ACP + poorman_vt100[i - 96]);
+                    (WCHAR) (CSET_ACP + poorman_vt100[i - 96]);
         for(i=128;i<256;i++)
             if (!DIRECT_FONT(ucsdata->unitab_scoacs[i]))
                 ucsdata->unitab_scoacs[i] =
@@ -606,7 +689,7 @@ void init_ucs(Conf *conf, struct unicode_data *ucsdata)
     }
 }
 
-static void link_font(WCHAR * line_tbl, WCHAR * font_tbl, WCHAR attr)
+static void link_font(WCHAR *line_tbl, WCHAR *font_tbl, WCHAR attr)
 {
     int font_index, line_index, i;
     for (line_index = 0; line_index < 256; line_index++) {
@@ -641,11 +724,11 @@ wchar_t xlat_uskbd2cyrllic(int ch)
         0x0440, 0x0448, 0x043e, 0x043b, 0x0434, 0x044c, 0x0442, 0x0449,
         0x0437, 0x0439, 0x043a, 0x044b, 0x0435, 0x0433, 0x043c, 0x0446,
         0x0447, 0x043d, 0x044f, 0x0425, 0x0407, 0x042a,    126,    127
-       };
+    };
     return cyrtab[ch&0x7F];
 }
 
-int check_compose_internal(int first, int second, int recurse)
+static int check_compose_internal(int first, int second, int recurse)
 {
 
     static const struct {
@@ -1000,9 +1083,9 @@ int check_compose(int first, int second)
     return check_compose_internal(first, second, 0);
 }
 
-int decode_codepage(char *cp_name)
+int decode_codepage(const char *cp_name)
 {
-    char *s, *d;
+    const char *s, *d;
     const struct cp_list_item *cpi;
     int codepage = -1;
     CPINFO cpinfo;
@@ -1117,7 +1200,7 @@ const char *cp_enumerate(int index)
     return cp_list[index].name;
 }
 
-void get_unitab(int codepage, wchar_t * unitab, int ftype)
+void get_unitab(int codepage, wchar_t *unitab, int ftype)
 {
     char tbuf[4];
     int i, max = 256, flg = MB_ERR_INVALID_CHARS;
@@ -1156,20 +1239,21 @@ void get_unitab(int codepage, wchar_t * unitab, int ftype)
 }
 
 int wc_to_mb(int codepage, int flags, const wchar_t *wcstr, int wclen,
-             char *mbstr, int mblen, const char *defchr,
-             struct unicode_data *ucsdata)
+             char *mbstr, int mblen, const char *defchr)
 {
-    char *p;
-    int i;
-    if (ucsdata && codepage == ucsdata->line_codepage && ucsdata->uni_tbl) {
+    reverse_mapping *rmap = get_reverse_mapping(codepage);
+
+    if (rmap) {
         /* Do this by array lookup if we can. */
         if (wclen < 0) {
             for (wclen = 0; wcstr[wclen++] ;);   /* will include the NUL */
         }
+        char *p;
+        int i;
         for (p = mbstr, i = 0; i < wclen; i++) {
             wchar_t ch = wcstr[i];
             int by;
-            char *p1;
+            const char *p1;
 
             #define WRITECH(chr) do             \
             {                                   \
@@ -1177,8 +1261,7 @@ int wc_to_mb(int codepage, int flags, const wchar_t *wcstr, int wclen,
                 *p++ = (char)(chr);             \
             } while (0)
 
-            if (ucsdata->uni_tbl &&
-                (p1 = ucsdata->uni_tbl[(ch >> 8) & 0xFF]) != NULL &&
+            if ((p1 = rmap->blocks[(ch >> 8) & 0xFF]) != NULL &&
                 (by = p1[ch & 0xFF]) != '\0')
                 WRITECH(by);
             else if (ch < 0x80)
@@ -1240,6 +1323,35 @@ int wc_to_mb(int codepage, int flags, const wchar_t *wcstr, int wclen,
 int mb_to_wc(int codepage, int flags, const char *mbstr, int mblen,
              wchar_t *wcstr, int wclen)
 {
+    if (codepage >= 65536) {
+        /* Character set not known to Windows, so we'll have to
+         * translate it ourself */
+        size_t index = codepage - 65536;
+        if (index >= lenof(cp_list))
+            return 0;
+        const struct cp_list_item *cp = &cp_list[index];
+        if (!cp->cp_table)
+            return 0;
+
+        size_t remaining = wclen;
+        wchar_t *p = wcstr;
+        unsigned tablebase = 256 - cp->cp_size;
+
+        while (mblen > 0) {
+            mblen--;
+            unsigned c = 0xFF & *mbstr++;
+            wchar_t wc = (c < tablebase ? c : cp->cp_table[c - tablebase]);
+            if (remaining > 0) {
+                remaining--;
+                *p++ = wc;
+            } else {
+                return p - wcstr;
+            }
+        }
+
+        return p - wcstr;
+    }
+
     int ret = MultiByteToWideChar(codepage, flags, mbstr, mblen, wcstr, wclen);
     if (ret)
         return ret;

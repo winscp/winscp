@@ -62,8 +62,8 @@ static void wm_copydata_agent_query(strbuf *query, void **out, int *outlen)
             psd = (PSECURITY_DESCRIPTOR)
                 LocalAlloc(LPTR, SECURITY_DESCRIPTOR_MIN_LENGTH);
             if (psd) {
-                if (p_InitializeSecurityDescriptor
-                    (psd, SECURITY_DESCRIPTOR_REVISION) &&
+                if (p_InitializeSecurityDescriptor(
+                        psd, SECURITY_DESCRIPTOR_REVISION) &&
                     p_SetSecurityDescriptorOwner(psd, usersid, false)) {
                     sa.nLength = sizeof(sa);
                     sa.bInheritHandle = true;
