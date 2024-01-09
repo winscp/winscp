@@ -214,12 +214,15 @@ digits.
 \b \c{&T} will be replaced by the current time, as six digits
 (HHMMSS) with no punctuation.
 
-\b \c{&H} will be replaced by the host name you are connecting to.
+\b \c{&H} will be replaced by the host name you are connecting to
+(or the serial line, for a serial connection).
 
 \b \c{&P} will be replaced by the port number you are connecting to on
 the target host.
 
-For example, if you enter the host name
+(These are all case-insensitive.)
+
+For example, if you enter the file name
 \c{c:\\puttylogs\\log-&h-&y&m&d-&t.dat}, you will end up with files looking
 like
 
@@ -3030,6 +3033,9 @@ PuTTY can't fall back to using this file itself.
 
 \S{config-ssh-cert} \q{\ii{Certificate} to use with the private key}
 
+(This is optional. If you don't know you need it, you can leave this
+blank.)
+
 In some environments, user authentication keys can be signed in turn
 by a \q{certifying authority} (\q{CA} for short), and user accounts on
 an SSH server can be configured to automatically trust any key that's
@@ -3521,6 +3527,9 @@ not available for bugs that \e{cannot} be detected from the server
 version, e.g. because they must be acted on before the server version
 is known.)
 
+(The PuTTY project has a defined policy about when we're prepared to
+add auto-detection for a bug workaround. See \k{feedback-workarounds}.)
+
 \S{config-ssh-bug-ignore2} \q{Chokes on SSH-2 \i{ignore message}s}
 
 An ignore message (SSH_MSG_IGNORE) is a message in the SSH protocol
@@ -3660,6 +3669,23 @@ client and server waited for the other one to speak first, the
 connection would deadlock. We don't know of any servers that do this,
 but if there is one, then this flag will make PuTTY unable to speak to
 them at all.
+
+\S{config-ssh-bug-rsa-sha2-cert-userauth} \q{Old RSA/SHA2 cert
+algorithm naming}
+
+If PuTTY is trying to do SSH-2 user authentication using an RSA key,
+and the server is using one of the newer SHA-2 based versions of the
+SSH RSA protocol, and the user's key is also a certificate, then
+earlier versions of OpenSSH (up to 7.7) disagree with later versions
+about the right key algorithm string to send in the
+\cw{SSH2_MSG_USERAUTH_REQUEST} packet. Modern versions send a string
+that indicates both the SHA-2 nature and the certificate nature of the
+key, such as \cq{rsa-sha2-512-cert-v01@openssh.com}. Earlier versions
+would reject that, and insist on seeing
+\cq{ssh-rsa-cert-v01@openssh.com} followed by a SHA-2 based signature.
+
+PuTTY should auto-detect the presence of this bug in earlier OpenSSH
+and adjust to send the right string.
 
 \S{config-ssh-bug-sig} \q{Requires padding on SSH-2 \i{RSA} \i{signatures}}
 
@@ -4071,7 +4097,7 @@ at the bottom of the screen, until a space is typed.
 
 \S{supdup-scroll} \q{Terminal scrolling}
 
-This controls whether the terminal will perform scrolling then the
+This controls whether the terminal will perform scrolling when the
 cursor goes below the last line, or if the cursor will return to the
 first line.
 

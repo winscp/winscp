@@ -5,7 +5,7 @@
 
 #include "putty.h"
 
-HKEY open_regkey_fn(bool create, HKEY hk, const char *path, ...)
+HKEY open_regkey_fn(bool create, bool write, HKEY hk, const char *path, ...)
 {
     HKEY toret = NULL;
     bool hk_needs_close = false;
@@ -15,14 +15,14 @@ HKEY open_regkey_fn(bool create, HKEY hk, const char *path, ...)
     for (; path; path = va_arg(ap, const char *)) {
         HKEY hk_sub = NULL;
 
+        DWORD access = KEY_READ | (write ? KEY_WRITE : 0);
         LONG status;
         if (create)
             status = RegCreateKeyEx(
                 hk, path, 0, NULL, REG_OPTION_NON_VOLATILE,
-                KEY_READ | KEY_WRITE, NULL, &hk_sub, NULL);
+                access, NULL, &hk_sub, NULL);
         else
-            status = RegOpenKeyEx(
-                hk, path, 0, KEY_READ | KEY_WRITE, &hk_sub);
+            status = RegOpenKeyEx(hk, path, 0, access, &hk_sub);
 
         if (status != ERROR_SUCCESS)
             goto out;
@@ -175,7 +175,7 @@ bool put_reg_multi_sz(HKEY key, const char *name, strbuf *str)
 
 char *get_reg_sz_simple(HKEY key, const char *name, const char *leaf)
 {
-    HKEY subkey = open_regkey(false, key, name);
+    HKEY subkey = open_regkey_ro(key, name);
     if (!subkey)
         return NULL;
     char *toret = get_reg_sz(subkey, leaf);

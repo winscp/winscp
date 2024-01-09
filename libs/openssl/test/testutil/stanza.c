@@ -1,7 +1,7 @@
 /*
  * Copyright 2017 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -54,7 +54,7 @@ static int read_key(STANZA *s)
         s->curr++;
         if (!TEST_int_gt(BIO_puts(s->key, tmpbuf), 0))
             return 0;
-        if (strncmp(tmpbuf, "-----END", 8) == 0)
+        if (HAS_PREFIX(tmpbuf, "-----END"))
             return 1;
     }
     TEST_error("Can't find key end");
@@ -72,7 +72,7 @@ static char *strip_spaces(char *p)
     /* Skip over leading spaces */
     while (*p && isspace((unsigned char)*p))
         p++;
-    if (!*p)
+    if (*p == '\0')
         return NULL;
 
     for (q = p + strlen(p) - 1; q != p && isspace((unsigned char)*q); )
@@ -86,7 +86,8 @@ static char *strip_spaces(char *p)
 int test_readstanza(STANZA *s)
 {
     PAIR *pp = s->pairs;
-    char *p, *equals, *key, *value;
+    char *p, *equals, *key;
+    const char *value;
 
     for (s->numpairs = 0; BIO_gets(s->fp, s->buff, sizeof(s->buff)); ) {
         s->curr++;

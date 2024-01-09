@@ -1,7 +1,7 @@
 /*
- * Copyright 2016-2018 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL licenses, (the "License");
+ * Licensed under the Apache License 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  * https://www.openssl.org/source/license.html
@@ -13,9 +13,15 @@
 #include <openssl/bio.h>
 #include <openssl/err.h>
 
-#include "../ssl/packet_local.h"
+/* We include internal headers so we can check if the buffers are allocated */
+#include "../ssl/ssl_local.h"
+#include "../ssl/record/record_local.h"
+#include "internal/recordmethod.h"
+#include "../ssl/record/methods/recmethod_local.h"
 
-#include "ssltestlib.h"
+#include "internal/packet.h"
+
+#include "helpers/ssltestlib.h"
 #include "testutil.h"
 
 struct async_ctrs {
@@ -28,6 +34,17 @@ static SSL_CTX *clientctx = NULL;
 
 #define MAX_ATTEMPTS    100
 
+static int checkbuffers(SSL *s, int isalloced)
+{
+    SSL_CONNECTION *sc = SSL_CONNECTION_FROM_SSL(s);
+    OSSL_RECORD_LAYER *rrl = sc->rlayer.rrl;
+    OSSL_RECORD_LAYER *wrl = sc->rlayer.wrl;
+
+    if (isalloced)
+        return rrl->rbuf.buf != NULL && wrl->wbuf[0].buf != NULL;
+
+    return rrl->rbuf.buf == NULL && wrl->wbuf[0].buf == NULL;
+}
 
 /*
  * There are 9 passes in the tests
@@ -78,14 +95,18 @@ static int test_func(int test)
         for (ret = -1, i = 0, len = 0; len != sizeof(testdata) && i < 2;
              i++) {
             /* test == 0 mean to free/allocate = control */
-            if (test >= 1 && !TEST_true(SSL_free_buffers(clientssl)))
+            if (test >= 1 && (!TEST_true(SSL_free_buffers(clientssl))
+                              || !TEST_true(checkbuffers(clientssl, 0))))
                 goto end;
-            if (test >= 2 && !TEST_true(SSL_alloc_buffers(clientssl)))
+            if (test >= 2 && (!TEST_true(SSL_alloc_buffers(clientssl))
+                              || !TEST_true(checkbuffers(clientssl, 1))))
                 goto end;
             /* allocate a second time */
-            if (test >= 3 && !TEST_true(SSL_alloc_buffers(clientssl)))
+            if (test >= 3 && (!TEST_true(SSL_alloc_buffers(clientssl))
+                              || !TEST_true(checkbuffers(clientssl, 1))))
                 goto end;
-            if (test >= 4 && !TEST_true(SSL_free_buffers(clientssl)))
+            if (test >= 4 && (!TEST_true(SSL_free_buffers(clientssl))
+                              || !TEST_true(checkbuffers(clientssl, 0))))
                 goto end;
 
             ret = SSL_write(clientssl, testdata + len,
@@ -112,14 +133,18 @@ static int test_func(int test)
         for (ret = -1, i = 0, len = 0; len != sizeof(testdata) &&
                  i < MAX_ATTEMPTS; i++)
         {
-            if (test >= 5 && !TEST_true(SSL_free_buffers(serverssl)))
+            if (test >= 5 && (!TEST_true(SSL_free_buffers(serverssl))
+                              || !TEST_true(checkbuffers(serverssl, 0))))
                 goto end;
             /* free a second time */
-            if (test >= 6 && !TEST_true(SSL_free_buffers(serverssl)))
+            if (test >= 6 && (!TEST_true(SSL_free_buffers(serverssl))
+                              || !TEST_true(checkbuffers(serverssl, 0))))
                 goto end;
-            if (test >= 7 && !TEST_true(SSL_alloc_buffers(serverssl)))
+            if (test >= 7 && (!TEST_true(SSL_alloc_buffers(serverssl))
+                              || !TEST_true(checkbuffers(serverssl, 1))))
                 goto end;
-            if (test >= 8 && !TEST_true(SSL_free_buffers(serverssl)))
+            if (test >= 8 && (!TEST_true(SSL_free_buffers(serverssl))
+                              || !TEST_true(checkbuffers(serverssl, 0))))
                 goto end;
 
             ret = SSL_read(serverssl, buf + len, sizeof(buf) - len);
@@ -150,23 +175,23 @@ static int test_func(int test)
     return result;
 }
 
-int global_init(void)
-{
-    CRYPTO_set_mem_debug(1);
-    CRYPTO_mem_ctrl(CRYPTO_MEM_CHECK_ON);
-    return 1;
-}
+OPT_TEST_DECLARE_USAGE("certfile privkeyfile\n")
 
 int setup_tests(void)
 {
     char *cert, *pkey;
 
+    if (!test_skip_common_options()) {
+        TEST_error("Error parsing test options\n");
+        return 0;
+    }
+
     if (!TEST_ptr(cert = test_get_argument(0))
             || !TEST_ptr(pkey = test_get_argument(1)))
         return 0;
 
-    if (!create_ssl_ctx_pair(TLS_server_method(), TLS_client_method(),
-                             TLS1_VERSION, TLS_MAX_VERSION,
+    if (!create_ssl_ctx_pair(NULL, TLS_server_method(), TLS_client_method(),
+                             TLS1_VERSION, 0,
                              &serverctx, &clientctx, cert, pkey)) {
         TEST_error("Failed to create SSL_CTX pair\n");
         return 0;

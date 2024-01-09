@@ -12,7 +12,7 @@ not described here; and the pterm and command-line puttygen and pageant
 utilities are not described at all. The only Unix-specific documentation
 that currently exists is the man pages.
 
-This manual is copyright 1997-2022 Simon Tatham. All rights reserved. You
+This manual is copyright 1997-2023 Simon Tatham. All rights reserved. You
 may distribute this documentation under the MIT licence. See appendix D for
 the licence text in full.
 
@@ -1623,12 +1623,15 @@ Chapter 4: Configuring PuTTY
         -  `&T' will be replaced by the current time, as six digits
            (HHMMSS) with no punctuation.
 
-        -  `&H' will be replaced by the host name you are connecting to.
+        -  `&H' will be replaced by the host name you are connecting to (or
+           the serial line, for a serial connection).
 
         -  `&P' will be replaced by the port number you are connecting to
            on the target host.
 
-       For example, if you enter the host name `c:\puttylogs\log-&h-&y&m&d-
+       (These are all case-insensitive.)
+
+       For example, if you enter the file name `c:\puttylogs\log-&h-&y&m&d-
        &t.dat', you will end up with files looking like
 
          log-server1.example.com-20010528-110859.dat
@@ -3106,7 +3109,7 @@ Chapter 4: Configuring PuTTY
        alternative, see section 4.14.3.)
 
        Note that if you are using SSH-1 and the server has a bug that makes
-       it unable to deal with SSH-1 ignore messages (see section 4.27.13),
+       it unable to deal with SSH-1 ignore messages (see section 4.27.14),
        enabling keepalives will have no effect.
 
 4.14.2 `Disable Nagle's algorithm'
@@ -4396,6 +4399,9 @@ Chapter 4: Configuring PuTTY
 
 4.22.2 `Certificate to use with the private key'
 
+       (This is optional. If you don't know you need it, you can leave this
+       blank.)
+
        In some environments, user authentication keys can be signed in turn
        by a `certifying authority' (`CA' for short), and user accounts
        on an SSH server can be configured to automatically trust any key
@@ -4872,6 +4878,9 @@ Chapter 4: Configuring PuTTY
            the server version, e.g. because they must be acted on before
            the server version is known.)
 
+       (The PuTTY project has a defined policy about when we're prepared to
+       add auto-detection for a bug workaround. See section B.6.)
+
 4.27.1 `Chokes on SSH-2 ignore messages'
 
        An ignore message (SSH_MSG_IGNORE) is a message in the SSH protocol
@@ -5009,7 +5018,23 @@ Chapter 4: Configuring PuTTY
        this, but if there is one, then this flag will make PuTTY unable to
        speak to them at all.
 
-4.27.8 `Requires padding on SSH-2 RSA signatures'
+4.27.8 `Old RSA/SHA2 cert algorithm naming'
+
+       If PuTTY is trying to do SSH-2 user authentication using an RSA
+       key, and the server is using one of the newer SHA-2 based versions
+       of the SSH RSA protocol, and the user's key is also a certificate,
+       then earlier versions of OpenSSH (up to 7.7) disagree with later
+       versions about the right key algorithm string to send in the
+       SSH2_MSG_USERAUTH_REQUEST packet. Modern versions send a string
+       that indicates both the SHA-2 nature and the certificate nature
+       of the key, such as `rsa-sha2-512-cert-v01@openssh.com'. Earlier
+       versions would reject that, and insist on seeing `ssh-rsa-cert-
+       v01@openssh.com' followed by a SHA-2 based signature.
+
+       PuTTY should auto-detect the presence of this bug in earlier OpenSSH
+       and adjust to send the right string.
+
+4.27.9 `Requires padding on SSH-2 RSA signatures'
 
        Versions below 3.3 of OpenSSH require SSH-2 RSA signatures to be
        padded with zero bytes to the same length as the RSA key modulus.
@@ -5026,7 +5051,7 @@ Chapter 4: Configuring PuTTY
 
        This is an SSH-2-specific bug.
 
-4.27.9 `Only supports pre-RFC4419 SSH-2 DH GEX'
+4.27.10 `Only supports pre-RFC4419 SSH-2 DH GEX'
 
        The SSH key exchange method that uses Diffie-Hellman group exchange
        was redesigned after its original release, to use a slightly more
@@ -5041,7 +5066,7 @@ Chapter 4: Configuring PuTTY
 
        This is an SSH-2-specific bug.
 
-4.27.10 `Miscomputes SSH-2 HMAC keys'
+4.27.11 `Miscomputes SSH-2 HMAC keys'
 
        Versions 2.3.0 and below of the SSH server software from ssh.com
        compute the keys for their HMAC message authentication codes
@@ -5056,7 +5081,7 @@ Chapter 4: Configuring PuTTY
 
        This is an SSH-2-specific bug.
 
-4.27.11 `Misuses the session ID in SSH-2 PK auth'
+4.27.12 `Misuses the session ID in SSH-2 PK auth'
 
        Versions below 2.3 of OpenSSH require SSH-2 public-key
        authentication to be done slightly differently: the data to be
@@ -5072,7 +5097,7 @@ Chapter 4: Configuring PuTTY
 
        This is an SSH-2-specific bug.
 
-4.27.12 `Miscomputes SSH-2 encryption keys'
+4.27.13 `Miscomputes SSH-2 encryption keys'
 
        Versions below 2.0.11 of the SSH server software from ssh.com
        compute the keys for the session encryption incorrectly. This
@@ -5086,7 +5111,7 @@ Chapter 4: Configuring PuTTY
 
        This is an SSH-2-specific bug.
 
-4.27.13 `Chokes on SSH-1 ignore messages'
+4.27.14 `Chokes on SSH-1 ignore messages'
 
        An ignore message (SSH_MSG_IGNORE) is a message in the SSH protocol
        which can be sent from the client to the server, or from the server
@@ -5099,15 +5124,15 @@ Chapter 4: Configuring PuTTY
        If this bug is detected, PuTTY will stop using ignore messages.
        This means that keepalives will stop working, and PuTTY will
        have to fall back to a secondary defence against SSH-1 password-
-       length eavesdropping. See section 4.27.14. If this bug is enabled
+       length eavesdropping. See section 4.27.15. If this bug is enabled
        when talking to a correct server, the session will succeed, but
        keepalives will not work and the session might be more vulnerable to
        eavesdroppers than it could be.
 
-4.27.14 `Refuses all SSH-1 password camouflage'
+4.27.15 `Refuses all SSH-1 password camouflage'
 
        When talking to an SSH-1 server which cannot deal with ignore
-       messages (see section 4.27.13), PuTTY will attempt to disguise the
+       messages (see section 4.27.14), PuTTY will attempt to disguise the
        length of the user's password by sending additional padding _within_
        the password packet. This is technically a violation of the SSH-
        1 specification, and so PuTTY will only do it when it cannot use
@@ -5127,7 +5152,7 @@ Chapter 4: Configuring PuTTY
        This is an SSH-1-specific bug. SSH-2 is secure against this type of
        attack.
 
-4.27.15 `Chokes on SSH-1 RSA authentication'
+4.27.16 `Chokes on SSH-1 RSA authentication'
 
        Some SSH-1 servers cannot deal with RSA authentication messages at
        all. If Pageant is running and contains any SSH-1 keys, PuTTY will
@@ -5416,7 +5441,7 @@ Chapter 4: Configuring PuTTY
 
 4.32.4 `Terminal scrolling'
 
-       This controls whether the terminal will perform scrolling then the
+       This controls whether the terminal will perform scrolling when the
        cursor goes below the last line, or if the cursor will return to the
        first line.
 
@@ -5505,7 +5530,7 @@ Chapter 5: Using PSCP to transfer files securely
 
          C:\>pscp
          PuTTY Secure Copy client
-         Release 0.78
+         Release 0.80
          Usage: pscp [options] [user@]host:source target
                 pscp [options] source [source...] [user@]host:target
                 pscp [options] -ls [user@]host:filespec
@@ -6427,7 +6452,7 @@ Chapter 7: Using the command-line connection tool Plink
 
          C:\>plink
          Plink: command-line connection utility
-         Release 0.78
+         Release 0.80
          Usage: plink [options] [user@]host [command]
                 ("host" can also be a PuTTY saved session name)
          Options:
@@ -6635,7 +6660,7 @@ Chapter 7: Using the command-line connection tool Plink
 
 7.2.3.3 `-share': Test and try to share an existing connection.
 
-       This option tris to detect if an existing connection can be shared
+       This option tries to detect if an existing connection can be shared
        (See section 4.17.5 for more information about SSH connection
        sharing.) and reuses that connection.
 
@@ -7187,7 +7212,7 @@ Chapter 8: Using public keys for SSH authentication
        4.22.1) or tell Pageant to load (see section 9.2.2).
 
        (You can optionally change some details of the PPK format for your
-       saved key files; see section 8.2.13. But The defaults should be fine
+       saved key files; see section 8.2.13. But the defaults should be fine
        for most purposes.)
 
 8.2.11 Saving your public key to a disk file
@@ -7325,13 +7350,18 @@ Chapter 8: Using public keys for SSH authentication
        without a passphrase.
 
        For OpenSSH there are two options. Modern OpenSSH actually has two
-       formats it uses for storing private keys. `Export OpenSSH key' will
-       automatically choose the oldest format supported for the key type,
-       for maximum backward compatibility with older versions of OpenSSH;
-       for newer key types like Ed25519, it will use the newer format as
-       that is the only legal option. If you have some specific reason for
-       wanting to use OpenSSH's newer format even for RSA, DSA, or ECDSA
-       keys, you can choose `Export OpenSSH key (force new file format)'.
+       formats it uses for storing private keys: an older (`PEM-style')
+       format, and a newer `native' format with better resistance to
+       passphrase guessing and support for comments. `Export OpenSSH key'
+       will automatically choose the oldest format supported for the key
+       type, for maximum backward compatibility with older versions of
+       OpenSSH; for newer key types like Ed25519, it will use the newer
+       format as that is the only legal option. If you have some specific
+       reason for wanting to use OpenSSH's newer format even for RSA,
+       DSA, or ECDSA keys - for instance, you know your file will only
+       be used by OpenSSH 6.5 or newer (released in 2014), and want the
+       extra security - you can choose `Export OpenSSH key (force new file
+       format)'.
 
        Most clients for the older SSH-1 protocol use a standard format for
        storing private keys on disk. PuTTY uses this format as well; so if
@@ -8151,7 +8181,7 @@ Chapter 10: Common error messages
        This error can be caused by buggy SSH-1 servers that fail to cope
        with the various strategies we use for camouflaging passwords in
        transit. Upgrade your server, or use the workarounds described in
-       section 4.27.13 and possibly section 4.27.14.
+       section 4.27.14 and possibly section 4.27.15.
 
  10.12 `No supported authentication methods available'
 
@@ -8178,7 +8208,7 @@ Chapter 10: Common error messages
        which may not be noticed.
 
        Occasionally this has been caused by server bugs. An example is the
-       bug described at section 4.27.10, although you're very unlikely to
+       bug described at section 4.27.11, although you're very unlikely to
        encounter that one these days.
 
        In this context MAC stands for Message Authentication Code. It's a
@@ -8195,7 +8225,7 @@ Chapter 10: Common error messages
 
        If you get this error, one thing you could try would be to fiddle
        with the setting of `Miscomputes SSH-2 encryption keys' (see section
-       4.27.12) or `Ignores SSH-2 maximum packet size' (see section 4.27.5)
+       4.27.13) or `Ignores SSH-2 maximum packet size' (see section 4.27.5)
        on the Bugs panel.
 
  10.15 `PuTTY X11 proxy: _various errors_'
@@ -8282,6 +8312,10 @@ Chapter 10: Common error messages
        Check that you are connecting with the correct protocol (SSH,
        Telnet, etc), and check that the port number is correct. If that
        fails, consult the administrator of your server.
+
+       This error can also be caused by a firewall in between you and the
+       server, which rejects the connection and sends back the same type of
+       error packet as the real server would have sent.
 
  10.19 `Network error: Connection timed out'
 
@@ -9348,6 +9382,23 @@ A.7.23 After I upgraded PuTTY to 0.68, I can no longer connect to my
        IUTF8 on the list, select `Nothing', and press `Set'. (It's not
        possible to disable sending this mode in 0.68.)
 
+A.7.24 Since 0.78, I can't find where to configure my SSH private key.
+
+       In PuTTY 0.78, the `Private key file for authentication' control,
+       where you specify a `.PPK' file for SSH public key authentication,
+       moved to a new `Credentials' panel in the configuration dialog. You
+       can find this by opening the `SSH' category in the tree view on the
+       left, then opening the `Auth' subcategory under that, then clicking
+       on `Credentials'. On this page you'll find the `Browse...' button
+       you need to select a `.PPK' file for authentication, as described in
+       section 4.22.1.
+
+       (This control had previously been on the `Auth' panel since public
+       key authentication was first released in 2002, so many online how-
+       to guides still describe it there. The configuration controls were
+       reorganised to make room for features added in 0.78, such as OpenSSH
+       certificates.)
+
    A.8 Security questions
 
  A.8.1 Is it safe for me to download PuTTY and use it on a public PC?
@@ -9567,7 +9618,7 @@ A.7.23 After I upgraded PuTTY to 0.68, I can no longer connect to my
        Yes. For most things, you need not bother asking us explicitly for
        permission; our licence already grants you permission.
 
-       See section B.8 for more details.
+       See section B.9 for more details.
 
 A.9.10 Can you sign an agreement indemnifying us against security problems
        in PuTTY?
@@ -9892,7 +9943,7 @@ Appendix B: Feedback and bug reporting
        We get so much e-mail that we literally do not have time to answer
        it all. We regret this, but there's nothing we can do about it.
        So if you can _possibly_ avoid sending mail to the PuTTY team, we
-       recommend you do so. In particular, support requests (section B.6)
+       recommend you do so. In particular, support requests (section B.7)
        are probably better sent to newsgroups, or passed to a local expert
        if possible.
 
@@ -10165,7 +10216,55 @@ Appendix B: Feedback and bug reporting
            to get a feature implemented quickly, if it's a big one that we
            don't have time to do ourselves.
 
-   B.6 Support requests
+   B.6 Workarounds for SSH server bugs
+
+       It's normal for SSH implementations to automatically enable
+       workarounds for each other's bugs, using the software version
+       strings that are exchanged at the start of the connection. Typically
+       an SSH client will have a list of server version strings that it
+       believes to have particular bugs, and auto-enable the appropriate
+       set of workarounds when it sees one of those strings. (And servers
+       will have a similar list of workarounds for _client_ software they
+       believe to be buggy.)
+
+       If you've found a bug in an SSH server, and you'd like us to add
+       an auto-detected workaround for it, our policy is that *the server
+       implementor should fix it first*.
+
+       If the server implementor has fixed it in the latest version, and
+       can give us a complete description of the version strings that go
+       with the bug, then we're happy to use those version strings as a
+       trigger to automatically enable our workaround (assuming one is
+       possible). We _won't_ accept requests to auto-enable workarounds
+       for an open-ended set of version strings, such as `any version of
+       FooServer, including future ones not yet released'.
+
+       The aim of this policy is to encourage implementors to gradually
+       converge on the actual standardised SSH protocol. If we enable
+       people to continue violating the spec, by installing open-ended
+       workarounds in PuTTY for bugs they're never going to fix, then we're
+       contributing to an ecosystem in which everyone carries on having
+       bugs and everyone else carries on having to work around them.
+
+       An exception: if an SSH server is no longer maintained _at all_
+       (e.g. the company that produced it has gone out of business), and
+       every version of it that was ever released has a bug, then that's
+       one situation in which we may be prepared to add a workaround rule
+       that matches all versions of that software. (The aim is to stop
+       implementors from continuing to release software with the bug - and
+       if they're not releasing it _at all_ any more, then that's already
+       done!)
+
+       We do recognise that sometimes it will be difficult to get the
+       server maintainer to fix a bug, or even to answer support requests
+       at all. Or it might take them a very long time to get round to doing
+       anything about it. We're not completely unwilling to compromise:
+       we're prepared to add _manually enabled_ workarounds to PuTTY even
+       for bugs that an implementation hasn't fixed yet. We just won't
+       _automatically_ enable the workaround unless the server maintainer
+       has also done their part.
+
+   B.7 Support requests
 
        If you're trying to make PuTTY do something for you and it isn't
        working, but you're not sure whether it's a bug or not, then
@@ -10206,7 +10305,7 @@ Appendix B: Feedback and bug reporting
        way, you can try mailing it to us, but we can't guarantee to have
        time to answer it.
 
-   B.7 Web server administration
+   B.8 Web server administration
 
        If the PuTTY web site is down (Connection Timed Out), please don't
        bother mailing us to tell us about it. Most of us read our e-mail on
@@ -10228,7 +10327,7 @@ Appendix B: Feedback and bug reporting
        contact us if that doesn't solve the problem (in case we need to
        remove the mirror from our list).
 
-   B.8 Asking permission for things
+   B.9 Asking permission for things
 
        PuTTY is distributed under the MIT Licence (see appendix D for
        details). This means you can do almost _anything_ you like with our
@@ -10258,7 +10357,7 @@ Appendix B: Feedback and bug reporting
        If you just want to link to our web site, just go ahead. (It's not
        clear that we _could_ stop you doing this, even if we wanted to!)
 
-   B.9 Mirroring the PuTTY web site
+  B.10 Mirroring the PuTTY web site
 
        If you want to set up a mirror of the PuTTY website, go ahead and
        set one up. Please don't bother asking us for permission before
@@ -10282,7 +10381,7 @@ Appendix B: Feedback and bug reporting
        guidelines on the Mirrors page); but if you just want to ask for
        permission, you don't need to. You already have permission.
 
-  B.10 Praise and compliments
+  B.11 Praise and compliments
 
        One of the most rewarding things about maintaining free software
        is getting e-mails that just say `thanks'. We are always happy to
@@ -10296,7 +10395,7 @@ Appendix B: Feedback and bug reporting
        To everyone who's ever sent us praise and compliments, in the past
        and the future: _you're welcome_!
 
-  B.11 E-mail address
+  B.12 E-mail address
 
        The actual address to mail is <putty@projects.tartarus.org>.
 
@@ -10690,7 +10789,7 @@ Appendix C: PPK file format
 Appendix D: PuTTY Licence
 -------------------------
 
-       PuTTY is copyright 1997-2022 Simon Tatham.
+       PuTTY is copyright 1997-2023 Simon Tatham.
 
        Portions copyright Robert de Bath, Joris van Rantwijk, Delian
        Delchev, Andreas Schultz, Jeroen Massar, Wez Furlong, Nicolas Barry,
@@ -11525,25 +11624,25 @@ Appendix F: PuTTY download keys and signatures
        PuTTY website, and are also available on PGP keyservers using the
        key IDs listed below.
 
-       *Master Key* (2021)
+       *Master Key* (2023)
 
-           RSA, 3072-bit. Key ID: DD4355EAAC1119DE. Fingerprint:
-           A872 D42F 1660 890F 0E05 223E DD43 55EA AC11 19DE
+           RSA, 4096-bit. Key ID: B15D9EFC216B06A1. Fingerprint:
+           28D4 7C46 55E7 65A6 D827 AC66 B15D 9EFC 216B 06A1
 
-       *Release Key* (2021)
+       *Release Key* (2023)
 
-           RSA, 3072-bit. Key ID: E4F83EA2AA4915EC. Fingerprint:
-           2CF6 134B D3F7 7A65 88EB D668 E4F8 3EA2 AA49 15EC
+           RSA, 3072-bit. Key ID: 1993D21BCAD1AA77. Fingerprint:
+           F412 BA3A A30F DC0E 77B4 E387 1993 D21B CAD1 AA77
 
-       *Snapshot Key* (2021)
+       *Snapshot Key* (2023)
 
-           RSA, 3072-bit. Key ID: B43979F89F446CFD. Fingerprint:
-           1FD3 BCAC E532 FBE0 6A8C 09E2 B439 79F8 9F44 6CFD
+           RSA, 3072-bit. Key ID: 10625E553F53FAAD. Fingerprint:
+           74CC 6DD9 ABA7 31D4 C5A0 C2D0 1062 5E55 3F53 FAAD
 
-       *Secure Contact Key* (2021)
+       *Secure Contact Key* (2023)
 
-           RSA, 3072-bit. Key ID: 012C59D4211BD62A. Fingerprint:
-           E30F 1354 2A04 BE0E 56F0 5801 012C 59D4 211B D62A
+           RSA, 3072-bit. Key ID: 1559F6A8929F5EFC. Fingerprint:
+           01F5 A2B1 1388 D64B 707F 897F 1559 F6A8 929F 5EFC
 
    F.2 Security details
 
@@ -11623,7 +11722,7 @@ Appendix F: PuTTY download keys and signatures
 
    F.3 Key rollover
 
-       Our current keys were generated in August 2018.
+       Our current keys were generated in July 2023.
 
        Each new Master Key is signed with the old one, to show that it
        really is owned by the same people and not substituted by an
@@ -11639,6 +11738,28 @@ Appendix F: PuTTY download keys and signatures
        newly generated keys.
 
        The details of all previous keys are given here.
+
+       *Keys generated in the 2021 rollover*
+
+       *Master Key* (2021)
+
+           RSA, 3072-bit. Key ID: DD4355EAAC1119DE. Fingerprint:
+           A872 D42F 1660 890F 0E05 223E DD43 55EA AC11 19DE
+
+       *Release Key* (2021)
+
+           RSA, 3072-bit. Key ID: E4F83EA2AA4915EC. Fingerprint:
+           2CF6 134B D3F7 7A65 88EB D668 E4F8 3EA2 AA49 15EC
+
+       *Snapshot Key* (2021)
+
+           RSA, 3072-bit. Key ID: B43979F89F446CFD. Fingerprint:
+           1FD3 BCAC E532 FBE0 6A8C 09E2 B439 79F8 9F44 6CFD
+
+       *Secure Contact Key* (2021)
+
+           RSA, 3072-bit. Key ID: 012C59D4211BD62A. Fingerprint:
+           E30F 1354 2A04 BE0E 56F0 5801 012C 59D4 211B D62A
 
        *Keys generated in the 2018 rollover*
 
@@ -12358,4 +12479,4 @@ H.6.12 PLUGIN_AUTH_FAILURE
        Secure Shell Protocol (SSH)' (better known by its wire id `keyboard-
        interactive').
 
-[PuTTY release 0.78]
+[PuTTY release 0.80]

@@ -41,7 +41,7 @@ use Plink:
 
 \c C:\>plink
 \c Plink: command-line connection utility
-\c Release 0.78
+\c Release 0.80
 \c Usage: plink [options] [user@]host [command]
 \c        ("host" can also be a PuTTY saved session name)
 \c Options:
@@ -254,7 +254,7 @@ line.
 \S2{plink-option-share} \I{-share-plink}\c{-share}:
 Test and try to share an existing connection.
 
-This option tris to detect if an existing connection can be shared
+This option tries to detect if an existing connection can be shared
 (See \k{config-ssh-sharing} for more information about SSH connection
 sharing.) and reuses that connection.
 

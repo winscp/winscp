@@ -21,14 +21,14 @@
  * Fingerprints of the current and previous PGP master keys, to
  * establish a trust path between an executable and other files.
  */
-#define PGP_MASTER_KEY_YEAR "2021"
-#define PGP_MASTER_KEY_DETAILS "RSA, 3072-bit"
+#define PGP_MASTER_KEY_YEAR "2023"
+#define PGP_MASTER_KEY_DETAILS "RSA, 4096-bit"
 #define PGP_MASTER_KEY_FP                                  \
-    "A872 D42F 1660 890F 0E05  223E DD43 55EA AC11 19DE"
-#define PGP_PREV_MASTER_KEY_YEAR "2018"
-#define PGP_PREV_MASTER_KEY_DETAILS "RSA, 4096-bit"
+    "28D4 7C46 55E7 65A6 D827  AC66 B15D 9EFC 216B 06A1"
+#define PGP_PREV_MASTER_KEY_YEAR "2021"
+#define PGP_PREV_MASTER_KEY_DETAILS "RSA, 3072-bit"
 #define PGP_PREV_MASTER_KEY_FP                                  \
-    "24E1 B1C5 75EA 3C9F F752  A922 76BC 7FE4 EBFD 2D9E"
+    "A872 D42F 1660 890F 0E05  223E DD43 55EA AC11 19DE"
 
 /*
  * Definitions of three separate indexing schemes for colour palette
@@ -363,11 +363,12 @@ typedef enum {
     MBT_NOTHING,
     MBT_LEFT, MBT_MIDDLE, MBT_RIGHT,   /* `raw' button designations */
     MBT_SELECT, MBT_EXTEND, MBT_PASTE, /* `cooked' button designations */
-    MBT_WHEEL_UP, MBT_WHEEL_DOWN       /* mouse wheel */
+    MBT_WHEEL_UP, MBT_WHEEL_DOWN,      /* vertical mouse wheel */
+    MBT_WHEEL_LEFT, MBT_WHEEL_RIGHT    /* horizontal mouse wheel */
 } Mouse_Button;
 
 typedef enum {
-    MA_NOTHING, MA_CLICK, MA_2CLK, MA_3CLK, MA_DRAG, MA_RELEASE
+    MA_NOTHING, MA_CLICK, MA_2CLK, MA_3CLK, MA_DRAG, MA_RELEASE, MA_MOVE
 } Mouse_Action;
 
 /* Keyboard modifiers -- keys the user is actually holding down */
@@ -1292,7 +1293,7 @@ struct SeatVtable {
      * confirm_ssh_host_key above.
      */
     SeatPromptResult (*confirm_weak_crypto_primitive)(
-        Seat *seat, const char *algtype, const char *algname,
+        Seat *seat, SeatDialogText *text,
         void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 
     /*
@@ -1303,11 +1304,10 @@ struct SeatVtable {
      * This form is used in the case where we're using a host key
      * below the warning threshold because that's the best one we have
      * cached, but at least one host key algorithm *above* the
-     * threshold is available that we don't have cached. 'betteralgs'
-     * lists the better algorithm(s).
+     * threshold is available that we don't have cached.
      */
     SeatPromptResult (*confirm_weak_cached_hostkey)(
-        Seat *seat, const char *algname, const char *betteralgs,
+        Seat *seat, SeatDialogText *text,
         void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 
     /*
@@ -1443,15 +1443,15 @@ static inline SeatPromptResult seat_confirm_ssh_host_key(
 { return iseat.seat->vt->confirm_ssh_host_key(
         iseat.seat, h, p, ktyp, kstr, text, helpctx, cb, ctx); }
 static inline SeatPromptResult seat_confirm_weak_crypto_primitive(
-    InteractionReadySeat iseat, const char *atyp, const char *aname,
+    InteractionReadySeat iseat, SeatDialogText *text,
     void (*cb)(void *ctx, SeatPromptResult result), void *ctx)
 { return iseat.seat->vt->confirm_weak_crypto_primitive(
-        iseat.seat, atyp, aname, cb, ctx); }
+        iseat.seat, text, cb, ctx); }
 static inline SeatPromptResult seat_confirm_weak_cached_hostkey(
-    InteractionReadySeat iseat, const char *aname, const char *better,
+    InteractionReadySeat iseat, SeatDialogText *text,
     void (*cb)(void *ctx, SeatPromptResult result), void *ctx)
 { return iseat.seat->vt->confirm_weak_cached_hostkey(
-        iseat.seat, aname, better, cb, ctx); }
+        iseat.seat, text, cb, ctx); }
 static inline const SeatDialogPromptDescriptions *seat_prompt_descriptions(
     Seat *seat)
 { return seat->vt->prompt_descriptions(seat); }
@@ -1504,6 +1504,7 @@ struct SeatDialogPromptDescriptions {
     const char *hk_accept_action;
     const char *hk_connect_once_action;
     const char *hk_cancel_action, *hk_cancel_action_Participle;
+    const char *weak_accept_action, *weak_cancel_action;
 };
 
 /* In the utils subdir: print a message to the Seat which can't be
@@ -1536,10 +1537,10 @@ SeatPromptResult nullseat_confirm_ssh_host_key(
     char *keystr, SeatDialogText *text, HelpCtx helpctx,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 SeatPromptResult nullseat_confirm_weak_crypto_primitive(
-    Seat *seat, const char *algtype, const char *algname,
+    Seat *seat, SeatDialogText *text,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 SeatPromptResult nullseat_confirm_weak_cached_hostkey(
-    Seat *seat, const char *algname, const char *betteralgs,
+    Seat *seat, SeatDialogText *text,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 const SeatDialogPromptDescriptions *nullseat_prompt_descriptions(Seat *seat);
 bool nullseat_is_never_utf8(Seat *seat);
@@ -1572,10 +1573,10 @@ SeatPromptResult console_confirm_ssh_host_key(
     char *keystr, SeatDialogText *text, HelpCtx helpctx,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 SeatPromptResult console_confirm_weak_crypto_primitive(
-    Seat *seat, const char *algtype, const char *algname,
+    Seat *seat, SeatDialogText *text,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 SeatPromptResult console_confirm_weak_cached_hostkey(
-    Seat *seat, const char *algname, const char *betteralgs,
+    Seat *seat, SeatDialogText *text,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 StripCtrlChars *console_stripctrl_new(
     Seat *seat, BinarySink *bs_out, SeatInteractionContext sic);

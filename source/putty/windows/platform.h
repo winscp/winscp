@@ -237,10 +237,10 @@ SeatPromptResult win_seat_confirm_ssh_host_key(
     char *keystr, SeatDialogText *text, HelpCtx helpctx,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 SeatPromptResult win_seat_confirm_weak_crypto_primitive(
-    Seat *seat, const char *algtype, const char *algname,
+    Seat *seat, SeatDialogText *text,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 SeatPromptResult win_seat_confirm_weak_cached_hostkey(
-    Seat *seat, const char *algname, const char *betteralgs,
+    Seat *seat, SeatDialogText *text,
     void (*callback)(void *ctx, SeatPromptResult result), void *ctx);
 const SeatDialogPromptDescriptions *win_seat_prompt_descriptions(Seat *seat);
 
@@ -734,9 +734,13 @@ char *get_jumplist_registry_entries(void);
 #define CLIPUI_DEFAULT_INS CLIPUI_EXPLICIT
 
 /* In utils */
-HKEY open_regkey_fn(bool create, HKEY base, const char *path, ...);
-#define open_regkey(create, base, ...) \
-    open_regkey_fn(create, base, __VA_ARGS__, (const char *)NULL)
+HKEY open_regkey_fn(bool create, bool write, HKEY base, const char *path, ...);
+#define open_regkey_ro(base, ...) \
+    open_regkey_fn(false, false, base, __VA_ARGS__, (const char *)NULL)
+#define open_regkey_rw(base, ...) \
+    open_regkey_fn(false, true, base, __VA_ARGS__, (const char *)NULL)
+#define create_regkey(base, ...) \
+    open_regkey_fn(true, true, base, __VA_ARGS__, (const char *)NULL)
 void close_regkey(HKEY key);
 void del_regkey(HKEY key, const char *name);
 char *enum_regkey(HKEY key, int index);

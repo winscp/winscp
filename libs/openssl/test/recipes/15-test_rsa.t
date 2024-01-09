@@ -1,7 +1,7 @@
 #! /usr/bin/env perl
-# Copyright 2015-2016 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2015-2023 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
+# Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
 # in the file LICENSE in the source distribution or at
 # https://www.openssl.org/source/license.html
@@ -16,32 +16,64 @@ use OpenSSL::Test::Utils;
 
 setup("test_rsa");
 
-plan tests => 6;
+plan tests => 14;
 
-require_ok(srctop_file('test','recipes','tconversion.pl'));
+require_ok(srctop_file('test', 'recipes', 'tconversion.pl'));
 
 ok(run(test(["rsa_test"])), "running rsatest");
 
-ok(run(app([ 'openssl', 'rsa', '-check', '-in', srctop_file('test', 'testrsa.pem'), '-noout'])), "rsa -check");
+run_rsa_tests("pkey");
 
- SKIP: {
-     skip "Skipping rsa conversion test", 3
-	 if disabled("rsa");
+run_rsa_tests("rsa");
 
-     subtest 'rsa conversions -- private key' => sub {
-	 tconversion("rsa", srctop_file("test","testrsa.pem"));
-     };
-     subtest 'rsa conversions -- private key PKCS#8' => sub {
-	 tconversion("rsa", srctop_file("test","testrsa.pem"), "pkey");
-     };
-}
+sub run_rsa_tests {
+    my $cmd = shift;
 
- SKIP: {
-     skip "Skipping msblob conversion test", 1
-	 if disabled("rsa") || disabled("dsa");
+    ok(run(app([ 'openssl', $cmd, '-check', '-in', srctop_file('test', 'testrsa.pem'), '-noout'])),
+           "$cmd -check" );
 
-     subtest 'rsa conversions -- public key' => sub {
-	 tconversion("msb", srctop_file("test","testrsapub.pem"), "rsa",
-		     "-pubin", "-pubout");
-     };
+    SKIP: {
+        skip "Skipping Deprecated rsa_x931_test", 1 if disabled("deprecated-3.0");
+        ok(run(test(['rsa_x931_test'])), "RSA X931 test");
+    };
+
+    SKIP: {
+         skip "Skipping $cmd conversion test", 3
+             if disabled("rsa");
+
+         subtest "$cmd conversions -- private key" => sub {
+             tconversion( -type => $cmd, -prefix => "$cmd-priv",
+                          -in => srctop_file("test", "testrsa.pem") );
+         };
+         subtest "$cmd conversions -- private key PKCS#8" => sub {
+             tconversion( -type => $cmd, -prefix => "$cmd-pkcs8",
+                          -in => srctop_file("test", "testrsa.pem"),
+                          -args => ["pkey"] );
+         };
+    }
+
+    SKIP: {
+         skip "Skipping msblob conversion test", 1
+             if disabled($cmd) || $cmd eq 'pkey';
+
+         subtest "$cmd conversions -- public key" => sub {
+             tconversion( -type => 'msb', -prefix => "$cmd-msb-pub",
+                          -in => srctop_file("test", "testrsapub.pem"),
+                          -args => ["rsa", "-pubin", "-pubout"] );
+         };
+    }
+    SKIP: {
+         skip "Skipping PVK conversion test", 1
+             if disabled($cmd) || $cmd eq 'pkey' || disabled("rc4")
+                || disabled ("legacy");
+
+         subtest "$cmd conversions -- private key" => sub {
+             tconversion( -type => 'pvk', -prefix => "$cmd-pvk",
+                          -in => srctop_file("test", "testrsa.pem"),
+                          -args => ["rsa", "-passin", "pass:testpass",
+                                    "-passout", "pass:testpass",
+                                    "-provider", "default",
+                                    "-provider", "legacy"] );
+         };
+    }
 }
