@@ -1648,6 +1648,7 @@ TSshHostCADialog::TSshHostCADialog(bool Add) :
   PublicKeyLabel = new TEdit(this);
   ReadOnlyControl(PublicKeyLabel);
   PublicKeyLabel->BorderStyle = bsNone;
+  PublicKeyLabel->TabStop = false;
   AddEditLikeControl(PublicKeyLabel, NULL);
 
   ValidityExpressionEdit = new TEdit(this);
