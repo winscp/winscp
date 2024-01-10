@@ -446,6 +446,13 @@ void CTransferSocket::OnClose(int nErrorCode)
 
   OnReceive(0);
   CloseAndEnsureSendClose(0);
+  // Report pending transfer
+  // (particularly during ascii downloads, when the transferred data might be larger than expected,
+  // though possibly also when downloading a growing file)
+  if (FLAGSET(m_nMode, CSMODE_DOWNLOAD))
+  {
+    UpdateStatusBar(true);
+  }
 }
 
 int CTransferSocket::CheckForTimeout(int delay)
