@@ -3243,7 +3243,6 @@ void __fastcall TSFTPFileSystem::DoStartup()
           FTerminal->LogEvent(FORMAT(L"Unsupported %s extension version %s", (ExtensionName, LimitsVersion)));
         }
       }
-      // See the comment in SupportsExtension
       else if ((ExtensionName == SFTP_EXT_COPY_FILE) ||
                (ExtensionName == SFTP_EXT_COPY_DATA) ||
                (ExtensionName == SFTP_EXT_SPACE_AVAILABLE) ||
