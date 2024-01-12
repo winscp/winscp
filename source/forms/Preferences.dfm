@@ -1647,7 +1647,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 345
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Use multiple connections for single files abo&ve:'
+            Caption = 'Use multiple connections for single files abo&ve:'
             TabOrder = 4
             OnClick = ControlChange
           end
