@@ -336,6 +336,7 @@ void __fastcall TSessionData::DefaultSettings()
   Ftps = ftpsNone;
   MinTlsVersion = tlsDefaultMin;
   MaxTlsVersion = tlsMax;
+  CompleteTlsShutdown = asAuto;
   FtpListAll = asAuto;
   FtpHost = asAuto;
   FtpWorkFromCwd = asAuto;
@@ -524,6 +525,7 @@ void __fastcall TSessionData::NonPersistant()
   \
   PROPERTY(MinTlsVersion); \
   PROPERTY(MaxTlsVersion); \
+  PROPERTY(CompleteTlsShutdown); \
   \
   PROPERTY(WinTitle); \
   \
@@ -927,6 +929,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
 
   MinTlsVersion = static_cast<TTlsVersion>(Storage->ReadInteger(L"MinTlsVersion", MinTlsVersion));
   MaxTlsVersion = static_cast<TTlsVersion>(Storage->ReadInteger(L"MaxTlsVersion", MaxTlsVersion));
+  CompleteTlsShutdown = Storage->ReadEnum(L"CompleteTlsShutdown", CompleteTlsShutdown, AutoSwitchMapping);
 
   LOAD_PASSWORD(EncryptKey, L"EncryptKeyPlain");
 
@@ -1234,6 +1237,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
 
     WRITE_DATA(Integer, MinTlsVersion);
     WRITE_DATA(Integer, MaxTlsVersion);
+    WRITE_DATA(Integer, CompleteTlsShutdown);
 
     WRITE_DATA(Bool, WebDavLiberalEscaping);
     WRITE_DATA(Bool, WebDavAuthLegacy);
@@ -4495,6 +4499,11 @@ void __fastcall TSessionData::SetMaxTlsVersion(TTlsVersion value)
 void __fastcall TSessionData::SetLogicalHostName(UnicodeString value)
 {
   SET_SESSION_PROPERTY(LogicalHostName);
+}
+//---------------------------------------------------------------------------
+void TSessionData::SetCompleteTlsShutdown(TAutoSwitch value)
+{
+  SET_SESSION_PROPERTY(CompleteTlsShutdown);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetFtpListAll(TAutoSwitch value)

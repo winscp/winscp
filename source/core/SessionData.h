@@ -228,6 +228,7 @@ private:
   TFtps FFtps;
   TTlsVersion FMinTlsVersion;
   TTlsVersion FMaxTlsVersion;
+  TAutoSwitch FCompleteTlsShutdown;
   TAutoSwitch FNotUtf;
   int FInternalEditorEncoding;
   UnicodeString FS3DefaultRegion;
@@ -421,6 +422,7 @@ private:
   void __fastcall SetFtps(TFtps value);
   void __fastcall SetMinTlsVersion(TTlsVersion value);
   void __fastcall SetMaxTlsVersion(TTlsVersion value);
+  void SetCompleteTlsShutdown(TAutoSwitch value);
   void __fastcall SetNotUtf(TAutoSwitch value);
   void __fastcall SetInternalEditorEncoding(int value);
   void __fastcall SetS3DefaultRegion(UnicodeString value);
@@ -705,6 +707,7 @@ public:
   __property TFtps Ftps = { read = FFtps, write = SetFtps };
   __property TTlsVersion MinTlsVersion = { read = FMinTlsVersion, write = SetMinTlsVersion };
   __property TTlsVersion MaxTlsVersion = { read = FMaxTlsVersion, write = SetMaxTlsVersion };
+  __property TAutoSwitch CompleteTlsShutdown = { read = FCompleteTlsShutdown, write = SetCompleteTlsShutdown };
   __property UnicodeString LogicalHostName = { read = FLogicalHostName, write = SetLogicalHostName };
   __property TAutoSwitch NotUtf = { read = FNotUtf, write = SetNotUtf };
   __property int InternalEditorEncoding = { read = FInternalEditorEncoding, write = SetInternalEditorEncoding };

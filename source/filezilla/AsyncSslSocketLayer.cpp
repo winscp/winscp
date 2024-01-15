@@ -1015,8 +1015,9 @@ BOOL CAsyncSslSocketLayer::ShutDown(int nHow /*=sends*/)
       // Without bi-directional shutdown, file uploads are incomplete on some servers
       res = SSL_shutdown(m_ssl);
 
-      if ((SSL_version(m_ssl) <= TLS1_2_VERSION) ||
-          !GetSocketOptionVal(OPTION_MPEXT_COMPLETE_TLS_SHUTDOWN))
+      int completeShutdown = GetSocketOptionVal(OPTION_MPEXT_COMPLETE_TLS_SHUTDOWN);
+      if ((completeShutdown < 0) ||
+          ((completeShutdown == 0) && (SSL_version(m_ssl) <= TLS1_2_VERSION)))
       {
         LogSocketMessageRaw(FZ_LOG_INFO, L"Not waiting for complete TLS shutdown");
         res = 0;
