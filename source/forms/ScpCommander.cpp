@@ -2961,27 +2961,30 @@ void TScpCommanderForm::RestoreFocus(void * Focus)
   if ((ControlFocus == LocalDirView) || (ControlFocus == LocalDriveView))
   {
     DebugAssert(ActiveControl == ControlFocus);
-    DebugAssert(ControlFocus->Enabled);
+    DebugAssert(ControlFocus->CanFocus());
     // noop
   }
   else if ((ControlFocus == RemoteDirView) || (ControlFocus == OtherLocalDirView))
   {
-    if (DirView(osOther)->Enabled)
+    TCustomDirView * OtherDirView = DirView(osOther);
+    if (OtherDirView->CanFocus())
     {
-      ControlFocus = DirView(osOther);
+      ControlFocus = OtherDirView;
     }
     else
     {
+      DebugAssert(LocalDirView->CanFocus());
       ControlFocus = LocalDirView;
     }
   }
   else if ((ControlFocus == RemoteDriveView) || (ControlFocus == OtherLocalDriveView))
   {
-    if (DriveView(osOther)->Enabled)
+    TCustomDriveView * OtherDriveView = DriveView(osOther);
+    if (OtherDriveView->CanFocus())
     {
-      ControlFocus = DriveView(osOther);
+      ControlFocus = OtherDriveView;
     }
-    else if (LocalDriveView->Visible)
+    else if (LocalDriveView->CanFocus())
     {
       ControlFocus = LocalDriveView;
     }
@@ -2989,7 +2992,7 @@ void TScpCommanderForm::RestoreFocus(void * Focus)
     {
       // Switching to a disconnected session with local drive view hidden -
       // fallback to the local dir view (should always be visible)
-      DebugAssert(LocalDirView->Visible);
+      DebugAssert(LocalDirView->CanFocus());
       ControlFocus = LocalDirView;
     }
   }
@@ -2998,7 +3001,7 @@ void TScpCommanderForm::RestoreFocus(void * Focus)
     ControlFocus = NULL;
   }
 
-  if (ControlFocus != NULL)
+  if ((ControlFocus != NULL) && DebugAlwaysTrue(ControlFocus->CanFocus()))
   {
     ControlFocus->SetFocus();
   }
