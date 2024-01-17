@@ -155,6 +155,7 @@
 #define SFTP_EXT_COPY_DATA L"copy-data"
 #define SFTP_EXT_LIMITS L"limits@openssh.com"
 #define SFTP_EXT_LIMITS_VALUE_V1 L"1"
+#define SFTP_EXT_POSIX_RENAME L"posix-rename@openssh.com"
 //---------------------------------------------------------------------------
 #define OGQ_LIST_OWNERS 0x01
 #define OGQ_LIST_GROUPS 0x02
@@ -3246,7 +3247,8 @@ void __fastcall TSFTPFileSystem::DoStartup()
       else if ((ExtensionName == SFTP_EXT_COPY_FILE) ||
                (ExtensionName == SFTP_EXT_COPY_DATA) ||
                (ExtensionName == SFTP_EXT_SPACE_AVAILABLE) ||
-               (ExtensionName == SFTP_EXT_CHECK_FILE))
+               (ExtensionName == SFTP_EXT_CHECK_FILE) ||
+               (ExtensionName == SFTP_EXT_POSIX_RENAME))
       {
         FTerminal->LogEvent(FORMAT(L"Supports extension %s=%s", (ExtensionName, ExtensionDisplayData)));
       }
@@ -3852,7 +3854,12 @@ void __fastcall TSFTPFileSystem::DeleteFile(const UnicodeString FileName,
 void __fastcall TSFTPFileSystem::RenameFile(
   const UnicodeString & FileName, const TRemoteFile *, const UnicodeString & NewName, bool DebugUsedArg(Overwrite))
 {
-  TSFTPPacket Packet(SSH_FXP_RENAME);
+  bool UsePosixRename = FTerminal->SessionData->UsePosixRename;
+  TSFTPPacket Packet(UsePosixRename ? SSH_FXP_EXTENDED : SSH_FXP_RENAME);
+  if (UsePosixRename)
+  {
+    Packet.AddString(SFTP_EXT_POSIX_RENAME);
+  }
   UnicodeString RealName = LocalCanonify(FileName);
   bool Encrypted = FTerminal->IsFileEncrypted(RealName);
   AddPathString(Packet, RealName);
@@ -3867,7 +3874,7 @@ void __fastcall TSFTPFileSystem::RenameFile(
     TargetName = LocalCanonify(NewName);
   }
   AddPathString(Packet, TargetName, Encrypted);
-  if (FVersion >= 5)
+  if (UsePosixRename && (FVersion >= 5))
   {
     Packet.AddCardinal(0);
   }

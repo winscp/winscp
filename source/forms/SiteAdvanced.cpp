@@ -197,6 +197,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     // hide selection, which is wrongly shown initially even when the box has not focus
     SftpServerEdit->SelLength = 0;
     AllowScpFallbackCheck->Checked = (FSessionData->FSProtocol == fsSFTP);
+    UsePosixRenameCheck->Checked = FSessionData->UsePosixRename;
 
     SFTPMaxVersionCombo->ItemIndex = FSessionData->SFTPMaxVersion;
 
@@ -627,6 +628,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
       SessionData->FSProtocol = fsSFTPonly;
     }
   }
+  FSessionData->UsePosixRename = UsePosixRenameCheck->Checked;
 
   FSessionData->SFTPRealPath = ComboAutoSwitchSave(SFTPRealPathCombo);
   #define SAVE_SFTP_BUG_COMBO(BUG) SessionData->SFTPBug[sb ## BUG] = ComboAutoSwitchSave(SFTPBug ## BUG ## Combo);

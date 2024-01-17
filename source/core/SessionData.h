@@ -191,6 +191,7 @@ private:
   int FSFTPMaxVersion;
   unsigned long FSFTPMaxPacketSize;
   TAutoSwitch FSFTPRealPath;
+  bool FUsePosixRename;
   TDSTMode FDSTMode;
   TAutoSwitch FSFTPBugs[SFTP_BUG_COUNT];
   bool FDeleteToRecycleBin;
@@ -378,6 +379,7 @@ private:
   void __fastcall SetSFTPMaxVersion(int value);
   void __fastcall SetSFTPMaxPacketSize(unsigned long value);
   void __fastcall SetSFTPRealPath(TAutoSwitch value);
+  void SetUsePosixRename(bool value);
   void __fastcall SetSFTPBug(TSftpBug Bug, TAutoSwitch value);
   TAutoSwitch __fastcall GetSFTPBug(TSftpBug Bug) const;
   void __fastcall SetSCPLsFullTime(TAutoSwitch value);
@@ -668,6 +670,7 @@ public:
   __property int SFTPMaxVersion = { read = FSFTPMaxVersion, write = SetSFTPMaxVersion };
   __property unsigned long SFTPMaxPacketSize = { read = FSFTPMaxPacketSize, write = SetSFTPMaxPacketSize };
   __property TAutoSwitch SFTPRealPath = { read = FSFTPRealPath, write = SetSFTPRealPath };
+  __property bool UsePosixRename = { read = FUsePosixRename, write = SetUsePosixRename };
   __property TAutoSwitch SFTPBug[TSftpBug Bug]  = { read=GetSFTPBug, write=SetSFTPBug };
   __property TAutoSwitch SCPLsFullTime = { read = FSCPLsFullTime, write = SetSCPLsFullTime };
   __property TAutoSwitch FtpListAll = { read = FFtpListAll, write = SetFtpListAll };
