@@ -1839,7 +1839,7 @@ void __fastcall TFTPFileSystem::DoStartup()
     UnicodeString NameFact = L"Name";
     UnicodeString VersionFact = L"Version";
     UnicodeString Command =
-      FORMAT(L"%s %s=%s;%s=%s", (CsidCommand, NameFact, AppNameString(), VersionFact, FTerminal->Configuration->Version));
+      FORMAT(L"%s %s=%s;%s=%s;", (CsidCommand, NameFact, AppNameString(), VersionFact, FTerminal->Configuration->Version));
     SendCommand(Command);
     TStrings * Response = NULL;
     GotReply(WaitForCommandReply(), REPLY_2XX_CODE, EmptyStr, NULL, &Response);
