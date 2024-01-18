@@ -1842,10 +1842,24 @@ void __fastcall TFTPFileSystem::DoStartup()
       FORMAT(L"%s %s=%s;%s=%s;", (CsidCommand, NameFact, AppNameString(), VersionFact, FTerminal->Configuration->Version));
     SendCommand(Command);
     TStrings * Response = NULL;
-    GotReply(WaitForCommandReply(), REPLY_2XX_CODE, EmptyStr, NULL, &Response);
     std::unique_ptr<TStrings> ResponseOwner(Response);
-    // Not using REPLY_SINGLE_LINE to make it robust
-    if (Response->Count == 1)
+    try
+    {
+      GotReply(WaitForCommandReply(), REPLY_2XX_CODE | REPLY_SINGLE_LINE, EmptyStr, NULL, &Response);
+      ResponseOwner.reset(Response);
+    }
+    catch (...)
+    {
+      if (FTerminal->Active)
+      {
+        FTerminal->LogEvent(FORMAT(L"%s command failed", (CsidCommand)));
+      }
+      else
+      {
+        throw;
+      }
+    }
+    if (ResponseOwner.get() != NULL)
     {
       UnicodeString ResponseText = Response->Strings[0];
       UnicodeString Name, Version;
