@@ -1358,7 +1358,11 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       ADF(L"SFTP Server: %s", ((Data->SftpServer.IsEmpty()? UnicodeString(L"default") : Data->SftpServer)));
       if (Data->SFTPRealPath != asAuto)
       {
-        ADF(L"SFTP Real Path: %s", (EnumName(Data->SFTPRealPath, AutoSwitchNames)));
+        ADF(L"SFTP Real path: %s", (EnumName(Data->SFTPRealPath, AutoSwitchNames)));
+      }
+      if (Data->UsePosixRename)
+      {
+        ADF(L"Use POSIX rename: %s", (BooleanToEngStr(Data->UsePosixRename)));
       }
     }
     bool FtpsOn = false;

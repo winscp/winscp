@@ -1839,13 +1839,27 @@ void __fastcall TFTPFileSystem::DoStartup()
     UnicodeString NameFact = L"Name";
     UnicodeString VersionFact = L"Version";
     UnicodeString Command =
-      FORMAT(L"%s %s=%s;%s=%s", (CsidCommand, NameFact, AppNameString(), VersionFact, FTerminal->Configuration->Version));
+      FORMAT(L"%s %s=%s;%s=%s;", (CsidCommand, NameFact, AppNameString(), VersionFact, FTerminal->Configuration->Version));
     SendCommand(Command);
     TStrings * Response = NULL;
-    GotReply(WaitForCommandReply(), REPLY_2XX_CODE, EmptyStr, NULL, &Response);
     std::unique_ptr<TStrings> ResponseOwner(Response);
-    // Not using REPLY_SINGLE_LINE to make it robust
-    if (Response->Count == 1)
+    try
+    {
+      GotReply(WaitForCommandReply(), REPLY_2XX_CODE | REPLY_SINGLE_LINE, EmptyStr, NULL, &Response);
+      ResponseOwner.reset(Response);
+    }
+    catch (...)
+    {
+      if (FTerminal->Active)
+      {
+        FTerminal->LogEvent(FORMAT(L"%s command failed", (CsidCommand)));
+      }
+      else
+      {
+        throw;
+      }
+    }
+    if (ResponseOwner.get() != NULL)
     {
       UnicodeString ResponseText = Response->Strings[0];
       UnicodeString Name, Version;
@@ -2862,10 +2876,17 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_MPEXT_COMPLETE_TLS_SHUTDOWN:
-      // As of FileZilla Server 1.6.1 this does not seem to be needed. It's still needed with 1.5.1.
-      // It was possibly fixed by 1.6.0 (2022-12-06) change:
-      // Fixed an issue in the networking code when dealing with TLS close_notify alerts
-      Result = FFileZilla ? FALSE : TRUE;
+      if (Data->CompleteTlsShutdown == asAuto)
+      {
+        // As of FileZilla Server 1.6.1 this does not seem to be needed. It's still needed with 1.5.1.
+        // It was possibly fixed by 1.6.0 (2022-12-06) change:
+        // Fixed an issue in the networking code when dealing with TLS close_notify alerts
+        Result = FFileZilla ? -1 : 0;
+      }
+      else
+      {
+        Result = (Data->CompleteTlsShutdown == asOn) ? 1 : -1;
+      }
       break;
 
     case OPTION_MPEXT_WORK_FROM_CWD:

@@ -284,6 +284,7 @@ __published:
   TFilenameEdit *DetachedCertificateEdit;
   TCheckBox *S3RequesterPaysCheck;
   TRadioButton *FtpPingDirectoryListingButton;
+  TCheckBox *UsePosixRenameCheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);

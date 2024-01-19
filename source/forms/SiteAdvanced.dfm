@@ -556,7 +556,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           382)
         object SFTPBugsGroupBox: TGroupBox
           Left = 0
-          Top = 130
+          Top = 153
           Width = 393
           Height = 70
           Anchors = [akLeft, akTop, akRight]
@@ -604,13 +604,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 0
           Top = 6
           Width = 393
-          Height = 118
+          Height = 141
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Protocol options'
           TabOrder = 0
           DesignSize = (
             393
-            118)
+            141)
           object Label34: TLabel
             Left = 12
             Top = 44
@@ -686,6 +686,16 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 2
+          end
+          object UsePosixRenameCheck: TCheckBox
+            Left = 12
+            Top = 113
+            Width = 369
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Use POSIX rename'
+            TabOrder = 4
+            OnClick = DataChange
           end
         end
       end

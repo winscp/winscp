@@ -308,6 +308,7 @@ void __fastcall TSessionData::DefaultSettings()
   SFTPMaxVersion = ::SFTPMaxVersion;
   SFTPMaxPacketSize = 0;
   SFTPRealPath = asAuto;
+  UsePosixRename = false;
 
   for (unsigned int Index = 0; Index < LENOF(FSFTPBugs); Index++)
   {
@@ -336,6 +337,7 @@ void __fastcall TSessionData::DefaultSettings()
   Ftps = ftpsNone;
   MinTlsVersion = tlsDefaultMin;
   MaxTlsVersion = tlsMax;
+  CompleteTlsShutdown = asAuto;
   FtpListAll = asAuto;
   FtpHost = asAuto;
   FtpWorkFromCwd = asAuto;
@@ -489,6 +491,7 @@ void __fastcall TSessionData::NonPersistant()
   PROPERTY(SFTPMaxVersion); \
   PROPERTY(SFTPMaxPacketSize); \
   PROPERTY(SFTPRealPath); \
+  PROPERTY(UsePosixRename); \
   \
   for (unsigned int Index = 0; Index < LENOF(FSFTPBugs); Index++) \
   { \
@@ -524,6 +527,7 @@ void __fastcall TSessionData::NonPersistant()
   \
   PROPERTY(MinTlsVersion); \
   PROPERTY(MaxTlsVersion); \
+  PROPERTY(CompleteTlsShutdown); \
   \
   PROPERTY(WinTitle); \
   \
@@ -882,6 +886,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
   SFTPUploadQueue = Storage->ReadInteger(L"SFTPUploadQueue", SFTPUploadQueue);
   SFTPListingQueue = Storage->ReadInteger(L"SFTPListingQueue", SFTPListingQueue);
   SFTPRealPath = Storage->ReadEnum(L"SFTPRealPath", SFTPRealPath, AutoSwitchMapping);
+  UsePosixRename = Storage->ReadBool(L"UsePosixRename", UsePosixRename);
 
   Color = Storage->ReadInteger(L"Color", Color);
 
@@ -927,6 +932,7 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
 
   MinTlsVersion = static_cast<TTlsVersion>(Storage->ReadInteger(L"MinTlsVersion", MinTlsVersion));
   MaxTlsVersion = static_cast<TTlsVersion>(Storage->ReadInteger(L"MaxTlsVersion", MaxTlsVersion));
+  CompleteTlsShutdown = Storage->ReadEnum(L"CompleteTlsShutdown", CompleteTlsShutdown, AutoSwitchMapping);
 
   LOAD_PASSWORD(EncryptKey, L"EncryptKeyPlain");
 
@@ -1204,6 +1210,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(Integer, SFTPUploadQueue);
     WRITE_DATA(Integer, SFTPListingQueue);
     WRITE_DATA(Integer, SFTPRealPath);
+    WRITE_DATA(Bool, UsePosixRename);
 
     WRITE_DATA(Integer, Color);
 
@@ -1234,6 +1241,7 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
 
     WRITE_DATA(Integer, MinTlsVersion);
     WRITE_DATA(Integer, MaxTlsVersion);
+    WRITE_DATA(Integer, CompleteTlsShutdown);
 
     WRITE_DATA(Bool, WebDavLiberalEscaping);
     WRITE_DATA(Bool, WebDavAuthLegacy);
@@ -4313,6 +4321,11 @@ void __fastcall TSessionData::SetSFTPRealPath(TAutoSwitch value)
   SET_SESSION_PROPERTY(SFTPRealPath);
 }
 //---------------------------------------------------------------------
+void TSessionData::SetUsePosixRename(bool value)
+{
+  SET_SESSION_PROPERTY(UsePosixRename);
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetSFTPBug(TSftpBug Bug, TAutoSwitch value)
 {
   DebugAssert(Bug >= 0 && static_cast<unsigned int>(Bug) < LENOF(FSFTPBugs));
@@ -4495,6 +4508,11 @@ void __fastcall TSessionData::SetMaxTlsVersion(TTlsVersion value)
 void __fastcall TSessionData::SetLogicalHostName(UnicodeString value)
 {
   SET_SESSION_PROPERTY(LogicalHostName);
+}
+//---------------------------------------------------------------------------
+void TSessionData::SetCompleteTlsShutdown(TAutoSwitch value)
+{
+  SET_SESSION_PROPERTY(CompleteTlsShutdown);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetFtpListAll(TAutoSwitch value)
