@@ -5900,7 +5900,10 @@ void __fastcall TCustomScpExplorerForm::DoDirViewExecFile(TObject * Sender,
       }
       else
       {
-        ExecuteFileOperation(foCopy, Side, true, !WinConfiguration->CopyOnDoubleClickConfirmation);
+        if (HasActiveTerminal())
+        {
+          ExecuteFileOperation(foCopy, Side, true, !WinConfiguration->CopyOnDoubleClickConfirmation);
+        }
       }
     }
     __finally
