@@ -11409,7 +11409,8 @@ bool __fastcall TCustomScpExplorerForm::DoesClipboardContainOurFiles()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ClipboardStop()
 {
-  RemoveDir(ApiPath(FClipboardFakeDirectory));
+  bool Deleted = RemoveDir(ApiPath(FClipboardFakeDirectory));
+  AppLogFmt(L"Clearing clipboard, deleted clipboard temporary folder \"%s\" - %d", (FClipboardFakeDirectory, int(Deleted)));
   FClipboardFakeDirectory = UnicodeString();
   FClipboardTerminal = NULL;
   if (FDownloadingFromClipboard)
@@ -11452,6 +11453,7 @@ void TCustomScpExplorerForm::PasteFiles()
     FClipboardPasteTarget = EmptyStr;
     // Can fail as it can be e.g. locked by AV, so we retry that later
     bool Removed = RemoveDir(ApiPath(Target));
+    AppLogFmt(L"First attempt to delete pasted fake clipboard directory \"%s\" - %d", (Target, int(Removed)));
 
     try
     {
@@ -11468,7 +11470,8 @@ void TCustomScpExplorerForm::PasteFiles()
     {
       if (!Removed)
       {
-        RemoveDir(ApiPath(Target));
+        Removed = RemoveDir(ApiPath(Target));
+        AppLogFmt(L"Second attempt to delete pasted fake clipboard directory - %d", (Target, int(Removed)));
       }
     }
   }
