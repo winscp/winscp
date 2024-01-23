@@ -479,7 +479,7 @@ HKEY open_regkey_fn_winscp(bool Create, bool Write, HKEY Key, const char * Path,
   HKEY Result;
   if (PuttyRegistryMode == prmCollect)
   {
-    DebugAssert(Write && Create);
+    // Note that for prmCollect even !Write mode is supported (behaving like prmFail) - needed for do_defaults
     Result = reinterpret_cast<HKEY>(1);
   }
   else if (PuttyRegistryMode == prmFail)
