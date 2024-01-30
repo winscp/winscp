@@ -375,6 +375,8 @@ void TThemePageControl::DrawDropDown(HDC DC, int Radius, int X, int Y, COLORREF 
   Polygon(DC, Points, LENOF(Points));
   SelectObject(DC, OldPen);
   SelectObject(DC, OldBrush);
+  DeleteObject(Brush);
+  DeleteObject(Pen);
 }
 //----------------------------------------------------------------------------------------------------------
 // draw tab item context: possible icon and text
