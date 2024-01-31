@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -225,7 +225,7 @@ static const PROV_CIPHER_HW aes_xts_rv32i_zbkb_zknd_zkne = {                   \
 # define PROV_CIPHER_HW_select_xts()                                           \
 if (RISCV_HAS_ZBKB_AND_ZKND_AND_ZKNE())                                        \
     return &aes_xts_rv32i_zbkb_zknd_zkne;                                      \
-if (RISCV_HAS_ZKND_ZKNE())                                                     \
+if (RISCV_HAS_ZKND_AND_ZKNE())                                                 \
     return &aes_xts_rv32i_zknd_zkne;
 # else
 /* The generic case */
