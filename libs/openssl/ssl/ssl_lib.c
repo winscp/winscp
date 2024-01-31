@@ -340,8 +340,19 @@ static int dane_tlsa_add(SSL_DANE *dane,
             }
 
             if ((DANETLS_USAGE_BIT(usage) & DANETLS_TA_MASK) == 0) {
+                /*
+                 * The Full(0) certificate decodes to a seemingly valid X.509
+                 * object with a plausible key, so the TLSA record is well
+                 * formed.  However, we don't actually need the certifiate for
+                 * usages PKIX-EE(1) or DANE-EE(3), because at least the EE
+                 * certificate is always presented by the peer.  We discard the
+                 * certificate, and just use the TLSA data as an opaque blob
+                 * for matching the raw presented DER octets.
+                 *
+                 * DO NOT FREE `t` here, it will be added to the TLSA record
+                 * list below!
+                 */
                 X509_free(cert);
-                tlsa_free(t);
                 break;
             }
 
@@ -6012,6 +6023,7 @@ uint64_t SSL_set_options(SSL *s, uint64_t op)
 
     /* Ignore return value */
     sc->rlayer.rrlmethod->set_options(sc->rlayer.rrl, options);
+    sc->rlayer.wrlmethod->set_options(sc->rlayer.wrl, options);
 
     return sc->options;
 }
@@ -6024,6 +6036,7 @@ uint64_t SSL_CTX_clear_options(SSL_CTX *ctx, uint64_t op)
 uint64_t SSL_clear_options(SSL *s, uint64_t op)
 {
     SSL_CONNECTION *sc = SSL_CONNECTION_FROM_SSL(s);
+    OSSL_PARAM options[2], *opts = options;
 
 #ifndef OPENSSL_NO_QUIC
     if (IS_QUIC(s))
@@ -6033,7 +6046,17 @@ uint64_t SSL_clear_options(SSL *s, uint64_t op)
     if (sc == NULL)
         return 0;
 
-    return sc->options &= ~op;
+    sc->options &= ~op;
+
+    *opts++ = OSSL_PARAM_construct_uint64(OSSL_LIBSSL_RECORD_LAYER_PARAM_OPTIONS,
+                                          &sc->options);
+    *opts = OSSL_PARAM_construct_end();
+
+    /* Ignore return value */
+    sc->rlayer.rrlmethod->set_options(sc->rlayer.rrl, options);
+    sc->rlayer.wrlmethod->set_options(sc->rlayer.wrl, options);
+
+    return sc->options;
 }
 
 STACK_OF(X509) *SSL_get0_verified_chain(const SSL *s)
@@ -6056,6 +6079,8 @@ IMPLEMENT_OBJ_BSEARCH_GLOBAL_CMP_FN(SSL_CIPHER, SSL_CIPHER, ssl_cipher_id);
  * If |dst| points to a NULL pointer, a new stack will be created and owned by
  * the caller.
  * Returns the number of SCTs moved, or a negative integer if an error occurs.
+ * The |dst| stack is created and possibly partially populated even in case
+ * of error, likewise the |src| stack may be left in an intermediate state.
  */
 static int ct_move_scts(STACK_OF(SCT) **dst, STACK_OF(SCT) *src,
                         sct_source_t origin)
@@ -6075,15 +6100,14 @@ static int ct_move_scts(STACK_OF(SCT) **dst, STACK_OF(SCT) *src,
         if (SCT_set_source(sct, origin) != 1)
             goto err;
 
-        if (sk_SCT_push(*dst, sct) <= 0)
+        if (!sk_SCT_push(*dst, sct))
             goto err;
         scts_moved += 1;
     }
 
     return scts_moved;
  err:
-    if (sct != NULL)
-        sk_SCT_push(src, sct);  /* Put the SCT back */
+    SCT_free(sct);
     return -1;
 }
 

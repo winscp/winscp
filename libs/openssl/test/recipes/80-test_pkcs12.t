@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2016-2023 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2016-2024 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -9,7 +9,7 @@
 use strict;
 use warnings;
 
-use OpenSSL::Test qw/:DEFAULT srctop_file/;
+use OpenSSL::Test qw/:DEFAULT srctop_file with/;
 use OpenSSL::Test::Utils;
 
 use Encode;
@@ -54,7 +54,7 @@ if (eval { require Win32::API; 1; }) {
 }
 $ENV{OPENSSL_WIN32_UTF8}=1;
 
-plan tests => 24;
+plan tests => 28;
 
 # Test different PKCS#12 formats
 ok(run(test(["pkcs12_format_test"])), "test pkcs12 formats");
@@ -169,6 +169,27 @@ ok(grep(/Trusted key usage (Oracle)/, @pkcs12info) == 0,
     close DATA;
     ok(scalar @match > 0 ? 0 : 1, "test_export_pkcs12_outerr6_empty");
 }
+
+# Test some bad pkcs12 files
+my $bad1 = srctop_file("test", "recipes", "80-test_pkcs12_data", "bad1.p12");
+my $bad2 = srctop_file("test", "recipes", "80-test_pkcs12_data", "bad2.p12");
+my $bad3 = srctop_file("test", "recipes", "80-test_pkcs12_data", "bad3.p12");
+
+with({ exit_checker => sub { return shift == 1; } },
+     sub {
+        ok(run(app(["openssl", "pkcs12", "-in", $bad1, "-password", "pass:"])),
+           "test bad pkcs12 file 1");
+
+        ok(run(app(["openssl", "pkcs12", "-in", $bad1, "-password", "pass:",
+                    "-nomacver"])),
+           "test bad pkcs12 file 1 (nomacver)");
+
+        ok(run(app(["openssl", "pkcs12", "-in", $bad2, "-password", "pass:"])),
+           "test bad pkcs12 file 2");
+
+        ok(run(app(["openssl", "pkcs12", "-in", $bad3, "-password", "pass:"])),
+           "test bad pkcs12 file 3");
+     });
 
 # Test with Oracle Trusted Key Usage specified in openssl.cnf
 {

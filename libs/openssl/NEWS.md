@@ -20,6 +20,24 @@ OpenSSL Releases
 OpenSSL 3.2
 -----------
 
+### Major changes between OpenSSL 3.2.0 and OpenSSL 3.2.1 [30 Jan 2024]
+
+OpenSSL 3.2.1 is a security patch release. The most severe CVE fixed in this
+release is Low.
+
+This release incorporates the following bug fixes and mitigations:
+
+  * Fixed PKCS12 Decoding crashes
+    ([CVE-2024-0727])
+  * Fixed excessive time spent checking invalid RSA public keys
+    ([CVE-2023-6237])
+  * Fixed POLY1305 MAC implementation corrupting vector registers on PowerPC
+    CPUs which support PowerISA 2.07
+    ([CVE-2023-6129])
+  * Fixed excessive time spent in DH check / generation with large Q parameter
+    value
+    [(CVE-2023-5678)]
+
 ### Major changes between OpenSSL 3.1 and OpenSSL 3.2.0 [23 Nov 2023]
 
 OpenSSL 3.2.0 is a feature release adding significant new functionality to
@@ -106,11 +124,6 @@ tracker][issue tracker].
 
 OpenSSL 3.1
 -----------
-
-### Major changes between OpenSSL 3.1.4 and OpenSSL 3.1.5 [under development]
-
-  * Fix excessive time spent in DH check / generation with large Q parameter
-    value ([CVE-2023-5678])
 
 ### Major changes between OpenSSL 3.1.3 and OpenSSL 3.1.4 [24 Oct 2023]
 
@@ -1567,6 +1580,9 @@ OpenSSL 0.9.x
 
 <!-- Links -->
 
+[CVE-2024-0727]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-0727
+[CVE-2023-6237]: https://www.openssl.org/news/vulnerabilities.html#CVE-2023-6237
+[CVE-2023-6129]: https://www.openssl.org/news/vulnerabilities.html#CVE-2023-6129
 [CVE-2023-5678]: https://www.openssl.org/news/vulnerabilities.html#CVE-2023-5678
 [CVE-2023-5363]: https://www.openssl.org/news/vulnerabilities.html#CVE-2023-5363
 [CVE-2023-4807]: https://www.openssl.org/news/vulnerabilities.html#CVE-2023-4807
