@@ -246,14 +246,14 @@ void ne_ssl_cert_validity_time(const ne_ssl_certificate *cert,
  * identity does not match, or <0 if the certificate had no identity.
  * If 'identity' is non-NULL, store the malloc-allocated identity in
  * *identity.  Logic specified by RFC 2818 and RFC 3280. */
-static int check_identity(const struct host_info *server, X509 *cert,
+static int check_identity(const struct host_info *server, /*WINSCP*/ const char * realhost, X509 *cert,
                           char **identity)
 {
     STACK_OF(GENERAL_NAME) *names;
     int match = 0, found = 0;
     const char *hostname;
     
-    hostname = server ? server->hostname : "";
+    hostname = realhost ? realhost : server ? server->hostname : "";
 
     names = X509_get_ext_d2i(cert, NID_subject_alt_name, NULL, NULL);
     if (names) {
@@ -346,7 +346,7 @@ static ne_ssl_certificate *populate_cert(ne_ssl_certificate *cert, X509 *x5)
     cert->subject = x5;
     /* Retrieve the cert identity; pass a dummy hostname to match. */
     cert->identity = NULL;
-    check_identity(NULL, x5, &cert->identity);
+    check_identity(NULL, /*WINSCP*/NULL, x5, &cert->identity);
     return cert;
 }
 
@@ -458,7 +458,7 @@ static int check_certificate(ne_session *sess, SSL *ssl, ne_ssl_certificate *cha
 
     /* Check certificate was issued to this server; pass URI of
      * server. */
-    ret = check_identity(&sess->server, cert, NULL);
+    ret = check_identity(&sess->server, /*WINSCP*/sess->realhost, cert, NULL);
     if (ret < 0) {
         ne_set_error(sess, _("Server certificate was missing commonName "
                              "attribute in subject name"));

@@ -481,17 +481,6 @@ void ne_set_realhost(ne_session *sess, const char *realhost)
     if (sess->realhost) ne_free(sess->realhost);
     sess->realhost = ne_strdup(realhost);
 }
-
-void ne_fill_real_server_uri(ne_session *sess, ne_uri *uri)
-{
-    ne_fill_server_uri(sess, uri);
-
-    if (sess->realhost)
-    {
-        ne_free(uri->host);
-        uri->host = ne_strdup(sess->realhost);
-    }
-}
 #endif
 
 void ne_fill_proxy_uri(ne_session *sess, ne_uri *uri)
