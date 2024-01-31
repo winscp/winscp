@@ -22,7 +22,7 @@ BASIC_TESTS = uri-tests util-tests string-tests socket \
 ZLIB_TESTS = compress
 ZLIB_HELPERS = file1.gz file2.gz trailing.gz badcsum.gz truncated.gz \
 	corrupt1.gz corrupt2.gz empty.gz random.txt hello.txt hello.gz
-DAV_TESTS = xml xmlreq oldacl acl3744 props lock
+DAV_TESTS = xml xmlreq twooh7 oldacl acl3744 props lock
 SSL_TESTS = socket-ssl ssl
 SSL_HELPERS = ca-stamp
 TESTS = @TESTS@
@@ -232,6 +232,8 @@ xml: xml.lo $(DEPS)
 	$(LINK) -o $@ xml.lo $(LDADD)
 xmlreq: xmlreq.lo $(DEPS)
 	$(LINK) -o $@ xmlreq.lo $(LDADD)
+twooh7: twooh7.lo $(DEPS)
+	$(LINK) -o $@ twooh7.lo $(LDADD)
 lock: lock.lo $(DEPS)
 	$(LINK) -o $@ lock.lo $(LDADD)
 largefile: largefile.lo $(DEPS)

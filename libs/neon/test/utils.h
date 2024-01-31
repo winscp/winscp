@@ -59,6 +59,9 @@ int any_2xx_request_method(ne_session *sess, const char *method,
  * CALL(make_session(...)); */
 int make_session(ne_session **sess, server_fn fn, void *userdata);
 
+/* Returns hostname used for make_session(). */
+const char *get_session_host(void);
+
 /* Server which sleeps for 10 seconds then closes the socket. */
 int sleepy_server(ne_socket *sock, void *userdata);
 

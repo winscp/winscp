@@ -119,6 +119,10 @@ void t_warning(const char *str, ...)
         ONV(exp && strcmp(exp, act), ("%s: " name " was '%s' not '%s'", ctx, act, exp)); \
 } while (0)
 
+/* Variant of ONCMP(), 'exp' and 'act' are known to be non-NULL. */
+#define ONCMPN(exp, act, ctx, name) \
+    ONV(strcmp(exp, act), ("%s: " name " was '%s' not '%s'", ctx, act, exp))
+
 /* return immediately with result of test 'x' if it fails. */
 #define CALL(x) do { int t_ret = (x); if (t_ret != OK) return t_ret; } while (0)
 

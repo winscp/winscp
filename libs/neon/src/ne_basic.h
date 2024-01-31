@@ -36,6 +36,11 @@ int ne_get(ne_session *sess, const char *path, int fd);
  * body to submit from 'fd'. */
 int ne_put(ne_session *sess, const char *path, int fd);
 
+/* Perform a PUT request on resource at 'path', including the entity
+ * body 'buf' of length 'buflen'. */
+int ne_putbuf(ne_session *sess, const char *path,
+              const char *buf, size_t buflen);
+
 #define NE_DEPTH_ZERO (0)
 #define NE_DEPTH_ONE (1)
 #define NE_DEPTH_INFINITE (2)

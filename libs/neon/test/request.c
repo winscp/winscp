@@ -89,7 +89,7 @@ static ne_request *construct_get(ne_session *sess, void *userdata)
     ne_request *r = ne_request_create(sess, "GET", "/");
     ne_buffer *buf = userdata;
 
-    ne_add_response_body_reader(r, ne_accept_2xx, collector, buf);
+    if (buf) ne_add_response_body_reader(r, ne_accept_2xx, collector, buf);
 
     return r;
 }
@@ -153,8 +153,7 @@ static int expect_response(const char *expect, server_fn fn, void *userdata)
 
     CALL(session_server(&sess, fn, userdata));
     CALL(run_request(sess, 200, construct_get, buf));
-    ne_session_destroy(sess);
-    CALL(await_server());
+    CALL(destroy_and_wait(sess));
 
     ONN("response body match", strcmp(buf->data, expect));
 
@@ -433,8 +432,7 @@ static int test_persist_p(const char *response, const char *body, int proxy)
     /* Run it again. */
     ne_buffer_clear(buf);
     CALL(run_request(sess, 200, construct_get, buf));
-    ne_session_destroy(sess);
-    ON(await_server());
+    CALL(destroy_and_wait(sess));
 
     ONV(strcmp(buf->data, body),
 	("response #2 mismatch: [%s] not [%s]", buf->data, body));
@@ -628,10 +626,9 @@ static int persist_timeout(void)
 	}
     }
 
-    ne_session_destroy(sess);
     ne_buffer_destroy(buf);
 
-    return OK;
+    return destroy_and_wait(sess);
 }   
 
 /* Test that an HTTP/1.0 server is not presumed to support persistent
@@ -663,148 +660,78 @@ static int no_persist_http10(void)
     return OK;
 }
 
-static int ignore_bad_headers(void)
-{
-    return expect_response("abcde", single_serve_string,
-			   RESP200 
-			   "Stupid Header\r\n"
-			   "ReallyStupidHeader\r\n"
-			   "Content-Length: 5\r\n"
-			   "\r\n"
-			   "abcde");
-}
-
-static int fold_headers(void)
-{
-    return expect_response("abcde", single_serve_string,
-			   RESP200 "Content-Length: \r\n   5\r\n"
-			   "\r\n"
-			   "abcde");
-}
-
-static int fold_many_headers(void)
-{
-    return expect_response("abcde", single_serve_string,
-			   RESP200 "Content-Length: \r\n \r\n \r\n \r\n  5\r\n"
-			   "\r\n"
-			   "abcde");
-}
-
 #define NO_BODY "Content-Length: 0\r\n\r\n"
 
-static int empty_header(void)
+static int response_bodies(void)
 {
-    return expect_header_value("ranDom-HEader", "",
-			       single_serve_string,
-			       RESP200 "RANDom-HeADEr:\r\n"
-			       NO_BODY);
+    struct {
+        const char *expect;
+        server_fn fn;
+        const char *response;
+    } ts[] = {
+        { "abcde", single_serve_string, RESP200 "Stupid Header\r\n" "ReallyStupidHeader\r\n"
+          "Content-Length: 5\r\n" "\r\n" "abcde" },
+        { "abcde", single_serve_string, RESP200 "Content-Length: \r\n   5\r\n" "\r\n" "abcde" },
+        { "abcde", single_serve_string, RESP200 "Content-Length: \r\n \r\n \r\n \r\n  5\r\n" "\r\n" "abcde" },
+        { NULL, NULL, NULL }
+    };
+    unsigned n;
+
+    for (n = 0; ts[n].expect != NULL; n++ ){
+        CALL(expect_response(ts[n].expect, ts[n].fn, (void *)ts[n].response));
+    }
+
+    return OK;
 }
 
-static int ignore_header_case(void)
+static int response_headers(void)
 {
-    return expect_header_value("ranDom-HEader", "noddy",
-			       single_serve_string,
-			       RESP200 "RANDom-HeADEr: noddy\r\n"
-			       NO_BODY);
-}
+    struct {
+        const char *name, *value;
+        server_fn fn;
+        const char *response;
+    } ts[] = {
+        { "ranDom-HEader", "", single_serve_string,      RESP200 "RANDom-HeADEr:\r\n" NO_BODY },
+        { "ranDom-HEader", "noddy", single_serve_string, RESP200 "RANDom-HeADEr: noddy\r\n" NO_BODY },
+        { "ranDom-HEader", "fishy", single_serve_string, RESP200 "RANDom-HeADEr:    fishy\r\n" NO_BODY },
+        { "ranDom-HEader", "fishy", single_serve_string, RESP200 "RANDom-HeADEr \t :    fishy\r\n" NO_BODY},
+        { "ranDom-HEader", "fishy", single_serve_string, RESP200 "RANDom-HeADEr: fishy  \r\n" NO_BODY },
+        { "ranDom-HEader", "geezer", single_serve_string, RESP200 "RANDom-HeADEr: \t \tgeezer\r\n" NO_BODY },
+        { "gONe", "fishing", single_serve_string,
+          RESP200 TE_CHUNKED "\r\n0\r\n" "Hello: world\r\n" "GONE: fishing\r\n" "\r\n" },
+        { "hello", "w o r l d", single_serve_string,
+          RESP200 "Hello:  \n\tw\r\n\to r l\r\n\td  \r\n" NO_BODY },
+        { "X-Header", "jim, jab, jar", single_serve_string,
+          RESP200 "X-Header: jim\r\n" "x-header: jab\r\n" "x-Header: jar\r\n" NO_BODY },
+        { "X-Header", "jim, jab, jar", single_serve_string,
+          RESP200 "X-Header: jim  \r\n" "x-header: jab  \r\n" "x-Header: jar  \r\n" NO_BODY },
+        /* RFC 2616 14.10: headers listed in Connection must be stripped on
+         * receiving an HTTP/1.0 message in case there was a pre-1.1 proxy
+         * somewhere. */
+        { "X-Widget", NULL, single_serve_string,
+          "HTTP/1.0 200 OK\r\n" "Connection: x-widget\r\n" "x-widget: blah\r\n" NO_BODY },
+        { "X-Widget", NULL, single_serve_string,
+          "HTTP/1.0 200 OK\r\n" "Connection: connection, x-fish, x-widget\r\n" "x-widget: blah\r\n" NO_BODY },
+        /* Test trailer header handling. */
+        { "X-Trailer", "foo", single_serve_string,
+          RESP200 TE_CHUNKED "X-Header: bar\r\n\r\n"
+          CHUNK(6, "foobar") "0\r\nX-Trailer: foo\r\n\r\n" },
+        { "X-Header", "foo", single_serve_string,
+          RESP200 TE_CHUNKED "X-Header: foo\r\n\r\n"
+          CHUNK(6, "foobar") "0\r\nX-Trailer: barish\r\n\r\n" },
+        /* Test that merging between trailers and main response headers works. */
+        { "X-Trailer", "fooish, barish", single_serve_string,
+          RESP200 TE_CHUNKED "X-Trailer: fooish\r\n\r\n"
+          CHUNK(6, "foobar") "0\r\nX-Trailer: barish\r\n\r\n" },
+        { NULL, NULL, NULL, NULL }
+    };
+    unsigned n;
 
-static int ignore_header_ws(void)
-{
-    return expect_header_value("ranDom-HEader", "fishy",
-			       single_serve_string,
-			       RESP200 "RANDom-HeADEr:    fishy\r\n"
-			       NO_BODY);
-}
+    for (n = 0; ts[n].name != NULL; n++ ){
+        CALL(expect_header_value(ts[n].name, ts[n].value, ts[n].fn, (void *)ts[n].response));
+    }
 
-static int ignore_header_ws2(void)
-{
-    return expect_header_value("ranDom-HEader", "fishy",
-			       single_serve_string,
-			       RESP200 "RANDom-HeADEr \t :    fishy\r\n"
-			       NO_BODY);
-}
-
-static int ignore_header_ws3(void)
-{
-    return expect_header_value("ranDom-HEader", "fishy",
-			       single_serve_string,
-			       RESP200 "RANDom-HeADEr: fishy  \r\n"
-			       NO_BODY);
-}
-
-static int ignore_header_tabs(void)
-{
-    return expect_header_value("ranDom-HEader", "geezer",
-			       single_serve_string,
-			       RESP200 "RANDom-HeADEr: \t \tgeezer\r\n"
-			       NO_BODY);
-}
-
-static int trailing_header(void)
-{
-    return expect_header_value("gONe", "fishing",
-			       single_serve_string,
-			       RESP200 TE_CHUNKED
-			       "\r\n0\r\n"
-			       "Hello: world\r\n"
-			       "GONE: fishing\r\n"
-			       "\r\n");
-}
-
-static int continued_header(void)
-{
-    return expect_header_value("hello", "w o r l d", single_serve_string,
-			       RESP200 "Hello:  \n\tw\r\n\to r l\r\n\td  \r\n"
-			       NO_BODY);
-}
-
-/* check headers callbacks are working correctly. */
-static int multi_header(void)
-{
-    return expect_header_value("X-Header", "jim, jab, jar",
-                               single_serve_string,
-                               RESP200 
-                               "X-Header: jim\r\n" 
-                               "x-header: jab\r\n"
-                               "x-Header: jar\r\n"
-                               "Content-Length: 0\r\n\r\n");
-}
-
-/* check headers callbacks are working correctly. */
-static int multi_header2(void)
-{
-    return expect_header_value("X-Header", "jim, jab, jar",
-                               single_serve_string,
-                               RESP200 
-                               "X-Header: jim  \r\n" 
-                               "x-header: jab  \r\n"
-                               "x-Header: jar  \r\n"
-                               "Content-Length: 0\r\n\r\n");
-}
-
-/* RFC 2616 14.10: headers listed in Connection must be stripped on
- * receiving an HTTP/1.0 message in case there was a pre-1.1 proxy
- * somewhere. */
-static int strip_http10_connhdr(void)
-{
-    return expect_header_value("X-Widget", NULL,
-                               single_serve_string,
-                               "HTTP/1.0 200 OK\r\n"
-                               "Connection: x-widget\r\n"
-                               "x-widget: blah\r\n"
-                               "Content-Length: 0\r\n"
-                               "\r\n");
-}
-
-static int strip_http10_connhdr2(void)
-{
-    return expect_header_value("X-Widget", NULL,
-                               single_serve_string,
-                               "HTTP/1.0 200 OK\r\n"
-                               "Connection: connection, x-fish, x-widget\r\n"
-                               "x-widget: blah\r\n"
-                               "Content-Length: 0\r\n"
-                               "\r\n");
+    return OK;
 }
 
 static int post_send_retry(ne_request *req, void *userdata, 
@@ -1130,6 +1057,10 @@ static int fail_request_with_error(int with_body, server_fn fn, void *ud,
 
     CALL(new_spawn_server(forever ? 100 : 1, fn, ud, &port));
     sess = ne_session_create("http", "localhost", port);
+
+    /* Set default timeout, required by e.g. fail_excess_1xx. */
+    ne_set_read_timeout(sess, 2);
+
     req = ne_request_create(sess, "GET", "/");
 
     if (with_body) {
@@ -1642,9 +1573,7 @@ static int versions(void)
     ONN("did not detect lack of HTTP/1.1 compliance",
 	ne_version_pre_http11(sess) == 0);
 
-    ne_session_destroy(sess);
-
-    return OK;
+    return destroy_and_wait(sess);
 }
 
 struct cr_args {
@@ -1707,9 +1636,7 @@ static int hook_create_req(void)
 
     ne_free(u);
 
-    ne_session_destroy(sess);
-
-    return OK;    
+    return destroy_and_wait(sess);
 }
 
 static int serve_check_method(ne_socket *sock, void *ud)
@@ -2049,27 +1976,29 @@ static int status(void)
 {
     ne_session *sess;
     ne_buffer *buf = ne_buffer_create();
+    const char *host, *addr = get_lh_addr();
     char expect[1024];
 
+    CALL(make_session(&sess, single_serve_string, RESP200
+                      "Content-Length: 5\r\n\r\n" "abcde"));
+
+    host = get_session_host();
+
     ne_snprintf(expect, sizeof expect,
-                "lookup(127.0.0.1)-"
-                "connecting(127.0.0.1,127.0.0.1)-"
-                "connected(127.0.0.1)-"
+                "connecting(%s,%s)-"
+                "connected(%s)-"
                 "send(0,5000)-"
                 "send(5000,5000)-"
                 "recv(0,5)-"
                 "recv(5,5)-"
-                "disconnected(127.0.0.1)-");
-
-    CALL(make_session(&sess, single_serve_string, RESP200
-                      "Content-Length: 5\r\n\r\n" "abcde"));
+                "disconnected(%s)-",
+                host, addr, host, host);
 
     ne_set_notifier(sess, status_cb, buf);
 
     CALL(any_2xx_request_body(sess, "/status"));
 
-    ne_session_destroy(sess);
-    CALL(await_server());
+    CALL(destroy_and_wait(sess));
 
     ONV(strcmp(expect, buf->data),
         ("status event sequence mismatch: got [%s] not [%s]",
@@ -2084,14 +2013,19 @@ static int status_chunked(void)
 {
     ne_session *sess;
     ne_buffer *buf = ne_buffer_create();
+    const char *host, *addr = get_lh_addr();
     char expect[1024];
+
+    CALL(make_session(&sess, single_serve_string,
+                      RESP200 TE_CHUNKED "\r\n" ABCDE_CHUNKS));
+
+    host = get_session_host();
 
     /* This sequence is not exactly guaranteed by the API, but it's
      * what the current implementation should do. */
     ne_snprintf(expect, sizeof expect,
-                "lookup(127.0.0.1)-"
-                "connecting(127.0.0.1,127.0.0.1)-"
-                "connected(127.0.0.1)-"
+                "connecting(%s,%s)-"
+                "connected(%s)-"
                 "send(0,5000)-"
                 "send(5000,5000)-"
                 "recv(0,-1)-"
@@ -2100,17 +2034,14 @@ static int status_chunked(void)
                 "recv(3,-1)-"
                 "recv(4,-1)-"
                 "recv(5,-1)-"
-                "disconnected(127.0.0.1)-");
-
-    CALL(make_session(&sess, single_serve_string, 
-                      RESP200 TE_CHUNKED "\r\n" ABCDE_CHUNKS));
+                "disconnected(%s)-",
+                host, addr, host, host);
 
     ne_set_notifier(sess, status_cb, buf);
 
     CALL(any_2xx_request_body(sess, "/status"));
 
-    ne_session_destroy(sess);
-    CALL(await_server());
+    CALL(destroy_and_wait(sess));
     
     ONV(strcmp(expect, buf->data),
         ("status event sequence mismatch: got [%s] not [%s]",
@@ -2121,12 +2052,10 @@ static int status_chunked(void)
     return OK;
 }
 
-static const unsigned char raw_127[4] = "\x7f\0\0\01"; /* 127.0.0.1 */
-
 static int local_addr(void)
 {
     ne_session *sess;
-    ne_inet_addr *ia = ne_iaddr_make(ne_iaddr_ipv4, raw_127);
+    ne_inet_addr *ia = get_lh_inet_addr();
 
     CALL(make_session(&sess, single_serve_string, RESP200 
                       "Connection: close\r\n\r\n"));
@@ -2160,7 +2089,7 @@ static int dereg_progress(void)
 static int addrlist(void)
 {
     ne_session *sess;
-    ne_inet_addr *ia = ne_iaddr_make(ne_iaddr_ipv4, raw_127);
+    ne_inet_addr *ia = get_lh_inet_addr();
     const ne_inet_addr *ial[1];
     unsigned int port;
 
@@ -2292,10 +2221,9 @@ static int send_length(void)
     ONCMP("foo", buf->data, "response body", "match");
 
     ne_request_destroy(req);
-    ne_session_destroy(sess);
     ne_buffer_destroy(buf);
     close(fd);
-    return await_server();
+    return destroy_and_wait(sess);
 }
 
 /* Test for error code for a SOCKS proxy failure, bug in <= 0.29.3. */
@@ -2345,11 +2273,184 @@ static int safe_flags(void)
     return OK;
 }
 
+/* Hit the timeout (2 seconds) for reading interim responses. */
 static int fail_excess_1xx(void)
 {
-    struct s1xx_args args = {200, 0};
+    struct s1xx_args args = {20000000, 0};
     return fail_request_with_error(0, serve_1xx, &args, 0,
-                                   "Too many interim responses");
+                                   "Timed out reading interim responses");
+}
+
+static int serve_check_reqline(ne_socket *sock, void *userdata)
+{
+    const char *expect = userdata;
+
+    ONN("failed to read request-line",
+        ne_sock_readline(sock, buffer, BUFSIZ) <= 0);
+
+    NE_DEBUG(NE_DBG_HTTP, "child: got request-line %s\n", buffer);
+
+    ONCMPN(expect, buffer, "request-line", "check for absolute URI");
+
+    return single_serve_string(sock, RESP200 "Connection: close\r\n\r\n");
+}
+
+/* Test that various request target forms are allowed. */
+static int target_forms(void)
+{
+    static const struct {
+        const char *uri, *reqline;
+    } ts[] = {
+        { "/foo", "GET /foo HTTP/1.1\r\n" },
+        { "/foo?bar", "GET /foo?bar HTTP/1.1\r\n" },
+        { "ftp://www.example.com/foo", "GET ftp://www.example.com/foo HTTP/1.1\r\n" },
+        { "*", "GET * HTTP/1.1\r\n" },
+        { NULL, NULL }
+    };
+    unsigned n;
+
+    for (n = 0; ts[n].uri; n++) {
+        ne_session *sess;
+
+        CALL(make_session(&sess, serve_check_reqline, (void *)ts[n].reqline));
+
+        ONREQ(any_request(sess, ts[n].uri));
+
+        CALL(destroy_and_wait(sess));
+    }
+
+    return OK;
+}
+
+/* Interim response callback. */
+static void test_interim(void *userdata, ne_request *req, const ne_status *st)
+{
+    ne_buffer *buf = userdata;
+    const char *val;
+
+    ne_buffer_snprintf(buf, 15, "[code=%d]", st->code);
+
+    val = ne_get_response_header(req, "X-Interim");
+
+    ne_buffer_concat(buf, "[hdr=", val ? val : "null", "]", NULL);
+}
+
+/* Test for interim response headers. */
+static int interims(void)
+{
+    ne_session *sess;
+    ne_request *req;
+    ne_buffer *buf = ne_buffer_create();
+
+    CALL(make_session(&sess, single_serve_string,
+                      "HTTP/1.1 103 Early Stuff\r\n"
+                      "X-Interim: foobar\r\n" "\r\n"
+
+                      "HTTP/1.1 102 Stuff Is Happening\r\n"
+                      "X-Interim: bar, foo\r\n" "\r\n"
+
+                      "HTTP/1.1 200 Thank you kindly\r\n"
+                      "Content-Length: 0\r\n"
+                      "X-Not-Interim: finally\r\n" "\r\n"));
+
+    req = ne_request_create(sess, "GET", "/");
+    ne_add_interim_handler(req, test_interim, buf);
+    ONREQ(ne_request_dispatch(req));
+    ONN("interim header leaked to final response",
+        ne_get_response_header(req, "X-Interim") != NULL);
+    ne_request_destroy(req);
+    CALL(destroy_and_wait(sess));
+
+    ONCMPN("[code=103][hdr=foobar][code=102][hdr=bar, foo]", buf->data,
+           "interim responses", "trace");
+
+    ne_buffer_destroy(buf);
+    return OK;
+}
+
+static int retry_408(void)
+{
+    ne_session *sess;
+
+    /* Serve two responses down a single persistent connection, the
+     * second of which is invalid and will cause the request to be
+     * aborted. */
+    CALL(multi_session_server(&sess, "http", "localhost",
+                              2, single_serve_string,
+                              EMPTY_RESP
+                              "HTTP/1.1 408 Request Timeout\r\n"
+                              "Server: neon-test-server\r\n"
+                              "Content-Length: 0\r\n\r\n"));
+
+    CALL(any_2xx_request(sess, "/first408"));
+    CALL(any_2xx_request(sess, "/second408"));
+
+    return destroy_and_wait(sess);
+}
+
+/* Ensure that only a 408 on a persisted connection is
+ * retried. Otherwise it should just be handled as a final
+ * response. */
+static int dont_retry_408(void)
+{
+    ne_session *sess;
+
+    CALL(make_session(&sess, single_serve_string,
+                      "HTTP/1.1 408 Request Timeout\r\n"
+                      "Server: neon-test-server\r\n"
+                      "Content-Length: 0\r\n\r\n"));
+
+    /* Run any request, ensure it gets a 408 response. */
+    CALL(run_request(sess, 408, construct_get, NULL));
+
+    return destroy_and_wait(sess);
+}
+
+static const char *ipv6_check_result = "500 Something Went Wrong";
+
+#define V6_EXAMPLE_HOST "[2001:db8::cafe]"
+
+static void ipv6_host_checker(char *value)
+{
+    NE_DEBUG(NE_DBG_HTTP, "child: header value [%s]\n", value);
+    if (strcmp(value, V6_EXAMPLE_HOST) == 0)
+        ipv6_check_result = "200 Good Header";
+    else
+        ipv6_check_result = "400 Bad Header";
+}
+
+/* Server which acts as a proxy accepting a CONNECT request. */
+static int serve_v6_check(ne_socket *sock, void *ud)
+{
+    char resp[512];
+
+    got_header = ipv6_host_checker;
+    want_header = "Host";
+
+    CALL(discard_request(sock));
+
+    ne_snprintf(resp, sizeof resp, "HTTP/1.1 %s\r\n"
+                "Content-Length: 0\r\n"
+                "Server: serve_v6_check\r\n\r\n",
+                ipv6_check_result);
+
+    SEND_STRING(sock, resp);
+
+    return 0;
+}
+
+static int ipv6_literal(void)
+{
+    ne_session *sess;
+
+    CALL(fakeproxied_session_server(&sess, "http", V6_EXAMPLE_HOST,
+                                    80, serve_v6_check,
+                                    RESP200 "Content-Length: 2\r\n"
+                                    "ok"));
+
+    CALL(any_2xx_request(sess, "/ipv6ish"));
+
+    return destroy_and_wait(sess);
 }
 
 /* TODO: test that ne_set_notifier(, NULL, NULL) DTRT too. */
@@ -2385,21 +2486,8 @@ ne_test tests[] = {
     T(closed_connection),
     T(close_not_retried),
     T(send_progress),
-    T(ignore_bad_headers),
-    T(fold_headers),
-    T(fold_many_headers),
-    T(multi_header),
-    T(multi_header2),
-    T(empty_header),
-    T(trailing_header),
-    T(ignore_header_case),
-    T(ignore_header_ws),
-    T(ignore_header_ws2),
-    T(ignore_header_ws3),
-    T(ignore_header_tabs),
-    T(strip_http10_connhdr),
-    T(strip_http10_connhdr2),
-    T(continued_header),
+    T(response_bodies),
+    T(response_headers),
     T(reset_headers),
     T(iterate_none),
     T(iterate_many),
@@ -2447,5 +2535,10 @@ ne_test tests[] = {
     T(fail_double_lookup),
     T(safe_flags),
     T(fail_excess_1xx),
+    T(target_forms),
+    T(interims),
+    T(retry_408),
+    T(dont_retry_408),
+    T(ipv6_literal),
     T(NULL)
 };

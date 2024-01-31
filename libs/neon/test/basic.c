@@ -311,6 +311,19 @@ static int options2(void)
     return OK;  
 }
 
+static int put(void)
+{
+    ne_session *sess;
+    
+    CALL(make_session(&sess, single_serve_string, "HTTP/1.1 204 OK\r\n"
+                      "Content-Length: 200\r\n"
+                      "\r\n"));
+    
+    ONREQ(ne_putbuf(sess, "/foo", "foobar", 6));
+
+    return destroy_and_wait(sess);
+}
+
 ne_test tests[] = {
     T(lookup_localhost),
     T(content_type),
@@ -323,6 +336,7 @@ ne_test tests[] = {
     T(dav_capabilities),
     T(get),
     T(options2),
+    T(put),
     T(NULL) 
 };
 
