@@ -499,11 +499,9 @@ static int basic_challenge(auth_session *sess, int attempt,
 
     tmp = ne_concat(sess->username, ":", password, NULL);
     sess->basic = ne_base64((unsigned char *)tmp, strlen(tmp));
-    ne_free(tmp);
+    zero_and_free(tmp);
 
     ne__strzero(password, sizeof password);
-
-    if (sess->ndomains) free_domains(sess); /* is this really needed? */
 
     if (strcmp(uri, "*") == 0) {
         /* If the request-target is "*" the auth scope is explicitly
@@ -511,7 +509,7 @@ static int basic_challenge(auth_session *sess, int attempt,
         return 0;
     }
 
-    sess->domains = ne_realloc(sess->domains, sizeof(*sess->domains));
+    sess->domains = ne_malloc(sizeof *sess->domains);
     sess->domains[0] = get_scope_path(uri);
     sess->ndomains = 1;
 
@@ -1809,7 +1807,8 @@ static void insert_challenge(struct auth_challenge **list, struct auth_challenge
         if (chall->protocol->strength > cur->protocol->strength
             || (cur->protocol->id == NE_AUTH_DIGEST
                 && chall->protocol->id == NE_AUTH_DIGEST
-                && chall->alg > cur->alg)) {
+                && chall->alg && cur->alg
+                && chall->alg->hash > cur->alg->hash)) {
             break;
         }
     }

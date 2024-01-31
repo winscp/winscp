@@ -105,13 +105,14 @@ struct lock_ctx {
 #define ELM_shared (ELM_LOCK_FIRST + 11)
 #define ELM_href (ELM_LOCK_FIRST + 12)
 #define ELM_prop (NE_207_STATE_PROP)
+#define ELM_lockroot (ELM_LOCK_FIRST + 13)
 
 static const struct ne_xml_idmap element_map[] = {
 #define ELM(x) { "DAV:", #x, ELM_ ## x }
     ELM(lockdiscovery), ELM(activelock), ELM(prop), ELM(lockscope),
     ELM(locktype), ELM(depth), ELM(owner), ELM(timeout), ELM(locktoken),
     ELM(lockinfo), ELM(lockscope), ELM(locktype), ELM(write), ELM(exclusive),
-    ELM(shared), ELM(href)
+    ELM(shared), ELM(href), ELM(lockroot)
     /* no "lockentry" */
 #undef ELM
 };
@@ -536,8 +537,15 @@ end_element_common(struct ne_lock *l, int state, const char *cdata)
     case ELM_owner:
 	l->owner = strdup(cdata);
 	break;
-    case ELM_href:
+    case ELM_locktoken:
 	l->token = strdup(cdata);
+	break;
+    case ELM_lockroot:
+        ne_uri_free(&l->uri);
+        if (ne_uri_parse(cdata, &l->uri)) {
+            NE_DEBUG(NE_DBG_LOCKS, "lock: URI parse failed for %s\n", cdata);
+            return -1;
+        }
 	break;
     }
     return 0;
@@ -555,17 +563,20 @@ static int end_element_ldisc(void *userdata, int state,
 
 static inline int can_accept(int parent, int id)
 {
-    return (parent == NE_XML_STATEROOT && id == ELM_prop) ||
-        (parent == ELM_prop && id == ELM_lockdiscovery) ||
-        (parent == ELM_lockdiscovery && id == ELM_activelock) ||
-        (parent == ELM_activelock && 
-         (id == ELM_lockscope || id == ELM_locktype ||
-          id == ELM_depth || id == ELM_owner ||
-          id == ELM_timeout || id == ELM_locktoken)) ||
-        (parent == ELM_lockscope &&
-         (id == ELM_exclusive || id == ELM_shared)) ||
-        (parent == ELM_locktype && id == ELM_write) ||
-        (parent == ELM_locktoken && id == ELM_href);
+    return (parent == NE_XML_STATEROOT && id == ELM_prop)
+        || (parent == ELM_prop && id == ELM_lockdiscovery)
+        || (parent == ELM_lockdiscovery && id == ELM_activelock)
+        || (parent == ELM_activelock
+            && (id == ELM_lockscope || id == ELM_locktype
+                || id == ELM_depth || id == ELM_owner
+                || id == ELM_timeout || id == ELM_locktoken
+                || id == ELM_lockroot))
+        || (parent == ELM_lockscope
+            && (id == ELM_exclusive || id == ELM_shared))
+        || (parent == ELM_locktype && id == ELM_write)
+        || (id == ELM_href
+            && (parent == ELM_locktoken || parent == ELM_lockroot));
+
 }
 
 static int ld_startelm(void *userdata, int parent,
@@ -586,13 +597,18 @@ static int ld_startelm(void *userdata, int parent,
 
 #define MAX_CDATA (256)
 
-static int lk_cdata(void *userdata, int state,
-                    const char *cdata, size_t len)
+static int common_cdata(ne_buffer *buf, int state,
+                        const char *cdata, size_t len)
 {
-    struct lock_ctx *ctx = userdata;
-
-    if (ctx->cdata->used + len < MAX_CDATA)
-        ne_buffer_append(ctx->cdata, cdata, len);
+    switch (state) {
+    case ELM_depth:
+    case ELM_timeout:
+    case ELM_owner:
+    case ELM_href:
+        if (buf->used + len < MAX_CDATA)
+            ne_buffer_append(buf, cdata, len);
+        break;
+    }
     
     return 0;
 }
@@ -602,10 +618,15 @@ static int ld_cdata(void *userdata, int state,
 {
     struct discover_ctx *ctx = userdata;
 
-    if (ctx->cdata->used + len < MAX_CDATA)
-        ne_buffer_append(ctx->cdata, cdata, len);
-    
-    return 0;
+    return common_cdata(ctx->cdata, state, cdata, len);
+}
+
+static int lk_cdata(void *userdata, int state,
+                    const char *cdata, size_t len)
+{
+    struct lock_ctx *ctx = userdata;
+
+    return common_cdata(ctx->cdata, state, cdata, len);
 }
 
 static int lk_startelm(void *userdata, int parent,
@@ -869,6 +890,9 @@ int ne_lock_refresh(ne_session *sess, struct ne_lock *lock)
      * sufficient. */
     ne_print_request_header(req, "If", "(<%s>)", lock->token);
     add_timeout_header(req, lock->timeout);
+
+    /* LOCK is not idempotent. */
+    ne_set_request_flag(req, NE_REQFLAG_IDEMPOTENT, 0);
 
     ret = ne_xml_dispatch_request(req, parser);
 
