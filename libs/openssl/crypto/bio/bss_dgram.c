@@ -1,5 +1,5 @@
 /*
- * Copyright 2005-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2005-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -60,6 +60,11 @@
      */
 #   define NO_RECVMMSG
 #  endif
+# endif
+# if defined(__GNU__)
+   /* GNU/Hurd does not have IP_PKTINFO yet */
+   #undef NO_RECVMSG
+   #define NO_RECVMSG
 # endif
 # if !defined(M_METHOD)
 #  if defined(OPENSSL_SYS_WINDOWS) && defined(BIO_HAVE_WSAMSG) && !defined(NO_WSARECVMSG)

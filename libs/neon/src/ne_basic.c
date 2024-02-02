@@ -50,9 +50,9 @@
 #include "ne_dates.h"
 #include "ne_internal.h"
 
-int ne_getmodtime(ne_session *sess, const char *uri, time_t *modtime) 
+int ne_getmodtime(ne_session *sess, const char *path, time_t *modtime)
 {
-    ne_request *req = ne_request_create(sess, "HEAD", uri);
+    ne_request *req = ne_request_create(sess, "HEAD", path);
     const char *value;
     int ret;
 
@@ -84,8 +84,8 @@ typedef struct stat64 struct_stat;
 typedef struct stat struct_stat;
 #endif
 
-/* PUT's from fd to URI */
-int ne_put(ne_session *sess, const char *uri, int fd) 
+/* PUT's from fd to PATH */
+int ne_put(ne_session *sess, const char *path, int fd)
 {
     ne_request *req;
     struct_stat st;
@@ -100,17 +100,40 @@ int ne_put(ne_session *sess, const char *uri, int fd)
         return NE_ERROR;
     }
     
-    req = ne_request_create(sess, "PUT", uri);
+    req = ne_request_create(sess, "PUT", path);
 
 #ifdef NE_HAVE_DAV
-    ne_lock_using_resource(req, uri, 0);
-    ne_lock_using_parent(req, uri);
+    ne_lock_using_resource(req, path, 0);
+    ne_lock_using_parent(req, path);
 #endif
 
     ne_set_request_body_fd(req, fd, 0, st.st_size);
 	
     ret = ne_request_dispatch(req);
     
+    if (ret == NE_OK && ne_get_status(req)->klass != 2)
+	ret = NE_ERROR;
+
+    ne_request_destroy(req);
+
+    return ret;
+}
+
+int ne_putbuf(ne_session *sess, const char *path,
+              const char *buf, size_t buflen)
+{
+    ne_request *req = ne_request_create(sess, "PUT", path);
+    int ret;
+
+#ifdef NE_HAVE_DAV
+    ne_lock_using_resource(req, path, 0);
+    ne_lock_using_parent(req, path);
+#endif
+
+    ne_set_request_body_buffer(req, buf, buflen);
+
+    ret = ne_request_dispatch(req);
+
     if (ret == NE_OK && ne_get_status(req)->klass != 2)
 	ret = NE_ERROR;
 
@@ -152,7 +175,8 @@ static int dispatch_to_fd(ne_request *req, int fd, const char *range)
 
         if ((range && st->code == 206) || (!range && st->klass == 2)) {
             ret = ne_read_response_to_fd(req, fd);
-        } else {
+        }
+        else {
             ret = ne_discard_response(req);
         }
 
@@ -162,11 +186,11 @@ static int dispatch_to_fd(ne_request *req, int fd, const char *range)
     return ret;
 }
 
-static int get_range_common(ne_session *sess, const char *uri, 
+static int get_range_common(ne_session *sess, const char *path,
                             const char *brange, int fd)
 
 {
-    ne_request *req = ne_request_create(sess, "GET", uri);
+    ne_request *req = ne_request_create(sess, "GET", path);
     const ne_status *status;
     int ret;
 
@@ -198,13 +222,13 @@ static int get_range_common(ne_session *sess, const char *uri,
     return ret;
 }
 
-int ne_get_range(ne_session *sess, const char *uri, 
+int ne_get_range(ne_session *sess, const char *path,
 		 ne_content_range *range, int fd)
 {
     char brange[64];
 
     if (range->end == -1) {
-        ne_snprintf(brange, sizeof brange, "bytes=%" FMT_NE_OFF_T "-", 
+        ne_snprintf(brange, sizeof brange, "bytes=%" FMT_NE_OFF_T "-",
                     range->start);
     }
     else {
@@ -213,13 +237,13 @@ int ne_get_range(ne_session *sess, const char *uri,
                     range->start, range->end);
     }
 
-    return get_range_common(sess, uri, brange, fd);
+    return get_range_common(sess, path, brange, fd);
 }
 
 /* Get to given fd */
-int ne_get(ne_session *sess, const char *uri, int fd)
+int ne_get(ne_session *sess, const char *path, int fd)
 {
-    ne_request *req = ne_request_create(sess, "GET", uri);
+    ne_request *req = ne_request_create(sess, "GET", path);
     int ret;
 
     ret = dispatch_to_fd(req, fd, NULL);
@@ -235,9 +259,9 @@ int ne_get(ne_session *sess, const char *uri, int fd)
 
 
 /* Get to given fd */
-int ne_post(ne_session *sess, const char *uri, int fd, const char *buffer)
+int ne_post(ne_session *sess, const char *path, int fd, const char *buffer)
 {
-    ne_request *req = ne_request_create(sess, "POST", uri);
+    ne_request *req = ne_request_create(sess, "POST", path);
     int ret;
 
     ne_set_request_flag(req, NE_REQFLAG_IDEMPOTENT, 0);
@@ -286,7 +310,8 @@ int ne_get_content_type(ne_request *req, ne_content_type *ct)
 		tok = strstr(tok, "charset=");
 		if (tok)
 		    ct->charset = ne_shave(tok+8, "\"\'");
-	    } else {
+	    }
+            else {
 		break;
 	    }
 	} while (sep != NULL);
@@ -368,9 +393,9 @@ static void parse_dav_header(const char *value, unsigned int *caps)
     ne_free(tokens);
 }
 
-int ne_options2(ne_session *sess, const char *uri, unsigned int *caps)
+int ne_options2(ne_session *sess, const char *path, unsigned int *caps)
 {
-    ne_request *req = ne_request_create(sess, "OPTIONS", uri);
+    ne_request *req = ne_request_create(sess, "OPTIONS", path);
     int ret = ne_request_dispatch(req);
     const char *header = ne_get_response_header(req, "DAV");
     
@@ -422,11 +447,11 @@ void ne_add_depth_header(ne_request *req, int depth)
 }
 
 static int copy_or_move(ne_session *sess, int is_move, int overwrite,
-			int depth, const char *src, const char *dest) 
+			int depth, const char *src, const char *dest)
 {
     ne_request *req = ne_request_create( sess, is_move?"MOVE":"COPY", src );
 
-    /* 2518 S8.9.2 says only use Depth: infinity with MOVE. */
+    /* RFC4918ẞ9.9.2 - "Depth: infinity" is implicit for MOVE. */
     if (!is_move) {
 	ne_add_depth_header(req, depth);
     }
@@ -444,8 +469,8 @@ static int copy_or_move(ne_session *sess, int is_move, int overwrite,
         ne_add_request_header(req, "Destination", dest);
     }
     else {
-        ne_print_request_header(req, "Destination", "%s://%s%s", 
-                                ne_get_scheme(sess), 
+        ne_print_request_header(req, "Destination", "%s://%s%s",
+                                ne_get_scheme(sess),
                                 ne_get_server_hostport(sess), dest);
     }
     
@@ -455,60 +480,53 @@ static int copy_or_move(ne_session *sess, int is_move, int overwrite,
 }
 
 int ne_copy(ne_session *sess, int overwrite, int depth,
-	     const char *src, const char *dest) 
+	     const char *src, const char *dest)
 {
     return copy_or_move(sess, 0, overwrite, depth, src, dest);
 }
 
 int ne_move(ne_session *sess, int overwrite,
-	     const char *src, const char *dest) 
+	     const char *src, const char *dest)
 {
     return copy_or_move(sess, 1, overwrite, 0, src, dest);
 }
 
-/* Deletes the specified resource. (and in only two lines of code!) */
-int ne_delete(ne_session *sess, const char *uri) 
+int ne_delete(ne_session *sess, const char *path)
 {
-    ne_request *req = ne_request_create(sess, "DELETE", uri);
+    ne_request *req = ne_request_create(sess, "DELETE", path);
 
 #ifdef NE_HAVE_DAV
-    ne_lock_using_resource(req, uri, NE_DEPTH_INFINITE);
-    ne_lock_using_parent(req, uri);
+    ne_lock_using_resource(req, path, NE_DEPTH_INFINITE);
+    ne_lock_using_parent(req, path);
 #endif
     
-    /* joe: I asked on the DAV WG list about whether we might get a
-     * 207 error back from a DELETE... conclusion, you shouldn't if
-     * you don't send the Depth header, since we might be an HTTP/1.1
-     * client and a 2xx response indicates success to them.  But
-     * it's all a bit unclear. In any case, DAV servers today do
-     * return 207 to DELETE even if we don't send the Depth header.
-     * So we handle 207 errors appropriately. */
-
+    /* Per RFC4918ẞ9.6.1 DELETE can get a 207 response. */
     return ne_simple_request(sess, req);
 }
 
-int ne_mkcol(ne_session *sess, const char *uri) 
+int ne_mkcol(ne_session *sess, const char *path)
 {
     ne_request *req;
-    char *real_uri;
+    char *real_path;
     int ret;
 
-    if (ne_path_has_trailing_slash(uri)) {
-	real_uri = ne_strdup(uri);
-    } else {
-	real_uri = ne_concat(uri, "/", NULL);
+    if (ne_path_has_trailing_slash(path)) {
+	real_path = ne_strdup(path);
+    }
+    else {
+	real_path = ne_concat(path, "/", NULL);
     }
 
-    req = ne_request_create(sess, "MKCOL", real_uri);
+    req = ne_request_create(sess, "MKCOL", real_path);
 
 #ifdef NE_HAVE_DAV
-    ne_lock_using_resource(req, real_uri, 0);
-    ne_lock_using_parent(req, real_uri);
+    ne_lock_using_resource(req, real_path, 0);
+    ne_lock_using_parent(req, real_path);
 #endif
     
     ret = ne_simple_request(sess, req);
 
-    ne_free(real_uri);
+    ne_free(real_path);
 
     return ret;
 }

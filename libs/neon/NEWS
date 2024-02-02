@@ -1,3 +1,41 @@
+Changes in release 0.33.0:
+* Interface changes:
+ - API and ABI backwards-compatible with 0.27.x and later
+* Interface clarifications:
+ - ne_locks.h: note that returned lock may have a different URI
+   than the path passed to ne_lock_discover() due to added
+   support for RFC 4918 "lockroot" in lock discovery
+ - ne_request.h: ne_request_create() takes a "target" rather
+   than a path and this can also be an absolute-URI
+ - ne_request.h: never-used ne_free_hooks typedef removed
+ - ne_dates.h: clarified error cases (behaviour unchanged)
+ - ne_session.h: ne_session_create() 'host' must match RFC 3986
+   syntax; IPv6 literal addresses must use [] brackets
+* New interfaces and features:
+ - added new configure flag --enable-auto-libproxy which enables
+   libproxy by default for new sessions (Jan-Michael Brummer)
+ - ne_locks.h: added DAV:lockroot support per RFC 4918
+ - ne_ssl.h: ne_ssl_trust_default_ca() now a no-op for non-SSL sessions
+ - ne_request.h: add ne_add_interim_handler() to handle interim
+   (1xx) responses; headers in interim responses are now accessible
+ - ne_basic.h: add ne_putbuf()
+ - ne_strhash: SHA-512/256 now supported for LibreSSL 3.8+ (orbea)
+ - response handling no longer applies a maximum limit on 1xx interim
+   responses; an overall timeout equal to the read timeout is now
+   applied if a read timeout is configured and 1XXTIMEOUT is enabled
+ - ne_request.h: add NE_REQFLAG_1XXTIMEOUT
+* Bug fixes:
+ - test suite now works correctly on IPv6-only hosts (Jeremy Sowden)
+ - fixes for building against LibreSSL (orbea)
+ - ne_uri_parse() fixes for handling URI with no path and catch
+   some invalid URIs which were allowed (fasticc)
+ - retry requests after a 408 response on a persisted connection
+ - 207 error strings are cleaned and compressed to a single line
+ - fixed thread-safety in ne_rfc1123_date where gmtime_r is available
+ - ne_lock_refresh() fixed to use a non-idempotent request
+ - TLS name verification updated to match RFC 9110/6125, added strict
+   handling of IP literals vs DNS names
+
 Changes in release 0.32.5:
 * NOTE: Since 0.32.0 the "$KRB5_CONFIG" environment variable is ignored
   when running configure. Use KRB5_CONF_TOOL instead to specify an

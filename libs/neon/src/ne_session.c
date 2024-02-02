@@ -61,6 +61,7 @@ static void free_hostinfo(struct host_info *hi)
     if (hi->hostname) ne_free(hi->hostname);
     if (hi->hostport) ne_free(hi->hostport);
     if (hi->address) ne_addr_destroy(hi->address);
+    if (hi->literal) ne_iaddr_free(hi->literal);
 }
 
 /* Destroy the sess->proxies array. */
@@ -152,9 +153,32 @@ static void set_hostport(struct host_info *host, unsigned int defaultport)
 static void set_hostinfo(struct host_info *hi, enum proxy_type type, 
                          const char *hostname, unsigned int port)
 {
+    ne_inet_addr *ia;
+    size_t hlen;
+
     hi->hostname = ne_strdup(hostname);
     hi->port = port;
     hi->proxy = type;
+
+    hlen = strlen(hi->hostname);
+
+    /* IP literal parsing */
+    ia = ne_iaddr_parse(hi->hostname, ne_iaddr_ipv4);
+    if (!ia && hlen > 4
+        && hi->hostname[0] == '[' && hi->hostname[hlen-1] == ']') {
+        char *v6lit = ne_strdup(hi->hostname + 1);
+
+        v6lit[hlen-2] = '\0';
+
+        ia = ne_iaddr_parse(v6lit, ne_iaddr_ipv6);
+        ne_free(v6lit);
+    }
+
+    if (ia) {
+        NE_DEBUG(NE_DBG_HTTP, "sess: Using IP literal address for %s\n",
+                 hostname);
+        hi->network = hi->literal = ia;
+    }
 }
 
 ne_session *ne_session_create(const char *scheme,
@@ -176,21 +200,10 @@ ne_session *ne_session_create(const char *scheme,
 
 #ifdef NE_HAVE_SSL
     if (sess->use_ssl) {
-        ne_inet_addr *ia;
-
         sess->ssl_context = ne_ssl_context_create(0);
         sess->flags[NE_SESSFLAG_SSLv2] = 1;
         
-        /* If the hostname parses as an IP address, don't
-         * enable SNI by default. */
-        ia = ne_iaddr_parse(hostname, ne_iaddr_ipv4);
-        if (ia == NULL)
-            ia = ne_iaddr_parse(hostname, ne_iaddr_ipv6);
-
-        if (ia) {
-            ne_iaddr_free(ia);
-        } 
-        else {
+        if (!sess->server.literal) {
             sess->flags[NE_SESSFLAG_TLS_SNI] = 1;
         }
         NE_DEBUG(NE_DBG_SSL, "ssl: SNI %s by default.\n",
@@ -203,6 +216,10 @@ ne_session *ne_session_create(const char *scheme,
 
     /* Set flags which default to on: */
     sess->flags[NE_SESSFLAG_PERSIST] = 1;
+
+#ifdef NE_ENABLE_AUTO_LIBPROXY
+    ne_session_system_proxy(sess, 0);
+#endif
 
     return sess;
 }
@@ -464,17 +481,6 @@ void ne_set_realhost(ne_session *sess, const char *realhost)
     if (sess->realhost) ne_free(sess->realhost);
     sess->realhost = ne_strdup(realhost);
 }
-
-void ne_fill_real_server_uri(ne_session *sess, ne_uri *uri)
-{
-    ne_fill_server_uri(sess, uri);
-
-    if (sess->realhost)
-    {
-        ne_free(uri->host);
-        uri->host = ne_strdup(sess->realhost);
-    }
-}
 #endif
 
 void ne_fill_proxy_uri(ne_session *sess, ne_uri *uri)
@@ -617,25 +623,6 @@ int ne__ssl_match_hostname(const char *cn, size_t cnlen, const char *hostname)
 
     if (strncmp(cn, "*.", 2) == 0 && cnlen > 2
         && (dot = strchr(hostname, '.')) != NULL) {
-        ne_inet_addr *ia;
-
-        /* Prevent wildcard CN matches against anything which can be
-         * parsed as an IP address (i.e. a CN of "*.1.1.1" should not
-         * be match 8.1.1.1).  draft-saintandre-tls-server-id-check
-         * will require some more significant changes to cert ID
-         * verification which will probably obviate this check, but
-         * this is a desirable policy tightening in the mean time. */
-        ia = ne_iaddr_parse(hostname, ne_iaddr_ipv4);
-        if (ia == NULL)
-            ia = ne_iaddr_parse(hostname, ne_iaddr_ipv6);
-        
-        if (ia) {
-            NE_DEBUG(NE_DBG_SSL, "ssl: Denying wildcard match for numeric "
-                     "IP address.\n");
-            ne_iaddr_free(ia);
-            return 0;
-        }
-
 	hostname = dot + 1;
 	cn += 2;
         cnlen -= 2;

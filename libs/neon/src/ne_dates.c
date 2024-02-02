@@ -49,8 +49,8 @@
 #define ISO8601_FORMAT_M "%04d-%02d-%02dT%02d:%02d:%lf-%02d:%02d"
 #define ISO8601_FORMAT_P "%04d-%02d-%02dT%02d:%02d:%lf+%02d:%02d"
 
-/* RFC1123: Sun, 06 Nov 1994 08:49:37 GMT */
-#define RFC1123_FORMAT "%3s, %02d %3s %4d %02d:%02d:%02d GMT"
+/* IMF-fixdate: Sun, 06 Nov 1994 08:49:37 GMT */
+#define IMFFIX_FORMAT "%3s, %02d %3s %4d %02d:%02d:%02d GMT"
 /* RFC850:  Sunday, 06-Nov-94 08:49:37 GMT */
 #define RFC1036_FORMAT "%10s %2d-%3s-%2d %2d:%2d:%2d GMT"
 /* asctime: Wed Jun 30 21:49:08 1993 */
@@ -98,21 +98,27 @@ time_t gmt_to_local_win32(void)
 }
 #endif
 
-/* Returns the time/date GMT, in RFC1123-type format: eg
- *  Sun, 06 Nov 1994 08:49:37 GMT. */
 char *ne_rfc1123_date(time_t anytime) {
-    struct tm *gmt;
+    struct tm gmt;
+    struct tm *rv;
     char *ret;
-    gmt = gmtime(&anytime);
-    if (gmt == NULL)
-	return NULL;
+
+#ifdef HAVE_GMTIME_R
+    if ((rv = gmtime_r(&anytime, &gmt)) == NULL)
+        return NULL;
+#else
+    if ((rv = gmtime(&anytime)) == NULL)
+        return NULL;
+
+    gmt = *rv;
+#endif
+
     ret = ne_malloc(29 + 1); /* dates are 29 chars long */
-/*  it goes: Sun, 06 Nov 1994 08:49:37 GMT */
-    ne_snprintf(ret, 30, RFC1123_FORMAT,
-		rfc1123_weekdays[gmt->tm_wday], gmt->tm_mday, 
-		short_months[gmt->tm_mon], 1900 + gmt->tm_year, 
-		gmt->tm_hour, gmt->tm_min, gmt->tm_sec);
-    
+    ne_snprintf(ret, 30, IMFFIX_FORMAT,
+		rfc1123_weekdays[gmt.tm_wday], gmt.tm_mday,
+		short_months[gmt.tm_mon], 1900 + gmt.tm_year,
+		gmt.tm_hour, gmt.tm_min, gmt.tm_sec);
+
     return ret;
 }
 
@@ -161,8 +167,6 @@ time_t ne_iso8601_parse(const char *date)
     return result + GMTOFF(gmt);
 }
 
-/* Takes an RFC1123-formatted date string and returns the time_t.
- * Returns (time_t)-1 if the parse fails. */
 time_t ne_rfc1123_parse(const char *date) 
 {
     struct tm gmt = {0};
@@ -171,7 +175,7 @@ time_t ne_rfc1123_parse(const char *date)
     time_t result;
     
     /* it goes: Sun, 06 Nov 1994 08:49:37 GMT */
-    if (sscanf(date, RFC1123_FORMAT,
+    if (sscanf(date, IMFFIX_FORMAT,
                wkday, &gmt.tm_mday, mon, &gmt.tm_year, &gmt.tm_hour,
                &gmt.tm_min, &gmt.tm_sec) != 7)
         return (time_t) -1;
@@ -249,7 +253,6 @@ time_t ne_asctime_parse(const char *date)
     return result + GMTOFF(gmt);
 }
 
-/* HTTP-date parser */
 time_t ne_httpdate_parse(const char *date)
 {
     time_t tmp;

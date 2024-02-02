@@ -1,6 +1,6 @@
 /* 
    WebDAV 207 multi-status response handling
-   Copyright (C) 1999-2021, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1999-2023, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -30,6 +30,7 @@
 #include "ne_alloc.h"
 #include "ne_utils.h"
 #include "ne_xml.h"
+#include "ne_xmlreq.h"
 #include "ne_207.h"
 #include "ne_uri.h"
 #include "ne_basic.h"
@@ -171,7 +172,7 @@ end_element(void *userdata, int state, const char *nspace, const char *name)
     case ELM_responsedescription:
 	if (HAVE_CDATA(p)) {
             if (p->description) ne_free(p->description);
-	    p->description = ne_strdup(cdata);
+	    p->description = ne_strclean(ne_strdup(cdata));
 	}
 	break;
     case ELM_href:
@@ -288,7 +289,7 @@ int ne_accept_207(void *userdata, ne_request *req, const ne_status *status)
 
 /* This is passed as userdata to the 207 code. */
 struct context {
-    char *href;
+    char *path;
     ne_buffer *buf;
     unsigned int is_error;
 };
@@ -296,8 +297,11 @@ struct context {
 static void *start_response(void *userdata, const ne_uri *uri)
 {
     struct context *ctx = userdata;
-    if (ctx->href) ne_free(ctx->href);
-    ctx->href = ne_uri_unparse(uri);
+
+    /* Assume the only part of the URI that matters is the path, but
+     * could compare it to be sure. */
+    if (ctx->path) ne_free(ctx->path);
+    ctx->path = ne_strdup(uri->path);
     return NULL;
 }
 
@@ -305,15 +309,13 @@ static void handle_error(struct context *ctx, const ne_status *status,
 			 const char *description)
 {
     if (status && status->klass != 2 && status->code != 424) {
-	char buf[50];
+        if (ctx->is_error)
+            ne_buffer_czappend(ctx->buf, ", ");
 	ctx->is_error = 1;
-	sprintf(buf, "%d", status->code);
-	ne_buffer_concat(ctx->buf, ctx->href, ": ", 
-			 buf, " ", status->reason_phrase, "\n", NULL);
-	if (description != NULL) {
-	    /* TODO: these can be multi-line. Would be good to
-	     * word-wrap this at col 80. */
-	    ne_buffer_concat(ctx->buf, " -> ", description, "\n", NULL);
+	ne_buffer_snprintf(ctx->buf, 512, "%s: %d %s",
+                           ctx->path, status->code, status->reason_phrase);
+	if (description) {
+	    ne_buffer_concat(ctx->buf, " (", description, ")", NULL);
 	}
     }
 
@@ -335,7 +337,6 @@ end_propstat(void *userdata, void *propstat,
 }
 
 /* Dispatch a DAV request and handle a 207 error response appropriately */
-/* TODO: hook up Content-Type parsing; passing charset to XML parser */
 int ne_simple_request(ne_session *sess, ne_request *req)
 {
     int ret;
@@ -357,10 +358,8 @@ int ne_simple_request(ne_session *sess, ne_request *req)
 
     ne_207_set_response_handlers(p207, start_response, end_response);
     ne_207_set_propstat_handlers(p207, NULL, end_propstat);
-    
-    ne_add_response_body_reader(req, ne_accept_207, ne_xml_parse_v, p);
 
-    ret = ne_request_dispatch(req);
+    ret = ne_xml_dispatch_request(req, p);
 
     if (ret == NE_OK) {
 	if (ne_get_status(req)->code == 207) {
@@ -382,7 +381,7 @@ int ne_simple_request(ne_session *sess, ne_request *req)
     ne_207_destroy(p207);
     ne_xml_destroy(p);
     ne_buffer_destroy(ctx.buf);
-    if (ctx.href) ne_free(ctx.href);
+    if (ctx.path) ne_free(ctx.path);
 
     ne_request_destroy(req);
 

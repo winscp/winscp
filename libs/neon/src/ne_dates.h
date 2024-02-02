@@ -28,26 +28,35 @@
 
 NE_BEGIN_DECLS
 
-/* Date manipulation routines as per RFC1123 and RFC1036 */
+/* Convert time to a string following the Internet Message Format RFC
+ * standard (historically known as "RFC1123", currently known as
+ * RFC5322). Returns a malloc-allocated string, or NULL if there is an
+ * error converting the time. */
+char *ne_rfc1123_date(time_t anytime)
+    ne_attribute_malloc;
 
-/* Return current date/time in RFC1123 format */
-char *ne_rfc1123_date(time_t anytime);
+/* Parses a date/time using the the ISO8601 format. Returns -1 on
+ * error. */
+time_t ne_iso8601_parse(const char *date)
+    ne_attribute((nonnull));
 
-/* Returns time from date/time using the subset of the ISO8601 format
- * referenced in RFC2518 (e.g as used in the creationdate property in
- * the DAV: namespace). */
-time_t ne_iso8601_parse(const char *date);
+/* Parses a date/time using the the IMF-fixdate format (historically
+ * known as "RFC1123". Returns -1 on error. */
+time_t ne_rfc1123_parse(const char *date)
+    ne_attribute((nonnull));
 
-/* Returns time from date/time in RFC1123 format */
-time_t ne_rfc1123_parse(const char *date);
+/* Parses a date/time using the the RFC1036 format. Returns -1 on
+ * error. */
+time_t ne_rfc1036_parse(const char *date)
+    ne_attribute((nonnull));
 
-time_t ne_rfc1036_parse(const char *date);
+/* Parses a libc "asctime" format date. Returns -1 on error. */
+time_t ne_asctime_parse(const char *date)
+    ne_attribute((nonnull));
 
-/* Parses asctime date string */
-time_t ne_asctime_parse(const char *date);
-
-/* Parse an HTTP-date as per RFC2616 */
-time_t ne_httpdate_parse(const char *date);
+/* Parse an HTTP-date as perq RFC2616. Returns -1 on error. */
+time_t ne_httpdate_parse(const char *date)
+    ne_attribute((nonnull));
 
 NE_END_DECLS
 
