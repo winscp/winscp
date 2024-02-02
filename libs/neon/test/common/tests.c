@@ -115,6 +115,8 @@ void t_warning(const char *str, ...)
 #define W_RED(m) do { if (use_colour) W("\033[41;37;01m"); \
 W(m); if (use_colour) W("\033[00m\n"); } while (0);
 
+#ifndef NEON_NO_TEST_CHILD
+
 /* Signal handler for child processes. */
 static void child_segv(int signo)
 {
@@ -148,6 +150,7 @@ void in_child(void)
     signal(SIGABRT, child_segv);
     flag_child = 1;
 }
+#endif
 
 static const char dots[] = "......................";
 
@@ -221,9 +224,11 @@ int main(int argc, char *argv[])
 	return -1;
     }
 
+#ifndef NEON_NO_TEST_CHILD
     /* install special SEGV handler. */
     signal(SIGSEGV, parent_segv);
     signal(SIGABRT, parent_segv);
+#endif
 
     /* test the "no-debugging" mode of ne_debug. */
     ne_debug_init(NULL, 0);
@@ -374,8 +379,10 @@ int main(int argc, char *argv[])
 	    break;
 	}
 
+#ifndef NEON_NO_TEST_CHILD
 	reap_server();
-            
+#endif
+
         if (quiet) {
             print_prefix(n);
         }

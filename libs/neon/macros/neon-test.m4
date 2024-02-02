@@ -43,3 +43,7 @@ AC_CHECK_FUNCS(pipe isatty usleep shutdown setlocale gethostname)
 AC_REQUIRE([NE_FIND_AR])
 
 ])
+
+AC_DEFUN([NEON_TEST_WITHOUT_CHILD], [
+AC_DEFINE([NEON_NO_TEST_CHILD], 1, [Define if test suite child process handling is not needed])
+])

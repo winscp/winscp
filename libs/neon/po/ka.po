@@ -1,13 +1,13 @@
 # Georgian translation for neon
-# Copyright (C) 2022, neon authors
+# Copyright (C) 2022, Temuri Doghonadze
 # This file is distributed under the same license as the neon package.
 # Temuri Doghonadze <temuri.doghonadze@gmail.com>, 2022.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: neon-dev\n"
-"Report-Msgid-Bugs-To: neon@lists.manyfish.co.uk\n"
-"POT-Creation-Date: 2022-09-11 08:33+0100\n"
+"Report-Msgid-Bugs-To: https://github.com/notroj/neon\n"
+"POT-Creation-Date: 2024-01-29 19:40+0000\n"
 "PO-Revision-Date: 2022-12-13 09:04+0100\n"
 "Last-Translator: Temuri Doghonadze <temuri.doghonadze@gmail.com>\n"
 "Language-Team: Georgian <(nothing)>\n"
@@ -18,7 +18,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "X-Generator: Poedit 3.2.2\n"
 
-#: src/ne_207.c:213
+#: src/ne_207.c:214
 #, c-format
 msgid ""
 "Invalid HTTP status line in status element at line %d of response:\n"
@@ -48,108 +48,116 @@ msgstr "basic გამოწვევაში რეალმი მითი�
 
 #: src/ne_auth.c:465
 msgid "cannot handle Basic challenge for username containing colon"
-msgstr "basic გამოწვევისთვის ორი წერტილის შემცველი მომხმარებლის სახელის დამუშავება შეუძლებელია"
+msgstr ""
+"basic გამოწვევისთვის ორი წერტილის შემცველი მომხმარებლის სახელის დამუშავება "
+"შეუძლებელია"
 
-#: src/ne_auth.c:570
+#: src/ne_auth.c:568
 msgid "invalid Negotiate token"
 msgstr "მოლაპარაკების კოდი არასწორია"
 
-#: src/ne_auth.c:593
+#: src/ne_auth.c:591
 msgid "GSSAPI authentication error: "
 msgstr "GSSAPI ავთენტიკაციის შეცდომა: "
 
-#: src/ne_auth.c:606
+#: src/ne_auth.c:604
 #, c-format
 msgid "GSSAPI failure (code %u)"
 msgstr "GSSAPI -ის ავარია (კოდი %u)"
 
-#: src/ne_auth.c:641
+#: src/ne_auth.c:639
 msgid "ignoring empty Negotiate continuation"
 msgstr "ცარიელი მოლაპარაკების გაგრძელების იგნორირება"
 
-#: src/ne_auth.c:656
+#: src/ne_auth.c:654
 #, c-format
 msgid "Negotiate response verification failed: invalid response header token"
-msgstr "მოლაპარაკების პასუხის გადამოწმების შეცდომა: პასუხის თავსართის კოდი არასწორია"
+msgstr ""
+"მოლაპარაკების პასუხის გადამოწმების შეცდომა: პასუხის თავსართის კოდი არასწორია"
 
-#: src/ne_auth.c:678
+#: src/ne_auth.c:676
 #, c-format
 msgid "Negotiate response verification failure: %s"
 msgstr "მოლაპარაკების პასუხის გადამოწმების შეცდომა: %s"
 
-#: src/ne_auth.c:742
+#: src/ne_auth.c:740
 #, c-format
 msgid "SSPI response verification failed: invalid response header token"
 msgstr "SSPI პასუხის გადამოწმების შეცდომა: პასუხის თავსართის კოდი არასწორია"
 
-#: src/ne_auth.c:928
+#: src/ne_auth.c:926
 msgid "could not handle non-ASCII username in Digest challenge"
-msgstr "დაიჯესტის გამოწვევაში არა-ASCII მომხმარებლის სახელის დამუშავება შეუძლებელია"
+msgstr ""
+"დაიჯესტის გამოწვევაში არა-ASCII მომხმარებლის სახელის დამუშავება შეუძლებელია"
 
-#: src/ne_auth.c:956
+#: src/ne_auth.c:954
 msgid "unknown algorithm in Digest challenge"
 msgstr "დაიჯესტის გამოწვევის უცნობი ალგორითმი"
 
-#: src/ne_auth.c:963
+#: src/ne_auth.c:961
 msgid "legacy Digest challenge not supported"
 msgstr "მოძველებული დაიჯესტის გამოწვევა მხარდაჭერილი არაა"
 
-#: src/ne_auth.c:967
+#: src/ne_auth.c:965
 msgid "incompatible algorithm in Digest challenge"
 msgstr "დაიჯესტის გამოწვევის შეუთავსებელი ალგორითმი"
 
-#: src/ne_auth.c:971
+#: src/ne_auth.c:969
 msgid "missing parameter in Digest challenge"
 msgstr "დაიჯესტის გამოწვევას პარამეტრი აკლია"
 
-#: src/ne_auth.c:975
+#: src/ne_auth.c:973
 msgid "initial Digest challenge was stale"
 msgstr "საწყისი დაიჯესტის გამოწვევა გაჭედილია"
 
-#: src/ne_auth.c:982
+#: src/ne_auth.c:980
 msgid "stale Digest challenge with new algorithm or realm"
 msgstr "გაჭედლი დაიჯესტის გამოწვევა ახალი ალგორითმით ან რეალმით"
 
-#: src/ne_auth.c:989
+#: src/ne_auth.c:987
 #, c-format
 msgid "%s algorithm in Digest challenge not supported"
 msgstr "%s ალგორითმი დაიჯესტის გამოწვევაში მხარდაჭერილი არაა"
 
-#: src/ne_auth.c:1003
+#: src/ne_auth.c:1001
 msgid "could not parse domain in Digest challenge"
 msgstr "დაიჯესტის გამოწვევაში დომენის დამუშავების შეცდომა"
 
-#: src/ne_auth.c:1281
+#: src/ne_auth.c:1279
 #, c-format
 msgid "Digest mutual authentication failure: missing parameters"
 msgstr "დაჯესტის ორმხრივი ავთენტიკაციის შეცდომა: არასაკმარისი პარამეტრებ"
 
-#: src/ne_auth.c:1286
+#: src/ne_auth.c:1284
 #, c-format
 msgid "Digest mutual authentication failure: client nonce mismatch"
 msgstr "დაიჯესტის ორმხრივი ავთენტიკაციის შეცდომა: კლიენტის nonce არ ემთხვევა"
 
-#: src/ne_auth.c:1296
+#: src/ne_auth.c:1294
 #, c-format
 msgid "Digest mutual authentication failure: could not parse nonce count"
-msgstr "დაიჯესტის ორმხრივი ავთენტიკაციის შეცდომა: nonce-ების რაოდენობის დამუშავების შეცდომა"
+msgstr ""
+"დაიჯესტის ორმხრივი ავთენტიკაციის შეცდომა: nonce-ების რაოდენობის დამუშავების "
+"შეცდომა"
 
-#: src/ne_auth.c:1301
+#: src/ne_auth.c:1299
 #, c-format
 msgid "Digest mutual authentication failure: nonce count mismatch (%u not %u)"
-msgstr "დაიჯესტის ორმხრივი ავთენტიკაციის შეცდომა: nonce-ის რაოდენობა არ ემთხვევა (%u და არა %u)"
+msgstr ""
+"დაიჯესტის ორმხრივი ავთენტიკაციის შეცდომა: nonce-ის რაოდენობა არ ემთხვევა (%u "
+"და არა %u)"
 
-#: src/ne_auth.c:1328
+#: src/ne_auth.c:1326
 #, c-format
 msgid "Digest mutual authentication failure: request-digest mismatch"
 msgstr "დაიჯესტის ორმხრივი ავთენტიკაციის შეცდომა: request-digest არ ემთხვევა"
 
-#: src/ne_auth.c:1466
+#: src/ne_auth.c:1465
 #, c-format
 msgid "ignored %s challenge"
 msgstr "%s გამოწვევა იგნორირებულია"
 
-#: src/ne_auth.c:1563
+#: src/ne_auth.c:1562
 msgid "could not parse challenge"
 msgstr "გამოწვევის დამუშავების შეცდომა"
 
@@ -158,17 +166,17 @@ msgstr "გამოწვევის დამუშავების შე�
 msgid "Could not determine file size: %s"
 msgstr "ფაილის ზომის განსაზღვრის შეცდომა: %s"
 
-#: src/ne_basic.c:149
+#: src/ne_basic.c:172
 #, c-format
 msgid "Response did not include requested range"
 msgstr "პასუხი მოთხოვნილ დიაპაზონს არ შეიცავს"
 
-#: src/ne_basic.c:183
+#: src/ne_basic.c:207
 #, c-format
 msgid "Range is not satisfiable"
 msgstr "დაპაზონი დამაკმაყოფილებელი არაა"
 
-#: src/ne_basic.c:188
+#: src/ne_basic.c:212
 #, c-format
 msgid "Resource does not support ranged GET requests"
 msgstr "რესურსს დიაპაზონის შემცველ GETი მოთხოვნების მხარდაჭერა არ გააჩნია"
@@ -195,65 +203,65 @@ msgstr "[არა-ბეჭდვადი:#%lu]"
 msgid "[unprintable]"
 msgstr "[არადაბეჭდვადი]"
 
-#: src/ne_gnutls.c:660
+#: src/ne_gnutls.c:637
 #, c-format
 msgid "Failed to import private key: %s"
 msgstr "სერვერის პირადი გასაღების შემოტანის შეცდომა: %s"
 
-#: src/ne_gnutls.c:904
+#: src/ne_gnutls.c:881
 msgid "signed using insecure algorithm"
 msgstr "ხელმოწერილია დაუცველი ალგორითმით"
 
-#: src/ne_gnutls.c:907
+#: src/ne_gnutls.c:884
 #, c-format
 msgid "unrecognized errors (%u)"
 msgstr "უცნობი შეცდომები (%u0)"
 
-#: src/ne_gnutls.c:952 src/ne_openssl.c:484
+#: src/ne_gnutls.c:925 src/ne_openssl.c:458
 #, c-format
 msgid "Server certificate was missing commonName attribute in subject name"
 msgstr "სერვერის სერტიფიკატს თემის სახელში commonName ატრიბუტი აკლია"
 
-#: src/ne_gnutls.c:966
+#: src/ne_gnutls.c:939
 #, c-format
 msgid "Could not verify server certificate: %s"
 msgstr "სერვერის სერტიფიკატის გადამოწმების შეცდომა: %s"
 
-#: src/ne_gnutls.c:985 src/ne_openssl.c:471
+#: src/ne_gnutls.c:958 src/ne_openssl.c:448
 #, c-format
 msgid "Certificate verification error: %s"
 msgstr "სერტიფიკატის გადამოწმების შეცდომა: %s"
 
-#: src/ne_gnutls.c:1018 src/ne_openssl.c:720
+#: src/ne_gnutls.c:991 src/ne_openssl.c:694
 #, c-format
 msgid "SSL handshake failed, client certificate was requested: %s"
 msgstr "SSL მიმოცვლის შეცდომა. მოთხოვნილი კლიენტის სერტიფიკატი: %s"
 
-#: src/ne_gnutls.c:1023 src/ne_openssl.c:725
+#: src/ne_gnutls.c:996 src/ne_openssl.c:699
 #, c-format
 msgid "SSL handshake failed: %s"
 msgstr "SSL მიმოცვლის შეცდომა: %s"
 
-#: src/ne_gnutls.c:1033
+#: src/ne_gnutls.c:1006
 #, c-format
 msgid "Server did not send certificate chain"
 msgstr "სერვერმა სერტიფიკატის ჯაჭვი არ გამოაგზავნა"
 
-#: src/ne_locks.c:619
+#: src/ne_locks.c:640
 msgid "LOCK response missing Lock-Token header"
 msgstr "LOCK პასუხს თავსართი Lock-Token აკლია"
 
-#: src/ne_locks.c:794
+#: src/ne_locks.c:815
 #, c-format
 msgid "Response missing activelock for %s"
 msgstr "პასუხს %s-სთვის activelock აკლია"
 
-#: src/ne_locks.c:836
+#: src/ne_locks.c:860
 #, c-format
 msgid "No activelock for <%s> returned in LOCK refresh response"
 msgstr "LOCK-ის განახლების პასუხში <%s>-ის activelock არ დაბრუნებულა"
 
-#: src/ne_openssl.c:745
+#: src/ne_openssl.c:719
 #, c-format
 msgid "SSL server did not present certificate"
 msgstr "SSL სერვერმა სერტიფიკატი არ წარმოადგინა"
@@ -267,255 +275,254 @@ msgstr "პასუხი თვისებების მაქსიმა�
 msgid "Could not parse redirect destination URL"
 msgstr "გადამისამართების სამიზნე URL-ის დამუშავების შეცდომა"
 
-#: src/ne_request.c:196
+#: src/ne_request.c:203
 #, c-format
 msgid "%s: connection was closed by proxy server"
 msgstr "%s: შეერთება დახურულია პროქსი სერვერის მიერ"
 
-#: src/ne_request.c:199
+#: src/ne_request.c:206
 #, c-format
 msgid "%s: connection was closed by server"
 msgstr "%s შეერთება დახურულია სერვერის მიერ"
 
-#: src/ne_request.c:204
+#: src/ne_request.c:211
 #, c-format
 msgid "%s: connection timed out"
 msgstr "%s: შეერთების მოლოდინის ვადა ამოიწურა"
 
-#: src/ne_request.c:307
+#: src/ne_request.c:314
 #, c-format
 msgid "Premature EOF in request body file"
 msgstr "ნაადრევი EOF მოთხოვნის სხეულის ფაილში"
 
-#: src/ne_request.c:314
+#: src/ne_request.c:321
 #, c-format
 msgid "Failed reading request body file: %s"
 msgstr "მოთხოვნის სხეულის ფაილის წაკითხვის შეცდომა: %s"
 
-#: src/ne_request.c:334
+#: src/ne_request.c:341
 msgid "offset invalid"
 msgstr "წანაცვლება არასწორია"
 
-#: src/ne_request.c:339
+#: src/ne_request.c:346
 #, c-format
 msgid "Could not seek to offset %s of request body file: %s"
 msgstr "მოთხოვნის სხეულის ფაილში %s წანაცვლებაზე გადახვევის შეცდომა: %s"
 
-#: src/ne_request.c:425
+#: src/ne_request.c:432
 msgid "Could not send request body"
 msgstr "მოთხოვნის სხეულის გაგზავნის შეცდომა"
 
-#: src/ne_request.c:452
+#: src/ne_request.c:459
 msgid "Could not send chunked request terminator"
 msgstr "ნაგლეჯების შემცველი მოთხოვნის დამსრულებლის გაგზავნის შეცდომა"
 
-#: src/ne_request.c:788
+#: src/ne_request.c:814
 msgid "Could not read chunk size"
 msgstr "ნაგლეჯის ზომის წაკითხვის შეცდომა"
 
-#: src/ne_request.c:795
+#: src/ne_request.c:821
 msgid "Could not parse chunk size"
 msgstr "ნაგლეჯის ზომის დამუშავების შეცდოა"
 
-#: src/ne_request.c:832
+#: src/ne_request.c:858
 msgid "Could not read response body"
 msgstr "პასუხის სხეულის დამუშავების შეცდომა"
 
-#: src/ne_request.c:848
+#: src/ne_request.c:874
 msgid "Could not read chunk delimiter"
 msgstr "ნაგლეჯის გამყოფის წაკითხვის შეცდომა"
 
-#: src/ne_request.c:851
+#: src/ne_request.c:877
 msgid "Chunk delimiter was invalid"
 msgstr "ნაგლეჯის გამყოფი არასწორია"
 
-#: src/ne_request.c:964
+#: src/ne_request.c:990
 msgid "Could not read status line (TLS client certificate was requested)"
-msgstr "სტატუსის ხაზის წაკითხვა შეუძლებელია (მოთხოვნილი იყო TLS კლიენტის სერტიფიკატი)"
+msgstr ""
+"სტატუსის ხაზის წაკითხვა შეუძლებელია (მოთხოვნილი იყო TLS კლიენტის სერტიფიკატი)"
 
-#: src/ne_request.c:965
+#: src/ne_request.c:991
 msgid "Could not read status line"
 msgstr "სტატუსის ხაზის წაკითხვა შეუძლებელია"
 
-#: src/ne_request.c:988
+#: src/ne_request.c:1014
 msgid "Could not parse response status line"
 msgstr "პასუხის სტატუსის ხაზის წაკითხვის შეცდომა"
 
-#: src/ne_request.c:1000
-msgid "Could not read interim response headers"
-msgstr "შუალედური პასუხის თავსართების წაკითხვის შეცდომა"
-
-#: src/ne_request.c:1035
+#: src/ne_request.c:1053
 msgid "Could not send request"
 msgstr "მოთხოვნის გაგზავნა შეუძლებელია"
 
-#: src/ne_request.c:1069
-msgid "Too many interim responses"
+#: src/ne_request.c:1095
+#, fuzzy
+msgid "Timed out reading interim responses"
 msgstr "მეტისმეტად ბევრი შუალედური პასუხი"
 
-#: src/ne_request.c:1089 src/ne_request.c:1107 src/ne_request.c:1117
+#: src/ne_request.c:1124 src/ne_request.c:1142 src/ne_request.c:1152
 msgid "Error reading response headers"
 msgstr "პასუხის თავსართების წაკითხვის შეცდომა"
 
-#: src/ne_request.c:1135
+#: src/ne_request.c:1170
 #, c-format
 msgid "Response header too long"
 msgstr "პასუხის თავსართი მეტისმეტად გრძელია"
 
-#: src/ne_request.c:1217
+#: src/ne_request.c:1257
 msgid "Response exceeded maximum number of header fields"
 msgstr "პასუხის თავსართის ველების მაქსიმალურ რიცხვს სცდება"
 
-#: src/ne_request.c:1232
+#: src/ne_request.c:1272
 #, c-format
 msgid "Could not resolve hostname `%s': %s"
 msgstr "ჰოსტის სახელის '%s' ამოხსნის შეცდომა: %s"
 
-#: src/ne_request.c:1362
+#: src/ne_request.c:1398
 msgid "Unknown transfer-coding in response"
 msgstr "პასუხის transfer-code არასწორია"
 
-#: src/ne_request.c:1377
+#: src/ne_request.c:1413
 msgid "Invalid Content-Length in response"
 msgstr "პასუხის Content-Length არასწორია"
 
-#: src/ne_request.c:1452
+#: src/ne_request.c:1489
 #, c-format
 msgid "Could not write to file: %s"
 msgstr "ფაილში ჩაწერის შეცდომა: %s"
 
-#: src/ne_request.c:1525
+#: src/ne_request.c:1562
 #, c-format
 msgid "Could not create SSL connection through proxy server: %s"
 msgstr "პროქსის გავლით SSL შეერთების შექნის შეცდომა: %s"
 
-#: src/ne_request.c:1564
+#: src/ne_request.c:1601
 #, c-format
 msgid "Could not create socket"
 msgstr "სოკეტის შექმნის შეცდომა"
 
-#: src/ne_request.c:1598
+#: src/ne_request.c:1637
 msgid "Could not connect to server"
 msgstr "სერვერთან მიერთების პრობლემა"
 
-#: src/ne_request.c:1600
+#: src/ne_request.c:1639
 msgid "Could not connect to proxy server"
 msgstr "პროქსი სერვერთან დაკავშირების შეცდომა"
 
-#: src/ne_request.c:1643
+#: src/ne_request.c:1682
 #, c-format
 msgid "Could not find IPv4 address of hostname %s for SOCKS v4 proxy"
-msgstr "SOCKS v4 პროქსისთვის ჰოსტის სახელის %s IPv4 მისამართის აღმოჩენა შეუძლებელია"
+msgstr ""
+"SOCKS v4 პროქსისთვის ჰოსტის სახელის %s IPv4 მისამართის აღმოჩენა შეუძლებელია"
 
-#: src/ne_request.c:1701
+#: src/ne_request.c:1740
 #, c-format
 msgid "Could not establish connection from SOCKS proxy (%s:%u): %s"
 msgstr "SOCKS პროქსიდან (%s:%u) მიერთების დამყარების შეცდომა: %s"
 
-#: src/ne_session.c:538 src/ne_session.c:549
+#: src/ne_session.c:555 src/ne_session.c:566
 msgid "[invalid date]"
 msgstr "[არასწორი თარიღი]"
 
-#: src/ne_session.c:562
+#: src/ne_session.c:579
 msgid "certificate is not yet valid"
 msgstr "სერტიფიკატი ჯერ არასწორია"
 
-#: src/ne_session.c:563
+#: src/ne_session.c:580
 msgid "certificate has expired"
 msgstr "სერტიფიკატი ვადაგასულია"
 
-#: src/ne_session.c:564
+#: src/ne_session.c:581
 msgid "certificate issued for a different hostname"
 msgstr "სერტიფიკატი სხვა ჰოსტის სახელს ეკუთვნის"
 
-#: src/ne_session.c:565
+#: src/ne_session.c:582
 msgid "issuer is not trusted"
 msgstr "გამომცემელი სანდო არაა"
 
-#: src/ne_session.c:566
+#: src/ne_session.c:583
 msgid "bad certificate chain"
 msgstr "სერტიფიკატების არასწორი ჯაჭვი"
 
-#: src/ne_session.c:567
+#: src/ne_session.c:584
 msgid "certificate has been revoked"
 msgstr "სერტიფიკატი გაუქმებულია"
 
-#: src/ne_session.c:572
+#: src/ne_session.c:589
 msgid "Server certificate verification failed: "
 msgstr "სერვერის სერტიფიკატის გადამოწმების შეცდომა: "
 
-#: src/ne_socket.c:522 src/ne_socket.c:674 src/ne_socket.c:804
+#: src/ne_socket.c:524 src/ne_socket.c:676 src/ne_socket.c:806
 msgid "Connection closed"
 msgstr "კავშირი დახურულია"
 
-#: src/ne_socket.c:679
+#: src/ne_socket.c:681
 msgid "Retry operation"
 msgstr "ოპერაციის თავიდან ცდა"
 
-#: src/ne_socket.c:693 src/ne_socket.c:708 src/ne_socket.c:818
+#: src/ne_socket.c:695 src/ne_socket.c:710 src/ne_socket.c:820
 msgid "Secure connection truncated"
 msgstr "დაცული შეერთება წაკვეთილია"
 
-#: src/ne_socket.c:699
+#: src/ne_socket.c:701
 msgid "Secure connection reset"
 msgstr "დაცული შეერთება გაწყდა"
 
-#: src/ne_socket.c:720 src/ne_socket.c:834
+#: src/ne_socket.c:722 src/ne_socket.c:836
 #, c-format
 msgid "SSL error: %s"
 msgstr "SSL-ის შეცდომა: %s"
 
-#: src/ne_socket.c:723
+#: src/ne_socket.c:725
 #, c-format
 msgid "SSL error code %d/%d/%lu"
 msgstr "SSL -ის შეცდომის კოდი %d/%d/%lu"
 
-#: src/ne_socket.c:809
+#: src/ne_socket.c:811
 #, c-format
 msgid "SSL alert received: %s"
 msgstr "SSL გაფრთხილება მიღებულია: %s"
 
-#: src/ne_socket.c:830
+#: src/ne_socket.c:832
 msgid "SSL socket read failed"
 msgstr "SSL სოკეტის წაკითხვის შეცდომა"
 
-#: src/ne_socket.c:961
+#: src/ne_socket.c:963
 msgid "Line too long"
 msgstr "ხაზი ძალიან გრძელია"
 
-#: src/ne_socket.c:1122 src/ne_socket.c:1128
+#: src/ne_socket.c:1124 src/ne_socket.c:1130
 msgid "Host not found"
 msgstr "ჰოსტი ნაპოვნი არაა"
 
-#: src/ne_socket.c:1337
+#: src/ne_socket.c:1339
 msgid "Connection timed out"
 msgstr "კავშირის ვადა გავიდა"
 
-#: src/ne_socket.c:1536
+#: src/ne_socket.c:1538
 msgid "Socket descriptor number exceeds FD_SETSIZE"
 msgstr "სოკეტის დესკრიპტორის ნომერი FD_SETSIZE-ს სცილდება"
 
-#: src/ne_socket.c:1598
+#: src/ne_socket.c:1600
 msgid "Socket family not supported"
 msgstr "სოკეტის ოჯახი მხარდაჭერილი არაა"
 
-#: src/ne_socket.c:1835
+#: src/ne_socket.c:1837
 msgid "Client certificate verification failed"
 msgstr "კლიენტის სერტიფიკატის შემოწმების შეცდომა"
 
-#: src/ne_socket.c:1851
+#: src/ne_socket.c:1853
 msgid "SSL disabled due to lack of entropy"
 msgstr "ენტროპიის ნაკლებობის გამო SSL-ი გათიშულია"
 
-#: src/ne_socket.c:1857
+#: src/ne_socket.c:1859
 msgid "Could not create SSL structure"
 msgstr "SSL სტრუქტურის შექმნის შეცდომა"
 
-#: src/ne_socket.c:2029
+#: src/ne_socket.c:2031
 msgid "Missing flags for socket shutdown"
 msgstr "სოკეტის გასათიშად საჭირო ალმები არ არსებობს"
 
-#: src/ne_socket.c:2047 src/ne_socket.c:2058 src/ne_socket.c:2073
+#: src/ne_socket.c:2049 src/ne_socket.c:2060 src/ne_socket.c:2075
 msgid "Incomplete TLS closure"
 msgstr "TLS-ს არასრული დახურვა"
 
@@ -659,3 +666,6 @@ msgstr "XML -ის დამუშავების შეცდომა ხ�
 #, c-format
 msgid "Could not parse response: %s"
 msgstr "პასუხის დამუშავების შეცდომა: %s"
+
+#~ msgid "Could not read interim response headers"
+#~ msgstr "შუალედური პასუხის თავსართების წაკითხვის შეცდომა"

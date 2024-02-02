@@ -544,8 +544,9 @@ help: ## Show this help screen
 
 ##@ Testing
 test: tests ## Run tests (alias of "tests")
-{- dependmagic('tests', 'Run tests'); -}: build_programs_nodep build_modules_nodep link-utils run_tests
-run_tests:
+{- dependmagic('tests', 'Run tests'); -}: build_programs_nodep build_modules_nodep link-utils
+	$(MAKE) run_tests
+run_tests: FORCE
 	@ : {- output_off() if $disabled{tests}; "" -}
 	( SRCTOP=$(SRCDIR) \
 	  BLDTOP=$(BLDDIR) \
@@ -1363,18 +1364,16 @@ renumber: build_generated
                 --renumber \
                 $(SSLHEADERS)
 
-$(SRCDIR)/util/libcrypto.num: $(CRYPTOHEADERS) $(SRCDIR)/include/openssl/symhacks.h
+.PHONY: ordinals
+ordinals: build_generated
 	$(PERL) $(SRCDIR)/util/mknum.pl --version $(VERSION_NUMBER) --no-warnings \
                 --ordinals $(SRCDIR)/util/libcrypto.num \
                 --symhacks $(SRCDIR)/include/openssl/symhacks.h \
                 $(CRYPTOHEADERS)
-$(SRCDIR)/util/libssl.num: $(SSLHEADERS) $(SRCDIR)/include/openssl/symhacks.h
 	$(PERL) $(SRCDIR)/util/mknum.pl --version $(VERSION_NUMBER) --no-warnings \
                 --ordinals $(SRCDIR)/util/libssl.num \
                 --symhacks $(SRCDIR)/include/openssl/symhacks.h \
                 $(SSLHEADERS)
-.PHONY: ordinals
-ordinals: build_generated $(SRCDIR)/util/libcrypto.num $(SRCDIR)/util/libssl.num
 
 test_ordinals:
 	$(MAKE) run_tests TESTS=test_ordinals

@@ -91,6 +91,14 @@ if test "$enable_memleak" = "yes"; then
   ALLOW_INSTALL=memleak
 fi
 
+AC_ARG_ENABLE(auto-libproxy, 
+  AS_HELP_STRING([--enable-auto-libproxy],
+                 [for using libproxy during session creation]))
+
+if test "$enable_auto_libproxy" = "yes"; then
+  AC_DEFINE(NE_ENABLE_AUTO_LIBPROXY, 1, [to use libproxy automatically])
+fi
+
 # Enable tests for optional features
 TESTS="\$(BASIC_TESTS)"
 HELPERS=""

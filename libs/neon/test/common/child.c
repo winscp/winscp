@@ -38,6 +38,9 @@
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
 
 #include <fcntl.h>
 #include <netdb.h>
@@ -50,17 +53,29 @@
 #include "tests.h"
 #include "child.h"
 
+#ifndef NEON_NO_TEST_CHILD
+
+#ifndef NI_MAXHOST
+#define NI_MAXHOST 1025
+#endif
+
 static pid_t child = 0;
 
 int clength;
 
-static struct in_addr lh_addr, hn_addr;
+struct server_addr {
+    int family;
+    union {
+	struct sockaddr_in in;
+	struct sockaddr_in6 in6;
+    } sockaddr;
+    char name[NI_MAXHOST];
+};
 
-static int have_lh_addr;
+struct server_addr lh;
 
 const char *want_header = NULL;
 got_header_fn got_header = NULL;
-char *local_hostname = NULL;
 
 /* If we have pipe(), then use a pipe between the parent and child to
  * know when the child is ready to accept incoming connections.
@@ -72,48 +87,125 @@ char *local_hostname = NULL;
 
 int lookup_localhost(void)
 {
-    /* this will break if a system is set up so that `localhost' does
-     * not resolve to 127.0.0.1, but... */
-    lh_addr.s_addr = inet_addr("127.0.0.1");
-    have_lh_addr = 1;
-    return OK;
-}
-
-int lookup_hostname(void)
-{
-    char buf[BUFSIZ];
-    struct hostent *ent;
-
-    local_hostname = NULL;
-    ONV(gethostname(buf, BUFSIZ) < 0,
-	("gethostname failed: %s", strerror(errno)));
-
-    ent = gethostbyname(buf);
-#ifdef HAVE_HSTRERROR
-    ONV(ent == NULL,
-	("could not resolve `%s': %s", buf, hstrerror(h_errno)));
-#else
-    ONV(ent == NULL, ("could not resolve `%s'", buf));
+#ifdef USE_GETADDRINFO
+    struct addrinfo hints = {}, *results, *rp;
 #endif
 
-    local_hostname = ne_strdup(ent->h_name);
+    if (lh.family != AF_UNSPEC)
+	return OK;
+
+#ifdef USE_GETADDRINFO
+
+#ifdef USE_GAI_ADDRCONFIG
+    hints.ai_flags = AI_ADDRCONFIG;
+#endif
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    if (getaddrinfo("localhost", NULL, &hints, &results) != 0)
+	goto err_use_ipv4;
+
+    for (rp = results; rp != NULL; rp = rp->ai_next) {
+	int sock, rv;
+
+	if (rp->ai_family != AF_INET &&
+	    rp->ai_family != AF_INET6)
+	    continue;
+
+	sock = socket(rp->ai_family, rp->ai_socktype, 0);
+	if (sock < 0)
+	    continue;
+	rv = bind(sock, rp->ai_addr, rp->ai_addrlen);
+	close(sock);
+	if (rv < 0)
+	    continue;
+
+	if (getnameinfo(rp->ai_addr, rp->ai_addrlen,
+			lh.name, sizeof lh.name, NULL, 0,
+			NI_NUMERICHOST))
+	    continue;
+
+	lh.family = rp->ai_family;
+	memcpy(&lh.sockaddr, rp->ai_addr, rp->ai_addrlen);
+	break;
+    }
+
+    freeaddrinfo(results);
+
+err_use_ipv4:
+
+#endif
+
+    if (lh.family == AF_UNSPEC) {
+	/* this will break if a system is set up so that `localhost' does
+	 * not resolve to 127.0.0.1, but... */
+	lh.family = AF_INET;
+	strcpy(lh.name, "127.0.0.1");
+	lh.sockaddr.in.sin_family = lh.family;
+	lh.sockaddr.in.sin_addr.s_addr = inet_addr(lh.name);
+    }
 
     return OK;
 }
 
-static int do_listen(struct in_addr addr, int port)
+int
+get_lh_family(void)
 {
-    int ls = socket(AF_INET, SOCK_STREAM, 0);
-    struct sockaddr_in saddr = {0};
+    if (lh.family == AF_UNSPEC)
+        lookup_localhost();
+
+    return lh.family;
+}
+
+const char *
+get_lh_addr(void)
+{
+    if (lh.family == AF_UNSPEC)
+        lookup_localhost();
+
+    return lh.name;
+}
+
+ne_inet_addr *
+get_lh_inet_addr(void)
+{
+    ne_iaddr_type type;
+    unsigned char *raw;
+
+    if (lh.family == AF_UNSPEC)
+        lookup_localhost();
+
+    if (lh.family == AF_INET) {
+	type = ne_iaddr_ipv4;
+	raw = (unsigned char *) &lh.sockaddr.in.sin_addr.s_addr;
+    } else {
+	type = ne_iaddr_ipv6;
+	raw = lh.sockaddr.in6.sin6_addr.s6_addr;
+    }
+
+    return ne_iaddr_make(type, raw);
+}
+
+static int do_listen(int port)
+{
+    int ls = socket(lh.family, SOCK_STREAM, 0);
+    struct sockaddr *saddr;
+    socklen_t saddrlen;
     int val = 1;
 
     setsockopt(ls, SOL_SOCKET, SO_REUSEADDR, (void *)&val, sizeof(int));
-    
-    saddr.sin_addr = addr;
-    saddr.sin_port = htons(port);
-    saddr.sin_family = AF_INET;
 
-    if (bind(ls, (struct sockaddr *)&saddr, sizeof(saddr))) {
+    if (lh.family == AF_INET) {
+	lh.sockaddr.in.sin_port = htons(port);
+	saddr = (struct sockaddr *) &lh.sockaddr.in;
+	saddrlen = sizeof lh.sockaddr.in;
+    } else {
+	lh.sockaddr.in6.sin6_port = htons(port);
+	saddr = (struct sockaddr *) &lh.sockaddr.in6;
+	saddrlen = sizeof lh.sockaddr.in6;
+    }
+
+    if (bind(ls, saddr, saddrlen)) {
 	printf("bind failed: %s\n", strerror(errno));
 	return -1;
     }
@@ -171,7 +263,7 @@ static int close_socket(ne_socket *sock)
 }
 
 /* This runs as the child process. */
-static int server_child(int readyfd, struct in_addr addr, int port,
+static int server_child(int readyfd, int port,
 			server_fn callback, void *userdata)
 {
     ne_socket *s = ne_sock_create();
@@ -179,7 +271,7 @@ static int server_child(int readyfd, struct in_addr addr, int port,
 
     in_child();
 
-    listener = do_listen(addr, port);
+    listener = do_listen(port);
     if (listener < 0)
 	return FAIL;
 
@@ -199,15 +291,7 @@ static int server_child(int readyfd, struct in_addr addr, int port,
 
 int spawn_server(int port, server_fn fn, void *ud)
 {
-    return spawn_server_addr(1, port, fn, ud);
-}
-
-int spawn_server_addr(int bind_local, int port, server_fn fn, void *ud)
-{
     int fds[2];
-    struct in_addr addr;
-
-    addr = bind_local?lh_addr:hn_addr;
 
 #ifdef USE_PIPE
     if (pipe(fds)) {
@@ -227,7 +311,7 @@ int spawn_server_addr(int bind_local, int port, server_fn fn, void *ud)
 	/* this is the child. */
 	int ret;
 
-	ret = server_child(fds[1], addr, port, fn, ud);
+	ret = server_child(fds[1], port, fn, ud);
 
 #ifdef USE_PIPE
 	close(fds[0]);
@@ -276,25 +360,34 @@ int new_spawn_server(int count, server_fn fn, void *userdata,
 int new_spawn_server2(int count, server_fn fn, void *userdata,
                       ne_inet_addr **addr, unsigned int *port)
 {
-    struct sockaddr_in sa;
+    union {
+	struct sockaddr_in  in;
+	struct sockaddr_in6 in6;
+    } sa;
     socklen_t salen = sizeof sa;
     int ls;
-    
-    if (!have_lh_addr)
+
+    if (lh.family == AF_UNSPEC)
         lookup_localhost();
 
-    ls = do_listen(lh_addr, 0);
+    ls = do_listen(0);
     ONN("could not bind/listen fd for server", ls < 0);
 
-    ONV(getsockname(ls, &sa, &salen) != 0,
+    ONV(getsockname(ls, (struct sockaddr *) &sa, &salen) != 0,
         ("could not get socket name for listening fd: %s",
          strerror(errno)));
-    
-    *port = ntohs(sa.sin_port);
-    *addr = ne_iaddr_make(ne_iaddr_ipv4, (unsigned char *)&lh_addr.s_addr);
+
+    if (salen == sizeof sa.in) {
+	*port = ntohs(sa.in.sin_port);
+	*addr = ne_iaddr_make(ne_iaddr_ipv4,
+			      (unsigned char *) &sa.in.sin_addr.s_addr);
+    } else {
+	*port = ntohs(sa.in6.sin6_port);
+	*addr = ne_iaddr_make(ne_iaddr_ipv6, sa.in6.sin6_addr.s6_addr);
+    }
 
     NE_DEBUG(NE_DBG_SOCKET, "child using port %u\n", *port);
-    
+
     NE_DEBUG(NE_DBG_SOCKET, "child forking now...\n");
 
     child = fork();
@@ -537,3 +630,5 @@ int serve_file(ne_socket *sock, void *ud)
 
     return OK;
 }
+
+#endif /* NEON_NO_TEST_CHILD */

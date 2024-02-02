@@ -41,26 +41,33 @@
 
 #define EOL "\r\n"
 
+#define FOO_LOCKROOT "http://localhost/foo"
+
 /* returns an activelock XML element. */
 static char *activelock(enum ne_lock_scope scope,
-			int depth,
-			const char *owner,
-			unsigned long timeout,
-			const char *token_href)
+                        int depth,
+                        const char *owner,
+                        const char *uri,
+                        unsigned long timeout,
+                        const char *token_href)
 {
     static char buf[BUFSIZ];
+    const char *lr_start = uri != NULL ? "<D:lockroot><D:href>" : "";
+    const char *lr_end = uri != NULL ? "</D:href></D:lockroot>\n" : "";
     
-    ne_snprintf(buf, BUFSIZ,
-		"<D:activelock>\n"
-		"<D:locktype><D:write/></D:locktype>\n"
-		"<D:lockscope><D:%s/></D:lockscope>\n"
-		"<D:depth>%d</D:depth>\n"
-		"<D:owner>%s</D:owner>\n"
-		"<D:timeout>Second-%lu</D:timeout>\n"
-		"<D:locktoken><D:href>%s</D:href></D:locktoken>\n"
-		"</D:activelock>",
-		scope==ne_lockscope_exclusive?"exclusive":"shared",
-		depth, owner, timeout, token_href);
+    ne_snprintf(buf, BUFSIZ,                                            \
+                "<D:activelock>\n"                                      \
+                "<D:locktype><D:write/></D:locktype>\n"                 \
+                "<D:lockscope><D:%s/></D:lockscope>\n"                  \
+                "<D:depth>%d</D:depth>\n"                               \
+                "<D:owner>%s</D:owner>\n"                               \
+                "<D:timeout>Second-%lu</D:timeout>\n"                   \
+                "<D:locktoken><D:href>%s</D:href></D:locktoken>\n"      \
+                "%s%s%s"                                                \
+                "</D:activelock>",                                      \
+                scope==ne_lockscope_exclusive?"exclusive":"shared",     \
+                depth, owner, timeout, token_href,                      \
+                lr_start, uri ? uri : "", lr_end);
 
     return buf;
 }	
@@ -69,6 +76,7 @@ static char *activelock(enum ne_lock_scope scope,
 static char *lock_response(enum ne_lock_scope scope,
 			   int depth,
 			   const char *owner,
+                           const char *uri,
 			   unsigned long timeout,
 			   const char *token_href)
 {
@@ -78,7 +86,7 @@ static char *lock_response(enum ne_lock_scope scope,
                 "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
                 "<D:prop xmlns:D=\"DAV:\">"
                 "<D:lockdiscovery>%s</D:lockdiscovery></D:prop>\n",
-                activelock(scope, depth, owner, timeout, token_href));
+                activelock(scope, depth, owner, uri, timeout, token_href));
 
     return buf;
 }
@@ -96,9 +104,9 @@ static char *multi_lock_response(struct ne_lock **locks)
 		      "<D:lockdiscovery>");
     
     for (n = 0; locks[n] != NULL; n++) {
-	char *lk = activelock(locks[n]->scope, locks[n]->depth,
-			      locks[n]->owner, locks[n]->timeout,
-			      locks[n]->token);
+        char *lk = activelock(locks[n]->scope, locks[n]->depth,
+                              locks[n]->owner, NULL,
+                              locks[n]->timeout, locks[n]->token);
 	ne_buffer_zappend(buf, lk);
     }
 
@@ -108,7 +116,9 @@ static char *multi_lock_response(struct ne_lock **locks)
 
 static char *discover_response(const char *href, const struct ne_lock *lk)
 {
-    static char buf[BUFSIZ];
+    char buf[BUFSIZ];
+    char *uri = ne_uri_unparse(&lk->uri);
+
     ne_snprintf(buf, BUFSIZ,
 		"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
 		"<D:multistatus xmlns:D='DAV:'>\n"
@@ -116,9 +126,12 @@ static char *discover_response(const char *href, const struct ne_lock *lk)
 		"<D:prop><D:lockdiscovery>%s</D:lockdiscovery></D:prop>\n"
 		"<D:status>HTTP/1.1 200 OK</D:status></D:propstat>\n"
 		"</D:response></D:multistatus>\n",
-		href, activelock(lk->scope, lk->depth, lk->owner,
+		href, activelock(lk->scope, lk->depth, lk->owner, uri,
 				 7200, lk->token));
-    return buf;
+
+    ne_free(uri);
+
+    return ne_strdup(buf);
 }
 
 static struct ne_lock *make_lock(const char *path, const char *token,
@@ -232,7 +245,7 @@ static int lock_timeout(void)
 {
     ne_session *sess;
     char *resp, *rbody = lock_response(ne_lockscope_exclusive, 0, "me",
-				       6500, "opaquelocktoken:foo");
+                                       NULL, 6500, "opaquelocktoken:foo");
     struct ne_lock *lock = ne_lock_create();
 
     resp = ne_concat("HTTP/1.1 200 OK\r\n" "Server: neon-test-server\r\n"
@@ -267,7 +280,7 @@ static int lock_timeout(void)
 static int lock_long_timeout(void)
 {
     ne_session *sess;
-    char *resp, *rbody = lock_response(ne_lockscope_exclusive, 0, "me",
+    char *resp, *rbody = lock_response(ne_lockscope_exclusive, 0, "me", FOO_LOCKROOT,
                                        LONG_TIMEOUT, "opaquelocktoken:foo");
     struct ne_lock *lock = ne_lock_create();
 
@@ -450,6 +463,7 @@ static int serve_discovery(ne_socket *sock, void *userdata)
 
 struct result_args {
     struct ne_lock *lock;
+    ne_uri uri;
     int result;
 };
 
@@ -474,7 +488,18 @@ static void discover_result(void *userdata, const struct ne_lock *lk,
 			    const ne_uri *uri, const ne_status *st)
 {
     struct result_args *args = userdata;
-    args->result = lock_compare("discovered lock", lk, args->lock);
+
+    if (ne_uri_cmp(uri, &args->uri) != 0) {
+        NE_DEBUG(NE_DBG_HTTP, "discover: URI mismatch: %s not %s",
+                 ne_uri_unparse(uri), ne_uri_unparse(&args->uri));
+        args->result = FAIL;
+    }
+    else {
+        NE_DEBUG(NE_DBG_HTTP, "test: Comparing discovered lock [%s] for %s "
+                 "with expected [%s]...\n",
+                 lk->token, uri->path, args->lock->token);
+        args->result = lock_compare("discovered lock", lk, args->lock);
+    }
 }
 
 static int discover(void)
@@ -483,6 +508,8 @@ static int discover(void)
     char *response;
     int ret;
     struct result_args args;
+
+    memset(&args, 0, sizeof args);
     
     args.lock = ne_lock_create();
 
@@ -491,6 +518,7 @@ static int discover(void)
     args.lock->uri.host = ne_strdup("localhost");
     args.lock->uri.port = 7777;
     args.lock->uri.scheme = ne_strdup("http");
+    args.lock->uri.path = ne_strdup("/this/is/the/lock/path");
     
     /* default */
     args.result = FAIL;
@@ -498,13 +526,17 @@ static int discover(void)
 
     response = discover_response("/lockme", args.lock);
     CALL(fake_session(&sess, serve_discovery, response));
-    args.lock->uri.path = ne_strdup("/lockme");
+    ne_free(response);
+
+    ne_fill_server_uri(sess, &args.uri);
+    args.uri.path = ne_strdup("/lockme");
 
     ret = ne_lock_discover(sess, "/lockme", discover_result, &args);
     CALL(await_server());
     ONREQ(ret);
 
     ne_lock_destroy(args.lock);
+    ne_uri_free(&args.uri);
     ne_session_destroy(sess);
 
     return args.result;
@@ -633,7 +665,7 @@ static int fail_noheader(void)
 {
     ne_session *sess;
     char *resp, *rbody = lock_response(ne_lockscope_exclusive, 0, "me",
-                                       6500, "opaquelocktoken:foo");
+                                       FOO_LOCKROOT, 6500, "opaquelocktoken:foo");
     struct ne_lock *lock = ne_lock_create();
     int ret;
 

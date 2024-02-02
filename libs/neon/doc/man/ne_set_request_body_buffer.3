@@ -2,12 +2,12 @@
 .\"     Title: ne_set_request_body_buffer
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 21 January 2023
+.\"      Date: 29 January 2024
 .\"    Manual: neon API reference
-.\"    Source: neon 0.32.5
+.\"    Source: neon 0.33.0
 .\"  Language: English
 .\"
-.TH "NE_SET_REQUEST_BODY_" "3" "21 January 2023" "neon 0.32.5" "neon API reference"
+.TH "NE_SET_REQUEST_BODY_" "3" "29 January 2024" "neon 0.33.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -28,7 +28,7 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-ne_set_request_body_buffer, ne_set_request_body_fd \- include a message body with a request
+ne_set_request_body_buffer, ne_set_request_body_fd, ne_set_request_body_provider \- include a message body with a request
 .SH "SYNOPSIS"
 .sp
 .ft B
@@ -40,6 +40,10 @@ ne_set_request_body_buffer, ne_set_request_body_fd \- include a message body wit
 .BI "void ne_set_request_body_buffer(ne_request\ *" "req" ", const\ char\ *" "buf" ", size_t\ " "count" ");"
 .HP \w'int\ ne_set_request_body_fd('u
 .BI "int ne_set_request_body_fd(ne_request\ *" "req" ", int\ " "fd" ", ne_off_t\ " "begin" ", ne_off_t\ " "length" ");"
+.HP \w'typedef\ ssize_t\ (*ne_provide_body)('u
+.BI "typedef ssize_t (*ne_provide_body)(void\ *" "userdata" ", char\ *" "data" ", size_t\ " "buflen" ");"
+.HP \w'int\ ne_set_request_body_provider('u
+.BI "int ne_set_request_body_provider(ne_request\ *" "req" ", ne_off_t\ " "length" ", ne_provide_body\ " "provider" ", void\ *" "userdata" ");"
 .SH "DESCRIPTION"
 .PP
 The
@@ -60,14 +64,64 @@ bytes are read, beginning at offset
 \fIbegin\fR
 as zero means the body is read from the beginning of the file)\&.
 .PP
-For all the above functions, the source of the request body must survive until the request has been dispatched; neither the memory buffer passed to
+For both above functions, the source of the request body must survive until the request has been dispatched; neither the memory buffer passed to
 \fBne_set_request_body_buffer\fR
 nor the file descriptor passed to
 \fBne_set_request_body_fd\fR
 are copied internally\&.
+.PP
+The
+\fBne_set_request_body_provider\fR
+function can be used to include a message body with a request which is provided by a callback function\&. The body length passed in the
+\fIlength\fR
+paramater must be positive, or if a chunked request body is required, as covered below,
+\-1
+can be used\&.
+.PP
+Before sending the body, the callback is invoked once with the
+\fIbuflen\fR
+parameter as
+0\&. The body is then read by invoking the callback repeatedly until it returns
+0
+indicating the end\-of\-body\&. The callback return value must be as follows:
+.PP
+less than 0
+.RS 4
+An error; the request will be aborted\&. The session error string must be set via
+\fBne_set_error\fR\&.
+.RE
+.PP
+0
+.RS 4
+End of body\&.
+.RE
+.PP
+between 0 and \fBbuflen\fR
+.RS 4
+Number of bytes of request body data\&.
+.RE
+.SS "Chunked request bodies"
+.PP
+Chunked request bodies are only sent when
+\fBne_set_request_body_provider\fR
+is used and
+\-1
+is passed as the
+\fIlength\fR\&. In this case, the length of the request body does not have to be determined ahead of time\&. The end of the request body is indicated by returning
+0
+from the callback function\&.
+.PP
+Before using a chunked request body, the caller must determine that HTTP/1\&.1 is supported (by the origin server and any HTTP proxy server configured)\&. This can be done by testing that
+\fBne_version_pre_http11\fR
+returns zero after performing an
+OPTIONS
+or
+HEAD
+request\&.
 .SH "SEE ALSO"
 .PP
-ne_request_create
+ne_request_create,
+ne_set_error
 .SH "AUTHOR"
 .PP
 \fBJoe Orton\fR
