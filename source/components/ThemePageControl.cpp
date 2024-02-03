@@ -382,6 +382,7 @@ void TThemePageControl::DrawDropDown(HDC DC, int Radius, int X, int Y, COLORREF 
 // draw tab item context: possible icon and text
 void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int State, bool Shadowed)
 {
+  TRect OrigRect = Rect;
   ItemContentsRect(Item, Rect);
 
   UnicodeString Text = Pages[Item]->Caption;
@@ -396,7 +397,7 @@ void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int
     }
     else
     {
-      Left = (Rect.Right - Images->Width - Rect.Left) / 2;
+      Left = OrigRect.Left + (OrigRect.Right - Images->Width - OrigRect.Left) / 2;
     }
     int Y = ((Rect.Top + Rect.Bottom - Images->Height) / 2) - 1 + (Selected ? 0 : -2);
     std::unique_ptr<TCanvas> Canvas(new TCanvas());
