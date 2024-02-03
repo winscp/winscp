@@ -227,7 +227,7 @@ void __fastcall TThemePageControl::PaintWindow(HDC DC)
 
   if (SelectedIndex >= 0)
   {
-    DrawThemesXpTab(DC, Theme, TabIndex);
+    DrawThemesXpTab(DC, Theme, SelectedIndex);
   }
 
   CloseThemeData(Theme);
