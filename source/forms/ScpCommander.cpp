@@ -3001,8 +3001,9 @@ void TScpCommanderForm::RestoreFocus(void * Focus)
     ControlFocus = NULL;
   }
 
+  // The CanFocus check is hack and should be removed eventually
   if ((ControlFocus != NULL) && DebugAlwaysTrue(ControlFocus->CanFocus()))
   {
-    ControlFocus->SetFocus();
+    ActiveControl = ControlFocus;
   }
 }
