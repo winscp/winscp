@@ -75,5 +75,7 @@ EXPORTS
   XML_SetHashSalt @67
 ; internal @68 removed with version 2.3.1
 ; added with version 2.4.0
-@_EXPAT_COMMENT_DTD@ XML_SetBillionLaughsAttackProtectionActivationThreshold @69
-@_EXPAT_COMMENT_DTD@ XML_SetBillionLaughsAttackProtectionMaximumAmplification @70
+@_EXPAT_COMMENT_DTD_OR_GE@ XML_SetBillionLaughsAttackProtectionActivationThreshold @69
+@_EXPAT_COMMENT_DTD_OR_GE@ XML_SetBillionLaughsAttackProtectionMaximumAmplification @70
+; added with version 2.6.0
+  XML_SetReparseDeferralEnabled @71
