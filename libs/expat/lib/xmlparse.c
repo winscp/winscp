@@ -1015,6 +1015,7 @@ callProcessor(XML_Parser parser, const char *start, const char *end,
     available_buffer
         += EXPAT_SAFE_PTR_DIFF(parser->m_bufferLim, parser->m_bufferEnd);
     // m_lastBufferRequestSize is never assigned a value < 0, so the cast is ok
+    { // WINSCP
     const bool enough
         = (have_now >= 2 * had_before)
           || ((size_t)parser->m_lastBufferRequestSize > available_buffer);
@@ -1023,8 +1024,10 @@ callProcessor(XML_Parser parser, const char *start, const char *end,
       *endPtr = start; // callers may expect this to be set
       return XML_ERROR_NONE;
     }
+    } // WINSCP
   }
   g_parseAttempts += 1;
+  { // WINSCP
   const enum XML_Error ret = parser->m_processor(parser, start, end, endPtr);
   if (ret == XML_ERROR_NONE) {
     // if we consumed nothing, remember what we had on this parse attempt.
@@ -1035,6 +1038,7 @@ callProcessor(XML_Parser parser, const char *start, const char *end,
     }
   }
   return ret;
+  } // WINSCP
 }
 
 static XML_Bool /* only valid for root parser */
@@ -2023,6 +2027,7 @@ XML_Parse(XML_Parser parser, const char *s, int len, int isFinal) {
     return result;
   }
 #endif /* XML_CONTEXT_BYTES == 0 */
+  { // WINSCP
   void *buff = XML_GetBuffer(parser, len);
   if (buff == NULL)
     return XML_STATUS_ERROR;
@@ -2031,6 +2036,7 @@ XML_Parse(XML_Parser parser, const char *s, int len, int isFinal) {
     memcpy(buff, s, len);
   }
   return XML_ParseBuffer(parser, len, isFinal);
+  } // WINSCP
 }
 
 enum XML_Status XMLCALL
@@ -6776,6 +6782,7 @@ setContext(XML_Parser parser, const XML_Char *context) {
     return XML_FALSE;
   }
 
+  { // WINSCP
   DTD *const dtd = parser->m_dtd; /* save one level of indirection */
   const XML_Char *s = context;
 
@@ -6832,6 +6839,7 @@ setContext(XML_Parser parser, const XML_Char *context) {
     }
   }
   return XML_TRUE;
+  } // WINSCP
 }
 
 static void FASTCALL
