@@ -388,7 +388,7 @@ void __fastcall TScpCommanderForm::DoShow()
   // is finally connected
   UpdateControls();
 
-  DoLocalDefaultDirectory(OtherLocalDirView, WinConfiguration->ScpCommander.OtherLocalPanelLastPath);
+  DoLocalDefaultDirectory(OtherLocalDirView, WinConfiguration->ScpCommander.OtherLocalPanelLastPath, L"P");
 
   // If we do not call SetFocus on any control before DoShow,
   // no control will get focused on Login dialog
@@ -607,6 +607,7 @@ void __fastcall TScpCommanderForm::StartingWithoutSession()
 
   AddStartupSequence(L"H");
   LocalDefaultDirectory();
+  AddStartupSequence(L"K");
 }
 //---------------------------------------------------------------------------
 void TScpCommanderForm::RestoreSessionLocalDirView(
@@ -707,7 +708,8 @@ void __fastcall TScpCommanderForm::SessionChanged(bool Replaced)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::DoLocalDefaultDirectory(TDirView * DirView, const UnicodeString & LastPath)
+void TScpCommanderForm::DoLocalDefaultDirectory(
+  TDirView * DirView, const UnicodeString & LastPath, const UnicodeString & StartupSequenceTag)
 {
   bool DocumentsDir = true;
   if (!LastPath.IsEmpty())
@@ -724,6 +726,7 @@ void __fastcall TScpCommanderForm::DoLocalDefaultDirectory(TDirView * DirView, c
 
   if (DocumentsDir)
   {
+    AddStartupSequence(StartupSequenceTag);
     try
     {
       DirView->HomeDirectory = L"";
@@ -747,7 +750,7 @@ void __fastcall TScpCommanderForm::DoLocalDefaultDirectory(TDirView * DirView, c
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalDefaultDirectory()
 {
-  DoLocalDefaultDirectory(LocalDirView, WinConfiguration->ScpCommander.LocalPanel.LastPath);
+  DoLocalDefaultDirectory(LocalDirView, WinConfiguration->ScpCommander.LocalPanel.LastPath, L"L");
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::ConfigurationChanged()
