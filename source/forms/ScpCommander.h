@@ -562,7 +562,8 @@ private:
   void __fastcall UpdateToolbar2ItemCaption(TTBCustomItem * Item);
   void __fastcall SetShortcuts();
   void __fastcall UpdatePanelsPathLabelsStatus();
-  void __fastcall DoLocalDefaultDirectory(TDirView * DirView, const UnicodeString & LastPath);
+  void DoLocalDefaultDirectory(
+    TDirView * DirView, const UnicodeString & LastPath, const UnicodeString & StartupSequenceTag);
   void __fastcall LocalDefaultDirectory();
   TOperationSide __fastcall GetOtherSize(TOperationSide Side);
   void __fastcall DoLocalDirViewContextPopup(TOperationSide Side, TPoint & MousePos, bool & Handled);
