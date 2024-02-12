@@ -10,3 +10,4 @@ URL: https://libexpat.github.io/
 Libs: -L${libdir} -l@PACKAGE_NAME@
 Libs.private: @LIBM@
 Cflags: -I${includedir}
+Cflags.private: -DXML_STATIC

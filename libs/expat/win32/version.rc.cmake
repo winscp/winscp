@@ -6,8 +6,8 @@ BEGIN
   BEGIN
     BLOCK "040904E4"
     BEGIN
-      VALUE "FileVersion", "VER_FILEVERSION"
-      VALUE "ProductVersion", "VER_FILEVERSION"
+      VALUE "FileVersion", "${PROJECT_VERSION}.0"
+      VALUE "ProductVersion", "${PROJECT_VERSION}.0"
     END
   END
   BLOCK "VarFileInfo"
