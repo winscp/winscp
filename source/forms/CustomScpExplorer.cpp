@@ -11474,7 +11474,7 @@ void TCustomScpExplorerForm::PasteFiles()
       if (!Removed)
       {
         Removed = RemoveDir(ApiPath(Target));
-        AppLogFmt(L"Second attempt to delete pasted fake clipboard directory - %d", (Target, int(Removed)));
+        AppLogFmt(L"Second attempt to delete pasted fake clipboard directory \"%s\" - %d", (Target, int(Removed)));
       }
     }
   }
