@@ -3868,7 +3868,7 @@ void __fastcall TSFTPFileSystem::RenameFile(
     TargetName = LocalCanonify(NewName);
   }
   AddPathString(Packet, TargetName, Encrypted);
-  if (UsePosixRename && (FVersion >= 5))
+  if (!UsePosixRename && (FVersion >= 5))
   {
     Packet.AddCardinal(0);
   }
