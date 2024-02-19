@@ -199,7 +199,6 @@ protected:
     TFileOperationProgressType * OperationProgress);
   bool __fastcall DoesFileLookLikeSymLink(TRemoteFile * File);
   void DoCloseRemoteIfOpened(const RawByteString & Handle);
-  void NoPacketReservations();
 };
 //---------------------------------------------------------------------------
 #endif // SftpFileSystemH
