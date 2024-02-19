@@ -3870,6 +3870,7 @@ void __fastcall TSFTPFileSystem::RenameFile(
   AddPathString(Packet, TargetName, Encrypted);
   if (!UsePosixRename && (FVersion >= 5))
   {
+    // Use SSH_FXP_RENAME + SSH_FXF_RENAME_ATOMIC when UsePosixRename?
     Packet.AddCardinal(0);
   }
   SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
