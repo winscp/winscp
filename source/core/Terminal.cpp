@@ -7325,7 +7325,7 @@ bool __fastcall TTerminal::CopyToRemote(
 
   if ((CopyParam->OnTransferIn != NULL) && !FFileSystem->IsCapable(fcTransferIn))
   {
-    throw Exception(LoadStr(NOTSUPPORTED));
+    NotSupported();
   }
 
   try
@@ -7885,7 +7885,7 @@ bool __fastcall TTerminal::CopyToLocal(
 
   if ((CopyParam->OnTransferOut != NULL) && !FFileSystem->IsCapable(fcTransferOut))
   {
-    throw Exception(LoadStr(NOTSUPPORTED));
+    NotSupported();
   }
 
   FDestFileName = L"";

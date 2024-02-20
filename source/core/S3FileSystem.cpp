@@ -1370,7 +1370,7 @@ void __fastcall TS3FileSystem::RenameFile(
 {
   if (DebugAlwaysTrue(File != NULL) && File->IsDirectory)
   {
-    throw Exception(LoadStr(NOTSUPPORTED));
+    NotSupported();
   }
   CopyFile(FileName, File, NewName, Overwrite);
   TRmSessionAction DummyAction(FTerminal->ActionLog, FileName);

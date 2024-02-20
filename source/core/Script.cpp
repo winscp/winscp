@@ -928,11 +928,6 @@ void __fastcall TScript::CheckSession()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScript::NotSupported()
-{
-  throw Exception(LoadStr(NOTSUPPORTED));
-}
-//---------------------------------------------------------------------------
 void __fastcall TScript::CheckMultiFilesToOne(TStrings * FileList, const UnicodeString & Target, bool Unix)
 {
   UnicodeString Name;
@@ -2066,6 +2061,13 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
     }
 
     CheckParams(Parameters);
+
+    if (FLAGSET(SynchronizeParams, TTerminal::spByChecksum) &&
+        (!FTerminal->IsCapable[fcCalculatingChecksum] &&
+         !FTerminal->IsCapable[fcSecondaryShell]))
+    {
+      NotSupported();
+    }
 
     PrintLine(LoadStr(SCRIPT_SYNCHRONIZE_COLLECTING));
 

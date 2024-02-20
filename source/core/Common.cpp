@@ -4534,6 +4534,11 @@ void NotImplemented()
   throw Exception(L"Not implemented");
 }
 //---------------------------------------------------------------------------
+void NotSupported()
+{
+  throw Exception(MainInstructions(LoadStr(NOTSUPPORTED)));
+}
+//---------------------------------------------------------------------------
 UnicodeString GetDividerLine()
 {
   return UnicodeString::StringOfChar(L'-', 27);

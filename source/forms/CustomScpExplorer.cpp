@@ -7022,8 +7022,13 @@ bool __fastcall TCustomScpExplorerForm::EnsureCommandSessionFallback(TFSCapabili
 
   if (!Result)
   {
-    DebugAssert(Terminal->IsCapable[fcSecondaryShell]);
-    if (!GUIConfiguration->ConfirmCommandSession)
+    // We might get here for example when "checksum" synchronization is requested from command-line
+    // on server that supports
+    if (!Terminal->IsCapable[fcSecondaryShell])
+    {
+      NotSupported();
+    }
+    else if (!GUIConfiguration->ConfirmCommandSession)
     {
       Result = true;
     }
