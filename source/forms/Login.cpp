@@ -3204,7 +3204,20 @@ void __fastcall TLoginDialog::ParseUrl(const UnicodeString & Url)
 
   SaveSession(SessionData.get());
 
-  DoParseUrl(SessionData.get(), Url);
+  // Otherwise the colons would be misrepresented as URL syntax
+  if (IsIPv6Literal(Url))
+  {
+    UnicodeString IPv6Literal = Url;
+    if (HasIP6LiteralBrackets(IPv6Literal))
+    {
+      IPv6Literal = StripIP6LiteralBrackets(IPv6Literal);
+    }
+    SessionData->HostName = IPv6Literal;
+  }
+  else
+  {
+    DoParseUrl(SessionData.get(), Url);
+  }
 
   LoadSession(SessionData.get());
 }
@@ -3242,7 +3255,6 @@ void __fastcall TLoginDialog::ParseHostName()
     DoParseUrl(SessionData.get(), HostName);
     std::unique_ptr<TSessionData> HostNameSessionData(new TSessionData(EmptyStr));
     HostNameSessionData->HostName = HostName;
-    std::unique_ptr<TStringList> DifferentProperties(CreateSortedStringList());
     if ((HostNameSessionData->HostName != HostName) || // Has legacy HostName property parsing intervened?
        (!SessionData->IsSameDecrypted(HostNameSessionData.get())))
     {

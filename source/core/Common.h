@@ -201,6 +201,7 @@ UnicodeString GetEnvironmentInfo();
 void SetStringValueEvenIfEmpty(TStrings * Strings, const UnicodeString & Name, const UnicodeString & Value);
 UnicodeString __fastcall GetAncestorProcessName(int Levels = 1);
 UnicodeString GetAncestorProcessNames();
+void NotSupported();
 void NotImplemented();
 UnicodeString GetDividerLine();
 //---------------------------------------------------------------------------

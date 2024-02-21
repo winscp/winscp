@@ -188,7 +188,6 @@ private:
   void __fastcall CheckDefaultCopyParam();
   bool __fastcall HasNonDefaultCopyParams();
   void __fastcall CheckDefaultSynchronizeParams();
-  void __fastcall NotSupported();
   void __fastcall CheckMultiFilesToOne(TStrings * FileList, const UnicodeString & Target, bool Unix);
   void __fastcall LogOption(const UnicodeString & LogStr);
   void __fastcall DoMvOrCp(TScriptProcParams * Parameters, TFSCapability Capability, bool Cp);

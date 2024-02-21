@@ -1921,7 +1921,12 @@ __fastcall TSFTPFileSystem::TSFTPFileSystem(TTerminal * ATerminal,
 __fastcall TSFTPFileSystem::~TSFTPFileSystem()
 {
   delete FSupport;
-  NoPacketReservations();
+  // After closing, we can only possibly have "discard" reservations of the not-read responses to the last requests
+  // (typically to SSH_FXP_CLOSE)
+  for (int i = 0; i < FPacketReservations->Count; i++)
+  {
+    DebugAssert(FPacketReservations->Items[i] == NULL);
+  }
   delete FPacketReservations;
   delete FFixedPaths;
   delete FSecureShell;
@@ -1929,20 +1934,9 @@ __fastcall TSFTPFileSystem::~TSFTPFileSystem()
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::Open()
 {
-  NoPacketReservations();
-  ResetConnection();
   // this is used for reconnects only
+  ResetConnection();
   FSecureShell->Open();
-}
-//---------------------------------------------------------------------------
-void TSFTPFileSystem::NoPacketReservations()
-{
-  // After closing, we can only possibly have "discard" reservations of the not-read responses to the last requests
-  // (typocally to SSH_FXP_CLOSE)
-  for (int i = 0; i < FPacketReservations->Count; i++)
-  {
-    DebugAssert(FPacketReservations->Items[i] == NULL);
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::Close()
@@ -3874,8 +3868,9 @@ void __fastcall TSFTPFileSystem::RenameFile(
     TargetName = LocalCanonify(NewName);
   }
   AddPathString(Packet, TargetName, Encrypted);
-  if (UsePosixRename && (FVersion >= 5))
+  if (!UsePosixRename && (FVersion >= 5))
   {
+    // Use SSH_FXP_RENAME + SSH_FXF_RENAME_ATOMIC when UsePosixRename?
     Packet.AddCardinal(0);
   }
   SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);

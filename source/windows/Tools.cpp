@@ -33,7 +33,7 @@
 // VCL includes wininet.h (even with NO_WIN32_LEAN_AND_MEAN)
 // and it cannot be combined with winhttp.h as of current Windows SDK.
 // This is hack to allow that.
-// https://social.msdn.microsoft.com/Forums/windowsdesktop/en-US/8f468d9f-3f15-452c-803d-fc63ab3f684e/cannot-use-both-winineth-and-winhttph
+// https://web.archive.org/web/20140612011622/https://social.msdn.microsoft.com/Forums/windowsdesktop/en-US/8f468d9f-3f15-452c-803d-fc63ab3f684e/cannot-use-both-winineth-and-winhttph
 #undef BOOLAPI
 #undef SECURITY_FLAG_IGNORE_CERT_DATE_INVALID
 #undef SECURITY_FLAG_IGNORE_CERT_CN_INVALID
