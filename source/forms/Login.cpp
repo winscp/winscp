@@ -3242,7 +3242,6 @@ void __fastcall TLoginDialog::ParseHostName()
     DoParseUrl(SessionData.get(), HostName);
     std::unique_ptr<TSessionData> HostNameSessionData(new TSessionData(EmptyStr));
     HostNameSessionData->HostName = HostName;
-    std::unique_ptr<TStringList> DifferentProperties(CreateSortedStringList());
     if ((HostNameSessionData->HostName != HostName) || // Has legacy HostName property parsing intervened?
        (!SessionData->IsSameDecrypted(HostNameSessionData.get())))
     {
