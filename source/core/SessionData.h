@@ -817,6 +817,8 @@ private:
 UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TDateTime Started, TSessionData * SessionData);
 bool __fastcall IsSshProtocol(TFSProtocol FSProtocol);
 int __fastcall DefaultPort(TFSProtocol FSProtocol, TFtps Ftps);
+bool HasIP6LiteralBrackets(const UnicodeString & HostName);
+UnicodeString StripIP6LiteralBrackets(const UnicodeString & HostName);
 bool __fastcall IsIPv6Literal(const UnicodeString & HostName);
 UnicodeString __fastcall EscapeIPv6Literal(const UnicodeString & IP);
 TFSProtocol NormalizeFSProtocol(TFSProtocol FSProtocol);

@@ -3539,7 +3539,7 @@ UnicodeString __fastcall TSessionData::GetProtocolUrl(bool HttpForWebDAV)
   return Url;
 }
 //---------------------------------------------------------------------
-static bool HasIP6LiteralBrackets(const UnicodeString & HostName)
+bool HasIP6LiteralBrackets(const UnicodeString & HostName)
 {
   return
     (HostName.Length() >= 2) &&
@@ -3547,7 +3547,7 @@ static bool HasIP6LiteralBrackets(const UnicodeString & HostName)
     (HostName[HostName.Length()] == L']');
 }
 //---------------------------------------------------------------------
-static UnicodeString StripIP6LiteralBrackets(const UnicodeString & HostName)
+UnicodeString StripIP6LiteralBrackets(const UnicodeString & HostName)
 {
   UnicodeString Result = HostName;
   if (DebugAlwaysTrue(HasIP6LiteralBrackets(Result)))
