@@ -7023,7 +7023,7 @@ bool __fastcall TCustomScpExplorerForm::EnsureCommandSessionFallback(TFSCapabili
   if (!Result)
   {
     // We might get here for example when "checksum" synchronization is requested from command-line
-    // on server that supports
+    // on server that supports neither checksum nor shell
     if (!Terminal->IsCapable[fcSecondaryShell])
     {
       NotSupported();
