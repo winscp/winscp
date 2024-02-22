@@ -3204,7 +3204,7 @@ void __fastcall TLoginDialog::ParseUrl(const UnicodeString & Url)
 
   SaveSession(SessionData.get());
 
-  // Otherwise the colons would be misrepresented as URL syntax
+  // Otherwise the colons would be misinterpreted as URL syntax
   if (IsIPv6Literal(Url))
   {
     UnicodeString IPv6Literal = Url;
