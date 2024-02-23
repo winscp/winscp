@@ -1552,6 +1552,9 @@ begin
   { if tree view is not visible anyway }
   GetAttr :=
     Visible and
+    Assigned(Parent) and
+    // Ad-hoc test for "other/right" panel, which is not hidden directly, but indirectly by hiding it container panel
+    ((Parent is TCustomForm) or Parent.Visible) and
     (GetDriveTypeToNode(ParentNode) <> DRIVE_REMOTE);
   GetNodeShellAttr(ParentNode, NodeData, GetAttr);
 
