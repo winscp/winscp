@@ -269,8 +269,6 @@ type
     function GetDisplayName(Node: TTreeNode): string;
     function NodePathName(Node: TTreeNode): string; override;
 
-    function GetFQPIDL(Node: TTreeNode): PItemIDList;
-
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
 
@@ -798,20 +796,6 @@ begin
   end;
   inherited;
 end;
-
-function TDriveView.GetFQPIDL(Node: TTreeNode): PItemIDList;
-var
-  Eaten: ULONG;
-  shAttr: ULONG;
-begin
-  Result := nil;
-  if Assigned(Node) then
-  begin
-    shAttr := 0;
-    FDesktop.ParseDisplayName(FParentForm.Handle, nil, PChar(NodePathName(Node)), Eaten,
-      Result, shAttr);
-  end;
-end; {GetFQPIDL}
 
 function TDriveView.NodeColor(Node: TTreeNode): TColor;
 begin
