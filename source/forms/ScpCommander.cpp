@@ -15,6 +15,7 @@
 #include <DragDrop.hpp>
 #include <StrUtils.hpp>
 #include <IOUtils.hpp>
+#include <DateUtils.hpp>
 
 #include "Glyphs.h"
 #include "NonVisual.h"
@@ -3008,5 +3009,30 @@ void TScpCommanderForm::RestoreFocus(void * Focus)
   if ((ControlFocus != NULL) && DebugAlwaysTrue(ControlFocus->CanFocus()))
   {
     ActiveControl = ControlFocus;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalDriveViewContinueLoading(
+  TObject *, TDateTime & Start, UnicodeString Path, int Count, bool & Stop)
+{
+  int Limit = WinConfiguration->LoadingTooLongLimit;
+  if ((Limit > 0) &&
+      (SecondsBetween(Now(), Start) > Limit))
+  {
+    UnicodeString Message = FMTLOAD(CONTINUE_DIR_LOADING, (Path, FormatNumber(Count)));
+    TMessageParams Params(mpNeverAskAgainCheck);
+    unsigned int Answer = MessageDialog(Message, qtConfirmation, qaOK | qaCancel, HELP_NONE, &Params);
+    if (Answer == qaCancel)
+    {
+      Stop = true;
+    }
+    else
+    {
+      if (Answer == qaNeverAskAgain)
+      {
+        WinConfiguration->LoadingTooLongLimit = 0;
+      }
+      Start = Now();
+    }
   }
 }

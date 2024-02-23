@@ -118,6 +118,7 @@ type
   end;
 
   TDriveViewRefreshDrives = procedure(Sender: TObject; Global: Boolean) of object;
+  TDriveViewContinueLoading = procedure(Sender: TObject; var Start: TDateTime; Path: string; Count: Integer; var Stop: Boolean) of object;
 
   TDriveView = class(TCustomDriveView)
   private
@@ -149,6 +150,7 @@ type
     FOnDisplayContextMenu: TNotifyEvent;
     FOnRefreshDrives: TDriveViewRefreshDrives;
     FOnNeedHiddenDirectories: TNotifyEvent;
+    FOnContinueLoading: TDriveViewContinueLoading;
 
     {used components:}
     FDirView: TDirView;
@@ -163,7 +165,7 @@ type
     procedure SignalDirDelete(Sender: TObject; Files: TStringList);
 
     function CheckForSubDirs(Path: string): Boolean;
-    function ReadSubDirs(Node: TTreeNode; DriveType: Integer): Boolean;
+    function ReadSubDirs(Node: TTreeNode; DriveType: Integer; SpecificFile: string = ''): Boolean;
 
     {Callback-functions used by iteratesubtree:}
     function CallBackValidateDir(var Node: TTreeNode; Data: Pointer): Boolean;
@@ -318,6 +320,7 @@ type
     property OnDisplayContextMenu: TNotifyEvent read FOnDisplayContextMenu
       write FOnDisplayContextMenu;
     property OnRefreshDrives: TDriveViewRefreshDrives read FOnRefreshDrives write FOnRefreshDrives;
+    property OnContinueLoading: TDriveViewContinueLoading read FOnContinueLoading write FOnContinueLoading;
     property OnBusy;
 
     property DDLinkOnExeDrag;
@@ -1653,20 +1656,26 @@ function TDriveView.DoFindNodeToPath(Path: string; ExistingOnly: Boolean): TTree
 
   function SearchSubDirs(ParentNode: TTreeNode; Path: string): TTreeNode; forward;
 
+  function ExtractFirstName(S: string): string;
+  var
+    I: Integer;
+  begin
+    I := Pos('\', S);
+
+    if I = 0 then
+      I := Length(S);
+
+    Result := System.Copy(S, 1, I);
+  end;
+
   function DoSearchSubDirs(ParentNode: TTreeNode; Path: string): TTreeNode;
   var
-    i: Integer;
     Node: TTreeNode;
     Dir: string;
   begin
     {Extract first directory from path:}
-    i := Pos('\', Path);
-
-    if i = 0 then
-      i := Length(Path);
-
-    Dir := System.Copy(Path, 1, i);
-    System.Delete(Path, 1, i);
+    Dir := ExtractFirstName(Path);
+    System.Delete(Path, 1, Length(Dir));
 
     if Dir[Length(Dir)] = '\' then
       SetLength(Dir, Pred(Length(Dir)));
@@ -1704,11 +1713,19 @@ function TDriveView.DoFindNodeToPath(Path: string; ExistingOnly: Boolean): TTree
     begin
       if (not TNodeData(ParentNode.Data).Scanned) and (not ExistingOnly) then
       begin
-        ReadSubDirs(ParentNode, GetDriveTypetoNode(ParentNode));
+        ReadSubDirs(ParentNode, GetDriveTypeToNode(ParentNode));
       end;
 
       // Factored out of DoSearchSubDirs is remnant of Bug 956 superceded by Bug 1320
       Result := DoSearchSubDirs(ParentNode, Path);
+
+      if (not Assigned(Result)) and
+         DirectoryExists(IncludeTrailingBackslash(NodePath(ParentNode)) + Path) and
+         (not ExistingOnly) then
+      begin
+        ReadSubDirs(ParentNode, GetDriveTypeToNode(ParentNode), ExcludeTrailingBackslash(ExtractFirstName(Path)));
+        Result := DoSearchSubDirs(ParentNode, Path);
+      end;
     end;
   end; {SearchSubDirs}
 
@@ -1817,42 +1834,74 @@ begin
   FindClose(SRec);
 end; {CheckForSubDirs}
 
-function TDriveView.ReadSubDirs(Node: TTreeNode; DriveType: Integer): Boolean;
+function TDriveView.ReadSubDirs(Node: TTreeNode; DriveType: Integer; SpecificFile: string): Boolean;
 var
-  DosError: Integer;
+  C, DosError: Integer;
   SRec: TSearchRec;
   NewNode: TTreeNode;
+  Path: string;
+  Start: TDateTime;
+  All, Stop: Boolean;
 begin
   Result := False;
-  DosError := FindFirst(ApiPath(IncludeTrailingBackslash(NodePath(Node)) + '*.*'), DirAttrMask, SRec);
-  while DosError = 0 do
-  begin
-    if (SRec.Name <> '.' ) and
-       (SRec.Name <> '..') and
-       (SRec.Attr and faDirectory <> 0) then
+  Path := NodePath(Node);
+  All := (SpecificFile = '');
+  if All then SpecificFile := '*.*';
+  DosError := FindFirst(ApiPath(IncludeTrailingBackslash(Path) + SpecificFile), DirAttrMask, SRec);
+  Start := Now;
+  C := 0;
+  // At least from SetDirectory > DoFindNodeToPath, this is not called within BeginUpdate/EndUpdate block.
+  // No noticeable effect seen (possibly because the node is collapsed), but it makes sense in general.
+  Items.BeginUpdate;
+  try
+    while DosError = 0 do
     begin
-      NewNode := AddChildNode(Node, SRec);
-      if DoScanDir(NewNode) then
+      if (SRec.Name <> '.' ) and
+         (SRec.Name <> '..') and
+         (SRec.Attr and faDirectory <> 0) then
       begin
-        // We have seen the SFGAO_HASSUBFOLDER to be absent on C: drive $Recycle.Bin
-        NewNode.HasChildren := Bool(TNodeData(NewNode.Data).shAttr and SFGAO_HASSUBFOLDER);
+        NewNode := AddChildNode(Node, SRec);
+        Inc(C);
+        if DoScanDir(NewNode) then
+        begin
+          // We have seen the SFGAO_HASSUBFOLDER to be absent on C: drive $Recycle.Bin
+          NewNode.HasChildren := Bool(TNodeData(NewNode.Data).shAttr and SFGAO_HASSUBFOLDER);
 
-        TNodeData(NewNode.Data).Scanned := not NewNode.HasChildren;
-      end
-        else
-      begin
-        NewNode.HasChildren := False;
-        TNodeData(NewNode.Data).Scanned := True;
+          TNodeData(NewNode.Data).Scanned := not NewNode.HasChildren;
+        end
+          else
+        begin
+          NewNode.HasChildren := False;
+          TNodeData(NewNode.Data).Scanned := True;
+        end;
+
+        // There are two other directory reading loops, where this is not called
+        if ((C mod 100) = 0) and Assigned(OnContinueLoading) then
+        begin
+          Stop := False;
+          OnContinueLoading(Self, Start, Path, C, Stop);
+          if Stop then DosError := 1;
+        end;
+
+        Result := True;
       end;
-      Result := True;
-    end;
-    DosError := FindNext(SRec);
-  end; {While DosError = 0}
-  FindClose(Srec);
-  TNodeData(Node.Data).Scanned := True;
 
-  if Result then SortChildren(Node, False)
-    else Node.HasChildren := False;
+      if DosError = 0 then
+      begin
+        DosError := FindNext(SRec);
+      end;
+    end; {While DosError = 0}
+
+    FindClose(Srec);
+
+    if All then TNodeData(Node.Data).Scanned := True;
+
+    if Result then SortChildren(Node, False)
+      else
+    if All then Node.HasChildren := False;
+  finally
+    Items.EndUpdate;
+  end;
   Application.ProcessMessages;
 end; {ReadSubDirs}
 

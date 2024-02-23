@@ -165,6 +165,7 @@ BEGIN
         CLOSE_WORKSPACE, "Close application without saving a workspace?"
         TOO_MANY_SESSIONS, "**Do you really want to open another tab?**\nYou have %d tabs opened already. Please consider closing some tabs first to free resources of your computer."
         EDIT_CHANGED_EXTERNALLY, "The remote file has been changed while you were editing it. Do you want to overwrite it anyway?"
+        CONTINUE_DIR_LOADING, "**Directory '%s' is taking too long to load. Do you want to keep waiting?**\nAlternatively, select 'Cancel' to abort loading and continue with incomplete results. %s entries have been loaded so far.\n\nIf you are getting this on every WinSCP start, and you are not using this directory, consider browsing to a different path before closing WinSCP, not to start in this directory the next time."
 
         WIN_INFORMATION_STRINGS, "WIN_INFORMATION"
         COMPARE_NO_DIFFERENCES, "No differences found."

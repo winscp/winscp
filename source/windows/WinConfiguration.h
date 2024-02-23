@@ -484,6 +484,7 @@ private:
   bool FHiContrast;
   bool FEditorCheckNotModified;
   bool FSessionTabCaptionTruncation;
+  int FLoadingTooLongLimit;
   UnicodeString FFirstRun;
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
@@ -607,6 +608,7 @@ private:
   void SetHiContrast(bool value);
   void SetEditorCheckNotModified(bool value);
   void SetSessionTabCaptionTruncation(bool value);
+  void SetLoadingTooLongLimit(int value);
   void SetFirstRun(const UnicodeString & value);
   int __fastcall GetLocaleCompletenessTreshold();
 
@@ -812,6 +814,7 @@ public:
   __property bool HiContrast = { read = FHiContrast, write = SetHiContrast };
   __property bool EditorCheckNotModified = { read = FEditorCheckNotModified, write = SetEditorCheckNotModified };
   __property bool SessionTabCaptionTruncation = { read = FSessionTabCaptionTruncation, write = SetSessionTabCaptionTruncation };
+  __property int LoadingTooLongLimit = { read = FLoadingTooLongLimit, write = SetLoadingTooLongLimit };
   __property UnicodeString FirstRun = { read = FFirstRun, write = SetFirstRun };
   __property LCID DefaultLocale = { read = FDefaultLocale };
   __property int LocaleCompletenessTreshold = { read = GetLocaleCompletenessTreshold };

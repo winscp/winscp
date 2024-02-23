@@ -531,6 +531,7 @@ __published:
   void __fastcall OtherLocalDirViewUpdateStatusBar(TObject *Sender, const TStatusFileInfo &FileInfo);
   void __fastcall OtherLocalDirViewPathChange(TCustomDirView *Sender);
   void __fastcall LocalDriveViewNeedHiddenDirectories(TObject *Sender);
+  void __fastcall LocalDriveViewContinueLoading(TObject *Sender, TDateTime &Start, UnicodeString Path, int Count, bool &Stop);
 
 private:
   bool FConstructed;
