@@ -129,6 +129,7 @@ private:
   bool FKeepAuthenticateForm;
   int FUpdating;
   int FMaxSessions;
+  TTerminal * FOpeningTerminal;
 
   bool __fastcall ConnectActiveTerminalImpl(bool Reopen);
   bool __fastcall ConnectActiveTerminal();
