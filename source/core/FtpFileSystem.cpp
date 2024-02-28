@@ -247,7 +247,6 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FFileList(NULL),
   FFileListCache(NULL),
   FActive(false),
-  FOpening(false),
   FWaitingForReply(false),
   FIgnoreFileList(false),
   FOnCaptureOutput(NULL),
@@ -497,7 +496,6 @@ void __fastcall TFTPFileSystem::Open()
     }
 
     FPasswordFailed = false;
-    TAutoFlag OpeningFlag(FOpening);
 
     FActive = FFileZillaIntf->Connect(
       HostName.c_str(), Data->PortNumber, UserName.c_str(),
@@ -548,8 +546,10 @@ void __fastcall TFTPFileSystem::Open()
 void __fastcall TFTPFileSystem::Close()
 {
   DebugAssert(FActive);
+
   bool Result;
-  if (FFileZillaIntf->Close(FOpening))
+  bool Opening = (FTerminal->Status == ssOpening);
+  if (FFileZillaIntf->Close(Opening))
   {
     DebugCheck(FLAGSET(WaitForCommandReply(false), TFileZillaIntf::REPLY_DISCONNECTED));
     Result = true;
@@ -557,7 +557,7 @@ void __fastcall TFTPFileSystem::Close()
   else
   {
     // See TFileZillaIntf::Close
-    Result = FOpening;
+    Result = Opening;
   }
 
   if (DebugAlwaysTrue(Result))
