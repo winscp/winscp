@@ -498,6 +498,7 @@ void __fastcall TConfiguration::SaveCustomIniFileStorageName()
     {
       RegistryStorage->WriteString(L"IniFile", CustomIniFileStorageName);
       RegistryStorage->CloseSubKey();
+      AppLogFmt(L"Saved custom INI file path %s", (CustomIniFileStorageName));
     }
   }
 }
@@ -635,6 +636,7 @@ UnicodeString __fastcall TConfiguration::LoadCustomIniFileStorageName()
   if (RegistryStorage->OpenRootKey(false))
   {
     Result = RegistryStorage->ReadString(L"IniFile", L"");
+    AppLogFmt(L"Loaded custom INI file path %s", (Result));
     RegistryStorage->CloseSubKey();
   }
   RegistryStorage.reset(NULL);
