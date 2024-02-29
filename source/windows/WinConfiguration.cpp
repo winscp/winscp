@@ -22,6 +22,7 @@
 #include <Generics.Defaults.hpp>
 #include <OperationWithTimeout.hpp>
 #include "FileInfo.h"
+#include "CoreMain.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -867,12 +868,14 @@ bool __fastcall TWinConfiguration::CanWriteToStorage()
 bool TWinConfiguration::DetectStorage(bool SafeOnly)
 {
   bool Result;
-  if (FileExists(ApiPath(IniFileStorageNameForReading)))
+  UnicodeString IniFile = IniFileStorageNameForReading;
+  if (FileExists(ApiPath(IniFile)))
   {
     Result = !SafeOnly;
     if (Result)
     {
       FStorage = stIniFile;
+      AppLogFmt(L"Will use existing INI file %s for configuration", (IniFile));
     }
   }
   else
@@ -882,6 +885,14 @@ bool TWinConfiguration::DetectStorage(bool SafeOnly)
         DetectRegistryStorage(HKEY_LOCAL_MACHINE))
     {
       FStorage = stRegistry;
+      if (IsUWP())
+      {
+        AppLog(L"Will use registry for configuration as this is store installation");
+      }
+      else
+      {
+        AppLog(L"Will use existing registry for configuration");
+      }
       Result = true;
     }
     else
@@ -889,6 +900,7 @@ bool TWinConfiguration::DetectStorage(bool SafeOnly)
       if (SafeOnly)
       {
         Result = false;
+        AppLog(L"No configuration found");
       }
       else
       {
@@ -898,6 +910,11 @@ bool TWinConfiguration::DetectStorage(bool SafeOnly)
         if (!CanWriteToStorage())
         {
           FStorage = stRegistry;
+          AppLog(L"Will use registry configuration as no configuration was found and default INI file location is not writtable");
+        }
+        else
+        {
+          AppLog(L"Will use (not yet existing) INI file for configuration");
         }
         // With !SafeOnly we always return true, so this result is actually never considered
         Result = true;
