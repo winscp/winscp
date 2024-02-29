@@ -10,7 +10,7 @@
 #if defined(_WIN32)
 # include <windows.h>
 # if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x600
-#  define USE_RWLOCK
+// WINSCP #  define USE_RWLOCK
 # endif
 #endif
 
