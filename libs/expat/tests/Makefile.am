@@ -6,7 +6,7 @@
 #                      \___/_/\_\ .__/ \__,_|\__|
 #                               |_| XML parser
 #
-# Copyright (c) 2017-2023 Sebastian Pipping <sebastian@pipping.org>
+# Copyright (c) 2017-2024 Sebastian Pipping <sebastian@pipping.org>
 # Copyright (c) 2017-2022 Rhodri James <rhodri@wildebeest.org.uk>
 # Copyright (c) 2020      Jeffrey Walton <noloader@gmail.com>
 # Licensed under the MIT license:
@@ -32,7 +32,7 @@
 
 SUBDIRS = . benchmark
 
-AM_CPPFLAGS = @AM_CPPFLAGS@ -I$(srcdir)/../lib
+AM_CPPFLAGS = @AM_CPPFLAGS@ -I$(srcdir)/../lib -DXML_TESTING
 
 check_PROGRAMS = runtests runtests_cxx
 TESTS = runtests runtests_cxx
@@ -72,8 +72,8 @@ runtests_cxx_SOURCES = \
     runtests_cxx.cpp \
     structdata_cxx.cpp
 
-runtests_LDADD = ../lib/libexpatinternal.la
-runtests_cxx_LDADD = ../lib/libexpatinternal.la
+runtests_LDADD = ../lib/libtestpat.la
+runtests_cxx_LDADD = ../lib/libtestpat.la
 
 runtests_LDFLAGS = @AM_LDFLAGS@ @LIBM@
 runtests_cxx_LDFLAGS = @AM_LDFLAGS@ @LIBM@

@@ -83,7 +83,7 @@ dnl If the API changes incompatibly set LIBAGE back to 0
 dnl
 
 LIBCURRENT=10  # sync
-LIBREVISION=0  # with
+LIBREVISION=1  # with
 LIBAGE=9       # CMakeLists.txt!
 
 AC_CONFIG_HEADERS([expat_config.h])
@@ -357,11 +357,22 @@ AS_IF([test "x${DOCBOOK_TO_MAN}" != x -a "x$with_docbook" != xno],
   page for xmlwf.])])])
 
 dnl This will make sure that a release tarball shipping a pre-rendered xmlwf man page will
-dnl get it installed, independent of whether some flavor of docbook2man is available.
+dnl get it installed, when no working flavor of docbook2man is available (or wanted).
 dnl This relies on file xmlwf.1 being at least as recent as its source file xmlwf.xml.
 AS_IF([test -f "${srcdir}"/doc/xmlwf.1],
-  [AM_CONDITIONAL(WITH_DOCBOOK, [true])],
-  [AM_CONDITIONAL(WITH_DOCBOOK, [test "x${DOCBOOK_TO_MAN}" != x])])
+  [AM_CONDITIONAL(WITH_MANPAGE, [true])
+   AS_IF([test "x$with_docbook" = xno -o "x${DOCBOOK_TO_MAN}" = x],
+     [AM_CONDITIONAL(WITH_PREBUILT_MANPAGE, [true])
+      AM_CONDITIONAL(WITH_DISTRIBUTABLE_MANPAGE, [false])],
+     [AM_CONDITIONAL(WITH_PREBUILT_MANPAGE, [false])
+      AM_CONDITIONAL(WITH_DISTRIBUTABLE_MANPAGE, [true])])
+   ],
+  [AS_IF([test "x$with_docbook" != xno -a "x${DOCBOOK_TO_MAN}" != x],
+     [AM_CONDITIONAL(WITH_MANPAGE, [true])
+      AM_CONDITIONAL(WITH_DISTRIBUTABLE_MANPAGE, [true])],
+     [AM_CONDITIONAL(WITH_MANPAGE, [false])
+      AM_CONDITIONAL(WITH_DISTRIBUTABLE_MANPAGE, [false])])
+   AM_CONDITIONAL(WITH_PREBUILT_MANPAGE, [false])])
 
 dnl Configure CMake file templates
 dnl NOTE: The *_TRUE variables read here are Automake conditionals
@@ -407,6 +418,14 @@ AC_SUBST([SO_MINOR])
 AC_SUBST([SO_PATCH])
 AC_SUBST([ac_cv_sizeof_void_p])
 
+dnl Protect against generating an expat_config.h that would break multilib
+AS_IF([grep -F -q SIZEOF_VOID_P "${srcdir}"/expat_config.h.in],
+  [AC_MSG_ERROR(
+    [Plain autoreconf/autoheader does not cut it,
+                  please use ./buildconf.sh or imitate its effect
+                  through other means, so that file expat_config.h.in
+                  no longer defines macro SIZEOF_VOID_P, as that would
+                  break multilib support.  Thank you.])])
 
 dnl write the Automake flags we set
 AC_SUBST([AM_CPPFLAGS])
