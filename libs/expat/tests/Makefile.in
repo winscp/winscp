@@ -22,7 +22,7 @@
 #                      \___/_/\_\ .__/ \__,_|\__|
 #                               |_| XML parser
 #
-# Copyright (c) 2017-2023 Sebastian Pipping <sebastian@pipping.org>
+# Copyright (c) 2017-2024 Sebastian Pipping <sebastian@pipping.org>
 # Copyright (c) 2017-2022 Rhodri James <rhodri@wildebeest.org.uk>
 # Copyright (c) 2020      Jeffrey Walton <noloader@gmail.com>
 # Licensed under the MIT license:
@@ -151,7 +151,7 @@ am_runtests_OBJECTS = acc_tests.$(OBJEXT) alloc_tests.$(OBJEXT) \
 	nsalloc_tests.$(OBJEXT) runtests.$(OBJEXT) \
 	structdata.$(OBJEXT)
 runtests_OBJECTS = $(am_runtests_OBJECTS)
-runtests_DEPENDENCIES = ../lib/libexpatinternal.la
+runtests_DEPENDENCIES = ../lib/libtestpat.la
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -168,7 +168,7 @@ am_runtests_cxx_OBJECTS = acc_tests_cxx.$(OBJEXT) \
 	ns_tests_cxx.$(OBJEXT) runtests_cxx.$(OBJEXT) \
 	structdata_cxx.$(OBJEXT)
 runtests_cxx_OBJECTS = $(am_runtests_cxx_OBJECTS)
-runtests_cxx_DEPENDENCIES = ../lib/libexpatinternal.la
+runtests_cxx_DEPENDENCIES = ../lib/libtestpat.la
 runtests_cxx_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
 	$(CXXFLAGS) $(runtests_cxx_LDFLAGS) $(LDFLAGS) -o $@
@@ -515,7 +515,7 @@ am__relativize = \
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_CFLAGS = @AM_CFLAGS@
-AM_CPPFLAGS = @AM_CPPFLAGS@ -I$(srcdir)/../lib
+AM_CPPFLAGS = @AM_CPPFLAGS@ -I$(srcdir)/../lib -DXML_TESTING
 AM_CXXFLAGS = @AM_CXXFLAGS@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AM_LDFLAGS = @AM_LDFLAGS@
@@ -698,8 +698,8 @@ runtests_cxx_SOURCES = \
     runtests_cxx.cpp \
     structdata_cxx.cpp
 
-runtests_LDADD = ../lib/libexpatinternal.la
-runtests_cxx_LDADD = ../lib/libexpatinternal.la
+runtests_LDADD = ../lib/libtestpat.la
+runtests_cxx_LDADD = ../lib/libtestpat.la
 runtests_LDFLAGS = @AM_LDFLAGS@ @LIBM@
 runtests_cxx_LDFLAGS = @AM_LDFLAGS@ @LIBM@
 EXTRA_DIST = \
