@@ -132,17 +132,26 @@ LPTSTR find_reg_str(LPTSTR str, LPCTSTR what, LPTSTR * next){
 //---------------------------------------------------------------------------
 void path_reg_propagate()
 {
-  DWORD send_message_result;
-  LONG ret = SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
-                           (LPARAM)_T("Environment"), SMTO_ABORTIFHUNG,
-                           5000, &send_message_result);
-  if (ret != ERROR_SUCCESS && GetLastError() != 0)
+  unsigned long SessionId = 0;
+  if (!ProcessIdToSessionId(GetCurrentProcessId(), &SessionId) ||
+      (SessionId == 0))
   {
-    err_out_sys(_T("Cannot propagate the new enviroment to ")
-                _T("other processes. The new value will be ")
-                _T("available after a reboot."), GetLastError());
-    SimpleErrorDialog(LastPathError);
-    LastPathError = L"";
+    AppLog(L"Program does not seem to be running in user session, not propagating search path changes");
+  }
+  else
+  {
+    DWORD send_message_result;
+    LONG ret = SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
+                             (LPARAM)_T("Environment"), SMTO_ABORTIFHUNG,
+                             5000, &send_message_result);
+    if (ret != ERROR_SUCCESS && GetLastError() != 0)
+    {
+      err_out_sys(_T("Cannot propagate the new enviroment to ")
+                  _T("other processes. The new value will be ")
+                  _T("available after a reboot."), GetLastError());
+      SimpleErrorDialog(LastPathError);
+      LastPathError = L"";
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -173,7 +182,13 @@ BOOL add_path_reg(LPCTSTR path){
         func_ret = FALSE;
     }
     else{
-        if (!find_reg_str(reg_str, path, NULL)){
+        AppLogFmt(L"Previous search path: %s", (reg_str));
+        if (find_reg_str(reg_str, path, NULL))
+        {
+          AppLog(L"Path is already in search path");
+        }
+        else
+        {
             _tcscat(reg_str, _T(";"));
             _tcscat(reg_str, path);
             size_t len = _tcslen(reg_str);
@@ -194,6 +209,7 @@ BOOL add_path_reg(LPCTSTR path){
               /* Is this needed to make the new key avaible? */
               RegFlushKey(key);
               SetLastError(0);
+              AppLogFmt(L"New search path written: %s", (reg_str));
               path_reg_propagate();
             }
         }
@@ -265,6 +281,7 @@ BOOL remove_path_reg(LPCTSTR path){
 //---------------------------------------------------------------------------
 void __fastcall AddSearchPath(const UnicodeString Path)
 {
+  AppLogFmt(L"Adding '%s' to search path", (Path));
   if (!add_path_reg(Path.c_str()))
   {
     throw ExtException(FMTLOAD(ADD_PATH_ERROR, (Path)), LastPathError);
