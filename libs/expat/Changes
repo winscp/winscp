@@ -2,6 +2,27 @@ NOTE: We are looking for help with a few things:
       https://github.com/libexpat/libexpat/labels/help%20wanted
       If you can help, please get in touch.  Thanks!
 
+Release 2.6.1 Thu February 29 2024
+        Bug fixes:
+            #817  Make tests independent of CPU speed, and thus more robust
+       #828 #836  Expose billion laughs API with XML_DTD defined and
+                    XML_GE undefined, regression from 2.6.0
+
+        Other changes:
+            #829  Hide test-only code behind new internal macro
+            #833  Autotools: Reject expat_config.h.in defining SIZEOF_VOID_P
+            #819  Address compiler warnings
+       #832 #834  Version info bumped from 10:0:9 (libexpat*.so.1.9.0)
+                    to 10:1:9 (libexpat*.so.1.9.1); see https://verbump.de/
+                    for what these numbers do
+
+        Infrastructure:
+            #818  CI: Adapt to breaking changes in clang-format
+
+        Special thanks to:
+            David Hall
+            Snild Dolkow
+
 Release 2.6.0 Tue February 6 2024
         Security fixes:
       #789 #814  CVE-2023-52425 -- Fix quadratic runtime issues with big tokens
