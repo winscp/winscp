@@ -1944,7 +1944,7 @@ void __fastcall TSessionData::Modify()
   }
 }
 //---------------------------------------------------------------------
-UnicodeString __fastcall TSessionData::GetSource()
+UnicodeString __fastcall TSessionData::GetSourceName()
 {
   switch (FSource)
   {
