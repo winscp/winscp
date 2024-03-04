@@ -1850,58 +1850,55 @@ begin
   DosError := FindFirst(ApiPath(IncludeTrailingBackslash(Path) + SpecificFile), DirAttrMask, SRec);
   Start := Now;
   C := 0;
-  // At least from SetDirectory > DoFindNodeToPath, this is not called within BeginUpdate/EndUpdate block.
-  // No noticeable effect seen (possibly because the node is collapsed), but it makes sense in general.
-  Items.BeginUpdate;
-  try
-    while DosError = 0 do
+  // At least from SetDirectory > DoFindNodeToPath and CanExpand, this is not called within BeginUpdate/EndUpdate block.
+  // But in any case, addinf it here makes expanding (which calls CanExpand) noticeably slower, when there are lot of nodes,
+  // because EndUpdate triggers TVN_GETDISPINFO for all nodes in the tree.
+  while DosError = 0 do
+  begin
+    if (SRec.Name <> '.' ) and
+       (SRec.Name <> '..') and
+       (SRec.Attr and faDirectory <> 0) then
     begin
-      if (SRec.Name <> '.' ) and
-         (SRec.Name <> '..') and
-         (SRec.Attr and faDirectory <> 0) then
+      NewNode := AddChildNode(Node, SRec);
+      Inc(C);
+      if DoScanDir(NewNode) then
       begin
-        NewNode := AddChildNode(Node, SRec);
-        Inc(C);
-        if DoScanDir(NewNode) then
-        begin
-          // We have seen the SFGAO_HASSUBFOLDER to be absent on C: drive $Recycle.Bin
-          NewNode.HasChildren := Bool(TNodeData(NewNode.Data).shAttr and SFGAO_HASSUBFOLDER);
+        // We have seen the SFGAO_HASSUBFOLDER to be absent on C: drive $Recycle.Bin
+        NewNode.HasChildren := Bool(TNodeData(NewNode.Data).shAttr and SFGAO_HASSUBFOLDER);
 
-          TNodeData(NewNode.Data).Scanned := not NewNode.HasChildren;
-        end
-          else
-        begin
-          NewNode.HasChildren := False;
-          TNodeData(NewNode.Data).Scanned := True;
-        end;
-
-        // There are two other directory reading loops, where this is not called
-        if ((C mod 100) = 0) and Assigned(OnContinueLoading) then
-        begin
-          Stop := False;
-          OnContinueLoading(Self, Start, Path, C, Stop);
-          if Stop then DosError := 1;
-        end;
-
-        Result := True;
+        TNodeData(NewNode.Data).Scanned := not NewNode.HasChildren;
+      end
+        else
+      begin
+        NewNode.HasChildren := False;
+        TNodeData(NewNode.Data).Scanned := True;
       end;
 
-      if DosError = 0 then
+      // There are two other directory reading loops, where this is not called
+      if ((C mod 100) = 0) and Assigned(OnContinueLoading) then
       begin
-        DosError := FindNext(SRec);
+        Stop := False;
+        OnContinueLoading(Self, Start, Path, C, Stop);
+        if Stop then DosError := 1;
       end;
-    end; {While DosError = 0}
 
-    FindClose(Srec);
+      Result := True;
+    end;
 
-    if All then TNodeData(Node.Data).Scanned := True;
+    if DosError = 0 then
+    begin
+      DosError := FindNext(SRec);
+    end;
+  end; {While DosError = 0}
 
-    if Result then SortChildren(Node, False)
-      else
-    if All then Node.HasChildren := False;
-  finally
-    Items.EndUpdate;
-  end;
+  FindClose(Srec);
+
+  if All then TNodeData(Node.Data).Scanned := True;
+
+  if Result then SortChildren(Node, False)
+    else
+  if All then Node.HasChildren := False;
+
   Application.ProcessMessages;
 end; {ReadSubDirs}
 
