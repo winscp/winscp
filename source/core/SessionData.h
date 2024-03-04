@@ -451,7 +451,7 @@ private:
   UnicodeString __fastcall GetLocalName();
   UnicodeString __fastcall GetFolderName();
   void __fastcall Modify();
-  UnicodeString __fastcall GetSource();
+  UnicodeString __fastcall GetSourceName();
   void __fastcall DoLoad(THierarchicalStorage * Storage, bool PuttyImport, bool & RewritePassword, bool Unsafe, bool RespectDisablePasswordStoring);
   void __fastcall DoSave(THierarchicalStorage * Storage,
     bool PuttyExport, const TSessionData * Default, bool DoNotEncryptPasswords);
@@ -739,7 +739,8 @@ public:
   __property int OrigPortNumber = { read = FOrigPortNumber };
   __property UnicodeString LocalName = { read = GetLocalName };
   __property UnicodeString FolderName = { read = GetFolderName };
-  __property UnicodeString Source = { read = GetSource };
+  __property TSessionSource Source = { read = FSource };
+  __property UnicodeString SourceName = { read = GetSourceName };
   __property bool SaveOnly = { read = FSaveOnly };
 };
 //---------------------------------------------------------------------------

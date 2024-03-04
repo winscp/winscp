@@ -1231,7 +1231,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
   }
   else
   {
-    ADF(L"Session name: %s (%s)", (Data->SessionName, Data->Source));
+    ADF(L"Session name: %s (%s)", (Data->SessionName, Data->SourceName));
     UnicodeString AddressFamily;
     if (Data->AddressFamily != afAuto)
     {
