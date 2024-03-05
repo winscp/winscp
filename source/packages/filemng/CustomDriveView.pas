@@ -40,7 +40,6 @@ type
     FShowHiddenDirs: Boolean;
     FNaturalOrderNumericalSorting: Boolean;
     FDarkMode: Boolean;
-    FContinue: Boolean;
     FImageList: TImageList;
     FScrollOnDragOver: TTreeViewScrollOnDragOver;
     FRecreatingHandle: Boolean;
@@ -225,7 +224,6 @@ type
     property Directory: string read GetDirectory write SetDirectory;
     property DragNode: TTreeNode read FDragNode;
 
-    property Continue: Boolean read FContinue write FContinue;
     property LastDDResult: TDragResult read FLastDDResult;
   end;
 
@@ -247,7 +245,6 @@ begin
   FContextMenu := False;
   FCanChange := True;
   FUseSystemContextMenu := True;
-  FContinue := True;
   FNaturalOrderNumericalSorting := True;
   FDarkMode := False;
   FRecreatingHandle := False;
@@ -1153,17 +1150,17 @@ function TCustomDriveView.IterateSubTree(var StartNode : TTreeNode;
 
     Node := StartNode.GetFirstChild;
 
-    while Assigned(Node) and FContinue do
+    while Assigned(Node) do
     begin
       NextNode := StartNode.GetNextChild(Node);
       NodeHasChilds := Node.HasChildren;
 
-      if (not FContinue) or (not CallBackFunc(Node, Data)) then Exit;
+      if not CallBackFunc(Node, Data) then Exit;
 
       if Assigned(Node) and
          (Recurse = rsRecursiveExisting) and NodeHasChilds then
       begin
-        if (not ScanSubTree(Node)) or (not FContinue) then Exit;
+        if not ScanSubTree(Node) then Exit;
       end;
 
       Node := NextNode;
@@ -1173,7 +1170,6 @@ function TCustomDriveView.IterateSubTree(var StartNode : TTreeNode;
 
 begin {IterateSubTree}
   Result := False;
-  FContinue := True;
   if Assigned(CallBackFunc) then
   begin
     if ScanStartNode = coScanStartNode then
@@ -1182,7 +1178,7 @@ begin {IterateSubTree}
     end;
 
     if (not Assigned(StartNode)) or
-       FContinue and ScanSubTree(StartNode) then
+       ScanSubTree(StartNode) then
     begin
       Result := True;
     end;

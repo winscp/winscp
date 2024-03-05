@@ -128,7 +128,6 @@ type
     FConfirmOverwrite: Boolean;
     FWatchDirectory: Boolean;
     FDirectory: string;
-    FFullDriveScan: Boolean;
     FShowVolLabel: Boolean;
     FVolDisplayStyle: TVolumeDisplayStyle;
     FChangeFlag: Boolean;
@@ -181,7 +180,6 @@ type
 
   protected
     procedure SetSelected(Node: TTreeNode);
-    procedure SetFullDriveScan(DoFullDriveScan: Boolean);
     procedure SetWatchDirectory(Value: Boolean);
     procedure SetShowVolLabel(ShowIt: Boolean);
     procedure SetDirView(Value: TDirView);
@@ -308,8 +306,6 @@ type
     property ConfirmDelete: Boolean read FConfirmDelete write FConfirmDelete default True;
     {Confirm overwriting directories:}
     property ConfirmOverwrite: Boolean read FConfirmOverwrite write FConfirmOverwrite default True;
-    {Scan all directories in method ScanDrive:}
-    property FullDriveScan: Boolean read FFullDriveScan write SetFullDriveScan default False;
     {Enable automatic update on filesystem changes:}
     property WatchDirectory: Boolean read FWatchDirectory write SetWatchDirectory default False;
     {Linked component TDirView:}
@@ -1575,80 +1571,12 @@ begin
 end;
 
 procedure TDriveView.ScanDrive(Drive: string);
-var
-  DosError: Integer;
-  RootNode: TTreeNode;
-  SaveCursor: TCursor;
-
-  procedure ScanPath(const Path: string; ParentNode: TTreeNode);
-  var
-    SRec: TSearchRec;
-    SubNode: TTreeNode;
-  begin
-    if not DoScanDir(ParentNode) then
-      Exit;
-
-    DosError := FindFirst(ApiPath(Path), DirAttrMask, Srec);
-    while DosError = 0 do
-    begin
-      if (SRec.Name <> '.') and
-         (SRec.Name <> '..') and
-         (SRec.Attr and faDirectory <> 0) then
-      begin
-        if (SRec.Attr And faDirectory) <> 0 then
-        begin { Scan subdirectory }
-          SubNode := AddChildNode(ParentNode, SRec);
-          TNodeData(SubNode.Data).Scanned := True;
-          ScanPath(ExtractFilePath(Path) + SRec.Name + '\*.*', SubNode);
-          if not FContinue then
-            Break;
-        end;
-      end;
-      DosError := FindNext(SRec);
-    end;
-    FindClose(Srec);
-    if (Items.Count mod 10) = 0 then
-      Application.ProcessMessages;
-    if not FContinue then
-      Exit;
-  end; {ScanPath}
-
 begin {ScanDrive}
   with Self.Items do
   begin
-    FContinue := True;
-    if not FFullDriveScan then
-    begin
-      ValidateDirectory(FindNodeToPath(DriveInfo.GetDriveRoot(Drive)));
-      GetDriveStatus(Drive).Scanned := True;
-      GetDriveStatus(Drive).Verified := False;
-    end
-      else
-    begin
-      SaveCursor := Screen.Cursor;
-      Screen.Cursor := crHourGlass;
-      Items.BeginUpdate;
-
-      try
-        RootNode := GetDriveStatus(Drive).RootNode;
-        if not Assigned(RootNode) then Exit;
-
-        iF RootNode.HasChildren then
-          RootNode.DeleteChildren;
-
-        ScanPath(DriveInfo.GetDriveRoot(Drive) + '*.*', RootNode);      { scan subdirectories of rootdir}
-        TNodeData(RootNode.Data).Scanned := True;
-
-        GetDriveStatus(Drive).Scanned := True;
-        GetDriveStatus(Drive).Verified := True;
-      finally
-        SortChildren(GetDriveStatus(Drive).RootNode, True);
-        EndUpdate;
-      end;
-      RootNode.Expand(False);
-
-      Screen.Cursor := SaveCursor;
-    end;
+    ValidateDirectory(FindNodeToPath(DriveInfo.GetDriveRoot(Drive)));
+    GetDriveStatus(Drive).Scanned := True;
+    GetDriveStatus(Drive).Verified := False;
   end;
 end; {ScanDrive}
 
@@ -2433,11 +2361,6 @@ begin
 
   Result := WatchThreadActive(Drive);
 end; {WatchThreadActive}
-
-procedure TDriveView.SetFullDriveScan(DoFullDriveScan: Boolean);
-begin
-  FFullDriveScan := DoFullDriveScan;
-end; {SetAutoScan}
 
 function TDriveView.FindPathNode(Path: string): TTreeNode;
 var
