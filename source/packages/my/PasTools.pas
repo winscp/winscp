@@ -3,7 +3,7 @@ unit PasTools;
 interface
 
 uses
-  Windows, Types, Classes, ComCtrls, ExtCtrls, Controls, Dialogs, Forms, Messages, Graphics;
+  Windows, Types, Classes, ComCtrls, ExtCtrls, Controls, Dialogs, Forms, Messages, Graphics, SysUtils;
 
 function Construct(ComponentClass: TComponentClass; Owner: TComponent): TComponent;
 
@@ -76,6 +76,12 @@ procedure ForceColorChange(Control: TWinControl);
 function IsUncPath(Path: string): Boolean;
 function FileExistsFix(Path: string): Boolean;
 function DirectoryExistsFix(Path: string): Boolean;
+
+const
+  FIND_FIRST_EX_LARGE_FETCH_PAS = 2; // VCLCOPY (actually should be part of Winapi)
+function FindFirstEx(
+  const Path: string; Attr: Integer; var F: TSearchRec; AdditionalFlags: DWORD = 0;
+  SearchOp: _FINDEX_SEARCH_OPS = FindExSearchNameMatch): Integer;
 
 function SupportsDarkMode: Boolean;
 procedure AllowDarkModeForWindow(Control: TWinControl; Allow: Boolean); overload;
@@ -153,7 +159,7 @@ type
 implementation
 
 uses
-  SysUtils, StdCtrls, MultiMon, ShellAPI, Generics.Collections, CommCtrl, ImgList, Registry;
+  StdCtrls, MultiMon, ShellAPI, Generics.Collections, CommCtrl, ImgList, Registry;
 
 const
   DDExpandDelay = 15000000;
@@ -1045,6 +1051,57 @@ begin
   Result := DoExists(DirectoryExists(ApiPath(Path)), Path);
 end;
 
+// VCLCOPY
+function FindMatchingFileEx(var F: TSearchRec): Integer;
+var
+  LocalFileTime: TFileTime;
+begin
+  while F.FindData.dwFileAttributes and F.ExcludeAttr <> 0 do
+    if not FindNextFile(F.FindHandle, F.FindData) then
+    begin
+      Result := GetLastError;
+      Exit;
+    end;
+  FileTimeToLocalFileTime(F.FindData.ftLastWriteTime, LocalFileTime);
+{$WARN SYMBOL_DEPRECATED OFF}
+  FileTimeToDosDateTime(LocalFileTime, LongRec(F.Time).Hi,
+    LongRec(F.Time).Lo);
+{$WARN SYMBOL_DEPRECATED ON}
+  F.Size := F.FindData.nFileSizeLow or Int64(F.FindData.nFileSizeHigh) shl 32;
+  F.Attr := F.FindData.dwFileAttributes;
+  F.Name := F.FindData.cFileName;
+  Result := 0;
+end;
+
+var
+  FindexAdvancedSupport: Boolean = False;
+
+// VCLCOPY (with FindFirstFile replaced by FindFirstFileEx)
+function FindFirstEx(
+  const Path: string; Attr: Integer; var F: TSearchRec; AdditionalFlags: DWORD; SearchOp: _FINDEX_SEARCH_OPS): Integer;
+const
+  faSpecial = faHidden or faSysFile or faDirectory;
+var
+  FindexInfoLevel: TFindexInfoLevels;
+begin
+  F.ExcludeAttr := not Attr and faSpecial;
+  // FindExInfoBasic = do not retrieve cAlternateFileName, which we do not use
+  if FindexAdvancedSupport then FindexInfoLevel := FindExInfoBasic
+    else
+  begin
+    FindexInfoLevel := FindExInfoStandard;
+    AdditionalFlags := AdditionalFlags and (not FIND_FIRST_EX_LARGE_FETCH_PAS);
+  end;
+  F.FindHandle := FindFirstFileEx(PChar(Path), FindexInfoLevel, @F.FindData, SearchOp, nil, AdditionalFlags);
+  if F.FindHandle <> INVALID_HANDLE_VALUE then
+  begin
+    Result := FindMatchingFileEx(F);
+    if Result <> 0 then FindClose(F);
+  end
+  else
+    Result := GetLastError;
+end;
+
 type TPreferredAppMode = (pamDefault, pamAllowDark, pamForceDark, pamForceLight, pamMax);
 
 var
@@ -1139,6 +1196,7 @@ var
   OSVersionInfo: TOSVersionInfoEx;
   SetDefaultDllDirectories: function(DirectoryFlags: DWORD): BOOL; stdcall;
 initialization
+  FindexAdvancedSupport := IsWin7;
   // Translated from PuTTY's dll_hijacking_protection().
   // Inno Setup does not use LOAD_LIBRARY_SEARCH_USER_DIRS and falls back to SetDllDirectory.
   Lib := LoadLibrary(kernel32);

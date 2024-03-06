@@ -89,7 +89,6 @@ type
   TNodeData = class
   private
     FDirName: string;
-    FShortName: string;
     FAttr: Integer;
     FScanned: Boolean;
     FData: Pointer;
@@ -105,7 +104,6 @@ type
     destructor Destroy; override;
 
     property DirName: string read FDirName write FDirName;
-    property ShortName: string read FShortName write FShortName;
     property Attr: Integer read FAttr write FAttr;
     property Scanned: Boolean read FScanned write FScanned;
     property Data: Pointer read FData write FData;
@@ -164,6 +162,9 @@ type
     procedure SignalDirDelete(Sender: TObject; Files: TStringList);
 
     function CheckForSubDirs(Path: string): Boolean;
+    function GetSubDir(var SRec: TSearchRec): Boolean;
+    function FindFirstSubDir(Path: string; var SRec: TSearchRec): Boolean;
+    function FindNextSubDir(var SRec: TSearchRec): Boolean;
     function ReadSubDirs(Node: TTreeNode; DriveType: Integer; SpecificFile: string = ''): Boolean;
 
     {Callback-functions used by iteratesubtree:}
@@ -426,7 +427,6 @@ begin
   FAttr := 0;
   FScanned := False;
   FDirName := '';
-  FShortName := '';
   FIsRecycleBin := False;
   FIconEmpty := True;
   shAttr := 0;
@@ -458,7 +458,6 @@ begin
     SourceData := TNodeData(TTreeNode(Source).Data);
     NewData := TNodeData.Create();
     NewData.DirName := SourceData.DirName;
-    NewData.ShortName := SourceData.ShortName;
     NewData.Attr := SourceData.Attr;
     NewData.Scanned := SourceData.Scanned;
     NewData.Data := SourceData.Data;
@@ -885,7 +884,6 @@ end; {CanEdit}
 
 procedure TDriveView.Edit(const Item: TTVItem);
 var
-  SRec: TSearchRec;
   Node: TTreeNode;
   Info: string;
   i: Integer;
@@ -923,12 +921,6 @@ begin
       begin
         Node.Text := Item.pszText;
         TNodeData(Node.Data).DirName := Item.pszText;
-        if FindFirst(ApiPath(IncludeTrailingBackslash(NodePath(Node.Parent)) + Item.pszText),
-             faAnyFile, SRec) = 0 then
-        begin
-          TNodeData(Node.Data).ShortName := string(SRec.FindData.cAlternateFileName);
-        end;
-        FindClose(SRec);
         SortChildren(Node.Parent, False);
 
         inherited;
@@ -1456,7 +1448,6 @@ begin
               { Create root directory node }
               NodeData := TNodeData.Create;
               NodeData.DirName := DriveInfo.GetDriveRoot(Drive);
-              NodeData.ShortName := NodeData.DirName;
 
               {Get the shared attributes:}
               GetAttr :=
@@ -1522,7 +1513,6 @@ begin
   NodeData := TNodeData.Create;
   NodeData.Attr := SRec.Attr;
   NodeData.DirName := SRec.Name;
-  NodeData.ShortName := SRec.FindData.cAlternateFileName;
   NodeData.FIsRecycleBin :=
     (SRec.Attr and faSysFile <> 0) and
     (ParentNode.Level = 0) and
@@ -1618,7 +1608,7 @@ function TDriveView.DoFindNodeToPath(Path: string; ExistingOnly: Boolean): TTree
     Result := nil;
     while Assigned(Node) do
     begin
-      if (UpperCase(GetDirName(Node)) = Dir) or (TNodeData(Node.Data).ShortName = Dir) then
+      if UpperCase(GetDirName(Node)) = Dir then
       begin
         if Length(Path) > 0 then
         begin
@@ -1762,62 +1752,85 @@ begin
   FindClose(SRec);
 end; {CheckForSubDirs}
 
+function TDriveView.GetSubDir(var SRec: TSearchRec): Boolean;
+begin
+  Result := True;
+  while Result and
+        ((SRec.Name = '.' ) or
+         (SRec.Name = '..') or
+         ((SRec.Attr and faDirectory) = 0)) do
+  begin
+    if FindNext(SRec) <> 0 then
+    begin
+      Result := False;
+    end;
+  end;
+end;
+
+function TDriveView.FindFirstSubDir(Path: string; var SRec: TSearchRec): Boolean;
+begin
+  Result :=
+    (FindFirstEx(ApiPath(Path), DirAttrMask, SRec, FIND_FIRST_EX_LARGE_FETCH_PAS, FindExSearchLimitToDirectories) = 0) and
+    GetSubDir(SRec);
+end;
+
+function TDriveView.FindNextSubDir(var SRec: TSearchRec): Boolean;
+begin
+  Result := (FindNext(SRec) = 0) and GetSubDir(SRec);
+end;
+
 function TDriveView.ReadSubDirs(Node: TTreeNode; DriveType: Integer; SpecificFile: string): Boolean;
 var
-  C, DosError: Integer;
+  C: Integer;
   SRec: TSearchRec;
   NewNode: TTreeNode;
   Path: string;
   Start: TDateTime;
-  All, Stop: Boolean;
+  R, All, Stop: Boolean;
+  Seconds: Integer;
 begin
   Result := False;
   Path := NodePath(Node);
   All := (SpecificFile = '');
   if All then SpecificFile := '*.*';
-  DosError := FindFirst(ApiPath(IncludeTrailingBackslash(Path) + SpecificFile), DirAttrMask, SRec);
+  R := FindFirstSubDir(IncludeTrailingBackslash(Path) + SpecificFile, SRec);
   Start := Now;
   C := 0;
   // At least from SetDirectory > DoFindNodeToPath and CanExpand, this is not called within BeginUpdate/EndUpdate block.
-  // But in any case, addinf it here makes expanding (which calls CanExpand) noticeably slower, when there are lot of nodes,
+  // But in any case, adding it here makes expanding (which calls CanExpand) noticeably slower, when there are lot of nodes,
   // because EndUpdate triggers TVN_GETDISPINFO for all nodes in the tree.
-  while DosError = 0 do
+  while R do
   begin
-    if (SRec.Name <> '.' ) and
-       (SRec.Name <> '..') and
-       (SRec.Attr and faDirectory <> 0) then
+    NewNode := AddChildNode(Node, SRec);
+    Inc(C);
+    if DoScanDir(NewNode) then
     begin
-      NewNode := AddChildNode(Node, SRec);
-      Inc(C);
-      if DoScanDir(NewNode) then
-      begin
-        // We have seen the SFGAO_HASSUBFOLDER to be absent on C: drive $Recycle.Bin
-        NewNode.HasChildren := Bool(TNodeData(NewNode.Data).shAttr and SFGAO_HASSUBFOLDER);
+      // We have seen the SFGAO_HASSUBFOLDER to be absent on C: drive $Recycle.Bin
+      NewNode.HasChildren := Bool(TNodeData(NewNode.Data).shAttr and SFGAO_HASSUBFOLDER);
 
-        TNodeData(NewNode.Data).Scanned := not NewNode.HasChildren;
-      end
-        else
-      begin
-        NewNode.HasChildren := False;
-        TNodeData(NewNode.Data).Scanned := True;
-      end;
-
-      // There are two other directory reading loops, where this is not called
-      if ((C mod 100) = 0) and Assigned(OnContinueLoading) then
-      begin
-        Stop := False;
-        OnContinueLoading(Self, Start, Path, C, Stop);
-        if Stop then DosError := 1;
-      end;
-
-      Result := True;
+      TNodeData(NewNode.Data).Scanned := not NewNode.HasChildren;
+    end
+      else
+    begin
+      NewNode.HasChildren := False;
+      TNodeData(NewNode.Data).Scanned := True;
     end;
 
-    if DosError = 0 then
+    // There are two other directory reading loops, where this is not called
+    if ((C mod 100) = 0) and Assigned(OnContinueLoading) then
     begin
-      DosError := FindNext(SRec);
+      Stop := False;
+      OnContinueLoading(Self, Start, Path, C, Stop);
+      if Stop then R := False;
     end;
-  end; {While DosError = 0}
+
+    Result := True;
+
+    if R then
+    begin
+      R := FindNextSubDir(SRec);
+    end;
+  end;
 
   FindClose(Srec);
 
@@ -1857,7 +1870,7 @@ var
   SRec: TSearchRec;
   SrecList: TStringList;
   SubDirList: TStringList;
-  DosError: Integer;
+  R: Boolean;
   Index: Integer;
   NewDirFound: Boolean;
   ParentDir: string;
@@ -1903,24 +1916,20 @@ begin {CallBackValidateDir}
 
       SRecList := TStringList.Create;
       SRecList.CaseSensitive := True;
-      DosError := FindFirst(ApiPath(ParentDir + '*.*'), DirAttrMask, SRec);
-      while DosError = 0 do
+      R := FindFirstSubDir(ParentDir + '*.*', SRec);
+      while R do
       begin
-        if (Srec.Name <> '.' ) and
-           (Srec.Name <> '..') and
-           (Srec.Attr and faDirectory <> 0) then
+        SrecList.Add(Srec.Name);
+        if not SubDirList.Find(Srec.Name, Index) then
+        {Subnode does not exists: add it:}
         begin
-          SrecList.Add(Srec.Name);
-          if not SubDirList.Find(Srec.Name, Index) then
-          {Subnode does not exists: add it:}
-          begin
-            NewNode := AddChildNode(Node, SRec);
-            NewNode.HasChildren := CheckForSubDirs(ParentDir + Srec.Name);
-            TNodeData(NewNode.Data).Scanned := Not NewNode.HasChildren;
-            NewDirFound  := True;
-          end;
+          NewNode := AddChildNode(Node, SRec);
+          // Why doesn't this use shAttr consistently with other code?
+          NewNode.HasChildren := CheckForSubDirs(ParentDir + Srec.Name);
+          TNodeData(NewNode.Data).Scanned := Not NewNode.HasChildren;
+          NewDirFound  := True;
         end;
-        DosError := FindNext(Srec);
+        R := FindNextSubDir(Srec);
       end;
       FindClose(Srec);
       Sreclist.Sort;
@@ -1942,7 +1951,6 @@ begin {CallBackValidateDir}
           begin
             {Case of directory letters has changed:}
             TNodeData(WorkNode.Data).DirName := SrecList[Index];
-            TNodeData(WorkNode.Data).ShortName := ExtractShortPathName(NodePathName(WorkNode));
             WorkNode.Text := SrecList[Index];
           end;
           WorkNode := Node.GetNextChild(WorkNode);

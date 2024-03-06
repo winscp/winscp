@@ -896,10 +896,20 @@ begin
 end;
 
 procedure TDirView.SetPath(Value: string);
+var
+  LongPath: string;
+  Len: Integer;
 begin
   // do checks before passing directory to drive view, because
   // it would truncate non-existing directory to first superior existing
   Value := ReplaceStr(Value, '/', '\');
+
+  // Convert to long path
+  Len := GetLongPathName(PChar(ApiPath(Value)), nil, 0);
+  SetLength(LongPath, Len);
+  Len := GetLongPathName(PChar(ApiPath(Value)), PChar(LongPath), Len);
+  if Len > 0 then
+    Value := Copy(LongPath, 1, Len);
 
   CheckCanOpenDirectory(Value);
 
@@ -1346,8 +1356,8 @@ begin
       begin
         FParentFolder := GetShellFolder(PathName);
 
-        DosError := SysUtils.FindFirst(ApiPath(IncludeTrailingPathDelimiter(FPath) + '*.*'),
-          FileAttr, SRec);
+        DosError :=
+          FindFirstEx(ApiPath(IncludeTrailingPathDelimiter(FPath) + '*.*'), FileAttr, SRec, FIND_FIRST_EX_LARGE_FETCH_PAS);
         while (DosError = 0) and (not AbortLoading) do
         begin
           if (SRec.Attr and faDirectory) = 0 then
@@ -1368,8 +1378,8 @@ begin
 
         {Search for directories:}
         DirsCount := 0;
-        DosError := SysUtils.FindFirst(ApiPath(IncludeTrailingPathDelimiter(FPath) + '*.*'),
-          DirAttrMask, SRec);
+        DosError :=
+          FindFirstEx(ApiPath(IncludeTrailingPathDelimiter(FPath) + '*.*'), DirAttrMask, SRec, FIND_FIRST_EX_LARGE_FETCH_PAS);
         while (DosError = 0) and (not AbortLoading) do
         begin
           if (SRec.Name <> '.') and (SRec.Name <> '..') and
@@ -1506,8 +1516,8 @@ begin
           end;
           EItems.Sort;
 
-          DosError := SysUtils.FindFirst(ApiPath(IncludeTrailingPathDelimiter(FPath) + '*.*'),
-            FileAttr, SRec);
+          DosError :=
+            FindFirstEx(ApiPath(IncludeTrailingPathDelimiter(FPath) + '*.*'), FileAttr, SRec, FIND_FIRST_EX_LARGE_FETCH_PAS);
           while DosError = 0 do
           begin
             if (SRec.Attr and faDirectory) = 0 then
@@ -1562,7 +1572,8 @@ begin
           SysUtils.FindClose(Srec);
 
           {Search new directories:}
-          DosError := SysUtils.FindFirst(ApiPath(FPath + '\*.*'), DirAttrMask, SRec);
+          DosError :=
+            FindFirstEx(ApiPath(FPath + '\*.*'), DirAttrMask, SRec, FIND_FIRST_EX_LARGE_FETCH_PAS);
           while DosError = 0 do
           begin
             if (Srec.Attr and faDirectory) <> 0 then
