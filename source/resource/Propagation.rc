@@ -94,4 +94,6 @@ BEGIN
   NEW_6_2_HOST_CERTIFICATES, "Support for OpenSSH certificates for host verification"
   NEW_6_2_SYNC_HASH, "File hash can be used as criterion for synchronization"
   NEW_6_2_MOVE_DUPLICATE, "Improved behaviour when moving and duplicating remote files"
+
+  NEW_6_4, "TODO"
 END
