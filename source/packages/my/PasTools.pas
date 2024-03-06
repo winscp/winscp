@@ -2,6 +2,8 @@ unit PasTools;
 
 interface
 
+{$WARN SYMBOL_PLATFORM OFF}
+
 uses
   Windows, Types, Classes, ComCtrls, ExtCtrls, Controls, Dialogs, Forms, Messages, Graphics, SysUtils;
 
