@@ -44,7 +44,7 @@ uses
   Windows, Messages, SysUtils, Classes,  Graphics, Controls, Forms, ComObj,
   Dialogs, ComCtrls, ShellApi, CommCtrl, ExtCtrls, ActiveX,  ShlObj,
   DirView, ShellDialogs, DragDrop, DragDropFilesEx, FileChanges, FileOperator,
-  DiscMon, IEDriveInfo, IEListView, PIDL, BaseUtils, CustomDirView,
+  DiscMon, IEDriveInfo, IEListView, BaseUtils, CustomDirView,
   CustomDriveView, System.Generics.Collections;
 
 const
@@ -96,10 +96,6 @@ type
     FIconEmpty: Boolean;
 
   public
-    shAttr: ULONG;
-    PIDL: PItemIDList;
-    ShellFolder: IShellFolder;
-
     constructor Create;
     destructor Destroy; override;
 
@@ -141,8 +137,6 @@ type
     FPrevSelectedIndex: Integer;
     FChangeTimerSuspended: Integer;
 
-    FDesktop: IShellFolder;
-
     {Additional events:}
     FOnDisplayContextMenu: TNotifyEvent;
     FOnRefreshDrives: TDriveViewRefreshDrives;
@@ -161,7 +155,6 @@ type
     {Drag&drop helper functions:}
     procedure SignalDirDelete(Sender: TObject; Files: TStringList);
 
-    function CheckForSubDirs(Path: string): Boolean;
     function GetSubDir(var SRec: TSearchRec): Boolean;
     function FindFirstSubDir(Path: string; var SRec: TSearchRec): Boolean;
     function FindNextSubDir(var SRec: TSearchRec): Boolean;
@@ -185,9 +178,8 @@ type
     procedure SetShowVolLabel(ShowIt: Boolean);
     procedure SetDirView(Value: TDirView);
     procedure SetDirectory(Value: string); override;
-    procedure GetNodeShellAttr(ParentNode: TTreeNode; NodeData: TNodeData; GetAttr: Boolean);
     function  DoScanDir(FromNode: TTreeNode): Boolean;
-    function  AddChildNode(ParentNode: TTreeNode; SRec: TSearchRec): TTreeNode;
+    function  AddChildNode(ParentNode: TTreeNode; ParentPath: string; SRec: TSearchRec): TTreeNode;
     procedure CreateWatchThread(Drive: string);
     function NodeWatched(Node: TTreeNode): Boolean;
     procedure TerminateWatchThread(Drive: string);
@@ -410,7 +402,7 @@ procedure Register;
 implementation
 
 uses
-  CompThread, PasTools, UITypes, Types, OperationWithTimeout, System.Generics.Defaults;
+  CompThread, PasTools, UITypes, Types, System.Generics.Defaults;
 
 type
   PInt = ^Integer;
@@ -429,18 +421,11 @@ begin
   FDirName := '';
   FIsRecycleBin := False;
   FIconEmpty := True;
-  shAttr := 0;
-  PIDL := nil;
-  ShellFolder := nil;
 end; {TNodeData.Create}
 
 destructor TNodeData.Destroy;
 begin
   SetLength(FDirName, 0);
-
-  if Assigned(PIDL) then
-    FreePIDL(PIDL);
-
   inherited;
 end; {TNodeData.Destroy}
 
@@ -745,8 +730,6 @@ begin
 
   if Assigned(PopupMenu) then
     PopupMenu.Autopopup := False;
-
-  OLECheck(SHGetDesktopFolder(FDesktop));
 
   FDragDropFilesEx.SourceEffects := [deCopy, deMove, deLink];
   FDragDropFilesEx.TargetEffects := [deCopy, deMove, deLink];
@@ -1264,71 +1247,6 @@ begin
   end;
 end; {GetDriveText}
 
-procedure TDriveView.GetNodeShellAttr(ParentNode: TTreeNode; NodeData: TNodeData; GetAttr: Boolean);
-var
-  ParentFolder: IShellFolder;
-  ParentData: TNodeData;
-begin
-  NodeData.shAttr := 0;
-
-  if GetAttr then
-  begin
-    if Assigned(ParentNode) then
-    begin
-      ParentData := TNodeData(ParentNode.Data);
-      if not Assigned(ParentData) then
-      begin
-        Assert(False);
-        ParentFolder := nil;
-      end
-        else
-      begin
-        if not Assigned(ParentData.ShellFolder) then
-        begin
-          GetNodeShellAttr(ParentNode.Parent, ParentData, GetAttr);
-        end;
-        ParentFolder := ParentData.ShellFolder;
-      end;
-    end
-      else
-    begin
-      ParentFolder := FDesktop;
-    end;
-
-    if Assigned(ParentFolder) and Assigned(NodeData) then
-    begin
-      if not Assigned(NodeData.PIDL) then
-        NodeData.PIDL := PIDL_GetFromParentFolder(ParentFolder, PChar(NodeData.DirName));
-      if Assigned(NodeData.PIDL) then
-      begin
-        NodeData.shAttr := SFGAO_CONTENTSMASK;
-
-        // Previously we would also make use of SFGAO_SHARE to display a share overlay.
-        // But for directories, Windows File Explorer does not display the overlay anymore (probably since Vista).
-        // And for drives (where Explorer does display the overlay), it did not work ever since we use "desktop"
-        // (and not "workspace" as before) to resolve drive interface (see Bug 1717).
-        if not Succeeded(ShellFolderGetAttributesOfWithTimeout(ParentFolder, 1, NodeData.PIDL, NodeData.shAttr, MSecsPerSec)) then
-        begin
-          NodeData.shAttr := 0;
-        end;
-
-        if not Assigned(NodeData.ShellFolder) then
-        begin
-          ParentFolder.BindToObject(NodeData.PIDL, nil, IID_IShellFolder, Pointer(NodeData.ShellFolder));
-        end;
-      end
-    end;
-  end;
-
-  if NodeData.shAttr = 0 then
-  begin
-    // If we cannot resolve attrs, we do not want to assume that the folder has no subfolders,
-    // as that will make us scan the folder.
-    NodeData.shAttr := SFGAO_HASSUBFOLDER;
-  end;
-
-end; {GetNodeAttr}
-
 function CompareDrive(List: TStringList; Index1, Index2: Integer): Integer;
 var
   Drive1, Drive2: string;
@@ -1414,7 +1332,6 @@ var
   NextDriveNode: TTreeNode;
   Index: Integer;
   Drive: string;
-  GetAttr: Boolean;
 begin
   SaveCursor := Screen.Cursor;
   Screen.Cursor := crHourGlass;
@@ -1448,12 +1365,6 @@ begin
               { Create root directory node }
               NodeData := TNodeData.Create;
               NodeData.DirName := DriveInfo.GetDriveRoot(Drive);
-
-              {Get the shared attributes:}
-              GetAttr :=
-                DriveInfo.IsFixedDrive(Drive) and (DriveType <> DRIVE_REMOVABLE) and
-                ((DriveType <> DRIVE_REMOTE) or GetNetWorkConnected(Drive));
-              GetNodeShellAttr(nil, NodeData, GetAttr);
 
               if Assigned(NextDriveNode) then
                 RootNode := Items.InsertObject(NextDriveNode, '', NodeData)
@@ -1504,11 +1415,11 @@ begin
   end;
 end; {RefreshRootNodes}
 
-function TDriveView.AddChildNode(ParentNode: TTreeNode; SRec: TSearchRec): TTreeNode;
+function TDriveView.AddChildNode(ParentNode: TTreeNode; ParentPath: string; SRec: TSearchRec): TTreeNode;
 var
   NewNode: TTreeNode;
   NodeData: TNodeData;
-  GetAttr: Boolean;
+  SubSRec: TSearchRec;
 begin
   NodeData := TNodeData.Create;
   NodeData.Attr := SRec.Attr;
@@ -1520,19 +1431,27 @@ begin
      SameText(SRec.Name, 'RECYCLER') or
      SameText(SRec.Name, '$RECYCLE.BIN'));
 
-  { query content attributes ("has subfolder") only if tree view is visible }
-  { to avoid unnecessary scan of subfolders (which may take some time) }
-  { if tree view is not visible anyway }
-  GetAttr :=
-    Visible and
-    Assigned(Parent) and
-    // Ad-hoc test for "other/right" panel, which is not hidden directly, but indirectly by hiding it container panel
-    ((Parent is TCustomForm) or Parent.Visible) and
-    (GetDriveTypeToNode(ParentNode) <> DRIVE_REMOTE);
-  GetNodeShellAttr(ParentNode, NodeData, GetAttr);
-
   NewNode := Self.Items.AddChildObject(ParentNode, '', NodeData);
   NewNode.Text := GetDisplayName(NewNode);
+
+  // query content ("has subfolder") only if tree view is visible
+  // to avoid unnecessary scan of subfolders (which may take some time)
+  // if tree view is not visible anyway
+  if Visible and
+     Assigned(Parent) and
+     // Ad-hoc test for "other/right" panel, which is not hidden directly, but indirectly by hiding it container panel
+     ((Parent is TCustomForm) or Parent.Visible) and
+     (GetDriveTypeToNode(ParentNode) <> DRIVE_REMOTE) then
+  begin
+    NewNode.HasChildren := FindFirstSubDir(IncludeTrailingBackslash(ParentPath) + NodeData.DirName + '\*.*', SubSRec);
+    FindClose(SubSRec);
+  end
+    else
+  begin
+    NewNode.HasChildren := True;
+  end;
+
+  NodeData.Scanned := not NewNode.HasChildren;
 
   Result := NewNode;
 end; {AddChildNode}
@@ -1730,28 +1649,6 @@ begin
   Result := DoFindNodeToPath(Path, True);
 end;
 
-function TDriveView.CheckForSubDirs(Path: string): Boolean;
-var
-  DosError: Integer;
-  SRec: TSearchRec;
-begin
-  Result := False;
-
-  DosError := FindFirst(ApiPath(IncludeTrailingBackslash(Path) + '*.'), DirAttrMask, SRec);
-  while DosError = 0 do
-  begin
-    if (SRec.Name <> '.' ) and
-       (SRec.Name <> '..') and
-       (SRec.Attr and faDirectory <> 0) then
-    begin
-      Result := True;
-      Break;
-    end;
-    DosError := FindNext(SRec);
-  end;
-  FindClose(SRec);
-end; {CheckForSubDirs}
-
 function TDriveView.GetSubDir(var SRec: TSearchRec): Boolean;
 begin
   Result := True;
@@ -1769,9 +1666,13 @@ end;
 
 function TDriveView.FindFirstSubDir(Path: string; var SRec: TSearchRec): Boolean;
 begin
-  Result :=
-    (FindFirstEx(ApiPath(Path), DirAttrMask, SRec, FIND_FIRST_EX_LARGE_FETCH_PAS, FindExSearchLimitToDirectories) = 0) and
-    GetSubDir(SRec);
+  Result := (FindFirstEx(ApiPath(Path), DirAttrMask, SRec, FIND_FIRST_EX_LARGE_FETCH_PAS, FindExSearchLimitToDirectories) = 0);
+  if Result then
+  begin
+    Result := GetSubDir(SRec);
+    // For consistency with FindFirst, but not really needed, as all callers call FindClose unconditionally anyway
+    if not Result then FindClose(SRec);
+  end;
 end;
 
 function TDriveView.FindNextSubDir(var SRec: TSearchRec): Boolean;
@@ -1783,11 +1684,9 @@ function TDriveView.ReadSubDirs(Node: TTreeNode; DriveType: Integer; SpecificFil
 var
   C: Integer;
   SRec: TSearchRec;
-  NewNode: TTreeNode;
   Path: string;
   Start: TDateTime;
   R, All, Stop: Boolean;
-  Seconds: Integer;
 begin
   Result := False;
   Path := NodePath(Node);
@@ -1801,20 +1700,8 @@ begin
   // because EndUpdate triggers TVN_GETDISPINFO for all nodes in the tree.
   while R do
   begin
-    NewNode := AddChildNode(Node, SRec);
+    AddChildNode(Node, Path, SRec);
     Inc(C);
-    if DoScanDir(NewNode) then
-    begin
-      // We have seen the SFGAO_HASSUBFOLDER to be absent on C: drive $Recycle.Bin
-      NewNode.HasChildren := Bool(TNodeData(NewNode.Data).shAttr and SFGAO_HASSUBFOLDER);
-
-      TNodeData(NewNode.Data).Scanned := not NewNode.HasChildren;
-    end
-      else
-    begin
-      NewNode.HasChildren := False;
-      TNodeData(NewNode.Data).Scanned := True;
-    end;
 
     // There are two other directory reading loops, where this is not called
     if ((C mod 100) = 0) and Assigned(OnContinueLoading) then
@@ -1866,7 +1753,6 @@ function TDriveView.CallBackValidateDir(var Node: TTreeNode; Data: Pointer): Boo
 var
   WorkNode: TTreeNode;
   DelNode: TTreeNode;
-  NewNode: TTreeNode;
   SRec: TSearchRec;
   SrecList: TStringList;
   SubDirList: TStringList;
@@ -1923,10 +1809,7 @@ begin {CallBackValidateDir}
         if not SubDirList.Find(Srec.Name, Index) then
         {Subnode does not exists: add it:}
         begin
-          NewNode := AddChildNode(Node, SRec);
-          // Why doesn't this use shAttr consistently with other code?
-          NewNode.HasChildren := CheckForSubDirs(ParentDir + Srec.Name);
-          TNodeData(NewNode.Data).Scanned := Not NewNode.HasChildren;
+          AddChildNode(Node, ParentDir, SRec);
           NewDirFound  := True;
         end;
         R := FindNextSubDir(Srec);
