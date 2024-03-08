@@ -431,6 +431,9 @@ end; {TNodeData.Destroy}
 
   { TDriveTreeNode }
 
+// Not sure if this is ever used (possibly only then "assigning" tree view to another instance, what never do).
+// It is NOT used when recreating a tree view handle - for that a node is serialized and deserialized,
+// including a pointer to TNodeData. See csRecreating condition in TDriveView.Delete.
 procedure TDriveTreeNode.Assign(Source: TPersistent);
 var
   SourceData: TNodeData;
