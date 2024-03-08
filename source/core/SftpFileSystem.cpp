@@ -2432,10 +2432,10 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(
     UnicodeString MessageStr = LoadStr(Message);
     UnicodeString ServerMessage;
     UnicodeString LanguageTag;
-    if ((FVersion >= 3) ||
-        // if version is not decided yet (i.e. this is status response
-        // to the init request), go on, only if there are any more data
-        ((FVersion < 0) && (Packet->RemainingLength > 0)))
+    // Message field is defined since version 3 only.
+    // We also might get the packet even before the version is established.
+    // And Cisco servers respond without message field even in version 3.
+    if (Packet->RemainingLength > 0)
     {
       // message is in UTF only since SFTP specification 01 (specification 00
       // is also version 3)
