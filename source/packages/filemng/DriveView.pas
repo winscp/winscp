@@ -45,7 +45,7 @@ uses
   Dialogs, ComCtrls, ShellApi, CommCtrl, ExtCtrls, ActiveX,  ShlObj,
   DirView, ShellDialogs, DragDrop, DragDropFilesEx, FileChanges, FileOperator,
   DiscMon, IEDriveInfo, IEListView, BaseUtils, CustomDirView,
-  CustomDriveView, System.Generics.Collections;
+  CustomDriveView, System.Generics.Collections, CompThread;
 
 const
   msThreadChangeDelay = 50;
@@ -57,6 +57,7 @@ const
   dvdsRereadAllways   = 16; {Refresh drivestatus in any case}
 
   WM_USER_SHCHANGENOTIFY = WM_USER + $2000 + 13;
+  WM_USER_SUBDIRREADER = WM_USER_SHCHANGENOTIFY + 1;
 
 type
   EInvalidDirName  = class(Exception);
@@ -86,6 +87,13 @@ type
 
   TDriveView = class;
 
+  TSubDirReaderSchedule = class
+    Node: TTreeNode;
+    Path: string;
+    Deleted: Boolean;
+    Processed: Boolean;
+  end;
+
   TNodeData = class
   private
     FDirName: string;
@@ -94,6 +102,7 @@ type
     FData: Pointer;
     FIsRecycleBin: Boolean;
     FIconEmpty: Boolean;
+    FSchedule: TSubDirReaderSchedule;
 
   public
     constructor Create;
@@ -105,10 +114,42 @@ type
     property Data: Pointer read FData write FData;
     property IsRecycleBin: Boolean read FIsRecycleBin;
     property IconEmpty: Boolean read FIconEmpty write FIconEmpty;
+    property Schedule: TSubDirReaderSchedule read FSchedule write FSchedule;
   end;
 
   TDriveTreeNode = class(TTreeNode)
     procedure Assign(Source: TPersistent); override;
+  end;
+
+  TSubDirReaderThread = class(TCompThread)
+  public
+    destructor Destroy; override;
+    procedure Terminate; override;
+
+  protected
+    constructor Create(DriveView: TDriveView);
+    procedure Add(Node: TTreeNode; Path: string);
+    procedure Delete(Node: TTreeNode);
+    function Detach: Integer;
+    procedure Reattach(Count: Integer);
+
+    procedure Execute; override;
+
+  private
+    FDriveView: TDriveView;
+    FEvent: THandle;
+    FQueue: TStack<TSubDirReaderSchedule>;
+    FResults: TQueue<TSubDirReaderSchedule>;
+    FSection: TRTLCriticalSection;
+    FTimer: TTimer;
+    FWindowHandle: HWND;
+
+    procedure TriggerEvent;
+    procedure ScheduleProcess;
+    procedure Process;
+    function ProcessResult: Boolean;
+    procedure Timer(Sender: TObject);
+    procedure WndProc(var Msg: TMessage);
   end;
 
   TDriveViewRefreshDrives = procedure(Sender: TObject; Global: Boolean) of object;
@@ -136,6 +177,7 @@ type
     FPrevSelected: TTreeNode;
     FPrevSelectedIndex: Integer;
     FChangeTimerSuspended: Integer;
+    FSubDirReaderThread: TSubDirReaderThread;
 
     {Additional events:}
     FOnDisplayContextMenu: TNotifyEvent;
@@ -179,7 +221,7 @@ type
     procedure SetDirView(Value: TDirView);
     procedure SetDirectory(Value: string); override;
     function  DoScanDir(FromNode: TTreeNode): Boolean;
-    function  AddChildNode(ParentNode: TTreeNode; ParentPath: string; SRec: TSearchRec): TTreeNode;
+    procedure AddChildNode(ParentNode: TTreeNode; ParentPath: string; SRec: TSearchRec);
     procedure CreateWatchThread(Drive: string);
     function NodeWatched(Node: TTreeNode): Boolean;
     procedure TerminateWatchThread(Drive: string);
@@ -207,6 +249,7 @@ type
     procedure Edit(const Item: TTVItem); override;
 
     procedure WMUserRename(var Message: TMessage); message WM_USER_RENAME;
+    procedure CMRecreateWnd(var Msg: TMessage); message CM_RECREATEWND;
 
     function GetCustomDirView: TCustomDirView; override;
     procedure SetCustomDirView(Value: TCustomDirView); override;
@@ -402,7 +445,7 @@ procedure Register;
 implementation
 
 uses
-  CompThread, PasTools, UITypes, Types, System.Generics.Defaults;
+  PasTools, UITypes, SyncObjs, IOUtils;
 
 type
   PInt = ^Integer;
@@ -421,13 +464,333 @@ begin
   FDirName := '';
   FIsRecycleBin := False;
   FIconEmpty := True;
+  FSchedule := nil;
 end; {TNodeData.Create}
 
 destructor TNodeData.Destroy;
 begin
+  Assert(not Assigned(FSchedule));
   SetLength(FDirName, 0);
   inherited;
 end; {TNodeData.Destroy}
+
+  { TSubDirReaderThread }
+
+constructor TSubDirReaderThread.Create(DriveView: TDriveView);
+begin
+  inherited Create(True);
+  FDriveView := DriveView;
+  FSection.Initialize;
+  FEvent := CreateEvent(nil, False, False, nil);
+  FQueue := TStack<TSubDirReaderSchedule>.Create;
+  FResults := TQueue<TSubDirReaderSchedule>.Create;
+  FTimer := TTimer.Create(FDriveView);
+  FTimer.Enabled := False;
+  FTimer.Interval := 200;
+  FTimer.OnTimer := Timer;
+  FWindowHandle := AllocateHWnd(WndProc);
+end;
+
+destructor TSubDirReaderThread.Destroy;
+
+  procedure DestroyScheduleList(List: TEnumerable<TSubDirReaderSchedule>);
+  var
+    Schedule: TSubDirReaderSchedule;
+  begin
+    for Schedule in List do
+    begin
+      if not Schedule.Deleted then
+        TNodeData(Schedule.Node.Data).Schedule := nil;
+      Schedule.Free;
+    end;
+    List.Destroy;
+  end;
+
+begin
+  inherited;
+
+  DeallocateHWnd(FWindowHandle);
+
+  DestroyScheduleList(FQueue);
+  DestroyScheduleList(FResults);
+
+  CloseHandle(FEvent);
+  FTimer.Destroy;
+  FSection.Destroy;
+end;
+
+procedure TSubDirReaderThread.WndProc(var Msg: TMessage);
+begin
+  if Msg.Msg = WM_USER_SUBDIRREADER then
+    ScheduleProcess
+  else
+    Msg.Result := DefWindowProc(FWindowHandle, Msg.Msg, Msg.wParam, Msg.lParam);
+end;
+
+procedure TSubDirReaderThread.Process;
+var
+  Started: DWORD;
+  Elapsed: Integer;
+  Later: Boolean;
+begin
+  Started := GetTickCount;
+  Later := False;
+  while (not Later) and ProcessResult do
+  begin
+    Elapsed := GetTickCount - Started;
+    Later := (Elapsed < 0) or (Elapsed > 20);
+  end;
+
+  if not Later then
+    FTimer.Enabled := False;
+end;
+
+procedure TSubDirReaderThread.Timer(Sender: TObject);
+begin
+  Process;
+end;
+
+procedure TSubDirReaderThread.Add(Node: TTreeNode; Path: string);
+var
+  NodeData: TNodeData;
+  Schedule: TSubDirReaderSchedule;
+begin
+  if Suspended then
+    Resume;
+
+  FSection.Enter;
+  try
+    NodeData := TNodeData(Node.Data);
+    Assert(not Assigned(NodeData.Schedule));
+    Schedule := TSubDirReaderSchedule.Create;
+    Schedule.Node := Node;
+    Schedule.Path := Path;
+    Schedule.Deleted := False;
+    Schedule.Processed := False;
+    FQueue.Push(Schedule);
+    NodeData.Schedule := Schedule;
+  finally
+    FSection.Leave;
+  end;
+  TriggerEvent;
+end;
+
+procedure TSubDirReaderThread.Delete(Node: TTreeNode);
+var
+  NodeData: TNodeData;
+begin
+  FSection.Enter;
+  try
+    NodeData := TNodeData(Node.Data);
+    if Assigned(NodeData.Schedule) then
+    begin
+      NodeData.Schedule.Deleted := True;
+      NodeData.Schedule := nil;
+    end;
+  finally
+    FSection.Leave;
+  end;
+  TriggerEvent;
+end;
+
+function TSubDirReaderThread.Detach: Integer;
+
+  procedure DetachList(List: TEnumerable<TSubDirReaderSchedule>);
+  var
+    Schedule: TSubDirReaderSchedule;
+  begin
+    for Schedule in List do
+    begin
+      if Schedule.Deleted then Schedule.Free
+        else
+      begin
+        Assert(Schedule.Processed = (List = FResults));
+        Schedule.Node := nil;
+        Inc(Result);
+      end;
+    end;
+  end;
+
+begin
+  // block thread while handle is being recreated
+  FSection.Enter;
+  try
+    Result := 0;
+
+    DetachList(FQueue);
+    DetachList(FResults);
+
+    FQueue.Clear;
+    FResults.Clear;
+  except
+    FSection.Leave;
+    raise;
+  end;
+end;
+
+procedure TSubDirReaderThread.Reattach(Count: Integer);
+var
+  Node: TTreeNode;
+  Schedule: TSubDirReaderSchedule;
+begin
+  try
+    if Count > 0 then
+    begin
+      Node := FDriveView.Items.GetFirstNode;
+      while Assigned(Node) do
+      begin
+        Schedule := TNodeData(Node.Data).Schedule;
+        if Assigned(Schedule) then
+        begin
+          Assert(not Assigned(Schedule.Node));
+          Schedule.Node := Node;
+          if not Schedule.Processed then
+            FQueue.Push(Schedule)
+          else
+            FResults.Enqueue(Schedule);
+          Assert(Count > 0);
+          // Can be optimized to stop once Count = 0
+          Dec(Count);
+        end;
+        Node := Node.GetNext;
+      end;
+      Assert(Count = 0);
+    end;
+  finally
+    FSection.Leave;
+  end;
+
+  TriggerEvent;
+  ScheduleProcess;
+end;
+
+procedure TSubDirReaderThread.Terminate;
+begin
+  inherited;
+  TriggerEvent;
+end;
+
+procedure TSubDirReaderThread.TriggerEvent;
+begin
+  SetEvent(FEvent);
+end;
+
+function TSubDirReaderThread.ProcessResult: Boolean;
+var
+  Node: TTreeNode;
+  NodeData: TNodeData;
+  Schedule: TSubDirReaderSchedule;
+begin
+  FSection.Enter;
+  try
+    Result := (FResults.Count > 0);
+    if Result then
+    begin
+      Schedule := FResults.Dequeue;
+      if not Schedule.Deleted then
+      begin
+        Assert(Schedule.Processed);
+        Node := Schedule.Node;
+        Node.HasChildren := False;
+        NodeData := TNodeData(Node.Data);
+        NodeData.Scanned := not Node.HasChildren; // = True
+        Assert(NodeData.Schedule = Schedule);
+        NodeData.Schedule := nil;
+      end;
+      Schedule.Free;
+    end;
+  finally
+    FSection.Leave;
+  end;
+end;
+
+procedure TSubDirReaderThread.ScheduleProcess;
+begin
+  // process the first batch immediatelly, to make it more likely that the first seen subdirectories
+  // will immediatelly show correct status
+  Process;
+  FTimer.Enabled := True;
+end;
+
+procedure TSubDirReaderThread.Execute;
+var
+  SRec: TSearchRec;
+  HasSubDirs: Boolean;
+  NodeData: TNodeData;
+  Schedule: TSubDirReaderSchedule;
+  DelayStart, DelayStartStep: Integer;
+begin
+  DelayStart := 3000;
+  DelayStartStep := 100;
+  while (DelayStart > 0) and (not Terminated) do
+  begin
+    Sleep(DelayStartStep);
+    Dec(DelayStart, DelayStartStep)
+  end;
+
+  while not Terminated do
+  begin
+    WaitForSingleObject(FEvent, INFINITE);
+
+    while not Terminated do
+    begin
+      FSection.Enter;
+      try
+        if FQueue.Count = 0 then
+        begin
+          Schedule := nil; // shut up
+          Break;
+        end
+          else
+        begin
+          Schedule := FQueue.Pop;
+          if Schedule.Deleted then
+          begin
+            Schedule.Free;
+            // Can be optimized to loop within locked critical section until first non-deleted schedule is found
+            Continue;
+          end;
+          Assert(not Schedule.Processed);
+        end
+      finally
+        FSection.Leave;
+      end;
+
+      HasSubDirs := FDriveView.FindFirstSubDir(IncludeTrailingBackslash(Schedule.Path) + '*.*', SRec);
+      FindClose(SRec);
+
+      FSection.Enter;
+      try
+        if Schedule.Deleted then
+        begin
+          Schedule.Free;
+        end
+          else
+        begin
+          Schedule.Processed := True;
+          if not HasSubDirs then // optimization
+          begin
+            FResults.Enqueue(Schedule);
+            if FResults.Count = 1 then
+              PostMessage(FWindowHandle, WM_USER_SUBDIRREADER, 0, 0);
+          end
+            else
+          begin
+            // can happen only if the tree handle is just being recreated
+            if Assigned(Schedule.Node) then
+            begin
+              NodeData := TNodeData(Schedule.Node.Data);
+              NodeData.Schedule := nil;
+            end;
+            Schedule.Free;
+          end;
+        end;
+      finally
+        FSection.Leave;
+      end;
+    end;
+  end;
+end;
 
   { TDriveTreeNode }
 
@@ -476,6 +839,7 @@ begin
   end;
 
   FFileOperator := TFileOperator.Create(Self);
+  FSubDirReaderThread := TSubDirReaderThread.Create(Self);
 
   FShowVolLabel := True;
   FChangeFlag := False;
@@ -539,6 +903,7 @@ begin
 
   if Assigned(FFileOperator) then
     FFileOperator.Free;
+  FSubDirReaderThread.Free;
 
   inherited Destroy;
 end; {Destroy}
@@ -758,7 +1123,13 @@ procedure TDriveView.DestroyWnd;
 var
   DriveStatus: TDriveStatus;
 begin
-  if CreateWndRestores and (Items.Count > 0) and (csRecreating in ControlState) then
+  if not (csRecreating in ControlState) then
+  begin
+    FSubDirReaderThread.Terminate;
+    FSubDirReaderThread.WaitFor;
+  end
+    else
+  if CreateWndRestores and (Items.Count > 0) then
   begin
     FPrevSelectedIndex := -1;
     if Assigned(FPrevSelected) then
@@ -1030,6 +1401,7 @@ begin
 
   if Assigned(NodeData) and not (csRecreating in ControlState) then
   begin
+    FSubDirReaderThread.Delete(Node);
     NodeData.Destroy;
   end;
 end; {OnDelete}
@@ -1418,11 +1790,10 @@ begin
   end;
 end; {RefreshRootNodes}
 
-function TDriveView.AddChildNode(ParentNode: TTreeNode; ParentPath: string; SRec: TSearchRec): TTreeNode;
+procedure TDriveView.AddChildNode(ParentNode: TTreeNode; ParentPath: string; SRec: TSearchRec);
 var
   NewNode: TTreeNode;
   NodeData: TNodeData;
-  SubSRec: TSearchRec;
 begin
   NodeData := TNodeData.Create;
   NodeData.Attr := SRec.Attr;
@@ -1433,30 +1804,14 @@ begin
     (SameText(SRec.Name, 'RECYCLED') or
      SameText(SRec.Name, 'RECYCLER') or
      SameText(SRec.Name, '$RECYCLE.BIN'));
+  NodeData.Scanned := False;
 
   NewNode := Self.Items.AddChildObject(ParentNode, '', NodeData);
   NewNode.Text := GetDisplayName(NewNode);
+  NewNode.HasChildren := True;
+  if GetDriveTypeToNode(ParentNode) <> DRIVE_REMOTE then
+    FSubDirReaderThread.Add(NewNode, IncludeTrailingBackslash(ParentPath) + SRec.Name);
 
-  // query content ("has subfolder") only if tree view is visible
-  // to avoid unnecessary scan of subfolders (which may take some time)
-  // if tree view is not visible anyway
-  if Visible and
-     Assigned(Parent) and
-     // Ad-hoc test for "other/right" panel, which is not hidden directly, but indirectly by hiding it container panel
-     ((Parent is TCustomForm) or Parent.Visible) and
-     (GetDriveTypeToNode(ParentNode) <> DRIVE_REMOTE) then
-  begin
-    NewNode.HasChildren := FindFirstSubDir(IncludeTrailingBackslash(ParentPath) + NodeData.DirName + '\*.*', SubSRec);
-    FindClose(SubSRec);
-  end
-    else
-  begin
-    NewNode.HasChildren := True;
-  end;
-
-  NodeData.Scanned := not NewNode.HasChildren;
-
-  Result := NewNode;
 end; {AddChildNode}
 
 function TDriveView.GetDriveStatus(Drive: string): TDriveStatus;
@@ -2738,5 +3093,17 @@ begin
     Result := True;
   end;
 end; {PasteFromClipBoard}
+
+procedure TDriveView.CMRecreateWnd(var Msg: TMessage);
+var
+  ScheduledCount: Integer;
+begin
+  ScheduledCount := FSubDirReaderThread.Detach;
+  try
+    inherited;
+  finally
+    FSubDirReaderThread.Reattach(ScheduledCount);
+  end;
+end;
 
 end.
