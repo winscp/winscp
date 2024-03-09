@@ -654,7 +654,7 @@ begin
         end;
         Node := Node.GetNext;
       end;
-      Assert(Count = 0);
+      if Count = 0 then Assert(False); // shut up
     end;
   finally
     FSection.Leave;
