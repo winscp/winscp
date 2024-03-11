@@ -164,7 +164,6 @@ type
     destructor Destroy; override;
 
     procedure ValidateDirectory(Node: TTreeNode);
-    procedure CenterNode(Node: TTreeNode); virtual;
     function SortChildren(ParentNode: TTreeNode; Recurse: Boolean): Boolean;
     function IterateSubTree(var StartNode : TTreeNode;
       CallBackFunc: TCallBackFunc; Recurse: TRecursiveScan;
@@ -1064,61 +1063,6 @@ procedure TCustomDriveView.ValidateDirectory(Node: TTreeNode);
 begin
   ValidateDirectoryEx(Node, rsRecursiveExisting, False);
 end;  {ValidateDirectory}
-
-procedure TCustomDriveView.CenterNode(Node: TTreeNode);
-var
-  NodePos: TRect;
-  ScrollInfo: TScrollInfo;
-begin
-  if Assigned(Node) and (Items.Count > 0) then
-  begin
-    Node.MakeVisible;
-
-    NodePos  := Node.DisplayRect(False);
-    with ScrollInfo do
-    begin
-      cbSize := SizeOf(ScrollInfo);
-      fMask := SIF_ALL;
-      nMin := 0;
-      nMax := 0;
-      nPage := 0;
-    end;
-    GetScrollInfo(Handle, SB_VERT, ScrollInfo);
-
-    if ScrollInfo.nMin <> ScrollInfo.nMax then
-    begin
-      {Scroll tree up:}
-      if (NodePos.Top < Height div 4) and (ScrollInfo.nPos > 0) then
-      begin
-        ScrollInfo.fMask := SIF_POS;
-        while (ScrollInfo.nPos > 0) and (NodePos.Top < (Height div 4)) do
-        begin
-          Perform(WM_VSCROLL, SB_LINEUP, 0);
-          GetScrollInfo(Handle, SB_VERT, ScrollInfo);
-          NodePos := Node.DisplayRect(False);
-        end;
-      end
-        else
-      if (NodePos.Top > ((Height * 3) div 4)) then
-      begin
-        {Scroll tree down:}
-        ScrollInfo.fMask := SIF_POS;
-        while (ScrollInfo.nPos + ABS(ScrollInfo.nPage) < ScrollInfo.nMax) and
-          (NodePos.Top > ((Height * 3) div 4)) and
-          (ScrollInfo.nPage > 0) do
-        begin
-          Perform(WM_VSCROLL, SB_LINEDOWN, 0);
-          GetScrollInfo(Handle, SB_VERT, ScrollInfo);
-          NodePos := Node.DisplayRect(False);
-        end;
-      end;
-      NodePos := Node.DisplayRect(True);
-    end;
-
-    if NodePos.Left < 50 then
-      Perform(WM_HSCROLL, SB_PAGELEFT, 0);
-  end;
-end; {CenterNode}
 
 function TCustomDriveView.DoCompareText(Text1, Text2: string): Integer;
 begin
