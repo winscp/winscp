@@ -2823,7 +2823,7 @@ void TScpCommanderForm::LocalLocalCopy(
       UnicodeString SourcePath = FileOperator->OperandFrom->Strings[Index];
       UnicodeString FileName = TPath::GetFileName(SourcePath);
       FileName = MaskFileName(FileName, FileMask);
-      UnicodeString DestinationPath = TPath::Combine(DestinationDir, FileName);
+      UnicodeString DestinationPath = CombinePaths(DestinationDir, FileName);
       FileOperator->OperandTo->Add(DestinationPath);
     }
 

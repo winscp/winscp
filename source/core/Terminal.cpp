@@ -879,7 +879,7 @@ void TParallelOperation::Done(
 
               try
               {
-                UnicodeString TargetName = TPath::Combine(TargetDir, FParallelFileTargetName);
+                UnicodeString TargetName = CombinePaths(TargetDir, FParallelFileTargetName);
                 UnicodeString TargetNamePartial = TargetName + PartialExt;
                 UnicodeString TargetNamePartialOnly = ExtractFileName(TargetNamePartial);
 
@@ -896,7 +896,7 @@ void TParallelOperation::Done(
                     UnicodeString FileNameOnly = UnixExtractFileName(FileName);
                     // Safe as write access to FParallelFileMerged is guarded by FParallelFileMerging
                     int Index = FParallelFileMerged;
-                    UnicodeString TargetPartName = GetPartPrefix(TPath::Combine(TargetDir, FileNameOnly)) + IntToStr(Index);
+                    UnicodeString TargetPartName = GetPartPrefix(CombinePaths(TargetDir, FileNameOnly)) + IntToStr(Index);
 
                     if ((CopyParam->PartSize >= 0) && (Terminal->OperationProgress->TransferredSize != CopyParam->PartSize))
                     {
@@ -1101,7 +1101,7 @@ int TParallelOperation::GetNext(
         }
         else
         {
-          DirectoryData.OppositePath = TPath::Combine(TargetDir, OnlyFileName);
+          DirectoryData.OppositePath = CombinePaths(TargetDir, OnlyFileName);
         }
 
         DirectoryData.Exists = false;
@@ -7838,7 +7838,7 @@ void TTerminal::CheckParallelFileTransfer(
         {
           ParallelFileSize = UltimateFile->Size;
           UnicodeString TargetFileName = CopyParam->ChangeFileName(UnixExtractFileName(ParallelFileName), osRemote, true);
-          UnicodeString DestFullName = TPath::Combine(TargetDir, TargetFileName);
+          UnicodeString DestFullName = CombinePaths(TargetDir, TargetFileName);
 
           if (::FileExists(ApiPath(DestFullName)))
           {

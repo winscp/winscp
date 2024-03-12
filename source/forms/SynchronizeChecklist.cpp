@@ -1311,8 +1311,8 @@ void __fastcall TSynchronizeChecklistDialog::MoveActionExecute(TObject *)
   else if (Action2 == TSynchronizeChecklist::saDeleteLocal)
   {
     Side = osLocal;
-    FileName = TPath::Combine(MoveItems.second->Local.Directory, MoveItems.second->Local.FileName);
-    NewFileName = TPath::Combine(MoveItems.first->Local.Directory, MoveItems.first->Remote.FileName);
+    FileName = CombinePaths(MoveItems.second->Local.Directory, MoveItems.second->Local.FileName);
+    NewFileName = CombinePaths(MoveItems.first->Local.Directory, MoveItems.first->Remote.FileName);
     RemoteFile = NULL;
   }
   else

@@ -951,7 +951,7 @@ void __fastcall TConfiguration::CleanupRegistry(const UnicodeString & RegistryPa
     Registry->UnmungedRoot = RegistryStorageSubKey;
 
     AppLogFmt(L"Cleaning up registry key %s", (RegistryPath));
-    UnicodeString ARegistryPath = TPath::Combine(RegistryStorageSubKey, RegistryPath);
+    UnicodeString ARegistryPath = CombinePaths(RegistryStorageSubKey, RegistryPath);
     UnicodeString Buf = ARegistryPath;
     while (!Buf.IsEmpty())
     {
@@ -991,9 +991,9 @@ TStrings * TConfiguration::GetCaches()
   Result->Add(FtpsCertificateStorageKey);
   Result->Add(HttpsCertificateStorageKey);
   Result->Add(DirectoryStatisticsCacheKey);
-  Result->Add(TPath::Combine(ConfigurationSubKey, CDCacheKey));
-  Result->Add(TPath::Combine(ConfigurationSubKey, BannersKey));
-  Result->Add(TPath::Combine(ConfigurationSubKey, LastFingerprintsStorageKey));
+  Result->Add(CombinePaths(ConfigurationSubKey, CDCacheKey));
+  Result->Add(CombinePaths(ConfigurationSubKey, BannersKey));
+  Result->Add(CombinePaths(ConfigurationSubKey, LastFingerprintsStorageKey));
   return Result.release();
 }
 //---------------------------------------------------------------------------
@@ -1683,8 +1683,8 @@ TStoredSessionList * __fastcall TConfiguration::SelectFilezillaSessionsForImport
   std::unique_ptr<TStoredSessionList> ImportSessionList(CreateSessionsForImport(Sessions));
 
   UnicodeString AppDataPath = GetShellFolderPath(CSIDL_APPDATA);
-  UnicodeString FilezillaSiteManagerFile = TPath::Combine(AppDataPath, L"FileZilla\\sitemanager.xml");
-  UnicodeString FilezillaConfigurationFile = TPath::Combine(AppDataPath, L"FileZilla\\filezilla.xml");
+  UnicodeString FilezillaSiteManagerFile = CombinePaths(AppDataPath, L"FileZilla\\sitemanager.xml");
+  UnicodeString FilezillaConfigurationFile = CombinePaths(AppDataPath, L"FileZilla\\filezilla.xml");
 
   if (FileExists(ApiPath(FilezillaSiteManagerFile)))
   {
@@ -1724,7 +1724,7 @@ bool __fastcall TConfiguration::AnyFilezillaSessionForImport(TStoredSessionList 
 UnicodeString GetOpensshFolder()
 {
   UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
-  UnicodeString Result = TPath::Combine(ProfilePath, OpensshFolderName);
+  UnicodeString Result = CombinePaths(ProfilePath, OpensshFolderName);
   return Result;
 }
 //---------------------------------------------------------------------
@@ -1732,7 +1732,7 @@ TStoredSessionList * __fastcall TConfiguration::SelectKnownHostsSessionsForImpor
   TStoredSessionList * Sessions, UnicodeString & Error)
 {
   std::unique_ptr<TStoredSessionList> ImportSessionList(CreateSessionsForImport(Sessions));
-  UnicodeString KnownHostsFile = TPath::Combine(GetOpensshFolder(), L"known_hosts");
+  UnicodeString KnownHostsFile = CombinePaths(GetOpensshFolder(), L"known_hosts");
 
   try
   {
@@ -1776,7 +1776,7 @@ TStoredSessionList * TConfiguration::SelectOpensshSessionsForImport(
   TStoredSessionList * Sessions, UnicodeString & Error)
 {
   std::unique_ptr<TStoredSessionList> ImportSessionList(CreateSessionsForImport(Sessions));
-  UnicodeString ConfigFile = TPath::Combine(GetOpensshFolder(), L"config");
+  UnicodeString ConfigFile = CombinePaths(GetOpensshFolder(), L"config");
 
   try
   {
@@ -1801,7 +1801,7 @@ TStoredSessionList * TConfiguration::SelectOpensshSessionsForImport(
               // If path does not exist, try if it works relatively to .ssh/
               if (!FileExists(ApiPath(IncludePath)))
               {
-                IncludePath = TPath::Combine(GetOpensshFolder(), IncludePath);
+                IncludePath = CombinePaths(GetOpensshFolder(), IncludePath);
               }
 
               if (FileExists(ApiPath(IncludePath)))
@@ -1971,7 +1971,7 @@ UnicodeString TConfiguration::GetCertificateStorageExpanded()
   UnicodeString Result = FCertificateStorage;
   if (Result.IsEmpty())
   {
-    UnicodeString DefaultCertificateStorage = TPath::Combine(ExtractFilePath(ModuleFileName()), L"cacert.pem");
+    UnicodeString DefaultCertificateStorage = CombinePaths(ExtractFilePath(ModuleFileName()), L"cacert.pem");
     if (FileExists(DefaultCertificateStorage))
     {
       Result = DefaultCertificateStorage;

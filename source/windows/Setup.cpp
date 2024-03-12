@@ -2371,19 +2371,19 @@ UnicodeString GetNetCoreVersionStr()
       ::SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
     }
     UnicodeString RuntimeFolder = L"shared\\Microsoft.NETCore.App";
-    UnicodeString DotNetPath = TPath::Combine(TPath::Combine(ProgramsFolder, L"dotnet"), RuntimeFolder);
+    UnicodeString DotNetPath = CombinePaths(CombinePaths(ProgramsFolder, L"dotnet"), RuntimeFolder);
     if (!DirectoryExistsFix(DotNetPath))
     {
       UnicodeString DotNetExe = L"dotnet.exe";
       if (FindFile(DotNetExe))
       {
-        DotNetPath = TPath::Combine(ExtractFilePath(DotNetExe), RuntimeFolder);
+        DotNetPath = CombinePaths(ExtractFilePath(DotNetExe), RuntimeFolder);
       }
     }
     if (DirectoryExistsFix(DotNetPath))
     {
       TSearchRecChecked SearchRec;
-      DotNetPath = TPath::Combine(DotNetPath, L"*.*");
+      DotNetPath = CombinePaths(DotNetPath, L"*.*");
       if (FindFirstUnchecked(ApiPath(DotNetPath), faDirectory, SearchRec) == 0)
       {
         do

@@ -357,7 +357,7 @@ public:
 
     if (RecordLocal)
     {
-      UnicodeString FileName = TPath::Combine(Item->Local.Directory, Item->Local.FileName);
+      UnicodeString FileName = CombinePaths(Item->Local.Directory, Item->Local.FileName);
       SynchronizeChecklistItemFileInfo(FileName, Item->IsDirectory, Item->Local);
     }
     if (RecordRemote)

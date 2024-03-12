@@ -963,6 +963,17 @@ bool __fastcall SamePaths(const UnicodeString & Path1, const UnicodeString & Pat
   return AnsiSameText(IncludeTrailingBackslash(Path1), IncludeTrailingBackslash(Path2));
 }
 //---------------------------------------------------------------------------
+UnicodeString CombinePaths(const UnicodeString & Path1, const UnicodeString & Path2)
+{
+  // Make sure that C: + foo => C:\foo and not C:foo
+  UnicodeString Path1Terminated = Path1;
+  if (EndsStr(L":", Path1Terminated))
+  {
+    Path1Terminated = IncludeTrailingBackslash(Path1Terminated);
+  }
+  return TPath::Combine(Path1Terminated, Path2);
+}
+//---------------------------------------------------------------------------
 int __fastcall CompareLogicalText(
   const UnicodeString & S1, const UnicodeString & S2, bool NaturalOrderNumericalSorting)
 {
@@ -1525,7 +1536,7 @@ bool TSearchRecSmart::IsHidden() const
 //---------------------------------------------------------------------------
 UnicodeString TSearchRecChecked::GetFilePath() const
 {
-  return TPath::Combine(Dir, Name);
+  return CombinePaths(Dir, Name);
 }
 //---------------------------------------------------------------------------
 TSearchRecOwned::~TSearchRecOwned()
@@ -1628,7 +1639,7 @@ void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   }
 
   TSearchRecOwned SearchRec;
-  if (FindFirstChecked(TPath::Combine(DirName, AnyMask), FindAttrs, SearchRec) == 0)
+  if (FindFirstChecked(CombinePaths(DirName, AnyMask), FindAttrs, SearchRec) == 0)
   {
     do
     {
@@ -4543,3 +4554,4 @@ UnicodeString GetDividerLine()
 {
   return UnicodeString::StringOfChar(L'-', 27);
 }
+//---------------------------------------------------------------------

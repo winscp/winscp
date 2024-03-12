@@ -100,6 +100,7 @@ UnicodeString __fastcall EscapePuttyCommandParam(UnicodeString Param);
 UnicodeString __fastcall StringsToParams(TStrings * Strings);
 UnicodeString __fastcall ExpandEnvironmentVariables(const UnicodeString & Str);
 bool __fastcall SamePaths(const UnicodeString & Path1, const UnicodeString & Path2);
+UnicodeString CombinePaths(const UnicodeString & Path1, const UnicodeString & Path2);
 UnicodeString GetNormalizedPath(const UnicodeString & Path);
 UnicodeString GetCanonicalPath(const UnicodeString & Path);
 bool __fastcall IsPathToSameFile(const UnicodeString & Path1, const UnicodeString & Path2);

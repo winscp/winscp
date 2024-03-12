@@ -1407,7 +1407,7 @@ UnicodeString DumpCallstackEventName(int ProcessId)
 UnicodeString DumpCallstackFileName(int ProcessId)
 {
   UnicodeString FileName = FORMAT(L"%s.txt", (DumpCallstackEventName(ProcessId)));
-  UnicodeString Result = TPath::Combine(SystemTemporaryDirectory(), FileName);
+  UnicodeString Result = CombinePaths(SystemTemporaryDirectory(), FileName);
   return Result;
 }
 //---------------------------------------------------------------------------
