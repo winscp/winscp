@@ -37,7 +37,7 @@ dist_man_MANS = xmlwf.1
 
 xmlwf.1: xmlwf.xml
 	-rm -f $@
-	test x$(DOCBOOK_TO_MAN) != x && $(DOCBOOK_TO_MAN) $<
+	test "x$(DOCBOOK_TO_MAN)" != x && $(DOCBOOK_TO_MAN) $<
 	test -f $@ || mv XMLWF.1 $@
 endif
 

@@ -1202,6 +1202,49 @@ START_TEST(test_wfc_no_recursive_entity_refs) {
 }
 END_TEST
 
+START_TEST(test_recursive_external_parameter_entity_2) {
+  struct TestCase {
+    const char *doc;
+    enum XML_Status expectedStatus;
+  };
+
+  struct TestCase cases[] = {
+      {"<!ENTITY % p1 '%p1;'>", XML_STATUS_ERROR},
+      {"<!ENTITY % p1 '%p1;'>"
+       "<!ENTITY % p1 'first declaration wins'>",
+       XML_STATUS_ERROR},
+      {"<!ENTITY % p1 'first declaration wins'>"
+       "<!ENTITY % p1 '%p1;'>",
+       XML_STATUS_OK},
+      {"<!ENTITY % p1 '&#37;p1;'>", XML_STATUS_OK},
+  };
+
+  for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+    const char *const doc = cases[i].doc;
+    const enum XML_Status expectedStatus = cases[i].expectedStatus;
+    set_subtest("%s", doc);
+
+    XML_Parser parser = XML_ParserCreate(NULL);
+    assert_true(parser != NULL);
+
+    XML_Parser ext_parser = XML_ExternalEntityParserCreate(parser, NULL, NULL);
+    assert_true(ext_parser != NULL);
+
+    const enum XML_Status actualStatus
+        = _XML_Parse_SINGLE_BYTES(ext_parser, doc, (int)strlen(doc), XML_TRUE);
+
+    assert_true(actualStatus == expectedStatus);
+    if (actualStatus != XML_STATUS_OK) {
+      assert_true(XML_GetErrorCode(ext_parser)
+                  == XML_ERROR_RECURSIVE_ENTITY_REF);
+    }
+
+    XML_ParserFree(ext_parser);
+    XML_ParserFree(parser);
+  }
+}
+END_TEST
+
 /* Test incomplete external entities are faulted */
 START_TEST(test_ext_entity_invalid_parse) {
   const char *text = "<!DOCTYPE doc [\n"
@@ -5944,6 +5987,8 @@ make_basic_test_case(Suite *s) {
   tcase_add_test__ifdef_xml_dtd(tc_basic, test_skipped_parameter_entity);
   tcase_add_test__ifdef_xml_dtd(tc_basic,
                                 test_recursive_external_parameter_entity);
+  tcase_add_test__ifdef_xml_dtd(tc_basic,
+                                test_recursive_external_parameter_entity_2);
   tcase_add_test(tc_basic, test_undefined_ext_entity_in_external_dtd);
   tcase_add_test(tc_basic, test_suspend_xdecl);
   tcase_add_test(tc_basic, test_abort_epilog);
