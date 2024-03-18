@@ -605,7 +605,7 @@ uninstall-man: uninstall-man1
 
 @WITH_MANPAGE_TRUE@xmlwf.1: xmlwf.xml
 @WITH_MANPAGE_TRUE@	-rm -f $@
-@WITH_MANPAGE_TRUE@	test x$(DOCBOOK_TO_MAN) != x && $(DOCBOOK_TO_MAN) $<
+@WITH_MANPAGE_TRUE@	test "x$(DOCBOOK_TO_MAN)" != x && $(DOCBOOK_TO_MAN) $<
 @WITH_MANPAGE_TRUE@	test -f $@ || mv XMLWF.1 $@
 
 @WITH_DISTRIBUTABLE_MANPAGE_FALSE@dist-hook:
