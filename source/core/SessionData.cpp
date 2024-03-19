@@ -303,7 +303,7 @@ void __fastcall TSessionData::DefaultSettings()
   // SFTP
   SftpServer = L"";
   SFTPDownloadQueue = 32;
-  SFTPUploadQueue = 32;
+  SFTPUploadQueue = 64;
   SFTPListingQueue = 2;
   SFTPMaxVersion = ::SFTPMaxVersion;
   SFTPMaxPacketSize = 0;
