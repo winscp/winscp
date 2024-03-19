@@ -1152,7 +1152,7 @@ public:
     return SendRequests();
   }
 
-  void DisposeUntil(int Count, int ExpectedType, int AllowStatus)
+  void DisposeUntil(int Count, int ExpectedType)
   {
     DebugAssert(FFileSystem->FTerminal->Active);
 
@@ -1169,7 +1169,7 @@ public:
 
       try
       {
-        ReceiveResponse(Request.get(), Response.get(), ExpectedType, AllowStatus);
+        ReceiveResponse(Request.get(), Response.get(), ExpectedType, -1);
       }
       catch(Exception & E)
       {
@@ -1194,16 +1194,16 @@ public:
     }
   }
 
-  virtual void __fastcall Dispose(int ExpectedType, int AllowStatus)
+  virtual void __fastcall Dispose(int ExpectedType)
   {
-    DisposeUntil(0, ExpectedType, AllowStatus);
+    DisposeUntil(0, ExpectedType);
   }
 
-  void __fastcall DisposeSafe(int ExpectedType = -1, int AllowStatus = -1)
+  void __fastcall DisposeSafe(int ExpectedType = -1)
   {
     if (FFileSystem->FTerminal->Active)
     {
-      Dispose(ExpectedType, AllowStatus);
+      Dispose(ExpectedType);
     }
   }
 
@@ -1385,12 +1385,12 @@ public:
     UnregisterReceiveHandler();
   }
 
-  virtual void __fastcall Dispose(int ExpectedType, int AllowStatus)
+  virtual void __fastcall Dispose(int ExpectedType)
   {
     // we do not want to receive asynchronous notifications anymore,
     // while waiting synchronously for pending responses
     UnregisterReceiveHandler();
-    TSFTPQueue::Dispose(ExpectedType, AllowStatus);
+    TSFTPQueue::Dispose(ExpectedType);
   }
 
   bool __fastcall Continue()
@@ -1692,7 +1692,7 @@ protected:
       DebugCheck(UnregisterReceiveHandler());
       try
       {
-        DisposeUntil(FQueueMaxLen - 1, SSH_FXP_STATUS, -1);
+        DisposeUntil(FQueueMaxLen - 1, SSH_FXP_STATUS);
       }
       __finally
       {
