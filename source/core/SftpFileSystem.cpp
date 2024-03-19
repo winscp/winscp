@@ -1575,7 +1575,7 @@ protected:
     // Buffer for one block of data
     TFileBuffer BlockBuf;
 
-    unsigned long BlockSize = GetBlockSize();
+    unsigned long BlockSize = FFileSystem->UploadBlockSize(FHandle, OperationProgress);
     bool Result = (BlockSize > 0);
 
     if (Result)
@@ -1676,11 +1676,6 @@ protected:
       ReceivePacket(NULL, SSH_FXP_STATUS, -1, NULL, true);
     }
     return Result;
-  }
-
-  inline int __fastcall GetBlockSize()
-  {
-    return FFileSystem->UploadBlockSize(FHandle, OperationProgress);
   }
 
   virtual bool __fastcall End(TSFTPPacket * /*Response*/)
