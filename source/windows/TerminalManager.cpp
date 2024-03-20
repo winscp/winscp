@@ -313,8 +313,7 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
   UnicodeString OrigRemoteDirectory = Terminal->SessionData->RemoteDirectory;
   try
   {
-    TValueRestorer<TTerminal *> OpeningTerminalRestorer(FOpeningTerminal);
-    FOpeningTerminal = Terminal;
+    TValueRestorer<TTerminal *> OpeningTerminalRestorer(FOpeningTerminal, Terminal);
     TTerminalThread * TerminalThread = new TTerminalThread(Terminal);
     TerminalThread->AllowAbandon = (Terminal == ActiveTerminal);
     try

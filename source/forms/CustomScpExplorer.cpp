@@ -598,8 +598,7 @@ void __fastcall TCustomScpExplorerForm::DoSetManagedSession(TManagedTerminal * v
   DebugAssert(!Replace || ((value != NULL) && !value->LocalBrowser));
   FManagedSession = value;
   {
-    TValueRestorer<bool> AllowTransferPresetAutoSelectRestorer(FAllowTransferPresetAutoSelect);
-    FAllowTransferPresetAutoSelect = false;
+    TValueRestorer<bool> AllowTransferPresetAutoSelectRestorer(FAllowTransferPresetAutoSelect, false);
     TAutoFlag SessionChangingFlag(FSessionChanging);
 
     SessionChanged(Replace);
@@ -2529,8 +2528,7 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommand(TStrings * FileList,
     POutput.reset(new UnicodeString());
   }
 
-  TValueRestorer<TOperationSide> ProgressSideRestorer(FProgressSide);
-  FProgressSide = FCurrentSide;
+  TValueRestorer<TOperationSide> ProgressSideRestorer(FProgressSide, FCurrentSide);
 
   if (!LocalCustomCommand.IsFileCommand(Command))
   {
@@ -4373,12 +4371,9 @@ void __fastcall TCustomScpExplorerForm::DeleteFiles(TOperationSide Side,
 
       try
       {
-        TValueRestorer<TStrings *> DeletedFilesRestorer(FDeletedFiles);
         DebugAssert(FDeletedFiles == NULL);
-        FDeletedFiles = DeletedFiles.get();
-
-        TValueRestorer<TFileOperationFinishedEvent> OnFileOperationFinishedRestorer(FOnFileOperationFinished);
-        FOnFileOperationFinished = FileDeleted;
+        TValueRestorer<TStrings *> DeletedFilesRestorer(FDeletedFiles, DeletedFiles.get());
+        TValueRestorer<TFileOperationFinishedEvent> OnFileOperationFinishedRestorer(FOnFileOperationFinished, FileDeleted);
 
         FMoveToQueue = false;
 
@@ -4421,8 +4416,7 @@ void __fastcall TCustomScpExplorerForm::DeleteFiles(TOperationSide Side,
       {
         Configuration->Usage->Inc(L"LocalLocalDeletes");
       }
-      TValueRestorer<TOperationSide> ProgressSideRestorer(FProgressSide);
-      FProgressSide = FCurrentSide;
+      TValueRestorer<TOperationSide> ProgressSideRestorer(FProgressSide, FCurrentSide);
       try
       {
         TTerminalManager::Instance()->LocalTerminal->DeleteLocalFiles(FileList, FLAGMASK(Alternative, dfAlternative));
@@ -10591,8 +10585,7 @@ void __fastcall TCustomScpExplorerForm::DoOperationOnFoundFiles(
 {
   if (CanOperateOnFoundFiles(ATerminal))
   {
-    TValueRestorer<TFileOperationFinishedEvent> OnFileOperationFinishedRestorer(FOnFileOperationFinished);
-    FOnFileOperationFinished = OnFileOperationFinished;
+    TValueRestorer<TFileOperationFinishedEvent> OnFileOperationFinishedRestorer(FOnFileOperationFinished, OnFileOperationFinished);
     ExecuteFileOperation(Operation, osRemote, FileList, false, NULL);
   }
 }
@@ -12015,21 +12008,16 @@ void TCustomScpExplorerForm::CalculateDirectorySizes(TOperationSide Side)
   CalculateSizeOperation.Index = 0;
 
   __int64 Size = 0;
-  TValueRestorer<TCalculateSizeOperation *> DirectorySizeOperationRestorer(FCalculateSizeOperation);
-  FCalculateSizeOperation = &CalculateSizeOperation;
-
-  TValueRestorer<TFileOperationFinishedEvent> OnFileOperationFinishedRestorer(FOnFileOperationFinished);
-  FOnFileOperationFinished = DirectorySizeCalculated;
-  TValueRestorer<TFileOperation> PrimaryOperationRestorer(FPrimaryOperation);
-  FPrimaryOperation = foCalculateSize;
+  TValueRestorer<TCalculateSizeOperation *> DirectorySizeOperationRestorer(FCalculateSizeOperation, &CalculateSizeOperation);
+  TValueRestorer<TFileOperationFinishedEvent> OnFileOperationFinishedRestorer(FOnFileOperationFinished, DirectorySizeCalculated);
+  TValueRestorer<TFileOperation> PrimaryOperationRestorer(FPrimaryOperation, foCalculateSize);
 
   TCalculatedSizes CalculatedSizes;
   CalculateSizeOperation.Stats.CalculatedSizes = &CalculatedSizes;
 
   if (LocalSide)
   {
-    TValueRestorer<TOperationSide> ProgressSideRestorer(FProgressSide);
-    FProgressSide = Side;
+    TValueRestorer<TOperationSide> ProgressSideRestorer(FProgressSide, Side);
     ManagedSession->CalculateLocalFilesSize(FileList.get(), Size, NULL, true, NULL, &CalculatedSizes);
   }
   else

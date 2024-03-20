@@ -356,9 +356,10 @@ class TValueRestorer
 public:
   __fastcall TValueRestorer(T & Target, const T & Value) :
     FTarget(Target),
-    FValue(Value),
+    FValue(Target),
     FArmed(true)
   {
+    FTarget = Value;
   }
 
   __fastcall TValueRestorer(T & Target) :
@@ -392,10 +393,9 @@ class TAutoNestingCounter : public TValueRestorer<int>
 {
 public:
   __fastcall TAutoNestingCounter(int & Target) :
-    TValueRestorer<int>(Target)
+    TValueRestorer<int>(Target, Target + 1)
   {
-    DebugAssert(Target >= 0);
-    ++Target;
+    DebugAssert(FValue >= 0);
   }
 
   __fastcall ~TAutoNestingCounter()
@@ -408,10 +408,9 @@ class TAutoFlag : public TValueRestorer<bool>
 {
 public:
   __fastcall TAutoFlag(bool & Target) :
-    TValueRestorer<bool>(Target)
+    TValueRestorer<bool>(Target, true)
   {
-    DebugAssert(!Target);
-    Target = true;
+    DebugAssert(!FValue);
   }
 
   __fastcall ~TAutoFlag()

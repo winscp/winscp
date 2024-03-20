@@ -1497,10 +1497,8 @@ void __fastcall TScpCommanderForm::SynchronizeBrowsing(TCustomDirView * ADirView
       !PrevPath.IsEmpty() && PrevPath != ADirView->Path)
   {
     DebugAssert(!IsLocalBrowserMode());
-    TValueRestorer<bool> AllowTransferPresetAutoSelectRestorer(FAllowTransferPresetAutoSelect);
-    FAllowTransferPresetAutoSelect = false;
-    TValueRestorer<bool> SynchronisingBrowseRestorer(FSynchronisingBrowse);
-    FSynchronisingBrowse = true;
+    TValueRestorer<bool> AllowTransferPresetAutoSelectRestorer(FAllowTransferPresetAutoSelect, false);
+    TValueRestorer<bool> SynchronisingBrowseRestorer(FSynchronisingBrowse, true);
 
     try
     {

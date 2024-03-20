@@ -2288,8 +2288,7 @@ UnicodeString __fastcall TSecureShell::RetrieveHostKey(const UnicodeString & Hos
   Storage->AccessMode = smRead;
   TGuard Guard(PuttyStorageSection.get());
   DebugAssert(PuttyStorage == NULL);
-  TValueRestorer<THierarchicalStorage *> StorageRestorer(PuttyStorage);
-  PuttyStorage = Storage.get();
+  TValueRestorer<THierarchicalStorage *> StorageRestorer(PuttyStorage, Storage.get());
 
   AnsiString AnsiStoredKeys;
   AnsiStoredKeys.SetLength(10240);
@@ -2449,10 +2448,9 @@ UnicodeString TSecureShell::StoreHostKey(
 {
   TGuard Guard(PuttyStorageSection.get());
   DebugAssert(PuttyStorage == NULL);
-  TValueRestorer<THierarchicalStorage *> StorageRestorer(PuttyStorage);
   std::unique_ptr<THierarchicalStorage> Storage(GetHostKeyStorage());
   Storage->AccessMode = smReadWrite;
-  PuttyStorage = Storage.get();
+  TValueRestorer<THierarchicalStorage *> StorageRestorer(PuttyStorage, Storage.get());
   store_host_key(AnsiString(Host).c_str(), Port, AnsiString(KeyType).c_str(), AnsiString(KeyStr).c_str());
   return Storage->Source;
 }

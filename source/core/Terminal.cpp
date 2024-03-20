@@ -4326,8 +4326,7 @@ void __fastcall TTerminal::DoDeleteFile(
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::DeleteFiles(TStrings * FilesToDelete, int Params)
 {
-  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor);
-  FUseBusyCursor = false;
+  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor, false);
 
   // TODO: avoid resolving symlinks while reading subdirectories.
   // Resolving does not work anyway for relative symlinks in subdirectories
@@ -4552,8 +4551,7 @@ void __fastcall TTerminal::DoChangeFileProperties(const UnicodeString FileName,
 void __fastcall TTerminal::ChangeFilesProperties(TStrings * FileList,
   const TRemoteProperties * Properties)
 {
-  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor);
-  FUseBusyCursor = false;
+  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor, false);
 
   AnnounceFileListOperation();
   ProcessFiles(FileList, foSetProperties, ChangeFileProperties, (void *)Properties);
@@ -4561,8 +4559,7 @@ void __fastcall TTerminal::ChangeFilesProperties(TStrings * FileList,
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::LoadFilesProperties(TStrings * FileList)
 {
-  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor);
-  FUseBusyCursor = false;
+  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor, false);
 
   // see comment in TSFTPFileSystem::IsCapable
   bool Result =
@@ -4729,8 +4726,7 @@ bool TTerminal::CalculateFilesSize(TStrings * FileList, __int64 & Size, TCalcula
   // draft-peterson-streamlined-ftp-command-extensions-10
   // Implemented by Serv-U FTP.
 
-  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor);
-  FUseBusyCursor = false;
+  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor, false);
 
   ProcessFiles(FileList, foCalculateSize, DoCalculateFileSize, &Params);
   Size = Params.Size;
@@ -5943,8 +5939,7 @@ TSynchronizeChecklist * __fastcall TTerminal::SynchronizeCollect(const UnicodeSt
   TSynchronizeDirectory OnSynchronizeDirectory,
   TSynchronizeOptions * Options)
 {
-  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor);
-  FUseBusyCursor = false;
+  TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor, false);
 
   TSynchronizeChecklist * Checklist = new TSynchronizeChecklist();
   try

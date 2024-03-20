@@ -1491,8 +1491,7 @@ void WritePuttySettings(THierarchicalStorage * Storage, const UnicodeString & AS
   if (PuttyRegistryTypes.empty())
   {
     TGuard Guard(PuttyRegistrySection.get());
-    TValueRestorer<TPuttyRegistryMode> PuttyRegistryModeRestorer(PuttyRegistryMode);
-    PuttyRegistryMode = prmCollect;
+    TValueRestorer<TPuttyRegistryMode> PuttyRegistryModeRestorer(PuttyRegistryMode, prmCollect);
     Conf * conf = conf_new();
     try
     {
@@ -1537,16 +1536,14 @@ void WritePuttySettings(THierarchicalStorage * Storage, const UnicodeString & AS
 void PuttyDefaults(Conf * conf)
 {
   TGuard Guard(PuttyRegistrySection.get());
-  TValueRestorer<TPuttyRegistryMode> PuttyRegistryModeRestorer(PuttyRegistryMode);
-  PuttyRegistryMode = prmFail;
+  TValueRestorer<TPuttyRegistryMode> PuttyRegistryModeRestorer(PuttyRegistryMode, prmFail);
   do_defaults(NULL, conf);
 }
 //---------------------------------------------------------------------------
 void SavePuttyDefaults(const UnicodeString & Name)
 {
   TGuard Guard(PuttyRegistrySection.get());
-  TValueRestorer<TPuttyRegistryMode> PuttyRegistryModeRestorer(PuttyRegistryMode);
-  PuttyRegistryMode = prmPass;
+  TValueRestorer<TPuttyRegistryMode> PuttyRegistryModeRestorer(PuttyRegistryMode, prmPass);
   Conf * conf = conf_new();
   try
   {
