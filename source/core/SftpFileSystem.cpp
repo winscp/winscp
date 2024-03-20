@@ -4834,6 +4834,7 @@ void __fastcall TSFTPFileSystem::Source(
 
     TEncryption Encryption(FTerminal->GetEncryptKey());
     bool Encrypt = FTerminal->IsFileEncrypted(DestFullName, CopyParam->EncryptNewFiles);
+    TValueRestorer<TSecureShellMode> SecureShellModeRestorer(FSecureShell->Mode, ssmUploading);
     TSFTPUploadQueue Queue(this, (Encrypt ? &Encryption : NULL), FTerminal->SessionData->SFTPUploadQueue);
     try
     {
@@ -5580,6 +5581,7 @@ void __fastcall TSFTPFileSystem::Sink(
 
     // at end of this block queue is discarded
     {
+      TValueRestorer<TSecureShellMode> SecureShellModeRestorer(FSecureShell->Mode, ssmDownloading);
       TSFTPDownloadQueue Queue(this);
       try
       {

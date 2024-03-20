@@ -23,6 +23,7 @@ enum TSshImplementation { sshiUnknown, sshiOpenSSH, sshiProFTPD, sshiBitvise, ss
 struct ScpLogPolicy;
 struct LogContext;
 struct ScpSeat;
+enum TSecureShellMode { ssmNone, ssmUploading, ssmDownloading };
 //---------------------------------------------------------------------------
 class TSecureShell
 {
@@ -101,7 +102,7 @@ private:
   void __fastcall DispatchSendBuffer(int BufSize);
   void __fastcall SendBuffer(unsigned int & Result);
   unsigned int __fastcall TimeoutPrompt(TQueryParamsTimerEvent PoolEvent);
-  void TimeoutAbort(unsigned int Answer);
+  void TimeoutAbort(unsigned int Answer, bool Sending);
   bool __fastcall TryFtp();
   UnicodeString __fastcall ConvertInput(const RawByteString & Input);
   void __fastcall GetRealHost(UnicodeString & Host, int & Port);
@@ -190,6 +191,7 @@ public:
   __property bool Simple = { read = FSimple, write = FSimple };
   __property TSshImplementation SshImplementation = { read = FSshImplementation };
   __property bool UtfStrings = { read = FUtfStrings, write = FUtfStrings };
+  TSecureShellMode Mode;
 };
 //---------------------------------------------------------------------------
 #endif

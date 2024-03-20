@@ -1967,6 +1967,8 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
 
     try
     {
+      TValueRestorer<TSecureShellMode> SecureShellModeRestorer(FSecureShell->Mode, ssmUploading);
+
       // During ASCII transfer we will load whole file to this buffer
       // than convert EOL and send it at once, because before converting EOL
       // we can't know its size
@@ -2459,6 +2461,8 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
   bool Initialized = (Level > 0);
 
   FileData.SetTime = 0;
+
+  TValueRestorer<TSecureShellMode> SecureShellModeRestorer(FSecureShell->Mode, ssmDownloading);
 
   FSecureShell->SendNull();
 
