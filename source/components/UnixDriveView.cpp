@@ -521,7 +521,7 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
         try
         {
           {
-            // Prevent curther changes while loading the folder.
+            // Prevent further changes while loading the folder.
             // Particularly prevent user from trying to proceed with incremental search.
             TValueRestorer<bool> ChangingDirectoryRestorer(FChangingDirectory);
             FChangingDirectory = true;
