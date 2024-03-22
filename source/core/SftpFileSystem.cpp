@@ -1330,7 +1330,7 @@ protected:
         FFileSystem->FTerminal->LogEvent(FORMAT(L"Queue len: %d", (FRequests->Count)));
       }
 
-      // make sure the response is reserved before actually ending the message
+      // make sure the response is reserved before actually sending the message
       // as we may receive response asynchronously before SendPacket finishes
       FFileSystem->ReserveResponse(Request, Response);
       SendPacket(Request);
