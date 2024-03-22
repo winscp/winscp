@@ -1904,6 +1904,7 @@ struct TOpenRemoteFileParams
 {
   UnicodeString FileName;
   UnicodeString RemoteFileName;
+  UnicodeString RemoteFullFileName;
   TFileOperationProgressType * OperationProgress;
   const TCopyParamType * CopyParam;
   int Params;
@@ -4740,11 +4741,13 @@ void __fastcall TSFTPFileSystem::Source(
   }
 
   // will the transfer be resumable?
-  bool DoResume = (ResumeAllowed && (OpenParams.OverwriteMode == omOverwrite));
+  bool IntendedResume = (ResumeAllowed && (OpenParams.OverwriteMode == omOverwrite));
+  bool DoResume = IntendedResume;
 
   UnicodeString RemoteFileName = DoResume ? DestPartialFullName : DestFullName;
   OpenParams.FileName = Handle.FileName;
   OpenParams.RemoteFileName = RemoteFileName;
+  OpenParams.RemoteFullFileName = DestFullName;
   OpenParams.Resume = DoResume;
   OpenParams.Resuming = ResumeTransfer;
   OpenParams.OperationProgress = OperationProgress;
@@ -4761,13 +4764,17 @@ void __fastcall TSFTPFileSystem::Source(
     &OpenParams);
   OperationProgress->Progress();
 
+  DoResume = OpenParams.Resume;
+
   if (OpenParams.RemoteFileName != RemoteFileName)
   {
     DebugAssert(!DoResume);
     DebugAssert(UnixExtractFilePath(OpenParams.RemoteFileName) == UnixExtractFilePath(RemoteFileName));
     DestFullName = OpenParams.RemoteFileName;
     UnicodeString NewFileName = UnixExtractFileName(DestFullName);
-    DebugAssert(DestFileName != NewFileName);
+    // We can get here either when user change target name or
+    // when we intended to transfer via temporary file but we fails to create it in the end
+    DebugAssert((DestFileName != NewFileName) || (IntendedResume && !DoResume));
     DestFileName = NewFileName;
   }
 
@@ -5126,7 +5133,15 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
     }
     catch(Exception & E)
     {
-      if (!OpenParams->Confirmed && (OpenType & SSH_FXF_EXCL) && FTerminal->Active)
+      if (OpenParams->Resume && !OpenParams->Resuming &&
+          (OpenParams->RemoteFileName != OpenParams->RemoteFullFileName) &&
+          (OpenParams->CopyParam->ResumeSupport == rsSmart) && FTerminal->Active)
+      {
+        FTerminal->LogEvent(FORMAT(L"Cannot create new partial file \"%s\", trying to create target file \"%s\"", (OpenParams->RemoteFileName, OpenParams->RemoteFullFileName)));
+        OpenParams->RemoteFileName = OpenParams->RemoteFullFileName;
+        OpenParams->Resume = false;
+      }
+      else if (!OpenParams->Confirmed && (OpenType & SSH_FXF_EXCL) && FTerminal->Active)
       {
         FTerminal->LogEvent(FORMAT(L"Cannot create new file \"%s\", checking if it exists already", (OpenParams->RemoteFileName)));
 
