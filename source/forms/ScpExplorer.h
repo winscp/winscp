@@ -373,6 +373,7 @@ protected:
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   virtual bool __fastcall UpdateToolbarDisplayMode();
   virtual void __fastcall UpdateImages();
+  virtual void __fastcall UpdateControls();
 
 public:
   __fastcall TScpExplorerForm(TComponent* Owner);
