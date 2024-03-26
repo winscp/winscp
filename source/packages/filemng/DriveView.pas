@@ -1848,8 +1848,11 @@ begin {ScanDrive}
 end; {ScanDrive}
 
 function TDriveView.DoFindNodeToPath(Path: string; ExistingOnly: Boolean): TTreeNode;
+var
+  SelectionHierarchy: array of TTreeNode;
+  SelectionHierarchyHeight: Integer;
 
-  function SearchSubDirs(ParentNode: TTreeNode; Path: string): TTreeNode; forward;
+  function SearchSubDirs(ParentNode: TTreeNode; Path: string; Level: Integer): TTreeNode; forward;
 
   function ExtractFirstName(S: string): string;
   var
@@ -1863,7 +1866,7 @@ function TDriveView.DoFindNodeToPath(Path: string; ExistingOnly: Boolean): TTree
     Result := System.Copy(S, 1, I);
   end;
 
-  function DoSearchSubDirs(ParentNode: TTreeNode; Path: string): TTreeNode;
+  function DoSearchSubDirs(ParentNode: TTreeNode; Path: string; Level: Integer): TTreeNode;
   var
     Node: TTreeNode;
     Dir: string;
@@ -1875,33 +1878,49 @@ function TDriveView.DoFindNodeToPath(Path: string; ExistingOnly: Boolean): TTree
     if Dir[Length(Dir)] = '\' then
       SetLength(Dir, Pred(Length(Dir)));
 
-    Node := ParentNode.GetFirstChild;
-    if (not Assigned(Node)) and (not ExistingOnly) then
+    // Optimization. Avoid iterating possibly thousands of nodes,
+    // when the node we are looking for is the selected node or its ancestor.
+    // This is often the case, when navigating under node that has lot of sibligs.
+    // Typically, when navigating in user's profile folder, and there are many [thousands] other user profile folders.
+    if (SelectionHierarchyHeight > 0) and
+       // Change of selection might indicate that the tree was rebuilt meanwhile and
+       // the references in SelectionHierarchy might not be valid anymore
+       (Selected = SelectionHierarchy[SelectionHierarchyHeight - 1]) and
+       (Level < SelectionHierarchyHeight) and
+       (Uppercase(GetDirName(SelectionHierarchy[Level])) = Dir) then
     begin
-      ValidateDirectoryEx(ParentNode, rsRecursiveExisting, True);
+      Result := SelectionHierarchy[Level];
+    end
+      else
+    begin
       Node := ParentNode.GetFirstChild;
-    end;
-
-    Result := nil;
-    while Assigned(Node) do
-    begin
-      if UpperCase(GetDirName(Node)) = Dir then
+      if (not Assigned(Node)) and (not ExistingOnly) then
       begin
-        if Length(Path) > 0 then
+        ValidateDirectoryEx(ParentNode, rsRecursiveExisting, True);
+        Node := ParentNode.GetFirstChild;
+      end;
+
+      Result := nil;
+      while (not Assigned(Result)) and Assigned(Node) do
+      begin
+        if UpperCase(GetDirName(Node)) = Dir then
         begin
-          Result := SearchSubDirs(Node, Path)
+          Result := Node;
         end
           else
         begin
-          Result := Node;
+          Node := ParentNode.GetNextChild(Node);
         end;
-        Exit;
       end;
-      Node := ParentNode.GetNextChild(Node);
+    end;
+
+    if Assigned(Result) and (Length(Path) > 0) then
+    begin
+      Result := SearchSubDirs(Result, Path, Level + 1);
     end;
   end;
 
-  function SearchSubDirs(ParentNode: TTreeNode; Path: string): TTreeNode;
+  function SearchSubDirs(ParentNode: TTreeNode; Path: string; Level: Integer): TTreeNode;
   begin
     Result := nil;
     if Length(Path) > 0 then
@@ -1912,21 +1931,22 @@ function TDriveView.DoFindNodeToPath(Path: string; ExistingOnly: Boolean): TTree
       end;
 
       // Factored out of DoSearchSubDirs is remnant of Bug 956 superceded by Bug 1320
-      Result := DoSearchSubDirs(ParentNode, Path);
+      Result := DoSearchSubDirs(ParentNode, Path, Level);
 
       if (not Assigned(Result)) and
          DirectoryExists(IncludeTrailingBackslash(NodePath(ParentNode)) + Path) and
          (not ExistingOnly) then
       begin
         ReadSubDirs(ParentNode, GetDriveTypeToNode(ParentNode), ExcludeTrailingBackslash(ExtractFirstName(Path)));
-        Result := DoSearchSubDirs(ParentNode, Path);
+        Result := DoSearchSubDirs(ParentNode, Path, Level);
       end;
     end;
   end; {SearchSubDirs}
 
 var
   Drive: string;
-  P: Integer;
+  P, I: Integer;
+  RootNode, Node: TTreeNode;
 begin {FindNodeToPath}
   Result := nil;
   if Length(Path) < 3 then
@@ -1991,7 +2011,21 @@ begin {FindNodeToPath}
       begin
         ScanDrive(Drive);
       end;
-      Result := SearchSubDirs(GetDriveStatus(Drive).RootNode, UpperCase(Path));
+      Node := Selected;
+      RootNode := GetDriveStatus(Drive).RootNode;
+      if Assigned(Node) then
+      begin
+        SelectionHierarchyHeight := Node.Level + 1;
+        SetLength(SelectionHierarchy, SelectionHierarchyHeight);
+        for I := SelectionHierarchyHeight - 1 downto 0 do
+        begin
+          SelectionHierarchy[I] := Node;
+          Node := Node.Parent;
+        end;
+        Assert(Selected = SelectionHierarchy[SelectionHierarchyHeight - 1]);
+        Assert(RootNode = SelectionHierarchy[0]);
+      end;
+      Result := SearchSubDirs(RootNode, UpperCase(Path), 1);
     end
       else Result := GetDriveStatus(Drive).RootNode;
   end;
