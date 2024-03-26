@@ -200,7 +200,7 @@ type
     function GetSubDir(var SRec: TSearchRec): Boolean;
     function FindFirstSubDir(Path: string; var SRec: TSearchRec): Boolean;
     function FindNextSubDir(var SRec: TSearchRec): Boolean;
-    procedure ReadSubDirs(Node: TTreeNode; DriveType: Integer; SpecificFile: string = '');
+    procedure ReadSubDirs(Node: TTreeNode; DriveType: Integer);
 
     {Callback-functions used by iteratesubtree:}
     function CallBackValidateDir(var Node: TTreeNode; Data: Pointer): Boolean;
@@ -1921,6 +1921,9 @@ var
   end;
 
   function SearchSubDirs(ParentNode: TTreeNode; Path: string; Level: Integer): TTreeNode;
+  var
+    ParentPath, SubPath: string;
+    SRec: TSearchRec;
   begin
     Result := nil;
     if Length(Path) > 0 then
@@ -1933,11 +1936,18 @@ var
       // Factored out of DoSearchSubDirs is remnant of Bug 956 superceded by Bug 1320
       Result := DoSearchSubDirs(ParentNode, Path, Level);
 
+      ParentPath := NodePath(ParentNode);
       if (not Assigned(Result)) and
-         DirectoryExists(IncludeTrailingBackslash(NodePath(ParentNode)) + Path) and
+         DirectoryExists(IncludeTrailingBackslash(ParentPath) + Path) and
          (not ExistingOnly) then
       begin
-        ReadSubDirs(ParentNode, GetDriveTypeToNode(ParentNode), ExcludeTrailingBackslash(ExtractFirstName(Path)));
+        SubPath := IncludeTrailingBackslash(ParentPath) + ExcludeTrailingBackslash(ExtractFirstName(Path));
+        if FindFirstSubDir(SubPath, SRec) then
+        begin
+          AddChildNode(ParentNode, ParentPath, SRec);
+          SortChildren(ParentNode, False);
+          FindClose(SRec);
+        end;
         Result := DoSearchSubDirs(ParentNode, Path, Level);
       end;
     end;
@@ -2062,7 +2072,6 @@ begin
   if Result then
   begin
     Result := GetSubDir(SRec);
-    // For consistency with FindFirst, but not really needed, as all callers call FindClose unconditionally anyway
     if not Result then FindClose(SRec);
   end;
 end;
@@ -2072,18 +2081,16 @@ begin
   Result := (FindNext(SRec) = 0) and GetSubDir(SRec);
 end;
 
-procedure TDriveView.ReadSubDirs(Node: TTreeNode; DriveType: Integer; SpecificFile: string);
+procedure TDriveView.ReadSubDirs(Node: TTreeNode; DriveType: Integer);
 var
   C: Integer;
   SRec: TSearchRec;
   Path: string;
   Start: TDateTime;
-  R, All, Stop: Boolean;
+  R, Stop: Boolean;
 begin
   Path := NodePath(Node);
-  All := (SpecificFile = '');
-  if All then SpecificFile := '*.*';
-  R := FindFirstSubDir(IncludeTrailingBackslash(Path) + SpecificFile, SRec);
+  R := FindFirstSubDir(IncludeTrailingBackslash(Path) + '*.*', SRec);
   Start := Now;
   C := 0;
   // At least from SetDirectory > DoFindNodeToPath and CanExpand, this is not called within BeginUpdate/EndUpdate block.
@@ -2110,11 +2117,10 @@ begin
 
   FindClose(Srec);
 
-  if All then TNodeData(Node.Data).Scanned := True;
+  TNodeData(Node.Data).Scanned := True;
 
   if C > 0 then SortChildren(Node, False)
-    else
-  if All then Node.HasChildren := False;
+    else Node.HasChildren := False;
 
   Application.ProcessMessages;
 end; {ReadSubDirs}
