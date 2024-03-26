@@ -2023,7 +2023,11 @@ begin {FindNodeToPath}
       end;
       Node := Selected;
       RootNode := GetDriveStatus(Drive).RootNode;
-      if Assigned(Node) then
+      if not Assigned(Node) then
+      begin
+        SelectionHierarchyHeight := 0;
+      end
+        else
       begin
         SelectionHierarchyHeight := Node.Level + 1;
         SetLength(SelectionHierarchy, SelectionHierarchyHeight);
