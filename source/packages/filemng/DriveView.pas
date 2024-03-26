@@ -200,7 +200,7 @@ type
     function GetSubDir(var SRec: TSearchRec): Boolean;
     function FindFirstSubDir(Path: string; var SRec: TSearchRec): Boolean;
     function FindNextSubDir(var SRec: TSearchRec): Boolean;
-    function ReadSubDirs(Node: TTreeNode; DriveType: Integer; SpecificFile: string = ''): Boolean;
+    procedure ReadSubDirs(Node: TTreeNode; DriveType: Integer; SpecificFile: string = '');
 
     {Callback-functions used by iteratesubtree:}
     function CallBackValidateDir(var Node: TTreeNode; Data: Pointer): Boolean;
@@ -2072,7 +2072,7 @@ begin
   Result := (FindNext(SRec) = 0) and GetSubDir(SRec);
 end;
 
-function TDriveView.ReadSubDirs(Node: TTreeNode; DriveType: Integer; SpecificFile: string): Boolean;
+procedure TDriveView.ReadSubDirs(Node: TTreeNode; DriveType: Integer; SpecificFile: string);
 var
   C: Integer;
   SRec: TSearchRec;
@@ -2080,7 +2080,6 @@ var
   Start: TDateTime;
   R, All, Stop: Boolean;
 begin
-  Result := False;
   Path := NodePath(Node);
   All := (SpecificFile = '');
   if All then SpecificFile := '*.*';
@@ -2103,8 +2102,6 @@ begin
       if Stop then R := False;
     end;
 
-    Result := True;
-
     if R then
     begin
       R := FindNextSubDir(SRec);
@@ -2115,7 +2112,7 @@ begin
 
   if All then TNodeData(Node.Data).Scanned := True;
 
-  if Result then SortChildren(Node, False)
+  if C > 0 then SortChildren(Node, False)
     else
   if All then Node.HasChildren := False;
 
