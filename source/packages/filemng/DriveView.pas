@@ -200,7 +200,7 @@ type
     function GetSubDir(var SRec: TSearchRec): Boolean;
     function FindFirstSubDir(Path: string; var SRec: TSearchRec): Boolean;
     function FindNextSubDir(var SRec: TSearchRec): Boolean;
-    procedure ReadSubDirs(Node: TTreeNode; DriveType: Integer);
+    procedure ReadSubDirs(Node: TTreeNode);
 
     {Callback-functions used by iteratesubtree:}
     function CallBackValidateDir(var Node: TTreeNode; Data: Pointer): Boolean;
@@ -1351,7 +1351,7 @@ begin
       try
         if (not TNodeData(Node.Data).Scanned) and DoScanDir(Node) then
         begin
-          ReadSubDirs(Node, DriveInfo.Get(Drive).DriveType);
+          ReadSubDirs(Node);
         end;
       finally
         Screen.Cursor := SaveCursor;
@@ -1930,7 +1930,7 @@ var
     begin
       if (not TNodeData(ParentNode.Data).Scanned) and (not ExistingOnly) then
       begin
-        ReadSubDirs(ParentNode, GetDriveTypeToNode(ParentNode));
+        ReadSubDirs(ParentNode);
       end;
 
       // Factored out of DoSearchSubDirs is remnant of Bug 956 superceded by Bug 1320
@@ -2085,7 +2085,7 @@ begin
   Result := (FindNext(SRec) = 0) and GetSubDir(SRec);
 end;
 
-procedure TDriveView.ReadSubDirs(Node: TTreeNode; DriveType: Integer);
+procedure TDriveView.ReadSubDirs(Node: TTreeNode);
 var
   C: Integer;
   SRec: TSearchRec;
@@ -2252,7 +2252,7 @@ begin {CallBackValidateDir}
      (Node = ScanDirInfo^.StartNode)) and
      DoScanDir(Node) then
   begin
-    ReadSubDirs(Node, ScanDirInfo^.DriveType);
+    ReadSubDirs(Node);
   end;
 end; {CallBackValidateDir}
 
