@@ -802,6 +802,7 @@ var
   SourceData: TNodeData;
   NewData: TNodeData;
 begin
+  Assert(False);
   inherited Assign(Source);
 
   if not Deleting and (Source is TTreeNode) then
