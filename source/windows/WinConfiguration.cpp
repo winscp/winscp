@@ -23,6 +23,7 @@
 #include <OperationWithTimeout.hpp>
 #include "FileInfo.h"
 #include "CoreMain.h"
+#include "DriveView.hpp"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -637,7 +638,7 @@ void __fastcall TWinConfiguration::Default()
   HiContrast = false;
   EditorCheckNotModified = false;
   SessionTabCaptionTruncation = true;
-  LoadingTooLongLimit = 60;
+  LoadingTooLongLimit = 15;
   FirstRun = StandardDatestamp();
 
   FEditor.Font.FontName = DefaultFixedWidthFontName;
@@ -2834,7 +2835,12 @@ void TWinConfiguration::SetSessionTabCaptionTruncation(bool value)
 //---------------------------------------------------------------------------
 void TWinConfiguration::SetLoadingTooLongLimit(int value)
 {
-  SET_CONFIG_PROPERTY(LoadingTooLongLimit);
+  DriveViewLoadingTooLongLimit = value;
+}
+//---------------------------------------------------------------------------
+int TWinConfiguration::GetLoadingTooLongLimit()
+{
+  return DriveViewLoadingTooLongLimit;
 }
 //---------------------------------------------------------------------------
 void TWinConfiguration::SetFirstRun(const UnicodeString & value)

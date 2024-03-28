@@ -105,6 +105,9 @@ type
     FSchedule: TSubDirReaderSchedule;
 
   public
+    DelayedSrec: TSearchRec;
+    DelayedExclude: TStringList;
+
     constructor Create;
     destructor Destroy; override;
 
@@ -153,7 +156,6 @@ type
   end;
 
   TDriveViewRefreshDrives = procedure(Sender: TObject; Global: Boolean) of object;
-  TDriveViewContinueLoading = procedure(Sender: TObject; var Start: TDateTime; Path: string; Count: Integer; var Stop: Boolean) of object;
 
   TDriveView = class(TCustomDriveView)
   private
@@ -178,12 +180,13 @@ type
     FPrevSelectedIndex: Integer;
     FChangeTimerSuspended: Integer;
     FSubDirReaderThread: TSubDirReaderThread;
+    FDelayedNodes: TStringList;
+    FDelayedNodeTimer: TTimer;
 
     {Additional events:}
     FOnDisplayContextMenu: TNotifyEvent;
     FOnRefreshDrives: TDriveViewRefreshDrives;
     FOnNeedHiddenDirectories: TNotifyEvent;
-    FOnContinueLoading: TDriveViewContinueLoading;
 
     {used components:}
     FDirView: TDirView;
@@ -201,6 +204,10 @@ type
     function FindFirstSubDir(Path: string; var SRec: TSearchRec): Boolean;
     function FindNextSubDir(var SRec: TSearchRec): Boolean;
     procedure ReadSubDirs(Node: TTreeNode);
+    procedure CancelDelayedNode(Node: TTreeNode);
+    procedure DelayedNodeTimer(Sender: TObject);
+    function ReadSubDirsBatch(Node: TTreeNode; var SRec: TSearchRec; CheckInterval, Limit: Integer): Boolean;
+    procedure UpdateDelayedNodeTimer;
 
     {Callback-functions used by iteratesubtree:}
     function CallBackValidateDir(var Node: TTreeNode; Data: Pointer): Boolean;
@@ -352,7 +359,6 @@ type
     property OnDisplayContextMenu: TNotifyEvent read FOnDisplayContextMenu
       write FOnDisplayContextMenu;
     property OnRefreshDrives: TDriveViewRefreshDrives read FOnRefreshDrives write FOnRefreshDrives;
-    property OnContinueLoading: TDriveViewContinueLoading read FOnContinueLoading write FOnContinueLoading;
     property OnBusy;
 
     property DDLinkOnExeDrag;
@@ -440,12 +446,15 @@ type
     property OnNeedHiddenDirectories: TNotifyEvent read FOnNeedHiddenDirectories write FOnNeedHiddenDirectories;
   end;
 
+var
+  DriveViewLoadingTooLongLimit: Integer = 0;
+
 procedure Register;
 
 implementation
 
 uses
-  PasTools, UITypes, SyncObjs, IOUtils;
+  PasTools, UITypes, SyncObjs, IOUtils, System.DateUtils;
 
 type
   PInt = ^Integer;
@@ -465,6 +474,7 @@ begin
   FIsRecycleBin := False;
   FIconEmpty := True;
   FSchedule := nil;
+  DelayedExclude := nil;
 end; {TNodeData.Create}
 
 destructor TNodeData.Destroy;
@@ -841,6 +851,11 @@ begin
 
   FFileOperator := TFileOperator.Create(Self);
   FSubDirReaderThread := TSubDirReaderThread.Create(Self);
+  FDelayedNodes := TStringList.Create;
+  FDelayedNodeTimer := TTimer.Create(Self);
+  UpdateDelayedNodeTimer;
+  FDelayedNodeTimer.Interval := 250;
+  FDelayedNodeTimer.OnTimer := DelayedNodeTimer;
 
   FShowVolLabel := True;
   FChangeFlag := False;
@@ -905,6 +920,9 @@ begin
   if Assigned(FFileOperator) then
     FFileOperator.Free;
   FSubDirReaderThread.Free;
+
+  Assert(FDelayedNodes.Count = 0);
+  FreeAndNil(FDelayedNodes);
 
   inherited Destroy;
 end; {Destroy}
@@ -1118,12 +1136,18 @@ begin
         RootNodeIndex := -1;
       end;
     end;
+
+  UpdateDelayedNodeTimer;
 end; {CreateWnd}
 
 procedure TDriveView.DestroyWnd;
 var
   DriveStatus: TDriveStatus;
+  I: Integer;
 begin
+  FDelayedNodeTimer.Enabled := False;
+  for I := 0 to FDelayedNodes.Count - 1 do
+    FDelayedNodes.Objects[I] := nil;
   if not (csRecreating in ControlState) then
   begin
     FSubDirReaderThread.Terminate;
@@ -1403,6 +1427,14 @@ begin
   if Assigned(NodeData) and not (csRecreating in ControlState) then
   begin
     FSubDirReaderThread.Delete(Node);
+
+    if Assigned(NodeData.DelayedExclude) then
+    begin
+      CancelDelayedNode(Node);
+      FDelayedNodes.Delete(FDelayedNodes.IndexOfObject(Node));
+      UpdateDelayedNodeTimer;
+    end;
+
     NodeData.Destroy;
   end;
 end; {OnDelete}
@@ -1925,11 +1957,13 @@ var
   var
     ParentPath, SubPath: string;
     SRec: TSearchRec;
+    ParentNodeData: TNodeData;
   begin
     Result := nil;
     if Length(Path) > 0 then
     begin
-      if (not TNodeData(ParentNode.Data).Scanned) and (not ExistingOnly) then
+      ParentNodeData := TNodeData(ParentNode.Data);
+      if (not ParentNodeData.Scanned) and (not ExistingOnly) then
       begin
         ReadSubDirs(ParentNode);
       end;
@@ -1946,6 +1980,8 @@ var
         if FindFirstSubDir(SubPath, SRec) then
         begin
           AddChildNode(ParentNode, ParentPath, SRec);
+          if Assigned(ParentNodeData.DelayedExclude) then
+            ParentNodeData.DelayedExclude.Add(SRec.Name);
           SortChildren(ParentNode, False);
           FindClose(SRec);
         end;
@@ -2086,49 +2122,126 @@ begin
   Result := (FindNext(SRec) = 0) and GetSubDir(SRec);
 end;
 
-procedure TDriveView.ReadSubDirs(Node: TTreeNode);
+function TDriveView.ReadSubDirsBatch(Node: TTreeNode; var SRec: TSearchRec; CheckInterval, Limit: Integer): Boolean;
 var
-  C: Integer;
-  SRec: TSearchRec;
-  Path: string;
   Start: TDateTime;
-  R, Stop: Boolean;
+  Cont: Boolean;
+  Path: string;
+  Count: Integer;
+  DelayedExclude: TStringList;
 begin
-  Path := NodePath(Node);
-  R := FindFirstSubDir(IncludeTrailingBackslash(Path) + '*.*', SRec);
   Start := Now;
-  C := 0;
+  Path := NodePath(Node);
+  Result := True;
+  Count := 0;
+  DelayedExclude := TNodeData(Node.Data).DelayedExclude;
   // At least from SetDirectory > DoFindNodeToPath and CanExpand, this is not called within BeginUpdate/EndUpdate block.
   // But in any case, adding it here makes expanding (which calls CanExpand) noticeably slower, when there are lot of nodes,
   // because EndUpdate triggers TVN_GETDISPINFO for all nodes in the tree.
-  while R do
-  begin
-    AddChildNode(Node, Path, SRec);
-    Inc(C);
-
-    // There are two other directory reading loops, where this is not called
-    if ((C mod 100) = 0) and Assigned(OnContinueLoading) then
+  repeat
+    if (not Assigned(DelayedExclude)) or
+       (DelayedExclude.IndexOf(SRec.Name) < 0) then
     begin
-      Stop := False;
-      OnContinueLoading(Self, Start, Path, C, Stop);
-      if Stop then R := False;
+      AddChildNode(Node, Path, SRec);
+      Inc(Count);
     end;
 
-    if R then
+    Cont := FindNextSubDir(SRec);
+
+    // There are two other directory reading loops, where this is not checked
+    if Cont and
+       ((Count mod CheckInterval) = 0) and
+       (Limit > 0) and
+       (MilliSecondsBetween(Now, Start) > Limit) then
     begin
-      R := FindNextSubDir(SRec);
+      Result := False;
+      Cont := False;
+    end
+  until not Cont;
+
+  if Result then
+    FindClose(Srec);
+end;
+
+procedure TDriveView.DelayedNodeTimer(Sender: TObject);
+var
+  Node: TTreeNode;
+  NodeData: TNodeData;
+begin
+  Assert(FDelayedNodes.Count > 0);
+  if FDelayedNodes.Count > 0 then
+  begin
+    // Control was recreated
+    if not Assigned(FDelayedNodes.Objects[0]) then
+    begin
+      FDelayedNodes.Objects[0] := TryFindNodeToPath(FDelayedNodes.Strings[0]);
+    end;
+    Node := TTreeNode(FDelayedNodes.Objects[0]);
+
+    if not Assigned(Node) then
+    begin
+      FDelayedNodes.Delete(0);
+    end
+      else
+    begin
+      NodeData := TNodeData(Node.Data);
+      if ReadSubDirsBatch(Node, NodeData.DelayedSrec, 10, 50) then
+      begin
+        FreeAndNil(NodeData.DelayedExclude);
+        FDelayedNodes.Delete(0);
+        SortChildren(Node, False);
+      end;
     end;
   end;
 
-  FindClose(Srec);
+  UpdateDelayedNodeTimer;
+end;
 
-  TNodeData(Node.Data).Scanned := True;
+procedure TDriveView.UpdateDelayedNodeTimer;
+begin
+  FDelayedNodeTimer.Enabled := HandleAllocated and (FDelayedNodes.Count > 0);
+end;
 
-  if C > 0 then SortChildren(Node, False)
-    else Node.HasChildren := False;
+procedure TDriveView.ReadSubDirs(Node: TTreeNode);
+var
+  SRec: TSearchRec;
+  NodeData: TNodeData;
+  Path: string;
+begin
+  NodeData := TNodeData(Node.Data);
+  Path := NodePath(Node);
+  if not FindFirstSubDir(IncludeTrailingBackslash(Path) + '*.*', SRec) then
+  begin
+    Node.HasChildren := False;
+  end
+    else
+  begin
+    if not ReadSubDirsBatch(Node, SRec, 100, DriveViewLoadingTooLongLimit * 1000) then
+    begin
+      NodeData.DelayedSrec := SRec;
+      NodeData.DelayedExclude := TStringList.Create;
+      NodeData.DelayedExclude.CaseSensitive := False;
+      NodeData.DelayedExclude.Sorted := True;
+      FDelayedNodes.AddObject(Path, Node);
+      Assert(FDelayedNodes.Count < 20); // if more, something went likely wrong
+      UpdateDelayedNodeTimer;
+    end;
+    SortChildren(Node, False);
+  end;
+
+  NodeData.Scanned := True;
 
   Application.ProcessMessages;
 end; {ReadSubDirs}
+
+procedure TDriveView.CancelDelayedNode(Node: TTreeNode);
+var
+  NodeData: TNodeData;
+begin
+  NodeData := TNodeData(Node.Data);
+  FindClose(NodeData.DelayedSrec);
+  FreeAndNil(NodeData.DelayedExclude);
+end;
 
 procedure TDriveView.DeleteNode(Node: TTreeNode);
 var
