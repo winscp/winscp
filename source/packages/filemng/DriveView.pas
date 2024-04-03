@@ -2207,6 +2207,7 @@ var
   SRec: TSearchRec;
   NodeData: TNodeData;
   Path: string;
+  CheckInterval, Limit: Integer;
 begin
   NodeData := TNodeData(Node.Data);
   Path := NodePath(Node);
@@ -2216,7 +2217,14 @@ begin
   end
     else
   begin
-    if not ReadSubDirsBatch(Node, SRec, 100, DriveViewLoadingTooLongLimit * 1000) then
+    CheckInterval := 100;
+    Limit := DriveViewLoadingTooLongLimit * 1000;
+    if not Showing then
+    begin
+      Limit := Limit div 10;
+      CheckInterval := CheckInterval div 10;
+    end;
+    if not ReadSubDirsBatch(Node, SRec, CheckInterval, Limit) then
     begin
       NodeData.DelayedSrec := SRec;
       NodeData.DelayedExclude := TStringList.Create;
