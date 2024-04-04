@@ -336,9 +336,9 @@ void __fastcall TS3FileSystem::Open()
   UnicodeString S3Profile;
   if (Data->S3CredentialsEnv)
   {
-    S3Profile = FTerminal->SessionData->S3Profile;
+    S3Profile = Data->S3Profile;
   }
-  if (!S3Profile.IsEmpty() && !FTerminal->SessionData->FingerprintScan)
+  if (!S3Profile.IsEmpty() && !Data->FingerprintScan)
   {
     std::unique_ptr<TStrings> S3Profiles(GetS3Profiles());
     if (S3Profiles->IndexOf(S3Profile) < 0)
@@ -348,7 +348,7 @@ void __fastcall TS3FileSystem::Open()
   }
 
   UnicodeString AccessKeyId = Data->UserNameExpanded;
-  if (AccessKeyId.IsEmpty() && !FTerminal->SessionData->FingerprintScan)
+  if (AccessKeyId.IsEmpty() && !Data->FingerprintScan)
   {
     if (!FTerminal->PromptUser(Data, pkUserName, LoadStr(S3_ACCESS_KEY_ID_TITLE), L"",
           LoadStr(S3_ACCESS_KEY_ID_PROMPT), true, 0, AccessKeyId))
@@ -373,7 +373,7 @@ void __fastcall TS3FileSystem::Open()
     }
   }
   UnicodeString SecretAccessKey = UTF8String(NormalizeString(Password));
-  if (SecretAccessKey.IsEmpty() && !FTerminal->SessionData->FingerprintScan)
+  if (SecretAccessKey.IsEmpty() && !Data->FingerprintScan)
   {
     if (!FTerminal->PromptUser(Data, pkPassword, LoadStr(S3_SECRET_ACCESS_KEY_TITLE), L"",
           LoadStr(S3_SECRET_ACCESS_KEY_PROMPT), false, 0, SecretAccessKey))
@@ -398,11 +398,11 @@ void __fastcall TS3FileSystem::Open()
 
   FHostName = UTF8String(Data->HostNameExpanded);
   FPortSuffix = UTF8String();
-  int ADefaultPort = FTerminal->SessionData->GetDefaultPort();
+  int ADefaultPort = Data->GetDefaultPort();
   DebugAssert((ADefaultPort == HTTPSPortNumber) || (ADefaultPort == HTTPPortNumber));
-  if (FTerminal->SessionData->PortNumber != ADefaultPort)
+  if (Data->PortNumber != ADefaultPort)
   {
-    FPortSuffix = UTF8String(FORMAT(L":%d", (FTerminal->SessionData->PortNumber)));
+    FPortSuffix = UTF8String(FORMAT(L":%d", (Data->PortNumber)));
   }
   FTimeout = Data->Timeout;
 
@@ -419,7 +419,7 @@ void __fastcall TS3FileSystem::Open()
     FTerminal->LogEvent(L"Google Cloud detected.");
   }
 
-  S3_set_request_context_requester_pays(FRequestContext, FTerminal->SessionData->S3RequesterPays);
+  S3_set_request_context_requester_pays(FRequestContext, Data->S3RequesterPays);
 
   FActive = false;
   try
