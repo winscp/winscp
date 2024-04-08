@@ -11391,6 +11391,7 @@ void __fastcall TCustomScpExplorerForm::CopyFilesToClipboard(TOperationSide Side
     {
       FClipboardFileList->Strings[Index] = UnixExcludeTrailingBackslash(FClipboardFileList->Strings[Index]);
     }
+    AppLogFmt(L"Create fake clipboard directory \"%s\" and started drive monitors", (FClipboardFakeDirectory));
   }
 }
 //---------------------------------------------------------------------------
@@ -11398,6 +11399,7 @@ void __fastcall TCustomScpExplorerForm::ClipboardClear()
 {
   if (OpenClipboard(0))
   {
+    AppLog(L"Clearing clipboard");
     EmptyClipboard(); // Calls ClipboardDataObjectRelease, if clipboard contains our data
     CloseClipboard();
   }
