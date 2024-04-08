@@ -2291,15 +2291,17 @@ void __fastcall TScpCommanderForm::DoLocalPathComboBoxAdjustImageIndex(
   if (FLocalPathComboBoxPaths != NULL)
   {
     TTBXComboBoxItem * PathComboBox = DebugNotNull(dynamic_cast<TTBXComboBoxItem *>(Sender));
-    DebugAssert(FLocalPathComboBoxPaths->Count == PathComboBox->Strings->Count);
-    DebugAssert(AIndex < FLocalPathComboBoxPaths->Count);
+    DebugAssert(FSessionChanging || (FLocalPathComboBoxPaths->Count == PathComboBox->Strings->Count));
+    DebugAssert(FSessionChanging || (AIndex < FLocalPathComboBoxPaths->Count));
 
     if (AIndex < 0)
     {
       AIndex = PathComboBox->ItemIndex;
     }
 
-    if (AIndex >= 0)
+    // We might get called via some Windows messages while switching from remote to local tab (FSessionChanging),
+    // before the UpdateRemotePathComboBox gets called. If that happens, ignore the call.
+    if ((AIndex >= 0) && (AIndex < FLocalPathComboBoxPaths->Count))
     {
       ImageIndex = int(FLocalPathComboBoxPaths->Objects[AIndex]);
     }
