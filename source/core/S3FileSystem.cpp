@@ -82,12 +82,14 @@ static void NeedS3Config()
   if (S3ConfigFileName.IsEmpty())
   {
     S3ConfigFileName = GetEnvironmentVariable(AWS_CONFIG_FILE);
-    UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
-    UnicodeString DefaultConfigFileName = IncludeTrailingBackslash(ProfilePath) + L".aws\\credentials";
-    // "aws" cli really prefers the default location over location specified by AWS_CONFIG_FILE
-    if (FileExists(DefaultConfigFileName))
+    if (S3ConfigFileName.IsEmpty())
     {
-      S3ConfigFileName = DefaultConfigFileName;
+      UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
+      UnicodeString DefaultConfigFileName = IncludeTrailingBackslash(ProfilePath) + L".aws\\credentials";
+      if (FileExists(DefaultConfigFileName))
+      {
+        S3ConfigFileName = DefaultConfigFileName;
+      }
     }
   }
 
