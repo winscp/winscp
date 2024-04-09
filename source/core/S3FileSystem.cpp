@@ -34,9 +34,11 @@
 #define AWS_ACCESS_KEY_ID L"AWS_ACCESS_KEY_ID"
 #define AWS_SECRET_ACCESS_KEY L"AWS_SECRET_ACCESS_KEY"
 #define AWS_SESSION_TOKEN L"AWS_SESSION_TOKEN"
+#define AWS_SHARED_CREDENTIALS_FILE L"AWS_SHARED_CREDENTIALS_FILE"
 #define AWS_CONFIG_FILE L"AWS_CONFIG_FILE"
 #define AWS_PROFILE L"AWS_PROFILE"
 #define AWS_PROFILE_DEFAULT L"default"
+#define AWS_CONFIG_PROFILE_PREFIX L"profile "
 //---------------------------------------------------------------------------
 static std::unique_ptr<TCriticalSection> LibS3Section(TraceInitPtr(new TCriticalSection()));
 //---------------------------------------------------------------------------
@@ -57,6 +59,38 @@ UnicodeString __fastcall S3LibDefaultRegion()
   return StrFromS3(S3_DEFAULT_REGION);
 }
 //---------------------------------------------------------------------------
+static void NeedS3Config(
+  UnicodeString & FileName, TDateTime & TimeStamp, std::unique_ptr<TCustomIniFile> & File,
+  const UnicodeString & DefaultName, const UnicodeString & EnvName)
+{
+  if (FileName.IsEmpty())
+  {
+    FileName = GetEnvironmentVariable(EnvName);
+    if (FileName.IsEmpty())
+    {
+      UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
+      UnicodeString DefaultFileName = IncludeTrailingBackslash(ProfilePath) + L".aws\\" + DefaultName;
+      if (FileExists(DefaultFileName))
+      {
+        FileName = DefaultFileName;
+      }
+    }
+  }
+
+  TDateTime CurrentTimestamp;
+  FileAge(FileName, CurrentTimestamp);
+  if (TimeStamp != CurrentTimestamp)
+  {
+    TimeStamp = CurrentTimestamp;
+    // TMemIniFile silently ignores empty paths or non-existing files
+    AppLogFmt(L"Reading AWS '%s' file", (FileName));
+    File.reset(new TMemIniFile(FileName));
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString S3CredentialsFileName;
+TDateTime S3CredentialsTimestamp;
+std::unique_ptr<TCustomIniFile> S3CredentialsFile;
 UnicodeString S3ConfigFileName;
 TDateTime S3ConfigTimestamp;
 std::unique_ptr<TCustomIniFile> S3ConfigFile;
@@ -79,28 +113,32 @@ static void NeedS3Config()
     }
   }
 
-  if (S3ConfigFileName.IsEmpty())
+  NeedS3Config(S3CredentialsFileName, S3CredentialsTimestamp, S3CredentialsFile, L"credentials", AWS_SHARED_CREDENTIALS_FILE);
+  NeedS3Config(S3ConfigFileName, S3ConfigTimestamp, S3ConfigFile, L"config", AWS_CONFIG_FILE);
+}
+//---------------------------------------------------------------------------
+void GetS3Profiles(TStrings * Profiles, TCustomIniFile * File, const UnicodeString & Prefix = EmptyStr)
+{
+  if (File != NULL)
   {
-    S3ConfigFileName = GetEnvironmentVariable(AWS_CONFIG_FILE);
-    if (S3ConfigFileName.IsEmpty())
+    std::unique_ptr<TStrings> Sections(new TStringList());
+    File->ReadSections(Sections.get());
+    for (int Index = 0; Index < Sections->Count; Index++)
     {
-      UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
-      UnicodeString DefaultConfigFileName = IncludeTrailingBackslash(ProfilePath) + L".aws\\credentials";
-      if (FileExists(DefaultConfigFileName))
+      UnicodeString Section = Sections->Strings[Index];
+      if (Prefix.IsEmpty() || StartsText(Prefix, Section))
       {
-        S3ConfigFileName = DefaultConfigFileName;
+        // This is not consistent with AWS CLI.
+        // AWS CLI fails if one of AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY is set and other is missing:
+        // "Partial credentials found in env, missing: AWS_SECRET_ACCESS_KEY"
+        if (!File->ReadString(Section, AWS_ACCESS_KEY_ID, EmptyStr).IsEmpty() ||
+            !File->ReadString(Section, AWS_SECRET_ACCESS_KEY, EmptyStr).IsEmpty() ||
+            !File->ReadString(Section, AWS_SESSION_TOKEN, EmptyStr).IsEmpty())
+        {
+          Profiles->Add(MidStr(Section, Prefix.Length() + 1));
+        }
       }
     }
-  }
-
-  TDateTime Timestamp;
-  FileAge(S3ConfigFileName, Timestamp);
-  if (S3ConfigTimestamp != Timestamp)
-  {
-    S3ConfigTimestamp = Timestamp;
-    // TMemIniFile silently ignores empty paths or non-existing files
-    AppLog(L"Reading AWS credentials file");
-    S3ConfigFile.reset(new TMemIniFile(S3ConfigFileName));
   }
 }
 //---------------------------------------------------------------------------
@@ -109,30 +147,9 @@ TStrings * GetS3Profiles()
   NeedS3Config();
   // S3 allegedly treats the section case-sensitively, but our GetS3ConfigValue (ReadString) does not,
   // so consistently we return case-insensitive list.
-  std::unique_ptr<TStrings> Result(new TStringList());
-  if (S3ConfigFile.get() != NULL)
-  {
-    S3ConfigFile->ReadSections(Result.get());
-    int Index = 0;
-    while (Index < Result->Count)
-    {
-      UnicodeString Section = Result->Strings[Index];
-      // This is not consistent with AWS CLI.
-      // AWS CLI fails if one of AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY is set and other is missing:
-      // "Partial credentials found in env, missing: AWS_SECRET_ACCESS_KEY"
-      if (S3ConfigFile->ReadString(Section, AWS_ACCESS_KEY_ID, EmptyStr).IsEmpty() &&
-          S3ConfigFile->ReadString(Section, AWS_SECRET_ACCESS_KEY, EmptyStr).IsEmpty() &&
-          S3ConfigFile->ReadString(Section, AWS_SESSION_TOKEN, EmptyStr).IsEmpty())
-      {
-        Result->Delete(Index);
-      }
-      else
-      {
-        Index++;
-      }
-    }
-  }
-
+  std::unique_ptr<TStrings> Result(CreateSortedStringList());
+  GetS3Profiles(Result.get(), S3CredentialsFile.get());
+  GetS3Profiles(Result.get(), S3ConfigFile.get(), AWS_CONFIG_PROFILE_PREFIX);
   return Result.release();
 }
 //---------------------------------------------------------------------------
@@ -143,6 +160,29 @@ UnicodeString ReadUrl(const UnicodeString & Url)
   Http->ResponseLimit = BasicHttpResponseLimit;
   Http->Get();
   return Http->Response.Trim();
+}
+//---------------------------------------------------------------------------
+static UnicodeString GetS3ConfigValue(
+  TCustomIniFile * File, const UnicodeString & Profile, const UnicodeString & Name, const UnicodeString & Prefix, UnicodeString & Source)
+{
+  UnicodeString Result;
+  if (File != NULL)
+  {
+    UnicodeString ConfigSection = Profile;
+    if (!SameText(ConfigSection, AWS_PROFILE_DEFAULT))
+    {
+      ConfigSection = Prefix + ConfigSection;
+    }
+    // This is not consistent with AWS CLI.
+    // AWS CLI fails if one of aws_access_key_id or aws_secret_access_key is set and other is missing:
+    // "Partial credentials found in shared-credentials-file, missing: aws_secret_access_key"
+    Result = File->ReadString(ConfigSection, Name, EmptyStr);
+    if (!Result.IsEmpty())
+    {
+      Source = FORMAT(L"%s/%s", (ExtractFileName(File->FileName), Profile));
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString GetS3ConfigValue(
@@ -166,17 +206,11 @@ UnicodeString GetS3ConfigValue(
     {
       NeedS3Config();
 
-      if (S3ConfigFile.get() != NULL)
+      UnicodeString AProfile = DefaultStr(Profile, S3Profile);
+      Result = GetS3ConfigValue(S3CredentialsFile.get(), AProfile, Name, EmptyStr, ASource);
+      if (Result.IsEmpty())
       {
-        UnicodeString AProfile = DefaultStr(Profile, S3Profile);
-        // This is not consistent with AWS CLI.
-        // AWS CLI fails if one of aws_access_key_id or aws_secret_access_key is set and other is missing:
-        // "Partial credentials found in shared-credentials-file, missing: aws_secret_access_key"
-        Result = S3ConfigFile->ReadString(AProfile, Name, EmptyStr);
-        if (!Result.IsEmpty())
-        {
-          ASource = FORMAT(L"%s/%s", (ExtractFileName(S3ConfigFile->FileName), AProfile));
-        }
+        Result = GetS3ConfigValue(S3ConfigFile.get(), AProfile, Name, AWS_CONFIG_PROFILE_PREFIX, ASource);
       }
     }
   }
