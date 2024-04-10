@@ -285,6 +285,8 @@ __published:
   TCheckBox *S3RequesterPaysCheck;
   TRadioButton *FtpPingDirectoryListingButton;
   TCheckBox *UsePosixRenameCheck;
+  TLabel *S3RoleArnLabel;
+  TEdit *S3RoleArnEdit;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);

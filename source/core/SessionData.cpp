@@ -294,6 +294,8 @@ void __fastcall TSessionData::DefaultSettings()
   // S3
   S3DefaultRegion = EmptyStr;
   S3SessionToken = EmptyStr;
+  S3RoleArn = EmptyStr;
+  S3RoleSessionName = EmptyStr;
   S3Profile = EmptyStr;
   S3UrlStyle = s3usVirtualHost;
   S3MaxKeys = asAuto;
@@ -463,6 +465,8 @@ void __fastcall TSessionData::NonPersistant()
   \
   PROPERTY(S3DefaultRegion); \
   PROPERTY(S3SessionToken); \
+  PROPERTY(S3RoleArn); \
+  PROPERTY(S3RoleSessionName); \
   PROPERTY(S3Profile); \
   PROPERTY(S3UrlStyle); \
   PROPERTY(S3MaxKeys); \
@@ -813,6 +817,8 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
 
   S3DefaultRegion = Storage->ReadString(L"S3DefaultRegion", S3DefaultRegion);
   S3SessionToken = Storage->ReadString(L"S3SessionToken", S3SessionToken);
+  S3RoleArn = Storage->ReadString(L"S3RoleArn", S3RoleArn);
+  S3RoleSessionName = Storage->ReadString(L"S3RoleSessionName", S3RoleSessionName);
   S3Profile = Storage->ReadString(L"S3Profile", S3Profile);
   S3UrlStyle = (TS3UrlStyle)Storage->ReadInteger(L"S3UrlStyle", S3UrlStyle);
   S3MaxKeys = Storage->ReadEnum(L"S3MaxKeys", S3MaxKeys, AutoSwitchMapping);
@@ -1143,6 +1149,8 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(Integer, InternalEditorEncoding);
     WRITE_DATA(String, S3DefaultRegion);
     WRITE_DATA(String, S3SessionToken);
+    WRITE_DATA(String, S3RoleArn);
+    WRITE_DATA(String, S3RoleSessionName);
     WRITE_DATA(String, S3Profile);
     WRITE_DATA(Integer, S3UrlStyle);
     WRITE_DATA(Integer, S3MaxKeys);
@@ -4567,6 +4575,16 @@ void __fastcall TSessionData::SetS3DefaultRegion(UnicodeString value)
 void __fastcall TSessionData::SetS3SessionToken(UnicodeString value)
 {
   SET_SESSION_PROPERTY(S3SessionToken);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetS3RoleArn(UnicodeString value)
+{
+  SET_SESSION_PROPERTY(S3RoleArn);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetS3RoleSessionName(UnicodeString value)
+{
+  SET_SESSION_PROPERTY(S3RoleSessionName);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetS3Profile(UnicodeString value)

@@ -229,11 +229,13 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     S3RequesterPaysCheck->Checked = FSessionData->S3RequesterPays;
 
     UnicodeString S3SessionToken = FSessionData->S3SessionToken;
+    UnicodeString S3RoleArn = FSessionData->S3RoleArn;
     if (FSessionData->HasAutoCredentials())
     {
       try
       {
         S3SessionToken = S3EnvSessionToken(FSessionData->S3Profile);
+        S3RoleArn = S3EnvRoleArn(FSessionData->S3Profile);
       }
       catch (...)
       {
@@ -241,6 +243,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
       }
     }
     S3SessionTokenMemo->Lines->Text = S3SessionToken;
+    S3RoleArnEdit->Text = S3RoleArn;
 
     // Authentication page
     SshNoUserAuthCheck->Checked = FSessionData->SshNoUserAuth;
@@ -664,6 +667,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
     // Trim not to try to authenticate with a stray new-line
     SessionData->S3SessionToken = S3SessionTokenMemo->Lines->Text.Trim();
   }
+  FSessionData->S3RoleArn = S3RoleArnEdit->Text;
 
   // Proxy page
   SessionData->ProxyMethod = GetProxyMethod();
@@ -1071,6 +1075,8 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     S3Sheet->Enabled = S3Protocol;
     EnableControl(S3SessionTokenMemo, S3Sheet->Enabled && !FSessionData->HasAutoCredentials());
     EnableControl(S3SessionTokenLabel, S3SessionTokenMemo->Enabled);
+    EnableControl(S3RoleArnEdit, S3SessionTokenMemo->Enabled && IsAmazonS3SessionData(FSessionData));
+    EnableControl(S3RoleArnLabel, S3RoleArnEdit->Enabled);
 
     // tunnel sheet
     TunnelSheet->Enabled = SshProtocol;

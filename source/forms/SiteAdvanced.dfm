@@ -1123,13 +1123,13 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           Left = 1
           Top = 109
           Width = 393
-          Height = 143
+          Height = 189
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Authentication'
           TabOrder = 1
           DesignSize = (
             393
-            143)
+            189)
           object S3SessionTokenLabel: TLabel
             Left = 12
             Top = 20
@@ -1138,16 +1138,34 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Caption = '&Session token:'
             FocusControl = S3SessionTokenMemo
           end
+          object S3RoleArnLabel: TLabel
+            Left = 11
+            Top = 140
+            Width = 49
+            Height = 13
+            Caption = '&Role ARN:'
+            FocusControl = S3RoleArnEdit
+          end
           object S3SessionTokenMemo: TMemo
             Left = 11
             Top = 36
             Width = 371
             Height = 93
-            Anchors = [akLeft, akTop, akRight, akBottom]
+            Anchors = [akLeft, akTop, akRight]
             MaxLength = 10000
             TabOrder = 0
             OnChange = DataChange
             OnKeyDown = NoteMemoKeyDown
+          end
+          object S3RoleArnEdit: TEdit
+            Left = 12
+            Top = 156
+            Width = 368
+            Height = 21
+            Anchors = [akLeft, akTop, akRight]
+            TabOrder = 1
+            Text = 'S3RoleArnEdit'
+            OnChange = DataChange
           end
         end
       end

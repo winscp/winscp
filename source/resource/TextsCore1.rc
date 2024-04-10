@@ -264,6 +264,8 @@ BEGIN
   SSH_HOST_CA_NO_KEY_TYPE, "Invalid key (no key type)."
   SSH_HOST_CA_CERTIFICATE, "CA key may not be a certificate (type is '%s')."
   SSH_HOST_CA_INVALID, "Invalid '%s' key data."
+  S3_ASSUME_ROLE_ERROR, "Error assuming role '%s'."
+  S3_ASSUME_ROLE_RESPONSE_ERROR, "Unexpected response to assume role request (%s)."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"

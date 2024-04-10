@@ -2219,6 +2219,7 @@ void TLoginDialog::UpdateS3Credentials()
     if (FSessionData != NULL)
     {
       FSessionData->S3SessionToken = S3EnvSessionToken(S3Profile);
+      FSessionData->S3RoleArn = S3EnvRoleArn(S3Profile);
     }
   }
 }
@@ -2255,9 +2256,16 @@ void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
           {
             PasswordEdit->Clear();
           }
-          if ((FSessionData != NULL) && (FSessionData->S3SessionToken == S3EnvSessionToken(S3Profile)))
+          if (FSessionData != NULL)
           {
-            FSessionData->S3SessionToken = UnicodeString();
+            if (FSessionData->S3SessionToken == S3EnvSessionToken(S3Profile))
+            {
+              FSessionData->S3SessionToken = EmptyStr;
+            }
+            if (FSessionData->S3RoleArn == S3EnvRoleArn(S3Profile))
+            {
+              FSessionData->S3RoleArn = EmptyStr;
+            }
           }
         }
       }

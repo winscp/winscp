@@ -1430,6 +1430,10 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       {
         ADF(L"S3: Session token: %s", (Data->S3SessionToken));
       }
+      if (!Data->S3RoleArn.IsEmpty())
+      {
+        ADF(L"S3: Role ARN: %s (session name: %s)", (Data->S3RoleArn, DefaultStr(Data->S3RoleSessionName, L"default")));
+      }
       if (Data->S3CredentialsEnv)
       {
         ADF(L"S3: Credentials from AWS environment: %s", (DefaultStr(Data->S3Profile, L"General")));

@@ -49,10 +49,11 @@ static S3Status errorXmlCallback(const char *elementPath, const char *data,
     if (!strcmp(elementPath, "Error")) {
         // Ignore, this is the Error element itself, we only care about subs
     }
-    else if (!strcmp(elementPath, "Error/Code")) {
+    // WINSCP: ErrorResponse is for STS
+    else if (!strcmp(elementPath, "Error/Code") || !strcmp(elementPath, "ErrorResponse/Error/Code")) {
         string_buffer_append(errorParser->code, data, dataLen, fit);
     }
-    else if (!strcmp(elementPath, "Error/Message")) {
+    else if (!strcmp(elementPath, "Error/Message") || !strcmp(elementPath, "ErrorResponse/Error/Message")) {
         string_buffer_append(errorParser->message, data, dataLen, fit);
         errorParser->s3ErrorDetails.message = errorParser->message;
     }
