@@ -318,7 +318,7 @@ static UnicodeString GetS3ConfigValue(
 
         if (S3SecurityProfile.IsEmpty())
         {
-            AppLog(L"No AWS security credentials role detected");
+          AppLog(L"No AWS security credentials role detected");
         }
         else
         {
