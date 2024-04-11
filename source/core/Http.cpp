@@ -266,10 +266,11 @@ int THttp::NeonServerSSLCallbackImpl(int Failures, const ne_ssl_certificate * AC
     while (true);
 
     UnicodeString RootCert = UnicodeString(NeonExportCertificate(RootCertificate));
+    AppLogFmt(L"Root certificate: %s", (RootCert));
     if (RootCert == Certificate)
     {
       Failures &= ~NE_SSL_UNTRUSTED;
-      AppLogFmt(L"Certificate is known (%d)", (Failures));
+      AppLogFmt(L"Root certificate is known (%d)", (Failures));
     }
   }
 
