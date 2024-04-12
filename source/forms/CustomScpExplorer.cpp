@@ -11391,7 +11391,7 @@ void __fastcall TCustomScpExplorerForm::CopyFilesToClipboard(TOperationSide Side
     {
       FClipboardFileList->Strings[Index] = UnixExcludeTrailingBackslash(FClipboardFileList->Strings[Index]);
     }
-    AppLogFmt(L"Create fake clipboard directory \"%s\" and started drive monitors", (FClipboardFakeDirectory));
+    AppLogFmt(L"Created fake clipboard directory \"%s\" and started drive monitors", (FClipboardFakeDirectory));
   }
 }
 //---------------------------------------------------------------------------
@@ -11460,13 +11460,19 @@ void TCustomScpExplorerForm::PasteFiles()
 
     try
     {
-      if (!NonVisualDataModule->Busy)
+      if (NonVisualDataModule->Busy)
+      {
+        AppLog(L"Is busy, cannot paste");
+      }
+      else
       {
         DebugAssert(!FClipboardFakeMonitorsPendingReset);
         FClipboardFakeMonitorsPendingReset = false;
         bool NoConfirmation = (WinConfiguration->DDTransferConfirmation == asOff);
         TAutoFlag Flag(FDownloadingFromClipboard);
+        AppLog(L"Downloading to paste target...");
         ClipboardDownload(ExtractFilePath(Target), NoConfirmation, true);
+        AppLog(L"Downloaded to paste target...");
       }
     }
     __finally
@@ -11485,6 +11491,9 @@ void __fastcall TCustomScpExplorerForm::ClipboardFakeCreated(TObject * /*Sender*
   // It can actually rarelly happen that some random file is created, while we are shutting down the monitor
   // (as it pumps a Windows message queue while being shutted down)
   if (DebugAlwaysTrue(!FClipboardFakeDirectory.IsEmpty()) &&
+      // Is can happen that creation of our temporary directory is detected (even though we are creating it before starting the monitors).
+      // It tent do happen with later copy-pastes, probably because everything is cached already and monitors start quickly.
+      !IsPathToSameFile(FClipboardFakeDirectory, FileName) &&
       SameText(ExtractFileName(FileName), ExtractFileName(FClipboardFakeDirectory)))
   {
     AppLogFmt(L"Fake clipboard directory pasted to \"%s\"", (FileName));
