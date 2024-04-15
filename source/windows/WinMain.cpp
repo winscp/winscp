@@ -20,6 +20,7 @@
 #include "WinApi.h"
 #include <DateUtils.hpp>
 #include <StrUtils.hpp>
+#include <Xml.Win.msxmldom.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -631,6 +632,18 @@ void __fastcall UpdateStaticUsage()
   Configuration->Usage->Set(L"NetCoreVersion", GetNetCoreVersionStr());
   Configuration->Usage->Set(L"PowerShellVersion", GetPowerShellVersionStr());
   Configuration->Usage->Set(L"PwshVersion", GetPowerShellCoreVersionStr());
+
+  bool MsXmlInstalled;
+  try
+  {
+    TMSXMLDOMDocumentFactory::CreateDOMDocument();
+    MsXmlInstalled = true;
+  }
+  catch (...)
+  {
+    MsXmlInstalled = false;
+  }
+  Configuration->Usage->Set(L"MsXmlInstalled", MsXmlInstalled);
 
   UnicodeString ParentProcess = GetAncestorProcessName();
   // do not record the installer as a parent process
