@@ -2673,6 +2673,9 @@ void __fastcall TTerminalThread::ProcessEvent()
   DebugAssert(FEvent != NULL);
   DebugAssert(FException == NULL);
 
+  // Needed at least for TXMLDocument use in TS3FileSystem
+  CoInitialize(NULL);
+
   try
   {
     FAction(NULL);
