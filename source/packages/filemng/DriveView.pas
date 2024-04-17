@@ -170,6 +170,7 @@ type
     FChangeFlag: Boolean;
     FLastDir: string;
     FValidateFlag: Boolean;
+    FSysColorChangePending: Boolean;
     FCreating: Boolean;
     FForceRename: Boolean;
     FRenameNode: TTreeNode;
@@ -257,6 +258,7 @@ type
 
     procedure WMUserRename(var Message: TMessage); message WM_USER_RENAME;
     procedure CMRecreateWnd(var Msg: TMessage); message CM_RECREATEWND;
+    procedure CMSysColorChange(var Message: TMessage); message CM_SYSCOLORCHANGE;
 
     function GetCustomDirView: TCustomDirView; override;
     procedure SetCustomDirView(Value: TCustomDirView); override;
@@ -861,6 +863,7 @@ begin
   FChangeFlag := False;
   FLastDir := EmptyStr;
   FValidateFlag := False;
+  FSysColorChangePending := False;
   FConfirmDelete := True;
   FDirectory := EmptyStr;
   FForceRename := False;
@@ -2428,6 +2431,7 @@ begin
         StopWatchThread;
 
       FValidateFlag := True;
+      FSysColorChangePending := False;
 
       New(Info);
       Info^.StartNode := Node;
@@ -2457,6 +2461,12 @@ begin
 
       if Screen.Cursor <> SaveCursor then
         Screen.Cursor := SaveCursor;
+
+      if FSysColorChangePending then
+      begin
+        FSysColorChangePending := False;
+        if HandleAllocated then Perform(CM_SYSCOLORCHANGE, 0, 0);
+      end;
     end;
   end;
 end; {ValidateDirectoryEx}
@@ -3266,6 +3276,21 @@ begin
     inherited;
   finally
     FSubDirReaderThread.Reattach(ScheduledCount);
+  end;
+end;
+
+procedure TDriveView.CMSysColorChange(var Message: TMessage);
+begin
+  if not FValidateFlag then
+  begin
+    inherited;
+  end
+    else
+  begin
+    // Do not recreate the handle, if we are just iterating nodes, at that invalidates the node objects.
+    // This is not perfect, as the handle can be recreated for other reasons.
+    // But system color change is by far the most common case.
+    FSysColorChangePending := True;
   end;
 end;
 
