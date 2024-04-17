@@ -190,6 +190,9 @@
 		<CppCompile Include="putty\crypto\pubkey-ppk.c">
 			<BuildOrder>31</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\crypto\rfc6979.c">
+			<BuildOrder>165</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\crypto\rsa.c">
 			<BuildOrder>32</BuildOrder>
 		</CppCompile>
