@@ -177,6 +177,8 @@ typedef struct ecdh_key ecdh_key;
 typedef struct ecdh_keyalg ecdh_keyalg;
 typedef struct NTRUKeyPair NTRUKeyPair;
 typedef struct NTRUEncodeSchedule NTRUEncodeSchedule;
+typedef struct RFC6979 RFC6979;
+typedef struct RFC6979Result RFC6979Result;
 
 typedef struct dlgparam dlgparam;
 typedef struct dlgcontrol dlgcontrol;

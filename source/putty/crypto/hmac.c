@@ -18,9 +18,10 @@ struct hmac_extra {
     const char *suffix, *annotation;
 };
 
-static ssh2_mac *hmac_new(const ssh2_macalg *alg, ssh_cipher *cipher)
+/* Most of hmac_new(). Takes the actual 'struct hmac' as a parameter,
+ * because sometimes it will have been allocated in a special way. */
+static ssh2_mac *hmac_new_inner(struct hmac *ctx, const ssh2_macalg *alg)
 {
-    struct hmac *ctx = snew(struct hmac);
     const struct hmac_extra *extra = (const struct hmac_extra *)alg->extra;
 
     ctx->h_outer = ssh_hash_new(extra->hashalg_base);
@@ -62,6 +63,11 @@ static ssh2_mac *hmac_new(const ssh2_macalg *alg, ssh_cipher *cipher)
     BinarySink_DELEGATE_INIT(&ctx->mac, ctx->h_live);
 
     return &ctx->mac;
+}
+
+static ssh2_mac *hmac_new(const ssh2_macalg *alg, ssh_cipher *cipher)
+{
+    return hmac_new_inner(snew(struct hmac), alg); /* cipher isn't needed */
 }
 
 static void hmac_free(ssh2_mac *mac)
@@ -277,3 +283,38 @@ const ssh2_macalg ssh_hmac_sha1_96_buggy = {
     .keylen = 16,
     .extra = &ssh_hmac_sha1_96_buggy_extra,
 };
+
+ssh2_mac *hmac_new_from_hash(const ssh_hashalg *hash)
+{
+    /*
+     * Construct a custom ssh2_macalg, derived directly from the
+     * provided hash vtable. It's included in the same memory
+     * allocation as the struct hmac, so that it all gets freed
+     * together.
+     */
+
+    struct alloc {
+        struct hmac hmac;
+        ssh2_macalg alg;
+        struct hmac_extra extra;
+    };
+
+    struct alloc *alloc = snew(struct alloc);
+    alloc->alg.new = hmac_new;
+    alloc->alg.free = hmac_free;
+    alloc->alg.setkey = hmac_key;
+    alloc->alg.start = hmac_start;
+    alloc->alg.genresult = hmac_genresult;
+    alloc->alg.next_message = nullmac_next_message;
+    alloc->alg.text_name = hmac_text_name;
+    alloc->alg.name = NULL;
+    alloc->alg.etm_name = NULL;
+    alloc->alg.len = hash->hlen;
+    alloc->alg.keylen = hash->hlen;
+    alloc->alg.extra = &alloc->extra;
+    alloc->extra.hashalg_base = hash;
+    alloc->extra.suffix = "";
+    alloc->extra.annotation = NULL;
+
+    return hmac_new_inner(&alloc->hmac, &alloc->alg);
+}
