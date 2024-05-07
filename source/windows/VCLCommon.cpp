@@ -496,6 +496,11 @@ friend void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFr
 friend void __fastcall HideAsModal(TForm * Form, void *& Storage);
 friend void __fastcall ShowFormNoActivate(TForm * Form);
 };
+//---------------------------------------------------------------------
+class TPublicTreeView : public TCustomTreeView
+{
+friend void __fastcall ChangeControlScale(TControl * Control, int M, int D);
+};
 //---------------------------------------------------------------------------
 void __fastcall RealignControl(TControl * Control)
 {
@@ -566,6 +571,13 @@ static void __fastcall ChangeControlScale(TControl * Control, int M, int D)
         Column->Width = MulDiv(Column->Width, M, D);
       }
     }
+  }
+
+  TCustomTreeView * CustomTreeView = dynamic_cast<TCustomTreeView *>(Control);
+  if (CustomTreeView != NULL)
+  {
+    TPublicTreeView * PublicTreeView = static_cast<TPublicTreeView *>(CustomTreeView);
+    PublicTreeView->Indent = MulDiv(PublicTreeView->Indent, M, D);
   }
 
   TCustomCombo * CustomCombo = dynamic_cast<TCustomCombo *>(Control);
