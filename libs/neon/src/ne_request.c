@@ -1221,7 +1221,7 @@ static int read_message_header(ne_request *req, char *buf, size_t buflen)
     return NE_ERROR;
 }
 
-#define MAX_HEADER_LEN (8192)
+#define MAX_HEADER_LEN (16384)
 
 /* Add a respnose header field for the given request, using
  * precalculated hash value. */
