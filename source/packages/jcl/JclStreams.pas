@@ -2376,6 +2376,11 @@ begin
   FStream := AStream;
   FOwnStream := AOwnsStream;
   FBufferSize := StreamDefaultBufferSize;
+
+  // Must call this method so that buffer initial values are properly set.
+  // This is most useful when AStream is not located at position zero
+  // before being used by us.
+  InvalidateBuffers;
 end;
 
 destructor TJclStringStream.Destroy;
