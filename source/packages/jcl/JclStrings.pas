@@ -83,8 +83,8 @@ uses
   {$ENDIF UNICODE_RTL_DATABASE}
   Classes, SysUtils,
   {$ENDIF ~HAS_UNITSCOPE}
-{$IFNDEF WINSCP}
   JclAnsiStrings,
+{$IFNDEF WINSCP}
   JclWideStrings,
 {$ENDIF ~WINSCP}
   JclBase;

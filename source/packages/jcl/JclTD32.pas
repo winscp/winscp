@@ -877,7 +877,7 @@ const
 implementation
 
 uses
-  JclResources, JclSysUtils, JclStringConversions;
+  JclResources, JclSysUtils{$IFNDEF WINSCP}, JclStringConversions{$ENDIF};
 
 {$IFDEF BORLAND}
 const

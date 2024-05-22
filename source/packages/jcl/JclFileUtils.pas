@@ -307,7 +307,9 @@ function GetSizeOfFile(const FileName: string): Int64; overload;
 function GetSizeOfFile(const FileInfo: TSearchRec): Int64; overload;
 {$IFDEF MSWINDOWS}
 function GetSizeOfFile(Handle: THandle): Int64; overload;
+{$IFNDEF WINSCP}
 function GetStandardFileInfo(const FileName: string): TWin32FileAttributeData;
+{$ENDIF}
 {$ENDIF MSWINDOWS}
 function IsDirectory(const FileName: string {$IFDEF UNIX}; ResolveSymLinks: Boolean = True {$ENDIF}): Boolean;
 function IsRootDirectory(const CanonicFileName: string): Boolean;
@@ -4395,6 +4397,7 @@ function GetFileAttributesEx(lpFileName: PChar;
 external kernel32 name 'GetFileAttributesExA';
 {$ENDIF FPC}
 
+{$IFNDEF WINSCP}
 function GetStandardFileInfo(const FileName: string): TWin32FileAttributeData;
 var
   Handle: THandle;
@@ -4428,6 +4431,7 @@ begin
       raise EJclFileUtilsError.CreateResFmt(@RsFileUtilsAttrUnavailable, [FileName]);
   end;
 end;
+{$ENDIF}
 
 {$ENDIF MSWINDOWS}
 

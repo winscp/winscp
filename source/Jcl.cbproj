@@ -97,6 +97,9 @@
 		<CppCompile Include="Jcl.cpp">
 			<BuildOrder>0</BuildOrder>
 		</CppCompile>
+		<DelphiCompile Include="packages\jcl\JclAnsiStrings.pas">
+			<BuildOrder>14</BuildOrder>
+		</DelphiCompile>
 		<DelphiCompile Include="packages\jcl\JclBase.pas">
 			<BuildOrder>3</BuildOrder>
 		</DelphiCompile>
@@ -129,6 +132,9 @@
 		</DelphiCompile>
 		<DelphiCompile Include="packages\jcl\JclSysUtils.pas">
 			<BuildOrder>12</BuildOrder>
+		</DelphiCompile>
+		<DelphiCompile Include="packages\jcl\JclTD32.pas">
+			<BuildOrder>15</BuildOrder>
 		</DelphiCompile>
 		<DelphiCompile Include="packages\jcl\JclWin32.pas">
 			<BuildOrder>13</BuildOrder>

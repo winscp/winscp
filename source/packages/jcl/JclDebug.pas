@@ -1131,24 +1131,8 @@ uses
   System.AnsiStrings,
   {$ENDIF ~WINSCP}
   {$ENDIF MSWINDOWS}
-  JclHookExcept, {$IFNDEF WINSCP}JclAnsiStrings,{$ENDIF ~WINSCP} JclStrings, JclSysInfo, JclSysUtils, JclWin32,
+  JclHookExcept, JclAnsiStrings, JclStrings, JclSysInfo, JclSysUtils, JclWin32,
   {$IFNDEF WINSCP}JclStringConversions,{$ENDIF ~WINSCP} JclResources;
-
-{$IFDEF WINSCP}
-
-// from JclAnsiStrings.pas
-
-function StrLICompA(const Str1, Str2: PAnsiChar; MaxLen: Cardinal): Integer;
-begin
-  Result := {$IFDEF DEPRECATED_SYSUTILS_ANSISTRINGS}System.AnsiStrings.{$ENDIF}StrIComp(Str1, Str2);
-end;
-
-function StrPLCopyA(Dest: PAnsiChar; const Source: AnsiString; MaxLen: Cardinal): PAnsiChar;
-begin
-  Result := {$IFDEF DEPRECATED_SYSUTILS_ANSISTRINGS}System.AnsiStrings.{$ENDIF}StrPLCopy(Dest, Source, MaxLen);
-end;
-
-{$ENDIF}
 
 //=== Helper assembler routines ==============================================
 
@@ -4440,12 +4424,12 @@ begin
   end;
 end;
 
-{$ENDIF ~WINSCP}
-
 procedure TJclDebugInfoTD32.GenerateUnmangledNames;
 begin
   FImage.TD32Scanner.GenerateUnmangledNames;
 end;
+
+{$ENDIF ~WINSCP}
 
 {$ENDIF BORLAND}
 

@@ -283,7 +283,7 @@ void __fastcall TAboutDialog::DoLoadThirdParty()
 #endif
 
   UnicodeString JclVersion =
-    FormatVersion(JclVersionMajor, JclVersionMinor, JclVersionRelease);
+    FormatVersion(JclVersionMajor, JclVersionMinor, JclVersionRelease) + L" " + JclCommit;
   AddPara(ThirdParty,
     FMTLOAD(ABOUT_JCL, (JclVersion)) + Br +
     CreateLink(LoadStr(ABOUT_JCL_URL)));

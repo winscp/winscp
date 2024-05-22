@@ -113,11 +113,15 @@ procedure SetGlobalEnvironmentVariable(VariableName, VariableContent: string);
 
 // Common Folder Locations
 {$IFDEF MSWINDOWS}
+{$IFNDEF WINSCP}
 function GetCommonFilesFolder: string;
+{$ENDIF WINSCP}
 {$ENDIF MSWINDOWS}
 function GetCurrentFolder: string;
 {$IFDEF MSWINDOWS}
+{$IFNDEF WINSCP}
 function GetProgramFilesFolder: string;
+{$ENDIF WINSCP}
 function GetWindowsFolder: string;
 function GetWindowsSystemFolder: string;
 function GetWindowsTempFolder: string;
@@ -211,9 +215,11 @@ function GetWorkGroupName: WideString;
 {$ENDIF MSWINDOWS}
 function GetDomainName: string;
 {$IFDEF MSWINDOWS}
+{$IFNDEF WINSCP}
 function GetRegisteredCompany: string;
 function GetRegisteredOwner: string;
 function GetWindowsProductId: string;
+{$ENDIF WINSCP}
 function GetBIOSName: string;
 function GetBIOSCopyright: string;
 function GetBIOSExtendedInfo: string;
@@ -226,7 +232,9 @@ function GetBIOSDate: TDateTime;
 type
   TJclTerminateAppResult = (taError, taClean, taKill);
 
+{$IFNDEF WINSCP}
 function RunningProcessesList(const List: TStrings; FullPath: Boolean = True): Boolean;
+{$ENDIF WINSCP}
 
 {$IFDEF MSWINDOWS}
 function LoadedModulesList(const List: TStrings; ProcessID: DWORD; HandlesOnly: Boolean = False): Boolean;
@@ -250,17 +258,21 @@ function TerminateApp(ProcessID: DWORD; Timeout: Integer): TJclTerminateAppResul
 
 {$IFDEF MSWINDOWS}
 {.$IFNDEF FPC}
+{$IFNDEF WINSCP}
 function GetPidFromProcessName(const ProcessName: string): THandle;
 function GetProcessNameFromWnd(Wnd: THandle): string;
 function GetProcessNameFromPid(PID: DWORD): string;
+{$ENDIF WINSCP}
 function GetMainAppWndFromPid(PID: DWORD): THandle;
 function GetWndFromPid(PID: DWORD; const WindowClassName: string): HWND;
 {.$ENDIF ~FPC}
 
+{$IFNDEF WINSCP}
 function GetShellProcessName: string;
 {.$IFNDEF FPC}
 function GetShellProcessHandle: THandle;
 {.$ENDIF ~FPC}
+{$ENDIF WINSCP}
 
 // Version Information
 type
@@ -292,12 +304,15 @@ type
 
 var
   { in case of additions, don't forget to update initialization section! }
+  {$IFNDEF WINSCP}
   IsWin95: Boolean = False;
   IsWin95OSR2: Boolean = False;
   IsWin98: Boolean = False;
   IsWin98SE: Boolean = False;
   IsWinME: Boolean = False;
+  {$ENDIF}
   IsWinNT: Boolean = False;
+  {$IFNDEF WINSCP}
   IsWinNT3: Boolean = False;
   IsWinNT31: Boolean = False;
   IsWinNT35: Boolean = False;
@@ -324,6 +339,7 @@ var
   IsWinServer2022: Boolean = False;
   IsWinServer: Boolean = False;
   IsWin11: Boolean = False;
+  {$ENDIF}
 
 const
   PROCESSOR_ARCHITECTURE_INTEL = 0;
@@ -338,6 +354,7 @@ const
 const
   Windows11InitialBuildNumber = 22000;
 
+{$IFNDEF WINSCP}
 function GetWindowsVersion: TWindowsVersion;
 function GetWindowsEdition: TWindowsEdition;
 function NtProductType: TNtProductType;
@@ -347,11 +364,13 @@ function GetWindowsProductString: string;
 function GetWindowsProductName: string;
 function NtProductTypeString: string;
 function GetWindowsBuildNumber: Integer;
+{$ENDIF WINSCP}
 function GetWindowsMajorVersionNumber: Integer;
 function GetWindowsMinorVersionNumber: Integer;
 function GetWindowsVersionNumber: string;
 function GetWindowsServicePackVersion: Integer;
 function GetWindowsServicePackVersionString: string;
+{$IFNDEF WINSCP}
 function GetWindowsDisplayVersion: string;
 function GetWindowsReleaseId: Integer;
 function GetWindowsReleaseName: String;
@@ -366,7 +385,6 @@ function GetWindows10ReleaseVersion: String; {$IFDEF SUPPORTS_DEPRECATED}depreca
 function GetWindowsServerDisplayVersion: string; {$IFDEF SUPPORTS_DEPRECATED}deprecated {$IFDEF SUPPORTS_DEPRECATED_DETAILS}'Use GetWindowsDisplayVersion'{$ENDIF};{$ENDIF}
 function GetWindowsServerReleaseId: Integer; {$IFDEF SUPPORTS_DEPRECATED}deprecated {$IFDEF SUPPORTS_DEPRECATED_DETAILS}'Use GetWindowsReleaseId'{$ENDIF};{$ENDIF}
 function GetWindowsServerReleaseVersion: String; {$IFDEF SUPPORTS_DEPRECATED}deprecated {$IFDEF SUPPORTS_DEPRECATED_DETAILS}'Use GetWindowsReleaseVersion'{$ENDIF};{$ENDIF}
-{$IFNDEF WINSCP}
 function GetOpenGLVersion(const Win: THandle; out Version, Vendor: AnsiString): Boolean;
 {$ENDIF ~WINSCP}
 function GetNativeSystemInfo(var SystemInfo: TSystemInfo): Boolean;
@@ -375,7 +393,9 @@ function IsWindows64: Boolean;
 function JclCheckWinVersion(Major, Minor: Integer): Boolean;
 {$ENDIF MSWINDOWS}
 
+{$IFNDEF WINSCP}
 function GetOSVersionString: string;
+{$ENDIF}
 
 // Hardware
 {$IFDEF MSWINDOWS}
@@ -1492,7 +1512,7 @@ uses
   {$ENDIF MSWINDOWS}
   {$ENDIF ~HAS_UNITSCOPE}
   {$IFNDEF WINSCP}Jcl8087, JclIniFiles,{$ENDIF ~WINSCP}
-  JclSysUtils, JclFileUtils, {$IFNDEF WINSCP}JclAnsiStrings,{$ENDIF ~WINSCP} JclStrings;
+  JclSysUtils, JclFileUtils, JclAnsiStrings, JclStrings;
 
 {$IFDEF WINSCP}
 
@@ -1559,6 +1579,8 @@ end;
 {$ENDIF MSWINDOWS}
 {.$ENDIF FPC}
 
+{$IFNDEF WINSCP}
+
 //=== Registry helpers =======================================================
 
 const
@@ -1618,6 +1640,8 @@ function ReadWindowsNTCurrentVersionIntegerValue(const Name: string; Def: Intege
 begin
   Result := RegReadHklmKeyIntegerValue(HKLM_CURRENT_VERSION_NT, Name, Def, ForceNative);
 end;
+
+{$ENDIF WINSCP}
 
 //=== Environment ============================================================
 
@@ -1966,7 +1990,6 @@ begin
   end;
   SendMessage(HWND_BROADCAST, WM_SETTINGCHANGE, 0, LPARAM(PChar(cEnvironment)));
 end;
-{$ENDIF ~WINSCP}
 
 //=== Common Folders =========================================================
 
@@ -1978,6 +2001,8 @@ begin
   Result := RegReadStringDef(HKEY_LOCAL_MACHINE, HKLM_CURRENT_VERSION_WINDOWS,
     'CommonFilesDir', '');
 end;
+
+{$ENDIF ~WINSCP}
 
 {$ENDIF MSWINDOWS}
 
@@ -2023,6 +2048,7 @@ end;
 {$ENDIF MSWINDOWS}
 
 {$IFDEF MSWINDOWS}
+{$IFNDEF WINSCP}
 { TODO : Check for documented solution }
 function GetProgramFilesFolder: string;
 begin
@@ -2030,6 +2056,7 @@ begin
   // as we want the platform (x86/x64) specific common folder.
   Result := RegReadStringDef(HKEY_LOCAL_MACHINE, HKLM_CURRENT_VERSION_WINDOWS, 'ProgramFilesDir', '');
 end;
+{$ENDIF WINSCP}
 
 { TODO : Check for documented solution }
 function GetWindowsFolder: string;
@@ -2516,6 +2543,7 @@ end;
 {$ENDIF MSWINDOWS}
 
 {$IFDEF MSWINDOWS}
+{$IFNDEF WINSCP}
 function GetRegisteredCompany: string;
 begin
   { TODO : check for MSDN documentation }
@@ -2542,6 +2570,7 @@ begin
   else
     Result := ReadWindowsCurrentVersionStringValue('ProductId', '', True);
 end;
+{$ENDIF WINSCP}
 
 { TODO: Check supported platforms, maybe complete rewrite }
 
@@ -2823,6 +2852,7 @@ end;
 
 {$IFDEF MSWINDOWS}
 
+{$IFNDEF WINSCP}
 function RunningProcessesList(const List: TStrings; FullPath: Boolean): Boolean;
 
   // This function always returns an empty string on Win9x
@@ -2954,6 +2984,7 @@ begin
     List.EndUpdate;
   end;
 end;
+{$ENDIF WINSCP}
 
 { TODO Windows 9x ? }
 
@@ -3397,6 +3428,7 @@ begin
     Result := taError;
 end;
 
+{$IFNDEF WINSCP}
 function GetProcessNameFromWnd(Wnd: THandle): string;
 var
   List: TStringList;
@@ -3464,6 +3496,7 @@ begin
     List.Free;
   end;
 end;
+{$ENDIF}
 
 type
   PSearch = ^TSearch;
@@ -3538,6 +3571,7 @@ begin
   Result := EnumWndStruct.ResultWnd;
 end;
 
+{$IFNDEF WINSCP}
 function GetShellProcessName: string;
 const
   cShellKey = HKLM_CURRENT_VERSION_NT + '\WinLogon';
@@ -3548,9 +3582,8 @@ const
 begin
   if IsWinNT then
     Result := RegReadStringDef(HKEY_LOCAL_MACHINE, cShellKey, cShellValue, '')
-{$IFNDEF WINSCP}
   else
-    Result := IniReadString(PathAddSeparator(GetWindowsFolder) + cShellSystemIniFileName, cShellBootSection, cShellValue){$ENDIF ~WINSCP};
+    Result := IniReadString(PathAddSeparator(GetWindowsFolder) + cShellSystemIniFileName, cShellBootSection, cShellValue);
   if Result = '' then
     Result := cShellDefault;
 end;
@@ -4234,10 +4267,13 @@ begin
   else
     Result := Win32BuildNumber;
 end;
+{$ENDIF WINSCP}
 
 function GetWindowsMajorVersionNumber: Integer;
+{$IFNDEF WINSCP}
 var
   Ver: string;
+{$ENDIF WINSCP}
 begin
 {$IFNDEF WINSCP}
   // WINSCP: We have the manifest
@@ -4256,13 +4292,15 @@ begin
     end;
   end
   else
-{$ENDIF}
+{$ENDIF WINSCP}
     Result := Win32MajorVersion;
 end;
 
 function GetWindowsMinorVersionNumber: Integer;
+{$IFNDEF WINSCP}
 var
   Ver: string;
+{$ENDIF WINSCP}
 begin
 {$IFNDEF WINSCP}
   // WINSCP: We have the manifest
@@ -4281,7 +4319,7 @@ begin
     end;
   end
   else
-{$ENDIF}
+{$ENDIF WINSCP}
     Result := Win32MinorVersion;
 end;
 
@@ -4328,6 +4366,7 @@ begin
     Result := '';
 end;
 
+{$IFNDEF WINSCP}
 function GetWindowsDisplayVersion: string;
 begin
   // Starting with Windows 10 20H2, the DisplayVersion registry entry is being populated ("20H2")
@@ -4562,7 +4601,6 @@ begin
     Result := '';
 end;
 
-{$IFNDEF WINSCP}
 // Imports copied from OpenGL unit. Direct using of OpenGL unit might cause unexpected problems due
 // setting 8087CW in the intialization section
 {
@@ -4832,6 +4870,7 @@ end;
 
 {$ENDIF MSWINDOWS}
 
+{$IFNDEF WINSCP}
 function GetOSVersionString: string;
 {$IFDEF UNIX}
 var
@@ -4846,6 +4885,7 @@ begin
   Result := Format('%s %s', [GetWindowsVersionString, GetWindowsServicePackVersionString]);
 end;
 {$ENDIF MSWINDOWS}
+{$ENDIF}
 
 //=== Hardware ===============================================================
 
@@ -6603,8 +6643,10 @@ end;
 procedure InitSysInfo;
 var
   SystemInfo: TSystemInfo;
+  {$IFNDEF WINSCP}
   Kernel32FileName: string;
   VerFixedFileInfo: TVSFixedFileInfo;
+  {$ENDIF}
 begin
   { processor information related initialization }
 
@@ -6618,6 +6660,7 @@ begin
 
   IsWinNT := Win32Platform = VER_PLATFORM_WIN32_NT;
 
+  {$IFNDEF WINSCP}
   Kernel32FileName := GetModulePath(GetModuleHandle(kernel32));
   VerFixedFileInfo.dwFileDateLS := 0;
   if (not IsWinNT) and VersionFixedFileInfo(Kernel32FileName, VerFixedFileInfo) then
@@ -6699,6 +6742,7 @@ begin
     wvWin11:
       IsWin11 := True;
   end;
+  {$ENDIF}
 end;
 
 procedure FinalizeSysInfo;

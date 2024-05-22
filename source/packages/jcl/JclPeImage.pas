@@ -1129,7 +1129,7 @@ uses
   Character,
   {$ENDIF HAS_UNIT_CHARACTER}
   {$ENDIF ~HAS_UNITSCOPE}
-  {$IFNDEF WINSCP}JclLogic,{$ELSE}Math, System.AnsiStrings, {$ENDIF ~WINSCP} JclResources, JclSysUtils, {$IFNDEF WINSCP}JclAnsiStrings,{$ENDIF ~WINSCP} JclStrings{$IFNDEF WINSCP}, JclStringConversions{$ENDIF ~WINSCP}, JclTD32;
+  {$IFNDEF WINSCP}JclLogic,{$ELSE}Math, System.AnsiStrings, {$ENDIF ~WINSCP} JclResources, JclSysUtils, JclAnsiStrings, JclStrings{$IFNDEF WINSCP}, JclStringConversions{$ENDIF ~WINSCP}, JclTD32;
 
 const
   MANIFESTExtension = '.manifest';
@@ -1165,28 +1165,6 @@ end;
 // stub for JclDateTime constant
 const
   UnixTimeStart = UnixDateDelta;
-
-// from JclAnsiStrings.pas
-
-function StrLCompA(const Str1, Str2: PAnsiChar; MaxLen: Cardinal): Integer;
-begin
-  Result := {$IFDEF DEPRECATED_SYSUTILS_ANSISTRINGS}System.AnsiStrings.{$ENDIF}StrLComp(Str1, Str2, MaxLen);
-end;
-
-function StrPLCopyA(Dest: PAnsiChar; const Source: AnsiString; MaxLen: Cardinal): PAnsiChar;
-begin
-  Result := {$IFDEF DEPRECATED_SYSUTILS_ANSISTRINGS}System.AnsiStrings.{$ENDIF}StrPLCopy(Dest, Source, MaxLen);
-end;
-
-function StrICompA(const Str1, Str2: PAnsiChar): Integer;
-begin
-  Result := {$IFDEF DEPRECATED_SYSUTILS_ANSISTRINGS}System.AnsiStrings.{$ENDIF}StrIComp(Str1, Str2);
-end;
-
-function StrLenA(S: PAnsiChar): Integer;
-begin
-  Result := {$IFDEF DEPRECATED_SYSUTILS_ANSISTRINGS}System.AnsiStrings.{$ENDIF}StrLen(S);
-end;
 
 {$ENDIF}
 

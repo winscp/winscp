@@ -527,7 +527,9 @@ function StrIdent(const S: AnsiString; var Index: SizeInt; out Ident: AnsiString
 function StrIdent(var S: PAnsiChar; out Ident: AnsiString): Boolean; overload;
 function StrToFloatSafe(const S: AnsiString): Float;
 function StrToIntSafe(const S: AnsiString): Integer;
+{$IFNDEF WINSCP}
 procedure StrNormIndex(const StrLen: SizeInt; var Index: SizeInt; var Count: SizeInt); overload;
+{$ENDIF}
 
 function ArrayOf(List: TJclAnsiStrings): TDynStringArray; overload;
 
@@ -606,7 +608,7 @@ uses
   {$ENDIF}
   {$ENDIF HAS_UNIT_RTLCONSTS}
   {$ENDIF SUPPORTS_UNICODE}
-  JclLogic, JclResources, JclStreams, JclSynch, JclSysUtils;
+  {$IFNDEF WINSCP}JclLogic,{$ENDIF WINSCP} JclResources, JclStreams, JclSynch, JclSysUtils;
 
 //=== Internal ===============================================================
 
@@ -4007,11 +4009,13 @@ begin
   Result := Trunc(StrToFloatSafe(S));
 end;
 
+{$IFNDEF WINSCP}
 procedure StrNormIndex(const StrLen: SizeInt; var Index: SizeInt; var Count: SizeInt); overload;
 begin
   Index := Max(1, Min(Index, StrLen + 1));
   Count := Max(0, Min(Count, StrLen + 1 - Index));
 end;
+{$ENDIF WINSCP}
 
 function ArrayOf(List: TJclAnsiStrings): TDynStringArray;
 var
