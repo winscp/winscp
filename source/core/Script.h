@@ -115,7 +115,7 @@ protected:
   virtual void __fastcall ResetTransfer();
   virtual void __fastcall ConnectTerminal(TTerminal * ATerminal);
   bool __fastcall EnsureCommandSessionFallback(
-    TFSCapability Capability, TSessionAction & Action);
+    TFSCapability Capability, TSessionAction * Action);
   void __fastcall Print(const UnicodeString Str, bool Error = false);
   void __fastcall CheckSession();
   void __fastcall CheckParams(TScriptProcParams * Parameters);
