@@ -1097,7 +1097,7 @@ void __fastcall TScript::ResetTransfer()
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScript::EnsureCommandSessionFallback(
-  TFSCapability Capability, TSessionAction & Action)
+  TFSCapability Capability, TSessionAction * Action)
 {
   bool Result = FTerminal->IsCapable[Capability] ||
     FTerminal->CommandSessionOpened;
@@ -1111,7 +1111,10 @@ bool __fastcall TScript::EnsureCommandSessionFallback(
     }
     catch(Exception & E)
     {
-      Action.Rollback(&E);
+      if (Action != NULL)
+      {
+        Action->Rollback(&E);
+      }
       HandleExtendedException(&E, FTerminal->CommandSession);
       Result = false;
     }
@@ -1169,7 +1172,7 @@ void __fastcall TScript::CallProc(TScriptProcParams * Parameters)
   // the actual call logging is done in TTerminal::AnyCommand
   TCallSessionAction Action(
     FTerminal->ActionLog, Parameters->ParamsStr, FTerminal->CurrentDirectory);
-  if (EnsureCommandSessionFallback(fcAnyCommand, Action))
+  if (EnsureCommandSessionFallback(fcAnyCommand, &Action))
   {
     Action.Cancel();
     FTerminal->AnyCommand(Parameters->ParamsStr, TerminalCaptureLog);
@@ -1218,7 +1221,7 @@ void __fastcall TScript::ChecksumProc(TScriptProcParams * Parameters)
   // this is used only to log failures to open separate shell session,
   // the actual call logging is done in TTerminal::CalculateFilesChecksum
   TChecksumSessionAction Action(FTerminal->ActionLog);
-  if (EnsureCommandSessionFallback(fcCalculatingChecksum, Action))
+  if (EnsureCommandSessionFallback(fcCalculatingChecksum, &Action))
   {
     Action.Cancel();
 
@@ -2062,49 +2065,59 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
 
     CheckParams(Parameters);
 
+    bool Continue = true;
     if (FLAGSET(SynchronizeParams, TTerminal::spByChecksum) &&
-        (!FTerminal->IsCapable[fcCalculatingChecksum] &&
-         !FTerminal->IsCapable[fcSecondaryShell]))
+        !FTerminal->IsCapable[fcCalculatingChecksum])
     {
-      NotSupported();
-    }
-
-    PrintLine(LoadStr(SCRIPT_SYNCHRONIZE_COLLECTING));
-
-    TSynchronizeChecklist * Checklist =
-      FTerminal->SynchronizeCollect(LocalDirectory, RemoteDirectory,
-        static_cast<TTerminal::TSynchronizeMode>(FSynchronizeMode),
-        &CopyParam, SynchronizeParams, OnTerminalSynchronizeDirectory, NULL);
-    try
-    {
-      bool AnyChecked = false;
-      for (int Index = 0; !AnyChecked && (Index < Checklist->Count); Index++)
+      if (!FTerminal->IsCapable[fcSecondaryShell])
       {
-        AnyChecked = Checklist->Item[Index]->Checked;
-      }
-
-      if (AnyChecked)
-      {
-        if (Preview)
-        {
-          PrintLine(LoadStr(SCRIPT_SYNCHRONIZE_CHECKLIST));
-          SynchronizePreview(LocalDirectory, RemoteDirectory, Checklist);
-        }
-        else
-        {
-          PrintLine(LoadStr(SCRIPT_SYNCHRONIZE_SYNCHRONIZING));
-          FTerminal->SynchronizeApply(
-            Checklist, &CopyParam, SynchronizeParams, OnTerminalSynchronizeDirectory, NULL, NULL, NULL, NULL);
-        }
+        NotSupported();
       }
       else
       {
-        NoMatch(LoadStr(SCRIPT_SYNCHRONIZE_NODIFFERENCE));
+        Continue = EnsureCommandSessionFallback(fcCalculatingChecksum, NULL);
       }
     }
-    __finally
+
+    if (Continue)
     {
-      delete Checklist;
+      PrintLine(LoadStr(SCRIPT_SYNCHRONIZE_COLLECTING));
+
+      TSynchronizeChecklist * Checklist =
+        FTerminal->SynchronizeCollect(LocalDirectory, RemoteDirectory,
+          static_cast<TTerminal::TSynchronizeMode>(FSynchronizeMode),
+          &CopyParam, SynchronizeParams, OnTerminalSynchronizeDirectory, NULL);
+      try
+      {
+        bool AnyChecked = false;
+        for (int Index = 0; !AnyChecked && (Index < Checklist->Count); Index++)
+        {
+          AnyChecked = Checklist->Item[Index]->Checked;
+        }
+
+        if (AnyChecked)
+        {
+          if (Preview)
+          {
+            PrintLine(LoadStr(SCRIPT_SYNCHRONIZE_CHECKLIST));
+            SynchronizePreview(LocalDirectory, RemoteDirectory, Checklist);
+          }
+          else
+          {
+            PrintLine(LoadStr(SCRIPT_SYNCHRONIZE_SYNCHRONIZING));
+            FTerminal->SynchronizeApply(
+              Checklist, &CopyParam, SynchronizeParams, OnTerminalSynchronizeDirectory, NULL, NULL, NULL, NULL);
+          }
+        }
+        else
+        {
+          NoMatch(LoadStr(SCRIPT_SYNCHRONIZE_NODIFFERENCE));
+        }
+      }
+      __finally
+      {
+        delete Checklist;
+      }
     }
   }
   __finally
