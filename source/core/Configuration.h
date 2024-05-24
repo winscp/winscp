@@ -234,6 +234,9 @@ protected:
   THierarchicalStorage * OpenDirectoryStatisticsCache(bool CanCreate);
   UnicodeString __fastcall GetDirectoryStatisticsCacheKey(
     const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam);
+  void SelectSessionsToImportIfAny(
+    TStoredSessionList * ImportSessionList, TStoredSessionList * Sessions,
+    UnicodeString & Error, const UnicodeString & NoSessionsError);
 
   virtual bool __fastcall GetConfirmOverwriting();
   virtual void __fastcall SetConfirmOverwriting(bool value);

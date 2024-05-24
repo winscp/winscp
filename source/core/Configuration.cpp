@@ -1677,6 +1677,20 @@ static TStoredSessionList * CreateSessionsForImport(TStoredSessionList * Session
   return Result.release();
 }
 //---------------------------------------------------------------------
+void TConfiguration::SelectSessionsToImportIfAny(
+  TStoredSessionList * ImportSessionList, TStoredSessionList * Sessions,
+  UnicodeString & Error, const UnicodeString & NoSessionsError)
+{
+  if (ImportSessionList->Count > 0)
+  {
+    ImportSessionList->SelectSessionsToImport(Sessions, true);
+  }
+  else
+  {
+    Error = NoSessionsError;
+  }
+}
+//---------------------------------------------------------------------
 TStoredSessionList * __fastcall TConfiguration::SelectFilezillaSessionsForImport(
   TStoredSessionList * Sessions, UnicodeString & Error)
 {
@@ -1690,14 +1704,8 @@ TStoredSessionList * __fastcall TConfiguration::SelectFilezillaSessionsForImport
   {
     ImportSessionList->ImportFromFilezilla(FilezillaSiteManagerFile, FilezillaConfigurationFile);
 
-    if (ImportSessionList->Count > 0)
-    {
-      ImportSessionList->SelectSessionsToImport(Sessions, true);
-    }
-    else
-    {
-      Error = FMTLOAD(FILEZILLA_NO_SITES, (FilezillaSiteManagerFile));
-    }
+    UnicodeString NoSessionsError = FMTLOAD(FILEZILLA_NO_SITES, (FilezillaSiteManagerFile));
+    SelectSessionsToImportIfAny(ImportSessionList.get(), Sessions, Error, NoSessionsError);
   }
   else
   {
@@ -1822,14 +1830,8 @@ TStoredSessionList * TConfiguration::SelectOpensshSessionsForImport(
 
       ImportSessionList->ImportFromOpenssh(Lines.get());
 
-      if (ImportSessionList->Count > 0)
-      {
-        ImportSessionList->SelectSessionsToImport(Sessions, true);
-      }
-      else
-      {
-        throw Exception(LoadStr(OPENSSH_CONFIG_NO_SITES));
-      }
+      UnicodeString NoSessionsError = FORMAT(L"%s\n(%s)", (LoadStr(OPENSSH_CONFIG_NO_SITES), ConfigFile));
+      SelectSessionsToImportIfAny(ImportSessionList.get(), Sessions, Error, NoSessionsError);
     }
     else
     {
