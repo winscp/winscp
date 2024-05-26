@@ -3039,7 +3039,7 @@ bool __fastcall TFTPFileSystem::KeepWaitingForReply(unsigned int & ReplyToAwait,
 
   // Though make sure that disconnect makes it through always. As for example when connection is closed already,
   // when sending commands, we may get REPLY_DISCONNECTED as a command response and no other response after,
-  // what would cause a hang.
+  // which would cause a hang.
   return
      (FReply == 0) &&
      ((ReplyToAwait == 0) ||
@@ -3071,7 +3071,7 @@ void __fastcall TFTPFileSystem::DoWaitForReply(unsigned int & ReplyToAwait, bool
   catch(...)
   {
     // even if non-fatal error happens, we must process pending message,
-    // so that we "eat" the reply message, so that it gets not mistakenly
+    // so that we "eat" the reply message, and it doesn't get mistakenly
     // associated with future connect
     if (FTerminal->Active)
     {
@@ -4423,7 +4423,7 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
         }
         catch(...)
         {
-          // ignore permissions errors with FTP
+          // ignore permission errors with FTP
         }
 
         File->HumanRights = Entry->HumanPerm;
@@ -4529,7 +4529,7 @@ bool __fastcall TFTPFileSystem::HandleReply(int Command, unsigned int Reply)
     }
 
     // reply with Command 0 is not associated with current operation
-    // so do not treat is as a reply
+    // so do not treat it as a reply
     // (it is typically used asynchronously to notify about disconnects)
     if (Command != 0)
     {
