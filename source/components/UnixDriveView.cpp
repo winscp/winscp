@@ -90,7 +90,7 @@ void __fastcall TCustomUnixDriveView::SetTerminal(TTerminal * value)
   {
     FTerminal = value;
     Items->Clear();
-    // If terminal is not active initially, we will never load fixed paths, when it become active.
+    // If terminal is not active initially, we will never load fixed paths, when it becomes active.
     // But actually terminal is not active here, only when we are replacing an abandoned terminal
     // with a dummy one (which will never become active)
     if ((FTerminal != NULL) && FTerminal->Active)
@@ -216,7 +216,7 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
       }
 
       // sort only after adding all items.
-      // should be faster then keeping the list sorted since beginning
+      // should be faster than keeping the list sorted since beginning
       ChildrenDirs->Sorted = true;
 
       for (int i = 0; i < Data->FileList->Count; i++)
@@ -265,7 +265,7 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
     __finally
     {
       delete ChildrenDirs;
-      // Relese only files only now, once they are no longer references in the tree
+      // Release only files only now, once they are no longer referenced in the tree
       delete OldFileList; // if not NULL
     }
   }
@@ -521,7 +521,7 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
         try
         {
           {
-            // Prevent curther changes while loading the folder.
+            // Prevent further changes while loading the folder.
             // Particularly prevent user from trying to proceed with incremental search.
             TValueRestorer<bool> ChangingDirectoryRestorer(FChangingDirectory);
             FChangingDirectory = true;
