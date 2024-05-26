@@ -669,7 +669,7 @@ void __fastcall TFileOperationProgressType::SetSkipToAll()
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::ChangeTransferSize(__int64 ASize)
 {
-  // reflect change on file size (due to text transfer mode conversion particulary)
+  // reflect change on file size (due to text transfer mode conversion particularly)
   // on total transfer size
   if (TotalSizeSet)
   {
