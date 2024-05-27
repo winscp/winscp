@@ -265,7 +265,7 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
     __finally
     {
       delete ChildrenDirs;
-      // Release only files only now, once they are no longer referenced in the tree
+      // Release files only now, once they are no longer referenced in the tree
       delete OldFileList; // if not NULL
     }
   }
