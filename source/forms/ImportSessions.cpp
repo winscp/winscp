@@ -191,11 +191,13 @@ void __fastcall TImportSessionsDialog::LoadSessions()
   if ((SessionList->Count > 0) || Error.IsEmpty())
   {
     ErrorPanel->Visible = false;
+    SessionListView2->TabStop = true;
   }
   else
   {
     ErrorLabel->Caption = Error;
     ErrorPanel->Visible = true;
+    SessionListView2->TabStop = false;
   }
 
   UpdateControls();
