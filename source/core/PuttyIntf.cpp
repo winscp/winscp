@@ -1204,13 +1204,13 @@ UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const s
   BinarySource Source[1];
   BinarySource_BARE_INIT(Source, UtfLine.c_str(), UtfLine.Length());
   UnicodeString Result;
-  if (!openssh_loadpub(Source, &AlgorithmName, BinarySink_UPCAST(PubBlobBuf), &CommentPtr, &ErrorStr))
+  try
   {
-    throw Exception(UnicodeString(ErrorStr));
-  }
-  else
-  {
-    try
+    if (!openssh_loadpub(Source, &AlgorithmName, BinarySink_UPCAST(PubBlobBuf), &CommentPtr, &ErrorStr))
+    {
+      throw Exception(UnicodeString(ErrorStr));
+    }
+    else
     {
       Algorithm = find_pubkey_alg(AlgorithmName);
       if (Algorithm == NULL)
@@ -1229,12 +1229,12 @@ UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const s
       sfree(FmtKey);
       Algorithm->freekey(Key);
     }
-    __finally
-    {
-      strbuf_free(PubBlobBuf);
-      sfree(AlgorithmName);
-      sfree(CommentPtr);
-    }
+  }
+  __finally
+  {
+    strbuf_free(PubBlobBuf);
+    sfree(AlgorithmName);
+    sfree(CommentPtr);
   }
   return Result;
 }
