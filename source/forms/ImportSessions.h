@@ -40,7 +40,6 @@ private:
   TList * FSessionListsList;
   TStrings * FErrors;
   std::unique_ptr<TStoredSessionList> FPastedKnownHosts;
-  int FKnownHostsIndex;
   void __fastcall UpdateControls();
   void __fastcall LoadSessions();
   void __fastcall ClearSelections();
