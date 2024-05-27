@@ -222,7 +222,7 @@ UnicodeString __fastcall TFileMasks::ComposeMaskStr(
 
   // For directories, the above will add slash at the end of masks,
   // breaking size and time masks and thus circumverting their validation.
-  // This performes ad hoc validation to cover the scenario.
+  // This performs ad hoc validation to cover the scenario.
   // For files this makes no difference, but no harm either
   TFileMasks Temp(Directory ? 1 : 0);
   Temp = ResultNoDirMask;

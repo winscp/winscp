@@ -1446,7 +1446,7 @@ void __fastcall TLoginDialog::SaveDataList(TList * DataList)
   // Normally we would call this from Execute,
   // but at that point the windows is already hidden.
   // Cloning session data may pop up master password dialog:
-  // - if it happens between closing and destroyiong login dialog
+  // - if it happens between closing and destroying login dialog
   //   the next window will appear in background for some reason
   // - and its actually even nicer when master password dialog pops up over
   //   the login dialog
