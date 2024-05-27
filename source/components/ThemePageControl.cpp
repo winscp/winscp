@@ -165,7 +165,7 @@ __fastcall TThemePageControl::TThemePageControl(TComponent * Owner) :
 //----------------------------------------------------------------------------------------------------------
 int __fastcall TThemePageControl::GetTabsHeight()
 {
-  // The Calculated height, includes tab/contents separator line on Windows 7/8,
+  // The Calculated height includes tab/contents separator line on Windows 7/8,
   // but not on Windows XP
 
   TRect Rect = GetClientRect();
