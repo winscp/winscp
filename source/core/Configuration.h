@@ -336,6 +336,7 @@ public:
   TStoredSessionList * __fastcall SelectKnownHostsSessionsForImport(
     TStrings * Lines, TStoredSessionList * Sessions, UnicodeString & Error);
   TStoredSessionList * SelectOpensshSessionsForImport(TStoredSessionList * Sessions, UnicodeString & Error);
+  TStoredSessionList * SelectSessionsForImport(TStoredSessionList * Sessions, const UnicodeString & FileName, UnicodeString & Error);
   UnicodeString GetPuttySessionsKey(const UnicodeString & RootKey);
   void RefreshPuttySshHostCAList();
 

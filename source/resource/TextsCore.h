@@ -290,6 +290,7 @@
 #define SSH_HOST_CA_INVALID     770
 #define S3_ASSUME_ROLE_ERROR    780
 #define S3_ASSUME_ROLE_RESPONSE_ERROR 781
+#define INI_NO_SITES            782
 
 #define CORE_CONFIRMATION_STRINGS 300
 #define CONFIRM_PROLONG_TIMEOUT3 301
@@ -537,6 +538,7 @@
 #define PUBLIC_KEY_PERMISSIONS  568
 #define TIME_RELATIVE           569
 #define DAYS_SPAN               570
+#define INI_SELECT              571
 
 #define CORE_VARIABLE_STRINGS   600
 #define PUTTY_BASED_ON          601

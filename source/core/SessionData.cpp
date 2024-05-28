@@ -5216,9 +5216,10 @@ void __fastcall TStoredSessionList::SelectAll(bool Select)
     Sessions[Index]->Selected = Select;
 }
 //---------------------------------------------------------------------
-void __fastcall TStoredSessionList::Import(TStoredSessionList * From,
+bool TStoredSessionList::Import(TStoredSessionList * From,
   bool OnlySelected, TList * Imported)
 {
+  bool Result = false;
   for (int Index = 0; Index < From->Count; Index++)
   {
     if (!OnlySelected || From->Sessions[Index]->Selected)
@@ -5228,6 +5229,7 @@ void __fastcall TStoredSessionList::Import(TStoredSessionList * From,
       Session->Modified = true;
       Session->MakeUniqueIn(this);
       Add(Session);
+      Result = true;
       if (Imported != NULL)
       {
         Imported->Add(Session);
@@ -5236,6 +5238,7 @@ void __fastcall TStoredSessionList::Import(TStoredSessionList * From,
   }
   // only modified, explicit
   Save(false, true);
+  return Result;
 }
 //---------------------------------------------------------------------
 void __fastcall TStoredSessionList::SelectSessionsToImport
@@ -5469,9 +5472,7 @@ void __fastcall TStoredSessionList::SetDefaultSettings(TSessionData * value)
 //---------------------------------------------------------------------------
 bool __fastcall TStoredSessionList::OpenHostKeysSubKey(THierarchicalStorage * Storage, bool CanCreate)
 {
-  return
-    Storage->OpenRootKey(CanCreate) &&
-    Storage->OpenSubKey(Configuration->SshHostKeysSubKey, CanCreate);
+  return Storage->OpenSubKey(Configuration->SshHostKeysSubKey, CanCreate);
 }
 //---------------------------------------------------------------------------
 THierarchicalStorage * __fastcall TStoredSessionList::CreateHostKeysStorageForWritting()
@@ -5483,7 +5484,7 @@ THierarchicalStorage * __fastcall TStoredSessionList::CreateHostKeysStorageForWr
   return Storage.release();
 }
 //---------------------------------------------------------------------------
-int __fastcall TStoredSessionList::ImportHostKeys(
+int TStoredSessionList::ImportHostKeys(
   THierarchicalStorage * SourceStorage, THierarchicalStorage * TargetStorage, TStoredSessionList * Sessions, bool OnlySelected)
 {
   int Result = 0;
@@ -5515,13 +5516,20 @@ int __fastcall TStoredSessionList::ImportHostKeys(
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TStoredSessionList::ImportHostKeys(
-  const UnicodeString & SourceKey, TStoredSessionList * Sessions, bool OnlySelected)
+void TStoredSessionList::ImportHostKeys(
+  THierarchicalStorage * SourceStorage, TStoredSessionList * Sessions, bool OnlySelected)
 {
   std::unique_ptr<THierarchicalStorage> TargetStorage(CreateHostKeysStorageForWritting());
+
+  ImportHostKeys(SourceStorage, TargetStorage.get(), Sessions, OnlySelected);
+}
+//---------------------------------------------------------------------------
+void TStoredSessionList::ImportHostKeys(
+  const UnicodeString & SourceKey, TStoredSessionList * Sessions, bool OnlySelected)
+{
   std::unique_ptr<THierarchicalStorage> SourceStorage(new TRegistryStorage(SourceKey));
 
-  ImportHostKeys(SourceStorage.get(), TargetStorage.get(), Sessions, OnlySelected);
+  ImportHostKeys(SourceStorage.get(), Sessions, OnlySelected);
 }
 //---------------------------------------------------------------------------
 void __fastcall TStoredSessionList::ImportSelectedKnownHosts(TStoredSessionList * Sessions)

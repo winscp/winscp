@@ -266,6 +266,7 @@ BEGIN
   SSH_HOST_CA_INVALID, "Invalid '%s' key data."
   S3_ASSUME_ROLE_ERROR, "Error assuming role '%s'."
   S3_ASSUME_ROLE_RESPONSE_ERROR, "Unexpected response to assume role request (%s)."
+  INI_NO_SITES, "No sites found in \"%s\"."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"
@@ -510,6 +511,7 @@ BEGIN
   PUBLIC_KEY_PERMISSIONS, "Though potentially wrong permissions of \"%s\" file and/or its parent folder were detected. Please check them."
   TIME_RELATIVE, "just now|today|yesterday|tomorrow|one second ago|%d seconds ago|one minute ago|%d minutes ago|one hour ago|%d hours ago|one day ago|%d days ago|one week ago|%d weeks ago|one month ago|%d months ago|one year ago|%d years ago"
   DAYS_SPAN, "%d days"
+  INI_SELECT, "Browse for INI file to import sites from."
 
   CORE_VARIABLE_STRINGS, "CORE_VARIABLE"
   PUTTY_BASED_ON, "SSH and SCP code based on PuTTY %s"

@@ -765,7 +765,7 @@ public:
     bool UseDefaults = false, bool PuttyImport = false);
   void __fastcall Save(THierarchicalStorage * Storage, bool All = false);
   void __fastcall SelectAll(bool Select);
-  void __fastcall Import(TStoredSessionList * From, bool OnlySelected, TList * Imported);
+  bool Import(TStoredSessionList * From, bool OnlySelected, TList * Imported);
   void __fastcall RecryptPasswords(TStrings * RecryptPasswordErrors);
   TSessionData * __fastcall AtSession(int Index)
     { return (TSessionData*)AtObject(Index); }
@@ -792,10 +792,10 @@ public:
   __property TSessionData * Sessions[int Index]  = { read=AtSession };
   __property TSessionData * DefaultSettings  = { read=FDefaultSettings, write=SetDefaultSettings };
 
-  static int __fastcall ImportHostKeys(
+  static int ImportHostKeys(
     THierarchicalStorage * SourceStorage, THierarchicalStorage * TargetStorage, TStoredSessionList * Sessions, bool OnlySelected);
-  static void __fastcall ImportHostKeys(
-    const UnicodeString & SourceKey, TStoredSessionList * Sessions, bool OnlySelected);
+  static void ImportHostKeys(THierarchicalStorage * SourceStorage, TStoredSessionList * Sessions, bool OnlySelected);
+  static void ImportHostKeys(const UnicodeString & SourceKey, TStoredSessionList * Sessions, bool OnlySelected);
   static void __fastcall ImportSelectedKnownHosts(TStoredSessionList * Sessions);
   static bool __fastcall OpenHostKeysSubKey(THierarchicalStorage * Storage, bool CanCreate);
   static void SelectKnownHostsForSelectedSessions(TStoredSessionList * KnownHosts, TStoredSessionList * Sessions);

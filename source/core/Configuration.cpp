@@ -1846,6 +1846,39 @@ TStoredSessionList * TConfiguration::SelectOpensshSessionsForImport(
   return ImportSessionList.release();
 }
 //---------------------------------------------------------------------------
+TStoredSessionList * TConfiguration::SelectSessionsForImport(
+  TStoredSessionList * Sessions, const UnicodeString & FileName, UnicodeString & Error)
+{
+  std::unique_ptr<TStoredSessionList> ImportSessionList(CreateSessionsForImport(Sessions));
+
+  try
+  {
+    if (FileName.IsEmpty())
+    {
+      throw Exception(LoadStr(INI_SELECT));
+    }
+    else
+    {
+      std::unique_ptr<THierarchicalStorage> ImportStorage(TIniFileStorage::CreateFromPath(FileName));
+      ImportStorage->AccessMode = smRead;
+
+      if (ImportStorage->OpenSubKey(Configuration->StoredSessionsSubKey, false))
+      {
+        ImportSessionList->Load(ImportStorage.get());
+      }
+
+      UnicodeString NoSessionsError = FMTLOAD(INI_NO_SITES, (FileName));
+      SelectSessionsToImportIfAny(ImportSessionList.get(), Sessions, Error, NoSessionsError);
+    }
+  }
+  catch (Exception & E)
+  {
+    Error = E.Message;
+  }
+
+  return ImportSessionList.release();
+}
+//---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetRandomSeedFile(UnicodeString value)
 {
   if (RandomSeedFile != value)

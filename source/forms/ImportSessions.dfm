@@ -35,7 +35,7 @@ object ImportSessionsDialog: TImportSessionsDialog
     Caption = 'OK'
     Default = True
     ModalResult = 1
-    TabOrder = 4
+    TabOrder = 5
   end
   object CancelButton: TButton
     Left = 215
@@ -46,7 +46,7 @@ object ImportSessionsDialog: TImportSessionsDialog
     Cancel = True
     Caption = 'Cancel'
     ModalResult = 2
-    TabOrder = 5
+    TabOrder = 6
   end
   object SessionListView2: TListView
     Left = 8
@@ -67,7 +67,7 @@ object ImportSessionsDialog: TImportSessionsDialog
     ParentShowHint = False
     ShowColumnHeaders = False
     ShowHint = True
-    TabOrder = 2
+    TabOrder = 3
     ViewStyle = vsReport
     OnInfoTip = SessionListView2InfoTip
     OnKeyUp = SessionListView2KeyUp
@@ -80,7 +80,7 @@ object ImportSessionsDialog: TImportSessionsDialog
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = 'Un/check &all'
-    TabOrder = 3
+    TabOrder = 4
     OnClick = CheckAllButtonClick
   end
   object HelpButton: TButton
@@ -90,7 +90,7 @@ object ImportSessionsDialog: TImportSessionsDialog
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'
-    TabOrder = 6
+    TabOrder = 7
     OnClick = HelpButtonClick
   end
   object SourceComboBox: TComboBox
@@ -106,6 +106,7 @@ object ImportSessionsDialog: TImportSessionsDialog
       'KiTTY'
       'FileZilla'
       'OpenSSH'
+      'INI file'
       'known_hosts')
   end
   object ErrorPanel: TPanel
@@ -116,7 +117,7 @@ object ImportSessionsDialog: TImportSessionsDialog
     BevelOuter = bvNone
     Color = clWindow
     ParentBackground = False
-    TabOrder = 7
+    TabOrder = 8
     object ErrorLabel: TLabel
       Left = 0
       Top = 0
@@ -138,5 +139,14 @@ object ImportSessionsDialog: TImportSessionsDialog
     Caption = '&Paste'
     TabOrder = 1
     OnClick = PasteButtonClick
+  end
+  object BrowseButton: TButton
+    Left = 232
+    Top = 8
+    Width = 75
+    Height = 25
+    Caption = 'B&rowse...'
+    TabOrder = 2
+    OnClick = BrowseButtonClick
   end
 end
