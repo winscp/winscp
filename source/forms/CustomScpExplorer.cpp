@@ -4373,7 +4373,8 @@ void __fastcall TCustomScpExplorerForm::DeleteFiles(TOperationSide Side,
       {
         DebugAssert(FDeletedFiles == NULL);
         TValueRestorer<TStrings *> DeletedFilesRestorer(FDeletedFiles, DeletedFiles.get());
-        TValueRestorer<TFileOperationFinishedEvent> OnFileOperationFinishedRestorer(FOnFileOperationFinished, FileDeleted);
+        TValueRestorer<TFileOperationFinishedEvent> OnFileOperationFinishedRestorer(FOnFileOperationFinished);
+        FOnFileOperationFinished = FileDeleted;
 
         FMoveToQueue = false;
 
@@ -12020,7 +12021,8 @@ void TCustomScpExplorerForm::CalculateDirectorySizes(TOperationSide Side)
 
   __int64 Size = 0;
   TValueRestorer<TCalculateSizeOperation *> DirectorySizeOperationRestorer(FCalculateSizeOperation, &CalculateSizeOperation);
-  TValueRestorer<TFileOperationFinishedEvent> OnFileOperationFinishedRestorer(FOnFileOperationFinished, DirectorySizeCalculated);
+  TValueRestorer<TFileOperationFinishedEvent> OnFileOperationFinishedRestorer(FOnFileOperationFinished);
+  FOnFileOperationFinished = DirectorySizeCalculated;
   TValueRestorer<TFileOperation> PrimaryOperationRestorer(FPrimaryOperation, foCalculateSize);
 
   TCalculatedSizes CalculatedSizes;
