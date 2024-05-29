@@ -165,7 +165,7 @@ __fastcall TThemePageControl::TThemePageControl(TComponent * Owner) :
 //----------------------------------------------------------------------------------------------------------
 int __fastcall TThemePageControl::GetTabsHeight()
 {
-  // Calculated height includes tab/contents separator line on Windows 7/8,
+  // The Calculated height includes tab/contents separator line on Windows 7/8,
   // but not on Windows XP
 
   TRect Rect = GetClientRect();
@@ -379,7 +379,7 @@ void TThemePageControl::DrawDropDown(HDC DC, int Radius, int X, int Y, COLORREF 
   DeleteObject(Pen);
 }
 //----------------------------------------------------------------------------------------------------------
-// draw tab item context: possible icon and text
+// Draw tab item context: possible icon and text
 void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int State, bool Shadowed)
 {
   TRect OrigRect = Rect;
@@ -435,7 +435,7 @@ void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int
       {
         ButtonItemInfo.HoverKind = hkMouseHover;
 
-        // Untimatelly, merge both branches to use PaintFrame (just with a different theme) (and drop GetSelectedBodyColor)
+        // Ultimately, merge both branches to use PaintFrame (just with a different theme) (and drop GetSelectedBodyColor)
         if (Selected && (ActiveTabTheme != NULL))
         {
           std::unique_ptr<TCanvas> CanvasMem(new TCanvas());
