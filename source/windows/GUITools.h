@@ -44,7 +44,16 @@ void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName)
 int __fastcall DialogImageSize(TForm * Form);
 int __fastcall NormalizePixelsPerInch(int PixelsPerInch);
 void __fastcall HideComponentsPanel(TForm * Form);
-UnicodeString FormatIncrementalSearchStatus(const UnicodeString & Text, bool HaveNext);
+struct TIncrementalSearchState
+{
+  TIncrementalSearchState();
+  void Reset();
+
+  bool Searching;
+  UnicodeString Text;
+  bool HaveNext;
+};
+UnicodeString FormatIncrementalSearchStatus(const TIncrementalSearchState & SearchState);
 namespace Webbrowserex
 {
   class TWebBrowserEx;

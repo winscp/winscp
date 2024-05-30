@@ -24,7 +24,6 @@
 #include <DragExt.h>
 #include <WinApi.h>
 
-#include "GUITools.h"
 #include "NonVisual.h"
 #include "Glyphs.h"
 #include "Tools.h"
@@ -38,6 +37,7 @@
 #include <TB2Common.hpp>
 #include <DirectoryMonitor.hpp>
 #include <System.IOUtils.hpp>
+#include <System.StrUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "CustomDirView"
@@ -211,7 +211,6 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FNeedSession = false;
   FDoNotIdleCurrentTerminal = 0;
   FIncrementalSearching = 0;
-  FIncrementalSearchHaveNext = false;
   FQueueFileList.reset(new TQueueFileList());
   FProgressSide = osCurrent;
   FCalculateSizeOperation = NULL;
@@ -9177,9 +9176,9 @@ UnicodeString __fastcall TCustomScpExplorerForm::FileStatusBarText(
 {
   UnicodeString Result;
 
-  if (!FIncrementalSearch.IsEmpty() && (Side == GetSide(osCurrent)))
+  if (FIncrementalSearchState.Searching && (Side == GetSide(osCurrent)))
   {
-    Result = FormatIncrementalSearchStatus(FIncrementalSearch, FIncrementalSearchHaveNext);
+    Result = FormatIncrementalSearchStatus(FIncrementalSearchState);
   }
   else if (!IsSideLocalBrowser(Side) && ((Terminal == NULL) || Terminal->Disconnected))
   {
@@ -11543,15 +11542,15 @@ void __fastcall TCustomScpExplorerForm::DirViewKeyDown(TObject * Sender, WORD & 
     // while searching
     if (Key == VK_BACK)
     {
-      if (!FIncrementalSearch.IsEmpty())
+      if (FIncrementalSearchState.Searching)
       {
-        if (FIncrementalSearch.Length() == 1)
+        if (FIncrementalSearchState.Text.Length() <= 1)
         {
           ResetIncrementalSearch();
         }
         else
         {
-          UnicodeString NewText = FIncrementalSearch.SubString(1, FIncrementalSearch.Length() - 1);
+          UnicodeString NewText = LeftStr(FIncrementalSearchState.Text, FIncrementalSearchState.Text.Length() - 1);
           IncrementalSearch(NewText, false, false);
         }
         Key = 0;
@@ -11569,9 +11568,9 @@ void __fastcall TCustomScpExplorerForm::DirViewKeyPress(TObject * Sender, wchar_
     // When not searching yet, prefer use of the space for toggling file selection
     // (so we cannot incrementally search for a string starting with a space).
     if ((Key > VK_SPACE) ||
-        ((Key == VK_SPACE) && (GetKeyState(VK_CONTROL) >= 0) && !FIncrementalSearch.IsEmpty()))
+        ((Key == VK_SPACE) && (GetKeyState(VK_CONTROL) >= 0) && !FIncrementalSearchState.Searching))
     {
-      IncrementalSearch(FIncrementalSearch + Key, false, false);
+      IncrementalSearch(FIncrementalSearchState.Text + Key, false, false);
       Key = 0;
     }
   }
@@ -11579,9 +11578,9 @@ void __fastcall TCustomScpExplorerForm::DirViewKeyPress(TObject * Sender, wchar_
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ResetIncrementalSearch()
 {
-  if (!FIncrementalSearch.IsEmpty())
+  if (FIncrementalSearchState.Searching)
   {
-    FIncrementalSearch = L"";
+    FIncrementalSearchState.Reset();
     DirView(osCurrent)->UpdateStatusBar();
   }
 }
@@ -11610,11 +11609,12 @@ void __fastcall TCustomScpExplorerForm::IncrementalSearch(const UnicodeString & 
         }
       }
     }
-    FIncrementalSearch = Text;
+    FIncrementalSearchState.Searching = true;
+    FIncrementalSearchState.Text = Text;
     Item->MakeVisible(false);
 
     TListItem * NextItem = SearchFile(Text, true, Reverse);
-    FIncrementalSearchHaveNext = (NextItem != NULL) && (NextItem != Item);
+    FIncrementalSearchState.HaveNext = (NextItem != NULL) && (NextItem != Item);
 
     ADirView->UpdateStatusBar();
   }
@@ -11709,18 +11709,18 @@ void __fastcall TCustomScpExplorerForm::CMDialogKey(TWMKeyDown & Message)
 {
   if (Message.CharCode == VK_TAB)
   {
-    if (!FIncrementalSearch.IsEmpty())
+    if (!FIncrementalSearchState.Text.IsEmpty())
     {
       TShiftState Shift = KeyDataToShiftState(Message.KeyData);
       bool Reverse = Shift.Contains(ssShift);
-      IncrementalSearch(FIncrementalSearch, true, Reverse);
+      IncrementalSearch(FIncrementalSearchState.Text, true, Reverse);
       Message.Result = 1;
       return;
     }
   }
   else if (Message.CharCode == VK_ESCAPE)
   {
-    if (!FIncrementalSearch.IsEmpty())
+    if (FIncrementalSearchState.Searching)
     {
       ResetIncrementalSearch();
       Message.Result = 1;
@@ -12109,4 +12109,17 @@ void TCustomScpExplorerForm::RestoreFocus(void * Focus)
 {
   DebugUsedParam(Focus);
   DebugAssert(Focus == NULL);
+}
+//---------------------------------------------------------------------------
+void TCustomScpExplorerForm::IncrementalSearchStart()
+{
+  TCustomDirView * ADirView = DirView(osCurrent);
+  ADirView->SetFocus();
+  if (!FIncrementalSearchState.Searching)
+  {
+    FIncrementalSearchState.Searching = true;
+    FIncrementalSearchState.HaveNext = false;
+    DebugAssert(FIncrementalSearchState.Text.IsEmpty());
+    ADirView->UpdateStatusBar();
+  }
 }

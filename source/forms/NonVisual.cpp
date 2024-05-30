@@ -445,6 +445,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(EditorListCustomizeAction, true)
   UPD(ChangePasswordAction, ScpExplorer->CanChangePassword())
   UPD(PrivateKeyUploadAction, ScpExplorer->CanPrivateKeyUpload())
+  UPD(IncrementalSearchStartAction, true);
 
   // CUSTOM COMMANDS
   UPD(CustomCommandsFileAction, true)
@@ -792,6 +793,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(EditorListCustomizeAction, PreferencesDialog(pmEditor))
     EXE(ChangePasswordAction, ScpExplorer->ChangePassword())
     EXE(PrivateKeyUploadAction, ScpExplorer->PrivateKeyUpload())
+    EXE(IncrementalSearchStartAction, ScpExplorer->IncrementalSearchStart())
 
     // CUSTOM COMMANDS
     EXE(CustomCommandsFileAction, CreateCustomCommandsMenu(CustomCommandsFileAction, ccltFile))

@@ -1285,11 +1285,23 @@ void __fastcall HideComponentsPanel(TForm * Form)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString FormatIncrementalSearchStatus(const UnicodeString & Text, bool HaveNext)
+TIncrementalSearchState::TIncrementalSearchState()
+{
+  Reset();
+}
+//---------------------------------------------------------------------------
+void TIncrementalSearchState::Reset()
+{
+  Searching = false;
+  Text = EmptyStr;
+  HaveNext = false;
+}
+//---------------------------------------------------------------------------
+UnicodeString FormatIncrementalSearchStatus(const TIncrementalSearchState & SearchState)
 {
   UnicodeString Result =
-    L" " + FMTLOAD(INC_SEARCH, (Text)) +
-    (HaveNext ? L" " + LoadStr(INC_NEXT_SEARCH) : UnicodeString());
+    L" " + FMTLOAD(INC_SEARCH, (DefaultStr(SearchState.Text, LoadStr(INC_SEARCH_TYPE)))) +
+    ((SearchState.HaveNext && DebugAlwaysTrue(!SearchState.Text.IsEmpty())) ? L" " + LoadStr(INC_NEXT_SEARCH) : EmptyStr);
   return Result;
 }
 //---------------------------------------------------------------------------

@@ -2459,6 +2459,12 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Open the same directory as in the other panel'
       ShortCut = 16574
     end
+    object IncrementalSearchStartAction: TAction
+      Tag = 11
+      Category = 'Command'
+      Caption = 'IncrementalSearchStartAction'
+      ShortCut = 16454
+    end
   end
   object ExplorerBarPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages

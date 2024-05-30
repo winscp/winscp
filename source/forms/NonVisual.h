@@ -710,6 +710,7 @@ __published:    // IDE-managed Components
   TAction *QueueResetLayoutColumnsAction;
   TTBXSeparatorItem *TBXSeparatorItem23;
   TTBXItem *TBXItem116;
+  TAction *IncrementalSearchStartAction;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);

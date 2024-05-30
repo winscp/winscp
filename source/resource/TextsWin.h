@@ -692,6 +692,7 @@
 #define SSH_HOST_CA_HOSTS_INVALID 6205
 #define LOGIN_NOT_SHOWING_AGAIN 6206
 #define IMPORT_INI_TITLE        6207
+#define INC_SEARCH_TYPE         6208
 
 // 2xxx is reserved for TextsFileZilla.h
 

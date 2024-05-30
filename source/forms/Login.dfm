@@ -720,6 +720,15 @@ object LoginDialog: TLoginDialog
       Caption = 'Edit &Raw Settings...'
       OnExecute = SessionAdvancedActionExecute
     end
+    object SearchSiteStartAction: TAction
+      Category = 'Other'
+      Caption = '&Find Site'
+      SecondaryShortCuts.Strings = (
+        'Alt+F7'
+        'F3')
+      ShortCut = 16454
+      OnExecute = SearchSiteStartActionExecute
+    end
   end
   object ToolsPopupMenu: TPopupMenu
     Left = 152
@@ -1265,13 +1274,16 @@ object LoginDialog: TLoginDialog
     object ExplorersSendToShortcut2: TMenuItem
       Action = SendToHookAction
     end
-    object Options1: TMenuItem
-      Caption = 'Options'
+    object Search1: TMenuItem
+      Caption = 'Search'
       Enabled = False
       Visible = False
     end
-    object IncrementalSearch1: TMenuItem
-      Caption = 'Incremental Search'
+    object FindSite1: TMenuItem
+      Action = SearchSiteStartAction
+    end
+    object SearchOptions1: TMenuItem
+      Caption = 'Options'
       object SearchSiteNameStartOnly1: TMenuItem
         Action = SearchSiteNameStartOnlyAction
         RadioItem = True
@@ -1325,13 +1337,16 @@ object LoginDialog: TLoginDialog
     object MenuItem8: TMenuItem
       Action = DesktopIconAction
     end
-    object Options3: TMenuItem
-      Caption = 'Options'
+    object Search3: TMenuItem
+      Caption = 'Search'
       Enabled = False
       Visible = False
     end
-    object IncrementalSearch3: TMenuItem
-      Caption = 'Incremental Search'
+    object FindSite3: TMenuItem
+      Action = SearchSiteStartAction
+    end
+    object SearchOptions3: TMenuItem
+      Caption = 'Options'
       object BeginningofSiteNameOnly2: TMenuItem
         Action = SearchSiteNameStartOnlyAction
         RadioItem = True
@@ -1389,13 +1404,16 @@ object LoginDialog: TLoginDialog
     object MenuItem17: TMenuItem
       Action = NewSessionFolderAction
     end
-    object Options2: TMenuItem
-      Caption = 'Options'
+    object Search2: TMenuItem
+      Caption = 'Search'
       Enabled = False
       Visible = False
     end
-    object IncrementalSearch2: TMenuItem
-      Caption = 'Incremental Search'
+    object FindSite2: TMenuItem
+      Action = SearchSiteStartAction
+    end
+    object SearchOptions2: TMenuItem
+      Caption = 'Options'
       object BeginningofSiteNameOnly1: TMenuItem
         Action = SearchSiteNameStartOnlyAction
         RadioItem = True
@@ -1440,13 +1458,16 @@ object LoginDialog: TLoginDialog
     object MenuItem19: TMenuItem
       Action = DesktopIconAction
     end
-    object Options4: TMenuItem
-      Caption = 'Options'
+    object Search4: TMenuItem
+      Caption = 'Search'
       Enabled = False
       Visible = False
     end
-    object IncrementalSearch4: TMenuItem
-      Caption = 'Incremental Search'
+    object FindSite4: TMenuItem
+      Action = SearchSiteStartAction
+    end
+    object SearchOptions4: TMenuItem
+      Caption = 'Options'
       object BeginningofSiteNameOnly3: TMenuItem
         Action = SearchSiteNameStartOnlyAction
         RadioItem = True

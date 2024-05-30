@@ -33,6 +33,7 @@
 #include "ThemePageControl.h"
 #include "PathLabel.hpp"
 #include <Vcl.AppEvnts.hpp>
+#include <GUITools.h>
 //---------------------------------------------------------------------------
 class TProgressForm;
 class TSynchronizeProgressForm;
@@ -403,9 +404,8 @@ protected:
   int FDoNotIdleCurrentTerminal;
   UnicodeString FFakeFileDropTarget;
   TFileColorData::TList FFileColors;
-  UnicodeString FIncrementalSearch;
+  TIncrementalSearchState FIncrementalSearchState;
   int FIncrementalSearching;
-  bool FIncrementalSearchHaveNext;
   TOperationSide FProgressSide;
   bool FImmersiveDarkMode;
 
@@ -919,6 +919,7 @@ public:
   void AutoSizeColumns(TOperationSide Side);
   virtual void ResetLayoutColumns(TOperationSide Side) = 0;
   void QueueResetLayoutColumns();
+  void IncrementalSearchStart();
   virtual void * SaveFocus();
   virtual void RestoreFocus(void * Focus);
 

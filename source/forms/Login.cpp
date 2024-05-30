@@ -67,7 +67,6 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FDataList = NULL;
   FUpdatePortWithProtocol = true;
   FIncrementalSearching = 0;
-  FSitesIncrementalSearchHaveNext = false;
   FEditing = false;
   FRenaming = false;
   FNewSiteKeepName = false;
@@ -729,9 +728,9 @@ void __fastcall TLoginDialog::UpdateControls()
     EnableControl(S3ProfileCombo, S3CredentialsEnv);
 
     // sites
-    if (SitesIncrementalSearchLabel->Visible != !FSitesIncrementalSearch.IsEmpty())
+    if (SitesIncrementalSearchLabel->Visible != FIncrementalSearchState.Searching)
     {
-      if (FSitesIncrementalSearch.IsEmpty())
+      if (!FIncrementalSearchState.Searching)
       {
         SitesIncrementalSearchLabel->Visible = false;
         SessionTree->Height = SitesIncrementalSearchLabel->BoundsRect.Bottom - SessionTree->Top;
@@ -743,9 +742,9 @@ void __fastcall TLoginDialog::UpdateControls()
       }
     }
 
-    if (!FSitesIncrementalSearch.IsEmpty())
+    if (FIncrementalSearchState.Searching)
     {
-      SitesIncrementalSearchLabel->Caption = FormatIncrementalSearchStatus(FSitesIncrementalSearch, FSitesIncrementalSearchHaveNext);
+      SitesIncrementalSearchLabel->Caption = FormatIncrementalSearchStatus(FIncrementalSearchState);
     }
 
     EnableControl(ManageButton, !FEditing);
@@ -929,11 +928,11 @@ void __fastcall TLoginDialog::SessionTreeKeyPress(TObject * /*Sender*/, System::
     // filter control sequences
     if (Key >= VK_SPACE)
     {
-      if (FSitesIncrementalSearch.IsEmpty())
+      if (!FIncrementalSearchState.Searching)
       {
         Configuration->Usage->Inc(L"SiteIncrementalSearches");
       }
-      if (!SitesIncrementalSearch(FSitesIncrementalSearch + Key, false, false, false))
+      if (!SitesIncrementalSearch(FIncrementalSearchState.Text + Key, false, false, false))
       {
         MessageBeep(MB_ICONHAND);
       }
@@ -941,16 +940,15 @@ void __fastcall TLoginDialog::SessionTreeKeyPress(TObject * /*Sender*/, System::
     }
     else if (Key == VK_BACK)
     {
-      if (!FSitesIncrementalSearch.IsEmpty())
+      if (FIncrementalSearchState.Searching)
       {
-        if (FSitesIncrementalSearch.Length() == 1)
+        if (FIncrementalSearchState.Text.Length() <= 1)
         {
           ResetSitesIncrementalSearch();
         }
         else
         {
-          UnicodeString NewText =
-            FSitesIncrementalSearch.SubString(1, FSitesIncrementalSearch.Length() - 1);
+          UnicodeString NewText = LeftStr(FIncrementalSearchState.Text, FIncrementalSearchState.Text.Length() - 1);
           SitesIncrementalSearch(NewText, false, false, false);
         }
         Key = 0;
@@ -1326,6 +1324,10 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction * BasicAction,
     // without hostname it's pointless
     Action->Enabled = (Data != NULL) && !Data->HostNameExpanded.IsEmpty();
   }
+  else if (Action == SearchSiteStartAction)
+  {
+    Action->Enabled = !SessionTree->IsEditing() && !FEditing;
+  }
   else if (Action == SearchSiteNameStartOnlyAction)
   {
     Action->Checked = (FSiteSearch == isNameStartOnly);
@@ -1682,11 +1684,11 @@ void __fastcall TLoginDialog::CMDialogKey(TWMKeyDown & Message)
 {
   if (Message.CharCode == VK_TAB)
   {
-    if (!FSitesIncrementalSearch.IsEmpty())
+    if (!FIncrementalSearchState.Text.IsEmpty())
     {
       TShiftState Shift = KeyDataToShiftState(Message.KeyData);
       bool Reverse = Shift.Contains(ssShift);
-      if (!SitesIncrementalSearch(FSitesIncrementalSearch, true, Reverse, true))
+      if (!SitesIncrementalSearch(FIncrementalSearchState.Text, true, Reverse, true))
       {
         MessageBeep(MB_ICONHAND);
       }
@@ -1696,7 +1698,7 @@ void __fastcall TLoginDialog::CMDialogKey(TWMKeyDown & Message)
   }
   else if (Message.CharCode == VK_ESCAPE)
   {
-    if (!FSitesIncrementalSearch.IsEmpty())
+    if (FIncrementalSearchState.Searching)
     {
       ResetSitesIncrementalSearch();
       Message.Result = 1;
@@ -2786,7 +2788,7 @@ void __fastcall TLoginDialog::ImportActionExecute(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::ResetSitesIncrementalSearch()
 {
-  FSitesIncrementalSearch = L"";
+  FIncrementalSearchState.Reset();
   // this is to prevent active tree node being set back to Sites tab
   // (from UpdateNavigationTree) when we are called from SessionTreeExit,
   // while tab is changing
@@ -2825,11 +2827,12 @@ bool __fastcall TLoginDialog::SitesIncrementalSearch(
       TAutoNestingCounter Guard(FIncrementalSearching);
       SessionTree->Selected = Node;
     }
-    FSitesIncrementalSearch = Text;
+    FIncrementalSearchState.Searching = true;
+    FIncrementalSearchState.Text = Text;
 
     // Tab always searches even in collapsed nodes
     TTreeNode * NextNode = SearchSite(Text, true, true, Reverse);
-    FSitesIncrementalSearchHaveNext =
+    FIncrementalSearchState.HaveNext =
       (NextNode != NULL) && (NextNode != Node);
 
     UpdateControls();
@@ -3377,6 +3380,18 @@ void __fastcall TLoginDialog::ShowAgainCheckClick(TObject *)
     {
       ShowAgainCheck->Checked = true;
     }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::SearchSiteStartActionExecute(TObject *)
+{
+  SessionTree->SetFocus();
+  if (!FIncrementalSearchState.Searching)
+  {
+    FIncrementalSearchState.Searching = true;
+    FIncrementalSearchState.HaveNext = false;
+    DebugAssert(FIncrementalSearchState.Text.IsEmpty());
+    UpdateControls();
   }
 }
 //---------------------------------------------------------------------------
