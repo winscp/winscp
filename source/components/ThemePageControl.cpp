@@ -160,6 +160,7 @@ __fastcall TThemePageControl::TThemePageControl(TComponent * Owner) :
   FSessionTabShrink = 0;
   FOnTabButtonClick = NULL;
   FOnTabHint = NULL;
+  FTabTheme = NULL;
   FActiveTabTheme = NULL;
 }
 //----------------------------------------------------------------------------------------------------------
@@ -246,17 +247,20 @@ void __fastcall TThemePageControl::DrawThemesXpTab(HDC DC, HTHEME Theme, int Tab
   TRect Rect = TabRect(Tab);
   ItemTabRect(Tab, Rect);
   int State;
+  TTBXTheme * ATabTheme;
   if (Tab != TabIndex)
   {
     TPoint Point = ScreenToClient(Mouse->CursorPos);
     int HotIndex = IndexOfTabAt(Point.X, Point.Y);
     State = (Tab == HotIndex ? TIS_HOT : (Shadowed ? TIS_DISABLED : TIS_NORMAL));
+    ATabTheme = TabTheme;
   }
   else
   {
     State = TIS_SELECTED;
+    ATabTheme = (ActiveTabTheme != NULL) ? ActiveTabTheme : TabTheme;
   }
-  DrawThemesXpTabItem(DC, Theme, Tab, Rect, State, Shadowed);
+  DrawThemesXpTabItem(DC, Theme, Tab, Rect, State, Shadowed, ATabTheme);
 }
 //----------------------------------------------------------------------------------------------------------
 static TTBXItemInfo GetItemInfo(int State)
@@ -271,20 +275,19 @@ static TTBXItemInfo GetItemInfo(int State)
 }
 //----------------------------------------------------------------------------------------------------------
 void __fastcall TThemePageControl::DrawThemesXpTabItem(
-  HDC DC, HTHEME Theme, int Item, const TRect & Rect, int State, bool Shadowed)
+  HDC DC, HTHEME Theme, int Item, const TRect & Rect, int State, bool Shadowed, TTBXTheme * ATabTheme)
 {
   TRect PaintRect = Rect;
-  bool Selected = (State == TIS_SELECTED);
-  if (Selected)
+  if ((State == TIS_SELECTED) || (ATabTheme != NULL))
   {
     PaintRect.Bottom++;
   }
 
-  if (Selected && (ActiveTabTheme != NULL))
+  if (ATabTheme != NULL)
   {
     std::unique_ptr<TCanvas> CanvasMem(new TCanvas());
     CanvasMem->Handle = DC;
-    ActiveTabTheme->PaintFrame(CanvasMem.get(), PaintRect, GetItemInfo(State));
+    ATabTheme->PaintFrame(CanvasMem.get(), PaintRect, GetItemInfo(State));
   }
   else
   {
@@ -294,7 +297,7 @@ void __fastcall TThemePageControl::DrawThemesXpTabItem(
 
   if (Item >= 0)
   {
-    DrawTabItem(DC, Item, Rect, State, Shadowed);
+    DrawTabItem(DC, Item, Rect, State, Shadowed, ATabTheme);
   }
 }
 //----------------------------------------------------------------------------------------------------------
@@ -380,7 +383,7 @@ void TThemePageControl::DrawDropDown(HDC DC, int Radius, int X, int Y, COLORREF 
 }
 //----------------------------------------------------------------------------------------------------------
 // Draw tab item context: possible icon and text
-void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int State, bool Shadowed)
+void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int State, bool Shadowed, TTBXTheme * ATabTheme)
 {
   TRect OrigRect = Rect;
   ItemContentsRect(Item, Rect);
@@ -410,9 +413,9 @@ void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int
   if (!Text.IsEmpty())
   {
     ItemTextRect(Item, Rect);
-    if (Selected && (ActiveTabTheme != NULL))
+    if (ATabTheme != NULL)
     {
-      SetTextColor(DC, ActiveTabTheme->GetItemTextColor(GetItemInfo(State)));
+      SetTextColor(DC, ATabTheme->GetItemTextColor(GetItemInfo(State)));
     }
     HFONT OldFont = (HFONT)SelectObject(DC, Font->Handle);
     wchar_t * Buf = new wchar_t[Text.Length() + 1 + 4];
@@ -435,32 +438,16 @@ void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int
       {
         ButtonItemInfo.HoverKind = hkMouseHover;
 
-        // Ultimately, merge both branches to use PaintFrame (just with a different theme) (and drop GetSelectedBodyColor)
-        if (Selected && (ActiveTabTheme != NULL))
-        {
-          std::unique_ptr<TCanvas> CanvasMem(new TCanvas());
-          CanvasMem->Handle = DC;
-          CurrentTheme->PaintFrame(CanvasMem.get(), Rect, ButtonItemInfo);
-        }
-        else
-        {
-          HBRUSH Brush = CreateSolidBrush(GetSelectedBodyColor());
-          FillRect(DC, &Rect, Brush);
-          DeleteObject(Brush);
-
-          HPEN Pen = CreatePen(PS_SOLID, 1, ColorToRGB(clHighlight));
-          HPEN OldPen = static_cast<HPEN>(SelectObject(DC, Pen));
-          Rectangle(DC, Rect.Left, Rect.Top, Rect.Right, Rect.Bottom);
-          SelectObject(DC, OldPen);
-          DeleteObject(Pen);
-        }
+        std::unique_ptr<TCanvas> CanvasMem(new TCanvas());
+        CanvasMem->Handle = DC;
+        CurrentTheme->PaintFrame(CanvasMem.get(), Rect, ButtonItemInfo);
       }
 
       COLORREF BackColor = GetPixel(DC, Rect.Left + (Rect.Width() / 2), Rect.Top + (Rect.Height() / 2));
       COLORREF ShapeColor;
-      if (Selected && (ActiveTabTheme != NULL))
+      if (ATabTheme != NULL)
       {
-        ShapeColor = ColorToRGB(ActiveTabTheme->GetItemTextColor(ButtonItemInfo));
+        ShapeColor = ColorToRGB(ATabTheme->GetItemTextColor(ButtonItemInfo));
       }
       else
       {
@@ -788,6 +775,15 @@ void TThemePageControl::SetActiveTabTheme(TTBXTheme * value)
     {
       ActivePage->Invalidate();
     }
+  }
+}
+//----------------------------------------------------------------------------------------------------------
+void TThemePageControl::SetTabTheme(TTBXTheme * value)
+{
+  if (FTabTheme != value)
+  {
+    FTabTheme = value;
+    Invalidate();
   }
 }
 //----------------------------------------------------------------------------------------------------------

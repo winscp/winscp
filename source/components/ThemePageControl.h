@@ -57,6 +57,7 @@ public:
 
   __property TThemeTabSheet * Pages[int Index] = { read = GetPage };
   __property TThemeTabSheet * ActivePage = { read = GetActivePage };
+  __property TTBXTheme * TabTheme = { read = FTabTheme, write = SetTabTheme };
   __property TTBXTheme * ActiveTabTheme = { read = FActiveTabTheme, write = SetActiveTabTheme };
 
   int __fastcall GetTabsHeight();
@@ -77,8 +78,9 @@ protected:
 
 private:
   void __fastcall DrawThemesXpTab(HDC DC, HTHEME Theme, int Tab);
-  void __fastcall DrawThemesXpTabItem(HDC DC, HTHEME Theme, int Item, const TRect & Rect, int State, bool Selected);
-  void __fastcall DrawTabItem(HDC DC, int Item, TRect Rect, int State, bool Shadowed);
+  void __fastcall DrawThemesXpTabItem(
+    HDC DC, HTHEME Theme, int Item, const TRect & Rect, int State, bool Selected, TTBXTheme * ATabTheme);
+  void __fastcall DrawTabItem(HDC DC, int Item, TRect Rect, int State, bool Shadowed, TTBXTheme * ATabTheme);
   void __fastcall InvalidateTab(int Index);
   int __fastcall TabButtonSize();
   int __fastcall GetCrossPadding();
@@ -96,6 +98,7 @@ private:
   TThemeTabSheet * GetPage(int Index);
   TThemeTabSheet * GetActivePage();
   void CMHintShow(TCMHintShow & Message);
+  void SetTabTheme(TTBXTheme * value);
   void SetActiveTabTheme(TTBXTheme * value);
 
   int FOldTabIndex;
@@ -104,6 +107,7 @@ private:
   TPageControlTabButtonClick FOnTabButtonClick;
   TPageControlTabHint FOnTabHint;
   int FSessionTabShrink;
+  TTBXTheme * FTabTheme;
   TTBXTheme * FActiveTabTheme;
 };
 //---------------------------------------------------------------------------

@@ -9372,17 +9372,19 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
     QueueFileList->Font->Color = QueueView3->Font->Color;
     QueueLabelUpdateStatus();
 
-    RemoteDirView->DarkMode = WinConfiguration->UseDarkTheme();
+    bool UseDarkTheme = WinConfiguration->UseDarkTheme();
+    RemoteDirView->DarkMode = UseDarkTheme;
     RemoteDriveView->DarkMode = RemoteDirView->DarkMode;
-    if (FImmersiveDarkMode != WinConfiguration->UseDarkTheme())
+    if (FImmersiveDarkMode != UseDarkTheme)
     {
       UpdateDarkMode();
     }
 
-    // As the hi-contrast theme is currently used for session tabs only, which currently do not support dark mode,
-    // we always use dark theme. But ultimatelly, we should use an opposite theme to the main one.
+    SessionsPageControl->TabTheme = UseDarkTheme ? CurrentTheme : NULL;
+
     UnicodeString CurrentHiContrastThemeName = (FHiContrastTheme != NULL) ? FHiContrastTheme->Name : EmptyStr;
-    UnicodeString NewHiContrastThemeName = WinConfiguration->HiContrast ? GetThemeName(true) : EmptyStr;
+    bool HiContrast = WinConfiguration->HiContrast;
+    UnicodeString NewHiContrastThemeName = HiContrast ? GetThemeName(!UseDarkTheme) : EmptyStr;
     if (CurrentHiContrastThemeName != NewHiContrastThemeName)
     {
       ReleaseHiContrastTheme();
@@ -9390,8 +9392,8 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
       {
         FHiContrastTheme = GetTBXTheme(NewHiContrastThemeName);
       }
-      SessionsPageControl->ActiveTabTheme = FHiContrastTheme;
     }
+    SessionsPageControl->ActiveTabTheme = HiContrast ? DebugNotNull(FHiContrastTheme) : NULL;
 
     reinterpret_cast<TTBCustomItem *>(GetComponent(fcRemotePathComboBox))->Enabled = HasTerminal || IsLocalBrowserMode();
 
