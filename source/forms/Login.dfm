@@ -487,18 +487,6 @@ object LoginDialog: TLoginDialog
       OnMouseMove = SessionTreeMouseMove
       OnStartDrag = SessionTreeStartDrag
     end
-    object SitesIncrementalSearchLabel: TStaticText
-      Left = 14
-      Top = 330
-      Width = 142
-      Height = 17
-      Anchors = [akLeft, akRight, akBottom]
-      BorderStyle = sbsSingle
-      Caption = 'SitesIncrementalSearchLabel'
-      ShowAccelChar = False
-      TabOrder = 1
-      Visible = False
-    end
     object ManageButton: TButton
       Left = 403
       Top = 356
@@ -506,7 +494,7 @@ object LoginDialog: TLoginDialog
       Height = 25
       Anchors = [akRight, akBottom]
       Caption = '&Manage'
-      TabOrder = 3
+      TabOrder = 2
       OnClick = ManageButtonClick
     end
     object ToolsMenuButton: TButton
@@ -516,8 +504,38 @@ object LoginDialog: TLoginDialog
       Height = 25
       Anchors = [akLeft, akBottom]
       Caption = '&Tools'
-      TabOrder = 2
+      TabOrder = 1
       OnClick = ToolsMenuButtonClick
+    end
+    object SitesIncrementalSearchPanel: TPanel
+      Left = 26
+      Top = 309
+      Width = 183
+      Height = 23
+      Anchors = [akLeft, akRight, akBottom]
+      BevelOuter = bvNone
+      PopupMenu = SitesIncrementalSearchPopupMenu
+      TabOrder = 3
+      OnContextPopup = SitesIncrementalSearchPanelContextPopup
+      object SitesIncrementalSearchBorderLabel: TStaticText
+        Left = 0
+        Top = 0
+        Width = 183
+        Height = 23
+        Align = alClient
+        AutoSize = False
+        BorderStyle = sbsSingle
+        TabOrder = 0
+      end
+      object SitesIncrementalSearchLabel: TStaticText
+        Left = 5
+        Top = 4
+        Width = 142
+        Height = 17
+        Caption = 'SitesIncrementalSearchLabel'
+        ShowAccelChar = False
+        TabOrder = 1
+      end
     end
   end
   object ShowAgainPanel: TPanel
@@ -5079,5 +5097,21 @@ object LoginDialog: TLoginDialog
     Left = 406
     Top = 253
     Bitmap = {}
+  end
+  object SitesIncrementalSearchPopupMenu: TPopupMenu
+    Left = 279
+    Top = 309
+    object MenuItem36: TMenuItem
+      Action = SearchSiteNameStartOnlyAction
+      RadioItem = True
+    end
+    object MenuItem37: TMenuItem
+      Action = SearchSiteNameAction
+      RadioItem = True
+    end
+    object MenuItem38: TMenuItem
+      Action = SearchSiteAction
+      RadioItem = True
+    end
   end
 end

@@ -144,11 +144,12 @@ void __fastcall TLoginDialog::InitControls()
   BasicSshPanel->Top = BasicFtpPanel->Top;
   BasicS3Panel->Top = BasicFtpPanel->Top;
 
-  SitesIncrementalSearchLabel->AutoSize = false;
-  SitesIncrementalSearchLabel->Left = SessionTree->Left;
-  SitesIncrementalSearchLabel->Width = SessionTree->Width;
-  SitesIncrementalSearchLabel->Top = SessionTree->BoundsRect.Bottom - SitesIncrementalSearchLabel->Height;
-  SitesIncrementalSearchLabel->Visible = false;
+  SitesIncrementalSearchPanel->Left = SessionTree->Left;
+  SitesIncrementalSearchPanel->Width = SessionTree->Width;
+  SitesIncrementalSearchPanel->Height =
+    (2 * SitesIncrementalSearchLabel->Top) + SitesIncrementalSearchLabel->Height - ScaleByTextHeight(SitesIncrementalSearchPanel, 2);
+  SitesIncrementalSearchPanel->Top = SessionTree->BoundsRect.Bottom - SitesIncrementalSearchPanel->Height;
+  SitesIncrementalSearchPanel->Visible = false;
 
   ReadOnlyControl(TransferProtocolView);
   ReadOnlyControl(EncryptionView);
@@ -728,17 +729,17 @@ void __fastcall TLoginDialog::UpdateControls()
     EnableControl(S3ProfileCombo, S3CredentialsEnv);
 
     // sites
-    if (SitesIncrementalSearchLabel->Visible != FIncrementalSearchState.Searching)
+    if (SitesIncrementalSearchPanel->Visible != FIncrementalSearchState.Searching)
     {
       if (!FIncrementalSearchState.Searching)
       {
-        SitesIncrementalSearchLabel->Visible = false;
-        SessionTree->Height = SitesIncrementalSearchLabel->BoundsRect.Bottom - SessionTree->Top;
+        SitesIncrementalSearchPanel->Visible = false;
+        SessionTree->Height = SitesIncrementalSearchPanel->BoundsRect.Bottom - SessionTree->Top;
       }
       else
       {
-        SitesIncrementalSearchLabel->Visible = true;
-        SessionTree->Height = SitesIncrementalSearchLabel->BoundsRect.Top - SessionTree->Top;
+        SitesIncrementalSearchPanel->Visible = true;
+        SessionTree->Height = SitesIncrementalSearchPanel->BoundsRect.Top - SessionTree->Top + 1;
       }
     }
 
@@ -3332,19 +3333,31 @@ void __fastcall TLoginDialog::CopyParamRuleActionExecute(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
+void TLoginDialog::SetSiteSearch(TIncrementalSearch SiteSearch)
+{
+  if (FSiteSearch != SiteSearch)
+  {
+    FSiteSearch = SiteSearch;
+    if (!SitesIncrementalSearch(FIncrementalSearchState.Text, false, false, false))
+    {
+      ResetSitesIncrementalSearch();
+    }
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SearchSiteNameStartOnlyActionExecute(TObject * /*Sender*/)
 {
-  FSiteSearch = isNameStartOnly;
+  SetSiteSearch(isNameStartOnly);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SearchSiteNameActionExecute(TObject * /*Sender*/)
 {
-  FSiteSearch = isName;
+  SetSiteSearch(isName);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SearchSiteActionExecute(TObject * /*Sender*/)
 {
-  FSiteSearch = isAll;
+  SetSiteSearch(isAll);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::ChangeScale(int M, int D)
@@ -3393,5 +3406,10 @@ void __fastcall TLoginDialog::SearchSiteStartActionExecute(TObject *)
     DebugAssert(FIncrementalSearchState.Text.IsEmpty());
     UpdateControls();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::SitesIncrementalSearchPanelContextPopup(TObject * Sender, TPoint & MousePos, bool & Handled)
+{
+  MenuPopup(Sender, MousePos, Handled);
 }
 //---------------------------------------------------------------------------

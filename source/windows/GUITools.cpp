@@ -1300,7 +1300,7 @@ void TIncrementalSearchState::Reset()
 UnicodeString FormatIncrementalSearchStatus(const TIncrementalSearchState & SearchState)
 {
   UnicodeString Result =
-    L" " + FMTLOAD(INC_SEARCH, (DefaultStr(SearchState.Text, LoadStr(INC_SEARCH_TYPE)))) +
+    FMTLOAD(INC_SEARCH, (DefaultStr(SearchState.Text, LoadStr(INC_SEARCH_TYPE)))) +
     ((SearchState.HaveNext && DebugAlwaysTrue(!SearchState.Text.IsEmpty())) ? L" " + LoadStr(INC_NEXT_SEARCH) : EmptyStr);
   return Result;
 }

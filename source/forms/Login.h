@@ -68,7 +68,6 @@ __published:
   TMenuItem *N3;
   TMenuItem *ImportConfiguration1;
   TMenuItem *ExportConfiguration1;
-  TStaticText *SitesIncrementalSearchLabel;
   TAction *PreferencesAction;
   TMenuItem *N4;
   TMenuItem *Preferences1;
@@ -218,6 +217,13 @@ __published:
   TCheckBox *S3CredentialsEnvCheck3;
   TMenuItem *OpeninPuTTY4;
   TComboBox *S3ProfileCombo;
+  TPanel *SitesIncrementalSearchPanel;
+  TStaticText *SitesIncrementalSearchBorderLabel;
+  TStaticText *SitesIncrementalSearchLabel;
+  TPopupMenu *SitesIncrementalSearchPopupMenu;
+  TMenuItem *MenuItem36;
+  TMenuItem *MenuItem37;
+  TMenuItem *MenuItem38;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionTreeDblClick(TObject *Sender);
@@ -300,6 +306,7 @@ __published:
   void __fastcall S3ProfileComboChange(TObject *Sender);
   void __fastcall ShowAgainCheckClick(TObject *Sender);
   void __fastcall SearchSiteStartActionExecute(TObject *Sender);
+  void __fastcall SitesIncrementalSearchPanelContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
 
 private:
   int NoUpdate;
@@ -439,6 +446,7 @@ protected:
   void __fastcall EditSession();
   void __fastcall Login();
   DYNAMIC void __fastcall ChangeScale(int M, int D);
+  void SetSiteSearch(TIncrementalSearch SiteSearch);
   __property TSessionData * SelectedSession  = { read=GetSelectedSession };
 
   INTERFACE_HOOK;
