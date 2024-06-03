@@ -1916,7 +1916,7 @@ var
 
     // Optimization. Avoid iterating possibly thousands of nodes,
     // when the node we are looking for is the selected node or its ancestor.
-    // This is often the case, when navigating under node that has lot of sibligs.
+    // This is often the case, when navigating under node that has lot of siblings.
     // Typically, when navigating in user's profile folder, and there are many [thousands] other user profile folders.
     if (SelectionHierarchyHeight > 0) and
        // Change of selection might indicate that the tree was rebuilt meanwhile and
