@@ -1929,6 +1929,9 @@ var
     end
       else
     begin
+      // Paths have diverted
+      SelectionHierarchyHeight := 0;
+
       Node := ParentNode.GetFirstChild;
       if (not Assigned(Node)) and (not ExistingOnly) then
       begin
@@ -2077,7 +2080,9 @@ begin {FindNodeToPath}
           Node := Node.Parent;
         end;
         Assert(Selected = SelectionHierarchy[SelectionHierarchyHeight - 1]);
-        Assert(RootNode = SelectionHierarchy[0]);
+        // Different drive - nothing to optimize
+        if RootNode <> SelectionHierarchy[0] then
+          SelectionHierarchyHeight := 0;
       end;
       Result := SearchSubDirs(RootNode, UpperCase(Path), 1);
     end
