@@ -800,9 +800,14 @@ int __fastcall TWebDAVFileSystem::ReadDirectoryInternal(
   return Result;
 }
 //---------------------------------------------------------------------------
+bool TWebDAVFileSystem::IsRedirect(int NeonStatus)
+{
+  return (NeonStatus == NE_REDIRECT);
+}
+//---------------------------------------------------------------------------
 bool __fastcall TWebDAVFileSystem::IsValidRedirect(int NeonStatus, UnicodeString & Path)
 {
-  bool Result = (NeonStatus == NE_REDIRECT);
+  bool Result = IsRedirect(NeonStatus);
   if (Result)
   {
     // What PathToNeon does
@@ -813,7 +818,6 @@ bool __fastcall TWebDAVFileSystem::IsValidRedirect(int NeonStatus, UnicodeString
     UnicodeString RedirectUrl = GetRedirectUrl();
     // We should test if the redirect is not for another server,
     // though not sure how to do this reliably (domain aliases, IP vs. domain, etc.)
-    // If this ever gets implemented, beware of use from Sink(), where we support redirects to another server.
     UnicodeString RedirectPath = ParsePathFromUrl(RedirectUrl);
     Result =
       !RedirectPath.IsEmpty() &&
@@ -1766,8 +1770,8 @@ void __fastcall TWebDAVFileSystem::Sink(
 
       ClearNeonError();
       int NeonStatus = ne_get(FSessionContext->NeonSession, PathToNeon(FileName), FD);
-      UnicodeString DiscardPath = FileName;
-      if (IsValidRedirect(NeonStatus, DiscardPath))
+      // Contrary to other actions, for "GET" we support any redirect
+      if (IsRedirect(NeonStatus))
       {
         UnicodeString CorrectedUrl = GetRedirectUrl();
         UTF8String CorrectedFileName, Query;
