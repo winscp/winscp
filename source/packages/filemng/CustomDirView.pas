@@ -147,8 +147,8 @@ type
     FNotifyEnabled: Boolean;
     FDragStartTime: TFileTime;
     FHistoryPaths: TStrings;
-    FImageList16: TImageList;
-    FImageList32: TImageList;
+    FOverlaySmallImages: TImageList;
+    FOverlayLargeImages: TImageList;
     FMaxHistoryCount: Integer;
     FPathLabel: TCustomPathLabel;
     FOnUpdateStatusBar: TDirViewUpdateStatusBarEvent;
@@ -335,14 +335,13 @@ type
     procedure DoExecute(Item: TListItem; ForceEnter: Boolean);
     procedure DoExecuteParentDirectory;
     procedure Load(DoFocusSomething: Boolean); virtual;
+    function NeedImageList(Size: TImageListSize; Recreate: Boolean; var OverlayImages: TImageList): TImageList;
     procedure NeedImageLists(Recreate: Boolean);
     procedure FreeImageLists;
     procedure UpdateDarkMode;
     procedure DoUpdateStatusBar(Force: Boolean = False);
     procedure DoCustomDrawItem(Item: TListItem; Stage: TCustomDrawStage);
     procedure ItemCalculatedSizeUpdated(Item: TListItem; OldSize, NewSize: Int64);
-    property ImageList16: TImageList read FImageList16;
-    property ImageList32: TImageList read FImageList32;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -962,7 +961,7 @@ procedure TCustomDirView.CNNotify(var Message: TWMNotify);
 
   procedure DrawOverlayImage(DC: HDC; Image: Integer);
   var
-    ImageList: TCustomImageList;
+    OverlayImages: TCustomImageList;
     Rect: TRect;
     Point: TPoint;
     Index: Integer;
@@ -971,16 +970,16 @@ procedure TCustomDirView.CNNotify(var Message: TWMNotify);
     Point := Rect.TopLeft;
     if ViewStyle = vsIcon then
     begin
-      ImageList := ImageList32;
+      OverlayImages := FOverlayLargeImages;
     end
       else
     begin
-      ImageList := ImageList16;
+      OverlayImages := FOverlaySmallImages;
     end;
 
     // center on the rect
-    Inc(Point.X, (Rect.Width - ImageList.Width) div 2);
-    Inc(Point.Y, (Rect.Height - ImageList.Height) div 2);
+    Inc(Point.X, (Rect.Width - OverlayImages.Width) div 2);
+    Inc(Point.Y, (Rect.Height - OverlayImages.Height) div 2);
 
     Index := 0;
     while Image > 1 do
@@ -989,10 +988,9 @@ procedure TCustomDirView.CNNotify(var Message: TWMNotify);
       Image := Image shr 1;
     end;
 
-    if 8 + ImageList.Width <= Columns[0].Width then
+    if 8 + OverlayImages.Width <= Columns[0].Width then
     begin
-      ImageList_Draw(ImageList.Handle, Index, DC,
-        Point.X, Point.Y, ILD_TRANSPARENT);
+      ImageList_Draw(OverlayImages.Handle, Index, DC, Point.X, Point.Y, ILD_TRANSPARENT);
     end;
   end;
 
@@ -1173,22 +1171,21 @@ begin
   if Assigned(FDragDropFilesEx) then FDragDropFilesEx.TargetPopupMenu := Value;
 end;
 
+function TCustomDirView.NeedImageList(Size: TImageListSize; Recreate: Boolean; var OverlayImages: TImageList): TImageList;
+begin
+  Result := ShellImageListForControl(Self, Size);
+
+  if (not Assigned(OverlayImages)) or Recreate then
+  begin
+    FreeAndNil(OverlayImages);
+    OverlayImages := OverlayImageList(Result.Width);
+  end;
+end;
+
 procedure TCustomDirView.NeedImageLists(Recreate: Boolean);
 begin
-  SmallImages := ShellImageListForControl(Self, ilsSmall);
-  LargeImages := ShellImageListForControl(Self, ilsLarge);
-
-  if (not Assigned(FImageList16)) or Recreate then
-  begin
-    FreeAndNil(FImageList16);
-    FImageList16 := OverlayImageList(SmallImages.Width);
-  end;
-
-  if (not Assigned(FImageList32)) or Recreate then
-  begin
-    FreeAndNil(FImageList32);
-    FImageList32 := OverlayImageList(LargeImages.Width);
-  end;
+  SmallImages := NeedImageList(ilsSmall, Recreate, FOverlaySmallImages);
+  LargeImages := NeedImageList(ilsLarge, Recreate, FOverlayLargeImages);
 end;
 
 procedure TCustomDirView.CMDPIChanged(var Message: TMessage);
@@ -1220,8 +1217,8 @@ end;
 
 procedure TCustomDirView.FreeImageLists;
 begin
-  FreeAndNil(FImageList16);
-  FreeAndNil(FImageList32);
+  FreeAndNil(FOverlaySmallImages);
+  FreeAndNil(FOverlayLargeImages);
 
   SmallImages := nil;
   LargeImages := nil;
