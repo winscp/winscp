@@ -219,7 +219,6 @@ type
     procedure SortItems; override;
     procedure StartFileDeleteThread;
     procedure WMDestroy(var Msg: TWMDestroy); message WM_DESTROY;
-    procedure CMRecreateWnd(var Message: TMessage); message CM_RECREATEWND;
     procedure Load(DoFocusSomething: Boolean); override;
     procedure DoFetchIcon(
       FilePath: string; IsSpecialExt: Boolean; CanTimeout: Boolean; FileRec: PFileRec; var ImageIndex: Integer; var TypeName: string);
@@ -822,15 +821,6 @@ begin
   TerminateThreads;
   inherited;
 end; {WMDestroy}
-
-procedure TDirView.CMRecreateWnd(var Message: TMessage);
-begin
-  // see comment in TDirView.StopIconUpdateThread
-  if not (csRecreating in ControlState) then
-  begin
-    inherited;
-  end;
-end;
 
 procedure TDirView.TerminateThreads;
 begin
