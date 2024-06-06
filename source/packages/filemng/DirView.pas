@@ -98,7 +98,6 @@ type
     FOwner: TDirView;
     FIndex: Integer;
     FMaxIndex: Integer;
-    FNewIcons: Boolean;
     FSyncIcon: Integer;
     FCurrentIndex: Integer;
     FCurrentFilePath: string;
@@ -618,7 +617,6 @@ begin
   inherited Create(True);
   FOwner := Owner;
   FIndex := 0;
-  FNewIcons := False;
   if (FOwner.ViewStyle = vsReport) or (FOwner.ViewStyle = vsList) then
     FMaxIndex := FOwner.VisibleRowCount
       else FMaxIndex := 0;
@@ -631,7 +629,6 @@ var
 begin
   if Value <> MaxIndex then
   begin
-    FNewIcons := True;
     if Value < FMaxIndex then
     begin
       if Suspended then FIndex := Value
@@ -656,7 +653,6 @@ begin
   begin
     PageSize := FOwner.VisibleRowCount;
     FIndex := Value;
-    FNewIcons := True;
     if FOwner.ViewStyle = vsList then FMaxIndex := Value + 2 * PageSize
       else FMaxIndex := Value + PageSize;
   end;
@@ -671,8 +667,6 @@ begin
   CoInitialize(nil); // needed for SHGetFileInfo
   if Assigned(FOwner.TopItem) then FIndex := FOwner.TopItem.Index
     else FIndex := 0;
-
-  FNewIcons := (FIndex > 0);
 
   while not Terminated do
   begin
@@ -698,8 +692,6 @@ begin
         FreePIDL(FCurrentItemData.PIDL);
         Break;
       end;
-      if FSyncIcon <> FCurrentItemData.ImageIndex then
-        FNewIcons := True;
       if not Terminated then
       begin
         Synchronize(DoUpdateIcon);
@@ -751,7 +743,6 @@ begin
         LVI.iImage := I_IMAGECALLBACK;
         if not Terminated then
           ListView_SetItem(FOwner.Handle, LVI);
-        FNewIcons := True;
       end;
       PFileRec(Data)^.IconEmpty := False;
     end;
