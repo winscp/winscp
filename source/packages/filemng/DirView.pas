@@ -116,9 +116,6 @@ type
 
     property Index: Integer read FIndex write SetIndex;
     property MaxIndex: Integer read FMaxIndex write SetMaxIndex;
-
-  public
-    procedure Terminate; override;
   end;
 
   { TDirView }
@@ -130,7 +127,6 @@ type
     FChangeTimer: TTimer;
     FChangeInterval: Cardinal;
     FUseIconUpdateThread: Boolean;
-    FIUThreadFinished: Boolean;
     FDriveType: Integer;
     FParentFolder: IShellFolder;
     FDesktopFolder: IShellFolder;
@@ -627,7 +623,6 @@ begin
   if (FOwner.ViewStyle = vsReport) or (FOwner.ViewStyle = vsList) then
     FMaxIndex := FOwner.VisibleRowCount
       else FMaxIndex := 0;
-  FOwner.FIUThreadFinished := False;
 end; {TIconUpdateThread.Create}
 
 procedure TIconUpdateThread.SetMaxIndex(Value: Integer);
@@ -762,12 +757,6 @@ begin
       PFileRec(Data)^.IconEmpty := False;
     end;
 end; {TIconUpdateThread.DoUpdateIcon}
-
-procedure TIconUpdateThread.Terminate;
-begin
-  FOwner.FIUThreadFinished := True;
-  inherited;
-end; {TIconUpdateThread.Terminate}
 
 { TDirView }
 
