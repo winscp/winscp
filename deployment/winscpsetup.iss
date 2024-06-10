@@ -774,11 +774,53 @@ begin
   end;
 end;
 
+function MsiEnumRelatedProducts(
+  lpUpgradeCode: string; dwReserved, iProductIndex: DWORD; lpProductBuf: string): UINT;
+  external 'MsiEnumRelatedProductsW@msi.dll stdcall delayload setuponly';
+
+function MsiGetProductInfo(szProduct, szAttribute, lpValueBuf: string; var pcchValueBuf: DWORD): UINT;
+  external 'MsiGetProductInfoW@msi.dll stdcall delayload setuponly';
+
+const
+  ERROR_SUCCESS = 0;
+  ERROR_MORE_DATA = 234;
+  ERROR_NO_MORE_ITEMS = 259;
+
+function GetProductInfo(ProductCode, Attribute: string): string;
+var
+  BufSize: DWORD;
+  ErrorCode: Integer;
+begin
+  BufSize := 256;
+  SetLength(Result, BufSize);
+  ErrorCode := MsiGetProductInfo(ProductCode, Attribute, Result, BufSize);
+  if ErrorCode = ERROR_MORE_DATA then
+  begin
+    Inc(BufSize);
+    SetLength(Result, BufSize);
+    ErrorCode := MsiGetProductInfo(ProductCode, Attribute, Result, BufSize);
+  end;
+
+  if ErrorCode <> ERROR_SUCCESS then
+  begin
+    Log(Format('Error %d reading MSI installation %s: %s', [ErrorCode, Attribute, SysErrorMessage(ErrorCode)]));
+    Result := '';
+  end
+    else
+  begin
+    SetLength(Result, BufSize);
+    Log(Format('MSI installation %s: %s [%d]', [Attribute, Result, Integer(BufSize)]));
+  end;
+end;
+
 function InitializeSetup: Boolean;
 var
   WaitInterval: Integer;
   Wait: Integer;
+  ProductCode, VersionString: string;
+  ErrorCode: Integer;
 begin
+  Log('Initializing...');
   AutomaticUpdate := CmdLineParamExists('/AutomaticUpdate');
   if AutomaticUpdate then
   begin
@@ -791,10 +833,11 @@ begin
     Wait := 0;
   end;
 
+  Log('Checking for mutexes...');
   WaitInterval := 250;
   while (Wait > 0) and CheckForMutexes('{#AppMutex}') do
   begin
-    Log('Application is still running, waiting');
+    Log('Application is still running, waiting...');
     Sleep(WaitInterval);
     Wait := Wait - WaitInterval;
   end;
@@ -809,14 +852,53 @@ begin
     end;
   end;
 
-  if IsMsiProductInstalled('{029F9450-CFEF-4408-A2BB-B69ECE29EB18}', 0) and
-     (not CmdLineParamExists('/OverrideMsi')) then
-  begin
-    MsgBox(CustomMessage('MsiInstallation'), mbError, MB_OK);
-    Abort;
-  end;
-
   Result := True;
+
+  if CmdLineParamExists('/OverrideMsi') then
+  begin
+    Log('Skipping MSI installation check');
+  end
+    else
+  begin
+    Log('Checking MSI installation...');
+    try
+      SetLength(ProductCode, 38);
+      ErrorCode := MsiEnumRelatedProducts('{029F9450-CFEF-4408-A2BB-B69ECE29EB18}', 0, 0, ProductCode);
+      if ErrorCode <> ERROR_SUCCESS then
+      begin
+        if ErrorCode = ERROR_NO_MORE_ITEMS then
+        begin
+          Log('MSI installation not detected');
+        end
+          else
+        begin
+          Log(Format('Error %d detecting MSI installation: %s', [ErrorCode, SysErrorMessage(ErrorCode)]));
+        end;
+      end
+        else
+      begin
+        Log('Product code: "' + ProductCode + '"');
+        GetProductInfo(ProductCode, 'InstalledProductName');
+        GetProductInfo(ProductCode, 'InstallDate');
+        GetProductInfo(ProductCode, 'InstallLocation');
+        GetProductInfo(ProductCode, 'Publisher');
+        VersionString := GetProductInfo(ProductCode, 'VersionString');
+        GetProductInfo(ProductCode, 'VersionMajor');
+        GetProductInfo(ProductCode, 'VersionMinor');
+        if VersionString = '' then
+        begin
+          Log('Corrupted MSI installation, proceeding...');
+        end
+          else
+        begin
+          MsgBox(CustomMessage('MsiInstallation'), mbError, MB_OK);
+          Result := False;
+        end;
+      end;
+    except
+      Log('Error checking MSI installations: ' + GetExceptionMessage);
+    end;
+  end;
 end;
 
 // Keep in sync with similar function on Preferences dialog
