@@ -57,10 +57,7 @@ const
 
 type
   {Exceptions:}
-  EIUThread = class(Exception);
   EDragDrop = class(Exception);
-  EInvalidFileName = class(Exception);
-  ERenameFileFailed = class(Exception);
 
   TClipboardOperation = (cboNone, cboCut, cboCopy);
 
