@@ -1431,6 +1431,7 @@ begin
         begin
           R := ItemFocused.DisplayRect(drBounds);
           // btw, we use vsReport only, nothing else was tested
+          // (We can use ListView_IsItemVisible here)
           Assert(ViewStyle = vsReport);
           case ViewStyle of
             vsReport:
