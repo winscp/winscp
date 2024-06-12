@@ -2357,7 +2357,6 @@ begin
       Mask := Mask or LVIF_DI_SETITEM;
     end;
   end; {With PFileRec Do}
-  {Mask := Mask Or LVIF_DI_SETITEM; {<== causes flickering display and icons not to be updated on renaming the item}
 end;
 
 function TDirView.ItemColor(Item: TListItem): TColor;
