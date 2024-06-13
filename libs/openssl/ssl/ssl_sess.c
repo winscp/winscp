@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright 2005 Nokia. All rights reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -127,16 +127,11 @@ SSL_SESSION *SSL_SESSION_new(void)
     return ss;
 }
 
-SSL_SESSION *SSL_SESSION_dup(const SSL_SESSION *src)
-{
-    return ssl_session_dup(src, 1);
-}
-
 /*
  * Create a new SSL_SESSION and duplicate the contents of |src| into it. If
  * ticket == 0 then no ticket information is duplicated, otherwise it is.
  */
-SSL_SESSION *ssl_session_dup(const SSL_SESSION *src, int ticket)
+static SSL_SESSION *ssl_session_dup_intern(const SSL_SESSION *src, int ticket)
 {
     SSL_SESSION *dest;
 
@@ -263,6 +258,27 @@ SSL_SESSION *ssl_session_dup(const SSL_SESSION *src, int ticket)
  err:
     SSL_SESSION_free(dest);
     return NULL;
+}
+
+SSL_SESSION *SSL_SESSION_dup(const SSL_SESSION *src)
+{
+    return ssl_session_dup_intern(src, 1);
+}
+
+/*
+ * Used internally when duplicating a session which might be already shared.
+ * We will have resumed the original session. Subsequently we might have marked
+ * it as non-resumable (e.g. in another thread) - but this copy should be ok to
+ * resume from.
+ */
+SSL_SESSION *ssl_session_dup(const SSL_SESSION *src, int ticket)
+{
+    SSL_SESSION *sess = ssl_session_dup_intern(src, ticket);
+
+    if (sess != NULL)
+        sess->not_resumable = 0;
+
+    return sess;
 }
 
 const unsigned char *SSL_SESSION_get_id(const SSL_SESSION *s, unsigned int *len)
@@ -503,6 +519,12 @@ SSL_SESSION *lookup_sess_in_cache(SSL_CONNECTION *s,
                                              sess_id, sess_id_len, &copy);
 
         if (ret != NULL) {
+            if (ret->not_resumable) {
+                /* If its not resumable then ignore this session */
+                if (!copy)
+                    SSL_SESSION_free(ret);
+                return NULL;
+            }
             ssl_tsan_counter(s->session_ctx,
                              &s->session_ctx->stats.sess_cb_hit);
 
@@ -885,8 +907,9 @@ int SSL_SESSION_set1_id(SSL_SESSION *s, const unsigned char *sid,
       return 0;
     }
     s->session_id_length = sid_len;
-    if (sid != s->session_id)
+    if (sid != s->session_id && sid_len > 0)
         memcpy(s->session_id, sid, sid_len);
+
     return 1;
 }
 

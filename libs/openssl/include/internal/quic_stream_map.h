@@ -1,5 +1,5 @@
 /*
-* Copyright 2022-2023 The OpenSSL Project Authors. All Rights Reserved.
+* Copyright 2022-2024 The OpenSSL Project Authors. All Rights Reserved.
 *
 * Licensed under the Apache License 2.0 (the "License").  You may not use
 * this file except in compliance with the License.  You can obtain a copy
@@ -500,6 +500,41 @@ static ossl_inline ossl_unused int ossl_quic_stream_recv_get_final_size(const QU
             return 0;
 
         return 1;
+    }
+}
+
+/*
+ * Determines the number of bytes available still to be read, and (if
+ * include_fin is 1) whether a FIN or reset has yet to be read.
+ */
+static ossl_inline ossl_unused int ossl_quic_stream_recv_pending(const QUIC_STREAM *s,
+                                                                 int include_fin)
+{
+    size_t avail;
+    int fin = 0;
+
+    switch (s->recv_state) {
+    default:
+    case QUIC_RSTREAM_STATE_NONE:
+        return 0;
+
+    case QUIC_RSTREAM_STATE_RECV:
+    case QUIC_RSTREAM_STATE_SIZE_KNOWN:
+    case QUIC_RSTREAM_STATE_DATA_RECVD:
+        if (!ossl_quic_rstream_available(s->rstream, &avail, &fin))
+            avail = 0;
+
+        if (avail == 0 && include_fin && fin)
+            avail = 1;
+
+        return avail;
+
+    case QUIC_RSTREAM_STATE_RESET_RECVD:
+        return include_fin;
+
+    case QUIC_RSTREAM_STATE_DATA_READ:
+    case QUIC_RSTREAM_STATE_RESET_READ:
+        return 0;
     }
 }
 
