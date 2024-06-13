@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -1978,14 +1978,17 @@ int ssl_version_supported(const SSL_CONNECTION *s, int version,
     for (vent = table;
          vent->version != 0 && version_cmp(s, version, vent->version) <= 0;
          ++vent) {
-        if (vent->cmeth != NULL
+        const SSL_METHOD *(*thismeth)(void) = s->server ? vent->smeth
+                                                        : vent->cmeth;
+
+        if (thismeth != NULL
                 && version_cmp(s, version, vent->version) == 0
-                && ssl_method_error(s, vent->cmeth()) == 0
+                && ssl_method_error(s, thismeth()) == 0
                 && (!s->server
                     || version != TLS1_3_VERSION
                     || is_tls13_capable(s))) {
             if (meth != NULL)
-                *meth = vent->cmeth();
+                *meth = thismeth();
             return 1;
         }
     }
