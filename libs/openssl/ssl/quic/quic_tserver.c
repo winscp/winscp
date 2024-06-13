@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2022-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -158,11 +158,11 @@ void ossl_quic_tserver_free(QUIC_TSERVER *srv)
     if (srv == NULL)
         return;
 
+    SSL_free(srv->tls);
     ossl_quic_channel_free(srv->ch);
     BIO_free_all(srv->args.net_rbio);
     BIO_free_all(srv->args.net_wbio);
     OPENSSL_free(srv->ssl);
-    SSL_free(srv->tls);
     SSL_CTX_free(srv->ctx);
 #if defined(OPENSSL_THREADS)
     ossl_crypto_mutex_free(&srv->mutex);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2015-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -2859,7 +2859,9 @@ static int kdf_test_ctrl(EVP_TEST *t, EVP_KDF_CTX *kctx,
     if (!TEST_ptr(name = OPENSSL_strdup(value)))
         return 0;
     p = strchr(name, ':');
-    if (p != NULL)
+    if (p == NULL)
+        p = "";
+    else
         *p++ = '\0';
 
     if (strcmp(name, "r") == 0
@@ -2912,30 +2914,29 @@ static int kdf_test_ctrl(EVP_TEST *t, EVP_KDF_CTX *kctx,
     }
 
     rv = OSSL_PARAM_allocate_from_text(kdata->p, defs, name, p,
-                                       p != NULL ? strlen(p) : 0, NULL);
+                                       strlen(p), NULL);
     *++kdata->p = OSSL_PARAM_construct_end();
     if (!rv) {
         t->err = "KDF_PARAM_ERROR";
         OPENSSL_free(name);
         return 0;
     }
-    if (p != NULL && strcmp(name, "digest") == 0) {
+    if (strcmp(name, "digest") == 0) {
         if (is_digest_disabled(p)) {
             TEST_info("skipping, '%s' is disabled", p);
             t->skip = 1;
         }
         goto end;
     }
-    if (p != NULL
-        && (strcmp(name, "cipher") == 0
-            || strcmp(name, "cekalg") == 0)
+
+    if ((strcmp(name, "cipher") == 0
+        || strcmp(name, "cekalg") == 0)
         && is_cipher_disabled(p)) {
         TEST_info("skipping, '%s' is disabled", p);
         t->skip = 1;
         goto end;
     }
-    if (p != NULL
-        && (strcmp(name, "mac") == 0)
+    if ((strcmp(name, "mac") == 0)
         && is_mac_disabled(p)) {
         TEST_info("skipping, '%s' is disabled", p);
         t->skip = 1;

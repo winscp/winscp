@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -80,5 +80,7 @@ SSL_SESSION *create_a_psk(SSL *ssl, size_t mdsize);
 /* Add cert from `cert_file` multiple times to create large extra cert chain */
 int ssl_ctx_add_large_cert_chain(OSSL_LIB_CTX *libctx, SSL_CTX *sctx,
                                  const char *cert_file);
+
+ENGINE *load_dasync(void);
 
 #endif /* OSSL_TEST_SSLTESTLIB_H */

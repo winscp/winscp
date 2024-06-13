@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2022-2024 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright Siemens AG 2022
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -307,9 +307,11 @@ int OSSL_CMP_get1_rootCaKeyUpdate(OSSL_CMP_CTX *ctx,
     if (!OSSL_CMP_ITAV_get0_rootCaKeyUpdate(itav, newWithNew,
                                             &my_newWithOld, &my_oldWithNew))
         goto end;
-
-    if (*newWithNew == NULL) /* no root CA cert update available */
+    /* no root CA cert update available */
+    if (*newWithNew == NULL) {
+        res = 1;
         goto end;
+    }
     if ((oldWithOld_copy = X509_dup(oldWithOld)) == NULL && oldWithOld != NULL)
         goto end;
     if (!verify_ss_cert_trans(ctx, oldWithOld_copy, my_newWithOld,

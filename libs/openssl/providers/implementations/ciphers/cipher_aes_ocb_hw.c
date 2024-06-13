@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -104,7 +104,7 @@ static const PROV_CIPHER_HW aes_t4_ocb = {                                     \
     if (SPARC_AES_CAPABLE)                                                     \
         return &aes_t4_ocb;
 
-#elif defined(__riscv) && __riscv_xlen == 64
+#elif defined(OPENSSL_CPUID_OBJ) && defined(__riscv) && __riscv_xlen == 64
 
 static int cipher_hw_aes_ocb_rv64i_zknd_zkne_initkey(PROV_CIPHER_CTX *vctx,
                                                      const unsigned char *key,
@@ -126,7 +126,7 @@ static const PROV_CIPHER_HW aes_rv64i_zknd_zkne_ocb = {                        \
     if (RISCV_HAS_ZKND_AND_ZKNE())                                             \
         return &aes_rv64i_zknd_zkne_ocb;
 
-#elif defined(__riscv) && __riscv_xlen == 32
+#elif defined(OPENSSL_CPUID_OBJ) && defined(__riscv) && __riscv_xlen == 32
 
 static int cipher_hw_aes_ocb_rv32i_zknd_zkne_initkey(PROV_CIPHER_CTX *vctx,
                                                      const unsigned char *key,

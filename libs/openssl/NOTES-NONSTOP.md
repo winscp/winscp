@@ -37,6 +37,9 @@ for each on the TNS/X (L-Series) platform:
 
 The SPT threading model is no longer supported as of OpenSSL 3.2.
 
+The PUT model is incompatible with the QUIC capability. This capability should
+be disabled when building with PUT.
+
 ### TNS/E Considerations
 
 The TNS/E platform is build using the same set of builds specifying `nse`
@@ -57,7 +60,10 @@ relating to `atexit()` processing when a shared library is unloaded and when
 the program terminates. This limitation applies to all OpenSSL shared library
 components.
 
-A resolution to this situation is under investigation.
+It is possible to configure the build with `no-atexit` to avoid the SIGSEGV.
+Preferably, you can explicitly call `OPENSSL_cleanup()` from your application.
+It is not mandatory as it just deallocates various global data structures
+OpenSSL allocated.
 
 About Prefix and OpenSSLDir
 ---------------------------

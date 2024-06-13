@@ -20,6 +20,23 @@ OpenSSL Releases
 OpenSSL 3.2
 -----------
 
+### Major changes between OpenSSL 3.2.1 and OpenSSL 3.2.2 [4 Jun 2024]
+
+OpenSSL 3.2.2 is a security patch release. The most severe CVE fixed in this
+release is Low.
+
+This release incorporates the following bug fixes and mitigations:
+
+  * Fixed potential use after free after SSL_free_buffers() is called
+    ([CVE-2024-4741])
+
+  * Fixed an issue where checking excessively long DSA keys or parameters may
+    be very slow
+    ([CVE-2024-4603])
+
+  * Fixed unbounded memory growth with session handling in TLSv1.3
+    ([CVE-2024-2511])
+
 ### Major changes between OpenSSL 3.2.0 and OpenSSL 3.2.1 [30 Jan 2024]
 
 OpenSSL 3.2.1 is a security patch release. The most severe CVE fixed in this
@@ -34,9 +51,6 @@ This release incorporates the following bug fixes and mitigations:
   * Fixed POLY1305 MAC implementation corrupting vector registers on PowerPC
     CPUs which support PowerISA 2.07
     ([CVE-2023-6129])
-  * Fixed excessive time spent in DH check / generation with large Q parameter
-    value
-    [(CVE-2023-5678)]
 
 ### Major changes between OpenSSL 3.1 and OpenSSL 3.2.0 [23 Nov 2023]
 
@@ -51,7 +65,7 @@ changes:
   * The `x509`, `ca`, and `req` apps now always produce X.509v3 certificates.
 
   * Subject or issuer names in X.509 objects are now displayed as UTF-8 strings
-    by default.
+    by default. Also spaces surrounding `=` in DN output are removed.
 
 This release adds the following new features:
 
@@ -111,6 +125,12 @@ This release incorporates the following documentation enhancements:
     on writing various clients (using TLS and QUIC protocols) with libssl
 
     See [OpenSSL Guide].
+
+This release incorporates the following bug fixes and mitigations:
+
+  * Fixed excessive time spent in DH check / generation with large Q parameter
+    value
+    ([CVE-2023-5678])
 
 A more detailed list of changes in this release can be found in the
 [CHANGES.md] file.
@@ -1580,6 +1600,9 @@ OpenSSL 0.9.x
 
 <!-- Links -->
 
+[CVE-2024-4741]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-4741
+[CVE-2024-4603]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-4603
+[CVE-2024-2511]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-2511
 [CVE-2024-0727]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-0727
 [CVE-2023-6237]: https://www.openssl.org/news/vulnerabilities.html#CVE-2023-6237
 [CVE-2023-6129]: https://www.openssl.org/news/vulnerabilities.html#CVE-2023-6129
