@@ -66,6 +66,10 @@
    #undef NO_RECVMSG
    #define NO_RECVMSG
 # endif
+# if defined(__ANDROID_API__) && __ANDROID_API__ < 21
+#  undef NO_RECVMMSG
+#  define NO_RECVMMSG
+# endif
 # if !defined(M_METHOD)
 #  if defined(OPENSSL_SYS_WINDOWS) && defined(BIO_HAVE_WSAMSG) && !defined(NO_WSARECVMSG)
 #   define M_METHOD  M_METHOD_WSARECVMSG
@@ -556,6 +560,8 @@ static long dgram_ctrl(BIO *b, int cmd, long num, void *ptr)
     socklen_t addr_len;
     BIO_ADDR addr;
 # endif
+    struct sockaddr_storage ss;
+    socklen_t ss_len = sizeof(ss);
 
     data = (bio_dgram_data *)b->ptr;
 
@@ -573,6 +579,10 @@ static long dgram_ctrl(BIO *b, int cmd, long num, void *ptr)
         b->shutdown = (int)num;
         b->init = 1;
         dgram_update_local_addr(b);
+        if (getpeername(b->num, (struct sockaddr *)&ss, &ss_len) == 0) {
+            BIO_ADDR_make(&data->peer, BIO_ADDR_sockaddr((BIO_ADDR *)&ss));
+            data->connected = 1;
+        }
 # if defined(SUPPORT_LOCAL_ADDR)
         if (data->local_addr_enabled) {
             if (enable_local_addr(b, 1) < 1)
@@ -1063,19 +1073,27 @@ static void translate_msg_win(BIO *b, WSAMSG *mh, WSABUF *iov,
 static void translate_msg(BIO *b, struct msghdr *mh, struct iovec *iov,
                           unsigned char *control, BIO_MSG *msg)
 {
+    bio_dgram_data *data;
+
     iov->iov_base = msg->data;
     iov->iov_len  = msg->data_len;
 
-    /* macOS requires msg_namelen be 0 if msg_name is NULL */
-    mh->msg_name = msg->peer != NULL ? &msg->peer->sa : NULL;
-    if (msg->peer != NULL && dgram_get_sock_family(b) == AF_INET)
-        mh->msg_namelen = sizeof(struct sockaddr_in);
+    data = (bio_dgram_data *)b->ptr;
+    if (data->connected == 0) {
+        /* macOS requires msg_namelen be 0 if msg_name is NULL */
+        mh->msg_name = msg->peer != NULL ? &msg->peer->sa : NULL;
+        if (msg->peer != NULL && dgram_get_sock_family(b) == AF_INET)
+            mh->msg_namelen = sizeof(struct sockaddr_in);
 #  if OPENSSL_USE_IPV6
-    else if (msg->peer != NULL && dgram_get_sock_family(b) == AF_INET6)
-        mh->msg_namelen = sizeof(struct sockaddr_in6);
+        else if (msg->peer != NULL && dgram_get_sock_family(b) == AF_INET6)
+            mh->msg_namelen = sizeof(struct sockaddr_in6);
 #  endif
-    else
+        else
+            mh->msg_namelen = 0;
+    } else {
+        mh->msg_name = NULL;
         mh->msg_namelen = 0;
+    }
 
     mh->msg_iov         = iov;
     mh->msg_iovlen      = 1;
@@ -1174,7 +1192,7 @@ static int pack_local(BIO *b, MSGHDR_TYPE *mh, const BIO_ADDR *local) {
         cmsg->cmsg_type  = IP_PKTINFO;
 
         info = (struct in_pktinfo *)BIO_CMSG_DATA(cmsg);
-#   if !defined(OPENSSL_SYS_WINDOWS) && !defined(OPENSSL_SYS_CYGWIN)
+#   if !defined(OPENSSL_SYS_WINDOWS) && !defined(OPENSSL_SYS_CYGWIN) && !defined(__FreeBSD__)
         info->ipi_spec_dst      = local->s_in.sin_addr;
 #   endif
         info->ipi_addr.s_addr   = 0;

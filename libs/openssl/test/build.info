@@ -505,7 +505,7 @@ IF[{- !$disabled{tests} -}]
 
   SOURCE[sslapitest]=sslapitest.c helpers/ssltestlib.c filterprov.c tls-provider.c
   INCLUDE[sslapitest]=../include ../apps/include ..
-  DEPEND[sslapitest]=../libcrypto ../libssl libtestutil.a
+  DEPEND[sslapitest]=../libcrypto.a ../libssl.a libtestutil.a
 
   SOURCE[ssl_handshake_rtt_test]=ssl_handshake_rtt_test.c helpers/ssltestlib.c
   INCLUDE[ssl_handshake_rtt_test]=../include ../apps/include ..
@@ -1052,6 +1052,7 @@ IF[{- !$disabled{tests} -}]
   ENDIF
   IF[{- $disabled{module} || !$target{dso_scheme} -}]
     DEFINE[provider_test]=NO_PROVIDER_MODULE
+    DEFINE[prov_config_test]=NO_PROVIDER_MODULE
     DEFINE[provider_internal_test]=NO_PROVIDER_MODULE
   ENDIF
   DEPEND[]=provider_internal_test.cnf

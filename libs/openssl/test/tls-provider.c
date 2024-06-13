@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -385,6 +385,8 @@ static int tls_prov_get_capabilities(void *provctx, const char *capability,
 
     if (strcmp(capability, "TLS-GROUP") == 0) {
         /* Register our 2 groups */
+        OPENSSL_assert(xor_group.group_id >= 65024
+                       && xor_group.group_id < 65279 - NUM_DUMMY_GROUPS);
         ret = cb(xor_group_params, arg);
         ret &= cb(xor_kemgroup_params, arg);
 
@@ -396,6 +398,7 @@ static int tls_prov_get_capabilities(void *provctx, const char *capability,
 
         for (i = 0; i < NUM_DUMMY_GROUPS; i++) {
             OSSL_PARAM dummygroup[OSSL_NELEM(xor_group_params)];
+            unsigned int dummygroup_id;
 
             memcpy(dummygroup, xor_group_params, sizeof(xor_group_params));
 
@@ -410,6 +413,9 @@ static int tls_prov_get_capabilities(void *provctx, const char *capability,
             }
             dummygroup[0].data = dummy_group_names[i];
             dummygroup[0].data_size = strlen(dummy_group_names[i]) + 1;
+            /* assign unique group IDs also to dummy groups for registration */
+            dummygroup_id = 65279 - NUM_DUMMY_GROUPS + i;
+            dummygroup[3].data = (unsigned char*)&dummygroup_id;
             ret &= cb(dummygroup, arg);
         }
     }
@@ -2685,6 +2691,10 @@ static int xor_sig_setup_md(PROV_XORSIG_CTX *ctx,
     OPENSSL_free(ctx->aid);
     ctx->aid = NULL;
     ctx->aid_len = xor_get_aid(&(ctx->aid), ctx->sig->tls_name);
+    if (ctx->aid_len <= 0) {
+        EVP_MD_free(md);
+        return 0;
+    }
 
     ctx->mdctx = NULL;
     ctx->md = md;
@@ -3185,9 +3195,10 @@ unsigned int randomize_tls_alg_id(OSSL_LIB_CTX *libctx)
         return 0;
     /*
      * Ensure id is within the IANA Reserved for private use range
-     * (65024-65279)
+     * (65024-65279).
+     * Carve out NUM_DUMMY_GROUPS ids for properly registering those.
      */
-    id %= 65279 - 65024;
+    id %= 65279 - NUM_DUMMY_GROUPS - 65024;
     id += 65024;
 
     /* Ensure we did not already issue this id */
@@ -3209,12 +3220,12 @@ int tls_provider_init(const OSSL_CORE_HANDLE *handle,
     OSSL_LIB_CTX *libctx = OSSL_LIB_CTX_new_from_dispatch(handle, in);
     OSSL_FUNC_core_obj_create_fn *c_obj_create= NULL;
     OSSL_FUNC_core_obj_add_sigid_fn *c_obj_add_sigid= NULL;
-    PROV_XOR_CTX *prov_ctx = xor_newprovctx(libctx);
+    PROV_XOR_CTX *xor_prov_ctx = xor_newprovctx(libctx);
 
-    if (libctx == NULL || prov_ctx == NULL)
-        return 0;
+    if (libctx == NULL || xor_prov_ctx == NULL)
+        goto err;
 
-    *provctx = prov_ctx;
+    *provctx = xor_prov_ctx;
 
     /*
      * Randomise the group_id and code_points we're going to use to ensure we
@@ -3247,23 +3258,29 @@ int tls_provider_init(const OSSL_CORE_HANDLE *handle,
      */
     if (!c_obj_create(handle, XORSIGALG_OID, XORSIGALG_NAME, XORSIGALG_NAME)) {
         ERR_raise(ERR_LIB_USER, XORPROV_R_OBJ_CREATE_ERR);
-        return 0;
+        goto err;
     }
 
     if (!c_obj_add_sigid(handle, XORSIGALG_OID, "", XORSIGALG_OID)) {
         ERR_raise(ERR_LIB_USER, XORPROV_R_OBJ_CREATE_ERR);
-        return 0;
+        goto err;
     }
     if (!c_obj_create(handle, XORSIGALG_HASH_OID, XORSIGALG_HASH_NAME, NULL)) {
         ERR_raise(ERR_LIB_USER, XORPROV_R_OBJ_CREATE_ERR);
-        return 0;
+        goto err;
     }
 
     if (!c_obj_add_sigid(handle, XORSIGALG_HASH_OID, XORSIGALG_HASH, XORSIGALG_HASH_OID)) {
         ERR_raise(ERR_LIB_USER, XORPROV_R_OBJ_CREATE_ERR);
-        return 0;
+        goto err;
     }
 
     *out = tls_prov_dispatch_table;
     return 1;
+
+err:
+    OPENSSL_free(xor_prov_ctx);
+    *provctx = NULL;
+    OSSL_LIB_CTX_free(libctx);
+    return 0;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2023-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -91,7 +91,7 @@ int ossl_quic_thread_assist_init_start(QUIC_THREAD_ASSIST *qta,
     qta->t = ossl_crypto_thread_native_start(assist_thread_main,
                                              qta, /*joinable=*/1);
     if (qta->t == NULL) {
-        ossl_crypto_condvar_free(qta->cv);
+        ossl_crypto_condvar_free(&qta->cv);
         return 0;
     }
 

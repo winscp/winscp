@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2023-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,10 +64,20 @@ int FuzzerTestOneInput(const uint8_t *buf, size_t len)
         EVP_PKEY_free(pkey2);
 
         ctx = EVP_PKEY_CTX_new(pkey, NULL);
-        EVP_PKEY_param_check(ctx);
+        /*
+         * Param check will take too long time on large DH parameters.
+         * Skip it.
+         */
+        if ((!EVP_PKEY_is_a(pkey, "DH") && !EVP_PKEY_is_a(pkey, "DHX"))
+            || EVP_PKEY_get_bits(pkey) <= 8192)
+            EVP_PKEY_param_check(ctx);
+
         EVP_PKEY_public_check(ctx);
-        EVP_PKEY_private_check(ctx);
-        EVP_PKEY_pairwise_check(ctx);
+        /* Private and pairwise checks are unbounded, skip for large keys. */
+        if (EVP_PKEY_get_bits(pkey) <= 16384) {
+            EVP_PKEY_private_check(ctx);
+            EVP_PKEY_pairwise_check(ctx);
+        }
         OPENSSL_assert(ctx != NULL);
         EVP_PKEY_CTX_free(ctx);
         EVP_PKEY_free(pkey);

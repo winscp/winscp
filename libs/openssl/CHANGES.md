@@ -25,6 +25,77 @@ OpenSSL Releases
 OpenSSL 3.2
 -----------
 
+### Changes between 3.2.1 and 3.2.2 [4 Jun 2024]
+
+ * Fixed potential use after free after SSL_free_buffers() is called.
+
+   The SSL_free_buffers function is used to free the internal OpenSSL
+   buffer used when processing an incoming record from the network.
+   The call is only expected to succeed if the buffer is not currently
+   in use. However, two scenarios have been identified where the buffer
+   is freed even when still in use.
+
+   The first scenario occurs where a record header has been received
+   from the network and processed by OpenSSL, but the full record body
+   has not yet arrived. In this case calling SSL_free_buffers will succeed
+   even though a record has only been partially processed and the buffer
+   is still in use.
+
+   The second scenario occurs where a full record containing application
+   data has been received and processed by OpenSSL but the application has
+   only read part of this data. Again a call to SSL_free_buffers will
+   succeed even though the buffer is still in use.
+
+   ([CVE-2024-4741])
+
+   *Matt Caswell*
+
+ * Fixed an issue where checking excessively long DSA keys or parameters may
+   be very slow.
+
+   Applications that use the functions EVP_PKEY_param_check() or
+   EVP_PKEY_public_check() to check a DSA public key or DSA parameters may
+   experience long delays. Where the key or parameters that are being checked
+   have been obtained from an untrusted source this may lead to a Denial of
+   Service.
+
+   To resolve this issue DSA keys larger than OPENSSL_DSA_MAX_MODULUS_BITS
+   will now fail the check immediately with a DSA_R_MODULUS_TOO_LARGE error
+   reason.
+
+   ([CVE-2024-4603])
+
+   *Tomáš Mráz*
+
+ * Fixed an issue where some non-default TLS server configurations can cause
+   unbounded memory growth when processing TLSv1.3 sessions. An attacker may
+   exploit certain server configurations to trigger unbounded memory growth that
+   would lead to a Denial of Service
+
+   This problem can occur in TLSv1.3 if the non-default SSL_OP_NO_TICKET option
+   is being used (but not if early_data is also configured and the default
+   anti-replay protection is in use). In this case, under certain conditions,
+   the session cache can get into an incorrect state and it will fail to flush
+   properly as it fills. The session cache will continue to grow in an unbounded
+   manner. A malicious client could deliberately create the scenario for this
+   failure to force a Denial of Service. It may also happen by accident in
+   normal operation.
+
+   ([CVE-2024-2511])
+
+   *Matt Caswell*
+
+ * New atexit configuration switch, which controls whether the OPENSSL_cleanup
+   is registered when libcrypto is unloaded. This can be used on platforms
+   where using atexit() from shared libraries causes crashes on exit.
+
+   *Randall S. Becker*
+
+ * Fixed bug where SSL_export_keying_material() could not be used with QUIC
+   connections. (#23560)
+
+   *Hugo Landau*
+
 ### Changes between 3.2.0 and 3.2.1 [30 Jan 2024]
 
  * A file in PKCS12 format can contain certificates and keys and may come from
@@ -95,6 +166,13 @@ OpenSSL 3.2
 
    *Rohan McLure*
 
+ * Disable building QUIC server utility when OpenSSL is configured with
+   `no-apps`.
+
+   *Vitalii Koshura*
+
+### Changes between 3.1 and 3.2.0 [23 Nov 2023]
+
  * Fix excessive time spent in DH check / generation with large Q parameter
    value.
 
@@ -108,13 +186,6 @@ OpenSSL 3.2
    ([CVE-2023-5678])
 
    *Richard Levitte*
-
- * Disable building QUIC server utility when OpenSSL is configured with
-   `no-apps`.
-
-   *Vitalii Koshura*
-
-### Changes between 3.1 and 3.2.0 [23 Nov 2023]
 
  * The BLAKE2b hash algorithm supports a configurable output length
    by setting the "size" parameter.
@@ -434,7 +505,7 @@ OpenSSL 3.2
    *Paul Dale*
 
  * Subject or issuer names in X.509 objects are now displayed as UTF-8 strings
-   by default.
+   by default. Also spaces surrounding `=` in DN output are removed.
 
    *Dmitry Belyavskiy*
 
@@ -20392,6 +20463,9 @@ ndif
 
 <!-- Links -->
 
+[CVE-2024-4741]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-4741
+[CVE-2024-4603]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-4603
+[CVE-2024-2511]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-2511
 [CVE-2024-0727]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-0727
 [CVE-2023-6237]: https://www.openssl.org/news/vulnerabilities.html#CVE-2023-6237
 [CVE-2023-6129]: https://www.openssl.org/news/vulnerabilities.html#CVE-2023-6129

@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Copyright 2020-2023 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2020-2024 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -32,7 +32,7 @@ sub data
 }
 
 __END__
-// Copyright 2021-2023 The OpenSSL Project Authors. All Rights Reserved.
+// Copyright 2021-2024 The OpenSSL Project Authors. All Rights Reserved.
 //
 // Licensed under the OpenSSL license (the "License").  You may not use
 // this file except in compliance with the License.  You can obtain a copy
@@ -1018,6 +1018,7 @@ _bsaes_key_convert:
 //   Initialisation vector overwritten with last quadword of ciphertext
 //   No output registers, usual AAPCS64 register preservation
 ossl_bsaes_cbc_encrypt:
+        AARCH64_VALID_CALL_TARGET
         cmp     x2, #128
         bhs     .Lcbc_do_bsaes
         b       AES_cbc_encrypt
@@ -1270,7 +1271,7 @@ ossl_bsaes_cbc_encrypt:
 //   Output text filled in
 //   No output registers, usual AAPCS64 register preservation
 ossl_bsaes_ctr32_encrypt_blocks:
-
+        AARCH64_VALID_CALL_TARGET
         cmp     x2, #8                      // use plain AES for
         blo     .Lctr_enc_short             // small sizes
 
@@ -1476,6 +1477,7 @@ ossl_bsaes_ctr32_encrypt_blocks:
 //   Output ciphertext filled in
 //   No output registers, usual AAPCS64 register preservation
 ossl_bsaes_xts_encrypt:
+        AARCH64_VALID_CALL_TARGET
         // Stack layout:
         // sp ->
         //        nrounds*128-96 bytes: key schedule
@@ -1921,6 +1923,7 @@ ossl_bsaes_xts_encrypt:
 //   Output plaintext filled in
 //   No output registers, usual AAPCS64 register preservation
 ossl_bsaes_xts_decrypt:
+        AARCH64_VALID_CALL_TARGET
         // Stack layout:
         // sp ->
         //        nrounds*128-96 bytes: key schedule

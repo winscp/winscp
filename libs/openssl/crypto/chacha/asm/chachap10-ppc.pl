@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2016-2022 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2016-2024 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -170,7 +170,9 @@ $code.=<<___;
 .align	5
 .ChaCha20_ctr32_vsx_p10:
 	${UCMP}i $len,255
-	bgt 	ChaCha20_ctr32_vsx_8x
+	ble	.Not_greater_than_8x
+	b	ChaCha20_ctr32_vsx_8x
+.Not_greater_than_8x:
 	$STU	$sp,-$FRAME($sp)
 	mflr	r0
 	li	r10,`15+$LOCALS+64`

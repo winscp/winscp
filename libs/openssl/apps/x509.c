@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -25,6 +25,7 @@
 #ifndef OPENSSL_NO_DSA
 # include <openssl/dsa.h>
 #endif
+#include "internal/e_os.h"    /* For isatty() */
 
 #undef POSTFIX
 #define POSTFIX ".srl"
@@ -701,7 +702,7 @@ int x509_main(int argc, char **argv)
     }
 
     if (reqfile) {
-        if (infile == NULL)
+        if (infile == NULL && isatty(fileno_stdin()))
             BIO_printf(bio_err,
                        "Warning: Reading cert request from stdin since no -in option is given\n");
         req = load_csr_autofmt(infile, informat, vfyopts,
@@ -754,7 +755,7 @@ int x509_main(int argc, char **argv)
             }
         }
     } else {
-        if (infile == NULL)
+        if (infile == NULL && isatty(fileno_stdin()))
             BIO_printf(bio_err,
                        "Warning: Reading certificate from stdin since no -in or -new option is given\n");
         x = load_cert_pass(infile, informat, 1, passin, "certificate");
