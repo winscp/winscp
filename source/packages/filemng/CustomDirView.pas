@@ -959,14 +959,14 @@ end;
 
 procedure TCustomDirView.CNNotify(var Message: TWMNotify);
 
-  procedure DrawOverlayImage(DC: HDC; Image: Integer);
+  procedure DrawOverlayImage(DC: HDC; Image: Integer; Item: TListItem);
   var
     OverlayImages: TCustomImageList;
     Rect: TRect;
     Point: TPoint;
     Index: Integer;
   begin
-    Rect := Items[PNMCustomDraw(Message.NMHdr)^.dwItemSpec].DisplayRect(drIcon);
+    Rect := Item.DisplayRect(drIcon);
     Point := Rect.TopLeft;
     if ViewStyle = vsIcon then
     begin
@@ -1001,6 +1001,7 @@ var
   OverlayIndex: Word;
   OverlayIndexes: Word;
   UpdateStatusBarPending: Boolean;
+  Nmcd: PNMCustomDraw;
 begin
   UpdateStatusBarPending := False;
   case Message.NMHdr^.code of
@@ -1066,30 +1067,32 @@ begin
         end;
   end;
 
-  if (Message.NMHdr.code = NM_CUSTOMDRAW) and
-     Valid and (not Loading) then
-    with PNMLVCustomDraw(Message.NMHdr)^ do
-      try
-        Message.Result := Message.Result or CDRF_NOTIFYPOSTPAINT;
-        if (nmcd.dwDrawStage = CDDS_ITEMPOSTPAINT) and
-           ((nmcd.dwDrawStage and CDDS_SUBITEM) = 0) and
-           Assigned(Columns[0]) and (Columns[0].Width > 0) then
+  if (Message.NMHdr.code = NM_CUSTOMDRAW) and Valid and (not Loading) then
+  begin
+    Nmcd := @PNMLVCustomDraw(Message.NMHdr).nmcd;
+    try
+      Message.Result := Message.Result or CDRF_NOTIFYPOSTPAINT;
+      if (Nmcd.dwDrawStage = CDDS_ITEMPOSTPAINT) and
+         ((Nmcd.dwDrawStage and CDDS_SUBITEM) = 0) and
+         Assigned(Columns[0]) and (Columns[0].Width > 0) then
+      begin
+        Item := Items[Nmcd.dwItemSpec];
+        Assert(Assigned(Item));
+        OverlayIndexes := ItemOverlayIndexes(Item);
+        OverlayIndex := 1;
+        while OverlayIndexes > 0 do
         begin
-          Assert(Assigned(Items[nmcd.dwItemSpec]));
-          OverlayIndexes := ItemOverlayIndexes(Items[nmcd.dwItemSpec]);
-          OverlayIndex := 1;
-          while OverlayIndexes > 0 do
+          if (OverlayIndex and OverlayIndexes) <> 0 then
           begin
-            if (OverlayIndex and OverlayIndexes) <> 0 then
-            begin
-              DrawOverlayImage(nmcd.hdc, OverlayIndex);
-              Dec(OverlayIndexes, OverlayIndex);
-            end;
-            OverlayIndex := OverlayIndex shl 1;
+            DrawOverlayImage(Nmcd.hdc, OverlayIndex, Item);
+            Dec(OverlayIndexes, OverlayIndex);
           end;
+          OverlayIndex := OverlayIndex shl 1;
         end;
-      except
       end;
+    except
+    end;
+  end;
 
   if UpdateStatusBarPending then DoUpdateStatusBar;
 end;
