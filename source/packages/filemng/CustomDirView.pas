@@ -988,7 +988,8 @@ procedure TCustomDirView.CNNotify(var Message: TWMNotify);
       Image := Image shr 1;
     end;
 
-    if 8 + OverlayImages.Width <= Columns[0].Width then
+    if (ViewStyle <> vsReport) or
+       (8 + OverlayImages.Width <= Columns[0].Width) then
     begin
       ImageList_Draw(OverlayImages.Handle, Index, DC, Point.X, Point.Y, ILD_TRANSPARENT);
     end;
@@ -1073,8 +1074,7 @@ begin
     try
       Message.Result := Message.Result or CDRF_NOTIFYPOSTPAINT;
       if (Nmcd.dwDrawStage = CDDS_ITEMPOSTPAINT) and
-         ((Nmcd.dwDrawStage and CDDS_SUBITEM) = 0) and
-         Assigned(Columns[0]) and (Columns[0].Width > 0) then
+         ((Nmcd.dwDrawStage and CDDS_SUBITEM) = 0) then
       begin
         Item := Items[Nmcd.dwItemSpec];
         Assert(Assigned(Item));
