@@ -1191,6 +1191,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         DoubleBuffered = True
         FullDrag = True
         HideSelection = False
+        IconOptions.AutoArrange = True
         ParentDoubleBuffered = False
         PopupMenu = NonVisualDataModule.RemoteDirViewPopup
         TabOrder = 1
@@ -1595,6 +1596,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       DoubleBuffered = True
       FullDrag = True
       HideSelection = False
+      IconOptions.AutoArrange = True
       ParentDoubleBuffered = False
       PopupMenu = NonVisualDataModule.LocalDirViewPopup
       TabOrder = 1
