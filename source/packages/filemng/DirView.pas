@@ -103,6 +103,11 @@ type
     procedure Execute; override;
   end;
 
+  // WORKAROUND: TQueue<Integer>.Create fails when TDirView is created in IDE, while TQueue<TIconUpdateSchedule>.Create works
+  TIconUpdateSchedule = record
+    Index: Integer;
+  end;
+
   { TDirView }
   TDirView = class(TCustomDirView)
   private
@@ -128,8 +133,8 @@ type
     FIconUpdateThread: TIconUpdateThread;
     // only ever accessed by GUI thread
     FIconUpdateSet: TDictionary<Integer, Boolean>;
-    FIconUpdateQueue: TQueue<Integer>;
-    FIconUpdateQueueDeferred: TQueue<Integer>;
+    FIconUpdateQueue: TQueue<TIconUpdateSchedule>;
+    FIconUpdateQueueDeferred: TQueue<TIconUpdateSchedule>;
     FDiscMonitor: TDiscMonitor;
     FHomeDirectory: string;
 
@@ -691,8 +696,8 @@ begin
   end;
 
   FIconUpdateSet := TDictionary<Integer, Boolean>.Create;
-  FIconUpdateQueue := TQueue<Integer>.Create;
-  FIconUpdateQueueDeferred := TQueue<Integer>.Create;
+  FIconUpdateQueue := TQueue<TIconUpdateSchedule>.Create;
+  FIconUpdateQueueDeferred := TQueue<TIconUpdateSchedule>.Create;
 
   FLastPath := nil;
 end; {Create}
@@ -2294,6 +2299,7 @@ var
   Value: string;
   ASize: Int64;
   FetchIcon: Boolean;
+  Schedule: TIconUpdateSchedule;
 begin
   Assert(Assigned(ListItem) and Assigned(ListItem.Data));
   with PFileRec(ListItem.Data)^, DispInfo  do
@@ -2318,7 +2324,8 @@ begin
        (not FIconUpdateSet.ContainsKey(ListItem.Index)) then
     begin
       FIconUpdateSet.Add(ListItem.Index, False);
-      FIconUpdateQueue.Enqueue(ListItem.Index);
+      Schedule.Index := ListItem.Index;
+      FIconUpdateQueue.Enqueue(Schedule);
       StartIconUpdateThread;
     end;
 
@@ -2390,9 +2397,9 @@ end;
 function TDirView.IconUpdatePeek: Integer;
 begin
   if FIconUpdateQueue.Count > 0 then
-    Result := FIconUpdateQueue.Peek
+    Result := FIconUpdateQueue.Peek.Index
   else if FIconUpdateQueueDeferred.Count > 0 then
-    Result := FIconUpdateQueueDeferred.Peek
+    Result := FIconUpdateQueueDeferred.Peek.Index
   else
     Result := -1;
 end;
