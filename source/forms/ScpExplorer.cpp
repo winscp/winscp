@@ -443,4 +443,6 @@ void __fastcall TScpExplorerForm::UpdateControls()
   {
     ActiveControl = RemoteDirView;
   }
+
+  ColumndsSubmenuItem->Enabled = (RemoteDirView->ViewStyle == vsReport);
 }
