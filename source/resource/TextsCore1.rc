@@ -122,7 +122,7 @@ BEGIN
   SCRIPT_OPTION_UNKNOWN, "Unknown option '%s'."
   SCRIPT_VALUE_UNKNOWN, "Unknown value '%s' of option '%s'."
   UNKNOWN_SOCKET_STATUS, "Cannot determine status of socket (%d)."
-  DELETE_ON_RESUME_ERROR, "Error deleting file '%s'. After resumable file upload the existing destination file must be deleted. If you do not have permissions to delete file destination file, you need to disable resumable file transfers."
+  DELETE_ON_RESUME_ERROR, "Error deleting file '%s'. After resumable file upload the existing destination file must be deleted. If you do not have permissions to delete the destination file, you need to disable resumable file transfers."
   SFTP_PACKET_ERROR, "Error decoding SFTP packet (%d, %d, %d)."
   ITEM_NAME_INVALID, "Invalid name '%s'. Name cannot contain '%s'."
   SFTP_STATUS_LOCK_CONFLICT, "The file could not be opened because it is locked by another process."
