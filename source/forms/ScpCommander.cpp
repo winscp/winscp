@@ -165,6 +165,7 @@ void __fastcall TScpCommanderForm::RestorePanelParams(
   const TScpCommanderPanelConfiguration & PanelConfiguration)
 {
   DirView->ColProperties->ParamsStr = PanelConfiguration.DirViewParams;
+  DirView->DirViewStyle = (TDirViewStyle)PanelConfiguration.ViewStyle;
   StatusBar->Visible = PanelConfiguration.StatusBar;
   DriveControl->Visible = PanelConfiguration.DriveView;
   if (DriveControl->Align == alTop)
@@ -194,6 +195,7 @@ void __fastcall TScpCommanderForm::RestoreParams()
   RestorePanelParams(LocalDirView, LocalDriveView, LocalStatusBar, WinConfiguration->ScpCommander.LocalPanel);
   RestorePanelParams(RemoteDirView, RemoteDrivePanel, RemoteStatusBar, WinConfiguration->ScpCommander.RemotePanel);
   OtherLocalDirView->ColProperties->ParamsStr = WinConfiguration->ScpCommander.OtherLocalPanelDirViewParams;
+  OtherLocalDirView->DirViewStyle = (TDirViewStyle)WinConfiguration->ScpCommander.OtherLocalPanelViewStyle;
   FPanelsRestored = true;
 
   // just to make sure
@@ -207,6 +209,7 @@ void __fastcall TScpCommanderForm::StorePanelParams(
   TScpCommanderPanelConfiguration & PanelConfiguration)
 {
   PanelConfiguration.DirViewParams = DirView->ColProperties->ParamsStr;
+  PanelConfiguration.ViewStyle = DirView->DirViewStyle;
   PanelConfiguration.StatusBar = StatusBar->Visible;
   PanelConfiguration.DriveView = DriveControl->Visible;
   if (DriveControl->Align == alTop)
@@ -242,6 +245,7 @@ void __fastcall TScpCommanderForm::StoreParams()
     StorePanelParams(LocalDirView, LocalDriveView, LocalStatusBar, CommanderConfiguration.LocalPanel);
     StorePanelParams(RemoteDirView, RemoteDrivePanel, RemoteStatusBar, CommanderConfiguration.RemotePanel);
     CommanderConfiguration.OtherLocalPanelDirViewParams = OtherLocalDirView->ColProperties->ParamsStr;
+    CommanderConfiguration.OtherLocalPanelViewStyle = reinterpret_cast<TDirViewStyle>(OtherLocalDirView->DirViewStyle);
 
     CommanderConfiguration.LocalPanel.LastPath = LocalDirView->Path;
     CommanderConfiguration.OtherLocalPanelLastPath = OtherLocalDirView->Path;
@@ -1024,6 +1028,12 @@ void __fastcall TScpCommanderForm::SetToolbar2ItemAction(TTBXItem * Item, TBasic
   }
 }
 //---------------------------------------------------------------------------
+void TScpCommanderForm::UpdatePanelControls(TCustomDirView * ADirView, TCustomDriveView * ADriveView)
+{
+  TCustomScpExplorerForm::UpdatePanelControls(ADirView, ADriveView);
+  ADirView->AddParentDir = (ADirView->DirViewStyle == dvsReport);
+}
+//---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::UpdateControls()
 {
   // Before TCustomScpExplorerForm disables them (when disconnecting)
@@ -1057,10 +1067,8 @@ void __fastcall TScpCommanderForm::UpdateControls()
     // command line combo width needs to be updated as caption width has probably changed
     ToolBarResize(CommandLineToolbar);
   }
-  LocalDirView->DarkMode = WinConfiguration->UseDarkTheme();
-  LocalDriveView->DarkMode = LocalDirView->DarkMode;
-  OtherLocalDirView->DarkMode = LocalDirView->DarkMode;
-  OtherLocalDriveView->DarkMode = LocalDirView->DarkMode;
+  UpdatePanelControls(LocalDirView, LocalDriveView);
+  UpdatePanelControls(OtherLocalDirView, OtherLocalDriveView);
   LocalDirView->Color = PanelColor();
   LocalDriveView->Color = LocalDirView->Color;
   OtherLocalDirView->Color = LocalDirView->Color;
@@ -1069,6 +1077,9 @@ void __fastcall TScpCommanderForm::UpdateControls()
   LocalDriveView->Font->Color = LocalDirView->Font->Color;
   OtherLocalDirView->Font->Color = LocalDirView->Font->Color;
   OtherLocalDriveView->Font->Color = LocalDirView->Font->Color;
+
+  LocalColumnsSubmenuItem->Enabled = (DirView(osLocal)->DirViewStyle == dvsReport);
+  RemoteColumnsSubmenuItem->Enabled = (DirView(osRemote)->DirViewStyle == dvsReport);
 
   if (IsLocalBrowserMode())
   {

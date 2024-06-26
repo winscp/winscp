@@ -9327,6 +9327,13 @@ TColor __fastcall TCustomScpExplorerForm::DisabledPanelColor()
   return Result;
 }
 //---------------------------------------------------------------------------
+void TCustomScpExplorerForm::UpdatePanelControls(TCustomDirView * ADirView, TCustomDriveView * ADriveView)
+{
+  bool UseDarkTheme = WinConfiguration->UseDarkTheme();
+  ADirView->DarkMode = UseDarkTheme;
+  ADriveView->DarkMode = UseDarkTheme;
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateControls()
 {
   if (!FSessionChanging)
@@ -9371,9 +9378,8 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
     QueueFileList->Font->Color = QueueView3->Font->Color;
     QueueLabelUpdateStatus();
 
+    UpdatePanelControls(RemoteDirView, RemoteDriveView);
     bool UseDarkTheme = WinConfiguration->UseDarkTheme();
-    RemoteDirView->DarkMode = UseDarkTheme;
-    RemoteDriveView->DarkMode = RemoteDirView->DarkMode;
     if (FImmersiveDarkMode != UseDarkTheme)
     {
       UpdateDarkMode();
@@ -11671,11 +11677,11 @@ TListItem * __fastcall TCustomScpExplorerForm::SearchFile(const UnicodeString & 
           Matches = ContainsTextSemiCaseSensitive(ADirView->ItemFileName(Item), Text);
           break;
         case isAll:
-          int ColCount = (ADirView->ViewStyle == vsReport) ? ADirView->ColProperties->Count : 1;
+          int ColCount = (ADirView->DirViewStyle == dvsReport) ? ADirView->ColProperties->Count : 1;
           int Index = 0;
           while ((Index < ColCount) && !Matches)
           {
-            bool Visible = (ADirView->ViewStyle == vsReport) ? ADirView->ColProperties->Visible[Index] : true;
+            bool Visible = (ADirView->DirViewStyle == dvsReport) ? ADirView->ColProperties->Visible[Index] : true;
             if (Visible)
             {
               Matches = ContainsTextSemiCaseSensitive(ADirView->GetColumnText(Item, Index), Text);

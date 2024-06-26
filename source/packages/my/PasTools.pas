@@ -64,6 +64,7 @@ type
   TImageListSize = (ilsSmall, ilsLarge);
 
 procedure NeedShellImageLists;
+function ShellImageListForSize(Width: Integer): TImageList;
 function ShellImageListForControl(Control: TControl; Size: TImageListSize): TImageList;
 
 function ControlHasRecreationPersistenceData(Control: TControl): Boolean;
@@ -504,6 +505,7 @@ end;
 var
   ShellImageLists: TDictionary<Integer, TImageList> = nil;
 
+// This should be replaced with IShellItemImageFactory, as already used for thumbnails
 procedure InitializeShellImageLists;
 type
   TSHGetImageList = function (iImageList: integer; const riid: TGUID; var ppv: Pointer): hResult; stdcall;
@@ -551,22 +553,14 @@ begin
   end;
 end;
 
-function ShellImageListForControl(Control: TControl; Size: TImageListSize): TImageList;
+function ShellImageListForSize(Width: Integer): TImageList;
 var
   ImageListPair: TPair<Integer, TImageList>;
-  Width, ImageListWidth: Integer;
+  ImageListWidth: Integer;
   Diff, BestDiff: Integer;
 begin
   // Delay load image lists, not to waste resources in console/scripting mode
   NeedShellImageLists;
-
-  case Size of
-    ilsSmall: Width := 16;
-    ilsLarge: Width := 32;
-    else Width := 0; Assert(False);
-  end;
-
-  Width := ScaleByPixelsPerInch(Width, Control);
 
   Result := nil;
   BestDiff := -1;
@@ -580,6 +574,7 @@ begin
       else
     begin
       // Prefer smaller images over larger, so for 150%, we use 100% images, not 200%
+      // (a larger icon would make the item row higher)
       Diff := ImageListWidth - Width + 1;
     end;
 
@@ -589,6 +584,22 @@ begin
       Result := ImageListPair.Value;
     end;
   end;
+end;
+
+function ShellImageListForControl(Control: TControl; Size: TImageListSize): TImageList;
+var
+  Width: Integer;
+begin
+  case Size of
+    ilsSmall: Width := 16;
+    ilsLarge: Width := 32;
+    else Width := 0; Assert(False);
+  end;
+
+  Width := ScaleByPixelsPerInch(Width, Control);
+
+  Result := ShellImageListForSize(Width);
+
 end;
 
 type

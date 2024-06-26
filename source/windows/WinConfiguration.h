@@ -35,6 +35,7 @@ struct TScpExplorerConfiguration {
 //---------------------------------------------------------------------------
 struct TScpCommanderPanelConfiguration {
   UnicodeString DirViewParams;
+  int ViewStyle;
   bool StatusBar;
   bool DriveView;
   int DriveViewHeight;
@@ -43,7 +44,7 @@ struct TScpCommanderPanelConfiguration {
   int DriveViewWidthPixelsPerInch;
   UnicodeString LastPath;
   bool __fastcall operator !=(TScpCommanderPanelConfiguration & rhc)
-    { return C(DirViewParams) C(StatusBar)
+    { return C(DirViewParams) C(ViewStyle) C(StatusBar)
         C(DriveView) C(DriveViewHeight) C(DriveViewHeightPixelsPerInch)
         C(DriveViewWidth) C(DriveViewWidthPixelsPerInch) C(LastPath) 0; };
 };
@@ -67,6 +68,7 @@ struct TScpCommanderConfiguration {
   bool ExplorerKeyboardShortcuts;
   bool SystemContextMenu;
   UnicodeString OtherLocalPanelDirViewParams;
+  int OtherLocalPanelViewStyle;
   UnicodeString OtherLocalPanelLastPath;
   bool __fastcall operator !=(TScpCommanderConfiguration & rhc)
     { return C(WindowParams) C(LocalPanelWidth) C(ToolbarsLayout) C(ToolbarsButtons)
@@ -75,7 +77,7 @@ struct TScpCommanderConfiguration {
       C(NortonLikeMode) C(PreserveLocalDirectory)
       C(CompareBySize) C(CompareByTime) C(SwappedPanels)
       C(TreeOnLeft) C(ExplorerKeyboardShortcuts) C(SystemContextMenu)
-      C(OtherLocalPanelDirViewParams) C(OtherLocalPanelLastPath) 0; };
+      C(OtherLocalPanelDirViewParams) C(OtherLocalPanelViewStyle) C(OtherLocalPanelLastPath) 0; };
 
   TCompareCriterias __fastcall CompareCriterias()
   {

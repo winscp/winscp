@@ -343,40 +343,40 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 6
       ShortCut = 32805
     end
-    object CurrentCycleStyleAction: TAction
-      Tag = 7
+    object RemoteCycleStyleAction: TAction
+      Tag = 15
       Category = 'Style'
       Caption = 'View'
       HelpKeyword = 'ui_file_panel#view_style'
       Hint = 'View|Cycle thru directory view styles'
       ImageIndex = 8
     end
-    object CurrentIconAction: TAction
-      Tag = 7
+    object RemoteIconAction: TAction
+      Tag = 15
       Category = 'Style'
       Caption = '&Large Icons'
       HelpKeyword = 'ui_file_panel#view_style'
       Hint = 'Large Icons|View large icons'
       ImageIndex = 8
     end
-    object CurrentSmallIconAction: TAction
-      Tag = 7
+    object RemoteSmallIconAction: TAction
+      Tag = 15
       Category = 'Style'
       Caption = '&Small Icons'
       HelpKeyword = 'ui_file_panel#view_style'
       Hint = 'Small Icons|View small icons'
       ImageIndex = 9
     end
-    object CurrentListAction: TAction
-      Tag = 7
+    object RemoteListAction: TAction
+      Tag = 15
       Category = 'Style'
       Caption = 'Lis&t'
       HelpKeyword = 'ui_file_panel#view_style'
       Hint = 'List|View list'
       ImageIndex = 10
     end
-    object CurrentReportAction: TAction
-      Tag = 7
+    object RemoteReportAction: TAction
+      Tag = 15
       Category = 'Style'
       Caption = '&Details'
       HelpKeyword = 'ui_file_panel#view_style'
@@ -2464,6 +2464,28 @@ object NonVisualDataModule: TNonVisualDataModule
       Category = 'Command'
       Caption = 'IncrementalSearchStartAction'
       ShortCut = 16454
+    end
+    object RemoteThumbnailAction: TAction
+      Tag = 15
+      Category = 'Style'
+      Caption = '&Thumbnails'
+      HelpKeyword = 'ui_file_panel#view_style'
+      Hint = 'Thumbnails|View thumbnails'
+    end
+    object LocalReportAction: TAction
+      Tag = 15
+      Category = 'Style'
+      Caption = '&Details'
+      HelpKeyword = 'ui_file_panel#view_style'
+      Hint = 'Details|View details'
+      ImageIndex = 11
+    end
+    object LocalThumbnailAction: TAction
+      Tag = 15
+      Category = 'Style'
+      Caption = '&Thumbnails'
+      HelpKeyword = 'ui_file_panel#view_style'
+      Hint = 'Thumbnails|View thumbnails'
     end
   end
   object ExplorerBarPopup: TTBXPopupMenu

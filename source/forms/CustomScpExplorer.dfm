@@ -86,7 +86,6 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         ParentDoubleBuffered = False
         PopupMenu = NonVisualDataModule.RemoteDirViewPopup
         TabOrder = 0
-        ViewStyle = vsReport
         OnColumnRightClick = DirViewColumnRightClick
         OnEditing = DirViewEditing
         OnEnter = RemoteDirViewEnter
@@ -118,6 +117,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         OnContextPopup = RemoteDirViewContextPopup
         OnHistoryChange = DirViewHistoryChange
         OnDisplayProperties = RemoteDirViewDisplayProperties
+        DirViewStyle = dvsReport
         OnRead = RemoteDirViewRead
       end
       object ReconnectToolbar: TTBXToolbar

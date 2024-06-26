@@ -460,16 +460,16 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXSeparatorItem3: TTBXSeparatorItem
         end
         object TBXItem16: TTBXItem
-          Action = NonVisualDataModule.CurrentIconAction
+          Action = NonVisualDataModule.RemoteIconAction
         end
         object TBXItem17: TTBXItem
-          Action = NonVisualDataModule.CurrentSmallIconAction
+          Action = NonVisualDataModule.RemoteSmallIconAction
         end
         object TBXItem18: TTBXItem
-          Action = NonVisualDataModule.CurrentListAction
+          Action = NonVisualDataModule.RemoteListAction
         end
         object TBXItem19: TTBXItem
-          Action = NonVisualDataModule.CurrentReportAction
+          Action = NonVisualDataModule.RemoteReportAction
         end
         object TBXSeparatorItem4: TTBXSeparatorItem
         end
@@ -833,19 +833,19 @@ inherited ScpExplorerForm: TScpExplorerForm
       object TBXSeparatorItem36: TTBXSeparatorItem
       end
       object TBXSubmenuItem3: TTBXSubmenuItem
-        Action = NonVisualDataModule.CurrentCycleStyleAction
+        Action = NonVisualDataModule.RemoteCycleStyleAction
         DropdownCombo = True
         object TBXItem72: TTBXItem
-          Action = NonVisualDataModule.CurrentIconAction
+          Action = NonVisualDataModule.RemoteIconAction
         end
         object TBXItem73: TTBXItem
-          Action = NonVisualDataModule.CurrentSmallIconAction
+          Action = NonVisualDataModule.RemoteSmallIconAction
         end
         object TBXItem74: TTBXItem
-          Action = NonVisualDataModule.CurrentListAction
+          Action = NonVisualDataModule.RemoteListAction
         end
         object TBXItem75: TTBXItem
-          Action = NonVisualDataModule.CurrentReportAction
+          Action = NonVisualDataModule.RemoteReportAction
         end
       end
       object TBXSubmenuItem24: TTBXSubmenuItem

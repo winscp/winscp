@@ -592,7 +592,7 @@ protected:
     TTBXStatusBar * StatusBar, const TStatusFileInfo & FileInfo);
   void __fastcall FileStatusBarPanelClick(TTBXStatusPanel * Panel, TOperationSide Side);
   virtual void __fastcall DoDirViewLoaded(TCustomDirView * Sender);
-  virtual void __fastcall UpdateControls();
+  virtual void UpdatePanelControls(TCustomDirView * ADirView, TCustomDriveView * ADriveView);
   void __fastcall UpdateTransferList();
   void __fastcall UpdateTransferLabel();
   void __fastcall StartUpdates();
@@ -922,6 +922,7 @@ public:
   void IncrementalSearchStart();
   virtual void * SaveFocus();
   virtual void RestoreFocus(void * Focus);
+  virtual void __fastcall UpdateControls();
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

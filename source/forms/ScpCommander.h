@@ -468,6 +468,14 @@ __published:
   TTBXItem *TBXItem266;
   TTBXSeparatorItem *TBXSeparatorItem74;
   TTBXItem *TBXItem267;
+  TTBXSubmenuItem *TBXSubmenuItem4;
+  TTBXItem *TBXItem269;
+  TTBXSeparatorItem *TBXSeparatorItem75;
+  TTBXItem *TBXItem268;
+  TTBXSubmenuItem *TBXSubmenuItem17;
+  TTBXItem *TBXItem270;
+  TTBXSeparatorItem *TBXSeparatorItem76;
+  TTBXItem *TBXItem271;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -592,7 +600,7 @@ protected:
   virtual void __fastcall ConfigurationChanged();
   virtual bool __fastcall GetHasDirView(TOperationSide Side);
   virtual TCustomDirView * GetCurrentLocalBrowser();
-  virtual void __fastcall UpdateControls();
+  virtual void UpdatePanelControls(TCustomDirView * ADirView, TCustomDriveView * ADriveView);
   virtual void __fastcall FileOperationProgress(
     TFileOperationProgressType & ProgressData);
   virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode,
@@ -695,6 +703,7 @@ public:
   virtual void ResetLayoutColumns(TOperationSide Side);
   virtual void * SaveFocus();
   virtual void RestoreFocus(void * Focus);
+  virtual void __fastcall UpdateControls();
 
   __property double LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

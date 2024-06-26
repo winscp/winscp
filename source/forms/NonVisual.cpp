@@ -266,14 +266,17 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(RemoteSelectAllAction2, DirView(osRemote)->FilesCount)
 
   //style
-  UPDACT(CurrentCycleStyleAction,
-    CurrentCycleStyleAction->ImageIndex = 8 + (DirView(osCurrent)->ViewStyle + 1) % 4)
-  #define STYLEACTION(Style) UPDACT(Current ## Style ## Action, \
-    Current ## Style ## Action->Checked = (DirView(osCurrent)->ViewStyle == vs ## Style))
-  STYLEACTION(Icon)
-  STYLEACTION(SmallIcon)
-  STYLEACTION(List)
-  STYLEACTION(Report)
+  UPDACT(RemoteCycleStyleAction,
+    RemoteCycleStyleAction->ImageIndex = 8 + (DirView(osRemote)->DirViewStyle + 1) % 4)
+  #define STYLEACTION(SIDE, STYLE) UPDACT(SIDE ## STYLE ## Action, \
+    SIDE ## STYLE ## Action->Checked = (DirView(os ## SIDE)->DirViewStyle == dvs ## STYLE))
+  STYLEACTION(Remote, Icon)
+  STYLEACTION(Remote, SmallIcon)
+  STYLEACTION(Remote, List)
+  STYLEACTION(Remote, Report)
+  STYLEACTION(Remote, Thumbnail)
+  STYLEACTION(Local, Report)
+  STYLEACTION(Local, Thumbnail)
   #undef STYLEACTION
 
   // REMOTE+LOCAL
@@ -627,16 +630,20 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(PasteAction3, ScpExplorer->PasteFromClipBoard())
 
     // style
-    EXE(CurrentCycleStyleAction,
-      if (DirView(osCurrent)->ViewStyle == vsReport) DirView(osCurrent)->ViewStyle = vsIcon;
-        else DirView(osCurrent)->ViewStyle = (TViewStyle)(DirView(osCurrent)->ViewStyle + 1);
+    EXE(RemoteCycleStyleAction,
+      if (DirView(osRemote)->DirViewStyle == dvsReport) DirView(osRemote)->DirViewStyle = dvsIcon;
+        else DirView(osRemote)->DirViewStyle = (TDirViewStyle)(DirView(osRemote)->DirViewStyle + 1);
+      ScpExplorer->UpdateControls();
     )
-    #define STYLEACTION(Style) EXE(Current ## Style ## Action, \
-      DirView(osCurrent)->ViewStyle = vs ## Style)
-    STYLEACTION(Icon)
-    STYLEACTION(SmallIcon)
-    STYLEACTION(List)
-    STYLEACTION(Report)
+    #define STYLEACTION(SIDE, STYLE) EXE(SIDE ## STYLE ## Action, \
+      DirView(os ## SIDE)->DirViewStyle = dvs ## STYLE; ScpExplorer->UpdateControls())
+    STYLEACTION(Remote, Icon)
+    STYLEACTION(Remote, SmallIcon)
+    STYLEACTION(Remote, List)
+    STYLEACTION(Remote, Report)
+    STYLEACTION(Remote, Thumbnail)
+    STYLEACTION(Local, Report)
+    STYLEACTION(Local, Thumbnail)
     #undef STYLEACTION
 
     #define PANEL_ACTIONS(SIDE) \

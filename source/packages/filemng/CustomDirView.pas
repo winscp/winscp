@@ -17,6 +17,7 @@ uses
 const
   clDefaultItemColor = -(COLOR_ENDCOLORS + 1);
   WM_USER_RENAME = WM_USER + 57;
+  WM_USER_INVALIDATEITEM = WM_USER + $2000 + 16;
   oiNoOverlay = $00;
   oiDirUp = $01;
   oiLink = $02;
@@ -88,6 +89,8 @@ type
   TDVHistoryGoEvent = procedure(Sender: TCustomDirView; Index: Integer; var Cancel: Boolean) of object;
   TCompareCriteria = (ccTime, ccSize);
   TCompareCriterias = set of TCompareCriteria;
+  // First four must match TViewStyle
+  TDirViewStyle = (dvsIcon, dvsSmallIcon, dvsList, dvsReport, dvsThumbnail);
 
   TWMXMouse = packed record
     Msg: Cardinal;
@@ -149,6 +152,8 @@ type
     FHistoryPaths: TStrings;
     FOverlaySmallImages: TImageList;
     FOverlayLargeImages: TImageList;
+    FThumbnailShellImages: TImageList;
+    FThumbnailImages: TImageList;
     FMaxHistoryCount: Integer;
     FPathLabel: TCustomPathLabel;
     FOnUpdateStatusBar: TDirViewUpdateStatusBarEvent;
@@ -173,6 +178,8 @@ type
     FDoubleBufferedScrollingWorkaround: Boolean;
     FOnBusy: TDirViewBusy;
     FOnChangeFocus: TDirViewChangeFocusEvent;
+    FFallbackThumbnail: array[Boolean] of TBitmap;
+    FFallbackThumbnailSize: TSize;
 
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
     procedure WMNotify(var Msg: TWMNotify); message WM_NOTIFY;
@@ -190,6 +197,7 @@ type
     procedure CMDPIChanged(var Message: TMessage); message CM_DPICHANGED;
     procedure CMEnabledChanged(var Message: TMessage); message CM_ENABLEDCHANGED;
     procedure CNKeyDown(var Message: TWMKeyDown); message CN_KEYDOWN;
+    procedure WMUserInvalidateItem(var Message: TMessage); message WM_USER_INVALIDATEITEM;
 
     procedure DumbCustomDrawItem(Sender: TCustomListView; Item: TListItem;
       State: TCustomDrawState; var DefaultDraw: Boolean);
@@ -200,6 +208,9 @@ type
     function GetForwardCount: Integer;
     function GetHistoryPath(Index: Integer): string;
     function GetSelectedNamesSaved: Boolean;
+
+    function GetDirViewStyle: TDirViewStyle;
+    procedure SetDirViewStyle(Value: TDirViewStyle);
 
     function GetTargetPopupMenu: Boolean;
     function GetUseDragImages: Boolean;
@@ -223,6 +234,7 @@ type
     FInvalidNameChars: string;
     FDragDrive: string;
     FAnnouncedState: TObject;
+    FThumbnail: Boolean;
 
     procedure AddToDragFileList(FileList: TFileList; Item: TListItem); virtual;
     function CanEdit(Item: TListItem): Boolean; override;
@@ -276,6 +288,10 @@ type
     function DoItemColor(Item: TListItem): TColor;
     function ItemColor(Item: TListItem): TColor; virtual;
     function ItemImageIndex(Item: TListItem; Cache: Boolean): Integer; virtual; abstract;
+    function ItemThumbnail(Item: TListItem; Size: TSize): TBitmap; virtual;
+    procedure FreeThumbnails;
+    function FallbackThumbnail(Dir: Boolean; Size: TSize): TBitmap;
+    procedure DrawThumbnail(Item: TListItem; DC: HDC);
     // ItemIsDirectory and ItemFullFileName is in public block
     function ItemIsRecycleBin(Item: TListItem): Boolean; virtual;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
@@ -299,6 +315,7 @@ type
     function ItemIsFile(Item: TListItem): Boolean; virtual; abstract;
     function ItemMatchesFilter(Item: TListItem; const Filter: TFileFilter): Boolean; virtual; abstract;
     function ItemOverlayIndexes(Item: TListItem): Word; virtual;
+    function IsItemVisible(Item: TListItem): Boolean;
     procedure LimitHistorySize;
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     procedure PathChanged; virtual;
@@ -342,6 +359,8 @@ type
     procedure DoUpdateStatusBar(Force: Boolean = False);
     procedure DoCustomDrawItem(Item: TListItem; Stage: TCustomDrawStage);
     procedure ItemCalculatedSizeUpdated(Item: TListItem; OldSize, NewSize: Int64);
+    function GetThumbnail(Path: string; Size: TSize): TBitmap;
+    procedure InvalidateItem(Item: TListItem);
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -436,6 +455,7 @@ type
     property NaturalOrderNumericalSorting: Boolean read FNaturalOrderNumericalSorting write SetNaturalOrderNumericalSorting;
     property AlwaysSortDirectoriesByName: Boolean read FAlwaysSortDirectoriesByName write SetAlwaysSortDirectoriesByName;
     property DarkMode: Boolean read FDarkMode write SetDarkMode;
+    property DirViewStyle: TDirViewStyle read GetDirViewStyle write SetDirViewStyle;
 
     property OnContextPopup;
     property OnStartLoading: TNotifyEvent read FOnStartLoading write FOnStartLoading;
@@ -548,7 +568,11 @@ const
 implementation
 
 uses
-  Math, DirViewColProperties, UITypes, Types, OperationWithTimeout, Winapi.UxTheme, Vcl.Themes;
+  Math, DirViewColProperties, UITypes, Types, OperationWithTimeout, Winapi.UxTheme, Vcl.Themes, System.IOUtils;
+
+type
+  PRGBQuadArray = ^TRGBQuadArray;    // From graphics.pas
+  TRGBQuadArray = array[Byte] of TRGBQuad;  // From graphics.pas
 
 const
   ResDirUp = 'DIRUP%2.2d';
@@ -957,6 +981,47 @@ begin
     else inherited;
 end;
 
+procedure TCustomDirView.DrawThumbnail(Item: TListItem; DC: HDC);
+var
+  Rect: TRect;
+  Thumbnail: TBitmap;
+  Size: TSize;
+  Left, Top: Integer;
+  BlendFunction: TBlendFunction;
+  ThumbnailDC: HDC;
+begin
+  Rect := Item.DisplayRect(drIcon);
+
+  // For thumbnails: The larger side (e.g. height for portrait oriented images) is rescaled to Size.Width
+  // For icons: The "generated" images is exactly as requested
+  Size.Height := MulDiv(Min(Rect.Width, Rect.Height), 9, 10);
+  Size.Width := Size.Height;
+
+  Thumbnail := ItemThumbnail(Item, Size);
+  if not Assigned(Thumbnail) then
+    Thumbnail := FallbackThumbnail(ItemIsDirectory(Item), Size);
+
+  if Assigned(Thumbnail) then
+  begin
+    Left := Rect.Left + ((Rect.Width - Thumbnail.Width) div 2);
+    Top := Rect.Bottom - Thumbnail.Height - MulDiv(Rect.Height, 1, 20); // Bottom-aligned, as Explorer does
+
+    // https://stackoverflow.com/q/24595717/850848
+    // https://stackoverflow.com/q/10028531/850848#10044325
+    ThumbnailDC := CreateCompatibleDC(0);
+    try
+      SelectObject(ThumbnailDC, Thumbnail.Handle);
+      BlendFunction.BlendOp := AC_SRC_OVER;
+      BlendFunction.BlendFlags := 0;
+      BlendFunction.SourceConstantAlpha := 255;
+      BlendFunction.AlphaFormat := AC_SRC_ALPHA;
+      AlphaBlend(DC, Left, Top, Thumbnail.Width, Thumbnail.Height, ThumbnailDC, 0, 0, Thumbnail.Width, Thumbnail.Height, BlendFunction);
+    finally
+      DeleteDC(ThumbnailDC);
+    end;
+  end;
+end;
+
 procedure TCustomDirView.CNNotify(var Message: TWMNotify);
 
   procedure DrawOverlayImage(DC: HDC; Image: Integer; Item: TListItem);
@@ -1072,22 +1137,39 @@ begin
   begin
     Nmcd := @PNMLVCustomDraw(Message.NMHdr).nmcd;
     try
-      Message.Result := Message.Result or CDRF_NOTIFYPOSTPAINT;
-      if (Nmcd.dwDrawStage = CDDS_ITEMPOSTPAINT) and
-         ((Nmcd.dwDrawStage and CDDS_SUBITEM) = 0) then
+      if (Nmcd.dwDrawStage and CDDS_SUBITEM) = 0 then
       begin
-        Item := Items[Nmcd.dwItemSpec];
-        Assert(Assigned(Item));
-        OverlayIndexes := ItemOverlayIndexes(Item);
-        OverlayIndex := 1;
-        while OverlayIndexes > 0 do
+        if (Nmcd.dwDrawStage and CDDS_ITEMPREPAINT) = CDDS_ITEMPREPAINT then
         begin
-          if (OverlayIndex and OverlayIndexes) <> 0 then
+          Message.Result := Message.Result or CDRF_NOTIFYPOSTPAINT;
+        end
+          else
+        if ((Nmcd.dwDrawStage and CDDS_ITEMPOSTPAINT) = CDDS_ITEMPOSTPAINT) and
+           (Nmcd.rc.Width > 0) then // We get called many times with empty rect while view is recreating (e.g. when switching to thumnails mode)
+        begin
+          Item := Items[Nmcd.dwItemSpec];
+
+          if IsItemVisible(Item) then // particularly the thumbnail drawing is expensive
           begin
-            DrawOverlayImage(Nmcd.hdc, OverlayIndex, Item);
-            Dec(OverlayIndexes, OverlayIndex);
+            if FThumbnail then
+            begin
+              DrawThumbnail(Item, Nmcd.hdc);
+            end
+              else
+            begin
+              OverlayIndexes := ItemOverlayIndexes(Item);
+              OverlayIndex := 1;
+              while OverlayIndexes > 0 do
+              begin
+                if (OverlayIndex and OverlayIndexes) <> 0 then
+                begin
+                  DrawOverlayImage(Nmcd.hdc, OverlayIndex, Item);
+                  Dec(OverlayIndexes, OverlayIndex);
+                end;
+                OverlayIndex := OverlayIndex shl 1;
+              end;
+            end;
           end;
-          OverlayIndex := OverlayIndex shl 1;
         end;
       end;
     except
@@ -1186,9 +1268,31 @@ begin
 end;
 
 procedure TCustomDirView.NeedImageLists(Recreate: Boolean);
+var
+  ALargeImages: TImageList;
+  ThumbnailSize: Integer;
 begin
   SmallImages := NeedImageList(ilsSmall, Recreate, FOverlaySmallImages);
-  LargeImages := NeedImageList(ilsLarge, Recreate, FOverlayLargeImages);
+  ALargeImages := NeedImageList(ilsLarge, Recreate, FOverlayLargeImages);
+
+  if FThumbnail then
+  begin
+    ThumbnailSize := ScaleByPixelsPerInch(128, Self);
+    // ShellImageListForSize would normally prefer smaller icons (for row sizing purposes).
+    // But for thumbnails, we prefer larger version as will will scale it when painting.
+    // The *2 is hackish way to achieve that.
+    FThumbnailShellImages := ShellImageListForSize(ThumbnailSize * 2);
+    if (not Assigned(FThumbnailImages)) or (FThumbnailImages.Width <> ThumbnailSize) then
+    begin
+      if Assigned(FThumbnailImages) then
+        FreeAndNil(FThumbnailImages);
+      // Dummy image list, whose sole purpose it to autosize the items in the view
+      FThumbnailImages := TImageList.CreateSize(ThumbnailSize, ThumbnailSize);
+    end;
+
+    LargeImages := FThumbnailImages
+  end
+    else LargeImages := ALargeImages;
 end;
 
 procedure TCustomDirView.CMDPIChanged(var Message: TMessage);
@@ -1222,6 +1326,7 @@ procedure TCustomDirView.FreeImageLists;
 begin
   FreeAndNil(FOverlaySmallImages);
   FreeAndNil(FOverlayLargeImages);
+  FreeAndNil(FThumbnailImages);
 
   SmallImages := nil;
   LargeImages := nil;
@@ -1383,6 +1488,7 @@ begin
 
   FreeAndNil(FDragDropFilesEx);
   FreeImageLists;
+  FreeThumbnails;
 
   inherited;
 end;
@@ -1465,6 +1571,104 @@ begin
   Result := clDefaultItemColor;
 end;
 
+function TCustomDirView.ItemThumbnail(Item: TListItem; Size: TSize): TBitmap;
+begin
+  Result := nil;
+end;
+
+function TCustomDirView.GetThumbnail(Path: string; Size: TSize): TBitmap;
+var
+  ImageFactory: IShellItemImageFactory;
+  X, Y: Integer;
+  Row: PRGBQuadArray;
+  Pixel: PRGBQuad;
+  Alpha: Byte;
+  Handle: HBITMAP;
+begin
+  Result := nil;
+  SHCreateItemFromParsingName(PChar(Path), nil, IShellItemImageFactory, ImageFactory);
+  if Assigned(ImageFactory) then
+  begin
+    if Succeeded(ImageFactory.GetImage(Size, SIIGBF_RESIZETOFIT, Handle)) then
+    begin
+      Result := TBitmap.Create;
+      try
+        Result.Handle := Handle;
+        Result.PixelFormat := pf32bit;
+
+        for Y := 0 to Result.Height - 1 do
+        begin
+          Row  := Result.ScanLine[Y];
+          for X := 0 to Result.Width - 1 do
+          begin
+            Pixel := @Row[X];
+            Alpha := Pixel.rgbReserved;
+            Pixel.rgbBlue := (Pixel.rgbBlue * Alpha) div 255;
+            Pixel.rgbGreen := (Pixel.rgbGreen * Alpha) div 255;
+            Pixel.rgbRed := (Pixel.rgbRed * Alpha) div 255;
+          end;
+        end;
+      except
+        Result.Free;
+        raise;
+      end;
+    end;
+
+    ImageFactory := nil; // Redundant?
+  end;
+end;
+
+procedure TCustomDirView.FreeThumbnails;
+begin
+  FreeAndNil(FFallbackThumbnail[True]);
+  FreeAndNil(FFallbackThumbnail[False]);
+end;
+
+function TCustomDirView.FallbackThumbnail(Dir: Boolean; Size: TSize): TBitmap;
+var
+  FallbackPath: string;
+  Existed: Boolean;
+  Index: Integer;
+begin
+  Result := nil;
+  try
+    if FFallbackThumbnailSize <> Size then
+    begin
+      FreeThumbnails;
+    end;
+
+    if not Assigned(FFallbackThumbnail[Dir]) then
+    begin
+      Index := 1;
+      repeat
+        FallbackPath := TPath.Combine(TempDir, 'default.' + IntToStr(Index) + '.thumbnailimage');
+        Existed := FileExists(FallbackPath) or DirectoryExists(FallbackPath);
+        if not Existed then
+        begin
+          if Dir then
+            CreateDir(FallbackPath)
+          else
+            TFile.WriteAllText(FallbackPath, '');
+        end;
+        Inc(Index);
+      until not Existed;
+
+      FFallbackThumbnailSize := Size;
+      FFallbackThumbnail[Dir] := GetThumbnail(FallbackPath, Size);
+      if Existed then
+      begin
+        if Dir then
+          RemoveDir(FallbackPath)
+        else
+          DeleteFile(FallbackPath);
+      end;
+    end;
+
+    Result := FFallbackThumbnail[Dir];
+  except
+  end;
+end;
+
 function TCustomDirView.GetFilesMarkedSize: Int64;
 begin
   if SelCount > 0 then Result := FilesSelSize
@@ -1483,6 +1687,11 @@ begin
   Result := oiNoOverlay;
   if Assigned(OnGetOverlay) then
     OnGetOverlay(Self, Item, Result);
+end;
+
+function TCustomDirView.IsItemVisible(Item: TListItem): Boolean;
+begin
+  Result := (ListView_IsItemVisible(Handle, Item.Index) <> 0);
 end;
 
 procedure TCustomDirView.WMKeyDown(var Message: TWMKeyDown);
@@ -3480,6 +3689,54 @@ begin
   end;
   Item.Update;
   UpdateStatusBar;
+end;
+
+function TCustomDirView.GetDirViewStyle: TDirViewStyle;
+begin
+  if (ViewStyle = vsIcon) and FThumbnail then Result := dvsThumbnail
+    else Result := TDirViewStyle(ViewStyle);
+end;
+
+procedure TCustomDirView.SetDirViewStyle(Value: TDirViewStyle);
+var
+  NewViewStyle: TViewStyle;
+begin
+  if DirViewStyle <> Value then
+  begin
+    FThumbnail := (Value = dvsThumbnail);
+    // Create thumbnail images before recreating the view
+    NeedImageLists(False);
+    if FThumbnail then NewViewStyle := vsIcon
+      else NewViewStyle := TViewStyle(Value);
+    if ViewStyle <> NewViewStyle then
+    begin
+      ViewStyle := NewViewStyle;
+    end
+      else
+    begin
+      // Changing ViewStyle recreates the view, we want to be consistent.
+      if not (csLoading in ComponentState) then
+        RecreateWnd;
+    end;
+  end;
+end;
+
+procedure TCustomDirView.InvalidateItem(Item: TListItem);
+var
+  R: TRect;
+begin
+  R := Item.DisplayRect(drBounds);
+  // alternative to TListItem.Update (which causes flicker)
+  InvalidateRect(Handle, @R, True);
+end;
+
+procedure TCustomDirView.WMUserInvalidateItem(var Message: TMessage);
+var
+  Index: Integer;
+begin
+  Index := Integer(Message.WParam);
+  if (Index >= 0) and (Index < Items.Count) then
+    InvalidateItem(Items[Index]);
 end;
 
 initialization

@@ -81,11 +81,11 @@ __published:    // IDE-managed Components
   TAction *CurrentRenameAction;
   TAction *CurrentDeleteAction;
   TAction *CurrentCreateDirAction;
-  TAction *CurrentCycleStyleAction;
-  TAction *CurrentIconAction;
-  TAction *CurrentSmallIconAction;
-  TAction *CurrentReportAction;
-  TAction *CurrentListAction;
+  TAction *RemoteCycleStyleAction;
+  TAction *RemoteIconAction;
+  TAction *RemoteSmallIconAction;
+  TAction *RemoteReportAction;
+  TAction *RemoteListAction;
   TAction *CurrentDeleteFocusedAction;
   TAction *CurrentPropertiesFocusedAction;
   TAction *CurrentPropertiesAction;
@@ -711,6 +711,9 @@ __published:    // IDE-managed Components
   TTBXSeparatorItem *TBXSeparatorItem23;
   TTBXItem *TBXItem116;
   TAction *IncrementalSearchStartAction;
+  TAction *RemoteThumbnailAction;
+  TAction *LocalReportAction;
+  TAction *LocalThumbnailAction;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);

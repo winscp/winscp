@@ -723,7 +723,7 @@ void __fastcall TWinConfiguration::Default()
   FScpExplorer.SessionsTabs = true;
   FScpExplorer.StatusBar = true;
   FScpExplorer.LastLocalTargetDirectory = GetPersonalFolder();
-  FScpExplorer.ViewStyle = 0; /* vsIcon */
+  FScpExplorer.ViewStyle = dvsIcon;
   FScpExplorer.ShowFullAddress = true;
   FScpExplorer.DriveView = true;
   FScpExplorer.DriveViewWidth = 180;
@@ -771,6 +771,7 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.ExplorerKeyboardShortcuts = false;
   FScpCommander.SystemContextMenu = false;
   FScpCommander.RemotePanel.DirViewParams = ScpCommanderRemotePanelDirViewParamsDefault;
+  FScpCommander.RemotePanel.ViewStyle = dvsReport;
   FScpCommander.RemotePanel.StatusBar = true;
   FScpCommander.RemotePanel.DriveView = false;
   FScpCommander.RemotePanel.DriveViewHeight = 100;
@@ -779,6 +780,7 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.RemotePanel.DriveViewWidthPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
   FScpCommander.RemotePanel.LastPath = UnicodeString();
   FScpCommander.LocalPanel.DirViewParams = ScpCommanderLocalPanelDirViewParamsDefault;
+  FScpCommander.LocalPanel.ViewStyle = dvsReport;
   FScpCommander.LocalPanel.StatusBar = true;
   FScpCommander.LocalPanel.DriveView = false;
   FScpCommander.LocalPanel.DriveViewHeight = 100;
@@ -787,6 +789,7 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.LocalPanel.DriveViewWidthPixelsPerInch = USER_DEFAULT_SCREEN_DPI;
   FScpCommander.LocalPanel.LastPath = UnicodeString();
   FScpCommander.OtherLocalPanelDirViewParams = FScpCommander.LocalPanel.DirViewParams;
+  FScpCommander.OtherLocalPanelViewStyle = FScpCommander.LocalPanel.ViewStyle;
   FScpCommander.OtherLocalPanelLastPath = UnicodeString();
 
   FBookmarks->Clear();
@@ -1229,6 +1232,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
   ); \
   BLOCK(L"Interface\\Commander\\LocalPanel", CANCREATE, \
     KEY(String,  ScpCommander.LocalPanel.DirViewParams); \
+    KEY(Integer, ScpCommander.LocalPanel.ViewStyle); \
     KEY(Bool,    ScpCommander.LocalPanel.StatusBar); \
     KEY(Bool,    ScpCommander.LocalPanel.DriveView); \
     KEY(Integer, ScpCommander.LocalPanel.DriveViewHeight); \
@@ -1239,6 +1243,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
   ); \
   BLOCK(L"Interface\\Commander\\RemotePanel", CANCREATE, \
     KEY(String,  ScpCommander.RemotePanel.DirViewParams); \
+    KEY(Integer, ScpCommander.RemotePanel.ViewStyle); \
     KEY(Bool,    ScpCommander.RemotePanel.StatusBar); \
     KEY(Bool,    ScpCommander.RemotePanel.DriveView); \
     KEY(Integer, ScpCommander.RemotePanel.DriveViewHeight); \
@@ -1248,8 +1253,9 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(String,  ScpCommander.RemotePanel.LastPath); \
   ); \
   BLOCK(L"Interface\\Commander\\OtherLocalPanel", CANCREATE, \
-    KEYEX(String, ScpCommander.OtherLocalPanelDirViewParams, L"DirViewParams"); \
-    KEYEX(String, ScpCommander.OtherLocalPanelLastPath, L"LastPath"); \
+    KEYEX(String,  ScpCommander.OtherLocalPanelDirViewParams, L"DirViewParams"); \
+    KEYEX(Integer, ScpCommander.OtherLocalPanelViewStyle, L"ViewStyle"); \
+    KEYEX(String,  ScpCommander.OtherLocalPanelLastPath, L"LastPath"); \
   ); \
   BLOCK(L"Security", CANCREATE, \
     KEY(Bool,    FUseMasterPassword); \
