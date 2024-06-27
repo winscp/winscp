@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2022-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -12,6 +12,7 @@
 
 # include <openssl/ssl.h>
 # include "internal/quic_types.h"
+# include "internal/quic_predef.h"
 # include "internal/quic_cfq.h"
 # include "internal/quic_ackm.h"
 
@@ -21,8 +22,6 @@
  * QUIC Transmitted Packet Information Manager
  * ===========================================
  */
-typedef struct quic_txpim_st QUIC_TXPIM;
-typedef struct quic_fifd_st QUIC_FIFD;
 
 typedef struct quic_txpim_pkt_st {
     /* ACKM-specific data. Caller should fill this. */
@@ -33,6 +32,9 @@ typedef struct quic_txpim_pkt_st {
 
     /* Reserved for FIFD use. */
     QUIC_FIFD          *fifd;
+
+    /* QUIC_PKT_TYPE value. For diagnostic use only. */
+    unsigned char       pkt_type;
 
     /* Regenerate-strategy frames. */
     unsigned int        had_handshake_done_frame    : 1;

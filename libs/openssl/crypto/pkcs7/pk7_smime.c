@@ -1,5 +1,5 @@
 /*
- * Copyright 1999-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1999-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -290,9 +290,8 @@ int PKCS7_verify(PKCS7 *p7, STACK_OF(X509) *certs, X509_STORE *store,
             if (!(flags & PKCS7_NOCRL))
                 X509_STORE_CTX_set0_crls(cert_ctx, p7->d.sign->crl);
             i = X509_verify_cert(cert_ctx);
-            if (i <= 0)
-                j = X509_STORE_CTX_get_error(cert_ctx);
             if (i <= 0) {
+                j = X509_STORE_CTX_get_error(cert_ctx);
                 ERR_raise_data(ERR_LIB_PKCS7, PKCS7_R_CERTIFICATE_VERIFY_ERROR,
                                "Verify error: %s",
                                X509_verify_cert_error_string(j));

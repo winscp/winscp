@@ -1,5 +1,5 @@
 /*
- * Copyright 2009-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2009-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -204,6 +204,10 @@ static int kek_unwrap_key(unsigned char *out, size_t *outlen,
     size_t blocklen = EVP_CIPHER_CTX_get_block_size(ctx);
     unsigned char *tmp;
     int outl, rv = 0;
+
+    if (blocklen == 0)
+        return 0;
+
     if (inlen < 2 * blocklen) {
         /* too small */
         return 0;
@@ -257,6 +261,10 @@ static int kek_wrap_key(unsigned char *out, size_t *outlen,
     size_t blocklen = EVP_CIPHER_CTX_get_block_size(ctx);
     size_t olen;
     int dummy;
+
+    if (blocklen == 0)
+        return 0;
+
     /*
      * First decide length of output buffer: need header and round up to
      * multiple of block length.

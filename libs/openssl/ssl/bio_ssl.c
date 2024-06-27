@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -174,7 +174,7 @@ static int ssl_write(BIO *b, const char *buf, size_t size, size_t *written)
 
     BIO_clear_retry_flags(b);
 
-    ret = ssl_write_internal(ssl, buf, size, written);
+    ret = ssl_write_internal(ssl, buf, size, 0, written);
 
     switch (SSL_get_error(ssl, ret)) {
     case SSL_ERROR_NONE:

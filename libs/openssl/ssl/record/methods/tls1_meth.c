@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2022-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -228,6 +228,11 @@ static int tls1_cipher(OSSL_RECORD_LAYER *rl, TLS_RL_RECORD *recs,
     provided = (EVP_CIPHER_get0_provider(enc) != NULL);
 
     bs = EVP_CIPHER_get_block_size(EVP_CIPHER_CTX_get0_cipher(ds));
+
+    if (bs == 0) {
+        RLAYERfatal(rl, SSL_AD_INTERNAL_ERROR, SSL_R_BAD_CIPHER);
+        return 0;
+    }
 
     if (n_recs > 1) {
         if ((EVP_CIPHER_get_flags(EVP_CIPHER_CTX_get0_cipher(ds))
@@ -646,7 +651,7 @@ int tls1_initialise_write_packets(OSSL_RECORD_LAYER *rl,
 }
 
 /* TLSv1.0, TLSv1.1 and TLSv1.2 all use the same funcs */
-struct record_functions_st tls_1_funcs = {
+const struct record_functions_st tls_1_funcs = {
     tls1_set_crypto_state,
     tls1_cipher,
     tls1_mac,
@@ -667,7 +672,7 @@ struct record_functions_st tls_1_funcs = {
     NULL
 };
 
-struct record_functions_st dtls_1_funcs = {
+const struct record_functions_st dtls_1_funcs = {
     tls1_set_crypto_state,
     tls1_cipher,
     tls1_mac,
