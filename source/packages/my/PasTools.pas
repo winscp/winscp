@@ -531,7 +531,7 @@ begin
        ImageList_GetIconSize(Handle, Width, Height) then
     begin
 
-      // We could use AddOrSetValue instead, but to be on a safe siz, we prefer e.g. SHIL_SMALL over SHIL_SYSSMALL,
+      // We could use AddOrSetValue instead, but to be on a safe side, we prefer e.g. SHIL_SMALL over SHIL_SYSSMALL,
       // while they actually can be the same
       if not ShellImageLists.ContainsKey(Width) then
       begin
