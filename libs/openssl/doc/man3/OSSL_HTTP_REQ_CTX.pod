@@ -15,7 +15,8 @@ OSSL_HTTP_REQ_CTX_exchange,
 OSSL_HTTP_REQ_CTX_get0_mem_bio,
 OSSL_HTTP_REQ_CTX_get_resp_len,
 OSSL_HTTP_REQ_CTX_set_max_response_length,
-OSSL_HTTP_is_alive
+OSSL_HTTP_is_alive,
+OSSL_HTTP_REQ_CTX_set_max_response_hdr_lines
 - HTTP client low-level functions
 
 =head1 SYNOPSIS
@@ -49,6 +50,9 @@ OSSL_HTTP_is_alive
                                                 unsigned long len);
 
  int OSSL_HTTP_is_alive(const OSSL_HTTP_REQ_CTX *rctx);
+
+ void OSSL_HTTP_REQ_CTX_set_max_response_hdr_lines(OSSL_HTTP_REQ_CTX *rctx,
+                                                   size_t count);
 
 =head1 DESCRIPTION
 
@@ -191,6 +195,12 @@ In case the client application keeps I<rctx> but the connection then dies
 for any reason at the server side, it will notice this obtaining an
 I/O error when trying to send the next request via I<rctx>.
 
+The OSSL_HTTP_REQ_CTX_set_max_response_hdr_lines() function changes the limit
+for the number of HTTP headers which can be received in a response. The default
+value is 256.  If the number of HTTP headers in a response exceeds the limit,
+then the HTTP_R_RESPONSE_TOO_MANY_HDRLINES error is indicated. Setting the
+limit to 0 disables the check.
+
 =head1 WARNINGS
 
 The server's response may be unexpected if the hostname that was used to
@@ -276,7 +286,7 @@ The functions described here were added in OpenSSL 3.0.
 
 =head1 COPYRIGHT
 
-Copyright 2015-2023 The OpenSSL Project Authors. All Rights Reserved.
+Copyright 2015-2024 The OpenSSL Project Authors. All Rights Reserved.
 
 Licensed under the Apache License 2.0 (the "License").  You may not use
 this file except in compliance with the License.  You can obtain a copy

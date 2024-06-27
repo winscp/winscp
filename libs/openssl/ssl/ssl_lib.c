@@ -62,7 +62,7 @@ static int ssl_undefined_function_8(SSL_CONNECTION *sc)
     return ssl_undefined_function(SSL_CONNECTION_GET_SSL(sc));
 }
 
-SSL3_ENC_METHOD ssl3_undef_enc_method = {
+const SSL3_ENC_METHOD ssl3_undef_enc_method = {
     ssl_undefined_function_8,
     ssl_undefined_function_3,
     ssl_undefined_function_4,
@@ -343,7 +343,7 @@ static int dane_tlsa_add(SSL_DANE *dane,
                 /*
                  * The Full(0) certificate decodes to a seemingly valid X.509
                  * object with a plausible key, so the TLSA record is well
-                 * formed.  However, we don't actually need the certifiate for
+                 * formed.  However, we don't actually need the certificate for
                  * usages PKIX-EE(1) or DANE-EE(3), because at least the EE
                  * certificate is always presented by the peer.  We discard the
                  * certificate, and just use the TLSA data as an opaque blob
@@ -1917,7 +1917,7 @@ int SSL_has_pending(const SSL *s)
         TLS_RECORD *rdata;
         pitem *item, *iter;
 
-        iter = pqueue_iterator(sc->rlayer.d->buffered_app_data.q);
+        iter = pqueue_iterator(sc->rlayer.d->buffered_app_data);
         while ((item = pqueue_next(&iter)) != NULL) {
             rdata = item->data;
             if (rdata->length > 0)
@@ -2483,13 +2483,14 @@ int SSL_peek_ex(SSL *s, void *buf, size_t num, size_t *readbytes)
     return ret;
 }
 
-int ssl_write_internal(SSL *s, const void *buf, size_t num, size_t *written)
+int ssl_write_internal(SSL *s, const void *buf, size_t num,
+                       uint64_t flags, size_t *written)
 {
     SSL_CONNECTION *sc = SSL_CONNECTION_FROM_SSL(s);
 
 #ifndef OPENSSL_NO_QUIC
     if (IS_QUIC(s))
-        return s->method->ssl_write(s, buf, num, written);
+        return ossl_quic_write_flags(s, buf, num, flags, written);
 #endif
 
     if (sc == NULL)
@@ -2503,6 +2504,11 @@ int ssl_write_internal(SSL *s, const void *buf, size_t num, size_t *written)
     if (sc->shutdown & SSL_SENT_SHUTDOWN) {
         sc->rwstate = SSL_NOTHING;
         ERR_raise(ERR_LIB_SSL, SSL_R_PROTOCOL_IS_SHUTDOWN);
+        return -1;
+    }
+
+    if (flags != 0) {
+        ERR_raise(ERR_LIB_SSL, SSL_R_UNSUPPORTED_WRITE_FLAG);
         return -1;
     }
 
@@ -2611,7 +2617,7 @@ int SSL_write(SSL *s, const void *buf, int num)
         return -1;
     }
 
-    ret = ssl_write_internal(s, buf, (size_t)num, &written);
+    ret = ssl_write_internal(s, buf, (size_t)num, 0, &written);
 
     /*
      * The cast is safe here because ret should be <= INT_MAX because num is
@@ -2625,7 +2631,13 @@ int SSL_write(SSL *s, const void *buf, int num)
 
 int SSL_write_ex(SSL *s, const void *buf, size_t num, size_t *written)
 {
-    int ret = ssl_write_internal(s, buf, num, written);
+    return SSL_write_ex2(s, buf, num, 0, written);
+}
+
+int SSL_write_ex2(SSL *s, const void *buf, size_t num, uint64_t flags,
+                  size_t *written)
+{
+    int ret = ssl_write_internal(s, buf, num, flags, written);
 
     if (ret < 0)
         ret = 0;
@@ -4203,6 +4215,9 @@ void SSL_CTX_free(SSL_CTX *a)
 #endif
 
     OPENSSL_free(a->propq);
+#ifndef OPENSSL_NO_QLOG
+    OPENSSL_free(a->qlog_title);
+#endif
 
     OPENSSL_free(a);
 }
@@ -4775,12 +4790,6 @@ int ssl_undefined_void_function(void)
 int ssl_undefined_const_function(const SSL *s)
 {
     return 0;
-}
-
-const SSL_METHOD *ssl_bad_method(int ver)
-{
-    ERR_raise(ERR_LIB_SSL, ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED);
-    return NULL;
 }
 
 const char *ssl_protocol_to_string(int version)
@@ -7627,6 +7636,30 @@ int SSL_get_conn_close_info(SSL *s, SSL_CONN_CLOSE_INFO *info,
 #else
     return -1;
 #endif
+}
+
+int SSL_get_value_uint(SSL *s, uint32_t class_, uint32_t id,
+                       uint64_t *value)
+{
+#ifndef OPENSSL_NO_QUIC
+    if (IS_QUIC(s))
+        return ossl_quic_get_value_uint(s, class_, id, value);
+#endif
+
+    ERR_raise(ERR_LIB_SSL, SSL_R_UNSUPPORTED_PROTOCOL);
+    return 0;
+}
+
+int SSL_set_value_uint(SSL *s, uint32_t class_, uint32_t id,
+                       uint64_t value)
+{
+#ifndef OPENSSL_NO_QUIC
+    if (IS_QUIC(s))
+        return ossl_quic_set_value_uint(s, class_, id, value);
+#endif
+
+    ERR_raise(ERR_LIB_SSL, SSL_R_UNSUPPORTED_PROTOCOL);
+    return 0;
 }
 
 int SSL_add_expected_rpk(SSL *s, EVP_PKEY *rpk)

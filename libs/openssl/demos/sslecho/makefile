@@ -1,14 +1,25 @@
-PROG ?= sslecho
-
-all: $(PROG)
-
-# Debug version.
 #
-$(PROG): main.c
+# To run the demos when linked with a shared library (default) ensure that
+# libcrypto and libssl are on the library path. For example:
+#
+#    LD_LIBRARY_PATH=../.. ./sslecho
 
-	$(CC) -O0 -g3 -W -Wall -I../../include -L../../ -o $(PROG) main.c -lssl -lcrypto
+TESTS = sslecho
 
-test:
+CFLAGS  = -I../../include -g -Wall
+LDFLAGS = -L../..
+LDLIBS  = -lssl -lcrypto
+
+all: $(TESTS)
+
+sslecho: main.o
+
+$(TESTS):
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LDLIBS)
 
 clean:
-	rm -rf $(PROG) *.o *.obj
+	$(RM) $(TESTS) *.o
+
+test: all
+	@echo "\nSSL Echo tests:"
+	@echo "skipped"

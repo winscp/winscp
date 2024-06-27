@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2017-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -471,10 +471,6 @@ static int test_tls13ccs(int tst)
                 || !TEST_size_t_gt(chsessidlen, 0))
             goto err;
         break;
-
-    default:
-        TEST_error("Invalid test value");
-        goto err;
     }
 
     ret = 1;

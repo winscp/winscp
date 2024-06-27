@@ -3,8 +3,29 @@
 =head1 NAME
 
 SSL_get_conn_close_info, SSL_CONN_CLOSE_FLAG_LOCAL,
-SSL_CONN_CLOSE_FLAG_TRANSPORT - get information about why a QUIC connection was
-closed
+SSL_CONN_CLOSE_FLAG_TRANSPORT,
+OSSL_QUIC_ERR_NO_ERROR,
+OSSL_QUIC_ERR_INTERNAL_ERROR,
+OSSL_QUIC_ERR_CONNECTION_REFUSED,
+OSSL_QUIC_ERR_FLOW_CONTROL_ERROR,
+OSSL_QUIC_ERR_STREAM_LIMIT_ERROR,
+OSSL_QUIC_ERR_STREAM_STATE_ERROR,
+OSSL_QUIC_ERR_FINAL_SIZE_ERROR,
+OSSL_QUIC_ERR_FRAME_ENCODING_ERROR,
+OSSL_QUIC_ERR_TRANSPORT_PARAMETER_ERROR,
+OSSL_QUIC_ERR_CONNECTION_ID_LIMIT_ERROR,
+OSSL_QUIC_ERR_PROTOCOL_VIOLATION,
+OSSL_QUIC_ERR_INVALID_TOKEN,
+OSSL_QUIC_ERR_APPLICATION_ERROR,
+OSSL_QUIC_ERR_CRYPTO_BUFFER_EXCEEDED,
+OSSL_QUIC_ERR_KEY_UPDATE_ERROR,
+OSSL_QUIC_ERR_AEAD_LIMIT_REACHED,
+OSSL_QUIC_ERR_NO_VIABLE_PATH,
+OSSL_QUIC_ERR_CRYPTO_ERR_BEGIN,
+OSSL_QUIC_ERR_CRYPTO_ERR_END,
+OSSL_QUIC_ERR_CRYPTO_ERR,
+OSSL_QUIC_LOCAL_ERR_IDLE_TIMEOUT
+- get information about why a QUIC connection was closed
 
 =head1 SYNOPSIS
 
@@ -22,6 +43,32 @@ closed
 
  int SSL_get_conn_close_info(SSL *ssl, SSL_CONN_CLOSE_INFO *info,
                              size_t info_len);
+
+ #define OSSL_QUIC_ERR_NO_ERROR                  0x00
+ #define OSSL_QUIC_ERR_INTERNAL_ERROR            0x01
+ #define OSSL_QUIC_ERR_CONNECTION_REFUSED        0x02
+ #define OSSL_QUIC_ERR_FLOW_CONTROL_ERROR        0x03
+ #define OSSL_QUIC_ERR_STREAM_LIMIT_ERROR        0x04
+ #define OSSL_QUIC_ERR_STREAM_STATE_ERROR        0x05
+ #define OSSL_QUIC_ERR_FINAL_SIZE_ERROR          0x06
+ #define OSSL_QUIC_ERR_FRAME_ENCODING_ERROR      0x07
+ #define OSSL_QUIC_ERR_TRANSPORT_PARAMETER_ERROR 0x08
+ #define OSSL_QUIC_ERR_CONNECTION_ID_LIMIT_ERROR 0x09
+ #define OSSL_QUIC_ERR_PROTOCOL_VIOLATION        0x0A
+ #define OSSL_QUIC_ERR_INVALID_TOKEN             0x0B
+ #define OSSL_QUIC_ERR_APPLICATION_ERROR         0x0C
+ #define OSSL_QUIC_ERR_CRYPTO_BUFFER_EXCEEDED    0x0D
+ #define OSSL_QUIC_ERR_KEY_UPDATE_ERROR          0x0E
+ #define OSSL_QUIC_ERR_AEAD_LIMIT_REACHED        0x0F
+ #define OSSL_QUIC_ERR_NO_VIABLE_PATH            0x10
+
+ /* Inclusive range for handshake-specific errors. */
+ #define OSSL_QUIC_ERR_CRYPTO_ERR_BEGIN          0x0100
+ #define OSSL_QUIC_ERR_CRYPTO_ERR_END            0x01FF
+
+ #define OSSL_QUIC_ERR_CRYPTO_ERR(X)
+
+ #define OSSL_QUIC_LOCAL_ERR_IDLE_TIMEOUT
 
 =head1 DESCRIPTION
 
@@ -80,6 +127,29 @@ by the local or remote application.
 
 =back
 
+The B<OSSL_QUIC_ERR> macro definitions provide the QUIC transport error codes as
+defined by RFC 9000. The OSSL_QUIC_ERR_CRYPTO_ERR() macro can be used to convert
+a TLS alert code into a QUIC transport error code by mapping it into the range
+reserved for such codes by RFC 9000. This range begins at
+B<OSSL_QUIC_ERR_CRYPTO_ERR_BEGIN> and ends at B<OSSL_QUIC_ERR_CRYPTO_ERR_END>
+inclusive.
+
+=head1 NON-STANDARD TRANSPORT ERROR CODES
+
+Some conditions which can cause QUIC connection termination are not signalled on
+the wire and therefore do not have standard error codes. OpenSSL indicates these
+errors via SSL_get_conn_close_info() by setting B<SSL_CONN_CLOSE_FLAG_TRANSPORT>
+and using one of the following error values. These codes are specific to
+OpenSSL, and cannot be sent over the wire, as they are above 2**62.
+
+=over 4
+
+=item B<OSSL_QUIC_LOCAL_ERR_IDLE_TIMEOUT>
+
+The connection was terminated immediately due to the idle timeout expiring.
+
+=back
+
 =head1 RETURN VALUES
 
 SSL_get_conn_close_info() returns 1 on success and 0 on failure. This function
@@ -97,7 +167,7 @@ This function was added in OpenSSL 3.2.
 
 =head1 COPYRIGHT
 
-Copyright 2002-2023 The OpenSSL Project Authors. All Rights Reserved.
+Copyright 2002-2024 The OpenSSL Project Authors. All Rights Reserved.
 
 Licensed under the Apache License 2.0 (the "License").  You may not use
 this file except in compliance with the License.  You can obtain a copy
