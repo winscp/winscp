@@ -1339,7 +1339,6 @@ begin
       else FIsRecycleBin := False;
 
   finally
-    //if Assigned(Animate) then Animate.Free;
   end; {Finally}
 end;
 
