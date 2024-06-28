@@ -47,7 +47,7 @@ INCO_D=openssl
 CP=copy
 RM=del
 MKDIR=-mkdir
-MKLIB=tlib /P128 /C
+MKLIB=tlib /C
 
 ASM=$(BUILDTOOLS)\tools\nasm -f obj -d__omf__
 
@@ -2935,14 +2935,14 @@ $(OBJ_D)\sha512_586.obj: $(SRC_D)\crypto\sha\asm\sha512_586.asm
 
 $(O_SSL): $(SSLOBJ)
     -if exist $(O_SSL) $(RM) $(O_SSL)
-    $(MKLIB) $(O_SSL) @&&!
+    $(MKLIB) $(O_SSL) /P256 @&&!
 +$(**: = &^
 +)
 !
 
 $(O_CRYPTO): $(CRYPTOOBJ)
     -if exist $(O_CRYPTO) $(RM) $(O_CRYPTO)
-    $(MKLIB) $(O_CRYPTO) /P256 @&&!
+    $(MKLIB) $(O_CRYPTO) /P1024 @&&!
 +$(**: = &^
 +)
 !
