@@ -96,7 +96,7 @@
 		<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
 		<DCC_Define>DEBUG</DCC_Define>
 		<DCC_Optimize>false</DCC_Optimize>
-		<Debugger_DebugSourcePath>packages\my;packages\filemng;packages\jcl;..\libs\openssl\crypto\bio;..\libs\openssl\ssl;..\libs\openssl\crypto\stack;..\libs\openssl\crypto\x509;..\libs\openssl\crypto\evp;..\libs\openssl\crypto\pkcs12;..\libs\openssl\crypto\pem;..\libs\openssl\crypto\asn1;..\libs\openssl\crypto\err;..\libs\openssl\crypto\rand;..\libs\neon\src;..\libs\libs3\src;..\libs\expat\lib;$(Debugger_DebugSourcePath)</Debugger_DebugSourcePath>
+		<Debugger_DebugSourcePath>packages\my;packages\filemng;packages\jcl;..\libs\openssl\crypto;..\libs\openssl\crypto\bio;..\libs\openssl\crypto\conf;..\libs\openssl\ssl;..\libs\openssl\crypto\stack;..\libs\openssl\crypto\x509;..\libs\openssl\crypto\evp;..\libs\openssl\crypto\pkcs12;..\libs\openssl\crypto\pem;..\libs\openssl\crypto\asn1;..\libs\openssl\crypto\err;..\libs\openssl\crypto\rand;..\libs\neon\src;..\libs\libs3\src;..\libs\expat\lib;$(Debugger_DebugSourcePath)</Debugger_DebugSourcePath>
 		<Defines>_DEBUG;$(Defines)</Defines>
 		<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
 		<TASM_Debugging>Full</TASM_Debugging>
