@@ -1203,7 +1203,12 @@ int __fastcall Execute()
         bool TrySendToAnotherInstance =
           (ParamCommand == pcNone) &&
           (WinConfiguration->ExternalSessionInExistingInstance != OpenInNewWindow()) &&
-          !NewInstance;
+          !NewInstance &&
+          // With /rawconfig before session url, parsing commandline does not work correctly,
+          // when opening session in the other instance.
+          // And as it is not clear what it should do anyway, let's ban it and
+          // never send to the existing instance, whenever /rawconfig is used.
+          !Params->FindSwitch(RAW_CONFIG_SWITCH);
 
         if (TrySendToAnotherInstance &&
             !AutoStartSession.IsEmpty() &&
