@@ -1091,17 +1091,19 @@ BOOL CAsyncSslSocketLayer::ShutDownComplete()
 void CAsyncSslSocketLayer::LogSslError(const SSL *s, const char * str, const char * fmt, int nMessageType, char * debug)
 {
   USES_CONVERSION;
-  char * buffer = new char[4096 + ((debug != NULL) ? strlen(debug) : 0)];
-  sprintf(buffer, fmt,
-      str,
-      SSL_state_string_long(s));
-  if (debug != NULL)
+  const char * StateString = SSL_state_string_long(s);
+  if ((strcmp(StateString, "error") != 0) || (debug != NULL))
   {
-    sprintf(buffer + strlen(buffer), " [%s]", debug);
-    OPENSSL_free(debug);
+    char * buffer = new char[4096 + ((debug != NULL) ? strlen(debug) : 0)];
+    sprintf(buffer, fmt, str, StateString);
+    if (debug != NULL)
+    {
+      sprintf(buffer + strlen(buffer), " [%s]", debug);
+      OPENSSL_free(debug);
+    }
+    LogSocketMessageRaw(nMessageType, A2T(buffer));
+    delete[] buffer;
   }
-  LogSocketMessageRaw(nMessageType, A2T(buffer));
-  delete[] buffer;
 }
 
 void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int ret)
