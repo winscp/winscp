@@ -1071,25 +1071,6 @@ void __fastcall TSessionLog::AddStartupInfo(bool System)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TSessionLog::GetTlsVersionName(TTlsVersion TlsVersion)
-{
-  switch (TlsVersion)
-  {
-    default:
-      DebugFail();
-    case ssl2:
-    case ssl3:
-    case tls10:
-      return "TLSv1.0";
-    case tls11:
-      return "TLSv1.1";
-    case tls12:
-      return "TLSv1.2";
-    case tls13:
-      return "TLSv1.3";
-  }
-}
-//---------------------------------------------------------------------------
 UnicodeString __fastcall TSessionLog::LogSensitive(const UnicodeString & Str)
 {
   if (FConfiguration->LogSensitive && !Str.IsEmpty())

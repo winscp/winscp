@@ -13,6 +13,7 @@ public:
   virtual wchar_t * LastSysErrorMessage() = 0;
   virtual std::wstring GetClientString() = 0;
   virtual void SetupSsl(ssl_st * Ssl) = 0;
+  virtual std::wstring CustomReason(int Err) = 0;
 };
 //---------------------------------------------------------------------------
 #endif // FileZillaToolsH
