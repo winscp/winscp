@@ -301,7 +301,6 @@ private:
   void __fastcall DoAddToSelf(TLogLineType aType, const UnicodeString & aLine);
   void __fastcall AddStartupInfo(bool System);
   void __fastcall DoAddStartupInfo(TSessionData * Data);
-  UnicodeString __fastcall GetTlsVersionName(TTlsVersion TlsVersion);
   UnicodeString __fastcall LogSensitive(const UnicodeString & Str);
   static UnicodeString __fastcall GetCmdLineLog(TConfiguration * AConfiguration);
   void __fastcall CheckSize(__int64 Addition);

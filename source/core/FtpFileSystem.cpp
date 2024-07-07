@@ -16,9 +16,11 @@
 #include "HelpCore.h"
 #include "Security.h"
 #include "NeonIntf.h"
+#include "SessionInfo.h"
 #include <StrUtils.hpp>
 #include <DateUtils.hpp>
 #include <openssl/x509_vfy.h>
+#include <openssl/err.h>
 #include <limits>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -64,6 +66,7 @@ protected:
   virtual wchar_t * LastSysErrorMessage();
   virtual std::wstring GetClientString();
   virtual void SetupSsl(ssl_st * Ssl);
+  virtual std::wstring CustomReason(int Err);
 
 private:
   TFTPFileSystem * FFileSystem;
@@ -167,7 +170,29 @@ std::wstring TFileZillaImpl::GetClientString()
 //---------------------------------------------------------------------------
 void TFileZillaImpl::SetupSsl(ssl_st * Ssl)
 {
-  ::SetupSsl(Ssl, FFileSystem->FTerminal->SessionData->MinTlsVersion, FFileSystem->FTerminal->SessionData->MaxTlsVersion);
+  TSessionData * SessionData = FFileSystem->FTerminal->SessionData;
+  ::SetupSsl(Ssl, SessionData->MinTlsVersion, SessionData->MaxTlsVersion);
+}
+//---------------------------------------------------------------------------
+std::wstring TFileZillaImpl::CustomReason(int Err)
+{
+  std::wstring Result;
+  int Lib = ERR_GET_LIB(Err);
+  int Reason = ERR_GET_REASON(Err);
+  if ((Lib == ERR_LIB_SSL) &&
+      ((Reason == SSL_R_UNSUPPORTED_PROTOCOL) ||
+       (Reason == SSL_R_TLSV1_ALERT_PROTOCOL_VERSION) ||
+       (Reason == SSL_R_WRONG_SSL_VERSION) ||
+       (Reason == SSL_R_WRONG_VERSION_NUMBER)))
+  {
+    TSessionData * SessionData = FFileSystem->FTerminal->SessionData;
+    Result =
+      FMTLOAD(
+        TLS_UNSUPPORTED, (
+          GetTlsVersionName(SessionData->MinTlsVersion), GetTlsVersionName(SessionData->MaxTlsVersion),
+          GetTlsVersionName(tlsMin), GetTlsVersionName(tlsMax))).c_str();
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
