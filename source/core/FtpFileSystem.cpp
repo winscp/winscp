@@ -2047,7 +2047,7 @@ void __fastcall TFTPFileSystem::ReadCurrentDirectory()
 
         if (Result)
         {
-          if ((Path.Length() > 0) && !UnixIsAbsolutePath(Path))
+          if (Path.IsEmpty() || !UnixIsAbsolutePath(Path))
           {
             Path = L"/" + Path;
           }
