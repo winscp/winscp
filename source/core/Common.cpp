@@ -1334,7 +1334,7 @@ UnicodeString __fastcall DisplayableStr(const RawByteString & Str)
   int Index = 1;
   while ((Index <= Str.Length()) && Displayable)
   {
-    if (((Str[Index] < '\x20') || (static_cast<unsigned char>(Str[Index]) >= static_cast<unsigned char>('\x80'))) &&
+    if (((Str[Index] < '\x20') || IsWideChar(Str[Index])) &&
         (Str[Index] != '\n') && (Str[Index] != '\r') && (Str[Index] != '\t') && (Str[Index] != '\b'))
     {
       Displayable = false;
