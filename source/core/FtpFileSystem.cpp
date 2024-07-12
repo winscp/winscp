@@ -462,6 +462,7 @@ void __fastcall TFTPFileSystem::Open()
   }
 
   FPasswordFailed = false;
+  FAnyPassword = !Password.IsEmpty();
   FStoredPasswordTried = false;
   bool PromptedForCredentials = false;
 
@@ -511,7 +512,12 @@ void __fastcall TFTPFileSystem::Open()
       if (!FTerminal->PromptUser(Data, pkPassword, LoadStr(PASSWORD_TITLE), L"",
             LoadStr(PASSWORD_PROMPT), false, 0, Password))
       {
-        FTerminal->FatalError(NULL, LoadStr(CREDENTIALS_NOT_SPECIFIED));
+        int Message = FAnyPassword ? AUTHENTICATION_FAILED : CREDENTIALS_NOT_SPECIFIED;
+        FTerminal->FatalError(NULL, LoadStr(Message));
+      }
+      else if (!Password.IsEmpty())
+      {
+        FAnyPassword = true;
       }
     }
 
@@ -3555,7 +3561,9 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
     {
       FStoredPasswordTried = true;
       // 530 = "Not logged in."
-      if (FLastCode == 530)
+      // 501 = "Login incorrect." (ProFTPD empty password code)
+      if ((FLastCode == 530) ||
+          (FLastCode == 501))
       {
         FPasswordFailed = true;
       }
@@ -4348,6 +4356,10 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestNeedPass(
         LoadStr(PASSWORD_PROMPT), false, 0, Password))
       {
         RequestResult = TFileZillaIntf::REPLY_OK;
+        if (!Password.IsEmpty())
+        {
+          FAnyPassword = true;
+        }
       }
       else
       {
