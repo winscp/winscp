@@ -235,6 +235,7 @@ private:
   unsigned int FReply;
   unsigned int FCommandReply;
   TCommand FLastCommand;
+  bool FAnyPassword;
   bool FPasswordFailed;
   bool FStoredPasswordTried;
   bool FMultiLineResponse;
