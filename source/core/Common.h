@@ -110,7 +110,7 @@ int __fastcall CompareNumber(__int64 Value1, __int64 Value2);
 bool ContainsTextSemiCaseSensitive(const UnicodeString & Text, const UnicodeString & SubText);
 bool __fastcall IsReservedName(UnicodeString FileName);
 UnicodeString __fastcall ApiPath(UnicodeString Path);
-bool IsWideChar(wchar_t Ch) { return static_cast<unsigned char>(Ch) >= static_cast<unsigned char>('\x80'); };
+bool IsWideChar(wchar_t Ch) { return (Ch >= L'\x80'); };
 UnicodeString __fastcall DisplayableStr(const RawByteString & Str);
 UnicodeString __fastcall ByteToHex(unsigned char B, bool UpperCase = true);
 UnicodeString __fastcall BytesToHex(const unsigned char * B, size_t Length, bool UpperCase = true, wchar_t Separator = L'\0');
