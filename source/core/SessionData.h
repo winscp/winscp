@@ -40,6 +40,7 @@ enum TTlsVersion { ssl2 = 2, ssl3 = 3, tls10 = 10, tls11 = 11, tls12 = 12, tls13
 // has to match libs3 S3UriStyle
 enum TS3UrlStyle { s3usVirtualHost, s3usPath };
 enum TSessionSource { ssNone, ssStored, ssStoredModified };
+const int SFTPMaxVersionAuto = -1;
 enum TSessionUrlFlags
 {
   sufSpecific = 0x01,

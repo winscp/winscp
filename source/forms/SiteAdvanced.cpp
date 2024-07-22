@@ -199,7 +199,14 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     AllowScpFallbackCheck->Checked = (FSessionData->FSProtocol == fsSFTP);
     UsePosixRenameCheck->Checked = FSessionData->UsePosixRename;
 
-    SFTPMaxVersionCombo->ItemIndex = FSessionData->SFTPMaxVersion;
+    if (FSessionData->SFTPMaxVersion < 0)
+    {
+      SFTPMaxVersionCombo->ItemIndex = 0;
+    }
+    else
+    {
+      SFTPMaxVersionCombo->ItemIndex = FSessionData->SFTPMaxVersion + 1;
+    }
 
     ComboAutoSwitchLoad(SFTPRealPathCombo, FSessionData->SFTPRealPath);
     #define LOAD_SFTP_BUG_COMBO(BUG) \
@@ -617,7 +624,14 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
 
   // SFTP page
   SessionData->SftpServer = (IsDefaultSftpServer() ? UnicodeString() : SftpServerEdit->Text);
-  SessionData->SFTPMaxVersion = SFTPMaxVersionCombo->ItemIndex;
+  if (SFTPMaxVersionCombo->ItemIndex == 0)
+  {
+    SessionData->SFTPMaxVersion = SFTPMaxVersionAuto;
+  }
+  else
+  {
+    SessionData->SFTPMaxVersion = SFTPMaxVersionCombo->ItemIndex - 1;
+  }
   if (AllowScpFallbackCheck->Checked != (SessionData->FSProtocol == fsSFTP))
   {
     if (AllowScpFallbackCheck->Checked)

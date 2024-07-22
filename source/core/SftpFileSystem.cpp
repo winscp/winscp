@@ -161,6 +161,7 @@
 #define OGQ_LIST_GROUPS 0x02
 //---------------------------------------------------------------------------
 const int SFTPMinVersion = 0;
+const int SFTPStandardVersion = 3;
 const int SFTPMaxVersion = 6;
 const unsigned int SFTPNoMessageNumber = static_cast<unsigned int>(-1);
 
@@ -3037,6 +3038,20 @@ void __fastcall TSFTPFileSystem::DoStartup()
   FFileSystemInfoValid = false;
   TSFTPPacket Packet(SSH_FXP_INIT);
   int MaxVersion = FTerminal->SessionData->SFTPMaxVersion;
+  if (MaxVersion == SFTPMaxVersionAuto)
+  {
+    TSshImplementation SshImplementation = FSecureShell->SshImplementation;
+    if ((SshImplementation == sshiOpenSSH) || (SshImplementation == sshiProFTPD) || (SshImplementation == sshiBitvise))
+    {
+      MaxVersion = SFTPMaxVersion;
+      FTerminal->LogEvent(FORMAT(L"Well known server, allowing SFTP version %d.", (MaxVersion)));
+    }
+    else
+    {
+      MaxVersion = SFTPStandardVersion;
+      FTerminal->LogEvent(FORMAT(L"Not well known server, limiting to safe SFTP version %d.", (MaxVersion)));
+    }
+  }
   if (MaxVersion > SFTPMaxVersion)
   {
     MaxVersion = SFTPMaxVersion;

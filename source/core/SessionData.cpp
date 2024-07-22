@@ -307,7 +307,7 @@ void __fastcall TSessionData::DefaultSettings()
   SFTPDownloadQueue = 32;
   SFTPUploadQueue = 64;
   SFTPListingQueue = 2;
-  SFTPMaxVersion = ::SFTPMaxVersion;
+  SFTPMaxVersion = SFTPMaxVersionAuto;
   SFTPMaxPacketSize = 0;
   SFTPRealPath = asAuto;
   UsePosixRename = false;

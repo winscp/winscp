@@ -644,6 +644,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Anchors = [akTop, akRight]
             TabOrder = 1
             Items.Strings = (
+              'Auto'
               '0'
               '1'
               '2'
