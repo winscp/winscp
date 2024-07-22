@@ -396,6 +396,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     TWinConfiguration::RestoreFont(WinConfiguration->Editor.Font, FEditorFont.get());
     FEditorFont->Color = WinConfiguration->Editor.FontColor;
     FEditorBackgroundColor = WinConfiguration->Editor.BackgroundColor;
+    EditorDisableSmoothScrollCheck->Checked = WinConfiguration->Editor.DisableSmoothScroll;
     (*FEditorList) = *WinConfiguration->EditorList;
     UpdateEditorListView();
     BOOLPROP(EditorCheckNotModified);
@@ -797,6 +798,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     TWinConfiguration::StoreFont(FEditorFont.get(), WinConfiguration->Editor.Font);
     WinConfiguration->Editor.FontColor = FEditorFont->Color;
     WinConfiguration->Editor.BackgroundColor = FEditorBackgroundColor;
+    WinConfiguration->Editor.DisableSmoothScroll = EditorDisableSmoothScrollCheck->Checked;
     WinConfiguration->EditorList = FEditorList;
     BOOLPROP(EditorCheckNotModified);
 

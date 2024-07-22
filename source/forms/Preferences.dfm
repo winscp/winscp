@@ -3377,6 +3377,28 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = EditorBackgroundColorButtonClick
           end
         end
+        object InternalEditorBehaviourGroup: TGroupBox
+          Left = 13
+          Top = 284
+          Width = 389
+          Height = 49
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Behaviour'
+          TabOrder = 2
+          DesignSize = (
+            389
+            49)
+          object EditorDisableSmoothScrollCheck: TCheckBox
+            Left = 16
+            Top = 20
+            Width = 353
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Disable s&mooth scrolling'
+            TabOrder = 0
+            OnClick = ControlChange
+          end
+        end
       end
       object FileColorsSheet: TTabSheet
         Tag = 25

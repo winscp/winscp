@@ -133,11 +133,12 @@ struct TEditorConfiguration {
   bool WarnOnEncodingFallback;
   bool WarnOrLargeFileSize;
   bool AutoFont;
+  bool DisableSmoothScroll;
   bool __fastcall operator !=(TEditorConfiguration & rhc)
     { return C(Font) C(FontColor) C(BackgroundColor) C(WordWrap) C(FindText) C(ReplaceText)
       C(FindMatchCase) C(FindWholeWord) C(FindDown) C(TabSize)
       C(MaxEditors) C(EarlyClose) C(SDIShellEditor) C(WindowParams)
-      C(Encoding) C(WarnOnEncodingFallback) C(WarnOrLargeFileSize) C(AutoFont) 0; };
+      C(Encoding) C(WarnOnEncodingFallback) C(WarnOrLargeFileSize) C(AutoFont) C(DisableSmoothScroll) 0; };
 };
 //---------------------------------------------------------------------------
 enum TQueueViewShow { qvShow, qvHideWhenEmpty, qvHide };

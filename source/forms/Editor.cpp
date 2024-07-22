@@ -172,6 +172,7 @@ protected:
   void __fastcall SetTabSize(unsigned int TabSize);
   void __fastcall WMPaste();
   void __fastcall EMStreamIn(TMessage & Message);
+  void WMMouseWheel(TMessage & Message);
   bool __stdcall StreamLoad(TRichEditStreamInfo * StreamInfo,
     unsigned char * Buff, long Read, long & WasRead);
   DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
@@ -410,6 +411,34 @@ void __fastcall TEditorRichEdit::EMStreamIn(TMessage & Message)
   TNewRichEdit::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
+void TEditorRichEdit::WMMouseWheel(TMessage & Message)
+{
+  unsigned int ScrollLines = 0;
+  if (WinConfiguration->Editor.DisableSmoothScroll &&
+      SystemParametersInfo(SPI_GETWHEELSCROLLLINES, 0, &ScrollLines, 0) &&
+      (ScrollLines != 0))
+  {
+    int Delta = GET_WHEEL_DELTA_WPARAM(Message.WParam);
+    bool Up = (Delta > 0);
+    if (ScrollLines == WHEEL_PAGESCROLL)
+    {
+      SendMessage(Handle, WM_VSCROLL, Up ? SB_PAGEUP : SB_PAGEDOWN, 0);
+    }
+    else
+    {
+      int LinesToScroll = (abs(Delta) / WHEEL_DELTA) * ScrollLines;
+      for (int Index = 0; Index < LinesToScroll; Index++)
+      {
+        SendMessage(Handle, WM_VSCROLL, Up ? SB_LINEUP : SB_LINEDOWN, 0);
+      }
+    }
+  }
+  else
+  {
+    TNewRichEdit::Dispatch(&Message);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TEditorRichEdit::Dispatch(void * Message)
 {
   TMessage * M = static_cast<TMessage *>(Message);
@@ -421,6 +450,10 @@ void __fastcall TEditorRichEdit::Dispatch(void * Message)
 
     case EM_STREAMIN:
       EMStreamIn(*M);
+      break;
+
+    case WM_MOUSEWHEEL:
+      WMMouseWheel(*M);
       break;
 
     default:

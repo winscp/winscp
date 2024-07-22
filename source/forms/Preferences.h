@@ -355,6 +355,8 @@ __published:
   TCheckBox *SshHostCAsFromPuTTYCheck;
   TButton *ConfigureSshHostCAsButton;
   TCheckBox *SessionTabCaptionTruncationCheck;
+  TGroupBox *InternalEditorBehaviourGroup;
+  TCheckBox *EditorDisableSmoothScrollCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
