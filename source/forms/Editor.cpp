@@ -173,6 +173,7 @@ protected:
   void __fastcall WMPaste();
   void __fastcall EMStreamIn(TMessage & Message);
   void WMMouseWheel(TMessage & Message);
+  void WMMouseActivate(TWMMouseActivate & Message);
   bool __stdcall StreamLoad(TRichEditStreamInfo * StreamInfo,
     unsigned char * Buff, long Read, long & WasRead);
   DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
@@ -439,6 +440,16 @@ void TEditorRichEdit::WMMouseWheel(TMessage & Message)
   }
 }
 //---------------------------------------------------------------------------
+void TEditorRichEdit::WMMouseActivate(TWMMouseActivate & Message)
+{
+  // https://stackoverflow.com/q/20180213/850848
+  if ((Message.MouseMsg == WM_LBUTTONDOWN) && (GetFocus() != Handle))
+  {
+    SetFocus();
+  }
+  TNewRichEdit::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
 void __fastcall TEditorRichEdit::Dispatch(void * Message)
 {
   TMessage * M = static_cast<TMessage *>(Message);
@@ -454,6 +465,10 @@ void __fastcall TEditorRichEdit::Dispatch(void * Message)
 
     case WM_MOUSEWHEEL:
       WMMouseWheel(*M);
+      break;
+
+    case WM_MOUSEACTIVATE:
+      WMMouseActivate(*reinterpret_cast<TWMMouseActivate *>(M));
       break;
 
     default:
