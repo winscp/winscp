@@ -615,58 +615,60 @@ static void __fastcall ChangeControlScale(TControl * Control, int M, int D)
 typedef std::pair<int, int> TRatio;
 typedef std::map<TRatio, TRatio > TRatioMap;
 //---------------------------------------------------------------------------
-class TFormRescaleComponent : public TComponent
+class TFormCustomizationComponent : public TComponent
 {
 public:
-  __fastcall TFormRescaleComponent() :
+  __fastcall TFormCustomizationComponent() :
     TComponent(NULL)
   {
     ImplicitRescaleAdded = false;
     Rescaling = false;
+    WindowStateBeforeMimimize = wsNormal;
   }
 
   bool Rescaling;
   bool ImplicitRescaleAdded;
   TRatioMap RatioMap;
+  TWindowState WindowStateBeforeMimimize;
 };
 //---------------------------------------------------------------------------
-static TFormRescaleComponent * GetFormRescaleComponent(TForm * Form)
+static TFormCustomizationComponent * GetFormCustomizationComponent(TForm * Form)
 {
-  TFormRescaleComponent * FormRescaleComponent =
-    dynamic_cast<TFormRescaleComponent *>(Form->FindComponent(TFormRescaleComponent::QualifiedClassName()));
-  if (FormRescaleComponent == NULL)
+  TFormCustomizationComponent * FormCustomizationComponent =
+    dynamic_cast<TFormCustomizationComponent *>(Form->FindComponent(TFormCustomizationComponent::QualifiedClassName()));
+  if (FormCustomizationComponent == NULL)
   {
-    FormRescaleComponent = new TFormRescaleComponent();
-    FormRescaleComponent->Name = TFormRescaleComponent::QualifiedClassName();
-    Form->InsertComponent(FormRescaleComponent);
+    FormCustomizationComponent = new TFormCustomizationComponent();
+    FormCustomizationComponent->Name = TFormCustomizationComponent::QualifiedClassName();
+    Form->InsertComponent(FormCustomizationComponent);
   }
-  return FormRescaleComponent;
+  return FormCustomizationComponent;
 }
 //---------------------------------------------------------------------------
 void __fastcall RecordFormImplicitRescale(TForm * Form)
 {
   if (Form->Scaled)
   {
-    TFormRescaleComponent * FormRescaleComponent = GetFormRescaleComponent(Form);
-    if (!FormRescaleComponent->ImplicitRescaleAdded)
+    TFormCustomizationComponent * FormCustomizationComponent = GetFormCustomizationComponent(Form);
+    if (!FormCustomizationComponent->ImplicitRescaleAdded)
     {
       TRatio Ratio;
       GetFormScaleRatio(Form, Ratio.first, Ratio.second);
       TRatio RescaleKeyRatio(Form->PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
-      FormRescaleComponent->RatioMap[RescaleKeyRatio] = Ratio;
-      FormRescaleComponent->ImplicitRescaleAdded = true;
+      FormCustomizationComponent->RatioMap[RescaleKeyRatio] = Ratio;
+      FormCustomizationComponent->ImplicitRescaleAdded = true;
     }
   }
 }
 //---------------------------------------------------------------------------
 static void GetFormRescaleRatio(TForm * Form, int PixelsPerInch, int & M, int & D)
 {
-  TFormRescaleComponent * FormRescaleComponent = GetFormRescaleComponent(Form);
+  TFormCustomizationComponent * FormCustomizationComponent = GetFormCustomizationComponent(Form);
   TRatio ReverseRescaleKeyRatio(Form->PixelsPerInch, PixelsPerInch);
-  if (FormRescaleComponent->RatioMap.count(ReverseRescaleKeyRatio) > 0)
+  if (FormCustomizationComponent->RatioMap.count(ReverseRescaleKeyRatio) > 0)
   {
-    M = FormRescaleComponent->RatioMap[ReverseRescaleKeyRatio].second;
-    D = FormRescaleComponent->RatioMap[ReverseRescaleKeyRatio].first;
+    M = FormCustomizationComponent->RatioMap[ReverseRescaleKeyRatio].second;
+    D = FormCustomizationComponent->RatioMap[ReverseRescaleKeyRatio].first;
   }
   else
   {
@@ -676,20 +678,20 @@ static void GetFormRescaleRatio(TForm * Form, int PixelsPerInch, int & M, int & 
 
 
   TRatio RescaleKeyRatio(PixelsPerInch, Form->PixelsPerInch);
-  FormRescaleComponent->RatioMap[RescaleKeyRatio] = TRatio(M, D);
+  FormCustomizationComponent->RatioMap[RescaleKeyRatio] = TRatio(M, D);
 }
 //---------------------------------------------------------------------------
 static void __fastcall ChangeFormPixelsPerInch(TForm * Form, int PixelsPerInch)
 {
   RecordFormImplicitRescale(Form);
 
-  TFormRescaleComponent * FormRescaleComponent = GetFormRescaleComponent(Form);
+  TFormCustomizationComponent * FormCustomizationComponent = GetFormCustomizationComponent(Form);
 
   if ((Form->PixelsPerInch != PixelsPerInch) && // optimization
-      !FormRescaleComponent->Rescaling)
+      !FormCustomizationComponent->Rescaling)
   {
     AppLogFmt(L"Scaling window %s", (Form->Caption));
-    TAutoFlag RescalingFlag(FormRescaleComponent->Rescaling);
+    TAutoFlag RescalingFlag(FormCustomizationComponent->Rescaling);
 
     int M, D;
     GetFormRescaleRatio(Form, PixelsPerInch, M, D);
@@ -886,6 +888,11 @@ static void __fastcall FormShowingChanged(TForm * Form, TWndMethod WndProc, TMes
   }
 }
 //---------------------------------------------------------------------------
+TWindowState GetWindowStateBeforeMimimize(TForm * Form)
+{
+  return GetFormCustomizationComponent(Form)->WindowStateBeforeMimimize;
+}
+//---------------------------------------------------------------------------
 static TCustomForm * WindowPrintForm = NULL;
 static DWORD WindowPrintPrevClick = 0;
 static unsigned int WindowPrintClickCount = 0;
@@ -964,11 +971,22 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
 {
   TForm * AForm = dynamic_cast<TForm *>(Form);
   DebugAssert(AForm != NULL);
-  if ((Message.Msg == WM_SYSCOMMAND) &&
-      (Message.WParam == SC_CONTEXTHELP))
+  if (Message.Msg == WM_SYSCOMMAND)
   {
-    FormHelp(Form);
-    Message.Result = 1;
+    if (Message.WParam == SC_CONTEXTHELP)
+    {
+      FormHelp(Form);
+      Message.Result = 1;
+    }
+    else if (Message.WParam == SC_MINIMIZE)
+    {
+      GetFormCustomizationComponent(AForm)->WindowStateBeforeMimimize = Form->WindowState;
+      WndProc(Message);
+    }
+    else
+    {
+      WndProc(Message);
+    }
   }
   else if (Message.Msg == CM_SHOWINGCHANGED)
   {

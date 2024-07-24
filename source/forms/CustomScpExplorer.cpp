@@ -299,6 +299,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
 //---------------------------------------------------------------------------
 __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
 {
+  AppLog(L"Destroying main window");
   FInvalid = true;
   ReleaseHiContrastTheme();
   if (FClipboardTerminal != NULL)
@@ -350,6 +351,7 @@ __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
     // particularly window site is not restored correctly (BoundsRect value set
     // in RestoreForm gets lost during handle allocation), so we do not want
     // it to be stored
+    AppLog(L"Storing main window configuration");
     StoreParams();
   }
   ManagedSession = NULL;
@@ -390,6 +392,7 @@ __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
     DestroyWindow(FHiddenWindow);
     FHiddenWindow = NULL;
   }
+  AppLog(L"Main window destroyed");
 
 }
 //---------------------------------------------------------------------------

@@ -325,7 +325,7 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall StoreForm(TCustomForm * Form)
+UnicodeString __fastcall StoreForm(TForm * Form)
 {
   DebugAssert(Form);
   TRect Bounds = Form->BoundsRect;
@@ -334,9 +334,7 @@ UnicodeString __fastcall StoreForm(TCustomForm * Form)
     FORMAT(L"%d;%d;%d;%d;%d;%s", (SaveDimension(Bounds.Left), SaveDimension(Bounds.Top),
       SaveDimension(Bounds.Right), SaveDimension(Bounds.Bottom),
       // we do not want WinSCP to start minimized next time (we cannot handle that anyway).
-      // note that WindowState is wsNormal when window in minimized for some reason.
-      // actually it is wsMinimized only when minimized by MSVDM
-      (int)(Form->WindowState == wsMinimized ? wsNormal : Form->WindowState),
+      (int)(Form->WindowState == wsMinimized ? GetWindowStateBeforeMimimize(Form) : Form->WindowState),
       SavePixelsPerInch(Form)));
   return Result;
 }
