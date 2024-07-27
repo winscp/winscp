@@ -693,6 +693,8 @@
 #define LOGIN_NOT_SHOWING_AGAIN 6206
 #define IMPORT_INI_TITLE        6207
 #define INC_SEARCH_TYPE         6208
+#define SEARCH_EDIT             6209
+#define SEARCH_NO_RESULTS       6210
 
 // 2xxx is reserved for TextsFileZilla.h
 

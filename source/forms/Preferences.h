@@ -357,6 +357,9 @@ __published:
   TCheckBox *SessionTabCaptionTruncationCheck;
   TGroupBox *InternalEditorBehaviourGroup;
   TCheckBox *EditorDisableSmoothScrollCheck;
+  TComboEdit *SearchEdit;
+  TTabSheet *SearchSheet;
+  TGroupBox *SearchGroup;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -471,6 +474,10 @@ __published:
   void __fastcall RemoveSshHostCAButtonClick(TObject *Sender);
   void __fastcall SshHostCAsFromPuTTYCheckClick(TObject *Sender);
   void __fastcall ConfigureSshHostCAsButtonClick(TObject *Sender);
+  void __fastcall SearchEditButtonClick(TObject *Sender);
+  void __fastcall SearchEditChangeEnter(TObject *Sender);
+  void __fastcall NavigationTreeEnter(TObject *Sender);
+  void __fastcall FormShortCut(TWMKey &Msg, bool &Handled);
 
 private:
   TPreferencesMode FPreferencesMode;
@@ -504,6 +511,8 @@ private:
   UnicodeString FCustomIniFileStorageName;
   TFileColorData::TList FFileColors;
   TSshHostCA::TList FSshHostCAPlainList;
+  std::unique_ptr<TStrings> FSearchResults;
+  bool FHideFocus;
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
   void __fastcall CMDpiChanged(TMessage & Message);
@@ -522,6 +531,18 @@ private:
   UnicodeString __fastcall GetSessionKey();
   void __fastcall ExtensionHttpError(THttp * Sender, int Status, const UnicodeString & Message);
   const TSshHostCA::TList & GetSshHostCAPlainList();
+  void UpdateSearching(bool ASearching);
+  void Search(TControl * Control, TStrings * Results, bool & NewResults);
+  void __fastcall SearchResultClick(TObject * Sender);
+  void SetActivePage(TTabSheet * Page);
+  void FocusAndHighlightControl(TControl * Control, const UnicodeString & Text);
+  void CMFocusChanged(TMessage & Message);
+  void HideFocus(int State);
+  static int __fastcall CompareControlByLocation(void * Item1, void * Item2);
+  void AddSearchResult(TStrings * Results, UnicodeString & Caption, TControl * Control, bool & NewResults);
+  void SetFocusIfEnabled(TControl * Control);
+  UnicodeString GetControlText(TControl * Control);
+  TWinControl * GetSearchParent(TControl * Control);
 public:
   virtual __fastcall ~TPreferencesDialog();
   bool __fastcall Execute(TPreferencesDialogData * DialogData);
@@ -542,6 +563,7 @@ protected:
   TListViewScrollOnDragOver * __fastcall ScrollOnDragOver(TObject * ListView);
   void __fastcall LoadLanguages();
   TTabSheet * __fastcall FindPageForTreeNode(TTreeNode * Node);
+  TTreeNode * FindTreeNodeForPage(TTabSheet * Sheet);
   bool __fastcall CanSetMasterPassword();
   void __fastcall ChangeMasterPassword(UnicodeString Message);
   void __fastcall MasterPasswordChanged(

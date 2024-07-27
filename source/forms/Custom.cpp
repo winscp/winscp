@@ -336,20 +336,7 @@ void __fastcall TCustomDialog::AddText(TLabel * Label)
   Label->Top = FPos;
   Label->ShowAccelChar = false;
 
-  TRect TextRect;
-  SetRect(&TextRect, 0, 0, Label->Width, 0);
-  DrawText(Label->Canvas->Handle, Label->Caption.c_str(), Label->Caption.Length() + 1, &TextRect,
-    DT_EXPANDTABS | DT_CALCRECT | DT_WORDBREAK | DT_NOPREFIX |
-    Label->DrawTextBiDiModeFlagsReadingOnly());
-  if (TextRect.Height() > Label->Height)
-  {
-    Label->Height = TextRect.Height();
-    Label->AutoSize = false;
-  }
-  else
-  {
-    Label->WordWrap = false;
-  }
+  AutoSizeLabel(Label);
 
   AdjustHeight(Label);
 }

@@ -13,6 +13,7 @@ object PreferencesDialog: TPreferencesDialog
   OldCreateOrder = True
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
+  OnShortCut = FormShortCut
   OnShow = FormShow
   DesignSize = (
     545
@@ -547,6 +548,7 @@ object PreferencesDialog: TPreferencesDialog
               'ry)'#13#10'- keyboard shortcuts like in Norton Commander (and other si' +
               'milar programs as Total Commander, Midnight Commander...)'#13#10'- dra' +
               'g && drop to/from both panels'
+            FocusControl = CommanderInterfaceButton2
             WordWrap = True
             OnClick = CommanderClick
           end
@@ -560,6 +562,7 @@ object PreferencesDialog: TPreferencesDialog
             Caption = 
               '- only remote directory'#13#10'- keyboard shortcuts like in Windows Fi' +
               'le Explorer'#13#10'- drag && drop'
+            FocusControl = ExplorerInterfaceButton2
             WordWrap = True
             OnClick = ExplorerClick
           end
@@ -1429,6 +1432,7 @@ object PreferencesDialog: TPreferencesDialog
               'ile Explorer). Does not allow downloads to other destinations (Z' +
               'IP archives,  FTP, etc.). Uses drag&&drop shell extension, when ' +
               'available.'
+            FocusControl = DDFakeFileEnabledButton
             WordWrap = True
             OnClick = DDLabelClick
           end
@@ -1443,6 +1447,7 @@ object PreferencesDialog: TPreferencesDialog
               'Allows downloads to any destinations (regular folders, ZIP archi' +
               'ves,  FTP, etc.). Files are downloaded first to temporary folder' +
               ', from where they are delivered to the destination.'
+            FocusControl = DDFakeFileDisabledButton
             WordWrap = True
             OnClick = DDLabelClick
           end
@@ -1453,6 +1458,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 13
             Anchors = [akLeft, akTop, akRight]
             Caption = 'DragExtStatusLabel'
+            FocusControl = DDFakeFileEnabledButton
             ShowAccelChar = False
             OnClick = DDLabelClick
           end
@@ -1812,6 +1818,7 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
             Caption = 'Specify where to temporarily store edited and downloaded files.'
+            FocusControl = DDSystemTemporaryDirectoryButton
             ShowAccelChar = False
             WordWrap = True
           end
@@ -3505,6 +3512,25 @@ object PreferencesDialog: TPreferencesDialog
           end
         end
       end
+      object SearchSheet: TTabSheet
+        HelpType = htKeyword
+        HelpKeyword = 'ui_pref_search'
+        Caption = 'SearchSheet'
+        ImageIndex = 24
+        TabVisible = False
+        DesignSize = (
+          405
+          422)
+        object SearchGroup: TGroupBox
+          Left = 8
+          Top = 8
+          Width = 389
+          Height = 414
+          Anchors = [akLeft, akTop, akRight, akBottom]
+          Caption = 'Search'
+          TabOrder = 0
+        end
+      end
     end
     object LeftPanel: TPanel
       Left = 0
@@ -3519,9 +3545,9 @@ object PreferencesDialog: TPreferencesDialog
         432)
       object NavigationTree: TTreeView
         Left = 8
-        Top = 9
+        Top = 36
         Width = 116
-        Height = 422
+        Height = 395
         Anchors = [akLeft, akTop, akRight, akBottom]
         DoubleBuffered = True
         HideSelection = False
@@ -3531,10 +3557,11 @@ object PreferencesDialog: TPreferencesDialog
         ReadOnly = True
         ShowButtons = False
         ShowRoot = False
-        TabOrder = 0
+        TabOrder = 1
         OnChange = NavigationTreeChange
         OnChanging = NavigationTreeChanging
         OnCollapsing = NavigationTreeCollapsing
+        OnEnter = NavigationTreeEnter
         Items.NodeData = {
           030B000000360000000000000001000000FFFFFFFFFFFFFFFF00000000000000
           0005000000010C45006E007600690072006F006E006D0065006E007400580032
@@ -3576,6 +3603,21 @@ object PreferencesDialog: TPreferencesDialog
           FFFFFFFFFF0000000000000000000000000108530074006F0072006100670065
           0058002E000000000000000F000000FFFFFFFFFFFFFFFF000000000000000000
           000000010855007000640061007400650073005800}
+      end
+      object SearchEdit: TComboEdit
+        Left = 10
+        Top = 9
+        Width = 116
+        Height = 21
+        HelpType = htKeyword
+        HelpKeyword = 'ui_pref_search'
+        ButtonTabStop = False
+        ButtonCaption = #10005
+        ClickKey = 0
+        TabOrder = 0
+        OnButtonClick = SearchEditButtonClick
+        OnChange = SearchEditChangeEnter
+        OnEnter = SearchEditChangeEnter
       end
     end
   end

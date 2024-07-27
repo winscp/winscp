@@ -257,10 +257,7 @@ void TAuthenticateForm::ExternalLabel(TLabel * Label)
 TList * __fastcall TAuthenticateForm::GeneratePrompt(
   TPromptKind Kind, const UnicodeString & Instructions, TStrings * Prompts)
 {
-  while (FPromptParent->ControlCount > 0)
-  {
-    delete FPromptParent->Controls[0];
-  }
+  DeleteChildren(FPromptParent);
   TList * Result = new TList;
 
   int Current = FPromptTop;

@@ -27,7 +27,8 @@
 #include <WinApi.h>
 #include <vssym32.h>
 //---------------------------------------------------------------------------
-const UnicodeString LinkAppLabelMark(TraceInitStr(L" \x00BB"));
+const UnicodeString ContextSeparator(TraceInitStr(L"\x00BB"));
+const UnicodeString LinkAppLabelMark(TraceInitStr(UnicodeString(L" ") + ContextSeparator));
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -2972,6 +2973,36 @@ void AutoSizeButton(TButton * Button)
   }
 }
 //---------------------------------------------------------------------------
+template<class T>
+bool DoAutoSizeLabel(T * Label, TCanvas * Canvas)
+{
+  TRect TextRect;
+  SetRect(&TextRect, 0, 0, Label->Width, 0);
+  DrawText(Canvas->Handle, Label->Caption.c_str(), Label->Caption.Length() + 1, &TextRect,
+    DT_EXPANDTABS | DT_CALCRECT | DT_WORDBREAK | DT_NOPREFIX |
+    Label->DrawTextBiDiModeFlagsReadingOnly());
+  bool Result = (TextRect.Height() > Label->Height);
+  if (Result)
+  {
+    Label->Height = TextRect.Height();
+    Label->AutoSize = false;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void AutoSizeLabel(TLabel * Label)
+{
+  if (!DoAutoSizeLabel(Label, Label->Canvas))
+  {
+    Label->WordWrap = false;
+  }
+}
+//---------------------------------------------------------------------------
+void AutoSizeLabel(TStaticText * Label)
+{
+  std::unique_ptr<TCanvas> Canvas(CreateControlCanvas(Label));
+  DoAutoSizeLabel(Label, Canvas.get());
+}//---------------------------------------------------------------------------
 void GiveTBItemPriority(TTBCustomItem * Item)
 {
   DebugAssert(Item->GetTopComponent() != NULL);
@@ -2982,5 +3013,13 @@ void GiveTBItemPriority(TTBCustomItem * Item)
   {
     TTBItemViewer * Viewer = ToolbarComponent->View->Find(Item);
     ToolbarComponent->View->GivePriority(Viewer);
+  }
+}
+//---------------------------------------------------------------------------
+void DeleteChildren(TWinControl * Control)
+{
+  while (Control->ControlCount > 0)
+  {
+    delete Control->Controls[0];
   }
 }

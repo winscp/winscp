@@ -9,6 +9,7 @@
 #include <HistoryComboBox.hpp>
 //---------------------------------------------------------------------------
 const TColor LinkColor = clBlue;
+extern const UnicodeString ContextSeparator;
 //---------------------------------------------------------------------------
 void __fastcall FixListColumnWidth(TListView * TListView, int Index);
 void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrinkIndex = -1);
@@ -98,5 +99,8 @@ TCanvas * CreateControlCanvas(TControl * Control);
 void AutoSizeButton(TButton * Button);
 namespace Tb2item { class TTBCustomItem; }
 void GiveTBItemPriority(Tb2item::TTBCustomItem * Item);
+void DeleteChildren(TWinControl * Control);
+void AutoSizeLabel(TLabel * Label);
+void AutoSizeLabel(TStaticText * Label);
 //---------------------------------------------------------------------------
 #endif  // VCLCommonH
