@@ -3970,6 +3970,18 @@ void __fastcall TSFTPFileSystem::CopyFile(
       Packet.AddString(DestRemoteHandle);
       Packet.AddInt64(0);
       SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
+
+      if (DebugAlwaysTrue(File != NULL))
+      {
+        TSFTPPacket PropertiesRequest(SSH_FXP_SETSTAT);
+        AddPathString(PropertiesRequest, NewNameCanonical);
+
+        unsigned short Rights = File->Rights->NumberSet;
+        TDSTMode DSTMode = FTerminal->SessionData->DSTMode;
+        __int64 MTime = ConvertTimestampToUnix(DateTimeToFileTime(File->Modification, DSTMode), DSTMode);
+        PropertiesRequest.AddProperties(&Rights, NULL, NULL, &MTime, NULL, NULL, false, FVersion, FUtfStrings);
+        SendPacketAndReceiveResponse(&PropertiesRequest, &Packet, SSH_FXP_STATUS);
+      }
     }
     __finally
     {
