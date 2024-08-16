@@ -819,12 +819,20 @@ begin
   // it would truncate non-existing directory to first superior existing
   Value := ReplaceStr(Value, '/', '\');
 
+  // GetLongPathName would resolve to it the current working directory
+  if (Length(Value) = 2) and CharInSet(UpperCase(Value)[1], ['A'..'Z']) and (Value[2] = ':') then
+  begin
+    Value := Value + '\';
+  end
+    else
   // Convert to long path
-  Len := GetLongPathName(PChar(ApiPath(Value)), nil, 0);
-  SetLength(LongPath, Len);
-  Len := GetLongPathName(PChar(ApiPath(Value)), PChar(LongPath), Len);
-  if Len > 0 then
-    Value := Copy(LongPath, 1, Len);
+  begin
+    Len := GetLongPathName(PChar(ApiPath(Value)), nil, 0);
+    SetLength(LongPath, Len);
+    Len := GetLongPathName(PChar(ApiPath(Value)), PChar(LongPath), Len);
+    if Len > 0 then
+      Value := Copy(LongPath, 1, Len);
+  end;
 
   CheckCanOpenDirectory(Value);
 
@@ -2831,6 +2839,7 @@ begin
       DriveRoot := DriveInfo.GetDriveRoot(Drive);
       // When the drive is not valid, the GetDir returns the current drive working directory, detect that,
       // and let it fail later when trying to open root of the invalid drive.
+      // (maybe GetLongPathName would not have that side effect?)
       if not StartsText(DriveRoot, APath) then
         APath := DriveRoot;
       APath := ExcludeTrailingPathDelimiter(APath);
