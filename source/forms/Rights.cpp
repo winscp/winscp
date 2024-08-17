@@ -39,9 +39,6 @@ __fastcall TRightsFrame::TRightsFrame(TComponent* Owner)
   COPY_HINT(Exec);
   #undef COPY_HINT
 
-  UpgradeSpeedButton(OwnerButton);
-  UpgradeSpeedButton(GroupButton);
-  UpgradeSpeedButton(OthersButton);
 }
 //---------------------------------------------------------------------------
 __fastcall TRightsFrame::~TRightsFrame()

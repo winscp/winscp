@@ -525,8 +525,6 @@ UnicodeString __fastcall StoreColor(TColor Color);
 void __fastcall FixButtonImage(TButton * Button);
 void __fastcall CenterButtonImage(TButton * Button);
 
-void __fastcall UpgradeSpeedButton(TSpeedButton * Button);
-
 int __fastcall AdjustLocaleFlag(const UnicodeString & S, TLocaleFlagOverride LocaleFlagOverride, bool Recommended, int On, int Off);
 
 void __fastcall SetGlobalMinimizeHandler(TCustomForm * Form, TNotifyEvent OnMinimize);

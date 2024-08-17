@@ -1130,11 +1130,6 @@ TPopupMenu * __fastcall CreateColorPopupMenu(TColor Color,
   return PopupMenu.release();
 }
 //---------------------------------------------------------------------------
-void __fastcall UpgradeSpeedButton(TSpeedButton * /*Button*/)
-{
-  // no-op yet
-}
-//---------------------------------------------------------------------------
 struct TThreadParam
 {
   TThreadFunc ThreadFunc;
