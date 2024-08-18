@@ -5,54 +5,33 @@ object RightsFrame: TRightsFrame
   Height = 109
   TabOrder = 0
   OnContextPopup = FrameContextPopup
-  object OwnerLabel: TLabel
-    Left = 4
-    Top = 4
-    Width = 32
-    Height = 13
-    Caption = '&Owner'
-    FocusControl = OwnerReadCheck
-  end
-  object GroupLabel: TLabel
-    Left = 4
-    Top = 24
-    Width = 29
-    Height = 13
-    Caption = '&Group'
-    FocusControl = GroupReadCheck
-  end
-  object OthersLabel: TLabel
-    Left = 4
-    Top = 44
-    Width = 33
-    Height = 13
-    Caption = 'Ot&hers'
-    FocusControl = OthersReadCheck
-  end
   object OthersButton: TSpeedButton
     Tag = 3
     Left = 0
-    Top = 41
-    Width = 56
-    Height = 19
+    Top = 42
+    Width = 43
+    Height = 18
+    Caption = 'Ot&hers'
     Flat = True
     OnClick = RightsButtonsClick
   end
   object GroupButton: TSpeedButton
     Tag = 2
     Left = 0
-    Top = 21
-    Width = 56
+    Top = 22
+    Width = 39
     Height = 19
+    Caption = '&Group'
     Flat = True
     OnClick = RightsButtonsClick
   end
   object OwnerButton: TSpeedButton
     Tag = 1
     Left = 0
-    Top = 1
-    Width = 56
+    Top = 2
+    Width = 40
     Height = 19
+    Caption = '&Owner'
     Flat = True
     OnClick = RightsButtonsClick
   end
