@@ -263,7 +263,6 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   SetSubmenu(NonVisualDataModule->ColorMenuItem, true);
 
   UseDesktopFont(SessionsPageControl);
-  UpdateSessionsPageControlHeight();
   UseDesktopFont(RemoteDirView);
   UseDesktopFont(RemoteDriveView);
   UseDesktopFont(QueueView3);
@@ -287,6 +286,8 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FSessionColors->ColorDepth = cd32Bit;
   AddFixedSessionImages();
   SessionsPageControl->Images = FSessionColors;
+  // Needed for Explorer (Commander calls it implicitly on its own)
+  UpdateSessionsPageControlHeight();
   UpdateQueueLabel();
   CheckStoreTransition();
 
@@ -1224,6 +1225,16 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
       (FSessionColors != NULL))
   {
     SessionListChanged();
+  }
+
+  if (GlyphsModule->LargerToolbar != WinConfiguration->LargerToolbar)
+  {
+    GlyphsModule->LargerToolbar = WinConfiguration->LargerToolbar;
+    if (FSessionColors != NULL)
+    {
+      RegenerateSessionColorsImageList();
+      UpdateSessionsPageControlHeight();
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -9908,13 +9919,18 @@ void __fastcall TCustomScpExplorerForm::UpdateImages()
   // noop
 }
 //---------------------------------------------------------------------------
+void TCustomScpExplorerForm::RegenerateSessionColorsImageList()
+{
+  FSessionColors->Clear();
+  AddFixedSessionImages();
+  ::RegenerateSessionColorsImageList(FSessionColors, FSessionColorMaskImageIndex);
+  UpdateImages();
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CMDpiChanged(TMessage & Message)
 {
   TForm::Dispatch(&Message);
-  FSessionColors->Clear();
-  AddFixedSessionImages();
-  RegenerateSessionColorsImageList(FSessionColors, FSessionColorMaskImageIndex);
-  UpdateImages();
+  RegenerateSessionColorsImageList();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMDpiChanged(TMessage & Message)
@@ -11108,15 +11124,7 @@ void __fastcall TCustomScpExplorerForm::ChangeScale(int M, int D)
 {
   TForm::ChangeScale(M, D);
   int APixelsPerInch = GetControlPixelsPerInch(this);
-  HANDLE ResourceModule = GUIConfiguration->ChangeToDefaultResourceModule();
-  try
-  {
-    GlyphsModule->SetPixelsPerInch(APixelsPerInch);
-  }
-  __finally
-  {
-    GUIConfiguration->ChangeResourceModule(ResourceModule);
-  }
+  GlyphsModule->PixelsPerInch = APixelsPerInch;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DockContextPopup(TObject * Sender, TPoint & MousePos, bool & /*Handled*/)

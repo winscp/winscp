@@ -17,6 +17,7 @@
 #include "TBX.hpp"
 #include "VCLCommon.h"
 #include <HistoryComboBox.hpp>
+#include "Glyphs.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "TB2Item"
@@ -352,6 +353,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     LockToolbarsAction->Checked = WinConfiguration->LockToolbars, )
   UPDEX(SelectiveToolbarTextAction, true,
     SelectiveToolbarTextAction->Checked = WinConfiguration->SelectiveToolbarText, )
+  UPDEX(LargerToolbarAction, GlyphsModule->LargerToolbarPossible,
+    LargerToolbarAction->Checked = WinConfiguration->LargerToolbar, )
   UPDCOMP(CustomCommandsBand)
   UPD(ColorMenuAction2, HasTerminal)
   UPD(GoToAddressAction, true)
@@ -703,6 +706,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(FileColorsPreferencesAction, PreferencesDialog(pmFileColors) )
     EXE(LockToolbarsAction, WinConfiguration->LockToolbars = !WinConfiguration->LockToolbars)
     EXE(SelectiveToolbarTextAction, WinConfiguration->SelectiveToolbarText = !WinConfiguration->SelectiveToolbarText)
+    EXE(LargerToolbarAction, WinConfiguration->LargerToolbar = (WinConfiguration->LargerToolbar > 0) ? 0 : 2)
     EXECOMP(CustomCommandsBand)
     EXE(ColorMenuAction2, CreateSessionColorMenu(ColorMenuAction2))
     EXE(GoToAddressAction, ScpExplorer->GoToAddress())

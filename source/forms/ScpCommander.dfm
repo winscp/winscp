@@ -550,6 +550,9 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXItem133: TTBXItem
             Action = NonVisualDataModule.SelectiveToolbarTextAction
           end
+          object TBXItem272: TTBXItem
+            Action = NonVisualDataModule.LargerToolbarAction
+          end
         end
         object TBXSubmenuItem11: TTBXSubmenuItem
           Action = NonVisualDataModule.CommanderLocalPanelAction

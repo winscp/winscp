@@ -1798,6 +1798,13 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_toolbars'
       Hint = 'Show text labels for selected important commands on toolbars'
     end
+    object LargerToolbarAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = '&Larger Toolbar Icons'
+      HelpKeyword = 'ui_toolbars'
+      Hint = 'Show larger toolbar icons'
+    end
     object CustomCommandsBandAction: TAction
       Tag = 15
       Category = 'View'
@@ -2520,11 +2527,16 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem16: TTBXItem
       Action = ExplorerCustomCommandsBandAction
     end
+    object TBXSeparatorItem27: TTBXSeparatorItem
+    end
     object TBXItem7: TTBXItem
       Action = LockToolbarsAction
     end
     object TBXItem48: TTBXItem
       Action = SelectiveToolbarTextAction
+    end
+    object TBXItem120: TTBXItem
+      Action = LargerToolbarAction
     end
     object TBXSubmenuItem4: TTBXSubmenuItem
       Action = CustomizeToolbarAction
@@ -2606,11 +2618,16 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem15: TTBXItem
       Action = CommanderCustomCommandsBandAction
     end
+    object TBXSeparatorItem24: TTBXSeparatorItem
+    end
     object TBXItem6: TTBXItem
       Action = LockToolbarsAction
     end
     object TBXItem46: TTBXItem
       Action = SelectiveToolbarTextAction
+    end
+    object TBXItem117: TTBXItem
+      Action = LargerToolbarAction
     end
     object TBXItem77: TTBXSubmenuItem
       Action = CustomizeToolbarAction
@@ -2776,11 +2793,16 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem45: TTBXItem
       Action = CommanderRemoteSelectionBandAction2
     end
+    object TBXSeparatorItem26: TTBXSeparatorItem
+    end
     object TBXItem37: TTBXItem
       Action = LockToolbarsAction
     end
     object TBXItem49: TTBXItem
       Action = SelectiveToolbarTextAction
+    end
+    object TBXItem119: TTBXItem
+      Action = LargerToolbarAction
     end
     object TBXSubmenuItem9: TTBXSubmenuItem
       Action = CustomizeToolbarAction
@@ -2860,11 +2882,16 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem44: TTBXItem
       Action = CommanderLocalSelectionBandAction2
     end
+    object TBXSeparatorItem25: TTBXSeparatorItem
+    end
     object TBXItem38: TTBXItem
       Action = LockToolbarsAction
     end
     object TBXItem47: TTBXItem
       Action = SelectiveToolbarTextAction
+    end
+    object TBXItem118: TTBXItem
+      Action = LargerToolbarAction
     end
     object TBXSubmenuItem6: TTBXSubmenuItem
       Action = CustomizeToolbarAction

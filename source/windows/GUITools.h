@@ -42,7 +42,8 @@ void __fastcall SelectScaledImageList(TImageList * ImageList);
 void __fastcall CopyImageList(TImageList * TargetList, TImageList * SourceList);
 void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName);
 int __fastcall DialogImageSize(TForm * Form);
-int __fastcall NormalizePixelsPerInch(int PixelsPerInch);
+int NormalizePixelsPerInch(int PixelsPerInch);
+int LargerPixelsPerInch(int PixelsPerInch, int Larger);
 void __fastcall HideComponentsPanel(TForm * Form);
 struct TIncrementalSearchState
 {

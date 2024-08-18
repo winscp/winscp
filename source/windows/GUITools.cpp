@@ -1103,7 +1103,7 @@ static void __fastcall DoSelectScaledImageList(TImageList * ImageList)
 {
   TImageList * MatchingList = NULL;
   int MachingPixelsPerInch = 0;
-  int PixelsPerInch = GetComponentPixelsPerInch(ImageList);
+  int PixelsPerInch = LargerPixelsPerInch(GetComponentPixelsPerInch(ImageList), WinConfiguration->LargerToolbar);
 
   for (int Index = 0; Index < ImageList->Owner->ComponentCount; Index++)
   {
@@ -1822,7 +1822,7 @@ static std::map<int, TPngImageList *> AnimationsImages;
 static std::map<int, TImageList *> ButtonImages;
 static std::map<int, TPngImageList *> DialogImages;
 //---------------------------------------------------------------------------
-int __fastcall NormalizePixelsPerInch(int PixelsPerInch)
+int __fastcall DoNormalizePixelsPerInch(int PixelsPerInch, bool Larger)
 {
   if (PixelsPerInch >= 192)
   {
@@ -1830,17 +1830,33 @@ int __fastcall NormalizePixelsPerInch(int PixelsPerInch)
   }
   else if (PixelsPerInch >= 144)
   {
-    PixelsPerInch = 144;
+    PixelsPerInch = Larger ? 192 : 144;
   }
   else if (PixelsPerInch >= 120)
   {
-    PixelsPerInch = 120;
+    PixelsPerInch = Larger ? 144 : 120;
   }
   else
   {
-    PixelsPerInch = 96;
+    PixelsPerInch = Larger ? 120 : 96;
   }
   return PixelsPerInch;
+}
+//---------------------------------------------------------------------------
+int NormalizePixelsPerInch(int PixelsPerInch)
+{
+  return DoNormalizePixelsPerInch(PixelsPerInch, false);
+}
+//---------------------------------------------------------------------------
+int LargerPixelsPerInch(int PixelsPerInch, int Larger)
+{
+  int Result = PixelsPerInch;
+  while (Larger > 0)
+  {
+    Result = DoNormalizePixelsPerInch(Result, true);
+    Larger--;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 static int __fastcall NeedImagesModule(TControl * Control)

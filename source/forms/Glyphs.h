@@ -17,12 +17,20 @@ __published:
 public:
   __fastcall TGlyphsModule(TComponent * Owner);
 
-  void __fastcall SetPixelsPerInch(int PixelsPerInch);
+  __property int PixelsPerInch = { read = FBasePixelsPerInch, write = SetPixelsPerInch };
+  __property int LargerToolbar = { read = FLargerToolbar, write = SetLargerToolbar };
+  __property bool LargerToolbarPossible = { read = GetLargerToolbarPossible };
 
 private:
+  int FLargerToolbar;
+  int FBasePixelsPerInch;
   int FPixelsPerInch;
 
   __fastcall TGlyphsModule();
+  void UpdatePixelsPerInch();
+  void SetPixelsPerInch(int PixelsPerInch);
+  void SetLargerToolbar(int LargerToolbar);
+  bool GetLargerToolbarPossible();
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TGlyphsModule * GlyphsModule;

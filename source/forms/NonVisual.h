@@ -714,6 +714,15 @@ __published:    // IDE-managed Components
   TAction *RemoteThumbnailAction;
   TAction *LocalReportAction;
   TAction *LocalThumbnailAction;
+  TTBXSeparatorItem *TBXSeparatorItem24;
+  TAction *LargerToolbarAction;
+  TTBXItem *TBXItem117;
+  TTBXSeparatorItem *TBXSeparatorItem25;
+  TTBXSeparatorItem *TBXSeparatorItem26;
+  TTBXItem *TBXItem118;
+  TTBXItem *TBXItem119;
+  TTBXItem *TBXItem120;
+  TTBXSeparatorItem *TBXSeparatorItem27;
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);

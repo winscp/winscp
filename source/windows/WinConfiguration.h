@@ -441,6 +441,7 @@ private:
   bool FCopyParamAutoSelectNotice;
   bool FLockToolbars;
   bool FSelectiveToolbarText;
+  int FLargerToolbar;
   TEditorList * FEditorList;
   TEditorPreferences * FLegacyEditor;
   UnicodeString FDefaultKeyFile;
@@ -561,6 +562,7 @@ private:
   void __fastcall SetVersionHistory(UnicodeString value);
   void __fastcall SetLockToolbars(bool value);
   void __fastcall SetSelectiveToolbarText(bool value);
+  void SetLargerToolbar(int value);
   const TEditorList * __fastcall GetEditorList();
   void __fastcall SetEditorList(const TEditorList * value);
   void __fastcall SetAutoOpenInPutty(bool value);
@@ -772,6 +774,7 @@ public:
   __property bool CopyParamAutoSelectNotice = { read = FCopyParamAutoSelectNotice, write = SetCopyParamAutoSelectNotice };
   __property bool LockToolbars = { read = FLockToolbars, write = SetLockToolbars };
   __property bool SelectiveToolbarText = { read = FSelectiveToolbarText, write = SetSelectiveToolbarText };
+  __property int LargerToolbar = { read = FLargerToolbar, write = SetLargerToolbar };
   __property bool AutoOpenInPutty = { read = FAutoOpenInPutty, write = SetAutoOpenInPutty };
   __property bool RefreshRemotePanel = { read = FRefreshRemotePanel, write = SetRefreshRemotePanel };
   __property TDateTime RefreshRemotePanelInterval = { read = FRefreshRemotePanelInterval, write = SetRefreshRemotePanelInterval };

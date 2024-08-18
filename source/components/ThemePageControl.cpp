@@ -162,6 +162,7 @@ __fastcall TThemePageControl::TThemePageControl(TComponent * Owner) :
   FOnTabHint = NULL;
   FTabTheme = NULL;
   FActiveTabTheme = NULL;
+  FTextHeight = -1;
 }
 //----------------------------------------------------------------------------------------------------------
 int __fastcall TThemePageControl::GetTabsHeight()
@@ -217,6 +218,10 @@ void __fastcall TThemePageControl::PaintWindow(HDC DC)
   // 2nd paint the inactive tabs
 
   int SelectedIndex = TabIndex; // optimization
+
+  std::unique_ptr<TCanvas> ACanvas(new TCanvas());
+  ACanvas->Handle = DC;
+  FTextHeight = CalculateTextHeight(ACanvas.get());
 
   for (int Tab = 0; Tab < PageCount; Tab++)
   {
@@ -346,6 +351,12 @@ void __fastcall TThemePageControl::ItemTextRect(int Item, TRect & Rect)
     Rect.Left -= 2;
   }
   Rect.Right -= 3;
+  // Shouldn't get here until the control has (started) painted
+  if (DebugAlwaysTrue(FTextHeight > 0))
+  {
+    int AlignOffset = ((Rect.Height() - FTextHeight) / 2) - ScaleByTextHeight(this, 4) + 2;
+    Rect.Top += AlignOffset;
+  }
   OffsetRect(&Rect, 0, ((Item == TabIndex) ? 0 : -2));
 }
 //----------------------------------------------------------------------------------------------------------
@@ -408,7 +419,6 @@ void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int
     Images->Draw(Canvas.get(), Left, Y, Pages[Item]->ImageIndex, !Shadowed);
   }
 
-  int TextHeight = 20;
   int OldMode = SetBkMode(DC, TRANSPARENT);
   if (!Text.IsEmpty())
   {
@@ -420,7 +430,7 @@ void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int
     HFONT OldFont = (HFONT)SelectObject(DC, Font->Handle);
     wchar_t * Buf = new wchar_t[Text.Length() + 1 + 4];
     wcscpy(Buf, Text.c_str());
-    TRect TextRect(0, 0, Rect.Right - Rect.Left, TextHeight);
+    TRect TextRect(0, 0, Rect.Right - Rect.Left, 20);
     // Truncates too long texts with ellipsis
     ::DrawText(DC, Buf, -1, &TextRect, DT_CALCRECT | DT_SINGLELINE | DT_MODIFYSTRING | DT_END_ELLIPSIS);
 
@@ -509,6 +519,7 @@ TRect __fastcall TThemePageControl::TabButtonRect(int Index)
   Canvas->Font = Font;
   GetTextMetrics(Canvas->Handle, &TextMetric);
 
+  // TextMetric.tmAscent is approx the same thing as FTextHeight
   Rect.Top += TextMetric.tmAscent - ATabButtonSize + CrossPadding;
   Rect.Left = Rect.Right - ATabButtonSize - ScaleByTextHeight(this, 1);
   if (Index == TabIndex)

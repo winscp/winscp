@@ -54,6 +54,7 @@ function LoadPixelsPerInch(S: string; Control: TControl): Integer;
 function SavePixelsPerInch(Control: TControl): string;
 function SaveDefaultPixelsPerInch: string;
 
+function CalculateTextHeight(Canvas: TCanvas): Integer;
 function ScaleByTextHeight(Control: TControl; Dimension: Integer): Integer;
 function ScaleByTextHeightRunTime(Control: TControl; Dimension: Integer): Integer;
 function ScaleByControlTextHeightRunTime(Canvas: TCanvas; Dimension: Integer): Integer;

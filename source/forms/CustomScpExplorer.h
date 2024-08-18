@@ -765,6 +765,7 @@ protected:
   bool NeedSecondarySessionForRemoteCopy(TStrings * FileList);
   void ReleaseHiContrastTheme();
   bool CanCalculateChecksum();
+  void RegenerateSessionColorsImageList();
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();

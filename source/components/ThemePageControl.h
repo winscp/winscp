@@ -109,6 +109,7 @@ private:
   int FSessionTabShrink;
   TTBXTheme * FTabTheme;
   TTBXTheme * FActiveTabTheme;
+  int FTextHeight;
 };
 //---------------------------------------------------------------------------
 #endif

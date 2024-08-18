@@ -393,6 +393,9 @@ inherited ScpExplorerForm: TScpExplorerForm
           object TBXItem140: TTBXItem
             Action = NonVisualDataModule.SelectiveToolbarTextAction
           end
+          object TBXItem169: TTBXItem
+            Action = NonVisualDataModule.LargerToolbarAction
+          end
         end
         object SessionsTabs3: TTBXItem
           Action = NonVisualDataModule.SessionsTabsAction2

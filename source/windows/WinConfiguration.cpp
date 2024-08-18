@@ -587,6 +587,7 @@ void __fastcall TWinConfiguration::Default()
   FCopyParamAutoSelectNotice = true;
   FLockToolbars = false;
   FSelectiveToolbarText = true;
+  FLargerToolbar = 0;
   FAutoOpenInPutty = false;
   FRefreshRemotePanel = false;
   FRefreshRemotePanelInterval = TDateTime(0, 1, 0, 0);
@@ -1075,6 +1076,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     CopyParamAutoSelectNotice); \
     KEY(Bool,     LockToolbars); \
     KEY(Bool,     SelectiveToolbarText); \
+    KEY(Integer,  LargerToolbar); \
     KEY(Bool,     AutoOpenInPutty); \
     KEY(Bool,     RefreshRemotePanel); \
     KEY(DateTime, RefreshRemotePanelInterval); \
@@ -2316,6 +2318,11 @@ void __fastcall TWinConfiguration::SetLockToolbars(bool value)
 void __fastcall TWinConfiguration::SetSelectiveToolbarText(bool value)
 {
   SET_CONFIG_PROPERTY(SelectiveToolbarText);
+}
+//---------------------------------------------------------------------------
+void TWinConfiguration::SetLargerToolbar(int value)
+{
+  SET_CONFIG_PROPERTY(LargerToolbar);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetAutoOpenInPutty(bool value)
