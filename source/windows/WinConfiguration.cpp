@@ -587,7 +587,7 @@ void __fastcall TWinConfiguration::Default()
   FCopyParamAutoSelectNotice = true;
   FLockToolbars = false;
   FSelectiveToolbarText = true;
-  FLargerToolbar = 0;
+  FLargerToolbar = 1;
   FAutoOpenInPutty = false;
   FRefreshRemotePanel = false;
   FRefreshRemotePanelInterval = TDateTime(0, 1, 0, 0);

@@ -550,8 +550,20 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXItem133: TTBXItem
             Action = NonVisualDataModule.SelectiveToolbarTextAction
           end
-          object TBXItem272: TTBXItem
-            Action = NonVisualDataModule.LargerToolbarAction
+          object TBXItem272: TTBXSubmenuItem
+            Action = NonVisualDataModule.ToolbarIconSizeAction
+            object TBXItem273: TTBXItem
+              Action = NonVisualDataModule.ToolbarIconSizeNormalAction
+              RadioItem = True
+            end
+            object TBXItem274: TTBXItem
+              Action = NonVisualDataModule.ToolbarIconSizeLargeAction
+              RadioItem = True
+            end
+            object TBXItem275: TTBXItem
+              Action = NonVisualDataModule.ToolbarIconSizeVeryLargeAction
+              RadioItem = True
+            end
           end
         end
         object TBXSubmenuItem11: TTBXSubmenuItem

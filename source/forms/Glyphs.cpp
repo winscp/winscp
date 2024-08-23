@@ -50,9 +50,10 @@ void TGlyphsModule::SetLargerToolbar(int LargerToolbar)
   }
 }
 //---------------------------------------------------------------------------
-bool TGlyphsModule::GetLargerToolbarPossible()
+bool TGlyphsModule::IsLargerToolbarPossible(int Larger)
 {
-  return (LargerPixelsPerInch(FBasePixelsPerInch, 1) > FBasePixelsPerInch);
+  int Prev = LargerPixelsPerInch(FBasePixelsPerInch, Larger - 1);
+  return (LargerPixelsPerInch(Prev, 1) > Prev);
 }
 //---------------------------------------------------------------------------
 void TGlyphsModule::UpdatePixelsPerInch()

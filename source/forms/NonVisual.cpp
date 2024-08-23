@@ -353,8 +353,13 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     LockToolbarsAction->Checked = WinConfiguration->LockToolbars, )
   UPDEX(SelectiveToolbarTextAction, true,
     SelectiveToolbarTextAction->Checked = WinConfiguration->SelectiveToolbarText, )
-  UPDEX(LargerToolbarAction, GlyphsModule->LargerToolbarPossible,
-    LargerToolbarAction->Checked = WinConfiguration->LargerToolbar, )
+  UPD(ToolbarIconSizeAction, true)
+  UPDEX1(ToolbarIconSizeNormalAction, true,
+    ToolbarIconSizeNormalAction->Checked = (WinConfiguration->LargerToolbar <= 0))
+  UPDEX1(ToolbarIconSizeLargeAction, GlyphsModule->IsLargerToolbarPossible(1),
+    ToolbarIconSizeLargeAction->Checked = (WinConfiguration->LargerToolbar == 1))
+  UPDEX1(ToolbarIconSizeVeryLargeAction, GlyphsModule->IsLargerToolbarPossible(2),
+    ToolbarIconSizeVeryLargeAction->Checked = (WinConfiguration->LargerToolbar >= 2))
   UPDCOMP(CustomCommandsBand)
   UPD(ColorMenuAction2, HasTerminal)
   UPD(GoToAddressAction, true)
@@ -706,7 +711,10 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(FileColorsPreferencesAction, PreferencesDialog(pmFileColors) )
     EXE(LockToolbarsAction, WinConfiguration->LockToolbars = !WinConfiguration->LockToolbars)
     EXE(SelectiveToolbarTextAction, WinConfiguration->SelectiveToolbarText = !WinConfiguration->SelectiveToolbarText)
-    EXE(LargerToolbarAction, WinConfiguration->LargerToolbar = (WinConfiguration->LargerToolbar > 0) ? 0 : 2)
+    EXE(ToolbarIconSizeAction, )
+    EXE(ToolbarIconSizeNormalAction, WinConfiguration->LargerToolbar = 0)
+    EXE(ToolbarIconSizeLargeAction, WinConfiguration->LargerToolbar = 1)
+    EXE(ToolbarIconSizeVeryLargeAction, WinConfiguration->LargerToolbar = 2)
     EXECOMP(CustomCommandsBand)
     EXE(ColorMenuAction2, CreateSessionColorMenu(ColorMenuAction2))
     EXE(GoToAddressAction, ScpExplorer->GoToAddress())

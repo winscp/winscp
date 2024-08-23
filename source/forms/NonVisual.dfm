@@ -1798,12 +1798,33 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_toolbars'
       Hint = 'Show text labels for selected important commands on toolbars'
     end
-    object LargerToolbarAction: TAction
+    object ToolbarIconSizeAction: TAction
       Tag = 15
       Category = 'View'
-      Caption = '&Larger Toolbar Icons'
+      Caption = 'T&oolbar Icons Size'
       HelpKeyword = 'ui_toolbars'
-      Hint = 'Show larger toolbar icons'
+      Hint = 'Change toolbar icons size'
+    end
+    object ToolbarIconSizeNormalAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = '&Normal'
+      HelpKeyword = 'ui_toolbars'
+      Hint = 'Show normal toolbar icons'
+    end
+    object ToolbarIconSizeLargeAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = '&Large'
+      HelpKeyword = 'ui_toolbars'
+      Hint = 'Show large toolbar icons'
+    end
+    object ToolbarIconSizeVeryLargeAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = '&Very Large'
+      HelpKeyword = 'ui_toolbars'
+      Hint = 'Show very large toolbar icons'
     end
     object CustomCommandsBandAction: TAction
       Tag = 15
@@ -2535,8 +2556,20 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem48: TTBXItem
       Action = SelectiveToolbarTextAction
     end
-    object TBXItem120: TTBXItem
-      Action = LargerToolbarAction
+    object TBXSubmenuItem15: TTBXSubmenuItem
+      Action = ToolbarIconSizeAction
+      object TBXItem127: TTBXItem
+        Action = ToolbarIconSizeNormalAction
+        RadioItem = True
+      end
+      object TBXItem120: TTBXItem
+        Action = ToolbarIconSizeLargeAction
+        RadioItem = True
+      end
+      object TBXItem128: TTBXItem
+        Action = ToolbarIconSizeVeryLargeAction
+        RadioItem = True
+      end
     end
     object TBXSubmenuItem4: TTBXSubmenuItem
       Action = CustomizeToolbarAction
@@ -2626,8 +2659,20 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem46: TTBXItem
       Action = SelectiveToolbarTextAction
     end
-    object TBXItem117: TTBXItem
-      Action = LargerToolbarAction
+    object TBXSubmenuItem14: TTBXSubmenuItem
+      Action = ToolbarIconSizeAction
+      object TBXItem123: TTBXItem
+        Action = ToolbarIconSizeNormalAction
+        RadioItem = True
+      end
+      object TBXItem117: TTBXItem
+        Action = ToolbarIconSizeLargeAction
+        RadioItem = True
+      end
+      object TBXItem126: TTBXItem
+        Action = ToolbarIconSizeVeryLargeAction
+        RadioItem = True
+      end
     end
     object TBXItem77: TTBXSubmenuItem
       Action = CustomizeToolbarAction
@@ -2801,8 +2846,20 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem49: TTBXItem
       Action = SelectiveToolbarTextAction
     end
-    object TBXItem119: TTBXItem
-      Action = LargerToolbarAction
+    object TBXSubmenuItem13: TTBXSubmenuItem
+      Action = ToolbarIconSizeAction
+      object TBXItem121: TTBXItem
+        Action = ToolbarIconSizeNormalAction
+        RadioItem = True
+      end
+      object TBXItem119: TTBXItem
+        Action = ToolbarIconSizeLargeAction
+        RadioItem = True
+      end
+      object TBXItem122: TTBXItem
+        Action = ToolbarIconSizeVeryLargeAction
+        RadioItem = True
+      end
     end
     object TBXSubmenuItem9: TTBXSubmenuItem
       Action = CustomizeToolbarAction
@@ -2890,8 +2947,20 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem47: TTBXItem
       Action = SelectiveToolbarTextAction
     end
-    object TBXItem118: TTBXItem
-      Action = LargerToolbarAction
+    object TBXSubmenuItem16: TTBXSubmenuItem
+      Action = ToolbarIconSizeAction
+      object TBXItem129: TTBXItem
+        Action = ToolbarIconSizeNormalAction
+        RadioItem = True
+      end
+      object TBXItem118: TTBXItem
+        Action = ToolbarIconSizeLargeAction
+        RadioItem = True
+      end
+      object TBXItem130: TTBXItem
+        Action = ToolbarIconSizeVeryLargeAction
+        RadioItem = True
+      end
     end
     object TBXSubmenuItem6: TTBXSubmenuItem
       Action = CustomizeToolbarAction

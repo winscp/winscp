@@ -393,8 +393,20 @@ inherited ScpExplorerForm: TScpExplorerForm
           object TBXItem140: TTBXItem
             Action = NonVisualDataModule.SelectiveToolbarTextAction
           end
-          object TBXItem169: TTBXItem
-            Action = NonVisualDataModule.LargerToolbarAction
+          object TBXItem169: TTBXSubmenuItem
+            Action = NonVisualDataModule.ToolbarIconSizeAction
+            object TBXItem273: TTBXItem
+              Action = NonVisualDataModule.ToolbarIconSizeNormalAction
+              RadioItem = True
+            end
+            object TBXItem274: TTBXItem
+              Action = NonVisualDataModule.ToolbarIconSizeLargeAction
+              RadioItem = True
+            end
+            object TBXItem275: TTBXItem
+              Action = NonVisualDataModule.ToolbarIconSizeVeryLargeAction
+              RadioItem = True
+            end
           end
         end
         object SessionsTabs3: TTBXItem
