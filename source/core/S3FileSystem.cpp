@@ -232,7 +232,7 @@ static UnicodeString GetS3ConfigValue(
 //---------------------------------------------------------------------------
 static UnicodeString GetS3ConfigValue(
   const UnicodeString & Profile, const UnicodeString & EnvName, const UnicodeString & AConfigName,
-  const UnicodeString & CredentialsName, UnicodeString * Source)
+  const UnicodeString & CredentialsName, UnicodeString * Source, bool OnlyCached = false)
 {
   UnicodeString Result;
   UnicodeString ASource;
@@ -302,7 +302,7 @@ static UnicodeString GetS3ConfigValue(
       S3SecurityProfileChecked = false;
     }
 
-    if (!S3SecurityProfileChecked)
+    if (!S3SecurityProfileChecked && !OnlyCached)
     {
       S3Credentials.clear();
       S3SecurityProfile = EmptyStr;
@@ -386,24 +386,24 @@ static UnicodeString GetS3ConfigValue(
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString S3EnvUserName(const UnicodeString & Profile, UnicodeString * Source)
+UnicodeString S3EnvUserName(const UnicodeString & Profile, UnicodeString * Source, bool OnlyCached)
 {
-  return GetS3ConfigValue(Profile, AWS_ACCESS_KEY_ID, AWS_ACCESS_KEY_ID, L"AccessKeyId", Source);
+  return GetS3ConfigValue(Profile, AWS_ACCESS_KEY_ID, AWS_ACCESS_KEY_ID, L"AccessKeyId", Source, OnlyCached);
 }
 //---------------------------------------------------------------------------
-UnicodeString S3EnvPassword(const UnicodeString & Profile, UnicodeString * Source)
+UnicodeString S3EnvPassword(const UnicodeString & Profile, UnicodeString * Source, bool OnlyCached)
 {
-  return GetS3ConfigValue(Profile, AWS_SECRET_ACCESS_KEY, AWS_SECRET_ACCESS_KEY, L"SecretAccessKey", Source);
+  return GetS3ConfigValue(Profile, AWS_SECRET_ACCESS_KEY, AWS_SECRET_ACCESS_KEY, L"SecretAccessKey", Source, OnlyCached);
 }
 //---------------------------------------------------------------------------
-UnicodeString S3EnvSessionToken(const UnicodeString & Profile, UnicodeString * Source)
+UnicodeString S3EnvSessionToken(const UnicodeString & Profile, UnicodeString * Source, bool OnlyCached)
 {
-  return GetS3ConfigValue(Profile, AWS_SESSION_TOKEN, AWS_SESSION_TOKEN, L"Token", Source);
+  return GetS3ConfigValue(Profile, AWS_SESSION_TOKEN, AWS_SESSION_TOKEN, L"Token", Source, OnlyCached);
 }
 //---------------------------------------------------------------------------
-UnicodeString S3EnvRoleArn(const UnicodeString & Profile, UnicodeString * Source)
+UnicodeString S3EnvRoleArn(const UnicodeString & Profile, UnicodeString * Source, bool OnlyCached)
 {
-  return GetS3ConfigValue(Profile, AWS_ROLE_ARN, AWS_ROLE_ARN_KEY, EmptyStr, Source);
+  return GetS3ConfigValue(Profile, AWS_ROLE_ARN, AWS_ROLE_ARN_KEY, EmptyStr, Source, OnlyCached);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

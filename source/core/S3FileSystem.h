@@ -198,9 +198,9 @@ UnicodeString __fastcall S3LibDefaultHostName();
 UnicodeString __fastcall S3LibDefaultRegion();
 bool IsAmazonS3SessionData(TSessionData * Data);
 TStrings * GetS3Profiles();
-UnicodeString S3EnvUserName(const UnicodeString & Profile, UnicodeString * Source = NULL);
-UnicodeString S3EnvPassword(const UnicodeString & Profile, UnicodeString * Source = NULL);
-UnicodeString S3EnvSessionToken(const UnicodeString & Profile, UnicodeString * Source = NULL);
-UnicodeString S3EnvRoleArn(const UnicodeString & Profile, UnicodeString * Source = NULL);
+UnicodeString S3EnvUserName(const UnicodeString & Profile, UnicodeString * Source = NULL, bool OnlyCached = false);
+UnicodeString S3EnvPassword(const UnicodeString & Profile, UnicodeString * Source = NULL, bool OnlyCached = false);
+UnicodeString S3EnvSessionToken(const UnicodeString & Profile, UnicodeString * Source = NULL, bool OnlyCached = false);
+UnicodeString S3EnvRoleArn(const UnicodeString & Profile, UnicodeString * Source = NULL, bool OnlyCached = false);
 //------------------------------------------------------------------------------
 #endif
