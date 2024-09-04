@@ -267,8 +267,10 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(RemoteSelectAllAction2, DirView(osRemote)->FilesCount)
 
   //style
-  UPDACT(RemoteCycleStyleAction,
-    RemoteCycleStyleAction->ImageIndex = 8 + (DirView(osRemote)->DirViewStyle + 1) % 4)
+  #define STYLEIMAGE(STYLE) Style == dvs ## STYLE ? Remote ## STYLE ## Action->ImageIndex :
+  UPDACT(RemoteCycleStyleAction, int Style = DirView(osRemote)->DirViewStyle;
+    RemoteCycleStyleAction->ImageIndex = (STYLEIMAGE(Icon) STYLEIMAGE(SmallIcon) STYLEIMAGE(List) STYLEIMAGE(Report) RemoteIconAction->ImageIndex))
+  #undef STYLEIMAGE
   #define STYLEACTION(SIDE, STYLE) UPDACT(SIDE ## STYLE ## Action, \
     SIDE ## STYLE ## Action->Checked = (DirView(os ## SIDE)->DirViewStyle == dvs ## STYLE))
   STYLEACTION(Remote, Icon)
