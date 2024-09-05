@@ -39,7 +39,7 @@
 
 #define CRYPTO_RCU_LOCK CRYPTO_RWLOCK
 
-#define ossl_rcu_lock_new(num_writers) CRYPTO_THREAD_lock_new()
+#define ossl_rcu_lock_new(num_writers, ctx) CRYPTO_THREAD_lock_new()
 #define ossl_rcu_lock_free CRYPTO_THREAD_lock_free
 // CRYPTO_THREAD_*_lock return boolean result, while ossl_rcu_*_lock are void.
 // But the CRYPTO_THREAD_*_lock actually always returns 1/true, so it's safe to ignore the result.
