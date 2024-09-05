@@ -1065,7 +1065,8 @@ int ossl_quic_handle_events(SSL *s)
         return 0;
 
     quic_lock(ctx.qc);
-    ossl_quic_reactor_tick(ossl_quic_channel_get_reactor(ctx.qc->ch), 0);
+    if (ctx.qc->started)
+        ossl_quic_reactor_tick(ossl_quic_channel_get_reactor(ctx.qc->ch), 0);
     quic_unlock(ctx.qc);
     return 1;
 }
@@ -1088,8 +1089,9 @@ int ossl_quic_get_event_timeout(SSL *s, struct timeval *tv, int *is_infinite)
 
     quic_lock(ctx.qc);
 
-    deadline
-        = ossl_quic_reactor_get_tick_deadline(ossl_quic_channel_get_reactor(ctx.qc->ch));
+    if (ctx.qc->started)
+        deadline
+            = ossl_quic_reactor_get_tick_deadline(ossl_quic_channel_get_reactor(ctx.qc->ch));
 
     if (ossl_time_is_infinite(deadline)) {
         *is_infinite = 1;
@@ -2863,6 +2865,9 @@ static size_t ossl_quic_pending_int(const SSL *s, int check_channel)
 
     quic_lock(ctx.qc);
 
+    if (!ctx.qc->started)
+        goto out;
+
     if (ctx.xso == NULL) {
         /* No XSO yet, but there might be a default XSO eligible to be created. */
         if (qc_wait_for_default_xso_for_read(&ctx, /*peek=*/1)) {
@@ -4096,6 +4101,13 @@ int ossl_quic_conn_poll_events(SSL *ssl, uint64_t events, int do_tick,
 
     quic_lock(ctx.qc);
 
+    if (!ctx.qc->started) {
+        /* We can only try to write on non-started connection. */
+        if ((events & SSL_POLL_EVENT_W) != 0)
+            revents |= SSL_POLL_EVENT_W;
+        goto end;
+    }
+
     if (do_tick)
         ossl_quic_reactor_tick(ossl_quic_channel_get_reactor(ctx.qc->ch), 0);
 
@@ -4145,6 +4157,7 @@ int ossl_quic_conn_poll_events(SSL *ssl, uint64_t events, int do_tick,
             revents |= SSL_POLL_EVENT_OSU;
     }
 
+ end:
     quic_unlock(ctx.qc);
     *p_revents = revents;
     return 1;

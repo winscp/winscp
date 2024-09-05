@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2024 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright 2019 Red Hat, Inc.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -354,7 +354,8 @@ static int kbkdf_set_ctx_params(void *vctx, const OSSL_PARAM params[])
     if (!ossl_prov_macctx_load_from_params(&ctx->ctx_init, params, NULL,
                                            NULL, NULL, libctx))
         return 0;
-    else if (ctx->ctx_init != NULL) {
+    if (ctx->ctx_init != NULL) {
+        ctx->is_kmac = 0;
         if (EVP_MAC_is_a(EVP_MAC_CTX_get0_mac(ctx->ctx_init),
                          OSSL_MAC_NAME_KMAC128)
             || EVP_MAC_is_a(EVP_MAC_CTX_get0_mac(ctx->ctx_init),

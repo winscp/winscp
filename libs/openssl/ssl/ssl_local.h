@@ -532,7 +532,6 @@ struct ssl_session_st {
      * certificate is not ok, we must remember the error for session reuse:
      */
     long verify_result;         /* only for servers */
-    CRYPTO_REF_COUNT references;
     OSSL_TIME timeout;
     OSSL_TIME time;
     OSSL_TIME calc_timeout;
@@ -542,11 +541,6 @@ struct ssl_session_st {
                                  * load the 'cipher' structure */
     unsigned int kex_group;      /* TLS group from key exchange */
     CRYPTO_EX_DATA ex_data;     /* application specific data */
-    /*
-     * These are used to make removal of session-ids more efficient and to
-     * implement a maximum cache size.
-     */
-    struct ssl_session_st *prev, *next;
 
     struct {
         char *hostname;
@@ -576,6 +570,13 @@ struct ssl_session_st {
     size_t ticket_appdata_len;
     uint32_t flags;
     SSL_CTX *owner;
+
+    /*
+     * These are used to make removal of session-ids more efficient and to
+     * implement a maximum cache size. Access requires protection of ctx->lock.
+     */
+    struct ssl_session_st *prev, *next;
+    CRYPTO_REF_COUNT references;
 };
 
 /* Extended master secret support */

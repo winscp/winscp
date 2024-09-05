@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2021 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2021-2024 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -11,44 +11,89 @@
 # The result is a Perl module creating the package OpenSSL::safe::installdata.
 
 use File::Spec;
+use List::Util qw(pairs);
 
 # These are expected to be set up as absolute directories
-my @absolutes = qw(PREFIX);
+my @absolutes = qw(PREFIX libdir);
 # These may be absolute directories, and if not, they are expected to be set up
-# as subdirectories to PREFIX
-my @subdirs = qw(BINDIR LIBDIR INCLUDEDIR APPLINKDIR ENGINESDIR MODULESDIR
-                 PKGCONFIGDIR CMAKECONFIGDIR);
+# as subdirectories to PREFIX or LIBDIR.  The order of the pairs is important,
+# since the LIBDIR subdirectories depend on the calculation of LIBDIR from
+# PREFIX.
+my @subdirs = pairs (PREFIX => [ qw(BINDIR LIBDIR INCLUDEDIR APPLINKDIR) ],
+                     LIBDIR => [ qw(ENGINESDIR MODULESDIR PKGCONFIGDIR
+                                    CMAKECONFIGDIR) ]);
+# For completeness, other expected variables
+my @others = qw(VERSION LDLIBS);
+
+my %all = ( );
+foreach (@absolutes) { $all{$_} = 1 }
+foreach (@subdirs) { foreach (@{$_->[1]}) { $all{$_} = 1 } }
+foreach (@others) { $all{$_} = 1 }
+print STDERR "DEBUG: all keys: ", join(", ", sort keys %all), "\n";
 
 my %keys = ();
+my %values = ();
 foreach (@ARGV) {
     (my $k, my $v) = m|^([^=]*)=(.*)$|;
     $keys{$k} = 1;
-    $ENV{$k} = $v;
+    push @{$values{$k}}, $v;
 }
 
-foreach my $k (sort keys %keys) {
-    my $v = $ENV{$k};
-    $v = File::Spec->rel2abs($v) if $v && grep { $k eq $_ } @absolutes;
-    $ENV{$k} = $v;
+# warn if there are missing values, and also if there are unexpected values
+foreach my $k (sort keys %all) {
+    warn "No value given for $k\n" unless $keys{$k};
 }
 foreach my $k (sort keys %keys) {
-    my $v = $ENV{$k} || '.';
+    warn "Unknown variable $k\n" unless $all{$k};
+}
 
-    # Absolute paths for the subdir variables are computed.  This provides
-    # the usual form of values for names that have become norm, known as GNU
-    # installation paths.
-    # For the benefit of those that need it, the subdirectories are preserved
-    # as they are, using the same variable names, suffixed with '_REL', if they
-    # are indeed subdirectories.
-    if (grep { $k eq $_ } @subdirs) {
-        if (File::Spec->file_name_is_absolute($v)) {
-            $ENV{"${k}_REL"} = File::Spec->abs2rel($v, $ENV{PREFIX});
-        } else {
-            $ENV{"${k}_REL"} = $v;
-            $v = File::Spec->rel2abs($v, $ENV{PREFIX});
+# This shouldn't be needed, but just in case we get relative paths that
+# should be absolute, make sure they actually are.
+foreach my $k (@absolutes) {
+    my $v = $values{$k} || [ '.' ];
+    die "Can't have more than one $k\n" if scalar @$v > 1;
+    print STDERR "DEBUG: $k = $v->[0] => ";
+    $v = [ map { File::Spec->rel2abs($_) } @$v ];
+    $values{$k} = $v;
+    print STDERR "$k = $v->[0]\n";
+}
+
+# Absolute paths for the subdir variables are computed.  This provides
+# the usual form of values for names that have become norm, known as GNU
+# installation paths.
+# For the benefit of those that need it, the subdirectories are preserved
+# as they are, using the same variable names, suffixed with '_REL_{var}',
+# if they are indeed subdirectories.  The '{var}' part of the name tells
+# which other variable value they are relative to.
+foreach my $pair (@subdirs) {
+    my ($var, $subdir_vars) = @$pair;
+    foreach my $k (@$subdir_vars) {
+        my $kr = "${k}_REL_${var}";
+        my $v2 = $values{$k} || [ '.' ];
+        $values{$k} = [];       # We're rebuilding it
+        print STDERR "DEBUG: $k = ",
+            (scalar @$v2 > 1 ? "[ " . join(", ", @$v2) . " ]" : $v2->[0]),
+            " => ";
+        foreach my $v (@$v2) {
+            if (File::Spec->file_name_is_absolute($v)) {
+                push @{$values{$k}}, $v;
+                push @{$values{$kr}},
+                    File::Spec->abs2rel($v, $values{$var}->[0]);
+            } else {
+                push @{$values{$kr}}, $v;
+                push @{$values{$k}},
+                    File::Spec->rel2abs($v, $values{$var}->[0]);
+            }
         }
+        print STDERR join(", ",
+                          map {
+                              my $v = $values{$_};
+                              "$_ = " . (scalar @$v > 1
+                                         ? "[ " . join(", ", @$v) . " ]"
+                                         : $v->[0]);
+                          } ($k, $kr)),
+            "\n";
     }
-    $ENV{$k} = $v;
 }
 
 print <<_____;
@@ -58,38 +103,51 @@ use strict;
 use warnings;
 use Exporter;
 our \@ISA = qw(Exporter);
-our \@EXPORT = qw(\$PREFIX
-                  \$BINDIR \$BINDIR_REL
-                  \$LIBDIR \$LIBDIR_REL
-                  \$INCLUDEDIR \$INCLUDEDIR_REL
-                  \$APPLINKDIR \$APPLINKDIR_REL
-                  \$ENGINESDIR \$ENGINESDIR_REL
-                  \$MODULESDIR \$MODULESDIR_REL
-                  \$PKGCONFIGDIR \$PKGCONFIGDIR_REL
-                  \$CMAKECONFIGDIR \$CMAKECONFIGDIR_REL
-                  \$VERSION \@LDLIBS);
+our \@EXPORT = qw(
+_____
 
-our \$PREFIX             = '$ENV{PREFIX}';
-our \$BINDIR             = '$ENV{BINDIR}';
-our \$BINDIR_REL         = '$ENV{BINDIR_REL}';
-our \$LIBDIR             = '$ENV{LIBDIR}';
-our \$LIBDIR_REL         = '$ENV{LIBDIR_REL}';
-our \$INCLUDEDIR         = '$ENV{INCLUDEDIR}';
-our \$INCLUDEDIR_REL     = '$ENV{INCLUDEDIR_REL}';
-our \$APPLINKDIR         = '$ENV{APPLINKDIR}';
-our \$APPLINKDIR_REL     = '$ENV{APPLINKDIR_REL}';
-our \$ENGINESDIR         = '$ENV{ENGINESDIR}';
-our \$ENGINESDIR_REL     = '$ENV{ENGINESDIR_REL}';
-our \$MODULESDIR         = '$ENV{MODULESDIR}';
-our \$MODULESDIR_REL     = '$ENV{MODULESDIR_REL}';
-our \$PKGCONFIGDIR       = '$ENV{PKGCONFIGDIR}';
-our \$PKGCONFIGDIR_REL   = '$ENV{PKGCONFIGDIR_REL}';
-our \$CMAKECONFIGDIR     = '$ENV{CMAKECONFIGDIR}';
-our \$CMAKECONFIGDIR_REL = '$ENV{CMAKECONFIGDIR_REL}';
-our \$VERSION            = '$ENV{VERSION}';
-our \@LDLIBS             =
+foreach my $k (@absolutes) {
+    print "    \@$k\n";
+}
+foreach my $pair (@subdirs) {
+    my ($var, $subdir_vars) = @$pair;
+    foreach my $k (@$subdir_vars) {
+        my $k2 = "${k}_REL_${var}";
+        print "    \@$k \@$k2\n";
+    }
+}
+
+print <<_____;
+    \$VERSION \@LDLIBS
+);
+
+_____
+
+foreach my $k (@absolutes) {
+    print "our \@$k" . ' ' x (27 - length($k)) . "= ( '",
+        join("', '", @{$values{$k}}),
+        "' );\n";
+}
+foreach my $pair (@subdirs) {
+    my ($var, $subdir_vars) = @$pair;
+    foreach my $k (@$subdir_vars) {
+        my $k2 = "${k}_REL_${var}";
+        print "our \@$k" . ' ' x (27 - length($k)) . "= ( '",
+            join("', '", @{$values{$k}}),
+            "' );\n";
+        print "our \@$k2" . ' ' x (27 - length($k2)) . "= ( '",
+            join("', '", @{$values{$k2}}),
+            "' );\n";
+    }
+}
+
+print <<_____;
+our \$VERSION                    = '$values{VERSION}->[0]';
+our \@LDLIBS                     =
     # Unix and Windows use space separation, VMS uses comma separation
-    split(/ +| *, */, '$ENV{LDLIBS}');
+    \$^O eq 'VMS'
+    ? split(/ *, */, '$values{LDLIBS}->[0]')
+    : split(/ +/, '$values{LDLIBS}->[0]');
 
 1;
 _____

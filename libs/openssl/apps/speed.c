@@ -3031,7 +3031,7 @@ int speed_main(int argc, char **argv)
             ERR_print_errors(bio_err);
             op_count = 1;
         } else {
-            pkey_print_message("private", "rsa encrypt",
+            pkey_print_message("public", "rsa encrypt",
                                rsa_keys[testnum].bits, seconds.rsa);
             /* RSA_blinding_on(rsa_key[testnum],NULL); */
             Time_F(START);
@@ -3099,7 +3099,6 @@ int speed_main(int argc, char **argv)
             loopargs[i].sigsize = loopargs[i].buflen;
             if (loopargs[i].dsa_sign_ctx[testnum] == NULL
                 || EVP_PKEY_sign_init(loopargs[i].dsa_sign_ctx[testnum]) <= 0
-
                 || EVP_PKEY_sign(loopargs[i].dsa_sign_ctx[testnum],
                                  loopargs[i].buf2,
                                  &loopargs[i].sigsize,
@@ -3176,7 +3175,6 @@ int speed_main(int argc, char **argv)
             loopargs[i].sigsize = loopargs[i].buflen;
             if (loopargs[i].ecdsa_sign_ctx[testnum] == NULL
                 || EVP_PKEY_sign_init(loopargs[i].ecdsa_sign_ctx[testnum]) <= 0
-
                 || EVP_PKEY_sign(loopargs[i].ecdsa_sign_ctx[testnum],
                                  loopargs[i].buf2,
                                  &loopargs[i].sigsize,
