@@ -134,6 +134,10 @@ implementation
 uses
   Math, PIDL, OperationWithTimeout, PasTools, CompThread;
 
+type
+  PRGBQuadArray = ^TRGBQuadArray;    // From graphics.pas
+  TRGBQuadArray = array[Byte] of TRGBQuad;  // From graphics.pas
+
 var
   ThreadLock: TRTLCriticalSection;
   ReadyDrives: string;
