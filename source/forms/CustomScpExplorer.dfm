@@ -100,6 +100,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         OnBusy = DirViewBusy
         OnChangeFocus = DirViewChangeFocus
         OnSelectItem = DirViewSelectItem
+        OnStartLoading = RemoteDirViewStartLoading
         OnLoaded = DirViewLoaded
         OnExecFile = DirViewExecFile
         OnMatchMask = DirViewMatchMask
@@ -119,6 +120,8 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         OnDisplayProperties = RemoteDirViewDisplayProperties
         DirViewStyle = dvsReport
         OnRead = RemoteDirViewRead
+        OnStartReading = RemoteDirViewStartReading
+        OnThumbnailNeeded = RemoteDirViewThumbnailNeeded
       end
       object ReconnectToolbar: TTBXToolbar
         Left = 136

@@ -641,7 +641,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
 
     // style
     EXE(RemoteCycleStyleAction,
-      if (DirView(osRemote)->DirViewStyle == dvsReport) DirView(osRemote)->DirViewStyle = dvsIcon;
+      if (DirView(osRemote)->DirViewStyle == dvsThumbnail) DirView(osRemote)->DirViewStyle = dvsIcon;
         else DirView(osRemote)->DirViewStyle = (TDirViewStyle)(DirView(osRemote)->DirViewStyle + 1);
       ScpExplorer->UpdateControls();
     )

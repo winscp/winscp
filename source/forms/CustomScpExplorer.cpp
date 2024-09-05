@@ -217,6 +217,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FDownloadingFromClipboard = false;
   FClipboardFakeMonitorsPendingReset = false;
   FHiContrastTheme = NULL;
+  InitializeRemoteThumbnailMask();
 
   FEditorManager = new TEditorManager();
   FEditorManager->OnFileChange = ExecutedFileChanged;
@@ -9432,6 +9433,12 @@ void __fastcall TCustomScpExplorerForm::DirViewLoaded(
   DebugAssert(DirView != NULL);
   DoDirViewLoaded(DirView);
   TransferPresetAutoSelect();
+  TUnixDirView * UnixDirView = dynamic_cast<TUnixDirView *>(DirView);
+  if (UnixDirView != NULL)
+  {
+    TManagedTerminal * ATerminal = DebugNotNull(dynamic_cast<TManagedTerminal *>(UnixDirView->Terminal));
+    TTerminalManager::Instance()->TerminalLoadedDirectory(ATerminal);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::StartUpdates()
@@ -9906,6 +9913,10 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
         AddStartupSequence(L"J");
       }
       TForm::Dispatch(Message);
+      break;
+
+    case WM_QUEUE_CALLBACK:
+      WMQueueCallback(*M);
       break;
 
     default:
@@ -12140,3 +12151,135 @@ void TCustomScpExplorerForm::IncrementalSearchStart()
     ADirView->UpdateStatusBar();
   }
 }
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RemoteDirViewThumbnailNeeded(
+  TUnixDirView *, TListItem * Item, TRemoteFile * File, const TSize & Size, TBitmap *& Bitmap)
+{
+  // though when downloading to temporary folder, encryption should not be a problem
+  if (Terminal->IsCapable[fcBackgroundTransfers] &&
+      !File->IsDirectory)
+  {
+    UnicodeString FileName = File->FullFileName;
+
+    TFileMasks::TParams MaskParams;
+    MaskParams.Size = File->Size;
+    MaskParams.Modification = File->Modification;
+
+    if ((File->Size <= static_cast<__int64>(WinConfiguration->RemoteThumbnailSizeLimit) * 1024) &&
+        FRemoteThumbnailMask.Matches(FileName, false, File->IsDirectory, &MaskParams))
+    {
+      Bitmap = TTerminalManager::Instance()->ThumbnailNeeded(Terminal, Item->Index, File, Size);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+TThumbnailDownloadQueueItem * TCustomScpExplorerForm::AddThumbnailDownloadQueueItem(TManagedTerminal * ATerminal)
+{
+  DebugAssert(ATerminal == Terminal);
+  TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
+  TemporaryFileCopyParam(CopyParam);
+  CopyParam.TransferMode = tmBinary;
+
+  UnicodeString SourceDir = ATerminal->CurrentDirectory;
+  UnicodeString TempDir, RootTempDir;
+  TemporaryDirectoryForRemoteFiles(SourceDir, CopyParam, true, TempDir, RootTempDir);
+
+  TTerminalQueue * AQueue = TTerminalManager::Instance()->FindQueueForTerminal(ATerminal);
+  DebugAssert((Queue == NULL) || (AQueue == Queue)); // we might get here before queue is set
+  TThumbnailDownloadQueueItem * QueueItem =
+    new TThumbnailDownloadQueueItem(this, Terminal, SourceDir, TempDir, &CopyParam);
+  AddQueueItem(AQueue, QueueItem, ATerminal);
+  return QueueItem;
+}
+//---------------------------------------------------------------------------
+enum { qccRemoteItemVisible, qccRemoteItemRedraw };
+typedef std::pair<int, UnicodeString> TRemoteItemVisibleData;
+//---------------------------------------------------------------------------
+void TCustomScpExplorerForm::PostThumbnailVisibleQueueQuery(int Index, const UnicodeString & FileName)
+{
+  // The queue might be destroyed before the WM_QUEUE_CALLBACK is processed
+  TRemoteItemVisibleData * Data = new TRemoteItemVisibleData();
+  Data->first = Index;
+  Data->second = FileName;
+  PostMessage(Handle, WM_QUEUE_CALLBACK, qccRemoteItemVisible, reinterpret_cast<WPARAM>(Data));
+}
+//---------------------------------------------------------------------------
+void TCustomScpExplorerForm::PostThumbnailDrawRequest(int Index)
+{
+  PostMessage(Handle, WM_QUEUE_CALLBACK, qccRemoteItemRedraw, Index);
+}
+//---------------------------------------------------------------------------
+void TCustomScpExplorerForm::WMQueueCallback(TMessage & Message)
+{
+  int Command = Message.WParam;
+  if (Command == qccRemoteItemVisible)
+  {
+    TRemoteItemVisibleData * Data = reinterpret_cast<TRemoteItemVisibleData *>(Message.LParam);
+    int Index = Data->first;
+    UnicodeString FileName = Data->second;
+    delete Data;
+
+    TGuard Guard(Terminal->ThumbnailsSection.get());
+    bool Visible = False;
+    if (Terminal->ThumbnailsEnabled &&
+        // though we should better also disable thumbnails once we switch to different view style
+        (RemoteDirView->DirViewStyle == dvsThumbnail))
+    {
+      // The message might be processed, while we are already loading a different directory
+      if ((Index >= 0) &&
+          (Index < RemoteDirView->Items->Count))
+      {
+        TListItem * Item = RemoteDirView->Items->Item[Index];
+        Visible =
+          (RemoteDirView->ItemFullFileName(Item) == FileName) &&
+          ListView_IsItemVisible(RemoteDirView->Handle, Index);
+      }
+    }
+    Terminal->ThumbnailVisible(Index, FileName, Visible);
+  }
+  else if (Command == qccRemoteItemRedraw)
+  {
+    int Index = Message.LParam;
+    if ((Index >= 0) &&
+        (Index < RemoteDirView->Items->Count))
+    {
+      RemoteDirView->InvalidateItem(RemoteDirView->Items->Item[Index]);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void TCustomScpExplorerForm::InitializeRemoteThumbnailMask()
+{
+  UnicodeString DefaultRemoteThumbnailMask = L"*.jpg;*.jpeg;*.gif;*.png;*.svg;*.bmp;*.raw;*.ico;*.heic";
+  UnicodeString RemoteThumbnailMask = WinConfiguration->RemoteThumbnailMask;
+  if (RemoteThumbnailMask.IsEmpty() ||
+      StartsStr(L"+", RemoteThumbnailMask) || StartsStr(L"-", RemoteThumbnailMask) || StartsStr(L"*", RemoteThumbnailMask))
+  {
+    std::unique_ptr<TStrings> RemoteThumbnailMasks(new TStringList());
+    while (!DefaultRemoteThumbnailMask.IsEmpty())
+    {
+      RemoteThumbnailMasks->Add(CutToChar(DefaultRemoteThumbnailMask, L';', true));
+    }
+
+    RemoteThumbnailMasks.reset(ProcessFeatures(RemoteThumbnailMasks.get(), RemoteThumbnailMask));
+
+    RemoteThumbnailMask = EmptyStr;
+    for (int Index = 0; Index < RemoteThumbnailMasks->Count; Index++)
+    {
+      AddToList(RemoteThumbnailMask, RemoteThumbnailMasks->Strings[Index], L";");
+    }
+  }
+
+  FRemoteThumbnailMask.Masks = RemoteThumbnailMask;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RemoteDirViewStartLoading(TObject *)
+{
+  Terminal->StartLoadingDirectory();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RemoteDirViewStartReading(TObject *)
+{
+  Terminal->DisableThumbnails();
+}
+//---------------------------------------------------------------------------

@@ -273,6 +273,22 @@ int __fastcall TUnixDirView::ItemImageIndex(TListItem * Item, bool /*Cache*/)
 #endif
 }
 //---------------------------------------------------------------------------
+TBitmap * __fastcall TUnixDirView::ItemThumbnail(TListItem * Item, const TSize & Size)
+{
+  TBitmap * Result = NULL;
+#ifndef DESIGN_ONLY
+  ASSERT_VALID_ITEM;
+  if (OnThumbnailNeeded != NULL)
+  {
+    OnThumbnailNeeded(this, Item, ITEMFILE, Size, Result);
+  }
+#else
+  DebugUsedParam(Item);
+  DebugUsedParam(Size);
+#endif
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall TUnixDirView::ItemMatchesFilter(TListItem * Item,
   const TFileFilter &Filter)
 {
@@ -656,6 +672,10 @@ void __fastcall TUnixDirView::DoStartReadDirectory(TObject * /*Sender*/)
 {
   DebugAssert(!FLoading);
   FLoading = true;
+  if (FOnStartReading != NULL)
+  {
+    FOnStartReading(this);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TUnixDirView::DoReadDirectory(TObject * Sender, bool ReloadOnly)

@@ -211,6 +211,7 @@ type
 
     function GetDirViewStyle: TDirViewStyle;
     procedure SetDirViewStyle(Value: TDirViewStyle);
+    procedure ViewStyleChanged;
 
     function GetTargetPopupMenu: Boolean;
     function GetUseDragImages: Boolean;
@@ -359,8 +360,6 @@ type
     procedure DoUpdateStatusBar(Force: Boolean = False);
     procedure DoCustomDrawItem(Item: TListItem; Stage: TCustomDrawStage);
     procedure ItemCalculatedSizeUpdated(Item: TListItem; OldSize, NewSize: Int64);
-    function GetThumbnail(Path: string; Size: TSize): TBitmap;
-    procedure InvalidateItem(Item: TListItem);
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -408,6 +407,7 @@ type
     procedure DisplayContextMenu(Where: TPoint); virtual; abstract;
     procedure DisplayContextMenuInSitu;
     procedure UpdateStatusBar;
+    procedure InvalidateItem(Item: TListItem);
 
     property AddParentDir: Boolean read FAddParentDir write SetAddParentDir default False;
     property DimmHiddenFiles: Boolean read FDimmHiddenFiles write SetDimmHiddenFiles default True;
@@ -569,10 +569,6 @@ implementation
 
 uses
   Math, DirViewColProperties, UITypes, Types, OperationWithTimeout, Winapi.UxTheme, Vcl.Themes, System.IOUtils;
-
-type
-  PRGBQuadArray = ^TRGBQuadArray;    // From graphics.pas
-  TRGBQuadArray = array[Byte] of TRGBQuad;  // From graphics.pas
 
 const
   ResDirUp = 'DIRUP%2.2d';
@@ -1576,48 +1572,6 @@ begin
   Result := nil;
 end;
 
-function TCustomDirView.GetThumbnail(Path: string; Size: TSize): TBitmap;
-var
-  ImageFactory: IShellItemImageFactory;
-  X, Y: Integer;
-  Row: PRGBQuadArray;
-  Pixel: PRGBQuad;
-  Alpha: Byte;
-  Handle: HBITMAP;
-begin
-  Result := nil;
-  SHCreateItemFromParsingName(PChar(Path), nil, IShellItemImageFactory, ImageFactory);
-  if Assigned(ImageFactory) then
-  begin
-    if Succeeded(ImageFactory.GetImage(Size, SIIGBF_RESIZETOFIT, Handle)) then
-    begin
-      Result := TBitmap.Create;
-      try
-        Result.Handle := Handle;
-        Result.PixelFormat := pf32bit;
-
-        for Y := 0 to Result.Height - 1 do
-        begin
-          Row  := Result.ScanLine[Y];
-          for X := 0 to Result.Width - 1 do
-          begin
-            Pixel := @Row[X];
-            Alpha := Pixel.rgbReserved;
-            Pixel.rgbBlue := (Pixel.rgbBlue * Alpha) div 255;
-            Pixel.rgbGreen := (Pixel.rgbGreen * Alpha) div 255;
-            Pixel.rgbRed := (Pixel.rgbRed * Alpha) div 255;
-          end;
-        end;
-      except
-        Result.Free;
-        raise;
-      end;
-    end;
-
-    ImageFactory := nil; // Redundant?
-  end;
-end;
-
 procedure TCustomDirView.FreeThumbnails;
 begin
   FreeAndNil(FFallbackThumbnail[True]);
@@ -2318,6 +2272,13 @@ begin
   if (Result > 0) and HasParentDir then Dec(Result);
 end;
 
+procedure TCustomDirView.ViewStyleChanged;
+begin
+  // this is workaround for bug in TCustomNortonLikeListView
+  // that clears Items on recreating wnd (caused by change to ViewStyle)
+  Reload(True);
+end;
+
 procedure TCustomDirView.SetViewStyle(Value: TViewStyle);
 begin
   if (Value <> ViewStyle) and (not FLoading) then
@@ -2325,9 +2286,7 @@ begin
     FNotifyEnabled := False;
     inherited;
     FNotifyEnabled := True;
-    // this is workaround for bug in TCustomNortonLikeListView
-    // that clears Items on recreating wnd (caused by change to ViewStyle)
-    Reload(True);
+    ViewStyleChanged;
   end;
 end;
 
@@ -3716,7 +3675,11 @@ begin
     begin
       // Changing ViewStyle recreates the view, we want to be consistent.
       if not (csLoading in ComponentState) then
+      begin
         RecreateWnd;
+      end;
+      // Again, for consistency (among other this clears thumbnail cache)
+      ViewStyleChanged;
     end;
   end;
 end;

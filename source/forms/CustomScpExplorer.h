@@ -52,6 +52,7 @@ struct TSynchronizeParams;
 class TBookmark;
 class TManagedTerminal;
 class TCalculateSizeOperation;
+class TThumbnailDownloadQueueItem;
 //---------------------------------------------------------------------------
 enum TActionAllowed { aaShortCut, aaUpdate, aaExecute };
 enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4, afCommander = 8 };
@@ -224,6 +225,10 @@ __published:
   void __fastcall SessionsPageControlTabHint(TPageControl *Sender, int Index, UnicodeString &Hint);
   void __fastcall MessageDockRequestDock(TObject *Sender, TTBCustomDockableWindow *Bar, bool &Accept);
   void __fastcall QueueView3EndDrag(TObject *Sender, TObject *Target, int X, int Y);
+  void __fastcall RemoteDirViewThumbnailNeeded(
+    TUnixDirView * Sender, TListItem * Item, TRemoteFile * File, const TSize & Size, TBitmap *& Bitmap);
+  void __fastcall RemoteDirViewStartLoading(TObject *Sender);
+  void __fastcall RemoteDirViewStartReading(TObject *Sender);
 
 private:
   TManagedTerminal * FManagedSession;
@@ -374,6 +379,7 @@ private:
   void __fastcall AdjustQueueLayout();
   void __fastcall StoreTransitionCloseClick(TObject * Sender);
   void __fastcall StoreTransitionLinkClick(TObject * Sender);
+  void InitializeRemoteThumbnailMask();
 
 protected:
   TOperationSide FCurrentSide;
@@ -408,6 +414,7 @@ protected:
   int FIncrementalSearching;
   TOperationSide FProgressSide;
   bool FImmersiveDarkMode;
+  TFileMasks FRemoteThumbnailMask;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
@@ -766,6 +773,7 @@ protected:
   void ReleaseHiContrastTheme();
   bool CanCalculateChecksum();
   void RegenerateSessionColorsImageList();
+  void WMQueueCallback(TMessage & Message);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -924,6 +932,9 @@ public:
   virtual void * SaveFocus();
   virtual void RestoreFocus(void * Focus);
   virtual void __fastcall UpdateControls();
+  TThumbnailDownloadQueueItem * AddThumbnailDownloadQueueItem(TManagedTerminal * ATerminal);
+  void PostThumbnailVisibleQueueQuery(int Index, const UnicodeString & FileName);
+  void PostThumbnailDrawRequest(int Index);
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

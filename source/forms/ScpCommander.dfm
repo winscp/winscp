@@ -739,6 +739,19 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
         object TBXSeparatorItem27: TTBXSeparatorItem
         end
+        object TBXSubmenuItem19: TTBXSubmenuItem
+          Caption = '&View'
+          HelpKeyword = 'ui_file_panel#view_style'
+          Hint = 'Change directory view style'
+          object TBXItem276: TTBXItem
+            Action = NonVisualDataModule.RemoteReportAction
+          end
+          object TBXSeparatorItem77: TTBXSeparatorItem
+          end
+          object TBXItem277: TTBXItem
+            Action = NonVisualDataModule.RemoteThumbnailAction
+          end
+        end
         object TBXSubmenuItem16: TTBXSubmenuItem
           Caption = '&Sort'
           HelpKeyword = 'ui_file_panel#sorting_files'
@@ -1351,6 +1364,19 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem170: TTBXItem
           Action = NonVisualDataModule.RemoteTreeAction
         end
+        object TBXSubmenuItem32: TTBXSubmenuItem
+          Caption = 'Change directory view style'
+          ImageIndex = 11
+          Options = [tboDropdownArrow]
+          object TBXItem278: TTBXItem
+            Action = NonVisualDataModule.RemoteReportAction
+          end
+          object TBXSeparatorItem78: TTBXSeparatorItem
+          end
+          object TBXItem279: TTBXItem
+            Action = NonVisualDataModule.RemoteThumbnailAction
+          end
+        end
       end
       object RemotePathToolbar: TTBXToolbar
         Left = 0
@@ -1473,7 +1499,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
       end
       object RemoteSelectionToolbar: TTBXToolbar
-        Left = 295
+        Left = 328
         Top = 27
         Caption = 'Remote Selection'
         DockPos = 282

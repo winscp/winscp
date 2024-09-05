@@ -206,6 +206,7 @@ UnicodeString GetAncestorProcessNames();
 void NotSupported();
 void NotImplemented();
 UnicodeString GetDividerLine();
+TStrings * ProcessFeatures(TStrings * Features, const UnicodeString & FeaturesOverride);
 //---------------------------------------------------------------------------
 struct TSearchRecSmart : public TSearchRec
 {

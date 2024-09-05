@@ -31,7 +31,7 @@ interface
 
 uses
   Windows, Registry, SysUtils, Classes, ComCtrls, ShellApi, ShlObj, CommCtrl, Forms,
-  BaseUtils, System.Generics.Collections;
+  BaseUtils, System.Generics.Collections, Vcl.Graphics;
 
 const
   {Flags used by TDriveInfo.ReadDriveStatus and TDriveView.RefreshRootNodes:}
@@ -120,6 +120,7 @@ function GetShellFileName(PIDL: PItemIDList): string; overload;
 function GetNetWorkName(Drive: string): string;
 function GetNetWorkConnected(Drive: string): Boolean;
 function IsRootPath(Path: string): Boolean;
+function GetThumbnail(Path: string; Size: TSize): TBitmap;
 
 {Central drive information object instance of TDriveInfo}
 var
@@ -787,6 +788,48 @@ end;
 function IsRootPath(Path: string): Boolean;
 begin
   Result := SameText(ExcludeTrailingBackslash(ExtractFileDrive(Path)), ExcludeTrailingBackslash(Path));
+end;
+
+function GetThumbnail(Path: string; Size: TSize): TBitmap;
+var
+  ImageFactory: IShellItemImageFactory;
+  X, Y: Integer;
+  Row: PRGBQuadArray;
+  Pixel: PRGBQuad;
+  Alpha: Byte;
+  Handle: HBITMAP;
+begin
+  Result := nil;
+  SHCreateItemFromParsingName(PChar(Path), nil, IShellItemImageFactory, ImageFactory);
+  if Assigned(ImageFactory) then
+  begin
+    if Succeeded(ImageFactory.GetImage(Size, SIIGBF_RESIZETOFIT, Handle)) then
+    begin
+      Result := TBitmap.Create;
+      try
+        Result.Handle := Handle;
+        Result.PixelFormat := pf32bit;
+
+        for Y := 0 to Result.Height - 1 do
+        begin
+          Row  := Result.ScanLine[Y];
+          for X := 0 to Result.Width - 1 do
+          begin
+            Pixel := @Row[X];
+            Alpha := Pixel.rgbReserved;
+            Pixel.rgbBlue := (Pixel.rgbBlue * Alpha) div 255;
+            Pixel.rgbGreen := (Pixel.rgbGreen * Alpha) div 255;
+            Pixel.rgbRed := (Pixel.rgbRed * Alpha) div 255;
+          end;
+        end;
+      except
+        Result.Free;
+        raise;
+      end;
+    end;
+
+    ImageFactory := nil; // Redundant?
+  end;
 end;
 
 initialization

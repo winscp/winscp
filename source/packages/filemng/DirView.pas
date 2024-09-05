@@ -673,7 +673,7 @@ begin
 
       if FOwner.ThumbnailNeeded(@FCurrentItemData) then
       begin
-        FSyncThumbnail := FOwner.GetThumbnail(FCurrentFilePath, FCurrentItemData.ThumbnailSize);
+        FSyncThumbnail := GetThumbnail(FCurrentFilePath, FCurrentItemData.ThumbnailSize);
       end;
 
       if not Terminated then

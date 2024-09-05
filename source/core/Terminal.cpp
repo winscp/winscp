@@ -9007,84 +9007,9 @@ bool TTerminal::IsValidFile(TRemoteFile * File)
     (IsUnixRootPath(File->FileName) || UnixExtractFileDir(File->FileName).IsEmpty());
 }
 //---------------------------------------------------------------------------
-UnicodeString TTerminal::CutFeature(UnicodeString & Buf)
-{
-  UnicodeString Result;
-  if (Buf.SubString(1, 1) == L"\"")
-  {
-    Buf.Delete(1, 1);
-    int P = Buf.Pos(L"\",");
-    if (P == 0)
-    {
-      Result = Buf;
-      Buf = UnicodeString();
-      // there should be the ending quote, but if not, just do nothing
-      if (Result.SubString(Result.Length(), 1) == L"\"")
-      {
-        Result.SetLength(Result.Length() - 1);
-      }
-    }
-    else
-    {
-      Result = Buf.SubString(1, P - 1);
-      Buf.Delete(1, P + 1);
-    }
-    Buf = Buf.TrimLeft();
-  }
-  else
-  {
-    Result = CutToChar(Buf, L',', true);
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 TStrings * TTerminal::ProcessFeatures(TStrings * Features)
 {
-  std::unique_ptr<TStrings> Result(new TStringList());
-  UnicodeString FeaturesOverride = SessionData->ProtocolFeatures.Trim();
-  if (FeaturesOverride.SubString(1, 1) == L"*")
-  {
-    FeaturesOverride.Delete(1, 1);
-    while (!FeaturesOverride.IsEmpty())
-    {
-      UnicodeString Feature = CutFeature(FeaturesOverride);
-      Result->Add(Feature);
-    }
-  }
-  else
-  {
-    std::unique_ptr<TStrings> DeleteFeatures(CreateSortedStringList());
-    std::unique_ptr<TStrings> AddFeatures(new TStringList());
-    while (!FeaturesOverride.IsEmpty())
-    {
-      UnicodeString Feature = CutFeature(FeaturesOverride);
-      if (Feature.SubString(1, 1) == L"-")
-      {
-        Feature.Delete(1, 1);
-        DeleteFeatures->Add(Feature.LowerCase());
-      }
-      else
-      {
-        if (Feature.SubString(1, 1) == L"+")
-        {
-          Feature.Delete(1, 1);
-        }
-        AddFeatures->Add(Feature);
-      }
-    }
-
-    for (int Index = 0; Index < Features->Count; Index++)
-    {
-      UnicodeString Feature = Features->Strings[Index];
-      if (DeleteFeatures->IndexOf(Feature) < 0)
-      {
-        Result->Add(Feature);
-      }
-    }
-
-    Result->AddStrings(AddFeatures.get());
-  }
-  return Result.release();
+  return ::ProcessFeatures(Features, SessionData->ProtocolFeatures.Trim());
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

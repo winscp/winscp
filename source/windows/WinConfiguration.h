@@ -487,6 +487,8 @@ private:
   bool FHiContrast;
   bool FEditorCheckNotModified;
   bool FSessionTabCaptionTruncation;
+  UnicodeString FRemoteThumbnailMask;
+  int FRemoteThumbnailSizeLimit;
   UnicodeString FFirstRun;
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
@@ -820,6 +822,8 @@ public:
   __property bool EditorCheckNotModified = { read = FEditorCheckNotModified, write = SetEditorCheckNotModified };
   __property bool SessionTabCaptionTruncation = { read = FSessionTabCaptionTruncation, write = SetSessionTabCaptionTruncation };
   __property int LoadingTooLongLimit = { read = GetLoadingTooLongLimit, write = SetLoadingTooLongLimit };
+  __property UnicodeString RemoteThumbnailMask = { read = FRemoteThumbnailMask, write = FRemoteThumbnailMask };
+  __property int RemoteThumbnailSizeLimit = { read = FRemoteThumbnailSizeLimit, write = FRemoteThumbnailSizeLimit };
   __property UnicodeString FirstRun = { read = FFirstRun, write = SetFirstRun };
   __property LCID DefaultLocale = { read = FDefaultLocale };
   __property int LocaleCompletenessTreshold = { read = GetLocaleCompletenessTreshold };

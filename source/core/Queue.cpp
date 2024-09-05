@@ -245,6 +245,7 @@ public:
   void __fastcall Idle();
   bool __fastcall Pause();
   bool __fastcall Resume();
+  bool IsCancelled();
 
 protected:
   TTerminalQueue * FQueue;
@@ -1222,7 +1223,7 @@ __fastcall TBackgroundTerminal::TBackgroundTerminal(TTerminal * MainTerminal,
 bool __fastcall TBackgroundTerminal::DoQueryReopen(Exception * /*E*/)
 {
   bool Result;
-  if (FItem->FTerminated || FItem->FCancel)
+  if (FItem->IsCancelled())
   {
     // avoid reconnection if we are closing
     Result = false;
@@ -1315,7 +1316,7 @@ void __fastcall TTerminalItem::ProcessEvent()
 
       FItem->SetStatus(TQueueItem::qsProcessing);
 
-      FItem->Execute(this);
+      FItem->Execute();
     }
   }
   catch(Exception & E)
@@ -1559,7 +1560,7 @@ void __fastcall TTerminalItem::OperationFinished(TFileOperation /*Operation*/,
 void __fastcall TTerminalItem::OperationProgress(
   TFileOperationProgressType & ProgressData)
 {
-  if (FPause && !FTerminated && !FCancel)
+  if (FPause && !IsCancelled())
   {
     DebugAssert(FItem != NULL);
     TQueueItem::TStatus PrevStatus = FItem->GetStatus();
@@ -1582,7 +1583,7 @@ void __fastcall TTerminalItem::OperationProgress(
     }
   }
 
-  if (FTerminated || FCancel)
+  if (IsCancelled())
   {
     if (ProgressData.TransferringFile)
     {
@@ -1607,6 +1608,11 @@ bool __fastcall TTerminalItem::OverrideItemStatus(TQueueItem::TStatus & ItemStat
     ItemStatus = TQueueItem::qsConnecting;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+bool TTerminalItem::IsCancelled()
+{
+  return FTerminated || FCancel;
 }
 //---------------------------------------------------------------------------
 // TQueueItem
@@ -1732,14 +1738,19 @@ bool __fastcall TQueueItem::UpdateFileList(TQueueFileList *)
   return false;
 }
 //---------------------------------------------------------------------------
-void __fastcall TQueueItem::Execute(TTerminalItem * TerminalItem)
+bool TQueueItem::IsExecutionCancelled()
+{
+  return DebugAlwaysTrue(FTerminalItem != NULL) ? FTerminalItem->IsCancelled() : true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TQueueItem::Execute()
 {
   {
     DebugAssert(FProgressData == NULL);
     TGuard Guard(FSection);
     FProgressData = new TFileOperationProgressType();
   }
-  DoExecute(TerminalItem->FTerminal);
+  DoExecute(FTerminalItem->FTerminal);
 }
 //---------------------------------------------------------------------------
 void __fastcall TQueueItem::SetCPSLimit(unsigned long CPSLimit)
@@ -2132,13 +2143,15 @@ __fastcall TTransferQueueItem::TTransferQueueItem(TTerminal * Terminal,
   FInfo->Side = Side;
   FInfo->SingleFile = SingleFile;
 
-  DebugAssert(FilesToCopy != NULL);
-  FFilesToCopy = new TStringList();
-  for (int Index = 0; Index < FilesToCopy->Count; Index++)
+  if (FilesToCopy != NULL)
   {
-    UnicodeString FileName = FilesToCopy->Strings[Index];
-    TRemoteFile * File = dynamic_cast<TRemoteFile *>(FilesToCopy->Objects[Index]);
-    FFilesToCopy->AddObject(FileName, ((File == NULL) || (Side == osLocal)) ? NULL : File->Duplicate());
+    FFilesToCopy = new TStringList();
+    for (int Index = 0; Index < FilesToCopy->Count; Index++)
+    {
+      UnicodeString FileName = FilesToCopy->Strings[Index];
+      TRemoteFile * File = dynamic_cast<TRemoteFile *>(FilesToCopy->Objects[Index]);
+      FFilesToCopy->AddObject(FileName, ((File == NULL) || (Side == osLocal)) ? NULL : File->Duplicate());
+    }
   }
 
   FTargetDir = TargetDir;
@@ -2155,11 +2168,14 @@ __fastcall TTransferQueueItem::TTransferQueueItem(TTerminal * Terminal,
 //---------------------------------------------------------------------------
 __fastcall TTransferQueueItem::~TTransferQueueItem()
 {
-  for (int Index = 0; Index < FFilesToCopy->Count; Index++)
+  if (FFilesToCopy != NULL)
   {
-    delete FFilesToCopy->Objects[Index];
+    for (int Index = 0; Index < FFilesToCopy->Count; Index++)
+    {
+      delete FFilesToCopy->Objects[Index];
+    }
+    delete FFilesToCopy;
   }
-  delete FFilesToCopy;
   delete FCopyParam;
 }
 //---------------------------------------------------------------------------

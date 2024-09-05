@@ -640,6 +640,8 @@ void __fastcall TWinConfiguration::Default()
   EditorCheckNotModified = false;
   SessionTabCaptionTruncation = true;
   LoadingTooLongLimit = 15;
+  RemoteThumbnailMask = EmptyStr;
+  RemoteThumbnailSizeLimit = 50 * 1024;
   FirstRun = StandardDatestamp();
 
   FEditor.Font.FontName = DefaultFixedWidthFontName;
@@ -1127,6 +1129,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     EditorCheckNotModified); \
     KEY(Bool,     SessionTabCaptionTruncation); \
     KEY(Integer,  LoadingTooLongLimit); \
+    KEY(String,   RemoteThumbnailMask); \
+    KEY(Integer,  RemoteThumbnailSizeLimit); \
     KEY(String,   FirstRun); \
   ); \
   BLOCK(L"Interface\\Editor", CANCREATE, \

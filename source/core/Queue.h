@@ -200,7 +200,7 @@ protected:
 
   void __fastcall SetStatus(TStatus Status);
   TStatus __fastcall GetStatus();
-  void __fastcall Execute(TTerminalItem * TerminalItem);
+  void __fastcall Execute();
   virtual void __fastcall DoExecute(TTerminal * Terminal) = 0;
   void __fastcall SetProgress(TFileOperationProgressType & ProgressData);
   void __fastcall GetData(TQueueItemProxy * Proxy);
@@ -212,6 +212,7 @@ protected:
   virtual void __fastcall ProgressUpdated();
   virtual TQueueItem * __fastcall CreateParallelOperation();
   virtual bool __fastcall Complete();
+  bool IsExecutionCancelled();
 };
 //---------------------------------------------------------------------------
 class TQueueItemProxy

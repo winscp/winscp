@@ -486,6 +486,9 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXItem19: TTBXItem
           Action = NonVisualDataModule.RemoteReportAction
         end
+        object TBXItem170: TTBXItem
+          Action = NonVisualDataModule.RemoteThumbnailAction
+        end
         object TBXSeparatorItem4: TTBXSeparatorItem
         end
         object TBXSubmenuItem15: TTBXSubmenuItem
@@ -861,6 +864,9 @@ inherited ScpExplorerForm: TScpExplorerForm
         end
         object TBXItem75: TTBXItem
           Action = NonVisualDataModule.RemoteReportAction
+        end
+        object TBXItem279: TTBXItem
+          Action = NonVisualDataModule.RemoteThumbnailAction
         end
       end
       object TBXSubmenuItem24: TTBXSubmenuItem
