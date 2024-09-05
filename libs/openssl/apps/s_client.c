@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright 2005 Nokia. All rights reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -2167,6 +2167,9 @@ int s_client_main(int argc, char **argv)
     if (tfo)
         BIO_printf(bio_c_out, "Connecting via TFO\n");
  re_start:
+    /* peer_addr might be set from previous connections */
+    BIO_ADDR_free(peer_addr);
+    peer_addr = NULL;
     if (init_client(&sock, host, port, bindhost, bindport, socket_family,
                     socket_type, protocol, tfo, !isquic, &peer_addr) == 0) {
         BIO_printf(bio_err, "connect:errno=%d\n", get_last_socket_error());

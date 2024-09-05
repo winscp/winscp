@@ -403,6 +403,12 @@ The file where any newly enrolled certificate should be saved.
 =item B<-chainout> I<filename>
 
 The file where the chain of any newly enrolled certificate should be saved.
+This chain excludes the leaf certificate, i.e., the newly enrolled certificate.
+Also the trust anchor (the root certificate) is not included.
+
+If the B<-certout> option is given, too, with equal I<filename> argument,
+then the file produced contains both outputs concatenated:
+the newly enrolled certificate followed by its chain.
 
 =back
 
@@ -1394,7 +1400,7 @@ The B<-engine option> was deprecated in OpenSSL 3.0.
 
 =head1 COPYRIGHT
 
-Copyright 2007-2023 The OpenSSL Project Authors. All Rights Reserved.
+Copyright 2007-2024 The OpenSSL Project Authors. All Rights Reserved.
 
 Licensed under the Apache License 2.0 (the "License").  You may not use
 this file except in compliance with the License.  You can obtain a copy
