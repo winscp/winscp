@@ -119,7 +119,4 @@
 /* Define to `long' if <sys/types.h> does not define. */
 #cmakedefine off_t @off_t@
 
-/* Define to `unsigned' if <sys/types.h> does not define. */
-#cmakedefine size_t @size_t@
-
 #endif // ndef EXPAT_CONFIG_H
