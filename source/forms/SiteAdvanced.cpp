@@ -1392,16 +1392,19 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyEdit3AfterDialog(TObject * Sender
       {
         UnicodeString FileName = ExpandEnvironmentVariables(Name);
         TKeyType Type = KeyType(FileName);
-        // This gonna fail for encrypted keys
-        TPrivateKey * PrivateKey = LoadKey(Type, FileName, EmptyStr);
-        try
+        if ((Type == ktSSH2) || (Type == ktOpenSSHPEM) || (Type == ktOpenSSHNew) || (Type == ktSSHCom))
         {
-          UnicodeString CertificateFileName = AddMatchingKeyCertificate(PrivateKey, FileName);
-          DetachedCertificateEdit->Text = CertificateFileName;
-        }
-        __finally
-        {
-          FreeKey(PrivateKey);
+          // This gonna fail for encrypted keys
+          TPrivateKey * PrivateKey = LoadKey(Type, FileName, EmptyStr);
+          try
+          {
+            UnicodeString CertificateFileName = AddMatchingKeyCertificate(PrivateKey, FileName);
+            DetachedCertificateEdit->Text = CertificateFileName;
+          }
+          __finally
+          {
+            FreeKey(PrivateKey);
+          }
         }
       }
       catch (Exception & E)
