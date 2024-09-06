@@ -405,20 +405,30 @@ var
   Reg: TRegistry;
   Folder: TSpecialFolder;
   Drives: string;
+  DrivesDataInfo: TRegDataInfo;
+const
+  NoDrivesValueName = 'NoDrives';
 begin
   AppLog('Loading drives');
-  FNoDrives := 0;
   Reg := TRegistry.Create;
+  FNoDrives := 0;
   try
-    if Reg.OpenKeyReadOnly('Software\Microsoft\Windows\CurrentVersion\Policies\Explorer') Then
-       Reg.ReadBinaryData('NoDrives', FNoDrives, SizeOf(FNoDrives));
-  except
-    try
-      FNoDrives := Reg.ReadInteger('NoDrives');
-    except
+    if Reg.OpenKeyReadOnly('Software\Microsoft\Windows\CurrentVersion\Policies\Explorer') and
+       Reg.GetDataInfo(NoDrivesValueName, DrivesDataInfo) then
+    begin
+      if (DrivesDataInfo.RegData = rdBinary) and (DrivesDataInfo.DataSize >= SizeOf(FNoDrives)) then
+      begin
+        Reg.ReadBinaryData(NoDrivesValueName, FNoDrives, SizeOf(FNoDrives));
+      end
+        else
+      if DrivesDataInfo.RegData = rdInteger then
+      begin
+        FNoDrives := Reg.ReadInteger(NoDrivesValueName);
+      end;
     end;
+  finally
+    Reg.Free;
   end;
-  Reg.Free;
   AppLog(Format('NoDrives mask: %d', [Integer(FNoDrives)]));
 
   FDesktop := nil;
