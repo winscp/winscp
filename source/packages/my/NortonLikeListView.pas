@@ -44,6 +44,7 @@ type
     procedure LVMEditLabel(var Message: TMessage); message LVM_EDITLABEL;
     procedure WMSetFocus(var Message: TWMSetFocus); message WM_SETFOCUS;
     procedure CMWantSpecialKey(var Message: TCMWantSpecialKey); message CM_WANTSPECIALKEY;
+    procedure WMNCDestroy(var Message: TWMNCDestroy); message WM_NCDESTROY;
     function GetMarkedCount: Integer;
     function GetMarkedFile: TListItem;
     procedure ItemSelected(Item: TListItem; Index: Integer);
@@ -1014,11 +1015,19 @@ begin
   Dec(FUpdatingSelection);
 end; { EndUpdatingSelection }
 
+procedure TCustomNortonLikeListView.WMNCDestroy(var Message: TWMNCDestroy);
+begin
+  // VCLCOPY
+  FHeaderHandle := 0;
+  inherited;
+end;
+
 procedure TCustomNortonLikeListView.CreateWnd;
 begin
   try
     Assert(ColProperties <> nil);
     inherited;
+    // VCL gets the handle from WM_CREATE
     FHeaderHandle := ListView_GetHeader(Handle);
 
     ColProperties.ListViewWndCreated;
