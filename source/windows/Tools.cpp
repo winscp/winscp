@@ -1263,17 +1263,9 @@ UnicodeString GetConvertedKeyFileName(const UnicodeString & FileName)
   return ChangeFileExt(FileName, FORMAT(L".%s", (PuttyKeyExt)));
 }
 //---------------------------------------------------------------------------
-UnicodeString AddMatchingKeyCertificate(TPrivateKey * PrivateKey, const UnicodeString & FileName)
+static bool TryAddMatchingKeyCertificate(
+  TPrivateKey * PrivateKey, const UnicodeString & CertificateFileName, UnicodeString & Result)
 {
-  UnicodeString CertificateFileName = FileName;
-  UnicodeString S = FORMAT(L".%s", (PuttyKeyExt));
-  if (EndsText(S, CertificateFileName))
-  {
-    CertificateFileName.SetLength(CertificateFileName.Length() - S.Length());
-  }
-  CertificateFileName += L"-cert.pub";
-
-  UnicodeString Result;
   if (FileExists(CertificateFileName))
   {
     try
@@ -1286,6 +1278,24 @@ UnicodeString AddMatchingKeyCertificate(TPrivateKey * PrivateKey, const UnicodeS
       AppLogFmt(L"Cannot add certificate from auto-detected \"%s\": %s", (CertificateFileName, E.Message));
     }
   }
+
+  return !Result.IsEmpty();
+}
+//---------------------------------------------------------------------------
+UnicodeString AddMatchingKeyCertificate(TPrivateKey * PrivateKey, const UnicodeString & FileName)
+{
+  UnicodeString CertificateFileName = FileName;
+  UnicodeString S = FORMAT(L".%s", (PuttyKeyExt));
+  if (EndsText(S, CertificateFileName))
+  {
+    CertificateFileName.SetLength(CertificateFileName.Length() - S.Length());
+  }
+
+  UnicodeString Result;
+
+  TryAddMatchingKeyCertificate(PrivateKey, CertificateFileName + L"-cert.pub", Result) ||
+  TryAddMatchingKeyCertificate(PrivateKey, CertificateFileName + L".pub-aadcert.pub", Result);
+
   return Result;
 }
 //---------------------------------------------------------------------------
