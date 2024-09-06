@@ -38,7 +38,7 @@ cmake_minimum_required(VERSION 3.5.0)
 
 project(expat
     VERSION
-        2.6.2
+        2.6.3
     LANGUAGES
         C
 )
@@ -201,8 +201,8 @@ if(MSVC)
     # - https://sourceforge.net/p/predef/wiki/Compilers/
     # - https://en.wikipedia.org/wiki/Microsoft_Visual_Studio#History
     set(_EXPAT_MSVC_REQUIRED_INT 1800)  # i.e. 12.0/2013/1800; see PR #426
-    set(_EXPAT_MSVC_SUPPORTED_INT 1910)
-    set(_EXPAT_MSVC_SUPPORTED_DISPLAY "Visual Studio 15.0/2017/${_EXPAT_MSVC_SUPPORTED_INT}")
+    set(_EXPAT_MSVC_SUPPORTED_INT 1920)
+    set(_EXPAT_MSVC_SUPPORTED_DISPLAY "Visual Studio 16.0/2019/${_EXPAT_MSVC_SUPPORTED_INT}")
 
     if(MSVC_VERSION VERSION_LESS ${_EXPAT_MSVC_SUPPORTED_INT})
         if(MSVC_VERSION VERSION_LESS ${_EXPAT_MSVC_REQUIRED_INT})
@@ -466,7 +466,7 @@ foreach(build_type_upper
 endforeach()
 
 set(LIBCURRENT 10)  # sync
-set(LIBREVISION 2)  # with
+set(LIBREVISION 3)  # with
 set(LIBAGE 9)       # configure.ac!
 math(EXPR LIBCURRENT_MINUS_AGE "${LIBCURRENT} - ${LIBAGE}")
 

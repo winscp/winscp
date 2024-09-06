@@ -22,6 +22,8 @@ dnl   Copyright (c) 2018      KangLin <kl222@126.com>
 dnl   Copyright (c) 2019      Mohammed Khajapasha <mohammed.khajapasha@intel.com>
 dnl   Copyright (c) 2019      Kishore Kunche <kishore.kunche@intel.com>
 dnl   Copyright (c) 2020      Jeffrey Walton <noloader@gmail.com>
+dnl   Copyright (c) 2024      Ferenc Géczi <ferenc.gm@gmail.com>
+dnl   Copyright (c) 2024      Dag-Erling Smørgrav <des@des.dev>
 dnl   Licensed under the MIT license:
 dnl
 dnl   Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -83,7 +85,7 @@ dnl If the API changes incompatibly set LIBAGE back to 0
 dnl
 
 LIBCURRENT=10  # sync
-LIBREVISION=2  # with
+LIBREVISION=3  # with
 LIBAGE=9       # CMakeLists.txt!
 
 AC_CONFIG_HEADERS([expat_config.h])
@@ -160,7 +162,6 @@ AC_C_BIGENDIAN([AC_DEFINE([WORDS_BIGENDIAN], 1)
 AC_DEFINE_UNQUOTED([BYTEORDER], $BYTEORDER, [1234 = LILENDIAN, 4321 = BIGENDIAN])
 
 AC_C_CONST
-AC_TYPE_SIZE_T
 
 AC_ARG_WITH([xmlwf],
   [AS_HELP_STRING([--without-xmlwf], [do not build xmlwf])],
@@ -215,7 +216,7 @@ AC_LINK_IFELSE([AC_LANG_SOURCE([
     #else
     # include <stdlib.h>  /* for arc4random_buf on BSD */
     #endif
-    int main() {
+    int main(void) {
       char dummy[[123]];  // double brackets for m4
       arc4random_buf(dummy, 0U);
       return 0;
@@ -232,7 +233,7 @@ AC_LINK_IFELSE([AC_LANG_SOURCE([
        #else
        # include <stdlib.h>
        #endif
-       int main() {
+       int main(void) {
           arc4random();
           return 0;
        }
@@ -254,7 +255,7 @@ AS_IF([test "x$with_getrandom" != xno],
    AC_LINK_IFELSE([AC_LANG_SOURCE([
        #include <stdlib.h>  /* for NULL */
        #include <sys/random.h>
-       int main() {
+       int main(void) {
          return getrandom(NULL, 0U, 0U);
        }
      ])],
@@ -275,10 +276,11 @@ AS_HELP_STRING([--without-sys-getrandom],
 AS_IF([test "x$with_sys_getrandom" != xno],
   [AC_MSG_CHECKING([for syscall SYS_getrandom (Linux 3.17+)])
    AC_LINK_IFELSE([AC_LANG_SOURCE([
+       #define _GNU_SOURCE
        #include <stdlib.h>  /* for NULL */
        #include <unistd.h>  /* for syscall */
        #include <sys/syscall.h>  /* for SYS_getrandom */
-       int main() {
+       int main(void) {
          syscall(SYS_getrandom, NULL, 0, 0);
          return 0;
      }
@@ -403,7 +405,6 @@ LIBDIR_BASENAME="$(basename "${libdir}")"
 SO_MAJOR="$(expr "${LIBCURRENT}" - "${LIBAGE}")"
 SO_MINOR="${LIBAGE}"
 SO_PATCH="${LIBREVISION}"
-AC_CHECK_SIZEOF([void *])  # sets ac_cv_sizeof_void_p
 AC_SUBST([EXPAT_ATTR_INFO])
 AC_SUBST([EXPAT_DTD])
 AC_SUBST([EXPAT_LARGE_SIZE])
@@ -416,16 +417,13 @@ AC_SUBST([LIBDIR_BASENAME])
 AC_SUBST([SO_MAJOR])
 AC_SUBST([SO_MINOR])
 AC_SUBST([SO_PATCH])
-AC_SUBST([ac_cv_sizeof_void_p])
 
-dnl Protect against generating an expat_config.h that would break multilib
-AS_IF([grep -F -q SIZEOF_VOID_P "${srcdir}"/expat_config.h.in],
-  [AC_MSG_ERROR(
-    [Plain autoreconf/autoheader does not cut it,
-                  please use ./buildconf.sh or imitate its effect
-                  through other means, so that file expat_config.h.in
-                  no longer defines macro SIZEOF_VOID_P, as that would
-                  break multilib support.  Thank you.])])
+dnl The canonical way of doing this is AC_CHECK_SIZEOF(void *), but
+dnl that adds SIZEOF_VOID_P to expat_config.h.in, making it difficult
+dnl to have 32-bit and 64-bit versions of libexpat installed on the
+dnl same system with a single, shared copy of the header.
+AC_COMPUTE_INT(SIZEOF_VOID_P, [sizeof(void *)])
+AC_SUBST([SIZEOF_VOID_P])
 
 dnl write the Automake flags we set
 AC_SUBST([AM_CPPFLAGS])

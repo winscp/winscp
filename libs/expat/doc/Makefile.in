@@ -25,6 +25,7 @@
 # Copyright (c) 2017-2024 Sebastian Pipping <sebastian@pipping.org>
 # Copyright (c) 2017      Stephen Groat <stephen@groat.us>
 # Copyright (c) 2017      Joe Orton <jorton@redhat.com>
+# Copyright (c) 2024      Tomas Korbar <tkorbar@redhat.com>
 # Licensed under the MIT license:
 #
 # Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -285,6 +286,7 @@ RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
+SIZEOF_VOID_P = @SIZEOF_VOID_P@
 SO_MAJOR = @SO_MAJOR@
 SO_MINOR = @SO_MINOR@
 SO_PATCH = @SO_PATCH@
@@ -298,7 +300,6 @@ ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
-ac_cv_sizeof_void_p = @ac_cv_sizeof_void_p@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
