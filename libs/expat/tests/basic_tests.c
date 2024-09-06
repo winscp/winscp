@@ -2804,6 +2804,61 @@ START_TEST(test_empty_parse) {
 }
 END_TEST
 
+/* Test XML_Parse for len < 0 */
+START_TEST(test_negative_len_parse) {
+  const char *const doc = "<root/>";
+  for (int isFinal = 0; isFinal < 2; isFinal++) {
+    set_subtest("isFinal=%d", isFinal);
+
+    XML_Parser parser = XML_ParserCreate(NULL);
+
+    if (XML_GetErrorCode(parser) != XML_ERROR_NONE)
+      fail("There was not supposed to be any initial parse error.");
+
+    const enum XML_Status status = XML_Parse(parser, doc, -1, isFinal);
+
+    if (status != XML_STATUS_ERROR)
+      fail("Negative len was expected to fail the parse but did not.");
+
+    if (XML_GetErrorCode(parser) != XML_ERROR_INVALID_ARGUMENT)
+      fail("Parse error does not match XML_ERROR_INVALID_ARGUMENT.");
+
+    XML_ParserFree(parser);
+  }
+}
+END_TEST
+
+/* Test XML_ParseBuffer for len < 0 */
+START_TEST(test_negative_len_parse_buffer) {
+  const char *const doc = "<root/>";
+  for (int isFinal = 0; isFinal < 2; isFinal++) {
+    set_subtest("isFinal=%d", isFinal);
+
+    XML_Parser parser = XML_ParserCreate(NULL);
+
+    if (XML_GetErrorCode(parser) != XML_ERROR_NONE)
+      fail("There was not supposed to be any initial parse error.");
+
+    void *const buffer = XML_GetBuffer(parser, (int)strlen(doc));
+
+    if (buffer == NULL)
+      fail("XML_GetBuffer failed.");
+
+    memcpy(buffer, doc, strlen(doc));
+
+    const enum XML_Status status = XML_ParseBuffer(parser, -1, isFinal);
+
+    if (status != XML_STATUS_ERROR)
+      fail("Negative len was expected to fail the parse but did not.");
+
+    if (XML_GetErrorCode(parser) != XML_ERROR_INVALID_ARGUMENT)
+      fail("Parse error does not match XML_ERROR_INVALID_ARGUMENT.");
+
+    XML_ParserFree(parser);
+  }
+}
+END_TEST
+
 /* Test odd corners of the XML_GetBuffer interface */
 static enum XML_Status
 get_feature(enum XML_FeatureEnum feature_id, long *presult) {
@@ -5955,6 +6010,8 @@ make_basic_test_case(Suite *s) {
   tcase_add_test__ifdef_xml_dtd(tc_basic, test_user_parameters);
   tcase_add_test__ifdef_xml_dtd(tc_basic, test_ext_entity_ref_parameter);
   tcase_add_test(tc_basic, test_empty_parse);
+  tcase_add_test(tc_basic, test_negative_len_parse);
+  tcase_add_test(tc_basic, test_negative_len_parse_buffer);
   tcase_add_test(tc_basic, test_get_buffer_1);
   tcase_add_test(tc_basic, test_get_buffer_2);
 #if XML_CONTEXT_BYTES > 0

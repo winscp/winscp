@@ -16,6 +16,7 @@
 ; Copyright (c) 2006-2017 Karl Waclawek <karl@waclawek.net>
 ; Copyright (c) 2007-2024 Sebastian Pipping <sebastian@pipping.org>
 ; Copyright (c) 2022      Johnny Jazeix <jazeix@gmail.com>
+; Copyright (c) 2024      Dag-Erling Smørgrav <des@des.dev>
 ; Licensed under the MIT license:
 ;
 ; Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -37,7 +38,7 @@
 ; OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 ; USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#define expatVer "2.6.2"
+#define expatVer "2.6.3"
 
 [Setup]
 AppName=Expat
@@ -96,7 +97,7 @@ Flags: ignoreversion; Source: examples\*.c;                 DestDir: "{app}\Sour
 Flags: ignoreversion; Source: tests\*.c;                    DestDir: "{app}\Source\tests"
 Flags: ignoreversion; Source: tests\*.cpp;                  DestDir: "{app}\Source\tests"
 Flags: ignoreversion; Source: tests\*.h;                    DestDir: "{app}\Source\tests"
-Flags: ignoreversion; Source: tests\README.txt;             DestDir: "{app}\Source\tests"
+Flags: ignoreversion; Source: tests\README.md;              DestDir: "{app}\Source\tests"
 Flags: ignoreversion; Source: tests\benchmark\*.c;          DestDir: "{app}\Source\tests\benchmark"
 Flags: ignoreversion; Source: tests\benchmark\README.txt;   DestDir: "{app}\Source\tests\benchmark"
 Flags: ignoreversion; Source: xmlwf\*.c*;                   DestDir: "{app}\Source\xmlwf"
