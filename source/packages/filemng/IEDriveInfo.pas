@@ -76,20 +76,22 @@ type
   private
     FData: TObjectDictionary<string, TDriveInfoRec>;
     FNoDrives: DWORD;
+    FNoViewOnDrive: DWORD;
     FDesktop: IShellFolder;
     FFolders: array[TSpecialFolder] of TSpecialFolderRec;
-    FHonorDrivePolicy: Boolean;
+    FHonorDrivePolicy: Integer;
     FUseABDrives: Boolean;
     FLoaded: Boolean;
     function GetFolder(Folder: TSpecialFolder): PSpecialFolderRec;
     procedure ReadDriveBasicStatus(Drive: string);
     procedure ResetDrive(Drive: string);
-    procedure SetHonorDrivePolicy(Value: Boolean);
+    procedure SetHonorDrivePolicy(Value: Integer);
     function GetFirstFixedDrive: Char;
     procedure Load;
     function AddDrive(Drive: string): TDriveInfoRec;
     function GetDriveBitMask(Drive: string): Integer;
     function DoAnyValidPath(DriveType: Integer; CanBeHidden: Boolean; var Path: string): Boolean;
+    function ReadDriveMask(Reg: TRegistry; ValueName: string): DWORD;
 
   public
     function Get(Drive: string): TDriveInfoRec;
@@ -107,7 +109,7 @@ type
     function GetPrettyName(Drive: string): string;
     function ReadDriveStatus(Drive: string; Flags: Integer): Boolean;
     procedure OverrideDrivePolicy(Drive: string);
-    property HonorDrivePolicy: Boolean read FHonorDrivePolicy write SetHonorDrivePolicy;
+    property HonorDrivePolicy: Integer read FHonorDrivePolicy write SetHonorDrivePolicy;
     property FirstFixedDrive: Char read GetFirstFixedDrive;
     property UseABDrives: Boolean read FUseABDrives write FUseABDrives;
 
@@ -192,7 +194,7 @@ constructor TDriveInfo.Create;
 begin
   inherited;
 
-  FHonorDrivePolicy := True;
+  FHonorDrivePolicy := 1;
   FUseABDrives := True;
   FLoaded := False;
   FData := TObjectDictionary<string, TDriveInfoRec>.Create([doOwnsValues]);
@@ -340,7 +342,7 @@ begin
   Result := @FFolders[Folder];
 end;
 
-procedure TDriveInfo.SetHonorDrivePolicy(Value: Boolean);
+procedure TDriveInfo.SetHonorDrivePolicy(Value: Integer);
 var
   Drive: TRealDrive;
 begin
@@ -372,15 +374,21 @@ end;
 procedure TDriveInfo.ReadDriveBasicStatus(Drive: string);
 var
   ValidDriveType: Boolean;
-  HiddenByDrivePolicy: Boolean;
+  InaccessibleByDrivePolicy, HiddenByDrivePolicy: Boolean;
+  DriveBitMask: Integer;
 begin
   Assert(FData.ContainsKey(Drive));
   with FData[Drive] do
   begin
     DriveType := Windows.GetDriveType(PChar(GetDriveRoot(Drive)));
-    ValidDriveType := (DriveType in [DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_CDROM, DRIVE_RAMDISK, DRIVE_REMOTE]);
+    DriveBitMask := GetDriveBitMask(Drive);
+    InaccessibleByDrivePolicy :=
+      IsRealDrive(Drive) and ((HonorDrivePolicy and 2) <> 0) and ((DriveBitMask and FNoViewOnDrive) <> 0);
     HiddenByDrivePolicy :=
-      FHonorDrivePolicy and IsRealDrive(Drive) and ((GetDriveBitMask(Drive) and FNoDrives) <> 0);
+      IsRealDrive(Drive) and ((HonorDrivePolicy and 1) <> 0) and ((DriveBitMask and FNoDrives) <> 0);
+    ValidDriveType :=
+      (DriveType in [DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_CDROM, DRIVE_RAMDISK, DRIVE_REMOTE]) and
+      (not InaccessibleByDrivePolicy);
     ValidButHiddenByDrivePolicy := ValidDriveType and HiddenByDrivePolicy;
     Valid := ValidDriveType and (not HiddenByDrivePolicy);
   end;
@@ -399,37 +407,47 @@ begin
   end;
 end;
 
+function TDriveInfo.ReadDriveMask(Reg: TRegistry; ValueName: string): DWORD;
+var
+  DataInfo: TRegDataInfo;
+begin
+  Result := 0;
+  if Reg.GetDataInfo(ValueName, DataInfo) then
+  begin
+    if (DataInfo.RegData = rdBinary) and (DataInfo.DataSize >= SizeOf(Result)) then
+    begin
+      Reg.ReadBinaryData(ValueName, Result, SizeOf(Result));
+    end
+      else
+    if DataInfo.RegData = rdInteger then
+    begin
+      Result := Reg.ReadInteger(ValueName);
+    end;
+  end;
+end;
+
 procedure TDriveInfo.Load;
 var
   Drive: TRealDrive;
   Reg: TRegistry;
   Folder: TSpecialFolder;
   Drives: string;
-  DrivesDataInfo: TRegDataInfo;
-const
-  NoDrivesValueName = 'NoDrives';
 begin
   AppLog('Loading drives');
   Reg := TRegistry.Create;
   FNoDrives := 0;
+  FNoViewOnDrive := 0;
   try
-    if Reg.OpenKeyReadOnly('Software\Microsoft\Windows\CurrentVersion\Policies\Explorer') and
-       Reg.GetDataInfo(NoDrivesValueName, DrivesDataInfo) then
+    if Reg.OpenKeyReadOnly('Software\Microsoft\Windows\CurrentVersion\Policies\Explorer') then
     begin
-      if (DrivesDataInfo.RegData = rdBinary) and (DrivesDataInfo.DataSize >= SizeOf(FNoDrives)) then
-      begin
-        Reg.ReadBinaryData(NoDrivesValueName, FNoDrives, SizeOf(FNoDrives));
-      end
-        else
-      if DrivesDataInfo.RegData = rdInteger then
-      begin
-        FNoDrives := Reg.ReadInteger(NoDrivesValueName);
-      end;
+      FNoDrives := ReadDriveMask(Reg, 'NoDrives');
+      FNoViewOnDrive := ReadDriveMask(Reg, 'NoViewOnDrive');
     end;
   finally
     Reg.Free;
   end;
   AppLog(Format('NoDrives mask: %d', [Integer(FNoDrives)]));
+  AppLog(Format('NoViewOnDrive mask: %d', [Integer(FNoViewOnDrive)]));
 
   FDesktop := nil;
 

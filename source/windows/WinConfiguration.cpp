@@ -628,7 +628,7 @@ void __fastcall TWinConfiguration::Default()
   FExtensionsDeleted = L"";
   FLockedInterface = false;
 
-  HonorDrivePolicy = true;
+  HonorDrivePolicy = 1;
   UseABDrives = true;
   TimeoutShellOperations = true;
   TimeoutShellIconRetrieval = false;
@@ -1113,7 +1113,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(DateTime, TipsShown); \
     KEY(String,   FileColors); \
     KEY(Integer,  RunsSinceLastTip); \
-    KEY(Bool,     HonorDrivePolicy); \
+    KEY(Integer,  HonorDrivePolicy); \
     KEY(Bool,     UseABDrives); \
     KEY(Integer,  LastMachineInstallations); \
     KEY(String,   FExtensionsDeleted); \
@@ -2469,12 +2469,12 @@ void __fastcall TWinConfiguration::SetRunsSinceLastTip(int value)
   SET_CONFIG_PROPERTY(RunsSinceLastTip);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TWinConfiguration::GetHonorDrivePolicy()
+int __fastcall TWinConfiguration::GetHonorDrivePolicy()
 {
   return DriveInfo->HonorDrivePolicy;
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetHonorDrivePolicy(bool value)
+void __fastcall TWinConfiguration::SetHonorDrivePolicy(int value)
 {
   if (HonorDrivePolicy != value)
   {

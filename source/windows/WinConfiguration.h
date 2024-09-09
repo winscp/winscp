@@ -595,8 +595,8 @@ private:
   void __fastcall SetTipsShown(TDateTime value);
   void __fastcall SetFileColors(UnicodeString value);
   void __fastcall SetRunsSinceLastTip(int value);
-  bool __fastcall GetHonorDrivePolicy();
-  void __fastcall SetHonorDrivePolicy(bool value);
+  int __fastcall GetHonorDrivePolicy();
+  void __fastcall SetHonorDrivePolicy(int value);
   bool __fastcall GetUseABDrives();
   void __fastcall SetUseABDrives(bool value);
   bool __fastcall GetIsBeta();
@@ -807,7 +807,7 @@ public:
   __property TDateTime TipsShown = { read = FTipsShown, write = SetTipsShown };
   __property UnicodeString FileColors = { read = FFileColors, write = SetFileColors };
   __property int RunsSinceLastTip = { read = FRunsSinceLastTip, write = SetRunsSinceLastTip };
-  __property bool HonorDrivePolicy = { read = GetHonorDrivePolicy, write = SetHonorDrivePolicy };
+  __property int HonorDrivePolicy = { read = GetHonorDrivePolicy, write = SetHonorDrivePolicy };
   __property bool UseABDrives = { read = GetUseABDrives, write = SetUseABDrives };
   __property TMasterPasswordPromptEvent OnMasterPasswordPrompt = { read = FOnMasterPasswordPrompt, write = FOnMasterPasswordPrompt };
   __property TStrings * CustomCommandOptions = { read = GetCustomCommandOptions, write = SetCustomCommandOptions };
