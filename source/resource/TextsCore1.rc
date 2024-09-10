@@ -521,7 +521,7 @@ BEGIN
   OPENSSL_COPYRIGHT2, "Copyright © 1998–%s The OpenSSL Project"
   OPENSSL_URL, "https://openssl-library.org/"
   NEON_BASED_ON2, "WebDAV/HTTP code based on neon library %s"
-  NEON_COPYRIGHT, "Copyright © 1999–2022 Joe Orton"
+  NEON_COPYRIGHT, "Copyright © 1999–2024 Joe Orton"
   NEON_URL, "https://notroj.github.io/neon/"
   EXPAT_BASED_ON, "eXpat library %s"
   EXPAT_URL, "https://libexpat.github.io/"
