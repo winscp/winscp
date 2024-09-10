@@ -66,7 +66,7 @@ If you want to use this class in a commercial application, a short message
 to tim.kosse@filezilla-project.org would be appreciated but is not required.
 
 This product includes software developed by the OpenSSL Project
-for use in the OpenSSL Toolkit. (https://www.openssl.org/)
+for use in the OpenSSL Toolkit. (https://openssl-library.org/)
 */
 //---------------------------------------------------------------------------
 #ifndef AsyncSslSocketLayerH
