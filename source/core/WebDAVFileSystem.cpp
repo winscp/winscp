@@ -867,17 +867,38 @@ void TWebDAVFileSystem::NeonPropsResult(
   if (Data.FileList != NULL)
   {
     std::unique_ptr<TRemoteFile> File(new TRemoteFile(NULL));
-    File->Terminal = Data.FileSystem->FTerminal;
+    TTerminal * Terminal = Data.FileSystem->FTerminal;
+    File->Terminal = Terminal;
     Data.FileSystem->ParsePropResultSet(File.get(), Path, Results);
 
-    UnicodeString FileListPath = Data.FileSystem->AbsolutePath(Data.FileList->Directory, false);
+    UnicodeString FileListPath = UnixIncludeTrailingBackslash(Data.FileSystem->AbsolutePath(Data.FileList->Directory, false));
     if (UnixSamePath(File->FullFileName, FileListPath))
     {
       File->FileName = PARENTDIRECTORY;
       File->FullFileName = UnixCombinePaths(Path, PARENTDIRECTORY);
     }
+    else
+    {
+      if (!StartsStr(FileListPath, File->FullFileName))
+      {
+        Terminal->LogEvent(FORMAT(L"Discarding entry \"%s\" with absolute path \"%s\" because it is not descendant of directory \"%s\".", (Path, File->FullFileName, FileListPath)));
+        File.reset(NULL);
+      }
+      else
+      {
+        UnicodeString FileName = MidStr(File->FullFileName, FileListPath.Length() + 1);
+        if (!UnixExtractFileDir(FileName).IsEmpty())
+        {
+          Terminal->LogEvent(FORMAT(L"Discarding entry \"%s\" with absolute path \"%s\" because it is not direct child of directory \"%s\".", (Path, File->FullFileName, FileListPath)));
+          File.reset(NULL);
+        }
+      }
+    }
 
-    Data.FileList->AddFile(File.release());
+    if (File.get() != NULL)
+    {
+      Data.FileList->AddFile(File.release());
+    }
   }
   else
   {
