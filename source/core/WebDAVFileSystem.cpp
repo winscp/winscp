@@ -864,14 +864,15 @@ void TWebDAVFileSystem::NeonPropsResult(
   UnicodeString Path = PathUnescape(Uri->path);
 
   TReadFileData & Data = *static_cast<TReadFileData *>(UserData);
+  TWebDAVFileSystem * FileSystem = Data.FileSystem;
   if (Data.FileList != NULL)
   {
     std::unique_ptr<TRemoteFile> File(new TRemoteFile(NULL));
-    TTerminal * Terminal = Data.FileSystem->FTerminal;
+    TTerminal * Terminal = FileSystem->FTerminal;
     File->Terminal = Terminal;
-    Data.FileSystem->ParsePropResultSet(File.get(), Path, Results);
+    FileSystem->ParsePropResultSet(File.get(), Path, Results);
 
-    UnicodeString FileListPath = UnixIncludeTrailingBackslash(Data.FileSystem->AbsolutePath(Data.FileList->Directory, false));
+    UnicodeString FileListPath = UnixIncludeTrailingBackslash(FileSystem->AbsolutePath(Data.FileList->Directory, false));
     if (UnixSamePath(File->FullFileName, FileListPath))
     {
       File->FileName = PARENTDIRECTORY;
@@ -879,18 +880,24 @@ void TWebDAVFileSystem::NeonPropsResult(
     }
     else
     {
-      if (!StartsStr(FileListPath, File->FullFileName))
+      // Quick and dirty hack. The following tests do not work on OneDrive, as the directory path may be escaped,
+      // and we do not correctly unescape full `Path`, only its filename (so path in FullFileName may not be not correct).
+      // Until it's real problem somewhere else, we skip this test, as we otherwise trust OneDrive not to return nonsense contents.
+      if (!FileSystem->FOneDrive)
       {
-        Terminal->LogEvent(FORMAT(L"Discarding entry \"%s\" with absolute path \"%s\" because it is not descendant of directory \"%s\".", (Path, File->FullFileName, FileListPath)));
-        File.reset(NULL);
-      }
-      else
-      {
-        UnicodeString FileName = MidStr(File->FullFileName, FileListPath.Length() + 1);
-        if (!UnixExtractFileDir(FileName).IsEmpty())
+        if (!StartsStr(FileListPath, File->FullFileName))
         {
-          Terminal->LogEvent(FORMAT(L"Discarding entry \"%s\" with absolute path \"%s\" because it is not direct child of directory \"%s\".", (Path, File->FullFileName, FileListPath)));
+          Terminal->LogEvent(FORMAT(L"Discarding entry \"%s\" with absolute path \"%s\" because it is not descendant of directory \"%s\".", (Path, File->FullFileName, FileListPath)));
           File.reset(NULL);
+        }
+        else
+        {
+          UnicodeString FileName = MidStr(File->FullFileName, FileListPath.Length() + 1);
+          if (!UnixExtractFileDir(FileName).IsEmpty())
+          {
+            Terminal->LogEvent(FORMAT(L"Discarding entry \"%s\" with absolute path \"%s\" because it is not direct child of directory \"%s\".", (Path, File->FullFileName, FileListPath)));
+            File.reset(NULL);
+          }
         }
       }
     }
@@ -902,7 +909,7 @@ void TWebDAVFileSystem::NeonPropsResult(
   }
   else
   {
-    Data.FileSystem->ParsePropResultSet(Data.File, Path, Results);
+    FileSystem->ParsePropResultSet(Data.File, Path, Results);
   }
 }
 //---------------------------------------------------------------------------
