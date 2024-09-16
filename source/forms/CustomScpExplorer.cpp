@@ -11798,7 +11798,7 @@ void TCustomScpExplorerForm::DoBrowseFile(TCustomDirView * DirView, const Unicod
 {
   if (!FileName.IsEmpty())
   {
-    DirView->RestoreFocus(FileName);
+    DirView->FocusByName(FileName);
     if (DirView->ItemFocused != NULL)
     {
       DirView->ItemFocused->Selected = true;

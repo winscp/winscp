@@ -165,7 +165,7 @@ type
     FSavedSelectionFile: string;
     FSavedSelectionLastFile: string;
     FSavedNames: TStringList;
-    FPendingFocusSomething: Boolean;
+    FPendingFocusSomething: Integer;
     FOnMatchMask: TMatchMaskEvent;
     FOnGetOverlay: TDirViewGetOverlayEvent;
     FOnGetItemColor: TDirViewGetItemColorEvent;
@@ -283,7 +283,7 @@ type
     function DoExecFile(Item: TListItem; ForceEnter: Boolean): Boolean; virtual;
     procedure Execute(Item: TListItem; ForceEnter: Boolean); virtual;
     procedure ExecuteFile(Item: TListItem); virtual; abstract;
-    procedure FocusSomething; override;
+    procedure FocusSomething(ForceMakeVisible: Boolean); override;
     function GetIsRoot: Boolean; virtual; abstract;
     function ItemCanDrag(Item: TListItem): Boolean; virtual;
     function DoItemColor(Item: TListItem): TColor;
@@ -360,6 +360,10 @@ type
     procedure DoUpdateStatusBar(Force: Boolean = False);
     procedure DoCustomDrawItem(Item: TListItem; Stage: TCustomDrawStage);
     procedure ItemCalculatedSizeUpdated(Item: TListItem; OldSize, NewSize: Int64);
+    procedure SaveItemsState(var FocusedItem: string; var FocusedShown: Boolean; var ShownItemOffset: Integer);
+    procedure RestoreItemsState(ItemToFocus: TListItem; FocusedShown: Boolean; ShownItemOffset: Integer); overload;
+    procedure RestoreItemsState(AState: TObject); overload;
+    function FindFileItemIfNotEmpty(FileName: string): TListItem;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -403,7 +407,7 @@ type
     function SaveState: TObject; virtual;
     procedure RestoreState(AState: TObject); virtual;
     procedure AnnounceState(AState: TObject); virtual;
-    procedure RestoreFocus(FocusedItem: string);
+    procedure FocusByName(FileName: string);
     procedure DisplayContextMenu(Where: TPoint); virtual; abstract;
     procedure DisplayContextMenuInSitu;
     procedure UpdateStatusBar;
@@ -645,6 +649,8 @@ type
     SortStr: string;
     Mask: string;
     FocusedItem: string;
+    FocusedShown: Boolean;
+    ShownItemOffset: Integer;
   end;
 
 constructor TDirViewState.Create;
@@ -864,7 +870,7 @@ begin
   FForceRename := False;
   FLastRenameName := '';
   FSavedSelection := False;
-  FPendingFocusSomething := False;
+  FPendingFocusSomething := -1;
   FSavedNames := TStringList.Create;
 
   FContextMenu := False;
@@ -2010,8 +2016,6 @@ var
   Item: TListItem;
   ItemToFocus: TListItem;
   FileName: string;
-  R: TRect;
-  P: TPoint;
 begin
   if Path <> '' then
   begin
@@ -2047,46 +2051,7 @@ begin
       end
         else
       begin
-        if Assigned(ItemFocused) then
-        begin
-          if ViewStyle = vsReport then
-          begin
-            if Assigned(TopItem) then
-            begin
-              R := ItemFocused.DisplayRect(drBounds);
-              if (R.Top < TopItem.DisplayRect(drBounds).Top) or (R.Top > ClientHeight) then
-              begin
-                OldFocusedShown := False;
-                OldShownItemOffset := TopItem.Index;
-              end
-                else
-              begin
-                OldFocusedShown := True;
-                OldShownItemOffset := ItemFocused.Index - TopItem.Index;
-              end;
-            end
-              else
-            begin
-              // seen with one user only
-              OldFocusedShown := False;
-              OldShownItemOffset := 0;
-            end;
-          end
-            else
-          begin
-            // to satisfy compiler, never used
-            OldFocusedShown := False;
-            OldShownItemOffset := -1;
-          end;
-          OldItemFocused := ItemFocused.Caption;
-        end
-          else
-        begin
-          OldItemFocused := '';
-          OldFocusedShown := False;
-          if Assigned(TopItem) then OldShownItemOffset := TopItem.Index
-            else OldShownItemOffset := -1;
-        end;
+        SaveItemsState(OldItemFocused, OldFocusedShown, OldShownItemOffset);
       end;
 
       Load(False);
@@ -2121,42 +2086,9 @@ begin
     end;
 
     // This is below Items.EndUpdate(), to make Scroll() work properly
-    if Assigned(ItemToFocus) then
-    begin
-      // we have found item that was previously focused and visible, scroll to it
-      if (ViewStyle = vsReport) and OldFocusedShown and
-         (ItemToFocus.Index > OldShownItemOffset) then
-      begin
-        P := Items[ItemToFocus.Index - OldShownItemOffset].GetPosition;
-        // GetPosition is shifted bit low below actual row top.
-        // Scroll to the GetPosition would scroll one line lower.
-        Scroll(0, P.Y - Items[0].GetPosition.Y);
-      end;
-      // Strangely after this mouse selection works correctly, so we do not have to call FocusItem.
-      ItemFocused := ItemToFocus;
-    end;
+    RestoreItemsState(ItemToFocus, OldFocusedShown, OldShownItemOffset);
 
-    // could not scroll when focus is not visible because
-    // of previous call to hack-implementation of FocusItem()
-    // - no longer true, this can be re-enabled after some testing
-    {$IF False}
-    // previously focus item was not visible, scroll to the same position
-    // as before
-    if (ViewStyle = vsReport) and (not OldFocusedShown) and
-       (OldShownItemOffset >= 0) and (Items.Count > 0) then
-    begin
-      if OldShownItemOffset < Items.Count - VisibleRowCount then
-        Scroll(0, OldShownItemOffset)
-      else
-        Items.Item[Items.Count - 1].MakeVisible(false);
-    end
-      // do not know where to scroll to, so scroll to focus
-      // (or we have tried to scroll to previously focused and visible item,
-      // now make sute that it is really visible)
-      else {$IFEND}
-    if Assigned(ItemToFocus) then ItemToFocus.MakeVisible(false);
-
-    FocusSomething;
+    FocusSomething(False);
   end;
 end;
 
@@ -2240,9 +2172,9 @@ begin
         begin
           if FAnnouncedState is TDirViewState then
           begin
-            RestoreFocus(TDirViewState(FAnnouncedState).FocusedItem);
+            RestoreItemsState(FAnnouncedState);
           end;
-          FocusSomething;
+          FocusSomething(False);
         end;
 
         if Assigned(FOnLoaded) then
@@ -3070,6 +3002,13 @@ begin
   ForceColorChange(Self);
 end;
 
+function TCustomDirView.FindFileItemIfNotEmpty(FileName: string): TListItem;
+begin
+  Result := nil;
+  if FileName <> '' then
+    Result := FindFileItem(FileName);
+end;
+
 function TCustomDirView.FindFileItem(FileName: string): TListItem;
 type
   TFileNameCompare = function(const S1, S2: string): Integer;
@@ -3347,9 +3286,13 @@ begin
   SetLength(Result, StrLen(PChar(Result)));
 end;
 
-procedure TCustomDirView.FocusSomething;
+procedure TCustomDirView.FocusSomething(ForceMakeVisible: Boolean);
 begin
-  if FSavedSelection then FPendingFocusSomething := True
+  if FSavedSelection then
+  begin
+    if ForceMakeVisible then FPendingFocusSomething := 1
+      else FPendingFocusSomething := 0
+  end
     else inherited;
 end;
 
@@ -3393,7 +3336,7 @@ begin
     end;
   end;
 
-  if not Assigned(ItemFocused) then FocusSomething
+  if not Assigned(ItemFocused) then FocusSomething(True)
     else ItemFocused.MakeVisible(False);
 end;
 
@@ -3402,10 +3345,10 @@ begin
   Assert(FSavedSelection);
   FSavedSelection := False;
 
-  if FPendingFocusSomething then
+  if FPendingFocusSomething >= 0 then
   begin
-    FPendingFocusSomething := False;
-    FocusSomething;
+    FocusSomething(FPendingFocusSomething > 0);
+    FPendingFocusSomething := -1;
   end;
 end;
 
@@ -3460,6 +3403,90 @@ begin
   FAnnouncedState := AState;
 end;
 
+procedure TCustomDirView.SaveItemsState(
+  var FocusedItem: string; var FocusedShown: Boolean; var ShownItemOffset: Integer);
+begin
+  if Assigned(ItemFocused) then
+  begin
+    if ViewStyle = vsReport then
+    begin
+      if Assigned(TopItem) then
+      begin
+        FocusedShown := IsItemVisible(ItemFocused);
+        if not FocusedShown then
+        begin
+          ShownItemOffset := TopItem.Index;
+        end
+          else
+        begin
+          ShownItemOffset := ItemFocused.Index - TopItem.Index;
+        end;
+      end
+        else
+      begin
+        // seen with one user only
+        FocusedShown := False;
+        ShownItemOffset := 0;
+      end;
+    end
+      else
+    begin
+      // to satisfy compiler, never used
+      FocusedShown := False;
+      ShownItemOffset := -1;
+    end;
+    FocusedItem := ItemFocused.Caption;
+  end
+    else
+  begin
+    FocusedItem := '';
+    FocusedShown := False;
+    if Assigned(TopItem) then ShownItemOffset := TopItem.Index
+      else ShownItemOffset := -1;
+  end;
+end;
+
+procedure TCustomDirView.RestoreItemsState(ItemToFocus: TListItem; FocusedShown: Boolean; ShownItemOffset: Integer);
+begin
+  if Assigned(ItemToFocus) then
+  begin
+    // we have found item that was previously focused and visible, scroll to it
+    if (ViewStyle = vsReport) and FocusedShown and
+       (ItemToFocus.Index > ShownItemOffset) then
+    begin
+      MakeTopItem(Items[ItemToFocus.Index - ShownItemOffset]);
+    end;
+    // Strangely after this mouse selection works correctly, so we do not have to call FocusItem.
+    ItemFocused := ItemToFocus;
+  end;
+
+  // previously focused item was not visible, scroll to the same position
+  // as before
+  if (ViewStyle = vsReport) and (not FocusedShown) and
+     (ShownItemOffset >= 0) and (Items.Count > 0) then
+  begin
+    if ShownItemOffset < Items.Count - VisibleRowCount then
+      MakeTopItem(Items[ShownItemOffset])
+    else
+      Items.Item[Items.Count - 1].MakeVisible(false);
+  end
+    // do not know where to scroll to, so scroll to focus
+    // (or we have tried to scroll to previously focused and visible item,
+    // now make sure that it is really visible)
+    else
+  if Assigned(ItemToFocus) then ItemToFocus.MakeVisible(False);
+end;
+
+procedure TCustomDirView.RestoreItemsState(AState: TObject);
+var
+  State: TDirViewState;
+  ItemToFocus: TListItem;
+begin
+  State := TDirViewState(AState);
+  ItemToFocus := FindFileItemIfNotEmpty(State.FocusedItem);
+  RestoreItemsState(ItemToFocus, State.FocusedShown, State.ShownItemOffset);
+end;
+
 function TCustomDirView.SaveState: TObject;
 var
   State: TDirViewState;
@@ -3474,23 +3501,19 @@ begin
   Assert(Assigned(DirColProperties));
   State.SortStr := DirColProperties.SortStr;
   State.Mask := Mask;
-  if Assigned(ItemFocused) then State.FocusedItem := ItemFocused.Caption
-    else State.FocusedItem := '';
+  SaveItemsState(State.FocusedItem, State.FocusedShown, State.ShownItemOffset);
   Result := State;
 end;
 
-procedure TCustomDirView.RestoreFocus(FocusedItem: string);
+procedure TCustomDirView.FocusByName(FileName: string);
 var
   ListItem: TListItem;
 begin
-  if FocusedItem <> '' then
+  ListItem := FindFileItemIfNotEmpty(Name);
+  if Assigned(ListItem) then
   begin
-    ListItem := FindFileItem(FocusedItem);
-    if Assigned(ListItem) then
-    begin
-      ItemFocused := ListItem;
-      ListItem.MakeVisible(False);
-    end;
+    ItemFocused := ListItem;
+    ListItem.MakeVisible(False);
   end;
 end;
 
@@ -3513,7 +3536,7 @@ begin
     Assert(Assigned(DirColProperties));
     DirColProperties.SortStr := State.SortStr;
     Mask := State.Mask;
-    RestoreFocus(State.FocusedItem);
+    RestoreItemsState(State);
   end
     else
   begin

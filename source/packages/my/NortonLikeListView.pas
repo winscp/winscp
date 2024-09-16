@@ -69,7 +69,7 @@ type
       NewState, OldState: Word): Boolean; dynamic;
     procedure InsertItem(Item: TListItem); override;
     function NewColProperties: TCustomListViewColProperties; virtual; abstract;
-    procedure FocusSomething; virtual;
+    procedure FocusSomething(ForceMakeVisible: Boolean); virtual;
     function EnableDragOnClick: Boolean; virtual;
     function GetItemFromHItem(const Item: TLVItem): TListItem;
     function GetValid: Boolean; virtual;
@@ -80,6 +80,7 @@ type
     procedure ChangeScale(M, D: Integer); override;
     procedure SetItemSelectedByIndex(Index: Integer; Select: Boolean);
     function GetItemSelectedByIndex(Index: Integer): Boolean;
+    procedure MakeTopItem(Item: TListItem);
   public
     { Public declarations }
     constructor Create(AOwner: TComponent); override;
@@ -609,10 +610,15 @@ begin
   FNextCharToIgnore := 0;
 end;
 
-procedure TCustomNortonLikeListView.FocusSomething;
+procedure TCustomNortonLikeListView.FocusSomething(ForceMakeVisible: Boolean);
+var
+  MakeVisible: Boolean;
 begin
+  MakeVisible := ForceMakeVisible;
   if Valid and (Items.Count > 0) and not Assigned(ItemFocused) then
   begin
+    MakeVisible := True;
+
     if (NortonLike <> nlOff) then
     begin
       SendMessage(Handle, WM_KEYDOWN, VK_DOWN, LongInt(0));
@@ -623,7 +629,7 @@ begin
       ItemFocused := Items[0];
     end;
   end;
-  if Assigned(ItemFocused) then
+  if MakeVisible and Assigned(ItemFocused) then
   begin
     ItemFocused.MakeVisible(False);
   end;
@@ -1085,6 +1091,11 @@ begin
     Message.Result := 1;
 end;
 
+procedure TCustomNortonLikeListView.MakeTopItem(Item: TListItem);
+begin
+  Scroll(0, Item.Top - TopItem.Top);
+end;
+
 procedure TCustomNortonLikeListView.MakeProgressVisible(Item: TListItem);
 var
   DisplayRect: TRect;
@@ -1095,7 +1106,7 @@ begin
 
     if DisplayRect.Bottom > ClientHeight then
     begin
-      Scroll(0, Item.Top - TopItem.Top);
+      MakeTopItem(Item);
     end;
   end;
 
