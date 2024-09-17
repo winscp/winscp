@@ -3509,7 +3509,7 @@ procedure TCustomDirView.FocusByName(FileName: string);
 var
   ListItem: TListItem;
 begin
-  ListItem := FindFileItemIfNotEmpty(Name);
+  ListItem := FindFileItemIfNotEmpty(FileName);
   if Assigned(ListItem) then
   begin
     ItemFocused := ListItem;
