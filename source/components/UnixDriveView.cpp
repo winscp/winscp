@@ -392,7 +392,18 @@ void __fastcall TCustomUnixDriveView::LoadDirectory()
   FIgnoreChange = true;
   try
   {
-    Selected = LoadPath(FTerminal->Files->Directory);
+    // WM_SETREDRAW does not prevent re-drawing of the scrollbar (with each added node)
+    LockWindowUpdate(Handle);
+    TTreeNode * NewSelected;
+    try
+    {
+      NewSelected = LoadPath(FTerminal->Files->Directory);
+    }
+    __finally
+    {
+      LockWindowUpdate(NULL);
+    }
+    Selected = NewSelected;
     DebugAssert(Selected != NULL);
     FPrevSelected = Selected;
   }
