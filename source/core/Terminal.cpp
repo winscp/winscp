@@ -3673,6 +3673,8 @@ void __fastcall TTerminal::CustomReadDirectory(TRemoteFileList * FileList)
   DebugAssert(FileList);
   DebugAssert(FFileSystem);
 
+  AppLogFmt(L"Reading directory %s", (FileList->Directory));
+
   // To match FTP upload/download, we also limit directory listing.
   // For simplicity, we limit it unconditionally, for all protocols for any kind of errors.
   bool FileTransferAny = false;

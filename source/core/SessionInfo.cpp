@@ -15,6 +15,7 @@
 #include "CoreMain.h"
 #include "Script.h"
 #include <System.IOUtils.hpp>
+#include <DateUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -1765,6 +1766,7 @@ TApplicationLog::TApplicationLog()
 {
   FFile = NULL;
   FLogging = false;
+  FPeekReservedMemory = 0;
   FCriticalSection.reset(new TCriticalSection());
 }
 //---------------------------------------------------------------------------
@@ -1799,11 +1801,67 @@ void __fastcall TApplicationLog::Log(const UnicodeString & S)
 {
   if (FFile != NULL)
   {
-    UnicodeString Timestamp = FormatDateTime(L"yyyy-mm-dd hh:nn:ss.zzz", Now());
+    TDateTime N = Now();
+    UnicodeString Timestamp = FormatDateTime(L"yyyy-mm-dd hh:nn:ss.zzz", N);
     UnicodeString Line = FORMAT(L"[%s] [%x] %s\r\n", (Timestamp, static_cast<int>(GetCurrentThreadId()), S));
     UTF8String UtfLine = UTF8String(Line);
     int Writting = UtfLine.Length();
-    TGuard Guard(FCriticalSection.get());
-    fwrite(UtfLine.c_str(), 1, Writting, static_cast<FILE *>(FFile));
+
+    bool CheckMemory;
+
+    {
+      TGuard Guard(FCriticalSection.get());
+      fwrite(UtfLine.c_str(), 1, Writting, static_cast<FILE *>(FFile));
+
+      __int64 SecondsSinceLastMemoryCheck = SecondsBetween(N, FLastMemoryCheck);
+      CheckMemory = (SecondsSinceLastMemoryCheck >= 10);
+      if (CheckMemory)
+      {
+        FLastMemoryCheck = N;
+      }
+    }
+
+    if (CheckMemory)
+    {
+      BYTE * Address = NULL;
+      MEMORY_BASIC_INFORMATION MemoryInfo;
+      size_t ReservedMemory = 0;
+      size_t CommittedMemory = 0;
+      while (VirtualQuery(Address, &MemoryInfo, sizeof(MemoryInfo)) == sizeof(MemoryInfo))
+      {
+        if ((MemoryInfo.State == MEM_RESERVE) || (MemoryInfo.State == MEM_COMMIT))
+        {
+          ReservedMemory += MemoryInfo.RegionSize;
+        }
+        if ((MemoryInfo.State == MEM_COMMIT) && (MemoryInfo.Type == MEM_PRIVATE))
+        {
+          CommittedMemory += MemoryInfo.RegionSize;
+        }
+
+        Address += MemoryInfo.RegionSize;
+      }
+
+      bool NewMemoryPeek;
+      {
+        TGuard Guard(FCriticalSection.get());
+        const size_t Threshold = 10 * 1024 * 1024;
+        NewMemoryPeek =
+          ((ReservedMemory > FPeekReservedMemory) &&
+           ((ReservedMemory - FPeekReservedMemory) > Threshold)) |
+          ((CommittedMemory > FPeekCommittedMemory) &&
+           ((CommittedMemory - FPeekCommittedMemory) > Threshold));
+        if (NewMemoryPeek)
+        {
+          FPeekReservedMemory = ReservedMemory;
+          FPeekCommittedMemory = CommittedMemory;
+        }
+      }
+
+      if (NewMemoryPeek)
+      {
+        Log(FORMAT(L"Memory increased: Reserved address space: %s, Committed private: %s",
+              (FormatNumber(__int64(ReservedMemory)), FormatNumber(__int64(CommittedMemory)))));
+      }
+    }
   }
 }

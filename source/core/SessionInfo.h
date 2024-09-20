@@ -375,6 +375,9 @@ private:
   UnicodeString FPath;
   void * FFile;
   bool FLogging;
+  TDateTime FLastMemoryCheck;
+  size_t FPeekReservedMemory;
+  size_t FPeekCommittedMemory;
   std::unique_ptr<TCriticalSection> FCriticalSection;
 };
 //---------------------------------------------------------------------------
