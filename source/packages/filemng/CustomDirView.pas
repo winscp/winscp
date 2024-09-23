@@ -180,6 +180,7 @@ type
     FOnChangeFocus: TDirViewChangeFocusEvent;
     FFallbackThumbnail: array[Boolean] of TBitmap;
     FFallbackThumbnailSize: TSize;
+    FRecreatingWnd: Integer;
 
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
     procedure WMNotify(var Msg: TWMNotify); message WM_NOTIFY;
@@ -1417,12 +1418,25 @@ procedure TCustomDirView.CMRecreateWnd(var Message: TMessage);
 var
   HadHandle: Boolean;
 begin
-  HadHandle := HandleAllocated;
-  inherited;
-  // See comment in TCustomDriveView.CMRecreateWnd
-  if HadHandle then
+  Inc(FRecreatingWnd);
+  if FRecreatingWnd = 1 then
   begin
-    HandleNeeded;
+    HadHandle := HandleAllocated;
+    try
+      // Prevent nesting
+      while FRecreatingWnd > 0 do
+      begin
+        inherited;
+        Dec(FRecreatingWnd);
+      end;
+    finally
+      FRecreatingWnd := 0;
+    end;
+    // See comment in TCustomDriveView.CMRecreateWnd
+    if HadHandle then
+    begin
+      HandleNeeded;
+    end;
   end;
 end;
 
