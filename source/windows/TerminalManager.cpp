@@ -52,6 +52,8 @@ __fastcall TManagedTerminal::~TManagedTerminal()
 //---------------------------------------------------------------------------
 void TManagedTerminal::StartLoadingDirectory()
 {
+  // just in case it wasn't already (like when only reloading the list view on view style change)
+  DisableThumbnails();
   AppLog(L"Starting loading directory");
   TGuard Guard(ThumbnailsSection.get());
   DebugAssert(TTerminalManager::Instance()->ActiveTerminal == this);
