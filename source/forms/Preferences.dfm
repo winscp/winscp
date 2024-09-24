@@ -3605,7 +3605,7 @@ object PreferencesDialog: TPreferencesDialog
           000000010855007000640061007400650073005800}
       end
       object SearchEdit: TComboEdit
-        Left = 10
+        Left = 8
         Top = 9
         Width = 116
         Height = 21
