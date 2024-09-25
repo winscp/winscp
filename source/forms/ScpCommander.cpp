@@ -615,42 +615,46 @@ void __fastcall TScpCommanderForm::StartingWithoutSession()
   AddStartupSequence(L"K");
 }
 //---------------------------------------------------------------------------
-void TScpCommanderForm::RestoreSessionLocalDirView(
-  TDirView * ALocalDirView, const UnicodeString & LocalDirectory, TObject * State)
+void TScpCommanderForm::RestoreSessionLocalDirView(TDirView * ALocalDirView, const UnicodeString & LocalDirectory)
 {
-  ALocalDirView->AnnounceState(State);
-  try
+  // we will load completely different directory, so particularly
+  // do not attempt to select previously selected directory
+  ALocalDirView->ContinueSession(false);
+
+  // reset home directory
+  ALocalDirView->HomeDirectory = L"";
+
+  if (!LocalDirectory.IsEmpty() &&
+      (FFirstTerminal || !WinConfiguration->ScpCommander.PreserveLocalDirectory || ManagedSession->LocalBrowser))
   {
-    // we will load completely different directory, so particularly
-    // do not attempt to select previously selected directory
-    ALocalDirView->ContinueSession(false);
-
-    // reset home directory
-    ALocalDirView->HomeDirectory = L"";
-
-    if (!LocalDirectory.IsEmpty() &&
-        (FFirstTerminal || !WinConfiguration->ScpCommander.PreserveLocalDirectory || ManagedSession->LocalBrowser))
+    try
     {
-      try
+      ALocalDirView->Path = LocalDirectory;
+    }
+    catch(Exception & E)
+    {
+      if (!ManagedSession->SessionData->UpdateDirectories)
       {
-        ALocalDirView->Path = LocalDirectory;
+        ManagedSession->ShowExtendedException(&E);
       }
-      catch(Exception & E)
+      else
       {
-        if (!ManagedSession->SessionData->UpdateDirectories)
-        {
-          ManagedSession->ShowExtendedException(&E);
-        }
-        else
-        {
-          ALocalDirView->OpenFallbackPath(LocalDirectory);
-        }
+        ALocalDirView->OpenFallbackPath(LocalDirectory);
       }
     }
   }
-  __finally
+}
+//---------------------------------------------------------------------------
+void TScpCommanderForm::AnnounceLocalStates(
+  bool RestoreState, bool LocalBrowser, TObject * State, TObject * OtherState)
+{
+  if (RestoreState)
   {
-    ALocalDirView->AnnounceState(NULL);
+    LocalDirView->AnnounceState(State);
+    if (LocalBrowser)
+    {
+      OtherLocalDirView->AnnounceState(OtherState);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -665,42 +669,50 @@ void __fastcall TScpCommanderForm::SessionChanged(bool Replaced)
     bool RestoreState =
       WinConfiguration->PreservePanelState &&
         (!WinConfiguration->ScpCommander.PreserveLocalDirectory || ManagedSession->LocalBrowser);
+    AnnounceLocalStates(
+      RestoreState, ManagedSession->LocalBrowser,
+      ManagedSession->LocalExplorerState, ManagedSession->OtherLocalExplorerState);
 
-    RestoreSessionLocalDirView(
-      LocalDirView, ManagedSession->StateData->LocalDirectory, ManagedSession->LocalExplorerState);
-
-    if (ManagedSession->LocalBrowser)
+    try
     {
-      RestoreSessionLocalDirView(
-        OtherLocalDirView, ManagedSession->StateData->OtherLocalDirectory, ManagedSession->OtherLocalExplorerState);
-    }
-
-    FFirstTerminal = false;
-
-    // Happens when opening a connection from a command-line (StartingWithoutSession was not called),
-    // which does not have a local directory set yet.
-    // Or when starting with vanila local browser.
-    if (LocalDirView->Path.IsEmpty())
-    {
-      LocalDefaultDirectory();
-    }
-
-    if (WinConfiguration->DefaultDirIsHome &&
-        !ManagedSession->SessionData->UpdateDirectories &&
-        DebugAlwaysTrue(!ManagedSession->LocalBrowser))
-    {
-      LocalDirView->HomeDirectory = ManagedSession->SessionData->LocalDirectoryExpanded;
-    }
-
-    if (RestoreState)
-    {
-      LocalDirView->RestoreState(ManagedSession->LocalExplorerState);
+      RestoreSessionLocalDirView(LocalDirView, ManagedSession->StateData->LocalDirectory);
 
       if (ManagedSession->LocalBrowser)
       {
-        OtherLocalDirView->RestoreState(ManagedSession->OtherLocalExplorerState);
+        RestoreSessionLocalDirView(OtherLocalDirView, ManagedSession->StateData->OtherLocalDirectory);
       }
-      NonVisualDataModule->SynchronizeBrowsingAction2->Checked = ManagedSession->StateData->SynchronizeBrowsing;
+
+      FFirstTerminal = false;
+
+      // Happens when opening a connection from a command-line (StartingWithoutSession was not called),
+      // which does not have a local directory set yet.
+      // Or when starting with vanila local browser.
+      if (LocalDirView->Path.IsEmpty())
+      {
+        LocalDefaultDirectory();
+      }
+
+      if (WinConfiguration->DefaultDirIsHome &&
+          !ManagedSession->SessionData->UpdateDirectories &&
+          DebugAlwaysTrue(!ManagedSession->LocalBrowser))
+      {
+        LocalDirView->HomeDirectory = ManagedSession->SessionData->LocalDirectoryExpanded;
+      }
+
+      if (RestoreState)
+      {
+        LocalDirView->RestoreState(ManagedSession->LocalExplorerState);
+
+        if (ManagedSession->LocalBrowser)
+        {
+          OtherLocalDirView->RestoreState(ManagedSession->OtherLocalExplorerState);
+        }
+        NonVisualDataModule->SynchronizeBrowsingAction2->Checked = ManagedSession->StateData->SynchronizeBrowsing;
+      }
+    }
+    __finally
+    {
+      AnnounceLocalStates(RestoreState, ManagedSession->LocalBrowser, NULL, NULL);
     }
 
     if (ManagedSession->LocalBrowser)

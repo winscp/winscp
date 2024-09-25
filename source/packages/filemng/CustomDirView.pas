@@ -3542,6 +3542,8 @@ begin
     State := AState as TDirViewState;
     Assert(Assigned(State));
 
+    Assert((not Assigned(FAnnouncedState)) or (FAnnouncedState = AState));
+
     FHistoryPaths.Assign(State.HistoryPaths);
     FBackCount := State.BackCount;
     DoHistoryChange;
