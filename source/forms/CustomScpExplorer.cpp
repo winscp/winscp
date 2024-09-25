@@ -12283,3 +12283,23 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewStartReading(TObject *)
   Terminal->DisableThumbnails();
 }
 //---------------------------------------------------------------------------
+void TCustomScpExplorerForm::ChangeDirViewStyle(TOperationSide Side, TDirViewStyle DirViewStyle)
+{
+  TCustomDirView * ADirView = DirView(Side);
+  if (ADirView->DirViewStyle != DirViewStyle)
+  {
+    if (DirViewStyle == dvsThumbnail)
+    {
+      if (dynamic_cast<TUnixDirView *>(ADirView) != NULL)
+      {
+        Configuration->Usage->Inc(L"ThumbnailsRemote");
+      }
+      else
+      {
+        Configuration->Usage->Inc(L"ThumbnailsLocal");
+      }
+    }
+    ADirView->DirViewStyle = DirViewStyle;
+    UpdateControls();
+  }
+}

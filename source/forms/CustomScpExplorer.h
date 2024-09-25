@@ -935,6 +935,7 @@ public:
   TThumbnailDownloadQueueItem * AddThumbnailDownloadQueueItem(TManagedTerminal * ATerminal);
   void PostThumbnailVisibleQueueQuery(int Index, const UnicodeString & FileName);
   void PostThumbnailDrawRequest(int Index);
+  void ChangeDirViewStyle(TOperationSide Side, TDirViewStyle DirViewStyle);
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

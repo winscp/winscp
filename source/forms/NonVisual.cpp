@@ -646,7 +646,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
       ScpExplorer->UpdateControls();
     )
     #define STYLEACTION(SIDE, STYLE) EXE(SIDE ## STYLE ## Action, \
-      DirView(os ## SIDE)->DirViewStyle = dvs ## STYLE; ScpExplorer->UpdateControls())
+      ScpExplorer->ChangeDirViewStyle(os ## SIDE, dvs ## STYLE))
     STYLEACTION(Remote, Icon)
     STYLEACTION(Remote, SmallIcon)
     STYLEACTION(Remote, List)
