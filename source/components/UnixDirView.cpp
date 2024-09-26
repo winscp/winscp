@@ -358,9 +358,9 @@ void __fastcall TUnixDirView::LoadFiles()
       {
         FHiddenCount++;
       }
-      else if (!Mask.IsEmpty() &&
+      else if (!FEffectiveMask.IsEmpty() &&
                IsRealFile(File->FileName) &&
-               !FileNameMatchesMasks(File->FileName, File->IsDirectory, File->Size, File->Modification, Mask, true))
+               !FileNameMatchesMasks(File->FileName, File->IsDirectory, File->Size, File->Modification, FEffectiveMask, true))
       {
         FFilteredCount++;
       }

@@ -237,6 +237,7 @@ type
     FDragDrive: string;
     FAnnouncedState: TObject;
     FThumbnail: Boolean;
+    FEffectiveMask: string;
 
     procedure AddToDragFileList(FileList: TFileList; Item: TListItem); virtual;
     function CanEdit(Item: TListItem): Boolean; override;
@@ -3413,8 +3414,22 @@ begin
 end;
 
 procedure TCustomDirView.AnnounceState(AState: TObject);
+var
+  State: TDirViewState;
 begin
   FAnnouncedState := AState;
+  if Assigned(FAnnouncedState) then
+  begin
+    State := AState as TDirViewState;
+    if Assigned(State) then
+    begin
+      FEffectiveMask := State.Mask;
+    end;
+  end
+    else
+  begin
+    FEffectiveMask := Mask;
+  end;
 end;
 
 procedure TCustomDirView.SaveItemsState(
@@ -3566,9 +3581,17 @@ procedure TCustomDirView.SetMask(Value: string);
 begin
   if Mask <> Value then
   begin
+    if Assigned(FAnnouncedState) then
+      Assert(FEffectiveMask = Value)
+    else
+      Assert(FEffectiveMask = Mask);
     FMask := Value;
     UpdatePathLabel;
-    if DirOK then Reload(False);
+    if FEffectiveMask <> Value then
+    begin
+      FEffectiveMask := Value;
+      if DirOK then Reload(False);
+    end;
   end;
 end;{SetMask}
 

@@ -1185,7 +1185,7 @@ begin
     Inc(FHiddenCount);
   end
     else
-  if Mask <> '' then
+  if FEffectiveMask <> '' then
   begin
     Directory := ((SearchRec.Attr and faDirectory) <> 0);
     if Directory then FileSize := 0
@@ -1197,7 +1197,7 @@ begin
         Directory,
         FileSize,
         FileTimeToDateTime(SearchRec.FindData.ftLastWriteTime),
-        Mask, True);
+        FEffectiveMask, True);
 
     if not Result then
     begin
