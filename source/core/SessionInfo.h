@@ -266,6 +266,7 @@ public:
   void __fastcall AddSystemInfo();
   void __fastcall AddStartupInfo();
   void __fastcall AddException(Exception * E);
+  static UnicodeString GetSeparator();
   void __fastcall AddSeparator();
 
   void __fastcall ReflectSettings();

@@ -25,6 +25,8 @@
 #include "GUITools.h"
 #include "VCLCommon.h"
 #include "Setup.h"
+#include "FtpFileSystem.h"
+#include "SessionInfo.h"
 //---------------------------------------------------------------------------
 #define WM_INTERUPT_IDLE (WM_WINSCP_USER + 3)
 #define BATCH_INPUT_TIMEOUT 10000
@@ -2841,10 +2843,17 @@ int Info(TConsole * Console)
   int Result = RESULT_SUCCESS;
   try
   {
+    Console->PrintLine(FORMAT(L"SSH implementation: PuTTY %s", (GetPuTTYVersion())));
+    Console->PrintLine();
     PrintListAndFree(Console, L"SSH encryption ciphers:", SshCipherList());
     PrintListAndFree(Console, L"SSH key exchange algorithms:", SshKexList());
     PrintListAndFree(Console, L"SSH host key algorithms:", SshHostKeyList());
     PrintListAndFree(Console, L"SSH MAC algorithms:", SshMacList());
+
+    Console->PrintLine(TSessionLog::GetSeparator());
+
+    Console->PrintLine(FORMAT(L"TLS/SSL implementation: %s", (GetOpenSSLVersionText())));
+    Console->PrintLine();
     PrintListAndFree(Console, L"TLS/SSL cipher suites:", TlsCipherList());
   }
   catch (Exception & E)
