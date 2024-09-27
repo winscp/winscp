@@ -30,9 +30,9 @@ if exist neon\tmp (
 
 rem ==== PuTTYVS ====
 
-if exist puttyvs\Release (
+if exist puttyvs\PuTTYVS (
     echo Cleaning up PuTTYVS ...
-    rmdir /s /q puttyvs\Release
+    rmdir /s /q puttyvs\PuTTYVS
     set ANY_CLEANED=1
 )
 
