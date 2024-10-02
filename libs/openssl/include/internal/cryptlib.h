@@ -161,4 +161,19 @@ char *ossl_buf2hexstr_sep(const unsigned char *buf, long buflen, char sep);
 unsigned char *ossl_hexstr2buf_sep(const char *str, long *buflen,
                                    const char sep);
 
+//!CLEANBEGIN
+
+#ifdef _DEBUG
+extern int IsTracing;
+void __fastcall DoTrace(const wchar_t * SourceFile, const wchar_t * Func,
+  int Line, const wchar_t * Message);
+#define __UTEXT(S) L##S
+#define UTEXT(S) __UTEXT(S)
+#define Trace(MESSAGE) if (IsTracing) DoTrace(UTEXT(__FILE__), UTEXT(__FUNC__), __LINE__, MESSAGE)
+#else
+#define Trace(MESSAGE)
+#endif
+
+//!CLEANEND
+
 #endif

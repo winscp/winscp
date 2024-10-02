@@ -27,6 +27,12 @@
 #include "ne_socket.h"
 #include "ne_sspi.h"
 
+//!CLEANBEGIN
+#ifdef WINSCP
+#include "ne_internal.h"
+#endif
+//!CLEANEND
+
 #ifdef HAVE_SSPI
 
 #define SEC_SUCCESS(Status) ((Status) >= 0)
@@ -367,6 +373,7 @@ int ne_sspi_create_context(void **context, char *serverName, int ntlm)
     SSPIContext *sspiContext;
     char *canonicalName;
 
+    Trace(L"ne_sspi_create_context 1");
     if (initialized <= 0) {
         return -1;
     }
@@ -375,13 +382,16 @@ int ne_sspi_create_context(void **context, char *serverName, int ntlm)
     sspiContext->continueNeeded = 0;
 
     if (ntlm) {
+	Trace(L"ne_sspi_create_context 2");
         sspiContext->mechanism = "NTLM";
         sspiContext->serverName = ne_strdup(serverName);
         sspiContext->maxTokenSize = ntlmMaxTokenSize;
     } else {
+	Trace(L"ne_sspi_create_context 3");
         sspiContext->mechanism = "Negotiate";
         /* Canonicalize to conform to GSSAPI behavior */
         canonicalName = canonical_hostname(serverName);
+	Trace(L"ne_sspi_create_context 4");
         sspiContext->serverName = ne_concat("HTTP/", canonicalName, NULL);
         ne_free(canonicalName);
         NE_DEBUG(NE_DBG_HTTPAUTH, "sspi: Created context with SPN '%s'\n",
@@ -392,6 +402,7 @@ int ne_sspi_create_context(void **context, char *serverName, int ntlm)
     sspiContext->ntlm = ntlm;
     sspiContext->authfinished = 0;
     *context = sspiContext;
+    Trace(L"ne_sspi_create_context /");
     return 0;
 }
 

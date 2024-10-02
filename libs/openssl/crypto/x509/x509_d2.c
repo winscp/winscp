@@ -17,14 +17,18 @@ int X509_STORE_set_default_paths_ex(X509_STORE *ctx, OSSL_LIB_CTX *libctx,
 {
     X509_LOOKUP *lookup;
 
+    Trace(L"X509_STORE_set_default_paths 1");
     lookup = X509_STORE_add_lookup(ctx, X509_LOOKUP_file());
     if (lookup == NULL)
         return 0;
+    Trace(L"X509_STORE_set_default_paths 2");
     X509_LOOKUP_load_file_ex(lookup, NULL, X509_FILETYPE_DEFAULT, libctx, propq);
 
+    Trace(L"X509_STORE_set_default_paths 3");
     lookup = X509_STORE_add_lookup(ctx, X509_LOOKUP_hash_dir());
     if (lookup == NULL)
         return 0;
+    Trace(L"X509_STORE_set_default_paths 4");
     X509_LOOKUP_add_dir(lookup, NULL, X509_FILETYPE_DEFAULT);
 
     lookup = X509_STORE_add_lookup(ctx, X509_LOOKUP_store());
@@ -35,6 +39,7 @@ int X509_STORE_set_default_paths_ex(X509_STORE *ctx, OSSL_LIB_CTX *libctx,
     /* clear any errors */
     ERR_clear_error();
 
+    Trace(L"X509_STORE_set_default_paths /");
     return 1;
 }
 int X509_STORE_set_default_paths(X509_STORE *ctx)

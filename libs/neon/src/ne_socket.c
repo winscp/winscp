@@ -677,12 +677,15 @@ static int error_ossl(ne_socket *sock, int sret)
     int errnum = SSL_get_error(sock->ssl, sret);
     unsigned long err;
 
+    Trace(L"error_ossl >");
     if (errnum == SSL_ERROR_ZERO_RETURN) {
+	Trace(L"error_ossl 1");
         set_error(sock, _("Connection closed"));
         NE_DEBUG(NE_DBG_SSL, "ssl: Got TLS closure.\n");
         return NE_SOCK_CLOSED;
     }
     else if (errnum == SSL_ERROR_WANT_READ) {
+	Trace(L"error_ossl 2");
         set_error(sock, _("Retry operation"));
         return NE_SOCK_RETRY;
     }
@@ -712,10 +715,12 @@ static int error_ossl(ne_socket *sock, int sret)
         /* Empty error stack, presume this is a system call error: */
         if (sret == 0) {
             /* EOF without close_notify, possible truncation */
+            Trace(L"error_ossl 3");
             set_error(sock, _("Secure connection truncated"));
             return NE_SOCK_TRUNC;
         } else {
             /* Other socket error. */
+            Trace(L"error_ossl 4");
             errnum = ne_errno;
             set_strerror(sock, errnum);
             return MAP_ERR(errnum);
@@ -729,6 +734,8 @@ static int error_ossl(ne_socket *sock, int sret)
 	ne_snprintf(sock->error, sizeof sock->error, 
                     _("SSL error code %d/%d/%lu"), sret, errnum, err);
     }
+    Trace(L"error_ossl 5");
+    Trace(sock->error);
     
     /* make sure the error stack is now empty. */
     ERR_clear_error();
@@ -758,6 +765,7 @@ static ssize_t read_ossl(ne_socket *sock, char *buffer, size_t len)
 static ssize_t write_ossl(ne_socket *sock, const char *data, size_t len)
 {
     int ret, ilen = CAST2INT(len);
+    Trace(L"write_ossl >");
     ret = SSL_write(sock->ssl, data, ilen);
     /* ssl.h says SSL_MODE_ENABLE_PARTIAL_WRITE must be enabled to
      * have SSL_write return < length...  so, SSL_write should never
@@ -1191,6 +1199,8 @@ ne_inet_addr *ne_iaddr_parse(const char *addr, ne_iaddr_type type)
     char dst[sizeof(struct in6_addr)];
     int af = type == ne_iaddr_ipv6 ? AF_INET6 : AF_INET;
 
+    Trace(L"ne_iaddr_parse 1");
+    Trace(addr);
     if (inet_pton(af, addr, dst) != 1) {
         return NULL;
     }
@@ -1200,15 +1210,19 @@ ne_inet_addr *ne_iaddr_parse(const char *addr, ne_iaddr_type type)
     /* For Windows, which lacks inet_pton(). */
     struct addrinfo *ai, *rv, hints;
 
+    Trace(L"ne_iaddr_parse 2");
+    TraceA(addr);
     memset(&hints, 0, sizeof hints);
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_NUMERICHOST;
     hints.ai_family = type == ne_iaddr_ipv6 ? AF_INET6 : AF_INET;
     
     if (getaddrinfo(addr, NULL, &hints, &ai)) {
+        Trace(L"ne_iaddr_parse /1");
         return NULL;
     }
     
+    Trace(L"ne_iaddr_parse 3");
     /* Copy the returned addrinfo, since it needs to be ne_free()-able
      * later; must only call freeaddrinfo() on ai. */
     rv = ne_calloc(sizeof *rv);
@@ -1216,6 +1230,20 @@ ne_inet_addr *ne_iaddr_parse(const char *addr, ne_iaddr_type type)
     rv->ai_next = NULL;
     rv->ai_canonname = NULL;
     rv->ai_addr = ne_calloc(ai->ai_addrlen);
+    //!CLEANBEGIN
+    #ifdef NEON_TRACE
+    {
+        char * buf = ne_calloc(ai->ai_addrlen * 4 + 1);
+        int i;
+        for (i = 0; i < ai->ai_addrlen; i++)
+        {
+            sprintf(buf + strlen(buf), "%d.", (int)(((unsigned char *)ai->ai_addr)[i]));
+        }
+        TraceA(buf);
+        ne_free(buf);
+    }
+    #endif
+    //!CLEANEND
     memcpy(rv->ai_addr, ai->ai_addr, ai->ai_addrlen);
     freeaddrinfo(ai);
     
@@ -1223,6 +1251,8 @@ ne_inet_addr *ne_iaddr_parse(const char *addr, ne_iaddr_type type)
 #else /* !USE_GETADDRINFO */
     struct in_addr a;
     
+    Trace(L"ne_iaddr_parse 4");
+    Trace(addr);
     if (type == ne_iaddr_ipv6) {
         return NULL;
     }
