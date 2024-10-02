@@ -3350,9 +3350,9 @@ void __fastcall TLoginDialog::SearchSiteActionExecute(TObject * /*Sender*/)
   SetSiteSearch(isAll);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::ChangeScale(int M, int D)
+void __fastcall TLoginDialog::ChangeScale(int M, int D, bool isDpiChange)
 {
-  TForm::ChangeScale(M, D);
+  TForm::ChangeScale(M, D, isDpiChange);
   FSiteButtonsPadding = MulDiv(FSiteButtonsPadding, M, D);
   FBasicGroupBaseHeight = MulDiv(FBasicGroupBaseHeight, M, D);
   FNoteGroupOffset = MulDiv(FNoteGroupOffset, M, D);

@@ -1,7 +1,7 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{BABF1FFA-834C-44BA-8CE2-BA19AAC5C459}</ProjectGuid>
-        <ProjectVersion>15.4</ProjectVersion>
+        <ProjectVersion>19.5</ProjectVersion>
         <FrameworkType>None</FrameworkType>
         <MainSource>Jcl.cpp</MainSource>
         <Base>True</Base>
@@ -136,6 +136,9 @@
         <DelphiCompile Include="packages\jcl\JclTD32.pas">
             <BuildOrder>15</BuildOrder>
         </DelphiCompile>
+        <DelphiCompile Include="packages\jcl\JclUnitVersioning.pas">
+            <BuildOrder>16</BuildOrder>
+        </DelphiCompile>
         <DelphiCompile Include="packages\jcl\JclWin32.pas">
             <BuildOrder>13</BuildOrder>
         </DelphiCompile>
@@ -169,7 +172,6 @@
                     <ProjectProperties Name="IndexFiles">False</ProjectProperties>
                 </ProjectProperties>
             </CPlusPlusBuilder.Personality>
-            <Deployment/>
             <Platforms>
                 <Platform value="Win32">True</Platform>
                 <Platform value="Win64">False</Platform>

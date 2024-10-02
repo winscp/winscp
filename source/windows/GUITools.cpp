@@ -23,7 +23,6 @@
 #include <PasTools.hpp>
 #include <VCLCommon.h>
 #include <WinApi.h>
-#include <Vcl.ScreenTips.hpp>
 #include <HistoryComboBox.hpp>
 #include <vssym32.h>
 #include <DateUtils.hpp>
@@ -2222,6 +2221,8 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
 
   Canvas->Font->Assign(GetFont(HintControl, AHint));
 
+  // from XE6 Vcl.ScreenTips.pas, but absent in 11
+  const cScreenTipTextOnlyWidth = 210;
   const int ScreenTipTextOnlyWidth = ScaleByTextHeight(HintControl, cScreenTipTextOnlyWidth);
 
   int LongHintMargin = 0; // shut up

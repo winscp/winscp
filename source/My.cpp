@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-
+#pragma warn -pch // WORKAROUND (initialized data in header in xlocnum)
 #include <basepch.h>
 #pragma hdrstop
 #pragma package(smart_init)

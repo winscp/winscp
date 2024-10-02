@@ -29,8 +29,6 @@ procedure FilterToFileTypes(Filter: string; FileTypes: TFileTypeItems);
 
 const
   CM_DPICHANGED = WM_USER + $2000 + 10;
-  WM_DPICHANGED_BEFOREPARENT = $02E2;
-  WM_DPICHANGED_AFTERPARENT = $02E3;
 
 function HasSystemParametersInfoForPixelsPerInch: Boolean;
 function SystemParametersInfoForPixelsPerInch(
@@ -408,7 +406,7 @@ type
 
 function TFormHelper.RetrieveTextHeight: Integer;
 begin
-  Result := Self.FTextHeight;
+  Result := Self.GetInternalTextHeight;
 end;
 
 function CalculateTextHeight(Canvas: TCanvas): Integer;
@@ -611,7 +609,8 @@ type
 
 function TListViewHelper.HasMemStream: Boolean;
 begin
-  Result := Assigned(Self.FMemStream);
+  with Self do
+    Result := Assigned(FMemStream);
 end;
 
 type
@@ -622,7 +621,8 @@ type
 
 function TTreeViewHelper.HasMemStream: Boolean;
 begin
-  Result := Assigned(Self.FMemStream);
+  with Self do
+    Result := Assigned(FMemStream);
 end;
 
 type
@@ -633,7 +633,8 @@ type
 
 function TRichEditHelper.HasMemStream: Boolean;
 begin
-  Result := Assigned(Self.FMemStream);
+  with Self do
+    Result := Assigned(FMemStream);
 end;
 
 function ControlHasRecreationPersistenceData(Control: TControl): Boolean;
@@ -657,22 +658,26 @@ type
 
 function TApplicationHelper.IsAppIconic: Boolean;
 begin
-  Result := Self.FAppIconic;
+  with Self do
+    Result := FAppIconic;
 end;
 
 procedure TApplicationHelper.SetAppIconic(Value: Boolean);
 begin
-  Self.FAppIconic := Value;
+  with Self do
+    FAppIconic := Value;
 end;
 
 procedure TApplicationHelper.SetMainForm(Value: TForm);
 begin
-  Self.FMainForm := Value;
+  with Self do
+    FMainForm := Value;
 end;
 
 procedure TApplicationHelper.SetTerminated(Value: Boolean);
 begin
-  Self.FTerminate := Value;
+  with Self do
+    FTerminate := Value;
 end;
 
 function IsAppIconic: Boolean;

@@ -1,4 +1,5 @@
 //---------------------------------------------------------------------------
+#pragma warn -pch // WORKAROUND (see My.cpp)
 #include <vcl.h>
 #pragma hdrstop
 

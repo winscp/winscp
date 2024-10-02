@@ -567,7 +567,7 @@ void __fastcall UpdateStaticUsage()
       {
         unsigned int DpiX;
         unsigned int DpiY;
-        GetDpiForMonitor(Screen->Monitors[Index]->Handle, MDT_Default, &DpiX, &DpiY);
+        GetDpiForMonitor(Screen->Monitors[Index]->Handle, MDT_DEFAULT, &DpiX, &DpiY);
 
         if (DpiX != DpiY)
         {

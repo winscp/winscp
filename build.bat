@@ -12,7 +12,7 @@ if "%PROCESSOR_ARCHITECTURE%"=="x86" (
   exit
 )
 
-set BDS=%PROGRAMFILES32%\Embarcadero\Studio\14.0
+set BDS=%PROGRAMFILES32%\Embarcadero\Studio\22.0
 
 set VS_PATH_REL=Microsoft Visual Studio\2022
 set MSBUILD_REL=MSBuild\Current\Bin\MSBuild.exe

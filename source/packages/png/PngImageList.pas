@@ -11,9 +11,6 @@ uses
   {$IF CompilerVersion >= 34.0 Delphi 10.4 }
   System.UITypes,
   {$IFEND}
-  {$IFDEF WINSCP}
-  System.UITypes,
-  {$IFEND}
   PngImage, PngFunctions;
 
 {$IF CompilerVersion < 34.0 Delphi 10.4 }

@@ -1,7 +1,7 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{58677B04-A1B8-4709-A590-464869E7397E}</ProjectGuid>
-        <ProjectVersion>15.4</ProjectVersion>
+        <ProjectVersion>19.5</ProjectVersion>
         <Config Condition="'$(Config)'==''">Release</Config>
         <FrameworkType>None</FrameworkType>
         <Base>True</Base>
@@ -40,7 +40,7 @@
         <PackageImports>vcl.bpi;rtl.bpi;vclx.bpi;DragDrop.bpi;My.bpi;DriveDir.bpi;$(PackageImports)</PackageImports>
         <ProjectType>CppStaticLibrary</ProjectType>
         <SanitizedProjectName>ScpForms</SanitizedProjectName>
-        <TLIB_PageSize>512</TLIB_PageSize>
+        <TLIB_PageSize>1024</TLIB_PageSize>
         <UsingDelphiRTL>true</UsingDelphiRTL>
         <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>

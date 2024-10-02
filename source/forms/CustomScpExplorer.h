@@ -159,7 +159,7 @@ __published:
     int grfKeyState, const TPoint & DetectStart, const TPoint & Point,
     TDragDetectStatus DragStatus);
   void __fastcall RemoteFileControlDDQueryContinueDrag(TObject *Sender,
-          BOOL FEscapePressed, int grfKeyState, HRESULT &Result);
+          LongBool FEscapePressed, int grfKeyState, HRESULT &Result);
   void __fastcall RemoteDirViewEnter(TObject *Sender);
   void __fastcall RemoteDriveViewEnter(TObject *Sender);
   void __fastcall DirViewMatchMask(TObject *Sender, UnicodeString FileName,
@@ -353,11 +353,11 @@ private:
     TObject * Sender, int Effect, UnicodeString TargetPath, bool ForceQueue, bool Paste);
   void __fastcall SessionsDDDragEnter(_di_IDataObject DataObj, int KeyState,
     const TPoint & Point, int & Effect, bool & Accept);
-  void __fastcall SessionsDDDragLeave();
+  void __fastcall SessionsDDDragLeave(int);
   void __fastcall QueueDDProcessDropped(TObject * Sender, int KeyState, const TPoint & Point, int Effect);
   void __fastcall QueueDDDragEnter(_di_IDataObject DataObj, int KeyState,
     const TPoint & Point, int & Effect, bool & Accept);
-  void __fastcall QueueDDDragLeave();
+  void __fastcall QueueDDDragLeave(int);
   void __fastcall EnableDDTransferConfirmation(TObject * Sender);
   void __fastcall CollectItemsWithTextDisplayMode(TWinControl * Control);
   void __fastcall CreateHiddenWindow();
@@ -705,7 +705,7 @@ protected:
   bool __fastcall SelectedAllFilesInDirView(TCustomDirView * DView);
   TSessionData * __fastcall SessionDataForCode();
   void __fastcall RefreshPanel(const UnicodeString & Session, const UnicodeString & Path);
-  DYNAMIC void __fastcall ChangeScale(int M, int D);
+  HIDESBASE DYNAMIC void __fastcall ChangeScale(int M, int D, bool isDpiChange);
   virtual void __fastcall UpdateImages();
   void __fastcall UpdatePixelsPerInchMainWindowCounter();
   void __fastcall CopyPopup(TControl * DestControl, TControl * SourceControl);

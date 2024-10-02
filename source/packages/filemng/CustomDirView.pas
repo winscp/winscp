@@ -247,7 +247,7 @@ type
     function GetDirOK: Boolean; virtual; abstract;
     procedure DDDragDetect(grfKeyState: Longint; DetectStart, Point: TPoint; DragStatus: TDragDetectStatus); virtual;
     procedure DDDragEnter(DataObj: IDataObject; grfKeyState: Longint; Point: TPoint; var dwEffect: longint; var Accept: Boolean);
-    procedure DDDragLeave;
+    procedure DDDragLeave(Dummy: Integer);
     procedure DDDragOver(grfKeyState: Longint; Point: TPoint; var dwEffect: Longint; PreferredEffect: LongInt);
     procedure DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer; PreferredEffect: Integer); virtual;
     procedure DDDrop(DataObj: IDataObject; grfKeyState: LongInt; Point: TPoint; var dwEffect: Longint);

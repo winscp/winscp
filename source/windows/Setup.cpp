@@ -35,6 +35,7 @@
 #include <Web.HTTPApp.hpp>
 #include <System.IOUtils.hpp>
 #include <WinApi.h>
+#include <System.NetEncoding.hpp>
 //---------------------------------------------------------------------------
 #define KEY _T("SYSTEM\\CurrentControlSet\\Control\\") \
             _T("Session Manager\\Environment")
@@ -1677,7 +1678,7 @@ static void __fastcall InsertDonateLink(void * /*Data*/, TObject * Sender)
     UnicodeString StoreUrl = FMTLOAD(STORE_URL, (L"update"));
     UnicodeString StoreLink = FORMAT(L"<a href=\"%s\">%s</a>", (StoreUrl, StoreButton));
 
-    UnicodeString PlainBody = HTMLDecode(DocumentBody);
+    UnicodeString PlainBody = TNetEncoding::HTML->Decode(DocumentBody);
     int P1, P2;
     while (((P1 = PlainBody.Pos(L"<")) > 0) && ((P2 = PlainBody.Pos(L">")) > 0) && (P1 < P2))
     {

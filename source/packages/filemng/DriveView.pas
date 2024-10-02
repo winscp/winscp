@@ -750,7 +750,6 @@ begin
       try
         if FQueue.Count = 0 then
         begin
-          Schedule := nil; // shut up
           Break;
         end
           else

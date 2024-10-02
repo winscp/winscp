@@ -351,7 +351,7 @@ static UnicodeString GetS3ConfigValue(
           S3CredentialsExpiration = ParseExpiration(ExpirationStr);
           AppLogFmt(L"Credentials expiration: %s", (StandardTimestamp(S3CredentialsExpiration)));
 
-          std::unique_ptr<TJSONPairEnumerator> Enumerator(ProfileData->GetEnumerator());
+          std::unique_ptr<TJSONObject::TEnumerator> Enumerator(ProfileData->GetEnumerator());
           UnicodeString Names;
           while (Enumerator->MoveNext())
           {

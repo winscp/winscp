@@ -109,7 +109,7 @@ type
 
     procedure DDDragEnter(DataObj: IDataObject; KeyState: Longint;
       Point: TPoint; var Effect: Longint; var Accept: Boolean);
-    procedure DDDragLeave;
+    procedure DDDragLeave(Dummy: Integer);
     procedure DDDragOver(KeyState: Longint; Point: TPoint; var Effect: Longint; PreferredEffect: LongInt);
     procedure DDDrop(DataObj: IDataObject; KeyState: Longint; Point: TPoint;
       var Effect: Longint);
@@ -467,7 +467,7 @@ begin
     FOnDDDragEnter(Self, DataObj, KeyState, Point, Effect, Accept);
 end; {DDDragEnter}
 
-procedure TCustomDriveView.DDDragLeave;
+procedure TCustomDriveView.DDDragLeave(Dummy: Integer);
 begin
   if Assigned(DropTarget) then
   begin

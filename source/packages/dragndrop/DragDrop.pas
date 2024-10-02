@@ -78,7 +78,8 @@ type
 
   TOnDragEnter = procedure(DataObj: IDataObject; grfKeyState: LongInt; pt: TPoint;
      var dwEffect: LongInt; var Accept: Boolean) of object;
-  TOnDragLeave = procedure of object;
+  // WORKAROUND C++ Builder 11.2 cannot compile parameter-less Delphi closures
+  TOnDragLeave = procedure(Dummy: Integer) of object;
   TOnDragOver = procedure(grfKeyState: LongInt; pt: TPoint; var dwEffect: LongInt; PreferredEffect: LongInt) of object;
   TOnDrop = procedure(DataObj: IDataObject; grfKeyState: LongInt;  pt: TPoint; var dwEffect: LongInt) of object;
   TOnQueryContinueDrag = procedure(fEscapePressed: BOOL; grfKeyState: LongInt; var Result: HResult) of object;
@@ -1315,7 +1316,7 @@ function TDropTarget.DragLeave: HResult;
 // Removes target feedback and releases the data object.
 begin
   TDragDrop(FOwner).FInternalSource := nil;
-  if Assigned(FOwner.OnDragLeave) then FOwner.OnDragLeave;
+  if Assigned(FOwner.OnDragLeave) then FOwner.OnDragLeave(0);
   FOwner.FAvailableDropEffects := 0;
   Result := NOERROR;
   TermScroll(True);
@@ -1952,7 +1953,6 @@ begin
           DropSource._Release;
         end;
       except
-        Result := drInvalid;
         raise;
       end;
     finally

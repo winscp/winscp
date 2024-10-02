@@ -77,7 +77,7 @@ type
     procedure DDBeforeDrag;
     function CanEdit(Item: TListItem): Boolean; override;
     function GetPopupMenu: TPopupMenu; override;
-    procedure ChangeScale(M, D: Integer); override;
+    procedure ChangeScale(M, D: Integer; isDpiChange: Boolean); override;
     procedure SetItemSelectedByIndex(Index: Integer; Select: Boolean);
     function GetItemSelectedByIndex(Index: Integer): Boolean;
     procedure MakeTopItem(Item: TListItem);
@@ -1113,7 +1113,7 @@ begin
   Item.MakeVisible(False);
 end;
 
-procedure TCustomNortonLikeListView.ChangeScale(M, D: Integer);
+procedure TCustomNortonLikeListView.ChangeScale(M, D: Integer; isDpiChange: Boolean);
 begin
   if M <> D then
   begin

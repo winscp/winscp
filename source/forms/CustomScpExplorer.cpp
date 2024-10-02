@@ -6892,7 +6892,8 @@ void __fastcall TCustomScpExplorerForm::ToolbarGetBaseSize(
     if (DropDownItem != NULL)
     {
       ASize.x -= DropDownItem->EditWidth;
-      ASize.x += ScaleByTextHeight(this, 50) /* minimal combo width */;
+      TControl * Control = this;
+      ASize.x += ScaleByTextHeight(Control, 50) /* minimal combo width */;
     }
   }
 }
@@ -7113,12 +7114,12 @@ void __fastcall TCustomScpExplorerForm::FileControlDDDragLeave(
   FDDTargetControl = NULL;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::SessionsDDDragLeave()
+void __fastcall TCustomScpExplorerForm::SessionsDDDragLeave(int)
 {
   FileControlDDDragLeave(SessionsPageControl);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::QueueDDDragLeave()
+void __fastcall TCustomScpExplorerForm::QueueDDDragLeave(int)
 {
   FileControlDDDragLeave(QueueView3);
 }
@@ -8999,7 +9000,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDDragDetect(
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteFileControlDDQueryContinueDrag(
-  TObject * /*Sender*/, BOOL /*FEscapePressed*/, int /*grfKeyState*/,
+  TObject * /*Sender*/, LongBool /*FEscapePressed*/, int /*grfKeyState*/,
   HRESULT & Result)
 {
   if (Result == DRAGDROP_S_DROP)
@@ -11131,9 +11132,9 @@ void __fastcall TCustomScpExplorerForm::PrivateKeyUpload()
   TTerminalManager::Instance()->UploadPublicKey(Terminal, NULL, FileName);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::ChangeScale(int M, int D)
+void __fastcall TCustomScpExplorerForm::ChangeScale(int M, int D, bool isDpiChange)
 {
-  TForm::ChangeScale(M, D);
+  TForm::ChangeScale(M, D, isDpiChange);
   int APixelsPerInch = GetControlPixelsPerInch(this);
   GlyphsModule->PixelsPerInch = APixelsPerInch;
 }

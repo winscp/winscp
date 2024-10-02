@@ -3220,7 +3220,7 @@ bool _fastcall GetWindowsProductType(DWORD & Type)
   }
   else
   {
-    GetProductInfo(Win32MajorVersion, Win32MinorVersion, 0, 0, &Type);
+    GetProductInfo(Win32MajorVersion(), Win32MinorVersion(), 0, 0, &Type);
     Result = true;
   }
   return Result;
@@ -3263,7 +3263,7 @@ UnicodeString __fastcall WindowsVersion()
 UnicodeString __fastcall WindowsVersionLong()
 {
   UnicodeString Result = WindowsVersion();
-  AddToList(Result, Win32CSDVersion, L" ");
+  AddToList(Result, Win32CSDVersion(), L" ");
   return Result;
 }
 //---------------------------------------------------------------------------

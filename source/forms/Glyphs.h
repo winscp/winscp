@@ -6,6 +6,7 @@
 #include <Controls.hpp>
 #include <ImgList.hpp>
 #include "PngImageList.hpp"
+#include <System.ImageList.hpp>
 //---------------------------------------------------------------------------
 class TGlyphsModule : public TDataModule
 {

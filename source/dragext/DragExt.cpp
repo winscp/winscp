@@ -34,6 +34,14 @@
 #define THREADING_MODEL L"Apartment"
 #define CLSID_SIZE 39
 //---------------------------------------------------------------------------
+// WORKAROUND
+// While the import is in import32.lib or ole32.lib, the declaration in guiddef.h seems to be for C++,
+// so the symbol does not match
+int __stdcall IsEqualGUID(REFGUID rguid1, REFGUID rguid2)
+{
+  return !memcmp(&rguid1, &rguid2, sizeof(GUID));
+}
+//---------------------------------------------------------------------------
 class CShellExtClassFactory : public IClassFactory
 {
 public:
@@ -87,13 +95,16 @@ protected:
 #pragma clang diagnostic pop
 #endif
 //---------------------------------------------------------------------------
-unsigned int GRefThisDll = 0;
-bool GEnabled = false;
-wchar_t GLogFile[MAX_PATH] = L"";
-bool GLogOn = false;
-FILE* GLogHandle = NULL;
-HANDLE GLogMutex;
-HINSTANCE GInstance;
+#ifndef __clang__
+#define nullptr 0
+#endif
+static unsigned int GRefThisDll = 0;
+static bool GEnabled = false;
+static wchar_t GLogFile[MAX_PATH] = L"";
+static bool GLogOn = false;
+static FILE* GLogHandle = nullptr;
+static HANDLE GLogMutex;
+static HINSTANCE GInstance;
 //---------------------------------------------------------------------------
 static void DoDebug(const char* Func, const wchar_t* Message)
 {
@@ -104,7 +115,7 @@ static void DoDebug(const char* Func, const wchar_t* Message)
     {
       try
       {
-        if (GLogHandle == NULL)
+        if (GLogHandle == nullptr)
         {
           if (wcslen(GLogFile) == 0)
           {
@@ -113,13 +124,13 @@ static void DoDebug(const char* Func, const wchar_t* Message)
           else
           {
             GLogHandle = _wfopen(GLogFile, L"at");
-            if (GLogHandle == NULL)
+            if (GLogHandle == nullptr)
             {
               GLogOn = false;
             }
             else
             {
-              setbuf(GLogHandle, NULL);
+              setbuf(GLogHandle, nullptr);
               fwprintf(GLogHandle, L"----------------------------\n");
             }
           }
@@ -208,7 +219,7 @@ DllMain(HINSTANCE HInstance, DWORD Reason, LPVOID /*Reserved*/)
 
     if (GRefThisDll == 0)
     {
-      GLogMutex = CreateMutex(NULL, false, DRAG_EXT_RUNNING_MUTEX);
+      GLogMutex = CreateMutex(nullptr, false, DRAG_EXT_RUNNING_MUTEX);
 
       for (int Root = 0; Root <= 1; Root++)
       {
@@ -224,7 +235,7 @@ DllMain(HINSTANCE HInstance, DWORD Reason, LPVOID /*Reserved*/)
           wchar_t Buf[MAX_PATH];
 
           Size = sizeof(Value);
-          if ((RegQueryValueEx(Key, L"Enable", NULL, &Type,
+          if ((RegQueryValueEx(Key, L"Enable", nullptr, &Type,
                  reinterpret_cast<unsigned char*>(&Value), &Size) == ERROR_SUCCESS) &&
               (Type == REG_DWORD))
           {
@@ -232,7 +243,7 @@ DllMain(HINSTANCE HInstance, DWORD Reason, LPVOID /*Reserved*/)
           }
 
           Size = sizeof(Buf);
-          if ((RegQueryValueEx(Key, L"LogFile", NULL, &Type,
+          if ((RegQueryValueEx(Key, L"LogFile", nullptr, &Type,
                  reinterpret_cast<unsigned char*>(&Buf), &Size) == ERROR_SUCCESS) &&
               (Type == REG_SZ))
           {
@@ -287,6 +298,10 @@ DllMain(HINSTANCE HInstance, DWORD Reason, LPVOID /*Reserved*/)
   return 1;   // ok
 }
 //---------------------------------------------------------------------------
+#ifdef _WIN64
+#pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
+#endif
+//---------------------------------------------------------------------------
 STDAPI DllCanUnloadNow(void)
 {
   bool CanUnload = (GRefThisDll == 0);
@@ -298,7 +313,7 @@ STDAPI DllGetClassObject(REFCLSID Rclsid, REFIID Riid, LPVOID* PpvOut)
 {
   Debug(L"enter");
 
-  *PpvOut = NULL;
+  *PpvOut = nullptr;
 
   if (IsEqualIID(Rclsid, CLSID_ShellExtension))
   {
@@ -328,8 +343,8 @@ static bool RegisterServer(bool AllUsers)
 
   if ((RegOpenKeyEx(RootKey, L"Software\\Classes", 0, KEY_WRITE, &HKey) ==
          ERROR_SUCCESS) &&
-      (RegCreateKeyEx(HKey, L"CLSID", 0, NULL,
-         REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &HKey, &Unused) ==
+      (RegCreateKeyEx(HKey, L"CLSID", 0, nullptr,
+         REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr, &HKey, &Unused) ==
            ERROR_SUCCESS))
   {
     Debug(L"CLSID created");
@@ -338,7 +353,7 @@ static bool RegisterServer(bool AllUsers)
     {
       Debug(L"class ID created");
 
-      RegSetValueEx(HKey, NULL, 0, REG_SZ,
+      RegSetValueEx(HKey, nullptr, 0, REG_SZ,
         reinterpret_cast<const unsigned char*>(DRAG_EXT_NAME), sizeof(DRAG_EXT_NAME));
 
       if (RegCreateKey(HKey, L"InProcServer32", &HKey) == ERROR_SUCCESS)
@@ -347,7 +362,7 @@ static bool RegisterServer(bool AllUsers)
 
         wchar_t Filename[MAX_PATH];
         GetModuleFileName(GInstance, Filename, LENOF(Filename));
-        RegSetValueEx(HKey, NULL, 0, REG_SZ,
+        RegSetValueEx(HKey, nullptr, 0, REG_SZ,
           reinterpret_cast<unsigned char*>(Filename), (wcslen(Filename) + 1) * sizeof(wchar_t));
 
         RegSetValueEx(HKey, L"ThreadingModel", 0, REG_SZ,
@@ -361,17 +376,17 @@ static bool RegisterServer(bool AllUsers)
            0, KEY_WRITE, &HKey) == ERROR_SUCCESS) &&
         (RegCreateKeyEx(HKey,
            L"directory\\shellex\\CopyHookHandlers\\WinSCPCopyHook",
-           0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &HKey,
+           0, nullptr, REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr, &HKey,
            &Unused) == ERROR_SUCCESS))
     {
       Debug(L"WinSCPCopyHook created");
 
-      RegSetValueEx(HKey, NULL, 0, REG_SZ,
+      RegSetValueEx(HKey, nullptr, 0, REG_SZ,
         reinterpret_cast<unsigned char*>(ClassID), (wcslen(ClassID) + 1) * sizeof(wchar_t));
       RegCloseKey(HKey);
 
       if ((RegCreateKeyEx(RootKey, DRAG_EXT_REG_KEY,
-             0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &HKey,
+             0, nullptr, REG_OPTION_NON_VOLATILE, KEY_WRITE, nullptr, &HKey,
              &Unused) == ERROR_SUCCESS))
       {
         Debug(L"drag ext key created");
@@ -385,7 +400,7 @@ static bool RegisterServer(bool AllUsers)
         Result = true;
       }
 
-      SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, 0, 0);
+      SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
     }
   }
 
@@ -477,7 +492,7 @@ static bool UnregisterServer(bool AllUsers)
     Result = true;
   }
 
-  SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, 0, 0);
+  SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
 
   Debug(L"leave");
 
@@ -524,7 +539,7 @@ STDMETHODIMP CShellExtClassFactory::QueryInterface(REFIID Riid, LPVOID FAR* Ppv)
 {
   Debug(L"enter");
 
-  *Ppv = NULL;
+  *Ppv = nullptr;
 
   // Any interface on this object is the object pointer
 
@@ -532,7 +547,7 @@ STDMETHODIMP CShellExtClassFactory::QueryInterface(REFIID Riid, LPVOID FAR* Ppv)
   {
     Debug(L"is IUnknown or IClassFactory");
 
-    *Ppv = (LPCLASSFACTORY)this;
+    *Ppv = static_cast<LPCLASSFACTORY>(this);
 
     AddRef();
 
@@ -567,7 +582,7 @@ STDMETHODIMP CShellExtClassFactory::CreateInstance(LPUNKNOWN UnkOuter,
 {
   Debug(L"enter");
 
-  *PpvObj = NULL;
+  *PpvObj = nullptr;
 
   // Shell extensions typically don't support aggregation (inheritance)
 
@@ -598,9 +613,9 @@ CShellExt::CShellExt()
   Debug(L"enter");
 
   FReferenceCounter = 0L;
-  FDataObj = NULL;
+  FDataObj = nullptr;
 
-  FMutex = CreateMutex(NULL, false, DRAG_EXT_MUTEX);
+  FMutex = CreateMutex(nullptr, false, DRAG_EXT_MUTEX);
   FLastTicks = 0;
 
   GRefThisDll++;
@@ -629,7 +644,7 @@ STDMETHODIMP CShellExt::QueryInterface(REFIID Riid, LPVOID FAR* Ppv)
   Debug(L"enter");
 
   HRESULT Result = E_NOINTERFACE;
-  *Ppv = NULL;
+  *Ppv = nullptr;
 
   if (!GEnabled)
   {
@@ -640,12 +655,12 @@ STDMETHODIMP CShellExt::QueryInterface(REFIID Riid, LPVOID FAR* Ppv)
     if (IsEqualIID(Riid, IID_IShellExtInit) || IsEqualIID(Riid, IID_IUnknown))
     {
       Debug(L"is IShellExtInit or IUnknown");
-      *Ppv = (LPSHELLEXTINIT)this;
+      *Ppv = static_cast<LPSHELLEXTINIT>(this);
     }
     else if (IsEqualIID(Riid, IID_IShellCopyHook))
     {
       Debug(L"is IShellCopyHook");
-      *Ppv = (LPCOPYHOOK)this;
+      *Ppv = static_cast<LPCOPYHOOK>(this);
     }
 
     if (*Ppv)
@@ -686,15 +701,15 @@ STDMETHODIMP CShellExt::Initialize(LPCITEMIDLIST /*IDFolder*/,
 {
   Debug(L"enter");
 
-  if (FDataObj != NULL)
+  if (FDataObj != nullptr)
   {
     FDataObj->Release();
-    FDataObj = NULL;
+    FDataObj = nullptr;
   }
 
   // duplicate the object pointer and registry handle
 
-  if (DataObj != NULL)
+  if (DataObj != nullptr)
   {
     FDataObj = DataObj;
     DataObj->AddRef();
@@ -734,7 +749,7 @@ STDMETHODIMP_(UINT) CShellExt::CopyCallback(HWND /*Hwnd*/, UINT Func, UINT /*Fla
       {
         Debug(L"empty dest file");
       }
-      else if ((BackPtr != NULL) &&
+      else if ((BackPtr != nullptr) &&
           (wcsncmp(BackPtr + 1, DRAG_EXT_DUMMY_DIR_PREFIX,
             DRAG_EXT_DUMMY_DIR_PREFIX_LEN) == 0))
       {
@@ -743,7 +758,7 @@ STDMETHODIMP_(UINT) CShellExt::CopyCallback(HWND /*Hwnd*/, UINT Func, UINT /*Fla
         HANDLE MapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS,
           false, DRAG_EXT_MAPPING);
 
-        if (MapFile != NULL)
+        if (MapFile != nullptr)
         {
           Debug(L"mapfile found");
 
@@ -751,7 +766,7 @@ STDMETHODIMP_(UINT) CShellExt::CopyCallback(HWND /*Hwnd*/, UINT Func, UINT /*Fla
           CommStruct = static_cast<TDragExtCommStruct*>(MapViewOfFile(MapFile,
             FILE_MAP_ALL_ACCESS, 0, 0, 0));
 
-          if (CommStruct != NULL)
+          if (CommStruct != nullptr)
           {
             Debug(L"mapview created");
             unsigned long WaitResult = WaitForSingleObject(FMutex, 1000);

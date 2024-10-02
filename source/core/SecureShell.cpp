@@ -642,7 +642,7 @@ UnicodeString __fastcall TSecureShell::ConvertFromPutty(const char * Str, int Le
   if ((Length >= BomLength) &&
       (strncmp(Str, WINSCP_BOM, BomLength) == 0))
   {
-    return UTF8ToString(Str + BomLength, Length - BomLength);
+    return UTF8ArrayToString(Str + BomLength, Length - BomLength - 1);
   }
   else
   {

@@ -23,6 +23,7 @@
 #include <PasTools.hpp>
 #include <System.Actions.hpp>
 #include <GUITools.h>
+#include <System.ImageList.hpp>
 //----------------------------------------------------------------------------
 class TLoginDialog : public TForm
 {
@@ -444,7 +445,7 @@ protected:
   void __fastcall InitControls();
   void __fastcall EditSession();
   void __fastcall Login();
-  DYNAMIC void __fastcall ChangeScale(int M, int D);
+  HIDESBASE DYNAMIC void __fastcall ChangeScale(int M, int D, bool isDpiChange);
   void SetSiteSearch(TIncrementalSearch SiteSearch);
   __property TSessionData * SelectedSession  = { read=GetSelectedSession };
 

@@ -19,7 +19,6 @@
 #include <DragExt.h>
 #include <Math.hpp>
 #include <StrUtils.hpp>
-#include <Generics.Defaults.hpp>
 #include <OperationWithTimeout.hpp>
 #include "FileInfo.h"
 #include "CoreMain.h"

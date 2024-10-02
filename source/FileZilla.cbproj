@@ -1,7 +1,7 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{152D1B4E-7546-4C2B-80C5-F0D9D5F6D9D7}</ProjectGuid>
-        <ProjectVersion>15.4</ProjectVersion>
+        <ProjectVersion>19.5</ProjectVersion>
         <Config Condition="'$(Config)'==''">Release</Config>
         <FrameworkType>None</FrameworkType>
         <Base>True</Base>
@@ -43,7 +43,7 @@
         <BCC_wrch>false</BCC_wrch>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
-        <Defines>WINSCP;_WIN32;$(Defines)</Defines>
+        <Defines>WINSCP;WIN32;$(Defines)</Defines>
         <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
         <IncludePath>filezilla\misc\;filezilla\;resource;core;..\libs\openssl\include;..\libs\mfc\include;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>

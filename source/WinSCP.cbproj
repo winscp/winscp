@@ -1,7 +1,7 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ProjectGuid>{0B0C5EC6-5DCB-4F16-9504-1E6D37FFBB77}</ProjectGuid>
-        <ProjectVersion>15.4</ProjectVersion>
+        <ProjectVersion>19.5</ProjectVersion>
         <MainSource>WinSCP.cpp</MainSource>
         <Config Condition="'$(Config)'==''">Release</Config>
         <FrameworkType>VCL</FrameworkType>
@@ -49,7 +49,7 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
         <_TCHARMapping>wchar_t</_TCHARMapping>
-        <AllPackageLibs>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;My.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib;jcl.lib;vclie.lib;urlmon.lib;shlwapi.lib;powrprof.lib;soaprtl.lib;fmx.lib;dbrtl.lib;inet.lib;psapi.lib;msi.lib</AllPackageLibs>
+        <AllPackageLibs>vcl.lib;rtl.lib;vclx.lib;ws2_32.lib;secur32.lib;My.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;Crypt32.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;winhttp.lib;jcl.lib;vclie.lib;vcledge.lib;urlmon.lib;shlwapi.lib;powrprof.lib;soaprtl.lib;fmx.lib;dbrtl.lib;inet.lib;psapi.lib;msi.lib</AllPackageLibs>
         <BCC_AllWarnings>true</BCC_AllWarnings>
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
@@ -63,7 +63,7 @@
         <Defines>WINSCP;STRICT;$(Defines)</Defines>
         <FinalOutputDir>$(FINAL_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <Icon_MainIcon>resource\Application.ico</Icon_MainIcon>
-        <ILINK_GenerateDRC>true</ILINK_GenerateDRC>
+        <ILINK_GenerateDRC>True</ILINK_GenerateDRC>
         <ILINK_LibraryPath>windows\;forms\;packages\filemng;packages\tbx;packages\png;$(ILINK_LibraryPath)</ILINK_LibraryPath>
         <ILINK_MapFileType>DetailedSegments</ILINK_MapFileType>
         <IncludePath>console;windows\;forms\;core;resource;components;dragext;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;packages\png;packages\jcl;..\libs\mfc\include;$(BDS)\include\windows;$(BDS)\include\windows\sdk;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>

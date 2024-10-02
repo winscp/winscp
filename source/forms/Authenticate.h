@@ -101,7 +101,7 @@ protected:
   int __fastcall LogItemHeight(int Index);
   void __fastcall RedrawLog();
   void __fastcall CMShowingChanged(TMessage & Message);
-  DYNAMIC void __fastcall ChangeScale(int M, int D);
+  HIDESBASE DYNAMIC void __fastcall ChangeScale(int M, int D, bool isDpiChange);
   void __fastcall UpdateBannerFont();
   void __fastcall DoAdjustWindow();
   void __fastcall LabelContextPopup(TObject* Sender, const TPoint & MousePos, bool & Handled);

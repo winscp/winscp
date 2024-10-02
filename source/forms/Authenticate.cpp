@@ -623,9 +623,9 @@ void __fastcall TAuthenticateForm::FormResize(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::ChangeScale(int M, int D)
+void __fastcall TAuthenticateForm::ChangeScale(int M, int D, bool isDpiChange)
 {
-  TForm::ChangeScale(M, D);
+  TForm::ChangeScale(M, D, isDpiChange);
 
   // Recreate the list to re-measure the items according to the new font
   if (DebugAlwaysTrue(LogView->HandleAllocated()) &&

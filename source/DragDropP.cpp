@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-
+#pragma warn -pch // WORKAROUND (see My.cpp)
 #include <basepch.h>
 #pragma hdrstop
 #pragma package(smart_init)
