@@ -811,6 +811,8 @@ begin
 end;
 
 procedure TDirView.SetPath(Value: string);
+const
+  LongPathPrefix = '\\?\';
 var
   LongPath: string;
   Len: Integer;
@@ -831,7 +833,11 @@ begin
     SetLength(LongPath, Len);
     Len := GetLongPathName(PChar(ApiPath(Value)), PChar(LongPath), Len);
     if Len > 0 then
+    begin
       Value := Copy(LongPath, 1, Len);
+      if StartsStr(LongPathPrefix, Value) then
+        System.Delete(Value, 1, Length(LongPathPrefix));
+    end;
   end;
 
   CheckCanOpenDirectory(Value);
