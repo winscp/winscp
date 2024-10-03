@@ -1957,7 +1957,7 @@ void __fastcall TLoginDialog::SessionTreeEditing(TObject * /*Sender*/,
   AllowEdit =
     !FEditing &&
     (IsFolderOrWorkspaceNode(Node) ||
-     (DebugAlwaysTrue(IsSiteNode(Node)) && !GetNodeSession(Node)->Special));
+     (IsSiteNode(Node) && !GetNodeSession(Node)->Special));
   FRenaming = AllowEdit;
   UpdateControls();
 }
