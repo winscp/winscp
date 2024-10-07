@@ -1498,7 +1498,6 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     PopupMenu = ListViewPopupMenu
     ShowHint = True
     TabOrder = 0
-    ViewStyle = vsReport
     OnChange = ListViewChange
     OnChanging = ListViewChanging
     OnClick = ListViewClick
@@ -1552,6 +1551,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
         MinWidth = 20
         Width = 80
       end>
+    ViewStyle = vsReport
     OnAdvancedCustomDrawSubItem = ListViewAdvancedCustomDrawSubItem
     OnCompare = ListViewCompare
     OnContextPopup = ListViewContextPopup

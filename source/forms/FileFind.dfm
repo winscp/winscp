@@ -1489,7 +1489,6 @@ object FileFindDialog: TFileFindDialog
       RowSelect = True
       PopupMenu = FileViewPopupMenu
       TabOrder = 0
-      ViewStyle = vsReport
       OnDblClick = FileViewDblClick
       OnEnter = ControlChange
       OnExit = ControlChange
@@ -1512,6 +1511,7 @@ object FileFindDialog: TFileFindDialog
           Caption = 'Changed'
           Width = 90
         end>
+      ViewStyle = vsReport
       OnCompare = FileViewCompare
       OnContextPopup = FileViewContextPopup
       OnSelectItem = FileViewSelectItem
