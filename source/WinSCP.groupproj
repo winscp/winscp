@@ -212,5 +212,5 @@
     <Target Name="Make">
         <CallTarget Targets="My:Make;DragDropP:Make;DriveDir:Make;tb2k:Make;tbxp:Make;Jcl:Make;PngComponents:Make;Putty:Make;FileZilla:Make;ScpCore:Make;RScpComp:Make;ScpForms:Make;ScpResources:Make;WinSCP:Make;Console:Make;DragExt:Make"/>
     </Target>
-    <Import Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')" Project="$(BDS)\Bin\CodeGear.Group.Targets"/>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>
