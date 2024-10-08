@@ -78,7 +78,7 @@ type
 
   TOnDragEnter = procedure(DataObj: IDataObject; grfKeyState: LongInt; pt: TPoint;
      var dwEffect: LongInt; var Accept: Boolean) of object;
-  // WORKAROUND C++ Builder 11.2 cannot compile parameter-less Delphi closures
+  // WORKAROUND C++Builder 11.2 cannot compile parameter-less Delphi closures
   TOnDragLeave = procedure(Dummy: Integer) of object;
   TOnDragOver = procedure(grfKeyState: LongInt; pt: TPoint; var dwEffect: LongInt; PreferredEffect: LongInt) of object;
   TOnDrop = procedure(DataObj: IDataObject; grfKeyState: LongInt;  pt: TPoint; var dwEffect: LongInt) of object;
@@ -1807,7 +1807,7 @@ begin
   if (not FRegistered) and (FTargetEffects <> 0) and (FDragDropControl <> nil) then
   begin
     try
-      // CoLockObjectExternal crashes debugging intermittently in C++ Builder 2010
+      // CoLockObjectExternal crashes debugging intermittently in C++Builder 2010
       {$IFNDEF IDE}
       // Ensure that drag-and-drop interface stays in memory
       CoLockObjectExternal(FDropTarget, True, False);

@@ -897,7 +897,7 @@ __declspec(dllimport) int rand_s(unsigned int *);
  */
 static int
 writeRandomBytes_rand_s(void *target, size_t count) {
-  // WINSCP, we do not have rand_s in C++ Builder
+  // WINSCP, we do not have rand_s in C++Builder
   int success = 0;  /* full count bytes written? */
   const HMODULE advapi32 = _Expat_LoadLibrary(TEXT("ADVAPI32.DLL"));
 

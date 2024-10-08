@@ -29,7 +29,7 @@
 #ifdef WINSCP
 
 // UPGRADE
-// RCU cannot be used in C++ Builder XE6 as it does not support Interlocked* intrinsic.
+// RCU cannot be used in C++Builder XE6 as it does not support Interlocked* intrinsic.
 // Mapping RCU API to plain locks.
 // This is effectivelly a rollback of
 // https://github.com/openssl/openssl/commit/504e72fc1a1432d5266bd6e8909648c49884a36c
