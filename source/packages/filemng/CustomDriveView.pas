@@ -309,7 +309,12 @@ var
   ImageHeight: Integer;
   TextHeight: Integer;
 begin
-  ImageHeight := (Images.Width * 9) div 8;
+  // Particularly when called from CMFontChanged because we are changing (reverting)
+  // the default form font, the Images might not be set up yet
+  if Assigned(Images) then
+    ImageHeight := (Images.Width * 9) div 8
+  else
+    ImageHeight := 0;
   // 16 seems to be the system default tree view item height
   TextHeight := ScaleByControlTextHeightRunTime(Canvas, 16);
   TreeView_SetItemHeight(Handle, Max(ImageHeight, TextHeight));
