@@ -2112,6 +2112,7 @@ var
   SaveCursor: TCursor;
   Delimiters: string;
   LastDirName: string;
+  ForceMakeVisible: Boolean;
 begin
   if not FLoadEnabled or Loading then
   begin
@@ -2185,11 +2186,15 @@ begin
 
         if DoFocusSomething then
         begin
+          ForceMakeVisible := True;
           if FAnnouncedState is TDirViewState then
           begin
+            // "AnnouncedState" should not be combined with "LastPath"
+            Assert(not Assigned(ItemFocused));
             RestoreItemsState(FAnnouncedState);
+            ForceMakeVisible := False;
           end;
-          FocusSomething(False);
+          FocusSomething(ForceMakeVisible);
         end;
 
         if Assigned(FOnLoaded) then
