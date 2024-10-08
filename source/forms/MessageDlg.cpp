@@ -21,6 +21,7 @@
 #include <Setup.h>
 #include <WinApi.h>
 #include "MessageDlg.h"
+#include <Custom.h>
 //---------------------------------------------------------------------------
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
@@ -78,7 +79,8 @@ __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner)
   NeverAskAgainCheck = NULL;
   FUpdateForShiftStateTimer = NULL;
   UseSystemSettingsPre(this);
-  FDummyForm = new TForm(this);
+  // DFM-based form, to use the custom Tahoma font
+  FDummyForm = new TCustomDialog(EmptyStr);
   UseSystemSettings(FDummyForm);
 }
 //---------------------------------------------------------------------------

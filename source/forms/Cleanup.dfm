@@ -9,7 +9,11 @@ object CleanupDialog: TCleanupDialog
   ClientHeight = 299
   ClientWidth = 489
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
   Position = poOwnerFormCenter
   OnShow = FormShow
   DesignSize = (

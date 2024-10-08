@@ -9,7 +9,11 @@ object CopyParamCustomDialog: TCopyParamCustomDialog
   ClientHeight = 515
   ClientWidth = 420
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   DesignSize = (

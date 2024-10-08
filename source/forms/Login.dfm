@@ -10,7 +10,11 @@ object LoginDialog: TLoginDialog
   Color = clBtnFace
   Constraints.MinHeight = 399
   Constraints.MinWidth = 600
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
   KeyPreview = True
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery

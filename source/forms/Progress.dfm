@@ -9,7 +9,11 @@ object ProgressForm: TProgressForm
   ClientHeight = 291
   ClientWidth = 360
   Color = clWindow
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
   PopupMode = pmAuto
   Position = poOwnerFormCenter
   OnHide = FormHide

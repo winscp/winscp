@@ -1163,7 +1163,7 @@ void __fastcall ApplySystemSettingsOnControl(TControl * Control)
 }
 //---------------------------------------------------------------------------
 // Settings that must be set as soon as possible.
-void __fastcall UseSystemSettingsPre(TCustomForm * Control)
+void __fastcall UseSystemSettingsPre(TForm * Control)
 {
   LocalSystemSettings(Control);
 
@@ -1177,6 +1177,12 @@ void __fastcall UseSystemSettingsPre(TCustomForm * Control)
     // temporary help keyword to enable F1 key in all forms
     Control->HelpKeyword = L"start";
   }
+
+  // We have legacy XE6 font (Tahoma) explicitly set in DFMs to match the layout.
+  // That unlinks the font fonts from the Application->DefaultFont. We set the DefaultFont to Tahoma in WinSCP.cpp.
+  // So we can link the form's font back to it now.
+  DebugAssert(SameFont(Control->Font, Application->DefaultFont));
+  Control->ParentFont = true;
 
   ApplySystemSettingsOnControl(Control);
 };
@@ -1211,7 +1217,7 @@ static void FlipAnchors(TControl * Control)
 }
 //---------------------------------------------------------------------------
 // Settings that must be set only after whole form is constructed
-void __fastcall UseSystemSettingsPost(TCustomForm * Control)
+void __fastcall UseSystemSettingsPost(TForm * Control)
 {
   // When showing an early error message
   if (WinConfiguration != NULL)
@@ -1229,13 +1235,13 @@ void __fastcall UseSystemSettingsPost(TCustomForm * Control)
   ResetSystemSettings(Control);
 };
 //---------------------------------------------------------------------------
-void __fastcall UseSystemSettings(TCustomForm * Control)
+void __fastcall UseSystemSettings(TForm * Control)
 {
   UseSystemSettingsPre(Control);
   UseSystemSettingsPost(Control);
 };
 //---------------------------------------------------------------------------
-void __fastcall ResetSystemSettings(TCustomForm * /*Control*/)
+void __fastcall ResetSystemSettings(TForm * /*Control*/)
 {
   // noop
 }

@@ -7,7 +7,11 @@ object MessageForm: TMessageForm
   ClientHeight = 41
   ClientWidth = 326
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
   Position = poOwnerFormCenter
   TextHeight = 13
 end

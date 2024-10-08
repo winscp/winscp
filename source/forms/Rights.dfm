@@ -3,6 +3,12 @@ object RightsFrame: TRightsFrame
   Top = 0
   Width = 239
   Height = 109
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
+  ParentFont = False
   TabOrder = 0
   OnContextPopup = FrameContextPopup
   object OthersButton: TSpeedButton

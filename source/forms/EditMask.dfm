@@ -9,7 +9,11 @@ object EditMaskDialog: TEditMaskDialog
   ClientHeight = 500
   ClientWidth = 425
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
   KeyPreview = True
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery

@@ -9,7 +9,11 @@ object AboutDialog: TAboutDialog
   ClientHeight = 501
   ClientWidth = 410
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
   KeyPreview = True
   Position = poOwnerFormCenter
   OnKeyDown = FormKeyDown

@@ -115,7 +115,7 @@ void __fastcall FlashOnBackground()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall LocalSystemSettings(TCustomForm * /*Control*/)
+void __fastcall LocalSystemSettings(TForm * /*Control*/)
 {
   // noop
 }

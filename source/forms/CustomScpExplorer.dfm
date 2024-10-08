@@ -5,7 +5,11 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   ClientHeight = 432
   ClientWidth = 620
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
   KeyPreview = True
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery

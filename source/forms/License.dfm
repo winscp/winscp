@@ -8,7 +8,11 @@ object LicenseDialog: TLicenseDialog
   ClientHeight = 320
   ClientWidth = 504
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
   Position = poOwnerFormCenter
   DesignSize = (
     504

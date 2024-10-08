@@ -11,7 +11,11 @@ object GenerateUrlDialog: TGenerateUrlDialog
   Color = clBtnFace
   Constraints.MinHeight = 300
   Constraints.MinWidth = 484
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
   Position = poOwnerFormCenter
   OnShow = FormShow
   DesignSize = (

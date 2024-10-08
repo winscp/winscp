@@ -62,6 +62,8 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
     Application->Initialize();
     Application->MainFormOnTaskBar = true;
     Application->ModalPopupMode = pmAuto;
+    Application->DefaultFont->Name = L"Tahoma";
+    Application->DefaultFont->Height = -11;
     SetEnvironmentVariable(L"WINSCP_PATH",
       ExcludeTrailingBackslash(ExtractFilePath(Application->ExeName)).c_str());
     CoreInitialize();

@@ -4,6 +4,12 @@ object CopyParamsFrame: TCopyParamsFrame
   Width = 420
   Height = 477
   HelpType = htKeyword
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
+  ParentFont = False
   TabOrder = 0
   object CommonPropertiesGroup: TGroupBox
     Left = 212

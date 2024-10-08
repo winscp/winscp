@@ -20,11 +20,11 @@ int CalculateCheckBoxWidth(TControl * Control, const UnicodeString & Caption);
 void AutoSizeCheckBox(TCheckBox * CheckBox);
 void __fastcall InitializeSystemSettings();
 void __fastcall FinalizeSystemSettings();
-void __fastcall LocalSystemSettings(TCustomForm * Control);
-void __fastcall UseSystemSettingsPre(TCustomForm * Control);
-void __fastcall UseSystemSettingsPost(TCustomForm * Control);
-void __fastcall UseSystemSettings(TCustomForm * Control);
-void __fastcall ResetSystemSettings(TCustomForm * Control);
+void __fastcall LocalSystemSettings(TForm * Control);
+void __fastcall UseSystemSettingsPre(TForm * Control);
+void __fastcall UseSystemSettingsPost(TForm * Control);
+void __fastcall UseSystemSettings(TForm * Control);
+void __fastcall ResetSystemSettings(TForm * Control);
 void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url = L"",
   TNotifyEvent OnEnter = NULL);
 void __fastcall LinkActionLabel(TStaticText * StaticText);
