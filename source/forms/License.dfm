@@ -9,12 +9,10 @@ object LicenseDialog: TLicenseDialog
   ClientWidth = 504
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
   DesignSize = (
     504
     320)
-  PixelsPerInch = 96
   TextHeight = 13
   object CloseButton: TButton
     Left = 421

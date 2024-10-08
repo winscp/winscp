@@ -23,6 +23,7 @@
 #include "TB2ExtItems.hpp"
 #include "TBXExtItems.hpp"
 #include <Vcl.AppEvnts.hpp>
+#include <System.ImageList.hpp>
 #include <list>
 //----------------------------------------------------------------------------
 class TProgressForm : public TForm

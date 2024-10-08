@@ -7,12 +7,10 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   Color = clBtnFace
   ParentFont = True
   KeyPreview = True
-  OldCreateOrder = False
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnConstrainedResize = FormConstrainedResize
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 13
   object QueueSplitter: TSplitter
     Left = 0

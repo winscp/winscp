@@ -10,14 +10,12 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
   ClientWidth = 675
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = False
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
     675
     560)
-  PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel
     Left = 10

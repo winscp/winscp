@@ -11,13 +11,11 @@ object AboutDialog: TAboutDialog
   Color = clBtnFace
   ParentFont = True
   KeyPreview = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
   OnKeyDown = FormKeyDown
   DesignSize = (
     410
     501)
-  PixelsPerInch = 96
   TextHeight = 13
   object OKButton: TButton
     Left = 243

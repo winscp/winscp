@@ -8,12 +8,10 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
   ClientWidth = 424
   Color = clWindow
   ParentFont = True
-  OldCreateOrder = False
   Position = poOwnerFormCenter
   DesignSize = (
     424
     219)
-  PixelsPerInch = 96
   TextHeight = 13
   object TimeLeftLabel: TLabel
     Left = 141
@@ -308,7 +306,6 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
       end>
     Left = 40
     Top = 166
-    Bitmap = {}
   end
   object ImageList120: TPngImageList
     Height = 20
@@ -440,7 +437,6 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
       end>
     Left = 136
     Top = 166
-    Bitmap = {}
   end
   object ImageList144: TPngImageList
     Height = 24
@@ -577,7 +573,6 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
       end>
     Left = 224
     Top = 166
-    Bitmap = {}
   end
   object ImageList192: TPngImageList
     Height = 32
@@ -670,6 +665,5 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
       end>
     Left = 312
     Top = 166
-    Bitmap = {}
   end
 end

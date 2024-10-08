@@ -1356,13 +1356,11 @@ object ConsoleDialog: TConsoleDialog
     000000000000000000000000000000000000000000000000000000000000FFFF
     0000000000000000000000000000000000000000000000000000000000000000
     0000000000000000000000000000000000000000000000000000FFFF0000}
-  OldCreateOrder = True
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
     551
     393)
-  PixelsPerInch = 96
   TextHeight = 13
   object Bevel1: TBevel
     Left = 0
@@ -1672,7 +1670,6 @@ object ConsoleDialog: TConsoleDialog
       end>
     Left = 328
     Top = 192
-    Bitmap = {}
   end
   object PopupMenu: TPopupMenu
     Images = Images
@@ -1922,7 +1919,6 @@ object ConsoleDialog: TConsoleDialog
       end>
     Left = 392
     Top = 192
-    Bitmap = {}
   end
   object Images144: TPngImageList
     Height = 24
@@ -2140,7 +2136,6 @@ object ConsoleDialog: TConsoleDialog
       end>
     Left = 328
     Top = 256
-    Bitmap = {}
   end
   object Images192: TPngImageList
     Height = 32
@@ -2365,6 +2360,5 @@ object ConsoleDialog: TConsoleDialog
       end>
     Left = 392
     Top = 256
-    Bitmap = {}
   end
 end

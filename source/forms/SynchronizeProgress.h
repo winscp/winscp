@@ -16,6 +16,7 @@
 #include <Vcl.ImgList.hpp>
 #include <GUITools.h>
 #include <Vcl.ComCtrls.hpp>
+#include <System.ImageList.hpp>
 //---------------------------------------------------------------------------
 class TSynchronizeProgressForm : public TForm
 {

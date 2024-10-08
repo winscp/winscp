@@ -10,14 +10,12 @@ object SelectMaskDialog: TSelectMaskDialog
   ClientWidth = 417
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = True
   Position = poDesigned
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
     417
     186)
-  PixelsPerInch = 96
   TextHeight = 13
   object MaskGroup: TGroupBox
     Left = 8

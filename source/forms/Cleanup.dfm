@@ -10,13 +10,11 @@ object CleanupDialog: TCleanupDialog
   ClientWidth = 489
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
   OnShow = FormShow
   DesignSize = (
     489
     299)
-  PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel
     Left = 8

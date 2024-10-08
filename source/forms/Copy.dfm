@@ -10,14 +10,12 @@ object CopyDialog: TCopyDialog
   ClientWidth = 511
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = False
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
     511
     225)
-  PixelsPerInch = 96
   TextHeight = 13
   object Image: TImage
     Left = 8

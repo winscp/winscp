@@ -10,14 +10,12 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
   ClientWidth = 403
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = False
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
     403
     389)
-  PixelsPerInch = 96
   TextHeight = 13
   object ExternalEditorGroup: TGroupBox
     Left = 8

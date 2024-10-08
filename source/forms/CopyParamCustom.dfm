@@ -10,13 +10,11 @@ object CopyParamCustomDialog: TCopyParamCustomDialog
   ClientWidth = 420
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = False
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   DesignSize = (
     420
     515)
-  PixelsPerInch = 96
   TextHeight = 13
   object OkButton: TButton
     Left = 168

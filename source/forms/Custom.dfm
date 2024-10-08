@@ -8,12 +8,10 @@ object CustomDialog: TCustomDialog
   ClientWidth = 326
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
   DesignSize = (
     326
     41)
-  PixelsPerInch = 96
   TextHeight = 13
   object OKButton: TButton
     Left = 68

@@ -16,6 +16,7 @@
 //---------------------------------------------------------------------------
 #include <RemoteFiles.h>
 #include <GUITools.h>
+#include <System.ImageList.hpp>
 //---------------------------------------------------------------------------
 class TRightsFrame : public TFrame
 {

@@ -12,13 +12,11 @@ object GenerateUrlDialog: TGenerateUrlDialog
   Constraints.MinHeight = 300
   Constraints.MinWidth = 484
   ParentFont = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
   OnShow = FormShow
   DesignSize = (
     484
     338)
-  PixelsPerInch = 96
   TextHeight = 13
   object OptionsPageControl: TPageControl
     Left = 5

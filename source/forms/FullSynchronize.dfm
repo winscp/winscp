@@ -10,14 +10,12 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   ClientWidth = 481
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = False
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
     481
     477)
-  PixelsPerInch = 96
   TextHeight = 13
   object DirectoriesGroup: TGroupBox
     Left = 8

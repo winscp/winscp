@@ -10,13 +10,11 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
   ClientWidth = 405
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
   OnShow = FormShow
   DesignSize = (
     405
     334)
-  PixelsPerInch = 96
   TextHeight = 13
   object EditLabel: TLabel
     Left = 46

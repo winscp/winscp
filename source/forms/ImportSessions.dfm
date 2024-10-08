@@ -10,13 +10,11 @@ object ImportSessionsDialog: TImportSessionsDialog
   ClientWidth = 375
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
   OnShow = FormShow
   DesignSize = (
     375
     273)
-  PixelsPerInch = 96
   TextHeight = 13
   object Label: TLabel
     Left = 8

@@ -1,5 +1,4 @@
 object NonVisualDataModule: TNonVisualDataModule
-  OldCreateOrder = False
   Height = 502
   Width = 624
   object RemoteFilePopup: TTBXPopupMenu

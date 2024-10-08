@@ -1355,10 +1355,8 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     0000C0030000C0030000C0030000C0030000C0030000C0030000C0030000C003
     0000C0030000C0030000C0030000C0030000C0030000C0070000FC7F0000}
   KeyPreview = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 13
   object Panel: TPanel
     Left = 571
@@ -2064,7 +2062,6 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       end>
     Left = 48
     Top = 416
-    Bitmap = {}
   end
   object ListViewPopupMenu: TPopupMenu
     Left = 648
@@ -2653,7 +2650,6 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       end>
     Left = 136
     Top = 416
-    Bitmap = {}
   end
   object ActionImages144: TPngImageList
     Height = 24
@@ -3150,7 +3146,6 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       end>
     Left = 224
     Top = 416
-    Bitmap = {}
   end
   object ActionImages192: TPngImageList
     Height = 32
@@ -3668,6 +3663,5 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       end>
     Left = 312
     Top = 416
-    Bitmap = {}
   end
 end

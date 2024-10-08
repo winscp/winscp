@@ -10,14 +10,12 @@ object PropertiesDialog: TPropertiesDialog
   ClientWidth = 357
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
     357
     416)
-  PixelsPerInch = 96
   TextHeight = 13
   object OkButton: TButton
     Left = 99

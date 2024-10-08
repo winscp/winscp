@@ -11,7 +11,6 @@ object EditMaskDialog: TEditMaskDialog
   Color = clBtnFace
   ParentFont = True
   KeyPreview = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnKeyDown = FormKeyDown
@@ -19,7 +18,6 @@ object EditMaskDialog: TEditMaskDialog
   DesignSize = (
     425
     500)
-  PixelsPerInch = 96
   TextHeight = 13
   object FilesGroup: TGroupBox
     Left = 8

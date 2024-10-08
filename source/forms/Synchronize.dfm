@@ -11,7 +11,6 @@ object SynchronizeDialog: TSynchronizeDialog
   Color = clBtnFace
   ParentFont = True
   KeyPreview = True
-  OldCreateOrder = False
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnKeyDown = FormKeyDown
@@ -19,7 +18,6 @@ object SynchronizeDialog: TSynchronizeDialog
   DesignSize = (
     468
     445)
-  PixelsPerInch = 96
   TextHeight = 13
   object DirectoriesGroup: TGroupBox
     Left = 8

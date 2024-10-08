@@ -1357,7 +1357,6 @@ object FileFindDialog: TFileFindDialog
     0000C0000000C0000000C0010000C0030000C0030000C0030000C0030000C003
     0000C0030000C0030000C0030000C0030000C0070000C00F0000FFFF0000}
   KeyPreview = True
-  OldCreateOrder = False
   Position = poOwnerFormCenter
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
@@ -1366,7 +1365,6 @@ object FileFindDialog: TFileFindDialog
   DesignSize = (
     562
     417)
-  PixelsPerInch = 96
   TextHeight = 13
   object FilterGroup: TGroupBox
     Left = 8

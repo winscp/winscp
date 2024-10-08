@@ -12,11 +12,9 @@ object LoginDialog: TLoginDialog
   Constraints.MinWidth = 600
   ParentFont = True
   KeyPreview = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 13
   object MainPanel: TPanel
     Left = 512
@@ -1216,7 +1214,6 @@ object LoginDialog: TLoginDialog
       end>
     Left = 44
     Top = 189
-    Bitmap = {}
   end
   object SaveDropDownMenu: TPopupMenu
     Left = 276
@@ -2013,7 +2010,6 @@ object LoginDialog: TLoginDialog
       end>
     Left = 41
     Top = 253
-    Bitmap = {}
   end
   object LoginDropDownMenu: TPopupMenu
     Images = ActionImageList
@@ -2467,7 +2463,6 @@ object LoginDialog: TLoginDialog
       end>
     Left = 151
     Top = 189
-    Bitmap = {}
   end
   object ActionImageList120: TPngImageList
     Height = 20
@@ -2987,7 +2982,6 @@ object LoginDialog: TLoginDialog
       end>
     Left = 153
     Top = 253
-    Bitmap = {}
   end
   object SessionImageList144: TPngImageList
     Height = 24
@@ -3452,7 +3446,6 @@ object LoginDialog: TLoginDialog
       end>
     Left = 279
     Top = 189
-    Bitmap = {}
   end
   object SessionImageList192: TPngImageList
     Height = 32
@@ -3946,7 +3939,6 @@ object LoginDialog: TLoginDialog
       end>
     Left = 407
     Top = 189
-    Bitmap = {}
   end
   object ActionImageList144: TPngImageList
     Height = 24
@@ -4497,7 +4489,6 @@ object LoginDialog: TLoginDialog
       end>
     Left = 278
     Top = 253
-    Bitmap = {}
   end
   object ActionImageList192: TPngImageList
     Height = 32
@@ -5096,7 +5087,6 @@ object LoginDialog: TLoginDialog
       end>
     Left = 406
     Top = 253
-    Bitmap = {}
   end
   object SitesIncrementalSearchPopupMenu: TPopupMenu
     Left = 279

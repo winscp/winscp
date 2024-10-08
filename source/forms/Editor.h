@@ -25,6 +25,7 @@
 #include <System.Actions.hpp>
 #include "TBXExtItems.hpp"
 #include <Vcl.AppEvnts.hpp>
+#include <System.ImageList.hpp>
 //---------------------------------------------------------------------------
 class TEditorRichEdit;
 //---------------------------------------------------------------------------

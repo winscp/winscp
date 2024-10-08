@@ -10,13 +10,11 @@ object SymlinkDialog: TSymlinkDialog
   ClientWidth = 396
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = False
   Position = poOwnerFormCenter
   OnShow = FormShow
   DesignSize = (
     396
     183)
-  PixelsPerInch = 96
   TextHeight = 13
   object SymlinkGroup: TGroupBox
     Left = 8

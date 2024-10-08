@@ -7,8 +7,6 @@ inherited ScpExplorerForm: TScpExplorerForm
   Caption = 'ScpExplorerForm'
   ClientHeight = 475
   ClientWidth = 632
-  OldCreateOrder = True
-  PixelsPerInch = 96
   TextHeight = 13
   inherited QueueSplitter: TSplitter
     Top = 332

@@ -10,13 +10,11 @@ object LocationProfilesDialog: TLocationProfilesDialog
   ClientWidth = 557
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
   OnShow = FormShow
   DesignSize = (
     557
     435)
-  PixelsPerInch = 96
   TextHeight = 13
   object LocalDirectoryLabel: TLabel
     Left = 46
@@ -570,7 +568,6 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end>
     Left = 352
     Top = 152
-    Bitmap = {}
   end
   object BookmarkImageList120: TPngImageList
     Height = 20
@@ -790,7 +787,6 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end>
     Left = 352
     Top = 208
-    Bitmap = {}
   end
   object BookmarkImageList144: TPngImageList
     Height = 24
@@ -1024,7 +1020,6 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end>
     Left = 352
     Top = 264
-    Bitmap = {}
   end
   object BookmarkImageList192: TPngImageList
     Height = 32
@@ -1268,6 +1263,5 @@ object LocationProfilesDialog: TLocationProfilesDialog
       end>
     Left = 352
     Top = 320
-    Bitmap = {}
   end
 end

@@ -16,6 +16,7 @@
 #include <Terminal.h>
 #include <System.Actions.hpp>
 #include <Vcl.ActnList.hpp>
+#include <System.ImageList.hpp>
 //----------------------------------------------------------------------------
 class TSynchronizeChecklistDialog : public TForm
 {

@@ -708,7 +708,6 @@ object RightsFrame: TRightsFrame
           AE426082}
       end>
     Left = 104
-    Bitmap = {}
   end
   object RightsImages120: TPngImageList
     Height = 20
@@ -1152,7 +1151,6 @@ object RightsFrame: TRightsFrame
           000049454E44AE426082}
       end>
     Left = 112
-    Bitmap = {}
   end
   object RightsImages144: TPngImageList
     Height = 24
@@ -1628,7 +1626,6 @@ object RightsFrame: TRightsFrame
           7D41B4E95000B20000940F64EF2976481D0000000049454E44AE426082}
       end>
     Left = 120
-    Bitmap = {}
   end
   object RightsImages192: TPngImageList
     Height = 32
@@ -2144,6 +2141,5 @@ object RightsFrame: TRightsFrame
           8A08009C0E18080000E784EDDF83CCD63A0000000049454E44AE426082}
       end>
     Left = 128
-    Bitmap = {}
   end
 end

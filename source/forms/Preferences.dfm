@@ -10,7 +10,6 @@ object PreferencesDialog: TPreferencesDialog
   ClientWidth = 545
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShortCut = FormShortCut
@@ -18,7 +17,6 @@ object PreferencesDialog: TPreferencesDialog
   DesignSize = (
     545
     519)
-  PixelsPerInch = 96
   TextHeight = 13
   object OKButton: TButton
     Left = 282

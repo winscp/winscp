@@ -10,14 +10,12 @@ object CustomCommandDialog: TCustomCommandDialog
   ClientWidth = 416
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = False
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
     416
     309)
-  PixelsPerInch = 96
   TextHeight = 13
   object Group: TGroupBox
     Left = 8

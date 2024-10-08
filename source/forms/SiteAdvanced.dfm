@@ -10,7 +10,6 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
   ClientWidth = 561
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
@@ -18,7 +17,6 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
   DesignSize = (
     561
     432)
-  PixelsPerInch = 96
   TextHeight = 13
   object MainPanel: TPanel
     Left = 0

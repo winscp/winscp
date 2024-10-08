@@ -6,8 +6,6 @@ inherited ScpCommanderForm: TScpCommanderForm
   Caption = 'ScpCommanderForm'
   ClientHeight = 670
   ClientWidth = 898
-  OldCreateOrder = True
-  PixelsPerInch = 96
   TextHeight = 13
   object Splitter: TSplitter [0]
     Left = 435

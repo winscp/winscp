@@ -1355,12 +1355,10 @@ object EditorForm: TEditorForm
     0000C0030000C0030000C0030000C0030000C0030000C0030000C0030000C003
     0000C0030000C0030000C0010000C0010000C0000000C0000000FFF80000}
   KeyPreview = True
-  OldCreateOrder = False
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnKeyDown = FormKeyDown
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 13
   object TopDock: TTBXDock
     Left = 0
@@ -2668,7 +2666,6 @@ object EditorForm: TEditorForm
       end>
     Left = 552
     Top = 56
-    Bitmap = {}
   end
   object EditorPopup: TTBXPopupMenu
     Images = EditorImages
@@ -3831,7 +3828,6 @@ object EditorForm: TEditorForm
       end>
     Left = 552
     Top = 136
-    Bitmap = {}
   end
   object EditorImages144: TPngImageList
     Height = 24
@@ -4995,7 +4991,6 @@ object EditorForm: TEditorForm
       end>
     Left = 552
     Top = 208
-    Bitmap = {}
   end
   object EditorImages192: TPngImageList
     Height = 32
@@ -6261,6 +6256,5 @@ object EditorForm: TEditorForm
       end>
     Left = 552
     Top = 272
-    Bitmap = {}
   end
 end

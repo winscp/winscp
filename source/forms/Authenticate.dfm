@@ -12,11 +12,9 @@ object AuthenticateForm: TAuthenticateForm
   Constraints.MinHeight = 200
   Constraints.MinWidth = 280
   ParentFont = True
-  OldCreateOrder = False
   Position = poOwnerFormCenter
   OnResize = FormResize
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 13
   object TopPanel: TPanel
     Left = 0

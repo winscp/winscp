@@ -10,7 +10,6 @@ object ProgressForm: TProgressForm
   ClientWidth = 360
   Color = clWindow
   ParentFont = True
-  OldCreateOrder = False
   PopupMode = pmAuto
   Position = poOwnerFormCenter
   OnHide = FormHide
@@ -18,7 +17,6 @@ object ProgressForm: TProgressForm
   DesignSize = (
     360
     291)
-  PixelsPerInch = 96
   TextHeight = 13
   object AnimationPaintBox: TPaintBox
     Left = 8
@@ -1095,7 +1093,6 @@ object ProgressForm: TProgressForm
       end>
     Left = 40
     Top = 240
-    Bitmap = {}
   end
   object ImageList120: TPngImageList
     Height = 20
@@ -1936,7 +1933,6 @@ object ProgressForm: TProgressForm
       end>
     Left = 128
     Top = 240
-    Bitmap = {}
   end
   object ImageList144: TPngImageList
     Height = 24
@@ -2838,7 +2834,6 @@ object ProgressForm: TProgressForm
       end>
     Left = 208
     Top = 240
-    Bitmap = {}
   end
   object ImageList192: TPngImageList
     Height = 32
@@ -3806,7 +3801,6 @@ object ProgressForm: TProgressForm
       end>
     Left = 288
     Top = 240
-    Bitmap = {}
   end
   object ApplicationEvents: TApplicationEvents
     Left = 128

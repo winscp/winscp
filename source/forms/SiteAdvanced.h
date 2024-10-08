@@ -21,6 +21,7 @@
 #include <SessionData.h>
 #include <PasTools.hpp>
 #include <GUITools.h>
+#include <System.ImageList.hpp>
 //----------------------------------------------------------------------------
 class TSiteAdvancedDialog : public TForm
 {

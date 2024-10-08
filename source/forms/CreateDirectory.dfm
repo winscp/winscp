@@ -10,14 +10,12 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
   ClientWidth = 337
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
     337
     253)
-  PixelsPerInch = 96
   TextHeight = 13
   object EditLabel: TLabel
     Left = 8

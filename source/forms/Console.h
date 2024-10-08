@@ -19,6 +19,7 @@
 #include <Vcl.Imaging.pngimage.hpp>
 #include <System.Actions.hpp>
 #include <GUITools.h>
+#include <System.ImageList.hpp>
 //----------------------------------------------------------------------------
 class TConsoleDialog : public TForm
 {

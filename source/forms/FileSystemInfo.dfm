@@ -10,13 +10,11 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   ClientWidth = 371
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
   OnShow = FormShow
   DesignSize = (
     371
     398)
-  PixelsPerInch = 96
   TextHeight = 13
   object CloseButton: TButton
     Left = 204
