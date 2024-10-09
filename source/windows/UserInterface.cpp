@@ -632,7 +632,7 @@ static void __fastcall ConvertMenu(TMenuItem * AItems, TTBCustomItem * Items)
         (AItem->OnClick == NULL) && DebugAlwaysTrue(AItem->Count == 0))
     {
       TTBXLabelItem * LabelItem = new TTBXLabelItem(Items->Owner);
-      // TTBXLabelItem has it's own Caption
+      // TTBXLabelItem has its own Caption
       LabelItem->Caption = AItem->Caption;
       LabelItem->SectionHeader = true;
       Item = LabelItem;
