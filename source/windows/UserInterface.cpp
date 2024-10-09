@@ -675,7 +675,6 @@ static void __fastcall ConvertMenu(TMenuItem * AItems, TTBCustomItem * Items)
       Item->Tag = AItem->Tag;
       Item->Visible = AItem->Visible;
 
-      // recurse is supported only for empty submenus (as used for custom commands)
       if (AItem->Count > 0)
       {
         ConvertMenu(AItem, Item);
