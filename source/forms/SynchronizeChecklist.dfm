@@ -1469,7 +1469,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       Height = 25
       Action = CalculateSizeAction
       Anchors = [akLeft, akTop, akRight]
+      Style = bsSplitButton
       TabOrder = 10
+      OnDropDownClick = CalculateSizeButtonDropDownClick
     end
     object MoveButton: TButton
       Left = 8
@@ -2096,6 +2098,12 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     end
     object Calculate1: TMenuItem
       Action = CalculateSizeAction
+      object Calculate3: TMenuItem
+        Action = CalculateSizeAction
+      end
+      object CalculateAll1: TMenuItem
+        Action = CalculateSizeAllAction
+      end
     end
     object TMenuItem
       Action = CustomCommandsAction
@@ -2156,10 +2164,12 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     end
     object CalculateSizeAction: TAction
       Caption = 'C&alculate'
+      ShortCut = 40973
       OnExecute = CalculateSizeActionExecute
     end
     object CalculateSizeAllAction: TAction
-      ShortCut = 49217
+      Caption = 'Calc&ulate All'
+      ShortCut = 57357
       OnExecute = CalculateSizeAllActionExecute
     end
     object MoveAction: TAction
@@ -3667,5 +3677,16 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       end>
     Left = 312
     Top = 416
+  end
+  object CalculateSizePopupMenu: TPopupMenu
+    Left = 88
+    Top = 336
+    object Calculate2: TMenuItem
+      Action = CalculateSizeAction
+      Default = True
+    end
+    object CalculateAll2: TMenuItem
+      Action = CalculateSizeAllAction
+    end
   end
 end

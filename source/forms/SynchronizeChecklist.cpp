@@ -1195,10 +1195,10 @@ void __fastcall TSynchronizeChecklistDialog::OkButtonClick(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::CalculateSizeActionExecute(TObject * /*Sender*/)
+void TSynchronizeChecklistDialog::CalculateSize(bool All)
 {
   TItemStates States;
-  if (!IsKeyPressed(VK_CONTROL))
+  if (!All)
   {
     States << isSelected;
   }
@@ -1224,10 +1224,14 @@ void __fastcall TSynchronizeChecklistDialog::CalculateSizeActionExecute(TObject 
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::CalculateSizeAllActionExecute(TObject * Sender)
+void __fastcall TSynchronizeChecklistDialog::CalculateSizeActionExecute(TObject *)
 {
-  DebugAssert(IsKeyPressed(VK_CONTROL));
-  CalculateSizeActionExecute(Sender);
+  CalculateSize(false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::CalculateSizeAllActionExecute(TObject *)
+{
+  CalculateSize(true);
 }
 //---------------------------------------------------------------------------
 TSynchronizeChecklistDialog::TSynchronizeMoveItems __fastcall TSynchronizeChecklistDialog::GetMoveItems()
@@ -1422,5 +1426,10 @@ void __fastcall TSynchronizeChecklistDialog::ListViewRecreate(TObject *)
     const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
     FChecklistToListViewMap.insert(std::make_pair(ChecklistItem, Item));
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::CalculateSizeButtonDropDownClick(TObject *)
+{
+  MenuPopup(CalculateSizePopupMenu, CalculateSizeButton);
 }
 //---------------------------------------------------------------------------

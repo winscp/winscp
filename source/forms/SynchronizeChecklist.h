@@ -69,6 +69,11 @@ __published:
   TAction *BrowseRemoteAction;
   TMenuItem *BrowseLocalDirectory1;
   TMenuItem *BrowseLocalDirectory2;
+  TMenuItem *Calculate3;
+  TMenuItem *CalculateAll1;
+  TPopupMenu *CalculateSizePopupMenu;
+  TMenuItem *Calculate2;
+  TMenuItem *CalculateAll2;
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall FormShow(TObject * Sender);
   void __fastcall StatusBarDrawPanel(TStatusBar *StatusBar,
@@ -108,6 +113,7 @@ __published:
   void __fastcall BrowseLocalActionExecute(TObject *Sender);
   void __fastcall BrowseRemoteActionExecute(TObject *Sender);
   void __fastcall ListViewRecreate(TObject *Sender);
+  void __fastcall CalculateSizeButtonDropDownClick(TObject *Sender);
 
 public:
   __fastcall TSynchronizeChecklistDialog(
@@ -184,6 +190,7 @@ protected:
   void __fastcall ListViewHintShow(TCMHintShow & HintShow);
   void __fastcall StatusBarHintShow(TCMHintShow & HintShow);
   DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
+  void CalculateSize(bool All);
 };
 //----------------------------------------------------------------------------
 #endif
