@@ -34,7 +34,6 @@
         <ILINK_LibraryPath>console\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
         <IncludePath>console\;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
         <IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
-        <LinkPackageStatics>rtl.lib</LinkPackageStatics>
         <Manifest_File>None</Manifest_File>
         <Multithreaded>true</Multithreaded>
         <NoVCL>true</NoVCL>
