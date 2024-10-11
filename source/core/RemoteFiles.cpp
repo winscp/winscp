@@ -2884,20 +2884,32 @@ __int64 __fastcall TSynchronizeChecklist::TItem::GetSize(TAction AAction) const
   }
   else
   {
-    switch (AAction)
-    {
-      case saUploadNew:
-      case saUploadUpdate:
-        return Local.Size;
+    return GetBaseSize(AAction);
+  }
+}
+//---------------------------------------------------------------------------
+__int64 __fastcall TSynchronizeChecklist::TItem::GetBaseSize() const
+{
+  return GetBaseSize(Action);
+}
+//---------------------------------------------------------------------------
+__int64 __fastcall TSynchronizeChecklist::TItem::GetBaseSize(TAction AAction) const
+{
+  switch (AAction)
+  {
+    case saUploadNew:
+    case saUploadUpdate:
+    case saDeleteLocal:
+      return Local.Size;
 
-      case saDownloadNew:
-      case saDownloadUpdate:
-        return Remote.Size;
+    case saDownloadNew:
+    case saDownloadUpdate:
+    case saDeleteRemote:
+      return Remote.Size;
 
-      default:
-        DebugFail();
-        return 0;
-    }
+    default:
+      DebugFail();
+      return 0;
   }
 }
 //---------------------------------------------------------------------------

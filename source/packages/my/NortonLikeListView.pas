@@ -92,6 +92,7 @@ type
       States: TItemStates): TListItem;
     procedure MakeProgressVisible(Item: TListItem);
     procedure FocusItem(Item: TListItem);
+    function IsItemVisible(Item: TListItem): Boolean;
 
     property ColProperties: TCustomListViewColProperties read FColProperties write FColProperties stored False;
 
@@ -1111,6 +1112,11 @@ begin
   end;
 
   Item.MakeVisible(False);
+end;
+
+function TCustomNortonLikeListView.IsItemVisible(Item: TListItem): Boolean;
+begin
+  Result := (ListView_IsItemVisible(Handle, Item.Index) <> 0);
 end;
 
 procedure TCustomNortonLikeListView.ChangeScale(M, D: Integer; isDpiChange: Boolean);

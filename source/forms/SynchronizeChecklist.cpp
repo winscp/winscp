@@ -20,6 +20,7 @@
 #include <TerminalManager.h>
 #include <System.IOUtils.hpp>
 #include <System.StrUtils.hpp>
+#include <algorithm>
 //---------------------------------------------------------------------
 #pragma link "IEListView"
 #pragma link "NortonLikeListView"
@@ -70,6 +71,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FChangingItemIgnore = false;
   FChangingItemMass = false;
   FSynchronizing = false;
+  FMoveCandidatesValidForSort = MaxInt;
   FDirectories = 0;
 
   SelectScaledImageList(ActionImages);
@@ -85,6 +87,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   // button visibility cannot be bound to action visibility
   CustomCommandsButton2->Visible = CustomCommandsAction->Visible;
   MenuButton(CustomCommandsButton2);
+  MenuButton(ToolsMenuButton);
 }
 //---------------------------------------------------------------------
 __fastcall TSynchronizeChecklistDialog::~TSynchronizeChecklistDialog()
@@ -199,6 +202,7 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
   BrowseRemoteAction->Enabled = (ListView->SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteLocal);
 
   SelectAllAction->Enabled = (ListView->SelCount < ListView->Items->Count) && !FSynchronizing;
+  FindMoveCandidateAction->Enabled = (ListView->Items->Count > 0) && !FSynchronizing;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSynchronizeChecklistDialog::GetWindowParams(UnicodeString & WindowParams)
@@ -886,6 +890,11 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarMouseDown(
   }
 }
 //---------------------------------------------------------------------------
+TIEListViewColProperties * TSynchronizeChecklistDialog::GetColProperties()
+{
+  return dynamic_cast<TIEListViewColProperties *>(ListView->ColProperties);
+}
+//---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::ListViewCompare(
   TObject * /*Sender*/, TListItem * Item1, TListItem * Item2, int /*Data*/,
   int & Compare)
@@ -893,9 +902,7 @@ void __fastcall TSynchronizeChecklistDialog::ListViewCompare(
   const TSynchronizeChecklist::TItem * ChecklistItem1 = GetChecklistItem(Item1);
   const TSynchronizeChecklist::TItem * ChecklistItem2 = GetChecklistItem(Item2);
 
-  TIEListViewColProperties * ColProperties =
-    dynamic_cast<TIEListViewColProperties *>(ListView->ColProperties);
-
+  TIEListViewColProperties * ColProperties = GetColProperties();
   switch (ColProperties->SortColumn)
   {
     case 0: // name
@@ -1241,6 +1248,28 @@ void __fastcall TSynchronizeChecklistDialog::CalculateSizeAllActionExecute(TObje
   CalculateSize(true);
 }
 //---------------------------------------------------------------------------
+TSynchronizeChecklist::TAction TSynchronizeChecklistDialog::GetOppositeMoveAction(TSynchronizeChecklist::TAction Action1)
+{
+  switch (Action1)
+  {
+    case TSynchronizeChecklist::saUploadNew:
+      return TSynchronizeChecklist::saDeleteRemote;
+    case TSynchronizeChecklist::saDownloadNew:
+      return TSynchronizeChecklist::saDeleteLocal;
+    case TSynchronizeChecklist::saDeleteRemote:
+      return TSynchronizeChecklist::saUploadNew;
+    case TSynchronizeChecklist::saDeleteLocal:
+      return TSynchronizeChecklist::saDownloadNew;
+    default:
+      return TSynchronizeChecklist::saNone;
+  }
+}
+//---------------------------------------------------------------------------
+bool TSynchronizeChecklistDialog::IsTransferNewAction(TSynchronizeChecklist::TAction Action)
+{
+  return (Action == TSynchronizeChecklist::saUploadNew) || (Action == TSynchronizeChecklist::saDownloadNew);
+}
+//---------------------------------------------------------------------------
 TSynchronizeChecklistDialog::TSynchronizeMoveItems __fastcall TSynchronizeChecklistDialog::GetMoveItems()
 {
   if ((ListView->SelCount != 2) || DebugAlwaysFalse(FSynchronizing))
@@ -1263,21 +1292,16 @@ TSynchronizeChecklistDialog::TSynchronizeMoveItems __fastcall TSynchronizeCheckl
       TSynchronizeChecklist::TAction Action1 = GetChecklistItemAction(ChecklistItem1);
       TSynchronizeChecklist::TAction Action2 = GetChecklistItemAction(ChecklistItem2);
 
-      if ((Action1 == TSynchronizeChecklist::saUploadNew) && (Action2 == TSynchronizeChecklist::saDeleteRemote))
+      if (GetOppositeMoveAction(Action1) == Action2)
       {
-        return TSynchronizeMoveItems(ChecklistItem1, ChecklistItem2);
-      }
-      else if ((Action1 == TSynchronizeChecklist::saDownloadNew) && (Action2 == TSynchronizeChecklist::saDeleteLocal))
-      {
-        return TSynchronizeMoveItems(ChecklistItem1, ChecklistItem2);
-      }
-      else if ((Action1 == TSynchronizeChecklist::saDeleteRemote) && (Action2 == TSynchronizeChecklist::saUploadNew))
-      {
-        return TSynchronizeMoveItems(ChecklistItem2, ChecklistItem1);
-      }
-      else if ((Action1 == TSynchronizeChecklist::saDeleteLocal) && (Action2 == TSynchronizeChecklist::saDownloadNew))
-      {
-        return TSynchronizeMoveItems(ChecklistItem2, ChecklistItem1);
+        if (IsTransferNewAction(Action1))
+        {
+          return TSynchronizeMoveItems(ChecklistItem1, ChecklistItem2);
+        }
+        else
+        {
+          return TSynchronizeMoveItems(ChecklistItem2, ChecklistItem1);
+        }
       }
       else
       {
@@ -1300,7 +1324,22 @@ void __fastcall TSynchronizeChecklistDialog::DeleteItem(TListItem * Item)
   FChecklistToListViewMap.erase(ChecklistItem);
 
   FChecklist->Delete(ChecklistItem);
-  ListView->Items->Delete(Item->Index);
+  int Index = Item->Index;
+  if (Item->Focused)
+  {
+    int FocusIndex = Index;
+    if (FocusIndex == ListView->Items->Count - 1)
+    {
+      FocusIndex--;
+    }
+    else
+    {
+      FocusIndex++;
+    }
+    ListView->ItemFocused = ListView->Items->Item[FocusIndex];
+  }
+  ListView->Items->Delete(Index);
+  FMoveCandidatesValidForSort = MaxInt; // can be optimized
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::MoveActionExecute(TObject *)
@@ -1436,8 +1475,223 @@ void __fastcall TSynchronizeChecklistDialog::ListViewRecreate(TObject *)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::CalculateSizeButtonDropDownClick(TObject *)
+void __fastcall TSynchronizeChecklistDialog::ToolsMenuButtonClick(TObject *)
 {
-  MenuPopup(CalculateSizePopupMenu, CalculateSizeButton);
+  MenuPopup(ToolsPopupMenu, ToolsMenuButton);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::FindMoveCandidateActionExecute(TObject *)
+{
+  TIEListViewColProperties * ColProperties = GetColProperties();
+  int Sort = (ColProperties->SortAscending ? 1 : -1) * ColProperties->SortColumn;
+
+  if (FMoveCandidatesValidForSort != Sort)
+  {
+    FMoveCandidatesFileName.clear();
+    FMoveCandidatesSize.clear();
+    for (int Index = 0; Index < ListView->Items->Count; Index++)
+    {
+      const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(ListView->Items->Item[Index]);
+      if (ChecklistItem->IsLocalOnly() || ChecklistItem->IsRemoteOnly())
+      {
+        if (ChecklistItem->IsDirectory)
+        {
+          FMoveCandidatesFileName[ChecklistItem->GetFileName().LowerCase()].push_back(ChecklistItem);
+        }
+        else
+        {
+          FMoveCandidatesSize[ChecklistItem->GetBaseSize()].push_back(ChecklistItem);
+        }
+      }
+    }
+
+    FMoveCandidatesValidForSort = Sort;
+  }
+
+  bool Found = false;
+  if (!FMoveCandidatesFileName.empty() || !FMoveCandidatesSize.empty())
+  {
+    TListItem * ItemFocused = ListView->ItemFocused;
+    TListItem * Item;
+    if (ItemFocused != NULL)
+    {
+      Item = ItemFocused;
+    }
+    // Can we have a selection without focus?
+    else if (DebugAlwaysFalse(ListView->Selected != NULL))
+    {
+      Item = ListView->Selected;
+    }
+    else if (ListView->Items->Count > 0)
+    {
+      Item = ListView->Items->Item[0];
+    }
+    else
+    {
+      DebugFail(); // the action is disabled when there are no items
+      Item = NULL;
+    }
+
+    TListItem * FirstItem = NULL;
+
+    while (!Found && (Item != NULL))
+    {
+      const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
+      TSynchronizeChecklist::TAction OppositeAction = GetOppositeMoveAction(ChecklistItem->Action);
+      if ((OppositeAction != TSynchronizeChecklist::saNone) &&
+          // For focused item, we search pair even if the focused item is "delete" action,
+          // but when searching the next items, consider "transfer" actions only
+          ((Item == ItemFocused) || IsTransferNewAction(ChecklistItem->Action)))
+      {
+        TChecklistItems Candidates;
+        if (ChecklistItem->IsDirectory)
+        {
+          UnicodeString FileName = ChecklistItem->GetFileName().LowerCase();
+          TMoveCandidatesFileNameMap::const_iterator I = FMoveCandidatesFileName.find(FileName);
+          if (I != FMoveCandidatesFileName.end())
+          {
+            const TChecklistItems & NameCandidates = I->second;
+            for (size_t I = 0; I < NameCandidates.size(); I++)
+            {
+              const TSynchronizeChecklist::TItem * ChecklistItem2 = NameCandidates[I];
+              if ((ChecklistItem2->Action == OppositeAction) &&
+                  DebugAlwaysTrue(ChecklistItem2->IsDirectory))
+              {
+                Candidates.push_back(ChecklistItem2);
+              }
+            }
+          }
+        }
+        else
+        {
+          __int64 Size = ChecklistItem->GetBaseSize();
+          TMoveCandidatesSizeMap::const_iterator I = FMoveCandidatesSize.find(Size);
+          if (I != FMoveCandidatesSize.end())
+          {
+            UnicodeString FileName = ChecklistItem->GetFileName();
+            const TChecklistItems & SizeCandidates = I->second;
+            for (size_t I = 0; I < SizeCandidates.size(); I++)
+            {
+              const TSynchronizeChecklist::TItem * ChecklistItem2 = SizeCandidates[I];
+              if ((ChecklistItem2->Action == OppositeAction) &&
+                  DebugAlwaysTrue(!ChecklistItem2->IsDirectory))
+              {
+                bool IsCandidate;
+                // in addition to the same size, also the same file filename (although possibly different directory)
+                if (SameText(FileName, ChecklistItem2->GetFileName()))
+                {
+                  IsCandidate = true;
+                }
+                // or different filename but the same directory (in addition to the same size)
+                else if ((ChecklistItem->Action == TSynchronizeChecklist::saDeleteLocal) ||
+                         (ChecklistItem->Action == TSynchronizeChecklist::saDownloadNew))
+                {
+                  IsCandidate = SamePaths(ChecklistItem->Local.Directory, ChecklistItem2->Local.Directory);
+                }
+                else if ((ChecklistItem->Action == TSynchronizeChecklist::saDeleteRemote) ||
+                         (ChecklistItem->Action == TSynchronizeChecklist::saUploadNew))
+                {
+                  IsCandidate = UnixSamePath(ChecklistItem->Remote.Directory, ChecklistItem2->Remote.Directory);
+                }
+                else
+                {
+                  DebugFail();
+                  IsCandidate = false;
+                }
+
+                if (IsCandidate)
+                {
+                  Candidates.push_back(ChecklistItem2);
+                }
+              }
+            }
+          }
+        }
+
+        if (!Candidates.empty())
+        {
+          const TSynchronizeChecklist::TItem * ChecklistItem2 = Candidates[0];
+          if ((FirstItem == NULL) && Item->Selected && (ListView->SelCount == 2))
+          {
+            TListItem * NextSelected = ListView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
+            if (NextSelected == NULL)
+            {
+              NextSelected = ListView->Selected; // Shorthand for GetNextItem(NULL, sdAll, isSelected)
+            }
+            TChecklistItems::const_iterator I = std::find(Candidates.begin(), Candidates.end(), GetChecklistItem(NextSelected));
+            if (I < Candidates.end() - 1)
+            {
+              ChecklistItem2 = *(I + 1);
+            }
+            else if (I == Candidates.end() - 1)
+            {
+              ChecklistItem2 = NULL;
+            }
+          }
+
+          if (ChecklistItem2 != NULL)
+          {
+            TListItem * Item2 = FChecklistToListViewMap[ChecklistItem2];
+
+            for (int Index = 0; Index < ListView->Items->Count; Index++)
+            {
+              TListItem * ItemI = ListView->Items->Item[Index];
+              ItemI->Selected = (ItemI == Item) || (ItemI == Item2);
+            }
+            ListView->ItemFocused = Item;
+
+            // IsItemVisible returns true even on partial visibility,
+            // so it is still worth trying MakeVisible to make them completelly visible
+            bool FlickerExpected = !ListView->IsItemVisible(Item) || !ListView->IsItemVisible(Item2);
+            if (FlickerExpected)
+            {
+              // does not seem to have any effect
+              DisableRedraw(ListView);
+            }
+            try
+            {
+              // even if the item turns to be invisible in the end, it at least scrolls the view towards it
+              Item2->MakeVisible(false);
+              // Should do minimal scroll needed to make the first item whole visible, but not hiding the second
+              Item->MakeVisible(false);
+            }
+            __finally
+            {
+              if (FlickerExpected)
+              {
+                EnableRedraw(ListView);
+              }
+            }
+
+            Found = true;
+          }
+        }
+      }
+
+      // Allow going through the first item twice, to make sure we roll over its previous pair candidates
+      if (Item == FirstItem)
+      {
+        Item = NULL;
+      }
+      else
+      {
+        if (FirstItem == NULL)
+        {
+          FirstItem = Item;
+        }
+
+        Item = ListView->GetNextItem(Item, sdAll, TItemStates());
+        if (Item == NULL)
+        {
+          Item = ListView->Items->Item[0];
+        }
+      }
+    }
+  }
+
+  if (!Found)
+  {
+    MessageBeep(MB_ICONHAND);
+  }
 }
 //---------------------------------------------------------------------------

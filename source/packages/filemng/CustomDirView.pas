@@ -318,7 +318,6 @@ type
     function ItemIsFile(Item: TListItem): Boolean; virtual; abstract;
     function ItemMatchesFilter(Item: TListItem; const Filter: TFileFilter): Boolean; virtual; abstract;
     function ItemOverlayIndexes(Item: TListItem): Word; virtual;
-    function IsItemVisible(Item: TListItem): Boolean;
     procedure LimitHistorySize;
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     procedure PathChanged; virtual;
@@ -1662,11 +1661,6 @@ begin
   Result := oiNoOverlay;
   if Assigned(OnGetOverlay) then
     OnGetOverlay(Self, Item, Result);
-end;
-
-function TCustomDirView.IsItemVisible(Item: TListItem): Boolean;
-begin
-  Result := (ListView_IsItemVisible(Handle, Item.Index) <> 0);
 end;
 
 procedure TCustomDirView.WMKeyDown(var Message: TWMKeyDown);

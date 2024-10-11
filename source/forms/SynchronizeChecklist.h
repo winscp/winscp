@@ -55,7 +55,7 @@ __published:
   TPngImageList *ActionImages192;
   TAction *CalculateSizeAction;
   TMenuItem *Calculate1;
-  TButton *CalculateSizeButton;
+  TButton *ToolsMenuButton;
   TAction *CalculateSizeAllAction;
   TAction *MoveAction;
   TButton *MoveButton;
@@ -69,11 +69,14 @@ __published:
   TAction *BrowseRemoteAction;
   TMenuItem *BrowseLocalDirectory1;
   TMenuItem *BrowseLocalDirectory2;
+  TAction *FindMoveCandidateAction;
   TMenuItem *Calculate3;
   TMenuItem *CalculateAll1;
-  TPopupMenu *CalculateSizePopupMenu;
+  TPopupMenu *ToolsPopupMenu;
   TMenuItem *Calculate2;
   TMenuItem *CalculateAll2;
+  TMenuItem *N4;
+  TMenuItem *FindMoveCandidate1;
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall FormShow(TObject * Sender);
   void __fastcall StatusBarDrawPanel(TStatusBar *StatusBar,
@@ -113,7 +116,8 @@ __published:
   void __fastcall BrowseLocalActionExecute(TObject *Sender);
   void __fastcall BrowseRemoteActionExecute(TObject *Sender);
   void __fastcall ListViewRecreate(TObject *Sender);
-  void __fastcall CalculateSizeButtonDropDownClick(TObject *Sender);
+  void __fastcall ToolsMenuButtonClick(TObject *Sender);
+  void __fastcall FindMoveCandidateActionExecute(TObject *Sender);
 
 public:
   __fastcall TSynchronizeChecklistDialog(
@@ -154,6 +158,12 @@ protected:
   std::unique_ptr<Exception> FException;
   std::map<const TSynchronizeChecklist::TItem *, TListItem *> FChecklistToListViewMap;
   int FDirectories;
+  int FMoveCandidatesValidForSort;
+  typedef std::vector<const TSynchronizeChecklist::TItem *> TChecklistItems;
+  typedef std::map<UnicodeString, TChecklistItems> TMoveCandidatesFileNameMap;
+  TMoveCandidatesFileNameMap FMoveCandidatesFileName;
+  typedef std::map<__int64, TChecklistItems> TMoveCandidatesSizeMap;
+  TMoveCandidatesSizeMap FMoveCandidatesSize;
 
   void __fastcall UpdateControls();
   void __fastcall UpdateCaption();
@@ -192,6 +202,9 @@ protected:
   void __fastcall StatusBarHintShow(TCMHintShow & HintShow);
   DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
   void CalculateSize(bool All);
+  TIEListViewColProperties * GetColProperties();
+  TSynchronizeChecklist::TAction GetOppositeMoveAction(TSynchronizeChecklist::TAction Action1);
+  bool IsTransferNewAction(TSynchronizeChecklist::TAction Action);
 };
 //----------------------------------------------------------------------------
 #endif

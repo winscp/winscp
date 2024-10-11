@@ -48,6 +48,20 @@ static int __fastcall GetColumnTextWidth(TListView * ListView, int ColumnPadding
     ListView->Canvas->TextExtent(Text).Width;
 }
 //---------------------------------------------------------------------------
+void DisableRedraw(TWinControl * Control)
+{
+  SendMessage(Control->Handle, WM_SETREDRAW, false, 0);
+}
+//---------------------------------------------------------------------------
+void EnableRedraw(TWinControl * Control)
+{
+  SendMessage(Control->Handle, WM_SETREDRAW, true, 0);
+  // As recommended by documentation for WM_SETREDRAW.
+  // Without this, session list on Import dialog stops working after the list is reloaded while visible
+  // (i.e. when chaing import source)
+  RedrawWindow(Control->Handle, NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);
+}
+//---------------------------------------------------------------------------
 void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrinkIndex)
 {
   // Preallocate handle to precreate columns, otherwise our changes may get
@@ -57,7 +71,7 @@ void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrin
   // what may cause a flicker of the currently focused window title.
   ListView->HandleNeeded();
 
-  SendMessage(ListView->Handle, WM_SETREDRAW, false, 0);
+  DisableRedraw(ListView);
 
   try
   {
@@ -198,11 +212,7 @@ void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrin
   }
   __finally
   {
-    SendMessage(ListView->Handle, WM_SETREDRAW, true, 0);
-    // As recommended by documentation for WM_SETREDRAW.
-    // Without this, session list on Import dialog stops working after the list is reloaded while visible
-    // (i.e. when chaing import source)
-    RedrawWindow(ListView->Handle, NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);
+    EnableRedraw(ListView);
   }
 }
 //---------------------------------------------------------------------------

@@ -1445,7 +1445,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     end
     object CustomCommandsButton2: TButton
       Left = 8
-      Top = 353
+      Top = 322
       Width = 108
       Height = 25
       Action = CustomCommandsAction
@@ -1462,16 +1462,15 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 7
     end
-    object CalculateSizeButton: TButton
+    object ToolsMenuButton: TButton
       Left = 8
-      Top = 322
+      Top = 368
       Width = 108
       Height = 25
-      Action = CalculateSizeAction
       Anchors = [akLeft, akTop, akRight]
-      Style = bsSplitButton
+      Caption = '&Tools'
       TabOrder = 10
-      OnDropDownClick = CalculateSizeButtonDropDownClick
+      OnClick = ToolsMenuButtonClick
     end
     object MoveButton: TButton
       Left = 8
@@ -2192,6 +2191,11 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     object BrowseRemoteAction: TAction
       Caption = 'Browse &Remote Directory'
       OnExecute = BrowseRemoteActionExecute
+    end
+    object FindMoveCandidateAction: TAction
+      Caption = '&Find Move Candidate'
+      ShortCut = 49269
+      OnExecute = FindMoveCandidateActionExecute
     end
   end
   object ActionImages120: TPngImageList
@@ -3678,15 +3682,20 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     Left = 312
     Top = 416
   end
-  object CalculateSizePopupMenu: TPopupMenu
+  object ToolsPopupMenu: TPopupMenu
     Left = 88
     Top = 336
     object Calculate2: TMenuItem
       Action = CalculateSizeAction
-      Default = True
     end
     object CalculateAll2: TMenuItem
       Action = CalculateSizeAllAction
+    end
+    object N4: TMenuItem
+      Caption = '-'
+    end
+    object FindMoveCandidate1: TMenuItem
+      Action = FindMoveCandidateAction
     end
   end
 end
