@@ -153,6 +153,7 @@ protected:
   bool FSynchronizing;
   std::unique_ptr<Exception> FException;
   std::map<const TSynchronizeChecklist::TItem *, TListItem *> FChecklistToListViewMap;
+  int FDirectories;
 
   void __fastcall UpdateControls();
   void __fastcall UpdateCaption();

@@ -70,6 +70,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FChangingItemIgnore = false;
   FChangingItemMass = false;
   FSynchronizing = false;
+  FDirectories = 0;
 
   SelectScaledImageList(ActionImages);
 
@@ -191,6 +192,7 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
   ReverseAction->Enabled = (ListView->SelCount > 0) && DebugAlwaysTrue(!FSynchronizing);
   MoveAction->Enabled = (GetMoveItems() != TSynchronizeMoveItems());
   CalculateSizeAction->Enabled = (ListView->SelCount > 0) && AnyDirectory && DebugAlwaysTrue(!FSynchronizing);
+  CalculateSizeAllAction->Enabled = (FDirectories > 0) && !FSynchronizing;
   TSynchronizeChecklist::TAction SelectedItemAction =
     (ListView->SelCount == 1) ? GetChecklistItemAction(GetChecklistItem(ListView->Selected)) : TSynchronizeChecklist::saNone;
   BrowseLocalAction->Enabled = (ListView->SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteRemote);
@@ -369,6 +371,10 @@ void __fastcall TSynchronizeChecklistDialog::CountItemTotal(const TSynchronizeCh
   FTotals[0] += Factor;
   int ActionIndex = int(GetChecklistItemAction(ChecklistItem));
   FTotals[ActionIndex] += Factor;
+  if (ChecklistItem->IsDirectory)
+  {
+    FDirectories += Factor;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::LoadList()
@@ -376,6 +382,7 @@ void __fastcall TSynchronizeChecklistDialog::LoadList()
   memset(&FTotals, 0, sizeof(FTotals));
   memset(&FChecked, 0, sizeof(FChecked));
   memset(&FCheckedSize, 0, sizeof(FCheckedSize));
+  FDirectories = 0;
 
   ListView->Items->BeginUpdate();
   try
@@ -1332,6 +1339,7 @@ void __fastcall TSynchronizeChecklistDialog::MoveActionExecute(TObject *)
 
   DeleteItem(Item1);
   DeleteItem(Item2);
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::CheckDirectory(bool Check)
