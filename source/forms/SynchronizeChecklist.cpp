@@ -1534,11 +1534,12 @@ void __fastcall TSynchronizeChecklistDialog::FindMoveCandidateActionExecute(TObj
     while (!Found && (Item != NULL))
     {
       const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
-      TSynchronizeChecklist::TAction OppositeAction = GetOppositeMoveAction(ChecklistItem->Action);
+      TSynchronizeChecklist::TAction Action = GetChecklistItemAction(ChecklistItem);
+      TSynchronizeChecklist::TAction OppositeAction = GetOppositeMoveAction(Action);
       if ((OppositeAction != TSynchronizeChecklist::saNone) &&
           // For focused item, we search pair even if the focused item is "delete" action,
           // but when searching the next items, consider "transfer" actions only
-          ((Item == ItemFocused) || IsTransferNewAction(ChecklistItem->Action)))
+          ((Item == ItemFocused) || IsTransferNewAction(Action)))
       {
         TChecklistItems Candidates;
         if (ChecklistItem->IsDirectory)
@@ -1551,7 +1552,7 @@ void __fastcall TSynchronizeChecklistDialog::FindMoveCandidateActionExecute(TObj
             for (size_t I = 0; I < NameCandidates.size(); I++)
             {
               const TSynchronizeChecklist::TItem * ChecklistItem2 = NameCandidates[I];
-              if ((ChecklistItem2->Action == OppositeAction) &&
+              if ((GetChecklistItemAction(ChecklistItem2) == OppositeAction) &&
                   DebugAlwaysTrue(ChecklistItem2->IsDirectory))
               {
                 Candidates.push_back(ChecklistItem2);
@@ -1570,7 +1571,7 @@ void __fastcall TSynchronizeChecklistDialog::FindMoveCandidateActionExecute(TObj
             for (size_t I = 0; I < SizeCandidates.size(); I++)
             {
               const TSynchronizeChecklist::TItem * ChecklistItem2 = SizeCandidates[I];
-              if ((ChecklistItem2->Action == OppositeAction) &&
+              if ((GetChecklistItemAction(ChecklistItem2) == OppositeAction) &&
                   DebugAlwaysTrue(!ChecklistItem2->IsDirectory))
               {
                 bool IsCandidate;
@@ -1580,13 +1581,13 @@ void __fastcall TSynchronizeChecklistDialog::FindMoveCandidateActionExecute(TObj
                   IsCandidate = true;
                 }
                 // or different filename but the same directory (in addition to the same size)
-                else if ((ChecklistItem->Action == TSynchronizeChecklist::saDeleteLocal) ||
-                         (ChecklistItem->Action == TSynchronizeChecklist::saDownloadNew))
+                else if ((Action == TSynchronizeChecklist::saDeleteLocal) ||
+                         (Action == TSynchronizeChecklist::saDownloadNew))
                 {
                   IsCandidate = SamePaths(ChecklistItem->Local.Directory, ChecklistItem2->Local.Directory);
                 }
-                else if ((ChecklistItem->Action == TSynchronizeChecklist::saDeleteRemote) ||
-                         (ChecklistItem->Action == TSynchronizeChecklist::saUploadNew))
+                else if ((Action == TSynchronizeChecklist::saDeleteRemote) ||
+                         (Action == TSynchronizeChecklist::saUploadNew))
                 {
                   IsCandidate = UnixSamePath(ChecklistItem->Remote.Directory, ChecklistItem2->Remote.Directory);
                 }
