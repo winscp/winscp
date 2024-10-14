@@ -195,7 +195,7 @@ protected:
   void __fastcall CountItemTotal(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);
   typedef std::pair<const TSynchronizeChecklist::TItem *, const TSynchronizeChecklist::TItem *> TSynchronizeMoveItems;
   TSynchronizeMoveItems __fastcall GetMoveItems();
-  void __fastcall DeleteItem(TListItem * Item);
+  void __fastcall DeleteItem(const TSynchronizeChecklist::TItem * ChecklistItem);
   void __fastcall CheckDirectory(bool Check);
   void __fastcall DoBrowse(TOperationSide Side);
   void __fastcall ListViewHintShow(TCMHintShow & HintShow);

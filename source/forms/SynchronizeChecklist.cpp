@@ -1311,9 +1311,9 @@ TSynchronizeChecklistDialog::TSynchronizeMoveItems __fastcall TSynchronizeCheckl
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::DeleteItem(TListItem * Item)
+void __fastcall TSynchronizeChecklistDialog::DeleteItem(const TSynchronizeChecklist::TItem * ChecklistItem)
 {
-  const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
+  TListItem * Item = FChecklistToListViewMap[ChecklistItem];
   CountItemTotal(ChecklistItem, -1);
   if (Item->Checked)
   {
@@ -1373,11 +1373,8 @@ void __fastcall TSynchronizeChecklistDialog::MoveActionExecute(TObject *)
 
   FOnSynchronizeMove(Side, FileName, NewFileName, RemoteFile);
 
-  TListItem * Item1 = DebugNotNull(ListView->FindData(0, const_cast<TSynchronizeChecklist::TItem *>(MoveItems.first), true, false));
-  TListItem * Item2 = DebugNotNull(ListView->FindData(0, const_cast<TSynchronizeChecklist::TItem *>(MoveItems.second), true, false));
-
-  DeleteItem(Item1);
-  DeleteItem(Item2);
+  DeleteItem(MoveItems.first);
+  DeleteItem(MoveItems.second);
   UpdateControls();
 }
 //---------------------------------------------------------------------------
