@@ -6422,7 +6422,7 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeMove(
   }
   else if (DebugAlwaysTrue(Side == osLocal))
   {
-    if (!MoveFile(FileName.c_str(), NewFileName.c_str()))
+    if (!MoveFile(ApiPath(FileName).c_str(), ApiPath(NewFileName).c_str()))
     {
       throw EOSExtException(FMTLOAD(RENAME_FILE_ERROR, (FileName, NewFileName)));
     }
