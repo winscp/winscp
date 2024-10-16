@@ -1249,7 +1249,7 @@ end;
 
 function TDriveView.NodePathExists(Node: TTreeNode): Boolean;
 begin
-  Result := DirectoryExists(NodePathName(Node));
+  Result := DirectoryExists(ApiPath(NodePathName(Node)));
 end;
 
 function TDriveView.CanEdit(Node: TTreeNode): Boolean;
@@ -1401,7 +1401,7 @@ begin
   {Create the drive nodes:}
   RefreshRootNodes(dsDisplayName or dvdsFloppy);
   {Set the initial directory:}
-  if (Length(FDirectory) > 0) and DirectoryExists(FDirectory) then
+  if (Length(FDirectory) > 0) and DirectoryExists(ApiPath(FDirectory)) then
     Directory := FDirectory;
 
   FCreating := False;
@@ -1542,7 +1542,7 @@ begin
 
           if DriveReady then
           begin
-            if not DirectoryExists(NewDir) then
+            if not DirectoryExists(ApiPath(NewDir)) then
             begin
               ValidateDirectory(GetDriveStatus(Drive).RootNode);
               Exit;
@@ -1980,7 +1980,7 @@ var
       if (not Assigned(Result)) and (not ExistingOnly) then
       begin
         ParentPath := NodePath(ParentNode);
-        if DirectoryExists(IncludeTrailingBackslash(ParentPath) + Path) then
+        if DirectoryExists(ApiPath(IncludeTrailingBackslash(ParentPath) + Path)) then
         begin
           SubPath := IncludeTrailingBackslash(ParentPath) + ExcludeTrailingBackslash(ExtractFirstName(Path));
           if FindFirstSubDir(SubPath, SRec) then
@@ -2268,7 +2268,7 @@ begin
      ((Selected = Node) or Selected.HasAsParent(Node)) then
   begin
     ValidNode := Node.Parent;
-    while (not DirectoryExists(NodePathName(ValidNode))) and Assigned(ValidNode.Parent) do
+    while (not NodePathExists(ValidNode)) and Assigned(ValidNode.Parent) do
       ValidNode := ValidNode.Parent;
     Selected := ValidNode;
   end;
@@ -2301,13 +2301,13 @@ begin {CallBackValidateDir}
   ScanDirInfo := PScanDirInfo(Data);
 
   {Check, if directory still exists: (but not with root directory) }
-  if Assigned(Node.Parent) and (ScanDirInfo^.StartNode = Node) then
-    if not DirectoryExists(NodePathName(Node)) then
-    begin
-      DeleteNode(Node);
-      Node := nil;
-      Exit;
-    end;
+  if Assigned(Node.Parent) and (ScanDirInfo^.StartNode = Node) and
+     (not NodePathExists(Node)) then
+  begin
+    DeleteNode(Node);
+    Node := nil;
+    Exit;
+  end;
 
   WorkNode := Node.GetFirstChild;
 
