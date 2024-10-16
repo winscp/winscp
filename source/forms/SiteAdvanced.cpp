@@ -776,7 +776,7 @@ void __fastcall TSiteAdvancedDialog::UpdateNavigationTree()
         {
           if (Indented)
           {
-            if (PrevNode->Level == 0)
+            if (PrevNode->Parent == NULL)
             {
               Node = PrevNode->getFirstChild();
               if (Node == NULL)
@@ -795,7 +795,7 @@ void __fastcall TSiteAdvancedDialog::UpdateNavigationTree()
           }
           else
           {
-            if (PrevNode->Level == 0)
+            if (PrevNode->Parent == NULL)
             {
               // delete all excess children of previous top level node
               while ((Node = PrevNode->GetNext()) != PrevNode->getNextSibling())

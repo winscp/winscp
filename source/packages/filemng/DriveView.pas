@@ -1216,16 +1216,17 @@ begin
     raise ENodeNotAssigned.Create(Format(ErrorNodeNA, ['GetDirPath']));
 
   Result := GetDirName(Node);
-  ParentNode := Node.Parent;
+  Node := Node.Parent;
 
-  while (ParentNode <> nil) and (ParentNode.Level >= 0) do
+  while Assigned(Node) do
   begin
-    if ParentNode.Level > 0 then
-      Result := GetDirName(ParentNode) + '\' + Result
+    ParentNode := Node.Parent;
+    if Assigned(ParentNode) then
+      Result := GetDirName(Node) + '\' + Result
     else
-      Result := GetDirName(ParentNode) + Result;
+      Result := GetDirName(Node) + Result;
 
-    ParentNode := ParentNode.Parent;
+    Node := ParentNode;
   end;
 
   if IsRootPath(Result) then
@@ -1356,7 +1357,7 @@ begin
   Drive := GetDriveToNode(Node);
   if Node.HasChildren then
   begin
-    if (Node.Level = 0) and
+    if (not Assigned(Node.Parent)) and
        (not GetDriveStatus(Drive).Scanned) and
        DriveInfo.IsFixedDrive(Drive) then
     begin
@@ -1594,7 +1595,7 @@ begin
   begin
     NodePath := NodePathName(Node);
     Drive := DriveInfo.GetDriveKey(NodePath);
-    if Node.Level = 0 then
+    if not Assigned(Node.Parent) then
     begin
       with DriveInfo.Get(Drive) do
       begin
@@ -1835,7 +1836,7 @@ begin
   NodeData.DirName := SRec.Name;
   NodeData.FIsRecycleBin :=
     (SRec.Attr and faSysFile <> 0) and
-    (ParentNode.Level = 0) and
+    (not Assigned(ParentNode.Parent)) and
     (SameText(SRec.Name, 'RECYCLED') or
      SameText(SRec.Name, 'RECYCLER') or
      SameText(SRec.Name, '$RECYCLE.BIN'));
@@ -1976,21 +1977,22 @@ var
       // Factored out of DoSearchSubDirs is remnant of Bug 956 superceded by Bug 1320
       Result := DoSearchSubDirs(ParentNode, Path, Level);
 
-      ParentPath := NodePath(ParentNode);
-      if (not Assigned(Result)) and
-         DirectoryExists(IncludeTrailingBackslash(ParentPath) + Path) and
-         (not ExistingOnly) then
+      if (not Assigned(Result)) and (not ExistingOnly) then
       begin
-        SubPath := IncludeTrailingBackslash(ParentPath) + ExcludeTrailingBackslash(ExtractFirstName(Path));
-        if FindFirstSubDir(SubPath, SRec) then
+        ParentPath := NodePath(ParentNode);
+        if DirectoryExists(IncludeTrailingBackslash(ParentPath) + Path) then
         begin
-          AddChildNode(ParentNode, ParentPath, SRec);
-          if Assigned(ParentNodeData.DelayedExclude) then
-            ParentNodeData.DelayedExclude.Add(SRec.Name);
-          SortChildren(ParentNode, False);
-          FindClose(SRec);
+          SubPath := IncludeTrailingBackslash(ParentPath) + ExcludeTrailingBackslash(ExtractFirstName(Path));
+          if FindFirstSubDir(SubPath, SRec) then
+          begin
+            AddChildNode(ParentNode, ParentPath, SRec);
+            if Assigned(ParentNodeData.DelayedExclude) then
+              ParentNodeData.DelayedExclude.Add(SRec.Name);
+            SortChildren(ParentNode, False);
+            FindClose(SRec);
+          end;
+          Result := DoSearchSubDirs(ParentNode, Path, Level);
         end;
-        Result := DoSearchSubDirs(ParentNode, Path, Level);
       end;
     end;
   end; {SearchSubDirs}
@@ -2426,7 +2428,7 @@ begin
     CurrentPath := NodePath(Node);
 
     Drive := DriveInfo.GetDriveKey(CurrentPath);
-    if Node.Level = 0 then
+    if not Assigned(Node.Parent) then
       GetDriveStatus(Drive).ChangeTimer.Enabled := False;
 
     RestartWatchThread := WatchThreadActive;
@@ -2832,7 +2834,7 @@ begin
 
   inherited;
 
-  if Assigned(Selected) and (Selected.Level = 0) then
+  if Assigned(Selected) and (not Assigned(Selected.Parent)) then
   begin
     if not GetDriveStatus(GetDriveToNode(Selected)).Scanned then
       ScanDrive(GetDriveToNode(Selected));
@@ -2874,7 +2876,7 @@ begin
   if (not Assigned(Node)) or (not Assigned(Node.Data)) then
     raise ENodeNotAssigned.Create(Format(ErrorNodeNA, ['GetDisplayName']));
 
-  if Node.Level = 0 then Result := GetDriveText(GetDriveToNode(Node))
+  if not Assigned(Node.Parent) then Result := GetDriveText(GetDriveToNode(Node))
     else
   begin
     Result := GetDirName(Node);
@@ -2954,7 +2956,7 @@ end; {SignalDirDelete}
 
 function TDriveView.DDSourceEffects: TDropEffectSet;
 begin
-  if FDragNode.Level = 0 then
+  if not Assigned(FDragNode.Parent) then
     Result := [deLink]
   else
     Result := [deLink, deCopy, deMove];
@@ -3008,7 +3010,7 @@ begin
     else
       DragParentPath := DragPath;
 
-    if (FDragNode.Level > 0) or (DragParentPath <> NodePathName(Selected.Parent)) then
+    if Assigned(FDragNode.Parent) or (DragParentPath <> NodePathName(Selected.Parent)) then
     begin
       FDragNode := FindNodeToPath(DragPath);
       if Assigned(FDragNode) then
@@ -3224,7 +3226,7 @@ end; {CopyToClipBoard}
 
 function TDriveView.CutToClipBoard(Node: TTreeNode): Boolean;
 begin
-  Result := Assigned(Node) and (Node.Level > 0) and CopyToClipBoard(Node);
+  Result := Assigned(Node) and Assigned(Node.Parent) and CopyToClipBoard(Node);
   if Result then
   begin
     LastPathCut := NodePathName(Node);
