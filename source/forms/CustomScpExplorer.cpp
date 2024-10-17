@@ -4480,13 +4480,10 @@ void __fastcall TCustomScpExplorerForm::LockFiles(TStrings * FileList, bool Lock
 //---------------------------------------------------------------------------
 bool TCustomScpExplorerForm::DoDirectoryExists(void * Session, const UnicodeString & Directory)
 {
-  bool Result = false;
   TTerminal * ATerminal = (Session == NULL) ? Terminal : reinterpret_cast<TTerminal *>(Session);
-  if (IsActiveTerminal(ATerminal))
-  {
-    std::unique_ptr<TRemoteFile> File(ATerminal->TryReadFile(Directory));
-    Result = File && File->IsDirectory;
-  }
+  bool Result =
+    IsActiveTerminal(ATerminal) &&
+    ATerminal->DirectoryExists(Directory);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -6394,24 +6391,34 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeChecklistCalculateSize(
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DoSynchronizeMove(
-  TOperationSide Side, const UnicodeString & FileName, const UnicodeString & NewFileName, TRemoteFile * RemoteFile)
+  TOperationSide Side, TStrings * FileList, const UnicodeString & NewFileName, bool TargetIsDirectory, void * Token)
 {
   DebugAssert(!IsLocalBrowserMode());
   TAutoBatch AutoBatch(this);
   TAutoFlag AutoOperationFlag(FAutoOperation);
 
+  TSynchronizeParams & Params = *static_cast<TSynchronizeParams *>(Token);
+
   if (Side == osRemote)
   {
-    std::unique_ptr<TStrings> FileList(new TStringList());
-    FileList->AddObject(FileName, RemoteFile);
-    UnicodeString Target = UnixExtractFileDir(NewFileName);
-    UnicodeString FileMask = DelimitFileNameMask(UnixExtractFileName(NewFileName));
+    UnicodeString Target;
+    UnicodeString FileMask;
+    if (TargetIsDirectory)
+    {
+      Target = NewFileName;
+      Terminal->CreateTargetDirectory(Target, faDirectory, Params.CopyParam);
+    }
+    else
+    {
+      Target = UnixExtractFileDir(NewFileName);
+      FileMask = DelimitFileNameMask(UnixExtractFileName(NewFileName));
+    }
 
     RemoteDirView->SaveSelection();
     RemoteDirView->SaveSelectedNames();
     try
     {
-      Terminal->MoveFiles(FileList.get(), Target, FileMask, false);
+      Terminal->MoveFiles(FileList, Target, FileMask, false);
     }
     catch(...)
     {
@@ -6422,16 +6429,39 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeMove(
   }
   else if (DebugAlwaysTrue(Side == osLocal))
   {
-    if (!MoveFile(ApiPath(FileName).c_str(), ApiPath(NewFileName).c_str()))
+    std::unique_ptr<TStrings> Directories(CreateSortedStringList());
+    if (TargetIsDirectory)
     {
-      throw EOSExtException(FMTLOAD(RENAME_FILE_ERROR, (FileName, NewFileName)));
+      if (!ForceDirectories(ApiPath(NewFileName)))
+      {
+        throw EOSExtException(FMTLOAD(CREATE_DIR_ERROR, (NewFileName)));
+      }
+      Directories->Add(NewFileName);
     }
-    UnicodeString Directory = ExtractFileDir(FileName);
-    ReloadLocalDirectory(Directory);
-    UnicodeString NewDirectory = ExtractFileDir(NewFileName);
-    if (!SamePaths(Directory, NewDirectory))
+    else
     {
-      ReloadLocalDirectory(NewDirectory);
+      Directories->Add(ExtractFileDir(NewFileName));
+    }
+
+    for (int Index = 0; Index < FileList->Count; Index++)
+    {
+      UnicodeString FileName = FileList->Strings[Index];
+      UnicodeString Directory = ExtractFileDir(FileName);
+      Directories->Add(Directory);
+      UnicodeString NewFilePath = NewFileName;
+      if (TargetIsDirectory)
+      {
+        NewFilePath = TPath::Combine(NewFilePath, ExtractFileName(FileName));
+      }
+      if (!MoveFile(ApiPath(FileName).c_str(), ApiPath(NewFilePath).c_str()))
+      {
+        throw EOSExtException(FMTLOAD(RENAME_FILE_ERROR, (FileName, NewFilePath)));
+      }
+    }
+
+    for (int Index = 0; Index < Directories->Count; Index++)
+    {
+      ReloadLocalDirectory(Directories->Strings[Index]);
     }
   }
 }

@@ -395,7 +395,7 @@ typedef void __fastcall (__closure *TFullSynchronizeEvent)(
 typedef void __fastcall (__closure *TSynchronizeChecklistCalculateSize)
   (TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items, void * Token);
 typedef void __fastcall (__closure *TSynchronizeMoveEvent)(
-  TOperationSide Side, const UnicodeString & FileName, const UnicodeString & NewFileName, TRemoteFile * RemoteFile);
+  TOperationSide Side, TStrings * FileList, const UnicodeString & NewFileName, bool TargetIsDirectory, void * Token);
 typedef void __fastcall (__closure *TSynchronizeBrowseEvent)(
   TOperationSide Side, TSynchronizeChecklist::TAction Action, const TSynchronizeChecklist::TItem * Item);
 bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,

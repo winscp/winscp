@@ -140,6 +140,128 @@ void __fastcall TSynchronizeChecklistDialog::UpdateCaption()
   }
   Caption = Manager->FormatFormCaptionWithSession(this, Title);
 }
+//---------------------------------------------------------------------------
+static bool IsTransferNewAction(TSynchronizeChecklist::TAction Action)
+{
+  return (Action == TSynchronizeChecklist::saUploadNew) || (Action == TSynchronizeChecklist::saDownloadNew);
+}
+//---------------------------------------------------------------------------
+static TSynchronizeChecklist::TAction GetOppositeMoveAction(TSynchronizeChecklist::TAction Action1)
+{
+  switch (Action1)
+  {
+    case TSynchronizeChecklist::saUploadNew:
+      return TSynchronizeChecklist::saDeleteRemote;
+    case TSynchronizeChecklist::saDownloadNew:
+      return TSynchronizeChecklist::saDeleteLocal;
+    case TSynchronizeChecklist::saDeleteRemote:
+      return TSynchronizeChecklist::saUploadNew;
+    case TSynchronizeChecklist::saDeleteLocal:
+      return TSynchronizeChecklist::saDownloadNew;
+    default:
+      return TSynchronizeChecklist::saNone;
+  }
+}
+//---------------------------------------------------------------------
+struct TMoveActionData
+{
+  TSynchronizeChecklist::TAction Action;
+  bool AllItemsFiles;
+  bool AllItemsDirectories;
+  int ItemsCount;
+  std::unique_ptr<TStrings> FileList;
+  typedef std::vector<const TSynchronizeChecklist::TItem *> TChecklistItems;
+  TChecklistItems ChecklistItems;
+
+  TMoveActionData()
+  {
+    Action = TSynchronizeChecklist::saNone;
+    AllItemsFiles = true;
+    AllItemsDirectories = true;
+    ItemsCount = 0;
+  }
+
+  bool Collect(const TSynchronizeChecklist::TItem * ChecklistItem, TSynchronizeChecklist::TAction AAction, bool CollectFileList)
+  {
+    bool Result = (ItemsCount == 0) || (Action == AAction);
+    if (Result)
+    {
+      Action = AAction;
+      if (ChecklistItem->IsDirectory)
+      {
+        AllItemsFiles = false;
+      }
+      else
+      {
+        AllItemsDirectories = false;
+      }
+      ItemsCount++;
+
+      if (CollectFileList)
+      {
+        UnicodeString FileName;
+        TObject * Object;
+        if (Action == TSynchronizeChecklist::saDeleteRemote)
+        {
+          FileName = UnixCombinePaths(ChecklistItem->Remote.Directory, ChecklistItem->Remote.FileName);
+          Object = ChecklistItem->RemoteFile;
+        }
+        else if (Action == TSynchronizeChecklist::saDeleteLocal)
+        {
+          FileName = CombinePaths(ChecklistItem->Local.Directory, ChecklistItem->Local.FileName);
+        }
+
+        bool CollectFile = !FileName.IsEmpty();
+        DebugAssert(CollectFile == IsTransferNewAction(GetOppositeMoveAction(Action)));
+        if (CollectFile)
+        {
+          if (FileList.get() == NULL)
+          {
+            FileList.reset(new TStringList());
+          }
+          FileList->AddObject(FileName, Object);
+        }
+
+        ChecklistItems.push_back(ChecklistItem);
+      }
+    }
+    return Result;
+  }
+
+  bool IsOnlyDirectoryTransferAction()
+  {
+    return
+      IsTransferNewAction(Action) &&
+      (ItemsCount == 1) &&
+      AllItemsDirectories &&
+      DebugAlwaysTrue(!AllItemsFiles);
+  }
+};
+//---------------------------------------------------------------------
+struct TMoveData
+{
+  TMoveActionData FirstAction;
+  TMoveActionData SecondAction;
+  bool ThreeActions;
+
+  TMoveData(bool CollectFileList)
+  {
+    ThreeActions = false;
+    FCollectFileList = CollectFileList;
+  }
+
+  void Collect(const TSynchronizeChecklist::TItem * ChecklistItem, TSynchronizeChecklist::TAction Action)
+  {
+    if (!FirstAction.Collect(ChecklistItem, Action, FCollectFileList) &&
+        !SecondAction.Collect(ChecklistItem, Action, FCollectFileList))
+    {
+      ThreeActions = true;
+    }
+  }
+
+private:
+  bool FCollectFileList;
+};
 //---------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::UpdateControls()
 {
@@ -152,11 +274,13 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
   bool AnyBoth = false;
   bool AnyNonBoth = false;
   bool AnyDirectory = false;
-  TListItem * Item = ListView->Selected;
-  while (Item != NULL)
+  TMoveData MoveData(false);
+  TListItem * Item = NULL;
+  while (IterateSelectedItems(Item))
   {
     const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
     TSynchronizeChecklist::TAction Action = GetChecklistItemAction(ChecklistItem);
+
     if ((Action == TSynchronizeChecklist::saUploadUpdate) ||
         (Action == TSynchronizeChecklist::saDownloadUpdate))
     {
@@ -166,6 +290,8 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
     {
       AnyNonBoth = true;
     }
+
+    MoveData.Collect(ChecklistItem, Action);
 
     if (Item->Checked)
     {
@@ -179,9 +305,9 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
     {
       AnyDirectory = true;
     }
-    Item = ListView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
   }
 
+  int SelCount = ListView->SelCount;
   EnableControl(OkButton, (FChecked[0] > 0) && !FSynchronizing);
   EnableControl(CancelButton, !FSynchronizing);
   EnableControl(HelpButton, !FSynchronizing);
@@ -192,17 +318,28 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
   CheckDirectoryAction->Enabled = CheckAllAction->Enabled; // sic
   UncheckDirectoryAction->Enabled = UncheckAllAction->Enabled; // sic
   CustomCommandsAction->Enabled = AnyBoth && !AnyNonBoth && DebugAlwaysTrue(!FSynchronizing);
-  ReverseAction->Enabled = (ListView->SelCount > 0) && DebugAlwaysTrue(!FSynchronizing);
-  MoveAction->Enabled = (GetMoveItems() != TSynchronizeMoveItems());
-  CalculateSizeAction->Enabled = (ListView->SelCount > 0) && AnyDirectory && DebugAlwaysTrue(!FSynchronizing);
+  ReverseAction->Enabled = (SelCount > 0) && DebugAlwaysTrue(!FSynchronizing);
+  MoveAction->Enabled =
+    // All actions are of exactly two and opposite types
+    (MoveData.SecondAction.Action != TSynchronizeChecklist::saNone) &&
+    !MoveData.ThreeActions &&
+    (GetOppositeMoveAction(MoveData.FirstAction.Action) == MoveData.SecondAction.Action) &&
+    // ... and there are exactly two of them of the same file/dir type
+    (((SelCount == 2) && (MoveData.FirstAction.AllItemsFiles == MoveData.SecondAction.AllItemsFiles)) ||
+    // ... or the "transfer new" side is exactly one directory
+     MoveData.FirstAction.IsOnlyDirectoryTransferAction() ||
+     MoveData.SecondAction.IsOnlyDirectoryTransferAction());
+  CalculateSizeAction->Enabled = (SelCount > 0) && AnyDirectory && DebugAlwaysTrue(!FSynchronizing);
   CalculateSizeAllAction->Enabled = (FDirectories > 0) && !FSynchronizing;
   TSynchronizeChecklist::TAction SelectedItemAction =
-    (ListView->SelCount == 1) ? GetChecklistItemAction(GetChecklistItem(ListView->Selected)) : TSynchronizeChecklist::saNone;
-  BrowseLocalAction->Enabled = (ListView->SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteRemote);
-  BrowseRemoteAction->Enabled = (ListView->SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteLocal);
+    (SelCount == 1) ? GetChecklistItemAction(GetChecklistItem(ListView->Selected)) : TSynchronizeChecklist::saNone;
+  BrowseLocalAction->Enabled = (SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteRemote);
+  BrowseRemoteAction->Enabled = (SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteLocal);
 
-  SelectAllAction->Enabled = (ListView->SelCount < ListView->Items->Count) && !FSynchronizing;
-  FindMoveCandidateAction->Enabled = (ListView->Items->Count > 0) && !FSynchronizing;
+  int Count = ListView->Items->Count;
+  DebugAssert(FTotals[0] == Count);
+  SelectAllAction->Enabled = (SelCount < Count) && !FSynchronizing;
+  FindMoveCandidateAction->Enabled = (Count > 0) && !FSynchronizing;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSynchronizeChecklistDialog::GetWindowParams(UnicodeString & WindowParams)
@@ -788,16 +925,26 @@ void __fastcall TSynchronizeChecklistDialog::UncheckAllActionExecute(TObject * /
   CheckAll(false);
 }
 //---------------------------------------------------------------------------
+bool TSynchronizeChecklistDialog::IterateItems(TListItem *& Item, TItemStates States)
+{
+  Item = ListView->GetNextItem(Item, sdAll, States);
+  return (Item != NULL);
+}
+//---------------------------------------------------------------------------
+bool TSynchronizeChecklistDialog::IterateSelectedItems(TListItem *& Item)
+{
+  return IterateItems(Item, TItemStates() << isSelected);
+}
+//---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::Check(bool Check)
 {
   FChangingItemMass = true;
   try
   {
-    TListItem * Item = ListView->Selected;
-    while (Item != NULL)
+    TListItem * Item = NULL;
+    while (IterateSelectedItems(Item))
     {
       Item->Checked = Check;
-      Item = ListView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
     }
   }
   __finally
@@ -991,10 +1138,8 @@ void __fastcall TSynchronizeChecklistDialog::CustomCommandsActionExecute(
   TStrings * RemoteFileList = new TStringList();
   try
   {
-    TListItem * Item = ListView->Selected;
-    DebugAssert(Item != NULL);
-
-    while (Item != NULL)
+    TListItem * Item = NULL;
+    while (IterateSelectedItems(Item))
     {
       const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
 
@@ -1013,8 +1158,6 @@ void __fastcall TSynchronizeChecklistDialog::CustomCommandsActionExecute(
         ChecklistItem->Remote.FileName;
 
       RemoteFileList->AddObject(RemotePath, ChecklistItem->RemoteFile);
-
-      Item = ListView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
     }
   }
   catch(...)
@@ -1063,8 +1206,8 @@ void __fastcall TSynchronizeChecklistDialog::ReverseActionExecute(TObject * /*Se
 {
   TAutoFlag Flag(FChangingItemMass);
 
-  TListItem * Item = ListView->Selected;
-  while (Item != NULL)
+  TListItem * Item = NULL;
+  while (IterateSelectedItems(Item))
   {
     const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
     TSynchronizeChecklist::TAction & Action = GetChecklistItemAction(ChecklistItem);
@@ -1089,8 +1232,6 @@ void __fastcall TSynchronizeChecklistDialog::ReverseActionExecute(TObject * /*Se
 
       LoadItem(Item);
     }
-
-    Item = ListView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
   }
 
   Flag.Release();
@@ -1218,7 +1359,7 @@ void TSynchronizeChecklistDialog::CalculateSize(bool All)
   }
   TSynchronizeChecklist::TItemList Items;
   TListItem * Item = NULL;
-  while ((Item = ListView->GetNextItem(Item, sdAll, States)) != NULL)
+  while (IterateItems(Item, States))
   {
     const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
     Items.push_back(ChecklistItem);
@@ -1246,69 +1387,6 @@ void __fastcall TSynchronizeChecklistDialog::CalculateSizeActionExecute(TObject 
 void __fastcall TSynchronizeChecklistDialog::CalculateSizeAllActionExecute(TObject *)
 {
   CalculateSize(true);
-}
-//---------------------------------------------------------------------------
-TSynchronizeChecklist::TAction TSynchronizeChecklistDialog::GetOppositeMoveAction(TSynchronizeChecklist::TAction Action1)
-{
-  switch (Action1)
-  {
-    case TSynchronizeChecklist::saUploadNew:
-      return TSynchronizeChecklist::saDeleteRemote;
-    case TSynchronizeChecklist::saDownloadNew:
-      return TSynchronizeChecklist::saDeleteLocal;
-    case TSynchronizeChecklist::saDeleteRemote:
-      return TSynchronizeChecklist::saUploadNew;
-    case TSynchronizeChecklist::saDeleteLocal:
-      return TSynchronizeChecklist::saDownloadNew;
-    default:
-      return TSynchronizeChecklist::saNone;
-  }
-}
-//---------------------------------------------------------------------------
-bool TSynchronizeChecklistDialog::IsTransferNewAction(TSynchronizeChecklist::TAction Action)
-{
-  return (Action == TSynchronizeChecklist::saUploadNew) || (Action == TSynchronizeChecklist::saDownloadNew);
-}
-//---------------------------------------------------------------------------
-TSynchronizeChecklistDialog::TSynchronizeMoveItems __fastcall TSynchronizeChecklistDialog::GetMoveItems()
-{
-  if ((ListView->SelCount != 2) || DebugAlwaysFalse(FSynchronizing))
-  {
-    return TSynchronizeMoveItems();
-  }
-  else
-  {
-    TListItem * Item1 = ListView->Selected;
-    const TSynchronizeChecklist::TItem * ChecklistItem1 = GetChecklistItem(DebugNotNull(Item1));
-    TListItem * Item2 = ListView->GetNextItem(ListView->Selected, sdAll, TItemStates() << isSelected);
-    const TSynchronizeChecklist::TItem * ChecklistItem2 = GetChecklistItem(DebugNotNull(Item2));
-
-    if (ChecklistItem1->IsDirectory != ChecklistItem2->IsDirectory)
-    {
-      return TSynchronizeMoveItems();
-    }
-    else
-    {
-      TSynchronizeChecklist::TAction Action1 = GetChecklistItemAction(ChecklistItem1);
-      TSynchronizeChecklist::TAction Action2 = GetChecklistItemAction(ChecklistItem2);
-
-      if (GetOppositeMoveAction(Action1) == Action2)
-      {
-        if (IsTransferNewAction(Action1))
-        {
-          return TSynchronizeMoveItems(ChecklistItem1, ChecklistItem2);
-        }
-        else
-        {
-          return TSynchronizeMoveItems(ChecklistItem2, ChecklistItem1);
-        }
-      }
-      else
-      {
-        return TSynchronizeMoveItems();
-      }
-    }
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::DeleteItem(const TSynchronizeChecklist::TItem * ChecklistItem)
@@ -1344,50 +1422,89 @@ void __fastcall TSynchronizeChecklistDialog::DeleteItem(const TSynchronizeCheckl
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::MoveActionExecute(TObject *)
 {
-  TSynchronizeMoveItems MoveItems = GetMoveItems();
-  TSynchronizeChecklist::TAction Action2 = GetChecklistItemAction(MoveItems.second);
+  TMoveData MoveData(true);
+  TListItem * Item = NULL;
+  while (IterateSelectedItems(Item))
+  {
+    const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
+    TSynchronizeChecklist::TAction Action = GetChecklistItemAction(ChecklistItem);
+    MoveData.Collect(ChecklistItem, Action);
+  }
+
+  TMoveActionData * TransferAction = &MoveData.FirstAction;
+  TMoveActionData * DeleteAction = &MoveData.SecondAction;
+  if (IsTransferNewAction(DeleteAction->Action))
+  {
+    std::swap(TransferAction, DeleteAction);
+  }
+  DebugAssert(IsTransferNewAction(TransferAction->Action));
+  DebugAssert(GetOppositeMoveAction(DeleteAction->Action) == TransferAction->Action);
 
   TOperationSide Side;
-  UnicodeString FileName;
   UnicodeString NewFileName;
-  TRemoteFile * RemoteFile;
-  if (Action2 == TSynchronizeChecklist::saDeleteRemote)
+  DebugAssert(TransferAction->ChecklistItems.size() == 1);
+  const TSynchronizeChecklist::TItem * TransferChecklistItem = TransferAction->ChecklistItems[0];
+  if (DeleteAction->Action == TSynchronizeChecklist::saDeleteRemote)
   {
     Side = osRemote;
-    FileName = UnixCombinePaths(MoveItems.second->Remote.Directory, MoveItems.second->Remote.FileName);
-    NewFileName = UnixCombinePaths(MoveItems.first->Remote.Directory, MoveItems.first->Local.FileName);
-    RemoteFile = MoveItems.second->RemoteFile;
+    NewFileName = UnixCombinePaths(TransferChecklistItem->Remote.Directory, TransferChecklistItem->Local.FileName);
   }
-  else if (Action2 == TSynchronizeChecklist::saDeleteLocal)
+  else if (DebugAlwaysTrue(DeleteAction->Action == TSynchronizeChecklist::saDeleteLocal))
   {
     Side = osLocal;
-    FileName = CombinePaths(MoveItems.second->Local.Directory, MoveItems.second->Local.FileName);
-    NewFileName = CombinePaths(MoveItems.first->Local.Directory, MoveItems.first->Remote.FileName);
-    RemoteFile = NULL;
+    NewFileName = CombinePaths(TransferChecklistItem->Local.Directory, TransferChecklistItem->Remote.FileName);
   }
-  else
+
+  if (DebugAlwaysTrue(!NewFileName.IsEmpty()))
   {
-    DebugFail();
-    Abort();
+    bool Move = false;
+    bool TargetIsDirectory;
+    if ((TransferAction->AllItemsDirectories == DeleteAction->AllItemsDirectories) &&
+        DebugAlwaysTrue(TransferAction->ItemsCount == 1) &&
+        DebugAlwaysTrue(DeleteAction->ItemsCount == 1))
+    {
+      Move = true;
+      TargetIsDirectory = false;
+    }
+    else if (DebugAlwaysTrue(TransferAction->AllItemsDirectories && (TransferAction->ItemsCount == 1)))
+    {
+      TargetIsDirectory = true;
+      Move = true;
+    }
+
+    if (DebugAlwaysTrue(Move))
+    {
+      FOnSynchronizeMove(Side, DeleteAction->FileList.get(), NewFileName, TargetIsDirectory, FToken);
+
+      TMoveActionData::TChecklistItems::const_iterator I = DeleteAction->ChecklistItems.begin();
+      while (I != DeleteAction->ChecklistItems.end())
+      {
+        DeleteItem(*I);
+        I++;
+      }
+      if (!TargetIsDirectory)
+      {
+        DeleteItem(TransferChecklistItem);
+      }
+      else
+      {
+        // The remaning "transfer" item
+        ListView->Selected->MakeVisible(false);
+      }
+      UpdateControls();
+    }
   }
-
-  FOnSynchronizeMove(Side, FileName, NewFileName, RemoteFile);
-
-  DeleteItem(MoveItems.first);
-  DeleteItem(MoveItems.second);
-  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::CheckDirectory(bool Check)
 {
   std::unique_ptr<TStringList> Directories(new TStringList());
-  TListItem * Item = ListView->Selected;
-  while (Item != NULL)
+  TListItem * Item = NULL;
+  while (IterateSelectedItems(Item))
   {
     const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
     // It does not matter if we use local or remote directory
     Directories->Add(IncludeTrailingBackslash(ChecklistItem->Local.Directory));
-    Item = ListView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
   }
 
   TAutoFlag ChangingItemMassSwitch(FChangingItemMass);

@@ -4005,6 +4005,14 @@ bool TTerminal::FileExists(const UnicodeString & FileName)
   return (File.get() != NULL);
 }
 //---------------------------------------------------------------------------
+bool TTerminal::DirectoryExists(const UnicodeString & FileName)
+{
+  std::unique_ptr<TRemoteFile> File(TryReadFile(FileName));
+  return
+    (File.get() != NULL) &&
+    File->IsDirectory;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::AnnounceFileListOperation()
 {
   FFileSystem->AnnounceFileListOperation();
@@ -7535,11 +7543,7 @@ void __fastcall TTerminal::SourceRobust(
 bool __fastcall TTerminal::CreateTargetDirectory(
   const UnicodeString & DirectoryPath, int Attrs, const TCopyParamType * CopyParam)
 {
-  std::unique_ptr<TRemoteFile> File(TryReadFile(DirectoryPath));
-  bool DoCreate =
-    (File.get() == NULL) ||
-    !File->IsDirectory; // just try to create and make it fail
-  File.reset(NULL);
+  bool DoCreate = !DirectoryExists(DirectoryPath);
   if (DoCreate)
   {
     TRemoteProperties Properties;

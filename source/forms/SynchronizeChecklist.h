@@ -193,8 +193,6 @@ protected:
   void __fastcall CountItemSize(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);
   void __fastcall CountItem(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);
   void __fastcall CountItemTotal(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);
-  typedef std::pair<const TSynchronizeChecklist::TItem *, const TSynchronizeChecklist::TItem *> TSynchronizeMoveItems;
-  TSynchronizeMoveItems __fastcall GetMoveItems();
   void __fastcall DeleteItem(const TSynchronizeChecklist::TItem * ChecklistItem);
   void __fastcall CheckDirectory(bool Check);
   void __fastcall DoBrowse(TOperationSide Side);
@@ -203,8 +201,8 @@ protected:
   DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
   void CalculateSize(bool All);
   TIEListViewColProperties * GetColProperties();
-  TSynchronizeChecklist::TAction GetOppositeMoveAction(TSynchronizeChecklist::TAction Action1);
-  bool IsTransferNewAction(TSynchronizeChecklist::TAction Action);
+  bool IterateItems(TListItem *& Item, TItemStates States);
+  bool IterateSelectedItems(TListItem *& Item);
 };
 //----------------------------------------------------------------------------
 #endif

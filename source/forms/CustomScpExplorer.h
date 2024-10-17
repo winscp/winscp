@@ -716,7 +716,7 @@ protected:
   void __fastcall DoSynchronizeChecklistCalculateSize(
     TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items, void * Token);
   void __fastcall DoSynchronizeMove(
-    TOperationSide Side, const UnicodeString & FileName, const UnicodeString & NewFileName, TRemoteFile * RemoteFile);
+    TOperationSide Side, TStrings * FileList, const UnicodeString & NewFileName, bool TargetIsDirectory, void * Token);
   void __fastcall DoSynchronizeBrowse(TOperationSide Side, TSynchronizeChecklist::TAction Action, const TSynchronizeChecklist::TItem * Item);
   void __fastcall FullSynchronize(
     TSynchronizeParams & Params, TProcessedSynchronizationChecklistItem OnProcessedItem,

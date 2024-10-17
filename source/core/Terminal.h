@@ -261,7 +261,6 @@ private:
   bool __fastcall GetStoredCredentialsTried();
   inline bool __fastcall InTransaction();
   void __fastcall SaveCapabilities(TFileSystemInfo & FileSystemInfo);
-  bool __fastcall CreateTargetDirectory(const UnicodeString & DirectoryPath, int Attrs, const TCopyParamType * CopyParam);
   static UnicodeString __fastcall SynchronizeModeStr(TSynchronizeMode Mode);
   static UnicodeString __fastcall SynchronizeParamsStr(int Params);
 
@@ -554,6 +553,7 @@ public:
   TRemoteFile * ReadFile(const UnicodeString & FileName);
   TRemoteFile * TryReadFile(const UnicodeString & FileName);
   bool FileExists(const UnicodeString & FileName);
+  bool DirectoryExists(const UnicodeString & FileName);
   void __fastcall ReadSymlink(TRemoteFile * SymlinkFile, TRemoteFile *& File);
   bool __fastcall CopyToLocal(
     TStrings * FilesToCopy, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
@@ -564,6 +564,7 @@ public:
   int __fastcall CopyToParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress);
   void __fastcall LogParallelTransfer(TParallelOperation * ParallelOperation);
   void __fastcall CreateDirectory(const UnicodeString & DirName, const TRemoteProperties * Properties);
+  bool __fastcall CreateTargetDirectory(const UnicodeString & DirectoryPath, int Attrs, const TCopyParamType * CopyParam);
   void __fastcall CreateLink(const UnicodeString FileName, const UnicodeString PointTo, bool Symbolic);
   void __fastcall DeleteFile(UnicodeString FileName,
     const TRemoteFile * File = NULL, void * Params = NULL);
