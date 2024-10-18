@@ -8506,7 +8506,7 @@ void __fastcall TCustomScpExplorerForm::DDDownload(
 class TFakeDataObjectFilesEx : public TDataObjectFilesEx
 {
 public:
-        __fastcall TFakeDataObjectFilesEx(TFileList * AFileList, bool RenderPIDL,
+  __fastcall TFakeDataObjectFilesEx(TFileList * AFileList, bool RenderPIDL,
     bool RenderFilename) : TDataObjectFilesEx(AFileList, RenderPIDL, RenderFilename, true)
   {
   }
