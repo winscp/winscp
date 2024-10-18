@@ -2406,6 +2406,7 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
               CopyParam.FileMask = L"";
 
               FAutoOperation = true;
+              FMoveToQueue = false;
               std::unique_ptr<TStrings> TemporaryFilesList(new TStringList());
               TemporaryFilesList->Add(FileName);
 
@@ -3628,6 +3629,7 @@ void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
 
   DebugAssert(!FAutoOperation);
   FAutoOperation = AutoOperation;
+  FMoveToQueue = false;
   Terminal->ExceptionOnFail = true;
   try
   {
@@ -4134,6 +4136,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
         }
         else
         {
+          FMoveToQueue = false;
           Data->Terminal->CopyToRemote(FileList, Data->RemoteDirectory, &CopyParam, Params, NULL);
           SetEvent(UploadCompleteEvent);
         }
@@ -4416,6 +4419,7 @@ void __fastcall TCustomScpExplorerForm::DeleteFiles(TOperationSide Side,
             }
           }
 
+          FMoveToQueue = false;
           Configuration->Usage->Inc("MovesToBackgroundDelete");
 
           TQueueItem * QueueItem = new TDeleteQueueItem(Terminal, PermanentFileList.get(), Params);
@@ -4642,6 +4646,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferFiles(
 
           DebugAssert(!FAutoOperation);
           FAutoOperation = true;
+          FMoveToQueue = false;
           Terminal->CopyToRemote(TemporaryFilesList, Target, &CopyParam, cpTemporary, NULL);
         }
       }
@@ -8496,6 +8501,7 @@ void __fastcall TCustomScpExplorerForm::DDDownload(
   TAutoBatch AutoBatch(this);
   CopyParam->IncludeFileMask.SetRoots(TargetDir, FilesToCopy);
   UpdateCopyParamCounters(*CopyParam);
+  FMoveToQueue = false;
   Terminal->CopyToLocal(FilesToCopy, TargetDir, CopyParam, Params, NULL);
   if (FLAGSET(Params, cpDelete) && (DropSourceControl == RemoteDriveView))
   {
