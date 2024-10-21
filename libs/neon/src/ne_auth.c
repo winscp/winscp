@@ -334,7 +334,6 @@ static void clean_session(auth_session *sess)
     sess->sspi_token = NULL;
     ne_sspi_destroy_context(sess->sspi_context);
     sess->sspi_context = NULL;
-    Trace(L"clean_session 3");
 #endif
 #ifdef HAVE_NTLM
     if (sess->ntlm_context) {
@@ -739,29 +738,23 @@ static int continue_sspi(auth_session *sess, int ntlm, const char *hdr)
     NE_DEBUG(NE_DBG_HTTPAUTH, "auth: SSPI challenge.\n");
     
     if (!sess->sspi_context) {
-        Trace(L"continue_sspi 1");
         status = ne_sspi_create_context(&sess->sspi_context, sess->sspi_host, ntlm);
         if (status) {
-            Trace(L"continue_sspi 2");
             return status;
         }
     }
     
-    Trace(L"continue_sspi 3");
     status = ne_sspi_authenticate(sess->sspi_context, hdr, &response);
     if (status) {
-        Trace(L"continue_sspi 4");
         return status;
     }
 
     if (response && *response) {
-        Trace(L"continue_sspi 5");
         sess->sspi_token = response;
         
         NE_DEBUG(NE_DBG_HTTPAUTH, "auth: SSPI challenge [%s]\n", sess->sspi_token);
     }
 
-    Trace(L"continue_sspi /");
     return 0;
 }
 
@@ -1010,7 +1003,6 @@ static int digest_challenge(auth_session *sess, int attempt,
     NE_DEBUG_WINSCP_CONTEXT(sess->sess);
     char *p, *h_urp = NULL;
 
-    Trace(L"digest_challenge >");
     if (parms->alg == NULL) {
         challenge_error(errmsg, _("unknown algorithm in Digest challenge"));
         return -1;
@@ -1042,7 +1034,6 @@ static int digest_challenge(auth_session *sess, int attempt,
         return -1;
     }
 
-    Trace(L"digest_challenge 2");
     p = ne_strhash(parms->alg->hash, "", NULL);
     if (p == NULL) {
         challenge_error(errmsg,
@@ -1053,7 +1044,6 @@ static int digest_challenge(auth_session *sess, int attempt,
     ne_free(p);
 
     if (!parms->stale) {
-        Trace(L"digest_challenge 3");
         /* Non-stale challenge: clear session and request credentials. */
         clean_session(sess);
 
@@ -1075,13 +1065,11 @@ static int digest_challenge(auth_session *sess, int attempt,
         }
     }
     else {
-        Trace(L"digest_challenge 4");
         /* Stale challenge: accept a new nonce or opaque. */
         if (sess->nonce) ne_free(sess->nonce);
         if (sess->opaque && parms->opaque) ne_free(sess->opaque);
     }
     
-    Trace(L"digest_challenge 5");
     sess->nonce = ne_strdup(parms->nonce);
     if (parms->opaque) {
 	sess->opaque = ne_strdup(parms->opaque);
@@ -1098,7 +1086,6 @@ static int digest_challenge(auth_session *sess, int attempt,
     }
 
     if (h_urp) {
-        Trace(L"digest_challenge 6");
         if (sess->alg->sess) {
             sess->h_a1 = ne_strhash(parms->alg->hash, h_urp, ":",
                                     sess->nonce, ":", sess->cnonce, NULL);
@@ -1113,7 +1100,6 @@ static int digest_challenge(auth_session *sess, int attempt,
     
     NE_DEBUG(NE_DBG_HTTPAUTH, "auth: Accepting digest challenge.\n");
 
-    Trace(L"digest_challenge /");
     return 0;
 }
 
@@ -1157,7 +1143,6 @@ static char *request_digest(auth_session *sess, struct auth_request *req)
     ne_buffer *ret;
     unsigned int hash = sess->alg->hash;
 
-    Trace(L"request_digest 1");
     /* Do not submit credentials if an auth domain is defined and this
      * request-uri fails outside it. */
     if (sess->ndomains && !inside_domain(sess, req->uri)) {
@@ -2288,34 +2273,14 @@ static void auth_register(ne_session *sess, int isproxy, unsigned protomask,
         
         if (isproxy)
         {
-            Trace(L"auth_register 1");
             ne_fill_proxy_uri(sess, &uri);
         }
         else
         {
-            Trace(L"auth_register 2");
             ne_fill_server_uri(sess, &uri);
         }
 
         ahs->sspi_host = uri.host;
-
-//!CLEANBEGIN
-        if (ahs->sspi_host != NULL)
-        {
-            wchar_t buf[1024];
-            int i;
-            Trace(L"auth_register 3");
-            for (i = 0; i < strlen(ahs->sspi_host) + 1; i++)
-            {
-                buf[i] = (wchar_t)ahs->sspi_host[i];
-            }
-            Trace(buf);
-        }
-        else
-        {
-            Trace(L"auth_register 4");
-        }
-//!CLEANEND
 
         uri.host = NULL;
 

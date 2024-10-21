@@ -95,30 +95,4 @@ NE_PRIVATE char *ne__strhash2hex(const unsigned char *digest, size_t len, unsign
 #define ne__strzero(s, n) memset(s, 0, n)
 #endif
 
-//!CLEANBEGIN
-
-#ifdef WINSCP
-
-// #define NEON_TRACE to enable tracing
-
-#ifdef NEON_TRACE
-// BOOL is not defined in all files
-extern int IsTracing;
-void __fastcall DoTrace(const wchar_t * SourceFile, const wchar_t * Func,
-  int Line, const wchar_t * Message);
-void __fastcall DoTraceA(const wchar_t * SourceFile, const wchar_t * Func,
-  int Line, const char * Message);
-#define __UTEXT(S) L##S
-#define UTEXT(S) __UTEXT(S)
-#define Trace(MESSAGE) if (IsTracing) DoTrace(UTEXT(__FILE__), UTEXT(__FUNC__), __LINE__, MESSAGE)
-#define TraceA(MESSAGE) if (IsTracing) DoTraceA(UTEXT(__FILE__), UTEXT(__FUNC__), __LINE__, MESSAGE)
-#else
-#define Trace(MESSAGE)
-#define TraceA(MESSAGE)
-#endif
-
-#endif /* WINSCP */
-
-//!CLEANEND
-
 #endif /* NE_INTERNAL_H */

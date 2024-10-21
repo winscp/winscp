@@ -186,7 +186,6 @@ ne_session *ne_session_create(const char *scheme,
 {
     ne_session *sess = ne_calloc(sizeof *sess);
 
-    Trace(L"ne_session_create >");
     NE_DEBUG(NE_DBG_HTTP, "HTTP session to %s://%s:%d begins.\n",
 	     scheme, hostname, port);
 

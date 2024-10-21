@@ -842,17 +842,14 @@ void SSL_SESSION_free(SSL_SESSION *ss)
 
     if (ss == NULL)
         return;
-    Trace(L"SSL_SESSION_free 1");
     CRYPTO_DOWN_REF(&ss->references, &i);
     REF_PRINT_COUNT("SSL_SESSION", ss);
     if (i > 0)
         return;
     REF_ASSERT_ISNT(i < 0);
 
-    Trace(L"SSL_SESSION_free 2");
     CRYPTO_free_ex_data(CRYPTO_EX_INDEX_SSL_SESSION, ss, &ss->ex_data);
 
-    Trace(L"SSL_SESSION_free 3");
     OPENSSL_cleanse(ss->master_key, sizeof(ss->master_key));
     OPENSSL_cleanse(ss->session_id, sizeof(ss->session_id));
     X509_free(ss->peer);
@@ -864,7 +861,6 @@ void SSL_SESSION_free(SSL_SESSION *ss)
     OPENSSL_free(ss->psk_identity_hint);
     OPENSSL_free(ss->psk_identity);
 #endif
-    Trace(L"SSL_SESSION_free 4");
 #ifndef OPENSSL_NO_SRP
     OPENSSL_free(ss->srp_username);
 #endif
@@ -872,7 +868,6 @@ void SSL_SESSION_free(SSL_SESSION *ss)
     OPENSSL_free(ss->ticket_appdata);
     CRYPTO_FREE_REF(&ss->references);
     OPENSSL_clear_free(ss, sizeof(*ss));
-    Trace(L"SSL_SESSION_free /");
 }
 
 int SSL_SESSION_up_ref(SSL_SESSION *ss)

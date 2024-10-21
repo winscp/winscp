@@ -441,15 +441,11 @@ int ne_unlock(ne_session *sess, const struct ne_lock *lock)
 
 static int parse_depth(const char *depth)
 {
-    Trace(L"parse_depth 1");
     if (ne_strcasecmp(depth, "infinity") == 0) {
-	Trace(L"parse_depth 2");
 	return NE_DEPTH_INFINITE;
     } else if (isdigit(depth[0])) {
-	Trace(L"parse_depth 3");
 	return atoi(depth);
     } else {
-	Trace(L"parse_depth 4");
 	return -1;
     }
 }
@@ -523,10 +519,8 @@ end_element_common(struct ne_lock *l, int state, const char *cdata)
 	ne_free(depth);
 	}
 	if (l->depth == -1) {
-	    Trace(L"end_element_common 1");
 	    return -1;
 	}
-	Trace(L"end_element_common 2");
 	break;
     case ELM_timeout:
 	NE_DEBUG(NE_DBG_LOCKS, "Got timeout: %s\n", cdata);
@@ -554,7 +548,6 @@ end_element_common(struct ne_lock *l, int state, const char *cdata)
         }
 	break;
     }
-    Trace(L"end_element_common /");
     return 0;
 }
 
