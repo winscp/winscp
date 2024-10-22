@@ -3166,6 +3166,18 @@ void __fastcall TLoginDialog::LoginActionExecute(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::PuttyActionExecute(TObject * /*Sender*/)
 {
+  std::unique_ptr<TAutoFlag> AutoFlag;
+  if (PuttyAction->ActionComponent == NULL)
+  {
+    // Resolving conflict between copying command to clipboard on Ctrl+Shift and Ctrl+Shift+P keyboard shortcut.
+    // Ctrl+Shift to copy to clipboard now works with menu invocations only.
+    AutoFlag.reset(new TAutoFlag(DontCopyCommandToClipboard));
+  }
+  else
+  {
+    // does not clear on its own
+    PuttyAction->ActionComponent = NULL;
+  }
   // following may take some time, so cache the shift key state,
   // in case user manages to release it before following finishes
   bool Close = !OpenInNewWindow();
