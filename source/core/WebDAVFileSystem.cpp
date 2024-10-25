@@ -209,6 +209,7 @@ void __fastcall TWebDAVFileSystem::Open()
   if (FOneDrive)
   {
     FTerminal->LogEvent(L"OneDrive host detected.");
+    FOneDriveInterface = odiUnknown;
   }
 
   size_t Port = Data->PortNumber;
@@ -511,6 +512,18 @@ void __fastcall TWebDAVFileSystem::CollectUsage()
   }
 
   UnicodeString RemoteSystem = FFileSystemInfo.RemoteSystem;
+  if (FOneDrive)
+  {
+    FTerminal->Configuration->Usage->Inc(L"OpenedSessionsWebDAVOneDrive");
+    if (FOneDriveInterface == odiUpperCase)
+    {
+      FTerminal->Configuration->Usage->Inc(L"OpenedSessionsWebDAVOneDriveUpperCase");
+    }
+    else if (FOneDriveInterface == odiLowerCase)
+    {
+      FTerminal->Configuration->Usage->Inc(L"OpenedSessionsWebDAVOneDriveLowerCase");
+    }
+  }
   if (ContainsText(RemoteSystem, L"Microsoft-IIS"))
   {
     FTerminal->Configuration->Usage->Inc(L"OpenedSessionsWebDAVIIS");
@@ -867,6 +880,43 @@ void TWebDAVFileSystem::NeonPropsResult(
     Data.FileSystem->ParsePropResultSet(File.get(), Path, Results);
 
     UnicodeString FileListPath = Data.FileSystem->AbsolutePath(Data.FileList->Directory, false);
+    if (FileSystem->FOneDrive)
+    {
+      UnicodeString FullFileName = UnixIncludeTrailingBackslash(File->FullFileName);
+      if (Configuration->Usage->Collect && (FileSystem->FOneDriveInterface == odiUnknown) && !IsUnixRootPath(FullFileName))
+      {
+        UnicodeString Cid = FullFileName;
+        if (DebugAlwaysTrue(StartsStr(L"/", Cid)))
+        {
+          Cid.Delete(1, 1);
+          int P = Cid.Pos(L"/");
+          if (P > 0)
+          {
+            Cid.SetLength(P - 1);
+          }
+          UnicodeString CidUpper = UpperCase(Cid);
+          UnicodeString CidLower = LowerCase(Cid);
+          if (CidUpper != CidLower)
+          {
+            if (Cid == CidUpper)
+            {
+              FileSystem->FOneDriveInterface = odiUpperCase;
+              Terminal->LogEvent(L"Detected upper-case OneDrive interface");
+            }
+            else if (Cid == CidLower)
+            {
+              FileSystem->FOneDriveInterface = odiLowerCase;
+              Terminal->LogEvent(L"Detected lower-case OneDrive interface");
+            }
+          }
+        }
+      }
+      // OneDrive is case insensitive and when we enter the directory using a different case, it returns results with the actual case
+      if (StartsText(FileListPath, FullFileName))
+      {
+        File->FullFileName = FileListPath + MidStr(FullFileName, FileListPath.Length() + 1);
+      }
+    }
     if (UnixSamePath(File->FullFileName, FileListPath))
     {
       File->FileName = PARENTDIRECTORY;

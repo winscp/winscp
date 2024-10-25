@@ -221,7 +221,8 @@ typedef struct {
     /* Part of the RHS of the response digest. */
     char *response_rhs;
 #ifdef WINSCP
-    char * passport;
+    char * passport_auth_header;
+    char * passport_cookies_header;
     /* In the current implementation, we actually possibly never reuse these two fields */
     ne_uri passport_login_uri;
     char * passport_cookies;
@@ -343,10 +344,15 @@ static void clean_session(auth_session *sess)
 #endif
 #ifdef WINSCP
     ne_uri_free(&sess->passport_login_uri);
-    if (sess->passport)
+    if (sess->passport_auth_header)
     {
-        ne_free(sess->passport);
-        sess->passport = NULL;
+        ne_free(sess->passport_auth_header);
+        sess->passport_auth_header = NULL;
+    }
+    if (sess->passport_cookies_header)
+    {
+        ne_free(sess->passport_cookies_header);
+        sess->passport_cookies_header = NULL;
     }
     if (sess->passport_cookies)
     {
@@ -1450,7 +1456,7 @@ static int passport_challenge(auth_session *sess, int attempt,
     char * org_url;
     int result;
 
-    if (sess->passport == NULL)
+    if (sess->passport_auth_header == NULL)
     {
         struct aux_request_init_data * init_data = ne_get_session_private(session, PASSPORT_REQ_ID);
 
@@ -1600,7 +1606,7 @@ static int passport_challenge(auth_session *sess, int attempt,
 
                 char * buf, * pnt, * key, * val;
                 pnt = buf = ne_strdup(auth_info);
-                while (((sess->passport == NULL) || (success < 0)) &&
+                while (((sess->passport_auth_header == NULL) || (success < 0)) &&
                        (tokenize(&pnt, &key, &val, NULL, 1) == 0))
                 {
                     if (val == NULL)
@@ -1626,13 +1632,13 @@ static int passport_challenge(auth_session *sess, int attempt,
                     }
                     else if (ne_strcasecmp(key, "from-PP") == 0)
                     {
-                        sess->passport = ne_concat("Authorization: ", PASSPORT_NAME, " ", key, "=", val, "\r\n", NULL);
+                        sess->passport_auth_header = ne_concat("Authorization: ", PASSPORT_NAME, " ", key, "=", val, "\r\n", NULL);
                     }
                 }
 
                 ne_free(buf);
 
-                if ((sess->passport == NULL) || (success < 0))
+                if ((sess->passport_auth_header == NULL) || (success < 0))
                 {
                     challenge_error(errmsg, _("Cannot parse Nexus response"));
                     result = -1;
@@ -1653,7 +1659,7 @@ static int passport_challenge(auth_session *sess, int attempt,
 
 static char *request_passport(auth_session *sess, struct auth_request *req)
 {
-    return ne_strdup(sess->passport);
+    return ne_concat(sess->passport_auth_header, sess->passport_cookies_header, NULL);
 }
 
 static void lower_case(char * s)
@@ -1747,12 +1753,12 @@ static int verify_passport_response(struct auth_request *req, auth_session *sess
 
             if (cookie_header != NULL)
             {
-                if (sess->passport != NULL)
+                if (sess->passport_cookies_header != NULL)
                 {
-                    ne_free(sess->passport);
+                    ne_free(sess->passport_cookies_header);
                 }
                 ne_buffer_zappend(cookie_header, "\r\n");
-                sess->passport = ne_buffer_finish(cookie_header);
+                sess->passport_cookies_header = ne_buffer_finish(cookie_header);
             }
         }
     }
