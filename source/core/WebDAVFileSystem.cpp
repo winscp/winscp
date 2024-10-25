@@ -873,13 +873,15 @@ void TWebDAVFileSystem::NeonPropsResult(
   UnicodeString Path = PathUnescape(Uri->path);
 
   TReadFileData & Data = *static_cast<TReadFileData *>(UserData);
+  TWebDAVFileSystem * FileSystem = Data.FileSystem;
   if (Data.FileList != NULL)
   {
     std::unique_ptr<TRemoteFile> File(new TRemoteFile(NULL));
-    File->Terminal = Data.FileSystem->FTerminal;
-    Data.FileSystem->ParsePropResultSet(File.get(), Path, Results);
+    TTerminal * Terminal = FileSystem->FTerminal;
+    File->Terminal = Terminal;
+    FileSystem->ParsePropResultSet(File.get(), Path, Results);
 
-    UnicodeString FileListPath = Data.FileSystem->AbsolutePath(Data.FileList->Directory, false);
+    UnicodeString FileListPath = FileSystem->AbsolutePath(Data.FileList->Directory, false);
     if (FileSystem->FOneDrive)
     {
       UnicodeString FullFileName = UnixIncludeTrailingBackslash(File->FullFileName);
@@ -927,7 +929,7 @@ void TWebDAVFileSystem::NeonPropsResult(
   }
   else
   {
-    Data.FileSystem->ParsePropResultSet(Data.File, Path, Results);
+    FileSystem->ParsePropResultSet(Data.File, Path, Results);
   }
 }
 //---------------------------------------------------------------------------
