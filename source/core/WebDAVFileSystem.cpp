@@ -1029,7 +1029,9 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
     // so if we see one in the display name, take the name from there.
     // * and % won't help, as OneDrive seem to have bug with % at the end of the filename,
     // and the * (and others) is removed from file names.
-    // Filenames with commas (,) get as many additional characters at the end of the filename as there are commas.
+
+    // Filenames with commas (,) get as many additional characters at the end of the filename as there are commas
+    // (not true anymore in the new interface).
     if (FOneDrive &&
         (ContainsText(File->FileName, L"^") || ContainsText(File->FileName, L",") || (wcspbrk(File->DisplayName.c_str(), L"&,+#[]%*") != NULL)))
     {
