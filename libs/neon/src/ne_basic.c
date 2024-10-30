@@ -524,6 +524,10 @@ int ne_mkcol(ne_session *sess, const char *path)
     ne_lock_using_parent(req, real_path);
 #endif
     
+    #ifdef WINSCP
+    // New OneDrive interface returns empty text/xml 207 MULTI-STATUS response, ignore it
+    ne_set_request_flag(req, NE_REQFLAG_IGNOREEMPTYXML, 1);
+    #endif
     ret = ne_simple_request(sess, req);
 
     ne_free(real_path);

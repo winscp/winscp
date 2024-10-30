@@ -243,6 +243,10 @@ typedef enum ne_request_flag_e {
                              * timeout when reading interim
                              * responses. */
 
+    #ifdef WINSCP
+    NE_REQFLAG_IGNOREEMPTYXML,
+    #endif
+
     NE_REQFLAG_LAST /* enum sentinel value */
 } ne_request_flag;
 
