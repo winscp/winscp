@@ -7471,7 +7471,7 @@ void __fastcall TTerminal::DoCopyToRemote(
         {
           DirectoryModified(TargetDir, false);
 
-          if (DirectoryExists(ApiPath(FileName)))
+          if (::DirectoryExists(ApiPath(FileName)))
           {
             UnicodeString FileNameOnly = ExtractFileName(FileName);
             DirectoryModified(FullTargetDir + FileNameOnly, true);
