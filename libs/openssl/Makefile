@@ -2942,7 +2942,7 @@ $(O_SSL): $(SSLOBJ)
 
 $(O_CRYPTO): $(CRYPTOOBJ)
     -if exist $(O_CRYPTO) $(RM) $(O_CRYPTO)
-    $(MKLIB) $(O_CRYPTO) /P1024 @&&!
+    $(MKLIB) $(O_CRYPTO) /P2048 @&&!
 +$(**: = &^
 +)
 !
