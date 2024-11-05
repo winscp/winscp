@@ -204,7 +204,7 @@ void __fastcall TEditorRichEdit::ApplyFont()
 {
   std::unique_ptr<TFont> NewFont(new TFont());
   TWinConfiguration::RestoreFont(FFontConfiguration, NewFont.get());
-  NewFont->Size = ScaleByPixelsPerInchFromSystem(NewFont->Size, this);
+  // Rich Edit 4.1 scales the font on its own
   NewFont->Color = GetWindowTextColor(Color, FFontColor);
   // setting DefAttributes may take quite time, even if the font attributes
   // do not change, so avoid that if not necessary
@@ -1735,29 +1735,3 @@ void __fastcall TEditorForm::UpdateBackgroundColor()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorForm::CMDpiChanged(TMessage & Message)
-{
-  bool WasModified = EditorMemo->Modified;
-  EditorMemo->ApplyFont();
-  EditorMemo->Modified = WasModified;
-  // we do not want this, but we want to prevent undo of the font change too, should be improved
-  EditorMemo->ClearUndo();
-  // Clear "modified" status in the status bar, invoked by font change
-  UpdateControls();
-  TForm::Dispatch(&Message);
-}
-//---------------------------------------------------------------------------
-void __fastcall TEditorForm::Dispatch(void * Message)
-{
-  TMessage * M = static_cast<TMessage*>(Message);
-  switch (M->Msg)
-  {
-    case CM_DPICHANGED:
-      CMDpiChanged(*M);
-      break;
-
-    default:
-      TForm::Dispatch(Message);
-      break;
-  }
-}

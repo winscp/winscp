@@ -163,8 +163,6 @@ protected:
   void __fastcall BackupSave();
   void __fastcall CheckFileSize();
   void __fastcall UpdateBackgroundColor();
-  virtual void __fastcall Dispatch(void * Message);
-  void __fastcall CMDpiChanged(TMessage & Message);
 };
 //---------------------------------------------------------------------------
 #endif
