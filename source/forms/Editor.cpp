@@ -206,14 +206,11 @@ void __fastcall TEditorRichEdit::ApplyFont()
   TWinConfiguration::RestoreFont(FFontConfiguration, NewFont.get());
   // Rich Edit 4.1 scales the font on its own
   NewFont->Color = GetWindowTextColor(Color, FFontColor);
-  // setting DefAttributes may take quite time, even if the font attributes
-  // do not change, so avoid that if not necessary
   if (!FInitialized ||
       !SameFont(Font, NewFont.get()) ||
       (Font->Color != NewFont->Color))
   {
     Font->Assign(NewFont.get());
-    DefAttributes->Assign(Font);
   }
 }
 //---------------------------------------------------------------------------
@@ -230,6 +227,7 @@ void __fastcall TEditorRichEdit::SetFormat(
 
   // setting DefAttributes is noop if we do not have a handle
   // (btw code below would create one anyway)
+  // (and we now do not set DefAttributes anymore anyway)
   HandleNeeded();
 
   LockWindowUpdate(Handle);
