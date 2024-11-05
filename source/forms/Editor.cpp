@@ -144,7 +144,7 @@ int __fastcall TPreambleFilteringFileStream::Write(
   EXCEPTION;
 }
 //---------------------------------------------------------------------------
-class TEditorRichEdit : public TNewRichEdit
+class TEditorRichEdit : public TRichEdit
 {
 public:
   virtual __fastcall TEditorRichEdit(TComponent * AOwner);
@@ -191,7 +191,7 @@ private:
 };
 //---------------------------------------------------------------------------
 __fastcall TEditorRichEdit::TEditorRichEdit(TComponent * AOwner) :
-  TNewRichEdit(AOwner),
+  TRichEdit(AOwner),
   FLibrary(0),
   FTabSize(0),
   FWordWrap(true),
@@ -290,7 +290,7 @@ void __fastcall TEditorRichEdit::Redo()
 //---------------------------------------------------------------------------
 void __fastcall TEditorRichEdit::CreateParams(TCreateParams & Params)
 {
-  TNewRichEdit::CreateParams(Params);
+  TRichEdit::CreateParams(Params);
 
   Params.Style = Params.Style |
     (HideScrollBars ? 0 : ES_DISABLENOSCROLL) |
@@ -301,7 +301,7 @@ void __fastcall TEditorRichEdit::CreateParams(TCreateParams & Params)
 //---------------------------------------------------------------------------
 void __fastcall TEditorRichEdit::CreateWnd()
 {
-  TNewRichEdit::CreateWnd();
+  TRichEdit::CreateWnd();
   if (!WinConfiguration->Editor.AutoFont)
   {
     int LangOptions = SendMessage(Handle, EM_GETLANGOPTIONS, 0, 0);
@@ -407,7 +407,7 @@ void __fastcall TEditorRichEdit::EMStreamIn(TMessage & Message)
   LoadInfo.StreamInfo = reinterpret_cast<TRichEditStreamInfo *>(EditStream->dwCookie);
   LoadInfo.RichEdit = this;
   EditStream->dwCookie = reinterpret_cast<DWORD_PTR>(&LoadInfo);
-  TNewRichEdit::Dispatch(&Message);
+  TRichEdit::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
 void TEditorRichEdit::WMMouseWheel(TMessage & Message)
@@ -434,7 +434,7 @@ void TEditorRichEdit::WMMouseWheel(TMessage & Message)
   }
   else
   {
-    TNewRichEdit::Dispatch(&Message);
+    TRichEdit::Dispatch(&Message);
   }
 }
 //---------------------------------------------------------------------------
@@ -445,7 +445,7 @@ void TEditorRichEdit::WMMouseActivate(TWMMouseActivate & Message)
   {
     SetFocus();
   }
-  TNewRichEdit::Dispatch(&Message);
+  TRichEdit::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorRichEdit::Dispatch(void * Message)
@@ -470,7 +470,7 @@ void __fastcall TEditorRichEdit::Dispatch(void * Message)
       break;
 
     default:
-      TNewRichEdit::Dispatch(Message);
+      TRichEdit::Dispatch(Message);
       break;
   }
 }
@@ -652,7 +652,7 @@ void __fastcall TEditorRichEdit::KeyDown(Word & Key, TShiftState Shift)
   {
     Key = 0;
   }
-  TNewRichEdit::KeyDown(Key, Shift);
+  TRichEdit::KeyDown(Key, Shift);
 }
 //---------------------------------------------------------------------------
 class TFindDialogEx : public TFindDialog
