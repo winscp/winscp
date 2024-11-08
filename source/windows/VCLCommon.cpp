@@ -852,21 +852,21 @@ static void __fastcall AfterMonitorDpiChanged(void * AData, TObject * Sender, in
   }
 }
 //---------------------------------------------------------------------------
-inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
-  TMessage & Message)
+static void __fastcall FormWindowProc(void * Data, TMessage & Message)
 {
-  TForm * AForm = dynamic_cast<TForm *>(Form);
+  TForm * AForm = static_cast<TForm *>(Data);
   DebugAssert(AForm != NULL);
+  TWndMethod WndProc = ControlWndProc(AForm);
   if (Message.Msg == WM_SYSCOMMAND)
   {
     if (Message.WParam == SC_CONTEXTHELP)
     {
-      FormHelp(Form);
+      FormHelp(AForm);
       Message.Result = 1;
     }
     else if (Message.WParam == SC_MINIMIZE)
     {
-      GetFormCustomizationComponent(AForm)->WindowStateBeforeMimimize = Form->WindowState;
+      GetFormCustomizationComponent(AForm)->WindowStateBeforeMimimize = AForm->WindowState;
       WndProc(Message);
     }
     else
@@ -912,12 +912,6 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
   {
     WndProc(Message);
   }
-}
-//---------------------------------------------------------------------------
-static void __fastcall FormWindowProc(void * Data, TMessage & Message)
-{
-  TCustomForm * Form = static_cast<TCustomForm *>(Data);
-  DoFormWindowProc(Form, ControlWndProc(Form), Message);
 }
 //---------------------------------------------------------------------------
 void __fastcall InitializeSystemSettings()
