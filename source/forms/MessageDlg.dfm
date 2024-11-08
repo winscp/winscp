@@ -13,5 +13,6 @@ object MessageForm: TMessageForm
   Font.Name = 'Tahoma'
   Font.Style = []
   Position = poOwnerFormCenter
+  OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   TextHeight = 13
 end

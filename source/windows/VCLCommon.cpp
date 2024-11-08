@@ -502,15 +502,9 @@ friend TCanvas * CreateControlCanvas(TControl * Control);
 //---------------------------------------------------------------------
 class TPublicForm : public TForm
 {
-friend void __fastcall ChangeFormPixelsPerInch(TForm * Form, int PixelsPerInch);
 friend void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront, bool TriggerModalStarted);
 friend void __fastcall HideAsModal(TForm * Form, void *& Storage);
 friend void __fastcall ShowFormNoActivate(TForm * Form);
-};
-//---------------------------------------------------------------------
-class TPublicTreeView : public TCustomTreeView
-{
-friend void __fastcall ChangeControlScale(TControl * Control, int M, int D);
 };
 //---------------------------------------------------------------------------
 void __fastcall RealignControl(TControl * Control)
@@ -520,17 +514,6 @@ void __fastcall RealignControl(TControl * Control)
 }
 //---------------------------------------------------------------------------
 static Forms::TMonitor * LastMonitor = NULL;
-//---------------------------------------------------------------------------
-static int __fastcall GetTextHeightAtPixelsPerInch(TForm * Form, int PixelsPerInch)
-{
-  std::unique_ptr<TCanvas> Canvas(new TCanvas());
-  Canvas->Handle = GetDC(0);
-  Canvas->Font->Assign(Form->Font);
-  Canvas->Font->PixelsPerInch = PixelsPerInch; // Must be set BEFORE size
-  Canvas->Font->Size = Form->Font->Size;
-  // VCLCOPY: this is what TCustomForm.GetTextHeight does
-  return Canvas->TextHeight(L"0");
-}
 //---------------------------------------------------------------------------
 class TRescaleComponent : public TComponent
 {
@@ -564,33 +547,8 @@ void __fastcall SetRescaleFunction(
   Component->InsertComponent(RescaleComponent);
 }
 //---------------------------------------------------------------------------
-static void __fastcall ChangeControlScale(TControl * Control, int M, int D)
+static void __fastcall ChangeControlScale(TControl * Control)
 {
-  // VCLCOPY This is what TCustomListView.ChangeScale does,
-  // but it does that for initial loading only, when ScalingFlags includes sfWidth.
-  // But ScalingFlags is reset in TControl.ChangeScale (seems like a bug).
-  TCustomListView * CustomListView = dynamic_cast<TCustomListView *>(Control);
-  if (CustomListView != NULL)
-  {
-    TListView * ListView = reinterpret_cast<TListView *>(CustomListView);
-    for (int Index = 0; Index < ListView->Columns->Count; Index++)
-    {
-      TListColumn * Column = ListView->Columns->Items[Index];
-      if ((Column->Width != LVSCW_AUTOSIZE) &&
-          (Column->Width != LVSCW_AUTOSIZE_USEHEADER))
-      {
-        Column->Width = MulDiv(Column->Width, M, D);
-      }
-    }
-  }
-
-  TCustomTreeView * CustomTreeView = dynamic_cast<TCustomTreeView *>(Control);
-  if (CustomTreeView != NULL)
-  {
-    TPublicTreeView * PublicTreeView = static_cast<TPublicTreeView *>(CustomTreeView);
-    PublicTreeView->Indent = MulDiv(PublicTreeView->Indent, M, D);
-  }
-
   TCustomCombo * CustomCombo = dynamic_cast<TCustomCombo *>(Control);
   if (CustomCombo != NULL)
   {
@@ -609,7 +567,7 @@ static void __fastcall ChangeControlScale(TControl * Control, int M, int D)
     TControl * ChildControl = dynamic_cast<TControl *>(Component);
     if (ChildControl != NULL)
     {
-      ChangeControlScale(ChildControl, M, D);
+      ChangeControlScale(ChildControl);
     }
 
     TRescaleComponent * RescaleComponent =
@@ -620,7 +578,7 @@ static void __fastcall ChangeControlScale(TControl * Control, int M, int D)
     }
   }
 
-  Control->Perform(CM_DPICHANGED, M, D);
+  Control->Perform(CM_DPICHANGED, 0, 0);
 }
 //---------------------------------------------------------------------------
 typedef std::pair<int, int> TRatio;
@@ -632,14 +590,9 @@ public:
   __fastcall TFormCustomizationComponent() :
     TComponent(NULL)
   {
-    ImplicitRescaleAdded = false;
-    Rescaling = false;
     WindowStateBeforeMimimize = wsNormal;
   }
 
-  bool Rescaling;
-  bool ImplicitRescaleAdded;
-  TRatioMap RatioMap;
   TWindowState WindowStateBeforeMimimize;
 };
 //---------------------------------------------------------------------------
@@ -656,92 +609,11 @@ static TFormCustomizationComponent * GetFormCustomizationComponent(TForm * Form)
   return FormCustomizationComponent;
 }
 //---------------------------------------------------------------------------
-void __fastcall RecordFormImplicitRescale(TForm * Form)
+static void __fastcall ChangeFormPixelsPerInch(TForm * Form)
 {
-  if (Form->Scaled)
-  {
-    TFormCustomizationComponent * FormCustomizationComponent = GetFormCustomizationComponent(Form);
-    if (!FormCustomizationComponent->ImplicitRescaleAdded)
-    {
-      TRatio Ratio;
-      GetFormScaleRatio(Form, Ratio.first, Ratio.second);
-      TRatio RescaleKeyRatio(Form->PixelsPerInch, USER_DEFAULT_SCREEN_DPI);
-      FormCustomizationComponent->RatioMap[RescaleKeyRatio] = Ratio;
-      FormCustomizationComponent->ImplicitRescaleAdded = true;
-    }
-  }
-}
-//---------------------------------------------------------------------------
-static void GetFormRescaleRatio(TForm * Form, int PixelsPerInch, int & M, int & D)
-{
-  TFormCustomizationComponent * FormCustomizationComponent = GetFormCustomizationComponent(Form);
-  TRatio ReverseRescaleKeyRatio(Form->PixelsPerInch, PixelsPerInch);
-  if (FormCustomizationComponent->RatioMap.count(ReverseRescaleKeyRatio) > 0)
-  {
-    M = FormCustomizationComponent->RatioMap[ReverseRescaleKeyRatio].second;
-    D = FormCustomizationComponent->RatioMap[ReverseRescaleKeyRatio].first;
-  }
-  else
-  {
-    M = GetTextHeightAtPixelsPerInch(Form, PixelsPerInch);
-    D = GetTextHeightAtPixelsPerInch(Form, Form->PixelsPerInch);
-  }
 
-
-  TRatio RescaleKeyRatio(PixelsPerInch, Form->PixelsPerInch);
-  FormCustomizationComponent->RatioMap[RescaleKeyRatio] = TRatio(M, D);
-}
-//---------------------------------------------------------------------------
-static void __fastcall ChangeFormPixelsPerInch(TForm * Form, int PixelsPerInch)
-{
-  RecordFormImplicitRescale(Form);
-
-  TFormCustomizationComponent * FormCustomizationComponent = GetFormCustomizationComponent(Form);
-
-  if ((Form->PixelsPerInch != PixelsPerInch) && // optimization
-      !FormCustomizationComponent->Rescaling)
-  {
-    AppLogFmt(L"Scaling window %s", (Form->Caption));
-    TAutoFlag RescalingFlag(FormCustomizationComponent->Rescaling);
-
-    int M, D;
-    GetFormRescaleRatio(Form, PixelsPerInch, M, D);
-
-    Form->PixelsPerInch = PixelsPerInch;
-    TPublicForm * PublicCustomForm = static_cast<TPublicForm *>(Form);
-
-    // WORKAROUND
-    // TCustomForm.ChangeScale scales contraints only after rescaling the size,
-    // so the unscaled constraints apply to the new size
-    // (e.g. with TLoginDialog)
-    std::unique_ptr<TSizeConstraints> Constraints(new TSizeConstraints(NULL));
-    Constraints->Assign(PublicCustomForm->Constraints);
-    std::unique_ptr<TSizeConstraints> NoConstraints(new TSizeConstraints(NULL));
-    PublicCustomForm->Constraints = NoConstraints.get();
-
-    // Does not seem to have any effect
-    PublicCustomForm->DisableAlign();
-    try
-    {
-      int PrevFontHeight = Form->Font->Height;
-      PublicCustomForm->ChangeScale(M, D);
-      // Re-rescale by Height as it has higher granularity, hence lower risk of loosing precision due to rounding
-      Form->Font->Height = MulDiv(PrevFontHeight, M, D);
-
-      ChangeControlScale(Form, M, D);
-
-      Constraints->MinWidth = MulDiv(Constraints->MinWidth, M, D);
-      Constraints->MaxWidth = MulDiv(Constraints->MaxWidth, M, D);
-      Constraints->MinHeight = MulDiv(Constraints->MinHeight, M, D);
-      Constraints->MaxHeight = MulDiv(Constraints->MaxHeight, M, D);
-      PublicCustomForm->Constraints = Constraints.get();
-    }
-    __finally
-    {
-      PublicCustomForm->EnableAlign();
-    }
-
-  }
+  AppLogFmt(L"Scaling window %s", (Form->Caption));
+  ChangeControlScale(Form);
 }
 //---------------------------------------------------------------------------
 static void __fastcall FormShowingChanged(TForm * Form, TWndMethod WndProc, TMessage & Message)
@@ -842,18 +714,6 @@ static void __fastcall FormShowingChanged(TForm * Form, TWndMethod WndProc, TMes
     {
       Form->Position = poScreenCenter;
     }
-  }
-
-  if (Form->Showing)
-  {
-    // At least on single monitor setup, monitor DPI is 100% but system DPI is higher,
-    // WM_DPICHANGED is not sent. But VCL scales the form using system DPI.
-    // Also we have to do this always for implicitly placed forms (poDefaultPosOnly), like TEditorForm,
-    // as they never get the WM_DPICHANGED.
-    // Call this before WndProc below, i.e. before OnShow event (particularly important for the TEditorForm::FormShow).
-
-    // GetControlPixelsPerInch would return Form.PixelsPerInch, but we want to get a new DPI of the form monitor.
-    ChangeFormPixelsPerInch(Form, GetMonitorPixelsPerInch(GetMonitorFromControl(Form)));
   }
 
   bool WasFormCenter =
@@ -977,6 +837,21 @@ void __fastcall CountClicksForWindowPrint(TForm * Form)
   }
 }
 //---------------------------------------------------------------------------
+struct TWMDpiChangedData
+{
+  TMonitorDpiChangedEvent OnAfterMonitorDpiChanged;
+};
+//---------------------------------------------------------------------------
+static void __fastcall AfterMonitorDpiChanged(void * AData, TObject * Sender, int OldDPI, int NewDPI)
+{
+  TWMDpiChangedData * Data = static_cast<TWMDpiChangedData *>(AData);
+  ChangeFormPixelsPerInch(DebugNotNull(dynamic_cast<TForm *>(Sender)));
+  if (Data->OnAfterMonitorDpiChanged != NULL)
+  {
+    Data->OnAfterMonitorDpiChanged(Sender, OldDPI, NewDPI);
+  }
+}
+//---------------------------------------------------------------------------
 inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
   TMessage & Message)
 {
@@ -1014,20 +889,19 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
       WndProc(Message);
     }
   }
-  else if (Message.Msg == WM_GETDPISCALEDSIZE)
-  {
-    WndProc(Message);
-    int M, D;
-    GetFormRescaleRatio(AForm, LOWORD(Message.WParam), M, D);
-    SIZE & Size = *(reinterpret_cast<SIZE *>(Message.LParam));
-    Size.cx = MulDiv(Size.cx, M, D);
-    Size.cy = MulDiv(Size.cy, M, D);
-    Message.Result = TRUE;
-  }
   else if (Message.Msg == WM_DPICHANGED)
   {
-    ChangeFormPixelsPerInch(AForm, LOWORD(Message.WParam));
-    WndProc(Message);
+    TWMDpiChangedData WMDpiChangedData;
+    WMDpiChangedData.OnAfterMonitorDpiChanged = AForm->OnAfterMonitorDpiChanged;
+    AForm->OnAfterMonitorDpiChanged = MakeMethod<TMonitorDpiChangedEvent>(&WMDpiChangedData, AfterMonitorDpiChanged);
+    try
+    {
+      WndProc(Message);
+    }
+    __finally
+    {
+      AForm->OnAfterMonitorDpiChanged = WMDpiChangedData.OnAfterMonitorDpiChanged;
+    }
   }
   else if ((Message.Msg == WM_LBUTTONDOWN) || (Message.Msg == WM_LBUTTONDBLCLK))
   {
@@ -1190,9 +1064,7 @@ void __fastcall UseSystemSettingsPre(TForm * Control)
 
   // We have legacy XE6 font (Tahoma) explicitly set in DFMs to match the layout.
   // That unlinks the font fonts from the Application->DefaultFont. We set the DefaultFont to Tahoma in WinSCP.cpp.
-  // So we can link the form's font back to it now.
   DebugAssert(SameFont(Control->Font, Application->DefaultFont));
-  Control->ParentFont = true;
 
   ApplySystemSettingsOnControl(Control);
 };
@@ -1390,7 +1262,8 @@ bool __fastcall SelectDirectory(UnicodeString & Path, const UnicodeString Prompt
       Directory = ExtractFilePath(Path);
       FileName = ExtractFileName(Path);
     }
-    Result = SelectDirectory(Prompt, L"", Directory);
+    TSelectDirExtOpts Opts = TSelectDirExtOpts() << sdNewUI;
+    Result = SelectDirectory(Prompt, EmptyStr, Directory, Opts);
     if (Result)
     {
       Path = Directory;

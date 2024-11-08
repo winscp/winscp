@@ -308,6 +308,7 @@ __published:
   void __fastcall ShowAgainCheckClick(TObject *Sender);
   void __fastcall SearchSiteStartActionExecute(TObject *Sender);
   void __fastcall SitesIncrementalSearchPanelContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
+  void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
 
 private:
   int NoUpdate;
@@ -335,7 +336,6 @@ private:
   TIncrementalSearch FSiteSearch;
   TForm * FLinkedForm;
   TPoint FPrevPos;
-  int FSiteButtonsPadding;
   UnicodeString FUserNameLabel;
   UnicodeString FPasswordLabel;
   int FFixedSessionImages;
@@ -422,7 +422,6 @@ private:
   TModalResult __fastcall DefaultResult();
   int AddLoginButtonImage(int Index, bool Enabled);
   void __fastcall WMWindowPosChanged(TWMWindowPosChanged & Message);
-  void __fastcall CMDpiChanged(TMessage & Message);
   void __fastcall GenerateImages();
   void __fastcall CMVisibleChanged(TMessage & Message);
   void UpdateS3Credentials();
@@ -445,7 +444,6 @@ protected:
   void __fastcall InitControls();
   void __fastcall EditSession();
   void __fastcall Login();
-  HIDESBASE DYNAMIC void __fastcall ChangeScale(int M, int D, bool isDpiChange);
   void SetSiteSearch(TIncrementalSearch SiteSearch);
   __property TSessionData * SelectedSession  = { read=GetSelectedSession };
 

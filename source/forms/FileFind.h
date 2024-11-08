@@ -81,6 +81,7 @@ __published:
   void __fastcall DownloadActionExecute(TObject *Sender);
   void __fastcall EditActionExecute(TObject *Sender);
   void __fastcall FileViewCompare(TObject *Sender, TListItem *Item1, TListItem *Item2, int Data, int &Compare);
+  void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
 
 public:
   __fastcall TFileFindDialog(TComponent * Owner);
@@ -131,7 +132,6 @@ private:
   void __fastcall FocusFile();
   void __fastcall DoFocusFile(const UnicodeString & Path);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
-  void __fastcall CMDpiChanged(TMessage & Message);
   void __fastcall ClearItem(TListItem * Item);
   void __fastcall FileDeleteFinished(TOperationSide Side, const UnicodeString & FileName, bool Success);
   void __fastcall FileDownloadFinished(TOperationSide Side, const UnicodeString & FileName, bool Success);

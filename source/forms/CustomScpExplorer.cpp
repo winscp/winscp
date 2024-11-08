@@ -9922,10 +9922,6 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
       WMDpiChanged(*M);
       break;
 
-    case CM_DPICHANGED:
-      CMDpiChanged(*M);
-      break;
-
     case WM_SETTINGCHANGE:
       WMSettingChange(*M);
       break;
@@ -9973,12 +9969,6 @@ void TCustomScpExplorerForm::RegenerateSessionColorsImageList()
   AddFixedSessionImages();
   ::RegenerateSessionColorsImageList(FSessionColors, FSessionColorMaskImageIndex);
   UpdateImages();
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::CMDpiChanged(TMessage & Message)
-{
-  TForm::Dispatch(&Message);
-  RegenerateSessionColorsImageList();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMDpiChanged(TMessage & Message)
@@ -11168,11 +11158,19 @@ void __fastcall TCustomScpExplorerForm::PrivateKeyUpload()
   TTerminalManager::Instance()->UploadPublicKey(Terminal, NULL, FileName);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::ChangeScale(int M, int D, bool isDpiChange)
+void __fastcall TCustomScpExplorerForm::FormAfterMonitorDpiChanged(TObject *, int OldDPI, int NewDPI)
 {
-  TForm::ChangeScale(M, D, isDpiChange);
-  int APixelsPerInch = GetControlPixelsPerInch(this);
-  GlyphsModule->PixelsPerInch = APixelsPerInch;
+  DebugUsedParam(OldDPI);
+  DebugAssert(NewDPI == GetControlPixelsPerInch(this));
+  GlyphsModule->PixelsPerInch = NewDPI;
+  // Can be called too early when primary monitor has non-system dpi
+  if (FSessionColors != NULL)
+  {
+    RegenerateSessionColorsImageList();
+  }
+  UpdateTabsSize();
+  UpdateSessionsPageControlHeight();
+  QueueFileListColumnAutoSize();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DockContextPopup(TObject * Sender, TPoint & MousePos, bool & /*Handled*/)
@@ -11971,7 +11969,7 @@ void TCustomScpExplorerForm::LocalLocalCopyCommand(TFileOperation Operation, TOp
   LocalLocalCopy(Operation, Side, OnFocused, !WinConfiguration->ConfirmTransferring, false, Flags);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::SessionsPageControlResize(TObject *)
+void TCustomScpExplorerForm::UpdateTabsSize()
 {
   // 1) Changing tab list triggers the OnResize.
   // 2) Is called in TForm constructor, when we are not ready to call SessionListChanged (particularly when starting with colored session)
@@ -11980,6 +11978,11 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlResize(TObject *)
     // UpdateTabsCaptionTruncation should be enough
     SessionListChanged(true);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SessionsPageControlResize(TObject *)
+{
+  UpdateTabsSize();
 }
 //---------------------------------------------------------------------------
 UnicodeString TCustomScpExplorerForm::GetSessionPath(TManagedTerminal * ASession, TOperationSide Side)

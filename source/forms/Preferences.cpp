@@ -155,6 +155,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(
   }
 
   HideComponentsPanel(this);
+  FInitialized = true;
 }
 //---------------------------------------------------------------------------
 __fastcall TPreferencesDialog::~TPreferencesDialog()
@@ -1268,7 +1269,9 @@ int __fastcall TPreferencesDialog::GetCommandListIndex(TCustomCommandList * List
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpdateControls()
 {
-  if (FNoUpdate == 0)
+  // ControlChange gets called when scaling the form while loading it,
+  // when the primary monitor dpi is different than system dpi
+  if (FInitialized && (FNoUpdate == 0))
   {
     NavigationTree->HideSelection = (FSearchResults.get() != NULL);
     if ((SearchEdit->ButtonWidth != 0) != !SearchEdit->Text.IsEmpty()) // optimization
@@ -2263,12 +2266,12 @@ void __fastcall TPreferencesDialog::WMHelp(TWMHelp & Message)
   TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::CMDpiChanged(TMessage & Message)
+void __fastcall TPreferencesDialog::FormAfterMonitorDpiChanged(TObject *, int OldDPI, int NewDPI)
 {
+  DebugUsedParam2(OldDPI, NewDPI);
   // To update font sizes - Note that they get scaled automatically, but as we use our own algorithm,
   // we may end up using a slightly different size, so apply it straight away for consistency
   UpdateControls();
-  TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
 void TPreferencesDialog::WMActivate(TWMActivate & Message)
@@ -2298,10 +2301,6 @@ void __fastcall TPreferencesDialog::Dispatch(void *Message)
   if (M->Msg == CM_DIALOGKEY)
   {
     CMDialogKey(*((TWMKeyDown *)Message));
-  }
-  else if (M->Msg == CM_DPICHANGED)
-  {
-    CMDpiChanged(*M);
   }
   else if (M->Msg == WM_HELP)
   {

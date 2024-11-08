@@ -87,7 +87,6 @@ private:
   int __fastcall IndexOfTabButtonAt(int X, int Y);
   void __fastcall ItemContentsRect(int Item, TRect & Rect);
   bool __fastcall HasItemImage(int Item);
-  void __fastcall ItemTextRect(int Item, TRect & Rect);
   void __fastcall ItemTabRect(int Item, TRect & Rect);
   TThemeTabSheetButtons __fastcall GetTabButton(int Index);
   void UpdateHotButton(int & Ref, int Index);

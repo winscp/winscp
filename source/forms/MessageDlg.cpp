@@ -79,14 +79,10 @@ __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner)
   NeverAskAgainCheck = NULL;
   FUpdateForShiftStateTimer = NULL;
   UseSystemSettingsPre(this);
-  // DFM-based form, to use the custom Tahoma font
-  FDummyForm = new TCustomDialog(EmptyStr);
-  UseSystemSettings(FDummyForm);
 }
 //---------------------------------------------------------------------------
 __fastcall TMessageForm::~TMessageForm()
 {
-  SAFE_DESTROY(FDummyForm);
   SAFE_DESTROY(FUpdateForShiftStateTimer);
 }
 //---------------------------------------------------------------------------
@@ -358,21 +354,22 @@ void __fastcall TMessageForm::Dispatch(void * Message)
   {
     CMShowingChanged(*M);
   }
-  else if (M->Msg == CM_DPICHANGED)
-  {
-    if (MessageBrowser != NULL)
-    {
-      LoadMessageBrowser();
-    }
-    if (NeverAskAgainCheck != NULL)
-    {
-      AutoSizeCheckBox(NeverAskAgainCheck);
-    }
-    TForm::Dispatch(Message);
-  }
   else
   {
     TForm::Dispatch(Message);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TMessageForm::FormAfterMonitorDpiChanged(TObject *, int OldDPI, int NewDPI)
+{
+  DebugUsedParam2(OldDPI, NewDPI);
+  if (MessageBrowser != NULL)
+  {
+    LoadMessageBrowser();
+  }
+  if (NeverAskAgainCheck != NULL)
+  {
+    AutoSizeCheckBox(NeverAskAgainCheck);
   }
 }
 //---------------------------------------------------------------------------
@@ -597,11 +594,6 @@ TButton * __fastcall TMessageForm::CreateButton(
     Button->Name = Name;
     Button->Parent = this;
     Button->Caption = Caption;
-    // Scale buttons using regular font, so that they are as large as buttons
-    // on other dialogs (note that they are still higher than Windows Task dialog
-    // buttons)
-    Button->Height = ScaleByTextHeightRunTime(FDummyForm, Button->Height);
-    Button->Width = ScaleByTextHeightRunTime(FDummyForm, Button->Width);
 
     if (OnSubmit != NULL)
     {
@@ -677,13 +669,6 @@ void __fastcall TMessageForm::NavigateToUrl(const UnicodeString & Url)
     UnicodeString FullUrl = AppendUrlParams(Url, FontSizeParam);
     NavigateBrowserToUrl(MessageBrowser, FullUrl);
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TMessageForm::ReadState(TReader * Reader)
-{
-  TForm::ReadState(Reader);
-  // Before we change form font
-  RecordFormImplicitRescale(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall AnswerNameAndCaption(

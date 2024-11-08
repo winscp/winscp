@@ -630,14 +630,9 @@ void __fastcall TCopyDialog::OkButtonDropDownClick(TObject *)
   MenuPopup(OkMenu, OkButton);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCopyDialog::Dispatch(void * Message)
+void __fastcall TCopyDialog::FormAfterMonitorDpiChanged(TObject *, int OldDPI, int NewDPI)
 {
-  TMessage * M = reinterpret_cast<TMessage*>(Message);
-  if (M->Msg == CM_DPICHANGED)
-  {
-    AutoSizeCheckBox(NeverShowAgainCheck);
-  }
-
-  TForm::Dispatch(Message);
+  DebugUsedParam2(OldDPI, NewDPI);
+  AutoSizeCheckBox(NeverShowAgainCheck);
 }
 //---------------------------------------------------------------------------

@@ -17,6 +17,7 @@ object LoginDialog: TLoginDialog
   Font.Style = []
   KeyPreview = True
   Position = poOwnerFormCenter
+  OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   TextHeight = 13
@@ -460,7 +461,6 @@ object LoginDialog: TLoginDialog
       DoubleBuffered = True
       DragMode = dmAutomatic
       HideSelection = False
-      Images = SessionImageList
       Indent = 19
       ParentDoubleBuffered = False
       ParentShowHint = False

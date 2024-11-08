@@ -90,7 +90,6 @@ TPanel * __fastcall CreateBlankPanel(TComponent * Owner);
 typedef void __fastcall (*TRescaleEvent)(TComponent * Sender, TObject * Token);
 void __fastcall SetRescaleFunction(
   TComponent * Component, TRescaleEvent OnRescale, TObject * Token = NULL, bool OwnsToken = false);
-void __fastcall RecordFormImplicitRescale(TForm * Form);
 TWindowState GetWindowStateBeforeMimimize(TForm * Form);
 void __fastcall CountClicksForWindowPrint(TForm * Form);
 bool IsButtonBeingClicked(TButtonControl * Button);

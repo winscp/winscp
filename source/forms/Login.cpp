@@ -90,8 +90,8 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FUserNameLabel = UserNameLabel->Caption;
   FPasswordLabel = PasswordLabel->Caption;
 
-  FSiteButtonsPadding = SitesPanel->ClientHeight - ToolsMenuButton->Top - ToolsMenuButton->Height;
   AutoSizeCheckBox(ShowAgainCheck);
+  SessionTree->Images = TreeViewImageList(SessionImageList);
 }
 //---------------------------------------------------------------------
 __fastcall TLoginDialog::~TLoginDialog()
@@ -789,13 +789,6 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
   {
     Init();
   }
-
-  // WORKAROUND for a bug in the VCL layout code for bottom aligned controls
-  // This is probably no longer needed after ComponentsPanel was removed
-  int Offset = (SitesPanel->ClientHeight - FSiteButtonsPadding - ToolsMenuButton->Height) - ToolsMenuButton->Top;
-  ToolsMenuButton->Top = ToolsMenuButton->Top + Offset;
-  ManageButton->Top = ManageButton->Top + Offset;
-  SessionTree->Height = SessionTree->Height + Offset;
 
   // Bit of a hack: Assume an auto open, when we are linked to the main form
   ShowAgainPanel->Visible = (FLinkedForm != NULL);
@@ -1734,14 +1727,6 @@ void __fastcall TLoginDialog::CMVisibleChanged(TMessage & Message)
   TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::CMDpiChanged(TMessage & Message)
-{
-  TForm::Dispatch(&Message);
-  GenerateImages();
-  CenterButtonImage(LoginButton);
-  AutoSizeCheckBox(ShowAgainCheck);
-}
-//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::Dispatch(void * Message)
 {
   TMessage * M = reinterpret_cast<TMessage*>(Message);
@@ -1787,10 +1772,6 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
   else if (M->Msg == CM_VISIBLECHANGED)
   {
     CMVisibleChanged(*M);
-  }
-  else if (M->Msg == CM_DPICHANGED)
-  {
-    CMDpiChanged(*M);
   }
   else
   {
@@ -3362,12 +3343,13 @@ void __fastcall TLoginDialog::SearchSiteActionExecute(TObject * /*Sender*/)
   SetSiteSearch(isAll);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::ChangeScale(int M, int D, bool isDpiChange)
+void __fastcall TLoginDialog::FormAfterMonitorDpiChanged(TObject *, int OldDPI, int NewDPI)
 {
-  TForm::ChangeScale(M, D, isDpiChange);
-  FSiteButtonsPadding = MulDiv(FSiteButtonsPadding, M, D);
-  FBasicGroupBaseHeight = MulDiv(FBasicGroupBaseHeight, M, D);
-  FNoteGroupOffset = MulDiv(FNoteGroupOffset, M, D);
+  FBasicGroupBaseHeight = MulDiv(FBasicGroupBaseHeight, NewDPI, OldDPI);
+  FNoteGroupOffset = MulDiv(FNoteGroupOffset, NewDPI, OldDPI);
+  GenerateImages();
+  CenterButtonImage(LoginButton);
+  AutoSizeCheckBox(ShowAgainCheck);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::PanelMouseDown(TObject *, TMouseButton, TShiftState, int, int)

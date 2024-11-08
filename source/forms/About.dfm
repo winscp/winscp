@@ -16,6 +16,7 @@ object AboutDialog: TAboutDialog
   Font.Style = []
   KeyPreview = True
   Position = poOwnerFormCenter
+  OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnKeyDown = FormKeyDown
   DesignSize = (
     410

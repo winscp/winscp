@@ -17,6 +17,7 @@ object AuthenticateForm: TAuthenticateForm
   Font.Name = 'Tahoma'
   Font.Style = []
   Position = poOwnerFormCenter
+  OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnResize = FormResize
   OnShow = FormShow
   TextHeight = 13

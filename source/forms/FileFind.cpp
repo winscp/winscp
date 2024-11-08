@@ -465,19 +465,15 @@ void __fastcall TFileFindDialog::Dispatch(void * Message)
   {
     CMDialogKey(*((TWMKeyDown *)Message));
   }
-  else if (M->Msg == CM_DPICHANGED)
-  {
-    CMDpiChanged(*M);
-  }
   else
   {
     TForm::Dispatch(Message);
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileFindDialog::CMDpiChanged(TMessage & Message)
+void __fastcall TFileFindDialog::FormAfterMonitorDpiChanged(TObject *, int OldDPI, int NewDPI)
 {
-  TForm::Dispatch(&Message);
+  DebugUsedParam2(OldDPI, NewDPI);
   UpdateImages();
 }
 //---------------------------------------------------------------------------

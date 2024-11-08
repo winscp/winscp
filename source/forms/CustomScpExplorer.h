@@ -229,6 +229,7 @@ __published:
     TUnixDirView * Sender, TListItem * Item, TRemoteFile * File, const TSize & Size, TBitmap *& Bitmap);
   void __fastcall RemoteDirViewStartLoading(TObject *Sender);
   void __fastcall RemoteDirViewStartReading(TObject *Sender);
+  void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
 
 private:
   TManagedTerminal * FManagedSession;
@@ -363,12 +364,12 @@ private:
   void __fastcall CreateHiddenWindow();
   bool __fastcall IsQueueAutoPopup();
   void __fastcall UpdateSessionsPageControlHeight();
+  void UpdateTabsSize();
   TDragDropFilesEx * __fastcall CreateDragDropFilesEx();
   void __fastcall KeyProcessed(Word & Key, TShiftState Shift);
   void __fastcall CheckCustomCommandShortCut(TCustomCommandList * List, Word & Key, Classes::TShiftState Shift, TShortCut KeyShortCut);
   void __fastcall CMShowingChanged(TMessage & Message);
   void __fastcall WMClose(TMessage & Message);
-  void __fastcall CMDpiChanged(TMessage & Message);
   void __fastcall WMDpiChanged(TMessage & Message);
   void __fastcall DoBookmarkClick(TOperationSide Side, TObject * Sender);
   void __fastcall LocalBookmarkClick(TObject * Sender);
@@ -705,7 +706,6 @@ protected:
   bool __fastcall SelectedAllFilesInDirView(TCustomDirView * DView);
   TSessionData * __fastcall SessionDataForCode();
   void __fastcall RefreshPanel(const UnicodeString & Session, const UnicodeString & Path);
-  HIDESBASE DYNAMIC void __fastcall ChangeScale(int M, int D, bool isDpiChange);
   virtual void __fastcall UpdateImages();
   void __fastcall UpdatePixelsPerInchMainWindowCounter();
   void __fastcall CopyPopup(TControl * DestControl, TControl * SourceControl);

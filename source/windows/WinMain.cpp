@@ -548,61 +548,21 @@ void __fastcall UpdateStaticUsage()
   Configuration->Usage->Set(L"EncodingMultiByteAnsi", !TEncoding::Default->IsSingleByte);
   Configuration->Usage->Set(L"PixelsPerInch", Screen->PixelsPerInch);
 
-  bool PixelsPerInchSystemDiffers = false;
+  int PrimaryPixelsPerInch = Screen->PrimaryMonitor->PixelsPerInch;
   bool PixelsPerInchMonitorsDiffer = false;
-  bool PixelsPerInchAxesDiffer = false;
-
-  HINSTANCE ShCoreLibrary = LoadLibrary(L"shcore.dll");
-  if (ShCoreLibrary != NULL)
+  for (int Index = 0; Index < Screen->MonitorCount; Index++)
   {
-    GetDpiForMonitorProc GetDpiForMonitor =
-      (GetDpiForMonitorProc)GetProcAddress(ShCoreLibrary, "GetDpiForMonitor");
-
-    if (GetDpiForMonitor != NULL)
+    if (Screen->Monitors[Index]->PixelsPerInch != PrimaryPixelsPerInch)
     {
-      unsigned int PrimaryDpiX;
-      unsigned int PrimaryDpiY;
-
-      for (int Index = 0; Index < Screen->MonitorCount; Index++)
-      {
-        unsigned int DpiX;
-        unsigned int DpiY;
-        GetDpiForMonitor(Screen->Monitors[Index]->Handle, MDT_DEFAULT, &DpiX, &DpiY);
-
-        if (DpiX != DpiY)
-        {
-          PixelsPerInchAxesDiffer = true;
-        }
-
-        if (Index == 0)
-        {
-          PrimaryDpiX = DpiX;
-          PrimaryDpiY = DpiY;
-
-          // PixelsPerInch is GetDeviceCaps(DC, LOGPIXELSY)
-          if (DpiY != (unsigned int)Screen->PixelsPerInch)
-          {
-            PixelsPerInchSystemDiffers = true;
-          }
-        }
-        else
-        {
-          if ((DpiX != PrimaryDpiX) ||
-              (DpiY != PrimaryDpiY))
-          {
-            PixelsPerInchMonitorsDiffer = true;
-          }
-        }
-      }
+      PixelsPerInchMonitorsDiffer = true;
     }
   }
 
-  if (PixelsPerInchSystemDiffers)
+  if (PrimaryPixelsPerInch != Screen->PixelsPerInch)
   {
-    Configuration->Usage->Inc(L"PixelsPerInchSystemDiffered");
+    Configuration->Usage->Inc(L"PixelsPerInchSystemDiffered2");
   }
   Configuration->Usage->Set(L"PixelsPerInchMonitorsDiffer", PixelsPerInchMonitorsDiffer);
-  Configuration->Usage->Set(L"PixelsPerInchAxesDiffer", PixelsPerInchAxesDiffer);
 
   Configuration->Usage->Set(L"WorkAreaWidth", Screen->WorkAreaWidth);
   Configuration->Usage->Set(L"WorkAreaHeight", Screen->WorkAreaHeight);

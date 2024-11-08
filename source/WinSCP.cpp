@@ -63,7 +63,9 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
     Application->MainFormOnTaskBar = true;
     Application->ModalPopupMode = pmAuto;
     Application->DefaultFont->Name = L"Tahoma";
-    Application->DefaultFont->Height = -11;
+    // The default DefaultFont is calculated as -MulDiv(8, ScreenLogPixels, 72)
+    // But form's font is scaled using DPI, what can resumt in slightly different Height
+    Application->DefaultFont->Height = -MulDiv(11, Screen->PixelsPerInch, Screen->DefaultPixelsPerInch);
     SetEnvironmentVariable(L"WINSCP_PATH",
       ExcludeTrailingBackslash(ExtractFilePath(Application->ExeName)).c_str());
     CoreInitialize();

@@ -1167,7 +1167,8 @@ void __fastcall SelectScaledImageList(TImageList * ImageList)
 //---------------------------------------------------------------------------
 void __fastcall CopyImageList(TImageList * TargetList, TImageList * SourceList)
 {
-  // Maybe this is not necessary, once the TPngImageList::Assign was fixed
+  // Maybe this is not necessary, once the TPngImageList::Assign was fixed.
+  // But if we ever use Assign, make sure the target keeps its Scaled property.
   TPngImageList * PngTargetList = dynamic_cast<TPngImageList *>(TargetList);
   TPngImageList * PngSourceList = dynamic_cast<TPngImageList *>(SourceList);
 
@@ -2571,4 +2572,11 @@ void GUIFinalize()
     Thread->WaitFor();
     delete Thread;
   }
+}
+//---------------------------------------------------------------------------
+TCustomImageList * TreeViewImageList(TPngImageList * ImageList)
+{
+  // WORKAROUND Prevent DPI scaling, see TCustomTreeView.SetImages
+  ImageList->Scaled = true;
+  return ImageList;
 }

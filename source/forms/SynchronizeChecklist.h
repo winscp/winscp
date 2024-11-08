@@ -118,6 +118,7 @@ __published:
   void __fastcall ListViewRecreate(TObject *Sender);
   void __fastcall ToolsMenuButtonClick(TObject *Sender);
   void __fastcall FindMoveCandidateActionExecute(TObject *Sender);
+  void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
 
 public:
   __fastcall TSynchronizeChecklistDialog(
@@ -186,7 +187,6 @@ protected:
   TRect __fastcall GetColumnHeaderRect(int Index);
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall UpdateImages();
-  void __fastcall CMDpiChanged(TMessage & Message);
   bool __fastcall GetWindowParams(UnicodeString & WindowParams);
   void __fastcall ProcessedItem(void * Token, const TSynchronizeChecklist::TItem * ChecklistItem);
   void __fastcall UpdatedSynchronizationChecklistItems(const TSynchronizeChecklist::TItemList & Items);

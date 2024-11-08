@@ -40,6 +40,7 @@ __published:
           int X, int Y);
   void __fastcall IconPaintBoxPaint(TObject *Sender);
   void __fastcall FormKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
+  void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
 private:
   TConfiguration * FConfiguration;
   TNotifyEvent FOnRegistrationLink;
@@ -55,9 +56,6 @@ private:
   void __fastcall LookupAddress();
   void __fastcall DoLoadThirdParty();
   void __fastcall ShiftControls(int From, int Diff);
-
-protected:
-  virtual void __fastcall Dispatch(void * Message);
 
 public:
   virtual __fastcall TAboutDialog(TComponent * AOwner,

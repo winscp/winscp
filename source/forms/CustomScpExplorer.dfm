@@ -11,6 +11,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   Font.Name = 'Tahoma'
   Font.Style = []
   KeyPreview = True
+  OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnConstrainedResize = FormConstrainedResize

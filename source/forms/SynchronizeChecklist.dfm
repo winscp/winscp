@@ -1360,6 +1360,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     0000C0030000C0030000C0030000C0030000C0030000C0070000FC7F0000}
   KeyPreview = True
   Position = poOwnerFormCenter
+  OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnShow = FormShow
   TextHeight = 13
   object Panel: TPanel

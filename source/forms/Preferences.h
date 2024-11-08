@@ -478,6 +478,7 @@ __published:
   void __fastcall SearchEditChangeEnter(TObject *Sender);
   void __fastcall NavigationTreeEnter(TObject *Sender);
   void __fastcall FormShortCut(TWMKey &Msg, bool &Handled);
+  void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
 
 private:
   TPreferencesMode FPreferencesMode;
@@ -513,9 +514,9 @@ private:
   TSshHostCA::TList FSshHostCAPlainList;
   std::unique_ptr<TStrings> FSearchResults;
   bool FHideFocus;
+  bool FInitialized;
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
-  void __fastcall CMDpiChanged(TMessage & Message);
   void WMActivate(TWMActivate & Message);
   UnicodeString __fastcall TabSample(UnicodeString Values);
   void __fastcall AddEditCopyParam(TCopyParamPresetMode Mode);

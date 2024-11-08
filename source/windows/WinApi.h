@@ -11,9 +11,6 @@ typedef BOOL WINAPI (* ChangeWindowMessageFilterExProc)(
 typedef BOOL WINAPI (* AddClipboardFormatListenerProc)(HWND hwnd);
 typedef BOOL WINAPI (* RemoveClipboardFormatListenerProc)(HWND hwnd);
 //---------------------------------------------------------------------------
-typedef HRESULT WINAPI (* GetDpiForMonitorProc)(
-  HMONITOR hmonitor, MONITOR_DPI_TYPE dpiType, UINT * dpiX, UINT * dpiY);
-//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 // Taken from https://www.codeproject.com/Articles/35197/Undocumented-List-View-Features
 //---------------------------------------------------------------------------

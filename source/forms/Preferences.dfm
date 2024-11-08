@@ -15,6 +15,7 @@ object PreferencesDialog: TPreferencesDialog
   Font.Name = 'Tahoma'
   Font.Style = []
   Position = poOwnerFormCenter
+  OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnCloseQuery = FormCloseQuery
   OnShortCut = FormShortCut
   OnShow = FormShow

@@ -623,12 +623,11 @@ void __fastcall TAuthenticateForm::FormResize(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::ChangeScale(int M, int D, bool isDpiChange)
+void __fastcall TAuthenticateForm::FormAfterMonitorDpiChanged(TObject *, int OldDPI, int NewDPI)
 {
-  TForm::ChangeScale(M, D, isDpiChange);
-
+  DebugUsedParam2(OldDPI, NewDPI);
   // Recreate the list to re-measure the items according to the new font
-  if (DebugAlwaysTrue(LogView->HandleAllocated()) &&
+  if (LogView->HandleAllocated() &&
       (LogView->Items->Count > 0))
   {
     std::unique_ptr<TStrings> Items(new TStringList());

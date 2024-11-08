@@ -1269,10 +1269,6 @@ void __fastcall TSynchronizeChecklistDialog::Dispatch(void * AMessage)
       TForm::Dispatch(AMessage);
     }
   }
-  else if (Message.Msg == CM_DPICHANGED)
-  {
-    CMDpiChanged(Message);
-  }
   else if (Message.Msg == WM_WANTS_MOUSEWHEEL_INACTIVE)
   {
     Message.Result = FSynchronizing ? 1 : 0;
@@ -1294,10 +1290,11 @@ void __fastcall TSynchronizeChecklistDialog::UpdateImages()
   ListView->SmallImages = ShellImageListForControl(this, ilsSmall);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::CMDpiChanged(TMessage & Message)
+void __fastcall TSynchronizeChecklistDialog::FormAfterMonitorDpiChanged(TObject *, int OldDPI, int NewDPI)
 {
-  TForm::Dispatch(&Message);
+  DebugUsedParam2(OldDPI, NewDPI);
   UpdateImages();
+  UpdateStatusBarSize();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::ProcessedItem(void * /*Token*/, const TSynchronizeChecklist::TItem * ChecklistItem)

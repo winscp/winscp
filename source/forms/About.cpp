@@ -380,20 +380,12 @@ void __fastcall TAboutDialog::IconPaintBoxPaint(TObject * /*Sender*/)
     0, 0, FIconHandle, IconPaintBox->Width, IconPaintBox->Height, 0, NULL, DI_NORMAL);
 }
 //---------------------------------------------------------------------------
-void __fastcall TAboutDialog::Dispatch(void * Message)
+void __fastcall TAboutDialog::FormAfterMonitorDpiChanged(TObject *, int OldDPI, int NewDPI)
 {
-  TMessage * M = reinterpret_cast<TMessage*>(Message);
-  if (M->Msg == CM_DPICHANGED)
+  DebugUsedParam2(OldDPI, NewDPI);
+  if (FThirdPartyWebBrowser != NULL)
   {
-    if (FThirdPartyWebBrowser != NULL)
-    {
-      DoLoadThirdParty();
-    }
-    TForm::Dispatch(Message);
-  }
-  else
-  {
-    TForm::Dispatch(Message);
+    DoLoadThirdParty();
   }
 }
 //---------------------------------------------------------------------------

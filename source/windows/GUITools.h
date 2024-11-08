@@ -111,6 +111,7 @@ using namespace Pngimagelist;
 TPngImageList * __fastcall GetAnimationsImages(TControl * Control);
 TImageList * __fastcall GetButtonImages(TControl * Control);
 TPngImageList * __fastcall GetDialogImages(TControl * Control);
+TCustomImageList * TreeViewImageList(TPngImageList * ImageList);
 void __fastcall ReleaseImagesModules();
 //---------------------------------------------------------------------------
 class TFrameAnimation

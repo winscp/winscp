@@ -1362,6 +1362,7 @@ object FileFindDialog: TFileFindDialog
     0000C0030000C0030000C0030000C0030000C0070000C00F0000FFFF0000}
   KeyPreview = True
   Position = poOwnerFormCenter
+  OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnKeyDown = FormKeyDown

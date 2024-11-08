@@ -89,7 +89,6 @@ object LocationProfilesDialog: TLocationProfilesDialog
         DoubleBuffered = True
         DragMode = dmAutomatic
         HideSelection = False
-        Images = BookmarkImageList
         Indent = 19
         ParentDoubleBuffered = False
         TabOrder = 0
