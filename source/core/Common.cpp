@@ -1508,6 +1508,7 @@ void TSearchRecSmart::Clear()
   FLastWriteTimeSource.dwHighDateTime = 0;
 }
 //---------------------------------------------------------------------------
+// This can be replaced with TSearchRec.TimeStamp
 TDateTime TSearchRecSmart::GetLastWriteTime() const
 {
   if ((FindData.ftLastWriteTime.dwLowDateTime != FLastWriteTimeSource.dwLowDateTime) ||
@@ -2207,6 +2208,7 @@ FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime,
   return Result;
 }
 //---------------------------------------------------------------------------
+// This can be replaced with TSearchRec.TimeStamp
 TDateTime __fastcall FileTimeToDateTime(const FILETIME & FileTime)
 {
   // duplicated in DirView.pas

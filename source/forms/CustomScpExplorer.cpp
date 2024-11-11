@@ -2397,9 +2397,9 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
                 UnixIncludeTrailingBackslash(Terminal->CurrentDirectory) +
                 ToUnixPath(FileName.SubString(TempDir.Length() + 1, FileName.Length() - TempDir.Length())));
 
-            TDateTime NewTime;
-            if (FileAge(FileName, NewTime) &&
-                (NewTime != RemoteFileTimes[Index]))
+            TSearchRecSmart SearchRec;
+            if (FileSearchRec(FileName, SearchRec) &&
+                (SearchRec.GetLastWriteTime() != RemoteFileTimes[Index]))
             {
               TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
               TemporaryFileCopyParam(CopyParam);
