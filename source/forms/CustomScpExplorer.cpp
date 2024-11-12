@@ -7393,7 +7393,7 @@ void __fastcall TCustomScpExplorerForm::SessionListChanged(bool ForceTruncationU
 
   Configuration->Usage->SetMax(L"MaxOpenedSessions", Manager->Count);
 
-  SendMessage(SessionsPageControl->Handle, WM_SETREDRAW, 0, 0);
+  SessionsPageControl->LockDrawing();
   try
   {
     int PrevTabsWidth = SessionsPageControl->TotalTabsWidth();
@@ -7443,7 +7443,7 @@ void __fastcall TCustomScpExplorerForm::SessionListChanged(bool ForceTruncationU
   }
   __finally
   {
-    SendMessage(SessionsPageControl->Handle, WM_SETREDRAW, 1, 0);
+    SessionsPageControl->UnlockDrawing();
   }
 
   SessionsPageControl->ActivePageIndex = ActiveSessionIndex;

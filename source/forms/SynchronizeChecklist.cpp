@@ -1758,7 +1758,7 @@ void __fastcall TSynchronizeChecklistDialog::FindMoveCandidateActionExecute(TObj
             if (FlickerExpected)
             {
               // does not seem to have any effect
-              DisableRedraw(ListView);
+              ListView->LockDrawing();
             }
             try
             {
@@ -1771,7 +1771,7 @@ void __fastcall TSynchronizeChecklistDialog::FindMoveCandidateActionExecute(TObj
             {
               if (FlickerExpected)
               {
-                EnableRedraw(ListView);
+                ListView->UnlockDrawing();
               }
             }
 

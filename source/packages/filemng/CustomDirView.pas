@@ -1672,11 +1672,11 @@ begin
     // When scrolling with double-buffering enabled, ugly artefacts
     // are shown temporarily.
     // LVS_EX_TRANSPARENTBKGND fixes it on Vista and newer
-    SendMessage(Handle, WM_SETREDRAW, 0, 0);
+    LockDrawing;
     try
       inherited;
     finally
-      SendMessage(Handle, WM_SETREDRAW, 1, 0);
+      UnlockDrawing;
     end;
     Repaint;
   end

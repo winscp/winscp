@@ -101,7 +101,5 @@ void GiveTBItemPriority(Tb2item::TTBCustomItem * Item);
 void DeleteChildren(TWinControl * Control);
 void AutoSizeLabel(TLabel * Label);
 void AutoSizeLabel(TStaticText * Label);
-void DisableRedraw(TWinControl * Control);
-void EnableRedraw(TWinControl * Control);
 //---------------------------------------------------------------------------
 #endif  // VCLCommonH
