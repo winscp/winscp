@@ -635,13 +635,13 @@ void __fastcall TMessageForm::InsertPanel(TPanel * Panel)
     // we currently use this for updates message box only
     TControl * ContentsControl = static_cast<TControl *>(DebugNotNull(MessageBrowser))->Parent;
 
+    Panel->Parent = ContentsPanel;
     Panel->Width = ContentsControl->Width;
     Panel->Left = ContentsControl->Left;
     int ContentsBottom = ContentsControl->Top + ContentsControl->Height;
     Panel->Top = ContentsBottom + ((ContentsPanel->Height - ContentsBottom) / 2);
     Height = Height + Panel->Height;
     ContentsPanel->Height = ContentsPanel->Height + Panel->Height;
-    Panel->Parent = ContentsPanel;
     // The panel itself does not need this, as the ParentBackground (true by default)
     // has the same effect, but an eventual TStaticText on the panel
     // uses a wrong background color, if panel's ParentColor is not set.
