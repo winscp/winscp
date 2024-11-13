@@ -1044,7 +1044,7 @@ void __fastcall UseSystemSettingsPre(TForm * Control)
 
   // We have legacy XE6 font (Tahoma) explicitly set in DFMs to match the layout.
   // That unlinks the font fonts from the Application->DefaultFont. We set the DefaultFont to Tahoma in WinSCP.cpp.
-  DebugAssert(SameFont(Control->Font, Application->DefaultFont));
+  DebugAssert((Control->Name == L"AboutDialog") || SameFont(Control->Font, Application->DefaultFont));
 
   ApplySystemSettingsOnControl(Control);
 };

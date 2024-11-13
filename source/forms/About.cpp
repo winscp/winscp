@@ -293,11 +293,7 @@ void __fastcall TAboutDialog::DoLoadThirdParty()
     LoadStr(ABOUT_PNG_COPYRIGHT) + Br +
     CreateLink(LoadStr(ABOUT_PNG_URL)));
 
-  std::unique_ptr<TFont> DefaultFont(new TFont());
-  DefaultFont->Assign(Application->DefaultFont);
-  DefaultFont->Height = ScaleByPixelsPerInchFromSystem(DefaultFont->Height, this);
-
-  ThirdParty = GenerateAppHtmlPage(DefaultFont.get(), ThirdPartyPanel, ThirdParty, false);
+  ThirdParty = GenerateAppHtmlPage(Font, ThirdPartyPanel, ThirdParty, false);
 
   LoadBrowserDocument(FThirdPartyWebBrowser, ThirdParty);
 }
