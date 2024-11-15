@@ -24,7 +24,8 @@ UnicodeString __fastcall DoXmlEscape(UnicodeString Str, bool NewLine)
   for (int i = 1; i <= Str.Length(); i++)
   {
     UnicodeString Repl;
-    switch (Str[i])
+    wchar_t Ch = Str[i];
+    switch (Ch)
     {
       case L'\x00': // \0 Is not valid in XML anyway
       case L'\x01':
@@ -57,7 +58,12 @@ UnicodeString __fastcall DoXmlEscape(UnicodeString Str, bool NewLine)
       case L'\x1D':
       case L'\x1E':
       case L'\x1F':
-        Repl = L"#x" + ByteToHex((unsigned char)Str[i]) + L";";
+        Repl = L"#x" + ByteToHex((unsigned char)Ch) + L";";
+        break;
+
+      case L'\xFFFE':
+      case L'\xFFFF':
+        Repl = L"#x" + CharToHex(Ch) + L";";
         break;
 
       case L'&':

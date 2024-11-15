@@ -1422,7 +1422,8 @@ UnicodeString __fastcall BytesToHex(RawByteString Str, bool UpperCase, wchar_t S
 //---------------------------------------------------------------------------
 UnicodeString __fastcall CharToHex(wchar_t Ch, bool UpperCase)
 {
-  return BytesToHex(reinterpret_cast<const unsigned char *>(&Ch), sizeof(Ch), UpperCase);
+  // BytesToHex would encode with opposite/unexpected endianness
+  return ByteToHex(Ch >> 8, UpperCase) + ByteToHex(Ch & 0xFF, UpperCase);
 }
 //---------------------------------------------------------------------------
 RawByteString __fastcall HexToBytes(const UnicodeString Hex)
@@ -2889,6 +2890,7 @@ UnicodeString __fastcall DoEncodeUrl(UnicodeString S, const UnicodeString & DoNo
     {
       UTF8String UtfS(S.SubString(Index, 1));
       UnicodeString H;
+      // BytesToHex with separator would do the same
       for (int Index2 = 1; Index2 <= UtfS.Length(); Index2++)
       {
         H += L"%" + ByteToHex(static_cast<unsigned char>(UtfS[Index2]));
