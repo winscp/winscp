@@ -7034,7 +7034,7 @@ void __fastcall TCustomScpExplorerForm::DoOpenDirectoryDialog(
         if (::DoOpenDirectoryDialog(Mode, BookmarkSide, Name, VisitedDirectories, Terminal,
               // do not allow switching to location profiles,
               // if we are not connected
-              HasDirView[osLocal] && (Terminal != NULL)))
+              HasDirView[osLocal] && IsActiveTerminal(Terminal)))
         {
           TWindowLock Lock(this);
           if (!TryOpenDirectory(Side, Name))
