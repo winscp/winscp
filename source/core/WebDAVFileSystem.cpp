@@ -213,7 +213,7 @@ void __fastcall TWebDAVFileSystem::Open()
   }
 
   size_t Port = Data->PortNumber;
-  UnicodeString ProtocolName = (FTerminal->SessionData->Ftps == ftpsNone) ? HttpProtocol : HttpsProtocol;
+  UnicodeString ProtocolName = (Data->Ftps == ftpsNone) ? HttpProtocol : HttpsProtocol;
   UnicodeString Path = Data->RemoteDirectory;
   // PathToNeon is not used as we cannot call AbsolutePath here
   UnicodeString EscapedPath = StrFromNeon(PathEscape(StrToNeon(Path)).c_str());
