@@ -3524,12 +3524,35 @@ UnicodeString __fastcall FindIdent(const UnicodeString & Ident, TStrings * Ident
   return Ident;
 }
 //---------------------------------------------------------------------------
-static UnicodeString __fastcall GetTlsErrorStr(int Err)
+UnicodeString GetTlsErrorStr(unsigned long Err)
 {
-  char * Buffer = new char[512];
-  ERR_error_string(Err, Buffer);
-  // not sure about the UTF8
-  return UnicodeString(UTF8String(Buffer));
+  char Buffer[512];
+  ERR_error_string_n(Err, Buffer, sizeof(Buffer));
+  UnicodeString S = UnicodeString(UTF8String(Buffer));
+  for (int I = 0; I < 4; I++)
+  {
+    CutToChar(S, L':', false);
+  }
+  UnicodeString ErrStr = IntToHex(static_cast<unsigned int>(Err));
+  return FORMAT(L"OpenSSL %s: %s", (ErrStr, S.TrimRight()));
+}
+//---------------------------------------------------------------------------
+UnicodeString GetTlsErrorStrs()
+{
+  UnicodeString Result;
+  int Error;
+  const char * Data;
+  while ((Error = ERR_get_error_all(NULL, NULL, NULL, &Data, NULL)) != 0)
+  {
+    UnicodeString S = GetTlsErrorStr(Error);
+    if ((Data != NULL) && (strlen(Data) > 0))
+    {
+      UnicodeString DataStr = UnicodeString(UTF8String(Data)).TrimRight();
+      S += FORMAT(L" (%s)", (DataStr));
+    }
+    AddToList(Result, S, L"\n");
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 static FILE * __fastcall OpenCertificate(const UnicodeString & Path)
@@ -3559,7 +3582,7 @@ static int PemPasswordCallback(char * Buf, int Size, int /*RWFlag*/, void * User
   return strlen(Buf);
 }
 //---------------------------------------------------------------------------
-static bool __fastcall IsTlsPassphraseError(int Error, bool HasPassphrase)
+static bool __fastcall IsTlsPassphraseError(unsigned long Error, bool HasPassphrase)
 {
   int ErrorLib = ERR_GET_LIB(Error);
   int ErrorReason = ERR_GET_REASON(Error);
@@ -3577,7 +3600,7 @@ static bool __fastcall IsTlsPassphraseError(int Error, bool HasPassphrase)
 //---------------------------------------------------------------------------
 static void __fastcall ThrowTlsCertificateErrorIgnorePassphraseErrors(const UnicodeString & Path, bool HasPassphrase)
 {
-  int Error = ERR_get_error();
+  unsigned long Error = ERR_get_error();
   if (!IsTlsPassphraseError(Error, HasPassphrase))
   {
     throw ExtException(MainInstructions(FMTLOAD(CERTIFICATE_READ_ERROR, (Path))), GetTlsErrorStr(Error));
@@ -3664,7 +3687,7 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
 
       if (Certificate == NULL)
       {
-        int Error = ERR_get_error();
+        unsigned long Error = ERR_get_error();
         // unlikely
         if (IsTlsPassphraseError(Error, HasPassphrase))
         {
@@ -3693,7 +3716,7 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
 
             if (Certificate == NULL)
             {
-              int Base64Error = ERR_get_error();
+              unsigned long Base64Error = ERR_get_error();
 
               File = OpenCertificate(CertificatePath);
               // Binary DER-encoded certificate
@@ -3704,7 +3727,7 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
 
               if (Certificate == NULL)
               {
-                int DERError = ERR_get_error();
+                unsigned long DERError = ERR_get_error();
 
                 UnicodeString Message = MainInstructions(FMTLOAD(CERTIFICATE_READ_ERROR, (CertificatePath)));
                 UnicodeString MoreMessages =

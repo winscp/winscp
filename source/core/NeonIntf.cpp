@@ -8,6 +8,7 @@
 #include "Exceptions.h"
 #include "Security.h"
 #include "Terminal.h"
+#include "Cryptography.h"
 #include <TextsCore.h>
 #define WINSCP
 extern "C"
@@ -73,6 +74,10 @@ static int NeonProxyAuth(
 //---------------------------------------------------------------------------
 ne_session * CreateNeonSession(const ne_uri & uri)
 {
+  if (IsTlsUri(uri))
+  {
+    RequireTls();
+  }
   return ne_session_create(uri.scheme, uri.host, uri.port);
 }
 //---------------------------------------------------------------------------

@@ -21,6 +21,7 @@
 #include <limits>
 #include "CoreMain.h"
 #include "Http.h"
+#include "Cryptography.h"
 #include <System.JSON.hpp>
 #include <System.DateUtils.hpp>
 #include "request.h"
@@ -447,7 +448,15 @@ void __fastcall TS3FileSystem::Open()
   FSessionInfo.LoginTime = Now();
   FSessionInfo.CertificateVerifiedManually = false;
 
-  FLibS3Protocol = (Data->Ftps != ftpsNone) ? S3ProtocolHTTPS : S3ProtocolHTTP;
+  if (Data->Ftps != ftpsNone)
+  {
+    FLibS3Protocol = S3ProtocolHTTPS;
+    RequireTls();
+  }
+  else
+  {
+    FLibS3Protocol = S3ProtocolHTTP;
+  }
 
   UnicodeString S3Profile;
   if (Data->S3CredentialsEnv)

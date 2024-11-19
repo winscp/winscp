@@ -185,6 +185,8 @@ int __fastcall ParseShortEngMonthName(const UnicodeString & MonthStr);
 TStringList * __fastcall CreateSortedStringList(bool CaseSensitive = false, System::Types::TDuplicates Duplicates = dupIgnore);
 bool SameIdent(const UnicodeString & Ident1, const UnicodeString & Ident2);
 UnicodeString __fastcall FindIdent(const UnicodeString & Ident, TStrings * Idents);
+UnicodeString GetTlsErrorStr(unsigned long Err);
+UnicodeString GetTlsErrorStrs();
 void __fastcall CheckCertificate(const UnicodeString & Path);
 typedef struct x509_st X509;
 typedef struct evp_pkey_st EVP_PKEY;

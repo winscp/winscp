@@ -457,6 +457,11 @@ void TWebDAVFileSystem::ExchangeCapabilities(const char * Path, UnicodeString & 
   FTerminal->SaveCapabilities(FFileSystemInfo);
 }
 //---------------------------------------------------------------------------
+TWebDAVFileSystem::TSessionContext::TSessionContext() :
+  NeonSession(NULL)
+{
+}
+//---------------------------------------------------------------------------
 TWebDAVFileSystem::TSessionContext::~TSessionContext()
 {
   if (NeonSession != NULL)

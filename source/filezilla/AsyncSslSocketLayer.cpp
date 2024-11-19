@@ -13,6 +13,8 @@
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
 #include <openssl/tls1.h>
+#pragma hdrstop
+#include "Common.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // CAsyncSslSocketLayer
@@ -1836,12 +1838,12 @@ void CAsyncSslSocketLayer::OnClose(int nErrorCode)
 
 void CAsyncSslSocketLayer::PrintLastErrorMsg()
 {
-  int err = ERR_get_error();
+  unsigned long err = ERR_get_error();
   while (err)
   {
     USES_CONVERSION;
 
-    int aerr = err;
+    unsigned long aerr = err;
     err = ERR_get_error();
 
     char *buffer = new char[512];
@@ -1856,8 +1858,8 @@ void CAsyncSslSocketLayer::PrintLastErrorMsg()
     }
     else
     {
-      const char * reason = ERR_reason_error_string(aerr);
-      LogSocketMessageRaw(FZ_LOG_WARNING, A2T(reason));
+      UnicodeString S = GetTlsErrorStr(aerr);
+      LogSocketMessageRaw(FZ_LOG_WARNING, S.c_str());
     }
   }
 }

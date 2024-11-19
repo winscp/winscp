@@ -17,6 +17,7 @@
 #include "Security.h"
 #include "NeonIntf.h"
 #include "SessionInfo.h"
+#include "Cryptography.h"
 #include <StrUtils.hpp>
 #include <DateUtils.hpp>
 #include <openssl/x509_vfy.h>
@@ -415,30 +416,35 @@ void __fastcall TFTPFileSystem::Open()
   UnicodeString Account = Data->FtpAccount;
   UnicodeString Path = Data->RemoteDirectory;
   int ServerType;
-  switch (Data->Ftps)
+  if (Data->Ftps == ftpsNone)
   {
-    case ftpsNone:
-      ServerType = TFileZillaIntf::SERVER_FTP;
-      break;
+    ServerType = TFileZillaIntf::SERVER_FTP;
+  }
+  else
+  {
+    switch (Data->Ftps)
+    {
+      case ftpsImplicit:
+        ServerType = TFileZillaIntf::SERVER_FTP_SSL_IMPLICIT;
+        FSessionInfo.SecurityProtocolName = LoadStr(FTPS_IMPLICIT);
+        break;
 
-    case ftpsImplicit:
-      ServerType = TFileZillaIntf::SERVER_FTP_SSL_IMPLICIT;
-      FSessionInfo.SecurityProtocolName = LoadStr(FTPS_IMPLICIT);
-      break;
+      case ftpsExplicitSsl:
+        ServerType = TFileZillaIntf::SERVER_FTP_SSL_EXPLICIT;
+        FSessionInfo.SecurityProtocolName = LoadStr(FTPS_EXPLICIT);
+        break;
 
-    case ftpsExplicitSsl:
-      ServerType = TFileZillaIntf::SERVER_FTP_SSL_EXPLICIT;
-      FSessionInfo.SecurityProtocolName = LoadStr(FTPS_EXPLICIT);
-      break;
+      case ftpsExplicitTls:
+        ServerType = TFileZillaIntf::SERVER_FTP_TLS_EXPLICIT;
+        FSessionInfo.SecurityProtocolName = LoadStr(FTPS_EXPLICIT);
+        break;
 
-    case ftpsExplicitTls:
-      ServerType = TFileZillaIntf::SERVER_FTP_TLS_EXPLICIT;
-      FSessionInfo.SecurityProtocolName = LoadStr(FTPS_EXPLICIT);
-      break;
+      default:
+        DebugFail();
+        break;
+    }
 
-    default:
-      DebugFail();
-      break;
+    RequireTls();
   }
 
   int Pasv = (Data->FtpPasvMode ? 1 : 2);

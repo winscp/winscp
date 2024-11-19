@@ -164,6 +164,7 @@ private:
   unsigned int FCapabilities;
   struct TSessionContext
   {
+    TSessionContext();
     ~TSessionContext();
     TWebDAVFileSystem * FileSystem;
     ne_session_s * NeonSession; // The main one (there might be aux session for the same context)
