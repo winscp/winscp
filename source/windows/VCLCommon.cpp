@@ -920,18 +920,7 @@ void __fastcall VerifyControl(TControl * Control)
   // check for the presence of items as while the listview does not have
   // a handle allocated, item count querying does not work
   // (see also a check below)
-  if (ControlHasRecreationPersistenceData(Control))
-  {
-    // Though if RTL bidi mode is set, the controls are recreated always,
-    // as we cannot really prevent it. So we force creation here.
-    DebugAssert(Application->BiDiMode != bdLeftToRight);
-    TWinControl * WinControl = dynamic_cast<TWinControl *>(Control);
-    // It must be TWinControl if ControlHasRecreationPersistenceData returned true
-    if (DebugAlwaysTrue(WinControl != NULL))
-    {
-      WinControl->HandleNeeded();
-    }
-  }
+  DebugAssert(!ControlHasRecreationPersistenceData(Control));
 
   TCustomListView * ListView = dynamic_cast<TCustomListView *>(Control);
   if (ListView != NULL)
