@@ -37,7 +37,7 @@
 #define HAVE_AES_NI 1
 #endif
 
-#if (!defined WINSCP) && defined _MSC_VER && _MSC_VER < 1800
+#if defined _MSC_VER && _MSC_VER < 1800
 /* Work around lack of inttypes.h and strtoumax in older MSVC */
 #define PRIx32 "x"
 #define PRIu32 "u"
@@ -50,19 +50,13 @@
 /* Also, define a LEGACY_WINDOWS flag to enable other workarounds */
 #define LEGACY_WINDOWS
 #else
-#ifndef WINSCP
-// Not needed by the code WinSCP uses
 #include <inttypes.h>
-#else
-#define PRIu32 "u"
-#endif
 /* Because we still support older MSVC libraries which don't recognise the
  * standard C "z" modifier for size_t-sized integers, we must use an
  * inttypes.h-style macro for those */
 #define SIZEx "zx"
 #define SIZEu "zu"
 #endif
-uintmax_t strtoumax(const char *nptr, char **endptr, int base);
 
 #if defined __GNUC__ || defined __clang__
 /*

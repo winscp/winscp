@@ -18,10 +18,6 @@
 #include "tree234.h"
 #include "ssh.h"
 
-#ifdef MPEXT
-// ws2tcpip.h does not compile without _MSC_VER defined
-#define _MSC_VER 1000
-#endif
 #include <ws2tcpip.h>
 
 #if HAVE_AFUNIX_H
