@@ -572,7 +572,7 @@ void __fastcall UpdateStaticUsage()
   Configuration->Usage->Set(L"ColorDepth", Planes * BitsPixel);
   Configuration->Usage->Set(L"MonitorCount", Screen->MonitorCount);
   Configuration->Usage->Set(L"NotUseThemes", !UseThemes());
-  Configuration->Usage->Set(L"ThemeDefaultFontSize", Application->DefaultFont->Size);
+  Configuration->Usage->Set(L"ThemeDefaultFontSize", std::unique_ptr<TFont>(new TFont())->Size);
   Configuration->Usage->Set(L"ThemeIconFontSize", Screen->IconFont->Size);
 
   Configuration->Usage->Set(L"SysColorWindow", ColorToRGBStr(clWindow));

@@ -62,6 +62,7 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
     Application->Initialize();
     Application->MainFormOnTaskBar = true;
     Application->ModalPopupMode = pmAuto;
+    DebugAssert(SameFont(Application->DefaultFont, std::unique_ptr<TFont>(new TFont()).get()));
     Application->DefaultFont->Name = L"Tahoma";
     // The default DefaultFont is calculated as -MulDiv(8, ScreenLogPixels, 72)
     // But form's font is scaled using DPI, what can resumt in slightly different Height
