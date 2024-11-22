@@ -2346,7 +2346,7 @@ void __fastcall TScpCommanderForm::DoLocalPathComboBoxItemClick(TDirView * ADirV
   {
     // Changing the path failed, reset the combo box back.
     // Does not recurse, so infinite recursion should not happen.
-    DoLocalPathComboBoxItemClick(ADirView, PathComboBox);
+    LocalPathComboUpdate(ADirView, PathComboBox);
     throw;
   }
 }
