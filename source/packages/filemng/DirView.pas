@@ -606,7 +606,13 @@ var
   SRec: SysUtils.TSearchRec;
 begin
   if not DirectoryExistsFix(Path) then
-    raise Exception.CreateFmt(SDirNotExists, [Path]);
+  begin
+    DosError := GetLastError;
+    if (DosError = ERROR_FILE_NOT_FOUND) or (DosError = ERROR_PATH_NOT_FOUND) then
+      raise Exception.CreateFmt(SDirNotExists, [Path])
+    else
+      RaiseLastOSError;
+  end;
   DosError := SysUtils.FindFirst(ApiPath(IncludeTrailingPathDelimiter(Path) + '*.*'), FileAttr, SRec);
   if DosError = ERROR_SUCCESS then
   begin
