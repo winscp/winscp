@@ -250,7 +250,7 @@ BEGIN
         QUEUE_DONE, "Completed"
         EDITOR_AUTO_CONFIG2, "**Do you want to use '%s' instead of default internal editor?**\n\nWinSCP has detected that you have custom text editor '%s' associated with text files."
         MASTER_PASSWORD_RECRYPT_ERRORS, "%s\n\nThere were some errors when encrypting passwords using new master password or decrypting passwords."
-        REGISTERED_APP_DESC4, "WinSCP is a popular free SFTP and FTP client for Windows, a powerful file manager that will improve your productivity. It supports also local-local mode and FTPS, S3, SCP and WebDAV protocols. Power users can automate WinSCP using .NET assembly."
+        REGISTERED_APP_DESC5, "WinSCP is a popular free SFTP and FTP client for Windows, a powerful file manager that will improve your productivity. It supports also local-local mode and FTPS, S3, SCP and WebDAV protocols. Power users can automate WinSCP using .NET assembly."
         MESSAGE_LOADING, "Loading..."
         NEW_VERSION_CLICK, "%s\n\nClick here, to see what is new."
         DIRECTORY_READING_AND_RESOLVING_PROGRESS, "%d Resolving links and Reading directory"

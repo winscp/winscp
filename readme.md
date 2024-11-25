@@ -1,4 +1,4 @@
-[WinSCP](https://winscp.net/) is a popular free SFTP and FTP client for Windows, a powerful file manager that will improve your productivity. It offers an easy to use GUI to copy files between a local and remote computer using multiple protocols: Amazon S3, FTP, FTPS, SCP, SFTP or WebDAV. Power users can automate WinSCP using .NET assembly. WinSCP is available in English and many other languages.
+[WinSCP](https://winscp.net/) is a popular free file manager for Windows supporting SFTP, FTP, FTPS, SCP, S3, WebDAV and local-to-local file transfers. A powerful tool to enhance your productivity with a user-friendly interface and automation options like .NET assembly or batch file scripting. Use WinSCP also for file editing, directory synchronization and site management. WinSCP is open-source and well documented. It is available in English and many other languages.
 
 To build WinSCP you need:
 - [Embarcadero C++Builder 11 Professional](https://www.embarcadero.com/products/cbuilder).
