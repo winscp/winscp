@@ -942,32 +942,6 @@ void __fastcall ApplySystemSettingsOnControl(TControl * Control)
   VerifyControl(Control);
   #endif
 
-  // WORKAROUND
-  // VCL does not scale status par panels (while for instance it does
-  // scale list view headers). Remove this if they ever "fix" this.
-  // Neither they scale the status bar size if UseSystemFont is true.
-  // they claim it should scale with font size, but it does not,
-  // probably because they eat WM_SIZE in TCustomStatusBar.WMSize.
-  // (used to be issue 83599 on Embarcadero QC, when it was still online)
-  // Check TCustomStatusBar.ChangeScale() for changes.
-  // For TBX status bars, this is implemented in TTBXCustomStatusBar.ChangeScale
-  TStatusBar * StatusBar = dynamic_cast<TStatusBar *>(Control);
-  if (StatusBar != NULL)
-  {
-    // We should have UseSystemFont and bottom alignment set for all status bars.
-    if (DebugAlwaysTrue(StatusBar->UseSystemFont) &&
-        DebugAlwaysTrue(StatusBar->Align == alBottom))
-    {
-      StatusBar->Height = ScaleByTextHeight(StatusBar, StatusBar->Height);
-    }
-
-    for (int Index = 0; Index < StatusBar->Panels->Count; Index++)
-    {
-      TStatusPanel * Panel = StatusBar->Panels->Items[Index];
-      Panel->Width = ScaleByTextHeight(StatusBar, Panel->Width);
-    }
-  }
-
   TCustomListView * ListView = dynamic_cast<TCustomListView *>(Control);
   TCustomIEListView * IEListView = dynamic_cast<TCustomIEListView *>(Control);
   // For IEListView, this is (somewhat) handled in the TCustomListViewColProperties

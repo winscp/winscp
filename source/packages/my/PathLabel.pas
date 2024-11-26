@@ -66,7 +66,6 @@ type
     procedure DoMaskClick;
     procedure DblClick; override;
     procedure DoContextPopup(MousePos: TPoint; var Handled: Boolean); override;
-    procedure CMStyleChanged(var Message: TMessage); message CM_STYLECHANGED;
 
   public
     constructor Create(AnOwner: TComponent); override;
@@ -1006,19 +1005,6 @@ begin
   inherited;
 end;
 
-procedure TCustomPathLabel.CMStyleChanged(var Message: TMessage);
-var
-  WasNotTransparent: Boolean;
-begin
-  // WORKAROUND for what seems like a bug in TCustomLabel.CMStyleChanged that unconditionally sets Transparent := True,
-  // when styling is enabled
-  WasNotTransparent := not Transparent;
-  inherited;
-  if WasNotTransparent then
-  begin
-    Transparent := False;
-    Invalidate;
-  end;
-end;
+WORKAROUND
 
 end.

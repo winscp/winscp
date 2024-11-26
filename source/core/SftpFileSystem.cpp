@@ -1421,7 +1421,6 @@ protected:
     return true;
   }
 
-  #pragma option push -vi- // WORKAROUND for internal compiler errors
   bool __fastcall UnregisterReceiveHandler()
   {
     bool Result = FReceiveHandlerRegistered;
@@ -1438,7 +1437,6 @@ protected:
     FFileSystem->FSecureShell->RegisterReceiveHandler(ReceiveHandler);
     FReceiveHandlerRegistered = true;
   }
-  #pragma option pop
 
 private:
   bool FReceiveHandlerRegistered;
