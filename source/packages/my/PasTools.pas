@@ -34,8 +34,6 @@ function HasSystemParametersInfoForPixelsPerInch: Boolean;
 function SystemParametersInfoForPixelsPerInch(
   uiAction, uiParam: UINT; pvParam: Pointer; fWinIni: UINT; dpi: UINT): BOOL;
 
-procedure GetFormScaleRatio(Form: TForm; var M, D: Integer);
-
 function GetMonitorFromControl(Control: TControl): TMonitor;
 function GetMonitorPixelsPerInch(Monitor: TMonitor): Integer;
 function GetControlPixelsPerInch(Control: TControl): Integer;
@@ -469,12 +467,6 @@ begin
       Result := ScaleByTextHeightImpl(Control, Dimension, TextHeight);
     end;
   end;
-end;
-
-procedure GetFormScaleRatio(Form: TForm; var M, D: Integer);
-begin
-  M := CalculateTextHeight(Form.Canvas);
-  D := Form.RetrieveTextHeight;
 end;
 
 // this differs from ScaleByTextHeight only by enforcing
