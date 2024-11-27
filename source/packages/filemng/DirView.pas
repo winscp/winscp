@@ -2511,7 +2511,7 @@ begin
       Assert(Assigned(Item.Data));
       ItemData := PFileRec(Item.Data);
 
-      Invisible := IsVista and (not IsItemVisible(Item));
+      Invisible := not IsItemVisible(Item);
 
       if (Invisible or (not FThumbnail)) and
          (not Assigned(ItemData.Thumbnail)) then

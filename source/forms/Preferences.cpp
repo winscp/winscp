@@ -1501,7 +1501,6 @@ void __fastcall TPreferencesDialog::UpdateControls()
 
     // integration
     EnableControl(ShellIconsGroup, !IsUWP());
-    MakeDefaultHandlerItem->Visible = IsWinVista();
 
     // languages
     LanguageChangeLabel->Visible =

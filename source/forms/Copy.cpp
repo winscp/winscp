@@ -128,7 +128,6 @@ __fastcall TCopyDialog::TCopyDialog(
   FPresetsMenu = new TPopupMenu(this);
 
   HotTrackLabel(CopyParamLabel);
-  CopyParamListButton(TransferSettingsButton);
   HotTrackLabel(ShortCutHintLabel);
 
   if (FLAGSET(FOptions, coBrowse))
@@ -501,14 +500,7 @@ void __fastcall TCopyDialog::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::TransferSettingsButtonClick(TObject * /*Sender*/)
 {
-  if (!SupportsSplitButton())
-  {
-    CopyParamListPopup(CalculatePopupRect(TransferSettingsButton), 0);
-  }
-  else
-  {
-    CopyParamGroupClick(NULL);
-  }
+  CopyParamGroupClick(NULL);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::GenerateCode()

@@ -489,7 +489,6 @@ void __fastcall DoGenerateTransferCodeDialog(
   bool ToRemote, bool Move, int CopyParamAttrs, TSessionData * Data, TFilesSelected FilesSelected,
   TStrings * FileList, const UnicodeString & Path, const TCopyParamType & CopyParam);
 
-void __fastcall CopyParamListButton(TButton * Button);
 const int cplNone =             0x00;
 const int cplCustomizeDefault = 0x02;
 const int cplSaveSettings =     0x04;

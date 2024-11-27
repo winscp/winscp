@@ -9,10 +9,6 @@ uses
 
 function Construct(ComponentClass: TComponentClass; Owner: TComponent): TComponent;
 
-function IsVistaHard: Boolean;
-
-function IsVista: Boolean;
-
 {$EXTERNALSYM IsWin7}
 function IsWin7: Boolean;
 
@@ -171,18 +167,6 @@ const
 function Construct(ComponentClass: TComponentClass; Owner: TComponent): TComponent;
 begin
   Result := ComponentClass.Create(Owner);
-end;
-
-// detects vista, even in compatibility mode
-// (GetLocaleInfoEx is available since Vista only)
-function IsVistaHard: Boolean;
-begin
-  Result := (GetProcAddress(GetModuleHandle(Kernel32), 'GetLocaleInfoEx') <> nil);
-end;
-
-function IsVista: Boolean;
-begin
-  Result := CheckWin32Version(6, 0);
 end;
 
 function IsWin7: Boolean;

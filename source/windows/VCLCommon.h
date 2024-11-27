@@ -71,7 +71,6 @@ FormType * __fastcall SafeFormCreate(TComponent * Owner = NULL)
 {
   return dynamic_cast<FormType *>(_SafeFormCreate(__classid(FormType), Owner));
 }
-bool __fastcall SupportsSplitButton();
 TModalResult __fastcall DefaultResult(TCustomForm * Form, TButton * DefaultButton = NULL);
 void __fastcall DefaultButton(TButton * Button, bool Default);
 void __fastcall MemoKeyDown(TObject * Sender, WORD & Key, TShiftState Shift);

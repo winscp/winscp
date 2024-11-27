@@ -145,7 +145,6 @@ bool __fastcall CutTokenEx(UnicodeString & Str, UnicodeString & Token,
   UnicodeString * RawToken = NULL, UnicodeString * Separator = NULL);
 void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, const UnicodeString & Delimiter);
 void AddToShellFileListCommandLine(UnicodeString & List, const UnicodeString & Value);
-bool __fastcall IsWinVista();
 bool __fastcall IsWin7();
 bool __fastcall IsWin8();
 bool __fastcall IsWin10();

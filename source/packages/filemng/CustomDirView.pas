@@ -175,7 +175,6 @@ type
     FDarkMode: Boolean;
     FScrollOnDragOver: TListViewScrollOnDragOver;
     FStatusFileInfo: TStatusFileInfo;
-    FDoubleBufferedScrollingWorkaround: Boolean;
     FOnBusy: TDirViewBusy;
     FOnChangeFocus: TDirViewChangeFocusEvent;
     FFallbackThumbnail: array[Boolean] of TBitmap;
@@ -184,7 +183,6 @@ type
 
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
     procedure WMNotify(var Msg: TWMNotify); message WM_NOTIFY;
-    procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
     procedure WMLButtonDblClk(var Message: TWMLButtonDblClk); message WM_LBUTTONDBLCLK;
     procedure WMLButtonUp(var Message: TWMLButtonUp); message WM_LBUTTONUP;
     procedure WMContextMenu(var Message: TWMContextMenu); message WM_CONTEXTMENU;
@@ -889,7 +887,6 @@ begin
   FNaturalOrderNumericalSorting := True;
   FAlwaysSortDirectoriesByName := False;
   FDarkMode := False;
-  FDoubleBufferedScrollingWorkaround := not IsVistaHard();
 
   FOnHistoryChange := nil;
   FOnPathChange := nil;
@@ -1661,29 +1658,6 @@ begin
   Result := oiNoOverlay;
   if Assigned(OnGetOverlay) then
     OnGetOverlay(Self, Item, Result);
-end;
-
-procedure TCustomDirView.WMKeyDown(var Message: TWMKeyDown);
-begin
-  if DoubleBuffered and (Message.CharCode in [VK_PRIOR, VK_NEXT]) and
-     FDoubleBufferedScrollingWorkaround then
-  begin
-    // WORKAROUND
-    // When scrolling with double-buffering enabled, ugly artefacts
-    // are shown temporarily.
-    // LVS_EX_TRANSPARENTBKGND fixes it on Vista and newer
-    LockDrawing;
-    try
-      inherited;
-    finally
-      UnlockDrawing;
-    end;
-    Repaint;
-  end
-    else
-  begin
-    inherited;
-  end;
 end;
 
 procedure TCustomDirView.DoDisplayPropertiesMenu;

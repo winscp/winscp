@@ -2383,11 +2383,6 @@ TForm * __fastcall _SafeFormCreate(TMetaClass * FormClass, TComponent * Owner)
   return Form;
 }
 //---------------------------------------------------------------------------
-bool __fastcall SupportsSplitButton()
-{
-  return (Win32MajorVersion() >= 6);
-}
-//---------------------------------------------------------------------------
 static TButton * __fastcall FindStandardButton(TWinControl * Control, bool Default)
 {
   TButton * Result = NULL;

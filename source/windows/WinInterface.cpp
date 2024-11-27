@@ -763,14 +763,6 @@ bool __fastcall ProcessGUI(bool Force)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall CopyParamListButton(TButton * Button)
-{
-  if (!SupportsSplitButton())
-  {
-    MenuButton(Button);
-  }
-}
-//---------------------------------------------------------------------------
 const int cpiDefault = -1;
 const int cpiConfigure = -2;
 const int cpiCustom = -3;

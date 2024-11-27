@@ -681,16 +681,8 @@ static void __fastcall NotifyChangedAssociations()
 void __fastcall RegisterForDefaultProtocols()
 {
   AppLog(L"Registering to handle protocol URL addresses");
-  if (IsWinVista())
-  {
-    AppLog(L"Registering as default program");
-    RegisterForDefaultPrograms();
-  }
-  else
-  {
-    AppLog(L"Registering for non-browser protocols");
-    RegisterAsNonBrowserUrlHandler(UnicodeString());
-  }
+  AppLog(L"Registering as default program");
+  RegisterForDefaultPrograms();
 
   AppLog(L"Registering for non-browser protocols with prefix");
   RegisterAsNonBrowserUrlHandler(WinSCPProtocolPrefix);
@@ -729,8 +721,6 @@ void __fastcall UnregisterForProtocols()
 //---------------------------------------------------------------------------
 void __fastcall LaunchAdvancedAssociationUI()
 {
-  DebugAssert(IsWinVista());
-
   RegisterForDefaultPrograms();
   NotifyChangedAssociations();
   // sleep recommended by https://learn.microsoft.com/en-us/windows/win32/shell/default-programs#becoming-the-default-browser
@@ -1818,9 +1808,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
 
   if (New)
   {
-    // Internet Explorer on Windows XP cannot talk to CDN77, where we host Store Get button.
-    // As a simple solution, we just do not display the donation panel on Windows XP.
-    if (Updates.Results.DownloadUrl.IsEmpty() && IsInstalled() && IsWinVista())
+    if (Updates.Results.DownloadUrl.IsEmpty() && IsInstalled())
     {
       DebugAssert(Dialog->OnShow == NULL);
       // InsertDonateLink need to be called only after MessageBrowser is created

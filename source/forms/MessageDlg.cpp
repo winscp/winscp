@@ -498,7 +498,7 @@ TButton * __fastcall TMessageForm::CreateButton(
     &TextRect, DT_CALCRECT | DT_LEFT | DT_SINGLELINE |
     DrawTextBiDiModeFlagsReadingOnly());
   int CurButtonWidth = TextRect.Right - TextRect.Left + ScaleByTextHeightRunTime(this, 16);
-  if (ElevationRequired && IsVista())
+  if (ElevationRequired)
   {
     // Elevation icon
     CurButtonWidth += ScaleByTextHeightRunTime(this, 16);
@@ -510,8 +510,7 @@ TButton * __fastcall TMessageForm::CreateButton(
 
   TButton * Button = NULL;
 
-  if (SupportsSplitButton() &&
-      (GroupWith >= 0) &&
+  if ((GroupWith >= 0) &&
       DebugAlwaysTrue(AnswerButtons.find(GroupWith) != AnswerButtons.end()))
   {
     TButton * GroupWithButton = AnswerButtons[GroupWith];

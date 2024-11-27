@@ -129,12 +129,12 @@ begin
   FUpdatingSelection := 0;
   FFocusingItem := False;
   FLastSelectMethod := smNoneYet;
-  // On Windows Vista, native GetNextItem for selection stops working once we
-  // disallow deselecting any item (see ExCanChange).
+  // Since Windows Vista, native GetNextItem for selection stops working
+  // once we disallow deselecting any item (see ExCanChange).
   // So we need to manage selection state ourselves
-  // cannot use Win32MajorVersion as it is affected by compatibility mode and
-  // the bug is present even in compatibility mode
-  FManageSelection := IsVistaHard;
+  // All supported Windows versions have the bug (last time tested on Windows 11 23H2 22631),
+  // keeping the variable only as a way to tag all related code
+  FManageSelection := True;
   FFocused := 0;
   FIgnoreSetFocusFrom := INVALID_HANDLE_VALUE;
   // On Windows 7 we have to force item update when it looses focus,

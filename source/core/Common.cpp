@@ -1079,17 +1079,6 @@ static int __fastcall PathRootLength(UnicodeString Path)
   return (Buffer != NULL) ? (Buffer - Result.c_str()) : -1;
 }
 //---------------------------------------------------------------------------
-static bool __fastcall PathIsRelative_CorrectedForMicrosoftStupidity(UnicodeString Path)
-{
-  // Correction for PathIsRelative API
-
-  // Replace all /'s with \'s because PathIsRelative can't handle /'s
-  UnicodeString Result = ReplaceChar(Path, L'/', L'\\');
-
-  //Now call the API
-  return PathIsRelative(Result.c_str());
-}
-//---------------------------------------------------------------------------
 static int __fastcall GetOffsetAfterPathRoot(UnicodeString Path, PATH_PREFIX_TYPE & PrefixType)
 {
   // Checks if 'pPath' begins with the drive, share, prefix, etc
@@ -1112,17 +1101,11 @@ static int __fastcall GetOffsetAfterPathRoot(UnicodeString Path, PATH_PREFIX_TYP
   {
     int Len = Path.Length();
 
-    bool WinXPOnly = !IsWinVista();
-
-    // The PathSkipRoot() API doesn't work correctly on Windows XP
-    if (!WinXPOnly)
+    // Works since Vista and up, but still needs correction :)
+    int RootLength = PathRootLength(Path);
+    if (RootLength >= 0)
     {
-      // Works since Vista and up, but still needs correction :)
-      int RootLength = PathRootLength(Path);
-      if (RootLength >= 0)
-      {
-        Result = RootLength + 1;
-      }
+      Result = RootLength + 1;
     }
 
     // Now determine the type of prefix
@@ -1141,12 +1124,6 @@ static int __fastcall GetOffsetAfterPathRoot(UnicodeString Path, PATH_PREFIX_TYP
       // Found \\?\UNC\ prefix
       PrefixType = PPT_LONG_UNICODE_UNC;
 
-      if (WinXPOnly)
-      {
-          //For older OS
-          Result += 8;
-      }
-
       //Check for UNC share later
       IndCheckUNC = 8;
     }
@@ -1158,12 +1135,6 @@ static int __fastcall GetOffsetAfterPathRoot(UnicodeString Path, PATH_PREFIX_TYP
     {
       // Found \\?\ prefix
       PrefixType = PPT_LONG_UNICODE;
-
-      if (WinXPOnly)
-      {
-          //For older OS
-          Result += 4;
-      }
     }
     else if ((Len >= 2) &&
         (Path[1] == L'\\' || Path[1] == L'/') &&
@@ -1191,46 +1162,10 @@ static int __fastcall GetOffsetAfterPathRoot(UnicodeString Path, PATH_PREFIX_TYP
               {
                 PrefixType = PPT_UNC;
               }
-
-              if (WinXPOnly)
-              {
-                  //For older OS
-                  Result = Index;
-              }
             }
 
             break;
           }
-        }
-      }
-    }
-
-    if (WinXPOnly)
-    {
-      // Only if we didn't determine any other type
-      if (PrefixType == PPT_UNKNOWN)
-      {
-        if (!PathIsRelative_CorrectedForMicrosoftStupidity(Path.SubString(Result, Path.Length() - Result + 1)))
-        {
-          PrefixType = PPT_ABSOLUTE;
-        }
-      }
-
-      // For older OS only
-      int RootLength = PathRootLength(Path.SubString(Result, Path.Length() - Result + 1));
-      if (RootLength >= 0)
-      {
-        Result = RootLength + 1;
-      }
-    }
-    else
-    {
-      // Only if we didn't determine any other type
-      if (PrefixType == PPT_UNKNOWN)
-      {
-        if (!PathIsRelative_CorrectedForMicrosoftStupidity(Path))
-        {
-          PrefixType = PPT_ABSOLUTE;
         }
       }
     }
@@ -1666,7 +1601,7 @@ int __fastcall FileGetAttrFix(const UnicodeString & FileName)
     // FileGetAttr when called for link with FollowLink set (default) will always fail on pre-Vista
     // as it calls InternalGetFileNameFromSymLink, which test for CheckWin32Version(6, 0)
     Result = GetFileAttributes(FileName.c_str());
-    if ((Result >= 0) && FLAGSET(Result, faSymLink) && IsWinVista())
+    if ((Result >= 0) && FLAGSET(Result, faSymLink))
     {
       try
       {
@@ -3073,15 +3008,6 @@ void AddToShellFileListCommandLine(UnicodeString & List, const UnicodeString & V
 {
   UnicodeString Arg = ShellQuoteStr(Value);
   AddToList(List, Arg, L" ");
-}
-//---------------------------------------------------------------------------
-bool __fastcall IsWinVista()
-{
-  // Vista is 6.0
-  // Win XP is 5.1
-  // There also 5.2, what is Windows 2003 or Windows XP 64bit
-  // (we consider it WinXP for now)
-  return CheckWin32Version(6, 0);
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsWin7()
