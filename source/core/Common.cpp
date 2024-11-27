@@ -3010,6 +3010,25 @@ void AddToShellFileListCommandLine(UnicodeString & List, const UnicodeString & V
   AddToList(List, Arg, L" ");
 }
 //---------------------------------------------------------------------------
+bool IsWin64()
+{
+  static int Result = -1;
+  if (Result < 0)
+  {
+    Result = 0;
+    BOOL Wow64Process = FALSE;
+    if (IsWow64Process(GetCurrentProcess(), &Wow64Process))
+    {
+      if (Wow64Process)
+      {
+        Result = 1;
+      }
+    }
+  }
+
+  return (Result > 0);
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsWin7()
 {
   return CheckWin32Version(6, 1);
@@ -3121,43 +3140,58 @@ UnicodeString __fastcall DefaultEncodingName()
   return ADefaultEncodingName;
 }
 //---------------------------------------------------------------------------
-bool _fastcall GetWindowsProductType(DWORD & Type)
+DWORD GetWindowsProductType()
 {
-  bool Result;
-  HINSTANCE Kernel32 = GetModuleHandle(kernel32);
-  typedef BOOL WINAPI (* TGetProductInfo)(DWORD, DWORD, DWORD, DWORD, PDWORD);
-  TGetProductInfo GetProductInfo =
-      (TGetProductInfo)GetProcAddress(Kernel32, "GetProductInfo");
-  if (GetProductInfo == NULL)
-  {
-    Result = false;
-  }
-  else
-  {
-    GetProductInfo(Win32MajorVersion(), Win32MinorVersion(), 0, 0, &Type);
-    Result = true;
-  }
+  DWORD Result = 0;
+  GetProductInfo(Win32MajorVersion(), Win32MinorVersion(), 0, 0, &Result);
   return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall WindowsProductName()
 {
   UnicodeString Result;
-  TRegistry * Registry = new TRegistry(KEY_READ);
-  try
+  // On Windows 11 "ProductName" is still "Windows 10"
+  if (IsWin11())
   {
-    Registry->RootKey = HKEY_LOCAL_MACHINE;
-    if (Registry->OpenKey(L"SOFTWARE", false) &&
-        Registry->OpenKey(L"Microsoft", false) &&
-        Registry->OpenKey(L"Windows NT", false) &&
-        Registry->OpenKey(L"CurrentVersion", false))
+    Result = L"Windows 11"; // fallback value
+
+    HMODULE WinBrandLib = LoadLibrary(L"winbrand.dll");
+    if (WinBrandLib != NULL)
     {
-      Result = Registry->ReadString(L"ProductName");
+      typedef LPWSTR (* TBrandingFormatString)(LPCWSTR);
+      TBrandingFormatString BrandingFormatString =
+        reinterpret_cast<TBrandingFormatString>(GetProcAddress(WinBrandLib, "BrandingFormatString"));
+      if (BrandingFormatString != NULL)
+      {
+        LPWSTR Brand = BrandingFormatString(L"%WINDOWS_LONG%");
+        if (Brand != NULL)
+        {
+          Result = Brand;
+          GlobalFree(Brand);
+        }
+      }
+      FreeLibrary(WinBrandLib);
     }
-    delete Registry;
   }
-  catch(...)
+  else
   {
+    try
+    {
+      // JCL GetWindowsProductName claims that reading 64-bit key gets correct values, but on Windows 11, neither works
+      unsigned int Access = KEY_READ | FLAGMASK(IsWin64(), KEY_WOW64_64KEY);
+      std::unique_ptr<TRegistry> Registry(new TRegistry(Access));
+      Registry->RootKey = HKEY_LOCAL_MACHINE;
+      if (Registry->OpenKey(L"SOFTWARE", false) &&
+          Registry->OpenKey(L"Microsoft", false) &&
+          Registry->OpenKey(L"Windows NT", false) &&
+          Registry->OpenKey(L"CurrentVersion", false))
+      {
+        Result = Registry->ReadString(L"ProductName");
+      }
+    }
+    catch(...)
+    {
+    }
   }
   return Result;
 }

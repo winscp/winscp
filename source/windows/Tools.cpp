@@ -1187,25 +1187,6 @@ void __fastcall CopyToClipboard(TStrings * Strings)
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall IsWin64()
-{
-  static int Result = -1;
-  if (Result < 0)
-  {
-    Result = 0;
-    BOOL Wow64Process = FALSE;
-    if (IsWow64Process(GetCurrentProcess(), &Wow64Process))
-    {
-      if (Wow64Process)
-      {
-        Result = 1;
-      }
-    }
-  }
-
-  return (Result > 0);
-}
-//---------------------------------------------------------------------------
 static void __fastcall AcquireShutDownPrivileges()
 {
   HANDLE Token;

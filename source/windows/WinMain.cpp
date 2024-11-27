@@ -535,9 +535,7 @@ void __fastcall UpdateStaticUsage()
 
   Configuration->Usage->Set(L"WindowsVersion", (WindowsVersionLong()));
   Configuration->Usage->Set(L"WindowsProductName", (WindowsProductName()));
-  DWORD Type;
-  GetWindowsProductType(Type);
-  Configuration->Usage->Set(L"WindowsProductType", (static_cast<int>(Type)));
+  Configuration->Usage->Set(L"WindowsProductType", (static_cast<int>(GetWindowsProductType())));
   Configuration->Usage->Set(L"Windows64", IsWin64());
   Configuration->Usage->Set(L"UWP", IsUWP());
   Configuration->Usage->Set(L"PackageName", GetPackageName());

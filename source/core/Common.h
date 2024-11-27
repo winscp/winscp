@@ -145,6 +145,7 @@ bool __fastcall CutTokenEx(UnicodeString & Str, UnicodeString & Token,
   UnicodeString * RawToken = NULL, UnicodeString * Separator = NULL);
 void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, const UnicodeString & Delimiter);
 void AddToShellFileListCommandLine(UnicodeString & List, const UnicodeString & Value);
+bool IsWin64();
 bool __fastcall IsWin7();
 bool __fastcall IsWin8();
 bool __fastcall IsWin10();
@@ -164,7 +165,7 @@ UnicodeString __fastcall SizeToStr(__int64 Size);
 LCID __fastcall GetDefaultLCID();
 UnicodeString __fastcall DefaultEncodingName();
 UnicodeString __fastcall WindowsProductName();
-bool _fastcall GetWindowsProductType(DWORD & Type);
+DWORD GetWindowsProductType();
 UnicodeString __fastcall WindowsVersion();
 UnicodeString __fastcall WindowsVersionLong();
 bool __fastcall IsDirectoryWriteable(const UnicodeString & Path);

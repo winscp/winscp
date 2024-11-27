@@ -66,7 +66,6 @@ bool __fastcall FontDialog(TFont * Font);
 bool __fastcall SaveDialog(UnicodeString Title, UnicodeString Filter,
   UnicodeString DefaultExt, UnicodeString & FileName);
 bool __fastcall AutodetectProxy(UnicodeString & HostName, int & PortNumber);
-bool __fastcall IsWin64();
 void __fastcall CopyToClipboard(UnicodeString Text);
 void __fastcall CopyToClipboard(TStrings * Strings);
 void __fastcall ShutDownWindows();
