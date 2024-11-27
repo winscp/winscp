@@ -1005,6 +1005,4 @@ begin
   inherited;
 end;
 
-WORKAROUND
-
 end.
