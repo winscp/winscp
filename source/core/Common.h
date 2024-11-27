@@ -148,7 +148,7 @@ void AddToShellFileListCommandLine(UnicodeString & List, const UnicodeString & V
 bool __fastcall IsWin7();
 bool __fastcall IsWin8();
 bool __fastcall IsWin10();
-bool __fastcall IsWin10Build(unsigned int BuildNumber);
+bool IsWin10Build(int BuildNumber);
 bool IsWin11();
 bool __fastcall IsWine();
 void EnableUWPTestMode();
@@ -165,7 +165,6 @@ LCID __fastcall GetDefaultLCID();
 UnicodeString __fastcall DefaultEncodingName();
 UnicodeString __fastcall WindowsProductName();
 bool _fastcall GetWindowsProductType(DWORD & Type);
-int __fastcall GetWindowsBuild();
 UnicodeString __fastcall WindowsVersion();
 UnicodeString __fastcall WindowsVersionLong();
 bool __fastcall IsDirectoryWriteable(const UnicodeString & Path);

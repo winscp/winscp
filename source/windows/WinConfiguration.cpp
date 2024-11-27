@@ -1834,7 +1834,7 @@ bool __fastcall TWinConfiguration::IsDDExtRunning()
 //---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::IsDDExtBroken()
 {
-  int Build = GetWindowsBuild();
+  int Build = Win32BuildNumber();
   return (Build >= 17134) && (Build < 17763);
 }
 //---------------------------------------------------------------------------
