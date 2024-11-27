@@ -411,13 +411,6 @@ begin
   MsgBox(Text, mbInformation, MB_OK);
 end;
 
-#ifdef Sponsor
-function IsWinVista: Boolean;
-begin
-  Result := (GetWindowsVersion >= $06000000);
-end;
-#endif
-
 procedure CutVersionPart(var VersionString: string; var VersionPart: Word);
 var
   P: Integer;
@@ -1379,8 +1372,7 @@ begin
 #ifdef Sponsor
     if VarIsEmpty(SponsorReq) then
     begin
-      // Need Vista for SHCONTCH_* constants
-      if WizardSilent or CmdLineParamExists('/NoSponsor') or (not IsWinVista) then
+      if WizardSilent or CmdLineParamExists('/NoSponsor') then
       begin
         Log('Skipping sponsor query request');
         SponsorStatus := 'N';
