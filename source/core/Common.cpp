@@ -1066,20 +1066,7 @@ enum PATH_PREFIX_TYPE
   PPT_LONG_UNICODE_UNC,   //Found \\?\UNC\ prefix
 };
 //---------------------------------------------------------------------------
-static int __fastcall PathRootLength(UnicodeString Path)
-{
-  // Correction for PathSkipRoot API
-
-  // Replace all /'s with \'s because PathSkipRoot can't handle /'s
-  UnicodeString Result = ReplaceChar(Path, L'/', L'\\');
-
-  // Now call the API
-  LPCTSTR Buffer = PathSkipRoot(Result.c_str());
-
-  return (Buffer != NULL) ? (Buffer - Result.c_str()) : -1;
-}
-//---------------------------------------------------------------------------
-static int __fastcall GetOffsetAfterPathRoot(UnicodeString Path, PATH_PREFIX_TYPE & PrefixType)
+static int GetOffsetAfterPathRoot(const UnicodeString & Path, PATH_PREFIX_TYPE & PrefixType)
 {
   // Checks if 'pPath' begins with the drive, share, prefix, etc
   // EXAMPLES:
@@ -1101,11 +1088,14 @@ static int __fastcall GetOffsetAfterPathRoot(UnicodeString Path, PATH_PREFIX_TYP
   {
     int Len = Path.Length();
 
-    // Works since Vista and up, but still needs correction :)
-    int RootLength = PathRootLength(Path);
-    if (RootLength >= 0)
+    // Replace all /'s with \'s because PathSkipRoot and PathIsRelative can't handle /'s
+    UnicodeString WinPath = ReplaceChar(Path, L'/', L'\\');
+
+     // Now call the API
+    LPCTSTR Buffer = PathSkipRoot(WinPath.c_str());
+    if (Buffer != NULL)
     {
-      Result = RootLength + 1;
+      Result = (Buffer - WinPath.c_str()) + 1;
     }
 
     // Now determine the type of prefix
@@ -1167,6 +1157,15 @@ static int __fastcall GetOffsetAfterPathRoot(UnicodeString Path, PATH_PREFIX_TYP
             break;
           }
         }
+      }
+    }
+
+    // Only if we didn't determine any other type
+    if (PrefixType == PPT_UNKNOWN)
+    {
+      if (!PathIsRelative(WinPath.c_str()))
+      {
+        PrefixType = PPT_ABSOLUTE;
       }
     }
   }
