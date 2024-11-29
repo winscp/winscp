@@ -2382,7 +2382,8 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
             (IsDomainOrSubdomain(HostName, S3HostName) ||
              IsDomainOrSubdomain(HostName, L"digitaloceanspaces.com") ||
              IsDomainOrSubdomain(HostName, S3GoogleCloudHostName) ||
-             IsDomainOrSubdomain(HostName, L"r2.cloudflarestorage.com")))
+             IsDomainOrSubdomain(HostName, L"r2.cloudflarestorage.com") ||
+             (IsDomainOrSubdomain(HostName, L"oraclecloud.com") && ContainsText(HostName, L".compat.objectstorage."))))
         {
           AFSProtocol = fsS3;
         }
