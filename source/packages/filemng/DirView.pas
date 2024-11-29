@@ -821,11 +821,23 @@ const
   LongPathPrefix = '\\?\';
 var
   LongPath: string;
-  Len: Integer;
+  P, Len: Integer;
 begin
   // do checks before passing directory to drive view, because
   // it would truncate non-existing directory to first superior existing
   Value := ReplaceStr(Value, '/', '\');
+
+  // Particularly the TDriveView.FindPathNode (its ExtractFileDir) cannot handle double backslashes
+  while True do
+  begin
+    P := Value.LastIndexOf('\\'); // 0-based
+    if P <= 0 then // not found or UNC
+        Break
+      else
+    begin
+      System.Delete(Value, P + 1, 1);
+    end;
+  end;
 
   // GetLongPathName would resolve to it the current working directory
   if (Length(Value) = 2) and CharInSet(UpperCase(Value)[1], ['A'..'Z']) and (Value[2] = ':') then
