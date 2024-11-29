@@ -3157,7 +3157,7 @@ UnicodeString __fastcall WindowsProductName()
     HMODULE WinBrandLib = LoadLibrary(L"winbrand.dll");
     if (WinBrandLib != NULL)
     {
-      typedef LPWSTR (* TBrandingFormatString)(LPCWSTR);
+      typedef LPWSTR WINAPI (* TBrandingFormatString)(LPCWSTR);
       TBrandingFormatString BrandingFormatString =
         reinterpret_cast<TBrandingFormatString>(GetProcAddress(WinBrandLib, "BrandingFormatString"));
       if (BrandingFormatString != NULL)
