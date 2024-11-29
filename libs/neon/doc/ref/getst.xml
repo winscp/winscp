@@ -7,7 +7,8 @@
 
       <refnamediv>
 	<refname id="ne_get_status">ne_get_status</refname>
-	<refpurpose>retrieve HTTP response status for request</refpurpose>
+	<refname id="ne_get_response_location">ne_get_response_location</refname>
+	<refpurpose>retrieve HTTP response properties</refpurpose>
       </refnamediv>
       
       <refsynopsisdiv>
@@ -21,8 +22,12 @@
 	    <paramdef>const ne_request *<parameter>request</parameter></paramdef>
 	  </funcprototype>
 
+	  <funcprototype>
+	    <funcdef>ne_uri *<function>ne_get_response_location</function></funcdef>
+	    <paramdef>ne_request *<parameter>request</parameter></paramdef>
+	  </funcprototype>
 	</funcsynopsis>
-	
+
       </refsynopsisdiv>
 
       <refsect1>
@@ -33,21 +38,31 @@ a pointer to the HTTP status object giving the result of a request.
 The object returned only becomes valid once the request has been
 <emphasis>successfully</emphasis> dispatched (the return value of
 <function>ne_request_dispatch</function> or
-<function>ne_begin_request</function> was zero).  The object remains
-valid until the associated request object is destroyed.</para>
+<function>ne_begin_request</function> was zero).</para>
 
+<para>If the response includes a <literal>Location</literal> header,
+the <function>ne_get_response_location</function> function parses and
+resolves the URI-reference relative to the request target. If a
+fragment ("#fragment") is applicable to the request target, it can be
+passed as an argument to allow appropriate relative resolution.</para>
       </refsect1>
 
       <refsect1>
-	<title>See also</title>
+	<title>Return value</title>
 
-	<para><xref linkend="ne_status"/>, <xref
-	linkend="ne_request_create"/></para>
+        <para><function>ne_get_status</function> returns a pointer to
+        the HTTP status object giving the result of a request. This
+        pointer is valid until the associated request object is
+        destroyed.</para>
 
+        <para><function>ne_get_response_location</function> returns a
+        malloc-allocated ne_uri object, or NULL if either the URI in
+        the Location header could not be parsed or the Location header
+        was not present.</para>
       </refsect1>
 
       <refsect1>
-	<title>Example</title>
+	<title>Examples</title>
 	
 	<para>Display the response status code of applying the
 <literal>HEAD</literal> method to some resource.</para>
@@ -58,6 +73,20 @@ if (ne_request_dispatch(req))
 else
    printf("Response status code was %d\n", ne_get_status(req)->code);
 ne_request_destroy(req);</programlisting>
+      </refsect1>
+
+      <refsect1>
+	<title>History</title>
+
+        <para><function>ne_get_response_location</function> is
+        available in &neon; 0.34.0 and later.</para>
+      </refsect1>
+
+      <refsect1>
+	<title>See also</title>
+
+	<para><xref linkend="ne_status"/>, <xref
+	linkend="ne_request_create"/></para>
       </refsect1>
 
     </refentry>

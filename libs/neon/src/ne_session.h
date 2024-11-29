@@ -38,7 +38,8 @@ typedef struct ne_session_s ne_session;
  * server. The host string must follow the definition of 'host' in RFC
  * 3986, which can be an IP-literal or registered (DNS) hostname. An
  * IPv6 literal address must be enclosed in square brackets (for
- * example "[::1]"). */
+ * example "[::1]"). The RFC 6874 syntax for IPv6 link-local literal
+ * addresses is also supported, for example "[fe80::1%25eth0]". */
 ne_session *ne_session_create(const char *scheme, const char *host,
                               unsigned int port);
 
@@ -85,8 +86,7 @@ typedef enum ne_session_flag_e {
     NE_SESSFLAG_ICYPROTO, /* enable this flag to enable support for
                            * non-HTTP ShoutCast-style "ICY" responses. */
 
-    NE_SESSFLAG_SSLv2, /* disable this flag to disable support for
-                        * SSLv2, if supported by the SSL library. */
+    NE_SESSFLAG_SSLv2, /* this flag is ignored */
 
     NE_SESSFLAG_RFC4918, /* enable this flag to enable support for
                           * RFC4918-only WebDAV features; losing
@@ -106,6 +106,10 @@ typedef enum ne_session_flag_e {
     NE_SESSFLAG_SHAREPOINT, /* this flag enables various workarounds
                              * to improve interoperability with
                              * SharePoint */
+
+    NE_SESSFLAG_STRICT, /* disable this flag to parse HTTP/1.1
+                         * messages without strict requirements
+                         * introduced in RFC 7230 and later. */
 
     #ifdef WINSCP
     NE_SESSFLAG_LIBERAL_ESCAPING,
@@ -292,6 +296,15 @@ void ne_ssl_trust_cert(ne_session *sess, const ne_ssl_certificate *cert);
  * this set of CAs. This function has no effect for non-SSL
  * sessions. */
 void ne_ssl_trust_default_ca(ne_session *sess);
+
+/* Set the minimum and maximum SSL/TLS protocol version for the
+ * session. Either minimum and/or maximum may be specified as
+ * NE_SSL_PROTO_UNSPEC, in which case no limit is imposed. Returns
+ * non-zero on error if the range is invalid, if the range cannot be
+ * configured in the SSL/TLS toolkit, or if SSL/TLS is not in use for
+ * the session. */
+int ne_ssl_set_protovers(ne_session *sess, enum ne_ssl_protocol min,
+                         enum ne_ssl_protocol max);
 
 /* Callback used to load a client certificate on demand.  If dncount
  * is > 0, the 'dnames' array dnames[0] through dnames[dncount-1]

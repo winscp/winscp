@@ -65,8 +65,8 @@ typedef void ne_207_end_propstat(void *userdata, void *propstat,
 
 typedef struct ne_207_parser_s ne_207_parser;
 
-/* Create 207 parser an add the handlers the the given parser's
- * handler stack.  URI references in the 207 response will be resolved
+/* Create 207 parser, adding handlers to the given XML parser's
+ * handler stack. URI references in the 207 response will be resolved
  * relative to the base URI 'base'. */
 ne_207_parser *ne_207_create(ne_xml_parser *parser, const ne_uri *base, 
                              void *userdata);

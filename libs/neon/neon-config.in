@@ -24,7 +24,7 @@ Known values for OPTION are:
 
  Known features: 
     dav [@NE_FLAG_DAV@], ssl [@NE_FLAG_SSL@], zlib [@NE_FLAG_ZLIB@], ipv6 [@NE_FLAG_IPV6@], lfs [@NE_FLAG_LFS@],
-    i18n [@NE_FLAG_I18N@], ts_ssl [@NE_FLAG_TS_SSL@]
+    i18n [@NE_FLAG_I18N@], ts_ssl [@NE_FLAG_TS_SSL@], gssapi [@NE_FLAG_GSSAPI@], libpxy [@NE_FLAG_LIBPXY@]
 
 EOF
 
@@ -89,6 +89,8 @@ while test $# -gt 0; do
 	shift
 
 	case "$1" in
+	gssapi|GSSAPI) support @NE_FLAG_GSSAPI@ ;;
+	libpxy|LIBPXY) support @NE_FLAG_LIBPXY@ ;;
 	ssl|SSL) support @NE_FLAG_SSL@ ;;
 	zlib|ZLIB) support @NE_FLAG_ZLIB@ ;;
 	ipv6|IPV6) support @NE_FLAG_IPV6@ ;;
