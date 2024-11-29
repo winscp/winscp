@@ -1,0 +1,69 @@
+    <refentry id="refred">
+
+      <refmeta>
+	<refentrytitle>ne_redirect_register</refentrytitle>
+	<manvolnum>3</manvolnum>
+      </refmeta>
+
+      <refnamediv>
+	<refname id="ne_redirect_register">ne_redirect_register</refname>
+	<refname id="ne_redirect_location">ne_redirect_location</refname>
+	<refpurpose>HTTP request redirect handling</refpurpose>
+      </refnamediv>
+      
+      <refsynopsisdiv>
+	
+	<funcsynopsis>
+
+	  <funcsynopsisinfo>#include &lt;ne_redirect.h&gt;</funcsynopsisinfo>
+
+	  <funcprototype>
+	    <funcdef>void <function>ne_redirect_register</function></funcdef>
+	    <paramdef>ne_session *<parameter>sess</parameter></paramdef>
+	  </funcprototype>
+
+	  <funcprototype>
+	    <funcdef>const ne_uri *<function>ne_redirect_location</function></funcdef>
+	    <paramdef>ne_session *<parameter>sess</parameter></paramdef>
+	  </funcprototype>
+	</funcsynopsis>
+	
+      </refsynopsisdiv>
+
+      <refsect1>
+	<title>Description</title>
+
+	<para>The <type>ne_redirect_register</type> function registers
+	redirect handling for the session. If a valid redirect (with
+	status code 3xx) response is processed, the request will fail
+	with the <literal>NE_REDIRECT</literal> error code. The
+	destination of the redirect can then be retrieved using
+	<function>ne_redirect_location</function>.</para>
+
+	<para>If a redirect was processed, the
+	<type>ne_redirect_location</type> function returns the
+	destination URI of the redirect.</para>
+        
+      </refsect1>
+
+      <refsect1>
+	<title>Return value</title>
+
+	<para><function>ne_redirect_location</function> returns
+	<literal>NULL</literal> if no request has yet been processed,
+	if the current request was not a redirect, or if the
+	destination of the redirect could not be parsed or
+	resolved. Otherwise it returns a pointer to an
+	<type>ne_uri</type> object, which remains valid until another
+	request is created for the session.</para>
+
+      </refsect1>
+
+      <refsect1>
+	<title>See also</title>
+	
+	<para><xref linkend="ne_session_create"/>.</para>
+
+      </refsect1>
+
+    </refentry>

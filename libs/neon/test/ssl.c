@@ -75,7 +75,8 @@ static int check_cert_dnames(const ne_ssl_certificate *cert,
 /* Arguments for running the SSL server */
 struct ssl_server_args {
     char *cert; /* the server cert to present. */
-    const char *response; /* the response to send. */
+    const char *key; /* server key filename */
+    const char *response; /* the HTTP response message to send. */
     int numreqs; /* number of request/responses to handle over the SSL connection. */
 
     /* client cert handling: */
@@ -91,9 +92,8 @@ struct ssl_server_args {
     } session;
     int count; /* internal use. */
 
-    int use_ssl2; /* force use of SSLv2 only */
-
-    const char *key;
+    /* minimum, maximum version. */
+    enum ne_ssl_protocol minver, maxver;
 };
 
 /* default response string if args->response is NULL */
@@ -109,8 +109,7 @@ static int ssl_server(ne_socket *sock, void *userdata)
     static ne_ssl_context *ctx = NULL;
 
     if (ctx == NULL) {
-        ctx = ne_ssl_context_create(args->use_ssl2 ? NE_SSL_CTX_SERVERv2
-                                    : NE_SSL_CTX_SERVER);
+        ctx = ne_ssl_context_create(NE_SSL_CTX_SERVER);
     }
 
     ONV(ctx == NULL, ("could not create SSL context"));
@@ -162,6 +161,18 @@ static int ssl_server(ne_socket *sock, void *userdata)
         
     } while (--args->numreqs > 0);
 
+    if (args->minver || args->maxver) {
+        unsigned int vers = ne_sock_getproto(sock);
+        const char *name = ne_ssl_proto_name(vers);
+
+        NE_DEBUG(NE_DBG_HTTP, "ssl: TLS protocol version (%d): [%s]\n", 
+                 vers, name);
+
+        ONV((args->minver && vers < args->minver)
+            || (args->maxver && vers > args->maxver),
+            ("SSL protocol version %d (%s) outside range (%d, %d)",
+             vers, name, args->minver, args->maxver));
+    }
 
     if (args->cache) {
         unsigned char sessid[128];
@@ -173,7 +184,7 @@ static int ssl_server(ne_socket *sock, void *userdata)
 #ifdef NE_DEBUGGING
         {
             char *b64 = ne_base64(sessid, len);
-            NE_DEBUG(NE_DBG_SSL, "Session id retrieved (%d): [%s]\n", 
+            NE_DEBUG(NE_DBG_SSL, "ssl: Session id retrieved (%d): [%s]\n", 
                      args->count, b64);
             ne_free(b64);
         }
@@ -192,15 +203,6 @@ static int ssl_server(ne_socket *sock, void *userdata)
     }	
     
     return 0;
-}
-
-/* serve_ssl wrapper which ignores server failure and always succeeds */
-static int fail_serve(ne_socket *sock, void *ud)
-{
-    struct ssl_server_args args = {0};
-    args.cert = ud;
-    ssl_server(sock, &args);
-    return OK;
 }
 
 #define DEFSESS  (ne_session_create("https", "localhost", 7777))
@@ -468,28 +470,6 @@ static int simple(void)
 {
     return accept_signed_cert(SERVER_CERT);
 }
-
-#if 0 /* No longer works for modern SSL libraries, rightly so. */
-/* Test for SSL operation when server uses SSLv2 */
-static int simple_sslv2(void)
-{
-    ne_session *sess = ne_session_create("https", "localhost", 7777);
-    struct ssl_server_args args = {SERVER_CERT, 0};
-
-    args.use_ssl2 = 1;
-    ne_set_session_flag(sess, NE_SESSFLAG_SSLv2, 1);
-
-    if (ne_get_session_flag(sess, NE_SESSFLAG_SSLv2) != 1) {
-        t_context("no SSLv2 support in SSL library");
-        ne_session_destroy(sess);
-        return SKIP;
-    }
-
-    CALL(any_ssl_request(sess, ssl_server, &args, CA_CERT, NULL, NULL));
-    ne_session_destroy(sess);
-    return OK;
-}
-#endif
 
 /* Test read-til-EOF behaviour with SSL. */
 static int simple_eof(void)
@@ -763,6 +743,7 @@ static int get_failures(void *userdata, int fs, const ne_ssl_certificate *c)
 {
     int *out = userdata;
     *out = fs;
+    NE_DEBUG(NE_DBG_SSL, "test: fail_ssl_request verify callback - %d\n", fs);
     return -1;
 }
 
@@ -802,6 +783,9 @@ static int fail_ssl_request_with_error2(char *cert, char *key, char *cacert,
     ne_ssl_set_verify(sess, get_failures, &gotf);
 
     ret = any_request(sess, "/expect-to-fail");
+
+    NE_DEBUG(NE_DBG_SSL, "test: fail_ssl_request - request code %d, error: %s\n",
+             ret, ne_get_error(sess));
 
     ONV(gotf == 0,
 	("no error in verification callback; request rv %d error string: %s",
@@ -932,18 +916,22 @@ static int fail_self_signed(void)
  * commonName (and no alt names either). */
 static int fail_missing_CN(void)
 {
-    ne_session *sess = DEFSESS;
+    struct ssl_server_args args = {0};
+    ne_session *sess;
+    int ret;
 
-    ONN("accepted server cert with missing commonName",
-        any_ssl_request(sess, fail_serve, "missingcn.cert", SERVER_CERT,
-                        NULL, NULL) == NE_OK);
-    
-    ONV(strstr(ne_get_error(sess), "missing commonName") == NULL,
-        ("unexpected session error `%s'", ne_get_error(sess)));
+    args.cert = "missingcn.cert";
 
-    ne_session_destroy(sess);
-    return OK;
-}                            
+    CALL(make_ssl_session(&sess, "localhost", ssl_server, &args));
+
+    ret = any_request(sess, "/fail-missing-cn");
+    ONN("request did not fail", ret != NE_ERROR);
+
+    ONV(strstr(ne_get_error(sess), "missing commonName attribute") == NULL,
+        ("error string unexpected: %s", ne_get_error(sess)));
+
+    return destroy_and_wait(sess);
+}
 
 /* test for a bad ipAddress altname */
 static int fail_bad_ipaltname(void)
@@ -1263,27 +1251,42 @@ static int proxy_tunnel(void)
     return OK;
 }
 
-#define RESP_0LENGTH "HTTP/1.1 200 OK\r\n" "Content-Length: 0\r\n" "\r\n"
+struct tunnel_args {
+    int iteration;
+    const char *first_response; /* first CONNECT response. */
+    const char *second_response; /* second CONNECT response. */
+    struct ssl_server_args *args;
+};
 
-/* a tricky test which requires spawning a second server process in
- * time for a new connection after a 407. */
-static int apt_post_send(ne_request *req, void *ud, const ne_status *st)
+/* Server which acts as a proxy accepting a CONNECT request. */
+static int serve_auth_tunnel(ne_socket *sock, void *ud)
 {
-    int *code = ud;
-    if (st->code == *code) {
-        struct ssl_server_args args = {SERVER_CERT, NULL};
-    
-        if (*code == 407) args.numreqs = 2;
-        args.response = RESP_0LENGTH;
+    struct tunnel_args *args = ud;
 
-        NE_DEBUG(NE_DBG_HTTP, "Got challenge, awaiting server...\n");
-        CALL(await_server());
-        NE_DEBUG(NE_DBG_HTTP, "Spawning proper tunnel server...\n");
-        /* serve *two* 200 OK responses. */
-        CALL(spawn_server(7777, serve_tunnel, &args));
-        NE_DEBUG(NE_DBG_HTTP, "Spawned.\n");
+    /* check for a server auth function */
+    want_header = "Authorization";
+    got_header = tunnel_header;
+    got_server_auth = 0;
+
+    CALL(discard_request(sock));
+
+    if (got_server_auth) {
+        SEND_STRING(sock, "HTTP/1.1 500 Leaked Server Auth Creds\r\n"
+                    "Content-Length: 0\r\n" "Server: serve_tunnel\r\n\r\n");
+        return 0;
     }
-    return OK;
+    
+    if (args->iteration++ == 0) {
+        /* give the plaintext tunnel reply, acting as the proxy */
+
+        SEND_STRING(sock, args->first_response);
+
+        return OK;
+    }
+
+    SEND_STRING(sock, args->second_response);
+
+    return ssl_server(sock, args->args);
 }
 
 static int apt_creds(void *userdata, const char *realm, int attempt,
@@ -1299,23 +1302,27 @@ static int apt_creds(void *userdata, const char *realm, int attempt,
  * 0.24.0. */
 static int auth_proxy_tunnel(void)
 {
-    ne_session *sess = ne_session_create("https", "localhost", 443);
-    int ret, code = 407;
+    struct ssl_server_args args = {SERVER_CERT, NULL};
+    struct tunnel_args tunnel;
+    ne_session *sess;
+
+    tunnel.first_response =
+        "HTTP/1.0 407 I WANT MORE BISCUITS\r\n"
+        "Server: auth_proxy_tunnel\r\n"
+        "Proxy-Authenticate: Basic realm=\"bigbluesea\"\r\n"
+        "Connection: close\r\n" "\r\n";
+    tunnel.second_response = "HTTP/1.1 200 OK\r\n"
+        "Server: auth_proxy_tunnel r2\r\n\r\n";
+    tunnel.iteration = 0;
+    tunnel.args = &args;
+
+    CALL(proxied_multi_session_server(2, &sess, "https", "localhost", 443,
+                                      serve_auth_tunnel, &tunnel));
     
-    ne_session_proxy(sess, "localhost", 7777);
-    ne_hook_post_send(sess, apt_post_send, &code);
     ne_set_proxy_auth(sess, apt_creds, NULL);
     ne_ssl_trust_cert(sess, def_ca_cert);
     
-    CALL(spawn_server(7777, single_serve_string,
-                      "HTTP/1.0 407 I WANT MORE BISCUITS\r\n"
-                      "Proxy-Authenticate: Basic realm=\"bigbluesea\"\r\n"
-                      "Connection: close\r\n" "\r\n"));
-    
-    /* run two requests over the tunnel. */
-    ret = any_2xx_request(sess, "/foobar");
-    if (!ret) ret = any_2xx_request(sess, "/foobar2");
-    CALL(ret);
+    CALL(any_2xx_request(sess, "/foobar"));
 
     return destroy_and_wait(sess);
 }
@@ -1324,20 +1331,27 @@ static int auth_proxy_tunnel(void)
  * proxy in a CONNECT request. */
 static int auth_tunnel_creds(void)
 {
-    ne_session *sess = ne_session_create("https", "localhost", 443);
-    int code = 401;
-    struct ssl_server_args args = {SERVER_CERT, 0};
+    struct ssl_server_args args = {SERVER_CERT, NULL};
+    struct tunnel_args tunnel;
+    ne_session *sess;
+
+    args.response = "HTTP/1.1 401 I want a Shrubbery\r\n"
+        "WWW-Authenticate: Basic realm=\"bigredocean\"\r\n"
+        "Server: auth_tunnel_creds\r\n" "Content-Length: 0\r\n" "\r\n"
+        ""
+        "HTTP/1.1 200 OK\r\n\r\n";
+
+    tunnel.second_response = "HTTP/1.1 200 OK\r\n\r\n";
+    tunnel.args = &args;
+    tunnel.iteration = 1;
+
+    CALL(proxied_multi_session_server(2, &sess, "https", "localhost", 443,
+                                      serve_auth_tunnel, &tunnel));
     
-    ne_session_proxy(sess, "localhost", 7777);
-    ne_hook_post_send(sess, apt_post_send, &code);
     ne_set_server_auth(sess, apt_creds, NULL);
     ne_ssl_trust_cert(sess, def_ca_cert);
     
-    args.response = "HTTP/1.1 401 I want a Shrubbery\r\n"
-        "WWW-Authenticate: Basic realm=\"bigredocean\"\r\n"
-        "Server: Python\r\n" "Content-Length: 0\r\n" "\r\n";
-    
-    CALL(spawn_server(7777, serve_tunnel, &args));
+    CALL(any_2xx_request(sess, "/foobar"));
     CALL(any_2xx_request(sess, "/foobar"));
 
     return destroy_and_wait(sess);
@@ -1864,6 +1878,23 @@ static int pkcs11_dsa(void)
     return nss_pkcs11_test("nssdb-dsa");
 }
 
+static int protovers(void)
+{
+    ne_session *sess = DEFSESS;
+    struct ssl_server_args args = {SERVER_CERT, NULL};
+
+    args.minver = NE_SSL_PROTO_TLS_1_2;
+    args.maxver = NE_SSL_PROTO_TLS_1_2;
+
+    ONV(ne_ssl_set_protovers(sess, args.minver, args.maxver),
+        ("setting TLS protocol version failed: %s", ne_get_error(sess)));
+
+    CALL(any_ssl_request(sess, ssl_server, &args, CA_CERT, NULL, NULL));
+
+    ne_session_destroy(sess);
+    return OK;
+}
+
 /* TODO: code paths still to test in cert verification:
  * - server cert changes between connections: Mozilla gives
  * a "bad MAC decode" error for this; can do better?
@@ -1899,9 +1930,6 @@ ne_test tests[] = {
     T(clicert_import),
 
     T(simple),
-#if 0
-    T(simple_sslv2),
-#endif
     T(simple_eof),
     T(empty_truncated_eof),
     T(fail_not_ssl),
@@ -1963,6 +1991,8 @@ ne_test tests[] = {
     T(auth_proxy_tunnel),
     T(auth_tunnel_creds),
     T(auth_tunnel_fail),
+
+    T(protovers),
 
     T(nonssl_trust),
 

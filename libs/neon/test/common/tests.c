@@ -110,7 +110,7 @@ void t_warning(const char *str, ...)
  NE_DBG_LOCKS | NE_DBG_XMLPARSE | NE_DBG_XML | NE_DBG_SSL | \
  NE_DBG_HTTPPLAIN)
 
-#define W(m) do { if (write(0, m, strlen(m)) < 0) _exit(99); } while(0)
+#define W(m) do { if (write(STDOUT_FILENO, m, strlen(m)) < 0) _exit(99); } while(0)
 
 #define W_RED(m) do { if (use_colour) W("\033[41;37;01m"); \
 W(m); if (use_colour) W("\033[00m\n"); } while (0);
@@ -133,12 +133,16 @@ static void parent_segv(int signo)
     signal(SIGSEGV, SIG_DFL);
     signal(SIGABRT, SIG_DFL);
     if (signo == SIGSEGV) {
-        W_RED("FAILED - segmentation fault");
-    } else if (signo == SIGABRT) {
-        W_RED("ABORTED");
+        W_RED("FAILED - Segmentation fault--\n");
+    }
+    else if (signo == SIGABRT) {
+        W_RED("ABORTED\n");
+    }
+    else {
+        W_RED("-- Unexpected signal! --\n");
     }
     reap_server();
-    kill(getpid(), SIGSEGV);
+    kill(getpid(), signo);
     minisleep();
 }
 

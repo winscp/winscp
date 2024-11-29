@@ -223,13 +223,14 @@ int session_server(ne_session **sess, server_fn fn, void *userdata)
     return multi_session_server(sess, "http", session_host, 1, fn, userdata);
 }
 
-int proxied_session_server(ne_session **sess, const char *scheme,
-                           const char *host, unsigned int fakeport,
-                           server_fn fn, void *userdata)
+int proxied_multi_session_server(int count, ne_session **sess,
+                                 const char *scheme, const char *host,
+                                 unsigned int fakeport,
+                                 server_fn fn, void *userdata)
 {
     unsigned int port;
     
-    CALL(new_spawn_server(1, fn, userdata, &port));
+    CALL(new_spawn_server(count, fn, userdata, &port));
     
     *sess = ne_session_create(scheme, host, fakeport);
 
@@ -238,6 +239,15 @@ int proxied_session_server(ne_session **sess, const char *scheme,
     ne_session_proxy(*sess, get_lh_addr(), port);
 
     return OK;
+}
+
+
+int proxied_session_server(ne_session **sess, const char *scheme,
+                           const char *host, unsigned int fakeport,
+                           server_fn fn, void *userdata)
+{
+    return proxied_multi_session_server(1, sess, scheme, host, fakeport,
+                                        fn, userdata);
 }
 
 static void fakesess_destroy(void *userdata)

@@ -409,6 +409,8 @@ static void dup_header(char *header)
 #define PARM_LEGACY_ONLY (0x0100)
 #define PARM_QOP       (0x0200) /* use qop= */
 #define PARM_RFC2617   (0x0204) /* use algorithm= and qop= */
+#define PARM_OPTSTAR   (0x0400) /* use OPTIONS * */
+#define PARM_PARSEQOP  (0x0800) /* use qop-value parsing test */
 
 struct digest_parms {
     const char *realm, *nonce, *opaque, *domain;
@@ -497,6 +499,8 @@ static char *make_digest(struct digest_state *state, struct digest_parms *parms,
         h_a1 = sess_h_a1;
     }
 
+    NE_DEBUG(NE_DBG_HTTP, "H(A2) from %s:%s\n",
+             !auth_info ? state->method : "", state->uri);
     h_a2 = hash(parms, !auth_info ? state->method : "", ":", state->uri, NULL);
 
     if (parms->flags & PARM_QOP) {
@@ -689,7 +693,8 @@ static char *make_authinfo_header(struct digest_state *state,
 
     if ((parms->flags & PARM_QOP) == 0) {
         ne_buffer_concat(buf, "rspauth=\"", digest, "\"", NULL);
-    } else {
+    }
+    else {
         if (parms->failure != fail_ai_omit_nc) {
             ne_buffer_concat(buf, "nc=", ncval, ", ", NULL);
         }
@@ -731,7 +736,10 @@ static char *make_digest_header(struct digest_state *state,
         ne_buffer_concat(buf, "algorithm=\"", algorithm, "\", ", NULL);
     }
 
-    if (parms->flags & PARM_QOP) {
+    if (parms->flags & PARM_PARSEQOP) {
+        ne_buffer_czappend(buf, "qop=\"auth-int,fish, auth\", ");
+    }
+    else if (parms->flags & PARM_QOP) {
         ne_buffer_concat(buf, "qop=\"", state->qop, "\", ", NULL);
     }
 
@@ -767,14 +775,20 @@ static int serve_digest(ne_socket *sock, void *userdata)
     struct digest_parms *parms = userdata;
     struct digest_state state;
     char resp[NE_BUFSIZ], *rspdigest;
+
+    state.method = "GET";
     
     if ((parms->flags & PARM_PROXY))
         state.uri = "http://www.example.com/fish";
     else if (parms->domain)
         state.uri = "/fish/0";
+    else if ((parms->flags & PARM_OPTSTAR)) {
+        state.method = "OPTIONS";
+        state.uri = "*";
+    }
     else
         state.uri = "/fish";
-    state.method = "GET";
+
     state.realm = parms->realm;
     state.nonce = parms->nonce;
     state.opaque = parms->opaque;
@@ -926,7 +940,10 @@ static int test_digest(struct digest_parms *parms)
     }
 
     do {
-        CALL(any_2xx_request(sess, "/fish"));
+        if (parms->flags & PARM_OPTSTAR)
+            CALL(any_2xx_request_method(sess, "OPTIONS", "*"));
+        else
+            CALL(any_2xx_request(sess, "/fish"));
     } while (--parms->num_requests);
     
     return destroy_and_wait(sess);
@@ -947,6 +964,8 @@ static int digest(void)
         { "WallyWorld", "nonce-nonce-nonce", "opaque-string", NULL, ALG_MD5_SESS, PARM_RFC2617 | PARM_AINFO, 1, 0, fail_not },
         /* many requests, with changing nonces; tests for next-nonce handling bug. */
         { "WallyWorld", "this-is-a-nonce", "opaque-thingy", NULL, ALG_MD5, PARM_RFC2617 | PARM_AINFO | PARM_NEXTNONCE, 20, 0, fail_not },
+        /* ... with qop parsing tests. */
+        { "WallyWorld", "qop-parsing-test", NULL, NULL, ALG_MD5, PARM_RFC2617 | PARM_PARSEQOP, 1, 0, fail_not },
 
         /* staleness. */
         { "WallyWorld", "this-is-a-nonce", "opaque-thingy", NULL, ALG_MD5, PARM_RFC2617 | PARM_AINFO, 3, 2, fail_not },
@@ -968,6 +987,9 @@ static int digest(void)
         { "WallyWorld", "this-is-also-a-nonce", "opaque-string", NULL, ALG_MD5, PARM_RFC2617|PARM_PROXY, 1, 0, fail_not },
         /* Proxy + nextnonce */
         { "WallyWorld", "this-is-also-a-nonce", "opaque-string", NULL, ALG_MD5, PARM_RFC2617|PARM_AINFO|PARM_PROXY, 1, 0, fail_not },
+
+        /* OPTIONS * test */
+        { "WallyWorld", "options-nonce", "new-opaque", NULL, ALG_MD5, PARM_RFC2617|PARM_USERHASH|PARM_OPTSTAR, 1, 0, fail_not },
 
         { NULL }
     };
@@ -1657,6 +1679,54 @@ static int star_scope(void)
     return destroy_and_wait(sess);
 }
 
+/* Test for realm with non-readable characters. */
+static int serve_unclean_realm(ne_socket *sock, void *userdata)
+{
+    CALL(discard_request(sock));
+    send_response(sock, "WWW-Authenticate: Basic realm='Foo\tBar'", 401, 0);
+
+    CALL(discard_request(sock));
+    send_response(sock, NULL, 200, 0);
+
+    return 0;
+}
+
+static int get_realm_cb(void *userdata, const char *realm, int tries, 
+                        char *un, char *pw)
+{
+    char **rp = userdata;
+
+    *rp = ne_strdup(realm);
+
+    ne_strnzcpy(un, "foo", NE_ABUFSIZ);
+    ne_strnzcpy(pw, "bar", NE_ABUFSIZ);
+
+    return 0;
+}
+
+/* Test for the scope of "*". */
+static int clean_realm(void)
+{
+    ne_session *sess;
+    char *realm = NULL;
+
+    CALL(make_session(&sess, serve_unclean_realm, NULL));
+
+    ne_set_server_auth(sess, get_realm_cb, &realm);
+
+    ONREQ(any_request(sess, "/realm-test"));
+
+    ONN("no realm header found?", realm == NULL);
+
+    ONV(strchr(realm, '\t') != NULL,
+        ("realm header returned unclean: '%s'", realm));
+
+    ne_free(realm);
+
+    return destroy_and_wait(sess);
+}
+
+
 /* proxy auth, proxy AND origin */
 
 ne_test tests[] = {
@@ -1681,5 +1751,6 @@ ne_test tests[] = {
     T(forget),
     T(basic_scope),
     T(star_scope),
+    T(clean_realm),
     T(NULL)
 };

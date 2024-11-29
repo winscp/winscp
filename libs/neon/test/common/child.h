@@ -118,7 +118,7 @@ struct serve_file_args {
 int serve_file(ne_socket *sock, void *ud);
 
 /* set to value of C-L header by discard_request. */
-extern int clength;
+extern unsigned long clength;
 
 /* Sleep for a short time. */
 void minisleep(void);
