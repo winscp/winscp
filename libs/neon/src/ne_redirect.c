@@ -63,7 +63,11 @@ static int post_send(ne_request *req, void *userdata, const ne_status *status)
     uri_free_clear(red);
 
     if (status->klass == 3
-        && (loc = ne_get_response_location(req, NULL)) != NULL) {
+#ifdef WINSCP
+        && !is_passport_challenge(req, status)
+#endif
+        && (loc = ne_get_response_location(req, NULL)) != NULL
+        ) {
         red->uri = loc;
         return NE_REDIRECT;
     }

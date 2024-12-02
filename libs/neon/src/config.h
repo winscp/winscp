@@ -41,6 +41,14 @@
 
 #define NE_HAVE_TS_SSL 1
 
+#define HAVE_INET_NTOP 1
+#define HAVE_INET_PTON 1
+#define HAVE_IF_INDEXTONAME 1
+#define HAVE_IF_NAMETOINDEX 1
+#define USE_GETADDRINFO
+#define USE_GAI_ADDRCONFIG
+#define NE_HAVE_IPV6 // doesn't really have any practival effect
+
 /* Define to enable debugging */
 #define NE_DEBUGGING 1
 

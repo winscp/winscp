@@ -69,6 +69,9 @@
 #ifdef HAVE_WSPIAPI_H
 #include <wspiapi.h>
 #endif
+#if (defined WINSCP) && (HAVE_IF_INDEXTONAME)
+#include <iphlpapi.h>
+#endif
 #endif
 
 #if defined(HAVE_OPENSSL) && defined(HAVE_LIMITS_H)

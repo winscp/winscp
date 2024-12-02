@@ -434,7 +434,12 @@ static int get_credentials(auth_session *sess, ne_buffer **errmsg, int attempt,
 {
     unsigned mask = chall->protocol->id | sess->spec->protomask;
     int rv;
-    char *realm = ne_strclean(ne_strdup(sess->realm));
+    char *realm =
+                  #ifdef WINSCP
+                  // No "realm" in "passport" auth
+                  sess->realm == NULL ? NULL :
+                  #endif
+                  ne_strclean(ne_strdup(sess->realm));
 
     if (chall->handler->new_creds)
         rv = chall->handler->new_creds(chall->handler->userdata,
@@ -1580,7 +1585,7 @@ static int passport_challenge(auth_session *sess, int attempt,
         while (*auth_hdr == ' ') auth_hdr++;
 
         ne_fill_server_uri(session, &orig_uri);
-        orig_uri.path = ne_strdup(areq->uri);
+        orig_uri.path = ne_strdup(areq->target);
         org_url = ne_uri_unparse(&orig_uri);
         ne_uri_free(&orig_uri);
 
