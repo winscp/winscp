@@ -562,20 +562,30 @@ UnicodeString __fastcall NeonTlsSessionInfo(
   return FORMAT(L"Using %s, cipher %s", (TlsVersionStr, Cipher));
 }
 //---------------------------------------------------------------------------
+static int TlsVersionToOpenssl(TTlsVersion TlsVersion)
+{
+  TlsVersion = (TTlsVersion)std::min((TTlsVersion)std::max(TlsVersion, tlsMin), tlsMax);
+  switch (TlsVersion)
+  {
+    case tls10: return TLS1_VERSION;
+    case tls11: return TLS1_1_VERSION;
+    case tls12: return TLS1_2_VERSION;
+    case tls13: return TLS1_3_VERSION;
+    default:
+      return 0;
+  }
+}
+//---------------------------------------------------------------------------
 void SetupSsl(ssl_st * Ssl, TTlsVersion MinTlsVersion, TTlsVersion MaxTlsVersion)
 {
-  MaxTlsVersion = (TTlsVersion)std::max(MaxTlsVersion, tlsMin); // the lowest currently supported version
-  #define MASK_TLS_VERSION(VERSION, FLAG) ((MinTlsVersion > VERSION) || (MaxTlsVersion < VERSION) ? FLAG : 0)
-  int Options =
-    MASK_TLS_VERSION(tls10, SSL_OP_NO_TLSv1) |
-    MASK_TLS_VERSION(tls11, SSL_OP_NO_TLSv1_1) |
-    MASK_TLS_VERSION(tls12, SSL_OP_NO_TLSv1_2) |
-    MASK_TLS_VERSION(tls13, SSL_OP_NO_TLSv1_3);
-  // adds flags (not sets)
-  SSL_set_options(Ssl, Options);
+  // With Neon, we could use ne_ssl_set_protovers, but we share this with FTP
+  int MinVersion = TlsVersionToOpenssl(MinTlsVersion);
+  SSL_set_min_proto_version(Ssl, MinVersion);
+  int MaxVersion = TlsVersionToOpenssl(MaxTlsVersion);
+  SSL_set_max_proto_version(Ssl, MaxVersion);
 
   // Since OpenSSL 3, SSL 3.0, TLS 1.0 and 1.1 are enabled on security level 0 only
-  if (MinTlsVersion <= tls11)
+  if (MinVersion <= TLS1_1_VERSION)
   {
     SSL_set_security_level(Ssl, 0);
   }
