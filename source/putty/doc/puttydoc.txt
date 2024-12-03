@@ -1413,6 +1413,92 @@ Chapter 3: Using PuTTY
        section 4.19.4. When you dismiss that dialog box, PuTTY will
        terminate.
 
+3.11.3.30 `-legacy-stdio-prompts': handle Windows console prompts like
+       older versions of PuTTY
+
+       This option applies to all of PSCP, PSFTP and Plink on Windows: all
+       the tools in the PuTTY suite that run in a Windows console and make
+       SSH connections.
+
+       These tools use the Windows console to prompt for various
+       information: usernames, passwords, answers to questions about host
+       keys, and so on.
+
+       In current versions of PuTTY, these prompts work by direct access
+       to the Windows console. This means that even if you redirect the
+       standard input or output of the tool, prompts will _still_ be sent
+       to the console (and not where you've redirected your output), and
+       the user's responses will be read from the console (and not from
+       where you've redirected your input).
+
+       Another advantage of reading directly from the Windows console is
+       that the tools can read input as Unicode. So this also allows you
+       to enter usernames and passwords that contain characters not in the
+       Windows system's default character set.
+
+       In versions of the PuTTY tools up to and including 0.81, the prompts
+       used the tool's ordinary I/O handles, so prompt output and user
+       responses could be redirected.
+
+       We think the new behaviour is more likely to be useful. For example,
+       if you have a local command that generates output, and you want to
+       pipe that output into a command running remotely via Plink, you can
+       run a command line such as
+
+         local_command | plink hostname remote_command
+
+       and the data piped into the remote command will be the same whether
+       or not Plink has to stop to ask for a password. With the old
+       behaviour you would have had to include the password in Plink's
+       input, which is more awkward.
+
+       However, we recognise that people may have customised complicated
+       workflows around the old behaviour. So if you need to switch back
+       to it, you can do so by specifying `-legacy-stdio-prompts' on the
+       command-line.
+
+       To fully revert to the previous behaviour, you'd also need to
+       specify `-legacy-charset-handling' (see the next section). (Even
+       without that option, prompt handling with `-legacy-stdio-prompts'
+       may not be fully Unicode-clean.)
+
+3.11.3.31 `-legacy-charset-handling': handle character set in prompts like
+       older versions of PuTTY
+
+       This option applies to PuTTY (on all platforms), and also to all of
+       PSCP, PSFTP and Plink on Windows.
+
+       In current versions of PuTTY, when you are prompted in the terminal
+       window for things like SSH usernames and passwords, the responses
+       you type are interpreted as Unicode, and transmitted to the server
+       as such, even if the terminal is otherwise configured to use a
+       different character encoding (see section 4.10.1). Similarly, the
+       same prompts from the Windows console tools will unconditionally
+       interpret their input as Unicode.
+
+       This behaviour is in line with the SSH standards; it allows things
+       like usernames to use the full character set of the user's native
+       language, and ensures that different keystrokes you type for your
+       password are actually treated distinctly.
+
+       However, if you are used to the behaviour of the PuTTY tools up to
+       version 0.81, this could cause a previously working username and/or
+       password not to work as you expected. For instance, if you had
+       set a password including some accented characters, this change in
+       behaviour could cause the same keystrokes you've always entered to
+       start sending a different sequence of bytes to the server, denying
+       you access (and you wouldn't even be able to see the difference,
+       since the password is not shown when you type it).
+
+       `-legacy-charset-handling' reverts the PuTTY tools' behaviour to
+       how it was previously: what you type at these prompts will be
+       interpreted according to the `Remote character set' (for PuTTY) or
+       Windows' default character set (for the Windows console tools).
+
+       (For example, this could allow you to log in to change your password
+       to make using this option unnecessary in future. But if you're doing
+       that, make sure the terminal is configured as UTF-8!)
+
 Chapter 4: Configuring PuTTY
 ----------------------------
 
@@ -2377,6 +2463,34 @@ Chapter 4: Configuring PuTTY
 
        You may also find you need to disable Arabic text shaping; see
        section 4.6.10.
+
+4.6.12 Disabling bracketed paste mode
+
+       By default, when you paste text into the terminal window, it's sent
+       to the server as terminal input, exactly as if you'd typed the same
+       text into the terminal window using the keyboard (except that it's
+       all sent at once, much faster than you could type it).
+
+       However, a terminal application can change that, by asking the
+       terminal to enable `bracketed paste mode'. In this mode, pasted data
+       is marked in the input stream, by sending a special control sequence
+       before the paste, and another one at the end.
+
+       A terminal application can use this information to treat pasted data
+       differently from keyboard input. For example, a terminal-based text
+       editor can treat the input as literal data, even if some of its
+       characters would normally trigger special editor functions. A shell
+       can treat pasted input as less trusted, in case another application
+       somehow sneaked a malicious shell command into your clipboard:
+       modern versions of bash will highlight pasted data on the command
+       line, and not run it until you've confirmed it by pressing Return,
+       even if the pasted data contained a newline character.
+
+       In edge cases, it's possible that bracketed paste mode introduces
+       bigger problems than the ones it solves. So you can use this
+       checkbox to turn it off completely. If you do that, then PuTTY will
+       always send your paste data exactly as if it had been typed at the
+       keyboard, whether or not the server asked for bracketed paste mode.
 
    4.7 The Window panel
 
@@ -5530,7 +5644,7 @@ Chapter 5: Using PSCP to transfer files securely
 
          C:\>pscp
          PuTTY Secure Copy client
-         Release 0.81
+         Release 0.82
          Usage: pscp [options] [user@]host:source target
                 pscp [options] source [source...] [user@]host:target
                 pscp [options] -ls [user@]host:filespec
@@ -6452,7 +6566,7 @@ Chapter 7: Using the command-line connection tool Plink
 
          C:\>plink
          Plink: command-line connection utility
-         Release 0.81
+         Release 0.82
          Usage: plink [options] [user@]host [command]
                 ("host" can also be a PuTTY saved session name)
          Options:
@@ -9490,7 +9604,17 @@ A.7.24 Since 0.78, I can't find where to configure my SSH private key.
        The real PuTTY web site, run by the PuTTY team, has always been at
        https://www.chiark.greenend.org.uk/~sgtatham/putty/.
 
- A.9.2 Would you like me to register you a nicer domain name?
+ A.9.2 Why do the download links point to the.earth.li and not chiark? Has
+       your website been hacked?
+
+       We haven't been hacked: links to the.earth.li are legit. The files
+       for released versions of PuTTY are hosted on a different server from
+       the web pages, for bandwidth reasons.
+
+       The download site the.earth.li is hosted by Mythic Beasts, and we're
+       very grateful to them!
+
+ A.9.3 Would you like me to register you a nicer domain name?
 
        No, thank you. Even if you can find one (most of them seem to
        have been registered already, by people who didn't ask whether we
@@ -9506,11 +9630,11 @@ A.7.24 Since 0.78, I can't find where to configure my SSH private key.
        things. Having it registered for us by a third party who we don't
        even know is not the best way to achieve this.
 
- A.9.3 Would you like free web hosting for the PuTTY web site?
+ A.9.4 Would you like free web hosting for the PuTTY web site?
 
        We already have some, thanks.
 
- A.9.4 Would you link to my web site from the PuTTY web site?
+ A.9.5 Would you link to my web site from the PuTTY web site?
 
        Only if the content of your web page is of definite direct interest
        to PuTTY users. If your content is unrelated, or only tangentially
@@ -9547,10 +9671,10 @@ A.7.24 Since 0.78, I can't find where to configure my SSH private key.
        of the PuTTY web site, we might be interested in linking to you from
        our Mirrors page.
 
- A.9.5 Why don't you move PuTTY to SourceForge?
+ A.9.6 Why don't you move PuTTY to SourceForge?
 
        Partly, because we don't want to move the web site location (see
-       question A.9.2).
+       question A.9.3).
 
        Also, security reasons. PuTTY is a security product, and as such it
        is particularly important to guard the code and the web site against
@@ -9565,7 +9689,7 @@ A.7.24 Since 0.78, I can't find where to configure my SSH private key.
        they're not ideal for everyone, and in particular they're not ideal
        for us.
 
- A.9.6 Why can't I subscribe to the putty-bugs mailing list?
+ A.9.7 Why can't I subscribe to the putty-bugs mailing list?
 
        Because you're not a member of the PuTTY core development team. The
        putty-bugs mailing list is not a general newsgroup-like discussion
@@ -9576,17 +9700,16 @@ A.7.24 Since 0.78, I can't find where to configure my SSH private key.
        overwhelmed by the volume of traffic. It's hard enough to keep up
        with the list as it is.
 
- A.9.7 If putty-bugs isn't a general-subscription mailing list, what is?
+ A.9.8 If putty-bugs isn't a general-subscription mailing list, what is?
 
        There isn't one, that we know of.
 
        If someone else wants to set up a mailing list or other forum for
-       PuTTY users to help each other with common problems, that would
-       be fine with us, though the PuTTY team would almost certainly not
-       have the time to read it. It's probably better to use one of the
-       established newsgroups for this purpose (see section B.1.2).
+       PuTTY users to help each other with common problems, that would be
+       fine with us, though the PuTTY team would almost certainly not have
+       the time to read it.
 
- A.9.8 How can I donate to PuTTY development?
+ A.9.9 How can I donate to PuTTY development?
 
        Please, _please_ don't feel you have to. PuTTY is completely free
        software, and not shareware. We think it's very important that
@@ -9612,7 +9735,7 @@ A.7.24 Since 0.78, I can't find where to configure my SSH private key.
        something worthwhile, ask us first. If you don't like these terms,
        feel perfectly free not to donate. We don't mind.
 
- A.9.9 Can I have permission to put PuTTY on a cover disk / distribute it
+A.9.10 Can I have permission to put PuTTY on a cover disk / distribute it
        with other software / etc?
 
        Yes. For most things, you need not bother asking us explicitly for
@@ -9620,7 +9743,7 @@ A.7.24 Since 0.78, I can't find where to configure my SSH private key.
 
        See section B.9 for more details.
 
-A.9.10 Can you sign an agreement indemnifying us against security problems
+A.9.11 Can you sign an agreement indemnifying us against security problems
        in PuTTY?
 
        No!
@@ -9681,13 +9804,13 @@ A.9.10 Can you sign an agreement indemnifying us against security problems
        then get our code reviewed by a security engineer they're happy
        with.
 
-A.9.11 Can you sign this form granting us permission to use/distribute
+A.9.12 Can you sign this form granting us permission to use/distribute
        PuTTY?
 
        If your form contains any clause along the lines of `the undersigned
        represents and warrants', we're not going to sign it. This is
        particularly true if it asks us to warrant that PuTTY is secure;
-       see question A.9.10 for more discussion of this. But it doesn't
+       see question A.9.11 for more discussion of this. But it doesn't
        really matter what we're supposed to be warranting: even if it's
        something we already believe is true, such as that we don't infringe
        any third-party copyright, we will not sign a document accepting
@@ -9702,10 +9825,10 @@ A.9.11 Can you sign this form granting us permission to use/distribute
        involve pretending you wrote it or suing us if it goes wrong. We
        think that really ought to be enough for anybody.
 
-       See also question A.9.13 for another reason why we don't want to do
+       See also question A.9.14 for another reason why we don't want to do
        this sort of thing.
 
-A.9.12 Can you write us a formal notice of permission to use PuTTY?
+A.9.13 Can you write us a formal notice of permission to use PuTTY?
 
        We could, in principle, but it isn't clear what use it would be. If
        you think there's a serious chance of one of the PuTTY copyright
@@ -9718,10 +9841,10 @@ A.9.12 Can you write us a formal notice of permission to use PuTTY?
        document, which wouldn't guarantee you that some other copyright
        holder might not sue.
 
-       See also question A.9.13 for another reason why we don't want to do
+       See also question A.9.14 for another reason why we don't want to do
        this sort of thing.
 
-A.9.13 Can you sign _anything_ for us?
+A.9.14 Can you sign _anything_ for us?
 
        Not unless there's an incredibly good reason.
 
@@ -9740,7 +9863,7 @@ A.9.13 Can you sign _anything_ for us?
        is simply not well suited to using popular free software, and we
        urge you to consider this as a flaw in your policy.
 
-A.9.14 If you won't sign anything, can you give us some sort of assurance
+A.9.15 If you won't sign anything, can you give us some sort of assurance
        that you won't make PuTTY closed-source in future?
 
        Yes and no.
@@ -9782,7 +9905,7 @@ A.9.14 If you won't sign anything, can you give us some sort of assurance
        would switch to the latter. Therefore, it would be pretty stupid of
        us to try it.)
 
-A.9.15 Can you provide us with export control information / FIPS
+A.9.16 Can you provide us with export control information / FIPS
        certification for PuTTY?
 
        Some people have asked us for an Export Control Classification
@@ -9799,7 +9922,7 @@ A.9.15 Can you provide us with export control information / FIPS
        PuTTY tools. Unless someone else is prepared to do the necessary
        work and pay any costs, we can't provide this.
 
-A.9.16 As one of our existing software vendors, can you just fill in this
+A.9.17 As one of our existing software vendors, can you just fill in this
        questionnaire for us?
 
        We periodically receive requests like this, from organisations
@@ -9850,7 +9973,7 @@ A.9.16 As one of our existing software vendors, can you just fill in this
        about you from free software developers who don't have any idea who
        you are. Then, only send out these mass mailings to the former.
 
-A.9.17 The `sha1sums' / `sha256sums' / etc files on your download page
+A.9.18 The `sha1sums' / `sha256sums' / etc files on your download page
        don't match the binaries.
 
        People report this every so often, and usually the reason turns out
@@ -9936,16 +10059,15 @@ Appendix B: Feedback and bug reporting
 
        The PuTTY development team gets a _lot_ of mail. If you can possibly
        solve your own problem by reading the manual, reading the FAQ,
-       reading the web site, asking a fellow user, perhaps posting to a
-       newsgroup (see section B.1.2), or some other means, then it would
-       make our lives much easier.
+       reading the web site, asking a fellow user, or some other means,
+       then it would make our lives much easier.
 
        We get so much e-mail that we literally do not have time to answer
        it all. We regret this, but there's nothing we can do about it.
        So if you can _possibly_ avoid sending mail to the PuTTY team, we
        recommend you do so. In particular, support requests (section B.7)
-       are probably better sent to newsgroups, or passed to a local expert
-       if possible.
+       are probably better sent to some public forum, or passed to a local
+       expert if possible.
 
        The PuTTY contact email address is a private mailing list containing
        four or five core developers. Don't be put off by it being a mailing
@@ -10013,24 +10135,6 @@ Appendix B: Feedback and bug reporting
        your modification. If you've only changed 10 lines, we'd prefer to
        receive a mail that's 30 lines long than one containing multiple
        megabytes of data we already have.
-
- B.1.2 Other places to ask for help
-
-       There are two Usenet newsgroups that are particularly relevant to
-       the PuTTY tools:
-
-        -  `comp.security.ssh', for questions specific to using the SSH
-           protocol;
-
-        -  `comp.terminals', for issues relating to terminal emulation (for
-           instance, keyboard problems).
-
-       Please use the newsgroup most appropriate to your query, and
-       remember that these are general newsgroups, not specifically about
-       PuTTY.
-
-       If you don't have direct access to Usenet, you can access these
-       newsgroups through Google Groups (groups.google.com).
 
    B.2 Reporting bugs
 
@@ -10119,11 +10223,11 @@ Appendix B: Feedback and bug reporting
        think the documentation is unclear or unhelpful. But we do need
        to be given exact details of _what_ you think the documentation
        has failed to tell you, or _how_ you think it could be made
-       clearer. If your problem is simply that you don't _understand_ the
-       documentation, we suggest posting to a newsgroup (see section B.1.2)
-       and seeing if someone will explain what you need to know. _Then_, if
-       you think the documentation could usefully have told you that, send
-       us a bug report and explain how you think we should change it.
+       clearer. If your problem is simply that you don't _understand_
+       the documentation, we suggest asking around and seeing if someone
+       will explain what you need to know. _Then_, if you think the
+       documentation could usefully have told you that, send us a bug
+       report and explain how you think we should change it.
 
    B.3 Reporting security vulnerabilities
 
@@ -10275,17 +10379,16 @@ Appendix B: Feedback and bug reporting
 
         -  If you want to do something with PuTTY but have no idea where to
            start, and reading the manual hasn't helped, try posting to a
-           newsgroup (see section B.1.2) and see if someone can explain it
-           to you.
+           public forum and see if someone can explain it to you.
 
         -  If you have tried to do something with PuTTY but it hasn't
            worked, and you aren't sure whether it's a bug in PuTTY or a bug
            in your SSH server or simply that you're not doing it right,
-           then try posting to a newsgroup (see section B.1.2) and see if
-           someone can solve your problem. Or try doing the same thing with
-           a different SSH client and see if it works with that. Please do
-           not report it as a PuTTY bug unless you are really sure it _is_
-           a bug in PuTTY.
+           then try posting to some public forum and see if someone can
+           solve your problem. Or try doing the same thing with a different
+           SSH client and see if it works with that. Please do not report
+           it as a PuTTY bug unless you are really sure it _is_ a bug in
+           PuTTY.
 
         -  If someone else installed PuTTY for you, or you're using PuTTY
            on someone else's computer, try asking them for help first.
@@ -11586,6 +11689,9 @@ Appendix F: PuTTY download keys and signatures
        Windows' own mechanism (`Authenticode'). The keys used for that are
        different, and are not covered here.
 
+       See question A.9.18 in the FAQ for some gotchas when verifying
+       checksums and signatures.
+
        (Note that none of the keys, signatures, etc mentioned here have
        anything to do with keys used with SSH - they are purely for
        verifying the origin of files distributed by the PuTTY team.)
@@ -12479,4 +12585,256 @@ H.6.12 PLUGIN_AUTH_FAILURE
        Secure Shell Protocol (SSH)' (better known by its wire id `keyboard-
        interactive').
 
-[PuTTY release 0.81]
+Appendix I: PuTTY privacy considerations
+----------------------------------------
+
+       This appendix lists the implications of using PuTTY for your privacy
+       and personal data.
+
+       The short summary: PuTTY never `phones home' to us, the developers.
+       It does store data on your own computer, and it does transmit data
+       over the network, but in both cases, only as necessary to do its
+       job. In particular, data is only transmitted over the network to the
+       server you told PuTTY to connect to.
+
+       But if you're concerned about exactly _what_ information is stored
+       or transmitted, then here's a more detailed description.
+
+   I.1 Information that PuTTY stores locally
+
+       When you use PuTTY, it stores a small amount of information on
+       your computer, necessary for doing its own job. This information
+       is stored in the user account of the user who runs PuTTY, so it is
+       under your control: you can view it, change it, or delete it.
+
+       If you need to delete all of this data, you can use the `-cleanup'
+       command-line option, as described in section 3.11.2.
+
+       PuTTY does not transmit your saved session data to any other site.
+       However, you may need to be aware of the fact that it is stored on
+       _your_ computer. (For example, somebody else accessing your computer
+       might be able to find a list of sites you have connected to, if you
+       have saved details of them.)
+
+ I.1.1 Host key cache
+
+       If you use the SSH protocol, then PuTTY stores a list of the SSH
+       servers you have connected to, together with their host keys.
+
+       This is known as the `host key cache'. It is used to detect network
+       attacks, by notifying you if a server you've connected to before
+       doesn't look like the same one you thought it was. (See section 2.2
+       for a basic introduction to host keys.)
+
+       The host key cache is optional. An entry is only saved in the host
+       key cache if you select the `Accept' action at one of the PuTTY
+       suite's host key verification prompts. So if you want to make an SSH
+       connection without PuTTY saving any trace of where you connected to,
+       you can press `Connect Once' instead of `Accept', which does not
+       store the host key in the cache.
+
+       However, if you do this, PuTTY can't automatically detect the host
+       key changing in the future, so you should check the key fingerprint
+       yourself every time you connect. *This is vitally important.* If you
+       don't let PuTTY cache host keys _and_ don't check them yourself,
+       then it becomes easy for an attacker to interpose a listener between
+       you and the server you're connecting to. The entire cryptographic
+       system of SSH depends on making sure the host key is right.
+
+       The host key cache is only used by SSH. No other protocol supported
+       by PuTTY has any analogue of it.
+
+ I.1.2 Saved sessions
+
+       After you set up PuTTY's configuration for a particular network
+       connection, you can choose to save it as a `saved session', so that
+       you can make the same connection again later without having to re-
+       enter all the details.
+
+       PuTTY will not do this unless you use the `Save' button in
+       its configuration box. It never saves session configuration
+       automatically.
+
+       So if you want to make an SSH connection without leaving any trace
+       of where you connected to, you should not make a saved session for
+       that connection. Instead, re-enter the details by hand every time
+       you do it.
+
+ I.1.3 Jump list
+
+       On Windows, the operating system provides a feature called a `jump
+       list'. This is a menu that pops up from an application's icon in
+       the Windows taskbar, and the application can configure entries that
+       appear in it. Applications typically include menu items to re-launch
+       recently used documents or configurations.
+
+       PuTTY updates its jump list whenever a saved session is loaded,
+       either to launch it immediately or to load it within the
+       configuration dialog box. So if you have a collection of saved
+       sessions, the jump list will contain a record of which ones you have
+       recently used.
+
+       An exception is that saved sessions are not included in the jump
+       list if they are not `launchable', meaning that they actually
+       specify a host name or serial port to connect to. A non-launchable
+       session can specify all the other configuration details (such as
+       fonts, window size, keyboard setup, SSH features, etc), but leave
+       out the hostname.
+
+       If you want to avoid leaving any evidence of having made a
+       particular connection, then make the connection without creating
+       a launchable saved session for it: either make no saved session
+       at all, or create a non-launchable one which sets up every detail
+       _except_ the destination host name. Then it won't appear in the jump
+       list.
+
+       (The saved session itself would also be evidence, of course, as
+       discussed in the previous section.)
+
+ I.1.4 Log files
+
+       PuTTY can be configured to save a log file of your entire session
+       to the computer you run it on. By default it does not do so: the
+       content of your session is not saved.
+
+       See section 4.2 for details of the logging features. Some logging
+       modes store only output sent by the server and printed in PuTTY's
+       terminal window. Other more thorough modes also store your input
+       that PuTTY sends _to_ the server.
+
+       If the logging feature is enabled, then by default, PuTTY will avoid
+       saving data in the log file that it knows to be sensitive, such as
+       passwords. However, it cannot reliably identify _all_ passwords. If
+       you use a password for your initial login to an SSH server, PuTTY
+       knows that is a password, and will omit it from the log file. But if
+       after login you type a password into an application on the server,
+       then PuTTY will not know that _that_ is a password, so it will
+       appear in the log file, if PuTTY is writing a type that includes
+       keyboard input.
+
+       PuTTY can also be configured to include all passwords in its log
+       files, even the ones it would normally leave out. This is intended
+       for debugging purposes, for example if a server is refusing your
+       password and you need to check whether the password is being sent
+       correctly. We do not recommend enabling this option routinely.
+
+ I.1.5 Random seed file
+
+       PuTTY stores a small file of random bytes under the name
+       `putty.rnd', which is reloaded the next time it is run and used to
+       seed its random number generator. These bytes are meaningless and
+       random, and do not contain an encrypted version of anything.
+
+   I.2 Sending information over the network
+
+       PuTTY is a communications tool. Its _purpose_ is to connect to
+       another computer, over a network or a serial port, and send
+       information. However it only makes the network connections that its
+       configuration instructs it to.
+
+ I.2.1 PuTTY only connects to the specified destination host
+
+       No PuTTY tool will `phone home' to any site under the control of
+       us (the development team), or to any other site apart from the
+       destination host or proxy host in its configuration, and any DNS
+       server that is needed to look up the IP addresses corresponding to
+       those host names.
+
+       No information about your network sessions, and no information from
+       the computer you run PuTTY on, is collected or recorded by the PuTTY
+       developers.
+
+       Information you provide to PuTTY (via keyboard input, the command
+       line, or files loaded by the file transfer tools) is sent to the
+       server that PuTTY's configuration tells it to connect to. It is not
+       sent anywhere else.
+
+ I.2.2 What data is sent to the destination host
+
+       When you log in to a server, PuTTY will send your username. If you
+       use a password to authenticate to the server, PuTTY will send it
+       that password as well.
+
+       (Therefore, the server is told what your password is during login.
+       This means that if you use the same password on two servers, the
+       administrator of one could find out your password and log in to your
+       account on the other.)
+
+       If you use an SSH private key to authenticate, PuTTY will send the
+       _public_ key, but not the private key. If you typed a passphrase to
+       decrypt the private key, PuTTY will not send the passphrase either.
+
+       (Therefore, it is safer to use the same _public key_ to authenticate
+       to two SSH servers. Neither server gains the ability to impersonate
+       you to the other server. However, if the server maintainers talked
+       to each other, they would at least be able to find out that your
+       accounts on the two machines were owned by the same person, if they
+       didn't already know.)
+
+       When PuTTY prompts for a private key passphrase, a small copy of the
+       PuTTY icon appears to the left of the prompt, to indicate that the
+       prompt was genuinely from PuTTY. (We call this a `trust sigil'.)
+       That icon never appears next to text sent from the server. So if a
+       server tries to mimic that prompt to trick you into telling it your
+       private key passphrase, it won't be able to fake that trust sigil,
+       and you can tell the difference.
+
+       If you're running Pageant, and you haven't configured a specific
+       public key to authenticate to this server, then PuTTY will try
+       all the keys in Pageant one after the other, sending each public
+       key to the server to see if it's acceptable. This can lead to the
+       server finding out about other public keys you own. However, if you
+       configure PuTTY to use a specific public key, then it will ignore
+       all the other keys in Pageant.
+
+       Once you have logged in, keystrokes you type in the PuTTY terminal
+       window, and data you paste in with the mouse, are sent to the
+       destination host. That is PuTTY's primary job.
+
+       The server can request PuTTY to send details of mouse movements in
+       the terminal window, in order to implement mouse-controlled user
+       interfaces on the server. If you consider this to be a privacy
+       intrusion, you can turn off that terminal feature in the Features
+       configuration panel (`Disable xterm-style mouse reporting', as
+       described in section 4.6.2).
+
+   I.3 Configuration
+
+       The operation of a PuTTY network tool is controlled by its
+       configuration. This configuration is obtained from:
+
+        -  the command line used to run the tool
+
+        -  settings configured in the GUI before opening a network session
+
+        -  optionally, the contents of a saved session, if the command line
+           or a GUI action instructed PuTTY to load one
+
+        -  the special saved session called `Default Settings', which
+           applies if no other saved session is loaded
+
+        -  defaults built in to PuTTY itself.
+
+       The defaults built in to PuTTY do not tell it to save log files, or
+       specify the name of any network site to connect to.
+
+       However, if PuTTY has been installed for you by somebody else,
+       such as an organisation, then that organisation may have provided
+       their own default configuration. In that situation you may wish
+       to check that the defaults they have set are compatible with your
+       privacy needs. For example, an organisation providing your PuTTY
+       configuration might configure PuTTY to save log files of your
+       sessions, even though PuTTY's own default is not to do so.
+
+   I.4 Modified versions of PuTTY
+
+       PuTTY is free software. Its source code is available, so anyone
+       can make a modified version of it. The modified version can behave
+       differently from the original in any way it likes.
+
+       This list of privacy considerations only applies to the original
+       version of PuTTY, as distributed by its development team. We
+       cannot make any promises about the behaviour of modified versions
+       distributed by other people.
+
+[PuTTY release 0.82]

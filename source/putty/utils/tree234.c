@@ -63,11 +63,11 @@ struct node234_Tag {
  */
 tree234 *newtree234(cmpfn234 cmp)
 {
-    tree234 *ret = snew(tree234);
-    LOG(("created tree %p\n", ret));
-    ret->root = NULL;
-    ret->cmp = cmp;
-    return ret;
+    tree234 *t = snew(tree234);
+    LOG(("created tree %p\n", t));
+    t->root = NULL;
+    t->cmp = cmp;
+    return t;
 }
 
 /*

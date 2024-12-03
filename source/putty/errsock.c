@@ -39,16 +39,11 @@ static const char *sk_error_socket_error(Socket *s)
     return es->error;
 }
 
-static SocketPeerInfo *sk_error_peer_info(Socket *s)
-{
-    return NULL;
-}
-
 static const SocketVtable ErrorSocket_sockvt = {
     .plug = sk_error_plug,
     .close = sk_error_close,
     .socket_error = sk_error_socket_error,
-    .peer_info = sk_error_peer_info,
+    .endpoint_info = nullsock_endpoint_info,
     /* other methods are NULL */
 };
 

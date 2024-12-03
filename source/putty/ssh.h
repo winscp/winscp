@@ -225,7 +225,7 @@ struct ConnectionLayerVtable {
      * PortFwdManager */
     SshChannel *(*lportfwd_open)(
         ConnectionLayer *cl, const char *hostname, int port,
-        const char *description, const SocketPeerInfo *peerinfo,
+        const char *description, const SocketEndpointInfo *peerinfo,
         Channel *chan);
 
     /* Initiate opening of a 'session'-type channel */
@@ -234,7 +234,7 @@ struct ConnectionLayerVtable {
     /* Open outgoing channels for X and agent forwarding. (Used in the
      * SSH server.) */
     SshChannel *(*serverside_x11_open)(ConnectionLayer *cl, Channel *chan,
-                                       const SocketPeerInfo *pi);
+                                       const SocketEndpointInfo *pi);
     SshChannel *(*serverside_agent_open)(ConnectionLayer *cl, Channel *chan);
 
     /* Add an X11 display for ordinary X forwarding */
@@ -324,12 +324,12 @@ static inline void ssh_rportfwd_remove(
 { cl->vt->rportfwd_remove(cl, rpf); }
 static inline SshChannel *ssh_lportfwd_open(
     ConnectionLayer *cl, const char *host, int port,
-    const char *desc, const SocketPeerInfo *pi, Channel *chan)
+    const char *desc, const SocketEndpointInfo *pi, Channel *chan)
 { return cl->vt->lportfwd_open(cl, host, port, desc, pi, chan); }
 static inline SshChannel *ssh_session_open(ConnectionLayer *cl, Channel *chan)
 { return cl->vt->session_open(cl, chan); }
 static inline SshChannel *ssh_serverside_x11_open(
-    ConnectionLayer *cl, Channel *chan, const SocketPeerInfo *pi)
+    ConnectionLayer *cl, Channel *chan, const SocketEndpointInfo *pi)
 { return cl->vt->serverside_x11_open(cl, chan, pi); }
 static inline SshChannel *ssh_serverside_agent_open(
     ConnectionLayer *cl, Channel *chan)
@@ -1383,7 +1383,7 @@ char *platform_get_x_display(void);
  * calling this function to do the rest of the work.
  */
 void x11_get_auth_from_authfile(struct X11Display *display,
-                                const char *authfilename);
+                                Filename *authfilename);
 void x11_format_auth_for_authfile(
     BinarySink *bs, SockAddr *addr, int display_no,
     ptrlen authproto, ptrlen authdata);

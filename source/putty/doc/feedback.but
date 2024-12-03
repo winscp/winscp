@@ -13,16 +13,15 @@ reports and feature requests.
 
 The PuTTY development team gets a \e{lot} of mail. If you can
 possibly solve your own problem by reading the manual, reading the
-FAQ, reading the web site, asking a fellow user, perhaps posting to a
-newsgroup (see \k{feedback-other-fora}), or some other means, then it
-would make our lives much easier.
+FAQ, reading the web site, asking a fellow user, or some other
+means, then it would make our lives much easier.
 
 We get so much e-mail that we literally do not have time to answer
 it all. We regret this, but there's nothing we can do about it. So
 if you can \e{possibly} avoid sending mail to the PuTTY team, we
 recommend you do so. In particular, support requests
-(\k{feedback-support}) are probably better sent to newsgroups, or
-passed to a local expert if possible.
+(\k{feedback-support}) are probably better sent to some public
+forum, or passed to a local expert if possible.
 
 The PuTTY contact email address is a private \i{mailing list} containing
 four or five core developers. Don't be put off by it being a mailing
@@ -90,23 +89,7 @@ modification. If you've only changed 10 lines, we'd prefer to
 receive a mail that's 30 lines long than one containing multiple
 megabytes of data we already have.
 
-\S{feedback-other-fora} Other places to ask for help
-
-There are two Usenet newsgroups that are particularly relevant to the
-PuTTY tools:
-
-\b \W{news:comp.security.ssh}\c{comp.security.ssh}, for questions
-specific to using the SSH protocol;
-
-\b \W{news:comp.terminals}\c{comp.terminals}, for issues relating to
-terminal emulation (for instance, keyboard problems).
-
-Please use the newsgroup most appropriate to your query, and remember
-that these are general newsgroups, not specifically about PuTTY.
-
-If you don't have direct access to Usenet, you can access these
-newsgroups through Google Groups
-(\W{http://groups.google.com/}\cw{groups.google.com}).
+\# \S{feedback-other-fora} Other places to ask for help
 
 \H{feedback-bugs} Reporting bugs
 
@@ -200,8 +183,7 @@ think the documentation is unclear or unhelpful. But we do need to
 be given exact details of \e{what} you think the documentation has
 failed to tell you, or \e{how} you think it could be made clearer.
 If your problem is simply that you don't \e{understand} the
-documentation, we suggest posting to a newsgroup (see
-\k{feedback-other-fora}) and seeing if someone
+documentation, we suggest asking around and seeing if someone
 will explain what you need to know. \e{Then}, if you think the
 documentation could usefully have told you that, send us a bug
 report and explain how you think we should change it.
@@ -356,17 +338,15 @@ include:
 
 \b If you want to do something with PuTTY but have no idea where to
 start, and reading the manual hasn't helped, try posting to a
-newsgroup (see \k{feedback-other-fora}) and see if someone can explain
-it to you.
+public forum and see if someone can explain it to you.
 
 \b If you have tried to do something with PuTTY but it hasn't
 worked, and you aren't sure whether it's a bug in PuTTY or a bug in
 your SSH server or simply that you're not doing it right, then try
-posting to a newsgroup (see \k{feedback-other-fora}) and see
-if someone can solve your problem. Or try doing the same thing with
-a different SSH client and see if it works with that. Please do not
-report it as a PuTTY bug unless you are really sure it \e{is} a bug
-in PuTTY.
+posting to some public forum and see if someone can solve your
+problem. Or try doing the same thing with a different SSH client
+and see if it works with that. Please do not report it as a PuTTY
+bug unless you are really sure it \e{is} a bug in PuTTY.
 
 \b If someone else installed PuTTY for you, or you're using PuTTY on
 someone else's computer, try asking them for help first.  They're more

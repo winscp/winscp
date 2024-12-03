@@ -26,7 +26,7 @@
     if (uli.QuadPart != 0) \
         uli.QuadPart = uli.QuadPart / CNS_PERSEC - UNIX_EPOCH; \
     (t) = (time_t) uli.QuadPart; \
-} while(0)
+} while (0)
 
 /* Windows code to set up the GSSAPI library list. */
 
@@ -118,9 +118,7 @@ static void add_library_to_never_unload_tree(HMODULE module)
 struct ssh_gss_liblist *ssh_gss_setup(Conf *conf)
 {
     HMODULE module;
-    HKEY regkey;
     struct ssh_gss_liblist *list = snew(struct ssh_gss_liblist);
-    char *path;
     static HMODULE kernel32_module;
     if (!kernel32_module) {
         kernel32_module = load_system32_dll("kernel32.dll");
@@ -137,55 +135,47 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf)
 
     /* MIT Kerberos GSSAPI implementation */
     module = NULL;
-    if (RegOpenKey(HKEY_LOCAL_MACHINE, "SOFTWARE\\MIT\\Kerberos", &regkey)
-        == ERROR_SUCCESS) {
-        DWORD type, size;
-        LONG ret;
-        char *buffer;
-
-        /* Find out the string length */
-        ret = RegQueryValueEx(regkey, "InstallDir", NULL, &type, NULL, &size);
-
-        if (ret == ERROR_SUCCESS && type == REG_SZ) {
-            buffer = snewn(size + 20, char);
-            ret = RegQueryValueEx(regkey, "InstallDir", NULL,
-                                  &type, (LPBYTE)buffer, &size);
-            if (ret == ERROR_SUCCESS && type == REG_SZ) {
-                strcat (buffer, "\\bin");
-                if(p_AddDllDirectory) {
-                    /* Add MIT Kerberos' path to the DLL search path,
-                     * it loads its own DLLs further down the road */
-                    wchar_t *dllPath =
-                        dup_mb_to_wc(DEFAULT_CODEPAGE, 0, buffer);
-                    p_AddDllDirectory(dllPath);
-                    sfree(dllPath);
-                }
-                strcat (buffer, "\\gssapi"MIT_KERB_SUFFIX".dll");
-                module = LoadLibraryEx (buffer, NULL,
-                                        LOAD_LIBRARY_SEARCH_SYSTEM32 |
-                                        LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR |
-                                        LOAD_LIBRARY_SEARCH_USER_DIRS);
-
-                /*
-                 * The MIT Kerberos DLL suffers an internal segfault
-                 * for some reason if you unload and reload one within
-                 * the same process. So, make sure that after we load
-                 * this library, we never free it.
-                 *
-                 * Or rather: after we've loaded it once, if any
-                 * _further_ load returns the same module handle, we
-                 * immediately free it again (to prevent the Windows
-                 * API's internal reference count growing without
-                 * bound). But on the other hand we never free it in
-                 * ssh_gss_cleanup.
-                 */
-                if (library_is_in_never_unload_tree(module))
-                    FreeLibrary(module);
-                add_library_to_never_unload_tree(module);
+    HKEY regkey = open_regkey_ro(HKEY_LOCAL_MACHINE,
+                                 "SOFTWARE\\MIT\\Kerberos");
+    if (regkey) {
+        char *installdir = get_reg_sz(regkey, "InstallDir");
+        if (installdir) {
+            char *bindir = dupcat(installdir, "\\bin");
+            if (p_AddDllDirectory) {
+                /* Add MIT Kerberos' path to the DLL search path,
+                 * it loads its own DLLs further down the road */
+                wchar_t *dllPath = dup_mb_to_wc(DEFAULT_CODEPAGE, bindir);
+                p_AddDllDirectory(dllPath);
+                sfree(dllPath);
             }
-            sfree(buffer);
+
+            char *dllfile = dupcat(bindir, "\\gssapi"MIT_KERB_SUFFIX".dll");
+            module = LoadLibraryEx(dllfile, NULL,
+                                   LOAD_LIBRARY_SEARCH_SYSTEM32 |
+                                   LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR |
+                                   LOAD_LIBRARY_SEARCH_USER_DIRS);
+
+            /*
+             * The MIT Kerberos DLL suffers an internal segfault for
+             * some reason if you unload and reload one within the
+             * same process. So, make sure that after we load this
+             * library, we never free it.
+             *
+             * Or rather: after we've loaded it once, if any _further_
+             * load returns the same module handle, we immediately
+             * free it again (to prevent the Windows API's internal
+             * reference count growing without bound). But on the
+             * other hand we never free it in ssh_gss_cleanup.
+             */
+            if (library_is_in_never_unload_tree(module))
+                FreeLibrary(module);
+            add_library_to_never_unload_tree(module);
+
+            sfree(dllfile);
+            sfree(bindir);
+            sfree(installdir);
         }
-        RegCloseKey(regkey);
+        close_regkey(regkey);
     }
     if (module) {
         struct ssh_gss_library *lib =
@@ -242,34 +232,36 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf)
      * Custom GSSAPI DLL.
      */
     module = NULL;
-    path = conf_get_filename(conf, CONF_ssh_gss_custom)->path;
-    if (*path) {
-        if(p_AddDllDirectory) {
+    Filename *customlib = conf_get_filename(conf, CONF_ssh_gss_custom);
+    if (!filename_is_null(customlib)) {
+        const wchar_t *path = customlib->wpath;
+        if (p_AddDllDirectory) {
+
             /* Add the custom directory as well in case it chainloads
              * some other DLLs (e.g a non-installed MIT Kerberos
              * instance) */
-            int pathlen = strlen(path);
+            int pathlen = wcslen(path);
 
-            while (pathlen > 0 && path[pathlen-1] != ':' &&
-                   path[pathlen-1] != '\\')
+            while (pathlen > 0 && path[pathlen-1] != L':' &&
+                   path[pathlen-1] != L'\\')
                 pathlen--;
 
-            if (pathlen > 0 && path[pathlen-1] != '\\')
+            if (pathlen > 0 && path[pathlen-1] != L'\\')
                 pathlen--;
 
             if (pathlen > 0) {
-                char *dirpath = dupprintf("%.*s", pathlen, path);
-                wchar_t *dllPath = dup_mb_to_wc(DEFAULT_CODEPAGE, 0, dirpath);
-                p_AddDllDirectory(dllPath);
-                sfree(dllPath);
+                wchar_t *dirpath = snewn(pathlen + 1, wchar_t);
+                memcpy(dirpath, path, pathlen * sizeof(wchar_t));
+                dirpath[pathlen] = L'\0';
+                p_AddDllDirectory(dirpath);
                 sfree(dirpath);
             }
         }
 
-        module = LoadLibraryEx(path, NULL,
-                               LOAD_LIBRARY_SEARCH_SYSTEM32 |
-                               LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR |
-                               LOAD_LIBRARY_SEARCH_USER_DIRS);
+        module = LoadLibraryExW(path, NULL,
+                                LOAD_LIBRARY_SEARCH_SYSTEM32 |
+                                LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR |
+                                LOAD_LIBRARY_SEARCH_USER_DIRS);
     }
     if (module) {
         struct ssh_gss_library *lib =
@@ -277,7 +269,7 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf)
 
         lib->id = 2;
         lib->gsslogmsg = dupprintf("Using GSSAPI from user-specified"
-                                   " library '%s'", path);
+                                   " library '%s'", customlib->cpath);
         lib->handle = (void *)module;
 
 #define BIND_GSS_FN(name) \
@@ -460,8 +452,8 @@ static Ssh_gss_stat ssh_sspi_init_sec_context(struct ssh_gss_library *lib,
     winSsh_gss_ctx *winctx = (winSsh_gss_ctx *) *ctx;
     SecBuffer wsend_tok = {send_tok->length,SECBUFFER_TOKEN,send_tok->value};
     SecBuffer wrecv_tok = {recv_tok->length,SECBUFFER_TOKEN,recv_tok->value};
-    SecBufferDesc output_desc={SECBUFFER_VERSION,1,&wsend_tok};
-    SecBufferDesc input_desc ={SECBUFFER_VERSION,1,&wrecv_tok};
+    SecBufferDesc output_desc = {SECBUFFER_VERSION,1,&wsend_tok};
+    SecBufferDesc input_desc  = {SECBUFFER_VERSION,1,&wrecv_tok};
     unsigned long flags=ISC_REQ_MUTUAL_AUTH|ISC_REQ_REPLAY_DETECT|
         ISC_REQ_CONFIDENTIALITY|ISC_REQ_ALLOCATE_MEMORY;
     ULONG ret_flags=0;
@@ -512,7 +504,7 @@ static Ssh_gss_stat ssh_sspi_free_tok(struct ssh_gss_library *lib,
 static Ssh_gss_stat ssh_sspi_release_cred(struct ssh_gss_library *lib,
                                           Ssh_gss_ctx *ctx)
 {
-    winSsh_gss_ctx *winctx= (winSsh_gss_ctx *) *ctx;
+    winSsh_gss_ctx *winctx = (winSsh_gss_ctx *) *ctx;
 
     /* check input */
     if (winctx == NULL) return SSH_GSS_FAILURE;
@@ -532,7 +524,7 @@ static Ssh_gss_stat ssh_sspi_release_cred(struct ssh_gss_library *lib,
 static Ssh_gss_stat ssh_sspi_release_name(struct ssh_gss_library *lib,
                                           Ssh_gss_name *srv_name)
 {
-    char *pStr= (char *) *srv_name;
+    char *pStr = (char *) *srv_name;
 
     if (pStr == NULL) return SSH_GSS_FAILURE;
     sfree(pStr);
@@ -596,7 +588,7 @@ static Ssh_gss_stat ssh_sspi_get_mic(struct ssh_gss_library *lib,
                                      Ssh_gss_ctx ctx, Ssh_gss_buf *buf,
                                      Ssh_gss_buf *hash)
 {
-    winSsh_gss_ctx *winctx= (winSsh_gss_ctx *) ctx;
+    winSsh_gss_ctx *winctx = (winSsh_gss_ctx *) ctx;
     SecPkgContext_Sizes ContextSizes;
     SecBufferDesc InputBufferDescriptor;
     SecBuffer InputSecurityToken[2];
@@ -643,7 +635,7 @@ static Ssh_gss_stat ssh_sspi_verify_mic(struct ssh_gss_library *lib,
                                         Ssh_gss_buf *buf,
                                         Ssh_gss_buf *mic)
 {
-    winSsh_gss_ctx *winctx= (winSsh_gss_ctx *) ctx;
+    winSsh_gss_ctx *winctx = (winSsh_gss_ctx *) ctx;
     SecBufferDesc InputBufferDescriptor;
     SecBuffer InputSecurityToken[2];
     ULONG qop;

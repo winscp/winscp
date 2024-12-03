@@ -90,8 +90,7 @@ static struct ec_curve *ec_p256(void)
     static struct ec_curve curve = { 0 };
     static bool initialised = false;
 
-    if (!initialised)
-    {
+    if (!initialised) {
         mp_int *p = MP_LITERAL(0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff);
         mp_int *a = MP_LITERAL(0xffffffff00000001000000000000000000000000fffffffffffffffffffffffc);
         mp_int *b = MP_LITERAL(0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b);
@@ -122,8 +121,7 @@ static struct ec_curve *ec_p384(void)
     static struct ec_curve curve = { 0 };
     static bool initialised = false;
 
-    if (!initialised)
-    {
+    if (!initialised) {
         mp_int *p = MP_LITERAL(0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff);
         mp_int *a = MP_LITERAL(0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffc);
         mp_int *b = MP_LITERAL(0xb3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef);
@@ -154,8 +152,7 @@ static struct ec_curve *ec_p521(void)
     static struct ec_curve curve = { 0 };
     static bool initialised = false;
 
-    if (!initialised)
-    {
+    if (!initialised) {
         mp_int *p = MP_LITERAL(0x01ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
         mp_int *a = MP_LITERAL(0x01fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc);
         mp_int *b = MP_LITERAL(0x0051953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00);
@@ -186,8 +183,7 @@ static struct ec_curve *ec_curve25519(void)
     static struct ec_curve curve = { 0 };
     static bool initialised = false;
 
-    if (!initialised)
-    {
+    if (!initialised) {
         mp_int *p = MP_LITERAL(0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed);
         mp_int *a = MP_LITERAL(0x0000000000000000000000000000000000000000000000000000000000076d06);
         mp_int *b = MP_LITERAL(0x0000000000000000000000000000000000000000000000000000000000000001);
@@ -215,8 +211,7 @@ static struct ec_curve *ec_curve448(void)
     static struct ec_curve curve = { 0 };
     static bool initialised = false;
 
-    if (!initialised)
-    {
+    if (!initialised) {
         mp_int *p = MP_LITERAL(0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
         mp_int *a = MP_LITERAL(0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000262a6);
         mp_int *b = MP_LITERAL(0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001);
@@ -244,8 +239,7 @@ static struct ec_curve *ec_ed25519(void)
     static struct ec_curve curve = { 0 };
     static bool initialised = false;
 
-    if (!initialised)
-    {
+    if (!initialised) {
         mp_int *p = MP_LITERAL(0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed);
         mp_int *d = MP_LITERAL(0x52036cee2b6ffe738cc740797779e89800700a4d4141d8ab75eb4dca135978a3);
         mp_int *a = MP_LITERAL(0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffec); /* == p-1 */
@@ -281,8 +275,7 @@ static struct ec_curve *ec_ed448(void)
     static struct ec_curve curve = { 0 };
     static bool initialised = false;
 
-    if (!initialised)
-    {
+    if (!initialised) {
         mp_int *p = MP_LITERAL(0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffffffff);
         mp_int *d = MP_LITERAL(0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffff6756); /* = p - 39081 */
         mp_int *a = MP_LITERAL(0x1);

@@ -26,11 +26,13 @@ char *host_strrchr(const char *s, int c);
 char *host_strduptrim(const char *s);
 
 char *dupstr(const char *s);
+wchar_t *dupwcs(const wchar_t *s);
 char *dupcat_fn(const char *s1, ...);
 #define dupcat(...) dupcat_fn(__VA_ARGS__, (const char *)NULL)
 char *dupprintf(const char *fmt, ...) PRINTF_LIKE(1, 2);
 char *dupvprintf(const char *fmt, va_list ap);
 void burnstr(char *string);
+void burnwcs(wchar_t *string);
 
 /*
  * The visible part of a strbuf structure. There's a surrounding
@@ -69,11 +71,12 @@ void strbuf_finalise_agent_query(strbuf *buf);
 
 /* String-to-Unicode converters that auto-allocate the destination and
  * work around the rather deficient interface of mb_to_wc. */
-wchar_t *dup_mb_to_wc_c(int codepage, int flags, const char *string, int len);
-wchar_t *dup_mb_to_wc(int codepage, int flags, const char *string);
-char *dup_wc_to_mb_c(int codepage, int flags, const wchar_t *string, int len,
-                     const char *defchr);
-char *dup_wc_to_mb(int codepage, int flags, const wchar_t *string,
+wchar_t *dup_mb_to_wc_c(int codepage, const char *string,
+                        size_t len, size_t *outlen_p);
+wchar_t *dup_mb_to_wc(int codepage, const char *string);
+char *dup_wc_to_mb_c(int codepage, const wchar_t *string,
+                     size_t len, const char *defchr, size_t *outlen_p);
+char *dup_wc_to_mb(int codepage, const wchar_t *string,
                    const char *defchr);
 
 static inline int toint(unsigned u)
@@ -248,26 +251,53 @@ void smemclr(void *b, size_t len);
  * by the 'eq' in the name. */
 unsigned smemeq(const void *av, const void *bv, size_t len);
 
-/* Encode a single UTF-8 character. Assumes that illegal characters
- * (such as things in the surrogate range, or > 0x10FFFF) have already
- * been removed. */
-size_t encode_utf8(void *output, unsigned long ch);
-
 /* Encode a wide-character string into UTF-8. Tolerates surrogates if
  * sizeof(wchar_t) == 2, assuming that in that case the wide string is
  * encoded in UTF-16. */
 char *encode_wide_string_as_utf8(const wchar_t *wstr);
 
+/* Decode UTF-8 to a wide-character string, emitting UTF-16 surrogates
+ * if sizeof(wchar_t) == 2. */
+wchar_t *decode_utf8_to_wide_string(const char *ustr);
+
 /* Decode a single UTF-8 character. Returns U+FFFD for any of the
- * illegal cases. */
-unsigned long decode_utf8(const char **utf8);
+ * illegal cases. If the source is empty, returns L'\0' (and sets the
+ * error indicator on the source, of course). */
+#define DECODE_UTF8_FAILURE_LIST(X) \
+    X(DUTF8_SUCCESS, "success")                                      \
+    X(DUTF8_SPURIOUS_CONTINUATION, "spurious continuation byte")     \
+    X(DUTF8_ILLEGAL_BYTE, "illegal UTF-8 byte value")                \
+    X(DUTF8_E_OUT_OF_DATA, "unfinished multibyte encoding at end of string") \
+    X(DUTF8_TRUNCATED_SEQUENCE, "multibyte encoding interrupted by " \
+      "non-continuation byte")                                       \
+    X(DUTF8_OVERLONG_ENCODING, "overlong encoding")                  \
+    X(DUTF8_ENCODED_SURROGATE, "Unicode surrogate character encoded in " \
+      "UTF-8")                                                       \
+    X(DUTF8_CODE_POINT_TOO_BIG, "code point outside the Unicode range") \
+    /* end of list */
+typedef enum DecodeUTF8Failure {
+    #define ENUM_DECL(sym, string) sym,
+    DECODE_UTF8_FAILURE_LIST(ENUM_DECL)
+    #undef ENUM_DECL
+    DUTF8_N_FAILURE_CODES
+} DecodeUTF8Failure;
+unsigned decode_utf8(BinarySource *src, DecodeUTF8Failure *err);
+extern const char *const decode_utf8_error_strings[DUTF8_N_FAILURE_CODES];
 
 /* Decode a single UTF-8 character to an output buffer of the
  * platform's wchar_t. May write a pair of surrogates if
  * sizeof(wchar_t) == 2, assuming that in that case the wide string is
  * encoded in UTF-16. Otherwise, writes one character. Returns the
  * number written. */
-size_t decode_utf8_to_wchar(const char **utf8, wchar_t *out);
+size_t decode_utf8_to_wchar(BinarySource *src, wchar_t *out,
+                            DecodeUTF8Failure *err);
+
+/* Normalise a UTF-8 string into Normalisation Form C. */
+strbuf *utf8_to_nfc(ptrlen input);
+
+/* Determine if a UTF-8 string contains any characters unknown to our
+ * supported version of Unicode. */
+char *utf8_unknown_char(ptrlen input);
 
 /* Write a string out in C string-literal format. */
 void write_c_string_literal(FILE *fp, ptrlen str);
@@ -309,6 +339,11 @@ void debug_memdump(const void *buf, int len, bool L);
 #define debug(...) (debug_printf(__VA_ARGS__))
 #define dmemdump(buf,len) (debug_memdump(buf, len, false))
 #define dmemdumpl(buf,len) (debug_memdump(buf, len, true))
+
+/* Functions used only for debugging, not declared unless
+ * defined(DEBUG) to avoid accidentally linking them in production */
+const char *conf_id(int key);
+
 #else
 #define debug(...) ((void)0)
 #define dmemdump(buf,len) ((void)0)

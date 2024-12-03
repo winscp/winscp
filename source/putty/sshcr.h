@@ -39,7 +39,7 @@
 #define crFinishFreeV   } sfree(s); return; } while (0)
 #define crReturn(z)     \
         do {\
-            *crLine =__LINE__; return (z); case __LINE__:;\
+            *crLine = __LINE__; return (z); case __LINE__:;\
         } while (0)
 #define crReturnV       \
         do {\
@@ -64,22 +64,22 @@
  */
 #define crMaybeWaitUntil(c)                     \
     do {                                        \
-        *crLine =__LINE__;                      \
+        *crLine = __LINE__;                     \
         case __LINE__: if (!(c)) return 0;      \
     } while (0)
 #define crMaybeWaitUntilV(c)                    \
     do {                                        \
-        *crLine =__LINE__;                      \
+        *crLine = __LINE__;                     \
         case __LINE__: if (!(c)) return;        \
     } while (0)
 #define crWaitUntil(c)                          \
     do {                                        \
-        *crLine =__LINE__; return;              \
+        *crLine = __LINE__; return;             \
         case __LINE__: if (!(c)) return 0;      \
     } while (0)
 #define crWaitUntilV(c)                         \
     do {                                        \
-        *crLine =__LINE__; return;              \
+        *crLine = __LINE__; return;             \
         case __LINE__: if (!(c)) return;        \
     } while (0)
 

@@ -48,14 +48,27 @@
 #define AGENT_COPYDATA_ID 0x804e50ba
 
 struct Filename {
-    char *path;
+    /*
+     * A Windows Filename stores a path in three formats:
+     *
+     *  - wchar_t (in Windows UTF-16 encoding). The best format to use
+     *    for actual file API functions, because all legal Windows
+     *    file names are representable.
+     *
+     *  - char, in the system default codepage. A fallback to use if
+     *    necessary, e.g. in diagnostics written to somewhere that is
+     *    unavoidably encoded _in_ the system codepage.
+     *
+     *  - char, in UTF-8. An equally general representation to wpath,
+     *    but suitable for keeping in char-typed strings.
+     */
+    wchar_t *wpath;
+    char *cpath, *utf8path;
 };
-static inline FILE *f_open(const Filename *filename, const char *mode,
-                           bool isprivate)
-{
-    return fopen(filename->path, mode);
-}
+Filename *filename_from_wstr(const wchar_t *str);
+FILE *f_open(const Filename *filename, const char *mode, bool isprivate);
 
+#ifndef SUPERSEDE_FONTSPEC_FOR_TESTING
 struct FontSpec {
     char *name;
     bool isbold;
@@ -64,6 +77,7 @@ struct FontSpec {
 };
 struct FontSpec *fontspec_new(
     const char *name, bool bold, int height, int charset);
+#endif
 
 #ifndef CLEARTYPE_QUALITY
 #define CLEARTYPE_QUALITY 5
@@ -194,6 +208,9 @@ void centre_window(HWND hwnd);
 
 #define DEFAULT_CODEPAGE CP_ACP
 #define USES_VTLINE_HACK
+#define CP_UTF8 65001
+#define CP_437 437                     /* used for test suites */
+#define CP_ISO8859_1 0x10001           /* used for test suites */
 
 #ifndef NO_GSSAPI
 /*
@@ -249,7 +266,7 @@ const SeatDialogPromptDescriptions *win_seat_prompt_descriptions(Seat *seat);
  * which takes the data string in the system code page instead of
  * Unicode.
  */
-void write_aclip(int clipboard, char *, int, bool);
+void write_aclip(HWND hwnd, int clipboard, char *, int);
 
 #define WM_NETEVENT  (WM_APP + 5)
 
@@ -283,12 +300,21 @@ void write_aclip(int clipboard, char *, int, bool);
  * these strings are of exactly the type needed to go in
  * `lpstrFilter' in an OPENFILENAME structure.
  */
-#define FILTER_KEY_FILES ("PuTTY Private Key Files (*.ppk)\0*.ppk\0" \
-                              "All Files (*.*)\0*\0\0\0")
-#define FILTER_WAVE_FILES ("Wave Files (*.wav)\0*.WAV\0" \
+typedef const wchar_t *FILESELECT_FILTER_TYPE;
+#define FILTER_KEY_FILES (L"PuTTY Private Key Files (*.ppk)\0*.ppk\0" \
+                          L"All Files (*.*)\0*\0\0\0")
+#define FILTER_WAVE_FILES (L"Wave Files (*.wav)\0*.WAV\0"       \
+                           L"All Files (*.*)\0*\0\0\0")
+#define FILTER_DYNLIB_FILES (L"Dynamic Library Files (*.dll)\0*.dll\0" \
+                             L"All Files (*.*)\0*\0\0\0")
+
+/* char-based versions of the above, for outlying uses of file selectors. */
+#define FILTER_KEY_FILES_C ("PuTTY Private Key Files (*.ppk)\0*.ppk\0" \
+                            "All Files (*.*)\0*\0\0\0")
+#define FILTER_WAVE_FILES_C ("Wave Files (*.wav)\0*.WAV\0" \
+                             "All Files (*.*)\0*\0\0\0")
+#define FILTER_DYNLIB_FILES_C ("Dynamic Library Files (*.dll)\0*.dll\0" \
                                "All Files (*.*)\0*\0\0\0")
-#define FILTER_DYNLIB_FILES ("Dynamic Library Files (*.dll)\0*.dll\0" \
-                                 "All Files (*.*)\0*\0\0\0")
 
 /*
  * Exports from network.c.
@@ -392,14 +418,53 @@ void init_common_controls(void);       /* also does some DLL-loading */
  */
 typedef struct filereq_tag filereq; /* cwd for file requester */
 bool request_file(filereq *state, OPENFILENAME *of, bool preserve, bool save);
+bool request_file_w(filereq *state, OPENFILENAMEW *of,
+                    bool preserve, bool save);
 filereq *filereq_new(void);
 void filereq_free(filereq *state);
 void pgp_fingerprints_msgbox(HWND owner);
-int message_box(HWND owner, LPCTSTR text, LPCTSTR caption,
-                DWORD style, DWORD helpctxid);
+int message_box(HWND owner, LPCTSTR text, LPCTSTR caption, DWORD style,
+                bool utf8, DWORD helpctxid);
 void MakeDlgItemBorderless(HWND parent, int id);
 char *GetDlgItemText_alloc(HWND hwnd, int id);
-void split_into_argv(char *, int *, char ***, char ***);
+wchar_t *GetDlgItemTextW_alloc(HWND hwnd, int id);
+/*
+ * The split_into_argv functions take a single string 'cmdline' (char
+ * or wide) to split up into arguments. They return an argc and argv
+ * pair, and also 'argstart', an array of pointers into the original
+ * command line, pointing at the place where each output argument
+ * begins. (Useful for retrieving the tail of the original command
+ * line corresponding to a certain argument onwards, or identifying a
+ * section of the original command line to blank out for privacy.)
+ *
+ * If the command line includes the program name (e.g. if it was
+ * returned from GetCommandLine()), set includes_program_name=true. If
+ * it doesn't (e.g. it was the arguments string received by WinMain),
+ * set that flag to false. This affects the rules for argument
+ * splitting, which is done differently in the program name
+ * (specifically, \ isn't special, and won't escape ").
+ *
+ * Mutability: the argv[] words are in fresh dynamically allocated
+ * memory, so you can write into them safely. The original cmdline is
+ * passed in as a const pointer, and not modified in this function.
+ * But the pointers into that string written into argstart have the
+ * type of a mutable char *. Similarly to strchr, this is due to the
+ * limitation of C that you can't specify argstart as having the same
+ * constness as cmdline: the idea is that you either pass a
+ * non-mutable cmdline and promise not to write through the argstart
+ * pointers, of you pass a mutable one and are free to write through
+ * it.
+ *
+ * Allocation: argv and argstart are dynamically allocated. There's
+ * also a dynamically allocated string behind the scenes storing the
+ * actual strings. argv[0] guarantees to point at the first character
+ * of that. So to free all the memory allocated by this function, you
+ * must free argv[0], then argv, and also argstart.
+ */
+void split_into_argv(const char *cmdline, bool includes_program_name,
+                     int *argc, char ***argv, char ***argstart);
+void split_into_argv_w(const wchar_t *cmdline, bool includes_program_name,
+                       int *argc, wchar_t ***argv, wchar_t ***argstart);
 
 /*
  * Private structure for prefslist state. Only in the header file
@@ -783,18 +848,27 @@ void unlock_interprocess_mutex(HANDLE mutex);
 
 typedef void (*aux_opt_error_fn_t)(const char *, ...);
 typedef struct AuxMatchOpt {
-    int index, argc;
-    char **argv;
+    CmdlineArgList *arglist;
+    size_t index;
     bool doing_opts;
     aux_opt_error_fn_t error;
 } AuxMatchOpt;
-AuxMatchOpt aux_match_opt_init(int argc, char **argv, int start_index,
-                               aux_opt_error_fn_t opt_error);
-bool aux_match_arg(AuxMatchOpt *amo, char **val);
-bool aux_match_opt(AuxMatchOpt *amo, char **val, const char *optname, ...);
+AuxMatchOpt aux_match_opt_init(aux_opt_error_fn_t opt_error);
+bool aux_match_arg(AuxMatchOpt *amo, CmdlineArg **val);
+bool aux_match_opt(AuxMatchOpt *amo, CmdlineArg **val,
+                   const char *optname, ...);
 bool aux_match_done(AuxMatchOpt *amo);
 
-char *save_screenshot(HWND hwnd, const char *outfile);
+char *save_screenshot(HWND hwnd, Filename *outfile);
 void gui_terminal_ready(HWND hwnd, Seat *seat, Backend *backend);
+
+void setup_gui_timing(void);
+
+/* Windows-specific extra functions in cmdline_arg.c */
+CmdlineArgList *cmdline_arg_list_from_GetCommandLineW(void);
+const wchar_t *cmdline_arg_remainder_wide(CmdlineArg *);
+char *cmdline_arg_remainder_acp(CmdlineArg *);
+char *cmdline_arg_remainder_utf8(CmdlineArg *);
+CmdlineArg *cmdline_arg_from_utf8(CmdlineArgList *list, const char *string);
 
 #endif /* PUTTY_WINDOWS_PLATFORM_H */
