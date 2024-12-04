@@ -137,7 +137,7 @@ protected:
    const ne_uri * Uri, const ne_status * Status);
   void __fastcall RequireLockStore();
   void InitSslSession(ssl_st * Ssl, ne_session * Session);
-  void __fastcall NeonAddAuthentiation(TSessionContext * SessionContext, bool UseNegotiate);
+  void __fastcall NeonAddAuthentication(TSessionContext * SessionContext, bool UseNegotiate);
   void __fastcall HttpAuthenticationFailed(TSessionContext * SessionContext);
 
 private:

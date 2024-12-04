@@ -1004,7 +1004,7 @@ Boolean __fastcall TRemoteFile::GetIsThisDirectory() const
   return (FileName == THISDIRECTORY);
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall TRemoteFile::GetIsInaccesibleDirectory() const
+Boolean __fastcall TRemoteFile::GetIsInaccessibleDirectory() const
 {
   Boolean Result;
   if (IsDirectory)

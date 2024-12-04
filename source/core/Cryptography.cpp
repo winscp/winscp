@@ -636,11 +636,11 @@ void __fastcall CryptographyInitialize()
   // initialization succeeds. It seems to be because the in_init_config_local recursion fuest is never cleared.
   // So for example, is the configuration is invalid, the foreground updates check still work,
   // as the foreground thread always initialized OpenSSL here (via RAND_poll), and the later
-  // OPENSSL_init_crypto from withing updates TLS code succeeds. Similarly scripting TLS connections work.
+  // OPENSSL_init_crypto from within updates TLS code succeeds. Similarly scripting TLS connections work.
   // But opening GUI TLS connections (WebDAV, S3...) fail, as they are opened on background thread,
   // and there the OPENSSL_init_crypto is first called from TLS connection.
   // Clean solution would be to fail any TLS connection,
-  // if OPENSSL_init_crypto failed when called the firts time, but that would be regression.
+  // if OPENSSL_init_crypto failed when called the first time, but that would be regression.
   // But let's be prepared that this happens if OpenSSL is ever fixed.
   if (!InitOpenssl())
   {
