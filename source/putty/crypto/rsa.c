@@ -356,12 +356,12 @@ char *rsa_ssh1_fingerprint(RSAKey *key)
  */
 char **rsa_ssh1_fake_all_fingerprints(RSAKey *key)
 {
-    char **ret = snewn(SSH_N_FPTYPES, char *);
+    char **fingerprints = snewn(SSH_N_FPTYPES, char *);
     unsigned i; // WINSCP
     for (i = 0; i < SSH_N_FPTYPES; i++)
-        ret[i] = NULL;
-    ret[SSH_FPTYPE_MD5] = rsa_ssh1_fingerprint(key);
-    return ret;
+        fingerprints[i] = NULL;
+    fingerprints[SSH_FPTYPE_MD5] = rsa_ssh1_fingerprint(key);
+    return fingerprints;
 }
 
 /*
@@ -862,7 +862,36 @@ static void rsa2_sign(ssh_key *key, ptrlen data,
     mp_free(in);
 
     put_stringz(bs, sign_alg_name);
-    nbytes = (mp_get_nbits(out) + 7) / 8;
+    if (flags == 0) {
+        /*
+         * Original "ssh-rsa", per RFC 4253 section 6.6, stores the
+         * signature integer in a string without padding - not even
+         * the leading zero byte that an ordinary SSH-2 mpint would
+         * require to avoid looking like two's complement.
+         *
+         * "The value for 'rsa_signature_blob' is encoded as a string
+         * containing s (which is an integer, without lengths or
+         * padding, unsigned, and in network byte order)."
+         */
+        nbytes = (mp_get_nbits(out) + 7) / 8;
+    } else {
+        /*
+         * The SHA-256 and SHA-512 signature systems, per RFC 8332
+         * section 3, should be padded to the length of the key
+         * modulus.
+         *
+         * "The value for 'rsa_signature_blob' is encoded as a string
+         * that contains an octet string S (which is the output of
+         * RSASSA-PKCS1-v1_5) and that has the same length (in octets)
+         * as the RSA modulus."
+         *
+         * Awkwardly, RFC 8332 doesn't say whether that means the
+         * 'raw' length of the RSA modulus (that is, ceil(n/8) for an
+         * n-bit key) or the length it would occupy as an SSH-2 mpint.
+         * My interpretation is the former.
+         */
+        nbytes = (mp_get_nbits(rsa->modulus) + 7) / 8;
+    }
     put_uint32(bs, nbytes);
     { // WINSCP
     size_t i; // WINSCP

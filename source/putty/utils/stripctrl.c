@@ -226,9 +226,6 @@ static inline void stripctrl_term_put_wc(
     if (prefix.len)
         put_datapl(scc->bs_out, prefix);
 
-    char outbuf[6];
-    size_t produced;
-
     /*
      * The Terminal implementation encodes 7-bit ASCII characters in
      * UTF-8 mode, and all printing characters in non-UTF-8 (i.e.
@@ -241,14 +238,10 @@ static inline void stripctrl_term_put_wc(
         wc &= 0xFF;
 
     if (in_utf(scc->term)) {
-        produced = encode_utf8(outbuf, wc);
+        put_utf8_char(scc->bs_out, wc);
     } else {
-        outbuf[0] = wc;
-        produced = 1;
+        put_byte(scc->bs_out, wc);
     }
-
-    if (produced > 0)
-        put_data(scc->bs_out, outbuf, produced);
 }
 
 static inline size_t stripctrl_locale_try_consume(

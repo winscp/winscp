@@ -94,8 +94,10 @@ int check_stored_host_key(const char *hostname, int port,
 /*
  * Write a host key into the database, overwriting any previous
  * entry that might have been there.
+ *
+ * A Seat is provided for error-reporting purposes.
  */
-void store_host_key(const char *hostname, int port,
+void store_host_key(Seat *seat, const char *hostname, int port,
                     const char *keytype, const char *key);
 
 /* ----------------------------------------------------------------------

@@ -290,6 +290,17 @@ static void tempseat_connection_fatal(Seat *seat, const char *message)
     unreachable("connection_fatal should never be called on TempSeat");
 }
 
+static void tempseat_nonfatal(Seat *seat, const char *message)
+{
+    /*
+     * Non-fatal errors specific to a Seat should also not occur,
+     * because those will be for things like I/O errors writing the
+     * host key collection, and a backend's not _doing_ that when we
+     * haven't connected it to the host yet.
+     */
+    unreachable("nonfatal should never be called on TempSeat");
+}
+
 static bool tempseat_eof(Seat *seat)
 {
     /*
@@ -330,6 +341,7 @@ static const struct SeatVtable tempseat_vt = {
     /*.notify_remote_exit =*/ tempseat_notify_remote_exit,
     /*.notify_remote_disconnect =*/ tempseat_notify_remote_disconnect,
     /*.connection_fatal =*/ tempseat_connection_fatal,
+    /*.nonfatal =*/ tempseat_nonfatal,
     /*.update_specials_menu =*/ tempseat_update_specials_menu,
     /*.get_ttymode =*/ tempseat_get_ttymode,
     /*.set_busy_status =*/ tempseat_set_busy_status,
