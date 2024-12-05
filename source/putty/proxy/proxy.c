@@ -432,6 +432,11 @@ static SocketEndpointInfo *sk_proxy_endpoint_info(Socket *s, bool peer)
     if (peer)
         return NULL;
 
+    #ifdef WINSCP
+    // if proxy is connected synchronously, we get here from sk_new even before ps->sub_socket is assigned
+    if (ps->sub_socket == NULL) return NULL;
+    #endif
+
     /* But we can at least tell where we're coming _from_. */
     return sk_endpoint_info(ps->sub_socket, false);
 }

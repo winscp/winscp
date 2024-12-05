@@ -539,7 +539,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
         char *algname = NULL;
         char *comment = NULL;
 
-        ppl_logevent("Reading certificate file \"%s\"",
+        ppl_logevent(WINSCP_BOM "Reading certificate file \"%s\"",
                      filename_to_str(s->detached_cert_file));
         { // WINSCP
         int keytype = key_type(s->detached_cert_file);
@@ -586,7 +586,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
             ppl_logevent("Unable to use this certificate file (%s)",
                          cert_error);
             ppl_printf(
-                "Unable to use certificate file \"%s\" (%s)\r\n",
+                WINSCP_BOM "Unable to use certificate file \"%s\" (%s)\r\n",
                 filename_to_str(s->detached_cert_file), cert_error);
             sfree(cert_error);
         }
@@ -2476,7 +2476,7 @@ static void ssh2_userauth_add_alg_and_publickey(
          * SHA-512 name rsa-sha2-512-cert-v01@... .)
          */
         if (verbose) {
-            ppl_logevent("Sending public key with certificate from \"%s\"",
+            ppl_logevent(WINSCP_BOM "Sending public key with certificate from \"%s\"",
                          filename_to_str(s->detached_cert_file));
         }
         {
@@ -2511,7 +2511,7 @@ static void ssh2_userauth_add_alg_and_publickey(
          * avoid verbosely logging once for the offer and once for the
          * real auth attempt.) */
 	if (verbose) {
-            ppl_logevent("Not substituting certificate \"%s\" for public "
+            ppl_logevent(WINSCP_BOM "Not substituting certificate \"%s\" for public "
                          "key: %s", filename_to_str(s->detached_cert_file),
                          fail_reason->s);
             if (s->publickey_blob) {
@@ -2521,7 +2521,7 @@ static void ssh2_userauth_add_alg_and_publickey(
                  * send the certificate, so we should make a loud error
                  * message about it as well as just commenting in the
                  * Event Log. */
-                ppl_printf("Unable to use certificate \"%s\" with public "
+                ppl_printf(WINSCP_BOM "Unable to use certificate \"%s\" with public "
                            "key \"%s\": %s\r\n",
                            filename_to_str(s->detached_cert_file),
                            filename_to_str(s->keyfile),

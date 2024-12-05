@@ -2072,7 +2072,7 @@ bool __fastcall TSessionData::IsSensitiveOption(const UnicodeString & Option, co
   }
   else if (SameText(Option, PRIVATEKEY_SWITCH))
   {
-    Filename * AFilename = filename_from_str(UTF8String(Value).c_str());
+    Filename * AFilename = filename_from_utf8(UTF8String(Value).c_str());
     Result = (in_memory_key_data(AFilename) != NULL);
     filename_free(AFilename);
   }

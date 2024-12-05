@@ -138,6 +138,8 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf, LogContext *logctx) // MPEXT
 
     /* MIT Kerberos GSSAPI implementation */
     module = NULL;
+    putty_registry_pass(true);
+    { // WINSCP
     HKEY regkey = open_regkey_ro(HKEY_LOCAL_MACHINE,
                                  "SOFTWARE\\MIT\\Kerberos");
     if (regkey) {
@@ -152,6 +154,7 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf, LogContext *logctx) // MPEXT
                 sfree(dllPath);
             }
 
+            { // WINSCP
             char *dllfile = dupcat(bindir, "\\gssapi"MIT_KERB_SUFFIX".dll");
             module = LoadLibraryEx(dllfile, NULL,
                                    LOAD_LIBRARY_SEARCH_SYSTEM32 |
@@ -177,9 +180,11 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf, LogContext *logctx) // MPEXT
             sfree(dllfile);
             sfree(bindir);
             sfree(installdir);
+            } // WINSCP
         }
         close_regkey(regkey);
     }
+    putty_registry_pass(false);
     if (module) {
         struct ssh_gss_library *lib =
             &list->libraries[list->nlibraries++];
@@ -235,6 +240,7 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf, LogContext *logctx) // MPEXT
      * Custom GSSAPI DLL.
      */
     module = NULL;
+    { // WINSCP
     Filename *customlib = conf_get_filename(conf, CONF_ssh_gss_custom);
     if (!filename_is_null(customlib)) {
         const wchar_t *path = customlib->wpath;
@@ -303,6 +309,8 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf, LogContext *logctx) // MPEXT
 
 
     return list;
+    } // WINSCP
+    } // WINSCP
 }
 
 void ssh_gss_cleanup(struct ssh_gss_liblist *list)

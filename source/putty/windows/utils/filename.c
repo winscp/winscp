@@ -48,7 +48,7 @@ Filename *filename_copy(const Filename *fn)
 #ifdef WINSCP
 const char* in_memory_key_data(const Filename *fn)
 {
-    const char* result = fn->path;
+    const char* result = fn->cpath;
     if (result[0] != '@')
     {
         result = NULL;
@@ -84,7 +84,8 @@ const char *filename_to_str(const Filename *fn)
     #ifdef WINSCP
     if (in_memory_key_data(fn) != NULL) return "in-memory";
     #endif
-    return fn->cpath;                  /* FIXME */
+    // WINSCP
+    return fn->utf8path;                  /* FIXME */
 }
 
 bool filename_equal(const Filename *f1, const Filename *f2)
@@ -140,37 +141,3 @@ FILE *f_open(const Filename *fn, const char *mode, bool isprivate)
     sfree(wmode);
     return fp;
 }
-
-#ifdef WINSCP
-
-FILE * mp_wfopen(const char *filename, const char *mode)
-{
-    size_t len = strlen(filename);
-    wchar_t * wfilename = snewn(len * 10, wchar_t);
-    size_t wlen = MultiByteToWideChar(CP_UTF8, 0, filename, -1, wfilename, len * 10);
-    FILE * file;
-    if (wlen <= 0)
-    {
-        file = NULL;
-    }
-    else
-    {
-        wchar_t wmode[3];
-        memset(wmode, 0, sizeof(wmode));
-        wmode[0] = (wchar_t)mode[0];
-        if (mode[0] != '\0')
-        {
-            wmode[1] = (wchar_t)mode[1];
-            if (mode[1] != '\0')
-            {
-                assert(mode[2] == '\0');
-            }
-        }
-
-        file = _wfopen(wfilename, wmode);
-    }
-    sfree(wfilename);
-    return file;
-}
-
-#endif

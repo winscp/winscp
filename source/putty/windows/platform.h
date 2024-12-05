@@ -828,6 +828,7 @@ HKEY open_regkey_fn_winscp(bool create, bool write, HKEY base, const char *path,
     reg_override_winscp() ? open_regkey_fn_winscp(true, true, base, __VA_ARGS__, (const char *)NULL) : open_regkey_fn(true, true, base, __VA_ARGS__, (const char *)NULL)
 void close_regkey(HKEY key);
 void close_regkey_winscp(HKEY key);
+void putty_registry_pass(bool enable);
 void del_regkey(HKEY key, const char *name);
 char *enum_regkey(HKEY key, int index);
 bool get_reg_dword(HKEY key, const char *name, DWORD *out);

@@ -129,6 +129,7 @@ protected:
   UnicodeString __fastcall FormatKeyStr(UnicodeString KeyStr);
   void ParseFingerprint(const UnicodeString & Fingerprint, UnicodeString & SignKeyType, UnicodeString & Hash);
   static Conf * __fastcall StoreToConfig(TSessionData * Data, bool Simple);
+  TPromptKind __fastcall IdentifyPromptKind(UnicodeString & Name);
 
 public:
   __fastcall TSecureShell(TSessionUI * UI, TSessionData * SessionData,
@@ -162,7 +163,6 @@ public:
   void __fastcall UpdateSocket(SOCKET value, bool Enable);
   void __fastcall UpdatePortFwdSocket(SOCKET value, bool Enable);
   void __fastcall PuttyFatalError(UnicodeString Error);
-  TPromptKind __fastcall IdentifyPromptKind(UnicodeString & Name);
   bool __fastcall PromptUser(bool ToServer,
     UnicodeString AName, bool NameRequired,
     UnicodeString Instructions, bool InstructionsRequired,

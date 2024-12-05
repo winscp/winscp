@@ -1222,7 +1222,7 @@ Socket *sk_new(SockAddr *addr, int port, bool privport, bool oobinline,
     err = 0;
     do {
 #ifdef MPEXT
-        ret->error = NULL;
+        s->error = NULL;
 #endif
         err = try_connect(s
 #ifdef MPEXT

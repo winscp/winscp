@@ -1871,8 +1871,10 @@ struct ConfKeyInfo {
     int value_type;
 
     union {
-        bool bval;
+        // WINSCP changed order, because only the first member can be initialized
+        // and char* can be casted to int, but not to bool
         int ival;
+        bool bval;
         const char *sval;
     } default_value;
 
@@ -2592,6 +2594,7 @@ enum {
  * as fontspec_serialise and fontspec_deserialise above.
  */
 Filename *filename_from_str(const char *string);
+Filename *filename_from_utf8(const char *ustr); // WINSCP
 const char *filename_to_str(const Filename *fn);
 const char* in_memory_key_data(const Filename *fn); // WINSCP
 bool filename_equal(const Filename *f1, const Filename *f2);

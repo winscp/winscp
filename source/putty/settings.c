@@ -450,7 +450,8 @@ static void wprefs(settings_w *sesskey, const char *name,
 {
     strbuf *sb = strbuf_new();
 
-    for (int i = 0; i < nvals; i++) {
+    int i; // WINSCP
+    for (i = 0; i < nvals; i++) {
         const char *s = val2key(mapping, nvals,
                                 conf_get_int_int(conf, primary, i));
         if (s)
@@ -538,7 +539,8 @@ void save_open_settings(settings_w *sesskey, Conf *conf)
     const char *p;
 
     /* Save the settings simple enough to handle automatically */
-    for (size_t key = 0; key < N_CONFIG_OPTIONS; key++) {
+    size_t key; // WINSCP
+    for (key = 0; key < N_CONFIG_OPTIONS; key++) {
         const ConfKeyInfo *info = &conf_key_info[key];
         if (!info->save_custom && !info->not_saved) {
             /* Mappings are handled individually below */
@@ -561,6 +563,7 @@ void save_open_settings(settings_w *sesskey, Conf *conf)
                     cp_to = CP_UTF8;
                 }
 
+                { // WINSCP
                 size_t wlen;
                 wchar_t *wide = dup_mb_to_wc_c(
                     cp_from, orig, strlen(orig), &wlen);
@@ -582,6 +585,7 @@ void save_open_settings(settings_w *sesskey, Conf *conf)
 
                 burnwcs(wide);
                 burnstr(converted);
+                } // WINSCP
                 break;
               }
               case CONF_TYPE_INT: {
@@ -710,8 +714,36 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
     int i;
     char *prot;
 
+    // WINSCP BEGIN Testing that our conf.winscp.h projection is valid
+    assert(conf_key_info[CONF_host].subkey_type == CONF_TYPE_NONE);
+    assert(conf_key_info[CONF_host].value_type == CONF_TYPE_STR);
+    assert(strcmp(conf_key_info[CONF_host].default_value.sval, "") == 0);
+    assert(!conf_key_info[CONF_host].save_custom);
+    assert(!conf_key_info[CONF_host].load_custom);
+    assert(!conf_key_info[CONF_host].not_saved);
+    assert(strcmp(conf_key_info[CONF_host].save_keyword, "HostName") == 0);
+    assert(conf_key_info[CONF_host].storage_enum == NULL);
+
+    assert(conf_key_info[CONF_close_on_exit].default_value.ival == AUTO);
+
+    assert(conf_key_info[CONF_proxy_type].storage_enum == &conf_enum_proxy_type);
+
+    assert(conf_key_info[CONF_remote_cmd2].not_saved);
+
+    assert(strcmp(conf_key_info[CONF_proxy_host].default_value.sval, "proxy") == 0);
+
+    assert(conf_key_info[CONF_ssh_kexlist].subkey_type == CONF_TYPE_INT);
+    assert(conf_key_info[CONF_ssh_kexlist].save_custom);
+    assert(conf_key_info[CONF_ssh_kexlist].load_custom);
+    assert(conf_key_info[CONF_ssh_kexlist].save_keyword == NULL);
+
+    assert(conf_key_info[CONF_ssh_prefer_known_hostkeys].default_value.bval == true);
+    // WINSCP END
+
+    { // WINSCP
     /* Load the settings simple enough to handle automatically */
-    for (size_t key = 0; key < N_CONFIG_OPTIONS; key++) {
+    size_t key; // WINSCP
+    for (key = 0; key < N_CONFIG_OPTIONS; key++) {
         const ConfKeyInfo *info = &conf_key_info[key];
         if (info->not_saved) {
             /* Mappings are assumed to default to empty */
@@ -760,6 +792,7 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
                     assert(success && "unmapped default");
 
                     /* Now retrieve the stored value */
+                    { // WINSCP
                     int storageval = gppi_raw(sesskey, info->save_keyword,
                                               defstorage);
 
@@ -770,6 +803,7 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
                             info->storage_enum, storageval, &confval))
                         confval = info->default_value.ival;
                     conf_set_int(conf, key, confval);
+                    } // WINSCP
                 }
                 break;
               case CONF_TYPE_BOOL:
@@ -1049,6 +1083,7 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
         }
     }
     gppmap(sesskey, "SSHManualHostKeys", conf, CONF_ssh_manual_hostkeys);
+    } // WINSCP
 }
 
 bool do_defaults(const char *session, Conf *conf)

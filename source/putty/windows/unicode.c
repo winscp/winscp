@@ -22,6 +22,8 @@ static const WCHAR unitab_xterm_std[32] = {
     0x2502, 0x2264, 0x2265, 0x03c0, 0x2260, 0x00a3, 0x00b7, 0x0020
 };
 
+#endif
+
 /*
  * If the codepage is non-zero it's a window codepage, zero means use a
  * local codepage. The name is always converted to the first of any
@@ -438,7 +440,11 @@ static const struct cp_list_item cp_list[] = {
     {0, 0}
 };
 
+#ifndef WINSCP
+
 static void link_font(WCHAR *line_tbl, WCHAR *font_tbl, WCHAR attr);
+
+#endif
 
 /*
  * We keep a collection of reverse mappings from Unicode back to code pages,
@@ -486,17 +492,21 @@ static reverse_mapping *make_reverse_mapping_inner(
     if (!reverse_mappings)
         reverse_mappings = newtree234(reverse_mapping_cmp);
 
+    { // WINSCP
     reverse_mapping *rmap = snew(reverse_mapping);
     rmap->blocks = snewn(256, char *);
     memset(rmap->blocks, 0, 256 * sizeof(char *));
 
-    for (size_t i = 0; i < 256; i++) {
+    { // WINSCP
+    size_t i; // WINSCP
+    for (i = 0; i < 256; i++) {
         /* These special kinds of value correspond to no Unicode character */
         if (DIRECT_CHAR(mapping[i]))
             continue;
         if (DIRECT_FONT(mapping[i]))
             continue;
 
+        { // WINSCP
         size_t chr = mapping[i];
         size_t block = chr >> 8, index = chr & 0xFF;
 
@@ -505,13 +515,20 @@ static reverse_mapping *make_reverse_mapping_inner(
             memset(rmap->blocks[block], 0, 256);
         }
         rmap->blocks[block][index] = i;
+        } // WINSCP
     }
 
     rmap->codepage = codepage;
+    { // WINSCP
     reverse_mapping *added = add234(reverse_mappings, rmap);
     assert(added == rmap); /* we already checked it wasn't already in there */
     return added;
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
+
+#ifndef WINSCP
 
 static void make_reverse_mapping(int codepage, const wchar_t *mapping)
 {
@@ -519,6 +536,8 @@ static void make_reverse_mapping(int codepage, const wchar_t *mapping)
         return;                        /* we've already got this one */
     make_reverse_mapping_inner(codepage, mapping);
 }
+
+#endif
 
 static reverse_mapping *get_reverse_mapping(int codepage)
 {
@@ -536,14 +555,20 @@ static reverse_mapping *get_reverse_mapping(int codepage)
         return NULL;
     if (codepage >= 65536 + lenof(cp_list))
         return NULL;
+    { // WINSCP
     const struct cp_list_item *cp = &cp_list[codepage - 65536];
     if (!cp->cp_table)
         return NULL;
 
+    { // WINSCP
     wchar_t mapping[256];
     get_unitab(codepage, mapping, 0);
     return make_reverse_mapping_inner(codepage, mapping);
+    } // WINSCP
+    } // WINSCP
 }
+
+#ifndef WINSCP
 
 void init_ucs(Conf *conf, struct unicode_data *ucsdata)
 {
@@ -1210,6 +1235,8 @@ const char *cp_enumerate(int index)
     return cp_list[index].name;
 }
 
+#endif
+
 void get_unitab(int codepage, wchar_t *unitab, int ftype)
 {
     char tbuf[4];
@@ -1254,6 +1281,7 @@ bool BinarySink_put_wc_to_mb(
     if (!wclen)
         return true;
 
+    { // WINSCP
     reverse_mapping *rmap = get_reverse_mapping(codepage);
 
     if (rmap) {
@@ -1261,7 +1289,8 @@ bool BinarySink_put_wc_to_mb(
         bool defchr_len_known = false;
 
         /* Do this by array lookup if we can. */
-        for (size_t i = 0; i < wclen; i++) {
+        size_t i; // WINSCP
+        for (i = 0; i < wclen; i++) {
             wchar_t ch = wcstr[i];
             int by;
             const char *blk;
@@ -1351,16 +1380,12 @@ bool BinarySink_put_wc_to_mb(
 
     /* No other fallbacks are available */
     return false;
+    } // WINSCP
 }
-
-#endif
 
 bool BinarySink_put_mb_to_wc(
     BinarySink *bs, int codepage, const char *mbstr, int mblen)
 {
-    #ifdef WINSCP
-    pinitassert(codepage == DEFAULT_CODEPAGE);
-    #else
     if (!mblen)
         return true;
 
@@ -1370,20 +1395,26 @@ bool BinarySink_put_mb_to_wc(
         size_t index = codepage - 65536;
         if (index >= lenof(cp_list))
             return false;
+        { // WINSCP
         const struct cp_list_item *cp = &cp_list[index];
         if (!cp->cp_table)
             return false;
 
+        { // WINSCP
         unsigned tablebase = 256 - cp->cp_size;
 
         while (mblen > 0) {
             mblen--;
+            { // WINSCP
             unsigned c = 0xFF & *mbstr++;
             wchar_t wc = (c < tablebase ? c : cp->cp_table[c - tablebase]);
             put_data(bs, &wc, sizeof(wc));
+            } // WINSCP
         }
 
         return true;
+        } // WINSCP
+        } // WINSCP
     }
 
     {
@@ -1411,7 +1442,6 @@ bool BinarySink_put_mb_to_wc(
                 currsize = allocsize;
             }
         }
-    #endif
 
         smemclr(allocbuf, allocsize * sizeof(wchar_t));
         if (success)

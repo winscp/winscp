@@ -185,7 +185,7 @@ Filename *read_setting_filename(settings_r *handle, const char *name)
 {
     char *tmp = read_setting_s(handle, name);
     if (tmp) {
-        Filename *ret = filename_from_str(tmp);
+        Filename *ret = filename_from_utf8(tmp); // WINSCP (though it might not have any effect for our uses of the code)
         sfree(tmp);
         return ret;
     } else

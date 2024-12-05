@@ -34,6 +34,8 @@ static Filename *xlatlognam(const Filename *s,
  */
 static void logwrite(LogContext *ctx, ptrlen data)
 {
+    assert(false); // WINSCP
+
     /*
      * In state L_CLOSED, we call logfopen, which will set the state
      * to one of L_OPENING, L_OPEN or L_ERROR. Hence we process all of
@@ -63,6 +65,8 @@ static PRINTF_LIKE(2, 3) void logprintf(LogContext *ctx, const char *fmt, ...)
 {
     va_list ap;
     char *data;
+
+    assert(false); // WINSCP
 
     va_start(ap, fmt);
     data = dupvprintf(fmt, ap);
@@ -94,6 +98,8 @@ static void logfopen_callback(void *vctx, int mode)
     struct tm tm;
     const char *fmode;
     bool shout = false;
+
+    assert(false); // WINSCP
 
     if (mode == 0) {
         ctx->state = L_ERROR;          /* disable logging */
@@ -160,6 +166,8 @@ void logfopen(LogContext *ctx)
     struct tm tm;
     int mode;
 
+    assert(false); // WINSCP
+
     /* Prevent repeat calls */
     if (ctx->state != L_CLOSED)
         return;
@@ -207,6 +215,8 @@ void logfclose(LogContext *ctx)
  */
 void logtraffic(LogContext *ctx, unsigned char c, int logmode)
 {
+    assert(false); // WINSCP
+
     if (ctx->logtype > 0) {
         if (ctx->logtype == logmode)
             logwrite(ctx, make_ptrlen(&c, 1));
@@ -272,6 +282,8 @@ void log_packet(LogContext *ctx, int direction, int type,
     if (!(ctx->logtype == LGTYP_SSHRAW ||
           (ctx->logtype == LGTYP_PACKETS && texttype)))
         return;
+
+    assert(false); // WINSCP
 
     /* Packet header. */
     if (texttype) {
@@ -408,9 +420,13 @@ void log_free(LogContext *ctx)
     sfree(ctx);
 }
 
+#ifndef WINSCP
+
 void log_reconfig(LogContext *ctx, Conf *conf)
 {
     bool reset_logging;
+
+    assert(false); // WINSCP
 
     if (!filename_equal(conf_get_filename(ctx->conf, CONF_logfilename),
                         conf_get_filename(conf, CONF_logfilename)) ||
@@ -432,6 +448,8 @@ void log_reconfig(LogContext *ctx, Conf *conf)
         logfopen(ctx);
 }
 
+#endif
+
 /*
  * translate format codes into time/date strings
  * and insert them into log file name
@@ -448,6 +466,8 @@ static Filename *xlatlognam(const Filename *src,
     strbuf *buffer;
     const char *s;
     Filename *ret;
+
+    assert(false); // WINSCP
 
     buffer = strbuf_new();
     s = filename_to_str(src);

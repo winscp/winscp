@@ -35,7 +35,7 @@
         <BCC_wamp>true</BCC_wamp>
         <BCC_wasm>true</BCC_wasm>
         <BCC_waus>false</BCC_waus>
-        <BCC_wbbf>true</BCC_wbbf>
+        <BCC_wbbf>false</BCC_wbbf>
         <BCC_wccc>false</BCC_wccc>
         <BCC_wcln>true</BCC_wcln>
         <BCC_wcsu>false</BCC_wcsu>
@@ -352,6 +352,9 @@
         <CppCompile Include="putty\stubs\null-seat.c">
             <BuildOrder>100</BuildOrder>
         </CppCompile>
+        <CppCompile Include="putty\stubs\null-socket.c">
+            <BuildOrder>171</BuildOrder>
+        </CppCompile>
         <CppCompile Include="putty\utils\antispoof.c">
             <BuildOrder>77</BuildOrder>
         </CppCompile>
@@ -379,11 +382,17 @@
         <CppCompile Include="putty\utils\burnstr.c">
             <BuildOrder>151</BuildOrder>
         </CppCompile>
+        <CppCompile Include="putty\utils\burnwcs.c">
+            <BuildOrder>170</BuildOrder>
+        </CppCompile>
         <CppCompile Include="putty\utils\cert-expr.c">
             <BuildOrder>147</BuildOrder>
         </CppCompile>
         <CppCompile Include="putty\utils\conf.c">
             <BuildOrder>82</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\conf_data.c">
+            <BuildOrder>167</BuildOrder>
         </CppCompile>
         <CppCompile Include="putty\utils\conf_dest.c">
             <BuildOrder>164</BuildOrder>
@@ -394,11 +403,23 @@
         <CppCompile Include="putty\utils\ctrlparse.c">
             <BuildOrder>84</BuildOrder>
         </CppCompile>
+        <CppCompile Include="putty\utils\decode_utf8.c">
+            <BuildOrder>176</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\decode_utf8_to_wchar.c">
+            <BuildOrder>175</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\decode_utf8_to_wide_string.c">
+            <BuildOrder>172</BuildOrder>
+        </CppCompile>
         <CppCompile Include="putty\utils\default_description.c">
             <BuildOrder>85</BuildOrder>
         </CppCompile>
         <CppCompile Include="putty\utils\dup_mb_to_wc.c">
             <BuildOrder>86</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\dup_wc_to_mb.c">
+            <BuildOrder>168</BuildOrder>
         </CppCompile>
         <CppCompile Include="putty\utils\dupcat.c">
             <BuildOrder>148</BuildOrder>
@@ -408,6 +429,15 @@
         </CppCompile>
         <CppCompile Include="putty\utils\dupstr.c">
             <BuildOrder>152</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\dupwcs.c">
+            <BuildOrder>166</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\encode_utf8.c">
+            <BuildOrder>174</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\encode_wide_string_as_utf8.c">
+            <BuildOrder>173</BuildOrder>
         </CppCompile>
         <CppCompile Include="putty\utils\host_ca_new_free.c">
             <BuildOrder>148</BuildOrder>
@@ -432,6 +462,9 @@
         </CppCompile>
         <CppCompile Include="putty\utils\log_proxy_stderr.c">
             <BuildOrder>95</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\utils\logeventf.c">
+            <BuildOrder>169</BuildOrder>
         </CppCompile>
         <CppCompile Include="putty\utils\make_spr_sw_abort_static.c">
             <BuildOrder>153</BuildOrder>
