@@ -103,9 +103,6 @@
         <CppCompile Include="putty\crypto\aes-common.c">
             <BuildOrder>9</BuildOrder>
         </CppCompile>
-        <CppCompile Include="putty\crypto\aesgcm-common.c">
-            <BuildOrder>158</BuildOrder>
-        </CppCompile>
         <CppCompile Include="putty\crypto\aesgcm-ref-poly.c">
             <BuildOrder>159</BuildOrder>
         </CppCompile>
@@ -486,12 +483,6 @@
         </CppCompile>
         <CppCompile Include="putty\utils\parse_blocksize.c">
             <BuildOrder>103</BuildOrder>
-        </CppCompile>
-        <CppCompile Include="putty\utils\percent_decode.c">
-            <BuildOrder>150</BuildOrder>
-        </CppCompile>
-        <CppCompile Include="putty\utils\percent_encode.c">
-            <BuildOrder>151</BuildOrder>
         </CppCompile>
         <CppCompile Include="putty\utils\prompts.c">
             <BuildOrder>104</BuildOrder>
