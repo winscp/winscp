@@ -222,10 +222,6 @@
             <BuildOrder>2</BuildOrder>
             <BuildOrder>19</BuildOrder>
         </CppCompile>
-        <LibFiles Include="..\libs\lib\libs3.lib" Condition="'$(Platform)'=='Win32'">
-            <BuildOrder>34</BuildOrder>
-            <IgnorePath>true</IgnorePath>
-        </LibFiles>
         <LibFiles Include="FileZilla.lib">
             <BuildOrder>27</BuildOrder>
             <IgnorePath>true</IgnorePath>
@@ -236,6 +232,10 @@
         </LibFiles>
         <LibFiles Include="libexpats_mtd.lib">
             <BuildOrder>31</BuildOrder>
+            <IgnorePath>true</IgnorePath>
+        </LibFiles>
+        <LibFiles Include="libs3.lib">
+            <BuildOrder>34</BuildOrder>
             <IgnorePath>true</IgnorePath>
         </LibFiles>
         <LibFiles Include="neon.lib">
