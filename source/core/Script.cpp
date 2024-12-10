@@ -2477,10 +2477,10 @@ void __fastcall TManagementScript::TerminalOperationProgress(
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::TerminalOperationFinished(
   TFileOperation Operation, TOperationSide /*Side*/,
-  bool /*Temp*/, const UnicodeString & FileName, Boolean Success,
+  bool /*Temp*/, const UnicodeString & FileName, bool Success, bool NotCancelled,
   TOnceDoneOperation & /*OnceDoneOperation*/)
 {
-  if (Success &&
+  if (Success && NotCancelled &&
       (Operation != foCalculateSize) && (Operation != foCalculateChecksum) &&
       !TFileOperationProgressType::IsTransferOperation(Operation))
   {

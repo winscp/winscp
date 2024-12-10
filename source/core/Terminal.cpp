@@ -2224,14 +2224,14 @@ void __fastcall TTerminal::DoProgress(TFileOperationProgressType & ProgressData)
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoFinished(TFileOperation Operation, TOperationSide Side, bool Temp,
-  const UnicodeString & FileName, bool Success, TOnceDoneOperation & OnceDoneOperation)
+  const UnicodeString & FileName, bool Success, bool NotCancelled, TOnceDoneOperation & OnceDoneOperation)
 {
   if (OnFinished != NULL)
   {
     TCallbackGuard Guard(this);
     try
     {
-      OnFinished(Operation, Side, Temp, FileName, Success, OnceDoneOperation);
+      OnFinished(Operation, Side, Temp, FileName, Success, NotCancelled, OnceDoneOperation);
       Guard.Verify();
     }
     catch (Exception & E)

@@ -1368,7 +1368,7 @@ void TCustomScpExplorerForm::ClearOperationSelection(TOperationSide Side)
 {
   if (FOnFileOperationFinished != NULL)
   {
-    FOnFileOperationFinished(Side, UnicodeString(), true);
+    FOnFileOperationFinished(Side, UnicodeString(), true, true);
   }
   else
   {
@@ -1781,7 +1781,7 @@ TListItem * TCustomScpExplorerForm::VisualiseOperationFinished(TOperationSide Si
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DoOperationFinished(
   TFileOperation Operation, TOperationSide Side,
-  bool /*Temp*/, const UnicodeString & FileName, bool Success,
+  bool /*Temp*/, const UnicodeString & FileName, bool Success, bool NotCancelled,
   TOnceDoneOperation & OnceDoneOperation)
 {
   if (!FAutoOperation)
@@ -1805,11 +1805,11 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(
       }
       if (FOnFileOperationFinished != NULL)
       {
-        FOnFileOperationFinished(DViewSide, FileName, Success);
+        FOnFileOperationFinished(DViewSide, FileName, Success, NotCancelled);
       }
       else
       {
-        VisualiseOperationFinished(DViewSide, FileName, Success);
+        VisualiseOperationFinished(DViewSide, FileName, Success && NotCancelled);
       }
     }
 
@@ -1852,12 +1852,11 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::OperationFinished(
   TFileOperation Operation, TOperationSide Side,
-  bool Temp, const UnicodeString & FileName, Boolean Success,
+  bool Temp, const UnicodeString & FileName, bool Success, bool NotCancelled,
   TOnceDoneOperation & OnceDoneOperation)
 {
   TAutoNestingCounter Counter(FDoNotIdleCurrentTerminal);
-  DoOperationFinished(Operation, Side, Temp, FileName, Success,
-    OnceDoneOperation);
+  DoOperationFinished(Operation, Side, Temp, FileName, Success, NotCancelled, OnceDoneOperation);
 }
 //---------------------------------------------------------------------------
 bool TCustomScpExplorerForm::IsLocalBrowserMode()
@@ -4355,9 +4354,10 @@ void __fastcall TCustomScpExplorerForm::SideEnter(TOperationSide Side)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::FileDeleted(TOperationSide Side, const UnicodeString & FileName, bool Success)
+void __fastcall TCustomScpExplorerForm::FileDeleted(
+  TOperationSide Side, const UnicodeString & FileName, bool Success, bool NotCancelled)
 {
-  VisualiseOperationFinished(Side, FileName, Success);
+  VisualiseOperationFinished(Side, FileName, Success && NotCancelled);
 
   if (DebugAlwaysTrue(FDeletedFiles != NULL) && Success)
   {
@@ -10677,7 +10677,7 @@ void __fastcall TCustomScpExplorerForm::DoEditFoundFiles(
       UnicodeString FileName = FileList->Strings[Index];
       TRemoteFile * File = static_cast<TRemoteFile *>(FileList->Objects[Index]);
       ExecuteRemoteFile(FileName, File, efDefaultEditor);
-      OnFileOperationFinished(osRemote, FileName, true);
+      OnFileOperationFinished(osRemote, FileName, true, true);
     }
   }
 }
@@ -12112,7 +12112,8 @@ void TCustomScpExplorerForm::CalculateDirectorySizes(TOperationSide Side)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::DirectorySizeCalculated(TOperationSide Side, const UnicodeString & FileName, bool Success)
+void __fastcall TCustomScpExplorerForm::DirectorySizeCalculated(
+  TOperationSide Side, const UnicodeString & FileName, bool Success, bool NotCancelled)
 {
   DebugAlwaysTrue(FCalculateSizeOperation != NULL);
 
@@ -12137,7 +12138,7 @@ void __fastcall TCustomScpExplorerForm::DirectorySizeCalculated(TOperationSide S
       Index = I - FCalculateSizeOperation->ListItems.begin();
     }
   }
-  if (DebugAlwaysTrue(Index >= 0) && Success)
+  if (DebugAlwaysTrue(Index >= 0) && Success && NotCancelled)
   {
     __int64 Size = (*FCalculateSizeOperation->Stats.CalculatedSizes)[Index];
     ADirView->SetItemCalculatedSize(Item, Size);

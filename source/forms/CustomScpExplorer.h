@@ -463,7 +463,7 @@ protected:
   void __fastcall UpdateStatusBar();
   virtual void __fastcall UpdateStatusPanelText(TTBXStatusPanel * Panel);
   virtual void __fastcall DoOperationFinished(TFileOperation Operation,
-    TOperationSide Side, bool Temp, const UnicodeString & FileName, bool Success,
+    TOperationSide Side, bool Temp, const UnicodeString & FileName, bool Success, bool NotCancelled,
     TOnceDoneOperation & OnceDoneOperation);
   virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side);
   void __fastcall CreateProgressForm(TSynchronizeProgress * SynchronizeProgress);
@@ -762,9 +762,9 @@ protected:
   virtual UnicodeString GetNewTabHintDetails();
   UnicodeString GetTabHintSessionDetails(TManagedTerminal * ASession);
   UnicodeString GetSessionPath(TManagedTerminal * ASession, TOperationSide Side);
-  void __fastcall DirectorySizeCalculated(TOperationSide Side, const UnicodeString & FileName, bool Success);
+  void __fastcall DirectorySizeCalculated(TOperationSide Side, const UnicodeString & FileName, bool Success, bool NotCancelled);
   TListItem * VisualiseOperationFinished(TOperationSide Side, const UnicodeString & FileName, bool Unselect);
-  void __fastcall FileDeleted(TOperationSide Side, const UnicodeString & FileName, bool Success);
+  void __fastcall FileDeleted(TOperationSide Side, const UnicodeString & FileName, bool Success, bool NotCancelled);
   void LoadFilesProperties(TStrings * FileList);
   void PasteFiles();
   bool DoDirectoryExists(void * Session, const UnicodeString & Directory);
@@ -868,7 +868,7 @@ public:
     UnicodeString HelpKeyword, const TMessageParams * Params = NULL,
     TTerminal * Terminal = NULL);
   void __fastcall OperationFinished(TFileOperation Operation, TOperationSide Side,
-    bool Temp, const UnicodeString & FileName, bool Success, TOnceDoneOperation & OnceDoneOperation);
+    bool Temp, const UnicodeString & FileName, bool Success, bool NotCancelled, TOnceDoneOperation & OnceDoneOperation);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData);
   UnicodeString __fastcall GetProgressTitle();
   void __fastcall ShowExtendedException(TTerminal * Terminal, Exception * E);

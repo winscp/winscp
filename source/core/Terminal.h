@@ -423,7 +423,7 @@ protected:
   bool __fastcall IsListenerFree(unsigned int PortNumber);
   void __fastcall DoProgress(TFileOperationProgressType & ProgressData);
   void __fastcall DoFinished(TFileOperation Operation, TOperationSide Side, bool Temp,
-    const UnicodeString & FileName, bool Success, TOnceDoneOperation & OnceDoneOperation);
+    const UnicodeString & FileName, bool Success, bool NotCancelled, TOnceDoneOperation & OnceDoneOperation);
   void __fastcall RollbackAction(TSessionAction & Action,
     TFileOperationProgressType * OperationProgress, Exception * E = NULL);
   void __fastcall DoAnyCommand(const UnicodeString Command, TCaptureOutputEvent OutputEvent,

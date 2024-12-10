@@ -133,8 +133,8 @@ private:
   void __fastcall DoFocusFile(const UnicodeString & Path);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall ClearItem(TListItem * Item);
-  void __fastcall FileDeleteFinished(TOperationSide Side, const UnicodeString & FileName, bool Success);
-  void __fastcall FileDownloadFinished(TOperationSide Side, const UnicodeString & FileName, bool Success);
+  void __fastcall FileDeleteFinished(TOperationSide Side, const UnicodeString & FileName, bool Success, bool NotCancelled);
+  void __fastcall FileDownloadFinished(TOperationSide Side, const UnicodeString & FileName, bool Success, bool NotCancelled);
   TListItem * __fastcall FileOperationFinished(const UnicodeString & FileName);
   void __fastcall FileListOperation(TFileListOperationEvent Operation, TFileOperationFinishedEvent OnFileOperationFinished);
   TIEListViewColProperties * GetColProperties();

@@ -270,7 +270,7 @@ protected:
   void __fastcall TerminalShowExtendedException(TTerminal * Terminal,
     Exception * E, void * Arg);
   void __fastcall OperationFinished(TFileOperation Operation, TOperationSide Side,
-    bool Temp, const UnicodeString & FileName, bool Success,
+    bool Temp, const UnicodeString & FileName, bool Success, bool NotCancelled,
     TOnceDoneOperation & OnceDoneOperation);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData);
 };
@@ -1552,7 +1552,7 @@ void __fastcall TTerminalItem::TerminalShowExtendedException(
 //---------------------------------------------------------------------------
 void __fastcall TTerminalItem::OperationFinished(TFileOperation /*Operation*/,
   TOperationSide /*Side*/, bool /*Temp*/, const UnicodeString & /*FileName*/,
-  bool /*Success*/, TOnceDoneOperation & /*OnceDoneOperation*/)
+  bool /*Success*/, bool /*NotCancelled*/, TOnceDoneOperation & /*OnceDoneOperation*/)
 {
   // nothing
 }

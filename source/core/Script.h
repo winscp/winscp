@@ -239,7 +239,7 @@ protected:
     TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase, const UnicodeString & Additional);
   void __fastcall TerminalOperationProgress(TFileOperationProgressType & ProgressData);
   void __fastcall TerminalOperationFinished(TFileOperation Operation, TOperationSide Side,
-    bool Temp, const UnicodeString & FileName, Boolean Success,
+    bool Temp, const UnicodeString & FileName, bool Success, bool NotCancelled,
     TOnceDoneOperation & OnceDoneOperation);
 
   void __fastcall PrintActiveSession();

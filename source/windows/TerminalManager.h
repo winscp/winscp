@@ -207,7 +207,7 @@ private:
   void __fastcall SaveTerminal(TTerminal * Terminal);
   void __fastcall SetActiveSessionIndex(int value);
   void __fastcall OperationFinished(::TFileOperation Operation, TOperationSide Side,
-    bool Temp, const UnicodeString & FileName, bool Success,
+    bool Temp, const UnicodeString & FileName, bool Success, bool NotCancelled,
     TOnceDoneOperation & OnceDoneOperation);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData);
   void __fastcall DeleteLocalFile(const UnicodeString FileName, bool Alternative, int & Deleted);

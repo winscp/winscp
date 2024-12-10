@@ -1504,12 +1504,11 @@ void __fastcall TTerminalManager::TerminalInformation(
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::OperationFinished(::TFileOperation Operation,
-  TOperationSide Side, bool Temp, const UnicodeString & FileName, bool Success,
+  TOperationSide Side, bool Temp, const UnicodeString & FileName, bool Success, bool NotCancelled,
   TOnceDoneOperation & OnceDoneOperation)
 {
   DebugAssert(ScpExplorer);
-  ScpExplorer->OperationFinished(Operation, Side, Temp, FileName, Success,
-    OnceDoneOperation);
+  ScpExplorer->OperationFinished(Operation, Side, Temp, FileName, Success, NotCancelled, OnceDoneOperation);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::OperationProgress(
