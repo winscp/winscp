@@ -4357,6 +4357,7 @@ void __fastcall TTerminal::DeleteLocalFile(UnicodeString FileName,
   {
     OnDeleteLocalFile(FileName, FLAGSET(*((int*)Params), dfAlternative), Deleted);
   }
+  AppLogFmt(L"Deleted local file \"%s\"", (FileName));
   if (DebugAlwaysTrue((OperationProgress != NULL) && (OperationProgress->Operation == foDelete)))
   {
     OperationProgress->Succeeded(Deleted);

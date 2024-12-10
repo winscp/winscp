@@ -1786,6 +1786,11 @@ TQueueItem * __fastcall TQueueItem::CreateParallelOperation()
   return NULL;
 }
 //---------------------------------------------------------------------------
+UnicodeString __fastcall TQueueItem::StartupDirectory() const
+{
+  return EmptyStr;
+}
+//---------------------------------------------------------------------------
 // TQueueItemProxy
 //---------------------------------------------------------------------------
 __fastcall TQueueItemProxy::TQueueItemProxy(TTerminalQueue * Queue,
@@ -2093,11 +2098,6 @@ void __fastcall TBootstrapQueueItem::DoExecute(TTerminal * DebugUsedArg(Terminal
   // noop
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TBootstrapQueueItem::StartupDirectory() const
-{
-  return UnicodeString();
-}
-//---------------------------------------------------------------------------
 bool __fastcall TBootstrapQueueItem::Complete()
 {
   TQueueItem::Complete();
@@ -2274,6 +2274,13 @@ bool __fastcall TTransferQueueItem::UpdateFileList(TQueueFileList * FileList)
 //---------------------------------------------------------------------------
 // TUploadQueueItem
 //---------------------------------------------------------------------------
+static void ExtractLocalSourcePath(TStrings * Files, UnicodeString & Path)
+{
+  ExtractCommonPath(Files, Path);
+  // this way the trailing backslash is preserved for root directories like D:\\
+  Path = ExtractFileDir(IncludeTrailingBackslash(Path));
+}
+//---------------------------------------------------------------------------
 __fastcall TUploadQueueItem::TUploadQueueItem(TTerminal * Terminal,
   TStrings * FilesToCopy, const UnicodeString & TargetDir,
   const TCopyParamType * CopyParam, int Params, bool SingleFile, bool Parallel) :
@@ -2288,9 +2295,7 @@ __fastcall TUploadQueueItem::TUploadQueueItem(TTerminal * Terminal,
     }
     else
     {
-      ExtractCommonPath(FilesToCopy, FInfo->Source);
-      // this way the trailing backslash is preserved for root directories like D:\\
-      FInfo->Source = ExtractFileDir(IncludeTrailingBackslash(FInfo->Source));
+      ExtractLocalSourcePath(FilesToCopy, FInfo->Source);
       FInfo->ModifiedLocal = FLAGCLEAR(Params, cpDelete) ? UnicodeString() :
         IncludeTrailingBackslash(FInfo->Source);
     }
@@ -2434,7 +2439,7 @@ void __fastcall TDownloadQueueItem::DoTransferExecute(TTerminal * Terminal, TPar
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-TDeleteQueueItem::TDeleteQueueItem(TTerminal * Terminal, TStrings * FilesToDelete, int Params) :
+TRemoteDeleteQueueItem::TRemoteDeleteQueueItem(TTerminal * Terminal, TStrings * FilesToDelete, int Params) :
   TLocatedQueueItem(Terminal)
 {
   FInfo->Operation = foDelete;
@@ -2449,12 +2454,34 @@ TDeleteQueueItem::TDeleteQueueItem(TTerminal * Terminal, TStrings * FilesToDelet
   FParams = Params;
 }
 //---------------------------------------------------------------------------
-void __fastcall TDeleteQueueItem::DoExecute(TTerminal * Terminal)
+void __fastcall TRemoteDeleteQueueItem::DoExecute(TTerminal * Terminal)
 {
   TLocatedQueueItem::DoExecute(Terminal);
 
   DebugAssert(Terminal != NULL);
   Terminal->DeleteFiles(FFilesToDelete.get(), FParams);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+TLocalDeleteQueueItem::TLocalDeleteQueueItem(TStrings * FilesToDelete, int Params) :
+  TQueueItem()
+{
+  FInfo->Operation = foDelete;
+  FInfo->Side = osLocal;
+
+  DebugAssert(FilesToDelete != NULL);
+  FFilesToDelete.reset(CloneStrings(FilesToDelete));
+  ExtractLocalSourcePath(FilesToDelete, FInfo->Source);
+
+  FInfo->ModifiedLocal = FInfo->Source;
+
+  FParams = Params;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLocalDeleteQueueItem::DoExecute(TTerminal * Terminal)
+{
+  DebugAssert(Terminal != NULL);
+  Terminal->DeleteLocalFiles(FFilesToDelete.get(), FParams);
 }
 //---------------------------------------------------------------------------
 // TTerminalThread

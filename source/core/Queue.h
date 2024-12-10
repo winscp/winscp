@@ -208,7 +208,7 @@ protected:
   void __fastcall SetCPSLimit(unsigned long CPSLimit);
   unsigned long __fastcall GetCPSLimit();
   virtual unsigned long __fastcall DefaultCPSLimit();
-  virtual UnicodeString __fastcall StartupDirectory() const = 0;
+  virtual UnicodeString __fastcall StartupDirectory() const;
   virtual void __fastcall ProgressUpdated();
   virtual TQueueItem * __fastcall CreateParallelOperation();
   virtual bool __fastcall Complete();
@@ -312,7 +312,6 @@ public:
 
 protected:
   virtual void __fastcall DoExecute(TTerminal * Terminal);
-  virtual UnicodeString __fastcall StartupDirectory() const;
   virtual bool __fastcall Complete();
 };
 //---------------------------------------------------------------------------
@@ -377,10 +376,23 @@ protected:
   virtual void __fastcall DoTransferExecute(TTerminal * Terminal, TParallelOperation * ParallelOperation);
 };
 //---------------------------------------------------------------------------
-class TDeleteQueueItem : public TLocatedQueueItem
+class TRemoteDeleteQueueItem : public TLocatedQueueItem
 {
 public:
-  TDeleteQueueItem(TTerminal * Terminal, TStrings * FilesToDelete, int Params);
+  TRemoteDeleteQueueItem(TTerminal * Terminal, TStrings * FilesToDelete, int Params);
+
+protected:
+  virtual void __fastcall DoExecute(TTerminal * Terminal);
+
+private:
+  std::unique_ptr<TStrings> FFilesToDelete;
+  int FParams;
+};
+//---------------------------------------------------------------------------
+class TLocalDeleteQueueItem : public TQueueItem
+{
+public:
+  TLocalDeleteQueueItem(TStrings * FilesToDelete, int Params);
 
 protected:
   virtual void __fastcall DoExecute(TTerminal * Terminal);

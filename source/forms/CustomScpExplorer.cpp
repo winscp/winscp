@@ -4376,75 +4376,102 @@ void __fastcall TCustomScpExplorerForm::DeleteFiles(TOperationSide Side,
 
   try
   {
-    if (!IsSideLocalBrowser(Side))
+    int Params = FLAGMASK(Alternative, dfAlternative);
+    bool Remote = !IsSideLocalBrowser(Side);
+    std::unique_ptr<TStringList> DeletedFiles;
+    std::unique_ptr<TStrings> PermanentFileList;
+    bool AllowMoveToQueue = (Terminal != NULL);
+    if (AllowMoveToQueue)
     {
-      DebugAssert(Terminal != NULL);
+      DeletedFiles.reset(new TStringList());
+      DeletedFiles->CaseSensitive = Remote;
+    }
 
-      // Clone the file list as it may refer to current directory files, which get destroyed, when the directory is reloaded after the operation
-      std::unique_ptr<TStrings> PermanentFileList(TRemoteFileList::CloneStrings(FileList));
-      std::unique_ptr<TStringList> DeletedFiles(new TStringList());
-      DeletedFiles->CaseSensitive = DebugAlwaysTrue(!IsSideLocalBrowser(Side));
-      int Params = FLAGMASK(Alternative, dfAlternative);
-
-      try
+    try
+    {
+      DebugAssert(FDeletedFiles == NULL);
+      TValueRestorer<TStrings *> DeletedFilesRestorer(FDeletedFiles, DeletedFiles.get());
+      TValueRestorer<TFileOperationFinishedEvent> OnFileOperationFinishedRestorer(FOnFileOperationFinished);
+      if (AllowMoveToQueue)
       {
-        DebugAssert(FDeletedFiles == NULL);
-        TValueRestorer<TStrings *> DeletedFilesRestorer(FDeletedFiles, DeletedFiles.get());
-        TValueRestorer<TFileOperationFinishedEvent> OnFileOperationFinishedRestorer(FOnFileOperationFinished);
         FOnFileOperationFinished = FileDeleted;
+      }
 
-        FMoveToQueue = false;
+      FMoveToQueue = false;
+
+      if (Remote)
+      {
+        DebugAssert(AllowMoveToQueue);
+        // Clone the file list as it may refer to current directory files, which get destroyed, when the directory is reloaded after the operation
+        PermanentFileList.reset(TRemoteFileList::CloneStrings(FileList));
+        DebugAssert(Terminal != NULL);
 
         Terminal->DeleteFiles(FileList, Params);
-
-        // Probably not needed for deleting, just for consistency with transfer code
-        if (FMoveToQueue)
+      }
+      else
+      {
+        if (AllowMoveToQueue) // optimization)
         {
-          Abort();
+          PermanentFileList.reset(CloneStrings(FileList));
+        }
+        if (IsLocalBrowserMode())
+        {
+          Configuration->Usage->Inc(L"LocalLocalDeletes");
+        }
+        TValueRestorer<TOperationSide> ProgressSideRestorer(FProgressSide, FCurrentSide);
+        try
+        {
+          TTerminalManager::Instance()->LocalTerminal->DeleteLocalFiles(FileList, Params);
+        }
+        __finally
+        {
+          ReloadLocalDirectory();
         }
       }
-      catch (EAbort &)
-      {
-        if (FMoveToQueue)
-        {
-          DeletedFiles->Sorted = true;
-          for (int Index = 0; Index < PermanentFileList->Count; Index++)
-          {
-            if (DeletedFiles->IndexOf(PermanentFileList->Strings[Index]) >= 0)
-            {
-              // We should always be deleting the first item => what can be used to optimize this code, if needed
-              DebugAssert(Index == 0);
-              PermanentFileList->Delete(Index);
-              Index--;
-            }
-          }
 
-          FMoveToQueue = false;
+      // Probably not needed for deleting, just for consistency with transfer code
+      if (FMoveToQueue)
+      {
+        Abort();
+      }
+    }
+    catch (EAbort &)
+    {
+      if (FMoveToQueue && DebugAlwaysTrue(AllowMoveToQueue) && DebugAlwaysTrue(Terminal != NULL))
+      {
+        FMoveToQueue = false;
+
+        DeletedFiles->Sorted = true;
+        for (int Index = 0; Index < PermanentFileList->Count; Index++)
+        {
+          if (DeletedFiles->IndexOf(PermanentFileList->Strings[Index]) >= 0)
+          {
+            // We should always be deleting the first item => what can be used to optimize this code, if needed
+            DebugAssert(Index == 0);
+            PermanentFileList->Delete(Index);
+            Index--;
+          }
+        }
+
+        if (Remote)
+        {
           Configuration->Usage->Inc("MovesToBackgroundDelete");
 
-          TQueueItem * QueueItem = new TDeleteQueueItem(Terminal, PermanentFileList.get(), Params);
+          TQueueItem * QueueItem = new TRemoteDeleteQueueItem(Terminal, PermanentFileList.get(), Params);
           AddQueueItem(Queue, QueueItem, Terminal);
-
-          ClearOperationSelection(osRemote);
         }
+        else
+        {
+          Configuration->Usage->Inc("MovesToBackgroundDeleteLocal");
+
+          TQueueItem * QueueItem = new TLocalDeleteQueueItem(PermanentFileList.get(), Params);
+          AddQueueItem(Queue, QueueItem, Terminal);
+        }
+
+        ClearOperationSelection(Side);
       }
     }
-    else
-    {
-      if (IsLocalBrowserMode())
-      {
-        Configuration->Usage->Inc(L"LocalLocalDeletes");
-      }
-      TValueRestorer<TOperationSide> ProgressSideRestorer(FProgressSide, FCurrentSide);
-      try
-      {
-        TTerminalManager::Instance()->LocalTerminal->DeleteLocalFiles(FileList, FLAGMASK(Alternative, dfAlternative));
-      }
-      __finally
-      {
-        ReloadLocalDirectory();
-      }
-    }
+
     FAlternativeDelete = false;
   }
   catch(...)
