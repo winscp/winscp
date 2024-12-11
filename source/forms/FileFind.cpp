@@ -613,6 +613,7 @@ TListItem * __fastcall TFileFindDialog::FileOperationFinished(const UnicodeStrin
 void __fastcall TFileFindDialog::FileDeleteFinished(
   TOperationSide, const UnicodeString & FileName, bool Success, bool NotCancelled)
 {
+  DebugUsedParam(NotCancelled);
   if (FileName.IsEmpty())
   {
     DebugAssert(Success && NotCancelled);
