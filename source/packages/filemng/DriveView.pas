@@ -1117,9 +1117,6 @@ var
 begin
   inherited;
 
-  if Assigned(PopupMenu) then
-    PopupMenu.Autopopup := False;
-
   FDragDropFilesEx.SourceEffects := [deCopy, deMove, deLink];
   FDragDropFilesEx.TargetEffects := [deCopy, deMove, deLink];
 

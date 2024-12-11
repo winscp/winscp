@@ -926,6 +926,8 @@ var
   Point: TPoint;
   PrevAutoPopup: Boolean;
 begin
+  // Not sure what is this exactly for, as without AutoPopup, the inherited WMContextMenu is almost noop.
+  // In general it would be better to override DoContextPopup
   PrevAutoPopup := False;
   try
     if Assigned(PopupMenu) then
