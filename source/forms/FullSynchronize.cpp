@@ -474,8 +474,8 @@ void __fastcall TFullSynchronizeDialog::OkButtonClick(TObject *)
     else
     {
       Beep();
+      ModalResult = mrNone;
     }
-    Abort();
   }
 }
 //---------------------------------------------------------------------------
