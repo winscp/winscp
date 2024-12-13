@@ -2913,6 +2913,16 @@ __int64 __fastcall TSynchronizeChecklist::TItem::GetBaseSize(TAction AAction) co
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::GetLocalPath() const
+{
+  return CombinePaths(Local.Directory, Local.FileName);
+}
+//---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::GetRemotePath() const
+{
+  return UnixCombinePaths(Remote.Directory, Remote.FileName);
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 TSynchronizeChecklist::TSynchronizeChecklist() :
   FList(new TList())
@@ -2933,11 +2943,8 @@ void TSynchronizeChecklist::Add(TItem * Item)
   FList->Add(Item);
 }
 //---------------------------------------------------------------------------
-int __fastcall TSynchronizeChecklist::Compare(void * AItem1, void * AItem2)
+int TSynchronizeChecklist::Compare(const TItem * Item1, const TItem * Item2)
 {
-  TItem * Item1 = static_cast<TItem *>(AItem1);
-  TItem * Item2 = static_cast<TItem *>(AItem2);
-
   int Result;
   if (!Item1->Local.Directory.IsEmpty())
   {
@@ -2955,6 +2962,11 @@ int __fastcall TSynchronizeChecklist::Compare(void * AItem1, void * AItem2)
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall TSynchronizeChecklist::Compare(void * AItem1, void * AItem2)
+{
+  return Compare(static_cast<TItem *>(AItem1), static_cast<TItem *>(AItem2));
 }
 //---------------------------------------------------------------------------
 void TSynchronizeChecklist::Sort()
@@ -2978,6 +2990,22 @@ int TSynchronizeChecklist::GetCheckedCount() const
     }
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+bool TSynchronizeChecklist::GetNextChecked(int & Index, const TItem *& AItem) const
+{
+  while (Index < Count)
+  {
+    const TItem * TheItem = Item[Index];
+    Index++;
+    if (TheItem->Checked)
+    {
+      AItem = TheItem;
+      return true;
+    }
+  }
+  AItem = NULL;
+  return false;
 }
 //---------------------------------------------------------------------------
 const TSynchronizeChecklist::TItem * TSynchronizeChecklist::GetItem(int Index) const
@@ -3119,13 +3147,11 @@ __int64 TSynchronizeProgress::GetProcessed(const TFileOperationProgressType * Cu
   {
     FTotalSize = 0;
 
-    for (int Index = 0; Index < FChecklist->Count; Index++)
+    int Index = 0;
+    const TSynchronizeChecklist::TItem * ChecklistItem;
+    while (FChecklist->GetNextChecked(Index, ChecklistItem))
     {
-      const TSynchronizeChecklist::TItem * ChecklistItem = FChecklist->Item[Index];
-      if (ChecklistItem->Checked)
-      {
-        FTotalSize += ItemSize(ChecklistItem);
-      }
+      FTotalSize += ItemSize(ChecklistItem);
     }
   }
 

@@ -364,13 +364,11 @@ public:
 
     if (RecordLocal)
     {
-      UnicodeString FileName = CombinePaths(Item->Local.Directory, Item->Local.FileName);
-      SynchronizeChecklistItemFileInfo(FileName, Item->IsDirectory, Item->Local);
+      SynchronizeChecklistItemFileInfo(Item->GetLocalPath(), Item->IsDirectory, Item->Local);
     }
     if (RecordRemote)
     {
-      UnicodeString FileName = UnixCombinePaths(Item->Remote.Directory, Item->Remote.FileName);
-      SynchronizeChecklistItemFileInfo(FileName, Item->IsDirectory, Item->Remote);
+      SynchronizeChecklistItemFileInfo(Item->GetRemotePath(), Item->IsDirectory, Item->Remote);
     }
   }
 

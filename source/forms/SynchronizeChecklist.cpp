@@ -203,12 +203,12 @@ struct TMoveActionData
         TObject * Object;
         if (Action == TSynchronizeChecklist::saDeleteRemote)
         {
-          FileName = UnixCombinePaths(ChecklistItem->Remote.Directory, ChecklistItem->Remote.FileName);
+          FileName = ChecklistItem->GetRemotePath();
           Object = ChecklistItem->RemoteFile;
         }
         else if (Action == TSynchronizeChecklist::saDeleteLocal)
         {
-          FileName = CombinePaths(ChecklistItem->Local.Directory, ChecklistItem->Local.FileName);
+          FileName = ChecklistItem->GetLocalPath();
         }
 
         bool CollectFile = !FileName.IsEmpty();
@@ -1087,20 +1087,7 @@ void __fastcall TSynchronizeChecklistDialog::ListViewCompare(
 
   if (Compare == 0)
   {
-    if (!ChecklistItem1->Local.Directory.IsEmpty())
-    {
-      Compare = AnsiCompareText(ChecklistItem1->Local.Directory, ChecklistItem2->Local.Directory);
-    }
-    else
-    {
-      DebugAssert(!ChecklistItem1->Remote.Directory.IsEmpty());
-      Compare = AnsiCompareText(ChecklistItem1->Remote.Directory, ChecklistItem2->Remote.Directory);
-    }
-
-    if (Compare == 0)
-    {
-      Compare = AnsiCompareText(ChecklistItem1->GetFileName(), ChecklistItem2->GetFileName());
-    }
+    Compare = TSynchronizeChecklist::Compare(ChecklistItem1, ChecklistItem2);
   }
 
   if (!ColProperties->SortAscending)
@@ -1147,16 +1134,10 @@ void __fastcall TSynchronizeChecklistDialog::CustomCommandsActionExecute(
              (GetChecklistItemAction(ChecklistItem) == TSynchronizeChecklist::saDownloadUpdate));
       DebugAssert(ChecklistItem->RemoteFile != NULL);
 
-      UnicodeString LocalPath =
-        IncludeTrailingBackslash(ChecklistItem->Local.Directory) +
-        ChecklistItem->Local.FileName;
-
+      UnicodeString LocalPath = ChecklistItem->GetLocalPath();
       LocalFileList->Add(LocalPath);
 
-      UnicodeString RemotePath =
-        UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) +
-        ChecklistItem->Remote.FileName;
-
+      UnicodeString RemotePath = ChecklistItem->GetRemotePath();
       RemoteFileList->AddObject(RemotePath, ChecklistItem->RemoteFile);
     }
   }

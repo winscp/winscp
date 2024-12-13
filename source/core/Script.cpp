@@ -1899,56 +1899,54 @@ void __fastcall TScript::SynchronizePreview(
   LocalDirectory = IncludeTrailingBackslash(LocalDirectory);
   RemoteDirectory = UnixIncludeTrailingBackslash(RemoteDirectory);
 
-  for (int Index = 0; (Index < Checklist->Count); Index++)
+  int Index = 0;
+  const TSynchronizeChecklist::TItem * Item;
+  while (Checklist->GetNextChecked(Index, Item))
   {
-    const TSynchronizeChecklist::TItem * Item = Checklist->Item[Index];
-    if (Item->Checked)
+    TDifferenceSessionAction Action(FTerminal->ActionLog, Item);
+
+    UnicodeString Message;
+    UnicodeString LocalRecord = SynchronizeFileRecord(LocalDirectory, Item, true);
+    UnicodeString RemoteRecord = SynchronizeFileRecord(RemoteDirectory, Item, false);
+
+    switch (Item->Action)
     {
-      TDifferenceSessionAction Action(FTerminal->ActionLog, Item);
+      case TSynchronizeChecklist::saUploadNew:
+        Message =
+          FMTLOAD(SCRIPT_SYNC_UPLOAD_NEW, (LocalRecord));
+        break;
 
-      UnicodeString Message;
-      UnicodeString LocalRecord = SynchronizeFileRecord(LocalDirectory, Item, true);
-      UnicodeString RemoteRecord = SynchronizeFileRecord(RemoteDirectory, Item, false);
+      case TSynchronizeChecklist::saDownloadNew:
+        Message =
+          FMTLOAD(SCRIPT_SYNC_DOWNLOAD_NEW, (RemoteRecord));
+        break;
 
-      switch (Item->Action)
-      {
-        case TSynchronizeChecklist::saUploadNew:
-          Message =
-            FMTLOAD(SCRIPT_SYNC_UPLOAD_NEW, (LocalRecord));
-          break;
+      case TSynchronizeChecklist::saUploadUpdate:
+        Message =
+          FMTLOAD(SCRIPT_SYNC_UPLOAD_UPDATE,
+            (LocalRecord, RemoteRecord));
+        break;
 
-        case TSynchronizeChecklist::saDownloadNew:
-          Message =
-            FMTLOAD(SCRIPT_SYNC_DOWNLOAD_NEW, (RemoteRecord));
-          break;
+      case TSynchronizeChecklist::saDownloadUpdate:
+        Message =
+          FMTLOAD(SCRIPT_SYNC_DOWNLOAD_UPDATE,
+            (RemoteRecord, LocalRecord));
+        break;
 
-        case TSynchronizeChecklist::saUploadUpdate:
-          Message =
-            FMTLOAD(SCRIPT_SYNC_UPLOAD_UPDATE,
-              (LocalRecord, RemoteRecord));
-          break;
+      case TSynchronizeChecklist::saDeleteRemote:
+        Message =
+          FMTLOAD(SCRIPT_SYNC_DELETE_REMOTE, (RemoteRecord));
+        break;
 
-        case TSynchronizeChecklist::saDownloadUpdate:
-          Message =
-            FMTLOAD(SCRIPT_SYNC_DOWNLOAD_UPDATE,
-              (RemoteRecord, LocalRecord));
-          break;
+      case TSynchronizeChecklist::saDeleteLocal:
+        Message =
+          FMTLOAD(SCRIPT_SYNC_DELETE_LOCAL, (LocalRecord));
+        break;
 
-        case TSynchronizeChecklist::saDeleteRemote:
-          Message =
-            FMTLOAD(SCRIPT_SYNC_DELETE_REMOTE, (RemoteRecord));
-          break;
-
-        case TSynchronizeChecklist::saDeleteLocal:
-          Message =
-            FMTLOAD(SCRIPT_SYNC_DELETE_LOCAL, (LocalRecord));
-          break;
-
-      default:
-        DebugFail();
-      }
-      PrintLine(Message);
+    default:
+      DebugFail();
     }
+    PrintLine(Message);
   }
 }
 //---------------------------------------------------------------------------
@@ -2089,13 +2087,9 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
           &CopyParam, SynchronizeParams, OnTerminalSynchronizeDirectory, NULL);
       try
       {
-        bool AnyChecked = false;
-        for (int Index = 0; !AnyChecked && (Index < Checklist->Count); Index++)
-        {
-          AnyChecked = Checklist->Item[Index]->Checked;
-        }
-
-        if (AnyChecked)
+        int Index = 0;
+        const TSynchronizeChecklist::TItem * DummyItem;
+        if (Checklist->GetNextChecked(Index, DummyItem))
         {
           if (Preview)
           {

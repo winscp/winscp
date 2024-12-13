@@ -6586,12 +6586,13 @@ void __fastcall TTerminal::SynchronizeApply(
     SyncCopyParam.CalculateSize = false;
 
     TSynchronizeChecklist::TItemList Items;
-    for (int Index = 0; Index < Checklist->Count; Index++)
+    int Index = 0;
+    const TSynchronizeChecklist::TItem * ChecklistItem;
+    while (Checklist->GetNextChecked(Index, ChecklistItem))
     {
-      const TSynchronizeChecklist::TItem * ChecklistItem = Checklist->Item[Index];
       // TSynchronizeChecklistDialog relies on us not to update a size of an item that had size already
       // See TSynchronizeChecklistDialog::UpdatedSynchronizationChecklistItems
-      if (ChecklistItem->Checked && !TSynchronizeChecklist::IsItemSizeIrrelevant(ChecklistItem->Action) &&
+      if (!TSynchronizeChecklist::IsItemSizeIrrelevant(ChecklistItem->Action) &&
           !ChecklistItem->HasSize() && DebugAlwaysTrue(ChecklistItem->IsDirectory))
       {
         Items.push_back(ChecklistItem);
@@ -6615,99 +6616,94 @@ void __fastcall TTerminal::SynchronizeApply(
   try
   {
     int Index = 0;
-    while (Index < Checklist->Count)
+    const TSynchronizeChecklist::TItem * ChecklistItem;
+    while (Checklist->GetNextChecked(Index, ChecklistItem))
     {
-      const TSynchronizeChecklist::TItem * ChecklistItem = Checklist->Item[Index];
-      if (ChecklistItem->Checked)
+      if (!SamePaths(Data.LocalDirectory, ChecklistItem->Local.Directory) ||
+          !UnixSamePath(Data.RemoteDirectory, ChecklistItem->Remote.Directory))
       {
-        if (!SamePaths(Data.LocalDirectory, ChecklistItem->Local.Directory) ||
-            !UnixSamePath(Data.RemoteDirectory, ChecklistItem->Remote.Directory))
+        Data.LocalDirectory = IncludeTrailingBackslash(ChecklistItem->Local.Directory);
+        Data.RemoteDirectory = UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory);
+
+        LogEvent(
+          FORMAT(L"Synchronizing local directory '%s' with remote directory '%s', params = 0x%x (%s)",
+          (Data.LocalDirectory, Data.RemoteDirectory, int(Params), SynchronizeParamsStr(Params))));
+
+        DoSynchronizeProgress(Data, false);
+      }
+
+      std::unique_ptr<TStringList> FileList(new TStringList());
+
+      UnicodeString LocalPath = ChecklistItem->GetLocalPath();
+      UnicodeString RemotePath = ChecklistItem->GetRemotePath();
+      bool Result = true;
+
+      if (FLAGSET(Params, spTimestamp))
+      {
+        // used by SynchronizeLocalTimestamp and SynchronizeRemoteTimestamp
+        TObject * ChecklistItemToken = const_cast<TObject *>(reinterpret_cast<const TObject *>(ChecklistItem));
+        switch (ChecklistItem->Action)
         {
-          Data.LocalDirectory = IncludeTrailingBackslash(ChecklistItem->Local.Directory);
-          Data.RemoteDirectory = UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory);
+          case TSynchronizeChecklist::saDownloadUpdate:
+            FileList->AddObject(RemotePath, ChecklistItemToken);
+            ProcessFiles(FileList.get(), foSetProperties, SynchronizeLocalTimestamp, NULL, osLocal);
+            break;
 
-          LogEvent(
-            FORMAT(L"Synchronizing local directory '%s' with remote directory '%s', params = 0x%x (%s)",
-            (Data.LocalDirectory, Data.RemoteDirectory, int(Params), SynchronizeParamsStr(Params))));
+          case TSynchronizeChecklist::saUploadUpdate:
+            FileList->AddObject(LocalPath, ChecklistItemToken);
+            ProcessFiles(FileList.get(), foSetProperties, SynchronizeRemoteTimestamp);
+            break;
 
-          DoSynchronizeProgress(Data, false);
+          default:
+            DebugFail();
+            Result = false;
+            break;
         }
-
-        std::unique_ptr<TStringList> FileList(new TStringList());
-
-        UnicodeString LocalPath = IncludeTrailingBackslash(ChecklistItem->Local.Directory) + ChecklistItem->Local.FileName;
-        UnicodeString RemotePath = UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) + ChecklistItem->Remote.FileName;
-        bool Result = true;
-
-        if (FLAGSET(Params, spTimestamp))
+      }
+      else
+      {
+        TCopyParamType ItemCopyParam = SyncCopyParam;
+        ItemCopyParam.Size = ChecklistItem->HasSize() ? ChecklistItem->GetSize() : -1;
+        switch (ChecklistItem->Action)
         {
-          // used by SynchronizeLocalTimestamp and SynchronizeRemoteTimestamp
-          TObject * ChecklistItemToken = const_cast<TObject *>(reinterpret_cast<const TObject *>(ChecklistItem));
-          switch (ChecklistItem->Action)
-          {
-            case TSynchronizeChecklist::saDownloadUpdate:
-              FileList->AddObject(RemotePath, ChecklistItemToken);
-              ProcessFiles(FileList.get(), foSetProperties, SynchronizeLocalTimestamp, NULL, osLocal);
-              break;
+          case TSynchronizeChecklist::saDownloadNew:
+          case TSynchronizeChecklist::saDownloadUpdate:
+            FileList->AddObject(RemotePath, ChecklistItem->RemoteFile);
+            Result = CopyToLocal(FileList.get(), Data.LocalDirectory, &ItemCopyParam, CopyParams, NULL);
+            break;
 
-            case TSynchronizeChecklist::saUploadUpdate:
-              FileList->AddObject(LocalPath, ChecklistItemToken);
-              ProcessFiles(FileList.get(), foSetProperties, SynchronizeRemoteTimestamp);
-              break;
+          case TSynchronizeChecklist::saDeleteRemote:
+            FileList->AddObject(RemotePath, ChecklistItem->RemoteFile);
+            Result = DeleteFiles(FileList.get());
+            break;
 
-            default:
-              DebugFail();
-              Result = false;
-              break;
-          }
-        }
-        else
-        {
-          TCopyParamType ItemCopyParam = SyncCopyParam;
-          ItemCopyParam.Size = ChecklistItem->HasSize() ? ChecklistItem->GetSize() : -1;
-          switch (ChecklistItem->Action)
-          {
-            case TSynchronizeChecklist::saDownloadNew:
-            case TSynchronizeChecklist::saDownloadUpdate:
-              FileList->AddObject(RemotePath, ChecklistItem->RemoteFile);
-              Result = CopyToLocal(FileList.get(), Data.LocalDirectory, &ItemCopyParam, CopyParams, NULL);
-              break;
+          case TSynchronizeChecklist::saUploadNew:
+          case TSynchronizeChecklist::saUploadUpdate:
+            FileList->Add(LocalPath);
+            Result = CopyToRemote(FileList.get(), Data.RemoteDirectory, &ItemCopyParam, CopyParams, NULL);
+            break;
 
-            case TSynchronizeChecklist::saDeleteRemote:
-              FileList->AddObject(RemotePath, ChecklistItem->RemoteFile);
-              Result = DeleteFiles(FileList.get());
-              break;
+          case TSynchronizeChecklist::saDeleteLocal:
+            FileList->Add(LocalPath);
+            Result = DeleteLocalFiles(FileList.get());
+            break;
 
-            case TSynchronizeChecklist::saUploadNew:
-            case TSynchronizeChecklist::saUploadUpdate:
-              FileList->Add(LocalPath);
-              Result = CopyToRemote(FileList.get(), Data.RemoteDirectory, &ItemCopyParam, CopyParams, NULL);
-              break;
-
-            case TSynchronizeChecklist::saDeleteLocal:
-              FileList->Add(LocalPath);
-              Result = DeleteLocalFiles(FileList.get());
-              break;
-
-            default:
-              DebugFail();
-              Result = false;
-              break;
-          }
-        }
-
-        if (!Result)
-        {
-          Abort();
-        }
-
-        if (OnProcessedItem != NULL)
-        {
-          OnProcessedItem(Token, ChecklistItem);
+          default:
+            DebugFail();
+            Result = false;
+            break;
         }
       }
 
-      Index++;
+      if (!Result)
+      {
+        Abort();
+      }
+
+      if (OnProcessedItem != NULL)
+      {
+        OnProcessedItem(Token, ChecklistItem);
+      }
     }
   }
   __finally
@@ -6738,11 +6734,12 @@ void __fastcall TTerminal::SynchronizeChecklistCalculateSize(
     {
       if (ChecklistItem->IsRemoteOnly())
       {
-        RemoteFileList->AddObject(ChecklistItem->RemoteFile->FullFileName, ChecklistItem->RemoteFile);
+        DebugAssert(UnixSamePath(ChecklistItem->RemoteFile->FullFileName, ChecklistItem->GetRemotePath()));
+        RemoteFileList->AddObject(ChecklistItem->GetRemotePath(), ChecklistItem->RemoteFile);
       }
       else if (ChecklistItem->IsLocalOnly())
       {
-        LocalFileList->Add(IncludeTrailingBackslash(ChecklistItem->Local.Directory) + ChecklistItem->Local.FileName);
+        LocalFileList->Add(ChecklistItem->GetLocalPath());
       }
       else
       {
@@ -6841,9 +6838,7 @@ void __fastcall TTerminal::SynchronizeLocalTimestamp(const UnicodeString /*FileN
   const TSynchronizeChecklist::TItem * ChecklistItem =
     reinterpret_cast<const TSynchronizeChecklist::TItem *>(File);
 
-  UnicodeString LocalFile =
-    IncludeTrailingBackslash(ChecklistItem->Local.Directory) +
-      ChecklistItem->Local.FileName;
+  UnicodeString LocalFile = ChecklistItem->GetLocalPath();
 
   FILE_OPERATION_LOOP_BEGIN
   {
@@ -6874,9 +6869,7 @@ void __fastcall TTerminal::SynchronizeRemoteTimestamp(const UnicodeString /*File
   Properties.Modification = ConvertTimestampToUnix(ChecklistItem->FLocalLastWriteTime,
     SessionData->DSTMode);
 
-  ChangeFileProperties(
-    UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) + ChecklistItem->Remote.FileName,
-    NULL, &Properties);
+  ChangeFileProperties(ChecklistItem->GetRemotePath(), NULL, &Properties);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::FileFind(UnicodeString FileName,

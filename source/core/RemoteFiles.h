@@ -499,6 +499,9 @@ public:
     __int64 __fastcall GetBaseSize() const;
     __int64 __fastcall GetSize() const;
     __int64 __fastcall GetSize(TAction AAction) const;
+    UnicodeString GetLocalPath() const;
+    // Contrary to RemoteFile->FullFileName, this does not include trailing slash for directories
+    UnicodeString GetRemotePath() const;
 
     ~TItem();
 
@@ -520,10 +523,13 @@ public:
 
   static TAction __fastcall Reverse(TAction Action);
   static bool __fastcall IsItemSizeIrrelevant(TAction Action);
+  bool GetNextChecked(int & Index, const TItem *& Item) const;
 
   __property int Count = { read = GetCount };
   __property int CheckedCount = { read = GetCheckedCount };
   __property const TItem * Item[int Index] = { read = GetItem };
+
+  static int Compare(const TItem * Item1, const TItem * Item2);
 
 protected:
   TSynchronizeChecklist();
