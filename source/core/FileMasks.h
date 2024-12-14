@@ -215,7 +215,7 @@ private:
   void __fastcall Init(
     TSessionData * SessionData, const UnicodeString & AUserName,
     const UnicodeString & Password, const UnicodeString & HostKey);
-  TSessionData * __fastcall GetSesssionData() const;
+  TSessionData * __fastcall GetSessionData() const;
 };
 //---------------------------------------------------------------------------
 class TFileCustomCommand : public TCustomCommand

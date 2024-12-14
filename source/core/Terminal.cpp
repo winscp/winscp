@@ -874,7 +874,7 @@ void TParallelOperation::Done(
 
             if (!FParallelFileMerging)
             {
-              // Once we obtain "merging" semaphor, we won't leave until everything is merged
+              // Once we obtain "merging" semaphore, we won't leave until everything is merged
               TAutoFlag MergingFlag(FParallelFileMerging);
 
               try
@@ -3199,7 +3199,7 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(
             break;
         }
 
-        // we user has not selected another batch overwrite mode,
+        // if user has not selected another batch overwrite mode,
         // keep the current one. note that we may get here even
         // when batch overwrite was selected already, but it could not be applied
         // to current transfer (see condition above)
@@ -9020,7 +9020,7 @@ __fastcall TSecondaryTerminal::TSecondaryTerminal(
   FMainTerminal(MainTerminal)
 {
   Log->SetParent(FMainTerminal->Log, Name);
-  SessionData->NonPersistant();
+  SessionData->NonPersistent();
   DebugAssert(FMainTerminal != NULL);
   FMainTerminal->FSecondaryTerminals++;
   if (SessionData->TunnelLocalPortNumber != 0)

@@ -477,8 +477,8 @@ void __fastcall RetrieveNeonCertificateData(
     Data.FingerprintSHA1 = StrFromNeon(FingerprintSHA1);
   }
 
-  char * FingeprintSHA256 = ne_ssl_cert_hdigest(Certificate, NE_HASH_SHA256);
-  if (DebugAlwaysFalse(FingeprintSHA256 == NULL))
+  char * FingerprintSHA256 = ne_ssl_cert_hdigest(Certificate, NE_HASH_SHA256);
+  if (DebugAlwaysFalse(FingerprintSHA256 == NULL))
   {
     Data.FingerprintSHA256 = Unknown;
   }
@@ -494,7 +494,7 @@ void __fastcall RetrieveNeonCertificateData(
       }
     }
     Data.FingerprintSHA256 = Buf;
-    ne_free(FingeprintSHA256);
+    ne_free(FingerprintSHA256);
   }
 
   Data.AsciiCert = NeonExportCertificate(Certificate);

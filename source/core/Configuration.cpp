@@ -273,7 +273,7 @@ void __fastcall TConfiguration::Default()
   FLogActionsRequired = false;
   FActionsLogFileName = L"%TEMP%\\!S.xml";
   FPermanentActionsLogFileName = FActionsLogFileName;
-  FProgramIniPathWrittable = -1;
+  FProgramIniPathWritable = -1;
   FCustomIniFileStorageName = LoadCustomIniFileStorageName();
 
   Changed();
@@ -1462,14 +1462,14 @@ UnicodeString __fastcall TConfiguration::GetAutomaticIniFileStorageName(bool Rea
     else
     {
       // avoid expensive test if we are interested in existing files only
-      if (!ReadingOnly && (FProgramIniPathWrittable < 0))
+      if (!ReadingOnly && (FProgramIniPathWritable < 0))
       {
         UnicodeString ProgramDir = ExtractFilePath(ProgramPath);
-        FProgramIniPathWrittable = IsDirectoryWriteable(ProgramDir) ? 1 : 0;
+        FProgramIniPathWritable = IsDirectoryWriteable(ProgramDir) ? 1 : 0;
       }
 
       // does not really matter what we return when < 0
-      IniPath = (FProgramIniPathWrittable == 0) ? AppDataIniPath : ProgramIniPath;
+      IniPath = (FProgramIniPathWritable == 0) ? AppDataIniPath : ProgramIniPath;
     }
   }
 

@@ -849,9 +849,9 @@ void __fastcall TSessionLog::DoAddToSelf(TLogLineType Type, const UnicodeString 
           UtfLine.Insert('\r', Index);
         }
       }
-      int Writting = UtfLine.Length();
-      CheckSize(Writting);
-      FCurrentFileSize += fwrite(UtfLine.c_str(), 1, Writting, (FILE *)FFile);
+      int Writing = UtfLine.Length();
+      CheckSize(Writing);
+      FCurrentFileSize += fwrite(UtfLine.c_str(), 1, Writing, (FILE *)FFile);
     }
   }
 }

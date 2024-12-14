@@ -510,7 +510,7 @@ public:
   TSessionData * __fastcall Clone();
   void __fastcall Default();
   void __fastcall DefaultSettings();
-  void __fastcall NonPersistant();
+  void __fastcall NonPersistent();
   void __fastcall Load(THierarchicalStorage * Storage, bool PuttyImport);
   void __fastcall ApplyRawSettings(TStrings * RawSettings, bool Unsafe);
   void __fastcall ApplyRawSettings(THierarchicalStorage * Storage, bool Unsafe, bool RespectDisablePasswordStoring);
@@ -819,7 +819,7 @@ private:
     TSessionData * Data, const UnicodeString & Name);
   void __fastcall ImportLevelFromFilezilla(_di_IXMLNode Node, const UnicodeString & Path, _di_IXMLNode SettingsNode);
   void __fastcall DoGetFolderOrWorkspace(const UnicodeString & Name, TList * List, bool NoRecrypt);
-  static THierarchicalStorage * __fastcall CreateHostKeysStorageForWritting();
+  static THierarchicalStorage * __fastcall CreateHostKeysStorageForWriting();
 };
 //---------------------------------------------------------------------------
 UnicodeString GetExpandedLogFileName(UnicodeString LogFileName, TDateTime Started, TSessionData * SessionData);
