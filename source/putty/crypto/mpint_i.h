@@ -317,7 +317,9 @@ struct MontyContext {
      * Persistent scratch space from which monty_* functions can
      * allocate storage for intermediate values.
      */
-    mp_int *scratch;
+    // WINSCP: this is volatile member that needs to be guarded for thread-safety
+    // We want to know if it starts being used elsewhre/otherwise.
+    mp_int *winscp_guarded_scratch;
 };
 
 /* Functions shared between mpint.c and mpunsafe.c */

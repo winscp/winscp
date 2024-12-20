@@ -13,6 +13,9 @@
 #include "mpint.h"
 #include "mpint_i.h"
 
+// for WINSCP_PUTTY_SECTION_*
+#include "putty.h"
+
 #pragma warn -ngu // WINSCP
 
 #define SIZE_T_BITS (CHAR_BIT * sizeof(size_t))
@@ -1507,7 +1510,7 @@ MontyContext *monty_new(mp_int *modulus)
         mc->powers_of_r_mod_m[j] = mp_modmul(
             mc->powers_of_r_mod_m[0], mc->powers_of_r_mod_m[j-1], mc->m);
 
-    mc->scratch = mp_make_sized(monty_scratch_size(mc));
+    mc->winscp_guarded_scratch = mp_make_sized(monty_scratch_size(mc));
 
     return mc;
     } // WINSCP
@@ -1520,7 +1523,7 @@ void monty_free(MontyContext *mc)
     for (j = 0; j < 3; j++)
         mp_free(mc->powers_of_r_mod_m[j]);
     mp_free(mc->minus_minv_mod_r);
-    mp_free(mc->scratch);
+    mp_free(mc->winscp_guarded_scratch);
     smemclr(mc, sizeof(*mc));
     sfree(mc);
 }
@@ -1585,16 +1588,18 @@ void monty_mul_into(MontyContext *mc, mp_int *r, mp_int *x, mp_int *y)
     assert(x->nw <= mc->rw);
     assert(y->nw <= mc->rw);
 
+    WINSCP_PUTTY_SECTION_ENTER;
     { // WINSCP
-    mp_int scratch = *mc->scratch;
+    mp_int scratch = *mc->winscp_guarded_scratch;
     mp_int tmp = mp_alloc_from_scratch(&scratch, 2*mc->rw);
     mp_mul_into(&tmp, x, y);
     { // WINSCP
     mp_int reduced = monty_reduce_internal(mc, &tmp, scratch);
     mp_copy_into(r, &reduced);
-    mp_clear(mc->scratch);
+    mp_clear(mc->winscp_guarded_scratch);
     } // WINSCP
     } // WINSCP
+    WINSCP_PUTTY_SECTION_LEAVE;
 }
 
 mp_int *monty_mul(MontyContext *mc, mp_int *x, mp_int *y)
@@ -1647,10 +1652,14 @@ void monty_import_into(MontyContext *mc, mp_int *r, mp_int *x)
  */
 void monty_export_into(MontyContext *mc, mp_int *r, mp_int *x)
 {
-    pinitassert(x->nw <= 2*mc->rw);
-    mp_int reduced = monty_reduce_internal(mc, x, *mc->scratch);
+    assert(x->nw <= 2*mc->rw);
+    WINSCP_PUTTY_SECTION_ENTER;
+    { // WINSCP
+    mp_int reduced = monty_reduce_internal(mc, x, *mc->winscp_guarded_scratch);
     mp_copy_into(r, &reduced);
-    mp_clear(mc->scratch);
+    mp_clear(mc->winscp_guarded_scratch);
+    WINSCP_PUTTY_SECTION_LEAVE;
+    } // WINSCP
 }
 
 mp_int *monty_export(MontyContext *mc, mp_int *x)
@@ -1783,7 +1792,9 @@ mp_int *monty_pow(MontyContext *mc, mp_int *base, mp_int *exponent)
     for (i = 0; i < MODPOW_WINDOW_SIZE; i++)
         mp_free(table[i]);
     mp_free(table_entry);
-    mp_clear(mc->scratch);
+    WINSCP_PUTTY_SECTION_ENTER;
+    mp_clear(mc->winscp_guarded_scratch);
+    WINSCP_PUTTY_SECTION_LEAVE;
     return out;
     } // WINSCP
     } // WINSCP

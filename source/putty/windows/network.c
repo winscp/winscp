@@ -904,7 +904,9 @@ static Socket *sk_net_accept(accept_ctx_t ctx, Plug *plug)
         return &s->sock;
     }
 
+    WINSCP_PUTTY_SECTION_ENTER;
     add234(sktree, s);
+    WINSCP_PUTTY_SECTION_LEAVE;
 
     return &s->sock;
 }
@@ -957,7 +959,9 @@ static DWORD try_connect(NetSocket *sock,
      * sorting criterion. We'll add it back before exiting this
      * function, whether we changed anything or not.
      */
+    WINSCP_PUTTY_SECTION_ENTER;
     del234(sktree, sock);
+    WINSCP_PUTTY_SECTION_LEAVE;
 
     s = p_socket(family, SOCK_STREAM, 0);
     sock->s = s;
@@ -1170,7 +1174,9 @@ static DWORD try_connect(NetSocket *sock,
     /*
      * No matter what happened, put the socket back in the tree.
      */
+    WINSCP_PUTTY_SECTION_ENTER;
     add234(sktree, sock);
+    WINSCP_PUTTY_SECTION_LEAVE;
 
     if (err) {
         SockAddr thisaddr = sk_extractaddr_tmp(
@@ -1420,7 +1426,9 @@ static Socket *sk_newlistener_internal(
         return &s->sock;
     }
 
+    WINSCP_PUTTY_SECTION_ENTER;
     add234(sktree, s);
+    WINSCP_PUTTY_SECTION_LEAVE;
 
 #ifndef NO_IPV6
     /*
@@ -1482,7 +1490,9 @@ static void sk_net_close(Socket *sock)
 
     bufchain_clear(&s->output_data);
 
+    WINSCP_PUTTY_SECTION_ENTER;
     del234(sktree, s);
+    WINSCP_PUTTY_SECTION_LEAVE;
 #ifdef MPEXT
     do_select(s->plug, s->s, false);
 #else
@@ -1519,7 +1529,11 @@ static void socket_error_callback(void *vs)
      * Just in case other socket work has caused this socket to vanish
      * or become somehow non-erroneous before this callback arrived...
      */
-    if (!find234(sktree, s, NULL) || !s->pending_error)
+    int nr;
+    WINSCP_PUTTY_SECTION_ENTER;
+    nr = !find234(sktree, s, NULL) || !s->pending_error;
+    WINSCP_PUTTY_SECTION_LEAVE;
+    if (nr)
         return;
 
     /*
@@ -1683,7 +1697,9 @@ void select_result(WPARAM wParam, LPARAM lParam)
     if (wParam == 0)
         return;                /* boggle */
 
+    WINSCP_PUTTY_SECTION_ENTER;
     s = find234(sktree, (void *) wParam, cmpforsearch);
+    WINSCP_PUTTY_SECTION_LEAVE;
     if (!s)
         return;                /* boggle */
 
@@ -1949,6 +1965,9 @@ static void sk_net_set_frozen(Socket *sock, bool is_frozen)
     s->frozen_readable = false;
 }
 
+#ifndef WINSCP
+// WINSCP: if ever needed, do not forget about guarding access to sktree
+
 void socket_reselect_all(void)
 {
     NetSocket *s;
@@ -1956,11 +1975,7 @@ void socket_reselect_all(void)
 
     for (i = 0; (s = index234(sktree, i)) != NULL; i++) {
         if (!s->frozen)
-#ifdef MPEXT
-            do_select(s->plug, s->s, true);
-#else
             do_select(s->s, true);
-#endif
     }
 }
 
@@ -1990,6 +2005,7 @@ bool socket_writable(SOCKET skt)
     else
         return false;
 }
+#endif
 
 int net_service_lookup(const char *service)
 {
