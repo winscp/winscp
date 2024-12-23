@@ -1392,33 +1392,20 @@ void __fastcall TCustomScpExplorerForm::AddQueueItem(
 {
   DebugAssert(Queue != NULL);
 
-  bool SingleFile = false;
-  if (FileList->Count == 1)
-  {
-    if (Direction == tdToRemote)
-    {
-      UnicodeString FileName = FileList->Strings[0];
-      SingleFile = FileExists(ApiPath(FileName));
-    }
-    else
-    {
-      TRemoteFile * File = static_cast<TRemoteFile *>(FileList->Objects[0]);
-      SingleFile = !File->IsDirectory;
-    }
-  }
-
   TQueueItem * QueueItem;
   if (Direction == tdToRemote)
   {
     CopyParam.IncludeFileMask.SetRoots(FileList, TargetDirectory);
-    QueueItem = new TUploadQueueItem(Terminal, FileList, TargetDirectory,
-      &CopyParam, Params, SingleFile, CopyParam.QueueParallel);
+    QueueItem =
+      new TUploadQueueItem(
+        Terminal, FileList, TargetDirectory, &CopyParam, Params, CopyParam.QueueParallel);
   }
   else
   {
     CopyParam.IncludeFileMask.SetRoots(TargetDirectory, FileList);
-    QueueItem = new TDownloadQueueItem(Terminal, FileList, TargetDirectory,
-      &CopyParam, Params, SingleFile, CopyParam.QueueParallel);
+    QueueItem =
+      new TDownloadQueueItem(
+        Terminal, FileList, TargetDirectory, &CopyParam, Params, CopyParam.QueueParallel);
   }
   AddQueueItem(Queue, QueueItem, Terminal);
 }
@@ -3942,7 +3929,7 @@ public:
   __fastcall TEditorUploadQueueItem(
       TTerminal * Terminal, TStrings * FilesToCopy, const UnicodeString & TargetDir,
       const TCopyParamType * CopyParam, int Params) :
-    TUploadQueueItem(Terminal, FilesToCopy, TargetDir, CopyParam, Params, true, false)
+    TUploadQueueItem(Terminal, FilesToCopy, TargetDir, CopyParam, Params, false)
   {
   }
 
@@ -6411,6 +6398,24 @@ void __fastcall TCustomScpExplorerForm::DoFullSynchronize(
   FullSynchronize(Params, OnProcessedItem, OnUpdatedSynchronizationChecklistItems);
 }
 //---------------------------------------------------------------------------
+void TCustomScpExplorerForm::DoQueueSynchronize(void * Token)
+{
+  TSynchronizeParams & Params = *static_cast<TSynchronizeParams *>(Token);
+
+  int CopyParams = TTerminal::GetSynchronizeCopyParams(Params.Params);
+  TCopyParamType SyncCopyParam = TTerminal::GetSynchronizeCopyParam(Params.CopyParam, Params.Params);
+
+  bool Parallel = GUIConfiguration->CurrentCopyParam.QueueParallel;
+
+  int Index = 0;
+  const TSynchronizeChecklist::TItem * ChecklistItem;
+  while (Params.Checklist->GetNextChecked(Index, ChecklistItem))
+  {
+    TQueueItem * QueueItem = Terminal->SynchronizeToQueue(ChecklistItem, &SyncCopyParam, CopyParams, Parallel);
+    AddQueueItem(Queue, QueueItem, Terminal);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DoSynchronizeChecklistCalculateSize(
   TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items, void * Token)
 {
@@ -6638,9 +6643,15 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
       {
         if (FLAGSET(Params, TTerminal::spPreviewChanges))
         {
+          TQueueSynchronizeEvent OnQueueSynchronize = NULL;
+          if (Visible && FLAGCLEAR(Params, TTerminal::spTimestamp))
+          {
+            OnQueueSynchronize = DoQueueSynchronize;
+          }
           if (!DoSynchronizeChecklistDialog(
                 Checklist, Mode, Params, LocalDirectory, RemoteDirectory, CustomCommandMenu, DoFullSynchronize,
-                DoSynchronizeChecklistCalculateSize, DoSynchronizeMove, DoSynchronizeBrowse, &SynchronizeParams))
+                OnQueueSynchronize, DoSynchronizeChecklistCalculateSize, DoSynchronizeMove, DoSynchronizeBrowse,
+                &SynchronizeParams))
           {
             Result = -1;
           }

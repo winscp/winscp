@@ -2281,10 +2281,18 @@ static void ExtractLocalSourcePath(TStrings * Files, UnicodeString & Path)
   Path = ExtractFileDir(IncludeTrailingBackslash(Path));
 }
 //---------------------------------------------------------------------------
-__fastcall TUploadQueueItem::TUploadQueueItem(TTerminal * Terminal,
-  TStrings * FilesToCopy, const UnicodeString & TargetDir,
-  const TCopyParamType * CopyParam, int Params, bool SingleFile, bool Parallel) :
-  TTransferQueueItem(Terminal, FilesToCopy, TargetDir, CopyParam, Params, osLocal, SingleFile, Parallel)
+static bool IsSingleFileUpload(TStrings * FilesToCopy)
+{
+  return
+    (FilesToCopy->Count == 1) &&
+    FileExists(ApiPath(FilesToCopy->Strings[0]));
+}
+//---------------------------------------------------------------------------
+__fastcall TUploadQueueItem::TUploadQueueItem(
+    TTerminal * Terminal, TStrings * FilesToCopy, const UnicodeString & TargetDir,
+    const TCopyParamType * CopyParam, int Params, bool Parallel) :
+  TTransferQueueItem(
+    Terminal, FilesToCopy, TargetDir, CopyParam, Params, osLocal, IsSingleFileUpload(FilesToCopy), Parallel)
 {
   if (FilesToCopy->Count > 1)
   {
@@ -2392,10 +2400,18 @@ static void ExtractRemoteSourcePath(TTerminal * Terminal, TStrings * Files, Unic
   Path = UnixExcludeTrailingBackslash(Path);
 }
 //---------------------------------------------------------------------------
+static bool IsSingleFileDownload(TStrings * FilesToCopy)
+{
+  return
+    (FilesToCopy->Count == 1) &&
+    !static_cast<TRemoteFile *>(FilesToCopy->Objects[0])->IsDirectory;
+}
+//---------------------------------------------------------------------------
 __fastcall TDownloadQueueItem::TDownloadQueueItem(TTerminal * Terminal,
-  TStrings * FilesToCopy, const UnicodeString & TargetDir,
-  const TCopyParamType * CopyParam, int Params, bool SingleFile, bool Parallel) :
-  TTransferQueueItem(Terminal, FilesToCopy, TargetDir, CopyParam, Params, osRemote, SingleFile, Parallel)
+    TStrings * FilesToCopy, const UnicodeString & TargetDir,
+    const TCopyParamType * CopyParam, int Params, bool Parallel) :
+  TTransferQueueItem(
+    Terminal, FilesToCopy, TargetDir, CopyParam, Params, osRemote, IsSingleFileDownload(FilesToCopy), Parallel)
 {
   if (FilesToCopy->Count > 1)
   {

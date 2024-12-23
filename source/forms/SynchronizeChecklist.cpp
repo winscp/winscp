@@ -33,13 +33,14 @@ bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
   TSynchronizeMode Mode, int Params,
   const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
   TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
+  TQueueSynchronizeEvent OnQueueSynchronize,
   TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
   TSynchronizeBrowseEvent OnSynchronizeBrowse, void * Token)
 {
   std::unique_ptr<TSynchronizeChecklistDialog> Dialog(
     new TSynchronizeChecklistDialog(
       Application, Mode, Params, LocalDirectory, RemoteDirectory, OnCustomCommandMenu, OnSynchronize,
-      OnSynchronizeChecklistCalculateSize, OnSynchronizeMove, OnSynchronizeBrowse, Token));
+      OnQueueSynchronize, OnSynchronizeChecklistCalculateSize, OnSynchronizeMove, OnSynchronizeBrowse, Token));
   return Dialog->Execute(Checklist);
 }
 //---------------------------------------------------------------------
@@ -47,6 +48,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   TComponent * AOwner, TSynchronizeMode Mode, int Params,
   const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
   TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
+  TQueueSynchronizeEvent OnQueueSynchronize,
   TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
   TSynchronizeBrowseEvent OnSynchronizeBrowse, void * Token)
   : TForm(AOwner)
@@ -62,6 +64,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FOnSynchronizeBrowse = OnSynchronizeBrowse;
   DebugAssert(OnSynchronize != NULL);
   FOnSynchronize = OnSynchronize;
+  FOnQueueSynchronize = OnQueueSynchronize;
   FToken = Token;
   UseSystemSettings(this);
   UseDesktopFont(ListView);
@@ -88,6 +91,12 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   CustomCommandsButton2->Visible = CustomCommandsAction->Visible;
   MenuButton(CustomCommandsButton2);
   MenuButton(ToolsMenuButton);
+
+  // Other dialogs use !IsMainFormLike
+  if (FOnQueueSynchronize != NULL)
+  {
+    OkButton->Style = TCustomButton::bsSplitButton;
+  }
 }
 //---------------------------------------------------------------------
 __fastcall TSynchronizeChecklistDialog::~TSynchronizeChecklistDialog()
@@ -1306,7 +1315,7 @@ void __fastcall TSynchronizeChecklistDialog::UpdatedSynchronizationChecklistItem
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::OkButtonClick(TObject * /*Sender*/)
+void TSynchronizeChecklistDialog::DoSynchronize(bool Queue)
 {
   ListView->SelectAll(smNone);
   for (int Index = 0; Index < ListView->Items->Count; Index++)
@@ -1320,11 +1329,34 @@ void __fastcall TSynchronizeChecklistDialog::OkButtonClick(TObject * /*Sender*/)
   UpdateControls();
   try
   {
-    FOnSynchronize(FToken, ProcessedItem, UpdatedSynchronizationChecklistItems);
+    if (Queue)
+    {
+      FOnQueueSynchronize(FToken);
+    }
+    else
+    {
+      FOnSynchronize(FToken, ProcessedItem, UpdatedSynchronizationChecklistItems);
+    }
   }
   catch (Exception & E)
   {
     FException.reset(CloneException(&E));
+  }
+
+  // Needed when called from the drop down menu
+  ModalResult = OkButton->ModalResult;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::OkButtonClick(TObject *)
+{
+  bool Queue = OpenInNewWindow();
+  if (Queue && (FOnQueueSynchronize == NULL))
+  {
+    Beep();
+  }
+  else
+  {
+    DoSynchronize(Queue);
   }
 }
 //---------------------------------------------------------------------------
@@ -1786,5 +1818,20 @@ void __fastcall TSynchronizeChecklistDialog::FindMoveCandidateActionExecute(TObj
   {
     MessageBeep(MB_ICONHAND);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::StartItemClick(TObject *)
+{
+  DoSynchronize(false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::OkButtonDropDownClick(TObject *)
+{
+  MenuPopup(OkPopupMenu, OkButton);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::StartQueueItemClick(TObject *)
+{
+  DoSynchronize(true);
 }
 //---------------------------------------------------------------------------

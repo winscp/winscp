@@ -502,6 +502,9 @@ public:
     UnicodeString GetLocalPath() const;
     // Contrary to RemoteFile->FullFileName, this does not include trailing slash for directories
     UnicodeString GetRemotePath() const;
+    UnicodeString GetLocalTarget() const;
+    UnicodeString GetRemoteTarget() const;
+    TStrings * GetFileList() const;
 
     ~TItem();
 

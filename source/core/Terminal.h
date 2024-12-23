@@ -31,6 +31,7 @@ class TParallelOperation;
 class TCollectedFileList;
 struct TLocalFileHandle;
 struct TNeonCertificateData;
+class TQueueItem;
 typedef std::vector<__int64> TCalculatedSizes;
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TQueryUserEvent)
@@ -613,9 +614,13 @@ public:
     TSynchronizeDirectory OnSynchronizeDirectory, TProcessedSynchronizationChecklistItem OnProcessedItem,
     TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems, void * Token,
     TFileOperationStatistics * Statistics);
+  TQueueItem * SynchronizeToQueue(
+    const TSynchronizeChecklist::TItem * ChecklistItem, const TCopyParamType * CopyParam, int Params, bool Parallel);
   void __fastcall SynchronizeChecklistCalculateSize(
     TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items,
     const TCopyParamType * CopyParam);
+  static TCopyParamType GetSynchronizeCopyParam(const TCopyParamType * CopyParam, int Params);
+  static int GetSynchronizeCopyParams(int Params);
   void __fastcall FilesFind(UnicodeString Directory, const TFileMasks & FileMask,
     TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile);
   void __fastcall SpaceAvailable(const UnicodeString Path, TSpaceAvailable & ASpaceAvailable);

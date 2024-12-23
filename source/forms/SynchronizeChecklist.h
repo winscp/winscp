@@ -77,6 +77,9 @@ __published:
   TMenuItem *CalculateAll2;
   TMenuItem *N4;
   TMenuItem *FindMoveCandidate1;
+  TPopupMenu *OkPopupMenu;
+  TMenuItem *StartItem;
+  TMenuItem *StartQueueItem;
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall FormShow(TObject * Sender);
   void __fastcall StatusBarDrawPanel(TStatusBar *StatusBar,
@@ -119,12 +122,16 @@ __published:
   void __fastcall ToolsMenuButtonClick(TObject *Sender);
   void __fastcall FindMoveCandidateActionExecute(TObject *Sender);
   void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
+  void __fastcall StartItemClick(TObject *Sender);
+  void __fastcall OkButtonDropDownClick(TObject *Sender);
+  void __fastcall StartQueueItemClick(TObject *Sender);
 
 public:
   __fastcall TSynchronizeChecklistDialog(
     TComponent * AOwner, TSynchronizeMode Mode, int Params,
     const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
     TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
+    TQueueSynchronizeEvent OnQueueSynchronize,
     TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
     TSynchronizeBrowseEvent OnSynchronizeBrowse, void * Token);
   virtual __fastcall ~TSynchronizeChecklistDialog();
@@ -154,6 +161,7 @@ protected:
   typedef std::map<const TSynchronizeChecklist::TItem *, TSynchronizeChecklist::TAction> TActions;
   TActions FActions;
   TFullSynchronizeEvent FOnSynchronize;
+  TQueueSynchronizeEvent FOnQueueSynchronize;
   void * FToken;
   bool FSynchronizing;
   std::unique_ptr<Exception> FException;
@@ -203,6 +211,7 @@ protected:
   TIEListViewColProperties * GetColProperties();
   bool IterateItems(TListItem *& Item, TItemStates States);
   bool IterateSelectedItems(TListItem *& Item);
+  void DoSynchronize(bool Queue);
 };
 //----------------------------------------------------------------------------
 #endif

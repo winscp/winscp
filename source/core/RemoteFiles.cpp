@@ -2923,6 +2923,41 @@ UnicodeString TSynchronizeChecklist::TItem::GetRemotePath() const
   return UnixCombinePaths(Remote.Directory, Remote.FileName);
 }
 //---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::GetLocalTarget() const
+{
+  return IncludeTrailingBackslash(Local.Directory);
+}
+//---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::GetRemoteTarget() const
+{
+  return UnixIncludeTrailingBackslash(Remote.Directory);
+};
+//---------------------------------------------------------------------------
+TStrings * TSynchronizeChecklist::TItem::GetFileList() const
+{
+  std::unique_ptr<TStrings> FileList(new TStringList());
+  switch (Action)
+  {
+    case TSynchronizeChecklist::saDownloadNew:
+    case TSynchronizeChecklist::saDownloadUpdate:
+    case TSynchronizeChecklist::saDeleteRemote:
+      FileList->AddObject(GetRemotePath(), RemoteFile);
+      break;
+
+    case TSynchronizeChecklist::saUploadNew:
+    case TSynchronizeChecklist::saUploadUpdate:
+    case TSynchronizeChecklist::saDeleteLocal:
+      FileList->Add(GetLocalPath());
+      break;
+
+    default:
+      DebugFail();
+      NotImplemented();
+      break;
+  }
+  return FileList.release();
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 TSynchronizeChecklist::TSynchronizeChecklist() :
   FList(new TList())

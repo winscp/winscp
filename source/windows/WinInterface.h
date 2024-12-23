@@ -392,6 +392,7 @@ typedef void __fastcall (__closure *TCustomCommandMenuEvent)
 typedef void __fastcall (__closure *TFullSynchronizeEvent)(
   void * Token, TProcessedSynchronizationChecklistItem OnProcessedItem,
   TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);
+typedef void (__closure *TQueueSynchronizeEvent)(void * Token);
 typedef void __fastcall (__closure *TSynchronizeChecklistCalculateSize)
   (TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items, void * Token);
 typedef void __fastcall (__closure *TSynchronizeMoveEvent)(
@@ -402,6 +403,7 @@ bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
   TSynchronizeMode Mode, int Params,
   const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
   TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
+  TQueueSynchronizeEvent OnQueueSynchronize,
   TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
   TSynchronizeBrowseEvent OnSynchronizeBrowse, void * Token);
 

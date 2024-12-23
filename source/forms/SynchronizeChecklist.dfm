@@ -1386,6 +1386,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       ModalResult = 1
       TabOrder = 0
       OnClick = OkButtonClick
+      OnDropDownClick = OkButtonDropDownClick
     end
     object CancelButton: TButton
       Left = 8
@@ -3697,6 +3698,19 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     end
     object FindMoveCandidate1: TMenuItem
       Action = FindMoveCandidateAction
+    end
+  end
+  object OkPopupMenu: TPopupMenu
+    Left = 224
+    Top = 336
+    object StartItem: TMenuItem
+      Caption = '&Start'
+      Default = True
+      OnClick = StartItemClick
+    end
+    object StartQueueItem: TMenuItem
+      Caption = 'Start on &Background'
+      OnClick = StartQueueItemClick
     end
   end
 end

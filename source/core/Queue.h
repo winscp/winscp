@@ -359,7 +359,7 @@ class TUploadQueueItem : public TTransferQueueItem
 public:
   __fastcall TUploadQueueItem(TTerminal * Terminal,
     TStrings * FilesToCopy, const UnicodeString & TargetDir,
-    const TCopyParamType * CopyParam, int Params, bool SingleFile, bool Parallel);
+    const TCopyParamType * CopyParam, int Params, bool Parallel);
 
 protected:
   virtual void __fastcall DoTransferExecute(TTerminal * Terminal, TParallelOperation * ParallelOperation);
@@ -370,7 +370,7 @@ class TDownloadQueueItem : public TTransferQueueItem
 public:
   __fastcall TDownloadQueueItem(TTerminal * Terminal,
     TStrings * FilesToCopy, const UnicodeString & TargetDir,
-    const TCopyParamType * CopyParam, int Params, bool SingleFile, bool Parallel);
+    const TCopyParamType * CopyParam, int Params, bool Parallel);
 
 protected:
   virtual void __fastcall DoTransferExecute(TTerminal * Terminal, TParallelOperation * ParallelOperation);

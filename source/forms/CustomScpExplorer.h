@@ -713,6 +713,7 @@ protected:
   void __fastcall DoFullSynchronize(
     void * Token, TProcessedSynchronizationChecklistItem OnProcessedItem,
     TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);
+  void DoQueueSynchronize(void * Token);
   void __fastcall DoSynchronizeChecklistCalculateSize(
     TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items, void * Token);
   void __fastcall DoSynchronizeMove(

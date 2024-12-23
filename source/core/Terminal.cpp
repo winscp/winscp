@@ -6558,6 +6558,65 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
   }
 }
 //---------------------------------------------------------------------------
+TCopyParamType TTerminal::GetSynchronizeCopyParam(const TCopyParamType * CopyParam, int Params)
+{
+  TCopyParamType SyncCopyParam = *CopyParam;
+  // when synchronizing by time, we force preserving time,
+  // otherwise it does not make any sense
+  if (FLAGCLEAR(Params, spNotByTime))
+  {
+    SyncCopyParam.PreserveTime = true;
+  }
+  return SyncCopyParam;
+}
+//---------------------------------------------------------------------------
+int TTerminal::GetSynchronizeCopyParams(int Params)
+{
+  return
+    // The spNoConfirmation seems to always be present
+    FLAGMASK(DebugAlwaysTrue(FLAGSET(Params, spNoConfirmation)), cpNoConfirmation);
+}
+//---------------------------------------------------------------------------
+TQueueItem * TTerminal::SynchronizeToQueue(
+  const TSynchronizeChecklist::TItem * ChecklistItem, const TCopyParamType * CopyParam, int Params, bool Parallel)
+{
+  TQueueItem * Result;
+  if (DebugAlwaysFalse(FLAGSET(Params, spTimestamp)))
+  {
+    NotImplemented();
+  }
+  else
+  {
+    std::unique_ptr<TStrings> FileList(ChecklistItem->GetFileList());
+    switch (ChecklistItem->Action)
+    {
+      case TSynchronizeChecklist::saDownloadNew:
+      case TSynchronizeChecklist::saDownloadUpdate:
+        Result = new TDownloadQueueItem(this, FileList.get(), ChecklistItem->GetLocalTarget(), CopyParam, Params, Parallel);
+        break;
+
+      case TSynchronizeChecklist::saDeleteRemote:
+        Result = new TRemoteDeleteQueueItem(this, FileList.get(), 0);
+        break;
+
+      case TSynchronizeChecklist::saUploadNew:
+      case TSynchronizeChecklist::saUploadUpdate:
+        Result = new TUploadQueueItem(this, FileList.get(), ChecklistItem->GetRemoteTarget(), CopyParam, Params, Parallel);
+        break;
+
+      case TSynchronizeChecklist::saDeleteLocal:
+        Result = new TLocalDeleteQueueItem(FileList.get(), 0);
+        break;
+
+      default:
+        DebugFail();
+        NotImplemented();
+        break;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::SynchronizeApply(
   TSynchronizeChecklist * Checklist,
   const TCopyParamType * CopyParam, int Params,
@@ -6569,16 +6628,8 @@ void __fastcall TTerminal::SynchronizeApply(
 
   Data.OnSynchronizeDirectory = OnSynchronizeDirectory;
 
-  int CopyParams =
-    FLAGMASK(FLAGSET(Params, spNoConfirmation), cpNoConfirmation);
-
-  TCopyParamType SyncCopyParam = *CopyParam;
-  // when synchronizing by time, we force preserving time,
-  // otherwise it does not make any sense
-  if (FLAGCLEAR(Params, spNotByTime))
-  {
-    SyncCopyParam.PreserveTime = true;
-  }
+  int CopyParams = GetSynchronizeCopyParams(Params);
+  TCopyParamType SyncCopyParam = GetSynchronizeCopyParam(CopyParam, Params);
 
   if (SyncCopyParam.CalculateSize)
   {
@@ -6619,11 +6670,13 @@ void __fastcall TTerminal::SynchronizeApply(
     const TSynchronizeChecklist::TItem * ChecklistItem;
     while (Checklist->GetNextChecked(Index, ChecklistItem))
     {
-      if (!SamePaths(Data.LocalDirectory, ChecklistItem->Local.Directory) ||
-          !UnixSamePath(Data.RemoteDirectory, ChecklistItem->Remote.Directory))
+      UnicodeString LocalTarget = ChecklistItem->GetLocalTarget();
+      UnicodeString RemoteTarget = ChecklistItem->GetRemoteTarget();
+      if (!SamePaths(Data.LocalDirectory, LocalTarget) ||
+          !UnixSamePath(Data.RemoteDirectory, RemoteTarget))
       {
-        Data.LocalDirectory = IncludeTrailingBackslash(ChecklistItem->Local.Directory);
-        Data.RemoteDirectory = UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory);
+        Data.LocalDirectory = LocalTarget;
+        Data.RemoteDirectory = RemoteTarget;
 
         LogEvent(
           FORMAT(L"Synchronizing local directory '%s' with remote directory '%s', params = 0x%x (%s)",
@@ -6632,25 +6685,22 @@ void __fastcall TTerminal::SynchronizeApply(
         DoSynchronizeProgress(Data, false);
       }
 
-      std::unique_ptr<TStringList> FileList(new TStringList());
-
-      UnicodeString LocalPath = ChecklistItem->GetLocalPath();
-      UnicodeString RemotePath = ChecklistItem->GetRemotePath();
       bool Result = true;
 
       if (FLAGSET(Params, spTimestamp))
       {
         // used by SynchronizeLocalTimestamp and SynchronizeRemoteTimestamp
         TObject * ChecklistItemToken = const_cast<TObject *>(reinterpret_cast<const TObject *>(ChecklistItem));
+        std::unique_ptr<TStringList> FileList(new TStringList());
         switch (ChecklistItem->Action)
         {
           case TSynchronizeChecklist::saDownloadUpdate:
-            FileList->AddObject(RemotePath, ChecklistItemToken);
+            FileList->AddObject(ChecklistItem->GetRemotePath(), ChecklistItemToken);
             ProcessFiles(FileList.get(), foSetProperties, SynchronizeLocalTimestamp, NULL, osLocal);
             break;
 
           case TSynchronizeChecklist::saUploadUpdate:
-            FileList->AddObject(LocalPath, ChecklistItemToken);
+            FileList->AddObject(ChecklistItem->GetLocalPath(), ChecklistItemToken);
             ProcessFiles(FileList.get(), foSetProperties, SynchronizeRemoteTimestamp);
             break;
 
@@ -6662,29 +6712,26 @@ void __fastcall TTerminal::SynchronizeApply(
       }
       else
       {
+        std::unique_ptr<TStrings> FileList(ChecklistItem->GetFileList());
         TCopyParamType ItemCopyParam = SyncCopyParam;
         ItemCopyParam.Size = ChecklistItem->HasSize() ? ChecklistItem->GetSize() : -1;
         switch (ChecklistItem->Action)
         {
           case TSynchronizeChecklist::saDownloadNew:
           case TSynchronizeChecklist::saDownloadUpdate:
-            FileList->AddObject(RemotePath, ChecklistItem->RemoteFile);
-            Result = CopyToLocal(FileList.get(), Data.LocalDirectory, &ItemCopyParam, CopyParams, NULL);
+            Result = CopyToLocal(FileList.get(), LocalTarget, &ItemCopyParam, CopyParams, NULL);
             break;
 
           case TSynchronizeChecklist::saDeleteRemote:
-            FileList->AddObject(RemotePath, ChecklistItem->RemoteFile);
             Result = DeleteFiles(FileList.get());
             break;
 
           case TSynchronizeChecklist::saUploadNew:
           case TSynchronizeChecklist::saUploadUpdate:
-            FileList->Add(LocalPath);
-            Result = CopyToRemote(FileList.get(), Data.RemoteDirectory, &ItemCopyParam, CopyParams, NULL);
+            Result = CopyToRemote(FileList.get(), RemoteTarget, &ItemCopyParam, CopyParams, NULL);
             break;
 
           case TSynchronizeChecklist::saDeleteLocal:
-            FileList->Add(LocalPath);
             Result = DeleteLocalFiles(FileList.get());
             break;
 
