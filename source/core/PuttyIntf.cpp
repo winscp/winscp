@@ -21,7 +21,6 @@ char appname_[50];
 const char *const appname = appname_;
 extern const bool share_can_be_downstream = false;
 extern const bool share_can_be_upstream = false;
-THierarchicalStorage * PuttyStorage = NULL;
 //---------------------------------------------------------------------------
 extern "C"
 {
@@ -461,7 +460,8 @@ ScpSeat::ScpSeat(TSecureShell * ASecureShell)
   vt = &ScpSeatVtable;
 }
 //---------------------------------------------------------------------------
-static std::unique_ptr<TCriticalSection> PuttyRegistrySection(TraceInitPtr(new TCriticalSection()));
+std::unique_ptr<TCriticalSection> PuttyStorageSection(TraceInitPtr(new TCriticalSection()));
+THierarchicalStorage * PuttyStorage = NULL;
 enum TPuttyRegistryMode { prmPass, prmRedirect, prmCollect, prmFail };
 static TPuttyRegistryMode PuttyRegistryMode = prmRedirect;
 typedef std::map<UnicodeString, unsigned long> TPuttyRegistryTypes;
@@ -1490,7 +1490,7 @@ void WritePuttySettings(THierarchicalStorage * Storage, const UnicodeString & AS
 {
   if (PuttyRegistryTypes.empty())
   {
-    TGuard Guard(PuttyRegistrySection.get());
+    TGuard Guard(PuttyStorageSection.get());
     TValueRestorer<TPuttyRegistryMode> PuttyRegistryModeRestorer(PuttyRegistryMode);
     PuttyRegistryMode = prmCollect;
     Conf * conf = conf_new();
@@ -1536,7 +1536,7 @@ void WritePuttySettings(THierarchicalStorage * Storage, const UnicodeString & AS
 //---------------------------------------------------------------------------
 void PuttyDefaults(Conf * conf)
 {
-  TGuard Guard(PuttyRegistrySection.get());
+  TGuard Guard(PuttyStorageSection.get());
   TValueRestorer<TPuttyRegistryMode> PuttyRegistryModeRestorer(PuttyRegistryMode);
   PuttyRegistryMode = prmFail;
   do_defaults(NULL, conf);
@@ -1544,7 +1544,7 @@ void PuttyDefaults(Conf * conf)
 //---------------------------------------------------------------------------
 void SavePuttyDefaults(const UnicodeString & Name)
 {
-  TGuard Guard(PuttyRegistrySection.get());
+  TGuard Guard(PuttyStorageSection.get());
   TValueRestorer<TPuttyRegistryMode> PuttyRegistryModeRestorer(PuttyRegistryMode);
   PuttyRegistryMode = prmPass;
   Conf * conf = conf_new();

@@ -23,7 +23,6 @@
 #define MAX_BUFSIZE 32768
 //---------------------------------------------------------------------------
 const wchar_t HostKeyDelimiter = L';';
-static std::unique_ptr<TCriticalSection> PuttyStorageSection(TraceInitPtr(new TCriticalSection()));
 //---------------------------------------------------------------------------
 struct TPuttyTranslation
 {
