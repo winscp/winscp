@@ -484,7 +484,7 @@ void __fastcall RetrieveNeonCertificateData(
   }
   else
   {
-    UnicodeString Buf = StrFromNeon(FingeprintSHA256);
+    UnicodeString Buf = StrFromNeon(FingerprintSHA256);
     if (DebugAlwaysTrue(Buf.Length() > 2) &&
         DebugAlwaysTrue((Buf.Length() % 2) == 0))
     {

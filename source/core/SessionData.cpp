@@ -5520,7 +5520,7 @@ int TStoredSessionList::ImportHostKeys(
 void TStoredSessionList::ImportHostKeys(
   THierarchicalStorage * SourceStorage, TStoredSessionList * Sessions, bool OnlySelected)
 {
-  std::unique_ptr<THierarchicalStorage> TargetStorage(CreateHostKeysStorageForWritting());
+  std::unique_ptr<THierarchicalStorage> TargetStorage(CreateHostKeysStorageForWriting());
 
   ImportHostKeys(SourceStorage, TargetStorage.get(), Sessions, OnlySelected);
 }
@@ -5535,7 +5535,7 @@ void TStoredSessionList::ImportHostKeys(
 //---------------------------------------------------------------------------
 void __fastcall TStoredSessionList::ImportSelectedKnownHosts(TStoredSessionList * Sessions)
 {
-  std::unique_ptr<THierarchicalStorage> Storage(CreateHostKeysStorageForWritting());
+  std::unique_ptr<THierarchicalStorage> Storage(CreateHostKeysStorageForWriting());
   if (OpenHostKeysSubKey(Storage.get(), true))
   {
     for (int Index = 0; Index < Sessions->Count; Index++)

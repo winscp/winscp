@@ -99,7 +99,7 @@ private:
   UnicodeString FIniFileStorageName;
   UnicodeString FVirtualIniFileStorageName;
   std::unique_ptr<TStrings> FOptionsStorage;
-  int FProgramIniPathWrittable;
+  int FProgramIniPathWritable;
   int FTunnelLocalPortNumberLow;
   int FTunnelLocalPortNumberHigh;
   int FCacheDirectoryChangesMaxSize;
