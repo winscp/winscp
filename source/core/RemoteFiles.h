@@ -126,7 +126,7 @@ private:
   void __fastcall SetIsHidden(bool value);
   bool __fastcall GetIsParentDirectory() const;
   bool __fastcall GetIsThisDirectory() const;
-  bool __fastcall GetIsInaccesibleDirectory() const;
+  bool __fastcall GetIsInaccessibleDirectory() const;
   UnicodeString __fastcall GetExtension();
   UnicodeString __fastcall GetUserModificationStr();
   void __fastcall LoadTypeInfo();
@@ -181,7 +181,7 @@ public:
   __property bool IsHidden = { read = GetIsHidden, write = SetIsHidden };
   __property bool IsParentDirectory = { read = GetIsParentDirectory };
   __property bool IsThisDirectory = { read = GetIsThisDirectory };
-  __property bool IsInaccesibleDirectory  = { read=GetIsInaccesibleDirectory };
+  __property bool IsInaccesibleDirectory  = { read=GetIsInaccessibleDirectory };
   __property UnicodeString Extension  = { read=GetExtension };
   __property bool IsEncrypted  = { read = FIsEncrypted };
 };

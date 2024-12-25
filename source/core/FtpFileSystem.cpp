@@ -1350,7 +1350,7 @@ bool __fastcall TFTPFileSystem::ConfirmOverwrite(
   bool CanResume =
     !OperationProgress->AsciiTransfer &&
     // when resuming transfer after interrupted connection,
-    // do nothing (dummy resume) when the files has the same size.
+    // do nothing (dummy resume) when the files have the same size.
     // this is workaround for servers that strangely fails just after successful
     // upload.
     (DestIsSmaller || (DestIsSame && CanAutoResume));
@@ -1528,7 +1528,7 @@ void __fastcall TFTPFileSystem::DoFileTransferProgress(__int64 TransferSize,
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::SetCPSLimit(TFileOperationProgressType * OperationProgress)
 {
-  // Any reason we use separate field intead of directly using OperationProgress->CPSLimit?
+  // Any reason we use separate field instead of directly using OperationProgress->CPSLimit?
   // Maybe thread-safety?
   FFileTransferCPSLimit = OperationProgress->CPSLimit;
   OperationProgress->SetSpeedCounters();
@@ -4703,7 +4703,7 @@ bool __fastcall TFTPFileSystem::GetFileModificationTimeInUtc(const wchar_t * Fil
   bool Result;
   try
   {
-    // error-handling-free and DST-mode-inaware copy of TTerminal::OpenLocalFile
+    // error-handling-free and DST-mode-unaware copy of TTerminal::OpenLocalFile
     HANDLE Handle = CreateFile(ApiPath(FileName).c_str(), GENERIC_READ,
       FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, 0);
     if (Handle == INVALID_HANDLE_VALUE)

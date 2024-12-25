@@ -602,7 +602,7 @@ public:
     return Result;
   }
 
-  // For reading strings that are character strings (not byte strings as
+  // For reading strings that are character strings (not byte strings
   // as file handles), and SFTP spec does not say explicitly that they
   // are in UTF. For most of them it actually does not matter as
   // the content should be pure ASCII (e.g. extension names, etc.)
@@ -4745,7 +4745,7 @@ void __fastcall TSFTPFileSystem::Source(
         }
         else
         {
-          // partial upload file does not exists, check for full file
+          // partial upload file does not exist, check for full file
           if (DestFileExists)
           {
             UnicodeString PrevDestFileName = DestFileName;

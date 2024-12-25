@@ -2148,7 +2148,7 @@ TDateTime __fastcall FileTimeToDateTime(const FILETIME & FileTime)
 {
   // duplicated in DirView.pas
   TDateTime Result;
-  // The 0xFFF... is sometime seen for invalid timestamps,
+  // The 0xFFF... is sometimes seen for invalid timestamps,
   // it would cause failure in SystemTimeToDateTime below
   if (FileTime.dwLowDateTime == std::numeric_limits<DWORD>::max())
   {
@@ -3416,11 +3416,11 @@ UnicodeString __fastcall TrimVersion(UnicodeString Version)
   return Version;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall FormatVersion(int MajovVersion, int MinorVersion, int Release)
+UnicodeString __fastcall FormatVersion(int MajorVersion, int MinorVersion, int Release)
 {
   return
     TrimVersion(FORMAT(L"%d.%d.%d",
-      (MajovVersion, MinorVersion, Release)));
+      (MajorVersion, MinorVersion, Release)));
 }
 //---------------------------------------------------------------------------
 TFormatSettings __fastcall GetEngFormatSettings()
@@ -4176,9 +4176,9 @@ UnicodeString __fastcall AssemblyNewClassInstanceStart(
       break;
 
     case alVBNET:
-      // Historically we use Dim .. With instead of object initilizer.
+      // Historically we use Dim .. With instead of object initializer.
       // But for inline use, we have to use object initialize.
-      // We should consistently always use object initilizers.
+      // We should consistently always use object initializers.
       // Unfortunately VB.NET object initializer (contrary to C#) does not allow trailing comma.
       Result += SpaceOrPara + RtfKeyword(L"With");
       if (Inline)

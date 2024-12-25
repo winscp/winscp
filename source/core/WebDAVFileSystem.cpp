@@ -351,7 +351,7 @@ TWebDAVFileSystem::TSessionContext * TWebDAVFileSystem::NeonOpen(const UnicodeSt
 
   UpdateNeonDebugMask();
 
-  NeonAddAuthentiation(Result.get(), Ssl);
+  NeonAddAuthentication(Result.get(), Ssl);
 
   if (Ssl)
   {
@@ -390,7 +390,7 @@ void TWebDAVFileSystem::NeonAuxRequestInit(ne_session * Session, ne_request * /*
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TWebDAVFileSystem::NeonAddAuthentiation(TSessionContext * SessionContext, bool UseNegotiate)
+void __fastcall TWebDAVFileSystem::NeonAddAuthentication(TSessionContext * SessionContext, bool UseNegotiate)
 {
   unsigned int NeonAuthTypes = NE_AUTH_BASIC | NE_AUTH_DIGEST | NE_AUTH_PASSPORT;
   if (UseNegotiate)
@@ -1491,7 +1491,7 @@ void __fastcall TWebDAVFileSystem::Source(
           // The only server we found that supports this is TradeMicro SafeSync.
           // But it announces itself as "Server: Apache",
           // so it's not reliable to autodetect the support.
-          // Microsoft Office alegedly uses <Win32LastModifiedTime>
+          // Microsoft Office allegedly uses <Win32LastModifiedTime>
           // https://sabre.io/dav/clients/msoffice/
           // Carot DAV does that too. But we do not know what server does support this.
           TouchAction.Cancel();
@@ -1639,7 +1639,7 @@ void __fastcall TWebDAVFileSystem::HttpAuthenticationFailed(TSessionContext * Se
       // We have to retry with a fresh request. That's what FAuthenticationRetry does.
       FTerminal->LogEvent(FORMAT(L"%s challenge failed, will try different challenge", (SessionContext->AuthorizationProtocol)));
       ne_remove_server_auth(SessionContext->NeonSession);
-      NeonAddAuthentiation(SessionContext, false);
+      NeonAddAuthentication(SessionContext, false);
       FAuthenticationRetry = true;
     }
     else

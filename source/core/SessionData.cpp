@@ -371,7 +371,7 @@ void __fastcall TSessionData::Default()
   // add also to TSessionLog::AddStartupInfo()
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::NonPersistant()
+void __fastcall TSessionData::NonPersistent()
 {
   UpdateDirectories = false;
   PreserveDirectoryChanges = false;
@@ -5476,7 +5476,7 @@ bool __fastcall TStoredSessionList::OpenHostKeysSubKey(THierarchicalStorage * St
   return Storage->OpenSubKey(Configuration->SshHostKeysSubKey, CanCreate);
 }
 //---------------------------------------------------------------------------
-THierarchicalStorage * __fastcall TStoredSessionList::CreateHostKeysStorageForWritting()
+THierarchicalStorage * __fastcall TStoredSessionList::CreateHostKeysStorageForWriting()
 {
   bool SessionList = false;
   std::unique_ptr<THierarchicalStorage> Storage(Configuration->CreateScpStorage(SessionList));
