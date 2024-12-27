@@ -1046,20 +1046,14 @@ NTRUKeyPair *ntru_keygen_attempt(unsigned p, unsigned q, unsigned w)
     ntru_scale(f3, f, 3, p, q);
 
     /*
-     * Try to invert 3*f over Z_q. This should be _almost_ guaranteed
-     * to succeed, since Z_q/<x^p-x-1> is a field, so the only
-     * non-invertible value is 0. Even so, there _is_ one, so check
-     * the return value!
+     * Invert 3*f over Z_q. This is guaranteed to succeed, since
+     * Z_q/<x^p-x-1> is a field, so the only non-invertible value is
+     * 0. And f is nonzero because it came from ntru_gen_short (hence,
+     * w of its components are nonzero), hence so is 3*f.
      */
     uint16_t *f3inv = snewn(p, uint16_t);
-    if (!ntru_ring_invert(f3inv, f3, p, q)) {
-        ring_free(f, p);
-        ring_free(f3, p);
-        ring_free(f3inv, p);
-        ring_free(g, p);
-        ring_free(ginv, p);
-        return NULL;
-    }
+    bool expect_always_success = ntru_ring_invert(f3inv, f3, p, q);
+    assert(expect_always_success);
 
     /*
      * Make the public key, by converting g to a polynomial over q and
@@ -1875,8 +1869,17 @@ static const ecdh_keyalg ssh_ntru_selector_vt = {
     .description = ssh_ntru_description,
 };
 
-static const ssh_kex ssh_ntru_curve25519 = {
+static const ssh_kex ssh_ntru_curve25519_openssh = {
     .name = "sntrup761x25519-sha512@openssh.com",
+    .main_type = KEXTYPE_ECDH,
+    .hash = &ssh_sha512,
+    .ecdh_vt = &ssh_ntru_selector_vt,
+};
+
+static const ssh_kex ssh_ntru_curve25519 = {
+    /* Same as sntrup761x25519-sha512@openssh.com but with an
+     * IANA-assigned name */
+    .name = "sntrup761x25519-sha512",
     .main_type = KEXTYPE_ECDH,
     .hash = &ssh_sha512,
     .ecdh_vt = &ssh_ntru_selector_vt,
@@ -1884,6 +1887,7 @@ static const ssh_kex ssh_ntru_curve25519 = {
 
 static const ssh_kex *const hybrid_list[] = {
     &ssh_ntru_curve25519,
+    &ssh_ntru_curve25519_openssh,
 };
 
 const ssh_kexes ssh_ntru_hybrid_kex = { lenof(hybrid_list), hybrid_list };
