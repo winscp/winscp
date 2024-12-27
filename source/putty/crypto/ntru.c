@@ -2087,10 +2087,11 @@ static const ssh_kex ssh_ntru_curve25519_openssh = {
 static const ssh_kex ssh_ntru_curve25519 = {
     /* Same as sntrup761x25519-sha512@openssh.com but with an
      * IANA-assigned name */
-    .name = "sntrup761x25519-sha512",
-    .main_type = KEXTYPE_ECDH,
-    .hash = &ssh_sha512,
-    .ecdh_vt = &ssh_ntru_selector_vt,
+    /*.name =*/ "sntrup761x25519-sha512",
+    NULL, // WINSCP
+    /*.main_type =*/ KEXTYPE_ECDH,
+    /*.hash =*/ &ssh_sha512,
+    /*.ecdh_vt =*/ &ssh_ntru_selector_vt,
 };
 
 static const ssh_kex *const hybrid_list[] = {
