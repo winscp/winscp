@@ -702,7 +702,7 @@ BEGIN
         SEARCH_NO_RESULTS, "No search results found."
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
-        WINSCP_COPYRIGHT, "Copyright © 2000–2024 Martin Prikryl"
+        WINSCP_COPYRIGHT, "Copyright © 2000–2025 Martin Prikryl"
         HOMEPAGE_URL, "https://winscp.net/"
         HISTORY_URL, "https://winscp.net/eng/docs/history"
         FORUM_URL, "https://winscp.net/forum/"
