@@ -162,6 +162,7 @@ friend class TParallelOperation;
 
 private:
   TSessionData * FSessionData;
+  UnicodeString FPasswordEncryptionKey;
   TSessionLog * FLog;
   TActionLog * FActionLog;
   bool FActionLogOwned;

@@ -1208,6 +1208,8 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData, TConfiguration * Con
   FConfiguration = Configuration;
   FSessionData = new TSessionData(L"");
   FSessionData->Assign(SessionData);
+  // Cache it, in case it changes (particularly by ConfigureTunnel)
+  FPasswordEncryptionKey = SessionData->GetSessionPasswordEncryptionKey();
   TDateTime Started = Now(); // use the same time for session and XML log
   FLog = new TSessionLog(this, Started, FSessionData, Configuration);
   if (ActionLog != NULL)
@@ -1345,7 +1347,7 @@ void __fastcall TTerminal::Idle()
 //---------------------------------------------------------------------
 RawByteString __fastcall TTerminal::EncryptPassword(const UnicodeString & Password)
 {
-  return Configuration->EncryptPassword(Password, SessionData->GetSessionPasswordEncryptionKey());
+  return Configuration->EncryptPassword(Password, FPasswordEncryptionKey);
 }
 //---------------------------------------------------------------------
 UnicodeString __fastcall TTerminal::DecryptPassword(const RawByteString & Password)
@@ -1353,7 +1355,7 @@ UnicodeString __fastcall TTerminal::DecryptPassword(const RawByteString & Passwo
   UnicodeString Result;
   try
   {
-    Result = Configuration->DecryptPassword(Password, SessionData->GetSessionPasswordEncryptionKey());
+    Result = Configuration->DecryptPassword(Password, FPasswordEncryptionKey);
   }
   catch(EAbort &)
   {
