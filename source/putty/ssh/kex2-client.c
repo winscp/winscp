@@ -190,7 +190,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
                      ssh_hash_alg(s->exhash)->text_name);
         sfree(desc);
 
-        s->ppl.bpp->pls->kctx = SSH2_PKTCTX_ECDHKEX;
+        s->ppl.bpp->pls->kctx = s->kex_alg->ecdh_vt->packet_naming_ctx;
 
         s->ecdh_key = ecdh_key_new(s->kex_alg, false);
 

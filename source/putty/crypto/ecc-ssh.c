@@ -1615,6 +1615,7 @@ static const ecdh_keyalg ssh_ecdhkex_m_alg = {
     .getpublic = ssh_ecdhkex_m_getpublic,
     .getkey = ssh_ecdhkex_m_getkey,
     .description = ssh_ecdhkex_description,
+    .packet_naming_ctx = SSH2_PKTCTX_ECDHKEX,
 };
 const ssh_kex ssh_ec_kex_curve25519 = {
     .name = "curve25519-sha256",
@@ -1655,6 +1656,7 @@ static const ecdh_keyalg ssh_ecdhkex_w_alg = {
     .getpublic = ssh_ecdhkex_w_getpublic,
     .getkey = ssh_ecdhkex_w_getkey,
     .description = ssh_ecdhkex_description,
+    .packet_naming_ctx = SSH2_PKTCTX_ECDHKEX,
 };
 static const struct eckex_extra kex_extra_nistp256 = { ec_p256 };
 const ssh_kex ssh_ec_kex_nistp256 = {

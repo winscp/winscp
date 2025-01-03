@@ -136,6 +136,7 @@ typedef enum {
     SSH2_PKTCTX_DHGROUP,
     SSH2_PKTCTX_DHGEX,
     SSH2_PKTCTX_ECDHKEX,
+    SSH2_PKTCTX_HYBRIDKEX,
     SSH2_PKTCTX_GSSKEX,
     SSH2_PKTCTX_RSAKEX
 } Pkt_KCtx;
@@ -992,6 +993,12 @@ struct ecdh_keyalg {
     void (*getpublic)(ecdh_key *key, BinarySink *bs);
     bool (*getkey)(ecdh_key *key, ptrlen remoteKey, BinarySink *bs);
     char *(*description)(const ssh_kex *kex);
+
+    /* Some things that use this vtable are genuinely elliptic-curve
+     * Diffie-Hellman. Others are hybrid PQ + classical kex methods.
+     * Provide a packet-naming context for use in the SSH log. (Purely
+     * cosmetic.) */
+    Pkt_KCtx packet_naming_ctx;
 };
 static inline ecdh_key *ecdh_key_new(const ssh_kex *kex, bool is_server)
 { return kex->ecdh_vt->new(kex, is_server); }
@@ -1004,6 +1011,52 @@ static inline bool ecdh_key_getkey(ecdh_key *key, ptrlen remoteKey,
 { return key->vt->getkey(key, remoteKey, bs); }
 static inline char *ecdh_keyalg_description(const ssh_kex *kex)
 { return kex->ecdh_vt->description(kex); }
+
+/*
+ * vtable for post-quantum key encapsulation methods (things like NTRU
+ * and ML-KEM).
+ *
+ * These work in an asymmetric way that's conceptually more like the
+ * old RSA kex (either SSH-1 or SSH-2) than like Diffie-Hellman. One
+ * party generates a keypair and sends the public key; the other party
+ * invents a secret and encrypts it with the public key; the first
+ * party receives the ciphertext and decrypts it, and now both parties
+ * have the secret.
+ */
+struct pq_kem_dk {
+    const pq_kemalg *vt;
+};
+struct pq_kemalg {
+    /* Generate a key pair, writing the public encryption key in wire
+     * format to ek. Return the decryption key. */
+    pq_kem_dk *(*keygen)(const pq_kemalg *alg, BinarySink *ek);
+    /* Invent and encrypt a secret, writing the ciphertext in wire
+     * format to c and the secret itself to k. Returns false on any
+     * kind of really obvious validation failure of the encryption key. */
+    bool (*encaps)(const pq_kemalg *alg, BinarySink *c, BinarySink *k,
+                   ptrlen ek);
+    /* Decrypt the secret and write it to k. Returns false on
+     * validation failure. However, more competent cryptographic
+     * attacks are rejected in a way that's not obvious, returning a
+     * useless pseudorandom secret. */
+    bool (*decaps)(pq_kem_dk *dk, BinarySink *k, ptrlen c);
+    /* Free a decryption key. */
+    void (*free_dk)(pq_kem_dk *dk);
+
+    const void *extra;
+    const char *description;
+    size_t ek_len, c_len;
+};
+
+static inline pq_kem_dk *pq_kem_keygen(const pq_kemalg *alg, BinarySink *ek)
+{ return alg->keygen(alg, ek); }
+static inline bool pq_kem_encaps(const pq_kemalg *alg, BinarySink *c,
+                                 BinarySink *k, ptrlen ek)
+{ return alg->encaps(alg, c, k, ek); }
+static inline bool pq_kem_decaps(pq_kem_dk *dk, BinarySink *k, ptrlen c)
+{ return dk->vt->decaps(dk, k, c); }
+static inline void pq_kem_free_dk(pq_kem_dk *dk)
+{ dk->vt->free_dk(dk); }
 
 /*
  * Suffix on GSSAPI SSH protocol identifiers that indicates Kerberos 5
@@ -1167,6 +1220,7 @@ extern const ssh_hashalg ssh_sha3_224;
 extern const ssh_hashalg ssh_sha3_256;
 extern const ssh_hashalg ssh_sha3_384;
 extern const ssh_hashalg ssh_sha3_512;
+extern const ssh_hashalg ssh_shake256_32bytes;
 extern const ssh_hashalg ssh_shake256_114bytes;
 extern const ssh_hashalg ssh_blake2b;
 extern const ssh_kexes ssh_diffiehellman_group1;
@@ -1194,6 +1248,12 @@ extern const ssh_kex ssh_ec_kex_nistp384;
 extern const ssh_kex ssh_ec_kex_nistp521;
 extern const ssh_kexes ssh_ecdh_kex;
 extern const ssh_kexes ssh_ntru_hybrid_kex;
+extern const pq_kemalg ssh_ntru;
+extern const ssh_kexes ssh_mlkem_curve25519_hybrid_kex;
+extern const ssh_kexes ssh_mlkem_nist_hybrid_kex;
+extern const pq_kemalg ssh_mlkem512;
+extern const pq_kemalg ssh_mlkem768;
+extern const pq_kemalg ssh_mlkem1024;
 extern const ssh_keyalg ssh_dsa;
 extern const ssh_keyalg ssh_rsa;
 extern const ssh_keyalg ssh_rsa_sha256;
@@ -1234,6 +1294,13 @@ ssh_hash *blake2b_new_general(unsigned hashlen);
 /* Special test function for AES-GCM */
 void aesgcm_set_prefix_lengths(ssh2_mac *mac, size_t skip, size_t aad);
 
+/* Shake128/256 extendable output functions (like a hash except you don't
+ * commit up front to how much data you want to get out of it) */
+ShakeXOF *shake128_xof_from_input(ptrlen data);
+ShakeXOF *shake256_xof_from_input(ptrlen data);
+void shake_xof_read(ShakeXOF *sx, void *output_v, size_t size);
+void shake_xof_free(ShakeXOF *sx);
+
 /*
  * On some systems, you have to detect hardware crypto acceleration by
  * asking the local OS API rather than OS-agnostically asking the CPU
@@ -1245,6 +1312,7 @@ bool platform_pmull_neon_available(void);
 bool platform_sha256_neon_available(void);
 bool platform_sha1_neon_available(void);
 bool platform_sha512_neon_available(void);
+bool platform_dit_available(void);
 
 /*
  * PuTTY version number formatted as an SSH version string.
@@ -1728,6 +1796,8 @@ void platform_ssh_share_cleanup(const char *name);
     K(y, SSH2_MSG_KEXRSA_DONE, 32, SSH2_PKTCTX_RSAKEX)                  \
     K(y, SSH2_MSG_KEX_ECDH_INIT, 30, SSH2_PKTCTX_ECDHKEX)               \
     K(y, SSH2_MSG_KEX_ECDH_REPLY, 31, SSH2_PKTCTX_ECDHKEX)              \
+    K(y, SSH2_MSG_KEX_HYBRID_INIT, 30, SSH2_PKTCTX_HYBRIDKEX)           \
+    K(y, SSH2_MSG_KEX_HYBRID_REPLY, 31, SSH2_PKTCTX_HYBRIDKEX)          \
     X(y, SSH2_MSG_USERAUTH_REQUEST, 50)                                 \
     X(y, SSH2_MSG_USERAUTH_FAILURE, 51)                                 \
     X(y, SSH2_MSG_USERAUTH_SUCCESS, 52)                                 \
@@ -1979,3 +2049,13 @@ enum {
     PLUGIN_NOTYPE = 256, /* packet too short to have a type */
     PLUGIN_EOF = 257 /* EOF from auth plugin */
 };
+
+/*
+ * CPU features for security
+ */
+
+#if HAVE_ARM_DIT
+void enable_dit(void);
+#else
+#define enable_dit() ((void)0)
+#endif

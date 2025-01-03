@@ -3848,6 +3848,12 @@ Chapter 4: Configuring PuTTY
            that commonly-used method, and hopefully also resistant to a new
            class of attacks.
 
+        -  `ML-KEM / Curve25519 hybrid' and `ML-KEM NIST ECDH hybrid':
+           similar hybrid constructs of ML-KEM, another lattice-based key
+           exchange method intended to be quantum-resistant. In the former,
+           ML-KEM is hybridised with Curve25519; in the latter, with NIST
+           P384 or P256.
+
         -  `ECDH': elliptic curve Diffie-Hellman key exchange, with a
            variety of standard curves and hash algorithms.
 
@@ -5637,12 +5643,11 @@ Chapter 5: Using PSCP to transfer files securely
 
    5.2 PSCP Usage
 
-       Once you've got a console window to type into, you can just type
-       `pscp' on its own to bring up a usage message. This tells you the
-       version of PSCP you're using, and gives you a brief summary of how
-       to use PSCP:
+       Once you've got a console window to type into, you can type `pscp -
+       h' to bring up a usage message. This tells you the version of PSCP
+       you're using, and gives you a brief summary of how to use PSCP:
 
-         C:\>pscp
+         C:\>pscp -h
          PuTTY Secure Copy client
          Release 0.82
          Usage: pscp [options] [user@]host:source target
@@ -6559,12 +6564,12 @@ Chapter 7: Using the command-line connection tool Plink
        This section describes the basics of how to use Plink for
        interactive logins and for automated processes.
 
-       Once you've got a console window to type into, you can just type
-       `plink' on its own to bring up a usage message. This tells you the
-       version of Plink you're using, and gives you a brief summary of how
-       to use Plink:
+       Once you've got a console window to type into, you can type `plink -
+       -help' to bring up a usage message. This tells you the version of
+       Plink you're using, and gives you a brief summary of how to use
+       Plink:
 
-         C:\>plink
+         C:\>plink --help
          Plink: command-line connection utility
          Release 0.82
          Usage: plink [options] [user@]host [command]
@@ -6764,6 +6769,10 @@ Chapter 7: Using the command-line connection tool Plink
        scripts: using `-batch', if something goes wrong at connection time,
        the batch job will fail rather than hang.
 
+       If another program is invoking Plink on your behalf, then you might
+       need to arrange that that program passes `-batch' to Plink. See
+       section 7.4 for an example involving Git.
+
 7.2.3.2 `-s': remote command is SSH subsystem
 
        If you specify the `-s' option, Plink passes the specified command
@@ -6915,7 +6924,39 @@ Chapter 7: Using the command-line connection tool Plink
        Any non-interactive command you could usefully run on the server
        command line, you can run in a batch file using Plink in this way.
 
-   7.4 Using Plink with CVS
+   7.4 Using Plink with Git
+
+       To use Plink for Git operations performed over SSH, you can set the
+       environment variable `GIT_SSH_COMMAND' to point to Plink.
+
+       For example, if you've run PuTTY's full Windows installer and it has
+       installed Plink in the default location, you might do this:
+
+         set GIT_SSH_COMMAND="C:\Program Files\PuTTY\plink.exe"
+
+       or if you've put Plink somewhere else then you can do a similar
+       thing with a different path.
+
+       This environment variable accepts a whole command line, not just an
+       executable file name. So you can add Plink options to the end of
+       it if you like. For example, if you're using Git in a batch-mode
+       context, where your Git jobs are running unattended and nobody is
+       available to answer interactive prompts, you might also append the
+       `-batch' option (section 7.2.3.1):
+
+         set GIT_SSH_COMMAND="C:\Program Files\PuTTY\plink.exe" -batch
+
+       and then if Plink unexpectedly prints a prompt of some kind (for
+       example, because the SSH server's host key has changed), your batch
+       job will terminate with an error message, instead of stopping and
+       waiting for user input that will never arrive.
+
+       (However, you don't _always_ want to do this with Git. If you're
+       using Git interactively, you might _want_ Plink to stop for
+       interactive prompts - for example, to let you enter a password for
+       the SSH server.)
+
+   7.5 Using Plink with CVS
 
        To use Plink with CVS, you need to set the environment variable
        `CVS_RSH' to point to Plink:
@@ -6934,7 +6975,7 @@ Chapter 7: Using the command-line connection tool Plink
 
          cvs -d :ext:sessionname:/path/to/repository co module
 
-   7.5 Using Plink with WinCVS
+   7.6 Using Plink with WinCVS
 
        Plink can also be used with WinCVS. Firstly, arrange for Plink to be
        able to connect to a remote host non-interactively, as described in
@@ -6947,7 +6988,7 @@ Chapter 7: Using the command-line connection tool Plink
        on the `Preferences' dialogue box.
 
        Next, select `Command Line' from the WinCVS `Admin' menu, and type a
-       CVS command as in section 7.4, for example:
+       CVS command as in section 7.5, for example:
 
          cvs -d :ext:user@hostname:/path/to/repository co module
 
@@ -12837,4 +12878,4 @@ Appendix I: PuTTY privacy considerations
        cannot make any promises about the behaviour of modified versions
        distributed by other people.
 
-[PuTTY release 0.82]
+[PuTTY pre-release 0.83:2025-01-03.1e45199]

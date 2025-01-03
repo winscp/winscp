@@ -29,6 +29,8 @@ char *dupstr(const char *s);
 wchar_t *dupwcs(const wchar_t *s);
 char *dupcat_fn(const char *s1, ...);
 #define dupcat(...) dupcat_fn(__VA_ARGS__, (const char *)NULL)
+wchar_t *dupwcscat_fn(const wchar_t *s1, ...);
+#define dupwcscat(...) dupwcscat_fn(__VA_ARGS__, (const wchar_t *)NULL)
 char *dupprintf(const char *fmt, ...) PRINTF_LIKE(1, 2);
 char *dupvprintf(const char *fmt, va_list ap);
 void burnstr(char *string);

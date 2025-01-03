@@ -954,6 +954,8 @@ static char *ssh_init(const BackendVtable *vt, Seat *seat,
 {
     Ssh *ssh;
 
+    enable_dit(); /* just in case main() forgot */
+
     ssh = snew(Ssh);
     memset(ssh, 0, sizeof(Ssh));
 

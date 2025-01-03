@@ -47,6 +47,11 @@ const char *filename_to_str(const Filename *fn)
     return fn->cpath;                  /* FIXME */
 }
 
+const wchar_t *filename_to_wstr(const Filename *fn)
+{
+    return fn->wpath;
+}
+
 bool filename_equal(const Filename *f1, const Filename *f2)
 {
     /* wpath is primary: two filenames refer to the same file if they

@@ -699,7 +699,8 @@ saved sessions from
 \IM{Streamlined NTRU Prime} Streamlined NTRU Prime
 \IM{Streamlined NTRU Prime} NTRU Prime
 
-\IM{quantum attacks} quantum attacks, resistance to
+\IM{quantum attacks}{quantum-resistant} quantum attacks, resistance to
+\IM{quantum attacks}{quantum-resistant} post-quantum algorithm
 
 \IM{repeat key exchange} repeat key exchange
 \IM{repeat key exchange} key exchange, repeat

@@ -2385,6 +2385,12 @@ Curve25519-based method (one of those included in \q{ECDH}), in such
 a way that it should be no \e{less} secure than that commonly-used
 method, and hopefully also resistant to a new class of attacks.
 
+\b \q{ML-KEM / Curve25519 hybrid} and \q{ML-KEM NIST ECDH hybrid}:
+similar hybrid constructs of \i{ML-KEM}, another lattice-based key
+exchange method intended to be \i{quantum-resistant}. In the former,
+ML-KEM is hybridised with Curve25519; in the latter, with NIST P384
+or P256.
+
 \b \q{\i{ECDH}}: elliptic curve Diffie-Hellman key exchange,
 with a variety of standard curves and hash algorithms.
 

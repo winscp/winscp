@@ -4,6 +4,21 @@
 #include <stddef.h>                    /* for wchar_t */
 #include <limits.h>                    /* for INT_MAX */
 
+/*
+ * Declared before including platform.h, because that will refer to it
+ *
+ * An enum for different types of file that a GUI file requester might
+ * focus on. (Our requesters never _insist_ on a particular file type
+ * or extension - there's always an escape hatch to select any file
+ * you want - but the default can be configured.)
+ */
+typedef enum {
+    FILTER_ALL_FILES, /* no particular focus */
+    FILTER_KEY_FILES, /* .ppk */
+    FILTER_DYNLIB_FILES, /* whatever the host platform uses as shared libs */
+    FILTER_SOUND_FILES, /* whatever kind of sound file we can use as bell */
+} FilereqFilter;
+
 #include "defs.h"
 #include "platform.h"
 #include "network.h"
@@ -388,6 +403,8 @@ enum {
     KEX_RSA,
     KEX_ECDH,
     KEX_NTRU_HYBRID,
+    KEX_MLKEM_25519_HYBRID,
+    KEX_MLKEM_NIST_HYBRID,
     KEX_MAX
 };
 
