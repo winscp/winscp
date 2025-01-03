@@ -629,6 +629,14 @@ static void ssh2_write_kexinit_lists(
             preferred_kex[n_preferred_kex++] =
                 &ssh_ntru_hybrid_kex;
             break;
+          case KEX_MLKEM_25519_HYBRID:
+            preferred_kex[n_preferred_kex++] =
+                &ssh_mlkem_curve25519_hybrid_kex;
+            break;
+          case KEX_MLKEM_NIST_HYBRID:
+            preferred_kex[n_preferred_kex++] =
+                &ssh_mlkem_nist_hybrid_kex;
+            break;
           case KEX_WARN:
             /* Flag for later. Don't bother if it's the last in
              * the list. */
@@ -1189,7 +1197,7 @@ static ScanKexinitsResult ssh2_scan_kexinits(
              * Otherwise, any match failure _is_ a fatal error.
              */
             ScanKexinitsResult skr;
-                skr.success = false, skr.error = SKR_UNKNOWN_ID,
+                skr.success = false, skr.error = SKR_NO_AGREEMENT,
                 skr.kind = kexlist_descr[i], skr.desc = slists[i];
             return skr;
         }

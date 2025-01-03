@@ -1398,7 +1398,8 @@ void findtest(void)
 
             lo = 0;
             hi = arraylen - 1;
-            while (lo <= hi) {
+            assert(lo <= hi);
+            do {
                 mid = (lo + hi) / 2;
                 c = strcmp(p, array[mid]);
                 if (c < 0)
@@ -1407,7 +1408,7 @@ void findtest(void)
                     lo = mid + 1;
                 else
                     break;
-            }
+            } while (lo <= hi);
 
             if (c == 0) {
                 if (rel == REL234_LT)
@@ -1428,10 +1429,11 @@ void findtest(void)
                     ret = NULL;
             }
 
+            index = -1;
             realret = findrelpos234(tree, p, NULL, rel, &index);
             if (realret != ret) {
                 error("find(\"%s\",%s) gave %s should be %s",
-                      p, relnames[j], realret, ret);
+                      p, relnames[j], realret ? realret : "NULL", ret);
             }
             if (realret && index != mid) {
                 error("find(\"%s\",%s) gave %d should be %d",

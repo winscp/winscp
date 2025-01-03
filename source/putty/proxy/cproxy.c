@@ -22,6 +22,7 @@ strbuf *chap_response(ptrlen challenge, ptrlen password)
 {
     strbuf *sb = strbuf_new_nm();
     const ssh2_macalg *alg = &ssh_hmac_md5;
+    enable_dit(); /* just in case main() forgot */
     mac_simple(alg, password, challenge, strbuf_append(sb, alg->len));
     return sb;
 }
@@ -74,6 +75,8 @@ void http_digest_response(BinarySink *bs, ptrlen username, ptrlen password,
     unsigned char rsphash[MAX_HASH_LEN];
     const ssh_hashalg *alg = httphashalgs[hash];
     size_t hashlen = httphashlengths[hash];
+
+    enable_dit(); /* just in case main() forgot */
 
     unsigned char ncbuf[4];
     PUT_32BIT_MSB_FIRST(ncbuf, nonce_count);
