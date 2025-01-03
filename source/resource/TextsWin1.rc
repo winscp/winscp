@@ -698,7 +698,7 @@ BEGIN
         LOGIN_NOT_SHOWING_AGAIN, "**Stop showing Login dialog automatically?** Please confirm if you really want to WinSCP stop showing Login dialog automatically on startup and when the last session is closed.\n\nIf you change your mind later, you can revert this in Preferences on Environment > Window page.\n\nTo open the Login dialog manually, go to Tabs > New Tab [> Remote Tab] or use corresponding toolbar button."
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
-        WINSCP_COPYRIGHT, "Copyright © 2000–2024 Martin Prikryl"
+        WINSCP_COPYRIGHT, "Copyright © 2000–2025 Martin Prikryl"
         HOMEPAGE_URL, "https://winscp.net/"
         HISTORY_URL, "https://winscp.net/eng/docs/history"
         FORUM_URL, "https://winscp.net/forum/"
