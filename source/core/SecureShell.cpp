@@ -218,6 +218,8 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
       case kexRSA: pkex = KEX_RSA; break;
       case kexECDH: pkex = KEX_ECDH; break;
       case kexNTRUHybrid: pkex = KEX_NTRU_HYBRID; break;
+      case kexMLKEM25519Hybrid: pkex = KEX_MLKEM_25519_HYBRID; break;
+      case kexMLKEMNISTHybrid: pkex = KEX_MLKEM_NIST_HYBRID; break;
       default: DebugFail();
     }
     conf_set_int_int(conf, CONF_ssh_kexlist, k, pkex);

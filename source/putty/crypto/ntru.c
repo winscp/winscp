@@ -1641,6 +1641,7 @@ static bool ntru_vt_encaps(const pq_kemalg *alg, BinarySink *c, BinarySink *k,
     BinarySource src[1];
     BinarySource_BARE_INIT_PL(src, ek);
 
+    { // WINSCP
     uint16_t *pubkey = snewn(p_LIVE, uint16_t);
     ntru_decode_pubkey(pubkey, p_LIVE, q_LIVE, src);
 
@@ -1651,14 +1652,17 @@ static bool ntru_vt_encaps(const pq_kemalg *alg, BinarySink *c, BinarySink *k,
     }
 
     /* Invent a valid NTRU plaintext. */
+    { // WINSCP
     uint16_t *plaintext = snewn(p_LIVE, uint16_t);
     ntru_gen_short(plaintext, p_LIVE, w_LIVE);
 
     /* Encrypt the plaintext, and encode the ciphertext into a strbuf,
      * so we can reuse it for both the session hash and sending to the
      * client. */
+    { // WINSCP
     uint16_t *ciphertext = snewn(p_LIVE, uint16_t);
     ntru_encrypt(ciphertext, plaintext, pubkey, p_LIVE, q_LIVE);
+    { // WINSCP
     strbuf *ciphertext_encoded = strbuf_new_nm();
     ntru_encode_ciphertext(ciphertext, p_LIVE, q_LIVE,
                            BinarySink_UPCAST(ciphertext_encoded));
@@ -1666,11 +1670,13 @@ static bool ntru_vt_encaps(const pq_kemalg *alg, BinarySink *c, BinarySink *k,
 
     /* Compute the confirmation hash, and append that to the data sent
      * to the other side. */
+    { // WINSCP
     uint8_t confhash[32];
     ntru_confirmation_hash(confhash, plaintext, pubkey, p_LIVE, q_LIVE);
     put_data(c, confhash, 32);
 
     /* Compute the session hash, i.e. the output shared secret. */
+    { // WINSCP
     uint8_t sesshash[32];
     ntru_session_hash(sesshash, 1, plaintext, p_LIVE,
                       ptrlen_from_strbuf(ciphertext_encoded),
@@ -1685,6 +1691,12 @@ static bool ntru_vt_encaps(const pq_kemalg *alg, BinarySink *c, BinarySink *k,
     smemclr(sesshash, sizeof(sesshash));
 
     return true;
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
 static bool ntru_vt_decaps(pq_kem_dk *dk, BinarySink *k, ptrlen c)
@@ -1713,19 +1725,23 @@ static bool ntru_vt_decaps(pq_kem_dk *dk, BinarySink *k, ptrlen c)
     ntru_decrypt(plaintext, ciphertext, ndk->keypair);
 
     /* Make the confirmation hash */
+    { // WINSCP
     uint8_t confhash[32];
     ntru_confirmation_hash(confhash, plaintext, ndk->keypair->h,
                            p_LIVE, q_LIVE);
 
     /* Check it matches the one the server sent */
+    { // WINSCP
     unsigned ok = smemeq(confhash, confirmation_hash.ptr, 32);
 
     /* If not, substitute in rho for the plaintext in the session hash */
     unsigned mask = ok-1;
-    for (size_t i = 0; i < p_LIVE; i++)
+    size_t i; // WINSCP
+    for (i = 0; i < p_LIVE; i++)
         plaintext[i] ^= mask & (plaintext[i] ^ ndk->keypair->rho[i]);
 
     /* Compute the session hash, whether or not we did that */
+    { // WINSCP
     uint8_t sesshash[32];
     ntru_session_hash(sesshash, ok, plaintext, p_LIVE, ciphertext_encoded,
                       confirmation_hash);
@@ -1739,6 +1755,9 @@ static bool ntru_vt_decaps(pq_kem_dk *dk, BinarySink *k, ptrlen c)
     return true;
     } // WINSCP
     } // WINSCP
+    } // WINSCP
+    } // WINSCP
+    } // WINSCP
 }
 
 static void ntru_vt_free_dk(pq_kem_dk *dk)
@@ -1750,11 +1769,12 @@ static void ntru_vt_free_dk(pq_kem_dk *dk)
 }
 
 const pq_kemalg ssh_ntru = {
-    .keygen = ntru_vt_keygen,
-    .encaps = ntru_vt_encaps,
-    .decaps = ntru_vt_decaps,
-    .free_dk = ntru_vt_free_dk,
-    .description = "NTRU Prime",
-    .ek_len = 1158,
-    .c_len = 1039,
+    /*.keygen =*/ ntru_vt_keygen,
+    /*.encaps =*/ ntru_vt_encaps,
+    /*.decaps =*/ ntru_vt_decaps,
+    /*.free_dk =*/ ntru_vt_free_dk,
+    NULL, // WINSCP
+    /*.description =*/ "NTRU Prime",
+    /*.ek_len =*/ 1158,
+    /*.c_len =*/ 1039,
 };

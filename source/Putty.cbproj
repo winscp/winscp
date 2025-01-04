@@ -160,6 +160,9 @@
         <CppCompile Include="putty\crypto\hmac.c">
             <BuildOrder>23</BuildOrder>
         </CppCompile>
+        <CppCompile Include="putty\crypto\kex-hybrid.c">
+            <BuildOrder>174</BuildOrder>
+        </CppCompile>
         <CppCompile Include="putty\crypto\mac.c">
             <BuildOrder>25</BuildOrder>
         </CppCompile>
@@ -168,6 +171,9 @@
         </CppCompile>
         <CppCompile Include="putty\crypto\md5.c">
             <BuildOrder>27</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="putty\crypto\mlkem.c">
+            <BuildOrder>175</BuildOrder>
         </CppCompile>
         <CppCompile Include="putty\crypto\mpint.c">
             <BuildOrder>28</BuildOrder>

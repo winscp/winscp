@@ -17,7 +17,7 @@ enum TFSProtocol { fsSCPonly = 0, fsSFTP = 1, fsSFTPonly = 2, fsFTP = 5, fsWebDA
 #define FSPROTOCOL_COUNT (fsS3+1)
 extern const wchar_t * ProxyMethodNames;
 enum TProxyMethod { pmNone, pmSocks4, pmSocks5, pmHTTP, pmTelnet, pmCmd };
-enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGroup15, kexDHGroup16, kexDHGroup17, kexDHGroup18, kexDHGEx, kexRSA, kexECDH, kexNTRUHybrid, kexCount };
+enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGroup15, kexDHGroup16, kexDHGroup17, kexDHGroup18, kexDHGEx, kexRSA, kexECDH, kexNTRUHybrid, kexMLKEM25519Hybrid, kexMLKEMNISTHybrid, kexCount };
 #define KEX_COUNT (kexCount)
 enum THostKey { hkWarn, hkRSA, hkDSA, hkECDSA, hkED25519, hkED448, hkCount };
 #define HOSTKEY_COUNT (hkCount)

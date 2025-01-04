@@ -78,6 +78,7 @@ void http_digest_response(BinarySink *bs, ptrlen username, ptrlen password,
 
     enable_dit(); /* just in case main() forgot */
 
+    { // WINSCP
     unsigned char ncbuf[4];
     PUT_32BIT_MSB_FIRST(ncbuf, nonce_count);
 
@@ -194,6 +195,7 @@ void http_digest_response(BinarySink *bs, ptrlen username, ptrlen password,
     smemclr(rsphash, lenof(rsphash));
     smemclr(client_nonce_raw, lenof(client_nonce_raw));
     smemclr(client_nonce_base64, lenof(client_nonce_base64));
+    } // WINSCP
     } // WINSCP
     } // WINSCP
     } // WINSCP

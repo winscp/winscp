@@ -279,7 +279,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     // KEX page
 
     KexListBox->Items->Clear();
-    DebugAssert(KEX_NAME_WARN + KEX_COUNT - 1 == KEX_NAME_NTRU_HYBRID);
+    DebugAssert(KEX_NAME_WARN + KEX_COUNT - 1 == KEX_NAME_MLKEM_NIST_HYBRID);
     for (int Index = 0; Index < KEX_COUNT; Index++)
     {
       KexListBox->Items->AddObject(
