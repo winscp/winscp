@@ -12329,7 +12329,7 @@ void TCustomScpExplorerForm::WMQueueCallback(TMessage & Message)
 //---------------------------------------------------------------------------
 void TCustomScpExplorerForm::InitializeRemoteThumbnailMask()
 {
-  UnicodeString DefaultRemoteThumbnailMask = L"*.jpg;*.jpeg;*.gif;*.png;*.svg;*.bmp;*.raw;*.ico;*.heic";
+  UnicodeString DefaultRemoteThumbnailMask = L"*.jpg;*.jpeg;*.gif;*.png;*.svg;*.bmp;*.raw;*.ico;*.heic;*.webp";
   UnicodeString RemoteThumbnailMask = WinConfiguration->RemoteThumbnailMask;
   if (RemoteThumbnailMask.IsEmpty() ||
       StartsStr(L"+", RemoteThumbnailMask) || StartsStr(L"-", RemoteThumbnailMask) || StartsStr(L"*", RemoteThumbnailMask))
