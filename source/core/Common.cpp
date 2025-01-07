@@ -3551,143 +3551,155 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
   Certificate = NULL;
   PrivateKey = NULL;
   WrongPassphrase = false;
-  bool HasPassphrase = !Passphrase.IsEmpty();
-
-  FILE * File;
-
-  // Inspired by neon's ne_ssl_clicert_read
-  File = OpenCertificate(Path);
-  // openssl pkcs12 -inkey cert.pem -in cert.crt -export -out cert.pfx
-  // Binary file
-  PKCS12 * Pkcs12 = d2i_PKCS12_fp(File, NULL);
-  fclose(File);
-
-  if (Pkcs12 != NULL)
+  bool Discard = false;
+  try
   {
-    UTF8String PassphraseUtf(Passphrase);
-
-    bool Result =
-      (PKCS12_parse(Pkcs12, PassphraseUtf.c_str(), &PrivateKey, &Certificate, NULL) == 1);
-    PKCS12_free(Pkcs12);
-
-    if (!Result)
-    {
-      ThrowTlsCertificateErrorIgnorePassphraseErrors(Path, HasPassphrase);
-      WrongPassphrase = true;
-    }
-  }
-  else
-  {
-    ERR_clear_error();
-
-    TPemPasswordCallbackData CallbackUserData;
-    // PemPasswordCallback never writes to the .Passphrase
-    CallbackUserData.Passphrase = const_cast<UnicodeString *>(&Passphrase);
-
-    File = OpenCertificate(Path);
-    // Encrypted:
-    // openssl req -x509 -newkey rsa:2048 -keyout cert.pem -out cert.crt
-    // -----BEGIN ENCRYPTED PRIVATE KEY-----
-    // ...
-    // -----END ENCRYPTED PRIVATE KEY-----
-
-    // Not encrypted (add -nodes):
-    // -----BEGIN PRIVATE KEY-----
-    // ...
-    // -----END PRIVATE KEY-----
-    // Or (openssl genrsa -out client.key 1024   # used for certificate signing request)
-    // -----BEGIN RSA PRIVATE KEY-----
-    // ...
-    // -----END RSA PRIVATE KEY-----
-    PrivateKey = PEM_read_PrivateKey(File, NULL, PemPasswordCallback, &CallbackUserData);
-    fclose(File);
-
     try
     {
-      if (PrivateKey == NULL)
-      {
-        ThrowTlsCertificateErrorIgnorePassphraseErrors(Path, HasPassphrase);
-        WrongPassphrase = true;
-      }
+      bool HasPassphrase = !Passphrase.IsEmpty();
 
+      FILE * File;
+
+      // Inspired by neon's ne_ssl_clicert_read
       File = OpenCertificate(Path);
-      // The file can contain both private and public key
-      // (basically cert.pem and cert.crt appended one to each other)
-      // -----BEGIN ENCRYPTED PRIVATE KEY-----
-      // ...
-      // -----END ENCRYPTED PRIVATE KEY-----
-      // -----BEGIN CERTIFICATE-----
-      // ...
-      // -----END CERTIFICATE-----
-      Certificate = PEM_read_X509(File, NULL, PemPasswordCallback, &CallbackUserData);
+      // openssl pkcs12 -inkey cert.pem -in cert.crt -export -out cert.pfx
+      // Binary file
+      PKCS12 * Pkcs12 = d2i_PKCS12_fp(File, NULL);
       fclose(File);
 
-      if (Certificate == NULL)
+      if (Pkcs12 != NULL)
       {
-        unsigned long Error = ERR_get_error();
-        // unlikely
-        if (IsTlsPassphraseError(Error, HasPassphrase))
+        UTF8String PassphraseUtf(Passphrase);
+
+        bool Result =
+          (PKCS12_parse(Pkcs12, PassphraseUtf.c_str(), &PrivateKey, &Certificate, NULL) == 1);
+        PKCS12_free(Pkcs12);
+
+        if (!Result)
         {
+          ThrowTlsCertificateErrorIgnorePassphraseErrors(Path, HasPassphrase);
           WrongPassphrase = true;
         }
-        else
+        if (!WrongPassphrase && (PrivateKey == NULL))
         {
-          UnicodeString CertificatePath = ChangeFileExt(Path, L".cer");
-          if (!FileExists(CertificatePath))
-          {
-            CertificatePath = ChangeFileExt(Path, L".crt");
-          }
+          throw Exception(FMTLOAD(NO_PRIVATE_KEY, (Path)));
+        }
+      }
+      else
+      {
+        ERR_clear_error();
 
-          if (!FileExists(CertificatePath))
+        TPemPasswordCallbackData CallbackUserData;
+        // PemPasswordCallback never writes to the .Passphrase
+        CallbackUserData.Passphrase = const_cast<UnicodeString *>(&Passphrase);
+
+        File = OpenCertificate(Path);
+        // Encrypted:
+        // openssl req -x509 -newkey rsa:2048 -keyout cert.pem -out cert.crt
+        // -----BEGIN ENCRYPTED PRIVATE KEY-----
+        // ...
+        // -----END ENCRYPTED PRIVATE KEY-----
+
+        // Not encrypted (add -nodes):
+        // -----BEGIN PRIVATE KEY-----
+        // ...
+        // -----END PRIVATE KEY-----
+        // Or (openssl genrsa -out client.key 1024   # used for certificate signing request)
+        // -----BEGIN RSA PRIVATE KEY-----
+        // ...
+        // -----END RSA PRIVATE KEY-----
+        PrivateKey = PEM_read_PrivateKey(File, NULL, PemPasswordCallback, &CallbackUserData);
+        fclose(File);
+
+        if (PrivateKey == NULL)
+        {
+          ThrowTlsCertificateErrorIgnorePassphraseErrors(Path, HasPassphrase);
+          WrongPassphrase = true;
+        }
+
+        File = OpenCertificate(Path);
+        // The file can contain both private and public key
+        // (basically cert.pem and cert.crt appended one to each other)
+        // -----BEGIN ENCRYPTED PRIVATE KEY-----
+        // ...
+        // -----END ENCRYPTED PRIVATE KEY-----
+        // -----BEGIN CERTIFICATE-----
+        // ...
+        // -----END CERTIFICATE-----
+        Certificate = PEM_read_X509(File, NULL, PemPasswordCallback, &CallbackUserData);
+        fclose(File);
+
+        if (Certificate == NULL)
+        {
+          unsigned long Error = ERR_get_error();
+          // unlikely
+          if (IsTlsPassphraseError(Error, HasPassphrase))
           {
-            throw Exception(MainInstructions(FMTLOAD(CERTIFICATE_PUBLIC_KEY_NOT_FOUND, (Path))));
+            WrongPassphrase = true;
           }
           else
           {
-            File = OpenCertificate(CertificatePath);
-            // -----BEGIN CERTIFICATE-----
-            // ...
-            // -----END CERTIFICATE-----
-            Certificate = PEM_read_X509(File, NULL, PemPasswordCallback, &CallbackUserData);
-            fclose(File);
-
-            if (Certificate == NULL)
+            UnicodeString CertificatePath = ChangeFileExt(Path, L".cer");
+            if (!FileExists(CertificatePath))
             {
-              unsigned long Base64Error = ERR_get_error();
+              CertificatePath = ChangeFileExt(Path, L".crt");
+            }
 
+            if (!FileExists(CertificatePath))
+            {
+              throw Exception(MainInstructions(FMTLOAD(CERTIFICATE_PUBLIC_KEY_NOT_FOUND, (Path))));
+            }
+            else
+            {
               File = OpenCertificate(CertificatePath);
-              // Binary DER-encoded certificate
-              // (as above, with BEGIN/END removed, and decoded from Base64 to binary)
-              // openssl x509 -in cert.crt -out client.der.crt -outform DER
-              Certificate = d2i_X509_fp(File, NULL);
+              // -----BEGIN CERTIFICATE-----
+              // ...
+              // -----END CERTIFICATE-----
+              Certificate = PEM_read_X509(File, NULL, PemPasswordCallback, &CallbackUserData);
               fclose(File);
 
               if (Certificate == NULL)
               {
-                unsigned long DERError = ERR_get_error();
+                unsigned long Base64Error = ERR_get_error();
 
-                UnicodeString Message = MainInstructions(FMTLOAD(CERTIFICATE_READ_ERROR, (CertificatePath)));
-                UnicodeString MoreMessages =
-                  FORMAT(L"Base64: %s\nDER: %s", (GetTlsErrorStr(Base64Error), GetTlsErrorStr(DERError)));
-                throw ExtException(Message, MoreMessages);
+                File = OpenCertificate(CertificatePath);
+                // Binary DER-encoded certificate
+                // (as above, with BEGIN/END removed, and decoded from Base64 to binary)
+                // openssl x509 -in cert.crt -out client.der.crt -outform DER
+                Certificate = d2i_X509_fp(File, NULL);
+                fclose(File);
+
+                if (Certificate == NULL)
+                {
+                  unsigned long DERError = ERR_get_error();
+
+                  UnicodeString Message = MainInstructions(FMTLOAD(CERTIFICATE_READ_ERROR, (CertificatePath)));
+                  UnicodeString MoreMessages =
+                    FORMAT(L"Base64: %s\nDER: %s", (GetTlsErrorStr(Base64Error), GetTlsErrorStr(DERError)));
+                  throw ExtException(Message, MoreMessages);
+                }
               }
             }
           }
         }
       }
     }
-    __finally
+    catch (...)
     {
-      // We loaded private key, but failed to load certificate, discard the certificate
-      // (either exception was thrown or WrongPassphrase)
-      if ((PrivateKey != NULL) && (Certificate == NULL))
+      Discard = true;
+      throw;
+    }
+  }
+  __finally
+  {
+    if (Discard || WrongPassphrase)
+    {
+      if (PrivateKey != NULL)
       {
         EVP_PKEY_free(PrivateKey);
         PrivateKey = NULL;
       }
-      // Certificate was verified, but passphrase was wrong when loading private key,
-      // so discard the certificate
-      else if ((Certificate != NULL) && (PrivateKey == NULL))
+      if (Certificate != NULL)
       {
         X509_free(Certificate);
         Certificate = NULL;

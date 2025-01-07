@@ -293,6 +293,7 @@
 #define INI_NO_SITES            782
 #define TLS_UNSUPPORTED         783
 #define OPENSSL_INIT_ERROR      784
+#define NO_PRIVATE_KEY          785
 
 #define CORE_CONFIRMATION_STRINGS 300
 #define CONFIRM_PROLONG_TIMEOUT3 301

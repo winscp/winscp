@@ -269,6 +269,7 @@ BEGIN
   INI_NO_SITES, "No sites found in \"%s\"."
   TLS_UNSUPPORTED, "The server is using unsupported protocol. Your WinSCP session is configured to use %s through %s. It can be configured to use %s through %s. Though, avoid using old insecure protocols, whenever possible."
   OPENSSL_INIT_ERROR, "OpenSSL initialization failed"
+  NO_PRIVATE_KEY, "No private key found in %s file."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"
