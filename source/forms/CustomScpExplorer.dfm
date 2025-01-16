@@ -2,25 +2,21 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   Left = 251
   Top = 166
   Caption = 'CustomScpExplorerForm'
-  ClientHeight = 432
-  ClientWidth = 620
+  ClientHeight = 429
+  ClientWidth = 608
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'Tahoma'
-  Font.Style = []
+  ParentFont = True
   KeyPreview = True
   OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnConstrainedResize = FormConstrainedResize
   OnShow = FormShow
-  TextHeight = 13
+  TextHeight = 15
   object QueueSplitter: TSplitter
     Left = 0
-    Top = 289
-    Width = 620
+    Top = 286
+    Width = 608
     Height = 3
     Cursor = crSizeNS
     Hint = 'Drag to resize queue list. Double click to hide queue list.'
@@ -33,15 +29,15 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   object TopDock: TTBXDock
     Left = 0
     Top = 0
-    Width = 620
+    Width = 608
     Height = 9
     FixAlign = True
   end
   object RemotePanel: TPanel
     Left = 0
     Top = 39
-    Width = 620
-    Height = 250
+    Width = 608
+    Height = 247
     Align = alClient
     BevelOuter = bvNone
     Color = clWindow
@@ -50,7 +46,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     object RemotePanelSplitter: TSplitter
       Left = 169
       Top = 0
-      Height = 231
+      Height = 228
       Cursor = crSizeWE
       AutoSnap = False
       MinSize = 70
@@ -58,8 +54,8 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     end
     object RemoteStatusBar: TTBXStatusBar
       Left = 0
-      Top = 231
-      Width = 620
+      Top = 228
+      Width = 608
       Height = 19
       Panels = <>
       ParentShowHint = False
@@ -71,8 +67,8 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     object RemoteDirPanel: TPanel
       Left = 172
       Top = 0
-      Width = 448
-      Height = 231
+      Width = 436
+      Height = 228
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 1
@@ -146,7 +142,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       Left = 0
       Top = 0
       Width = 169
-      Height = 231
+      Height = 228
       Align = alLeft
       BevelOuter = bvNone
       TabOrder = 2
@@ -154,7 +150,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         Left = 0
         Top = 0
         Width = 169
-        Height = 231
+        Height = 228
         DirView = RemoteDirView
         OnDDDragFileName = RemoteFileControlDDDragFileName
         OnDDEnd = RemoteFileControlDDEnd
@@ -183,8 +179,8 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   end
   object QueuePanel: TPanel
     Left = 0
-    Top = 292
-    Width = 620
+    Top = 289
+    Width = 608
     Height = 140
     Align = alBottom
     BevelOuter = bvNone
@@ -193,7 +189,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       Left = 0
       Top = 0
       Width = 620
-      Height = 19
+      Height = 21
       IndentVertical = 3
       AutoSizeVertical = True
       OnGetStatus = QueueLabelGetStatus
@@ -217,9 +213,9 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     end
     object QueueView3: TListView
       Left = 0
-      Top = 45
+      Top = 47
       Width = 620
-      Height = 72
+      Height = 70
       Align = alClient
       Columns = <
         item
@@ -286,7 +282,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     object QueueDock: TTBXDock
       Tag = 1
       Left = 0
-      Top = 19
+      Top = 21
       Width = 620
       Height = 26
       AllowDrag = False
@@ -392,7 +388,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   object SessionsPageControl: TThemePageControl
     Left = 0
     Top = 18
-    Width = 620
+    Width = 608
     Height = 21
     ActivePage = TabSheet1
     Align = alTop
@@ -418,7 +414,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     Tag = 1
     Left = 0
     Top = 9
-    Width = 620
+    Width = 608
     Height = 9
     AllowDrag = False
     FixAlign = True

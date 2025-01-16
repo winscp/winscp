@@ -8,11 +8,7 @@ object EditorForm: TEditorForm
   ClientHeight = 381
   ClientWidth = 609
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'Tahoma'
-  Font.Style = []
+  ParentFont = True
   Icon.Data = {
     000001000700404000000100200028420000760000003030000001002000A825
     00009E4200002828000001002000681A0000466800002020000001002000A810
@@ -1363,7 +1359,7 @@ object EditorForm: TEditorForm
   OnCloseQuery = FormCloseQuery
   OnKeyDown = FormKeyDown
   OnShow = FormShow
-  TextHeight = 13
+  TextHeight = 15
   object TopDock: TTBXDock
     Left = 0
     Top = 0

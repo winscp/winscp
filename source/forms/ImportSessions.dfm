@@ -6,32 +6,28 @@ object ImportSessionsDialog: TImportSessionsDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Import sitesX'
-  ClientHeight = 273
-  ClientWidth = 375
+  ClientHeight = 307
+  ClientWidth = 418
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'Tahoma'
-  Font.Style = []
+  ParentFont = True
   Position = poOwnerFormCenter
   OnShow = FormShow
   DesignSize = (
-    375
-    273)
-  TextHeight = 13
+    418
+    307)
+  TextHeight = 15
   object Label: TLabel
     Left = 8
-    Top = 13
-    Width = 61
-    Height = 13
+    Top = 12
+    Width = 68
+    Height = 15
     Caption = '&Import from:'
     FocusControl = SourceComboBox
   end
   object OKButton: TButton
-    Left = 135
-    Top = 242
-    Width = 75
+    Left = 158
+    Top = 274
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'OK'
@@ -40,9 +36,9 @@ object ImportSessionsDialog: TImportSessionsDialog
     TabOrder = 5
   end
   object CancelButton: TButton
-    Left = 215
-    Top = 242
-    Width = 75
+    Left = 244
+    Top = 274
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
@@ -53,8 +49,8 @@ object ImportSessionsDialog: TImportSessionsDialog
   object SessionListView2: TListView
     Left = 8
     Top = 39
-    Width = 361
-    Height = 197
+    Width = 402
+    Height = 229
     Anchors = [akLeft, akTop, akRight, akBottom]
     Checkboxes = True
     Columns = <
@@ -77,8 +73,8 @@ object ImportSessionsDialog: TImportSessionsDialog
   end
   object CheckAllButton: TButton
     Left = 8
-    Top = 242
-    Width = 113
+    Top = 274
+    Width = 125
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = 'Un/check &all'
@@ -86,9 +82,9 @@ object ImportSessionsDialog: TImportSessionsDialog
     OnClick = CheckAllButtonClick
   end
   object HelpButton: TButton
-    Left = 294
-    Top = 242
-    Width = 75
+    Left = 330
+    Top = 274
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'
@@ -96,10 +92,10 @@ object ImportSessionsDialog: TImportSessionsDialog
     OnClick = HelpButtonClick
   end
   object SourceComboBox: TComboBox
-    Left = 106
-    Top = 10
-    Width = 120
-    Height = 21
+    Left = 116
+    Top = 9
+    Width = 133
+    Height = 23
     Style = csDropDownList
     TabOrder = 0
     OnSelect = SourceComboBoxSelect
@@ -114,8 +110,8 @@ object ImportSessionsDialog: TImportSessionsDialog
   object ErrorPanel: TPanel
     Left = 48
     Top = 92
-    Width = 281
-    Height = 97
+    Width = 321
+    Height = 125
     BevelOuter = bvNone
     Color = clWindow
     ParentBackground = False
@@ -123,8 +119,8 @@ object ImportSessionsDialog: TImportSessionsDialog
     object ErrorLabel: TLabel
       Left = 0
       Top = 0
-      Width = 281
-      Height = 97
+      Width = 321
+      Height = 125
       Align = alClient
       Alignment = taCenter
       Caption = 'ErrorLabel'
@@ -134,7 +130,7 @@ object ImportSessionsDialog: TImportSessionsDialog
     end
   end
   object PasteButton: TButton
-    Left = 232
+    Left = 255
     Top = 8
     Width = 75
     Height = 25
@@ -143,9 +139,9 @@ object ImportSessionsDialog: TImportSessionsDialog
     OnClick = PasteButtonClick
   end
   object BrowseButton: TButton
-    Left = 232
+    Left = 255
     Top = 8
-    Width = 75
+    Width = 80
     Height = 25
     Caption = 'B&rowse...'
     TabOrder = 2

@@ -892,8 +892,8 @@ void __fastcall TGenerateUrlDialog::Execute()
 
   if (OptionsPageControl->ActivePage != UrlSheet)
   {
-    ClientWidth = ScaleByTextHeightRunTime(this, 700);
-    ClientHeight = ScaleByTextHeightRunTime(this, 600);
+    ClientWidth = ScaleByTextHeightRunTime(this, 777);
+    ClientHeight = ScaleByTextHeightRunTime(this, 666);
   }
 
   ShowModal();

@@ -7,7 +7,7 @@ inherited ScpExplorerForm: TScpExplorerForm
   Caption = 'ScpExplorerForm'
   ClientHeight = 475
   ClientWidth = 632
-  TextHeight = 13
+  TextHeight = 15
   inherited QueueSplitter: TSplitter
     Top = 332
     Width = 632
@@ -1067,7 +1067,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       end
     end
     object CustomCommandsToolbar: TTBXToolbar
-      Left = 299
+      Left = 300
       Top = 182
       Caption = 'Custom Commands'
       ChevronMenu = True
@@ -1086,7 +1086,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     Top = 239
     Width = 614
     Height = 93
-    Constraints.MinHeight = 93
+    Constraints.MinHeight = 92
     Constraints.MinWidth = 210
     inherited RemotePanelSplitter: TSplitter
       Height = 62

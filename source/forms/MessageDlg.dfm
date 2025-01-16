@@ -7,12 +7,8 @@ object MessageForm: TMessageForm
   ClientHeight = 41
   ClientWidth = 326
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'Tahoma'
-  Font.Style = []
+  ParentFont = True
   Position = poOwnerFormCenter
   OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
-  TextHeight = 13
+  TextHeight = 15
 end

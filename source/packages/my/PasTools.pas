@@ -420,7 +420,7 @@ begin
 end;
 
 const
-  OurDesignTimeTextHeight = 13;
+  OurDesignTimeTextHeight = 15;
 
 function ScaleByTextHeight(Control: TControl; Dimension: Integer): Integer;
 var

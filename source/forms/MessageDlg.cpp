@@ -451,7 +451,7 @@ const ResourceString * Captions[] = { &_SMsgDlgWarning, &_SMsgDlgError, &_SMsgDl
   &_SMsgDlgConfirm, NULL };
 const wchar_t * ImageNames[] = { L"Warning", L"Error", L"Information",
   L"Help Blue", NULL };
-const int mcHorzMargin = 10;
+const int mcHorzMargin = 8;
 const int mcVertMargin = 13;
 const int mcHorzSpacing = 12;
 const int mcButtonVertMargin = 7;
@@ -608,11 +608,8 @@ TButton * __fastcall TMessageForm::CreateButton(
       Button->Anchors = TAnchors() << akBottom << akLeft;
     }
 
-    // never shrink buttons below their default width
-    if (Button->Width < CurButtonWidth)
-    {
-      Button->Width = CurButtonWidth;
-    }
+    // never shrink buttons below our default UI button with
+    Button->Width = std::max(ScaleByTextHeightRunTime(this, 80), CurButtonWidth);
 
     Button->ElevationRequired = ElevationRequired;
     ButtonWidths += Button->Width;
@@ -1213,7 +1210,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     TButton * FirstButton = ButtonControls[0];
     int NeverAskAgainHeight = ScaleByTextHeightRunTime(Result, Result->NeverAskAgainCheck->Height);
     int NeverAskAgainTop = FirstButton->Top + ((FirstButton->Height - NeverAskAgainHeight) / 2);
-    int NeverAskAgainLeft = HorzMargin;
+    int NeverAskAgainLeft = HorzMargin + ScaleByTextHeightRunTime(Result, 2); // checkbox indentation
 
     Result->NeverAskAgainCheck->SetBounds(
       NeverAskAgainLeft, NeverAskAgainTop, NeverAskAgainBaseWidth, NeverAskAgainHeight);

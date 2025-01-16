@@ -6,7 +6,7 @@ inherited ScpCommanderForm: TScpCommanderForm
   Caption = 'ScpCommanderForm'
   ClientHeight = 670
   ClientWidth = 898
-  TextHeight = 13
+  TextHeight = 15
   object Splitter: TSplitter [0]
     Left = 435
     Top = 186
@@ -1117,7 +1117,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
     end
     object CustomCommandsToolbar: TTBXToolbar
-      Left = 299
+      Left = 300
       Top = 129
       Caption = 'Custom Commands'
       ChevronMenu = True
@@ -1144,7 +1144,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Left = 0
       Top = 79
       Width = 458
-      Height = 19
+      Height = 21
       UnixPath = True
       IndentVertical = 3
       AutoSizeVertical = True
@@ -1158,7 +1158,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     inherited RemotePanelSplitter: TSplitter
       Left = 0
-      Top = 143
+      Top = 145
       Width = 458
       Height = 3
       Cursor = crSizeNS
@@ -1202,13 +1202,13 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     inherited RemoteDirPanel: TPanel
       Left = 0
-      Top = 146
+      Top = 148
       Width = 458
-      Height = 115
+      Height = 113
       Constraints.MinHeight = 70
       inherited RemoteDirView: TUnixDirView
         Width = 280
-        Height = 115
+        Height = 113
         NortonLike = nlOn
         OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
         PathLabel = RemotePathLabel
@@ -1224,7 +1224,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Left = 280
         Top = 0
         Width = 178
-        Height = 115
+        Height = 113
         Align = alRight
         Constraints.MinHeight = 70
         DoubleBuffered = True
@@ -1266,7 +1266,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
     end
     inherited RemoteDrivePanel: TPanel
-      Top = 98
+      Top = 100
       Width = 458
       Height = 45
       Align = alTop
@@ -1542,7 +1542,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     inherited QueueView3: TListView
       Width = 898
-      Height = 48
+      Height = 46
       TabStop = False
     end
     inherited QueueDock: TTBXDock
@@ -1573,7 +1573,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Left = 0
       Top = 79
       Width = 435
-      Height = 19
+      Height = 21
       IndentVertical = 3
       AutoSizeVertical = True
       HotTrack = True
@@ -1587,7 +1587,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalPanelSplitter: TSplitter
       Left = 0
-      Top = 143
+      Top = 145
       Width = 435
       Height = 3
       Cursor = crSizeNS
@@ -1640,9 +1640,9 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalDirView: TDirView
       Left = 0
-      Top = 146
+      Top = 148
       Width = 435
-      Height = 115
+      Height = 113
       Align = alClient
       Constraints.MinHeight = 70
       DoubleBuffered = True
@@ -1893,7 +1893,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalDriveView: TDriveView
       Left = 0
-      Top = 98
+      Top = 100
       Width = 435
       Height = 45
       WatchDirectory = True

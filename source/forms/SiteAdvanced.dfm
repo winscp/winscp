@@ -6,36 +6,32 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Advanced Site Settings'
-  ClientHeight = 432
-  ClientWidth = 561
+  ClientHeight = 429
+  ClientWidth = 619
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'Tahoma'
-  Font.Style = []
+  ParentFont = True
   Position = poOwnerFormCenter
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
-    561
-    432)
-  TextHeight = 13
+    619
+    429)
+  TextHeight = 15
   object MainPanel: TPanel
     Left = 0
     Top = 0
-    Width = 561
-    Height = 392
+    Width = 619
+    Height = 398
     Align = alTop
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
     TabOrder = 0
     object PageControl: TPageControl
-      Left = 152
+      Left = 161
       Top = 0
-      Width = 409
-      Height = 392
+      Width = 458
+      Height = 398
       HelpType = htKeyword
       ActivePage = EnvironmentSheet
       Align = alClient
@@ -52,66 +48,66 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         ImageIndex = 6
         TabVisible = False
         DesignSize = (
-          401
-          382)
+          450
+          388)
         object EnvironmentGroup: TGroupBox
-          Left = 0
-          Top = 6
-          Width = 393
-          Height = 140
+          Left = 8
+          Top = 2
+          Width = 438
+          Height = 156
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Server environment'
           TabOrder = 0
           DesignSize = (
-            393
-            140)
+            438
+            156)
           object EOLTypeLabel: TLabel
-            Left = 12
-            Top = 20
-            Width = 241
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 261
+            Height = 15
             Caption = 'End-of-line &characters (if not indicated by server):'
             FocusControl = EOLTypeCombo
           end
           object UtfLabel: TLabel
-            Left = 12
-            Top = 44
-            Width = 144
-            Height = 13
+            Left = 9
+            Top = 51
+            Width = 160
+            Height = 15
             Caption = '&UTF-8 encoding for filenames:'
             FocusControl = UtfCombo
           end
           object TimeDifferenceLabel: TLabel
-            Left = 12
-            Top = 68
-            Width = 84
-            Height = 13
+            Left = 9
+            Top = 80
+            Width = 91
+            Height = 15
             Caption = 'Time &zone offset:'
             FocusControl = TimeDifferenceEdit
           end
           object TimeDifferenceHoursLabel: TLabel
-            Left = 210
-            Top = 68
-            Width = 27
-            Height = 13
+            Left = 245
+            Top = 80
+            Width = 30
+            Height = 15
             Anchors = [akTop, akRight]
             Caption = 'hours'
             FocusControl = TimeDifferenceEdit
           end
           object TimeDifferenceMinutesLabel: TLabel
-            Left = 336
-            Top = 66
-            Width = 37
-            Height = 13
+            Left = 376
+            Top = 80
+            Width = 43
+            Height = 15
             Anchors = [akTop, akRight]
             Caption = 'minutes'
             FocusControl = TimeDifferenceMinutesEdit
           end
           object EOLTypeCombo: TComboBox
-            Left = 320
-            Top = 15
-            Width = 61
-            Height = 21
+            Left = 362
+            Top = 19
+            Width = 67
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 0
@@ -120,19 +116,19 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'CR/LF')
           end
           object UtfCombo: TComboBox
-            Left = 320
-            Top = 39
-            Width = 61
-            Height = 21
+            Left = 362
+            Top = 48
+            Width = 67
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 1
           end
           object TimeDifferenceEdit: TUpDownEdit
-            Left = 135
-            Top = 63
-            Width = 69
-            Height = 21
+            Left = 163
+            Top = 77
+            Width = 76
+            Height = 23
             Alignment = taRightJustify
             MaxValue = 25.000000000000000000
             MinValue = -25.000000000000000000
@@ -142,10 +138,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnChange = DataChange
           end
           object TimeDifferenceMinutesEdit: TUpDownEdit
-            Left = 261
-            Top = 63
-            Width = 69
-            Height = 21
+            Left = 294
+            Top = 77
+            Width = 76
+            Height = 23
             Alignment = taRightJustify
             Increment = 15.000000000000000000
             MaxValue = 45.000000000000000000
@@ -156,39 +152,41 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnChange = DataChange
           end
           object TimeDifferenceAutoCheck: TCheckBox
-            Left = 135
-            Top = 90
-            Width = 242
+            Left = 165
+            Top = 106
+            Width = 264
             Height = 17
+            Anchors = [akTop, akRight]
             Caption = 'Detect &automatically'
             TabOrder = 4
             OnClick = DataChange
           end
           object TrimVMSVersionsCheck: TCheckBox
-            Left = 12
-            Top = 113
-            Width = 369
+            Left = 11
+            Top = 129
+            Width = 418
             Height = 17
+            Anchors = [akLeft, akTop, akRight]
             Caption = '&Trim VMS version numbers'
             TabOrder = 5
             OnClick = DataChange
           end
         end
         object DSTModeGroup: TGroupBox
-          Left = 0
-          Top = 153
-          Width = 393
+          Left = 8
+          Top = 164
+          Width = 438
           Height = 93
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Daylight saving time'
           TabOrder = 1
           DesignSize = (
-            393
+            438
             93)
           object DSTModeUnixCheck: TRadioButton
-            Left = 12
-            Top = 19
-            Width = 369
+            Left = 11
+            Top = 23
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Adjust remote timestamp to local co&nventions'
@@ -196,9 +194,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object DSTModeWinCheck: TRadioButton
-            Left = 12
-            Top = 42
-            Width = 369
+            Left = 11
+            Top = 46
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Adjust remote timestamp with &DST'
@@ -206,9 +204,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object DSTModeKeepCheck: TRadioButton
-            Left = 12
-            Top = 65
-            Width = 369
+            Left = 11
+            Top = 69
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Preser&ve remote timestamp'
@@ -217,28 +215,28 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
         object PuttyGroup: TGroupBox
-          Left = 0
-          Top = 252
-          Width = 393
-          Height = 98
+          Left = 8
+          Top = 263
+          Width = 438
+          Height = 103
           Anchors = [akLeft, akTop, akRight]
           Caption = 'PuTTY'
           TabOrder = 2
           DesignSize = (
-            393
-            98)
+            438
+            103)
           object PuttySettingsLabel: TLabel
-            Left = 12
-            Top = 18
-            Width = 116
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 129
+            Height = 15
             Caption = '&PuTTY terminal settings:'
             FocusControl = EncryptKeyPasswordEdit
           end
           object PuttySettingsButton: TButton
-            Left = 12
-            Top = 61
-            Width = 125
+            Left = 9
+            Top = 69
+            Width = 138
             Height = 25
             Anchors = [akTop, akRight]
             Caption = '&Edit in PuTTY...'
@@ -246,10 +244,11 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = PuttySettingsButtonClick
           end
           object PuttySettingsEdit: TEdit
-            Left = 12
-            Top = 34
-            Width = 370
-            Height = 21
+            Left = 9
+            Top = 40
+            Width = 420
+            Height = 23
+            Anchors = [akLeft, akTop, akRight]
             MaxLength = 64
             TabOrder = 0
             Text = 'PuttySettingsEdit'
@@ -266,47 +265,47 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         ImageIndex = 11
         TabVisible = False
         DesignSize = (
-          401
-          382)
+          450
+          388)
         object DirectoriesGroup: TGroupBox
-          Left = 0
-          Top = 6
-          Width = 393
-          Height = 183
+          Left = 8
+          Top = 2
+          Width = 438
+          Height = 185
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Directories'
           TabOrder = 0
           DesignSize = (
-            393
-            183)
+            438
+            185)
           object LocalDirectoryLabel: TLabel
-            Left = 12
-            Top = 111
-            Width = 74
-            Height = 13
+            Left = 9
+            Top = 115
+            Width = 81
+            Height = 15
             Caption = '&Local directory:'
             FocusControl = LocalDirectoryEdit
           end
           object RemoteDirectoryLabel: TLabel
-            Left = 12
-            Top = 66
-            Width = 87
-            Height = 13
+            Left = 9
+            Top = 68
+            Width = 94
+            Height = 15
             Caption = '&Remote directory:'
             FocusControl = RemoteDirectoryEdit
           end
           object LocalDirectoryDescLabel: TLabel
-            Left = 12
-            Top = 156
-            Width = 241
-            Height = 13
+            Left = 9
+            Top = 160
+            Width = 261
+            Height = 15
             Caption = 'Local directory is not used with Explorer interface.'
             ShowAccelChar = False
           end
           object LocalDirectoryEdit: TDirectoryEdit
-            Left = 12
-            Top = 128
-            Width = 371
+            Left = 9
+            Top = 133
+            Width = 420
             Height = 21
             AcceptFiles = True
             DialogText = 'Select startup local directory.'
@@ -317,10 +316,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnChange = DataChange
           end
           object RemoteDirectoryEdit: TEdit
-            Left = 12
-            Top = 83
-            Width = 371
-            Height = 21
+            Left = 9
+            Top = 86
+            Width = 420
+            Height = 23
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 1000
             TabOrder = 2
@@ -328,18 +327,18 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnChange = DataChange
           end
           object UpdateDirectoriesCheck: TCheckBox
-            Left = 12
-            Top = 42
-            Width = 369
+            Left = 11
+            Top = 45
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Re&member last used directory'
             TabOrder = 1
           end
           object SynchronizeBrowsingCheck: TCheckBox
-            Left = 12
-            Top = 19
-            Width = 369
+            Left = 11
+            Top = 22
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Syn&chronize browsing'
@@ -347,20 +346,20 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
         object DirectoryOptionsGroup: TGroupBox
-          Left = 1
-          Top = 195
-          Width = 393
+          Left = 8
+          Top = 193
+          Width = 438
           Height = 116
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Directory reading options'
           TabOrder = 1
           DesignSize = (
-            393
+            438
             116)
           object CacheDirectoriesCheck: TCheckBox
-            Left = 12
-            Top = 19
-            Width = 369
+            Left = 11
+            Top = 22
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Cache &visited remote directories'
@@ -368,9 +367,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object CacheDirectoryChangesCheck: TCheckBox
-            Left = 12
-            Top = 42
-            Width = 230
+            Left = 11
+            Top = 45
+            Width = 275
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Cache &directory changes'
@@ -378,27 +377,27 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object ResolveSymlinksCheck: TCheckBox
-            Left = 12
-            Top = 65
-            Width = 369
+            Left = 11
+            Top = 68
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Resolve symbolic li&nks'
             TabOrder = 3
           end
           object PreserveDirectoryChangesCheck: TCheckBox
-            Left = 251
-            Top = 42
-            Width = 139
+            Left = 266
+            Top = 45
+            Width = 163
             Height = 17
             Anchors = [akTop, akRight]
             Caption = '&Permanent cache'
             TabOrder = 2
           end
           object FollowDirectorySymlinksCheck: TCheckBox
-            Left = 12
-            Top = 88
-            Width = 369
+            Left = 11
+            Top = 91
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Follow symbolic links to directories'
@@ -414,31 +413,31 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         ImageIndex = 15
         TabVisible = False
         DesignSize = (
-          401
-          382)
+          450
+          388)
         object RecycleBinGroup: TGroupBox
-          Left = 0
-          Top = 6
-          Width = 393
-          Height = 116
+          Left = 8
+          Top = 2
+          Width = 438
+          Height = 119
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Recycle bin'
           TabOrder = 0
           DesignSize = (
-            393
-            116)
+            438
+            119)
           object RecycleBinPathLabel: TLabel
-            Left = 12
-            Top = 66
-            Width = 95
-            Height = 13
+            Left = 9
+            Top = 68
+            Width = 104
+            Height = 15
             Caption = '&Remote recycle bin:'
             FocusControl = RecycleBinPathEdit
           end
           object DeleteToRecycleBinCheck: TCheckBox
-            Left = 12
-            Top = 19
-            Width = 370
+            Left = 11
+            Top = 22
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Preserve deleted remote files to recycle bin'
@@ -446,9 +445,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object OverwrittenToRecycleBinCheck: TCheckBox
-            Left = 12
-            Top = 42
-            Width = 370
+            Left = 11
+            Top = 45
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Preserve &overwritten remote files to recycle bin (SFTP only)'
@@ -456,10 +455,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object RecycleBinPathEdit: TEdit
-            Left = 12
-            Top = 83
-            Width = 370
-            Height = 21
+            Left = 9
+            Top = 86
+            Width = 420
+            Height = 23
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 1000
             TabOrder = 2
@@ -475,12 +474,12 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         Caption = 'Encryption'
         TabVisible = False
         DesignSize = (
-          401
-          382)
+          450
+          388)
         object EncryptFilesCheck: TCheckBox
-          Left = 12
+          Left = 8
           Top = 8
-          Width = 382
+          Width = 438
           Height = 17
           Anchors = [akLeft, akTop, akRight]
           Caption = '&Encrypt files'
@@ -488,26 +487,30 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           OnClick = DataChange
         end
         object EncryptFilesGroup: TGroupBox
-          Left = 0
-          Top = 32
-          Width = 393
-          Height = 121
+          Left = 8
+          Top = 31
+          Width = 438
+          Height = 127
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Encryption options'
           TabOrder = 1
+          DesignSize = (
+            438
+            127)
           object Label13: TLabel
-            Left = 12
-            Top = 18
-            Width = 75
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 81
+            Height = 15
             Caption = 'Encryption &key:'
             FocusControl = EncryptKeyPasswordEdit
           end
           object EncryptKeyVisibleEdit: TEdit
-            Left = 12
-            Top = 34
-            Width = 370
-            Height = 21
+            Left = 9
+            Top = 40
+            Width = 420
+            Height = 23
+            Anchors = [akLeft, akTop, akRight]
             MaxLength = 64
             TabOrder = 1
             Text = 'EncryptKeyVisibleEdit'
@@ -516,10 +519,11 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnExit = EncryptKeyEditExit
           end
           object EncryptKeyPasswordEdit: TPasswordEdit
-            Left = 12
-            Top = 34
-            Width = 370
-            Height = 21
+            Left = 9
+            Top = 40
+            Width = 420
+            Height = 23
+            Anchors = [akLeft, akTop, akRight]
             MaxLength = 64
             TabOrder = 0
             Text = 'EncryptKeyPasswordEdit'
@@ -527,18 +531,18 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnExit = EncryptKeyEditExit
           end
           object ShowEncryptionKeyCheck: TCheckBox
-            Left = 12
-            Top = 61
-            Width = 117
+            Left = 11
+            Top = 69
+            Width = 418
             Height = 17
             Caption = '&Show key'
             TabOrder = 2
             OnClick = ShowEncryptionKeyCheckClick
           end
           object GenerateKeyButton: TButton
-            Left = 12
-            Top = 84
-            Width = 117
+            Left = 9
+            Top = 92
+            Width = 129
             Height = 25
             Caption = '&Generate Key'
             TabOrder = 3
@@ -554,94 +558,94 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         ImageIndex = 12
         TabVisible = False
         DesignSize = (
-          401
-          382)
+          450
+          388)
         object SFTPBugsGroupBox: TGroupBox
-          Left = 0
-          Top = 153
-          Width = 393
-          Height = 70
+          Left = 8
+          Top = 164
+          Width = 438
+          Height = 77
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Detection of known bugs in SFTP servers'
           TabOrder = 1
           DesignSize = (
-            393
-            70)
+            438
+            77)
           object Label10: TLabel
-            Left = 12
-            Top = 20
-            Width = 211
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 233
+            Height = 15
             Caption = '&Reverses order of link command arguments:'
             FocusControl = SFTPBugSymlinkCombo
           end
           object Label36: TLabel
-            Left = 12
-            Top = 44
-            Width = 205
-            Height = 13
+            Left = 9
+            Top = 47
+            Width = 225
+            Height = 15
             Caption = '&Misinterprets file timestamps prior to 1970:'
             FocusControl = SFTPBugSignedTSCombo
           end
           object SFTPBugSymlinkCombo: TComboBox
-            Left = 320
+            Left = 362
             Top = 15
-            Width = 61
-            Height = 21
+            Width = 67
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 0
           end
           object SFTPBugSignedTSCombo: TComboBox
-            Left = 320
-            Top = 39
-            Width = 61
-            Height = 21
+            Left = 362
+            Top = 44
+            Width = 67
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 1
           end
         end
         object SFTPProtocolGroup: TGroupBox
-          Left = 0
-          Top = 6
-          Width = 393
-          Height = 141
+          Left = 8
+          Top = 2
+          Width = 438
+          Height = 156
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Protocol options'
           TabOrder = 0
           DesignSize = (
-            393
-            141)
+            438
+            156)
           object Label34: TLabel
-            Left = 12
-            Top = 44
-            Width = 157
-            Height = 13
+            Left = 9
+            Top = 51
+            Width = 169
+            Height = 15
             Caption = '&Preferred SFTP protocol version:'
             FocusControl = SFTPMaxVersionCombo
           end
           object Label23: TLabel
-            Left = 12
-            Top = 20
-            Width = 62
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 63
+            Height = 15
             Caption = 'SFTP ser&ver:'
             FocusControl = SftpServerEdit
           end
           object Label5: TLabel
-            Left = 12
-            Top = 68
-            Width = 157
-            Height = 13
+            Left = 9
+            Top = 80
+            Width = 170
+            Height = 15
             Caption = '&Canonicalize paths on the server'
             FocusControl = SFTPRealPathCombo
           end
           object SFTPMaxVersionCombo: TComboBox
-            Left = 320
-            Top = 39
-            Width = 61
-            Height = 21
+            Left = 362
+            Top = 48
+            Width = 67
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 1
@@ -656,10 +660,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               '6')
           end
           object SftpServerEdit: TComboBox
-            Left = 149
-            Top = 15
-            Width = 232
-            Height = 21
+            Left = 152
+            Top = 19
+            Width = 277
+            Height = 23
             AutoComplete = False
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 255
@@ -672,9 +676,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'sudo su -c /bin/sftp-server')
           end
           object AllowScpFallbackCheck: TCheckBox
-            Left = 12
-            Top = 90
-            Width = 369
+            Left = 11
+            Top = 106
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Allow SCP &fallback'
@@ -682,18 +686,18 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object SFTPRealPathCombo: TComboBox
-            Left = 320
-            Top = 63
-            Width = 61
-            Height = 21
+            Left = 362
+            Top = 77
+            Width = 67
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 2
           end
           object UsePosixRenameCheck: TCheckBox
-            Left = 12
-            Top = 113
-            Width = 369
+            Left = 11
+            Top = 129
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Use POSIX rename'
@@ -710,23 +714,23 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         ImageIndex = 3
         TabVisible = False
         DesignSize = (
-          401
-          382)
+          450
+          388)
         object OtherShellOptionsGroup: TGroupBox
-          Left = 0
-          Top = 161
-          Width = 393
-          Height = 69
+          Left = 8
+          Top = 170
+          Width = 438
+          Height = 72
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Other options'
           TabOrder = 2
           DesignSize = (
-            393
-            69)
+            438
+            72)
           object LookupUserGroupsCheck: TCheckBox
-            Left = 12
-            Top = 19
-            Width = 140
+            Left = 11
+            Top = 22
+            Width = 172
             Height = 17
             AllowGrayed = True
             Caption = 'Lookup &user groups'
@@ -734,18 +738,18 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object ClearAliasesCheck: TCheckBox
-            Left = 12
-            Top = 42
-            Width = 140
+            Left = 11
+            Top = 45
+            Width = 172
             Height = 17
             Caption = 'Clear a&liases'
             TabOrder = 2
             OnClick = DataChange
           end
           object UnsetNationalVarsCheck: TCheckBox
-            Left = 168
-            Top = 19
-            Width = 213
+            Left = 189
+            Top = 22
+            Width = 240
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Clear &national variables'
@@ -753,9 +757,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object Scp1CompatibilityCheck: TCheckBox
-            Left = 168
-            Top = 42
-            Width = 213
+            Left = 189
+            Top = 45
+            Width = 240
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Use scp&2 with scp1 compatibility'
@@ -764,37 +768,37 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
         object ShellGroup: TGroupBox
-          Left = 0
-          Top = 6
-          Width = 393
-          Height = 70
+          Left = 8
+          Top = 2
+          Width = 438
+          Height = 81
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Shell'
           TabOrder = 0
           DesignSize = (
-            393
-            70)
+            438
+            81)
           object Label19: TLabel
-            Left = 12
-            Top = 20
-            Width = 26
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 28
+            Height = 15
             Caption = 'S&hell:'
             FocusControl = ShellEdit
           end
           object Label20: TLabel
-            Left = 12
-            Top = 44
-            Width = 104
-            Height = 13
+            Left = 9
+            Top = 51
+            Width = 111
+            Height = 15
             Caption = '&Return code variable:'
             FocusControl = ReturnVarEdit
           end
           object ShellEdit: TComboBox
-            Left = 168
-            Top = 15
-            Width = 213
-            Height = 21
+            Left = 187
+            Top = 19
+            Width = 242
+            Height = 23
             AutoComplete = False
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 50
@@ -808,10 +812,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'sudo su -')
           end
           object ReturnVarEdit: TComboBox
-            Left = 168
-            Top = 39
-            Width = 213
-            Height = 21
+            Left = 187
+            Top = 48
+            Width = 242
+            Height = 23
             AutoComplete = False
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 50
@@ -824,37 +828,37 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
         object ScpLsOptionsGroup: TGroupBox
-          Left = 0
-          Top = 84
-          Width = 393
-          Height = 69
+          Left = 8
+          Top = 89
+          Width = 438
+          Height = 75
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Directory listing'
           TabOrder = 1
           DesignSize = (
-            393
-            69)
+            438
+            75)
           object Label9: TLabel
-            Left = 12
-            Top = 20
-            Width = 82
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 96
+            Height = 15
             Caption = 'Listing &command:'
             FocusControl = ListingCommandEdit
           end
           object IgnoreLsWarningsCheck: TCheckBox
-            Left = 12
-            Top = 42
-            Width = 140
+            Left = 11
+            Top = 48
+            Width = 172
             Height = 17
             Caption = 'Ignore LS &warnings'
             TabOrder = 1
             OnClick = DataChange
           end
           object SCPLsFullTimeAutoCheck: TCheckBox
-            Left = 168
-            Top = 42
-            Width = 217
+            Left = 189
+            Top = 48
+            Width = 240
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Try to get &full timestamp'
@@ -862,10 +866,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object ListingCommandEdit: TComboBox
-            Left = 168
-            Top = 15
-            Width = 213
-            Height = 21
+            Left = 187
+            Top = 19
+            Width = 242
+            Height = 23
             AutoComplete = False
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 50
@@ -885,111 +889,111 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         ImageIndex = 16
         TabVisible = False
         DesignSize = (
-          401
-          382)
+          450
+          388)
         object FtpGroup: TGroupBox
-          Left = 0
-          Top = 6
-          Width = 393
-          Height = 251
+          Left = 8
+          Top = 2
+          Width = 438
+          Height = 274
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Protocol options'
           TabOrder = 0
           DesignSize = (
-            393
-            251)
+            438
+            274)
           object Label25: TLabel
-            Left = 12
-            Top = 42
-            Width = 103
-            Height = 13
+            Left = 9
+            Top = 48
+            Width = 119
+            Height = 15
             Caption = 'Post login &commands:'
             FocusControl = PostLoginCommandsMemo
           end
           object FtpListAllLabel: TLabel
-            Left = 12
-            Top = 148
-            Width = 159
-            Height = 13
+            Left = 9
+            Top = 157
+            Width = 176
+            Height = 15
             Caption = '&Support for listing of hidden files:'
             FocusControl = FtpListAllCombo
           end
           object Label24: TLabel
-            Left = 12
-            Top = 124
-            Width = 188
-            Height = 13
+            Left = 9
+            Top = 128
+            Width = 214
+            Height = 15
             Caption = 'Use &MLSD command for directory listing'
             FocusControl = FtpUseMlsdCombo
           end
           object FtpForcePasvIpLabel: TLabel
-            Left = 12
-            Top = 172
-            Width = 230
-            Height = 13
+            Left = 9
+            Top = 186
+            Width = 249
+            Height = 15
             Caption = '&Force IP address for passive mode connections:'
             FocusControl = FtpForcePasvIpCombo
           end
           object FtpAccountLabel: TLabel
-            Left = 12
-            Top = 20
-            Width = 43
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 48
+            Height = 15
             Caption = '&Account:'
             FocusControl = FtpAccountEdit
           end
           object Label3: TLabel
-            Left = 12
-            Top = 196
-            Width = 232
-            Height = 13
+            Left = 9
+            Top = 215
+            Width = 255
+            Height = 15
             Caption = 'Use &HOST command to select host on the server'
             FocusControl = FtpHostCombo
           end
           object PostLoginCommandsMemo: TMemo
-            Left = 12
-            Top = 59
-            Width = 369
+            Left = 9
+            Top = 66
+            Width = 420
             Height = 53
             Anchors = [akLeft, akTop, akRight]
             ScrollBars = ssVertical
             TabOrder = 1
           end
           object FtpListAllCombo: TComboBox
-            Left = 320
-            Top = 143
-            Width = 61
-            Height = 21
+            Left = 362
+            Top = 154
+            Width = 67
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 3
             OnChange = DataChange
           end
           object FtpForcePasvIpCombo: TComboBox
-            Left = 320
-            Top = 167
-            Width = 61
-            Height = 21
+            Left = 362
+            Top = 183
+            Width = 67
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 4
             OnChange = DataChange
           end
           object FtpUseMlsdCombo: TComboBox
-            Left = 320
-            Top = 119
-            Width = 61
-            Height = 21
+            Left = 362
+            Top = 125
+            Width = 67
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 2
             OnChange = DataChange
           end
           object FtpAccountEdit: TEdit
-            Left = 128
-            Top = 15
-            Width = 253
-            Height = 21
+            Left = 168
+            Top = 19
+            Width = 261
+            Height = 23
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 100
             TabOrder = 0
@@ -997,19 +1001,19 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnChange = DataChange
           end
           object FtpHostCombo: TComboBox
-            Left = 320
-            Top = 191
-            Width = 61
-            Height = 21
+            Left = 362
+            Top = 212
+            Width = 67
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 5
             OnChange = DataChange
           end
           object VMSAllRevisionsCheck: TCheckBox
-            Left = 12
-            Top = 220
-            Width = 309
+            Left = 11
+            Top = 241
+            Width = 418
             Height = 17
             Caption = 'Display all file &revisions on VMS servers'
             TabOrder = 6
@@ -1024,40 +1028,40 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         ImageIndex = 16
         TabVisible = False
         DesignSize = (
-          401
-          382)
+          450
+          388)
         object S3Group: TGroupBox
-          Left = 0
-          Top = 6
-          Width = 393
-          Height = 97
+          Left = 8
+          Top = 2
+          Width = 438
+          Height = 104
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Protocol options'
           TabOrder = 0
           DesignSize = (
-            393
-            97)
+            438
+            104)
           object Label27: TLabel
-            Left = 12
-            Top = 20
-            Width = 72
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 78
+            Height = 15
             Caption = '&Default region:'
             FocusControl = S3DefaultReqionCombo
           end
           object S3UrlStyleLabel: TLabel
-            Left = 12
-            Top = 44
-            Width = 49
-            Height = 13
+            Left = 9
+            Top = 51
+            Width = 51
+            Height = 15
             Caption = '&URL style:'
             FocusControl = S3UrlStyleCombo
           end
           object S3DefaultReqionCombo: TComboBox
-            Left = 168
-            Top = 15
-            Width = 213
-            Height = 21
+            Left = 170
+            Top = 19
+            Width = 258
+            Height = 23
             Anchors = [akLeft, akTop, akRight]
             DropDownCount = 16
             MaxLength = 32
@@ -1101,10 +1105,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'us-west-2')
           end
           object S3UrlStyleCombo: TComboBox
-            Left = 168
-            Top = 39
-            Width = 213
-            Height = 21
+            Left = 170
+            Top = 48
+            Width = 258
+            Height = 23
             AutoComplete = False
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
@@ -1115,45 +1119,45 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'Path')
           end
           object S3RequesterPaysCheck: TCheckBox
-            Left = 12
-            Top = 68
-            Width = 369
+            Left = 11
+            Top = 77
+            Width = 420
             Height = 17
             Caption = 'Requester &pays'
             TabOrder = 2
           end
         end
         object S3AuthenticationGroup: TGroupBox
-          Left = 1
-          Top = 109
-          Width = 393
-          Height = 189
+          Left = 8
+          Top = 112
+          Width = 438
+          Height = 187
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Authentication'
           TabOrder = 1
           DesignSize = (
-            393
-            189)
+            438
+            187)
           object S3SessionTokenLabel: TLabel
-            Left = 12
+            Left = 9
             Top = 20
-            Width = 70
-            Height = 13
+            Width = 75
+            Height = 15
             Caption = '&Session token:'
             FocusControl = S3SessionTokenMemo
           end
           object S3RoleArnLabel: TLabel
-            Left = 11
-            Top = 140
-            Width = 49
-            Height = 13
+            Left = 9
+            Top = 135
+            Width = 53
+            Height = 15
             Caption = '&Role ARN:'
             FocusControl = S3RoleArnEdit
           end
           object S3SessionTokenMemo: TMemo
-            Left = 11
+            Left = 9
             Top = 36
-            Width = 371
+            Width = 419
             Height = 93
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 10000
@@ -1162,10 +1166,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnKeyDown = NoteMemoKeyDown
           end
           object S3RoleArnEdit: TEdit
-            Left = 12
-            Top = 156
-            Width = 368
-            Height = 21
+            Left = 9
+            Top = 153
+            Width = 419
+            Height = 23
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 1
             Text = 'S3RoleArnEdit'
@@ -1181,23 +1185,23 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         ImageIndex = 17
         TabVisible = False
         DesignSize = (
-          401
-          382)
+          450
+          388)
         object WebdavGroup: TGroupBox
-          Left = 0
-          Top = 6
-          Width = 393
-          Height = 46
+          Left = 8
+          Top = 2
+          Width = 438
+          Height = 49
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Protocol options'
           TabOrder = 0
           DesignSize = (
-            393
-            46)
+            438
+            49)
           object WebDavLiberalEscapingCheck: TCheckBox
-            Left = 12
-            Top = 19
-            Width = 369
+            Left = 11
+            Top = 22
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Tolerate non-encoded special characters in filenames'
@@ -1214,43 +1218,44 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         ImageIndex = 7
         TabVisible = False
         DesignSize = (
-          401
-          382)
+          450
+          388)
         object FtpPingGroup: TGroupBox
-          Left = 0
-          Top = 132
-          Width = 393
-          Height = 117
+          Left = 8
+          Top = 139
+          Width = 438
+          Height = 124
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Keepalives'
           TabOrder = 3
           DesignSize = (
-            393
-            117)
+            438
+            124)
           object FtpPingIntervalLabel: TLabel
-            Left = 12
-            Top = 90
-            Width = 142
-            Height = 13
+            Left = 9
+            Top = 94
+            Width = 152
+            Height = 15
             Caption = 'Seconds &between keepalives:'
             FocusControl = FtpPingIntervalSecEdit
           end
           object FtpPingIntervalSecEdit: TUpDownEdit
-            Left = 208
-            Top = 85
-            Width = 73
-            Height = 21
+            Left = 288
+            Top = 91
+            Width = 80
+            Height = 23
             Alignment = taRightJustify
             MaxValue = 3600.000000000000000000
             MinValue = 1.000000000000000000
+            Anchors = [akTop, akRight]
             MaxLength = 4
             TabOrder = 3
             OnChange = DataChange
           end
           object FtpPingOffButton: TRadioButton
-            Left = 12
-            Top = 19
-            Width = 365
+            Left = 11
+            Top = 22
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Off'
@@ -1258,9 +1263,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object FtpPingDummyCommandButton: TRadioButton
-            Left = 12
-            Top = 42
-            Width = 365
+            Left = 11
+            Top = 45
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Executing &dummy protocol commands'
@@ -1268,9 +1273,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object FtpPingDirectoryListingButton: TRadioButton
-            Left = 12
-            Top = 65
-            Width = 365
+            Left = 11
+            Top = 68
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&And additionally reading the current directory'
@@ -1279,38 +1284,38 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
         object TimeoutGroup: TGroupBox
-          Left = 0
-          Top = 80
-          Width = 393
-          Height = 46
+          Left = 8
+          Top = 81
+          Width = 438
+          Height = 52
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Timeouts'
           TabOrder = 1
           DesignSize = (
-            393
-            46)
+            438
+            52)
           object Label11: TLabel
-            Left = 12
-            Top = 19
-            Width = 122
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 130
+            Height = 15
             Caption = 'Server &response timeout:'
             FocusControl = TimeoutEdit
           end
           object Label12: TLabel
-            Left = 334
-            Top = 19
-            Width = 39
-            Height = 13
+            Left = 374
+            Top = 22
+            Width = 43
+            Height = 15
             Anchors = [akTop, akRight]
             Caption = 'seconds'
             FocusControl = TimeoutEdit
           end
           object TimeoutEdit: TUpDownEdit
-            Left = 256
-            Top = 14
-            Width = 73
-            Height = 21
+            Left = 288
+            Top = 19
+            Width = 80
+            Height = 23
             Alignment = taRightJustify
             Increment = 5.000000000000000000
             MaxValue = 6000.000000000000000000
@@ -1322,29 +1327,29 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
         object PingGroup: TGroupBox
-          Left = 0
-          Top = 132
-          Width = 393
-          Height = 117
+          Left = 8
+          Top = 139
+          Width = 438
+          Height = 124
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Keepalives'
           TabOrder = 2
           DesignSize = (
-            393
-            117)
+            438
+            124)
           object PingIntervalLabel: TLabel
-            Left = 12
-            Top = 90
-            Width = 142
-            Height = 13
+            Left = 9
+            Top = 94
+            Width = 152
+            Height = 15
             Caption = 'Seconds &between keepalives:'
             FocusControl = PingIntervalSecEdit
           end
           object PingIntervalSecEdit: TUpDownEdit
-            Left = 256
-            Top = 85
-            Width = 73
-            Height = 21
+            Left = 288
+            Top = 91
+            Width = 80
+            Height = 23
             Alignment = taRightJustify
             MaxValue = 3600.000000000000000000
             MinValue = 1.000000000000000000
@@ -1354,9 +1359,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnChange = DataChange
           end
           object PingOffButton: TRadioButton
-            Left = 12
-            Top = 19
-            Width = 365
+            Left = 11
+            Top = 22
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Off'
@@ -1364,9 +1369,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object PingNullPacketButton: TRadioButton
-            Left = 12
-            Top = 42
-            Width = 365
+            Left = 11
+            Top = 45
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Sending of &null SSH packets'
@@ -1374,9 +1379,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object PingDummyCommandButton: TRadioButton
-            Left = 12
-            Top = 65
-            Width = 365
+            Left = 11
+            Top = 68
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Executing &dummy protocol commands'
@@ -1385,16 +1390,16 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
         object IPvGroup: TGroupBox
-          Left = 0
-          Top = 255
-          Width = 393
-          Height = 46
+          Left = 8
+          Top = 269
+          Width = 438
+          Height = 49
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Internet protocol version'
           TabOrder = 4
           object IPAutoButton: TRadioButton
-            Left = 12
-            Top = 19
+            Left = 11
+            Top = 22
             Width = 101
             Height = 17
             Caption = 'A&uto'
@@ -1402,8 +1407,8 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object IPv4Button: TRadioButton
-            Left = 124
-            Top = 19
+            Left = 133
+            Top = 22
             Width = 101
             Height = 17
             Caption = 'IPv&4'
@@ -1411,8 +1416,8 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object IPv6Button: TRadioButton
-            Left = 236
-            Top = 19
+            Left = 255
+            Top = 22
             Width = 101
             Height = 17
             Caption = 'IPv&6'
@@ -1421,20 +1426,20 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
         object ConnectionGroup: TGroupBox
-          Left = 0
-          Top = 6
-          Width = 393
-          Height = 69
+          Left = 8
+          Top = 2
+          Width = 438
+          Height = 73
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Connection'
           TabOrder = 0
           DesignSize = (
-            393
-            69)
+            438
+            73)
           object FtpPasvModeCheck: TCheckBox
-            Left = 12
-            Top = 19
-            Width = 369
+            Left = 11
+            Top = 22
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Passive mode'
@@ -1442,9 +1447,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object BufferSizeCheck: TCheckBox
-            Left = 12
-            Top = 42
-            Width = 369
+            Left = 11
+            Top = 45
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Optimize connection &buffer size'
@@ -1461,65 +1466,65 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         ImageIndex = 8
         TabVisible = False
         DesignSize = (
-          401
-          382)
+          450
+          388)
         object ProxyTypeGroup: TGroupBox
-          Left = 0
-          Top = 6
-          Width = 393
-          Height = 164
+          Left = 8
+          Top = 2
+          Width = 438
+          Height = 176
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Proxy'
           TabOrder = 0
           DesignSize = (
-            393
-            164)
+            438
+            176)
           object ProxyMethodLabel: TLabel
-            Left = 12
-            Top = 20
-            Width = 57
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 58
+            Height = 15
             Caption = 'Proxy &type:'
             FocusControl = SshProxyMethodCombo
           end
           object ProxyHostLabel: TLabel
-            Left = 12
-            Top = 41
-            Width = 85
-            Height = 13
+            Left = 9
+            Top = 48
+            Width = 91
+            Height = 15
             Caption = 'Pro&xy host name:'
             FocusControl = ProxyHostEdit
           end
           object ProxyPortLabel: TLabel
-            Left = 284
-            Top = 41
-            Width = 63
-            Height = 13
+            Left = 327
+            Top = 48
+            Width = 70
+            Height = 15
             Anchors = [akTop, akRight]
             Caption = 'Po&rt number:'
             FocusControl = ProxyPortEdit
           end
           object ProxyUsernameLabel: TLabel
-            Left = 12
-            Top = 85
-            Width = 55
-            Height = 13
+            Left = 9
+            Top = 95
+            Width = 59
+            Height = 15
             Caption = '&User name:'
             FocusControl = ProxyUsernameEdit
           end
           object ProxyPasswordLabel: TLabel
-            Left = 200
-            Top = 85
-            Width = 50
-            Height = 13
+            Left = 222
+            Top = 95
+            Width = 53
+            Height = 15
             Caption = '&Password:'
             FocusControl = ProxyPasswordEdit
           end
           object SshProxyMethodCombo: TComboBox
-            Left = 128
-            Top = 15
-            Width = 110
-            Height = 21
+            Left = 140
+            Top = 19
+            Width = 121
+            Height = 23
             Style = csDropDownList
             TabOrder = 0
             OnChange = DataChange
@@ -1532,10 +1537,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'Local')
           end
           object ProxyPortEdit: TUpDownEdit
-            Left = 284
-            Top = 58
-            Width = 98
-            Height = 21
+            Left = 327
+            Top = 66
+            Width = 102
+            Height = 23
             Alignment = taRightJustify
             MaxValue = 65535.000000000000000000
             MinValue = 1.000000000000000000
@@ -1544,10 +1549,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnChange = DataChange
           end
           object ProxyHostEdit: TEdit
-            Left = 12
-            Top = 58
-            Width = 266
-            Height = 21
+            Left = 9
+            Top = 66
+            Width = 312
+            Height = 23
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 255
             TabOrder = 3
@@ -1555,20 +1560,20 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnChange = DataChange
           end
           object ProxyUsernameEdit: TEdit
-            Left = 12
-            Top = 102
-            Width = 182
-            Height = 21
+            Left = 9
+            Top = 113
+            Width = 207
+            Height = 23
             MaxLength = 100
             TabOrder = 5
             Text = 'ProxyUsernameEdit'
             OnChange = DataChange
           end
           object ProxyPasswordEdit: TPasswordEdit
-            Left = 200
-            Top = 102
-            Width = 182
-            Height = 21
+            Left = 222
+            Top = 113
+            Width = 207
+            Height = 23
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 100
             TabOrder = 6
@@ -1576,10 +1581,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnChange = DataChange
           end
           object FtpProxyMethodCombo: TComboBox
-            Left = 128
-            Top = 15
-            Width = 254
-            Height = 21
+            Left = 140
+            Top = 19
+            Width = 289
+            Height = 23
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
             DropDownCount = 12
@@ -1600,10 +1605,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'USER %user@%proxyuser@%host')
           end
           object NeonProxyMethodCombo: TComboBox
-            Left = 128
-            Top = 15
-            Width = 110
-            Height = 21
+            Left = 140
+            Top = 19
+            Width = 121
+            Height = 23
             Style = csDropDownList
             TabOrder = 2
             OnChange = DataChange
@@ -1614,8 +1619,8 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'HTTP')
           end
           object ProxyAutodetectButton: TButton
-            Left = 12
-            Top = 129
+            Left = 9
+            Top = 142
             Width = 100
             Height = 25
             Caption = '&Autodetect'
@@ -1624,45 +1629,45 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
         object ProxySettingsGroup: TGroupBox
-          Left = 0
-          Top = 176
-          Width = 393
-          Height = 128
+          Left = 8
+          Top = 184
+          Width = 438
+          Height = 134
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Proxy settings'
           TabOrder = 1
           DesignSize = (
-            393
-            128)
+            438
+            134)
           object ProxyTelnetCommandLabel: TLabel
-            Left = 12
-            Top = 18
-            Width = 82
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 93
+            Height = 15
             Caption = 'Telnet co&mmand:'
             FocusControl = ProxyTelnetCommandEdit
           end
           object Label17: TLabel
-            Left = 12
-            Top = 99
-            Width = 168
-            Height = 13
+            Left = 9
+            Top = 104
+            Width = 185
+            Height = 15
             Caption = 'Do &DNS name lookup at proxy end:'
             FocusControl = ProxyDNSCombo
           end
           object ProxyLocalCommandLabel: TLabel
-            Left = 12
-            Top = 18
-            Width = 107
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 121
+            Height = 15
             Caption = 'Local proxy co&mmand:'
             FocusControl = ProxyLocalCommandEdit
           end
           object ProxyTelnetCommandEdit: TEdit
-            Left = 12
-            Top = 35
-            Width = 370
-            Height = 21
+            Left = 9
+            Top = 40
+            Width = 420
+            Height = 23
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 255
             TabOrder = 0
@@ -1670,21 +1675,21 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnChange = DataChange
           end
           object ProxyLocalhostCheck: TCheckBox
-            Left = 12
-            Top = 77
-            Width = 370
+            Left = 11
+            Top = 78
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Co&nsider proxying local host connections'
             TabOrder = 5
           end
           object ProxyDNSCombo: TComboBox
-            Left = 252
-            Top = 94
-            Width = 130
-            Height = 21
+            Left = 362
+            Top = 101
+            Width = 67
+            Height = 23
             Style = csDropDownList
-            Anchors = [akLeft, akTop, akRight]
+            Anchors = [akTop, akRight]
             TabOrder = 6
             Items.Strings = (
               'Auto'
@@ -1692,18 +1697,18 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'Yes')
           end
           object ProxyLocalCommandEdit: TEdit
-            Left = 12
-            Top = 35
-            Width = 274
-            Height = 21
+            Left = 9
+            Top = 40
+            Width = 332
+            Height = 23
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 2
             Text = 'ProxyLocalCommandEdit'
             OnChange = DataChange
           end
           object ProxyLocalCommandBrowseButton: TButton
-            Left = 300
-            Top = 33
+            Left = 347
+            Top = 39
             Width = 82
             Height = 25
             Anchors = [akTop, akRight]
@@ -1712,10 +1717,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = ProxyLocalCommandBrowseButtonClick
           end
           object ProxyTelnetCommandHintText: TStaticText
-            Left = 303
-            Top = 58
+            Left = 350
+            Top = 63
             Width = 79
-            Height = 16
+            Height = 17
             Alignment = taRightJustify
             Anchors = [akTop, akRight]
             AutoSize = False
@@ -1724,10 +1729,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             TabStop = True
           end
           object ProxyLocalCommandHintText: TStaticText
-            Left = 207
-            Top = 58
+            Left = 262
+            Top = 63
             Width = 79
-            Height = 16
+            Height = 17
             Alignment = taRightJustify
             Anchors = [akTop, akRight]
             AutoSize = False
@@ -1745,57 +1750,57 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         ImageIndex = 14
         TabVisible = False
         DesignSize = (
-          401
-          382)
+          450
+          388)
         object TunnelSessionGroup: TGroupBox
-          Left = 0
-          Top = 32
-          Width = 393
-          Height = 118
+          Left = 8
+          Top = 25
+          Width = 438
+          Height = 120
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Host to setup tunnel on'
           TabOrder = 1
           DesignSize = (
-            393
-            118)
+            438
+            120)
           object Label6: TLabel
-            Left = 12
-            Top = 18
-            Width = 55
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 61
+            Height = 15
             Caption = '&Host name:'
             FocusControl = TunnelHostNameEdit
           end
           object Label14: TLabel
-            Left = 284
-            Top = 18
-            Width = 63
-            Height = 13
+            Left = 327
+            Top = 22
+            Width = 70
+            Height = 15
             Anchors = [akTop, akRight]
             Caption = 'Po&rt number:'
             FocusControl = TunnelPortNumberEdit
           end
           object Label15: TLabel
-            Left = 12
-            Top = 68
-            Width = 55
-            Height = 13
+            Left = 9
+            Top = 69
+            Width = 59
+            Height = 15
             Caption = '&User name:'
             FocusControl = TunnelUserNameEdit
           end
           object Label16: TLabel
-            Left = 200
-            Top = 68
-            Width = 50
-            Height = 13
+            Left = 222
+            Top = 69
+            Width = 53
+            Height = 15
             Caption = '&Password:'
             FocusControl = TunnelPasswordEdit
           end
           object TunnelHostNameEdit: TEdit
-            Left = 12
-            Top = 35
-            Width = 266
-            Height = 21
+            Left = 9
+            Top = 40
+            Width = 312
+            Height = 23
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 255
             TabOrder = 0
@@ -1803,20 +1808,20 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnChange = DataChange
           end
           object TunnelUserNameEdit: TEdit
-            Left = 12
-            Top = 85
-            Width = 182
-            Height = 21
+            Left = 9
+            Top = 87
+            Width = 207
+            Height = 23
             MaxLength = 100
             TabOrder = 2
             Text = 'TunnelUserNameEdit'
             OnChange = DataChange
           end
           object TunnelPasswordEdit: TPasswordEdit
-            Left = 200
-            Top = 85
-            Width = 182
-            Height = 21
+            Left = 222
+            Top = 87
+            Width = 207
+            Height = 23
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 100
             TabOrder = 3
@@ -1824,10 +1829,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnChange = DataChange
           end
           object TunnelPortNumberEdit: TUpDownEdit
-            Left = 284
-            Top = 35
-            Width = 98
-            Height = 21
+            Left = 327
+            Top = 40
+            Width = 102
+            Height = 23
             Alignment = taRightJustify
             MaxValue = 65535.000000000000000000
             MinValue = 1.000000000000000000
@@ -1837,9 +1842,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
         object TunnelCheck: TCheckBox
-          Left = 12
-          Top = 8
-          Width = 382
+          Left = 10
+          Top = 2
+          Width = 436
           Height = 17
           Anchors = [akLeft, akTop, akRight]
           Caption = '&Connect through SSH tunnel'
@@ -1847,29 +1852,29 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           OnClick = DataChange
         end
         object TunnelOptionsGroup: TGroupBox
-          Left = 0
-          Top = 156
-          Width = 393
-          Height = 47
+          Left = 8
+          Top = 151
+          Width = 438
+          Height = 52
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Tunnel options'
           TabOrder = 2
           DesignSize = (
-            393
-            47)
+            438
+            52)
           object Label21: TLabel
-            Left = 12
-            Top = 20
-            Width = 84
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 93
+            Height = 15
             Caption = '&Local tunnel port:'
             FocusControl = TunnelLocalPortNumberEdit
           end
           object TunnelLocalPortNumberEdit: TComboBox
-            Left = 284
-            Top = 15
-            Width = 98
-            Height = 21
+            Left = 327
+            Top = 19
+            Width = 102
+            Height = 23
             AutoComplete = False
             Anchors = [akTop, akRight]
             MaxLength = 50
@@ -1881,28 +1886,28 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
         object TunnelAuthenticationParamsGroup: TGroupBox
-          Left = 0
+          Left = 8
           Top = 209
-          Width = 393
-          Height = 68
+          Width = 438
+          Height = 71
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Tunnel authentication parameters'
           TabOrder = 3
           DesignSize = (
-            393
-            68)
+            438
+            71)
           object Label18: TLabel
-            Left = 12
-            Top = 18
-            Width = 75
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 79
+            Height = 15
             Caption = 'Private &key file:'
             FocusControl = TunnelPrivateKeyEdit3
           end
           object TunnelPrivateKeyEdit3: TFilenameEdit
-            Left = 12
-            Top = 35
-            Width = 370
+            Left = 9
+            Top = 40
+            Width = 420
             Height = 21
             AcceptFiles = True
             OnBeforeDialog = PathEditBeforeDialog
@@ -1928,40 +1933,40 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         ImageIndex = 13
         TabVisible = False
         DesignSize = (
-          401
-          382)
+          450
+          388)
         object TlsGroup: TGroupBox
-          Left = 0
-          Top = 6
-          Width = 393
-          Height = 99
+          Left = 8
+          Top = 2
+          Width = 438
+          Height = 104
           Anchors = [akLeft, akTop, akRight]
           Caption = 'TLS options'
           TabOrder = 0
           DesignSize = (
-            393
-            99)
+            438
+            104)
           object MinTlsVersionLabel: TLabel
-            Left = 12
-            Top = 20
-            Width = 102
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 119
+            Height = 15
             Caption = 'Mi&nimum TLS version:'
             FocusControl = MinTlsVersionCombo
           end
           object MaxTlsVersionLabel: TLabel
-            Left = 12
-            Top = 44
-            Width = 106
-            Height = 13
+            Left = 9
+            Top = 51
+            Width = 120
+            Height = 15
             Caption = 'Ma&ximum TLS version:'
             FocusControl = MaxTlsVersionCombo
           end
           object MinTlsVersionCombo: TComboBox
-            Left = 304
-            Top = 15
-            Width = 77
-            Height = 21
+            Left = 345
+            Top = 19
+            Width = 84
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 0
@@ -1973,10 +1978,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'TLS 1.3')
           end
           object MaxTlsVersionCombo: TComboBox
-            Left = 304
-            Top = 39
-            Width = 77
-            Height = 21
+            Left = 345
+            Top = 48
+            Width = 84
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 1
@@ -1988,9 +1993,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
               'TLS 1.3')
           end
           object SslSessionReuseCheck2: TCheckBox
-            Left = 12
-            Top = 68
-            Width = 365
+            Left = 11
+            Top = 77
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Reuse TLS session ID for data connections'
@@ -1999,28 +2004,28 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
         object TlsAuthenticationGroup: TGroupBox
-          Left = 0
-          Top = 113
-          Width = 393
-          Height = 72
+          Left = 9
+          Top = 112
+          Width = 438
+          Height = 73
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Authentication parameters'
           TabOrder = 1
           DesignSize = (
-            393
-            72)
+            438
+            73)
           object Label4: TLabel
-            Left = 12
-            Top = 20
-            Width = 99
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 108
+            Height = 15
             Caption = '&Client certificate file:'
             FocusControl = TlsCertificateFileEdit
           end
           object TlsCertificateFileEdit: TFilenameEdit
-            Left = 12
-            Top = 37
-            Width = 372
+            Left = 9
+            Top = 40
+            Width = 420
             Height = 21
             AcceptFiles = True
             OnBeforeDialog = PathEditBeforeDialog
@@ -2046,23 +2051,23 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         ImageIndex = 2
         TabVisible = False
         DesignSize = (
-          401
-          382)
+          450
+          388)
         object ProtocolGroup: TGroupBox
-          Left = 0
-          Top = 6
-          Width = 393
-          Height = 46
+          Left = 8
+          Top = 2
+          Width = 438
+          Height = 49
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Protocol options'
           TabOrder = 0
           DesignSize = (
-            393
-            46)
+            438
+            49)
           object CompressionCheck: TCheckBox
-            Left = 16
-            Top = 19
-            Width = 367
+            Left = 11
+            Top = 22
+            Width = 418
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Enable &compression'
@@ -2071,32 +2076,32 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
         object EncryptionGroup: TGroupBox
-          Left = 0
-          Top = 58
-          Width = 393
-          Height = 171
+          Left = 8
+          Top = 57
+          Width = 438
+          Height = 204
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Encryption options'
           TabOrder = 1
           DesignSize = (
-            393
-            171)
+            438
+            204)
           object Label8: TLabel
-            Left = 12
-            Top = 19
-            Width = 162
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 181
+            Height = 15
             Caption = 'Encryption cipher selection &policy:'
             FocusControl = CipherListBox
           end
           object CipherListBox: TListBox
-            Left = 12
-            Top = 36
-            Width = 285
-            Height = 99
-            Anchors = [akLeft, akTop, akRight]
+            Left = 9
+            Top = 40
+            Width = 334
+            Height = 131
+            Anchors = [akLeft, akTop, akRight, akBottom]
             DragMode = dmAutomatic
-            ItemHeight = 13
+            ItemHeight = 15
             TabOrder = 0
             OnClick = DataChange
             OnDragDrop = AlgListBoxDragDrop
@@ -2104,17 +2109,17 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnStartDrag = AlgListBoxStartDrag
           end
           object Ssh2LegacyDESCheck: TCheckBox
-            Left = 16
-            Top = 142
-            Width = 367
+            Left = 11
+            Top = 177
+            Width = 418
             Height = 17
-            Anchors = [akLeft, akTop, akRight]
+            Anchors = [akLeft, akRight, akBottom]
             Caption = 'Enable legacy use of single-&DES'
             TabOrder = 3
           end
           object CipherUpButton: TButton
-            Left = 303
-            Top = 36
+            Left = 349
+            Top = 40
             Width = 80
             Height = 25
             Anchors = [akTop, akRight]
@@ -2123,8 +2128,8 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = CipherButtonClick
           end
           object CipherDownButton: TButton
-            Left = 303
-            Top = 68
+            Left = 349
+            Top = 71
             Width = 80
             Height = 25
             Anchors = [akTop, akRight]
@@ -2142,35 +2147,35 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         ImageIndex = 13
         TabVisible = False
         DesignSize = (
-          401
-          382)
+          450
+          388)
         object KexOptionsGroup: TGroupBox
-          Left = 0
-          Top = 6
-          Width = 393
-          Height = 248
+          Left = 8
+          Top = 2
+          Width = 438
+          Height = 280
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Key exchange algorithm options'
           TabOrder = 0
           DesignSize = (
-            393
-            248)
+            438
+            280)
           object Label28: TLabel
-            Left = 12
-            Top = 19
-            Width = 124
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 142
+            Height = 15
             Caption = 'Algorithm selection &policy:'
             FocusControl = KexListBox
           end
           object KexListBox: TListBox
-            Left = 12
-            Top = 36
-            Width = 285
-            Height = 179
+            Left = 9
+            Top = 40
+            Width = 334
+            Height = 207
             Anchors = [akLeft, akTop, akRight, akBottom]
             DragMode = dmAutomatic
-            ItemHeight = 13
+            ItemHeight = 15
             TabOrder = 0
             OnClick = DataChange
             OnDragDrop = AlgListBoxDragDrop
@@ -2178,8 +2183,8 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnStartDrag = AlgListBoxStartDrag
           end
           object KexUpButton: TButton
-            Left = 303
-            Top = 36
+            Left = 349
+            Top = 40
             Width = 80
             Height = 25
             Anchors = [akTop, akRight]
@@ -2188,7 +2193,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = KexButtonClick
           end
           object KexDownButton: TButton
-            Left = 303
+            Left = 349
             Top = 68
             Width = 80
             Height = 25
@@ -2198,8 +2203,8 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = KexButtonClick
           end
           object AuthGSSAPIKEXCheck: TCheckBox
-            Left = 12
-            Top = 221
+            Left = 11
+            Top = 253
             Width = 285
             Height = 17
             Anchors = [akLeft, akBottom]
@@ -2209,41 +2214,41 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
         object KexReexchangeGroup: TGroupBox
-          Left = 0
-          Top = 261
-          Width = 393
-          Height = 69
+          Left = 8
+          Top = 288
+          Width = 438
+          Height = 81
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Options controlling key re-exchange'
           TabOrder = 1
           DesignSize = (
-            393
-            69)
+            438
+            81)
           object Label31: TLabel
-            Left = 12
-            Top = 20
-            Width = 199
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 218
+            Height = 15
             Caption = 'Max &minutes before rekey (0 for no limit):'
             Color = clBtnFace
             FocusControl = RekeyTimeEdit
             ParentColor = False
           end
           object Label32: TLabel
-            Left = 12
-            Top = 44
-            Width = 184
-            Height = 13
+            Left = 9
+            Top = 51
+            Width = 198
+            Height = 15
             Caption = 'Ma&x data before rekey (0 for no limit):'
             Color = clBtnFace
             FocusControl = RekeyDataEdit
             ParentColor = False
           end
           object RekeyTimeEdit: TUpDownEdit
-            Left = 303
-            Top = 12
+            Left = 349
+            Top = 19
             Width = 80
-            Height = 21
+            Height = 23
             Alignment = taRightJustify
             MaxValue = 1440.000000000000000000
             Anchors = [akTop, akRight]
@@ -2252,10 +2257,10 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnChange = DataChange
           end
           object RekeyDataEdit: TEdit
-            Left = 303
-            Top = 39
+            Left = 349
+            Top = 48
             Width = 80
-            Height = 21
+            Height = 23
             Anchors = [akTop, akRight]
             MaxLength = 10
             TabOrder = 1
@@ -2271,12 +2276,12 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         ImageIndex = 10
         TabVisible = False
         DesignSize = (
-          401
-          382)
+          450
+          388)
         object SshNoUserAuthCheck: TCheckBox
-          Left = 12
-          Top = 8
-          Width = 382
+          Left = 10
+          Top = 2
+          Width = 436
           Height = 17
           Anchors = [akLeft, akTop, akRight]
           Caption = '&Bypass authentication entirely'
@@ -2284,20 +2289,20 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           OnClick = DataChange
         end
         object AuthenticationGroup: TGroupBox
-          Left = 0
-          Top = 32
-          Width = 393
-          Height = 94
+          Left = 8
+          Top = 25
+          Width = 438
+          Height = 95
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Authentication options'
           TabOrder = 1
           DesignSize = (
-            393
-            94)
+            438
+            95)
           object TryAgentCheck: TCheckBox
-            Left = 12
-            Top = 19
-            Width = 373
+            Left = 11
+            Top = 22
+            Width = 416
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Attempt authentication using &Pageant'
@@ -2305,9 +2310,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object AuthKICheck: TCheckBox
-            Left = 12
-            Top = 42
-            Width = 373
+            Left = 11
+            Top = 45
+            Width = 416
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Attempt '#39'keyboard-&interactive'#39' authentication'
@@ -2315,9 +2320,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object AuthKIPasswordCheck: TCheckBox
-            Left = 32
-            Top = 65
-            Width = 353
+            Left = 26
+            Top = 68
+            Width = 401
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Respond with a pass&word to the first prompt'
@@ -2326,36 +2331,36 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
         object AuthenticationParamsGroup: TGroupBox
-          Left = 0
-          Top = 132
-          Width = 393
-          Height = 164
+          Left = 8
+          Top = 126
+          Width = 438
+          Height = 172
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Authentication parameters'
           TabOrder = 2
           DesignSize = (
-            393
-            164)
+            438
+            172)
           object PrivateKeyLabel: TLabel
-            Left = 12
-            Top = 42
-            Width = 75
-            Height = 13
+            Left = 9
+            Top = 45
+            Width = 79
+            Height = 15
             Caption = 'Private &key file:'
             FocusControl = PrivateKeyEdit3
           end
           object DetachedCertificateLabel: TLabel
-            Left = 12
-            Top = 117
-            Width = 186
-            Height = 13
+            Left = 9
+            Top = 121
+            Width = 198
+            Height = 15
             Caption = 'Certificate to &use with the private key:'
             FocusControl = DetachedCertificateEdit
           end
           object AgentFwdCheck: TCheckBox
-            Left = 12
-            Top = 19
-            Width = 373
+            Left = 11
+            Top = 22
+            Width = 416
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Allow agent &forwarding'
@@ -2363,9 +2368,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = DataChange
           end
           object PrivateKeyEdit3: TFilenameEdit
-            Left = 12
-            Top = 59
-            Width = 372
+            Left = 9
+            Top = 63
+            Width = 418
             Height = 21
             AcceptFiles = True
             OnBeforeDialog = PathEditBeforeDialog
@@ -2382,27 +2387,27 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnChange = DataChange
           end
           object PrivateKeyToolsButton: TButton
-            Left = 201
-            Top = 86
-            Width = 101
+            Left = 215
+            Top = 90
+            Width = 94
             Height = 25
             Caption = '&Tools'
             TabOrder = 3
             OnClick = PrivateKeyToolsButtonClick
           end
           object PrivateKeyViewButton: TButton
-            Left = 12
-            Top = 86
-            Width = 183
+            Left = 9
+            Top = 90
+            Width = 200
             Height = 25
             Caption = '&Display Public Key'
             TabOrder = 2
             OnClick = PrivateKeyViewButtonClick
           end
           object DetachedCertificateEdit: TFilenameEdit
-            Left = 12
-            Top = 133
-            Width = 372
+            Left = 9
+            Top = 139
+            Width = 418
             Height = 21
             AcceptFiles = True
             OnBeforeDialog = PathEditBeforeDialog
@@ -2418,20 +2423,20 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           end
         end
         object GSSAPIGroup: TGroupBox
-          Left = 0
-          Top = 302
-          Width = 393
-          Height = 71
+          Left = 8
+          Top = 304
+          Width = 438
+          Height = 72
           Anchors = [akLeft, akTop, akRight]
           Caption = 'GSSAPI'
           TabOrder = 3
           DesignSize = (
-            393
-            71)
+            438
+            72)
           object AuthGSSAPICheck3: TCheckBox
-            Left = 12
-            Top = 19
-            Width = 373
+            Left = 11
+            Top = 22
+            Width = 416
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Attempt &GSSAPI authentication'
@@ -2439,9 +2444,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnClick = AuthGSSAPICheck3Click
           end
           object GSSAPIFwdTGTCheck: TCheckBox
-            Left = 32
-            Top = 42
-            Width = 353
+            Left = 26
+            Top = 45
+            Width = 401
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Allow GSSAPI &credential delegation'
@@ -2458,158 +2463,158 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         ImageIndex = 9
         TabVisible = False
         DesignSize = (
-          401
-          382)
+          450
+          388)
         object BugsGroupBox: TGroupBox
-          Left = 0
-          Top = 6
-          Width = 393
-          Height = 217
+          Left = 8
+          Top = 2
+          Width = 438
+          Height = 257
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Detection of known bugs in SSH servers'
           TabOrder = 0
           DesignSize = (
-            393
-            217)
+            438
+            257)
           object BugHMAC2Label: TLabel
-            Left = 12
-            Top = 68
-            Width = 144
-            Height = 13
+            Left = 9
+            Top = 80
+            Width = 164
+            Height = 15
             Caption = 'Miscomputes SSH H&MAC keys:'
             FocusControl = BugHMAC2Combo
           end
           object BugDeriveKey2Label: TLabel
-            Left = 12
-            Top = 92
-            Width = 166
-            Height = 13
+            Left = 9
+            Top = 109
+            Width = 185
+            Height = 15
             Caption = 'Miscomputes SSH &encryption keys:'
             FocusControl = BugDeriveKey2Combo
           end
           object BugRSAPad2Label: TLabel
-            Left = 12
-            Top = 116
-            Width = 200
-            Height = 13
+            Left = 9
+            Top = 138
+            Width = 217
+            Height = 15
             Caption = 'Requires &padding on SSH RSA signatures:'
             FocusControl = BugRSAPad2Combo
           end
           object BugPKSessID2Label: TLabel
-            Left = 12
-            Top = 140
-            Width = 185
-            Height = 13
+            Left = 9
+            Top = 167
+            Width = 201
+            Height = 15
             Caption = 'Misuses the sessio&n ID in SSH PK auth:'
             FocusControl = BugPKSessID2Combo
           end
           object BugRekey2Label: TLabel
-            Left = 12
-            Top = 164
-            Width = 177
-            Height = 13
+            Left = 9
+            Top = 196
+            Width = 191
+            Height = 15
             Caption = 'Handles SSH &key re-exchange badly:'
             FocusControl = BugRekey2Combo
           end
           object BugMaxPkt2Label: TLabel
-            Left = 12
-            Top = 188
-            Width = 166
-            Height = 13
+            Left = 9
+            Top = 225
+            Width = 183
+            Height = 15
             Caption = 'Ignores SSH ma&ximum packet size:'
             FocusControl = BugMaxPkt2Combo
           end
           object BugIgnore2Label: TLabel
-            Left = 12
-            Top = 20
-            Width = 159
-            Height = 13
+            Left = 9
+            Top = 22
+            Width = 174
+            Height = 15
             Caption = 'Chokes on SSH i&gnore messages:'
             FocusControl = BugIgnore2Combo
           end
           object BugWinAdjLabel: TLabel
-            Left = 12
-            Top = 44
-            Width = 202
-            Height = 13
+            Left = 9
+            Top = 51
+            Width = 224
+            Height = 15
             Caption = 'Chokes on WinSCP'#39's SSH '#39'&winadj'#39' requests'
             FocusControl = BugWinAdjCombo
           end
           object BugHMAC2Combo: TComboBox
-            Left = 320
-            Top = 63
-            Width = 61
-            Height = 21
+            Left = 362
+            Top = 77
+            Width = 67
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 2
             OnChange = DataChange
           end
           object BugDeriveKey2Combo: TComboBox
-            Left = 320
-            Top = 87
-            Width = 61
-            Height = 21
+            Left = 362
+            Top = 106
+            Width = 67
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 3
             OnChange = DataChange
           end
           object BugRSAPad2Combo: TComboBox
-            Left = 320
-            Top = 111
-            Width = 61
-            Height = 21
+            Left = 362
+            Top = 135
+            Width = 67
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 4
             OnChange = DataChange
           end
           object BugPKSessID2Combo: TComboBox
-            Left = 320
-            Top = 135
-            Width = 61
-            Height = 21
+            Left = 362
+            Top = 164
+            Width = 67
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 5
             OnChange = DataChange
           end
           object BugRekey2Combo: TComboBox
-            Left = 320
-            Top = 159
-            Width = 61
-            Height = 21
+            Left = 362
+            Top = 193
+            Width = 67
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 6
             OnChange = DataChange
           end
           object BugMaxPkt2Combo: TComboBox
-            Left = 320
-            Top = 183
-            Width = 61
-            Height = 21
+            Left = 362
+            Top = 222
+            Width = 67
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 7
             OnChange = DataChange
           end
           object BugIgnore2Combo: TComboBox
-            Left = 320
-            Top = 15
-            Width = 61
-            Height = 21
+            Left = 362
+            Top = 19
+            Width = 67
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 0
             OnChange = DataChange
           end
           object BugWinAdjCombo: TComboBox
-            Left = 320
-            Top = 39
-            Width = 61
-            Height = 21
+            Left = 362
+            Top = 48
+            Width = 67
+            Height = 23
             Style = csDropDownList
             Anchors = [akTop, akRight]
             TabOrder = 1
@@ -2624,24 +2629,24 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         ImageIndex = 14
         TabVisible = False
         DesignSize = (
-          401
-          382)
+          450
+          388)
         object NoteGroup: TGroupBox
-          Left = 0
-          Top = 6
-          Width = 393
-          Height = 367
+          Left = 8
+          Top = 2
+          Width = 438
+          Height = 382
           Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'Note'
           TabOrder = 0
           DesignSize = (
-            393
-            367)
+            438
+            382)
           object NoteMemo: TMemo
-            Left = 12
-            Top = 21
-            Width = 371
-            Height = 332
+            Left = 9
+            Top = 22
+            Width = 420
+            Height = 350
             Anchors = [akLeft, akTop, akRight, akBottom]
             MaxLength = 4000
             TabOrder = 0
@@ -2654,19 +2659,19 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
     object LeftPanel: TPanel
       Left = 0
       Top = 0
-      Width = 152
-      Height = 392
+      Width = 161
+      Height = 398
       Align = alLeft
       BevelOuter = bvNone
       TabOrder = 0
       DesignSize = (
-        152
-        392)
+        161
+        398)
       object NavigationTree: TTreeView
         Left = 8
-        Top = 9
-        Width = 136
-        Height = 379
+        Top = 8
+        Width = 151
+        Height = 382
         Anchors = [akLeft, akTop, akRight, akBottom]
         DoubleBuffered = True
         HideSelection = False
@@ -2711,9 +2716,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
     end
   end
   object OKBtn: TButton
-    Left = 307
-    Top = 401
-    Width = 75
+    Left = 359
+    Top = 396
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'OK'
@@ -2722,9 +2727,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
     TabOrder = 1
   end
   object CancelBtn: TButton
-    Left = 392
-    Top = 401
-    Width = 75
+    Left = 445
+    Top = 396
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
@@ -2733,9 +2738,9 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
     TabOrder = 2
   end
   object HelpButton: TButton
-    Left = 475
-    Top = 401
-    Width = 75
+    Left = 531
+    Top = 396
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'
@@ -2744,8 +2749,8 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
   end
   object ColorButton: TButton
     Left = 8
-    Top = 401
-    Width = 82
+    Top = 396
+    Width = 80
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = '&Color'

@@ -6,27 +6,23 @@ object GenerateUrlDialog: TGenerateUrlDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Generate URL X'
-  ClientHeight = 338
-  ClientWidth = 484
+  ClientHeight = 381
+  ClientWidth = 539
   Color = clBtnFace
   Constraints.MinHeight = 300
-  Constraints.MinWidth = 484
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'Tahoma'
-  Font.Style = []
+  Constraints.MinWidth = 500
+  ParentFont = True
   Position = poOwnerFormCenter
   OnShow = FormShow
   DesignSize = (
-    484
-    338)
-  TextHeight = 13
+    539
+    381)
+  TextHeight = 15
   object OptionsPageControl: TPageControl
-    Left = 5
-    Top = 5
-    Width = 475
-    Height = 111
+    Left = 0
+    Top = 0
+    Width = 539
+    Height = 104
     ActivePage = UrlSheet
     Anchors = [akLeft, akTop, akRight]
     TabOrder = 0
@@ -35,9 +31,9 @@ object GenerateUrlDialog: TGenerateUrlDialog
       Caption = 'URL'
       object UserNameCheck: TCheckBox
         Tag = 1
-        Left = 11
-        Top = 8
-        Width = 144
+        Left = 7
+        Top = 5
+        Width = 151
         Height = 17
         Caption = '&User name'
         TabOrder = 0
@@ -45,9 +41,9 @@ object GenerateUrlDialog: TGenerateUrlDialog
       end
       object HostKeyCheck: TCheckBox
         Tag = 4
-        Left = 161
-        Top = 8
-        Width = 144
+        Left = 164
+        Top = 5
+        Width = 151
         Height = 17
         Caption = 'SSH &host Key'
         TabOrder = 3
@@ -55,9 +51,9 @@ object GenerateUrlDialog: TGenerateUrlDialog
       end
       object WinSCPSpecificCheck: TCheckBox
         Tag = 16
-        Left = 161
-        Top = 31
-        Width = 144
+        Left = 164
+        Top = 28
+        Width = 151
         Height = 17
         Caption = '&WinSCP-specific'
         TabOrder = 4
@@ -65,9 +61,9 @@ object GenerateUrlDialog: TGenerateUrlDialog
       end
       object SaveExtensionCheck: TCheckBox
         Tag = 32
-        Left = 161
-        Top = 54
-        Width = 144
+        Left = 164
+        Top = 51
+        Width = 151
         Height = 17
         Caption = '&Save extension'
         TabOrder = 5
@@ -75,9 +71,9 @@ object GenerateUrlDialog: TGenerateUrlDialog
       end
       object RemoteDirectoryCheck: TCheckBox
         Tag = 8
-        Left = 11
-        Top = 54
-        Width = 144
+        Left = 7
+        Top = 51
+        Width = 151
         Height = 17
         Caption = 'Initial &directory'
         TabOrder = 2
@@ -85,9 +81,9 @@ object GenerateUrlDialog: TGenerateUrlDialog
       end
       object PasswordCheck: TCheckBox
         Tag = 2
-        Left = 11
-        Top = 31
-        Width = 144
+        Left = 7
+        Top = 28
+        Width = 151
         Height = 17
         HelpType = htKeyword
         Caption = '&Password'
@@ -96,9 +92,9 @@ object GenerateUrlDialog: TGenerateUrlDialog
       end
       object RawSettingsCheck: TCheckBox
         Tag = 64
-        Left = 311
-        Top = 8
-        Width = 144
+        Left = 321
+        Top = 5
+        Width = 147
         Height = 17
         Caption = '&Advanced settings'
         TabOrder = 6
@@ -108,29 +104,33 @@ object GenerateUrlDialog: TGenerateUrlDialog
     object ScriptSheet: TTabSheet
       Caption = 'Script'
       ImageIndex = 1
+      DesignSize = (
+        531
+        74)
       object Label2: TLabel
-        Left = 11
+        Left = 5
         Top = 8
-        Width = 38
-        Height = 13
+        Width = 41
+        Height = 15
         Caption = '&Format:'
         FocusControl = ScriptFormatCombo
       end
       object ScriptDescriptionLabel: TLabel
-        Left = 11
+        Left = 5
         Top = 32
-        Width = 446
+        Width = 518
         Height = 42
+        Anchors = [akLeft, akTop, akRight, akBottom]
         AutoSize = False
         Caption = 'ScriptDescriptionLabel'
         ShowAccelChar = False
         WordWrap = True
       end
       object ScriptFormatCombo: TComboBox
-        Left = 112
+        Left = 106
         Top = 5
-        Width = 121
-        Height = 21
+        Width = 134
+        Height = 23
         Style = csDropDownList
         TabOrder = 0
         OnChange = ControlChange
@@ -144,29 +144,33 @@ object GenerateUrlDialog: TGenerateUrlDialog
     object AssemblySheet: TTabSheet
       Caption = '.NET assembly code'
       ImageIndex = 2
+      DesignSize = (
+        531
+        74)
       object Label1: TLabel
-        Left = 11
+        Left = 5
         Top = 8
-        Width = 51
-        Height = 13
+        Width = 55
+        Height = 15
         Caption = '&Language:'
         FocusControl = AssemblyLanguageCombo
       end
       object AssemblyDescriptionLabel: TLabel
-        Left = 11
+        Left = 5
         Top = 32
-        Width = 446
+        Width = 518
         Height = 42
+        Anchors = [akLeft, akTop, akRight, akBottom]
         AutoSize = False
         Caption = 'AssemblyDescriptionLabel'
         ShowAccelChar = False
         WordWrap = True
       end
       object AssemblyLanguageCombo: TComboBox
-        Left = 112
+        Left = 106
         Top = 5
-        Width = 121
-        Height = 21
+        Width = 134
+        Height = 23
         Style = csDropDownList
         TabOrder = 0
         OnChange = ControlChange
@@ -179,20 +183,20 @@ object GenerateUrlDialog: TGenerateUrlDialog
   end
   object ResultGroup: TGroupBox
     Left = 8
-    Top = 122
-    Width = 468
-    Height = 176
+    Top = 110
+    Width = 523
+    Height = 232
     Anchors = [akLeft, akTop, akRight, akBottom]
     Caption = 'ResultX'
     TabOrder = 1
     DesignSize = (
-      468
-      176)
+      523
+      232)
     object ResultMemo: TMemo
       Left = 7
       Top = 15
-      Width = 454
-      Height = 152
+      Width = 509
+      Height = 208
       Anchors = [akLeft, akTop, akRight, akBottom]
       BevelInner = bvNone
       BevelOuter = bvNone
@@ -201,9 +205,9 @@ object GenerateUrlDialog: TGenerateUrlDialog
     end
   end
   object CancelBtn: TButton
-    Left = 318
-    Top = 305
-    Width = 75
+    Left = 365
+    Top = 348
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
@@ -212,9 +216,9 @@ object GenerateUrlDialog: TGenerateUrlDialog
     TabOrder = 3
   end
   object HelpButton: TButton
-    Left = 401
-    Top = 305
-    Width = 75
+    Left = 451
+    Top = 348
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'
@@ -223,8 +227,8 @@ object GenerateUrlDialog: TGenerateUrlDialog
   end
   object ClipboardButton: TButton
     Left = 8
-    Top = 305
-    Width = 165
+    Top = 348
+    Width = 183
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = '&Copy to Clipboard'

@@ -10,11 +10,7 @@ object ConsoleDialog: TConsoleDialog
   Color = clBtnFace
   Constraints.MinHeight = 250
   Constraints.MinWidth = 420
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'Tahoma'
-  Font.Style = []
+  ParentFont = True
   Icon.Data = {
     000001000700404000000100200028420000760000003030000001002000A825
     00009E4200002828000001002000681A0000466800002020000001002000A810
@@ -1365,28 +1361,28 @@ object ConsoleDialog: TConsoleDialog
   DesignSize = (
     551
     393)
-  TextHeight = 13
+  TextHeight = 15
   object Bevel1: TBevel
     Left = 0
     Top = 0
     Width = 551
-    Height = 78
+    Height = 80
     Align = alTop
     Shape = bsBottomLine
   end
   object Label1: TLabel
     Left = 51
-    Top = 13
-    Width = 78
-    Height = 13
+    Top = 11
+    Width = 88
+    Height = 15
     Caption = 'Enter &command:'
     FocusControl = CommandEdit
   end
   object Label2: TLabel
     Left = 51
     Top = 56
-    Width = 87
-    Height = 13
+    Width = 93
+    Height = 15
     Caption = 'Current directory:'
     ShowAccelChar = False
   end
@@ -1401,10 +1397,10 @@ object ConsoleDialog: TConsoleDialog
     ShowAccelChar = False
   end
   object DirectoryLabel: TPathLabel
-    Left = 158
+    Left = 163
     Top = 56
-    Width = 299
-    Height = 13
+    Width = 298
+    Height = 15
     UnixPath = True
     IndentHorizontal = 0
     IndentVertical = 0
@@ -1421,9 +1417,9 @@ object ConsoleDialog: TConsoleDialog
   end
   object OutputMemo: TMemo
     Left = 0
-    Top = 78
+    Top = 80
     Width = 551
-    Height = 315
+    Height = 313
     TabStop = False
     Align = alClient
     Color = clBtnFace
@@ -1435,9 +1431,9 @@ object ConsoleDialog: TConsoleDialog
     OnContextPopup = OutputMemoContextPopup
   end
   object CancelBtn: TButton
-    Left = 472
+    Left = 463
     Top = 7
-    Width = 75
+    Width = 80
     Height = 25
     Anchors = [akTop, akRight]
     Cancel = True
@@ -1446,10 +1442,10 @@ object ConsoleDialog: TConsoleDialog
     TabOrder = 2
   end
   object CommandEdit: THistoryComboBox
-    Left = 158
-    Top = 9
-    Width = 213
-    Height = 21
+    Left = 163
+    Top = 8
+    Width = 208
+    Height = 23
     AutoComplete = False
     Anchors = [akLeft, akTop, akRight]
     MaxLength = 2048
@@ -1457,9 +1453,9 @@ object ConsoleDialog: TConsoleDialog
     OnChange = CommandEditChange
   end
   object ExecuteButton: TButton
-    Left = 384
+    Left = 377
     Top = 7
-    Width = 75
+    Width = 80
     Height = 25
     Anchors = [akTop, akRight]
     Caption = '&Execute'
@@ -1468,9 +1464,9 @@ object ConsoleDialog: TConsoleDialog
     OnClick = ExecuteButtonClick
   end
   object HelpButton: TButton
-    Left = 472
+    Left = 463
     Top = 42
-    Width = 75
+    Width = 80
     Height = 25
     Anchors = [akTop, akRight]
     Caption = '&Help'

@@ -1411,7 +1411,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     }
     EnableControl(DDDrivesMemo, DDFakeFileEnabledButton->Checked);
     EnableControl(DDDrivesLabel, DDDrivesMemo->Enabled);
-    EnableControl(DDFakeFileDisabledPanel, DDFakeFileDisabledButton->Checked);
+    EnableControl(DDWarnLackOfTempSpaceCheck, DDFakeFileDisabledButton->Checked);
     EnableControl(DDTemporaryDirectoryEdit, DDCustomTemporaryDirectoryButton->Enabled &&
       DDCustomTemporaryDirectoryButton->Checked);
     EnableControl(ConfirmTemporaryDirectoryCleanupCheck,
@@ -2763,7 +2763,7 @@ void __fastcall TPreferencesDialog::AddExtension()
   std::unique_ptr<TStrings> History(CloneStrings(CustomWinConfiguration->History[HistoryKey]));
   UnicodeString Path;
   if (InputDialog(LoadStr(ADD_EXTENSION_CAPTION), LoadStr(ADD_EXTENSION_PROMPT), Path,
-        HELP_ADD_EXTENSION, History.get(), true, NULL, true, 400) &&
+        HELP_ADD_EXTENSION, History.get(), true, NULL, true, 444) &&
       !Path.IsEmpty())
   {
     CustomWinConfiguration->History[HistoryKey] = History.get();

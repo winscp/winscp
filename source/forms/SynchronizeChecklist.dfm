@@ -8,11 +8,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
   ClientHeight = 521
   ClientWidth = 695
   Color = clBtnFace
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'Tahoma'
-  Font.Style = []
+  ParentFont = True
   Icon.Data = {
     000001000700404000000100200028420000760000003030000001002000A825
     00009E4200002828000001002000681A0000466800002020000001002000A810
@@ -1362,23 +1358,23 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
   Position = poOwnerFormCenter
   OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnShow = FormShow
-  TextHeight = 13
+  TextHeight = 15
   object Panel: TPanel
-    Left = 571
+    Left = 562
     Top = 0
-    Width = 124
+    Width = 133
     Height = 501
     Align = alRight
     BevelOuter = bvNone
     Constraints.MinHeight = 350
     TabOrder = 1
     DesignSize = (
-      124
+      133
       501)
     object OkButton: TButton
-      Left = 8
+      Left = 6
       Top = 8
-      Width = 108
+      Width = 119
       Height = 25
       Anchors = [akLeft, akTop, akRight]
       Caption = 'OK'
@@ -1389,9 +1385,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       OnDropDownClick = OkButtonDropDownClick
     end
     object CancelButton: TButton
-      Left = 8
-      Top = 40
-      Width = 108
+      Left = 6
+      Top = 39
+      Width = 119
       Height = 25
       Anchors = [akLeft, akTop, akRight]
       Cancel = True
@@ -1400,45 +1396,45 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       TabOrder = 1
     end
     object CheckAllButton: TButton
-      Left = 8
-      Top = 182
-      Width = 108
+      Left = 6
+      Top = 179
+      Width = 119
       Height = 25
       Action = CheckAllAction
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 5
     end
     object UncheckAllButton: TButton
-      Left = 8
-      Top = 214
-      Width = 108
+      Left = 6
+      Top = 210
+      Width = 119
       Height = 25
       Action = UncheckAllAction
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 6
     end
     object CheckButton: TButton
-      Left = 8
-      Top = 118
-      Width = 108
+      Left = 6
+      Top = 117
+      Width = 119
       Height = 25
       Action = CheckAction
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 3
     end
     object UncheckButton: TButton
-      Left = 8
-      Top = 150
-      Width = 108
+      Left = 6
+      Top = 148
+      Width = 119
       Height = 25
       Action = UncheckAction
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 4
     end
     object HelpButton: TButton
-      Left = 8
-      Top = 72
-      Width = 108
+      Left = 6
+      Top = 70
+      Width = 119
       Height = 25
       Anchors = [akLeft, akTop, akRight]
       Caption = '&Help'
@@ -1446,9 +1442,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       OnClick = HelpButtonClick
     end
     object CustomCommandsButton2: TButton
-      Left = 8
-      Top = 322
-      Width = 108
+      Left = 6
+      Top = 319
+      Width = 119
       Height = 25
       Action = CustomCommandsAction
       Anchors = [akLeft, akTop, akRight]
@@ -1456,18 +1452,18 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       TabOrder = 9
     end
     object ReverseButton: TButton
-      Left = 8
-      Top = 260
-      Width = 108
+      Left = 6
+      Top = 257
+      Width = 119
       Height = 25
       Action = ReverseAction
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 7
     end
     object ToolsMenuButton: TButton
-      Left = 8
-      Top = 368
-      Width = 108
+      Left = 6
+      Top = 366
+      Width = 119
       Height = 25
       Anchors = [akLeft, akTop, akRight]
       Caption = '&Tools'
@@ -1475,9 +1471,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       OnClick = ToolsMenuButtonClick
     end
     object MoveButton: TButton
-      Left = 8
-      Top = 291
-      Width = 108
+      Left = 6
+      Top = 288
+      Width = 119
       Height = 25
       Action = MoveAction
       Anchors = [akLeft, akTop, akRight]
@@ -1487,7 +1483,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
   object ListView: TIEListView
     Left = 0
     Top = 0
-    Width = 571
+    Width = 562
     Height = 501
     OnRecreate = ListViewRecreate
     Align = alClient

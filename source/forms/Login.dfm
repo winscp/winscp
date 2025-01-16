@@ -9,22 +9,18 @@ object LoginDialog: TLoginDialog
   ClientWidth = 873
   Color = clBtnFace
   Constraints.MinHeight = 399
-  Constraints.MinWidth = 600
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'Tahoma'
-  Font.Style = []
+  Constraints.MinWidth = 640
+  ParentFont = True
   KeyPreview = True
   Position = poOwnerFormCenter
   OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
-  TextHeight = 13
+  TextHeight = 15
   object MainPanel: TPanel
-    Left = 512
+    Left = 472
     Top = 0
-    Width = 361
+    Width = 401
     Height = 387
     Align = alRight
     BevelOuter = bvNone
@@ -32,48 +28,48 @@ object LoginDialog: TLoginDialog
     object ContentsPanel: TPanel
       Left = 0
       Top = 0
-      Width = 361
-      Height = 346
+      Width = 401
+      Height = 353
       Align = alClient
       BevelOuter = bvNone
       TabOrder = 0
       Visible = False
       DesignSize = (
-        361
-        346)
+        401
+        353)
       object ContentsGroupBox: TGroupBox
         Left = 2
-        Top = 12
-        Width = 347
-        Height = 331
+        Top = 8
+        Width = 391
+        Height = 342
         Anchors = [akLeft, akTop, akBottom]
         Caption = 'ContentsGroupBox'
         TabOrder = 0
         DesignSize = (
-          347
-          331)
+          391
+          342)
         object ContentsLabel: TLabel
-          Left = 12
-          Top = 20
-          Width = 31
-          Height = 13
+          Left = 8
+          Top = 22
+          Width = 35
+          Height = 15
           Caption = 'Name:'
           ShowAccelChar = False
         end
         object ContentsNameEdit: TEdit
           Left = 66
-          Top = 15
-          Width = 270
-          Height = 21
+          Top = 19
+          Width = 316
+          Height = 23
           Anchors = [akLeft, akTop, akRight]
           TabOrder = 0
           Text = 'ContentsNameEdit'
         end
         object ContentsMemo: TMemo
-          Left = 12
-          Top = 42
-          Width = 324
-          Height = 277
+          Left = 8
+          Top = 48
+          Width = 374
+          Height = 284
           Anchors = [akLeft, akTop, akRight, akBottom]
           Lines.Strings = (
             'ContentsMemo')
@@ -84,98 +80,97 @@ object LoginDialog: TLoginDialog
     object SitePanel: TPanel
       Left = 0
       Top = 0
-      Width = 361
-      Height = 346
+      Width = 401
+      Height = 353
       Align = alClient
-      Anchors = [akTop, akRight, akBottom]
       BevelOuter = bvNone
       TabOrder = 1
       DesignSize = (
-        361
-        346)
+        401
+        353)
       object BasicGroup: TGroupBox
         Left = 2
-        Top = 12
-        Width = 347
-        Height = 260
+        Top = 8
+        Width = 391
+        Height = 258
         Anchors = [akLeft, akTop, akRight]
         Caption = 'Session'
         TabOrder = 0
         DesignSize = (
-          347
-          260)
+          391
+          258)
         object Label1: TLabel
-          Left = 12
-          Top = 72
-          Width = 55
-          Height = 13
+          Left = 8
+          Top = 69
+          Width = 61
+          Height = 15
           Caption = '&Host name:'
           FocusControl = HostNameEdit
         end
         object Label2: TLabel
-          Left = 255
-          Top = 72
-          Width = 63
-          Height = 13
+          Left = 280
+          Top = 69
+          Width = 70
+          Height = 15
           Anchors = [akTop, akRight]
           Caption = 'Po&rt number:'
           FocusControl = PortNumberEdit
         end
         object UserNameLabel: TLabel
-          Left = 12
-          Top = 122
-          Width = 55
-          Height = 13
+          Left = 8
+          Top = 116
+          Width = 59
+          Height = 15
           Caption = '&User name:'
           FocusControl = UserNameEdit
         end
         object PasswordLabel: TLabel
-          Left = 178
-          Top = 122
-          Width = 50
-          Height = 13
+          Left = 198
+          Top = 116
+          Width = 53
+          Height = 15
           Caption = '&Password:'
           FocusControl = PasswordEdit
         end
         object Label22: TLabel
-          Left = 12
+          Left = 8
           Top = 22
-          Width = 62
-          Height = 13
+          Width = 69
+          Height = 15
           Caption = '&File protocol:'
           FocusControl = TransferProtocolCombo
         end
         object FtpsLabel: TLabel
-          Left = 163
+          Left = 178
           Top = 22
-          Width = 55
-          Height = 13
+          Width = 60
+          Height = 15
           Caption = '&Encryption:'
           FocusControl = FtpsCombo
         end
         object WebDavsLabel: TLabel
-          Left = 163
+          Left = 178
           Top = 22
-          Width = 55
-          Height = 13
+          Width = 60
+          Height = 15
           Caption = '&Encryption:'
           FocusControl = WebDavsCombo
         end
         object BasicS3Panel: TPanel
-          Left = 12
-          Top = 195
-          Width = 324
+          Left = 8
+          Top = 192
+          Width = 374
           Height = 31
           Anchors = [akLeft, akTop, akRight]
           BevelOuter = bvNone
           TabOrder = 11
           DesignSize = (
-            324
+            374
             31)
           object S3CredentialsEnvCheck3: TCheckBox
-            Left = 0
-            Top = 2
-            Width = 324
+            Left = 2
+            Top = 3
+            Width = 374
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Credentials from AWS environment:'
@@ -183,10 +178,10 @@ object LoginDialog: TLoginDialog
             OnClick = S3CredentialsEnvCheck3Click
           end
           object S3ProfileCombo: TComboBox
-            Left = 200
+            Left = 253
             Top = 0
-            Width = 124
-            Height = 21
+            Width = 121
+            Height = 23
             DropDownCount = 16
             TabOrder = 1
             Text = 'S3ProfileCombo'
@@ -194,26 +189,26 @@ object LoginDialog: TLoginDialog
           end
         end
         object EncryptionView: TEdit
-          Left = 163
-          Top = 39
-          Width = 173
-          Height = 21
+          Left = 178
+          Top = 40
+          Width = 204
+          Height = 23
           TabOrder = 4
           OnChange = TransferProtocolComboChange
         end
         object TransferProtocolView: TEdit
-          Left = 12
-          Top = 39
-          Width = 145
-          Height = 21
+          Left = 8
+          Top = 40
+          Width = 164
+          Height = 23
           TabOrder = 1
           OnChange = TransferProtocolComboChange
         end
         object HostNameEdit: TEdit
-          Left = 12
-          Top = 89
-          Width = 236
-          Height = 21
+          Left = 8
+          Top = 87
+          Width = 266
+          Height = 23
           Anchors = [akLeft, akTop, akRight]
           MaxLength = 255
           TabOrder = 5
@@ -222,20 +217,20 @@ object LoginDialog: TLoginDialog
           OnExit = HostNameEditExit
         end
         object UserNameEdit: TEdit
-          Left = 12
-          Top = 139
-          Width = 159
-          Height = 21
+          Left = 8
+          Top = 134
+          Width = 184
+          Height = 23
           MaxLength = 128
           TabOrder = 7
           Text = 'UserNameEdit'
           OnChange = DataChange
         end
         object PasswordEdit: TPasswordEdit
-          Left = 177
-          Top = 139
-          Width = 159
-          Height = 21
+          Left = 198
+          Top = 134
+          Width = 184
+          Height = 23
           Anchors = [akLeft, akTop, akRight]
           MaxLength = 100
           TabOrder = 8
@@ -243,10 +238,10 @@ object LoginDialog: TLoginDialog
           OnChange = DataChange
         end
         object PortNumberEdit: TUpDownEdit
-          Left = 254
-          Top = 89
-          Width = 82
-          Height = 21
+          Left = 280
+          Top = 87
+          Width = 102
+          Height = 23
           Alignment = taRightJustify
           MaxValue = 65535.000000000000000000
           MinValue = 1.000000000000000000
@@ -255,10 +250,10 @@ object LoginDialog: TLoginDialog
           OnChange = PortNumberEditChange
         end
         object TransferProtocolCombo: TComboBox
-          Left = 12
-          Top = 39
-          Width = 145
-          Height = 21
+          Left = 8
+          Top = 40
+          Width = 164
+          Height = 23
           Style = csDropDownList
           TabOrder = 0
           OnChange = TransferProtocolComboChange
@@ -270,10 +265,10 @@ object LoginDialog: TLoginDialog
             'Amazon S3')
         end
         object FtpsCombo: TComboBox
-          Left = 163
-          Top = 39
-          Width = 173
-          Height = 21
+          Left = 178
+          Top = 40
+          Width = 204
+          Height = 23
           Style = csDropDownList
           TabOrder = 2
           OnChange = EncryptionComboChange
@@ -283,10 +278,10 @@ object LoginDialog: TLoginDialog
             'TLS/SSL Explicit encryptionX')
         end
         object WebDavsCombo: TComboBox
-          Left = 163
-          Top = 39
-          Width = 173
-          Height = 21
+          Left = 178
+          Top = 40
+          Width = 204
+          Height = 23
           Style = csDropDownList
           TabOrder = 3
           OnChange = EncryptionComboChange
@@ -295,17 +290,17 @@ object LoginDialog: TLoginDialog
             'TLS/SSL Implicit encryptionX')
         end
         object BasicFtpPanel: TPanel
-          Left = 12
-          Top = 169
-          Width = 324
+          Left = 8
+          Top = 166
+          Width = 374
           Height = 26
           Anchors = [akLeft, akTop, akRight]
           BevelOuter = bvNone
           TabOrder = 9
           object AnonymousLoginCheck: TCheckBox
-            Left = 0
+            Left = 2
             Top = 0
-            Width = 170
+            Width = 182
             Height = 17
             Caption = 'A&nonymous login'
             TabOrder = 0
@@ -315,16 +310,16 @@ object LoginDialog: TLoginDialog
         object BasicSshPanel: TPanel
           Left = 12
           Top = 198
-          Width = 347
+          Width = 391
           Height = 0
           Anchors = [akLeft, akTop, akRight]
           BevelOuter = bvNone
           TabOrder = 10
         end
         object AdvancedButton: TButton
-          Left = 238
-          Top = 224
-          Width = 98
+          Left = 274
+          Top = 221
+          Width = 108
           Height = 25
           Action = SessionAdvancedAction
           Anchors = [akRight, akBottom]
@@ -333,9 +328,9 @@ object LoginDialog: TLoginDialog
           OnDropDownClick = AdvancedButtonDropDownClick
         end
         object SaveButton: TButton
-          Left = 12
-          Top = 224
-          Width = 98
+          Left = 8
+          Top = 221
+          Width = 108
           Height = 25
           Action = SaveSessionAction
           Anchors = [akLeft, akBottom]
@@ -344,9 +339,9 @@ object LoginDialog: TLoginDialog
           OnDropDownClick = SaveButtonDropDownClick
         end
         object EditCancelButton: TButton
-          Left = 116
-          Top = 224
-          Width = 82
+          Left = 122
+          Top = 221
+          Width = 80
           Height = 25
           Action = EditCancelAction
           Anchors = [akLeft, akBottom]
@@ -354,9 +349,9 @@ object LoginDialog: TLoginDialog
           OnDropDownClick = SaveButtonDropDownClick
         end
         object EditButton: TButton
-          Left = 12
-          Top = 224
-          Width = 98
+          Left = 8
+          Top = 221
+          Width = 108
           Height = 25
           Action = EditSessionAction
           Anchors = [akLeft, akBottom]
@@ -366,20 +361,20 @@ object LoginDialog: TLoginDialog
       end
       object NoteGroup: TGroupBox
         Left = 2
-        Top = 278
-        Width = 347
-        Height = 65
+        Top = 272
+        Width = 391
+        Height = 78
         Anchors = [akLeft, akTop, akRight, akBottom]
         Caption = 'Note'
         TabOrder = 1
         DesignSize = (
-          347
-          65)
+          391
+          78)
         object NoteMemo: TMemo
-          Left = 7
-          Top = 15
-          Width = 333
-          Height = 41
+          Left = 8
+          Top = 17
+          Width = 375
+          Height = 52
           TabStop = False
           Anchors = [akLeft, akTop, akRight, akBottom]
           BevelInner = bvNone
@@ -394,20 +389,20 @@ object LoginDialog: TLoginDialog
     end
     object ButtonPanel: TPanel
       Left = 0
-      Top = 346
-      Width = 361
-      Height = 41
+      Top = 353
+      Width = 401
+      Height = 34
       Align = alBottom
       BevelOuter = bvNone
       TabOrder = 2
       OnMouseDown = PanelMouseDown
       DesignSize = (
-        361
-        41)
+        401
+        34)
       object LoginButton: TButton
-        Left = 75
-        Top = 10
-        Width = 98
+        Left = 113
+        Top = 3
+        Width = 108
         Height = 25
         Action = LoginAction
         Anchors = [akRight, akBottom]
@@ -419,9 +414,9 @@ object LoginDialog: TLoginDialog
         OnDropDownClick = LoginButtonDropDownClick
       end
       object CloseButton: TButton
-        Left = 179
-        Top = 10
-        Width = 82
+        Left = 227
+        Top = 3
+        Width = 80
         Height = 25
         Anchors = [akRight, akBottom]
         Cancel = True
@@ -430,9 +425,9 @@ object LoginDialog: TLoginDialog
         TabOrder = 1
       end
       object HelpButton: TButton
-        Left = 267
-        Top = 10
-        Width = 82
+        Left = 313
+        Top = 3
+        Width = 80
         Height = 25
         Anchors = [akRight, akBottom]
         Caption = 'Help'
@@ -444,19 +439,19 @@ object LoginDialog: TLoginDialog
   object SitesPanel: TPanel
     Left = 0
     Top = 0
-    Width = 512
+    Width = 472
     Height = 387
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 2
     DesignSize = (
-      512
+      472
       387)
     object SessionTree: TTreeView
-      Left = 11
-      Top = 12
-      Width = 490
-      Height = 338
+      Left = 8
+      Top = 8
+      Width = 456
+      Height = 342
       Anchors = [akLeft, akTop, akRight, akBottom]
       DoubleBuffered = True
       DragMode = dmAutomatic
@@ -490,9 +485,9 @@ object LoginDialog: TLoginDialog
       OnStartDrag = SessionTreeStartDrag
     end
     object ManageButton: TButton
-      Left = 403
+      Left = 356
       Top = 356
-      Width = 98
+      Width = 108
       Height = 25
       Anchors = [akRight, akBottom]
       Caption = '&Manage'
@@ -500,9 +495,9 @@ object LoginDialog: TLoginDialog
       OnClick = ManageButtonClick
     end
     object ToolsMenuButton: TButton
-      Left = 11
+      Left = 8
       Top = 356
-      Width = 98
+      Width = 108
       Height = 25
       Anchors = [akLeft, akBottom]
       Caption = '&Tools'
@@ -512,7 +507,7 @@ object LoginDialog: TLoginDialog
     object SitesIncrementalSearchPanel: TPanel
       Left = 26
       Top = 309
-      Width = 183
+      Width = 139
       Height = 23
       Anchors = [akLeft, akRight, akBottom]
       BevelOuter = bvNone
@@ -522,7 +517,7 @@ object LoginDialog: TLoginDialog
       object SitesIncrementalSearchBorderLabel: TStaticText
         Left = 0
         Top = 0
-        Width = 183
+        Width = 139
         Height = 23
         Align = alClient
         AutoSize = False
@@ -532,8 +527,8 @@ object LoginDialog: TLoginDialog
       object SitesIncrementalSearchLabel: TStaticText
         Left = 5
         Top = 4
-        Width = 142
-        Height = 17
+        Width = 154
+        Height = 19
         Caption = 'SitesIncrementalSearchLabel'
         ShowAccelChar = False
         TabOrder = 1

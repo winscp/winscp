@@ -6,22 +6,18 @@ object ProgressForm: TProgressForm
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Operation'
-  ClientHeight = 291
-  ClientWidth = 360
+  ClientHeight = 294
+  ClientWidth = 398
   Color = clWindow
-  Font.Charset = DEFAULT_CHARSET
-  Font.Color = clWindowText
-  Font.Height = -11
-  Font.Name = 'Tahoma'
-  Font.Style = []
+  ParentFont = True
   PopupMode = pmAuto
   Position = poOwnerFormCenter
   OnHide = FormHide
   OnShow = FormShow
   DesignSize = (
-    360
-    291)
-  TextHeight = 13
+    398
+    294)
+  TextHeight = 15
   object AnimationPaintBox: TPaintBox
     Left = 8
     Top = 11
@@ -31,28 +27,28 @@ object ProgressForm: TProgressForm
   object MainPanel: TPanel
     Left = 50
     Top = 7
-    Width = 302
-    Height = 68
+    Width = 340
+    Height = 69
     Anchors = [akLeft, akTop, akRight]
     BevelOuter = bvNone
     ParentColor = True
     TabOrder = 0
     DesignSize = (
-      302
-      68)
+      340
+      69)
     object PathLabel: TLabel
       Left = 0
       Top = 7
-      Width = 26
-      Height = 13
+      Width = 28
+      Height = 15
       Caption = 'FileX:'
       ShowAccelChar = False
     end
     object FileLabel: TPathLabel
       Left = 56
       Top = 7
-      Width = 246
-      Height = 13
+      Width = 284
+      Height = 15
       IndentHorizontal = 0
       IndentVertical = 0
       Align = alNone
@@ -61,17 +57,17 @@ object ProgressForm: TProgressForm
     end
     object TargetLabel: TLabel
       Left = 0
-      Top = 23
+      Top = 25
       Width = 36
-      Height = 13
+      Height = 15
       Caption = 'Target:'
       ShowAccelChar = False
     end
     object TargetPathLabel: TPathLabel
       Left = 56
-      Top = 23
-      Width = 246
-      Height = 13
+      Top = 25
+      Width = 284
+      Height = 15
       IndentHorizontal = 0
       IndentVertical = 0
       Align = alNone
@@ -80,8 +76,8 @@ object ProgressForm: TProgressForm
     end
     object OperationProgress: TProgressBar
       Left = 0
-      Top = 42
-      Width = 302
+      Top = 43
+      Width = 340
       Height = 16
       Anchors = [akLeft, akTop, akRight]
       ParentShowHint = False
@@ -91,28 +87,28 @@ object ProgressForm: TProgressForm
   end
   object TransferPanel: TPanel
     Left = 50
-    Top = 75
-    Width = 322
-    Height = 63
+    Top = 76
+    Width = 360
+    Height = 64
     Anchors = [akLeft, akTop, akRight]
     BevelOuter = bvNone
     ParentColor = True
     TabOrder = 1
     DesignSize = (
-      322
-      63)
+      360
+      64)
     object StartTimeLabel: TLabel
-      Left = 88
+      Left = 104
       Top = 2
       Width = 65
-      Height = 13
+      Height = 15
       Alignment = taRightJustify
       AutoSize = False
       Caption = '00:00:00'
       ShowAccelChar = False
     end
     object TimeLeftLabel: TLabel
-      Left = 88
+      Left = 104
       Top = 2
       Width = 65
       Height = 13
@@ -124,16 +120,16 @@ object ProgressForm: TProgressForm
     object TimeLeftLabelLabel: TLabel
       Left = 0
       Top = 2
-      Width = 45
-      Height = 13
+      Width = 50
+      Height = 15
       Caption = 'Time left:'
       ShowAccelChar = False
     end
     object CPSLabel: TLabel
-      Left = 237
-      Top = 18
-      Width = 65
-      Height = 13
+      Left = 266
+      Top = 20
+      Width = 74
+      Height = 15
       Alignment = taRightJustify
       Anchors = [akTop, akRight]
       AutoSize = False
@@ -141,10 +137,10 @@ object ProgressForm: TProgressForm
       ShowAccelChar = False
     end
     object TimeElapsedLabel: TLabel
-      Left = 237
+      Left = 266
       Top = 2
-      Width = 65
-      Height = 13
+      Width = 74
+      Height = 15
       Alignment = taRightJustify
       Anchors = [akTop, akRight]
       AutoSize = False
@@ -152,20 +148,20 @@ object ProgressForm: TProgressForm
       ShowAccelChar = False
     end
     object BytesTransferredLabel: TLabel
-      Left = 88
-      Top = 18
+      Left = 104
+      Top = 20
       Width = 65
-      Height = 13
+      Height = 15
       Alignment = taRightJustify
       AutoSize = False
       Caption = '0 KB'
       ShowAccelChar = False
     end
     object Label3: TLabel
-      Left = 165
+      Left = 190
       Top = 2
-      Width = 66
-      Height = 13
+      Width = 73
+      Height = 15
       Anchors = [akTop, akRight]
       Caption = 'Time elapsed:'
       ShowAccelChar = False
@@ -173,32 +169,32 @@ object ProgressForm: TProgressForm
     object StartTimeLabelLabel: TLabel
       Left = 0
       Top = 2
-      Width = 51
-      Height = 13
+      Width = 54
+      Height = 15
       Caption = 'Start time:'
       ShowAccelChar = False
     end
     object Label4: TLabel
       Left = 0
-      Top = 18
-      Width = 89
-      Height = 13
+      Top = 20
+      Width = 91
+      Height = 15
       Caption = 'Bytes transferred:'
       ShowAccelChar = False
     end
     object Label12: TLabel
-      Left = 165
-      Top = 18
-      Width = 34
-      Height = 13
+      Left = 190
+      Top = 20
+      Width = 35
+      Height = 15
       Anchors = [akTop, akRight]
       Caption = 'Speed:'
       ShowAccelChar = False
     end
     object FileProgress: TProgressBar
       Left = 0
-      Top = 37
-      Width = 302
+      Top = 38
+      Width = 340
       Height = 16
       Anchors = [akLeft, akTop, akRight]
       ParentShowHint = False
@@ -208,7 +204,7 @@ object ProgressForm: TProgressForm
   end
   object ToolbarPanel: TPanel
     Left = 50
-    Top = 142
+    Top = 145
     Width = 302
     Height = 28
     Anchors = [akLeft, akBottom]
@@ -305,8 +301,8 @@ object ProgressForm: TProgressForm
   end
   object ComponentsPanel: TPanel
     Left = 0
-    Top = 181
-    Width = 360
+    Top = 184
+    Width = 398
     Height = 110
     Align = alBottom
     BevelEdges = [beTop]

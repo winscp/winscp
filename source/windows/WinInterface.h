@@ -185,7 +185,7 @@ typedef void __fastcall (__closure *TInputDialogInitialize)
 bool __fastcall InputDialog(const UnicodeString ACaption,
   const UnicodeString APrompt, UnicodeString & Value, UnicodeString HelpKeyword = HELP_NONE,
   TStrings * History = NULL, bool PathInput = false,
-  TInputDialogInitialize OnInitialize = NULL, bool Echo = true, int Width = 275);
+  TInputDialogInitialize OnInitialize = NULL, bool Echo = true, int Width = 305);
 
 // forms\About.cpp
 struct TRegistration

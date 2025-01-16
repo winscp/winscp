@@ -87,7 +87,6 @@ __published:
   TLabel *DDFakeFileDisabledLabel;
   TRadioButton *DDFakeFileEnabledButton;
   TRadioButton *DDFakeFileDisabledButton;
-  TPanel *DDFakeFileDisabledPanel;
   TCheckBox *DDWarnLackOfTempSpaceCheck;
   TCheckBox *ConfirmExitOnCompletionCheck;
   TTabSheet *QueueSheet;

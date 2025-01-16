@@ -62,7 +62,7 @@ void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrin
   try
   {
     int ColumnPadding = 2 * ScaleByTextHeightRunTime(ListView, 6);
-    int ColumnShrinkMinWidth = ScaleByTextHeightRunTime(ListView, 60);
+    int ColumnShrinkMinWidth = ScaleByTextHeightRunTime(ListView, 67);
 
     int ResizableWidth = 0;
     int NonResizableWidth = 0;
@@ -1005,9 +1005,7 @@ void __fastcall UseSystemSettingsPre(TForm * Control)
     Control->HelpKeyword = L"start";
   }
 
-  // We have legacy XE6 font (Tahoma) explicitly set in DFMs to match the layout.
-  // That unlinks the font fonts from the Application->DefaultFont. We set the DefaultFont to Tahoma in WinSCP.cpp.
-  DebugAssert((Control->Name == L"AboutDialog") || SameFont(Control->Font, Application->DefaultFont));
+  DebugAssert(SameFont(Control->Font, Application->DefaultFont));
 
   ApplySystemSettingsOnControl(Control);
 };
@@ -2582,6 +2580,7 @@ void TDesktopFontManager::UpdateControl(TControl * Control)
     if (DebugAlwaysTrue(SystemParametersInfoForPixelsPerInch(SPI_GETICONTITLELOGFONT, sizeof(LogFont), &LogFont, 0, PixelsPerInch)))
     {
       DesktopFont->Handle = CreateFontIndirect(&LogFont);
+      DebugAssert((PixelsPerInch == Screen->PixelsPerInch) || SameFont(DesktopFont.get(), Application->DefaultFont));
     }
   }
   else
@@ -2631,6 +2630,7 @@ void __fastcall TDesktopFontManager::WndProc(TMessage & Message)
 //---------------------------------------------------------------------------
 std::unique_ptr<TDesktopFontManager> DesktopFontManager(new TDesktopFontManager());
 //---------------------------------------------------------------------------
+// This might be somewhat redundant now that at least the default Desktop font is actually the default VCL font
 void __fastcall UseDesktopFont(TControl * Control)
 {
   TCustomStatusBar * StatusBar = dynamic_cast<TCustomStatusBar *>(Control);
