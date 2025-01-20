@@ -21,7 +21,7 @@ set MSBUILD_COMMUNITY=%PROGRAMFILES64%\%VS_PATH_REL%\Community\%MSBUILD_REL%
 set MSBUILD=%MSBUILD_COMMUNITY%
 rem Visual Studio 2022 Build Tools (build server)
 if not exist "%MSBUILD%" set MSBUILD=%PROGRAMFILES32%\%VS_PATH_REL%\BuildTools\%MSBUILD_REL%
-if not exist "%MSBUILD%" set echo Cannot find MSBUILD (%MSBUILD%, %MSBUILD_COMMUNITY%), install Build Tools for Visual Studio 2022 & exit
+if not exist "%MSBUILD%" echo Cannot find MSBUILD (%MSBUILD%, %MSBUILD_COMMUNITY%), install Build Tools for Visual Studio 2022 & exit
 
 set WITH_DOTNET=1
 if "%BUILD_TARGET%"=="" set BUILD_TARGET=Build
