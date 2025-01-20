@@ -1363,14 +1363,14 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     Left = 562
     Top = 0
     Width = 133
-    Height = 501
+    Height = 500
     Align = alRight
     BevelOuter = bvNone
     Constraints.MinHeight = 350
     TabOrder = 1
     DesignSize = (
       133
-      501)
+      500)
     object OkButton: TButton
       Left = 6
       Top = 8
@@ -1484,7 +1484,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     Left = 0
     Top = 0
     Width = 562
-    Height = 501
+    Height = 500
     OnRecreate = ListViewRecreate
     Align = alClient
     Checkboxes = True
@@ -1561,9 +1561,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
   end
   object StatusBar: TStatusBar
     Left = 0
-    Top = 501
+    Top = 500
     Width = 695
-    Height = 20
+    Height = 21
     Hint = 'Click to select all actions of this type'
     Panels = <
       item

@@ -5,7 +5,7 @@ object FileFindDialog: TFileFindDialog
   HelpKeyword = 'ui_find'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   Caption = 'FindX'
-  ClientHeight = 417
+  ClientHeight = 419
   ClientWidth = 562
   Color = clBtnFace
   Constraints.MinHeight = 240
@@ -1365,7 +1365,7 @@ object FileFindDialog: TFileFindDialog
   OnShow = FormShow
   DesignSize = (
     562
-    417)
+    419)
   TextHeight = 15
   object FilterGroup: TGroupBox
     Left = 8
@@ -1520,7 +1520,7 @@ object FileFindDialog: TFileFindDialog
     Left = 0
     Top = 398
     Width = 562
-    Height = 19
+    Height = 21
     Panels = <>
     SimplePanel = True
   end
