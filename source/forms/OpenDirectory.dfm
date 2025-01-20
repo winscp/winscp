@@ -197,7 +197,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
         Width = 80
         Height = 25
         Anchors = [akTop, akRight]
-        Caption = '&Remove'
+        Caption = 'Remo&ve'
         TabOrder = 2
         OnClick = RemoveBookmarkButtonClick
       end
