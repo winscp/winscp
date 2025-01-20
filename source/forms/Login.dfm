@@ -9,7 +9,7 @@ object LoginDialog: TLoginDialog
   ClientWidth = 873
   Color = clBtnFace
   Constraints.MinHeight = 399
-  Constraints.MinWidth = 640
+  Constraints.MinWidth = 660
   ParentFont = True
   KeyPreview = True
   Position = poOwnerFormCenter
