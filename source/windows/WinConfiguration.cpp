@@ -133,6 +133,9 @@ void __fastcall TEditorData::ExternalEditorOptionsAutodetect()
     // A notable exception is Windows Notepad before Windows 10 1809, so here's an exception for it.
     ExternalEditorText = !IsWin10Build(17763);
 
+    // While on Windows 11, the notepad.exe open the MDI Store Windows Notepad,
+    // the notepad.exe process runs as long as the Windows Notepad tab is opened,
+    // so technically the notepad.exe is stil SDI
     SDIExternalEditor = true;
   }
 }
