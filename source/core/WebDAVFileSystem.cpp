@@ -321,7 +321,9 @@ void __fastcall TWebDAVFileSystem::InitSession(TSessionContext * SessionContext,
 
   ne_set_read_timeout(Session, Data->Timeout);
 
-  ne_set_connect_timeout(Session, Data->Timeout);
+  // The ne_set_connect_timeout was called here previously, but as neon does not support non-blocking
+  // connection on Windows, it was noop.
+  // Restore the call once ours non-blocking connection implementation proves working.
 
   ne_set_session_private(Session, SESSION_CONTEXT_KEY, SessionContext);
 

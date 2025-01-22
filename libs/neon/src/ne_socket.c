@@ -137,11 +137,15 @@ typedef struct in_addr ne_inet_addr;
 #endif
 
 /* "Be Conservative In What You Build". */
+#ifdef WINSCP
+#define USE_NONBLOCKING_CONNECT
+#else
 #if defined(HAVE_FCNTL) && defined(O_NONBLOCK) && defined(F_SETFL) \
     && defined(HAVE_GETSOCKOPT) && defined(SO_ERROR) \
     && defined(HAVE_SOCKLEN_T) && defined(SOL_SOCKET) \
     && defined(EINPROGRESS)
 #define USE_NONBLOCKING_CONNECT
+#endif
 #endif
 
 #include "ne_internal.h"
@@ -1345,6 +1349,10 @@ static int timed_connect(ne_socket *sock, int fd,
     if (sock->cotimeout) {
         int errnum, flags;
 
+        #ifdef WINSCP
+        flags = 1;
+        ioctlsocket(fd, FIONBIO, &flags);
+        #else
         /* Get flags and then set O_NONBLOCK. */
         flags = fcntl(fd, F_GETFL);
         if (flags & O_NONBLOCK) {
@@ -1356,6 +1364,7 @@ static int timed_connect(ne_socket *sock, int fd,
             set_strerror(sock, errno);
             return NE_SOCK_ERROR;
         }
+        #endif
         
         ret = raw_connect(fd, sa, salen);
         if (ret == -1) {
@@ -1394,10 +1403,15 @@ static int timed_connect(ne_socket *sock, int fd,
         }
         
         /* Reset to old flags; fail on error if no previous error. */
+        #ifdef WINSCP
+        flags = 0;
+        ioctlsocket(fd, FIONBIO, &flags);
+        #else
         if (fcntl(fd, F_SETFL, flags) == -1 && !ret) {
             set_strerror(sock, errno);
             ret = NE_SOCK_ERROR;
         }
+        #endif
     } else 
 #endif /* USE_NONBLOCKING_CONNECT */
     {

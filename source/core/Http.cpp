@@ -18,6 +18,7 @@ THttp::THttp()
   FOnDownload = NULL;
   FOnError = NULL;
   FResponseLimit = -1;
+  FConnectTimeout = 0;
 
   FRequestHeaders = NULL;
   FResponseHeaders = new TStringList();
@@ -72,6 +73,7 @@ void THttp::SendRequest(const char * Method, const UnicodeString & Request)
     {
       TProxyMethod ProxyMethod = ProxyHost.IsEmpty() ? ::pmNone : pmHTTP;
       InitNeonSession(NeonSession, ProxyMethod, ProxyHost, ProxyPort, UnicodeString(), UnicodeString(), NULL);
+      ne_set_connect_timeout(NeonSession, ConnectTimeout);
 
       if (IsTls)
       {

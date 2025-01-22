@@ -183,11 +183,12 @@ TStrings * GetS3Profiles()
   return Result.release();
 }
 //---------------------------------------------------------------------------
-static UnicodeString ReadUrl(const UnicodeString & Url)
+static UnicodeString ReadUrl(const UnicodeString & Url, int ConnectTimeout = 0)
 {
   std::unique_ptr<THttp> Http(new THttp());
   Http->URL = Url;
   Http->ResponseLimit = BasicHttpResponseLimit;
+  Http->ConnectTimeout = ConnectTimeout;
   Http->Get();
   return Http->Response.Trim();
 }
@@ -315,7 +316,8 @@ static UnicodeString GetS3ConfigValue(
         UnicodeString SecurityCredentialsUrl = AWSMetadataService + L"iam/security-credentials/";
 
         AppLogFmt(L"Retrieving AWS security credentials from %s", (SecurityCredentialsUrl));
-        S3SecurityProfile = ReadUrl(SecurityCredentialsUrl);
+        int ConnectTimeout = StrToIntDef(GetEnvironmentVariable(L"AWS_METADATA_SERVICE_TIMEOUT"), 1);
+        S3SecurityProfile = ReadUrl(SecurityCredentialsUrl, ConnectTimeout);
 
         if (S3SecurityProfile.IsEmpty())
         {
