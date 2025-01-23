@@ -443,7 +443,7 @@ void __fastcall TS3FileSystem::Open()
 
   RequireNeon(FTerminal);
 
-  FTerminal->Information(LoadStr(STATUS_CONNECT), true);
+  FTerminal->Information(LoadStr(STATUS_CONNECT));
 
   TSessionData * Data = FTerminal->SessionData;
 

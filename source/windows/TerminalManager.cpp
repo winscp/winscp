@@ -1465,7 +1465,7 @@ void __fastcall TTerminalManager::AuthenticatingDone()
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalInformation(
-  TTerminal * Terminal, const UnicodeString & Str, bool DebugUsedArg(Status), int Phase, const UnicodeString & Additional)
+  TTerminal * Terminal, const UnicodeString & Str, int Phase, const UnicodeString & Additional)
 {
   if (ScpExplorer != NULL)
   {

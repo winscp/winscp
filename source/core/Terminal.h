@@ -66,7 +66,7 @@ typedef void __fastcall (__closure *TDeleteLocalFileEvent)(
 typedef int __fastcall (__closure *TDirectoryModifiedEvent)
   (TTerminal * Terminal, const UnicodeString Directory, bool SubDirs);
 typedef void __fastcall (__closure *TInformationEvent)
-  (TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase, const UnicodeString & Additional);
+  (TTerminal * Terminal, const UnicodeString & Str, int Phase, const UnicodeString & Additional);
 typedef void __fastcall (__closure *TCustomCommandEvent)
   (TTerminal * Terminal, const UnicodeString & Command, bool & Handled);
 //---------------------------------------------------------------------------
@@ -386,7 +386,7 @@ protected:
   void __fastcall OpenTunnel();
   void __fastcall CloseTunnel();
   void __fastcall DoInformation(
-    const UnicodeString & Str, bool Status, int Phase = -1, const UnicodeString & Additional = UnicodeString());
+    const UnicodeString & Str, int Phase = -1, const UnicodeString & Additional = UnicodeString());
   bool __fastcall PromptUser(TSessionData * Data, TPromptKind Kind,
     UnicodeString Name, UnicodeString Instructions, UnicodeString Prompt, bool Echo,
     int MaxLen, UnicodeString & Result);
@@ -408,7 +408,7 @@ protected:
     TFileOperationProgressType & Progress, TFileOperation Operation, TOperationSide Side, int Count,
     bool Temp, const UnicodeString & Directory, unsigned long CPSLimit, TOnceDoneOperation OnceDoneOperation);
   void __fastcall OperationStop(TFileOperationProgressType & Progress);
-  virtual void __fastcall Information(const UnicodeString & Str, bool Status);
+  virtual void __fastcall Information(const UnicodeString & Str);
   virtual unsigned int __fastcall QueryUser(const UnicodeString Query,
     TStrings * MoreMessages, unsigned int Answers, const TQueryParams * Params,
     TQueryType QueryType = qtConfirmation);

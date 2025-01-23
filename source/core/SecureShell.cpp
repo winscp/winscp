@@ -419,7 +419,7 @@ void __fastcall TSecureShell::Open()
 
   FAuthenticationLog = L"";
   FNoConnectionResponse = false;
-  FUI->Information(LoadStr(STATUS_LOOKUPHOST), true);
+  FUI->Information(LoadStr(STATUS_LOOKUPHOST));
 
   try
   {
@@ -450,7 +450,7 @@ void __fastcall TSecureShell::Open()
     {
       PuttyFatalError(InitError);
     }
-    FUI->Information(LoadStr(STATUS_CONNECT), true);
+    FUI->Information(LoadStr(STATUS_CONNECT));
     FAuthenticationCancelled = false;
     if (!Active && DebugAlwaysTrue(HasLocalProxy()))
     {
@@ -480,7 +480,7 @@ void __fastcall TSecureShell::Open()
 
   FAuthenticating = false;
   FAuthenticated = true;
-  FUI->Information(LoadStr(STATUS_AUTHENTICATED), true);
+  FUI->Information(LoadStr(STATUS_AUTHENTICATED));
 
   ResetSessionInfo();
 
@@ -910,7 +910,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
         FLAGCLEAR(int(Prompts->Objects[0]), pupEcho))
     {
       LogEvent(L"Using stored password.");
-      FUI->Information(LoadStr(AUTH_PASSWORD), false);
+      FUI->Information(LoadStr(AUTH_PASSWORD));
       Result = true;
       Results->Strings[0] = NormalizeString(FSessionData->Password);
       FStoredPasswordTriedForKI = true;
@@ -926,7 +926,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
     if (!FSessionData->Password.IsEmpty() && !FStoredPasswordTried)
     {
       LogEvent(L"Using stored password.");
-      FUI->Information(LoadStr(AUTH_PASSWORD), false);
+      FUI->Information(LoadStr(AUTH_PASSWORD));
       Result = true;
       Results->Strings[0] = NormalizeString(FSessionData->Password);
       FStoredPasswordTried = true;
@@ -946,7 +946,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
   {
     if (FSessionData->ChangePassword)
     {
-      FUI->Information(LoadStr(AUTH_CHANGING_PASSWORD), false);
+      FUI->Information(LoadStr(AUTH_CHANGING_PASSWORD));
 
       if (!FSessionData->Password.IsEmpty() && !FSessionData->NewPassword.IsEmpty() && !FStoredPasswordTried)
       {
@@ -1002,7 +1002,7 @@ void __fastcall TSecureShell::GotHostKey()
     FAuthenticating = true;
     if (!FSessionData->ChangePassword)
     {
-      FUI->Information(LoadStr(STATUS_AUTHENTICATE), true);
+      FUI->Information(LoadStr(STATUS_AUTHENTICATE));
     }
   }
 }
@@ -1030,7 +1030,7 @@ void __fastcall TSecureShell::CWrite(const char * Data, size_t Length)
       FAuthenticationLog += (FAuthenticationLog.IsEmpty() ? L"" : L"\n") + Line;
     }
 
-    FUI->Information(Line, false);
+    FUI->Information(Line);
   }
 }
 //---------------------------------------------------------------------------
@@ -2560,7 +2560,7 @@ void __fastcall TSecureShell::VerifyHostKey(
         if (ExpectedKey == L"*")
         {
           UnicodeString Message = LoadStr(ANY_HOSTKEY);
-          FUI->Information(Message, true);
+          FUI->Information(Message);
           FLog->Add(llException, Message);
           Result = true;
         }

@@ -492,7 +492,7 @@ void __fastcall TFTPFileSystem::Open()
 
       if (!PromptedForCredentials)
       {
-        FTerminal->Information(LoadStr(FTP_CREDENTIAL_PROMPT), false);
+        FTerminal->Information(LoadStr(FTP_CREDENTIAL_PROMPT));
         PromptedForCredentials = true;
       }
 
@@ -558,7 +558,7 @@ void __fastcall TFTPFileSystem::Open()
     {
       if (FPasswordFailed)
       {
-        FTerminal->Information(LoadStr(FTP_ACCESS_DENIED), false);
+        FTerminal->Information(LoadStr(FTP_ACCESS_DENIED));
       }
       else
       {
@@ -3736,7 +3736,7 @@ bool __fastcall TFTPFileSystem::HandleStatus(const wchar_t * AStatus, int Type)
   switch (Type)
   {
     case TFileZillaIntf::LOG_STATUS:
-      FTerminal->Information(Status, true);
+      FTerminal->Information(Status);
       LogType = llMessage;
       break;
 

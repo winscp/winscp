@@ -236,7 +236,7 @@ protected:
   virtual void __fastcall ResetTransfer();
   void __fastcall Input(const UnicodeString Prompt, UnicodeString & Str, bool AllowEmpty);
   void __fastcall TerminalInformation(
-    TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase, const UnicodeString & Additional);
+    TTerminal * Terminal, const UnicodeString & Str, int Phase, const UnicodeString & Additional);
   void __fastcall TerminalOperationProgress(TFileOperationProgressType & ProgressData);
   void __fastcall TerminalOperationFinished(TFileOperation Operation, TOperationSide Side,
     bool Temp, const UnicodeString & FileName, bool Success, bool NotCancelled,

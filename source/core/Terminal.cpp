@@ -201,7 +201,7 @@ class TTunnelUI : public TSessionUI
 {
 public:
   __fastcall TTunnelUI(TTerminal * Terminal);
-  virtual void __fastcall Information(const UnicodeString & Str, bool Status);
+  virtual void __fastcall Information(const UnicodeString & Str);
   virtual unsigned int __fastcall QueryUser(const UnicodeString Query,
     TStrings * MoreMessages, unsigned int Answers, const TQueryParams * Params,
     TQueryType QueryType);
@@ -228,11 +228,11 @@ __fastcall TTunnelUI::TTunnelUI(TTerminal * Terminal)
   FTerminalThread = GetCurrentThreadId();
 }
 //---------------------------------------------------------------------------
-void __fastcall TTunnelUI::Information(const UnicodeString & Str, bool Status)
+void __fastcall TTunnelUI::Information(const UnicodeString & Str)
 {
   if (GetCurrentThreadId() == FTerminalThread)
   {
-    FTerminal->Information(Str, Status);
+    FTerminal->Information(Str);
   }
 }
 //---------------------------------------------------------------------------
@@ -1470,7 +1470,7 @@ void __fastcall TTerminal::Open()
       ValidateEncryptKey(FEncryptKey);
     }
 
-    DoInformation(L"", true, 1);
+    DoInformation(L"", 1);
     try
     {
       FRememberedPasswordUsed = false;
@@ -1491,14 +1491,14 @@ void __fastcall TTerminal::Open()
           DebugAssert(FTunnel == NULL);
           if (FSessionData->Tunnel)
           {
-            DoInformation(LoadStr(OPEN_TUNNEL), true);
+            Information(LoadStr(OPEN_TUNNEL));
             LogEvent(L"Opening tunnel.");
             OpenTunnel();
             Log->AddSeparator();
 
             FSessionData->ConfigureTunnel(FTunnelLocalPortNumber);
 
-            DoInformation(LoadStr(USING_TUNNEL), false);
+            Information(LoadStr(USING_TUNNEL));
             LogEvent(FORMAT(L"Connecting via tunnel interface %s:%d.",
               (FSessionData->HostNameExpanded, FSessionData->PortNumber)));
           }
@@ -1625,7 +1625,7 @@ void __fastcall TTerminal::Open()
           FCollectFileSystemUsage = false;
         }
 
-        DoInformation(LoadStr(STATUS_READY), true);
+        Information(LoadStr(STATUS_READY));
         FStatus = ssOpened;
       }
       catch(...)
@@ -1659,7 +1659,7 @@ void __fastcall TTerminal::Open()
     {
       // This does not make it through, if terminal thread is abandoned,
       // see also TTerminalManager::DoConnectTerminal
-      DoInformation(L"", true, 0);
+      DoInformation(L"", 0);
     }
   }
   catch(EFatal &)
@@ -2163,14 +2163,14 @@ void __fastcall TTerminal::ShowExtendedException(Exception * E)
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoInformation(
-  const UnicodeString & Str, bool Status, int Phase, const UnicodeString & Additional)
+  const UnicodeString & Str, int Phase, const UnicodeString & Additional)
 {
   if (OnInformation)
   {
     TCallbackGuard Guard(this);
     try
     {
-      OnInformation(this, Str, Status, Phase, Additional);
+      OnInformation(this, Str, Phase, Additional);
       Guard.Verify();
     }
     catch (Exception & E)
@@ -2183,9 +2183,9 @@ void __fastcall TTerminal::DoInformation(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::Information(const UnicodeString & Str, bool Status)
+void __fastcall TTerminal::Information(const UnicodeString & Str)
 {
-  DoInformation(Str, Status);
+  DoInformation(Str);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoProgress(TFileOperationProgressType & ProgressData)
@@ -2866,7 +2866,7 @@ void __fastcall TTerminal::DoEndTransaction(bool Inform)
         {
           if (Inform)
           {
-            DoInformation(LoadStr(STATUS_OPEN_DIRECTORY), true, -1, CurrentDirectory);
+            DoInformation(LoadStr(STATUS_OPEN_DIRECTORY), -1, CurrentDirectory);
           }
           ReadDirectory(!FReadCurrentDirectoryPending);
         }
@@ -3439,7 +3439,7 @@ void __fastcall TTerminal::DoStartup()
   BeginTransaction();
   try
   {
-    DoInformation(LoadStr(STATUS_STARTUP), true);
+    Information(LoadStr(STATUS_STARTUP));
 
     // Make sure that directory would be loaded at last
     FReadCurrentDirectoryPending = true;
@@ -8544,7 +8544,7 @@ bool  __fastcall TTerminal::VerifyCertificate(
       if (ExpectedKey == L"*")
       {
         UnicodeString Message = LoadStr(ANY_CERTIFICATE);
-        Information(Message, true);
+        Information(Message);
         Log->Add(llException, Message);
         Result = true;
       }
@@ -8741,11 +8741,11 @@ bool __fastcall TTerminal::LoadTlsCertificate(X509 *& Certificate, EVP_PKEY *& P
         if (Passphrase.IsEmpty())
         {
           LogEvent(L"Certificate is encrypted, need passphrase");
-          Information(LoadStr(CLIENT_CERTIFICATE_LOADING), false);
+          Information(LoadStr(CLIENT_CERTIFICATE_LOADING));
         }
         else
         {
-          Information(LoadStr(CERTIFICATE_DECODE_ERROR_INFO), false);
+          Information(LoadStr(CERTIFICATE_DECODE_ERROR_INFO));
         }
 
         Passphrase = L"";

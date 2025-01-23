@@ -197,7 +197,7 @@ private:
   void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress,
     int ResolvedLinks, bool & Cancel);
   void __fastcall TerminalInformation(
-    TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase, const UnicodeString & Additional);
+    TTerminal * Terminal, const UnicodeString & Str, int Phase, const UnicodeString & Additional);
   void __fastcall TerminalCustomCommand(TTerminal * Terminal, const UnicodeString & Command, bool & Handled);
   void __fastcall FreeAll();
   void __fastcall SessionReady();

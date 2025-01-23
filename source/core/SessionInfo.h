@@ -66,7 +66,7 @@ struct TFileSystemInfo
 class TSessionUI
 {
 public:
-  virtual void __fastcall Information(const UnicodeString & Str, bool Status) = 0;
+  virtual void __fastcall Information(const UnicodeString & Str) = 0;
   virtual unsigned int __fastcall QueryUser(const UnicodeString Query,
     TStrings * MoreMessages, unsigned int Answers, const TQueryParams * Params,
     TQueryType QueryType = qtConfirmation) = 0;

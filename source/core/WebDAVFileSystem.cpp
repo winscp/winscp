@@ -219,7 +219,7 @@ void __fastcall TWebDAVFileSystem::Open()
   UnicodeString EscapedPath = StrFromNeon(PathEscape(StrToNeon(Path)).c_str());
   UnicodeString Url = FORMAT(L"%s://%s:%d%s", (ProtocolName, HostName, Port, EscapedPath));
 
-  FTerminal->Information(LoadStr(STATUS_CONNECT), true);
+  FTerminal->Information(LoadStr(STATUS_CONNECT));
   FActive = false;
   try
   {
@@ -1715,7 +1715,7 @@ int TWebDAVFileSystem::NeonBodyAccepter(void * UserData, ne_request * Request, c
 
     if (!Line.IsEmpty())
     {
-      FileSystem->FTerminal->Information(Line, true);
+      FileSystem->FTerminal->Information(Line);
     }
 
     UnicodeString RemoteSystem;

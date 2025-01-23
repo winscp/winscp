@@ -64,7 +64,7 @@ public:
   {
     if (OnInformation != NULL)
     {
-      OnInformation(Terminal, Str, Status, Phase, Additional);
+      OnInformation(Terminal, Str, Phase, Additional);
     }
   }
 
@@ -78,7 +78,6 @@ public:
   TInformationEvent OnInformation;
   TTerminal * Terminal;
   UnicodeString Str;
-  bool Status;
   int Phase;
   UnicodeString Additional;
 };
@@ -2895,12 +2894,11 @@ void __fastcall TTerminalThread::WaitForUserAction(TUserAction * UserAction)
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::TerminalInformation(
-  TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase, const UnicodeString & Additional)
+  TTerminal * Terminal, const UnicodeString & Str, int Phase, const UnicodeString & Additional)
 {
   TInformationUserAction Action(FOnInformation);
   Action.Terminal = Terminal;
   Action.Str = Str;
-  Action.Status = Status;
   Action.Phase = Phase;
   Action.Additional = Additional;
 

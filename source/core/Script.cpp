@@ -2312,7 +2312,7 @@ bool __fastcall TManagementScript::QueryCancel()
 }
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::TerminalInformation(
-  TTerminal * ATerminal, const UnicodeString & Str, bool DebugUsedArg(Status), int Phase, const UnicodeString & DebugUsedArg(Additional))
+  TTerminal * ATerminal, const UnicodeString & Str, int Phase, const UnicodeString & DebugUsedArg(Additional))
 {
   DebugAssert(ATerminal != NULL);
   if ((Phase < 0) && (ATerminal->Status == ssOpening))
