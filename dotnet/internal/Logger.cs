@@ -414,6 +414,13 @@ namespace WinSCP
             {
                 WriteLine("Entry assembly path: {0}", GetEntryAssemblyFilePath());
             }
+            WriteLine($"Process path: {GetProcessPath()}");
+        }
+
+        public static string GetProcessPath()
+        {
+            // Can be replaced with Environment.ProcessPath in .NET 6 and newer
+            return Process.GetCurrentProcess().MainModule?.FileName;
         }
 
         public static string LastWin32ErrorMessage()
