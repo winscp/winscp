@@ -263,6 +263,7 @@ private:
   bool __fastcall GetStoredCredentialsTried();
   inline bool __fastcall InTransaction();
   void __fastcall SaveCapabilities(TFileSystemInfo & FileSystemInfo);
+  void LogAndInformation(const UnicodeString & S);
   static UnicodeString __fastcall SynchronizeModeStr(TSynchronizeMode Mode);
   static UnicodeString __fastcall SynchronizeParamsStr(int Params);
 

@@ -928,6 +928,10 @@ int __fastcall Execute()
   {
     Mode = cmKeyGen;
   }
+  else if (Params->FindSwitch(COPYID_SWITCH))
+  {
+    Mode = cmCopyId;
+  }
   else if (Params->FindSwitch(FINGERPRINTSCAN_SWITCH))
   {
     Mode = cmFingerprintScan;

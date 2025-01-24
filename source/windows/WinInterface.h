@@ -56,6 +56,8 @@ const int mpAllowContinueOnError = 0x02;
 #define STDIN_SWITCH L"StdIn"
 #define STDINOUT_BINARY_VALUE L"binary"
 #define STDINOUT_CHUNKED_VALUE L"chunked"
+#define COPYID_SWITCH L"CopyId"
+#define IDENTITY_SWITCH L"Identity"
 
 #define DUMPCALLSTACK_EVENT L"WinSCPCallstack%d"
 
@@ -459,6 +461,7 @@ extern const UnicodeString OKButtonName;
 enum TConsoleMode
 {
   cmNone, cmScripting, cmHelp, cmBatchSettings, cmKeyGen, cmFingerprintScan, cmDumpCallstack, cmInfo, cmComRegistration,
+  cmCopyId,
 };
 int __fastcall Console(TConsoleMode Mode);
 

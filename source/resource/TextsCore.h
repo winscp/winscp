@@ -542,6 +542,12 @@
 #define TIME_RELATIVE           569
 #define DAYS_SPAN               570
 #define INI_SELECT              571
+#define PUBLIC_KEY_ADDING       572
+#define PUBLIC_KEY_DOWNLOADING  573
+#define PUBLIC_KEY_CONTAINS     574
+#define PUBLIC_KEY_NOT_CONTAINS 575
+#define PUBLIC_KEY_NEW          576
+#define PUBLIC_KEY_UPLOADING    577
 
 #define CORE_VARIABLE_STRINGS   600
 #define PUTTY_BASED_ON          601

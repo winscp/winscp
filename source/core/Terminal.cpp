@@ -8923,8 +8923,19 @@ TRemoteFile * TTerminal::CheckRights(const UnicodeString & EntryType, const Unic
   return File.release();
 }
 //---------------------------------------------------------------------------
+void TTerminal::LogAndInformation(const UnicodeString & S)
+{
+  LogEvent(S);
+  Information(S);
+}
+//---------------------------------------------------------------------------
 UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
 {
+  if (FSProtocol != cfsSFTP)
+  {
+    NotSupported();
+  }
+
   UnicodeString Result;
 
   UnicodeString TemporaryDir;
@@ -8944,7 +8955,7 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
     bool UnusedHasCertificate;
     UnicodeString Line = GetPublicKeyLine(FileName, Comment, UnusedHasCertificate);
 
-    LogEvent(FORMAT(L"Adding public key line to \"%s\" file:\n%s", (AuthorizedKeysFilePath, Line)));
+    LogAndInformation(FMTLOAD(PUBLIC_KEY_ADDING, (AuthorizedKeysFilePath)) + L"\n" + Line);
 
     UnicodeString SshFolderAbsolutePath = UnixIncludeTrailingBackslash(GetHomeDirectory()) + OpensshFolderName;
     bool WrongRights = false;
@@ -8982,7 +8993,7 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
       AuthorizedKeysFileFile->FullFileName = AuthorizedKeysFileAbsolutePath;
       std::unique_ptr<TStrings> Files(new TStringList());
       Files->AddObject(AuthorizedKeysFileAbsolutePath, AuthorizedKeysFileFile.get());
-      LogEvent(FORMAT(L"Downloading current \"%s\" file...", (OpensshAuthorizedKeysFileName)));
+      LogAndInformation(FMTLOAD(PUBLIC_KEY_DOWNLOADING, (OpensshAuthorizedKeysFileName)));
       CopyToLocal(Files.get(), TemporaryDir, &CopyParam, cpNoConfirmation, NULL);
       // Overload with Encoding parameter work incorrectly, when used on a file without BOM
       AuthorizedKeys = TFile::ReadAllText(TemporaryAuthorizedKeysFile);
@@ -8998,14 +9009,14 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
       {
         if (StartsStr(Prefix, AuthorizedKeysLines->Strings[Index]))
         {
-          LogEvent(FORMAT(L"\"%s\" file already contains public key line:\n%s", (OpensshAuthorizedKeysFileName, AuthorizedKeysLines->Strings[Index])));
+          LogAndInformation(FMTLOAD(PUBLIC_KEY_CONTAINS, (OpensshAuthorizedKeysFileName)) + L"\n" + AuthorizedKeysLines->Strings[Index]);
           Updated = false;
         }
       }
 
       if (Updated)
       {
-        LogEvent(FORMAT(L"\"%s\" file does not contain the public key line yet.", (OpensshAuthorizedKeysFileName)));
+        LogAndInformation(FMTLOAD(PUBLIC_KEY_NOT_CONTAINS, (OpensshAuthorizedKeysFileName)));
         if (!EndsStr(L"\n", AuthorizedKeys))
         {
           LogEvent(FORMAT(L"Adding missing trailing new line to \"%s\" file...", (OpensshAuthorizedKeysFileName)));
@@ -9015,7 +9026,7 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
     }
     else
     {
-      LogEvent(FORMAT(L"Creating new \"%s\" file...", (OpensshAuthorizedKeysFileName)));
+      LogAndInformation(FMTLOAD(PUBLIC_KEY_NEW, (OpensshAuthorizedKeysFileName)));
       CopyParam.PreserveRights = true;
       CopyParam.Rights.Number = TRights::rfUserRead | TRights::rfUserWrite;
     }
@@ -9027,14 +9038,20 @@ UnicodeString TTerminal::UploadPublicKey(const UnicodeString & FileName)
       TFile::WriteAllText(TemporaryAuthorizedKeysFile, AuthorizedKeys);
       std::unique_ptr<TStrings> Files(new TStringList());
       Files->Add(TemporaryAuthorizedKeysFile);
-      LogEvent(FORMAT(L"Uploading updated \"%s\" file...", (OpensshAuthorizedKeysFileName)));
+      LogAndInformation(FMTLOAD(PUBLIC_KEY_UPLOADING, (OpensshAuthorizedKeysFileName)));
       CopyToRemote(Files.get(), SshFolderAbsolutePath, &CopyParam, cpNoConfirmation, NULL);
     }
 
     Result = FMTLOAD(PUBLIC_KEY_UPLOADED, (Comment));
+    if (Updated)
+    {
+      LogAndInformation(ReplaceStr(RemoveMainInstructionsTag(Result), L"\n\n", L"\n"));
+    }
     if (WrongRights)
     {
-      Result += L"\n\n" + FMTLOAD(PUBLIC_KEY_PERMISSIONS, (AuthorizedKeysFilePath));
+      UnicodeString PermissionsInfo = FMTLOAD(PUBLIC_KEY_PERMISSIONS, (AuthorizedKeysFilePath));
+      LogAndInformation(PermissionsInfo);
+      Result += L"\n\n" + PermissionsInfo;
     }
   }
   __finally

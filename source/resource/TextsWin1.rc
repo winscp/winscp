@@ -99,6 +99,7 @@ BEGIN
         DD_TARGET_UNKNOWN, "**WinSCP was not able to detect a folder, where the dragged file(s) was dropped.** In the default drag&drop mode, WinSCP allows dropping files only to local drives and mapped network drives.\n\nYou can allow dropping files to other targets in preferences. Press Help button for details."
         JUMPLIST_ERROR, "Error updating jump list."
         TOO_MANY_PARAMS_ERROR, "Too many parameters."
+        COPYID_IDETITY_MISSING, "Identity/key file was not specified."
 
         WIN_CONFIRMATION_STRINGS, "WIN_CONFIRMATION"
         CONFIRM_OVERWRITE_SESSION, "Site with name '%s' already exists. Overwrite?"
@@ -317,6 +318,7 @@ BEGIN
         UPDATE_CURRENT, "Your version: %s"
         PATTERNS_HINT_K, "!K expands to current session private key path"
         PATTERNS_HINT_BACKSLASH, "!\\ expands to current local path"
+        USAGE_COPYID, "Installs your public key in a server's authorized_keys."
 
         WIN_FORMS_STRINGS, "WIN_FORMS_STRINGS"
         COPY_FILE, "%s file '%s' to %s:"

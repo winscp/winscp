@@ -75,7 +75,7 @@ public:
   __property TTerminal * Terminal = { read = FTerminal };
   __property bool Groups = { read = FGroups, write = FGroups };
   __property bool WantsProgress = { read = FWantsProgress, write = FWantsProgress };
-  __property bool Interactive = { read = FInteractive, write = FInteractive };
+  __property bool UsageWarnings = { read = FUsageWarnings, write = FUsageWarnings };
   __property TTransferOutEvent OnTransferOut = { read = FOnTransferOut, write = FOnTransferOut };
   __property TTransferInEvent OnTransferIn = { read = FOnTransferIn, write = FOnTransferIn };
 
@@ -105,12 +105,13 @@ protected:
   int FInteractiveSessionReopenTimeout;
   bool FGroups;
   bool FWantsProgress;
-  bool FInteractive;
+  bool FUsageWarnings;
   TTransferOutEvent FOnTransferOut;
   TTransferInEvent FOnTransferIn;
   TStrings * FPendingLogLines;
   bool FWarnNonDefaultCopyParam;
   bool FWarnNonDefaultSynchronizeParams;
+  bool FPrintInformation;
 
   virtual void __fastcall ResetTransfer();
   virtual void __fastcall ConnectTerminal(TTerminal * ATerminal);
@@ -160,6 +161,7 @@ protected:
   void __fastcall EchoProc(TScriptProcParams * Parameters);
   void __fastcall StatProc(TScriptProcParams * Parameters);
   void __fastcall ChecksumProc(TScriptProcParams * Parameters);
+  void __fastcall CopyIdProc(TScriptProcParams * Parameters);
 
   void __fastcall OptionImpl(UnicodeString OptionName, UnicodeString ValueName);
   void __fastcall SynchronizeDirectories(TScriptProcParams * Parameters,
@@ -273,5 +275,8 @@ protected:
   void __fastcall LCdProc(TScriptProcParams * Parameters);
   void __fastcall LLsProc(TScriptProcParams * Parameters);
 };
+//---------------------------------------------------------------------------
+#define COPYID_COMMAND L"copyid"
+#define EXIT_COMMAND L"exit"
 //---------------------------------------------------------------------------
 #endif
