@@ -1673,7 +1673,8 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyToolsButtonClick(TObject * /*Send
 {
   UnicodeString Dummy;
   PrivateKeyGenerateItem->Enabled = FindTool(PuttygenTool, Dummy);
-  PrivateKeyUploadItem->Enabled = (NormalizeFSProtocol(FSessionData->FSProtocol) == fsSFTP);
+  PrivateKeyUploadItem->Enabled =
+    FSessionData->CanLogin && (NormalizeFSProtocol(FSessionData->FSProtocol) == fsSFTP);
   MenuPopup(PrivateKeyMenu, PrivateKeyToolsButton);
 }
 //---------------------------------------------------------------------------
