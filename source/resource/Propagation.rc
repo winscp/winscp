@@ -96,5 +96,9 @@ BEGIN
   NEW_6_2_SYNC_HASH, "File hash can be used as criterion for synchronization"
   NEW_6_2_MOVE_DUPLICATE, "Improved behaviour when moving and duplicating remote files"
 
-  NEW_6_4_TBD, "TBD"
+  NEW_6_4_THUMBNAILS, "Thumbnail view in file panels"
+  NEW_6_4_LARGER_UI, "Slightly larger font and toolbar buttons"
+  NEW_6_4_SYNCHRONIZATION, "Synchronization actions can be pushed to background queue"
+  NEW_6_4_LARGE_DIRS, "Optimized working with large local directories"
+  NEW_6_4_S3_ROLE, "Allowed assuming IAM role in S3 sessions"
 END
