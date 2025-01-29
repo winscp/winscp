@@ -516,7 +516,7 @@ BEGIN
   DAYS_SPAN, "%d days"
   INI_SELECT, "Browse for INI file to import sites from."
   PUBLIC_KEY_ADDING, "Adding public key line to \"%s\" file:"
-  PUBLIC_KEY_DOWNLOADING, L"Downloading current \"%s\" file..."
+  PUBLIC_KEY_DOWNLOADING, "Downloading current \"%s\" file..."
   PUBLIC_KEY_CONTAINS, "\"%s\" file already contains public key line:"
   PUBLIC_KEY_NOT_CONTAINS, "\"%s\" file does not contain the public key line yet."
   PUBLIC_KEY_NEW, "Creating new \"%s\" file..."
