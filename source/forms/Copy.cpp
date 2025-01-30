@@ -131,6 +131,14 @@ __fastcall TCopyDialog::TCopyDialog(
   CopyParamListButton(TransferSettingsButton);
   HotTrackLabel(ShortCutHintLabel);
 
+  if (FLAGSET(FOptions, coBrowse))
+  {
+    DebugAssert(!FToRemote);
+    OkButton->Style = TCustomButton::bsSplitButton;
+  }
+
+  AutoSizeCheckBox(NeverShowAgainCheck);
+
   UseSystemSettings(this);
 }
 //---------------------------------------------------------------------------
@@ -295,7 +303,8 @@ int __fastcall TCopyDialog::GetOutputOptions()
 {
   return FOutputOptions |
     FLAGMASK(FSaveSettings, cooSaveSettings) |
-    FLAGMASK(NeverShowAgainCheck->Checked, cooDoNotShowAgain);
+    FLAGMASK(NeverShowAgainCheck->Checked, cooDoNotShowAgain) |
+    FLAGMASK(FBrowse, cooBrowse);
 }
 //---------------------------------------------------------------------------
 THistoryComboBox * __fastcall TCopyDialog::GetDirectoryEdit()
@@ -418,6 +427,7 @@ bool __fastcall TCopyDialog::Execute()
   FPreset = GUIConfiguration->CopyParamCurrent;
   DirectoryEdit->Items = CustomWinConfiguration->History[
     FToRemote ? L"RemoteTarget" : L"LocalTarget"];
+  FBrowse = false;
   bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
@@ -449,7 +459,7 @@ bool __fastcall TCopyDialog::Execute()
 void __fastcall TCopyDialog::FormCloseQuery(TObject * /*Sender*/,
       bool &CanClose)
 {
-  if (ModalResult == DefaultResult(this))
+  if ((ModalResult == DefaultResult(this)) && !FBrowse)
   {
     ExitActiveControl(this);
 
@@ -602,5 +612,32 @@ void __fastcall TCopyDialog::LocalDirectoryEditExit(TObject *)
       LocalDirectoryEdit->Text = IncludeTrailingBackslash(LocalDirectoryEdit->Text) + AnyMask;
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyDialog::DownloadItemClick(TObject *)
+{
+  OkButton->Click();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyDialog::BrowseItemClick(TObject *)
+{
+  FBrowse = true;
+  OkButton->Click();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyDialog::OkButtonDropDownClick(TObject *)
+{
+  MenuPopup(OkMenu, OkButton);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyDialog::Dispatch(void * Message)
+{
+  TMessage * M = reinterpret_cast<TMessage*>(Message);
+  if (M->Msg == CM_DPICHANGED)
+  {
+    AutoSizeCheckBox(NeverShowAgainCheck);
+  }
+
+  TForm::Dispatch(Message);
 }
 //---------------------------------------------------------------------------

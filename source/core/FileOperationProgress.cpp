@@ -669,7 +669,7 @@ void __fastcall TFileOperationProgressType::SetSkipToAll()
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::ChangeTransferSize(__int64 ASize)
 {
-  // reflect change on file size (due to text transfer mode conversion particulary)
+  // reflect change on file size (due to text transfer mode conversion particularly)
   // on total transfer size
   if (TotalSizeSet)
   {
@@ -977,7 +977,7 @@ UnicodeString __fastcall TFileOperationProgressType::GetLogStr(bool Done)
     Time = TimeElapsed();
     TimeLabel = L"Elapsed";
   }
-  UnicodeString TimeStr = FormatDateTimeSpan(Configuration->TimeFormat, Time);
+  UnicodeString TimeStr = FormatDateTimeSpan(Time);
 
   unsigned int ACPS;
   if (!Done)

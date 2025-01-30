@@ -86,6 +86,14 @@ object NonVisualDataModule: TNonVisualDataModule
     OnUpdate = ExplorerActionsUpdate
     Left = 440
     Top = 24
+    object AutoSizeRemoteColumnsAction: TAction
+      Tag = 12
+      Category = 'Columns'
+      Caption = 'Size &Automatically'
+      HelpKeyword = 'ui_file_panel#width'
+      Hint = 'Adjust columns width to fit their contents'
+      ShortCut = 16491
+    end
     object RemoteCopyQueueAction: TAction
       Tag = 14
       Category = 'Remote Selected Operation'
@@ -188,11 +196,20 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Download|Download selected remote file(s) to local directory'
       ImageIndex = 89
     end
-    object BestFitColumnAction: TAction
+    object AutoSizeLocalColumnsAction: TAction
+      Tag = 8
+      Category = 'Columns'
+      Caption = 'Size &Automatically'
+      HelpKeyword = 'ui_file_panel#width'
+      Hint = 'Adjust columns width to fit their contents'
+      ShortCut = 16491
+    end
+    object ResetLayoutRemoteColumnsAction: TAction
       Tag = 15
       Category = 'Columns'
-      Caption = '&Best Fit'
-      Hint = 'Best fit|Adjust column width to fit its content'
+      Caption = '&Reset Layout'
+      HelpKeyword = 'ui_file_panel#width'
+      Hint = 'Reset to the default layout of file panel columns'
     end
     object GoToTreeAction: TAction
       Tag = 15
@@ -228,6 +245,13 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_queue#manage'
       Hint = 'Show pending query of selected queue item'
       ImageIndex = 67
+    end
+    object ResetLayoutLocalColumnsAction: TAction
+      Tag = 15
+      Category = 'Columns'
+      Caption = '&Reset Layout'
+      HelpKeyword = 'ui_file_panel#width'
+      Hint = 'Reset to the default layout of file panel columns'
     end
     object QueueItemErrorAction: TAction
       Tag = 12
@@ -1488,7 +1512,7 @@ object NonVisualDataModule: TNonVisualDataModule
       ShortCut = 16467
     end
     object RemoteMoveToFocusedAction: TAction
-      Tag = 14
+      Tag = 12
       Category = 'Remote Focused Operation'
       Caption = 'Mo&ve To...'
       HelpKeyword = 'task_move_duplicate#move'
@@ -1615,6 +1639,12 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&File List'
       Hint = 'Hide/show full queue file list'
     end
+    object QueueResetLayoutColumnsAction: TAction
+      Tag = 12
+      Category = 'Queue'
+      Caption = '&Reset Columns Layout'
+      Hint = 'Reset to the default layout of list columns'
+    end
     object QueuePreferencesAction: TAction
       Tag = 12
       Category = 'Queue'
@@ -1652,7 +1682,7 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 28
     end
     object RemoteCopyToFocusedAction: TAction
-      Tag = 14
+      Tag = 12
       Category = 'Remote Focused Operation'
       Caption = '&Duplicate...'
       HelpKeyword = 'task_move_duplicate#duplicate'
@@ -2413,6 +2443,22 @@ object NonVisualDataModule: TNonVisualDataModule
         'the file panel'
       ShortCut = 40973
     end
+    object LocalOtherDirAction: TAction
+      Tag = 9
+      Category = 'Local Directory'
+      Caption = 'Path fro&m Other Panel'
+      HelpKeyword = 'task_navigate#special_commands'
+      Hint = 'Open the same directory as in the other panel'
+      ShortCut = 16574
+    end
+    object RemoteOtherDirAction: TAction
+      Tag = 14
+      Category = 'Remote Directory'
+      Caption = 'Path fro&m Other Panel'
+      HelpKeyword = 'task_navigate#special_commands'
+      Hint = 'Open the same directory as in the other panel'
+      ShortCut = 16574
+    end
   end
   object ExplorerBarPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
@@ -2664,6 +2710,9 @@ object NonVisualDataModule: TNonVisualDataModule
       object TBXItem89: TTBXItem
         Action = RemoteHomeDirAction
       end
+      object TBXItem109: TTBXItem
+        Action = RemoteOtherDirAction
+      end
       object TBXSeparatorItem14: TTBXSeparatorItem
       end
       object TBXItem90: TTBXItem
@@ -2744,6 +2793,9 @@ object NonVisualDataModule: TNonVisualDataModule
       end
       object TBXItem96: TTBXItem
         Action = LocalHomeDirAction
+      end
+      object TBXItem113: TTBXItem
+        Action = LocalOtherDirAction
       end
       object TBXSeparatorItem16: TTBXSeparatorItem
       end
@@ -2838,10 +2890,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXSeparatorItem8: TTBXSeparatorItem
     end
-    object Showcolumns3: TTBXSubmenuItem
-      Caption = 'Show &Columns'
+    object LocalColumnsSubmenuItem: TTBXSubmenuItem
+      Caption = '&Columns'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 'Select columns to show in panel'
       object Name3: TTBXItem
         Action = ShowHideLocalNameColumnAction2
       end
@@ -2856,6 +2907,14 @@ object NonVisualDataModule: TNonVisualDataModule
       end
       object Attributes3: TTBXItem
         Action = ShowHideLocalAttrColumnAction2
+      end
+      object TBXSeparatorItem73: TTBXSeparatorItem
+      end
+      object TBXItem264: TTBXItem
+        Action = AutoSizeLocalColumnsAction
+      end
+      object TBXItem112: TTBXItem
+        Action = ResetLayoutLocalColumnsAction
       end
     end
   end
@@ -2899,10 +2958,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXSeparatorItem7: TTBXSeparatorItem
     end
-    object Showcolumns4: TTBXSubmenuItem
-      Caption = 'Show &Columns'
+    object RemoteColumnsSubmenuItem: TTBXSubmenuItem
+      Caption = '&Columns'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 'Select columns to show in panel'
       object Name4: TTBXItem
         Action = ShowHideRemoteNameColumnAction2
       end
@@ -2926,6 +2984,14 @@ object NonVisualDataModule: TNonVisualDataModule
       end
       object TBXItem1: TTBXItem
         Action = ShowHideRemoteLinkTargetColumnAction2
+      end
+      object TBXSeparatorItem20: TTBXSeparatorItem
+      end
+      object TBXItem114: TTBXItem
+        Action = AutoSizeRemoteColumnsAction
+      end
+      object TBXItem115: TTBXItem
+        Action = ResetLayoutRemoteColumnsAction
       end
     end
   end
@@ -3038,6 +3104,11 @@ object NonVisualDataModule: TNonVisualDataModule
       end
       object TBXItem83: TTBXItem
         Action = QueueFileListAction
+      end
+      object TBXSeparatorItem23: TTBXSeparatorItem
+      end
+      object TBXItem116: TTBXItem
+        Action = QueueResetLayoutColumnsAction
       end
       object N65: TTBXSeparatorItem
       end

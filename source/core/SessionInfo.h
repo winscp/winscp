@@ -45,7 +45,9 @@ enum TFSCapability { fcUserGroupListing, fcModeChanging, fcAclChangingFiles, fcG
   fcModeChangingUpload, fcPreservingTimestampUpload, fcShellAnyCommand,
   fcSecondaryShell, fcRemoveCtrlZUpload, fcRemoveBOMUpload, fcMoveToQueue,
   fcLocking, fcPreservingTimestampDirs, fcResumeSupport,
-  fcChangePassword, fcSkipTransfer, fcParallelTransfers, fcBackgroundTransfers,
+  fcChangePassword, fcSkipTransfer,
+  fcParallelTransfers, fcParallelFileTransfers,
+  fcBackgroundTransfers,
   fcTransferOut, fcTransferIn,
   fcMoveOverExistingFile,
   fcCount };
@@ -299,7 +301,6 @@ private:
   void __fastcall DoAddToSelf(TLogLineType aType, const UnicodeString & aLine);
   void __fastcall AddStartupInfo(bool System);
   void __fastcall DoAddStartupInfo(TSessionData * Data);
-  UnicodeString __fastcall GetTlsVersionName(TTlsVersion TlsVersion);
   UnicodeString __fastcall LogSensitive(const UnicodeString & Str);
   static UnicodeString __fastcall GetCmdLineLog(TConfiguration * AConfiguration);
   void __fastcall CheckSize(__int64 Addition);
@@ -368,8 +369,10 @@ public:
   void AddStartupInfo();
   void __fastcall Log(const UnicodeString & S);
   __property bool Logging = { read = FLogging };
+  __property UnicodeString Path = { read = FPath };
 
 private:
+  UnicodeString FPath;
   void * FFile;
   bool FLogging;
   std::unique_ptr<TCriticalSection> FCriticalSection;

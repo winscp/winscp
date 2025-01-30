@@ -47,6 +47,8 @@ TCopyLocalDialog::TCopyLocalDialog(TComponent * Owner, bool Move, int Options)
     ClientHeight = ClientHeight - ShortCutHintPanel->Height;
   }
 
+  AutoSizeCheckBox(NeverShowAgainCheck);
+
   UseSystemSettings(this);
 }
 //---------------------------------------------------------------------------
@@ -84,7 +86,7 @@ void __fastcall TCopyLocalDialog::ShortCutHintLabelClick(TObject *)
 void __fastcall TCopyLocalDialog::FormShow(TObject *)
 {
   InstallPathWordBreakProc(DirectoryEdit);
-  // Does not work when set from a contructor
+  // Does not work when set from a constructor
   ShortCutHintPanel->Color = Application->HintColor;
   UpdateControls();
 }
@@ -152,5 +154,16 @@ void __fastcall TCopyLocalDialog::LocalDirectoryBrowseButtonClick(TObject *)
     SetDirectoryAndFileMask(ADirectory, GetFileMask());
     UpdateControls();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyLocalDialog::Dispatch(void * Message)
+{
+  TMessage * M = reinterpret_cast<TMessage*>(Message);
+  if (M->Msg == CM_DPICHANGED)
+  {
+    AutoSizeCheckBox(NeverShowAgainCheck);
+  }
+
+  TForm::Dispatch(Message);
 }
 //---------------------------------------------------------------------------

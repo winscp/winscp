@@ -124,13 +124,13 @@ void __fastcall TSynchronizeProgressForm::UpdateControls()
     Elapsed = EncodeTimeVerbose(0, 0, 0, 0);
   }
   Caption = ACaption;
-  TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, Elapsed);
+  TimeElapsedLabel->Caption = FormatDateTimeSpan(Elapsed);
   UnicodeString TimeLeftCaption;
   int Position = OperationProgress->Position;
   if (FStarted && CanShowTimeEstimate(FStartTime) && (Position > 0))
   {
     TDateTime TimeLeft = TDateTime(double(double(Elapsed) * (OperationProgress->Max - Position) / Position));
-    TimeLeftCaption = FormatDateTimeSpan(Configuration->TimeFormat, TimeLeft);
+    TimeLeftCaption = FormatDateTimeSpan(TimeLeft);
   }
   else
   {

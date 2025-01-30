@@ -33,6 +33,9 @@ __published:
   TImage *Image;
   TPanel *ShortCutHintPanel;
   TLabel *ShortCutHintLabel;
+  TPopupMenu *OkMenu;
+  TMenuItem *DownloadItem;
+  TMenuItem *BrowseItem;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
@@ -46,6 +49,9 @@ __published:
   void __fastcall NeverShowAgainCheckClick(TObject *Sender);
   void __fastcall ShortCutHintLabelClick(TObject *Sender);
   void __fastcall LocalDirectoryEditExit(TObject *Sender);
+  void __fastcall DownloadItemClick(TObject *Sender);
+  void __fastcall BrowseItemClick(TObject *Sender);
+  void __fastcall OkButtonDropDownClick(TObject *Sender);
 private:
   bool FDefaultToRemote;
   bool FToRemote;
@@ -60,6 +66,7 @@ private:
   int FCopyParamAttrs;
   TSessionData * FSessionData;
   bool FSaveSettings;
+  bool FBrowse;
   UnicodeString __fastcall GetDirectory();
   THistoryComboBox * __fastcall GetDirectoryEdit();
   void __fastcall SetParams(const TGUICopyParamType & value);
@@ -77,6 +84,7 @@ protected:
   bool __fastcall RemotePaths();
   void __fastcall CopyParamListPopup(TRect R, int AdditionalOptions);
   int __fastcall ActualCopyParamAttrs();
+  virtual void __fastcall Dispatch(void * Message);
 
   INTERFACE_HOOK;
 

@@ -430,3 +430,17 @@ void __fastcall TScpExplorerForm::RemoteOpenDirButtonPopup(TTBCustomItem *, bool
   CreateOpenDirMenu(RemoteOpenDirButton, osRemote);
 }
 //---------------------------------------------------------------------------
+void TScpExplorerForm::ResetLayoutColumns(TOperationSide)
+{
+  RemoteDirView->UnixColProperties->ParamsStr = ScpExplorerDirViewParamsDefault;
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::UpdateControls()
+{
+  TCustomScpExplorerForm::UpdateControls();
+
+  if ((ActiveControl == NULL) && RemoteDirView->CanFocus())
+  {
+    ActiveControl = RemoteDirView;
+  }
+}

@@ -468,7 +468,7 @@ static bool UnregisterServer(bool AllUsers)
     // Previously we were setting the value explicitly to 0,
     // but doing that for both HKLM and HKCU.
     // While on register, we set it to 1 for HKLM only,
-    // what makes the extension disabled effectivelly,
+    // what makes the extension disabled effectively,
     // as KHCU value 0, is kept even after re-registration
     RegDeleteValue(HKey, L"Enable");
 

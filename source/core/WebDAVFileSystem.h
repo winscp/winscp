@@ -71,10 +71,10 @@ public:
     TRemoteFile *& File);
   virtual void __fastcall ReadSymlink(TRemoteFile * SymlinkFile,
     TRemoteFile *& File);
-  virtual void __fastcall RenameFile(const UnicodeString FileName, const TRemoteFile * File,
-    const UnicodeString NewName);
-  virtual void __fastcall CopyFile(const UnicodeString FileName, const TRemoteFile * File,
-    const UnicodeString NewName);
+  virtual void __fastcall RenameFile(
+    const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool Overwrite);
+  virtual void __fastcall CopyFile(
+    const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool Overwrite);
   virtual TStrings * __fastcall GetFixedPaths();
   virtual void __fastcall SpaceAvailable(const UnicodeString Path,
     TSpaceAvailable & ASpaceAvailable);
@@ -178,6 +178,7 @@ private:
   UnicodeString FLastAuthorizationProtocol;
   bool FAuthenticationRetry;
   bool FOneDrive;
+  enum { odiUnknown, odiUpperCase, odiLowerCase } FOneDriveInterface;
 
   void __fastcall CustomReadFile(UnicodeString FileName,
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);
@@ -189,8 +190,8 @@ private:
   UnicodeString __fastcall GetRedirectUrl();
   UnicodeString __fastcall ParsePathFromUrl(const UnicodeString & Url);
   int __fastcall ReadDirectoryInternal(const UnicodeString & Path, TRemoteFileList * FileList);
-  int __fastcall RenameFileInternal(const UnicodeString & FileName, const UnicodeString & NewName);
-  int __fastcall CopyFileInternal(const UnicodeString & FileName, const UnicodeString & NewName);
+  int __fastcall RenameFileInternal(const UnicodeString & FileName, const UnicodeString & NewName, bool Overwrite);
+  int __fastcall CopyFileInternal(const UnicodeString & FileName, const UnicodeString & NewName, bool Overwrite);
   bool __fastcall IsValidRedirect(int NeonStatus, UnicodeString & Path);
   UnicodeString __fastcall DirectoryPath(UnicodeString Path);
   UnicodeString __fastcall FilePath(const TRemoteFile * File);

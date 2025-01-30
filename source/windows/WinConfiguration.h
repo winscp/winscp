@@ -212,6 +212,10 @@ struct TUpdatesData
 //---------------------------------------------------------------------------
 enum TConnectionType { ctDirect, ctAuto, ctProxy };
 extern TDateTime DefaultUpdatesPeriod;
+extern const UnicodeString ScpExplorerDirViewParamsDefault;
+extern const UnicodeString ScpCommanderRemotePanelDirViewParamsDefault;
+extern const UnicodeString ScpCommanderLocalPanelDirViewParamsDefault;
+extern UnicodeString QueueViewLayoutDefault;
 //---------------------------------------------------------------------------
 struct TUpdatesConfiguration
 {
@@ -477,7 +481,9 @@ private:
   bool FAllowWindowPrint;
   TStoreTransition FStoreTransition;
   int FQueueTransferLimitMax;
+  bool FHiContrast;
   bool FEditorCheckNotModified;
+  bool FSessionTabCaptionTruncation;
   UnicodeString FFirstRun;
   int FDontDecryptPasswords;
   int FMasterPasswordSession;
@@ -598,7 +604,9 @@ private:
   void __fastcall SetAllowWindowPrint(bool value);
   void SetStoreTransition(TStoreTransition value);
   void SetQueueTransferLimitMax(int value);
+  void SetHiContrast(bool value);
   void SetEditorCheckNotModified(bool value);
+  void SetSessionTabCaptionTruncation(bool value);
   void SetFirstRun(const UnicodeString & value);
   int __fastcall GetLocaleCompletenessTreshold();
 
@@ -801,7 +809,9 @@ public:
   __property bool AllowWindowPrint = { read = FAllowWindowPrint, write = SetAllowWindowPrint };
   __property TStoreTransition StoreTransition = { read = FStoreTransition, write = SetStoreTransition };
   __property int QueueTransferLimitMax = { read = FQueueTransferLimitMax, write = SetQueueTransferLimitMax };
+  __property bool HiContrast = { read = FHiContrast, write = SetHiContrast };
   __property bool EditorCheckNotModified = { read = FEditorCheckNotModified, write = SetEditorCheckNotModified };
+  __property bool SessionTabCaptionTruncation = { read = FSessionTabCaptionTruncation, write = SetSessionTabCaptionTruncation };
   __property UnicodeString FirstRun = { read = FFirstRun, write = SetFirstRun };
   __property LCID DefaultLocale = { read = FDefaultLocale };
   __property int LocaleCompletenessTreshold = { read = GetLocaleCompletenessTreshold };

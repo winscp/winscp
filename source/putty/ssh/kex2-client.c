@@ -985,6 +985,10 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
                 }
                 if (cert_ok) {
                     strbuf_free(error);
+                    // WINSCP (does not "verify", only informs about the hostkeys)
+                    seat_confirm_ssh_host_key(
+                        ppl_get_iseat(&s->ppl), s->savedhost, s->savedport, ssh_key_cache_id(s->hkey), s->keystr, NULL, NULL, NULL, NULL,
+                        fingerprints, true, 0, true);
                     ssh2_free_all_fingerprints(fingerprints);
                     ppl_logevent("Accepted certificate");
                     goto host_key_ok;

@@ -344,6 +344,17 @@ __published:
   TLabel *LogProtocolHintLabel;
   TGroupBox *EditingOptionsGroup;
   TCheckBox *EditorCheckNotModifiedCheck;
+  TCheckBox *ParallelTransferCheck;
+  TComboBox *ParallelTransferThresholdCombo;
+  TLabel *ParallelTransferThresholdUnitLabel;
+  TGroupBox *SshHostCAsGroup;
+  TListView *SshHostCAsView;
+  TButton *AddSshHostCAButton;
+  TButton *RemoveSshHostCAButton;
+  TButton *EditSshHostCAButton;
+  TCheckBox *SshHostCAsFromPuTTYCheck;
+  TButton *ConfigureSshHostCAsButton;
+  TCheckBox *SessionTabCaptionTruncationCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -433,7 +444,7 @@ __published:
   void __fastcall BackgroundConfirmationsLinkClick(TObject *Sender);
   void __fastcall ConfigureCommandButtonClick(TObject *Sender);
   void __fastcall LanguagesViewCustomDrawItem(TCustomListView * Sender, TListItem * Item, TCustomDrawState State, bool & DefaultDraw);
-  void __fastcall LogMaxSizeComboExit(TObject *Sender);
+  void __fastcall SizeComboExit(TObject *Sender);
   void __fastcall PuttyPathEditExit(TObject *Sender);
   void __fastcall AutomaticIniFileStorageLabelGetStatus(TCustomPathLabel *Sender, bool &Active);
   void __fastcall CustomIniFileStorageEditExit(TObject *Sender);
@@ -450,6 +461,14 @@ __published:
   void __fastcall CopyParamListViewDragOver(TObject *Sender, TObject *Source, int X, int Y, TDragState State, bool &Accept);
   void __fastcall LocalPortNumberMinEditExit(TObject *Sender);
   void __fastcall LocalPortNumberMaxEditExit(TObject *Sender);
+  void __fastcall SshHostCAsViewDblClick(TObject *Sender);
+  void __fastcall SshHostCAsViewKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
+  void __fastcall AddSshHostCAButtonClick(TObject *Sender);
+  void __fastcall SshHostCAsViewData(TObject *Sender, TListItem *Item);
+  void __fastcall EditSshHostCAButtonClick(TObject *Sender);
+  void __fastcall RemoveSshHostCAButtonClick(TObject *Sender);
+  void __fastcall SshHostCAsFromPuTTYCheckClick(TObject *Sender);
+  void __fastcall ConfigureSshHostCAsButtonClick(TObject *Sender);
 
 private:
   TPreferencesMode FPreferencesMode;
@@ -482,9 +501,11 @@ private:
   std::unique_ptr<TStringList> FCustomCommandOptions;
   UnicodeString FCustomIniFileStorageName;
   TFileColorData::TList FFileColors;
+  TSshHostCA::TList FSshHostCAPlainList;
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
   void __fastcall CMDpiChanged(TMessage & Message);
+  void WMActivate(TWMActivate & Message);
   UnicodeString __fastcall TabSample(UnicodeString Values);
   void __fastcall AddEditCopyParam(TCopyParamPresetMode Mode);
   const TCopyParamType * GetCopyParam(int Index);
@@ -498,6 +519,7 @@ private:
   int __fastcall GetListCommandIndex(TCustomCommandList * List);
   UnicodeString __fastcall GetSessionKey();
   void __fastcall ExtensionHttpError(THttp * Sender, int Status, const UnicodeString & Message);
+  const TSshHostCA::TList & GetSshHostCAPlainList();
 public:
   virtual __fastcall ~TPreferencesDialog();
   bool __fastcall Execute(TPreferencesDialogData * DialogData);
@@ -534,6 +556,8 @@ protected:
   void __fastcall UpdateFileColorsView();
   void __fastcall AddEditFileColor(bool Edit);
   UnicodeString Bullet(const UnicodeString & S);
+  void UpdateSshHostCAsViewView();
+  void SshHostCAsRefresh();
 
   INTERFACE_HOOK;
 };

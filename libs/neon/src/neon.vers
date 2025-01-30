@@ -34,3 +34,8 @@ NEON_0_32 {
     ne_ssl_cert_hdigest;
     ne_sock_shutdown;
 };
+
+NEON_0_33 {
+    ne_add_interim_handler;
+    ne_putbuf;
+};

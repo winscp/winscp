@@ -1,5 +1,5 @@
 @echo off
-if "%BUILDTOOLS%" == "" echo BUILDTOOLS not set & exit
+if "%BUILDTOOLS%" == "" echo BUILDTOOLS not set & exit /B 1
 
 set LIB_PATH=%INTERM_PATH%\Win32
 
@@ -19,7 +19,7 @@ cd ..
 
 if not exist %LIB_PATH%\libeay32.lib (
 echo OpenSSL build failed
-exit
+exit /B 1
 )
 
 :SKIP_OPENSSL
@@ -38,7 +38,7 @@ cd ..\..
 
 if not exist expat\bcb5\release\libexpats_mtd.lib (
 echo Expat build failed
-exit
+exit /B 1
 )
 
 copy expat\bcb5\release\libexpats_mtd.lib %LIB_PATH%
@@ -59,7 +59,7 @@ cd ..
 
 if not exist %LIB_PATH%\neon.lib (
 echo neon build failed
-exit
+exit /B 1
 )
 
 :SKIP_NEON
@@ -78,7 +78,7 @@ cd ..
 
 if not exist %LIB_PATH%\PuTTYVS.lib (
 echo PuTTYVS build failed
-exit
+exit /B 1
 )
 
 :SKIP_PUTTYVS
@@ -97,7 +97,7 @@ cd ..
 
 if not exist %LIB_PATH%\libs3.lib (
 echo libs3 build failed
-exit
+exit /B 1
 )
 
 :SKIP_LIBS3
@@ -116,7 +116,7 @@ cd ..\..
 
 if not exist %LIB_PATH%\UafxcW.lib (
 echo MFC build failed
-exit
+exit /B 1
 )
 
 :SKIP_MFC

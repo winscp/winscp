@@ -42,7 +42,7 @@ typedef struct InitialMultipartData
     SimpleXml simpleXml;
     int len;
     S3MultipartInitialHandler *handler;
-    string_buffer(upload_id, 256);
+    string_buffer(upload_id, 512);
     void *userdata;
 } InitialMultipartData;
 
@@ -95,6 +95,10 @@ static S3Status initialMultipartXmlCallback(const char *elementPath,
     if (data) {
         if (!strcmp(elementPath, "InitiateMultipartUploadResult/UploadId")) {
             string_buffer_append(mdata->upload_id,data, dataLen, fit);
+            if (!fit) // WINSCP
+            {
+                return S3StatusUploadIdTooLong;
+            }
         }
     }
 
@@ -215,8 +219,8 @@ void S3_upload_part(S3BucketContext *bucketContext, const char *key,
                     int timeoutMs,
                     void *callbackData)
 {
-    char queryParams[512];
-    snprintf(queryParams, 512, "partNumber=%d&uploadId=%s", seq, upload_id);
+    char queryParams[1024];
+    snprintf(queryParams, 1024, "partNumber=%d&uploadId=%s", seq, upload_id);
 
     RequestParams params =
     {
@@ -346,8 +350,8 @@ void S3_complete_multipart_upload(S3BucketContext *bucketContext,
                                   int timeoutMs,
                                   void *callbackData)
 {
-    char queryParams[512];
-    snprintf(queryParams, 512, "uploadId=%s", upload_id);
+    char queryParams[1024];
+    snprintf(queryParams, 1024, "uploadId=%s", upload_id);
     CommitMultiPartData *data =
         (CommitMultiPartData *) malloc(sizeof(CommitMultiPartData));
     data->userdata = callbackData;

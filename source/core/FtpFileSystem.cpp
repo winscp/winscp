@@ -16,9 +16,11 @@
 #include "HelpCore.h"
 #include "Security.h"
 #include "NeonIntf.h"
+#include "SessionInfo.h"
 #include <StrUtils.hpp>
 #include <DateUtils.hpp>
 #include <openssl/x509_vfy.h>
+#include <openssl/err.h>
 #include <limits>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -64,6 +66,7 @@ protected:
   virtual wchar_t * LastSysErrorMessage();
   virtual std::wstring GetClientString();
   virtual void SetupSsl(ssl_st * Ssl);
+  virtual std::wstring CustomReason(int Err);
 
 private:
   TFTPFileSystem * FFileSystem;
@@ -167,7 +170,29 @@ std::wstring TFileZillaImpl::GetClientString()
 //---------------------------------------------------------------------------
 void TFileZillaImpl::SetupSsl(ssl_st * Ssl)
 {
-  ::SetupSsl(Ssl, FFileSystem->FTerminal->SessionData->MinTlsVersion, FFileSystem->FTerminal->SessionData->MaxTlsVersion);
+  TSessionData * SessionData = FFileSystem->FTerminal->SessionData;
+  ::SetupSsl(Ssl, SessionData->MinTlsVersion, SessionData->MaxTlsVersion);
+}
+//---------------------------------------------------------------------------
+std::wstring TFileZillaImpl::CustomReason(int Err)
+{
+  std::wstring Result;
+  int Lib = ERR_GET_LIB(Err);
+  int Reason = ERR_GET_REASON(Err);
+  if ((Lib == ERR_LIB_SSL) &&
+      ((Reason == SSL_R_UNSUPPORTED_PROTOCOL) ||
+       (Reason == SSL_R_TLSV1_ALERT_PROTOCOL_VERSION) ||
+       (Reason == SSL_R_WRONG_SSL_VERSION) ||
+       (Reason == SSL_R_WRONG_VERSION_NUMBER)))
+  {
+    TSessionData * SessionData = FFileSystem->FTerminal->SessionData;
+    Result =
+      FMTLOAD(
+        TLS_UNSUPPORTED, (
+          GetTlsVersionName(SessionData->MinTlsVersion), GetTlsVersionName(SessionData->MaxTlsVersion),
+          GetTlsVersionName(tlsMin), GetTlsVersionName(tlsMax))).c_str();
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -247,7 +272,6 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FFileList(NULL),
   FFileListCache(NULL),
   FActive(false),
-  FOpening(false),
   FWaitingForReply(false),
   FIgnoreFileList(false),
   FOnCaptureOutput(NULL),
@@ -438,6 +462,7 @@ void __fastcall TFTPFileSystem::Open()
   }
 
   FPasswordFailed = false;
+  FAnyPassword = !Password.IsEmpty();
   FStoredPasswordTried = false;
   bool PromptedForCredentials = false;
 
@@ -468,7 +493,7 @@ void __fastcall TFTPFileSystem::Open()
       if (!FTerminal->PromptUser(Data, pkUserName, LoadStr(USERNAME_TITLE), L"",
             LoadStr(USERNAME_PROMPT2), true, 0, UserName))
       {
-        FTerminal->FatalError(NULL, LoadStr(AUTHENTICATION_FAILED));
+        FTerminal->FatalError(NULL, LoadStr(CREDENTIALS_NOT_SPECIFIED));
       }
       else
       {
@@ -487,7 +512,12 @@ void __fastcall TFTPFileSystem::Open()
       if (!FTerminal->PromptUser(Data, pkPassword, LoadStr(PASSWORD_TITLE), L"",
             LoadStr(PASSWORD_PROMPT), false, 0, Password))
       {
-        FTerminal->FatalError(NULL, LoadStr(AUTHENTICATION_FAILED));
+        int Message = FAnyPassword ? AUTHENTICATION_FAILED : CREDENTIALS_NOT_SPECIFIED;
+        FTerminal->FatalError(NULL, LoadStr(Message));
+      }
+      else if (!Password.IsEmpty())
+      {
+        FAnyPassword = true;
       }
     }
 
@@ -497,7 +527,6 @@ void __fastcall TFTPFileSystem::Open()
     }
 
     FPasswordFailed = false;
-    TAutoFlag OpeningFlag(FOpening);
 
     FActive = FFileZillaIntf->Connect(
       HostName.c_str(), Data->PortNumber, UserName.c_str(),
@@ -548,8 +577,10 @@ void __fastcall TFTPFileSystem::Open()
 void __fastcall TFTPFileSystem::Close()
 {
   DebugAssert(FActive);
+
   bool Result;
-  if (FFileZillaIntf->Close(FOpening))
+  bool Opening = (FTerminal->Status == ssOpening);
+  if (FFileZillaIntf->Close(Opening))
   {
     DebugCheck(FLAGSET(WaitForCommandReply(false), TFileZillaIntf::REPLY_DISCONNECTED));
     Result = true;
@@ -557,7 +588,7 @@ void __fastcall TFTPFileSystem::Close()
   else
   {
     // See TFileZillaIntf::Close
-    Result = FOpening;
+    Result = Opening;
   }
 
   if (DebugAlwaysTrue(Result))
@@ -817,7 +848,7 @@ void __fastcall TFTPFileSystem::Idle()
     PoolForFatalNonCommandReply();
 
     // Keep session alive
-    if ((FTerminal->SessionData->FtpPingType != ptOff) &&
+    if ((FTerminal->SessionData->FtpPingType == fptDirectoryListing) &&
         (double(Now() - FLastDataSent) > double(FTerminal->SessionData->FtpPingIntervalDT) * 4))
     {
       FTerminal->LogEvent(L"Dummy directory read to keep session alive.");
@@ -1455,7 +1486,11 @@ void __fastcall TFTPFileSystem::DoFileTransferProgress(__int64 TransferSize,
 
   if (FFileTransferResumed > 0)
   {
-    OperationProgress->AddResumed(FFileTransferResumed);
+    // Bytes will be 0, if resume was not possible
+    if (Bytes >= FFileTransferResumed)
+    {
+      OperationProgress->AddResumed(FFileTransferResumed);
+    }
     FFileTransferResumed = 0;
   }
 
@@ -1465,7 +1500,6 @@ void __fastcall TFTPFileSystem::DoFileTransferProgress(__int64 TransferSize,
     OperationProgress->AddTransferred(Diff);
     FFileTransferAny = true;
   }
-
   if (OperationProgress->Cancel != csContinue)
   {
     if (OperationProgress->ClearCancelFile())
@@ -1553,7 +1587,7 @@ void __fastcall TFTPFileSystem::CopyToLocal(TStrings * FilesToCopy,
 UnicodeString TFTPFileSystem::RemoteExtractFilePath(const UnicodeString & Path)
 {
   UnicodeString Result;
-  // If the path ends with a slash, FZAPI CServerPath contructor does not identify the path as VMS.
+  // If the path ends with a slash, FZAPI CServerPath constructor does not identify the path as VMS.
   // It is probably ok to use UnixExtractFileDir for all paths passed to FZAPI,
   // but for now, we limit the impact of the change to VMS.
   if (FVMS)
@@ -1707,7 +1741,7 @@ void __fastcall TFTPFileSystem::Source(
   // Support for MDTM does not necessarily mean that the server supports
   // non-standard hack of setting timestamp using
   // MFMT-like (two argument) call to MDTM.
-  // IIS definitelly does.
+  // IIS definitely does.
   if (FFileTransferPreserveTime &&
       ((FServerCapabilities->GetCapability(mfmt_command) == yes) ||
        ((FServerCapabilities->GetCapability(mdtm_command) == yes))))
@@ -1836,13 +1870,27 @@ void __fastcall TFTPFileSystem::DoStartup()
     UnicodeString NameFact = L"Name";
     UnicodeString VersionFact = L"Version";
     UnicodeString Command =
-      FORMAT(L"%s %s=%s;%s=%s", (CsidCommand, NameFact, AppNameString(), VersionFact, FTerminal->Configuration->Version));
+      FORMAT(L"%s %s=%s;%s=%s;", (CsidCommand, NameFact, AppNameString(), VersionFact, FTerminal->Configuration->Version));
     SendCommand(Command);
     TStrings * Response = NULL;
-    GotReply(WaitForCommandReply(), REPLY_2XX_CODE, EmptyStr, NULL, &Response);
     std::unique_ptr<TStrings> ResponseOwner(Response);
-    // Not using REPLY_SINGLE_LINE to make it robust
-    if (Response->Count == 1)
+    try
+    {
+      GotReply(WaitForCommandReply(), REPLY_2XX_CODE | REPLY_SINGLE_LINE, EmptyStr, NULL, &Response);
+      ResponseOwner.reset(Response);
+    }
+    catch (...)
+    {
+      if (FTerminal->Active)
+      {
+        FTerminal->LogEvent(FORMAT(L"%s command failed", (CsidCommand)));
+      }
+      else
+      {
+        throw;
+      }
+    }
+    if (ResponseOwner.get() != NULL)
     {
       UnicodeString ResponseText = Response->Strings[0];
       UnicodeString Name, Version;
@@ -1941,6 +1989,7 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
     case fcPreservingTimestampDirs:
     case fcResumeSupport:
     case fcChangePassword:
+    case fcParallelFileTransfers:
       return false;
 
     default:
@@ -2514,8 +2563,8 @@ void __fastcall TFTPFileSystem::ReadSymlink(TRemoteFile * SymlinkFile,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::RenameFile(const UnicodeString AFileName, const TRemoteFile * /*File*/,
-  const UnicodeString ANewName)
+void __fastcall TFTPFileSystem::RenameFile(
+  const UnicodeString & AFileName, const TRemoteFile *, const UnicodeString & ANewName, bool DebugUsedArg(Overwrite))
 {
   UnicodeString FileName = AbsolutePath(AFileName, false);
   UnicodeString NewName = AbsolutePath(ANewName, false);
@@ -2536,8 +2585,8 @@ void __fastcall TFTPFileSystem::RenameFile(const UnicodeString AFileName, const 
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::CopyFile(const UnicodeString FileName, const TRemoteFile * /*File*/,
-  const UnicodeString NewName)
+void __fastcall TFTPFileSystem::CopyFile(
+  const UnicodeString & FileName, const TRemoteFile *, const UnicodeString & NewName, bool DebugUsedArg(Overwrite))
 {
   DebugAssert(SupportsSiteCommand(CopySiteCommand));
   EnsureLocation();
@@ -2642,8 +2691,7 @@ const TFileSystemInfo & __fastcall TFTPFileSystem::GetFileSystemInfo(bool /*Retr
         FORMAT(L"%s\r\n", (LoadStr(FTP_FEATURE_INFO)));
       for (int Index = 0; Index < FFeatures->Count; Index++)
       {
-        // For TrimLeft, refer to HandleFeatReply
-        FFileSystemInfo.AdditionalInfo += FORMAT(L"  %s\r\n", (TrimLeft(FFeatures->Strings[Index])));
+        FFileSystemInfo.AdditionalInfo += FORMAT(L"  %s\r\n", (FFeatures->Strings[Index]));
       }
     }
 
@@ -2800,7 +2848,7 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_KEEPALIVE:
-      Result = ((Data->FtpPingType != ptOff) ? TRUE : FALSE);
+      Result = ((Data->FtpPingType != fptOff) ? TRUE : FALSE);
       break;
 
     case OPTION_INTERVALLOW:
@@ -2859,10 +2907,17 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_MPEXT_COMPLETE_TLS_SHUTDOWN:
-      // As of FileZilla Server 1.6.1 this does not seem to be needed. It's still needed with 1.5.1.
-      // It was possibly fixed by 1.6.0 (2022-12-06) change:
-      // Fixed an issue in the networking code when dealing with TLS close_notify alerts
-      Result = FFileZilla ? FALSE : TRUE;
+      if (Data->CompleteTlsShutdown == asAuto)
+      {
+        // As of FileZilla Server 1.6.1 this does not seem to be needed. It's still needed with 1.5.1.
+        // It was possibly fixed by 1.6.0 (2022-12-06) change:
+        // Fixed an issue in the networking code when dealing with TLS close_notify alerts
+        Result = FFileZilla ? -1 : 0;
+      }
+      else
+      {
+        Result = (Data->CompleteTlsShutdown == asOn) ? 1 : -1;
+      }
       break;
 
     case OPTION_MPEXT_WORK_FROM_CWD:
@@ -3015,7 +3070,7 @@ bool __fastcall TFTPFileSystem::KeepWaitingForReply(unsigned int & ReplyToAwait,
 
   // Though make sure that disconnect makes it through always. As for example when connection is closed already,
   // when sending commands, we may get REPLY_DISCONNECTED as a command response and no other response after,
-  // what would cause a hang.
+  // which would cause a hang.
   return
      (FReply == 0) &&
      ((ReplyToAwait == 0) ||
@@ -3047,7 +3102,7 @@ void __fastcall TFTPFileSystem::DoWaitForReply(unsigned int & ReplyToAwait, bool
   catch(...)
   {
     // even if non-fatal error happens, we must process pending message,
-    // so that we "eat" the reply message, so that it gets not mistakenly
+    // so that we "eat" the reply message, and it doesn't get mistakenly
     // associated with future connect
     if (FTerminal->Active)
     {
@@ -3506,7 +3561,9 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
     {
       FStoredPasswordTried = true;
       // 530 = "Not logged in."
-      if (FLastCode == 530)
+      // 501 = "Login incorrect." (ProFTPD empty password code)
+      if ((FLastCode == 530) ||
+          (FLastCode == 501))
       {
         FPasswordFailed = true;
       }
@@ -3525,7 +3582,7 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
         // (the ... can be "z/OS")
         // https://www.ibm.com/docs/en/zos/latest?topic=2rc-215-mvs-is-operating-system-this-server-ftp-server-is-running-name
         // FZPI has a different incompatible detection.
-        // MVS FTP servers have two separate MVS and Unix file systems cooexisting in the same session.
+        // MVS FTP servers have two separate MVS and Unix file systems coexisting in the same session.
         FMVS = (FSystem.SubString(1, 3) == L"MVS");
         if (FMVS)
         {
@@ -3595,85 +3652,9 @@ void __fastcall TFTPFileSystem::ResetFeatures()
   FSupportsAnyChecksumFeature = false;
 }
 //---------------------------------------------------------------------------
-UnicodeString TFTPFileSystem::CutFeature(UnicodeString & Buf)
-{
-  UnicodeString Result;
-  if (Buf.SubString(1, 1) == L"\"")
-  {
-    Buf.Delete(1, 1);
-    int P = Buf.Pos(L"\",");
-    if (P == 0)
-    {
-      Result = Buf;
-      Buf = UnicodeString();
-      // there should be the ending quote, but if not, just do nothing
-      if (Result.SubString(Result.Length(), 1) == L"\"")
-      {
-        Result.SetLength(Result.Length() - 1);
-      }
-    }
-    else
-    {
-      Result = Buf.SubString(1, P - 1);
-      Buf.Delete(1, P + 1);
-    }
-    Buf = Buf.TrimLeft();
-  }
-  else
-  {
-    Result = CutToChar(Buf, L',', true);
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 void TFTPFileSystem::ProcessFeatures()
 {
-  std::unique_ptr<TStrings> Features(new TStringList());
-  UnicodeString FeaturesOverride = FTerminal->SessionData->ProtocolFeatures.Trim();
-  if (FeaturesOverride.SubString(1, 1) == L"*")
-  {
-    FeaturesOverride.Delete(1, 1);
-    while (!FeaturesOverride.IsEmpty())
-    {
-      UnicodeString Feature = CutFeature(FeaturesOverride);
-      Features->Add(Feature);
-    }
-  }
-  else
-  {
-    std::unique_ptr<TStrings> DeleteFeatures(CreateSortedStringList());
-    std::unique_ptr<TStrings> AddFeatures(new TStringList());
-    while (!FeaturesOverride.IsEmpty())
-    {
-      UnicodeString Feature = CutFeature(FeaturesOverride);
-      if (Feature.SubString(1, 1) == L"-")
-      {
-        Feature.Delete(1, 1);
-        DeleteFeatures->Add(Feature.LowerCase());
-      }
-      else
-      {
-        if (Feature.SubString(1, 1) == L"+")
-        {
-          Feature.Delete(1, 1);
-        }
-        AddFeatures->Add(Feature);
-      }
-    }
-
-    for (int Index = 0; Index < FFeatures->Count; Index++)
-    {
-      // IIS 2003 indents response by 4 spaces, instead of one,
-      // see example in HandleReplyStatus
-      UnicodeString Feature = FFeatures->Strings[Index].Trim();
-      if (DeleteFeatures->IndexOf(Feature) < 0)
-      {
-        Features->Add(Feature);
-      }
-    }
-
-    Features->AddStrings(AddFeatures.get());
-  }
+  std::unique_ptr<TStrings> Features(FTerminal->ProcessFeatures(FFeatures));
 
   for (int Index = 0; Index < Features->Count; Index++)
   {
@@ -3690,7 +3671,7 @@ void TFTPFileSystem::ProcessFeatures()
     {
       // Serv-U lists all SITE commands in one line like:
       //  SITE PSWD;SET;ZONE;CHMOD;MSG;EXEC;HELP
-      // But ProFTPD lists them separatelly:
+      // But ProFTPD lists them separately:
       //  SITE UTIME
       //  SITE RMDIR
       //  SITE COPY
@@ -3734,7 +3715,10 @@ void __fastcall TFTPFileSystem::HandleFeatReply()
   {
     FLastResponse->Delete(0);
     FLastResponse->Delete(FLastResponse->Count - 1);
-    FFeatures->Assign(FLastResponse);
+    for (int Index = 0; Index < FLastResponse->Count; Index++)
+    {
+      FFeatures->Add(FLastResponse->Strings[Index].Trim());
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -4281,7 +4265,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
 
       // TryWindowsSystemCertificateStore is set for the same set of failures
       // as trigger NE_SSL_UNTRUSTED flag in ne_openssl.c's verify_callback().
-      // Use WindowsValidateCertificate only as a last resort (after checking the cached fiungerprint)
+      // Use WindowsValidateCertificate only as a last resort (after checking the cached fingerprint)
       // as it can take a very long time (up to 1 minute).
       if (!VerificationResult && TryWindowsSystemCertificateStore)
       {
@@ -4372,6 +4356,10 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestNeedPass(
         LoadStr(PASSWORD_PROMPT), false, 0, Password))
       {
         RequestResult = TFileZillaIntf::REPLY_OK;
+        if (!Password.IsEmpty())
+        {
+          FAnyPassword = true;
+        }
       }
       else
       {
@@ -4472,7 +4460,7 @@ bool __fastcall TFTPFileSystem::HandleListData(const wchar_t * Path,
         }
         catch(...)
         {
-          // ignore permissions errors with FTP
+          // ignore permission errors with FTP
         }
 
         File->HumanRights = Entry->HumanPerm;
@@ -4578,7 +4566,7 @@ bool __fastcall TFTPFileSystem::HandleReply(int Command, unsigned int Reply)
     }
 
     // reply with Command 0 is not associated with current operation
-    // so do not treat is as a reply
+    // so do not treat it as a reply
     // (it is typically used asynchronously to notify about disconnects)
     if (Command != 0)
     {
@@ -4701,7 +4689,7 @@ void __fastcall TFTPFileSystem::PreserveDownloadFileTime(HANDLE Handle, void * U
 {
   TFileTransferData * Data = static_cast<TFileTransferData *>(UserData);
   DebugAssert(Data->CopyParam->OnTransferOut == NULL);
-  FTerminal->UpdateTargetTime(Handle, Data->Modification, dstmUnix);
+  FTerminal->UpdateTargetTime(Handle, Data->Modification, mfFull, dstmUnix);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::GetFileModificationTimeInUtc(const wchar_t * FileName, struct tm & Time)

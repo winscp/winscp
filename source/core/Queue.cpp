@@ -1323,8 +1323,8 @@ void __fastcall TTerminalItem::ProcessEvent()
     UnicodeString Message;
     if (ExceptionMessageFormatted(&E, Message))
     {
-      // do not show error messages, if task was cancelled anyway
-      // (for example if transfer is cancelled during reconnection attempts)
+      // do not show error messages, if task was canceled anyway
+      // (for example if transfer is canceled during reconnection attempts)
       if (!FCancel &&
           (FTerminal->QueryUserException(L"", &E, qaOK | qaCancel, NULL, qtError) == qaCancel))
       {
@@ -2236,6 +2236,8 @@ TQueueItem * __fastcall TTransferQueueItem::CreateParallelOperation()
   DebugAssert(FParallelOperation.get() != NULL);
 
   FParallelOperation->AddClient();
+  DebugAssert(!FInfo->SingleFile || FParallelOperation->IsParallelFileTransfer);
+  FInfo->SingleFile = false;
   return new TParallelTransferQueueItem(this, FParallelOperation.get());
 }
 //---------------------------------------------------------------------------
@@ -2524,16 +2526,28 @@ void __fastcall TTerminalThread::Cancel()
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::Idle()
 {
-  TGuard Guard(FSection);
-  // only when running user action already,
-  // so that the exception is caught, saved and actually
-  // passed back into the terminal thread, saved again
-  // and passed back to us
-  if ((FUserAction != NULL) && (FIdleException != NULL))
+  // If user action is needed during Idle() call from TTerminalThread::WaitForUserAction
+  // (e.g. when disconnect is detected and session get reconnected)
+  // unconditional Enter() here would deadlock.
+  if (FSection->TryEnter())
   {
-    Rethrow(FIdleException);
+    try
+    {
+      // only when running user action already,
+      // so that the exception is caught, saved and actually
+      // passed back into the terminal thread, saved again
+      // and passed back to us
+      if ((FUserAction != NULL) && (FIdleException != NULL))
+      {
+        Rethrow(FIdleException);
+      }
+      FPendingIdle = true;
+    }
+    __finally
+    {
+      FSection->Release();
+    }
   }
-  FPendingIdle = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::TerminalOpen()
@@ -2703,7 +2717,7 @@ void __fastcall TTerminalThread::FatalAbort()
 {
   if (FAbandoned)
   {
-    // We cannot use TTerminal::FatalError as the terminal still runs on a backgroud thread,
+    // We cannot use TTerminal::FatalError as the terminal still runs on a background thread,
     // may have its TCallbackGuard armed right now.
     throw ESshFatal(NULL, L"");
   }

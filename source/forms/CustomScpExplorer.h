@@ -313,6 +313,7 @@ private:
   bool FStarted;
   bool FUpdatingSessionTabs;
   TCalculateSizeOperation * FCalculateSizeOperation;
+  TTBXTheme * FHiContrastTheme;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side, int FilesOnly);
@@ -556,6 +557,8 @@ protected:
   bool __fastcall CommandSessionFallback();
   void __fastcall FileTerminalRemoved(const UnicodeString FileName,
     TEditedFileData * Data, TObject * Token, void * Arg);
+  void __fastcall FileTerminalReplaced(
+    const UnicodeString FileName, TEditedFileData * Data, TObject * Token, void * Arg);
   void __fastcall FileConfigurationChanged(const UnicodeString FileName,
     TEditedFileData * Data, TObject * Token, void * Arg);
   void __fastcall CustomExecuteFile(TOperationSide Side,
@@ -651,6 +654,8 @@ protected:
   int __fastcall AddSessionColor(TColor Color);
   void UpdateSessionTab(TThemeTabSheet * TabSheet);
   void __fastcall UpdateNewTabTab();
+  TThemeTabSheet * GetNewTabTab();
+  TThemeTabCaptionTruncation GetNewTabTabCaptionTruncation();
   UnicodeString GetNewTabTabCaption();
   void __fastcall AddFixedSessionImages();
   int __fastcall AddFixedSessionImage(int GlyphsSourceIndex);
@@ -755,6 +760,11 @@ protected:
   void __fastcall FileDeleted(TOperationSide Side, const UnicodeString & FileName, bool Success);
   void LoadFilesProperties(TStrings * FileList);
   void PasteFiles();
+  bool DoDirectoryExists(void * Session, const UnicodeString & Directory);
+  void DoBrowseFile(TCustomDirView * DirView, const UnicodeString & FileName);
+  bool NeedSecondarySessionForRemoteCopy(TStrings * FileList);
+  void ReleaseHiContrastTheme();
+  bool CanCalculateChecksum();
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -793,6 +803,7 @@ public:
   bool CanCloseSession(TManagedTerminal * Session);
   virtual UnicodeString __fastcall DefaultDownloadTargetDirectory() = 0;
   virtual bool SupportedSession(TSessionData * SessionData) = 0;
+  TOperationSide GetOtherSide(TOperationSide Side);
 
   void __fastcall NewSession(const UnicodeString & SessionUrl = L"");
   virtual void NewTab(TOperationSide Side = osCurrent, bool AllowReverse = true);
@@ -897,7 +908,7 @@ public:
   void __fastcall PrivateKeyUpload();
   bool __fastcall IsComponentPossible(Byte Component);
   void __fastcall ReplaceTerminal(TManagedTerminal * value);
-  virtual void __fastcall BrowseFile();
+  virtual void __fastcall BrowseFile(const UnicodeString & FileName);
   void __fastcall CloseApp();
   virtual bool SupportsLocalBrowser();
   virtual bool IsSideLocalBrowser(TOperationSide Side);
@@ -905,6 +916,11 @@ public:
   virtual int GetNewTabActionImageIndex();
   virtual int GetNewTabTabImageIndex(TOperationSide Side);
   void CalculateDirectorySizes(TOperationSide Side);
+  void AutoSizeColumns(TOperationSide Side);
+  virtual void ResetLayoutColumns(TOperationSide Side) = 0;
+  void QueueResetLayoutColumns();
+  virtual void * SaveFocus();
+  virtual void RestoreFocus(void * Focus);
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

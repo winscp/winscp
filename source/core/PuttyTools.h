@@ -21,6 +21,8 @@ void AddCertificateToKey(TPrivateKey * PrivateKey, const UnicodeString & Certifi
 void SaveKey(TKeyType KeyType, const UnicodeString & FileName,
   const UnicodeString & Passphrase, TPrivateKey * PrivateKey);
 void FreeKey(TPrivateKey * PrivateKey);
+RawByteString LoadPublicKey(
+  const UnicodeString & FileName, UnicodeString & Algorithm, UnicodeString & Comment, bool & HasCertificate);
 UnicodeString GetPublicKeyLine(const UnicodeString & FileName, UnicodeString & Comment, bool & HasCertificate);
 extern const UnicodeString PuttyKeyExt;
 //---------------------------------------------------------------------------
@@ -35,12 +37,12 @@ UnicodeString __fastcall KeyTypeFromFingerprint(UnicodeString Fingerprint);
 UnicodeString __fastcall GetPuTTYVersion();
 //---------------------------------------------------------------------------
 UnicodeString __fastcall Sha256(const char * Data, size_t Size);
-//---------------------------------------------------------------------------
-void __fastcall DllHijackingProtection();
+UnicodeString CalculateFileChecksum(TStream * Stream, const UnicodeString & Alg);
 //---------------------------------------------------------------------------
 UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const struct ssh_keyalg *& Algorithm);
-//---------------------------------------------------------------------------
-UnicodeString __fastcall GetKeyTypeHuman(const UnicodeString & KeyType);
+void ParseCertificatePublicKey(const UnicodeString & Str, RawByteString & PublicKey, UnicodeString & Fingerprint);
+bool IsCertificateValidityExpressionValid(
+  const UnicodeString & Str, UnicodeString & Error, int & ErrorStart, int & ErrorLen);
 //---------------------------------------------------------------------------
 bool IsOpenSSH(const UnicodeString & SshImplementation);
 //---------------------------------------------------------------------------

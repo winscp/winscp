@@ -9,7 +9,7 @@ if "%PROCESSOR_ARCHITECTURE%"=="x86" (
   set "PROGRAMFILES64=%ProgramFiles%"
 ) else (
   echo Unrecognized architecture %PROCESSOR_ARCHITECTURE%
-  exit
+  exit /B 1
 )
 
 set BDS=%PROGRAMFILES32%\Embarcadero\Studio\14.0
@@ -21,7 +21,7 @@ set MSBUILD_COMMUNITY=%PROGRAMFILES64%\%VS_PATH_REL%\Community\%MSBUILD_REL%
 set MSBUILD=%MSBUILD_COMMUNITY%
 rem Visual Studio 2022 Build Tools (build server)
 if not exist "%MSBUILD%" set MSBUILD=%PROGRAMFILES32%\%VS_PATH_REL%\BuildTools\%MSBUILD_REL%
-if not exist "%MSBUILD%" set echo Cannot find MSBUILD (%MSBUILD%, %MSBUILD_COMMUNITY%), install Build Tools for Visual Studio 2022 & exit
+if not exist "%MSBUILD%" echo Cannot find MSBUILD (%MSBUILD%, %MSBUILD_COMMUNITY%), install Build Tools for Visual Studio 2022 & exit /B 1
 
 set WITH_DOTNET=1
 if "%BUILD_TARGET%"=="" set BUILD_TARGET=Build
@@ -32,6 +32,7 @@ set BUILDTOOLS=%~dp0\buildtools
 cd libs
 set INTERM_PATH=%~dp0\source
 call buildlibs.bat
+if errorlevel 1 echo Error building libs & exit /B 1
 set INTERM_PATH=
 
 cd ..\source

@@ -113,7 +113,7 @@ __published:
   TTBXItem *TBXItem98;
   TTBXItem *TBXItem99;
   TTBXItem *TBXItem100;
-  TTBXSubmenuItem *TBXSubmenuItem17;
+  TTBXSubmenuItem *ColumndsSubmenuItem;
   TTBXItem *TBXItem101;
   TTBXItem *TBXItem102;
   TTBXItem *TBXItem103;
@@ -331,6 +331,11 @@ __published:
   TTBXSeparatorItem *TBXSeparatorItem29;
   TTBXItem *TBXItem90;
   TTBXSeparatorItem *TBXSeparatorItem50;
+  TTBXSeparatorItem *TBXSeparatorItem73;
+  TTBXItem *TBXItem264;
+  TTBXSeparatorItem *TBXSeparatorItem51;
+  TTBXItem *TBXItem115;
+  TTBXItem *TBXItem266;
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
   void __fastcall UnixPathComboBoxBeginEdit(TTBEditItem *Sender,
@@ -368,6 +373,7 @@ protected:
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   virtual bool __fastcall UpdateToolbarDisplayMode();
   virtual void __fastcall UpdateImages();
+  virtual void __fastcall UpdateControls();
 
 public:
   __fastcall TScpExplorerForm(TComponent* Owner);
@@ -379,6 +385,7 @@ public:
   virtual void __fastcall GoToAddress();
   virtual UnicodeString __fastcall DefaultDownloadTargetDirectory();
   virtual bool SupportedSession(TSessionData * SessionData);
+  virtual void ResetLayoutColumns(TOperationSide Side);
 };
 //---------------------------------------------------------------------------
 #endif

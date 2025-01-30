@@ -83,10 +83,10 @@ public:
     TRemoteFile *& File);
   virtual void __fastcall ReadSymlink(TRemoteFile * SymlinkFile,
     TRemoteFile *& File);
-  virtual void __fastcall RenameFile(const UnicodeString FileName, const TRemoteFile * File,
-    const UnicodeString NewName);
-  virtual void __fastcall CopyFile(const UnicodeString FileName, const TRemoteFile * File,
-    const UnicodeString NewName);
+  virtual void __fastcall RenameFile(
+    const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool Overwrite);
+  virtual void __fastcall CopyFile(
+    const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool Overwrite);
   virtual TStrings * __fastcall GetFixedPaths();
   virtual void __fastcall SpaceAvailable(const UnicodeString Path,
     TSpaceAvailable & ASpaceAvailable);
@@ -118,7 +118,8 @@ protected:
   int FBusy;
   void * FBusyToken;
   bool FAvoidBusy;
-  TStrings * FExtensions;
+  UnicodeString FExtensions;
+  std::unique_ptr<TStrings> FSupportedExtensions;
   TSFTPSupport * FSupport;
   TAutoSwitch FUtfStrings;
   bool FUtfDisablingAnnounced;
@@ -184,8 +185,8 @@ protected:
   char * __fastcall GetEOL() const;
   inline void __fastcall BusyStart();
   inline void __fastcall BusyEnd();
-  inline unsigned long __fastcall TransferBlockSize(unsigned long Overhead,
-    TFileOperationProgressType * OperationProgress, unsigned long MaxPacketSize = 0);
+  inline unsigned long __fastcall TransferBlockSize(
+    unsigned long Overhead, TFileOperationProgressType * OperationProgress);
   inline unsigned long __fastcall UploadBlockSize(const RawByteString & Handle,
     TFileOperationProgressType * OperationProgress);
   inline unsigned long __fastcall DownloadBlockSize(

@@ -9,3 +9,4 @@ Z_3_WORKSPACE ICON "..\\resource\\Workspace.ico"
 
 LICENSE RCDATA "License.txt"
 LICENSE_EXPAT RCDATA "LicenseExpat.txt"
+UPDATES_ROOT_CA RCDATA "UpdatesRootCA.pem"

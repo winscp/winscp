@@ -18,7 +18,6 @@ TEditedFileData::TEditedFileData()
   ForceText = false;
   Terminal = NULL;
   SessionData = NULL;
-  Queue = NULL;
 }
 //---------------------------------------------------------------------------
 TEditedFileData::~TEditedFileData()
@@ -477,7 +476,7 @@ bool __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
 
     if (Delete && !LocalRootDirectory.IsEmpty())
     {
-      if (!RecursiveDeleteFile(ExcludeTrailingBackslash(LocalRootDirectory), false) &&
+      if (!RecursiveDeleteFile(ExcludeTrailingBackslash(LocalRootDirectory)) &&
           !IgnoreErrors)
       {
         throw Exception(FMTLOAD(DELETE_TEMP_EXECUTE_FILE_ERROR, (LocalRootDirectory)));

@@ -71,5 +71,7 @@
 #define HELP_ADD_EXTENSION           "ui_pref_commands#extensions"
 #define HELP_TOO_MANY_SESSIONS       "ui_tabs"
 #define HELP_STORE_TRANSITION        "microsoft_store#transitioning"
+#define HELP_SSH_HOST_CA             "ui_ssh_host_ca"
+#define HELP_SHOW_LOGIN              "ui_pref_window#show_login"
 
 #endif // TextsWin

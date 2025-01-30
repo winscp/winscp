@@ -184,7 +184,7 @@ int ne_uri_parse_ex(const char *uri, ne_uri *parsed, int liberal) // WINSCP
 
         s = pa = s + 2; /* => s = authority */
 
-        while (*pa != '/' && *pa != '\0')
+        while (*pa != '/' && *pa != '?' && *pa != '#' && *pa != '\0')
             pa++;
         /* => pa = path-abempty */
         
@@ -212,25 +212,31 @@ int ne_uri_parse_ex(const char *uri, ne_uri *parsed, int liberal) // WINSCP
             p++; /* => p = colon */
         } else {
             /* Find the colon. */
-            p = pa;
-            while (*p != ':' && p > s)
-                p--;
+            p = s;
+            while (*p != ':' && p < pa)
+                p++;
         }
+        /* => p = colon */
 
-        if (p == s) {
-            p = pa;
-            /* No colon; => p = path-abempty */
-        } else if (p + 1 != pa) {
-            /* => p = colon */
-            parsed->port = atoi(p + 1);
-        }
         parsed->host = ne_strndup(s, p - s);
-        
-        s = pa;        
 
-        if (*s == '\0') {
-            s = "/"; /* FIXME: scheme-specific. */
+        if (p != pa && p + 1 != pa) {
+            p++;
+
+            s = p;
+            /* => s = port */
+
+            while (p < pa) {
+                if (!(uri_lookup(*p) & URI_DIGIT))
+                    return -1;
+
+                p++;
+            }
+
+            parsed->port = atoi(s);
         }
+        
+        s = pa;
     }
 
     /* => s = path-abempty / path-absolute / path-rootless
@@ -247,7 +253,10 @@ int ne_uri_parse_ex(const char *uri, ne_uri *parsed, int liberal) // WINSCP
 
     /* => p = [ "?" query ] [ "#" fragment ] */
 
-    parsed->path = ne_strndup(s, p - s);
+    if (p != s || parsed->host == NULL)
+        parsed->path = ne_strndup(s, p - s);
+    else
+        parsed->path = ne_strdup("/");  /* FIXME: scheme-specific. */
 
     if (*p != '\0') {
         s = p++;
@@ -520,7 +529,7 @@ char *ne_path_escapef(const char *path, unsigned int flags)
     for (pnt = (const unsigned char *)path; *pnt != '\0'; pnt++) {
 	if (path_escape_ch(*pnt, mask)) {
 	    /* Escape it - %<hex><hex> */
-	    sprintf(p, "%%%02x", (unsigned char) *pnt);
+	    ne_snprintf(p, 4, "%%%02x", (unsigned char) *pnt);
 	    p += 3;
 	} else {
 	    *p++ = *pnt;

@@ -78,6 +78,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FLinkedForm = NULL;
   FRestoring = false;
   FPrevPos = TPoint(std::numeric_limits<LONG>::min(), std::numeric_limits<LONG>::min());
+  FWasEverS3 = false;
 
   // we need to make sure that window procedure is set asap
   // (so that CM_SHOWINGCHANGED handling is applied)
@@ -92,6 +93,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FPasswordLabel = PasswordLabel->Caption;
 
   FSiteButtonsPadding = SitesPanel->ClientHeight - ToolsMenuButton->Top - ToolsMenuButton->Height;
+  AutoSizeCheckBox(ShowAgainCheck);
 }
 //---------------------------------------------------------------------
 __fastcall TLoginDialog::~TLoginDialog()
@@ -128,7 +130,7 @@ void __fastcall TLoginDialog::InitControls()
   int FtpsNoneIndex = FtpsToIndex(ftpsNone);
   int FtpsImplicitIndex = FtpsToIndex(ftpsImplicit);
   // Items item setter is implemented as deleting and re-adding the item. If we do it for the last item
-  // (explicit for FTP, implicit for WebDAV/S3), the ItemIndex is effectivelly reset to -1.
+  // (explicit for FTP, implicit for WebDAV/S3), the ItemIndex is effectively reset to -1.
   // This happens when TLS is set in the default session settings.
   // Also as TransferProtocolComboChange is not triggered it results in currupted state in respect to protocol/tls to port number sync.
   int Index = FtpsCombo->ItemIndex;
@@ -554,7 +556,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * SessionData)
           UnicodeString::StringOfChar(L'?', 16) : UnicodeString();
     }
 
-    S3CredentialsEnvCheck2->Checked = SessionData->S3CredentialsEnv;
+    S3CredentialsEnvCheck3->Checked = SessionData->S3CredentialsEnv;
     S3ProfileCombo->Text = DefaultStr(SessionData->S3Profile, GetS3GeneralName());
     UpdateS3Credentials();
 
@@ -605,7 +607,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * SessionData)
 
   if (SessionData->FSProtocol == fsS3)
   {
-    SessionData->S3CredentialsEnv = S3CredentialsEnvCheck2->Checked;
+    SessionData->S3CredentialsEnv = S3CredentialsEnvCheck3->Checked;
     SessionData->S3Profile = GetS3Profile();
   }
 
@@ -623,7 +625,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * SessionData)
 
   SessionData->PortNumber = PortNumberEdit->AsInteger;
   // Must be set after UserName, because HostName may be in format user@host,
-  // Though now we parse the hostname right on this dialog (see HostNameEdit), this is unlikely to ever be triggered.
+  // Though now we parse the hostname right on this dialog (see HostNameEditExit), this is unlikely to ever be triggered.
   SessionData->HostName = HostNameEdit->Text.Trim();
   SessionData->Ftps = GetFtps();
 
@@ -674,6 +676,10 @@ void __fastcall TLoginDialog::UpdateControls()
     bool FtpProtocol = (FSProtocol == fsFTP);
     bool WebDavProtocol = (FSProtocol == fsWebDAV);
     bool S3Protocol = (FSProtocol == fsS3);
+    if (S3Protocol)
+    {
+      FWasEverS3 = true;
+    }
 
     // session
     FtpsCombo->Visible = Editable && FtpProtocol;
@@ -709,7 +715,7 @@ void __fastcall TLoginDialog::UpdateControls()
     ReadOnlyControl(PortNumberEdit, !Editable);
     PortNumberEdit->ButtonsVisible = Editable;
     // FSessionData may be NULL temporary even when Editable while switching nodes
-    bool S3CredentialsEnv = S3Protocol && S3CredentialsEnvCheck2->Checked;
+    bool S3CredentialsEnv = S3Protocol && S3CredentialsEnvCheck3->Checked;
     bool NoAuth =
       Editable && (FSessionData != NULL) &&
       ((SshProtocol && FSessionData->SshNoUserAuth) ||
@@ -1440,7 +1446,7 @@ void __fastcall TLoginDialog::SaveDataList(TList * DataList)
   // Normally we would call this from Execute,
   // but at that point the windows is already hidden.
   // Cloning session data may pop up master password dialog:
-  // - if it happens between closing and destroyiong login dialog
+  // - if it happens between closing and destroying login dialog
   //   the next window will appear in background for some reason
   // - and its actually even nicer when master password dialog pops up over
   //   the login dialog
@@ -1468,6 +1474,7 @@ void __fastcall TLoginDialog::SaveDataList(TList * DataList)
   }
   else
   {
+    ParseHostName();
     DataList->Add(CloneSelectedSession());
   }
 }
@@ -1734,6 +1741,7 @@ void __fastcall TLoginDialog::CMDpiChanged(TMessage & Message)
   TForm::Dispatch(&Message);
   GenerateImages();
   CenterButtonImage(LoginButton);
+  AutoSizeCheckBox(ShowAgainCheck);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::Dispatch(void * Message)
@@ -2201,7 +2209,7 @@ int __fastcall TLoginDialog::DefaultPort()
 //---------------------------------------------------------------------------
 void TLoginDialog::UpdateS3Credentials()
 {
-  if (S3CredentialsEnvCheck2->Checked)
+  if (S3CredentialsEnvCheck3->Checked)
   {
     UnicodeString S3Profile = GetS3Profile();
     UserNameEdit->Text = S3EnvUserName(S3Profile);
@@ -2235,17 +2243,22 @@ void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
         {
           HostNameEdit->Clear();
         }
-        if (UserNameEdit->Text == S3EnvUserName(S3Profile))
+        // Optimization to avoid querying AWS metadata service.
+        // Smarter would be to tell S3EnvXXX functions not to do expensive queries.
+        if (FWasEverS3)
         {
-          UserNameEdit->Clear();
-        }
-        if (PasswordEdit->Text == S3EnvPassword(S3Profile))
-        {
-          PasswordEdit->Clear();
-        }
-        if ((FSessionData != NULL) && (FSessionData->S3SessionToken == S3EnvSessionToken(S3Profile)))
-        {
-          FSessionData->S3SessionToken = UnicodeString();
+          if (UserNameEdit->Text == S3EnvUserName(S3Profile))
+          {
+            UserNameEdit->Clear();
+          }
+          if (PasswordEdit->Text == S3EnvPassword(S3Profile))
+          {
+            PasswordEdit->Clear();
+          }
+          if ((FSessionData != NULL) && (FSessionData->S3SessionToken == S3EnvSessionToken(S3Profile)))
+          {
+            FSessionData->S3SessionToken = UnicodeString();
+          }
         }
       }
       catch (...)
@@ -2254,7 +2267,7 @@ void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
       }
     }
 
-    S3CredentialsEnvCheck2->Checked = false;
+    S3CredentialsEnvCheck3->Checked = false;
   }
 
   UpdatePortWithProtocol();
@@ -2658,6 +2671,12 @@ void __fastcall TLoginDialog::PortNumberEditChange(TObject * Sender)
     TFSProtocol FSProtocol;
     TFtps Ftps = ftpsNone;
 
+    // For ambiguous port numbers, keep the current protocol, even if it is not the default protocol for the port
+    // (e.g. HTTPS vs S3 or FTP vs FTPES).
+    // So for example, when user selects FTPES and then types 2121 port, the protocol is not reset to FTP,
+    // once partial 21 is entered
+    TFSProtocol CurrentFSProtocol = GetFSProtocol(false);
+
     int PortNumber = PortNumberEdit->AsInteger;
     if (PortNumber == SshPortNumber)
     {
@@ -2667,6 +2686,10 @@ void __fastcall TLoginDialog::PortNumberEditChange(TObject * Sender)
     else if (PortNumber == FtpPortNumber)
     {
       FSProtocol = fsFTP;
+      if ((CurrentFSProtocol == FSProtocol) && (GetFtps() == ftpsExplicitTls))
+      {
+        Ftps = ftpsExplicitTls;
+      }
       WellKnownPort = true;
     }
     else if (PortNumber == FtpsImplicitPortNumber)
@@ -2677,12 +2700,12 @@ void __fastcall TLoginDialog::PortNumberEditChange(TObject * Sender)
     }
     else if (PortNumber == HTTPPortNumber)
     {
-      FSProtocol = fsWebDAV;
+      FSProtocol = (CurrentFSProtocol == fsS3) ? fsS3 : fsWebDAV;
       WellKnownPort = true;
     }
     else if (PortNumber == HTTPSPortNumber)
     {
-      FSProtocol = fsWebDAV;
+      FSProtocol = (CurrentFSProtocol == fsS3) ? fsS3 : fsWebDAV;
       Ftps = ftpsImplicit;
       WellKnownPort = true;
     }
@@ -3143,6 +3166,18 @@ void __fastcall TLoginDialog::LoginActionExecute(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::PuttyActionExecute(TObject * /*Sender*/)
 {
+  std::unique_ptr<TAutoFlag> AutoFlag;
+  if (PuttyAction->ActionComponent == NULL)
+  {
+    // Resolving conflict between copying command to clipboard on Ctrl+Shift and Ctrl+Shift+P keyboard shortcut.
+    // Ctrl+Shift to copy to clipboard now works with menu invocations only.
+    AutoFlag.reset(new TAutoFlag(DontCopyCommandToClipboard));
+  }
+  else
+  {
+    // does not clear on its own
+    PuttyAction->ActionComponent = NULL;
+  }
   // following may take some time, so cache the shift key state,
   // in case user manages to release it before following finishes
   bool Close = !OpenInNewWindow();
@@ -3166,16 +3201,35 @@ void __fastcall TLoginDialog::LoginButtonDropDownClick(TObject * /*Sender*/)
   MenuPopup(LoginDropDownMenu, LoginButton);
 }
 //---------------------------------------------------------------------------
+void TLoginDialog::DoParseUrl(TSessionData * SessionData, const UnicodeString & Url)
+{
+  // We do not want to pass in StoredSessions as we do not want the URL be
+  // parsed as pointing to a stored site.
+  bool DefaultsOnly; // unused
+  SessionData->ParseUrl(Url, NULL, NULL, DefaultsOnly, NULL, NULL, NULL, pufPreferProtocol);
+  SessionData->RequireDirectories = false;
+}
+//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::ParseUrl(const UnicodeString & Url)
 {
   std::unique_ptr<TSessionData> SessionData(new TSessionData(L""));
 
   SaveSession(SessionData.get());
 
-  // We do not want to pass in StoredSessions as we do not want the URL be
-  // parsed as pointing to a stored site.
-  bool DefaultsOnly; // unused
-  SessionData->ParseUrl(Url, NULL, NULL, DefaultsOnly, NULL, NULL, NULL, pufPreferProtocol);
+  // Otherwise the colons would be misinterpreted as URL syntax
+  if (IsIPv6Literal(Url))
+  {
+    UnicodeString IPv6Literal = Url;
+    if (HasIP6LiteralBrackets(IPv6Literal))
+    {
+      IPv6Literal = StripIP6LiteralBrackets(IPv6Literal);
+    }
+    SessionData->HostName = IPv6Literal;
+  }
+  else
+  {
+    DoParseUrl(SessionData.get(), Url);
+  }
 
   LoadSession(SessionData.get());
 }
@@ -3205,11 +3259,19 @@ void __fastcall TLoginDialog::PasteUrlActionExecute(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::ParseHostName()
 {
-  UnicodeString HostName = HostNameEdit->Text;
-  if (!HostName.IsEmpty() &&
-      (StoredSessions->IsUrl(HostName) || (HostName.Pos(L"@") > 0)))
+  UnicodeString HostName = HostNameEdit->Text.Trim();
+  if (!HostName.IsEmpty())
   {
-    ParseUrl(HostName);
+    // All this check is probably unnecessary, keeping it just to be safe
+    std::unique_ptr<TSessionData> SessionData(new TSessionData(EmptyStr));
+    DoParseUrl(SessionData.get(), HostName);
+    std::unique_ptr<TSessionData> HostNameSessionData(new TSessionData(EmptyStr));
+    HostNameSessionData->HostName = HostName;
+    if ((HostNameSessionData->HostName != HostName) || // Has legacy HostName property parsing intervened?
+       (!SessionData->IsSameDecrypted(HostNameSessionData.get())))
+    {
+      ParseUrl(HostName);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -3298,7 +3360,7 @@ void __fastcall TLoginDialog::PanelMouseDown(TObject *, TMouseButton, TShiftStat
   CountClicksForWindowPrint(this);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::S3CredentialsEnvCheck2Click(TObject *)
+void __fastcall TLoginDialog::S3CredentialsEnvCheck3Click(TObject *)
 {
   UpdateS3Credentials();
   UpdateControls();
@@ -3308,5 +3370,16 @@ void __fastcall TLoginDialog::S3ProfileComboChange(TObject *)
 {
   UpdateS3Credentials();
   UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::ShowAgainCheckClick(TObject *)
+{
+  if (!ShowAgainCheck->Checked)
+  {
+    if (MessageDialog(LoadStr(LOGIN_NOT_SHOWING_AGAIN), qtConfirmation, qaOK | qaCancel, HELP_SHOW_LOGIN) != qaOK)
+    {
+      ShowAgainCheck->Checked = true;
+    }
+  }
 }
 //---------------------------------------------------------------------------

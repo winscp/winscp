@@ -1399,7 +1399,7 @@ end;
 
 constructor TTBXOfficeXPTheme.CreateEx(const AName: string; Dark: Boolean);
 begin
-  inherited;
+  inherited Create(AName);
   FDark := Dark;
   Init;
 end;

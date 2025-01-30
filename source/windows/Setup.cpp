@@ -65,10 +65,10 @@ void err_out_sys(LPCTSTR base_err_msg, LONG sys_err)
 //---------------------------------------------------------------------------
 // Works as "strcmp" but the comparison is not case sensitive.
 int tcharicmp(LPCTSTR str1, LPCTSTR str2){
-    for (; tolower(*str1) == tolower(*str2); ++str1, ++str2)
+    for (; towlower(*str1) == towlower(*str2); ++str1, ++str2)
         if (*str1 == L'\0')
             return 0;
-    return tolower(*str1) - tolower(*str2);
+    return towlower(*str1) - towlower(*str2);
 }
 //---------------------------------------------------------------------------
 // Returns un unquoted copy of "str" (or a copy of "str" if the quotes are
@@ -132,17 +132,26 @@ LPTSTR find_reg_str(LPTSTR str, LPCTSTR what, LPTSTR * next){
 //---------------------------------------------------------------------------
 void path_reg_propagate()
 {
-  DWORD send_message_result;
-  LONG ret = SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
-                           (LPARAM)_T("Environment"), SMTO_ABORTIFHUNG,
-                           5000, &send_message_result);
-  if (ret != ERROR_SUCCESS && GetLastError() != 0)
+  unsigned long SessionId = 0;
+  if (!ProcessIdToSessionId(GetCurrentProcessId(), &SessionId) ||
+      (SessionId == 0))
   {
-    err_out_sys(_T("Cannot propagate the new enviroment to ")
-                _T("other processes. The new value will be ")
-                _T("available after a reboot."), GetLastError());
-    SimpleErrorDialog(LastPathError);
-    LastPathError = L"";
+    AppLog(L"Program does not seem to be running in user session, not propagating search path changes");
+  }
+  else
+  {
+    DWORD send_message_result;
+    LONG ret = SendMessageTimeout(HWND_BROADCAST, WM_SETTINGCHANGE, 0,
+                             (LPARAM)_T("Environment"), SMTO_ABORTIFHUNG,
+                             5000, &send_message_result);
+    if (ret != ERROR_SUCCESS && GetLastError() != 0)
+    {
+      err_out_sys(_T("Cannot propagate the new enviroment to ")
+                  _T("other processes. The new value will be ")
+                  _T("available after a reboot."), GetLastError());
+      SimpleErrorDialog(LastPathError);
+      LastPathError = L"";
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -173,7 +182,13 @@ BOOL add_path_reg(LPCTSTR path){
         func_ret = FALSE;
     }
     else{
-        if (!find_reg_str(reg_str, path, NULL)){
+        AppLogFmt(L"Previous search path: %s", (reg_str));
+        if (find_reg_str(reg_str, path, NULL))
+        {
+          AppLog(L"Path is already in search path");
+        }
+        else
+        {
             _tcscat(reg_str, _T(";"));
             _tcscat(reg_str, path);
             size_t len = _tcslen(reg_str);
@@ -194,6 +209,7 @@ BOOL add_path_reg(LPCTSTR path){
               /* Is this needed to make the new key avaible? */
               RegFlushKey(key);
               SetLastError(0);
+              AppLogFmt(L"New search path written: %s", (reg_str));
               path_reg_propagate();
             }
         }
@@ -265,6 +281,7 @@ BOOL remove_path_reg(LPCTSTR path){
 //---------------------------------------------------------------------------
 void __fastcall AddSearchPath(const UnicodeString Path)
 {
+  AppLogFmt(L"Adding '%s' to search path", (Path));
   if (!add_path_reg(Path.c_str()))
   {
     throw ExtException(FMTLOAD(ADD_PATH_ERROR, (Path)), LastPathError);
@@ -280,6 +297,11 @@ void __fastcall RemoveSearchPath(const UnicodeString Path)
 }
 //---------------------------------------------------------------------------
 static const UnicodeString SoftwareClassesBaseKey = L"Software\\Classes\\";
+//---------------------------------------------------------------------------
+static UnicodeString KeyName(HKEY RootKey, const UnicodeString & Key)
+{
+  return FORMAT(L"%s\\%s", (RootKeyToStr(RootKey, L"Unknown"), Key));
+}
 //---------------------------------------------------------------------------
 static void __fastcall DeleteKeyIfEmpty(TRegistry * Registry, const UnicodeString & Key, bool AllowRootValues)
 {
@@ -310,6 +332,7 @@ static void __fastcall DeleteKeyIfEmpty(TRegistry * Registry, const UnicodeStrin
 
     Registry->CloseKey();
 
+    UnicodeString AKeyName = KeyName(Registry->RootKey, Key);
     if (CanDelete)
     {
       for (int Index = 0; Index < List->Count; Index++)
@@ -319,6 +342,11 @@ static void __fastcall DeleteKeyIfEmpty(TRegistry * Registry, const UnicodeStrin
 
       // will fail, if not all subkeys got removed
       Registry->DeleteKey(Key);
+      AppLogFmt(L"Deleted key %s", (AKeyName));
+    }
+    else
+    {
+      AppLogFmt(L"Cannot delete non-empty key %s", (AKeyName));
     }
   }
 }
@@ -335,7 +363,8 @@ static void __fastcall RegisterProtocol(TRegistry * Registry,
   UnicodeString ProtocolKey = SoftwareClassesBaseKey + Protocol;
   if (Force || !Registry->KeyExists(ProtocolKey))
   {
-    if (Registry->OpenKey(SoftwareClassesBaseKey + Protocol, true))
+    UnicodeString Key = SoftwareClassesBaseKey + Protocol;
+    if (Registry->OpenKey(Key, true))
     {
       Registry->WriteString(L"", Description);
       Registry->WriteString(L"URL Protocol", L"");
@@ -350,6 +379,7 @@ static void __fastcall RegisterProtocol(TRegistry * Registry,
       {
         Abort();
       }
+      AppLogFmt(L"Created %s", (KeyName(Registry->RootKey, Key)));
     }
     else
     {
@@ -381,13 +411,15 @@ static void __fastcall RegisterAsUrlHandler(HKEY RootKey,
 
   RegisterProtocol(Registry.get(), Protocol, Description, true);
 
-  if (Registry->OpenKey(SoftwareClassesBaseKey + Protocol, false) &&
+  UnicodeString Key = SoftwareClassesBaseKey + Protocol;
+  if (Registry->OpenKey(Key, false) &&
       Registry->OpenKey(L"shell", true) &&
       Registry->OpenKey(L"open", true) &&
       Registry->OpenKey(L"command", true))
   {
     Registry->WriteString(L"", FORMAT(L"\"%s\" %s \"%%1\"", (Application->ExeName, TProgramParams::FormatSwitch(UNSAFE_SWITCH))));
     Registry->CloseKey();
+    AppLogFmt(L"Added command to %s", (KeyName(RootKey, Key)));
   }
   else
   {
@@ -402,7 +434,7 @@ static void __fastcall RegisterAsUrlHandler(const UnicodeString & Protocol, Unic
   {
     RegisterAsUrlHandler(HKEY_LOCAL_MACHINE, Protocol, Description);
 
-    // get rid of any HKCU registraction that would overrite the HKLM one
+    // get rid of any HKCU registraction that would override the HKLM one
     std::unique_ptr<TRegistry> Registry(CreateRegistry(HKEY_CURRENT_USER));
     if (Registry->KeyExists(SoftwareClassesBaseKey + Protocol))
     {
@@ -493,7 +525,8 @@ static void __fastcall RegisterProtocolForDefaultPrograms(HKEY RootKey, const Un
   // Register protocol, if it does not exist yet.
   // Prior to Windows 8, we need to register ourselves as legacy handler to
   // become the default handler. On Windows 8, it's automatic as long as no other
-  // application is registered for the protocol (i.e. RegisterProtocol would be enough)
+  // application is registered for the protocol (i.e. RegisterProtocol would be enough).
+  // Inconsistently with other calls, this does not use UpperCase().
   RegisterAsUrlHandler(RootKey, Protocol);
 
   // see https://learn.microsoft.com/en-us/windows/win32/shell/default-programs#registering-an-application-for-use-with-default-programs
@@ -521,15 +554,20 @@ static void __fastcall RegisterProtocolForDefaultPrograms(HKEY RootKey, const Un
   Registry->WriteString(Protocol, GenericUrlHandler);
   Registry->CloseKey();
 
+  AppLogFmt(L"Added capabilities to %s", (KeyName(RootKey, CapabilitiesKey)));
+
   // register application
 
-  if (!Registry->OpenKey(L"Software\\RegisteredApplications", true))
+  UnicodeString ApplicationsKey = L"Software\\RegisteredApplications";
+  if (!Registry->OpenKey(ApplicationsKey, true))
   {
     Abort();
   }
 
-  Registry->WriteString(AppNameString(), CapabilitiesKey);
+  UnicodeString AppName = AppNameString();
+  Registry->WriteString(AppName, CapabilitiesKey);
   Registry->CloseKey();
+  AppLogFmt(L"Registered %s in %s", (AppName, KeyName(RootKey, ApplicationsKey)));
 }
 //---------------------------------------------------------------------------
 static void __fastcall UnregisterProtocolForDefaultPrograms(HKEY RootKey,
@@ -602,6 +640,7 @@ static void __fastcall UnregisterProtocolsForDefaultPrograms(HKEY RootKey, bool 
   UnregisterProtocolForDefaultPrograms(RootKey, FtpesProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, SftpProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, ScpProtocol, ForceHandlerUnregistration);
+  UnregisterProtocolForDefaultPrograms(RootKey, SshProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, WebDAVProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, WebDAVSProtocol, ForceHandlerUnregistration);
   UnregisterProtocolForDefaultPrograms(RootKey, S3Protocol, ForceHandlerUnregistration);
@@ -640,16 +679,21 @@ static void __fastcall NotifyChangedAssociations()
 //---------------------------------------------------------------------------
 void __fastcall RegisterForDefaultProtocols()
 {
+  AppLog(L"Registering to handle protocol URL addresses");
   if (IsWinVista())
   {
+    AppLog(L"Registering as default program");
     RegisterForDefaultPrograms();
   }
   else
   {
+    AppLog(L"Registering for non-browser protocols");
     RegisterAsNonBrowserUrlHandler(UnicodeString());
   }
 
+  AppLog(L"Registering for non-browser protocols with prefix");
   RegisterAsNonBrowserUrlHandler(WinSCPProtocolPrefix);
+  AppLog(L"Registering for browser protocols with prefix");
   RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpsProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + FtpesProtocol.UpperCase());
@@ -657,11 +701,14 @@ void __fastcall RegisterForDefaultProtocols()
   RegisterAsUrlHandler(WinSCPProtocolPrefix + HttpsProtocol.UpperCase());
   RegisterAsUrlHandler(WinSCPProtocolPrefix + SshProtocol.UpperCase());
 
+  AppLog(L"Notifying about changes");
   NotifyChangedAssociations();
+  AppLog(L"Registration done");
 }
 //---------------------------------------------------------------------------
 void __fastcall UnregisterForProtocols()
 {
+  AppLog(L"Unregistering from handling protocol URL addresses");
   UnregisterAsUrlHandlers(UnicodeString(), false);
   UnregisterAsUrlHandlers(WinSCPProtocolPrefix, true);
   UnregisterAsUrlHandler(WinSCPProtocolPrefix + FtpProtocol.UpperCase(), true);
@@ -674,7 +721,9 @@ void __fastcall UnregisterForProtocols()
   UnregisterProtocolsForDefaultPrograms(HKEY_CURRENT_USER, false);
   UnregisterProtocolsForDefaultPrograms(HKEY_LOCAL_MACHINE, false);
 
+  AppLog(L"Notifying about changes");
   NotifyChangedAssociations();
+  AppLog(L"Unregistration done");
 }
 //---------------------------------------------------------------------------
 void __fastcall LaunchAdvancedAssociationUI()
@@ -875,6 +924,10 @@ static THttp * __fastcall CreateHttp(const TUpdatesConfiguration & Updates)
       break;
   }
 
+  if (!ProxyHost.IsEmpty())
+  {
+    AppLogFmt("Using proxy: %s:%d", (ProxyHost, ProxyPort));
+  }
   Http->ProxyHost = ProxyHost;
   Http->ProxyPort = ProxyPort;
 
@@ -884,6 +937,16 @@ static THttp * __fastcall CreateHttp(const TUpdatesConfiguration & Updates)
 THttp * __fastcall CreateHttp()
 {
   return CreateHttp(WinConfiguration->Updates);
+}
+//---------------------------------------------------------------------------
+UnicodeString GetUpdatesCertificate()
+{
+  UnicodeString Result = ReadResource(L"UPDATES_ROOT_CA");
+  Result = ReplaceStr(Result, L"-----BEGIN CERTIFICATE-----", EmptyStr);
+  Result = ReplaceStr(Result, L"-----END CERTIFICATE-----", EmptyStr);
+  Result = ReplaceStr(Result, L"\n", EmptyStr);
+  Result = ReplaceStr(Result, L"\r", EmptyStr);
+  return Result;
 }
 //---------------------------------------------------------------------------
 static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool CollectUsage)
@@ -926,7 +989,8 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
     AppLogFmt(L"Updates check URL: %s", (URL));
     CheckForUpdatesHTTP->URL = URL;
     // sanity check
-    CheckForUpdatesHTTP->ResponseLimit = 102400;
+    CheckForUpdatesHTTP->ResponseLimit = BasicHttpResponseLimit;
+    CheckForUpdatesHTTP->Certificate = GetUpdatesCertificate();
     try
     {
       if (CollectUsage)
@@ -944,6 +1008,7 @@ static bool __fastcall DoQueryUpdates(TUpdatesConfiguration & Updates, bool Coll
     {
       if (CheckForUpdatesHTTP->IsCertificateError())
       {
+        AppLog(L"Certificate error detected.");
         Configuration->Usage->Inc(L"UpdateCertificateErrors");
       }
       throw;
@@ -1235,6 +1300,33 @@ static int __fastcall DownloadSizeToProgress(__int64 Size)
   return static_cast<int>(Size / 1024);
 }
 //---------------------------------------------------------------------------
+static UnicodeString GetInstallationPath(HKEY RootKey)
+{
+  std::unique_ptr<TRegistry> Registry(new TRegistry(KEY_READ));
+  Registry->RootKey = RootKey;
+  UnicodeString Result;
+  if (Registry->OpenKey(L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\winscp3_is1", false))
+  {
+    Result = ExcludeTrailingBackslash(Registry->ReadString(L"Inno Setup: App Path"));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+static bool DoIsPathToExe(const UnicodeString & Path)
+{
+  UnicodeString ExePath = ExcludeTrailingBackslash(ExtractFilePath(Application->ExeName));
+  return IsPathToSameFile(ExePath, Path);
+}
+//---------------------------------------------------------------------------
+static bool DoIsInstalled(HKEY RootKey)
+{
+  UnicodeString InstallPath = GetInstallationPath(RootKey);
+  bool Result =
+    !InstallPath.IsEmpty() &&
+    DoIsPathToExe(InstallPath);
+  return Result;
+}
+//---------------------------------------------------------------------------
 class TUpdateDownloadThread : public TCompThread
 {
 public:
@@ -1395,10 +1487,31 @@ void __fastcall TUpdateDownloadThread::UpdateDownloaded()
   {
     Params += L" /OpenGettingStarted";
   }
+  if (ApplicationLog->Logging)
+  {
+    Params += FORMAT(" /LOG=\"%s\"", (ApplicationLog->Path + L".setup"));
+  }
+  // This condition is not necessary, it's here to reduce an impact of the change only
+  if (!GetInstallationPath(HKEY_LOCAL_MACHINE).IsEmpty() &&
+      !GetInstallationPath(HKEY_CURRENT_USER).IsEmpty())
+  {
+    UnicodeString Mode;
+    if (DoIsInstalled(HKEY_LOCAL_MACHINE))
+    {
+      Mode = L" /ALLUSERS";
+    }
+    else if (DebugAlwaysTrue(DoIsInstalled(HKEY_CURRENT_USER)))
+    {
+      Mode = L" /CURRENTUSER";
+    }
+    AppLogFmt(L"Both administrative and non-administrative installation found, explicitly requesting this installation mode:%s", (Mode));
+    Params += Mode;
+  }
 
   ExecuteShellChecked(SetupPath, Params);
 
   Configuration->Usage->Inc(L"UpdateRuns");
+  AppLog(L"Terminating to allow installation...");
   TerminateApplication();
 }
 //---------------------------------------------------------------------------
@@ -1683,7 +1796,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
   if (!Updates.Results.DownloadUrl.IsEmpty())
   {
     Aliases[3].OnSubmit = MakeMethod<TButtonSubmitEvent>(NULL, DownloadUpdate);
-    Aliases[3].ElevationRequired = true;
+    Aliases[3].ElevationRequired = DoIsInstalled(HKEY_LOCAL_MACHINE);
   }
 
   TMessageParams Params;
@@ -1967,28 +2080,6 @@ bool __fastcall AnyOtherInstanceOfSelf()
   return Result;
 }
 //---------------------------------------------------------------------------
-static bool DoIsPathToExe(const UnicodeString & Path)
-{
-  UnicodeString ExePath = ExcludeTrailingBackslash(ExtractFilePath(Application->ExeName));
-  return IsPathToSameFile(ExePath, Path);
-}
-//---------------------------------------------------------------------------
-static bool __fastcall DoIsInstalled(HKEY RootKey)
-{
-  std::unique_ptr<TRegistry> Registry(new TRegistry(KEY_READ));
-  Registry->RootKey = RootKey;
-  bool Result =
-    Registry->OpenKey(L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\winscp3_is1", false);
-  if (Result)
-  {
-    UnicodeString InstallPath = ExcludeTrailingBackslash(Registry->ReadString(L"Inno Setup: App Path"));
-    Result =
-      !InstallPath.IsEmpty() &&
-      DoIsPathToExe(InstallPath);
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 bool IsInstalled()
 {
   return
@@ -2028,19 +2119,12 @@ bool IsInstalledMsi()
   return (GIsInstalledMsi > 0);
 }
 //---------------------------------------------------------------------------
-static TStringList * __fastcall TextToTipList(const UnicodeString & Text)
-{
-  std::unique_ptr<TStringList> List(new TStringList());
-  List->CommaText = Text;
-  return List.release();
-}
-//---------------------------------------------------------------------------
 UnicodeString __fastcall FirstUnshownTip()
 {
   TUpdatesConfiguration Updates = WinConfiguration->Updates;
-  std::unique_ptr<TStringList> Tips(TextToTipList(Updates.Results.Tips));
+  std::unique_ptr<TStringList> Tips(CommaTextToStringList(Updates.Results.Tips));
   Tips->CaseSensitive = false;
-  std::unique_ptr<TStringList> TipsSeen(TextToTipList(WinConfiguration->TipsSeen));
+  std::unique_ptr<TStringList> TipsSeen(CommaTextToStringList(WinConfiguration->TipsSeen));
   TipsSeen->CaseSensitive = false;
 
   int LastTipSeen = -1;
@@ -2107,7 +2191,7 @@ static UnicodeString __fastcall TipUrl(TTipsData * TipsData)
 //---------------------------------------------------------------------------
 static void __fastcall TipSeen(const UnicodeString & Tip)
 {
-  std::unique_ptr<TStringList> TipsSeen(TextToTipList(WinConfiguration->TipsSeen));
+  std::unique_ptr<TStringList> TipsSeen(CommaTextToStringList(WinConfiguration->TipsSeen));
   TipsSeen->Values[Tip] = FormatDateTime(L"yyyy-mm-dd", Now());
   WinConfiguration->TipsSeen = TipsSeen->CommaText;
   WinConfiguration->TipsShown = Now();
@@ -2131,7 +2215,7 @@ static void __fastcall ShowTip(bool AutoShow)
 {
   TUpdatesConfiguration Updates = WinConfiguration->Updates;
   UnicodeString Tip = FirstUnshownTip();
-  std::unique_ptr<TStringList> Tips(TextToTipList(Updates.Results.Tips));
+  std::unique_ptr<TStringList> Tips(CommaTextToStringList(Updates.Results.Tips));
   Tips->CaseSensitive = false;
   int Index;
   if (Tip.IsEmpty())
@@ -2222,9 +2306,9 @@ void __fastcall ShowTips()
 void __fastcall TipsUpdateStaticUsage()
 {
   TUpdatesConfiguration Updates = WinConfiguration->Updates;
-  std::unique_ptr<TStringList> Tips(TextToTipList(Updates.Results.Tips));
+  std::unique_ptr<TStringList> Tips(CommaTextToStringList(Updates.Results.Tips));
   Configuration->Usage->Set(L"TipsCount", Tips->Count);
-  std::unique_ptr<TStringList> TipsSeen(TextToTipList(WinConfiguration->TipsSeen));
+  std::unique_ptr<TStringList> TipsSeen(CommaTextToStringList(WinConfiguration->TipsSeen));
   Configuration->Usage->Set(L"TipsSeen", TipsSeen->Count);
 }
 //---------------------------------------------------------------------------

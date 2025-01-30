@@ -189,7 +189,6 @@ __published:
   TLabel *FtpPingIntervalLabel;
   TUpDownEdit *FtpPingIntervalSecEdit;
   TRadioButton *FtpPingOffButton;
-  TRadioButton *FtpPingNullPacketButton;
   TRadioButton *FtpPingDummyCommandButton;
   TLabel *Label23;
   TComboBox *SftpServerEdit;
@@ -225,12 +224,12 @@ __published:
   TImageList *ColorImageList;
   TButton *ColorButton;
   TTabSheet *SslSheet;
-  TGroupBox *SslGroup;
-  TLabel *Label1;
+  TGroupBox *TlsGroup;
+  TLabel *MinTlsVersionLabel;
   TComboBox *MinTlsVersionCombo;
-  TLabel *Label2;
+  TLabel *MaxTlsVersionLabel;
   TComboBox *MaxTlsVersionCombo;
-  TCheckBox *SslSessionReuseCheck;
+  TCheckBox *SslSessionReuseCheck2;
   TLabel *BugWinAdjLabel;
   TComboBox *BugWinAdjCombo;
   TButton *ProxyAutodetectButton;
@@ -283,6 +282,9 @@ __published:
   TComboBox *SFTPRealPathCombo;
   TLabel *DetachedCertificateLabel;
   TFilenameEdit *DetachedCertificateEdit;
+  TCheckBox *S3RequesterPaysCheck;
+  TRadioButton *FtpPingDirectoryListingButton;
+  TCheckBox *UsePosixRenameCheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);

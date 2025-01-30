@@ -849,8 +849,7 @@ UnicodeString TEncryption::DecryptFileName(const UnicodeString & FileName)
   {
     Base64 += UnicodeString::StringOfChar(L'=', Padding);
   }
-  DynamicArray<Byte> BufferBytes = DecodeBase64(Base64);
-  RawByteString Buffer(reinterpret_cast<const char *>(&BufferBytes[0]), BufferBytes.Length);
+  RawByteString Buffer = DecodeBase64ToStr(Base64);
   FSalt = Buffer.SubString(1, SALT_LENGTH(PASSWORD_MANAGER_AES_MODE));
   SetSalt();
   Buffer.Delete(1, FSalt.Length());

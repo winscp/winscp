@@ -69,6 +69,7 @@ object CopyDialog: TCopyDialog
     Default = True
     ModalResult = 1
     TabOrder = 6
+    OnDropDownClick = OkButtonDropDownClick
   end
   object CancelButton: TButton
     Left = 343
@@ -112,7 +113,7 @@ object CopyDialog: TCopyDialog
   object NeverShowAgainCheck: TCheckBox
     Left = 12
     Top = 167
-    Width = 493
+    Width = 253
     Height = 17
     Caption = '&Do not show this dialog box again'
     TabOrder = 10
@@ -176,6 +177,19 @@ object CopyDialog: TCopyDialog
       ShowAccelChar = False
       WordWrap = True
       OnClick = ShortCutHintLabelClick
+    end
+  end
+  object OkMenu: TPopupMenu
+    Left = 456
+    Top = 69
+    object DownloadItem: TMenuItem
+      Caption = '&Download'
+      Default = True
+      OnClick = DownloadItemClick
+    end
+    object BrowseItem: TMenuItem
+      Caption = '&Browse'
+      OnClick = BrowseItemClick
     end
   end
 end

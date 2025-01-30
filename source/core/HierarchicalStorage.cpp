@@ -129,6 +129,20 @@ TIntMapping CreateIntMapping(
   return Result;
 }
 //---------------------------------------------------------------------------
+TIntMapping CreateIntMappingFromEnumNames(const UnicodeString & ANames)
+{
+  UnicodeString Names(ANames);
+  TIntMapping Result;
+  int Index = 0;
+  while (!Names.IsEmpty())
+  {
+    UnicodeString Name = CutToChar(Names, L';', true);
+    Result.insert(std::make_pair(Name, Index));
+    Index++;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 TIntMapping AutoSwitchMapping = CreateIntMapping(L"on", asOn, L"off", asOff, L"auto", asAuto);
 TIntMapping AutoSwitchReversedMapping = CreateIntMapping(L"on", asOff, L"off", asOn, L"auto", asAuto);
 TIntMapping BoolMapping = CreateIntMapping(L"on", true, L"off", false);
@@ -196,13 +210,27 @@ bool __fastcall THierarchicalStorage::OpenRootKey(bool CanCreate)
   return OpenSubKey(UnicodeString(), CanCreate);
 }
 //---------------------------------------------------------------------------
+bool THierarchicalStorage::MungingKeyName(const UnicodeString & Key)
+{
+  UnicodeString K = CurrentSubKey + Key + L"\\";
+  return UnmungedRoot.IsEmpty() || !SameText(LeftStr(UnmungedRoot + L"\\", K.Length()), K);
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall THierarchicalStorage::MungeKeyName(const UnicodeString & Key)
 {
-  UnicodeString Result = MungeStr(Key, ForceAnsi, false);
-  // if there's already ANSI-munged subkey, keep ANSI munging
-  if ((Result != Key) && !ForceAnsi && CanRead() && DoKeyExists(Key, true))
+  UnicodeString Result;
+  if (!MungingKeyName(Key))
   {
-    Result = MungeStr(Key, true, false);
+    Result = Key;
+  }
+  else
+  {
+    Result = MungeStr(Key, ForceAnsi, false);
+    // if there's already ANSI-munged subkey, keep ANSI munging
+    if ((Result != Key) && !ForceAnsi && CanRead() && DoKeyExists(Key, true))
+    {
+      Result = MungeStr(Key, true, false);
+    }
   }
   return Result;
 }
@@ -355,7 +383,7 @@ void __fastcall THierarchicalStorage::CloseSubKeyPath()
   }
 
   int Levels = FKeyHistory.back().Levels;
-  FKeyHistory.back().Levels = 1; // to satify the assertion in CloseSubKey()
+  FKeyHistory.back().Levels = 1; // to satisfy the assertion in CloseSubKey()
   while (Levels > 0)
   {
     CloseSubKey();
@@ -401,30 +429,46 @@ void __fastcall THierarchicalStorage::ClearSubKeys()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall THierarchicalStorage::RecursiveDeleteSubKey(const UnicodeString & Key)
+bool THierarchicalStorage::RecursiveDeleteSubKey(const UnicodeString & Key)
+{
+  return DeleteSubKey(Key, true);
+}
+//---------------------------------------------------------------------------
+bool THierarchicalStorage::DeleteSubKey(const UnicodeString & Key, bool Recursive)
 {
   bool CanWriteParent = CanWrite();
-  if (OpenSubKey(Key, false))
+  bool Result = OpenSubKey(Key, false);
+  if (Result)
   {
-    ClearSubKeys();
-
-    // Cannot delete the key itself, but can delete its contents, so at least delete the values
-    // (which would otherwise be deleted implicitly by DoDeleteSubKey)
-    if (!CanWriteParent && CanWrite())
+    if (Recursive)
     {
-      ClearValues();
+      ClearSubKeys();
+
+      // Cannot delete the key itself, but can delete its contents, so at least delete the values
+      // (which would otherwise be deleted implicitly by DoDeleteSubKey)
+      if (!CanWriteParent && CanWrite())
+      {
+        ClearValues();
+      }
+    }
+
+    std::unique_ptr<TStrings> ValueNames(new TStringList());
+    if (!Recursive)
+    {
+      GetValueNames(ValueNames.get());
     }
 
     // Only if all subkeys were successfully deleted in ClearSubKeys
-    bool Delete = CanWriteParent && !HasSubKeys();
+    Result = CanWriteParent && !HasSubKeys() && (ValueNames->Count == 0);
 
     CloseSubKey();
 
-    if (Delete)
+    if (Result)
     {
-      DoDeleteSubKey(Key);
+      Result = DoDeleteSubKey(Key);
     }
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall THierarchicalStorage::HasSubKeys()
@@ -944,7 +988,7 @@ void __fastcall TRegistryStorage::DoCloseSubKey()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TRegistryStorage::DoDeleteSubKey(const UnicodeString & SubKey)
+bool __fastcall TRegistryStorage::DoDeleteSubKey(const UnicodeString & SubKey)
 {
   UnicodeString K;
   if (FKeyHistory.empty())
@@ -952,7 +996,7 @@ void __fastcall TRegistryStorage::DoDeleteSubKey(const UnicodeString & SubKey)
     K = Storage + CurrentSubKey;
   }
   K += MungeKeyName(SubKey);
-  FRegistry->DeleteKey(K);
+  return FRegistry->DeleteKey(K);
 }
 //---------------------------------------------------------------------------
 void __fastcall TRegistryStorage::DoGetSubKeyNames(TStrings * Strings)
@@ -976,7 +1020,11 @@ bool __fastcall TRegistryStorage::DoDeleteValue(const UnicodeString & Name)
 //---------------------------------------------------------------------------
 bool __fastcall TRegistryStorage::DoKeyExists(const UnicodeString & SubKey, bool AForceAnsi)
 {
-  UnicodeString K = MungeStr(SubKey, AForceAnsi, false);
+  UnicodeString K = SubKey;
+  if (MungingKeyName(K))
+  {
+    K = MungeStr(K, AForceAnsi, false);
+  }
   bool Result = FRegistry->KeyExists(K);
   return Result;
 }
@@ -1160,7 +1208,7 @@ bool __fastcall TCustomIniFileStorage::OpenSubKey(const UnicodeString & Key, boo
 {
   bool Result;
 
-  // To cache root access in advance, otherwise we end up calling outselves, what TAutoFlag does not like
+  // To cache root access in advance, otherwise we end up calling ourselves, what TAutoFlag does not like
   GetCurrentAccess();
 
   {
@@ -1172,7 +1220,10 @@ bool __fastcall TCustomIniFileStorage::OpenSubKey(const UnicodeString & Key, boo
   {
     if (FMasterStorageOpenFailures > 0)
     {
-      FMasterStorageOpenFailures++;
+      if (Result)
+      {
+        FMasterStorageOpenFailures++;
+      }
     }
     else
     {
@@ -1216,8 +1267,9 @@ void __fastcall TCustomIniFileStorage::CloseSubKey()
   THierarchicalStorage::CloseSubKey();
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomIniFileStorage::DoDeleteSubKey(const UnicodeString & SubKey)
+bool __fastcall TCustomIniFileStorage::DoDeleteSubKey(const UnicodeString & SubKey)
 {
+  bool Result = true;
   try
   {
     ResetCache();
@@ -1228,11 +1280,11 @@ void __fastcall TCustomIniFileStorage::DoDeleteSubKey(const UnicodeString & SubK
   }
   if (HandleByMasterStorage())
   {
-    if (FMasterStorage->CanWrite())
-    {
+    Result =
+      FMasterStorage->CanWrite() &&
       FMasterStorage->DoDeleteSubKey(SubKey);
-    }
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomIniFileStorage::DoGetSubKeyNames(TStrings * Strings)
@@ -1619,7 +1671,7 @@ bool __fastcall TCustomIniFileStorage::HasAccess(unsigned int Access)
 //===========================================================================
 TIniFileStorage * __fastcall TIniFileStorage::CreateFromPath(const UnicodeString & AStorage)
 {
-  // The code was originally inline in the parent contructor call in the TIniFileStorage::TIniFileStorage [public originally].
+  // The code was originally inline in the parent constructor call in the TIniFileStorage::TIniFileStorage [public originally].
   // But if the TMemIniFile constructor throws (e.g. because the INI file is locked), the exception causes access violation.
   // Moving the code to a factory solves this.
   TMemIniFile * IniFile = new TMemIniFile(AStorage);
@@ -1859,7 +1911,7 @@ UnicodeString __fastcall TOptionsIniFile::FormatKey(const UnicodeString & Sectio
   {
     Result += PathDelim;
   }
-  Result += Ident; // Can be empty, when called from a contructor, AllowSection or ReadSection
+  Result += Ident; // Can be empty, when called from a constructor, AllowSection or ReadSection
   if (DebugAlwaysTrue(AllowSection(Section)))
   {
     Result.Delete(1, FRootKey.Length());

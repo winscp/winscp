@@ -41,6 +41,7 @@ const UnicodeString FtpsCertificateStorageKey(L"FtpsCertificates");
 const UnicodeString HttpsCertificateStorageKey(L"HttpsCertificates");
 const UnicodeString LastFingerprintsStorageKey(L"LastFingerprints");
 const UnicodeString DirectoryStatisticsCacheKey(L"DirectoryStatisticsCache");
+const UnicodeString SshHostCAsKey(L"SshHostCAs");
 const UnicodeString CDCacheKey(L"CDCache");
 const UnicodeString BannersKey(L"Banners");
 //---------------------------------------------------------------------------
@@ -48,6 +49,123 @@ const UnicodeString OpensshFolderName(L".ssh");
 const UnicodeString OpensshAuthorizedKeysFileName(L"authorized_keys");
 //---------------------------------------------------------------------------
 const int BelowNormalLogLevels = 1;
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+TSshHostCA::TSshHostCA()
+{
+  PermitRsaSha1 = false;
+  PermitRsaSha256 = true;
+  PermitRsaSha512 = true;
+}
+//---------------------------------------------------------------------------
+bool TSshHostCA::Load(THierarchicalStorage * Storage)
+{
+  PublicKey = DecodeBase64ToStr(Storage->ReadString(L"PublicKey", PublicKey));
+  ValidityExpression = Storage->ReadString(L"Validity", ValidityExpression);
+  PermitRsaSha1 = Storage->ReadBool(L"PermitRSASHA1", PermitRsaSha1);
+  PermitRsaSha256 = Storage->ReadBool(L"PermitRSASHA256", PermitRsaSha256);
+  PermitRsaSha512 = Storage->ReadBool(L"PermitRSASHA512", PermitRsaSha512);
+  return !PublicKey.IsEmpty() && !ValidityExpression.IsEmpty();
+}
+//---------------------------------------------------------------------------
+void TSshHostCA::Save(THierarchicalStorage * Storage) const
+{
+  Storage->WriteString(L"PublicKey", EncodeStrToBase64(PublicKey));
+  Storage->WriteString(L"Validity", ValidityExpression);
+  Storage->WriteBool(L"PermitRSASHA1", PermitRsaSha1);
+  Storage->WriteBool(L"PermitRSASHA256", PermitRsaSha256);
+  Storage->WriteBool(L"PermitRSASHA512", PermitRsaSha512);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+TSshHostCAList::TSshHostCAList()
+{
+}
+//---------------------------------------------------------------------------
+TSshHostCAList::TSshHostCAList(const TSshHostCA::TList & List)
+{
+  FList = List;
+}
+//---------------------------------------------------------------------------
+void TSshHostCAList::Default()
+{
+  FList.clear();
+}
+//---------------------------------------------------------------------------
+void TSshHostCAList::Save(THierarchicalStorage * Storage)
+{
+  Storage->ClearSubKeys();
+  TSshHostCA::TList::const_iterator I = FList.begin();
+  while (I != FList.end())
+  {
+    const TSshHostCA & SshHostCA = *I;
+    if (Storage->OpenSubKey(SshHostCA.Name, true))
+    {
+      SshHostCA.Save(Storage);
+      Storage->CloseSubKey();
+    }
+    ++I;
+  }
+}
+//---------------------------------------------------------------------------
+void TSshHostCAList::Load(THierarchicalStorage * Storage)
+{
+  FList.clear();
+  std::unique_ptr<TStrings> SubKeys(new TStringList());
+  Storage->GetSubKeyNames(SubKeys.get());
+
+  for (int Index = 0; Index < SubKeys->Count; Index++)
+  {
+    TSshHostCA SshHostCA;
+    SshHostCA.Name = SubKeys->Strings[Index];
+    if (Storage->OpenSubKey(SshHostCA.Name, false))
+    {
+      if (SshHostCA.Load(Storage))
+      {
+        FList.push_back(SshHostCA);
+      }
+
+      Storage->CloseSubKey();
+    }
+  }
+}
+//---------------------------------------------------------------------------
+int TSshHostCAList::GetCount() const
+{
+  return FList.size();
+}
+//---------------------------------------------------------------------------
+const TSshHostCA * TSshHostCAList::Get(int Index) const
+{
+  return &FList[Index];
+}
+//---------------------------------------------------------------------------
+const TSshHostCA * TSshHostCAList::Find(const UnicodeString & Name) const
+{
+  TSshHostCA::TList::const_iterator I = FList.begin();
+  while (I != FList.end())
+  {
+    const TSshHostCA & SshHostCA = *I;
+    if (SameStr(SshHostCA.Name, Name))
+    {
+      return &SshHostCA;
+    }
+    ++I;
+  }
+  return NULL;
+}
+//---------------------------------------------------------------------------
+const TSshHostCA::TList & TSshHostCAList::GetList() const
+{
+  return FList;
+}
+//---------------------------------------------------------------------------
+TSshHostCAList & TSshHostCAList::operator =(const TSshHostCAList & other)
+{
+  FList = other.FList;
+  return *this;
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 __fastcall TConfiguration::TConfiguration()
 {
@@ -58,8 +176,9 @@ __fastcall TConfiguration::TConfiguration()
   FForceSave = false;
   FApplicationInfo = NULL;
   FUsage = new TUsage(this);
-  FDefaultCollectUsage = false;
+  FDefaultCollectUsage = IsUWP();
   FScripting = false;
+  FSshHostCAList.reset(new TSshHostCAList());
 
   UnicodeString RandomSeedPath;
   if (!GetEnvironmentVariable(L"APPDATA").IsEmpty())
@@ -121,10 +240,18 @@ void __fastcall TConfiguration::Default()
   FParallelDurationThreshold = 10;
   FMimeTypes = UnicodeString();
   FCertificateStorage = EmptyStr;
+  FAWSMetadataService = EmptyStr;
   FChecksumCommands = EmptyStr;
   FDontReloadMoreThanSessions = 1000;
   FScriptProgressFileNameLimit = 25;
+  FQueueTransfersLimit = 2;
+  FParallelTransferThreshold = -1; // default (currently off), 0 = explicitly off
   FKeyVersion = 0;
+  FSshHostCAList->Default();
+  RefreshPuttySshHostCAList();
+  FSshHostCAsFromPuTTY = false;
+  FHttpsCertificateValidation = 0;
+  FSynchronizationChecksumAlgs = EmptyStr;
   CollectUsage = FDefaultCollectUsage;
 
   FLogging = false;
@@ -227,7 +354,7 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
   // no longer useful
   int P = Property.LastDelimiter(L".>");
   UnicodeString Result = Property.SubString(P + 1, Property.Length() - P);
-  if ((Result[1] == L'F') && ((wchar_t)toupper(Result[2]) == Result[2]))
+  if ((Result[1] == L'F') && (towupper(Result[2]) == Result[2]))
   {
     Result.Delete(1, 1);
   }
@@ -260,9 +387,15 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(String,   MimeTypes); \
     KEY(Integer,  DontReloadMoreThanSessions); \
     KEY(Integer,  ScriptProgressFileNameLimit); \
+    KEY(Integer,  QueueTransfersLimit); \
+    KEY(Integer,  ParallelTransferThreshold); \
     KEY(Integer,  KeyVersion); \
+    KEY(Bool,     SshHostCAsFromPuTTY); \
+    KEY(Integer,  HttpsCertificateValidation); \
+    KEY(String,   SynchronizationChecksumAlgs); \
     KEY(Bool,     CollectUsage); \
     KEY(String,   CertificateStorage); \
+    KEY(String,   AWSMetadataService); \
   ); \
   BLOCK(L"Logging", CANCREATE, \
     KEYEX(Bool,  PermanentLogging, L"Logging"); \
@@ -301,6 +434,21 @@ void __fastcall TConfiguration::SaveExplicit()
   DoSave(false, true);
 }
 //---------------------------------------------------------------------------
+void TConfiguration::DoSave(THierarchicalStorage * AStorage, bool All)
+{
+  if (AStorage->OpenSubKey(ConfigurationSubKey, true))
+  {
+    SaveData(AStorage, All);
+    AStorage->CloseSubKey();
+  }
+
+  if (AStorage->OpenSubKey(SshHostCAsKey, true))
+  {
+    FSshHostCAList->Save(AStorage);
+    AStorage->CloseSubKey();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TConfiguration::DoSave(bool All, bool Explicit)
 {
   if (FDontSave) return;
@@ -311,13 +459,10 @@ void __fastcall TConfiguration::DoSave(bool All, bool Explicit)
     AStorage->AccessMode = smReadWrite;
     AStorage->Explicit = Explicit;
     AStorage->ForceSave = FForceSave;
-    if (AStorage->OpenSubKey(ConfigurationSubKey, true))
-    {
-      // if saving to TOptionsStorage, make sure we save everything so that
-      // all configuration is properly transferred to the master storage
-      bool ConfigAll = All || AStorage->Temporary;
-      SaveData(AStorage, ConfigAll);
-    }
+    // if saving to TOptionsStorage, make sure we save everything so that
+    // all configuration is properly transferred to the master storage
+    bool ConfigAll = All || AStorage->Temporary;
+    DoSave(AStorage, ConfigAll);
   }
   __finally
   {
@@ -353,6 +498,7 @@ void __fastcall TConfiguration::SaveCustomIniFileStorageName()
     {
       RegistryStorage->WriteString(L"IniFile", CustomIniFileStorageName);
       RegistryStorage->CloseSubKey();
+      AppLogFmt(L"Saved custom INI file path %s", (CustomIniFileStorageName));
     }
   }
 }
@@ -378,10 +524,7 @@ void __fastcall TConfiguration::Export(const UnicodeString & FileName)
 
     CopyData(Storage, ExportStorage);
 
-    if (ExportStorage->OpenSubKey(ConfigurationSubKey, true))
-    {
-      SaveData(ExportStorage, true);
-    }
+    DoSave(ExportStorage, true);
   }
   __finally
   {
@@ -462,6 +605,15 @@ void __fastcall TConfiguration::LoadAdmin(THierarchicalStorage * Storage)
   FDefaultCollectUsage = Storage->ReadBool(L"DefaultCollectUsage", FDefaultCollectUsage);
 }
 //---------------------------------------------------------------------------
+void TConfiguration::LoadSshHostCAList(TSshHostCAList * SshHostCAList, THierarchicalStorage * Storage)
+{
+  if (Storage->OpenSubKey(SshHostCAsKey, false))
+  {
+    SshHostCAList->Load(Storage);
+    Storage->CloseSubKey();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TConfiguration::LoadFrom(THierarchicalStorage * Storage)
 {
   if (Storage->OpenSubKey(ConfigurationSubKey, false))
@@ -469,6 +621,7 @@ void __fastcall TConfiguration::LoadFrom(THierarchicalStorage * Storage)
     LoadData(Storage);
     Storage->CloseSubKey();
   }
+  LoadSshHostCAList(FSshHostCAList.get(), Storage);
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetRegistryStorageOverrideKey()
@@ -483,6 +636,7 @@ UnicodeString __fastcall TConfiguration::LoadCustomIniFileStorageName()
   if (RegistryStorage->OpenRootKey(false))
   {
     Result = RegistryStorage->ReadString(L"IniFile", L"");
+    AppLogFmt(L"Loaded custom INI file path %s", (Result));
     RegistryStorage->CloseSubKey();
   }
   RegistryStorage.reset(NULL);
@@ -564,6 +718,7 @@ void __fastcall TConfiguration::CopyData(THierarchicalStorage * Source,
   }
 
   CopyAllStringsInSubKey(Source, Target, SshHostKeysSubKey);
+  CopyAllStringsInSubKey(Source, Target, SshHostCAsKey);
   CopyAllStringsInSubKey(Source, Target, FtpsCertificateStorageKey);
   CopyAllStringsInSubKey(Source, Target, HttpsCertificateStorageKey);
 }
@@ -786,14 +941,45 @@ bool TConfiguration::RegistryPathExists(const UnicodeString & RegistryPath)
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::CleanupRegistry(const UnicodeString & RegistryPath)
 {
-  std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(RegistryStorageKey));
-
-  UnicodeString ParentKey = ExtractFileDir(RegistryPath);
-  if (ParentKey.IsEmpty() ||
-      Registry->OpenSubKeyPath(ParentKey, false))
+  UnicodeString CompanyKey = GetCompanyRegistryKey();
+  UnicodeString Prefix = IncludeTrailingBackslash(CompanyKey);
+  if (DebugAlwaysTrue(SameStr(LeftStr(RegistryStorageKey, Prefix.Length()), Prefix)))
   {
-    UnicodeString SubKey = ExtractFileName(RegistryPath);
-    Registry->RecursiveDeleteSubKey(SubKey);
+    UnicodeString CompanyParentKey = ExtractFileDir(CompanyKey);
+    std::unique_ptr<TRegistryStorage> Registry(new TRegistryStorage(CompanyParentKey));
+    UnicodeString RegistryStorageSubKey = MidStr(RegistryStorageKey, CompanyParentKey.Length() + 2);
+    Registry->UnmungedRoot = RegistryStorageSubKey;
+
+    AppLogFmt(L"Cleaning up registry key %s", (RegistryPath));
+    UnicodeString ARegistryPath = TPath::Combine(RegistryStorageSubKey, RegistryPath);
+    UnicodeString Buf = ARegistryPath;
+    while (!Buf.IsEmpty())
+    {
+      UnicodeString ParentKey = ExtractFileDir(Buf);
+      // Actually can be simplified to Registry->OpenSubKeyPath(ParentKey, false)
+      if (ParentKey.IsEmpty() ? Registry->OpenRootKey(false) : Registry->OpenSubKeyPath(ParentKey, false))
+      {
+        UnicodeString SubKey = ExtractFileName(Buf);
+        if (Registry->KeyExists(SubKey))
+        {
+          bool Recursive = (Buf == ARegistryPath);
+          if (Registry->DeleteSubKey(SubKey, Recursive))
+          {
+            AppLogFmt(L"Deleted registry key %s in %s", (SubKey, ParentKey));
+          }
+          else
+          {
+            break;
+          }
+        }
+        Registry->CloseSubKeyPath();
+        Buf = ParentKey;
+      }
+      else
+      {
+        break;
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -801,6 +987,7 @@ TStrings * TConfiguration::GetCaches()
 {
   std::unique_ptr<TStrings> Result(new TStringList());
   Result->Add(SshHostKeysSubKey);
+  Result->Add(SshHostCAsKey);
   Result->Add(FtpsCertificateStorageKey);
   Result->Add(HttpsCertificateStorageKey);
   Result->Add(DirectoryStatisticsCacheKey);
@@ -1470,6 +1657,7 @@ TStorage __fastcall TConfiguration::GetStorage()
   TGuard Guard(FCriticalSection);
   if (FStorage == stDetect)
   {
+    DebugFail(); // This is never called, as the detection is completely overriden by TWinConfiguration
     if (FileExists(ApiPath(IniFileStorageNameForReading)))
     {
       FStorage = stIniFile;
@@ -1533,7 +1721,7 @@ bool __fastcall TConfiguration::AnyFilezillaSessionForImport(TStoredSessionList 
   }
 }
 //---------------------------------------------------------------------
-static UnicodeString GetOpensshFolder()
+UnicodeString GetOpensshFolder()
 {
   UnicodeString ProfilePath = GetShellFolderPath(CSIDL_PROFILE);
   UnicodeString Result = TPath::Combine(ProfilePath, OpensshFolderName);
@@ -1596,6 +1784,42 @@ TStoredSessionList * TConfiguration::SelectOpensshSessionsForImport(
     {
       std::unique_ptr<TStrings> Lines(new TStringList());
       LoadScriptFromFile(ConfigFile, Lines.get(), true);
+
+      const UnicodeString OpensshIncludeDirective(L"Include");
+      for (int Index = 0; Index < Lines->Count; Index++)
+      {
+        UnicodeString Line = Lines->Strings[Index];
+        UnicodeString Directive, Args;
+        if (ParseOpensshDirective(Line, Directive, Args))
+        {
+          if (SameText(Directive, OpensshIncludeDirective))
+          {
+            while (!Args.IsEmpty())
+            {
+              UnicodeString IncludePath = ConvertPathFromOpenssh(CutOpensshToken(Args));
+
+              // If path does not exist, try if it works relatively to .ssh/
+              if (!FileExists(ApiPath(IncludePath)))
+              {
+                IncludePath = TPath::Combine(GetOpensshFolder(), IncludePath);
+              }
+
+              if (FileExists(ApiPath(IncludePath)))
+              {
+                std::unique_ptr <TStrings> LinesToInclude(new TStringList());
+                LoadScriptFromFile(IncludePath, LinesToInclude.get(), true);
+                Lines->Delete(Index); // Not really needed
+                for (int Index2 = 0; Index2 < LinesToInclude->Count; Index2++)
+                {
+                  Lines->Insert(Index + Index2, LinesToInclude->Strings[Index2]);
+                }
+                Index--;
+              }
+            }
+          }
+        }
+      }
+
       ImportSessionList->ImportFromOpenssh(Lines.get());
 
       if (ImportSessionList->Count > 0)
@@ -1680,14 +1904,18 @@ TStrings * __fastcall TConfiguration::LoadDirectoryStatisticsCache(
   const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam)
 {
   std::unique_ptr<THierarchicalStorage> Storage(OpenDirectoryStatisticsCache(false));
-  std::unique_ptr<TStringList> Result(new TStringList());
+  TStrings * Result;
   if (Storage.get() != NULL)
   {
     UnicodeString Key = GetDirectoryStatisticsCacheKey(SessionKey, Path, CopyParam);
     UnicodeString Buf = Storage->ReadString(Key, UnicodeString());
-    Result->CommaText = Buf;
+    Result = CommaTextToStringList(Buf);
   }
-  return Result.release();
+  else
+  {
+    Result = new TStringList();
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SaveDirectoryStatisticsCache(
@@ -1752,6 +1980,11 @@ UnicodeString TConfiguration::GetCertificateStorageExpanded()
   return Result;
 }
 //---------------------------------------------------------------------
+void TConfiguration::SetAWSMetadataService(const UnicodeString & value)
+{
+  SET_CONFIG_PROPERTY(AWSMetadataService);
+}
+//---------------------------------------------------------------------
 void __fastcall TConfiguration::SetTryFtpWhenSshFails(bool value)
 {
   SET_CONFIG_PROPERTY(TryFtpWhenSshFails);
@@ -1764,7 +1997,8 @@ void __fastcall TConfiguration::SetParallelDurationThreshold(int value)
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetPuttyRegistryStorageKey(UnicodeString value)
 {
-  SET_CONFIG_PROPERTY(PuttyRegistryStorageKey);
+  SET_CONFIG_PROPERTY_EX(PuttyRegistryStorageKey,
+    RefreshPuttySshHostCAList());
 }
 //---------------------------------------------------------------------------
 TEOLType __fastcall TConfiguration::GetLocalEOLType()
@@ -2015,11 +2249,6 @@ UnicodeString __fastcall TConfiguration::GetTimeFormat()
   return L"h:nn:ss";
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TConfiguration::GetPartialExt() const
-{
-  return PARTIAL_EXT;
-}
-//---------------------------------------------------------------------------
 UnicodeString __fastcall TConfiguration::GetDefaultKeyFile()
 {
   return L"";
@@ -2068,6 +2297,43 @@ void __fastcall TConfiguration::SetCacheDirectoryChangesMaxSize(int value)
 void __fastcall TConfiguration::SetShowFtpWelcomeMessage(bool value)
 {
   SET_CONFIG_PROPERTY(ShowFtpWelcomeMessage);
+}
+//---------------------------------------------------------------------------
+void TConfiguration::SetQueueTransfersLimit(int value)
+{
+  SET_CONFIG_PROPERTY(QueueTransfersLimit);
+}
+//---------------------------------------------------------------------------
+const TSshHostCAList * TConfiguration::GetSshHostCAList()
+{
+  return FSshHostCAList.get();
+}
+//---------------------------------------------------------------------------
+void TConfiguration::SetSshHostCAList(const TSshHostCAList * value)
+{
+  *FSshHostCAList = *value;
+}
+//---------------------------------------------------------------------------
+const TSshHostCAList * TConfiguration::GetPuttySshHostCAList()
+{
+  if (FPuttySshHostCAList.get() == NULL)
+  {
+    std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(PuttyRegistryStorageKey));
+    Storage->ConfigureForPutty();
+    FPuttySshHostCAList.reset(new TSshHostCAList());
+    LoadSshHostCAList(FPuttySshHostCAList.get(), Storage.get());
+  }
+  return FPuttySshHostCAList.get();
+}
+//---------------------------------------------------------------------------
+void TConfiguration::RefreshPuttySshHostCAList()
+{
+  FPuttySshHostCAList.reset(NULL);
+}
+//---------------------------------------------------------------------------
+const TSshHostCAList * TConfiguration::GetActiveSshHostCAList()
+{
+  return FSshHostCAsFromPuTTY ? PuttySshHostCAList : SshHostCAList;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TConfiguration::GetPersistent()

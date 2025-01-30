@@ -11,19 +11,13 @@ function IsVistaHard: Boolean;
 
 function IsVista: Boolean;
 
-// Prevent name conflict with C++ IsWin8.
-{$HPPEMIT '#define IsWin7 IsWin7Pas'}
-{$HPPEMIT END '#undef IsWin7'}
+{$EXTERNALSYM IsWin7}
 function IsWin7: Boolean;
 
-// Prevent name conflict with C++ IsWin8.
-{$HPPEMIT '#define IsWin8 IsWin8Pas'}
-{$HPPEMIT END '#undef IsWin8'}
+{$EXTERNALSYM IsWin8}
 function IsWin8: Boolean;
 
-// Prevent name conflict with C++ CutToChar.
-{$HPPEMIT '#define CutToChar CutToCharPas'}
-{$HPPEMIT END '#undef CutToChar'}
+{$EXTERNALSYM CutToChar}
 function CutToChar(var Str: string; Ch: Char; Trim: Boolean): string;
 
 procedure FilterToFileTypes(Filter: string; FileTypes: TFileTypeItems);
@@ -96,11 +90,17 @@ type
 var
   OnApiPath: TApiPathEvent = nil;
 
-// Prevent name conflict with C++ ApiPath.
-// We would not want to call this implementation in any case anyway.
-{$HPPEMIT '#define ApiPath ApiPathPas'}
-{$HPPEMIT END '#undef ApiPath'}
+{$EXTERNALSYM ApiPath}
 function ApiPath(Path: string): string;
+
+type
+  TAppLogEvent = procedure(S: string);
+
+var
+  OnAppLog: TAppLogEvent = nil;
+
+{$EXTERNALSYM AppLog}
+procedure AppLog(S: string);
 
 type
   TControlScrollBeforeUpdate = procedure(ObjectToValidate: TObject) of object;
@@ -695,6 +695,14 @@ begin
   end;
 end;
 
+procedure AppLog(S: string);
+begin
+  if Assigned(OnAppLog) then
+  begin
+    OnAppLog(S);
+  end;
+end;
+
   { TCustomControlScrollOnDragOver }
 
 constructor TCustomControlScrollOnDragOver.Create(Control: TControl;
@@ -1122,10 +1130,23 @@ begin
   Result := (SysDarkTheme > 0);
 end;
 
+const
+  LOAD_LIBRARY_SEARCH_SYSTEM32 = $00000800;
+  LOAD_LIBRARY_SEARCH_USER_DIRS = $00000400;
+
 var
   Lib: THandle;
   OSVersionInfo: TOSVersionInfoEx;
+  SetDefaultDllDirectories: function(DirectoryFlags: DWORD): BOOL; stdcall;
 initialization
+  // Translated from PuTTY's dll_hijacking_protection().
+  // Inno Setup does not use LOAD_LIBRARY_SEARCH_USER_DIRS and falls back to SetDllDirectory.
+  Lib := LoadLibrary(kernel32);
+  SetDefaultDllDirectories := GetProcAddress(Lib, 'SetDefaultDllDirectories');
+  if Assigned(SetDefaultDllDirectories) then
+  begin
+    SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32 or LOAD_LIBRARY_SEARCH_USER_DIRS);
+  end;
   Lib := LoadLibrary('shcore');
   if Lib <> 0 then
   begin

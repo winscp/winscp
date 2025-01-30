@@ -115,7 +115,7 @@ protected:
   virtual void __fastcall ResetTransfer();
   virtual void __fastcall ConnectTerminal(TTerminal * ATerminal);
   bool __fastcall EnsureCommandSessionFallback(
-    TFSCapability Capability, TSessionAction & Action);
+    TFSCapability Capability, TSessionAction * Action);
   void __fastcall Print(const UnicodeString Str, bool Error = false);
   void __fastcall CheckSession();
   void __fastcall CheckParams(TScriptProcParams * Parameters);
@@ -188,7 +188,6 @@ private:
   void __fastcall CheckDefaultCopyParam();
   bool __fastcall HasNonDefaultCopyParams();
   void __fastcall CheckDefaultSynchronizeParams();
-  void __fastcall NotSupported();
   void __fastcall CheckMultiFilesToOne(TStrings * FileList, const UnicodeString & Target, bool Unix);
   void __fastcall LogOption(const UnicodeString & LogStr);
   void __fastcall DoMvOrCp(TScriptProcParams * Parameters, TFSCapability Capability, bool Cp);

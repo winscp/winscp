@@ -70,6 +70,9 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXItem6: TTBXItem
             Action = NonVisualDataModule.LocalHomeDirAction
           end
+          object TBXItem262: TTBXItem
+            Action = NonVisualDataModule.LocalOtherDirAction
+          end
           object TBXSeparatorItem3: TTBXSeparatorItem
           end
           object TBXItem7: TTBXItem
@@ -130,10 +133,9 @@ inherited ScpCommanderForm: TScpCommanderForm
             RadioItem = True
           end
         end
-        object TBXSubmenuItem4: TTBXSubmenuItem
-          Caption = 'S&how Columns'
+        object LocalColumnsSubmenuItem: TTBXSubmenuItem
+          Caption = '&Columns'
           HelpKeyword = 'ui_file_panel#selecting_columns'
-          Hint = 'Select columns to show in panel'
           object TBXItem19: TTBXItem
             Action = NonVisualDataModule.ShowHideLocalNameColumnAction2
           end
@@ -148,6 +150,14 @@ inherited ScpCommanderForm: TScpCommanderForm
           end
           object TBXItem23: TTBXItem
             Action = NonVisualDataModule.ShowHideLocalAttrColumnAction2
+          end
+          object TBXSeparatorItem72: TTBXSeparatorItem
+          end
+          object TBXItem263: TTBXItem
+            Action = NonVisualDataModule.AutoSizeLocalColumnsAction
+          end
+          object TBXItem265: TTBXItem
+            Action = NonVisualDataModule.ResetLayoutLocalColumnsAction
           end
         end
         object TBXItem221: TTBXItem
@@ -613,6 +623,11 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXItem255: TTBXItem
             Action = NonVisualDataModule.QueueFileListAction
           end
+          object TBXSeparatorItem74: TTBXSeparatorItem
+          end
+          object TBXItem267: TTBXItem
+            Action = NonVisualDataModule.QueueResetLayoutColumnsAction
+          end
           object TBXSeparatorItem22: TTBXSeparatorItem
           end
           object TBXSubmenuItem8: TTBXSubmenuItem
@@ -672,6 +687,9 @@ inherited ScpCommanderForm: TScpCommanderForm
           end
           object TBXItem87: TTBXItem
             Action = NonVisualDataModule.RemoteHomeDirAction
+          end
+          object TBXItem261: TTBXItem
+            Action = NonVisualDataModule.RemoteOtherDirAction
           end
           object TBXSeparatorItem26: TTBXSeparatorItem
           end
@@ -742,10 +760,9 @@ inherited ScpCommanderForm: TScpCommanderForm
             RadioItem = True
           end
         end
-        object TBXSubmenuItem17: TTBXSubmenuItem
-          Caption = 'S&how Columns'
+        object RemoteColumnsSubmenuItem: TTBXSubmenuItem
+          Caption = '&Columns'
           HelpKeyword = 'ui_file_panel#selecting_columns'
-          Hint = 'Select columns to show in panel'
           object TBXItem101: TTBXItem
             Action = NonVisualDataModule.ShowHideRemoteNameColumnAction2
           end
@@ -769,6 +786,14 @@ inherited ScpCommanderForm: TScpCommanderForm
           end
           object TBXItem179: TTBXItem
             Action = NonVisualDataModule.ShowHideRemoteLinkTargetColumnAction2
+          end
+          object TBXSeparatorItem73: TTBXSeparatorItem
+          end
+          object TBXItem264: TTBXItem
+            Action = NonVisualDataModule.AutoSizeRemoteColumnsAction
+          end
+          object TBXItem266: TTBXItem
+            Action = NonVisualDataModule.ResetLayoutRemoteColumnsAction
           end
         end
         object TBXItem220: TTBXItem
@@ -1213,6 +1238,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Height = 45
         WatchDirectory = True
         DirView = OtherLocalDirView
+        OnRefreshDrives = LocalDriveViewRefreshDrives
         OnBusy = DirViewBusy
         OnDDDragEnter = LocalFileControlDDDragEnter
         OnDDDragLeave = FileControlDDDragLeave

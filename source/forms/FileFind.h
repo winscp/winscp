@@ -58,6 +58,7 @@ __published:
   TAction *EditAction;
   TButton *EditButton;
   TMenuItem *Edit1;
+  TPanel *FileViewPanel;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall StartStopButtonClick(TObject *Sender);
   void __fastcall StopButtonClick(TObject *Sender);

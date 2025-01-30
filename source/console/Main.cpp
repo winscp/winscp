@@ -518,6 +518,10 @@ void CancelInput()
 void BreakInput()
 {
   FlushConsoleInputBuffer(ConsoleInput);
+
+  // Signal cancel first, otherwise the main thread can get Enter before the event is set
+  CancelInput();
+
   INPUT_RECORD InputRecord;
   memset(&InputRecord, 0, sizeof(InputRecord));
   InputRecord.EventType = KEY_EVENT;
@@ -527,8 +531,6 @@ void BreakInput()
 
   unsigned long Written;
   WriteConsoleInput(ConsoleInput, &InputRecord, 1, &Written);
-
-  CancelInput();
 }
 //---------------------------------------------------------------------------
 DWORD WINAPI InputTimerThreadProc(void* Parameter)

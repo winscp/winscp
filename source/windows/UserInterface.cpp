@@ -213,88 +213,88 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
   }
 
   TTerminalManager * Manager = TTerminalManager::Instance(false);
-  bool HookedDialog = false;
-  try
+  if (!DoNotDisplay)
   {
-    if (!DoNotDisplay)
+    ESshTerminate * Terminate = dynamic_cast<ESshTerminate*>(E);
+    bool CloseOnCompletion = (Terminate != NULL);
+
+    bool ForActiveTerminal =
+      E->InheritsFrom(__classid(EFatal)) && (Terminal != NULL) &&
+      (Manager != NULL) && (Manager->ActiveTerminal == Terminal);
+
+    unsigned int Result;
+    if (CloseOnCompletion)
     {
-      ESshTerminate * Terminate = dynamic_cast<ESshTerminate*>(E);
-      bool CloseOnCompletion = (Terminate != NULL);
-
-      bool ForActiveTerminal =
-        E->InheritsFrom(__classid(EFatal)) && (Terminal != NULL) &&
-        (Manager != NULL) && (Manager->ActiveTerminal == Terminal);
-
-      unsigned int Result;
-      if (CloseOnCompletion)
+      if (ForActiveTerminal)
       {
+        DebugAssert(!Terminal->Active);
+        Manager->DisconnectActiveTerminal();
+      }
+
+      if (Terminate->Operation == odoSuspend)
+      {
+        // suspend, so that exit prompt is shown only after windows resume
+        SuspendWindows();
+      }
+
+      DebugAssert(Show);
+      bool ConfirmExitOnCompletion =
+        CloseOnCompletion &&
+        ((Terminate->Operation == odoDisconnect) || (Terminate->Operation == odoSuspend)) &&
+        WinConfiguration->ConfirmExitOnCompletion;
+
+      if (ConfirmExitOnCompletion)
+      {
+        TMessageParams Params(mpNeverAskAgainCheck);
+        unsigned int Answers = 0;
+        TQueryButtonAlias Aliases[1];
+        TOpenLocalPathHandler OpenLocalPathHandler;
+        if (!Terminate->TargetLocalPath.IsEmpty() && !ForActiveTerminal)
+        {
+          OpenLocalPathHandler.LocalPath = Terminate->TargetLocalPath;
+          OpenLocalPathHandler.LocalFileName = Terminate->DestLocalFileName;
+
+          Aliases[0].Button = qaIgnore;
+          Aliases[0].Alias = LoadStr(OPEN_BUTTON);
+          Aliases[0].OnSubmit = OpenLocalPathHandler.Open;
+          Aliases[0].MenuButton = true;
+          Answers |= Aliases[0].Button;
+          Params.Aliases = Aliases;
+          Params.AliasesCount = LENOF(Aliases);
+        }
+
         if (ForActiveTerminal)
         {
-          DebugAssert(!Terminal->Active);
-          Manager->DisconnectActiveTerminal();
-        }
-
-        if (Terminate->Operation == odoSuspend)
-        {
-          // suspend, so that exit prompt is shown only after windows resume
-          SuspendWindows();
-        }
-
-        DebugAssert(Show);
-        bool ConfirmExitOnCompletion =
-          CloseOnCompletion &&
-          ((Terminate->Operation == odoDisconnect) || (Terminate->Operation == odoSuspend)) &&
-          WinConfiguration->ConfirmExitOnCompletion;
-
-        if (ConfirmExitOnCompletion)
-        {
-          TMessageParams Params(mpNeverAskAgainCheck);
-          unsigned int Answers = 0;
-          TQueryButtonAlias Aliases[1];
-          TOpenLocalPathHandler OpenLocalPathHandler;
-          if (!Terminate->TargetLocalPath.IsEmpty() && !ForActiveTerminal)
-          {
-            OpenLocalPathHandler.LocalPath = Terminate->TargetLocalPath;
-            OpenLocalPathHandler.LocalFileName = Terminate->DestLocalFileName;
-
-            Aliases[0].Button = qaIgnore;
-            Aliases[0].Alias = LoadStr(OPEN_BUTTON);
-            Aliases[0].OnSubmit = OpenLocalPathHandler.Open;
-            Aliases[0].MenuButton = true;
-            Answers |= Aliases[0].Button;
-            Params.Aliases = Aliases;
-            Params.AliasesCount = LENOF(Aliases);
-          }
-
-          if (ForActiveTerminal)
-          {
-            UnicodeString MessageFormat =
-              (Manager->Count > 1) ?
-                FMTLOAD(DISCONNECT_ON_COMPLETION, (Manager->Count - 1)) :
-                LoadStr(EXIT_ON_COMPLETION);
-            // Remove the leading "%s\n\n" (not to change the translation originals - previously the error message was prepended)
-            MessageFormat = FORMAT(MessageFormat, (UnicodeString())).Trim();
-            MessageFormat = MainInstructions(MessageFormat) + L"\n\n%s";
-            Result = FatalExceptionMessageDialog(E, qtInformation,
-              MessageFormat,
-              Answers | qaYes | qaNo, HELP_NONE, &Params);
-          }
-          else
-          {
-            Result =
-              ExceptionMessageDialog(E, qtInformation, L"", Answers | qaOK, HELP_NONE, &Params);
-          }
+          UnicodeString MessageFormat =
+            (Manager->Count > 1) ?
+              FMTLOAD(DISCONNECT_ON_COMPLETION, (Manager->Count - 1)) :
+              LoadStr(EXIT_ON_COMPLETION);
+          // Remove the leading "%s\n\n" (not to change the translation originals - previously the error message was prepended)
+          MessageFormat = FORMAT(MessageFormat, (UnicodeString())).Trim();
+          MessageFormat = MainInstructions(MessageFormat) + L"\n\n%s";
+          Result = FatalExceptionMessageDialog(E, qtInformation,
+            MessageFormat,
+            Answers | qaYes | qaNo, HELP_NONE, &Params);
         }
         else
         {
-          Result = qaYes;
+          Result =
+            ExceptionMessageDialog(E, qtInformation, L"", Answers | qaOK, HELP_NONE, &Params);
         }
       }
       else
       {
-        if (Show)
+        Result = qaYes;
+      }
+    }
+    else
+    {
+      if (Show)
+      {
+        if (ForActiveTerminal)
         {
-          if (ForActiveTerminal)
+          bool HookedDialog = false;
+          try
           {
             TMessageParams Params;
             if (DebugAlwaysTrue(Manager->ActiveTerminal != NULL) &&
@@ -310,70 +310,70 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
 
             Result = FatalExceptionMessageDialog(E, qtError, EmptyStr, qaOK, EmptyStr, &Params);
           }
-          else
+          __finally
           {
-            Result = ExceptionMessageDialog(E, qtError);
+            if (HookedDialog)
+            {
+              Manager->UnhookFatalExceptionMessageDialog();
+            }
           }
         }
         else
         {
-          Result = qaOK;
-        }
-      }
-
-      if (Result == qaNeverAskAgain)
-      {
-        DebugAssert(CloseOnCompletion);
-        Result = qaYes;
-        WinConfiguration->ConfirmExitOnCompletion = false;
-      }
-
-      if (Result == qaYes)
-      {
-        DebugAssert(CloseOnCompletion);
-        DebugAssert(Terminate != NULL);
-        DebugAssert(Terminate->Operation != odoIdle);
-        TerminateApplication();
-
-        switch (Terminate->Operation)
-        {
-          case odoDisconnect:
-            break;
-
-          case odoSuspend:
-            // suspended before already
-            break;
-
-          case odoShutDown:
-            ShutDownWindows();
-            break;
-
-          default:
-            DebugFail();
-        }
-      }
-      else if (Result == qaRetry)
-      {
-        // qaRetry is used by FatalExceptionMessageDialog
-        if (DebugAlwaysTrue(ForActiveTerminal))
-        {
-          Manager->ReconnectActiveTerminal();
+          Result = ExceptionMessageDialog(E, qtError);
         }
       }
       else
       {
-        if (ForActiveTerminal)
-        {
-          Manager->DisconnectActiveTerminalIfPermanentFreeOtherwise();
-        }
+        Result = qaOK;
       }
     }
-  }
-  __finally
-  {
-    if (HookedDialog)
+
+    if (Result == qaNeverAskAgain)
     {
-      Manager->UnhookFatalExceptionMessageDialog();
+      DebugAssert(CloseOnCompletion);
+      Result = qaYes;
+      WinConfiguration->ConfirmExitOnCompletion = false;
+    }
+
+    if (Result == qaYes)
+    {
+      DebugAssert(CloseOnCompletion);
+      DebugAssert(Terminate != NULL);
+      DebugAssert(Terminate->Operation != odoIdle);
+      TerminateApplication();
+
+      switch (Terminate->Operation)
+      {
+        case odoDisconnect:
+          break;
+
+        case odoSuspend:
+          // suspended before already
+          break;
+
+        case odoShutDown:
+          ShutDownWindows();
+          break;
+
+        default:
+          DebugFail();
+      }
+    }
+    else if (Result == qaRetry)
+    {
+      // qaRetry is used by FatalExceptionMessageDialog
+      if (DebugAlwaysTrue(ForActiveTerminal))
+      {
+        Manager->ReconnectActiveTerminal();
+      }
+    }
+    else
+    {
+      if (ForActiveTerminal)
+      {
+        Manager->DisconnectActiveTerminalIfPermanentFreeOtherwise();
+      }
     }
   }
 }
@@ -387,6 +387,11 @@ void __fastcall ShowNotification(TTerminal * Terminal, const UnicodeString & Str
   Manager->ScpExplorer->PopupTrayBalloon(Terminal, Str, Type);
 }
 //---------------------------------------------------------------------------
+UnicodeString GetThemeName(bool Dark)
+{
+  return Dark ? L"DarkOfficeXP" : L"OfficeXP";
+}
+//---------------------------------------------------------------------------
 void __fastcall ConfigureInterface()
 {
   DebugAssert(WinConfiguration != NULL);
@@ -394,7 +399,7 @@ void __fastcall ConfigureInterface()
     AdjustLocaleFlag(LoadStr(BIDI_MODE), WinConfiguration->BidiModeOverride, false, bdRightToLeft, bdLeftToRight);
   Application->BiDiMode = static_cast<TBiDiMode>(BidiModeFlag);
   SetTBXSysParam(TSP_XPVISUALSTYLE, XPVS_AUTOMATIC);
-  UnicodeString Theme = WinConfiguration->UseDarkTheme() ? L"DarkOfficeXP" : L"OfficeXP";
+  UnicodeString Theme = GetThemeName(WinConfiguration->UseDarkTheme());
   if (!SameText(TBXCurrentTheme(), Theme))
   {
     TBXSetTheme(Theme);
@@ -557,10 +562,9 @@ UnicodeString __fastcall GetToolbarsLayoutStr(TControl * OwnerControl)
 //---------------------------------------------------------------------------
 void __fastcall LoadToolbarsLayoutStr(TControl * OwnerControl, UnicodeString LayoutStr)
 {
-  TStrings * Storage = new TStringList();
+  TStrings * Storage = CommaTextToStringList(LayoutStr);
   try
   {
-    Storage->CommaText = LayoutStr;
     TBCustomLoadPositions(OwnerControl, ToolbarReadInt, ToolbarReadString,
       Storage);
     int PixelsPerInch = GetToolbarLayoutPixelsPerInch(Storage, OwnerControl);
@@ -1246,8 +1250,9 @@ bool __fastcall IsCustomShortCut(TShortCut ShortCut)
 class TMasterPasswordDialog : public TCustomDialog
 {
 public:
-  __fastcall TMasterPasswordDialog(bool Current);
+  __fastcall TMasterPasswordDialog(TComponent * AOwner);
 
+  void Init(bool Current);
   bool __fastcall Execute(UnicodeString & CurrentPassword, UnicodeString & NewPassword);
 
 protected:
@@ -1260,9 +1265,15 @@ private:
   TPasswordEdit * ConfirmEdit;
 };
 //---------------------------------------------------------------------------
-__fastcall TMasterPasswordDialog::TMasterPasswordDialog(bool Current) :
-  TCustomDialog(Current ? HELP_MASTER_PASSWORD_CURRENT : HELP_MASTER_PASSWORD_CHANGE)
+// Need to have an Owner argument for SafeFormCreate
+__fastcall TMasterPasswordDialog::TMasterPasswordDialog(TComponent *) :
+  TCustomDialog(EmptyStr)
 {
+}
+//---------------------------------------------------------------------------
+void TMasterPasswordDialog::Init(bool Current)
+{
+  HelpKeyword = Current ? HELP_MASTER_PASSWORD_CURRENT : HELP_MASTER_PASSWORD_CHANGE;
   Caption = LoadStr(MASTER_PASSWORD_CAPTION);
 
   CurrentEdit = new TPasswordEdit(this);
@@ -1359,9 +1370,11 @@ static bool __fastcall DoMasterPasswordDialog(bool Current,
   UnicodeString & NewPassword)
 {
   bool Result;
-  TMasterPasswordDialog * Dialog = new TMasterPasswordDialog(Current);
+  // This can be a standalone dialog when opening session from commandline
+  TMasterPasswordDialog * Dialog = SafeFormCreate<TMasterPasswordDialog>();
   try
   {
+    Dialog->Init(Current);
     UnicodeString CurrentPassword;
     Result = Dialog->Execute(CurrentPassword, NewPassword);
     if (Result)

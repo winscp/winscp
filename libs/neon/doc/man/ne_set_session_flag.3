@@ -2,12 +2,12 @@
 .\"     Title: ne_set_session_flag
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 21 January 2023
+.\"      Date: 29 January 2024
 .\"    Manual: neon API reference
-.\"    Source: neon 0.32.5
+.\"    Source: neon 0.33.0
 .\"  Language: English
 .\"
-.TH "NE_SET_SESSION_FLAG" "3" "21 January 2023" "neon 0.32.5" "neon API reference"
+.TH "NE_SET_SESSION_FLAG" "3" "29 January 2024" "neon 0.33.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -50,44 +50,44 @@ argument enables the flag, and zero disables it\&.
 .PP
 The following flags are defined:
 .PP
-\fBNE_SESSFLAG_PERSIST\fR
+\fBNE_SESSFLAG_PERSIST\fR (default on)
 .RS 4
 disable this flag to prevent use of persistent connections
 .RE
 .PP
-\fBNE_SESSFLAG_ICYPROTO\fR
+\fBNE_SESSFLAG_ICYPROTO\fR (default off)
 .RS 4
 enable this flag to enable support for non\-HTTP ShoutCast\-style "ICY" responses
 .RE
 .PP
-\fBNE_SESSFLAG_SSLv2\fR
+\fBNE_SESSFLAG_SSLv2\fR (default on)
 .RS 4
 disable this flag to disable support for the SSLv2 protocol
 .RE
 .PP
-\fBNE_SESSFLAG_RFC4918\fR
+\fBNE_SESSFLAG_RFC4918\fR (default off)
 .RS 4
 enable this flag to enable support for RFC4918\-only WebDAV features; losing backwards\-compatibility with RFC2518 servers
 .RE
 .PP
-\fBNE_SESSFLAG_CONNAUTH\fR
+\fBNE_SESSFLAG_CONNAUTH\fR (default off)
 .RS 4
 enable this flag if an RFC\-violating connection\-based HTTP authentication scheme is in use
 .RE
 .PP
-\fBNE_SESSFLAG_TLS_SNI\fR
+\fBNE_SESSFLAG_TLS_SNI\fR (default off)
 .RS 4
 disable this flag if a server is used which does not correctly support the TLS SNI extension
 .RE
 .PP
-\fBNE_SESSFLAG_EXPECT100\fR
+\fBNE_SESSFLAG_EXPECT100\fR (default off)
 .RS 4
 enable this flag to enable the request flag
 \fBNE_REQFLAG_EXPECT100\fR
 for new requests
 .RE
 .PP
-\fBNE_SESSFLAG_SHAREPOINT\fR
+\fBNE_SESSFLAG_SHAREPOINT\fR (default off)
 .RS 4
 enable this flag to use various workarounds to improve interoperability with SharePoint
 .RE

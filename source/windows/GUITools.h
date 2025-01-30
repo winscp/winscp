@@ -12,6 +12,7 @@ typedef void __fastcall (__closure* TProcessMessagesEvent)();
 //---------------------------------------------------------------------------
 void GUIFinalize();
 bool __fastcall FindFile(UnicodeString & Path);
+UnicodeString FindPuttyPath();
 bool __fastcall FindTool(const UnicodeString & Name, UnicodeString & Path);
 void __fastcall ExecuteTool(const UnicodeString & Name);
 void __fastcall ExecuteShellChecked(const UnicodeString Path, const UnicodeString Params,
@@ -29,7 +30,6 @@ void OpenSessionInPutty(TSessionData * SessionData);
 bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path);
 UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir,
   const UnicodeString Identity, bool Mask = false);
-bool __fastcall DeleteDirectory(const UnicodeString DirName);
 int __fastcall GetSessionColorImage(TCustomImageList * ImageList, TColor Color, int MaskIndex);
 void __fastcall RegenerateSessionColorsImageList(TCustomImageList * ImageList, int MaskIndex);
 void __fastcall SetSubmenu(TTBXCustomItem * Item, bool Enable);

@@ -146,7 +146,7 @@ static void gpps(settings_r *sesskey, const char *name, const char *def,
  * format of a Filename or FontSpec is platform-dependent. So the
  * platform-dependent functions MUST return some sort of value.
  */
-static void gppfont(settings_r *sesskey, char *name,
+static void gppfont(settings_r *sesskey, const char *name,
                     Conf *conf, int primary)
 {
     FontSpec *result = read_setting_fontspec(sesskey, name);
@@ -686,12 +686,12 @@ void save_open_settings(settings_w *sesskey, Conf *conf)
     write_setting_b(sesskey, "BellOverload", conf_get_bool(conf, CONF_bellovl));
     write_setting_i(sesskey, "BellOverloadN", conf_get_int(conf, CONF_bellovl_n));
     write_setting_i(sesskey, "BellOverloadT", conf_get_int(conf, CONF_bellovl_t)
-#ifdef PUTTY_UNIX_H
+#ifdef PUTTY_UNIX_PLATFORM_H
                     * 1000
 #endif
                     );
     write_setting_i(sesskey, "BellOverloadS", conf_get_int(conf, CONF_bellovl_s)
-#ifdef PUTTY_UNIX_H
+#ifdef PUTTY_UNIX_PLATFORM_H
                     * 1000
 #endif
                     );
@@ -1122,22 +1122,22 @@ void load_open_settings(settings_r *sesskey, Conf *conf)
     gppb(sesskey, "BellOverload", true, conf, CONF_bellovl);
     gppi(sesskey, "BellOverloadN", 5, conf, CONF_bellovl_n);
     i = gppi_raw(sesskey, "BellOverloadT", 2*TICKSPERSEC
-#ifdef PUTTY_UNIX_H
+#ifdef PUTTY_UNIX_PLATFORM_H
                                    *1000
 #endif
                                    );
     conf_set_int(conf, CONF_bellovl_t, i
-#ifdef PUTTY_UNIX_H
+#ifdef PUTTY_UNIX_PLATFORM_H
                  / 1000
 #endif
                  );
     i = gppi_raw(sesskey, "BellOverloadS", 5*TICKSPERSEC
-#ifdef PUTTY_UNIX_H
+#ifdef PUTTY_UNIX_PLATFORM_H
                                    *1000
 #endif
                                    );
     conf_set_int(conf, CONF_bellovl_s, i
-#ifdef PUTTY_UNIX_H
+#ifdef PUTTY_UNIX_PLATFORM_H
                  / 1000
 #endif
                  );

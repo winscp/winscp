@@ -1071,27 +1071,6 @@ void __fastcall TSessionLog::AddStartupInfo(bool System)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TSessionLog::GetTlsVersionName(TTlsVersion TlsVersion)
-{
-  switch (TlsVersion)
-  {
-    default:
-      DebugFail();
-    case ssl2:
-      return "SSLv2";
-    case ssl3:
-      return "SSLv3";
-    case tls10:
-      return "TLSv1.0";
-    case tls11:
-      return "TLSv1.1";
-    case tls12:
-      return "TLSv1.2";
-    case tls13:
-      return "TLSv1.3";
-  }
-}
-//---------------------------------------------------------------------------
 UnicodeString __fastcall TSessionLog::LogSensitive(const UnicodeString & Str)
 {
   if (FConfiguration->LogSensitive && !Str.IsEmpty())
@@ -1233,7 +1212,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
   }
   else
   {
-    ADF(L"Session name: %s (%s)", (Data->SessionName, Data->Source));
+    ADF(L"Session name: %s (%s)", (Data->SessionName, Data->SourceName));
     UnicodeString AddressFamily;
     if (Data->AddressFamily != afAuto)
     {
@@ -1269,20 +1248,20 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     ADF(L"Transfer Protocol: %s", (Data->FSProtocolStr));
     if (Data->UsesSsh || (Data->FSProtocol == fsFTP))
     {
-      TPingType PingType;
+      UnicodeString PingType;
       int PingInterval;
       if (Data->FSProtocol == fsFTP)
       {
-        PingType = Data->FtpPingType;
+        PingType = EnumName(Data->FtpPingType, FtpPingTypeNames);
         PingInterval = Data->FtpPingInterval;
       }
       else
       {
-        PingType = Data->PingType;
+        PingType = EnumName(Data->PingType, PingTypeNames);
         PingInterval = Data->PingInterval;
       }
       ADF(L"Ping type: %s, Ping interval: %d sec; Timeout: %d sec",
-        (EnumName(PingType, PingTypeNames), PingInterval, Data->Timeout));
+        (PingType, PingInterval, Data->Timeout));
       ADF(L"Disable Nagle: %s",
         (BooleanToEngStr(Data->TcpNoDelay)));
     }
@@ -1360,7 +1339,11 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       ADF(L"SFTP Server: %s", ((Data->SftpServer.IsEmpty()? UnicodeString(L"default") : Data->SftpServer)));
       if (Data->SFTPRealPath != asAuto)
       {
-        ADF(L"SFTP Real Path: %s", (EnumName(Data->SFTPRealPath, AutoSwitchNames)));
+        ADF(L"SFTP Real path: %s", (EnumName(Data->SFTPRealPath, AutoSwitchNames)));
+      }
+      if (Data->UsePosixRename)
+      {
+        ADF(L"Use POSIX rename: %s", (BooleanToEngStr(Data->UsePosixRename)));
       }
     }
     bool FtpsOn = false;
@@ -1427,6 +1410,10 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       if (!Data->S3SessionToken.IsEmpty())
       {
         ADF(L"S3: Session token: %s", (Data->S3SessionToken));
+      }
+      if (Data->S3CredentialsEnv)
+      {
+        ADF(L"S3: Credentials from AWS environment: %s", (DefaultStr(Data->S3Profile, L"General")));
       }
     }
     if (FtpsOn)
@@ -1791,7 +1778,8 @@ TApplicationLog::~TApplicationLog()
 void TApplicationLog::Enable(const UnicodeString & Path)
 {
   UnicodeString Dummy;
-  FFile = OpenFile(Path, Now(), NULL, false, Dummy);
+  FPath = Path;
+  FFile = OpenFile(FPath, Now(), NULL, false, Dummy);
   FLogging = true;
 }
 //---------------------------------------------------------------------------

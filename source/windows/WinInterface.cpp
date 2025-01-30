@@ -496,8 +496,10 @@ TForm * __fastcall CreateMoreMessageDialogEx(const UnicodeString Message, TStrin
 unsigned int __fastcall MoreMessageDialog(const UnicodeString Message, TStrings * MoreMessages,
   TQueryType Type, unsigned int Answers, UnicodeString HelpKeyword, const TMessageParams * Params)
 {
+  AppLogFmt(L"Message dialog: %s", (Message));
   std::unique_ptr<TForm> Dialog(CreateMoreMessageDialogEx(Message, MoreMessages, Type, Answers, HelpKeyword, Params));
   unsigned int Result = ExecuteMessageDialog(Dialog.get(), Answers, Params);
+  AppLogFmt(L"Message dialog answer: %d", (Integer(Result)));
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -1071,110 +1073,10 @@ void __fastcall TWinInteractiveCustomCommand::Prompt(
 void __fastcall TWinInteractiveCustomCommand::Execute(
   const UnicodeString & Command, UnicodeString & Value)
 {
-  HANDLE StdOutOutput;
-  HANDLE StdOutInput;
-  HANDLE StdInOutput;
-  HANDLE StdInInput;
-  SECURITY_ATTRIBUTES SecurityAttributes;
-  SecurityAttributes.nLength = sizeof(SecurityAttributes);
-  SecurityAttributes.lpSecurityDescriptor = NULL;
-  SecurityAttributes.bInheritHandle = TRUE;
-  try
-  {
-    if (!CreatePipe(&StdOutOutput, &StdOutInput, &SecurityAttributes, 0))
-    {
-      throw Exception(FMTLOAD(SHELL_PATTERN_ERROR, (Command, L"out")));
-    }
-    else if (!CreatePipe(&StdInOutput, &StdInInput, &SecurityAttributes, 0))
-    {
-      throw Exception(FMTLOAD(SHELL_PATTERN_ERROR, (Command, L"in")));
-    }
-    else
-    {
-      STARTUPINFO StartupInfo;
-      PROCESS_INFORMATION ProcessInformation;
-
-      FillMemory(&StartupInfo, sizeof(StartupInfo), 0);
-      StartupInfo.cb = sizeof(StartupInfo);
-      StartupInfo.wShowWindow = SW_HIDE;
-      StartupInfo.hStdInput = StdInOutput;
-      StartupInfo.hStdOutput = StdOutInput;
-      StartupInfo.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
-
-      if (!CreateProcess(NULL, Command.c_str(), &SecurityAttributes, &SecurityAttributes,
-            TRUE, NORMAL_PRIORITY_CLASS, NULL, NULL, &StartupInfo, &ProcessInformation))
-      {
-        throw Exception(FMTLOAD(SHELL_PATTERN_ERROR, (Command, L"process")));
-      }
-      else
-      {
-        try
-        {
-          // wait until the console program terminated
-          bool Running = true;
-          while (Running)
-          {
-            switch (WaitForSingleObject(ProcessInformation.hProcess, 200))
-            {
-              case WAIT_TIMEOUT:
-                Application->ProcessMessages();
-                break;
-
-              case WAIT_OBJECT_0:
-                Running = false;
-                break;
-
-              default:
-                throw Exception(FMTLOAD(SHELL_PATTERN_ERROR, (Command, L"wait")));
-            }
-          }
-
-          char Buffer[1024];
-          unsigned long Read;
-          while (PeekNamedPipe(StdOutOutput, NULL, 0, NULL, &Read, NULL) &&
-                 (Read > 0))
-
-          {
-            if (!ReadFile(StdOutOutput, &Buffer, Read, &Read, NULL))
-            {
-              throw Exception(FMTLOAD(SHELL_PATTERN_ERROR, (Command, L"read")));
-            }
-            else if (Read > 0)
-            {
-              Value += AnsiToString(Buffer, Read);
-            }
-          }
-
-          // trim trailing cr/lf
-          Value = TrimRight(Value);
-        }
-        __finally
-        {
-          CloseHandle(ProcessInformation.hProcess);
-          CloseHandle(ProcessInformation.hThread);
-        }
-      }
-    }
-  }
-  __finally
-  {
-    if (StdOutOutput != INVALID_HANDLE_VALUE)
-    {
-      CloseHandle(StdOutOutput);
-    }
-    if (StdOutInput != INVALID_HANDLE_VALUE)
-    {
-      CloseHandle(StdOutInput);
-    }
-    if (StdInOutput != INVALID_HANDLE_VALUE)
-    {
-      CloseHandle(StdInOutput);
-    }
-    if (StdInInput != INVALID_HANDLE_VALUE)
-    {
-      CloseHandle(StdInInput);
-    }
-  }
+  DWORD DummyExitCode;
+  ExecuteProcessAndReadOutput(Command, Value, DummyExitCode, false);
+  // trim trailing cr/lf
+  Value = TrimRight(Value);
 }
 //---------------------------------------------------------------------------
 void __fastcall MenuPopup(TPopupMenu * Menu, TButton * Button)
@@ -1300,11 +1202,11 @@ void __fastcall CenterButtonImage(TButton * Button)
     // The margins seem to extend the area over which the image is centered,
     // so we have to set it to a double of desired padding.
     // The original formula is - 2 * ((CaptionWidth / 2) - (ImageWidth / 2) + ScaleByTextHeight(Button, 2))
-    // the one below is equivalent, but with reduced rouding.
+    // the one below is equivalent, but with reduced rounding.
     // Without the change, the rounding caused the space between icon and caption too
     // small on 200% zoom.
     // Note that (CaptionWidth / 2) - (ImageWidth / 2)
-    // is approximatelly same as half of caption width before padding.
+    // is approximately same as half of caption width before padding.
     Button->ImageMargins->Left = -(CaptionWidth - ImageWidth + ScaleByTextHeight(Button, 4));
   }
   else
@@ -1592,7 +1494,7 @@ static void __fastcall AppGetMainFormHandle(void * /*Data*/, HWND & Handle)
   TForm * MainForm = GetMainForm();
   // This, among other, causes minimizing of the top-level non-MainForm minimize other child windows.
   // Like clicking "Minimize" on Progress window over Synchronization progress window over Synchronization checklist window.
-  // Would also have a lot of other effects (hopefully possitive) and may render lot of existing MainFormLike code obsolete.
+  // Would also have a lot of other effects (hopefully positive) and may render lot of existing MainFormLike code obsolete.
   if ((MainForm != NULL) && IsMainFormLike(MainForm) && MainForm->HandleAllocated())
   {
     Handle = MainForm->Handle;

@@ -80,6 +80,7 @@ __fastcall TTerminalManager::TTerminalManager() :
   FPendingConfigurationChange = 0;
   FKeepAuthenticateForm = false;
   FUpdating = 0;
+  FOpeningTerminal = NULL;
 
   FApplicationsEvents.reset(new TApplicationEvents(Application));
   FApplicationsEvents->OnException = ApplicationException;
@@ -131,7 +132,7 @@ __fastcall TTerminalManager::~TTerminalManager()
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::SetQueueConfiguration(TTerminalQueue * Queue)
 {
-  Queue->TransfersLimit = GUIConfiguration->QueueTransfersLimit;
+  Queue->TransfersLimit = Configuration->QueueTransfersLimit;
   Queue->KeepDoneItemsFor =
     (GUIConfiguration->QueueKeepDoneItems ? GUIConfiguration->QueueKeepDoneItemsFor : 0);
 }
@@ -312,6 +313,8 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
   UnicodeString OrigRemoteDirectory = Terminal->SessionData->RemoteDirectory;
   try
   {
+    TValueRestorer<TTerminal *> OpeningTerminalRestorer(FOpeningTerminal);
+    FOpeningTerminal = Terminal;
     TTerminalThread * TerminalThread = new TTerminalThread(Terminal);
     TerminalThread->AllowAbandon = (Terminal == ActiveTerminal);
     try
@@ -759,6 +762,7 @@ void __fastcall TTerminalManager::DoSetActiveSession(TManagedTerminal * value, b
     {
       NonVisualDataModule->StartBusy();
     }
+    void * Focus = NULL;
     try
     {
       // here used to be call to TCustomScpExporer::UpdateSessionData (now UpdateSession)
@@ -768,6 +772,7 @@ void __fastcall TTerminalManager::DoSetActiveSession(TManagedTerminal * value, b
       FActiveSession = value;
       if (ScpExplorer)
       {
+        Focus = ScpExplorer->SaveFocus();
         if ((ActiveSession != NULL) &&
             ((ActiveSession->Status == ssOpened) || ActiveSession->Disconnected || ActiveSession->LocalBrowser))
         {
@@ -851,6 +856,10 @@ void __fastcall TTerminalManager::DoSetActiveSession(TManagedTerminal * value, b
       if (NonVisualDataModule != NULL)
       {
         NonVisualDataModule->EndBusy();
+      }
+      if ((Focus != NULL) && DebugAlwaysTrue(ScpExplorer != NULL))
+      {
+        ScpExplorer->RestoreFocus(Focus);
       }
     }
   }
@@ -1291,11 +1300,12 @@ void __fastcall TTerminalManager::TerminalShowExtendedException(
 static TDateTime DirectoryReadingProgressDelay(0, 0, 1, 500);
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalReadDirectoryProgress(
-  TObject * /*Sender*/, int Progress, int ResolvedLinks, bool & Cancel)
+  TObject * Sender, int Progress, int ResolvedLinks, bool & Cancel)
 {
+  DebugAlwaysTrue((Sender == FOpeningTerminal) == (FAuthenticateForm != NULL));
   if (Progress == 0)
   {
-    if (ScpExplorer != NULL)
+    if ((ScpExplorer != NULL) && (Sender != FOpeningTerminal))
     {
       // See also TCustomScpExplorerForm::RemoteDirViewBusy
       ScpExplorer->LockWindow();
@@ -1323,7 +1333,7 @@ void __fastcall TTerminalManager::TerminalReadDirectoryProgress(
     }
     else
     {
-      if (ScpExplorer != NULL)
+      if ((ScpExplorer != NULL) && (Sender != FOpeningTerminal))
       {
         ScpExplorer->UnlockWindow();
       }

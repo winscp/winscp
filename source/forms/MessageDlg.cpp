@@ -75,6 +75,7 @@ __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner)
   MessageMemo = NULL;
   MessageBrowserPanel = NULL;
   MessageBrowser = NULL;
+  NeverAskAgainCheck = NULL;
   FUpdateForShiftStateTimer = NULL;
   UseSystemSettingsPre(this);
   FDummyForm = new TForm(this);
@@ -360,6 +361,10 @@ void __fastcall TMessageForm::Dispatch(void * Message)
     if (MessageBrowser != NULL)
     {
       LoadMessageBrowser();
+    }
+    if (NeverAskAgainCheck != NULL)
+    {
+      AutoSizeCheckBox(NeverAskAgainCheck);
     }
     TForm::Dispatch(Message);
   }
@@ -944,12 +949,11 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   }
 
   int NeverAskAgainWidth = 0;
+  int NeverAskAgainBaseWidth = 0;
   if (!NeverAskAgainCaption.IsEmpty())
   {
-    NeverAskAgainWidth =
-      ScaleByTextHeightRunTime(Result, 16) + // checkbox
-      Result->Canvas->TextWidth(NeverAskAgainCaption) +
-      ScaleByTextHeightRunTime(Result, 16); // margin
+    NeverAskAgainBaseWidth = CalculateCheckBoxWidth(Result, NeverAskAgainCaption);
+    NeverAskAgainWidth = NeverAskAgainBaseWidth + ScaleByTextHeightRunTime(Result, 8); // even more margin
   }
 
   int ButtonSpacing = ScaleByTextHeightRunTime(Result, mcButtonSpacing);
@@ -1211,23 +1215,23 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   if (!NeverAskAgainCaption.IsEmpty() &&
       !ButtonControls.empty())
   {
-    TCheckBox * NeverAskAgainCheck = new TCheckBox(Result);
-    NeverAskAgainCheck->Name = L"NeverAskAgainCheck";
-    NeverAskAgainCheck->Parent = Result;
-    NeverAskAgainCheck->Caption = NeverAskAgainCaption;
+    Result->NeverAskAgainCheck = new TCheckBox(Result);
+    Result->NeverAskAgainCheck->Name = L"NeverAskAgainCheck";
+    Result->NeverAskAgainCheck->Parent = Result;
+    Result->NeverAskAgainCheck->Caption = NeverAskAgainCaption;
     // Previously we set anchor to akBottom, but as we do not do that for buttons, we removed that.
     // When showing window on 100% DPI monitor, with system DPI 100%, but main monitor 150%,
     // the title bar seems to start on 150% DPI reducing later, leaving the form client height
     // sligtly higher than needed and the checkbox being aligned differently than the button.
-    // Removing the akBottom aligning improves this sligtly, while the main problem stil should be fixed.
+    // Removing the akBottom aligning improves this sligtly, while the main problem still should be fixed.
 
     TButton * FirstButton = ButtonControls[0];
-    int NeverAskAgainHeight = ScaleByTextHeightRunTime(Result, NeverAskAgainCheck->Height);
+    int NeverAskAgainHeight = ScaleByTextHeightRunTime(Result, Result->NeverAskAgainCheck->Height);
     int NeverAskAgainTop = FirstButton->Top + ((FirstButton->Height - NeverAskAgainHeight) / 2);
     int NeverAskAgainLeft = HorzMargin;
 
-    NeverAskAgainCheck->SetBounds(
-      NeverAskAgainLeft, NeverAskAgainTop, NeverAskAgainWidth, NeverAskAgainHeight);
+    Result->NeverAskAgainCheck->SetBounds(
+      NeverAskAgainLeft, NeverAskAgainTop, NeverAskAgainBaseWidth, NeverAskAgainHeight);
   }
 
   return Result;

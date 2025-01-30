@@ -16,15 +16,16 @@
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
-bool __fastcall DoRemoteCopyDialog(TStrings * Sessions, TStrings * Directories,
+bool __fastcall DoRemoteCopyDialog(
+  TStrings * Sessions, TStrings * Directories,
   TDirectRemoteCopy AllowDirectCopy, bool Multi, void *& Session, UnicodeString & Target, UnicodeString & FileMask,
-  bool & DirectCopy, void * CurrentSession)
+  bool & DirectCopy, void * CurrentSession, TDirectoryExistsEvent OnDirectoryExists, bool TargetConfirmed)
 {
   bool Result;
   TRemoteTransferDialog * Dialog = SafeFormCreate<TRemoteTransferDialog>();
   try
   {
-    Dialog->Init(Multi, Sessions, Directories, AllowDirectCopy, CurrentSession);
+    Dialog->Init(Multi, Sessions, Directories, AllowDirectCopy, CurrentSession, OnDirectoryExists, TargetConfirmed);
     Result = Dialog->Execute(Session, Target, FileMask, DirectCopy);
   }
   __finally
@@ -42,8 +43,9 @@ __fastcall TRemoteTransferDialog::TRemoteTransferDialog(TComponent * Owner)
   Caption = LoadStr(REMOTE_COPY_TITLE);
 }
 //---------------------------------------------------------------------------
-void __fastcall TRemoteTransferDialog::Init(bool Multi, TStrings * Sessions,
-  TStrings * Directories, TDirectRemoteCopy AllowDirectCopy, void * CurrentSession)
+void __fastcall TRemoteTransferDialog::Init(
+  bool Multi, TStrings * Sessions, TStrings * Directories, TDirectRemoteCopy AllowDirectCopy,
+  void * CurrentSession, TDirectoryExistsEvent OnDirectoryExists, bool TargetConfirmed)
 {
   FMulti = Multi;
   SessionCombo->Items = Sessions;
@@ -52,6 +54,8 @@ void __fastcall TRemoteTransferDialog::Init(bool Multi, TStrings * Sessions,
   DebugAssert(SessionCombo->Items->Count == FDirectories->Count);
   FAllowDirectCopy = AllowDirectCopy;
   FCurrentSession = CurrentSession;
+  FOnDirectoryExists = OnDirectoryExists;
+  FTargetConfirmed = TargetConfirmed;
   LoadDialogImage(Image, L"Duplicate L to R");
 }
 //---------------------------------------------------------------------------
@@ -69,20 +73,26 @@ bool __fastcall TRemoteTransferDialog::Execute(void *& Session, UnicodeString & 
   DirectoryEdit->Items = CustomWinConfiguration->History[L"RemoteTarget"];
   DirectoryEdit->Text = UnixIncludeTrailingBackslash(Target) + FileMask;
   FDirectCopy = DirectCopy;
+  FOriginalTarget = Target;
   UpdateNotDirectCopyCheck();
   bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
-    Session = SessionCombo->Items->Objects[SessionCombo->ItemIndex];
+    Session = GetSelectedSession();
     CustomWinConfiguration->History[L"RemoteTarget"] = DirectoryEdit->Items;
-    Target = UnixExtractFilePath(DirectoryEdit->Text);
+    Target = GetTarget();
     FileMask = GetFileMask();
     DirectCopy = !NotDirectCopyCheck->Checked;
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TRemoteTransferDialog::GetFileMask()
+UnicodeString TRemoteTransferDialog::GetTarget()
+{
+  return UnixExtractFilePath(DirectoryEdit->Text);
+}
+//---------------------------------------------------------------------------
+UnicodeString TRemoteTransferDialog::GetFileMask()
 {
   return UnixExtractFileName(DirectoryEdit->Text);
 }
@@ -139,6 +149,17 @@ void __fastcall TRemoteTransferDialog::FormCloseQuery(TObject * /*Sender*/,
 {
   if (ModalResult == DefaultResult(this))
   {
+    bool TargetConfirmed =
+      FTargetConfirmed &&
+      UnixSamePath(GetTarget(), FOriginalTarget);
+
+    if (!TargetConfirmed &&
+        !IsFileNameMask(GetFileMask()) &&
+        FOnDirectoryExists(GetSelectedSession(), DirectoryEdit->Text))
+    {
+      DirectoryEdit->Text = UnixCombinePaths(DirectoryEdit->Text, AnyMask);
+    }
+
     if (!IsFileNameMask(GetFileMask()) && FMulti)
     {
       UnicodeString Message =
@@ -150,13 +171,15 @@ void __fastcall TRemoteTransferDialog::FormCloseQuery(TObject * /*Sender*/,
     }
 
     if (IsCurrentSessionSelected() &&
-        (FAllowDirectCopy == drcConfirmCommandSession) &&
+        ((FAllowDirectCopy == drcConfirmCommandSession) || (FAllowDirectCopy == drcConfirmCommandSessionDirs)) &&
         !NotDirectCopyCheck->Checked &&
         GUIConfiguration->ConfirmCommandSession)
     {
       TMessageParams Params(mpNeverAskAgainCheck);
-      unsigned int Answer = MessageDialog(LoadStr(REMOTE_COPY_COMMAND_SESSION2),
-        qtConfirmation, qaOK | qaCancel, HelpKeyword, &Params);
+      int ObjectNamePart = (FAllowDirectCopy == drcConfirmCommandSession) ? 1 : 2;
+      UnicodeString ObjectName = LoadStrPart(REMOTE_COPY_COMMAND_SESSION_FILES_DIRECTORIES, ObjectNamePart);
+      UnicodeString Message = FMTLOAD(REMOTE_COPY_COMMAND_SESSION3, (ObjectName, ObjectName, ObjectName));
+      unsigned int Answer = MessageDialog(Message, qtConfirmation, qaOK | qaCancel, HelpKeyword, &Params);
       if (Answer == qaNeverAskAgain)
       {
         GUIConfiguration->ConfirmCommandSession = false;
@@ -178,8 +201,13 @@ void __fastcall TRemoteTransferDialog::NotDirectCopyCheckClick(
   }
 }
 //---------------------------------------------------------------------------
+void * TRemoteTransferDialog::GetSelectedSession()
+{
+  return SessionCombo->Items->Objects[SessionCombo->ItemIndex];
+}
+//---------------------------------------------------------------------------
 bool __fastcall TRemoteTransferDialog::IsCurrentSessionSelected()
 {
-  return (SessionCombo->Items->Objects[SessionCombo->ItemIndex] == FCurrentSession);
+  return (GetSelectedSession() == FCurrentSession);
 }
 //---------------------------------------------------------------------------

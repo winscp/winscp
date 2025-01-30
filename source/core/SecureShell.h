@@ -23,6 +23,7 @@ enum TSshImplementation { sshiUnknown, sshiOpenSSH, sshiProFTPD, sshiBitvise, ss
 struct ScpLogPolicy;
 struct LogContext;
 struct ScpSeat;
+enum TSecureShellMode { ssmNone, ssmUploading, ssmDownloading };
 //---------------------------------------------------------------------------
 class TSecureShell
 {
@@ -45,6 +46,7 @@ private:
   bool FStoredPasswordTried;
   bool FStoredPasswordTriedForKI;
   bool FStoredPassphraseTried;
+  bool FAuthenticationCancelled;
   bool FOpened;
   bool FClosed;
   int FWaiting;
@@ -100,7 +102,7 @@ private:
   void __fastcall DispatchSendBuffer(int BufSize);
   void __fastcall SendBuffer(unsigned int & Result);
   unsigned int __fastcall TimeoutPrompt(TQueryParamsTimerEvent PoolEvent);
-  void TimeoutAbort(unsigned int Answer);
+  void TimeoutAbort(unsigned int Answer, bool Sending);
   bool __fastcall TryFtp();
   UnicodeString __fastcall ConvertInput(const RawByteString & Input);
   void __fastcall GetRealHost(UnicodeString & Host, int & Port);
@@ -171,11 +173,11 @@ public:
   const UnicodeString & __fastcall GetStdError();
   void __fastcall VerifyHostKey(
     const UnicodeString & Host, int Port, const UnicodeString & KeyType, const UnicodeString & KeyStr,
-    const UnicodeString & FingerprintSHA256, const UnicodeString & FingerprintMD5);
+    const UnicodeString & FingerprintSHA256, const UnicodeString & FingerprintMD5,
+    bool IsCertificate, int CACount, bool AlreadyVerified);
   bool __fastcall HaveHostKey(UnicodeString Host, int Port, const UnicodeString KeyType);
-  void __fastcall AskAlg(UnicodeString AlgType, UnicodeString AlgName);
+  void AskAlg(const UnicodeString & AlgType, const UnicodeString & AlgName, int WeakCryptoReason);
   void __fastcall DisplayBanner(const UnicodeString & Banner);
-  void __fastcall OldKeyfileWarning();
   void __fastcall PuttyLogEvent(const char * Str);
   UnicodeString __fastcall ConvertFromPutty(const char * Str, int Length);
   struct callback_set * GetCallbackSet();
@@ -189,6 +191,7 @@ public:
   __property bool Simple = { read = FSimple, write = FSimple };
   __property TSshImplementation SshImplementation = { read = FSshImplementation };
   __property bool UtfStrings = { read = FUtfStrings, write = FUtfStrings };
+  TSecureShellMode Mode;
 };
 //---------------------------------------------------------------------------
 #endif

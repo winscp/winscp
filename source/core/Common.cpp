@@ -9,6 +9,7 @@
 #include "Interface.h"
 #include <StrUtils.hpp>
 #include <DateUtils.hpp>
+#include <System.IOUtils.hpp>
 #include <math.h>
 #include <shlobj.h>
 #include <limits>
@@ -18,6 +19,7 @@
 #include <psapi.h>
 #include <CoreMain.h>
 #include <SessionInfo.h>
+#include <Soap.EncdDecd.hpp>
 #include <openssl/pkcs12.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
@@ -28,6 +30,7 @@
 const wchar_t * DSTModeNames = L"Win;Unix;Keep";
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+const UnicodeString AnyMask = L"*.*";
 const wchar_t EngShortMonthNames[12][4] =
   {L"Jan", L"Feb", L"Mar", L"Apr", L"May", L"Jun",
    L"Jul", L"Aug", L"Sep", L"Oct", L"Nov", L"Dec"};
@@ -134,7 +137,7 @@ UnicodeString MakeValidFileName(UnicodeString FileName)
   return FileName;
 }
 //---------------------------------------------------------------------------
-UnicodeString RootKeyToStr(HKEY RootKey)
+UnicodeString RootKeyToStr(HKEY RootKey, const UnicodeString & Default)
 {
   if (RootKey == HKEY_USERS) return L"HKU";
     else
@@ -148,7 +151,13 @@ UnicodeString RootKeyToStr(HKEY RootKey)
     else
   if (RootKey == HKEY_DYN_DATA) return L"HKDD";
     else
-  {  Abort(); return L""; };
+  {
+    if (Default.IsEmpty())
+    {
+      Abort();
+    }
+    return Default;
+  };
 }
 //---------------------------------------------------------------------------
 UnicodeString BooleanToEngStr(bool B)
@@ -319,6 +328,11 @@ UnicodeString DelimitStr(const UnicodeString & Str, wchar_t Quote)
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString MidStr(const UnicodeString & Text, int Start)
+{
+  return Text.SubString(Start, Text.Length() - Start + 1);
+}
+//---------------------------------------------------------------------------
 UnicodeString ShellQuoteStr(const UnicodeString & Str)
 {
   wchar_t Quote = L'"';
@@ -465,8 +479,31 @@ UnicodeString RemoveEmptyLines(const UnicodeString & S)
 //---------------------------------------------------------------------------
 bool IsNumber(const UnicodeString Str)
 {
-  int Value;
-  return TryStrToInt(Str, Value);
+  bool Result = (Str.Length() > 0);
+  for (int Index = 1; (Index < Str.Length()) && Result; Index++)
+  {
+    wchar_t C = Str[Index];
+    if ((C < L'0') || (C > L'9'))
+    {
+      Result = false;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+UnicodeString EncodeStrToBase64(const RawByteString & Str)
+{
+  UnicodeString Result = EncodeBase64(Str.c_str(), Str.Length());
+  Result = ReplaceStr(Result, sLineBreak, EmptyStr);
+  return Result;
+}
+//---------------------------------------------------------------------------
+RawByteString DecodeBase64ToStr(const UnicodeString & Str)
+{
+  TBytes Bytes = DecodeBase64(Str);
+  // This might be the same as TEncoding::ASCII->GetString.
+  // const_cast: The operator[] const is (badly?) implemented to return by value
+  return RawByteString(reinterpret_cast<const char *>(&const_cast<TBytes &>(Bytes)[0]), Bytes.Length);
 }
 //---------------------------------------------------------------------------
 UnicodeString Base64ToUrlSafe(const UnicodeString & S)
@@ -940,7 +977,7 @@ int __fastcall CompareLogicalText(
   {
     Result = lstrcmpi(S1.c_str(), S2.c_str());
   }
-  // For deterministics results
+  // For deterministic results
   if (Result == 0)
   {
     Result = lstrcmp(S1.c_str(), S2.c_str());
@@ -1387,8 +1424,8 @@ RawByteString __fastcall HexToBytes(const UnicodeString Hex)
   {
     for (int i = 1; i <= Hex.Length(); i += 2)
     {
-      P1 = Digits.Pos((wchar_t)toupper(Hex[i]));
-      P2 = Digits.Pos((wchar_t)toupper(Hex[i + 1]));
+      P1 = Digits.Pos(towupper(Hex[i]));
+      P2 = Digits.Pos(towupper(Hex[i + 1]));
       if (P1 <= 0 || P2 <= 0)
       {
         Result = L"";
@@ -1407,8 +1444,8 @@ unsigned char __fastcall HexToByte(const UnicodeString Hex)
 {
   static UnicodeString Digits = L"0123456789ABCDEF";
   DebugAssert(Hex.Length() == 2);
-  int P1 = Digits.Pos((wchar_t)toupper(Hex[1]));
-  int P2 = Digits.Pos((wchar_t)toupper(Hex[2]));
+  int P1 = Digits.Pos(towupper(Hex[1]));
+  int P2 = Digits.Pos(towupper(Hex[2]));
 
   return
     static_cast<unsigned char>(((P1 <= 0) || (P2 <= 0)) ? 0 : (((P1 - 1) << 4) + (P2 - 1)));
@@ -1486,6 +1523,11 @@ bool TSearchRecSmart::IsHidden() const
   return FLAGSET(Attr, faHidden);
 }
 //---------------------------------------------------------------------------
+UnicodeString TSearchRecChecked::GetFilePath() const
+{
+  return TPath::Combine(Dir, Name);
+}
+//---------------------------------------------------------------------------
 TSearchRecOwned::~TSearchRecOwned()
 {
   if (Opened)
@@ -1514,6 +1556,7 @@ int __fastcall FindCheck(int Result, const UnicodeString & Path)
 int __fastcall FindFirstUnchecked(const UnicodeString & Path, int Attr, TSearchRecChecked & F)
 {
   F.Path = Path;
+  F.Dir = ExtractFilePath(Path);
   int Result = FindFirst(ApiPath(Path), Attr, F);
   F.Opened = (Result == 0);
   return Result;
@@ -1584,15 +1627,14 @@ void __fastcall ProcessLocalDirectory(UnicodeString DirName,
     FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
   }
 
-  DirName = IncludeTrailingBackslash(DirName);
   TSearchRecOwned SearchRec;
-  if (FindFirstChecked(DirName + L"*.*", FindAttrs, SearchRec) == 0)
+  if (FindFirstChecked(TPath::Combine(DirName, AnyMask), FindAttrs, SearchRec) == 0)
   {
     do
     {
       if (SearchRec.IsRealFile())
       {
-        CallBackFunc(DirName + SearchRec.Name, SearchRec, Param);
+        CallBackFunc(SearchRec.GetFilePath(), SearchRec, Param);
       }
 
     } while (FindNextChecked(SearchRec) == 0);
@@ -2061,7 +2103,7 @@ bool __fastcall TryStrToSize(UnicodeString SizeStr, __int64 & Size)
       Result = (SizeStr.Length() == 1);
       if (Result)
       {
-        wchar_t Unit = (wchar_t)toupper(SizeStr[1]);
+        wchar_t Unit = towupper(SizeStr[1]);
         switch (Unit)
         {
           case GigaSize:
@@ -2523,11 +2565,11 @@ static bool __fastcall DoRecursiveDeleteFile(
 
   if (!ToRecycleBin)
   {
-    TSearchRecChecked SearchRec;
-    Result = FileSearchRec(FileName, SearchRec);
+    TSearchRecChecked InitialSearchRec;
+    Result = FileSearchRec(FileName, InitialSearchRec);
     if (Result)
     {
-      if (!SearchRec.IsDirectory())
+      if (!InitialSearchRec.IsDirectory())
       {
         Result = DeleteFile(ApiPath(FileName));
         if (Result)
@@ -2537,41 +2579,35 @@ static bool __fastcall DoRecursiveDeleteFile(
       }
       else
       {
+        TSearchRecOwned SearchRec;
         Result = (FindFirstUnchecked(FileName + L"\\*", faAnyFile, SearchRec) == 0);
 
         if (Result)
         {
-          try
+          do
           {
-            do
+            UnicodeString FileName2 = SearchRec.GetFilePath();
+            if (SearchRec.IsDirectory())
             {
-              UnicodeString FileName2 = FileName + L"\\" + SearchRec.Name;
-              if (SearchRec.IsDirectory())
+              if (SearchRec.IsRealFile())
               {
-                if (SearchRec.IsRealFile())
-                {
-                  Result = DoRecursiveDeleteFile(FileName2, DebugAlwaysFalse(ToRecycleBin), AErrorPath, Deleted);
-                }
+                Result = DoRecursiveDeleteFile(FileName2, DebugAlwaysFalse(ToRecycleBin), AErrorPath, Deleted);
+              }
+            }
+            else
+            {
+              Result = DeleteFile(ApiPath(FileName2));
+              if (!Result)
+              {
+                AErrorPath = FileName2;
               }
               else
               {
-                Result = DeleteFile(ApiPath(FileName2));
-                if (!Result)
-                {
-                  AErrorPath = FileName2;
-                }
-                else
-                {
-                  Deleted++;
-                }
+                Deleted++;
               }
             }
-            while (Result && (FindNextUnchecked(SearchRec) == 0));
           }
-          __finally
-          {
-            FindClose(SearchRec);
-          }
+          while (Result && (FindNextUnchecked(SearchRec) == 0));
 
           if (Result)
           {
@@ -2899,6 +2935,13 @@ UnicodeString __fastcall ExtractFileNameFromUrl(const UnicodeString & Url)
   }
   return Result;
 }
+//---------------------------------------------------------------------
+bool IsDomainOrSubdomain(const UnicodeString & FullDomain, const UnicodeString & Domain)
+{
+  return
+    SameText(FullDomain, Domain) ||
+    EndsText(L"." + Domain, FullDomain);
+}
 //---------------------------------------------------------------------------
 UnicodeString __fastcall EscapeHotkey(const UnicodeString & Caption)
 {
@@ -3079,6 +3122,12 @@ bool __fastcall IsWine()
 int GIsUWP = -1;
 UnicodeString GPackageName;
 //---------------------------------------------------------------------------
+void EnableUWPTestMode()
+{
+  GIsUWP = 1;
+  AppLog(L"UWP test mode");
+}
+//---------------------------------------------------------------------------
 static void NeedUWPData()
 {
   if (GIsUWP < 0)
@@ -3233,16 +3282,25 @@ UnicodeString __fastcall FormatSize(__int64 Size)
   return FormatNumber(Size);
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall FormatDateTimeSpan(const UnicodeString TimeFormat, TDateTime DateTime)
+UnicodeString FormatDateTimeSpan(const TDateTime & DateTime)
 {
   UnicodeString Result;
-  if (int(DateTime) > 0)
+  if ((0 <= DateTime) && (DateTime <= MaxDateTime))
   {
-    Result = IntToStr(int(DateTime)) + L", ";
+    TTimeStamp TimeStamp = DateTimeToTimeStamp(DateTime);
+    int Days = TimeStamp.Date - DateDelta;
+    if (abs(Days) >= 4)
+    {
+      Result = FMTLOAD(DAYS_SPAN, (Days));
+    }
+    else
+    {
+      unsigned short Hour, Min, Sec, Dummy;
+      DecodeTime(DateTime, Hour, Min, Sec, Dummy);
+      int TotalHours = static_cast<int>(Hour) + (Days * HoursPerDay);
+      Result = FORMAT(L"%d%s%.2d%s%.2d", (TotalHours, FormatSettings.TimeSeparator, Min, FormatSettings.TimeSeparator, Sec));
+    }
   }
-  // days are decremented, because when there are too many of them,
-  // "integer overflow" error occurs
-  Result += FormatDateTime(TimeFormat, DateTime - int(DateTime));
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -3382,6 +3440,13 @@ UnicodeString __fastcall StringsToText(TStrings * Strings)
   return Result;
 }
 //---------------------------------------------------------------------------
+TStringList * __fastcall CommaTextToStringList(const UnicodeString & CommaText)
+{
+  std::unique_ptr<TStringList> List(new TStringList());
+  List->CommaText = CommaText;
+  return List.release();
+}
+//---------------------------------------------------------------------------
 TStrings * __fastcall CloneStrings(TStrings * Strings)
 {
   std::unique_ptr<TStringList> List(new TStringList());
@@ -3426,29 +3491,17 @@ TStringList * __fastcall CreateSortedStringList(bool CaseSensitive, System::Type
   return Result;
 }
 //---------------------------------------------------------------------------
-static UnicodeString __fastcall NormalizeIdent(UnicodeString Ident)
+bool SameIdent(const UnicodeString & Ident1, const UnicodeString & Ident2)
 {
-  int Index = 1;
-  while (Index <= Ident.Length())
-  {
-    if (Ident[Index] == L'-')
-    {
-      Ident.Delete(Index, 1);
-    }
-    else
-    {
-      Index++;
-    }
-  }
-  return Ident;
+  const UnicodeString Dash(L"-");
+  return SameText(ReplaceStr(Ident1, Dash, EmptyStr), ReplaceStr(Ident2, Dash, EmptyStr));
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall FindIdent(const UnicodeString & Ident, TStrings * Idents)
 {
-  UnicodeString NormalizedIdent(NormalizeIdent(Ident));
   for (int Index = 0; Index < Idents->Count; Index++)
   {
-    if (SameText(NormalizedIdent, NormalizeIdent(Idents->Strings[Index])))
+    if (SameIdent(Ident, Idents->Strings[Index]))
     {
       return Idents->Strings[Index];
     }
@@ -4151,7 +4204,7 @@ UnicodeString __fastcall AssemblyNewClassInstanceStart(
       // Historically we use Dim .. With instead of object initilizer.
       // But for inline use, we have to use object initialize.
       // We should consistently always use object initilizers.
-      // Unfortunatelly VB.NET object initializer (contrary to C#) does not allow trailing comma.
+      // Unfortunately VB.NET object initializer (contrary to C#) does not allow trailing comma.
       Result += SpaceOrPara + RtfKeyword(L"With");
       if (Inline)
       {
@@ -4300,7 +4353,8 @@ UnicodeString __fastcall GetFileMimeType(const UnicodeString & FileName)
 TStrings * TlsCipherList()
 {
   std::unique_ptr<TStrings> Result(new TStringList());
-  const SSL_METHOD * Method = DTLS_client_method();
+  // Exact method that neon uses. FTP uses TLS_method() (FTP needs server method too). But they have the same ciphers.
+  const SSL_METHOD * Method = TLS_client_method();
   SSL_CTX * Ctx = SSL_CTX_new(Method);
   SSL * Ssl = SSL_new(Ctx);
 
@@ -4478,6 +4532,11 @@ void NotImplemented()
 {
   DebugFail();
   throw Exception(L"Not implemented");
+}
+//---------------------------------------------------------------------------
+void NotSupported()
+{
+  throw Exception(MainInstructions(LoadStr(NOTSUPPORTED)));
 }
 //---------------------------------------------------------------------------
 UnicodeString GetDividerLine()

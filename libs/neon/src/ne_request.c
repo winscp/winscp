@@ -41,6 +41,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <time.h>
 
 #include "ne_internal.h"
 
@@ -66,14 +67,18 @@ struct body_reader {
     struct body_reader *next;
 };
 
+struct interim_handler {
+    ne_interim_response_fn fn;
+    void *userdata;
+    struct interim_handler *next;
+};
+
 struct field {
     char *name, *value;
     size_t vlen;
     struct field *next;
 };
 
-/* Maximum number of interim responses. */
-#define MAX_INTERIM_RESPONSES (128)
 /* Maximum number of header fields per response: */
 #define MAX_HEADER_FIELDS (100)
 /* Size of hash table; 43 is the smallest prime for which the common
@@ -155,6 +160,7 @@ struct ne_request_s {
 
     /* List of callbacks which are passed response body blocks */
     struct body_reader *body_readers;
+    struct interim_handler *interim_handler;
 
     /*** Miscellaneous ***/
     unsigned int method_is_head;
@@ -167,6 +173,7 @@ struct ne_request_s {
 };
 
 static int open_connection(ne_session *sess);
+static int read_response_headers(ne_request *req, int clear);
 
 /* Returns hash value for header 'name', converting it to lower-case
  * in-place. */
@@ -517,8 +524,8 @@ int ne_accept_2xx(void *userdata, ne_request *req, const ne_status *st)
     return (st->klass == 2);
 }
 
-ne_request *ne_request_create(ne_session *sess,
-			      const char *method, const char *path) 
+ne_request *ne_request_create(ne_session *sess, const char *method,
+                              const char *target)
 {
     ne_request *req = ne_calloc(sizeof *req);
 
@@ -528,6 +535,8 @@ ne_request *ne_request_create(ne_session *sess,
     req->flags[NE_REQFLAG_IDEMPOTENT] = 1;
     /* Expect-100 default follows the corresponding session flag. */
     req->flags[NE_REQFLAG_EXPECT100] = sess->flags[NE_SESSFLAG_EXPECT100];
+    /* 1xx timeouts default to on. */
+    req->flags[NE_REQFLAG_1XXTIMEOUT] = 1;
 
     /* Add in the fixed headers */
     req->headers = initial_request_headers(req);
@@ -538,12 +547,12 @@ ne_request *ne_request_create(ne_session *sess,
 
     /* Only use an absoluteURI here when we might be using an HTTP
      * proxy, and SSL is in use: some servers can't parse them. */
-    if (sess->any_proxy_http && !req->session->use_ssl && path[0] == '/')
+    if (sess->any_proxy_http && !req->session->use_ssl && target[0] == '/')
         req->target = ne_concat(req->session->scheme, "://",
                                 req->session->server.hostport,
-                                path, NULL);
+                                target, NULL);
     else
-        req->target = ne_strdup(path);
+        req->target = ne_strdup(target);
 
     {
 	struct hook *hk;
@@ -759,10 +768,22 @@ void ne_add_response_body_reader(ne_request *req, ne_accept_response acpt,
     req->body_readers = new;
 }
 
+void ne_add_interim_handler(ne_request *req, ne_interim_response_fn fn,
+                            void *userdata)
+{
+    struct interim_handler *new = ne_malloc(sizeof *new);
+
+    new->fn = fn;
+    new->userdata = userdata;
+    new->next = req->interim_handler;
+    req->interim_handler = new;
+}
+
 void ne_request_destroy(ne_request *req) 
 {
     NE_DEBUG_WINSCP_CONTEXT(req->session);
     struct body_reader *rdr, *next_rdr;
+    struct interim_handler *ih, *next_ih;
     struct hook *hk, *next_hk;
 
     ne_free(req->target);
@@ -771,6 +792,11 @@ void ne_request_destroy(ne_request *req)
     for (rdr = req->body_readers; rdr != NULL; rdr = next_rdr) {
 	next_rdr = rdr->next;
 	ne_free(rdr);
+    }
+
+    for (ih = req->interim_handler; ih; ih = next_ih) {
+        next_ih = ih->next;
+        ne_free(ih);
     }
 
     free_response_headers(req);
@@ -1039,18 +1065,9 @@ static int read_status_line(ne_request *req, ne_status *status, int retry)
     return 0;
 }
 
-/* Discard a set of message headers. */
-static int discard_headers(ne_request *req)
-{
-    NE_DEBUG_WINSCP_CONTEXT(req->session);
-    do {
-	SOCK_ERR(req, ne_sock_readline(req->session->socket, req->respbuf, 
-				       sizeof req->respbuf),
-		 _("Could not read interim response headers"));
-	NE_DEBUG(NE_DBG_HTTP, "[discard] < %s", req->respbuf);
-    } while (strcmp(req->respbuf, EOL) != 0);
-    return NE_OK;
-}
+#define INTERIM_TIMEOUT(req_) \
+    (((req_)->flags[NE_REQFLAG_1XXTIMEOUT] && (req_)->session->rdtimeout) \
+      ? time(NULL) + (req_)->session->rdtimeout : 0)
 
 /* Send the request, and read the response Status-Line. Returns:
  *   NE_RETRY   connection closed by server; persistent connection
@@ -1067,7 +1084,7 @@ static int send_request(ne_request *req, const ne_buffer *request)
     ne_status *const status = &req->status;
     int sentbody = 0; /* zero until body has been sent. */
     int ret, retry; /* retry non-zero whilst the request should be retried */
-    unsigned count;
+    time_t timeout = INTERIM_TIMEOUT(req);
     ssize_t sret;
 
     /* Send the Request-Line and headers */
@@ -1098,25 +1115,42 @@ static int send_request(ne_request *req, const ne_buffer *request)
 
     /* Loop eating interim 1xx responses; RFC 7231§6.2 says clients
      * MUST be able to parse unsolicited interim responses. */
-    for (count = 0; count < MAX_INTERIM_RESPONSES
-             && (ret = read_status_line(req, status, retry)) == NE_OK
-             && status->klass == 1; count++) {
-	NE_DEBUG(NE_DBG_HTTP, "[req] Interim %d response %d.\n",
-                 status->code, count);
+    while ((ret = read_status_line(req, status, retry)) == NE_OK
+           && status->klass == 1) {
+        struct interim_handler *ih;
+
+	NE_DEBUG(NE_DBG_HTTP, "[req] Interim %d response.\n", status->code);
 	retry = 0; /* successful read() => never retry now. */
+
 	/* Discard headers with the interim response. */
-	if ((ret = discard_headers(req)) != NE_OK) break;
+	if ((ret = read_response_headers(req, 1)) != NE_OK) break;
+
+        /* Run interim handlers. */
+        for (ih = req->interim_handler; ih; ih = ih->next) {
+            ih->fn(ih->userdata, req, status);
+        }
 
 	if (req->flags[NE_REQFLAG_EXPECT100] && (status->code == 100)
             && req->body_length && !sentbody) {
 	    /* Send the body after receiving the first 100 Continue */
 	    if ((ret = send_request_body(req, 0)) != NE_OK) break;	    
 	    sentbody = 1;
+            /* Reset read timeout. */
+            timeout = INTERIM_TIMEOUT(req);
 	}
+        else if (req->flags[NE_REQFLAG_1XXTIMEOUT] && sess->rdtimeout
+                 && time(NULL) > timeout) {
+            NE_DEBUG(NE_DBG_HTTP, "[req] Timeout after %d\n", sess->rdtimeout);
+            return aborted(req, _("Timed out reading interim responses"), 0);
+        }
     }
 
-    if (count == MAX_INTERIM_RESPONSES) {
-        return aborted(req, _("Too many interim responses"), 0);
+    /* Per RFC 9110ẞ15.5.9 a client MAY retry an outstanding request
+     * after a 408. Some modern servers generate this. */
+    if (sess->persisted && status->code == 408) {
+        NE_DEBUG(NE_DBG_HTTP, "req: Retrying after 408.\n");
+        ne_close_connection(sess);
+        return NE_RETRY;
     }
 
     return ret;
@@ -1187,7 +1221,7 @@ static int read_message_header(ne_request *req, char *buf, size_t buflen)
     return NE_ERROR;
 }
 
-#define MAX_HEADER_LEN (8192)
+#define MAX_HEADER_LEN (16384)
 
 /* Add a respnose header field for the given request, using
  * precalculated hash value. */
@@ -1219,13 +1253,18 @@ static void add_response_header(ne_request *req, unsigned int hash,
     (*nextf)->next = NULL;
 }
 
-/* Read response headers.  Returns NE_* code, sets session error and
- * closes connection on error. */
-static int read_response_headers(ne_request *req) 
+/* Read response headers. If 'clear' is non-zero, clears existing
+ * response header hash first. Returns NE_* code, sets session error
+ * and closes connection on error. */
+static int read_response_headers(ne_request *req, int clear)
 {
     NE_DEBUG_WINSCP_CONTEXT(req->session);
     char hdr[MAX_HEADER_LEN];
     int ret, count = 0;
+
+    /* Clear any response headers from previous invocations
+     * (e.g. retired requests, interim responses. */
+    if (clear) free_response_headers(req);
     
     while ((ret = read_message_header(req, hdr, sizeof hdr)) == NE_RETRY 
 	   && ++count < MAX_HEADER_FIELDS) {
@@ -1320,7 +1359,7 @@ int ne_begin_request(ne_request *req)
     ret = send_request(req, data);
     /* Retry this once after a persistent connection timeout. */
     if (ret == NE_RETRY) {
-	NE_DEBUG(NE_DBG_HTTP, "Persistent connection timed out, retrying.\n");
+	NE_DEBUG(NE_DBG_HTTP, "req: Persistent connection timed out, retrying.\n");
 	ret = send_request(req, data);
     }
     ne_buffer_destroy(data);
@@ -1334,13 +1373,9 @@ int ne_begin_request(ne_request *req)
     if (req->session->is_http11) req->can_persist = 1;
 
     ne_set_error(req->session, "%d %s", st->code, st->reason_phrase);
-    
-    /* Empty the response header hash, in case this request was
-     * retried: */
-    free_response_headers(req);
 
     /* Read the headers */
-    ret = read_response_headers(req);
+    ret = read_response_headers(req, 1);
     if (ret) return ret;
 
     /* check the Connection header */
@@ -1463,9 +1498,10 @@ int ne_end_request(ne_request *req)
     struct hook *hk;
     int ret;
 
-    /* Read headers in chunked trailers */
     if (req->resp.mode == R_CHUNKED) {
-	ret = read_response_headers(req);
+        /* Read headers in chunked trailers WITHOUT clearing existing
+         * header hash. */
+	ret = read_response_headers(req, 0);
         if (ret) return ret;
     } else {
         ret = NE_OK;
@@ -1628,6 +1664,8 @@ static int do_connect(ne_session *sess, struct host_info *host)
     if (sess->local_addr)
         ne_sock_prebind(sess->socket, sess->local_addr, 0);
 
+    /* Pick the first address, or if the address was pre-determined
+       (e.g. an IP-literal passed to ne_session_create) fetch that. */
     if (host->current == NULL)
 	host->current = resolve_first(host);
 

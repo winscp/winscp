@@ -80,10 +80,10 @@ public:
     TRemoteFile *& File);
   virtual void __fastcall ReadSymlink(TRemoteFile * SymlinkFile,
     TRemoteFile *& File);
-  virtual void __fastcall RenameFile(const UnicodeString FileName, const TRemoteFile * File,
-    const UnicodeString NewName);
-  virtual void __fastcall CopyFile(const UnicodeString FileName, const TRemoteFile * File,
-    const UnicodeString NewName);
+  virtual void __fastcall RenameFile(
+    const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool Overwrite);
+  virtual void __fastcall CopyFile(
+    const UnicodeString & FileName, const TRemoteFile * File, const UnicodeString & NewName, bool Overwrite);
   virtual TStrings * __fastcall GetFixedPaths();
   virtual void __fastcall SpaceAvailable(const UnicodeString Path,
     TSpaceAvailable & ASpaceAvailable);
@@ -205,7 +205,6 @@ protected:
   void __fastcall HandleFeatReply();
   void __fastcall ResetFeatures();
   void ProcessFeatures();
-  UnicodeString CutFeature(UnicodeString & Buf);
   bool __fastcall SupportsSiteCommand(const UnicodeString & Command) const;
   bool __fastcall SupportsCommand(const UnicodeString & Command) const;
   void __fastcall RegisterChecksumAlgCommand(const UnicodeString & Alg, const UnicodeString & Command);
@@ -236,6 +235,7 @@ private:
   unsigned int FReply;
   unsigned int FCommandReply;
   TCommand FLastCommand;
+  bool FAnyPassword;
   bool FPasswordFailed;
   bool FStoredPasswordTried;
   bool FMultiLineResponse;
@@ -258,7 +258,6 @@ private:
   UnicodeString FFileListCachePath;
   UnicodeString FWelcomeMessage;
   bool FActive;
-  bool FOpening;
   bool FWaitingForReply;
   enum { ftaNone, ftaSkip, ftaCancel } FFileTransferAbort;
   bool FIgnoreFileList;

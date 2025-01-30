@@ -44,8 +44,14 @@ int ne_xml_parse_response(ne_request *req, ne_xml_parser *parser)
     char buf[8000];
     ssize_t bytes;
     int ret = 0;
+    #ifdef WINSCP
+    int any = 0;
+    #endif
 
     while ((bytes = ne_read_response_block(req, buf, sizeof buf)) > 0) {
+        #ifdef WINSCP
+        any = 1;
+        #endif
         ret = ne_xml_parse(parser, buf, bytes);
         if (ret)
             return parse_error(ne_get_session(req), parser);
@@ -53,6 +59,11 @@ int ne_xml_parse_response(ne_request *req, ne_xml_parser *parser)
 
     if (bytes == 0) {
         /* Tell the parser that end of document was reached: */
+        #ifdef WINSCP
+        if (!any && ne_get_request_flag(req, NE_REQFLAG_IGNOREEMPTYXML))
+            return NE_OK;
+        else
+        #endif
         if (ne_xml_parse(parser, NULL, 0) == 0)
             return NE_OK;
         else

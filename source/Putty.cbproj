@@ -190,6 +190,9 @@
 		<CppCompile Include="putty\crypto\pubkey-ppk.c">
 			<BuildOrder>31</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\crypto\rfc6979.c">
+			<BuildOrder>165</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\crypto\rsa.c">
 			<BuildOrder>32</BuildOrder>
 		</CppCompile>
@@ -367,6 +370,9 @@
 		<CppCompile Include="putty\utils\base64_encode_atom.c">
 			<BuildOrder>80</BuildOrder>
 		</CppCompile>
+		<CppCompile Include="putty\utils\base64_valid.c">
+			<BuildOrder>165</BuildOrder>
+		</CppCompile>
 		<CppCompile Include="putty\utils\bufchain.c">
 			<BuildOrder>81</BuildOrder>
 		</CppCompile>
@@ -378,6 +384,9 @@
 		</CppCompile>
 		<CppCompile Include="putty\utils\conf.c">
 			<BuildOrder>82</BuildOrder>
+		</CppCompile>
+		<CppCompile Include="putty\utils\conf_dest.c">
+			<BuildOrder>164</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\utils\conf_launchable.c">
 			<BuildOrder>83</BuildOrder>
@@ -549,9 +558,6 @@
 		</CppCompile>
 		<CppCompile Include="putty\windows\utils\defaults.c">
 			<BuildOrder>140</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="putty\windows\utils\dll_hijacking_protection.c">
-			<BuildOrder>141</BuildOrder>
 		</CppCompile>
 		<CppCompile Include="putty\windows\utils\escape_registry_key.c">
 			<BuildOrder>142</BuildOrder>

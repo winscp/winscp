@@ -41,6 +41,9 @@ private:
 
   INTERFACE_HOOK;
 
+protected:
+  virtual void __fastcall Dispatch(void * Message);
+
 public:
   TCopyLocalDialog(TComponent * Owner, bool Move, int Options);
 

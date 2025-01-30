@@ -15,6 +15,8 @@ void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrin
 void __fastcall EnableControl(TControl* Control, bool Enable);
 void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly = true);
 void __fastcall ReadOnlyAndEnabledControl(TControl * Control, bool ReadOnly, bool Enabled);
+int CalculateCheckBoxWidth(TControl * Control, const UnicodeString & Caption);
+void AutoSizeCheckBox(TCheckBox * CheckBox);
 void __fastcall InitializeSystemSettings();
 void __fastcall FinalizeSystemSettings();
 void __fastcall LocalSystemSettings(TCustomForm * Control);
@@ -31,7 +33,7 @@ void __fastcall HotTrackLabel(TLabel * Label);
 void __fastcall SetLabelHintPopup(TLabel * Label, const UnicodeString & Hint);
 bool __fastcall HasLabelHintPopup(TControl * Control, const UnicodeString & HintStr);
 void __fastcall FixComboBoxResizeBug(TCustomComboBox * ComboBox);
-void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront = true);
+void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront = true, bool TriggerModalStarted = false);
 void __fastcall HideAsModal(TForm * Form, void *& Storage);
 bool __fastcall ReleaseAsModal(TForm * Form, void *& Storage);
 bool __fastcall IsMainFormLike(TCustomForm * Form);

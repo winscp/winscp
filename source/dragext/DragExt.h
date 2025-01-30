@@ -18,7 +18,7 @@ DEFINE_GUID(CLSID_ShellExtension, 0xe15e1d68, 0x0d1c, 0x49f7,
 #pragma pack(push, 4)
 //---------------------------------------------------------------------------
 // Note that the change between 0 and 1 was incompatible in both directions.
-// So unfortunatelly version 0 extension (4.x and older) will accept incompatible request
+// So unfortunately version 0 extension (4.x and older) will accept incompatible request
 // from version 1 application (5.x and newer).
 // Luckily the extension will gracefully fail, when using the Unicode path in
 // GetShortPathName(CommStruct->DropDest, ...) and will ignore the request.

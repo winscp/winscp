@@ -21,7 +21,6 @@ char appname_[50];
 const char *const appname = appname_;
 extern const bool share_can_be_downstream = false;
 extern const bool share_can_be_upstream = false;
-THierarchicalStorage * PuttyStorage = NULL;
 //---------------------------------------------------------------------------
 extern "C"
 {
@@ -40,6 +39,10 @@ void __fastcall PuttyInitialize()
   InitializeCriticalSection(&putty_section);
 
   HadRandomSeed = FileExists(ApiPath(Configuration->RandomSeedFileName));
+  if (HadRandomSeed)
+  {
+    AppLog(L"Random seed file exists");
+  }
   // make sure random generator is initialised, so random_save_seed()
   // in destructor can proceed
   random_ref();
@@ -63,12 +66,14 @@ void __fastcall PuttyFinalize()
 {
   if (SaveRandomSeed)
   {
+    AppLog(L"Saving random seed file");
     random_save_seed();
   }
   random_unref();
   // random_ref in PuttyInitialize creates the seed file. Delete it, if we didn't want to create it.
   if (DeleteRandomSeedOnExit())
   {
+    AppLog(L"Deleting unwanted random seed file");
     DeleteFile(ApiPath(Configuration->RandomSeedFileName));
   }
 
@@ -259,12 +264,8 @@ static void connection_fatal(Seat * seat, const char * message)
 SeatPromptResult confirm_ssh_host_key(Seat * seat, const char * host, int port, const char * keytype,
   char * keystr, SeatDialogText *, HelpCtx,
   void (*DebugUsedArg(callback))(void *ctx, SeatPromptResult result), void * DebugUsedArg(ctx),
-  char **key_fingerprints, bool is_certificate)
+  char **key_fingerprints, bool is_certificate, int ca_count, bool already_verified)
 {
-  if (DebugAlwaysFalse(is_certificate))
-  {
-    NotImplemented();
-  }
   UnicodeString FingerprintSHA256, FingerprintMD5;
   if (key_fingerprints[SSH_FPTYPE_SHA256] != NULL)
   {
@@ -275,7 +276,8 @@ SeatPromptResult confirm_ssh_host_key(Seat * seat, const char * host, int port, 
     FingerprintMD5 = key_fingerprints[SSH_FPTYPE_MD5];
   }
   TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
-  SecureShell->VerifyHostKey(host, port, keytype, keystr, FingerprintSHA256, FingerprintMD5);
+  SecureShell->VerifyHostKey(
+    host, port, keytype, keystr, FingerprintSHA256, FingerprintMD5, is_certificate, ca_count, already_verified);
 
   // We should return 0 when key was not confirmed, we throw exception instead.
   return SPR_OK;
@@ -288,18 +290,21 @@ bool have_ssh_host_key(Seat * seat, const char * hostname, int port,
   return SecureShell->HaveHostKey(hostname, port, keytype) ? 1 : 0;
 }
 //---------------------------------------------------------------------------
-SeatPromptResult confirm_weak_crypto_primitive(Seat * seat, const char * algtype, const char * algname,
-  void (*/*callback*/)(void * ctx, SeatPromptResult result), void * /*ctx*/)
+SeatPromptResult confirm_weak_crypto_primitive(
+    Seat * seat, SeatDialogText *,
+    void (*DebugUsedArg(callback))(void * ctx, SeatPromptResult result), void * DebugUsedArg(ctx),
+    const char * algtype, const char *algname, int wcr)
 {
   TSecureShell * SecureShell = static_cast<ScpSeat *>(seat)->SecureShell;
-  SecureShell->AskAlg(algtype, algname);
+  SecureShell->AskAlg(algtype, algname, wcr);
 
   // We should return 0 when alg was not confirmed, we throw exception instead.
   return SPR_OK;
 }
 //---------------------------------------------------------------------------
-SeatPromptResult confirm_weak_cached_hostkey(Seat *, const char * /*algname*/, const char * /*betteralgs*/,
-  void (*/*callback*/)(void *ctx, SeatPromptResult result), void * /*ctx*/)
+SeatPromptResult confirm_weak_cached_hostkey(
+  Seat *, SeatDialogText *,
+  void (*DebugUsedArg(callback))(void * ctx, SeatPromptResult result), void * DebugUsedArg(ctx))
 {
   return SPR_OK;
 }
@@ -317,7 +322,7 @@ const SeatDialogPromptDescriptions * prompt_descriptions(Seat *)
 //---------------------------------------------------------------------------
 void old_keyfile_warning(void)
 {
-  // no reference to TSecureShell instance available
+  // no reference to TSecureShell instance available - and we already warn on Login dialog
 }
 //---------------------------------------------------------------------------
 size_t banner(Seat * seat, const void * data, size_t len)
@@ -455,7 +460,8 @@ ScpSeat::ScpSeat(TSecureShell * ASecureShell)
   vt = &ScpSeatVtable;
 }
 //---------------------------------------------------------------------------
-static std::unique_ptr<TCriticalSection> PuttyRegistrySection(TraceInitPtr(new TCriticalSection()));
+std::unique_ptr<TCriticalSection> PuttyStorageSection(TraceInitPtr(new TCriticalSection()));
+THierarchicalStorage * PuttyStorage = NULL;
 enum TPuttyRegistryMode { prmPass, prmRedirect, prmCollect, prmFail };
 static TPuttyRegistryMode PuttyRegistryMode = prmRedirect;
 typedef std::map<UnicodeString, unsigned long> TPuttyRegistryTypes;
@@ -467,11 +473,13 @@ int reg_override_winscp()
   return (PuttyRegistryMode != prmPass);
 }
 //---------------------------------------------------------------------------
-HKEY open_regkey_fn_winscp(bool Create, HKEY Key, const char * Path, ...)
+HKEY open_regkey_fn_winscp(bool Create, bool Write, HKEY Key, const char * Path, ...)
 {
+  DebugUsedParam(Write);
   HKEY Result;
   if (PuttyRegistryMode == prmCollect)
   {
+    // Note that for prmCollect even !Write mode is supported (behaving like prmFail) - needed for do_defaults
     Result = reinterpret_cast<HKEY>(1);
   }
   else if (PuttyRegistryMode == prmFail)
@@ -516,7 +524,7 @@ HKEY open_regkey_fn_winscp(bool Create, HKEY Key, const char * Path, ...)
       DebugAssert(RegKey == L"SshHostKeys");
 
       DebugAssert(PuttyStorage != NULL);
-      DebugAssert(PuttyStorage->AccessMode == (Create ? smReadWrite : smRead));
+      DebugAssert(PuttyStorage->AccessMode == (Write ? smReadWrite : smRead));
       if (PuttyStorage->OpenSubKey(RegKey, Create))
       {
         Result = reinterpret_cast<HKEY>(PuttyStorage);
@@ -771,7 +779,7 @@ TPrivateKey * LoadKey(TKeyType KeyType, const UnicodeString & FileName, const Un
   {
     // While theoretically we may get "unable to open key file" and
     // so we should check system error code,
-    // we actully never get here unless we call KeyType previously
+    // we actually never get here unless we call KeyType previously
     // and handle ktUnopenable accordingly.
     Error = AnsiString(ErrorStr);
   }
@@ -972,6 +980,11 @@ void FreeKey(TPrivateKey * PrivateKey)
   sfree(Ssh2Key);
 }
 //---------------------------------------------------------------------------
+RawByteString StrBufToString(strbuf * StrBuf)
+{
+  return RawByteString(reinterpret_cast<char *>(StrBuf->s), StrBuf->len);
+}
+//---------------------------------------------------------------------------
 RawByteString LoadPublicKey(
   const UnicodeString & FileName, UnicodeString & Algorithm, UnicodeString & Comment, bool & HasCertificate)
 {
@@ -995,7 +1008,7 @@ RawByteString LoadPublicKey(
     sfree(AlgorithmStr);
     Comment = UnicodeString(AnsiString(CommentStr));
     sfree(CommentStr);
-    Result = RawByteString(reinterpret_cast<char *>(PublicKeyBuf->s), PublicKeyBuf->len);
+    Result = StrBufToString(PublicKeyBuf);
     strbuf_free(PublicKeyBuf);
   }
   __finally
@@ -1132,9 +1145,53 @@ UnicodeString __fastcall Sha256(const char * Data, size_t Size)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall DllHijackingProtection()
+UnicodeString CalculateFileChecksum(TStream * Stream, const UnicodeString & Alg)
 {
-  dll_hijacking_protection();
+  const ssh_hashalg * HashAlg;
+  if (SameIdent(Alg, Sha256ChecksumAlg))
+  {
+    HashAlg = &ssh_sha256;
+  }
+  else if (SameIdent(Alg, Sha1ChecksumAlg))
+  {
+    HashAlg = &ssh_sha1;
+  }
+  else if (SameIdent(Alg, Md5ChecksumAlg))
+  {
+    HashAlg = &ssh_md5;
+  }
+  else
+  {
+    throw Exception(FMTLOAD(UNKNOWN_CHECKSUM, (Alg)));
+  }
+
+  UnicodeString Result;
+  ssh_hash * Hash = ssh_hash_new(HashAlg);
+  try
+  {
+    const int BlockSize = 32 * 1024;
+    TFileBuffer Buffer;
+    DWORD Read;
+    do
+    {
+      Buffer.Reset();
+      Read = Buffer.LoadStream(Stream, BlockSize, false);
+      if (Read > 0)
+      {
+        put_datapl(Hash, make_ptrlen(Buffer.Data, Read));
+      }
+    }
+    while (Read > 0);
+  }
+  __finally
+  {
+    RawByteString Buf;
+    Buf.SetLength(ssh_hash_alg(Hash)->hlen);
+    ssh_hash_final(Hash, reinterpret_cast<unsigned char *>(Buf.c_str()));
+    Result = BytesToHex(Buf);
+  }
+
+  return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const struct ssh_keyalg *& Algorithm)
@@ -1155,7 +1212,7 @@ UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const s
   {
     try
     {
-      Algorithm = find_pubkey_alg_winscp_host(AlgorithmName);
+      Algorithm = find_pubkey_alg(AlgorithmName);
       if (Algorithm == NULL)
       {
         throw Exception(FMTLOAD(PUB_KEY_UNKNOWN, (AlgorithmName)));
@@ -1182,38 +1239,81 @@ UnicodeString __fastcall ParseOpenSshPubLine(const UnicodeString & Line, const s
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall GetKeyTypeHuman(const UnicodeString & KeyType)
+// Based on ca_refresh_pubkey_info
+void ParseCertificatePublicKey(const UnicodeString & Str, RawByteString & PublicKey, UnicodeString & Fingerprint)
 {
-  UnicodeString Result;
-  if (KeyType == ssh_dsa.cache_id)
+  AnsiString AnsiStr = AnsiString(Str);
+  ptrlen Data = ptrlen_from_asciz(AnsiStr.c_str());
+  strbuf * Blob = strbuf_new();
+  try
   {
-    Result = L"DSA";
+    // See if we have a plain base64-encoded public key blob.
+    if (base64_valid(Data))
+    {
+      base64_decode_bs(BinarySink_UPCAST(Blob), Data);
+    }
+    else
+    {
+      // Otherwise, try to decode as if it was a public key _file_.
+      BinarySource Src[1];
+      BinarySource_BARE_INIT_PL(Src, Data);
+      const char * Error;
+      if (!ppk_loadpub_s(Src, NULL, BinarySink_UPCAST(Blob), NULL, &Error))
+      {
+        throw Exception(FMTLOAD(SSH_HOST_CA_DECODE_ERROR, (Error)));
+      }
+    }
+
+    ptrlen AlgNamePtrLen = pubkey_blob_to_alg_name(ptrlen_from_strbuf(Blob));
+    if (!AlgNamePtrLen.len)
+    {
+      throw Exception(LoadStr(SSH_HOST_CA_NO_KEY_TYPE));
+    }
+
+    UnicodeString AlgName = UnicodeString(AnsiString(static_cast<const char *>(AlgNamePtrLen.ptr), AlgNamePtrLen.len));
+    const ssh_keyalg * Alg = find_pubkey_alg_len(AlgNamePtrLen);
+    if (Alg == NULL)
+    {
+      throw Exception(FMTLOAD(PUB_KEY_UNKNOWN, (AlgName)));
+    }
+    if (Alg->is_certificate)
+    {
+      throw Exception(FMTLOAD(SSH_HOST_CA_CERTIFICATE, (AlgName)));
+    }
+
+    ssh_key * Key = ssh_key_new_pub(Alg, ptrlen_from_strbuf(Blob));
+    if (Key == NULL)
+    {
+      throw Exception(FMTLOAD(SSH_HOST_CA_INVALID, (AlgName)));
+    }
+
+    char * FingerprintPtr = ssh2_fingerprint(Key, SSH_FPTYPE_DEFAULT);
+    Fingerprint = UnicodeString(FingerprintPtr);
+    sfree(FingerprintPtr);
+    ssh_key_free(Key);
+
+    PublicKey = StrBufToString(Blob);
   }
-  else if ((KeyType == ssh_rsa.cache_id) ||
-           (KeyType == L"rsa")) // SSH1
+  __finally
   {
-    Result = L"RSA";
+    strbuf_free(Blob);
   }
-  else if (KeyType == ssh_ecdsa_ed25519.cache_id)
+}
+//---------------------------------------------------------------------------
+bool IsCertificateValidityExpressionValid(
+  const UnicodeString & Str, UnicodeString & Error, int & ErrorStart, int & ErrorLen)
+{
+  char * ErrorMsg;
+  ptrlen ErrorLoc;
+  AnsiString StrAnsi(Str);
+  const char * StrPtr = StrAnsi.c_str();
+  bool Result = cert_expr_valid(StrPtr, &ErrorMsg, &ErrorLoc);
+  if (!Result)
   {
-    Result = L"Ed25519";
-  }
-  else if (KeyType == ssh_ecdsa_nistp256.cache_id)
-  {
-    Result = L"ECDSA/nistp256";
-  }
-  else if (KeyType == ssh_ecdsa_nistp384.cache_id)
-  {
-    Result = L"ECDSA/nistp384";
-  }
-  else if (KeyType == ssh_ecdsa_nistp521.cache_id)
-  {
-    Result = L"ECDSA/nistp521";
-  }
-  else
-  {
-    DebugFail();
-    Result = KeyType;
+    Error = UnicodeString(ErrorMsg);
+    sfree(ErrorMsg);
+    ErrorStart = static_cast<const char *>(ErrorLoc.ptr) - StrPtr;
+    ErrorLen = ErrorLoc.len;
   }
   return Result;
 }
@@ -1390,7 +1490,7 @@ void WritePuttySettings(THierarchicalStorage * Storage, const UnicodeString & AS
 {
   if (PuttyRegistryTypes.empty())
   {
-    TGuard Guard(PuttyRegistrySection.get());
+    TGuard Guard(PuttyStorageSection.get());
     TValueRestorer<TPuttyRegistryMode> PuttyRegistryModeRestorer(PuttyRegistryMode);
     PuttyRegistryMode = prmCollect;
     Conf * conf = conf_new();
@@ -1436,7 +1536,7 @@ void WritePuttySettings(THierarchicalStorage * Storage, const UnicodeString & AS
 //---------------------------------------------------------------------------
 void PuttyDefaults(Conf * conf)
 {
-  TGuard Guard(PuttyRegistrySection.get());
+  TGuard Guard(PuttyStorageSection.get());
   TValueRestorer<TPuttyRegistryMode> PuttyRegistryModeRestorer(PuttyRegistryMode);
   PuttyRegistryMode = prmFail;
   do_defaults(NULL, conf);
@@ -1444,7 +1544,7 @@ void PuttyDefaults(Conf * conf)
 //---------------------------------------------------------------------------
 void SavePuttyDefaults(const UnicodeString & Name)
 {
-  TGuard Guard(PuttyRegistrySection.get());
+  TGuard Guard(PuttyStorageSection.get());
   TValueRestorer<TPuttyRegistryMode> PuttyRegistryModeRestorer(PuttyRegistryMode);
   PuttyRegistryMode = prmPass;
   Conf * conf = conf_new();
@@ -1458,6 +1558,54 @@ void SavePuttyDefaults(const UnicodeString & Name)
   {
     conf_free(conf);
   }
+}
+//---------------------------------------------------------------------------
+struct host_ca_enum
+{
+  int Index;
+};
+//---------------------------------------------------------------------------
+host_ca_enum * enum_host_ca_start()
+{
+  Configuration->RefreshPuttySshHostCAList();
+  host_ca_enum * Result = new host_ca_enum();
+  Result->Index = 0;
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool enum_host_ca_next(host_ca_enum * Enum, strbuf * StrBuf)
+{
+  const TSshHostCAList * SshHostCAList = Configuration->ActiveSshHostCAList;
+  bool Result = (Enum->Index < SshHostCAList->GetCount());
+  if (Result)
+  {
+    put_asciz(StrBuf, UTF8String(SshHostCAList->Get(Enum->Index)->Name).c_str());
+    Enum->Index++;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void enum_host_ca_finish(host_ca_enum * Enum)
+{
+  delete Enum;
+}
+//---------------------------------------------------------------------------
+host_ca * host_ca_load(const char * NameStr)
+{
+  host_ca * Result = NULL;
+  UnicodeString Name = UTF8String(NameStr);
+  const TSshHostCA * SshHostCA = Configuration->ActiveSshHostCAList->Find(Name);
+  if (DebugAlwaysTrue(SshHostCA != NULL))
+  {
+    Result = host_ca_new();
+    Result->name = dupstr(NameStr);
+    Result->ca_public_key = strbuf_dup(make_ptrlen(SshHostCA->PublicKey.c_str(), SshHostCA->PublicKey.Length()));
+    Result->validity_expression = dupstr(UTF8String(SshHostCA->ValidityExpression).c_str());
+    Result->opts.permit_rsa_sha1 = SshHostCA->PermitRsaSha1;
+    Result->opts.permit_rsa_sha256 = SshHostCA->PermitRsaSha256;
+    Result->opts.permit_rsa_sha512 = SshHostCA->PermitRsaSha512;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

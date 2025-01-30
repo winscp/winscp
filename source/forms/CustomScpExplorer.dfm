@@ -217,34 +217,41 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       Columns = <
         item
           Caption = 'Operation'
+          MinWidth = 20
           Width = 70
         end
         item
           Caption = 'Source'
+          MinWidth = 20
           Width = 170
         end
         item
           Caption = 'Destination'
+          MinWidth = 20
           Width = 170
         end
         item
           Alignment = taRightJustify
           Caption = 'Transferred'
+          MinWidth = 20
           Width = 80
         end
         item
           Alignment = taRightJustify
           Caption = 'Time'
+          MinWidth = 20
           Width = 80
         end
         item
           Alignment = taRightJustify
           Caption = 'Speed'
+          MinWidth = 20
           Width = 80
         end
         item
           Alignment = taCenter
           Caption = 'Progress'
+          MinWidth = 20
           Width = 80
         end>
       ColumnClick = False

@@ -36,6 +36,8 @@ namespace WinSCP
         None = 0x00,
         Time = 0x01,
         Size = 0x02,
+        Checksum = 0x04,
+        [Obsolete("Use Time | Size")]
         Either = Time | Size,
     }
 
@@ -85,7 +87,7 @@ namespace WinSCP
         public int ReconnectTimeInMilliseconds { get { return Tools.TimeSpanToMilliseconds(ReconnectTime); } set { ReconnectTime = Tools.MillisecondsToTimeSpan(value); } }
         public string DebugLogPath { get { CheckNotDisposed(); return Logger.LogPath; } set { CheckNotDisposed(); Logger.LogPath = value; } }
         public int DebugLogLevel { get { CheckNotDisposed(); return Logger.LogLevel; } set { CheckNotDisposed(); Logger.LogLevel = value; } }
-        public string SessionLogPath { get { return _sessionLogPath; } set { CheckNotOpened(); _sessionLogPath = value; } }
+        public string SessionLogPath { get => _sessionLogPath; set => SetSessionLogPath(value); }
         public string XmlLogPath { get { return _xmlLogPath; } set { CheckNotOpened(); _xmlLogPath = value; } }
         public bool XmlLogPreserve { get; set; }
         #if DEBUG
@@ -228,10 +230,7 @@ namespace WinSCP
                 _aborted = true;
 
                 // double-check
-                if (_process != null)
-                {
-                    _process.Abort();
-                }
+                _process?.Abort();
             }
         }
 
@@ -1268,22 +1267,32 @@ namespace WinSCP
             }
 
             string criteriaName;
-            switch (criteria)
+            if (criteria == SynchronizationCriteria.None)
             {
-                case SynchronizationCriteria.None:
-                    criteriaName = "none";
-                    break;
-                case SynchronizationCriteria.Time:
-                    criteriaName = "time";
-                    break;
-                case SynchronizationCriteria.Size:
-                    criteriaName = "size";
-                    break;
-                case SynchronizationCriteria.Either:
-                    criteriaName = "either";
-                    break;
-                default:
+                criteriaName = "none";
+            }
+            else
+            {
+                var names = new Dictionary<SynchronizationCriteria, string>
+                {
+                    { SynchronizationCriteria.Time, "time" },
+                    { SynchronizationCriteria.Size, "size" },
+                    { SynchronizationCriteria.Checksum, "checksum" }
+                };
+                var c = criteria;
+                criteriaName = string.Empty;
+                foreach (var name in names)
+                {
+                    if (c.HasFlag(name.Key))
+                    {
+                        c -= name.Key;
+                        criteriaName += (criteriaName.Length > 0 ? "," : string.Empty) + name.Value;
+                    }
+                }
+                if (c != 0)
+                {
                     throw Logger.WriteException(new ArgumentOutOfRangeException(nameof(criteria)));
+                }
             }
 
             WriteCommand(
@@ -2339,10 +2348,7 @@ namespace WinSCP
                 {
                     message += " - " + additional;
                 }
-                if (_logReader != null)
-                {
-                    _logReader.SetTimeouted();
-                }
+                _logReader?.SetTimeouted();
                 Cleanup();
                 throw Logger.WriteException(new TimeoutException(message));
             }
@@ -2581,6 +2587,16 @@ namespace WinSCP
             return result;
         }
 
+        private void SetSessionLogPath(string value)
+        {
+            CheckNotOpened();
+            const string XmlExtension = ".xml";
+            if (Path.GetExtension(value).Equals(XmlExtension, StringComparison.OrdinalIgnoreCase))
+            {
+                throw Logger.WriteException(new ArgumentException($"Session log cannot have {XmlExtension} extension"));
+            }
+            _sessionLogPath = value;
+        }
 
         FieldInfo IReflect.GetField(string name, BindingFlags bindingAttr)
         {

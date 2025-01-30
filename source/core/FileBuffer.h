@@ -28,20 +28,20 @@ public:
   DWORD __fastcall LoadFromIn(TTransferInEvent OnTransferIn, TObject * Sender, DWORD Len);
   void __fastcall WriteToStream(TStream * Stream, const DWORD Len);
   void __fastcall WriteToOut(TTransferOutEvent OnTransferOut, TObject * Sender, const DWORD Len);
-  __property TMemoryStream * Memory  = { read=FMemory, write=SetMemory };
+  void Reset();
+  __property TMemoryStream * Memory  = { read=FMemory };
   __property char * Data = { read=GetData };
   __property int Size = { read=FSize, write=SetSize };
-  __property int Position = { read=GetPosition, write=SetPosition };
 
 private:
   TMemoryStream * FMemory;
   int FSize;
 
-  void __fastcall SetMemory(TMemoryStream * value);
   char * __fastcall GetData() const { return (char *)FMemory->Memory; }
+  char * __fastcall GetPointer() const { return GetData() + GetPosition(); }
+  void NeedSpace(DWORD Size);
   void __fastcall SetSize(int value);
-  void __fastcall SetPosition(int value);
-  int __fastcall GetPosition() const;
+  int __fastcall GetPosition() const { return (int)FMemory->Position; }
   void __fastcall ProcessRead(DWORD Len, DWORD Result);
 };
 //---------------------------------------------------------------------------
@@ -49,10 +49,16 @@ class TSafeHandleStream : public THandleStream
 {
 public:
   __fastcall TSafeHandleStream(int AHandle);
+  __fastcall TSafeHandleStream(THandleStream * Source, bool Own);
+  static TSafeHandleStream * CreateFromFile(const UnicodeString & FileName, unsigned short Mode);
+  virtual __fastcall ~TSafeHandleStream();
   virtual int __fastcall Read(void * Buffer, int Count);
   virtual int __fastcall Write(const void * Buffer, int Count);
   virtual int __fastcall Read(System::DynamicArray<System::Byte> Buffer, int Offset, int Count);
   virtual int __fastcall Write(const System::DynamicArray<System::Byte> Buffer, int Offset, int Count);
+private:
+  THandleStream * FSource;
+  bool FOwned;
 };
 //---------------------------------------------------------------------------
 char * __fastcall EOLToStr(TEOLType EOLType);

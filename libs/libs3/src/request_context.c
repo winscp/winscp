@@ -54,7 +54,7 @@ S3Status S3_create_request_context_ex(S3RequestContext **requestContextReturn,
     }
     
 #ifdef WINSCP
-    (*requestContextReturn)->sslCallback = NULL;
+    memset(*requestContextReturn, 0, sizeof(S3RequestContext));
 #else
     if (curlm) {
         (*requestContextReturn)->curlm = curlm;
@@ -134,6 +134,11 @@ void S3_set_request_context_response_data_callback(S3RequestContext *requestCont
 {
     requestContext->responseDataCallback = responseDataCallback;
     requestContext->responseDataCallbackData = responseDataCallbackData;
+}
+
+void S3_set_request_context_requester_pays(S3RequestContext *requestContext, int requesterPays)
+{
+    requestContext->requesterPays = requesterPays;
 }
 
 #else
