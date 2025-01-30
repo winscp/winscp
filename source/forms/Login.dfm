@@ -1297,7 +1297,7 @@ object LoginDialog: TLoginDialog
       Action = SearchSiteStartAction
     end
     object SearchOptions1: TMenuItem
-      Caption = 'Options'
+      Caption = '&Options'
       object SearchSiteNameStartOnly1: TMenuItem
         Action = SearchSiteNameStartOnlyAction
         RadioItem = True
@@ -1360,7 +1360,7 @@ object LoginDialog: TLoginDialog
       Action = SearchSiteStartAction
     end
     object SearchOptions3: TMenuItem
-      Caption = 'Options'
+      Caption = '&Options'
       object BeginningofSiteNameOnly2: TMenuItem
         Action = SearchSiteNameStartOnlyAction
         RadioItem = True
@@ -1427,7 +1427,7 @@ object LoginDialog: TLoginDialog
       Action = SearchSiteStartAction
     end
     object SearchOptions2: TMenuItem
-      Caption = 'Options'
+      Caption = '&Options'
       object BeginningofSiteNameOnly1: TMenuItem
         Action = SearchSiteNameStartOnlyAction
         RadioItem = True
@@ -1481,7 +1481,7 @@ object LoginDialog: TLoginDialog
       Action = SearchSiteStartAction
     end
     object SearchOptions4: TMenuItem
-      Caption = 'Options'
+      Caption = '&Options'
       object BeginningofSiteNameOnly3: TMenuItem
         Action = SearchSiteNameStartOnlyAction
         RadioItem = True
