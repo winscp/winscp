@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -397,7 +397,7 @@ int OPENSSL_sk_find_all(OPENSSL_STACK *st, const void *data, int *pnum)
 int OPENSSL_sk_push(OPENSSL_STACK *st, const void *data)
 {
     if (st == NULL)
-        return -1;
+        return 0;
     return OPENSSL_sk_insert(st, data, st->num);
 }
 

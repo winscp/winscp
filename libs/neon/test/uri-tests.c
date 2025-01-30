@@ -321,6 +321,10 @@ static int parse(void)
         { "http://[::1]:8080/bar", "http", "[::1]", 8080, "/bar", NULL, NULL, NULL },
         { "ftp://[feed::cafe]:555", "ftp", "[feed::cafe]", 555, "/", NULL, NULL, NULL },
 
+        /* Test RFC 6874 syntax, an extension of RFC 3987. */
+        { "http://[fe80::cafe%25eth0]:555", "http", "[fe80::cafe%25eth0]", 555, "/", NULL, NULL, NULL },
+        { "http://[fe80::cafe%251]:555", "http", "[fe80::cafe%251]", 555, "/", NULL, NULL, NULL },
+
         { "DAV:", "DAV", NULL, 0, "", NULL, NULL, NULL },
         
         /* Some odd cases: heir-part and relative-ref will both match

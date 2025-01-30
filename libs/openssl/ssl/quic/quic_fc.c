@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2022-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -189,7 +189,7 @@ static int on_rx_controlled_bytes(QUIC_RXFC *rxfc, uint64_t num_bytes)
     if (num_bytes > credit) {
         ok = 0;
         num_bytes = credit;
-        rxfc->error_code = QUIC_ERR_FLOW_CONTROL_ERROR;
+        rxfc->error_code = OSSL_QUIC_ERR_FLOW_CONTROL_ERROR;
     }
 
     rxfc->swm += num_bytes;
@@ -205,7 +205,7 @@ int ossl_quic_rxfc_on_rx_stream_frame(QUIC_RXFC *rxfc, uint64_t end, int is_fin)
 
     if (rxfc->is_fin && ((is_fin && rxfc->hwm != end) || end > rxfc->hwm)) {
         /* Stream size cannot change after the stream is finished */
-        rxfc->error_code = QUIC_ERR_FINAL_SIZE_ERROR;
+        rxfc->error_code = OSSL_QUIC_ERR_FINAL_SIZE_ERROR;
         return 1; /* not a caller error */
     }
 
@@ -220,7 +220,7 @@ int ossl_quic_rxfc_on_rx_stream_frame(QUIC_RXFC *rxfc, uint64_t end, int is_fin)
         if (rxfc->parent != NULL)
             on_rx_controlled_bytes(rxfc->parent, delta); /* result ignored */
     } else if (end < rxfc->hwm && is_fin) {
-        rxfc->error_code = QUIC_ERR_FINAL_SIZE_ERROR;
+        rxfc->error_code = OSSL_QUIC_ERR_FINAL_SIZE_ERROR;
         return 1; /* not a caller error */
     }
 
@@ -359,19 +359,24 @@ int ossl_quic_rxfc_on_retire(QUIC_RXFC *rxfc,
     return 1;
 }
 
-uint64_t ossl_quic_rxfc_get_cwm(QUIC_RXFC *rxfc)
+uint64_t ossl_quic_rxfc_get_cwm(const QUIC_RXFC *rxfc)
 {
     return rxfc->cwm;
 }
 
-uint64_t ossl_quic_rxfc_get_swm(QUIC_RXFC *rxfc)
+uint64_t ossl_quic_rxfc_get_swm(const QUIC_RXFC *rxfc)
 {
     return rxfc->swm;
 }
 
-uint64_t ossl_quic_rxfc_get_rwm(QUIC_RXFC *rxfc)
+uint64_t ossl_quic_rxfc_get_rwm(const QUIC_RXFC *rxfc)
 {
     return rxfc->rwm;
+}
+
+uint64_t ossl_quic_rxfc_get_credit(const QUIC_RXFC *rxfc)
+{
+    return ossl_quic_rxfc_get_cwm(rxfc) - ossl_quic_rxfc_get_swm(rxfc);
 }
 
 int ossl_quic_rxfc_has_cwm_changed(QUIC_RXFC *rxfc, int clear)

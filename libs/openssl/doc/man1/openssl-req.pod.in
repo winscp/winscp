@@ -148,7 +148,9 @@ Prints out the value of the modulus of the public key contained in the request.
 
 =item B<-verify>
 
-Verifies the self-signature on the request.
+Verifies the self-signature on the request. If the verification fails,
+the program will immediately exit, i.e. further option processing
+(e.g. B<-text>) is skipped.
 
 =item B<-new>
 
@@ -804,6 +806,8 @@ The B<-reqexts> option has been made an alias of B<-extensions> in OpenSSL 3.2.
 Since OpenSSL 3.2,
 generated certificates bear X.509 version 3 unless B<-x509v1> is given,
 and key identifier extensions are included by default.
+
+Since OpenSSL 3.3, the B<-verify> option will exit with 1 on failure.
 
 =head1 COPYRIGHT
 

@@ -2,12 +2,12 @@
 .\"     Title: ne_set_session_flag
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 29 January 2024
+.\"      Date: 23 November 2024
 .\"    Manual: neon API reference
-.\"    Source: neon 0.33.0
+.\"    Source: neon 0.34.0
 .\"  Language: English
 .\"
-.TH "NE_SET_SESSION_FLAG" "3" "29 January 2024" "neon 0.33.0" "neon API reference"
+.TH "NE_SET_SESSION_FLAG" "3" "23 November 2024" "neon 0.34.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -91,6 +91,11 @@ for new requests
 .RS 4
 enable this flag to use various workarounds to improve interoperability with SharePoint
 .RE
+.PP
+\fBNE_SESSFLAG_STRICT\fR (default on)
+.RS 4
+disable this flag to parse HTTP/1\&.1 messages without strict requirements introduced in RFC 7230 and later
+.RE
 .SH "RETURN VALUE"
 .PP
 The
@@ -100,11 +105,7 @@ function returns zero if a flag is disabled, less than zero if the flag is not s
 .PP
 ne_session_create,
 ne_set_request_flag\&.
-.SH "AUTHOR"
-.PP
-\fBJoe Orton\fR
-.RS 4
-Author.
-.RE
 .SH "COPYRIGHT"
+.br
+Copyright \(co 2001-2024 Joe Orton
 .br

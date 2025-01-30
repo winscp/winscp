@@ -209,7 +209,7 @@ end_element(void *userdata, int state, const char *nspace, const char *name)
             if (p->status.reason_phrase) ne_free(p->status.reason_phrase);
 	    if (ne_parse_statusline(cdata, &p->status)) {
 		char buf[500];
-		NE_DEBUG(NE_DBG_HTTP, "Status line: %s\n", cdata);
+                NE_DEBUG(NE_DBG_HTTP, "[207] Invalid status-line: [%s]\n", cdata);
 		ne_snprintf(buf, 500, 
 			    _("Invalid HTTP status line in status element "
                               "at line %d of response:\nStatus line was: %s"),
@@ -217,7 +217,7 @@ end_element(void *userdata, int state, const char *nspace, const char *name)
 		ne_xml_set_error(p->parser, buf);
 		return -1;
 	    } else {
-		NE_DEBUG(NE_DBG_XML, "Decoded status line: %s\n", cdata);
+		NE_DEBUG(NE_DBG_XML, "[207] valid status-line: %s\n", cdata);
 	    }
 	}
 	break;

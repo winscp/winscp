@@ -41,7 +41,7 @@ static void proxy_activate(ProxySocket *ps)
 
     proxy_negotiator_cleanup(ps);
 
-    plug_log(ps->plug, PLUGLOG_CONNECT_SUCCESS, NULL, 0, NULL, 0);
+    plug_log(ps->plug, &ps->sock, PLUGLOG_CONNECT_SUCCESS, NULL, 0, NULL, 0);
 
     /* we want to ignore new receive events until we have sent
      * all of our buffered receive data.
@@ -189,12 +189,13 @@ static const char *sk_proxy_socket_error (Socket *s)
 
 /* basic proxy plug functions */
 
-static void plug_proxy_log(Plug *plug, PlugLogType type, SockAddr *addr,
-                           int port, const char *error_msg, int error_code)
+static void plug_proxy_log(Plug *plug, Socket *s, PlugLogType type,
+                           SockAddr *addr, int port,
+                           const char *error_msg, int error_code)
 {
     ProxySocket *ps = container_of(plug, ProxySocket, plugimpl);
 
-    plug_log(ps->plug, type, addr, port, error_msg, error_code);
+    plug_log(ps->plug, &ps->sock, type, addr, port, error_msg, error_code);
 }
 
 static void plug_proxy_closing(Plug *p, PlugCloseType type,
@@ -415,6 +416,19 @@ SockAddr *name_lookup(const char *host, int port, char **canonicalname,
     }
 }
 
+static SocketEndpointInfo *sk_proxy_endpoint_info(Socket *s, bool peer)
+{
+    ProxySocket *ps = container_of(s, ProxySocket, sock);
+
+    /* We can't reliably find out where we ended up connecting _to_:
+     * that's at the far end of the proxy, and might be anything. */
+    if (peer)
+        return NULL;
+
+    /* But we can at least tell where we're coming _from_. */
+    return sk_endpoint_info(ps->sub_socket, false);
+}
+
 static const SocketVtable ProxySocket_sockvt = {
     .plug = sk_proxy_plug,
     .close = sk_proxy_close,
@@ -423,7 +437,7 @@ static const SocketVtable ProxySocket_sockvt = {
     .write_eof = sk_proxy_write_eof,
     .set_frozen = sk_proxy_set_frozen,
     .socket_error = sk_proxy_socket_error,
-    .peer_info = NULL,
+    .endpoint_info = sk_proxy_endpoint_info,
 };
 
 static const PlugVtable ProxySocket_plugvt = {
@@ -499,8 +513,7 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
     int type = conf_get_int(conf, CONF_proxy_type);
 
     if (type != PROXY_NONE &&
-        proxy_for_destination(addr, hostname, port, conf))
-    {
+        proxy_for_destination(addr, hostname, port, conf)) {
         ProxySocket *ps;
         SockAddr *proxy_addr;
         char *proxy_canonical_name;
@@ -585,7 +598,7 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
                                      conf_get_str(conf, CONF_proxy_host),
                                      conf_get_int(conf, CONF_proxy_port),
                                      hostname, port);
-            plug_log(plug, PLUGLOG_PROXY_MSG, NULL, 0, logmsg, 0);
+            plug_log(plug, &ps->sock, PLUGLOG_PROXY_MSG, NULL, 0, logmsg, 0);
             sfree(logmsg);
         }
 
@@ -593,7 +606,7 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
             char *logmsg = dns_log_msg(conf_get_str(conf, CONF_proxy_host),
                                        conf_get_int(conf, CONF_addressfamily),
                                        "proxy");
-            plug_log(plug, PLUGLOG_PROXY_MSG, NULL, 0, logmsg, 0);
+            plug_log(plug, &ps->sock, PLUGLOG_PROXY_MSG, NULL, 0, logmsg, 0);
             sfree(logmsg);
         }
 
@@ -614,7 +627,7 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
             logmsg = dupprintf("Connecting to %s proxy at %s port %d",
                                vt->type, addrbuf,
                                conf_get_int(conf, CONF_proxy_port));
-            plug_log(plug, PLUGLOG_PROXY_MSG, NULL, 0, logmsg, 0);
+            plug_log(plug, &ps->sock, PLUGLOG_PROXY_MSG, NULL, 0, logmsg, 0);
             sfree(logmsg);
         }
 

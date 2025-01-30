@@ -336,3 +336,23 @@ void bufchain_sink_init(bufchain_sink *sink, bufchain *ch)
     sink->ch = ch;
     BinarySink_INIT(sink, bufchain_sink_write);
 }
+
+static void buffer_sink_write(BinarySink *bs, const void *data, size_t len)
+{
+    buffer_sink *sink = BinarySink_DOWNCAST(bs, buffer_sink);
+    if (len > sink->space) {
+        len = sink->space;
+        sink->overflowed = true;
+    }
+    memcpy(sink->out, data, len);
+    sink->space -= len;
+    sink->out += len;
+}
+
+void buffer_sink_init(buffer_sink *sink, void *buffer, size_t len)
+{
+    sink->out = buffer;
+    sink->space = len;
+    sink->overflowed = false;
+    BinarySink_INIT(sink, buffer_sink_write);
+}

@@ -11,7 +11,7 @@
 
 #ifdef OPENSSL_SYS_VMS
   /* So fd_set and friends get properly defined on OpenVMS */
-# define _XOPEN_SOURCE_EXTENDED 1
+# define _XOPEN_SOURCE_EXTENDED
 #endif
 
 #include <stdio.h>
@@ -32,12 +32,6 @@
 #include <openssl/evp.h>
 #include <openssl/bn.h>
 #include <openssl/x509v3.h>
-
-#if defined(__TANDEM)
-# if defined(OPENSSL_TANDEM_FLOSS)
-#  include <floss.h(floss_fork)>
-# endif
-#endif
 
 #if defined(OPENSSL_SYS_VXWORKS)
 /* not supported */

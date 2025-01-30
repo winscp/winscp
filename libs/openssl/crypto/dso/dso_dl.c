@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2000-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -217,7 +217,7 @@ static char *dl_name_converter(DSO *dso, const char *filename)
 
     len = strlen(filename);
     rsize = len + 1;
-    transform = (strstr(filename, "/") == NULL);
+    transform = (strchr(filename, '/') == NULL);
     if (transform) {
         /* We will convert this to "%s.s?" or "lib%s.s?" */
         rsize += strlen(DSO_EXTENSION); /* The length of ".s?" */

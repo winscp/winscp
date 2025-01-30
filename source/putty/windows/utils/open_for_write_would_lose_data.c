@@ -39,17 +39,17 @@ static inline bool open_for_write_would_lose_data_impl(
 bool open_for_write_would_lose_data(const Filename *fn)
 {
     static HMODULE kernel32_module;
-    DECL_WINDOWS_FUNCTION(static, BOOL, GetFileAttributesExA,
-                          (LPCSTR, GET_FILEEX_INFO_LEVELS, LPVOID));
+    DECL_WINDOWS_FUNCTION(static, BOOL, GetFileAttributesExW,
+                          (LPCWSTR, GET_FILEEX_INFO_LEVELS, LPVOID));
 
     if (!kernel32_module) {
         kernel32_module = load_system32_dll("kernel32.dll");
-        GET_WINDOWS_FUNCTION(kernel32_module, GetFileAttributesExA);
+        GET_WINDOWS_FUNCTION(kernel32_module, GetFileAttributesExW);
     }
 
-    if (p_GetFileAttributesExA) {
+    if (p_GetFileAttributesExW) {
         WIN32_FILE_ATTRIBUTE_DATA attrs;
-        if (!p_GetFileAttributesExA(fn->path, GetFileExInfoStandard, &attrs)) {
+        if (!p_GetFileAttributesExW(fn->wpath, GetFileExInfoStandard, &attrs)) {
             /*
              * Generally, if we don't identify a specific reason why we
              * should return true from this function, we return false, and
@@ -61,8 +61,8 @@ bool open_for_write_would_lose_data(const Filename *fn)
         return open_for_write_would_lose_data_impl(
             attrs.dwFileAttributes, attrs.nFileSizeHigh, attrs.nFileSizeLow);
     } else {
-        WIN32_FIND_DATA fd;
-        HANDLE h = FindFirstFile(fn->path, &fd);
+        WIN32_FIND_DATAW fd;
+        HANDLE h = FindFirstFileW(fn->wpath, &fd);
         if (h == INVALID_HANDLE_VALUE) {
             /*
              * As above, if we can't find the file at all, return false.

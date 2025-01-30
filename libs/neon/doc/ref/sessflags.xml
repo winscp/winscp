@@ -105,6 +105,14 @@
 	      improve interoperability with SharePoint</simpara>
 	    </listitem>
 	  </varlistentry>
+	  <varlistentry>
+            <term><constant>NE_SESSFLAG_STRICT</constant> (default on)</term>
+	    <listitem>
+	      <simpara>disable this flag to parse HTTP/1.1 messages
+	      without strict requirements introduced in RFC 7230 and
+	      later</simpara>
+	    </listitem>
+	  </varlistentry>
         </variablelist>
   </refsect1>
 

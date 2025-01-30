@@ -209,6 +209,8 @@ DECL_WINDOWS_FUNCTION(static, SOCKET, accept,
                       (SOCKET, struct sockaddr FAR *, int FAR *));
 DECL_WINDOWS_FUNCTION(static, int, getpeername,
                       (SOCKET, struct sockaddr FAR *, int FAR *));
+DECL_WINDOWS_FUNCTION(static, int, getsockname,
+                      (SOCKET, struct sockaddr FAR *, int FAR *));
 DECL_WINDOWS_FUNCTION(static, int, recv, (SOCKET, char FAR *, int, int));
 DECL_WINDOWS_FUNCTION(static, int, WSAIoctl,
                       (SOCKET, DWORD, LPVOID, DWORD, LPVOID, DWORD,
@@ -332,6 +334,7 @@ void sk_init(void)
     GET_WINDOWS_FUNCTION(winsock_module, ioctlsocket);
     GET_WINDOWS_FUNCTION(winsock_module, accept);
     GET_WINDOWS_FUNCTION(winsock_module, getpeername);
+    GET_WINDOWS_FUNCTION(winsock_module, getsockname);
     GET_WINDOWS_FUNCTION(winsock_module, recv);
     GET_WINDOWS_FUNCTION(winsock_module, WSAIoctl);
 
@@ -547,18 +550,18 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname,
 
 static SockAddr *sk_special_addr(SuperFamily superfamily, const char *name)
 {
-    SockAddr *ret = snew(SockAddr);
-    ret->error = NULL;
-    ret->superfamily = superfamily;
+    SockAddr *addr = snew(SockAddr);
+    addr->error = NULL;
+    addr->superfamily = superfamily;
 #ifndef NO_IPV6
-    ret->ais = NULL;
+    addr->ais = NULL;
 #endif
-    ret->addresses = NULL;
-    ret->naddresses = 0;
-    ret->refcount = 1;
-    strncpy(ret->hostname, name, lenof(ret->hostname));
-    ret->hostname[lenof(ret->hostname)-1] = '\0';
-    return ret;
+    addr->addresses = NULL;
+    addr->naddresses = 0;
+    addr->refcount = 1;
+    strncpy(addr->hostname, name, lenof(addr->hostname));
+    addr->hostname[lenof(addr->hostname)-1] = '\0';
+    return addr;
 }
 
 SockAddr *sk_nonamelookup(const char *host)
@@ -821,7 +824,7 @@ static size_t sk_net_write_oob(Socket *s, const void *data, size_t len);
 static void sk_net_write_eof(Socket *s);
 static void sk_net_set_frozen(Socket *s, bool is_frozen);
 static const char *sk_net_socket_error(Socket *s);
-static SocketPeerInfo *sk_net_peer_info(Socket *s);
+static SocketEndpointInfo *sk_net_endpoint_info(Socket *s, bool peer);
 
 static const SocketVtable NetSocket_sockvt = {
     .plug = sk_net_plug,
@@ -831,54 +834,54 @@ static const SocketVtable NetSocket_sockvt = {
     .write_eof = sk_net_write_eof,
     .set_frozen = sk_net_set_frozen,
     .socket_error = sk_net_socket_error,
-    .peer_info = sk_net_peer_info,
+    .endpoint_info = sk_net_endpoint_info,
 };
 
 static Socket *sk_net_accept(accept_ctx_t ctx, Plug *plug)
 {
     DWORD err;
     const char *errstr;
-    NetSocket *ret;
+    NetSocket *s;
 
     /*
      * Create NetSocket structure.
      */
-    ret = snew(NetSocket);
-    ret->sock.vt = &NetSocket_sockvt;
-    ret->error = NULL;
-    ret->plug = plug;
-    bufchain_init(&ret->output_data);
-    ret->writable = true;              /* to start with */
-    ret->sending_oob = 0;
-    ret->outgoingeof = EOF_NO;
-    ret->frozen = true;
-    ret->frozen_readable = false;
-    ret->localhost_only = false;    /* unused, but best init anyway */
-    ret->pending_error = 0;
-    ret->parent = ret->child = NULL;
-    ret->addr = NULL;
+    s = snew(NetSocket);
+    s->sock.vt = &NetSocket_sockvt;
+    s->error = NULL;
+    s->plug = plug;
+    bufchain_init(&s->output_data);
+    s->writable = true;              /* to start with */
+    s->sending_oob = 0;
+    s->outgoingeof = EOF_NO;
+    s->frozen = true;
+    s->frozen_readable = false;
+    s->localhost_only = false;    /* unused, but best init anyway */
+    s->pending_error = 0;
+    s->parent = s->child = NULL;
+    s->addr = NULL;
 
-    ret->s = (SOCKET)ctx.p;
+    s->s = (SOCKET)ctx.p;
 
-    if (ret->s == INVALID_SOCKET) {
+    if (s->s == INVALID_SOCKET) {
         err = p_WSAGetLastError();
-        ret->error = winsock_error_string(err);
-        return &ret->sock;
+        s->error = winsock_error_string(err);
+        return &s->sock;
     }
 
-    ret->oobinline = false;
+    s->oobinline = false;
 
     /* Set up a select mechanism. This could be an AsyncSelect on a
      * window, or an EventSelect on an event object. */
-    errstr = do_select(ret->s, true);
+    errstr = do_select(s->s, true);
     if (errstr) {
-        ret->error = errstr;
-        return &ret->sock;
+        s->error = errstr;
+        return &s->sock;
     }
 
-    add234(sktree, ret);
+    add234(sktree, s);
 
-    return &ret->sock;
+    return &s->sock;
 }
 
 static DWORD try_connect(NetSocket *sock)
@@ -901,7 +904,7 @@ static DWORD try_connect(NetSocket *sock)
     {
         SockAddr thisaddr = sk_extractaddr_tmp(
             sock->addr, &sock->step);
-        plug_log(sock->plug, PLUGLOG_CONNECT_TRYING,
+        plug_log(sock->plug, &sock->sock, PLUGLOG_CONNECT_TRYING,
                  &thisaddr, sock->port, NULL, 0);
     }
 
@@ -1062,7 +1065,7 @@ static DWORD try_connect(NetSocket *sock)
          */
         sock->writable = true;
         SockAddr thisaddr = sk_extractaddr_tmp(sock->addr, &sock->step);
-        plug_log(sock->plug, PLUGLOG_CONNECT_SUCCESS,
+        plug_log(sock->plug, &sock->sock, PLUGLOG_CONNECT_SUCCESS,
                  &thisaddr, sock->port, NULL, 0);
     }
 
@@ -1078,7 +1081,7 @@ static DWORD try_connect(NetSocket *sock)
     if (err) {
         SockAddr thisaddr = sk_extractaddr_tmp(
             sock->addr, &sock->step);
-        plug_log(sock->plug, PLUGLOG_CONNECT_FAILED,
+        plug_log(sock->plug, &sock->sock, PLUGLOG_CONNECT_FAILED,
                  &thisaddr, sock->port, sock->error, err);
     }
     return err;
@@ -1087,48 +1090,48 @@ static DWORD try_connect(NetSocket *sock)
 Socket *sk_new(SockAddr *addr, int port, bool privport, bool oobinline,
                bool nodelay, bool keepalive, Plug *plug)
 {
-    NetSocket *ret;
+    NetSocket *s;
     DWORD err;
 
     /*
      * Create NetSocket structure.
      */
-    ret = snew(NetSocket);
-    ret->sock.vt = &NetSocket_sockvt;
-    ret->error = NULL;
-    ret->plug = plug;
-    bufchain_init(&ret->output_data);
-    ret->connected = false;            /* to start with */
-    ret->writable = false;             /* to start with */
-    ret->sending_oob = 0;
-    ret->outgoingeof = EOF_NO;
-    ret->frozen = false;
-    ret->frozen_readable = false;
-    ret->localhost_only = false;    /* unused, but best init anyway */
-    ret->pending_error = 0;
-    ret->parent = ret->child = NULL;
-    ret->oobinline = oobinline;
-    ret->nodelay = nodelay;
-    ret->keepalive = keepalive;
-    ret->privport = privport;
-    ret->port = port;
-    ret->addr = addr;
-    START_STEP(ret->addr, ret->step);
-    ret->s = INVALID_SOCKET;
+    s = snew(NetSocket);
+    s->sock.vt = &NetSocket_sockvt;
+    s->error = NULL;
+    s->plug = plug;
+    bufchain_init(&s->output_data);
+    s->connected = false;            /* to start with */
+    s->writable = false;             /* to start with */
+    s->sending_oob = 0;
+    s->outgoingeof = EOF_NO;
+    s->frozen = false;
+    s->frozen_readable = false;
+    s->localhost_only = false;    /* unused, but best init anyway */
+    s->pending_error = 0;
+    s->parent = s->child = NULL;
+    s->oobinline = oobinline;
+    s->nodelay = nodelay;
+    s->keepalive = keepalive;
+    s->privport = privport;
+    s->port = port;
+    s->addr = addr;
+    START_STEP(s->addr, s->step);
+    s->s = INVALID_SOCKET;
 
     err = 0;
     do {
-        err = try_connect(ret);
-    } while (err && sk_nextaddr(ret->addr, &ret->step));
+        err = try_connect(s);
+    } while (err && sk_nextaddr(s->addr, &s->step));
 
-    return &ret->sock;
+    return &s->sock;
 }
 
 static Socket *sk_newlistener_internal(
     const char *srcaddr, int port, Plug *plug,
     bool local_host_only, int orig_address_family)
 {
-    SOCKET s;
+    SOCKET sk;
     SOCKADDR_IN a;
 #ifndef NO_IPV6
     SOCKADDR_IN6 a6;
@@ -1141,7 +1144,7 @@ static Socket *sk_newlistener_internal(
 
     DWORD err;
     const char *errstr;
-    NetSocket *ret;
+    NetSocket *s;
     int retcode;
 
     int address_family = orig_address_family;
@@ -1149,20 +1152,20 @@ static Socket *sk_newlistener_internal(
     /*
      * Create NetSocket structure.
      */
-    ret = snew(NetSocket);
-    ret->sock.vt = &NetSocket_sockvt;
-    ret->error = NULL;
-    ret->plug = plug;
-    bufchain_init(&ret->output_data);
-    ret->writable = false;             /* to start with */
-    ret->sending_oob = 0;
-    ret->outgoingeof = EOF_NO;
-    ret->frozen = false;
-    ret->frozen_readable = false;
-    ret->localhost_only = local_host_only;
-    ret->pending_error = 0;
-    ret->parent = ret->child = NULL;
-    ret->addr = NULL;
+    s = snew(NetSocket);
+    s->sock.vt = &NetSocket_sockvt;
+    s->error = NULL;
+    s->plug = plug;
+    bufchain_init(&s->output_data);
+    s->writable = false;             /* to start with */
+    s->sending_oob = 0;
+    s->outgoingeof = EOF_NO;
+    s->frozen = false;
+    s->frozen_readable = false;
+    s->localhost_only = local_host_only;
+    s->pending_error = 0;
+    s->parent = s->child = NULL;
+    s->addr = NULL;
 
     /*
      * Our default, if passed the `don't care' value
@@ -1176,25 +1179,25 @@ static Socket *sk_newlistener_internal(
     /*
      * Open socket.
      */
-    s = p_socket(address_family, SOCK_STREAM, 0);
-    ret->s = s;
+    sk = p_socket(address_family, SOCK_STREAM, 0);
+    s->s = sk;
 
-    if (s == INVALID_SOCKET) {
+    if (sk == INVALID_SOCKET) {
         err = p_WSAGetLastError();
-        ret->error = winsock_error_string(err);
-        return &ret->sock;
+        s->error = winsock_error_string(err);
+        return &s->sock;
     }
 
-    SetHandleInformation((HANDLE)s, HANDLE_FLAG_INHERIT, 0);
+    SetHandleInformation((HANDLE)sk, HANDLE_FLAG_INHERIT, 0);
 
-    ret->oobinline = false;
+    s->oobinline = false;
 
 #if HAVE_AFUNIX_H
     if (address_family != AF_UNIX)
 #endif
     {
         BOOL on = true;
-        p_setsockopt(s, SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
+        p_setsockopt(sk, SOL_SOCKET, SO_EXCLUSIVEADDRUSE,
                      (const char *)&on, sizeof(on));
     }
 
@@ -1244,7 +1247,7 @@ static Socket *sk_newlistener_internal(
             a.sin_addr.s_addr = p_inet_addr(srcaddr);
             if (a.sin_addr.s_addr != INADDR_NONE) {
                 /* Override localhost_only with specified listen addr. */
-                ret->localhost_only = ipv4_is_loopback(a.sin_addr);
+                s->localhost_only = ipv4_is_loopback(a.sin_addr);
                 got_addr = true;
             }
         }
@@ -1277,7 +1280,7 @@ static Socket *sk_newlistener_internal(
         unreachable("bad address family in sk_newlistener_internal");
     }
 
-    retcode = p_bind(s, bindaddr, bindsize);
+    retcode = p_bind(sk, bindaddr, bindsize);
     if (retcode != SOCKET_ERROR) {
         err = 0;
     } else {
@@ -1285,28 +1288,28 @@ static Socket *sk_newlistener_internal(
     }
 
     if (err) {
-        p_closesocket(s);
-        ret->error = winsock_error_string(err);
-        return &ret->sock;
+        p_closesocket(sk);
+        s->error = winsock_error_string(err);
+        return &s->sock;
     }
 
 
-    if (p_listen(s, SOMAXCONN) == SOCKET_ERROR) {
-        p_closesocket(s);
-        ret->error = winsock_error_string(p_WSAGetLastError());
-        return &ret->sock;
+    if (p_listen(sk, SOMAXCONN) == SOCKET_ERROR) {
+        p_closesocket(sk);
+        s->error = winsock_error_string(p_WSAGetLastError());
+        return &s->sock;
     }
 
     /* Set up a select mechanism. This could be an AsyncSelect on a
      * window, or an EventSelect on an event object. */
-    errstr = do_select(s, true);
+    errstr = do_select(sk, true);
     if (errstr) {
-        p_closesocket(s);
-        ret->error = errstr;
-        return &ret->sock;
+        p_closesocket(sk);
+        s->error = errstr;
+        return &s->sock;
     }
 
-    add234(sktree, ret);
+    add234(sktree, s);
 
 #ifndef NO_IPV6
     /*
@@ -1320,8 +1323,8 @@ static Socket *sk_newlistener_internal(
         if (other) {
             NetSocket *ns = container_of(other, NetSocket, sock);
             if (!ns->error) {
-                ns->parent = ret;
-                ret->child = ns;
+                ns->parent = s;
+                s->child = ns;
             } else {
                 sfree(ns);
             }
@@ -1329,7 +1332,7 @@ static Socket *sk_newlistener_internal(
     }
 #endif
 
-    return &ret->sock;
+    return &s->sock;
 }
 
 Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
@@ -1575,8 +1578,8 @@ void select_result(WPARAM wParam, LPARAM lParam)
         if (s->addr) {
             SockAddr thisaddr = sk_extractaddr_tmp(
                 s->addr, &s->step);
-            plug_log(s->plug, PLUGLOG_CONNECT_FAILED, &thisaddr, s->port,
-                     winsock_error_string(err), err);
+            plug_log(s->plug, &s->sock, PLUGLOG_CONNECT_FAILED, &thisaddr,
+                     s->port, winsock_error_string(err), err);
             while (err && s->addr && sk_nextaddr(s->addr, &s->step)) {
                 err = try_connect(s);
             }
@@ -1601,7 +1604,7 @@ void select_result(WPARAM wParam, LPARAM lParam)
         if (s->addr) {
             SockAddr thisaddr = sk_extractaddr_tmp(
                 s->addr, &s->step);
-            plug_log(s->plug, PLUGLOG_CONNECT_SUCCESS,
+            plug_log(s->plug, &s->sock, PLUGLOG_CONNECT_SUCCESS,
                      &thisaddr, s->port, NULL, 0);
 
             sk_addr_free(s->addr);
@@ -1707,8 +1710,7 @@ void select_result(WPARAM wParam, LPARAM lParam)
         memset(&isa, 0, sizeof(isa));
         err = 0;
         t = p_accept(s->s,(struct sockaddr *)&isa,&addrlen);
-        if (t == INVALID_SOCKET)
-        {
+        if (t == INVALID_SOCKET) {
             err = p_WSAGetLastError();
             if (err == WSATRY_AGAIN)
                 break;
@@ -1748,7 +1750,7 @@ static const char *sk_net_socket_error(Socket *sock)
     return s->error;
 }
 
-static SocketPeerInfo *sk_net_peer_info(Socket *sock)
+static SocketEndpointInfo *sk_net_endpoint_info(Socket *sock, bool peer)
 {
     NetSocket *s = container_of(sock, NetSocket, sock);
 #ifdef NO_IPV6
@@ -1758,12 +1760,17 @@ static SocketPeerInfo *sk_net_peer_info(Socket *sock)
     char buf[INET6_ADDRSTRLEN];
 #endif
     int addrlen = sizeof(addr);
-    SocketPeerInfo *pi;
+    SocketEndpointInfo *pi;
 
-    if (p_getpeername(s->s, (struct sockaddr *)&addr, &addrlen) < 0)
-        return NULL;
+    {
+        int retd = (peer ?
+                    p_getpeername(s->s, (struct sockaddr *)&addr, &addrlen) :
+                    p_getsockname(s->s, (struct sockaddr *)&addr, &addrlen));
+        if (retd < 0)
+            return NULL;
+    }
 
-    pi = snew(SocketPeerInfo);
+    pi = snew(SocketEndpointInfo);
     pi->addressfamily = ADDRTYPE_UNSPEC;
     pi->addr_text = NULL;
     pi->port = -1;
@@ -1871,9 +1878,9 @@ char *get_hostname(void)
 
 SockAddr *platform_get_x11_unix_address(const char *display, int displaynum)
 {
-    SockAddr *ret = snew(SockAddr);
-    memset(ret, 0, sizeof(SockAddr));
-    ret->error = "unix sockets for X11 not supported on this platform";
-    ret->refcount = 1;
-    return ret;
+    SockAddr *addr = snew(SockAddr);
+    memset(addr, 0, sizeof(SockAddr));
+    addr->error = "unix sockets for X11 not supported on this platform";
+    addr->refcount = 1;
+    return addr;
 }

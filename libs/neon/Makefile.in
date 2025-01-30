@@ -104,6 +104,7 @@ docs-ps:
 docs-html:
 	test -d doc/html && rm -rf doc/html || true
 	mkdir -p doc/html
+	cp $(srcdir)/doc/manual.css doc/html
 	$(XMLTO) -o `pwd`/doc/html -x $(srcdir)/doc/html.xsl html $(srcdir)/doc/manual.xml
 
 # Validate the manual source

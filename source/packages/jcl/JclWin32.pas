@@ -202,14 +202,27 @@ type
     ReparseDataLength: Word;
     Reserved: Word;
     case Integer of
-      0: ( // SymbolicLinkReparseBuffer and MountPointReparseBuffer
-        SubstituteNameOffset: Word;
-        SubstituteNameLength: Word;
-        PrintNameOffset: Word;
-        PrintNameLength: Word;
-        PathBuffer: array [0..0] of WCHAR);
-      1: ( // GenericReparseBuffer
-        DataBuffer: array [0..0] of Byte);
+      0: (
+        SymbolicLinkReparseBuffer: record
+          SubstituteNameOffset: Word;
+          SubstituteNameLength: Word;
+          PrintNameOffset: Word;
+          PrintNameLength: Word;
+          Flags: ULONG;
+          PathBuffer: array [0..0] of WCHAR;
+        end);
+      1: (
+        MountPointReparseBuffer: record
+          SubstituteNameOffset: Word;
+          SubstituteNameLength: Word;
+          PrintNameOffset: Word;
+          PrintNameLength: Word;
+          PathBuffer: array [0..0] of WCHAR;
+        end);
+      2: (
+        GenericReparseBuffer: record
+          DataBuffer: array [0..0] of Byte;
+        end);
   end;
   {$EXTERNALSYM REPARSE_DATA_BUFFER}
   REPARSE_DATA_BUFFER = _REPARSE_DATA_BUFFER;
@@ -1138,16 +1151,28 @@ const
   {$EXTERNALSYM IO_REPARSE_TAG_MOUNT_POINT}
   IO_REPARSE_TAG_HSM         = DWORD($C0000004);
   {$EXTERNALSYM IO_REPARSE_TAG_HSM}
+  IO_REPARSE_TAG_DRIVER_EXTENDER = DWORD($80000005);
+  {$EXTERNALSYM IO_REPARSE_TAG_DRIVER_EXTENDER}
+  IO_REPARSE_TAG_HSM2        = DWORD($80000006);
+  {$EXTERNALSYM IO_REPARSE_TAG_HSM2}
   IO_REPARSE_TAG_SIS         = DWORD($80000007);
   {$EXTERNALSYM IO_REPARSE_TAG_SIS}
   IO_REPARSE_TAG_DFS         = DWORD($8000000A);
   {$EXTERNALSYM IO_REPARSE_TAG_DFS}
   IO_REPARSE_TAG_FILTER_MANAGER = DWORD($8000000B);
   {$EXTERNALSYM IO_REPARSE_TAG_FILTER_MANAGER}
+  IO_REPARSE_TAG_SYMLINK     = DWORD($A000000C);
+  {$EXTERNALSYM IO_REPARSE_TAG_SYMLINK}
+  IO_REPARSE_TAG_DFSR        = DWORD($80000012);
+  {$EXTERNALSYM IO_REPARSE_TAG_DFSR}
+  IO_REPARSE_TAG_NFS         = DWORD($80000014);
+  {$EXTERNALSYM IO_REPARSE_TAG_NFS}
+
   IO_COMPLETION_MODIFY_STATE = $0002;
   {$EXTERNALSYM IO_COMPLETION_MODIFY_STATE}
   IO_COMPLETION_ALL_ACCESS   = DWORD(STANDARD_RIGHTS_REQUIRED or SYNCHRONIZE or $3);
   {$EXTERNALSYM IO_COMPLETION_ALL_ACCESS}
+
   DUPLICATE_CLOSE_SOURCE     = $00000001;
   {$EXTERNALSYM DUPLICATE_CLOSE_SOURCE}
   DUPLICATE_SAME_ACCESS      = $00000002;
@@ -1641,7 +1666,7 @@ const
   {$EXTERNALSYM IMAGE_SCN_LNK_NRELOC_OVFL}
   IMAGE_SCN_MEM_DISCARDABLE = $02000000; // Section can be discarded.
   {$EXTERNALSYM IMAGE_SCN_MEM_DISCARDABLE}
-  IMAGE_SCN_MEM_NOT_CACHED  = $04000000; // Section is not cachable.
+  IMAGE_SCN_MEM_NOT_CACHED  = $04000000; // Section is not cacheable.
   {$EXTERNALSYM IMAGE_SCN_MEM_NOT_CACHED}
   IMAGE_SCN_MEM_NOT_PAGED   = $08000000; // Section is not pageable.
   {$EXTERNALSYM IMAGE_SCN_MEM_NOT_PAGED}
@@ -1911,7 +1936,7 @@ type
   {$EXTERNALSYM TImageTlsDirectory32}
   PImageTlsDirectory32 = PIMAGE_TLS_DIRECTORY32;
   {$EXTERNALSYM PImageTlsDirectory32}
-  
+
 const
   IMAGE_ORDINAL_FLAG = IMAGE_ORDINAL_FLAG32;
   {$EXTERNALSYM IMAGE_ORDINAL_FLAG}
@@ -2136,7 +2161,7 @@ type
   {$EXTERNALSYM IMAGE_RESOURCE_DATA_ENTRY}
   TImageResourceDataEntry = IMAGE_RESOURCE_DATA_ENTRY;
   PImageResourceDataEntry = PIMAGE_RESOURCE_DATA_ENTRY;
-  
+
 //
 // Load Configuration Directory Entry
 //
@@ -2731,7 +2756,7 @@ type
   {$EXTERNALSYM POSVERSIONINFOEX}
   LPOSVERSIONINFOEX = LPOSVERSIONINFOEXA;
   {$EXTERNALSYM LPOSVERSIONINFOEX}
-  TOSVersionInfoEx = TOSVersionInfoExA;  
+  TOSVersionInfoEx = TOSVersionInfoExA;
 
 {$ENDIF ~SUPPORTS_UNICODE}
 
@@ -2996,7 +3021,7 @@ type
 function GlobalMemoryStatusEx(out lpBuffer: TMemoryStatusEx): BOOL; stdcall;
 
 // line 3189
-  
+
 
 function BackupSeek(hFile: THandle; dwLowBytesToSeek, dwHighBytesToSeek: DWORD;
   out lpdwLowByteSeeked, lpdwHighByteSeeked: DWORD;
@@ -3041,7 +3066,7 @@ I have not had this problem on Windows 98.
 Ray Lischner, author of Delphi in a Nutshell (coming later this year)
 http://www.bardware.com and http://www.tempest-sw.com
 }
-function CreateMutex(lpMutexAttributes: PSecurityAttributes; bInitialOwner: DWORD; lpName: PChar): THandle; stdcall;
+function CreateMutex(lpMutexAttributes: PSecurityAttributes; bInitialOwner: BOOL; lpName: PChar): THandle; stdcall;
 {$EXTERNALSYM CreateMutex}
 
 // alternative conversion for WinNT 4.0 SP6 and later (OSVersionInfoEx instead of OSVersionInfo)
@@ -4960,7 +4985,7 @@ const
   {$EXTERNALSYM USER_PRIV_ADMIN}
 
 // line 1177
-  
+
 //
 // Group Class
 //
@@ -5804,8 +5829,8 @@ const
   CSIDL_COMMON_MUSIC         = $0035; { All Users\My Music }
   CSIDL_COMMON_PICTURES      = $0036; { All Users\My Pictures }
   CSIDL_COMMON_VIDEO         = $0037; { All Users\My Video }
-  CSIDL_RESOURCES            = $0038; { Resource Direcotry }
-  CSIDL_RESOURCES_LOCALIZED  = $0039; { Localized Resource Direcotry }
+  CSIDL_RESOURCES            = $0038; { Resource Directory }
+  CSIDL_RESOURCES_LOCALIZED  = $0039; { Localized Resource Directory }
   CSIDL_COMMON_OEM_LINKS     = $003A; { Links to All Users OEM specific apps }
   CSIDL_CDBURN_AREA          = $003B; { USERPROFILE\Local Settings\Application Data\Microsoft\CD Burning }
   CSIDL_COMPUTERSNEARME      = $003D; { Computers Near Me (computered from Workgroup membership) }
@@ -6575,7 +6600,7 @@ const
 
   FSCTL_FIND_FILES_BY_SID = (
     (FILE_DEVICE_FILE_SYSTEM shl 16) or (FILE_ANY_ACCESS shl 14) or
-    (35 shl 2) or METHOD_NEITHER);  
+    (35 shl 2) or METHOD_NEITHER);
   {$EXTERNALSYM FSCTL_FIND_FILES_BY_SID}
 
 // decommissioned fsctl value                                             36
@@ -7027,7 +7052,7 @@ const
   MAXIMUM_RESERVED_MANIFEST_RESOURCE_ID = MAKEINTRESOURCE(16{inclusive});
   {$EXTERNALSYM MAXIMUM_RESERVED_MANIFEST_RESOURCE_ID}
 
-// line 1451  
+// line 1451
 
   KLF_SETFORPROCESS = $00000100;
   {$EXTERNALSYM KLF_SETFORPROCESS}
@@ -8614,7 +8639,7 @@ begin
   Result := _AdjustTokenPrivileges(TokenHandle, DisableAllPrivileges, NewState, BufferLength, PreviousState, ReturnLength);
 end;
 
-function CreateMutex(lpMutexAttributes: PSecurityAttributes; bInitialOwner: DWORD; lpName: PChar): THandle; stdcall;
+function CreateMutex(lpMutexAttributes: PSecurityAttributes; bInitialOwner: BOOL; lpName: PChar): THandle; stdcall;
   external kernel32 name 'CreateMutex' + AWSuffix;
 
 function GetVersionEx(var lpVersionInformation: TOSVersionInfoEx): BOOL; stdcall;
@@ -9060,7 +9085,7 @@ end;
 
 const
   PowrprofLib = 'PowrProf.dll';
-  
+
 type
   TIsPwrSuspendAllowed = function : BOOL; stdcall;
 
@@ -9117,7 +9142,7 @@ type
   TStgCreateStorageEx = function (const pwcsName: PWideChar; grfMode: DWORD;
     stgfmt: DWORD; grfAttrs: DWORD; pStgOptions: PSTGOPTIONS; reserved2: Pointer;
     riid: PGUID; out stgOpen: IInterface): HResult; stdcall;
-  
+
 var
   _StgCreateStorageEx: TStgCreateStorageEx = nil;
 

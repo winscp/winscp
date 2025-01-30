@@ -12,6 +12,7 @@ appropriate release branch.
 OpenSSL Releases
 ----------------
 
+ - [OpenSSL 3.3](#openssl-33)
  - [OpenSSL 3.2](#openssl-32)
  - [OpenSSL 3.1](#openssl-31)
  - [OpenSSL 3.0](#openssl-30)
@@ -22,10 +23,10 @@ OpenSSL Releases
  - [OpenSSL 1.0.0](#openssl-100)
  - [OpenSSL 0.9.x](#openssl-09x)
 
-OpenSSL 3.2
+OpenSSL 3.3
 -----------
 
-### Changes between 3.2.2 and 3.2.3 [3 Sep 2024]
+### Changes between 3.3.1 and 3.3.2 [3 Sep 2024]
 
  * Fixed possible denial of service in X.509 name checks.
 
@@ -49,7 +50,7 @@ OpenSSL 3.2
 
    *Matt Caswell*
 
-### Changes between 3.2.1 and 3.2.2 [4 Jun 2024]
+### Changes between 3.3.0 and 3.3.1 [4 Jun 2024]
 
  * Fixed potential use after free after SSL_free_buffers() is called.
 
@@ -99,6 +100,201 @@ OpenSSL 3.2
 
    *Tomáš Mráz and Paul Dale*
 
+### Changes between 3.2 and 3.3.0 [9 Apr 2024]
+
+ * The `-verify` option to the `openssl crl` and `openssl req` will make
+   the program exit with 1 on failure.
+
+   *Vladimír Kotal*
+
+ * The BIO_get_new_index() function can only be called 127 times before it
+   reaches its upper bound of BIO_TYPE_MASK. It will now correctly return an
+   error of -1 once it is exhausted. Users may need to reserve using this
+   function for cases where BIO_find_type() is required. Either BIO_TYPE_NONE
+   or BIO_get_new_index() can be used to supply a type to BIO_meth_new().
+
+   *Shane Lontis*
+
+ * Added API functions SSL_SESSION_get_time_ex(), SSL_SESSION_set_time_ex()
+   using time_t which is Y2038 safe on 32 bit systems when 64 bit time
+   is enabled (e.g via setting glibc macro _TIME_BITS=64).
+
+   *Ijtaba Hussain*
+
+ * The d2i_ASN1_GENERALIZEDTIME(), d2i_ASN1_UTCTIME(), ASN1_TIME_check(), and
+   related functions have been augmented to check for a minimum length of
+   the input string, in accordance with ITU-T X.690 section 11.7 and 11.8.
+
+   *Job Snijders*
+
+ * Unknown entries in TLS SignatureAlgorithms, ClientSignatureAlgorithms
+   config options and the respective calls to SSL[_CTX]_set1_sigalgs() and
+   SSL[_CTX]_set1_client_sigalgs() that start with `?` character are
+   ignored and the configuration will still be used.
+
+   Similarly unknown entries that start with `?` character in a TLS
+   Groups config option or set with SSL[_CTX]_set1_groups_list() are ignored
+   and the configuration will still be used.
+
+   In both cases if the resulting list is empty, an error is returned.
+
+   *Tomáš Mráz*
+
+ * The EVP_PKEY_fromdata function has been augmented to allow for the derivation
+   of CRT (Chinese Remainder Theorem) parameters when requested.  See the
+   OSSL_PKEY_PARAM_RSA_DERIVE_FROM_PQ param in the EVP_PKEY-RSA documentation.
+
+   *Neil Horman*
+
+ * The activate and soft_load configuration settings for providers in
+   openssl.cnf have been updated to require a value of [1|yes|true|on]
+   (in lower or UPPER case) to enable the setting. Conversely a value
+   of [0|no|false|off] will disable the setting. All other values, or the
+   omission of a value for these settings will result in an error.
+
+    *Neil Horman*
+
+ * Added `-set_issuer` and `-set_subject` options to `openssl x509` to
+   override the Issuer and Subject when creating a certificate. The `-subj`
+   option now is an alias for `-set_subject`.
+
+    *Job Snijders, George Michaelson*
+
+ * OPENSSL_sk_push() and sk_<TYPE>_push() functions now return 0 instead of -1
+   if called with a NULL stack argument.
+
+   *Tomáš Mráz*
+
+ * In `openssl speed`, changed the default hash function used with `hmac` from
+   `md5` to `sha256`.
+
+   *James Muir*
+
+ * Added several new features of CMPv3 defined in RFC 9480 and RFC 9483:
+   - `certProfile` request message header and respective `-profile` CLI option
+   - support for delayed delivery of all types of response messages
+
+   *David von Oheimb*
+
+ * The build of exporters (such as `.pc` files for pkg-config) cleaned up to
+   be less hard coded in the build file templates, and to allow easier
+   addition of more exporters.  With that, an exporter for CMake is also
+   added.
+
+   *Richard Levitte*
+
+ * The BLAKE2s hash algorithm matches BLAKE2b's support
+   for configurable output length.
+
+   *Ahelenia Ziemiańska*
+
+ * New option `SSL_OP_PREFER_NO_DHE_KEX`, which allows configuring a TLS1.3
+   server to prefer session resumption using PSK-only key exchange over PSK
+   with DHE, if both are available.
+
+   *Markus Minichmayr, Tapkey GmbH*
+
+ * New API `SSL_write_ex2`, which can be used to send an end-of-stream (FIN)
+   condition in an optimised way when using QUIC.
+
+   *Hugo Landau*
+
+ * New atexit configuration switch, which controls whether the OPENSSL_cleanup
+   is registered when libcrypto is unloaded. This is turned off on NonStop
+   configurations because of loader differences on that platform compared to
+   Linux.
+
+   *Randall S. Becker*
+
+ * Support for qlog for tracing QUIC connections has been added.
+
+   The qlog output from OpenSSL currently uses a pre-standard draft version of
+   qlog. The output from OpenSSL will change in incompatible ways in future
+   releases, and is not subject to any format stability or compatibility
+   guarantees at this time. This functionality can be
+   disabled with the build-time option `no-unstable-qlog`. See the
+   openssl-qlog(7) manpage for details.
+
+   *Hugo Landau*
+
+ * Added APIs to allow configuring the negotiated idle timeout for QUIC
+   connections, and to allow determining the number of additional streams
+   that can currently be created for a QUIC connection.
+
+   *Hugo Landau*
+
+ * Added APIs to allow disabling implicit QUIC event processing for
+   QUIC SSL objects, allowing applications to control when event handling
+   occurs. Refer to the SSL_get_value_uint(3) manpage for details.
+
+   *Hugo Landau*
+
+ * Limited support for polling of QUIC connection and stream objects in a
+   non-blocking manner. Refer to the SSL_poll(3) manpage for details.
+
+   *Hugo Landau*
+
+ * Added APIs to allow querying the size and utilisation of a QUIC stream's
+   write buffer. Refer to the SSL_get_value_uint(3) manpage for details.
+
+   *Hugo Landau*
+
+ * New limit on HTTP response headers is introduced to HTTP client. The
+   default limit is set to 256 header lines. If limit is exceeded the
+   response processing stops with error HTTP_R_RESPONSE_TOO_MANY_HDRLINES.
+   Application may call OSSL_HTTP_REQ_CTX_set_max_response_hdr_lines(3)
+   to change the default. Setting the value to 0 disables the limit.
+
+   *Alexandr Nedvedicky*
+
+ * Applied AES-GCM unroll8 optimisation to Microsoft Azure Cobalt 100
+
+   *Tom Cosgrove*
+
+ * Added X509_STORE_get1_objects to avoid issues with the existing
+   X509_STORE_get0_objects API in multi-threaded applications. Refer to the
+   documentation for details.
+
+   *David Benjamin*
+
+ * Added assembly implementation for md5 on loongarch64
+
+   *Min Zhou*
+
+ * Optimized AES-CTR for ARM Neoverse V1 and V2
+
+   *Fisher Yu*
+
+ * Enable AES and SHA3 optimisations on Applie Silicon M3-based MacOS systems
+   similar to M1/M2.
+
+   *Tom Cosgrove*
+
+ * Added a new EVP_DigestSqueeze() API. This allows SHAKE to squeeze multiple
+   times with different output sizes.
+
+   *Shane Lontis, Holger Dengler*
+
+ * Various optimizations for cryptographic routines using RISC-V vector crypto
+   extensions
+
+   *Christoph Müllner, Charalampos Mitrodimas, Ard Biesheuvel, Phoebe Chen,
+    Jerry Shih*
+
+ * Accept longer context for TLS 1.2 exporters
+
+   While RFC 5705 implies that the maximum length of a context for exporters is
+   65535 bytes as the length is embedded in uint16, the previous implementation
+   enforced a much smaller limit, which is less than 1024 bytes. This
+   restriction has been removed.
+
+   *Daiki Ueno*
+
+OpenSSL 3.2
+-----------
+
+### Changes between 3.2.1 and 3.2.2 [xx XXX xxxx]
+
  * Fixed an issue where some non-default TLS server configurations can cause
    unbounded memory growth when processing TLSv1.3 sessions. An attacker may
    exploit certain server configurations to trigger unbounded memory growth that
@@ -116,12 +312,6 @@ OpenSSL 3.2
    ([CVE-2024-2511])
 
    *Matt Caswell*
-
- * New atexit configuration switch, which controls whether the OPENSSL_cleanup
-   is registered when libcrypto is unloaded. This can be used on platforms
-   where using atexit() from shared libraries causes crashes on exit.
-
-   *Randall S. Becker*
 
  * Fixed bug where SSL_export_keying_material() could not be used with QUIC
    connections. (#23560)

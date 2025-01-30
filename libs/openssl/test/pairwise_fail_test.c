@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2023-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -115,6 +115,17 @@ static int test_keygen_pairwise_failure(void)
         if (!TEST_ptr(pParams = PEM_read_bio_Parameters_ex(bio, NULL, libctx, NULL)))
             goto err;
         if (!TEST_ptr(ctx = EVP_PKEY_CTX_new_from_pkey(libctx, pParams, NULL)))
+            goto err;
+        if (!TEST_int_eq(EVP_PKEY_keygen_init(ctx), 1))
+            goto err;
+        if (!TEST_int_le(EVP_PKEY_keygen(ctx, &pkey), 0))
+            goto err;
+        if (!TEST_ptr_null(pkey))
+            goto err;
+    } else if (strncmp(pairwise_name, "eddsa", 5) == 0) {
+        if (!TEST_true(setup_selftest_pairwise_failure(type)))
+            goto err;
+        if (!TEST_ptr(ctx = EVP_PKEY_CTX_new_from_name(libctx, "ED25519", NULL)))
             goto err;
         if (!TEST_int_eq(EVP_PKEY_keygen_init(ctx), 1))
             goto err;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2022-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -118,6 +118,9 @@ static int ssl3_cipher(OSSL_RECORD_LAYER *rl, TLS_RL_RECORD *inrecs,
 
     l = rec->length;
     bs = EVP_CIPHER_CTX_get_block_size(ds);
+
+    if (bs == 0)
+        return 0;
 
     /* COMPRESS */
 
@@ -308,7 +311,7 @@ static int ssl3_mac(OSSL_RECORD_LAYER *rl, TLS_RL_RECORD *rec, unsigned char *md
     return 1;
 }
 
-struct record_functions_st ssl_3_0_funcs = {
+const struct record_functions_st ssl_3_0_funcs = {
     ssl3_set_crypto_state,
     ssl3_cipher,
     ssl3_mac,

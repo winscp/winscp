@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2022-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -303,7 +303,7 @@ static int tls13_add_record_padding(OSSL_RECORD_LAYER *rl,
     return 1;
 }
 
-struct record_functions_st tls_1_3_funcs = {
+const struct record_functions_st tls_1_3_funcs = {
     tls13_set_crypto_state,
     tls13_cipher,
     NULL,

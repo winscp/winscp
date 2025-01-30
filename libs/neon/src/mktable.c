@@ -92,6 +92,56 @@ static unsigned char gen_extparam(unsigned char ch)
     }
 }
 
+/*
+ * Map: '0'-'9' => 0-9
+ * reason-phrase characters => 0-10
+ * bad things => 99
+ *  
+ * RFC 9112: reason-phrase  = 1*( HTAB / SP / VCHAR / obs-text )
+ * RFC 5234: VCHAR          = %x21-7E
+ * RFC 9110: obs-text       = %x80-FF
+ */
+static unsigned char gen_status_line(unsigned char ch)
+{
+    if (ch >= '0' && ch <= '9')
+        return ch - '0';
+
+    if (ch == '\t' || ch == ' ' 
+        || (ch >= 0x21 && ch != 0x7F)) {
+        return 10;
+    }
+
+    return 99;
+}
+
+/* https://www.rfc-editor.org/rfc/rfc9110#name-tokens
+ token          = 1*tchar
+
+ tchar          = "!" / "#" / "$" / "%" / "&" / "'" / "*"
+                   / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
+                   / DIGIT / ALPHA
+                   ; any VCHAR, except delimiters
+
+ VCHAR          =  %x21-7E
+ delimiters = (DQUOTE and "(),/:;<=>?@[\]{}")
+*/
+
+static unsigned char gen_token(unsigned char ch)
+{
+    switch (ch) {
+    case '!': case '#': case '$': case '%': case '&': case '\'': case '*':
+    case '+': case '-': case '.': case '^': case '_': case '`': case '|':
+    case '~':
+        return ch;
+    case '(': case ')': case ',': case '/': case ':': case ';': case '<':
+    case '=': case '>': case '?': case '@': case '[': case '\\': case ']':
+    case '{': case '}': case '"':
+        return 0;
+    default:
+        return ch >= 0x21 && ch <= 0x7E ? tolower(ch) : 0;
+    }
+}
+
 #define FLAG_DECIMAL (0x01)
 #define FLAG_SHORT   (0x02)
 
@@ -105,8 +155,10 @@ static const struct {
     { "validb64", valid_b64, FLAG_DECIMAL | FLAG_SHORT },
     { "decodeb64", decode_b64, 0 },
     { "quote", gen_quote, FLAG_DECIMAL | FLAG_SHORT },
+    { "status_line", gen_status_line, FLAG_DECIMAL | FLAG_SHORT },
     { "extparam", gen_extparam, FLAG_DECIMAL | FLAG_SHORT },
     { "safe_username", safe_username, FLAG_DECIMAL | FLAG_SHORT },
+    { "http_token", gen_token, 0 },
 };
 
 static void fail(const char *err, const char *arg)

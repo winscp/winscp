@@ -95,6 +95,10 @@
 /* Define to 1 if you have the `gnutls_session_get_data2' function. */
 #undef HAVE_GNUTLS_SESSION_GET_DATA2
 
+/* Define to 1 if you have the `gnutls_set_default_priority_append' function.
+   */
+#undef HAVE_GNUTLS_SET_DEFAULT_PRIORITY_APPEND
+
 /* Define to 1 if you have the `gnutls_x509_crt_equals' function. */
 #undef HAVE_GNUTLS_X509_CRT_EQUALS
 
@@ -127,6 +131,12 @@
 
 /* Define to 1 if you have the <iconv.h> header file. */
 #undef HAVE_ICONV_H
+
+/* Define to 1 if you have the `if_indextoname' function. */
+#undef HAVE_IF_INDEXTONAME
+
+/* Define to 1 if you have the `if_nametoindex' function. */
+#undef HAVE_IF_NAMETOINDEX
 
 /* Define to 1 if you have the `inet_ntop' function. */
 #undef HAVE_INET_NTOP
@@ -175,6 +185,9 @@
 
 /* Define to 1 if you have the <netinet/tcp.h> header file. */
 #undef HAVE_NETINET_TCP_H
+
+/* Define to 1 if you have the <net/if.h> header file. */
+#undef HAVE_NET_IF_H
 
 /* Define if NTLM is supported */
 #undef HAVE_NTLM

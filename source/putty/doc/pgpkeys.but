@@ -19,6 +19,9 @@ built-in signatures that are automatically verified by Windows' own
 mechanism (\q{\i{Authenticode}}). The keys used for that are different,
 and are not covered here.
 
+See \k{faq-checksums} in the FAQ for some gotchas when verifying
+checksums and signatures.
+
 (Note that none of the keys, signatures, etc mentioned here have
 anything to do with keys used with SSH - they are purely for verifying
 the origin of files distributed by the PuTTY team.)

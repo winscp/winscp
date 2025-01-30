@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2023-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -567,6 +567,7 @@ int OSSL_DEMO_H3_CONN_handle_events(OSSL_DEMO_H3_CONN *conn)
     int ec, fin;
     size_t i, num_vecs, written, total_written, total_len;
     int64_t stream_id;
+    uint64_t flags;
     nghttp3_vec vecs[8] = {0};
     OSSL_DEMO_H3_STREAM key, *s;
     SSL *snew;
@@ -613,6 +614,12 @@ int OSSL_DEMO_H3_CONN_handle_events(OSSL_DEMO_H3_CONN *conn)
         if (ec == 0)
             break;
 
+        /*
+	 * we let SSL_write_ex2(3) to conclude the stream for us (send FIN)
+	 * after all data are written.
+         */
+        flags = (fin == 0) ? 0 : SSL_WRITE_FLAG_CONCLUDE;
+
         /* For each of the vectors returned, pass it to OpenSSL QUIC. */
         key.id = stream_id;
         if ((s = lh_OSSL_DEMO_H3_STREAM_retrieve(conn->streams, &key)) == NULL) {
@@ -631,7 +638,7 @@ int OSSL_DEMO_H3_CONN_handle_events(OSSL_DEMO_H3_CONN *conn)
             if (s->s == NULL) {
                 /* Already did STOP_SENDING and threw away stream, ignore */
                 written = vecs[i].len;
-            } else if (!SSL_write_ex(s->s, vecs[i].base, vecs[i].len, &written)) {
+            } else if (!SSL_write_ex2(s->s, vecs[i].base, vecs[i].len, flags, &written)) {
                 if (SSL_get_error(s->s, 0) == SSL_ERROR_WANT_WRITE) {
                     /*
                      * We have filled our send buffer so tell nghttp3 to stop
@@ -676,11 +683,6 @@ int OSSL_DEMO_H3_CONN_handle_events(OSSL_DEMO_H3_CONN *conn)
         }
 
         if (fin && total_written == total_len) {
-            /*
-             * We have written all the data so mark the stream as concluded
-             * (FIN).
-             */
-            SSL_stream_conclude(s->s, 0);
 
             if (total_len == 0) {
                 /*

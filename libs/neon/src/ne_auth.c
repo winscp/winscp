@@ -1,6 +1,6 @@
 /* 
    HTTP Authentication routines
-   Copyright (C) 1999-2021, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1999-2024, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -226,8 +226,8 @@ struct auth_request {
     /*** Per-request details. ***/
     ne_request *request; /* the request object. */
 
-    /* The method and URI we are using for the current request */
-    const char *uri;
+    /* The request-target and method for the current request, */
+    const char *target;
     const char *method;
     
     int attempt; /* number of times this request has been retries due
@@ -257,7 +257,7 @@ struct auth_protocol {
      * message to the error buffer 'errmsg'. */
     int (*challenge)(auth_session *sess, int attempt,
                      struct auth_challenge *chall,
-                     const char *uri, ne_buffer **errmsg);
+                     const char *target, ne_buffer **errmsg);
 
     /* Return the string to send in the -Authenticate request header:
      * (ne_malloc-allocated, NUL-terminated string) */
@@ -332,57 +332,65 @@ static void clean_session(auth_session *sess)
     sess->protocol = NULL;
 }
 
-/* Returns client nonce string. */
-static char *get_cnonce(void) 
+/* Returns client nonce string using given hash algorithm. Returns
+ * NULL on error, in which case challenge_error(errmsg) is called. */
+static char *get_cnonce(const struct hashalg *alg, ne_buffer **errmsg)
 {
 #ifdef NE_HAVE_SSL
     unsigned char data[32];
-#endif
+
 #ifdef HAVE_GNUTLS
-    if (1) {
 #if LIBGNUTLS_VERSION_NUMBER < 0x020b00
-        gcry_create_nonce(data, sizeof data);
+    gcry_create_nonce(data, sizeof data);
 #else
-        gnutls_rnd(GNUTLS_RND_NONCE, data, sizeof data);
+    gnutls_rnd(GNUTLS_RND_NONCE, data, sizeof data);
 #endif
-        return ne_base64(data, sizeof data);
-    }
-    else
-#elif defined(HAVE_OPENSSL)
+    return ne_base64(data, sizeof data);
+
+#else /* !HAVE_GNUTLS */
     if (RAND_status() == 1 && RAND_bytes(data, sizeof data) >= 0) {
         return ne_base64(data, sizeof data);
     } 
-    else 
-#endif /* HAVE_OPENSSL */
-    {
-        /* Fallback sources of random data: all bad, but no good sources
-         * are available. */
-        ne_buffer *buf = ne_buffer_create();
-        char *ret;
-
-        {
-#ifdef HAVE_GETTIMEOFDAY
-            struct timeval tv;
-            if (gettimeofday(&tv, NULL) == 0)
-                ne_buffer_snprintf(buf, 64, "%" NE_FMT_TIME_T ".%ld",
-                                   tv.tv_sec, (long)tv.tv_usec);
-#else /* HAVE_GETTIMEOFDAY */
-            ne_buffer_snprintf(buf, 64, "%" NE_FMT_TIME_T, time(NULL));
-#endif
-        }
-        {
-#ifdef WIN32
-            DWORD pid = GetCurrentThreadId();
-#else
-            pid_t pid = getpid();
-#endif
-            ne_buffer_snprintf(buf, 32, "%lu", (unsigned long) pid);
-        }
-
-        ret = ne_strhash(NE_HASH_MD5, buf->data, NULL);
-        ne_buffer_destroy(buf);
-        return ret;
+    else {
+        challenge_error(errmsg,
+                        _("cannot create client nonce for Digest challenge, "
+                          "OpenSSL PRNG not seeded"));
+        return NULL;
     }
+#endif /* HAVE_GNUTLS */
+
+#else /* !NE_HAVE_SSL */
+    /* Fallback sources of random data: all bad, but no good sources
+     * are available. */
+    ne_buffer *buf = ne_buffer_create();
+    char *ret;
+
+#ifdef HAVE_GETTIMEOFDAY
+    struct timeval tv;
+    if (gettimeofday(&tv, NULL) == 0)
+        ne_buffer_snprintf(buf, 64, "%" NE_FMT_TIME_T ".%ld",
+                           tv.tv_sec, (long)tv.tv_usec);
+#else /* !HAVE_GETTIMEOFDAY */
+    ne_buffer_snprintf(buf, 64, "%" NE_FMT_TIME_T, time(NULL));
+#endif
+
+    {
+#ifdef WIN32
+        DWORD pid = GetCurrentThreadId();
+#else
+        pid_t pid = getpid();
+#endif
+        ne_buffer_snprintf(buf, 32, "%lu", (unsigned long) pid);
+    }
+
+    ret = ne_strhash(alg->hash, buf->data, NULL);
+    if (!ret)
+        challenge_error(errmsg, _("%s hash failed for Digest challenge"),
+                        alg->name);
+
+    ne_buffer_destroy(buf);
+    return ret;
+#endif
 }
 
 /* Callback to retrieve user credentials for given session on given
@@ -394,15 +402,18 @@ static int get_credentials(auth_session *sess, ne_buffer **errmsg, int attempt,
 {
     unsigned mask = chall->protocol->id | sess->spec->protomask;
     int rv;
+    char *realm = ne_strclean(ne_strdup(sess->realm));
 
     if (chall->handler->new_creds)
         rv = chall->handler->new_creds(chall->handler->userdata,
-                                       attempt, mask, sess->realm,
+                                       attempt, mask, realm,
                                        sess->username, pwbuf,
                                        ABUFSIZE);
     else
-        rv = chall->handler->old_creds(chall->handler->userdata, sess->realm,
+        rv = chall->handler->old_creds(chall->handler->userdata, realm,
                                        chall->handler->attempt++, sess->username, pwbuf);
+
+    ne_free(realm);
 
     if (rv == 0)
         return 0;
@@ -442,7 +453,7 @@ static char *get_scope_path(const char *uri)
  * Returns 0 if an valid challenge, else non-zero. */
 static int basic_challenge(auth_session *sess, int attempt,
                            struct auth_challenge *parms,
-                           const char *uri, ne_buffer **errmsg)
+                           const char *target, ne_buffer **errmsg)
 {
     char *tmp, password[ABUFSIZE];
 
@@ -473,14 +484,14 @@ static int basic_challenge(auth_session *sess, int attempt,
 
     ne__strzero(password, sizeof password);
 
-    if (strcmp(uri, "*") == 0) {
-        /* If the request-target is "*" the auth scope is explicitly
-         * the whole server. */
+    if (strcmp(target, "*") == 0 || sess->context == AUTH_CONNECT) {
+        /* For CONNECT, or if the request-target is "*", the auth
+         * scope is implicitly the whole server. */
         return 0;
     }
 
     sess->domains = ne_malloc(sizeof *sess->domains);
-    sess->domains[0] = get_scope_path(uri);
+    sess->domains[0] = get_scope_path(target);
     sess->ndomains = 1;
 
     NE_DEBUG(NE_DBG_HTTPAUTH, "auth: Basic auth scope is: %s\n",
@@ -492,7 +503,7 @@ static int basic_challenge(auth_session *sess, int attempt,
 /* Add Basic authentication credentials to a request */
 static char *request_basic(auth_session *sess, struct auth_request *req) 
 {
-    if (sess->ndomains && !inside_domain(sess, req->uri)) {
+    if (sess->ndomains && !inside_domain(sess, req->target)) {
         return NULL;
     }
 
@@ -626,7 +637,7 @@ static int continue_negotiate(auth_session *sess, const char *token,
  * if challenge is accepted. */
 static int negotiate_challenge(auth_session *sess, int attempt,
                                struct auth_challenge *chall,
-                               const char *uri, ne_buffer **errmsg)
+                               const char *target, ne_buffer **errmsg)
 {
     const char *token = chall->opaque;
 
@@ -723,7 +734,7 @@ static int continue_sspi(auth_session *sess, int ntlm, const char *hdr)
 
 static int sspi_challenge(auth_session *sess, int attempt,
                           struct auth_challenge *parms,
-                          const char *uri, ne_buffer **errmsg)
+                          const char *target, ne_buffer **errmsg)
 {
     int ntlm = ne_strcasecmp(parms->protocol->name, "NTLM") == 0;
 
@@ -769,7 +780,7 @@ static int parse_domain(auth_session *sess, const char *domain)
     do {
         char *token = ne_token(&p, ' ');
         ne_uri rel, absolute;
-        
+
         if (ne_uri_parse(token, &rel) == 0) {
             /* Resolve relative to the Request-URI. */
             base.path = "/";
@@ -830,7 +841,7 @@ static char *request_ntlm(auth_session *sess, struct auth_request *request)
 
 static int ntlm_challenge(auth_session *sess, int attempt,
                           struct auth_challenge *parms,
-                          const char *uri, ne_buffer **errmsg)
+                          const char *target, ne_buffer **errmsg)
 {
     int status;
     
@@ -946,7 +957,7 @@ static char *get_digest_h_urp(auth_session *sess, ne_buffer **errmsg,
  * else non-zero. */
 static int digest_challenge(auth_session *sess, int attempt,
                             struct auth_challenge *parms,
-                            const char *uri, ne_buffer **errmsg)
+                            const char *target, ne_buffer **errmsg)
 {
     char *p, *h_urp = NULL;
 
@@ -1002,9 +1013,15 @@ static int digest_challenge(auth_session *sess, int attempt,
             return -1;
         }
 
+        /* The hash alg from parameters already tested to work above,
+           so re-use it. */
+        if ((sess->cnonce = get_cnonce(parms->alg, errmsg)) == NULL) {
+            /* challenge_error() called by get_cnonce(). */
+            return -1;
+        }
+
         sess->realm = ne_strdup(parms->realm);
         sess->alg = parms->alg;
-        sess->cnonce = get_cnonce();
 
         h_urp = get_digest_h_urp(sess, errmsg, attempt, parms);
         if (h_urp == NULL) {
@@ -1050,9 +1067,9 @@ static int digest_challenge(auth_session *sess, int attempt,
     return 0;
 }
 
-/* Returns non-zero if given Request-URI is inside the authentication
- * domain defined for the session. */
-static int inside_domain(auth_session *sess, const char *req_uri)
+/* Returns non-zero if given request-target is inside the
+ * authentication domain defined for the session. */
+static int inside_domain(auth_session *sess, const char *target)
 {
     int inside = 0;
     size_t n;
@@ -1060,7 +1077,7 @@ static int inside_domain(auth_session *sess, const char *req_uri)
     
     /* Parse the Request-URI; it will be an absoluteURI if using a
      * proxy, and possibly '*'. */
-    if (strcmp(req_uri, "*") == 0 || ne_uri_parse(req_uri, &uri) != 0) {
+    if (strcmp(target, "*") == 0 || ne_uri_parse(target, &uri) != 0) {
         /* Presume outside the authentication domain. */
         return 0;
     }
@@ -1090,12 +1107,15 @@ static char *request_digest(auth_session *sess, struct auth_request *req)
 
     /* Do not submit credentials if an auth domain is defined and this
      * request-uri fails outside it. */
-    if (sess->ndomains && !inside_domain(sess, req->uri)) {
+    if (sess->ndomains && !inside_domain(sess, req->target)) {
         return NULL;
     }
 
-    /* H(A2): https://tools.ietf.org/html/rfc7616#section-3.4.3 */
-    h_a2 = ne_strhash(hash, req->method, ":", req->uri, NULL);
+    /* H(A2): https://tools.ietf.org/html/rfc7616#section-3.4.3 - Note
+     * that the RFC specifies that "request-uri" is used in the A2
+     * grammar, which matches the RFC 9112 'request-target', which is
+     * what was passed through by ah_create. */
+    h_a2 = ne_strhash(hash, req->method, ":", req->target, NULL);
     NE_DEBUG(NE_DBG_HTTPAUTH, "auth: H(A2): %s\n", h_a2);
 
     /* Calculate the 'response' to the Digest challenge to send the
@@ -1126,7 +1146,7 @@ static char *request_digest(auth_session *sess, struct auth_request *req)
     ne_buffer_concat(ret, 
                      "Digest realm=\"", sess->realm, "\", "
 		     "nonce=\"", sess->nonce, "\", "
-		     "uri=\"", req->uri, "\", "
+		     "uri=\"", req->target, "\", "
 		     "response=\"", response, "\", "
 		     "algorithm=\"", sess->alg->name, "\"",
 		     NULL);
@@ -1308,7 +1328,7 @@ static int verify_digest_response(struct auth_request *req, auth_session *sess,
         char *h_a2, *response;
         unsigned int hash = sess->alg->hash;
 
-        h_a2 = ne_strhash(hash, ":", req->uri, NULL);
+        h_a2 = ne_strhash(hash, ":", req->target, NULL);
         response = ne_strhash(hash, sess->h_a1, ":", sess->response_rhs,
                               ":", h_a2, NULL);
         ne_free(h_a2);
@@ -1374,29 +1394,23 @@ static const struct auth_protocol protocols[] = {
 /* Insert a new auth challenge 'chall' into list of challenges 'list'.
  * The challenge list is kept in sorted order of strength, with
  * highest strength first. */
-static void insert_challenge(struct auth_challenge **list, struct auth_challenge *chall)
+static void insert_challenge(struct auth_challenge **list,
+                             struct auth_challenge *chall)
 {
-    struct auth_challenge *cur, *prev;
+    struct auth_challenge **p;
 
-    for (cur = *list, prev = NULL; cur != NULL;
-         prev = cur, cur = cur->next) {
-        if (chall->protocol->strength > cur->protocol->strength
-            || (cur->protocol->id == NE_AUTH_DIGEST
+    for (p = list; *p != NULL; p = &(*p)->next) {
+        if (chall->protocol->strength > (*p)->protocol->strength
+            || ((*p)->protocol->id == NE_AUTH_DIGEST
                 && chall->protocol->id == NE_AUTH_DIGEST
-                && chall->alg && cur->alg
-                && chall->alg->hash > cur->alg->hash)) {
+                && chall->alg && (*p)->alg
+                && chall->alg->hash > (*p)->alg->hash)) {
             break;
         }
     }
 
-    if (prev) {
-        chall->next = prev->next;
-        prev->next = chall;
-    }
-    else {
-        chall->next = *list;
-        *list = chall;
-    }
+    chall->next = *p;
+    *p = chall;
 }
 
 static void challenge_error(ne_buffer **errbuf, const char *fmt, ...)
@@ -1575,7 +1589,7 @@ static int auth_challenge(auth_session *sess, int attempt, const char *uri,
 }
 
 static void ah_create(ne_request *req, void *session, const char *method,
-		      const char *uri)
+		      const char *target)
 {
     auth_session *sess = session;
     int is_connect = strcmp(method, "CONNECT") == 0;
@@ -1589,7 +1603,7 @@ static void ah_create(ne_request *req, void *session, const char *method,
         NE_DEBUG(NE_DBG_HTTPAUTH, "auth: Create for %s\n", sess->spec->resp_hdr);
         
         areq->method = method;
-        areq->uri = uri;
+        areq->target = target;
         areq->request = req;
         
         ne_set_request_private(req, sess->spec->id, areq);
@@ -1679,7 +1693,7 @@ static int ah_post_send(ne_request *req, void *cookie, const ne_status *status)
         /* note above: allow a 401 in response to a CONNECT request
          * from a proxy since some buggy proxies send that. */
 	NE_DEBUG(NE_DBG_HTTPAUTH, "auth: Got challenge (code %d).\n", status->code);
-	if (!auth_challenge(sess, areq->attempt++, areq->uri, auth_hdr)) {
+	if (!auth_challenge(sess, areq->attempt++, areq->target, auth_hdr)) {
 	    ret = NE_RETRY;
 	} else {
 	    clean_session(sess);
