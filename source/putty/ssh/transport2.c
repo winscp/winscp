@@ -20,11 +20,24 @@ const struct ssh_signkey_with_user_pref_id ssh2_hostkey_algs[] = {
 };
 
 const static ssh2_macalg *const macs[] = {
-    &ssh_hmac_sha256, &ssh_hmac_sha1, &ssh_hmac_sha1_96, &ssh_hmac_md5
+    &ssh_hmac_sha256, &ssh_hmac_sha512,
+    &ssh_hmac_sha1, &ssh_hmac_sha1_96, &ssh_hmac_md5
 };
 const static ssh2_macalg *const buggymacs[] = {
     &ssh_hmac_sha1_buggy, &ssh_hmac_sha1_96_buggy, &ssh_hmac_md5
 };
+
+const static ptrlen ext_info_c = PTRLEN_DECL_LITERAL("ext-info-c");
+const static ptrlen ext_info_s = PTRLEN_DECL_LITERAL("ext-info-s");
+const static ptrlen kex_strict_c =
+    PTRLEN_DECL_LITERAL("kex-strict-c-v00@openssh.com");
+const static ptrlen kex_strict_s =
+    PTRLEN_DECL_LITERAL("kex-strict-s-v00@openssh.com");
+
+/* Pointer value to store in s->weak_algorithms_consented_to to
+ * indicate that the user has accepted the risk of the Terrapin
+ * attack */
+static const char terrapin_weakness[1];
 
 static ssh_compressor *ssh_comp_none_init(void)
 {
@@ -79,6 +92,10 @@ static size_t ssh2_transport_queued_data_size(PacketProtocolLayer *ppl);
 static void ssh2_transport_set_max_data_size(struct ssh2_transport_state *s);
 static unsigned long sanitise_rekey_time(int rekey_time, unsigned long def);
 static void ssh2_transport_higher_layer_packet_callback(void *context);
+static void ssh2_transport_final_output(PacketProtocolLayer *ppl);
+static const char *terrapin_vulnerable(
+    bool strict_kex, const transport_direction *d);
+static bool try_to_avoid_terrapin(const struct ssh2_transport_state *s);
 
 static const PacketProtocolLayerVtable ssh2_transport_vtable = {
     .free = ssh2_transport_free,
@@ -87,6 +104,7 @@ static const PacketProtocolLayerVtable ssh2_transport_vtable = {
     .special_cmd = ssh2_transport_special_cmd,
     .reconfigure = ssh2_transport_reconfigure,
     .queued_data_size = ssh2_transport_queued_data_size,
+    .final_output = ssh2_transport_final_output,
     .name = NULL, /* no protocol name for this layer */
 };
 
@@ -99,7 +117,7 @@ static bool ssh2_transport_timer_update(struct ssh2_transport_state *s,
                                         unsigned long rekey_time);
 static SeatPromptResult ssh2_transport_confirm_weak_crypto_primitive(
     struct ssh2_transport_state *s, const char *type, const char *name,
-    const void *alg);
+    const void *alg, WeakCryptoReason wcr);
 
 static const char *const kexlist_descr[NKEXLIST] = {
     "key exchange algorithm",
@@ -458,6 +476,31 @@ bool ssh2_common_filter_queue(PacketProtocolLayer *ppl)
 static bool ssh2_transport_filter_queue(struct ssh2_transport_state *s)
 {
     PktIn *pktin;
+
+    if (!s->enabled_incoming_crypto) {
+        /*
+         * Record the fact that we've seen any non-KEXINIT packet at
+         * the head of our queue.
+         *
+         * This enables us to check later that the initial incoming
+         * KEXINIT was the very first packet, if scanning the KEXINITs
+         * turns out to enable strict-kex mode.
+         */
+        PktIn *pktin = pq_peek(s->ppl.in_pq);
+        if (pktin && pktin->type != SSH2_MSG_KEXINIT)
+            s->seen_non_kexinit = true;
+
+        if (s->strict_kex) {
+            /*
+             * Also, if we're already in strict-KEX mode and haven't
+             * turned on crypto yet, don't do any actual filtering.
+             * This ensures that extraneous packets _after_ the
+             * KEXINIT will go to the main coroutine, which will
+             * complain about them.
+             */
+            return false;
+        }
+    }
 
     while (1) {
         if (ssh2_common_filter_queue(&s->ppl))
@@ -934,10 +977,13 @@ static void ssh2_write_kexinit_lists(
                 add_to_commasep_pl(list, kexlists[i].algs[j].name);
         }
         if (i == KEXLIST_KEX && first_time) {
-            if (our_hostkeys)          /* we're the server */
-                add_to_commasep(list, "ext-info-s");
-            else                       /* we're the client */
-                add_to_commasep(list, "ext-info-c");
+            if (our_hostkeys) {        /* we're the server */
+                add_to_commasep_pl(list, ext_info_s);
+                add_to_commasep_pl(list, kex_strict_s);
+            } else {                   /* we're the client */
+                add_to_commasep_pl(list, ext_info_c);
+                add_to_commasep_pl(list, kex_strict_c);
+            }
         }
         put_stringsb(pktout, list);
     }
@@ -952,15 +998,37 @@ struct server_hostkeys {
     size_t n, size;
 };
 
-static bool ssh2_scan_kexinits(
-    ptrlen client_kexinit, ptrlen server_kexinit,
+static bool kexinit_keyword_found(ptrlen list, ptrlen keyword)
+{
+    for (ptrlen word; get_commasep_word(&list, &word) ;)
+        if (ptrlen_eq_ptrlen(word, keyword))
+            return true;
+    return false;
+}
+
+typedef struct ScanKexinitsResult {
+    bool success;
+
+    /* only if success is false */
+    enum {
+        SKR_INCOMPLETE,
+        SKR_UNKNOWN_ID,
+        SKR_NO_AGREEMENT,
+    } error;
+
+    const char *kind; /* what kind of thing did we fail to sort out? */
+    ptrlen desc;      /* and what was it? or what was the available list? */
+} ScanKexinitsResult;
+
+static ScanKexinitsResult ssh2_scan_kexinits(
+    ptrlen client_kexinit, ptrlen server_kexinit, bool we_are_server,
     struct kexinit_algorithm_list kexlists[NKEXLIST],
     const ssh_kex **kex_alg, const ssh_keyalg **hostkey_alg,
     transport_direction *cs, transport_direction *sc,
     bool *warn_kex, bool *warn_hk, bool *warn_cscipher, bool *warn_sccipher,
-    Ssh *ssh, bool *ignore_guess_cs_packet, bool *ignore_guess_sc_packet,
+    bool *ignore_guess_cs_packet, bool *ignore_guess_sc_packet,
     struct server_hostkeys *server_hostkeys, unsigned *hkflags,
-    bool *can_send_ext_info)
+    bool *can_send_ext_info, bool first_time, bool *strict_kex)
 {
     BinarySource client[1], server[1];
     int i;
@@ -987,11 +1055,10 @@ static bool ssh2_scan_kexinits(
         clists[i] = get_string(client);
         slists[i] = get_string(server);
         if (get_err(client) || get_err(server)) {
-            /* Report a better error than the spurious "Couldn't
-             * agree" that we'd generate if we pressed on regardless
-             * and treated the empty get_string() result as genuine */
-            ssh_proto_error(ssh, "KEXINIT packet was incomplete");
-            return false;
+            ScanKexinitsResult skr = {
+                .success = false, .error = SKR_INCOMPLETE,
+            };
+            return skr;
         }
 
         for (cfirst = true, clist = clists[i];
@@ -1039,10 +1106,11 @@ static bool ssh2_scan_kexinits(
              * produce a reasonably useful message instead of an
              * assertion failure.
              */
-            ssh_sw_abort(ssh, "Selected %s \"%.*s\" does not correspond to "
-                         "any supported algorithm",
-                         kexlist_descr[i], PTRLEN_PRINTF(found));
-            return false;
+            ScanKexinitsResult skr = {
+                .success = false, .error = SKR_UNKNOWN_ID,
+                .kind = kexlist_descr[i], .desc = found,
+            };
+            return skr;
         }
 
         /*
@@ -1097,9 +1165,11 @@ static bool ssh2_scan_kexinits(
             /*
              * Otherwise, any match failure _is_ a fatal error.
              */
-            ssh_sw_abort(ssh, "Couldn't agree a %s (available: %.*s)",
-                         kexlist_descr[i], PTRLEN_PRINTF(slists[i]));
-            return false;
+            ScanKexinitsResult skr = {
+                .success = false, .error = SKR_UNKNOWN_ID,
+                .kind = kexlist_descr[i], .desc = slists[i],
+            };
+            return skr;
         }
 
         switch (i) {
@@ -1162,16 +1232,18 @@ static bool ssh2_scan_kexinits(
     /*
      * Check whether the other side advertised support for EXT_INFO.
      */
-    {
-        ptrlen extinfo_advert =
-            (server_hostkeys ? PTRLEN_LITERAL("ext-info-c") :
-             PTRLEN_LITERAL("ext-info-s"));
-        ptrlen list = (server_hostkeys ? clists[KEXLIST_KEX] :
-                       slists[KEXLIST_KEX]);
-        for (ptrlen word; get_commasep_word(&list, &word) ;)
-            if (ptrlen_eq_ptrlen(word, extinfo_advert))
-                *can_send_ext_info = true;
-    }
+    if (kexinit_keyword_found(
+            we_are_server ? clists[KEXLIST_KEX] : slists[KEXLIST_KEX],
+            we_are_server ? ext_info_c : ext_info_s))
+        *can_send_ext_info = true;
+
+    /*
+     * Check whether the other side advertised support for kex-strict.
+     */
+    if (first_time && kexinit_keyword_found(
+            we_are_server ? clists[KEXLIST_KEX] : slists[KEXLIST_KEX],
+            we_are_server ? kex_strict_c : kex_strict_s))
+        *strict_kex = true;
 
     if (server_hostkeys) {
         /*
@@ -1193,7 +1265,33 @@ static bool ssh2_scan_kexinits(
         }
     }
 
-    return true;
+    ScanKexinitsResult skr = { .success = true };
+    return skr;
+}
+
+static void ssh2_report_scan_kexinits_error(Ssh *ssh, ScanKexinitsResult skr)
+{
+    assert(!skr.success);
+
+    switch (skr.error) {
+      case SKR_INCOMPLETE:
+        /* Report a better error than the spurious "Couldn't
+         * agree" that we'd generate if we pressed on regardless
+         * and treated the empty get_string() result as genuine */
+        ssh_proto_error(ssh, "KEXINIT packet was incomplete");
+        break;
+      case SKR_UNKNOWN_ID:
+        ssh_sw_abort(ssh, "Selected %s \"%.*s\" does not correspond to "
+                     "any supported algorithm",
+                     skr.kind, PTRLEN_PRINTF(skr.desc));
+        break;
+      case SKR_NO_AGREEMENT:
+        ssh_sw_abort(ssh, "Couldn't agree a %s (available: %.*s)",
+                     skr.kind, PTRLEN_PRINTF(skr.desc));
+        break;
+      default:
+        unreachable("bad ScanKexinitsResult");
+    }
 }
 
 static inline bool delay_outgoing_kexinit(struct ssh2_transport_state *s)
@@ -1236,10 +1334,26 @@ static void filter_outgoing_kexinit(struct ssh2_transport_state *s)
         strbuf_clear(out);
         ptrlen olist = get_string(osrc), ilist = get_string(isrc);
         for (ptrlen oword; get_commasep_word(&olist, &oword) ;) {
+            ptrlen searchword = oword;
             ptrlen ilist_copy = ilist;
+
+            /*
+             * Special case: the kex_strict keywords are
+             * asymmetrically named, so if we're contemplating
+             * including one of them in our filtered KEXINIT, we
+             * should search the other side's KEXINIT for the _other_
+             * one, not the same one.
+             */
+            if (i == KEXLIST_KEX) {
+                if (ptrlen_eq_ptrlen(oword, kex_strict_c))
+                    searchword = kex_strict_s;
+                else if (ptrlen_eq_ptrlen(oword, kex_strict_s))
+                    searchword = kex_strict_c;
+            }
+
             bool add = false;
             for (ptrlen iword; get_commasep_word(&ilist_copy, &iword) ;) {
-                if (ptrlen_eq_ptrlen(oword, iword)) {
+                if (ptrlen_eq_ptrlen(searchword, iword)) {
                     /* Found this word in the incoming list. */
                     add = true;
                     break;
@@ -1458,15 +1572,32 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
     {
         struct server_hostkeys hks = { NULL, 0, 0 };
 
-        if (!ssh2_scan_kexinits(
+        ScanKexinitsResult skr = ssh2_scan_kexinits(
                 ptrlen_from_strbuf(s->client_kexinit),
-                ptrlen_from_strbuf(s->server_kexinit),
+                ptrlen_from_strbuf(s->server_kexinit), s->ssc != NULL,
                 s->kexlists, &s->kex_alg, &s->hostkey_alg, s->cstrans,
                 s->sctrans, &s->warn_kex, &s->warn_hk, &s->warn_cscipher,
-                &s->warn_sccipher, s->ppl.ssh, NULL, &s->ignorepkt, &hks,
-                &s->hkflags, &s->can_send_ext_info)) {
+                &s->warn_sccipher, NULL, &s->ignorepkt, &hks,
+                &s->hkflags, &s->can_send_ext_info, !s->got_session_id,
+                &s->strict_kex);
+
+        if (!skr.success) {
             sfree(hks.indices);
-            return; /* false means a fatal error function was called */
+            ssh2_report_scan_kexinits_error(s->ppl.ssh, skr);
+            return; /* we just called a fatal error function */
+        }
+
+        /*
+         * If we've just turned on strict kex mode, say so, and
+         * retrospectively fault any pre-KEXINIT extraneous packets.
+         */
+        if (!s->got_session_id && s->strict_kex) {
+            ppl_logevent("Enabling strict key exchange semantics");
+            if (s->seen_non_kexinit) {
+                ssh_proto_error(s->ppl.ssh, "Received a packet before KEXINIT "
+                                "in strict-kex mode");
+                return;
+            }
         }
 
         /*
@@ -1496,7 +1627,8 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
 
     if (s->warn_kex) {
         s->spr = ssh2_transport_confirm_weak_crypto_primitive(
-            s, "key-exchange algorithm", s->kex_alg->name, s->kex_alg);
+            s, "key-exchange algorithm", s->kex_alg->name, s->kex_alg,
+            WCR_BELOW_THRESHOLD);
         crMaybeWaitUntilV(s->spr.kind != SPRK_INCOMPLETE);
         if (spr_is_abort(s->spr)) {
             ssh_spr_close(s->ppl.ssh, s->spr, "kex warning");
@@ -1506,7 +1638,8 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
 
     if (s->warn_hk) {
         int j, k;
-        char *betteralgs;
+        const char **betteralgs = NULL;
+        size_t nbetter = 0, bettersize = 0;
 
         /*
          * Change warning box wording depending on why we chose a
@@ -1515,7 +1648,6 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
          * could usefully cross-certify. Otherwise, use the same
          * standard wording as any other weak crypto primitive.
          */
-        betteralgs = NULL;
         for (j = 0; j < s->n_uncert_hostkeys; j++) {
             const struct ssh_signkey_with_user_pref_id *hktype =
                 &ssh2_hostkey_algs[s->uncert_hostkeys[j]];
@@ -1530,19 +1662,16 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
                 }
             }
             if (better) {
-                if (betteralgs) {
-                    char *old_ba = betteralgs;
-                    betteralgs = dupcat(betteralgs, ",", hktype->alg->ssh_id);
-                    sfree(old_ba);
-                } else {
-                    betteralgs = dupstr(hktype->alg->ssh_id);
-                }
+                sgrowarray(betteralgs, bettersize, nbetter);
+                betteralgs[nbetter++] = hktype->alg->ssh_id;
             }
         }
         if (betteralgs) {
             /* Use the special warning prompt that lets us provide
              * a list of better algorithms */
-            s->spr = seat_confirm_weak_cached_hostkey(
+            sgrowarray(betteralgs, bettersize, nbetter);
+            betteralgs[nbetter] = NULL;
+            s->spr = confirm_weak_cached_hostkey(
                 ppl_get_iseat(&s->ppl), s->hostkey_alg->ssh_id, betteralgs,
                 ssh2_transport_dialog_callback, s);
             sfree(betteralgs);
@@ -1551,7 +1680,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
              * warning prompt */
             s->spr = ssh2_transport_confirm_weak_crypto_primitive(
                 s, "host key type", s->hostkey_alg->ssh_id,
-                s->hostkey_alg);
+                s->hostkey_alg, WCR_BELOW_THRESHOLD);
         }
         crMaybeWaitUntilV(s->spr.kind != SPRK_INCOMPLETE);
         if (spr_is_abort(s->spr)) {
@@ -1563,7 +1692,7 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
     if (s->warn_cscipher) {
         s->spr = ssh2_transport_confirm_weak_crypto_primitive(
             s, "client-to-server cipher", s->out.cipher->ssh2_id,
-            s->out.cipher);
+            s->out.cipher, WCR_BELOW_THRESHOLD);
         crMaybeWaitUntilV(s->spr.kind != SPRK_INCOMPLETE);
         if (spr_is_abort(s->spr)) {
             ssh_spr_close(s->ppl.ssh, s->spr, "cipher warning");
@@ -1574,11 +1703,51 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
     if (s->warn_sccipher) {
         s->spr = ssh2_transport_confirm_weak_crypto_primitive(
             s, "server-to-client cipher", s->in.cipher->ssh2_id,
-            s->in.cipher);
+            s->in.cipher, WCR_BELOW_THRESHOLD);
         crMaybeWaitUntilV(s->spr.kind != SPRK_INCOMPLETE);
         if (spr_is_abort(s->spr)) {
             ssh_spr_close(s->ppl.ssh, s->spr, "cipher warning");
             return;
+        }
+    }
+
+    {
+        s->terrapin.csvuln = terrapin_vulnerable(s->strict_kex, s->cstrans);
+        s->terrapin.scvuln = terrapin_vulnerable(s->strict_kex, s->sctrans);
+        s->terrapin.wcr = WCR_TERRAPIN;
+
+        if (s->terrapin.csvuln || s->terrapin.scvuln) {
+            ppl_logevent("SSH connection is vulnerable to 'Terrapin' attack "
+                         "(CVE-2023-48795)");
+            if (try_to_avoid_terrapin(s))
+                s->terrapin.wcr = WCR_TERRAPIN_AVOIDABLE;
+        }
+
+        if (s->terrapin.csvuln) {
+            s->spr = ssh2_transport_confirm_weak_crypto_primitive(
+                s, "client-to-server cipher", s->terrapin.csvuln,
+                terrapin_weakness, s->terrapin.wcr);
+            crMaybeWaitUntilV(s->spr.kind != SPRK_INCOMPLETE);
+            if (spr_is_abort(s->spr)) {
+                ssh_spr_close(s->ppl.ssh, s->spr, "vulnerability warning");
+                return;
+            }
+        }
+
+        if (s->terrapin.scvuln) {
+            s->spr = ssh2_transport_confirm_weak_crypto_primitive(
+                s, "server-to-client cipher", s->terrapin.scvuln,
+                terrapin_weakness, s->terrapin.wcr);
+            crMaybeWaitUntilV(s->spr.kind != SPRK_INCOMPLETE);
+            if (spr_is_abort(s->spr)) {
+                ssh_spr_close(s->ppl.ssh, s->spr, "vulnerability warning");
+                return;
+            }
+        }
+
+        if (s->terrapin.csvuln || s->terrapin.scvuln) {
+            ppl_logevent("Continuing despite 'Terrapin' vulnerability, "
+                         "at user request");
         }
     }
 
@@ -1664,7 +1833,9 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
             s->ppl.bpp,
             s->out.cipher, cipher_key->u, cipher_iv->u,
             s->out.mac, s->out.etm_mode, mac_key->u,
-            s->out.comp, s->out.comp_delayed);
+            s->out.comp, s->out.comp_delayed,
+            s->strict_kex);
+        s->enabled_outgoing_crypto = true;
 
         strbuf_free(cipher_key);
         strbuf_free(cipher_iv);
@@ -1756,7 +1927,9 @@ static void ssh2_transport_process_queue(PacketProtocolLayer *ppl)
             s->ppl.bpp,
             s->in.cipher, cipher_key->u, cipher_iv->u,
             s->in.mac, s->in.etm_mode, mac_key->u,
-            s->in.comp, s->in.comp_delayed);
+            s->in.comp, s->in.comp_delayed,
+            s->strict_kex);
+        s->enabled_incoming_crypto = true;
 
         strbuf_free(cipher_key);
         strbuf_free(cipher_iv);
@@ -2381,20 +2554,21 @@ static int ca_blob_compare(void *av, void *bv)
 }
 
 /*
- * Wrapper on seat_confirm_weak_crypto_primitive(), which uses the
+ * Wrapper on confirm_weak_crypto_primitive(), which uses the
  * tree234 s->weak_algorithms_consented_to to ensure we ask at most
  * once about any given crypto primitive.
  */
 static SeatPromptResult ssh2_transport_confirm_weak_crypto_primitive(
     struct ssh2_transport_state *s, const char *type, const char *name,
-    const void *alg)
+    const void *alg, WeakCryptoReason wcr)
 {
     if (find234(s->weak_algorithms_consented_to, (void *)alg, NULL))
         return SPR_OK;
     add234(s->weak_algorithms_consented_to, (void *)alg);
 
-    return seat_confirm_weak_crypto_primitive(
-        ppl_get_iseat(&s->ppl), type, name, ssh2_transport_dialog_callback, s);
+    return confirm_weak_crypto_primitive(
+        ppl_get_iseat(&s->ppl), type, name, ssh2_transport_dialog_callback,
+        s, wcr);
 }
 
 static size_t ssh2_transport_queued_data_size(PacketProtocolLayer *ppl)
@@ -2404,4 +2578,176 @@ static size_t ssh2_transport_queued_data_size(PacketProtocolLayer *ppl)
 
     return (ssh_ppl_default_queued_data_size(ppl) +
             ssh_ppl_queued_data_size(s->higher_layer));
+}
+
+static void ssh2_transport_final_output(PacketProtocolLayer *ppl)
+{
+    struct ssh2_transport_state *s =
+        container_of(ppl, struct ssh2_transport_state, ppl);
+
+    ssh_ppl_final_output(s->higher_layer);
+}
+
+/* Check the settings for a transport direction to see if they're
+ * vulnerable to the Terrapin attack, aka CVE-2023-48795. If so,
+ * return a string describing the vulnerable thing. */
+static const char *terrapin_vulnerable(
+    bool strict_kex, const transport_direction *d)
+{
+    /*
+     * Strict kex mode eliminates the vulnerability. (That's what it's
+     * for.)
+     */
+    if (strict_kex)
+        return NULL;
+
+    /*
+     * ChaCha20-Poly1305 is vulnerable and perfectly exploitable.
+     */
+    if (d->cipher == &ssh2_chacha20_poly1305)
+        return "ChaCha20-Poly1305";
+
+    /*
+     * CBC-mode ciphers with OpenSSH's ETM modification are vulnerable
+     * and probabilistically exploitable.
+     */
+    if (d->etm_mode && (d->cipher->flags & SSH_CIPHER_IS_CBC))
+        return "a CBC-mode cipher in OpenSSH ETM mode";
+
+    return NULL;
+}
+
+/*
+ * Called when we've detected that at least one transport direction
+ * has the Terrapin vulnerability.
+ *
+ * Before we report it, try to replay what would have happened if the
+ * user had reconfigured their cipher settings to demote
+ * ChaCha20+Poly1305 to below the warning threshold. If that would
+ * have avoided the vulnerability, we should say so in the dialog box.
+ *
+ * This is basically the only change in PuTTY's configuration that has
+ * a chance of avoiding the problem. Terrapin affects the modified
+ * binary packet protocol used with ChaCha20+Poly1305, and also
+ * CBC-mode ciphers in ETM mode. But PuTTY unconditionally offers the
+ * ETM mode of each MAC _after_ the non-ETM mode. So the latter case
+ * can only come up if the server has been configured to _only_ permit
+ * the ETM modes of those MACs, which means there's nothing we can do
+ * anyway.
+ */
+static bool try_to_avoid_terrapin(const struct ssh2_transport_state *s)
+{
+    bool avoidable = false;
+
+    strbuf *alt_client_kexinit = strbuf_new();
+    Conf *alt_conf = conf_copy(s->conf);
+    struct kexinit_algorithm_list alt_kexlists[NKEXLIST];
+    memset(alt_kexlists, 0, sizeof(alt_kexlists));
+
+    /*
+     * We only bother doing this if we're the client, because Uppity
+     * can't present a dialog box anyway.
+     */
+    if (s->ssc)
+        goto out;
+
+    /*
+     * Demote CIPHER_CHACHA20 to just below CIPHER_WARN, if it was
+     * previously above it. If not, don't do anything - we don't want
+     * to _promote_ it.
+     */
+    int ccp_pos_now = -1, ccp_pos_wanted = -1;
+    for (int i = 0; i < CIPHER_MAX; i++) {
+        switch (conf_get_int_int(alt_conf, CONF_ssh_cipherlist,
+                                 i)) {
+          case CIPHER_CHACHA20:
+            ccp_pos_now = i;
+            break;
+          case CIPHER_WARN:
+            ccp_pos_wanted = i;
+            break;
+        }
+    }
+    if (ccp_pos_now < 0 || ccp_pos_wanted < 0)
+        goto out; /* shouldn't ever happen: didn't find the two entries */
+    if (ccp_pos_now >= ccp_pos_wanted)
+        goto out; /* ChaCha20 is already demoted and it didn't help */
+    while (ccp_pos_now < ccp_pos_wanted) {
+        int cnext = conf_get_int_int(alt_conf, CONF_ssh_cipherlist,
+                                     ccp_pos_now + 1);
+        conf_set_int_int(alt_conf, CONF_ssh_cipherlist,
+                         ccp_pos_now, cnext);
+        ccp_pos_now++;
+    }
+    conf_set_int_int(alt_conf, CONF_ssh_cipherlist,
+                     ccp_pos_now + 1, CIPHER_CHACHA20);
+
+    /*
+     * Make the outgoing KEXINIT we would have made using this
+     * configuration.
+     */
+    put_byte(alt_client_kexinit, SSH2_MSG_KEXINIT);
+    put_padding(alt_client_kexinit, 16, 'x'); /* fake random padding */
+    ssh2_write_kexinit_lists(
+        BinarySink_UPCAST(alt_client_kexinit), alt_kexlists, alt_conf,
+        s->ssc, s->ppl.remote_bugs, s->savedhost, s->savedport, s->hostkey_alg,
+        s->thc, s->host_cas, s->hostkeys, s->nhostkeys, !s->got_session_id,
+        s->can_gssapi_keyex,
+        s->gss_kex_used && !s->need_gss_transient_hostkey);
+    put_bool(alt_client_kexinit, false); /* guess packet follows */
+    put_uint32(alt_client_kexinit, 0);   /* reserved */
+
+    /*
+     * Re-analyse the incoming KEXINIT with respect to this one, to
+     * see what we'd have decided on.
+     */
+    transport_direction cstrans, sctrans;
+    bool warn_kex, warn_hk, warn_cscipher, warn_sccipher;
+    bool can_send_ext_info = false, strict_kex = false;
+    unsigned hkflags;
+    const ssh_kex *kex_alg;
+    const ssh_keyalg *hostkey_alg;
+
+    ScanKexinitsResult skr = ssh2_scan_kexinits(
+        ptrlen_from_strbuf(alt_client_kexinit),
+        ptrlen_from_strbuf(s->server_kexinit),
+        s->ssc != NULL, alt_kexlists, &kex_alg, &hostkey_alg,
+        &cstrans, &sctrans,
+        &warn_kex, &warn_hk, &warn_cscipher, &warn_sccipher, NULL, NULL, NULL,
+        &hkflags, &can_send_ext_info, !s->got_session_id, &strict_kex);
+    if (!skr.success) /* something else would have gone wrong */
+        goto out;
+
+    /*
+     * Reject this as an alternative solution if any of the warn flags
+     * has got worse, or if there's still anything
+     * Terrapin-vulnerable.
+     */
+    if (warn_kex > s->warn_kex)
+        goto out;
+    if (warn_hk > s->warn_hk)
+        goto out;
+    if (warn_cscipher > s->warn_cscipher)
+        goto out;
+    if (warn_sccipher > s->warn_sccipher)
+        goto out;
+    if (terrapin_vulnerable(strict_kex, &cstrans))
+        goto out;
+    if (terrapin_vulnerable(strict_kex, &sctrans))
+        goto out;
+
+    /*
+     * Success! The vulnerability could have been avoided by this Conf
+     * tweak, and we should tell the user so.
+     */
+    avoidable = true;
+
+  out:
+
+    for (size_t i = 0; i < NKEXLIST; i++)
+        sfree(alt_kexlists[i].algs);
+    strbuf_free(alt_client_kexinit);
+    conf_free(alt_conf);
+
+    return avoidable;
 }

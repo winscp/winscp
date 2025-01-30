@@ -1,7 +1,7 @@
 /*
  * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -431,11 +431,6 @@ BN_ULONG bn_sub_words(BN_ULONG *r, const BN_ULONG *a, const BN_ULONG *b,
 }
 
 #if defined(BN_MUL_COMBA) && !defined(OPENSSL_SMALL_FOOTPRINT)
-
-# undef bn_mul_comba8
-# undef bn_mul_comba4
-# undef bn_sqr_comba8
-# undef bn_sqr_comba4
 
 /* mul_add_c(a,b,c0,c1,c2)  -- c+=a*b for three word number c=(c2,c1,c0) */
 /* mul_add_c2(a,b,c0,c1,c2) -- c+=2*a*b for three word number c=(c2,c1,c0) */
@@ -960,8 +955,6 @@ int bn_mul_mont(BN_ULONG *rp, const BN_ULONG *ap, const BN_ULONG *bp,
 #else                           /* !BN_MUL_COMBA */
 
 /* hmm... is it faster just to do a multiply? */
-# undef bn_sqr_comba4
-# undef bn_sqr_comba8
 void bn_sqr_comba4(BN_ULONG *r, const BN_ULONG *a)
 {
     BN_ULONG t[8];

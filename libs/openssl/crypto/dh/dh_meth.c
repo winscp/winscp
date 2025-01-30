@@ -1,11 +1,17 @@
 /*
- * Copyright 2016-2018 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2020 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
  */
+
+/*
+ * DH low level APIs are deprecated for public use, but still ok for
+ * internal use.
+ */
+#include "internal/deprecated.h"
 
 #include "dh_local.h"
 #include <string.h>
@@ -25,7 +31,6 @@ DH_METHOD *DH_meth_new(const char *name, int flags)
         OPENSSL_free(dhm);
     }
 
-    DHerr(DH_F_DH_METH_NEW, ERR_R_MALLOC_FAILURE);
     return NULL;
 }
 
@@ -51,7 +56,6 @@ DH_METHOD *DH_meth_dup(const DH_METHOD *dhm)
         OPENSSL_free(ret);
     }
 
-    DHerr(DH_F_DH_METH_DUP, ERR_R_MALLOC_FAILURE);
     return NULL;
 }
 
@@ -64,10 +68,8 @@ int DH_meth_set1_name(DH_METHOD *dhm, const char *name)
 {
     char *tmpname = OPENSSL_strdup(name);
 
-    if (tmpname == NULL) {
-        DHerr(DH_F_DH_METH_SET1_NAME, ERR_R_MALLOC_FAILURE);
+    if (tmpname == NULL)
         return 0;
-    }
 
     OPENSSL_free(dhm->name);
     dhm->name = tmpname;

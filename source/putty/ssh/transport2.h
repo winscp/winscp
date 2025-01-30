@@ -180,6 +180,10 @@ struct ssh2_transport_state {
 
     int nbits, pbits;
     bool warn_kex, warn_hk, warn_cscipher, warn_sccipher;
+    struct {
+        const char *csvuln, *scvuln;
+        WeakCryptoReason wcr;
+    } terrapin;
     mp_int *p, *g, *e, *f;
     strbuf *ebuf, *fbuf;
     strbuf *kex_shared_secret;
@@ -202,6 +206,8 @@ struct ssh2_transport_state {
     bool warned_about_no_gss_transient_hostkey;
     bool got_session_id;
     bool can_send_ext_info, post_newkeys_ext_info;
+    bool strict_kex, enabled_outgoing_crypto, enabled_incoming_crypto;
+    bool seen_non_kexinit;
     SeatPromptResult spr;
     bool guessok;
     bool ignorepkt;

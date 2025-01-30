@@ -374,6 +374,10 @@ Check that you are connecting with the correct protocol (SSH, Telnet,
 etc), and check that the port number is correct. If that
 fails, consult the administrator of your server.
 
+This error can also be caused by a firewall in between you and the
+server, which rejects the connection and sends back the same type of
+error packet as the real server would have sent.
+
 \H{errors-conntimedout} \q{Network error: Connection timed out}
 
 This error means that the network connection PuTTY tried to make to

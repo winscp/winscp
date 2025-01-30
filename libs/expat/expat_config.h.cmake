@@ -82,7 +82,9 @@
 #cmakedefine PACKAGE_VERSION "@PACKAGE_VERSION@"
 
 /* Define to 1 if you have the ANSI C header files. */
+#ifndef STDC_HEADERS
 #cmakedefine STDC_HEADERS
+#endif
 
 /* whether byteorder is bigendian */
 #cmakedefine WORDS_BIGENDIAN
@@ -92,8 +94,8 @@
 #cmakedefine XML_ATTR_INFO
 
 /* Define to specify how much context to retain around the current parse
-   point. */
-#cmakedefine XML_CONTEXT_BYTES @XML_CONTEXT_BYTES@
+   point, 0 to disable. */
+#define XML_CONTEXT_BYTES @XML_CONTEXT_BYTES@
 
 #if ! defined(_WIN32)
 /* Define to include code reading entropy from `/dev/urandom'. */
@@ -102,6 +104,9 @@
 
 /* Define to make parameter entity parsing functionality available. */
 #cmakedefine XML_DTD
+
+/* Define as 1/0 to enable/disable support for general entities. */
+#define XML_GE @XML_GE@
 
 /* Define to make XML Namespaces functionality available. */
 #cmakedefine XML_NS
@@ -112,9 +117,6 @@
 #endif
 
 /* Define to `long' if <sys/types.h> does not define. */
-#cmakedefine off_t @OFF_T@
-
-/* Define to `unsigned' if <sys/types.h> does not define. */
-#cmakedefine size_t @SIZE_T@
+#cmakedefine off_t @off_t@
 
 #endif // ndef EXPAT_CONFIG_H

@@ -26,6 +26,9 @@
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
+#ifdef HAVE_STDINT_H
+#include <stdint.h>
+#endif
 
 #include "ne_utils.h"
 #include "ne_md5.h"
@@ -253,6 +256,16 @@ static int bad_dates(void)
         BAD_DATE("rfc1123", ne_rfc1123_parse(dates[n]));
         BAD_DATE("asctime", ne_asctime_parse(dates[n]));
     }
+
+#if SIZEOF_TIME_T == 8 && defined(INT64_MAX)
+    {
+        char *rv = ne_rfc1123_date(INT64_MAX);
+
+        ONV(rv != NULL,
+            ("RFC1123 date conversion surprisingly worked for INT64_MAX: %s",
+             rv));
+    }
+#endif
 
     return OK;
 }

@@ -44,11 +44,12 @@ typedef struct ne_request_s ne_request;
 
 /***** Request Handling *****/
 
-/* Create a request in session 'sess', with given method and path.
- * 'path' must conform to the 'abs_path' grammar in RFC2396, with an
- * optional "? query" part, and MUST be URI-escaped by the caller. */
-ne_request *ne_request_create(ne_session *sess,
-                              const char *method, const char *path)
+/* Create a request in session 'sess', with given method and target.
+ * 'target' is used to form the request-target (per RFC 7230ẞ5.3), and
+ * may be an absolute-path (with optional query-string), an
+ * absolute-URI, or an asterisk. */
+ne_request *ne_request_create(ne_session *sess, const char *method,
+                              const char *target)
     ne_attribute((nonnull));
 
 /* The request body will be taken from 'size' bytes of 'buffer'. */
@@ -82,8 +83,13 @@ typedef ssize_t (*ne_provide_body)(void *userdata,
  * request body, a block at a time.  The total size of the request
  * body is 'length'; the callback must ensure that it returns no more
  * than 'length' bytes in total.  If 'length' is set to -1, then the
- * total size of the request is unknown by the caller and chunked 
- * transfer will be used. */
+ * total size of the request is unknown by the caller and chunked
+ * transfer will be used.
+ *
+ * The caller MUST determine that the server can accept chunked
+ * encoding (i.e. advertises HTTP/1.1 support) before using chunked
+ * encoding. This can be done by testing that ne_version_pre_http11()
+ * returns zero after performing an OPTIONS or HEAD request. */
 void ne_set_request_body_provider(ne_request *req, ne_off_t length,
                                   ne_provide_body provider, void *userdata)
     ne_attribute((nonnull (1)));
@@ -224,6 +230,10 @@ typedef enum ne_request_flag_e {
     NE_REQFLAG_IDEMPOTENT, /* disable this flag if the request uses a
                             * non-idempotent method such as POST. */
 
+    NE_REQFLAG_1XXTIMEOUT, /* disable this flag to apply no overall
+                             * timeout when reading interim
+                             * responses. */
+
     NE_REQFLAG_LAST /* enum sentinel value */
 } ne_request_flag;
 
@@ -234,9 +244,17 @@ void ne_set_request_flag(ne_request *req, ne_request_flag flag, int value);
  * flag is not supported. */
 int ne_get_request_flag(ne_request *req, ne_request_flag flag);
 
-/**** Request hooks handling *****/
+/* Callback to handle an interim (1xx) response. The status-code of
+ * the response is passed as 'status'; interim response headers can be
+ * accessed via ne_get_response_header. */
+typedef void (*ne_interim_response_fn)(void *userdata, ne_request *req,
+                                       const ne_status *status);
 
-typedef void (*ne_free_hooks)(void *cookie);
+/* Add a interim response callback handler for the request. */
+void ne_add_interim_handler(ne_request *req, ne_interim_response_fn fn,
+                            void *userdata);
+
+/**** Request hooks handling *****/
 
 /* Hook called when a request is created; passed the method and
  * request-target as used in the request-line (RFC7230§5.3).  The

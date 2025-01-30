@@ -65,6 +65,13 @@
 	      <literal>POST</literal></simpara>
 	    </listitem>
 	  </varlistentry>
+	  <varlistentry>
+            <term><constant>NE_REQFLAG_1XXTIMEOUT</constant> (default on)</term>
+	    <listitem>
+	      <simpara>disable this flag to disable overall timeout
+	      when reading interim (1xx) responses; </simpara>
+	    </listitem>
+	  </varlistentry>
         </variablelist>
   </refsect1>
 

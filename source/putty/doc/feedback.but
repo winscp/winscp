@@ -297,6 +297,54 @@ high-quality software to the users comes first.)
 way to get a feature implemented quickly, if it's a big one that we
 don't have time to do ourselves.
 
+\H{feedback-workarounds} Workarounds for SSH server bugs
+
+It's normal for SSH implementations to automatically enable
+workarounds for each other's bugs, using the software version strings
+that are exchanged at the start of the connection. Typically an SSH
+client will have a list of server version strings that it believes to
+have particular bugs, and auto-enable the appropriate set of
+workarounds when it sees one of those strings. (And servers will have
+a similar list of workarounds for \e{client} software they believe to
+be buggy.)
+
+If you've found a bug in an SSH server, and you'd like us to add an
+auto-detected workaround for it, our policy is that \s{the server
+implementor should fix it first}.
+
+If the server implementor has fixed it in the latest version, and can
+give us a complete description of the version strings that go with the
+bug, then we're happy to use those version strings as a trigger to
+automatically enable our workaround (assuming one is possible). We
+\e{won't} accept requests to auto-enable workarounds for an open-ended
+set of version strings, such as \q{any version of FooServer, including
+future ones not yet released}.
+
+The aim of this policy is to encourage implementors to gradually
+converge on the actual standardised SSH protocol. If we enable people
+to continue violating the spec, by installing open-ended workarounds
+in PuTTY for bugs they're never going to fix, then we're contributing
+to an ecosystem in which everyone carries on having bugs and everyone
+else carries on having to work around them.
+
+An exception: if an SSH server is no longer maintained \e{at all}
+(e.g. the company that produced it has gone out of business), and
+every version of it that was ever released has a bug, then that's one
+situation in which we may be prepared to add a workaround rule that
+matches all versions of that software. (The aim is to stop
+implementors from continuing to release software with the bug \dash
+and if they're not releasing it \e{at all} any more, then that's
+already done!)
+
+We do recognise that sometimes it will be difficult to get the server
+maintainer to fix a bug, or even to answer support requests at all. Or
+it might take them a very long time to get round to doing anything
+about it. We're not completely unwilling to compromise: we're prepared
+to add \e{manually enabled} workarounds to PuTTY even for bugs that an
+implementation hasn't fixed yet. We just won't \e{automatically}
+enable the workaround unless the server maintainer has also done their
+part.
+
 \H{feedback-support} \ii{Support requests}
 
 If you're trying to make PuTTY do something for you and it isn't

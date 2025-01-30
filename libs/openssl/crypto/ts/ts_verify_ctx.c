@@ -1,7 +1,7 @@
 /*
  * Copyright 2006-2021 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -16,8 +16,6 @@ TS_VERIFY_CTX *TS_VERIFY_CTX_new(void)
 {
     TS_VERIFY_CTX *ctx = OPENSSL_zalloc(sizeof(*ctx));
 
-    if (ctx == NULL)
-        TSerr(TS_F_TS_VERIFY_CTX_NEW, ERR_R_MALLOC_FAILURE);
     return ctx;
 }
 
@@ -60,7 +58,7 @@ X509_STORE *TS_VERIFY_CTX_set_store(TS_VERIFY_CTX *ctx, X509_STORE *s)
     return ctx->store;
 }
 
-STACK_OF(X509) *TS_VERIFY_CTS_set_certs(TS_VERIFY_CTX *ctx,
+STACK_OF(X509) *TS_VERIFY_CTX_set_certs(TS_VERIFY_CTX *ctx,
                                         STACK_OF(X509) *certs)
 {
     ctx->certs = certs;
@@ -82,7 +80,7 @@ void TS_VERIFY_CTX_cleanup(TS_VERIFY_CTX *ctx)
         return;
 
     X509_STORE_free(ctx->store);
-    sk_X509_pop_free(ctx->certs, X509_free);
+    OSSL_STACK_OF_X509_free(ctx->certs);
 
     ASN1_OBJECT_free(ctx->policy);
 

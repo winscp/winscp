@@ -43,7 +43,7 @@ The autoconf macros in the "macros" directory are under a less
 restrictive license, see each file for details.
 
 ~~~
-neon is Copyright (C) 1999-2021 Joe Orton
+neon is Copyright (C) 1999-2023 Joe Orton
 Portions are:
 Copyright (C) Aleix Conchillo Flaque
 Copyright (C) Arfrever Frehtes Taifersar Arahesis
@@ -57,6 +57,7 @@ Copyright (C) Karl Ove Hufthammer.
 Copyright (C) Michael Sobolev
 Copyright (C) Nobuyuki Tsuchimura
 Copyright (C) Sylvain Glaize
+Copyright (C) Temuri Doghonadze
 Copyright (C) Thomas Schultz
 Copyright (C) Vladimir Berezniker
 Copyright (C) Yves Martin

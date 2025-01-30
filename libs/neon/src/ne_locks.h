@@ -136,7 +136,9 @@ int ne_lock_refresh(ne_session *sess, struct ne_lock *lock);
 
 /* Callback for lock discovery.  If 'lock' is NULL, something went
  * wrong performing lockdiscovery for the resource, look at 'status'
- * for the details.
+ * for the details. 'uri' is the URI against which lock discovery is
+ * being performed, which may be different from the URI of a
+ * discovered lock (lock->uri).
  * 
  * If lock is non-NULL, at least lock->uri and lock->token will be
  * filled in; and status will be NULL. */

@@ -1084,6 +1084,24 @@ sending of the \cw{IUTF8} mode: on the SSH / TTY panel, select
 \cw{IUTF8} on the list, select \q{Nothing}, and press \q{Set}. (It's
 not possible to disable sending this mode in 0.68.)
 
+\S{faq-privkey-control-moved}{Question} Since 0.78, I can't find where
+to configure my SSH private key.
+
+In PuTTY 0.78, the \q{\ii{Private key} file for authentication} control,
+where you specify a \c{.\i{PPK}} file for SSH public key authentication,
+moved to a new \q{Credentials} panel in the configuration dialog. You can
+find this by opening the \q{SSH} category in the tree view on the left,
+then opening the \q{Auth} subcategory under that, then clicking on
+\q{Credentials}. On this page you'll find the \q{Browse...} button you
+need to select a \c{.PPK} file for authentication, as described in
+\k{config-ssh-privkey}.
+
+(This control had previously been on the \q{Auth} panel since public
+key authentication was first released in 2002, so many online how-to
+guides still describe it there. The configuration controls were
+reorganised to make room for features added in 0.78, such as OpenSSH
+certificates.)
+
 \H{faq-secure} Security questions
 
 \S{faq-publicpc}{Question} Is it safe for me to download PuTTY and

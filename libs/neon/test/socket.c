@@ -452,7 +452,7 @@ static int addr_connect(void)
     ne_inet_addr *ia;
     unsigned int port;
 
-    ia = ne_iaddr_make(ne_iaddr_ipv4, raw_127);
+    ia = get_lh_inet_addr();
     ONN("ne_iaddr_make returned NULL", ia == NULL);
     
     CALL(new_spawn_server(1, serve_close, NULL, &port));
@@ -469,7 +469,7 @@ static int addr_peer(void)
     unsigned int port = 9999, realport;
     int ret;
 
-    ia = ne_iaddr_make(ne_iaddr_ipv4, raw_127);
+    ia = get_lh_inet_addr();
     ONN("ne_iaddr_make returned NULL", ia == NULL);
     
     CALL(new_spawn_server(1, serve_close, NULL, &realport));
@@ -1330,7 +1330,7 @@ static int try_prebind(int addr, int port)
     char buf[128], line[256];
     unsigned int srvport;
 
-    ia = ne_iaddr_make(ne_iaddr_ipv4, raw_127);
+    ia = get_lh_inet_addr();
     ONN("ne_iaddr_make returned NULL", ia == NULL);
     
     CALL(new_spawn_server(1, serve_ppeer, NULL, &srvport));

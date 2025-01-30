@@ -1,7 +1,7 @@
 /*
- * Copyright 2008-2016 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2008-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -18,7 +18,7 @@ int main(int argc, char **argv)
     X509 *scert = NULL, *scert2 = NULL;
     EVP_PKEY *skey = NULL, *skey2 = NULL;
     CMS_ContentInfo *cms = NULL;
-    int ret = 1;
+    int ret = EXIT_FAILURE;
 
     OpenSSL_add_all_algorithms();
     ERR_load_crypto_strings();
@@ -77,11 +77,11 @@ int main(int argc, char **argv)
     if (!SMIME_write_CMS(out, cms, in, CMS_STREAM))
         goto err;
 
-    ret = 0;
+    printf("Signing Successful\n");
 
+    ret = EXIT_SUCCESS;
  err:
-
-    if (ret) {
+    if (ret != EXIT_SUCCESS) {
         fprintf(stderr, "Error Signing Data\n");
         ERR_print_errors_fp(stderr);
     }

@@ -1,7 +1,7 @@
 /*
- * Copyright 2017-2018 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2017-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -16,32 +16,51 @@
 #include <openssl/kdf.h>
 #include "testutil.h"
 
-static int test_kdf_tls1_prf(void)
+static int test_kdf_tls1_prf(int index)
 {
+    int ret = 0;
     EVP_PKEY_CTX *pctx;
     unsigned char out[16];
     size_t outlen = sizeof(out);
-    pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_TLS1_PRF, NULL);
 
+    if ((pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_TLS1_PRF, NULL)) == NULL) {
+        TEST_error("EVP_PKEY_TLS1_PRF");
+        goto err;
+    }
     if (EVP_PKEY_derive_init(pctx) <= 0) {
         TEST_error("EVP_PKEY_derive_init");
-        return 0;
+        goto err;
     }
     if (EVP_PKEY_CTX_set_tls1_prf_md(pctx, EVP_sha256()) <= 0) {
         TEST_error("EVP_PKEY_CTX_set_tls1_prf_md");
-        return 0;
+        goto err;
     }
-    if (EVP_PKEY_CTX_set1_tls1_prf_secret(pctx, "secret", 6) <= 0) {
+    if (EVP_PKEY_CTX_set1_tls1_prf_secret(pctx,
+                                          (unsigned char *)"secret", 6) <= 0) {
         TEST_error("EVP_PKEY_CTX_set1_tls1_prf_secret");
-        return 0;
+        goto err;
     }
-    if (EVP_PKEY_CTX_add1_tls1_prf_seed(pctx, "seed", 4) <= 0) {
-        TEST_error("EVP_PKEY_CTX_add1_tls1_prf_seed");
-        return 0;
+    if (index == 0) {
+        if (EVP_PKEY_CTX_add1_tls1_prf_seed(pctx,
+                                            (unsigned char *)"seed", 4) <= 0) {
+            TEST_error("EVP_PKEY_CTX_add1_tls1_prf_seed");
+            goto err;
+        }
+    } else {
+        if (EVP_PKEY_CTX_add1_tls1_prf_seed(pctx,
+                                            (unsigned char *)"se", 2) <= 0) {
+            TEST_error("EVP_PKEY_CTX_add1_tls1_prf_seed");
+            goto err;
+        }
+        if (EVP_PKEY_CTX_add1_tls1_prf_seed(pctx,
+                                            (unsigned char *)"ed", 2) <= 0) {
+            TEST_error("EVP_PKEY_CTX_add1_tls1_prf_seed");
+            goto err;
+        }
     }
     if (EVP_PKEY_derive(pctx, out, &outlen) <= 0) {
         TEST_error("EVP_PKEY_derive");
-        return 0;
+        goto err;
     }
 
     {
@@ -50,43 +69,65 @@ static int test_kdf_tls1_prf(void)
             0xaa, 0xe9, 0x74, 0xc3, 0x04, 0x73, 0x5e, 0xcc
         };
         if (!TEST_mem_eq(out, sizeof(out), expected, sizeof(expected))) {
-            return 0;
+            goto err;
         }
     }
+    ret = 1;
+err:
     EVP_PKEY_CTX_free(pctx);
-    return 1;
+    return ret;
 }
 
-static int test_kdf_hkdf(void)
+static int test_kdf_hkdf(int index)
 {
+    int ret = 0;
     EVP_PKEY_CTX *pctx;
     unsigned char out[10];
     size_t outlen = sizeof(out);
-    pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
 
+    if ((pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL)) == NULL) {
+        TEST_error("EVP_PKEY_HKDF");
+        goto err;
+    }
     if (EVP_PKEY_derive_init(pctx) <= 0) {
         TEST_error("EVP_PKEY_derive_init");
-        return 0;
+        goto err;
     }
     if (EVP_PKEY_CTX_set_hkdf_md(pctx, EVP_sha256()) <= 0) {
         TEST_error("EVP_PKEY_CTX_set_hkdf_md");
-        return 0;
+        goto err;
     }
-    if (EVP_PKEY_CTX_set1_hkdf_salt(pctx, "salt", 4) <= 0) {
+    if (EVP_PKEY_CTX_set1_hkdf_salt(pctx, (const unsigned char *)"salt", 4)
+            <= 0) {
         TEST_error("EVP_PKEY_CTX_set1_hkdf_salt");
-        return 0;
+        goto err;
     }
-    if (EVP_PKEY_CTX_set1_hkdf_key(pctx, "secret", 6) <= 0) {
+    if (EVP_PKEY_CTX_set1_hkdf_key(pctx, (const unsigned char *)"secret", 6)
+            <= 0) {
         TEST_error("EVP_PKEY_CTX_set1_hkdf_key");
-        return 0;
+        goto err;
     }
-    if (EVP_PKEY_CTX_add1_hkdf_info(pctx, "label", 5) <= 0) {
-        TEST_error("EVP_PKEY_CTX_set1_hkdf_info");
-        return 0;
+    if (index == 0) {
+        if (EVP_PKEY_CTX_add1_hkdf_info(pctx, (const unsigned char *)"label", 5)
+            <= 0) {
+            TEST_error("EVP_PKEY_CTX_add1_hkdf_info");
+            goto err;
+        }
+    } else {
+        if (EVP_PKEY_CTX_add1_hkdf_info(pctx, (const unsigned char *)"lab", 3)
+            <= 0) {
+            TEST_error("EVP_PKEY_CTX_add1_hkdf_info");
+            goto err;
+        }
+        if (EVP_PKEY_CTX_add1_hkdf_info(pctx, (const unsigned char *)"el", 2)
+            <= 0) {
+            TEST_error("EVP_PKEY_CTX_add1_hkdf_info");
+            goto err;
+        }
     }
     if (EVP_PKEY_derive(pctx, out, &outlen) <= 0) {
         TEST_error("EVP_PKEY_derive");
-        return 0;
+        goto err;
     }
 
     {
@@ -94,60 +135,66 @@ static int test_kdf_hkdf(void)
             0x2a, 0xc4, 0x36, 0x9f, 0x52, 0x59, 0x96, 0xf8, 0xde, 0x13
         };
         if (!TEST_mem_eq(out, sizeof(out), expected, sizeof(expected))) {
-            return 0;
+            goto err;
         }
     }
+    ret = 1;
+err:
     EVP_PKEY_CTX_free(pctx);
-    return 1;
+    return ret;
 }
 
 #ifndef OPENSSL_NO_SCRYPT
 static int test_kdf_scrypt(void)
 {
+    int ret = 0;
     EVP_PKEY_CTX *pctx;
     unsigned char out[64];
     size_t outlen = sizeof(out);
-    pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_SCRYPT, NULL);
 
+    if ((pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_SCRYPT, NULL)) == NULL) {
+        TEST_error("EVP_PKEY_SCRYPT");
+        goto err;
+    }
     if (EVP_PKEY_derive_init(pctx) <= 0) {
         TEST_error("EVP_PKEY_derive_init");
-        return 0;
+        goto err;
     }
     if (EVP_PKEY_CTX_set1_pbe_pass(pctx, "password", 8) <= 0) {
         TEST_error("EVP_PKEY_CTX_set1_pbe_pass");
-        return 0;
+        goto err;
     }
-    if (EVP_PKEY_CTX_set1_scrypt_salt(pctx, "NaCl", 4) <= 0) {
+    if (EVP_PKEY_CTX_set1_scrypt_salt(pctx, (unsigned char *)"NaCl", 4) <= 0) {
         TEST_error("EVP_PKEY_CTX_set1_scrypt_salt");
-        return 0;
+        goto err;
     }
     if (EVP_PKEY_CTX_set_scrypt_N(pctx, 1024) <= 0) {
         TEST_error("EVP_PKEY_CTX_set_scrypt_N");
-        return 0;
+        goto err;
     }
     if (EVP_PKEY_CTX_set_scrypt_r(pctx, 8) <= 0) {
         TEST_error("EVP_PKEY_CTX_set_scrypt_r");
-        return 0;
+        goto err;
     }
     if (EVP_PKEY_CTX_set_scrypt_p(pctx, 16) <= 0) {
         TEST_error("EVP_PKEY_CTX_set_scrypt_p");
-        return 0;
+        goto err;
     }
     if (EVP_PKEY_CTX_set_scrypt_maxmem_bytes(pctx, 16) <= 0) {
         TEST_error("EVP_PKEY_CTX_set_maxmem_bytes");
-        return 0;
+        goto err;
     }
     if (EVP_PKEY_derive(pctx, out, &outlen) > 0) {
         TEST_error("EVP_PKEY_derive should have failed");
-        return 0;
+        goto err;
     }
     if (EVP_PKEY_CTX_set_scrypt_maxmem_bytes(pctx, 10 * 1024 * 1024) <= 0) {
         TEST_error("EVP_PKEY_CTX_set_maxmem_bytes");
-        return 0;
+        goto err;
     }
     if (EVP_PKEY_derive(pctx, out, &outlen) <= 0) {
         TEST_error("EVP_PKEY_derive");
-        return 0;
+        goto err;
     }
 
     {
@@ -162,18 +209,25 @@ static int test_kdf_scrypt(void)
             0x83, 0x60, 0xcb, 0xdf, 0xa2, 0xcc, 0x06, 0x40
         };
         if (!TEST_mem_eq(out, sizeof(out), expected, sizeof(expected))) {
-            return 0;
+            goto err;
         }
     }
+    ret = 1;
+err:
     EVP_PKEY_CTX_free(pctx);
-    return 1;
+    return ret;
 }
 #endif
 
 int setup_tests(void)
 {
-    ADD_TEST(test_kdf_tls1_prf);
-    ADD_TEST(test_kdf_hkdf);
+    int tests = 1;
+
+    if (fips_provider_version_ge(NULL, 3, 3, 1))
+        tests = 2;
+
+    ADD_ALL_TESTS(test_kdf_tls1_prf, tests);
+    ADD_ALL_TESTS(test_kdf_hkdf, tests);
 #ifndef OPENSSL_NO_SCRYPT
     ADD_TEST(test_kdf_scrypt);
 #endif

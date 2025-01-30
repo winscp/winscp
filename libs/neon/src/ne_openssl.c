@@ -244,13 +244,14 @@ void ne_ssl_cert_validity_time(const ne_ssl_certificate *cert,
  * identity does not match, or <0 if the certificate had no identity.
  * If 'identity' is non-NULL, store the malloc-allocated identity in
  * *identity.  Logic specified by RFC 2818 and RFC 3280. */
-static int check_identity(const ne_uri *server, X509 *cert, char **identity)
+static int check_identity(const struct host_info *server, X509 *cert,
+                          char **identity)
 {
     STACK_OF(GENERAL_NAME) *names;
     int match = 0, found = 0;
     const char *hostname;
     
-    hostname = server ? server->host : "";
+    hostname = server ? server->hostname : "";
 
     names = X509_get_ext_d2i(cert, NID_subject_alt_name, NULL, NULL);
     if (names) {
@@ -264,12 +265,16 @@ static int check_identity(const ne_uri *server, X509 *cert, char **identity)
 	    if (nm->type == GEN_DNS) {
 		char *name = dup_ia5string(nm->d.ia5);
                 if (identity && !found) *identity = ne_strdup(name);
-		match = ne__ssl_match_hostname(name, strlen(name), hostname);
+
+                /* Only match if the server was not identified by a
+                 * literal IP address; avoiding wildcard matches. */
+                if (server && !server->literal)
+                    match = ne__ssl_match_hostname(name, strlen(name), hostname);
 		ne_free(name);
 		found = 1;
             } 
-            else if (nm->type == GEN_IPADD) {
-                /* compare IP address with server IP address. */
+            else if (nm->type == GEN_IPADD && server && server->literal) {
+                /* compare IP addfress with server literal IP address. */
                 ne_inet_addr *ia;
                 if (nm->d.ip->length == 4)
                     ia = ne_iaddr_make(ne_iaddr_ipv4, nm->d.ip->data);
@@ -279,10 +284,7 @@ static int check_identity(const ne_uri *server, X509 *cert, char **identity)
                     ia = NULL;
                 /* ne_iaddr_make returns NULL if address type is unsupported */
                 if (ia != NULL) { /* address type was supported. */
-                    char buf[128];
-
-                    match = strcmp(hostname, 
-                                   ne_iaddr_print(ia, buf, sizeof buf)) == 0;
+                    match = ne_iaddr_cmp(ia, server->literal) == 0;
                     found = 1;
                     ne_iaddr_free(ia);
                 } else {
@@ -290,33 +292,8 @@ static int check_identity(const ne_uri *server, X509 *cert, char **identity)
                              "address type (length %d), skipped.\n",
                              nm->d.ip->length);
                 }
-            } 
-            else if (nm->type == GEN_URI) {
-                char *name = dup_ia5string(nm->d.ia5);
-                ne_uri uri;
-
-                if (ne_uri_parse(name, &uri) == 0 && uri.host && uri.scheme) {
-                    ne_uri tmp;
-
-                    if (identity && !found) *identity = ne_strdup(name);
-                    found = 1;
-
-                    if (server) {
-                        /* For comparison purposes, all that matters is
-                         * host, scheme and port; ignore the rest. */
-                        memset(&tmp, 0, sizeof tmp);
-                        tmp.host = uri.host;
-                        tmp.scheme = uri.scheme;
-                        tmp.port = uri.port;
-                        
-                        match = ne_uri_cmp(server, &tmp) == 0;
-                    }
-                }
-
-                ne_uri_free(&uri);
-                ne_free(name);
             }
-	}
+        }
         /* free the whole stack. */
         sk_GENERAL_NAME_pop_free(names, GENERAL_NAME_free);
     }
@@ -348,7 +325,8 @@ static int check_identity(const ne_uri *server, X509 *cert, char **identity)
             return -1;
         }
         if (identity) *identity = ne_strdup(cname->data);
-        match = ne__ssl_match_hostname(cname->data, cname->used - 1, hostname);
+        if (server && !server->literal)
+            match = ne__ssl_match_hostname(cname->data, cname->used-1, hostname);
         ne_buffer_destroy(cname);
     }
 
@@ -459,7 +437,6 @@ static int check_certificate(ne_session *sess, SSL *ssl, ne_ssl_certificate *cha
 {
     X509 *cert = chain->subject;
     int ret, failures = sess->ssl_context->failures;
-    ne_uri server;
 
     /* If the verification callback hit a case which can't be mapped
      * to one of the exported error bits, it's treated as a hard
@@ -476,10 +453,7 @@ static int check_certificate(ne_session *sess, SSL *ssl, ne_ssl_certificate *cha
 
     /* Check certificate was issued to this server; pass URI of
      * server. */
-    memset(&server, 0, sizeof server);
-    ne_fill_server_uri(sess, &server);
-    ret = check_identity(&server, cert, NULL);
-    ne_uri_free(&server);
+    ret = check_identity(&sess->server, cert, NULL);
     if (ret < 0) {
         ne_set_error(sess, _("Server certificate was missing commonName "
                              "attribute in subject name"));
@@ -581,7 +555,7 @@ ne_ssl_context *ne_ssl_context_create(int mode)
         /* enable workarounds for buggy SSL server implementations */
         SSL_CTX_set_options(ctx->ctx, SSL_OP_ALL);
         SSL_CTX_set_verify(ctx->ctx, SSL_VERIFY_PEER, verify_callback);
-#if !defined(LIBRESSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x10101000L
+#if defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER >= 0x3040000fL || (!defined(LIBRESSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x10101000L)
         SSL_CTX_set_post_handshake_auth(ctx->ctx, 1);
 #endif
     } else if (mode == NE_SSL_CTX_SERVER) {
@@ -810,13 +784,15 @@ void ne_ssl_context_trustcert(ne_ssl_context *ctx, const ne_ssl_certificate *cer
 
 void ne_ssl_trust_default_ca(ne_session *sess)
 {
-    X509_STORE *store = SSL_CTX_get_cert_store(sess->ssl_context->ctx);
+    if (sess->ssl_context) {
+        X509_STORE *store = SSL_CTX_get_cert_store(sess->ssl_context->ctx);
     
 #ifdef NE_SSL_CA_BUNDLE
-    X509_STORE_load_locations(store, NE_SSL_CA_BUNDLE, NULL);
+        X509_STORE_load_locations(store, NE_SSL_CA_BUNDLE, NULL);
 #else
-    X509_STORE_set_default_paths(store);
+        X509_STORE_set_default_paths(store);
 #endif
+    }
 }
 
 /* Find a friendly name in a PKCS12 structure the hard way, without
@@ -1122,7 +1098,9 @@ static const EVP_MD *hash_to_md(unsigned int flags)
     case NE_HASH_SHA256: return EVP_sha256();
 #ifdef HAVE_OPENSSL11
     case NE_HASH_SHA512: return EVP_sha512();
+#if !defined(LIBRESSL_VERSION_NUMBER) || LIBRESSL_VERSION_NUMBER >= 0x3080000fL
     case NE_HASH_SHA512_256: return EVP_sha512_256();
+#endif
 #endif
     default: break;
     }

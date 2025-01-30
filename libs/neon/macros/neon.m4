@@ -136,12 +136,12 @@ AC_DEFUN([NE_VERSIONS_BUNDLED], [
 
 # Define the current versions.
 NE_VERSION_MAJOR=0
-NE_VERSION_MINOR=32
-NE_VERSION_PATCH=5
+NE_VERSION_MINOR=33
+NE_VERSION_PATCH=0
 NE_VERSION_TAG=
 
-# 0.32.x is backwards-compatible to 0.27.x, so AGE=5
-NE_LIBTOOL_VERSINFO="32:${NE_VERSION_PATCH}:5"
+# 0.33.x is backwards-compatible to 0.27.x, so AGE=6
+NE_LIBTOOL_VERSINFO="33:${NE_VERSION_PATCH}:6"
 
 NE_DEFINE_VERSIONS
 
@@ -675,7 +675,7 @@ NE_LARGEFILE
 AC_REPLACE_FUNCS(strcasecmp)
 
 AC_CHECK_FUNCS([signal setvbuf setsockopt stpcpy poll fcntl getsockopt \
-                explicit_bzero sendmsg gettimeofday])
+                explicit_bzero sendmsg gettimeofday gmtime_r])
 
 if test "x${ac_cv_func_poll}${ac_cv_header_sys_poll_h}y" = "xyesyesy"; then
   AC_DEFINE([NE_USE_POLL], 1, [Define if poll() should be used])
@@ -1053,6 +1053,7 @@ gnutls)
                   gnutls_certificate_get_issuer \
                   gnutls_certificate_get_x509_cas \
                   gnutls_x509_crt_sign2 \
+                  gnutls_x509_crt_equals \
                   gnutls_certificate_set_retrieve_function2 \
                   gnutls_certificate_set_x509_system_trust \
                   gnutls_privkey_import_ext])

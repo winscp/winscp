@@ -1,24 +1,24 @@
 /*
- * Copyright 2015-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2015-2023 The OpenSSL Project Authors. All Rights Reserved.
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
  */
 
-#include "../ssl/packet_local.h"
+#include "internal/packet_quic.h"
 #include "testutil.h"
 
 #define BUF_LEN 255
 
-static unsigned char smbuf[BUF_LEN];
+static unsigned char smbuf[BUF_LEN + 1];
 
 static int test_PACKET_remaining(void)
 {
     PACKET pkt;
 
-    if (!TEST_true(PACKET_buf_init(&pkt, smbuf, sizeof(smbuf)))
+    if (!TEST_true(PACKET_buf_init(&pkt, smbuf, BUF_LEN))
             || !TEST_size_t_eq(PACKET_remaining(&pkt), BUF_LEN)
             || !TEST_true(PACKET_forward(&pkt, BUF_LEN - 1))
             || !TEST_size_t_eq(PACKET_remaining(&pkt), 1)
@@ -33,7 +33,7 @@ static int test_PACKET_end(void)
 {
     PACKET pkt;
 
-    if (!TEST_true(PACKET_buf_init(&pkt, smbuf, sizeof(smbuf)))
+    if (!TEST_true(PACKET_buf_init(&pkt, smbuf, BUF_LEN))
             || !TEST_size_t_eq(PACKET_remaining(&pkt), BUF_LEN)
             || !TEST_ptr_eq(PACKET_end(&pkt), smbuf + BUF_LEN)
             || !TEST_true(PACKET_forward(&pkt, BUF_LEN - 1))
@@ -350,8 +350,9 @@ static int test_PACKET_get_length_prefixed_1(void)
     unsigned char buf1[BUF_LEN];
     const size_t len = 16;
     unsigned int i;
-    PACKET pkt, short_pkt, subpkt = {0};
+    PACKET pkt, short_pkt, subpkt;
 
+    memset(&subpkt, 0, sizeof(subpkt));
     buf1[0] = (unsigned char)len;
     for (i = 1; i < BUF_LEN; i++)
         buf1[i] = (i * 2) & 0xff;
@@ -374,8 +375,9 @@ static int test_PACKET_get_length_prefixed_2(void)
     unsigned char buf1[1024];
     const size_t len = 516;  /* 0x0204 */
     unsigned int i;
-    PACKET pkt, short_pkt, subpkt = {0};
+    PACKET pkt, short_pkt, subpkt;
 
+    memset(&subpkt, 0, sizeof(subpkt));
     for (i = 1; i <= 1024; i++)
         buf1[i - 1] = (i * 2) & 0xff;
 
@@ -397,8 +399,9 @@ static int test_PACKET_get_length_prefixed_3(void)
     unsigned char buf1[1024];
     const size_t len = 516;  /* 0x000204 */
     unsigned int i;
-    PACKET pkt, short_pkt, subpkt = {0};
+    PACKET pkt, short_pkt, subpkt;
 
+    memset(&subpkt, 0, sizeof(subpkt));
     for (i = 0; i < 1024; i++)
         buf1[i] = (i * 2) & 0xff;
 
@@ -420,8 +423,9 @@ static int test_PACKET_as_length_prefixed_1(void)
     unsigned char buf1[BUF_LEN];
     const size_t len = 16;
     unsigned int i;
-    PACKET pkt, exact_pkt, subpkt = {0};
+    PACKET pkt, exact_pkt, subpkt;
 
+    memset(&subpkt, 0, sizeof(subpkt));
     buf1[0] = (unsigned char)len;
     for (i = 1; i < BUF_LEN; i++)
         buf1[i] = (i * 2) & 0xff;
@@ -443,8 +447,9 @@ static int test_PACKET_as_length_prefixed_2(void)
     unsigned char buf[1024];
     const size_t len = 516;  /* 0x0204 */
     unsigned int i;
-    PACKET pkt, exact_pkt, subpkt = {0};
+    PACKET pkt, exact_pkt, subpkt;
 
+    memset(&subpkt, 0, sizeof(subpkt));
     for (i = 1; i <= 1024; i++)
         buf[i-1] = (i * 2) & 0xff;
 
@@ -459,6 +464,114 @@ static int test_PACKET_as_length_prefixed_2(void)
 
     return 1;
 }
+
+#ifndef OPENSSL_NO_QUIC
+
+static int test_PACKET_get_quic_vlint(void)
+{
+    struct quic_test_case {
+        unsigned char buf[16];
+        size_t expected_read_count;
+        uint64_t value;
+    };
+
+    static const struct quic_test_case cases[] = {
+        { {0x00}, 1, 0  },
+        { {0x01}, 1, 1  },
+        { {0x3e}, 1, 62 },
+        { {0x3f}, 1, 63 },
+        { {0x40,0x00}, 2, 0 },
+        { {0x40,0x01}, 2, 1 },
+        { {0x40,0x02}, 2, 2 },
+        { {0x40,0xff}, 2, 255 },
+        { {0x41,0x00}, 2, 256 },
+        { {0x7f,0xfe}, 2, 16382 },
+        { {0x7f,0xff}, 2, 16383 },
+        { {0x80,0x00,0x00,0x00}, 4, 0 },
+        { {0x80,0x00,0x00,0x01}, 4, 1 },
+        { {0x80,0x00,0x01,0x02}, 4, 258 },
+        { {0x80,0x18,0x49,0x65}, 4, 1591653 },
+        { {0xbe,0x18,0x49,0x65}, 4, 1041779045 },
+        { {0xbf,0xff,0xff,0xff}, 4, 1073741823 },
+        { {0xc0,0x00,0x00,0x00,0x00,0x00,0x00,0x00}, 8, 0 },
+        { {0xc0,0x00,0x00,0x00,0x00,0x00,0x01,0x02}, 8, 258 },
+        { {0xfd,0x1f,0x59,0x8d,0xc9,0xf8,0x71,0x8a}, 8, 4404337426105397642 },
+    };
+
+    PACKET pkt;
+    size_t i;
+    uint64_t v;
+
+    for (i = 0; i < OSSL_NELEM(cases); ++i) {
+        memset(&pkt, 0, sizeof(pkt));
+        v = 55;
+
+        if (!TEST_true(PACKET_buf_init(&pkt, cases[i].buf, sizeof(cases[i].buf)))
+                || !TEST_true(PACKET_get_quic_vlint(&pkt, &v))
+                || !TEST_uint64_t_eq(v, cases[i].value)
+                || !TEST_size_t_eq(PACKET_remaining(&pkt),
+                                   sizeof(cases[i].buf) - cases[i].expected_read_count)
+           )
+            return 0;
+    }
+
+    return 1;
+}
+
+static int test_PACKET_get_quic_length_prefixed(void)
+{
+    struct quic_test_case {
+        unsigned char buf[16];
+        size_t enclen, len;
+        int fail;
+    };
+
+    static const struct quic_test_case cases[] = {
+        /* success cases */
+        { {0x00}, 1, 0, 0 },
+        { {0x01}, 1, 1, 0 },
+        { {0x02}, 1, 2, 0 },
+        { {0x03}, 1, 3, 0 },
+        { {0x04}, 1, 4, 0 },
+        { {0x05}, 1, 5, 0 },
+
+        /* failure cases */
+        { {0x10}, 1, 0, 1 },
+        { {0x3f}, 1, 0, 1 },
+    };
+
+    size_t i;
+    PACKET pkt, subpkt = {0};
+
+    for (i = 0; i < OSSL_NELEM(cases); ++i) {
+        memset(&pkt, 0, sizeof(pkt));
+
+        if (!TEST_true(PACKET_buf_init(&pkt, cases[i].buf,
+                                       cases[i].fail
+                                         ? sizeof(cases[i].buf)
+                                         : cases[i].enclen + cases[i].len)))
+            return 0;
+
+        if (!TEST_int_eq(PACKET_get_quic_length_prefixed(&pkt, &subpkt), !cases[i].fail))
+            return 0;
+
+        if (cases[i].fail) {
+            if (!TEST_ptr_eq(pkt.curr, cases[i].buf))
+                return 0;
+            continue;
+        }
+
+        if (!TEST_ptr_eq(subpkt.curr, cases[i].buf + cases[i].enclen))
+            return 0;
+
+        if (!TEST_size_t_eq(subpkt.remaining, cases[i].len))
+            return 0;
+    }
+
+    return 1;
+}
+
+#endif
 
 int setup_tests(void)
 {
@@ -490,5 +603,9 @@ int setup_tests(void)
     ADD_TEST(test_PACKET_get_length_prefixed_3);
     ADD_TEST(test_PACKET_as_length_prefixed_1);
     ADD_TEST(test_PACKET_as_length_prefixed_2);
+#ifndef OPENSSL_NO_QUIC
+    ADD_TEST(test_PACKET_get_quic_vlint);
+    ADD_TEST(test_PACKET_get_quic_length_prefixed);
+#endif
     return 1;
 }

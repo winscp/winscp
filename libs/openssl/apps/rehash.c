@@ -1,8 +1,8 @@
 /*
- * Copyright 2015-2020 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2015-2023 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2013-2014 Timo Teräs <timo.teras@gmail.com>
  *
- * Licensed under the OpenSSL license (the "License").  You may not use
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
  * in the file LICENSE in the source distribution or at
  * https://www.openssl.org/source/license.html
@@ -42,12 +42,8 @@
 # include <openssl/pem.h>
 # include <openssl/x509.h>
 
-
 # ifndef PATH_MAX
 #  define PATH_MAX 4096
-# endif
-# ifndef NAME_MAX
-#  define NAME_MAX 255
 # endif
 # define MAX_COLLISIONS  256
 
@@ -169,6 +165,12 @@ static int add_entry(enum Type type, unsigned int hash, const char *filename,
         *ep = nilhentry;
         ep->old_id = ~0;
         ep->filename = OPENSSL_strdup(filename);
+        if (ep->filename == NULL) {
+            OPENSSL_free(ep);
+            ep = NULL;
+            BIO_printf(bio_err, "out of memory\n");
+            return 1;
+        }
         if (bp->last_entry)
             bp->last_entry->next = ep;
         if (bp->first_entry == NULL)
@@ -207,11 +209,11 @@ static int handle_symlink(const char *filename, const char *fullpath)
     }
     if (filename[i++] != '.')
         return -1;
-    for (type = OSSL_NELEM(suffixes) - 1; type > 0; type--) {
-        const char *suffix = suffixes[type];
-        if (strncasecmp(suffix, &filename[i], strlen(suffix)) == 0)
+    for (type = OSSL_NELEM(suffixes) - 1; type > 0; type--)
+        if (OPENSSL_strncasecmp(&filename[i],
+                                suffixes[type], strlen(suffixes[type])) == 0)
             break;
-    }
+
     i += strlen(suffixes[type]);
 
     id = strtoul(&filename[i], &endptr, 10);
@@ -233,7 +235,7 @@ static int do_file(const char *filename, const char *fullpath, enum Hash h)
 {
     STACK_OF (X509_INFO) *inf = NULL;
     X509_INFO *x;
-    X509_NAME *name = NULL;
+    const X509_NAME *name = NULL;
     BIO *b;
     const char *ext;
     unsigned char digest[EVP_MAX_MD_SIZE];
@@ -244,7 +246,7 @@ static int do_file(const char *filename, const char *fullpath, enum Hash h)
     if ((ext = strrchr(filename, '.')) == NULL)
         goto end;
     for (i = 0; i < OSSL_NELEM(extensions); i++) {
-        if (strcasecmp(extensions[i], ext + 1) == 0)
+        if (OPENSSL_strcasecmp(extensions[i], ext + 1) == 0)
             break;
     }
     if (i >= OSSL_NELEM(extensions))
@@ -292,10 +294,23 @@ static int do_file(const char *filename, const char *fullpath, enum Hash h)
         goto end;
     }
     if (name != NULL) {
-        if ((h == HASH_NEW) || (h == HASH_BOTH))
-            errs += add_entry(type, X509_NAME_hash(name), filename, digest, 1, ~0);
+        if (h == HASH_NEW || h == HASH_BOTH) {
+            int ok;
+            unsigned long hash_value =
+                X509_NAME_hash_ex(name,
+                                  app_get0_libctx(), app_get0_propq(), &ok);
+
+            if (ok) {
+                errs += add_entry(type, hash_value, filename, digest, 1, ~0);
+            } else {
+                BIO_printf(bio_err, "%s: error calculating SHA1 hash value\n",
+                           opt_getprog());
+                errs++;
+            }
+        }
         if ((h == HASH_OLD) || (h == HASH_BOTH))
-            errs += add_entry(type, X509_NAME_hash_old(name), filename, digest, 1, ~0);
+            errs += add_entry(type, X509_NAME_hash_old(name),
+                              filename, digest, 1, ~0);
     }
 
 end:
@@ -322,6 +337,11 @@ static int ends_with_dirsep(const char *path)
     return *path == '/';
 }
 
+static int sk_strcmp(const char * const *a, const char * const *b)
+{
+    return strcmp(*a, *b);
+}
+
 /*
  * Process a directory; return number of errors found.
  */
@@ -332,41 +352,50 @@ static int do_dir(const char *dirname, enum Hash h)
     OPENSSL_DIR_CTX *d = NULL;
     struct stat st;
     unsigned char idmask[MAX_COLLISIONS / 8];
-    int n, numfiles, nextid, buflen, errs = 0;
-    size_t i;
-    const char *pathsep;
+    int n, numfiles, nextid, dirlen, buflen, errs = 0;
+    size_t i, fname_max_len = 20; /* maximum length of "%08x.r%d" */
+    const char *pathsep = "";
     const char *filename;
-    char *buf, *copy = NULL;
+    char *buf = NULL, *copy = NULL;
     STACK_OF(OPENSSL_STRING) *files = NULL;
 
     if (app_access(dirname, W_OK) < 0) {
         BIO_printf(bio_err, "Skipping %s, can't write\n", dirname);
         return 1;
     }
-    buflen = strlen(dirname);
-    pathsep = (buflen && !ends_with_dirsep(dirname)) ? "/": "";
-    buflen += NAME_MAX + 1 + 1;
-    buf = app_malloc(buflen, "filename buffer");
+    dirlen = strlen(dirname);
+    if (dirlen != 0 && !ends_with_dirsep(dirname)) {
+        pathsep = "/";
+        dirlen++;
+    }
 
     if (verbose)
         BIO_printf(bio_out, "Doing %s\n", dirname);
 
-    if ((files = sk_OPENSSL_STRING_new_null()) == NULL) {
+    if ((files = sk_OPENSSL_STRING_new(sk_strcmp)) == NULL) {
         BIO_printf(bio_err, "Skipping %s, out of memory\n", dirname);
         errs = 1;
         goto err;
     }
     while ((filename = OPENSSL_DIR_read(&d, dirname)) != NULL) {
+        size_t fname_len = strlen(filename);
+
         if ((copy = OPENSSL_strdup(filename)) == NULL
                 || sk_OPENSSL_STRING_push(files, copy) == 0) {
             OPENSSL_free(copy);
+            OPENSSL_DIR_end(&d);
             BIO_puts(bio_err, "out of memory\n");
             errs = 1;
             goto err;
         }
+        if (fname_len > fname_max_len)
+            fname_max_len = fname_len;
     }
     OPENSSL_DIR_end(&d);
     sk_OPENSSL_STRING_sort(files);
+
+    buflen = dirlen + fname_max_len + 1;
+    buf = app_malloc(buflen, "filename buffer");
 
     numfiles = sk_OPENSSL_STRING_num(files);
     for (n = 0; n < numfiles; ++n) {
@@ -404,12 +433,12 @@ static int do_dir(const char *dirname, enum Hash h)
                     while (bit_isset(idmask, nextid))
                         nextid++;
 
-                    BIO_snprintf(buf, buflen, "%s%s%n%08x.%s%d",
-                                 dirname, pathsep, &n, bp->hash,
+                    BIO_snprintf(buf, buflen, "%s%s%08x.%s%d",
+                                 dirname, pathsep, bp->hash,
                                  suffixes[bp->type], nextid);
                     if (verbose)
                         BIO_printf(bio_out, "link %s -> %s\n",
-                                   ep->filename, &buf[n]);
+                                   ep->filename, &buf[dirlen]);
                     if (unlink(buf) < 0 && errno != ENOENT) {
                         BIO_printf(bio_err,
                                    "%s: Can't unlink %s, %s\n",
@@ -426,12 +455,12 @@ static int do_dir(const char *dirname, enum Hash h)
                     bit_set(idmask, nextid);
                 } else if (remove_links) {
                     /* Link to be deleted */
-                    BIO_snprintf(buf, buflen, "%s%s%n%08x.%s%d",
-                                 dirname, pathsep, &n, bp->hash,
+                    BIO_snprintf(buf, buflen, "%s%s%08x.%s%d",
+                                 dirname, pathsep, bp->hash,
                                  suffixes[bp->type], ep->old_id);
                     if (verbose)
                         BIO_printf(bio_out, "unlink %s\n",
-                                   &buf[n]);
+                                   &buf[dirlen]);
                     if (unlink(buf) < 0 && errno != ENOENT) {
                         BIO_printf(bio_err,
                                    "%s: Can't unlink %s, %s\n",
@@ -454,19 +483,28 @@ static int do_dir(const char *dirname, enum Hash h)
 }
 
 typedef enum OPTION_choice {
-    OPT_ERR = -1, OPT_EOF = 0, OPT_HELP,
-    OPT_COMPAT, OPT_OLD, OPT_N, OPT_VERBOSE
+    OPT_COMMON,
+    OPT_COMPAT, OPT_OLD, OPT_N, OPT_VERBOSE,
+    OPT_PROV_ENUM
 } OPTION_CHOICE;
 
 const OPTIONS rehash_options[] = {
-    {OPT_HELP_STR, 1, '-', "Usage: %s [options] [cert-directory...]\n"},
-    {OPT_HELP_STR, 1, '-', "Valid options are:\n"},
+    {OPT_HELP_STR, 1, '-', "Usage: %s [options] [directory...]\n"},
+
+    OPT_SECTION("General"),
     {"help", OPT_HELP, '-', "Display this summary"},
     {"h", OPT_HELP, '-', "Display this summary"},
     {"compat", OPT_COMPAT, '-', "Create both new- and old-style hash links"},
     {"old", OPT_OLD, '-', "Use old-style hash to generate links"},
     {"n", OPT_N, '-', "Do not remove existing links"},
+
+    OPT_SECTION("Output"),
     {"v", OPT_VERBOSE, '-', "Verbose output"},
+
+    OPT_PROV_OPTIONS,
+
+    OPT_PARAMETERS(),
+    {"directory", 0, 0, "One or more directories to process (optional)"},
     {NULL}
 };
 
@@ -501,13 +539,19 @@ int rehash_main(int argc, char **argv)
         case OPT_VERBOSE:
             verbose = 1;
             break;
+        case OPT_PROV_CASES:
+            if (!opt_provider(o))
+                goto end;
+            break;
         }
     }
+
+    /* Optional arguments are directories to scan. */
     argc = opt_num_rest();
     argv = opt_rest();
 
     evpmd = EVP_sha1();
-    evpmdsize = EVP_MD_size(evpmd);
+    evpmdsize = EVP_MD_get_size(evpmd);
 
     if (*argv != NULL) {
         while (*argv != NULL)

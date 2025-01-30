@@ -1126,16 +1126,10 @@ static void ecdsa_sign(ssh_key *key, ptrlen data,
 
     mp_int *z = ecdsa_signing_exponent_from_data(ek->curve, extra, data);
 
-    /* Generate k between 1 and curve->n, using the same deterministic
-     * k generation system we use for conventional DSA. */
-    mp_int *k;
-    {
-        unsigned char digest[20];
-        hash_simple(&ssh_sha1, data, digest);
-        k = dsa_gen_k(
-            "ECDSA deterministic k generator", ek->curve->w.G_order,
-            ek->privateKey, digest, sizeof(digest));
-    }
+    /* Generate any valid exponent k, using the RFC 6979 deterministic
+     * procedure. */
+    mp_int *k = rfc6979(
+        extra->hash, ek->curve->w.G_order, ek->privateKey, data);
 
     WeierstrassPoint *kG = ecc_weierstrass_multiply(ek->curve->w.G, k);
     mp_int *x;

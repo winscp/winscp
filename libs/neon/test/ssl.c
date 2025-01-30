@@ -66,8 +66,7 @@ static ne_ssl_client_cert *def_cli_cert;
 static char *nul_cn_fn;
 
 static int check_dname(const ne_ssl_dname *dn, const char *expected,
-                       const char *which)
-    ne_attribute((nonnull));
+                       const char *which);
 
 static int check_cert_dnames(const ne_ssl_certificate *cert,
                              const char *subject, const char *issuer)
@@ -593,11 +592,6 @@ static int ipaddr_altname(void)
     return accept_signed_cert_for_hostname("altname5.cert", "127.0.0.1");
 }
 
-static int uri_altname(void)
-{
-    return accept_signed_cert_for_hostname("altname7.cert", "localhost");
-}
-
 /* test that the *most specific* commonName attribute is used. */
 static int multi_commonName(void)
 {
@@ -789,42 +783,25 @@ static int fail_ssl_request_with_error2(char *cert, char *key, char *cacert,
                                         const char *msg, int failures,
                                         const char *errstr)
 {
-    ne_session *sess = ne_session_create("https", host, 7777);
+    ne_session *sess;
     int gotf = 0, ret;
     struct ssl_server_args args = {0};
     ne_sock_addr *addr = NULL;
     const ne_inet_addr **list = NULL;
 
-    if (realhost) {
-        size_t n;
-        const ne_inet_addr *ia;
-
-        addr = ne_addr_resolve(realhost, 0);
-
-        ONV(ne_addr_result(addr),
-            ("fake hostname lookup failed for %s", realhost));
-
-        NE_DEBUG(NE_DBG_SSL, "ssl: Using fake hostname '%s'\n", realhost);
-
-        for (n = 0, ia = ne_addr_first(addr); ia; ia = ne_addr_next(addr))
-            n++;
-
-        NE_DEBUG(NE_DBG_SSL, "ssl: Address count '%lu'\n", n);
-
-        list = ne_calloc(n * sizeof(*list));
-
-        for (n = 0, ia = ne_addr_first(addr); ia; ia = ne_addr_next(addr))
-            list[n++] = ia;
-        
-        ne_set_addrlist(sess, list, n);
-    }
-
     args.cert = cert;
     args.key = key;
     args.fail_silently = 1;
     
-    ret = any_ssl_request(sess, ssl_server, &args, cacert,
-			  get_failures, &gotf);
+    CALL(fakeproxied_session_server(&sess, "https", host, 7777, ssl_server, &args));
+
+    if (cacert) {
+        CALL(load_and_trust_cert(sess, cacert));
+    }
+
+    ne_ssl_set_verify(sess, get_failures, &gotf);
+
+    ret = any_request(sess, "/expect-to-fail");
 
     ONV(gotf == 0,
 	("no error in verification callback; request rv %d error string: %s",
@@ -981,12 +958,6 @@ static int fail_host_ipaltname(void)
 {
     return fail_ssl_request("altname5.cert", CA_CERT, "localhost",
                             "bad IP altname cert", NE_SSL_IDMISMATCH);
-}
-
-static int fail_bad_urialtname(void)
-{
-    return fail_ssl_request("altname8.cert", CA_CERT, "localhost",
-                            "bad URI altname cert", NE_SSL_IDMISMATCH);
 }
 
 static int fail_wildcard(void)
@@ -1502,7 +1473,6 @@ static int cert_identities(void)
         { "altname2.cert", "nohost.example.com" },
         { "altname4.cert", "localhost" },
         { "ca4.pem", "fourth.example.com" },
-        { "altname8.cert", "http://nohost.example.com/" },
         { NULL, NULL }
     };
     int n;
@@ -1823,6 +1793,7 @@ static int nonssl_trust(void)
     ne_session *sess = ne_session_create("http", "www.example.com", 80);
     
     ne_ssl_trust_cert(sess, def_ca_cert);
+    ne_ssl_trust_default_ca(sess);
     
     ne_session_destroy(sess);
 
@@ -1958,7 +1929,6 @@ ne_test tests[] = {
     T(two_subject_altname2),
     T(notdns_altname),
     T(ipaddr_altname),
-    T(uri_altname),
 
     T(multi_commonName),
     T(commonName_first),
@@ -1971,7 +1941,6 @@ ne_test tests[] = {
     T(fail_missing_CN),
     T(fail_host_ipaltname),
     T(fail_bad_ipaltname),
-    T(fail_bad_urialtname),
     T(fail_wildcard),
     T(fail_wildcard_ip),
     T(fail_ca_notyetvalid),

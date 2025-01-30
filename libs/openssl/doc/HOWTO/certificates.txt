@@ -30,7 +30,7 @@ keys, so before you create a certificate or a certificate request, you
 need to create a private key.
 
 Private keys are generated with 'openssl genrsa -out privkey.pem' if
-you want a RSA private key, or if you want a DSA private key:
+you want an RSA private key, or if you want a DSA private key:
 'openssl dsaparam -out dsaparam.pem 2048; openssl gendsa -out privkey.pem dsaparam.pem'.
 
 The private keys created by these commands are not passphrase protected;
@@ -89,7 +89,7 @@ was kind enough, your certificate is a raw DER thing in PEM format.
 Your key most definitely is if you have followed the examples above.
 However, some (most?) certificate authorities will encode them with
 things like PKCS7 or PKCS12, or something else.  Depending on your
-applications, this may be perfectly OK, it all depends on what they
+applications, this may be perfectly OK.  It all depends on what they
 know how to decode.  If not, there are a number of OpenSSL tools to
 convert between some (most?) formats.
 

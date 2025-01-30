@@ -1770,7 +1770,7 @@ static void share_receive(Plug *plug, int urgent, const char *data, size_t len)
             char *buf = dupprintf("Version string far too long\n");
             share_disconnect(cs, buf);
             sfree(buf);
-            goto dead;
+            return;
         }
         cs->recvbuf[cs->recvlen++] = c;
     }
@@ -1785,7 +1785,7 @@ static void share_receive(Plug *plug, int urgent, const char *data, size_t len)
         char *buf = dupprintf("Version string did not have expected prefix\n");
         share_disconnect(cs, buf);
         sfree(buf);
-        goto dead;
+        return;
     }
     if (cs->recvlen > 0 && cs->recvbuf[cs->recvlen-1] == '\015')
         cs->recvlen--;                 /* trim off \r before \n */
@@ -1810,7 +1810,7 @@ static void share_receive(Plug *plug, int urgent, const char *data, size_t len)
                                   (unsigned)cs->curr_packetlen);
             share_disconnect(cs, buf);
             sfree(buf);
-            goto dead;
+            return;
         }
         while (cs->recvlen < cs->curr_packetlen) {
             crGetChar(c);
@@ -1821,7 +1821,6 @@ static void share_receive(Plug *plug, int urgent, const char *data, size_t len)
                                       cs->recvbuf + 5, cs->recvlen - 5);
     }
 
-  dead:;
     crFinishV;
 }
 

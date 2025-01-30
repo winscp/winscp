@@ -14,8 +14,9 @@
 ; Copyright (c) 2001      Tim Peters <tim.peters@gmail.com>
 ; Copyright (c) 2001-2005 Fred L. Drake, Jr. <fdrake@users.sourceforge.net>
 ; Copyright (c) 2006-2017 Karl Waclawek <karl@waclawek.net>
-; Copyright (c) 2007-2022 Sebastian Pipping <sebastian@pipping.org>
+; Copyright (c) 2007-2024 Sebastian Pipping <sebastian@pipping.org>
 ; Copyright (c) 2022      Johnny Jazeix <jazeix@gmail.com>
+; Copyright (c) 2024      Dag-Erling Smørgrav <des@des.dev>
 ; Licensed under the MIT license:
 ;
 ; Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -37,7 +38,7 @@
 ; OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 ; USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#define expatVer "2.5.0"
+#define expatVer "2.6.4"
 
 [Setup]
 AppName=Expat
@@ -77,7 +78,7 @@ Flags: ignoreversion; Source: doc\*.css;                    DestDir: "{app}\Doc"
 Flags: ignoreversion; Source: doc\*.xml;                    DestDir: "{app}\Doc"
 Flags: ignoreversion; Source: win32\bin\Release\*.dll;      DestDir: "{app}\Bin"
 Flags: ignoreversion; Source: win32\bin\Release\*.lib;      DestDir: "{app}\Bin"
-Flags: ignoreversion; Source: win32\version.rc;             DestDir: "{app}\Source\win32"
+Flags: ignoreversion; Source: win32\version.rc.cmake;       DestDir: "{app}\Source\win32"
 Flags: ignoreversion; Source: win32\README.txt;             DestDir: "{app}\Source"
 Flags: ignoreversion; Source: AUTHORS;                      DestDir: "{app}\Source"
 Flags: ignoreversion; Source: Changes;                      DestDir: "{app}\Source"
@@ -96,7 +97,7 @@ Flags: ignoreversion; Source: examples\*.c;                 DestDir: "{app}\Sour
 Flags: ignoreversion; Source: tests\*.c;                    DestDir: "{app}\Source\tests"
 Flags: ignoreversion; Source: tests\*.cpp;                  DestDir: "{app}\Source\tests"
 Flags: ignoreversion; Source: tests\*.h;                    DestDir: "{app}\Source\tests"
-Flags: ignoreversion; Source: tests\README.txt;             DestDir: "{app}\Source\tests"
+Flags: ignoreversion; Source: tests\README.md;              DestDir: "{app}\Source\tests"
 Flags: ignoreversion; Source: tests\benchmark\*.c;          DestDir: "{app}\Source\tests\benchmark"
 Flags: ignoreversion; Source: tests\benchmark\README.txt;   DestDir: "{app}\Source\tests\benchmark"
 Flags: ignoreversion; Source: xmlwf\*.c*;                   DestDir: "{app}\Source\xmlwf"

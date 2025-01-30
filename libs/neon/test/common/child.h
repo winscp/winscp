@@ -34,11 +34,9 @@
  * named test. */
 int lookup_localhost(void);
 
-/* Test which looks up real local hostname. */
-int lookup_hostname(void);
-
-/* set to local hostname if lookup_hostname succeeds. */
-extern char *local_hostname;
+int get_lh_family(void);
+const char *get_lh_addr(void);
+ne_inet_addr *get_lh_inet_addr(void);
 
 /* Callback for spawn_server. */
 typedef int (*server_fn)(ne_socket *sock, void *userdata);
@@ -52,12 +50,6 @@ typedef int (*server_fn)(ne_socket *sock, void *userdata);
  * - the socket is closed when 'fn' returns, so don't close in in 'fn'.
  */
 int spawn_server(int port, server_fn fn, void *userdata);
-
-/* Like spawn_server; if bind_local is non-zero, binds server to
- * localhost, otherwise, binds server to real local hostname.  (must
- * have called lookup_localhost or lookup_hostname as appropriate
- * beforehand).  */
-int spawn_server_addr(int bind_local, int port, server_fn fn, void *userdata);
 
 /* Forks a server child process running 'fn(userdata)' on an
  * unspecified port.  Sets test suite error on failure; on success,

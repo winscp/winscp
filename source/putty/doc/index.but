@@ -869,6 +869,9 @@ saved sessions from
 \IM{ssh.com private key format} \cw{ssh.com} private key file format
 \IM{ssh.com private key format} private key file, \cw{ssh.com}
 
+\IM{PEM-style} PEM-style OpenSSH private key format
+\IM{PEM-style} OpenSSH private key format, PEM-style
+
 \IM{importing keys} importing private keys
 \IM{importing keys} loading private keys
 

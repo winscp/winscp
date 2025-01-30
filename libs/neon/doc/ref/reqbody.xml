@@ -8,6 +8,7 @@
       <refnamediv>
 	<refname id="ne_set_request_body_buffer">ne_set_request_body_buffer</refname>
 	<refname id="ne_set_request_body_fd">ne_set_request_body_fd</refname>
+	<refname id="ne_set_request_body_provider">ne_set_request_body_provider</refname>
 	<refpurpose>include a message body with a request</refpurpose>
       </refnamediv>
       
@@ -32,6 +33,21 @@
 	    <paramdef>ne_off_t <parameter>length</parameter></paramdef>
 	  </funcprototype>
 
+	  <funcprototype>
+	    <funcdef>typedef ssize_t (*<function>ne_provide_body</function>)</funcdef>
+	    <paramdef>void *<parameter>userdata</parameter></paramdef>
+	    <paramdef>char *<parameter>data</parameter></paramdef>
+	    <paramdef>size_t <parameter>buflen</parameter></paramdef>
+	  </funcprototype>
+
+	  <funcprototype>
+	    <funcdef>int <function>ne_set_request_body_provider</function></funcdef>
+	    <paramdef>ne_request *<parameter>req</parameter></paramdef>
+	    <paramdef>ne_off_t <parameter>length</parameter></paramdef>
+	    <paramdef>ne_provide_body <parameter>provider</parameter></paramdef>
+	    <paramdef>void *<parameter>userdata</parameter></paramdef>
+	  </funcprototype>
+
 	</funcsynopsis>
 	
       </refsynopsisdiv>
@@ -53,7 +69,7 @@ bytes are read, beginning at offset <parameter>begin</parameter>
 (hence, passing <parameter>begin</parameter> as zero means the body is read
 from the beginning of the file).</para>
 
-        <para>For all the above functions, the source of the request
+        <para>For both above functions, the source of the request
         body must survive until the request has been dispatched;
         neither the memory buffer passed to
         <function>ne_set_request_body_buffer</function> nor the file
@@ -61,12 +77,67 @@ from the beginning of the file).</para>
         <function>ne_set_request_body_fd</function> are copied
         internally.</para>
 
+	<para>The <function>ne_set_request_body_provider</function>
+	function can be used to include a message body with a request
+	which is provided by a callback function. The body length
+	passed in the <parameter>length</parameter> paramater must be
+	positive, or if a chunked request body is required, as covered
+	below, <literal>-1</literal> can be used.</para>
+
+        <para>Before sending the body, the callback is invoked once
+        with the <parameter>buflen</parameter> parameter as
+        <literal>0</literal>. The body is then read by invoking the
+        callback repeatedly until it returns <literal>0</literal>
+        indicating the end-of-body. The callback return value must be
+        as follows:
+
+	<variablelist>
+	  <varlistentry>
+            <term>less than <literal>0</literal></term>
+	    <listitem><simpara>An error; the request will be
+	    aborted. The session error string must be set via
+	    <function>ne_set_error</function>.</simpara>
+	    </listitem>
+	  </varlistentry>
+	  <varlistentry>
+            <term><literal>0</literal></term>
+	    <listitem><simpara>End of body.</simpara>
+	    </listitem>
+	  </varlistentry>
+	  <varlistentry>
+            <term>between <literal>0</literal> and
+            <constant>buflen</constant></term>
+	    <listitem><simpara>Number of bytes of request body data.</simpara>
+	    </listitem>
+	  </varlistentry>
+        </variablelist></para>
+
+        <refsect2>
+          <title>Chunked request bodies</title>
+          
+          <para>Chunked request bodies are only sent when
+          <function>ne_set_request_body_provider</function> is used
+          and <literal>-1</literal> is passed as the
+          <parameter>length</parameter>. In this case, the length of
+          the request body does not have to be determined ahead of
+          time. The end of the request body is indicated by returning
+          <literal>0</literal> from the callback function.</para>
+          
+          <para>Before using a chunked request body, the caller must
+          determine that HTTP/1.1 is supported (by the origin server
+          and any HTTP proxy server configured). This can be done by
+          testing that <function>ne_version_pre_http11</function>
+          returns zero after performing an <literal>OPTIONS</literal>
+          or <literal>HEAD</literal> request.</para>
+        </refsect2>
+        
       </refsect1>
 
       <refsect1>
 	<title>See also</title>
 
-	<para><xref linkend="ne_request_create"/></para>
+	<para><xref linkend="ne_request_create"/>, <xref
+	linkend="ne_set_error"/></para>
       </refsect1>
 
     </refentry>

@@ -2,12 +2,12 @@
 .\"     Title: ne_set_request_flag
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 21 January 2023
+.\"      Date: 29 January 2024
 .\"    Manual: neon API reference
-.\"    Source: neon 0.32.5
+.\"    Source: neon 0.33.0
 .\"  Language: English
 .\"
-.TH "NE_SET_REQUEST_FLAG" "3" "21 January 2023" "neon 0.32.5" "neon API reference"
+.TH "NE_SET_REQUEST_FLAG" "3" "29 January 2024" "neon 0.33.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -59,6 +59,11 @@ enable this flag to use the "Expect: 100\-continue" feature of HTTP/1\&.1, which
 .RS 4
 disable this flag if the request uses a non\-idempotent method such as
 POST
+.RE
+.PP
+\fBNE_REQFLAG_1XXTIMEOUT\fR (default on)
+.RS 4
+disable this flag to disable overall timeout when reading interim (1xx) responses;
 .RE
 .SH "RETURN VALUE"
 .PP

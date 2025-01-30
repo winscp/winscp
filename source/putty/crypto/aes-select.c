@@ -59,23 +59,26 @@ static ssh_cipher *aes_select(const ssh_cipheralg *alg)
         __VA_ARGS__                                                     \
     }
 
-AES_SELECTOR_VTABLE(cbc, "aes128-cbc", "CBC", 128, );
-AES_SELECTOR_VTABLE(cbc, "aes192-cbc", "CBC", 192, );
-AES_SELECTOR_VTABLE(cbc, "aes256-cbc", "CBC", 256, );
+AES_SELECTOR_VTABLE(cbc, "aes128-cbc", "CBC", 128, .flags = SSH_CIPHER_IS_CBC);
+AES_SELECTOR_VTABLE(cbc, "aes192-cbc", "CBC", 192, .flags = SSH_CIPHER_IS_CBC);
+AES_SELECTOR_VTABLE(cbc, "aes256-cbc", "CBC", 256, .flags = SSH_CIPHER_IS_CBC);
 AES_SELECTOR_VTABLE(sdctr, "aes128-ctr", "SDCTR", 128, );
 AES_SELECTOR_VTABLE(sdctr, "aes192-ctr", "SDCTR", 192, );
 AES_SELECTOR_VTABLE(sdctr, "aes256-ctr", "SDCTR", 256, );
 AES_SELECTOR_VTABLE(gcm, "aes128-gcm@openssh.com", "GCM", 128,
-                    .required_mac = &ssh2_aesgcm_mac);
+                    .required_mac = &ssh2_aesgcm_mac,
+                    .flags = SSH_CIPHER_SEPARATE_LENGTH);
 AES_SELECTOR_VTABLE(gcm, "aes256-gcm@openssh.com", "GCM", 256,
-                    .required_mac = &ssh2_aesgcm_mac);
+                    .required_mac = &ssh2_aesgcm_mac,
+                    .flags = SSH_CIPHER_SEPARATE_LENGTH);
 
 /* 192-bit AES-GCM is included only so that testcrypt can run standard
  * test vectors against it. OpenSSH doesn't define a protocol id for
  * it. Hence setting its ssh2_id to NULL here, and more importantly,
  * leaving it out of aesgcm_list[] below. */
 AES_SELECTOR_VTABLE(gcm, NULL, "GCM", 192,
-                    .required_mac = &ssh2_aesgcm_mac);
+                    .required_mac = &ssh2_aesgcm_mac,
+                    .flags = SSH_CIPHER_SEPARATE_LENGTH);
 
 static const ssh_cipheralg ssh_rijndael_lysator = {
     /* Same as aes256_cbc, but with a different protocol ID */
@@ -84,6 +87,7 @@ static const ssh_cipheralg ssh_rijndael_lysator = {
     .blksize = 16,
     .real_keybits = 256,
     .padded_keybytes = 256/8,
+    .flags = SSH_CIPHER_IS_CBC,
     .text_name = "AES-256 CBC (dummy selector vtable)",
     .extra = ssh_aes256_cbc_impls,
 };

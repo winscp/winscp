@@ -296,6 +296,8 @@ static int parse(void)
         { "http://foo/bar#beta", "http", "foo", 0, "/bar", NULL, NULL, "beta" },
         { "http://foo/bar?#beta", "http", "foo", 0, "/bar", NULL, "", "beta" },
         { "http://foo/bar?alpha?beta", "http", "foo", 0, "/bar", NULL, "alpha?beta", NULL },
+        { "http://foo?alpha", "http", "foo", 0, "/", NULL, "alpha", NULL },
+        { "http://foo#beta", "http", "foo", 0, "/", NULL, NULL, "beta" },
 
         /* Examples from RFC3986§1.1.2: */
         { "ftp://ftp.is.co.za/rfc/rfc1808.txt", "ftp", "ftp.is.co.za", 0, "/rfc/rfc1808.txt", NULL, NULL, NULL },
@@ -371,12 +373,14 @@ static int parse(void)
 static int failparse(void)
 {
     static const char *uris[] = {
-	"http://[::1/",
-	"http://[::1]f:80/",
-	"http://[::1]]:80/",
+        "http://[::1/",
+        "http://[::1]f:80/",
+        "http://[::1]]:80/",
         "http://foo/bar asda",
         "http://fish/[foo]/bar",
-	NULL
+        "http://foo:80bar",
+        "http://foo:80:80/bar",
+        NULL
     };
     int n;
     

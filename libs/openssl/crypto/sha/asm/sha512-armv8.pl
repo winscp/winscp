@@ -1,7 +1,7 @@
 #! /usr/bin/env perl
 # Copyright 2014-2020 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
+# Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
 # in the file LICENSE in the source distribution or at
 # https://www.openssl.org/source/license.html
@@ -28,6 +28,7 @@
 # X-Gene			20.0 (+100%)	12.8 (+300%(***))
 # Mongoose	2.36		13.0 (+50%)	8.36 (+33%)
 # Kryo		1.92		17.4 (+30%)	11.2 (+8%)
+# ThunderX2	2.54		13.2 (+40%)	8.40 (+18%)
 #
 # (*)	Software SHA256 results are of lesser relevance, presented
 #	mostly for informational purposes.
@@ -53,8 +54,10 @@
 # deliver much less improvement, likely *negative* on Cortex-A5x.
 # Which is why NEON support is limited to SHA256.]
 
-$output=pop;
-$flavour=pop;
+# $output is the last argument if it looks like a file (it has an extension)
+# $flavour is the first argument if it doesn't look like a file
+$output = $#ARGV >= 0 && $ARGV[$#ARGV] =~ m|\.\w+$| ? pop : undef;
+$flavour = $#ARGV >= 0 && $ARGV[0] !~ m|\.| ? shift : undef;
 
 if ($flavour && $flavour ne "void") {
     $0 =~ m/(.*[\/\\])[^\/\\]+$/; $dir=$1;
@@ -62,10 +65,11 @@ if ($flavour && $flavour ne "void") {
     ( $xlate="${dir}../../perlasm/arm-xlate.pl" and -f $xlate) or
     die "can't locate arm-xlate.pl";
 
-    open OUT,"| \"$^X\" $xlate $flavour $output";
+    open OUT,"| \"$^X\" $xlate $flavour \"$output\""
+        or die "can't call $xlate: $!";
     *STDOUT=*OUT;
 } else {
-    open STDOUT,">$output";
+    $output and open STDOUT,">$output";
 }
 
 if ($output =~ /512/) {
@@ -186,27 +190,22 @@ ___
 }
 
 $code.=<<___;
+#include "arm_arch.h"
 #ifndef	__KERNEL__
-# include "arm_arch.h"
+.extern	OPENSSL_armcap_P
+.hidden	OPENSSL_armcap_P
 #endif
 
 .text
 
-.extern	OPENSSL_armcap_P
-.hidden	OPENSSL_armcap_P
 .globl	$func
 .type	$func,%function
 .align	6
 $func:
+	AARCH64_VALID_CALL_TARGET
 #ifndef	__KERNEL__
-# ifdef	__ILP32__
-	ldrsw	x16,.LOPENSSL_armcap_P
-# else
-	ldr	x16,.LOPENSSL_armcap_P
-# endif
-	adr	x17,.LOPENSSL_armcap_P
-	add	x16,x16,x17
-	ldr	w16,[x16]
+	adrp	x16,OPENSSL_armcap_P
+	ldr	w16,[x16,#:lo12:OPENSSL_armcap_P]
 ___
 $code.=<<___	if ($SZ==4);
 	tst	w16,#ARMV8_SHA256
@@ -220,7 +219,7 @@ $code.=<<___	if ($SZ==8);
 ___
 $code.=<<___;
 #endif
-	.inst	0xd503233f				// paciasp
+	AARCH64_SIGN_LINK_REGISTER
 	stp	x29,x30,[sp,#-128]!
 	add	x29,sp,#0
 
@@ -282,7 +281,7 @@ $code.=<<___;
 	ldp	x25,x26,[x29,#64]
 	ldp	x27,x28,[x29,#80]
 	ldp	x29,x30,[sp],#128
-	.inst	0xd50323bf				// autiasp
+	AARCH64_VALIDATE_LINK_REGISTER
 	ret
 .size	$func,.-$func
 
@@ -354,15 +353,6 @@ $code.=<<___ if ($SZ==4);
 ___
 $code.=<<___;
 .size	.LK$BITS,.-.LK$BITS
-#ifndef	__KERNEL__
-.align	3
-.LOPENSSL_armcap_P:
-# ifdef	__ILP32__
-	.long	OPENSSL_armcap_P-.
-# else
-	.quad	OPENSSL_armcap_P-.
-# endif
-#endif
 .asciz	"SHA$BITS block transform for ARMv8, CRYPTOGAMS by <appro\@openssl.org>"
 .align	2
 ___
@@ -381,6 +371,7 @@ $code.=<<___;
 .align	6
 sha256_block_armv8:
 .Lv8_entry:
+	// Armv8.3-A PAuth: even though x30 is pushed to stack it is not popped later.
 	stp		x29,x30,[sp,#-16]!
 	add		x29,sp,#0
 
@@ -643,7 +634,9 @@ $code.=<<___;
 .type	sha256_block_neon,%function
 .align	4
 sha256_block_neon:
+	AARCH64_VALID_CALL_TARGET
 .Lneon_entry:
+	// Armv8.3-A PAuth: even though x30 is pushed to stack it is not popped later
 	stp	x29, x30, [sp, #-16]!
 	mov	x29, sp
 	sub	sp,sp,#16*4
@@ -754,6 +747,7 @@ $code.=<<___;
 .align	6
 sha512_block_armv8:
 .Lv8_entry:
+	// Armv8.3-A PAuth: even though x30 is pushed to stack it is not popped later
 	stp		x29,x30,[sp,#-16]!
 	add		x29,sp,#0
 

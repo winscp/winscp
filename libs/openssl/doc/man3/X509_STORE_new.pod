@@ -2,18 +2,19 @@
 
 =head1 NAME
 
-X509_STORE_new, X509_STORE_up_ref, X509_STORE_free, X509_STORE_lock,
-X509_STORE_unlock - X509_STORE allocation, freeing and locking functions
+X509_STORE_new, X509_STORE_up_ref, X509_STORE_free,
+X509_STORE_lock,X509_STORE_unlock
+- X509_STORE allocation, freeing and locking functions
 
 =head1 SYNOPSIS
 
  #include <openssl/x509_vfy.h>
 
  X509_STORE *X509_STORE_new(void);
- void X509_STORE_free(X509_STORE *v);
- int X509_STORE_lock(X509_STORE *v);
- int X509_STORE_unlock(X509_STORE *v);
- int X509_STORE_up_ref(X509_STORE *v);
+ void X509_STORE_free(X509_STORE *xs);
+ int X509_STORE_lock(X509_STORE *xs);
+ int X509_STORE_unlock(X509_STORE *xs);
+ int X509_STORE_up_ref(X509_STORE *xs);
 
 =head1 DESCRIPTION
 
@@ -26,6 +27,7 @@ X509_STORE_lock() locks the store from modification by other threads,
 X509_STORE_unlock() unlocks it.
 
 X509_STORE_free() frees up a single X509_STORE object.
+If the argument is NULL, nothing is done.
 
 =head1 RETURN VALUES
 
@@ -48,9 +50,9 @@ functions were added in OpenSSL 1.1.0.
 
 =head1 COPYRIGHT
 
-Copyright 2016-2019 The OpenSSL Project Authors. All Rights Reserved.
+Copyright 2016-2024 The OpenSSL Project Authors. All Rights Reserved.
 
-Licensed under the OpenSSL license (the "License").  You may not use
+Licensed under the Apache License 2.0 (the "License").  You may not use
 this file except in compliance with the License.  You can obtain a copy
 in the file LICENSE in the source distribution or at
 L<https://www.openssl.org/source/license.html>.

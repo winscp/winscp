@@ -340,117 +340,6 @@ static int dsa_pubkey_bits(const ssh_keyalg *self, ptrlen pub)
     return ret;
 }
 
-mp_int *dsa_gen_k(const char *id_string, mp_int *modulus,
-                  mp_int *private_key,
-                  unsigned char *digest, int digest_len)
-{
-    /*
-     * The basic DSA signing algorithm is:
-     *
-     *  - invent a random k between 1 and q-1 (exclusive).
-     *  - Compute r = (g^k mod p) mod q.
-     *  - Compute s = k^-1 * (hash + x*r) mod q.
-     *
-     * This has the dangerous properties that:
-     *
-     *  - if an attacker in possession of the public key _and_ the
-     *    signature (for example, the host you just authenticated
-     *    to) can guess your k, he can reverse the computation of s
-     *    and work out x = r^-1 * (s*k - hash) mod q. That is, he
-     *    can deduce the private half of your key, and masquerade
-     *    as you for as long as the key is still valid.
-     *
-     *  - since r is a function purely of k and the public key, if
-     *    the attacker only has a _range of possibilities_ for k
-     *    it's easy for him to work through them all and check each
-     *    one against r; he'll never be unsure of whether he's got
-     *    the right one.
-     *
-     *  - if you ever sign two different hashes with the same k, it
-     *    will be immediately obvious because the two signatures
-     *    will have the same r, and moreover an attacker in
-     *    possession of both signatures (and the public key of
-     *    course) can compute k = (hash1-hash2) * (s1-s2)^-1 mod q,
-     *    and from there deduce x as before.
-     *
-     *  - the Bleichenbacher attack on DSA makes use of methods of
-     *    generating k which are significantly non-uniformly
-     *    distributed; in particular, generating a 160-bit random
-     *    number and reducing it mod q is right out.
-     *
-     * For this reason we must be pretty careful about how we
-     * generate our k. Since this code runs on Windows, with no
-     * particularly good system entropy sources, we can't trust our
-     * RNG itself to produce properly unpredictable data. Hence, we
-     * use a totally different scheme instead.
-     *
-     * What we do is to take a SHA-512 (_big_) hash of the private
-     * key x, and then feed this into another SHA-512 hash that
-     * also includes the message hash being signed. That is:
-     *
-     *   proto_k = SHA512 ( SHA512(x) || SHA160(message) )
-     *
-     * This number is 512 bits long, so reducing it mod q won't be
-     * noticeably non-uniform. So
-     *
-     *   k = proto_k mod q
-     *
-     * This has the interesting property that it's _deterministic_:
-     * signing the same hash twice with the same key yields the
-     * same signature.
-     *
-     * Despite this determinism, it's still not predictable to an
-     * attacker, because in order to repeat the SHA-512
-     * construction that created it, the attacker would have to
-     * know the private key value x - and by assumption he doesn't,
-     * because if he knew that he wouldn't be attacking k!
-     *
-     * (This trick doesn't, _per se_, protect against reuse of k.
-     * Reuse of k is left to chance; all it does is prevent
-     * _excessively high_ chances of reuse of k due to entropy
-     * problems.)
-     *
-     * Thanks to Colin Plumb for the general idea of using x to
-     * ensure k is hard to guess, and to the Cambridge University
-     * Computer Security Group for helping to argue out all the
-     * fine details.
-     */
-    ssh_hash *h;
-    unsigned char digest512[64];
-
-    /*
-     * Hash some identifying text plus x.
-     */
-    h = ssh_hash_new(&ssh_sha512);
-    put_asciz(h, id_string);
-    put_mp_ssh2(h, private_key);
-    ssh_hash_digest(h, digest512);
-
-    /*
-     * Now hash that digest plus the message hash.
-     */
-    ssh_hash_reset(h);
-    put_data(h, digest512, sizeof(digest512));
-    put_data(h, digest, digest_len);
-    ssh_hash_final(h, digest512);
-
-    /*
-     * Now convert the result into a bignum, and coerce it to the
-     * range [2,q), which we do by reducing it mod q-2 and adding 2.
-     */
-    mp_int *modminus2 = mp_copy(modulus);
-    mp_sub_integer_into(modminus2, modminus2, 2);
-    mp_int *proto_k = mp_from_bytes_be(make_ptrlen(digest512, 64));
-    mp_int *k = mp_mod(proto_k, modminus2);
-    mp_free(proto_k);
-    mp_free(modminus2);
-    mp_add_integer_into(k, k, 2);
-
-    smemclr(digest512, sizeof(digest512));
-
-    return k;
-}
-
 static void dsa_sign(ssh_key *key, ptrlen data, unsigned flags, BinarySink *bs)
 {
     struct dsa_key *dsa = container_of(key, struct dsa_key, sshk);
@@ -459,8 +348,9 @@ static void dsa_sign(ssh_key *key, ptrlen data, unsigned flags, BinarySink *bs)
 
     hash_simple(&ssh_sha1, data, digest);
 
-    mp_int *k = dsa_gen_k("DSA deterministic k generator", dsa->q, dsa->x,
-                          digest, sizeof(digest));
+    /* Generate any valid exponent k, using the RFC 6979 deterministic
+     * procedure. */
+    mp_int *k = rfc6979(&ssh_sha1, dsa->q, dsa->x, data);
     mp_int *kinv = mp_invert(k, dsa->q);       /* k^-1 mod q */
 
     /*

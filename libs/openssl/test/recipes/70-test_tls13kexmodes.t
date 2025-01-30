@@ -1,7 +1,7 @@
 #! /usr/bin/env perl
-# Copyright 2017-2021 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2017-2023 The OpenSSL Project Authors. All Rights Reserved.
 #
-# Licensed under the OpenSSL license (the "License").  You may not use
+# Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
 # in the file LICENSE in the source distribution or at
 # https://www.openssl.org/source/license.html
@@ -26,11 +26,10 @@ plan skip_all => "$test_name needs the sock feature enabled"
     if disabled("sock");
 
 plan skip_all => "$test_name needs TLSv1.3 enabled"
-    if disabled("tls1_3");
+    if disabled("tls1_3") || (disabled("ec") && disabled("dh"));
 
-$ENV{OPENSSL_ia32cap} = '~0x200000200000000';
-$ENV{CTLOG_FILE} = srctop_file("test", "ct", "log_list.conf");
-
+plan skip_all => "$test_name needs EC enabled"
+    if disabled("ec");
 
 @handmessages = (
     [TLSProxy::Message::MT_CLIENT_HELLO,
@@ -188,8 +187,8 @@ my $proxy = TLSProxy::Proxy->new(
 
 #Test 1: First get a session
 (undef, my $session) = tempfile();
-$proxy->clientflags("-sess_out ".$session);
-$proxy->serverflags("-servername localhost");
+$proxy->clientflags("-no_rx_cert_comp -sess_out ".$session);
+$proxy->serverflags("-no_rx_cert_comp -servername localhost");
 $proxy->sessionfile($session);
 $proxy->start() or plan skip_all => "Unable to start up Proxy for tests";
 plan tests => 11;
@@ -198,7 +197,7 @@ ok(TLSProxy::Message->success(), "Initial connection");
 #Test 2: Attempt a resume with no kex modes extension. Should fail (server
 #        MUST abort handshake with pre_shared key and no psk_kex_modes)
 $proxy->clear();
-$proxy->clientflags("-sess_in ".$session);
+$proxy->clientflags("-no_rx_cert_comp -sess_in ".$session);
 my $testtype = DELETE_EXTENSION;
 $proxy->filter(\&modify_kex_modes_filter);
 $proxy->start();
@@ -207,7 +206,7 @@ ok(TLSProxy::Message->fail(), "Resume with no kex modes");
 #Test 3: Attempt a resume with empty kex modes extension. Should fail (empty
 #        extension is invalid)
 $proxy->clear();
-$proxy->clientflags("-sess_in ".$session);
+$proxy->clientflags("-no_rx_cert_comp -sess_in ".$session);
 $testtype = EMPTY_EXTENSION;
 $proxy->start();
 ok(TLSProxy::Message->fail(), "Resume with empty kex modes");
@@ -215,8 +214,8 @@ ok(TLSProxy::Message->fail(), "Resume with empty kex modes");
 #Test 4: Attempt a resume with non-dhe kex mode only. Should resume without a
 #        key_share
 $proxy->clear();
-$proxy->clientflags("-allow_no_dhe_kex -sess_in ".$session);
-$proxy->serverflags("-allow_no_dhe_kex");
+$proxy->clientflags("-no_rx_cert_comp -allow_no_dhe_kex -sess_in ".$session);
+$proxy->serverflags("-no_rx_cert_comp -allow_no_dhe_kex");
 $testtype = NON_DHE_KEX_MODE_ONLY;
 $proxy->start();
 checkhandshake($proxy, checkhandshake::RESUME_HANDSHAKE,
@@ -228,7 +227,7 @@ checkhandshake($proxy, checkhandshake::RESUME_HANDSHAKE,
 
 #Test 5: Attempt a resume with dhe kex mode only. Should resume with a key_share
 $proxy->clear();
-$proxy->clientflags("-sess_in ".$session);
+$proxy->clientflags("-no_rx_cert_comp -sess_in ".$session);
 $testtype = DHE_KEX_MODE_ONLY;
 $proxy->start();
 checkhandshake($proxy, checkhandshake::RESUME_HANDSHAKE,
@@ -242,7 +241,7 @@ checkhandshake($proxy, checkhandshake::RESUME_HANDSHAKE,
 #Test 6: Attempt a resume with only unrecognised kex modes. Should not resume
 #        but rather fall back to full handshake
 $proxy->clear();
-$proxy->clientflags("-sess_in ".$session);
+$proxy->clientflags("-no_rx_cert_comp -sess_in ".$session);
 $testtype = UNKNOWN_KEX_MODES;
 $proxy->start();
 checkhandshake($proxy, checkhandshake::DEFAULT_HANDSHAKE,
@@ -255,7 +254,7 @@ checkhandshake($proxy, checkhandshake::DEFAULT_HANDSHAKE,
 #Test 7: Attempt a resume with both non-dhe and dhe kex mode. Should resume with
 #        a key_share
 $proxy->clear();
-$proxy->clientflags("-sess_in ".$session);
+$proxy->clientflags("-no_rx_cert_comp -sess_in ".$session);
 $testtype = BOTH_KEX_MODES;
 $proxy->start();
 checkhandshake($proxy, checkhandshake::RESUME_HANDSHAKE,
@@ -269,8 +268,8 @@ checkhandshake($proxy, checkhandshake::RESUME_HANDSHAKE,
 #Test 8: Attempt a resume with both non-dhe and dhe kex mode, but unacceptable
 #        initial key_share. Should resume with a key_share following an HRR
 $proxy->clear();
-$proxy->clientflags("-sess_in ".$session);
-$proxy->serverflags("-curves P-256");
+$proxy->clientflags("-no_rx_cert_comp -sess_in ".$session);
+$proxy->serverflags("-no_rx_cert_comp -curves P-384");
 $testtype = BOTH_KEX_MODES;
 $proxy->start();
 checkhandshake($proxy, checkhandshake::HRR_RESUME_HANDSHAKE,
@@ -285,8 +284,8 @@ checkhandshake($proxy, checkhandshake::HRR_RESUME_HANDSHAKE,
 #Test 9: Attempt a resume with dhe kex mode only and an unacceptable initial
 #        key_share. Should resume with a key_share following an HRR
 $proxy->clear();
-$proxy->clientflags("-sess_in ".$session);
-$proxy->serverflags("-curves P-256");
+$proxy->clientflags("-no_rx_cert_comp -sess_in ".$session);
+$proxy->serverflags("-no_rx_cert_comp -curves P-384");
 $testtype = DHE_KEX_MODE_ONLY;
 $proxy->start();
 checkhandshake($proxy, checkhandshake::HRR_RESUME_HANDSHAKE,
@@ -302,8 +301,8 @@ checkhandshake($proxy, checkhandshake::HRR_RESUME_HANDSHAKE,
 #         initial key_share and no overlapping groups. Should resume without a
 #         key_share
 $proxy->clear();
-$proxy->clientflags("-allow_no_dhe_kex -curves P-384 -sess_in ".$session);
-$proxy->serverflags("-allow_no_dhe_kex -curves P-256");
+$proxy->clientflags("-no_rx_cert_comp -allow_no_dhe_kex -curves P-384 -sess_in ".$session);
+$proxy->serverflags("-no_rx_cert_comp -allow_no_dhe_kex -curves P-256");
 $testtype = BOTH_KEX_MODES;
 $proxy->start();
 checkhandshake($proxy, checkhandshake::RESUME_HANDSHAKE,
@@ -316,8 +315,8 @@ checkhandshake($proxy, checkhandshake::RESUME_HANDSHAKE,
 #Test 11: Attempt a resume with dhe kex mode only, unacceptable
 #         initial key_share and no overlapping groups. Should fail
 $proxy->clear();
-$proxy->clientflags("-curves P-384 -sess_in ".$session);
-$proxy->serverflags("-curves P-256");
+$proxy->clientflags("-no_rx_cert_comp -curves P-384 -sess_in ".$session);
+$proxy->serverflags("-no_rx_cert_comp -curves P-256");
 $testtype = DHE_KEX_MODE_ONLY;
 $proxy->start();
 ok(TLSProxy::Message->fail(), "Resume with dhe kex mode, no overlapping groups");
