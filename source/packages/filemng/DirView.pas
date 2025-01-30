@@ -57,10 +57,7 @@ const
 
 type
   {Exceptions:}
-  EIUThread = class(Exception);
   EDragDrop = class(Exception);
-  EInvalidFileName = class(Exception);
-  ERenameFileFailed = class(Exception);
 
   TClipboardOperation = (cboNone, cboCut, cboCopy);
 
@@ -77,6 +74,8 @@ type
     FileExt: string;
     TypeName: string;
     ImageIndex: Integer;
+    Thumbnail: TBitmap;
+    ThumbnailSize: TSize;
     Size: Int64;
     Attr: LongWord;
     FileTime: TFileTime;
@@ -96,29 +95,23 @@ type
   TIconUpdateThread = class(TCompThread)
   private
     FOwner: TDirView;
-    FIndex: Integer;
-    FMaxIndex: Integer;
-    FNewIcons: Boolean;
     FSyncIcon: Integer;
-    CurrentIndex: Integer;
-    CurrentFilePath: string;
-    CurrentItemData: TFileRec;
-    InvalidItem: Boolean;
-
-    procedure SetIndex(Value: Integer);
-    procedure SetMaxIndex(Value: Integer);
+    FSyncThumbnail: TBitmap;
+    FCurrentIndex: Integer;
+    FCurrentFilePath: string;
+    FCurrentItemData: TFileRec;
 
   protected
     constructor Create(Owner: TDirView);
-    procedure DoFetchData;
-    procedure DoUpdateIcon;
     procedure Execute; override;
 
-    property Index: Integer read FIndex write SetIndex;
-    property MaxIndex: Integer read FMaxIndex write SetMaxIndex;
-
   public
-    procedure Terminate; override;
+    destructor Destroy; override;
+  end;
+
+  // WORKAROUND: TQueue<Integer>.Create fails when TDirView is created in IDE, while TQueue<TIconUpdateSchedule>.Create works
+  TIconUpdateSchedule = record
+    Index: Integer;
   end;
 
   { TDirView }
@@ -130,7 +123,6 @@ type
     FChangeTimer: TTimer;
     FChangeInterval: Cardinal;
     FUseIconUpdateThread: Boolean;
-    FIUThreadFinished: Boolean;
     FDriveType: Integer;
     FParentFolder: IShellFolder;
     FDesktopFolder: IShellFolder;
@@ -145,6 +137,10 @@ type
     FFileOperator: TFileOperator;
     {Additional thread components:}
     FIconUpdateThread: TIconUpdateThread;
+    // only ever accessed by GUI thread
+    FIconUpdateSet: TDictionary<Integer, Boolean>;
+    FIconUpdateQueue: TQueue<TIconUpdateSchedule>;
+    FIconUpdateQueueDeferred: TQueue<TIconUpdateSchedule>;
     FDiscMonitor: TDiscMonitor;
     FHomeDirectory: string;
 
@@ -210,6 +206,7 @@ type
     function GetIsRoot: Boolean; override;
     procedure InternalEdit(const HItem: TLVItem); override;
     function ItemColor(Item: TListItem): TColor; override;
+    function ItemThumbnail(Item: TListItem; Size: TSize): TBitmap; override;
     function ItemFileExt(Item: TListItem): string;
     function ItemFileNameOnly(Item: TListItem): string;
     function ItemImageIndex(Item: TListItem; Cache: Boolean): Integer; override;
@@ -221,9 +218,14 @@ type
     procedure LoadFiles; override;
     procedure PerformItemDragDropOperation(Item: TListItem; Effect: Integer; Paste: Boolean); override;
     procedure SortItems; override;
+    function ThumbnailNeeded(ItemData: PFileRec): Boolean;
+    procedure DoFetchIconUpdate;
+    procedure DoUpdateIcon;
     procedure StartFileDeleteThread;
+    procedure IconUpdateEnqueue(ListItem: TListItem);
+    function IconUpdatePeek: Integer;
+    procedure IconUpdateDequeue;
     procedure WMDestroy(var Msg: TWMDestroy); message WM_DESTROY;
-    procedure CMRecreateWnd(var Message: TMessage); message CM_RECREATEWND;
     procedure Load(DoFocusSomething: Boolean); override;
     procedure DoFetchIcon(
       FilePath: string; IsSpecialExt: Boolean; CanTimeout: Boolean; FileRec: PFileRec; var ImageIndex: Integer; var TypeName: string);
@@ -370,6 +372,7 @@ type
     property ColumnClick;
     property MultiSelect;
     property ReadOnly;
+    property DirViewStyle;
 
     // The only way to make Items stored automatically and survive handle recreation.
     // Though we should implement custom persisting to avoid publishing this
@@ -401,6 +404,9 @@ uses
   ActiveX, ImgList,
   ShellDialogs, IEDriveInfo,
   FileChanges, Math, PasTools, StrUtils, Types, UITypes;
+
+var
+  ThumbnailNotNeeded: TSize;
 
 var
   DaylightHack: Boolean;
@@ -600,7 +606,13 @@ var
   SRec: SysUtils.TSearchRec;
 begin
   if not DirectoryExistsFix(Path) then
-    raise Exception.CreateFmt(SDirNotExists, [Path]);
+  begin
+    DosError := GetLastError;
+    if (DosError = ERROR_FILE_NOT_FOUND) or (DosError = ERROR_PATH_NOT_FOUND) then
+      raise Exception.CreateFmt(SDirNotExists, [Path])
+    else
+      RaiseLastOSError;
+  end;
   DosError := SysUtils.FindFirst(ApiPath(IncludeTrailingPathDelimiter(Path) + '*.*'), FileAttr, SRec);
   if DosError = ERROR_SUCCESS then
   begin
@@ -622,152 +634,62 @@ constructor TIconUpdateThread.Create(Owner: TDirView);
 begin
   inherited Create(True);
   FOwner := Owner;
-  FIndex := 0;
-  FNewIcons := False;
-  if (FOwner.ViewStyle = vsReport) or (FOwner.ViewStyle = vsList) then
-    FMaxIndex := FOwner.VisibleRowCount
-      else FMaxIndex := 0;
-  FOwner.FIUThreadFinished := False;
 end; {TIconUpdateThread.Create}
 
-procedure TIconUpdateThread.SetMaxIndex(Value: Integer);
-var
-  Point: TPoint;
-  Item: TListItem;
+destructor TIconUpdateThread.Destroy;
 begin
-  if Value <> MaxIndex then
-  begin
-    FNewIcons := True;
-    if Value < FMaxIndex then
-    begin
-      if Suspended then FIndex := Value
-        else
-      begin
-        Point.X := 0;
-        Point.X := 0;
-        Item := FOwner.GetNearestItem(Point, TSearchDirection(sdAbove));
-        if Assigned(Item) then FIndex := Item.Index
-          else FIndex := Value;
-      end;
-    end
-      else FMaxIndex := Value;
-  end;
-end; {SetMaxIndex}
-
-procedure TIconUpdateThread.SetIndex(Value: Integer);
-var
-  PageSize: Integer;
-begin
-  if Value <> Index then
-  begin
-    PageSize := FOwner.VisibleRowCount;
-    FIndex := Value;
-    FNewIcons := True;
-    if FOwner.ViewStyle = vsList then FMaxIndex := Value + 2 * PageSize
-      else FMaxIndex := Value + PageSize;
-  end;
-end; {SetIndex}
+  FreeAndNil(FSyncThumbnail);
+  inherited;
+end;
 
 procedure TIconUpdateThread.Execute;
 var
-  Count: Integer;
   IsSpecialExt: Boolean;
   TypeName: string;
+  PrevPIDL: PItemIDList;
 begin
   CoInitialize(nil); // needed for SHGetFileInfo
-  if Assigned(FOwner.TopItem) then FIndex := FOwner.TopItem.Index
-    else FIndex := 0;
-
-  FNewIcons := (FIndex > 0);
-
   while not Terminated do
   begin
-    if FIndex > FMaxIndex then Suspend;
-    Count := FOwner.Items.Count;
-    if not Terminated and ((FIndex >= Count) or (Count = 0)) then
-      Suspend;
-    InvalidItem := True;
-    if Terminated then Break;
-    Synchronize(DoFetchData);
-    if (not InvalidItem) and (not Terminated) and
-      CurrentItemData.IconEmpty then
+    FCurrentIndex := -1;
+    Synchronize(FOwner.DoFetchIconUpdate);
+    if (FCurrentIndex >= 0) and
+       (not Terminated) then
     begin
-      try
-        IsSpecialExt := MatchesFileExt(CurrentItemData.FileExt, SpecialExtensions);
-        FOwner.DoFetchIcon(CurrentFilePath, IsSpecialExt, False, @CurrentItemData, FSyncIcon, TypeName);
-      except
-        {Capture exceptions generated by the shell}
-        FSyncIcon := UnKnownFileIcon;
-      end;
-      if Terminated then
+      FSyncIcon := -1;
+      if Assigned(FSyncThumbnail) then
+        FreeAndNil(FSyncThumbnail);
+
+      if FCurrentItemData.IconEmpty then
       begin
-        FreePIDL(CurrentItemData.PIDL);
-        Break;
+        PrevPIDL := FCurrentItemData.PIDL;
+        try
+          IsSpecialExt := MatchesFileExt(FCurrentItemData.FileExt, SpecialExtensions);
+          FOwner.DoFetchIcon(FCurrentFilePath, IsSpecialExt, False, @FCurrentItemData, FSyncIcon, TypeName);
+        except
+          {Capture exceptions generated by the shell}
+          FSyncIcon := UnknownFileIcon;
+        end;
+        if Assigned(FCurrentItemData.PIDL) and
+           (PrevPIDL <> FCurrentItemData.PIDL) then
+        begin
+          FreePIDL(FCurrentItemData.PIDL);
+        end;
       end;
-      if FSyncIcon <> CurrentItemData.ImageIndex then
-        FNewIcons := True;
+
+      if FOwner.ThumbnailNeeded(@FCurrentItemData) then
+      begin
+        FSyncThumbnail := GetThumbnail(FCurrentFilePath, FCurrentItemData.ThumbnailSize);
+      end;
+
       if not Terminated then
       begin
-        Synchronize(DoUpdateIcon);
+        Synchronize(FOwner.DoUpdateIcon);
       end;
-
-      FreePIDL(CurrentItemData.PIDL);
     end;
-    SetLength(CurrentFilePath, 0);
-    if CurrentIndex = FIndex then Inc(FIndex);
-    SetLength(CurrentFilePath, 0);
+    SetLength(FCurrentFilePath, 0);
   end;
 end; {TIconUpdateThread.Execute}
-
-procedure TIconUpdateThread.DoFetchData;
-begin
-  CurrentIndex := fIndex;
-  if not Terminated and
-     (Pred(FOwner.Items.Count) >= CurrentIndex) and
-     Assigned(FOwner.Items[CurrentIndex]) and
-     Assigned(FOwner.Items[CurrentIndex].Data) then
-  begin
-    CurrentFilePath := FOwner.ItemFullFileName(FOwner.Items[CurrentIndex]);
-    CurrentItemData := PFileRec(FOwner.Items[CurrentIndex].Data)^;
-    InvalidItem := False;
-  end
-    else InvalidItem := True;
-end; {TIconUpdateThread.DoFetchData}
-
-procedure TIconUpdateThread.DoUpdateIcon;
-var
-  LVI: TLVItem;
-begin
-  if (FOwner.Items.Count > CurrentIndex) and
-     not fOwner.Loading and not Terminated and
-     Assigned(FOwner.Items[CurrentIndex]) and
-     Assigned(FOwner.Items[CurrentIndex].Data) then
-    with FOwner.Items[CurrentIndex] do
-    begin
-      if (FSyncIcon >= 0) and (PFileRec(Data)^.ImageIndex <> FSyncIcon) then
-      begin
-        with PFileRec(Data)^ do
-          ImageIndex := FSyncIcon;
-
-        {To avoid flickering of the display use Listview_SetItem
-        instead of using the property ImageIndex:}
-        LVI.mask := LVIF_IMAGE;
-        LVI.iItem := CurrentIndex;
-        LVI.iSubItem := 0;
-        LVI.iImage := I_IMAGECALLBACK;
-        if not Terminated then
-          ListView_SetItem(FOwner.Handle, LVI);
-        FNewIcons := True;
-      end;
-      PFileRec(Data)^.IconEmpty := False;
-    end;
-end; {TIconUpdateThread.DoUpdateIcon}
-
-procedure TIconUpdateThread.Terminate;
-begin
-  FOwner.FIUThreadFinished := True;
-  inherited;
-end; {TIconUpdateThread.Terminate}
 
 { TDirView }
 
@@ -811,11 +733,19 @@ begin
     ShellExtensions.DropHandler := True;
   end;
 
+  FIconUpdateSet := TDictionary<Integer, Boolean>.Create;
+  FIconUpdateQueue := TQueue<TIconUpdateSchedule>.Create;
+  FIconUpdateQueueDeferred := TQueue<TIconUpdateSchedule>.Create;
+
   FLastPath := nil;
 end; {Create}
 
 destructor TDirView.Destroy;
 begin
+  FreeAndNil(FIconUpdateQueue);
+  FreeAndNil(FIconUpdateQueueDeferred);
+  FreeAndNil(FIconUpdateSet);
+
   if Assigned(PIDLRecycle) then FreePIDL(PIDLRecycle);
 
   FLastPath.Free;
@@ -833,15 +763,6 @@ begin
   TerminateThreads;
   inherited;
 end; {WMDestroy}
-
-procedure TDirView.CMRecreateWnd(var Message: TMessage);
-begin
-  // see comment in TDirView.StopIconUpdateThread
-  if not (csRecreating in ControlState) then
-  begin
-    inherited;
-  end;
-end;
 
 procedure TDirView.TerminateThreads;
 begin
@@ -896,10 +817,46 @@ begin
 end;
 
 procedure TDirView.SetPath(Value: string);
+const
+  LongPathPrefix = '\\?\';
+var
+  LongPath: string;
+  P, Len: Integer;
 begin
   // do checks before passing directory to drive view, because
   // it would truncate non-existing directory to first superior existing
   Value := ReplaceStr(Value, '/', '\');
+
+  // Particularly the TDriveView.FindPathNode (its ExtractFileDir) cannot handle double backslashes
+  while True do
+  begin
+    P := Value.LastIndexOf('\\'); // 0-based
+    if P <= 0 then // not found or UNC
+        Break
+      else
+    begin
+      System.Delete(Value, P + 1, 1);
+    end;
+  end;
+
+  // GetLongPathName would resolve to it the current working directory
+  if (Length(Value) = 2) and CharInSet(UpperCase(Value)[1], ['A'..'Z']) and (Value[2] = ':') then
+  begin
+    Value := Value + '\';
+  end
+    else
+  // Convert to long path
+  begin
+    Len := GetLongPathName(PChar(ApiPath(Value)), nil, 0);
+    SetLength(LongPath, Len);
+    Len := GetLongPathName(PChar(ApiPath(Value)), PChar(LongPath), Len);
+    if Len > 0 then
+    begin
+      Value := Copy(LongPath, 1, Len);
+      if StartsStr(LongPathPrefix, Value) then
+        System.Delete(Value, 1, Length(LongPathPrefix));
+    end;
+  end;
 
   CheckCanOpenDirectory(Value);
 
@@ -1014,6 +971,8 @@ begin
 {$WARNINGS ON}
     Empty := True;
     IconEmpty := True;
+    Thumbnail := nil;
+    ThumbnailSize := ThumbnailNotNeeded;
     if Size > 0 then Inc(FFilesSize, Size);
     PIDL := nil;
     CalculatedSize := -1;
@@ -1062,6 +1021,8 @@ begin
 {$WARNINGS ON}
     Empty := True;
     IconEmpty := False;
+    Thumbnail := nil;
+    ThumbnailSize := ThumbnailNotNeeded;
     PIDL := nil;
 
     ImageIndex := StdDirIcon;
@@ -1248,7 +1209,7 @@ begin
     Inc(FHiddenCount);
   end
     else
-  if Mask <> '' then
+  if FEffectiveMask <> '' then
   begin
     Directory := ((SearchRec.Attr and faDirectory) <> 0);
     if Directory then FileSize := 0
@@ -1260,7 +1221,7 @@ begin
         Directory,
         FileSize,
         FileTimeToDateTime(SearchRec.FindData.ftLastWriteTime),
-        Mask, True);
+        FEffectiveMask, True);
 
     if not Result then
     begin
@@ -1283,6 +1244,10 @@ procedure TDirView.Load(DoFocusSomething: Boolean);
 begin
   try
     StopIconUpdateThread;
+    FIconUpdateQueue.Clear;
+    FIconUpdateQueueDeferred.Clear;
+    FIconUpdateSet.Clear;
+
     StopWatchThread;
 
     FChangeTimer.Enabled  := False;
@@ -1292,7 +1257,7 @@ begin
   finally
     if DirOK and not AbortLoading then
     begin
-      if FUseIconUpdateThread and (not IsRecycleBin) then
+      if not IsRecycleBin then
         StartIconUpdateThread;
       StartWatchThread;
     end;
@@ -1346,8 +1311,8 @@ begin
       begin
         FParentFolder := GetShellFolder(PathName);
 
-        DosError := SysUtils.FindFirst(ApiPath(IncludeTrailingPathDelimiter(FPath) + '*.*'),
-          FileAttr, SRec);
+        DosError :=
+          FindFirstEx(ApiPath(IncludeTrailingPathDelimiter(FPath) + '*.*'), FileAttr, SRec, FIND_FIRST_EX_LARGE_FETCH_PAS);
         while (DosError = 0) and (not AbortLoading) do
         begin
           if (SRec.Attr and faDirectory) = 0 then
@@ -1368,8 +1333,8 @@ begin
 
         {Search for directories:}
         DirsCount := 0;
-        DosError := SysUtils.FindFirst(ApiPath(IncludeTrailingPathDelimiter(FPath) + '*.*'),
-          DirAttrMask, SRec);
+        DosError :=
+          FindFirstEx(ApiPath(IncludeTrailingPathDelimiter(FPath) + '*.*'), DirAttrMask, SRec, FIND_FIRST_EX_LARGE_FETCH_PAS);
         while (DosError = 0) and (not AbortLoading) do
         begin
           if (SRec.Name <> '.') and (SRec.Name <> '..') and
@@ -1406,7 +1371,6 @@ begin
       else FIsRecycleBin := False;
 
   finally
-    //if Assigned(Animate) then Animate.Free;
   end; {Finally}
 end;
 
@@ -1435,7 +1399,6 @@ var
   SaveCursor: TCursor;
   FSize: Int64;
   FocusedIsVisible: Boolean;
-  R: TRect;
 begin
   if (not Loading) and LoadEnabled then
   begin
@@ -1450,28 +1413,7 @@ begin
       end
         else
       begin
-        if Assigned(ItemFocused) then
-        begin
-          R := ItemFocused.DisplayRect(drBounds);
-          // btw, we use vsReport only, nothing else was tested
-          Assert(ViewStyle = vsReport);
-          case ViewStyle of
-            vsReport:
-              FocusedIsVisible := (TopItem.Index <= ItemFocused.Index) and
-                (ItemFocused.Index < TopItem.Index + VisibleRowCount);
-
-            vsList:
-              // do not know how to implement that
-              FocusedIsVisible := False;
-
-            else // vsIcon and vsSmallIcon
-              FocusedIsVisible :=
-                IntersectRect(R,
-                  Classes.Rect(ViewOrigin, Point(ViewOrigin.X + ClientWidth, ViewOrigin.Y + ClientHeight)),
-                  ItemFocused.DisplayRect(drBounds));
-          end;
-        end
-          else FocusedIsVisible := False; // shut up
+        FocusedIsVisible := Assigned(ItemFocused) and IsItemVisible(ItemFocused);
 
         SaveCursor := Screen.Cursor;
         Screen.Cursor := crHourGlass;
@@ -1506,8 +1448,8 @@ begin
           end;
           EItems.Sort;
 
-          DosError := SysUtils.FindFirst(ApiPath(IncludeTrailingPathDelimiter(FPath) + '*.*'),
-            FileAttr, SRec);
+          DosError :=
+            FindFirstEx(ApiPath(IncludeTrailingPathDelimiter(FPath) + '*.*'), FileAttr, SRec, FIND_FIRST_EX_LARGE_FETCH_PAS);
           while DosError = 0 do
           begin
             if (SRec.Attr and faDirectory) = 0 then
@@ -1548,9 +1490,7 @@ begin
                       FileTime := SRec.FindData.ftLastWriteTime;
 {$WARNINGS ON}
                     end;
-                    // alternative to TListItem.Update (which causes flicker)
-                    R := Items[iIndex].DisplayRect(drBounds);
-                    InvalidateRect(Handle, @R, True);
+                    InvalidateItem(Items[iIndex]);
                     AnyUpdate := True;
                   end;
                   FItems.Add(Srec.Name);
@@ -1562,7 +1502,8 @@ begin
           SysUtils.FindClose(Srec);
 
           {Search new directories:}
-          DosError := SysUtils.FindFirst(ApiPath(FPath + '\*.*'), DirAttrMask, SRec);
+          DosError :=
+            FindFirstEx(ApiPath(FPath + '\*.*'), DirAttrMask, SRec, FIND_FIRST_EX_LARGE_FETCH_PAS);
           while DosError = 0 do
           begin
             if (Srec.Attr and faDirectory) <> 0 then
@@ -1648,7 +1589,7 @@ begin
           finally
             FDirOK := True;
             FDirty := false;
-            if FUseIconUpdateThread and (not FisRecycleBin) then
+            if not FIsRecycleBin then
               StartIconUpdateThread;
             StartWatchThread;
             // make focused item visible, only if it was before
@@ -1839,7 +1780,7 @@ begin
 
     except
       {Capture exceptions generated by the shell}
-      ImageIndex := UnKnownFileIcon;
+      ImageIndex := UnknownFileIcon;
     end;
   end;
 end;
@@ -1889,7 +1830,7 @@ begin
         if IconEmpty then
         begin
           if FileExt = ExeExtension then ImageIndex := DefaultExeIcon
-            else ImageIndex  := UnKnownFileIcon;
+            else ImageIndex := UnknownFileIcon;
         end;
       end;
       Empty := False;
@@ -2084,7 +2025,7 @@ begin
     try
       CustomSortItems(@CompareFile);
     finally
-      if (not Loading) and FUseIconUpdateThread then
+      if (not Loading) then
         StartIconUpdateThread;
     end;
   end
@@ -2203,8 +2144,7 @@ begin
     end;
 
   finally
-    if FUseIconUpdateThread then
-      StartIconUpdateThread;
+    StartIconUpdateThread;
 
     if WatchForChanges then StartWatchThread;
     if Assigned(DriveView) then
@@ -2318,7 +2258,7 @@ begin
       if Assigned(ItemFocused) and Assigned(ItemFocused.Data) then
       begin
         Verb := EmptyStr;
-        WithEdit := not FisRecycleBin and CanEdit(ItemFocused);
+        WithEdit := not FIsRecycleBin and CanEdit(ItemFocused);
         LoadEnabled := True;
 
         if FIsRecycleBin then
@@ -2335,7 +2275,7 @@ begin
             ItemFullFileName(ItemFocused), WithEdit, Verb,
             not PFileRec(ItemFocused.Data)^.isDirectory);
           LoadEnabled := True;
-        end; {not FisRecycleBin}
+        end; {not FIsRecycleBin}
 
         {---------- Rename ----------}
         if Verb = shcRename then ItemFocused.EditCaption
@@ -2400,15 +2340,19 @@ procedure TDirView.GetDisplayInfo(ListItem: TListItem;
 var
   Value: string;
   ASize: Int64;
+  FetchIcon: Boolean;
 begin
   Assert(Assigned(ListItem) and Assigned(ListItem.Data));
   with PFileRec(ListItem.Data)^, DispInfo  do
   begin
     {Fetch display data of current file:}
     if Empty then
-      GetDisplayData(ListItem, IconEmpty and
-        (not FUseIconUpdateThread or
-         (ViewStyle <> vsReport)));
+    begin
+      FetchIcon :=
+        IconEmpty and
+        (not FUseIconUpdateThread or (ViewStyle <> vsReport));
+      GetDisplayData(ListItem, FetchIcon);
+    end;
 
     if IconEmpty and
        (not FUseIconUpdateThread or
@@ -2417,17 +2361,9 @@ begin
       GetDisplayData(ListItem, True);
 
     {Set IconUpdatethread :}
-    if IconEmpty and Assigned(FIconUpdateThread) then
+    if IconEmpty and UseIconUpdateThread and (not FIsRecycleBin) then
     begin
-      if Assigned(TopItem) then
-      {Viewstyle is vsReport or vsList:}
-        FIconUpdateThread.Index := Self.TopItem.Index
-      else
-        {Viewstyle is vsIcon or vsSmallIcon:}
-        FIconUpdateThread.MaxIndex := ListItem.Index;
-
-      if FIconUpdateThread.Suspended and not FIsRecycleBin then
-        FIconUpdateThread.Resume;
+      IconUpdateEnqueue(ListItem);
     end;
 
     if (DispInfo.Mask and LVIF_TEXT) <> 0 then
@@ -2465,7 +2401,6 @@ begin
       Mask := Mask or LVIF_DI_SETITEM;
     end;
   end; {With PFileRec Do}
-  {Mask := Mask Or LVIF_DI_SETITEM; {<== causes flickering display and icons not to be updated on renaming the item}
 end;
 
 function TDirView.ItemColor(Item: TListItem): TColor;
@@ -2483,6 +2418,33 @@ begin
   Result := clDefaultItemColor;
 end;
 
+function TDirView.ItemThumbnail(Item: TListItem; Size: TSize): TBitmap;
+var
+  ItemData: PFileRec;
+begin
+  if not UseIconUpdateThread then
+  begin
+    // not supported without update thread
+    Result := nil;
+  end
+    else
+  begin
+    ItemData := PFileRec(Item.Data);
+    if (not Assigned(ItemData.Thumbnail)) or
+       (ItemData.ThumbnailSize <> Size) then
+    begin
+      FreeAndNil(ItemData.Thumbnail);
+      ItemData.ThumbnailSize := Size;
+      Result := nil;
+      IconUpdateEnqueue(Item);
+    end
+      else
+    begin
+      Result := ItemData.Thumbnail;
+    end;
+  end;
+end;
+
 procedure TDirView.StartFileDeleteThread;
 var
   Files: TStringList;
@@ -2496,22 +2458,176 @@ begin
   end;
 end;
 
-procedure TDirView.StartIconUpdateThread;
+procedure TDirView.IconUpdateEnqueue(ListItem: TListItem);
+var
+  Schedule: TIconUpdateSchedule;
 begin
-  if DirOK then
+  if not FIconUpdateSet.ContainsKey(ListItem.Index) then
   begin
-    if not Assigned(FIconUpdateThread) then
+    FIconUpdateSet.Add(ListItem.Index, False);
+    Schedule.Index := ListItem.Index;
+    FIconUpdateQueue.Enqueue(Schedule);
+    Assert(FIconUpdateSet.Count = FIconUpdateQueue.Count + FIconUpdateQueueDeferred.Count);
+  end;
+  StartIconUpdateThread;
+end;
+
+function TDirView.IconUpdatePeek: Integer;
+begin
+  if FIconUpdateQueue.Count > 0 then
+    Result := FIconUpdateQueue.Peek.Index
+  else if FIconUpdateQueueDeferred.Count > 0 then
+    Result := FIconUpdateQueueDeferred.Peek.Index
+  else
+    Result := -1;
+end;
+
+procedure TDirView.IconUpdateDequeue;
+begin
+  if FIconUpdateQueue.Count > 0 then
+    FIconUpdateQueue.Dequeue
+  else
+    FIconUpdateQueueDeferred.Dequeue;
+  FIconUpdateSet.Remove(FIconUpdateThread.FCurrentIndex);
+  Assert(FIconUpdateSet.Count = FIconUpdateQueue.Count + FIconUpdateQueueDeferred.Count);
+end;
+
+function TDirView.ThumbnailNeeded(ItemData: PFileRec): Boolean;
+begin
+  Result := (not Assigned(ItemData.Thumbnail)) and (ItemData.ThumbnailSize <> ThumbnailNotNeeded);
+end;
+
+procedure TDirView.DoFetchIconUpdate;
+var
+  Item: TListItem;
+  ItemData: PFileRec;
+  Invisible: Boolean;
+begin
+  FIconUpdateThread.FCurrentIndex := IconUpdatePeek;
+  if FIconUpdateThread.FCurrentIndex < 0 then
+  begin
+    FIconUpdateThread.Suspend;
+  end
+    else
+  begin
+    // We could loop here until we find a valid item, but we want to release the GUI thread frequently
+    if FIconUpdateThread.FCurrentIndex >= Items.Count then
     begin
-      if Items.Count > 0 then
-        FIconUpdateThread := TIconUpdateThread.Create(Self);
+      FIconUpdateThread.FCurrentIndex := -1;
+      IconUpdateDequeue;
     end
       else
     begin
-      Assert(not FIconUpdateThread.Terminated);
-      FIconUpdateThread.Index := 0;
-      if ViewStyle = vsReport then
-        FIconUpdateThread.Resume;
+      Item := Items[FIconUpdateThread.FCurrentIndex];
+      Assert(Assigned(Item));
+      Assert(Assigned(Item.Data));
+      ItemData := PFileRec(Item.Data);
+
+      Invisible := not IsItemVisible(Item);
+
+      if (Invisible or (not FThumbnail)) and
+         (not Assigned(ItemData.Thumbnail)) then
+      begin
+        ItemData.ThumbnailSize := ThumbnailNotNeeded; // not needed anymore
+      end;
+
+      // Deprioritizing unvisible item taken from priority queue.
+      // As we ask Window to cache the image index (LVIF_DI_SETITEM), we won't get asked again,
+      // so we have to retrieve the image eventually (but not thumbnail)
+      if (FIconUpdateQueue.Count > 0) and
+         Invisible then
+      begin
+        Assert(not ThumbnailNeeded(ItemData));
+        if ItemData.IconEmpty then
+        begin
+          FIconUpdateQueueDeferred.Enqueue(FIconUpdateQueue.Dequeue);
+        end
+          else
+        begin
+          IconUpdateDequeue;
+        end;
+        FIconUpdateThread.FCurrentIndex := -1;
+      end
+        else
+      begin
+        if ItemData.IconEmpty or
+           ThumbnailNeeded(ItemData) then
+        begin
+          FIconUpdateThread.FCurrentFilePath := ItemFullFileName(Item);
+          FIconUpdateThread.FCurrentItemData := ItemData^;
+        end
+          else
+        begin
+          IconUpdateDequeue;
+          FIconUpdateThread.FCurrentIndex := -1;
+        end;
+      end;
     end;
+  end;
+end;
+
+procedure TDirView.DoUpdateIcon;
+var
+  Item: TListItem;
+  ItemData: PFileRec;
+  LVI: TLVItem;
+begin
+  // otherwise just throw away the resolved icon and let this or future background thread
+  // retry with the same or different item the next time
+  if (not Loading) and
+     (not FIconUpdateThread.Terminated) and
+     (FIconUpdateThread.FCurrentIndex = IconUpdatePeek) then
+  begin
+    IconUpdateDequeue;
+
+    if (FIconUpdateThread.FCurrentIndex >= 0) and
+       (FIconUpdateThread.FCurrentIndex < Items.Count) then
+    begin
+      Item := Items[FIconUpdateThread.FCurrentIndex];
+      if FIconUpdateThread.FCurrentFilePath = ItemFullFileName(Item) then
+      begin
+        Assert(Assigned(Item));
+        Assert(Assigned(Item.Data));
+        ItemData := PFileRec(Item.Data);
+
+        if (FIconUpdateThread.FSyncIcon >= 0) and (ItemData^.ImageIndex <> FIconUpdateThread.FSyncIcon) then
+        begin
+          ItemData^.ImageIndex := FIconUpdateThread.FSyncIcon;
+
+          if not FIconUpdateThread.Terminated then
+          begin
+            {To avoid flickering of the display use Listview_SetItem
+            instead of using the property ImageIndex:}
+            LVI.mask := LVIF_IMAGE;
+            LVI.iItem := FIconUpdateThread.FCurrentIndex;
+            LVI.iSubItem := 0;
+            LVI.iImage := I_IMAGECALLBACK;
+            ListView_SetItem(Handle, LVI);
+          end;
+        end;
+        ItemData^.IconEmpty := False;
+
+        if Assigned(FIconUpdateThread.FSyncThumbnail) then
+        begin
+          ItemData^.Thumbnail := FIconUpdateThread.FSyncThumbnail;
+          FIconUpdateThread.FSyncThumbnail := nil;
+          // It can happen that this is called while the very item is being painted,
+          // (particularly ImageFactory.GetImage pumps the queue).
+          // Calling InvalidateRect directly would get ignored then.
+          PostMessage(WindowHandle, WM_USER_INVALIDATEITEM, Item.Index, 0);
+        end;
+      end;
+    end;
+  end;
+end; {TIconUpdateThread.DoUpdateIcon}
+
+procedure TDirView.StartIconUpdateThread;
+begin
+  if DirOK and UseIconUpdateThread then
+  begin
+    if not Assigned(FIconUpdateThread) then
+      FIconUpdateThread := TIconUpdateThread.Create(Self);
+    FIconUpdateThread.Resume;
   end;
 end; {StartIconUpdateThread}
 
@@ -2528,8 +2644,7 @@ begin
       // This prevents Destroy from waiting for (stalled) thread
       FIconUpdateThread.Suspend;
     end;
-    FIconUpdateThread.Destroy;
-    FIconUpdateThread := nil;
+    FreeAndNil(FIconUpdateThread);
   end;
 end; {StopIconUpdateThread}
 
@@ -2748,6 +2863,7 @@ begin
       DriveRoot := DriveInfo.GetDriveRoot(Drive);
       // When the drive is not valid, the GetDir returns the current drive working directory, detect that,
       // and let it fail later when trying to open root of the invalid drive.
+      // (maybe GetLongPathName would not have that side effect?)
       if not StartsText(DriveRoot, APath) then
         APath := DriveRoot;
       APath := ExcludeTrailingPathDelimiter(APath);
@@ -2804,6 +2920,7 @@ begin
       SetLength(TypeName, 0);
       SetLength(DisplayName, 0);
       if Assigned(PIDL) then FreePIDL(PIDL);
+      FreeAndNil(Thumbnail);
       Dispose(PFileRec(Item.Data));
       Item.Data := nil;
     end;

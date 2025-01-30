@@ -128,7 +128,6 @@ __fastcall TCopyDialog::TCopyDialog(
   FPresetsMenu = new TPopupMenu(this);
 
   HotTrackLabel(CopyParamLabel);
-  CopyParamListButton(TransferSettingsButton);
   HotTrackLabel(ShortCutHintLabel);
 
   if (FLAGSET(FOptions, coBrowse))
@@ -501,14 +500,7 @@ void __fastcall TCopyDialog::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::TransferSettingsButtonClick(TObject * /*Sender*/)
 {
-  if (!SupportsSplitButton())
-  {
-    CopyParamListPopup(CalculatePopupRect(TransferSettingsButton), 0);
-  }
-  else
-  {
-    CopyParamGroupClick(NULL);
-  }
+  CopyParamGroupClick(NULL);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::GenerateCode()
@@ -630,14 +622,9 @@ void __fastcall TCopyDialog::OkButtonDropDownClick(TObject *)
   MenuPopup(OkMenu, OkButton);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCopyDialog::Dispatch(void * Message)
+void __fastcall TCopyDialog::FormAfterMonitorDpiChanged(TObject *, int OldDPI, int NewDPI)
 {
-  TMessage * M = reinterpret_cast<TMessage*>(Message);
-  if (M->Msg == CM_DPICHANGED)
-  {
-    AutoSizeCheckBox(NeverShowAgainCheck);
-  }
-
-  TForm::Dispatch(Message);
+  DebugUsedParam2(OldDPI, NewDPI);
+  AutoSizeCheckBox(NeverShowAgainCheck);
 }
 //---------------------------------------------------------------------------

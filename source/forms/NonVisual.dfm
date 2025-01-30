@@ -1,5 +1,4 @@
 object NonVisualDataModule: TNonVisualDataModule
-  OldCreateOrder = False
   Height = 502
   Width = 624
   object RemoteFilePopup: TTBXPopupMenu
@@ -343,40 +342,40 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 6
       ShortCut = 32805
     end
-    object CurrentCycleStyleAction: TAction
-      Tag = 7
+    object RemoteCycleStyleAction: TAction
+      Tag = 15
       Category = 'Style'
       Caption = 'View'
       HelpKeyword = 'ui_file_panel#view_style'
       Hint = 'View|Cycle thru directory view styles'
       ImageIndex = 8
     end
-    object CurrentIconAction: TAction
-      Tag = 7
+    object RemoteIconAction: TAction
+      Tag = 15
       Category = 'Style'
       Caption = '&Large Icons'
       HelpKeyword = 'ui_file_panel#view_style'
       Hint = 'Large Icons|View large icons'
       ImageIndex = 8
     end
-    object CurrentSmallIconAction: TAction
-      Tag = 7
+    object RemoteSmallIconAction: TAction
+      Tag = 15
       Category = 'Style'
       Caption = '&Small Icons'
       HelpKeyword = 'ui_file_panel#view_style'
       Hint = 'Small Icons|View small icons'
       ImageIndex = 9
     end
-    object CurrentListAction: TAction
-      Tag = 7
+    object RemoteListAction: TAction
+      Tag = 15
       Category = 'Style'
       Caption = 'Lis&t'
       HelpKeyword = 'ui_file_panel#view_style'
       Hint = 'List|View list'
       ImageIndex = 10
     end
-    object CurrentReportAction: TAction
-      Tag = 7
+    object RemoteReportAction: TAction
+      Tag = 15
       Category = 'Style'
       Caption = '&Details'
       HelpKeyword = 'ui_file_panel#view_style'
@@ -1798,6 +1797,34 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_toolbars'
       Hint = 'Show text labels for selected important commands on toolbars'
     end
+    object ToolbarIconSizeAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = 'T&oolbar Icons Size'
+      HelpKeyword = 'ui_toolbars'
+      Hint = 'Change toolbar icons size'
+    end
+    object ToolbarIconSizeNormalAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = '&Normal'
+      HelpKeyword = 'ui_toolbars'
+      Hint = 'Show normal toolbar icons'
+    end
+    object ToolbarIconSizeLargeAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = '&Large'
+      HelpKeyword = 'ui_toolbars'
+      Hint = 'Show large toolbar icons'
+    end
+    object ToolbarIconSizeVeryLargeAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = '&Very Large'
+      HelpKeyword = 'ui_toolbars'
+      Hint = 'Show very large toolbar icons'
+    end
     object CustomCommandsBandAction: TAction
       Tag = 15
       Category = 'View'
@@ -2459,6 +2486,34 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Open the same directory as in the other panel'
       ShortCut = 16574
     end
+    object IncrementalSearchStartAction: TAction
+      Tag = 11
+      Category = 'Command'
+      Caption = 'IncrementalSearchStartAction'
+      ShortCut = 16454
+    end
+    object RemoteThumbnailAction: TAction
+      Tag = 15
+      Category = 'Style'
+      Caption = '&Thumbnails'
+      HelpKeyword = 'ui_file_panel#view_style'
+      Hint = 'Thumbnails|View thumbnails'
+    end
+    object LocalReportAction: TAction
+      Tag = 15
+      Category = 'Style'
+      Caption = '&Details'
+      HelpKeyword = 'ui_file_panel#view_style'
+      Hint = 'Details|View details'
+      ImageIndex = 11
+    end
+    object LocalThumbnailAction: TAction
+      Tag = 15
+      Category = 'Style'
+      Caption = '&Thumbnails'
+      HelpKeyword = 'ui_file_panel#view_style'
+      Hint = 'Thumbnails|View thumbnails'
+    end
   end
   object ExplorerBarPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
@@ -2492,11 +2547,28 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem16: TTBXItem
       Action = ExplorerCustomCommandsBandAction
     end
+    object TBXSeparatorItem27: TTBXSeparatorItem
+    end
     object TBXItem7: TTBXItem
       Action = LockToolbarsAction
     end
     object TBXItem48: TTBXItem
       Action = SelectiveToolbarTextAction
+    end
+    object TBXSubmenuItem15: TTBXSubmenuItem
+      Action = ToolbarIconSizeAction
+      object TBXItem127: TTBXItem
+        Action = ToolbarIconSizeNormalAction
+        RadioItem = True
+      end
+      object TBXItem120: TTBXItem
+        Action = ToolbarIconSizeLargeAction
+        RadioItem = True
+      end
+      object TBXItem128: TTBXItem
+        Action = ToolbarIconSizeVeryLargeAction
+        RadioItem = True
+      end
     end
     object TBXSubmenuItem4: TTBXSubmenuItem
       Action = CustomizeToolbarAction
@@ -2578,11 +2650,28 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem15: TTBXItem
       Action = CommanderCustomCommandsBandAction
     end
+    object TBXSeparatorItem24: TTBXSeparatorItem
+    end
     object TBXItem6: TTBXItem
       Action = LockToolbarsAction
     end
     object TBXItem46: TTBXItem
       Action = SelectiveToolbarTextAction
+    end
+    object TBXSubmenuItem14: TTBXSubmenuItem
+      Action = ToolbarIconSizeAction
+      object TBXItem123: TTBXItem
+        Action = ToolbarIconSizeNormalAction
+        RadioItem = True
+      end
+      object TBXItem117: TTBXItem
+        Action = ToolbarIconSizeLargeAction
+        RadioItem = True
+      end
+      object TBXItem126: TTBXItem
+        Action = ToolbarIconSizeVeryLargeAction
+        RadioItem = True
+      end
     end
     object TBXItem77: TTBXSubmenuItem
       Action = CustomizeToolbarAction
@@ -2748,11 +2837,28 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem45: TTBXItem
       Action = CommanderRemoteSelectionBandAction2
     end
+    object TBXSeparatorItem26: TTBXSeparatorItem
+    end
     object TBXItem37: TTBXItem
       Action = LockToolbarsAction
     end
     object TBXItem49: TTBXItem
       Action = SelectiveToolbarTextAction
+    end
+    object TBXSubmenuItem13: TTBXSubmenuItem
+      Action = ToolbarIconSizeAction
+      object TBXItem121: TTBXItem
+        Action = ToolbarIconSizeNormalAction
+        RadioItem = True
+      end
+      object TBXItem119: TTBXItem
+        Action = ToolbarIconSizeLargeAction
+        RadioItem = True
+      end
+      object TBXItem122: TTBXItem
+        Action = ToolbarIconSizeVeryLargeAction
+        RadioItem = True
+      end
     end
     object TBXSubmenuItem9: TTBXSubmenuItem
       Action = CustomizeToolbarAction
@@ -2832,11 +2938,28 @@ object NonVisualDataModule: TNonVisualDataModule
     object TBXItem44: TTBXItem
       Action = CommanderLocalSelectionBandAction2
     end
+    object TBXSeparatorItem25: TTBXSeparatorItem
+    end
     object TBXItem38: TTBXItem
       Action = LockToolbarsAction
     end
     object TBXItem47: TTBXItem
       Action = SelectiveToolbarTextAction
+    end
+    object TBXSubmenuItem16: TTBXSubmenuItem
+      Action = ToolbarIconSizeAction
+      object TBXItem129: TTBXItem
+        Action = ToolbarIconSizeNormalAction
+        RadioItem = True
+      end
+      object TBXItem118: TTBXItem
+        Action = ToolbarIconSizeLargeAction
+        RadioItem = True
+      end
+      object TBXItem130: TTBXItem
+        Action = ToolbarIconSizeVeryLargeAction
+        RadioItem = True
+      end
     end
     object TBXSubmenuItem6: TTBXSubmenuItem
       Action = CustomizeToolbarAction

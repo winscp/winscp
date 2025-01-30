@@ -767,7 +767,7 @@ ssh2_userkey *ppk_load_s(BinarySource *src, const char *passphrase,
 {
     char header[40], *b, *encryption, *comment, *mac;
     const ssh_keyalg *alg;
-    ssh2_userkey *ret;
+    ssh2_userkey *ukey;
     strbuf *public_blob, *private_blob, *cipher_mac_keys_blob;
     strbuf *passphrase_salt = strbuf_new();
     ptrlen cipherkey, cipheriv, mackey;
@@ -778,7 +778,7 @@ ssh2_userkey *ppk_load_s(BinarySource *src, const char *passphrase,
     const char *error = NULL;
     ppk_save_parameters params;
 
-    ret = NULL;                        /* return NULL for most errors */
+    ukey = NULL;                        /* return NULL for most errors */
     encryption = comment = mac = NULL;
     public_blob = private_blob = cipher_mac_keys_blob = NULL;
 
@@ -1017,10 +1017,10 @@ ssh2_userkey *ppk_load_s(BinarySource *src, const char *passphrase,
              * unencrypted. Otherwise, it means Wrong Passphrase. */
             if (ciphertype->keylen != 0) {
                 error = "wrong passphrase";
-                ret = SSH2_WRONG_PASSPHRASE;
+                ukey = SSH2_WRONG_PASSPHRASE;
             } else {
                 error = "MAC failed";
-                ret = NULL;
+                ukey = NULL;
             }
             goto error;
         }
@@ -1029,15 +1029,15 @@ ssh2_userkey *ppk_load_s(BinarySource *src, const char *passphrase,
     /*
      * Create and return the key.
      */
-    ret = snew(ssh2_userkey);
-    ret->comment = comment;
+    ukey = snew(ssh2_userkey);
+    ukey->comment = comment;
     comment = NULL;
-    ret->key = ssh_key_new_priv(
+    ukey->key = ssh_key_new_priv(
         alg, ptrlen_from_strbuf(public_blob),
         ptrlen_from_strbuf(private_blob));
-    if (!ret->key) {
-        sfree(ret);
-        ret = NULL;
+    if (!ukey->key) {
+        sfree(ukey);
+        ukey = NULL;
         error = "createkey failed";
         goto error;
     }
@@ -1062,7 +1062,7 @@ ssh2_userkey *ppk_load_s(BinarySource *src, const char *passphrase,
     strbuf_free(passphrase_salt);
     if (errorstr)
         *errorstr = error;
-    return ret;
+    return ukey;
 }
 
 ssh2_userkey *ppk_load_f(const Filename *filename, const char *passphrase,
@@ -1161,6 +1161,8 @@ static bool rfc4716_loadpub(BinarySource *src, char **algorithm,
             }
         }
         sfree(line); line = NULL;
+        if (!get_avail(src))
+            break;
         line = mkstr(get_chomped_line(src));
     }
 

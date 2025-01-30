@@ -166,6 +166,8 @@ protected:
   unsigned short AclGrantToPermissions(S3AclGrant & AclGrant, const TS3FileProperties & Properties);
   bool ParsePathForPropertiesRequests(
     const UnicodeString & Path, const TRemoteFile * File, UnicodeString & BucketName, UnicodeString & Key);
+  void AssumeRole(const UnicodeString & RoleArn);
+  void SetCredentials(const UnicodeString & AccessKeyId, const UnicodeString & SecretAccessKey, const UnicodeString & SessionToken);
 
   static TS3FileSystem * GetFileSystem(void * CallbackData);
   static void LibS3SessionCallback(ne_session_s * Session, void * CallbackData);
@@ -184,6 +186,8 @@ protected:
   static int LibS3MultipartCommitPutObjectDataCallback(int BufferSize, char * Buffer, void * CallbackData);
   static S3Status LibS3MultipartResponsePropertiesCallback(const S3ResponseProperties * Properties, void * CallbackData);
   static S3Status LibS3GetObjectDataCallback(int BufferSize, const char * Buffer, void * CallbackData);
+  static void LibS3AssumeRoleCompleteCallback(S3Status Status, const S3ErrorDetails * Error, void * CallbackData);
+  static S3Status LibS3AssumeRoleDataCallback(int BufferSize, const char * Buffer, void * CallbackData);
 
   static const int S3MinMultiPartChunkSize;
   static const int S3MaxMultiPartChunks;
@@ -192,9 +196,11 @@ protected:
 UnicodeString __fastcall S3LibVersion();
 UnicodeString __fastcall S3LibDefaultHostName();
 UnicodeString __fastcall S3LibDefaultRegion();
+bool IsAmazonS3SessionData(TSessionData * Data);
 TStrings * GetS3Profiles();
-UnicodeString S3EnvUserName(const UnicodeString & Profile, UnicodeString * Source = NULL);
-UnicodeString S3EnvPassword(const UnicodeString & Profile, UnicodeString * Source = NULL);
-UnicodeString S3EnvSessionToken(const UnicodeString & Profile, UnicodeString * Source = NULL);
+UnicodeString S3EnvUserName(const UnicodeString & Profile, UnicodeString * Source = NULL, bool OnlyCached = false);
+UnicodeString S3EnvPassword(const UnicodeString & Profile, UnicodeString * Source = NULL, bool OnlyCached = false);
+UnicodeString S3EnvSessionToken(const UnicodeString & Profile, UnicodeString * Source = NULL, bool OnlyCached = false);
+UnicodeString S3EnvRoleArn(const UnicodeString & Profile, UnicodeString * Source = NULL, bool OnlyCached = false);
 //------------------------------------------------------------------------------
 #endif

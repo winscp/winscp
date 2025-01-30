@@ -99,7 +99,7 @@ private:
   UnicodeString FIniFileStorageName;
   UnicodeString FVirtualIniFileStorageName;
   std::unique_ptr<TStrings> FOptionsStorage;
-  int FProgramIniPathWrittable;
+  int FProgramIniPathWritable;
   int FTunnelLocalPortNumberLow;
   int FTunnelLocalPortNumberHigh;
   int FCacheDirectoryChangesMaxSize;
@@ -234,6 +234,9 @@ protected:
   THierarchicalStorage * OpenDirectoryStatisticsCache(bool CanCreate);
   UnicodeString __fastcall GetDirectoryStatisticsCacheKey(
     const UnicodeString & SessionKey, const UnicodeString & Path, const TCopyParamType & CopyParam);
+  void SelectSessionsToImportIfAny(
+    TStoredSessionList * ImportSessionList, TStoredSessionList * Sessions,
+    UnicodeString & Error, const UnicodeString & NoSessionsError);
 
   virtual bool __fastcall GetConfirmOverwriting();
   virtual void __fastcall SetConfirmOverwriting(bool value);
@@ -333,6 +336,7 @@ public:
   TStoredSessionList * __fastcall SelectKnownHostsSessionsForImport(
     TStrings * Lines, TStoredSessionList * Sessions, UnicodeString & Error);
   TStoredSessionList * SelectOpensshSessionsForImport(TStoredSessionList * Sessions, UnicodeString & Error);
+  TStoredSessionList * SelectSessionsForImport(TStoredSessionList * Sessions, const UnicodeString & FileName, UnicodeString & Error);
   UnicodeString GetPuttySessionsKey(const UnicodeString & RootKey);
   void RefreshPuttySshHostCAList();
 

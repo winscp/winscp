@@ -34,7 +34,7 @@ const wchar_t * ProxyMethodNames = L"None;SOCKS4;SOCKS5;HTTP;Telnet;Cmd";
 TIntMapping ProxyMethodMapping = CreateIntMappingFromEnumNames(LowerCase(ProxyMethodNames));
 const wchar_t * DefaultName = L"Default Settings";
 const UnicodeString CipherNames[CIPHER_COUNT] = {L"WARN", L"3des", L"blowfish", L"aes", L"des", L"arcfour", L"chacha20", "aesgcm"};
-const UnicodeString KexNames[KEX_COUNT] = {L"WARN", L"dh-group1-sha1", L"dh-group14-sha1", L"dh-group15-sha512", L"dh-group16-sha512", L"dh-group17-sha512", L"dh-group18-sha512", L"dh-gex-sha1", L"rsa", L"ecdh", L"ntru-curve25519"};
+const UnicodeString KexNames[KEX_COUNT] = {L"WARN", L"dh-group1-sha1", L"dh-group14-sha1", L"dh-group15-sha512", L"dh-group16-sha512", L"dh-group17-sha512", L"dh-group18-sha512", L"dh-gex-sha1", L"rsa", L"ecdh", L"ntru-curve25519", L"mlkem-curve25519", L"mlkem-nist"};
 const UnicodeString HostKeyNames[HOSTKEY_COUNT] = {L"WARN", L"rsa", L"dsa", L"ecdsa", L"ed25519", L"ed448"};
 const UnicodeString GssLibNames[GSSLIB_COUNT] = {L"gssapi32", L"sspi", L"custom"};
 // Update also order in SshCipherList()
@@ -42,7 +42,7 @@ const TCipher DefaultCipherList[CIPHER_COUNT] =
   { cipAES, cipChaCha20, cipAESGCM, cip3DES, cipWarn, cipDES, cipBlowfish, cipArcfour };
 // Update also order in SshKexList()
 const TKex DefaultKexList[KEX_COUNT] =
-  { kexNTRUHybrid, kexECDH, kexDHGEx, kexDHGroup18, kexDHGroup17, kexDHGroup16, kexDHGroup15, kexDHGroup14, kexRSA, kexWarn, kexDHGroup1 };
+  { kexNTRUHybrid, kexMLKEM25519Hybrid, kexMLKEMNISTHybrid, kexECDH, kexDHGEx, kexDHGroup18, kexDHGroup17, kexDHGroup16, kexDHGroup15, kexDHGroup14, kexRSA, kexWarn, kexDHGroup1 };
 const THostKey DefaultHostKeyList[HOSTKEY_COUNT] =
   { hkED448, hkED25519, hkECDSA, hkRSA, hkDSA, hkWarn };
 const TGssLib DefaultGssLibList[GSSLIB_COUNT] =
@@ -294,6 +294,8 @@ void __fastcall TSessionData::DefaultSettings()
   // S3
   S3DefaultRegion = EmptyStr;
   S3SessionToken = EmptyStr;
+  S3RoleArn = EmptyStr;
+  S3RoleSessionName = EmptyStr;
   S3Profile = EmptyStr;
   S3UrlStyle = s3usVirtualHost;
   S3MaxKeys = asAuto;
@@ -303,9 +305,9 @@ void __fastcall TSessionData::DefaultSettings()
   // SFTP
   SftpServer = L"";
   SFTPDownloadQueue = 32;
-  SFTPUploadQueue = 32;
+  SFTPUploadQueue = 64;
   SFTPListingQueue = 2;
-  SFTPMaxVersion = ::SFTPMaxVersion;
+  SFTPMaxVersion = SFTPMaxVersionAuto;
   SFTPMaxPacketSize = 0;
   SFTPRealPath = asAuto;
   UsePosixRename = false;
@@ -369,7 +371,7 @@ void __fastcall TSessionData::Default()
   // add also to TSessionLog::AddStartupInfo()
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::NonPersistant()
+void __fastcall TSessionData::NonPersistent()
 {
   UpdateDirectories = false;
   PreserveDirectoryChanges = false;
@@ -463,6 +465,8 @@ void __fastcall TSessionData::NonPersistant()
   \
   PROPERTY(S3DefaultRegion); \
   PROPERTY(S3SessionToken); \
+  PROPERTY(S3RoleArn); \
+  PROPERTY(S3RoleSessionName); \
   PROPERTY(S3Profile); \
   PROPERTY(S3UrlStyle); \
   PROPERTY(S3MaxKeys); \
@@ -813,6 +817,8 @@ void __fastcall TSessionData::DoLoad(THierarchicalStorage * Storage, bool PuttyI
 
   S3DefaultRegion = Storage->ReadString(L"S3DefaultRegion", S3DefaultRegion);
   S3SessionToken = Storage->ReadString(L"S3SessionToken", S3SessionToken);
+  S3RoleArn = Storage->ReadString(L"S3RoleArn", S3RoleArn);
+  S3RoleSessionName = Storage->ReadString(L"S3RoleSessionName", S3RoleSessionName);
   S3Profile = Storage->ReadString(L"S3Profile", S3Profile);
   S3UrlStyle = (TS3UrlStyle)Storage->ReadInteger(L"S3UrlStyle", S3UrlStyle);
   S3MaxKeys = Storage->ReadEnum(L"S3MaxKeys", S3MaxKeys, AutoSwitchMapping);
@@ -1143,6 +1149,8 @@ void __fastcall TSessionData::DoSave(THierarchicalStorage * Storage,
     WRITE_DATA(Integer, InternalEditorEncoding);
     WRITE_DATA(String, S3DefaultRegion);
     WRITE_DATA(String, S3SessionToken);
+    WRITE_DATA(String, S3RoleArn);
+    WRITE_DATA(String, S3RoleSessionName);
     WRITE_DATA(String, S3Profile);
     WRITE_DATA(Integer, S3UrlStyle);
     WRITE_DATA(Integer, S3MaxKeys);
@@ -2064,7 +2072,7 @@ bool __fastcall TSessionData::IsSensitiveOption(const UnicodeString & Option, co
   }
   else if (SameText(Option, PRIVATEKEY_SWITCH))
   {
-    Filename * AFilename = filename_from_str(UTF8String(Value).c_str());
+    Filename * AFilename = filename_from_utf8(UTF8String(Value).c_str());
     Result = (in_memory_key_data(AFilename) != NULL);
     filename_free(AFilename);
   }
@@ -2374,7 +2382,8 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
             (IsDomainOrSubdomain(HostName, S3HostName) ||
              IsDomainOrSubdomain(HostName, L"digitaloceanspaces.com") ||
              IsDomainOrSubdomain(HostName, S3GoogleCloudHostName) ||
-             IsDomainOrSubdomain(HostName, L"r2.cloudflarestorage.com")))
+             IsDomainOrSubdomain(HostName, L"r2.cloudflarestorage.com") ||
+             (IsDomainOrSubdomain(HostName, L"oraclecloud.com") && ContainsText(HostName, L".compat.objectstorage."))))
         {
           AFSProtocol = fsS3;
         }
@@ -4569,6 +4578,16 @@ void __fastcall TSessionData::SetS3SessionToken(UnicodeString value)
   SET_SESSION_PROPERTY(S3SessionToken);
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::SetS3RoleArn(UnicodeString value)
+{
+  SET_SESSION_PROPERTY(S3RoleArn);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetS3RoleSessionName(UnicodeString value)
+{
+  SET_SESSION_PROPERTY(S3RoleSessionName);
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetS3Profile(UnicodeString value)
 {
   SET_SESSION_PROPERTY(S3Profile);
@@ -5198,9 +5217,10 @@ void __fastcall TStoredSessionList::SelectAll(bool Select)
     Sessions[Index]->Selected = Select;
 }
 //---------------------------------------------------------------------
-void __fastcall TStoredSessionList::Import(TStoredSessionList * From,
+bool TStoredSessionList::Import(TStoredSessionList * From,
   bool OnlySelected, TList * Imported)
 {
+  bool Result = false;
   for (int Index = 0; Index < From->Count; Index++)
   {
     if (!OnlySelected || From->Sessions[Index]->Selected)
@@ -5210,6 +5230,7 @@ void __fastcall TStoredSessionList::Import(TStoredSessionList * From,
       Session->Modified = true;
       Session->MakeUniqueIn(this);
       Add(Session);
+      Result = true;
       if (Imported != NULL)
       {
         Imported->Add(Session);
@@ -5218,6 +5239,7 @@ void __fastcall TStoredSessionList::Import(TStoredSessionList * From,
   }
   // only modified, explicit
   Save(false, true);
+  return Result;
 }
 //---------------------------------------------------------------------
 void __fastcall TStoredSessionList::SelectSessionsToImport
@@ -5451,12 +5473,10 @@ void __fastcall TStoredSessionList::SetDefaultSettings(TSessionData * value)
 //---------------------------------------------------------------------------
 bool __fastcall TStoredSessionList::OpenHostKeysSubKey(THierarchicalStorage * Storage, bool CanCreate)
 {
-  return
-    Storage->OpenRootKey(CanCreate) &&
-    Storage->OpenSubKey(Configuration->SshHostKeysSubKey, CanCreate);
+  return Storage->OpenSubKey(Configuration->SshHostKeysSubKey, CanCreate);
 }
 //---------------------------------------------------------------------------
-THierarchicalStorage * __fastcall TStoredSessionList::CreateHostKeysStorageForWritting()
+THierarchicalStorage * __fastcall TStoredSessionList::CreateHostKeysStorageForWriting()
 {
   bool SessionList = false;
   std::unique_ptr<THierarchicalStorage> Storage(Configuration->CreateScpStorage(SessionList));
@@ -5465,7 +5485,7 @@ THierarchicalStorage * __fastcall TStoredSessionList::CreateHostKeysStorageForWr
   return Storage.release();
 }
 //---------------------------------------------------------------------------
-int __fastcall TStoredSessionList::ImportHostKeys(
+int TStoredSessionList::ImportHostKeys(
   THierarchicalStorage * SourceStorage, THierarchicalStorage * TargetStorage, TStoredSessionList * Sessions, bool OnlySelected)
 {
   int Result = 0;
@@ -5497,18 +5517,25 @@ int __fastcall TStoredSessionList::ImportHostKeys(
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TStoredSessionList::ImportHostKeys(
+void TStoredSessionList::ImportHostKeys(
+  THierarchicalStorage * SourceStorage, TStoredSessionList * Sessions, bool OnlySelected)
+{
+  std::unique_ptr<THierarchicalStorage> TargetStorage(CreateHostKeysStorageForWriting());
+
+  ImportHostKeys(SourceStorage, TargetStorage.get(), Sessions, OnlySelected);
+}
+//---------------------------------------------------------------------------
+void TStoredSessionList::ImportHostKeys(
   const UnicodeString & SourceKey, TStoredSessionList * Sessions, bool OnlySelected)
 {
-  std::unique_ptr<THierarchicalStorage> TargetStorage(CreateHostKeysStorageForWritting());
   std::unique_ptr<THierarchicalStorage> SourceStorage(new TRegistryStorage(SourceKey));
 
-  ImportHostKeys(SourceStorage.get(), TargetStorage.get(), Sessions, OnlySelected);
+  ImportHostKeys(SourceStorage.get(), Sessions, OnlySelected);
 }
 //---------------------------------------------------------------------------
 void __fastcall TStoredSessionList::ImportSelectedKnownHosts(TStoredSessionList * Sessions)
 {
-  std::unique_ptr<THierarchicalStorage> Storage(CreateHostKeysStorageForWritting());
+  std::unique_ptr<THierarchicalStorage> Storage(CreateHostKeysStorageForWriting());
   if (OpenHostKeysSubKey(Storage.get(), true))
   {
     for (int Index = 0; Index < Sessions->Count; Index++)

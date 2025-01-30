@@ -23,6 +23,7 @@
 #include <PasTools.hpp>
 #include <System.Actions.hpp>
 #include <GUITools.h>
+#include <System.ImageList.hpp>
 //----------------------------------------------------------------------------
 class TLoginDialog : public TForm
 {
@@ -68,7 +69,6 @@ __published:
   TMenuItem *N3;
   TMenuItem *ImportConfiguration1;
   TMenuItem *ExportConfiguration1;
-  TStaticText *SitesIncrementalSearchLabel;
   TAction *PreferencesAction;
   TMenuItem *N4;
   TMenuItem *Preferences1;
@@ -181,26 +181,31 @@ __published:
   TAction *SearchSiteNameStartOnlyAction;
   TAction *SearchSiteNameAction;
   TAction *SearchSiteAction;
-  TMenuItem *Options1;
-  TMenuItem *IncrementalSearch1;
+  TMenuItem *Search1;
+  TMenuItem *SearchOptions1;
   TMenuItem *SearchSiteNameStartOnly1;
   TMenuItem *SearchSiteName1;
   TMenuItem *SearchSite1;
-  TMenuItem *Options2;
-  TMenuItem *IncrementalSearch2;
-  TMenuItem *AllMajorSiteFields1;
-  TMenuItem *AnyPartofSiteName1;
-  TMenuItem *BeginningofSiteNameOnly1;
-  TMenuItem *Options3;
-  TMenuItem *IncrementalSearch3;
+  TAction *SearchSiteStartAction;
+  TMenuItem *FindSite1;
+  TMenuItem *Search3;
+  TMenuItem *FindSite3;
+  TMenuItem *SearchOptions3;
   TMenuItem *AllMajorSiteFields2;
   TMenuItem *AnyPartofSiteName2;
   TMenuItem *BeginningofSiteNameOnly2;
-  TMenuItem *Options4;
-  TMenuItem *IncrementalSearch4;
+  TMenuItem *Search4;
+  TMenuItem *FindSite4;
+  TMenuItem *SearchOptions4;
   TMenuItem *AllMajorSiteFields3;
   TMenuItem *AnyPartofSiteName3;
   TMenuItem *BeginningofSiteNameOnly3;
+  TMenuItem *Search2;
+  TMenuItem *FindSite2;
+  TMenuItem *SearchOptions2;
+  TMenuItem *AllMajorSiteFields1;
+  TMenuItem *AnyPartofSiteName1;
+  TMenuItem *BeginningofSiteNameOnly1;
   TPngImageList *SessionImageList144;
   TPngImageList *SessionImageList192;
   TPngImageList *ActionImageList144;
@@ -213,6 +218,13 @@ __published:
   TCheckBox *S3CredentialsEnvCheck3;
   TMenuItem *OpeninPuTTY4;
   TComboBox *S3ProfileCombo;
+  TPanel *SitesIncrementalSearchPanel;
+  TStaticText *SitesIncrementalSearchBorderLabel;
+  TStaticText *SitesIncrementalSearchLabel;
+  TPopupMenu *SitesIncrementalSearchPopupMenu;
+  TMenuItem *MenuItem36;
+  TMenuItem *MenuItem37;
+  TMenuItem *MenuItem38;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionTreeDblClick(TObject *Sender);
@@ -294,6 +306,9 @@ __published:
   void __fastcall EncryptionComboChange(TObject *Sender);
   void __fastcall S3ProfileComboChange(TObject *Sender);
   void __fastcall ShowAgainCheckClick(TObject *Sender);
+  void __fastcall SearchSiteStartActionExecute(TObject *Sender);
+  void __fastcall SitesIncrementalSearchPanelContextPopup(TObject *Sender, TPoint &MousePos, bool &Handled);
+  void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
 
 private:
   int NoUpdate;
@@ -307,9 +322,8 @@ private:
   int FDefaultPort;
   TList * FDataList;
   bool FUpdatePortWithProtocol;
-  UnicodeString FSitesIncrementalSearch;
+  TIncrementalSearchState FIncrementalSearchState;
   int FIncrementalSearching;
-  bool FSitesIncrementalSearchHaveNext;
   int FBasicGroupBaseHeight;
   int FNoteGroupOffset;
   bool FEditing;
@@ -322,12 +336,10 @@ private:
   TIncrementalSearch FSiteSearch;
   TForm * FLinkedForm;
   TPoint FPrevPos;
-  int FSiteButtonsPadding;
   UnicodeString FUserNameLabel;
   UnicodeString FPasswordLabel;
   int FFixedSessionImages;
   bool FRestoring;
-  bool FWasEverS3;
 
   void __fastcall LoadSession(TSessionData * SessionData);
   void __fastcall LoadContents();
@@ -410,7 +422,6 @@ private:
   TModalResult __fastcall DefaultResult();
   int AddLoginButtonImage(int Index, bool Enabled);
   void __fastcall WMWindowPosChanged(TWMWindowPosChanged & Message);
-  void __fastcall CMDpiChanged(TMessage & Message);
   void __fastcall GenerateImages();
   void __fastcall CMVisibleChanged(TMessage & Message);
   void UpdateS3Credentials();
@@ -433,7 +444,7 @@ protected:
   void __fastcall InitControls();
   void __fastcall EditSession();
   void __fastcall Login();
-  DYNAMIC void __fastcall ChangeScale(int M, int D);
+  void SetSiteSearch(TIncrementalSearch SiteSearch);
   __property TSessionData * SelectedSession  = { read=GetSelectedSession };
 
   INTERFACE_HOOK;

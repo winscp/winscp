@@ -74,7 +74,6 @@ __fastcall TFullSynchronizeDialog::TFullSynchronizeDialog(TComponent* Owner)
   FPresetsMenu = new TPopupMenu(this);
   FSynchronizeBySizeCaption = SynchronizeBySizeCheck->Caption;
   HotTrackLabel(CopyParamLabel);
-  CopyParamListButton(TransferSettingsButton);
   LoadDialogImage(Image, L"Synchronize directories");
 }
 //---------------------------------------------------------------------------
@@ -344,14 +343,7 @@ void __fastcall TFullSynchronizeDialog::CopyParamListPopup(TRect R, int Addition
 void __fastcall TFullSynchronizeDialog::TransferSettingsButtonClick(
   TObject * /*Sender*/)
 {
-  if (FLAGCLEAR(FOptions, fsoDoNotUsePresets) && !SupportsSplitButton())
-  {
-    CopyParamListPopup(CalculatePopupRect(TransferSettingsButton), 0);
-  }
-  else
-  {
-    CopyParamGroupClick(NULL);
-  }
+  CopyParamGroupClick(NULL);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::CopyParamClick(TObject * Sender)
@@ -482,8 +474,8 @@ void __fastcall TFullSynchronizeDialog::OkButtonClick(TObject *)
     else
     {
       Beep();
+      ModalResult = mrNone;
     }
-    Abort();
   }
 }
 //---------------------------------------------------------------------------

@@ -147,7 +147,6 @@ type
     property ShowHint;
     property TabOrder;
     property TabStop default True;
-    property ViewStyle;
     property Visible;
     property OnChange;
     property OnChanging;

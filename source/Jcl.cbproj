@@ -1,176 +1,184 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-	<PropertyGroup>
-		<ProjectGuid>{BABF1FFA-834C-44BA-8CE2-BA19AAC5C459}</ProjectGuid>
-		<ProjectVersion>15.4</ProjectVersion>
-		<FrameworkType>None</FrameworkType>
-		<MainSource>Jcl.cpp</MainSource>
-		<Base>True</Base>
-		<Config Condition="'$(Config)'==''">Release</Config>
-		<Platform Condition="'$(Platform)'==''">Win32</Platform>
-		<TargetedPlatforms>1</TargetedPlatforms>
-		<AppType>Package</AppType>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
-		<Base_Win32>true</Base_Win32>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
-		<Base_Win64>true</Base_Win64>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
-		<Cfg_1>true</Cfg_1>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
-		<Cfg_1_Win32>true</Cfg_1_Win32>
-		<CfgParent>Cfg_1</CfgParent>
-		<Cfg_1>true</Cfg_1>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
-		<Cfg_2>true</Cfg_2>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Base)'!=''">
-		<_TCHARMapping>char</_TCHARMapping>
-		<BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
-		<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-		<BCC_wpar>false</BCC_wpar>
-		<BPILibOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</BPILibOutputDir>
-		<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
-		<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
-		<DCC_UnitSearchPath>packages\jcl;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
-		<Defines>WINSCP;$(Defines)</Defines>
-		<DynamicRTL>true</DynamicRTL>
-		<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
-		<ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
-		<ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
-		<ILINK_LibraryPath>packages\jcl\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-		<IncludePath>packages\jcl\;$(IncludePath)</IncludePath>
-		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
-		<Multithreaded>true</Multithreaded>
-		<ProjectType>CppPackage</ProjectType>
-		<RuntimeOnlyPackage>true</RuntimeOnlyPackage>
-		<SanitizedProjectName>Jcl</SanitizedProjectName>
-		<TLIB_PageSize>64</TLIB_PageSize>
-		<UsePackages>true</UsePackages>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Base_Win32)'!=''">
-		<DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
-		<PackageImports>vcldbx;vclib;inetdbbde;tbxp;ibxpress;vclimg;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;bcbsmp;websnap;vclribbon;My;vcl;DriveDir;CloudService;CodeSiteExpressPkg;dsnapcon;vclx;webdsnap;tb2k;bdertl;DragDropP;bcbie;adortl;$(PackageImports)</PackageImports>
-		<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-		<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Base_Win64)'!=''">
-		<PackageImports>vcldbx;vclib;inetdbbde;tbxp;ibxpress;vclimg;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;bcbsmp;websnap;vclribbon;My;vcl;DriveDir;CloudService;CodeSiteExpressPkg;dsnapcon;vclx;webdsnap;tb2k;bdertl;DragDropP;bcbie;adortl;$(PackageImports)</PackageImports>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_1)'!=''">
-		<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
-		<BCC_DisableOptimizations>true</BCC_DisableOptimizations>
-		<BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
-		<BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
-		<BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
-		<BCC_StackFrames>true</BCC_StackFrames>
-		<BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
-		<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
-		<DCC_Define>DEBUG</DCC_Define>
-		<DCC_Optimize>false</DCC_Optimize>
-		<Defines>_DEBUG;$(Defines)</Defines>
-		<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
-		<TASM_Debugging>Full</TASM_Debugging>
-		<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_2)'!=''">
-		<DCC_AssertionsAtRuntime>false</DCC_AssertionsAtRuntime>
-		<Defines>NDEBUG;$(Defines)</Defines>
-		<TASM_Debugging>None</TASM_Debugging>
-	</PropertyGroup>
-	<ItemGroup>
-		<CppCompile Include="Jcl.cpp">
-			<BuildOrder>0</BuildOrder>
-		</CppCompile>
-		<DelphiCompile Include="packages\jcl\JclBase.pas">
-			<BuildOrder>3</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\jcl\JclDebug.pas">
-			<BuildOrder>3</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\jcl\JclFileUtils.pas">
-			<BuildOrder>4</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\jcl\JclHookExcept.pas">
-			<BuildOrder>5</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\jcl\JclPeImage.pas">
-			<BuildOrder>6</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\jcl\JclResources.pas">
-			<BuildOrder>7</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\jcl\JclStreams.pas">
-			<BuildOrder>8</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\jcl\JclStrings.pas">
-			<BuildOrder>9</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\jcl\JclSynch.pas">
-			<BuildOrder>10</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\jcl\JclSysInfo.pas">
-			<BuildOrder>11</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\jcl\JclSysUtils.pas">
-			<BuildOrder>12</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\jcl\JclWin32.pas">
-			<BuildOrder>13</BuildOrder>
-		</DelphiCompile>
-		<PackageImport Include="rtl.bpi">
-			<BuildOrder>1</BuildOrder>
-		</PackageImport>
-		<BuildConfiguration Include="Base">
-			<Key>Base</Key>
-		</BuildConfiguration>
-		<BuildConfiguration Include="Debug">
-			<Key>Cfg_1</Key>
-			<CfgParent>Base</CfgParent>
-		</BuildConfiguration>
-		<BuildConfiguration Include="Release">
-			<Key>Cfg_2</Key>
-			<CfgParent>Base</CfgParent>
-		</BuildConfiguration>
-	</ItemGroup>
-	<ProjectExtensions>
-		<Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
-		<Borland.ProjectType>CppPackage</Borland.ProjectType>
-		<BorlandProject>
-			<CPlusPlusBuilder.Personality>
-				<Source>
-					<Source Name="MainSource">Jcl.cpp</Source>
-				</Source>
-				<ProjectProperties>
-					<ProjectProperties Name="AutoShowDeps">False</ProjectProperties>
-					<ProjectProperties Name="ManagePaths">True</ProjectProperties>
-					<ProjectProperties Name="VerifyPackages">True</ProjectProperties>
-					<ProjectProperties Name="IndexFiles">False</ProjectProperties>
-				</ProjectProperties>
-			</CPlusPlusBuilder.Personality>
-			<Deployment/>
-			<Platforms>
-				<Platform value="Win32">True</Platform>
-				<Platform value="Win64">False</Platform>
-			</Platforms>
-		</BorlandProject>
-		<ProjectFileVersion>12</ProjectFileVersion>
-	</ProjectExtensions>
-	<Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
-	<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
+    <PropertyGroup>
+        <ProjectGuid>{BABF1FFA-834C-44BA-8CE2-BA19AAC5C459}</ProjectGuid>
+        <ProjectVersion>19.5</ProjectVersion>
+        <FrameworkType>None</FrameworkType>
+        <MainSource>Jcl.cpp</MainSource>
+        <Base>True</Base>
+        <Config Condition="'$(Config)'==''">Release</Config>
+        <Platform Condition="'$(Platform)'==''">Win32</Platform>
+        <TargetedPlatforms>1</TargetedPlatforms>
+        <AppType>Package</AppType>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
+        <Base_Win32>true</Base_Win32>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
+        <Base_Win64>true</Base_Win64>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
+        <Cfg_1>true</Cfg_1>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
+        <Cfg_1_Win32>true</Cfg_1_Win32>
+        <CfgParent>Cfg_1</CfgParent>
+        <Cfg_1>true</Cfg_1>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
+        <Cfg_2>true</Cfg_2>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base)'!=''">
+        <_TCHARMapping>char</_TCHARMapping>
+        <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
+        <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
+        <BCC_wpar>false</BCC_wpar>
+        <BPILibOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</BPILibOutputDir>
+        <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
+        <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
+        <DCC_UnitSearchPath>packages\jcl;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <Defines>WINSCP;$(Defines)</Defines>
+        <DynamicRTL>true</DynamicRTL>
+        <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
+        <ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
+        <ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
+        <ILINK_LibraryPath>packages\jcl\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+        <IncludePath>packages\jcl\;$(IncludePath)</IncludePath>
+        <IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
+        <Multithreaded>true</Multithreaded>
+        <ProjectType>CppPackage</ProjectType>
+        <RuntimeOnlyPackage>true</RuntimeOnlyPackage>
+        <SanitizedProjectName>Jcl</SanitizedProjectName>
+        <TLIB_PageSize>64</TLIB_PageSize>
+        <UsePackages>true</UsePackages>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Win32)'!=''">
+        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
+        <PackageImports>vcldbx;vclib;inetdbbde;tbxp;ibxpress;vclimg;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;bcbsmp;websnap;vclribbon;My;vcl;DriveDir;CloudService;CodeSiteExpressPkg;dsnapcon;vclx;webdsnap;tb2k;bdertl;DragDropP;bcbie;adortl;$(PackageImports)</PackageImports>
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+        <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Win64)'!=''">
+        <PackageImports>vcldbx;vclib;inetdbbde;tbxp;ibxpress;vclimg;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;bcbsmp;websnap;vclribbon;My;vcl;DriveDir;CloudService;CodeSiteExpressPkg;dsnapcon;vclx;webdsnap;tb2k;bdertl;DragDropP;bcbie;adortl;$(PackageImports)</PackageImports>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1)'!=''">
+        <BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
+        <BCC_DisableOptimizations>true</BCC_DisableOptimizations>
+        <BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
+        <BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
+        <BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
+        <BCC_StackFrames>true</BCC_StackFrames>
+        <BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
+        <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+        <DCC_Define>DEBUG</DCC_Define>
+        <DCC_Optimize>false</DCC_Optimize>
+        <Defines>_DEBUG;$(Defines)</Defines>
+        <ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
+        <TASM_Debugging>Full</TASM_Debugging>
+        <TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2)'!=''">
+        <DCC_AssertionsAtRuntime>false</DCC_AssertionsAtRuntime>
+        <Defines>NDEBUG;$(Defines)</Defines>
+        <TASM_Debugging>None</TASM_Debugging>
+    </PropertyGroup>
+    <ItemGroup>
+        <CppCompile Include="Jcl.cpp">
+            <BuildOrder>0</BuildOrder>
+        </CppCompile>
+        <DelphiCompile Include="packages\jcl\JclAnsiStrings.pas">
+            <BuildOrder>14</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\jcl\JclBase.pas">
+            <BuildOrder>3</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\jcl\JclDebug.pas">
+            <BuildOrder>3</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\jcl\JclFileUtils.pas">
+            <BuildOrder>4</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\jcl\JclHookExcept.pas">
+            <BuildOrder>5</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\jcl\JclPeImage.pas">
+            <BuildOrder>6</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\jcl\JclResources.pas">
+            <BuildOrder>7</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\jcl\JclStreams.pas">
+            <BuildOrder>8</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\jcl\JclStrings.pas">
+            <BuildOrder>9</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\jcl\JclSynch.pas">
+            <BuildOrder>10</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\jcl\JclSysInfo.pas">
+            <BuildOrder>11</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\jcl\JclSysUtils.pas">
+            <BuildOrder>12</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\jcl\JclTD32.pas">
+            <BuildOrder>15</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\jcl\JclUnitVersioning.pas">
+            <BuildOrder>16</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\jcl\JclWin32.pas">
+            <BuildOrder>13</BuildOrder>
+        </DelphiCompile>
+        <PackageImport Include="rtl.bpi">
+            <BuildOrder>1</BuildOrder>
+        </PackageImport>
+        <BuildConfiguration Include="Base">
+            <Key>Base</Key>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Debug">
+            <Key>Cfg_1</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Release">
+            <Key>Cfg_2</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
+        <Borland.ProjectType>CppPackage</Borland.ProjectType>
+        <BorlandProject>
+            <CPlusPlusBuilder.Personality>
+                <Source>
+                    <Source Name="MainSource">Jcl.cpp</Source>
+                </Source>
+                <ProjectProperties>
+                    <ProjectProperties Name="AutoShowDeps">False</ProjectProperties>
+                    <ProjectProperties Name="ManagePaths">True</ProjectProperties>
+                    <ProjectProperties Name="VerifyPackages">True</ProjectProperties>
+                    <ProjectProperties Name="IndexFiles">False</ProjectProperties>
+                </ProjectProperties>
+            </CPlusPlusBuilder.Personality>
+            <Platforms>
+                <Platform value="Win32">True</Platform>
+                <Platform value="Win64">False</Platform>
+            </Platforms>
+        </BorlandProject>
+        <ProjectFileVersion>12</ProjectFileVersion>
+    </ProjectExtensions>
+    <Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
+    <Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
 </Project>

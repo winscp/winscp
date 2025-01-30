@@ -192,7 +192,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
                      ssh_hash_alg(s->exhash)->text_name);
         sfree(desc);
 
-        s->ppl.bpp->pls->kctx = SSH2_PKTCTX_ECDHKEX;
+        s->ppl.bpp->pls->kctx = s->kex_alg->ecdh_vt->packet_naming_ctx;
 
         s->ecdh_key = ecdh_key_new(s->kex_alg, false);
 
@@ -1064,7 +1064,7 @@ void ssh2kex_coroutine(struct ssh2_transport_state *s, bool *aborted)
             ppl_logevent("%s", fingerprint);
             sfree(fingerprint);
 
-            store_host_key(s->savedhost, s->savedport,
+            store_host_key(s->ppl.seat, s->savedhost, s->savedport,
                            ssh_key_cache_id(s->hkey), s->keystr);
             /*
              * Don't forget to store the new key as the one we'll be

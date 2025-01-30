@@ -23,8 +23,8 @@ CFLAG= \
     -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_RC5 -DOPENSSL_NO_MDC2 -DOPENSSL_NO_WHIRLPOOL \
     -DOPENSSL_NO_SEED -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_ENGINE -DOPENSSL_NO_ZLIB \
     -DOPENSSL_NO_QUIC -DOPENSSL_NO_BROTLI -DOPENSSL_NO_COMP -DOPENSSL_NO_COMP_ALG \
-    -DOPENSSL_NO_TFO -DOPENSSL_NO_ASYNC \
-    -DNO_INTERLOCKEDOR64 \
+    -DOPENSSL_NO_TFO \
+    -DNO_INTERLOCKEDOR64 -DOPENSSL_NO_QLOG \
     -DWINSCP
 
 # Copied from generated OpenSSL "makefile"
@@ -47,7 +47,7 @@ INCO_D=openssl
 CP=copy
 RM=del
 MKDIR=-mkdir
-MKLIB=tlib /P128 /C
+MKLIB=tlib /C
 
 ASM=$(BUILDTOOLS)\tools\nasm -f obj -d__omf__
 
@@ -272,7 +272,7 @@ CRYPTOOBJ= \
     $(OBJ_D)\ct_sct.obj $(OBJ_D)\ct_log.obj $(OBJ_D)\ct_policy.obj $(OBJ_D)\ct_sct_ctx.obj \
     $(OBJ_D)\ct_b64.obj $(OBJ_D)\ct_vfy.obj \
     $(OBJ_D)\async.obj $(OBJ_D)\async_err.obj $(OBJ_D)\async_wait.obj \
-    $(OBJ_D)\async_null.obj \
+    $(OBJ_D)\async_win.obj \
     $(OBJ_D)\ecdh_kdf.obj \
     $(OBJ_D)\store_lib.obj $(OBJ_D)\store_init.obj $(OBJ_D)\store_register.obj $(OBJ_D)\store_err.obj \
     $(OBJ_D)\store_meth.obj $(OBJ_D)\store_result.obj \
@@ -2273,8 +2273,8 @@ $(OBJ_D)\async_err.obj: $(SRC_D)\crypto\async\async_err.c
 $(OBJ_D)\async_wait.obj: $(SRC_D)\crypto\async\async_wait.c
     $(CC) -o$(OBJ_D)\async_wait.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\async\async_wait.c
 
-$(OBJ_D)\async_null.obj: $(SRC_D)\crypto\async\arch\async_null.c
-    $(CC) -o$(OBJ_D)\async_null.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\async\arch\async_null.c
+$(OBJ_D)\async_win.obj: $(SRC_D)\crypto\async\arch\async_win.c
+    $(CC) -o$(OBJ_D)\async_win.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\async\arch\async_win.c
 
 $(OBJ_D)\ecdh_kdf.obj: $(SRC_D)\crypto\ec\ecdh_kdf.c
     $(CC) -o$(OBJ_D)\ecdh_kdf.obj  $(LIB_CFLAGS) -c $(SRC_D)\crypto\ec\ecdh_kdf.c
@@ -2935,14 +2935,14 @@ $(OBJ_D)\sha512_586.obj: $(SRC_D)\crypto\sha\asm\sha512_586.asm
 
 $(O_SSL): $(SSLOBJ)
     -if exist $(O_SSL) $(RM) $(O_SSL)
-    $(MKLIB) $(O_SSL) @&&!
+    $(MKLIB) $(O_SSL) /P256 @&&!
 +$(**: = &^
 +)
 !
 
 $(O_CRYPTO): $(CRYPTOOBJ)
     -if exist $(O_CRYPTO) $(RM) $(O_CRYPTO)
-    $(MKLIB) $(O_CRYPTO) /P256 @&&!
+    $(MKLIB) $(O_CRYPTO) /P2048 @&&!
 +$(**: = &^
 +)
 !

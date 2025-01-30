@@ -100,6 +100,7 @@ UnicodeString __fastcall EscapePuttyCommandParam(UnicodeString Param);
 UnicodeString __fastcall StringsToParams(TStrings * Strings);
 UnicodeString __fastcall ExpandEnvironmentVariables(const UnicodeString & Str);
 bool __fastcall SamePaths(const UnicodeString & Path1, const UnicodeString & Path2);
+UnicodeString CombinePaths(const UnicodeString & Path1, const UnicodeString & Path2);
 UnicodeString GetNormalizedPath(const UnicodeString & Path);
 UnicodeString GetCanonicalPath(const UnicodeString & Path);
 bool __fastcall IsPathToSameFile(const UnicodeString & Path1, const UnicodeString & Path2);
@@ -109,6 +110,7 @@ int __fastcall CompareNumber(__int64 Value1, __int64 Value2);
 bool ContainsTextSemiCaseSensitive(const UnicodeString & Text, const UnicodeString & SubText);
 bool __fastcall IsReservedName(UnicodeString FileName);
 UnicodeString __fastcall ApiPath(UnicodeString Path);
+bool IsWideChar(wchar_t Ch) { return (Ch >= L'\x80'); };
 UnicodeString __fastcall DisplayableStr(const RawByteString & Str);
 UnicodeString __fastcall ByteToHex(unsigned char B, bool UpperCase = true);
 UnicodeString __fastcall BytesToHex(const unsigned char * B, size_t Length, bool UpperCase = true, wchar_t Separator = L'\0');
@@ -143,11 +145,11 @@ bool __fastcall CutTokenEx(UnicodeString & Str, UnicodeString & Token,
   UnicodeString * RawToken = NULL, UnicodeString * Separator = NULL);
 void __fastcall AddToList(UnicodeString & List, const UnicodeString & Value, const UnicodeString & Delimiter);
 void AddToShellFileListCommandLine(UnicodeString & List, const UnicodeString & Value);
-bool __fastcall IsWinVista();
+bool IsWin64();
 bool __fastcall IsWin7();
 bool __fastcall IsWin8();
 bool __fastcall IsWin10();
-bool __fastcall IsWin10Build(unsigned int BuildNumber);
+bool IsWin10Build(int BuildNumber);
 bool IsWin11();
 bool __fastcall IsWine();
 void EnableUWPTestMode();
@@ -163,8 +165,7 @@ UnicodeString __fastcall SizeToStr(__int64 Size);
 LCID __fastcall GetDefaultLCID();
 UnicodeString __fastcall DefaultEncodingName();
 UnicodeString __fastcall WindowsProductName();
-bool _fastcall GetWindowsProductType(DWORD & Type);
-int __fastcall GetWindowsBuild();
+DWORD GetWindowsProductType();
 UnicodeString __fastcall WindowsVersion();
 UnicodeString __fastcall WindowsVersionLong();
 bool __fastcall IsDirectoryWriteable(const UnicodeString & Path);
@@ -183,6 +184,8 @@ int __fastcall ParseShortEngMonthName(const UnicodeString & MonthStr);
 TStringList * __fastcall CreateSortedStringList(bool CaseSensitive = false, System::Types::TDuplicates Duplicates = dupIgnore);
 bool SameIdent(const UnicodeString & Ident1, const UnicodeString & Ident2);
 UnicodeString __fastcall FindIdent(const UnicodeString & Ident, TStrings * Idents);
+UnicodeString GetTlsErrorStr(unsigned long Err);
+UnicodeString GetTlsErrorStrs();
 void __fastcall CheckCertificate(const UnicodeString & Path);
 typedef struct x509_st X509;
 typedef struct evp_pkey_st EVP_PKEY;
@@ -204,6 +207,7 @@ UnicodeString GetAncestorProcessNames();
 void NotSupported();
 void NotImplemented();
 UnicodeString GetDividerLine();
+TStrings * ProcessFeatures(TStrings * Features, const UnicodeString & FeaturesOverride);
 //---------------------------------------------------------------------------
 struct TSearchRecSmart : public TSearchRec
 {
@@ -355,9 +359,10 @@ class TValueRestorer
 public:
   __fastcall TValueRestorer(T & Target, const T & Value) :
     FTarget(Target),
-    FValue(Value),
+    FValue(Target),
     FArmed(true)
   {
+    FTarget = Value;
   }
 
   __fastcall TValueRestorer(T & Target) :
@@ -391,10 +396,9 @@ class TAutoNestingCounter : public TValueRestorer<int>
 {
 public:
   __fastcall TAutoNestingCounter(int & Target) :
-    TValueRestorer<int>(Target)
+    TValueRestorer<int>(Target, Target + 1)
   {
-    DebugAssert(Target >= 0);
-    ++Target;
+    DebugAssert(FValue >= 0);
   }
 
   __fastcall ~TAutoNestingCounter()
@@ -407,10 +411,9 @@ class TAutoFlag : public TValueRestorer<bool>
 {
 public:
   __fastcall TAutoFlag(bool & Target) :
-    TValueRestorer<bool>(Target)
+    TValueRestorer<bool>(Target, true)
   {
-    DebugAssert(!Target);
-    Target = true;
+    DebugAssert(!FValue);
   }
 
   __fastcall ~TAutoFlag()

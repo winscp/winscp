@@ -1,4 +1,5 @@
 //---------------------------------------------------------------------------
+#pragma warn -pch // WORKAROUND (see My.cpp)
 #include <vcl.h>
 #pragma hdrstop
 
@@ -123,9 +124,11 @@ void TThemeTabSheet::UpdateCaption()
 
   if (UseThemes() && (Button != ttbNone))
   {
+    ParentPageControl->Canvas->Font = ParentPageControl->Font;
     int OrigWidth = ParentPageControl->Canvas->TextWidth(ACaption);
     int TabButtonWidth = ParentPageControl->TabButtonSize();
-    while (ParentPageControl->Canvas->TextWidth(ACaption) < OrigWidth + TabButtonWidth)
+    int Padding = ScaleByTextHeight(this, 2);
+    while (ParentPageControl->Canvas->TextWidth(ACaption) < OrigWidth + Padding + TabButtonWidth)
     {
       ACaption += L" ";
     }
@@ -160,7 +163,9 @@ __fastcall TThemePageControl::TThemePageControl(TComponent * Owner) :
   FSessionTabShrink = 0;
   FOnTabButtonClick = NULL;
   FOnTabHint = NULL;
+  FTabTheme = NULL;
   FActiveTabTheme = NULL;
+  FTextHeight = -1;
 }
 //----------------------------------------------------------------------------------------------------------
 int __fastcall TThemePageControl::GetTabsHeight()
@@ -217,6 +222,11 @@ void __fastcall TThemePageControl::PaintWindow(HDC DC)
 
   int SelectedIndex = TabIndex; // optimization
 
+  std::unique_ptr<TCanvas> ACanvas(new TCanvas());
+  ACanvas->Handle = DC;
+  ACanvas->Font = Font;
+  FTextHeight = CalculateTextHeight(ACanvas.get());
+
   for (int Tab = 0; Tab < PageCount; Tab++)
   {
     if (Tab != SelectedIndex)
@@ -246,17 +256,20 @@ void __fastcall TThemePageControl::DrawThemesXpTab(HDC DC, HTHEME Theme, int Tab
   TRect Rect = TabRect(Tab);
   ItemTabRect(Tab, Rect);
   int State;
+  TTBXTheme * ATabTheme;
   if (Tab != TabIndex)
   {
     TPoint Point = ScreenToClient(Mouse->CursorPos);
     int HotIndex = IndexOfTabAt(Point.X, Point.Y);
     State = (Tab == HotIndex ? TIS_HOT : (Shadowed ? TIS_DISABLED : TIS_NORMAL));
+    ATabTheme = TabTheme;
   }
   else
   {
     State = TIS_SELECTED;
+    ATabTheme = (ActiveTabTheme != NULL) ? ActiveTabTheme : TabTheme;
   }
-  DrawThemesXpTabItem(DC, Theme, Tab, Rect, State, Shadowed);
+  DrawThemesXpTabItem(DC, Theme, Tab, Rect, State, Shadowed, ATabTheme);
 }
 //----------------------------------------------------------------------------------------------------------
 static TTBXItemInfo GetItemInfo(int State)
@@ -271,20 +284,19 @@ static TTBXItemInfo GetItemInfo(int State)
 }
 //----------------------------------------------------------------------------------------------------------
 void __fastcall TThemePageControl::DrawThemesXpTabItem(
-  HDC DC, HTHEME Theme, int Item, const TRect & Rect, int State, bool Shadowed)
+  HDC DC, HTHEME Theme, int Item, const TRect & Rect, int State, bool Shadowed, TTBXTheme * ATabTheme)
 {
   TRect PaintRect = Rect;
-  bool Selected = (State == TIS_SELECTED);
-  if (Selected)
+  if ((State == TIS_SELECTED) || (ATabTheme != NULL))
   {
     PaintRect.Bottom++;
   }
 
-  if (Selected && (ActiveTabTheme != NULL))
+  if (ATabTheme != NULL)
   {
     std::unique_ptr<TCanvas> CanvasMem(new TCanvas());
     CanvasMem->Handle = DC;
-    ActiveTabTheme->PaintFrame(CanvasMem.get(), PaintRect, GetItemInfo(State));
+    ATabTheme->PaintFrame(CanvasMem.get(), PaintRect, GetItemInfo(State));
   }
   else
   {
@@ -294,7 +306,7 @@ void __fastcall TThemePageControl::DrawThemesXpTabItem(
 
   if (Item >= 0)
   {
-    DrawTabItem(DC, Item, Rect, State, Shadowed);
+    DrawTabItem(DC, Item, Rect, State, Shadowed, ATabTheme);
   }
 }
 //----------------------------------------------------------------------------------------------------------
@@ -310,40 +322,22 @@ void __fastcall TThemePageControl::ItemTabRect(int Item, TRect & Rect)
 //----------------------------------------------------------------------------------------------------------
 void __fastcall TThemePageControl::ItemContentsRect(int Item, TRect & Rect)
 {
-  bool Selected = (Item == TabIndex);
-
   Rect.Left += 6;
-  Rect.Top += 2;
+  Rect.Right -= 3;
 
-  if (Selected)
+  if (Item == TabIndex)
   {
+    // to counter the ItemTabRect
+    Rect.Left += 2;
+    Rect.Right -= 2;
+    Rect.Bottom++;
     Rect.Bottom -= 2;
-    Rect.Top += 1;
-  }
-  else
-  {
-    Rect.Bottom += 2;
-    Rect.Top += 3;
   }
 }
 //----------------------------------------------------------------------------------------------------------
 bool __fastcall TThemePageControl::HasItemImage(int Item)
 {
   return (Images != NULL) && (Pages[Item]->ImageIndex >= 0);
-}
-//----------------------------------------------------------------------------------------------------------
-void __fastcall TThemePageControl::ItemTextRect(int Item, TRect & Rect)
-{
-  if (HasItemImage(Item))
-  {
-    Rect.Left += Images->Width + 3;
-  }
-  else
-  {
-    Rect.Left -= 2;
-  }
-  Rect.Right -= 3;
-  OffsetRect(&Rect, 0, ((Item == TabIndex) ? 0 : -2));
 }
 //----------------------------------------------------------------------------------------------------------
 void TThemePageControl::DrawCross(HDC DC, int Width, COLORREF Color, const TRect & Rect)
@@ -379,48 +373,55 @@ void TThemePageControl::DrawDropDown(HDC DC, int Radius, int X, int Y, COLORREF 
   DeleteObject(Pen);
 }
 //----------------------------------------------------------------------------------------------------------
+static int VCenter(const TRect & Rect, int Height)
+{
+  int A = (Rect.Top + Rect.Bottom - Height);
+  return (A / 2) + (A % 2);
+}
+//----------------------------------------------------------------------------------------------------------
 // Draw tab item context: possible icon and text
-void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int State, bool Shadowed)
+void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int State, bool Shadowed, TTBXTheme * ATabTheme)
 {
   TRect OrigRect = Rect;
   ItemContentsRect(Item, Rect);
 
   UnicodeString Text = Pages[Item]->Caption;
-  bool Selected = (State == TIS_SELECTED);
+
+  std::unique_ptr<TCanvas> Canvas(new TCanvas());
+  Canvas->Handle = DC;
 
   if (HasItemImage(Item))
   {
     int Left;
     if (!Text.IsEmpty())
     {
-      Left = Rect.Left + (Selected ? 2 : 0);
+      Left = Rect.Left;
+      Rect.Left += Images->Width + 3;
     }
     else
     {
       Left = OrigRect.Left + (OrigRect.Right - Images->Width - OrigRect.Left) / 2;
     }
-    int Y = ((Rect.Top + Rect.Bottom - Images->Height) / 2) - 1 + (Selected ? 0 : -2);
-    std::unique_ptr<TCanvas> Canvas(new TCanvas());
-    Canvas->Handle = DC;
-    Images->Draw(Canvas.get(), Left, Y, Pages[Item]->ImageIndex, !Shadowed);
+    int Top = VCenter(Rect, Images->Height);
+    Images->Draw(Canvas.get(), Left, Top, Pages[Item]->ImageIndex, !Shadowed);
   }
 
-  int TextHeight = 20;
   int OldMode = SetBkMode(DC, TRANSPARENT);
   if (!Text.IsEmpty())
   {
-    ItemTextRect(Item, Rect);
-    if (Selected && (ActiveTabTheme != NULL))
+    if (ATabTheme != NULL)
     {
-      SetTextColor(DC, ActiveTabTheme->GetItemTextColor(GetItemInfo(State)));
+      SetTextColor(DC, ATabTheme->GetItemTextColor(GetItemInfo(State)));
     }
     HFONT OldFont = (HFONT)SelectObject(DC, Font->Handle);
     wchar_t * Buf = new wchar_t[Text.Length() + 1 + 4];
     wcscpy(Buf, Text.c_str());
-    TRect TextRect(0, 0, Rect.Right - Rect.Left, TextHeight);
+    TRect TextRect(0, 0, Rect.Width(), 20);
     // Truncates too long texts with ellipsis
     ::DrawText(DC, Buf, -1, &TextRect, DT_CALCRECT | DT_SINGLELINE | DT_MODIFYSTRING | DT_END_ELLIPSIS);
+    DebugAssert(FTextHeight == TextRect.Height());
 
+    Rect.Top = VCenter(Rect, FTextHeight);
     DrawText(DC, Buf, -1, &Rect, DT_NOPREFIX | DT_CENTER);
     delete[] Buf;
 
@@ -435,32 +436,14 @@ void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int
       {
         ButtonItemInfo.HoverKind = hkMouseHover;
 
-        // Ultimately, merge both branches to use PaintFrame (just with a different theme) (and drop GetSelectedBodyColor)
-        if (Selected && (ActiveTabTheme != NULL))
-        {
-          std::unique_ptr<TCanvas> CanvasMem(new TCanvas());
-          CanvasMem->Handle = DC;
-          CurrentTheme->PaintFrame(CanvasMem.get(), Rect, ButtonItemInfo);
-        }
-        else
-        {
-          HBRUSH Brush = CreateSolidBrush(GetSelectedBodyColor());
-          FillRect(DC, &Rect, Brush);
-          DeleteObject(Brush);
-
-          HPEN Pen = CreatePen(PS_SOLID, 1, ColorToRGB(clHighlight));
-          HPEN OldPen = static_cast<HPEN>(SelectObject(DC, Pen));
-          Rectangle(DC, Rect.Left, Rect.Top, Rect.Right, Rect.Bottom);
-          SelectObject(DC, OldPen);
-          DeleteObject(Pen);
-        }
+        CurrentTheme->PaintFrame(Canvas.get(), Rect, ButtonItemInfo);
       }
 
       COLORREF BackColor = GetPixel(DC, Rect.Left + (Rect.Width() / 2), Rect.Top + (Rect.Height() / 2));
       COLORREF ShapeColor;
-      if (Selected && (ActiveTabTheme != NULL))
+      if (ATabTheme != NULL)
       {
-        ShapeColor = ColorToRGB(ActiveTabTheme->GetItemTextColor(ButtonItemInfo));
+        ShapeColor = ColorToRGB(ATabTheme->GetItemTextColor(ButtonItemInfo));
       }
       else
       {
@@ -500,12 +483,12 @@ void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int
 //----------------------------------------------------------------------------------------------------------
 int __fastcall TThemePageControl::TabButtonSize()
 {
-  return ScaleByTextHeight(this, 16);
+  return MulDiv(GetTabsHeight(), 8, 13);
 }
 //----------------------------------------------------------------------------------------------------------
 int __fastcall TThemePageControl::GetCrossPadding()
 {
-  return ScaleByTextHeight(this, 4);
+  return MulDiv(GetTabsHeight(), 2, 13);
 }
 //----------------------------------------------------------------------------------------------------------
 TRect __fastcall TThemePageControl::TabButtonRect(int Index)
@@ -513,22 +496,11 @@ TRect __fastcall TThemePageControl::TabButtonRect(int Index)
   TRect Rect = TabRect(Index);
   ItemTabRect(Index, Rect);
   ItemContentsRect(Index, Rect);
-  ItemTextRect(Index, Rect);
 
   int ATabButtonSize = TabButtonSize();
-  int CrossPadding = GetCrossPadding();
 
-  TEXTMETRIC TextMetric;
-  Canvas->Font = Font;
-  GetTextMetrics(Canvas->Handle, &TextMetric);
-
-  Rect.Top += TextMetric.tmAscent - ATabButtonSize + CrossPadding;
+  Rect.Top = VCenter(Rect, ATabButtonSize);
   Rect.Left = Rect.Right - ATabButtonSize - ScaleByTextHeight(this, 1);
-  if (Index == TabIndex)
-  {
-    // To counter Inflate(2, 2) in ItemTabRect
-    Rect.Left -= 2;
-  }
   Rect.Right = Rect.Left + ATabButtonSize;
   Rect.Bottom = Rect.Top + ATabButtonSize;
   return Rect;
@@ -722,6 +694,7 @@ void TThemePageControl::UpdateTabsCaptionTruncation()
 
     int TabsWidth = TotalTabsWidth();
     int MaxWidth = ClientWidth - ScaleByTextHeight(this, 8); // arbitrary margin to avoid left/right buttons flicker
+    Canvas->Font = Font;
     if (TabsWidth > MaxWidth)
     {
       int NeedWidth = (TabsWidth - MaxWidth);
@@ -788,6 +761,15 @@ void TThemePageControl::SetActiveTabTheme(TTBXTheme * value)
     {
       ActivePage->Invalidate();
     }
+  }
+}
+//----------------------------------------------------------------------------------------------------------
+void TThemePageControl::SetTabTheme(TTBXTheme * value)
+{
+  if (FTabTheme != value)
+  {
+    FTabTheme = value;
+    Invalidate();
   }
 }
 //----------------------------------------------------------------------------------------------------------

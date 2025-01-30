@@ -53,6 +53,8 @@ int ne_version_match(int major, int minor);
 #define NE_FEATURE_TS_SSL (6) /* Thread-safe SSL/TLS support */
 #define NE_FEATURE_I18N (7) /* i18n error message support */
 #define NE_FEATURE_SSPI (8) /* NTLM/Negotiate authentication protocol via SSPI */
+#define NE_FEATURE_GSSAPI (9) /* GSSAPI support. */
+#define NE_FEATURE_LIBPXY (10) /* System proxy support via libproxy. */
 
 /* Returns non-zero if library is built with support for the given
  * NE_FEATURE_* feature code 'code'. */
@@ -122,7 +124,7 @@ void ne_debug(int ch, const char *, ...) ne_attribute((format(printf, 2, 3)));
 typedef struct {
     int major_version;
     int minor_version;
-    int code; /* Status-Code value */
+    int code; /* Status-Code value (100..599 inclusive) */
     int klass; /* Class of Status-Code (1-5) */
     char *reason_phrase;
 } ne_status;
@@ -130,7 +132,7 @@ typedef struct {
 /* NB: couldn't use 'class' in ne_status because it would clash with
  * the C++ reserved word. */
 
-/* Parse 'status_line' using the the RFC2616 Status-Line grammar.
+/* Parse 'status_line' using the RFC 9112 status-line grammar.
  * s->reason_phrase is malloc-allocated if non-NULL, and must be
  * free'd by the caller.  Returns 0 on success, in which case all
  * fields of '*s' will be set; or -1 on parse error, in which case

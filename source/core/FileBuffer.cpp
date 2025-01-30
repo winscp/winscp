@@ -142,6 +142,8 @@ void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params,
       else if ((Index == 0) && PrevToken && (*Ptr == Dest[1]))
       {
         Delete(Index, 1);
+        Index--;
+        Ptr = Data + Index;
       }
       // we are ending with the first char of destination 2-char EOL format,
       // append the second char and make sure we strip it from the next buffer, if any

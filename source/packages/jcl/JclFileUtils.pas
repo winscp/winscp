@@ -127,6 +127,8 @@ type
   TCompactPath = ({cpBegin, }cpCenter, cpEnd);
 
 function CharIsDriveLetter(const C: char): Boolean;
+function CharIsInvalidFileNameCharacter(const C: Char): Boolean;
+function CharIsInvalidPathCharacter(const C: Char): Boolean;
 
 function PathAddSeparator(const Path: string): string;
 function PathAddExtension(const Path, Extension: string): string;
@@ -305,7 +307,9 @@ function GetSizeOfFile(const FileName: string): Int64; overload;
 function GetSizeOfFile(const FileInfo: TSearchRec): Int64; overload;
 {$IFDEF MSWINDOWS}
 function GetSizeOfFile(Handle: THandle): Int64; overload;
+{$IFNDEF WINSCP}
 function GetStandardFileInfo(const FileName: string): TWin32FileAttributeData;
+{$ENDIF}
 {$ENDIF MSWINDOWS}
 function IsDirectory(const FileName: string {$IFDEF UNIX}; ResolveSymLinks: Boolean = True {$ENDIF}): Boolean;
 function IsRootDirectory(const CanonicFileName: string): Boolean;
@@ -895,7 +899,7 @@ type
   TJclMappedTextReaderIndex = (tiNoIndex, tiFull);
 
   PPAnsiCharArray = ^TPAnsiCharArray;
-  TPAnsiCharArray = array [0..0] of PAnsiChar;
+  TPAnsiCharArray = array [0..MaxInt div SizeOf(PAnsiChar) - 1] of PAnsiChar;
 
   TJclAnsiMappedTextReader = class(TPersistent)
   private
@@ -946,7 +950,7 @@ type
   end;
 
   PPWideCharArray = ^TPWideCharArray;
-  TPWideCharArray = array [0..0] of PWideChar;
+  TPWideCharArray = array [0..MaxInt div SizeOf(PWideChar) - 1] of PWideChar;
 
   TJclWideMappedTextReader = class(TPersistent)
   private
@@ -1063,25 +1067,26 @@ function PathListItemIndex(const List, Item: string): Integer;
 // returns the name of the command line parameter at position index, which is
 // separated by the given separator, if the first character of the name part
 // is one of the AllowedPrefixCharacters, this character will be deleted.
-function ParamName  (Index : Integer; const Separator : string = '=';
-             const AllowedPrefixCharacters : string = '-/'; TrimName : Boolean = true) : string;
+function ParamName(Index: Integer; const Separator: string = '=';
+  const AllowedPrefixCharacters: string = '-/'; TrimName: Boolean = True): string;
 // returns the value of the command line parameter at position index, which is
 // separated by the given separator
-function ParamValue (Index : Integer; const Separator : string = '='; TrimValue : Boolean = true) : string; overload;
+function ParamValue (Index: Integer; const Separator: string = '='; TrimValue: Boolean = True): string; overload;
 // seaches a command line parameter where the namepart is the searchname
 // and returns the value which is which by the given separator.
 // CaseSensitive defines the search type. if the first character of the name part
 // is one of the AllowedPrefixCharacters, this character will be deleted.
-function ParamValue (const SearchName : string; const Separator : string = '=';
-             CaseSensitive : Boolean = False;
-             const AllowedPrefixCharacters : string = '-/'; TrimValue : Boolean = true) : string; overload;
+function ParamValue (const SearchName: string; const Separator: string = '=';
+             CaseSensitive: Boolean = False;
+             const AllowedPrefixCharacters: string = '-/'; TrimValue: Boolean = True): string; overload;
 // seaches a command line parameter where the namepart is the searchname
 // and returns the position index. if no separator is defined, the full paramstr is compared.
 // CaseSensitive defines the search type. if the first character of the name part
 // is one of the AllowedPrefixCharacters, this character will be deleted.
-function ParamPos (const SearchName : string; const Separator : string = '=';
-             CaseSensitive : Boolean = False;
-             const AllowedPrefixCharacters : string = '-/'): Integer;
+function ParamPos (const SearchName: string; const Separator: string = '=';
+             CaseSensitive: Boolean = False;
+             const AllowedPrefixCharacters: string = '-/'): Integer;
+
 
 {$IFDEF UNITVERSIONING}
 const
@@ -2805,7 +2810,7 @@ function PathIsDiskDevice(const Path: string): Boolean;
 var
   FullPath: string;
   F: PIOFile;
-  Buffer: array [0..255] of Char;
+  Buffer: array [0..255] of AnsiChar;
   MountEntry: TMountEntry;
   FsTypes: TStringList;
 
@@ -2870,10 +2875,26 @@ begin
   end;
 end;
 
-function CharIsInvalidPathCharacter(const C: Char): Boolean; {$IFDEF SUPPORTS_INLINE} inline; {$ENDIF}
+function CharIsInvalidFileNameCharacter(const C: Char): Boolean;
 begin
   case C of
-    '<', '>', '?', '/', ',', '*', '+', '=', '[', ']', '|', ':', ';', '"', '''':
+    '<', '>', '?', '/', '\', ',', '*', '+', '=', '[', ']', '|', ':', ';', '"', '''':
+      Result := True;
+  else
+    Result := False;
+  end;
+end;
+
+function CharIsInvalidPathCharacter(const C: Char): Boolean;
+begin
+  case C of
+    '<', '>', '?',
+  {$IFDEF UNIX}
+    '/',
+  {$ELSE}
+    '\',
+  {$ENDIF}
+    ',', '*', '+', '=', '[', ']', '|', ':', ';', '"', '''':
       Result := True;
   else
     Result := False;
@@ -4376,6 +4397,7 @@ function GetFileAttributesEx(lpFileName: PChar;
 external kernel32 name 'GetFileAttributesExA';
 {$ENDIF FPC}
 
+{$IFNDEF WINSCP}
 function GetStandardFileInfo(const FileName: string): TWin32FileAttributeData;
 var
   Handle: THandle;
@@ -4409,6 +4431,7 @@ begin
       raise EJclFileUtilsError.CreateResFmt(@RsFileUtilsAttrUnavailable, [FileName]);
   end;
 end;
+{$ENDIF}
 
 {$ENDIF MSWINDOWS}
 
@@ -4872,10 +4895,10 @@ function WindowToModuleFileName(const Window: HWND): string;
 type
   {$IFDEF SUPPORTS_UNICODE}
   TGetModuleFileNameEx = function(hProcess: THandle; hModule: HMODULE; FileName: PWideChar; nSize: DWORD): DWORD; stdcall;
-  TQueryFullProcessImageName = function(HProcess: THandle; dwFlags: DWORD; lpExeName: PWideChar; lpdwSize: PDWORD): integer; stdcall;
+  TQueryFullProcessImageName = function(HProcess: THandle; dwFlags: DWORD; lpExeName: PWideChar; lpdwSize: PDWORD): BOOL; stdcall;
   {$ELSE ~SUPPORTS_UNICODE}
   TGetModuleFileNameEx = function(hProcess: THandle; hModule: HMODULE; FileName: PAnsiChar; nSize: DWORD): DWORD; stdcall;
-  TQueryFullProcessImageName = function(HProcess: THandle; dwFlags: DWORD; lpExeName: PAnsiChar; lpdwSize: PDWORD): integer; stdcall;
+  TQueryFullProcessImageName = function(HProcess: THandle; dwFlags: DWORD; lpExeName: PAnsiChar; lpdwSize: PDWORD): BOOL; stdcall;
   {$ENDIF ~SUPPORTS_UNICODE}
 var
   FileName: array[0..300] of Char;
@@ -4884,6 +4907,7 @@ var
   HProcess: THandle;
   GetModuleFileNameExAddress: TGetModuleFileNameEx;
   QueryFullProcessImageNameAddress: TQueryFullProcessImageName;
+  Len: DWORD;
 begin
   Result := '';
   if Window <> 0 then
@@ -4899,7 +4923,7 @@ begin
         if JclCheckWinVersion(6, 0) then // WinVista or newer
         begin
           DllHinst := LoadLibrary('Kernel32.dll');
-          if DllHinst < HINSTANCE_ERROR then
+          if DllHinst <> 0 then
           begin
             try
               {$IFDEF SUPPORTS_UNICODE}
@@ -4909,13 +4933,14 @@ begin
               {$ENDIF ~SUPPORTS_UNICODE}
               if Assigned(QueryFullProcessImageNameAddress) then
               begin
-                QueryFullProcessImageNameAddress(hProcess, 0, FileName, PDWORD(sizeof(FileName)));
-                Result := FileName;
+                Len := Length(FileName);
+                if QueryFullProcessImageNameAddress(hProcess, 0, FileName, PDWORD(@Len)) then
+                  Result := FileName;
+                //else
+                //  RaiseLastOSError   would be nice, but it didn't raise an exception before the return value was checked
               end
               else
-              begin
                 raise EJclError.CreateResFmt(@RsEFunctionNotFound, ['Kernel32.dll', 'QueryFullProcessImageName']);
-              end
             finally
               FreeLibrary(DllHinst);
             end;
@@ -4926,7 +4951,7 @@ begin
         else
         begin
           DllHinst := LoadLibrary('Psapi.dll');
-          if DllHinst < HINSTANCE_ERROR then
+          if DllHinst <> 0 then
           begin
             try
               {$IFDEF SUPPORTS_UNICODE}
@@ -4936,13 +4961,14 @@ begin
               {$ENDIF ~SUPPORTS_UNICODE}
               if Assigned(GetModuleFileNameExAddress) then
               begin
-                GetModuleFileNameExAddress(hProcess, 0, FileName, sizeof(FileName));
-                Result := FileName;
+                Len := GetModuleFileNameExAddress(hProcess, 0, FileName, Length(FileName));
+                if Len > 0 then
+                  Result := FileName;
+                //else
+                //  RaiseLastOSError;   would be nice, but it didn't raise an exception before the return value was checked
               end
               else
-              begin
                 raise EJclError.CreateResFmt(@RsEFunctionNotFound, ['Psapi.dll', 'GetModuleFileNameEx']);
-              end
             finally
               FreeLibrary(DllHinst);
             end;
@@ -5189,6 +5215,12 @@ var
         Inc(I)
       else
         Delete(Key, I, 1);
+
+    // Office16\1031\GrooveIntlResource.dll contains a '4094B0' key. Both parts (lang and codepage)
+    // are missing their leading zero. It should have been '040904B0'.
+    // The Windows file property dialog falls back to "English (United States) 1252", so do we.
+    if Length(Key) < 8 then
+      Key := '040904E4';
   end;
 
   procedure ProcessStringInfo(Size: Integer);
@@ -6969,22 +7001,23 @@ end;
 // returns the name of the command line parameter at position index, which is
 // separated by the given separator, if the first character of the name part
 // is one of the AllowedPrefixCharacters, this character will be deleted.
-function ParamName  (Index : Integer; const Separator : string = '=';
-             const AllowedPrefixCharacters : string = '-/'; TrimName : Boolean = true) : string;
-var s: string;
-    p: Integer;
+function ParamName(Index: Integer; const Separator: string;
+  const AllowedPrefixCharacters: string; TrimName: Boolean): string;
+var
+  S: string;
+  P: Integer;
 begin
-  if (index > 0) and (index <= ParamCount) then
+  if (Index > 0) and (Index <= ParamCount) then
   begin
-    s := ParamStr(index);
-    if Pos(Copy(s, 1, 1), AllowedPrefixCharacters) > 0 then
-      s := Copy (s, 2, Length(s)-1);
-    p := Pos(Separator, s);
-    if p > 0 then
-      s := Copy (s, 1, p-1);
+    S := ParamStr(Index);
+    if Pos(Copy(S, 1, 1), AllowedPrefixCharacters) > 0 then
+      S := Copy(S, 2, Length(S) - 1);
+    P := Pos(Separator, S);
+    if P > 0 then
+      S := Copy(S, 1, P - 1);
     if TrimName then
-      s := Trim(s);
-    Result := s;
+      S := Trim(S);
+    Result := S;
   end
   else
     Result := '';
@@ -6992,19 +7025,20 @@ end;
 
 // returns the value of the command line parameter at position index, which is
 // separated by the given separator
-function ParamValue (Index : Integer; const Separator : string = '='; TrimValue : Boolean = true) : string;
-var s: string;
-    p: Integer;
+function ParamValue(Index: Integer; const Separator: string; TrimValue: Boolean): string;
+var
+  S: string;
+  P: Integer;
 begin
-  if (index > 0) and (index <= ParamCount) then
+  if (Index > 0) and (Index <= ParamCount) then
   begin
-    s := ParamStr(index);
-    p := Pos(Separator, s);
-    if p > 0 then
-      s := Copy (s, p+1, Length(s)-p);
+    S := ParamStr(Index);
+    P := Pos(Separator, S);
+    if P > 0 then
+      S := Copy(S, P + 1, Length(S) - P);
     if TrimValue then
-      s := Trim(s);
-    Result := s;
+      S := Trim(S);
+    Result := S;
   end
   else
     Result := '';
@@ -7014,21 +7048,25 @@ end;
 // and returns the value which is which by the given separator.
 // CaseSensitive defines the search type. if the first character of the name part
 // is one of the AllowedPrefixCharacters, this character will be deleted.
-function ParamValue (const SearchName : string; const Separator : string = '=';
-             CaseSensitive : Boolean = False;
-             const AllowedPrefixCharacters : string = '-/'; TrimValue : Boolean = true) : string;
-var pName : string;
-    i : Integer;
+function ParamValue(const SearchName: string; const Separator: string;
+  CaseSensitive: Boolean; const AllowedPrefixCharacters: string;
+  TrimValue: Boolean): string;
+var
+  Name: string;
+  SearchS: String;
+  I: Integer;
 begin
   Result := '';
-  for i  := 1 to ParamCount do
+  SearchS := Trim(SearchName);
+
+  for I := 1 to ParamCount do
   begin
-    pName := ParamName(i, Separator, AllowedPrefixCharacters, True);
-    if (CaseSensitive and (pName = Trim(SearchName))) or
-       (UpperCase(pName) = Trim(UpperCase(SearchName))) then
+    Name := ParamName(I, Separator, AllowedPrefixCharacters, True);
+    if (CaseSensitive and (Name = SearchS)) or
+       ((not CaseSensitive) and (CompareText(Name, SearchS) = 0)) then
     begin
-      Result := ParamValue (i, Separator, TrimValue);
-      exit;
+      Result := ParamValue(I, Separator, TrimValue);
+      Exit;
     end;
   end;
 end;
@@ -7037,20 +7075,23 @@ end;
 // and returns the position index. if no separator is defined, the full paramstr is compared.
 // CaseSensitive defines the search type. if the first character of the name part
 // is one of the AllowedPrefixCharacters, this character will be deleted.
-function ParamPos (const SearchName : string; const Separator : string = '=';
-             CaseSensitive : Boolean = False;
-             const AllowedPrefixCharacters : string = '-/'): Integer;
-var pName : string;
-    i : Integer;
+function ParamPos(const SearchName: string; const Separator: string;
+  CaseSensitive: Boolean; const AllowedPrefixCharacters: string): Integer;
+var
+  Name: string;
+  SearchS: string;
+  I: Integer;
 begin
   Result := -1;
-  for i  := 1 to ParamCount do
+  SearchS := Trim(SearchName);
+
+  for I := 1 to ParamCount do
   begin
-    pName := ParamName(i, Separator, AllowedPrefixCharacters, True);
-    if (CaseSensitive and (pName = SearchName)) or
-       (UpperCase(pName) = UpperCase(SearchName)) then
+    Name := ParamName(I, Separator, AllowedPrefixCharacters, True);
+    if (CaseSensitive and (Name = SearchS)) or
+       ((not CaseSensitive) and (CompareText(Name, SearchS) = 0)) then
     begin
-      Result := i;
+      Result := I;
       Exit;
     end;
   end;

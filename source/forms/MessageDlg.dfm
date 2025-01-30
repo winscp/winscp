@@ -8,8 +8,7 @@ object MessageForm: TMessageForm
   ClientWidth = 326
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
-  PixelsPerInch = 96
-  TextHeight = 13
+  OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
+  TextHeight = 15
 end

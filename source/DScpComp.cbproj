@@ -1,166 +1,165 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-	<PropertyGroup>
-		<ProjectGuid>{EE6BA6C0-E60A-47E4-95EA-87E1EB520276}</ProjectGuid>
-		<ProjectVersion>15.4</ProjectVersion>
-		<MainSource>DScpComp.cpp</MainSource>
-		<Config Condition="'$(Config)'==''">Release</Config>
-		<FrameworkType>VCL</FrameworkType>
-		<Base>True</Base>
-		<Platform Condition="'$(Platform)'==''">Win32</Platform>
-		<TargetedPlatforms>1</TargetedPlatforms>
-		<AppType>Package</AppType>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
-		<Base_Win32>true</Base_Win32>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
-		<Cfg_1>true</Cfg_1>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
-		<Cfg_1_Win32>true</Cfg_1_Win32>
-		<CfgParent>Cfg_1</CfgParent>
-		<Cfg_1>true</Cfg_1>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
-		<Cfg_2>true</Cfg_2>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Base)'!=''">
-		<_TCHARMapping>wchar_t</_TCHARMapping>
-		<AllPackageLibs>rtl.lib;vcl.lib;vclx.lib</AllPackageLibs>
-		<BCC_AllWarnings>true</BCC_AllWarnings>
-		<BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
-		<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-		<BPILibOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</BPILibOutputDir>
-		<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
-		<DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
-		<Defines>DESIGN_ONLY;$(Defines)</Defines>
-		<DesignOnlyPackage>true</DesignOnlyPackage>
-		<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
-		<ILINK_Description>WinSCP components</ILINK_Description>
-		<ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
-		<ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
-		<ILINK_LibraryPath>components\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-		<IncludePath>components\;components;core;windows;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
-		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
-		<LinkPackageStatics>rtl.lib;vcl.lib;vclx.lib</LinkPackageStatics>
-		<Multithreaded>true</Multithreaded>
-		<OutputExt>bpl</OutputExt>
-		<ProjectType>CppPackage</ProjectType>
-		<SanitizedProjectName>DScpComp</SanitizedProjectName>
-		<TLIB_PageSize>64</TLIB_PageSize>
-		<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
-		<VerInfo_Locale>1033</VerInfo_Locale>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Base_Win32)'!=''">
-		<DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
-		<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_1)'!=''">
-		<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
-		<BCC_DisableOptimizations>true</BCC_DisableOptimizations>
-		<BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
-		<BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
-		<BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
-		<BCC_StackFrames>true</BCC_StackFrames>
-		<BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
-		<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
-		<DCC_Optimize>false</DCC_Optimize>
-		<Defines>NDEBUG;$(Defines)</Defines>
-		<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
-		<TASM_Debugging>Full</TASM_Debugging>
-		<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_2)'!=''">
-		<Defines>NDEBUG;$(Defines)</Defines>
-		<TASM_Debugging>None</TASM_Debugging>
-	</PropertyGroup>
-	<ItemGroup>
-		<CppCompile Include="components\ThemePageControl.cpp">
-			<DependentOn>components\ThemePageControl.h</DependentOn>
-			<BuildOrder>11</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="components\UnixDirView.cpp">
-			<BuildOrder>5</BuildOrder>
-			<DependentOn>components\UnixDirView.h</DependentOn>
-			<BuildOrder>17</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="components\UnixDriveView.cpp">
-			<BuildOrder>32</BuildOrder>
-			<DependentOn>components\UnixDriveView.h</DependentOn>
-			<BuildOrder>3</BuildOrder>
-		</CppCompile>
-		<CppCompile Include="DScpComp.cpp">
-			<BuildOrder>7</BuildOrder>
-			<BuildOrder>2</BuildOrder>
-		</CppCompile>
-		<PackageImport Include="DragDropP.bpi">
-			<BuildOrder>8</BuildOrder>
-		</PackageImport>
-		<PackageImport Include="DriveDir.bpi">
-			<BuildOrder>9</BuildOrder>
-		</PackageImport>
-		<PackageImport Include="My.bpi">
-			<BuildOrder>10</BuildOrder>
-		</PackageImport>
-		<PackageImport Include="rtl.bpi">
-			<BuildOrder>20</BuildOrder>
-			<BuildOrder>1</BuildOrder>
-		</PackageImport>
-		<PackageImport Include="tbxp.bpi">
-			<BuildOrder>8</BuildOrder>
-		</PackageImport>
-		<PackageImport Include="vcl.bpi">
-			<BuildOrder>23</BuildOrder>
-			<BuildOrder>0</BuildOrder>
-		</PackageImport>
-		<PackageImport Include="vclx.bpi">
-			<BuildOrder>26</BuildOrder>
-			<BuildOrder>2</BuildOrder>
-		</PackageImport>
-		<BuildConfiguration Include="Base">
-			<Key>Base</Key>
-		</BuildConfiguration>
-		<BuildConfiguration Include="Debug">
-			<Key>Cfg_1</Key>
-			<CfgParent>Base</CfgParent>
-		</BuildConfiguration>
-		<BuildConfiguration Include="Release">
-			<Key>Cfg_2</Key>
-			<CfgParent>Base</CfgParent>
-		</BuildConfiguration>
-	</ItemGroup>
-	<Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
-	<ProjectExtensions>
-		<Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
-		<Borland.ProjectType>CppPackage</Borland.ProjectType>
-		<BorlandProject>
-			<CPlusPlusBuilder.Personality>
-				<Source>
-					<Source Name="MainSource">DScpComp.cpp</Source>
-				</Source>
-				<ProjectProperties>
-					<ProjectProperties Name="AutoShowDeps">False</ProjectProperties>
-					<ProjectProperties Name="ManagePaths">True</ProjectProperties>
-					<ProjectProperties Name="VerifyPackages">True</ProjectProperties>
-					<ProjectProperties Name="IndexFiles">False</ProjectProperties>
-				</ProjectProperties>
-			</CPlusPlusBuilder.Personality>
-			<Platforms>
-				<Platform value="Win32">True</Platform>
-				<Platform value="Win64">False</Platform>
-			</Platforms>
-		</BorlandProject>
-		<ProjectFileVersion>12</ProjectFileVersion>
-	</ProjectExtensions>
-	<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
+    <PropertyGroup>
+        <ProjectGuid>{EE6BA6C0-E60A-47E4-95EA-87E1EB520276}</ProjectGuid>
+        <ProjectVersion>19.5</ProjectVersion>
+        <MainSource>DScpComp.cpp</MainSource>
+        <Config Condition="'$(Config)'==''">Release</Config>
+        <FrameworkType>VCL</FrameworkType>
+        <Base>True</Base>
+        <Platform Condition="'$(Platform)'==''">Win32</Platform>
+        <TargetedPlatforms>1</TargetedPlatforms>
+        <AppType>Package</AppType>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
+        <Base_Win32>true</Base_Win32>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
+        <Cfg_1>true</Cfg_1>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
+        <Cfg_1_Win32>true</Cfg_1_Win32>
+        <CfgParent>Cfg_1</CfgParent>
+        <Cfg_1>true</Cfg_1>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
+        <Cfg_2>true</Cfg_2>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base)'!=''">
+        <_TCHARMapping>wchar_t</_TCHARMapping>
+        <AllPackageLibs>rtl.lib;vcl.lib;vclx.lib</AllPackageLibs>
+        <BCC_AllWarnings>true</BCC_AllWarnings>
+        <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
+        <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
+        <BPILibOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</BPILibOutputDir>
+        <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
+        <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
+        <Defines>DESIGN_ONLY;$(Defines)</Defines>
+        <DesignOnlyPackage>true</DesignOnlyPackage>
+        <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
+        <ILINK_Description>WinSCP components</ILINK_Description>
+        <ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
+        <ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
+        <ILINK_LibraryPath>components\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+        <IncludePath>components\;components;core;windows;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
+        <IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
+        <Multithreaded>true</Multithreaded>
+        <OutputExt>bpl</OutputExt>
+        <ProjectType>CppPackage</ProjectType>
+        <SanitizedProjectName>DScpComp</SanitizedProjectName>
+        <TLIB_PageSize>64</TLIB_PageSize>
+        <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <VerInfo_Locale>1033</VerInfo_Locale>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Win32)'!=''">
+        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1)'!=''">
+        <BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
+        <BCC_DisableOptimizations>true</BCC_DisableOptimizations>
+        <BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
+        <BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
+        <BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
+        <BCC_StackFrames>true</BCC_StackFrames>
+        <BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
+        <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+        <DCC_Optimize>false</DCC_Optimize>
+        <Defines>NDEBUG;$(Defines)</Defines>
+        <ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
+        <TASM_Debugging>Full</TASM_Debugging>
+        <TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2)'!=''">
+        <Defines>NDEBUG;$(Defines)</Defines>
+        <TASM_Debugging>None</TASM_Debugging>
+    </PropertyGroup>
+    <ItemGroup>
+        <CppCompile Include="components\ThemePageControl.cpp">
+            <DependentOn>components\ThemePageControl.h</DependentOn>
+            <BuildOrder>11</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="components\UnixDirView.cpp">
+            <BuildOrder>5</BuildOrder>
+            <DependentOn>components\UnixDirView.h</DependentOn>
+            <BuildOrder>17</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="components\UnixDriveView.cpp">
+            <BuildOrder>32</BuildOrder>
+            <DependentOn>components\UnixDriveView.h</DependentOn>
+            <BuildOrder>3</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="DScpComp.cpp">
+            <BuildOrder>7</BuildOrder>
+            <BuildOrder>2</BuildOrder>
+        </CppCompile>
+        <PackageImport Include="DragDropP.bpi">
+            <BuildOrder>8</BuildOrder>
+        </PackageImport>
+        <PackageImport Include="DriveDir.bpi">
+            <BuildOrder>9</BuildOrder>
+        </PackageImport>
+        <PackageImport Include="My.bpi">
+            <BuildOrder>10</BuildOrder>
+        </PackageImport>
+        <PackageImport Include="rtl.bpi">
+            <BuildOrder>20</BuildOrder>
+            <BuildOrder>1</BuildOrder>
+        </PackageImport>
+        <PackageImport Include="tbxp.bpi">
+            <BuildOrder>8</BuildOrder>
+        </PackageImport>
+        <PackageImport Include="vcl.bpi">
+            <BuildOrder>23</BuildOrder>
+            <BuildOrder>0</BuildOrder>
+        </PackageImport>
+        <PackageImport Include="vclx.bpi">
+            <BuildOrder>26</BuildOrder>
+            <BuildOrder>2</BuildOrder>
+        </PackageImport>
+        <BuildConfiguration Include="Base">
+            <Key>Base</Key>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Debug">
+            <Key>Cfg_1</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Release">
+            <Key>Cfg_2</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+    </ItemGroup>
+    <Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
+    <ProjectExtensions>
+        <Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
+        <Borland.ProjectType>CppPackage</Borland.ProjectType>
+        <BorlandProject>
+            <CPlusPlusBuilder.Personality>
+                <Source>
+                    <Source Name="MainSource">DScpComp.cpp</Source>
+                </Source>
+                <ProjectProperties>
+                    <ProjectProperties Name="AutoShowDeps">False</ProjectProperties>
+                    <ProjectProperties Name="ManagePaths">True</ProjectProperties>
+                    <ProjectProperties Name="VerifyPackages">True</ProjectProperties>
+                    <ProjectProperties Name="IndexFiles">False</ProjectProperties>
+                </ProjectProperties>
+            </CPlusPlusBuilder.Personality>
+            <Platforms>
+                <Platform value="Win32">True</Platform>
+                <Platform value="Win64">False</Platform>
+            </Platforms>
+        </BorlandProject>
+        <ProjectFileVersion>12</ProjectFileVersion>
+    </ProjectExtensions>
+    <Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
 </Project>

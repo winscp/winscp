@@ -163,6 +163,7 @@ private:
   int ProcessSendBuffer();
 
   void TriggerEvents();
+  void LogSslError(const SSL *s, const char * str, const char * fmt, int nMessageType, char * debug = NULL);
 
   // Will be called from the OpenSSL library
   static void apps_ssl_info_callback(const SSL * s, int where, int ret);

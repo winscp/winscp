@@ -35,6 +35,7 @@
 #include <Web.HTTPApp.hpp>
 #include <System.IOUtils.hpp>
 #include <WinApi.h>
+#include <System.NetEncoding.hpp>
 //---------------------------------------------------------------------------
 #define KEY _T("SYSTEM\\CurrentControlSet\\Control\\") \
             _T("Session Manager\\Environment")
@@ -543,7 +544,7 @@ static void __fastcall RegisterProtocolForDefaultPrograms(HKEY RootKey, const Un
     Abort();
   }
 
-  UnicodeString Description = LoadStr(REGISTERED_APP_DESC4);
+  UnicodeString Description = LoadStr(REGISTERED_APP_DESC5);
   Registry->WriteString(L"ApplicationDescription", Description);
 
   if (!Registry->OpenKey(L"UrlAssociations", true))
@@ -680,16 +681,8 @@ static void __fastcall NotifyChangedAssociations()
 void __fastcall RegisterForDefaultProtocols()
 {
   AppLog(L"Registering to handle protocol URL addresses");
-  if (IsWinVista())
-  {
-    AppLog(L"Registering as default program");
-    RegisterForDefaultPrograms();
-  }
-  else
-  {
-    AppLog(L"Registering for non-browser protocols");
-    RegisterAsNonBrowserUrlHandler(UnicodeString());
-  }
+  AppLog(L"Registering as default program");
+  RegisterForDefaultPrograms();
 
   AppLog(L"Registering for non-browser protocols with prefix");
   RegisterAsNonBrowserUrlHandler(WinSCPProtocolPrefix);
@@ -728,8 +721,6 @@ void __fastcall UnregisterForProtocols()
 //---------------------------------------------------------------------------
 void __fastcall LaunchAdvancedAssociationUI()
 {
-  DebugAssert(IsWinVista());
-
   RegisterForDefaultPrograms();
   NotifyChangedAssociations();
   // sleep recommended by https://learn.microsoft.com/en-us/windows/win32/shell/default-programs#becoming-the-default-browser
@@ -1677,7 +1668,7 @@ static void __fastcall InsertDonateLink(void * /*Data*/, TObject * Sender)
     UnicodeString StoreUrl = FMTLOAD(STORE_URL, (L"update"));
     UnicodeString StoreLink = FORMAT(L"<a href=\"%s\">%s</a>", (StoreUrl, StoreButton));
 
-    UnicodeString PlainBody = HTMLDecode(DocumentBody);
+    UnicodeString PlainBody = TNetEncoding::HTML->Decode(DocumentBody);
     int P1, P2;
     while (((P1 = PlainBody.Pos(L"<")) > 0) && ((P2 = PlainBody.Pos(L">")) > 0) && (P1 < P2))
     {
@@ -1817,9 +1808,7 @@ bool __fastcall CheckForUpdates(bool CachedResults)
 
   if (New)
   {
-    // Internet Explorer on Windows XP cannot talk to CDN77, where we host Store Get button.
-    // As a simple solution, we just do not display the donation panel on Windows XP.
-    if (Updates.Results.DownloadUrl.IsEmpty() && IsInstalled() && IsWinVista())
+    if (Updates.Results.DownloadUrl.IsEmpty() && IsInstalled())
     {
       DebugAssert(Dialog->OnShow == NULL);
       // InsertDonateLink need to be called only after MessageBrowser is created
@@ -2371,19 +2360,19 @@ UnicodeString GetNetCoreVersionStr()
       ::SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
     }
     UnicodeString RuntimeFolder = L"shared\\Microsoft.NETCore.App";
-    UnicodeString DotNetPath = TPath::Combine(TPath::Combine(ProgramsFolder, L"dotnet"), RuntimeFolder);
+    UnicodeString DotNetPath = CombinePaths(CombinePaths(ProgramsFolder, L"dotnet"), RuntimeFolder);
     if (!DirectoryExistsFix(DotNetPath))
     {
       UnicodeString DotNetExe = L"dotnet.exe";
       if (FindFile(DotNetExe))
       {
-        DotNetPath = TPath::Combine(ExtractFilePath(DotNetExe), RuntimeFolder);
+        DotNetPath = CombinePaths(ExtractFilePath(DotNetExe), RuntimeFolder);
       }
     }
     if (DirectoryExistsFix(DotNetPath))
     {
       TSearchRecChecked SearchRec;
-      DotNetPath = TPath::Combine(DotNetPath, L"*.*");
+      DotNetPath = CombinePaths(DotNetPath, L"*.*");
       if (FindFirstUnchecked(ApiPath(DotNetPath), faDirectory, SearchRec) == 0)
       {
         do

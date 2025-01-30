@@ -7,9 +7,7 @@ inherited ScpExplorerForm: TScpExplorerForm
   Caption = 'ScpExplorerForm'
   ClientHeight = 475
   ClientWidth = 632
-  OldCreateOrder = True
-  PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 15
   inherited QueueSplitter: TSplitter
     Top = 332
     Width = 632
@@ -393,6 +391,21 @@ inherited ScpExplorerForm: TScpExplorerForm
           object TBXItem140: TTBXItem
             Action = NonVisualDataModule.SelectiveToolbarTextAction
           end
+          object TBXItem169: TTBXSubmenuItem
+            Action = NonVisualDataModule.ToolbarIconSizeAction
+            object TBXItem273: TTBXItem
+              Action = NonVisualDataModule.ToolbarIconSizeNormalAction
+              RadioItem = True
+            end
+            object TBXItem274: TTBXItem
+              Action = NonVisualDataModule.ToolbarIconSizeLargeAction
+              RadioItem = True
+            end
+            object TBXItem275: TTBXItem
+              Action = NonVisualDataModule.ToolbarIconSizeVeryLargeAction
+              RadioItem = True
+            end
+          end
         end
         object SessionsTabs3: TTBXItem
           Action = NonVisualDataModule.SessionsTabsAction2
@@ -460,16 +473,19 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXSeparatorItem3: TTBXSeparatorItem
         end
         object TBXItem16: TTBXItem
-          Action = NonVisualDataModule.CurrentIconAction
+          Action = NonVisualDataModule.RemoteIconAction
         end
         object TBXItem17: TTBXItem
-          Action = NonVisualDataModule.CurrentSmallIconAction
+          Action = NonVisualDataModule.RemoteSmallIconAction
         end
         object TBXItem18: TTBXItem
-          Action = NonVisualDataModule.CurrentListAction
+          Action = NonVisualDataModule.RemoteListAction
         end
         object TBXItem19: TTBXItem
-          Action = NonVisualDataModule.CurrentReportAction
+          Action = NonVisualDataModule.RemoteReportAction
+        end
+        object TBXItem170: TTBXItem
+          Action = NonVisualDataModule.RemoteThumbnailAction
         end
         object TBXSeparatorItem4: TTBXSeparatorItem
         end
@@ -833,19 +849,22 @@ inherited ScpExplorerForm: TScpExplorerForm
       object TBXSeparatorItem36: TTBXSeparatorItem
       end
       object TBXSubmenuItem3: TTBXSubmenuItem
-        Action = NonVisualDataModule.CurrentCycleStyleAction
+        Action = NonVisualDataModule.RemoteCycleStyleAction
         DropdownCombo = True
         object TBXItem72: TTBXItem
-          Action = NonVisualDataModule.CurrentIconAction
+          Action = NonVisualDataModule.RemoteIconAction
         end
         object TBXItem73: TTBXItem
-          Action = NonVisualDataModule.CurrentSmallIconAction
+          Action = NonVisualDataModule.RemoteSmallIconAction
         end
         object TBXItem74: TTBXItem
-          Action = NonVisualDataModule.CurrentListAction
+          Action = NonVisualDataModule.RemoteListAction
         end
         object TBXItem75: TTBXItem
-          Action = NonVisualDataModule.CurrentReportAction
+          Action = NonVisualDataModule.RemoteReportAction
+        end
+        object TBXItem279: TTBXItem
+          Action = NonVisualDataModule.RemoteThumbnailAction
         end
       end
       object TBXSubmenuItem24: TTBXSubmenuItem
@@ -1048,7 +1067,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       end
     end
     object CustomCommandsToolbar: TTBXToolbar
-      Left = 299
+      Left = 300
       Top = 182
       Caption = 'Custom Commands'
       ChevronMenu = True
@@ -1067,7 +1086,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     Top = 239
     Width = 614
     Height = 93
-    Constraints.MinHeight = 93
+    Constraints.MinHeight = 92
     Constraints.MinWidth = 210
     inherited RemotePanelSplitter: TSplitter
       Height = 62

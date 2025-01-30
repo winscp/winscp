@@ -465,19 +465,15 @@ void __fastcall TFileFindDialog::Dispatch(void * Message)
   {
     CMDialogKey(*((TWMKeyDown *)Message));
   }
-  else if (M->Msg == CM_DPICHANGED)
-  {
-    CMDpiChanged(*M);
-  }
   else
   {
     TForm::Dispatch(Message);
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileFindDialog::CMDpiChanged(TMessage & Message)
+void __fastcall TFileFindDialog::FormAfterMonitorDpiChanged(TObject *, int OldDPI, int NewDPI)
 {
-  TForm::Dispatch(&Message);
+  DebugUsedParam2(OldDPI, NewDPI);
   UpdateImages();
 }
 //---------------------------------------------------------------------------
@@ -614,11 +610,13 @@ TListItem * __fastcall TFileFindDialog::FileOperationFinished(const UnicodeStrin
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileFindDialog::FileDeleteFinished(TOperationSide, const UnicodeString & FileName, bool Success)
+void __fastcall TFileFindDialog::FileDeleteFinished(
+  TOperationSide, const UnicodeString & FileName, bool Success, bool NotCancelled)
 {
+  DebugUsedParam(NotCancelled);
   if (FileName.IsEmpty())
   {
-    DebugAssert(Success);
+    DebugAssert(Success && NotCancelled);
     FileView->SelectAll(smNone);
   }
   else
@@ -632,18 +630,19 @@ void __fastcall TFileFindDialog::FileDeleteFinished(TOperationSide, const Unicod
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileFindDialog::FileDownloadFinished(TOperationSide, const UnicodeString & FileName, bool Success)
+void __fastcall TFileFindDialog::FileDownloadFinished(
+  TOperationSide, const UnicodeString & FileName, bool Success, bool NotCancelled)
 {
   if (FileName.IsEmpty())
   {
-    DebugAssert(Success);
+    DebugAssert(Success && NotCancelled);
     // Moved to queue, see call in TCustomScpExplorerForm::CopyParamDialog
     FileView->SelectAll(smNone);
   }
   else
   {
     TListItem * Item = FileOperationFinished(FileName);
-    if (DebugAlwaysTrue(Item != NULL) && Success)
+    if (DebugAlwaysTrue(Item != NULL) && Success && NotCancelled)
     {
       Item->Selected = false;
     }

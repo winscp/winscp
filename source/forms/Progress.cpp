@@ -378,6 +378,22 @@ void __fastcall TProgressForm::UpdateControls()
     FileProgress->Position = FData.TransferProgress();
     FileProgress->Hint = FORMAT(L"%d%%", (FileProgress->Position));
   }
+
+  SizeToolbar(this, Toolbar, Dock, ToolbarPanel);
+}
+//---------------------------------------------------------------------
+void TProgressForm::SizeToolbar(TForm * Form, TTBXToolbar * Toolbar, TTBXDock * Dock, TPanel * ToolbarPanel)
+{
+  // particularly to adjust to LargerToolbar
+  Dock->ClientHeight = Toolbar->Height;
+  int Delta = Dock->Height - ToolbarPanel->ClientHeight;
+  if (Delta != 0)
+  {
+    ToolbarPanel->ClientHeight += Delta;
+    DebugAssert(ToolbarPanel->Anchors.Contains(akBottom));
+    ToolbarPanel->Top -= Delta; // to counter akBottom anchoring
+    Form->ClientHeight += Delta;
+  }
 }
 //---------------------------------------------------------------------
 static __int64 DelayStartInterval = MSecsPerSec / 2;

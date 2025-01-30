@@ -213,13 +213,13 @@ void __fastcall TWebDAVFileSystem::Open()
   }
 
   size_t Port = Data->PortNumber;
-  UnicodeString ProtocolName = (FTerminal->SessionData->Ftps == ftpsNone) ? HttpProtocol : HttpsProtocol;
+  UnicodeString ProtocolName = (Data->Ftps == ftpsNone) ? HttpProtocol : HttpsProtocol;
   UnicodeString Path = Data->RemoteDirectory;
   // PathToNeon is not used as we cannot call AbsolutePath here
   UnicodeString EscapedPath = StrFromNeon(PathEscape(StrToNeon(Path)).c_str());
   UnicodeString Url = FORMAT(L"%s://%s:%d%s", (ProtocolName, HostName, Port, EscapedPath));
 
-  FTerminal->Information(LoadStr(STATUS_CONNECT), true);
+  FTerminal->Information(LoadStr(STATUS_CONNECT));
   FActive = false;
   try
   {
@@ -321,7 +321,9 @@ void __fastcall TWebDAVFileSystem::InitSession(TSessionContext * SessionContext,
 
   ne_set_read_timeout(Session, Data->Timeout);
 
-  ne_set_connect_timeout(Session, Data->Timeout);
+  // The ne_set_connect_timeout was called here previously, but as neon does not support non-blocking
+  // connection on Windows, it was noop.
+  // Restore the call once ours non-blocking connection implementation proves working.
 
   ne_set_session_private(Session, SESSION_CONTEXT_KEY, SessionContext);
 
@@ -351,7 +353,7 @@ TWebDAVFileSystem::TSessionContext * TWebDAVFileSystem::NeonOpen(const UnicodeSt
 
   UpdateNeonDebugMask();
 
-  NeonAddAuthentiation(Result.get(), Ssl);
+  NeonAddAuthentication(Result.get(), Ssl);
 
   if (Ssl)
   {
@@ -390,7 +392,7 @@ void TWebDAVFileSystem::NeonAuxRequestInit(ne_session * Session, ne_request * /*
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TWebDAVFileSystem::NeonAddAuthentiation(TSessionContext * SessionContext, bool UseNegotiate)
+void __fastcall TWebDAVFileSystem::NeonAddAuthentication(TSessionContext * SessionContext, bool UseNegotiate)
 {
   unsigned int NeonAuthTypes = NE_AUTH_BASIC | NE_AUTH_DIGEST | NE_AUTH_PASSPORT;
   if (UseNegotiate)
@@ -455,6 +457,11 @@ void TWebDAVFileSystem::ExchangeCapabilities(const char * Path, UnicodeString & 
   }
 
   FTerminal->SaveCapabilities(FFileSystemInfo);
+}
+//---------------------------------------------------------------------------
+TWebDAVFileSystem::TSessionContext::TSessionContext() :
+  NeonSession(NULL)
+{
 }
 //---------------------------------------------------------------------------
 TWebDAVFileSystem::TSessionContext::~TSessionContext()
@@ -813,9 +820,14 @@ int __fastcall TWebDAVFileSystem::ReadDirectoryInternal(
   return Result;
 }
 //---------------------------------------------------------------------------
+bool TWebDAVFileSystem::IsRedirect(int NeonStatus)
+{
+  return (NeonStatus == NE_REDIRECT);
+}
+//---------------------------------------------------------------------------
 bool __fastcall TWebDAVFileSystem::IsValidRedirect(int NeonStatus, UnicodeString & Path)
 {
-  bool Result = (NeonStatus == NE_REDIRECT);
+  bool Result = IsRedirect(NeonStatus);
   if (Result)
   {
     // What PathToNeon does
@@ -826,7 +838,6 @@ bool __fastcall TWebDAVFileSystem::IsValidRedirect(int NeonStatus, UnicodeString
     UnicodeString RedirectUrl = GetRedirectUrl();
     // We should test if the redirect is not for another server,
     // though not sure how to do this reliably (domain aliases, IP vs. domain, etc.)
-    // If this ever gets implemented, beware of use from Sink(), where we support redirects to another server.
     UnicodeString RedirectPath = ParsePathFromUrl(RedirectUrl);
     Result =
       !RedirectPath.IsEmpty() &&
@@ -881,7 +892,7 @@ void TWebDAVFileSystem::NeonPropsResult(
     File->Terminal = Terminal;
     FileSystem->ParsePropResultSet(File.get(), Path, Results);
 
-    UnicodeString FileListPath = FileSystem->AbsolutePath(Data.FileList->Directory, false);
+    UnicodeString FileListPath = UnixIncludeTrailingBackslash(FileSystem->AbsolutePath(Data.FileList->Directory, false));
     if (FileSystem->FOneDrive)
     {
       UnicodeString FullFileName = UnixIncludeTrailingBackslash(File->FullFileName);
@@ -924,8 +935,34 @@ void TWebDAVFileSystem::NeonPropsResult(
       File->FileName = PARENTDIRECTORY;
       File->FullFileName = UnixCombinePaths(Path, PARENTDIRECTORY);
     }
+    else
+    {
+      // Quick and dirty hack. The following tests do not work on OneDrive, as the directory path may be escaped,
+      // and we do not correctly unescape full `Path`, only its filename (so path in FullFileName may not be not correct).
+      // Until it's real problem somewhere else, we skip this test, as we otherwise trust OneDrive not to return nonsense contents.
+      if (!FileSystem->FOneDrive)
+      {
+        if (!StartsStr(FileListPath, File->FullFileName))
+        {
+          Terminal->LogEvent(FORMAT(L"Discarding entry \"%s\" with absolute path \"%s\" because it is not descendant of directory \"%s\".", (Path, File->FullFileName, FileListPath)));
+          File.reset(NULL);
+        }
+        else
+        {
+          UnicodeString FileName = MidStr(File->FullFileName, FileListPath.Length() + 1);
+          if (!UnixExtractFileDir(FileName).IsEmpty())
+          {
+            Terminal->LogEvent(FORMAT(L"Discarding entry \"%s\" with absolute path \"%s\" because it is not direct child of directory \"%s\".", (Path, File->FullFileName, FileListPath)));
+            File.reset(NULL);
+          }
+        }
+      }
+    }
 
-    Data.FileList->AddFile(File.release());
+    if (File.get() != NULL)
+    {
+      Data.FileList->AddFile(File.release());
+    }
   }
   else
   {
@@ -1456,7 +1493,7 @@ void __fastcall TWebDAVFileSystem::Source(
           // The only server we found that supports this is TradeMicro SafeSync.
           // But it announces itself as "Server: Apache",
           // so it's not reliable to autodetect the support.
-          // Microsoft Office alegedly uses <Win32LastModifiedTime>
+          // Microsoft Office allegedly uses <Win32LastModifiedTime>
           // https://sabre.io/dav/clients/msoffice/
           // Carot DAV does that too. But we do not know what server does support this.
           TouchAction.Cancel();
@@ -1604,7 +1641,7 @@ void __fastcall TWebDAVFileSystem::HttpAuthenticationFailed(TSessionContext * Se
       // We have to retry with a fresh request. That's what FAuthenticationRetry does.
       FTerminal->LogEvent(FORMAT(L"%s challenge failed, will try different challenge", (SessionContext->AuthorizationProtocol)));
       ne_remove_server_auth(SessionContext->NeonSession);
-      NeonAddAuthentiation(SessionContext, false);
+      NeonAddAuthentication(SessionContext, false);
       FAuthenticationRetry = true;
     }
     else
@@ -1678,7 +1715,7 @@ int TWebDAVFileSystem::NeonBodyAccepter(void * UserData, ne_request * Request, c
 
     if (!Line.IsEmpty())
     {
-      FileSystem->FTerminal->Information(Line, true);
+      FileSystem->FTerminal->Information(Line);
     }
 
     UnicodeString RemoteSystem;
@@ -1820,8 +1857,8 @@ void __fastcall TWebDAVFileSystem::Sink(
 
       ClearNeonError();
       int NeonStatus = ne_get(FSessionContext->NeonSession, PathToNeon(FileName), FD);
-      UnicodeString DiscardPath = FileName;
-      if (IsValidRedirect(NeonStatus, DiscardPath))
+      // Contrary to other actions, for "GET" we support any redirect
+      if (IsRedirect(NeonStatus))
       {
         UnicodeString CorrectedUrl = GetRedirectUrl();
         UTF8String CorrectedFileName, Query;

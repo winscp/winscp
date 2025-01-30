@@ -1,5 +1,4 @@
 object Glyphs192Module: TGlyphs192Module
-  OldCreateOrder = False
   Height = 254
   Width = 215
   object ExplorerImages: TPngImageList
@@ -9101,7 +9100,6 @@ object Glyphs192Module: TGlyphs192Module
       end>
     Left = 32
     Top = 16
-    Bitmap = {}
   end
   object SessionImages: TPngImageList
     Height = 32
@@ -9198,7 +9196,6 @@ object Glyphs192Module: TGlyphs192Module
       end>
     Left = 32
     Top = 80
-    Bitmap = {}
   end
   object QueueImages: TPngImageList
     Height = 32
@@ -9915,6 +9912,5 @@ object Glyphs192Module: TGlyphs192Module
       end>
     Left = 32
     Top = 152
-    Bitmap = {}
   end
 end

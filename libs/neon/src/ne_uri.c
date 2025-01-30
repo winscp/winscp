@@ -201,6 +201,9 @@ int ne_uri_parse_ex(const char *uri, ne_uri *parsed, int liberal) // WINSCP
         if (s[0] == '[') {
             p = s + 1;
 
+            /* This allows any characters in IP-literal which is too
+             * broad, however e.g. zone identifiers per RFC 6874 are
+             * allowed through. */
             while (*p != ']' && p < pa)
                 p++;
 
@@ -209,14 +212,14 @@ int ne_uri_parse_ex(const char *uri, ne_uri *parsed, int liberal) // WINSCP
                 return -1;
             }
 
-            p++; /* => p = colon */
+            p++; /* => p = [ ':' port ] */
         } else {
-            /* Find the colon. */
+            /* Find any colon before reaching path-abempty. */
             p = s;
             while (*p != ':' && p < pa)
                 p++;
         }
-        /* => p = colon */
+        /* => p = [ ":" port ] */
 
         parsed->host = ne_strndup(s, p - s);
 

@@ -11,20 +11,30 @@
 
 #include "putty.h"
 
+// #define WINSCP_LOG_PACKETS
+
 /* log session to file stuff ... */
 struct LogContext {
+#ifndef WINSCP
     FILE *lgfp;
     enum { L_CLOSED, L_OPENING, L_OPEN, L_ERROR } state;
     bufchain queue;
     Filename *currlogfilename;
+#endif
     LogPolicy *lp;
+#ifndef WINSCP
     Conf *conf;
+#endif
     int logtype;                       /* cached out of conf */
 };
+
+#ifndef WINSCP
 
 static Filename *xlatlognam(const Filename *s,
                             const char *hostname, int port,
                             const struct tm *tm);
+
+#endif
 
 /*
  * Internal wrapper function which must be called for _all_ output
@@ -34,6 +44,12 @@ static Filename *xlatlognam(const Filename *s,
  */
 static void logwrite(LogContext *ctx, ptrlen data)
 {
+#if defined(WINSCP_LOG_PACKETS)
+    // WINSCP: All out uses of logwrite call it with ptrlen_from_asciz, so it's safe to ignore data.len
+    ctx->lp->vt->eventlog(ctx->lp, data.ptr);
+#elif defined(WINSCP)
+    assert(false);
+#else
     /*
      * In state L_CLOSED, we call logfopen, which will set the state
      * to one of L_OPENING, L_OPEN or L_ERROR. Hence we process all of
@@ -53,6 +69,7 @@ static void logwrite(LogContext *ctx, ptrlen data)
                         "due to error while writing");
         }
     }                                  /* else L_ERROR, so ignore the write */
+#endif
 }
 
 /*
@@ -63,6 +80,10 @@ static PRINTF_LIKE(2, 3) void logprintf(LogContext *ctx, const char *fmt, ...)
 {
     va_list ap;
     char *data;
+
+#ifndef WINSCP_LOG_PACKETS
+    assert(false);
+#endif
 
     va_start(ap, fmt);
     data = dupvprintf(fmt, ap);
@@ -77,15 +98,19 @@ static PRINTF_LIKE(2, 3) void logprintf(LogContext *ctx, const char *fmt, ...)
  */
 void logflush(LogContext *ctx)
 {
+#ifndef WINSCP
     if (ctx->logtype > 0)
         if (ctx->state == L_OPEN)
             fflush(ctx->lgfp);
+#endif
 }
 
 LogPolicy *log_get_policy(LogContext *ctx)
 {
     return ctx->lp;
 }
+
+#ifndef WINSCP
 
 static void logfopen_callback(void *vctx, int mode)
 {
@@ -213,6 +238,8 @@ void logtraffic(LogContext *ctx, unsigned char c, int logmode)
     }
 }
 
+#endif
+
 static void logevent_internal(LogContext *ctx, const char *event)
 {
     if (ctx->logtype == LGTYP_PACKETS || ctx->logtype == LGTYP_SSHRAW) {
@@ -254,26 +281,6 @@ void logevent(LogContext *ctx, const char *event)
     }
 }
 
-void logevent_and_free(LogContext *ctx, char *event)
-{
-    logevent(ctx, event);
-    sfree(event);
-}
-
-void logeventvf(LogContext *ctx, const char *fmt, va_list ap)
-{
-    logevent_and_free(ctx, dupvprintf(fmt, ap));
-}
-
-void logeventf(LogContext *ctx, const char *fmt, ...)
-{
-    va_list ap;
-
-    va_start(ap, fmt);
-    logeventvf(ctx, fmt, ap);
-    va_end(ap);
-}
-
 /*
  * Log an SSH packet.
  * If n_blanks != 0, blank or omit some parts.
@@ -289,14 +296,18 @@ void log_packet(LogContext *ctx, int direction, int type,
     size_t p = 0, b = 0, omitted = 0;
     int output_pos = 0; /* NZ if pending output in dumpdata */
 
+#ifndef WINSCP_LOG_PACKETS
     if (!(ctx->logtype == LGTYP_SSHRAW ||
           (ctx->logtype == LGTYP_PACKETS && texttype)))
         return;
 
+    assert(false);
+#endif
+
     /* Packet header. */
     if (texttype) {
-        logprintf(ctx, "%s packet ",
-                  direction == PKT_INCOMING ? "Incoming" : "Outgoing");
+        logprintf(ctx, "%s packet len=%d ",
+                  direction == PKT_INCOMING ? "Incoming" : "Outgoing", (int)len);
 
         if (seq)
             logprintf(ctx, "#0x%lx, ", *seq);
@@ -358,8 +369,11 @@ void log_packet(LogContext *ctx, int direction, int type,
         /* (Re-)initialise dumpdata as necessary
          * (start of row, or if we've just stopped omitting) */
         if (!output_pos && !omitted)
-            sprintf(dumpdata, "  %08"SIZEx"%*s\r\n",
-                    p-(p%16), 1+3*16+2+16, "");
+        {
+            // WINSCP: otherwise it fails with access violation with codeguard on
+            sprintf(dumpdata, "  %08"SIZEx, p-(p%16));
+            sprintf(dumpdata + strlen(dumpdata), "%*s\r\n", 1+3*16+2+16, "");
+        }
 
         /* Deal with the current byte. */
         if (blktype == PKTLOG_OMIT) {
@@ -402,13 +416,19 @@ void log_packet(LogContext *ctx, int direction, int type,
 LogContext *log_init(LogPolicy *lp, Conf *conf)
 {
     LogContext *ctx = snew(LogContext);
+#ifndef WINSCP
     ctx->lgfp = NULL;
     ctx->state = L_CLOSED;
+#endif
     ctx->lp = lp;
+#ifndef WINSCP
     ctx->conf = conf_copy(conf);
-    ctx->logtype = conf_get_int(ctx->conf, CONF_logtype);
+#endif
+    ctx->logtype = conf_get_int(conf, CONF_logtype);
+#ifndef WINSCP
     ctx->currlogfilename = NULL;
     bufchain_init(&ctx->queue);
+#endif
     return ctx;
 }
 
@@ -420,17 +440,23 @@ LogPolicy *log_get_logpolicy(LogContext *ctx)
 
 void log_free(LogContext *ctx)
 {
+#ifndef WINSCP
     logfclose(ctx);
     bufchain_clear(&ctx->queue);
     if (ctx->currlogfilename)
         filename_free(ctx->currlogfilename);
     conf_free(ctx->conf);
+#endif
     sfree(ctx);
 }
+
+#ifndef WINSCP
 
 void log_reconfig(LogContext *ctx, Conf *conf)
 {
     bool reset_logging;
+
+    assert(false); // WINSCP
 
     if (!filename_equal(conf_get_filename(ctx->conf, CONF_logfilename),
                         conf_get_filename(conf, CONF_logfilename)) ||
@@ -468,6 +494,8 @@ static Filename *xlatlognam(const Filename *src,
     strbuf *buffer;
     const char *s;
     Filename *ret;
+
+    assert(false); // WINSCP
 
     buffer = strbuf_new();
     s = filename_to_str(src);
@@ -528,3 +556,6 @@ static Filename *xlatlognam(const Filename *src,
     strbuf_free(buffer);
     return ret;
 }
+
+#endif
+

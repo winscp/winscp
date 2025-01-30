@@ -963,6 +963,17 @@ bool __fastcall SamePaths(const UnicodeString & Path1, const UnicodeString & Pat
   return AnsiSameText(IncludeTrailingBackslash(Path1), IncludeTrailingBackslash(Path2));
 }
 //---------------------------------------------------------------------------
+UnicodeString CombinePaths(const UnicodeString & Path1, const UnicodeString & Path2)
+{
+  // Make sure that C: + foo => C:\foo and not C:foo
+  UnicodeString Path1Terminated = Path1;
+  if (EndsStr(L":", Path1Terminated))
+  {
+    Path1Terminated = IncludeTrailingBackslash(Path1Terminated);
+  }
+  return TPath::Combine(Path1Terminated, Path2);
+}
+//---------------------------------------------------------------------------
 int __fastcall CompareLogicalText(
   const UnicodeString & S1, const UnicodeString & S2, bool NaturalOrderNumericalSorting)
 {
@@ -1055,31 +1066,7 @@ enum PATH_PREFIX_TYPE
   PPT_LONG_UNICODE_UNC,   //Found \\?\UNC\ prefix
 };
 //---------------------------------------------------------------------------
-static int __fastcall PathRootLength(UnicodeString Path)
-{
-  // Correction for PathSkipRoot API
-
-  // Replace all /'s with \'s because PathSkipRoot can't handle /'s
-  UnicodeString Result = ReplaceChar(Path, L'/', L'\\');
-
-  // Now call the API
-  LPCTSTR Buffer = PathSkipRoot(Result.c_str());
-
-  return (Buffer != NULL) ? (Buffer - Result.c_str()) : -1;
-}
-//---------------------------------------------------------------------------
-static bool __fastcall PathIsRelative_CorrectedForMicrosoftStupidity(UnicodeString Path)
-{
-  // Correction for PathIsRelative API
-
-  // Replace all /'s with \'s because PathIsRelative can't handle /'s
-  UnicodeString Result = ReplaceChar(Path, L'/', L'\\');
-
-  //Now call the API
-  return PathIsRelative(Result.c_str());
-}
-//---------------------------------------------------------------------------
-static int __fastcall GetOffsetAfterPathRoot(UnicodeString Path, PATH_PREFIX_TYPE & PrefixType)
+static int GetOffsetAfterPathRoot(const UnicodeString & Path, PATH_PREFIX_TYPE & PrefixType)
 {
   // Checks if 'pPath' begins with the drive, share, prefix, etc
   // EXAMPLES:
@@ -1101,17 +1088,14 @@ static int __fastcall GetOffsetAfterPathRoot(UnicodeString Path, PATH_PREFIX_TYP
   {
     int Len = Path.Length();
 
-    bool WinXPOnly = !IsWinVista();
+    // Replace all /'s with \'s because PathSkipRoot and PathIsRelative can't handle /'s
+    UnicodeString WinPath = ReplaceChar(Path, L'/', L'\\');
 
-    // The PathSkipRoot() API doesn't work correctly on Windows XP
-    if (!WinXPOnly)
+     // Now call the API
+    LPCTSTR Buffer = PathSkipRoot(WinPath.c_str());
+    if (Buffer != NULL)
     {
-      // Works since Vista and up, but still needs correction :)
-      int RootLength = PathRootLength(Path);
-      if (RootLength >= 0)
-      {
-        Result = RootLength + 1;
-      }
+      Result = (Buffer - WinPath.c_str()) + 1;
     }
 
     // Now determine the type of prefix
@@ -1130,12 +1114,6 @@ static int __fastcall GetOffsetAfterPathRoot(UnicodeString Path, PATH_PREFIX_TYP
       // Found \\?\UNC\ prefix
       PrefixType = PPT_LONG_UNICODE_UNC;
 
-      if (WinXPOnly)
-      {
-          //For older OS
-          Result += 8;
-      }
-
       //Check for UNC share later
       IndCheckUNC = 8;
     }
@@ -1147,12 +1125,6 @@ static int __fastcall GetOffsetAfterPathRoot(UnicodeString Path, PATH_PREFIX_TYP
     {
       // Found \\?\ prefix
       PrefixType = PPT_LONG_UNICODE;
-
-      if (WinXPOnly)
-      {
-          //For older OS
-          Result += 4;
-      }
     }
     else if ((Len >= 2) &&
         (Path[1] == L'\\' || Path[1] == L'/') &&
@@ -1180,12 +1152,6 @@ static int __fastcall GetOffsetAfterPathRoot(UnicodeString Path, PATH_PREFIX_TYP
               {
                 PrefixType = PPT_UNC;
               }
-
-              if (WinXPOnly)
-              {
-                  //For older OS
-                  Result = Index;
-              }
             }
 
             break;
@@ -1194,33 +1160,12 @@ static int __fastcall GetOffsetAfterPathRoot(UnicodeString Path, PATH_PREFIX_TYP
       }
     }
 
-    if (WinXPOnly)
+    // Only if we didn't determine any other type
+    if (PrefixType == PPT_UNKNOWN)
     {
-      // Only if we didn't determine any other type
-      if (PrefixType == PPT_UNKNOWN)
+      if (!PathIsRelative(WinPath.c_str()))
       {
-        if (!PathIsRelative_CorrectedForMicrosoftStupidity(Path.SubString(Result, Path.Length() - Result + 1)))
-        {
-          PrefixType = PPT_ABSOLUTE;
-        }
-      }
-
-      // For older OS only
-      int RootLength = PathRootLength(Path.SubString(Result, Path.Length() - Result + 1));
-      if (RootLength >= 0)
-      {
-        Result = RootLength + 1;
-      }
-    }
-    else
-    {
-      // Only if we didn't determine any other type
-      if (PrefixType == PPT_UNKNOWN)
-      {
-        if (!PathIsRelative_CorrectedForMicrosoftStupidity(Path))
-        {
-          PrefixType = PPT_ABSOLUTE;
-        }
+        PrefixType = PPT_ABSOLUTE;
       }
     }
   }
@@ -1323,7 +1268,7 @@ UnicodeString __fastcall DisplayableStr(const RawByteString & Str)
   int Index = 1;
   while ((Index <= Str.Length()) && Displayable)
   {
-    if (((Str[Index] < '\x20') || (static_cast<unsigned char>(Str[Index]) >= static_cast<unsigned char>('\x80'))) &&
+    if (((Str[Index] < '\x20') || IsWideChar(Str[Index])) &&
         (Str[Index] != '\n') && (Str[Index] != '\r') && (Str[Index] != '\t') && (Str[Index] != '\b'))
     {
       Displayable = false;
@@ -1411,7 +1356,8 @@ UnicodeString __fastcall BytesToHex(RawByteString Str, bool UpperCase, wchar_t S
 //---------------------------------------------------------------------------
 UnicodeString __fastcall CharToHex(wchar_t Ch, bool UpperCase)
 {
-  return BytesToHex(reinterpret_cast<const unsigned char *>(&Ch), sizeof(Ch), UpperCase);
+  // BytesToHex would encode with opposite/unexpected endianness
+  return ByteToHex(Ch >> 8, UpperCase) + ByteToHex(Ch & 0xFF, UpperCase);
 }
 //---------------------------------------------------------------------------
 RawByteString __fastcall HexToBytes(const UnicodeString Hex)
@@ -1497,6 +1443,7 @@ void TSearchRecSmart::Clear()
   FLastWriteTimeSource.dwHighDateTime = 0;
 }
 //---------------------------------------------------------------------------
+// This can be replaced with TSearchRec.TimeStamp
 TDateTime TSearchRecSmart::GetLastWriteTime() const
 {
   if ((FindData.ftLastWriteTime.dwLowDateTime != FLastWriteTimeSource.dwLowDateTime) ||
@@ -1525,7 +1472,7 @@ bool TSearchRecSmart::IsHidden() const
 //---------------------------------------------------------------------------
 UnicodeString TSearchRecChecked::GetFilePath() const
 {
-  return TPath::Combine(Dir, Name);
+  return CombinePaths(Dir, Name);
 }
 //---------------------------------------------------------------------------
 TSearchRecOwned::~TSearchRecOwned()
@@ -1628,7 +1575,7 @@ void __fastcall ProcessLocalDirectory(UnicodeString DirName,
   }
 
   TSearchRecOwned SearchRec;
-  if (FindFirstChecked(TPath::Combine(DirName, AnyMask), FindAttrs, SearchRec) == 0)
+  if (FindFirstChecked(CombinePaths(DirName, AnyMask), FindAttrs, SearchRec) == 0)
   {
     do
     {
@@ -1653,7 +1600,7 @@ int __fastcall FileGetAttrFix(const UnicodeString & FileName)
     // FileGetAttr when called for link with FollowLink set (default) will always fail on pre-Vista
     // as it calls InternalGetFileNameFromSymLink, which test for CheckWin32Version(6, 0)
     Result = GetFileAttributes(FileName.c_str());
-    if ((Result >= 0) && FLAGSET(Result, faSymLink) && IsWinVista())
+    if ((Result >= 0) && FLAGSET(Result, faSymLink))
     {
       try
       {
@@ -2196,11 +2143,12 @@ FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime,
   return Result;
 }
 //---------------------------------------------------------------------------
+// This can be replaced with TSearchRec.TimeStamp
 TDateTime __fastcall FileTimeToDateTime(const FILETIME & FileTime)
 {
   // duplicated in DirView.pas
   TDateTime Result;
-  // The 0xFFF... is sometime seen for invalid timestamps,
+  // The 0xFFF... is sometimes seen for invalid timestamps,
   // it would cause failure in SystemTimeToDateTime below
   if (FileTime.dwLowDateTime == std::numeric_limits<DWORD>::max())
   {
@@ -2876,6 +2824,7 @@ UnicodeString __fastcall DoEncodeUrl(UnicodeString S, const UnicodeString & DoNo
     {
       UTF8String UtfS(S.SubString(Index, 1));
       UnicodeString H;
+      // BytesToHex with separator would do the same
       for (int Index2 = 1; Index2 <= UtfS.Length(); Index2++)
       {
         H += L"%" + ByteToHex(static_cast<unsigned char>(UtfS[Index2]));
@@ -3060,13 +3009,23 @@ void AddToShellFileListCommandLine(UnicodeString & List, const UnicodeString & V
   AddToList(List, Arg, L" ");
 }
 //---------------------------------------------------------------------------
-bool __fastcall IsWinVista()
+bool IsWin64()
 {
-  // Vista is 6.0
-  // Win XP is 5.1
-  // There also 5.2, what is Windows 2003 or Windows XP 64bit
-  // (we consider it WinXP for now)
-  return CheckWin32Version(6, 0);
+  static int Result = -1;
+  if (Result < 0)
+  {
+    Result = 0;
+    BOOL Wow64Process = FALSE;
+    if (IsWow64Process(GetCurrentProcess(), &Wow64Process))
+    {
+      if (Wow64Process)
+      {
+        Result = 1;
+      }
+    }
+  }
+
+  return (Result > 0);
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsWin7()
@@ -3084,26 +3043,10 @@ bool __fastcall IsWin10()
   return CheckWin32Version(10, 0);
 }
 //---------------------------------------------------------------------------
-static OSVERSIONINFO __fastcall GetWindowsVersion()
-{
-  OSVERSIONINFO Result;
-  memset(&Result, 0, sizeof(Result));
-  Result.dwOSVersionInfoSize = sizeof(Result);
-  // Cannot use the VCL Win32MajorVersion+Win32MinorVersion+Win32BuildNumber as
-  // on Windows 10 due to some hacking in InitPlatformId, the Win32BuildNumber is lost
-  GetVersionEx(&Result);
-  return Result;
-}
-//---------------------------------------------------------------------------
-bool __fastcall IsWin10Build(unsigned int BuildNumber)
+bool IsWin10Build(int BuildNumber)
 {
   // It might be enough to check the dwBuildNumber, as we do in TWinConfiguration::IsDDExtBroken()
-  OSVERSIONINFO OSVersionInfo = GetWindowsVersion();
-  return
-    (OSVersionInfo.dwMajorVersion > 10) ||
-    ((OSVersionInfo.dwMajorVersion == 10) && (OSVersionInfo.dwMinorVersion > 0)) ||
-    ((OSVersionInfo.dwMajorVersion == 10) && (OSVersionInfo.dwMinorVersion == 0) &&
-     (OSVersionInfo.dwBuildNumber >= BuildNumber));
+  return IsWin10() && (Win32BuildNumber() >= BuildNumber);
 }
 //---------------------------------------------------------------------------
 bool IsWin11()
@@ -3196,63 +3139,72 @@ UnicodeString __fastcall DefaultEncodingName()
   return ADefaultEncodingName;
 }
 //---------------------------------------------------------------------------
-bool _fastcall GetWindowsProductType(DWORD & Type)
+DWORD GetWindowsProductType()
 {
-  bool Result;
-  HINSTANCE Kernel32 = GetModuleHandle(kernel32);
-  typedef BOOL WINAPI (* TGetProductInfo)(DWORD, DWORD, DWORD, DWORD, PDWORD);
-  TGetProductInfo GetProductInfo =
-      (TGetProductInfo)GetProcAddress(Kernel32, "GetProductInfo");
-  if (GetProductInfo == NULL)
-  {
-    Result = false;
-  }
-  else
-  {
-    GetProductInfo(Win32MajorVersion, Win32MinorVersion, 0, 0, &Type);
-    Result = true;
-  }
+  DWORD Result = 0;
+  GetProductInfo(Win32MajorVersion(), Win32MinorVersion(), 0, 0, &Result);
   return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall WindowsProductName()
 {
   UnicodeString Result;
-  TRegistry * Registry = new TRegistry(KEY_READ);
-  try
+  // On Windows 11 "ProductName" is still "Windows 10"
+  if (IsWin11())
   {
-    Registry->RootKey = HKEY_LOCAL_MACHINE;
-    if (Registry->OpenKey(L"SOFTWARE", false) &&
-        Registry->OpenKey(L"Microsoft", false) &&
-        Registry->OpenKey(L"Windows NT", false) &&
-        Registry->OpenKey(L"CurrentVersion", false))
+    Result = L"Windows 11"; // fallback value
+
+    HMODULE WinBrandLib = LoadLibrary(L"winbrand.dll");
+    if (WinBrandLib != NULL)
     {
-      Result = Registry->ReadString(L"ProductName");
+      typedef LPWSTR WINAPI (* TBrandingFormatString)(LPCWSTR);
+      TBrandingFormatString BrandingFormatString =
+        reinterpret_cast<TBrandingFormatString>(GetProcAddress(WinBrandLib, "BrandingFormatString"));
+      if (BrandingFormatString != NULL)
+      {
+        LPWSTR Brand = BrandingFormatString(L"%WINDOWS_LONG%");
+        if (Brand != NULL)
+        {
+          Result = Brand;
+          GlobalFree(Brand);
+        }
+      }
+      FreeLibrary(WinBrandLib);
     }
-    delete Registry;
   }
-  catch(...)
+  else
   {
+    try
+    {
+      // JCL GetWindowsProductName claims that reading 64-bit key gets correct values, but on Windows 11, neither works
+      unsigned int Access = KEY_READ | FLAGMASK(IsWin64(), KEY_WOW64_64KEY);
+      std::unique_ptr<TRegistry> Registry(new TRegistry(Access));
+      Registry->RootKey = HKEY_LOCAL_MACHINE;
+      if (Registry->OpenKey(L"SOFTWARE", false) &&
+          Registry->OpenKey(L"Microsoft", false) &&
+          Registry->OpenKey(L"Windows NT", false) &&
+          Registry->OpenKey(L"CurrentVersion", false))
+      {
+        Result = Registry->ReadString(L"ProductName");
+      }
+    }
+    catch(...)
+    {
+    }
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-int __fastcall GetWindowsBuild()
-{
-  return GetWindowsVersion().dwBuildNumber;
-}
-//---------------------------------------------------------------------------
 UnicodeString __fastcall WindowsVersion()
 {
-  OSVERSIONINFO OSVersionInfo = GetWindowsVersion();
-  UnicodeString Result = FORMAT(L"%d.%d.%d", (int(OSVersionInfo.dwMajorVersion), int(OSVersionInfo.dwMinorVersion), int(OSVersionInfo.dwBuildNumber)));
+  UnicodeString Result = FORMAT(L"%d.%d.%d", (Win32MajorVersion(), Win32MinorVersion(), Win32BuildNumber()));
   return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall WindowsVersionLong()
 {
   UnicodeString Result = WindowsVersion();
-  AddToList(Result, Win32CSDVersion, L" ");
+  AddToList(Result, Win32CSDVersion(), L" ");
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -3464,11 +3416,11 @@ UnicodeString __fastcall TrimVersion(UnicodeString Version)
   return Version;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall FormatVersion(int MajovVersion, int MinorVersion, int Release)
+UnicodeString __fastcall FormatVersion(int MajorVersion, int MinorVersion, int Release)
 {
   return
     TrimVersion(FORMAT(L"%d.%d.%d",
-      (MajovVersion, MinorVersion, Release)));
+      (MajorVersion, MinorVersion, Release)));
 }
 //---------------------------------------------------------------------------
 TFormatSettings __fastcall GetEngFormatSettings()
@@ -3509,12 +3461,35 @@ UnicodeString __fastcall FindIdent(const UnicodeString & Ident, TStrings * Ident
   return Ident;
 }
 //---------------------------------------------------------------------------
-static UnicodeString __fastcall GetTlsErrorStr(int Err)
+UnicodeString GetTlsErrorStr(unsigned long Err)
 {
-  char * Buffer = new char[512];
-  ERR_error_string(Err, Buffer);
-  // not sure about the UTF8
-  return UnicodeString(UTF8String(Buffer));
+  char Buffer[512];
+  ERR_error_string_n(Err, Buffer, sizeof(Buffer));
+  UnicodeString S = UnicodeString(UTF8String(Buffer));
+  for (int I = 0; I < 4; I++)
+  {
+    CutToChar(S, L':', false);
+  }
+  UnicodeString ErrStr = IntToHex(static_cast<unsigned int>(Err));
+  return FORMAT(L"OpenSSL %s: %s", (ErrStr, S.TrimRight()));
+}
+//---------------------------------------------------------------------------
+UnicodeString GetTlsErrorStrs()
+{
+  UnicodeString Result;
+  int Error;
+  const char * Data;
+  while ((Error = ERR_get_error_all(NULL, NULL, NULL, &Data, NULL)) != 0)
+  {
+    UnicodeString S = GetTlsErrorStr(Error);
+    if ((Data != NULL) && (strlen(Data) > 0))
+    {
+      UnicodeString DataStr = UnicodeString(UTF8String(Data)).TrimRight();
+      S += FORMAT(L" (%s)", (DataStr));
+    }
+    AddToList(Result, S, L"\n");
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 static FILE * __fastcall OpenCertificate(const UnicodeString & Path)
@@ -3544,7 +3519,7 @@ static int PemPasswordCallback(char * Buf, int Size, int /*RWFlag*/, void * User
   return strlen(Buf);
 }
 //---------------------------------------------------------------------------
-static bool __fastcall IsTlsPassphraseError(int Error, bool HasPassphrase)
+static bool __fastcall IsTlsPassphraseError(unsigned long Error, bool HasPassphrase)
 {
   int ErrorLib = ERR_GET_LIB(Error);
   int ErrorReason = ERR_GET_REASON(Error);
@@ -3562,7 +3537,7 @@ static bool __fastcall IsTlsPassphraseError(int Error, bool HasPassphrase)
 //---------------------------------------------------------------------------
 static void __fastcall ThrowTlsCertificateErrorIgnorePassphraseErrors(const UnicodeString & Path, bool HasPassphrase)
 {
-  int Error = ERR_get_error();
+  unsigned long Error = ERR_get_error();
   if (!IsTlsPassphraseError(Error, HasPassphrase))
   {
     throw ExtException(MainInstructions(FMTLOAD(CERTIFICATE_READ_ERROR, (Path))), GetTlsErrorStr(Error));
@@ -3576,143 +3551,155 @@ void __fastcall ParseCertificate(const UnicodeString & Path,
   Certificate = NULL;
   PrivateKey = NULL;
   WrongPassphrase = false;
-  bool HasPassphrase = !Passphrase.IsEmpty();
-
-  FILE * File;
-
-  // Inspired by neon's ne_ssl_clicert_read
-  File = OpenCertificate(Path);
-  // openssl pkcs12 -inkey cert.pem -in cert.crt -export -out cert.pfx
-  // Binary file
-  PKCS12 * Pkcs12 = d2i_PKCS12_fp(File, NULL);
-  fclose(File);
-
-  if (Pkcs12 != NULL)
+  bool Discard = false;
+  try
   {
-    UTF8String PassphraseUtf(Passphrase);
-
-    bool Result =
-      (PKCS12_parse(Pkcs12, PassphraseUtf.c_str(), &PrivateKey, &Certificate, NULL) == 1);
-    PKCS12_free(Pkcs12);
-
-    if (!Result)
-    {
-      ThrowTlsCertificateErrorIgnorePassphraseErrors(Path, HasPassphrase);
-      WrongPassphrase = true;
-    }
-  }
-  else
-  {
-    ERR_clear_error();
-
-    TPemPasswordCallbackData CallbackUserData;
-    // PemPasswordCallback never writes to the .Passphrase
-    CallbackUserData.Passphrase = const_cast<UnicodeString *>(&Passphrase);
-
-    File = OpenCertificate(Path);
-    // Encrypted:
-    // openssl req -x509 -newkey rsa:2048 -keyout cert.pem -out cert.crt
-    // -----BEGIN ENCRYPTED PRIVATE KEY-----
-    // ...
-    // -----END ENCRYPTED PRIVATE KEY-----
-
-    // Not encrypted (add -nodes):
-    // -----BEGIN PRIVATE KEY-----
-    // ...
-    // -----END PRIVATE KEY-----
-    // Or (openssl genrsa -out client.key 1024   # used for certificate signing request)
-    // -----BEGIN RSA PRIVATE KEY-----
-    // ...
-    // -----END RSA PRIVATE KEY-----
-    PrivateKey = PEM_read_PrivateKey(File, NULL, PemPasswordCallback, &CallbackUserData);
-    fclose(File);
-
     try
     {
-      if (PrivateKey == NULL)
-      {
-        ThrowTlsCertificateErrorIgnorePassphraseErrors(Path, HasPassphrase);
-        WrongPassphrase = true;
-      }
+      bool HasPassphrase = !Passphrase.IsEmpty();
 
+      FILE * File;
+
+      // Inspired by neon's ne_ssl_clicert_read
       File = OpenCertificate(Path);
-      // The file can contain both private and public key
-      // (basically cert.pem and cert.crt appended one to each other)
-      // -----BEGIN ENCRYPTED PRIVATE KEY-----
-      // ...
-      // -----END ENCRYPTED PRIVATE KEY-----
-      // -----BEGIN CERTIFICATE-----
-      // ...
-      // -----END CERTIFICATE-----
-      Certificate = PEM_read_X509(File, NULL, PemPasswordCallback, &CallbackUserData);
+      // openssl pkcs12 -inkey cert.pem -in cert.crt -export -out cert.pfx
+      // Binary file
+      PKCS12 * Pkcs12 = d2i_PKCS12_fp(File, NULL);
       fclose(File);
 
-      if (Certificate == NULL)
+      if (Pkcs12 != NULL)
       {
-        int Error = ERR_get_error();
-        // unlikely
-        if (IsTlsPassphraseError(Error, HasPassphrase))
+        UTF8String PassphraseUtf(Passphrase);
+
+        bool Result =
+          (PKCS12_parse(Pkcs12, PassphraseUtf.c_str(), &PrivateKey, &Certificate, NULL) == 1);
+        PKCS12_free(Pkcs12);
+
+        if (!Result)
         {
+          ThrowTlsCertificateErrorIgnorePassphraseErrors(Path, HasPassphrase);
           WrongPassphrase = true;
         }
-        else
+        if (!WrongPassphrase && (PrivateKey == NULL))
         {
-          UnicodeString CertificatePath = ChangeFileExt(Path, L".cer");
-          if (!FileExists(CertificatePath))
-          {
-            CertificatePath = ChangeFileExt(Path, L".crt");
-          }
+          throw Exception(FMTLOAD(NO_PRIVATE_KEY, (Path)));
+        }
+      }
+      else
+      {
+        ERR_clear_error();
 
-          if (!FileExists(CertificatePath))
+        TPemPasswordCallbackData CallbackUserData;
+        // PemPasswordCallback never writes to the .Passphrase
+        CallbackUserData.Passphrase = const_cast<UnicodeString *>(&Passphrase);
+
+        File = OpenCertificate(Path);
+        // Encrypted:
+        // openssl req -x509 -newkey rsa:2048 -keyout cert.pem -out cert.crt
+        // -----BEGIN ENCRYPTED PRIVATE KEY-----
+        // ...
+        // -----END ENCRYPTED PRIVATE KEY-----
+
+        // Not encrypted (add -nodes):
+        // -----BEGIN PRIVATE KEY-----
+        // ...
+        // -----END PRIVATE KEY-----
+        // Or (openssl genrsa -out client.key 1024   # used for certificate signing request)
+        // -----BEGIN RSA PRIVATE KEY-----
+        // ...
+        // -----END RSA PRIVATE KEY-----
+        PrivateKey = PEM_read_PrivateKey(File, NULL, PemPasswordCallback, &CallbackUserData);
+        fclose(File);
+
+        if (PrivateKey == NULL)
+        {
+          ThrowTlsCertificateErrorIgnorePassphraseErrors(Path, HasPassphrase);
+          WrongPassphrase = true;
+        }
+
+        File = OpenCertificate(Path);
+        // The file can contain both private and public key
+        // (basically cert.pem and cert.crt appended one to each other)
+        // -----BEGIN ENCRYPTED PRIVATE KEY-----
+        // ...
+        // -----END ENCRYPTED PRIVATE KEY-----
+        // -----BEGIN CERTIFICATE-----
+        // ...
+        // -----END CERTIFICATE-----
+        Certificate = PEM_read_X509(File, NULL, PemPasswordCallback, &CallbackUserData);
+        fclose(File);
+
+        if (Certificate == NULL)
+        {
+          unsigned long Error = ERR_get_error();
+          // unlikely
+          if (IsTlsPassphraseError(Error, HasPassphrase))
           {
-            throw Exception(MainInstructions(FMTLOAD(CERTIFICATE_PUBLIC_KEY_NOT_FOUND, (Path))));
+            WrongPassphrase = true;
           }
           else
           {
-            File = OpenCertificate(CertificatePath);
-            // -----BEGIN CERTIFICATE-----
-            // ...
-            // -----END CERTIFICATE-----
-            Certificate = PEM_read_X509(File, NULL, PemPasswordCallback, &CallbackUserData);
-            fclose(File);
-
-            if (Certificate == NULL)
+            UnicodeString CertificatePath = ChangeFileExt(Path, L".cer");
+            if (!FileExists(CertificatePath))
             {
-              int Base64Error = ERR_get_error();
+              CertificatePath = ChangeFileExt(Path, L".crt");
+            }
 
+            if (!FileExists(CertificatePath))
+            {
+              throw Exception(MainInstructions(FMTLOAD(CERTIFICATE_PUBLIC_KEY_NOT_FOUND, (Path))));
+            }
+            else
+            {
               File = OpenCertificate(CertificatePath);
-              // Binary DER-encoded certificate
-              // (as above, with BEGIN/END removed, and decoded from Base64 to binary)
-              // openssl x509 -in cert.crt -out client.der.crt -outform DER
-              Certificate = d2i_X509_fp(File, NULL);
+              // -----BEGIN CERTIFICATE-----
+              // ...
+              // -----END CERTIFICATE-----
+              Certificate = PEM_read_X509(File, NULL, PemPasswordCallback, &CallbackUserData);
               fclose(File);
 
               if (Certificate == NULL)
               {
-                int DERError = ERR_get_error();
+                unsigned long Base64Error = ERR_get_error();
 
-                UnicodeString Message = MainInstructions(FMTLOAD(CERTIFICATE_READ_ERROR, (CertificatePath)));
-                UnicodeString MoreMessages =
-                  FORMAT(L"Base64: %s\nDER: %s", (GetTlsErrorStr(Base64Error), GetTlsErrorStr(DERError)));
-                throw ExtException(Message, MoreMessages);
+                File = OpenCertificate(CertificatePath);
+                // Binary DER-encoded certificate
+                // (as above, with BEGIN/END removed, and decoded from Base64 to binary)
+                // openssl x509 -in cert.crt -out client.der.crt -outform DER
+                Certificate = d2i_X509_fp(File, NULL);
+                fclose(File);
+
+                if (Certificate == NULL)
+                {
+                  unsigned long DERError = ERR_get_error();
+
+                  UnicodeString Message = MainInstructions(FMTLOAD(CERTIFICATE_READ_ERROR, (CertificatePath)));
+                  UnicodeString MoreMessages =
+                    FORMAT(L"Base64: %s\nDER: %s", (GetTlsErrorStr(Base64Error), GetTlsErrorStr(DERError)));
+                  throw ExtException(Message, MoreMessages);
+                }
               }
             }
           }
         }
       }
     }
-    __finally
+    catch (...)
     {
-      // We loaded private key, but failed to load certificate, discard the certificate
-      // (either exception was thrown or WrongPassphrase)
-      if ((PrivateKey != NULL) && (Certificate == NULL))
+      Discard = true;
+      throw;
+    }
+  }
+  __finally
+  {
+    if (Discard || WrongPassphrase)
+    {
+      if (PrivateKey != NULL)
       {
         EVP_PKEY_free(PrivateKey);
         PrivateKey = NULL;
       }
-      // Certificate was verified, but passphrase was wrong when loading private key,
-      // so discard the certificate
-      else if ((Certificate != NULL) && (PrivateKey == NULL))
+      if (Certificate != NULL)
       {
         X509_free(Certificate);
         Certificate = NULL;
@@ -4201,9 +4188,9 @@ UnicodeString __fastcall AssemblyNewClassInstanceStart(
       break;
 
     case alVBNET:
-      // Historically we use Dim .. With instead of object initilizer.
+      // Historically we use Dim .. With instead of object initializer.
       // But for inline use, we have to use object initialize.
-      // We should consistently always use object initilizers.
+      // We should consistently always use object initializers.
       // Unfortunately VB.NET object initializer (contrary to C#) does not allow trailing comma.
       Result += SpaceOrPara + RtfKeyword(L"With");
       if (Inline)
@@ -4543,3 +4530,84 @@ UnicodeString GetDividerLine()
 {
   return UnicodeString::StringOfChar(L'-', 27);
 }
+//---------------------------------------------------------------------------
+static UnicodeString CutFeature(UnicodeString & Buf)
+{
+  UnicodeString Result;
+  if (Buf.SubString(1, 1) == L"\"")
+  {
+    Buf.Delete(1, 1);
+    int P = Buf.Pos(L"\",");
+    if (P == 0)
+    {
+      Result = Buf;
+      Buf = UnicodeString();
+      // there should be the ending quote, but if not, just do nothing
+      if (Result.SubString(Result.Length(), 1) == L"\"")
+      {
+        Result.SetLength(Result.Length() - 1);
+      }
+    }
+    else
+    {
+      Result = Buf.SubString(1, P - 1);
+      Buf.Delete(1, P + 1);
+    }
+    Buf = Buf.TrimLeft();
+  }
+  else
+  {
+    Result = CutToChar(Buf, L',', true);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+TStrings * ProcessFeatures(TStrings * Features, const UnicodeString & AFeaturesOverride)
+{
+  std::unique_ptr<TStrings> Result(new TStringList());
+  UnicodeString FeaturesOverride = AFeaturesOverride;
+  if (FeaturesOverride.SubString(1, 1) == L"*")
+  {
+    FeaturesOverride.Delete(1, 1);
+    while (!FeaturesOverride.IsEmpty())
+    {
+      UnicodeString Feature = CutFeature(FeaturesOverride);
+      Result->Add(Feature);
+    }
+  }
+  else
+  {
+    std::unique_ptr<TStrings> DeleteFeatures(CreateSortedStringList());
+    std::unique_ptr<TStrings> AddFeatures(new TStringList());
+    while (!FeaturesOverride.IsEmpty())
+    {
+      UnicodeString Feature = CutFeature(FeaturesOverride);
+      if (Feature.SubString(1, 1) == L"-")
+      {
+        Feature.Delete(1, 1);
+        DeleteFeatures->Add(Feature.LowerCase());
+      }
+      else
+      {
+        if (Feature.SubString(1, 1) == L"+")
+        {
+          Feature.Delete(1, 1);
+        }
+        AddFeatures->Add(Feature);
+      }
+    }
+
+    for (int Index = 0; Index < Features->Count; Index++)
+    {
+      UnicodeString Feature = Features->Strings[Index];
+      if (DeleteFeatures->IndexOf(Feature) < 0)
+      {
+        Result->Add(Feature);
+      }
+    }
+
+    Result->AddStrings(AddFeatures.get());
+  }
+  return Result.release();
+}
+//---------------------------------------------------------------------

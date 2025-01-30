@@ -17,6 +17,7 @@
 #include "Security.h"
 #include "NeonIntf.h"
 #include "SessionInfo.h"
+#include "Cryptography.h"
 #include <StrUtils.hpp>
 #include <DateUtils.hpp>
 #include <openssl/x509_vfy.h>
@@ -415,30 +416,35 @@ void __fastcall TFTPFileSystem::Open()
   UnicodeString Account = Data->FtpAccount;
   UnicodeString Path = Data->RemoteDirectory;
   int ServerType;
-  switch (Data->Ftps)
+  if (Data->Ftps == ftpsNone)
   {
-    case ftpsNone:
-      ServerType = TFileZillaIntf::SERVER_FTP;
-      break;
+    ServerType = TFileZillaIntf::SERVER_FTP;
+  }
+  else
+  {
+    switch (Data->Ftps)
+    {
+      case ftpsImplicit:
+        ServerType = TFileZillaIntf::SERVER_FTP_SSL_IMPLICIT;
+        FSessionInfo.SecurityProtocolName = LoadStr(FTPS_IMPLICIT);
+        break;
 
-    case ftpsImplicit:
-      ServerType = TFileZillaIntf::SERVER_FTP_SSL_IMPLICIT;
-      FSessionInfo.SecurityProtocolName = LoadStr(FTPS_IMPLICIT);
-      break;
+      case ftpsExplicitSsl:
+        ServerType = TFileZillaIntf::SERVER_FTP_SSL_EXPLICIT;
+        FSessionInfo.SecurityProtocolName = LoadStr(FTPS_EXPLICIT);
+        break;
 
-    case ftpsExplicitSsl:
-      ServerType = TFileZillaIntf::SERVER_FTP_SSL_EXPLICIT;
-      FSessionInfo.SecurityProtocolName = LoadStr(FTPS_EXPLICIT);
-      break;
+      case ftpsExplicitTls:
+        ServerType = TFileZillaIntf::SERVER_FTP_TLS_EXPLICIT;
+        FSessionInfo.SecurityProtocolName = LoadStr(FTPS_EXPLICIT);
+        break;
 
-    case ftpsExplicitTls:
-      ServerType = TFileZillaIntf::SERVER_FTP_TLS_EXPLICIT;
-      FSessionInfo.SecurityProtocolName = LoadStr(FTPS_EXPLICIT);
-      break;
+      default:
+        DebugFail();
+        break;
+    }
 
-    default:
-      DebugFail();
-      break;
+    RequireTls();
   }
 
   int Pasv = (Data->FtpPasvMode ? 1 : 2);
@@ -486,7 +492,7 @@ void __fastcall TFTPFileSystem::Open()
 
       if (!PromptedForCredentials)
       {
-        FTerminal->Information(LoadStr(FTP_CREDENTIAL_PROMPT), false);
+        FTerminal->Information(LoadStr(FTP_CREDENTIAL_PROMPT));
         PromptedForCredentials = true;
       }
 
@@ -552,7 +558,7 @@ void __fastcall TFTPFileSystem::Open()
     {
       if (FPasswordFailed)
       {
-        FTerminal->Information(LoadStr(FTP_ACCESS_DENIED), false);
+        FTerminal->Information(LoadStr(FTP_ACCESS_DENIED));
       }
       else
       {
@@ -1344,7 +1350,7 @@ bool __fastcall TFTPFileSystem::ConfirmOverwrite(
   bool CanResume =
     !OperationProgress->AsciiTransfer &&
     // when resuming transfer after interrupted connection,
-    // do nothing (dummy resume) when the files has the same size.
+    // do nothing (dummy resume) when the files have the same size.
     // this is workaround for servers that strangely fails just after successful
     // upload.
     (DestIsSmaller || (DestIsSame && CanAutoResume));
@@ -1522,7 +1528,7 @@ void __fastcall TFTPFileSystem::DoFileTransferProgress(__int64 TransferSize,
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::SetCPSLimit(TFileOperationProgressType * OperationProgress)
 {
-  // Any reason we use separate field intead of directly using OperationProgress->CPSLimit?
+  // Any reason we use separate field instead of directly using OperationProgress->CPSLimit?
   // Maybe thread-safety?
   FFileTransferCPSLimit = OperationProgress->CPSLimit;
   OperationProgress->SetSpeedCounters();
@@ -2053,7 +2059,7 @@ void __fastcall TFTPFileSystem::ReadCurrentDirectory()
 
         if (Result)
         {
-          if ((Path.Length() > 0) && !UnixIsAbsolutePath(Path))
+          if (Path.IsEmpty() || !UnixIsAbsolutePath(Path))
           {
             Path = L"/" + Path;
           }
@@ -3730,7 +3736,7 @@ bool __fastcall TFTPFileSystem::HandleStatus(const wchar_t * AStatus, int Type)
   switch (Type)
   {
     case TFileZillaIntf::LOG_STATUS:
-      FTerminal->Information(Status, true);
+      FTerminal->Information(Status);
       LogType = llMessage;
       break;
 
@@ -4697,7 +4703,7 @@ bool __fastcall TFTPFileSystem::GetFileModificationTimeInUtc(const wchar_t * Fil
   bool Result;
   try
   {
-    // error-handling-free and DST-mode-inaware copy of TTerminal::OpenLocalFile
+    // error-handling-free and DST-mode-unaware copy of TTerminal::OpenLocalFile
     HANDLE Handle = CreateFile(ApiPath(FileName).c_str(), GENERIC_READ,
       FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, 0);
     if (Handle == INVALID_HANDLE_VALUE)

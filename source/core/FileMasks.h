@@ -205,7 +205,7 @@ struct TCustomCommandData
     TSessionData * SessionData, const UnicodeString & AUserName,
     const UnicodeString & Password);
 
-  __property TSessionData * SessionData = { read = GetSesssionData };
+  __property TSessionData * SessionData = { read = GetSessionData };
 
   void __fastcall operator=(const TCustomCommandData & Data);
 
@@ -215,7 +215,7 @@ private:
   void __fastcall Init(
     TSessionData * SessionData, const UnicodeString & AUserName,
     const UnicodeString & Password, const UnicodeString & HostKey);
-  TSessionData * __fastcall GetSesssionData() const;
+  TSessionData * __fastcall GetSessionData() const;
 };
 //---------------------------------------------------------------------------
 class TFileCustomCommand : public TCustomCommand

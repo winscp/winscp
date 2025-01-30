@@ -38,10 +38,6 @@ __fastcall TRightsFrame::TRightsFrame(TComponent* Owner)
   COPY_HINT(Write);
   COPY_HINT(Exec);
   #undef COPY_HINT
-
-  UpgradeSpeedButton(OwnerButton);
-  UpgradeSpeedButton(GroupButton);
-  UpgradeSpeedButton(OthersButton);
 }
 //---------------------------------------------------------------------------
 __fastcall TRightsFrame::~TRightsFrame()
@@ -432,6 +428,7 @@ void __fastcall TRightsFrame::CreateWnd()
     Height += 2 * GetSystemMetricsForControl(Parent, SM_CYBORDER);
   }
   TFrame::CreateWnd();
+  UpdateButtons();
 }
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::SetPopup(bool value)
@@ -512,6 +509,36 @@ void __fastcall TRightsFrame::CMDialogKey(TCMDialogKey & Message)
   {
     TFrame::Dispatch(&Message);
   }
+
+  if (Message.CharCode == VK_MENU)
+  {
+    UpdateButtons();
+  }
+}
+//---------------------------------------------------------------------------
+bool TRightsFrame::IsButtonAccel(TCMDialogChar & Message, TSpeedButton * Button, TWinControl * FocusControl)
+{
+  bool Result = IsAccel(Message.CharCode, Button->Caption) && Button->Visible && Button->Enabled;
+  if (Result)
+  {
+    Perform(WM_CHANGEUISTATE, MAKELONG(UIS_CLEAR, UISF_HIDEFOCUS), 0);
+    FocusControl->SetFocus();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void TRightsFrame::CMDialogChar(TCMDialogChar & Message)
+{
+  if (IsButtonAccel(Message, OwnerButton, OwnerReadCheck) ||
+      IsButtonAccel(Message, GroupButton, GroupReadCheck) ||
+      IsButtonAccel(Message, OthersButton, OthersReadCheck))
+  {
+    Message.Result = 1;
+  }
+  else
+  {
+    TFrame::Dispatch(&Message);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::CMCancelMode(TCMCancelMode & Message)
@@ -525,6 +552,45 @@ void __fastcall TRightsFrame::CMCancelMode(TCMCancelMode & Message)
     CloseUp();
   }
   TFrame::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
+void TRightsFrame::CMDPIChanged(TMessage & Message)
+{
+  TFrame::Dispatch(&Message);
+  UpdateButtons();
+}
+//---------------------------------------------------------------------------
+void TRightsFrame::WMUpdateUIState(TMessage & Message)
+{
+  TFrame::Dispatch(&Message);
+  UpdateButtons();
+}
+//---------------------------------------------------------------------------
+void TRightsFrame::UpdateButton(TSpeedButton * Button, UnicodeString & Caption)
+{
+  if (Caption.IsEmpty())
+  {
+    Caption = Button->Caption;
+    DebugAssert(Caption.Pos(L"&") >= 0);
+  }
+  int Padding = ScaleByTextHeight(Button, 4);
+  std::unique_ptr<TCanvas> Canvas(CreateControlCanvas(Button));
+  UnicodeString ACaption = Caption;
+  UnicodeString StrippedCaption = StripHotkey(ACaption);
+  if ((SendMessage(Handle, WM_QUERYUISTATE, 0, 0) & UISF_HIDEACCEL) != 0)
+  {
+    ACaption = StrippedCaption;
+  }
+  Button->Caption = ACaption;
+  Button->Width = Padding + Canvas->TextWidth(StrippedCaption) + Padding;
+  Button->Left = OctalLabel->Left - Padding;
+}
+//---------------------------------------------------------------------------
+void TRightsFrame::UpdateButtons()
+{
+  UpdateButton(OwnerButton, FOwnerCaption);
+  UpdateButton(GroupButton, FGroupCaption);
+  UpdateButton(OthersButton, FOthersCaption);
 }
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::Dispatch(void * Message)
@@ -541,8 +607,20 @@ void __fastcall TRightsFrame::Dispatch(void * Message)
       CMDialogKey(*(TCMDialogKey *)Message);
       break;
 
+    case CM_DIALOGCHAR:
+      CMDialogChar(*(TCMDialogChar *)Message);
+      break;
+
     case WM_CONTEXTMENU:
       WMContextMenu(*(TWMContextMenu *)Message);
+      break;
+
+    case CM_DPICHANGED:
+      CMDPIChanged(AMessage);
+      break;
+
+    case WM_UPDATEUISTATE:
+      WMUpdateUIState(AMessage);
       break;
 
     default:
@@ -753,8 +831,9 @@ void TRightsFrame::DisplayAsAcl(TRights::TRight ReadRight, TRights::TRight Write
   WriteAclCheck->Hint = LoadStr(PROPERTIES_S3_W_ACL_HINT);
   WriteAclCheck->ShowHint = true;
 
-  GroupLabel->Caption = LoadStr(PROPERTIES_S3_USERS);
-  OthersLabel->Caption = LoadStr(PROPERTIES_S3_EVERYONE);
+  FGroupCaption = LoadStr(PROPERTIES_S3_USERS);
+  FOthersCaption = LoadStr(PROPERTIES_S3_EVERYONE);
+  UpdateButtons();
 }
 //---------------------------------------------------------------------------
 void TRightsFrame::DisplayAsAcl()

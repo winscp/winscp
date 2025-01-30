@@ -58,34 +58,33 @@
     <para>When using a connection secured by SSL/TLS, it is necessary
     for clients to verify that the X.509 certificate presented by the
     server matches the server's expected identity.  The algorithm
-    required for this purpose is described in RFC 2818 and RFC 3280,
+    required for this purpose is described in <ulink url="https://www.rfc-editor.org/rfc/rfc9110">RFC 9110</ulink> and <ulink url="https://www.rfc-editor.org/rfc/rfc9110">RFC 6125</ulink>,
     and is implemented by &neon; in the following manner:</para>
     
-    <itemizedlist>
+    <orderedlist>
       <listitem>
-        <para>the hostname argument passed to <xref
+        <para>the <literal>host</literal> argument passed to <xref
         linkend="ne_session_create"/> is the expected identity of the
         server</para>
       </listitem>
       
       <listitem>
-        <para>the subjectAltName extension of the certificate is used
-        for comparison against the expected identity, in preference
-        to the Subject name's commonName attribute.</para>
+        <para>if the <parameter>host</parameter> argument is an IP
+        literal (e.g. <literal>"198.51.100.42"</literal> or
+        <literal>"[2001:db8::42]"</literal>), it is compared
+        <emphasis>only</emphasis> to any
+        <emphasis>iPAddress</emphasis> subjectAltName values
+        present</para>
       </listitem>
 
       <listitem>
-        <para>the dNSName, iPAddress, and uniformResourceIdentifier
-        classes of GeneralName are supported in subjectAltName
-        comparison.</para>
+        <para>otherwise, the <parameter>host</parameter> parameter is
+        treated as a DNS hostname, and is compared with any
+        <emphasis>dNSName</emphasis> subjectAltName values if present;
+        if none match the hostname is compared with the most specific
+        commonName attribute in the Subject name.</para>
       </listitem>
-
-      <listitem>
-        <para>if no subjectAltName is present in the certificate, the
-        most specific commonName attribute in the Subject name is used
-        for comparison instead.</para>
-      </listitem>
-    </itemizedlist> 
+    </orderedlist>
     
     <para>In the case where a server certificate is presented that
     does not match the expected identity (or is otherwise not

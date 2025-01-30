@@ -68,6 +68,7 @@ __published:
   void __fastcall LogViewMouseMove(TObject *Sender, TShiftState Shift, int X, int Y);
   void __fastcall LabelCopyActionExecute(TObject *Sender);
   void __fastcall LabelOpenLinkAction2Execute(TObject *Sender);
+  void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
 
 public:
   __fastcall TAuthenticateForm(TComponent * Owner);
@@ -101,7 +102,6 @@ protected:
   int __fastcall LogItemHeight(int Index);
   void __fastcall RedrawLog();
   void __fastcall CMShowingChanged(TMessage & Message);
-  DYNAMIC void __fastcall ChangeScale(int M, int D);
   void __fastcall UpdateBannerFont();
   void __fastcall DoAdjustWindow();
   void __fastcall LabelContextPopup(TObject* Sender, const TPoint & MousePos, bool & Handled);

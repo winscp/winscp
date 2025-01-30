@@ -11,7 +11,6 @@ class TSecureShell;
 class TEncryption;
 //---------------------------------------------------------------------------
 enum TSFTPOverwriteMode { omOverwrite, omAppend, omResume };
-extern const int SFTPMaxVersion;
 //---------------------------------------------------------------------------
 class TSFTPFileSystem : public TCustomFileSystem
 {

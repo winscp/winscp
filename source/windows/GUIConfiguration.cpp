@@ -1385,14 +1385,8 @@ TStoredSessionList * __fastcall TGUIConfiguration::SelectPuttySessionsForImport(
   {
     ImportSessionList->Remove(PuttySessionData);
   }
-  if (ImportSessionList->Count > 0)
-  {
-    ImportSessionList->SelectSessionsToImport(Sessions, true);
-  }
-  else
-  {
-    Error = FMTLOAD(PUTTY_NO_SITES2, (Source, SessionsKey));
-  }
+  UnicodeString NoSessionsError = FMTLOAD(PUTTY_NO_SITES2, (Source, SessionsKey));
+  SelectSessionsToImportIfAny(ImportSessionList.get(), Sessions, Error, NoSessionsError);
 
   return ImportSessionList.release();
 }

@@ -11,19 +11,6 @@ typedef BOOL WINAPI (* ChangeWindowMessageFilterExProc)(
 typedef BOOL WINAPI (* AddClipboardFormatListenerProc)(HWND hwnd);
 typedef BOOL WINAPI (* RemoveClipboardFormatListenerProc)(HWND hwnd);
 //---------------------------------------------------------------------------
-#define WM_DPICHANGED 0x02E0
-#define WM_GETDPISCALEDSIZE 0x02E4
-//---------------------------------------------------------------------------
-typedef enum _Monitor_DPI_Type {
-  MDT_Effective_DPI  = 0,
-  MDT_Angular_DPI    = 1,
-  MDT_Raw_DPI        = 2,
-  MDT_Default        = MDT_Effective_DPI
-} MONITOR_DPI_TYPE;
-//---------------------------------------------------------------------------
-typedef HRESULT WINAPI (* GetDpiForMonitorProc)(
-  HMONITOR hmonitor, MONITOR_DPI_TYPE dpiType, UINT * dpiX, UINT * dpiY);
-//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 // Taken from https://www.codeproject.com/Articles/35197/Undocumented-List-View-Features
 //---------------------------------------------------------------------------
@@ -186,10 +173,6 @@ public:
   virtual HRESULT STDMETHODCALLTYPE GetVisibleItemRange(LVITEMINDEX* pFirstItem, LVITEMINDEX* pLastItem) = 0;
   virtual HRESULT STDMETHODCALLTYPE SetTypeAheadFlags(UINT mask, UINT flags) = 0;
 };
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-#define EM_SETEDITSTYLEEX (WM_USER + 275)
-#define SES_EX_HANDLEFRIENDLYURL (0x100)
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 // msi.h (available, but does not compile)

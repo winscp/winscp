@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2022-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -54,6 +54,15 @@ struct quic_xso_st {
      */
     unsigned int                    desires_blocking_set    : 1;
 
+    /* The application has retired a FIN (i.e. SSL_ERROR_ZERO_RETURN). */
+    unsigned int                    retired_fin             : 1;
+
+    /*
+     * The application has requested a reset. Not set for reflexive
+     * STREAM_RESETs caused by peer STOP_SENDING.
+     */
+    unsigned int                    requested_reset         : 1;
+
     /*
      * This state tracks SSL_write all-or-nothing (AON) write semantics
      * emulation.
@@ -74,6 +83,10 @@ struct quic_xso_st {
      */
     /* Is an AON write in progress? */
     unsigned int                    aon_write_in_progress   : 1;
+
+    /* Event handling mode. One of SSL_QUIC_VALUE_EVENT_HANDLING. */
+    unsigned int                    event_handling_mode     : 2;
+
     /*
      * The base buffer pointer the caller passed us for the initial AON write
      * call. We use this for validation purposes unless
@@ -117,6 +130,12 @@ struct quic_conn_st {
     struct ssl_st                   ssl;
 
     SSL                             *tls;
+
+    /* The QUIC engine representing the QUIC event domain. */
+    QUIC_ENGINE                     *engine;
+
+    /* The QUIC port representing the QUIC listener and socket. */
+    QUIC_PORT                       *port;
 
     /*
      * The QUIC channel providing the core QUIC connection implementation. Note
@@ -202,6 +221,9 @@ struct quic_conn_st {
     unsigned int                    addressed_mode_w        : 1;
     unsigned int                    addressed_mode_r        : 1;
 
+    /* Event handling mode. One of SSL_QUIC_VALUE_EVENT_HANDLING. */
+    unsigned int                    event_handling_mode     : 2;
+
     /* Default stream type. Defaults to SSL_DEFAULT_STREAM_MODE_AUTO_BIDI. */
     uint32_t                        default_stream_mode;
 
@@ -228,8 +250,9 @@ int ossl_quic_conn_on_handshake_confirmed(QUIC_CONNECTION *qc);
 
 /*
  * To be called when a protocol violation occurs. The connection is torn down
- * with the given error code, which should be a QUIC_ERR_* value. Reason string
- * is optional and copied if provided. frame_type should be 0 if not applicable.
+ * with the given error code, which should be a OSSL_QUIC_ERR_* value. Reason
+ * string is optional and copied if provided. frame_type should be 0 if not
+ * applicable.
  */
 void ossl_quic_conn_raise_protocol_error(QUIC_CONNECTION *qc,
                                          uint64_t error_code,

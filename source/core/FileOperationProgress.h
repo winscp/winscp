@@ -18,7 +18,7 @@ typedef void __fastcall (__closure *TFileOperationProgressEvent)
   (TFileOperationProgressType & ProgressData);
 typedef void __fastcall (__closure *TFileOperationFinished)
   (TFileOperation Operation, TOperationSide Side, bool Temp,
-    const UnicodeString & FileName, bool Success, TOnceDoneOperation & OnceDoneOperation);
+   const UnicodeString & FileName, bool Success, bool NotCancelled, TOnceDoneOperation & OnceDoneOperation);
 //---------------------------------------------------------------------------
 class TFileOperationStatistics
 {

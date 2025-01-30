@@ -25,6 +25,8 @@
 #include "GUITools.h"
 #include "VCLCommon.h"
 #include "Setup.h"
+#include "FtpFileSystem.h"
+#include "SessionInfo.h"
 //---------------------------------------------------------------------------
 #define WM_INTERUPT_IDLE (WM_WINSCP_USER + 3)
 #define BATCH_INPUT_TIMEOUT 10000
@@ -1157,8 +1159,9 @@ public:
   TConsoleRunner(TConsole * Console);
   ~TConsoleRunner();
 
-  int __fastcall Run(const UnicodeString Session, TOptions * Options,
-    TStrings * ScriptCommands, TStrings * ScriptParameters);
+  int Run(
+    const UnicodeString Session, TOptions * Options, TStrings * ScriptCommands, TStrings * ScriptParameters,
+    bool UsageWarnings);
   void __fastcall ShowException(Exception * E);
   inline void __fastcall PrintMessage(const UnicodeString & Str, bool Error = false);
 
@@ -2093,8 +2096,9 @@ void __fastcall TConsoleRunner::Failed(bool & AnyError)
   AnyError = true;
 }
 //---------------------------------------------------------------------------
-int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Options,
-  TStrings * ScriptCommands, TStrings * ScriptParameters)
+int TConsoleRunner::Run(
+  const UnicodeString Session, TOptions * Options, TStrings * ScriptCommands, TStrings * ScriptParameters,
+  bool UsageWarnings)
 {
   int ExitCode;
   try
@@ -2117,7 +2121,7 @@ int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Optio
       FScript->OnQueryCancel = ScriptQueryCancel;
       FScript->OnSynchronizeStartStop = ScriptSynchronizeStartStop;
       FScript->OnProgress = ScriptProgress;
-      FScript->Interactive = (ScriptCommands == NULL) && FConsole->HasFlag(cfInteractive);
+      FScript->UsageWarnings = UsageWarnings;
       if (FConsole->HasFlag(cfStdOut))
       {
         FScript->OnTransferOut = ScriptTransferOut;
@@ -2135,7 +2139,7 @@ int __fastcall TConsoleRunner::Run(const UnicodeString Session, TOptions * Optio
 
       if (!Session.IsEmpty())
       {
-        if (!FScript->Interactive)
+        if (UsageWarnings)
         {
           PrintMessage(LoadStr(SCRIPT_CMDLINE_SESSION));
         }
@@ -2342,6 +2346,8 @@ void __fastcall Usage(TConsole * Console)
     LowerCase(KEYGEN_SWITCH), LowerCase(KEYGEN_OUTPUT_SWITCH), LowerCase(KEYGEN_CHANGE_PASSPHRASE_SWITCH))));
   PrintUsageSyntax(Console, FORMAT(L"/%s keyfile [/%s=<text>] [/%s=<file>]",
     (LowerCase(KEYGEN_SWITCH), LowerCase(KEYGEN_COMMENT_SWITCH), LowerCase(KEYGEN_CERTIFICATE_SWITCH))));
+  PrintUsageSyntax(Console, FORMAT(L"/%s /%s=<file> mysession", (
+    LowerCase(COPYID_SWITCH), LowerCase(IDENTITY_SWITCH))));
   if (!CommandLineOnly)
   {
     PrintUsageSyntax(Console, L"/update");
@@ -2406,6 +2412,7 @@ void __fastcall Usage(TConsole * Console)
       TProgramParams::FormatSwitch(LowerCase(KEYGEN_COMMENT_SWITCH)) + L"=",
       TProgramParams::FormatSwitch(LowerCase(KEYGEN_CERTIFICATE_SWITCH)) + L"="));
   RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(KEYGEN_SWITCH), KeyGenDesc);
+  RegisterSwitch(SwitchesUsage, TProgramParams::FormatSwitch(COPYID_SWITCH), USAGE_COPYID);
   if (!CommandLineOnly)
   {
     RegisterSwitch(SwitchesUsage, L"/update", USAGE_UPDATE);
@@ -2533,8 +2540,8 @@ int __fastcall BatchSettings(TConsole * Console, TProgramParams * Params)
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall FindPuttygenCompatibleSwitch(
-  TProgramParams * Params, const UnicodeString & Name, const UnicodeString & PuttygenName, UnicodeString & Value, bool & Set)
+bool FindNixCompatibleSwitch(
+  TProgramParams * Params, const UnicodeString & Name, const UnicodeString & NixName, UnicodeString & Value, bool & Set)
 {
   bool Result =
     !Name.IsEmpty() &&
@@ -2542,7 +2549,7 @@ bool __fastcall FindPuttygenCompatibleSwitch(
   if (!Result)
   {
     std::unique_ptr<TStrings> Args(new TStringList());
-    Result = Params->FindSwitchCaseSensitive(PuttygenName, Args.get(), 1);
+    Result = Params->FindSwitchCaseSensitive(NixName, Args.get(), 1);
     if (Result && (Args->Count >= 1))
     {
       Value = Args->Strings[0];
@@ -2571,29 +2578,28 @@ int __fastcall KeyGen(TConsole * Console, TProgramParams * Params)
 
     bool ValueSet;
     UnicodeString OutputFileName;
-    FindPuttygenCompatibleSwitch(Params, KEYGEN_OUTPUT_SWITCH, L"o", OutputFileName, ValueSet);
+    FindNixCompatibleSwitch(Params, KEYGEN_OUTPUT_SWITCH, L"o", OutputFileName, ValueSet);
 
     UnicodeString NewComment;
-    FindPuttygenCompatibleSwitch(Params, KEYGEN_COMMENT_SWITCH, L"C", NewComment, ValueSet);
+    FindNixCompatibleSwitch(Params, KEYGEN_COMMENT_SWITCH, L"C", NewComment, ValueSet);
 
     bool ChangePassphrase;
     bool NewPassphraseSet;
     if (Params->FindSwitchCaseSensitive(L"P"))
     {
       ChangePassphrase = true;
-      FindPuttygenCompatibleSwitch(Params, EmptyStr, L"-new-passphrase", NewPassphrase, NewPassphraseSet);
+      FindNixCompatibleSwitch(Params, EmptyStr, L"-new-passphrase", NewPassphrase, NewPassphraseSet);
     }
     else
     {
       ChangePassphrase = Params->FindSwitch(KEYGEN_CHANGE_PASSPHRASE_SWITCH, NewPassphrase, NewPassphraseSet);
     }
 
-    bool CertificateSet;
     UnicodeString Certificate;
     // It's --certificate in puttygen
-    FindPuttygenCompatibleSwitch(Params, KEYGEN_CERTIFICATE_SWITCH, L"-certificate", Certificate, CertificateSet);
+    FindNixCompatibleSwitch(Params, KEYGEN_CERTIFICATE_SWITCH, L"-certificate", Certificate, ValueSet);
 
-    FindPuttygenCompatibleSwitch(Params, PassphraseOption, L"-old-passphrase", Passphrase, ValueSet);
+    FindNixCompatibleSwitch(Params, PassphraseOption, L"-old-passphrase", Passphrase, ValueSet);
 
     if (Params->ParamCount > 0)
     {
@@ -2841,10 +2847,17 @@ int Info(TConsole * Console)
   int Result = RESULT_SUCCESS;
   try
   {
+    Console->PrintLine(FORMAT(L"SSH implementation: PuTTY %s", (GetPuTTYVersion())));
+    Console->PrintLine();
     PrintListAndFree(Console, L"SSH encryption ciphers:", SshCipherList());
     PrintListAndFree(Console, L"SSH key exchange algorithms:", SshKexList());
     PrintListAndFree(Console, L"SSH host key algorithms:", SshHostKeyList());
     PrintListAndFree(Console, L"SSH MAC algorithms:", SshMacList());
+
+    Console->PrintLine(TSessionLog::GetSeparator());
+
+    Console->PrintLine(FORMAT(L"TLS/SSL implementation: %s", (GetOpenSSLVersionText())));
+    Console->PrintLine();
     PrintListAndFree(Console, L"TLS/SSL cipher suites:", TlsCipherList());
   }
   catch (Exception & E)
@@ -2969,7 +2982,20 @@ int __fastcall Console(TConsoleMode Mode)
         if (CheckSafe(Params))
         {
           UnicodeString Value;
-          if (Params->FindSwitch(SCRIPT_SWITCH, Value) && !Value.IsEmpty())
+          if (Mode == cmCopyId)
+          {
+            Configuration->Usage->Inc(L"CopyId");
+            UnicodeString IdentityFileName;
+            bool ValueSet;
+            FindNixCompatibleSwitch(Params, IDENTITY_SWITCH, L"i", IdentityFileName, ValueSet);
+            if (IdentityFileName.IsEmpty())
+            {
+              throw Exception(LoadStr(COPYID_IDETITY_MISSING));
+            }
+            ScriptCommands->Add(FORMAT(L"%s \"%s\"", (COPYID_COMMAND, IdentityFileName)));
+            ScriptCommands->Add(EXIT_COMMAND);
+          }
+          else if (Params->FindSwitch(SCRIPT_SWITCH, Value) && !Value.IsEmpty())
           {
             Configuration->Usage->Inc(L"ScriptFile");
             LoadScriptFromFile(Value, ScriptCommands);
@@ -3007,14 +3033,18 @@ int __fastcall Console(TConsoleMode Mode)
         CheckLogParam(Params);
         CheckXmlLogParam(Params);
 
-        Result = Runner->Run(Session, Params,
-          (ScriptCommands->Count > 0 ? ScriptCommands : NULL),
-          ScriptParameters);
+        bool UsageWarnings = (Mode != cmCopyId) && ((ScriptCommands->Count > 0) || !Console->HasFlag(cfInteractive));
+        Result = Runner->Run(Session, Params, ScriptCommands, ScriptParameters, UsageWarnings);
       }
       catch(Exception & E)
       {
         Runner->ShowException(&E);
         Result = RESULT_ANY_ERROR;
+      }
+
+      if (Mode == cmCopyId)
+      {
+        Console->WaitBeforeExit();
       }
     }
   }

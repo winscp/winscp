@@ -24,12 +24,14 @@
 #pragma link "PasswordEdit"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
+const int GroupBoxBorderWidth = 1;
+//---------------------------------------------------------------------
 __fastcall TCustomDialog::TCustomDialog(UnicodeString AHelpKeyword)
   : TForm(GetFormOwner())
 {
   UseSystemSettings(this);
 
-  FControlPadding = ScaleByTextHeight(this, 8);
+  FControlPadding = ScaleByTextHeight(this, 6);
   FPos = ScaleByTextHeight(this, 8);
   FPrePos = FPos;
   FHorizontalMargin = ScaleByTextHeight(this, 8);
@@ -140,7 +142,7 @@ void __fastcall TCustomDialog::AddImage(const UnicodeString & ImageName)
 //---------------------------------------------------------------------------
 int __fastcall TCustomDialog::GetMaxControlWidth(TControl * Control)
 {
-  return GetDefaultParent()->ClientWidth - Control->Left - FHorizontalMargin;
+  return GetDefaultParent()->ClientWidth - Control->Left - FHorizontalMargin - (FGroupBox != NULL ? GroupBoxBorderWidth : 0);
 }
 //---------------------------------------------------------------------------
 TWinControl * __fastcall TCustomDialog::GetDefaultParent()
@@ -201,7 +203,7 @@ void __fastcall TCustomDialog::AddEditLikeControl(TWinControl * Edit, TLabel * L
     {
       Label->Top = FPos;
 
-      FPos += Label->Height + ScaleByTextHeight(this, 4);
+      FPos += Label->Height + ScaleByTextHeight(this, 3);
     }
   }
 
@@ -298,7 +300,7 @@ void __fastcall TCustomDialog::ScaleButtonControl(TButtonControl * Control)
 void __fastcall TCustomDialog::AddButtonControl(TButtonControl * Control)
 {
   Control->Parent = GetDefaultParent();
-  Control->Left = FIndent + ScaleByTextHeight(this, 6);
+  Control->Left = FIndent + ScaleByTextHeight(this, 2);
   Control->Top = FPos;
   Control->Width = GetMaxControlWidth(Control);
   ScaleButtonControl(Control);
@@ -320,7 +322,7 @@ void TCustomDialog::AddButtonNextToEdit(TButton * Button, TWinControl * Edit)
   Button->Width = HelpButton->Width;
   Button->Left = GetDefaultParent()->ClientWidth - Button->Width - HorizontalMargin;
   Edit->Width = Button->Left - Edit->Left - ScaleByTextHeight(this, 6);
-  Button->Top = Edit->Top - ScaleByTextHeight(this, 2);
+  Button->Top = Edit->Top - ScaleByTextHeight(this, 1);
   ScaleButtonControl(Button);
   AddWinControl(Button);
 }
@@ -336,20 +338,7 @@ void __fastcall TCustomDialog::AddText(TLabel * Label)
   Label->Top = FPos;
   Label->ShowAccelChar = false;
 
-  TRect TextRect;
-  SetRect(&TextRect, 0, 0, Label->Width, 0);
-  DrawText(Label->Canvas->Handle, Label->Caption.c_str(), Label->Caption.Length() + 1, &TextRect,
-    DT_EXPANDTABS | DT_CALCRECT | DT_WORDBREAK | DT_NOPREFIX |
-    Label->DrawTextBiDiModeFlagsReadingOnly());
-  if (TextRect.Height() > Label->Height)
-  {
-    Label->Height = TextRect.Height();
-    Label->AutoSize = false;
-  }
-  else
-  {
-    Label->WordWrap = false;
-  }
+  AutoSizeLabel(Label);
 
   AdjustHeight(Label);
 }
@@ -396,16 +385,17 @@ void __fastcall TCustomDialog::StartGroup(const UnicodeString & Caption)
 
   GroupBox->Left = FIndent;
   GroupBox->Top = FPos;
-  GroupBox->Height = ScaleByTextHeight(GroupBox, 20);
+  GroupBox->Height = ScaleByTextHeight(GroupBox, 26);
   GroupBox->Width = GetMaxControlWidth(GroupBox);
 
   AdjustHeight(GroupBox);
 
   AddWinControl(GroupBox);
 
-  FPos = ScaleByTextHeight(this, 16);
+  // but if the first control is oneline box, then we should roll back a bit
+  FPos = ScaleByTextHeight(this, 22);
   FPrePos = FPos;
-  FIndent = FHorizontalMargin;
+  FIndent = FHorizontalMargin + GroupBoxBorderWidth;
 
   FGroupBox = GroupBox;
 }
@@ -834,7 +824,7 @@ __fastcall TRemoteMoveDialog::TRemoteMoveDialog(bool Multi, TDirectoryExistsEven
 {
   Caption = LoadStr(REMOTE_MOVE_TITLE);
   // The same as TRemoteTransferDialog
-  ClientWidth = ScaleByTextHeight(this, 420);
+  ClientWidth = ScaleByTextHeight(this, 466);
 
   FMulti = Multi;
   FOnDirectoryExists = OnDirectoryExists;
@@ -946,7 +936,7 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
   FCustomCommandOptions = CustomCommandOptions;
   FSite = Site;
   Caption = StripEllipsis(StripHotkey(FCommand->Name));
-  Width = ScaleByTextHeight(this, 400);
+  Width = ScaleByTextHeight(this, 444);
 
   bool HasGroups = false;
   int ControlIndex = 0;
@@ -1399,24 +1389,24 @@ __fastcall TUsageStatisticsDialog::TUsageStatisticsDialog() :
   TCustomDialog(HELP_USAGE)
 {
   Caption = LoadStr(USAGE_CAPTION);
-  Width = ScaleByTextHeight(this, 400);
+  Width = ScaleByTextHeight(this, 444);
 
   // UnformatMessage is called, because previously, ** markup was used and translations may still contain that
   AddText(CreateLabel(UnformatMessage(LoadStr(USAGE_DATA2))));
 
   FilterEdit = new TEdit(this);
-  FilterEdit->Width = ScaleByTextHeight(this, 250);
+  FilterEdit->Width = ScaleByTextHeight(this, 277);
   AddEdit(FilterEdit, CreateLabel(LoadStr(USAGE_FILTER)), true);
 
   UsageMemo = new TMemo(this);
-  UsageMemo->Height = ScaleByTextHeight(this, 300);
+  UsageMemo->Height = ScaleByTextHeight(this, 333);
   UsageMemo->ScrollBars = ssVertical;
   AddEdit(UsageMemo, NULL);
   ReadOnlyControl(UsageMemo);
 
   ClipboardButton = new TButton(this);
   ClipboardButton->Caption = LoadStr(USAGE_COPY);
-  ClipboardButton->Width = ScaleByTextHeight(this, 161);
+  ClipboardButton->Width = ScaleByTextHeight(this, 179);
   ClipboardButton->OnClick = ClipboardButtonClick;
   AddDialogButton(ClipboardButton);
 
@@ -1472,10 +1462,10 @@ __fastcall TSiteRawDialog::TSiteRawDialog() :
   TCustomDialog(HELP_SITE_RAW)
 {
   Caption = LoadStr(SITE_RAW_CAPTION);
-  Width = ScaleByTextHeight(this, 400);
+  Width = ScaleByTextHeight(this, 444);
 
   SettingsMemo = new TMemo(this);
-  SettingsMemo->Height = ScaleByTextHeight(this, 300);
+  SettingsMemo->Height = ScaleByTextHeight(this, 333);
   SettingsMemo->OnKeyDown = SettingsMemoKeyDown;
   AddEdit(SettingsMemo, NULL);
 
@@ -1630,7 +1620,7 @@ private:
 TSshHostCADialog::TSshHostCADialog(bool Add) :
   TCustomDialog(HELP_SSH_HOST_CA)
 {
-  ClientWidth = ScaleByTextHeight(this, 520);
+  ClientWidth = ScaleByTextHeight(this, 577);
   Caption = LoadStr(Add ? SSH_HOST_CA_ADD : SSH_HOST_CA_EDIT);
 
   NameEdit = new TEdit(this);

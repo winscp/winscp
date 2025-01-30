@@ -64,7 +64,7 @@ public:
   {
     if (OnInformation != NULL)
     {
-      OnInformation(Terminal, Str, Status, Phase, Additional);
+      OnInformation(Terminal, Str, Phase, Additional);
     }
   }
 
@@ -78,7 +78,6 @@ public:
   TInformationEvent OnInformation;
   TTerminal * Terminal;
   UnicodeString Str;
-  bool Status;
   int Phase;
   UnicodeString Additional;
 };
@@ -245,6 +244,7 @@ public:
   void __fastcall Idle();
   bool __fastcall Pause();
   bool __fastcall Resume();
+  bool IsCancelled();
 
 protected:
   TTerminalQueue * FQueue;
@@ -269,7 +269,7 @@ protected:
   void __fastcall TerminalShowExtendedException(TTerminal * Terminal,
     Exception * E, void * Arg);
   void __fastcall OperationFinished(TFileOperation Operation, TOperationSide Side,
-    bool Temp, const UnicodeString & FileName, bool Success,
+    bool Temp, const UnicodeString & FileName, bool Success, bool NotCancelled,
     TOnceDoneOperation & OnceDoneOperation);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData);
 };
@@ -1222,7 +1222,7 @@ __fastcall TBackgroundTerminal::TBackgroundTerminal(TTerminal * MainTerminal,
 bool __fastcall TBackgroundTerminal::DoQueryReopen(Exception * /*E*/)
 {
   bool Result;
-  if (FItem->FTerminated || FItem->FCancel)
+  if (FItem->IsCancelled())
   {
     // avoid reconnection if we are closing
     Result = false;
@@ -1315,7 +1315,7 @@ void __fastcall TTerminalItem::ProcessEvent()
 
       FItem->SetStatus(TQueueItem::qsProcessing);
 
-      FItem->Execute(this);
+      FItem->Execute();
     }
   }
   catch(Exception & E)
@@ -1551,7 +1551,7 @@ void __fastcall TTerminalItem::TerminalShowExtendedException(
 //---------------------------------------------------------------------------
 void __fastcall TTerminalItem::OperationFinished(TFileOperation /*Operation*/,
   TOperationSide /*Side*/, bool /*Temp*/, const UnicodeString & /*FileName*/,
-  bool /*Success*/, TOnceDoneOperation & /*OnceDoneOperation*/)
+  bool /*Success*/, bool /*NotCancelled*/, TOnceDoneOperation & /*OnceDoneOperation*/)
 {
   // nothing
 }
@@ -1559,7 +1559,7 @@ void __fastcall TTerminalItem::OperationFinished(TFileOperation /*Operation*/,
 void __fastcall TTerminalItem::OperationProgress(
   TFileOperationProgressType & ProgressData)
 {
-  if (FPause && !FTerminated && !FCancel)
+  if (FPause && !IsCancelled())
   {
     DebugAssert(FItem != NULL);
     TQueueItem::TStatus PrevStatus = FItem->GetStatus();
@@ -1582,7 +1582,7 @@ void __fastcall TTerminalItem::OperationProgress(
     }
   }
 
-  if (FTerminated || FCancel)
+  if (IsCancelled())
   {
     if (ProgressData.TransferringFile)
     {
@@ -1607,6 +1607,11 @@ bool __fastcall TTerminalItem::OverrideItemStatus(TQueueItem::TStatus & ItemStat
     ItemStatus = TQueueItem::qsConnecting;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+bool TTerminalItem::IsCancelled()
+{
+  return FTerminated || FCancel;
 }
 //---------------------------------------------------------------------------
 // TQueueItem
@@ -1732,14 +1737,19 @@ bool __fastcall TQueueItem::UpdateFileList(TQueueFileList *)
   return false;
 }
 //---------------------------------------------------------------------------
-void __fastcall TQueueItem::Execute(TTerminalItem * TerminalItem)
+bool TQueueItem::IsExecutionCancelled()
+{
+  return DebugAlwaysTrue(FTerminalItem != NULL) ? FTerminalItem->IsCancelled() : true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TQueueItem::Execute()
 {
   {
     DebugAssert(FProgressData == NULL);
     TGuard Guard(FSection);
     FProgressData = new TFileOperationProgressType();
   }
-  DoExecute(TerminalItem->FTerminal);
+  DoExecute(FTerminalItem->FTerminal);
 }
 //---------------------------------------------------------------------------
 void __fastcall TQueueItem::SetCPSLimit(unsigned long CPSLimit)
@@ -1773,6 +1783,11 @@ unsigned long __fastcall TQueueItem::GetCPSLimit()
 TQueueItem * __fastcall TQueueItem::CreateParallelOperation()
 {
   return NULL;
+}
+//---------------------------------------------------------------------------
+UnicodeString __fastcall TQueueItem::StartupDirectory() const
+{
+  return EmptyStr;
 }
 //---------------------------------------------------------------------------
 // TQueueItemProxy
@@ -2082,11 +2097,6 @@ void __fastcall TBootstrapQueueItem::DoExecute(TTerminal * DebugUsedArg(Terminal
   // noop
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TBootstrapQueueItem::StartupDirectory() const
-{
-  return UnicodeString();
-}
-//---------------------------------------------------------------------------
 bool __fastcall TBootstrapQueueItem::Complete()
 {
   TQueueItem::Complete();
@@ -2132,13 +2142,15 @@ __fastcall TTransferQueueItem::TTransferQueueItem(TTerminal * Terminal,
   FInfo->Side = Side;
   FInfo->SingleFile = SingleFile;
 
-  DebugAssert(FilesToCopy != NULL);
-  FFilesToCopy = new TStringList();
-  for (int Index = 0; Index < FilesToCopy->Count; Index++)
+  if (FilesToCopy != NULL)
   {
-    UnicodeString FileName = FilesToCopy->Strings[Index];
-    TRemoteFile * File = dynamic_cast<TRemoteFile *>(FilesToCopy->Objects[Index]);
-    FFilesToCopy->AddObject(FileName, ((File == NULL) || (Side == osLocal)) ? NULL : File->Duplicate());
+    FFilesToCopy = new TStringList();
+    for (int Index = 0; Index < FilesToCopy->Count; Index++)
+    {
+      UnicodeString FileName = FilesToCopy->Strings[Index];
+      TRemoteFile * File = dynamic_cast<TRemoteFile *>(FilesToCopy->Objects[Index]);
+      FFilesToCopy->AddObject(FileName, ((File == NULL) || (Side == osLocal)) ? NULL : File->Duplicate());
+    }
   }
 
   FTargetDir = TargetDir;
@@ -2155,11 +2167,14 @@ __fastcall TTransferQueueItem::TTransferQueueItem(TTerminal * Terminal,
 //---------------------------------------------------------------------------
 __fastcall TTransferQueueItem::~TTransferQueueItem()
 {
-  for (int Index = 0; Index < FFilesToCopy->Count; Index++)
+  if (FFilesToCopy != NULL)
   {
-    delete FFilesToCopy->Objects[Index];
+    for (int Index = 0; Index < FFilesToCopy->Count; Index++)
+    {
+      delete FFilesToCopy->Objects[Index];
+    }
+    delete FFilesToCopy;
   }
-  delete FFilesToCopy;
   delete FCopyParam;
 }
 //---------------------------------------------------------------------------
@@ -2258,10 +2273,25 @@ bool __fastcall TTransferQueueItem::UpdateFileList(TQueueFileList * FileList)
 //---------------------------------------------------------------------------
 // TUploadQueueItem
 //---------------------------------------------------------------------------
-__fastcall TUploadQueueItem::TUploadQueueItem(TTerminal * Terminal,
-  TStrings * FilesToCopy, const UnicodeString & TargetDir,
-  const TCopyParamType * CopyParam, int Params, bool SingleFile, bool Parallel) :
-  TTransferQueueItem(Terminal, FilesToCopy, TargetDir, CopyParam, Params, osLocal, SingleFile, Parallel)
+static void ExtractLocalSourcePath(TStrings * Files, UnicodeString & Path)
+{
+  ExtractCommonPath(Files, Path);
+  // this way the trailing backslash is preserved for root directories like D:\\
+  Path = ExtractFileDir(IncludeTrailingBackslash(Path));
+}
+//---------------------------------------------------------------------------
+static bool IsSingleFileUpload(TStrings * FilesToCopy)
+{
+  return
+    (FilesToCopy->Count == 1) &&
+    FileExists(ApiPath(FilesToCopy->Strings[0]));
+}
+//---------------------------------------------------------------------------
+__fastcall TUploadQueueItem::TUploadQueueItem(
+    TTerminal * Terminal, TStrings * FilesToCopy, const UnicodeString & TargetDir,
+    const TCopyParamType * CopyParam, int Params, bool Parallel) :
+  TTransferQueueItem(
+    Terminal, FilesToCopy, TargetDir, CopyParam, Params, osLocal, IsSingleFileUpload(FilesToCopy), Parallel)
 {
   if (FilesToCopy->Count > 1)
   {
@@ -2272,9 +2302,7 @@ __fastcall TUploadQueueItem::TUploadQueueItem(TTerminal * Terminal,
     }
     else
     {
-      ExtractCommonPath(FilesToCopy, FInfo->Source);
-      // this way the trailing backslash is preserved for root directories like D:\\
-      FInfo->Source = ExtractFileDir(IncludeTrailingBackslash(FInfo->Source));
+      ExtractLocalSourcePath(FilesToCopy, FInfo->Source);
       FInfo->ModifiedLocal = FLAGCLEAR(Params, cpDelete) ? UnicodeString() :
         IncludeTrailingBackslash(FInfo->Source);
     }
@@ -2371,10 +2399,18 @@ static void ExtractRemoteSourcePath(TTerminal * Terminal, TStrings * Files, Unic
   Path = UnixExcludeTrailingBackslash(Path);
 }
 //---------------------------------------------------------------------------
+static bool IsSingleFileDownload(TStrings * FilesToCopy)
+{
+  return
+    (FilesToCopy->Count == 1) &&
+    !static_cast<TRemoteFile *>(FilesToCopy->Objects[0])->IsDirectory;
+}
+//---------------------------------------------------------------------------
 __fastcall TDownloadQueueItem::TDownloadQueueItem(TTerminal * Terminal,
-  TStrings * FilesToCopy, const UnicodeString & TargetDir,
-  const TCopyParamType * CopyParam, int Params, bool SingleFile, bool Parallel) :
-  TTransferQueueItem(Terminal, FilesToCopy, TargetDir, CopyParam, Params, osRemote, SingleFile, Parallel)
+    TStrings * FilesToCopy, const UnicodeString & TargetDir,
+    const TCopyParamType * CopyParam, int Params, bool Parallel) :
+  TTransferQueueItem(
+    Terminal, FilesToCopy, TargetDir, CopyParam, Params, osRemote, IsSingleFileDownload(FilesToCopy), Parallel)
 {
   if (FilesToCopy->Count > 1)
   {
@@ -2418,7 +2454,7 @@ void __fastcall TDownloadQueueItem::DoTransferExecute(TTerminal * Terminal, TPar
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-TDeleteQueueItem::TDeleteQueueItem(TTerminal * Terminal, TStrings * FilesToDelete, int Params) :
+TRemoteDeleteQueueItem::TRemoteDeleteQueueItem(TTerminal * Terminal, TStrings * FilesToDelete, int Params) :
   TLocatedQueueItem(Terminal)
 {
   FInfo->Operation = foDelete;
@@ -2433,12 +2469,34 @@ TDeleteQueueItem::TDeleteQueueItem(TTerminal * Terminal, TStrings * FilesToDelet
   FParams = Params;
 }
 //---------------------------------------------------------------------------
-void __fastcall TDeleteQueueItem::DoExecute(TTerminal * Terminal)
+void __fastcall TRemoteDeleteQueueItem::DoExecute(TTerminal * Terminal)
 {
   TLocatedQueueItem::DoExecute(Terminal);
 
   DebugAssert(Terminal != NULL);
   Terminal->DeleteFiles(FFilesToDelete.get(), FParams);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+TLocalDeleteQueueItem::TLocalDeleteQueueItem(TStrings * FilesToDelete, int Params) :
+  TQueueItem()
+{
+  FInfo->Operation = foDelete;
+  FInfo->Side = osLocal;
+
+  DebugAssert(FilesToDelete != NULL);
+  FFilesToDelete.reset(CloneStrings(FilesToDelete));
+  ExtractLocalSourcePath(FilesToDelete, FInfo->Source);
+
+  FInfo->ModifiedLocal = FInfo->Source;
+
+  FParams = Params;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLocalDeleteQueueItem::DoExecute(TTerminal * Terminal)
+{
+  DebugAssert(Terminal != NULL);
+  Terminal->DeleteLocalFiles(FFilesToDelete.get(), FParams);
 }
 //---------------------------------------------------------------------------
 // TTerminalThread
@@ -2673,6 +2731,9 @@ void __fastcall TTerminalThread::ProcessEvent()
   DebugAssert(FEvent != NULL);
   DebugAssert(FException == NULL);
 
+  // Needed at least for TXMLDocument use in TS3FileSystem
+  CoInitialize(NULL);
+
   try
   {
     FAction(NULL);
@@ -2833,12 +2894,11 @@ void __fastcall TTerminalThread::WaitForUserAction(TUserAction * UserAction)
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::TerminalInformation(
-  TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase, const UnicodeString & Additional)
+  TTerminal * Terminal, const UnicodeString & Str, int Phase, const UnicodeString & Additional)
 {
   TInformationUserAction Action(FOnInformation);
   Action.Terminal = Terminal;
   Action.Str = Str;
-  Action.Status = Status;
   Action.Phase = Phase;
   Action.Additional = Additional;
 

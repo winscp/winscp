@@ -1,185 +1,184 @@
 ﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-	<PropertyGroup>
-		<ProjectGuid>{FDCD9EE5-6451-4405-ADEF-8E997ADEE3F0}</ProjectGuid>
-		<ProjectVersion>15.4</ProjectVersion>
-		<FrameworkType>VCL</FrameworkType>
-		<MainSource>PngComponents.cpp</MainSource>
-		<Base>True</Base>
-		<Config Condition="'$(Config)'==''">Release</Config>
-		<Platform Condition="'$(Platform)'==''">Win32</Platform>
-		<TargetedPlatforms>1</TargetedPlatforms>
-		<AppType>Package</AppType>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
-		<Base_Win32>true</Base_Win32>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
-		<Base_Win64>true</Base_Win64>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
-		<Cfg_1>true</Cfg_1>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
-		<Cfg_1_Win32>true</Cfg_1_Win32>
-		<CfgParent>Cfg_1</CfgParent>
-		<Cfg_1>true</Cfg_1>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
-		<Cfg_2>true</Cfg_2>
-		<CfgParent>Base</CfgParent>
-		<Base>true</Base>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Base)'!=''">
-		<_TCHARMapping>char</_TCHARMapping>
-		<BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
-		<BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-		<BCC_wpar>false</BCC_wpar>
-		<BPILibOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</BPILibOutputDir>
-		<DCC_AdditionalSwitches>-LUDesignIDE</DCC_AdditionalSwitches>
-		<DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
-		<DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;$(DCC_Namespace)</DCC_Namespace>
-		<DCC_UnitSearchPath>packages\png;packages\my;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
-		<Defines>WINSCP;$(Defines)</Defines>
-		<DynamicRTL>true</DynamicRTL>
-		<FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
-		<ILINK_Description>Png Components</ILINK_Description>
-		<ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
-		<ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
-		<ILINK_LibraryPath>packages\png\;packages\my;$(BDS)\lib;$(BDS)\source\toolsapi\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
-		<IncludePath>packages\png\;packages\my;$(IncludePath)</IncludePath>
-		<IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
-		<Multithreaded>true</Multithreaded>
-		<ProjectType>CppPackage</ProjectType>
-		<SanitizedProjectName>PngComponents</SanitizedProjectName>
-		<UsePackages>true</UsePackages>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Base_Win32)'!=''">
-		<DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
-		<PackageImports>vcldbx;vclib;inetdbbde;tbxp;ibxpress;vclimg;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;bcbsmp;websnap;vclribbon;My;vcl;DriveDir;CloudService;CodeSiteExpressPkg;dsnapcon;vclx;webdsnap;tb2k;bdertl;DragDropP;bcbie;adortl;$(PackageImports)</PackageImports>
-		<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-		<VerInfo_Keys>CompanyName=;FileDescription=Png Components Runtime;FileVersion=1.2.0.0;InternalName=PngComponents;LegalCopyright=;LegalTrademarks=;OriginalFilename=PngComponents;ProductName=Png Components;ProductVersion=1.0;Comments=</VerInfo_Keys>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Base_Win64)'!=''">
-		<PackageImports>vcldbx;vclib;inetdbbde;tbxp;ibxpress;vclimg;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;bcbsmp;websnap;vclribbon;My;vcl;DriveDir;CloudService;CodeSiteExpressPkg;dsnapcon;vclx;webdsnap;tb2k;bdertl;DragDropP;bcbie;adortl;$(PackageImports)</PackageImports>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_1)'!=''">
-		<BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
-		<BCC_DisableOptimizations>true</BCC_DisableOptimizations>
-		<BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
-		<BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
-		<BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
-		<BCC_StackFrames>true</BCC_StackFrames>
-		<BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
-		<DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
-		<DCC_Define>DEBUG</DCC_Define>
-		<DCC_Optimize>false</DCC_Optimize>
-		<Defines>_DEBUG;$(Defines)</Defines>
-		<ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
-		<TASM_Debugging>Full</TASM_Debugging>
-		<TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Cfg_2)'!=''">
-		<DCC_AssertionsAtRuntime>false</DCC_AssertionsAtRuntime>
-		<Defines>NDEBUG;$(Defines)</Defines>
-		<TASM_Debugging>None</TASM_Debugging>
-	</PropertyGroup>
-	<ItemGroup>
-		<DelphiCompile Include="packages\png\PngBitBtn.pas">
-			<BuildOrder>2</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\png\PngButtonFunctions.pas">
-			<BuildOrder>3</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\png\PngCheckListBox.pas">
-			<BuildOrder>7</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\png\PngComponentEditors.pas">
-			<BuildOrder>4</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\png\PngComponentsRegister.pas">
-			<BuildOrder>5</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\png\PngFunctions.pas">
-			<BuildOrder>6</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\png\PngImageList.pas">
-			<BuildOrder>8</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\png\PngImageListEditor.pas">
-			<BuildOrder>9</BuildOrder>
-		</DelphiCompile>
-		<DelphiCompile Include="packages\png\PngSpeedButton.pas">
-			<BuildOrder>10</BuildOrder>
-		</DelphiCompile>
-		<CppCompile Include="PngComponents.cpp">
-			<BuildOrder>0</BuildOrder>
-		</CppCompile>
-		<PackageImport Include="designide.bpi">
-			<BuildOrder>11</BuildOrder>
-		</PackageImport>
-		<PackageImport Include="rtl.bpi">
-			<BuildOrder>1</BuildOrder>
-		</PackageImport>
-		<PackageImport Include="vcl.bpi">
-			<BuildOrder>15</BuildOrder>
-		</PackageImport>
-		<PackageImport Include="vclactnband.bpi">
-			<BuildOrder>13</BuildOrder>
-		</PackageImport>
-		<PackageImport Include="vclimg.bpi">
-			<BuildOrder>16</BuildOrder>
-		</PackageImport>
-		<PackageImport Include="vclx.bpi">
-			<BuildOrder>14</BuildOrder>
-		</PackageImport>
-		<PackageImport Include="xmlrtl.bpi">
-			<BuildOrder>12</BuildOrder>
-		</PackageImport>
-		<BuildConfiguration Include="Base">
-			<Key>Base</Key>
-		</BuildConfiguration>
-		<BuildConfiguration Include="Debug">
-			<Key>Cfg_1</Key>
-			<CfgParent>Base</CfgParent>
-		</BuildConfiguration>
-		<BuildConfiguration Include="Release">
-			<Key>Cfg_2</Key>
-			<CfgParent>Base</CfgParent>
-		</BuildConfiguration>
-	</ItemGroup>
-	<ProjectExtensions>
-		<Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
-		<Borland.ProjectType>CppPackage</Borland.ProjectType>
-		<BorlandProject>
-			<CPlusPlusBuilder.Personality>
-				<Source>
-					<Source Name="MainSource">PngComponents.cpp</Source>
-				</Source>
-				<ProjectProperties>
-					<ProjectProperties Name="AutoShowDeps">False</ProjectProperties>
-					<ProjectProperties Name="ManagePaths">True</ProjectProperties>
-					<ProjectProperties Name="VerifyPackages">True</ProjectProperties>
-					<ProjectProperties Name="IndexFiles">False</ProjectProperties>
-				</ProjectProperties>
-			</CPlusPlusBuilder.Personality>
-			<Deployment/>
-			<Platforms>
-				<Platform value="Win32">True</Platform>
-				<Platform value="Win64">False</Platform>
-			</Platforms>
-		</BorlandProject>
-		<ProjectFileVersion>12</ProjectFileVersion>
-	</ProjectExtensions>
-	<Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
-	<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
+    <PropertyGroup>
+        <ProjectGuid>{FDCD9EE5-6451-4405-ADEF-8E997ADEE3F0}</ProjectGuid>
+        <ProjectVersion>19.5</ProjectVersion>
+        <FrameworkType>VCL</FrameworkType>
+        <MainSource>PngComponents.cpp</MainSource>
+        <Base>True</Base>
+        <Config Condition="'$(Config)'==''">Release</Config>
+        <Platform Condition="'$(Platform)'==''">Win32</Platform>
+        <TargetedPlatforms>1</TargetedPlatforms>
+        <AppType>Package</AppType>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
+        <Base_Win32>true</Base_Win32>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
+        <Base_Win64>true</Base_Win64>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_1)'!=''">
+        <Cfg_1>true</Cfg_1>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
+        <Cfg_1_Win32>true</Cfg_1_Win32>
+        <CfgParent>Cfg_1</CfgParent>
+        <Cfg_1>true</Cfg_1>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_2)'!=''">
+        <Cfg_2>true</Cfg_2>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base)'!=''">
+        <_TCHARMapping>char</_TCHARMapping>
+        <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
+        <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
+        <BCC_wpar>false</BCC_wpar>
+        <BPILibOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</BPILibOutputDir>
+        <DCC_AdditionalSwitches>-LUDesignIDE</DCC_AdditionalSwitches>
+        <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
+        <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;$(DCC_Namespace)</DCC_Namespace>
+        <DCC_UnitSearchPath>packages\png;packages\my;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+        <Defines>WINSCP;$(Defines)</Defines>
+        <DynamicRTL>true</DynamicRTL>
+        <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
+        <ILINK_Description>Png Components</ILINK_Description>
+        <ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
+        <ILINK_GenerateLibFile>true</ILINK_GenerateLibFile>
+        <ILINK_LibraryPath>packages\png\;packages\my;$(BDS)\lib;$(BDS)\source\toolsapi\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+        <IncludePath>packages\png\;packages\my;$(IncludePath)</IncludePath>
+        <IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
+        <Multithreaded>true</Multithreaded>
+        <ProjectType>CppPackage</ProjectType>
+        <SanitizedProjectName>PngComponents</SanitizedProjectName>
+        <UsePackages>true</UsePackages>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Win32)'!=''">
+        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
+        <PackageImports>vcldbx;vclib;inetdbbde;tbxp;ibxpress;vclimg;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;bcbsmp;websnap;vclribbon;My;vcl;DriveDir;CloudService;CodeSiteExpressPkg;dsnapcon;vclx;webdsnap;tb2k;bdertl;DragDropP;bcbie;adortl;$(PackageImports)</PackageImports>
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+        <VerInfo_Keys>CompanyName=;FileDescription=Png Components Runtime;FileVersion=1.2.0.0;InternalName=PngComponents;LegalCopyright=;LegalTrademarks=;OriginalFilename=PngComponents;ProductName=Png Components;ProductVersion=1.0;Comments=</VerInfo_Keys>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Win64)'!=''">
+        <PackageImports>vcldbx;vclib;inetdbbde;tbxp;ibxpress;vclimg;vclactnband;vcldb;vcldsnap;bindcompvcl;vclie;vcltouch;bcbsmp;websnap;vclribbon;My;vcl;DriveDir;CloudService;CodeSiteExpressPkg;dsnapcon;vclx;webdsnap;tb2k;bdertl;DragDropP;bcbie;adortl;$(PackageImports)</PackageImports>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1)'!=''">
+        <BCC_DebugLineNumbers>true</BCC_DebugLineNumbers>
+        <BCC_DisableOptimizations>true</BCC_DisableOptimizations>
+        <BCC_InlineFunctionExpansion>false</BCC_InlineFunctionExpansion>
+        <BCC_OptimizeForSpeed>false</BCC_OptimizeForSpeed>
+        <BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
+        <BCC_StackFrames>true</BCC_StackFrames>
+        <BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
+        <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
+        <DCC_Define>DEBUG</DCC_Define>
+        <DCC_Optimize>false</DCC_Optimize>
+        <Defines>_DEBUG;$(Defines)</Defines>
+        <ILINK_FullDebugInfo>true</ILINK_FullDebugInfo>
+        <TASM_Debugging>Full</TASM_Debugging>
+        <TASM_DisplaySourceLines>true</TASM_DisplaySourceLines>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2)'!=''">
+        <DCC_AssertionsAtRuntime>false</DCC_AssertionsAtRuntime>
+        <Defines>NDEBUG;$(Defines)</Defines>
+        <TASM_Debugging>None</TASM_Debugging>
+    </PropertyGroup>
+    <ItemGroup>
+        <DelphiCompile Include="packages\png\PngBitBtn.pas">
+            <BuildOrder>2</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\png\PngButtonFunctions.pas">
+            <BuildOrder>3</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\png\PngCheckListBox.pas">
+            <BuildOrder>7</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\png\PngComponentEditors.pas">
+            <BuildOrder>4</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\png\PngComponentsRegister.pas">
+            <BuildOrder>5</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\png\PngFunctions.pas">
+            <BuildOrder>6</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\png\PngImageList.pas">
+            <BuildOrder>8</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\png\PngImageListEditor.pas">
+            <BuildOrder>9</BuildOrder>
+        </DelphiCompile>
+        <DelphiCompile Include="packages\png\PngSpeedButton.pas">
+            <BuildOrder>10</BuildOrder>
+        </DelphiCompile>
+        <CppCompile Include="PngComponents.cpp">
+            <BuildOrder>0</BuildOrder>
+        </CppCompile>
+        <PackageImport Include="designide.bpi">
+            <BuildOrder>11</BuildOrder>
+        </PackageImport>
+        <PackageImport Include="rtl.bpi">
+            <BuildOrder>1</BuildOrder>
+        </PackageImport>
+        <PackageImport Include="vcl.bpi">
+            <BuildOrder>15</BuildOrder>
+        </PackageImport>
+        <PackageImport Include="vclactnband.bpi">
+            <BuildOrder>13</BuildOrder>
+        </PackageImport>
+        <PackageImport Include="vclimg.bpi">
+            <BuildOrder>16</BuildOrder>
+        </PackageImport>
+        <PackageImport Include="vclx.bpi">
+            <BuildOrder>14</BuildOrder>
+        </PackageImport>
+        <PackageImport Include="xmlrtl.bpi">
+            <BuildOrder>12</BuildOrder>
+        </PackageImport>
+        <BuildConfiguration Include="Base">
+            <Key>Base</Key>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Debug">
+            <Key>Cfg_1</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Release">
+            <Key>Cfg_2</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>CPlusPlusBuilder.Personality.12</Borland.Personality>
+        <Borland.ProjectType>CppPackage</Borland.ProjectType>
+        <BorlandProject>
+            <CPlusPlusBuilder.Personality>
+                <Source>
+                    <Source Name="MainSource">PngComponents.cpp</Source>
+                </Source>
+                <ProjectProperties>
+                    <ProjectProperties Name="AutoShowDeps">False</ProjectProperties>
+                    <ProjectProperties Name="ManagePaths">True</ProjectProperties>
+                    <ProjectProperties Name="VerifyPackages">True</ProjectProperties>
+                    <ProjectProperties Name="IndexFiles">False</ProjectProperties>
+                </ProjectProperties>
+            </CPlusPlusBuilder.Personality>
+            <Platforms>
+                <Platform value="Win32">True</Platform>
+                <Platform value="Win64">False</Platform>
+            </Platforms>
+        </BorlandProject>
+        <ProjectFileVersion>12</ProjectFileVersion>
+    </ProjectExtensions>
+    <Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
+    <Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
 </Project>

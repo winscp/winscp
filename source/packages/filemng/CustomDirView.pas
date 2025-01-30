@@ -17,6 +17,7 @@ uses
 const
   clDefaultItemColor = -(COLOR_ENDCOLORS + 1);
   WM_USER_RENAME = WM_USER + 57;
+  WM_USER_INVALIDATEITEM = WM_USER + $2000 + 16;
   oiNoOverlay = $00;
   oiDirUp = $01;
   oiLink = $02;
@@ -88,6 +89,8 @@ type
   TDVHistoryGoEvent = procedure(Sender: TCustomDirView; Index: Integer; var Cancel: Boolean) of object;
   TCompareCriteria = (ccTime, ccSize);
   TCompareCriterias = set of TCompareCriteria;
+  // First four must match TViewStyle
+  TDirViewStyle = (dvsIcon, dvsSmallIcon, dvsList, dvsReport, dvsThumbnail);
 
   TWMXMouse = packed record
     Msg: Cardinal;
@@ -147,8 +150,10 @@ type
     FNotifyEnabled: Boolean;
     FDragStartTime: TFileTime;
     FHistoryPaths: TStrings;
-    FImageList16: TImageList;
-    FImageList32: TImageList;
+    FOverlaySmallImages: TImageList;
+    FOverlayLargeImages: TImageList;
+    FThumbnailShellImages: TImageList;
+    FThumbnailImages: TImageList;
     FMaxHistoryCount: Integer;
     FPathLabel: TCustomPathLabel;
     FOnUpdateStatusBar: TDirViewUpdateStatusBarEvent;
@@ -160,7 +165,7 @@ type
     FSavedSelectionFile: string;
     FSavedSelectionLastFile: string;
     FSavedNames: TStringList;
-    FPendingFocusSomething: Boolean;
+    FPendingFocusSomething: Integer;
     FOnMatchMask: TMatchMaskEvent;
     FOnGetOverlay: TDirViewGetOverlayEvent;
     FOnGetItemColor: TDirViewGetItemColorEvent;
@@ -170,13 +175,14 @@ type
     FDarkMode: Boolean;
     FScrollOnDragOver: TListViewScrollOnDragOver;
     FStatusFileInfo: TStatusFileInfo;
-    FDoubleBufferedScrollingWorkaround: Boolean;
     FOnBusy: TDirViewBusy;
     FOnChangeFocus: TDirViewChangeFocusEvent;
+    FFallbackThumbnail: array[Boolean] of TBitmap;
+    FFallbackThumbnailSize: TSize;
+    FRecreatingWnd: Integer;
 
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
     procedure WMNotify(var Msg: TWMNotify); message WM_NOTIFY;
-    procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
     procedure WMLButtonDblClk(var Message: TWMLButtonDblClk); message WM_LBUTTONDBLCLK;
     procedure WMLButtonUp(var Message: TWMLButtonUp); message WM_LBUTTONUP;
     procedure WMContextMenu(var Message: TWMContextMenu); message WM_CONTEXTMENU;
@@ -190,6 +196,7 @@ type
     procedure CMDPIChanged(var Message: TMessage); message CM_DPICHANGED;
     procedure CMEnabledChanged(var Message: TMessage); message CM_ENABLEDCHANGED;
     procedure CNKeyDown(var Message: TWMKeyDown); message CN_KEYDOWN;
+    procedure WMUserInvalidateItem(var Message: TMessage); message WM_USER_INVALIDATEITEM;
 
     procedure DumbCustomDrawItem(Sender: TCustomListView; Item: TListItem;
       State: TCustomDrawState; var DefaultDraw: Boolean);
@@ -200,6 +207,10 @@ type
     function GetForwardCount: Integer;
     function GetHistoryPath(Index: Integer): string;
     function GetSelectedNamesSaved: Boolean;
+
+    function GetDirViewStyle: TDirViewStyle;
+    procedure SetDirViewStyle(Value: TDirViewStyle);
+    procedure ViewStyleChanged;
 
     function GetTargetPopupMenu: Boolean;
     function GetUseDragImages: Boolean;
@@ -223,6 +234,8 @@ type
     FInvalidNameChars: string;
     FDragDrive: string;
     FAnnouncedState: TObject;
+    FThumbnail: Boolean;
+    FEffectiveMask: string;
 
     procedure AddToDragFileList(FileList: TFileList; Item: TListItem); virtual;
     function CanEdit(Item: TListItem): Boolean; override;
@@ -232,7 +245,7 @@ type
     function GetDirOK: Boolean; virtual; abstract;
     procedure DDDragDetect(grfKeyState: Longint; DetectStart, Point: TPoint; DragStatus: TDragDetectStatus); virtual;
     procedure DDDragEnter(DataObj: IDataObject; grfKeyState: Longint; Point: TPoint; var dwEffect: longint; var Accept: Boolean);
-    procedure DDDragLeave;
+    procedure DDDragLeave(Dummy: Integer);
     procedure DDDragOver(grfKeyState: Longint; Point: TPoint; var dwEffect: Longint; PreferredEffect: LongInt);
     procedure DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer; PreferredEffect: Integer); virtual;
     procedure DDDrop(DataObj: IDataObject; grfKeyState: LongInt; Point: TPoint; var dwEffect: Longint);
@@ -270,12 +283,16 @@ type
     function DoExecFile(Item: TListItem; ForceEnter: Boolean): Boolean; virtual;
     procedure Execute(Item: TListItem; ForceEnter: Boolean); virtual;
     procedure ExecuteFile(Item: TListItem); virtual; abstract;
-    procedure FocusSomething; override;
+    procedure FocusSomething(ForceMakeVisible: Boolean); override;
     function GetIsRoot: Boolean; virtual; abstract;
     function ItemCanDrag(Item: TListItem): Boolean; virtual;
     function DoItemColor(Item: TListItem): TColor;
     function ItemColor(Item: TListItem): TColor; virtual;
     function ItemImageIndex(Item: TListItem; Cache: Boolean): Integer; virtual; abstract;
+    function ItemThumbnail(Item: TListItem; Size: TSize): TBitmap; virtual;
+    procedure FreeThumbnails;
+    function FallbackThumbnail(Dir: Boolean; Size: TSize): TBitmap;
+    procedure DrawThumbnail(Item: TListItem; DC: HDC);
     // ItemIsDirectory and ItemFullFileName is in public block
     function ItemIsRecycleBin(Item: TListItem): Boolean; virtual;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
@@ -335,14 +352,17 @@ type
     procedure DoExecute(Item: TListItem; ForceEnter: Boolean);
     procedure DoExecuteParentDirectory;
     procedure Load(DoFocusSomething: Boolean); virtual;
+    function NeedImageList(Size: TImageListSize; Recreate: Boolean; var OverlayImages: TImageList): TImageList;
     procedure NeedImageLists(Recreate: Boolean);
     procedure FreeImageLists;
     procedure UpdateDarkMode;
     procedure DoUpdateStatusBar(Force: Boolean = False);
     procedure DoCustomDrawItem(Item: TListItem; Stage: TCustomDrawStage);
     procedure ItemCalculatedSizeUpdated(Item: TListItem; OldSize, NewSize: Int64);
-    property ImageList16: TImageList read FImageList16;
-    property ImageList32: TImageList read FImageList32;
+    procedure SaveItemsState(var FocusedItem: string; var FocusedShown: Boolean; var ShownItemOffset: Integer);
+    procedure RestoreItemsState(ItemToFocus: TListItem; FocusedShown: Boolean; ShownItemOffset: Integer); overload;
+    procedure RestoreItemsState(AState: TObject); overload;
+    function FindFileItemIfNotEmpty(FileName: string): TListItem;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -386,10 +406,11 @@ type
     function SaveState: TObject; virtual;
     procedure RestoreState(AState: TObject); virtual;
     procedure AnnounceState(AState: TObject); virtual;
-    procedure RestoreFocus(FocusedItem: string);
+    procedure FocusByName(FileName: string);
     procedure DisplayContextMenu(Where: TPoint); virtual; abstract;
     procedure DisplayContextMenuInSitu;
     procedure UpdateStatusBar;
+    procedure InvalidateItem(Item: TListItem);
 
     property AddParentDir: Boolean read FAddParentDir write SetAddParentDir default False;
     property DimmHiddenFiles: Boolean read FDimmHiddenFiles write SetDimmHiddenFiles default True;
@@ -437,6 +458,7 @@ type
     property NaturalOrderNumericalSorting: Boolean read FNaturalOrderNumericalSorting write SetNaturalOrderNumericalSorting;
     property AlwaysSortDirectoriesByName: Boolean read FAlwaysSortDirectoriesByName write SetAlwaysSortDirectoriesByName;
     property DarkMode: Boolean read FDarkMode write SetDarkMode;
+    property DirViewStyle: TDirViewStyle read GetDirViewStyle write SetDirViewStyle;
 
     property OnContextPopup;
     property OnStartLoading: TNotifyEvent read FOnStartLoading write FOnStartLoading;
@@ -549,7 +571,7 @@ const
 implementation
 
 uses
-  Math, DirViewColProperties, UITypes, Types, OperationWithTimeout, Winapi.UxTheme, Vcl.Themes;
+  Math, DirViewColProperties, UITypes, Types, OperationWithTimeout, Winapi.UxTheme, Vcl.Themes, System.IOUtils;
 
 const
   ResDirUp = 'DIRUP%2.2d';
@@ -626,6 +648,8 @@ type
     SortStr: string;
     Mask: string;
     FocusedItem: string;
+    FocusedShown: Boolean;
+    ShownItemOffset: Integer;
   end;
 
 constructor TDirViewState.Create;
@@ -845,7 +869,7 @@ begin
   FForceRename := False;
   FLastRenameName := '';
   FSavedSelection := False;
-  FPendingFocusSomething := False;
+  FPendingFocusSomething := -1;
   FSavedNames := TStringList.Create;
 
   FContextMenu := False;
@@ -863,7 +887,6 @@ begin
   FNaturalOrderNumericalSorting := True;
   FAlwaysSortDirectoriesByName := False;
   FDarkMode := False;
-  FDoubleBufferedScrollingWorkaround := not IsVistaHard();
 
   FOnHistoryChange := nil;
   FOnPathChange := nil;
@@ -958,29 +981,70 @@ begin
     else inherited;
 end;
 
+procedure TCustomDirView.DrawThumbnail(Item: TListItem; DC: HDC);
+var
+  Rect: TRect;
+  Thumbnail: TBitmap;
+  Size: TSize;
+  Left, Top: Integer;
+  BlendFunction: TBlendFunction;
+  ThumbnailDC: HDC;
+begin
+  Rect := Item.DisplayRect(drIcon);
+
+  // For thumbnails: The larger side (e.g. height for portrait oriented images) is rescaled to Size.Width
+  // For icons: The "generated" images is exactly as requested
+  Size.Height := MulDiv(Min(Rect.Width, Rect.Height), 9, 10);
+  Size.Width := Size.Height;
+
+  Thumbnail := ItemThumbnail(Item, Size);
+  if not Assigned(Thumbnail) then
+    Thumbnail := FallbackThumbnail(ItemIsDirectory(Item), Size);
+
+  if Assigned(Thumbnail) then
+  begin
+    Left := Rect.Left + ((Rect.Width - Thumbnail.Width) div 2);
+    Top := Rect.Bottom - Thumbnail.Height - MulDiv(Rect.Height, 1, 20); // Bottom-aligned, as Explorer does
+
+    // https://stackoverflow.com/q/24595717/850848
+    // https://stackoverflow.com/q/10028531/850848#10044325
+    ThumbnailDC := CreateCompatibleDC(0);
+    try
+      SelectObject(ThumbnailDC, Thumbnail.Handle);
+      BlendFunction.BlendOp := AC_SRC_OVER;
+      BlendFunction.BlendFlags := 0;
+      BlendFunction.SourceConstantAlpha := 255;
+      BlendFunction.AlphaFormat := AC_SRC_ALPHA;
+      AlphaBlend(DC, Left, Top, Thumbnail.Width, Thumbnail.Height, ThumbnailDC, 0, 0, Thumbnail.Width, Thumbnail.Height, BlendFunction);
+    finally
+      DeleteDC(ThumbnailDC);
+    end;
+  end;
+end;
+
 procedure TCustomDirView.CNNotify(var Message: TWMNotify);
 
-  procedure DrawOverlayImage(DC: HDC; Image: Integer);
+  procedure DrawOverlayImage(DC: HDC; Image: Integer; Item: TListItem);
   var
-    ImageList: TCustomImageList;
+    OverlayImages: TCustomImageList;
     Rect: TRect;
     Point: TPoint;
     Index: Integer;
   begin
-    Rect := Items[PNMCustomDraw(Message.NMHdr)^.dwItemSpec].DisplayRect(drIcon);
+    Rect := Item.DisplayRect(drIcon);
     Point := Rect.TopLeft;
     if ViewStyle = vsIcon then
     begin
-      ImageList := ImageList32;
+      OverlayImages := FOverlayLargeImages;
     end
       else
     begin
-      ImageList := ImageList16;
+      OverlayImages := FOverlaySmallImages;
     end;
 
     // center on the rect
-    Inc(Point.X, (Rect.Width - ImageList.Width) div 2);
-    Inc(Point.Y, (Rect.Height - ImageList.Height) div 2);
+    Inc(Point.X, (Rect.Width - OverlayImages.Width) div 2);
+    Inc(Point.Y, (Rect.Height - OverlayImages.Height) div 2);
 
     Index := 0;
     while Image > 1 do
@@ -989,10 +1053,10 @@ procedure TCustomDirView.CNNotify(var Message: TWMNotify);
       Image := Image shr 1;
     end;
 
-    if 8 + ImageList.Width <= Columns[0].Width then
+    if (ViewStyle <> vsReport) or
+       (8 + OverlayImages.Width <= Columns[0].Width) then
     begin
-      ImageList_Draw(ImageList.Handle, Index, DC,
-        Point.X, Point.Y, ILD_TRANSPARENT);
+      ImageList_Draw(OverlayImages.Handle, Index, DC, Point.X, Point.Y, ILD_TRANSPARENT);
     end;
   end;
 
@@ -1003,6 +1067,7 @@ var
   OverlayIndex: Word;
   OverlayIndexes: Word;
   UpdateStatusBarPending: Boolean;
+  Nmcd: PNMCustomDraw;
 begin
   UpdateStatusBarPending := False;
   case Message.NMHdr^.code of
@@ -1068,30 +1133,48 @@ begin
         end;
   end;
 
-  if (Message.NMHdr.code = NM_CUSTOMDRAW) and
-     Valid and (not Loading) then
-    with PNMLVCustomDraw(Message.NMHdr)^ do
-      try
-        Message.Result := Message.Result or CDRF_NOTIFYPOSTPAINT;
-        if (nmcd.dwDrawStage = CDDS_ITEMPOSTPAINT) and
-           ((nmcd.dwDrawStage and CDDS_SUBITEM) = 0) and
-           Assigned(Columns[0]) and (Columns[0].Width > 0) then
+  if (Message.NMHdr.code = NM_CUSTOMDRAW) and Valid and (not Loading) then
+  begin
+    Nmcd := @PNMLVCustomDraw(Message.NMHdr).nmcd;
+    try
+      if (Nmcd.dwDrawStage and CDDS_SUBITEM) = 0 then
+      begin
+        if (Nmcd.dwDrawStage and CDDS_ITEMPREPAINT) = CDDS_ITEMPREPAINT then
         begin
-          Assert(Assigned(Items[nmcd.dwItemSpec]));
-          OverlayIndexes := ItemOverlayIndexes(Items[nmcd.dwItemSpec]);
-          OverlayIndex := 1;
-          while OverlayIndexes > 0 do
+          Message.Result := Message.Result or CDRF_NOTIFYPOSTPAINT;
+        end
+          else
+        if ((Nmcd.dwDrawStage and CDDS_ITEMPOSTPAINT) = CDDS_ITEMPOSTPAINT) and
+           (Nmcd.rc.Width > 0) then // We get called many times with empty rect while view is recreating (e.g. when switching to thumnails mode)
+        begin
+          Item := Items[Nmcd.dwItemSpec];
+
+          if IsItemVisible(Item) then // particularly the thumbnail drawing is expensive
           begin
-            if (OverlayIndex and OverlayIndexes) <> 0 then
+            if FThumbnail then
             begin
-              DrawOverlayImage(nmcd.hdc, OverlayIndex);
-              Dec(OverlayIndexes, OverlayIndex);
+              DrawThumbnail(Item, Nmcd.hdc);
+            end
+              else
+            begin
+              OverlayIndexes := ItemOverlayIndexes(Item);
+              OverlayIndex := 1;
+              while OverlayIndexes > 0 do
+              begin
+                if (OverlayIndex and OverlayIndexes) <> 0 then
+                begin
+                  DrawOverlayImage(Nmcd.hdc, OverlayIndex, Item);
+                  Dec(OverlayIndexes, OverlayIndex);
+                end;
+                OverlayIndex := OverlayIndex shl 1;
+              end;
             end;
-            OverlayIndex := OverlayIndex shl 1;
           end;
         end;
-      except
       end;
+    except
+    end;
+  end;
 
   if UpdateStatusBarPending then DoUpdateStatusBar;
 end;
@@ -1173,22 +1256,43 @@ begin
   if Assigned(FDragDropFilesEx) then FDragDropFilesEx.TargetPopupMenu := Value;
 end;
 
-procedure TCustomDirView.NeedImageLists(Recreate: Boolean);
+function TCustomDirView.NeedImageList(Size: TImageListSize; Recreate: Boolean; var OverlayImages: TImageList): TImageList;
 begin
-  SmallImages := ShellImageListForControl(Self, ilsSmall);
-  LargeImages := ShellImageListForControl(Self, ilsLarge);
+  Result := ShellImageListForControl(Self, Size);
 
-  if (not Assigned(FImageList16)) or Recreate then
+  if (not Assigned(OverlayImages)) or Recreate then
   begin
-    FreeAndNil(FImageList16);
-    FImageList16 := OverlayImageList(SmallImages.Width);
+    FreeAndNil(OverlayImages);
+    OverlayImages := OverlayImageList(Result.Width);
   end;
+end;
 
-  if (not Assigned(FImageList32)) or Recreate then
+procedure TCustomDirView.NeedImageLists(Recreate: Boolean);
+var
+  ALargeImages: TImageList;
+  ThumbnailSize: Integer;
+begin
+  SmallImages := NeedImageList(ilsSmall, Recreate, FOverlaySmallImages);
+  ALargeImages := NeedImageList(ilsLarge, Recreate, FOverlayLargeImages);
+
+  if FThumbnail then
   begin
-    FreeAndNil(FImageList32);
-    FImageList32 := OverlayImageList(LargeImages.Width);
-  end;
+    ThumbnailSize := ScaleByPixelsPerInch(128, Self);
+    // ShellImageListForSize would normally prefer smaller icons (for row sizing purposes).
+    // But for thumbnails, we prefer larger version as will will scale it when painting.
+    // The *2 is hackish way to achieve that.
+    FThumbnailShellImages := ShellImageListForSize(ThumbnailSize * 2);
+    if (not Assigned(FThumbnailImages)) or (FThumbnailImages.Width <> ThumbnailSize) then
+    begin
+      if Assigned(FThumbnailImages) then
+        FreeAndNil(FThumbnailImages);
+      // Dummy image list, whose sole purpose it to autosize the items in the view
+      FThumbnailImages := TImageList.CreateSize(ThumbnailSize, ThumbnailSize);
+    end;
+
+    LargeImages := FThumbnailImages
+  end
+    else LargeImages := ALargeImages;
 end;
 
 procedure TCustomDirView.CMDPIChanged(var Message: TMessage);
@@ -1220,8 +1324,9 @@ end;
 
 procedure TCustomDirView.FreeImageLists;
 begin
-  FreeAndNil(FImageList16);
-  FreeAndNil(FImageList32);
+  FreeAndNil(FOverlaySmallImages);
+  FreeAndNil(FOverlayLargeImages);
+  FreeAndNil(FThumbnailImages);
 
   SmallImages := nil;
   LargeImages := nil;
@@ -1310,12 +1415,25 @@ procedure TCustomDirView.CMRecreateWnd(var Message: TMessage);
 var
   HadHandle: Boolean;
 begin
-  HadHandle := HandleAllocated;
-  inherited;
-  // See comment in TCustomDriveView.CMRecreateWnd
-  if HadHandle then
+  Inc(FRecreatingWnd);
+  if FRecreatingWnd = 1 then
   begin
-    HandleNeeded;
+    HadHandle := HandleAllocated;
+    try
+      // Prevent nesting
+      while FRecreatingWnd > 0 do
+      begin
+        inherited;
+        Dec(FRecreatingWnd);
+      end;
+    finally
+      FRecreatingWnd := 0;
+    end;
+    // See comment in TCustomDriveView.CMRecreateWnd
+    if HadHandle then
+    begin
+      HandleNeeded;
+    end;
   end;
 end;
 
@@ -1383,6 +1501,7 @@ begin
 
   FreeAndNil(FDragDropFilesEx);
   FreeImageLists;
+  FreeThumbnails;
 
   inherited;
 end;
@@ -1465,6 +1584,62 @@ begin
   Result := clDefaultItemColor;
 end;
 
+function TCustomDirView.ItemThumbnail(Item: TListItem; Size: TSize): TBitmap;
+begin
+  Result := nil;
+end;
+
+procedure TCustomDirView.FreeThumbnails;
+begin
+  FreeAndNil(FFallbackThumbnail[True]);
+  FreeAndNil(FFallbackThumbnail[False]);
+end;
+
+function TCustomDirView.FallbackThumbnail(Dir: Boolean; Size: TSize): TBitmap;
+var
+  FallbackPath: string;
+  Existed: Boolean;
+  Index: Integer;
+begin
+  Result := nil;
+  try
+    if FFallbackThumbnailSize <> Size then
+    begin
+      FreeThumbnails;
+    end;
+
+    if not Assigned(FFallbackThumbnail[Dir]) then
+    begin
+      Index := 1;
+      repeat
+        FallbackPath := TPath.Combine(TempDir, 'default.' + IntToStr(Index) + '.thumbnailimage');
+        Existed := FileExists(FallbackPath) or DirectoryExists(FallbackPath);
+        if not Existed then
+        begin
+          if Dir then
+            CreateDir(FallbackPath)
+          else
+            TFile.WriteAllText(FallbackPath, '');
+        end;
+        Inc(Index);
+      until not Existed;
+
+      FFallbackThumbnailSize := Size;
+      FFallbackThumbnail[Dir] := GetThumbnail(FallbackPath, Size);
+      if Existed then
+      begin
+        if Dir then
+          RemoveDir(FallbackPath)
+        else
+          DeleteFile(FallbackPath);
+      end;
+    end;
+
+    Result := FFallbackThumbnail[Dir];
+  except
+  end;
+end;
+
 function TCustomDirView.GetFilesMarkedSize: Int64;
 begin
   if SelCount > 0 then Result := FilesSelSize
@@ -1483,29 +1658,6 @@ begin
   Result := oiNoOverlay;
   if Assigned(OnGetOverlay) then
     OnGetOverlay(Self, Item, Result);
-end;
-
-procedure TCustomDirView.WMKeyDown(var Message: TWMKeyDown);
-begin
-  if DoubleBuffered and (Message.CharCode in [VK_PRIOR, VK_NEXT]) and
-     FDoubleBufferedScrollingWorkaround then
-  begin
-    // WORKAROUND
-    // When scrolling with double-buffering enabled, ugly artefacts
-    // are shown temporarily.
-    // LVS_EX_TRANSPARENTBKGND fixes it on Vista and newer
-    SendMessage(Handle, WM_SETREDRAW, 0, 0);
-    try
-      inherited;
-    finally
-      SendMessage(Handle, WM_SETREDRAW, 1, 0);
-    end;
-    Repaint;
-  end
-    else
-  begin
-    inherited;
-  end;
 end;
 
 procedure TCustomDirView.DoDisplayPropertiesMenu;
@@ -1847,8 +1999,6 @@ var
   Item: TListItem;
   ItemToFocus: TListItem;
   FileName: string;
-  R: TRect;
-  P: TPoint;
 begin
   if Path <> '' then
   begin
@@ -1884,46 +2034,7 @@ begin
       end
         else
       begin
-        if Assigned(ItemFocused) then
-        begin
-          if ViewStyle = vsReport then
-          begin
-            if Assigned(TopItem) then
-            begin
-              R := ItemFocused.DisplayRect(drBounds);
-              if (R.Top < TopItem.DisplayRect(drBounds).Top) or (R.Top > ClientHeight) then
-              begin
-                OldFocusedShown := False;
-                OldShownItemOffset := TopItem.Index;
-              end
-                else
-              begin
-                OldFocusedShown := True;
-                OldShownItemOffset := ItemFocused.Index - TopItem.Index;
-              end;
-            end
-              else
-            begin
-              // seen with one user only
-              OldFocusedShown := False;
-              OldShownItemOffset := 0;
-            end;
-          end
-            else
-          begin
-            // to satisfy compiler, never used
-            OldFocusedShown := False;
-            OldShownItemOffset := -1;
-          end;
-          OldItemFocused := ItemFocused.Caption;
-        end
-          else
-        begin
-          OldItemFocused := '';
-          OldFocusedShown := False;
-          if Assigned(TopItem) then OldShownItemOffset := TopItem.Index
-            else OldShownItemOffset := -1;
-        end;
+        SaveItemsState(OldItemFocused, OldFocusedShown, OldShownItemOffset);
       end;
 
       Load(False);
@@ -1958,42 +2069,9 @@ begin
     end;
 
     // This is below Items.EndUpdate(), to make Scroll() work properly
-    if Assigned(ItemToFocus) then
-    begin
-      // we have found item that was previously focused and visible, scroll to it
-      if (ViewStyle = vsReport) and OldFocusedShown and
-         (ItemToFocus.Index > OldShownItemOffset) then
-      begin
-        P := Items[ItemToFocus.Index - OldShownItemOffset].GetPosition;
-        // GetPosition is shifted bit low below actual row top.
-        // Scroll to the GetPosition would scroll one line lower.
-        Scroll(0, P.Y - Items[0].GetPosition.Y);
-      end;
-      // Strangely after this mouse selection works correctly, so we do not have to call FocusItem.
-      ItemFocused := ItemToFocus;
-    end;
+    RestoreItemsState(ItemToFocus, OldFocusedShown, OldShownItemOffset);
 
-    // could not scroll when focus is not visible because
-    // of previous call to hack-implementation of FocusItem()
-    // - no longer true, this can be re-enabled after some testing
-    {$IF False}
-    // previously focus item was not visible, scroll to the same position
-    // as before
-    if (ViewStyle = vsReport) and (not OldFocusedShown) and
-       (OldShownItemOffset >= 0) and (Items.Count > 0) then
-    begin
-      if OldShownItemOffset < Items.Count - VisibleRowCount then
-        Scroll(0, OldShownItemOffset)
-      else
-        Items.Item[Items.Count - 1].MakeVisible(false);
-    end
-      // do not know where to scroll to, so scroll to focus
-      // (or we have tried to scroll to previously focused and visible item,
-      // now make sute that it is really visible)
-      else {$IFEND}
-    if Assigned(ItemToFocus) then ItemToFocus.MakeVisible(false);
-
-    FocusSomething;
+    FocusSomething(False);
   end;
 end;
 
@@ -2002,6 +2080,7 @@ var
   SaveCursor: TCursor;
   Delimiters: string;
   LastDirName: string;
+  ForceMakeVisible: Boolean;
 begin
   if not FLoadEnabled or Loading then
   begin
@@ -2075,11 +2154,15 @@ begin
 
         if DoFocusSomething then
         begin
+          ForceMakeVisible := True;
           if FAnnouncedState is TDirViewState then
           begin
-            RestoreFocus(TDirViewState(FAnnouncedState).FocusedItem);
+            // "AnnouncedState" should not be combined with "LastPath"
+            Assert(not Assigned(ItemFocused));
+            RestoreItemsState(FAnnouncedState);
+            ForceMakeVisible := False;
           end;
-          FocusSomething;
+          FocusSomething(ForceMakeVisible);
         end;
 
         if Assigned(FOnLoaded) then
@@ -2109,6 +2192,13 @@ begin
   if (Result > 0) and HasParentDir then Dec(Result);
 end;
 
+procedure TCustomDirView.ViewStyleChanged;
+begin
+  // this is workaround for bug in TCustomNortonLikeListView
+  // that clears Items on recreating wnd (caused by change to ViewStyle)
+  Reload(True);
+end;
+
 procedure TCustomDirView.SetViewStyle(Value: TViewStyle);
 begin
   if (Value <> ViewStyle) and (not FLoading) then
@@ -2116,9 +2206,7 @@ begin
     FNotifyEnabled := False;
     inherited;
     FNotifyEnabled := True;
-    // this is workaround for bug in TCustomNortonLikeListView
-    // that clears Items on recreating wnd (caused by change to ViewStyle)
-    Reload(True);
+    ViewStyleChanged;
   end;
 end;
 
@@ -2902,6 +2990,13 @@ begin
   ForceColorChange(Self);
 end;
 
+function TCustomDirView.FindFileItemIfNotEmpty(FileName: string): TListItem;
+begin
+  Result := nil;
+  if FileName <> '' then
+    Result := FindFileItem(FileName);
+end;
+
 function TCustomDirView.FindFileItem(FileName: string): TListItem;
 type
   TFileNameCompare = function(const S1, S2: string): Integer;
@@ -3179,9 +3274,13 @@ begin
   SetLength(Result, StrLen(PChar(Result)));
 end;
 
-procedure TCustomDirView.FocusSomething;
+procedure TCustomDirView.FocusSomething(ForceMakeVisible: Boolean);
 begin
-  if FSavedSelection then FPendingFocusSomething := True
+  if FSavedSelection then
+  begin
+    if ForceMakeVisible then FPendingFocusSomething := 1
+      else FPendingFocusSomething := 0
+  end
     else inherited;
 end;
 
@@ -3225,7 +3324,7 @@ begin
     end;
   end;
 
-  if not Assigned(ItemFocused) then FocusSomething
+  if not Assigned(ItemFocused) then FocusSomething(True)
     else ItemFocused.MakeVisible(False);
 end;
 
@@ -3234,10 +3333,10 @@ begin
   Assert(FSavedSelection);
   FSavedSelection := False;
 
-  if FPendingFocusSomething then
+  if FPendingFocusSomething >= 0 then
   begin
-    FPendingFocusSomething := False;
-    FocusSomething;
+    FocusSomething(FPendingFocusSomething > 0);
+    FPendingFocusSomething := -1;
   end;
 end;
 
@@ -3288,8 +3387,106 @@ begin
 end;
 
 procedure TCustomDirView.AnnounceState(AState: TObject);
+var
+  State: TDirViewState;
 begin
   FAnnouncedState := AState;
+  if Assigned(FAnnouncedState) then
+  begin
+    State := AState as TDirViewState;
+    if Assigned(State) then
+    begin
+      FEffectiveMask := State.Mask;
+    end;
+  end
+    else
+  begin
+    FEffectiveMask := Mask;
+  end;
+end;
+
+procedure TCustomDirView.SaveItemsState(
+  var FocusedItem: string; var FocusedShown: Boolean; var ShownItemOffset: Integer);
+begin
+  if Assigned(ItemFocused) then
+  begin
+    if ViewStyle = vsReport then
+    begin
+      if Assigned(TopItem) then
+      begin
+        FocusedShown := IsItemVisible(ItemFocused);
+        if not FocusedShown then
+        begin
+          ShownItemOffset := TopItem.Index;
+        end
+          else
+        begin
+          ShownItemOffset := ItemFocused.Index - TopItem.Index;
+        end;
+      end
+        else
+      begin
+        // seen with one user only
+        FocusedShown := False;
+        ShownItemOffset := 0;
+      end;
+    end
+      else
+    begin
+      // to satisfy compiler, never used
+      FocusedShown := False;
+      ShownItemOffset := -1;
+    end;
+    FocusedItem := ItemFocused.Caption;
+  end
+    else
+  begin
+    FocusedItem := '';
+    FocusedShown := False;
+    if Assigned(TopItem) then ShownItemOffset := TopItem.Index
+      else ShownItemOffset := -1;
+  end;
+end;
+
+procedure TCustomDirView.RestoreItemsState(ItemToFocus: TListItem; FocusedShown: Boolean; ShownItemOffset: Integer);
+begin
+  if Assigned(ItemToFocus) then
+  begin
+    // we have found item that was previously focused and visible, scroll to it
+    if (ViewStyle = vsReport) and FocusedShown and
+       (ItemToFocus.Index > ShownItemOffset) then
+    begin
+      MakeTopItem(Items[ItemToFocus.Index - ShownItemOffset]);
+    end;
+    // Strangely after this mouse selection works correctly, so we do not have to call FocusItem.
+    ItemFocused := ItemToFocus;
+  end;
+
+  // previously focused item was not visible, scroll to the same position
+  // as before
+  if (ViewStyle = vsReport) and (not FocusedShown) and
+     (ShownItemOffset >= 0) and (Items.Count > 0) then
+  begin
+    if ShownItemOffset < Items.Count - VisibleRowCount then
+      MakeTopItem(Items[ShownItemOffset])
+    else
+      Items.Item[Items.Count - 1].MakeVisible(false);
+  end
+    // do not know where to scroll to, so scroll to focus
+    // (or we have tried to scroll to previously focused and visible item,
+    // now make sure that it is really visible)
+    else
+  if Assigned(ItemToFocus) then ItemToFocus.MakeVisible(False);
+end;
+
+procedure TCustomDirView.RestoreItemsState(AState: TObject);
+var
+  State: TDirViewState;
+  ItemToFocus: TListItem;
+begin
+  State := TDirViewState(AState);
+  ItemToFocus := FindFileItemIfNotEmpty(State.FocusedItem);
+  RestoreItemsState(ItemToFocus, State.FocusedShown, State.ShownItemOffset);
 end;
 
 function TCustomDirView.SaveState: TObject;
@@ -3306,23 +3503,19 @@ begin
   Assert(Assigned(DirColProperties));
   State.SortStr := DirColProperties.SortStr;
   State.Mask := Mask;
-  if Assigned(ItemFocused) then State.FocusedItem := ItemFocused.Caption
-    else State.FocusedItem := '';
+  SaveItemsState(State.FocusedItem, State.FocusedShown, State.ShownItemOffset);
   Result := State;
 end;
 
-procedure TCustomDirView.RestoreFocus(FocusedItem: string);
+procedure TCustomDirView.FocusByName(FileName: string);
 var
   ListItem: TListItem;
 begin
-  if FocusedItem <> '' then
+  ListItem := FindFileItemIfNotEmpty(FileName);
+  if Assigned(ListItem) then
   begin
-    ListItem := FindFileItem(FocusedItem);
-    if Assigned(ListItem) then
-    begin
-      ItemFocused := ListItem;
-      ListItem.MakeVisible(False);
-    end;
+    ItemFocused := ListItem;
+    ListItem.MakeVisible(False);
   end;
 end;
 
@@ -3337,6 +3530,8 @@ begin
     State := AState as TDirViewState;
     Assert(Assigned(State));
 
+    Assert((not Assigned(FAnnouncedState)) or (FAnnouncedState = AState));
+
     FHistoryPaths.Assign(State.HistoryPaths);
     FBackCount := State.BackCount;
     DoHistoryChange;
@@ -3345,7 +3540,7 @@ begin
     Assert(Assigned(DirColProperties));
     DirColProperties.SortStr := State.SortStr;
     Mask := State.Mask;
-    RestoreFocus(State.FocusedItem);
+    RestoreItemsState(State);
   end
     else
   begin
@@ -3359,9 +3554,17 @@ procedure TCustomDirView.SetMask(Value: string);
 begin
   if Mask <> Value then
   begin
+    if Assigned(FAnnouncedState) then
+      Assert(FEffectiveMask = Value)
+    else
+      Assert(FEffectiveMask = Mask);
     FMask := Value;
     UpdatePathLabel;
-    if DirOK then Reload(False);
+    if FEffectiveMask <> Value then
+    begin
+      FEffectiveMask := Value;
+      if DirOK then Reload(False);
+    end;
   end;
 end;{SetMask}
 
@@ -3480,6 +3683,58 @@ begin
   end;
   Item.Update;
   UpdateStatusBar;
+end;
+
+function TCustomDirView.GetDirViewStyle: TDirViewStyle;
+begin
+  if (ViewStyle = vsIcon) and FThumbnail then Result := dvsThumbnail
+    else Result := TDirViewStyle(ViewStyle);
+end;
+
+procedure TCustomDirView.SetDirViewStyle(Value: TDirViewStyle);
+var
+  NewViewStyle: TViewStyle;
+begin
+  if DirViewStyle <> Value then
+  begin
+    FThumbnail := (Value = dvsThumbnail);
+    // Create thumbnail images before recreating the view
+    NeedImageLists(False);
+    if FThumbnail then NewViewStyle := vsIcon
+      else NewViewStyle := TViewStyle(Value);
+    if ViewStyle <> NewViewStyle then
+    begin
+      ViewStyle := NewViewStyle;
+    end
+      else
+    begin
+      // Changing ViewStyle recreates the view, we want to be consistent.
+      if not (csLoading in ComponentState) then
+      begin
+        RecreateWnd;
+      end;
+      // Again, for consistency (among other this clears thumbnail cache)
+      ViewStyleChanged;
+    end;
+  end;
+end;
+
+procedure TCustomDirView.InvalidateItem(Item: TListItem);
+var
+  R: TRect;
+begin
+  R := Item.DisplayRect(drBounds);
+  // alternative to TListItem.Update (which causes flicker)
+  InvalidateRect(Handle, @R, True);
+end;
+
+procedure TCustomDirView.WMUserInvalidateItem(var Message: TMessage);
+var
+  Index: Integer;
+begin
+  Index := Integer(Message.WParam);
+  if (Index >= 0) and (Index < Items.Count) then
+    InvalidateItem(Items[Index]);
 end;
 
 initialization

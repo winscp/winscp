@@ -52,6 +52,7 @@ __published:
   void __fastcall DownloadItemClick(TObject *Sender);
   void __fastcall BrowseItemClick(TObject *Sender);
   void __fastcall OkButtonDropDownClick(TObject *Sender);
+  void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
 private:
   bool FDefaultToRemote;
   bool FToRemote;
@@ -84,7 +85,6 @@ protected:
   bool __fastcall RemotePaths();
   void __fastcall CopyParamListPopup(TRect R, int AdditionalOptions);
   int __fastcall ActualCopyParamAttrs();
-  virtual void __fastcall Dispatch(void * Message);
 
   INTERFACE_HOOK;
 

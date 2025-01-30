@@ -29,6 +29,23 @@ namespace WinSCP
             return (assembly != null) ? DoGetAssemblyFilePath(assembly) : null;
         }
 
+        private string TryGetCodeBase(Assembly assembly, out Exception e)
+        {
+            string result;
+            try
+            {
+                e = null;
+                result = assembly.CodeBase;
+            }
+            // CodeBase is not supported on assemblies loaded from a single-file bundle
+            catch (NotSupportedException ex)
+            {
+                e = ex;
+                result = null;
+            }
+            return result;
+        }
+
         private string DoGetAssemblyFilePath(Assembly assembly)
         {
             string path = null;
@@ -42,15 +59,13 @@ namespace WinSCP
 
             // It's also good to know that the CodeBase is not guaranteed to be set for assemblies in the GAC.
             // Location will always be set for assemblies loaded from disk, however.
-            string codeBase;
-            try
+            string codeBase = TryGetCodeBase(assembly, out Exception e);
+            if (codeBase == null)
             {
-                codeBase = assembly.CodeBase;
-            }
-            catch (NotSupportedException e)
-            {
-                // CodeBase is not supported on assemblies loaded from a single-file bundle
-                WriteLine($"CodeBase not supported: {e.Message}");
+                if (e != null)
+                {
+                    WriteLine($"CodeBase not supported: {e.Message}");
+                }
                 codeBase = string.Empty;
             }
 
@@ -368,7 +383,9 @@ namespace WinSCP
             WriteLine(".NET Framework build");
 #endif
             WriteLine("Executing assembly: {0}", assembly);
-            WriteLine("Executing assembly codebase: {0}", (assembly.CodeBase ?? "unknown"));
+            string codeBase =
+                TryGetCodeBase(assembly, out Exception e) ?? e?.Message ?? "unknown";
+            WriteLine("Executing assembly codebase: {0}", codeBase);
             WriteLine("Executing assembly location: {0}", (assembly.Location ?? "unknown"));
             Assembly entryAssembly = Assembly.GetEntryAssembly();
             WriteLine("Entry Assembly: {0}", (entryAssembly != null ? entryAssembly.ToString() : "unmanaged"));
@@ -397,6 +414,13 @@ namespace WinSCP
             {
                 WriteLine("Entry assembly path: {0}", GetEntryAssemblyFilePath());
             }
+            WriteLine($"Process path: {GetProcessPath()}");
+        }
+
+        public static string GetProcessPath()
+        {
+            // Can be replaced with Environment.ProcessPath in .NET 6 and newer
+            return Process.GetCurrentProcess().MainModule?.FileName;
         }
 
         public static string LastWin32ErrorMessage()

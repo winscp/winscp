@@ -100,7 +100,7 @@ library.</simpara></listitem>
 
       </refsect1>
 
-      <refsect1 id="example">
+      <refsect1>
 	<title>Example</title>
 
 	<para>Below is a Makefile fragment which could be used to

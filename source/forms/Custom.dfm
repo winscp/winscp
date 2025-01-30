@@ -4,21 +4,19 @@ object CustomDialog: TCustomDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Save session as siteX'
-  ClientHeight = 41
-  ClientWidth = 326
+  ClientHeight = 42
+  ClientWidth = 362
   Color = clBtnFace
   ParentFont = True
-  OldCreateOrder = True
   Position = poOwnerFormCenter
   DesignSize = (
-    326
-    41)
-  PixelsPerInch = 96
-  TextHeight = 13
+    362
+    42)
+  TextHeight = 15
   object OKButton: TButton
-    Left = 68
+    Left = 102
     Top = 9
-    Width = 75
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'OK'
@@ -27,9 +25,9 @@ object CustomDialog: TCustomDialog
     TabOrder = 2
   end
   object CancelButton: TButton
-    Left = 156
+    Left = 188
     Top = 9
-    Width = 75
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
@@ -38,9 +36,9 @@ object CustomDialog: TCustomDialog
     TabOrder = 0
   end
   object HelpButton: TButton
-    Left = 243
+    Left = 274
     Top = 9
-    Width = 75
+    Width = 80
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'

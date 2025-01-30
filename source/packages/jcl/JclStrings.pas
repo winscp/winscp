@@ -83,8 +83,8 @@ uses
   {$ENDIF UNICODE_RTL_DATABASE}
   Classes, SysUtils,
   {$ENDIF ~HAS_UNITSCOPE}
-{$IFNDEF WINSCP}
   JclAnsiStrings,
+{$IFNDEF WINSCP}
   JclWideStrings,
 {$ENDIF ~WINSCP}
   JclBase;
@@ -667,8 +667,8 @@ uses
 
 type
   TStrRec = packed record
-    RefCount: Longint;
-    Length: Longint;
+    RefCount: Integer;
+    Length: Integer;
   end;
   PStrRec = ^TStrRec;
 

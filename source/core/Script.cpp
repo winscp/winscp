@@ -307,11 +307,12 @@ __fastcall TScript::TScript(bool LimitedOutput)
   FLoggingTerminal = NULL;
   FGroups = false;
   FWantsProgress = false;
-  FInteractive = false;
+  FUsageWarnings = true;
   FOnTransferOut = NULL;
   FOnTransferIn = NULL;
   FIncludeFileMaskOptionUsed = false;
   FPendingLogLines = new TStringList();
+  FPrintInformation = false;
 
   Init();
 }
@@ -380,6 +381,7 @@ void __fastcall TScript::Init()
   FCommands->Register(L"echo", SCRIPT_ECHO_DESC, SCRIPT_ECHO_HELP, &EchoProc, -1, -1, true);
   FCommands->Register(L"stat", SCRIPT_STAT_DESC, SCRIPT_STAT_HELP, &StatProc, 1, 1, false);
   FCommands->Register(L"checksum", SCRIPT_CHECKSUM_DESC, SCRIPT_CHECKSUM_HELP, &ChecksumProc, 2, 2, false);
+  FCommands->Register(COPYID_COMMAND, 0, 0, &CopyIdProc, 1, 1, false);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::RequireParams(TScriptProcParams * Parameters, int MinParams)
@@ -1246,6 +1248,15 @@ void __fastcall TScript::ChecksumProc(TScriptProcParams * Parameters)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TScript::CopyIdProc(TScriptProcParams * Parameters)
+{
+  CheckSession();
+
+  UnicodeString FileName = Parameters->Param[1];
+  TAutoFlag AutoFlag(FPrintInformation);
+  FTerminal->UploadPublicKey(FileName);
+}
+//---------------------------------------------------------------------------
 void __fastcall TScript::TerminalCaptureLog(const UnicodeString & AddedLine,
   TCaptureOutputType OutputType)
 {
@@ -1899,56 +1910,54 @@ void __fastcall TScript::SynchronizePreview(
   LocalDirectory = IncludeTrailingBackslash(LocalDirectory);
   RemoteDirectory = UnixIncludeTrailingBackslash(RemoteDirectory);
 
-  for (int Index = 0; (Index < Checklist->Count); Index++)
+  int Index = 0;
+  const TSynchronizeChecklist::TItem * Item;
+  while (Checklist->GetNextChecked(Index, Item))
   {
-    const TSynchronizeChecklist::TItem * Item = Checklist->Item[Index];
-    if (Item->Checked)
+    TDifferenceSessionAction Action(FTerminal->ActionLog, Item);
+
+    UnicodeString Message;
+    UnicodeString LocalRecord = SynchronizeFileRecord(LocalDirectory, Item, true);
+    UnicodeString RemoteRecord = SynchronizeFileRecord(RemoteDirectory, Item, false);
+
+    switch (Item->Action)
     {
-      TDifferenceSessionAction Action(FTerminal->ActionLog, Item);
+      case TSynchronizeChecklist::saUploadNew:
+        Message =
+          FMTLOAD(SCRIPT_SYNC_UPLOAD_NEW, (LocalRecord));
+        break;
 
-      UnicodeString Message;
-      UnicodeString LocalRecord = SynchronizeFileRecord(LocalDirectory, Item, true);
-      UnicodeString RemoteRecord = SynchronizeFileRecord(RemoteDirectory, Item, false);
+      case TSynchronizeChecklist::saDownloadNew:
+        Message =
+          FMTLOAD(SCRIPT_SYNC_DOWNLOAD_NEW, (RemoteRecord));
+        break;
 
-      switch (Item->Action)
-      {
-        case TSynchronizeChecklist::saUploadNew:
-          Message =
-            FMTLOAD(SCRIPT_SYNC_UPLOAD_NEW, (LocalRecord));
-          break;
+      case TSynchronizeChecklist::saUploadUpdate:
+        Message =
+          FMTLOAD(SCRIPT_SYNC_UPLOAD_UPDATE,
+            (LocalRecord, RemoteRecord));
+        break;
 
-        case TSynchronizeChecklist::saDownloadNew:
-          Message =
-            FMTLOAD(SCRIPT_SYNC_DOWNLOAD_NEW, (RemoteRecord));
-          break;
+      case TSynchronizeChecklist::saDownloadUpdate:
+        Message =
+          FMTLOAD(SCRIPT_SYNC_DOWNLOAD_UPDATE,
+            (RemoteRecord, LocalRecord));
+        break;
 
-        case TSynchronizeChecklist::saUploadUpdate:
-          Message =
-            FMTLOAD(SCRIPT_SYNC_UPLOAD_UPDATE,
-              (LocalRecord, RemoteRecord));
-          break;
+      case TSynchronizeChecklist::saDeleteRemote:
+        Message =
+          FMTLOAD(SCRIPT_SYNC_DELETE_REMOTE, (RemoteRecord));
+        break;
 
-        case TSynchronizeChecklist::saDownloadUpdate:
-          Message =
-            FMTLOAD(SCRIPT_SYNC_DOWNLOAD_UPDATE,
-              (RemoteRecord, LocalRecord));
-          break;
+      case TSynchronizeChecklist::saDeleteLocal:
+        Message =
+          FMTLOAD(SCRIPT_SYNC_DELETE_LOCAL, (LocalRecord));
+        break;
 
-        case TSynchronizeChecklist::saDeleteRemote:
-          Message =
-            FMTLOAD(SCRIPT_SYNC_DELETE_REMOTE, (RemoteRecord));
-          break;
-
-        case TSynchronizeChecklist::saDeleteLocal:
-          Message =
-            FMTLOAD(SCRIPT_SYNC_DELETE_LOCAL, (LocalRecord));
-          break;
-
-      default:
-        DebugFail();
-      }
-      PrintLine(Message);
+    default:
+      DebugFail();
     }
+    PrintLine(Message);
   }
 }
 //---------------------------------------------------------------------------
@@ -2089,13 +2098,9 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
           &CopyParam, SynchronizeParams, OnTerminalSynchronizeDirectory, NULL);
       try
       {
-        bool AnyChecked = false;
-        for (int Index = 0; !AnyChecked && (Index < Checklist->Count); Index++)
-        {
-          AnyChecked = Checklist->Item[Index]->Checked;
-        }
-
-        if (AnyChecked)
+        int Index = 0;
+        const TSynchronizeChecklist::TItem * DummyItem;
+        if (Checklist->GetNextChecked(Index, DummyItem))
         {
           if (Preview)
           {
@@ -2224,7 +2229,7 @@ __fastcall TManagementScript::TManagementScript(TStoredSessionList * StoredSessi
 
   OnTerminalSynchronizeDirectory = TerminalSynchronizeDirectory;
 
-  FCommands->Register(L"exit", SCRIPT_EXIT_DESC, SCRIPT_EXIT_HELP, &ExitProc, 0, 0, false);
+  FCommands->Register(EXIT_COMMAND, SCRIPT_EXIT_DESC, SCRIPT_EXIT_HELP, &ExitProc, 0, 0, false);
   FCommands->Register(L"bye", 0, SCRIPT_EXIT_HELP, &ExitProc, 0, 0, false);
   FCommands->Register(L"open", SCRIPT_OPEN_DESC, SCRIPT_OPEN_HELP11, &OpenProc, 0, -1, true);
   FCommands->Register(L"close", SCRIPT_CLOSE_DESC, SCRIPT_CLOSE_HELP, &CloseProc, 0, 1, false);
@@ -2318,10 +2323,10 @@ bool __fastcall TManagementScript::QueryCancel()
 }
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::TerminalInformation(
-  TTerminal * ATerminal, const UnicodeString & Str, bool DebugUsedArg(Status), int Phase, const UnicodeString & DebugUsedArg(Additional))
+  TTerminal * ATerminal, const UnicodeString & Str, int Phase, const UnicodeString & DebugUsedArg(Additional))
 {
   DebugAssert(ATerminal != NULL);
-  if ((Phase < 0) && (ATerminal->Status == ssOpening))
+  if ((Phase < 0) && ((ATerminal->Status == ssOpening) || FPrintInformation))
   {
     PrintLine(Str, false, ATerminal);
   }
@@ -2477,10 +2482,10 @@ void __fastcall TManagementScript::TerminalOperationProgress(
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::TerminalOperationFinished(
   TFileOperation Operation, TOperationSide /*Side*/,
-  bool /*Temp*/, const UnicodeString & FileName, Boolean Success,
+  bool /*Temp*/, const UnicodeString & FileName, bool Success, bool NotCancelled,
   TOnceDoneOperation & /*OnceDoneOperation*/)
 {
-  if (Success &&
+  if (Success && NotCancelled &&
       (Operation != foCalculateSize) && (Operation != foCalculateChecksum) &&
       !TFileOperationProgressType::IsTransferOperation(Operation))
   {
@@ -2771,7 +2776,7 @@ void __fastcall TManagementScript::Connect(const UnicodeString Session,
         TScriptCommands::CheckParams(Options, false);
       }
 
-      if (!Session.IsEmpty() && (Data->Source != ::ssNone) && (Batch != TScript::BatchOff) && !Interactive)
+      if (!Session.IsEmpty() && (Data->Source != ::ssNone) && (Batch != TScript::BatchOff) && UsageWarnings)
       {
         std::unique_ptr<TSessionData> DataWithFingerprint(Data->Clone());
         DataWithFingerprint->LookupLastFingerprint();

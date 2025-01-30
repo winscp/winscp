@@ -172,6 +172,18 @@ const ne_ssl_certificate *ne_ssl_clicert_owner(const ne_ssl_client_cert *ccert);
  * a ccert object in either the encrypted or decrypted state. */
 void ne_ssl_clicert_free(ne_ssl_client_cert *ccert);
 
+/* Protocol versions. */
+enum ne_ssl_protocol {
+    NE_SSL_PROTO_UNSPEC = 0,
+    NE_SSL_PROTO_SSL_3,
+    NE_SSL_PROTO_TLS_1_0,
+    NE_SSL_PROTO_TLS_1_1,
+    NE_SSL_PROTO_TLS_1_2,
+    NE_SSL_PROTO_TLS_1_3
+};
+
+/* Return the SSL/TLS protocol name for the protocol version. */
+const char *ne_ssl_proto_name(enum ne_ssl_protocol proto);
 
 /* SSL context object.  The interfaces to manipulate an SSL context
  * are only needed when interfacing directly with ne_socket.h. */
@@ -191,6 +203,12 @@ void ne_ssl_context_trustcert(ne_ssl_context *ctx, const ne_ssl_certificate *cer
 /* Server mode: use given cert and key (filenames to PEM certificates). */
 int ne_ssl_context_keypair(ne_ssl_context *ctx,
                            const char *cert, const char *key);
+
+/* Set the minimum and maximum protocol version which is allowed for
+ * the connection. This must be called prior to ne_sock_connect_ssl()
+ * or ne_sock_accept_ssl(). Returns 0 on success or NE_SOCK_*. */
+int ne_ssl_context_set_versions(ne_ssl_context *ctx, enum ne_ssl_protocol min,
+                                enum ne_ssl_protocol max);
 
 /* Server mode: set client cert verification options: required is non-zero if 
  * a client cert is required, if ca_names is non-NULL it is a filename containing

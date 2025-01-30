@@ -763,14 +763,6 @@ bool __fastcall ProcessGUI(bool Force)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall CopyParamListButton(TButton * Button)
-{
-  if (!SupportsSplitButton())
-  {
-    MenuButton(Button);
-  }
-}
-//---------------------------------------------------------------------------
 const int cpiDefault = -1;
 const int cpiConfigure = -2;
 const int cpiCustom = -3;
@@ -1407,7 +1399,7 @@ UnicodeString DumpCallstackEventName(int ProcessId)
 UnicodeString DumpCallstackFileName(int ProcessId)
 {
   UnicodeString FileName = FORMAT(L"%s.txt", (DumpCallstackEventName(ProcessId)));
-  UnicodeString Result = TPath::Combine(SystemTemporaryDirectory(), FileName);
+  UnicodeString Result = CombinePaths(SystemTemporaryDirectory(), FileName);
   return Result;
 }
 //---------------------------------------------------------------------------

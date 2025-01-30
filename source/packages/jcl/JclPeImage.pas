@@ -146,6 +146,7 @@ type
     FLastSortDescending: Boolean;
     FName: string;
     FSorted: Boolean;
+    FUseRVA: Boolean;
     FTotalResolveCheck: TJclPeResolveCheck;
     FThunk: Pointer;
     FThunkData: Pointer;
@@ -164,7 +165,7 @@ type
     procedure SetThunk(Value: Pointer);
   public
     constructor Create(AImage: TJclPeImage; AImportDescriptor: Pointer;
-      AImportKind: TJclPeImportKind; const AName: string; AThunk: Pointer);
+      AImportKind: TJclPeImportKind; const AName: string; AThunk: Pointer; AUseRVA: Boolean = True);
     procedure SortList(SortType: TJclPeImportSort; Descending: Boolean = False);
     property Count: Integer read GetCount;
     property FileName: TFileName read GetFileName;
@@ -464,6 +465,7 @@ type
   TJclPeDebugList = class(TJclPeImageBaseList)
   private
     function GetItems(Index: Integer): TImageDebugDirectory;
+    function IsTD32DebugInfo(DebugDir: PImageDebugDirectory): Boolean;
   protected
     procedure CreateList;
   public
@@ -655,7 +657,7 @@ type
     function RawToVa(Raw: DWORD): Pointer; overload;
     function RvaToSection(Rva: DWORD): PImageSectionHeader; overload;
     function RvaToVa(Rva: DWORD): Pointer; overload;
-    function RvaToVaEx(Rva: DWORD): Pointer; overload;
+    function ImageAddressToRva(Address: DWORD): DWORD;
     function StatusOK: Boolean;
     procedure TryGetNamesForOrdinalImports;
     function VerifyCheckSum: Boolean;
@@ -1127,7 +1129,7 @@ uses
   Character,
   {$ENDIF HAS_UNIT_CHARACTER}
   {$ENDIF ~HAS_UNITSCOPE}
-  {$IFNDEF WINSCP}JclLogic,{$ELSE}Math, System.AnsiStrings, {$ENDIF ~WINSCP} JclResources, JclSysUtils, {$IFNDEF WINSCP}JclAnsiStrings,{$ENDIF ~WINSCP} JclStrings{$IFNDEF WINSCP}, JclStringConversions{$ENDIF ~WINSCP};
+  {$IFNDEF WINSCP}JclLogic,{$ELSE}Math, System.AnsiStrings, {$ENDIF ~WINSCP} JclResources, JclSysUtils, JclAnsiStrings, JclStrings{$IFNDEF WINSCP}, JclStringConversions{$ENDIF ~WINSCP}, JclTD32;
 
 const
   MANIFESTExtension = '.manifest';
@@ -1163,28 +1165,6 @@ end;
 // stub for JclDateTime constant
 const
   UnixTimeStart = UnixDateDelta;
-
-// from JclAnsiStrings.pas
-
-function StrLCompA(const Str1, Str2: PAnsiChar; MaxLen: Cardinal): Integer;
-begin
-  Result := {$IFDEF DEPRECATED_SYSUTILS_ANSISTRINGS}System.AnsiStrings.{$ENDIF}StrLComp(Str1, Str2, MaxLen);
-end;
-
-function StrPLCopyA(Dest: PAnsiChar; const Source: AnsiString; MaxLen: Cardinal): PAnsiChar;
-begin
-  Result := {$IFDEF DEPRECATED_SYSUTILS_ANSISTRINGS}System.AnsiStrings.{$ENDIF}StrPLCopy(Dest, Source, MaxLen);
-end;
-
-function StrICompA(const Str1, Str2: PAnsiChar): Integer;
-begin
-  Result := {$IFDEF DEPRECATED_SYSUTILS_ANSISTRINGS}System.AnsiStrings.{$ENDIF}StrIComp(Str1, Str2);
-end;
-
-function StrLenA(S: PAnsiChar): Integer;
-begin
-  Result := {$IFDEF DEPRECATED_SYSUTILS_ANSISTRINGS}System.AnsiStrings.{$ENDIF}StrLen(S);
-end;
 
 {$ENDIF}
 
@@ -1498,7 +1478,7 @@ end;
 
 constructor TJclPeImportLibItem.Create(AImage: TJclPeImage;
   AImportDescriptor: Pointer; AImportKind: TJclPeImportKind; const AName: string;
-  AThunk: Pointer);
+  AThunk: Pointer; AUseRVA: Boolean = True);
 begin
   inherited Create(AImage);
   FTotalResolveCheck := icNotChecked;
@@ -1507,6 +1487,7 @@ begin
   FName := AName;
   FThunk := AThunk;
   FThunkData := AThunk;
+  FUseRVA := AUseRVA;
 end;
 
 procedure TJclPeImportLibItem.CheckImports(ExportImage: TJclPeImage);
@@ -1559,6 +1540,7 @@ procedure TJclPeImportLibItem.CreateList;
     Ordinal, Hint: Word;
     Name: PAnsiChar;
     ImportName: string;
+    AddressOfData: DWORD;
   begin
     Thunk32 := PImageThunkData32(FThunk);
     while Thunk32^.Function_ <> 0 do
@@ -1572,22 +1554,35 @@ procedure TJclPeImportLibItem.CreateList;
           ikImport, ikBoundImport:
             begin
               OrdinalName := PImageImportByName(Image.RvaToVa(Thunk32^.AddressOfData));
-              Hint := OrdinalName.Hint;
-              Name := OrdinalName.Name;
+              if OrdinalName <> nil then
+              begin
+                Hint := OrdinalName.Hint;
+                Name := OrdinalName.Name;
+              end;
             end;
           ikDelayImport:
             begin
-              OrdinalName := PImageImportByName(Image.RvaToVaEx(Thunk32^.AddressOfData));
-              Hint := OrdinalName.Hint;
-              Name := OrdinalName.Name;
+              AddressOfData := Thunk32^.AddressOfData;
+              if not FUseRVA then
+                AddressOfData := Image.ImageAddressToRva(AddressOfData);
+              OrdinalName := PImageImportByName(Image.RvaToVa(AddressOfData));
+              if OrdinalName <> nil then
+              begin
+                Hint := OrdinalName.Hint;
+                Name := OrdinalName.Name;
+              end;
             end;
         end;
       end
       else
         Ordinal := IMAGE_ORDINAL32(Thunk32^.Ordinal);
-      if not TryUTF8ToString(Name, ImportName) then
-        ImportName := string(Name);
-      Add(TJclPeImportFuncItem.Create(Self, Ordinal, Hint, ImportName));
+
+      if (Ordinal <> 0) or (Hint <> 0) or (Name <> nil) then
+      begin
+        if not TryUTF8ToString(Name, ImportName) then
+          ImportName := string(Name);
+        Add(TJclPeImportFuncItem.Create(Self, Ordinal, Hint, ImportName));
+      end;
       Inc(Thunk32);
     end;
   end;
@@ -1612,22 +1607,32 @@ procedure TJclPeImportLibItem.CreateList;
           ikImport, ikBoundImport:
             begin
               OrdinalName := PImageImportByName(Image.RvaToVa(Thunk64^.AddressOfData));
-              Hint := OrdinalName.Hint;
-              Name := OrdinalName.Name;
+              if OrdinalName <> nil then
+              begin
+                Hint := OrdinalName.Hint;
+                Name := OrdinalName.Name;
+              end;
             end;
           ikDelayImport:
             begin
-              OrdinalName := PImageImportByName(Image.RvaToVaEx(Thunk64^.AddressOfData));
-              Hint := OrdinalName.Hint;
-              Name := OrdinalName.Name;
+              OrdinalName := PImageImportByName(Image.RvaToVa(Thunk64^.AddressOfData));
+              if OrdinalName <> nil then
+              begin
+                Hint := OrdinalName.Hint;
+                Name := OrdinalName.Name;
+              end;
             end;
         end;
       end
       else
         Ordinal := IMAGE_ORDINAL64(Thunk64^.Ordinal);
-      if not TryUTF8ToString(Name, ImportName) then
-        ImportName := string(Name);
-      Add(TJclPeImportFuncItem.Create(Self, Ordinal, Hint, ImportName));
+
+      if (Ordinal <> 0) or (Hint <> 0) or (Name <> nil) then
+      begin
+        if not TryUTF8ToString(Name, ImportName) then
+          ImportName := string(Name);
+        Add(TJclPeImportFuncItem.Create(Self, Ordinal, Hint, ImportName));
+      end;
       Inc(Thunk64);
     end;
   end;
@@ -1771,18 +1776,33 @@ end;
 
 procedure TJclPeImportList.CreateList;
   procedure CreateDelayImportList32(DelayImportDesc: PImgDelayDescrV1);
+  const
+    ATTRS_RVA = 1;
   var
     LibItem: TJclPeImportLibItem;
     UTF8Name: TUTF8String;
     LibName: string;
+    P, Thunk: Pointer;
+    UseRVA: Boolean;
   begin
+    // 2010, XE use addresses whereas XE2 and newer use the RVA mode
     while DelayImportDesc^.szName <> nil do
     begin
-      UTF8Name := PAnsiChar(Image.RvaToVaEx(DWORD(DelayImportDesc^.szName)));
+      UseRVA := DelayImportDesc^.grAttrs and ATTRS_RVA <> 0;
+
+      Thunk := DelayImportDesc^.pINT;
+      P := DelayImportDesc^.szName;
+      if not UseRVA then
+      begin
+        Thunk := Pointer(Image.ImageAddressToRva(DWORD(DelayImportDesc^.pINT)));
+        P := Pointer(Image.ImageAddressToRva(DWORD(DelayImportDesc^.szName)));
+      end;
+
+      UTF8Name := PAnsiChar(Image.RvaToVa(DWORD(P)));
       if not TryUTF8ToString(UTF8Name, LibName) then
         LibName := string(UTF8Name);
       LibItem := TJclPeImportLibItem.Create(Image, DelayImportDesc, ikDelayImport,
-        LibName, Image.RvaToVaEx(DWORD(DelayImportDesc^.pINT)));
+        LibName, Image.RvaToVa(DWORD(Thunk)), UseRVA);
       Add(LibItem);
       FUniqueNamesList.AddObject(AnsiLowerCase(LibItem.Name), LibItem);
       Inc(DelayImportDesc);
@@ -1795,6 +1815,7 @@ procedure TJclPeImportList.CreateList;
     UTF8Name: TUTF8String;
     LibName: string;
   begin
+    // 64 bit always uses RVA mode
     while DelayImportDesc^.rvaDLLName <> 0 do
     begin
       UTF8Name := PAnsiChar(Image.RvaToVa(DelayImportDesc^.rvaDLLName));
@@ -1851,11 +1872,16 @@ begin
     DelayImportDesc := DirectoryEntryToData(IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT);
     if DelayImportDesc <> nil then
     begin
-      case Target of
-        taWin32:
-          CreateDelayImportList32(DelayImportDesc);
-        taWin64:
-          CreateDelayImportList64(DelayImportDesc);
+      try
+        case Target of
+          taWin32:
+            CreateDelayImportList32(DelayImportDesc);
+          taWin64:
+            CreateDelayImportList64(DelayImportDesc);
+        end;
+      except
+        on E: EAccessViolation do // Mantis #6177. Some users seem to have module loaded that is broken
+          ; // ignore
       end;
     end;
     BoundImports := DirectoryEntryToData(IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT);
@@ -2405,19 +2431,22 @@ begin
         List{$IFNDEF RTL230_UP}^{$ENDIF !RTL230_UP}[I] := ExportItem;
       end;
 
-      for I := 0 to NameCount - 1 do
+      if NameCount > 0 then
       begin
+        for I := 0 to NameCount - 1 do
+        begin
           // named function
-        UTF8Name := PAnsiChar(RvaToVa(Names^));
-        if not TryUTF8ToString(UTF8Name, ExportName) then
-          ExportName := string(UTF8Name);
+          UTF8Name := PAnsiChar(RvaToVa(Names^));
+          if not TryUTF8ToString(UTF8Name, ExportName) then
+            ExportName := string(UTF8Name);
 
-        ExportItem := TJclPeExportFuncItem(List{$IFNDEF RTL230_UP}^{$ENDIF !RTL230_UP}[NameOrdinals^]);
-        ExportItem.FName := ExportName;
-        ExportItem.FHint := I;
+          ExportItem := TJclPeExportFuncItem(List{$IFNDEF RTL230_UP}^{$ENDIF !RTL230_UP}[NameOrdinals^]);
+          ExportItem.FName := ExportName;
+          ExportItem.FHint := I;
 
-        Inc(NameOrdinals);
-        Inc(Names);
+          Inc(NameOrdinals);
+          Inc(Names);
+        end;
       end;
     end;
   end;
@@ -3012,6 +3041,14 @@ begin
   CreateList;
 end;
 
+function TJclPeDebugList.IsTD32DebugInfo(DebugDir: PImageDebugDirectory): Boolean;
+var
+  Base: Pointer;
+begin
+  Base := Image.RvaToVa(DebugDir^.AddressOfRawData);
+  Result := TJclTD32InfoParser.IsTD32DebugInfoValid(Base, DebugDir^.SizeOfData);
+end;
+
 procedure TJclPeDebugList.CreateList;
 var
   DebugImageDir: TImageDataDirectory;
@@ -3027,19 +3064,17 @@ begin
     if DebugImageDir.VirtualAddress = 0 then
       Exit;
     if GetSectionHeader(DebugSectionName, Header) and
-      (Header^.VirtualAddress = DebugImageDir.VirtualAddress) then
+      (Header^.VirtualAddress = DebugImageDir.VirtualAddress) and
+      (IsTD32DebugInfo(RvaToVa(DebugImageDir.VirtualAddress))) then
     begin
+      // TD32 debug image directory is broken...size should be in bytes, not count.
       FormatCount := DebugImageDir.Size;
-      DebugDir := RvaToVa(Header^.VirtualAddress);
     end
     else
     begin
-      if not GetSectionHeader(ReadOnlySectionName, Header) then
-        Exit;
       FormatCount := DebugImageDir.Size div SizeOf(TImageDebugDirectory);
-      DebugDir := Pointer(MappedAddress + DebugImageDir.VirtualAddress -
-        Header^.VirtualAddress + Header^.PointerToRawData);
     end;
+    DebugDir := RvaToVa(DebugImageDir.VirtualAddress);
     for I := 1 to FormatCount do
     begin
       Add(TObject(DebugDir));
@@ -4264,34 +4299,25 @@ begin
     Result := ImageRvaToVa(FLoadedImage.FileHeader, FLoadedImage.MappedAddress, Rva, nil);
 end;
 
-function TJclPeImage.RvaToVaEx(Rva: DWORD): Pointer;
-  function RvaToVaEx32(Rva: DWORD): Pointer;
-  var
-    OptionalHeader: TImageOptionalHeader32;
-  begin
-    OptionalHeader := OptionalHeader32;
-    if (Rva >= OptionalHeader.ImageBase) and (Rva < (OptionalHeader.ImageBase + FLoadedImage.SizeOfImage)) then
-      Dec(Rva, OptionalHeader.ImageBase);
-    Result := RvaToVa(Rva);
-  end;
-  function RvaToVaEx64(Rva: DWORD): Pointer;
-  var
-    OptionalHeader: TImageOptionalHeader64;
-  begin
-    OptionalHeader := OptionalHeader64;
-    if (Rva >= OptionalHeader.ImageBase) and (Rva < (OptionalHeader.ImageBase + FLoadedImage.SizeOfImage)) then
-      Dec(Rva, OptionalHeader.ImageBase);
-    Result := RvaToVa(Rva);
-  end;
+function TJclPeImage.ImageAddressToRva(Address: DWORD): DWORD;
+var
+  ImageBase32: DWORD;
+  ImageBase64: Int64;
 begin
   case Target of
     taWin32:
-      Result := RvaToVaEx32(Rva);
+      begin
+        ImageBase32 := PImageNtHeaders32(FLoadedImage.FileHeader)^.OptionalHeader.ImageBase;
+        Result := Address - ImageBase32;
+      end;
     taWin64:
-      Result := RvaToVaEx64(Rva);
+      begin
+        ImageBase64 := PImageNtHeaders64(FLoadedImage.FileHeader)^.OptionalHeader.ImageBase;
+        Result := DWORD(Address - ImageBase64);
+      end;
     //taUnknown:
   else
-    Result := nil;
+    Result := 0;
   end;
 end;
 
@@ -6302,7 +6328,12 @@ type
   PPackageThunk = ^TPackageThunk;
   TPackageThunk = packed record
     JmpInstruction: Word;
+  {$IFDEF CPU32}
     JmpAddress: PPointer;
+  {$ENDIF CPU32}
+  {$IFDEF CPU64}
+    JmpOffset: Int32;
+  {$ENDIF CPU64}
   end;
 begin
   if not IsCompiledWithPackages then
@@ -6310,7 +6341,13 @@ begin
   else
   if not IsBadReadPtr(Address, SizeOf(TPackageThunk)) and
     (PPackageThunk(Address)^.JmpInstruction = JmpInstructionCode) then
+  {$IFDEF CPU32}
     Result := PPackageThunk(Address)^.JmpAddress^
+  {$ENDIF CPU32}
+  {$IFDEF CPU64}
+    Result := PPointer(PByte(Address) + SizeOf(TPackageThunk) +
+      PPackageThunk(Address)^.JmpOffset)^
+  {$ENDIF CPU64}
   else
     Result := nil;
 end;
@@ -6692,6 +6729,48 @@ end;
 
 // Borland BPL packages name unmangling
 
+{$IFDEF CPU64}
+function PeBorUnmangleName(const Name: string; out Unmangled: string;
+  out Description: TJclBorUmDescription; out BasePos: Integer): TJclBorUmResult;
+var
+  CurPos: Integer;
+  EndPos: Integer;
+  Len: Integer;
+  PrevBasePos: Integer;
+begin
+  if (Length(Name) > 3) and (Name[1] = '_') and (Name[2] = 'Z') and (Name[3] = 'N') then
+  begin
+    Result := urOk;
+    CurPos := 4;
+    BasePos := 0;
+    PrevBasePos := 0;
+    while CurPos < Length(Name) do
+    begin
+      EndPos := CurPos;
+      while CharInSet(Name[EndPos], ['0'..'9']) do
+        Inc(EndPos);
+      if not TryStrToInt(Copy(Name, CurPos, EndPos - CurPos), Len) then
+        Break;
+      BasePos := PrevBasePos;
+      PrevBasePos := Length(Unmangled);
+      if Unmangled <> '' then
+        Unmangled := Unmangled + '.';
+      Unmangled := Unmangled + Copy(Name, EndPos, Len);
+      CurPos := EndPos + Len;
+    end;
+    if BasePos = 0 then
+      BasePos := PrevBasePos + 2
+    else
+      BasePos := BasePos + 2;
+    Description.Kind := skFunction;
+    Description.Modifiers := [];
+  end
+  else
+    Result := urNotMangled;
+end;
+{$ENDIF CPU64}
+
+{$IFDEF CPU32}
 function PeBorUnmangleName(const Name: string; out Unmangled: string;
   out Description: TJclBorUmDescription; out BasePos: Integer): TJclBorUmResult;
 var
@@ -6851,6 +6930,7 @@ begin
   if not TryUTF8ToString(UTF8Unmangled, Unmangled) then
     Unmangled := string(UTF8Unmangled);
 end;
+{$ENDIF CPU32}
 
 function PeBorUnmangleName(const Name: string; out Unmangled: string;
   out Description: TJclBorUmDescription): TJclBorUmResult;
@@ -6880,7 +6960,7 @@ begin
     Result := '';
 end;
 
-function PeIsNameMangled(const Name: string): TJclPeUmResult;
+function PeIsNameMangled(const Name: string): TJclPeUmResult; {$IFDEF SUPPORTS_INLINE}inline;{$ENDIF}
 begin
   Result := umNotMangled;
   if Length(Name) > 0 then
@@ -6889,6 +6969,11 @@ begin
         Result := umBorland;
       '?':
         Result := umMicrosoft;
+      {$IFDEF CPU64}
+      '_':
+        if (Length(Name) > 3) and (Name[2] = 'Z') and (Name[3] = 'N') then
+          Result := umBorland;
+      {$ENDIF CPU64}
     end;
 end;
 

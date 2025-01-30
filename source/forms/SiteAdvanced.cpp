@@ -199,7 +199,14 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     AllowScpFallbackCheck->Checked = (FSessionData->FSProtocol == fsSFTP);
     UsePosixRenameCheck->Checked = FSessionData->UsePosixRename;
 
-    SFTPMaxVersionCombo->ItemIndex = FSessionData->SFTPMaxVersion;
+    if (FSessionData->SFTPMaxVersion < 0)
+    {
+      SFTPMaxVersionCombo->ItemIndex = 0;
+    }
+    else
+    {
+      SFTPMaxVersionCombo->ItemIndex = FSessionData->SFTPMaxVersion + 1;
+    }
 
     ComboAutoSwitchLoad(SFTPRealPathCombo, FSessionData->SFTPRealPath);
     #define LOAD_SFTP_BUG_COMBO(BUG) \
@@ -229,11 +236,13 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     S3RequesterPaysCheck->Checked = FSessionData->S3RequesterPays;
 
     UnicodeString S3SessionToken = FSessionData->S3SessionToken;
+    UnicodeString S3RoleArn = FSessionData->S3RoleArn;
     if (FSessionData->HasAutoCredentials())
     {
       try
       {
         S3SessionToken = S3EnvSessionToken(FSessionData->S3Profile);
+        S3RoleArn = S3EnvRoleArn(FSessionData->S3Profile);
       }
       catch (...)
       {
@@ -241,6 +250,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
       }
     }
     S3SessionTokenMemo->Lines->Text = S3SessionToken;
+    S3RoleArnEdit->Text = S3RoleArn;
 
     // Authentication page
     SshNoUserAuthCheck->Checked = FSessionData->SshNoUserAuth;
@@ -269,7 +279,7 @@ void __fastcall TSiteAdvancedDialog::LoadSession()
     // KEX page
 
     KexListBox->Items->Clear();
-    DebugAssert(KEX_NAME_WARN + KEX_COUNT - 1 == KEX_NAME_NTRU_HYBRID);
+    DebugAssert(KEX_NAME_WARN + KEX_COUNT - 1 == KEX_NAME_MLKEM_NIST_HYBRID);
     for (int Index = 0; Index < KEX_COUNT; Index++)
     {
       KexListBox->Items->AddObject(
@@ -614,7 +624,14 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
 
   // SFTP page
   SessionData->SftpServer = (IsDefaultSftpServer() ? UnicodeString() : SftpServerEdit->Text);
-  SessionData->SFTPMaxVersion = SFTPMaxVersionCombo->ItemIndex;
+  if (SFTPMaxVersionCombo->ItemIndex == 0)
+  {
+    SessionData->SFTPMaxVersion = SFTPMaxVersionAuto;
+  }
+  else
+  {
+    SessionData->SFTPMaxVersion = SFTPMaxVersionCombo->ItemIndex - 1;
+  }
   if (AllowScpFallbackCheck->Checked != (SessionData->FSProtocol == fsSFTP))
   {
     if (AllowScpFallbackCheck->Checked)
@@ -664,6 +681,7 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
     // Trim not to try to authenticate with a stray new-line
     SessionData->S3SessionToken = S3SessionTokenMemo->Lines->Text.Trim();
   }
+  FSessionData->S3RoleArn = S3RoleArnEdit->Text;
 
   // Proxy page
   SessionData->ProxyMethod = GetProxyMethod();
@@ -758,7 +776,7 @@ void __fastcall TSiteAdvancedDialog::UpdateNavigationTree()
         {
           if (Indented)
           {
-            if (PrevNode->Level == 0)
+            if (PrevNode->Parent == NULL)
             {
               Node = PrevNode->getFirstChild();
               if (Node == NULL)
@@ -777,7 +795,7 @@ void __fastcall TSiteAdvancedDialog::UpdateNavigationTree()
           }
           else
           {
-            if (PrevNode->Level == 0)
+            if (PrevNode->Parent == NULL)
             {
               // delete all excess children of previous top level node
               while ((Node = PrevNode->GetNext()) != PrevNode->getNextSibling())
@@ -1071,6 +1089,8 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     S3Sheet->Enabled = S3Protocol;
     EnableControl(S3SessionTokenMemo, S3Sheet->Enabled && !FSessionData->HasAutoCredentials());
     EnableControl(S3SessionTokenLabel, S3SessionTokenMemo->Enabled);
+    EnableControl(S3RoleArnEdit, S3SessionTokenMemo->Enabled && IsAmazonS3SessionData(FSessionData));
+    EnableControl(S3RoleArnLabel, S3RoleArnEdit->Enabled);
 
     // tunnel sheet
     TunnelSheet->Enabled = SshProtocol;
@@ -1372,16 +1392,19 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyEdit3AfterDialog(TObject * Sender
       {
         UnicodeString FileName = ExpandEnvironmentVariables(Name);
         TKeyType Type = KeyType(FileName);
-        // This gonna fail for encrypted keys
-        TPrivateKey * PrivateKey = LoadKey(Type, FileName, EmptyStr);
-        try
+        if ((Type == ktSSH2) || (Type == ktOpenSSHPEM) || (Type == ktOpenSSHNew) || (Type == ktSSHCom))
         {
-          UnicodeString CertificateFileName = AddMatchingKeyCertificate(PrivateKey, FileName);
-          DetachedCertificateEdit->Text = CertificateFileName;
-        }
-        __finally
-        {
-          FreeKey(PrivateKey);
+          // This gonna fail for encrypted keys
+          TPrivateKey * PrivateKey = LoadKey(Type, FileName, EmptyStr);
+          try
+          {
+            UnicodeString CertificateFileName = AddMatchingKeyCertificate(PrivateKey, FileName);
+            DetachedCertificateEdit->Text = CertificateFileName;
+          }
+          __finally
+          {
+            FreeKey(PrivateKey);
+          }
         }
       }
       catch (Exception & E)
@@ -1650,7 +1673,8 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyToolsButtonClick(TObject * /*Send
 {
   UnicodeString Dummy;
   PrivateKeyGenerateItem->Enabled = FindTool(PuttygenTool, Dummy);
-  PrivateKeyUploadItem->Enabled = (NormalizeFSProtocol(FSessionData->FSProtocol) == fsSFTP);
+  PrivateKeyUploadItem->Enabled =
+    FSessionData->CanLogin && (NormalizeFSProtocol(FSessionData->FSProtocol) == fsSFTP);
   MenuPopup(PrivateKeyMenu, PrivateKeyToolsButton);
 }
 //---------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 /*
- * Copyright 2000-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2000-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -95,6 +95,8 @@ struct evp_keymgmt_st {
     int id;                      /* libcrypto internal */
 
     int name_id;
+    /* NID for the legacy alg if there is one */
+    int legacy_alg;
     char *type_name;
     const char *description;
     OSSL_PROVIDER *prov;

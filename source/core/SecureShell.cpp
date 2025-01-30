@@ -218,6 +218,8 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
       case kexRSA: pkex = KEX_RSA; break;
       case kexECDH: pkex = KEX_ECDH; break;
       case kexNTRUHybrid: pkex = KEX_NTRU_HYBRID; break;
+      case kexMLKEM25519Hybrid: pkex = KEX_MLKEM_25519_HYBRID; break;
+      case kexMLKEMNISTHybrid: pkex = KEX_MLKEM_NIST_HYBRID; break;
       default: DebugFail();
     }
     conf_set_int_int(conf, CONF_ssh_kexlist, k, pkex);
@@ -242,15 +244,15 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
     }
     conf_set_int_int(conf, CONF_ssh_gsslist, g, pgsslib);
   }
-  Filename * GssLibCustomFileName = filename_from_str(UTF8String(Data->GssLibCustom).c_str());
+  Filename * GssLibCustomFileName = filename_from_utf8(UTF8String(Data->GssLibCustom).c_str());
   conf_set_filename(conf, CONF_ssh_gss_custom, GssLibCustomFileName);
   filename_free(GssLibCustomFileName);
 
-  Filename * AFileName = filename_from_str(UTF8String(Data->ResolvePublicKeyFile()).c_str());
+  Filename * AFileName = filename_from_utf8(UTF8String(Data->ResolvePublicKeyFile()).c_str());
   conf_set_filename(conf, CONF_keyfile, AFileName);
   filename_free(AFileName);
 
-  AFileName = filename_from_str(UTF8String(ExpandEnvironmentVariables(Data->DetachedCertificate)).c_str());
+  AFileName = filename_from_utf8(UTF8String(ExpandEnvironmentVariables(Data->DetachedCertificate)).c_str());
   conf_set_filename(conf, CONF_detached_cert, AFileName);
   filename_free(AFileName);
 
@@ -417,7 +419,7 @@ void __fastcall TSecureShell::Open()
 
   FAuthenticationLog = L"";
   FNoConnectionResponse = false;
-  FUI->Information(LoadStr(STATUS_LOOKUPHOST), true);
+  FUI->Information(LoadStr(STATUS_LOOKUPHOST));
 
   try
   {
@@ -448,7 +450,7 @@ void __fastcall TSecureShell::Open()
     {
       PuttyFatalError(InitError);
     }
-    FUI->Information(LoadStr(STATUS_CONNECT), true);
+    FUI->Information(LoadStr(STATUS_CONNECT));
     FAuthenticationCancelled = false;
     if (!Active && DebugAlwaysTrue(HasLocalProxy()))
     {
@@ -478,7 +480,7 @@ void __fastcall TSecureShell::Open()
 
   FAuthenticating = false;
   FAuthenticated = true;
-  FUI->Information(LoadStr(STATUS_AUTHENTICATED), true);
+  FUI->Information(LoadStr(STATUS_AUTHENTICATED));
 
   ResetSessionInfo();
 
@@ -641,7 +643,7 @@ UnicodeString __fastcall TSecureShell::ConvertFromPutty(const char * Str, int Le
   if ((Length >= BomLength) &&
       (strncmp(Str, WINSCP_BOM, BomLength) == 0))
   {
-    return UTF8ToString(Str + BomLength, Length - BomLength);
+    return UTF8ArrayToString(Str + BomLength, Length - BomLength - 1);
   }
   else
   {
@@ -908,7 +910,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
         FLAGCLEAR(int(Prompts->Objects[0]), pupEcho))
     {
       LogEvent(L"Using stored password.");
-      FUI->Information(LoadStr(AUTH_PASSWORD), false);
+      FUI->Information(LoadStr(AUTH_PASSWORD));
       Result = true;
       Results->Strings[0] = NormalizeString(FSessionData->Password);
       FStoredPasswordTriedForKI = true;
@@ -924,7 +926,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
     if (!FSessionData->Password.IsEmpty() && !FStoredPasswordTried)
     {
       LogEvent(L"Using stored password.");
-      FUI->Information(LoadStr(AUTH_PASSWORD), false);
+      FUI->Information(LoadStr(AUTH_PASSWORD));
       Result = true;
       Results->Strings[0] = NormalizeString(FSessionData->Password);
       FStoredPasswordTried = true;
@@ -944,7 +946,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
   {
     if (FSessionData->ChangePassword)
     {
-      FUI->Information(LoadStr(AUTH_CHANGING_PASSWORD), false);
+      FUI->Information(LoadStr(AUTH_CHANGING_PASSWORD));
 
       if (!FSessionData->Password.IsEmpty() && !FSessionData->NewPassword.IsEmpty() && !FStoredPasswordTried)
       {
@@ -1000,7 +1002,7 @@ void __fastcall TSecureShell::GotHostKey()
     FAuthenticating = true;
     if (!FSessionData->ChangePassword)
     {
-      FUI->Information(LoadStr(STATUS_AUTHENTICATE), true);
+      FUI->Information(LoadStr(STATUS_AUTHENTICATE));
     }
   }
 }
@@ -1028,7 +1030,7 @@ void __fastcall TSecureShell::CWrite(const char * Data, size_t Length)
       FAuthenticationLog += (FAuthenticationLog.IsEmpty() ? L"" : L"\n") + Line;
     }
 
-    FUI->Information(Line, false);
+    FUI->Information(Line);
   }
 }
 //---------------------------------------------------------------------------
@@ -2302,8 +2304,7 @@ UnicodeString __fastcall TSecureShell::RetrieveHostKey(const UnicodeString & Hos
   Storage->AccessMode = smRead;
   TGuard Guard(PuttyStorageSection.get());
   DebugAssert(PuttyStorage == NULL);
-  TValueRestorer<THierarchicalStorage *> StorageRestorer(PuttyStorage);
-  PuttyStorage = Storage.get();
+  TValueRestorer<THierarchicalStorage *> StorageRestorer(PuttyStorage, Storage.get());
 
   AnsiString AnsiStoredKeys;
   AnsiStoredKeys.SetLength(10240);
@@ -2463,11 +2464,10 @@ UnicodeString TSecureShell::StoreHostKey(
 {
   TGuard Guard(PuttyStorageSection.get());
   DebugAssert(PuttyStorage == NULL);
-  TValueRestorer<THierarchicalStorage *> StorageRestorer(PuttyStorage);
   std::unique_ptr<THierarchicalStorage> Storage(GetHostKeyStorage());
   Storage->AccessMode = smReadWrite;
-  PuttyStorage = Storage.get();
-  store_host_key(AnsiString(Host).c_str(), Port, AnsiString(KeyType).c_str(), AnsiString(KeyStr).c_str());
+  TValueRestorer<THierarchicalStorage *> StorageRestorer(PuttyStorage, Storage.get());
+  store_host_key(FSeat, AnsiString(Host).c_str(), Port, AnsiString(KeyType).c_str(), AnsiString(KeyStr).c_str());
   return Storage->Source;
 }
 //---------------------------------------------------------------------------
@@ -2560,7 +2560,7 @@ void __fastcall TSecureShell::VerifyHostKey(
         if (ExpectedKey == L"*")
         {
           UnicodeString Message = LoadStr(ANY_HOSTKEY);
-          FUI->Information(Message, true);
+          FUI->Information(Message);
           FLog->Add(llException, Message);
           Result = true;
         }

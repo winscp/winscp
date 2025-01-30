@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2022-2024 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -88,7 +88,12 @@ static const PROV_CIPHER_HW sm4_generic_xts = {
     NULL,
     cipher_hw_sm4_xts_copyctx
 };
+
+#if defined(OPENSSL_CPUID_OBJ) && defined(__riscv) && __riscv_xlen == 64
+# include "cipher_sm4_xts_hw_rv64i.inc"
+#else
 const PROV_CIPHER_HW *ossl_prov_cipher_hw_sm4_xts(size_t keybits)
 {
     return &sm4_generic_xts;
 }
+#endif

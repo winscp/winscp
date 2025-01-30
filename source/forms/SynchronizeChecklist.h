@@ -16,6 +16,7 @@
 #include <Terminal.h>
 #include <System.Actions.hpp>
 #include <Vcl.ActnList.hpp>
+#include <System.ImageList.hpp>
 //----------------------------------------------------------------------------
 class TSynchronizeChecklistDialog : public TForm
 {
@@ -54,7 +55,7 @@ __published:
   TPngImageList *ActionImages192;
   TAction *CalculateSizeAction;
   TMenuItem *Calculate1;
-  TButton *CalculateSizeButton;
+  TButton *ToolsMenuButton;
   TAction *CalculateSizeAllAction;
   TAction *MoveAction;
   TButton *MoveButton;
@@ -68,6 +69,17 @@ __published:
   TAction *BrowseRemoteAction;
   TMenuItem *BrowseLocalDirectory1;
   TMenuItem *BrowseLocalDirectory2;
+  TAction *FindMoveCandidateAction;
+  TMenuItem *Calculate3;
+  TMenuItem *CalculateAll1;
+  TPopupMenu *ToolsPopupMenu;
+  TMenuItem *Calculate2;
+  TMenuItem *CalculateAll2;
+  TMenuItem *N4;
+  TMenuItem *FindMoveCandidate1;
+  TPopupMenu *OkPopupMenu;
+  TMenuItem *StartItem;
+  TMenuItem *StartQueueItem;
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall FormShow(TObject * Sender);
   void __fastcall StatusBarDrawPanel(TStatusBar *StatusBar,
@@ -107,12 +119,19 @@ __published:
   void __fastcall BrowseLocalActionExecute(TObject *Sender);
   void __fastcall BrowseRemoteActionExecute(TObject *Sender);
   void __fastcall ListViewRecreate(TObject *Sender);
+  void __fastcall ToolsMenuButtonClick(TObject *Sender);
+  void __fastcall FindMoveCandidateActionExecute(TObject *Sender);
+  void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
+  void __fastcall StartItemClick(TObject *Sender);
+  void __fastcall OkButtonDropDownClick(TObject *Sender);
+  void __fastcall StartQueueItemClick(TObject *Sender);
 
 public:
   __fastcall TSynchronizeChecklistDialog(
     TComponent * AOwner, TSynchronizeMode Mode, int Params,
     const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
     TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
+    TQueueSynchronizeEvent OnQueueSynchronize,
     TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
     TSynchronizeBrowseEvent OnSynchronizeBrowse, void * Token);
   virtual __fastcall ~TSynchronizeChecklistDialog();
@@ -142,10 +161,18 @@ protected:
   typedef std::map<const TSynchronizeChecklist::TItem *, TSynchronizeChecklist::TAction> TActions;
   TActions FActions;
   TFullSynchronizeEvent FOnSynchronize;
+  TQueueSynchronizeEvent FOnQueueSynchronize;
   void * FToken;
   bool FSynchronizing;
   std::unique_ptr<Exception> FException;
   std::map<const TSynchronizeChecklist::TItem *, TListItem *> FChecklistToListViewMap;
+  int FDirectories;
+  int FMoveCandidatesValidForSort;
+  typedef std::vector<const TSynchronizeChecklist::TItem *> TChecklistItems;
+  typedef std::map<UnicodeString, TChecklistItems> TMoveCandidatesFileNameMap;
+  TMoveCandidatesFileNameMap FMoveCandidatesFileName;
+  typedef std::map<__int64, TChecklistItems> TMoveCandidatesSizeMap;
+  TMoveCandidatesSizeMap FMoveCandidatesSize;
 
   void __fastcall UpdateControls();
   void __fastcall UpdateCaption();
@@ -168,21 +195,23 @@ protected:
   TRect __fastcall GetColumnHeaderRect(int Index);
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall UpdateImages();
-  void __fastcall CMDpiChanged(TMessage & Message);
   bool __fastcall GetWindowParams(UnicodeString & WindowParams);
   void __fastcall ProcessedItem(void * Token, const TSynchronizeChecklist::TItem * ChecklistItem);
   void __fastcall UpdatedSynchronizationChecklistItems(const TSynchronizeChecklist::TItemList & Items);
   void __fastcall CountItemSize(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);
   void __fastcall CountItem(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);
   void __fastcall CountItemTotal(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);
-  typedef std::pair<const TSynchronizeChecklist::TItem *, const TSynchronizeChecklist::TItem *> TSynchronizeMoveItems;
-  TSynchronizeMoveItems __fastcall GetMoveItems();
-  void __fastcall DeleteItem(TListItem * Item);
+  void __fastcall DeleteItem(const TSynchronizeChecklist::TItem * ChecklistItem);
   void __fastcall CheckDirectory(bool Check);
   void __fastcall DoBrowse(TOperationSide Side);
   void __fastcall ListViewHintShow(TCMHintShow & HintShow);
   void __fastcall StatusBarHintShow(TCMHintShow & HintShow);
   DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
+  void CalculateSize(bool All);
+  TIEListViewColProperties * GetColProperties();
+  bool IterateItems(TListItem *& Item, TItemStates States);
+  bool IterateSelectedItems(TListItem *& Item);
+  void DoSynchronize(bool Queue);
 };
 //----------------------------------------------------------------------------
 #endif

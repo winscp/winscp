@@ -236,11 +236,11 @@ Type: filesandordirs; Name: "{commonprograms}\WinSCP"
 Type: filesandordirs; Name: "{userprograms}\WinSCP"; Check: HasUserPrograms
 
 [Run]
-Filename: "{app}\WinSCP.exe"; Parameters: "/RegisterForDefaultProtocols"; \
+Filename: "{app}\WinSCP.exe"; Parameters: "{code:GetTaskCmdLine|RegisterForDefaultProtocols}"; \
   StatusMsg: {cm:RegisteringAsUrlHandlers}; Tasks: urlhandler
-Filename: "{app}\WinSCP.exe"; Parameters: "/AddSearchPath"; \
+Filename: "{app}\WinSCP.exe"; Parameters: "{code:GetTaskCmdLine|AddSearchPath}"; \
   StatusMsg: {cm:AddingSearchPath}; Tasks: searchpath
-Filename: "{app}\WinSCP.exe"; Parameters: "/ImportSitesIfAny"; \
+Filename: "{app}\WinSCP.exe"; Parameters: "{code:GetTaskCmdLine|ImportSitesIfAny}"; \
   StatusMsg: {cm:ImportSites}; Flags: skipifsilent
 
 [UninstallDelete]
@@ -361,11 +361,11 @@ Type: files; Name: "{app}\WinSCP.{#Lang}"
 
 [UninstallRun]
 ; Make sure no later uninstall task recreate the configuration
-Filename: "{app}\WinSCP.exe"; Parameters: "/UninstallCleanup"; \
+Filename: "{app}\WinSCP.exe"; Parameters: "{code:GetTaskCmdLine|UninstallCleanup}"; \
   RunOnceId: "UninstallCleanup"
-Filename: "{app}\WinSCP.exe"; Parameters: "/RemoveSearchPath"; \
+Filename: "{app}\WinSCP.exe"; Parameters: "{code:GetTaskCmdLine|RemoveSearchPath}"; \
   RunOnceId: "RemoveSearchPath"
-Filename: "{app}\WinSCP.exe"; Parameters: "/UnregisterForProtocols"; \
+Filename: "{app}\WinSCP.exe"; Parameters: "{code:GetTaskCmdLine|UnregisterForProtocols}"; \
   RunOnceId: "UnregisterForProtocols"
 
 [Code]
@@ -410,13 +410,6 @@ procedure ShowMessage(Text: string);
 begin
   MsgBox(Text, mbInformation, MB_OK);
 end;
-
-#ifdef Sponsor
-function IsWinVista: Boolean;
-begin
-  Result := (GetWindowsVersion >= $06000000);
-end;
-#endif
 
 procedure CutVersionPart(var VersionString: string; var VersionPart: Word);
 var
@@ -1379,8 +1372,7 @@ begin
 #ifdef Sponsor
     if VarIsEmpty(SponsorReq) then
     begin
-      // Need Vista for SHCONTCH_* constants
-      if WizardSilent or CmdLineParamExists('/NoSponsor') or (not IsWinVista) then
+      if WizardSilent or CmdLineParamExists('/NoSponsor') then
       begin
         Log('Skipping sponsor query request');
         SponsorStatus := 'N';
@@ -1455,12 +1447,30 @@ begin
   end;
 end;
 
-procedure ExecApp(Params: string; ShowCmd: Integer; Wait: TExecWait);
+function GetTaskLogCmdLine(Task: string): string;
+var
+  LogPath: string;
+  Ext: string;
+begin
+  if CmdLineParamExists('/LogTasks') then
+  begin
+    LogPath := Trim(ExpandConstant('{param:Log}'));
+    if LogPath <> '' then
+    begin
+      Ext := ExtractFileExt(LogPath);
+      LogPath := Copy(LogPath, 1, Length(LogPath) - Length(Ext)) + '.' + Task + Ext;
+      Result := ' /AppLog="' + LogPath + '"';
+    end;
+  end;
+end;
+
+procedure ExecApp(Params: string; ShowCmd: Integer; Wait: TExecWait; Task: string);
 var
   Path: string;
   ErrorCode: Integer;
 begin
   Path := ExpandConstant('{app}\{#MainFileName}');
+  Params := Params + GetTaskLogCmdLine(Task);
   ExecAsOriginalUser(Path, Params, '', ShowCmd, Wait, ErrorCode)
 end;
 
@@ -1567,12 +1577,12 @@ begin
       Log('Recording installer usage statistics: ' + UsageData);
       // make sure we write the counters using the "normal" account
       // (the account that will be used to report the counters)
-      ExecApp(UsageData, SW_HIDE, ewWaitUntilTerminated);
+      ExecApp(UsageData, SW_HIDE, ewWaitUntilTerminated, 'Usage');
 
       if AutomaticUpdate then
       begin
         Log('Launching WinSCP after automatic update');
-        ExecApp('', SW_SHOWNORMAL, ewNoWait);
+        ExecApp('', SW_SHOWNORMAL, ewNoWait, 'AutomaticUpdateRun');
 
         if CmdLineParamExists('/OpenGettingStarted') then
         begin
@@ -1600,7 +1610,7 @@ begin
           end;
 
           Log('Launching WinSCP');
-          ExecApp('', ShowCmd, ewNoWait);
+          ExecApp('', ShowCmd, ewNoWait, 'Run');
         end;
       end;
     end;
@@ -2007,6 +2017,12 @@ begin
     Log('Does not have user programs');
     Result := False;
   end;
+end;
+
+function GetTaskCmdLine(Param: string): string;
+begin
+  Result := '/' + Param + GetTaskLogCmdLine(Param);
+  Log(Format('Command-line for %s task: %s', [Param, Result]));
 end;
 
 #expr SaveToFile(AddBackslash(SourcePath) + "Preprocessed.iss")

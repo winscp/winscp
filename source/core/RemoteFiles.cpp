@@ -1004,7 +1004,7 @@ Boolean __fastcall TRemoteFile::GetIsThisDirectory() const
   return (FileName == THISDIRECTORY);
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall TRemoteFile::GetIsInaccesibleDirectory() const
+Boolean __fastcall TRemoteFile::GetIsInaccessibleDirectory() const
 {
   Boolean Result;
   if (IsDirectory)
@@ -2884,21 +2884,78 @@ __int64 __fastcall TSynchronizeChecklist::TItem::GetSize(TAction AAction) const
   }
   else
   {
-    switch (AAction)
-    {
-      case saUploadNew:
-      case saUploadUpdate:
-        return Local.Size;
-
-      case saDownloadNew:
-      case saDownloadUpdate:
-        return Remote.Size;
-
-      default:
-        DebugFail();
-        return 0;
-    }
+    return GetBaseSize(AAction);
   }
+}
+//---------------------------------------------------------------------------
+__int64 __fastcall TSynchronizeChecklist::TItem::GetBaseSize() const
+{
+  return GetBaseSize(Action);
+}
+//---------------------------------------------------------------------------
+__int64 __fastcall TSynchronizeChecklist::TItem::GetBaseSize(TAction AAction) const
+{
+  switch (AAction)
+  {
+    case saUploadNew:
+    case saUploadUpdate:
+    case saDeleteLocal:
+      return Local.Size;
+
+    case saDownloadNew:
+    case saDownloadUpdate:
+    case saDeleteRemote:
+      return Remote.Size;
+
+    default:
+      DebugFail();
+      return 0;
+  }
+}
+//---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::GetLocalPath() const
+{
+  return CombinePaths(Local.Directory, Local.FileName);
+}
+//---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::GetRemotePath() const
+{
+  return UnixCombinePaths(Remote.Directory, Remote.FileName);
+}
+//---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::GetLocalTarget() const
+{
+  return IncludeTrailingBackslash(Local.Directory);
+}
+//---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::GetRemoteTarget() const
+{
+  return UnixIncludeTrailingBackslash(Remote.Directory);
+};
+//---------------------------------------------------------------------------
+TStrings * TSynchronizeChecklist::TItem::GetFileList() const
+{
+  std::unique_ptr<TStrings> FileList(new TStringList());
+  switch (Action)
+  {
+    case TSynchronizeChecklist::saDownloadNew:
+    case TSynchronizeChecklist::saDownloadUpdate:
+    case TSynchronizeChecklist::saDeleteRemote:
+      FileList->AddObject(GetRemotePath(), RemoteFile);
+      break;
+
+    case TSynchronizeChecklist::saUploadNew:
+    case TSynchronizeChecklist::saUploadUpdate:
+    case TSynchronizeChecklist::saDeleteLocal:
+      FileList->Add(GetLocalPath());
+      break;
+
+    default:
+      DebugFail();
+      NotImplemented();
+      break;
+  }
+  return FileList.release();
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -2921,11 +2978,8 @@ void TSynchronizeChecklist::Add(TItem * Item)
   FList->Add(Item);
 }
 //---------------------------------------------------------------------------
-int __fastcall TSynchronizeChecklist::Compare(void * AItem1, void * AItem2)
+int TSynchronizeChecklist::Compare(const TItem * Item1, const TItem * Item2)
 {
-  TItem * Item1 = static_cast<TItem *>(AItem1);
-  TItem * Item2 = static_cast<TItem *>(AItem2);
-
   int Result;
   if (!Item1->Local.Directory.IsEmpty())
   {
@@ -2943,6 +2997,11 @@ int __fastcall TSynchronizeChecklist::Compare(void * AItem1, void * AItem2)
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall TSynchronizeChecklist::Compare(void * AItem1, void * AItem2)
+{
+  return Compare(static_cast<TItem *>(AItem1), static_cast<TItem *>(AItem2));
 }
 //---------------------------------------------------------------------------
 void TSynchronizeChecklist::Sort()
@@ -2966,6 +3025,22 @@ int TSynchronizeChecklist::GetCheckedCount() const
     }
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+bool TSynchronizeChecklist::GetNextChecked(int & Index, const TItem *& AItem) const
+{
+  while (Index < Count)
+  {
+    const TItem * TheItem = Item[Index];
+    Index++;
+    if (TheItem->Checked)
+    {
+      AItem = TheItem;
+      return true;
+    }
+  }
+  AItem = NULL;
+  return false;
 }
 //---------------------------------------------------------------------------
 const TSynchronizeChecklist::TItem * TSynchronizeChecklist::GetItem(int Index) const
@@ -3107,13 +3182,11 @@ __int64 TSynchronizeProgress::GetProcessed(const TFileOperationProgressType * Cu
   {
     FTotalSize = 0;
 
-    for (int Index = 0; Index < FChecklist->Count; Index++)
+    int Index = 0;
+    const TSynchronizeChecklist::TItem * ChecklistItem;
+    while (FChecklist->GetNextChecked(Index, ChecklistItem))
     {
-      const TSynchronizeChecklist::TItem * ChecklistItem = FChecklist->Item[Index];
-      if (ChecklistItem->Checked)
-      {
-        FTotalSize += ItemSize(ChecklistItem);
-      }
+      FTotalSize += ItemSize(ChecklistItem);
     }
   }
 

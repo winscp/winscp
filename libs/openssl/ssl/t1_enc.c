@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright 2005 Nokia. All rights reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -228,6 +228,9 @@ int tls1_change_cipher_state(SSL_CONNECTION *s, int which)
         direction = OSSL_RECORD_DIRECTION_WRITE;
     }
 
+    if (SSL_CONNECTION_IS_DTLS(s))
+        dtls1_increment_epoch(s, which);
+
     if (!ssl_set_new_record_layer(s, s->version, direction,
                                     OSSL_RECORD_PROTECTION_LEVEL_APPLICATION,
                                     NULL, 0, key, cl, iv, (size_t)k, mac_secret,
@@ -424,6 +427,15 @@ int tls1_export_keying_material(SSL_CONNECTION *s, unsigned char *out,
     unsigned char *val = NULL;
     size_t vallen = 0, currentvalpos;
     int rv = 0;
+
+    /*
+     * RFC 5705 embeds context length as uint16; reject longer context
+     * before proceeding.
+     */
+    if (contextlen > 0xffff) {
+        ERR_raise(ERR_LIB_SSL, ERR_R_PASSED_INVALID_ARGUMENT);
+        return 0;
+    }
 
     /*
      * construct PRF arguments we construct the PRF argument ourself rather

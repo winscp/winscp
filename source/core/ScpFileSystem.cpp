@@ -492,7 +492,7 @@ void __fastcall TSCPFileSystem::EnsureLocation()
     {
       // when location to cached directory fails, pretend again
       // location in cached directory
-      // here used to be check (CurrentDirectory != Directory), but it is
+      // here used to check (CurrentDirectory != Directory), but it is
       // false always (current directory is already set to cached directory),
       // making the condition below useless. check removed.
       if (FTerminal->Active)
@@ -1967,8 +1967,7 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
 
     try
     {
-      TValueRestorer<TSecureShellMode> SecureShellModeRestorer(FSecureShell->Mode);
-      FSecureShell->Mode = ssmUploading;
+      TValueRestorer<TSecureShellMode> SecureShellModeRestorer(FSecureShell->Mode, ssmUploading);
 
       // During ASCII transfer we will load whole file to this buffer
       // than convert EOL and send it at once, because before converting EOL
@@ -2463,8 +2462,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
 
   FileData.SetTime = 0;
 
-  TValueRestorer<TSecureShellMode> SecureShellModeRestorer(FSecureShell->Mode);
-  FSecureShell->Mode = ssmDownloading;
+  TValueRestorer<TSecureShellMode> SecureShellModeRestorer(FSecureShell->Mode, ssmDownloading);
 
   FSecureShell->SendNull();
 

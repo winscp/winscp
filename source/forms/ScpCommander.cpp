@@ -15,6 +15,7 @@
 #include <DragDrop.hpp>
 #include <StrUtils.hpp>
 #include <IOUtils.hpp>
+#include <DateUtils.hpp>
 
 #include "Glyphs.h"
 #include "NonVisual.h"
@@ -164,6 +165,7 @@ void __fastcall TScpCommanderForm::RestorePanelParams(
   const TScpCommanderPanelConfiguration & PanelConfiguration)
 {
   DirView->ColProperties->ParamsStr = PanelConfiguration.DirViewParams;
+  DirView->DirViewStyle = (TDirViewStyle)PanelConfiguration.ViewStyle;
   StatusBar->Visible = PanelConfiguration.StatusBar;
   DriveControl->Visible = PanelConfiguration.DriveView;
   if (DriveControl->Align == alTop)
@@ -193,6 +195,7 @@ void __fastcall TScpCommanderForm::RestoreParams()
   RestorePanelParams(LocalDirView, LocalDriveView, LocalStatusBar, WinConfiguration->ScpCommander.LocalPanel);
   RestorePanelParams(RemoteDirView, RemoteDrivePanel, RemoteStatusBar, WinConfiguration->ScpCommander.RemotePanel);
   OtherLocalDirView->ColProperties->ParamsStr = WinConfiguration->ScpCommander.OtherLocalPanelDirViewParams;
+  OtherLocalDirView->DirViewStyle = (TDirViewStyle)WinConfiguration->ScpCommander.OtherLocalPanelViewStyle;
   FPanelsRestored = true;
 
   // just to make sure
@@ -206,6 +209,7 @@ void __fastcall TScpCommanderForm::StorePanelParams(
   TScpCommanderPanelConfiguration & PanelConfiguration)
 {
   PanelConfiguration.DirViewParams = DirView->ColProperties->ParamsStr;
+  PanelConfiguration.ViewStyle = DirView->DirViewStyle;
   PanelConfiguration.StatusBar = StatusBar->Visible;
   PanelConfiguration.DriveView = DriveControl->Visible;
   if (DriveControl->Align == alTop)
@@ -241,6 +245,7 @@ void __fastcall TScpCommanderForm::StoreParams()
     StorePanelParams(LocalDirView, LocalDriveView, LocalStatusBar, CommanderConfiguration.LocalPanel);
     StorePanelParams(RemoteDirView, RemoteDrivePanel, RemoteStatusBar, CommanderConfiguration.RemotePanel);
     CommanderConfiguration.OtherLocalPanelDirViewParams = OtherLocalDirView->ColProperties->ParamsStr;
+    CommanderConfiguration.OtherLocalPanelViewStyle = reinterpret_cast<TDirViewStyle>(OtherLocalDirView->DirViewStyle);
 
     CommanderConfiguration.LocalPanel.LastPath = LocalDirView->Path;
     CommanderConfiguration.OtherLocalPanelLastPath = OtherLocalDirView->Path;
@@ -610,42 +615,46 @@ void __fastcall TScpCommanderForm::StartingWithoutSession()
   AddStartupSequence(L"K");
 }
 //---------------------------------------------------------------------------
-void TScpCommanderForm::RestoreSessionLocalDirView(
-  TDirView * ALocalDirView, const UnicodeString & LocalDirectory, TObject * State)
+void TScpCommanderForm::RestoreSessionLocalDirView(TDirView * ALocalDirView, const UnicodeString & LocalDirectory)
 {
-  ALocalDirView->AnnounceState(State);
-  try
+  // we will load completely different directory, so particularly
+  // do not attempt to select previously selected directory
+  ALocalDirView->ContinueSession(false);
+
+  // reset home directory
+  ALocalDirView->HomeDirectory = L"";
+
+  if (!LocalDirectory.IsEmpty() &&
+      (FFirstTerminal || !WinConfiguration->ScpCommander.PreserveLocalDirectory || ManagedSession->LocalBrowser))
   {
-    // we will load completely different directory, so particularly
-    // do not attempt to select previously selected directory
-    ALocalDirView->ContinueSession(false);
-
-    // reset home directory
-    ALocalDirView->HomeDirectory = L"";
-
-    if (!LocalDirectory.IsEmpty() &&
-        (FFirstTerminal || !WinConfiguration->ScpCommander.PreserveLocalDirectory || ManagedSession->LocalBrowser))
+    try
     {
-      try
+      ALocalDirView->Path = LocalDirectory;
+    }
+    catch(Exception & E)
+    {
+      if (!ManagedSession->SessionData->UpdateDirectories)
       {
-        ALocalDirView->Path = LocalDirectory;
+        ManagedSession->ShowExtendedException(&E);
       }
-      catch(Exception & E)
+      else
       {
-        if (!ManagedSession->SessionData->UpdateDirectories)
-        {
-          ManagedSession->ShowExtendedException(&E);
-        }
-        else
-        {
-          ALocalDirView->OpenFallbackPath(LocalDirectory);
-        }
+        ALocalDirView->OpenFallbackPath(LocalDirectory);
       }
     }
   }
-  __finally
+}
+//---------------------------------------------------------------------------
+void TScpCommanderForm::AnnounceLocalStates(
+  bool RestoreState, bool LocalBrowser, TObject * State, TObject * OtherState)
+{
+  if (RestoreState)
   {
-    ALocalDirView->AnnounceState(NULL);
+    LocalDirView->AnnounceState(State);
+    if (LocalBrowser)
+    {
+      OtherLocalDirView->AnnounceState(OtherState);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -660,42 +669,50 @@ void __fastcall TScpCommanderForm::SessionChanged(bool Replaced)
     bool RestoreState =
       WinConfiguration->PreservePanelState &&
         (!WinConfiguration->ScpCommander.PreserveLocalDirectory || ManagedSession->LocalBrowser);
+    AnnounceLocalStates(
+      RestoreState, ManagedSession->LocalBrowser,
+      ManagedSession->LocalExplorerState, ManagedSession->OtherLocalExplorerState);
 
-    RestoreSessionLocalDirView(
-      LocalDirView, ManagedSession->StateData->LocalDirectory, ManagedSession->LocalExplorerState);
-
-    if (ManagedSession->LocalBrowser)
+    try
     {
-      RestoreSessionLocalDirView(
-        OtherLocalDirView, ManagedSession->StateData->OtherLocalDirectory, ManagedSession->OtherLocalExplorerState);
-    }
-
-    FFirstTerminal = false;
-
-    // Happens when opening a connection from a command-line (StartingWithoutSession was not called),
-    // which does not have a local directory set yet.
-    // Or when starting with vanila local browser.
-    if (LocalDirView->Path.IsEmpty())
-    {
-      LocalDefaultDirectory();
-    }
-
-    if (WinConfiguration->DefaultDirIsHome &&
-        !ManagedSession->SessionData->UpdateDirectories &&
-        DebugAlwaysTrue(!ManagedSession->LocalBrowser))
-    {
-      LocalDirView->HomeDirectory = ManagedSession->SessionData->LocalDirectoryExpanded;
-    }
-
-    if (RestoreState)
-    {
-      LocalDirView->RestoreState(ManagedSession->LocalExplorerState);
+      RestoreSessionLocalDirView(LocalDirView, ManagedSession->StateData->LocalDirectory);
 
       if (ManagedSession->LocalBrowser)
       {
-        OtherLocalDirView->RestoreState(ManagedSession->OtherLocalExplorerState);
+        RestoreSessionLocalDirView(OtherLocalDirView, ManagedSession->StateData->OtherLocalDirectory);
       }
-      NonVisualDataModule->SynchronizeBrowsingAction2->Checked = ManagedSession->StateData->SynchronizeBrowsing;
+
+      FFirstTerminal = false;
+
+      // Happens when opening a connection from a command-line (StartingWithoutSession was not called),
+      // which does not have a local directory set yet.
+      // Or when starting with vanila local browser.
+      if (LocalDirView->Path.IsEmpty())
+      {
+        LocalDefaultDirectory();
+      }
+
+      if (WinConfiguration->DefaultDirIsHome &&
+          !ManagedSession->SessionData->UpdateDirectories &&
+          DebugAlwaysTrue(!ManagedSession->LocalBrowser))
+      {
+        LocalDirView->HomeDirectory = ManagedSession->SessionData->LocalDirectoryExpanded;
+      }
+
+      if (RestoreState)
+      {
+        LocalDirView->RestoreState(ManagedSession->LocalExplorerState);
+
+        if (ManagedSession->LocalBrowser)
+        {
+          OtherLocalDirView->RestoreState(ManagedSession->OtherLocalExplorerState);
+        }
+        NonVisualDataModule->SynchronizeBrowsingAction2->Checked = ManagedSession->StateData->SynchronizeBrowsing;
+      }
+    }
+    __finally
+    {
+      AnnounceLocalStates(RestoreState, ManagedSession->LocalBrowser, NULL, NULL);
     }
 
     if (ManagedSession->LocalBrowser)
@@ -1023,6 +1040,12 @@ void __fastcall TScpCommanderForm::SetToolbar2ItemAction(TTBXItem * Item, TBasic
   }
 }
 //---------------------------------------------------------------------------
+void TScpCommanderForm::UpdatePanelControls(TCustomDirView * ADirView, TCustomDriveView * ADriveView)
+{
+  TCustomScpExplorerForm::UpdatePanelControls(ADirView, ADriveView);
+  ADirView->AddParentDir = (ADirView->DirViewStyle == dvsReport);
+}
+//---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::UpdateControls()
 {
   // Before TCustomScpExplorerForm disables them (when disconnecting)
@@ -1056,10 +1079,8 @@ void __fastcall TScpCommanderForm::UpdateControls()
     // command line combo width needs to be updated as caption width has probably changed
     ToolBarResize(CommandLineToolbar);
   }
-  LocalDirView->DarkMode = WinConfiguration->UseDarkTheme();
-  LocalDriveView->DarkMode = LocalDirView->DarkMode;
-  OtherLocalDirView->DarkMode = LocalDirView->DarkMode;
-  OtherLocalDriveView->DarkMode = LocalDirView->DarkMode;
+  UpdatePanelControls(LocalDirView, LocalDriveView);
+  UpdatePanelControls(OtherLocalDirView, OtherLocalDriveView);
   LocalDirView->Color = PanelColor();
   LocalDriveView->Color = LocalDirView->Color;
   OtherLocalDirView->Color = LocalDirView->Color;
@@ -1068,6 +1089,9 @@ void __fastcall TScpCommanderForm::UpdateControls()
   LocalDriveView->Font->Color = LocalDirView->Font->Color;
   OtherLocalDirView->Font->Color = LocalDirView->Font->Color;
   OtherLocalDriveView->Font->Color = LocalDirView->Font->Color;
+
+  LocalColumnsSubmenuItem->Enabled = (DirView(osLocal)->DirViewStyle == dvsReport);
+  RemoteColumnsSubmenuItem->Enabled = (DirView(osRemote)->DirViewStyle == dvsReport);
 
   if (IsLocalBrowserMode())
   {
@@ -1496,10 +1520,8 @@ void __fastcall TScpCommanderForm::SynchronizeBrowsing(TCustomDirView * ADirView
       !PrevPath.IsEmpty() && PrevPath != ADirView->Path)
   {
     DebugAssert(!IsLocalBrowserMode());
-    TValueRestorer<bool> AllowTransferPresetAutoSelectRestorer(FAllowTransferPresetAutoSelect);
-    FAllowTransferPresetAutoSelect = false;
-    TValueRestorer<bool> SynchronisingBrowseRestorer(FSynchronisingBrowse);
-    FSynchronisingBrowse = true;
+    TValueRestorer<bool> AllowTransferPresetAutoSelectRestorer(FAllowTransferPresetAutoSelect, false);
+    TValueRestorer<bool> SynchronisingBrowseRestorer(FSynchronisingBrowse, true);
 
     try
     {
@@ -2824,7 +2846,7 @@ void TScpCommanderForm::LocalLocalCopy(
       UnicodeString SourcePath = FileOperator->OperandFrom->Strings[Index];
       UnicodeString FileName = TPath::GetFileName(SourcePath);
       FileName = MaskFileName(FileName, FileMask);
-      UnicodeString DestinationPath = TPath::Combine(DestinationDir, FileName);
+      UnicodeString DestinationPath = CombinePaths(DestinationDir, FileName);
       FileOperator->OperandTo->Add(DestinationPath);
     }
 

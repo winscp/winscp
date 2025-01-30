@@ -97,8 +97,6 @@ type
     constructor Create(const AName: string); override;
   end;
 
-function GetSelectedBodyColor: TColor;
-
 implementation
 
 uses
@@ -1255,7 +1253,7 @@ begin
     BtnItemColors[bisDisabled, ipFrame]        := clNone;
     if not FDark then
     begin
-      BtnItemColors[bisSelected, ipBody]       := GetSelectedBodyColor;
+      BtnItemColors[bisSelected, ipBody]       := Blend(clHighlight, Blend(clBtnFace, clWindow, 50), 10);
       SetContrast(BtnItemColors[bisSelected, ipBody], ToolbarColor, 5);
     end
       else
@@ -1490,11 +1488,6 @@ end;
 procedure TTBXOfficeXPTheme.TBXSysCommand(var Message: TMessage);
 begin
   if Message.WParam = TSC_VIEWCHANGE then SetupColorCache;
-end;
-
-function GetSelectedBodyColor: TColor;
-begin
-  Result := Blend(clHighlight, Blend(clBtnFace, clWindow, 50), 10);
 end;
 
 { TTBXDarkOfficeXPTheme }

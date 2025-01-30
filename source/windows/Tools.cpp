@@ -325,7 +325,7 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall StoreForm(TCustomForm * Form)
+UnicodeString __fastcall StoreForm(TForm * Form)
 {
   DebugAssert(Form);
   TRect Bounds = Form->BoundsRect;
@@ -334,9 +334,7 @@ UnicodeString __fastcall StoreForm(TCustomForm * Form)
     FORMAT(L"%d;%d;%d;%d;%d;%s", (SaveDimension(Bounds.Left), SaveDimension(Bounds.Top),
       SaveDimension(Bounds.Right), SaveDimension(Bounds.Bottom),
       // we do not want WinSCP to start minimized next time (we cannot handle that anyway).
-      // note that WindowState is wsNormal when window in minimized for some reason.
-      // actually it is wsMinimized only when minimized by MSVDM
-      (int)(Form->WindowState == wsMinimized ? wsNormal : Form->WindowState),
+      (int)(Form->WindowState == wsMinimized ? GetWindowStateBeforeMimimize(Form) : Form->WindowState),
       SavePixelsPerInch(Form)));
   return Result;
 }
@@ -1189,25 +1187,6 @@ void __fastcall CopyToClipboard(TStrings * Strings)
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall IsWin64()
-{
-  static int Result = -1;
-  if (Result < 0)
-  {
-    Result = 0;
-    BOOL Wow64Process = FALSE;
-    if (IsWow64Process(GetCurrentProcess(), &Wow64Process))
-    {
-      if (Wow64Process)
-      {
-        Result = 1;
-      }
-    }
-  }
-
-  return (Result > 0);
-}
-//---------------------------------------------------------------------------
 static void __fastcall AcquireShutDownPrivileges()
 {
   HANDLE Token;
@@ -1265,17 +1244,9 @@ UnicodeString GetConvertedKeyFileName(const UnicodeString & FileName)
   return ChangeFileExt(FileName, FORMAT(L".%s", (PuttyKeyExt)));
 }
 //---------------------------------------------------------------------------
-UnicodeString AddMatchingKeyCertificate(TPrivateKey * PrivateKey, const UnicodeString & FileName)
+static bool TryAddMatchingKeyCertificate(
+  TPrivateKey * PrivateKey, const UnicodeString & CertificateFileName, UnicodeString & Result)
 {
-  UnicodeString CertificateFileName = FileName;
-  UnicodeString S = FORMAT(L".%s", (PuttyKeyExt));
-  if (EndsText(S, CertificateFileName))
-  {
-    CertificateFileName.SetLength(CertificateFileName.Length() - S.Length());
-  }
-  CertificateFileName += L"-cert.pub";
-
-  UnicodeString Result;
   if (FileExists(CertificateFileName))
   {
     try
@@ -1288,6 +1259,24 @@ UnicodeString AddMatchingKeyCertificate(TPrivateKey * PrivateKey, const UnicodeS
       AppLogFmt(L"Cannot add certificate from auto-detected \"%s\": %s", (CertificateFileName, E.Message));
     }
   }
+
+  return !Result.IsEmpty();
+}
+//---------------------------------------------------------------------------
+UnicodeString AddMatchingKeyCertificate(TPrivateKey * PrivateKey, const UnicodeString & FileName)
+{
+  UnicodeString CertificateFileName = FileName;
+  UnicodeString S = FORMAT(L".%s", (PuttyKeyExt));
+  if (EndsText(S, CertificateFileName))
+  {
+    CertificateFileName.SetLength(CertificateFileName.Length() - S.Length());
+  }
+
+  UnicodeString Result;
+
+  TryAddMatchingKeyCertificate(PrivateKey, CertificateFileName + L"-cert.pub", Result) ||
+  TryAddMatchingKeyCertificate(PrivateKey, CertificateFileName + L".pub-aadcert.pub", Result);
+
   return Result;
 }
 //---------------------------------------------------------------------------

@@ -15,7 +15,7 @@ void psb_set_prefix(ProxyStderrBuf *psb, const char *prefix)
     psb->prefix = prefix;
 }
 
-void log_proxy_stderr(Plug *plug, ProxyStderrBuf *psb,
+void log_proxy_stderr(Plug *plug, Socket *sock, ProxyStderrBuf *psb,
                       const void *vdata, size_t len)
 {
     const char *data = (const char *)vdata;
@@ -68,7 +68,7 @@ void log_proxy_stderr(Plug *plug, ProxyStderrBuf *psb,
             { // WINSCP
             char *msg = dupprintf(
                 "%s: %.*s", psb->prefix, (int)(endpos - pos), psb->buf + pos);
-            plug_log(plug, PLUGLOG_PROXY_MSG, NULL, 0, msg, 0);
+            plug_log(plug, sock, PLUGLOG_PROXY_MSG, NULL, 0, msg, 0);
             sfree(msg);
 
             pos = nlpos - psb->buf + 1;
@@ -86,7 +86,7 @@ void log_proxy_stderr(Plug *plug, ProxyStderrBuf *psb,
             char *msg = dupprintf(
                 "%s (partial line): %.*s", psb->prefix, (int)psb->size,
                 psb->buf);
-            plug_log(plug, PLUGLOG_PROXY_MSG, NULL, 0, msg, 0);
+            plug_log(plug, sock, PLUGLOG_PROXY_MSG, NULL, 0, msg, 0);
             sfree(msg);
 
             pos = psb->size = 0;

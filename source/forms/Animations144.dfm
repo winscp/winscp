@@ -1,5 +1,4 @@
 object Animations144Module: TAnimations144Module
-  OldCreateOrder = False
   Height = 221
   Width = 215
   object AnimationImages: TPngImageList
@@ -16780,7 +16779,6 @@ object Animations144Module: TAnimations144Module
       end>
     Left = 40
     Top = 16
-    Bitmap = {}
   end
   object ButtonImages: TImageList
     Height = 24
@@ -18153,6 +18151,5 @@ object Animations144Module: TAnimations144Module
       end>
     Left = 40
     Top = 140
-    Bitmap = {}
   end
 end

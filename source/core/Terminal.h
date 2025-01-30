@@ -31,6 +31,7 @@ class TParallelOperation;
 class TCollectedFileList;
 struct TLocalFileHandle;
 struct TNeonCertificateData;
+class TQueueItem;
 typedef std::vector<__int64> TCalculatedSizes;
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TQueryUserEvent)
@@ -65,7 +66,7 @@ typedef void __fastcall (__closure *TDeleteLocalFileEvent)(
 typedef int __fastcall (__closure *TDirectoryModifiedEvent)
   (TTerminal * Terminal, const UnicodeString Directory, bool SubDirs);
 typedef void __fastcall (__closure *TInformationEvent)
-  (TTerminal * Terminal, const UnicodeString & Str, bool Status, int Phase, const UnicodeString & Additional);
+  (TTerminal * Terminal, const UnicodeString & Str, int Phase, const UnicodeString & Additional);
 typedef void __fastcall (__closure *TCustomCommandEvent)
   (TTerminal * Terminal, const UnicodeString & Command, bool & Handled);
 //---------------------------------------------------------------------------
@@ -262,8 +263,7 @@ private:
   bool __fastcall GetStoredCredentialsTried();
   inline bool __fastcall InTransaction();
   void __fastcall SaveCapabilities(TFileSystemInfo & FileSystemInfo);
-  bool __fastcall CreateTargetDirectory(const UnicodeString & DirectoryPath, int Attrs, const TCopyParamType * CopyParam);
-  UnicodeString CutFeature(UnicodeString & Buf);
+  void LogAndInformation(const UnicodeString & S);
   static UnicodeString __fastcall SynchronizeModeStr(TSynchronizeMode Mode);
   static UnicodeString __fastcall SynchronizeParamsStr(int Params);
 
@@ -387,7 +387,7 @@ protected:
   void __fastcall OpenTunnel();
   void __fastcall CloseTunnel();
   void __fastcall DoInformation(
-    const UnicodeString & Str, bool Status, int Phase = -1, const UnicodeString & Additional = UnicodeString());
+    const UnicodeString & Str, int Phase = -1, const UnicodeString & Additional = UnicodeString());
   bool __fastcall PromptUser(TSessionData * Data, TPromptKind Kind,
     UnicodeString Name, UnicodeString Instructions, UnicodeString Prompt, bool Echo,
     int MaxLen, UnicodeString & Result);
@@ -409,7 +409,7 @@ protected:
     TFileOperationProgressType & Progress, TFileOperation Operation, TOperationSide Side, int Count,
     bool Temp, const UnicodeString & Directory, unsigned long CPSLimit, TOnceDoneOperation OnceDoneOperation);
   void __fastcall OperationStop(TFileOperationProgressType & Progress);
-  virtual void __fastcall Information(const UnicodeString & Str, bool Status);
+  virtual void __fastcall Information(const UnicodeString & Str);
   virtual unsigned int __fastcall QueryUser(const UnicodeString Query,
     TStrings * MoreMessages, unsigned int Answers, const TQueryParams * Params,
     TQueryType QueryType = qtConfirmation);
@@ -426,7 +426,7 @@ protected:
   bool __fastcall IsListenerFree(unsigned int PortNumber);
   void __fastcall DoProgress(TFileOperationProgressType & ProgressData);
   void __fastcall DoFinished(TFileOperation Operation, TOperationSide Side, bool Temp,
-    const UnicodeString & FileName, bool Success, TOnceDoneOperation & OnceDoneOperation);
+    const UnicodeString & FileName, bool Success, bool NotCancelled, TOnceDoneOperation & OnceDoneOperation);
   void __fastcall RollbackAction(TSessionAction & Action,
     TFileOperationProgressType * OperationProgress, Exception * E = NULL);
   void __fastcall DoAnyCommand(const UnicodeString Command, TCaptureOutputEvent OutputEvent,
@@ -556,6 +556,7 @@ public:
   TRemoteFile * ReadFile(const UnicodeString & FileName);
   TRemoteFile * TryReadFile(const UnicodeString & FileName);
   bool FileExists(const UnicodeString & FileName);
+  bool DirectoryExists(const UnicodeString & FileName);
   void __fastcall ReadSymlink(TRemoteFile * SymlinkFile, TRemoteFile *& File);
   bool __fastcall CopyToLocal(
     TStrings * FilesToCopy, const UnicodeString & TargetDir, const TCopyParamType * CopyParam, int Params,
@@ -566,6 +567,7 @@ public:
   int __fastcall CopyToParallel(TParallelOperation * ParallelOperation, TFileOperationProgressType * OperationProgress);
   void __fastcall LogParallelTransfer(TParallelOperation * ParallelOperation);
   void __fastcall CreateDirectory(const UnicodeString & DirName, const TRemoteProperties * Properties);
+  bool __fastcall CreateTargetDirectory(const UnicodeString & DirectoryPath, int Attrs, const TCopyParamType * CopyParam);
   void __fastcall CreateLink(const UnicodeString FileName, const UnicodeString PointTo, bool Symbolic);
   void __fastcall DeleteFile(UnicodeString FileName,
     const TRemoteFile * File = NULL, void * Params = NULL);
@@ -614,9 +616,13 @@ public:
     TSynchronizeDirectory OnSynchronizeDirectory, TProcessedSynchronizationChecklistItem OnProcessedItem,
     TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems, void * Token,
     TFileOperationStatistics * Statistics);
+  TQueueItem * SynchronizeToQueue(
+    const TSynchronizeChecklist::TItem * ChecklistItem, const TCopyParamType * CopyParam, int Params, bool Parallel);
   void __fastcall SynchronizeChecklistCalculateSize(
     TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items,
     const TCopyParamType * CopyParam);
+  static TCopyParamType GetSynchronizeCopyParam(const TCopyParamType * CopyParam, int Params);
+  static int GetSynchronizeCopyParams(int Params);
   void __fastcall FilesFind(UnicodeString Directory, const TFileMasks & FileMask,
     TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile);
   void __fastcall SpaceAvailable(const UnicodeString Path, TSpaceAvailable & ASpaceAvailable);

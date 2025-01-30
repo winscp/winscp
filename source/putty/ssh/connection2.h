@@ -160,7 +160,7 @@ PktOut *ssh2_chanopen_init(struct ssh2_channel *c, const char *type);
 PktOut *ssh2_portfwd_chanopen(
     struct ssh2_connection_state *s, struct ssh2_channel *c,
     const char *hostname, int port,
-    const char *description, const SocketPeerInfo *peerinfo);
+    const char *description, const SocketEndpointInfo *peerinfo);
 
 struct ssh_rportfwd *ssh2_rportfwd_alloc(
     ConnectionLayer *cl,
@@ -171,7 +171,7 @@ void ssh2_rportfwd_remove(
     ConnectionLayer *cl, struct ssh_rportfwd *rpf);
 SshChannel *ssh2_session_open(ConnectionLayer *cl, Channel *chan);
 SshChannel *ssh2_serverside_x11_open(
-    ConnectionLayer *cl, Channel *chan, const SocketPeerInfo *pi);
+    ConnectionLayer *cl, Channel *chan, const SocketEndpointInfo *pi);
 SshChannel *ssh2_serverside_agent_open(ConnectionLayer *cl, Channel *chan);
 
 void ssh2channel_send_exit_status(SshChannel *c, int status);

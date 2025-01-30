@@ -10,6 +10,7 @@
 #include <TextsWin.h>
 #include <VCLCommon.h>
 #include <GUITools.h>
+#include <Progress.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "PathLabel"
@@ -138,6 +139,8 @@ void __fastcall TSynchronizeProgressForm::UpdateControls()
   }
   TimeLeftLabel->Caption = TimeLeftCaption;
   CancelItem->Enabled = !FCanceled;
+
+  TProgressForm::SizeToolbar(this, Toolbar, Dock, ToolbarPanel);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeProgressForm::CancelOperation()
