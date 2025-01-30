@@ -15,10 +15,10 @@ STRINGTABLE
 BEGIN
   IDS_ERRORMSG_NAMEINUSE, "File already exists"
   IDS_ERRORMSG_PROXY_AUTHNOLOGON, "Proxy requires authentication"
-  IDS_ERRORMSG_PROXY_AUTHTYPEUNKNOWN, "Required authtype reported by proxy server is unknown or not supported"
-  IDS_ERRORMSG_PROXY_CANTRESOLVEHOST, "Can't resolve host of proxy server"
-  IDS_ERRORMSG_PROXY_NOCONN, "Can't connect to proxy server"
-  IDS_ERRORMSG_PROXY_REQUESTFAILED, "Proxy request failed, can't connect through proxy server"
+  IDS_ERRORMSG_PROXY_AUTHTYPEUNKNOWN, "Required authtype reported by proxy server is unknown or not supported."
+  IDS_ERRORMSG_PROXY_CANTRESOLVEHOST, "Can't resolve host of proxy server."
+  IDS_ERRORMSG_PROXY_NOCONN, "Can't connect to proxy server."
+  IDS_ERRORMSG_PROXY_REQUESTFAILED, "Proxy request failed, can't connect through proxy server."
 END
 
 STRINGTABLE
@@ -30,20 +30,20 @@ END
 STRINGTABLE
 BEGIN
   IDS_ERRORMSG_CANTOPENTRANSFERCHANNEL, "Transfer channel can't be opened. Reason: %s"
-  IDS_ERRORMSG_CANTRESOLVEHOST2, "Can't resolve host name \"%s\""
+  IDS_ERRORMSG_CANTRESOLVEHOST2, "Can't resolve host name \"%s\"."
   IDS_ERRORMSG_CANTRESUME, "Resume command not supported by server, overwriting file."
   IDS_ERRORMSG_CANTRESUME_FINISH, "Resume command not supported by server, but local and remote filesize are equal."
   IDS_ERRORMSG_CANTSENDCOMMAND, "Unable to send command. Disconnected."
-  IDS_ERRORMSG_CERTREJECTED, "Peer certificate rejected"
+  IDS_ERRORMSG_CERTREJECTED, "Peer certificate rejected."
   IDS_ERRORMSG_DOWNLOADABORTED, "Download aborted"
 END
 
 STRINGTABLE
 BEGIN
   IDS_ERRORMSG_CANTCREATEDUETOPORTRANGE, "Could not create socket in the specified port range."
-  IDS_ERRORMSG_CANTESTABLISHSSLCONNECTION, "Can't establish TLS connection"
-  IDS_ERRORMSG_CANTGETLIST, "Could not retrieve directory listing"
-  IDS_ERRORMSG_CANTINITSSL, "Can't initialize TLS library"
+  IDS_ERRORMSG_CANTESTABLISHSSLCONNECTION, "Can't establish TLS connection."
+  IDS_ERRORMSG_CANTGETLIST, "Could not retrieve directory listing."
+  IDS_ERRORMSG_CANTINITSSL, "Can't initialize TLS library."
 END
 
 STRINGTABLE
