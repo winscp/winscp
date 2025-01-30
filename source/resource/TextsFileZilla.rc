@@ -43,7 +43,7 @@ BEGIN
   IDS_ERRORMSG_CANTCREATEDUETOPORTRANGE, "Could not create socket in the specified port range."
   IDS_ERRORMSG_CANTESTABLISHSSLCONNECTION, "Can't establish TLS connection"
   IDS_ERRORMSG_CANTGETLIST, "Could not retrieve directory listing"
-  IDS_ERRORMSG_CANTINITSSL, "Can't initialize TLS library"
+  IDS_ERRORMSG_CANTINITSSL, "Can't initialize TLS library."
 END
 
 STRINGTABLE
