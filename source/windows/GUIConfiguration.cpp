@@ -998,6 +998,7 @@ void __fastcall TGUIConfiguration::SetLocaleInternal(LCID value, bool Safe, bool
     {
       SetAppliedLocale(L, FileName);
       SetResourceModule(Module);
+      ResStringCleanupCache();
     }
   }
 }
