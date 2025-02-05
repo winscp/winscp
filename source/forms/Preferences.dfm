@@ -2309,7 +2309,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 425
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'No &proxy'
+            Caption = '&No proxy'
             TabOrder = 0
             OnClick = ControlChange
           end
