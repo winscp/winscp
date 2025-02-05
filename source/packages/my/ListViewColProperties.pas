@@ -42,6 +42,7 @@ type
     function GetVisible(Index: Integer): Boolean;
     function GetWidths(Index: Integer): Integer;
     procedure SetAlignments(Index: Integer; Value: TAlignment);
+    procedure SetVisibleInternal(Index: Integer; Value: Boolean; SaveWidth: Boolean);
     procedure SetVisible(Index: Integer; Value: Boolean);
     procedure SetWidths(Index: Integer; Value: Integer);
     function GetCaptions(Index: Integer): string;
@@ -146,6 +147,7 @@ var
   ColStr: string;
   Index: Integer;
   NeedInvalidate, NewVisible: Boolean;
+  NewWidth: Integer;
 begin
   Index := 0;
   NeedInvalidate := False;
@@ -154,11 +156,14 @@ begin
     while (Value <> '') and (Index < Count) do
     begin
       ColStr := CutToChar(Value, ';', True);
-      Widths[Index] := LoadDimension(StrToInt(CutToChar(ColStr, ',', True)), PixelsPerInch, FListView);
+      NewWidth := LoadDimension(StrToInt(CutToChar(ColStr, ',', True)), PixelsPerInch, FListView);
+      Widths[Index] := NewWidth;
       NewVisible := Boolean(StrToInt(CutToChar(ColStr, ',', True)));
       if Visible[Index] <> NewVisible then
       begin
-        Visible[Index] := NewVisible;
+        // As we are within BeginUpdate guard, the width set just above is not propadated to WinAPI.
+        // As reading width retrieves it from WinAPI (if the control is already allocated), we actually save wrong width.
+        SetVisibleInternal(Index, NewVisible, False);
         NeedInvalidate := True;
       end;
       Inc(Index);
@@ -351,7 +356,7 @@ begin
   SetOrderStr(OrderStr);
 end;
 
-procedure TCustomListViewColProperties.SetVisible(Index: Integer; Value: Boolean);
+procedure TCustomListViewColProperties.SetVisibleInternal(Index: Integer; Value: Boolean; SaveWidth: Boolean);
 var
   I: Integer;
   Properties: TCustomListViewColProperty;
@@ -381,7 +386,7 @@ begin
       Properties.Visible := True;
 
       if ColumnsExists then
-        SetRuntimeVisible(Index, True, True);
+        SetRuntimeVisible(Index, True, SaveWidth);
     end
       else
     begin
@@ -389,7 +394,7 @@ begin
       Properties.Visible := False;
 
       if ColumnsExists then
-        SetRuntimeVisible(Index, False, True);
+        SetRuntimeVisible(Index, False, SaveWidth);
 
       // hidden column is moved to the front,
       // unless column to the left is not hidden already
@@ -416,6 +421,11 @@ begin
     if FListView.HandleAllocated then
       FListView.Invalidate;
   end;
+end;
+
+procedure TCustomListViewColProperties.SetVisible(Index: Integer; Value: Boolean);
+begin
+  SetVisibleInternal(Index, Value, True);
 end;
 
 procedure TCustomListViewColProperties.SetRuntimeVisible(
