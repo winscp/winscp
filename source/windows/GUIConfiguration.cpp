@@ -1111,8 +1111,20 @@ void __fastcall TGUIConfiguration::FindLocales(const UnicodeString & Path, TStri
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TGUIConfiguration::AddLocale(LCID Locale, const UnicodeString & Name)
+void __fastcall TGUIConfiguration::AddLocale(LCID Locale, const UnicodeString & AName)
 {
+  UnicodeString Name = AName;
+
+  if (Name.IsEmpty())
+  {
+    wchar_t LocaleStr[255];
+    GetLocaleInfo(Locale, LOCALE_SENGLANGUAGE, LocaleStr, LENOF(LocaleStr));
+    Name = UnicodeString(LocaleStr) + TitleSeparator;
+    // LOCALE_SNATIVELANGNAME
+    GetLocaleInfo(Locale, LOCALE_SLANGUAGE, LocaleStr, LENOF(LocaleStr));
+    Name += LocaleStr;
+  }
+
   std::unique_ptr<TLocaleInfo> LocaleInfo(new TLocaleInfo());
   LocaleInfo->Locale = Locale;
   LocaleInfo->Name = Name;
@@ -1160,59 +1172,70 @@ TObjectList * __fastcall TGUIConfiguration::GetLocales()
     FLastLocalesExts = LocalesExts;
     FLocales->Clear();
 
+    AddLocale(InternalLocale(), EmptyStr);
+
     TLanguages * Langs = Languages();
-
     int Count = Langs->Count;
-    int Index = -1;
-    while (Index < Count)
-    {
-      LCID Locale;
-      if (Index >= 0)
-      {
-        Locale = Langs->LocaleID[Index];
-        DWORD SubLang = SUBLANGID(Locale);
-        int Ext = Exts->IndexOf(Langs->Ext[Index]);
-        if ((Ext >= 0) && (Exts->Objects[Ext] == NULL))
-        {
-          // noop
-        }
-        else if (SubLang == SUBLANG_DEFAULT)
-        {
-          Ext = Exts->IndexOf(Langs->Ext[Index].SubString(1, 2));
-          if ((Ext >= 0) && (Exts->Objects[Ext] == NULL))
-          {
-            Locale = MAKELANGID(PRIMARYLANGID(Locale), SUBLANG_DEFAULT);
-          }
-        }
 
-        if (Ext >= 0)
+    typedef std::map<UnicodeString, std::pair<int, DWORD> > TConflicts;
+    TConflicts DefaultLangConflicts;
+    LCID InvalidLocale = static_cast<LCID>(-1);
+
+    // The two-leter Windows code is not actually unique among languages.
+    // To find any duplicities and resolve them to the language, where ISO code also match.
+    // Notably:
+    // Georgian KAT ka-GE - Kalaallisut KAL kl-GL
+    // Tamil TAI ta-IN - Tajik TAJ tj-TJ
+    for (int Index = 0; Index < Count; Index++)
+    {
+      LCID Locale = Langs->LocaleID[Index];
+      DWORD SubLang = SUBLANGID(Locale);
+      if (SubLang == SUBLANG_DEFAULT)
+      {
+        UnicodeString LangExt2 = LeftStr(Langs->Ext[Index].UpperCase(), 2);
+        TConflicts::iterator Conflict = DefaultLangConflicts.find(LangExt2);
+        if (Conflict == DefaultLangConflicts.end())
         {
-          Exts->Objects[Ext] = reinterpret_cast<TObject*>(Locale);
+          Conflict = DefaultLangConflicts.insert(std::make_pair(LangExt2, std::make_pair(1, InvalidLocale))).first;
         }
         else
         {
-          Locale = 0;
+          Conflict->second.first++;
+        }
+
+        UnicodeString LangName = CopyToChar(Langs->LocaleName[Index], L'-', false);
+        bool Matches = SameText(LangName, LangExt2);
+        if (Matches)
+        {
+          Conflict->second.second = Locale;
         }
       }
-      else
+    }
+
+    for (int Index = 0; Index < Count; Index++)
+    {
+      LCID Locale = Langs->LocaleID[Index];
+      DWORD SubLang = SUBLANGID(Locale);
+      UnicodeString LangExt3 = Langs->Ext[Index].UpperCase();
+      int Ext = Exts->IndexOf(LangExt3);
+      if ((Ext < 0) && (SubLang == SUBLANG_DEFAULT))
       {
-        Locale = InternalLocale();
+        UnicodeString LangExt2 = LeftStr(LangExt3, 2);
+        TConflicts::const_iterator DefaultLangConflict = DefaultLangConflicts.find(LangExt2);
+        // Unless it is a conflicting extension with no resolution or resolved to another locale
+        if ((DefaultLangConflict == DefaultLangConflicts.end()) ||
+            ((DefaultLangConflict->second.second != InvalidLocale) &&
+             (DefaultLangConflict->second.second == Locale)))
+        {
+          Ext = Exts->IndexOf(LangExt2);
+        }
       }
 
-      if (Locale)
+      if ((Ext >= 0) && DebugAlwaysTrue(Exts->Objects[Ext] == NULL))
       {
-        wchar_t LocaleStr[255];
-        GetLocaleInfo(Locale, LOCALE_SENGLANGUAGE,
-          LocaleStr, LENOF(LocaleStr));
-        UnicodeString Name = LocaleStr;
-        Name += TitleSeparator;
-        // LOCALE_SNATIVELANGNAME
-        GetLocaleInfo(Locale, LOCALE_SLANGUAGE,
-          LocaleStr, LENOF(LocaleStr));
-        Name += LocaleStr;
-        AddLocale(Locale, Name);
+        Exts->Objects[Ext] = reinterpret_cast<TObject*>(Locale);
+        AddLocale(Locale, EmptyStr);
       }
-      Index++;
     }
 
     for (int Index = 0; Index < Exts->Count; Index++)
