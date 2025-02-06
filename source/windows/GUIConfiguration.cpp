@@ -10,6 +10,8 @@
 #include <Terminal.h>
 #include <CoreMain.h>
 #include <shlobj.h>
+#include <System.IOUtils.hpp>
+#include <System.StrUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -799,7 +801,8 @@ void __fastcall TGUIConfiguration::Saved()
 //---------------------------------------------------------------------------
 UnicodeString __fastcall TGUIConfiguration::GetTranslationModule(const UnicodeString & Path)
 {
-  UnicodeString SubPath = AddTranslationsSubFolder(Path);
+  UnicodeString SubPath =
+    TPath::Combine(TPath::Combine(ExtractFilePath(Path), TranslationsSubFolder), ExtractFileName(Path));
   UnicodeString Result;
   // Prefer the SubPath. Default to SubPath.
   if (FileExists(Path) && !FileExists(SubPath))
@@ -811,13 +814,6 @@ UnicodeString __fastcall TGUIConfiguration::GetTranslationModule(const UnicodeSt
     Result = SubPath;
   }
   return Result;
-}
-//---------------------------------------------------------------------------
-UnicodeString __fastcall TGUIConfiguration::AddTranslationsSubFolder(const UnicodeString & Path)
-{
-  return
-    IncludeTrailingBackslash(IncludeTrailingBackslash(ExtractFilePath(Path)) + TranslationsSubFolder) +
-    ExtractFileName(Path);
 }
 //---------------------------------------------------------------------------
 HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
@@ -1090,22 +1086,26 @@ void __fastcall TGUIConfiguration::SetResourceModule(HINSTANCE Instance)
   DefaultLocalized();
 }
 //---------------------------------------------------------------------------
-void __fastcall TGUIConfiguration::FindLocales(const UnicodeString & LocalesMask, TStrings * Exts, UnicodeString & LocalesExts)
+void __fastcall TGUIConfiguration::FindLocales(const UnicodeString & Path, TStrings * Exts, UnicodeString & LocalesExts)
 {
   int FindAttrs = faReadOnly | faArchive;
 
   TSearchRecOwned SearchRec;
+  UnicodeString BaseName = ChangeFileExt(ExtractFileName(ModuleFileName()), L".");
+  UnicodeString LocalesMask = TPath::Combine(Path, BaseName + L"*");
   bool Found = (FindFirstUnchecked(LocalesMask, FindAttrs, SearchRec) == 0);
   while (Found)
   {
-    UnicodeString Ext = ExtractFileExt(SearchRec.Name).UpperCase();
-    // DLL is a remnant from times the .NET assembly was winscp.dll, not winscpnet.dll
-    if ((Ext.Length() >= 3) && (Ext != L".EXE") && (Ext != L".COM") &&
-        (Ext != L".DLL") && (Ext != L".INI") && (Ext != L".MAP"))
+    if (DebugAlwaysTrue(SameText(BaseName, LeftStr(SearchRec.Name, BaseName.Length()))))
     {
-      Ext = Ext.SubString(2, Ext.Length() - 1);
-      LocalesExts += Ext;
-      Exts->Add(Ext);
+      UnicodeString Ext = MidStr(SearchRec.Name, BaseName.Length() + 1).UpperCase();
+      // DLL is a remnant from times the .NET assembly was winscp.dll, not winscpnet.dll.
+      if ((Ext.Length() >= 2) && (Ext.Length() <= 3) &&
+          (Ext != L"EXE") && (Ext != L"COM") && (Ext != L"DLL") && (Ext != L"INI") && (Ext != L"MAP"))
+      {
+        LocalesExts += Ext + L",";
+        Exts->Add(Ext);
+      }
     }
     Found = (FindNextChecked(SearchRec) == 0);
   }
@@ -1147,13 +1147,13 @@ int __fastcall TGUIConfiguration::LocalesCompare(void * Item1, void * Item2)
 //---------------------------------------------------------------------------
 TObjectList * __fastcall TGUIConfiguration::GetLocales()
 {
-  UnicodeString LocalesMask = ChangeFileExt(ModuleFileName(), L".*");
-  UnicodeString SubLocalesMask = AddTranslationsSubFolder(LocalesMask);
+  UnicodeString LocalesPath = ExtractFilePath(ModuleFileName());
+  UnicodeString SubLocalesPath = TPath::Combine(LocalesPath, TranslationsSubFolder);
 
   UnicodeString LocalesExts;
   std::unique_ptr<TStringList> Exts(CreateSortedStringList());
-  FindLocales(SubLocalesMask, Exts.get(), LocalesExts);
-  FindLocales(LocalesMask, Exts.get(), LocalesExts);
+  FindLocales(LocalesPath, Exts.get(), LocalesExts);
+  FindLocales(SubLocalesPath, Exts.get(), LocalesExts);
 
   if (FLastLocalesExts != LocalesExts)
   {
