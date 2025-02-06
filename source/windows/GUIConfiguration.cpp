@@ -20,8 +20,8 @@ const int ccRemoteFiles = ccUser << 3;
 const int ccShowResultsInMsgBox = ccUser << 4;
 const int ccSet = 0x80000000;
 //---------------------------------------------------------------------------
-static const unsigned int AdditionaLanguageMask = 0xFFFFFF00;
-static const UnicodeString AdditionaLanguagePrefix(L"XX");
+static const unsigned int AdditionalLanguageMask = 0xFFFFFF00;
+static const UnicodeString AdditionalLanguagePrefix(L"XX");
 static const UnicodeString TranslationsSubFolder(L"Translations");
 //---------------------------------------------------------------------------
 TGUIConfiguration * GUIConfiguration = NULL;
@@ -834,7 +834,7 @@ HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
     UnicodeString LocaleName;
 
     Module = ModuleFileName();
-    if ((ALocale & AdditionaLanguageMask) != AdditionaLanguageMask)
+    if ((ALocale & AdditionalLanguageMask) != AdditionalLanguageMask)
     {
       wchar_t LocaleStr[4];
       GetLocaleInfo(ALocale, LOCALE_SABBREVLANGNAME, LocaleStr, LENOF(LocaleStr));
@@ -843,8 +843,8 @@ HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
     }
     else
     {
-      LocaleName = AdditionaLanguagePrefix +
-        char(ALocale & ~AdditionaLanguageMask);
+      LocaleName = AdditionalLanguagePrefix +
+        char(ALocale & ~AdditionalLanguageMask);
     }
 
     Module = ChangeFileExt(Module, UnicodeString(L".") + LocaleName);
@@ -1219,14 +1219,14 @@ TObjectList * __fastcall TGUIConfiguration::GetLocales()
     {
       if ((Exts->Objects[Index] == NULL) &&
           (Exts->Strings[Index].Length() == 3) &&
-          SameText(Exts->Strings[Index].SubString(1, 2), AdditionaLanguagePrefix))
+          SameText(Exts->Strings[Index].SubString(1, 2), AdditionalLanguagePrefix))
       {
         UnicodeString ModulePath = ChangeFileExt(ModuleFileName(), UnicodeString(L".") + Exts->Strings[Index]);
         ModulePath = GetTranslationModule(ModulePath);
         UnicodeString LangName = GetFileFileInfoString(L"LangName", ModulePath);
         if (!LangName.IsEmpty())
         {
-          AddLocale(AdditionaLanguageMask + Exts->Strings[Index][3], LangName);
+          AddLocale(AdditionalLanguageMask + Exts->Strings[Index][3], LangName);
         }
       }
     }
