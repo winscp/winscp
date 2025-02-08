@@ -35,6 +35,7 @@
 
 #ifdef WINSCP
 #define HAVE_AES_NI 1
+#define HAVE_WMEMCHR 1
 #endif
 
 #if defined _MSC_VER && _MSC_VER < 1800
