@@ -58,6 +58,11 @@
 #define SIZEu "zu"
 #endif
 
+#if !HAVE_WMEMCHR
+/* Work around lack of wmemchr in older MSVC */
+wchar_t *wmemchr(const wchar_t *s, wchar_t c, size_t n);
+#endif
+
 #if defined __GNUC__ || defined __clang__
 /*
  * On MinGW, the correct compiler format checking for vsnprintf() etc
