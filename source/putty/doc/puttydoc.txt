@@ -12,7 +12,7 @@ not described here; and the pterm and command-line puttygen and pageant
 utilities are not described at all. The only Unix-specific documentation
 that currently exists is the man pages.
 
-This manual is copyright 1997-2024 Simon Tatham. All rights reserved. You
+This manual is copyright 1997-2025 Simon Tatham. All rights reserved. You
 may distribute this documentation under the MIT licence. See appendix D for
 the licence text in full.
 
@@ -5649,7 +5649,7 @@ Chapter 5: Using PSCP to transfer files securely
 
          C:\>pscp -h
          PuTTY Secure Copy client
-         Release 0.82
+         Release 0.83
          Usage: pscp [options] [user@]host:source target
                 pscp [options] source [source...] [user@]host:target
                 pscp [options] -ls [user@]host:filespec
@@ -6571,7 +6571,7 @@ Chapter 7: Using the command-line connection tool Plink
 
          C:\>plink --help
          Plink: command-line connection utility
-         Release 0.82
+         Release 0.83
          Usage: plink [options] [user@]host [command]
                 ("host" can also be a PuTTY saved session name)
          Options:
@@ -10933,7 +10933,7 @@ Appendix C: PPK file format
 Appendix D: PuTTY Licence
 -------------------------
 
-       PuTTY is copyright 1997-2024 Simon Tatham.
+       PuTTY is copyright 1997-2025 Simon Tatham.
 
        Portions copyright Robert de Bath, Joris van Rantwijk, Delian
        Delchev, Andreas Schultz, Jeroen Massar, Wez Furlong, Nicolas Barry,
@@ -12878,4 +12878,4 @@ Appendix I: PuTTY privacy considerations
        cannot make any promises about the behaviour of modified versions
        distributed by other people.
 
-[PuTTY pre-release 0.83:2025-01-03.1e45199]
+[PuTTY release 0.83]
