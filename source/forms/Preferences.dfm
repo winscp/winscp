@@ -1417,18 +1417,18 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 2
           Width = 445
-          Height = 322
+          Height = 329
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Drag && Drop downloads'
           TabOrder = 0
           DesignSize = (
             445
-            322)
+            329)
           object DDFakeFileEnabledLabel: TLabel
             Left = 27
             Top = 45
             Width = 409
-            Height = 55
+            Height = 59
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
             Caption = 
@@ -1442,9 +1442,9 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DDFakeFileDisabledLabel: TLabel
             Left = 27
-            Top = 236
+            Top = 239
             Width = 409
-            Height = 54
+            Height = 60
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
             Caption = 
@@ -1457,7 +1457,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DragExtStatusLabel: TLabel
             Left = 27
-            Top = 105
+            Top = 108
             Width = 100
             Height = 15
             Caption = 'DragExtStatusLabel'
@@ -1467,7 +1467,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DDDrivesLabel: TLabel
             Left = 27
-            Top = 123
+            Top = 126
             Width = 234
             Height = 15
             Caption = 'Allow dropping files to these &network drives:'
@@ -1485,7 +1485,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DDFakeFileDisabledButton: TRadioButton
             Left = 11
-            Top = 213
+            Top = 216
             Width = 412
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -1495,7 +1495,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DDWarnLackOfTempSpaceCheck: TCheckBox
             Left = 27
-            Top = 295
+            Top = 302
             Width = 315
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -1505,7 +1505,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DDDrivesMemo: TMemo
             Left = 27
-            Top = 141
+            Top = 144
             Width = 409
             Height = 66
             Anchors = [akLeft, akTop, akRight]
@@ -2309,7 +2309,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 425
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'No &proxy'
+            Caption = '&No proxy'
             TabOrder = 0
             OnClick = ControlChange
           end

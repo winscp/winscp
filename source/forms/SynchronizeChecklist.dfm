@@ -3705,7 +3705,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       OnClick = StartItemClick
     end
     object StartQueueItem: TMenuItem
-      Caption = 'Start on &Background'
+      Caption = 'Start in &Background'
       OnClick = StartQueueItemClick
     end
   end

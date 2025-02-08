@@ -3434,7 +3434,8 @@ UnicodeString TPreferencesDialog::Bullet(const UnicodeString & S)
   {
     Result = Bullet + Result.SubString(Dash.Length() + 1, Result.Length() - Dash.Length());
   }
-  Result = ReplaceStr(Result, sLineBreak + Dash, sLineBreak + Bullet);
+  Result = ReplaceStr(Result, sLineBreak, L"\n");
+  Result = ReplaceStr(Result, L"\n" + Dash, sLineBreak + Bullet);
   return Result;
 }
 //---------------------------------------------------------------------------

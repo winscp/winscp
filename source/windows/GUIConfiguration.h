@@ -227,8 +227,7 @@ protected:
   void __fastcall SetAppliedLocale(LCID AppliedLocale, const UnicodeString & LocaleModuleName);
   bool __fastcall GetCanApplyLocaleImmediately();
   UnicodeString __fastcall GetTranslationModule(const UnicodeString & Path);
-  UnicodeString __fastcall AddTranslationsSubFolder(const UnicodeString & Path);
-  void __fastcall FindLocales(const UnicodeString & LocalesMask, TStrings * Exts, UnicodeString & LocalesExts);
+  void __fastcall FindLocales(const UnicodeString & Path, TStrings * Exts, UnicodeString & LocalesExts);
   virtual int __fastcall GetResourceModuleCompleteness(HINSTANCE Module);
   virtual bool __fastcall IsTranslationComplete(HINSTANCE Module);
   static int __fastcall LocalesCompare(void * Item1, void * Item2);
