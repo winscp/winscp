@@ -1590,7 +1590,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 425
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Transfer on &background by default'
+            Caption = 'Transfer in &background by default'
             TabOrder = 2
           end
           object QueueNoConfirmationCheck: TCheckBox

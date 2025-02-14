@@ -96,7 +96,7 @@ object CopyDialog: TCopyDialog
     Top = 120
     Width = 317
     Height = 17
-    Caption = 'Transfer on background (add to transfer &queue) X'
+    Caption = 'Transfer in &background (add to transfer queue) X'
     TabOrder = 4
     OnClick = ControlChange
   end

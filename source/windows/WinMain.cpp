@@ -1234,7 +1234,7 @@ int __fastcall Execute()
         return 0;
       }
 
-      // from now flash message boxes on background
+      // from now flash message boxes in background
       SetOnForeground(false);
 
       bool NeedSession = NewInstance || (ParamCommand != pcNone);
