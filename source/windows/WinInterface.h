@@ -216,12 +216,8 @@ void __fastcall DoConsoleDialog(TTerminal * Terminal,
 // forms\Copy.cpp
 const coTemp                = 0x001;
 const coDisableQueue        = 0x002;
-const coDisableDirectory    = 0x008; // not used anymore
 const coDoNotShowAgain      = 0x020;
-const coDisableSaveSettings = 0x040; // not used anymore
-const coDoNotUsePresets     = 0x080; // not used anymore
 const coAllowRemoteTransfer = 0x100;
-const coNoQueue             = 0x200;
 const coShortCutHint        = 0x800;
 const coAllFiles            = 0x1000;
 const coBrowse              = 0x2000;
