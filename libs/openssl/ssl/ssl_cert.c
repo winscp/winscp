@@ -267,7 +267,7 @@ void ssl_cert_free(CERT *c)
     if (c == NULL)
         return;
     CRYPTO_DOWN_REF(&c->references, &i);
-    REF_PRINT_COUNT("CERT", c);
+    REF_PRINT_COUNT("CERT", i, c);
     if (i > 0)
         return;
     REF_ASSERT_ISNT(i < 0);
@@ -1211,7 +1211,7 @@ static int ssl_security_default_callback(const SSL *s, const SSL_CTX *ctx,
 
 int ssl_security(const SSL_CONNECTION *s, int op, int bits, int nid, void *other)
 {
-    return s->cert->sec_cb(SSL_CONNECTION_GET_SSL(s), NULL, op, bits, nid,
+    return s->cert->sec_cb(SSL_CONNECTION_GET_USER_SSL(s), NULL, op, bits, nid,
                            other, s->cert->sec_ex);
 }
 
