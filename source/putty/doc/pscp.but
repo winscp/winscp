@@ -39,7 +39,7 @@ use PSCP:
 
 \c C:\>pscp -h
 \c PuTTY Secure Copy client
-\c Release 0.82
+\c Release 0.83
 \c Usage: pscp [options] [user@]host:source target
 \c        pscp [options] source [source...] [user@]host:target
 \c        pscp [options] -ls [user@]host:filespec

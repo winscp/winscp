@@ -146,6 +146,7 @@ static bool hybrid_client_getkey(ecdh_key *ek, ptrlen remoteKey, BinarySink *bs)
     if (!ecdh_key_getkey(s->classical, classical_data,
                          BinarySink_UPCAST(classical_key))) {
         ssh_hash_free(h);
+        strbuf_free(classical_key);
         return false;                  /* classical DH key didn't validate */
     }
     s->alg->reformat(ptrlen_from_strbuf(classical_key), BinarySink_UPCAST(h));
@@ -238,6 +239,7 @@ static bool hybrid_server_getkey(ecdh_key *ek, ptrlen remoteKey, BinarySink *bs)
     if (!ecdh_key_getkey(s->classical, classical_data,
                          BinarySink_UPCAST(classical_key))) {
         ssh_hash_free(h);
+        strbuf_free(classical_key);
         return false;                  /* classical DH key didn't validate */
     }
     s->alg->reformat(ptrlen_from_strbuf(classical_key), BinarySink_UPCAST(h));
