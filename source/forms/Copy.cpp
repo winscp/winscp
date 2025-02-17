@@ -254,17 +254,11 @@ void __fastcall TCopyDialog::AdjustControls()
   RemoteDirectoryEdit->Visible = false;
   LocalDirectoryEdit->Visible = false;
   DirectoryEdit->Visible = FLAGCLEAR(FOptions, coTemp);
-  EnableControl(DirectoryEdit, FLAGCLEAR(FOptions, coDisableDirectory));
   EnableControl(DirectoryLabel, DirectoryEdit->Enabled);
   EnableControl(LocalDirectoryBrowseButton, DirectoryEdit->Enabled);
   DirectoryLabel->FocusControl = DirectoryEdit;
 
-  UnicodeString QueueLabel = LoadStr(COPY_BACKGROUND);
-  if (FLAGCLEAR(FOptions, coNoQueue))
-  {
-    QueueLabel = FMTLOAD(COPY_QUEUE, (QueueLabel));
-  }
-  QueueCheck2->Caption = QueueLabel;
+  QueueCheck2->Caption = FMTLOAD(COPY_QUEUE, (LoadStr(COPY_BACKGROUND)));
 
   AdjustTransferControls();
 
@@ -433,8 +427,7 @@ bool __fastcall TCopyDialog::Execute()
     Configuration->BeginUpdate();
     try
     {
-      if (FLAGSET(OutputOptions, cooSaveSettings) &&
-          FLAGCLEAR(FOptions, coDisableSaveSettings))
+      if (FLAGSET(OutputOptions, cooSaveSettings))
       {
         GUIConfiguration->DefaultCopyParam = Params;
       }
@@ -571,9 +564,7 @@ void __fastcall TCopyDialog::CopyParamListPopup(TRect R, int AdditionalOptions)
   ::CopyParamListPopup(R, FPresetsMenu,
     FCopyParams, FPreset, CopyParamClick,
     AdditionalOptions |
-      FLAGMASK(
-          FLAGCLEAR(FOptions, coDisableSaveSettings) && !RemoteTransfer,
-        cplSaveSettings) |
+      FLAGMASK(!RemoteTransfer, cplSaveSettings) |
       FLAGMASK(FLAGCLEAR(FOutputOptions, cooRemoteTransfer) && FLAGCLEAR(FOptions, coTemp), cplGenerateCode),
     ActualCopyParamAttrs(),
     FSaveSettings);

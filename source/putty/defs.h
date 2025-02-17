@@ -35,6 +35,7 @@
 
 #ifdef WINSCP
 #define HAVE_AES_NI 1
+#define HAVE_WMEMCHR 1
 #endif
 
 #if defined _MSC_VER && _MSC_VER < 1800
@@ -56,6 +57,11 @@
  * inttypes.h-style macro for those */
 #define SIZEx "zx"
 #define SIZEu "zu"
+#endif
+
+#if !HAVE_WMEMCHR
+/* Work around lack of wmemchr in older MSVC */
+wchar_t *wmemchr(const wchar_t *s, wchar_t c, size_t n);
 #endif
 
 #if defined __GNUC__ || defined __clang__
