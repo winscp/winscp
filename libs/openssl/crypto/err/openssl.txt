@@ -1,4 +1,4 @@
-# Copyright 1999-2024 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 1999-2025 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -318,6 +318,8 @@ CMS_R_ERROR_READING_MESSAGEDIGEST_ATTRIBUTE:114:\
 	error reading messagedigest attribute
 CMS_R_ERROR_SETTING_KEY:115:error setting key
 CMS_R_ERROR_SETTING_RECIPIENTINFO:116:error setting recipientinfo
+CMS_R_ERROR_UNSUPPORTED_STATIC_KEY_AGREEMENT:196:\
+	error unsupported static key agreement
 CMS_R_ESS_SIGNING_CERTID_MISMATCH_ERROR:183:ess signing certid mismatch error
 CMS_R_INVALID_ENCRYPTED_KEY_LENGTH:117:invalid encrypted key length
 CMS_R_INVALID_KEY_ENCRYPTION_PARAMETER:176:invalid key encryption parameter
@@ -394,17 +396,15 @@ CMS_R_UNWRAP_FAILURE:180:unwrap failure
 CMS_R_VERIFICATION_FAILURE:158:verification failure
 CMS_R_WRAP_ERROR:159:wrap error
 COMP_R_BROTLI_DECODE_ERROR:102:brotli decode error
-COMP_R_BROTLI_DEFLATE_ERROR:103:brotli deflate error
-COMP_R_BROTLI_ENCODE_ERROR:106:brotli encode error
-COMP_R_BROTLI_INFLATE_ERROR:104:brotli inflate error
-COMP_R_BROTLI_NOT_SUPPORTED:105:brotli not supported
+COMP_R_BROTLI_ENCODE_ERROR:103:brotli encode error
+COMP_R_BROTLI_NOT_SUPPORTED:104:brotli not supported
 COMP_R_ZLIB_DEFLATE_ERROR:99:zlib deflate error
 COMP_R_ZLIB_INFLATE_ERROR:100:zlib inflate error
 COMP_R_ZLIB_NOT_SUPPORTED:101:zlib not supported
-COMP_R_ZSTD_COMPRESS_ERROR:107:zstd compress error
-COMP_R_ZSTD_DECODE_ERROR:108:zstd decode error
-COMP_R_ZSTD_DECOMPRESS_ERROR:109:zstd decompress error
-COMP_R_ZSTD_NOT_SUPPORTED:110:zstd not supported
+COMP_R_ZSTD_COMPRESS_ERROR:105:zstd compress error
+COMP_R_ZSTD_DECODE_ERROR:106:zstd decode error
+COMP_R_ZSTD_DECOMPRESS_ERROR:107:zstd decompress error
+COMP_R_ZSTD_NOT_SUPPORTED:108:zstd not supported
 CONF_R_ERROR_LOADING_DSO:110:error loading dso
 CONF_R_INVALID_PRAGMA:122:invalid pragma
 CONF_R_LIST_CANNOT_BE_NULL:115:list cannot be null

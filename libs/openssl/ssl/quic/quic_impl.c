@@ -399,7 +399,7 @@ SSL *ossl_quic_new(SSL_CTX *ctx)
         goto err;
     }
 
-    qc->tls = ossl_ssl_connection_new_int(ctx, TLS_method());
+    qc->tls = ossl_ssl_connection_new_int(ctx, ssl_base, TLS_method());
     if (qc->tls == NULL || (sc = SSL_CONNECTION_FROM_SSL(qc->tls)) == NULL) {
         QUIC_RAISE_NON_NORMAL_ERROR(NULL, ERR_R_INTERNAL_ERROR, NULL);
         goto err;
@@ -2290,9 +2290,13 @@ static int quic_write_blocking(QCTX *ctx, const void *buf, size_t len,
 
     quic_post_write(xso, actual_written > 0, 1);
 
+    /*
+     * Record however much data we wrote
+     */
+    *written = actual_written;
+
     if (actual_written == len) {
         /* Managed to append everything on the first try. */
-        *written = actual_written;
         return 1;
     }
 
@@ -2315,7 +2319,14 @@ static int quic_write_blocking(QCTX *ctx, const void *buf, size_t len,
             return QUIC_RAISE_NON_NORMAL_ERROR(ctx, args.err, NULL);
     }
 
-    *written = args.total_written;
+    /*
+     * When waiting on extra buffer space to be available, args.total_written
+     * holds the amount of remaining data we requested to write, which will be
+     * something less than the len parameter passed in, however much we wrote
+     * here, add it to the value that we wrote when we initially called
+     * xso_sstream_append
+     */
+    *written += args.total_written;
     return 1;
 }
 
@@ -2478,13 +2489,15 @@ static int quic_validate_for_write(QUIC_XSO *xso, int *err)
         /* FALLTHROUGH */
     case QUIC_SSTREAM_STATE_SEND:
     case QUIC_SSTREAM_STATE_DATA_SENT:
-    case QUIC_SSTREAM_STATE_DATA_RECVD:
         if (ossl_quic_sstream_get_final_size(xso->stream->sstream, NULL)) {
             *err = SSL_R_STREAM_FINISHED;
             return 0;
         }
-
         return 1;
+
+    case QUIC_SSTREAM_STATE_DATA_RECVD:
+        *err = SSL_R_STREAM_FINISHED;
+        return 0;
 
     case QUIC_SSTREAM_STATE_RESET_SENT:
     case QUIC_SSTREAM_STATE_RESET_RECVD:
