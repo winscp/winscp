@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -72,7 +72,7 @@ typedef struct rcu_cb_item *prcu_cb_item;
 
 # if defined(__GNUC__) && defined(__ATOMIC_ACQUIRE) && !defined(BROKEN_CLANG_ATOMICS) \
     && !defined(USE_ATOMIC_FALLBACKS)
-#  if defined(__APPLE__) && defined(__clang__) && defined(__aarch64__)
+#  if defined(__APPLE__) && defined(__clang__) && defined(__aarch64__) && defined(__LP64__)
 /*
  * For pointers, Apple M1 virtualized cpu seems to have some problem using the
  * ldapr instruction (see https://github.com/openssl/openssl/pull/23974)
@@ -80,9 +80,10 @@ typedef struct rcu_cb_item *prcu_cb_item;
  * atomic loads, which is bad.  So, if
  * 1) We are building on a target that defines __APPLE__ AND
  * 2) We are building on a target using clang (__clang__) AND
- * 3) We are building for an M1 processor (__aarch64__)
- * Then we shold not use __atomic_load_n and instead implement our own
- * function to issue the ldar instruction instead, which procuces the proper
+ * 3) We are building for an M1 processor (__aarch64__) AND
+ * 4) We are building with 64 bit pointers
+ * Then we should not use __atomic_load_n and instead implement our own
+ * function to issue the ldar instruction instead, which produces the proper
  * sequencing guarantees
  */
 static inline void *apple_atomic_load_n_pvoid(void **p,
@@ -105,6 +106,7 @@ static inline void *apple_atomic_load_n_pvoid(void **p,
 #  define ATOMIC_STORE_N(t, p, v, o) __atomic_store_n(p, v, o)
 #  define ATOMIC_STORE(t, p, v, o) __atomic_store(p, v, o)
 #  define ATOMIC_EXCHANGE_N(t, p, v, o) __atomic_exchange_n(p, v, o)
+#  define ATOMIC_COMPARE_EXCHANGE_N(t, p, e, d, s, f) __atomic_compare_exchange_n(p, e, d, 0, s, f)
 #  define ATOMIC_ADD_FETCH(p, v, o) __atomic_add_fetch(p, v, o)
 #  define ATOMIC_FETCH_ADD(p, v, o) __atomic_fetch_add(p, v, o)
 #  define ATOMIC_SUB_FETCH(p, v, o) __atomic_sub_fetch(p, v, o)
@@ -170,6 +172,23 @@ IMPL_fallback_atomic_exchange_n(uint64_t)
 IMPL_fallback_atomic_exchange_n(prcu_cb_item)
 
 #  define ATOMIC_EXCHANGE_N(t, p, v, o) fallback_atomic_exchange_n_##t(p, v)
+
+#  define IMPL_fallback_atomic_compare_exchange_n(t)                                  \
+    static ossl_inline int fallback_atomic_compare_exchange_n_##t(t *p, t *e, t d, s, f) \
+    {                                                                                 \
+        int ret = 1;                                                                 \
+        pthread_mutex_lock(&atomic_sim_lock);                                         \
+        if (*p == *e)                                                                 \
+            *p = d;                                                                    \
+        else                                                                          \
+            ret = 0;                                                                   \
+        pthread_mutex_unlock(&atomic_sim_lock);                                       \
+        return ret;                                                                   \
+    }
+
+IMPL_fallback_atomic_exchange_n(uint64_t)
+
+#  define ATOMIC_COMPARE_EXCHANGE_N(t, p, e, d, s, f) fallback_atomic_compare_exchange_n_##t(p, e, d, s, f)
 
 /*
  * The fallbacks that follow don't need any per type implementation, as
@@ -476,6 +495,8 @@ void ossl_rcu_read_unlock(CRYPTO_RCU_LOCK *lock)
 static struct rcu_qp *update_qp(CRYPTO_RCU_LOCK *lock)
 {
     uint64_t new_id;
+    uint64_t update;
+    uint64_t ret;
     uint64_t current_idx;
 
     pthread_mutex_lock(&lock->alloc_lock);
@@ -509,10 +530,13 @@ static struct rcu_qp *update_qp(CRYPTO_RCU_LOCK *lock)
      * of this update are published to the read side prior to updating the
      * reader idx below
      */
-    ATOMIC_AND_FETCH(&lock->qp_group[current_idx].users, ID_MASK,
-                     __ATOMIC_RELEASE);
-    ATOMIC_OR_FETCH(&lock->qp_group[current_idx].users, new_id,
-                    __ATOMIC_RELEASE);
+try_again:
+    ret = ATOMIC_LOAD_N(uint64_t, &lock->qp_group[current_idx].users, __ATOMIC_ACQUIRE);
+    update = ret & ID_MASK;
+    update |= new_id;
+    if (!ATOMIC_COMPARE_EXCHANGE_N(uint64_t, &lock->qp_group[current_idx].users, &ret, update,
+                                   __ATOMIC_ACQ_REL, __ATOMIC_RELAXED))
+        goto try_again;
 
     /*
      * Update the reader index to be the prior qp.
@@ -636,8 +660,11 @@ CRYPTO_RCU_LOCK *ossl_rcu_lock_new(int num_writers, OSSL_LIB_CTX *ctx)
 {
     struct rcu_lock_st *new;
 
-    if (num_writers < 1)
-        num_writers = 1;
+    /*
+     * We need a minimum of 3 qp's
+     */
+    if (num_writers < 3)
+        num_writers = 3;
 
     ctx = ossl_lib_ctx_get_concrete(ctx);
     if (ctx == NULL)
@@ -653,11 +680,15 @@ CRYPTO_RCU_LOCK *ossl_rcu_lock_new(int num_writers, OSSL_LIB_CTX *ctx)
     pthread_mutex_init(&new->alloc_lock, NULL);
     pthread_cond_init(&new->prior_signal, NULL);
     pthread_cond_init(&new->alloc_signal, NULL);
-    new->qp_group = allocate_new_qp_group(new, num_writers + 1);
+    /* By default our first writer is already alloced */
+    new->writers_alloced = 1;
+
+    new->qp_group = allocate_new_qp_group(new, num_writers);
     if (new->qp_group == NULL) {
         OPENSSL_free(new);
         new = NULL;
     }
+
     return new;
 }
 

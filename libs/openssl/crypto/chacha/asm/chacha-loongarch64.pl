@@ -1,6 +1,6 @@
 #! /usr/bin/env perl
 # Author: Min Zhou <zhoumin@loongson.cn>
-# Copyright 2023-2024 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2023-2025 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -72,7 +72,7 @@ ChaCha20_ctr32:
 
 	beqz		$len,.Lno_data
 	ori			$t3,$zero,64
-	la.pcrel	$t0,OPENSSL_loongarch_hwcap_P
+	la.global	$t0,OPENSSL_loongarch_hwcap_P
 	ld.w		$t0,$t0,0
 
 	bleu		$len,$t3,.LChaCha20_1x  # goto 1x when len <= 64

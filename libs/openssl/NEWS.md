@@ -21,6 +21,23 @@ OpenSSL Releases
 OpenSSL 3.3
 -----------
 
+### Major changes between OpenSSL 3.3.2 and OpenSSL 3.3.3 [11 Feb 2025]
+
+OpenSSL 3.3.3 is a security patch release. The most severe CVE fixed in this
+release is High.
+
+This release incorporates the following bug fixes and mitigations:
+
+  * Fixed RFC7250 handshakes with unauthenticated servers don't abort as expected.
+    ([CVE-2024-12797])
+
+  * Fixed timing side-channel in ECDSA signature computation.
+    ([CVE-2024-13176])
+
+  * Fixed possible OOB memory access with invalid low-level GF(2^m) elliptic
+    curve parameters.
+    ([CVE-2024-9143])
+
 ### Major changes between OpenSSL 3.3.1 and OpenSSL 3.3.2 [3 Sep 2024]
 
 OpenSSL 3.3.2 is a security patch release. The most severe CVE fixed in this
@@ -1742,6 +1759,8 @@ OpenSSL 0.9.x
 
 <!-- Links -->
 
+[CVE-2024-13176]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-13176
+[CVE-2024-9143]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-9143
 [CVE-2024-6119]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-6119
 [CVE-2024-5535]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-5535
 [CVE-2024-4741]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-4741

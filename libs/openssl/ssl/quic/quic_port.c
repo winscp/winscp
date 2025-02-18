@@ -273,7 +273,7 @@ int ossl_quic_port_set_net_wbio(QUIC_PORT *port, BIO *net_wbio)
     if (!port_update_poll_desc(port, net_wbio, /*for_write=*/1))
         return 0;
 
-    LIST_FOREACH(ch, ch, &port->channel_list)
+    OSSL_LIST_FOREACH(ch, ch, &port->channel_list)
         ossl_qtx_set_bio(ch->qtx, net_wbio);
 
     port->net_wbio = net_wbio;
@@ -290,7 +290,7 @@ static SSL *port_new_handshake_layer(QUIC_PORT *port)
     SSL *tls = NULL;
     SSL_CONNECTION *tls_conn = NULL;
 
-    tls = ossl_ssl_connection_new_int(port->channel_ctx, TLS_method());
+    tls = ossl_ssl_connection_new_int(port->channel_ctx, NULL, TLS_method());
     if (tls == NULL || (tls_conn = SSL_CONNECTION_FROM_SSL(tls)) == NULL)
         return NULL;
 
@@ -373,7 +373,7 @@ void ossl_quic_port_subtick(QUIC_PORT *port, QUIC_TICK_RESULT *res,
             port_rx_pre(port);
 
         /* Iterate through all channels and service them. */
-        LIST_FOREACH(ch, ch, &port->channel_list) {
+        OSSL_LIST_FOREACH(ch, ch, &port->channel_list) {
             QUIC_TICK_RESULT subr = {0};
 
             ossl_quic_channel_subtick(ch, &subr, flags);
@@ -603,7 +603,7 @@ void ossl_quic_port_raise_net_error(QUIC_PORT *port,
     if (triggering_ch != NULL)
         ossl_quic_channel_raise_net_error(triggering_ch);
 
-    LIST_FOREACH(ch, ch, &port->channel_list)
+    OSSL_LIST_FOREACH(ch, ch, &port->channel_list)
         if (ch != triggering_ch)
             ossl_quic_channel_raise_net_error(ch);
 }

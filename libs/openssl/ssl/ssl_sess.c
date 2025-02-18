@@ -521,7 +521,7 @@ SSL_SESSION *lookup_sess_in_cache(SSL_CONNECTION *s,
     if (ret == NULL && s->session_ctx->get_session_cb != NULL) {
         int copy = 1;
 
-        ret = s->session_ctx->get_session_cb(SSL_CONNECTION_GET_SSL(s),
+        ret = s->session_ctx->get_session_cb(SSL_CONNECTION_GET_USER_SSL(s),
                                              sess_id, sess_id_len, &copy);
 
         if (ret != NULL) {
@@ -843,7 +843,7 @@ void SSL_SESSION_free(SSL_SESSION *ss)
     if (ss == NULL)
         return;
     CRYPTO_DOWN_REF(&ss->references, &i);
-    REF_PRINT_COUNT("SSL_SESSION", ss);
+    REF_PRINT_COUNT("SSL_SESSION", i, ss);
     if (i > 0)
         return;
     REF_ASSERT_ISNT(i < 0);
@@ -877,7 +877,7 @@ int SSL_SESSION_up_ref(SSL_SESSION *ss)
     if (CRYPTO_UP_REF(&ss->references, &i) <= 0)
         return 0;
 
-    REF_PRINT_COUNT("SSL_SESSION", ss);
+    REF_PRINT_COUNT("SSL_SESSION", i, ss);
     REF_ASSERT_ISNT(i < 2);
     return ((i > 1) ? 1 : 0);
 }

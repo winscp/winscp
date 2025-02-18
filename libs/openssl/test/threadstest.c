@@ -817,7 +817,7 @@ static void thread_general_worker(void)
      * Therefore we use an insecure bit length where we can (512).
      * In the FIPS module though we must use a longer length.
      */
-    pkey = EVP_PKEY_Q_keygen(multi_libctx, NULL, "RSA", isfips ? 2048 : 512);
+    pkey = EVP_PKEY_Q_keygen(multi_libctx, NULL, "RSA", (size_t)(isfips ? 2048 : 512));
     if (!TEST_ptr(pkey))
         goto err;
 
@@ -966,6 +966,45 @@ static int test_multi_downgrade_shared_pkey(void)
 static int test_multi_shared_pkey(void)
 {
     return test_multi_shared_pkey_common(&thread_shared_evp_pkey);
+}
+
+static void thread_release_shared_pkey(void)
+{
+    OSSL_sleep(0);
+    EVP_PKEY_free(shared_evp_pkey);
+}
+
+static int test_multi_shared_pkey_release(void)
+{
+    int testresult = 0;
+    size_t i = 1;
+
+    multi_intialise();
+    shared_evp_pkey = NULL;
+    if (!thread_setup_libctx(1, do_fips ? fips_and_default_providers
+                                        : default_provider)
+            || !TEST_ptr(shared_evp_pkey = load_pkey_pem(privkey, multi_libctx)))
+        goto err;
+    for (; i < 10; ++i) {
+        if (!TEST_true(EVP_PKEY_up_ref(shared_evp_pkey)))
+            goto err;
+    }
+
+    if (!start_threads(10, &thread_release_shared_pkey))
+        goto err;
+    i = 0;
+
+    if (!teardown_threads()
+            || !TEST_true(multi_success))
+        goto err;
+    testresult = 1;
+ err:
+    while (i > 0) {
+        EVP_PKEY_free(shared_evp_pkey);
+        --i;
+    }
+    thead_teardown_libctx();
+    return testresult;
 }
 
 static int test_multi_load_unload_provider(void)
@@ -1273,6 +1312,7 @@ int setup_tests(void)
 #ifndef OPENSSL_NO_DEPRECATED_3_0
     ADD_TEST(test_multi_downgrade_shared_pkey);
 #endif
+    ADD_TEST(test_multi_shared_pkey_release);
     ADD_TEST(test_multi_load_unload_provider);
     ADD_TEST(test_obj_add);
     ADD_TEST(test_lib_ctx_load_config);

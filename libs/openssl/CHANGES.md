@@ -26,6 +26,48 @@ OpenSSL Releases
 OpenSSL 3.3
 -----------
 
+### Changes between 3.3.2 and 3.3.3 [11 Feb 2025]
+
+ * Fixed RFC7250 handshakes with unauthenticated servers don't abort as expected.
+
+   Clients using RFC7250 Raw Public Keys (RPKs) to authenticate a
+   server may fail to notice that the server was not authenticated, because
+   handshakes don't abort as expected when the SSL_VERIFY_PEER verification mode
+   is set.
+
+   ([CVE-2024-12797])
+
+   *Viktor Dukhovni*
+
+ * Fixed timing side-channel in ECDSA signature computation.
+
+   There is a timing signal of around 300 nanoseconds when the top word of
+   the inverted ECDSA nonce value is zero. This can happen with significant
+   probability only for some of the supported elliptic curves. In particular
+   the NIST P-521 curve is affected. To be able to measure this leak, the
+   attacker process must either be located in the same physical computer or
+   must have a very fast network connection with low latency.
+
+   ([CVE-2024-13176])
+
+   *Tomáš Mráz*
+
+ * Fixed possible OOB memory access with invalid low-level GF(2^m) elliptic
+   curve parameters.
+
+   Use of the low-level GF(2^m) elliptic curve APIs with untrusted
+   explicit values for the field polynomial can lead to out-of-bounds memory
+   reads or writes.
+   Applications working with "exotic" explicit binary (GF(2^m)) curve
+   parameters, that make it possible to represent invalid field polynomials
+   with a zero constant term, via the above or similar APIs, may terminate
+   abruptly as a result of reading or writing outside of array bounds. Remote
+   code execution cannot easily be ruled out.
+
+   ([CVE-2024-9143])
+
+   *Viktor Dukhovni*
+
 ### Changes between 3.3.1 and 3.3.2 [3 Sep 2024]
 
  * Fixed possible denial of service in X.509 name checks.
@@ -20685,6 +20727,8 @@ ndif
 
 <!-- Links -->
 
+[CVE-2024-13176]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-13176
+[CVE-2024-9143]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-9143
 [CVE-2024-6119]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-6119
 [CVE-2024-5535]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-5535
 [CVE-2024-4741]: https://www.openssl.org/news/vulnerabilities.html#CVE-2024-4741
