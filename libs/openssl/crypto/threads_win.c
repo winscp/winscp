@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -123,8 +123,11 @@ CRYPTO_RCU_LOCK *ossl_rcu_lock_new(int num_writers, OSSL_LIB_CTX *ctx)
 {
     struct rcu_lock_st *new;
 
-    if (num_writers < 1)
-        num_writers = 1;
+    /*
+     * We need a minimum of 3 qps
+     */
+    if (num_writers < 3)
+        num_writers = 3;
 
     ctx = ossl_lib_ctx_get_concrete(ctx);
     if (ctx == NULL)
@@ -141,7 +144,9 @@ CRYPTO_RCU_LOCK *ossl_rcu_lock_new(int num_writers, OSSL_LIB_CTX *ctx)
     new->prior_signal = ossl_crypto_condvar_new();
     new->alloc_lock = ossl_crypto_mutex_new();
     new->prior_lock = ossl_crypto_mutex_new();
-    new->qp_group = allocate_new_qp_group(new, num_writers + 1);
+    new->qp_group = allocate_new_qp_group(new, num_writers);
+    /* By default the first qp is already alloced */
+    new->writers_alloced = 1;
     if (new->qp_group == NULL
         || new->alloc_signal == NULL
         || new->prior_signal == NULL
@@ -157,6 +162,7 @@ CRYPTO_RCU_LOCK *ossl_rcu_lock_new(int num_writers, OSSL_LIB_CTX *ctx)
         OPENSSL_free(new);
         new = NULL;
     }
+
     return new;
 
 }
@@ -563,7 +569,8 @@ int CRYPTO_THREAD_compare_id(CRYPTO_THREAD_ID a, CRYPTO_THREAD_ID b)
 
 int CRYPTO_atomic_add(int *val, int amount, int *ret, CRYPTO_RWLOCK *lock)
 {
-    *ret = (int)InterlockedExchangeAdd((long volatile *)val, (long)amount) + amount;
+    *ret = (int)InterlockedExchangeAdd((LONG volatile *)val, (LONG)amount)
+        + amount;
     return 1;
 }
 
