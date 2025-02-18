@@ -254,7 +254,7 @@ BEGIN
   S3_PROFILE_NOT_EXIST, "S3 profile \"%s\" does not exist or does not contain any relevant options."
   CERTIFICATE_UNOPENABLE, "Certificate file \"%s\" does not exist or cannot be opened."
   CERTIFICATE_LOAD_ERROR, "Unable to load certificate file \"%s\"."
-  PUB_KEY_UNKNOWN, L"Unknown public key algorithm \"%s\"."
+  PUB_KEY_UNKNOWN, "Unknown public key algorithm \"%s\"."
   CERTIFICATE_NOT_MATCH, "Certificate in \"%s\" does not match public key in the key file."
   CERTIFICATE_CANNOT_COMBINE, "Unable to combine certificate in \"%s\" with private key."
   KEYGEN_NOT_PUBLIC, "File \"%s\" is not a public key in a known format."
