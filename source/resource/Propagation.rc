@@ -101,4 +101,6 @@ BEGIN
   NEW_6_4_SYNCHRONIZATION, "Synchronization actions can be pushed to background queue"
   NEW_6_4_LARGE_DIRS, "Optimized working with large local directories"
   NEW_6_4_S3_ROLE, "Allowed assuming IAM role in S3 sessions"
+
+  NEW_6_6_TBD, "TBD"
 END
