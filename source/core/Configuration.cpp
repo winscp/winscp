@@ -240,7 +240,7 @@ void __fastcall TConfiguration::Default()
   FParallelDurationThreshold = 10;
   FMimeTypes = UnicodeString();
   FCertificateStorage = EmptyStr;
-  FAWSMetadataService = EmptyStr;
+  FAWSAPI = EmptyStr;
   FChecksumCommands = EmptyStr;
   FDontReloadMoreThanSessions = 1000;
   FScriptProgressFileNameLimit = 25;
@@ -395,7 +395,7 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(String,   SynchronizationChecksumAlgs); \
     KEY(Bool,     CollectUsage); \
     KEY(String,   CertificateStorage); \
-    KEY(String,   AWSMetadataService); \
+    KEY(String,   AWSAPI); \
   ); \
   BLOCK(L"Logging", CANCREATE, \
     KEYEX(Bool,  PermanentLogging, L"Logging"); \
@@ -2015,9 +2015,9 @@ UnicodeString TConfiguration::GetCertificateStorageExpanded()
   return Result;
 }
 //---------------------------------------------------------------------
-void TConfiguration::SetAWSMetadataService(const UnicodeString & value)
+void TConfiguration::SetAWSAPI(const UnicodeString & value)
 {
-  SET_CONFIG_PROPERTY(AWSMetadataService);
+  SET_CONFIG_PROPERTY(AWSAPI);
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetTryFtpWhenSshFails(bool value)

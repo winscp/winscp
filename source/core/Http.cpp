@@ -166,6 +166,11 @@ void THttp::Post(const UnicodeString & Request)
   SendRequest("POST", Request);
 }
 //---------------------------------------------------------------------------
+void THttp::Put(const UnicodeString & Request)
+{
+  SendRequest("PUT", Request);
+}
+//---------------------------------------------------------------------------
 UnicodeString THttp::GetResponse()
 {
   UTF8String UtfResponse(FResponse);
