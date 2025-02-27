@@ -47,6 +47,7 @@ void __fastcall Shred(AnsiString & Str);
 void __fastcall Shred(RawByteString & Str);
 UnicodeString AnsiToString(const RawByteString & S);
 UnicodeString AnsiToString(const char * S, size_t Len);
+UnicodeString UTFToString(const RawByteString & S);
 UnicodeString MakeValidFileName(UnicodeString FileName);
 UnicodeString RootKeyToStr(HKEY RootKey, const UnicodeString & Default = EmptyStr);
 UnicodeString BooleanToStr(bool B);

@@ -8,6 +8,7 @@
 #include <SessionData.h>
 //---------------------------------------------------------------------------
 #define StrToNeon(S) UTF8String(S).c_str()
+// Should be used with character pointer only
 #define StrFromNeon(S) UnicodeString(UTF8String(S))
 //---------------------------------------------------------------------------
 struct TNeonCertificateData

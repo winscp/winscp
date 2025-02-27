@@ -80,7 +80,7 @@ static UnicodeString PathUnescape(const char * Path)
     // In such case, take the path as is and we will probably overwrite the name with "display name".
     UtfResult = Path;
   }
-  UnicodeString Result = StrFromNeon(UtfResult);
+  UnicodeString Result = UnicodeString(UtfResult);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -1549,7 +1549,7 @@ void TWebDAVFileSystem::NeonPreSend(
   TWebDAVFileSystem * FileSystem = SessionContext->FileSystem;
 
   SessionContext->AuthorizationProtocol = EmptyStr;
-  UnicodeString HeaderBuf(StrFromNeon(AnsiString(Header->data, Header->used)));
+  UnicodeString HeaderBuf(UnicodeString(AnsiString(Header->data, Header->used)));
   const UnicodeString AuthorizationHeaderName(L"Authorization:");
   int P = HeaderBuf.Pos(AuthorizationHeaderName);
   if (P > 0)

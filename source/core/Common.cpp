@@ -125,6 +125,12 @@ UnicodeString AnsiToString(const char * S, size_t Len)
   return UnicodeString(AnsiString(S, Len));
 }
 //---------------------------------------------------------------------------
+UnicodeString UTFToString(const RawByteString & S)
+{
+  // Simply casting RawByteString to UTF8String does not work
+  return UnicodeString(UTF8String(S.c_str(), S.Length()));
+}
+//---------------------------------------------------------------------------
 // Note similar function ValidLocalFileName
 UnicodeString MakeValidFileName(UnicodeString FileName)
 {
