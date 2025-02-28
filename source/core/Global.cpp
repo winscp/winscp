@@ -18,6 +18,16 @@ UnicodeString NormalizeString(const UnicodeString & S)
   return Result;
 }
 //---------------------------------------------------------------------------
+UnicodeString DenormalizeString(const UnicodeString & S)
+{
+  UnicodeString Result = S;
+  if (Result.IsEmpty())
+  {
+    Result = EmptyString;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 // TGuard
 //---------------------------------------------------------------------------
 __fastcall TGuard::TGuard(TCriticalSection * ACriticalSection) :
