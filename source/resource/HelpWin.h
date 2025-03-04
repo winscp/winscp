@@ -73,5 +73,6 @@
 #define HELP_STORE_TRANSITION        "microsoft_store#transitioning"
 #define HELP_SSH_HOST_CA             "ui_ssh_host_ca"
 #define HELP_SHOW_LOGIN              "ui_pref_window#show_login"
+#define HELP_TAG                     "ui_properties#tags"
 
 #endif // TextsWin

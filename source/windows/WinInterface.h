@@ -166,6 +166,7 @@ bool __fastcall DoCustomCommandOptionsDialog(
 void __fastcall DoUsageStatisticsDialog();
 void __fastcall DoSiteRawDialog(TSessionData * Data);
 bool DoSshHostCADialog(bool Add, TSshHostCA & SshHostCA);
+bool DoTagDialog(bool Add, TStrings * Tags, UnicodeString & Key, UnicodeString & Value);
 
 // windows\UserInterface.cpp
 bool __fastcall DoMasterPasswordDialog();
@@ -311,6 +312,8 @@ const cpMode =  0x01;
 const cpOwner = 0x02;
 const cpGroup = 0x04;
 const cpAcl =   0x08;
+const poUserGroupByID = 0x01;
+const poTags =          0x02;
 typedef void __fastcall (__closure *TCalculateSizeEvent)
   (TStrings * FileList, __int64 & Size, TCalculateSizeStats & Stats,
    bool & Close);
@@ -323,7 +326,7 @@ bool __fastcall DoPropertiesDialog(TStrings * FileList,
     const UnicodeString Directory, const TRemoteTokenList * GroupList,
     const TRemoteTokenList * UserList, TStrings * ChecksumAlgs,
     TRemoteProperties * Properties,
-    int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
+    int AllowedChanges, int Options, TCalculateSizeEvent OnCalculateSize,
     TCalculateChecksumEvent OnCalculateChecksum);
 
 typedef bool (__closure * TDirectoryExistsEvent)(void * Session, const UnicodeString & Directory);

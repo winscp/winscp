@@ -2106,6 +2106,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
     case fcLocking:
     case fcAclChangingFiles: // pending implementation
     case fcMoveOverExistingFile:
+    case fcTags:
       return false;
 
     case fcNewerOnlyUpload:

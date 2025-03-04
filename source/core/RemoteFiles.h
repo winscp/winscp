@@ -100,6 +100,7 @@ private:
   UnicodeString FHumanRights;
   TTerminal *FTerminal;
   wchar_t FType;
+  UnicodeString FTags;
   bool FCyclicLink;
   UnicodeString FFullFileName;
   int FIsHidden;
@@ -178,6 +179,7 @@ public:
   __property bool HaveFullFileName  = { read = GetHaveFullFileName };
   __property int IconIndex = { read = GetIconIndex };
   __property UnicodeString TypeName = { read = GetTypeName };
+  __property UnicodeString Tags = { read = FTags, write = FTags };
   __property bool IsHidden = { read = GetIsHidden, write = SetIsHidden };
   __property bool IsParentDirectory = { read = GetIsParentDirectory };
   __property bool IsThisDirectory = { read = GetIsThisDirectory };
@@ -432,8 +434,8 @@ private:
   void __fastcall SetRightUndef(TRight Right, TState value);
 };
 //---------------------------------------------------------------------------
-enum TValidProperty { vpRights, vpGroup, vpOwner, vpModification, vpLastAccess, vpEncrypt };
-typedef Set<TValidProperty, vpRights, vpEncrypt> TValidProperties;
+enum TValidProperty { vpRights, vpGroup, vpOwner, vpModification, vpLastAccess, vpEncrypt, vpTags };
+typedef Set<TValidProperty, vpRights, vpTags> TValidProperties;
 class TRemoteProperties
 {
 public:
@@ -446,6 +448,7 @@ public:
   __int64 Modification; // unix time
   __int64 LastAccess; // unix time
   bool Encrypt;
+  UnicodeString Tags;
 
   __fastcall TRemoteProperties();
   __fastcall TRemoteProperties(const TRemoteProperties & rhp);

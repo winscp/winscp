@@ -653,6 +653,7 @@ bool __fastcall TWebDAVFileSystem::IsCapable(int Capability) const
     case fcTransferOut:
     case fcTransferIn:
     case fcParallelFileTransfers:
+    case fcTags:
       return false;
 
     case fcLocking:

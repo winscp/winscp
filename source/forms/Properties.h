@@ -58,6 +58,11 @@ __published:
   TLabel *ChecksumUnknownLabel;
   TEdit *OwnerView;
   TEdit *GroupView;
+  TTabSheet *TagsSheet;
+  TListView *TagsView;
+  TButton *AddTagButton;
+  TButton *RemoveTagButton;
+  TButton *EditTagButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall CalculateSizeButtonClick(TObject *Sender);
@@ -66,15 +71,21 @@ __published:
   void __fastcall PageControlChange(TObject *Sender);
   void __fastcall ChecksumAlgEditChange(TObject *Sender);
   void __fastcall CopyClick(TObject *Sender);
-  void __fastcall ChecksumViewContextPopup(TObject *Sender,
+  void __fastcall ListViewContextPopup(TObject *Sender,
           TPoint &MousePos, bool &Handled);
   void __fastcall GroupComboBoxExit(TObject *Sender);
   void __fastcall OwnerComboBoxExit(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
+  void __fastcall TagsViewKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
+  void __fastcall AddTagButtonClick(TObject *Sender);
+  void __fastcall TagsViewSelectItem(TObject *Sender, TListItem *Item, bool Selected);
+  void __fastcall EditTagButtonClick(TObject *Sender);
+  void __fastcall RemoveTagButtonClick(TObject *Sender);
+  void __fastcall TagsViewDblClick(TObject *Sender);
 
 private:
   int FAllowedChanges;
-  bool FUserGroupByID;
+  int FOptions;
   TStrings * FFileList;
   const TRemoteTokenList * FGroupList;
   const TRemoteTokenList * FUserList;
@@ -122,6 +133,9 @@ protected:
   void __fastcall LoadStats(__int64 FilesSize, const TCalculateSizeStats & Stats);
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall UpdateFileImage();
+  TListItem * AddTag(const UnicodeString & Key, const UnicodeString & Value);
+  void AutoSizeTagsView();
+  void AddEditTag(bool Add);
 
   INTERFACE_HOOK;
 
@@ -130,7 +144,7 @@ public:
     TStrings * FileList, const UnicodeString Directory,
     const TRemoteTokenList * GroupList, const TRemoteTokenList * UserList,
     TStrings * ChecksumAlgs,
-    int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
+    int AllowedChanges, int Options, TCalculateSizeEvent OnCalculateSize,
     TCalculateChecksumEvent OnCalculateChecksum);
 
   virtual __fastcall ~TPropertiesDialog();

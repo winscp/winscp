@@ -302,7 +302,7 @@ object PropertiesDialog: TPropertiesDialog
         PopupMenu = ListViewMenu
         TabOrder = 2
         ViewStyle = vsReport
-        OnContextPopup = ChecksumViewContextPopup
+        OnContextPopup = ListViewContextPopup
       end
       object ChecksumAlgEdit: TComboBox
         Left = 90
@@ -361,6 +361,72 @@ object PropertiesDialog: TPropertiesDialog
           TabOrder = 0
           Text = 'ChecksumEdit'
         end
+      end
+    end
+    object TagsSheet: TTabSheet
+      Caption = 'Tags'
+      ImageIndex = 2
+      DesignSize = (
+        390
+        355)
+      object TagsView: TListView
+        Left = 3
+        Top = 5
+        Width = 382
+        Height = 227
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        Columns = <
+          item
+            Caption = 'Key'
+            Width = 100
+          end
+          item
+            Caption = 'Value'
+            Width = 100
+          end>
+        ColumnClick = False
+        DoubleBuffered = True
+        HideSelection = False
+        ReadOnly = True
+        RowSelect = True
+        ParentDoubleBuffered = False
+        PopupMenu = ListViewMenu
+        TabOrder = 0
+        ViewStyle = vsReport
+        OnContextPopup = ListViewContextPopup
+        OnDblClick = TagsViewDblClick
+        OnKeyDown = TagsViewKeyDown
+        OnSelectItem = TagsViewSelectItem
+      end
+      object AddTagButton: TButton
+        Left = 133
+        Top = 238
+        Width = 80
+        Height = 25
+        Anchors = [akRight, akBottom]
+        Caption = '&Add...'
+        TabOrder = 1
+        OnClick = AddTagButtonClick
+      end
+      object RemoveTagButton: TButton
+        Left = 305
+        Top = 238
+        Width = 80
+        Height = 25
+        Anchors = [akRight, akBottom]
+        Caption = '&Remove'
+        TabOrder = 3
+        OnClick = RemoveTagButtonClick
+      end
+      object EditTagButton: TButton
+        Left = 219
+        Top = 238
+        Width = 80
+        Height = 25
+        Anchors = [akRight, akBottom]
+        Caption = '&Edit...'
+        TabOrder = 2
+        OnClick = EditTagButtonClick
       end
     end
   end

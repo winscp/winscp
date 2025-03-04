@@ -18,6 +18,7 @@
 #include <PuttyTools.h>
 #include <HistoryComboBox.hpp>
 #include <Math.hpp>
+#include <System.Character.hpp>
 
 #include "Custom.h"
 //---------------------------------------------------------------------
@@ -1793,4 +1794,104 @@ bool DoSshHostCADialog(bool Add, TSshHostCA & SshHostCA)
 {
   std::unique_ptr<TSshHostCADialog> Dialog(new TSshHostCADialog(Add));
   return Dialog->Execute(SshHostCA);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TTagDialog : public TCustomDialog
+{
+public:
+  TTagDialog(bool Add, TStrings * Tags);
+  bool Execute(UnicodeString & Key, UnicodeString & Value);
+
+protected:
+  virtual void __fastcall DoChange(bool & CanSubmit);
+  virtual void __fastcall DoValidate();
+
+private:
+  TEdit * KeyEdit;
+  TEdit * ValueEdit;
+  TStrings * FTags;
+
+  void ValidateTag(TEdit * Edit);
+};
+//---------------------------------------------------------------------------
+TTagDialog::TTagDialog(bool Add, TStrings * Tags) :
+  TCustomDialog(HELP_TAG)
+{
+  Caption = LoadStr(Add ? TAG_ADD : TAG_EDIT);
+  FTags = Tags;
+
+  KeyEdit = new TEdit(this);
+  KeyEdit->MaxLength = 128;
+  AddEdit(KeyEdit, CreateLabel(LoadStr(TAG_KEY)));
+
+  ValueEdit = new TEdit(this);
+  ValueEdit->MaxLength = 256;
+  AddEdit(ValueEdit, CreateLabel(LoadStr(TAG_VALUE)));
+}
+//---------------------------------------------------------------------------
+bool TTagDialog::Execute(UnicodeString & Key, UnicodeString & Value)
+{
+  // if we happen to get values longer than what we believed was possible, allow them.
+  KeyEdit->MaxLength = std::max(KeyEdit->MaxLength, Key.Length());
+  KeyEdit->Text = Key;
+  ValueEdit->MaxLength = std::max(ValueEdit->MaxLength, Value.Length());
+  ValueEdit->Text = Value;
+  bool Result = TCustomDialog::Execute();
+  if (Result)
+  {
+    Key = KeyEdit->Text;
+    Value = ValueEdit->Text;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TTagDialog::DoChange(bool & CanSubmit)
+{
+  CanSubmit = !KeyEdit->Text.IsEmpty();
+}
+//---------------------------------------------------------------------------
+void TTagDialog::ValidateTag(TEdit * Edit)
+{
+  // there are lot more in various scripts
+  UnicodeString InvalidChars = L"!\"#$%&'()*,;<>?[\\]^`{|}~¡¢£¤¥¦§¨©«¬­®¯°±´¶·¸»¿×÷";
+  UnicodeString Text = Edit->Text;
+  for (int Index = 1; Index <= Text.Length(); Index++)
+  {
+    wchar_t Ch = Text[Index];
+    if (TCharacter::IsControl(Ch) ||
+        (InvalidChars.Pos(Ch) > 0))
+    {
+      UnicodeString Message = MainInstructions(FMTLOAD(TAG_INVALID_CHAR, (Ch)));
+      if (MoreMessageDialog(Message, NULL, qtWarning, qaIgnore | qaAbort, HelpKeyword) != qaIgnore)
+      {
+        Edit->SetFocus();
+        Abort();
+      }
+      else
+      {
+        break;
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTagDialog::DoValidate()
+{
+  UnicodeString Key = KeyEdit->Text;
+  if (FTags->IndexOf(Key) >= 0)
+  {
+    throw Exception(MainInstructions(LoadStr(TAG_NOT_UNIQUE)));
+  }
+
+  ValidateTag(KeyEdit);
+  ValidateTag(ValueEdit);
+
+  TCustomDialog::DoValidate();
+}
+//---------------------------------------------------------------------------
+bool DoTagDialog(bool Add, TStrings * Tags, UnicodeString & Key, UnicodeString & Value)
+{
+  std::unique_ptr<TTagDialog> Dialog(new TTagDialog(Add, Tags));
+  return Dialog->Execute(Key, Value);
 }

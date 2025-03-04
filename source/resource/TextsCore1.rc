@@ -265,7 +265,7 @@ BEGIN
   SSH_HOST_CA_CERTIFICATE, "CA key may not be a certificate (type is '%s')."
   SSH_HOST_CA_INVALID, "Invalid '%s' key data."
   S3_ASSUME_ROLE_ERROR, "Error assuming role '%s'."
-  S3_ASSUME_ROLE_RESPONSE_ERROR, "Unexpected response to assume role request (%s)."
+  S3_RESPONSE_ERROR, "Unexpected response to AWS request (%s)."
   INI_NO_SITES, "No sites found in \"%s\"."
   TLS_UNSUPPORTED, "The server is using unsupported protocol. Your WinSCP session is configured to use %s through %s. It can be configured to use %s through %s. Though, avoid using old insecure protocols, whenever possible."
   OPENSSL_INIT_ERROR, "OpenSSL initialization failed"
