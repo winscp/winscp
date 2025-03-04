@@ -2436,9 +2436,9 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
       UserName = DecodeUrlChars(RawUserName);
 
       Password = DecodeUrlChars(UserInfo);
-      if (HasPassword && Password.IsEmpty())
+      if (HasPassword)
       {
-        Password = EmptyString;
+        Password = DenormalizeString(Password);
       }
 
       UnicodeString RemoteDirectoryWithSessionParams = Url.SubString(PSlash, Url.Length() - PSlash + 1);

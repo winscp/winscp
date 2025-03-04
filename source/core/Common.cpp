@@ -89,6 +89,7 @@ void __fastcall DoShred(T & Str)
 {
   if (!Str.IsEmpty())
   {
+    // Should instead test for (StringRefCount(Str) == 1) to prevent Unique making yet another copy
     Str.Unique();
     memset(Str.c_str(), 0, Str.Length() * sizeof(*Str.c_str()));
     Str = L"";
@@ -123,6 +124,12 @@ UnicodeString AnsiToString(const RawByteString & S)
 UnicodeString AnsiToString(const char * S, size_t Len)
 {
   return UnicodeString(AnsiString(S, Len));
+}
+//---------------------------------------------------------------------------
+UnicodeString UTFToString(const RawByteString & S)
+{
+  // Simply casting RawByteString to UTF8String does not work
+  return UnicodeString(UTF8String(S.c_str(), S.Length()));
 }
 //---------------------------------------------------------------------------
 // Note similar function ValidLocalFileName

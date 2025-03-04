@@ -1992,7 +1992,9 @@ bool __fastcall TTerminal::DoPromptUser(TSessionData * /*Data*/, TPromptKind Kin
     if (AResult && PasswordOrPassphrasePrompt &&
         (Configuration->RememberPassword || FLAGSET(int(Prompts->Objects[0]), pupRemember)))
     {
-      RawByteString EncryptedPassword = EncryptPassword(Results->Strings[0]);
+      UnicodeString Password = DenormalizeString(Results->Strings[0]);
+      RawByteString EncryptedPassword = EncryptPassword(Password);
+      Shred(Password);
       if (FTunnelOpening)
       {
         PrimaryTerminal->FRememberedTunnelPassword = EncryptedPassword;

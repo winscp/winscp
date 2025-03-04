@@ -11,9 +11,8 @@
 //---------------------------------------------------------------------------
 #include <System.SyncObjs.hpp>
 //---------------------------------------------------------------------------
-extern const UnicodeString EmptyString;
-//---------------------------------------------------------------------------
 UnicodeString NormalizeString(const UnicodeString & S);
+UnicodeString DenormalizeString(const UnicodeString & S);
 //---------------------------------------------------------------------------
 class TGuard
 {

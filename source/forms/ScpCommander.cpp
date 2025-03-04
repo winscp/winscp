@@ -617,8 +617,9 @@ void __fastcall TScpCommanderForm::StartingWithoutSession()
 //---------------------------------------------------------------------------
 void TScpCommanderForm::RestoreSessionLocalDirView(TDirView * ALocalDirView, const UnicodeString & LocalDirectory)
 {
-  // we will load completely different directory, so particularly
-  // do not attempt to select previously selected directory
+  // We will load completely different directory, so particularly
+  // do not attempt to select previously selected directory.
+  // TODO: Does not work, as LastPath is restored in PathChanging.
   ALocalDirView->ContinueSession(false);
 
   // reset home directory

@@ -23,6 +23,7 @@ public:
 
   void Get();
   void Post(const UnicodeString & Request);
+  void Put(const UnicodeString & Request);
   bool IsCertificateError();
 
   __property UnicodeString URL = { read = FURL, write = FURL };

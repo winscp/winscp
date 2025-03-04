@@ -166,10 +166,14 @@ void THttp::Post(const UnicodeString & Request)
   SendRequest("POST", Request);
 }
 //---------------------------------------------------------------------------
+void THttp::Put(const UnicodeString & Request)
+{
+  SendRequest("PUT", Request);
+}
+//---------------------------------------------------------------------------
 UnicodeString THttp::GetResponse()
 {
-  UTF8String UtfResponse(FResponse);
-  return UnicodeString(UtfResponse);
+  return UTFToString(FResponse);
 }
 //---------------------------------------------------------------------------
 int THttp::NeonBodyReaderImpl(const char * Buf, size_t Len)

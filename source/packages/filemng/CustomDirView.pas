@@ -2157,7 +2157,8 @@ begin
           ForceMakeVisible := True;
           if FAnnouncedState is TDirViewState then
           begin
-            // "AnnouncedState" should not be combined with "LastPath"
+            // "AnnouncedState" should not be combined with "LastPath".
+            // TODO: Does not work, see comment in TScpCommanderForm::RestoreSessionLocalDirView.
             Assert(not Assigned(ItemFocused));
             RestoreItemsState(FAnnouncedState);
             ForceMakeVisible := False;
