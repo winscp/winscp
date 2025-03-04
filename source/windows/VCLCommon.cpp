@@ -307,6 +307,45 @@ static void __fastcall ReadOnlyEditContextPopup(void * /*Data*/, TObject * Sende
   }
 }
 //---------------------------------------------------------------------------
+class TPublicWinControl : public TWinControl
+{
+friend TWndMethod __fastcall ControlWndProc(TWinControl * Control);
+friend void __fastcall InstallPathWordBreakProc(TWinControl * Control);
+};
+//---------------------------------------------------------------------------
+TWndMethod __fastcall ControlWndProc(TWinControl * Control)
+{
+  TPublicWinControl * PublicWinControl = static_cast<TPublicWinControl *>(Control);
+  return &PublicWinControl->WndProc;
+}
+//---------------------------------------------------------------------------
+static void __fastcall ReadOnlyEditWindowProc(void * Data, TMessage & Message)
+{
+  TCustomEdit * Edit = static_cast<TCustomEdit *>(Data);
+  TCustomStyleServices * AStyleServices;
+  if ((Message.Msg == CN_CTLCOLORSTATIC) && Edit->ReadOnly && (AStyleServices = StyleServices(Edit))->Enabled)
+  {
+    // VCL_COPY Based on TCustomStaticText.CNCtlColorStatic
+
+    // Pure Win32 alternative can be seen at:
+    // https://stackoverflow.com/a/75764544/850848
+    // (see my comment to the answer)
+
+    HDC ControlDC = reinterpret_cast<HDC>(Message.WParam);
+    HWND ControlHandle = reinterpret_cast<HWND>(Message.LParam);
+    DebugAssert(ControlHandle == Edit->Handle);
+
+    SetBkMode(ControlDC, TRANSPARENT);
+    AStyleServices->DrawParentBackground(ControlHandle, ControlDC, NULL, false);
+
+    Message.Result = reinterpret_cast<LRESULT>(GetStockObject(NULL_BRUSH));
+  }
+  else
+  {
+    ControlWndProc(Edit)(Message);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall DoReadOnlyControl(TControl * Control, bool ReadOnly, bool Color)
 {
   if (dynamic_cast<TCustomEdit *>(Control) != NULL)
@@ -314,6 +353,23 @@ void __fastcall DoReadOnlyControl(TControl * Control, bool ReadOnly, bool Color)
     TEdit * Edit = static_cast<TEdit *>(Control);
     Edit->ReadOnly = ReadOnly;
     TMemo * Memo = dynamic_cast<TMemo *>(Control);
+
+    TWinControl * Parent = Edit->Parent;
+    while (Parent != NULL)
+    {
+      // Not necessary, just to limit impact and conflicts
+      if (dynamic_cast<TTabSheet *>(Parent) != NULL)
+      {
+        TWndMethod WindowProc = MakeMethod<TWndMethod>(Edit, ReadOnlyEditWindowProc);
+        if ((Edit->WindowProc != WindowProc) && DebugAlwaysTrue(Edit->WindowProc == ControlWndProc(Edit)))
+        {
+          Edit->WindowProc = WindowProc;
+        }
+        break;
+      }
+      Parent = Parent->Parent;
+    }
+
     if (ReadOnly)
     {
       if (Color)
@@ -465,18 +521,6 @@ UnicodeString __fastcall FormatFormCaption(
     Result = FormatMainFormCaption(Result, SessionName);
   }
   return Result;
-}
-//---------------------------------------------------------------------------
-class TPublicWinControl : public TWinControl
-{
-friend TWndMethod __fastcall ControlWndProc(TWinControl * Control);
-friend void __fastcall InstallPathWordBreakProc(TWinControl * Control);
-};
-//---------------------------------------------------------------------------
-TWndMethod __fastcall ControlWndProc(TWinControl * Control)
-{
-  TPublicWinControl * PublicWinControl = static_cast<TPublicWinControl *>(Control);
-  return &PublicWinControl->WndProc;
 }
 //---------------------------------------------------------------------
 class TPublicControl : public TControl
