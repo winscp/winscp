@@ -162,7 +162,8 @@ protected:
   bool ShouldCancelTransfer(TLibS3TransferObjectDataCallbackData & Data);
   bool IsGoogleCloud();
   void __fastcall LoadFileProperties(const UnicodeString AFileName, const TRemoteFile * File, void * Param);
-  bool DoLoadFileProperties(const UnicodeString & AFileName, const TRemoteFile * File, TS3FileProperties & Properties);
+  bool DoLoadFileProperties(
+    const UnicodeString & AFileName, const TRemoteFile * File, TS3FileProperties & Properties, bool LoadTags);
   unsigned short AclGrantToPermissions(S3AclGrant & AclGrant, const TS3FileProperties & Properties);
   bool ParsePathForPropertiesRequests(
     const UnicodeString & Path, const TRemoteFile * File, UnicodeString & BucketName, UnicodeString & Key);
@@ -186,8 +187,8 @@ protected:
   static int LibS3MultipartCommitPutObjectDataCallback(int BufferSize, char * Buffer, void * CallbackData);
   static S3Status LibS3MultipartResponsePropertiesCallback(const S3ResponseProperties * Properties, void * CallbackData);
   static S3Status LibS3GetObjectDataCallback(int BufferSize, const char * Buffer, void * CallbackData);
-  static void LibS3AssumeRoleCompleteCallback(S3Status Status, const S3ErrorDetails * Error, void * CallbackData);
-  static S3Status LibS3AssumeRoleDataCallback(int BufferSize, const char * Buffer, void * CallbackData);
+  static S3Status LibS3XmlDataCallback(int BufferSize, const char * Buffer, void * CallbackData);
+  static int LibS3XmlDataToCallback(int BufferSize, char * Buffer, void * CallbackData);
 
   static const int S3MinMultiPartChunkSize;
   static const int S3MaxMultiPartChunks;

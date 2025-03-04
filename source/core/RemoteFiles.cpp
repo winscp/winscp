@@ -903,6 +903,7 @@ TRemoteFile * __fastcall TRemoteFile::Duplicate(bool Standalone) const
     COPY_FP(IsSymLink);
     COPY_FP(LinkTo);
     COPY_FP(Type);
+    COPY_FP(Tags);
     COPY_FP(CyclicLink);
     COPY_FP(HumanRights);
     COPY_FP(IsEncrypted);
@@ -2696,7 +2697,8 @@ __fastcall TRemoteProperties::TRemoteProperties(const TRemoteProperties & rhp) :
   Owner(rhp.Owner),
   Modification(rhp.Modification),
   LastAccess(rhp.Modification),
-  Encrypt(rhp.Encrypt)
+  Encrypt(rhp.Encrypt),
+  Tags(rhp.Tags)
 {
 }
 //---------------------------------------------------------------------------
@@ -2710,6 +2712,7 @@ void __fastcall TRemoteProperties::Default()
   Owner.Clear();
   Recursive = false;
   Encrypt = false;
+  Tags = EmptyStr;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRemoteProperties::operator ==(const TRemoteProperties & rhp) const
@@ -2724,7 +2727,8 @@ bool __fastcall TRemoteProperties::operator ==(const TRemoteProperties & rhp) co
         (Valid.Contains(vpGroup) && (Group != rhp.Group)) ||
         (Valid.Contains(vpModification) && (Modification != rhp.Modification)) ||
         (Valid.Contains(vpLastAccess) && (LastAccess != rhp.LastAccess)) ||
-        (Valid.Contains(vpEncrypt) && (Encrypt != rhp.Encrypt)))
+        (Valid.Contains(vpEncrypt) && (Encrypt != rhp.Encrypt)) ||
+        (Valid.Contains(vpTags) && (Tags != rhp.Tags)))
     {
       Result = false;
     }
@@ -2766,6 +2770,8 @@ TRemoteProperties __fastcall TRemoteProperties::CommonProperties(TStrings * File
         CommonProperties.Group = File->Group;
         CommonProperties.Valid << vpGroup;
       }
+      CommonProperties.Tags = File->Tags;
+      CommonProperties.Valid << vpTags;
     }
     else
     {
@@ -2780,6 +2786,11 @@ TRemoteProperties __fastcall TRemoteProperties::CommonProperties(TStrings * File
       {
         CommonProperties.Group.Clear();
         CommonProperties.Valid >> vpGroup;
+      }
+      if (CommonProperties.Tags != File->Tags)
+      {
+        CommonProperties.Tags = EmptyStr;
+        CommonProperties.Valid >> vpTags;
       }
     }
   }
@@ -2807,6 +2818,11 @@ TRemoteProperties __fastcall TRemoteProperties::ChangedProperties(
     if (NewProperties.Owner == OriginalProperties.Owner)
     {
       NewProperties.Valid >> vpOwner;
+    }
+
+    if (NewProperties.Tags == OriginalProperties.Tags)
+    {
+      NewProperties.Valid >> vpTags;
     }
   }
   return NewProperties;

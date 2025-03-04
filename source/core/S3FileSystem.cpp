@@ -872,7 +872,7 @@ void TS3FileSystem::LibS3Deinitialize()
   S3_deinitialize();
 }
 //---------------------------------------------------------------------------
-struct TLibS3AssumeRoleCallbackData : TLibS3CallbackData
+struct TLibS3XmlCallbackData : TLibS3CallbackData
 {
   RawByteString Contents;
 };
@@ -880,13 +880,27 @@ struct TLibS3AssumeRoleCallbackData : TLibS3CallbackData
 const UnicodeString AssumeRoleVersion(TraceInitStr(L"2011-06-15"));
 const UnicodeString AssumeRoleNamespace(TraceInitStr(FORMAT(L"https://sts.amazonaws.com/doc/%s/", (AssumeRoleVersion))));
 //---------------------------------------------------------------------------
-static _di_IXMLNode AssumeRoleNeedNode(const _di_IXMLNodeList & NodeList, const UnicodeString & Name)
+static _di_IXMLNode NeedNode(const _di_IXMLNodeList & NodeList, const UnicodeString & Name, const UnicodeString & Namespace)
 {
-  _di_IXMLNode Result = NodeList->FindNode(Name, AssumeRoleNamespace);
+  _di_IXMLNode Result = NodeList->FindNode(Name, Namespace);
   if (Result == NULL)
   {
-    throw Exception(FMTLOAD(S3_ASSUME_ROLE_RESPONSE_ERROR, (Name)));
+    throw Exception(FMTLOAD(S3_RESPONSE_ERROR, (Name)));
   }
+  return Result;
+}
+//---------------------------------------------------------------------------
+static _di_IXMLNode AssumeRoleNeedNode(const _di_IXMLNodeList & NodeList, const UnicodeString & Name)
+{
+  return NeedNode(NodeList, Name, AssumeRoleNamespace);
+}
+//---------------------------------------------------------------------------
+static const _di_IXMLDocument CreateDocumentFromXML(const TLibS3XmlCallbackData & Data, TParseOptions ParseOptions)
+{
+  const _di_IXMLDocument Result = interface_cast<Xmlintf::IXMLDocument>(new TXMLDocument(NULL));
+  DebugAssert(Result->ParseOptions == TParseOptions());
+  Result->ParseOptions = ParseOptions;
+  Result->LoadFromXML(UTFToString(Data.Contents));
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -897,7 +911,7 @@ void TS3FileSystem::AssumeRole(const UnicodeString & RoleArn)
 
   try
   {
-    TLibS3AssumeRoleCallbackData Data;
+    TLibS3XmlCallbackData Data;
     RequestInit(Data);
 
     UnicodeString QueryParams =
@@ -928,8 +942,8 @@ void TS3FileSystem::AssumeRole(const UnicodeString & RoleArn)
       NULL,
       QueryParamsBuf.c_str(),
       NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, 0,
-      LibS3AssumeRoleDataCallback,
-      LibS3AssumeRoleCompleteCallback,
+      LibS3XmlDataCallback,
+      LibS3ResponseCompleteCallback,
       &Data,
       FTimeout
     };
@@ -938,8 +952,7 @@ void TS3FileSystem::AssumeRole(const UnicodeString & RoleArn)
 
     CheckLibS3Error(Data);
 
-    const _di_IXMLDocument Document = interface_cast<Xmlintf::IXMLDocument>(new TXMLDocument(NULL));
-    Document->LoadFromXML(UnicodeString(UTF8String(Data.Contents)));
+    const _di_IXMLDocument Document = CreateDocumentFromXML(Data, TParseOptions());
     _di_IXMLNode ResponseNode = AssumeRoleNeedNode(Document->ChildNodes, L"AssumeRoleResponse");
     _di_IXMLNode ResultNode = AssumeRoleNeedNode(ResponseNode->ChildNodes, L"AssumeRoleResult");
     _di_IXMLNode CredentialsNode = AssumeRoleNeedNode(ResultNode->ChildNodes, L"Credentials");
@@ -968,16 +981,24 @@ void TS3FileSystem::AssumeRole(const UnicodeString & RoleArn)
   }
 }
 //---------------------------------------------------------------------------
-void TS3FileSystem::LibS3AssumeRoleCompleteCallback(S3Status Status, const S3ErrorDetails * Error, void * CallbackData)
+S3Status TS3FileSystem::LibS3XmlDataCallback(int BufferSize, const char * Buffer, void * CallbackData)
 {
-  LibS3ResponseCompleteCallback(Status, Error, CallbackData);
-}
-//---------------------------------------------------------------------------
-S3Status TS3FileSystem::LibS3AssumeRoleDataCallback(int BufferSize, const char * Buffer, void * CallbackData)
-{
-  TLibS3AssumeRoleCallbackData & Data = *static_cast<TLibS3AssumeRoleCallbackData *>(CallbackData);
+  TLibS3XmlCallbackData & Data = *static_cast<TLibS3XmlCallbackData *>(CallbackData);
+  if (Data.Contents.Length() + BufferSize > 1024 * 1024)
+  {
+    throw Exception(L"Too much data");
+  }
   Data.Contents += RawByteString(Buffer, BufferSize);
   return S3StatusOK;
+}
+//---------------------------------------------------------------------------
+int TS3FileSystem::LibS3XmlDataToCallback(int BufferSize, char * Buffer, void * CallbackData)
+{
+  TLibS3XmlCallbackData & Data = *static_cast<TLibS3XmlCallbackData *>(CallbackData);
+  int Len = std::min(Data.Contents.Length(), BufferSize);
+  memcpy(Buffer, Data.Contents.c_str(), Len);
+  Data.Contents.Delete(1, Len);
+  return Len;
 }
 //---------------------------------------------------------------------------
 UnicodeString TS3FileSystem::GetFolderKey(const UnicodeString & Key)
@@ -1216,6 +1237,7 @@ bool __fastcall TS3FileSystem::IsCapable(int Capability) const
     case fcLoadingAdditionalProperties:
     case fcAclChangingFiles:
     case fcMoveOverExistingFile:
+    case fcTags:
       return true;
 
     case fcPreservingTimestampUpload:
@@ -1794,6 +1816,7 @@ struct TS3FileProperties
   char OwnerDisplayName[S3_MAX_GRANTEE_DISPLAY_NAME_SIZE];
   int AclGrantCount;
   S3AclGrant AclGrants[S3_MAX_ACL_GRANT_COUNT];
+  UnicodeString Tags;
 };
 //---------------------------------------------------------------------------
 static TRights::TRightLevel S3PermissionToRightLevel(S3Permission Permission)
@@ -1825,8 +1848,20 @@ bool TS3FileSystem::ParsePathForPropertiesRequests(
   return Result;
 }
 //---------------------------------------------------------------------------
+const UnicodeString S3Version(TraceInitStr(L"2006-03-01"));
+const UnicodeString S3Namespace(TraceInitStr(FORMAT(L"http://s3.amazonaws.com/doc/%s/", (S3Version))));
+//---------------------------------------------------------------------------
+static _di_IXMLNode S3NeedNode(const _di_IXMLNodeList & NodeList, const UnicodeString & Name)
+{
+  return NeedNode(NodeList, Name, S3Namespace);
+}
+//---------------------------------------------------------------------------
+#define COPY_BUCKET_CONTEXT(BucketContext) \
+  { BucketContext.hostName, BucketContext.bucketName, BucketContext.protocol, BucketContext.uriStyle, \
+    BucketContext.accessKeyId, BucketContext.secretAccessKey, BucketContext.securityToken, BucketContext.authRegion }
+//---------------------------------------------------------------------------
 bool TS3FileSystem::DoLoadFileProperties(
-  const UnicodeString & AFileName, const TRemoteFile * File, TS3FileProperties & Properties)
+  const UnicodeString & AFileName, const TRemoteFile * File, TS3FileProperties & Properties, bool LoadTags)
 {
   UnicodeString BucketName, Key;
   bool Result = ParsePathForPropertiesRequests(AFileName, File, BucketName, Key);
@@ -1836,15 +1871,61 @@ bool TS3FileSystem::DoLoadFileProperties(
 
     S3ResponseHandler ResponseHandler = CreateResponseHandler();
 
-    TLibS3CallbackData Data;
-    RequestInit(Data);
+    TLibS3CallbackData AclData;
+    RequestInit(AclData);
 
     S3_get_acl(
       &BucketContext, StrToS3(Key), Properties.OwnerId, Properties.OwnerDisplayName,
       &Properties.AclGrantCount, Properties.AclGrants,
-      FRequestContext, FTimeout, &ResponseHandler, &Data);
+      FRequestContext, FTimeout, &ResponseHandler, &AclData);
 
-    CheckLibS3Error(Data);
+    CheckLibS3Error(AclData);
+
+    if (LoadTags)
+    {
+      TLibS3XmlCallbackData TagsData;
+      RequestInit(TagsData);
+
+      UTF8String KeyBuf = UTF8String(Key);
+      RequestParams TaggingRequestParams =
+      {
+        HttpRequestTypeGET,
+        COPY_BUCKET_CONTEXT(BucketContext),
+        KeyBuf.c_str(),
+        NULL,
+        "tagging",
+        NULL, NULL, NULL, 0, 0, NULL,
+        LibS3ResponsePropertiesCallback,
+        NULL, 0,
+        LibS3XmlDataCallback,
+        LibS3ResponseCompleteCallback,
+        &TagsData,
+        FTimeout
+      };
+
+      request_perform(&TaggingRequestParams, FRequestContext);
+
+      if (TagsData.Status != S3StatusErrorAccessDenied)
+      {
+        CheckLibS3Error(TagsData);
+
+        const _di_IXMLDocument Document = CreateDocumentFromXML(TagsData, TParseOptions() << poPreserveWhiteSpace);
+        _di_IXMLNode TaggingNode = S3NeedNode(Document->ChildNodes, L"Tagging");
+        _di_IXMLNode TagSetNode = S3NeedNode(TaggingNode->ChildNodes, L"TagSet");
+        _di_IXMLNodeList TagNodeList = TagSetNode->GetChildNodes();
+        std::unique_ptr<TStrings> Tags(new TStringList());
+        for (int Index = 0; Index < TagNodeList->Count; Index++)
+        {
+          _di_IXMLNode TagNode = TagNodeList->Get(Index);
+          UnicodeString Key = S3NeedNode(TagNode->ChildNodes, L"Key")->Text;
+          Tags->Add(Key);
+          UnicodeString Value = S3NeedNode(TagNode->ChildNodes, L"Value")->Text;
+          Tags->Add(Value);
+        }
+
+        Properties.Tags = Tags->Text;
+      }
+    }
   }
   return Result;
 }
@@ -1869,74 +1950,75 @@ void __fastcall TS3FileSystem::ChangeFileProperties(const UnicodeString FileName
   const TRemoteFile * File, const TRemoteProperties * Properties,
   TChmodSessionAction & /*Action*/)
 {
-  TValidProperties ValidProperties = Properties->Valid;
-  if (DebugAlwaysTrue(ValidProperties.Contains(vpRights)))
+  UnicodeString BucketName, Key;
+  if (DebugAlwaysTrue(ParsePathForPropertiesRequests(FileName, File, BucketName, Key)))
   {
-    ValidProperties >> vpRights;
+    TValidProperties ValidProperties = Properties->Valid;
 
-    DebugAssert(!Properties->AddXToDirectories);
+    TLibS3BucketContext BucketContext = GetBucketContext(BucketName, Key);
 
-    TS3FileProperties FileProperties;
-    if (DebugAlwaysTrue(!File->IsDirectory) &&
-        DebugAlwaysTrue(DoLoadFileProperties(FileName, File, FileProperties)))
+    if (ValidProperties.Contains(vpRights))
     {
-      TAclGrantsVector NewAclGrants;
+      ValidProperties >> vpRights;
 
-      unsigned short Permissions = File->Rights->Combine(Properties->Rights);
-      for (int GroupI = TRights::rgFirst; GroupI <= TRights::rgLast; GroupI++)
+      DebugAssert(!Properties->AddXToDirectories);
+
+      TS3FileProperties FileProperties;
+      if (DebugAlwaysTrue(!File->IsDirectory) &&
+          DebugAlwaysTrue(DoLoadFileProperties(FileName, File, FileProperties, false)))
       {
-        TRights::TRightGroup Group = static_cast<TRights::TRightGroup>(GroupI);
-        S3AclGrant NewAclGrant;
-        memset(&NewAclGrant, 0, sizeof(NewAclGrant));
-        if (Group == TRights::rgUser)
-        {
-          NewAclGrant.granteeType = S3GranteeTypeCanonicalUser;
-          DebugAssert(sizeof(NewAclGrant.grantee.canonicalUser.id) == sizeof(FileProperties.OwnerId));
-          strcpy(NewAclGrant.grantee.canonicalUser.id, FileProperties.OwnerId);
-        }
-        else if (Group == TRights::rgS3AllAwsUsers)
-        {
-          NewAclGrant.granteeType = S3GranteeTypeAllAwsUsers;
-        }
-        else if (DebugAlwaysTrue(Group == TRights::rgS3AllUsers))
-        {
-          NewAclGrant.granteeType = S3GranteeTypeAllUsers;
-        }
-        unsigned short AllGroupPermissions =
-          TRights::CalculatePermissions(Group, TRights::rlS3Read, TRights::rlS3ReadACP, TRights::rlS3WriteACP);
-        if (FLAGSET(Permissions, AllGroupPermissions))
-        {
-          NewAclGrant.permission = S3PermissionFullControl;
-          NewAclGrants.push_back(NewAclGrant);
-          Permissions -= AllGroupPermissions;
-        }
-        else
-        {
-          #define ADD_ACL_GRANT(PERM) AddAclGrant(Group, Permissions, NewAclGrants, NewAclGrant, PERM)
-          ADD_ACL_GRANT(S3PermissionRead);
-          ADD_ACL_GRANT(S3PermissionWrite);
-          ADD_ACL_GRANT(S3PermissionReadACP);
-          ADD_ACL_GRANT(S3PermissionWriteACP);
-        }
-      }
+        TAclGrantsVector NewAclGrants;
 
-      DebugAssert(Permissions == 0);
-
-      // Preserve unrecognized permissions
-      for (int Index = 0; Index < FileProperties.AclGrantCount; Index++)
-      {
-        S3AclGrant & AclGrant = FileProperties.AclGrants[Index];
-        unsigned short Permission = AclGrantToPermissions(AclGrant, FileProperties);
-        if (Permission == 0)
+        unsigned short Permissions = File->Rights->Combine(Properties->Rights);
+        for (int GroupI = TRights::rgFirst; GroupI <= TRights::rgLast; GroupI++)
         {
-          NewAclGrants.push_back(AclGrant);
+          TRights::TRightGroup Group = static_cast<TRights::TRightGroup>(GroupI);
+          S3AclGrant NewAclGrant;
+          memset(&NewAclGrant, 0, sizeof(NewAclGrant));
+          if (Group == TRights::rgUser)
+          {
+            NewAclGrant.granteeType = S3GranteeTypeCanonicalUser;
+            DebugAssert(sizeof(NewAclGrant.grantee.canonicalUser.id) == sizeof(FileProperties.OwnerId));
+            strcpy(NewAclGrant.grantee.canonicalUser.id, FileProperties.OwnerId);
+          }
+          else if (Group == TRights::rgS3AllAwsUsers)
+          {
+            NewAclGrant.granteeType = S3GranteeTypeAllAwsUsers;
+          }
+          else if (DebugAlwaysTrue(Group == TRights::rgS3AllUsers))
+          {
+            NewAclGrant.granteeType = S3GranteeTypeAllUsers;
+          }
+          unsigned short AllGroupPermissions =
+            TRights::CalculatePermissions(Group, TRights::rlS3Read, TRights::rlS3ReadACP, TRights::rlS3WriteACP);
+          if (FLAGSET(Permissions, AllGroupPermissions))
+          {
+            NewAclGrant.permission = S3PermissionFullControl;
+            NewAclGrants.push_back(NewAclGrant);
+            Permissions -= AllGroupPermissions;
+          }
+          else
+          {
+            #define ADD_ACL_GRANT(PERM) AddAclGrant(Group, Permissions, NewAclGrants, NewAclGrant, PERM)
+            ADD_ACL_GRANT(S3PermissionRead);
+            ADD_ACL_GRANT(S3PermissionWrite);
+            ADD_ACL_GRANT(S3PermissionReadACP);
+            ADD_ACL_GRANT(S3PermissionWriteACP);
+          }
         }
-      }
 
-      UnicodeString BucketName, Key;
-      if (DebugAlwaysTrue(ParsePathForPropertiesRequests(FileName, File, BucketName, Key)))
-      {
-        TLibS3BucketContext BucketContext = GetBucketContext(BucketName, Key);
+        DebugAssert(Permissions == 0);
+
+        // Preserve unrecognized permissions
+        for (int Index = 0; Index < FileProperties.AclGrantCount; Index++)
+        {
+          S3AclGrant & AclGrant = FileProperties.AclGrants[Index];
+          unsigned short Permission = AclGrantToPermissions(AclGrant, FileProperties);
+          if (Permission == 0)
+          {
+            NewAclGrants.push_back(AclGrant);
+          }
+        }
 
         S3ResponseHandler ResponseHandler = CreateResponseHandler();
 
@@ -1951,9 +2033,62 @@ void __fastcall TS3FileSystem::ChangeFileProperties(const UnicodeString FileName
         CheckLibS3Error(Data);
       }
     }
-  }
 
-  DebugAssert(ValidProperties.Empty());
+    if (ValidProperties.Contains(vpTags))
+    {
+      ValidProperties >> vpTags;
+
+      UnicodeString NewLine = L"\n";
+      UnicodeString Indent = L"  ";
+      UnicodeString Xml =
+        XmlDeclaration + NewLine +
+        L"<Tagging>" + NewLine +
+        Indent + L"<TagSet>" + NewLine;
+
+      std::unique_ptr<TStrings> Tags(TextToStringList(Properties->Tags));
+      for (int Index = 0; Index < Tags->Count; Index += 2)
+      {
+        UnicodeString Key = Tags->Strings[Index];
+        UnicodeString Value = Tags->Strings[Index + 1];
+        Xml += Indent + Indent + FORMAT(L"<Tag><Key>%s</Key><Value>%s</Value></Tag>", (XmlEscape(Key), XmlEscape(Value))) + NewLine;
+      }
+
+      Xml +=
+        Indent + L"</TagSet>" + NewLine +
+        "</Tagging>" + NewLine;
+
+      FTerminal->Log->Add(llOutput, Xml);
+
+      TLibS3XmlCallbackData Data;
+      RequestInit(Data);
+
+      Data.Contents = StrToS3(Xml);
+
+      UTF8String KeyBuf = UTF8String(Key);
+      RequestParams TaggingRequestParams =
+      {
+        HttpRequestTypePUT,
+        COPY_BUCKET_CONTEXT(BucketContext),
+        KeyBuf.c_str(),
+        NULL,
+        "tagging",
+        NULL, NULL, NULL, 0, 0, NULL,
+        LibS3ResponsePropertiesCallback,
+        LibS3XmlDataToCallback,
+        Data.Contents.Length(),
+        NULL,
+        LibS3ResponseCompleteCallback,
+        &Data,
+        FTimeout
+      };
+
+      request_perform(&TaggingRequestParams, FRequestContext);
+
+      CheckLibS3Error(Data);
+    }
+
+    DebugAssert(ValidProperties.Empty());
+  }
 }
 //---------------------------------------------------------------------------
 unsigned short TS3FileSystem::AclGrantToPermissions(S3AclGrant & AclGrant, const TS3FileProperties & Properties)
@@ -2006,12 +2141,19 @@ unsigned short TS3FileSystem::AclGrantToPermissions(S3AclGrant & AclGrant, const
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TS3FileSystem::LoadFileProperties(const UnicodeString AFileName, const TRemoteFile * File, void * Param)
+struct TLoadFilePropertiesData
 {
-  bool & Result = *static_cast<bool *>(Param);
+  bool Result;
+  bool LoadTags;
+};
+//---------------------------------------------------------------------------
+void __fastcall TS3FileSystem::LoadFileProperties(const UnicodeString AFileName, const TRemoteFile * AFile, void * Param)
+{
+  TRemoteFile * File = const_cast<TRemoteFile *>(AFile);
+  TLoadFilePropertiesData & Data = *static_cast<TLoadFilePropertiesData *>(Param);
   TS3FileProperties Properties;
-  Result = DoLoadFileProperties(AFileName, File, Properties);
-  if (Result)
+  Data.Result = DoLoadFileProperties(AFileName, File, Properties, Data.LoadTags);
+  if (Data.Result)
   {
     bool AdditionalRights;
     unsigned short Permissions = 0;
@@ -2079,23 +2221,31 @@ void __fastcall TS3FileSystem::LoadFileProperties(const UnicodeString AFileName,
 
     File->Rights->Number = Permissions;
     File->Rights->SetTextOverride(HumanRights);
-    Result = true;
+
+    if (Data.LoadTags)
+    {
+      File->Tags = Properties.Tags;
+    }
+
+    Data.Result = true;
   }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TS3FileSystem::LoadFilesProperties(TStrings * FileList)
 {
-  bool Result = false;
+  TLoadFilePropertiesData Data;
+  Data.Result = false;
+  Data.LoadTags = (FileList->Count == 1);
   FTerminal->BeginTransaction();
   try
   {
-    FTerminal->ProcessFiles(FileList, foGetProperties, LoadFileProperties, &Result);
+    FTerminal->ProcessFiles(FileList, foGetProperties, LoadFileProperties, &Data);
   }
   __finally
   {
     FTerminal->EndTransaction();
   }
-  return Result;
+  return Data.Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TS3FileSystem::CalculateFilesChecksum(

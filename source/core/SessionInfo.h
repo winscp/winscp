@@ -50,6 +50,7 @@ enum TFSCapability { fcUserGroupListing, fcModeChanging, fcAclChangingFiles, fcG
   fcBackgroundTransfers,
   fcTransferOut, fcTransferIn,
   fcMoveOverExistingFile,
+  fcTags,
   fcCount };
 //---------------------------------------------------------------------------
 struct TFileSystemInfo
@@ -381,5 +382,7 @@ private:
   size_t FPeekCommittedMemory;
   std::unique_ptr<TCriticalSection> FCriticalSection;
 };
+//---------------------------------------------------------------------------
+UnicodeString __fastcall XmlEscape(UnicodeString Str);
 //---------------------------------------------------------------------------
 #endif

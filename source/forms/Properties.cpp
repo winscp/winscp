@@ -22,12 +22,12 @@ bool __fastcall DoPropertiesDialog(TStrings * FileList,
   const UnicodeString Directory, const TRemoteTokenList * GroupList,
   const TRemoteTokenList * UserList, TStrings * ChecksumAlgs,
   TRemoteProperties * Properties,
-  int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
+  int AllowedChanges, int Options, TCalculateSizeEvent OnCalculateSize,
   TCalculateChecksumEvent OnCalculateChecksum)
 {
   bool Result;
   TPropertiesDialog * PropertiesDialog = new TPropertiesDialog(Application,
-    FileList, Directory, GroupList, UserList, ChecksumAlgs, AllowedChanges, UserGroupByID,
+    FileList, Directory, GroupList, UserList, ChecksumAlgs, AllowedChanges, Options,
     OnCalculateSize, OnCalculateChecksum);
   try
   {
@@ -44,7 +44,7 @@ __fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner,
   TStrings * FileList, const UnicodeString Directory,
   const TRemoteTokenList * GroupList, const TRemoteTokenList * UserList,
   TStrings * ChecksumAlgs,
-  int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
+  int AllowedChanges, int Options, TCalculateSizeEvent OnCalculateSize,
   TCalculateChecksumEvent OnCalculateChecksum)
   : TForm(AOwner)
 {
@@ -61,7 +61,7 @@ __fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner,
     RightsLabel->Caption = LoadStr(PROPERTIES_ACL);
     RightsFrame->DisplayAsAcl();
   }
-  FUserGroupByID = UserGroupByID;
+  FOptions = Options;
 
   FAllowCalculateStats = false;
   FStatsNotCalculated = false;
@@ -82,9 +82,8 @@ __fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner,
   ReadOnlyControl(SizeLabel);
   ReadOnlyControl(LinksToLabel);
   ChecksumUnknownLabel->Caption = LoadStr(PROPERTIES_CHECKSUM_UNKNOWN);
-  LoadInfo();
-
   UseSystemSettings(this);
+  LoadInfo();
 }
 //---------------------------------------------------------------------------
 __fastcall TPropertiesDialog::~TPropertiesDialog()
@@ -149,7 +148,7 @@ UnicodeString __fastcall TPropertiesDialog::LoadRemoteToken(
   const TRemoteToken & Token)
 {
   UnicodeString Result;
-  if (FUserGroupByID)
+  if (FLAGSET(FOptions, poUserGroupByID))
   {
     if (Token.IDValid)
     {
@@ -250,6 +249,9 @@ void __fastcall TPropertiesDialog::LoadInfo()
     FilesSize += File->Size;
   }
 
+  // before it gets eventualy cleared if !FMultiple
+  bool ShowTags = FLAGSET(FOptions, poTags) && (Stats.Files == 1) && (Stats.Directories == 0);
+
   LoadRemoteTokens(GroupComboBox, FGroupList);
   LoadRemoteTokens(OwnerComboBox, FUserList);
 
@@ -293,6 +295,8 @@ void __fastcall TPropertiesDialog::LoadInfo()
 
   ChecksumGroup->Visible = !FMultipleChecksum;
   ChecksumView->Visible = FMultipleChecksum;
+
+  TagsSheet->TabVisible = ShowTags;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::UpdateFileImage()
@@ -436,6 +440,20 @@ void __fastcall TPropertiesDialog::SetFileProperties(const TRemoteProperties & v
     FAnyDirectories;
   RecursiveBevel->Visible = RecursiveCheck2->Visible || HasRights;
 
+  if (TagsSheet->TabVisible)
+  {
+    TagsView->Clear();
+    if (value.Valid.Contains(vpTags))
+    {
+      std::unique_ptr<TStrings> Tags(TextToStringList(value.Tags));
+      for (int Index = 0; Index < Tags->Count; Index += 2)
+      {
+        AddTag(Tags->Strings[Index], Tags->Strings[Index + 1]);
+      }
+    }
+    AutoSizeTagsView();
+  }
+
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -462,7 +480,7 @@ TRemoteToken __fastcall TPropertiesDialog::StoreRemoteToken(const TRemoteToken &
   Text = Text.Trim();
   if (!Text.IsEmpty())
   {
-    if (FUserGroupByID)
+    if (FLAGSET(FOptions, poUserGroupByID))
     {
       DebugAssert(List != NULL);
       int IDStart = Text.LastDelimiter(L"[");
@@ -548,6 +566,20 @@ TRemoteProperties __fastcall TPropertiesDialog::GetFileProperties()
 
   Result.Recursive = RecursiveCheck2->Checked;
 
+  if (TagsSheet->TabVisible)
+  {
+    std::unique_ptr<TStrings> Tags(new TStringList());
+    TagsView->HandleNeeded(); // Count does not work otherwise
+    for (int Index = 0; Index < TagsView->Items->Count; Index++)
+    {
+      TListItem * Item = TagsView->Items->Item[Index];
+      Tags->Add(Item->Caption);
+      Tags->Add(Item->SubItems->Strings[0]);
+    }
+    Result.Tags = Tags->Text;
+    Result.Valid << vpTags;
+  }
+
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -612,6 +644,9 @@ void __fastcall TPropertiesDialog::UpdateControls()
     !ChecksumAlgEdit->Text.IsEmpty());
   ChecksumEdit->Visible = !ChecksumEdit->Text.IsEmpty();
   ChecksumUnknownLabel->Visible = !ChecksumEdit->Visible;
+
+  EnableControl(EditTagButton, (TagsView->ItemIndex >= 0));
+  EnableControl(RemoveTagButton, (TagsView->ItemIndex >= 0));
 
   DefaultButton(ChecksumButton, ChecksumAlgEdit->Focused());
   DefaultButton(OkButton, !ChecksumAlgEdit->Focused());
@@ -761,23 +796,36 @@ void __fastcall TPropertiesDialog::CopyClick(TObject * Sender)
 
   int Count = 0;
   UnicodeString SingleText;
-  UnicodeString Text;
+  std::unique_ptr<TStrings> Lines(new TStringList());
   TListItem * Item = ListView->GetNextItem(NULL, sdAll, TItemStates() << isSelected);
   while (Item != NULL)
   {
     DebugAssert(Item->Selected);
 
     SingleText = Item->SubItems->Strings[0];
-    Text += FORMAT(L"%s = %s\r\n", (Item->Caption, Item->SubItems->Strings[0]));
+    UnicodeString Value = Item->SubItems->Strings[0];
+    UnicodeString Entry = Item->Caption;
+    if (!Value.IsEmpty())
+    {
+      Entry += FORMAT(L" = %s", (Value));
+    }
+    Lines->Add(Entry);
     Count++;
 
     Item = ListView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
   }
 
-  CopyToClipboard(Count == 1 ? SingleText : Text);
+  if ((ListView == ChecksumView) && (Count == 1))
+  {
+    CopyToClipboard(SingleText);
+  }
+  else
+  {
+    CopyToClipboard(Lines.get());
+  }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPropertiesDialog::ChecksumViewContextPopup(
+void __fastcall TPropertiesDialog::ListViewContextPopup(
   TObject * Sender, TPoint & MousePos, bool & Handled)
 {
   MenuPopup(Sender, MousePos, Handled);
@@ -846,6 +894,104 @@ void __fastcall TPropertiesDialog::Dispatch(void * Message)
   else
   {
     TForm::Dispatch(Message);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::TagsViewKeyDown(TObject *, WORD & Key, TShiftState)
+{
+  if (RemoveTagButton->Enabled && (Key == VK_DELETE))
+  {
+    RemoveTagButton->OnClick(NULL);
+  }
+
+  if (AddTagButton->Enabled && (Key == VK_INSERT))
+  {
+    AddTagButton->OnClick(NULL);
+  }
+}
+//---------------------------------------------------------------------------
+TListItem * TPropertiesDialog::AddTag(const UnicodeString & Key, const UnicodeString & Value)
+{
+  TListItem * Item = TagsView->Items->Add();
+  Item->Caption = Key;
+  Item->SubItems->Add(Value);
+  return Item;
+}
+//---------------------------------------------------------------------------
+void TPropertiesDialog::AutoSizeTagsView()
+{
+  AutoSizeListColumnsWidth(TagsView, 1);
+}
+//---------------------------------------------------------------------------
+void TPropertiesDialog::AddEditTag(bool Add)
+{
+  std::unique_ptr<TStrings> Tags(CreateSortedStringList(true));
+  TListItem * ItemFocused = TagsView->ItemFocused;
+  for (int Index = 0; Index < TagsView->Items->Count; Index++)
+  {
+    TListItem * Item = TagsView->Items->Item[Index];
+    if (Add || (Item != ItemFocused))
+    {
+      Tags->Add(Item->Caption);
+    }
+  }
+
+  UnicodeString Key, Value;
+  if (!Add)
+  {
+    Key = ItemFocused->Caption;
+    Value = ItemFocused->SubItems->Strings[0];
+  }
+  if (DoTagDialog(Add, Tags.get(), Key, Value))
+  {
+    if (Add)
+    {
+      TagsView->ItemFocused = AddTag(Key, Value);
+      TagsView->ItemFocused->MakeVisible(false);
+    }
+    else
+    {
+      ItemFocused->Caption = Key;
+      ItemFocused->SubItems->Strings[0] = Value;
+    }
+    AutoSizeTagsView();
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::AddTagButtonClick(TObject *)
+{
+  AddEditTag(true);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::TagsViewSelectItem(TObject *, TListItem *, bool Selected)
+{
+  DebugUsedParam(Selected);
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::EditTagButtonClick(TObject *)
+{
+  AddEditTag(false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::RemoveTagButtonClick(TObject *)
+{
+  int Index = TagsView->ItemIndex;
+
+  TagsView->ItemFocused->Delete();
+
+  int Count = TagsView->Items->Count;
+  TagsView->ItemIndex = (Index < Count ? Index : Count - 1);
+  AutoSizeTagsView();
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::TagsViewDblClick(TObject *)
+{
+  if (EditTagButton->Enabled)
+  {
+    EditTagButton->OnClick(NULL);
   }
 }
 //---------------------------------------------------------------------------

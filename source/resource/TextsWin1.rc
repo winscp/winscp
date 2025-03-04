@@ -100,6 +100,8 @@ BEGIN
         JUMPLIST_ERROR, "Error updating jump list."
         TOO_MANY_PARAMS_ERROR, "Too many parameters."
         COPYID_IDETITY_MISSING, "Identity/key file was not specified."
+        TAG_NOT_UNIQUE, "Keys must be unique."
+        TAG_INVALID_CHAR, "Character \"%s\" is not allowed in tags."
 
         WIN_CONFIRMATION_STRINGS, "WIN_CONFIRMATION"
         CONFIRM_OVERWRITE_SESSION, "Site with name '%s' already exists. Overwrite?"
@@ -704,6 +706,10 @@ BEGIN
         INC_SEARCH_TYPE, "(start typing)"
         SEARCH_EDIT, "Search"
         SEARCH_NO_RESULTS, "No search results found."
+        TAG_EDIT, "Edit tag"
+        TAG_ADD, "Add tag"
+        TAG_KEY, "&Key:"
+        TAG_VALUE, "&Value (optional):"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000–2025 Martin Prikryl"

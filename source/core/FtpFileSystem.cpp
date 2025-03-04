@@ -1996,6 +1996,7 @@ bool __fastcall TFTPFileSystem::IsCapable(int Capability) const
     case fcResumeSupport:
     case fcChangePassword:
     case fcParallelFileTransfers:
+    case fcTags:
       return false;
 
     default:

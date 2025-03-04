@@ -4926,11 +4926,14 @@ bool __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStri
       std::unique_ptr<TStrings> ChecksumAlgs(new TStringList());
       Terminal->GetSupportedChecksumAlgs(ChecksumAlgs.get());
 
+      int Options =
+        FLAGMASK(Terminal->IsCapable[fcGroupOwnerChangingByID], poUserGroupByID) |
+        FLAGMASK(Terminal->IsCapable[fcTags], poTags);
+
       TRemoteProperties NewProperties = CurrentProperties;
       Result =
         DoPropertiesDialog(FileList, RemoteDirView->PathName,
-          GroupList, UserList, ChecksumAlgs.get(), &NewProperties, Flags,
-          Terminal->IsCapable[fcGroupOwnerChangingByID],
+          GroupList, UserList, ChecksumAlgs.get(), &NewProperties, Flags, Options,
           CalculateSize, CalculateChecksumEvent);
       if (Result)
       {

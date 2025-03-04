@@ -24,6 +24,7 @@
 extern const UnicodeString AnyMask;
 extern const wchar_t EngShortMonthNames[12][4];
 extern const char Bom[3];
+extern const UnicodeString XmlDeclaration;
 extern const wchar_t TokenPrefix;
 extern const wchar_t NoReplacement;
 extern const wchar_t TokenReplacement;

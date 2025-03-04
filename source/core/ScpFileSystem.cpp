@@ -465,6 +465,7 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
     case fcParallelFileTransfers:
     case fcTransferOut:
     case fcTransferIn:
+    case fcTags:
       return false;
 
     case fcChangePassword:

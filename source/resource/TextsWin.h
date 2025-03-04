@@ -92,6 +92,8 @@
 #define TOO_MANY_PARAMS_ERROR   1211
 #define UPDATE_MISSING_ADDRESS3 1212
 #define COPYID_IDETITY_MISSING  1213
+#define TAG_NOT_UNIQUE          1214
+#define TAG_INVALID_CHAR        1215
 
 #define WIN_CONFIRMATION_STRINGS 1300
 #define CONFIRM_OVERWRITE_SESSION 1301
@@ -699,6 +701,10 @@
 #define INC_SEARCH_TYPE         6208
 #define SEARCH_EDIT             6209
 #define SEARCH_NO_RESULTS       6210
+#define TAG_EDIT                6211
+#define TAG_ADD                 6212
+#define TAG_KEY                 6213
+#define TAG_VALUE               6214
 
 // 2xxx is reserved for TextsFileZilla.h
 
