@@ -111,7 +111,7 @@ object ProgressForm: TProgressForm
       Left = 104
       Top = 2
       Width = 65
-      Height = 13
+      Height = 15
       Alignment = taRightJustify
       AutoSize = False
       Caption = '00:00:00'
