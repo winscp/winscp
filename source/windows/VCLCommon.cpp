@@ -328,7 +328,7 @@ static void __fastcall ReadOnlyEditWindowProc(void * Data, TMessage & Message)
     // VCL_COPY Based on TCustomStaticText.CNCtlColorStatic
 
     // Pure Win32 alternative can be seen at:
-    // https://stackoverflow.com/a/75764544/850848
+    // https://stackoverflow.com/q/75759034/850848#75764544
     // (see my comment to the answer)
 
     HDC ControlDC = reinterpret_cast<HDC>(Message.WParam);
