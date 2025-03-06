@@ -50,7 +50,8 @@ const int mpAllowContinueOnError = 0x02;
 #define DUMPCALLSTACK_SWITCH L"DumpCallstack"
 #define INFO_SWITCH L"Info"
 #define COMREGISTRATION_SWITCH L"ComRegistration"
-#define BROWSE_SWITCH L"Browse"
+#define EXPLORE_SWITCH L"Explore"
+#define EXPLORE_OLD_SWITCH L"Browse"
 #define NOINTERACTIVEINPUT_SWITCH L"NoInteractiveInput"
 #define STDOUT_SWITCH L"StdOut"
 #define STDIN_SWITCH L"StdIn"
@@ -221,11 +222,11 @@ const coDoNotShowAgain      = 0x020;
 const coAllowRemoteTransfer = 0x100;
 const coShortCutHint        = 0x800;
 const coAllFiles            = 0x1000;
-const coBrowse              = 0x2000;
+const coExplore             = 0x2000;
 const cooDoNotShowAgain     = 0x01;
 const cooRemoteTransfer     = 0x02;
 const cooSaveSettings       = 0x04;
-const cooBrowse             = 0x08;
+const cooExplore            = 0x08;
 bool __fastcall DoCopyDialog(
   bool ToRemote, bool Move, TStrings * FileList, UnicodeString & TargetDirectory,
   TGUICopyParamType * Params, int Options, int CopyParamAttrs,
@@ -398,7 +399,7 @@ typedef void __fastcall (__closure *TSynchronizeChecklistCalculateSize)
   (TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items, void * Token);
 typedef void __fastcall (__closure *TSynchronizeMoveEvent)(
   TOperationSide Side, TStrings * FileList, const UnicodeString & NewFileName, bool TargetIsDirectory, void * Token);
-typedef void __fastcall (__closure *TSynchronizeBrowseEvent)(
+typedef void __fastcall (__closure *TSynchronizeExploreEvent)(
   TOperationSide Side, TSynchronizeChecklist::TAction Action, const TSynchronizeChecklist::TItem * Item);
 bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
   TSynchronizeMode Mode, int Params,
@@ -406,7 +407,7 @@ bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
   TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
   TQueueSynchronizeEvent OnQueueSynchronize,
   TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
-  TSynchronizeBrowseEvent OnSynchronizeBrowse, void * Token);
+  TSynchronizeExploreEvent OnSynchronizeExplore, void * Token);
 
 // forms\Editor.cpp
 typedef void __fastcall (__closure *TFileClosedEvent)

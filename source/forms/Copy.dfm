@@ -192,9 +192,9 @@ object CopyDialog: TCopyDialog
       Default = True
       OnClick = DownloadItemClick
     end
-    object BrowseItem: TMenuItem
-      Caption = '&Browse'
-      OnClick = BrowseItemClick
+    object ExploreItem: TMenuItem
+      Caption = '&Explore'
+      OnClick = ExploreItemClick
     end
   end
 end

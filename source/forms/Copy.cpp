@@ -130,7 +130,7 @@ __fastcall TCopyDialog::TCopyDialog(
   HotTrackLabel(CopyParamLabel);
   HotTrackLabel(ShortCutHintLabel);
 
-  if (FLAGSET(FOptions, coBrowse))
+  if (FLAGSET(FOptions, coExplore))
   {
     DebugAssert(!FToRemote);
     OkButton->Style = TCustomButton::bsSplitButton;
@@ -297,7 +297,7 @@ int __fastcall TCopyDialog::GetOutputOptions()
   return FOutputOptions |
     FLAGMASK(FSaveSettings, cooSaveSettings) |
     FLAGMASK(NeverShowAgainCheck->Checked, cooDoNotShowAgain) |
-    FLAGMASK(FBrowse, cooBrowse);
+    FLAGMASK(FExplore, cooExplore);
 }
 //---------------------------------------------------------------------------
 THistoryComboBox * __fastcall TCopyDialog::GetDirectoryEdit()
@@ -420,7 +420,7 @@ bool __fastcall TCopyDialog::Execute()
   FPreset = GUIConfiguration->CopyParamCurrent;
   DirectoryEdit->Items = CustomWinConfiguration->History[
     FToRemote ? L"RemoteTarget" : L"LocalTarget"];
-  FBrowse = false;
+  FExplore = false;
   bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
@@ -451,7 +451,7 @@ bool __fastcall TCopyDialog::Execute()
 void __fastcall TCopyDialog::FormCloseQuery(TObject * /*Sender*/,
       bool &CanClose)
 {
-  if ((ModalResult == DefaultResult(this)) && !FBrowse)
+  if ((ModalResult == DefaultResult(this)) && !FExplore)
   {
     ExitActiveControl(this);
 
@@ -602,9 +602,9 @@ void __fastcall TCopyDialog::DownloadItemClick(TObject *)
   OkButton->Click();
 }
 //---------------------------------------------------------------------------
-void __fastcall TCopyDialog::BrowseItemClick(TObject *)
+void __fastcall TCopyDialog::ExploreItemClick(TObject *)
 {
-  FBrowse = true;
+  FExplore = true;
   OkButton->Click();
 }
 //---------------------------------------------------------------------------

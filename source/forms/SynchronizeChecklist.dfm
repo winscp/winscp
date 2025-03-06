@@ -2107,11 +2107,11 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       object TMenuItem
       end
     end
-    object BrowseLocalDirectory2: TMenuItem
-      Action = BrowseLocalAction
+    object ExploreLocalDirectory1: TMenuItem
+      Action = ExploreLocalAction
     end
-    object BrowseLocalDirectory1: TMenuItem
-      Action = BrowseRemoteAction
+    object ExploreRemoteDirectory1: TMenuItem
+      Action = ExploreRemoteAction
     end
     object N2: TMenuItem
       Caption = '-'
@@ -2182,13 +2182,13 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       Caption = 'Uncheck All Actions in This &Directory'
       OnExecute = UncheckDirectoryActionExecute
     end
-    object BrowseLocalAction: TAction
-      Caption = 'Browse &Local Directory'
-      OnExecute = BrowseLocalActionExecute
+    object ExploreLocalAction: TAction
+      Caption = 'Explore &Local Directory'
+      OnExecute = ExploreLocalActionExecute
     end
-    object BrowseRemoteAction: TAction
-      Caption = 'Browse &Remote Directory'
-      OnExecute = BrowseRemoteActionExecute
+    object ExploreRemoteAction: TAction
+      Caption = 'Explore &Remote Directory'
+      OnExecute = ExploreRemoteActionExecute
     end
     object FindMoveCandidateAction: TAction
       Caption = '&Find Move Candidate'

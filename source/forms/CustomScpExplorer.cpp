@@ -6506,7 +6506,7 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeMove(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::DoSynchronizeBrowse(TOperationSide Side, TSynchronizeChecklist::TAction Action, const TSynchronizeChecklist::TItem * Item)
+void __fastcall TCustomScpExplorerForm::DoSynchronizeExplore(TOperationSide Side, TSynchronizeChecklist::TAction Action, const TSynchronizeChecklist::TItem * Item)
 {
   UnicodeString LocalPath = ExcludeTrailingBackslash(Item->Local.Directory);
   if (Side == osLocal)
@@ -6531,7 +6531,7 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeBrowse(TOperationSide Side,
     }
 
     UnicodeString SessionName = SaveHiddenDuplicateSession(SessionData.get());
-    ExecuteNewInstance(SessionName, FORMAT(L"%s=\"%s\"", (TProgramParams::FormatSwitch(BROWSE_SWITCH), Item->GetFileName())));
+    ExecuteNewInstance(SessionName, FORMAT(L"%s=\"%s\"", (TProgramParams::FormatSwitch(EXPLORE_SWITCH), Item->GetFileName())));
   }
 }
 //---------------------------------------------------------------------------
@@ -6653,7 +6653,7 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
           }
           if (!DoSynchronizeChecklistDialog(
                 Checklist, Mode, Params, LocalDirectory, RemoteDirectory, CustomCommandMenu, DoFullSynchronize,
-                OnQueueSynchronize, DoSynchronizeChecklistCalculateSize, DoSynchronizeMove, DoSynchronizeBrowse,
+                OnQueueSynchronize, DoSynchronizeChecklistCalculateSize, DoSynchronizeMove, DoSynchronizeExplore,
                 &SynchronizeParams))
           {
             Result = -1;
@@ -11870,7 +11870,7 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewResize(TObject *)
   CenterReconnectToolbar();
 }
 //---------------------------------------------------------------------------
-void TCustomScpExplorerForm::DoBrowseFile(TCustomDirView * DirView, const UnicodeString & FileName)
+void TCustomScpExplorerForm::DoExploreFile(TCustomDirView * DirView, const UnicodeString & FileName)
 {
   if (!FileName.IsEmpty())
   {
@@ -11882,9 +11882,9 @@ void TCustomScpExplorerForm::DoBrowseFile(TCustomDirView * DirView, const Unicod
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::BrowseFile(const UnicodeString & FileName)
+void __fastcall TCustomScpExplorerForm::ExploreFile(const UnicodeString & FileName)
 {
-  DoBrowseFile(RemoteDirView, FileName);
+  DoExploreFile(RemoteDirView, FileName);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateQueueFileList()

@@ -304,7 +304,7 @@ BEGIN
         CUSTOM_COMMAND_PATTERNS_HINT6, "!E expands to serialized connection data of current session"
         USAGE_PASSPHRASE, "A passphrase for an encrypted private key or a client certificate"
         AUTO_WORKSPACE_ENABLE, "Press 'No' to enable automatic saving of the workspace."
-        USAGE_BROWSE, "Selects the specified file in file panel(s)."
+        USAGE_EXPLORE, "Selects the specified file in file panel(s)."
         PUTTY_SETTINGS_INSTRUCTIONS, "**Edit terminal settings in PuTTY.**\n\nPuTTY will be started. Edit terminal settings of a temporary site %s. WinSCP will remember these settings after you close PuTTY."
         PUTTY_SETTINGS_SITE_NAME, "Terminal settings for %s"
         USAGE_USERNAME, "An alternative way to provide a username"

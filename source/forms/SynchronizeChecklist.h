@@ -65,10 +65,10 @@ __published:
   TMenuItem *N3;
   TMenuItem *CheckAllFilesinThisDirectory1;
   TMenuItem *UncheckAllActionsinThisDirectory1;
-  TAction *BrowseLocalAction;
-  TAction *BrowseRemoteAction;
-  TMenuItem *BrowseLocalDirectory1;
-  TMenuItem *BrowseLocalDirectory2;
+  TAction *ExploreLocalAction;
+  TAction *ExploreRemoteAction;
+  TMenuItem *ExploreLocalDirectory1;
+  TMenuItem *ExploreRemoteDirectory1;
   TAction *FindMoveCandidateAction;
   TMenuItem *Calculate3;
   TMenuItem *CalculateAll1;
@@ -116,8 +116,8 @@ __published:
   void __fastcall MoveActionExecute(TObject *Sender);
   void __fastcall CheckDirectoryActionExecute(TObject *Sender);
   void __fastcall UncheckDirectoryActionExecute(TObject *Sender);
-  void __fastcall BrowseLocalActionExecute(TObject *Sender);
-  void __fastcall BrowseRemoteActionExecute(TObject *Sender);
+  void __fastcall ExploreLocalActionExecute(TObject *Sender);
+  void __fastcall ExploreRemoteActionExecute(TObject *Sender);
   void __fastcall ListViewRecreate(TObject *Sender);
   void __fastcall ToolsMenuButtonClick(TObject *Sender);
   void __fastcall FindMoveCandidateActionExecute(TObject *Sender);
@@ -133,7 +133,7 @@ public:
     TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
     TQueueSynchronizeEvent OnQueueSynchronize,
     TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
-    TSynchronizeBrowseEvent OnSynchronizeBrowse, void * Token);
+    TSynchronizeExploreEvent OnSynchronizeExplore, void * Token);
   virtual __fastcall ~TSynchronizeChecklistDialog();
 
   bool __fastcall Execute(TSynchronizeChecklist * Checklist);
@@ -157,7 +157,7 @@ protected:
   TCustomCommandMenuEvent FOnCustomCommandMenu;
   TSynchronizeChecklistCalculateSize FOnSynchronizeChecklistCalculateSize;
   TSynchronizeMoveEvent FOnSynchronizeMove;
-  TSynchronizeBrowseEvent FOnSynchronizeBrowse;
+  TSynchronizeExploreEvent FOnSynchronizeExplore;
   typedef std::map<const TSynchronizeChecklist::TItem *, TSynchronizeChecklist::TAction> TActions;
   TActions FActions;
   TFullSynchronizeEvent FOnSynchronize;
@@ -203,7 +203,7 @@ protected:
   void __fastcall CountItemTotal(const TSynchronizeChecklist::TItem * ChecklistItem, int Factor);
   void __fastcall DeleteItem(const TSynchronizeChecklist::TItem * ChecklistItem);
   void __fastcall CheckDirectory(bool Check);
-  void __fastcall DoBrowse(TOperationSide Side);
+  void __fastcall DoExplore(TOperationSide Side);
   void __fastcall ListViewHintShow(TCMHintShow & HintShow);
   void __fastcall StatusBarHintShow(TCMHintShow & HintShow);
   DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);

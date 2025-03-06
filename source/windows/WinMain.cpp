@@ -132,7 +132,7 @@ void __fastcall Upload(TTerminal * Terminal, TStrings * FileList, int UseDefault
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName, int UseDefaults, bool & Browse, UnicodeString & BrowseFile)
+void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName, int UseDefaults, bool & Explore, UnicodeString & ExploreFile)
 {
   TRemoteFile * File = NULL;
 
@@ -170,14 +170,14 @@ void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName, int
     std::unique_ptr<TStrings> FileListFriendly(new TStringList());
     FileListFriendly->AddObject(FriendyFileName, File);
 
-    int Options = coDisableQueue | coBrowse;
+    int Options = coDisableQueue | coExplore;
     int CopyParamAttrs = Terminal->UsableCopyParamAttrs(0).Download;
     int OutputOptions = 0;
     if ((UseDefaults == 0) ||
         DoCopyDialog(false, false, FileListFriendly.get(), TargetDirectory, &CopyParam,
           Options, CopyParamAttrs, NULL, &OutputOptions, UseDefaults))
     {
-      if (FLAGCLEAR(OutputOptions, cooBrowse))
+      if (FLAGCLEAR(OutputOptions, cooExplore))
       {
         // Setting parameter overrides only now, otherwise the dialog would present the parametes as non-default
 
@@ -199,8 +199,8 @@ void __fastcall Download(TTerminal * Terminal, const UnicodeString FileName, int
       else
       {
         UnicodeString Directory = UnixExtractFilePath(FileName);
-        BrowseFile = UnixExtractFileName(FileName);
-        Browse = true;
+        ExploreFile = UnixExtractFileName(FileName);
+        Explore = true;
         Terminal->AutoReadDirectory = true;
         Terminal->ChangeDirectory(Directory);
       }
@@ -1270,20 +1270,20 @@ int __fastcall Execute()
               DebugAssert(TerminalManager->ActiveSession == NULL);
 
               bool CanStart;
-              bool Browse = false;
-              UnicodeString BrowseFile;
+              bool Explore = false;
+              UnicodeString ExploreFile;
               if (DataList->Count > 0)
               {
                 TManagedTerminal * Session = TerminalManager->NewSessions(DataList.get());
-                if (Params->FindSwitch(BROWSE_SWITCH, BrowseFile) &&
-                    (!BrowseFile.IsEmpty() || !DownloadFile.IsEmpty()))
+                if ((Params->FindSwitch(EXPLORE_SWITCH, ExploreFile) || Params->FindSwitch(EXPLORE_OLD_SWITCH, ExploreFile)) &&
+                    (!ExploreFile.IsEmpty() || !DownloadFile.IsEmpty()))
                 {
-                  if (BrowseFile.IsEmpty())
+                  if (ExploreFile.IsEmpty())
                   {
-                    BrowseFile = DownloadFile;
+                    ExploreFile = DownloadFile;
                   }
                   DownloadFile = UnicodeString();
-                  Browse = true;
+                  Explore = true;
                 }
                 if (!DownloadFile.IsEmpty())
                 {
@@ -1351,7 +1351,7 @@ int __fastcall Execute()
                   else if (!DownloadFile.IsEmpty())
                   {
                     Download(
-                      TerminalManager->ActiveSession, DownloadFile, UseDefaults, Browse, BrowseFile);
+                      TerminalManager->ActiveSession, DownloadFile, UseDefaults, Explore, ExploreFile);
                   }
                   else
                   {
@@ -1363,9 +1363,9 @@ int __fastcall Execute()
 
                   ScpExplorer->StandaloneOperation = false;
 
-                  if (Browse)
+                  if (Explore)
                   {
-                    ScpExplorer->BrowseFile(BrowseFile);
+                    ScpExplorer->ExploreFile(ExploreFile);
                   }
 
                   AddStartupSequence(L"R");

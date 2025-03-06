@@ -35,12 +35,12 @@ bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
   TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
   TQueueSynchronizeEvent OnQueueSynchronize,
   TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
-  TSynchronizeBrowseEvent OnSynchronizeBrowse, void * Token)
+  TSynchronizeExploreEvent OnSynchronizeExplore, void * Token)
 {
   std::unique_ptr<TSynchronizeChecklistDialog> Dialog(
     new TSynchronizeChecklistDialog(
       Application, Mode, Params, LocalDirectory, RemoteDirectory, OnCustomCommandMenu, OnSynchronize,
-      OnQueueSynchronize, OnSynchronizeChecklistCalculateSize, OnSynchronizeMove, OnSynchronizeBrowse, Token));
+      OnQueueSynchronize, OnSynchronizeChecklistCalculateSize, OnSynchronizeMove, OnSynchronizeExplore, Token));
   return Dialog->Execute(Checklist);
 }
 //---------------------------------------------------------------------
@@ -50,7 +50,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
   TQueueSynchronizeEvent OnQueueSynchronize,
   TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
-  TSynchronizeBrowseEvent OnSynchronizeBrowse, void * Token)
+  TSynchronizeExploreEvent OnSynchronizeExplore, void * Token)
   : TForm(AOwner)
 {
   FFormRestored = false;
@@ -61,7 +61,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FOnCustomCommandMenu = OnCustomCommandMenu;
   FOnSynchronizeChecklistCalculateSize = OnSynchronizeChecklistCalculateSize;
   FOnSynchronizeMove = OnSynchronizeMove;
-  FOnSynchronizeBrowse = OnSynchronizeBrowse;
+  FOnSynchronizeExplore = OnSynchronizeExplore;
   DebugAssert(OnSynchronize != NULL);
   FOnSynchronize = OnSynchronize;
   FOnQueueSynchronize = OnQueueSynchronize;
@@ -342,8 +342,8 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
   CalculateSizeAllAction->Enabled = (FDirectories > 0) && !FSynchronizing;
   TSynchronizeChecklist::TAction SelectedItemAction =
     (SelCount == 1) ? GetChecklistItemAction(GetChecklistItem(ListView->Selected)) : TSynchronizeChecklist::saNone;
-  BrowseLocalAction->Enabled = (SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteRemote);
-  BrowseRemoteAction->Enabled = (SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteLocal);
+  ExploreLocalAction->Enabled = (SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteRemote);
+  ExploreRemoteAction->Enabled = (SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteLocal);
 
   int Count = ListView->Items->Count;
   DebugAssert(FTotals[0] == Count);
@@ -1545,21 +1545,21 @@ void __fastcall TSynchronizeChecklistDialog::UncheckDirectoryActionExecute(TObje
   CheckDirectory(false);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::DoBrowse(TOperationSide Side)
+void __fastcall TSynchronizeChecklistDialog::DoExplore(TOperationSide Side)
 {
   const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(ListView->Selected);
   TSynchronizeChecklist::TAction Action = GetChecklistItemAction(ChecklistItem);
-  FOnSynchronizeBrowse(Side, Action, ChecklistItem);
+  FOnSynchronizeExplore(Side, Action, ChecklistItem);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::BrowseLocalActionExecute(TObject *)
+void __fastcall TSynchronizeChecklistDialog::ExploreLocalActionExecute(TObject *)
 {
-  DoBrowse(osLocal);
+  DoExplore(osLocal);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::BrowseRemoteActionExecute(TObject *)
+void __fastcall TSynchronizeChecklistDialog::ExploreRemoteActionExecute(TObject *)
 {
-  DoBrowse(osRemote);
+  DoExplore(osRemote);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::KeyDown(Word & Key, TShiftState Shift)

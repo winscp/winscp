@@ -718,7 +718,7 @@ protected:
     TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items, void * Token);
   void __fastcall DoSynchronizeMove(
     TOperationSide Side, TStrings * FileList, const UnicodeString & NewFileName, bool TargetIsDirectory, void * Token);
-  void __fastcall DoSynchronizeBrowse(TOperationSide Side, TSynchronizeChecklist::TAction Action, const TSynchronizeChecklist::TItem * Item);
+  void __fastcall DoSynchronizeExplore(TOperationSide Side, TSynchronizeChecklist::TAction Action, const TSynchronizeChecklist::TItem * Item);
   void __fastcall FullSynchronize(
     TSynchronizeParams & Params, TProcessedSynchronizationChecklistItem OnProcessedItem,
     TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);
@@ -769,7 +769,7 @@ protected:
   void LoadFilesProperties(TStrings * FileList);
   void PasteFiles();
   bool DoDirectoryExists(void * Session, const UnicodeString & Directory);
-  void DoBrowseFile(TCustomDirView * DirView, const UnicodeString & FileName);
+  void DoExploreFile(TCustomDirView * DirView, const UnicodeString & FileName);
   bool NeedSecondarySessionForRemoteCopy(TStrings * FileList);
   void ReleaseHiContrastTheme();
   bool CanCalculateChecksum();
@@ -918,7 +918,7 @@ public:
   void __fastcall PrivateKeyUpload();
   bool __fastcall IsComponentPossible(Byte Component);
   void __fastcall ReplaceTerminal(TManagedTerminal * value);
-  virtual void __fastcall BrowseFile(const UnicodeString & FileName);
+  virtual void __fastcall ExploreFile(const UnicodeString & FileName);
   void __fastcall CloseApp();
   virtual bool SupportsLocalBrowser();
   virtual bool IsSideLocalBrowser(TOperationSide Side);

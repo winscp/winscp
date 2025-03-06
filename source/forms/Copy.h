@@ -35,7 +35,7 @@ __published:
   TLabel *ShortCutHintLabel;
   TPopupMenu *OkMenu;
   TMenuItem *DownloadItem;
-  TMenuItem *BrowseItem;
+  TMenuItem *ExploreItem;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
@@ -50,7 +50,7 @@ __published:
   void __fastcall ShortCutHintLabelClick(TObject *Sender);
   void __fastcall LocalDirectoryEditExit(TObject *Sender);
   void __fastcall DownloadItemClick(TObject *Sender);
-  void __fastcall BrowseItemClick(TObject *Sender);
+  void __fastcall ExploreItemClick(TObject *Sender);
   void __fastcall OkButtonDropDownClick(TObject *Sender);
   void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
 private:
@@ -67,7 +67,7 @@ private:
   int FCopyParamAttrs;
   TSessionData * FSessionData;
   bool FSaveSettings;
-  bool FBrowse;
+  bool FExplore;
   UnicodeString __fastcall GetDirectory();
   THistoryComboBox * __fastcall GetDirectoryEdit();
   void __fastcall SetParams(const TGUICopyParamType & value);
