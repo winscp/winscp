@@ -6517,7 +6517,7 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeExplore(TOperationSide Side
     }
     else
     {
-      OpenFileInExplorer(CombinePaths(LocalPath, Item->GetFileName()));
+      OpenFileInExplorer(Item->ForceGetLocalPath());
     }
   }
   else if (DebugAlwaysTrue(Side == osRemote))

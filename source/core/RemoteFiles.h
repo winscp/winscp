@@ -503,8 +503,10 @@ public:
     __int64 __fastcall GetSize() const;
     __int64 __fastcall GetSize(TAction AAction) const;
     UnicodeString GetLocalPath() const;
+    UnicodeString ForceGetLocalPath() const;
     // Contrary to RemoteFile->FullFileName, this does not include trailing slash for directories
     UnicodeString GetRemotePath() const;
+    UnicodeString ForceGetRemotePath() const;
     UnicodeString GetLocalTarget() const;
     UnicodeString GetRemoteTarget() const;
     TStrings * GetFileList() const;

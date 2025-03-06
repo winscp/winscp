@@ -2107,11 +2107,23 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       object TMenuItem
       end
     end
-    object ExploreLocalDirectory1: TMenuItem
-      Action = ExploreLocalAction
+    object LocalDirectory1: TMenuItem
+      Caption = '&Local Directory'
+      object ExploreLocalDirectory1: TMenuItem
+        Action = ExploreLocalAction2
+      end
+      object CopyPathtoClipboard2: TMenuItem
+        Action = LocalPathToClipboardAction
+      end
     end
-    object ExploreRemoteDirectory1: TMenuItem
-      Action = ExploreRemoteAction
+    object RemoteDirectory1: TMenuItem
+      Caption = '&Remote Directory'
+      object ExploreRemoteDirectory1: TMenuItem
+        Action = ExploreRemoteAction2
+      end
+      object CopyPathtoClipboard1: TMenuItem
+        Action = RemotePathToClipboardAction
+      end
     end
     object N2: TMenuItem
       Caption = '-'
@@ -2182,18 +2194,28 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       Caption = 'Uncheck All Actions in This &Directory'
       OnExecute = UncheckDirectoryActionExecute
     end
-    object ExploreLocalAction: TAction
-      Caption = 'Explore &Local Directory'
-      OnExecute = ExploreLocalActionExecute
+    object ExploreLocalAction2: TAction
+      Caption = '&Explore'
+      OnExecute = ExploreLocalAction2Execute
     end
-    object ExploreRemoteAction: TAction
-      Caption = 'Explore &Remote Directory'
-      OnExecute = ExploreRemoteActionExecute
+    object ExploreRemoteAction2: TAction
+      Caption = '&Explore'
+      OnExecute = ExploreRemoteAction2Execute
     end
     object FindMoveCandidateAction: TAction
       Caption = '&Find Move Candidate'
       ShortCut = 49269
       OnExecute = FindMoveCandidateActionExecute
+    end
+    object LocalPathToClipboardAction: TAction
+      Caption = 'Copy &Path to Clipboard'
+      ShortCut = 16603
+      OnExecute = LocalPathToClipboardActionExecute
+    end
+    object RemotePathToClipboardAction: TAction
+      Caption = 'Copy &Path to Clipboard'
+      ShortCut = 16605
+      OnExecute = RemotePathToClipboardActionExecute
     end
   end
   object ActionImages120: TPngImageList

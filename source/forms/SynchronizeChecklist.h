@@ -65,8 +65,8 @@ __published:
   TMenuItem *N3;
   TMenuItem *CheckAllFilesinThisDirectory1;
   TMenuItem *UncheckAllActionsinThisDirectory1;
-  TAction *ExploreLocalAction;
-  TAction *ExploreRemoteAction;
+  TAction *ExploreLocalAction2;
+  TAction *ExploreRemoteAction2;
   TMenuItem *ExploreLocalDirectory1;
   TMenuItem *ExploreRemoteDirectory1;
   TAction *FindMoveCandidateAction;
@@ -80,6 +80,12 @@ __published:
   TPopupMenu *OkPopupMenu;
   TMenuItem *StartItem;
   TMenuItem *StartQueueItem;
+  TMenuItem *LocalDirectory1;
+  TMenuItem *RemoteDirectory1;
+  TAction *RemotePathToClipboardAction;
+  TMenuItem *CopyPathtoClipboard1;
+  TAction *LocalPathToClipboardAction;
+  TMenuItem *CopyPathtoClipboard2;
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall FormShow(TObject * Sender);
   void __fastcall StatusBarDrawPanel(TStatusBar *StatusBar,
@@ -116,8 +122,8 @@ __published:
   void __fastcall MoveActionExecute(TObject *Sender);
   void __fastcall CheckDirectoryActionExecute(TObject *Sender);
   void __fastcall UncheckDirectoryActionExecute(TObject *Sender);
-  void __fastcall ExploreLocalActionExecute(TObject *Sender);
-  void __fastcall ExploreRemoteActionExecute(TObject *Sender);
+  void __fastcall ExploreLocalAction2Execute(TObject *Sender);
+  void __fastcall ExploreRemoteAction2Execute(TObject *Sender);
   void __fastcall ListViewRecreate(TObject *Sender);
   void __fastcall ToolsMenuButtonClick(TObject *Sender);
   void __fastcall FindMoveCandidateActionExecute(TObject *Sender);
@@ -125,6 +131,8 @@ __published:
   void __fastcall StartItemClick(TObject *Sender);
   void __fastcall OkButtonDropDownClick(TObject *Sender);
   void __fastcall StartQueueItemClick(TObject *Sender);
+  void __fastcall LocalPathToClipboardActionExecute(TObject *Sender);
+  void __fastcall RemotePathToClipboardActionExecute(TObject *Sender);
 
 public:
   __fastcall TSynchronizeChecklistDialog(
@@ -212,6 +220,7 @@ protected:
   bool IterateItems(TListItem *& Item, TItemStates States);
   bool IterateSelectedItems(TListItem *& Item);
   void DoSynchronize(bool Queue);
+  void PathToClipboard(bool Local);
 };
 //----------------------------------------------------------------------------
 #endif

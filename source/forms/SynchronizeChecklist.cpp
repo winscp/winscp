@@ -342,8 +342,10 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
   CalculateSizeAllAction->Enabled = (FDirectories > 0) && !FSynchronizing;
   TSynchronizeChecklist::TAction SelectedItemAction =
     (SelCount == 1) ? GetChecklistItemAction(GetChecklistItem(ListView->Selected)) : TSynchronizeChecklist::saNone;
-  ExploreLocalAction->Enabled = (SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteRemote);
-  ExploreRemoteAction->Enabled = (SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteLocal);
+  ExploreLocalAction2->Enabled = (SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteRemote);
+  ExploreRemoteAction2->Enabled = (SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteLocal);
+  LocalPathToClipboardAction->Enabled = (SelCount > 0);
+  RemotePathToClipboardAction->Enabled = LocalPathToClipboardAction->Enabled;
 
   int Count = ListView->Items->Count;
   DebugAssert(FTotals[0] == Count);
@@ -1552,12 +1554,12 @@ void __fastcall TSynchronizeChecklistDialog::DoExplore(TOperationSide Side)
   FOnSynchronizeExplore(Side, Action, ChecklistItem);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::ExploreLocalActionExecute(TObject *)
+void __fastcall TSynchronizeChecklistDialog::ExploreLocalAction2Execute(TObject *)
 {
   DoExplore(osLocal);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::ExploreRemoteActionExecute(TObject *)
+void __fastcall TSynchronizeChecklistDialog::ExploreRemoteAction2Execute(TObject *)
 {
   DoExplore(osRemote);
 }
@@ -1833,5 +1835,30 @@ void __fastcall TSynchronizeChecklistDialog::OkButtonDropDownClick(TObject *)
 void __fastcall TSynchronizeChecklistDialog::StartQueueItemClick(TObject *)
 {
   DoSynchronize(true);
+}
+//---------------------------------------------------------------------------
+void TSynchronizeChecklistDialog::PathToClipboard(bool Local)
+{
+  std::unique_ptr<TStrings> Paths(new TStringList());
+  TListItem * Item = NULL;
+  while (IterateSelectedItems(Item))
+  {
+    const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
+    UnicodeString Path = Local ? ChecklistItem->ForceGetLocalPath() : ChecklistItem->ForceGetRemotePath();
+    Paths->Add(Path);
+  }
+
+  TInstantOperationVisualizer Visualizer;
+  CopyToClipboard(Paths.get());
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::LocalPathToClipboardActionExecute(TObject *)
+{
+  PathToClipboard(true);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::RemotePathToClipboardActionExecute(TObject *)
+{
+  PathToClipboard(false);
 }
 //---------------------------------------------------------------------------

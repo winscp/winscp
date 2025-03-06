@@ -2934,9 +2934,19 @@ UnicodeString TSynchronizeChecklist::TItem::GetLocalPath() const
   return CombinePaths(Local.Directory, Local.FileName);
 }
 //---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::ForceGetLocalPath() const
+{
+  return CombinePaths(Local.Directory, DefaultStr(Local.FileName, Remote.FileName));
+}
+//---------------------------------------------------------------------------
 UnicodeString TSynchronizeChecklist::TItem::GetRemotePath() const
 {
   return UnixCombinePaths(Remote.Directory, Remote.FileName);
+}
+//---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::ForceGetRemotePath() const
+{
+  return UnixCombinePaths(Remote.Directory, GetFileName());
 }
 //---------------------------------------------------------------------------
 UnicodeString TSynchronizeChecklist::TItem::GetLocalTarget() const
