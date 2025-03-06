@@ -1390,7 +1390,7 @@ object ConsoleDialog: TConsoleDialog
     Left = 51
     Top = 34
     Width = 414
-    Height = 13
+    Height = 15
     Anchors = [akLeft, akTop, akRight]
     AutoSize = False
     Caption = 'Do not execute commands that require user-input or data transfer'

@@ -17,7 +17,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
     Left = 141
     Top = 50
     Width = 79
-    Height = 13
+    Height = 15
     AutoSize = False
     Caption = '00:00:00'
     ShowAccelChar = False
