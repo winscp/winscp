@@ -1758,7 +1758,7 @@ protected:
         (FFileSystem->FSecureShell->SshImplementation == sshiBitvise) ||
         (FFileSystem->FSupport->Loaded &&
          FLAGSET(FFileSystem->FSupport->AttributeMask, SSH_FILEXFER_ATTR_OWNERGROUP) &&
-         !File->Owner.IsSet || !File->Group.IsSet);
+         (!File->Owner.IsSet || !File->Group.IsSet));
 
       Result = (MissingRights || MissingOwnerGroup);
       if (Result)

@@ -1858,7 +1858,8 @@ static _di_IXMLNode S3NeedNode(const _di_IXMLNodeList & NodeList, const UnicodeS
 //---------------------------------------------------------------------------
 #define COPY_BUCKET_CONTEXT(BucketContext) \
   { BucketContext.hostName, BucketContext.bucketName, BucketContext.protocol, BucketContext.uriStyle, \
-    BucketContext.accessKeyId, BucketContext.secretAccessKey, BucketContext.securityToken, BucketContext.authRegion }
+    BucketContext.accessKeyId, BucketContext.secretAccessKey, BucketContext.securityToken, BucketContext.authRegion, \
+    BucketContext.service }
 //---------------------------------------------------------------------------
 bool TS3FileSystem::DoLoadFileProperties(
   const UnicodeString & AFileName, const TRemoteFile * File, TS3FileProperties & Properties, bool LoadTags)
@@ -2155,7 +2156,7 @@ void __fastcall TS3FileSystem::LoadFileProperties(const UnicodeString AFileName,
   Data.Result = DoLoadFileProperties(AFileName, File, Properties, Data.LoadTags);
   if (Data.Result)
   {
-    bool AdditionalRights;
+    bool AdditionalRights = false;
     unsigned short Permissions = 0;
     for (int Index = 0; Index < Properties.AclGrantCount; Index++)
     {

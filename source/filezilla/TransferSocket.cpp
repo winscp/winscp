@@ -1140,14 +1140,15 @@ int CTransferSocket::ReadDataFromFile(char *buffer, int len)
   {
     // Comparing to Filezilla 2, we do not do any translation locally,
     // leaving it onto the server (what Filezilla 3 seems to do too)
-    const char Bom[3] = "\xEF\xBB\xBF";
+    const char Bom[4] = "\xEF\xBB\xBF";
+    int BomLen = strlen(Bom);
     int read = ReadData(buffer, len);
     if (GetOptionVal(OPTION_MPEXT_REMOVE_BOM) &&
-        m_transferdata.bType && (read >= sizeof(Bom)) && (memcmp(buffer, Bom, sizeof(Bom)) == 0))
+        m_transferdata.bType && (read >= BomLen) && (memcmp(buffer, Bom, BomLen) == 0))
     {
-      memcpy(buffer, buffer + sizeof(Bom), read - sizeof(Bom));
-      read -= sizeof(Bom);
-      int read2 = ReadData(buffer + read, sizeof(Bom));
+      memcpy(buffer, buffer + BomLen, read - BomLen);
+      read -= BomLen;
+      int read2 = ReadData(buffer + read, BomLen);
       if (read2 > 0)
       {
         read += read2;

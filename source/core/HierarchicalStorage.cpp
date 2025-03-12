@@ -69,9 +69,9 @@ UnicodeString __fastcall UnMungeStr(const UnicodeString & Str)
   RawByteString Dest(sb->s);
   strbuf_free(sb);
   UnicodeString Result;
-  if (Dest.SubString(1, LENOF(Bom)) == Bom)
+  if (Dest.SubString(1, strlen(Bom)) == Bom)
   {
-    Dest.Delete(1, LENOF(Bom));
+    Dest.Delete(1, strlen(Bom));
     Result = UTF8ToString(Dest);
   }
   else

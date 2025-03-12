@@ -2752,6 +2752,7 @@ void __fastcall TManagementScript::Connect(const UnicodeString Session,
       {
         Data = Data->Clone();
       }
+      DefaultsOnly = false;
     }
     else
     {

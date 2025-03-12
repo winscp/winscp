@@ -273,7 +273,7 @@ struct ssh_gss_liblist *ssh_gss_setup(Conf *conf, LogContext *logctx) // MPEXT
                                 LOAD_LIBRARY_SEARCH_USER_DIRS);
         // MPEXT
         if (!module && logctx) {
-            char *buf = dupprintf("Cannot load GSSAPI from user-specified library '%s': %s", path, win_strerror(GetLastError()));
+            char *buf = dupprintf(WINSCP_BOM "Cannot load GSSAPI from user-specified library '%s': %s", filename_to_str(customlib), win_strerror(GetLastError()));
             logevent(logctx, buf);
             sfree(buf);
         }
