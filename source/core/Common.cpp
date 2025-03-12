@@ -34,7 +34,7 @@ const UnicodeString AnyMask = L"*.*";
 const wchar_t EngShortMonthNames[12][4] =
   {L"Jan", L"Feb", L"Mar", L"Apr", L"May", L"Jun",
    L"Jul", L"Aug", L"Sep", L"Oct", L"Nov", L"Dec"};
-const char Bom[3] = "\xEF\xBB\xBF";
+const char Bom[4] = "\xEF\xBB\xBF";
 const UnicodeString XmlDeclaration(TraceInitStr(L"<?xml version=\"1.0\" encoding=\"UTF-8\"?>"));
 const wchar_t TokenPrefix = L'%';
 const wchar_t NoReplacement = wchar_t(false);

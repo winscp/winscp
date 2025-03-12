@@ -2314,7 +2314,7 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(
       // do we need FTimeDifference for the operation?
       // (tmAutomatic - AsciiFileMask can theoretically include time constraints, while it is unlikely)
       (!FLAGSET(Params, cpNoConfirmation) ||
-       CopyParam->NewerOnly || (!CopyParam->TransferMode == tmAutomatic) || !CopyParam->IncludeFileMask.Masks.IsEmpty()))
+       CopyParam->NewerOnly || (CopyParam->TransferMode == tmAutomatic) || !CopyParam->IncludeFileMask.Masks.IsEmpty()))
   {
     FTerminal->LogEvent(L"Retrieving listing to detect timezone difference");
     DummyReadDirectory(Directory);

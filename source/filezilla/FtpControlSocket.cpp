@@ -5585,7 +5585,7 @@ void CFtpControlSocket::SetVerifyCertResult(int nResult, t_SslCertData *pData)
   DebugAssert(pData);
   if (!m_pSslLayer)
     return;
-  if (!m_Operation.nOpMode == CSMODE_CONNECT)
+  if (DebugAlwaysFalse(m_Operation.nOpMode != CSMODE_CONNECT))
     return;
   m_bCheckForTimeout = TRUE;
   m_pSslLayer->SetNotifyReply(pData->priv_data, SSL_VERIFY_CERT, nResult);

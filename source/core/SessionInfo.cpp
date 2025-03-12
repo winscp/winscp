@@ -414,7 +414,10 @@ protected:
   void __fastcall RecordFile(const UnicodeString & Indent, TRemoteFile * File, bool IncludeFileName)
   {
     FLog->AddIndented(Indent + L"<file>");
-    FLog->AddIndented(Indent + FORMAT(L"  <filename value=\"%s\" />", (XmlAttributeEscape(File->FileName))));
+    if (IncludeFileName)
+    {
+      FLog->AddIndented(Indent + FORMAT(L"  <filename value=\"%s\" />", (XmlAttributeEscape(File->FileName))));
+    }
     FLog->AddIndented(Indent + FORMAT(L"  <type value=\"%s\" />", (XmlAttributeEscape(towupper(File->Type)))));
     if (!File->IsDirectory)
     {

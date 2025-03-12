@@ -2097,14 +2097,14 @@ void __fastcall TTerminal::DisplayBanner(const UnicodeString & Banner)
 {
   if (OnDisplayBanner != NULL)
   {
-    unsigned int OrigParams, Params;
-    if (Configuration->ForceBanners ||
-        Configuration->ShowBanner(SessionData->SessionKey, Banner, Params))
+    unsigned int Params = 0; // shut up
+    if (Configuration->ShowBanner(SessionData->SessionKey, Banner, Params) ||
+        Configuration->ForceBanners)
     {
       bool NeverShowAgain = false;
       int Options =
         FLAGMASK(Configuration->ForceBanners, boDisableNeverShowAgain);
-      OrigParams = Params;
+      unsigned int OrigParams = Params;
 
       TCallbackGuard Guard(this);
       try

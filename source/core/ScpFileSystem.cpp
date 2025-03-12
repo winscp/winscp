@@ -2616,8 +2616,8 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
         if (CopyParam->SkipTransfer(FullFileName, Dir))
         {
           SkipConfirmed = true;
-          SCPError(L"", false);
           OperationProgress->AddSkippedFileSize(MaskParams.Size);
+          SCPError(L"", false);
         }
 
         FTerminal->LogFileDetails(FileName, FileData.Modification, MaskParams.Size);
