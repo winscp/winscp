@@ -1103,6 +1103,7 @@ TLibS3BucketContext TS3FileSystem::GetBucketContext(const UnicodeString & Bucket
       Result.AuthRegionBuf.SetLength(S3_MAX_REGION_LENGTH);
     }
     Result.authRegion = Result.AuthRegionBuf.c_str();
+    Result.service = NULL;
 
     if (Retry)
     {
