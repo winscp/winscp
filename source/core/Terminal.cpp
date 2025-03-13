@@ -341,8 +341,8 @@ private:
 };
 //---------------------------------------------------------------------------
 __fastcall TCallbackGuard::TCallbackGuard(TTerminal * Terminal) :
-  FTerminal(Terminal),
   FFatalError(NULL),
+  FTerminal(Terminal),
   FGuarding(FTerminal->FCallbackGuard == NULL)
 {
   if (FGuarding)
@@ -2090,6 +2090,10 @@ unsigned int __fastcall TTerminal::QueryUserException(const UnicodeString Query,
       delete MoreMessages;
     }
   }
+  else
+  {
+    Result = AbortAnswer(Answers);
+  }
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -3115,7 +3119,7 @@ unsigned int __fastcall TTerminal::ConfirmFileOverwrite(
   TOperationSide Side, const TCopyParamType * CopyParam, int Params, TFileOperationProgressType * OperationProgress,
   UnicodeString Message)
 {
-  unsigned int Result;
+  unsigned int Result = qaCancel; // shut up
   TBatchOverwrite BatchOverwrite;
   bool CanAlternateResume =
     (FileParams != NULL) &&
@@ -5491,7 +5495,7 @@ bool __fastcall TTerminal::DoCreateLocalFile(const UnicodeString FileName,
     {
       // save the error, otherwise it gets overwritten by call to FileExists
       int LastError = GetLastError();
-      int FileAttr;
+      int FileAttr = 0; // shut up
       if (::FileExists(ApiPath(FileName)) &&
         (((FileAttr = FileGetAttrFix(ApiPath(FileName))) & (faReadOnly | faHidden)) != 0))
       {
@@ -6341,7 +6345,7 @@ bool TTerminal::SameFileChecksum(const UnicodeString & LocalFileName, const TRem
   }
 
   std::unique_ptr<TStrings> FileList(new TStringList());
-  FileList->AddObject(File->FullFileName, File);
+  FileList->AddObject(File->FullFileName, const_cast<TRemoteFile *>(File));
   DebugAssert(FCollectedCalculatedChecksum.IsEmpty());
   FCollectedCalculatedChecksum = EmptyStr;
   CalculateFilesChecksum(Alg, FileList.get(), CollectCalculatedChecksum);
@@ -6362,6 +6366,7 @@ bool TTerminal::SameFileChecksum(const UnicodeString & LocalFileName, const TRem
 void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName,
   const TRemoteFile * File, /*TSynchronizeData*/ void * Param)
 {
+  DebugUsedParam(FileName);
   TSynchronizeData * Data = static_cast<TSynchronizeData *>(Param);
 
   // Can be NULL in scripting
@@ -8806,7 +8811,7 @@ TTerminal::TEncryptedFileNames::const_iterator __fastcall TTerminal::GetEncrypte
     {
       delete DoReadDirectoryListing(FileDir, true);
     }
-    catch (Exception & E)
+    catch (Exception &)
     {
       if (!Active)
       {
@@ -8919,7 +8924,7 @@ TRemoteFile * TTerminal::CheckRights(const UnicodeString & EntryType, const Unic
       LogEvent(FORMAT(L"%s \"%s\" exists and has correct permissions %s.", (EntryType, FileName, File->Rights->Octal)));
     }
   }
-  catch (Exception & E)
+  catch (Exception &)
   {
   }
   return File.release();

@@ -4,7 +4,6 @@
 
 //---------------------------------------------------------------------------
 #include <list>
-#define MPEXT
 #include "FtpFileSystem.h"
 #include "FileZillaIntf.h"
 
@@ -30,7 +29,6 @@
 //---------------------------------------------------------------------------
 const int DummyCodeClass = 8;
 const int DummyTimeoutCode = 801;
-const int DummyCancelCode = 802;
 const int DummyDisconnectCode = 803;
 //---------------------------------------------------------------------------
 class TFileZillaImpl : public TFileZillaIntf
@@ -261,8 +259,9 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FFileZillaIntf(NULL),
   FQueueCriticalSection(new TCriticalSection),
   FTransferStatusCriticalSection(new TCriticalSection),
-  FQueueEvent(CreateEvent(NULL, true, false, NULL)),
   FQueue(new TMessageQueue),
+  FQueueEvent(CreateEvent(NULL, true, false, NULL)),
+  FFileSystemInfoValid(false),
   FReply(0),
   FCommandReply(0),
   FLastCommand(CMD_UNKNOWN),
@@ -270,16 +269,15 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FLastErrorResponse(new TStringList()),
   FLastError(new TStringList()),
   FFeatures(new TStringList()),
+  FReadCurrentDirectory(false),
   FFileList(NULL),
   FFileListCache(NULL),
   FActive(false),
   FWaitingForReply(false),
   FIgnoreFileList(false),
   FOnCaptureOutput(NULL),
-  FFileSystemInfoValid(false),
   FDoListAll(false),
-  FServerCapabilities(NULL),
-  FReadCurrentDirectory(false)
+  FServerCapabilities(NULL)
 {
   ResetReply();
 
@@ -440,6 +438,7 @@ void __fastcall TFTPFileSystem::Open()
         break;
 
       default:
+        ServerType = int(); // shutup
         DebugFail();
         break;
     }
@@ -2236,7 +2235,7 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
         {
           ReadFile(File->FullFileName, UtcFile);
         }
-        catch (Exception & E)
+        catch (Exception &)
         {
           FDetectTimeDifference = false;
           if (!FTerminal->Active)
@@ -2273,7 +2272,7 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
           // Time difference between timestamp retrieved using MDTM (UTC converted to local timezone)
           // and using LIST (no conversion, expecting the server uses the same timezone as the client).
           // Note that FormatTimeZone reverses the value.
-          FTimeDifference = static_cast<__int64>(SecsPerDay * (UtcModification - File->Modification));
+          FTimeDifference = static_cast<__int64>(SecsPerDay * static_cast<Variant>(UtcModification - File->Modification));
           double Hours = TTimeSpan::FromSeconds(FTimeDifference).TotalHours;
 
           UnicodeString FileLog =
@@ -2291,7 +2290,7 @@ void __fastcall TFTPFileSystem::AutoDetectTimeDifference(TRemoteFileList * FileL
           }
           else
           {
-            LogMessage = FORMAT(L"Timezone difference of %s detected using file %s", (FormatTimeZone(FTimeDifference), FileLog));
+            LogMessage = FORMAT(L"Timezone difference of %s detected using file %s", (FormatTimeZone(static_cast<long>(FTimeDifference)), FileLog));
           }
           FTerminal->LogEvent(LogMessage);
 
@@ -2371,7 +2370,7 @@ void __fastcall TFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
         // Note that FZAPI ignores this for VMS/MVS.
         FDoListAll = (FListAll == asOn);
       }
-      catch(Exception & E)
+      catch(Exception &)
       {
         FDoListAll = false;
         // reading the first directory has failed,
@@ -2465,7 +2464,7 @@ void __fastcall TFTPFileSystem::ReadFile(const UnicodeString FileName,
     {
       UnicodeString Path = RemoteExtractFilePath(FileName);
       UnicodeString NameOnly;
-      int P;
+      int P = 0; // shut up
       bool MVSPath =
         FMVS && Path.IsEmpty() &&
         (FileName.SubString(1, 1) == L"'") && (FileName.SubString(FileName.Length(), 1) == L"'") &&
@@ -3433,8 +3432,6 @@ void __fastcall TFTPFileSystem::StoreLastResponse(const UnicodeString & Text)
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
 {
-  int Code;
-
   if (FOnCaptureOutput != NULL)
   {
     FOnCaptureOutput(Response, cotOutput);
@@ -3476,6 +3473,7 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(UnicodeString Response)
 
   // Partially duplicated in CFtpControlSocket::OnReceive
 
+  int Code = 0; // shut up
   bool HasCodePrefix =
     (Response.Length() >= 3) &&
     TryStrToInt(Response.SubString(1, 3), Code) &&
@@ -4045,7 +4043,7 @@ UnicodeString __fastcall FormatValidityTime(const TFtpsCertificateData::TValidit
 bool __fastcall VerifyNameMask(UnicodeString Name, UnicodeString Mask)
 {
   bool Result = true;
-  int Pos;
+  int Pos = 0; // shut up
   while (Result && (Pos = Mask.Pos(L"*")) > 0)
   {
     // Pos will typically be 1 here, so not actual comparison is done
@@ -4642,7 +4640,7 @@ bool __fastcall TFTPFileSystem::Unquote(UnicodeString & Str)
   DebugAssert((Str.Length() > 0) && ((Str[1] == L'"') || (Str[1] == L'\'')));
 
   int Index = 1;
-  wchar_t Quote;
+  wchar_t Quote = wchar_t(); // shut up
   while (Index <= Str.Length())
   {
     switch (State)

@@ -106,8 +106,8 @@ private:
   unsigned long __fastcall GetCPSLimit();
   TBatchOverwrite __fastcall GetBatchOverwrite();
   bool __fastcall GetSkipToAll();
-  TDateTime __fastcall GetStartTime() const { return FPersistence.StartTime; };
-  TOperationSide __fastcall GetSide() const { return FPersistence.Side; };
+  TDateTime __fastcall GetStartTime() const { return FPersistence.StartTime; }
+  TOperationSide __fastcall GetSide() const { return FPersistence.Side; }
 
 protected:
   void __fastcall ClearTransfer();

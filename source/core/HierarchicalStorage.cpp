@@ -114,7 +114,7 @@ UnicodeString __fastcall MungeIniName(const UnicodeString & Str, bool ForceAnsi)
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString EscapedBom(TraceInitStr(PuttyEscape(Bom, false)));
+static UnicodeString EscapedBom(TraceInitStr(PuttyEscape(Bom, false)));
 //---------------------------------------------------------------------------
 UnicodeString __fastcall UnMungeIniName(const UnicodeString & Str)
 {
@@ -178,10 +178,10 @@ TIntMapping CreateIntMappingFromEnumNames(const UnicodeString & ANames)
 //---------------------------------------------------------------------------
 TIntMapping AutoSwitchMapping = CreateIntMapping(L"on", asOn, L"off", asOff, L"auto", asAuto);
 TIntMapping AutoSwitchReversedMapping = CreateIntMapping(L"on", asOff, L"off", asOn, L"auto", asAuto);
-TIntMapping BoolMapping = CreateIntMapping(L"on", true, L"off", false);
+static TIntMapping BoolMapping = CreateIntMapping(L"on", true, L"off", false);
 //===========================================================================
-UnicodeString AccessValueName(L"Access");
-UnicodeString DefaultAccessString(L"inherit");
+static UnicodeString AccessValueName(L"Access");
+static UnicodeString DefaultAccessString(L"inherit");
 //---------------------------------------------------------------------------
 __fastcall THierarchicalStorage::THierarchicalStorage(const UnicodeString & AStorage)
 {
@@ -355,7 +355,7 @@ unsigned int __fastcall THierarchicalStorage::GetCurrentAccess()
 bool __fastcall THierarchicalStorage::OpenSubKeyPath(const UnicodeString & KeyPath, bool CanCreate)
 {
   DebugAssert(!KeyPath.IsEmpty() && (KeyPath[KeyPath.Length()] != L'\\'));
-  bool Result;
+  bool Result = false; // shut up
   UnicodeString Buf(KeyPath);
   int Opens = 0;
   while (!Buf.IsEmpty())
@@ -1447,7 +1447,7 @@ bool __fastcall TCustomIniFileStorage::DoReadBool(const UnicodeString & Name, bo
 //---------------------------------------------------------------------------
 int __fastcall TCustomIniFileStorage::DoReadIntegerWithMapping(const UnicodeString & Name, int Default, const TIntMapping * Mapping)
 {
-  int Result;
+  int Result = 0; // shut up
   bool ReadAsInteger = true;
   UnicodeString MungedName = MungeIniName(Name);
   if (Mapping != NULL) // optimization
@@ -2053,11 +2053,13 @@ void __fastcall TOptionsIniFile::ReadSections(TStrings * Strings)
 //---------------------------------------------------------------------------
 void __fastcall TOptionsIniFile::ReadSectionValues(const UnicodeString Section, TStrings * /*Strings*/)
 {
+  DebugUsedParam(Section);
   NotImplemented();
 }
 //---------------------------------------------------------------------------
 void __fastcall TOptionsIniFile::EraseSection(const UnicodeString Section)
 {
+  DebugUsedParam(Section);
   if (AllowWrite())
   {
     NotImplemented();

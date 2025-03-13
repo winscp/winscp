@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------------
 #include "stdafx.h"
 #include "FileZillaApi.h"
-#include "mainthread.h"
+#include "MainThread.h"
 
 //////////////////////////////////////////////////////////////////////
 // Konstruktion/Destruktion

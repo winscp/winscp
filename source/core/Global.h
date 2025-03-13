@@ -45,7 +45,7 @@ private:
 #define DebugCheck(p) (p)
 #define DebugFail()
 #else // ifndef DODEBUGGING
-void __fastcall DoAssert(wchar_t * Message, wchar_t * Filename, int LineNumber);
+void __fastcall DoAssert(const wchar_t * Message, const wchar_t * Filename, int LineNumber);
 #define DebugAssert(p) ((p) ? (void)0 : DoAssert(TEXT(#p), TEXT(__FILE__), __LINE__))
 #define DebugCheck(p) { bool __CHECK_RESULT__ = (p); DebugAssert(__CHECK_RESULT__); }
 #define DebugFail() DebugAssert(false)
@@ -56,7 +56,7 @@ void __fastcall DoAssert(wchar_t * Message, wchar_t * Filename, int LineNumber);
 #define DebugNotNull(p) (p)
 #define TraceInitPtr(p) (p)
 #define TraceInitStr(p) (p)
-#define DebugUsedParam2(p1, p2) ((&p1) == (&p2))
+#define DebugUsedParam2(p1, p2) (static_cast<const void *>(&p1) == static_cast<const void *>(&p2))
 #define DebugUsedParam(p) DebugUsedParam2(p, p)
 #define DebugUsedArg(p)
 //---------------------------------------------------------------------------

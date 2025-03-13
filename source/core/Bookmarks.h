@@ -35,6 +35,8 @@ private:
     int Index, TBookmarkList * BookmarkList);
 };
 //---------------------------------------------------------------------------
+class TBookmark;
+//---------------------------------------------------------------------------
 class TBookmarkList : public TPersistent
 {
 friend class TBookmarks;

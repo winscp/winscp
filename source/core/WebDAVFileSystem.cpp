@@ -7,7 +7,6 @@
 #include <wincrypt.h>
 
 #define NE_LFS
-#define WINSCP
 #include <ne_basic.h>
 #include <ne_auth.h>
 #include <ne_props.h>
@@ -157,12 +156,12 @@ TWebDAVFileSystem::TWebDAVFileSystem(TTerminal * ATerminal) :
   TCustomFileSystem(ATerminal),
   FActive(false),
   FHasTrailingSlash(false),
-  FSessionContext(NULL),
-  FNeonLockStore(NULL),
-  FNeonLockStoreSection(new TCriticalSection()),
   FUploading(false),
   FDownloading(false),
+  FNeonLockStore(NULL),
+  FNeonLockStoreSection(new TCriticalSection()),
   FInitialHandshake(false),
+  FSessionContext(NULL),
   FIgnoreAuthenticationFailure(iafNo)
 {
   FFileSystemInfo.ProtocolBaseName = CONST_WEBDAV_PROTOCOL_BASE_NAME;
@@ -372,7 +371,7 @@ TWebDAVFileSystem::TSessionContext * TWebDAVFileSystem::NeonOpen(const UnicodeSt
 //---------------------------------------------------------------------------
 bool TWebDAVFileSystem::IsTlsSession(ne_session * Session)
 {
-  ne_uri uri = {0};
+  ne_uri uri = ne_uri();
   ne_fill_server_uri(Session, &uri);
   bool Result = IsTlsUri(uri);
   ne_uri_free(&uri);
@@ -1114,7 +1113,7 @@ void __fastcall TWebDAVFileSystem::ParsePropResultSet(TRemoteFile * File,
     if (IsWin8())
     {
       // The "lock" character is supported since Windows 8
-      LockRights = L"\uD83D\uDD12" + Owner;
+      LockRights = U"\U0001F512" + Owner;
     }
     else
     {
@@ -1166,6 +1165,7 @@ void __fastcall TWebDAVFileSystem::CustomReadFile(UnicodeString FileName,
 void __fastcall TWebDAVFileSystem::DeleteFile(const UnicodeString FileName,
   const TRemoteFile * File, int /*Params*/, TRmSessionAction & Action)
 {
+  DebugUsedParam(FileName);
   Action.Recursive();
   ClearNeonError();
   TOperationVisualizer Visualizer(FTerminal->UseBusyCursor);
@@ -1236,6 +1236,7 @@ void __fastcall TWebDAVFileSystem::CreateLink(const UnicodeString FileName,
   const UnicodeString PointTo, bool /*Symbolic*/)
 {
   DebugFail();
+  DebugUsedParam2(FileName, PointTo);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::ChangeFileProperties(const UnicodeString FileName,
@@ -1243,6 +1244,7 @@ void __fastcall TWebDAVFileSystem::ChangeFileProperties(const UnicodeString File
   TChmodSessionAction & /*Action*/)
 {
   DebugFail();
+  DebugUsedParam(FileName);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TWebDAVFileSystem::LoadFilesProperties(TStrings * /*FileList*/)
@@ -1311,12 +1313,14 @@ void __fastcall TWebDAVFileSystem::CustomCommandOnFile(const UnicodeString FileN
   const TRemoteFile * /*File*/, UnicodeString Command, int /*Params*/, TCaptureOutputEvent /*OutputEvent*/)
 {
   DebugFail();
+  DebugUsedParam2(FileName, Command);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWebDAVFileSystem::AnyCommand(const UnicodeString Command,
   TCaptureOutputEvent /*OutputEvent*/)
 {
   DebugFail();
+  DebugUsedParam(Command);
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TWebDAVFileSystem::GetFixedPaths()
@@ -2173,7 +2177,7 @@ void TWebDAVFileSystem::LockResult(void * UserData, const struct ne_lock * Lock,
 //---------------------------------------------------------------------------
 struct ne_lock * __fastcall TWebDAVFileSystem::FindLock(const RawByteString & Path)
 {
-  ne_uri Uri = {0};
+  ne_uri Uri = ne_uri();
   Uri.path = Path.c_str();
   return ne_lockstore_findbyuri(FNeonLockStore, &Uri);
 }

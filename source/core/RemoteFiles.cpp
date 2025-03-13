@@ -745,13 +745,11 @@ void __fastcall TRemoteTokenList::Add(const TRemoteToken & Token)
   FTokens.push_back(Token);
   if (Token.IDValid)
   {
-    std::pair<TIDMap::iterator, bool> Position =
-      FIDMap.insert(TIDMap::value_type(Token.ID, FTokens.size() - 1));
+    FIDMap.insert(TIDMap::value_type(Token.ID, FTokens.size() - 1));
   }
   if (Token.NameValid)
   {
-    std::pair<TNameMap::iterator, bool> Position =
-      FNameMap.insert(TNameMap::value_type(Token.Name, FTokens.size() - 1));
+    FNameMap.insert(TNameMap::value_type(Token.Name, FTokens.size() - 1));
   }
 }
 //---------------------------------------------------------------------------
@@ -2859,7 +2857,7 @@ void __fastcall TRemoteProperties::Save(THierarchicalStorage * Storage) const
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 TSynchronizeChecklist::TItem::TItem() :
-  Action(saNone), IsDirectory(false), RemoteFile(NULL), Checked(true), ImageIndex(-1), FDirectoryHasSize(false)
+  Action(saNone), IsDirectory(false), ImageIndex(-1), Checked(true), RemoteFile(NULL), FDirectoryHasSize(false)
 {
   Local.ModificationFmt = mfFull;
   Local.Modification = 0;
@@ -3223,7 +3221,7 @@ int TSynchronizeProgress::Progress(const TFileOperationProgressType * CurrentIte
     __int64 Processed = GetProcessed(CurrentItemOperationProgress);
     if (FTotalSize > 0)
     {
-      Result = (Processed * 100) / FTotalSize;
+      Result = static_cast<int>((Processed * 100) / FTotalSize);
     }
     else
     {

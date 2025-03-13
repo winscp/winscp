@@ -503,7 +503,7 @@ bool __fastcall AES256Verify(UnicodeString Input, RawByteString Verifier)
   return (Mac == Mac2);
 }
 //---------------------------------------------------------------------------
-unsigned char SScrambleTable[256] =
+static unsigned char SScrambleTable[256] =
 {
     0, 223, 235, 233, 240, 185,  88, 102,  22, 130,  27,  53,  79, 125,  66, 201,
    90,  71,  51,  60, 134, 104, 172, 244, 139,  84,  91,  12, 123, 155, 237, 151,
@@ -523,8 +523,8 @@ unsigned char SScrambleTable[256] =
   206, 222, 188, 152, 210, 243,  96,  41,  86, 180, 101, 177, 166, 141, 212, 116
 };
 //---------------------------------------------------------------------------
-unsigned char * ScrambleTable;
-unsigned char * UnscrambleTable;
+static unsigned char * ScrambleTable;
+static unsigned char * UnscrambleTable;
 //---------------------------------------------------------------------------
 RawByteString __fastcall ScramblePassword(UnicodeString Password)
 {
@@ -604,7 +604,7 @@ bool __fastcall UnscramblePassword(RawByteString Scrambled, UnicodeString & Pass
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString OpensslInitializationErrors;
+static UnicodeString OpensslInitializationErrors;
 //---------------------------------------------------------------------------
 static bool InitOpenssl()
 {
@@ -762,10 +762,8 @@ void TEncryption::NeedSalt()
   }
 }
 //---------------------------------------------------------------------------
-const int AesBlock = 16;
-const int AesBlockMask = 0x0F;
-UnicodeString AesCtrExt(L".aesctr.enc");
-RawByteString AesCtrMagic("aesctr.........."); // 16 bytes fixed [to match AES block size], even for future algos
+static UnicodeString AesCtrExt(L".aesctr.enc");
+static RawByteString AesCtrMagic("aesctr.........."); // 16 bytes fixed [to match AES block size], even for future algos
 //---------------------------------------------------------------------------
 int TEncryption::RoundToBlock(int Size)
 {
@@ -796,7 +794,7 @@ void TEncryption::Aes(TFileBuffer & Buffer, bool Last)
     FOverflowBuffer.SetLength(0);
   }
 
-  int Size;
+  int Size = 0; // shut up
   if (Last)
   {
     Size = Buffer.Size;

@@ -1135,7 +1135,7 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
   if (!pLayer->m_bUseSSL && (where != SSL_CB_LOOP))
     return;
 
-  char * str;
+  const char * str;
   int w;
 
   w = where& ~SSL_ST_MASK;
@@ -1823,7 +1823,7 @@ BOOL CAsyncSslSocketLayer::SetCertStorage(CString file)
 void CAsyncSslSocketLayer::OnClose(int nErrorCode)
 {
   m_onCloseCalled = true;
-  if (m_bUseSSL && BIO_ctrl)
+  if (m_bUseSSL)
   {
     size_t pending = BIO_ctrl_pending(m_sslbio);
     if (pending > 0)

@@ -3,7 +3,9 @@
 #include <limits.h>
 #include "putty.h"
 
+#ifndef WINSCP // already defined globally
 #define SECURITY_WIN32
+#endif
 #include <security.h>
 
 #include "ssh/pgssapi.h"

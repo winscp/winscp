@@ -2,7 +2,6 @@
 #ifndef NeonIntfH
 #define NeonIntfH
 //---------------------------------------------------------------------------
-#define WINSCP
 #include <ne_uri.h>
 #include <ne_session.h>
 #include <SessionData.h>

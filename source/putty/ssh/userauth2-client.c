@@ -1433,7 +1433,7 @@ static void ssh2_userauth_process_queue(PacketProtocolLayer *ppl)
                 /* Import server name if not cached from KEX */
                 if (s->shgss->srv_name == GSS_C_NO_NAME) {
                     // WINSCP
-                    const char * fullhostname = s->fullhostname;
+                    char * fullhostname = s->fullhostname;
                     if (s->loghost[0] != '\0')
                     {
                         fullhostname = s->loghost;

@@ -14,6 +14,7 @@
 #include <shlobj.h>
 #include <limits>
 #include <algorithm>
+#include <memory>
 #include <shlwapi.h>
 #include <tlhelp32.h>
 #include <psapi.h>
@@ -2185,7 +2186,7 @@ TDateTime __fastcall FileTimeToDateTime(const FILETIME & FileTime)
 __int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
   TDSTMode DSTMode)
 {
-  __int64 Result = ((*(__int64*)&(FileTime)) / 10000000LL - 11644473600LL);
+  __int64 Result = ((*(const __int64*)&(FileTime)) / 10000000LL - 11644473600LL);
 
   if (UsesDaylightHack())
   {
@@ -3070,8 +3071,8 @@ bool __fastcall IsWine()
     (GetProcAddress(NtDll, "wine_get_version") != NULL);
 }
 //---------------------------------------------------------------------------
-int GIsUWP = -1;
-UnicodeString GPackageName;
+static int GIsUWP = -1;
+static UnicodeString GPackageName;
 //---------------------------------------------------------------------------
 void EnableUWPTestMode()
 {
@@ -3919,7 +3920,7 @@ UnicodeString __fastcall RtfEscapeParam(UnicodeString Param, bool PowerShellEsca
     else
     {
       int P2 = PosEx(RtfHyperlinkFieldPrefix, Param, Index);
-      int P3;
+      int P3 = 0; // shut up
       if ((P2 > 0) && (P2 < P1) && ((P3 = PosEx(RtfHyperlinkFieldSuffix, Param, P2)) > 0))
       {
         // skip HYPERLINK
@@ -4428,7 +4429,7 @@ static UnicodeString GetProcessName(DWORD ProcessId)
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString ParentProcessName;
+static UnicodeString ParentProcessName;
 //---------------------------------------------------------------------------
 UnicodeString __fastcall GetAncestorProcessName(int Levels)
 {
@@ -4512,7 +4513,7 @@ UnicodeString __fastcall GetAncestorProcessName(int Levels)
   return Result;
 }
 //---------------------------------------------------------------------------
-UnicodeString AncestorProcessNames;
+static UnicodeString AncestorProcessNames;
 //---------------------------------------------------------------------------
 UnicodeString GetAncestorProcessNames()
 {

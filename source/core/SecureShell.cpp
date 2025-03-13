@@ -197,7 +197,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
       case cipArcfour: pcipher = CIPHER_ARCFOUR; break;
       case cipChaCha20: pcipher = CIPHER_CHACHA20; break;
       case cipAESGCM: pcipher = CIPHER_AESGCM; break;
-      default: DebugFail();
+      default: DebugFail(); pcipher = NULL; // shut up
     }
     conf_set_int_int(conf, CONF_ssh_cipherlist, c, pcipher);
   }
@@ -220,7 +220,7 @@ Conf * __fastcall TSecureShell::StoreToConfig(TSessionData * Data, bool Simple)
       case kexNTRUHybrid: pkex = KEX_NTRU_HYBRID; break;
       case kexMLKEM25519Hybrid: pkex = KEX_MLKEM_25519_HYBRID; break;
       case kexMLKEMNISTHybrid: pkex = KEX_MLKEM_NIST_HYBRID; break;
-      default: DebugFail();
+      default: DebugFail(); pkex = NULL; // shutup
     }
     conf_set_int_int(conf, CONF_ssh_kexlist, k, pkex);
   }

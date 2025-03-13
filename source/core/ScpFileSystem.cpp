@@ -759,7 +759,7 @@ void __fastcall TSCPFileSystem::DetectUtf()
           FSecureShell->UtfStrings = true;
         }
       }
-      catch (Exception & E)
+      catch (Exception &)
       {
         // ignore non-fatal errors
         if (!FTerminal->Active)
@@ -835,12 +835,12 @@ void __fastcall TSCPFileSystem::DetectReturnVar()
           Abort();
         }
       }
-      catch (EFatal &E)
+      catch (EFatal &)
       {
         // if fatal error occurs, we need to exit ...
         throw;
       }
-      catch (Exception &E)
+      catch (Exception &)
       {
         // ...otherwise, we will try next variable (if any)
         Success = false;
@@ -1205,7 +1205,7 @@ void __fastcall TSCPFileSystem::CopyFile(
   {
     ExecCommand(fsCopyFile, ARRAYOFCONST((AdditionalSwitches, DelimitedFileName, DelimitedNewName)));
   }
-  catch (Exception & E)
+  catch (Exception &)
   {
     if (FTerminal->Active)
     {
@@ -1420,7 +1420,7 @@ void __fastcall TSCPFileSystem::CalculateFilesChecksum(
           BatchChecksums->Add(Checksum);
         }
       }
-      catch (Exception & E)
+      catch (Exception &)
       {
         if (!FTerminal->Active)
         {
@@ -1574,6 +1574,7 @@ void __fastcall TSCPFileSystem::SpaceAvailable(const UnicodeString Path,
   TSpaceAvailable & /*ASpaceAvailable*/)
 {
   DebugFail();
+  DebugUsedParam(Path);
 }
 //---------------------------------------------------------------------------
 // transfer protocol
@@ -1791,6 +1792,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
               break;
 
             default:
+              CanProceed = false; // shut up
               DebugFail();
               break;
           }
@@ -2114,13 +2116,13 @@ void __fastcall TSCPFileSystem::SCPSource(const UnicodeString FileName,
         // side already know, that file transfer finished, even if it failed
         // so we don't have to throw EFatal
       }
-      catch (EScp &E)
+      catch (EScp &)
       {
         // SCP protocol fatal error
         OperationProgress->SetTransferringFile(false);
         throw;
       }
-      catch (EScpFileSkipped &E)
+      catch (EScpFileSkipped &)
       {
         // SCP protocol non-fatal error
         OperationProgress->SetTransferringFile(false);
@@ -2356,7 +2358,7 @@ void __fastcall TSCPFileSystem::CopyToLocal(TStrings * FilesToCopy,
               FTerminal->ExceptionOnFail = false;
             }
           }
-          catch (EFatal &E)
+          catch (EFatal &)
           {
             throw;
           }
@@ -2434,6 +2436,7 @@ void __fastcall TSCPFileSystem::SCPError(const UnicodeString Message, bool Fatal
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::SCPSendError(const UnicodeString Message, bool Fatal)
 {
+  DebugUsedParam(Message);
   unsigned char ErrorLevel = (char)(Fatal ? 2 : 1);
   FTerminal->LogEvent(FORMAT(L"Sending SCP error (%d) to remote side:",
     ((int)ErrorLevel)));
@@ -2783,12 +2786,12 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
                 // If one of following exception occurs, we still need
                 // to send confirmation to other side
               }
-              catch (EScp &E)
+              catch (EScp &)
               {
                 FSecureShell->SendNull();
                 throw;
               }
-              catch (EScpFileSkipped &E)
+              catch (EScpFileSkipped &)
               {
                 FSecureShell->SendNull();
                 throw;

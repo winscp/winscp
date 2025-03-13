@@ -9,7 +9,7 @@
 //---------------------------------------------------------------------------
 const wchar_t * EOLTypeNames = L"LF;CRLF;CR";
 //---------------------------------------------------------------------------
-char * __fastcall EOLToStr(TEOLType EOLType)
+const char * __fastcall EOLToStr(TEOLType EOLType)
 {
   switch (EOLType) {
     case eolLF: return "\n";
@@ -98,7 +98,7 @@ DWORD __fastcall TFileBuffer::LoadFromIn(TTransferInEvent OnTransferIn, TObject 
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params,
+void __fastcall TFileBuffer::Convert(const char * Source, const char * Dest, int Params,
   bool & Token)
 {
   DebugAssert(strlen(Source) <= 2);
@@ -202,13 +202,13 @@ void __fastcall TFileBuffer::Convert(TEOLType Source, TEOLType Dest, int Params,
   Convert(EOLToStr(Source), EOLToStr(Dest), Params, Token);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileBuffer::Convert(char * Source, TEOLType Dest, int Params,
+void __fastcall TFileBuffer::Convert(const char * Source, TEOLType Dest, int Params,
   bool & Token)
 {
   Convert(Source, EOLToStr(Dest), Params, Token);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileBuffer::Convert(TEOLType Source, char * Dest, int Params,
+void __fastcall TFileBuffer::Convert(TEOLType Source, const char * Dest, int Params,
   bool & Token)
 {
   Convert(EOLToStr(Source), Dest, Params, Token);

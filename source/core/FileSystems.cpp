@@ -29,3 +29,15 @@ UnicodeString TCustomFileSystem::CalculateFilesChecksumInitialize(const UnicodeS
   NotImplemented();
   return EmptyStr;
 }
+//---------------------------------------------------------------------------
+void __fastcall TCustomFileSystem::TransferOnDirectory(
+  const UnicodeString & Directory, const TCopyParamType *, int Params)
+{
+  DebugUsedParam2(Directory, Params);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomFileSystem::DirectorySunk(
+  const UnicodeString & DestFullName, const TRemoteFile *, const TCopyParamType *)
+{
+  DebugUsedParam(DestFullName);
+}

@@ -790,7 +790,7 @@ BOOL CAsyncSocketEx::Bind(UINT nSocketPort, LPCTSTR lpszSocketAddress)
     memset(&hints, 0, sizeof(addrinfo));
     hints.ai_family = m_SocketData.nFamily;
     hints.ai_socktype = SOCK_STREAM;
-    _snprintf(port, 9, "%lu", nSocketPort);
+    _snprintf(port, 9, "%u", nSocketPort);
     error = getaddrinfo(lpszAscii, port, &hints, &res0);
     if (error)
       return FALSE;
@@ -1092,7 +1092,7 @@ BOOL CAsyncSocketEx::Connect(LPCTSTR lpszHostAddress, UINT nHostPort)
     memset(&hints, 0, sizeof(addrinfo));
     hints.ai_family = m_SocketData.nFamily;
     hints.ai_socktype = SOCK_STREAM;
-    _snprintf(port, 9, "%lu", nHostPort);
+    _snprintf(port, 9, "%u", nHostPort);
     error = getaddrinfo(T2CA(lpszHostAddress), port, &hints, &m_SocketData.addrInfo);
     if (error)
       return FALSE;

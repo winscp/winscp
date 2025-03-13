@@ -112,7 +112,7 @@ int __fastcall CompareNumber(__int64 Value1, __int64 Value2);
 bool ContainsTextSemiCaseSensitive(const UnicodeString & Text, const UnicodeString & SubText);
 bool __fastcall IsReservedName(UnicodeString FileName);
 UnicodeString __fastcall ApiPath(UnicodeString Path);
-bool IsWideChar(wchar_t Ch) { return (Ch >= L'\x80'); };
+bool IsWideChar(wchar_t Ch) { return (Ch >= L'\x80'); }
 UnicodeString __fastcall DisplayableStr(const RawByteString & Str);
 UnicodeString __fastcall ByteToHex(unsigned char B, bool UpperCase = true);
 UnicodeString __fastcall BytesToHex(const unsigned char * B, size_t Length, bool UpperCase = true, wchar_t Separator = L'\0');
@@ -183,7 +183,7 @@ UnicodeString __fastcall FormatVersion(int MajovVersion, int MinorVersion, int R
 TFormatSettings __fastcall GetEngFormatSettings();
 int __fastcall ParseShortEngMonthName(const UnicodeString & MonthStr);
 // The defaults are equal to defaults of TStringList class (except for Sorted)
-TStringList * __fastcall CreateSortedStringList(bool CaseSensitive = false, System::Types::TDuplicates Duplicates = dupIgnore);
+TStringList * __fastcall CreateSortedStringList(bool CaseSensitive = false, System::Types::TDuplicates Duplicates = System::Types::dupIgnore);
 bool SameIdent(const UnicodeString & Ident1, const UnicodeString & Ident2);
 UnicodeString __fastcall FindIdent(const UnicodeString & Ident, TStrings * Idents);
 UnicodeString GetTlsErrorStr(unsigned long Err);
@@ -431,7 +431,7 @@ class BiDiMap
 {
 public:
   typedef std::map<T1, T2> TFirstToSecond;
-  typedef TFirstToSecond::const_iterator const_iterator;
+  typedef typename TFirstToSecond::const_iterator const_iterator;
 
   void Add(const T1 & Value1, const T2 & Value2)
   {
@@ -441,7 +441,7 @@ public:
 
   T1 LookupFirst(const T2 & Value2) const
   {
-    TSecondToFirst::const_iterator Iterator = FSecondToFirst.find(Value2);
+    typename TSecondToFirst::const_iterator Iterator = FSecondToFirst.find(Value2);
     DebugAssert(Iterator != FSecondToFirst.end());
     return Iterator->second;
   }
@@ -497,7 +497,7 @@ public:
 
   void Remove(T EventHandler)
   {
-    TEventHandlers::iterator I = Find(EventHandler);
+    typename TEventHandlers::iterator I = Find(EventHandler);
     if (DebugAlwaysTrue(I != FEventHandlers.end()))
     {
       FEventHandlers.erase(I);
@@ -508,7 +508,7 @@ public:
   template<typename P>
   void Invoke(const P & p)
   {
-    TEventHandlers::iterator I = FEventHandlers.begin();
+    typename TEventHandlers::iterator I = FEventHandlers.begin();
     while (I != FEventHandlers.end())
     {
       (*I)(p);
@@ -541,7 +541,7 @@ private:
   typedef std::vector<T> TEventHandlers;
   TEventHandlers FEventHandlers;
 
-  TEventHandlers::iterator Find(T EventHandler)
+  typename TEventHandlers::iterator Find(T EventHandler)
   {
     return std::find(FEventHandlers.begin(), FEventHandlers.end(), EventHandler);
   }

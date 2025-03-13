@@ -10,7 +10,6 @@
 #include "Terminal.h"
 #include "Cryptography.h"
 #include <TextsCore.h>
-#define WINSCP
 extern "C"
 {
 #include <ne_redirect.h>

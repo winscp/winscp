@@ -250,12 +250,15 @@ static inline size_t sk_write_oob(Socket *s, const void *data, size_t len)
 static inline void sk_write_eof(Socket *s)
 { s->vt->write_eof(s); }
 
-#pragma option push -w-bei // WINSCP
+#ifdef __cplusplus
+#define WINSCP_ENUM_CAST(TYPE, EXPR) static_cast<TYPE>(EXPR)
+#else
+#define WINSCP_ENUM_CAST(TYPE, EXPR) (EXPR)
+#endif
 static inline void plug_log(
     Plug *p, Socket *s, int type, SockAddr *addr, int port,
     const char *msg, int code)
-{ p->vt->log(p, s, type, addr, port, msg, code); }
-#pragma option pop // WINSCP
+{ p->vt->log(p, s, WINSCP_ENUM_CAST(PlugLogType, type), addr, port, msg, code); }
 static inline void plug_closing(Plug *p, PlugCloseType type, const char *msg)
 { p->vt->closing(p, type, msg); }
 static inline void plug_closing_normal(Plug *p)

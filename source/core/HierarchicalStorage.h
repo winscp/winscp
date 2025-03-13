@@ -2,7 +2,7 @@
 #ifndef HierarchicalStorageH
 #define HierarchicalStorageH
 
-#include <registry.hpp>
+#include <Registry.hpp>
 #include <memory>
 #include <map>
 //---------------------------------------------------------------------------
@@ -39,7 +39,7 @@ public:
 
   bool __fastcall ReadBool(const UnicodeString & Name, bool Default);
   template<typename T>
-  typename T __fastcall ReadEnum(
+  T __fastcall ReadEnum(
     const UnicodeString & Name, const T & Default, const TIntMapping & Mapping = TIntMapping());
   int __fastcall ReadInteger(const UnicodeString & Name, int Default);
   __int64 __fastcall ReadInt64(const UnicodeString & Name, __int64 Default);
