@@ -40,7 +40,7 @@ public:
   {
   }
 
-  virtual void __fastcall Execute(void * Arg)
+  virtual void __fastcall Execute(void *)
   {
     if (OnNotify != NULL)
     {
@@ -60,7 +60,7 @@ public:
   {
   }
 
-  virtual void __fastcall Execute(void * Arg)
+  virtual void __fastcall Execute(void *)
   {
     if (OnInformation != NULL)
     {
@@ -168,7 +168,7 @@ public:
   {
   }
 
-  virtual void __fastcall Execute(void * Arg)
+  virtual void __fastcall Execute(void *)
   {
     if (OnDisplayBanner != NULL)
     {
@@ -193,7 +193,7 @@ public:
   {
   }
 
-  virtual void __fastcall Execute(void * Arg)
+  virtual void __fastcall Execute(void *)
   {
     if (OnReadDirectory != NULL)
     {
@@ -214,7 +214,7 @@ public:
   {
   }
 
-  virtual void __fastcall Execute(void * Arg)
+  virtual void __fastcall Execute(void *)
   {
     if (OnReadDirectoryProgress != NULL)
     {
@@ -351,7 +351,7 @@ void __fastcall TSimpleThread::WaitFor(unsigned int Milliseconds)
 //---------------------------------------------------------------------------
 __fastcall TSignalThread::TSignalThread(bool LowPriority, HANDLE Event) :
   TSimpleThread(),
-  FTerminated(true), FEvent(NULL)
+  FEvent(NULL), FTerminated(true)
 {
   if (Event == NULL)
   {
@@ -434,11 +434,9 @@ void __fastcall TSignalThread::Terminate()
 //---------------------------------------------------------------------------
 __fastcall TTerminalQueue::TTerminalQueue(TTerminal * Terminal,
   TConfiguration * Configuration) :
-  TSignalThread(true),
-  FTerminal(Terminal), FTransfersLimit(2), FKeepDoneItemsFor(0), FEnabled(true),
-  FConfiguration(Configuration), FSessionData(NULL), FItems(NULL), FDoneItems(NULL),
-  FTerminals(NULL), FItemsSection(NULL), FFreeTerminals(0),
-  FItemsInProcess(0), FTemporaryTerminals(0), FOverallTerminals(0)
+  TSignalThread(true), FTerminal(Terminal), FConfiguration(Configuration), FSessionData(NULL), FItems(NULL), FDoneItems(NULL),
+  FItemsInProcess(0), FItemsSection(NULL), FFreeTerminals(0), FTerminals(NULL), FTemporaryTerminals(0),
+  FOverallTerminals(0), FTransfersLimit(2), FKeepDoneItemsFor(0), FEnabled(true)
 {
   FOnQueryUser = NULL;
   FOnPromptUser = NULL;
@@ -755,7 +753,7 @@ bool __fastcall TTerminalQueue::ItemProcessUserAction(TQueueItem * Item, void * 
   bool Result = !FFinished;
   if (Result)
   {
-    TTerminalItem * TerminalItem;
+    TTerminalItem * TerminalItem = NULL; // shut up
 
     {
       TGuard Guard(FItemsSection);
@@ -905,7 +903,7 @@ bool __fastcall TTerminalQueue::ItemPause(TQueueItem * Item, bool Pause)
   bool Result = !FFinished;
   if (Result)
   {
-    TTerminalItem * TerminalItem;
+    TTerminalItem * TerminalItem = NULL; // shut up
 
     {
       TGuard Guard(FItemsSection);
@@ -1617,8 +1615,8 @@ bool TTerminalItem::IsCancelled()
 // TQueueItem
 //---------------------------------------------------------------------------
 __fastcall TQueueItem::TQueueItem() :
-  FStatus(qsPending), FTerminalItem(NULL), FSection(NULL), FProgressData(NULL),
-  FQueue(NULL), FInfo(NULL), FCompleteEvent(INVALID_HANDLE_VALUE),
+  FStatus(qsPending), FSection(NULL), FTerminalItem(NULL), FProgressData(NULL),
+  FInfo(NULL), FQueue(NULL), FCompleteEvent(INVALID_HANDLE_VALUE),
   FCPSLimit(-1)
 {
   FSection = new TCriticalSection();
@@ -1794,9 +1792,8 @@ UnicodeString __fastcall TQueueItem::StartupDirectory() const
 //---------------------------------------------------------------------------
 __fastcall TQueueItemProxy::TQueueItemProxy(TTerminalQueue * Queue,
   TQueueItem * QueueItem) :
-  FQueue(Queue), FQueueItem(QueueItem), FProgressData(NULL),
-  FQueueStatus(NULL), FInfo(NULL),
-  FProcessingUserAction(false), FUserData(NULL)
+  UserData(NULL), FProgressData(NULL), FQueue(Queue), FQueueItem(QueueItem),
+  FQueueStatus(NULL), FInfo(NULL), FProcessingUserAction(false)
 {
   FProgressData = new TFileOperationProgressType();
   FInfo = new TQueueItem::TInfo();
@@ -2276,7 +2273,7 @@ bool __fastcall TTransferQueueItem::UpdateFileList(TQueueFileList * FileList)
 static void ExtractLocalSourcePath(TStrings * Files, UnicodeString & Path)
 {
   ExtractCommonPath(Files, Path);
-  // this way the trailing backslash is preserved for root directories like D:\\
+  // this way the trailing backslash is preserved for root directories like "D:\"
   Path = ExtractFileDir(IncludeTrailingBackslash(Path));
 }
 //---------------------------------------------------------------------------

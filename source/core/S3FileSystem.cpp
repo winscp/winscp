@@ -3,7 +3,6 @@
 #pragma hdrstop
 
 #define NE_LFS
-#define WINSCP
 #define NEED_LIBS3
 
 #include "S3FileSystem.h"
@@ -52,7 +51,7 @@
 //---------------------------------------------------------------------------
 static std::unique_ptr<TCriticalSection> LibS3Section(TraceInitPtr(new TCriticalSection()));
 //---------------------------------------------------------------------------
-UTF8String LibS3Delimiter(L"/");
+static UTF8String LibS3Delimiter(L"/");
 //---------------------------------------------------------------------------
 UnicodeString __fastcall S3LibVersion()
 {
@@ -103,19 +102,19 @@ static void NeedS3Config(
   }
 }
 //---------------------------------------------------------------------------
-UnicodeString S3CredentialsFileName;
-TDateTime S3CredentialsTimestamp;
-std::unique_ptr<TCustomIniFile> S3CredentialsFile;
-UnicodeString S3ConfigFileName;
-TDateTime S3ConfigTimestamp;
-std::unique_ptr<TCustomIniFile> S3ConfigFile;
-UnicodeString S3Profile;
-bool S3SecurityProfileChecked = false;
-TDateTime S3CredentialsExpiration;
-UnicodeString S3SessionToken;
-UnicodeString S3SecurityProfile;
+static UnicodeString S3CredentialsFileName;
+static TDateTime S3CredentialsTimestamp;
+static std::unique_ptr<TCustomIniFile> S3CredentialsFile;
+static UnicodeString S3ConfigFileName;
+static TDateTime S3ConfigTimestamp;
+static std::unique_ptr<TCustomIniFile> S3ConfigFile;
+static UnicodeString S3Profile;
+static bool S3SecurityProfileChecked = false;
+static TDateTime S3CredentialsExpiration;
+static UnicodeString S3SessionToken;
+static UnicodeString S3SecurityProfile;
 typedef std::map<UnicodeString, UnicodeString> TS3Credentials;
-TS3Credentials S3Credentials;
+static TS3Credentials S3Credentials;
 //---------------------------------------------------------------------------
 static void NeedS3Config()
 {
@@ -1807,6 +1806,7 @@ void __fastcall TS3FileSystem::CreateDirectory(const UnicodeString & ADirName, b
 void __fastcall TS3FileSystem::CreateLink(const UnicodeString FileName,
   const UnicodeString PointTo, bool /*Symbolic*/)
 {
+  DebugUsedParam2(FileName, PointTo);
   DebugFail();
 }
 //---------------------------------------------------------------------------
@@ -2259,12 +2259,14 @@ void __fastcall TS3FileSystem::CalculateFilesChecksum(
 void __fastcall TS3FileSystem::CustomCommandOnFile(const UnicodeString FileName,
   const TRemoteFile * /*File*/, UnicodeString Command, int /*Params*/, TCaptureOutputEvent /*OutputEvent*/)
 {
+  DebugUsedParam2(FileName, Command);
   DebugFail();
 }
 //---------------------------------------------------------------------------
 void __fastcall TS3FileSystem::AnyCommand(const UnicodeString Command,
   TCaptureOutputEvent /*OutputEvent*/)
 {
+  DebugUsedParam(Command);
   DebugFail();
 }
 //---------------------------------------------------------------------------
@@ -2276,6 +2278,7 @@ TStrings * __fastcall TS3FileSystem::GetFixedPaths()
 void __fastcall TS3FileSystem::SpaceAvailable(const UnicodeString Path,
   TSpaceAvailable & /*ASpaceAvailable*/)
 {
+  DebugUsedParam(Path);
   DebugFail();
 }
 //---------------------------------------------------------------------------
@@ -2645,7 +2648,7 @@ void __fastcall TS3FileSystem::Source(
       MultipartUploadId = RawByteString();
     }
   }
-  catch (Exception & E)
+  catch (Exception &)
   {
     if (!MultipartUploadId.IsEmpty())
     {

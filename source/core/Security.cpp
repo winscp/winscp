@@ -11,7 +11,7 @@
 #define PWALG_SIMPLE_INTERNAL 0x00
 #define PWALG_SIMPLE_EXTERNAL 0x01
 #define PWALG_SIMPLE_INTERNAL2 0x02
-RawByteString PWALG_SIMPLE_STRING("0123456789ABCDEF");
+static RawByteString PWALG_SIMPLE_STRING("0123456789ABCDEF");
 //---------------------------------------------------------------------------
 RawByteString SimpleEncryptChar(unsigned char Ch)
 {

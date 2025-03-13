@@ -86,7 +86,7 @@ void __fastcall TBookmarks::LoadLevel(THierarchicalStorage * Storage, const Unic
     Storage->GetValueNames(Names);
     UnicodeString Name;
     UnicodeString Directory;
-    TShortCut ShortCut;
+    TShortCut ShortCut = TShortCut();
     for (int i = 0; i < Names->Count; i++)
     {
       Name = Names->Strings[i];

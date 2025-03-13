@@ -54,6 +54,7 @@ class TTerminalQueue;
 class TQueueItemProxy;
 class TTerminalQueueStatus;
 class TQueueFileList;
+class TTerminalItem;
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TQueueListUpdate)
   (TTerminalQueue * Queue);
@@ -240,7 +241,8 @@ public:
   __property TQueueItem::TStatus Status = { read = FStatus };
   __property bool ProcessingUserAction = { read = FProcessingUserAction };
   __property int Index = { read = GetIndex };
-  __property void * UserData = { read = FUserData, write = FUserData };
+  // Clang warns on property backed by private field which is never used
+  void * UserData;
 
 private:
   TFileOperationProgressType * FProgressData;
@@ -250,7 +252,6 @@ private:
   TTerminalQueueStatus * FQueueStatus;
   TQueueItem::TInfo * FInfo;
   bool FProcessingUserAction;
-  void * FUserData;
 
   __fastcall TQueueItemProxy(TTerminalQueue * Queue, TQueueItem * QueueItem);
   virtual __fastcall ~TQueueItemProxy();

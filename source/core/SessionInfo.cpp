@@ -794,7 +794,7 @@ FILE * __fastcall OpenFile(UnicodeString LogFileName, TDateTime Started, TSessio
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-const wchar_t *LogLineMarks = L"<>!.*";
+static const wchar_t *LogLineMarks = L"<>!.*";
 __fastcall TSessionLog::TSessionLog(TSessionUI* UI, TDateTime Started, TSessionData * SessionData,
   TConfiguration * Configuration)
 {

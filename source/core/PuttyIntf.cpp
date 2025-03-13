@@ -15,9 +15,9 @@ char sshver[50];
 extern const char commitid[] = "";
 const bool platform_uses_x11_unix_by_default = true;
 CRITICAL_SECTION putty_section;
-bool SaveRandomSeed;
-bool HadRandomSeed;
-char appname_[50];
+static bool SaveRandomSeed;
+static bool HadRandomSeed;
+static char appname_[50];
 const char *const appname = appname_;
 extern const bool share_can_be_downstream = false;
 extern const bool share_can_be_upstream = false;
@@ -320,6 +320,7 @@ const SeatDialogPromptDescriptions * prompt_descriptions(Seat *)
         /*.hk_connect_once_action =*/ "",
         /*.hk_cancel_action =*/ "",
         /*.hk_cancel_action_Participle =*/ "",
+        NULL, NULL,
     };
     return &descs;
 }
@@ -470,8 +471,8 @@ THierarchicalStorage * PuttyStorage = NULL;
 enum TPuttyRegistryMode { prmPass, prmRedirect, prmCollect, prmFail };
 static TPuttyRegistryMode PuttyRegistryMode = prmRedirect;
 typedef std::map<UnicodeString, unsigned long> TPuttyRegistryTypes;
-TPuttyRegistryTypes PuttyRegistryTypes;
-HKEY RandSeedFileStorage = reinterpret_cast<HKEY>(1);
+static TPuttyRegistryTypes PuttyRegistryTypes;
+static HKEY RandSeedFileStorage = reinterpret_cast<HKEY>(1);
 //---------------------------------------------------------------------------
 int reg_override_winscp()
 {
@@ -505,7 +506,7 @@ HKEY open_regkey_fn_winscp(bool Create, bool Write, HKEY Key, const char * Path,
   }
   else if (PuttyRegistryMode == prmFail)
   {
-    Result = false;
+    Result = reinterpret_cast<HKEY>(false);
   }
   else if (PuttyRegistryMode == prmRedirect)
   {
@@ -1354,7 +1355,7 @@ struct TCipherGroup
   int CipherGroup;
   const ssh2_ciphers * Cipher;
 };
-TCipherGroup Ciphers[] =
+static TCipherGroup Ciphers[] =
   {
     { CIPHER_AES, &ssh2_aes },
     { CIPHER_CHACHA20, &ssh2_ccp },
@@ -1464,7 +1465,7 @@ TStrings * SshHostKeyList()
 TStrings * SshMacList()
 {
   std::unique_ptr<TStrings> Result(new TStringList());
-  const struct ssh2_macalg ** Macs = NULL;
+  const struct ssh2_macalg * const * Macs = NULL;
   int Count = 0;
   get_macs(&Count, &Macs);
 
@@ -1540,7 +1541,7 @@ void WritePuttySettings(THierarchicalStorage * Storage, const UnicodeString & AS
     if (IType != PuttyRegistryTypes.end())
     {
       UnicodeString Value = Settings->ValueFromIndex[Index];
-      int I;
+      int I = 0; // shut up
       if (IType->second == REG_SZ)
       {
         Storage->WriteStringRaw(Name, Value);

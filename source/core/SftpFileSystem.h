@@ -5,7 +5,7 @@
 #include <FileSystems.h>
 //---------------------------------------------------------------------------
 class TSFTPPacket;
-class TOverwriteFileParams;
+struct TOverwriteFileParams;
 struct TSFTPSupport;
 class TSecureShell;
 class TEncryption;
@@ -181,7 +181,7 @@ protected:
     TSFTPOverwriteMode & Mode, const TOverwriteFileParams * FileParams);
   bool SFTPConfirmResume(const UnicodeString DestFileName, bool PartialBiggerThanSource,
     TFileOperationProgressType * OperationProgress);
-  char * __fastcall GetEOL() const;
+  const char * __fastcall GetEOL() const;
   inline void __fastcall BusyStart();
   inline void __fastcall BusyEnd();
   inline unsigned long __fastcall TransferBlockSize(

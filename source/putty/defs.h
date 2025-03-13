@@ -11,6 +11,14 @@
 #ifndef PUTTY_DEFS_H
 #define PUTTY_DEFS_H
 
+#ifdef WINSCP
+#define HAVE_AES_NI 1
+#define HAVE_WMEMCHR 1
+#define HAVE_CMAKE_H 0
+#define HAVE_NO_STDINT_H 0
+#define HAVE_ARM_DIT 0
+#endif
+
 #ifndef WINSCP
 #ifdef NDEBUG
 /*
@@ -32,11 +40,6 @@
 #include <stdint.h>
 #include <stdio.h>                     /* for __MINGW_PRINTF_FORMAT */
 #include <stdbool.h>
-
-#ifdef WINSCP
-#define HAVE_AES_NI 1
-#define HAVE_WMEMCHR 1
-#endif
 
 #if defined _MSC_VER && _MSC_VER < 1800
 /* Work around lack of inttypes.h and strtoumax in older MSVC */

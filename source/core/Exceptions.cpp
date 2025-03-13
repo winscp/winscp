@@ -34,7 +34,7 @@ static bool __fastcall WellKnownException(
   Exception * E, UnicodeString * AMessage, const wchar_t ** ACounterName, Exception ** AClone, bool Rethrow)
 {
   UnicodeString Message;
-  const wchar_t * CounterName;
+  const wchar_t * CounterName = NULL; // shut up
   std::unique_ptr<Exception> Clone;
 
 

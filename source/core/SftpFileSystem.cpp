@@ -57,13 +57,11 @@
 #define SSH_FXP_ATTRS              105
 #define SSH_FXP_EXTENDED           200
 #define SSH_FXP_EXTENDED_REPLY     201
-#define SSH_FXP_ATTRS              105
 
 #define SSH_FILEXFER_ATTR_SIZE              0x00000001
 #define SSH_FILEXFER_ATTR_UIDGID            0x00000002
 #define SSH_FILEXFER_ATTR_PERMISSIONS       0x00000004
 #define SSH_FILEXFER_ATTR_ACMODTIME         0x00000008
-#define SSH_FILEXFER_ATTR_EXTENDED          0x80000000
 #define SSH_FILEXFER_ATTR_ACCESSTIME        0x00000008
 #define SSH_FILEXFER_ATTR_CREATETIME        0x00000010
 #define SSH_FILEXFER_ATTR_MODIFYTIME        0x00000020
@@ -86,9 +84,9 @@
 
 #define SSH_FILEXFER_TYPE_REGULAR          1
 #define SSH_FILEXFER_TYPE_DIRECTORY        2
-#define SSH_FILEXFER_TYPE_SYMLINK          3
-#define SSH_FILEXFER_TYPE_SPECIAL          4
-#define SSH_FILEXFER_TYPE_UNKNOWN          5
+//      SSH_FILEXFER_TYPE_SYMLINK          3
+//      SSH_FILEXFER_TYPE_SPECIAL          4
+//      SSH_FILEXFER_TYPE_UNKNOWN          5
 
 #define SSH_FXF_READ            0x00000001
 #define SSH_FXF_WRITE           0x00000002
@@ -98,37 +96,37 @@
 #define SSH_FXF_EXCL            0x00000020
 #define SSH_FXF_TEXT            0x00000040
 
-#define SSH_FXF_ACCESS_DISPOSITION        0x00000007
+//      SSH_FXF_ACCESS_DISPOSITION        0x00000007
 #define     SSH_FXF_CREATE_NEW            0x00000000
 #define     SSH_FXF_CREATE_TRUNCATE       0x00000001
 #define     SSH_FXF_OPEN_EXISTING         0x00000002
 #define     SSH_FXF_OPEN_OR_CREATE        0x00000003
-#define     SSH_FXF_TRUNCATE_EXISTING     0x00000004
+//          SSH_FXF_TRUNCATE_EXISTING     0x00000004
 #define SSH_FXF_ACCESS_APPEND_DATA        0x00000008
-#define SSH_FXF_ACCESS_APPEND_DATA_ATOMIC 0x00000010
+//      SSH_FXF_ACCESS_APPEND_DATA_ATOMIC 0x00000010
 #define SSH_FXF_ACCESS_TEXT_MODE          0x00000020
 
 #define ACE4_READ_DATA         0x00000001
-#define ACE4_LIST_DIRECTORY    0x00000001
+//      ACE4_LIST_DIRECTORY    0x00000001
 #define ACE4_WRITE_DATA        0x00000002
-#define ACE4_ADD_FILE          0x00000002
+//      ACE4_ADD_FILE          0x00000002
 #define ACE4_APPEND_DATA       0x00000004
-#define ACE4_ADD_SUBDIRECTORY  0x00000004
-#define ACE4_READ_NAMED_ATTRS  0x00000008
-#define ACE4_WRITE_NAMED_ATTRS 0x00000010
-#define ACE4_EXECUTE           0x00000020
-#define ACE4_DELETE_CHILD      0x00000040
-#define ACE4_READ_ATTRIBUTES   0x00000080
-#define ACE4_WRITE_ATTRIBUTES  0x00000100
-#define ACE4_DELETE            0x00010000
-#define ACE4_READ_ACL          0x00020000
-#define ACE4_WRITE_ACL         0x00040000
-#define ACE4_WRITE_OWNER       0x00080000
-#define ACE4_SYNCHRONIZE       0x00100000
+//      ACE4_ADD_SUBDIRECTORY  0x00000004
+//      ACE4_READ_NAMED_ATTRS  0x00000008
+//      ACE4_WRITE_NAMED_ATTRS 0x00000010
+//      ACE4_EXECUTE           0x00000020
+//      ACE4_DELETE_CHILD      0x00000040
+//      ACE4_READ_ATTRIBUTES   0x00000080
+//      ACE4_WRITE_ATTRIBUTES  0x00000100
+//      ACE4_DELETE            0x00010000
+//      ACE4_READ_ACL          0x00020000
+//      ACE4_WRITE_ACL         0x00040000
+//      ACE4_WRITE_OWNER       0x00080000
+//      ACE4_SYNCHRONIZE       0x00100000
 
 #define SSH_FILEXFER_ATTR_FLAGS_HIDDEN           0x00000004
 
-#define SSH_FXP_REALPATH_NO_CHECK    0x00000001
+//      SSH_FXP_REALPATH_NO_CHECK    0x00000001
 #define SSH_FXP_REALPATH_STAT_IF     0x00000002
 #define SSH_FXP_REALPATH_STAT_ALWAYS 0x00000003
 
@@ -658,7 +656,7 @@ public:
 
       // SSH-2.0-cryptlib returns file type 0 in response to SSH_FXP_LSTAT,
       // handle this undefined value as "unknown"
-      static wchar_t * Types = L"U-DLSUOCBF";
+      static const wchar_t * Types = L"U-DLSUOCBF";
       if (FXType > (unsigned char)wcslen(Types))
       {
         throw Exception(FMTLOAD(SFTP_UNKNOWN_FILE_TYPE, (int(FXType))));
@@ -949,7 +947,7 @@ private:
   TSFTPFileSystem * FReservedBy;
 
   static int FMessageCounter;
-  static const FSendPrefixLen = 4;
+  static const int FSendPrefixLen = 4;
 
   void Init()
   {
@@ -2593,7 +2591,7 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
 
   int Result = SSH_FX_OK;
   int Reservation = FPacketReservations->IndexOf(Packet);
-  bool NotLogged;
+  bool NotLogged = false; // shut up
 
   if (Reservation < 0 || Packet->Capacity == 0)
   {
@@ -3369,7 +3367,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
       TSFTPPacket Packet(SSH_FXP_EXTENDED);
       Packet.AddString(SFTP_EXT_LIMITS);
       SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_EXTENDED_REPLY);
-      unsigned int MaxPacketSize = std::min(static_cast<__int64>(std::numeric_limits<unsigned long>::max()), Packet.GetInt64());
+      unsigned int MaxPacketSize = static_cast<unsigned int>(std::min(static_cast<__int64>(std::numeric_limits<unsigned int>::max()), Packet.GetInt64()));
       FTerminal->LogEvent(FORMAT(L"Limiting packet size to server's limit of %d + %d bytes",
         (static_cast<int>(MaxPacketSize), static_cast<int>(PacketPayload))));
       FMaxPacketSize = MaxPacketSize + PacketPayload;
@@ -3407,7 +3405,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
 
 }
 //---------------------------------------------------------------------------
-char * __fastcall TSFTPFileSystem::GetEOL() const
+const char * __fastcall TSFTPFileSystem::GetEOL() const
 {
   if (FVersion >= 4)
   {
@@ -3429,7 +3427,7 @@ void __fastcall TSFTPFileSystem::LookupUsersGroups()
 
   TSFTPPacket * Packets[] = { &PacketOwners, &PacketGroups };
   TRemoteTokenList * Lists[] = { &FTerminal->FUsers, &FTerminal->FGroups };
-  wchar_t ListTypes[] = { OGQ_LIST_OWNERS, OGQ_LIST_GROUPS };
+  unsigned char ListTypes[] = { OGQ_LIST_OWNERS, OGQ_LIST_GROUPS };
 
   for (size_t Index = 0; Index < LENOF(Packets); Index++)
   {
@@ -4611,7 +4609,9 @@ bool TSFTPFileSystem::SFTPConfirmResume(const UnicodeString DestFileName,
         break;
 
       case qaCancel:
+      default:
         OperationProgress->SetCancelAtLeast(csCancel);
+        ResumeTransfer = false; // shut up
         Abort();
         break;
     }
@@ -4625,9 +4625,10 @@ bool TSFTPFileSystem::SFTPConfirmResume(const UnicodeString DestFileName,
 //---------------------------------------------------------------------------
 bool __fastcall TSFTPFileSystem::DoesFileLookLikeSymLink(TRemoteFile * File)
 {
+  unsigned short AllInt = static_cast<unsigned short>(TRights::rfAll);
   return
     (FVersion < 4) &&
-    ((*File->Rights & TRights::rfAll) == TRights::rfAll) &&
+    ((*File->Rights & AllInt) == AllInt) &&
     (File->Size < 100);
 }
 //---------------------------------------------------------------------------
@@ -4644,7 +4645,7 @@ void __fastcall TSFTPFileSystem::Source(
   bool DestFileExists = false;
   TRights DestRights;
 
-  __int64 ResumeOffset;
+  __int64 ResumeOffset = 0; // shut up
 
   // should we check for interrupted transfer?
   ResumeAllowed =
@@ -5647,7 +5648,7 @@ void __fastcall TSFTPFileSystem::Sink(
         int GapCount = 0;
         unsigned long Missing = 0;
         unsigned long DataLen = 0;
-        unsigned long BlockSize;
+        unsigned long BlockSize = 0; // shut up
         bool ConvertToken = false;
         TEncryption Encryption(FTerminal->GetEncryptKey());
         bool Decrypt = FTerminal->IsFileEncrypted(FileName);

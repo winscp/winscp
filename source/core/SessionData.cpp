@@ -11,7 +11,7 @@
 #include "TextsCore.h"
 #include "PuttyIntf.h"
 #include "RemoteFiles.h"
-#include "SFTPFileSystem.h"
+#include "SftpFileSystem.h"
 #include "S3FileSystem.h"
 #include "FileMasks.h"
 #include <Soap.EncdDecd.hpp>
@@ -31,8 +31,8 @@
 const wchar_t * PingTypeNames = L"Off;Null;Dummy";
 const wchar_t * FtpPingTypeNames = L"Off;Dummy;Dummy;List";
 const wchar_t * ProxyMethodNames = L"None;SOCKS4;SOCKS5;HTTP;Telnet;Cmd";
-TIntMapping ProxyMethodMapping = CreateIntMappingFromEnumNames(LowerCase(ProxyMethodNames));
-const wchar_t * DefaultName = L"Default Settings";
+static TIntMapping ProxyMethodMapping = CreateIntMappingFromEnumNames(LowerCase(ProxyMethodNames));
+static const wchar_t * DefaultName = L"Default Settings";
 const UnicodeString CipherNames[CIPHER_COUNT] = {L"WARN", L"3des", L"blowfish", L"aes", L"des", L"arcfour", L"chacha20", "aesgcm"};
 const UnicodeString KexNames[KEX_COUNT] = {L"WARN", L"dh-group1-sha1", L"dh-group14-sha1", L"dh-group15-sha512", L"dh-group16-sha512", L"dh-group17-sha512", L"dh-group18-sha512", L"dh-gex-sha1", L"rsa", L"ecdh", L"ntru-curve25519", L"mlkem-curve25519", L"mlkem-nist"};
 const UnicodeString HostKeyNames[HOSTKEY_COUNT] = {L"WARN", L"rsa", L"dsa", L"ecdsa", L"ed25519", L"ed448"};
@@ -2155,8 +2155,8 @@ bool __fastcall TSessionData::ParseUrl(UnicodeString Url, TOptions * Options,
 {
   bool ProtocolDefined = true;
   bool PortNumberDefined = false;
-  TFSProtocol AFSProtocol;
-  int DefaultProtocolPortNumber;
+  TFSProtocol AFSProtocol = TFSProtocol(); // shut up
+  int DefaultProtocolPortNumber = 0; // shut up
   TFtps AFtps = ftpsNone;
   int ProtocolLen = 0;
   bool HttpForWebdav = FLAGCLEAR(Flags, pufPreferProtocol) || (FSProtocol != fsS3);
@@ -2699,6 +2699,7 @@ void __fastcall TSessionData::ExpandEnvironmentVariables()
 //---------------------------------------------------------------------
 void __fastcall TSessionData::ValidatePath(const UnicodeString Path)
 {
+  DebugUsedParam(Path);
   // noop
 }
 //---------------------------------------------------------------------
@@ -3324,7 +3325,7 @@ void __fastcall TSessionData::SetFSProtocol(TFSProtocol value)
 //---------------------------------------------------------------------
 UnicodeString __fastcall TSessionData::GetFSProtocolStr()
 {
-  DebugAssert(FSProtocol >= 0 && FSProtocol < FSPROTOCOL_COUNT);
+  DebugAssert(FSProtocol >= 0 && static_cast<int>(FSProtocol) < FSPROTOCOL_COUNT);
   return FSProtocolNames[FSProtocol];
 }
 //---------------------------------------------------------------------------
@@ -3709,7 +3710,7 @@ UnicodeString __fastcall TSessionData::GenerateSessionUrl(unsigned int Flags)
   return Url;
 }
 //---------------------------------------------------------------------
-UnicodeString ScriptCommandOpenLink(TraceInitStr(ScriptCommandLink(L"open")));
+static UnicodeString ScriptCommandOpenLink(TraceInitStr(ScriptCommandLink(L"open")));
 //---------------------------------------------------------------------
 void __fastcall TSessionData::AddSwitch(
   UnicodeString & Result, const UnicodeString & Name, bool Rtf)
@@ -3822,7 +3823,7 @@ UnicodeString __fastcall TSessionData::GenerateOpenCommandArgs(bool Rtf)
   return Result;
 }
 //---------------------------------------------------------------------
-UnicodeString SessionOptionsClassName(L"SessionOptions");
+static UnicodeString SessionOptionsClassName(L"SessionOptions");
 //---------------------------------------------------------------------
 void __fastcall TSessionData::AddAssemblyProperty(
   UnicodeString & Result, TAssemblyLanguage Language,

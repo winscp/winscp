@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------------
 #include "stdafx.h"
 #include "TransferSocket.h"
-#include "mainthread.h"
+#include "MainThread.h"
 #include "AsyncProxySocketLayer.h"
 #ifndef MPEXT_NO_GSS
 #include "AsyncGssSocketLayer.h"
@@ -1046,7 +1046,7 @@ int CTransferSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
           break;
         case SSL_VERIFY_CERT:
           t_SslCertData data;
-          LPTSTR CertError = NULL;
+          LPCTSTR CertError = NULL;
           if (m_pSslLayer->GetPeerCertificateData(data, CertError))
             m_pSslLayer->SetNotifyReply(data.priv_data, SSL_VERIFY_CERT, 1);
           else
@@ -1111,7 +1111,7 @@ void CTransferSocket::WriteData(const char * buffer, int len)
 {
   if (m_OnTransferOut != NULL)
   {
-    m_OnTransferOut(NULL, m_pBuffer, len);
+    m_OnTransferOut(NULL, reinterpret_cast<const unsigned char *>(m_pBuffer), len);
   }
   else
   {
@@ -1124,7 +1124,7 @@ int CTransferSocket::ReadData(char * buffer, int len)
   int result;
   if (m_OnTransferIn != NULL)
   {
-    result = m_OnTransferIn(NULL, buffer, len);
+    result = m_OnTransferIn(NULL, reinterpret_cast<unsigned char *>(buffer), len);
   }
   else
   {

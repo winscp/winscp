@@ -16,7 +16,7 @@ void * __fastcall CreateFileInfo(UnicodeString FileName)
 {
   unsigned long Handle;
   unsigned int Size;
-  void * Result = NULL;
+  char * Result = NULL;
 
   // Get file version info block size
   Size = GetFileVersionInfoSize(FileName.c_str(), &Handle);
@@ -37,7 +37,7 @@ void * __fastcall CreateFileInfo(UnicodeString FileName)
 // Free file version info block memory
 void __fastcall FreeFileInfo(void * FileInfo)
 {
-  delete[] FileInfo;
+  delete[] static_cast<char *>(FileInfo);
 }
 //---------------------------------------------------------------------------
 typedef TTranslation TTranslations[65536];

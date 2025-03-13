@@ -2,7 +2,7 @@
 #ifndef FileBufferH
 #define FileBufferH
 
-#include <classes.hpp>
+#include <Classes.hpp>
 //---------------------------------------------------------------------------
 extern const wchar_t * EOLTypeNames;
 enum TEOLType { eolLF /* \n */, eolCRLF /* \r\n */, eolCR /* \r */ };
@@ -17,10 +17,10 @@ class TFileBuffer
 public:
   __fastcall TFileBuffer();
   virtual __fastcall ~TFileBuffer();
-  void __fastcall Convert(char * Source, char * Dest, int Params, bool & Token);
+  void __fastcall Convert(const char * Source, const char * Dest, int Params, bool & Token);
   void __fastcall Convert(TEOLType Source, TEOLType Dest, int Params, bool & Token);
-  void __fastcall Convert(char * Source, TEOLType Dest, int Params, bool & Token);
-  void __fastcall Convert(TEOLType Source, char * Dest, int Params, bool & Token);
+  void __fastcall Convert(const char * Source, TEOLType Dest, int Params, bool & Token);
+  void __fastcall Convert(TEOLType Source, const char * Dest, int Params, bool & Token);
   void __fastcall Insert(int Index, const char * Buf, int Len);
   void __fastcall Delete(int Index, int Len);
   DWORD __fastcall LoadStream(TStream * Stream, const DWORD Len, bool ForceLen);
@@ -58,9 +58,8 @@ public:
   virtual int __fastcall Write(const System::DynamicArray<System::Byte> Buffer, int Offset, int Count);
 private:
   THandleStream * FSource;
-  bool FOwned;
 };
 //---------------------------------------------------------------------------
-char * __fastcall EOLToStr(TEOLType EOLType);
+const char * __fastcall EOLToStr(TEOLType EOLType);
 //---------------------------------------------------------------------------
 #endif

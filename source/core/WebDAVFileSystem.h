@@ -103,7 +103,17 @@ protected:
     const TOverwriteFileParams * FileParams, const TCopyParamType * CopyParam,
     int Params);
   void CheckStatus(int NeonStatus);
-  struct TSessionContext;
+  struct TSessionContext
+  {
+    TSessionContext();
+    ~TSessionContext();
+    TWebDAVFileSystem * FileSystem;
+    ne_session_s * NeonSession; // The main one (there might be aux session for the same context)
+    UnicodeString HostName;
+    int PortNumber;
+    bool NtlmAuthenticationFailed;
+    UnicodeString AuthorizationProtocol;
+  };
   void CheckStatus(TSessionContext * SessionContext, int NeonStatus);
   void __fastcall ClearNeonError();
   static void NeonPropsResult(
@@ -162,17 +172,6 @@ private:
   RawByteString FPassword;
   UnicodeString FTlsVersionStr;
   unsigned int FCapabilities;
-  struct TSessionContext
-  {
-    TSessionContext();
-    ~TSessionContext();
-    TWebDAVFileSystem * FileSystem;
-    ne_session_s * NeonSession; // The main one (there might be aux session for the same context)
-    UnicodeString HostName;
-    int PortNumber;
-    bool NtlmAuthenticationFailed;
-    UnicodeString AuthorizationProtocol;
-  };
   TSessionContext * FSessionContext;
   enum TIgnoreAuthenticationFailure { iafNo, iafWaiting, iafPasswordFailed } FIgnoreAuthenticationFailure;
   UnicodeString FAuthorizationProtocol;

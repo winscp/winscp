@@ -450,7 +450,7 @@ void __fastcall TCopyParamType::DoGetInfoStr(
   {
     UnicodeString Value;
     UnicodeString CodeState;
-    int ResumeThresholdKB = (ResumeThreshold / 1024);
+    int ResumeThresholdKB = static_cast<int>(ResumeThreshold / 1024);
     switch (ResumeSupport)
     {
       case rsOff:

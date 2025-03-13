@@ -758,7 +758,7 @@ void CAsyncProxySocketLayer::OnConnect(int nErrorCode)
       else
       {
         pHost = new char[16];
-        sprintf(pHost, "%d.%d.%d.%d", m_nProxyPeerIp%256, (m_nProxyPeerIp>>8) % 256, (m_nProxyPeerIp>>16) %256, m_nProxyPeerIp>>24);
+        sprintf(pHost, "%lu.%lu.%lu.%lu", m_nProxyPeerIp%256, (m_nProxyPeerIp>>8) % 256, (m_nProxyPeerIp>>16) %256, m_nProxyPeerIp>>24);
       }
       if (!m_ProxyData.bUseLogon)
         sprintf(str, "CONNECT %s:%d HTTP/1.1\r\nHost: %s:%d\r\n\r\n", pHost, ntohs(m_nProxyPeerPort),

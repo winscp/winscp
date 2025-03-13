@@ -19,6 +19,8 @@ typedef enum {
     FILTER_SOUND_FILES, /* whatever kind of sound file we can use as bell */
 } FilereqFilter;
 
+struct callback_set;
+
 #include "defs.h"
 #include "platform.h"
 #include "network.h"
@@ -2518,6 +2520,8 @@ void conf_filesel_handler(dlgcontrol *ctrl, dlgparam *dlg,
 void conf_fontsel_handler(dlgcontrol *ctrl, dlgparam *dlg,
                           void *data, int event);
 
+// to avoid "[bcc32c Warning] anonymous types declared in an anonymous union are an extension"
+#ifndef WINSCP
 struct conf_editbox_handler_type {
     /* Structure passed as context2 to conf_editbox_handler */
     enum { EDIT_STR, EDIT_INT, EDIT_FIXEDPOINT } type;
@@ -2552,6 +2556,7 @@ extern const struct conf_editbox_handler_type conf_editbox_str;
 extern const struct conf_editbox_handler_type conf_editbox_int;
 #define ED_STR CP(&conf_editbox_str)
 #define ED_INT CP(&conf_editbox_int)
+#endif
 
 void setup_config_box(struct controlbox *b, bool midsession,
                       int protocol, int protcfginfo);

@@ -44,6 +44,7 @@ struct handle_list_node {
     handle_list_node *next, *prev;
 };
 #endif
+struct handle_generic; // WINSCP
 static void add_to_ready_list(struct handle_generic *ctx); // WINSCP
 
 /*
@@ -187,7 +188,7 @@ static DWORD WINAPI handle_input_threadfunc(void *param)
          */
         finished = (ctx->len == 0);
 
-        add_to_ready_list(ctx); // WINSCP
+        add_to_ready_list((struct handle_generic *)ctx); // WINSCP
 
         if (finished)
             break;
@@ -200,7 +201,7 @@ static DWORD WINAPI handle_input_threadfunc(void *param)
              * not touch ctx at all, because the main thread might
              * have freed it.
              */
-            add_to_ready_list(ctx); // WINSCP
+            add_to_ready_list((struct handle_generic *)ctx); // WINSCP
             break;
         }
     }
@@ -316,7 +317,7 @@ static DWORD WINAPI handle_output_threadfunc(void *param)
              * not touch ctx at all, because the main thread might
              * have freed it.
              */
-            add_to_ready_list(ctx); // WINSCP
+            add_to_ready_list((struct handle_generic *)ctx); // WINSCP
             break;
         }
         if (povl) {
@@ -339,7 +340,7 @@ static DWORD WINAPI handle_output_threadfunc(void *param)
                 ctx->writeerr = 0;
         }
 
-        add_to_ready_list(ctx); // WINSCP
+        add_to_ready_list((struct handle_generic *)ctx); // WINSCP
         if (!writeret) {
             /*
              * The write operation has suffered an error. Telling that

@@ -473,7 +473,7 @@ void __fastcall TScript::LogPendingLines(TTerminal * ATerminal)
     for (int Index = 0; Index < FPendingLogLines->Count; Index++)
     {
       ATerminal->Log->Add(
-        reinterpret_cast<TLogLineType>(FPendingLogLines->Objects[Index]),
+        static_cast<TLogLineType>(reinterpret_cast<uintptr_t>(FPendingLogLines->Objects[Index])),
         FPendingLogLines->Strings[Index]);
     }
     FPendingLogLines->Clear();
@@ -2456,7 +2456,7 @@ void __fastcall TManagementScript::TerminalOperationProgress(
         UnicodeString ProgressMessage = FORMAT(L"%-*s | %14s | %6.1f KB/s | %-6.6s | %3d%%",
           (Configuration->ScriptProgressFileNameLimit, FileName,
            TransferredSizeStr,
-           static_cast<float>(ProgressData.CPS()) / 1024,
+           static_cast<long double>(ProgressData.CPS()) / 1024,
            ProgressData.AsciiTransfer ? L"ascii" : L"binary",
            ProgressData.TransferProgress()));
         if (FLastProgressMessage != ProgressMessage)
@@ -3070,7 +3070,7 @@ void __fastcall TManagementScript::LLsProc(TScriptProcParams * Parameters)
         }
         else
         {
-          SizeStr = FORMAT(L"%14.0n", (double(SearchRec.Size)));
+          SizeStr = FORMAT(L"%14.0n", (static_cast<long double>(SearchRec.Size)));
         }
         PrintLine(FORMAT(L"%-*s  %-*s    %-14s %s", (
           DateLen, DateStr, TimeLen, TimeStr, SizeStr, SearchRec.Name)));

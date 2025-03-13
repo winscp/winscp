@@ -336,5 +336,5 @@ void __fastcall TUsage::Serialize(
 int __fastcall TUsage::CalculateCounterSize(__int64 Size)
 {
   const int SizeCounterFactor = 10240;
-  return (Size <= 0) ? 0 : (Size < SizeCounterFactor ? 1 : Size / SizeCounterFactor);
+  return (Size <= 0) ? 0 : (Size < SizeCounterFactor ? 1 : static_cast<int>(Size / SizeCounterFactor));
 }
