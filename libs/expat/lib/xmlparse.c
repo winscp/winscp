@@ -6062,6 +6062,7 @@ internalEntityProcessor(XML_Parser parser, const char *s, const char *end,
   UNUSED_P(s);
   UNUSED_P(end);
   UNUSED_P(nextPtr);
+  { // WINSCP
   ENTITY *entity;
   const char *textStart, *textEnd;
   const char *next;
@@ -6132,6 +6133,7 @@ internalEntityProcessor(XML_Parser parser, const char *s, const char *end,
   }
   triggerReenter(parser);
   return XML_ERROR_NONE;
+  } // WINSCP
 }
 
 static enum XML_Error PTRCALL
@@ -6159,6 +6161,7 @@ storeAttributeValue(XML_Parser parser, const ENCODING *enc, XML_Bool isCdata,
       if (! openEntity)
         return XML_ERROR_UNEXPECTED_STATE;
 
+      { // WINSCP
       ENTITY *const entity = openEntity->entity;
       const char *const textStart
           = ((const char *)entity->textPtr) + entity->processed;
@@ -6203,6 +6206,7 @@ storeAttributeValue(XML_Parser parser, const ENCODING *enc, XML_Bool isCdata,
       /* put openEntity back in list of free instances */
       openEntity->next = parser->m_freeAttributeEntities;
       parser->m_freeAttributeEntities = openEntity;
+      } // WINSCP
     }
 
     // Break if an error occurred or there is nothing left to process
@@ -6435,10 +6439,12 @@ storeEntityValue(XML_Parser parser, const ENCODING *enc,
       return XML_ERROR_NO_MEMORY;
   }
 
+  { // WINSCP
   const char *next;
   for (;;) {
     next
         = entityTextPtr; /* XmlEntityValueTok doesn't always set the last arg */
+    { // WINSCP
     int tok = XmlEntityValueTok(enc, entityTextPtr, entityTextEnd, &next);
 
     if (! accountingDiffTolerated(parser, tok, entityTextPtr, next, __LINE__,
@@ -6583,6 +6589,7 @@ storeEntityValue(XML_Parser parser, const ENCODING *enc,
       /* LCOV_EXCL_STOP */
     }
     entityTextPtr = next;
+    } // WINSCP
   }
 endEntityValue:
 #  ifdef XML_DTD
@@ -6593,6 +6600,7 @@ endEntityValue:
     *nextPtr = next;
   }
   return result;
+  } // WINSCP
 }
 
 static enum XML_Error
@@ -6610,6 +6618,7 @@ callStoreEntityValue(XML_Parser parser, const ENCODING *enc,
       if (! openEntity)
         return XML_ERROR_UNEXPECTED_STATE;
 
+      { // WINSCP
       ENTITY *const entity = openEntity->entity;
       const char *const textStart
           = ((const char *)entity->textPtr) + entity->processed;
@@ -6654,6 +6663,7 @@ callStoreEntityValue(XML_Parser parser, const ENCODING *enc,
       /* put openEntity back in list of free instances */
       openEntity->next = parser->m_freeValueEntities;
       parser->m_freeValueEntities = openEntity;
+      } // WINSCP
     }
 
     // Break if an error occurred or there is nothing left to process
