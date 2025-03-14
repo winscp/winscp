@@ -136,12 +136,10 @@ struct FontSpec *fontspec_new(
 #define LONG_PTR LONG
 #endif
 
-#ifndef WINSCP
 #if !HAVE_STRTOUMAX
 /* Work around lack of strtoumax in older MSVC libraries */
 static inline uintmax_t strtoumax(const char *nptr, char **endptr, int base)
 { return _strtoui64(nptr, endptr, base); }
-#endif
 #endif
 
 typedef INT_PTR (*ShinyDlgProc)(HWND hwnd, UINT msg, WPARAM wParam,
