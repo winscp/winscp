@@ -516,7 +516,7 @@ bool __fastcall TFileMasks::operator ==(const UnicodeString & rhs) const
   return (Masks == rhs);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileMasks::ThrowError(int Start, int End)
+NORETURN void __fastcall TFileMasks::ThrowError(int Start, int End)
 {
   throw EFileMasksException(
     FMTLOAD(MASK_ERROR, (Masks.SubString(Start, End - Start + 1))),

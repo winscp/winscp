@@ -2977,7 +2977,7 @@ TStrings * TSynchronizeChecklist::TItem::GetFileList() const
     default:
       DebugFail();
       NotImplemented();
-      break;
+      UNREACHABLE_AFTER_NORETURN(break);
   }
   return FileList.release();
 }

@@ -25,7 +25,7 @@ class TEncryption
 {
 public:
   TEncryption(const RawByteString & Key);
-  ~TEncryption();
+  ~TEncryption() EXCEPT;
 
   static bool IsEncryptedFileName(const UnicodeString & FileName);
 

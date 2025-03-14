@@ -36,8 +36,14 @@ private:
 //---------------------------------------------------------------------------
 #ifdef __clang__
 #define CLANG_INITIALIZE(V) = (V)
+#define NORETURN [[noreturn]]
+#define UNREACHABLE_AFTER_NORETURN(STATEMENT)
+#define EXCEPT noexcept(false)
 #else
 #define CLANG_INITIALIZE(V)
+#define NORETURN
+#define UNREACHABLE_AFTER_NORETURN(STATEMENT) STATEMENT
+#define EXCEPT
 #endif
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
