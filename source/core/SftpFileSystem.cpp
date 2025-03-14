@@ -2523,7 +2523,7 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(
       Error += L"\n\n" + LoadStr(SFTP_STATUS_4);
     }
     FTerminal->TerminalError(NULL, Error, HelpKeyword);
-    return 0;
+    UNREACHABLE_AFTER_NORETURN(return 0);
   }
   else
   {

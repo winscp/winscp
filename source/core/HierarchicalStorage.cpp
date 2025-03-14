@@ -1929,7 +1929,7 @@ bool __fastcall TOptionsIniFile::AllowWrite()
 
     case wmFail:
       NotImplemented();
-      return false; // never gets here
+      UNREACHABLE_AFTER_NORETURN(return false);
 
     case wmIgnore:
       return false;

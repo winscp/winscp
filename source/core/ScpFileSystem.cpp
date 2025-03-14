@@ -663,7 +663,7 @@ void __fastcall TSCPFileSystem::ReadCommandOutput(int Params, const UnicodeStrin
   }
 }
 //---------------------------------------------------------------------------
-void TSCPFileSystem::InvalidOutputError(const UnicodeString & Command)
+NORETURN void TSCPFileSystem::InvalidOutputError(const UnicodeString & Command)
 {
   FTerminal->TerminalError(FMTLOAD(INVALID_OUTPUT_ERROR, (Command, Output->Text)));
 }
@@ -2536,7 +2536,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
           case 2:
             // Fatal error, terminate copying
             FTerminal->TerminalError(Line);
-            return; // Unreachable
+            UNREACHABLE_AFTER_NORETURN(return);
 
           case L'E': // Exit
             FSecureShell->SendNull();
@@ -2713,7 +2713,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
               {
                 // In this step we can still cancel transfer, so we do it
                 SCPError(E.Message, false);
-                throw;
+                UNREACHABLE_AFTER_NORETURN(throw);
               }
 
               // We succeeded, so we confirm transfer to remote side

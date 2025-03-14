@@ -255,6 +255,7 @@ struct unicode_data;
     TYPECHECK(object == &((type *)0)->field,                            \
               ((type *)(((char *)(object)) - offsetof(type, field))))
 
+#undef NORETURN // WINSCP
 #if defined __GNUC__ || defined __clang__
 #define NORETURN __attribute__((__noreturn__))
 #elif defined _MSC_VER

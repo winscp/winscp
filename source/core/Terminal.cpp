@@ -329,7 +329,7 @@ public:
   inline __fastcall TCallbackGuard(TTerminal * FTerminal);
   inline __fastcall ~TCallbackGuard();
 
-  void __fastcall FatalError(Exception * E, const UnicodeString & Msg, const UnicodeString & HelpKeyword);
+  NORETURN void __fastcall FatalError(Exception * E, const UnicodeString & Msg, const UnicodeString & HelpKeyword);
   inline void __fastcall Verify();
   inline bool __fastcall Verify(Exception * E);
   void __fastcall Dismiss();
@@ -362,7 +362,7 @@ __fastcall TCallbackGuard::~TCallbackGuard()
   delete FFatalError;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCallbackGuard::FatalError(Exception * E, const UnicodeString & Msg, const UnicodeString & HelpKeyword)
+NORETURN void __fastcall TCallbackGuard::FatalError(Exception * E, const UnicodeString & Msg, const UnicodeString & HelpKeyword)
 {
   DebugAssert(FGuarding);
 
@@ -2347,12 +2347,12 @@ void __fastcall TTerminal::ReactOnCommand(int /*TFSCommand*/ Cmd)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::TerminalError(UnicodeString Msg)
+NORETURN void __fastcall TTerminal::TerminalError(UnicodeString Msg)
 {
   TerminalError(NULL, Msg);
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::TerminalError(
+NORETURN void __fastcall TTerminal::TerminalError(
   Exception * E, UnicodeString Msg, UnicodeString HelpKeyword)
 {
   throw ETerminal(E, Msg, HelpKeyword);
@@ -6620,7 +6620,7 @@ TQueueItem * TTerminal::SynchronizeToQueue(
       default:
         DebugFail();
         NotImplemented();
-        break;
+        UNREACHABLE_AFTER_NORETURN(break);
     }
   }
   return Result;

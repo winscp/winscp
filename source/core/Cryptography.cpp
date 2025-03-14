@@ -735,7 +735,7 @@ TEncryption::TEncryption(const RawByteString & Key)
   }
 }
 //---------------------------------------------------------------------------
-TEncryption::~TEncryption()
+TEncryption::~TEncryption() EXCEPT
 {
   if (FContext != NULL)
   {

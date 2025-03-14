@@ -1808,7 +1808,7 @@ static inline void win_unthrottle(TermWin *win, size_t size)
 /*
  * Global functions not specific to a connection instance.
  */
-void nonfatal(const char *, ...) PRINTF_LIKE(1, 2);
+NORETURN void nonfatal(const char *, ...) PRINTF_LIKE(1, 2); // WINSCP
 NORETURN void modalfatalbox(const char *, ...) PRINTF_LIKE(1, 2);
 NORETURN void cleanup_exit(int);
 

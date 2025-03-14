@@ -587,8 +587,8 @@ public:
   void __fastcall ChangeFilesProperties(TStrings * FileList,
     const TRemoteProperties * Properties);
   bool __fastcall LoadFilesProperties(TStrings * FileList);
-  void __fastcall TerminalError(UnicodeString Msg);
-  void __fastcall TerminalError(Exception * E, UnicodeString Msg, UnicodeString HelpKeyword = L"");
+  NORETURN void __fastcall TerminalError(UnicodeString Msg);
+  NORETURN void __fastcall TerminalError(Exception * E, UnicodeString Msg, UnicodeString HelpKeyword = L"");
   void __fastcall ReloadDirectory();
   void __fastcall RefreshDirectory();
   void __fastcall RenameFile(const TRemoteFile * File, const UnicodeString & NewName);

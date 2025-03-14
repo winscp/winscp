@@ -21,13 +21,13 @@ __fastcall TCustomFileSystem::~TCustomFileSystem()
 UnicodeString __fastcall TCustomFileSystem::GetHomeDirectory()
 {
   NotImplemented();
-  return EmptyStr;
+  UNREACHABLE_AFTER_NORETURN(return EmptyStr);
 }
 //---------------------------------------------------------------------------
 UnicodeString TCustomFileSystem::CalculateFilesChecksumInitialize(const UnicodeString & DebugUsedArg(Alg))
 {
   NotImplemented();
-  return EmptyStr;
+  UNREACHABLE_AFTER_NORETURN(return EmptyStr);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomFileSystem::TransferOnDirectory(

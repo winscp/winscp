@@ -338,7 +338,7 @@ size_t banner(Seat * seat, const void * data, size_t len)
   return 0; // PuTTY never uses the value
 }
 //---------------------------------------------------------------------------
-static void SSHFatalError(const char * Format, va_list Param)
+NORETURN static void SSHFatalError(const char * Format, va_list Param)
 {
   char Buf[200];
   vsnprintf(Buf, LENOF(Buf), Format, Param);

@@ -3,6 +3,7 @@
 #define CommonH
 //---------------------------------------------------------------------------
 #include <vector>
+#include "Global.h"
 //---------------------------------------------------------------------------
 #define EXCEPTION throw ExtException(NULL, L"")
 #define THROWOSIFFALSE(C) { if (!(C)) RaiseLastOSError(); }
@@ -206,8 +207,8 @@ UnicodeString GetEnvironmentInfo();
 void SetStringValueEvenIfEmpty(TStrings * Strings, const UnicodeString & Name, const UnicodeString & Value);
 UnicodeString __fastcall GetAncestorProcessName(int Levels = 1);
 UnicodeString GetAncestorProcessNames();
-void NotSupported();
-void NotImplemented();
+NORETURN void NotSupported();
+NORETURN void NotImplemented();
 UnicodeString GetDividerLine();
 TStrings * ProcessFeatures(TStrings * Features, const UnicodeString & FeaturesOverride);
 //---------------------------------------------------------------------------
@@ -352,8 +353,6 @@ UnicodeString __fastcall AssemblyNewClassInstanceEnd(TAssemblyLanguage Language,
 UnicodeString __fastcall AssemblyAddRawSettings(
   TAssemblyLanguage Language, TStrings * RawSettings, const UnicodeString & ClassName,
   const UnicodeString & MethodName);
-//---------------------------------------------------------------------------
-#include "Global.h"
 //---------------------------------------------------------------------------
 template<class T>
 class TValueRestorer
