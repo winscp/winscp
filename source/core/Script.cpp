@@ -579,7 +579,7 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
   TStrings * Result = new TStringList();
   try
   {
-    TStrings * FileLists = NULL;
+    TStringList * FileLists = NULL;
     try
     {
       for (int i = Start; i <= End; i++)
@@ -621,6 +621,7 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
             if (FileLists == NULL)
             {
               FileLists = new TStringList();
+              FileLists->OwnsObjects = true;
             }
             FileLists->AddObject(Directory, FileList);
           }
@@ -678,14 +679,7 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
     }
     __finally
     {
-      if (FileLists != NULL)
-      {
-        for (int i = 0; i < FileLists->Count; i++)
-        {
-          delete FileLists->Objects[i];
-        }
-        delete FileLists;
-      }
+      delete FileLists;
     }
 
     if (FLAGSET(ListType, fltLatest) && (Result->Count > 1))

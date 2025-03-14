@@ -553,7 +553,7 @@ bool __fastcall TSCPFileSystem::RemoveLastLine(UnicodeString & Line,
   return IsLastLine;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TSCPFileSystem::IsLastLine(UnicodeString & Line)
+bool __fastcall TSCPFileSystem::TryRemoveLastLine(UnicodeString & Line)
 {
   bool Result = false;
   try
@@ -565,6 +565,12 @@ bool __fastcall TSCPFileSystem::IsLastLine(UnicodeString & Line)
     FTerminal->TerminalError(&E, LoadStr(CANT_DETECT_RETURN_CODE));
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+bool TSCPFileSystem::IsLastLine(const UnicodeString & ALine)
+{
+  UnicodeString Line = ALine;
+  return TryRemoveLastLine(Line);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::SkipFirstLine()
@@ -590,7 +596,7 @@ void __fastcall TSCPFileSystem::ReadCommandOutput(int Params, const UnicodeStrin
       do
       {
         Line = FSecureShell->ReceiveLine();
-        IsLast = IsLastLine(Line);
+        IsLast = TryRemoveLastLine(Line);
         if (!IsLast || !Line.IsEmpty())
         {
           FOutput->Add(Line);
@@ -1620,7 +1626,7 @@ void __fastcall TSCPFileSystem::SCPResponse(bool * GotLastLine)
       // pscp adds 'Resp' to 'Msg', why?
       UnicodeString Msg = FSecureShell->ReceiveLine();
       UnicodeString Line = UnicodeString(static_cast<char>(Resp)) + Msg;
-      if (IsLastLine(Line))
+      if (TryRemoveLastLine(Line))
       {
         if (GotLastLine != NULL)
         {
@@ -2398,23 +2404,21 @@ void __fastcall TSCPFileSystem::CopyToLocal(TStrings * FilesToCopy,
         (OperationProgress->Cancel == csCancel) ||
         (OperationProgress->Cancel == csCancelTransfer)))
     {
-      bool LastLineRead;
-
       // If we get LastLine, it means that remote side 'scp' is already
       // terminated, so we need not to terminate it. There is also
       // possibility that remote side waits for confirmation, so it will hang.
       // This should not happen (hope)
-      UnicodeString Line = FSecureShell->ReceiveLine();
-      LastLineRead = IsLastLine(Line);
-      if (!LastLineRead)
+      if (!IsLastLine(FSecureShell->ReceiveLine()))
       {
         SCPSendError((OperationProgress->Cancel ? L"Terminated by user." : L"Exception"), true);
+        // Just in case, remote side already sent some more data (it's probable)
+        // but we don't want to raise exception (user asked to terminate, it's not error)
+        ReadCommandOutput(coOnlyReturnCode | coWaitForLastLine);
       }
-      // Just in case, remote side already sent some more data (it's probable)
-      // but we don't want to raise exception (user asked to terminate, it's not error)
-      int ECParams = coOnlyReturnCode;
-      if (!LastLineRead) ECParams |= coWaitForLastLine;
-      ReadCommandOutput(ECParams);
+      else
+      {
+        ReadCommandOutput(coOnlyReturnCode);
+      }
     }
   }
 }
@@ -2488,7 +2492,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
 
       if (Line.Length() == 0) FTerminal->FatalError(NULL, LoadStr(SCP_EMPTY_LINE));
 
-      if (IsLastLine(Line))
+      if (TryRemoveLastLine(Line))
       {
         // Remote side finished copying, so remote SCP was closed
         // and we don't need to terminate it manually, see CopyToLocal()

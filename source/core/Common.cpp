@@ -3246,7 +3246,7 @@ UnicodeString __fastcall FormatSize(__int64 Size)
 UnicodeString FormatDateTimeSpan(const TDateTime & DateTime)
 {
   UnicodeString Result;
-  if ((0 <= DateTime) && (DateTime <= MaxDateTime))
+  if ((TDateTime() <= DateTime) && (DateTime <= MaxDateTime))
   {
     TTimeStamp TimeStamp = DateTimeToTimeStamp(DateTime);
     int Days = TimeStamp.Date - DateDelta;
