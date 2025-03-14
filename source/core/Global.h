@@ -34,6 +34,12 @@ private:
   TCriticalSection * FCriticalSection;
 };
 //---------------------------------------------------------------------------
+#ifdef __clang__
+#define CLANG_INITIALIZE(V) = (V)
+#else
+#define CLANG_INITIALIZE(V)
+#endif
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #include <assert.h>
 #define ACCESS_VIOLATION_TEST { (*((int*)NULL)) = 0; }
