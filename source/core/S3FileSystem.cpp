@@ -1472,7 +1472,6 @@ void TS3FileSystem::DoListBucket(
 {
   S3ListBucketHandler ListBucketHandler = { CreateResponseHandler(), &LibS3ListBucketCallback };
   RequestInit(Data);
-  Data.Any = false;
   Data.KeyCount = 0;
   Data.FileList = FileList;
   Data.IsTruncated = false;
@@ -1552,6 +1551,8 @@ void TS3FileSystem::ReadDirectoryInternal(
     TLibS3BucketContext BucketContext = GetBucketContext(BucketName, Prefix);
 
     TLibS3ListBucketCallbackData Data;
+    Data.Any = false;
+
     bool Continue;
 
     do
