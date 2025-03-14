@@ -4043,7 +4043,7 @@ UnicodeString __fastcall FormatValidityTime(const TFtpsCertificateData::TValidit
 bool __fastcall VerifyNameMask(UnicodeString Name, UnicodeString Mask)
 {
   bool Result = true;
-  int Pos = 0; // shut up
+  int Pos CLANG_INITIALIZE(0);
   while (Result && (Pos = Mask.Pos(L"*")) > 0)
   {
     // Pos will typically be 1 here, so not actual comparison is done

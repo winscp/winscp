@@ -3920,7 +3920,7 @@ UnicodeString __fastcall RtfEscapeParam(UnicodeString Param, bool PowerShellEsca
     else
     {
       int P2 = PosEx(RtfHyperlinkFieldPrefix, Param, Index);
-      int P3 = 0; // shut up
+      int P3 CLANG_INITIALIZE(0);
       if ((P2 > 0) && (P2 < P1) && ((P3 = PosEx(RtfHyperlinkFieldSuffix, Param, P2)) > 0))
       {
         // skip HYPERLINK
