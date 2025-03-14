@@ -1714,7 +1714,7 @@ void __fastcall TTerminal::OpenTunnel()
       }
       int Index = Random(Ports.size());
       int Port = Ports[Index];
-      Ports.erase(&Ports.at(Index));
+      Ports.erase(Ports.begin() + Index);
       if (IsListenerFree(Port))
       {
         FTunnelLocalPortNumber = Port;
@@ -3527,6 +3527,25 @@ void __fastcall TTerminal::ReadCurrentDirectory()
   }
 }
 //---------------------------------------------------------------------------
+void TTerminal::DoReadDirectoryFinish(TRemoteDirectory * Files, bool ReloadOnly)
+{
+  // Factored out to solve Clang ICE
+  TRemoteDirectory * OldFiles = FFiles;
+  FFiles = Files;
+  try
+  {
+    DoReadDirectory(ReloadOnly);
+  }
+  __finally
+  {
+    // delete only after loading new files to dir view,
+    // not to destroy the file objects that the view holds
+    // (can be issue in multi threaded environment, such as when the
+    // terminal is reconnecting in the terminal thread)
+    delete OldFiles;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::ReadDirectory(bool ReloadOnly, bool ForceCache)
 {
   bool LoadedFromCache = false;
@@ -3579,20 +3598,7 @@ void __fastcall TTerminal::ReadDirectory(bool ReloadOnly, bool ForceCache)
       {
         DoReadDirectoryProgress(-1, 0, Cancel);
         FReadingCurrentDirectory = false;
-        TRemoteDirectory * OldFiles = FFiles;
-        FFiles = Files;
-        try
-        {
-          DoReadDirectory(ReloadOnly);
-        }
-        __finally
-        {
-          // delete only after loading new files to dir view,
-          // not to destroy the file objects that the view holds
-          // (can be issue in multi threaded environment, such as when the
-          // terminal is reconnecting in the terminal thread)
-          delete OldFiles;
-        }
+        DoReadDirectoryFinish(Files, ReloadOnly);
         if (Active)
         {
           if (SessionData->CacheDirectories)
@@ -6097,6 +6103,20 @@ bool __fastcall TTerminal::IsEmptyLocalDirectory(
   return Contents.IsEmpty();
 }
 //---------------------------------------------------------------------------
+void DestroyLocalFileList(TStringList * LocalFileList)
+{
+  // Factored out to workaround Clang ICE
+  if (LocalFileList != NULL)
+  {
+    for (int Index = 0; Index < LocalFileList->Count; Index++)
+    {
+      TSynchronizeFileData * FileData = reinterpret_cast<TSynchronizeFileData*>(LocalFileList->Objects[Index]);
+      delete FileData;
+    }
+    delete LocalFileList;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString LocalDirectory,
   const UnicodeString RemoteDirectory, TSynchronizeMode Mode,
   const TCopyParamType * CopyParam, int Params,
@@ -6266,16 +6286,7 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
   }
   __finally
   {
-    if (Data.LocalFileList != NULL)
-    {
-      for (int Index = 0; Index < Data.LocalFileList->Count; Index++)
-      {
-        TSynchronizeFileData * FileData = reinterpret_cast<TSynchronizeFileData*>
-          (Data.LocalFileList->Objects[Index]);
-        delete FileData;
-      }
-      delete Data.LocalFileList;
-    }
+    DestroyLocalFileList(Data.LocalFileList);
   }
 }
 //---------------------------------------------------------------------------
@@ -7421,10 +7432,9 @@ bool __fastcall TTerminal::CopyToRemote(
       {
         if (Configuration->Usage->Collect)
         {
-          int CounterSize = TUsage::CalculateCounterSize(Size);
           Configuration->Usage->Inc(L"Uploads");
-          Configuration->Usage->Inc(L"UploadedBytes", CounterSize);
-          Configuration->Usage->SetMax(L"MaxUploadSize", CounterSize);
+          int CounterSize = TUsage::CalculateCounterSize(Size);
+          Configuration->Usage->IncAndSetMax(L"UploadedBytes", L"MaxUploadSize", CounterSize);
           CollectingUsage = true;
         }
 
@@ -7469,9 +7479,7 @@ bool __fastcall TTerminal::CopyToRemote(
     {
       if (CollectingUsage)
       {
-        int CounterTime = TimeToSeconds(OperationProgress.TimeElapsed());
-        Configuration->Usage->Inc(L"UploadTime", CounterTime);
-        Configuration->Usage->SetMax(L"MaxUploadTime", CounterTime);
+        Configuration->Usage->IncAndSetMax(L"UploadTime", L"MaxUploadTime", TimeToSeconds(OperationProgress.TimeElapsed()));
       }
       OperationStop(OperationProgress);
     }
@@ -8001,8 +8009,7 @@ bool __fastcall TTerminal::CopyToLocal(
         {
           int CounterTotalSize = TUsage::CalculateCounterSize(TotalSize);
           Configuration->Usage->Inc(L"Downloads");
-          Configuration->Usage->Inc(L"DownloadedBytes", CounterTotalSize);
-          Configuration->Usage->SetMax(L"MaxDownloadSize", CounterTotalSize);
+          Configuration->Usage->IncAndSetMax(L"DownloadedBytes", L"MaxDownloadSize", CounterTotalSize);
           CollectingUsage = true;
         }
 
@@ -8068,9 +8075,7 @@ bool __fastcall TTerminal::CopyToLocal(
     {
       if (CollectingUsage)
       {
-        int CounterTime = TimeToSeconds(OperationProgress.TimeElapsed());
-        Configuration->Usage->Inc(L"DownloadTime", CounterTime);
-        Configuration->Usage->SetMax(L"MaxDownloadTime", CounterTime);
+        Configuration->Usage->IncAndSetMax(L"DownloadTime", L"MaxDownloadTime", TimeToSeconds(OperationProgress.TimeElapsed()));
       }
       OperationStop(OperationProgress);
     }

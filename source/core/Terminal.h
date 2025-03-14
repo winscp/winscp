@@ -277,6 +277,7 @@ protected:
   void __fastcall DoStartReadDirectory();
   void __fastcall DoReadDirectoryProgress(int Progress, int ResolvedLinks, bool & Cancel);
   void __fastcall DoReadDirectory(bool ReloadOnly);
+  void DoReadDirectoryFinish(TRemoteDirectory * Files, bool ReloadOnly);
   void __fastcall DoCreateDirectory(const UnicodeString & DirName, bool Encrypt);
   void __fastcall DoDeleteFile(
     TCustomFileSystem * FileSystem, const UnicodeString & FileName, const TRemoteFile * File, int Params);

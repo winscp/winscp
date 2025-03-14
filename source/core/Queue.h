@@ -487,6 +487,7 @@ private:
   void __fastcall TerminalStartReadDirectory(TObject * Sender);
   void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress, int ResolvedLinks, bool & Cancel);
   void __fastcall TerminalInitializeLog(TObject * Sender);
+  void DiscardException();
 };
 //---------------------------------------------------------------------------
 enum TQueueFileState { qfsQueued = 0, qfsProcessed = 1 };

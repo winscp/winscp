@@ -111,7 +111,8 @@ private:
   void __fastcall CustomReadFile(const UnicodeString FileName,
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);
   void __fastcall DetectReturnVar();
-  bool __fastcall IsLastLine(UnicodeString & Line);
+  bool __fastcall TryRemoveLastLine(UnicodeString & Line);
+  bool IsLastLine(const UnicodeString & ALine);
   static bool __fastcall IsTotalListingLine(const UnicodeString Line);
   void __fastcall EnsureLocation();
   void __fastcall ExecCommand(TFSCommand Cmd, const TVarRec * args = NULL,

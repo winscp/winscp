@@ -256,6 +256,12 @@ void __fastcall TUsage::SetMax(const UnicodeString & Key, int Value)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TUsage::IncAndSetMax(const UnicodeString & IncKey, const UnicodeString & MaxKey, int Value)
+{
+  Inc(IncKey, Value);
+  SetMax(MaxKey, Value);
+}
+//---------------------------------------------------------------------------
 void __fastcall TUsage::SetMax(const UnicodeString & Key, int Value,
   TCounters & Counters)
 {

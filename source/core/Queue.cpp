@@ -2615,6 +2615,11 @@ void __fastcall TTerminalThread::TerminalReopen()
   RunAction(TerminalReopenEvent);
 }
 //---------------------------------------------------------------------------
+void TTerminalThread::DiscardException()
+{
+  SAFE_DESTROY(FException);
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalThread::RunAction(TNotifyEvent Action)
 {
   DebugAssert(FAction == NULL);
@@ -2694,7 +2699,7 @@ void __fastcall TTerminalThread::RunAction(TNotifyEvent Action)
     __finally
     {
       FAction = NULL;
-      SAFE_DESTROY(FException);
+      DiscardException();
     }
   }
   catch(...)
@@ -2877,7 +2882,7 @@ void __fastcall TTerminalThread::WaitForUserAction(TUserAction * UserAction)
     __finally
     {
       FUserAction = PrevUserAction;
-      SAFE_DESTROY(FException);
+      DiscardException();
     }
 
     // Contrary to a call before, this is unconditional,

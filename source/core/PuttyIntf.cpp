@@ -1177,7 +1177,7 @@ UnicodeString CalculateFileChecksum(TStream * Stream, const UnicodeString & Alg)
     throw Exception(FMTLOAD(UNKNOWN_CHECKSUM, (Alg)));
   }
 
-  UnicodeString Result;
+  RawByteString Buf;
   ssh_hash * Hash = ssh_hash_new(HashAlg);
   try
   {
@@ -1197,11 +1197,11 @@ UnicodeString CalculateFileChecksum(TStream * Stream, const UnicodeString & Alg)
   }
   __finally
   {
-    RawByteString Buf;
     Buf.SetLength(ssh_hash_alg(Hash)->hlen);
     ssh_hash_final(Hash, reinterpret_cast<unsigned char *>(Buf.c_str()));
-    Result = BytesToHex(Buf);
   }
+
+  UnicodeString Result = BytesToHex(Buf);
 
   return Result;
 }

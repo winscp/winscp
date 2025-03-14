@@ -18,6 +18,7 @@ public:
   void __fastcall Set(const UnicodeString & Key, bool Value);
   int __fastcall Inc(const UnicodeString & Key, int Increment = 1);
   void __fastcall SetMax(const UnicodeString & Key, int Value);
+  void __fastcall IncAndSetMax(const UnicodeString & IncKey, const UnicodeString & MaxKey, int Value);
   UnicodeString __fastcall Get(const UnicodeString & Key);
 
   void __fastcall UpdateCurrentVersion();
