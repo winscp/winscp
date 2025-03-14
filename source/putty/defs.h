@@ -17,6 +17,7 @@
 #define HAVE_CMAKE_H 0
 #define HAVE_NO_STDINT_H 0
 #define HAVE_ARM_DIT 0
+#define HAVE_STRTOUMAX 1
 #endif
 
 #ifndef WINSCP

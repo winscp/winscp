@@ -338,16 +338,6 @@ size_t banner(Seat * seat, const void * data, size_t len)
   return 0; // PuTTY never uses the value
 }
 //---------------------------------------------------------------------------
-uintmax_t strtoumax(const char *nptr, char **endptr, int base)
-{
-  if (DebugAlwaysFalse(endptr != NULL) ||
-      DebugAlwaysFalse(base != 10))
-  {
-    Abort();
-  }
-  return StrToInt64(UnicodeString(AnsiString(nptr)));
-}
-//---------------------------------------------------------------------------
 static void SSHFatalError(const char * Format, va_list Param)
 {
   char Buf[200];
