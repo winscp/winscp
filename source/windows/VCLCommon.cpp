@@ -987,9 +987,9 @@ void __fastcall ApplySystemSettingsOnControl(TControl * Control)
   #endif
 
   TCustomListView * ListView = dynamic_cast<TCustomListView *>(Control);
-  TCustomIEListView * IEListView = dynamic_cast<TCustomIEListView *>(Control);
-  // For IEListView, this is (somewhat) handled in the TCustomListViewColProperties
-  if ((ListView != NULL) && (IEListView == NULL))
+  TCustomNortonLikeListView * NortonLikeListView = dynamic_cast<TCustomNortonLikeListView *>(Control);
+  // For NortonLikeListView, this is (somewhat) handled in the TCustomListViewColProperties
+  if ((ListView != NULL) && (NortonLikeListView == NULL))
   {
     TListView * PublicListView = reinterpret_cast<TListView *>(ListView);
 
@@ -1003,14 +1003,14 @@ void __fastcall ApplySystemSettingsOnControl(TControl * Control)
 
   // WORKAROUND for lack of public API for mimicking Explorer-style mouse selection
   // See https://stackoverflow.com/q/15750842/850848
-  if (IEListView != NULL)
+  if (NortonLikeListView != NULL)
   {
     // It should not be a problem to call the LVM_QUERYINTERFACE
     // on earlier versions of Windows. It should be noop.
     if (IsWin7())
     {
       IListView_Win7 * ListViewIntf = NULL;
-      SendMessage(IEListView->Handle, LVM_QUERYINTERFACE, reinterpret_cast<WPARAM>(&IID_IListView_Win7), reinterpret_cast<LPARAM>(&ListViewIntf));
+      SendMessage(NortonLikeListView->Handle, LVM_QUERYINTERFACE, reinterpret_cast<WPARAM>(&IID_IListView_Win7), reinterpret_cast<LPARAM>(&ListViewIntf));
       if (ListViewIntf != NULL)
       {
         ListViewIntf->SetSelectionFlags(1, 1);

@@ -1131,6 +1131,7 @@ begin
     HandleNeeded;
   end;
   inherited;
+  ColProperties.ChangeScale(M, D);
 end;
 
 end.
