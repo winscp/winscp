@@ -9,7 +9,11 @@ object ProgressForm: TProgressForm
   ClientHeight = 294
   ClientWidth = 398
   Color = clWindow
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   PopupMode = pmAuto
   Position = poOwnerFormCenter
   OnHide = FormHide

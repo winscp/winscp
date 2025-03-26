@@ -4,6 +4,12 @@ object CopyParamsFrame: TCopyParamsFrame
   Width = 456
   Height = 471
   HelpType = htKeyword
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
+  ParentFont = False
   TabOrder = 0
   object CommonPropertiesGroup: TGroupBox
     Left = 232

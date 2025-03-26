@@ -5,7 +5,11 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   ClientHeight = 429
   ClientWidth = 608
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   KeyPreview = True
   OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnClose = FormClose

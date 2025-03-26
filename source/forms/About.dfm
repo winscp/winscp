@@ -9,7 +9,11 @@ object AboutDialog: TAboutDialog
   ClientHeight = 532
   ClientWidth = 455
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   KeyPreview = True
   Position = poOwnerFormCenter
   OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged

@@ -7,7 +7,11 @@ object CustomDialog: TCustomDialog
   ClientHeight = 42
   ClientWidth = 362
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
   DesignSize = (
     362

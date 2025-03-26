@@ -10,7 +10,11 @@ object LoginDialog: TLoginDialog
   Color = clBtnFace
   Constraints.MinHeight = 399
   Constraints.MinWidth = 660
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   KeyPreview = True
   Position = poOwnerFormCenter
   OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
