@@ -869,7 +869,6 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
         LinkControl->Caption = ActionAlias;
         LinkControl->Alignment = taRightJustify;
         LinkControl->Anchors = TAnchors() << akRight << akTop;
-        LinkActionLabel(LinkControl);
         LinkControl->OnClick = Result->ButtonSubmit;
         Result->FButtonSubmitEvents[LinkControl] = OnSubmit;
       }
@@ -1103,6 +1102,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   if (LinkControl != NULL)
   {
     LinkControl->Parent = Panel;
+    LinkActionLabel(LinkControl);
     LinkControl->Left = Panel->ClientWidth - HorzMargin - LinkControl->Width;
     LinkControl->Top = VertMargin + IconTextHeight + VertMargin;
     IconTextHeight += VertMargin + LinkControl->Height;

@@ -2301,6 +2301,8 @@ void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url,
 //---------------------------------------------------------------------------
 void __fastcall LinkActionLabel(TStaticText * StaticText)
 {
+  // Must be called only after setting Parent, as it modifies Font and hence clears ParentFont
+  DebugAssert(StaticText->Parent != NULL);
   DoLinkLabel(StaticText);
 
   StaticText->Font->Color = LinkColor;
