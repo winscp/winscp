@@ -9,7 +9,11 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
   ClientHeight = 556
   ClientWidth = 744
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow

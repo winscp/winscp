@@ -3,6 +3,12 @@ object RightsFrame: TRightsFrame
   Top = 0
   Width = 258
   Height = 130
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
+  ParentFont = False
   TabOrder = 0
   OnContextPopup = FrameContextPopup
   object OthersButton: TSpeedButton

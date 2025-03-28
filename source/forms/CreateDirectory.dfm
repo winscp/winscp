@@ -9,7 +9,11 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
   ClientHeight = 263
   ClientWidth = 337
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow

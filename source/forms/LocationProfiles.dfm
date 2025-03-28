@@ -9,7 +9,11 @@ object LocationProfilesDialog: TLocationProfilesDialog
   ClientHeight = 448
   ClientWidth = 601
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
   OnShow = FormShow
   DesignSize = (

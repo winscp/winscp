@@ -9,7 +9,11 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   ClientHeight = 492
   ClientWidth = 534
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow

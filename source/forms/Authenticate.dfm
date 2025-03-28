@@ -11,7 +11,11 @@ object AuthenticateForm: TAuthenticateForm
   Color = clBtnFace
   Constraints.MinHeight = 200
   Constraints.MinWidth = 280
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Position = poOwnerFormCenter
   OnAfterMonitorDpiChanged = FormAfterMonitorDpiChanged
   OnResize = FormResize

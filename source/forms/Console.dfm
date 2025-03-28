@@ -10,7 +10,11 @@ object ConsoleDialog: TConsoleDialog
   Color = clBtnFace
   Constraints.MinHeight = 250
   Constraints.MinWidth = 420
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
   Icon.Data = {
     000001000700404000000100200028420000760000003030000001002000A825
     00009E4200002828000001002000681A0000466800002020000001002000A810
