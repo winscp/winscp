@@ -211,7 +211,7 @@ START_TEST(test_misc_version) {
   if (! versions_equal(&read_version, &parsed_version))
     fail("Version mismatch");
 
-  if (xcstrcmp(version_text, XCS("expat_2.7.0"))) /* needs bump on releases */
+  if (xcstrcmp(version_text, XCS("expat_2.7.1"))) /* needs bump on releases */
     fail("XML_*_VERSION in expat.h out of sync?\n");
 }
 END_TEST
@@ -618,6 +618,66 @@ START_TEST(test_renter_loop_finite_content) {
 }
 END_TEST
 
+// Inspired by function XML_OriginalString of Perl's XML::Parser
+static char *
+dup_original_string(XML_Parser parser) {
+  const int byte_count = XML_GetCurrentByteCount(parser);
+
+  assert_true(byte_count >= 0);
+
+  int offset = -1;
+  int size = -1;
+
+  const char *const context = XML_GetInputContext(parser, &offset, &size);
+
+#if XML_CONTEXT_BYTES > 0
+  assert_true(context != NULL);
+  assert_true(offset >= 0);
+  assert_true(size >= 0);
+  return portable_strndup(context + offset, byte_count);
+#else
+  assert_true(context == NULL);
+  return NULL;
+#endif
+}
+
+static void
+on_characters_issue_980(void *userData, const XML_Char *s, int len) {
+  (void)s;
+  (void)len;
+  XML_Parser parser = (XML_Parser)userData;
+
+  char *const original_string = dup_original_string(parser);
+
+#if XML_CONTEXT_BYTES > 0
+  assert_true(original_string != NULL);
+  assert_true(strcmp(original_string, "&draft.day;") == 0);
+  free(original_string);
+#else
+  assert_true(original_string == NULL);
+#endif
+}
+
+START_TEST(test_misc_expected_event_ptr_issue_980) {
+  // NOTE: This is a tiny subset of sample "REC-xml-19980210.xml"
+  //       from Perl's XML::Parser
+  const char *const doc = "<!DOCTYPE day [\n"
+                          "  <!ENTITY draft.day '10'>\n"
+                          "]>\n"
+                          "<day>&draft.day;</day>\n";
+
+  XML_Parser parser = XML_ParserCreate(NULL);
+  XML_SetUserData(parser, parser);
+  XML_SetCharacterDataHandler(parser, on_characters_issue_980);
+
+  assert_true(_XML_Parse_SINGLE_BYTES(parser, doc, (int)strlen(doc),
+                                      /*isFinal=*/XML_TRUE)
+              == XML_STATUS_OK);
+
+  XML_ParserFree(parser);
+}
+END_TEST
+
 void
 make_miscellaneous_test_case(Suite *s) {
   TCase *tc_misc = tcase_create("miscellaneous tests");
@@ -645,4 +705,5 @@ make_miscellaneous_test_case(Suite *s) {
   tcase_add_test(tc_misc, test_misc_resumeparser_not_crashing);
   tcase_add_test(tc_misc, test_misc_stopparser_rejects_unstarted_parser);
   tcase_add_test__if_xml_ge(tc_misc, test_renter_loop_finite_content);
+  tcase_add_test(tc_misc, test_misc_expected_event_ptr_issue_980);
 }
