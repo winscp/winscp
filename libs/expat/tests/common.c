@@ -10,7 +10,7 @@
    Copyright (c) 2003      Greg Stein <gstein@users.sourceforge.net>
    Copyright (c) 2005-2007 Steven Solie <steven@solie.ca>
    Copyright (c) 2005-2012 Karl Waclawek <karl@waclawek.net>
-   Copyright (c) 2016-2024 Sebastian Pipping <sebastian@pipping.org>
+   Copyright (c) 2016-2025 Sebastian Pipping <sebastian@pipping.org>
    Copyright (c) 2017-2022 Rhodri James <rhodri@wildebeest.org.uk>
    Copyright (c) 2017      Joe Orton <jorton@redhat.com>
    Copyright (c) 2017      José Gutiérrez de la Concha <jose@zeroc.com>
@@ -42,6 +42,8 @@
 */
 
 #include <assert.h>
+#include <errno.h>
+#include <stdint.h> // for SIZE_MAX
 #include <stdio.h>
 #include <string.h>
 
@@ -299,4 +301,27 @@ duff_reallocator(void *ptr, size_t size) {
   if (g_reallocation_count != REALLOC_ALWAYS_SUCCEED)
     g_reallocation_count--;
   return realloc(ptr, size);
+}
+
+// Portable remake of strndup(3) for C99; does not care about space efficiency
+char *
+portable_strndup(const char *s, size_t n) {
+  if ((s == NULL) || (n == SIZE_MAX)) {
+    errno = EINVAL;
+    return NULL;
+  }
+
+  char *const buffer = (char *)malloc(n + 1);
+  if (buffer == NULL) {
+    errno = ENOMEM;
+    return NULL;
+  }
+
+  errno = 0;
+
+  memcpy(buffer, s, n);
+
+  buffer[n] = '\0';
+
+  return buffer;
 }
