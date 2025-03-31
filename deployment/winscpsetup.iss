@@ -1187,8 +1187,8 @@ begin
   P2 := P;
 #endif
 
-  CreateDonateLink( 9, P);
   CreateDonateLink(19, P);
+  CreateDonateLink(29, P);
   CreateDonateLink(49, P);
 
   AboutDonationCaption := TLabel.Create(DonationPanel);
