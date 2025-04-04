@@ -446,8 +446,8 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
         // to complete its task and destroy the terminal afterwards.
         TerminalThread->Terminate();
 
-        // When abandoning cancelled terminal, DoInformation(Phase = 0) does not make it to TerminalInformation handler.
-        if (DebugAlwaysTrue(FAuthenticating > 0))
+        // When abandoning cancelled terminal, DoInformation(Phase = 0) usually does not make it to TerminalInformation handler.
+        if (FAuthenticating > 0)
         {
           FKeepAuthenticateForm = false;
           AuthenticatingDone();
