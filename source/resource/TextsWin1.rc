@@ -168,6 +168,7 @@ BEGIN
         CLOSE_WORKSPACE, "Close application without saving a workspace?"
         TOO_MANY_SESSIONS, "**Do you really want to open another tab?**\nYou have %d tabs opened already. Please consider closing some tabs first to free resources of your computer."
         EDIT_CHANGED_EXTERNALLY, "The remote file has been changed while you were editing it. Do you want to overwrite it anyway?"
+        ALWAYS_RECONNECT, "&Always reconnect automatically"
 
         WIN_INFORMATION_STRINGS, "WIN_INFORMATION"
         COMPARE_NO_DIFFERENCES, "No differences found."
@@ -321,6 +322,9 @@ BEGIN
         PATTERNS_HINT_K, "!K expands to current session private key path"
         PATTERNS_HINT_BACKSLASH, "!\\ expands to current local path"
         USAGE_COPYID, "Installs your public key in a server's authorized_keys."
+        SESSION_RECONNECTING, "Trying to reconnect..."
+        SESSION_RECONNECTED, "Reconnected."
+        SESSION_NEED_INTERACTION, "Session needs interaction to reconnect."
 
         WIN_FORMS_STRINGS, "WIN_FORMS_STRINGS"
         COPY_FILE, "%s file '%s' to %s:"

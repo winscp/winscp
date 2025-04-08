@@ -320,7 +320,7 @@ void __fastcall TEditorManager::Check()
 
       if (Index >= 0)
       {
-        UploadComplete(Index);
+        UploadComplete(Index, false);
       }
     }
     while ((Index >= 0) && (FUploadCompleteEvents.size() > 0));
@@ -405,7 +405,7 @@ void __fastcall TEditorManager::AddFile(TFileData & FileData, TEditedFileData * 
   Data.release(); // ownership passed
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorManager::UploadComplete(int Index)
+void TEditorManager::UploadComplete(int Index, bool Retry)
 {
   TFileData * FileData = &FFiles[Index];
 
@@ -427,7 +427,9 @@ void __fastcall TEditorManager::UploadComplete(int Index)
       FileData->Reupload = false;
       CheckFileChange(Index, true);
     }
-    else if ((FileData->Token != NULL) && (FOnFileUploadComplete != NULL))
+    // so far used only to signal to the internal editor that saving was complete,
+    // so we do signal once an actual upload is done only
+    else if ((FileData->Token != NULL) && (FOnFileUploadComplete != NULL) && !Retry)
     {
       FOnFileUploadComplete(FileData->Token);
     }
@@ -583,11 +585,11 @@ void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)
           DebugAssert(OnFileChange != NULL);
           bool Retry = false;
           AppLogFmt(L"Uploading opened/edited file \"%s\".", (FileData->FileName));
-          OnFileChange(FileData->FileName, FileData->Data, FileData->UploadCompleteEvent, Retry);
+          OnFileChange(FileData->FileName, FileData->Timestamp, FileData->Data, FileData->UploadCompleteEvent, Retry);
           if (Retry)
           {
             AppLogFmt(L"Will retry uploading opened/edited file \"%s\".", (FileData->FileName));
-            UploadComplete(Index);
+            UploadComplete(Index, true);
             FileData->Timestamp = PrevTimestamp;
           }
         }
@@ -597,7 +599,7 @@ void __fastcall TEditorManager::CheckFileChange(int Index, bool Force)
           // upload failed (was not even started)
           if (FileData->UploadCompleteEvent != INVALID_HANDLE_VALUE)
           {
-            UploadComplete(Index);
+            UploadComplete(Index, false);
           }
           throw;
         }

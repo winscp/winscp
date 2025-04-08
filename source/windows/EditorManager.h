@@ -24,7 +24,7 @@ struct TEditedFileData
 };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TEditedFileChangedEvent)
-  (const UnicodeString & FileName, TEditedFileData * Data, HANDLE CompleteEvent, bool & Retry);
+  (const UnicodeString & FileName, const TDateTime & Timestamp, TEditedFileData * Data, HANDLE CompleteEvent, bool & Retry);
 typedef void __fastcall (__closure * TEditedFileReloadEvent)
   (const UnicodeString & FileName, TEditedFileData * Data);
 typedef void __fastcall (__closure * TEditedFileEarlyClosedEvent)
@@ -96,7 +96,7 @@ private:
   TCriticalSection * FSection;
 
   void __fastcall AddFile(TFileData & FileData, TEditedFileData * Data);
-  void __fastcall UploadComplete(int Index);
+  void UploadComplete(int Index, bool Retry);
   bool __fastcall CloseFile(int Index, bool IgnoreErrors, bool Delete);
   void __fastcall CloseProcess(int Index);
   bool __fastcall EarlyClose(int Index);

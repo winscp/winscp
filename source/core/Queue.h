@@ -404,6 +404,8 @@ private:
 };
 //---------------------------------------------------------------------------
 class TUserAction;
+class TInformationUserAction;
+enum TTerminalReopenResult { trrPending, trrSucceeded, trrFailed, trrNeedsInteraction };
 class TTerminalThread : public TSignalThread
 {
 public:
@@ -412,6 +414,10 @@ public:
 
   void __fastcall TerminalOpen();
   void __fastcall TerminalReopen();
+  void StartTerminalReopenNonInteractive();
+  TTerminalReopenResult IsTerminalReopenComplete();
+  void ContinueTerminalReopenInteractive();
+  bool Abandoned();
 
   void __fastcall Cancel();
   bool __fastcall Release();
@@ -454,12 +460,17 @@ private:
   bool FCancelled;
   bool FPendingIdle;
   bool FAllowAbandon;
+  bool FNonInteractive;
+  bool FNeedsInteraction;
+  typedef std::list<TInformationUserAction *> TInformationList;
+  TInformationList FNonInteractiveInformation;
 
   DWORD FMainThread;
   TCriticalSection * FSection;
 
   void __fastcall WaitForUserAction(TUserAction * UserAction);
-  void __fastcall RunAction(TNotifyEvent Action);
+  void StartAction(TNotifyEvent Action);
+  void RunAction(TNotifyEvent Action);
 
   static void __fastcall SaveException(Exception & E, Exception *& Exception);
   static void __fastcall Rethrow(Exception *& Exception);
@@ -488,6 +499,9 @@ private:
   void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress, int ResolvedLinks, bool & Cancel);
   void __fastcall TerminalInitializeLog(TObject * Sender);
   void DiscardException();
+  bool WaitForActionEvent(unsigned int Wait);
+  void CompleteAction();
+  void NeedsInteraction();
 };
 //---------------------------------------------------------------------------
 enum TQueueFileState { qfsQueued = 0, qfsProcessed = 1 };

@@ -2010,13 +2010,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 132
           Width = 445
-          Height = 211
+          Height = 234
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Automatic reconnect'
           TabOrder = 1
           DesignSize = (
             445
-            211)
+            234)
           object SessionReopenAutoLabel: TLabel
             Left = 27
             Top = 48
@@ -2035,7 +2035,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenTimeoutLabel: TLabel
             Left = 9
-            Top = 181
+            Top = 204
             Width = 120
             Height = 15
             Caption = '&Keep reconnecting for:'
@@ -2043,7 +2043,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenTimeoutSecLabel: TLabel
             Left = 286
-            Top = 181
+            Top = 204
             Width = 43
             Height = 15
             Caption = 'seconds'
@@ -2051,7 +2051,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenAutoStallLabel: TLabel
             Left = 27
-            Top = 152
+            Top = 175
             Width = 86
             Height = 15
             Caption = 'Re&connect after:'
@@ -2059,7 +2059,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenAutoStallSecLabel: TLabel
             Left = 286
-            Top = 152
+            Top = 175
             Width = 43
             Height = 15
             Caption = 'seconds'
@@ -2067,7 +2067,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenAutoIdleLabel: TLabel
             Left = 27
-            Top = 100
+            Top = 123
             Width = 86
             Height = 15
             Caption = 'Reco&nnect after:'
@@ -2075,7 +2075,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenAutoIdleSecLabel: TLabel
             Left = 286
-            Top = 100
+            Top = 123
             Width = 43
             Height = 15
             Caption = 'seconds'
@@ -2116,30 +2116,30 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenTimeoutEdit: TUpDownEdit
             Left = 183
-            Top = 178
+            Top = 201
             Width = 97
             Height = 23
             Alignment = taRightJustify
             Increment = 30.000000000000000000
             MaxValue = 86400.000000000000000000
             MaxLength = 5
-            TabOrder = 6
+            TabOrder = 7
             OnGetValue = SessionReopenTimeoutEditGetValue
             OnSetValue = SessionReopenTimeoutEditSetValue
           end
           object SessionReopenAutoStallCheck: TCheckBox
             Left = 11
-            Top = 126
+            Top = 149
             Width = 425
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Automatically reconnect session, if it &stalls'
-            TabOrder = 4
+            TabOrder = 5
             OnClick = ControlChange
           end
           object SessionReopenAutoStallEdit: TUpDownEdit
             Left = 183
-            Top = 149
+            Top = 172
             Width = 97
             Height = 23
             Alignment = taRightJustify
@@ -2148,11 +2148,11 @@ object PreferencesDialog: TPreferencesDialog
             MinValue = 1.000000000000000000
             Value = 5.000000000000000000
             MaxLength = 3
-            TabOrder = 5
+            TabOrder = 6
           end
           object SessionReopenAutoIdleEdit: TUpDownEdit
             Left = 183
-            Top = 97
+            Top = 120
             Width = 97
             Height = 23
             Alignment = taRightJustify
@@ -2161,7 +2161,17 @@ object PreferencesDialog: TPreferencesDialog
             MinValue = 1.000000000000000000
             Value = 5.000000000000000000
             MaxLength = 3
+            TabOrder = 4
+          end
+          object SessionReopenAutoInactiveCheck: TCheckBox
+            Left = 11
+            Top = 97
+            Width = 425
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Automatically reconnect session, if it breaks &while inactive'
             TabOrder = 3
+            OnClick = ControlChange
           end
         end
       end

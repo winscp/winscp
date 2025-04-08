@@ -2566,6 +2566,12 @@ __fastcall TTerminalThread::~TTerminalThread()
   FTerminal->OnReadDirectoryProgress = FOnReadDirectoryProgress;
   FTerminal->OnInitializeLog = FOnInitializeLog;
 
+  while (!FNonInteractiveInformation.empty())
+  {
+    delete FNonInteractiveInformation.front();
+    FNonInteractiveInformation.pop_front();
+  }
+
   delete FSection;
   if (FAbandoned)
   {
@@ -2605,6 +2611,63 @@ void __fastcall TTerminalThread::Idle()
   }
 }
 //---------------------------------------------------------------------------
+void TTerminalThread::StartTerminalReopenNonInteractive()
+{
+  FNonInteractive = true;
+  StartAction(TerminalReopenEvent);
+}
+//---------------------------------------------------------------------------
+TTerminalReopenResult TTerminalThread::IsTerminalReopenComplete()
+{
+  DebugAssert(!FCancel);
+  DebugAssert(!FAbandoned);
+  DebugAssert(!FCancelled);
+
+  TTerminalReopenResult Result;
+  if (WaitForActionEvent(0))
+  {
+    if (FNeedsInteraction)
+    {
+      Result = trrNeedsInteraction;
+    }
+    else if (FException != NULL)
+    {
+      Result = trrFailed;
+    }
+    else
+    {
+      Result = trrSucceeded;
+    }
+  }
+  else
+  {
+    Result = trrPending;
+  }
+
+  if (Result != trrPending)
+  {
+    DiscardException();
+  }
+
+  DebugAssert(FUserAction == NULL);
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+void TTerminalThread::ContinueTerminalReopenInteractive()
+{
+  FNonInteractive = false;
+
+  while (!FNonInteractiveInformation.empty())
+  {
+    std::unique_ptr<TInformationUserAction> Action(FNonInteractiveInformation.front());
+    FNonInteractiveInformation.pop_front();
+    Action->Execute(NULL);
+  }
+
+  CompleteAction();
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalThread::TerminalOpen()
 {
   RunAction(TerminalOpenEvent);
@@ -2620,72 +2683,103 @@ void TTerminalThread::DiscardException()
   SAFE_DESTROY(FException);
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalThread::RunAction(TNotifyEvent Action)
+void TTerminalThread::StartAction(TNotifyEvent Action)
 {
   DebugAssert(FAction == NULL);
   DebugAssert(FException == NULL);
   DebugAssert(FIdleException == NULL);
-  DebugAssert(FOnIdle != NULL);
 
   FCancelled = false;
   FAction = Action;
+  FNeedsInteraction = false;
+  TriggerEvent();
+}
+//---------------------------------------------------------------------------
+bool TTerminalThread::WaitForActionEvent(unsigned int Wait)
+{
+  switch (WaitForSingleObject(FActionEvent, Wait))
+  {
+    case WAIT_OBJECT_0:
+      return true;
+
+    case WAIT_TIMEOUT:
+      return false;
+
+    default:
+      throw Exception(L"Error waiting for background session task to complete");
+  }
+}
+//---------------------------------------------------------------------------
+bool TTerminalThread::Abandoned()
+{
+  bool Result = false;
+  if (AllowAbandon && FCancel && (Now() >= FCancelAfter))
+  {
+    TGuard Guard(FSection);
+    if (WaitForSingleObject(FActionEvent, 0) != WAIT_OBJECT_0)
+    {
+      FAbandoned = true;
+      FCancelled = true;
+      Result = true;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void TTerminalThread::RunAction(TNotifyEvent Action)
+{
+  FNonInteractive = false;
+  StartAction(Action);
+  CompleteAction();
+}
+//---------------------------------------------------------------------------
+void TTerminalThread::CompleteAction()
+{
+  DebugAssert(FOnIdle != NULL);
   try
   {
     try
     {
-      TriggerEvent();
-
       bool Done = false;
       const unsigned int MaxWait = 50;
       unsigned int Wait = MaxWait;
 
       do
       {
-        switch (WaitForSingleObject(FActionEvent, Wait))
+        if (WaitForActionEvent(Wait))
         {
-          case WAIT_OBJECT_0:
-            Done = true;
-            break;
-
-          case WAIT_TIMEOUT:
-            if (FUserAction != NULL)
+          Done = true;
+        }
+        else
+        {
+          if (FUserAction != NULL)
+          {
+            try
             {
-              try
-              {
-                FUserAction->Execute(NULL);
-              }
-              catch (Exception & E)
-              {
-                SaveException(E, FException);
-              }
-
-              FUserAction = NULL;
-              TriggerEvent();
-              Wait = 0;
+              FUserAction->Execute(NULL);
             }
-            else
+            catch (Exception & E)
             {
-              if (FOnIdle != NULL)
-              {
-                FOnIdle(NULL);
-              }
-              Wait = std::min(Wait + 10, MaxWait);
+              SaveException(E, FException);
             }
-            break;
 
-          default:
-            throw Exception(L"Error waiting for background session task to complete");
+            FUserAction = NULL;
+            TriggerEvent();
+            Wait = 0;
+          }
+          else
+          {
+            if (FOnIdle != NULL)
+            {
+              FOnIdle(NULL);
+            }
+            Wait = std::min(Wait + 10, MaxWait);
+          }
         }
 
-        if (AllowAbandon && !Done && FCancel && (Now() >= FCancelAfter))
+        if (!Done && Abandoned())
         {
-          TGuard Guard(FSection);
-          if (WaitForSingleObject(FActionEvent, 0) != WAIT_OBJECT_0)
-          {
-            FAbandoned = true;
-            FCancelled = true;
-            FatalAbort();
-          }
+          FatalAbort();
         }
       }
       while (!Done);
@@ -2792,6 +2886,7 @@ void __fastcall TTerminalThread::FatalAbort()
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::CheckCancel()
 {
+  // Should we really fatally abort when e.g. just cancelling password prompt?
   if (FCancel && !FCancelled)
   {
     FCancelled = true;
@@ -2801,6 +2896,7 @@ void __fastcall TTerminalThread::CheckCancel()
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::WaitForUserAction(TUserAction * UserAction)
 {
+  DebugAssert(!FNonInteractive);
   DWORD Thread = GetCurrentThreadId();
   // we can get called from the main thread from within Idle,
   // should be only to call HandleExtendedException
@@ -2898,13 +2994,25 @@ void __fastcall TTerminalThread::WaitForUserAction(TUserAction * UserAction)
 void __fastcall TTerminalThread::TerminalInformation(
   TTerminal * Terminal, const UnicodeString & Str, int Phase, const UnicodeString & Additional)
 {
-  TInformationUserAction Action(FOnInformation);
-  Action.Terminal = Terminal;
-  Action.Str = Str;
-  Action.Phase = Phase;
-  Action.Additional = Additional;
-
-  WaitForUserAction(&Action);
+  std::unique_ptr<TInformationUserAction> Action(new TInformationUserAction(FOnInformation));
+  Action->Terminal = Terminal;
+  Action->Str = Str;
+  Action->Phase = Phase;
+  Action->Additional = Additional;
+  if (!FNonInteractive)
+  {
+    WaitForUserAction(Action.get());
+  }
+  else
+  {
+    FNonInteractiveInformation.push_back(Action.release());
+  }
+}
+//---------------------------------------------------------------------------
+void TTerminalThread::NeedsInteraction()
+{
+  FNeedsInteraction = true;
+  Cancel();
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::TerminalQueryUser(TObject * Sender,
@@ -2913,36 +3021,42 @@ void __fastcall TTerminalThread::TerminalQueryUser(TObject * Sender,
 {
   DebugUsedParam(Arg);
   DebugAssert(Arg == NULL);
+  if (FNonInteractive)
+  {
+    NeedsInteraction();
+    Answer = AbortAnswer(Answers);
+  }
+  else
+  {
+    // note about TQueryParams::TimerEvent
+    // So far there is only one use for this, the TSecureShell::SendBuffer,
+    // which should be thread-safe, as long as the terminal thread,
+    // is stopped waiting for OnQueryUser to finish.
 
-  // note about TQueryParams::TimerEvent
-  // So far there is only one use for this, the TSecureShell::SendBuffer,
-  // which should be thread-safe, as long as the terminal thread,
-  // is stopped waiting for OnQueryUser to finish.
+    // note about TQueryButtonAlias::OnClick
+    // So far there is only one use for this, the TClipboardHandler,
+    // which is thread-safe.
 
-  // note about TQueryButtonAlias::OnClick
-  // So far there is only one use for this, the TClipboardHandler,
-  // which is thread-safe.
+    TQueryUserAction Action(FOnQueryUser);
+    Action.Sender = Sender;
+    Action.Query = Query;
+    Action.MoreMessages = MoreMessages;
+    Action.Answers = Answers;
+    Action.Params = Params;
+    Action.Answer = Answer;
+    Action.Type = Type;
 
-  TQueryUserAction Action(FOnQueryUser);
-  Action.Sender = Sender;
-  Action.Query = Query;
-  Action.MoreMessages = MoreMessages;
-  Action.Answers = Answers;
-  Action.Params = Params;
-  Action.Answer = Answer;
-  Action.Type = Type;
+    WaitForUserAction(&Action);
 
-  WaitForUserAction(&Action);
-
-  Answer = Action.Answer;
+    Answer = Action.Answer;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::TerminalInitializeLog(TObject * Sender)
 {
-  if (FOnInitializeLog != NULL)
+  // never used, so not tested either
+  if (DebugAlwaysFalse(FOnInitializeLog != NULL) && DebugAlwaysTrue(!FNonInteractive))
   {
-    // never used, so not tested either
-    DebugFail();
     TNotifyAction Action(FOnInitializeLog);
     Action.Sender = Sender;
 
@@ -2955,91 +3069,121 @@ void __fastcall TTerminalThread::TerminalPromptUser(TTerminal * Terminal,
   TStrings * Results, bool & Result, void * Arg)
 {
   DebugUsedParam(Arg);
-  DebugAssert(Arg == NULL);
+  if (FNonInteractive)
+  {
+    NeedsInteraction();
+    Result = false;
+  }
+  else
+  {
+    DebugAssert(Arg == NULL);
 
-  TPromptUserAction Action(FOnPromptUser);
-  Action.Terminal = Terminal;
-  Action.Kind = Kind;
-  Action.Name = Name;
-  Action.Instructions = Instructions;
-  Action.Prompts = Prompts;
-  Action.Results->AddStrings(Results);
+    TPromptUserAction Action(FOnPromptUser);
+    Action.Terminal = Terminal;
+    Action.Kind = Kind;
+    Action.Name = Name;
+    Action.Instructions = Instructions;
+    Action.Prompts = Prompts;
+    Action.Results->AddStrings(Results);
 
-  WaitForUserAction(&Action);
+    WaitForUserAction(&Action);
 
-  Results->Clear();
-  Results->AddStrings(Action.Results);
-  Result = Action.Result;
+    Results->Clear();
+    Results->AddStrings(Action.Results);
+    Result = Action.Result;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::TerminalShowExtendedException(
   TTerminal * Terminal, Exception * E, void * Arg)
 {
   DebugUsedParam(Arg);
-  DebugAssert(Arg == NULL);
+  if (FNonInteractive)
+  {
+    NeedsInteraction();
+  }
+  else
+  {
+    DebugAssert(Arg == NULL);
 
-  TShowExtendedExceptionAction Action(FOnShowExtendedException);
-  Action.Terminal = Terminal;
-  Action.E = E;
+    TShowExtendedExceptionAction Action(FOnShowExtendedException);
+    Action.Terminal = Terminal;
+    Action.E = E;
 
-  WaitForUserAction(&Action);
+    WaitForUserAction(&Action);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::TerminalDisplayBanner(TTerminal * Terminal,
   UnicodeString SessionName, const UnicodeString & Banner,
   bool & NeverShowAgain, int Options, unsigned int & Params)
 {
-  TDisplayBannerAction Action(FOnDisplayBanner);
-  Action.Terminal = Terminal;
-  Action.SessionName = SessionName;
-  Action.Banner = Banner;
-  Action.NeverShowAgain = NeverShowAgain;
-  Action.Options = Options;
-  Action.Params = Params;
+  if (!FNonInteractive)
+  {
+    TDisplayBannerAction Action(FOnDisplayBanner);
+    Action.Terminal = Terminal;
+    Action.SessionName = SessionName;
+    Action.Banner = Banner;
+    Action.NeverShowAgain = NeverShowAgain;
+    Action.Options = Options;
+    Action.Params = Params;
 
-  WaitForUserAction(&Action);
+    WaitForUserAction(&Action);
 
-  NeverShowAgain = Action.NeverShowAgain;
-  Params = Action.Params;
+    NeverShowAgain = Action.NeverShowAgain;
+    Params = Action.Params;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::TerminalChangeDirectory(TObject * Sender)
 {
-  TNotifyAction Action(FOnChangeDirectory);
-  Action.Sender = Sender;
+  if (!FNonInteractive)
+  {
+    TNotifyAction Action(FOnChangeDirectory);
+    Action.Sender = Sender;
 
-  WaitForUserAction(&Action);
+    WaitForUserAction(&Action);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::TerminalReadDirectory(TObject * Sender, Boolean ReloadOnly)
 {
-  TReadDirectoryAction Action(FOnReadDirectory);
-  Action.Sender = Sender;
-  Action.ReloadOnly = ReloadOnly;
+  if (!FNonInteractive)
+  {
+    TReadDirectoryAction Action(FOnReadDirectory);
+    Action.Sender = Sender;
+    Action.ReloadOnly = ReloadOnly;
 
-  WaitForUserAction(&Action);
+    WaitForUserAction(&Action);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::TerminalStartReadDirectory(TObject * Sender)
 {
-  TNotifyAction Action(FOnStartReadDirectory);
-  Action.Sender = Sender;
+  if (!FNonInteractive)
+  {
+    TNotifyAction Action(FOnStartReadDirectory);
+    Action.Sender = Sender;
 
-  WaitForUserAction(&Action);
+    WaitForUserAction(&Action);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalThread::TerminalReadDirectoryProgress(
   TObject * Sender, int Progress, int ResolvedLinks, bool & Cancel)
 {
-  TReadDirectoryProgressAction Action(FOnReadDirectoryProgress);
-  Action.Sender = Sender;
-  Action.Progress = Progress;
-  Action.ResolvedLinks = ResolvedLinks;
-  Action.Cancel = Cancel;
+  if (!FNonInteractive)
+  {
+    TReadDirectoryProgressAction Action(FOnReadDirectoryProgress);
+    Action.Sender = Sender;
+    Action.Progress = Progress;
+    Action.ResolvedLinks = ResolvedLinks;
+    Action.Cancel = Cancel;
 
-  WaitForUserAction(&Action);
+    WaitForUserAction(&Action);
 
-  Cancel = Action.Cancel;
+    Cancel = Action.Cancel;
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalThread::Release()

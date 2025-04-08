@@ -218,8 +218,9 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
     ESshTerminate * Terminate = dynamic_cast<ESshTerminate*>(E);
     bool CloseOnCompletion = (Terminate != NULL);
 
+    EFatal * FatalException = dynamic_cast<EFatal *>(E);
     bool ForActiveTerminal =
-      E->InheritsFrom(__classid(EFatal)) && (Terminal != NULL) &&
+      (FatalException != NULL) && (Terminal != NULL) &&
       (Manager != NULL) && (Manager->ActiveTerminal == Terminal);
 
     unsigned int Result;
@@ -281,6 +282,12 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
           Result =
             ExceptionMessageDialog(E, qtInformation, L"", Answers | qaOK, HELP_NONE, &Params);
         }
+
+        if (Result == qaNeverAskAgain)
+        {
+          Result = qaYes;
+          WinConfiguration->ConfirmExitOnCompletion = false;
+        }
       }
       else
       {
@@ -302,13 +309,27 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
                  ((double)Manager->ActiveTerminal->ReopenStart == 0) ||
                  (int(double(Now() - Manager->ActiveTerminal->ReopenStart) * MSecsPerDay) < Configuration->SessionReopenTimeout)))
             {
-              Params.Timeout = GUIConfiguration->SessionReopenAutoIdle;
+              Params.Timeout = GUIConfiguration->SessionReopenAutoIdleOn ? GUIConfiguration->SessionReopenAutoIdle : 0;
               Params.TimeoutAnswer = qaRetry;
               Params.TimeoutResponse = Params.TimeoutAnswer;
               HookedDialog = Manager->HookFatalExceptionMessageDialog(Params);
             }
 
+            bool InactiveTerminationMessage = (FatalException != NULL) && FatalException->InactiveTerminationMessage;
+            if (InactiveTerminationMessage)
+            {
+              Params.Params |= mpNeverAskAgainCheck;
+              Params.NeverAskAgainTitle = LoadStr(ALWAYS_RECONNECT);
+              Params.NeverAskAgainAnswer = qaRetry;
+            }
+
             Result = FatalExceptionMessageDialog(E, qtError, EmptyStr, qaOK, EmptyStr, &Params);
+
+            if ((Result == qaNeverAskAgain) && DebugAlwaysTrue(InactiveTerminationMessage))
+            {
+              GUIConfiguration->SessionReopenAutoInactive = true;
+              Result = qaRetry;
+            }
           }
           __finally
           {
@@ -327,13 +348,6 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
       {
         Result = qaOK;
       }
-    }
-
-    if (Result == qaNeverAskAgain)
-    {
-      DebugAssert(CloseOnCompletion);
-      Result = qaYes;
-      WinConfiguration->ConfirmExitOnCompletion = false;
     }
 
     if (Result == qaYes)

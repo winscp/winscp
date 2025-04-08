@@ -21,6 +21,7 @@ const int ccCopyResults = ccUser << 2;
 const int ccRemoteFiles = ccUser << 3;
 const int ccShowResultsInMsgBox = ccUser << 4;
 const int ccSet = 0x80000000;
+const int SessionReopenAutoIdleDefault = 9000;
 //---------------------------------------------------------------------------
 static const unsigned int AdditionalLanguageMask = 0xFFFFFF00;
 static const UnicodeString AdditionalLanguagePrefix(L"XX");
@@ -578,7 +579,9 @@ void __fastcall TGUIConfiguration::Default()
   FCopyParamCurrent = L"";
   FKeepUpToDateChangeDelay = 500;
   FChecksumAlg = L"sha1";
-  FSessionReopenAutoIdle = 9000;
+  FSessionReopenAutoIdle = SessionReopenAutoIdleDefault;
+  FSessionReopenAutoIdleOn = true;
+  FSessionReopenAutoInactive = false;
 
   FNewDirectoryProperties.Default();
   FNewDirectoryProperties.Rights = TRights::rfDefault | TRights::rfExec;
@@ -655,6 +658,8 @@ void __fastcall TGUIConfiguration::UpdateStaticUsage()
     KEY(Integer,  KeepUpToDateChangeDelay); \
     KEY(String,   ChecksumAlg); \
     KEY(Integer,  SessionReopenAutoIdle); \
+    KEY(Bool,     SessionReopenAutoIdleOn); \
+    KEY(Bool,     SessionReopenAutoInactive); \
   ); \
 //---------------------------------------------------------------------------
 bool __fastcall TGUIConfiguration::DoSaveCopyParam(THierarchicalStorage * Storage, const TCopyParamType * CopyParam, const TCopyParamType * Defaults)

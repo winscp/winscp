@@ -15,6 +15,7 @@ extern const int ccCopyResults;
 extern const int ccSet;
 extern const int ccRemoteFiles;
 extern const int ccShowResultsInMsgBox;
+extern const int SessionReopenAutoIdleDefault;
 //---------------------------------------------------------------------------
 const int soRecurse =         0x01;
 const int soSynchronize =     0x02;
@@ -187,6 +188,8 @@ private:
   int FKeepUpToDateChangeDelay;
   UnicodeString FChecksumAlg;
   int FSessionReopenAutoIdle;
+  bool FSessionReopenAutoIdleOn;
+  bool FSessionReopenAutoInactive;
   LCID FAppliedLocale;
   // Corresponds to FAppliedLocale
   UnicodeString FLocaleModuleName;
@@ -288,6 +291,8 @@ public:
   __property int KeepUpToDateChangeDelay = { read = FKeepUpToDateChangeDelay, write = FKeepUpToDateChangeDelay };
   __property UnicodeString ChecksumAlg = { read = FChecksumAlg, write = FChecksumAlg };
   __property int SessionReopenAutoIdle = { read = FSessionReopenAutoIdle, write = FSessionReopenAutoIdle };
+  __property bool SessionReopenAutoIdleOn = { read = FSessionReopenAutoIdleOn, write = FSessionReopenAutoIdleOn };
+  __property bool SessionReopenAutoInactive = { read = FSessionReopenAutoInactive, write = FSessionReopenAutoInactive };
   __property bool CanApplyLocaleImmediately = { read = GetCanApplyLocaleImmediately };
   __property LCID AppliedLocale = { read = FAppliedLocale };
 };

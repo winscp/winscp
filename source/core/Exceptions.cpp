@@ -429,12 +429,14 @@ __fastcall EOSExtException::EOSExtException(UnicodeString Msg, int LastError) :
 //---------------------------------------------------------------------------
 __fastcall EFatal::EFatal(Exception* E, UnicodeString Msg, UnicodeString HelpKeyword) :
   ExtException(Msg, E, HelpKeyword),
-  FReopenQueried(false)
+  ReopenQueried(false),
+  InactiveTerminationMessage(false)
 {
   EFatal * F = dynamic_cast<EFatal *>(E);
   if (F != NULL)
   {
-    FReopenQueried = F->ReopenQueried;
+    ReopenQueried = F->ReopenQueried;
+    InactiveTerminationMessage = F->InactiveTerminationMessage;
   }
 }
 //---------------------------------------------------------------------------

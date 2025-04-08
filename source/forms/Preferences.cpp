@@ -427,9 +427,12 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     SessionReopenAutoCheck->Checked = (Configuration->SessionReopenAuto > 0);
     SessionReopenAutoEdit->Value = (Configuration->SessionReopenAuto > 0 ?
       (Configuration->SessionReopenAuto / MSecsPerSec) : 5);
-    SessionReopenAutoIdleCheck->Checked = (GUIConfiguration->SessionReopenAutoIdle > 0);
-    SessionReopenAutoIdleEdit->Value = (GUIConfiguration->SessionReopenAutoIdle > 0 ?
-      (GUIConfiguration->SessionReopenAutoIdle / MSecsPerSec) : 5);
+    SessionReopenAutoIdleCheck->Checked =
+      GUIConfiguration->SessionReopenAutoIdleOn && (GUIConfiguration->SessionReopenAutoIdle > 0);
+    SessionReopenAutoInactiveCheck->Checked = GUIConfiguration->SessionReopenAutoInactive;
+    int SessionReopenAutoIdle =
+      (GUIConfiguration->SessionReopenAutoIdle > 0 ? GUIConfiguration->SessionReopenAutoIdle : SessionReopenAutoIdleDefault);
+    SessionReopenAutoIdleEdit->Value = (SessionReopenAutoIdle / MSecsPerSec);
     SessionReopenAutoStallCheck->Checked = (Configuration->SessionReopenAutoStall > 0);
     SessionReopenAutoStallEdit->Value = (Configuration->SessionReopenAutoStall > 0 ?
       (Configuration->SessionReopenAutoStall / MSecsPerSec) : SecsPerMin);
@@ -829,8 +832,9 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     Configuration->SessionReopenAuto =
       (SessionReopenAutoCheck->Checked ? (SessionReopenAutoEdit->AsInteger * MSecsPerSec) : 0);
-    GUIConfiguration->SessionReopenAutoIdle =
-      (SessionReopenAutoIdleCheck->Checked ? (SessionReopenAutoIdleEdit->AsInteger * MSecsPerSec) : 0);
+    GUIConfiguration->SessionReopenAutoIdleOn = SessionReopenAutoIdleCheck->Checked;
+    GUIConfiguration->SessionReopenAutoInactive = SessionReopenAutoInactiveCheck->Checked;
+    GUIConfiguration->SessionReopenAutoIdle = (SessionReopenAutoIdleEdit->AsInteger * MSecsPerSec);
     Configuration->SessionReopenAutoStall =
       (SessionReopenAutoStallCheck->Checked ? (SessionReopenAutoStallEdit->AsInteger * MSecsPerSec) : 0);
     Configuration->SessionReopenTimeout = (SessionReopenTimeoutEdit->AsInteger * MSecsPerSec);
@@ -1289,7 +1293,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(SessionReopenAutoEdit, SessionReopenAutoCheck->Checked);
     EnableControl(SessionReopenAutoLabel, SessionReopenAutoEdit->Enabled);
     EnableControl(SessionReopenAutoSecLabel, SessionReopenAutoEdit->Enabled);
-    EnableControl(SessionReopenAutoIdleEdit, SessionReopenAutoIdleCheck->Checked);
+    EnableControl(SessionReopenAutoIdleEdit, SessionReopenAutoIdleCheck->Checked || SessionReopenAutoInactiveCheck->Checked);
     EnableControl(SessionReopenAutoIdleLabel, SessionReopenAutoIdleEdit->Enabled);
     EnableControl(SessionReopenAutoIdleSecLabel, SessionReopenAutoIdleEdit->Enabled);
     EnableControl(SessionReopenAutoStallEdit, SessionReopenAutoStallCheck->Checked);

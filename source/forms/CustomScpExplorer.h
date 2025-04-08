@@ -472,7 +472,8 @@ protected:
   void __fastcall OperationComplete(const TDateTime & StartTime);
   void EditedFileUploaded(TTerminal * ATerminal, HANDLE UploadCompleteEvent);
   void __fastcall ExecutedFileChanged(
-    const UnicodeString & FileName, TEditedFileData * Data, HANDLE UploadCompleteEvent, bool & Retry);
+    const UnicodeString & FileName, const TDateTime & Timestamp, TEditedFileData * Data,
+    HANDLE UploadCompleteEvent, bool & Retry);
   void __fastcall ExecutedFileReload(const UnicodeString & FileName, TEditedFileData * Data);
   void __fastcall ExecutedFileEarlyClosed(const TEditedFileData * Data,
     bool & KeepOpen);
@@ -627,8 +628,6 @@ protected:
   void __fastcall SetSessionColor(TColor value);
   void __fastcall NoteTimer(TObject * Sender);
   void __fastcall AddNote(UnicodeString Note, bool UpdateNow = true);
-  void __fastcall PostNote(UnicodeString Note, unsigned int Seconds,
-    TNotifyEvent OnNoteClick, TObject * NoteData);
   bool __fastcall CancelNote(bool Force);
   void __fastcall UpdateNoteHints();
   void __fastcall UpdatesChecked();
@@ -638,9 +637,6 @@ protected:
     bool AllowNeverAskAgain);
   void __fastcall UpdateTrayIcon();
   void __fastcall TrayIconClick(TObject * Sender);
-  void __fastcall Notify(TTerminal * Terminal, UnicodeString Message,
-    TQueryType Type, bool Important = false, TNotifyEvent OnClick = NULL,
-    TObject * UserData = NULL, Exception * E = NULL);
   virtual void __fastcall UpdateSessionData(TSessionData * Data);
   virtual void __fastcall UpdateRemotePathComboBox(bool TextOnly);
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
@@ -873,7 +869,8 @@ public:
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData);
   UnicodeString __fastcall GetProgressTitle();
   void __fastcall ShowExtendedException(TTerminal * Terminal, Exception * E);
-  void __fastcall InactiveTerminalException(TTerminal * Terminal, Exception * E);
+  void InactiveTerminalNotify(
+    TManagedTerminal * Terminal, const UnicodeString & Message, TQueryType Type, Exception * E = NULL);
   void __fastcall SessionReady();
   void __fastcall QueueEvent(TManagedTerminal * Terminal, TTerminalQueue * Queue, TQueueEvent Event);
   void __fastcall QueueEmptyNoteClicked(TObject * Sender);
@@ -937,6 +934,11 @@ public:
   void PostThumbnailVisibleQueueQuery(int Index, const UnicodeString & FileName);
   void PostThumbnailDrawRequest(int Index);
   void ChangeDirViewStyle(TOperationSide Side, TDirViewStyle DirViewStyle);
+  void PostNote(const UnicodeString & Note, unsigned int Seconds = 0, TNotifyEvent OnNoteClick = NULL, TObject * NoteData = NULL);
+  void CancelNote(const UnicodeString & Note);
+  void Notify(
+    TManagedTerminal * Terminal, const UnicodeString & Message, TQueryType Type,
+    bool Important = false, TNotifyEvent OnClick = NULL, TObject * UserData = NULL, Exception * E = NULL);
 
   __property bool ComponentVisible[Byte Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

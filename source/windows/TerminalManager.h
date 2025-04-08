@@ -64,6 +64,10 @@ public:
   std::unique_ptr<TCriticalSection> ThumbnailsSection;
   bool ThumbnailsEnabled;
   TThumbnailDownloadQueueItem * ThumbnailDownloadQueueItem;
+  UnicodeString InactiveTerminationMessage;
+  TDateTime NextInactiveReconnect;
+  TDateTime LastInactiveSave;
+  UnicodeString OrigRemoteDirectory;
 
   TRemoteThumbnailsMap Thumbnails;
   TRemoteThumbnailsQueue ThumbnailsQueue;
@@ -103,12 +107,15 @@ public:
   void NewLocalSession(const UnicodeString & LocalDirectory = UnicodeString(), const UnicodeString & OtherLocalDirectory = UnicodeString());
   void __fastcall Idle(bool SkipCurrentTerminal);
   UnicodeString __fastcall GetSessionTitle(TManagedTerminal * Terminal, bool Unique);
+  UnicodeString FormatTerminalNoteMessage(TManagedTerminal * Terminal, const UnicodeString & Message);
   UnicodeString __fastcall GetActiveSessionAppTitle();
   UnicodeString __fastcall GetAppProgressTitle();
   UnicodeString __fastcall FormatFormCaptionWithSession(TCustomForm * Form, const UnicodeString & Caption);
   void __fastcall HandleException(Exception * E);
   void __fastcall SaveWorkspace(TList * DataList);
   void __fastcall QueueStatusUpdated();
+  bool IsActiveTerminal(TTerminal * Terminal);
+  bool IsReconnectingTerminal(TTerminal * Terminal);
   bool __fastcall IsActiveTerminalForSite(TTerminal * Terminal, TSessionData * Data);
   TManagedTerminal * __fastcall FindActiveTerminalForSite(TSessionData * Data);
   TTerminalQueue * __fastcall FindQueueForTerminal(TTerminal * Terminal);
@@ -129,6 +136,7 @@ public:
   __property TTerminal * LocalTerminal = { read = FLocalTerminal };
   __property TManagedTerminal * Sessions[int Index]  = { read = GetSession };
   __property bool Updating = { read = IsUpdating };
+  __property TManagedTerminal * ReconnectingInactiveTerminal = { read = FReconnectingInactiveTerminal };
 
 protected:
   virtual TTerminal * __fastcall CreateTerminal(TSessionData * Data);
@@ -146,7 +154,6 @@ private:
   TTerminalPendingAction FTerminalPendingAction;
   TStrings * FSessionList;
   TList * FQueues;
-  TStrings * FTerminationMessages;
   UnicodeString FProgressTitle;
   UnicodeString FForegroundProgressTitle;
   TDateTime FDirectoryReadingStart;
@@ -166,6 +173,8 @@ private:
   int FUpdating;
   int FMaxSessions;
   TTerminal * FOpeningTerminal;
+  TManagedTerminal * FReconnectingInactiveTerminal;
+  UnicodeString FReconnectingNote;
 
   bool __fastcall ConnectActiveTerminalImpl(bool Reopen);
   bool __fastcall ConnectActiveTerminal();
@@ -239,6 +248,11 @@ private:
   bool SupportedSession(TSessionData * Data);
   void __fastcall TerminalFatalExceptionTimer(unsigned int & Result);
   void NeedThumbnailDownloadQueueItem(TManagedTerminal * ATerminal);
+  void StartInactiveTerminalReconnect(TManagedTerminal * Terminal);
+  void CheckInactiveTerminalReconnect();
+  TTerminalThread * CreateTerminalThread(TTerminal * Terminal);
+  void ReconnectingTerminal(TManagedTerminal * ManagedTerminal);
+  void ReconnectedTerminal(TManagedTerminal * ManagedTerminal);
 };
 //---------------------------------------------------------------------------
 class TThumbnailDownloadQueueItem : public TTransferQueueItem

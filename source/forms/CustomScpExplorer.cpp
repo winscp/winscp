@@ -3973,17 +3973,40 @@ void TCustomScpExplorerForm::EditedFileUploaded(TTerminal * ATerminal, HANDLE Up
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
-  const UnicodeString & FileName, TEditedFileData * Data, HANDLE UploadCompleteEvent, bool & Retry)
+  const UnicodeString & FileName, const TDateTime & Timestamp, TEditedFileData * Data,
+  HANDLE UploadCompleteEvent, bool & Retry)
 {
   TTerminalManager * Manager = TTerminalManager::Instance();
 
+  bool IsInactive = !IsActiveTerminal(Data->Terminal);
   if ((Manager->ActiveTerminal == Data->Terminal) &&
       Manager->ScheduleTerminalReconnnect(Data->Terminal))
   {
     AppLog(L"Scheduled session reconnect, will retry the upload later");
     Retry = true;
   }
-  else if (!IsActiveTerminal(Data->Terminal))
+  else if (Manager->IsReconnectingTerminal(Data->Terminal))
+  {
+    AppLog(L"Session is being reconnected, will retry the upload later");
+    Retry = true;
+  }
+  else if (IsInactive &&
+           GUIConfiguration->SessionReopenAutoInactive &&
+           (Data->Terminal->NextInactiveReconnect != TDateTime()))
+  {
+    if (Data->Terminal->LastInactiveSave != Timestamp)
+    {
+      AppLog(L"Inactive session reconnect is pending, rescheduling it for as soon as possible to retry the upload");
+      Data->Terminal->NextInactiveReconnect = Now();
+      Data->Terminal->LastInactiveSave = Timestamp;
+    }
+    else
+    {
+      AppLog(L"Inactive session reconnect is pending, will retry the upload later");
+    }
+    Retry = true;
+  }
+  else if (IsInactive)
   {
     if (!NonVisualDataModule->Busy)
     {
@@ -4018,7 +4041,16 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
         UnicodeString Message =
           MainInstructions(
             FMTLOAD(EDIT_SESSION_RECONNECT, (Data->SessionName, FileNameOnly)));
-        if (MessageDialog(Message, qtConfirmation, qaOK | qaCancel) == qaOK)
+        TMessageParams Params(FLAGMASK(!GUIConfiguration->SessionReopenAutoInactive, mpNeverAskAgainCheck));
+        Params.NeverAskAgainTitle = LoadStr(ALWAYS_RECONNECT);
+        unsigned int Answer = MessageDialog(Message, qtConfirmation, qaOK | qaCancel, HELP_NONE, &Params);
+        if (Answer == qaNeverAskAgain)
+        {
+          GUIConfiguration->SessionReopenAutoInactive = true;
+          Answer = qaOK;
+        }
+
+        if (Answer == qaOK)
         {
           if (Terminal->Disconnected)
           {
@@ -7989,25 +8021,23 @@ void __fastcall TCustomScpExplorerForm::SessionReady()
   UpdateSessionTab(SessionsPageControl->Pages[ActiveSessionIndex]);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::InactiveTerminalException(
-  TTerminal * Terminal, Exception * E)
+void TCustomScpExplorerForm::InactiveTerminalNotify(
+  TManagedTerminal * Terminal, const UnicodeString & Message, TQueryType Type, Exception * E)
 {
-  Notify(Terminal, L"", qtError, false, NULL, NULL, E);
+  Notify(Terminal, Message, Type, false, NULL, NULL, E);
 
-  if (!Terminal->Active)
+  int Index = TTerminalManager::Instance()->IndexOf(Terminal);
+  if (DebugAlwaysTrue((Index >= 0) && (Index < SessionsPageControl->PageCount)))
   {
-    int Index = TTerminalManager::Instance()->IndexOf(Terminal);
-    if (DebugAlwaysTrue((Index >= 0) && (Index < SessionsPageControl->PageCount)))
-    {
-      UpdateSessionTab(SessionsPageControl->Pages[Index]);
-    }
+    UpdateSessionTab(SessionsPageControl->Pages[Index]);
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::Notify(TTerminal * Terminal,
-  UnicodeString Message, TQueryType Type,
+void TCustomScpExplorerForm::Notify(
+  TManagedTerminal * Terminal, const UnicodeString & AMessage, TQueryType Type,
   bool Important, TNotifyEvent OnClick, TObject * UserData, Exception * E)
 {
+  UnicodeString Message = AMessage;
   if ((E == NULL) ||
       ExceptionMessage(E, Message))
   {
@@ -8020,9 +8050,7 @@ void __fastcall TCustomScpExplorerForm::Notify(TTerminal * Terminal,
     UnicodeString NoteMessage(UnformatMessage(Message));
     if (Terminal != NULL)
     {
-      TManagedTerminal * Session = DebugNotNull(dynamic_cast<TManagedTerminal *>(Terminal));
-      NoteMessage = FORMAT(L"%s: %s",
-        (TTerminalManager::Instance()->GetSessionTitle(Session, true), NoteMessage));
+      NoteMessage = TTerminalManager::Instance()->FormatTerminalNoteMessage(Terminal, NoteMessage);
     }
 
     if (WinConfiguration->BalloonNotifications)
@@ -9573,7 +9601,7 @@ void __fastcall TCustomScpExplorerForm::UpdatesChecked()
     if (!New && (Type != qtWarning))
     {
       AppLog(L"Posting non-critical updates note");
-      PostNote(UnformatMessage(Message), 0, UpdatesNoteClicked, NULL);
+      PostNote(UnformatMessage(Message), 0, UpdatesNoteClicked);
     }
     else
     {
@@ -10228,6 +10256,14 @@ bool __fastcall TCustomScpExplorerForm::CancelNote(bool Force)
   return Result;
 }
 //---------------------------------------------------------------------------
+void TCustomScpExplorerForm::CancelNote(const UnicodeString & Note)
+{
+  if (FNote == Note)
+  {
+    CancelNote(true);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::NoteTimer(TObject * /*Sender*/)
 {
   DebugAssert(FNoteTimer->Enabled);
@@ -10261,9 +10297,10 @@ void __fastcall TCustomScpExplorerForm::AddNote(UnicodeString Note, bool UpdateN
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::PostNote(UnicodeString Note,
-  unsigned int Seconds, TNotifyEvent OnNoteClick, TObject * NoteData)
+void TCustomScpExplorerForm::PostNote(
+  const UnicodeString & ANote, unsigned int Seconds, TNotifyEvent OnNoteClick, TObject * NoteData)
 {
+  UnicodeString Note = ANote;
   int P = Note.Pos(L"\n");
   if (P > 0)
   {
@@ -10289,7 +10326,7 @@ void __fastcall TCustomScpExplorerForm::PostNote(UnicodeString Note,
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ReadDirectoryCancelled()
 {
-  PostNote(LoadStr(DIRECTORY_READING_CANCELLED), 0, NULL, NULL);
+  PostNote(LoadStr(DIRECTORY_READING_CANCELLED));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SynchronizeBrowsingChanged()
@@ -10301,8 +10338,7 @@ void __fastcall TCustomScpExplorerForm::SynchronizeBrowsingChanged()
 
   PostNote(FORMAT(LoadStrPart(SYNC_DIR_BROWSE_TOGGLE, 1),
     (LoadStrPart(SYNC_DIR_BROWSE_TOGGLE,
-      (NonVisualDataModule->SynchronizeBrowsingAction2->Checked ? 2 : 3)))),
-    0, NULL, NULL);
+      (NonVisualDataModule->SynchronizeBrowsingAction2->Checked ? 2 : 3)))));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ToggleShowHiddenFiles()
@@ -10310,7 +10346,7 @@ void __fastcall TCustomScpExplorerForm::ToggleShowHiddenFiles()
   bool NewShowHiddenFiles = !WinConfiguration->ShowHiddenFiles;
   UnicodeString Note =
     FORMAT(LoadStrPart(SHOW_HIDDEN_FILES_TOGGLE, 1), (LoadStrPart(SHOW_HIDDEN_FILES_TOGGLE, (NewShowHiddenFiles ? 2 : 3))));
-  PostNote(Note, 0, NULL, NULL);
+  PostNote(Note);
   GetComponent(fcStatusBar)->Repaint(); // toggling ShowHiddenFiles takes time, force repaint beforehand
   WinConfiguration->ShowHiddenFiles = NewShowHiddenFiles;
 }
@@ -10325,7 +10361,7 @@ void __fastcall TCustomScpExplorerForm::ToggleAutoReadDirectoryAfterOp()
   Configuration->AutoReadDirectoryAfterOp = !Configuration->AutoReadDirectoryAfterOp;
   PostNote(FORMAT(LoadStrPart(AUTO_READ_DIRECTORY_TOGGLE, 1),
     (LoadStrPart(AUTO_READ_DIRECTORY_TOGGLE,
-      (Configuration->AutoReadDirectoryAfterOp ? 2 : 3)))), 0, NULL, NULL);
+      (Configuration->AutoReadDirectoryAfterOp ? 2 : 3)))));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::StatusBarPanelDblClick(
@@ -11985,7 +12021,7 @@ void __fastcall TCustomScpExplorerForm::CloseApp()
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::IsActiveTerminal(TTerminal * Terminal)
 {
-  return (Terminal != NULL) && Terminal->Active;
+  return TTerminalManager::Instance()->IsActiveTerminal(Terminal);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::HasManagedSession()
