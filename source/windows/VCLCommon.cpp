@@ -526,7 +526,6 @@ UnicodeString __fastcall FormatFormCaption(
 class TPublicControl : public TControl
 {
 friend void __fastcall RealignControl(TControl * Control);
-friend void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc, TMessage & Message);
 friend TCanvas * CreateControlCanvas(TControl * Control);
 };
 //---------------------------------------------------------------------
@@ -1724,7 +1723,7 @@ void __fastcall UpdateFormPosition(TCustomForm * Form, TPosition Position)
 //---------------------------------------------------------------------------
 void __fastcall ResizeForm(TCustomForm * Form, int Width, int Height)
 {
-  // This has to be called only after DoFormWindowProc(CM_SHOWINGCHANGED),
+  // This has to be called only after FormWindowProc(CM_SHOWINGCHANGED),
   // so that a correct monitor is considered.
   // Note that we cannot use LastMonitor(), as ResizeForm is also called from
   // TConsoleDialog::DoAdjustWindow, where we need to use the actual monitor
@@ -2411,7 +2410,7 @@ TForm * __fastcall _SafeFormCreate(TMetaClass * FormClass, TComponent * Owner)
   // - Makes other forms (dialogs invoked from this one),
   // be placed on the same monitor (otherwise all new forms get placed
   // on primary monitor)
-  // - Triggers MainForm-specific code in DoFormWindowProc.
+  // - Triggers MainForm-specific code in FormWindowProc.
   // - Shows button on taskbar
   if (Application->MainForm == NULL)
   {
@@ -2782,7 +2781,7 @@ void __fastcall ShowFormNoActivate(TForm * Form)
     Form->SetBounds(X, Y, Form->Width, Form->Height);
     // We cannot call SetWindowToMonitor().
     // We cannot set FPosition = poDesigned, so workarea-checking code
-    // in DoFormWindowProc is not triggered
+    // in FormWindowProc is not triggered
 
     // If application is restored, dialog is not activated, do it manually.
     // Wait for application to be activated to activate ourself.
