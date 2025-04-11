@@ -218,6 +218,8 @@ extern const UnicodeString ScpExplorerDirViewParamsDefault;
 extern const UnicodeString ScpCommanderRemotePanelDirViewParamsDefault;
 extern const UnicodeString ScpCommanderLocalPanelDirViewParamsDefault;
 extern UnicodeString QueueViewLayoutDefault;
+extern UnicodeString ScpCommanderWindowParamsDefault;
+extern UnicodeString ScpExplorerWindowParamsDefault;
 //---------------------------------------------------------------------------
 struct TUpdatesConfiguration
 {

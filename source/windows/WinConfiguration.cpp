@@ -39,6 +39,8 @@ const UnicodeString ScpCommanderRemotePanelDirViewParamsDefault = ScpExplorerDir
 const UnicodeString ScpCommanderLocalPanelDirViewParamsDefault =
   L"0;1;0|150,1;70,1;120,1;150,1;55,0;55,0;@" + SaveDefaultPixelsPerInch() + L"|5;0;1;2;3;4";
 UnicodeString QueueViewLayoutDefault;
+UnicodeString ScpCommanderWindowParamsDefault;
+UnicodeString ScpExplorerWindowParamsDefault;
 //---------------------------------------------------------------------------
 static const wchar_t FileColorDataSeparator = L':';
 TFileColorData::TFileColorData() :
@@ -708,7 +710,11 @@ void __fastcall TWinConfiguration::Default()
 
   int ExplorerWidth = Min(WorkAreaWidthScaled - 40, 960);
   int ExplorerHeight = Min(WorkAreaHeightScaled - 30, 720);
-  FScpExplorer.WindowParams = FormatDefaultWindowParams(ExplorerWidth, ExplorerHeight);
+  if (ScpExplorerWindowParamsDefault.IsEmpty())
+  {
+    ScpExplorerWindowParamsDefault = FormatDefaultWindowParams(ExplorerWidth, ExplorerHeight);
+  }
+  FScpExplorer.WindowParams = ScpExplorerWindowParamsDefault;
 
   FScpExplorer.DirViewParams = ScpExplorerDirViewParamsDefault;
   FScpExplorer.ToolbarsLayout =
@@ -737,7 +743,11 @@ void __fastcall TWinConfiguration::Default()
 
   int CommanderWidth = Min(WorkAreaWidthScaled - 40, 1090);
   int CommanderHeight = Min(WorkAreaHeightScaled - 30, 700);
-  FScpCommander.WindowParams = FormatDefaultWindowParams(CommanderWidth, CommanderHeight);
+  if (ScpCommanderWindowParamsDefault.IsEmpty())
+  {
+    ScpCommanderWindowParamsDefault = FormatDefaultWindowParams(CommanderWidth, CommanderHeight);
+  }
+  FScpCommander.WindowParams = ScpCommanderWindowParamsDefault;
 
   FScpCommander.LocalPanelWidth = 0.5;
   FScpCommander.SwappedPanels = false;

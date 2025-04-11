@@ -1470,14 +1470,15 @@ void __fastcall TCustomScpExplorerForm::StoreParams()
   WinConfiguration->QueueView.FileListHeightPixelsPerInch = APixelsPerInch;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::CreateParams(TCreateParams & Params)
+void __fastcall TCustomScpExplorerForm::Loaded()
 {
+  // Loaded is called in more deterministic moment than previously used CreateParams
   if (!FFormRestored)
   {
     FFormRestored = true;
     RestoreFormParams();
   }
-  TForm::CreateParams(Params);
+  TForm::Loaded();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SetDockAllowDrag(bool value)
