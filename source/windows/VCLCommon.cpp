@@ -1049,8 +1049,6 @@ void __fastcall UseSystemSettingsPre(TForm * Control)
     Control->HelpKeyword = L"start";
   }
 
-  DebugAssert(SameFont(Control->Font, Application->DefaultFont));
-
   ApplySystemSettingsOnControl(Control);
 };
 //---------------------------------------------------------------------------
@@ -2626,7 +2624,6 @@ void TDesktopFontManager::UpdateControl(TControl * Control)
     if (DebugAlwaysTrue(SystemParametersInfoForPixelsPerInch(SPI_GETICONTITLELOGFONT, sizeof(LogFont), &LogFont, 0, PixelsPerInch)))
     {
       DesktopFont->Handle = CreateFontIndirect(&LogFont);
-      DebugAssert((PixelsPerInch == Screen->PixelsPerInch) || SameFont(DesktopFont.get(), Application->DefaultFont));
     }
   }
   else

@@ -183,10 +183,17 @@ void __fastcall LoadListViewStr(TListView * ListView, UnicodeString ALayoutStr)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall LoadFormDimensions(
-  const UnicodeString & LeftStr, const UnicodeString & TopStr, const UnicodeString & RightStr, const UnicodeString & BottomStr,
-  int PixelsPerInch, Forms::TMonitor * Monitor, TForm * Form, TRect & Bounds, bool & DefaultPos)
+wchar_t FormDataSep = L';';
+//---------------------------------------------------------------------------
+void LoadFormDimensions(
+  const UnicodeString & AData, int PixelsPerInch, Forms::TMonitor * Monitor, TForm * Form, TRect & Bounds, bool & DefaultPos)
 {
+  UnicodeString Data = AData;
+  UnicodeString LeftStr = CutToChar(Data, FormDataSep, true);
+  UnicodeString TopStr = CutToChar(Data, FormDataSep, true);
+  UnicodeString RightStr = CutToChar(Data, FormDataSep, true);
+  UnicodeString BottomStr = CutToChar(Data, FormDataSep, true);
+
   DefaultPos = (StrToIntDef(LeftStr, 0) == -1) && (StrToIntDef(TopStr, 0) == -1);
   if (!DefaultPos)
   {
@@ -216,19 +223,26 @@ void __fastcall LoadFormDimensions(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
+static void CenterOnMonitor(TForm * Form, Forms::TMonitor * Monitor, const TRect & Bounds)
+{
+  Form->BoundsRect = Monitor->BoundsRect.CenteredRect(Bounds);
+}
+//---------------------------------------------------------------------------
+void RestoreForm(const UnicodeString & AData, TForm * Form, bool PositionOnly, const UnicodeString & DefaultData)
 {
   DebugAssert(Form);
+  UnicodeString Data = AData;
   if (!Data.IsEmpty())
   {
     Forms::TMonitor * Monitor = FormMonitor(Form);
 
-    UnicodeString LeftStr = CutToChar(Data, L';', true);
-    UnicodeString TopStr = CutToChar(Data, L';', true);
-    UnicodeString RightStr = CutToChar(Data, L';', true);
-    UnicodeString BottomStr = CutToChar(Data, L';', true);
-    TWindowState State = (TWindowState)StrToIntDef(CutToChar(Data, L';', true), (int)wsNormal);
-    int PixelsPerInch = LoadPixelsPerInch(CutToChar(Data, L';', true), Form);
+    UnicodeString BoundsStr;
+    for (int Index = 0; Index < 4; Index++)
+    {
+      CutToChar(Data, FormDataSep, true);
+    }
+    TWindowState State = (TWindowState)StrToIntDef(CutToChar(Data, FormDataSep, true), (int)wsNormal);
+    int PixelsPerInch = LoadPixelsPerInch(CutToChar(Data, FormDataSep, true), Form);
 
     TRect OriginalBounds = Form->BoundsRect;
     int OriginalPixelsPerInch = Form->PixelsPerInch;
@@ -237,7 +251,7 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
     {
       bool DefaultPos;
       TRect Bounds = OriginalBounds;
-      LoadFormDimensions(LeftStr, TopStr, RightStr, BottomStr, PixelsPerInch, Monitor, Form, Bounds, DefaultPos);
+      LoadFormDimensions(AData, PixelsPerInch, Monitor, Form, Bounds, DefaultPos);
 
       int Padding = ScaleByPixelsPerInch(20, Monitor);
       if (DefaultPos ||
@@ -277,9 +291,7 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
           // to handle that ourselves, so place window to center
           if (!PositionOnly)
           {
-            Form->SetBounds(Monitor->Left + ((Monitor->Width - Bounds.Width()) / 2),
-              Monitor->Top + ((Monitor->Height - Bounds.Height()) / 2),
-              Bounds.Width(), Bounds.Height());
+            CenterOnMonitor(Form, Monitor, Bounds);
           }
           if (!Form->HandleAllocated())
           {
@@ -300,7 +312,7 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
           if (OriginalPixelsPerInch != Form->PixelsPerInch)
           {
             TRect Bounds2 = OriginalBounds;
-            LoadFormDimensions(LeftStr, TopStr, RightStr, BottomStr, PixelsPerInch, Monitor, Form, Bounds2, DefaultPos);
+            LoadFormDimensions(AData, PixelsPerInch, Monitor, Form, Bounds2, DefaultPos);
             DebugAssert(!DefaultPos);
             Form->BoundsRect = Bounds2;
           }
@@ -313,9 +325,13 @@ void __fastcall RestoreForm(UnicodeString Data, TForm * Form, bool PositionOnly)
 
       if (!PositionOnly)
       {
-        TRect Bounds2 = Form->BoundsRect;
-        OffsetRect(Bounds2, Monitor->Left, Monitor->Top);
-        Form->BoundsRect = Bounds2;
+        TRect Bounds2 = OriginalBounds;
+        bool DefaultPos;
+        // This gives the form after unmaximization somewhat reasonable size,
+        // but it does not really set exact dimensions, let only with scaling
+        LoadFormDimensions(DefaultData, USER_DEFAULT_SCREEN_DPI, Monitor, Form, Bounds2, DefaultPos);
+        DebugAssert(DefaultPos);
+        CenterOnMonitor(Form, Monitor, Bounds2);
       }
     }
   }

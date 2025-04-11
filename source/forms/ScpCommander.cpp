@@ -157,7 +157,7 @@ void __fastcall TScpCommanderForm::RestoreFormParams()
 {
   DebugAssert(WinConfiguration);
   TCustomScpExplorerForm::RestoreFormParams();
-  RestoreForm(WinConfiguration->ScpCommander.WindowParams, this);
+  RestoreForm(WinConfiguration->ScpCommander.WindowParams, this, false, ScpCommanderWindowParamsDefault);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::RestorePanelParams(

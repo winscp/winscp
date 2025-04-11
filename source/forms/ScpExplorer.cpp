@@ -68,7 +68,7 @@ void __fastcall TScpExplorerForm::RestoreFormParams()
   DebugAssert(Configuration);
 
   TCustomScpExplorerForm::RestoreFormParams();
-  RestoreForm(WinConfiguration->ScpExplorer.WindowParams, this);
+  RestoreForm(WinConfiguration->ScpExplorer.WindowParams, this, false, ScpExplorerWindowParamsDefault);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::ConfigurationChanged()

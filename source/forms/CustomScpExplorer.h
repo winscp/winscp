@@ -425,7 +425,7 @@ protected:
   virtual bool __fastcall RemoteTransferDialog(TManagedTerminal *& Session,
     TStrings * FileList, UnicodeString & Target, UnicodeString & FileMask, bool & DirectCopy,
     bool NoConfirmation, bool Move);
-  virtual void __fastcall CreateParams(TCreateParams & Params);
+  virtual void __fastcall Loaded();
   void __fastcall DeleteFiles(TOperationSide Side, TStrings * FileList, bool Alternative);
   bool __fastcall RemoteTransferFiles(TStrings * FileList, bool NoConfirmation,
     bool Move, TManagedTerminal * Session);
