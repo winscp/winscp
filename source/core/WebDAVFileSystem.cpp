@@ -417,9 +417,9 @@ void TWebDAVFileSystem::ExchangeCapabilities(const char * Path, UnicodeString & 
   ClearNeonError();
 
   int NeonStatus;
-  FAuthenticationRetry = false;
   do
   {
+    FAuthenticationRetry = false;
     NeonStatus = ne_options2(FSessionContext->NeonSession, Path, &FCapabilities);
   }
   while ((NeonStatus == NE_AUTH) && FAuthenticationRetry);
