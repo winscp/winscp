@@ -1,0 +1,71 @@
+<refentry id="refreqtarget">
+
+  <refmeta>
+    <refentrytitle>ne_get_request_target</refentrytitle>
+    <manvolnum>3</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname id="ne_get_request_target">ne_get_request_target</refname>
+    <refpurpose>retrieve request target</refpurpose>
+  </refnamediv>
+  
+  <refsynopsisdiv>
+
+    <funcsynopsis>
+
+      <funcsynopsisinfo>#include &lt;ne_request.h&gt;</funcsynopsisinfo>
+
+      <funcprototype>
+        <funcdef>const ne_uri *<function>ne_get_request_target</function></funcdef>
+        <paramdef>ne_request *<parameter>req</parameter></paramdef>
+      </funcprototype>
+
+    </funcsynopsis>
+
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>Description</title>
+
+    <para>The <function>ne_get_request_target</function> returns the
+    request target URI as a pointer to an
+    <structname>ne_uri</structname> object. The "target resource" of a
+    request is defined per <ulink
+    url="https://www.rfc-editor.org/rfc/rfc9110.html#section-7.1">Section
+    7.1 of RFC 9110</ulink> and is derived from the parameters used to
+    create the request with <xref linkend="ne_request_create"/> and
+    the parameters used to create the session with <xref
+    linkend="ne_session_create"/>.</para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>Return value</title>
+
+    <para>The <function>ne_get_request_target</function> function
+    returns a <structname>ne_uri</structname>, or &null; if it was not
+    possible to create the target URI. The latter can only occur if
+    the path used to create the request object was not a valid URI
+    path. Note that the <structfield>path</structfield> field of the
+    returned object can be the empty string if the
+    <literal>authority-form</literal> of the URI is used.</para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>History</title>
+    
+    <para><function>ne_get_request_target</function> is available in
+    &neon; 0.34.0 and later.</para>
+  </refsect1>
+  
+  <refsect1>
+    <title>See also</title>
+
+    <para><xref linkend="ne_request_create"/>, <xref
+    linkend="ne_session_create"/>.</para>
+
+  </refsect1>
+
+</refentry>

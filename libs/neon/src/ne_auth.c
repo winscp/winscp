@@ -432,14 +432,9 @@ static char *get_cnonce(const struct hashalg *alg, ne_buffer **errmsg)
 static int get_credentials(auth_session *sess, ne_buffer **errmsg, int attempt,
                            struct auth_challenge *chall, char *pwbuf)
 {
+    char *realm = sess->realm ? ne_strclean(ne_strdup(sess->realm)) : "";
     unsigned mask = chall->protocol->id | sess->spec->protomask;
     int rv;
-    char *realm =
-                  #ifdef WINSCP
-                  // No "realm" in "passport" auth
-                  sess->realm == NULL ? NULL :
-                  #endif
-                  ne_strclean(ne_strdup(sess->realm));
 
     if (chall->handler->new_creds)
         rv = chall->handler->new_creds(chall->handler->userdata,
@@ -450,7 +445,7 @@ static int get_credentials(auth_session *sess, ne_buffer **errmsg, int attempt,
         rv = chall->handler->old_creds(chall->handler->userdata, realm,
                                        chall->handler->attempt++, sess->username, pwbuf);
 
-    ne_free(realm);
+    if (sess->realm) ne_free(realm);
 
     if (rv == 0)
         return 0;
