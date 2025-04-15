@@ -11673,7 +11673,7 @@ void __fastcall TCustomScpExplorerForm::DirViewKeyPress(TObject * Sender, wchar_
     // When not searching yet, prefer use of the space for toggling file selection
     // (so we cannot incrementally search for a string starting with a space).
     if ((Key > VK_SPACE) ||
-        ((Key == VK_SPACE) && (GetKeyState(VK_CONTROL) >= 0) && !FIncrementalSearchState.Searching))
+        ((Key == VK_SPACE) && (GetKeyState(VK_CONTROL) >= 0) && FIncrementalSearchState.Searching))
     {
       IncrementalSearch(FIncrementalSearchState.Text + Key, false, false);
       Key = 0;
