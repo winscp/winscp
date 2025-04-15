@@ -1,0 +1,87 @@
+<refentry id="refsslproto">
+
+  <refmeta>
+    <refentrytitle>ne_ssl_proto_name</refentrytitle>
+    <manvolnum>3</manvolnum>
+  </refmeta>
+
+  <refnamediv>
+    <refname id="ne_ssl_proto_name">ne_ssl_proto_name</refname>
+    <refpurpose>SSL/TLS protocol version to name mapping</refpurpose>
+  </refnamediv>
+  
+  <refsynopsisdiv>
+
+    <funcsynopsis>
+
+      <funcsynopsisinfo>#include &lt;ne_ssl.h&gt;</funcsynopsisinfo>
+
+      <funcprototype>
+        <funcdef>const char *<function>ne_ssl_proto_name</function></funcdef>
+        <paramdef>enum ne_ssl_protocol <parameter>proto</parameter></paramdef>
+      </funcprototype>
+
+    </funcsynopsis>
+
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>Description</title>
+
+    <para>The <function>ne_ssl_proto_name</function> function returns
+    a human-readable name for a SSL/TLS version constant. The set of
+    versions currently are as follows:</para>
+
+    <variablelist>
+      <varlistentry>
+        <term><constant>NE_SSL_PROTO_UNSPEC</constant></term>
+	<listitem><simpara>unspecified/unknown version</simpara></listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><constant>NE_SSL_PROTO_SSL3</constant></term>
+	<listitem><simpara>SSL v3</simpara></listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><constant>NE_SSL_PROTO_TLS_1_0</constant></term>
+	<listitem><simpara>TLS v1.0</simpara></listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><constant>NE_SSL_PROTO_TLS_1_1</constant></term>
+	<listitem><simpara>TLS v1.1</simpara></listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><constant>NE_SSL_PROTO_TLS_1_2</constant></term>
+	<listitem><simpara>TLS v1.2</simpara></listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><constant>NE_SSL_PROTO_TLS_1_3</constant></term>
+	<listitem><simpara>TLS v1.3</simpara></listitem>
+      </varlistentry>
+    </variablelist>
+
+  </refsect1>
+
+  <refsect1>
+    <title>Return value</title>
+
+    <para>The <function>ne_ssl_proto_name</function> function always
+    returns a non-&null; string even if the version constant is not
+    valid.</para>
+
+  </refsect1>
+
+  <refsect1>
+    <title>History</title>
+
+    <para><function>ne_ssl_proto_name</function> is available in
+    &neon; 0.34.0 and later.</para>
+  </refsect1>
+
+  <refsect1>
+    <title>See also</title>
+
+    <para><xref linkend="ne_ssl_set_protovers"/></para>
+
+  </refsect1>
+
+</refentry>

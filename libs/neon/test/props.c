@@ -370,11 +370,12 @@ static int propfind(void)
         { "DAV:", "fishbone", },
         { NULL, NULL }
     };
-    size_t n;
+    unsigned n;
 
     for (n = 0; n < sizeof(ts)/sizeof(ts[0]); n++) {
         const ne_propname *pset = pset1;
 
+        NE_DEBUG(NE_DBG_HTTP, "--> running test %u for %s\n", n, ts[n].resp);
         CALL(run_propfind(pset, ts[n].resp, ts[n].depth,
                           ts[n].expected, ts[n].type));
     }

@@ -1,5 +1,5 @@
 '\" t
-.\"     Title: ne_ssl_dname
+.\"     Title: ne_get_request_target
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
 .\"      Date: 15 April 2025
@@ -7,7 +7,7 @@
 .\"    Source: neon 0.34.2
 .\"  Language: English
 .\"
-.TH "NE_SSL_DNAME" "3" "15 April 2025" "neon 0.34.2" "neon API reference"
+.TH "NE_GET_REQUEST_TARGE" "3" "15 April 2025" "neon 0.34.2" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -28,47 +28,55 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-ne_ssl_readable_dname, ne_ssl_dname_cmp \- SSL distinguished name handling
+ne_get_request_target \- retrieve request target
 .SH "SYNOPSIS"
 .sp
 .ft B
 .nf
-#include <ne_ssl\&.h>
+#include <ne_request\&.h>
 .fi
 .ft
-.HP \w'const\ char\ *ne_ssl_readable_dname('u
-.BI "const char *ne_ssl_readable_dname(const\ ne_ssl_dname\ *" "dname" ");"
-.HP \w'int\ ne_ssl_dname_cmp('u
-.BI "int ne_ssl_dname_cmp(const\ ne_ssl_dname\ *" "dn1" ", const\ ne_ssl_dname\ *" "dn2" ");"
+.HP \w'const\ ne_uri\ *ne_get_request_target('u
+.BI "const ne_uri *ne_get_request_target(ne_request\ *" "req" ");"
 .SH "DESCRIPTION"
 .PP
 The
-\fBne_ssl_readable_dname\fR
-function creates a single\-line, human\-readable string out of an
-\fBne_ssl_dname\fR
-object\&. The returned string is
-\fBmalloc\fR()\-allocated, and must be
-\fBfree\fR()d by the caller\&.
-.PP
-The
-\fBne_ssl_dname_cmp\fR
-function compares two distinguished names, and returns zero if they are equal, or non\-zero otherwise\&.
+\fBne_get_request_target\fR
+returns the request target URI as a pointer to an
+ne_uri
+object\&. The "target resource" of a request is defined per
+\m[blue]\fBSection 7\&.1 of RFC 9110\fR\m[]\&\s-2\u[1]\d\s+2
+and is derived from the parameters used to create the request with
+ne_request_create
+and the parameters used to create the session with
+ne_session_create\&.
 .SH "RETURN VALUE"
 .PP
-\fBne_ssl_readable_dname\fR
-returns a
-\fBmalloc\fR\-allocated string, and never
-NULL\&.
-.SH "EXAMPLES"
+The
+\fBne_get_request_target\fR
+function returns a
+ne_uri, or
+NULL
+if it was not possible to create the target URI\&. The latter can only occur if the path used to create the request object was not a valid URI path\&. Note that the
+\fIpath\fR
+field of the returned object can be the empty string if the
+authority\-form
+of the URI is used\&.
+.SH "HISTORY"
 .PP
-See
-ne_ssl_cert_subject
-for an example use of
-\fBne_ssl_readable_dname\fR\&.
+\fBne_get_request_target\fR
+is available in neon 0\&.34\&.0 and later\&.
 .SH "SEE ALSO"
 .PP
-ne_ssl_cert_subject
+ne_request_create,
+ne_session_create\&.
 .SH "COPYRIGHT"
 .br
 Copyright \(co 2001-2024 Joe Orton
 .br
+.SH "REFERENCES"
+.IP " 1." 4
+Section 7.1 of RFC 9110
+.RS 4
+\%https://www.rfc-editor.org/rfc/rfc9110.html#section-7.1
+.RE

@@ -384,6 +384,8 @@ static int failparse(void)
         "http://fish/[foo]/bar",
         "http://foo:80bar",
         "http://foo:80:80/bar",
+        "http://foo:8000000000000000000000000000000000000000000000000/bar",
+        "http://foo:65536/bar",
         NULL
     };
     int n;
