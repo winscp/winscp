@@ -1,4 +1,14 @@
-Changes in release 0.34.0
+Changes in release 0.34.2:
+* Fix regression in NTLM auth in 0.34.0 (issue #190).
+* Add docs for ne_ssl_proto_name, ne_ssl_protovers, ne_get_request_target.
+
+Changes in release 0.34.1:
+* Fix regression in 207 parsing of <status> elements which omit
+  a reason-phrase (issue #188).
+* Fix ne_move() to submit lock tokens for the parent collection
+  of a source resource locked with depth: 0.
+
+Changes in release 0.34.0:
 * Interface changes:
  - API and ABI backwards-compatible with 0.27.x and later
  - NE_SESSFLAG_SSLv2 is now ignored

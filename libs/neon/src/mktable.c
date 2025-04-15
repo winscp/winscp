@@ -173,7 +173,10 @@ int main(int argc, const char **argv)
     unsigned n, wrap, flags = 0;
 
     if (argc != 2) {
-        fail("No generator given", "missing argument");
+        for (n = 0; n < sizeof(generators) / sizeof(generators[0]); n++) {
+            puts(generators[n].name);
+        }
+        return 0;
     }
 
     for (n = 0; n < sizeof(generators) / sizeof(generators[0]); n++) {

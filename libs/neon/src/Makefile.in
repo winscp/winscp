@@ -56,6 +56,9 @@ OBJECTS = @NEONOBJS@ @NEON_EXTRAOBJS@
 .SUFFIXES:
 .SUFFIXES: .c .lo .o
 
+.PHONY: all all-@NEON_BUILD_BUNDLED@ check-c++ check-incl update-tables \
+	update-deps
+
 NEON_TARGET = @NEON_TARGET@
 
 # Thanks to gettext for this neat trick.
@@ -85,18 +88,32 @@ clean:
 mktable: mktable.lo
 	$(LINK) -o $@ mktable.lo
 
-c++.c:
-	find . -name ne_\*.h -print | sed 's/.*/#include "&"/;/ne_priv/d' > $@
+c++.c: Makefile
+	find . -name ne_\*.h -print | sed 's/.*/#include "&"/;/ne_priv/d;/ne_internal.h/d;/ne_ntlm.h/d;/ne_acl.h/d' > $@
 	echo "int main(void) {}" >> $@
 
 check-c++: c++.c
 	c++ -I. c++.c
 
 check-incl:
-	@for f in ne_*.h; do \
-	 echo Checking $$f...; \
-	 echo "#include \"$$f\"" > checkincl.c; \
-	 $(COMPILE) -c checkincl.c -o checkincl.o || exit 1; done
+	@for f in ne_*.h; do						\
+	 [ x"$$f" != "xne_internal.h" ] || continue;			\
+	 [ x"$$f" != "xne_ntlm.h" ] || continue;			\
+	 echo Checking $$f...;						\
+	 echo "#include \"$$f\"" > checkincl.c;				\
+	 $(LT_COMPILE) -c checkincl.c -o checkincl.o || exit 1; done
+
+# Update generated character lookup tables.
+update-tables: mktable
+	@for n in `./mktable`; do						\
+	  for f in `grep -l "mktable $$n" ne*.c`; do				\
+	    new=`mktemp`;							\
+	    (sed "/.* Generated with .mktable $$n/,\$$d" $$f;			\
+	     ./mktable $$n;							\
+	     sed "0,/.* Generated code from .mktable $$n. ends/d" $$f) > $$new;	\
+	     mv $$new $$f;							\
+	  done									\
+	done
 
 # Update generated dependencies below; requires cc -MM as in gcc.
 update-deps:

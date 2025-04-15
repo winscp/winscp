@@ -1,5 +1,5 @@
 '\" t
-.\"     Title: ne_ssl_dname
+.\"     Title: ne_ssl_set_protovers
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
 .\"      Date: 15 April 2025
@@ -7,7 +7,7 @@
 .\"    Source: neon 0.34.2
 .\"  Language: English
 .\"
-.TH "NE_SSL_DNAME" "3" "15 April 2025" "neon 0.34.2" "neon API reference"
+.TH "NE_SSL_SET_PROTOVERS" "3" "15 April 2025" "neon 0.34.2" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -28,46 +28,35 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-ne_ssl_readable_dname, ne_ssl_dname_cmp \- SSL distinguished name handling
+ne_ssl_set_protovers \- set session SSL/TLS minimum or maximum protocol version
 .SH "SYNOPSIS"
 .sp
 .ft B
 .nf
-#include <ne_ssl\&.h>
+#include <ne_session\&.h>
 .fi
 .ft
-.HP \w'const\ char\ *ne_ssl_readable_dname('u
-.BI "const char *ne_ssl_readable_dname(const\ ne_ssl_dname\ *" "dname" ");"
-.HP \w'int\ ne_ssl_dname_cmp('u
-.BI "int ne_ssl_dname_cmp(const\ ne_ssl_dname\ *" "dn1" ", const\ ne_ssl_dname\ *" "dn2" ");"
+.HP \w'int\ ne_ssl_set_protovers('u
+.BI "int ne_ssl_set_protovers(ne_session\ *" "sess" ", enum\ ne_ssl_protocol\ " "min" ", enum\ ne_ssl_protocol\ " "max" ");"
 .SH "DESCRIPTION"
 .PP
 The
-\fBne_ssl_readable_dname\fR
-function creates a single\-line, human\-readable string out of an
-\fBne_ssl_dname\fR
-object\&. The returned string is
-\fBmalloc\fR()\-allocated, and must be
-\fBfree\fR()d by the caller\&.
-.PP
-The
-\fBne_ssl_dname_cmp\fR
-function compares two distinguished names, and returns zero if they are equal, or non\-zero otherwise\&.
+\fBne_ssl_set_protovers\fR
+function sets the minimum and/or maximum SSL/TLS version\&. Either minimum and/or maximum may be specified as
+\fBNE_SSL_PROTO_UNSPEC\fR, in which case no limit is imposed\&.
 .SH "RETURN VALUE"
 .PP
-\fBne_ssl_readable_dname\fR
-returns a
-\fBmalloc\fR\-allocated string, and never
-NULL\&.
-.SH "EXAMPLES"
+The
+\fBne_ssl_set_protovers\fR
+function returns zero on success or non\-zero on error\&. Errors include an invalid range (minimum above maximum), or if the protocol version is not supported by the SSL/TLS toolkit in use, or if SSL/TLS is not in use for the session\&.
+.SH "HISTORY"
 .PP
-See
-ne_ssl_cert_subject
-for an example use of
-\fBne_ssl_readable_dname\fR\&.
+\fBne_ssl_set_protovers\fR
+is available in neon 0\&.34\&.0 and later\&.
 .SH "SEE ALSO"
 .PP
-ne_ssl_cert_subject
+ne_ssl_proto_name,
+ne_session_create\&.
 .SH "COPYRIGHT"
 .br
 Copyright \(co 2001-2024 Joe Orton

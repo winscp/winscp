@@ -365,8 +365,22 @@ static int two_oh_seven(void)
           "end-prop[propone];"
           "start-prop[/alpha,/alpha-1,proptwo];cdata-prop[foobar];"
           "end-prop[proptwo];"
-          "end-pstat[/alpha-1]-status={200 OK};end-resp[/alpha];" }
+          "end-pstat[/alpha-1]-status={200 OK};end-resp[/alpha];" },
 
+        /* test for whitespace around href, which should be
+         * ignored. */
+        { MULTI_207(RESP_207(" /spaces ", STAT_207("200 OK") DESCR_207(""))),
+          "start-resp[/spaces];end-resp[/spaces]-status={200 OK};" },
+
+        /* test for whitespace around href, which should be
+         * ignored. */
+        { MULTI_207(RESP_207(" /spaces ", STAT_207("200 OK\n") DESCR_207(""))),
+          "start-resp[/spaces];end-resp[/spaces]-status={200 OK};" },
+
+        /* test for omitted reason-phrase in status-line, which is
+         * valid, per https://github.com/notroj/neon/issues/188 */
+        { MULTI_207(RESP_207("/bar", STAT_207("200 ") DESCR_207(""))),
+          "start-resp[/bar];end-resp[/bar]-status={200 };" }
     };
     unsigned n;
 
