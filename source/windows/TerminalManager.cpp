@@ -503,6 +503,11 @@ void __fastcall TTerminalManager::DoConnectTerminal(TTerminal * Terminal, bool R
     {
       ReconnectedTerminal(ManagedTerminal);
     }
+    if (ScpExplorer != NULL)
+    {
+      // Particularly to enable remote panel, now that FOpeningTerminal is cleared
+      ScpExplorer->UpdateControls();
+    }
   }
 
   if (DebugAlwaysTrue(Terminal->Active) && !Reopen && GUIConfiguration->QueueBootstrap)
