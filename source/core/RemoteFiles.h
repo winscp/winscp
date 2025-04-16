@@ -223,6 +223,7 @@ public:
   TRemoteFile * __fastcall FindFile(const UnicodeString &FileName);
   virtual void __fastcall DuplicateTo(TRemoteFileList * Copy);
   virtual void __fastcall AddFile(TRemoteFile * File);
+  virtual void ExtractFile(TRemoteFile * File);
 
   static TStrings * __fastcall CloneStrings(TStrings * List);
   static bool AnyDirectory(TStrings * List);

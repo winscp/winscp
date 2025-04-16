@@ -1571,6 +1571,12 @@ void __fastcall TRemoteFileList::AddFile(TRemoteFile * File)
   File->Directory = this;
 }
 //---------------------------------------------------------------------------
+void TRemoteFileList::ExtractFile(TRemoteFile * File)
+{
+  Extract(File);
+  File->Directory = NULL;
+}
+//---------------------------------------------------------------------------
 TStrings * __fastcall TRemoteFileList::CloneStrings(TStrings * List)
 {
   std::unique_ptr<TStringList> Result(new TStringList());
@@ -1737,12 +1743,12 @@ void __fastcall TRemoteDirectory::SetIncludeParentDirectory(Boolean value)
     if (value && ParentDirectory)
     {
       DebugAssert(IndexOf(ParentDirectory) < 0);
-      Add(ParentDirectory);
+      AddFile(ParentDirectory);
     }
     else if (!value && ParentDirectory)
     {
       DebugAssert(IndexOf(ParentDirectory) >= 0);
-      Extract(ParentDirectory);
+      ExtractFile(ParentDirectory);
     }
   }
 }
