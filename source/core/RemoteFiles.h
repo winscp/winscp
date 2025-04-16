@@ -211,7 +211,7 @@ protected:
   UnicodeString FDirectory;
   TDateTime FTimestamp;
   TRemoteFile * __fastcall GetFiles(Integer Index);
-  virtual void __fastcall SetDirectory(UnicodeString value);
+  void SetDirectory(const UnicodeString & value);
   UnicodeString __fastcall GetFullDirectory();
   Boolean __fastcall GetIsRoot();
   TRemoteFile * __fastcall GetParentDirectory();
@@ -222,7 +222,7 @@ public:
   virtual void __fastcall Reset();
   TRemoteFile * __fastcall FindFile(const UnicodeString &FileName);
   virtual void __fastcall DuplicateTo(TRemoteFileList * Copy);
-  virtual void __fastcall AddFile(TRemoteFile * File);
+  virtual bool AddFile(TRemoteFile * File);
 
   static TStrings * __fastcall CloneStrings(TStrings * List);
   static bool AnyDirectory(TStrings * List);
@@ -238,31 +238,22 @@ public:
 //---------------------------------------------------------------------------
 class TRemoteDirectory : public TRemoteFileList
 {
-friend class TSCPFileSystem;
-friend class TSFTPFileSystem;
 private:
   Boolean FIncludeParentDirectory;
-  Boolean FIncludeThisDirectory;
   TTerminal * FTerminal;
   TRemoteFile * FParentDirectory;
-  TRemoteFile * FThisDirectory;
-  virtual void __fastcall SetDirectory(UnicodeString value);
   Boolean __fastcall GetLoaded();
   void __fastcall SetIncludeParentDirectory(Boolean value);
-  void __fastcall SetIncludeThisDirectory(Boolean value);
   void __fastcall ReleaseRelativeDirectories();
 public:
   __fastcall TRemoteDirectory(TTerminal * aTerminal, TRemoteDirectory * Template = NULL);
   virtual __fastcall ~TRemoteDirectory();
-  virtual void __fastcall AddFile(TRemoteFile * File);
+  virtual bool AddFile(TRemoteFile * File);
   virtual void __fastcall DuplicateTo(TRemoteFileList * Copy);
   virtual void __fastcall Reset();
-  __property TTerminal * Terminal = { read = FTerminal, write = FTerminal };
+  __property TTerminal * Terminal = { read = FTerminal };
   __property Boolean IncludeParentDirectory = { read = FIncludeParentDirectory, write = SetIncludeParentDirectory };
-  __property Boolean IncludeThisDirectory = { read = FIncludeThisDirectory, write = SetIncludeThisDirectory };
   __property Boolean Loaded = { read = GetLoaded };
-  __property TRemoteFile * ParentDirectory = { read = FParentDirectory };
-  __property TRemoteFile * ThisDirectory = { read = FThisDirectory };
 };
 //---------------------------------------------------------------------------
 class TRemoteDirectoryCache : private TStringList

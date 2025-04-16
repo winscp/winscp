@@ -3601,9 +3601,8 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
         {
           std::unique_ptr<TRemoteFile> AFile(LoadFile(&ListingPacket, NULL, L"", FileList));
           TRemoteFile * File = AFile.get();
-          if (FTerminal->IsValidFile(File))
+          if (FTerminal->IsValidFile(File) && FileList->AddFile(AFile.release()))
           {
-            FileList->AddFile(AFile.release());
             if (FTerminal->IsEncryptingFiles() && // optimization
                 IsRealFile(File->FileName))
             {

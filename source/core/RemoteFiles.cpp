@@ -1565,10 +1565,11 @@ __fastcall TRemoteFileList::TRemoteFileList():
   FTimestamp = Now();
 }
 //---------------------------------------------------------------------------
-void __fastcall TRemoteFileList::AddFile(TRemoteFile * File)
+bool TRemoteFileList::AddFile(TRemoteFile * File)
 {
   Add(File);
   File->Directory = this;
+  return true;
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TRemoteFileList::CloneStrings(TStrings * List)
@@ -1611,7 +1612,7 @@ void __fastcall TRemoteFileList::Reset()
   Clear();
 }
 //---------------------------------------------------------------------------
-void __fastcall TRemoteFileList::SetDirectory(UnicodeString value)
+void TRemoteFileList::SetDirectory(const UnicodeString & value)
 {
   FDirectory = UnixExcludeTrailingBackslash(value);
 }
@@ -1654,16 +1655,13 @@ TRemoteFile * __fastcall TRemoteFileList::FindFile(const UnicodeString &FileName
 __fastcall TRemoteDirectory::TRemoteDirectory(TTerminal * aTerminal, TRemoteDirectory * Template) :
   TRemoteFileList(), FTerminal(aTerminal)
 {
-  FThisDirectory = NULL;
   FParentDirectory = NULL;
   if (Template == NULL)
   {
-    FIncludeThisDirectory = false;
     FIncludeParentDirectory = true;
   }
   else
   {
-    FIncludeThisDirectory = Template->FIncludeThisDirectory;
     FIncludeParentDirectory = Template->FIncludeParentDirectory;
   }
 }
@@ -1675,12 +1673,7 @@ __fastcall TRemoteDirectory::~TRemoteDirectory()
 //---------------------------------------------------------------------------
 void __fastcall TRemoteDirectory::ReleaseRelativeDirectories()
 {
-  if ((ThisDirectory != NULL) && !IncludeThisDirectory)
-  {
-    delete FThisDirectory;
-    FThisDirectory = NULL;
-  }
-  if ((ParentDirectory != NULL) && !IncludeParentDirectory)
+  if ((FParentDirectory != NULL) && !IncludeParentDirectory)
   {
     delete FParentDirectory;
     FParentDirectory = NULL;
@@ -1693,34 +1686,35 @@ void __fastcall TRemoteDirectory::Reset()
   TRemoteFileList::Reset();
 }
 //---------------------------------------------------------------------------
-void __fastcall TRemoteDirectory::SetDirectory(UnicodeString value)
+bool TRemoteDirectory::AddFile(TRemoteFile * File)
 {
-  TRemoteFileList::SetDirectory(value);
-}
-//---------------------------------------------------------------------------
-void __fastcall TRemoteDirectory::AddFile(TRemoteFile * File)
-{
-  if (File->IsThisDirectory) FThisDirectory = File;
-  if (File->IsParentDirectory) FParentDirectory = File;
-
-  if ((!File->IsThisDirectory || IncludeThisDirectory) &&
-      (!File->IsParentDirectory || IncludeParentDirectory))
+  bool Result = !File->IsThisDirectory;
+  if (!Result)
   {
-    TRemoteFileList::AddFile(File);
+    delete File;
   }
-  File->Terminal = Terminal;
+  else
+  {
+    if (File->IsParentDirectory)
+    {
+      FParentDirectory = File;
+    }
+
+    if (!File->IsParentDirectory || IncludeParentDirectory)
+    {
+      DebugCheck(TRemoteFileList::AddFile(File));
+    }
+    File->Terminal = Terminal;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteDirectory::DuplicateTo(TRemoteFileList * Copy)
 {
   TRemoteFileList::DuplicateTo(Copy);
-  if (ThisDirectory && !IncludeThisDirectory)
+  if ((FParentDirectory != NULL) && !IncludeParentDirectory)
   {
-    Copy->AddFile(ThisDirectory->Duplicate(false));
-  }
-  if (ParentDirectory && !IncludeParentDirectory)
-  {
-    Copy->AddFile(ParentDirectory->Duplicate(false));
+    Copy->AddFile(FParentDirectory->Duplicate(false));
   }
 }
 //---------------------------------------------------------------------------
@@ -1734,33 +1728,15 @@ void __fastcall TRemoteDirectory::SetIncludeParentDirectory(Boolean value)
   if (IncludeParentDirectory != value)
   {
     FIncludeParentDirectory = value;
-    if (value && ParentDirectory)
+    if (value && (FParentDirectory != NULL))
     {
-      DebugAssert(IndexOf(ParentDirectory) < 0);
-      Add(ParentDirectory);
+      DebugAssert(IndexOf(FParentDirectory) < 0);
+      Add(FParentDirectory);
     }
-    else if (!value && ParentDirectory)
+    else if (!value && (FParentDirectory != NULL))
     {
-      DebugAssert(IndexOf(ParentDirectory) >= 0);
-      Extract(ParentDirectory);
-    }
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TRemoteDirectory::SetIncludeThisDirectory(Boolean value)
-{
-  if (IncludeThisDirectory != value)
-  {
-    FIncludeThisDirectory = value;
-    if (value && ThisDirectory)
-    {
-      DebugAssert(IndexOf(ThisDirectory) < 0);
-      Add(ThisDirectory);
-    }
-    else if (!value && ThisDirectory)
-    {
-      DebugAssert(IndexOf(ThisDirectory) >= 0);
-      Extract(ThisDirectory);
+      DebugAssert(IndexOf(FParentDirectory) >= 0);
+      Extract(FParentDirectory);
     }
   }
 }
