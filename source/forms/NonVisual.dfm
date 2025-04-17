@@ -939,10 +939,10 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Sort by type|Sort panel by file type'
       ImageIndex = 34
     end
-    object LocalSortByChangedAction2: TAction
+    object LocalSortByChangedAction3: TAction
       Tag = 9
       Category = 'Sort'
-      Caption = 'By &Modification'
+      Caption = 'By Date &modified'
       HelpKeyword = 'ui_file_panel#sorting_files'
       Hint = 'Sort by time|Sort panel by last modification time'
       ImageIndex = 33
@@ -996,10 +996,10 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 36
       ShortCut = 16502
     end
-    object RemoteSortByChangedAction2: TAction
+    object RemoteSortByChangedAction3: TAction
       Tag = 14
       Category = 'Sort'
-      Caption = 'By &Modification'
+      Caption = 'By Date &modified'
       HelpKeyword = 'ui_file_panel#sorting_files'
       Hint = 'Sort by time|Sort panel by last modification time'
       ImageIndex = 33
@@ -1087,10 +1087,10 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 36
       ShortCut = 16502
     end
-    object CurrentSortByChangedAction: TAction
+    object CurrentSortByChangedAction2: TAction
       Tag = 15
       Category = 'Sort'
-      Caption = 'By &Modification'
+      Caption = 'By Date &modified'
       HelpKeyword = 'ui_file_panel#sorting_files'
       Hint = 'Sort by time|Sort current panel by last modification time'
       ImageIndex = 33
@@ -1179,12 +1179,12 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Show/hide size column'
       ImageIndex = 47
     end
-    object ShowHideRemoteChangedColumnAction2: TAction
+    object ShowHideRemoteChangedColumnAction3: TAction
       Tag = 15
       Category = 'Columns'
-      Caption = '&Modification'
+      Caption = '&Date modified'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 'Show/hide modification column'
+      Hint = 'Show/hide date modified column'
       ImageIndex = 48
     end
     object ShowHideRemoteRightsColumnAction2: TAction
@@ -1259,12 +1259,12 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Show/hide size column'
       ImageIndex = 47
     end
-    object ShowHideLocalChangedColumnAction2: TAction
+    object ShowHideLocalChangedColumnAction3: TAction
       Tag = 15
       Category = 'Columns'
-      Caption = '&Modification'
+      Caption = '&Date modified'
       HelpKeyword = 'ui_file_panel#selecting_columns'
-      Hint = 'Show/hide modification column'
+      Hint = 'Show/hide date modified column'
       ImageIndex = 48
     end
     object ShowHideLocalAttrColumnAction2: TAction
@@ -3026,7 +3026,7 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = ShowHideLocalTypeColumnAction2
       end
       object Modification3: TTBXItem
-        Action = ShowHideLocalChangedColumnAction2
+        Action = ShowHideLocalChangedColumnAction3
       end
       object Attributes3: TTBXItem
         Action = ShowHideLocalAttrColumnAction2
@@ -3094,7 +3094,7 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = ShowHideRemoteTypeColumnAction2
       end
       object Modification4: TTBXItem
-        Action = ShowHideRemoteChangedColumnAction2
+        Action = ShowHideRemoteChangedColumnAction3
       end
       object Permissions1: TTBXItem
         Action = ShowHideRemoteRightsColumnAction2

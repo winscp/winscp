@@ -15,7 +15,7 @@ resourcestring
 const
   UnixDirViewColumns = 9;
   DefaultUnixDirViewCaptions: array[0..UnixDirViewColumns-1] of Pointer =
-    (@SDirViewNameCol, @SDirViewSizeCol, @SDirViewChangedCol,
+    (@SDirViewNameCol, @SDirViewSizeCol, @SDirViewChangedCol2,
      @SUnixDirViewRightsCol, @SUnixDirViewOwnerCol, @SUnixDirViewGroupCol,
      @SDirViewExtCol, @SUnixDirViewLinkTargetCol, @SUnixDirViewTypeCol);
   DefaultUnixDirViewWidths: array[0..UnixDirViewColumns-1] of Integer =

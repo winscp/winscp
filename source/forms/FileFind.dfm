@@ -1481,7 +1481,7 @@ object FileFindDialog: TFileFindDialog
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
     TabOrder = 3
-    object FileView: TIEListView
+    object FileView2: TIEListView
       Left = 0
       Top = 0
       Width = 432
@@ -1492,7 +1492,7 @@ object FileFindDialog: TFileFindDialog
       RowSelect = True
       PopupMenu = FileViewPopupMenu
       TabOrder = 0
-      OnDblClick = FileViewDblClick
+      OnDblClick = FileView2DblClick
       OnEnter = ControlChange
       OnExit = ControlChange
       NortonLike = nlOff
@@ -1511,13 +1511,13 @@ object FileFindDialog: TFileFindDialog
           Width = 80
         end
         item
-          Caption = 'Changed'
+          Caption = 'Date modified'
           Width = 90
         end>
       ViewStyle = vsReport
-      OnCompare = FileViewCompare
-      OnContextPopup = FileViewContextPopup
-      OnSelectItem = FileViewSelectItem
+      OnCompare = FileView2Compare
+      OnContextPopup = FileView2ContextPopup
+      OnSelectItem = FileView2SelectItem
     end
   end
   object StatusBar: TStatusBar

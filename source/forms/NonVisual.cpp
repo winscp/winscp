@@ -62,14 +62,14 @@ TNonVisualDataModule *NonVisualDataModule;
   SIDE ## SortAscendingAction ## NUM->Checked = COLPROPS(SIDE)->SortAscending; } else
 #define EXESORTA(SIDE, NUM) EXE(SIDE ## SortAscendingAction ## NUM, \
   COLPROPS(SIDE)->SortAscending = !COLPROPS(SIDE)->SortAscending; )
-#define UPDSHCOL(SIDE, NAME, LCOL, RCOL) \
-  UPDFUNC(ShowHide ## SIDE ## NAME ## ColumnAction2, \
+#define UPDSHCOL(SIDE, NAME, LCOL, RCOL, NUM) \
+  UPDFUNC(ShowHide ## SIDE ## NAME ## ColumnAction ## NUM, \
     int Col = (ScpExplorer->IsSideLocalBrowser(os ## SIDE) ? LCOL : RCOL); \
     Action->Enabled = (Col >= 0); \
     Action->Checked = Action->Enabled && COLPROPS(SIDE)->Visible[Col]; \
   )
-#define EXESHCOL(SIDE, NAME, LCOL, RCOL) \
-  EXE(ShowHide ## SIDE ## NAME ## ColumnAction2, \
+#define EXESHCOL(SIDE, NAME, LCOL, RCOL, NUM) \
+  EXE(ShowHide ## SIDE ## NAME ## ColumnAction ## NUM, \
     int Col = (ScpExplorer->IsSideLocalBrowser(os ## SIDE) ? LCOL : RCOL); \
     COLPROPS(SIDE)->Visible[Col] = !COLPROPS(SIDE)->Visible[Col])
 
@@ -369,19 +369,19 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
 
   // SORT
   UPDSORTA(Local, 2)
-  #define UPDSORTL(NAME, COL) UPDSORT(Local, NAME, COL, -1, 2)
-  UPDSORTL(Name, dvName)
-  UPDSORTL(Ext, dvExt)
-  UPDSORTL(Size, dvSize)
-  UPDSORTL(Type, dvType)
-  UPDSORTL(Changed, dvChanged)
-  UPDSORTL(Attr, dvAttr)
+  #define UPDSORTL(NAME, COL, NUM) UPDSORT(Local, NAME, COL, -1, NUM)
+  UPDSORTL(Name, dvName, 2)
+  UPDSORTL(Ext, dvExt, 2)
+  UPDSORTL(Size, dvSize, 2)
+  UPDSORTL(Type, dvType, 2)
+  UPDSORTL(Changed, dvChanged, 3)
+  UPDSORTL(Attr, dvAttr, 2)
   #undef UPDSORTL
   UPDSORTA(Remote, 2)
   UPDSORT(Remote, Name, dvName, uvName, 2)
   UPDSORT(Remote, Ext, dvExt, uvExt, 2)
   UPDSORT(Remote, Size, dvSize, uvSize, 2)
-  UPDSORT(Remote, Changed, dvChanged, uvChanged, 2)
+  UPDSORT(Remote, Changed, dvChanged, uvChanged, 3)
   UPDSORT(Remote, Rights, dvAttr, uvRights, 2)
   UPDSORT(Remote, Owner, -1, uvOwner, 2)
   UPDSORT(Remote, Group, -1, uvGroup, 2)
@@ -391,7 +391,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDSORT(Current, Ext, dvExt, uvExt, )
   UPDSORT(Current, Size, dvSize, uvSize, )
   UPDSORT(Current, Type, dvType, uvType, 2)
-  UPDSORT(Current, Changed, dvChanged, uvChanged, )
+  UPDSORT(Current, Changed, dvChanged, uvChanged, 2)
   UPDSORT(Current, Rights, dvAttr, uvRights, )
   UPDSORT(Current, Owner, -1, uvOwner, )
   UPDSORT(Current, Group, -1, uvGroup, )
@@ -407,23 +407,23 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(ResetLayoutRemoteColumnsAction, true);
 
   // SHOW/HIDE COLUMN
-  #define UPDSHCOLL(NAME) UPDSHCOL(Local, NAME, dv ## NAME, -1)
-  UPDSHCOLL(Name)
-  UPDSHCOLL(Ext)
-  UPDSHCOLL(Size)
-  UPDSHCOLL(Type)
-  UPDSHCOLL(Changed)
-  UPDSHCOLL(Attr)
+  #define UPDSHCOLL(NAME, NUM) UPDSHCOL(Local, NAME, dv ## NAME, -1, NUM)
+  UPDSHCOLL(Name, 2)
+  UPDSHCOLL(Ext, 2)
+  UPDSHCOLL(Size, 2)
+  UPDSHCOLL(Type, 2)
+  UPDSHCOLL(Changed, 3)
+  UPDSHCOLL(Attr, 2)
   #undef UPDSHCOLL
-  UPDSHCOL(Remote, Name, dvName, uvName)
-  UPDSHCOL(Remote, Ext, dvExt, uvExt)
-  UPDSHCOL(Remote, Size, dvSize, uvSize)
-  UPDSHCOL(Remote, Changed, dvChanged, uvChanged)
-  UPDSHCOL(Remote, Rights, dvAttr, uvRights)
-  UPDSHCOL(Remote, Owner, -1, uvOwner)
-  UPDSHCOL(Remote, Group, -1, uvGroup)
-  UPDSHCOL(Remote, LinkTarget, -1, uvLinkTarget)
-  UPDSHCOL(Remote, Type, dvType, uvType)
+  UPDSHCOL(Remote, Name, dvName, uvName, 2)
+  UPDSHCOL(Remote, Ext, dvExt, uvExt, 2)
+  UPDSHCOL(Remote, Size, dvSize, uvSize, 2)
+  UPDSHCOL(Remote, Changed, dvChanged, uvChanged, 3)
+  UPDSHCOL(Remote, Rights, dvAttr, uvRights, 2)
+  UPDSHCOL(Remote, Owner, -1, uvOwner, 2)
+  UPDSHCOL(Remote, Group, -1, uvGroup, 2)
+  UPDSHCOL(Remote, LinkTarget, -1, uvLinkTarget, 2)
+  UPDSHCOL(Remote, Type, dvType, uvType, 2)
   UPD(HideColumnAction, (ListColumn != NULL))
 
   // SESSION
@@ -725,19 +725,19 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     #define COLVIEWPROPS ((TCustomDirViewColProperties*)(((TCustomDirView*)(((TListColumns*)(ListColumn->Collection))->Owner()))->ColProperties))
     // SORT
     EXESORTA(Local, 2)
-    #define EXESORTL(NAME, COL) EXESORT(Local, NAME, COL, COL, 2)
-    EXESORTL(Name, dvName)
-    EXESORTL(Ext, dvExt)
-    EXESORTL(Size, dvSize)
-    EXESORTL(Type, dvType)
-    EXESORTL(Changed, dvChanged)
-    EXESORTL(Attr, dvAttr)
+    #define EXESORTL(NAME, COL, NUM) EXESORT(Local, NAME, COL, COL, NUM)
+    EXESORTL(Name, dvName, 2)
+    EXESORTL(Ext, dvExt, 2)
+    EXESORTL(Size, dvSize, 2)
+    EXESORTL(Type, dvType, 2)
+    EXESORTL(Changed, dvChanged, 3)
+    EXESORTL(Attr, dvAttr, 2)
     #undef EXESORTL
     EXESORTA(Remote, 2)
     EXESORT(Remote, Name, dvName, uvName, 2)
     EXESORT(Remote, Ext, dvExt, uvExt, 2)
     EXESORT(Remote, Size, dvSize, uvSize, 2)
-    EXESORT(Remote, Changed, dvChanged, uvChanged, 2)
+    EXESORT(Remote, Changed, dvChanged, uvChanged, 3)
     EXESORT(Remote, Rights, dvAttr, uvRights, 2)
     EXESORT(Remote, Owner, -1, uvOwner, 2)
     EXESORT(Remote, Group, -1, uvGroup, 2)
@@ -747,7 +747,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXESORT(Current, Ext, dvExt, uvExt, )
     EXESORT(Current, Size, dvSize, uvSize, )
     EXESORT(Current, Type, dvType, uvType, 2)
-    EXESORT(Current, Changed, dvChanged, uvChanged, )
+    EXESORT(Current, Changed, dvChanged, uvChanged, 2)
     EXESORT(Current, Rights, dvAttr, uvRights, )
     EXESORT(Current, Owner, -1, uvOwner, )
     EXESORT(Current, Group, -1, uvGroup, )
@@ -761,23 +761,23 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(ResetLayoutRemoteColumnsAction, ScpExplorer->ResetLayoutColumns(osRemote))
 
     // SHOW/HIDE COLUMN
-    #define EXESHCOLL(NAME) EXESHCOL(Local, NAME, dv ## NAME, -1)
-    EXESHCOLL(Name)
-    EXESHCOLL(Ext)
-    EXESHCOLL(Size)
-    EXESHCOLL(Type)
-    EXESHCOLL(Changed)
-    EXESHCOLL(Attr)
+    #define EXESHCOLL(NAME, NUM) EXESHCOL(Local, NAME, dv ## NAME, -1, NUM)
+    EXESHCOLL(Name, 2)
+    EXESHCOLL(Ext, 2)
+    EXESHCOLL(Size, 2)
+    EXESHCOLL(Type, 2)
+    EXESHCOLL(Changed, 3)
+    EXESHCOLL(Attr, 2)
     #undef EXESHCOLL
-    EXESHCOL(Remote, Name, dvName, uvName)
-    EXESHCOL(Remote, Ext, dvExt, uvExt)
-    EXESHCOL(Remote, Size, dvSize, uvSize)
-    EXESHCOL(Remote, Changed, dvChanged, uvChanged)
-    EXESHCOL(Remote, Rights, dvAttr, uvRights)
-    EXESHCOL(Remote, Owner, -1, uvOwner)
-    EXESHCOL(Remote, Group, -1, uvGroup)
-    EXESHCOL(Remote, LinkTarget, -1, uvLinkTarget)
-    EXESHCOL(Remote, Type, dvType, uvType)
+    EXESHCOL(Remote, Name, dvName, uvName, 2)
+    EXESHCOL(Remote, Ext, dvExt, uvExt, 2)
+    EXESHCOL(Remote, Size, dvSize, uvSize, 2)
+    EXESHCOL(Remote, Changed, dvChanged, uvChanged, 3)
+    EXESHCOL(Remote, Rights, dvAttr, uvRights, 2)
+    EXESHCOL(Remote, Owner, -1, uvOwner, 2)
+    EXESHCOL(Remote, Group, -1, uvGroup, 2)
+    EXESHCOL(Remote, LinkTarget, -1, uvLinkTarget, 2)
+    EXESHCOL(Remote, Type, dvType, uvType, 2)
     EXE(HideColumnAction, DebugAssert(ListColumn);
       COLVIEWPROPS->Visible[ListColumn->Index] = false; ListColumn = NULL )
     #undef COLVIEWPROPS

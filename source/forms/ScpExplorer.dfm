@@ -545,7 +545,7 @@ inherited ScpExplorerForm: TScpExplorerForm
             RadioItem = True
           end
           object TBXItem96: TTBXItem
-            Action = NonVisualDataModule.RemoteSortByChangedAction2
+            Action = NonVisualDataModule.RemoteSortByChangedAction3
             GroupIndex = 1
           end
           object TBXItem98: TTBXItem
@@ -574,7 +574,7 @@ inherited ScpExplorerForm: TScpExplorerForm
             Action = NonVisualDataModule.ShowHideRemoteTypeColumnAction2
           end
           object TBXItem103: TTBXItem
-            Action = NonVisualDataModule.ShowHideRemoteChangedColumnAction2
+            Action = NonVisualDataModule.ShowHideRemoteChangedColumnAction3
           end
           object TBXItem104: TTBXItem
             Action = NonVisualDataModule.ShowHideRemoteRightsColumnAction2
@@ -919,7 +919,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         Action = NonVisualDataModule.CurrentSortByTypeAction2
       end
       object TBXItem149: TTBXItem
-        Action = NonVisualDataModule.CurrentSortByChangedAction
+        Action = NonVisualDataModule.CurrentSortByChangedAction2
       end
       object TBXItem150: TTBXItem
         Action = NonVisualDataModule.CurrentSortBySizeAction

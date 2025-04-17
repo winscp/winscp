@@ -137,13 +137,13 @@ __published:    // IDE-managed Components
   TAction *RemoteStatusBarAction2;
   TAction *LocalSortByAttrAction2;
   TAction *LocalSortByTypeAction2;
-  TAction *LocalSortByChangedAction2;
+  TAction *LocalSortByChangedAction3;
   TAction *CommanderSortBandAction;
   TAction *RemoteSortAscendingAction2;
   TAction *RemoteSortByNameAction2;
   TAction *RemoteSortBySizeAction2;
   TAction *RemoteSortByRightsAction2;
-  TAction *RemoteSortByChangedAction2;
+  TAction *RemoteSortByChangedAction3;
   TAction *RemoteSortByOwnerAction2;
   TAction *RemoteSortByGroupAction2;
   TAction *CurrentSortByTypeAction2;
@@ -151,7 +151,7 @@ __published:    // IDE-managed Components
   TAction *CurrentSortByNameAction;
   TAction *CurrentSortBySizeAction;
   TAction *CurrentSortByRightsAction;
-  TAction *CurrentSortByChangedAction;
+  TAction *CurrentSortByChangedAction2;
   TAction *CurrentSortByOwnerAction;
   TAction *CurrentSortByGroupAction;
   TAction *ExplorerSortBandAction;
@@ -166,7 +166,7 @@ __published:    // IDE-managed Components
   TAction *ShowHideRemoteNameColumnAction2;
   TAction *ShowHideRemoteExtColumnAction2;
   TAction *ShowHideRemoteSizeColumnAction2;
-  TAction *ShowHideRemoteChangedColumnAction2;
+  TAction *ShowHideRemoteChangedColumnAction3;
   TAction *ShowHideRemoteRightsColumnAction2;
   TAction *ShowHideRemoteOwnerColumnAction2;
   TAction *ShowHideRemoteGroupColumnAction2;
@@ -174,7 +174,7 @@ __published:    // IDE-managed Components
   TAction *ShowHideLocalExtColumnAction2;
   TAction *ShowHideLocalTypeColumnAction2;
   TAction *ShowHideLocalSizeColumnAction2;
-  TAction *ShowHideLocalChangedColumnAction2;
+  TAction *ShowHideLocalChangedColumnAction3;
   TAction *ShowHideLocalAttrColumnAction2;
   TAction *HideColumnAction;
   TAction *CompareDirectoriesAction2;

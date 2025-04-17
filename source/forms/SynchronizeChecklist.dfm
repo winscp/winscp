@@ -1484,12 +1484,12 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       TabOrder = 8
     end
   end
-  object ListView: TIEListView
+  object ListView2: TIEListView
     Left = 0
     Top = 0
     Width = 562
     Height = 500
-    OnRecreate = ListViewRecreate
+    OnRecreate = ListView2Recreate
     Align = alClient
     Checkboxes = True
     Constraints.MinWidth = 240
@@ -1503,9 +1503,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     PopupMenu = ListViewPopupMenu
     ShowHint = True
     TabOrder = 0
-    OnChange = ListViewChange
-    OnChanging = ListViewChanging
-    OnClick = ListViewClick
+    OnChange = ListView2Change
+    OnChanging = ListView2Changing
+    OnClick = ListView2Click
     NortonLike = nlOff
     Columns = <
       item
@@ -1527,7 +1527,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
         Width = 70
       end
       item
-        Caption = 'Changed'
+        Caption = 'Date modified'
         MaxWidth = 1000
         MinWidth = 20
         Width = 80
@@ -1551,17 +1551,17 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
         Width = 70
       end
       item
-        Caption = 'Changed'
+        Caption = 'Date modified'
         MaxWidth = 1000
         MinWidth = 20
         Width = 80
       end>
     ViewStyle = vsReport
-    OnAdvancedCustomDrawSubItem = ListViewAdvancedCustomDrawSubItem
-    OnCompare = ListViewCompare
-    OnContextPopup = ListViewContextPopup
-    OnSelectItem = ListViewSelectItem
-    OnSecondaryColumnHeader = ListViewSecondaryColumnHeader
+    OnAdvancedCustomDrawSubItem = ListView2AdvancedCustomDrawSubItem
+    OnCompare = ListView2Compare
+    OnContextPopup = ListView2ContextPopup
+    OnSelectItem = ListView2SelectItem
+    OnSecondaryColumnHeader = ListView2SecondaryColumnHeader
   end
   object StatusBar: TStatusBar
     Left = 0

@@ -134,7 +134,7 @@ inherited ScpCommanderForm: TScpCommanderForm
             RadioItem = True
           end
           object TBXItem16: TTBXItem
-            Action = NonVisualDataModule.LocalSortByChangedAction2
+            Action = NonVisualDataModule.LocalSortByChangedAction3
             GroupIndex = 1
             RadioItem = True
           end
@@ -157,7 +157,7 @@ inherited ScpCommanderForm: TScpCommanderForm
             Action = NonVisualDataModule.ShowHideLocalTypeColumnAction2
           end
           object TBXItem22: TTBXItem
-            Action = NonVisualDataModule.ShowHideLocalChangedColumnAction2
+            Action = NonVisualDataModule.ShowHideLocalChangedColumnAction3
           end
           object TBXItem23: TTBXItem
             Action = NonVisualDataModule.ShowHideLocalAttrColumnAction2
@@ -779,7 +779,7 @@ inherited ScpCommanderForm: TScpCommanderForm
             RadioItem = True
           end
           object TBXItem96: TTBXItem
-            Action = NonVisualDataModule.RemoteSortByChangedAction2
+            Action = NonVisualDataModule.RemoteSortByChangedAction3
             GroupIndex = 1
             RadioItem = True
           end
@@ -812,7 +812,7 @@ inherited ScpCommanderForm: TScpCommanderForm
             Action = NonVisualDataModule.ShowHideRemoteTypeColumnAction2
           end
           object TBXItem103: TTBXItem
-            Action = NonVisualDataModule.ShowHideRemoteChangedColumnAction2
+            Action = NonVisualDataModule.ShowHideRemoteChangedColumnAction3
           end
           object TBXItem104: TTBXItem
             Action = NonVisualDataModule.ShowHideRemoteRightsColumnAction2
@@ -991,7 +991,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Action = NonVisualDataModule.CurrentSortByTypeAction2
       end
       object TBXItem149: TTBXItem
-        Action = NonVisualDataModule.CurrentSortByChangedAction
+        Action = NonVisualDataModule.CurrentSortByChangedAction2
       end
       object TBXItem151: TTBXItem
         Action = NonVisualDataModule.CurrentSortByRightsAction

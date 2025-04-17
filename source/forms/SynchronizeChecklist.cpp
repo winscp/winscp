@@ -67,7 +67,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FOnQueueSynchronize = OnQueueSynchronize;
   FToken = Token;
   UseSystemSettings(this);
-  UseDesktopFont(ListView);
+  UseDesktopFont(ListView2);
   UseDesktopFont(StatusBar);
   FChecklist = NULL;
   FChangingItem = NULL;
@@ -79,8 +79,8 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
 
   SelectScaledImageList(ActionImages);
 
-  FOrigListViewWindowProc = ListView->WindowProc;
-  ListView->WindowProc = ListViewWindowProc;
+  FOrigListViewWindowProc = ListView2->WindowProc;
+  ListView2->WindowProc = ListViewWindowProc;
   FOrigStatusBarWindowProc = StatusBar->WindowProc;
   StatusBar->WindowProc = StatusBarWindowProc;
 
@@ -102,7 +102,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
 __fastcall TSynchronizeChecklistDialog::~TSynchronizeChecklistDialog()
 {
   StatusBar->WindowProc = FOrigStatusBarWindowProc;
-  ListView->WindowProc = FOrigListViewWindowProc;
+  ListView2->WindowProc = FOrigListViewWindowProc;
 }
 //---------------------------------------------------------------------
 bool __fastcall TSynchronizeChecklistDialog::Execute(TSynchronizeChecklist * Checklist)
@@ -115,7 +115,7 @@ bool __fastcall TSynchronizeChecklistDialog::Execute(TSynchronizeChecklist * Che
   {
     TSynchronizeChecklistConfiguration FormConfiguration =
       CustomWinConfiguration->SynchronizeChecklist;
-    FormConfiguration.ListParams = ListView->ColProperties->ParamsStr;
+    FormConfiguration.ListParams = ListView2->ColProperties->ParamsStr;
 
     UnicodeString WindowParams = FormConfiguration.WindowParams;
     // if there is no main window, keep previous "custom pos" indication,
@@ -316,7 +316,7 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
     }
   }
 
-  int SelCount = ListView->SelCount;
+  int SelCount = ListView2->SelCount;
   EnableControl(OkButton, (FChecked[0] > 0) && !FSynchronizing);
   EnableControl(CancelButton, !FSynchronizing);
   EnableControl(HelpButton, !FSynchronizing);
@@ -341,13 +341,13 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
   CalculateSizeAction->Enabled = (SelCount > 0) && AnyDirectory && DebugAlwaysTrue(!FSynchronizing);
   CalculateSizeAllAction->Enabled = (FDirectories > 0) && !FSynchronizing;
   TSynchronizeChecklist::TAction SelectedItemAction =
-    (SelCount == 1) ? GetChecklistItemAction(GetChecklistItem(ListView->Selected)) : TSynchronizeChecklist::saNone;
+    (SelCount == 1) ? GetChecklistItemAction(GetChecklistItem(ListView2->Selected)) : TSynchronizeChecklist::saNone;
   ExploreLocalAction2->Enabled = (SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteRemote);
   ExploreRemoteAction2->Enabled = (SelCount == 1) && (SelectedItemAction != TSynchronizeChecklist::saDeleteLocal);
   LocalPathToClipboardAction->Enabled = (SelCount > 0);
   RemotePathToClipboardAction->Enabled = LocalPathToClipboardAction->Enabled;
 
-  int Count = ListView->Items->Count;
+  int Count = ListView2->Items->Count;
   DebugAssert(FTotals[0] == Count);
   SelectAllAction->Enabled = (SelCount < Count) && !FSynchronizing;
   FindMoveCandidateAction->Enabled = (Count > 0) && !FSynchronizing;
@@ -536,18 +536,18 @@ void __fastcall TSynchronizeChecklistDialog::LoadList()
   memset(&FCheckedSize, 0, sizeof(FCheckedSize));
   FDirectories = 0;
 
-  ListView->Items->BeginUpdate();
+  ListView2->Items->BeginUpdate();
   try
   {
-    ListView->Items->Clear();
+    ListView2->Items->Clear();
     for (int Index = 0; Index < FChecklist->Count; Index++)
     {
       const TSynchronizeChecklist::TItem * ChecklistItem =
-        FChecklist->Item[ListView->Items->Count];
+        FChecklist->Item[ListView2->Items->Count];
       FChangingItemIgnore = true;
       try
       {
-        TListItem * Item = ListView->Items->Add();
+        TListItem * Item = ListView2->Items->Add();
         TSynchronizeChecklist::TAction Action = ChecklistItem->Action;
         FActions.insert(std::make_pair(ChecklistItem, Action));
         FChecklistToListViewMap.insert(std::make_pair(ChecklistItem, Item));
@@ -569,10 +569,10 @@ void __fastcall TSynchronizeChecklistDialog::LoadList()
   }
   __finally
   {
-    ListView->Items->EndUpdate();
+    ListView2->Items->EndUpdate();
   }
 
-  ListView->AlphaSort();
+  ListView2->AlphaSort();
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -597,7 +597,7 @@ void __fastcall TSynchronizeChecklistDialog::FormShow(TObject * /*Sender*/)
     FlashOnBackground();
   }
 
-  ListView->ColProperties->ParamsStr = CustomWinConfiguration->SynchronizeChecklist.ListParams;
+  ListView2->ColProperties->ParamsStr = CustomWinConfiguration->SynchronizeChecklist.ListParams;
 
   LoadList();
   UpdateStatusBarSize();
@@ -605,7 +605,7 @@ void __fastcall TSynchronizeChecklistDialog::FormShow(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 TRect __fastcall TSynchronizeChecklistDialog::GetColumnHeaderRect(int Index)
 {
-  HWND HeaderHandle = ListView_GetHeader(ListView->Handle);
+  HWND HeaderHandle = ListView_GetHeader(ListView2->Handle);
   TRect R;
   Header_GetItemRect(HeaderHandle, Index, &R);
 
@@ -614,7 +614,7 @@ TRect __fastcall TSynchronizeChecklistDialog::GetColumnHeaderRect(int Index)
   ZeroMemory(&ScrollInfo, sizeof(ScrollInfo));
   ScrollInfo.cbSize = sizeof(ScrollInfo);
   ScrollInfo.fMask = SIF_POS;
-  GetScrollInfo(ListView->Handle, SB_HORZ, &ScrollInfo);
+  GetScrollInfo(ListView2->Handle, SB_HORZ, &ScrollInfo);
 
   R.Left -= ScrollInfo.nPos;
   R.Right -= ScrollInfo.nPos;
@@ -638,9 +638,9 @@ void __fastcall TSynchronizeChecklistDialog::ListViewWindowProc(TMessage & Messa
           FLAGSET(CustomDraw->nmcd.dwDrawStage, CDDS_SUBITEM) &&
           FLAGSET(CustomDraw->nmcd.dwDrawStage, CDDS_ITEMPOSTPAINT) &&
           (CustomDraw->iSubItem == ImageColumnIndex) &&
-          (ActionImages->Width <= ListView->Columns->Items[CustomDraw->iSubItem]->Width))
+          (ActionImages->Width <= ListView2->Columns->Items[CustomDraw->iSubItem]->Width))
       {
-        TListItem * Item = ListView->Items->Item[CustomDraw->nmcd.dwItemSpec];
+        TListItem * Item = ListView2->Items->Item[CustomDraw->nmcd.dwItemSpec];
         const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
 
         TRect HeaderR = GetColumnHeaderRect(CustomDraw->iSubItem);
@@ -676,10 +676,10 @@ void __fastcall TSynchronizeChecklistDialog::ListViewHintShow(TCMHintShow & Hint
 {
   TLVHitTestInfo HitTest;
   HitTest.pt = HintShow.HintInfo->CursorPos;
-  int Index = ListView_SubItemHitTest(ListView->Handle, &HitTest);
+  int Index = ListView_SubItemHitTest(ListView2->Handle, &HitTest);
   if ((Index >= 0) && (HitTest.iSubItem == ImageColumnIndex))
   {
-    TListItem * Item = ListView->Items->Item[Index];
+    TListItem * Item = ListView2->Items->Item[Index];
     const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
     int ActionHint = 0;
     switch (int(GetChecklistItemAction(ChecklistItem)))
@@ -706,7 +706,7 @@ void __fastcall TSynchronizeChecklistDialog::ListViewHintShow(TCMHintShow & Hint
     if (DebugAlwaysTrue(ActionHint != 0))
     {
       HintShow.HintInfo->HintStr = FORMAT(L"%s|%s", (LoadStr(ActionHint), LoadStr(SYNCHRONIZE_CHECKLIST_REVERSE)));
-      ListView_GetSubItemRect(ListView->Handle, Index, ImageColumnIndex, LVIR_BOUNDS, &HintShow.HintInfo->CursorRect);
+      ListView_GetSubItemRect(ListView2->Handle, Index, ImageColumnIndex, LVIR_BOUNDS, &HintShow.HintInfo->CursorRect);
       HintShow.Result = 0;
     }
   }
@@ -756,7 +756,7 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarWindowProc(TMessage & Mess
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::ListViewAdvancedCustomDrawSubItem(
+void __fastcall TSynchronizeChecklistDialog::ListView2AdvancedCustomDrawSubItem(
   TCustomListView * /*Sender*/, TListItem * /*Item*/, int /*SubItem*/,
   TCustomDrawState /*State*/, TCustomDrawStage /*Stage*/, bool & /*DefaultDraw*/)
 {
@@ -870,7 +870,7 @@ int __fastcall TSynchronizeChecklistDialog::PanelAt(int X)
   return ((Result < StatusBar->Panels->Count - 1) ? Result : -1);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::ListViewChange(
+void __fastcall TSynchronizeChecklistDialog::ListView2Change(
   TObject * /*Sender*/, TListItem * Item, TItemChange Change)
 {
   if ((Change == ctState) && (FChangingItem == Item) && (FChangingItem != NULL))
@@ -893,7 +893,7 @@ void __fastcall TSynchronizeChecklistDialog::ListViewChange(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::ListViewChanging(
+void __fastcall TSynchronizeChecklistDialog::ListView2Changing(
   TObject * /*Sender*/, TListItem * Item, TItemChange Change,
   bool & /*AllowChange*/)
 {
@@ -914,9 +914,9 @@ void __fastcall TSynchronizeChecklistDialog::CheckAll(bool Check)
   FChangingItemMass = true;
   try
   {
-    for (int Index = 0; Index < ListView->Items->Count; Index++)
+    for (int Index = 0; Index < ListView2->Items->Count; Index++)
     {
-      ListView->Items->Item[Index]->Checked = Check;
+      ListView2->Items->Item[Index]->Checked = Check;
     }
   }
   __finally
@@ -938,7 +938,7 @@ void __fastcall TSynchronizeChecklistDialog::UncheckAllActionExecute(TObject * /
 //---------------------------------------------------------------------------
 bool TSynchronizeChecklistDialog::IterateItems(TListItem *& Item, TItemStates States)
 {
-  Item = ListView->GetNextItem(Item, sdAll, States);
+  Item = ListView2->GetNextItem(Item, sdAll, States);
   return (Item != NULL);
 }
 //---------------------------------------------------------------------------
@@ -975,7 +975,7 @@ void __fastcall TSynchronizeChecklistDialog::UncheckActionExecute(TObject * /*Se
   Check(false);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::ListViewSelectItem(
+void __fastcall TSynchronizeChecklistDialog::ListView2SelectItem(
   TObject * /*Sender*/, TListItem * /*Item*/, bool /*Selected*/)
 {
   // Delayed update of button status in case many items are being selected at once
@@ -995,9 +995,9 @@ TListItem * __fastcall TSynchronizeChecklistDialog::SelectAll(bool Select, int A
   bool OnlyTheAction)
 {
   TListItem * Result = NULL;
-  for (int Index = 0; Index < ListView->Items->Count; Index++)
+  for (int Index = 0; Index < ListView2->Items->Count; Index++)
   {
-    TListItem * Item = ListView->Items->Item[Index];
+    TListItem * Item = ListView2->Items->Item[Index];
     if (Action == 0)
     {
       Item->Selected = Select;
@@ -1043,17 +1043,17 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarMouseDown(
     {
       Item->MakeVisible(false);
       Item->Focused = true;
-      ListView->SetFocus();
+      ListView2->SetFocus();
     }
   }
 }
 //---------------------------------------------------------------------------
 TIEListViewColProperties * TSynchronizeChecklistDialog::GetColProperties()
 {
-  return dynamic_cast<TIEListViewColProperties *>(ListView->ColProperties);
+  return dynamic_cast<TIEListViewColProperties *>(ListView2->ColProperties);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::ListViewCompare(
+void __fastcall TSynchronizeChecklistDialog::ListView2Compare(
   TObject * /*Sender*/, TListItem * Item1, TListItem * Item2, int /*Data*/,
   int & Compare)
 {
@@ -1107,7 +1107,7 @@ void __fastcall TSynchronizeChecklistDialog::ListViewCompare(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::ListViewSecondaryColumnHeader(
+void __fastcall TSynchronizeChecklistDialog::ListView2SecondaryColumnHeader(
   TCustomIEListView * /*Sender*/, int Index, int & SecondaryColumn)
 {
   // "remote dir" column is sorting alias for "local dir" column
@@ -1121,7 +1121,7 @@ void __fastcall TSynchronizeChecklistDialog::ListViewSecondaryColumnHeader(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::ListViewContextPopup(
+void __fastcall TSynchronizeChecklistDialog::ListView2ContextPopup(
   TObject * Sender, TPoint & MousePos, bool & Handled)
 {
   // to update source popup menu before TBX menu is created
@@ -1231,7 +1231,7 @@ void __fastcall TSynchronizeChecklistDialog::ReverseActionExecute(TObject * /*Se
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::ListViewClick(TObject * /*Sender*/)
+void __fastcall TSynchronizeChecklistDialog::ListView2Click(TObject * /*Sender*/)
 {
   TKeyboardState KeyState;
   GetKeyboardState(KeyState);
@@ -1239,7 +1239,7 @@ void __fastcall TSynchronizeChecklistDialog::ListViewClick(TObject * /*Sender*/)
   // when selecting, do not reverse, even when user clicked on action column
   if (!ShiftState.Contains(ssShift) && !ShiftState.Contains(ssCtrl))
   {
-    TPoint P = ListView->ScreenToClient(Mouse->CursorPos);
+    TPoint P = ListView2->ScreenToClient(Mouse->CursorPos);
     TRect R = GetColumnHeaderRect(ImageColumnIndex);
     if ((R.Left <= P.x) && (P.x <= R.Right))
     {
@@ -1279,7 +1279,7 @@ void __fastcall TSynchronizeChecklistDialog::Dispatch(void * AMessage)
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::UpdateImages()
 {
-  ListView->SmallImages = ShellImageListForControl(this, ilsSmall);
+  ListView2->SmallImages = ShellImageListForControl(this, ilsSmall);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::FormAfterMonitorDpiChanged(TObject *, int OldDPI, int NewDPI)
@@ -1319,10 +1319,10 @@ void __fastcall TSynchronizeChecklistDialog::UpdatedSynchronizationChecklistItem
 //---------------------------------------------------------------------------
 void TSynchronizeChecklistDialog::DoSynchronize(bool Queue)
 {
-  ListView->SelectAll(smNone);
-  for (int Index = 0; Index < ListView->Items->Count; Index++)
+  ListView2->SelectAll(smNone);
+  for (int Index = 0; Index < ListView2->Items->Count; Index++)
   {
-    TListItem * Item = ListView->Items->Item[Index];
+    TListItem * Item = ListView2->Items->Item[Index];
     const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
     FChecklist->Update(ChecklistItem, Item->Checked, GetChecklistItemAction(ChecklistItem));
   }
@@ -1418,7 +1418,7 @@ void __fastcall TSynchronizeChecklistDialog::DeleteItem(const TSynchronizeCheckl
   if (Item->Focused)
   {
     int FocusIndex = Index;
-    if (FocusIndex == ListView->Items->Count - 1)
+    if (FocusIndex == ListView2->Items->Count - 1)
     {
       FocusIndex--;
     }
@@ -1426,9 +1426,9 @@ void __fastcall TSynchronizeChecklistDialog::DeleteItem(const TSynchronizeCheckl
     {
       FocusIndex++;
     }
-    ListView->ItemFocused = ListView->Items->Item[FocusIndex];
+    ListView2->ItemFocused = ListView2->Items->Item[FocusIndex];
   }
-  ListView->Items->Delete(Index);
+  ListView2->Items->Delete(Index);
   FMoveCandidatesValidForSort = MaxInt; // can be optimized
 }
 //---------------------------------------------------------------------------
@@ -1501,7 +1501,7 @@ void __fastcall TSynchronizeChecklistDialog::MoveActionExecute(TObject *)
       else
       {
         // The remaning "transfer" item
-        ListView->Selected->MakeVisible(false);
+        ListView2->Selected->MakeVisible(false);
       }
       UpdateControls();
     }
@@ -1520,9 +1520,9 @@ void __fastcall TSynchronizeChecklistDialog::CheckDirectory(bool Check)
   }
 
   TAutoFlag ChangingItemMassSwitch(FChangingItemMass);
-  for (int Index = 0; Index < ListView->Items->Count; Index++)
+  for (int Index = 0; Index < ListView2->Items->Count; Index++)
   {
-    TListItem * Item = ListView->Items->Item[Index];
+    TListItem * Item = ListView2->Items->Item[Index];
     const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
     UnicodeString Directory = IncludeTrailingBackslash(ChecklistItem->Local.Directory);
     for (int Index2 = 0; Index2 < Directories->Count; Index2++)
@@ -1549,7 +1549,7 @@ void __fastcall TSynchronizeChecklistDialog::UncheckDirectoryActionExecute(TObje
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::DoExplore(TOperationSide Side)
 {
-  const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(ListView->Selected);
+  const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(ListView2->Selected);
   TSynchronizeChecklist::TAction Action = GetChecklistItemAction(ChecklistItem);
   FOnSynchronizeExplore(Side, Action, ChecklistItem);
 }
@@ -1590,12 +1590,12 @@ void __fastcall TSynchronizeChecklistDialog::KeyDown(Word & Key, TShiftState Shi
   TForm::KeyDown(Key, Shift);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::ListViewRecreate(TObject *)
+void __fastcall TSynchronizeChecklistDialog::ListView2Recreate(TObject *)
 {
   FChecklistToListViewMap.clear();
-  for (int Index = 0; Index < ListView->Items->Count; Index++)
+  for (int Index = 0; Index < ListView2->Items->Count; Index++)
   {
-    TListItem * Item = ListView->Items->Item[Index];
+    TListItem * Item = ListView2->Items->Item[Index];
     const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
     FChecklistToListViewMap.insert(std::make_pair(ChecklistItem, Item));
   }
@@ -1615,9 +1615,9 @@ void __fastcall TSynchronizeChecklistDialog::FindMoveCandidateActionExecute(TObj
   {
     FMoveCandidatesFileName.clear();
     FMoveCandidatesSize.clear();
-    for (int Index = 0; Index < ListView->Items->Count; Index++)
+    for (int Index = 0; Index < ListView2->Items->Count; Index++)
     {
-      const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(ListView->Items->Item[Index]);
+      const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(ListView2->Items->Item[Index]);
       if (ChecklistItem->IsLocalOnly() || ChecklistItem->IsRemoteOnly())
       {
         if (ChecklistItem->IsDirectory)
@@ -1637,20 +1637,20 @@ void __fastcall TSynchronizeChecklistDialog::FindMoveCandidateActionExecute(TObj
   bool Found = false;
   if (!FMoveCandidatesFileName.empty() || !FMoveCandidatesSize.empty())
   {
-    TListItem * ItemFocused = ListView->ItemFocused;
+    TListItem * ItemFocused = ListView2->ItemFocused;
     TListItem * Item;
     if (ItemFocused != NULL)
     {
       Item = ItemFocused;
     }
     // Can we have a selection without focus?
-    else if (DebugAlwaysFalse(ListView->Selected != NULL))
+    else if (DebugAlwaysFalse(ListView2->Selected != NULL))
     {
-      Item = ListView->Selected;
+      Item = ListView2->Selected;
     }
-    else if (ListView->Items->Count > 0)
+    else if (ListView2->Items->Count > 0)
     {
-      Item = ListView->Items->Item[0];
+      Item = ListView2->Items->Item[0];
     }
     else
     {
@@ -1738,12 +1738,12 @@ void __fastcall TSynchronizeChecklistDialog::FindMoveCandidateActionExecute(TObj
         if (!Candidates.empty())
         {
           const TSynchronizeChecklist::TItem * ChecklistItem2 = Candidates[0];
-          if ((FirstItem == NULL) && Item->Selected && (ListView->SelCount == 2))
+          if ((FirstItem == NULL) && Item->Selected && (ListView2->SelCount == 2))
           {
-            TListItem * NextSelected = ListView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
+            TListItem * NextSelected = ListView2->GetNextItem(Item, sdAll, TItemStates() << isSelected);
             if (NextSelected == NULL)
             {
-              NextSelected = ListView->Selected; // Shorthand for GetNextItem(NULL, sdAll, isSelected)
+              NextSelected = ListView2->Selected; // Shorthand for GetNextItem(NULL, sdAll, isSelected)
             }
             TChecklistItems::const_iterator I = std::find(Candidates.begin(), Candidates.end(), GetChecklistItem(NextSelected));
             if (I < Candidates.end() - 1)
@@ -1760,20 +1760,20 @@ void __fastcall TSynchronizeChecklistDialog::FindMoveCandidateActionExecute(TObj
           {
             TListItem * Item2 = FChecklistToListViewMap[ChecklistItem2];
 
-            for (int Index = 0; Index < ListView->Items->Count; Index++)
+            for (int Index = 0; Index < ListView2->Items->Count; Index++)
             {
-              TListItem * ItemI = ListView->Items->Item[Index];
+              TListItem * ItemI = ListView2->Items->Item[Index];
               ItemI->Selected = (ItemI == Item) || (ItemI == Item2);
             }
-            ListView->ItemFocused = Item;
+            ListView2->ItemFocused = Item;
 
             // IsItemVisible returns true even on partial visibility,
             // so it is still worth trying MakeVisible to make them completelly visible
-            bool FlickerExpected = !ListView->IsItemVisible(Item) || !ListView->IsItemVisible(Item2);
+            bool FlickerExpected = !ListView2->IsItemVisible(Item) || !ListView2->IsItemVisible(Item2);
             if (FlickerExpected)
             {
               // does not seem to have any effect
-              ListView->LockDrawing();
+              ListView2->LockDrawing();
             }
             try
             {
@@ -1786,7 +1786,7 @@ void __fastcall TSynchronizeChecklistDialog::FindMoveCandidateActionExecute(TObj
             {
               if (FlickerExpected)
               {
-                ListView->UnlockDrawing();
+                ListView2->UnlockDrawing();
               }
             }
 
@@ -1807,10 +1807,10 @@ void __fastcall TSynchronizeChecklistDialog::FindMoveCandidateActionExecute(TObj
           FirstItem = Item;
         }
 
-        Item = ListView->GetNextItem(Item, sdAll, TItemStates());
+        Item = ListView2->GetNextItem(Item, sdAll, TItemStates());
         if (Item == NULL)
         {
-          Item = ListView->Items->Item[0];
+          Item = ListView2->Items->Item[0];
         }
       }
     }
