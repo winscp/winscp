@@ -9868,6 +9868,8 @@ void __fastcall TCustomScpExplorerForm::ThemeChanged()
   ResetSysDarkTheme();
   ConfigurationChanged();
   ConfigureInterface();
+  // To update references to recreated/destroyed themes in SessionsPageControl
+  UpdateControls();
   // Should be called for all controls
   RemoteDirView->Perform(WM_THEMECHANGED, 0, 0);
 }
