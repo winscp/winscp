@@ -174,7 +174,7 @@ object LoginDialog: TLoginDialog
           object S3CredentialsEnvCheck3: TCheckBox
             Left = 2
             Top = 3
-            Width = 374
+            Width = 245
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Credentials from AWS environment:'
