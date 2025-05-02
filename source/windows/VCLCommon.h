@@ -13,6 +13,7 @@ extern const UnicodeString ContextSeparator;
 //---------------------------------------------------------------------------
 void __fastcall FixListColumnWidth(TListView * TListView, int Index);
 void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrinkIndex = -1);
+bool UseDarkModeForControl(TControl * Control);
 void __fastcall EnableControl(TControl* Control, bool Enable);
 void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly = true);
 void __fastcall ReadOnlyAndEnabledControl(TControl * Control, bool ReadOnly, bool Enabled);
@@ -25,6 +26,8 @@ void __fastcall UseSystemSettingsPre(TForm * Control);
 void __fastcall UseSystemSettingsPost(TForm * Control);
 void __fastcall UseSystemSettings(TForm * Control);
 void __fastcall ResetSystemSettings(TForm * Control);
+void UseDarkMode(TForm * Form);
+void ApplyColorMode(TForm * Form);
 void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url = L"",
   TNotifyEvent OnEnter = NULL);
 void __fastcall LinkActionLabel(TStaticText * StaticText);

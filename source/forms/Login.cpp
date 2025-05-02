@@ -1900,6 +1900,14 @@ void __fastcall TLoginDialog::SessionTreeCustomDrawItem(
   }
 
   Sender->Canvas->Font->Style = Styles;
+
+  DebugAssert(Sender == SessionTree);
+  if (Node->Selected && !SessionTree->Focused() && UseDarkModeForControl(SessionTree))
+  {
+    // Otherwise it is rendered black on black. See also TCustomDriveView.InternalOnDrawItem.
+    SessionTree->Canvas->Font->Color = SessionTree->Font->Color;
+  }
+
   DefaultDraw = true;
 }
 //---------------------------------------------------------------------------
@@ -3395,5 +3403,11 @@ void __fastcall TLoginDialog::SearchSiteStartActionExecute(TObject *)
 void __fastcall TLoginDialog::SitesIncrementalSearchPanelContextPopup(TObject * Sender, TPoint & MousePos, bool & Handled)
 {
   MenuPopup(Sender, MousePos, Handled);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::CreateWnd()
+{
+  TForm::CreateWnd();
+  ApplyColorMode(this);
 }
 //---------------------------------------------------------------------------

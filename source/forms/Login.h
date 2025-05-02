@@ -445,6 +445,7 @@ protected:
   void __fastcall EditSession();
   void __fastcall Login();
   void SetSiteSearch(TIncrementalSearch SiteSearch);
+  virtual void __fastcall CreateWnd();
   __property TSessionData * SelectedSession  = { read=GetSelectedSession };
 
   INTERFACE_HOOK;

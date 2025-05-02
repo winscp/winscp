@@ -32,6 +32,33 @@ const UnicodeString LinkAppLabelMark(TraceInitStr(UnicodeString(L" ") + ContextS
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+class TFormCustomizationComponent : public TComponent
+{
+public:
+  __fastcall TFormCustomizationComponent() :
+    TComponent(NULL)
+  {
+    WindowStateBeforeMimimize = wsNormal;
+    DarkMode = false;
+  }
+
+  TWindowState WindowStateBeforeMimimize;
+  bool DarkMode;
+};
+//---------------------------------------------------------------------------
+static TFormCustomizationComponent * GetFormCustomizationComponent(TCustomForm * Form)
+{
+  TFormCustomizationComponent * FormCustomizationComponent =
+    dynamic_cast<TFormCustomizationComponent *>(Form->FindComponent(TFormCustomizationComponent::QualifiedClassName()));
+  if (FormCustomizationComponent == NULL)
+  {
+    FormCustomizationComponent = new TFormCustomizationComponent();
+    FormCustomizationComponent->Name = TFormCustomizationComponent::QualifiedClassName();
+    Form->InsertComponent(FormCustomizationComponent);
+  }
+  return FormCustomizationComponent;
+}
+//---------------------------------------------------------------------------
 void __fastcall FixListColumnWidth(TListView * TListView, int Index)
 {
   if (Index < 0)
@@ -202,44 +229,20 @@ void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrin
   }
 }
 //---------------------------------------------------------------------------
-static void __fastcall SetParentColor(TControl * Control)
+bool IsWindowColorControl(TControl * Control)
 {
-  TColor Color = clBtnFace;
-  if (UseThemes)
-  {
-    bool OnTabSheet = false;
-    TWinControl * Parent = Control->Parent;
-    while ((Parent != NULL) && !OnTabSheet)
-    {
-      TTabSheet * TabSheet = dynamic_cast<TTabSheet *>(Parent);
-      OnTabSheet = (TabSheet != NULL) && TabSheet->TabVisible;
-      Parent = Parent->Parent;
-    }
-
-    if (OnTabSheet)
-    {
-      HTHEME Theme = OpenThemeData(NULL, L"tab");
-      if (Theme != NULL)
-      {
-        COLORREF RGB;
-        // XP with classic theme: Does not get past OpenThemeData, clBtnFace is exact color
-        // XP with XP theme: not the exact color (probably same as clBtnFace), but close
-        // Vista - ok
-        // 2016 without desktop - ok
-        // 7 with classic and high contrast themes: Do not get past OpenThemeData, clBtnFace is exact color
-        // 7 with 7 and basic themes - ok
-        // 10 with high contrast themes - ok (note the difference to 7 with high contract themes)
-        // 10 - ok
-        if (GetThemeColor(Theme, TABP_AEROWIZARDBODY, TIS_NORMAL, TMT_FILLCOLOR, &RGB) == S_OK)
-        {
-          Color = static_cast<TColor>(RGB);
-        }
-        CloseThemeData(Theme);
-      }
-    }
-  }
-
-  ((TEdit*)Control)->Color = Color;
+  return
+    (dynamic_cast<TCustomEdit *>(Control) != NULL) ||
+    (dynamic_cast<TCustomComboBox *>(Control) != NULL) ||
+    (dynamic_cast<TCustomListView *>(Control) != NULL) ||
+    (dynamic_cast<TCustomTreeView *>(Control) != NULL);
+}
+//---------------------------------------------------------------------------
+bool UseDarkModeForControl(TControl * Control)
+{
+  return
+    WinConfiguration->UseDarkTheme() && // optimization
+    GetFormCustomizationComponent(GetParentForm(Control))->DarkMode;
 }
 //---------------------------------------------------------------------------
 void __fastcall EnableControl(TControl * Control, bool Enable)
@@ -258,24 +261,23 @@ void __fastcall EnableControl(TControl * Control, bool Enable)
     Control->Enabled = Enable;
   }
 
-  if ((dynamic_cast<TCustomEdit *>(Control) != NULL) ||
-      (dynamic_cast<TCustomComboBox *>(Control) != NULL) ||
-      (dynamic_cast<TCustomListView *>(Control) != NULL) ||
-      (dynamic_cast<TCustomTreeView *>(Control) != NULL))
+  if (IsWindowColorControl(Control))
   {
+    bool DarkMode = UseDarkModeForControl(Control);
+    TColor Color;
     if (Enable)
     {
-      ((TEdit*)Control)->Color = clWindow;
+      Color = DarkMode ? GetWindowColor() : clWindow;
     }
     else
     {
-      // This does not work for list view with
-      // LVS_EX_DOUBLEBUFFER (TCustomDirView).
-      // It automatically gets gray background.
-      // Though on Windows 7, the control has to be disabled
-      // only after it is showing already (see TCustomScpExplorerForm::UpdateControls())
-      ((TEdit*)Control)->Color = clBtnFace;
+      // This does not work for list view with LVS_EX_DOUBLEBUFFER (TCustomDirView).
+      // It automatically gets gray background. Though on Windows 7, the control has to be disabled
+      // only after it is showing already (see TCustomScpExplorerForm::UpdateControls()).
+      // But we do not use this code anymore for the main window anyway.
+      Color = DarkMode ? GetBtnFaceColor() : clBtnFace;
     }
+    ((TEdit*)Control)->Color = Color;
   }
 };
 //---------------------------------------------------------------------------
@@ -350,6 +352,7 @@ void __fastcall DoReadOnlyControl(TControl * Control, bool ReadOnly, bool Color)
 {
   if (dynamic_cast<TCustomEdit *>(Control) != NULL)
   {
+    bool DarkMode = UseDarkModeForControl(Control);
     TEdit * Edit = static_cast<TEdit *>(Control);
     Edit->ReadOnly = ReadOnly;
     TMemo * Memo = dynamic_cast<TMemo *>(Control);
@@ -374,7 +377,7 @@ void __fastcall DoReadOnlyControl(TControl * Control, bool ReadOnly, bool Color)
     {
       if (Color)
       {
-        SetParentColor(Control);
+        Edit->Color = DarkMode ? GetBtnFaceColor() : clBtnFace;
       }
       if (Memo != NULL)
       {
@@ -408,7 +411,7 @@ void __fastcall DoReadOnlyControl(TControl * Control, bool ReadOnly, bool Color)
     {
       if (Color)
       {
-        Edit->Color = clWindow;
+        Edit->Color = DarkMode ? GetWindowColor() : clWindow;
       }
       // not supported atm, we need to persist previous value of WantReturns
       DebugAssert(Memo == NULL);
@@ -527,6 +530,7 @@ class TPublicControl : public TControl
 {
 friend void __fastcall RealignControl(TControl * Control);
 friend TCanvas * CreateControlCanvas(TControl * Control);
+friend void ApplyDarkModeOnControl(TControl * Control);
 };
 //---------------------------------------------------------------------
 class TPublicForm : public TForm
@@ -612,31 +616,6 @@ static void __fastcall ChangeControlScale(TControl * Control)
 //---------------------------------------------------------------------------
 typedef std::pair<int, int> TRatio;
 typedef std::map<TRatio, TRatio > TRatioMap;
-//---------------------------------------------------------------------------
-class TFormCustomizationComponent : public TComponent
-{
-public:
-  __fastcall TFormCustomizationComponent() :
-    TComponent(NULL)
-  {
-    WindowStateBeforeMimimize = wsNormal;
-  }
-
-  TWindowState WindowStateBeforeMimimize;
-};
-//---------------------------------------------------------------------------
-static TFormCustomizationComponent * GetFormCustomizationComponent(TForm * Form)
-{
-  TFormCustomizationComponent * FormCustomizationComponent =
-    dynamic_cast<TFormCustomizationComponent *>(Form->FindComponent(TFormCustomizationComponent::QualifiedClassName()));
-  if (FormCustomizationComponent == NULL)
-  {
-    FormCustomizationComponent = new TFormCustomizationComponent();
-    FormCustomizationComponent->Name = TFormCustomizationComponent::QualifiedClassName();
-    Form->InsertComponent(FormCustomizationComponent);
-  }
-  return FormCustomizationComponent;
-}
 //---------------------------------------------------------------------------
 static void __fastcall ChangeFormPixelsPerInch(TForm * Form)
 {
@@ -1109,6 +1088,72 @@ void __fastcall ResetSystemSettings(TForm * /*Control*/)
 {
   // noop
 }
+//---------------------------------------------------------------------------
+void ApplyDarkModeOnControl(TControl * Control)
+{
+  TPublicControl * PublicControl = static_cast<TPublicControl *>(Control);
+
+  TColor BtnFaceColor = GetBtnFaceColor();
+  if (dynamic_cast<TForm *>(Control) != NULL)
+  {
+    DebugAssert((PublicControl->Color == clBtnFace) || (PublicControl->Color == BtnFaceColor));
+    PublicControl->Color = BtnFaceColor;
+    PublicControl->Font->Color = GetWindowTextColor(PublicControl->Color);
+  }
+
+  if (dynamic_cast<TPanel *>(Control) != NULL)
+  {
+    DebugAssert((PublicControl->Color == clBtnFace) || (PublicControl->Color == BtnFaceColor));
+    DebugAssert(!PublicControl->ParentColor);
+    PublicControl->Color = BtnFaceColor;
+  }
+
+  if (IsWindowColorControl(Control))
+  {
+    TColor WindowColor = GetWindowColor();
+    DebugAssert((PublicControl->Color == clWindow) || (PublicControl->Color == WindowColor));
+    DebugAssert(!PublicControl->ParentColor);
+    PublicControl->Color = WindowColor;
+  }
+
+  TWinControl * WinControl = dynamic_cast<TWinControl *>(Control);
+  if (WinControl != NULL)
+  {
+    if (dynamic_cast<TTreeView *>(WinControl) != NULL)
+    {
+      // for dark scrollbars
+      WinControl->HandleNeeded();
+      AllowDarkModeForWindow(WinControl, true);
+    }
+
+    for (int Index = 0; Index < WinControl->ControlCount; Index++)
+    {
+      ApplyDarkModeOnControl(WinControl->Controls[Index]);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void UseDarkMode(TForm * Form)
+{
+  if (IsWin10Build(19041))
+  {
+    BOOL DarkMode = WinConfiguration->UseDarkTheme() ? TRUE : FALSE;
+    const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+    DebugAssert(Form->HandleAllocated());
+    DwmSetWindowAttribute(Form->Handle, DWMWA_USE_IMMERSIVE_DARK_MODE, &DarkMode, sizeof(DarkMode));
+  }
+}
+//---------------------------------------------------------------------------
+void ApplyColorMode(TForm * Form)
+{
+  UseDarkMode(Form);
+  if (WinConfiguration->UseDarkTheme())
+  {
+    GetFormCustomizationComponent(Form)->DarkMode = true;
+    ApplyDarkModeOnControl(Form);
+  }
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 struct TShowAsModalStorage
 {

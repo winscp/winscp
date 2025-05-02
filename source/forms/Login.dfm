@@ -258,7 +258,8 @@ object LoginDialog: TLoginDialog
           Top = 40
           Width = 164
           Height = 23
-          Style = csDropDownList
+          Style = csOwnerDrawFixed
+          ItemHeight = 17
           TabOrder = 0
           OnChange = TransferProtocolComboChange
           Items.Strings = (
@@ -273,7 +274,8 @@ object LoginDialog: TLoginDialog
           Top = 40
           Width = 204
           Height = 23
-          Style = csDropDownList
+          Style = csOwnerDrawFixed
+          ItemHeight = 17
           TabOrder = 2
           OnChange = EncryptionComboChange
           Items.Strings = (
@@ -286,7 +288,8 @@ object LoginDialog: TLoginDialog
           Top = 40
           Width = 204
           Height = 23
-          Style = csDropDownList
+          Style = csOwnerDrawFixed
+          ItemHeight = 17
           TabOrder = 3
           OnChange = EncryptionComboChange
           Items.Strings = (

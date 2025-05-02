@@ -2419,6 +2419,43 @@ static int HideAccelFlag(TControl * Control)
   return Result;
 }
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TDarkUxThemeStyle : public TUxThemeStyle
+{
+public:
+  static TDarkUxThemeStyle * Instance();
+
+protected:
+  virtual bool __fastcall DoDrawText(
+    HDC DC, const TThemedElementDetails & Details, const UnicodeString S, TRect & R, TTextFormat Flags,
+    const TStyleTextOptions & Options, int DPI);
+
+private:
+  static std::unique_ptr<TDarkUxThemeStyle> FInstance;
+};
+//---------------------------------------------------------------------------
+std::unique_ptr<TDarkUxThemeStyle> TDarkUxThemeStyle::FInstance;
+//---------------------------------------------------------------------------
+TDarkUxThemeStyle * TDarkUxThemeStyle::Instance()
+{
+  if (FInstance.get() == NULL)
+  {
+    FInstance.reset(new TDarkUxThemeStyle());
+  }
+  return FInstance.get();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TDarkUxThemeStyle::DoDrawText(
+  HDC DC, const TThemedElementDetails & Details, const UnicodeString S, TRect & R, TTextFormat Flags,
+  const TStyleTextOptions & AOptions, int DPI)
+{
+  TStyleTextOptions Options = AOptions;
+  Options.TextColor = GetWindowTextColor(GetBtnFaceColor());
+  Options.Flags << stfTextColor;
+  return TUxThemeStyle::DoDrawText(DC, Details, S, R, Flags, Options, DPI);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 __fastcall TUIStateAwareLabel::TUIStateAwareLabel(TComponent * AOwner) :
   TLabel(AOwner)
 {
@@ -2458,6 +2495,120 @@ void __fastcall TUIStateAwareLabel::Dispatch(void * AMessage)
   }
 }
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+template<typename T>
+bool HandleMessageByDarkStyleHook(TMessage & Msg, TWinControl * Control, std::unique_ptr<T> & StyleHook)
+{
+  bool Result = false;
+  if (Control->HandleAllocated() &&
+      !Control->ComponentState.Contains(csDestroying) &&
+      !Control->ControlState.Contains(csDestroyingHandle) &&
+      !Control->ControlStyle.Contains(csOverrideStylePaint) &&
+      UseDarkModeForControl(Control))
+  {
+    if (StyleHook.get() == NULL)
+    {
+      StyleHook.reset(new T(Control));
+    }
+    Result = StyleHook->HandleMessage(Msg);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TDarkGroupBoxStyleHook : public TGroupBoxStyleHook
+{
+public:
+  __fastcall virtual TDarkGroupBoxStyleHook(TWinControl * AControl) :
+    TGroupBoxStyleHook(AControl)
+  {
+  }
+
+protected:
+  virtual TCustomStyleServices * __fastcall StyleServices()
+  {
+    return TDarkUxThemeStyle::Instance();
+  }
+};
+//---------------------------------------------------------------------------
+class TGroupBoxEx : public TGroupBox
+{
+protected:
+  virtual void __fastcall PaintWindow(HDC DC);
+  virtual void __fastcall WndProc(TMessage & Msg);
+private:
+  std::unique_ptr<TDarkGroupBoxStyleHook> FStyleHook;
+};
+//---------------------------------------------------------------------------
+void __fastcall TGroupBoxEx::WndProc(TMessage & Msg)
+{
+  if (!HandleMessageByDarkStyleHook(Msg, this, FStyleHook))
+  {
+    TGroupBox::WndProc(Msg);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TGroupBoxEx::PaintWindow(HDC DC)
+{
+  if (UseDarkModeForControl(this))
+  {
+    std::unique_ptr<TCanvas> Canvas(new TCanvas());
+    Canvas->Handle = DC;
+    Canvas->Font = Font;
+
+    TRect Rect = ClientRect;
+    Canvas->Brush->Style = bsSolid;
+    Canvas->Brush->Color = GetBtnFaceColor();
+    Canvas->FillRect(Rect);
+  }
+
+  TGroupBox::PaintWindow(DC);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TDarkCheckBoxStyleHook : public TCheckBoxStyleHook
+{
+public:
+  __fastcall virtual TDarkCheckBoxStyleHook(TWinControl * AControl);
+protected:
+  virtual void __fastcall PaintBackground(TCanvas * Canvas);
+  virtual TCustomStyleServices * __fastcall StyleServices();
+};
+//---------------------------------------------------------------------------
+class TCheckBoxEx : public TCheckBox
+{
+protected:
+  virtual void __fastcall WndProc(TMessage & Msg);
+private:
+  std::unique_ptr<TDarkCheckBoxStyleHook> FStyleHook;
+};
+//---------------------------------------------------------------------------
+__fastcall TDarkCheckBoxStyleHook::TDarkCheckBoxStyleHook(TWinControl * AControl) :
+  TCheckBoxStyleHook(AControl)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TDarkCheckBoxStyleHook::PaintBackground(TCanvas * Canvas)
+{
+  Canvas->Brush->Style = bsSolid;
+  Canvas->Brush->Color = GetBtnFaceColor();
+  Canvas->FillRect(Rect(0, 0, Control->Width, Control->Height));
+}
+//---------------------------------------------------------------------------
+TCustomStyleServices * __fastcall TDarkCheckBoxStyleHook::StyleServices()
+{
+  return TDarkUxThemeStyle::Instance();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCheckBoxEx::WndProc(TMessage & Msg)
+{
+  if (!HandleMessageByDarkStyleHook(Msg, this, FStyleHook))
+  {
+    TCheckBox::WndProc(Msg);
+  }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 void __fastcall FindComponentClass(
   void *, TReader *, const UnicodeString DebugUsedArg(ClassName), TComponentClass & ComponentClass)
 {
@@ -2468,6 +2619,14 @@ void __fastcall FindComponentClass(
   else if (ComponentClass == __classid(TComboBox))
   {
     ComponentClass = __classid(TUIStateAwareComboBox);
+  }
+  else if (ComponentClass == __classid(TGroupBox))
+  {
+    ComponentClass = __classid(TGroupBoxEx);
+  }
+  else if (ComponentClass == __classid(TCheckBox))
+  {
+    ComponentClass = __classid(TCheckBoxEx);
   }
 }
 //---------------------------------------------------------------------------

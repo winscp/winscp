@@ -10619,13 +10619,8 @@ TDragDropFilesEx * __fastcall TCustomScpExplorerForm::CreateDragDropFilesEx()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateDarkMode()
 {
-  if (IsWin10Build(19041))
-  {
-    FImmersiveDarkMode = WinConfiguration->UseDarkTheme();
-    BOOL DarkMode = FImmersiveDarkMode ? TRUE : FALSE;
-    const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
-    DwmSetWindowAttribute(Handle, DWMWA_USE_IMMERSIVE_DARK_MODE, &DarkMode, sizeof(DarkMode));
-  }
+  FImmersiveDarkMode = WinConfiguration->UseDarkTheme();
+  UseDarkMode(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CreateWnd()
