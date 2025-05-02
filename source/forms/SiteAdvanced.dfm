@@ -481,8 +481,8 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
           450
           388)
         object EncryptFilesCheck: TCheckBox
-          Left = 8
-          Top = 8
+          Left = 10
+          Top = 2
           Width = 438
           Height = 17
           Anchors = [akLeft, akTop, akRight]
@@ -492,7 +492,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
         end
         object EncryptFilesGroup: TGroupBox
           Left = 8
-          Top = 31
+          Top = 25
           Width = 438
           Height = 127
           Anchors = [akLeft, akTop, akRight]
