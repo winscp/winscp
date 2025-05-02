@@ -4862,7 +4862,7 @@ bool TTerminal::DoRenameOrCopyFile(
   std::unique_ptr<TRemoteFile> DuplicateFile;
   if (UnixSamePath(AbsoluteFileName, AbsoluteNewName))
   {
-    LogEvent(FORMAT(L"Tartget \"%s\" is same as source \"%s\" - skipping.", (AbsoluteNewName, AbsoluteFileName)));
+    LogEvent(FORMAT(L"Target \"%s\" is same as source \"%s\" - skipping.", (AbsoluteNewName, AbsoluteFileName)));
     Result = false;
   }
   else if (BatchOverwrite == boNone)
