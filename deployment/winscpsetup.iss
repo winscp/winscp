@@ -66,7 +66,7 @@
 #define AssemblyFileSource BinariesDirAssembly+"\WinSCPnet.dll"
 
 #ifdef Donations
-#define PayPalCardImage "PayPalCard.bmp"
+#define PayPalCardFileBase "PayPalCard"
 #endif
 
 #define Major
@@ -256,7 +256,7 @@ Source: "{#ImagesDir}\{#ExplorerFileBase} *.bmp"; Flags: dontcopy
 Source: "{#ImagesDir}\{#CommanderFileBase} *.bmp"; Flags: dontcopy
 Source: "{#ImagesDir}\{#SelectDirFileBase} *.bmp"; Flags: dontcopy
 #ifdef Donations
-Source: "{#ImagesDir}\{#PayPalCardImage}"; Flags: dontcopy
+Source: "{#ImagesDir}\{#PayPalCardFileBase} *.bmp"; Flags: dontcopy
 #endif
 #endif
 Source: "{#MainFileSource}"; DestDir: "{app}"; \
@@ -704,17 +704,6 @@ begin
   Bitmap.Free;
 end;
 
-procedure LoadEmbededBitmap(Image: TBitmapImage; Name: string);
-var
-  FileName: string;
-begin
-  ExtractTemporaryFile(Name);
-  FileName := ExpandConstant('{tmp}\' + Name);
-  LoadBitmap(Image, FileName);
-  // we won't need this anymore
-  DeleteFile(FileName);
-end;
-
 function GetScalingFactor: Integer;
 begin
   if WizardForm.Font.PixelsPerInch >= 192 then Result := 200
@@ -728,9 +717,14 @@ end;
 procedure LoadEmbededScaledIcon(Image: TBitmapImage; NameBase: string; SizeBase: Integer);
 var
   Name: String;
+  FileName: string;
 begin
   Name := Format('%s %d.bmp', [NameBase, SizeBase * GetScalingFactor div 100]);
-  LoadEmbededBitmap(Image, Name);
+  ExtractTemporaryFile(Name);
+  FileName := ExpandConstant('{tmp}\' + Name);
+  LoadBitmap(Image, FileName);
+  // we won't need this anymore
+  DeleteFile(FileName);
   Image.AutoSize := True;
 end;
 
@@ -911,7 +905,7 @@ var
 #endif
   HelpButton: TButton;
 #ifdef Donations
-  P: Integer;
+  P, H: Integer;
 #ifdef ImagesDir
   P2: Integer;
 #endif
@@ -1201,19 +1195,19 @@ begin
 
 #ifdef ImagesDir
   Image := TBitmapImage.Create(DonationPanel);
-  LoadEmbededBitmap(Image, '{#PayPalCardImage}');
-  Image.BackColor := DonationPanel.Color;
-  Image.AutoSize := True;
+  LoadEmbededScaledIcon(Image, '{#PayPalCardFileBase}', 100);
   Image.Cursor := crHand;
   Image.Parent := DonationPanel;
   Image.Left := ScaleX(108);
-  Image.Top := P2 + ScaleX(8);
+  Image.Top := P2;
   Image.Hint := CustomMessage('AboutDonations');
   Image.ShowHint := True;
   Image.OnClick := @AboutDonationsLinkClick;
 #endif
 
-  DonationPanel.Height := GetBottom(AboutDonationCaption);
+  H := GetBottom(AboutDonationCaption);
+  if H < Image.Height then H := Image.Height;
+  DonationPanel.Height := H + ScaleY(8);
 
 #endif
 
