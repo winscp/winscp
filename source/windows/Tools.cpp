@@ -132,6 +132,17 @@ TColor __fastcall GetBtnFaceColor()
   return WinConfiguration->UseDarkTheme() ? TColor(RGB(43, 43, 43)) : clBtnFace;
 }
 //---------------------------------------------------------------------------
+TColor GetLightLinkColor()
+{
+  return clBlue;
+}
+//---------------------------------------------------------------------------
+TColor GetLinkColor(TControl * Control)
+{
+  // dark theme Windows 11 Settings app On/Off toggle color
+  return UseDarkModeForControl(Control) ? TColor(RGB(0x4C, 0xC2, 0xFF)) : GetLightLinkColor();
+}
+//---------------------------------------------------------------------------
 TColor __fastcall GetNonZeroColor(TColor Color)
 {
   // 0,0,0 is "default color"

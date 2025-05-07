@@ -39,6 +39,8 @@ bool __fastcall SameFont(TFont * Font1, TFont * Font2);
 TColor __fastcall GetWindowTextColor(TColor BackgroundColor, TColor Color = static_cast<TColor>(0));
 TColor __fastcall GetWindowColor(TColor Color = static_cast<TColor>(0));
 TColor __fastcall GetBtnFaceColor();
+TColor GetLightLinkColor();
+TColor GetLinkColor(TControl * Control);
 TColor __fastcall GetNonZeroColor(TColor Color);
 void ValidateMask(const UnicodeString & Mask, int ForceDirectoryMasks = -1);
 void __fastcall ValidateMaskEdit(TComboBox * Edit);

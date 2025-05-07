@@ -382,6 +382,12 @@ void __fastcall TMessageForm::CreateParams(TCreateParams & Params)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TMessageForm::CreateWnd()
+{
+  TForm::CreateWnd();
+  ApplyColorMode(this);
+}
+//---------------------------------------------------------------------------
 void __fastcall TMessageForm::LoadMessageBrowser()
 {
   NavigateToUrl(MessageBrowserUrl);
@@ -623,12 +629,17 @@ TButton * __fastcall TMessageForm::CreateButton(
   return Button;
 }
 //---------------------------------------------------------------------------
+TControl * TMessageForm::GetContentsControls()
+{
+  return static_cast<TControl *>(DebugNotNull(MessageBrowser))->Parent;
+}
+//---------------------------------------------------------------------------
 void __fastcall TMessageForm::InsertPanel(TPanel * Panel)
 {
   if (DebugAlwaysTrue(MessageBrowser != NULL))
   {
     // we currently use this for updates message box only
-    TControl * ContentsControl = static_cast<TControl *>(DebugNotNull(MessageBrowser))->Parent;
+    TControl * ContentsControl = GetContentsControls();
 
     Panel->Parent = ContentsPanel;
     Panel->Width = ContentsControl->Width;
@@ -650,8 +661,18 @@ int __fastcall TMessageForm::GetContentWidth()
   if (DebugAlwaysTrue(MessageBrowser != NULL))
   {
     // we currently use this for updates message box only
-    TControl * ContentsControl = static_cast<TControl *>(DebugNotNull(MessageBrowser))->Parent;
-    Result = ContentsControl->Width;
+    Result = GetContentsControls()->Width;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+static UnicodeString UrlColor(TColor Color)
+{
+  UnicodeString Result = ColorToWebColorStr(Color);
+  DebugAssert(Result.Length() == 7);
+  if (DebugAlwaysTrue(StartsStr(L"#", Result)))
+  {
+    Result.Delete(1, 1);
   }
   return Result;
 }
@@ -660,8 +681,9 @@ void __fastcall TMessageForm::NavigateToUrl(const UnicodeString & Url)
 {
   if (DebugAlwaysTrue(MessageBrowser != NULL))
   {
-    UnicodeString FontSizeParam = FORMAT(L"fontsize=%d", (Font->Size));
-    UnicodeString FullUrl = AppendUrlParams(Url, FontSizeParam);
+    UnicodeString StyleParams =
+      FORMAT(L"fontsize=%d&textcolor=%s&backcolor=%s", (Font->Size, UrlColor(Font->Color), UrlColor(GetControlColor(GetContentsControls()))));
+    UnicodeString FullUrl = AppendUrlParams(Url, StyleParams);
     NavigateBrowserToUrl(MessageBrowser, FullUrl);
   }
 }
@@ -780,12 +802,18 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     *TimeoutButton = NULL;
   }
 
+  TMessageForm * Result = SafeFormCreate<TMessageForm>();
+
   TColor MainInstructionColor;
   HFONT MainInstructionFont;
   HFONT InstructionFont;
   GetInstrutionsTheme(MainInstructionColor, MainInstructionFont, InstructionFont);
 
-  TMessageForm * Result = SafeFormCreate<TMessageForm>();
+  if (UseDarkModeForControl(Result))
+  {
+    MainInstructionColor = GetLinkColor(Result);
+  }
+
   if (InstructionFont != 0)
   {
     Result->Font->Handle = InstructionFont;
@@ -951,7 +979,6 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   Result->ContentsPanel = Panel;
   Panel->Name = MessagePanelName;
   Panel->Parent = Result;
-  Panel->Color = clWindow;
   Panel->ParentBackground = false;
   Panel->Anchors = TAnchors() << akLeft << akRight << akTop;
   Panel->Caption = L"";
@@ -1197,7 +1224,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   if (!NeverAskAgainCaption.IsEmpty() &&
       !ButtonControls.empty())
   {
-    Result->NeverAskAgainCheck = new TCheckBox(Result);
+    Result->NeverAskAgainCheck = CreateCheckBox(Result);
     Result->NeverAskAgainCheck->Name = L"NeverAskAgainCheck";
     Result->NeverAskAgainCheck->Parent = Result;
     Result->NeverAskAgainCheck->Caption = NeverAskAgainCaption;

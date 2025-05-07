@@ -1057,7 +1057,7 @@ void TCustomScpExplorerForm::CheckStoreTransition()
     Toolbar->Items->Add(LabelItem);
 
     TTBXCustomItem * LinkItem = new TTBXItem(Toolbar);
-    LinkItem->FontSettings->Color = LinkColor;
+    LinkItem->FontSettings->Color = GetLightLinkColor(); // the background is not themed yet
     LinkItem->Caption = LoadStr(STORE_MIGRATION_LEARN);
     LinkItem->OnClick = StoreTransitionLinkClick;
     Toolbar->Items->Add(LinkItem);

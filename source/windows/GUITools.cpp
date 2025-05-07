@@ -1533,15 +1533,6 @@ void __fastcall TBrowserViewer::NavigateToUrl(const UnicodeString & Url)
   Navigate(Url.c_str());
 }
 //---------------------------------------------------------------------------
-TPanel * __fastcall CreateLabelPanel(TPanel * Parent, const UnicodeString & Label)
-{
-  TPanel * Result = CreateBlankPanel(Parent);
-  Result->Parent = Parent;
-  Result->Align = alClient;
-  Result->Caption = Label;
-  return Result;
-}
-//---------------------------------------------------------------------------
 TWebBrowserEx * __fastcall CreateBrowserViewer(TPanel * Parent, const UnicodeString & LoadingLabel)
 {
   TBrowserViewer * Result = new TBrowserViewer(Parent);
@@ -1621,6 +1612,25 @@ bool CopyTextFromBrowser(TWebBrowserEx * WebBrowser, UnicodeString & Text)
   return Result;
 }
 //---------------------------------------------------------------------------
+TPanel * CreateBlankPanel(TComponent * Owner)
+{
+  TPanel * Panel = new TPanel(Owner);
+  Panel->BevelOuter = bvNone;
+  Panel->BevelInner = bvNone; // default
+  Panel->BevelKind = bkNone;
+  Panel->Color = clWindow;
+  return Panel;
+}
+//---------------------------------------------------------------------------
+TPanel * CreateLabelPanel(TPanel * Parent, const UnicodeString & Label)
+{
+  TPanel * Result = CreateBlankPanel(Parent);
+  Result->Parent = Parent;
+  Result->Align = alClient;
+  Result->Caption = Label;
+  return Result;
+}
+//---------------------------------------------------------------------------
 UnicodeString GenerateAppHtmlPage(TFont * Font, TPanel * Parent, const UnicodeString & Body, bool Seamless)
 {
   UnicodeString Result =
@@ -1634,12 +1644,9 @@ UnicodeString GenerateAppHtmlPage(TFont * Font, TPanel * Parent, const UnicodeSt
     L"{\n"
     L"    font-family: '" + Font->Name + L"';\n"
     L"    margin: " + UnicodeString(Seamless ? L"0" : L"0.5em") + L";\n"
+    L"    color: " + ColorToWebColorStr(Parent->Font->Color) + L";\n"
     L"    background-color: " + ColorToWebColorStr(Parent->Color) + L";\n" +
     UnicodeString(Seamless ? L"    overflow: hidden;\n" : L"") +
-    L"}\n"
-    L"\n"
-    L"body\n"
-    L"{\n"
     L"    font-size: " + IntToStr(Font->Size) + L"pt;\n"
     L"}\n"
     L"\n"
@@ -1651,7 +1658,7 @@ UnicodeString GenerateAppHtmlPage(TFont * Font, TPanel * Parent, const UnicodeSt
     L"\n"
     L"a, a:visited, a:hover, a:visited, a:current\n"
     L"{\n"
-    L"    color: " + ColorToWebColorStr(LinkColor) + L";\n"
+    L"    color: " + ColorToWebColorStr(GetLinkColor(Parent)) + L";\n"
     L"}\n"
     L"</style>\n"
     L"</head>\n"
@@ -2456,6 +2463,24 @@ bool __fastcall TDarkUxThemeStyle::DoDrawText(
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+// Based on:
+// https://stackoverflow.com/q/6912424/850848
+// https://stackoverflow.com/q/4685863/850848
+class TUIStateAwareLabel : public TLabel
+{
+public:
+  __fastcall virtual TUIStateAwareLabel(TComponent * AOwner);
+
+protected:
+  DYNAMIC void __fastcall DoDrawText(TRect & Rect, int Flags);
+  virtual void __fastcall Dispatch(void * AMessage);
+};
+//---------------------------------------------------------------------------
+TLabel * CreateLabel(TComponent * AOwner)
+{
+  return new TUIStateAwareLabel(AOwner);
+}
+//---------------------------------------------------------------------------
 __fastcall TUIStateAwareLabel::TUIStateAwareLabel(TComponent * AOwner) :
   TLabel(AOwner)
 {
@@ -2577,11 +2602,18 @@ protected:
 //---------------------------------------------------------------------------
 class TCheckBoxEx : public TCheckBox
 {
+public:
+  __fastcall virtual TCheckBoxEx(TComponent * AOwner);
 protected:
   virtual void __fastcall WndProc(TMessage & Msg);
 private:
   std::unique_ptr<TDarkCheckBoxStyleHook> FStyleHook;
 };
+//---------------------------------------------------------------------------
+TCheckBox * CreateCheckBox(TComponent * AOwner)
+{
+  return new TCheckBoxEx(AOwner);
+}
 //---------------------------------------------------------------------------
 __fastcall TDarkCheckBoxStyleHook::TDarkCheckBoxStyleHook(TWinControl * AControl) :
   TCheckBoxStyleHook(AControl)
@@ -2598,6 +2630,11 @@ void __fastcall TDarkCheckBoxStyleHook::PaintBackground(TCanvas * Canvas)
 TCustomStyleServices * __fastcall TDarkCheckBoxStyleHook::StyleServices()
 {
   return TDarkUxThemeStyle::Instance();
+}
+//---------------------------------------------------------------------------
+__fastcall TCheckBoxEx::TCheckBoxEx(TComponent * AOwner) :
+  TCheckBox(AOwner)
+{
 }
 //---------------------------------------------------------------------------
 void __fastcall TCheckBoxEx::WndProc(TMessage & Msg)

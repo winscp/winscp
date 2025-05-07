@@ -531,6 +531,7 @@ class TPublicControl : public TControl
 friend void __fastcall RealignControl(TControl * Control);
 friend TCanvas * CreateControlCanvas(TControl * Control);
 friend void ApplyDarkModeOnControl(TControl * Control);
+friend TColor GetControlColor(TControl * Control);
 };
 //---------------------------------------------------------------------
 class TPublicForm : public TForm
@@ -1089,11 +1090,17 @@ void __fastcall ResetSystemSettings(TForm * /*Control*/)
   // noop
 }
 //---------------------------------------------------------------------------
+TColor GetControlColor(TControl * Control)
+{
+  return static_cast<TPublicControl *>(Control)->Color;
+}
+//---------------------------------------------------------------------------
 void ApplyDarkModeOnControl(TControl * Control)
 {
   TPublicControl * PublicControl = static_cast<TPublicControl *>(Control);
 
   TColor BtnFaceColor = GetBtnFaceColor();
+  TColor WindowColor = GetWindowColor();
   if (dynamic_cast<TForm *>(Control) != NULL)
   {
     DebugAssert((PublicControl->Color == clBtnFace) || (PublicControl->Color == BtnFaceColor));
@@ -1103,14 +1110,20 @@ void ApplyDarkModeOnControl(TControl * Control)
 
   if (dynamic_cast<TPanel *>(Control) != NULL)
   {
-    DebugAssert((PublicControl->Color == clBtnFace) || (PublicControl->Color == BtnFaceColor));
     DebugAssert(!PublicControl->ParentColor);
-    PublicControl->Color = BtnFaceColor;
+    if ((PublicControl->Color == clWindow) || (PublicControl->Color == WindowColor))
+    {
+      PublicControl->Color = WindowColor;
+    }
+    else
+    {
+      DebugAssert((PublicControl->Color == clBtnFace) || (PublicControl->Color == BtnFaceColor));
+      PublicControl->Color = BtnFaceColor;
+    }
   }
 
   if (IsWindowColorControl(Control))
   {
-    TColor WindowColor = GetWindowColor();
     DebugAssert((PublicControl->Color == clWindow) || (PublicControl->Color == WindowColor));
     DebugAssert(!PublicControl->ParentColor);
     PublicControl->Color = WindowColor;
@@ -1990,7 +2003,7 @@ static void __fastcall FocusableLabelWindowProc(void * Data, TMessage & Message,
       {
         Canvas->DrawFocusRect(R);
       }
-      else if ((StaticText->Font->Color != LinkColor) && // LinkActionLabel and LinkLabel
+      else if ((StaticText->Font->Color != GetLinkColor(StaticText)) && // LinkActionLabel and LinkLabel
                !EndsStr(LinkAppLabelMark, StaticText->Caption)) // LinkAppLabel
       {
         Canvas->Pen->Style = psDot;
@@ -2338,7 +2351,7 @@ void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url,
     }
   }
 
-  StaticText->Font->Color = LinkColor;
+  StaticText->Font->Color = GetLinkColor(StaticText);
 }
 //---------------------------------------------------------------------------
 void __fastcall LinkActionLabel(TStaticText * StaticText)
@@ -2347,7 +2360,7 @@ void __fastcall LinkActionLabel(TStaticText * StaticText)
   DebugAssert(StaticText->Parent != NULL);
   DoLinkLabel(StaticText);
 
-  StaticText->Font->Color = LinkColor;
+  StaticText->Font->Color = GetLinkColor(StaticText);
 }
 //---------------------------------------------------------------------------
 void __fastcall LinkAppLabel(TStaticText * StaticText)
@@ -2829,15 +2842,6 @@ void __fastcall ShowFormNoActivate(TForm * Form)
     // Wait for application to be activated to activate ourself.
     HookFormActivation(Form);
   }
-}
-//---------------------------------------------------------------------------
-TPanel * __fastcall CreateBlankPanel(TComponent * Owner)
-{
-  TPanel * Panel = new TPanel(Owner);
-  Panel->BevelOuter = bvNone;
-  Panel->BevelInner = bvNone; // default
-  Panel->BevelKind = bkNone;
-  return Panel;
 }
 //---------------------------------------------------------------------------
 bool IsButtonBeingClicked(TButtonControl * Button)

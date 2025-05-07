@@ -179,7 +179,7 @@ TCheckBox * __fastcall TCustomDialog::CreateAndAddCheckBox(const UnicodeString &
 //---------------------------------------------------------------------------
 TLabel * __fastcall TCustomDialog::CreateLabel(UnicodeString Label)
 {
-  TLabel * Result = new TUIStateAwareLabel(this);
+  TLabel * Result = ::CreateLabel(this);
   Result->Caption = Label;
   return Result;
 }

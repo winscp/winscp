@@ -34,6 +34,7 @@ protected:
   UnicodeString __fastcall GetReportText();
   UnicodeString __fastcall NormalizeNewLines(UnicodeString Text);
   virtual void __fastcall CreateParams(TCreateParams & Params);
+  virtual void __fastcall CreateWnd();
   DYNAMIC void __fastcall DoShow();
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall MenuItemClick(TObject * Sender);
@@ -42,6 +43,7 @@ protected:
   void __fastcall UpdateForShiftStateTimer(TObject * Sender);
   DYNAMIC void __fastcall SetZOrder(bool TopMost);
   void __fastcall LoadMessageBrowser();
+  TControl * GetContentsControls();
 
 private:
   typedef std::map<unsigned int, TButton *> TAnswerButtons;

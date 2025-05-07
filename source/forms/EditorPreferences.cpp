@@ -79,7 +79,7 @@ void __fastcall TEditorPreferencesDialog::Init(TEditorPreferencesMode Mode, bool
     ExternalEditorBrowseButton->Top = ExternalEditorBrowseButton->Top - Shift;
     Shift += (EditorExternalButton->Top - EditorInternalButton->Top);
     EditorGroup2->Height = EditorGroup2->Height - Shift;
-    TLabel * ExternalEditorLabel = new TUIStateAwareLabel(this);
+    TLabel * ExternalEditorLabel = CreateLabel(this);
     ExternalEditorLabel->Caption = EditorExternalButton->Caption;
     ExternalEditorLabel->Parent = EditorGroup2;
     ExternalEditorLabel->Top = MaskLabel->Top;
