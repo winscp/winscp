@@ -68,7 +68,22 @@ UnicodeString __fastcall SimpleUnixExcludeTrailingBackslash(const UnicodeString 
 //---------------------------------------------------------------------------
 UnicodeString __fastcall UnixCombinePaths(const UnicodeString & Path1, const UnicodeString & Path2)
 {
+  DebugAssert(!Path2.IsEmpty());
   return UnixIncludeTrailingBackslash(Path1) + Path2;
+}
+//---------------------------------------------------------------------------
+// Eventually make UnixCombinePaths do this,
+// once we verify that no use of UnixCombinePaths relies on it adding backslash even for empty second arg
+UnicodeString UnixCombinePathsSmart(const UnicodeString & Path1, const UnicodeString & Path2)
+{
+  if (Path2.IsEmpty())
+  {
+    return Path1;
+  }
+  else
+  {
+    return UnixCombinePaths(Path1, Path2);
+  }
 }
 //---------------------------------------------------------------------------
 Boolean __fastcall UnixSamePath(const UnicodeString & Path1, const UnicodeString & Path2)

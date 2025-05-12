@@ -585,12 +585,13 @@ protected:
     bool Local, const TFileMasks::TParams & MaskParams);
   void __fastcall ExecuteRemoteFile(
     const UnicodeString & FullFileName, TRemoteFile * File, TExecuteFileBy ExecuteFileBy);
-  void __fastcall TemporaryFileCopyParam(TCopyParamType & CopyParam);
+  TCopyParamType TemporaryFileCopyParam(bool ForceText = false);
   void __fastcall TemporaryDirectoryForRemoteFiles(
     const UnicodeString & RemoteDirectory, const TCopyParamType & CopyParam, bool Simple,
     UnicodeString & Result, UnicodeString & RootDirectory);
-  void __fastcall TemporarilyDownloadFiles(TStrings * FileList, bool ForceText,
-    UnicodeString & RootTempDir, UnicodeString & TempDir, bool GetTargetNames,
+  UnicodeString GetTempLocalName(const UnicodeString & Path, const TCopyParamType & CopyParam);
+  void TemporarilyDownloadFiles(
+    TStrings * FileList, bool ForceText, UnicodeString & RootTempDir, UnicodeString & TempDir,
     bool AutoOperation, bool SimpleTempDir);
   void __fastcall LocalEditorClosed(TObject * Sender, bool Forced);
   TTBXPopupMenu * __fastcall HistoryMenu(TOperationSide Side, bool Back);

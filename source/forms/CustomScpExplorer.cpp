@@ -2188,7 +2188,8 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
     bool RemoteFiles = FLAGSET(ACommand.Params, ccRemoteFiles);
     if (!RemoteFiles)
     {
-      TemporarilyDownloadFiles(FileList, false, RootTempDir, TempDir, false, true, true);
+      TemporarilyDownloadFiles(FileList, false, RootTempDir, TempDir, true, true);
+      DebugAssert(RootTempDir == TempDir);
     }
 
     try
@@ -2371,31 +2372,43 @@ void __fastcall TCustomScpExplorerForm::LocalCustomCommandPure(
       if (!RemoteFiles)
       {
         TempDir = IncludeTrailingBackslash(TempDir);
+        typedef std::map<UnicodeString, UnicodeString> TTempNameMap;
+        TTempNameMap TempNameMap;
         for (int Index = 0; Index < RemoteFileListFull->Count; Index++)
         {
           UnicodeString FileName = RemoteFileListFull->Strings[Index];
+          TSearchRecSmart SearchRec;
           if (DebugAlwaysTrue(SameText(TempDir, FileName.SubString(1, TempDir.Length()))) &&
+              FileSearchRec(FileName, SearchRec) &&
               // Skip directories, process only nested files.
-              // The check is redundant as FileAge fails for directories anyway.
-              !DirectoryExists(FileName))
+              !SearchRec.IsDirectory() &&
+              (SearchRec.GetLastWriteTime() != RemoteFileTimes[Index]))
           {
-            UnicodeString RemoteDir =
-              UnixExtractFileDir(
-                UnixIncludeTrailingBackslash(Terminal->CurrentDirectory) +
-                ToUnixPath(FileName.SubString(TempDir.Length() + 1, FileName.Length() - TempDir.Length())));
-
-            TSearchRecSmart SearchRec;
-            if (FileSearchRec(FileName, SearchRec) &&
-                (SearchRec.GetLastWriteTime() != RemoteFileTimes[Index]))
+            if (TempNameMap.empty()) // optimization (create map only once it is really needed)
             {
-              TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
-              TemporaryFileCopyParam(CopyParam);
+              TCopyParamType CopyParam = TemporaryFileCopyParam();
+              for (int Index2 = 0; Index2 < FileList->Count; Index2++)
+              {
+                UnicodeString RemotePath = FileList->Strings[Index2];
+                UnicodeString TempName = GetTempLocalName(RemotePath, CopyParam);
+                TempNameMap.insert(std::make_pair(TempName.UpperCase(), RemotePath));
+              }
+            }
+
+            UnicodeString RelPath = MidStr(FileName, TempDir.Length() + 1);
+            UnicodeString TempName = CutToChar(RelPath, L'\\', false).UpperCase();
+            TTempNameMap::const_iterator TempNameI = TempNameMap.find(TempName);
+            if (DebugAlwaysTrue(TempNameI != TempNameMap.end()))
+            {
+              TCopyParamType CopyParam = TemporaryFileCopyParam();
               CopyParam.FileMask = L"";
 
               FAutoOperation = true;
               FMoveToQueue = false;
               std::unique_ptr<TStrings> TemporaryFilesList(new TStringList());
               TemporaryFilesList->Add(FileName);
+
+              UnicodeString RemoteDir = UnixExtractFileDir(UnixCombinePathsSmart(TempNameI->second, ToUnixPath(RelPath)));
 
               Terminal->CopyToRemote(TemporaryFilesList.get(), RemoteDir, &CopyParam, cpTemporary, NULL);
             }
@@ -3597,17 +3610,17 @@ void __fastcall TCustomScpExplorerForm::TemporaryDirectoryForRemoteFiles(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
+UnicodeString TCustomScpExplorerForm::GetTempLocalName(const UnicodeString & Path, const TCopyParamType & CopyParam)
+{
+  return Terminal->ChangeFileName(&CopyParam, UnixExtractFileName(Path), osRemote, false);
+}
+//---------------------------------------------------------------------------
+void TCustomScpExplorerForm::TemporarilyDownloadFiles(
   TStrings * FileList, bool ForceText, UnicodeString & RootTempDir, UnicodeString & TempDir,
-  bool GetTargetNames, bool AutoOperation, bool SimpleTempDir)
+  bool AutoOperation, bool SimpleTempDir)
 {
   DebugAssert(!IsLocalBrowserMode());
-  TCopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
-  if (ForceText)
-  {
-    CopyParam.TransferMode = tmAscii;
-  }
-  TemporaryFileCopyParam(CopyParam);
+  TCopyParamType CopyParam = TemporaryFileCopyParam(ForceText);
 
   if (TempDir.IsEmpty())
   {
@@ -3626,15 +3639,6 @@ void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
       // the same file over
       Terminal->CopyToLocal(
         FileList, TempDir, &CopyParam, cpNoConfirmation | cpTemporary, NULL);
-
-      if (GetTargetNames)
-      {
-        for (int i = 0; i < FileList->Count; i++)
-        {
-          FileList->Strings[i] =
-            Terminal->ChangeFileName(&CopyParam, UnixExtractFileName(FileList->Strings[i]), osRemote, false);
-        }
-      }
     }
     catch(...)
     {
@@ -3776,19 +3780,11 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
 
     if (!Handled)
     {
-      TStringList * FileList1 = new TStringList();
-      try
-      {
-        FileList1->AddObject(FullFileName, Object);
-        TemporarilyDownloadFiles(FileList1,
-          RemoteExecuteForceText(ExecuteFileBy, ExternalEditor),
-          LocalRootDirectory, LocalDirectory, true, true, false);
-        LocalFileName = LocalDirectory + FileList1->Strings[0];
-      }
-      __finally
-      {
-        delete FileList1;
-      }
+      std::unique_ptr<TStrings> FileList1(new TStringList());
+      FileList1->AddObject(FullFileName, Object);
+      bool ForceText = RemoteExecuteForceText(ExecuteFileBy, ExternalEditor);
+      TemporarilyDownloadFiles(FileList1.get(), ForceText, LocalRootDirectory, LocalDirectory, true, false);
+      LocalFileName = LocalDirectory + GetTempLocalName(FullFileName, TemporaryFileCopyParam(ForceText));
 
       switch (ExecuteFileBy)
       {
@@ -3908,8 +3904,9 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::TemporaryFileCopyParam(TCopyParamType & CopyParam)
+TCopyParamType TCustomScpExplorerForm::TemporaryFileCopyParam(bool ForceText)
 {
+  TCopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
   CopyParam.FileNameCase = ncNoChange;
   CopyParam.PreserveRights = false;
   CopyParam.PreserveReadOnly = false;
@@ -3917,6 +3914,11 @@ void __fastcall TCustomScpExplorerForm::TemporaryFileCopyParam(TCopyParamType & 
   CopyParam.IncludeFileMask = TFileMasks();
   CopyParam.NewerOnly = false;
   CopyParam.FileMask = L"";
+  if (ForceText)
+  {
+    CopyParam.TransferMode = tmAscii;
+  }
+  return CopyParam;
 }
 //---------------------------------------------------------------------------
 bool TCustomScpExplorerForm::EditorCheckNotModified(const TEditedFileData * Data)
@@ -4121,12 +4123,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
 
       // Consider using the same settings (preset) as when the file was downloaded.
       // More over this does not reflect the actual session that will do the upload.
-      TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
-      TemporaryFileCopyParam(CopyParam);
-      if (Data->ForceText)
-      {
-        CopyParam.TransferMode = tmAscii;
-      }
+      TCopyParamType CopyParam = TemporaryFileCopyParam(Data->ForceText);
       // so i do not need to worry if masking algorithm works in all cases
       // ("" means "copy file name", no masking is actually done)
       if (ExtractFileName(FileName) == Data->OriginalFileName)
@@ -4207,15 +4204,12 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileReload(
     UnicodeString RootTempDir = Data->LocalRootDirectory;
     UnicodeString TempDir = ExtractFilePath(FileName);
 
-    TemporarilyDownloadFiles(FileList.get(), Data->ForceText, RootTempDir, TempDir, true, true, false);
+    TemporarilyDownloadFiles(FileList.get(), Data->ForceText, RootTempDir, TempDir, true, false);
 
     if (EditorCheckNotModified(Data))
     {
       Data->SourceTimestamp = File->Modification;
     }
-
-    // sanity check, the target file name should be still the same
-    DebugAssert(ExtractFileName(FileName) == FileList->Strings[0]);
   }
   __finally
   {
@@ -4670,7 +4664,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferFiles(
       UnicodeString RootTempDir;
       UnicodeString TempDir;
 
-      TemporarilyDownloadFiles(FileList, false, RootTempDir, TempDir, false, false, true);
+      TemporarilyDownloadFiles(FileList, false, RootTempDir, TempDir, false, true);
 
       TStrings * TemporaryFilesList = new TStringList();
 
@@ -12292,8 +12286,7 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewThumbnailNeeded(
 TThumbnailDownloadQueueItem * TCustomScpExplorerForm::AddThumbnailDownloadQueueItem(TManagedTerminal * ATerminal)
 {
   DebugAssert(ATerminal == Terminal);
-  TGUICopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
-  TemporaryFileCopyParam(CopyParam);
+  TCopyParamType CopyParam = TemporaryFileCopyParam();
   CopyParam.TransferMode = tmBinary;
 
   UnicodeString SourceDir = ATerminal->CurrentDirectory;
