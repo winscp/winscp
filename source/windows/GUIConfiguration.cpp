@@ -1187,7 +1187,7 @@ TObjectList * __fastcall TGUIConfiguration::GetLocales()
     LCID InvalidLocale = static_cast<LCID>(-1);
 
     // The two-leter Windows code is not actually unique among languages.
-    // To find any duplicities and resolve them to the language, where ISO code also match.
+    // So find any duplicities and resolve them to the language, where ISO code also match.
     // Notably:
     // Georgian KAT ka-GE - Kalaallisut KAL kl-GL
     // Tamil TAI ta-IN - Tajik TAJ tj-TJ
@@ -1229,6 +1229,7 @@ TObjectList * __fastcall TGUIConfiguration::GetLocales()
         TConflicts::const_iterator DefaultLangConflict = DefaultLangConflicts.find(LangExt2);
         // Unless it is a conflicting extension with no resolution or resolved to another locale
         if ((DefaultLangConflict == DefaultLangConflicts.end()) ||
+            (DefaultLangConflict->second.first == 1) ||
             ((DefaultLangConflict->second.second != InvalidLocale) &&
              (DefaultLangConflict->second.second == Locale)))
         {
