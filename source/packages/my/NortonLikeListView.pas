@@ -33,13 +33,14 @@ type
     FLButtonDownShiftState: TShiftState;
     FLButtonDownPos: TPoint;
     FLastSelectMethod: TSelectMethod;
+    FDarkMode: Boolean;
     procedure WMLButtonDown(var Message: TWMLButtonDown); message WM_LBUTTONDOWN;
     procedure WMRButtonDown(var Message: TWMRButtonDown); message WM_RBUTTONDOWN;
     procedure WMLButtonUp(var Message: TWMLButtonUp); message WM_LBUTTONUP;
     procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
     procedure WMSysCommand(var Message: TWMSysCommand); message WM_SYSCOMMAND;
     procedure WMChar(var Message: TWMChar); message WM_CHAR;
-    procedure WMNotify(var Message: TWMNotify); message WM_NOTIFY;
+    procedure WMNotify(var Msg: TWMNotify); message WM_NOTIFY;
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
     procedure LVMEditLabel(var Message: TMessage); message LVM_EDITLABEL;
     procedure WMSetFocus(var Message: TWMSetFocus); message WM_SETFOCUS;
@@ -50,6 +51,8 @@ type
     procedure ItemSelected(Item: TListItem; Index: Integer);
     procedure ItemUnselected(Item: TListItem; Index: Integer);
     procedure SelectAll(Mode: TSelectMode; Exclude: TListItem); reintroduce; overload;
+    procedure WMThemeChanged(var Msg: TMessage); message WM_THEMECHANGED;
+    procedure SetDarkMode(Value: Boolean);
   protected
     { Protected declarations }
     FClearingItems: Boolean;
@@ -81,6 +84,7 @@ type
     procedure SetItemSelectedByIndex(Index: Integer; Select: Boolean);
     function GetItemSelectedByIndex(Index: Integer): Boolean;
     procedure MakeTopItem(Item: TListItem);
+    procedure UpdateDarkMode;
   public
     { Public declarations }
     constructor Create(AOwner: TComponent); override;
@@ -102,12 +106,13 @@ type
     property MarkedFile: TListItem read GetMarkedFile;
     property Valid: Boolean read GetValid;
     property LastSelectMethod: TSelectMethod read FLastSelectMethod;
+    property DarkMode: Boolean read FDarkMode write SetDarkMode;
   end;
 
 implementation
 
 uses
-  PasTools, Types;
+  PasTools, Types, Winapi.UxTheme;
 
   { TCustomNortonLikeListView }
 
@@ -144,6 +149,7 @@ begin
   // Not sure about Vista
   FForceUpdateOnItemUnfocus := IsWin7;
   FNextCharToIgnore := 0;
+  FDarkMode := False;
 end;
 
 destructor TCustomNortonLikeListView.Destroy;
@@ -334,13 +340,13 @@ begin
   end;
 end;
 
-procedure TCustomNortonLikeListView.WMNotify(var Message: TWMNotify);
+procedure TCustomNortonLikeListView.WMNotify(var Msg: TWMNotify);
 var
   HDNotify: PHDNotify;
 begin
-  if (FHeaderHandle <> 0) and (Message.NMHdr^.hWndFrom = FHeaderHandle) then
+  if (FHeaderHandle <> 0) and (Msg.NMHdr^.hWndFrom = FHeaderHandle) then
   begin
-    HDNotify := PHDNotify(Message.NMHdr);
+    HDNotify := PHDNotify(Msg.NMHdr);
     // Disallow resizing of "invisible" (width=0) columns.
     // (We probably get only Unicode versions of the messages here as
     // controls are created as Unicode by VCL)
@@ -348,7 +354,7 @@ begin
       HDN_BEGINTRACKA, HDN_TRACKA, HDN_BEGINTRACKW, HDN_TRACKW:
         if not ColProperties.Visible[HDNotify.Item] then
         begin
-          Message.Result := 1;
+          Msg.Result := 1;
           Exit;
         end;
       // We won't get here when user tries to resize the column by mouse,
@@ -365,13 +371,71 @@ begin
            (HDNotify.PItem.cxy <> 0) and
            (not ColProperties.Visible[HDNotify.Item]) then
         begin
-          Message.Result := 1;
+          Msg.Result := 1;
           Exit;
         end;
+
+      // This all is to make header text white in dark mode.
+      NM_CUSTOMDRAW:
+        if DarkMode and SupportsDarkMode and
+           GetSysDarkTheme then // When system app theme is light, headers are not dark
+        begin
+          with PNMLVCustomDraw(Msg.NMHdr)^ do
+          begin
+            if nmcd.dwDrawStage = CDDS_PREPAINT then
+            begin
+              inherited;
+              Msg.Result := Msg.Result or CDRF_NOTIFYITEMDRAW;
+              Exit;
+            end
+              else
+            if nmcd.dwDrawStage = CDDS_ITEMPREPAINT then
+            begin
+              SetTextColor(nmcd.hdc, ColorToRGB(Font.Color));
+              Msg.Result := CDRF_DODEFAULT;
+            end;
+          end;
+        end
     end;
   end;
 
   inherited;
+end;
+
+procedure TCustomNortonLikeListView.WMThemeChanged(var Msg: TMessage);
+begin
+  if SupportsDarkMode then // To reduce impact
+  begin
+    UpdateDarkMode;
+    RedrawWindow(Handle, nil, 0, RDW_FRAME or RDW_INVALIDATE);
+  end;
+
+  inherited;
+end;
+
+procedure TCustomNortonLikeListView.UpdateDarkMode;
+begin
+  if SupportsDarkMode then // To reduce impact
+  begin
+    AllowDarkModeForWindow(Self, DarkMode);
+
+    if FHeaderHandle <> 0 then
+    begin
+      AllowDarkModeForWindow(FHeaderHandle, DarkMode);
+      SendMessage(FHeaderHandle, WM_THEMECHANGED, 0, 0);
+    end;
+  end;
+end;
+
+procedure TCustomNortonLikeListView.SetDarkMode(Value: Boolean);
+begin
+  if DarkMode <> Value then
+  begin
+    FDarkMode := Value;
+    // Call only when switching to dark more and when switching back to the light mode.
+    // But not for initial light mode - To reduce an impact of calling an undocumented function.
+    if HandleAllocated then UpdateDarkMode;
+  end;
 end;
 
 procedure TCustomNortonLikeListView.DDBeforeDrag;
@@ -1038,6 +1102,19 @@ begin
     FHeaderHandle := ListView_GetHeader(Handle);
 
     ColProperties.ListViewWndCreated;
+
+    if SupportsDarkMode then
+    begin
+      // This enables dark mode - List view itself supports dark mode somewhat even in the our 'Explorer' theme.
+      // The 'ItemsView' has better (Explorer-like) dark mode selection color, but on the other hand it does not have dark scrollbars.
+      // win32-darkmode has ugly fix for that (FixDarkScrollBar), which we do not want to employ.
+      // The 'DarkMode_Explorer' uses the standard selection color (bright blue).
+
+      // Enables dark headers:
+      SetWindowTheme(FHeaderHandle, 'ItemsView', nil);
+
+      if DarkMode then UpdateDarkMode;
+    end;
   finally
   end;
 end;

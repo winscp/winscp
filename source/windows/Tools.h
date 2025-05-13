@@ -27,8 +27,8 @@ IShellLink * __fastcall CreateDesktopSessionShortCut(
   const UnicodeString & SessionName, UnicodeString Name,
   const UnicodeString & AdditionalParams,
   int SpecialFolder = -1, int IconIndex = SITE_ICON, bool Return = false);
-UnicodeString __fastcall GetListViewStr(TListView * ListView);
-void __fastcall LoadListViewStr(TListView * ListView, UnicodeString LayoutStr);
+UnicodeString __fastcall GetListViewStr(TCustomListView * ListView);
+void __fastcall LoadListViewStr(TCustomListView * ListView, UnicodeString LayoutStr);
 void RestoreForm(const UnicodeString & Data, TForm * Form, bool PositionOnly = false, const UnicodeString & DefaultData = EmptyStr);
 UnicodeString __fastcall StoreForm(TForm * Form);
 void __fastcall RestoreFormSize(UnicodeString Data, TForm * Form);

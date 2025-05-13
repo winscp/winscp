@@ -13,9 +13,9 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-__fastcall TQueueController::TQueueController(TListView * ListView)
+__fastcall TQueueController::TQueueController(TCustomListView * ListView)
 {
-  FListView = ListView;
+  FListView = static_cast<TListView *>(ListView);
   DebugAssert(FListView != NULL);
   DebugAssert(FListView->OnDblClick == NULL);
   FListView->OnDblClick = QueueViewDblClick;

@@ -215,12 +215,25 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       ResizeStyle = rsUpdate
       OnCanResize = QueueFileListSplitterCanResize
     end
-    object QueueView3: TListView
+    object QueueView3: TIEListView
       Left = 0
       Top = 47
       Width = 620
       Height = 70
+      ShowColumnIcon = False
       Align = alClient
+      ColumnClick = False
+      DoubleBuffered = True
+      ReadOnly = True
+      RowSelect = True
+      ParentDoubleBuffered = False
+      PopupMenu = NonVisualDataModule.QueuePopup
+      TabOrder = 0
+      OnChange = QueueView3Change
+      OnDeletion = QueueView3Deletion
+      OnEnter = QueueView3Enter
+      OnExit = QueueView3Exit
+      NortonLike = nlOff
       Columns = <
         item
           Caption = 'Operation'
@@ -261,23 +274,13 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
           MinWidth = 20
           Width = 80
         end>
-      ColumnClick = False
-      DoubleBuffered = True
       DragMode = dmAutomatic
-      ReadOnly = True
-      RowSelect = True
-      ParentDoubleBuffered = False
-      PopupMenu = NonVisualDataModule.QueuePopup
+      MultiSelect = False
       SmallImages = GlyphsModule.QueueImages
       StateImages = GlyphsModule.QueueImages
-      TabOrder = 0
       ViewStyle = vsReport
-      OnChange = QueueView3Change
       OnContextPopup = QueueView3ContextPopup
-      OnDeletion = QueueView3Deletion
       OnEndDrag = QueueView3EndDrag
-      OnEnter = QueueView3Enter
-      OnExit = QueueView3Exit
       OnDragDrop = QueueView3DragDrop
       OnDragOver = QueueView3DragOver
       OnSelectItem = QueueView3SelectItem

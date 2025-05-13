@@ -75,7 +75,7 @@ __published:
   TUnixDirView *RemoteDirView;
   TPanel *RemoteDirPanel;
   TTBXDock *TopDock;
-  TListView *QueueView3;
+  TIEListView *QueueView3;
   TPanel *QueuePanel;
   TSplitter *QueueSplitter;
   TTBXToolbar *QueueToolbar;

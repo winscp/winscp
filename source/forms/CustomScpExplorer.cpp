@@ -9502,6 +9502,7 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
     }
 
     SessionsPageControl->TabTheme = UseDarkTheme ? CurrentTheme : NULL;
+    QueueView3->DarkMode = UseDarkTheme;
 
     UnicodeString CurrentHiContrastThemeName = (FHiContrastTheme != NULL) ? FHiContrastTheme->Name : EmptyStr;
     bool HiContrast = WinConfiguration->HiContrast;
@@ -9894,6 +9895,7 @@ void __fastcall TCustomScpExplorerForm::ThemeChanged()
   UpdateControls();
   // Should be called for all controls
   RemoteDirView->Perform(WM_THEMECHANGED, 0, 0);
+  QueueView3->Perform(WM_THEMECHANGED, 0, 0);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMSettingChange(TMessage & Message)

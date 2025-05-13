@@ -14,7 +14,7 @@ class TTerminalQueueStatus;
 class TQueueController
 {
 public:
-  __fastcall TQueueController(TListView * ListView);
+  __fastcall TQueueController(TCustomListView * ListView);
   virtual __fastcall ~TQueueController();
 
   TQueueOperation __fastcall DefaultOperation();

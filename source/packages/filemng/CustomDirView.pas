@@ -172,7 +172,6 @@ type
     FMask: string;
     FNaturalOrderNumericalSorting: Boolean;
     FAlwaysSortDirectoriesByName: Boolean;
-    FDarkMode: Boolean;
     FScrollOnDragOver: TListViewScrollOnDragOver;
     FStatusFileInfo: TStatusFileInfo;
     FOnBusy: TDirViewBusy;
@@ -182,7 +181,6 @@ type
     FRecreatingWnd: Integer;
 
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
-    procedure WMNotify(var Msg: TWMNotify); message WM_NOTIFY;
     procedure WMLButtonDblClk(var Message: TWMLButtonDblClk); message WM_LBUTTONDBLCLK;
     procedure WMLButtonUp(var Message: TWMLButtonUp); message WM_LBUTTONUP;
     procedure WMContextMenu(var Message: TWMContextMenu); message WM_CONTEXTMENU;
@@ -333,13 +331,11 @@ type
     procedure SetMask(Value: string); virtual;
     procedure SetNaturalOrderNumericalSorting(Value: Boolean);
     procedure SetAlwaysSortDirectoriesByName(Value: Boolean);
-    procedure SetDarkMode(Value: Boolean);
     procedure ScrollOnDragOverBeforeUpdate(ObjectToValidate: TObject);
     procedure ScrollOnDragOverAfterUpdate;
     procedure DoHistoryGo(Index: Integer);
     procedure WMSetFocus(var Message: TWMSetFocus); message WM_SETFOCUS;
     procedure WMKillFocus(var Message: TWMKillFocus); message WM_KILLFOCUS;
-    procedure WMThemeChanged(var Message: TMessage); message WM_THEMECHANGED;
     procedure EnsureSelectionRedrawn;
     function HiddenCount: Integer; virtual; abstract;
     function FilteredCount: Integer; virtual; abstract;
@@ -355,7 +351,6 @@ type
     function NeedImageList(Size: TImageListSize; Recreate: Boolean; var OverlayImages: TImageList): TImageList;
     procedure NeedImageLists(Recreate: Boolean);
     procedure FreeImageLists;
-    procedure UpdateDarkMode;
     procedure DoUpdateStatusBar(Force: Boolean = False);
     procedure DoCustomDrawItem(Item: TListItem; Stage: TCustomDrawStage);
     procedure ItemCalculatedSizeUpdated(Item: TListItem; OldSize, NewSize: Int64);
@@ -457,7 +452,6 @@ type
     property Mask: string read FMask write SetMask;
     property NaturalOrderNumericalSorting: Boolean read FNaturalOrderNumericalSorting write SetNaturalOrderNumericalSorting;
     property AlwaysSortDirectoriesByName: Boolean read FAlwaysSortDirectoriesByName write SetAlwaysSortDirectoriesByName;
-    property DarkMode: Boolean read FDarkMode write SetDarkMode;
     property DirViewStyle: TDirViewStyle read GetDirViewStyle write SetDirViewStyle;
 
     property OnContextPopup;
@@ -571,7 +565,7 @@ const
 implementation
 
 uses
-  Math, DirViewColProperties, UITypes, Types, OperationWithTimeout, Winapi.UxTheme, Vcl.Themes, System.IOUtils;
+  Math, DirViewColProperties, UITypes, Types, OperationWithTimeout, System.IOUtils;
 
 const
   ResDirUp = 'DIRUP%2.2d';
@@ -886,7 +880,6 @@ begin
   FMask := '';
   FNaturalOrderNumericalSorting := True;
   FAlwaysSortDirectoriesByName := False;
-  FDarkMode := False;
 
   FOnHistoryChange := nil;
   FOnPathChange := nil;
@@ -948,37 +941,6 @@ begin
     FFilesSize := 0;
     DoUpdateStatusBar;
   end;
-end;
-
-procedure TCustomDirView.WMNotify(var Msg: TWMNotify);
-begin
-  // This all is to make header text white in dark mode.
-  if Msg.NMHdr.code = NM_CUSTOMDRAW then
-  begin
-    if DarkMode and SupportsDarkMode and
-       GetSysDarkTheme and // When system app theme is light, headers are not dark
-       (FHeaderHandle <> 0) and (Msg.NMHdr^.hWndFrom = FHeaderHandle) then
-    begin
-      with PNMLVCustomDraw(Msg.NMHdr)^ do
-      begin
-        if nmcd.dwDrawStage = CDDS_PREPAINT then
-        begin
-          inherited;
-          Msg.Result := Msg.Result or CDRF_NOTIFYITEMDRAW;
-        end
-          else
-        if nmcd.dwDrawStage = CDDS_ITEMPREPAINT then
-        begin
-          SetTextColor(nmcd.hdc, ColorToRGB(Font.Color));
-          Msg.Result := CDRF_DODEFAULT;
-          inherited;
-        end
-          else inherited;
-      end;
-    end
-      else inherited;
-  end
-    else inherited;
 end;
 
 procedure TCustomDirView.DrawThumbnail(Item: TListItem; DC: HDC);
@@ -1332,31 +1294,6 @@ begin
   LargeImages := nil;
 end;
 
-procedure TCustomDirView.WMThemeChanged(var Message: TMessage);
-begin
-  if SupportsDarkMode then // To reduce impact
-  begin
-    UpdateDarkMode;
-    RedrawWindow(Handle, nil, 0, RDW_FRAME or RDW_INVALIDATE);
-  end;
-
-  inherited;
-end;
-
-procedure TCustomDirView.UpdateDarkMode;
-begin
-  if SupportsDarkMode then // To reduce impact
-  begin
-    AllowDarkModeForWindow(Self, DarkMode);
-
-    if FHeaderHandle <> 0 then
-    begin
-      AllowDarkModeForWindow(FHeaderHandle, DarkMode);
-      SendMessage(FHeaderHandle, WM_THEMECHANGED, 0, 0);
-    end;
-  end;
-end;
-
 procedure TCustomDirView.CreateWnd;
 begin
   inherited;
@@ -1364,19 +1301,6 @@ begin
   if Assigned(PopupMenu) then
     PopupMenu.Autopopup := False;
   FDragDropFilesEx.DragDropControl := Self;
-
-  if SupportsDarkMode then
-  begin
-    // This enables dark mode - List view itself supports dark mode somewhat even in the our 'Explorer' theme.
-    // The 'ItemsView' has better (Explorer-like) dark mode selection color, but on the other hand it does not have dark scrollbars.
-    // win32-darkmode has ugly fix for that (FixDarkScrollBar), which we do not want to employ.
-    // The 'DarkMode_Explorer' uses the standard selection color (bright blue).
-
-    // Enables dark headers:
-    SetWindowTheme(FHeaderHandle, 'ItemsView', nil);
-
-    if DarkMode then UpdateDarkMode;
-  end;
 
   NeedImageLists(False);
 end;
@@ -3584,17 +3508,6 @@ begin
   begin
     FAlwaysSortDirectoriesByName := Value;
     SortItems;
-  end;
-end;
-
-procedure TCustomDirView.SetDarkMode(Value: Boolean);
-begin
-  if DarkMode <> Value then
-  begin
-    FDarkMode := Value;
-    // Call only when switching to dark more and when switching back to the light mode.
-    // But not for initial light mode - To reduce an impact of calling an undocumented function.
-    if HandleAllocated then UpdateDarkMode;
   end;
 end;
 

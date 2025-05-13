@@ -97,9 +97,6 @@ type
     property ParentForm: TCustomForm read FParentForm;
     {Set the sort column of the listview}
     property SortColumn: Integer read FSortColumn write SetSortColumn;
-    {Show the sorting symbol in the listview's header:}
-    property ShowColumnIcon: Boolean
-      read FShowColumnIcon write SetShowColumnIcon default True;
     {Sortorder of actual sort column}
     property SortAscending: Boolean
       read FSortAscending write SetSortAscending default True;
@@ -113,6 +110,9 @@ type
       read  FOnHeaderEndTrack write FOnHeaderEndTrack;
     property OnRecreate: TNotifyEvent
       read  FOnRecreate write FOnRecreate;
+    {Show the sorting symbol in the listview's header:}
+    property ShowColumnIcon: Boolean
+      read FShowColumnIcon write SetShowColumnIcon default True;
 
     property Align;
     property AllocBy;

@@ -161,12 +161,13 @@ void __fastcall CenterFormOn(TForm * Form, TControl * CenterOn)
   Form->Top = ScreenPoint.y + (CenterOn->Height / 2) - (Form->Height / 2);
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall GetListViewStr(TListView * ListView)
+UnicodeString __fastcall GetListViewStr(TCustomListView * ListView)
 {
   UnicodeString Result;
-  for (int Index = 0; Index < ListView->Columns->Count; Index++)
+  TListView * AListView = static_cast<TListView *>(ListView);
+  for (int Index = 0; Index < AListView->Columns->Count; Index++)
   {
-    AddToList(Result, IntToStr(ListView->Column[Index]->Width), L",");
+    AddToList(Result, IntToStr(AListView->Column[Index]->Width), L",");
   }
   // WORKAROUND
   // Adding an additional comma after the list,
@@ -178,17 +179,18 @@ UnicodeString __fastcall GetListViewStr(TListView * ListView)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall LoadListViewStr(TListView * ListView, UnicodeString ALayoutStr)
+void __fastcall LoadListViewStr(TCustomListView * ListView, UnicodeString ALayoutStr)
 {
   UnicodeString LayoutStr = CutToChar(ALayoutStr, L';', true);
   int PixelsPerInch = LoadPixelsPerInch(CutToChar(ALayoutStr, L';', true), ListView);
   int Index = 0;
-  while (!LayoutStr.IsEmpty() && (Index < ListView->Columns->Count))
+  TListView * AListView = static_cast<TListView *>(ListView);
+  while (!LayoutStr.IsEmpty() && (Index < AListView->Columns->Count))
   {
     int Width;
     if (TryStrToInt(CutToChar(LayoutStr, L',', true), Width))
     {
-      ListView->Column[Index]->Width = LoadDimension(Width, PixelsPerInch, ListView);
+      AListView->Column[Index]->Width = LoadDimension(Width, PixelsPerInch, ListView);
     }
     Index++;
   }
