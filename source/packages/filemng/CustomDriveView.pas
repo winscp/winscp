@@ -82,7 +82,7 @@ type
     function IsCustomDrawn(Target: TCustomDrawTarget; Stage: TCustomDrawStage): Boolean; override;
     function CustomDrawItem(Node: TTreeNode; State: TCustomDrawState;
       Stage: TCustomDrawStage; var PaintImages: Boolean): Boolean; override;
-    procedure NeedImageLists(Recreate: Boolean);
+    procedure NeedImageLists;
     procedure DoCompare(Sender: TObject; Node1, Node2: TTreeNode; Data: Integer; var Compare: Integer);
     function DoCompareText(Text1, Text2: string): Integer;
     procedure UpdateItemHeight;
@@ -98,6 +98,7 @@ type
     procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
     procedure CMDPIChanged(var Message: TMessage); message CM_DPICHANGED;
     procedure CMFontChanged(var Message: TMessage); message CM_FONTCHANGED;
+    procedure ChangeScale(M, D: Integer; isDpiChange: Boolean); override;
 
     procedure Delete(Node: TTreeNode); override;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
@@ -326,24 +327,25 @@ begin
   UpdateItemHeight;
 end;
 
-procedure TCustomDriveView.NeedImageLists(Recreate: Boolean);
+procedure TCustomDriveView.NeedImageLists;
 var
   AImages: TImageList;
 begin
   if not Assigned(Images) then
   begin
     Images := TImageList.Create(Self);
-    Images.BkColor := Color;
   end;
 
   AImages := ShellImageListForControl(Self, ilsSmall);
   if Images.Handle <> AImages.Handle then
   begin
+    // When assigned directly (as in TCustomDirView), when moving from low to high DPI display,
+    // the images are resized vertically two times (thoguh originally, this approach was likely taken
+    // for different reasons)
     Images.Handle := AImages.Handle;
-  end;
+    Images.ShareImages := AImages.ShareImages;
+    Images.DrawingStyle := AImages.DrawingStyle;
 
-  if (not Assigned(FImageList)) or Recreate then
-  begin
     if Assigned(FImageList) then
       FImageList.Free;
 
@@ -356,7 +358,21 @@ end;
 procedure TCustomDriveView.CMDPIChanged(var Message: TMessage);
 begin
   inherited;
-  NeedImageLists(True);
+  NeedImageLists;
+end;
+
+procedure TCustomDriveView.ChangeScale(M, D: Integer; isDpiChange: Boolean);
+begin
+  inherited;
+  // WORKAROUND
+  // The Indent seems to be scaled by Windows.
+  // The TCustomTreeView.ChangeScale redundantly scales it again when Images.IsScaled
+  // (and we need Images.IsScaled, otherwise TCustomTreeView enables DPI [pixel] scaling)
+  // But we cannot just revert the scaling, because it is needed when DPI changes on runtime.
+  // (strangelly for plain tree view [e.g. navigation tree on preferences dialog, it works correctly,
+  // so it seems that Windows scales Ident on runtime only when the tree have images -
+  // what is confirmed by double scaling on Login dialog - so there we should do the same trick)
+  Indent := ScaleByCurrentPPI(19, Self);
 end;
 
 procedure TCustomDriveView.CreateWnd;
@@ -365,7 +381,7 @@ begin
 
   if DarkMode then AllowDarkModeForWindow(Self, DarkMode);
 
-  NeedImageLists(False);
+  NeedImageLists;
 
   if not (csDesigning in ComponentState) then
     FDragImageList := TDragImageList.Create(Self);
