@@ -219,6 +219,8 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FHiContrastTheme = NULL;
   InitializeRemoteThumbnailMask();
 
+  GlyphsModule->PixelsPerInch = CurrentPPI;
+
   FEditorManager = new TEditorManager();
   FEditorManager->OnFileChange = ExecutedFileChanged;
   FEditorManager->OnFileReload = ExecutedFileReload;

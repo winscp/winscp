@@ -41,6 +41,7 @@ function DimensionToDefaultPixelsPerInch(Dimension: Integer): Integer;
 function ScaleByPixelsPerInch(Dimension: Integer; Monitor: TMonitor): Integer; overload;
 function ScaleByPixelsPerInch(Dimension: Integer; Control: TControl): Integer; overload;
 function ScaleByPixelsPerInchFromSystem(Dimension: Integer; Control: TControl): Integer;
+function ScaleByCurrentPPI(Dimension: Integer; Control: TControl): Integer;
 
 function LoadPixelsPerInch(S: string; Control: TControl): Integer;
 function SavePixelsPerInch(Control: TControl): string;
@@ -280,6 +281,7 @@ begin
   end;
 end;
 
+// Legacy, switch to TControl.CurrentPPI
 function GetControlPixelsPerInch(Control: TControl): Integer;
 var
   Form: TCustomForm;
@@ -357,6 +359,13 @@ end;
 function ScaleByPixelsPerInchFromSystem(Dimension: Integer; Control: TControl): Integer;
 begin
   Result := MulDiv(Dimension, GetControlPixelsPerInch(Control), Screen.PixelsPerInch);
+end;
+
+// Eventually, we should use this everywhere, instead of ScaleByPixelsPerInch.
+// The CurrentPPI is updated already at the beginning of ChangeScale, while PixelsPerInch only at the end.
+function ScaleByCurrentPPI(Dimension: Integer; Control: TControl): Integer;
+begin
+  Result := MulDiv(Dimension, Control.CurrentPPI, USER_DEFAULT_SCREEN_DPI);
 end;
 
 function LoadPixelsPerInch(S: string; Control: TControl): Integer;
@@ -571,7 +580,7 @@ begin
     else Width := 0; Assert(False);
   end;
 
-  Width := ScaleByPixelsPerInch(Width, Control);
+  Width := ScaleByCurrentPPI(Width, Control);
 
   Result := ShellImageListForSize(Width);
 
