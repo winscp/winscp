@@ -1182,7 +1182,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     inherited QueueFileListSplitter: TSplitter
       Width = 632
     end
-    inherited QueueView3: TListView
+    inherited QueueView3: TIEListView
       Width = 632
     end
     inherited QueueDock: TTBXDock

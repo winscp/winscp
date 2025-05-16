@@ -1540,7 +1540,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Top = 93
       Width = 898
     end
-    inherited QueueView3: TListView
+    inherited QueueView3: TIEListView
       Width = 898
       Height = 46
       TabStop = False
