@@ -9889,15 +9889,13 @@ void __fastcall TCustomScpExplorerForm::QueueFileListSplitterDblClick(TObject *)
 void __fastcall TCustomScpExplorerForm::ThemeChanged()
 {
   // We hoped this will refresh scrollbar colors, but it does not have any effect here.
+  // Scrollbars colors are refreshed by WM_THEMECHANGED.
   RefreshColorMode();
   ResetSysDarkTheme();
   ConfigurationChanged();
   ConfigureInterface();
   // To update references to recreated/destroyed themes in SessionsPageControl
   UpdateControls();
-  // Should be called for all controls
-  RemoteDirView->Perform(WM_THEMECHANGED, 0, 0);
-  QueueView3->Perform(WM_THEMECHANGED, 0, 0);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMSettingChange(TMessage & Message)

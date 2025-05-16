@@ -2694,13 +2694,6 @@ void __fastcall TScpCommanderForm::ExploreFile(const UnicodeString & FileName)
   WinConfiguration->ScpCommander = ScpCommander;
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::ThemeChanged()
-{
-  TCustomScpExplorerForm::ThemeChanged();
-  LocalDirView->Perform(WM_THEMECHANGED, 0, 0);
-  OtherLocalDirView->Perform(WM_THEMECHANGED, 0, 0);
-}
-//---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::OtherLocalDirViewEnter(TObject *)
 {
   // Actually identical to LocalDirViewEnter

@@ -418,10 +418,13 @@ begin
   if SupportsDarkMode then // To reduce impact
   begin
     AllowDarkModeForWindow(Self, DarkMode);
+    // To update scrollbar theme
+    SendMessage(Handle, WM_THEMECHANGED, 0, 0);
 
     if FHeaderHandle <> 0 then
     begin
       AllowDarkModeForWindow(FHeaderHandle, DarkMode);
+      // Needs to be sent explicitly (does not propagate from the above call)
       SendMessage(FHeaderHandle, WM_THEMECHANGED, 0, 0);
     end;
   end;

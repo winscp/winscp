@@ -660,7 +660,6 @@ protected:
   virtual void __fastcall StartingWithoutSession();
   virtual void __fastcall UpdateImages();
   virtual void __fastcall FileColorsChanged();
-  virtual void __fastcall ThemeChanged();
   void __fastcall DoPathLabelPathClick(TOperationSide Side, const UnicodeString & Path);
   virtual void __fastcall DoRemotePathComboBoxAdjustImageIndex(
     TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex, int & ImageIndex);
