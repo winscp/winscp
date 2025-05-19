@@ -98,7 +98,13 @@ static void sk_proxy_close (Socket *s)
 {
     ProxySocket *ps = container_of(s, ProxySocket, sock);
 
+    #ifdef WINSCP
+    if (ps->sub_socket != NULL)
+    #endif
     sk_close(ps->sub_socket);
+    #ifdef WINSCP
+    if (ps->proxy_addr != NULL)
+    #endif
     sk_addr_free(ps->proxy_addr);
     sk_addr_free(ps->remote_addr);
     proxy_negotiator_cleanup(ps);
@@ -566,6 +572,10 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
         bufchain_init(&ps->output_from_negotiator);
 
         ps->sub_socket = NULL;
+
+        #ifdef WINSCP
+        ps->proxy_addr = NULL;
+        #endif
 
         /*
          * If we've been given an Interactor by the caller, set ourselves
