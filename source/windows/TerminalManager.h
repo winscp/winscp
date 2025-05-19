@@ -114,9 +114,9 @@ public:
   void __fastcall HandleException(Exception * E);
   void __fastcall SaveWorkspace(TList * DataList);
   void __fastcall QueueStatusUpdated();
-  bool IsActiveTerminal(TTerminal * Terminal);
+  bool IsAvailableTerminal(TTerminal * Terminal);
   bool IsReconnectingTerminal(TTerminal * Terminal);
-  bool __fastcall IsActiveTerminalForSite(TTerminal * Terminal, TSessionData * Data);
+  bool IsAvailableTerminalForSite(TTerminal * Terminal, TSessionData * Data);
   TManagedTerminal * __fastcall FindActiveTerminalForSite(TSessionData * Data);
   TTerminalQueue * __fastcall FindQueueForTerminal(TTerminal * Terminal);
   bool __fastcall UploadPublicKey(TTerminal * Terminal, TSessionData * Data, UnicodeString & FileName);

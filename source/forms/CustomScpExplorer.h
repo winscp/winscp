@@ -746,7 +746,7 @@ protected:
   int __fastcall GetStaticQueuePanelComponentsHeight();
   int __fastcall GetMinQueueViewHeight();
   void __fastcall DetachTerminal(TObject * ATerminal);
-  bool __fastcall IsActiveTerminal(TTerminal * Terminal);
+  bool IsAvailableTerminal(TTerminal * Terminal);
   void __fastcall UpdateRowSelect(TCustomDirView * DirView);
   void __fastcall MakeFocusedItemVisible(TCustomDirView * DirView);
   virtual void __fastcall DoRemotePathComboBoxAdjustImageIndex(
@@ -804,7 +804,7 @@ public:
   void __fastcall UnlockWindow();
   void __fastcall SuspendWindowLock();
   void __fastcall ResumeWindowLock();
-  bool __fastcall HasActiveTerminal();
+  bool HasAvailableTerminal();
   bool __fastcall HasManagedSession();
   virtual bool IsLocalBrowserMode();
   bool CanCloseSession(TManagedTerminal * Session);

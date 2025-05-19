@@ -131,7 +131,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   void * AuxVoidPtr;
   int AuxInt;
   #define HasManagedSession ScpExplorer->HasManagedSession()
-  #define HasTerminal ScpExplorer->HasActiveTerminal()
+  #define HasTerminal ScpExplorer->HasAvailableTerminal()
   // CURRENT DIRVIEW
   #define EnabledSelectedOperation (ScpExplorer->EnableSelectedOperation[osCurrent])
   #define EnabledFocusedOperation (ScpExplorer->EnableFocusedOperation[osCurrent])

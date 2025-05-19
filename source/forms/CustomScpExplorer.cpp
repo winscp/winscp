@@ -424,7 +424,7 @@ void __fastcall TCustomScpExplorerForm::RefreshPanel(const UnicodeString & Sessi
   {
     TTerminal * Terminal = Manager->Sessions[Index];
     if (Session.IsEmpty() ||
-        Manager->IsActiveTerminalForSite(Terminal, Data.get()))
+        Manager->IsAvailableTerminalForSite(Terminal, Data.get()))
     {
       if (Path.IsEmpty())
       {
@@ -438,9 +438,9 @@ void __fastcall TCustomScpExplorerForm::RefreshPanel(const UnicodeString & Sessi
   }
 
   // We should flag a pending refresh for the background terminals or busy foreground terminals
-  if (HasActiveTerminal() &&
+  if (HasAvailableTerminal() &&
       CanCommandLineFromAnotherInstance() &&
-      (Session.IsEmpty() || Manager->IsActiveTerminalForSite(Terminal, Data.get())) &&
+      (Session.IsEmpty() || Manager->IsAvailableTerminalForSite(Terminal, Data.get())) &&
       (Path.IsEmpty() || UnixIsChildPath(Path, Terminal->CurrentDirectory)))
   {
     Terminal->ReloadDirectory();
@@ -520,7 +520,7 @@ void __fastcall TCustomScpExplorerForm::CreateHiddenWindow()
 bool __fastcall TCustomScpExplorerForm::CanConsole()
 {
   return
-    HasActiveTerminal() &&
+    HasAvailableTerminal() &&
     (Terminal->IsCapable[fcAnyCommand] || Terminal->IsCapable[fcSecondaryShell]);
 }
 //---------------------------------------------------------------------------
@@ -1111,7 +1111,7 @@ void __fastcall TCustomScpExplorerForm::UpdateTransferList()
     TransferDropDown->Hint = FORMAT(L"%s|%s:\n%s",
       (FTransferDropDownHint, StripHotkey(Name),
        GUIConfiguration->CurrentCopyParam.GetInfoStr(L"; ",
-         FLAGMASK(HasActiveTerminal(), Terminal->UsableCopyParamAttrs(0).General))));
+         FLAGMASK(HasAvailableTerminal(), Terminal->UsableCopyParamAttrs(0).General))));
     // update the label, otherwise when it is updated only on the first draw
     // of the list, it is drawn "bold" for some reason
     FTransferListHoverIndex = TransferList->ItemIndex;
@@ -1315,7 +1315,7 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
   bool Confirm, bool DragDrop, int Options)
 {
   bool Result = true;
-  DebugAssert(HasActiveTerminal());
+  DebugAssert(HasAvailableTerminal());
 
   // these parameters are known in advance
   int Params =
@@ -1591,14 +1591,14 @@ UnicodeString __fastcall TCustomScpExplorerForm::GetToolbarsButtonsStr()
 void __fastcall TCustomScpExplorerForm::CreateProgressForm(TSynchronizeProgress * SynchronizeProgress)
 {
   DebugAssert(FProgressForm == NULL);
-  bool AllowSkip = HasActiveTerminal() ? Terminal->IsCapable[fcSkipTransfer] : false;
+  bool AllowSkip = HasAvailableTerminal() ? Terminal->IsCapable[fcSkipTransfer] : false;
   bool AllowMoveToQueue = (FTransferResumeList != NULL) || (FDeletedFiles != NULL);
   FProgressForm = new TProgressForm(Application, AllowMoveToQueue, AllowSkip, SynchronizeProgress);
 
   FProgressForm->DeleteLocalToRecycleBin =
     (WinConfiguration->DeleteToRecycleBin != FAlternativeDelete);
   FProgressForm->DeleteRemoteToRecycleBin =
-    HasActiveTerminal() &&
+    HasAvailableTerminal() &&
     (Terminal->SessionData->DeleteToRecycleBin != FAlternativeDelete) &&
     !Terminal->SessionData->RecycleBinPath.IsEmpty();
 
@@ -1887,7 +1887,7 @@ bool __fastcall TCustomScpExplorerForm::DirViewEnabled(TOperationSide Side)
 {
   DebugAssert(GetSide(Side) == osRemote);
   DebugUsedParam(Side);
-  return HasActiveTerminal();
+  return HasAvailableTerminal();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::GetEnableFocusedOperation(
@@ -1978,7 +1978,7 @@ bool __fastcall TCustomScpExplorerForm::CustomCommandRemoteAllowed()
 {
   // remote custom commands can be executed only if the server supports shell commands
   // or have secondary shell
-  return HasActiveTerminal() && (Terminal->IsCapable[fcSecondaryShell] || Terminal->IsCapable[fcShellAnyCommand]);
+  return HasAvailableTerminal() && (Terminal->IsCapable[fcSecondaryShell] || Terminal->IsCapable[fcShellAnyCommand]);
 }
 //---------------------------------------------------------------------------
 int __fastcall TCustomScpExplorerForm::CustomCommandState(
@@ -2068,7 +2068,7 @@ int __fastcall TCustomScpExplorerForm::CustomCommandState(
 
     if ((Result > 0) &&
         LocalCustomCommand.IsSessionCommand(Cmd) &&
-        !HasActiveTerminal())
+        !HasAvailableTerminal())
     {
       Result = 0;
     }
@@ -2603,7 +2603,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
   TCustomCommandData Data;
   UnicodeString Site;
   UnicodeString RemotePath;
-  if (HasActiveTerminal())
+  if (HasAvailableTerminal())
   {
     std::unique_ptr<TSessionData> SessionData(SessionDataForCode());
     Data = TCustomCommandData(SessionData.get());
@@ -3130,7 +3130,7 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
 
   bool ReloadProperties =
     !IsSideLocalBrowser(Side) && (Operation == foSetProperties) &&
-    DebugAlwaysTrue(HasActiveTerminal()) && Terminal->IsCapable[fcLoadingAdditionalProperties];
+    DebugAlwaysTrue(HasAvailableTerminal()) && Terminal->IsCapable[fcLoadingAdditionalProperties];
 
   bool Result = ExecuteFileOperation(Operation, Side, FileList.get(), NoConfirmation, Param);
 
@@ -3983,7 +3983,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
 {
   TTerminalManager * Manager = TTerminalManager::Instance();
 
-  bool IsInactive = !IsActiveTerminal(Data->Terminal);
+  bool IsInavailable = !IsAvailableTerminal(Data->Terminal);
   if ((Manager->ActiveTerminal == Data->Terminal) &&
       Manager->ScheduleTerminalReconnnect(Data->Terminal))
   {
@@ -3995,7 +3995,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
     AppLog(L"Session is being reconnected, will retry the upload later");
     Retry = true;
   }
-  else if (IsInactive &&
+  else if (IsInavailable &&
            GUIConfiguration->SessionReopenAutoInactive &&
            (Data->Terminal->NextInactiveReconnect != TDateTime()))
   {
@@ -4011,7 +4011,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
     }
     Retry = true;
   }
-  else if (IsInactive)
+  else if (IsInavailable)
   {
     if (!NonVisualDataModule->Busy)
     {
@@ -4062,7 +4062,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
             Manager->ActiveSession = Terminal;
             ReconnectSession();
             // Was it reconnected? (if not, Data->Terminal should be nulled now)
-            if (!IsActiveTerminal(Data->Terminal) || (Terminal != Data->Terminal))
+            if (!IsAvailableTerminal(Data->Terminal) || (Terminal != Data->Terminal))
             {
               Abort();
             }
@@ -4081,7 +4081,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(
       }
     }
 
-    if (!IsActiveTerminal(Data->Terminal))
+    if (!IsAvailableTerminal(Data->Terminal))
     {
       Configuration->Usage->Inc(L"EditInactiveSession");
       // Prevent this when not idle (!NonVisualDataModule->Busy)?
@@ -4173,7 +4173,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileReload(
   // Sanity check, we should not be busy otherwise user would not be able to click Reload button.
   DebugAssert(!NonVisualDataModule->Busy);
 
-  if (!IsActiveTerminal(Data->Terminal))
+  if (!IsAvailableTerminal(Data->Terminal))
   {
     throw Exception(FMTLOAD(EDIT_SESSION_CLOSED_RELOAD,
       (ExtractFileName(FileName), Data->SessionName)));
@@ -4529,7 +4529,7 @@ bool TCustomScpExplorerForm::DoDirectoryExists(void * Session, const UnicodeStri
 {
   TTerminal * ATerminal = (Session == NULL) ? Terminal : reinterpret_cast<TTerminal *>(Session);
   bool Result =
-    IsActiveTerminal(ATerminal) &&
+    IsAvailableTerminal(ATerminal) &&
     ATerminal->DirectoryExists(Directory);
   return Result;
 }
@@ -4607,7 +4607,7 @@ bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TManagedTerminal *&
       for (int Index = 0; Index < SessionList->Count; Index++)
       {
         TManagedTerminal * ASession = DebugNotNull(dynamic_cast<TManagedTerminal *>(SessionList->Objects[Index]));
-        if (IsActiveTerminal(ASession) && DebugAlwaysTrue(!ASession->LocalBrowser))
+        if (IsAvailableTerminal(ASession) && DebugAlwaysTrue(!ASession->LocalBrowser))
         {
           Sessions->AddObject(SessionList->Strings[Index], ASession);
           Directories->Add(GetSessionPath(ASession, osRemote));
@@ -5658,7 +5658,7 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
       }
     }
 
-    if (CanClose && HasActiveTerminal())
+    if (CanClose && HasAvailableTerminal())
     {
       CanClose = CanCloseQueue();
     }
@@ -5957,7 +5957,7 @@ void __fastcall TCustomScpExplorerForm::DoDirViewExecFile(TObject * Sender,
       }
       else
       {
-        if (HasActiveTerminal())
+        if (HasAvailableTerminal())
         {
           ExecuteFileOperation(foCopy, Side, true, !WinConfiguration->CopyOnDoubleClickConfirmation);
         }
@@ -6761,7 +6761,7 @@ TSessionData * __fastcall TCustomScpExplorerForm::CloneCurrentSessionData()
   SessionData->Assign(ManagedSession->SessionData);
   UpdateSessionData(SessionData.get());
   DebugAssert(SessionData->IsLocalBrowser == IsLocalBrowserMode());
-  if (IsActiveTerminal(ManagedSession))
+  if (IsAvailableTerminal(ManagedSession))
   {
     ManagedSession->UpdateSessionCredentials(SessionData.get());
   }
@@ -7104,7 +7104,7 @@ void __fastcall TCustomScpExplorerForm::DoOpenDirectoryDialog(
         if (::DoOpenDirectoryDialog(Mode, BookmarkSide, Name, VisitedDirectories, Terminal,
               // do not allow switching to location profiles,
               // if we are not connected
-              HasDirView[osLocal] && IsActiveTerminal(Terminal)))
+              HasDirView[osLocal] && IsAvailableTerminal(Terminal)))
         {
           TWindowLock Lock(this);
           if (!TryOpenDirectory(Side, Name))
@@ -7284,7 +7284,7 @@ bool __fastcall TCustomScpExplorerForm::CanAddEditLink(TOperationSide Side)
 {
   return
     (IsSideLocalBrowser(Side) ||
-     (HasActiveTerminal() &&
+     (HasAvailableTerminal() &&
       Terminal->ResolvingSymlinks &&
       Terminal->IsCapable[fcSymbolicLink]));
 }
@@ -7675,7 +7675,7 @@ void __fastcall TCustomScpExplorerForm::UpdateTransferLabel()
       UnicodeString InfoStr =
         GUIConfiguration->CopyParamPreset[Name].
           GetInfoStr(L"; ",
-            FLAGMASK(HasActiveTerminal(), Terminal->UsableCopyParamAttrs(0).General));
+            FLAGMASK(HasAvailableTerminal(), Terminal->UsableCopyParamAttrs(0).General));
       int MaxWidth = TransferList->MinWidth - (2 * TransferLabel->Margin) - ScaleByTextHeight(this, 10);
       if (Canvas->TextExtent(InfoStr).cx > MaxWidth)
       {
@@ -8470,7 +8470,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDTargetDrop()
       int Index = SessionsPageControl->IndexOfTabAt(Point.X, Point.Y);
       // do not allow dropping on local-local, disconnected and the "+" tab (see also SessionsDDProcessDropped)
       TargetTerminal = GetSessionTabSession(SessionsPageControl->Pages[Index]);
-      if (IsActiveTerminal(TargetTerminal) && DebugAlwaysTrue(!TargetTerminal->LocalBrowser))
+      if (IsAvailableTerminal(TargetTerminal) && DebugAlwaysTrue(!TargetTerminal->LocalBrowser))
       {
         if ((FLastDropEffect == DROPEFFECT_MOVE) &&
             (TargetTerminal == TTerminalManager::Instance()->ActiveTerminal))
@@ -9478,7 +9478,7 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
     // ReconnectSessionAction is hidden when disabled, so enabling it actualy resizes the toolbar
     CenterReconnectToolbar();
 
-    bool HasTerminal = HasActiveTerminal();
+    bool HasTerminal = HasAvailableTerminal();
 
     RemoteDirView->Enabled = HasTerminal;
     RemoteDirView->Color = HasTerminal ? PanelColor() : DisabledPanelColor();
@@ -10380,7 +10380,7 @@ void __fastcall TCustomScpExplorerForm::StatusBarPanelDblClick(
       OnNoteClick(NoteData.get());
     }
   }
-  if (HasActiveTerminal() &&
+  if (HasAvailableTerminal() &&
       (Panel->Index >= Sender->Panels->Count - SessionPanelCount))
   {
     FileSystemInfo();
@@ -10851,7 +10851,7 @@ void __fastcall TCustomScpExplorerForm::SessionsDDDragOver(
   {
     TManagedTerminal * TargetSession = GetSessionTabSession(SessionsPageControl->Pages[Index]);
     // do not allow dropping on the "+" tab or on disconnected or local-local tabs
-    if (!IsActiveTerminal(TargetSession) || DebugAlwaysFalse(TargetSession->LocalBrowser))
+    if (!IsAvailableTerminal(TargetSession) || DebugAlwaysFalse(TargetSession->LocalBrowser))
     {
       Effect = DROPEFFECT_NONE;
     }
@@ -10869,7 +10869,7 @@ void __fastcall TCustomScpExplorerForm::SessionsDDProcessDropped(
   // do not allow dropping on local-local, disconnected and the "+" tab
   // (though we do not seem to get here in that case anyway, contrary to RemoteFileControlDDTargetDrop)
   TManagedTerminal * TargetTerminal = GetSessionTabSession(SessionsPageControl->Pages[Index]);
-  if (DebugAlwaysTrue(IsActiveTerminal(TargetTerminal) && !TargetTerminal->LocalBrowser))
+  if (DebugAlwaysTrue(IsAvailableTerminal(TargetTerminal) && !TargetTerminal->LocalBrowser))
   {
     DebugAssert(!IsFileControl(DropSourceControl, osRemote));
     if (!IsFileControl(DropSourceControl, osRemote))
@@ -11192,7 +11192,7 @@ void __fastcall TCustomScpExplorerForm::SessionsPageControlContextPopup(TObject 
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::CanChangePassword()
 {
-  return HasActiveTerminal() && Terminal->IsCapable[fcChangePassword];
+  return HasAvailableTerminal() && Terminal->IsCapable[fcChangePassword];
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ChangePassword()
@@ -11219,7 +11219,7 @@ void __fastcall TCustomScpExplorerForm::ChangePassword()
 bool __fastcall TCustomScpExplorerForm::CanPrivateKeyUpload()
 {
   // No nice way to assert SSH2
-  return HasActiveTerminal() && (Terminal->FSProtocol == cfsSFTP);
+  return HasAvailableTerminal() && (Terminal->FSProtocol == cfsSFTP);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::PrivateKeyUpload()
@@ -12013,9 +12013,9 @@ void __fastcall TCustomScpExplorerForm::CloseApp()
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomScpExplorerForm::IsActiveTerminal(TTerminal * Terminal)
+bool TCustomScpExplorerForm::IsAvailableTerminal(TTerminal * Terminal)
 {
-  return TTerminalManager::Instance()->IsActiveTerminal(Terminal);
+  return TTerminalManager::Instance()->IsAvailableTerminal(Terminal);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::HasManagedSession()
@@ -12023,9 +12023,9 @@ bool __fastcall TCustomScpExplorerForm::HasManagedSession()
   return (ManagedSession != NULL);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomScpExplorerForm::HasActiveTerminal()
+bool TCustomScpExplorerForm::HasAvailableTerminal()
 {
-  return IsActiveTerminal(Terminal);
+  return IsAvailableTerminal(Terminal);
 }
 //---------------------------------------------------------------------------
 void TCustomScpExplorerForm::LocalLocalCopy(

@@ -2124,7 +2124,7 @@ void __fastcall TTerminalManager::SaveWorkspace(TList * DataList)
   }
 }
 //---------------------------------------------------------------------------
-bool TTerminalManager::IsActiveTerminal(TTerminal * Terminal)
+bool TTerminalManager::IsAvailableTerminal(TTerminal * Terminal)
 {
   return
     (Terminal != NULL) &&
@@ -2139,9 +2139,9 @@ bool TTerminalManager::IsReconnectingTerminal(TTerminal * Terminal)
     ((Terminal == FOpeningTerminal) || (Terminal == FReconnectingInactiveTerminal));
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminalManager::IsActiveTerminalForSite(TTerminal * Terminal, TSessionData * Data)
+bool TTerminalManager::IsAvailableTerminalForSite(TTerminal * Terminal, TSessionData * Data)
 {
-  bool Result = IsActiveTerminal(Terminal);
+  bool Result = IsAvailableTerminal(Terminal);
   if (Result)
   {
     std::unique_ptr<TSessionData> TerminalData(Terminal->SessionData->Clone());
@@ -2157,7 +2157,7 @@ TManagedTerminal * __fastcall TTerminalManager::FindActiveTerminalForSite(TSessi
   for (int Index = 0; (Result == NULL) && (Index < Count); Index++)
   {
     TManagedTerminal * Terminal = Sessions[Index];
-    if (IsActiveTerminalForSite(Terminal, Data))
+    if (IsAvailableTerminalForSite(Terminal, Data))
     {
       Result = Terminal;
     }

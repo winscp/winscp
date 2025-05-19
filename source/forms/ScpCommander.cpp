@@ -1696,7 +1696,7 @@ void __fastcall TScpCommanderForm::DoOpenDirectoryDialog(TOpenDirectoryMode Mode
   {
     UseLocationProfiles = WinConfiguration->UseLocationProfiles;
     // Location profiles dialog is not ready to be run without terminal
-    if (UseLocationProfiles && IsActiveTerminal(Terminal))
+    if (UseLocationProfiles && IsAvailableTerminal(Terminal))
     {
       TStrings * LocalDirectories = NULL;
       TStrings * RemoteDirectories = NULL;
