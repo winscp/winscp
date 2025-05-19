@@ -2124,11 +2124,17 @@ void __fastcall TTerminalManager::SaveWorkspace(TList * DataList)
   }
 }
 //---------------------------------------------------------------------------
-bool TTerminalManager::IsAvailableTerminal(TTerminal * Terminal)
+bool TTerminalManager::IsOpenedTerminal(TTerminal * Terminal)
 {
   return
     (Terminal != NULL) &&
-    Terminal->Active &&
+    Terminal->Active;
+}
+//---------------------------------------------------------------------------
+bool TTerminalManager::IsAvailableTerminal(TTerminal * Terminal)
+{
+  return
+    IsOpenedTerminal(Terminal) &&
     !IsReconnectingTerminal(Terminal);
 }
 //---------------------------------------------------------------------------

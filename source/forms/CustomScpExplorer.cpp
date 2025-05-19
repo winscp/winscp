@@ -9478,7 +9478,12 @@ void __fastcall TCustomScpExplorerForm::UpdateControls()
     // ReconnectSessionAction is hidden when disabled, so enabling it actualy resizes the toolbar
     CenterReconnectToolbar();
 
-    bool HasTerminal = HasAvailableTerminal();
+    // The only place, where we use IsOpenedTerminal and not IsAvailableTerminal
+    // (i.e. not checking for reconnecting status)
+    // Otherwise it causes flicker [particularly in dark mode] during the short time
+    // between the authentication window is closed and FOpeningTerminal is cleared.
+    // Should be solved smarter.
+    bool HasTerminal = TTerminalManager::Instance()->IsOpenedTerminal(Terminal);
 
     RemoteDirView->Enabled = HasTerminal;
     RemoteDirView->Color = HasTerminal ? PanelColor() : DisabledPanelColor();

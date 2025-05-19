@@ -114,8 +114,9 @@ public:
   void __fastcall HandleException(Exception * E);
   void __fastcall SaveWorkspace(TList * DataList);
   void __fastcall QueueStatusUpdated();
-  bool IsAvailableTerminal(TTerminal * Terminal);
+  bool IsOpenedTerminal(TTerminal * Terminal);
   bool IsReconnectingTerminal(TTerminal * Terminal);
+  bool IsAvailableTerminal(TTerminal * Terminal);
   bool IsAvailableTerminalForSite(TTerminal * Terminal, TSessionData * Data);
   TManagedTerminal * __fastcall FindActiveTerminalForSite(TSessionData * Data);
   TTerminalQueue * __fastcall FindQueueForTerminal(TTerminal * Terminal);
