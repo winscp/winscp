@@ -45,10 +45,12 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
     AppLogFmt(L"Mouse: %s", (BooleanToEngStr(Mouse->MousePresent)));
     AppLogFmt(L"Mouse wheel: %s, msg: %d, scroll lines: %d", (BooleanToEngStr(Mouse->WheelPresent), int(Mouse->RegWheelMessage), Mouse->WheelScrollLines));
     AppLogFmt(L"ACP: %d", (static_cast<int>(GetACP())));
+    AppLogFmt(L"Windows version: %s", (WindowsVersion()));
     AppLogFmt(L"Win32 platform: %d", (Win32Platform()));
     AppLogFmt(L"Windows product type: %x", (static_cast<int>(GetWindowsProductType())));
     AppLogFmt(L"Win64: %s", (BooleanToEngStr(IsWin64())));
     AddStartupSequence(L"T");
+    LogModules();
 
     WinInitialize();
     Application->Initialize();
@@ -93,6 +95,7 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
       FinalizeWinHelp();
       CoreFinalize();
       WinFinalize();
+      LogModules();
       AppLog(L"Finalizing done");
       OnAppLog = NULL;
       SAFE_DESTROY_EX(TApplicationLog, ApplicationLog);

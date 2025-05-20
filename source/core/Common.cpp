@@ -4524,6 +4524,44 @@ UnicodeString GetAncestorProcessNames()
   return AncestorProcessNames;
 }
 //---------------------------------------------------------------------------
+void LogModules()
+{
+  bool DoLogModules = ApplicationLog->Logging;
+  if (DoLogModules)
+  {
+    const int Max = 1024;
+    HMODULE Modules[Max];
+    HANDLE Process = GetCurrentProcess();
+    DWORD Needed;
+    if (!EnumProcessModules(Process, Modules, sizeof(Modules), &Needed))
+    {
+      AppLog(L"Failed to enumerate modules");
+    }
+    else
+    {
+      int NeededCount = Needed / sizeof(HMODULE);
+      int Count = NeededCount;
+      if (Count > Max)
+      {
+        AppLog(L"Too many modules");
+        Count = Max;
+      }
+      for (int Index = 0; Index < Count; ++Index)
+      {
+        TCHAR ModuleFileName[MAX_PATH];
+        if (!GetModuleFileNameEx(Process, Modules[Index], ModuleFileName, MAX_PATH))
+        {
+          AppLog(L"Failed to retrieve module path");
+        }
+        else
+        {
+          AppLogFmt(L"Module: %s", (ModuleFileName));
+        }
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
 NORETURN void NotImplemented()
 {
   DebugFail();
