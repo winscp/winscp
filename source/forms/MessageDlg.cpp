@@ -36,6 +36,7 @@ public:
   __fastcall TMessageButton(TComponent * Owner);
 protected:
   virtual void __fastcall Dispatch(void * Message);
+  virtual void __fastcall CreateWnd();
 private:
   void __fastcall WMGetDlgCode(TWMGetDlgCode & Message);
 };
@@ -67,6 +68,12 @@ void __fastcall TMessageButton::WMGetDlgCode(TWMGetDlgCode & Message)
   // Overrwide that. Though note that we need to pass the up/down keys back to button
   // to allow drop down, see TMessageForm::CMDialogKey
   Message.Result = Message.Result & ~DLGC_WANTARROWS;
+}
+//---------------------------------------------------------------------------
+void __fastcall TMessageButton::CreateWnd()
+{
+  TButton::CreateWnd();
+  SetButtonTheme(this);
 }
 //---------------------------------------------------------------------------
 __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner)

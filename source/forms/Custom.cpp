@@ -1018,7 +1018,7 @@ __fastcall TCustomCommandOptionsDialog::TCustomCommandOptionsDialog(
       else if (Option.Kind == TCustomCommandType::okFile)
       {
         THistoryComboBox * ComboBox = CreateHistoryComboBox(Option, Value);
-        TButton * Button = new TButton(this);
+        TButton * Button = CreateButton(this);
         AddButtonNextToEdit(Button, ComboBox);
         Button->Tag = Tag;
         Button->Caption = LoadStr(EXTENSION_OPTIONS_BROWSE);
@@ -1405,7 +1405,7 @@ __fastcall TUsageStatisticsDialog::TUsageStatisticsDialog() :
   AddEdit(UsageMemo, NULL);
   ReadOnlyControl(UsageMemo);
 
-  ClipboardButton = new TButton(this);
+  ClipboardButton = CreateButton(this);
   ClipboardButton->Caption = LoadStr(USAGE_COPY);
   ClipboardButton->Width = ScaleByTextHeight(this, 179);
   ClipboardButton->OnClick = ClipboardButtonClick;
@@ -1470,7 +1470,7 @@ __fastcall TSiteRawDialog::TSiteRawDialog() :
   SettingsMemo->OnKeyDown = SettingsMemoKeyDown;
   AddEdit(SettingsMemo, NULL);
 
-  TButton * AddButton = new TButton(this);
+  TButton * AddButton = CreateButton(this);
   AddButton->Caption = LoadStr(SITE_RAW_ADD);
   AddButton->Width = OKButton->Width;
   AddButton->OnClick = AddButtonClick;
@@ -1630,7 +1630,7 @@ TSshHostCADialog::TSshHostCADialog(bool Add) :
   PublicKeyEdit = new TEdit(this);
   AddEdit(PublicKeyEdit, CreateLabel(LoadStr(SSH_HOST_CA_PUBLIC_KEY)));
 
-  TButton * BrowseButton = new TButton(this);
+  TButton * BrowseButton = CreateButton(this);
   BrowseButton->Caption = LoadStr(SSH_HOST_CA_BROWSE);
   BrowseButton->OnClick = BrowseButtonClick;
   AddButtonNextToEdit(BrowseButton, PublicKeyEdit);

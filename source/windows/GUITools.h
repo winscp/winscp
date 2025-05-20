@@ -41,6 +41,8 @@ TPanel * CreateBlankPanel(TComponent * Owner);
 TPanel * CreateLabelPanel(TPanel * Parent, const UnicodeString & Label);
 TLabel * CreateLabel(TComponent * AOwner);
 TCheckBox * CreateCheckBox(TComponent * AOwner);
+void SetButtonTheme(TButton * Button);
+TButton * CreateButton(TComponent * AOwner);
 void __fastcall SelectScaledImageList(TImageList * ImageList);
 void __fastcall CopyImageList(TImageList * TargetList, TImageList * SourceList);
 void __fastcall LoadDialogImage(TImage * Image, const UnicodeString & ImageName);

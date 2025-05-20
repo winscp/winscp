@@ -1120,7 +1120,7 @@ static void __fastcall MenuButtonRescale(TComponent * Sender, TObject * /*Token*
 void __fastcall MenuButton(TButton * Button)
 {
   SetMenuButtonImages(Button);
-  Button->ImageIndex = 0;
+  Button->ImageIndex = UseDarkModeForControl(Button) ? 2 : 0;
   Button->DisabledImageIndex = 1;
   Button->ImageAlignment = iaRight;
   SetRescaleFunction(Button, MenuButtonRescale);

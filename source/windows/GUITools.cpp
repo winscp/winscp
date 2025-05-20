@@ -2646,6 +2646,42 @@ void __fastcall TCheckBoxEx::WndProc(TMessage & Msg)
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+void SetButtonTheme(TButton * Button)
+{
+  if (UseDarkModeForControl(Button))
+  {
+    // See https://gist.github.com/ericoporto/1745f4b912e22f9eabfce2c7166d979b#button
+    SetWindowTheme(Button->Handle, L"Explorer", NULL);
+    AllowDarkModeForWindow(Button, true);
+    SendMessage(Button->Handle, WM_THEMECHANGED, 0, 0);
+  }
+}
+//---------------------------------------------------------------------------
+class TButtonEx : public TButton
+{
+public:
+  __fastcall virtual TButtonEx(TComponent * AOwner);
+protected:
+  virtual void __fastcall CreateWnd();
+};
+//---------------------------------------------------------------------------
+__fastcall TButtonEx::TButtonEx(TComponent * AOwner) :
+  TButton(AOwner)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TButtonEx::CreateWnd()
+{
+  TButton::CreateWnd();
+  SetButtonTheme(this);
+}
+//---------------------------------------------------------------------------
+TButton * CreateButton(TComponent * AOwner)
+{
+  return new TButtonEx(AOwner);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 void __fastcall FindComponentClass(
   void *, TReader *, const UnicodeString DebugUsedArg(ClassName), TComponentClass & ComponentClass)
 {
@@ -2664,6 +2700,10 @@ void __fastcall FindComponentClass(
   else if (ComponentClass == __classid(TCheckBox))
   {
     ComponentClass = __classid(TCheckBoxEx);
+  }
+  else if (ComponentClass == __classid(TButton))
+  {
+    ComponentClass = __classid(TButtonEx);
   }
 }
 //---------------------------------------------------------------------------
