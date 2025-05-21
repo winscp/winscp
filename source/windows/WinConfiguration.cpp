@@ -2272,7 +2272,7 @@ bool __fastcall TWinConfiguration::UseDarkTheme()
     case asOff:
       return false;
     default:
-      return (GetSysDarkTheme() > 0);
+      return GetSysDarkTheme();
   }
 }
 //---------------------------------------------------------------------------
