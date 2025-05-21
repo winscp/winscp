@@ -235,7 +235,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 129
             Height = 15
             Caption = '&PuTTY terminal settings:'
-            FocusControl = EncryptKeyPasswordEdit
+            FocusControl = PuttySettingsEdit
           end
           object PuttySettingsButton: TButton
             Left = 9
