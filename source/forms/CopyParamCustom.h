@@ -22,6 +22,9 @@ public:
   __fastcall TCopyParamCustomDialog(TComponent * Owner, int Options, int Dummy);
 
   bool __fastcall Execute(TCopyParamType & CopyParam);
+
+protected:
+  INTERFACE_HOOK;
 };
 //---------------------------------------------------------------------------
 #endif

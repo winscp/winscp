@@ -77,6 +77,8 @@ protected:
   void __fastcall UpdateRightsByStr();
   virtual void __fastcall CreateWnd();
 
+  INTERFACE_HOOK_CUSTOM(TFrame);
+
 public:
   __fastcall TCopyParamsFrame(TComponent* Owner);
   __fastcall ~TCopyParamsFrame();

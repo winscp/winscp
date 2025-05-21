@@ -16,7 +16,6 @@
 #include <BaseUtils.hpp>
 #include <Math.hpp>
 #include <WinConfiguration.h>
-#include <GUITools.h>
 #include <TerminalManager.h>
 #include <System.IOUtils.hpp>
 #include <System.StrUtils.hpp>

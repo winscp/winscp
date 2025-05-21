@@ -12,11 +12,12 @@
 #include <Vcl.Menus.hpp>
 #include <Vcl.StdCtrls.hpp>
 #include "PngImageList.hpp"
-//----------------------------------------------------------------------------
-#include <Terminal.h>
 #include <System.Actions.hpp>
 #include <Vcl.ActnList.hpp>
 #include <System.ImageList.hpp>
+//----------------------------------------------------------------------------
+#include <Terminal.h>
+#include <GUITools.h>
 //----------------------------------------------------------------------------
 class TSynchronizeChecklistDialog : public TForm
 {
@@ -221,6 +222,8 @@ protected:
   bool IterateSelectedItems(TListItem *& Item);
   void DoSynchronize(bool Queue);
   void PathToClipboard(bool Local);
+
+  INTERFACE_HOOK;
 };
 //----------------------------------------------------------------------------
 #endif
