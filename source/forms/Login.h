@@ -3,7 +3,6 @@
 #define LoginH
 //----------------------------------------------------------------------------
 #include "ComboEdit.hpp"
-#include "PasswordEdit.hpp"
 #include "UpDownEdit.hpp"
 #include "PngImageList.hpp"
 #include <System.Classes.hpp>
@@ -90,7 +89,7 @@ __published:
   TLabel *WebDavsLabel;
   TEdit *HostNameEdit;
   TEdit *UserNameEdit;
-  TPasswordEdit *PasswordEdit;
+  TEdit *PasswordEdit;
   TUpDownEdit *PortNumberEdit;
   TComboBox *TransferProtocolCombo;
   TComboBox *FtpsCombo;

@@ -16,6 +16,7 @@ bool UseDarkModeForControl(TControl * Control);
 void __fastcall EnableControl(TControl* Control, bool Enable);
 void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly = true);
 void __fastcall ReadOnlyAndEnabledControl(TControl * Control, bool ReadOnly, bool Enabled);
+void SetEditPasswordMode(TEdit * Edit, bool Password = true);
 int CalculateCheckBoxWidth(TControl * Control, const UnicodeString & Caption);
 void AutoSizeCheckBox(TCheckBox * CheckBox);
 void __fastcall InitializeSystemSettings();

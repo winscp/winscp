@@ -522,13 +522,14 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             OnChange = DataChange
             OnExit = EncryptKeyEditExit
           end
-          object EncryptKeyPasswordEdit: TPasswordEdit
+          object EncryptKeyPasswordEdit: TEdit
             Left = 9
             Top = 40
             Width = 420
             Height = 23
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 64
+            PasswordChar = '*'
             TabOrder = 0
             Text = 'EncryptKeyPasswordEdit'
             OnChange = DataChange
@@ -1575,13 +1576,14 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Text = 'ProxyUsernameEdit'
             OnChange = DataChange
           end
-          object ProxyPasswordEdit: TPasswordEdit
+          object ProxyPasswordEdit: TEdit
             Left = 222
             Top = 113
             Width = 207
             Height = 23
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 100
+            PasswordChar = '*'
             TabOrder = 6
             Text = 'ProxyPasswordEdit'
             OnChange = DataChange
@@ -1823,13 +1825,14 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Text = 'TunnelUserNameEdit'
             OnChange = DataChange
           end
-          object TunnelPasswordEdit: TPasswordEdit
+          object TunnelPasswordEdit: TEdit
             Left = 222
             Top = 87
             Width = 207
             Height = 23
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 100
+            PasswordChar = '*'
             TabOrder = 3
             Text = 'TunnelPasswordEdit'
             OnChange = DataChange

@@ -8,7 +8,6 @@
 #include <Forms.hpp>
 #include <ComCtrls.hpp>
 #include <ExtCtrls.hpp>
-#include "PasswordEdit.hpp"
 #include "WinInterface.h"
 #include "GUITools.h"
 #include <System.Actions.hpp>
@@ -23,7 +22,7 @@ __published:
   TPanel *PasswordPanel;
   TPanel *PromptEditPanel;
   TLabel *PromptLabel1;
-  TPasswordEdit *PromptEdit1;
+  TEdit *PromptEdit1;
   TPanel *BannerPanel;
   TMemo *BannerMemo;
   TCheckBox *NeverShowAgainCheck;
@@ -37,7 +36,7 @@ __published:
   TButton *PasswordHelpButton;
   TLabel *InstructionsLabel;
   TLabel *PromptLabel2;
-  TPasswordEdit *PromptEdit2;
+  TEdit *PromptEdit2;
   TPanel *SessionRememberPasswordPanel;
   TCheckBox *SessionRememberPasswordCheck;
   TPanel *TopPanel;

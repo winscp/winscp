@@ -131,9 +131,6 @@
         <DelphiCompile Include="packages\my\OperationWithTimeout.pas">
             <BuildOrder>22</BuildOrder>
         </DelphiCompile>
-        <DelphiCompile Include="packages\my\PasswordEdit.pas">
-            <BuildOrder>15</BuildOrder>
-        </DelphiCompile>
         <DelphiCompile Include="packages\my\PasTools.pas">
             <BuildOrder>16</BuildOrder>
         </DelphiCompile>

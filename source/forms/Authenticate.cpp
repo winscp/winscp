@@ -16,7 +16,6 @@
 #include <Tools.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#pragma link "PasswordEdit"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 __fastcall TAuthenticateForm::TAuthenticateForm(TComponent * Owner)
@@ -230,8 +229,8 @@ TLabel * __fastcall TAuthenticateForm::GenerateLabel(int Current, UnicodeString 
 //---------------------------------------------------------------------------
 TCustomEdit * __fastcall TAuthenticateForm::GenerateEdit(int Current, bool Echo)
 {
-  TCustomEdit * Result = (Echo ? static_cast<TCustomEdit *>(new TEdit(this)) :
-    static_cast<TCustomEdit *>(new TPasswordEdit(this)));
+  TEdit * Result = new TEdit(this);
+  SetEditPasswordMode(Result, !Echo);
   Result->Parent = FPromptParent;
 
   Result->Anchors = TAnchors() << akLeft << akTop << akRight;

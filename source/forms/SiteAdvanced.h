@@ -3,7 +3,6 @@
 #define SiteAdvancedH
 //----------------------------------------------------------------------------
 #include "ComboEdit.hpp"
-#include "PasswordEdit.hpp"
 #include "UpDownEdit.hpp"
 #include <System.Classes.hpp>
 #include <Vcl.ActnList.hpp>
@@ -56,7 +55,7 @@ __published:
   TEdit *ProxyUsernameEdit;
   TLabel *ProxyUsernameLabel;
   TLabel *ProxyPasswordLabel;
-  TPasswordEdit *ProxyPasswordEdit;
+  TEdit *ProxyPasswordEdit;
   TGroupBox *ProxySettingsGroup;
   TLabel *ProxyTelnetCommandLabel;
   TEdit *ProxyTelnetCommandEdit;
@@ -143,7 +142,7 @@ __published:
   TLabel *Label18;
   TEdit *TunnelHostNameEdit;
   TEdit *TunnelUserNameEdit;
-  TPasswordEdit *TunnelPasswordEdit;
+  TEdit *TunnelPasswordEdit;
   TUpDownEdit *TunnelPortNumberEdit;
   TFilenameEdit *TunnelPrivateKeyEdit3;
   TLabel *Label19;
@@ -257,7 +256,7 @@ __published:
   TCheckBox *EncryptFilesCheck;
   TGroupBox *EncryptFilesGroup;
   TLabel *Label13;
-  TPasswordEdit *EncryptKeyPasswordEdit;
+  TEdit *EncryptKeyPasswordEdit;
   TCheckBox *ShowEncryptionKeyCheck;
   TButton *GenerateKeyButton;
   TEdit *EncryptKeyVisibleEdit;

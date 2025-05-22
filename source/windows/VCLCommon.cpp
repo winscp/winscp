@@ -14,7 +14,6 @@
 #include <CoreMain.h>
 
 #include <Vcl.StdActns.hpp>
-#include <PasswordEdit.hpp>
 #include <FileCtrl.hpp>
 #include <PathLabel.hpp>
 #include <PasTools.hpp>
@@ -387,7 +386,7 @@ void __fastcall DoReadOnlyControl(TControl * Control, bool ReadOnly, bool Color)
         Memo->WantReturns = false;
       }
 
-      if ((Edit->PopupMenu == NULL) && (dynamic_cast<TPasswordEdit *>(Control) == NULL))
+      if ((Edit->PopupMenu == NULL) && (Edit->PasswordChar == L'\0'))
       {
         std::unique_ptr<TPopupMenu> PopupMenu(new TPopupMenu(Edit));
 
@@ -436,6 +435,11 @@ void __fastcall DoReadOnlyControl(TControl * Control, bool ReadOnly, bool Color)
 void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
 {
   DoReadOnlyControl(Control, ReadOnly, true);
+}
+//---------------------------------------------------------------------------
+void SetEditPasswordMode(TEdit * Edit, bool Password)
+{
+  Edit->PasswordChar = (Password ? L'*' : L'\0');
 }
 //---------------------------------------------------------------------------
 int CalculateCheckBoxWidth(TControl * Control, const UnicodeString & Caption)

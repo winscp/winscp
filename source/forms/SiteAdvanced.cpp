@@ -23,7 +23,6 @@
 #include "Authenticate.h"
 //---------------------------------------------------------------------
 #pragma link "ComboEdit"
-#pragma link "PasswordEdit"
 #pragma link "UpDownEdit"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------

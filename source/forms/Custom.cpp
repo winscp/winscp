@@ -22,7 +22,6 @@
 
 #include "Custom.h"
 //---------------------------------------------------------------------
-#pragma link "PasswordEdit"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
 const int GroupBoxBorderWidth = 1;

@@ -15,7 +15,6 @@
 #include "TerminalManager.h"
 #include "TextsWin.h"
 #include "WinInterface.h"
-#include "PasswordEdit.hpp"
 #include "ProgParams.h"
 #include "Tools.h"
 #include "Custom.h"
@@ -1284,9 +1283,11 @@ protected:
   virtual void __fastcall DoChange(bool & CanSubmit);
 
 private:
-  TPasswordEdit * CurrentEdit;
-  TPasswordEdit * NewEdit;
-  TPasswordEdit * ConfirmEdit;
+  TEdit * CurrentEdit;
+  TEdit * NewEdit;
+  TEdit * ConfirmEdit;
+
+  TEdit * CreatePasswordEdit(int Label);
 };
 //---------------------------------------------------------------------------
 // Need to have an Owner argument for SafeFormCreate
@@ -1295,30 +1296,33 @@ __fastcall TMasterPasswordDialog::TMasterPasswordDialog(TComponent *) :
 {
 }
 //---------------------------------------------------------------------------
+TEdit * TMasterPasswordDialog::CreatePasswordEdit(int Label)
+{
+  TEdit * Result = new TEdit(this);
+  SetEditPasswordMode(Result);
+  AddEdit(Result, CreateLabel(LoadStr(Label)));
+  Result->MaxLength = PasswordMaxLength();
+  return Result;
+}
+//---------------------------------------------------------------------------
 void TMasterPasswordDialog::Init(bool Current)
 {
   HelpKeyword = Current ? HELP_MASTER_PASSWORD_CURRENT : HELP_MASTER_PASSWORD_CHANGE;
   Caption = LoadStr(MASTER_PASSWORD_CAPTION);
 
-  CurrentEdit = new TPasswordEdit(this);
-  AddEdit(CurrentEdit, CreateLabel(LoadStr(MASTER_PASSWORD_CURRENT)));
+  CurrentEdit = CreatePasswordEdit(MASTER_PASSWORD_CURRENT);
   EnableControl(CurrentEdit, Current || WinConfiguration->UseMasterPassword);
-  CurrentEdit->MaxLength = PasswordMaxLength();
 
   if (!Current)
   {
-    NewEdit = new TPasswordEdit(this);
-    AddEdit(NewEdit, CreateLabel(LoadStr(MASTER_PASSWORD_NEW)));
-    NewEdit->MaxLength = CurrentEdit->MaxLength;
+    NewEdit = CreatePasswordEdit(MASTER_PASSWORD_NEW);
 
     if (!WinConfiguration->UseMasterPassword)
     {
       ActiveControl = NewEdit;
     }
 
-    ConfirmEdit = new TPasswordEdit(this);
-    AddEdit(ConfirmEdit, CreateLabel(LoadStr(MASTER_PASSWORD_CONFIRM)));
-    ConfirmEdit->MaxLength = CurrentEdit->MaxLength;
+    ConfirmEdit = CreatePasswordEdit(MASTER_PASSWORD_CONFIRM);
   }
   else
   {

@@ -230,13 +230,14 @@ object LoginDialog: TLoginDialog
           Text = 'UserNameEdit'
           OnChange = DataChange
         end
-        object PasswordEdit: TPasswordEdit
+        object PasswordEdit: TEdit
           Left = 198
           Top = 134
           Width = 184
           Height = 23
           Anchors = [akLeft, akTop, akRight]
           MaxLength = 100
+          PasswordChar = '*'
           TabOrder = 8
           Text = 'PasswordEdit'
           OnChange = DataChange
