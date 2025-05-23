@@ -23,6 +23,7 @@
 #include <TB2ExtItems.hpp>
 #include <TBXExtItems.hpp>
 #include <IEListView.hpp>
+#include <UpDownEdit.hpp>
 #include <WinApi.h>
 #include <vssym32.h>
 //---------------------------------------------------------------------------
@@ -1101,46 +1102,49 @@ TColor GetControlColor(TControl * Control)
 //---------------------------------------------------------------------------
 void ApplyDarkModeOnControl(TControl * Control)
 {
-  TPublicControl * PublicControl = static_cast<TPublicControl *>(Control);
-
-  TColor BtnFaceColor = GetBtnFaceColor();
-  TColor WindowColor = GetWindowColor();
-  if (dynamic_cast<TForm *>(Control) != NULL)
-  {
-    DebugAssert((PublicControl->Color == clBtnFace) || (PublicControl->Color == BtnFaceColor));
-    PublicControl->Color = BtnFaceColor;
-    PublicControl->Font->Color = GetWindowTextColor(PublicControl->Color);
-  }
-
-  if (dynamic_cast<TPanel *>(Control) != NULL)
-  {
-    DebugAssert(!PublicControl->ParentColor);
-    if ((PublicControl->Color == clWindow) || (PublicControl->Color == WindowColor))
-    {
-      PublicControl->Color = WindowColor;
-    }
-    else
-    {
-      DebugAssert((PublicControl->Color == clBtnFace) || (PublicControl->Color == BtnFaceColor));
-      PublicControl->Color = BtnFaceColor;
-    }
-  }
-
-  if (IsWindowColorControl(Control))
-  {
-    DebugAssert((PublicControl->Color == clWindow) || (PublicControl->Color == WindowColor));
-    DebugAssert(!PublicControl->ParentColor);
-    PublicControl->Color = WindowColor;
-  }
-
   TWinControl * WinControl = dynamic_cast<TWinControl *>(Control);
   if (WinControl != NULL)
   {
-    if (dynamic_cast<TTreeView *>(WinControl) != NULL)
+    TPublicControl * PublicControl = static_cast<TPublicControl *>(Control);
+
+    TColor BtnFaceColor = GetBtnFaceColor();
+    TColor WindowColor = GetWindowColor();
+
+    if (IsWindowColorControl(Control))
+    {
+      DebugAssert((PublicControl->Color == clWindow) || (PublicControl->Color == WindowColor));
+      DebugAssert(!PublicControl->ParentColor);
+      PublicControl->Color = WindowColor;
+    }
+
+    if (dynamic_cast<TForm *>(Control) != NULL)
+    {
+      DebugAssert((PublicControl->Color == clBtnFace) || (PublicControl->Color == BtnFaceColor));
+      PublicControl->Color = BtnFaceColor;
+      PublicControl->Font->Color = GetWindowTextColor(PublicControl->Color);
+    }
+    else if (dynamic_cast<TPanel *>(Control) != NULL)
+    {
+      DebugAssert(!PublicControl->ParentColor);
+      if ((PublicControl->Color == clWindow) || (PublicControl->Color == WindowColor))
+      {
+        PublicControl->Color = WindowColor;
+      }
+      else
+      {
+        DebugAssert((PublicControl->Color == clBtnFace) || (PublicControl->Color == BtnFaceColor));
+        PublicControl->Color = BtnFaceColor;
+      }
+    }
+    else if (dynamic_cast<TTreeView *>(WinControl) != NULL)
     {
       // for dark scrollbars
       WinControl->HandleNeeded();
       AllowDarkModeForWindow(WinControl, true);
+    }
+    else if (dynamic_cast<TUpDownEdit *>(WinControl) != NULL)
+    {
+      dynamic_cast<TUpDownEdit *>(WinControl)->DarkMode = true;
     }
 
     for (int Index = 0; Index < WinControl->ControlCount; Index++)

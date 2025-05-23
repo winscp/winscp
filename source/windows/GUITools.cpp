@@ -28,6 +28,7 @@
 #include <DateUtils.hpp>
 #include <IOUtils.hpp>
 #include <Queue.h>
+#include <Vcl.Themes.hpp>
 
 #include "Animations96.h"
 #include "Animations120.h"
@@ -2463,6 +2464,136 @@ bool __fastcall TDarkUxThemeStyle::DoDrawText(
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+// For controls that need both custom VCL theme style and custom Windows theme.
+// Currently the checkbox (custom VCL theme for light caption and custom Windows theme for dark more checkbox bitmaps).
+// Current this handles only "button" theme.
+// It's a singleton and can be used only for controls that share the same Windows theme (curently used with "explorer").
+class TDarkExplorerUxThemeStyle : public TDarkUxThemeStyle
+{
+public:
+  virtual __fastcall TDarkExplorerUxThemeStyle();
+  virtual __fastcall ~TDarkExplorerUxThemeStyle();
+  HWND ControlHandle;
+  static const UnicodeString ThemeName;
+
+protected:
+  virtual NativeUInt __fastcall GetTheme(TThemedElement Element);
+  virtual NativeUInt __fastcall GetThemeForDPI(TThemedElement Element, int DPI);
+  virtual void __fastcall UpdateThemes();
+
+protected:
+  typedef std::map<int, NativeUInt> TThemes;
+  TThemes FThemes;
+  bool FInitialized;
+
+  bool DoGetTheme(TThemedElement Element, int DPI, NativeUInt & Result);
+  void Clear();
+};
+//---------------------------------------------------------------------------
+const UnicodeString TDarkExplorerUxThemeStyle::ThemeName = L"explorer";
+//---------------------------------------------------------------------------
+__fastcall TDarkExplorerUxThemeStyle::TDarkExplorerUxThemeStyle()
+{
+  ControlHandle = NULL;
+  FInitialized = true;
+}
+//---------------------------------------------------------------------------
+__fastcall TDarkExplorerUxThemeStyle::~TDarkExplorerUxThemeStyle()
+{
+  Clear();
+}
+//---------------------------------------------------------------------------
+NativeUInt __fastcall TDarkExplorerUxThemeStyle::GetTheme(TThemedElement Element)
+{
+  NativeUInt Result;
+  if (!DoGetTheme(Element, 0, Result))
+  {
+    Result = TDarkUxThemeStyle::GetTheme(Element);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+NativeUInt __fastcall TDarkExplorerUxThemeStyle::GetThemeForDPI(TThemedElement Element, int DPI)
+{
+  NativeUInt Result;
+  if (!DoGetTheme(Element, DPI, Result))
+  {
+    Result = TDarkUxThemeStyle::GetThemeForDPI(Element, DPI);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool TDarkExplorerUxThemeStyle::DoGetTheme(TThemedElement Element, int DPI, NativeUInt & Result)
+{
+  bool Handle = DebugAlwaysTrue(ControlHandle != 0) && DebugAlwaysTrue(Element == teButton);
+  if (Handle)
+  {
+    if (DPI == 0)
+    {
+      DPI = Screen->PixelsPerInch;
+    }
+
+    TThemes::const_iterator ITheme = FThemes.find(DPI);
+    if (ITheme != FThemes.end())
+    {
+      Result = ITheme->second;
+    }
+    else
+    {
+      if (!UseThemes())
+      {
+        Result = 0;
+      }
+      else
+      {
+        HTHEME Theme;
+        const wchar_t * ClassName = L"button";
+        if (!IsWin10() || !IsWin10Build(15063) || (DPI == Screen->PixelsPerInch))
+        {
+          Theme = OpenThemeData(ControlHandle, ClassName);
+        }
+        else
+        {
+          Theme = OpenThemeDataForDpi(ControlHandle, ClassName, DPI);
+        }
+        Result = reinterpret_cast<NativeUInt>(Theme);
+      }
+
+      FThemes.insert(std::make_pair(DPI, Result));
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void TDarkExplorerUxThemeStyle::Clear()
+{
+  TThemes Themes;
+  // TUxThemeStyle.UnloadThemeData implementation (FThemeDataUnLoading) imply
+  // that GetTheme might be called while unloading, so protecting against that
+  FThemes.swap(Themes);
+
+  TThemes::iterator I = Themes.begin();
+  while (I != Themes.end())
+  {
+    CloseThemeData(reinterpret_cast<HTHEME>(I->second));
+    ++I;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TDarkExplorerUxThemeStyle::UpdateThemes()
+{
+  TDarkUxThemeStyle::UpdateThemes();
+  // This is only ever called from the constructor, where FThemes is not initialized yet.
+  // It's not called for theme updates, as it is called only for the detault global app theme instance.
+  if (DebugAlwaysFalse(FInitialized))
+  {
+    Clear();
+  }
+}
+//---------------------------------------------------------------------------
+std::unique_ptr<TDarkExplorerUxThemeStyle> DarkExplorerUxThemeStyle;
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 // Based on:
 // https://stackoverflow.com/q/6912424/850848
 // https://stackoverflow.com/q/4685863/850848
@@ -2540,6 +2671,19 @@ bool HandleMessageByDarkStyleHook(TMessage & Msg, TWinControl * Control, std::un
   return Result;
 }
 //---------------------------------------------------------------------------
+void SetColorModeTheme(TWinControl * Control, const UnicodeString & DarkSubAppName)
+{
+  if (UseDarkModeForControl(Control))
+  {
+    SetDarkModeTheme(Control, DarkSubAppName);
+  }
+}
+//---------------------------------------------------------------------------
+void SetExplorerTheme(TWinControl * Button)
+{
+  SetColorModeTheme(Button, TDarkExplorerUxThemeStyle::ThemeName);
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 class TDarkGroupBoxStyleHook : public TGroupBoxStyleHook
 {
@@ -2606,6 +2750,7 @@ public:
   __fastcall virtual TCheckBoxEx(TComponent * AOwner);
 protected:
   virtual void __fastcall WndProc(TMessage & Msg);
+  virtual void __fastcall CreateWnd();
 private:
   std::unique_ptr<TDarkCheckBoxStyleHook> FStyleHook;
 };
@@ -2629,12 +2774,25 @@ void __fastcall TDarkCheckBoxStyleHook::PaintBackground(TCanvas * Canvas)
 //---------------------------------------------------------------------------
 TCustomStyleServices * __fastcall TDarkCheckBoxStyleHook::StyleServices()
 {
-  return TDarkUxThemeStyle::Instance();
+  if (DarkExplorerUxThemeStyle.get() == NULL)
+  {
+    DarkExplorerUxThemeStyle.reset(new TDarkExplorerUxThemeStyle());
+  }
+  // Handle is safer than a pointer
+  DarkExplorerUxThemeStyle->ControlHandle = Control->HandleAllocated() ? Control->Handle : 0;
+  return DarkExplorerUxThemeStyle.get();
 }
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 __fastcall TCheckBoxEx::TCheckBoxEx(TComponent * AOwner) :
   TCheckBox(AOwner)
 {
+}
+//---------------------------------------------------------------------------
+void __fastcall TCheckBoxEx::CreateWnd()
+{
+  TCheckBox::CreateWnd();
+  SetColorModeTheme(this, TDarkExplorerUxThemeStyle::ThemeName);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCheckBoxEx::WndProc(TMessage & Msg)
@@ -2645,17 +2803,6 @@ void __fastcall TCheckBoxEx::WndProc(TMessage & Msg)
   }
 }
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-void SetButtonTheme(TButton * Button)
-{
-  if (UseDarkModeForControl(Button))
-  {
-    // See https://gist.github.com/ericoporto/1745f4b912e22f9eabfce2c7166d979b#button
-    SetWindowTheme(Button->Handle, L"Explorer", NULL);
-    AllowDarkModeForWindow(Button, true);
-    SendMessage(Button->Handle, WM_THEMECHANGED, 0, 0);
-  }
-}
 //---------------------------------------------------------------------------
 class TButtonEx : public TButton
 {
@@ -2673,12 +2820,77 @@ __fastcall TButtonEx::TButtonEx(TComponent * AOwner) :
 void __fastcall TButtonEx::CreateWnd()
 {
   TButton::CreateWnd();
-  SetButtonTheme(this);
+  SetExplorerTheme(this);
 }
 //---------------------------------------------------------------------------
 TButton * CreateButton(TComponent * AOwner)
 {
   return new TButtonEx(AOwner);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TComboBoxEx : public TUIStateAwareComboBox
+{
+public:
+  __fastcall virtual TComboBoxEx(TComponent * AOwner);
+protected:
+  virtual void __fastcall CreateWnd();
+};
+//---------------------------------------------------------------------------
+__fastcall ::TComboBoxEx::TComboBoxEx(TComponent * AOwner) :
+  TUIStateAwareComboBox(AOwner)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall ::TComboBoxEx::CreateWnd()
+{
+  TUIStateAwareComboBox::CreateWnd();
+  SetColorModeTheme(this, L"CFD");
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TEditEx : public TEdit
+{
+public:
+  __fastcall virtual TEditEx(TComponent * AOwner);
+protected:
+  virtual void __fastcall CreateWnd();
+};
+//---------------------------------------------------------------------------
+__fastcall TEditEx::TEditEx(TComponent * AOwner) :
+  TEdit(AOwner)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditEx::CreateWnd()
+{
+  TEdit::CreateWnd();
+  SetColorModeTheme(this, L"CFD");
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TMemoEx : public TMemo
+{
+public:
+  __fastcall virtual TMemoEx(TComponent * AOwner);
+protected:
+  virtual void __fastcall CreateWnd();
+};
+//---------------------------------------------------------------------------
+__fastcall TMemoEx::TMemoEx(TComponent * AOwner) :
+  TMemo(AOwner)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TMemoEx::CreateWnd()
+{
+  TMemo::CreateWnd();
+  SetColorModeTheme(this, L"CFD");
+}
+//---------------------------------------------------------------------------
+TMemo * CreateMemo(TComponent * AOwner)
+{
+  return new TMemoEx(AOwner);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -2691,7 +2903,7 @@ void __fastcall FindComponentClass(
   }
   else if (ComponentClass == __classid(TComboBox))
   {
-    ComponentClass = __classid(TUIStateAwareComboBox);
+    ComponentClass = __classid(::TComboBoxEx);
   }
   else if (ComponentClass == __classid(TGroupBox))
   {
@@ -2704,6 +2916,14 @@ void __fastcall FindComponentClass(
   else if (ComponentClass == __classid(TButton))
   {
     ComponentClass = __classid(TButtonEx);
+  }
+  else if (ComponentClass == __classid(TEdit))
+  {
+    ComponentClass = __classid(TEditEx);
+  }
+  else if (ComponentClass == __classid(TMemo))
+  {
+    ComponentClass = __classid(TMemoEx);
   }
 }
 //---------------------------------------------------------------------------

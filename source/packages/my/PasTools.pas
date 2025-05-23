@@ -83,6 +83,7 @@ function FindFirstEx(
 function SupportsDarkMode: Boolean;
 procedure AllowDarkModeForWindow(Control: TWinControl; Allow: Boolean); overload;
 procedure AllowDarkModeForWindow(Handle: THandle; Allow: Boolean); overload;
+procedure SetDarkModeTheme(Control: TWinControl; SubAppName: string);
 procedure RefreshColorMode;
 procedure ResetSysDarkTheme;
 function GetSysDarkTheme: Boolean;
@@ -156,7 +157,7 @@ type
 implementation
 
 uses
-  StdCtrls, MultiMon, ShellAPI, Generics.Collections, CommCtrl, ImgList, Registry;
+  StdCtrls, MultiMon, ShellAPI, Generics.Collections, CommCtrl, ImgList, Registry, UxTheme;
 
 const
   DDExpandDelay = 15000000;
@@ -1133,6 +1134,15 @@ begin
   begin
     AAllowDarkModeForWindow(Handle, Allow);
   end;
+end;
+
+procedure SetDarkModeTheme(Control: TWinControl; SubAppName: string);
+begin
+  // See https://gist.github.com/ericoporto/1745f4b912e22f9eabfce2c7166d979b#button
+  Assert(Control.HandleAllocated);
+  SetWindowTheme(Control.Handle, PChar(SubAppName), nil);
+  AllowDarkModeForWindow(Control, True);
+  SendMessage(Control.Handle, WM_THEMECHANGED, 0, 0);
 end;
 
 procedure RefreshColorMode;

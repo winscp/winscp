@@ -73,7 +73,7 @@ void __fastcall TMessageButton::WMGetDlgCode(TWMGetDlgCode & Message)
 void __fastcall TMessageButton::CreateWnd()
 {
   TButton::CreateWnd();
-  SetButtonTheme(this);
+  SetExplorerTheme(this);
 }
 //---------------------------------------------------------------------------
 __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner)
@@ -816,6 +816,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   HFONT InstructionFont;
   GetInstrutionsTheme(MainInstructionColor, MainInstructionFont, InstructionFont);
 
+  // There is probably some theme we can load the load dark mode color from
   if (UseDarkModeForControl(Result))
   {
     MainInstructionColor = GetLinkColor(Result);
@@ -1159,7 +1160,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
     {
       DebugAssert(MoreMessagesUrl.IsEmpty());
 
-      TMemo * MessageMemo = new TMemo(Panel);
+      TMemo * MessageMemo = CreateMemo(Panel);
       MoreMessagesControl = MessageMemo;
       MessageMemo->Name = L"MessageMemo";
       MessageMemo->Parent = Panel;

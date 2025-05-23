@@ -28,6 +28,7 @@ type
     FValueType: TValueType;
     FArrowKeys: Boolean;
     FButtonsVisible: Boolean;
+    FDarkMode: Boolean;
     FOnTopClick: TNotifyEvent;
     FOnBottomClick: TNotifyEvent;
     FUpDown: TCustomUpDown;
@@ -54,6 +55,7 @@ type
     procedure SetEditRect;
     procedure SetAlignment(Value: TAlignment);
     procedure SetButtonsVisible(Value: Boolean);
+    procedure SetDarkMode(Value: Boolean);
     procedure WMSize(var Message: TWMSize); message WM_SIZE;
     procedure CMEnter(var Message: TMessage); message CM_ENTER;
     procedure CMExit(var Message: TCMExit); message CM_EXIT;
@@ -90,6 +92,7 @@ type
     property ValueType: TValueType read FValueType write SetValueType default vtInt;
     property Value: Extended read GetValue write SetValue stored IsValueStored;
     property ButtonsVisible: Boolean read FButtonsVisible write SetButtonsVisible default True;
+    property DarkMode: Boolean read FDarkMode write SetDarkMode default False;
     property AutoSelect;
     property AutoSize;
     property BorderStyle;
@@ -163,6 +166,8 @@ type
     procedure WMHScroll(var Message: TWMHScroll); message CN_HSCROLL;
     procedure WMVScroll(var Message: TWMVScroll); message CN_VSCROLL;
     procedure WMSize(var Message: TWMSize); message WM_SIZE;
+  protected
+    procedure CreateWnd; override;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -183,6 +188,22 @@ destructor TEmbededUpDown.Destroy;
 begin
   OnClick := nil;
   inherited Destroy;
+end;
+
+procedure TEmbededUpDown.CreateWnd;
+var
+  UpDownEdit: TUpDownEdit;
+begin
+  inherited;
+  UpDownEdit := Owner as TUpDownEdit;
+  if Assigned(UpDownEdit) then
+  begin
+    // Theme style for "Spin" found using msstylEditor in aero.msstyles
+    if UpDownEdit.DarkMode then
+      SetDarkModeTheme(Self, 'Explorer');
+    // edit rect is reset while changing the theme, calling always for consistency
+    UpDownEdit.SetEditRect;
+  end;
 end;
 
 procedure TEmbededUpDown.ScrollMessage(var Message: TWMVScroll);
@@ -233,6 +254,7 @@ begin
   FEditorEnabled := True;
   FArrowKeys := True;
   FButtonsVisible := True;
+  FDarkMode := False;
   RecreateButton;
 end;
 
@@ -380,6 +402,8 @@ begin
   ResizeButton; // now we know the scaling factor
   SetEditRect;
   SetValue(Value);
+  if DarkMode then
+    SetDarkModeTheme(Self, 'CFD');
 end;
 
 procedure TUpDownEdit.SetEditRect;
@@ -660,6 +684,15 @@ begin
     FButtonsVisible := Value;
     ResizeButton;
     SetEditRect;
+  end;
+end;
+
+procedure TUpDownEdit.SetDarkMode(Value: Boolean);
+begin
+  if DarkMode <> Value then
+  begin
+    FDarkMode := Value;
+    RecreateWnd;
   end;
 end;
 
