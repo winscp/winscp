@@ -2619,9 +2619,7 @@ void TTerminalThread::StartTerminalReopenNonInteractive()
 //---------------------------------------------------------------------------
 TTerminalReopenResult TTerminalThread::IsTerminalReopenComplete()
 {
-  DebugAssert(!FCancel);
   DebugAssert(!FAbandoned);
-  DebugAssert(!FCancelled);
 
   TTerminalReopenResult Result;
   if (WaitForActionEvent(0))
@@ -2650,6 +2648,7 @@ TTerminalReopenResult TTerminalThread::IsTerminalReopenComplete()
   }
 
   DebugAssert(FUserAction == NULL);
+  DebugAssert((!FCancel && !FCancelled) || (Result == trrNeedsInteraction));
 
   return Result;
 }
