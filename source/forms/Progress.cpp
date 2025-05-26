@@ -871,3 +871,10 @@ void __fastcall TProgressForm::MouseWheelHandler(TMessage & Message)
   TForm::MouseWheelHandler(Message);
 }
 //---------------------------------------------------------------------------
+void __fastcall TProgressForm::CreateWnd()
+{
+  TForm::CreateWnd();
+  ApplyColorMode(this);
+  Toolbar->Color = Color;
+}
+//---------------------------------------------------------------------------

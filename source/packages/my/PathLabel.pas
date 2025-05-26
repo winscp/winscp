@@ -539,7 +539,7 @@ var
   HotTrackBottom: Integer;
   Separator, Buf, Buf2: string;
   Str: string;
-  HotTrackColor: TColor;
+  HotTrackColor, OrigColor: TColor;
   VirtualMask: string;
   IsEmptyMask: Boolean;
   IsVirtualMask: Boolean;
@@ -695,6 +695,7 @@ begin
       end;
     end;
 
+    OrigColor := Canvas.Font.Color;
     if (FDisplayHotTrack <> '') and (FDisplayHotTrack <> HotTrackMask) then
     begin
       Canvas.Font.Color := HotTrackColor;
@@ -713,7 +714,7 @@ begin
     if TrackingActive then
       Canvas.Font.Color := FColors[2 + Integer(FIsActive)]
     else
-      Canvas.Font.Color := clWindowText;
+      Canvas.Font.Color := OrigColor;
 
     if FDisplayHotTrack = HotTrackMask then
     begin

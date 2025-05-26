@@ -1117,23 +1117,30 @@ void ApplyDarkModeOnControl(TControl * Control)
       PublicControl->Color = WindowColor;
     }
 
-    if (dynamic_cast<TForm *>(Control) != NULL)
+    bool IsForm = (dynamic_cast<TForm *>(Control) != NULL);
+    bool IsPanel = (dynamic_cast<TPanel *>(Control) != NULL);
+    if (IsForm || IsPanel)
     {
-      DebugAssert((PublicControl->Color == clBtnFace) || (PublicControl->Color == BtnFaceColor));
-      PublicControl->Color = BtnFaceColor;
-      PublicControl->Font->Color = GetWindowTextColor(PublicControl->Color);
-    }
-    else if (dynamic_cast<TPanel *>(Control) != NULL)
-    {
-      DebugAssert(!PublicControl->ParentColor);
-      if ((PublicControl->Color == clWindow) || (PublicControl->Color == WindowColor))
+      if (PublicControl->ParentColor)
       {
-        PublicControl->Color = WindowColor;
+        DebugAssert(IsPanel);
       }
       else
       {
-        DebugAssert((PublicControl->Color == clBtnFace) || (PublicControl->Color == BtnFaceColor));
-        PublicControl->Color = BtnFaceColor;
+        if ((PublicControl->Color == clWindow) || (PublicControl->Color == WindowColor))
+        {
+          PublicControl->Color = WindowColor;
+        }
+        else
+        {
+          DebugAssert((PublicControl->Color == clBtnFace) || (PublicControl->Color == BtnFaceColor));
+          PublicControl->Color = BtnFaceColor;
+        }
+      }
+
+      if (IsForm)
+      {
+        PublicControl->Font->Color = GetWindowTextColor(PublicControl->Color);
       }
     }
     else if (dynamic_cast<TTreeView *>(WinControl) != NULL)

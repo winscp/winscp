@@ -136,6 +136,7 @@ protected:
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall SetCancelLower(TCancelStatus ACancel);
   DYNAMIC void __fastcall MouseWheelHandler(TMessage & Message);
+  virtual void __fastcall CreateWnd();
 
   INTERFACE_HOOK;
 
