@@ -235,7 +235,8 @@ bool IsWindowColorControl(TControl * Control)
     (dynamic_cast<TCustomEdit *>(Control) != NULL) ||
     (dynamic_cast<TCustomComboBox *>(Control) != NULL) ||
     (dynamic_cast<TCustomListView *>(Control) != NULL) ||
-    (dynamic_cast<TCustomTreeView *>(Control) != NULL);
+    (dynamic_cast<TCustomTreeView *>(Control) != NULL) ||
+    (dynamic_cast<TCustomListBox *>(Control) != NULL);
 }
 //---------------------------------------------------------------------------
 bool UseDarkModeForControl(TControl * Control)
@@ -1110,16 +1111,9 @@ void ApplyDarkModeOnControl(TControl * Control)
     TColor BtnFaceColor = GetBtnFaceColor();
     TColor WindowColor = GetWindowColor();
 
-    if (IsWindowColorControl(Control))
-    {
-      DebugAssert((PublicControl->Color == clWindow) || (PublicControl->Color == WindowColor));
-      DebugAssert(!PublicControl->ParentColor);
-      PublicControl->Color = WindowColor;
-    }
-
     bool IsForm = (dynamic_cast<TForm *>(Control) != NULL);
     bool IsPanel = (dynamic_cast<TPanel *>(Control) != NULL);
-    if (IsForm || IsPanel)
+    if (IsWindowColorControl(Control) || IsForm || IsPanel)
     {
       if (PublicControl->ParentColor)
       {
@@ -1131,17 +1125,16 @@ void ApplyDarkModeOnControl(TControl * Control)
         {
           PublicControl->Color = WindowColor;
         }
-        else
+        else if (DebugAlwaysTrue((PublicControl->Color == clBtnFace) || (PublicControl->Color == BtnFaceColor)))
         {
-          DebugAssert((PublicControl->Color == clBtnFace) || (PublicControl->Color == BtnFaceColor));
           PublicControl->Color = BtnFaceColor;
         }
       }
+    }
 
-      if (IsForm)
-      {
-        PublicControl->Font->Color = GetWindowTextColor(PublicControl->Color);
-      }
+    if (IsForm)
+    {
+      PublicControl->Font->Color = GetWindowTextColor(PublicControl->Color);
     }
     else if (dynamic_cast<TTreeView *>(WinControl) != NULL)
     {
@@ -1179,6 +1172,14 @@ void ApplyColorMode(TForm * Form)
   {
     GetFormCustomizationComponent(Form)->DarkMode = true;
     ApplyDarkModeOnControl(Form);
+  }
+}
+//---------------------------------------------------------------------------
+void ApplyColorModeOnControl(TControl * Control)
+{
+  if (UseDarkModeForControl(Control))
+  {
+    ApplyDarkModeOnControl(Control);
   }
 }
 //---------------------------------------------------------------------------

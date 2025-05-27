@@ -210,6 +210,7 @@ TLabel * __fastcall TAuthenticateForm::GenerateLabel(int Current, UnicodeString 
 {
   TLabel * Result = CreateLabel(this);
   Result->Parent = FPromptParent;
+  ApplyColorModeOnControl(Result); // noop
 
   Result->Anchors = TAnchors() << akLeft << akTop << akRight;
   Result->WordWrap = true;
@@ -229,9 +230,10 @@ TLabel * __fastcall TAuthenticateForm::GenerateLabel(int Current, UnicodeString 
 //---------------------------------------------------------------------------
 TCustomEdit * __fastcall TAuthenticateForm::GenerateEdit(int Current, bool Echo)
 {
-  TEdit * Result = new TEdit(this);
+  TEdit * Result = CreateEdit(this);
   SetEditPasswordMode(Result, !Echo);
   Result->Parent = FPromptParent;
+  ApplyColorModeOnControl(Result);
 
   Result->Anchors = TAnchors() << akLeft << akTop << akRight;
   Result->Top = Current;
@@ -735,5 +737,11 @@ void __fastcall TAuthenticateForm::LabelOpenLinkAction2Execute(TObject *)
 void __fastcall TAuthenticateForm::LinkClick(TObject * Sender)
 {
   LabelOpen(DebugNotNull(dynamic_cast<TLabel *>(Sender)));
+}
+//---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::CreateWnd()
+{
+  TForm::CreateWnd();
+  ApplyColorMode(this);
 }
 //---------------------------------------------------------------------------

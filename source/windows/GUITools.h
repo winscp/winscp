@@ -43,6 +43,7 @@ TLabel * CreateLabel(TComponent * AOwner);
 TCheckBox * CreateCheckBox(TComponent * AOwner);
 void SetExplorerTheme(TWinControl * Control);
 TButton * CreateButton(TComponent * AOwner);
+TEdit * CreateEdit(TComponent * AOwner);
 TMemo * CreateMemo(TComponent * AOwner);
 void __fastcall SelectScaledImageList(TImageList * ImageList);
 void __fastcall CopyImageList(TImageList * TargetList, TImageList * SourceList);

@@ -108,6 +108,7 @@ protected:
   void ExternalLabel(TLabel * Label);
   void __fastcall LinkClick(TObject * Sender);
   void LabelOpen(TLabel * Label);
+  virtual void __fastcall CreateWnd();
 
 private:
   void * FShowAsModalStorage;

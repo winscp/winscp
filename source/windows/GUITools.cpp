@@ -2868,6 +2868,11 @@ void __fastcall TEditEx::CreateWnd()
   SetColorModeTheme(this, L"CFD");
 }
 //---------------------------------------------------------------------------
+TEdit * CreateEdit(TComponent * AOwner)
+{
+  return new TEditEx(AOwner);
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 class TMemoEx : public TMemo
 {
