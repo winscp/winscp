@@ -175,8 +175,8 @@ object AuthenticateForm: TAuthenticateForm
         416
         41)
       object PasswordOKButton: TButton
-        Left = 154
-        Top = 6
+        Left = 156
+        Top = 8
         Width = 80
         Height = 25
         Anchors = [akTop, akRight]
