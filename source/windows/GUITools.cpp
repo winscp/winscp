@@ -2471,20 +2471,26 @@ bool __fastcall TDarkUxThemeStyle::DoDrawText(
 class TDarkExplorerUxThemeStyle : public TDarkUxThemeStyle
 {
 public:
+  static const UnicodeString ThemeName;
+
   virtual __fastcall TDarkExplorerUxThemeStyle();
   virtual __fastcall ~TDarkExplorerUxThemeStyle();
-  HWND ControlHandle;
-  static const UnicodeString ThemeName;
+  void SetControl(TWinControl * Control);
 
 protected:
   virtual NativeUInt __fastcall GetTheme(TThemedElement Element);
   virtual NativeUInt __fastcall GetThemeForDPI(TThemedElement Element, int DPI);
   virtual void __fastcall UpdateThemes();
+  virtual bool __fastcall DoDrawText(
+    HDC DC, const TThemedElementDetails & Details, const UnicodeString S, TRect & R, TTextFormat Flags,
+    const TStyleTextOptions & Options, int DPI);
 
 protected:
   typedef std::map<int, NativeUInt> TThemes;
   TThemes FThemes;
   bool FInitialized;
+  HWND FControlHandle;
+  int FTextFlags;
 
   bool DoGetTheme(TThemedElement Element, int DPI, NativeUInt & Result);
   void Clear();
@@ -2494,13 +2500,30 @@ const UnicodeString TDarkExplorerUxThemeStyle::ThemeName = L"explorer";
 //---------------------------------------------------------------------------
 __fastcall TDarkExplorerUxThemeStyle::TDarkExplorerUxThemeStyle()
 {
-  ControlHandle = NULL;
+  FControlHandle = NULL;
+  FTextFlags = 0;
   FInitialized = true;
 }
 //---------------------------------------------------------------------------
 __fastcall TDarkExplorerUxThemeStyle::~TDarkExplorerUxThemeStyle()
 {
   Clear();
+}
+//---------------------------------------------------------------------------
+void TDarkExplorerUxThemeStyle::SetControl(TWinControl * Control)
+{
+  // Handle is safer than a pointer
+  if (Control->HandleAllocated())
+  {
+    FControlHandle = Control->Handle;
+    // WORKAROUND - VCL does not hide accelerator of custom-styled (at least) checkboxes
+    FTextFlags = HideAccelFlag(Control);
+  }
+  else
+  {
+    FControlHandle = 0;
+    FTextFlags = 0;
+  }
 }
 //---------------------------------------------------------------------------
 NativeUInt __fastcall TDarkExplorerUxThemeStyle::GetTheme(TThemedElement Element)
@@ -2525,7 +2548,7 @@ NativeUInt __fastcall TDarkExplorerUxThemeStyle::GetThemeForDPI(TThemedElement E
 //---------------------------------------------------------------------------
 bool TDarkExplorerUxThemeStyle::DoGetTheme(TThemedElement Element, int DPI, NativeUInt & Result)
 {
-  bool Handle = DebugAlwaysTrue(ControlHandle != 0) && DebugAlwaysTrue(Element == teButton);
+  bool Handle = DebugAlwaysTrue(FControlHandle != 0) && DebugAlwaysTrue(Element == teButton);
   if (Handle)
   {
     if (DPI == 0)
@@ -2550,11 +2573,11 @@ bool TDarkExplorerUxThemeStyle::DoGetTheme(TThemedElement Element, int DPI, Nati
         const wchar_t * ClassName = L"button";
         if (!IsWin10() || !IsWin10Build(15063) || (DPI == Screen->PixelsPerInch))
         {
-          Theme = OpenThemeData(ControlHandle, ClassName);
+          Theme = OpenThemeData(FControlHandle, ClassName);
         }
         else
         {
-          Theme = OpenThemeDataForDpi(ControlHandle, ClassName, DPI);
+          Theme = OpenThemeDataForDpi(FControlHandle, ClassName, DPI);
         }
         Result = reinterpret_cast<NativeUInt>(Theme);
       }
@@ -2589,6 +2612,20 @@ void __fastcall TDarkExplorerUxThemeStyle::UpdateThemes()
   {
     Clear();
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TDarkExplorerUxThemeStyle::DoDrawText(
+  HDC DC, const TThemedElementDetails & Details, const UnicodeString S, TRect & R, TTextFormat Flags,
+  const TStyleTextOptions & Options, int DPI)
+{
+  int TextFlags = FTextFlags;
+  if (FLAGSET(TextFlags, DT_HIDEPREFIX))
+  {
+    TextFlags -= DT_HIDEPREFIX;
+    Flags << tfHidePrefix;
+  }
+  DebugAssert(TextFlags == 0);
+  return TDarkUxThemeStyle::DoDrawText(DC, Details, S, R, Flags, Options, DPI);
 }
 //---------------------------------------------------------------------------
 std::unique_ptr<TDarkExplorerUxThemeStyle> DarkExplorerUxThemeStyle;
@@ -2778,8 +2815,7 @@ TCustomStyleServices * __fastcall TDarkCheckBoxStyleHook::StyleServices()
   {
     DarkExplorerUxThemeStyle.reset(new TDarkExplorerUxThemeStyle());
   }
-  // Handle is safer than a pointer
-  DarkExplorerUxThemeStyle->ControlHandle = Control->HandleAllocated() ? Control->Handle : 0;
+  DarkExplorerUxThemeStyle->SetControl(Control);
   return DarkExplorerUxThemeStyle.get();
 }
 //---------------------------------------------------------------------------
