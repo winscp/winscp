@@ -85,6 +85,7 @@ protected:
   bool __fastcall RemotePaths();
   void __fastcall CopyParamListPopup(TRect R, int AdditionalOptions);
   int __fastcall ActualCopyParamAttrs();
+  virtual void __fastcall CreateWnd();
 
   INTERFACE_HOOK;
 

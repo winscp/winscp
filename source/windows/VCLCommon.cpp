@@ -1153,6 +1153,10 @@ void ApplyDarkModeOnControl(TControl * Control)
     {
       dynamic_cast<TUpDownEdit *>(WinControl)->DarkMode = true;
     }
+    else if (dynamic_cast<TUIStateAwareComboBox *>(WinControl) != NULL)
+    {
+      dynamic_cast<TUIStateAwareComboBox *>(WinControl)->DarkMode = true;
+    }
 
     for (int Index = 0; Index < WinControl->ControlCount; Index++)
     {
@@ -2395,7 +2399,8 @@ void __fastcall LinkAppLabel(TStaticText * StaticText)
 //---------------------------------------------------------------------------
 static void __fastcall HotTrackLabelMouseEnter(void * /*Data*/, TObject * Sender)
 {
-  reinterpret_cast<TLabel *>(Sender)->Font->Color = clBlue;
+  TLabel * Label = reinterpret_cast<TLabel *>(Sender);
+  Label->Font->Color = GetLinkColor(Label);
 }
 //---------------------------------------------------------------------------
 static void __fastcall HotTrackLabelMouseLeave(void * /*Data*/, TObject * Sender)

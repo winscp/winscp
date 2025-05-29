@@ -2865,26 +2865,6 @@ TButton * CreateButton(TComponent * AOwner)
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-class TComboBoxEx : public TUIStateAwareComboBox
-{
-public:
-  __fastcall virtual TComboBoxEx(TComponent * AOwner);
-protected:
-  virtual void __fastcall CreateWnd();
-};
-//---------------------------------------------------------------------------
-__fastcall ::TComboBoxEx::TComboBoxEx(TComponent * AOwner) :
-  TUIStateAwareComboBox(AOwner)
-{
-}
-//---------------------------------------------------------------------------
-void __fastcall ::TComboBoxEx::CreateWnd()
-{
-  TUIStateAwareComboBox::CreateWnd();
-  SetColorModeTheme(this, L"CFD");
-}
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
 class TEditEx : public TEdit
 {
 public:
@@ -2944,7 +2924,7 @@ void __fastcall FindComponentClass(
   }
   else if (ComponentClass == __classid(TComboBox))
   {
-    ComponentClass = __classid(::TComboBoxEx);
+    ComponentClass = __classid(TUIStateAwareComboBox);
   }
   else if (ComponentClass == __classid(TGroupBox))
   {

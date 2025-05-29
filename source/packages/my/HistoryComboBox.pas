@@ -8,8 +8,14 @@ uses
 
 type
   TUIStateAwareComboBox = class(TComboBox)
+  private
+    FDarkMode: Boolean;
+    procedure SetDarkMode(Value: Boolean);
   protected
     procedure ComboWndProc(var Message: TMessage; ComboWnd: HWnd; ComboProc: TWindowProcPtr); override;
+    procedure CreateWnd; override;
+  public
+    property DarkMode: Boolean read FDarkMode write SetDarkMode default False;
   end;
 
 type
@@ -90,6 +96,21 @@ begin
   end;
 end;
 
+procedure TUIStateAwareComboBox.CreateWnd;
+begin
+  inherited;
+  if DarkMode then
+    SetDarkModeTheme(Self, 'CFD');
+end;
+
+procedure TUIStateAwareComboBox.SetDarkMode(Value: Boolean);
+begin
+  if DarkMode <> Value then
+  begin
+    FDarkMode := Value;
+    RecreateWnd;
+  end;
+end;
 
   { THistoryComboBox }
 

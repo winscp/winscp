@@ -619,3 +619,9 @@ void __fastcall TCopyDialog::FormAfterMonitorDpiChanged(TObject *, int OldDPI, i
   AutoSizeCheckBox(NeverShowAgainCheck);
 }
 //---------------------------------------------------------------------------
+void __fastcall TCopyDialog::CreateWnd()
+{
+  TForm::CreateWnd();
+  ApplyColorMode(this);
+}
+//---------------------------------------------------------------------------
