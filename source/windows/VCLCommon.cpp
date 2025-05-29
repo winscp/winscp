@@ -241,9 +241,16 @@ bool IsWindowColorControl(TControl * Control)
 //---------------------------------------------------------------------------
 bool UseDarkModeForControl(TControl * Control)
 {
-  return
-    WinConfiguration->UseDarkTheme() && // optimization
-    GetFormCustomizationComponent(GetParentForm(Control))->DarkMode;
+  bool Result = WinConfiguration->UseDarkTheme();
+  if (Result)
+  {
+    TCustomForm * ParentForm = GetParentForm(Control);
+    Result =
+      // Might be null temporarily if the control is part of frame
+      (ParentForm != NULL) &&
+      GetFormCustomizationComponent(ParentForm)->DarkMode;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall EnableControl(TControl * Control, bool Enable)
