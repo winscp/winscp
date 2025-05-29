@@ -40,10 +40,12 @@ public:
   {
     WindowStateBeforeMimimize = wsNormal;
     DarkMode = false;
+    DarkModeCustom = false;
   }
 
   TWindowState WindowStateBeforeMimimize;
   bool DarkMode;
+  bool DarkModeCustom;
 };
 //---------------------------------------------------------------------------
 static TFormCustomizationComponent * GetFormCustomizationComponent(TCustomForm * Form)
@@ -638,6 +640,42 @@ static void __fastcall ChangeFormPixelsPerInch(TForm * Form)
   ChangeControlScale(Form);
 }
 //---------------------------------------------------------------------------
+void CollectFormUsage(TForm * Form)
+{
+  if (WinConfiguration->UseDarkTheme())
+  {
+    TFormCustomizationComponent * CustomizationComponent = GetFormCustomizationComponent(Form);
+    if (!CustomizationComponent->DarkMode && !CustomizationComponent->DarkModeCustom)
+    {
+      const UnicodeString CounterName = L"UnsupportedDarkThemeWindows";
+      std::unique_ptr<TStrings> Windows(CommaTextToStringList(Configuration->Usage->Get(CounterName)));
+
+      UnicodeString ClassName = Form->ClassName();
+      ClassName = RemoveSuffix(ClassName, L"Dialog");
+      UnicodeString TPrefix = L"T";
+      if (StartsStr(TPrefix, ClassName))
+      {
+        ClassName.Delete(1, TPrefix.Length());
+      }
+
+      int Index = Windows->IndexOf(ClassName);
+      if (Index >= 0)
+      {
+        Windows->Delete(Index);
+      }
+
+      Windows->Insert(0, ClassName);
+
+      while (Windows->Count > 4)
+      {
+        Windows->Delete(Windows->Count - 1);
+      }
+
+      Configuration->Usage->Set(CounterName, Windows->CommaText);
+    }
+  }
+}
+//---------------------------------------------------------------------------
 static void __fastcall FormShowingChanged(TForm * Form, TWndMethod WndProc, TMessage & Message)
 {
   if (IsMainFormLike(Form))
@@ -778,6 +816,11 @@ static void __fastcall FormShowingChanged(TForm * Form, TWndMethod WndProc, TMes
       SetWindowPos(Form->Handle, 0, Left, Top, Rect.Width(), Rect.Height(),
         SWP_NOZORDER + SWP_NOACTIVATE);
     }
+  }
+
+  if (Form->Showing && Configuration->Usage->Collect)
+  {
+    CollectFormUsage();
   }
 }
 //---------------------------------------------------------------------------
@@ -1183,6 +1226,14 @@ void ApplyColorMode(TForm * Form)
   {
     GetFormCustomizationComponent(Form)->DarkMode = true;
     ApplyDarkModeOnControl(Form);
+  }
+}
+//---------------------------------------------------------------------------
+void UsesCustomColorMode(TForm * Form)
+{
+  if (WinConfiguration->UseDarkTheme())
+  {
+    GetFormCustomizationComponent(Form)->DarkModeCustom = true;
   }
 }
 //---------------------------------------------------------------------------

@@ -30,6 +30,7 @@ TColor GetControlColor(TControl * Control);
 void UseDarkMode(TForm * Form);
 void ApplyColorMode(TForm * Form);
 void ApplyColorModeOnControl(TControl * Control);
+void UsesCustomColorMode(TForm * Form);
 void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url = L"",
   TNotifyEvent OnEnter = NULL);
 void __fastcall LinkActionLabel(TStaticText * StaticText);

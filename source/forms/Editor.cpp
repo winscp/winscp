@@ -776,6 +776,7 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   UseSystemSettings(this);
   UseDesktopFont(StatusBar);
   FixFormIcons(this);
+  UsesCustomColorMode(this);
 }
 //---------------------------------------------------------------------------
 __fastcall TEditorForm::~TEditorForm()
