@@ -2625,6 +2625,7 @@ bool __fastcall TDarkExplorerUxThemeStyle::DoDrawText(
     Flags << tfHidePrefix;
   }
   DebugAssert(TextFlags == 0);
+  DebugUsedParam(TextFlags);
   return TDarkUxThemeStyle::DoDrawText(DC, Details, S, R, Flags, Options, DPI);
 }
 //---------------------------------------------------------------------------

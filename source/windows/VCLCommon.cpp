@@ -820,7 +820,7 @@ static void __fastcall FormShowingChanged(TForm * Form, TWndMethod WndProc, TMes
 
   if (Form->Showing && Configuration->Usage->Collect)
   {
-    CollectFormUsage();
+    CollectFormUsage(Form);
   }
 }
 //---------------------------------------------------------------------------
