@@ -2169,11 +2169,18 @@ static void ssh2_userauth_print_banner(struct ssh2_userauth_state *s)
         { // WINSCP
         bool mid_line = false;
         while (bufchain_size(&s->banner) > 0) {
+            // WINSCP: consume banner buffer before calling seat_banner_pl.
+            // As we might get disconnected, while the banner is displaying,
+            // and ssh_remote_error calls here via ssh2_userauth_final_output,
+            // so we might get into loop
             ptrlen data = bufchain_prefix(&s->banner);
-            seat_banner_pl(ppl_get_iseat(&s->ppl), data);
+            char * buf = smalloc(data.len);
+            bufchain_fetch(&s->banner, buf, data.len);
             mid_line =
                 (((const char *)data.ptr)[data.len-1] != '\n');
             bufchain_consume(&s->banner, data.len);
+            seat_banner_pl(ppl_get_iseat(&s->ppl), make_ptrlen(buf, data.len));
+            sfree(buf);
         }
         bufchain_clear(&s->banner);
 
