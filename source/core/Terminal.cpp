@@ -409,7 +409,8 @@ bool __fastcall TCallbackGuard::Verify(Exception * E)
     (dynamic_cast<ECallbackGuardAbort *>(E) != NULL);
   if (Result)
   {
-    DebugAssert(FGuarding && (FFatalError != NULL));
+    DebugAssert(FGuarding);
+    DebugAssert(FFatalError != NULL);
     Verify();
   }
   return Result;
