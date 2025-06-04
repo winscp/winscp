@@ -2566,6 +2566,8 @@ static bool __fastcall DoRecursiveDeleteFile(
           }
           while (Result && (FindNextUnchecked(SearchRec) == 0));
 
+          SearchRec.Close();
+
           if (Result)
           {
             Result = RemoveDir(ApiPath(FileName));
