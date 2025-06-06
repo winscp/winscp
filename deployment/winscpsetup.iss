@@ -127,7 +127,7 @@ SetupIconFile=winscpsetup.ico
 DisableDirPage=no
 WizardStyle=modern
 ; We do not want the Explorer restarts as that is not pleasant to the user
-CloseApplications=no
+CloseApplications=yes
 UsedUserAreasWarning=no
 #ifdef Sign
 SignTool=sign $f "WinSCP Installer" https://winscp.net/eng/docs/installation
@@ -428,6 +428,21 @@ begin
   end;
 end;
 
+function CmdLineParamExists(const Value: string): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  for I := 1 to ParamCount do
+  begin
+    if CompareText(ParamStr(I), Value) = 0 then
+    begin
+      Result := True;
+      Exit;
+    end;
+  end;
+end;
+
 function ShouldInstallShellExt(FileName: string; InstalledVersion: string): Boolean;
 var
   ExistingMS, ExistingLS: Cardinal;
@@ -464,50 +479,66 @@ begin
   end
     else
   begin
-    ExistingMajor := ExistingMS shr 16;
-    ExistingMinor := ExistingMS and $FFFF;
-    ExistingRev := ExistingLS shr 16;
-    ExistingBuild := ExistingLS and $FFFF;
-    Log(Format('Existing shell extension %s version: %d.%d.%d[.%d]', [FileName, ExistingMajor, ExistingMinor, ExistingRev, ExistingBuild]));
-
-    Log(Format('Installed extension version string: %s', [InstalledVersion]));
-    CutVersionPart(InstalledVersion, InstalledMajor);
-    CutVersionPart(InstalledVersion, InstalledMinor);
-    CutVersionPart(InstalledVersion, InstalledRev);
-    CutVersionPart(InstalledVersion, InstalledBuild);
-    Log(Format('Installed extension version: %d.%d.%d[.%d]', [InstalledMajor, InstalledMinor, InstalledRev, InstalledBuild]));
-
-    if (InstalledMajor <> ExistingMajor) or
-       ((ExistingMajor = 1) and (ExistingMinor <= 1)) then
+    if CmdLineParamExists('/InstallShellExt') then
     begin
-      // Still on 1.x, so this won't be used when upgrading,
-      // but it will be useful, if downgrading from future version with a different major version.
-      if InstalledMajor <> ExistingMajor then
-      begin
-        Log('Existing extension has different major version, allowing installation, and will require restart, if it is locked.')
-      end
-        else
-      begin
-        // 1.1 uses Ansi encoding, and is incompatible with 1.2 and newer which uses Unicode
-        Log('Existing extension is 1.1 or older, allowing installation, and will require restart, if it is locked.');
-      end;
-
+      Log('Installing shell extension and will require restart as explicitly requested using command-line parameter.');
       Result := True;
       ShellExtNoRestart := False;
     end
       else
-    if (InstalledMinor > ExistingMinor) or
-       ((InstalledMinor = ExistingMinor) and (InstalledRev > ExistingRev)) then
+    if CmdLineParamExists('/InstallShellExtNoRestart') then
     begin
-      Log('Installed extension is newer than existing extension, but major version is the same, allowing installation, but we will delay replacing the extension until the next system start, if it is locked.');
+      Log('Installing shell extension and will delay replacing as explicitly requested using command-line parameter.');
       Result := True;
       ShellExtNoRestart := True;
     end
       else
     begin
-      Log('Installed extension is same or older than existing extension (but the same major version), skipping installation');
-      ShellExtNoRestart := False;
-      Result := False;
+      ExistingMajor := ExistingMS shr 16;
+      ExistingMinor := ExistingMS and $FFFF;
+      ExistingRev := ExistingLS shr 16;
+      ExistingBuild := ExistingLS and $FFFF;
+      Log(Format('Existing shell extension %s version: %d.%d.%d[.%d]', [FileName, ExistingMajor, ExistingMinor, ExistingRev, ExistingBuild]));
+
+      Log(Format('Installed extension version string: %s', [InstalledVersion]));
+      CutVersionPart(InstalledVersion, InstalledMajor);
+      CutVersionPart(InstalledVersion, InstalledMinor);
+      CutVersionPart(InstalledVersion, InstalledRev);
+      CutVersionPart(InstalledVersion, InstalledBuild);
+      Log(Format('Installed extension version: %d.%d.%d[.%d]', [InstalledMajor, InstalledMinor, InstalledRev, InstalledBuild]));
+
+      if (InstalledMajor <> ExistingMajor) or
+         ((ExistingMajor = 1) and (ExistingMinor <= 1)) then
+      begin
+        // Still on 1.x, so this won't be used when upgrading,
+        // but it will be useful, if downgrading from future version with a different major version.
+        if InstalledMajor <> ExistingMajor then
+        begin
+          Log('Existing extension has different major version, allowing installation, and will require restart, if it is locked.')
+        end
+          else
+        begin
+          // 1.1 uses Ansi encoding, and is incompatible with 1.2 and newer which uses Unicode
+          Log('Existing extension is 1.1 or older, allowing installation, and will require restart, if it is locked.');
+        end;
+
+        Result := True;
+        ShellExtNoRestart := False;
+      end
+        else
+      if (InstalledMinor > ExistingMinor) or
+         ((InstalledMinor = ExistingMinor) and (InstalledRev > ExistingRev)) then
+      begin
+        Log('Installed extension is newer than existing extension, but major version is the same, allowing installation, but we will delay replacing the extension until the next system start, if it is locked.');
+        Result := True;
+        ShellExtNoRestart := True;
+      end
+        else
+      begin
+        Log('Installed extension is same or older than existing extension (but the same major version), skipping installation');
+        ShellExtNoRestart := False;
+        Result := False;
+      end;
     end;
   end;
 
@@ -551,6 +582,12 @@ begin
   ShellExec('open', Url, '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
 end;
 
+
+function IsRestartingApplicationsPage: Boolean;
+begin
+  Result := WizardForm.PreparingMemo.Visible;
+end;
+
 function IsRestartPage: Boolean;
 begin
   Result := WizardForm.YesRadio.Visible;
@@ -588,6 +625,10 @@ begin
 
     wpReady:
       HelpKeyword := 'ui_installer_ready';
+
+    wpPreparing:
+      if IsRestartingApplicationsPage then
+        HelpKeyword := 'ui_installer_restartingapplications';
 
     wpFinished:
       HelpKeyword := 'ui_installer_finished';
@@ -744,21 +785,6 @@ end;
 function GetRight(Control: TControl): Integer;
 begin
   Result := Control.Left + Control.Width;
-end;
-
-function CmdLineParamExists(const Value: string): Boolean;
-var
-  I: Integer;
-begin
-  Result := False;
-  for I := 1 to ParamCount do
-  begin
-    if CompareText(ParamStr(I), Value) = 0 then
-    begin
-      Result := True;
-      Exit;
-    end;
-  end;
 end;
 
 function MsiEnumRelatedProducts(
@@ -1395,6 +1421,38 @@ begin
       end;
     end;
 #endif
+  end
+    else
+  if CurPageID = wpPreparing then
+  begin
+    // Are we at the "Restart applications?" screen.
+    // If PreparingMemo is hidden, it's "installation/removal was not completed" screen
+    if IsRestartingApplicationsPage then
+    begin
+      S := CustomMessage('ApplicationsFoundDragExt');
+      if IsAdminInstallMode then
+        S := S + NewLine + CustomMessage('ApplicationsFoundRestart');
+      WizardForm.PreparingLabel.Caption := S;
+
+      WizardForm.IncTopDecHeight(
+        WizardForm.PreparingMemo, WizardForm.AdjustLabelHeight(WizardForm.PreparingLabel));
+
+      if not IsAdminInstallMode then
+      begin
+        Log('Not automatically choosing not to restart applications as installer is not running in admin mode, so delaying replacement after Windows restart is not possible');
+      end
+        else
+      if not ShellExtNoRestart then
+      begin
+        Log('Not automatically choosing not to restart applications as shell extension upgrade is critical');
+      end
+        else
+      begin
+        Log('Automatically choosing not to restart applications as shell extension upgrade is not critical (or there''s even other reason the restart is needed) and installer is running in admin mode, so replacement after Windows restart should be possible and enough');
+        WizardForm.PreparingNoRadio.Checked := True;
+        WizardForm.NextButton.OnClick(WizardForm.NextButton);
+      end;
+    end;
   end;
 end;
 
