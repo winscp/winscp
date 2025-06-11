@@ -107,7 +107,7 @@ type
     function GetSimpleName(Drive: string): string;
     function GetDisplayName(Drive: string): string;
     function GetPrettyName(Drive: string): string;
-    function ReadDriveStatus(Drive: string; Flags: Integer): Boolean;
+    procedure ReadDriveStatus(Drive: string; Flags: Integer);
     procedure OverrideDrivePolicy(Drive: string);
     property HonorDrivePolicy: Integer read FHonorDrivePolicy write SetHonorDrivePolicy;
     property FirstFixedDrive: Char read GetFirstFixedDrive;
@@ -538,7 +538,7 @@ begin
   end;
 end; {TDriveInfo.GetData}
 
-function TDriveInfo.ReadDriveStatus(Drive: string; Flags: Integer): Boolean;
+procedure TDriveInfo.ReadDriveStatus(Drive: string; Flags: Integer);
 var
   ErrorMode: Word;
   FileInfo: TShFileInfo;
@@ -673,7 +673,6 @@ begin
         FreePIDL(PIDL);
       ResetDrive(Drive);
     end;
-    Result := Valid and DriveReady;
   end;
 end; {TDriveInfo.ReadDriveStatus}
 
