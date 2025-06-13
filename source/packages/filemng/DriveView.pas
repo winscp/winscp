@@ -1841,8 +1841,11 @@ begin {FindNodeToPath}
   // if not assigned now, it must be that the drive already existed in DriveInfo, but it didn't make it to this view
   // (possible a network drive opened in another panel before)
   if not Assigned(GetDriveStatus(Drive).RootNode) then
-    // overkill, as we know exactly what drive to add (so not need to check all drives)
-    RefreshRootNodes;
+  begin
+    // Refresh the view drives to add the new drive and also explorer's drive drop down.
+    // Overkill, as we know exactly what drive to add (so not need to check all drives)
+    DriveInfo.DriveRefresh;
+  end;
 
   if Assigned(GetDriveStatus(Drive).RootNode) then
   begin

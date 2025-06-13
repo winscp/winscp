@@ -564,7 +564,8 @@ private:
   bool FFirstTerminal;
   UnicodeString FDDFakeFileTarget;
   bool FCommandLineComboPopulated;
-  TStrings* FLocalPathComboBoxPaths;
+  TStrings * FLocalPathComboBoxPaths;
+  TStrings * FOtherLocalPathComboBoxPaths;
   int FLocalSpecialPaths;
   unsigned int FSpecialFolders;
   TEdit * FCommandLineComboEdit;
@@ -647,8 +648,10 @@ protected:
   void __fastcall SynchronizeBrowsingRemote(UnicodeString PrevPath, UnicodeString & NewPath, bool Create);
   void __fastcall CreateLocalDirectory(const UnicodeString & Path);
   void __fastcall CreateRemoteDirectory(const UnicodeString & Path);
+  void LocalPathComboUpdateDrives(
+    TTBXComboBoxItem * ALocalPathComboBox, TCustomDirView * ADirView, TDriveView * ALocalDriveView, TStrings * LocalPathComboBoxPaths);
   void __fastcall LocalPathComboUpdateDrives();
-  void __fastcall LocalPathComboUpdate(TCustomDirView * ADirView, TTBXComboBoxItem * PathComboBox);
+  void LocalPathComboUpdate(TCustomDirView * ADirView, TTBXComboBoxItem * PathComboBox, TStrings * LocalPathComboBoxPaths);
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   void __fastcall DoOpenBookmark(UnicodeString Local, UnicodeString Remote);
   virtual bool __fastcall OpenBookmark(TOperationSide Side, TBookmark * Bookmark);
@@ -664,9 +667,10 @@ protected:
   virtual void __fastcall DoRemotePathComboBoxAdjustImageIndex(
     TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex, int & ImageIndex);
   virtual void __fastcall DoRemotePathComboBoxCancel(TObject * Sender);
-  void __fastcall DoLocalDirViewPathChange(TCustomDirView * Sender, TTBXComboBoxItem * PathComboBox);
-  void __fastcall DoLocalPathComboBoxAdjustImageIndex(TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex, int & ImageIndex);
-  void __fastcall DoLocalPathComboBoxItemClick(TDirView * ADirView, TTBXComboBoxItem * PathComboBox);
+  void DoLocalDirViewPathChange(TCustomDirView * Sender, TTBXComboBoxItem * PathComboBox, TStrings * LocalPathComboBoxPaths);
+  void DoLocalPathComboBoxAdjustImageIndex(
+    TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex, int & ImageIndex, TStrings * LocalPathComboBoxPaths);
+  void DoLocalPathComboBoxItemClick(TDirView * ADirView, TTBXComboBoxItem * PathComboBox, TStrings * LocalPathComboBoxPaths);
   virtual void __fastcall DoRemotePathComboBoxItemClick(TObject * Sender);
   virtual void __fastcall UpdateRemotePathComboBox(bool TextOnly);
   void __fastcall SetToolbar2ItemAction(TTBXItem * Item, TBasicAction * Action);
