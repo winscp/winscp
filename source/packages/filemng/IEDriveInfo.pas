@@ -31,7 +31,7 @@ interface
 
 uses
   Windows, Registry, SysUtils, Classes, ComCtrls, ShellApi, ShlObj, CommCtrl, Forms,
-  BaseUtils, System.Generics.Collections, Vcl.Graphics;
+  BaseUtils, System.Generics.Collections, Vcl.Graphics, Winapi.Messages;
 
 const
   {Flags used by TDriveInfo.ReadDriveStatus and TDriveView.RefreshRootNodes:}
@@ -39,12 +39,15 @@ const
   dsImageIndex = 1;   {Fetch imageindex, if not allready fetched}
   dsSize = 2;         {Fetch disk size and serialnumber}
   dsDisplayName = 4;  {Fetch drives displayname}
-  dsAll = dsImageIndex or dsSize or dsDisplayName;
+  dsSynchronous = dsImageIndex or dsDisplayName;
+  dsAll = dsSynchronous or dsSize;
   FirstDrive          = 'A';
   SystemDrive         = 'C';
   LastDrive           = 'Z';
   FirstSpecialFolder  = CSIDL_DESKTOP;
   LastSpecialFolder   = CSIDL_PRINTHOOD;
+  WM_USER_SHCHANGENOTIFY = WM_USER + $2000 + 13;
+  WM_DRIVEINFO_PROCESS = WM_USER + $2000 + 18;
 
 type
   TDriveInfoRec = class
@@ -59,6 +62,9 @@ type
     DriveSerial : DWORD;       {Serial number of the drive}
     Size        : Int64;       {Drivesize}
     ImageIndex  : Integer;     {Drive imageIndex}
+    DriveHandle: THandle;
+    NotificationHandle: HDEVNOTIFY;
+    SubscribeDriveNotifications: Boolean;
   end;
 
   TRealDrive = char;
@@ -72,6 +78,9 @@ type
     PIDL: PItemIDList;
   end;
 
+  TDriveNotification = (dnRefresh, dnRemoving);
+  TDriveNotificationEvent = procedure(Notification: TDriveNotification; Drive: string) of object;
+
   TDriveInfo = class(TObject)
   private
     FData: TObjectDictionary<string, TDriveInfoRec>;
@@ -82,6 +91,8 @@ type
     FHonorDrivePolicy: Integer;
     FUseABDrives: Boolean;
     FLoaded: Boolean;
+    FHandlers: TList<TDriveNotificationEvent>;
+    FChangeNotify: ULONG;
     function GetFolder(Folder: TSpecialFolder): PSpecialFolderRec;
     procedure ReadDriveBasicStatus(Drive: string);
     procedure ResetDrive(Drive: string);
@@ -92,6 +103,17 @@ type
     function GetDriveBitMask(Drive: string): Integer;
     function DoAnyValidPath(DriveType: Integer; CanBeHidden: Boolean; var Path: string): Boolean;
     function ReadDriveMask(Reg: TRegistry; ValueName: string): DWORD;
+    procedure ScheduleDriveRefresh;
+    procedure CancelDriveRefresh;
+    procedure InternalWndProc(var Msg: TMessage);
+    procedure InvokeHandlers(DriveNotification: TDriveNotification; Drive: string);
+    procedure UpdateDriveNotifications(Drive: string);
+    procedure UpdateDrivesNotifications;
+    procedure ProcessThreadResults;
+    constructor Create;
+    procedure ReadAsynchronous;
+    procedure DoReadDriveStatus(Drive: string; Flags: Integer);
+    procedure DriveRemoving(Drive: string);
 
   public
     function Get(Drive: string): TDriveInfoRec;
@@ -113,8 +135,12 @@ type
     property FirstFixedDrive: Char read GetFirstFixedDrive;
     property UseABDrives: Boolean read FUseABDrives write FUseABDrives;
 
-    constructor Create;
     destructor Destroy; override;
+
+    procedure AddHandler(Handler: TDriveNotificationEvent);
+    procedure RemoveHandler(Handler: TDriveNotificationEvent);
+    procedure DriveRefresh;
+    procedure SubscribeDriveNotifications(Drive: string);
   end;
 
 function GetShellFileName(const Name: string): string; overload;
@@ -140,7 +166,9 @@ type
   PRGBQuadArray = ^TRGBQuadArray;    // From graphics.pas
   TRGBQuadArray = array[Byte] of TRGBQuad;  // From graphics.pas
 
+// Globals so that we do not have to fear that thread run after DriveInfo is released
 var
+  InternalWindowHandle: HWND;
   ThreadLock: TRTLCriticalSection;
   ReadyDrives: string;
 
@@ -198,18 +226,19 @@ begin
   FUseABDrives := True;
   FLoaded := False;
   FData := TObjectDictionary<string, TDriveInfoRec>.Create([doOwnsValues]);
+  FHandlers := TList<TDriveNotificationEvent>.Create;
+  FChangeNotify := 0;
 end; {TDriveInfo.Create}
 
 destructor TDriveInfo.Destroy;
 begin
+  Assert(FHandlers.Count = 0);
+  FHandlers.Free;
   FData.Free;
   inherited;
 end; {TDriveInfo.Destroy}
 
 procedure TDriveInfo.NeedData;
-var
-  I: Integer;
-  Drive: Char;
 begin
   if not FLoaded then
   begin
@@ -217,6 +246,14 @@ begin
     FLoaded := True;
   end;
 
+  ProcessThreadResults;
+end;
+
+procedure TDriveInfo.ProcessThreadResults;
+var
+  I: Integer;
+  Drive: Char;
+begin
   EnterCriticalSection(ThreadLock);
   try
     for I := 1 to Length(ReadyDrives) do
@@ -224,6 +261,8 @@ begin
       Drive := ReadyDrives[I];
       Assert(FData.ContainsKey(Drive));
       FData[Drive].DriveReady := True;
+      UpdateDriveNotifications(Drive);
+      AppLog(Format('Drive "%s" is ready', [Drive]))
     end;
     ReadyDrives := '';
   finally
@@ -381,11 +420,12 @@ begin
   with FData[Drive] do
   begin
     DriveType := Windows.GetDriveType(PChar(GetDriveRoot(Drive)));
-    DriveBitMask := GetDriveBitMask(Drive);
+    if IsRealDrive(Drive) then DriveBitMask := GetDriveBitMask(Drive)
+      else DriveBitMask := 0;
     InaccessibleByDrivePolicy :=
-      IsRealDrive(Drive) and ((HonorDrivePolicy and 2) <> 0) and ((DriveBitMask and FNoViewOnDrive) <> 0);
+      ((HonorDrivePolicy and 2) <> 0) and ((DriveBitMask and FNoViewOnDrive) <> 0);
     HiddenByDrivePolicy :=
-      IsRealDrive(Drive) and ((HonorDrivePolicy and 1) <> 0) and ((DriveBitMask and FNoDrives) <> 0);
+      ((HonorDrivePolicy and 1) <> 0) and ((DriveBitMask and FNoDrives) <> 0);
     ValidDriveType :=
       (DriveType in [DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_CDROM, DRIVE_RAMDISK, DRIVE_REMOTE]) and
       (not InaccessibleByDrivePolicy);
@@ -404,6 +444,9 @@ begin
     DriveSerial := 0;
     Size := -1;
     ImageIndex := 0;
+    DriveHandle := INVALID_HANDLE_VALUE;
+    NotificationHandle := nil;
+    SubscribeDriveNotifications := False;
   end;
 end;
 
@@ -431,7 +474,6 @@ var
   Drive: TRealDrive;
   Reg: TRegistry;
   Folder: TSpecialFolder;
-  Drives: string;
 begin
   AppLog('Loading drives');
   Reg := TRegistry.Create;
@@ -451,21 +493,35 @@ begin
 
   FDesktop := nil;
 
-  Drives := EmptyStr;
   for Drive := FirstDrive to LastDrive do
   begin
-    if AddDrive(Drive).Valid then
-      Drives := Drives + Drive;
+    AddDrive(Drive);
   end;
 
-  if Length(Drives) > 0 then
-  begin
-    AppLog(Format('Drives found: %s', [Drives]));
-    TDriveInfoThread.Create(Drives);
-  end;
+  ReadAsynchronous;
 
   for Folder := Low(FFolders) to High(FFolders) do
     FFolders[Folder].Valid := False;
+end;
+
+procedure TDriveInfo.ReadAsynchronous;
+var
+  Drive: TRealDrive;
+  Drives: string;
+begin
+  for Drive := FirstDrive to LastDrive do
+  begin
+    // Not using Get as that would recurse into Load
+    if FData[Drive].Valid then
+      Drives := Drives + Drive;
+  end;
+    TDriveInfoThread.Create(Drives);
+
+  if Length(Drives) > 0 then
+  begin
+    AppLog(Format('Drives to check in the background: %s', [Drives]));
+    TDriveInfoThread.Create(Drives);
+  end;
 end;
 
 function TDriveInfo.AddDrive(Drive: string): TDriveInfoRec;
@@ -473,7 +529,10 @@ begin
   Result := TDriveInfoRec.Create;
   FData.Add(Drive, Result);
   ResetDrive(Drive);
-  ReadDriveBasicStatus(Drive);
+  if IsFixedDrive(Drive) or (not IsRealDrive(Drive)) then // not floppy
+    DoReadDriveStatus(Drive, dsSynchronous)
+  else
+    ReadDriveBasicStatus(Drive);
 end;
 
 function TDriveInfo.GetImageIndex(Drive: string): Integer;
@@ -528,17 +587,26 @@ function TDriveInfo.Get(Drive: string): TDriveInfoRec;
 begin
   NeedData;
 
-  // We might want to wait for ReadyDrives to beempty before returning
+  // We might want to wait for FReadyDrives to be empty before returning
   // (or even better do that only in DriveReady getter)
 
   if not FData.TryGetValue(Drive, Result) then
   begin
     Assert(IsUncPath(Drive));
     Result := AddDrive(Drive);
+    DriveRefresh;
   end;
 end; {TDriveInfo.GetData}
 
 procedure TDriveInfo.ReadDriveStatus(Drive: string; Flags: Integer);
+begin
+  // Among other, this makes sure the pending drive-ready status from the background thread are collected,
+  // before we overwrite it with fresh status here.
+  NeedData;
+  DoReadDriveStatus(Drive, Flags);
+end;
+
+procedure TDriveInfo.DoReadDriveStatus(Drive: string; Flags: Integer);
 var
   ErrorMode: Word;
   FileInfo: TShFileInfo;
@@ -554,9 +622,6 @@ var
   DriveInfoRec: TDriveInfoRec;
   S: string;
 begin
-  // Among other, this makes sure the pending drive-ready status from the background thread are collected,
-  // before we overwrite it with fresh status here.
-  NeedData;
   if not Assigned(FDesktop) then
     SHGetDesktopFolder(FDesktop);
 
@@ -610,6 +675,10 @@ begin
           begin
             DriveSerial := 0;
           end;
+          // Particularly when removing drive fails (as other app has it locked), we end up with not monitoring the
+          // drive. When the drive is visited again in panel, it calls into here, and we take the opportunity
+          // to resume monitoring
+          UpdateDriveNotifications(Drive);
         finally
           { restore old error mode }
           SetErrorMode(ErrorMode);
@@ -684,9 +753,303 @@ begin
   Assert(FData[Drive].ValidButHiddenByDrivePolicy);
   Mask := (not GetDriveBitMask(Drive));
   FNoDrives := FNoDrives and Mask;
-  ReadDriveBasicStatus(Drive);
+  ReadDriveStatus(Drive, dsAll);
   Assert(FData[Drive].Valid);
+  DriveRefresh;
 end;
+
+procedure TDriveInfo.AddHandler(Handler: TDriveNotificationEvent);
+var
+  ChangeNotifyEntry: TSHChangeNotifyEntry;
+  Dummy: string;
+begin
+  if not FHandlers.Contains(Handler) then
+  begin
+    FHandlers.Add(Handler);
+
+    if FHandlers.Count = 1 then
+    begin
+      // Source: petr.solin 2022-02-25
+      if SpecialFolderLocation(CSIDL_DESKTOP, Dummy, ChangeNotifyEntry.pidl) then
+      begin
+        ChangeNotifyEntry.fRecursive := False;
+
+        FChangeNotify :=
+          SHChangeNotifyRegister(
+            InternalWindowHandle, SHCNRF_ShellLevel or SHCNRF_NewDelivery,
+            SHCNE_RENAMEFOLDER or SHCNE_MEDIAINSERTED or SHCNE_MEDIAREMOVED,
+            WM_USER_SHCHANGENOTIFY, 1, ChangeNotifyEntry);
+      end;
+      UpdateDrivesNotifications;
+    end;
+  end;
+end;
+
+procedure TDriveInfo.RemoveHandler(Handler: TDriveNotificationEvent);
+begin
+  if (FHandlers.Remove(Handler) >= 0) and (FHandlers.Count = 0) then
+  begin
+    if FChangeNotify <> 0 then
+    begin
+      SHChangeNotifyDeregister(FChangeNotify);
+      FChangeNotify := 0;
+    end;
+    UpdateDrivesNotifications;
+  end;
+end;
+
+procedure TDriveInfo.InvokeHandlers(DriveNotification: TDriveNotification; Drive: string);
+var
+  Handler: TDriveNotificationEvent;
+begin
+  for Handler in FHandlers do
+    Handler(DriveNotification, Drive);
+end;
+
+type
+  PDevBroadcastHdr = ^TDevBroadcastHdr;
+  TDevBroadcastHdr = record
+    dbch_size: DWORD;
+    dbch_devicetype: DWORD;
+    dbch_reserved: DWORD;
+  end;
+
+  PDevBroadcastVolume = ^TDevBroadcastVolume;
+  TDevBroadcastVolume = record
+    dbcv_size: DWORD;
+    dbcv_devicetype: DWORD;
+    dbcv_reserved: DWORD;
+    dbcv_unitmask: DWORD;
+    dbcv_flags: WORD;
+  end;
+
+  PDEV_BROADCAST_HANDLE = ^DEV_BROADCAST_HANDLE;
+  DEV_BROADCAST_HANDLE = record
+    dbch_size       : DWORD;
+    dbch_devicetype : DWORD;
+    dbch_reserved   : DWORD;
+    dbch_handle     : THandle;
+    dbch_hdevnotify : HDEVNOTIFY  ;
+    dbch_eventguid  : TGUID;
+    dbch_nameoffset : LongInt;
+    dbch_data       : Byte;
+  end;
+
+  PPItemIDList = ^PItemIDList;
+
+const
+  DBT_DEVTYP_HANDLE = $00000006;
+  DBT_CONFIGCHANGED = $0018;
+  DBT_DEVICEARRIVAL = $8000;
+  DBT_DEVICEQUERYREMOVE = $8001;
+  DBT_DEVICEREMOVEPENDING = $8003;
+  DBT_DEVICEREMOVECOMPLETE = $8004;
+  DBT_DEVTYP_VOLUME = $00000002;
+
+// WORKAROUND Declaration in Winapi.ShlObj.pas is wrong
+function SHChangeNotification_Lock(hChange: THandle; dwProcId: DWORD;
+  var PPidls: PPItemIDList; var plEvent: Longint): THANDLE; stdcall;
+external 'shell32.dll' name 'SHChangeNotification_Lock';
+
+procedure TDriveInfo.InternalWndProc(var Msg: TMessage);
+var
+  DeviceType: DWORD;
+  UnitMask: DWORD;
+  DeviceHandle: THandle;
+  Drive: Char;
+  PPIDL: PPItemIDList;
+  Event: LONG;
+  Lock: THandle;
+  DrivePair: TPair<string, TDriveInfoRec>;
+begin
+  with Msg do
+  begin
+    if Msg = WM_USER_SHCHANGENOTIFY then
+    begin
+      Lock := SHChangeNotification_Lock(wParam, lParam, PPIDL, Event);
+      try
+        if (Event = SHCNE_RENAMEFOLDER) or // = drive rename
+           (Event = SHCNE_MEDIAINSERTED) or // also bitlocker drive unlock (also sends SHCNE_UPDATEDIR)
+           (Event = SHCNE_MEDIAREMOVED) then
+        begin
+          ScheduleDriveRefresh;
+        end;
+      finally
+        SHChangeNotification_Unlock(Lock);
+      end;
+    end
+      else
+    // from RegisterDeviceNotification
+    if Msg = WM_DEVICECHANGE then
+    begin
+      if (wParam = DBT_CONFIGCHANGED) or
+         (wParam = DBT_DEVICEARRIVAL) or
+         (wParam = DBT_DEVICEREMOVECOMPLETE) then
+      begin
+        ScheduleDriveRefresh;
+      end
+        else
+      if (wParam = DBT_DEVICEQUERYREMOVE) or
+         (wParam = DBT_DEVICEREMOVEPENDING) then
+      begin
+        DeviceType := PDevBroadcastHdr(lParam)^.dbch_devicetype;
+        // This is specifically for VeraCrypt.
+        // For normal drives, see DBT_DEVTYP_HANDLE below
+        // (and maybe now that we have generic implementation, this specific code for VeraCrypt might not be needed anymore)
+        if DeviceType = DBT_DEVTYP_VOLUME then
+        begin
+          UnitMask := PDevBroadcastVolume(lParam)^.dbcv_unitmask;
+          Drive := FirstDrive;
+          while UnitMask > 0 do
+          begin
+            if UnitMask and $01 <> 0 then
+            begin
+              DriveRemoving(Drive);
+            end;
+            UnitMask := UnitMask shr 1;
+            Drive := Chr(Ord(Drive) + 1);
+          end;
+        end
+          else
+        if DeviceType = DBT_DEVTYP_HANDLE then
+        begin
+          DeviceHandle := PDEV_BROADCAST_HANDLE(lParam)^.dbch_handle;
+          for DrivePair in FData do
+            if DrivePair.Value.DriveHandle = DeviceHandle then
+            begin
+              DriveRemoving(DrivePair.Key);
+            end;
+        end;
+      end;
+    end
+      else
+    if Msg = WM_TIMER then
+    begin
+      CancelDriveRefresh;
+      try
+        for Drive := FirstFixedDrive to LastDrive do
+          ReadDriveStatus(Drive, dsSynchronous);
+        ReadAsynchronous;
+        DriveRefresh;
+      except
+        Application.HandleException(Self);
+      end;
+    end
+      else
+    if Msg = WM_DRIVEINFO_PROCESS then
+    begin
+      ProcessThreadResults;
+    end;
+
+    Result := DefWindowProc(InternalWindowHandle, Msg, wParam, lParam);
+  end;
+end;
+
+procedure TDriveInfo.DriveRemoving(Drive: string);
+begin
+  FData[Drive].DriveReady := False;
+  UpdateDriveNotifications(Drive);
+  AppLog(Format('Removing drive "%s"', [Drive]));
+  InvokeHandlers(dnRemoving, Drive);
+end;
+
+procedure TDriveInfo.CancelDriveRefresh;
+begin
+  KillTimer(InternalWindowHandle, 1);
+end;
+
+procedure TDriveInfo.ScheduleDriveRefresh;
+begin
+  CancelDriveRefresh;
+  // Delay refreshing drives for a sec.
+  // Particularly with CD/DVD drives, if we query display name
+  // immediately after receiving DBT_DEVICEARRIVAL, we do not get media label.
+  // Actually one sec does not help usually, but we do not want to wait any longer,
+  // because we want to add USB drives asap.
+  // And this problem might be solved now by SHChangeNotifyRegister/SHCNE_RENAMEFOLDER.
+  SetTimer(InternalWindowHandle, 1, MSecsPerSec, nil);
+end;
+
+procedure TDriveInfo.UpdateDriveNotifications(Drive: string);
+var
+  NeedNotifications: Boolean;
+  Path: string;
+  DevBroadcastHandle: DEV_BROADCAST_HANDLE;
+  Size: Integer;
+  DriveInfoRec: TDriveInfoRec;
+begin
+  if IsFixedDrive(Drive) then
+  begin
+    // Not using Get to avoid recursion
+    DriveInfoRec := FData[Drive];
+    NeedNotifications :=
+      (FHandlers.Count > 0) and
+      (DriveInfoRec.DriveType <> DRIVE_REMOTE) and
+      DriveInfoRec.DriveReady and
+      DriveInfoRec.SubscribeDriveNotifications;
+
+    if NeedNotifications <> (DriveInfoRec.DriveHandle <> INVALID_HANDLE_VALUE) then
+    begin
+      Path := GetDriveRoot(Drive);
+      if NeedNotifications then
+      begin
+        DriveInfoRec.DriveHandle :=
+          CreateFile(PChar(Path), GENERIC_READ, FILE_SHARE_READ or FILE_SHARE_WRITE, nil,
+          OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS or FILE_ATTRIBUTE_NORMAL, 0);
+        if DriveInfoRec.DriveHandle <> INVALID_HANDLE_VALUE then
+        begin
+          Size := SizeOf(DevBroadcastHandle);
+          ZeroMemory(@DevBroadcastHandle, Size);
+          DevBroadcastHandle.dbch_size := Size;
+          DevBroadcastHandle.dbch_devicetype := DBT_DEVTYP_HANDLE;
+          DevBroadcastHandle.dbch_handle := DriveInfoRec.DriveHandle;
+
+          DriveInfoRec.NotificationHandle :=
+            RegisterDeviceNotification(InternalWindowHandle, @DevBroadcastHandle, DEVICE_NOTIFY_WINDOW_HANDLE);
+          if DriveInfoRec.NotificationHandle <> nil then
+          begin
+            AppLog(Format('Registered drive notification for "%s"', [Path]));
+          end
+            else
+          begin
+            CloseHandle(DriveInfoRec.DriveHandle);
+            DriveInfoRec.DriveHandle := INVALID_HANDLE_VALUE;
+          end;
+        end;
+      end
+        else
+      begin
+        AppLog(Format('Unregistered drive notification for "%s"', [Path]));
+        UnregisterDeviceNotification(DriveInfoRec.NotificationHandle);
+        DriveInfoRec.NotificationHandle := nil;
+
+        CloseHandle(DriveInfoRec.DriveHandle);
+        DriveInfoRec.DriveHandle := INVALID_HANDLE_VALUE;
+      end;
+    end;
+  end;
+end;
+
+procedure TDriveInfo.UpdateDrivesNotifications;
+var
+  Drive: string;
+begin
+  for Drive in FData.Keys do
+    UpdateDriveNotifications(Drive);
+end;
+
+procedure TDriveInfo.DriveRefresh;
+begin
+  InvokeHandlers(dnRefresh, '');
+end;
+
+procedure TDriveInfo.SubscribeDriveNotifications(Drive: string);
+begin
+  Get(Drive).SubscribeDriveNotifications := True;
+  UpdateDriveNotifications(Drive);
+end;
+
+// ===================
 
 function GetShellFileName(const Name: string): string;
 var
@@ -866,13 +1229,20 @@ end;
 initialization
   InitializeCriticalSection(ThreadLock);
   if not Assigned(DriveInfo) then
+  begin
     DriveInfo := TDriveInfo.Create;
+    InternalWindowHandle := Classes.AllocateHWnd(DriveInfo.InternalWndProc);
+  end;
 
 finalization
   if Assigned(DriveInfo) then
   begin
+    EnterCriticalSection(ThreadLock);
+    Classes.DeallocateHWnd(InternalWindowHandle);
+    InternalWindowHandle := 0;
     DriveInfo.Free;
     DriveInfo := nil;
+    LeaveCriticalSection(ThreadLock);
   end;
   DeleteCriticalSection(ThreadLock);
 end.

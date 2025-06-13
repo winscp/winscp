@@ -79,6 +79,7 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
   FInternalDDDownloadList = new TStringList();
   FLocalPathComboBoxPaths = new TStringList();
 
+  DriveInfo->AddHandler(DriveNotification);
   LocalPathComboUpdateDrives();
 
   LocalBackButton->LinkSubitems = HistoryMenu(osLocal, true)->Items;
@@ -142,6 +143,7 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
 //---------------------------------------------------------------------------
 __fastcall TScpCommanderForm::~TScpCommanderForm()
 {
+  DriveInfo->RemoveHandler(DriveNotification);
   delete FInternalDDDownloadList;
   SAFE_DESTROY(FLocalPathComboBoxPaths);
 }
@@ -2449,10 +2451,9 @@ void __fastcall TScpCommanderForm::CommandLineComboEditWndProc(TMessage & Messag
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::LocalDriveViewRefreshDrives(TObject * Sender, bool Global)
+void __fastcall TScpCommanderForm::DriveNotification(TDriveNotification Notification, UnicodeString Drive)
 {
-  // Process global drive notifications from only one drive view
-  if (!Global || (Sender == LocalDriveView))
+  if (Notification == dnRefresh)
   {
     LocalPathComboUpdateDrives();
     LocalPathComboUpdate(LocalDirView, LocalPathComboBox);
@@ -2460,22 +2461,6 @@ void __fastcall TScpCommanderForm::LocalDriveViewRefreshDrives(TObject * Sender,
     {
       LocalPathComboUpdate(OtherLocalDirView, RemotePathComboBox);
     }
-  }
-
-  if (!Global)
-  {
-    TDriveView * TheOtherLocalDriveView;
-    if (Sender == LocalDriveView)
-    {
-      TheOtherLocalDriveView = OtherLocalDriveView;
-    }
-    else
-    {
-      DebugAssert(Sender == OtherLocalDriveView);
-      TheOtherLocalDriveView = LocalDriveView;
-    }
-    // Or rather an immediate refresh?
-    TheOtherLocalDriveView->ScheduleDriveRefresh();
   }
 }
 //---------------------------------------------------------------------------

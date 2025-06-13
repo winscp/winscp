@@ -1278,7 +1278,6 @@ inherited ScpCommanderForm: TScpCommanderForm
         Height = 45
         WatchDirectory = True
         DirView = OtherLocalDirView
-        OnRefreshDrives = LocalDriveViewRefreshDrives
         OnBusy = DirViewBusy
         OnDDDragEnter = LocalFileControlDDDragEnter
         OnDDDragLeave = FileControlDDDragLeave
@@ -1898,7 +1897,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       Height = 45
       WatchDirectory = True
       DirView = LocalDirView
-      OnRefreshDrives = LocalDriveViewRefreshDrives
       OnBusy = DirViewBusy
       OnDDDragEnter = LocalFileControlDDDragEnter
       OnDDDragLeave = FileControlDDDragLeave

@@ -15,11 +15,12 @@
 // CM_DPICHANGED + 10 (packages/my/PasTools.pas)
 #define WM_WANTS_MOUSEWHEEL_INACTIVE (WM_WINSCP_USER + 11)
 #define WM_WANTS_SCREEN_TIPS (WM_WINSCP_USER + 12)
-// WM_USER_SHCHANGENOTIFY + 13 (packages/filemng/DriveView.pas)
+// WM_USER_SHCHANGENOTIFY + 13 (packages/filemng/IEDriveInfo.pas)
 // WM_PASTE_FILES + 14 (forms/CustomScpExplorer.cpp)
 #define WM_IS_HIDDEN (WM_WINSCP_USER + 15)
 // WM_USER_INVALIDATEITEM + 16 (packages/filemng/DirView.pas)
 #define WM_QUEUE_CALLBACK (WM_WINSCP_USER + 17)
+// WM_DRIVEINFO_PROCESS + 18 (packages/filemng/IEDriveInfo.pas)
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||
 struct TSynchronizeChecklistConfiguration

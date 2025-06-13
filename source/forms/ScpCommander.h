@@ -533,7 +533,6 @@ __published:
           bool FromLink);
   void __fastcall CommandLineComboBeginEdit(TTBEditItem *Sender,
           TTBEditItemViewer *Viewer, TEdit *EditControl);
-  void __fastcall LocalDriveViewRefreshDrives(TObject *Sender, bool Global);
   void __fastcall QueueSubmenuItemPopup(TTBCustomItem *Sender,
           bool FromLink);
   void __fastcall DirViewHistoryGo(TCustomDirView *Sender, int Index,
@@ -551,6 +550,7 @@ __published:
   void __fastcall OtherLocalDirViewUpdateStatusBar(TObject *Sender, const TStatusFileInfo &FileInfo);
   void __fastcall OtherLocalDirViewPathChange(TCustomDirView *Sender);
   void __fastcall LocalDriveViewNeedHiddenDirectories(TObject *Sender);
+  void __fastcall DriveNotification(TDriveNotification Notification, UnicodeString Drive);
 
 private:
   bool FConstructed;

@@ -1315,6 +1315,9 @@ int __fastcall Execute()
                 // from now on, we do not support runtime interface change
                 CustomWinConfiguration->CanApplyInterfaceImmediately = false;
                 AddStartupSequence(L"A");
+                // Start loading drives on the background asap,
+                // to prevent unnecessary refreshes after the explorer opens
+                DriveInfo->NeedData();
                 TCustomScpExplorerForm * ScpExplorer = CreateScpExplorer();
                 AddStartupSequence(L"E");
                 CustomWinConfiguration->AppliedInterface = CustomWinConfiguration->Interface;
