@@ -467,7 +467,7 @@ begin
       with FButton do
         ControlStyle := ControlStyle - [csFixedWidth];
     end
-    else if (Value <> ButtonWidth) and (Value < ClientWidth) then
+    else if (Value <> ButtonWidth) then
     begin
       FButton.Width := Value;
       with FButton do
@@ -542,7 +542,7 @@ begin
   with BtnRect do
     FBtnControl.SetBounds(Left, Top, Right - Left, Bottom - Top);
   FButton.Height := FBtnControl.Height;
-  SetEditRect;
+  if HandleAllocated then SetEditRect;
 end;
 
 procedure TCustomComboEdit.CMCtl3DChanged(var Message: TMessage);
