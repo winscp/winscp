@@ -137,6 +137,13 @@ type
   TBytes = array of Byte;
 {$ENDIF ~COMPILER11_UP}
 
+type
+  {$IFDEF RTL360_UP}
+  TJclListSize = NativeInt;
+  {$ELSE}
+  TJclListSize = Integer;
+  {$ENDIF ~RTL360_UP}
+
 // Redefinition of PByteArray to avoid range check exceptions.
 type
   TJclByteArray = array [0..MaxInt div SizeOf(Byte) - 1] of Byte;

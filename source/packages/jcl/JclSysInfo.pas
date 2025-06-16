@@ -276,7 +276,9 @@ type
    (paUnknown, // unknown processor
     pax8632,   // x86 32 bit processors (some P4, Celeron, Athlon and older)
     pax8664,   // x86 64 bit processors (latest P4, Celeron and Athlon64)
-    paIA64);   // Itanium processors
+    paIA64,    // Itanium processors
+    paARM,     // ARM 32 bit processors
+    paARM64);  // ARM 64 bit processors
 
 var
   { in case of additions, don't forget to update initialization section! }
@@ -322,6 +324,12 @@ const
   {$EXTERNALSYM PROCESSOR_ARCHITECTURE_IA32_ON_WIN64}
   PROCESSOR_ARCHITECTURE_IA64 = 6;
   {$EXTERNALSYM PROCESSOR_ARCHITECTURE_IA64}
+  PROCESSOR_ARCHITECTURE_ARM = 5;
+  {$EXTERNALSYM PROCESSOR_ARCHITECTURE_ARM}
+  PROCESSOR_ARCHITECTURE_ARM64 = 12;
+  {$EXTERNALSYM PROCESSOR_ARCHITECTURE_ARM64}
+  PROCESSOR_ARCHITECTURE_UNKNOWN = $FFFF;
+  {$EXTERNALSYM PROCESSOR_ARCHITECTURE_UNKNOWN}
 
 const
   Windows11InitialBuildNumber = 22000;
@@ -3436,9 +3444,9 @@ end;
 type
   PEnumWndStruct = ^TEnumWndStruct;
   TEnumWndStruct = record
-      PID: DWORD;
-      WndClassName: string;
-      ResultWnd: HWND;
+    PID: DWORD;
+    WndClassName: string;
+    ResultWnd: HWND;
   end;
 
 function EnumPidWinProc(Wnd: HWND; Enum: PEnumWndStruct): BOOL; stdcall;
@@ -3453,8 +3461,7 @@ begin
   begin
     CLen := Length(Enum.WndClassName)+1;
     C := StrAlloc(CLen);
-    if (GetClassName(Wnd, C, CLen) > 0) then
-      if (C = Enum.WndClassName) then
+    if (GetClassName(Wnd, C, CLen) > 0) and (C = Enum.WndClassName) then
     begin
       Result := False;
       Enum.ResultWnd := Wnd;
@@ -3590,88 +3597,88 @@ begin
               end;
           end;
         6:
-        begin
-          // Starting with Windows 8.1, the GetVersion(Ex) API is deprecated and will detect the
-          // application as Windows 8 (kernel version 6.2) until an application manifest is included
-          // See https://msdn.microsoft.com/en-us/library/windows/desktop/dn302074.aspx
-
-          if Win32MinorVersion = 2 then
           begin
-            ProductName := GetWindowsProductName;
-            if (Pos(RsOSVersionWin81, ProductName) = 1) or (Pos(RsOSVersionWinServer2012R2, ProductName) = 1) then
-              Win32MinorVersionEx := 3 // Windows 8.1 and Windows Server 2012R2
-            else
-            if (Pos(RsOSVersionWin8, ProductName) = 1) or (Pos(RsOSVersionWinServer2012, ProductName) = 1) then
-              Win32MinorVersionEx := 2 // Windows 8 and Windows Server 2012
-            else
-            begin
-              Win32MajorVersionEx := GetWindowsMajorVersionNumber;
-              if Win32MajorVersionEx = 6 then
-                 Win32MinorVersionEx := 4 // Windows 10 (builds < 9926) and Windows Server 2016 (builds < 10074)
-              else
-              if Win32MajorVersionEx = 10 then
-                 Win32MinorVersionEx := -1 // Windows 10 (builds >= 9926) and Windows Server 2016/2019/2022 (builds >= 10074), set to -1 to escape case block
-              else
-                 Win32MinorVersionEx := Win32MinorVersion;
-            end;
-          end
-          else
-            Win32MinorVersionEx := Win32MinorVersion;
+            // Starting with Windows 8.1, the GetVersion(Ex) API is deprecated and will detect the
+            // application as Windows 8 (kernel version 6.2) until an application manifest is included
+            // See https://msdn.microsoft.com/en-us/library/windows/desktop/dn302074.aspx
 
-          case Win32MinorVersionEx of
-            0:
+            if Win32MinorVersion = 2 then
+            begin
+              ProductName := GetWindowsProductName;
+              if (Pos(RsOSVersionWin81, ProductName) = 1) or (Pos(RsOSVersionWinServer2012R2, ProductName) = 1) then
+                Win32MinorVersionEx := 3 // Windows 8.1 and Windows Server 2012R2
+              else
+              if (Pos(RsOSVersionWin8, ProductName) = 1) or (Pos(RsOSVersionWinServer2012, ProductName) = 1) then
+                Win32MinorVersionEx := 2 // Windows 8 and Windows Server 2012
+              else
               begin
-                // Windows Vista and Windows Server 2008
-                OSVersionInfoEx.dwOSVersionInfoSize := SizeOf(OSVersionInfoEx);
-                if GetVersionEx(OSVersionInfoEx) and (OSVersionInfoEx.wProductType = VER_NT_WORKSTATION) then
-                  Result := wvWinVista
+                Win32MajorVersionEx := GetWindowsMajorVersionNumber;
+                if Win32MajorVersionEx = 6 then
+                  Win32MinorVersionEx := 4 // Windows 10 (builds < 9926) and Windows Server 2016 (builds < 10074)
                 else
-                  Result := wvWinServer2008;
-              end;
-            1:
-              begin
-                // Windows 7 and Windows Server 2008 R2
-                OSVersionInfoEx.dwOSVersionInfoSize := SizeOf(OSVersionInfoEx);
-                if GetVersionEx(OSVersionInfoEx) and (OSVersionInfoEx.wProductType = VER_NT_WORKSTATION) then
-                  Result := wvWin7
+                if Win32MajorVersionEx = 10 then
+                  Win32MinorVersionEx := -1 // Windows 10 (builds >= 9926) and Windows Server 2016/2019/2022 (builds >= 10074), set to -1 to escape case block
                 else
-                  Result := wvWinServer2008R2;
+                  Win32MinorVersionEx := Win32MinorVersion;
               end;
-            2:
-              begin
-                // Windows 8 and Windows Server 2012
-                OSVersionInfoEx.dwOSVersionInfoSize := SizeOf(OSVersionInfoEx);
-                if GetVersionEx(OSVersionInfoEx) and (OSVersionInfoEx.wProductType = VER_NT_WORKSTATION) then
-                  Result := wvWin8
-                else
-                  Result := wvWinServer2012;
-              end;
-            3:
-              begin
-                // Windows 8.1 and Windows Server 2012 R2
-                OSVersionInfoEx.dwOSVersionInfoSize := SizeOf(OSVersionInfoEx);
-                if GetVersionEx(OSVersionInfoEx) and (OSVersionInfoEx.wProductType = VER_NT_WORKSTATION) then
-                  Result := wvWin81
-                else
-                  Result := wvWinServer2012R2;
-              end;
-            4:
-              begin
-                // Windows 10 (builds < 9926) and Windows Server 2016 (builds < 10074)
-                OSVersionInfoEx.dwOSVersionInfoSize := SizeOf(OSVersionInfoEx);
-                if GetVersionEx(OSVersionInfoEx) and (OSVersionInfoEx.wProductType = VER_NT_WORKSTATION) then
-                  Result := wvWin10
-                else
-                  Result := wvWinServer2016;
-              end;
+            end
+            else
+              Win32MinorVersionEx := Win32MinorVersion;
+
+            case Win32MinorVersionEx of
+              0:
+                begin
+                  // Windows Vista and Windows Server 2008
+                  OSVersionInfoEx.dwOSVersionInfoSize := SizeOf(OSVersionInfoEx);
+                  if GetVersionEx(OSVersionInfoEx) and (OSVersionInfoEx.wProductType = VER_NT_WORKSTATION) then
+                    Result := wvWinVista
+                  else
+                    Result := wvWinServer2008;
+                end;
+              1:
+                begin
+                  // Windows 7 and Windows Server 2008 R2
+                  OSVersionInfoEx.dwOSVersionInfoSize := SizeOf(OSVersionInfoEx);
+                  if GetVersionEx(OSVersionInfoEx) and (OSVersionInfoEx.wProductType = VER_NT_WORKSTATION) then
+                    Result := wvWin7
+                  else
+                    Result := wvWinServer2008R2;
+                end;
+              2:
+                begin
+                  // Windows 8 and Windows Server 2012
+                  OSVersionInfoEx.dwOSVersionInfoSize := SizeOf(OSVersionInfoEx);
+                  if GetVersionEx(OSVersionInfoEx) and (OSVersionInfoEx.wProductType = VER_NT_WORKSTATION) then
+                    Result := wvWin8
+                  else
+                    Result := wvWinServer2012;
+                end;
+              3:
+                begin
+                  // Windows 8.1 and Windows Server 2012 R2
+                  OSVersionInfoEx.dwOSVersionInfoSize := SizeOf(OSVersionInfoEx);
+                  if GetVersionEx(OSVersionInfoEx) and (OSVersionInfoEx.wProductType = VER_NT_WORKSTATION) then
+                    Result := wvWin81
+                  else
+                    Result := wvWinServer2012R2;
+                end;
+              4:
+                begin
+                  // Windows 10 (builds < 9926) and Windows Server 2016 (builds < 10074)
+                  OSVersionInfoEx.dwOSVersionInfoSize := SizeOf(OSVersionInfoEx);
+                  if GetVersionEx(OSVersionInfoEx) and (OSVersionInfoEx.wProductType = VER_NT_WORKSTATION) then
+                    Result := wvWin10
+                  else
+                    Result := wvWinServer2016;
+                end;
+            end;
           end;
-        end;
         10:
-        begin
-          // Windows 10 if manifest is present
-          Win32MajorVersionEx := Win32MajorVersion;
-          Win32MinorVersionEx := Win32MinorVersion;
-        end;
+          begin
+            // Windows 10 if manifest is present
+            Win32MajorVersionEx := Win32MajorVersion;
+            Win32MinorVersionEx := Win32MinorVersion;
+          end;
       end;
   end;
 
@@ -3705,7 +3712,7 @@ begin
                   2009:
                     Result := wvWinServer2022;
                 else
-                    Result := wvWinServer;
+                  Result := wvWinServer;
                 end;
               end;
             end;
@@ -3729,111 +3736,111 @@ begin
   begin
    // Windows XP Editions
    if Pos('Home Edition N', Edition) > 0 then
-      Result := weWinXPHomeN
+     Result := weWinXPHomeN
    else
    if Pos('Professional N', Edition) > 0 then
-      Result := weWinXPProN
+     Result := weWinXPProN
    else
    if Pos('Home Edition K', Edition) > 0 then
-      Result := weWinXPHomeK
+     Result := weWinXPHomeK
    else
    if Pos('Professional K', Edition) > 0 then
-      Result := weWinXPProK
+     Result := weWinXPProK
    else
    if Pos('Home Edition KN', Edition) > 0 then
-      Result := weWinXPHomeKN
+     Result := weWinXPHomeKN
    else
    if Pos('Professional KN', Edition) > 0 then
-      Result := weWinXPProKN
+     Result := weWinXPProKN
    else
    if Pos('Home', Edition) > 0 then
-      Result := weWinXPHome
+     Result := weWinXPHome
    else
    if Pos('Professional', Edition) > 0 then
-      Result := weWinXPPro
+     Result := weWinXPPro
    else
    if Pos('Starter', Edition) > 0 then
-      Result := weWinXPStarter
+     Result := weWinXPStarter
    else
    if Pos('Media Center', Edition) > 0 then
-      Result := weWinXPMediaCenter
+     Result := weWinXPMediaCenter
    else
    if Pos('Tablet', Edition) > 0 then
-      Result := weWinXPTablet;
+     Result := weWinXPTablet;
   end
   else
   if (Pos('Windows Vista', Edition) = 1) then
   begin
    // Windows Vista Editions
    if Pos('Starter', Edition) > 0 then
-      Result := weWinVistaStarter
+     Result := weWinVistaStarter
    else
    if Pos('Home Basic N', Edition) > 0 then
-      Result := weWinVistaHomeBasicN
+     Result := weWinVistaHomeBasicN
    else
    if Pos('Home Basic', Edition) > 0 then
-      Result := weWinVistaHomeBasic
+     Result := weWinVistaHomeBasic
    else
    if Pos('Home Premium', Edition) > 0 then
-      Result := weWinVistaHomePremium
+     Result := weWinVistaHomePremium
    else
    if Pos('Business N', Edition) > 0 then
-      Result := weWinVistaBusinessN
+     Result := weWinVistaBusinessN
    else
    if Pos('Business', Edition) > 0 then
-      Result := weWinVistaBusiness
+     Result := weWinVistaBusiness
    else
    if Pos('Enterprise', Edition) > 0 then
-      Result := weWinVistaEnterprise
+     Result := weWinVistaEnterprise
    else
    if Pos('Ultimate', Edition) > 0 then
-      Result := weWinVistaUltimate;
+     Result := weWinVistaUltimate;
   end
   else
   if Pos('Windows 7', Edition) = 1 then
   begin
    // Windows 7 Editions
    if Pos('Starter', Edition) > 0 then
-      Result := weWin7Starter
+     Result := weWin7Starter
    else
    if Pos('Home Basic', Edition) > 0 then
-      Result := weWin7HomeBasic
+     Result := weWin7HomeBasic
    else
    if Pos('Home Premium', Edition) > 0 then
-      Result := weWin7HomePremium
+     Result := weWin7HomePremium
    else
    if Pos('Professional', Edition) > 0 then
-      Result := weWin7Professional
+     Result := weWin7Professional
    else
    if Pos('Enterprise', Edition) > 0 then
-      Result := weWin7Enterprise
+     Result := weWin7Enterprise
    else
    if Pos('Ultimate', Edition) > 0 then
-      Result := weWin7Ultimate;
+     Result := weWin7Ultimate;
   end
   else
   if Pos('Windows 8.1', Edition) = 1 then
   begin
    // Windows 8.1 Editions
    if Pos('Pro', Edition) > 0 then
-      Result := weWin81Pro
+     Result := weWin81Pro
    else
    if Pos('Enterprise', Edition) > 0 then
-      Result := weWin81Enterprise
+     Result := weWin81Enterprise
    else
-      Result := weWin81;
+     Result := weWin81;
   end
   else
   if Pos('Windows 8', Edition) = 1 then
   begin
    // Windows 8 Editions
    if Pos('Pro', Edition) > 0 then
-      Result := weWin8Pro
+     Result := weWin8Pro
    else
    if Pos('Enterprise', Edition) > 0 then
-      Result := weWin8Enterprise
+     Result := weWin8Enterprise
    else
-      Result := weWin8;
+     Result := weWin8;
   end
   else
   if Pos('Windows RT 8.1', Edition) = 1 then
@@ -3846,20 +3853,19 @@ begin
   begin
    // Windows 10/11 Editions
    if Pos('Home', Edition) > 0 then
-      Result := weWin10Home
+     Result := weWin10Home
    else
    if Pos('Pro', Edition) > 0 then
-      Result := weWin10Pro
+     Result := weWin10Pro
    else
    if Pos('Enterprise', Edition) > 0 then
-      Result := weWin10Enterprise
+     Result := weWin10Enterprise
    else
    if Pos('Education', Edition) > 0 then
-      Result := weWin10Education
+     Result := weWin10Education
    else
-      Result := weWin10;
-  end
-
+     Result := weWin10;
+  end;
 end;
 
 function NtProductType: TNtProductType;
@@ -4165,7 +4171,7 @@ begin
   // application as Windows 8 (kernel version 6.2) until an application manifest is included
   // See https://msdn.microsoft.com/en-us/library/windows/desktop/dn302074.aspx
   if ((Win32MajorVersion = 6) and (Win32MinorVersion = 2)) or (Win32MajorVersion = 10) then
-    Result := StrToInt(ReadWindowsNTCurrentVersionStringValue('CurrentBuildNumber', IntToStr(Win32BuildNumber)))
+    Result := StrToIntDef(ReadWindowsNTCurrentVersionStringValue('CurrentBuildNumber', IntToStr(Win32BuildNumber)), Win32BuildNumber)
   else
     Result := Win32BuildNumber;
 end;
@@ -4173,6 +4179,7 @@ end;
 function GetWindowsMajorVersionNumber: Integer;
 var
   Ver: string;
+  I: Integer;
 begin
   // Starting with Windows 8.1, the GetVersion(Ex) API is deprecated and will detect the
   // application as Windows 8 (kernel version 6.2) until an application manifest is included
@@ -4185,7 +4192,11 @@ begin
     if Result = -1 then
     begin
       Ver := ReadWindowsNTCurrentVersionStringValue('CurrentVersion', IntToStr(Win32MajorVersion) + '.' + IntToStr(Win32MinorVersion));
-      Result := StrToIntDef(Copy(Ver, 1, Pos('.', Ver) - 1), 2); // don't use StrBefore because it uses StrCaseMap that may not be initialized yet
+      I := Pos('.', Ver);
+      if I > 0 then
+        Result := StrToIntDef(Copy(Ver, 1, I - 1), Win32MajorVersion) // don't use StrBefore because it uses StrCaseMap that may not be initialized yet
+      else
+        Result := StrToIntDef(Ver, Win32MajorVersion);
     end;
   end
   else
@@ -4195,6 +4206,7 @@ end;
 function GetWindowsMinorVersionNumber: Integer;
 var
   Ver: string;
+  I: Integer;
 begin
   // Starting with Windows 8.1, the GetVersion(Ex) API is deprecated and will detect the
   // application as Windows 8 (kernel version 6.2) until an application manifest is included
@@ -4207,7 +4219,11 @@ begin
     if Result = -1 then
     begin
       Ver := ReadWindowsNTCurrentVersionStringValue('CurrentVersion', IntToStr(Win32MajorVersion) + '.' + IntToStr(Win32MinorVersion));
-      Result := StrToIntDef(Copy(Ver, Pos('.', Ver) + 1, Length(Ver)), 2);  // don't use StrAfter because it uses StrCaseMap that may not be initialized yet
+      I := Pos('.', Ver);
+      if (I > 0) and (I < Length(Ver)) then
+        Result := StrToIntDef(Copy(Ver, I + 1, Length(Ver)), 2)  // don't use StrAfter because it uses StrCaseMap that may not be initialized yet
+      else
+        Result := 2;
     end;
   end
   else
@@ -4228,7 +4244,7 @@ var
   VersionInfo: TOSVersionInfoEx;
 begin
   Result := 0;
-  if (Win32Platform = VER_PLATFORM_WIN32_NT) and (Win32MajorVersion >= 5) then
+  if (Win32Platform = VER_PLATFORM_WIN32_NT) and (Win32MajorVersion >= 5) then // 2000/XP and newer
   begin
     ResetMemory(VersionInfo, SizeOf(VersionInfo));
     VersionInfo.dwOSVersionInfoSize := SizeOf(VersionInfo);
@@ -4238,7 +4254,12 @@ begin
   else
   begin
     SP := RegReadIntegerDef(HKEY_LOCAL_MACHINE, RegWindowsControl, 'CSDVersion', 0);
-    Result := StrToInt(IntToHex(SP, 4)) div 100;
+    try
+      Result := StrToInt(IntToHex(SP, 4)) div 100; // 0x0200 => 02.00 => 2
+    except
+      on EConvertError do
+        Result := 0;
+    end;
   end;
 end;
 
@@ -4280,45 +4301,67 @@ begin
   begin
     case GetWindowsReleaseId of
       1507:
-         Result := LoadResString(@RsOSVersionWin10);
+         Result := ''; // RTM
       1511:
-         Result := LoadResString(@RsOSVersionWin10) + ' November Update';
+         Result := 'November Update';
       1607:
-         Result := LoadResString(@RsOSVersionWin10) + ' Anniversary Update';
+         Result := 'Anniversary Update';
       1703:
-         Result := LoadResString(@RsOSVersionWin10) + ' Creators Update';
+         Result := 'Creators Update';
       1709:
-         Result := LoadResString(@RsOSVersionWin10) + ' Fall Creators Update';
+         Result := 'Fall Creators Update';
       1803:
-         Result := LoadResString(@RsOSVersionWin10) + ' April 2018 Update';
+         Result := 'April 2018 Update';
       1809:
-         Result := LoadResString(@RsOSVersionWin10) + ' October 2018 Update';
+         Result := 'October 2018 Update';
       1903:
-         Result := LoadResString(@RsOSVersionWin10) + ' May 2019 Update';
+         Result := 'May 2019 Update';
       1909:
-         Result := LoadResString(@RsOSVersionWin10) + ' November 2019 Update';
+         Result := 'November 2019 Update';
       2004:
-         Result := LoadResString(@RsOSVersionWin10) + ' May 2020 Update';
+         Result := 'May 2020 Update';
       2009:
          begin
            WindowsDisplayVersion := GetWindowsDisplayVersion;
            if WindowsDisplayVersion = '20H2' then
-              Result := LoadResString(@RsOSVersionWin10) + ' October 2020 Update'
+             Result := 'October 2020 Update'
            else
            if WindowsDisplayVersion = '21H1' then
-              Result := LoadResString(@RsOSVersionWin10) + ' May 2021 Update'
+             Result := 'May 2021 Update'
            else
            if WindowsDisplayVersion = '21H2' then
-              Result := LoadResString(@RsOSVersionWin10) + ' November 2021 Update'
+             Result := 'November 2021 Update'
            else
-              Result := LoadResString(@RsOSVersionWin10) + ' ' + WindowsDisplayVersion + ' Update';
+           if WindowsDisplayVersion = '22H2' then
+             Result := '2022 Update'
+           else
+             Result := WindowsDisplayVersion + ' Update';
          end
     else
-      Result := LoadResString(@RsOSVersionWin10) + ' ' + IntToStr(GetWindowsReleaseId) + ' Update';
+      Result := IntToStr(GetWindowsReleaseId) + ' Update';
     end;
+    Result := Trim(GetWindowsVersionString + ' ' + Result);
   end
   else if IsWin11 then // And higher versions too?
-    Result := GetWindowsVersionString + ' ' + GetWindowsDisplayVersion + ' Update'
+  begin
+    // WindowsReleaseId = 2009 for Win 11
+    Result := '';
+    WindowsDisplayVersion := GetWindowsDisplayVersion;
+    if WindowsDisplayVersion = '21H2' then
+      Result := '' // RTM
+    else
+    if WindowsDisplayVersion = '22H2' then
+      Result := '2022 Update'
+    else
+    if WindowsDisplayVersion = '23H2' then
+      Result := '2023 Update'
+    else
+    if WindowsDisplayVersion = '24H2' then
+      Result := '2024 Update'
+    else
+      Result := WindowsDisplayVersion + ' Update';
+    Result := Trim(GetWindowsVersionString + ' ' + Result);
+  end
   else
     Result := '';
 end;
@@ -4731,6 +4774,10 @@ begin
       Result := paIA64;
     PROCESSOR_ARCHITECTURE_AMD64:
       Result := pax8664;
+    PROCESSOR_ARCHITECTURE_ARM:
+      Result := paARM;
+    PROCESSOR_ARCHITECTURE_ARM64:
+      Result := paARM64;
     else
       Result := paUnknown;
   end;
@@ -4738,7 +4785,7 @@ end;
 
 function IsWindows64: Boolean;
 begin
-  Result := GetProcessorArchitecture in [paIA64, pax8664];
+  Result := GetProcessorArchitecture in [paIA64, pax8664, paARM64];
 end;
 
 function JclCheckWinVersion(Major, Minor: Integer): Boolean;
@@ -4988,6 +5035,7 @@ begin
   end;
 end;
 {$ENDIF MSWINDOWS}
+
 function ReadTimeStampCounter: Int64; assembler;
 asm
         DW      $310F
@@ -5063,7 +5111,6 @@ begin
 end;
 {$ENDIF UNIX}
 {$IFDEF MSWINDOWS}
-
 var
   T0, T1: Int64;
   CountFreq: Int64;
@@ -5184,7 +5231,16 @@ begin
     EnabledFeatures := $FFFFFFFF;
     EnabledFeatures := EnabledFeatures shl 32;
     EnabledFeatures := EnabledFeatures or $FFFFFFFF;
-    EnabledFeatures := GetEnabledExtendedFeatures(EnabledFeatures);
+    try
+      EnabledFeatures := GetEnabledExtendedFeatures(EnabledFeatures);
+    except
+      on EJclError do
+      begin
+        // If the function doesn't exist (anymore) we shouldn't crash.
+        Result := [];
+        Exit;
+      end;
+    end;
     Result := [];
     if (EnabledFeatures and XSTATE_MASK_LEGACY_FLOATING_POINT) <> 0 then
       Include(Result, oefFPU);
@@ -5199,6 +5255,7 @@ end;
 {$ENDIF MSWINDOWS}
 
 function CPUID: TCpuInfo;
+
   function HasCPUIDInstruction: Boolean;
   const
     ID_FLAG = $200000;
@@ -6389,9 +6446,13 @@ procedure UnloadSystemResourcesMeterLib;
 begin
   if ResmeterLibHandle <> 0 then
   begin
-    FreeLibrary(ResmeterLibHandle);
-    ResmeterLibHandle := 0;
     @MyGetFreeSystemResources := nil;
+    try
+      FreeLibrary(ResmeterLibHandle);
+    except
+      // Ignore any exception from the DLL's DllMain(DLL_PROCESS_DETACH) function
+    end;
+    ResmeterLibHandle := 0;
   end;
 end;
 
@@ -6517,98 +6578,104 @@ var
   Kernel32FileName: string;
   VerFixedFileInfo: TVSFixedFileInfo;
 begin
-  { processor information related initialization }
+  try
+    { processor information related initialization }
 
-  ResetMemory(SystemInfo, SizeOf(SystemInfo));
-  GetSystemInfo(SystemInfo);
-  ProcessorCount := SystemInfo.dwNumberOfProcessors;
-  AllocGranularity := SystemInfo.dwAllocationGranularity;
-  PageSize := SystemInfo.dwPageSize;
+    ResetMemory(SystemInfo, SizeOf(SystemInfo));
+    GetSystemInfo(SystemInfo);
+    ProcessorCount := SystemInfo.dwNumberOfProcessors;
+    AllocGranularity := SystemInfo.dwAllocationGranularity;
+    PageSize := SystemInfo.dwPageSize;
 
-  { Windows version information }
+    { Windows version information }
 
-  IsWinNT := Win32Platform = VER_PLATFORM_WIN32_NT;
+    IsWinNT := Win32Platform = VER_PLATFORM_WIN32_NT;
 
-  Kernel32FileName := GetModulePath(GetModuleHandle(kernel32));
-  VerFixedFileInfo.dwFileDateLS := 0;
-  if (not IsWinNT) and VersionFixedFileInfo(Kernel32FileName, VerFixedFileInfo) then
-    KernelVersionHi := VerFixedFileInfo.dwProductVersionMS
-  else
-    KernelVersionHi := 0;
+    Kernel32FileName := GetModulePath(GetModuleHandle(kernel32));
+    VerFixedFileInfo.dwFileDateLS := 0;
+    if not IsWinNT and VersionFixedFileInfo(Kernel32FileName, VerFixedFileInfo) then
+      KernelVersionHi := VerFixedFileInfo.dwProductVersionMS
+    else
+      KernelVersionHi := 0;
 
-  case GetWindowsVersion of
-    wvUnknown:
-      ;
-    wvWin95:
-      IsWin95 := True;
-    wvWin95OSR2:
-      IsWin95OSR2 := True;
-    wvWin98:
-      IsWin98 := True;
-    wvWin98SE:
-      IsWin98SE := True;
-    wvWinME:
-      IsWinME := True;
-    wvWinNT31:
-      begin
-        IsWinNT3 := True;
-        IsWinNT31 := True;
-      end;
-    wvWinNT35:
-      begin
-        IsWinNT3 := True;
-        IsWinNT35 := True;
-      end;
-    wvWinNT351:
-      begin
-        IsWinNT3 := True;
-        IsWinNT35 := True;
-        IsWinNT351 := True;
-      end;
-    wvWinNT4:
-      IsWinNT4 := True;
-    wvWin2000:
-      IsWin2K := True;
-    wvWinXP:
-      IsWinXP := True;
-    wvWin2003:
-      IsWin2003 := True;
-    wvWinXP64:
-      IsWinXP64 := True;
-    wvWin2003R2:
-      IsWin2003R2 := True;
-    wvWinVista:
-      IsWinVista := True;
-    wvWinServer2008:
-      IsWinServer2008 := True;
-    wvWin7:
-      IsWin7 := True;
-    wvWinServer2008R2:
-      IsWinServer2008R2 := True;
-    wvWin8:
-      IsWin8 := True;
-    wvWin8RT:
-      IsWin8RT := True;
-    wvWinServer2012:
-      IsWinServer2012 := True;
-    wvWin81:
-      IsWin81 := True;
-    wvWin81RT:
-      IsWin81RT := True;
-    wvWinServer2012R2:
-      IsWinServer2012R2 := True;
-    wvWin10:
-      IsWin10 := True;
-    wvWinServer2016:
-      IsWinServer2016 := True;
-    wvWinServer2019:
-      IsWinServer2019 := True;
-    wvWinServer2022:
-      IsWinServer2022 := True;
-    wvWinServer:
-      IsWinServer := True;
-    wvWin11:
-      IsWin11 := True;
+    case GetWindowsVersion of
+      wvUnknown:
+        ;
+      wvWin95:
+        IsWin95 := True;
+      wvWin95OSR2:
+        IsWin95OSR2 := True;
+      wvWin98:
+        IsWin98 := True;
+      wvWin98SE:
+        IsWin98SE := True;
+      wvWinME:
+        IsWinME := True;
+      wvWinNT31:
+        begin
+          IsWinNT3 := True;
+          IsWinNT31 := True;
+        end;
+      wvWinNT35:
+        begin
+          IsWinNT3 := True;
+          IsWinNT35 := True;
+        end;
+      wvWinNT351:
+        begin
+          IsWinNT3 := True;
+          IsWinNT35 := True;
+          IsWinNT351 := True;
+        end;
+      wvWinNT4:
+        IsWinNT4 := True;
+      wvWin2000:
+        IsWin2K := True;
+      wvWinXP:
+        IsWinXP := True;
+      wvWin2003:
+        IsWin2003 := True;
+      wvWinXP64:
+        IsWinXP64 := True;
+      wvWin2003R2:
+        IsWin2003R2 := True;
+      wvWinVista:
+        IsWinVista := True;
+      wvWinServer2008:
+        IsWinServer2008 := True;
+      wvWin7:
+        IsWin7 := True;
+      wvWinServer2008R2:
+        IsWinServer2008R2 := True;
+      wvWin8:
+        IsWin8 := True;
+      wvWin8RT:
+        IsWin8RT := True;
+      wvWinServer2012:
+        IsWinServer2012 := True;
+      wvWin81:
+        IsWin81 := True;
+      wvWin81RT:
+        IsWin81RT := True;
+      wvWinServer2012R2:
+        IsWinServer2012R2 := True;
+      wvWin10:
+        IsWin10 := True;
+      wvWinServer2016:
+        IsWinServer2016 := True;
+      wvWinServer2019:
+        IsWinServer2019 := True;
+      wvWinServer2022:
+        IsWinServer2022 := True;
+      wvWinServer:
+        IsWinServer := True;
+      wvWin11:
+        IsWin11 := True;
+    end;
+  except
+    // Don't crash the application if anything goes wrong detecting the correct
+    // Windows version information.
+
   end;
 end;
 
