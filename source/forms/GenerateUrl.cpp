@@ -204,7 +204,7 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateUrl(UnicodeString Path)
   if ((RemoteDirectoryCheck->Enabled && RemoteDirectoryCheck->Checked) ||
       IsFileUrl())
   {
-    if (StartsStr(L"/", Path));
+    if (StartsStr(L"/", Path))
     {
       Path.Delete(1, 1);
     }

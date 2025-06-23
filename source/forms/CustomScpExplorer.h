@@ -805,7 +805,6 @@ public:
   void __fastcall SuspendWindowLock();
   void __fastcall ResumeWindowLock();
   bool HasAvailableTerminal();
-  bool __fastcall HasManagedSession();
   virtual bool IsLocalBrowserMode();
   bool CanCloseSession(TManagedTerminal * Session);
   virtual UnicodeString __fastcall DefaultDownloadTargetDirectory() = 0;

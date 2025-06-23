@@ -240,7 +240,7 @@ UnicodeString __fastcall TEditorPreferences::GetName() const
         FName.SetLength(P - 1);
       }
 
-      if (FName.ByteType(1) == mbSingleByte)
+      if (FName.ByteType(1) == UnicodeString::ctNotLeadChar)
       {
         if (FName.UpperCase() == FName)
         {

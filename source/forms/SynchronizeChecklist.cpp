@@ -208,7 +208,7 @@ struct TMoveActionData
       if (CollectFileList)
       {
         UnicodeString FileName;
-        TObject * Object;
+        TObject * Object = NULL;
         if (Action == TSynchronizeChecklist::saDeleteRemote)
         {
           FileName = ChecklistItem->GetRemotePath();

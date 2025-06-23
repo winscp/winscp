@@ -492,7 +492,7 @@ void __fastcall TLoginDialog::Default()
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::LoadContents()
 {
-  bool UseContentsPanel;
+  bool UseContentsPanel = false;
   TTreeNode * Node = SessionTree->Selected;
   if (IsSessionNode(Node))
   {

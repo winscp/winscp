@@ -70,7 +70,7 @@ public:
     unsigned long WaitResult = WaitForSingleObject(AMutex, Timeout);
     if (WaitResult == WAIT_TIMEOUT)
     {
-      throw Exception(LoadStr(MUTEX_RELEASE_TIMEOUT));
+      throw Exception(LoadStr(Message));
     }
     else
     {
@@ -3573,7 +3573,7 @@ void __fastcall TCustomScpExplorerForm::AnyInternalEditorModified(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::LocalEditorClosed(TObject * Sender, bool /*Forced*/)
 {
-  DebugCheck(FLocalEditors->Extract(Sender) >= 0);
+  DebugCheck(FLocalEditors->Extract(Sender) != NULL);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TemporaryDirectoryForRemoteFiles(
@@ -11934,10 +11934,10 @@ void __fastcall TCustomScpExplorerForm::UpdateQueueFileList()
     }
     else
     {
-      if (FQueueFileList->GetCount() > 0)
+      Refresh = (FQueueFileList->GetCount() > 0);
+      if (Refresh)
       {
         FQueueFileList->Clear();
-        Refresh = true;
       }
     }
     int Count = FQueueFileList->GetCount();
@@ -12022,11 +12022,6 @@ void __fastcall TCustomScpExplorerForm::CloseApp()
 bool TCustomScpExplorerForm::IsAvailableTerminal(TTerminal * Terminal)
 {
   return TTerminalManager::Instance()->IsAvailableTerminal(Terminal);
-}
-//---------------------------------------------------------------------------
-bool __fastcall TCustomScpExplorerForm::HasManagedSession()
-{
-  return (ManagedSession != NULL);
 }
 //---------------------------------------------------------------------------
 bool TCustomScpExplorerForm::HasAvailableTerminal()

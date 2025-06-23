@@ -915,8 +915,8 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
         if (GroupWith >= 0)
         {
           if (DebugAlwaysFalse(GroupWith >= static_cast<int>(Answer)) ||
-              DebugAlwaysFalse(Answer == TimeoutAnswer) &&
-              DebugAlwaysFalse(Answer == DefaultAnswer) &&
+              DebugAlwaysFalse(Answer == TimeoutAnswer) ||
+              DebugAlwaysFalse(Answer == DefaultAnswer) ||
               DebugAlwaysFalse(Answer == CancelAnswer))
           {
             GroupWith = -1;
@@ -1015,7 +1015,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   int MaxTextWidth = ScaleByTextHeightRunTime(Result, mcMaxDialogWidth);
   // If the message contains SHA-256 hex fingerprint (CERT_TEXT2 on TLS/SSL certificate verification dialog),
   // allow wider box to fit it
-  if (TRegEx::IsMatch(Msg, L"([0-9a-fA-F]{2}[:\-]){31}[0-9a-fA-F]{2}"))
+  if (TRegEx::IsMatch(Msg, L"([0-9a-fA-F]{2}[:\\-]){31}[0-9a-fA-F]{2}"))
   {
     MaxTextWidth = MaxTextWidth * 3 / 2;
   }

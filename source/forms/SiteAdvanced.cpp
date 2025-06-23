@@ -1055,8 +1055,8 @@ void __fastcall TSiteAdvancedDialog::UpdateControls()
     // environment/recycle bin sheet
     EnableControl(OverwrittenToRecycleBinCheck, SftpProtocol && RecycleBinSheet->Enabled);
     EnableControl(RecycleBinPathEdit,
-      (DeleteToRecycleBinCheck->Enabled && DeleteToRecycleBinCheck->Checked) ||
-      (OverwrittenToRecycleBinCheck->Enabled && OverwrittenToRecycleBinCheck->Checked) &&
+      ((DeleteToRecycleBinCheck->Enabled && DeleteToRecycleBinCheck->Checked) ||
+       (OverwrittenToRecycleBinCheck->Enabled && OverwrittenToRecycleBinCheck->Checked)) &&
       RecycleBinSheet->Enabled);
     EnableControl(RecycleBinPathLabel, RecycleBinPathEdit->Enabled &&
       RecycleBinSheet->Enabled);
