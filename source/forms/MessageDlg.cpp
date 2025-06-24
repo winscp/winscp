@@ -789,13 +789,16 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   TSize MoreMessagesSize, const UnicodeString & CustomCaption)
 {
   unsigned int DefaultAnswer;
-  if (FLAGSET(Answers, qaOK))
-  {
-    DefaultAnswer = qaOK;
-  }
-  else if (FLAGSET(Answers, qaYes))
+  // In general, we should not have Yes and OK on the same query.
+  // But we do for "hostkey" prompt, where they are aliased and OK is groupped with Yes.
+  // There we need Yes to be the default.
+  if (FLAGSET(Answers, qaYes))
   {
     DefaultAnswer = qaYes;
+  }
+  else if (FLAGSET(Answers, qaOK))
+  {
+    DefaultAnswer = qaOK;
   }
   else
   {
