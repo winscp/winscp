@@ -648,6 +648,7 @@ protected:
   void __fastcall CreateRemoteDirectory(const UnicodeString & Path);
   void LocalPathComboUpdateDrives(
     TTBXComboBoxItem * ALocalPathComboBox, TCustomDirView * ADirView, TDriveView * ALocalDriveView, TStrings * LocalPathComboBoxPaths);
+  void OtherLocalPathComboUpdateDrives();
   void __fastcall LocalPathComboUpdateDrives();
   void LocalPathComboUpdate(TCustomDirView * ADirView, TTBXComboBoxItem * PathComboBox, TStrings * LocalPathComboBoxPaths);
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);

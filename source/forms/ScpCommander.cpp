@@ -725,7 +725,7 @@ void __fastcall TScpCommanderForm::SessionChanged(bool Replaced)
       // Particularly, when switching from a remote to a local-local session,
       // the other local dir view path may not change at all,
       // so the path combo box would retain the remote path.
-      UpdateRemotePathComboBox(false);
+      OtherLocalPathComboUpdateDrives();
     }
   }
 }
@@ -2266,13 +2266,18 @@ void TScpCommanderForm::LocalPathComboUpdateDrives(
   LocalPathComboUpdate(ADirView, ALocalPathComboBox, LocalPathComboBoxPaths);
 }
 //---------------------------------------------------------------------------
+void TScpCommanderForm::OtherLocalPathComboUpdateDrives()
+{
+  LocalPathComboUpdateDrives(RemotePathComboBox, OtherLocalDirView, OtherLocalDriveView, FOtherLocalPathComboBoxPaths);
+}
+//---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalPathComboUpdateDrives()
 {
   LocalPathComboUpdateDrives(LocalPathComboBox, LocalDirView, LocalDriveView, FLocalPathComboBoxPaths);
 
   if (IsLocalBrowserMode())
   {
-    LocalPathComboUpdateDrives(RemotePathComboBox, OtherLocalDirView, OtherLocalDriveView, FOtherLocalPathComboBoxPaths);
+    OtherLocalPathComboUpdateDrives();
   }
 }
 //---------------------------------------------------------------------------
