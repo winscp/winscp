@@ -20,7 +20,7 @@
 #pragma link "PngImageList"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
-TFileFindDialog * FileFindDialog = NULL;
+static TFileFindDialog * FileFindDialog = NULL;
 static const int NoSort = 1;
 //---------------------------------------------------------------------------
 void __fastcall ShowFileFindDialog(
@@ -281,7 +281,7 @@ void __fastcall TFileFindDialog::Start()
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileFindDialog::FileFound(TTerminal * /*Terminal*/,
-  const UnicodeString FileName, const TRemoteFile * AFile, bool & Cancel)
+  const UnicodeString DebugUsedArg(FileName), const TRemoteFile * AFile, bool & Cancel)
 {
   TListItem * Item;
   int Count = FileView2->Items->Count;

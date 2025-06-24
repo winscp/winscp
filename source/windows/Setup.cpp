@@ -44,12 +44,12 @@
 #define MAX_PATH_LEN 2000
 
 /* Command line options. */
-UnicodeString LastPathError;
+static UnicodeString LastPathError;
 //---------------------------------------------------------------------------
-UnicodeString NetVersionStr;
-UnicodeString NetCoreVersionStr;
-UnicodeString PowerShellVersionStr;
-UnicodeString PowerShellCoreVersionStr;
+static UnicodeString NetVersionStr;
+static UnicodeString NetCoreVersionStr;
+static UnicodeString PowerShellVersionStr;
+static UnicodeString PowerShellCoreVersionStr;
 //---------------------------------------------------------------------------
 // Display the error "err_msg".
 void err_out(LPCTSTR err_msg)
@@ -442,7 +442,7 @@ static void __fastcall RegisterAsUrlHandler(const UnicodeString & Protocol, Unic
       Registry->DeleteKey(SoftwareClassesBaseKey + Protocol);
     }
   }
-  catch (Exception & E)
+  catch (Exception &)
   {
     try
     {
@@ -659,7 +659,7 @@ static void __fastcall RegisterForDefaultPrograms()
     // this is needed for Windows Vista+7
     UnregisterProtocolsForDefaultPrograms(HKEY_CURRENT_USER, true);
   }
-  catch (Exception & E)
+  catch (Exception &)
   {
     try
     {
@@ -1336,7 +1336,7 @@ protected:
   void __fastcall HttpDownload(THttp * Sender, __int64 Size, bool & Cancel);
   void __fastcall UpdateProgress();
   void __fastcall ShowException();
-  void __fastcall DownloadNotVerified();
+  NORETURN void __fastcall DownloadNotVerified();
   void __fastcall CancelForm();
 
 private:
@@ -1506,7 +1506,7 @@ void __fastcall TUpdateDownloadThread::UpdateDownloaded()
   TerminateApplication();
 }
 //---------------------------------------------------------------------------
-void __fastcall TUpdateDownloadThread::DownloadNotVerified()
+NORETURN void __fastcall TUpdateDownloadThread::DownloadNotVerified()
 {
   throw Exception(MainInstructions(LoadStr(UPDATE_VERIFY_ERROR)));
 }
@@ -1645,11 +1645,6 @@ static void __fastcall DownloadUpdate(void * /*Data*/, TObject * Sender, unsigne
   Thread->Resume();
 }
 //---------------------------------------------------------------------------
-static void __fastcall UpdatesDonateClick(void * /*Data*/, TObject * /*Sender*/)
-{
-  EnableAutomaticUpdates();
-}
-//---------------------------------------------------------------------------
 static void __fastcall InsertDonateLink(void * /*Data*/, TObject * Sender)
 {
   const UnicodeString DonatePanelName = L"DonatePanel";
@@ -1669,7 +1664,7 @@ static void __fastcall InsertDonateLink(void * /*Data*/, TObject * Sender)
     UnicodeString StoreLink = FORMAT(L"<a href=\"%s\">%s</a>", (StoreUrl, StoreButton));
 
     UnicodeString PlainBody = TNetEncoding::HTML->Decode(DocumentBody);
-    int P1, P2;
+    int P1, P2 = 0; // shut up
     while (((P1 = PlainBody.Pos(L"<")) > 0) && ((P2 = PlainBody.Pos(L">")) > 0) && (P1 < P2))
     {
       PlainBody.Delete(P1, P2 - P1 + 1);
@@ -1851,7 +1846,7 @@ protected:
   TThreadMethod FOnUpdatesChecked;
 };
 //---------------------------------------------------------------------------
-TUpdateThread * UpdateThread = NULL;
+static TUpdateThread * UpdateThread = NULL;
 //---------------------------------------------------------------------------
 __fastcall TUpdateThread::TUpdateThread(TThreadMethod OnUpdatesChecked) :
   TCompThread(false),
@@ -1973,7 +1968,6 @@ static bool __fastcall AddJumpListCategory(TStrings * Names,
 void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceNames)
 {
   ICustomDestinationList * DestinationList = NULL;
-  IObjectArray * RemovedArray;
   TStringList * Removed = NULL;
   int OldErrMode = SetErrorMode(SEM_FAILCRITICALERRORS);
 
@@ -1984,9 +1978,11 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
     {
 
       unsigned int MinSlots;
-      HRESULT Result = DestinationListBeginList(DestinationList, MinSlots, IID_IObjectArray, reinterpret_cast<void *>(RemovedArray), 50000);
-      if (SUCCEEDED(Result) && DebugAlwaysTrue(RemovedArray != NULL))
+      void * ppv = NULL;
+      HRESULT Result = DestinationListBeginList(DestinationList, MinSlots, IID_IObjectArray, ppv, 50000);
+      if (SUCCEEDED(Result) && DebugAlwaysTrue(ppv != NULL))
       {
+        IObjectArray * RemovedArray = static_cast<IObjectArray*>(ppv);
         Removed = new TStringList();
 
         unsigned int RemovedCount;

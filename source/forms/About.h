@@ -59,7 +59,7 @@ private:
   void __fastcall ShiftControls(int From, int Diff);
 
 protected:
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   virtual __fastcall TAboutDialog(TComponent * AOwner,

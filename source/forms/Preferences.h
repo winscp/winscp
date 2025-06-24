@@ -584,7 +584,7 @@ protected:
   void UpdateSshHostCAsViewView();
   void SshHostCAsRefresh();
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 };
 //----------------------------------------------------------------------------
 #endif

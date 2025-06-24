@@ -54,7 +54,6 @@ __published:
   void __fastcall OkButtonDropDownClick(TObject *Sender);
   void __fastcall FormAfterMonitorDpiChanged(TObject *Sender, int OldDPI, int NewDPI);
 private:
-  bool FDefaultToRemote;
   bool FToRemote;
   TStrings * FFileList;
   bool FMove;
@@ -87,7 +86,7 @@ protected:
   int __fastcall ActualCopyParamAttrs();
   virtual void __fastcall CreateWnd();
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   __fastcall TCopyDialog(

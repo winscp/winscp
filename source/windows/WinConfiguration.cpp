@@ -15,7 +15,7 @@
 #include "TerminalManager.h"
 #include "Cryptography.h"
 #include <VCLCommon.h>
-#include <InitGUID.h>
+#include <initguid.h>
 #include <DragExt.h>
 #include <Math.hpp>
 #include <StrUtils.hpp>
@@ -701,7 +701,7 @@ void __fastcall TWinConfiguration::Default()
   FUpdates.AuthenticationEmail = L"";
   FUpdates.Mode = EmptyStr;
   // for backward compatibility the default is decided based on value of ProxyHost
-  FUpdates.ConnectionType = (TConnectionType)-1;
+  FUpdates.ConnectionType = ctUndefined;
   FUpdates.ProxyHost = L""; // keep empty (see above)
   FUpdates.ProxyPort = 8080;
   FUpdates.Results.Reset();
@@ -1041,11 +1041,11 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
 #define KEY(TYPE, VAR) KEYEX(TYPE, VAR, PropertyToKey(TEXT(#VAR)))
 #define REGCONFIG(CANCREATE) \
   BLOCK(L"Interface", CANCREATE, \
-    KEYEX(Integer,DoubleClickAction, L"CopyOnDoubleClick"); \
+    KEYEX(Enum,   DoubleClickAction, L"CopyOnDoubleClick"); \
     KEY(Bool,     CopyOnDoubleClickConfirmation); \
     KEY(Bool,     AlwaysRespectDoubleClickAction); \
     KEY(Bool,     DDDisableMove); \
-    KEYEX(Integer, DDTransferConfirmation, L"DDTransferConfirmation2"); \
+    KEYEX(Enum,   DDTransferConfirmation, L"DDTransferConfirmation2"); \
     KEY(String,   DDTemporaryDirectory); \
     KEY(String,   DDDrives); \
     KEY(Bool,     DDWarnLackOfTempSpace); \
@@ -1056,8 +1056,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     SelectDirectories); \
     KEY(String,   SelectMask); \
     KEY(Bool,     ShowHiddenFiles); \
-    KEY(Integer,  FormatSizeBytes); \
-    KEY(Integer,  PanelSearch); \
+    KEY(Enum,     FormatSizeBytes); \
+    KEY(Enum,     PanelSearch); \
     KEY(Bool,     ShowInaccesibleDirectories); \
     KEY(Bool,     ConfirmTransferring); \
     KEY(Bool,     ConfirmDeleting); \
@@ -1076,13 +1076,13 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     TemporaryDirectoryCleanup); \
     KEY(Bool,     ConfirmTemporaryDirectoryCleanup); \
     KEY(Bool,     PreservePanelState); \
-    KEY(Integer,  DarkTheme); \
+    KEY(Enum,     DarkTheme); \
     KEY(String,   LastStoredSession); \
     KEY(Bool,     AutoSaveWorkspace); \
     KEY(Bool,     AutoSaveWorkspacePasswords); \
     KEY(String,   AutoWorkspace); \
-    KEY(Integer,  PathInCaption); \
-    KEY(Integer,  SessionTabNameFormat); \
+    KEY(Enum,     PathInCaption); \
+    KEY(Enum,     SessionTabNameFormat); \
     KEY(Bool,     MinimizeToTray); \
     KEY(Bool,     BalloonNotifications); \
     KEY(Integer,  NotificationsTimeout); \
@@ -1108,9 +1108,9 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(String,   OpenedStoredSessionFolders); \
     KEY(Bool,     AutoImportedFromPuttyOrFilezilla); \
     KEY(Integer,  GenerateUrlComponents); \
-    KEY(Integer,  GenerateUrlCodeTarget); \
-    KEY(Integer,  GenerateUrlScriptFormat); \
-    KEY(Integer,  GenerateUrlAssemblyLanguage); \
+    KEY(Enum,     GenerateUrlCodeTarget); \
+    KEY(Enum,     GenerateUrlScriptFormat); \
+    KEY(Enum,     GenerateUrlAssemblyLanguage); \
     KEY(Bool,     ExternalSessionInExistingInstance); \
     KEY(Bool,     ShowLoginWhenNoSession); \
     KEY(Bool,     KeepOpenWhenNoSession); \
@@ -1118,8 +1118,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     LocalIconsByExt); \
     KEY(Bool,     FlashTaskbar); \
     KEY(Integer,  MaxSessions); \
-    KEY(Integer,  BidiModeOverride); \
-    KEY(Integer,  FlipChildrenOverride); \
+    KEY(Enum,     BidiModeOverride); \
+    KEY(Enum,     FlipChildrenOverride); \
     KEY(Bool,     ShowTips); \
     KEY(String,   TipsSeen); \
     KEY(DateTime, TipsShown); \
@@ -1135,7 +1135,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Bool,     TimeoutShellIconRetrieval); \
     KEY(Bool,     UseIconUpdateThread); \
     KEY(Bool,     AllowWindowPrint); \
-    KEY(Integer,  StoreTransition); \
+    KEY(Enum,     StoreTransition); \
     KEY(Integer,  QueueTransferLimitMax); \
     KEY(Bool,     HiContrast); \
     KEY(Bool,     EditorCheckNotModified); \
@@ -1150,8 +1150,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  Editor.Font.FontSize); \
     KEY(Integer,  Editor.Font.FontStyle); \
     KEY(Integer,  Editor.Font.FontCharset); \
-    KEY(Integer,  Editor.FontColor); \
-    KEY(Integer,  Editor.BackgroundColor); \
+    KEY(Enum,     Editor.FontColor); \
+    KEY(Enum,     Editor.BackgroundColor); \
     KEY(Bool,     Editor.WordWrap); \
     KEY(String,   Editor.FindText); \
     KEY(String,   Editor.ReplaceText); \
@@ -1173,8 +1173,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(Integer,  QueueView.Height); \
     KEY(Integer,  QueueView.HeightPixelsPerInch); \
     KEY(String,   QueueView.Layout); \
-    KEY(Integer,  QueueView.Show); \
-    KEY(Integer,  QueueView.LastHideShow); \
+    KEY(Enum,     QueueView.Show); \
+    KEY(Enum,     QueueView.LastHideShow); \
     KEY(Bool,     QueueView.ToolBar); \
     KEY(Bool,     QueueView.Label); \
     KEY(Bool,     QueueView.FileList); \
@@ -1186,11 +1186,11 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
     KEY(DateTime, FUpdates.LastCheck); \
     KEY(Integer,  FUpdates.HaveResults); \
     KEY(Integer,  FUpdates.ShownResults); \
-    KEY(Integer,  FUpdates.BetaVersions); \
+    KEY(Enum,     FUpdates.BetaVersions); \
     KEY(Bool,     FUpdates.ShowOnStartup); \
     KEY(String,   FUpdates.AuthenticationEmail); \
     KEY(String,   FUpdates.Mode); \
-    KEY(Integer,  FUpdates.ConnectionType); \
+    KEY(Enum,     FUpdates.ConnectionType); \
     KEY(String,   FUpdates.ProxyHost); \
     KEY(Integer,  FUpdates.ProxyPort); \
     KEY(Integer,  FUpdates.Results.ForVersion); \
@@ -1236,13 +1236,13 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool & SessionList)
   BLOCK(L"Interface\\Commander", CANCREATE, \
     KEYEX(String,  ScpCommander.ToolbarsLayout, ToolbarsLayoutKey); \
     KEY(String,  ScpCommander.ToolbarsButtons); \
-    KEY(Integer, ScpCommander.CurrentPanel); \
+    KEY(Enum,    ScpCommander.CurrentPanel); \
     KEY(Float,   ScpCommander.LocalPanelWidth); \
     KEY(Bool,    ScpCommander.SwappedPanels); \
     KEY(Bool,    ScpCommander.SessionsTabs); \
     KEY(Bool,    ScpCommander.StatusBar); \
     KEY(String,  ScpCommander.WindowParams); \
-    KEYEX(Integer, ScpCommander.NortonLikeMode, L"ExplorerStyleSelection"); \
+    KEYEX(Enum,  ScpCommander.NortonLikeMode, L"ExplorerStyleSelection"); \
     KEY(Bool,    ScpCommander.PreserveLocalDirectory); \
     KEY(Bool,    ScpCommander.CompareByTime); \
     KEY(Bool,    ScpCommander.CompareBySize); \
@@ -1397,7 +1397,7 @@ void __fastcall TWinConfiguration::LoadFrom(THierarchicalStorage * Storage)
     FLegacyEditor = NULL;
   }
 
-  if (FUpdates.ConnectionType == -1)
+  if (FUpdates.ConnectionType == ctUndefined)
   {
     FUpdates.ConnectionType = (FUpdates.ProxyHost.IsEmpty() ? ctAuto : ctProxy);
   }
@@ -2248,21 +2248,6 @@ void __fastcall TWinConfiguration::SetDarkTheme(TAutoSwitch value)
   SET_CONFIG_PROPERTY_EX(DarkTheme, ConfigureInterface());
 }
 //---------------------------------------------------------------------------
-static int __fastcall SysDarkTheme(HKEY RootKey)
-{
-  std::unique_ptr<TRegistry> Registry(new TRegistry());
-  Registry->RootKey = RootKey;
-  UnicodeString ThemesPersonalizeKey = L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
-  UnicodeString AppsUseLightThemeValue = L"AppsUseLightTheme";
-  int Result = -1;
-  if (Registry->OpenKeyReadOnly(ThemesPersonalizeKey) &&
-      Registry->ValueExists(AppsUseLightThemeValue))
-  {
-    Result = Registry->ReadBool(AppsUseLightThemeValue) ? 0 : 1;
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::UseDarkTheme()
 {
   switch (WinConfiguration->DarkTheme)
@@ -2529,8 +2514,8 @@ void __fastcall TWinConfiguration::SetExtensionList(TCustomCommandList * value)
     for (int Index = 0; Index < ExtensionList->Count; Index++)
     {
       const TCustomCommandType * CustomCommand = ExtensionList->Commands[Index];
-      int Index = value->FindIndexByFileName(CustomCommand->FileName);
-      if (Index < 0)
+      int Index2 = value->FindIndexByFileName(CustomCommand->FileName);
+      if (Index2 < 0)
       {
         if (FileExists(CustomCommand->FileName) &&
             !DeleteFile(CustomCommand->FileName))
@@ -3071,7 +3056,7 @@ void __fastcall TWinConfiguration::RestoreFont(
 {
   Font->Name = Configuration.FontName;
   Font->Size = Configuration.FontSize;
-  Font->Charset = Configuration.FontCharset;
+  Font->Charset = static_cast<TFontCharset>(Configuration.FontCharset);
   Font->Style = IntToFontStyles(Configuration.FontStyle);
 }
 //---------------------------------------------------------------------------
@@ -3269,7 +3254,7 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines, const Unicod
 
     if (!Continuation)
     {
-      int P;
+      int P = 0; // shut up
       if (!ExtensionLine.IsEmpty() && (ExtensionLine[1] == ExtensionMark) && ((P = Pos(L" ", ExtensionLine)) >= 2))
       {
         UnicodeString Key = ExtensionLine.SubString(2, P - 2).LowerCase();
@@ -3956,11 +3941,11 @@ public:
     // fallback to comparing by name
     else if ((Index1 < 0) && (Index2 < 0))
     {
-      Result = TComparer__1<UnicodeString>::Default()->Compare(CustomCommand1->Name, CustomCommand2->Name);
+      Result = AnsiCompareStr(CustomCommand1->Name, CustomCommand2->Name);
     }
     else
     {
-      Result = TComparer__1<int>::Default()->Compare(Index1, Index2);
+      Result = ((Index1 < Index2) ? -1 : ((Index1 > Index2) ? 1 : 0));
     }
     return Result;
   }

@@ -607,7 +607,7 @@ void __fastcall TScpCommanderForm::BatchEnd(void * Storage)
   OtherLocalDirView->WatchForChanges = LocalDirView->WatchForChanges;
   OtherLocalDriveView->WatchDirectory = LocalDirView->WatchForChanges;
 
-  delete Storage;
+  delete static_cast<bool *>(Storage);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::StartingWithoutSession()
@@ -1075,7 +1075,7 @@ void __fastcall TScpCommanderForm::UpdateControls()
     P = SplitterLongHint.Pos(L"\n");
   }
   SplitterLongHint.Delete(1, P);
-  Splitter->Hint = FORMAT(L"%0.0f%%\n%s", (LeftPanelWidth*100, SplitterLongHint));
+  Splitter->Hint = FORMAT(L"%0.0f%%\n%s", (static_cast<long double>(LeftPanelWidth*100), SplitterLongHint));
   UnicodeString ACommandLinePromptLabel = LoadStr(COMMAND_LINE_LABEL) + " " +
     (!IsSideLocalBrowser(FCurrentSide) ? L"$" : L">");
   if (CommandLinePromptLabel->Caption != ACommandLinePromptLabel)
@@ -1590,7 +1590,7 @@ void __fastcall TScpCommanderForm::SynchronizeBrowsing(TCustomDirView * ADirView
       }
 
     }
-    catch(Exception & E)
+    catch(Exception &)
     {
       NonVisualDataModule->SynchronizeBrowsingAction2->Checked = false;
       // what does this say?
@@ -1817,8 +1817,8 @@ void __fastcall TScpCommanderForm::DDFakeFileInitDrag(TFileList * FileList,
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalFileControlDDFileOperation(
-  TObject * Sender, int dwEffect, UnicodeString SourcePath,
-  UnicodeString TargetPath, bool Paste, bool & DoOperation)
+  TObject * Sender, int dwEffect, UnicodeString DebugUsedArg(SourcePath),
+  UnicodeString DebugUsedArg(TargetPath), bool Paste, bool & DoOperation)
 {
   if (IsFileControl(DropSourceControl, osRemote) && !IsLocalBrowserMode())
   {
@@ -2323,7 +2323,7 @@ void __fastcall TScpCommanderForm::LocalPathComboBoxCancel(TObject * /*Sender*/)
 }
 //---------------------------------------------------------------------------
 void TScpCommanderForm::DoLocalPathComboBoxAdjustImageIndex(
-  TTBXComboBoxItem * Sender, const UnicodeString AText, int AIndex, int & ImageIndex, TStrings * LocalPathComboBoxPaths)
+  TTBXComboBoxItem * Sender, const UnicodeString DebugUsedArg(AText), int AIndex, int & ImageIndex, TStrings * LocalPathComboBoxPaths)
 {
   // this may get called even before constructor starts
   // (e.g. from FixControlsPlacement)
@@ -2467,7 +2467,7 @@ void __fastcall TScpCommanderForm::CommandLineComboEditWndProc(TMessage & Messag
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::DriveNotification(TDriveNotification Notification, UnicodeString Drive)
+void __fastcall TScpCommanderForm::DriveNotification(TDriveNotification Notification, UnicodeString DebugUsedArg(Drive))
 {
   if (Notification == dnRefresh)
   {
@@ -2790,6 +2790,7 @@ void TScpCommanderForm::LocalLocalCopy(
     default:
       DebugFail();
       Abort();
+      Move = false; // shut up
   }
 
   TOperationSide OtherSide = GetOtherSide(GetSide(Side));

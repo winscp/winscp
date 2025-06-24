@@ -133,7 +133,7 @@ private:
   int FHintIndex;
   TLabel * FContextLabel;
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 };
 //---------------------------------------------------------------------------
 #endif

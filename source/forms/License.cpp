@@ -13,7 +13,7 @@
 #pragma package(smart_init)
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
-UnicodeString LicenseStr[2] =
+static UnicodeString LicenseStr[2] =
   { L"LICENSE", L"LICENSE_EXPAT" };
 //---------------------------------------------------------------------------
 void __fastcall DoLicenseDialog(TLicense License)

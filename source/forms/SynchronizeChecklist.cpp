@@ -1451,7 +1451,7 @@ void __fastcall TSynchronizeChecklistDialog::MoveActionExecute(TObject *)
   DebugAssert(IsTransferNewAction(TransferAction->Action));
   DebugAssert(GetOppositeMoveAction(DeleteAction->Action) == TransferAction->Action);
 
-  TOperationSide Side;
+  TOperationSide Side = TOperationSide(); // shut up
   UnicodeString NewFileName;
   DebugAssert(TransferAction->ChecklistItems.size() == 1);
   const TSynchronizeChecklist::TItem * TransferChecklistItem = TransferAction->ChecklistItems[0];
@@ -1469,7 +1469,7 @@ void __fastcall TSynchronizeChecklistDialog::MoveActionExecute(TObject *)
   if (DebugAlwaysTrue(!NewFileName.IsEmpty()))
   {
     bool Move = false;
-    bool TargetIsDirectory;
+    bool TargetIsDirectory = false; // shut up
     if ((TransferAction->AllItemsDirectories == DeleteAction->AllItemsDirectories) &&
         DebugAlwaysTrue(TransferAction->ItemsCount == 1) &&
         DebugAlwaysTrue(DeleteAction->ItemsCount == 1))

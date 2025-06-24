@@ -468,14 +468,14 @@ void __fastcall TSiteAdvancedDialog::SaveSession(TSessionData * SessionData)
 
   for (int Index = 0; Index < CIPHER_COUNT; Index++)
   {
-    SessionData->Cipher[Index] = (TCipher)CipherListBox->Items->Objects[Index];
+    SessionData->Cipher[Index] = static_cast<TCipher>(reinterpret_cast<uintptr_t>(CipherListBox->Items->Objects[Index]));
   }
 
   // Kex page
 
   for (int Index = 0; Index < KEX_COUNT; Index++)
   {
-    SessionData->Kex[Index] = (TKex)KexListBox->Items->Objects[Index];
+    SessionData->Kex[Index] = static_cast<TKex>(reinterpret_cast<uintptr_t>(KexListBox->Items->Objects[Index]));
   }
 
   FSessionData->AuthGSSAPIKEX = AuthGSSAPIKEXCheck->Checked;
@@ -1406,7 +1406,7 @@ void __fastcall TSiteAdvancedDialog::PrivateKeyEdit3AfterDialog(TObject * Sender
           }
         }
       }
-      catch (Exception & E)
+      catch (Exception &)
       {
         // swallow
       }

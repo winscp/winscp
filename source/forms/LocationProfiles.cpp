@@ -440,7 +440,7 @@ TTabSheet * TLocationProfilesDialog::GetProfilesSheet()
 }
 //---------------------------------------------------------------------------
 template<class T>
-typename T * GetProfilesObject(TObject * Sender, T * SessionObject, T * SharedObject)
+T * GetProfilesObject(TObject * Sender, T * SessionObject, T * SharedObject)
 {
   TControl * Control = dynamic_cast<TControl *>(Sender);
   DebugAssert(Control != NULL);

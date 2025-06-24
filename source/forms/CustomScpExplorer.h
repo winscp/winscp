@@ -44,14 +44,14 @@ class TQueueItemProxy;
 class TQueueController;
 class TSynchronizeController;
 class TEditorManager;
-class TEditorData;
+struct TEditorData;
 class TTransferPresetNoteData;
 struct TEditedFileData;
-class ITaskbarList3;
+struct ITaskbarList3;
 struct TSynchronizeParams;
 class TBookmark;
 class TManagedTerminal;
-class TCalculateSizeOperation;
+struct TCalculateSizeOperation;
 class TThumbnailDownloadQueueItem;
 //---------------------------------------------------------------------------
 enum TActionAllowed { aaShortCut, aaUpdate, aaExecute };
@@ -772,6 +772,7 @@ protected:
   bool CanCalculateChecksum();
   void RegenerateSessionColorsImageList();
   void WMQueueCallback(TMessage & Message);
+  void PasteFilesCleanupRetry(const UnicodeString & Target);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -847,8 +848,8 @@ public:
     bool OnFocused = false);
   void __fastcall ExecuteCurrentFileWith(bool OnFocused);
   void __fastcall EditNew(TOperationSide Side);
-  bool __fastcall AllowQueueOperation(TQueueOperation Operation, void ** Param = NULL);
-  void __fastcall ExecuteQueueOperation(TQueueOperation Operation, void * Param = NULL);
+  bool __fastcall AllowQueueOperation(TQueueOperation Operation, unsigned long * Param = NULL);
+  void __fastcall ExecuteQueueOperation(TQueueOperation Operation, unsigned long Param = 0);
   TQueueOperation __fastcall DefaultQueueOperation();
   bool __fastcall GetQueueEnabled();
   void __fastcall ToggleQueueEnabled();

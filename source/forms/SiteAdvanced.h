@@ -347,9 +347,7 @@ private:
   int NoUpdate;
   int FAlgDragSource;
   int FAlgDragDest;
-  int FOptions;
   UnicodeString FBeforeDialogPath;
-  TFSProtocol FFSProtocol;
   TSessionData * FSessionData;
   TColor FColor;
   UnicodeString FLastPrivateKey;
@@ -385,7 +383,7 @@ private:
   void SerializePuttyRegistry(const UnicodeString & Key, TStrings * Values);
   bool HasCertificate(const UnicodeString & FileName);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 };
 //----------------------------------------------------------------------------
 #endif

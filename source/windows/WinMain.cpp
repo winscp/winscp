@@ -485,11 +485,11 @@ void __fastcall TStartupThread::Execute()
   }
 }
 //---------------------------------------------------------------------------
-TStartupThread * StartupThread(new TStartupThread());
-TDateTime Started(Now());
-TDateTime LastStartupStartupSequence(Now());
-UnicodeString StartupSequence;
-int LifetimeRuns = -1;
+static TStartupThread * StartupThread(new TStartupThread());
+static TDateTime Started(Now());
+static TDateTime LastStartupStartupSequence(Now());
+static UnicodeString StartupSequence;
+static int LifetimeRuns = -1;
 //---------------------------------------------------------------------------
 void InterfaceStartDontMeasure()
 {
@@ -738,8 +738,8 @@ bool __fastcall SendToAnotherInstance()
       SetForegroundWindow(Handle);
 
       Message.Command = TCopyDataMessage::CommandCommandLine;
-      wcsncpy(Message.CommandLine, CmdLine, LENOF(Message.CommandLine));
-      NULL_TERMINATE(Message.CommandLine);
+      wcsncpy(Message.Data.CommandLine, CmdLine, LENOF(Message.Data.CommandLine));
+      NULL_TERMINATE(Message.Data.CommandLine);
 
       Result = SendCopyDataMessage(Handle, Message);
     }
@@ -762,10 +762,10 @@ void __fastcall Refresh(const UnicodeString & Session, const UnicodeString & Pat
 
     TCopyDataMessage Message;
     Message.Command = TCopyDataMessage::RefreshPanel;
-    wcsncpy(Message.Refresh.Session, Session.c_str(), LENOF(Message.Refresh.Session));
-    NULL_TERMINATE(Message.Refresh.Session);
-    wcsncpy(Message.Refresh.Path, Path.c_str(), LENOF(Message.Refresh.Path));
-    NULL_TERMINATE(Message.Refresh.Path);
+    wcsncpy(Message.Data.Refresh.Session, Session.c_str(), LENOF(Message.Data.Refresh.Session));
+    NULL_TERMINATE(Message.Data.Refresh.Session);
+    wcsncpy(Message.Data.Refresh.Path, Path.c_str(), LENOF(Message.Data.Refresh.Path));
+    NULL_TERMINATE(Message.Data.Refresh.Path);
 
     SendCopyDataMessage(Handle, Message);
 
@@ -877,7 +877,7 @@ int __fastcall Execute()
 
       Configuration->TemporaryLogSensitive(LogSensitive);
     }
-    int LogProtocol;
+    int LogProtocol = 0; // shut up
     if (!SwitchValue.IsEmpty() && TryStrToInt(SwitchValue, LogProtocol) && (LogProtocol >= -1))
     {
       Configuration->TemporaryLogProtocol(LogProtocol);
@@ -898,7 +898,7 @@ int __fastcall Execute()
       SwitchValue = SwitchValue.Trim();
     }
 
-    __int64 LogMaxSize;
+    __int64 LogMaxSize = 0; // shut up
     if ((LogMaxCount >= 0) &&
         !SwitchValue.IsEmpty() &&
         TryStrToSize(SwitchValue, LogMaxSize))
@@ -1318,13 +1318,13 @@ int __fastcall Execute()
                 // Start loading drives on the background asap,
                 // to prevent unnecessary refreshes after the explorer opens
                 DriveInfo->NeedData();
-                TCustomScpExplorerForm * ScpExplorer = CreateScpExplorer();
+                std::unique_ptr<TCustomScpExplorerForm> ScpExplorer(CreateScpExplorer());
                 AddStartupSequence(L"E");
                 CustomWinConfiguration->AppliedInterface = CustomWinConfiguration->Interface;
                 try
                 {
                   // moved inside try .. __finally, because it can fail as well
-                  TerminalManager->ScpExplorer = ScpExplorer;
+                  TerminalManager->ScpExplorer = ScpExplorer.get();
 
                   if ((ParamCommand != pcNone) || !DownloadFile.IsEmpty())
                   {
@@ -1339,17 +1339,17 @@ int __fastcall Execute()
                   }
                   else if (ParamCommand == pcFullSynchronize)
                   {
-                    FullSynchronize(TerminalManager->ActiveSession, ScpExplorer,
-                      CommandParams, UseDefaults);
+                    FullSynchronize(
+                      TerminalManager->ActiveSession, ScpExplorer.get(), CommandParams, UseDefaults);
                   }
                   else if (ParamCommand == pcSynchronize)
                   {
-                    Synchronize(TerminalManager->ActiveSession, ScpExplorer,
-                      CommandParams, UseDefaults);
+                    Synchronize(
+                      TerminalManager->ActiveSession, ScpExplorer.get(), CommandParams, UseDefaults);
                   }
                   else if (ParamCommand == pcEdit)
                   {
-                    Edit(ScpExplorer, CommandParams);
+                    Edit(ScpExplorer.get(), CommandParams);
                   }
                   else if (!DownloadFile.IsEmpty())
                   {
@@ -1379,7 +1379,6 @@ int __fastcall Execute()
                 __finally
                 {
                   TerminalManager->ScpExplorer = NULL;
-                  SAFE_DESTROY(ScpExplorer);
                 }
               }
             }
@@ -1390,7 +1389,7 @@ int __fastcall Execute()
           }
         }
         // Catch EAbort from Synchronize() and similar functions, so that CheckConfigurationForceSave is processed
-        catch (EAbort & E)
+        catch (EAbort &)
         {
           Retry = false; // unlikely to be true, but just in case
         }

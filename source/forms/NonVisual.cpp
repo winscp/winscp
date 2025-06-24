@@ -28,7 +28,6 @@
 #pragma resource "*.dfm"
 TNonVisualDataModule *NonVisualDataModule;
 //---------------------------------------------------------------------------
-#define SCPCOMMANDER ((TScpCommanderForm *)ScpExplorer)
 #define UPDEX(HandleAction, Condition, OtherEnabled, OtherDisabled) if (Action == HandleAction) { \
   ((TCustomAction *)Action)->Enabled = (Condition); \
   if (((TCustomAction *)Action)->Enabled) { OtherEnabled; } else { OtherDisabled; }; \
@@ -128,7 +127,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     Handled = true;
     return;
   }
-  void * AuxVoidPtr;
+  unsigned long AuxULong;
   int AuxInt;
   #define HasManagedSession (ScpExplorer->ManagedSession != NULL)
   #define HasTerminal ScpExplorer->HasAvailableTerminal()
@@ -497,8 +496,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDQUEUE(DeleteAll)
   UPDQUEUE(DeleteAllDone)
   #undef UPDQUEUE
-  UPDEX(QueueItemSpeedAction, ScpExplorer->AllowQueueOperation(qoItemSpeed, &AuxVoidPtr),
-    QueueItemSpeedAction->Text = SetSpeedLimit(reinterpret_cast<unsigned long>(AuxVoidPtr)),
+  UPDEX(QueueItemSpeedAction, ScpExplorer->AllowQueueOperation(qoItemSpeed, &AuxULong),
+    QueueItemSpeedAction->Text = SetSpeedLimit(AuxULong),
     QueueItemSpeedAction->Text = L"")
   UPDEX1(QueueToggleShowAction, !ScpExplorer->IsLocalBrowserMode(), Action->Checked = ScpExplorer->ComponentVisible[fcQueueView])
   #define QUEUEACTION(SHOW) \
@@ -1793,7 +1792,7 @@ UnicodeString __fastcall TNonVisualDataModule::QueueItemSpeed(const UnicodeStrin
 {
   // Keep in sync with TProgressForm::ItemSpeed
   unsigned long Speed = GetSpeedLimit(Text);
-  ScpExplorer->ExecuteQueueOperation(qoItemSpeed, reinterpret_cast<void*>(Speed));
+  ScpExplorer->ExecuteQueueOperation(qoItemSpeed, Speed);
 
   UnicodeString Result = SetSpeedLimit(Speed);
   SaveToHistory(Item->Strings, Result);
@@ -1887,6 +1886,7 @@ TAction * __fastcall TNonVisualDataModule::CurrentQueueOnceEmptyAction()
   else
   {
     DebugFail();
+    Result = NULL; // shut up
   }
   return Result;
 }
@@ -1914,6 +1914,7 @@ TOnceDoneOperation __fastcall TNonVisualDataModule::CurrentQueueOnceEmptyOperati
   else
   {
     DebugFail();
+    Result = odoIdle; // shut up
   }
   return Result;
 }

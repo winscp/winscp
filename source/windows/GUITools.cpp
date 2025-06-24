@@ -13,7 +13,7 @@
 #include <CoreMain.h>
 #include <SessionData.h>
 #include <WinInterface.h>
-#include <TbxUtils.hpp>
+#include <TBXUtils.hpp>
 #include <Math.hpp>
 #include <Tools.h>
 #include "PngImageList.hpp"
@@ -422,7 +422,7 @@ UnicodeString FindPuttyPath()
   return Program;
 }
 //---------------------------------------------------------------------------
-unsigned int PipeCounter = 0;
+static unsigned int PipeCounter = 0;
 //---------------------------------------------------------------------------
 void OpenSessionInPutty(TSessionData * SessionData)
 {
@@ -745,8 +745,8 @@ static bool __fastcall DoExecuteShell(const UnicodeString Path, const UnicodeStr
       SEE_MASK_FLAG_NO_UI |
       FLAGMASK((Handle != NULL), SEE_MASK_NOCLOSEPROCESS);
     ExecuteInfo.hwnd = Application->Handle;
-    ExecuteInfo.lpFile = (wchar_t*)Path.data();
-    ExecuteInfo.lpParameters = (wchar_t*)Params.data();
+    ExecuteInfo.lpFile = static_cast<const wchar_t *>(Path.data());
+    ExecuteInfo.lpParameters = static_cast<const wchar_t *>(Params.data());
     ExecuteInfo.lpDirectory = (ChangeWorkingDirectory ? Directory.c_str() : NULL);
     ExecuteInfo.nShow = SW_SHOW;
 
@@ -1356,7 +1356,7 @@ protected:
   }
 
   virtual HRESULT STDMETHODCALLTYPE ShowContextMenu(
-    DWORD dwID, POINT * ppt, IUnknown * pcmdtReserved, IDispatch * pdispReserved)
+    DWORD DebugUsedArg(dwID), POINT *, IUnknown *, IDispatch *)
   {
     // No context menu
     // (implementing IDocHostUIHandler reenabled context menu disabled by TBrowserViewer::DoContextPopup)
@@ -1372,8 +1372,7 @@ protected:
   }
 
   virtual HRESULT STDMETHODCALLTYPE ShowUI(
-    DWORD dwID, IOleInPlaceActiveObject * pActiveObject, IOleCommandTarget * pCommandTarget, IOleInPlaceFrame * pFrame,
-    IOleInPlaceUIWindow * pDoc)
+    DWORD DebugUsedArg(dwID), IOleInPlaceActiveObject *, IOleCommandTarget *, IOleInPlaceFrame *, IOleInPlaceUIWindow *)
   {
     return E_NOTIMPL;
   }
@@ -1388,52 +1387,52 @@ protected:
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE EnableModeless(BOOL fEnable)
+  virtual HRESULT STDMETHODCALLTYPE EnableModeless(BOOL DebugUsedArg(fEnable))
   {
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE OnDocWindowActivate(BOOL fActivate)
+  virtual HRESULT STDMETHODCALLTYPE OnDocWindowActivate(BOOL DebugUsedArg(fActivate))
   {
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE OnFrameWindowActivate(BOOL fActivate)
+  virtual HRESULT STDMETHODCALLTYPE OnFrameWindowActivate(BOOL DebugUsedArg(fActivate))
   {
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE ResizeBorder(LPCRECT prcBorder, IOleInPlaceUIWindow * pUIWindow, BOOL fRameWindow)
+  virtual HRESULT STDMETHODCALLTYPE ResizeBorder(LPCRECT, IOleInPlaceUIWindow *, BOOL DebugUsedArg(fRameWindow))
   {
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE TranslateAccelerator(LPMSG lpMsg, const GUID * pguidCmdGroup, DWORD nCmdID)
+  virtual HRESULT STDMETHODCALLTYPE TranslateAccelerator(LPMSG, const GUID * DebugUsedArg(pguidCmdGroup), DWORD DebugUsedArg(nCmdID))
   {
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE GetOptionKeyPath(LPOLESTR * pchKey, DWORD dw)
+  virtual HRESULT STDMETHODCALLTYPE GetOptionKeyPath(LPOLESTR * DebugUsedArg(pchKey), DWORD DebugUsedArg(dw))
   {
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE GetDropTarget(IDropTarget * pDropTarget, IDropTarget ** ppDropTarget)
+  virtual HRESULT STDMETHODCALLTYPE GetDropTarget(IDropTarget *, IDropTarget **)
   {
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE GetExternal(IDispatch ** ppDispatch)
+  virtual HRESULT STDMETHODCALLTYPE GetExternal(IDispatch **)
   {
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE TranslateUrl(DWORD dwTranslate, OLECHAR * pchURLIn, OLECHAR ** ppchURLOut)
+  virtual HRESULT STDMETHODCALLTYPE TranslateUrl(DWORD DebugUsedArg(dwTranslate), OLECHAR * DebugUsedArg(pchURLIn), OLECHAR ** DebugUsedArg(ppchURLOut))
   {
     return E_NOTIMPL;
   }
 
-  virtual HRESULT STDMETHODCALLTYPE FilterDataObject(IDataObject * pDO, IDataObject ** ppDORet)
+  virtual HRESULT STDMETHODCALLTYPE FilterDataObject(IDataObject *, IDataObject **)
   {
     return E_NOTIMPL;
   }
@@ -2231,7 +2230,7 @@ TRect __fastcall TScreenTipHintWindow::CalcHintRect(int MaxWidth, const UnicodeS
   Canvas->Font->Assign(GetFont(HintControl, AHint));
 
   // from XE6 Vcl.ScreenTips.pas, but absent in 11
-  const cScreenTipTextOnlyWidth = 210;
+  const int cScreenTipTextOnlyWidth = 210;
   const int ScreenTipTextOnlyWidth = ScaleByTextHeight(HintControl, cScreenTipTextOnlyWidth);
 
   int LongHintMargin = 0; // shut up
@@ -2629,7 +2628,7 @@ bool __fastcall TDarkExplorerUxThemeStyle::DoDrawText(
   return TDarkUxThemeStyle::DoDrawText(DC, Details, S, R, Flags, Options, DPI);
 }
 //---------------------------------------------------------------------------
-std::unique_ptr<TDarkExplorerUxThemeStyle> DarkExplorerUxThemeStyle;
+static std::unique_ptr<TDarkExplorerUxThemeStyle> DarkExplorerUxThemeStyle;
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 // Based on:
@@ -2967,8 +2966,8 @@ private:
   TDateTime FLastRequired;
 };
 //---------------------------------------------------------------------------
-std::unique_ptr<TCriticalSection> SystemRequiredThreadSection(TraceInitPtr(new TCriticalSection()));
-TSystemRequiredThread * SystemRequiredThread = NULL;
+static std::unique_ptr<TCriticalSection> SystemRequiredThreadSection(TraceInitPtr(new TCriticalSection()));
+static TSystemRequiredThread * SystemRequiredThread = NULL;
 //---------------------------------------------------------------------------
 TSystemRequiredThread::TSystemRequiredThread() :
   TSignalThread(true), FRequired(false)

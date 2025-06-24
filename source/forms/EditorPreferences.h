@@ -54,7 +54,7 @@ private:
   UnicodeString FSystemExternalEditor;
   TEditorData FExternalEditorDefaults;
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 };
 //---------------------------------------------------------------------------
 #endif

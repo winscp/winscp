@@ -179,7 +179,6 @@ protected:
   DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
 
 private:
-  HINSTANCE FLibrary;
   bool FWordWrap;
   unsigned int FTabSize;
   bool FInitialized;
@@ -192,9 +191,8 @@ private:
 //---------------------------------------------------------------------------
 __fastcall TEditorRichEdit::TEditorRichEdit(TComponent * AOwner) :
   TRichEdit(AOwner),
-  FLibrary(0),
-  FTabSize(0),
   FWordWrap(true),
+  FTabSize(0),
   FInitialized(false),
   FLoadedWithPreamble(false)
 {
@@ -391,7 +389,7 @@ struct TStreamLoadInfo
 // VCLCOPY Vcl.ComCtrls.pas,
 // WORKAROUND for bug in BCB XE2-XE6 VCL
 // Fixes conversion from UTF-8, when read buffer ends in the middle of UTF-8 char
-static unsigned long __stdcall StreamLoad(DWORD_PTR Cookie, unsigned char * Buff, long Read, long * WasRead)
+unsigned long __stdcall StreamLoad(DWORD_PTR Cookie, unsigned char * Buff, long Read, long * WasRead)
 {
   TStreamLoadInfo * LoadInfo = reinterpret_cast<TStreamLoadInfo *>(Cookie);
   unsigned long Result =
@@ -604,13 +602,13 @@ bool __stdcall TEditorRichEdit::StreamLoad(
 
     Result = true;
   }
-  catch (EEncodingError & E)
+  catch (EEncodingError &)
   {
     FStreamLoadError = true;
     FStreamLoadEncodingError = true;
     Result = false;
   }
-  catch (Exception & E)
+  catch (Exception &)
   {
     FStreamLoadError = true;
     Result = false;

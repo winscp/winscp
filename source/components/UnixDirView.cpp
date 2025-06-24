@@ -3,6 +3,8 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#ifndef DESIGN_ONLY
+#endif
 #include <Common.h>
 
 #include "UnixDirView.h"
@@ -40,7 +42,9 @@ namespace Unixdirview
   }
 }
 //---------------------------------------------------------------------------
+#ifndef DESIGN_ONLY
 #define HOMEDIRECTORY L""
+#endif
 //---------------------------------------------------------------------------
 __fastcall TUnixDirView::TUnixDirView(TComponent* Owner)
         : TCustomUnixDirView(Owner)
@@ -449,7 +453,7 @@ void __fastcall TUnixDirView::GetDisplayInfo(TListItem * Item, tagLVITEMW &DispI
         case uvType: Value = File->TypeName; break;
         default: DebugFail();
       }
-      StrPLCopy(DispInfo.pszText, Value, DispInfo.cchTextMax - 1);
+      StrPLCopy(DispInfo.pszText, Value, static_cast<unsigned int>(DispInfo.cchTextMax - 1));
     }
 
     if (DispInfo.iSubItem == 0 && DispInfo.mask & LVIF_IMAGE)
@@ -761,14 +765,19 @@ void __fastcall TUnixDirView::SetPath(UnicodeString Value)
     PathChanging(true);
     Terminal->CurrentDirectory = Value;
   }
+#else
+  DebugUsedParam(Value);
 #endif
 }
 //---------------------------------------------------------------------------
 #ifndef DESIGN_ONLY
 #define COMPARE_NUMBER(Num1, Num2) ( Num1 < Num2 ? -1 : ( Num1 > Num2 ? 1 : 0) )
 //---------------------------------------------------------------------------
-int __stdcall CompareFile(TListItem * Item1, TListItem * Item2, TUnixDirView * DirView)
+int __stdcall CompareFile(INT_PTR AItem1, INT_PTR AItem2, INT_PTR ADirView)
 {
+  TListItem * Item1 = reinterpret_cast<TListItem *>(AItem1);
+  TListItem * Item2 = reinterpret_cast<TListItem *>(AItem2);
+  TUnixDirView * DirView = reinterpret_cast<TUnixDirView *>(ADirView);
   DebugAssert((Item1 != NULL) && (Item2 != NULL));
   TRemoteFile * File1 = DebugNotNull((TRemoteFile *)(Item1->Data));
   TRemoteFile * File2 = DebugNotNull((TRemoteFile *)(Item2->Data));
@@ -969,6 +978,8 @@ void __fastcall TUnixDirView::ChangeDirectory(UnicodeString Path)
       Reload(false);
     };
   }
+#else
+  DebugUsedParam(Path);
 #endif
 }
 //---------------------------------------------------------------------------
@@ -1025,6 +1036,7 @@ void __fastcall TUnixDirView::CreateDirectoryEx(UnicodeString DirName, const TRe
   }
   Terminal->CreateDirectory(DirName, Properties);
 #else
+  DebugUsedParam(DirName);
   DebugUsedParam(Properties);
 #endif
 }
@@ -1076,7 +1088,6 @@ TDateTime __fastcall TUnixDirView::ItemFileTime(TListItem * Item,
       break;
 
     case mfFull:
-    default:
       Precision = tpSecond;
       break;
   }

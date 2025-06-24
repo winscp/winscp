@@ -2,8 +2,8 @@
 #ifndef GUIToolsH
 #define GUIToolsH
 //---------------------------------------------------------------------------
-#include <FileMasks.H>
-#include <Tbx.hpp>
+#include <FileMasks.h>
+#include <TBX.hpp>
 #include <DirectoryMonitor.hpp>
 //---------------------------------------------------------------------------
 class TSessionData;

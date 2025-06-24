@@ -739,6 +739,53 @@ void __fastcall TTerminalManager::FreeAll()
   }
 }
 //---------------------------------------------------------------------------
+void TTerminalManager::FreeTerminalCleanup(TTerminal * ATerminal, bool IsActiveSession)
+{
+  int Index = IndexOf(ATerminal);
+  Extract(ATerminal);
+
+  TTerminalQueue * Queue;
+  Queue = reinterpret_cast<TTerminalQueue *>(FQueues->Items[Index]);
+  FQueues->Delete(Index);
+
+  if (IsActiveSession)
+  {
+    TManagedTerminal * NewActiveTerminal;
+    bool LastTerminalClosed = false;
+
+    if (FDestroying)
+    {
+      NewActiveTerminal = NULL;
+    }
+    else
+    {
+      if (Count > 0)
+      {
+        NewActiveTerminal = Sessions[Index < Count ? Index : Index - 1];
+        if (!NewActiveTerminal->Active && !NewActiveTerminal->Disconnected)
+        {
+          NewActiveTerminal->Disconnected = true;
+          NewActiveTerminal->DisconnectedTemporarily = true;
+        }
+      }
+      else
+      {
+        NewActiveTerminal = NULL;
+        LastTerminalClosed = true;
+        if (ScpExplorer != NULL)
+        {
+          TAutoNestingCounter UpdatingCounter(FUpdating); // prevent tab flicker
+          NewActiveTerminal = ScpExplorer->GetReplacementForLastSession();
+        }
+      }
+    }
+    DoSetActiveSession(NewActiveTerminal, false, LastTerminalClosed);
+  }
+
+  // only now all references to/from queue (particularly events to explorer) are cleared
+  delete Queue;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::FreeTerminal(TTerminal * Terminal)
 {
   TTerminal * ATerminal = Terminal;
@@ -801,50 +848,8 @@ void __fastcall TTerminalManager::FreeTerminal(TTerminal * Terminal)
   }
   __finally
   {
-    int Index = IndexOf(ATerminal);
-    Extract(ATerminal);
+    FreeTerminalCleanup(ATerminal, IsActiveSession);
 
-    TTerminalQueue * Queue;
-    Queue = reinterpret_cast<TTerminalQueue *>(FQueues->Items[Index]);
-    FQueues->Delete(Index);
-
-    if (IsActiveSession)
-    {
-      TManagedTerminal * NewActiveTerminal;
-      bool LastTerminalClosed = false;
-
-      if (FDestroying)
-      {
-        NewActiveTerminal = NULL;
-      }
-      else
-      {
-        if (Count > 0)
-        {
-          NewActiveTerminal = Sessions[Index < Count ? Index : Index - 1];
-          if (!NewActiveTerminal->Active && !NewActiveTerminal->Disconnected)
-          {
-            NewActiveTerminal->Disconnected = true;
-            NewActiveTerminal->DisconnectedTemporarily = true;
-          }
-        }
-        else
-        {
-          NewActiveTerminal = NULL;
-          LastTerminalClosed = true;
-          if (ScpExplorer != NULL)
-          {
-            TAutoNestingCounter UpdatingCounter(FUpdating); // prevent tab flicker
-            NewActiveTerminal = ScpExplorer->GetReplacementForLastSession();
-          }
-        }
-      }
-      DoSetActiveSession(NewActiveTerminal, false, LastTerminalClosed);
-    }
-
-    // only now all references to/from queue (particularly events to explorer)
-    // are cleared
-    delete Queue;
     delete Terminal; // noop if abandoned
 
     DoSessionListChanged();
@@ -1412,7 +1417,7 @@ void __fastcall TTerminalManager::TerminalPromptUser(
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalDisplayBanner(
-  TTerminal * Terminal, UnicodeString SessionName,
+  TTerminal * Terminal, UnicodeString DebugUsedArg(SessionName),
   const UnicodeString & Banner, bool & NeverShowAgain, int Options, unsigned int & Params)
 {
   DebugAssert(FAuthenticateForm != NULL);
@@ -2036,11 +2041,11 @@ void __fastcall TTerminalManager::Idle(bool SkipCurrentTerminal)
   }
 
   TTerminalQueue * QueueWithEvent;
-  TQueueEvent QueueEvent;
 
   do
   {
     QueueWithEvent = NULL;
+    TQueueEvent QueueEvent = TQueueEvent(); // shut up
 
     {
       TGuard Guard(FQueueSection);
@@ -2210,7 +2215,7 @@ bool __fastcall TTerminalManager::UploadPublicKey(
         Terminal->OnFinished = NULL;
         DoConnectTerminal(Terminal, false, true);
       }
-      catch (Exception & E)
+      catch (Exception &)
       {
         CloseAutheticateForm();
         throw;
@@ -2374,7 +2379,7 @@ TThumbnailDownloadQueueItem::TThumbnailDownloadQueueItem(
     TCustomScpExplorerForm * ScpExplorer, TManagedTerminal * Terminal, const UnicodeString & SourceDir,
     const UnicodeString & TargetDir, const TCopyParamType * CopyParam) :
   TTransferQueueItem(Terminal, NULL, TargetDir, CopyParam, cpNoConfirmation | cpTemporary, osRemote, true, false),
-  FScpExplorer(ScpExplorer), FManagedTerminal(Terminal)
+  FManagedTerminal(Terminal), FScpExplorer(ScpExplorer)
 {
   FInfo->Source = SourceDir;
 }

@@ -6,7 +6,7 @@
 #include <Vcl.Controls.hpp>
 #include <Vcl.StdCtrls.hpp>
 //----------------------------------------------------------------------------
-#include <Windows.h>
+#include <windows.h>
 #include <GUITools.h>
 //----------------------------------------------------------------------------
 class TCustomDialog : public TForm
@@ -41,7 +41,7 @@ protected:
   virtual void __fastcall DoHelp();
   void __fastcall Change(TObject * Sender);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   __fastcall TCustomDialog(UnicodeString HelpKeyword);

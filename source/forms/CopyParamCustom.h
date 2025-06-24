@@ -24,7 +24,7 @@ public:
   bool __fastcall Execute(TCopyParamType & CopyParam);
 
 protected:
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 };
 //---------------------------------------------------------------------------
 #endif

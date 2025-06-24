@@ -557,7 +557,6 @@ private:
   double FLastLeftPanelWidth;
   double FLeftPanelWidth;
   int FNormalPanelsWidth;
-  int FLastWidth;
   bool FSynchronisingBrowse;
   TStrings * FInternalDDDownloadList;
   UnicodeString FPrevPath[2];
@@ -567,7 +566,6 @@ private:
   TStrings * FLocalPathComboBoxPaths;
   TStrings * FOtherLocalPathComboBoxPaths;
   int FLocalSpecialPaths;
-  unsigned int FSpecialFolders;
   TEdit * FCommandLineComboEdit;
   TWndMethod FToolbarEditOldWndProc;
   bool FPanelsRestored;

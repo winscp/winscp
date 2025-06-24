@@ -75,7 +75,7 @@ private:
   void __fastcall CancelOperation();
   void __fastcall CMDialogKey(TCMDialogKey & Message);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 };
 //---------------------------------------------------------------------------
 #endif

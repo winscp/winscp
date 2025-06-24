@@ -206,7 +206,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
       }
     }
   }
-  catch (Exception & E)
+  catch (Exception &)
   {
     // swallow
   }

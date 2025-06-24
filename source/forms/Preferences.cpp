@@ -859,10 +859,11 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     GUIConfiguration->QueueAutoPopup = QueueAutoPopupCheck->Checked;
     CopyParam.Queue = QueueCheck->Checked;
     CopyParam.QueueParallel = QueueParallelCheck->Checked;
-    __int64 ParallelTransferThreshold;
+    __int64 ParallelTransferThreshold = 0; // shut up
     if (ParallelTransferCheck->Checked && TryStrToSize(ParallelTransferThresholdCombo->Text, ParallelTransferThreshold))
     {
-      Configuration->ParallelTransferThreshold = std::min(ParallelTransferThreshold / 1024, static_cast<__int64>(std::numeric_limits<int>::max()));
+      Configuration->ParallelTransferThreshold =
+        static_cast<int>(std::min(ParallelTransferThreshold / 1024, static_cast<__int64>(std::numeric_limits<int>::max())));
     }
     else
     {
@@ -1038,7 +1039,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     Configuration->LogProtocol = LogProtocolCombo2->ItemIndex - BelowNormalLogLevels;
     Configuration->LogFileName = LogFileNameEdit3->Text;
     Configuration->LogFileAppend = LogFileAppendButton->Checked;
-    __int64 LogMaxSize;
+    __int64 LogMaxSize = 0; // shut up
     // TryStrToSize can fail, only if LogMaxSizeComboExit is bypassed due to IsCancelButtonBeingClicked
     if (LogMaxSizeCheck->Checked && TryStrToSize(LogMaxSizeCombo->Text, LogMaxSize))
     {
@@ -1080,7 +1081,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
   }
 
   bool MoveStorage = true;
-  TStorage Storage;
+  TStorage Storage = TStorage(); // shut up
   if (RegistryStorageButton->Checked)
   {
     Storage = stRegistry;
@@ -1607,7 +1608,7 @@ void __fastcall TPreferencesDialog::FormCloseQuery(TObject * /*Sender*/,
 void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
 {
   UnicodeString IconName, Params;
-  int SpecialFolder;
+  int SpecialFolder = 0; // shut up
 
   if (Sender == DesktopIconButton)
   {
@@ -3335,7 +3336,7 @@ void __fastcall TPreferencesDialog::AddEditFileColor(bool Edit)
       }
       else
       {
-        FFileColors.insert(&FFileColors[Index], FileColorData);
+        FFileColors.insert(FFileColors.begin() + Index, FileColorData);
       }
     }
 

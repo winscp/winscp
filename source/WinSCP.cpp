@@ -21,13 +21,13 @@ void __fastcall AppLogImpl(UnicodeString S)
   AppLog(S);
 }
 //---------------------------------------------------------------------------
-WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
+int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 {
   int Result = 0;
   try
   {
     TProgramParams * Params = TProgramParams::Instance();
-    ApplicationLog = new TApplicationLog();
+    TObjectReleaser<TApplicationLog> ApplicationLogReleaser(ApplicationLog, new TApplicationLog());
     UnicodeString AppLogPath;
     if (Params->FindSwitch(L"applog", AppLogPath))
     {
@@ -89,16 +89,15 @@ WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
     }
     __finally
     {
-      AppLog(L"Finalizing");
+      AppLogImpl(L"Finalizing"); // AppLog causes internal compiler error
       GUIFinalize();
       FinalizeSystemSettings();
       FinalizeWinHelp();
       CoreFinalize();
       WinFinalize();
       LogModules();
-      AppLog(L"Finalizing done");
+      AppLogImpl(L"Finalizing done");
       OnAppLog = NULL;
-      SAFE_DESTROY_EX(TApplicationLog, ApplicationLog);
     }
   }
   catch (Exception &E)

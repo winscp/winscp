@@ -12,7 +12,7 @@
 class TCustomScpExplorerForm;
 class TTerminalQueue;
 class TAuthenticateForm;
-class ITaskbarList3;
+struct ITaskbarList3;
 class TThumbnailDownloadQueueItem;
 //---------------------------------------------------------------------------
 enum TTerminalPendingAction { tpNull, tpNone, tpReconnect, tpFree };
@@ -254,6 +254,7 @@ private:
   TTerminalThread * CreateTerminalThread(TTerminal * Terminal);
   void ReconnectingTerminal(TManagedTerminal * ManagedTerminal);
   void ReconnectedTerminal(TManagedTerminal * ManagedTerminal);
+  void FreeTerminalCleanup(TTerminal * ATerminal, bool IsActiveSession);
 };
 //---------------------------------------------------------------------------
 class TThumbnailDownloadQueueItem : public TTransferQueueItem
@@ -270,8 +271,6 @@ protected:
 private:
   TManagedTerminal * FManagedTerminal;
   TCustomScpExplorerForm * FScpExplorer;
-  int FIndex;
-  bool FVisible;
 
   bool Continue();
   bool CheckQueueFront(int Index, const UnicodeString & FileName, TSize ThumbnailSize);

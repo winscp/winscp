@@ -137,7 +137,7 @@ protected:
   void AutoSizeTagsView();
   void AddEditTag(bool Add);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   virtual __fastcall TPropertiesDialog(TComponent * AOwner,

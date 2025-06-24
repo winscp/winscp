@@ -39,11 +39,9 @@
 #undef SECURITY_FLAG_IGNORE_CERT_CN_INVALID
 
 #define URL_COMPONENTS URL_COMPONENTS_ANOTHER
-#define URL_COMPONENTSA URL_COMPONENTSA_ANOTHER
 #define URL_COMPONENTSW URL_COMPONENTSW_ANOTHER
 
 #define LPURL_COMPONENTS LPURL_COMPONENTS_ANOTHER
-#define LPURL_COMPONENTSA LPURL_COMPONENTS_ANOTHER
 #define LPURL_COMPONENTSW LPURL_COMPONENTS_ANOTHER
 
 #define INTERNET_SCHEME INTERNET_SCHEME_ANOTHER
@@ -196,7 +194,7 @@ void __fastcall LoadListViewStr(TCustomListView * ListView, UnicodeString ALayou
   }
 }
 //---------------------------------------------------------------------------
-wchar_t FormDataSep = L';';
+static wchar_t FormDataSep = L';';
 //---------------------------------------------------------------------------
 void LoadFormDimensions(
   const UnicodeString & AData, int PixelsPerInch, Forms::TMonitor * Monitor, TForm * Form, TRect & Bounds, bool & DefaultPos)
@@ -807,7 +805,7 @@ void __fastcall OpenBrowser(UnicodeString URL)
 void __fastcall OpenFolderInExplorer(const UnicodeString & Path)
 {
   if ((int)ShellExecute(Application->Handle, L"explore",
-      (wchar_t*)Path.data(), NULL, NULL, SW_SHOWNORMAL) <= 32)
+      static_cast<const wchar_t*>(Path.data()), NULL, NULL, SW_SHOWNORMAL) <= 32)
   {
     throw Exception(FMTLOAD(EXPLORE_LOCAL_DIR_ERROR, (Path)));
   }
@@ -1567,7 +1565,7 @@ bool __fastcall DetectSystemExternalEditor(
 //---------------------------------------------------------------------------
 // this was moved to global scope in past in some attempt to fix crashes,
 // not sure it really helped
-WINHTTP_CURRENT_USER_IE_PROXY_CONFIG IEProxyInfo;
+static WINHTTP_CURRENT_USER_IE_PROXY_CONFIG IEProxyInfo;
 //---------------------------------------------------------------------------
 static bool __fastcall GetProxyUrlFromIE(UnicodeString & Proxy)
 {
@@ -1720,21 +1718,21 @@ void __fastcall FinalizeCustomHelp()
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-bool __fastcall TWinHelpTester::CanShowALink(const UnicodeString ALink,
-  const UnicodeString FileName)
+bool __fastcall TWinHelpTester::CanShowALink(
+  const UnicodeString DebugUsedArg(ALink), const UnicodeString DebugUsedArg(FileName))
 {
   return !Application->HelpFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TWinHelpTester::CanShowTopic(const UnicodeString Topic,
-  const UnicodeString FileName)
+bool __fastcall TWinHelpTester::CanShowTopic(
+  const UnicodeString DebugUsedArg(Topic), const UnicodeString DebugUsedArg(FileName))
 {
   DebugFail();
   return !Application->HelpFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TWinHelpTester::CanShowContext(const int /*Context*/,
-  const UnicodeString FileName)
+bool __fastcall TWinHelpTester::CanShowContext(
+  const int DebugUsedArg(Context), const UnicodeString DebugUsedArg(FileName))
 {
   DebugFail();
   return !Application->HelpFile.IsEmpty();

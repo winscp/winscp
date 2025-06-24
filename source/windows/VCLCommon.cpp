@@ -1073,10 +1073,7 @@ void __fastcall UseSystemSettingsPre(TForm * Control)
 {
   LocalSystemSettings(Control);
 
-  TWndMethod WindowProc;
-  ((TMethod*)&WindowProc)->Data = Control;
-  ((TMethod*)&WindowProc)->Code = FormWindowProc;
-  Control->WindowProc = WindowProc;
+  Control->WindowProc = MakeMethod<TWndMethod>(Control, FormWindowProc);
 
   if (Control->HelpKeyword.IsEmpty())
   {
@@ -2248,10 +2245,7 @@ void __fastcall HintLabel(TStaticText * StaticText, UnicodeString Hint)
   StaticText->ShowHint = true;
   StaticText->Cursor = crHandPoint;
 
-  TWndMethod WindowProc;
-  ((TMethod*)&WindowProc)->Data = StaticText;
-  ((TMethod*)&WindowProc)->Code = HintLabelWindowProc;
-  StaticText->WindowProc = WindowProc;
+  StaticText->WindowProc = MakeMethod<TWndMethod>(StaticText, HintLabelWindowProc);
 }
 //---------------------------------------------------------------------------
 static void __fastcall ComboBoxFixWindowProc(void * Data, TMessage & Message)
@@ -2286,10 +2280,7 @@ static void __fastcall ComboBoxFixWindowProc(void * Data, TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall FixComboBoxResizeBug(TCustomComboBox * ComboBox)
 {
-  TWndMethod WindowProc;
-  ((TMethod*)&WindowProc)->Data = ComboBox;
-  ((TMethod*)&WindowProc)->Code = ComboBoxFixWindowProc;
-  ComboBox->WindowProc = WindowProc;
+  ComboBox->WindowProc = MakeMethod<TWndMethod>(ComboBox, ComboBoxFixWindowProc);
 }
 //---------------------------------------------------------------------------
 static void __fastcall LinkLabelClick(TStaticText * StaticText)
@@ -2374,10 +2365,7 @@ static void __fastcall DoLinkLabel(TStaticText * StaticText)
   StaticText->ParentFont = true;
   StaticText->Cursor = crHandPoint;
 
-  TWndMethod WindowProc;
-  ((TMethod*)&WindowProc)->Data = StaticText;
-  ((TMethod*)&WindowProc)->Code = LinkLabelWindowProc;
-  StaticText->WindowProc = WindowProc;
+  StaticText->WindowProc = MakeMethod<TWndMethod>(StaticText, LinkLabelWindowProc);
 }
 //---------------------------------------------------------------------------
 void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url,
@@ -2401,9 +2389,7 @@ void __fastcall LinkLabel(TStaticText * StaticText, UnicodeString Url,
     StaticText->PopupMenu = new TPopupMenu(StaticText);
     try
     {
-      TNotifyEvent ContextMenuOnClick;
-      ((TMethod*)&ContextMenuOnClick)->Data = StaticText;
-      ((TMethod*)&ContextMenuOnClick)->Code = LinkLabelContextMenuClick;
+      TNotifyEvent ContextMenuOnClick = MakeMethod<TNotifyEvent>(StaticText, LinkLabelContextMenuClick);
 
       TMenuItem * Item;
 
@@ -2807,7 +2793,7 @@ void __fastcall TDesktopFontManager::WndProc(TMessage & Message)
   Message.Result = DefWindowProc(FWindowHandle, Message.Msg, Message.WParam, Message.LParam);
 }
 //---------------------------------------------------------------------------
-std::unique_ptr<TDesktopFontManager> DesktopFontManager(new TDesktopFontManager());
+static std::unique_ptr<TDesktopFontManager> DesktopFontManager(new TDesktopFontManager());
 //---------------------------------------------------------------------------
 // This might be somewhat redundant now that at least the default Desktop font is actually the default VCL font
 void __fastcall UseDesktopFont(TControl * Control)

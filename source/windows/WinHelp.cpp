@@ -57,7 +57,7 @@ __fastcall TWebHelpSystem::TWebHelpSystem(
 {
 }
 //---------------------------------------------------------------------------
-int __fastcall TWebHelpSystem::UnderstandsKeyword(const UnicodeString HelpString)
+int __fastcall TWebHelpSystem::UnderstandsKeyword(const UnicodeString DebugUsedArg(HelpString))
 {
   // pretend that we know everything
   return 1;

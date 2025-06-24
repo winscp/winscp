@@ -223,7 +223,7 @@ protected:
   void DoSynchronize(bool Queue);
   void PathToClipboard(bool Local);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 };
 //----------------------------------------------------------------------------
 #endif

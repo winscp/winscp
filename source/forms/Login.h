@@ -447,7 +447,7 @@ protected:
   virtual void __fastcall CreateWnd();
   __property TSessionData * SelectedSession  = { read=GetSelectedSession };
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   virtual __fastcall TLoginDialog(TComponent* AOwner);

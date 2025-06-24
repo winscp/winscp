@@ -383,7 +383,7 @@ bool __fastcall TOwnConsole::Input(UnicodeString & Str, bool Echo, unsigned int 
 //---------------------------------------------------------------------------
 int __fastcall TOwnConsole::Choice(
   UnicodeString Options, int Cancel, int Break, int /*Continue*/, int Timeouted, bool /*Timeouting*/, unsigned int Timer,
-  UnicodeString Message)
+  UnicodeString DebugUsedArg(Message))
 {
   unsigned int ATimer = Timer;
   int Result = 0;
@@ -548,7 +548,6 @@ public:
   virtual UnicodeString __fastcall FinalLogMessage();
 
 private:
-  bool FPendingAbort;
   HANDLE FRequestEvent;
   HANDLE FResponseEvent;
   HANDLE FCancelEvent;
@@ -1374,7 +1373,7 @@ void __fastcall TConsoleRunner::ScriptPrintProgress(TScript * /*Script*/,
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::ScriptTerminalPromptUser(TTerminal * /*Terminal*/,
-  TPromptKind /*Kind*/, UnicodeString Name, UnicodeString Instructions, TStrings * Prompts,
+  TPromptKind /*Kind*/, UnicodeString DebugUsedArg(Name), UnicodeString Instructions, TStrings * Prompts,
   TStrings * Results, bool & Result, void * /*Arg*/)
 {
   if (!Instructions.IsEmpty())
@@ -1552,12 +1551,12 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   DebugAssert(Accels.Length() == static_cast<int>(Buttons.size()));
   int NumberAccel = 0;
   unsigned int CancelA = CancelAnswer(Answers);
-  int CancelIndex;
+  int CancelIndex = -1;
   // AbortAnswer call duplicated in qpWaitInBatch branch above
   unsigned int AbortA = AbortAnswer(Answers & ~NoBatchA);
-  int AbortIndex;
+  int AbortIndex = -1;
   unsigned int ContinueA = ContinueAnswer(Answers & ~NoBatchA);
-  int ContinueIndex;
+  int ContinueIndex = -1;
   int TimeoutIndex = 0;
 
   for (unsigned int Index = 0; Index < Buttons.size(); Index++)
@@ -1902,7 +1901,7 @@ void __fastcall TConsoleRunner::SynchronizeControllerSynchronize(
       FScript->Synchronize(LocalDirectory, RemoteDirectory, CopyParam,
         Params.Params, Checklist);
     }
-    catch (Exception & E)
+    catch (Exception &)
     {
       if ((FScript->Batch == TScript::BatchContinue) &&
           FScript->Terminal->Active)

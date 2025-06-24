@@ -55,7 +55,7 @@ private:
 protected:
   void __fastcall UpdateControls();
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   __fastcall TCustomCommandDialog(TComponent* Owner,

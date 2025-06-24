@@ -57,7 +57,7 @@ private:
   bool FTargetConfirmed;
   UnicodeString FOriginalTarget;
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 };
 //---------------------------------------------------------------------------
 #endif

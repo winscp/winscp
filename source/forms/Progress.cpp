@@ -28,7 +28,7 @@
 #pragma link "TBXExtItems"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
-static IsIndeterminate(const TSynchronizeProgress * SynchronizeProgress, const TFileOperationProgressType * ProgressData)
+static bool IsIndeterminate(const TSynchronizeProgress * SynchronizeProgress, const TFileOperationProgressType * ProgressData)
 {
   bool Result;
   // TSynchronizeProgress has its own way how to take atomic operations into account
@@ -84,7 +84,7 @@ UnicodeString __fastcall TProgressForm::ProgressStr(
 //---------------------------------------------------------------------
 __fastcall TProgressForm::TProgressForm(
   TComponent * AOwner, bool AllowMoveToQueue, bool AllowSkip, TSynchronizeProgress * SynchronizeProgress)
-    : FData(), TForm(AOwner)
+    : TForm(AOwner), FData()
 {
   FLastOperation = foNone;
   FLastSide = (TOperationSide)-1;

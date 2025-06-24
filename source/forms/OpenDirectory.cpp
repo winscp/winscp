@@ -277,8 +277,8 @@ bool __fastcall TOpenDirectoryDialog::Execute()
   return Result;
 }
 //---------------------------------------------------------------------------
-template<class T>
-typename T * GetBookmarkObject(TObject * Sender, T * SessionObject, T * SharedObject)
+template<typename T>
+T * GetBookmarkObject(TObject * Sender, T * SessionObject, T * SharedObject)
 {
   TControl * Control = dynamic_cast<TControl *>(Sender);
   DebugAssert(Control != NULL);

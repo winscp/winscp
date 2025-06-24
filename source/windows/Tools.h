@@ -2,7 +2,7 @@
 #ifndef ToolsH
 #define ToolsH
 
-#include <comctrls.hpp>
+#include <ComCtrls.hpp>
 #include <WinInterface.h>
 #include <HelpIntfs.hpp>
 #include <stdio.h>

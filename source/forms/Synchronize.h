@@ -97,7 +97,7 @@ private:
   TSynchronizeOptions * FSynchronizeOptions;
   TFeedSynchronizeError * FOnFeedSynchronizeError;
   TSynchronizeInNewWindow FOnSynchronizeInNewWindow;
-  static const MaxLogItems;
+  static const int MaxLogItems;
 
   void __fastcall SetParams(const TSynchronizeParamType& value);
   TSynchronizeParamType __fastcall GetParams();
@@ -137,7 +137,7 @@ protected:
   bool __fastcall CanStartInNewWindow();
   void Abort(bool Close);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   __fastcall TSynchronizeDialog(TComponent * Owner);

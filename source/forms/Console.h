@@ -81,7 +81,7 @@ protected:
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall DoAdjustWindow();
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   virtual __fastcall ~TConsoleDialog();

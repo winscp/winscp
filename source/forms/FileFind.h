@@ -140,7 +140,7 @@ private:
   TIEListViewColProperties * GetColProperties();
   int FilesCompare(const TRemoteFile * File1, const TRemoteFile * File2);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 };
 //---------------------------------------------------------------------------
 #endif

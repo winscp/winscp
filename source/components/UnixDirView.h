@@ -14,6 +14,12 @@ class TCustomUnixDriveView;
 class TRemoteFile;
 class TRemoteProperties;
 //---------------------------------------------------------------------------
+#ifdef DESIGN_ONLY
+class TRemoteFile
+{
+};
+#endif
+//---------------------------------------------------------------------------
 enum TTransferDirection { tdToRemote, tdToLocal };
 enum TTransferType { ttCopy, ttMove };
 typedef void __fastcall (__closure *TDDDragFileName)

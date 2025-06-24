@@ -22,7 +22,7 @@ public:
   __fastcall THistoryStrings() : TStringList()
   {
     FModified = false;
-  };
+  }
 
   __property bool Modified = { read = FModified, write = FModified };
 
@@ -150,7 +150,7 @@ void __fastcall TCustomWinConfiguration::Saved()
 #define KEY(TYPE, VAR) KEYEX(TYPE, VAR, PropertyToKey(TEXT(#VAR)))
 #define REGCONFIG(CANCREATE) \
   BLOCK(L"Interface", CANCREATE, \
-    KEY(Integer,  Interface); \
+    KEY(Enum,     Interface); \
     KEY(Bool,     ConfirmExitOnCompletion); \
     KEY(Bool,     SynchronizeSummary); \
     KEY(String,   SessionColors); \
@@ -173,7 +173,7 @@ void __fastcall TCustomWinConfiguration::Saved()
   ); \
   BLOCK(L"Interface\\LoginDialog", CANCREATE, \
     KEY(String,   LoginDialog.WindowSize); \
-    KEY(Integer,  LoginDialog.SiteSearch); \
+    KEY(Enum,     LoginDialog.SiteSearch); \
   ); \
 //---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::SaveData(

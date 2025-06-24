@@ -105,6 +105,11 @@ type
     function Execute(DataObject: TDataObject): TDragResult;
   end;
 
+  // TLVCompare uses LPARAM type, which in Pascal is defined as INT_PTR, while in C++ it's defined as incompatible LONG_PTR.
+  // So this is the same declaration (hence interchangable) as TLVCompare in Pascal, but explicitly with INT_PTR,
+  // so its generated C++ equivalent in hpp is compatible.
+  TListViewCompare = function(lParam1, lParam2, lParamSort: INT_PTR): Integer stdcall;
+
   TCustomDirView = class(TCustomIEListView)
   private
     FAddParentDir: Boolean;
@@ -272,7 +277,7 @@ type
       Stage: TCustomDrawStage): Boolean; override;
     function CustomDrawSubItem(Item: TListItem; SubItem: Integer;
       State: TCustomDrawState; Stage: TCustomDrawStage): Boolean; override;
-    procedure CustomSortItems(SortProc: Pointer);
+    procedure CustomSortItems(SortProc: TListViewCompare);
     procedure Delete(Item: TListItem); override;
     procedure DoHistoryChange; dynamic;
     function DragCompleteFileList: Boolean; virtual;
@@ -2145,7 +2150,7 @@ begin
     ItemFocused.MakeVisible(False);
 end;
 
-procedure TCustomDirView.CustomSortItems(SortProc: Pointer);
+procedure TCustomDirView.CustomSortItems(SortProc: TListViewCompare);
 var
   SavedCursor: TCursor;
   SavedNotifyEnabled: Boolean;
@@ -2158,7 +2163,7 @@ begin
     try
       Screen.Cursor := crHourglass;
       FNotifyEnabled := False;
-      CustomSort(TLVCompare(SortProc), Integer(Pointer(Self)));
+      CustomSort(SortProc, Integer(Pointer(Self)));
     finally
       Screen.Cursor := SavedCursor;
       FNotifyEnabled := SavedNotifyEnabled;

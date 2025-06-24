@@ -46,7 +46,7 @@ private:
   void __fastcall ColorChange(TColor Color);
   void __fastcall UpdateControls();
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   enum TMode { smSelect, smDeselect, smFilter, smFileColor };

@@ -34,7 +34,7 @@
 //---------------------------------------------------------------------------
 #define WM_TRAY_ICON (WM_WINSCP_USER + 5)
 //---------------------------------------------------------------------
-TNotifyEvent GlobalOnMinimize = NULL;
+static TNotifyEvent GlobalOnMinimize = NULL;
 //---------------------------------------------------------------------
 const IID IID_IListView_Win7 = {0xE5B16AF2, 0x3990, 0x4681, {0xA6, 0x09, 0x1F, 0x06, 0x0C, 0xD1, 0x42, 0x69}};
 //---------------------------------------------------------------------
@@ -238,9 +238,7 @@ TForm * __fastcall CreateMessageDialogEx(const UnicodeString Msg,
       {
         NeverAskAgainCheck->Tag = Params->NeverAskAgainAnswer;
       }
-      TNotifyEvent OnClick;
-      ((TMethod*)&OnClick)->Code = NeverAskAgainCheckClick;
-      NeverAskAgainCheck->OnClick = OnClick;
+      NeverAskAgainCheck->OnClick = MakeMethod<TNotifyEvent>(NULL, NeverAskAgainCheckClick);
     }
 
     Dialog->HelpKeyword = HelpKeyword;
@@ -729,7 +727,7 @@ void * __fastcall BusyStart()
 //---------------------------------------------------------------------------
 void __fastcall BusyEnd(void * Token)
 {
-  Screen->Cursor = reinterpret_cast<TCursor>(Token);
+  Screen->Cursor = static_cast<TCursor>(reinterpret_cast<uintptr_t>(Token));
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -1262,7 +1260,7 @@ void __fastcall CallGlobalMinimizeHandler(TObject * Sender)
   }
 }
 //---------------------------------------------------------------------------
-bool MinimizedToTray = false;
+static bool MinimizedToTray = false;
 //---------------------------------------------------------------------------
 static void __fastcall DoApplicationMinimizeRestore(bool Minimize)
 {
@@ -1446,7 +1444,7 @@ void __fastcall TCallstackThread::ProcessEvent()
     UnicodeString Path = DumpCallstackFileName(GetCurrentProcessId());
     std::unique_ptr<TStrings> StackStrings;
     HANDLE MainThreadHandle = reinterpret_cast<HANDLE>(MainThreadID);
-    if (SuspendThread(MainThreadHandle) < 0)
+    if (SuspendThread(MainThreadHandle) == static_cast<DWORD>(-1))
     {
       RaiseLastOSError();
     }
@@ -1461,7 +1459,7 @@ void __fastcall TCallstackThread::ProcessEvent()
     }
     __finally
     {
-      if (ResumeThread(MainThreadHandle) < 0)
+      if (ResumeThread(MainThreadHandle) == static_cast<DWORD>(-1))
       {
         RaiseLastOSError();
       }
@@ -1480,7 +1478,7 @@ HANDLE TCallstackThread::DoCreateEvent()
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-std::unique_ptr<TCallstackThread> CallstackThread;
+static std::unique_ptr<TCallstackThread> CallstackThread;
 //---------------------------------------------------------------------------
 static void __fastcall AppGetMainFormHandle(void * /*Data*/, HWND & Handle)
 {

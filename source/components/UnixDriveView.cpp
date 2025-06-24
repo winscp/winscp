@@ -3,6 +3,9 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#ifndef DESIGN_ONLY
+#endif
+
 #include <Common.h>
 
 #include "UnixDriveView.h"
@@ -153,6 +156,7 @@ bool __fastcall TCustomUnixDriveView::NodeIsHidden(const TTreeNode * Node)
     ((File != NULL) && File->IsHidden) ||
     ((File == NULL) && IsUnixHiddenFile(UnixExtractFileName(Data->Directory)));
   #else
+  DebugUsedParam(Node);
   return false;
   #endif
 }
@@ -230,11 +234,11 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
           int ChildIndex = ChildrenDirs->IndexOf(File->FileName);
           if (ChildIndex >= 0)
           {
-            TTreeNode * ChildNode =
+            TTreeNode * ChildNode2 =
               dynamic_cast<TTreeNode *>(ChildrenDirs->Objects[ChildIndex]);
-            TNodeData * ChildData = NodeData(ChildNode);
+            TNodeData * ChildData = NodeData(ChildNode2);
             ChildData->File = File;
-            UpdatePath(ChildNode, Force);
+            UpdatePath(ChildNode2, Force);
           }
           else
           {
@@ -253,11 +257,11 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
 
       for (int i = 0; i < ChildrenDirs->Count; i++)
       {
-        TTreeNode * ChildNode = dynamic_cast<TTreeNode *>(ChildrenDirs->Objects[i]);
-        TNodeData * ChildData = NodeData(ChildNode);
+        TTreeNode * ChildNode2 = dynamic_cast<TTreeNode *>(ChildrenDirs->Objects[i]);
+        TNodeData * ChildData = NodeData(ChildNode2);
         if (ChildData->File == NULL)
         {
-          NodeTryDelete(ChildNode, true);
+          NodeTryDelete(ChildNode2, true);
         }
       }
 
@@ -321,6 +325,7 @@ TTreeNode * __fastcall TCustomUnixDriveView::LoadPathEasy(TTreeNode * Parent,
   return Node;
   #else
   DebugUsedParam(Parent);
+  DebugUsedParam(Path);
   DebugUsedParam(File);
   return NULL;
   #endif
@@ -382,6 +387,7 @@ TTreeNode * __fastcall TCustomUnixDriveView::LoadPath(UnicodeString Path)
 
   return Node;
   #else
+  DebugUsedParam(Path);
   return NULL;
   #endif
 }
@@ -844,6 +850,7 @@ TTreeNode * __fastcall TCustomUnixDriveView::FindNodeToPath(UnicodeString Path)
     }
   }
   #else
+  DebugUsedParam(Path);
   Result = NULL;
   #endif
   return Result;
@@ -867,6 +874,8 @@ TTreeNode * __fastcall TCustomUnixDriveView::FindPathNode(UnicodeString Path)
     }
     while (Result == NULL);
   }
+  #else
+  DebugUsedParam(Path);
   #endif
 
   return Result;

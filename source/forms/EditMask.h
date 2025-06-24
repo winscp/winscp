@@ -54,7 +54,7 @@ protected:
   void __fastcall LoadFileMasks(TMemo * Memo, TStrings * MasksStr);
   void __fastcall UpdateControls();
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 private:
   UnicodeString FExcludeDirectoryMasks;

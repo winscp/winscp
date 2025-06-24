@@ -13,6 +13,7 @@
 //---------------------------------------------------------------------------
 UnicodeString NormalizeString(const UnicodeString & S);
 UnicodeString DenormalizeString(const UnicodeString & S);
+#define DateTimeToVariant(DATETIME) static_cast<long double>(static_cast<double>(DATETIME))
 //---------------------------------------------------------------------------
 class TGuard
 {
@@ -48,7 +49,7 @@ private:
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #include <assert.h>
-#define ACCESS_VIOLATION_TEST { (*((int*)NULL)) = 0; }
+#define ACCESS_VIOLATION_TEST { (*((volatile int*)NULL)) = 0; }
 #if defined(_DEBUG) && !defined(DESIGN_ONLY)
 #define DODEBUGGING
 #endif

@@ -55,6 +55,7 @@ public:
   void __fastcall WriteBool(const UnicodeString & Name, bool Value);
   void __fastcall WriteStringRaw(const UnicodeString & Name, const UnicodeString & Value);
   void __fastcall WriteInteger(const UnicodeString & Name, int Value);
+  void __fastcall WriteEnum(const UnicodeString & Name, int Value);
   void __fastcall WriteInt64(const UnicodeString & Name, __int64 Value);
   void __fastcall WriteDateTime(const UnicodeString & Name, TDateTime Value);
   void __fastcall WriteFloat(const UnicodeString & Name, double Value);

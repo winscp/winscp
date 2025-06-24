@@ -151,8 +151,8 @@ public:
 };
 //---------------------------------------------------------------------------
 __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
-    FFormRestored(false),
-    TForm(Owner)
+    TForm(Owner),
+    FFormRestored(false)
 {
   AddStartupSequence(L"F");
   FInvalid = false;
@@ -479,13 +479,13 @@ void __fastcall TCustomScpExplorerForm::WMCopyData(TMessage & Message)
 
         case TCopyDataMessage::CommandCommandLine:
           {
-            UnicodeString CommandLine(Message.CommandLine);
+            UnicodeString CommandLine(Message.Data.CommandLine);
             Result = CommandLineFromAnotherInstance(CommandLine);
           }
           break;
 
         case TCopyDataMessage::RefreshPanel:
-          RefreshPanel(Message.Refresh.Session, Message.Refresh.Path);
+          RefreshPanel(Message.Data.Refresh.Session, Message.Data.Refresh.Path);
           break;
 
         case TCopyDataMessage::MainWindowCheck:
@@ -504,7 +504,7 @@ void __fastcall TCustomScpExplorerForm::WMCopyData(TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CreateHiddenWindow()
 {
-  WNDCLASS WindowClass = {0};
+  WNDCLASS WindowClass = {};
   WindowClass.lpfnWndProc = DefWindowProc;
   WindowClass.hInstance = HInstance;
   WindowClass.lpszClassName = HIDDEN_WINDOW_NAME;
@@ -1254,7 +1254,7 @@ void __fastcall TCustomScpExplorerForm::FileColorsChanged()
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FileConfigurationChanged(
-  const UnicodeString FileName, TEditedFileData * /*Data*/, TObject * Token,
+  const UnicodeString DebugUsedArg(FileName), TEditedFileData * /*Data*/, TObject * Token,
   void * /*Arg*/)
 {
   if (Token != NULL)
@@ -2099,44 +2099,38 @@ void __fastcall TCustomScpExplorerForm::RemoteCustomCommand(
     TCaptureOutputEvent OutputEvent = NULL;
 
     DebugAssert(FCapturedLog == NULL);
+    TObjectReleaser<TStrings> CapturedLogReleaser(FCapturedLog);
     if (Capture)
     {
-      FCapturedLog = new TStringList();
+      CapturedLogReleaser.Set(new TStringList());
       OutputEvent = TerminalCaptureLog;
     }
 
-    try
+    if (!RemoteCustomCommand.IsFileCommand(Command))
     {
-      if (!RemoteCustomCommand.IsFileCommand(Command))
-      {
-        Terminal->AnyCommand(RemoteCustomCommand.Complete(Command, true),
-          OutputEvent);
-      }
-      else
-      {
-        Terminal->CustomCommandOnFiles(Command, ACommand.Params, FileList, OutputEvent);
-      }
-
-      if ((FCapturedLog != NULL) && (FCapturedLog->Count > 0))
-      {
-        if (FLAGSET(ACommand.Params, ccCopyResults))
-        {
-          CopyToClipboard(FCapturedLog);
-        }
-
-        if (FLAGSET(ACommand.Params, ccShowResults))
-        {
-          DoConsoleDialog(Terminal, L"", FCapturedLog);
-        }
-        else if (FLAGSET(ACommand.Params, ccShowResultsInMsgBox))
-        {
-          MessageDialog(FCapturedLog->Text, qtInformation, qaOK);
-        }
-      }
+      Terminal->AnyCommand(RemoteCustomCommand.Complete(Command, true),
+        OutputEvent);
     }
-    __finally
+    else
     {
-      SAFE_DESTROY(FCapturedLog);
+      Terminal->CustomCommandOnFiles(Command, ACommand.Params, FileList, OutputEvent);
+    }
+
+    if ((FCapturedLog != NULL) && (FCapturedLog->Count > 0))
+    {
+      if (FLAGSET(ACommand.Params, ccCopyResults))
+      {
+        CopyToClipboard(FCapturedLog);
+      }
+
+      if (FLAGSET(ACommand.Params, ccShowResults))
+      {
+        DoConsoleDialog(Terminal, L"", FCapturedLog);
+      }
+      else if (FLAGSET(ACommand.Params, ccShowResultsInMsgBox))
+      {
+        MessageDialog(FCapturedLog->Text, qtInformation, qaOK);
+      }
     }
   }
 }
@@ -2775,7 +2769,7 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewContextPopup(
   Handled = true;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::ReloadLocalDirectory(const UnicodeString Directory)
+void __fastcall TCustomScpExplorerForm::ReloadLocalDirectory(const UnicodeString DebugUsedArg(Directory))
 {
 }
 //---------------------------------------------------------------------------
@@ -3088,6 +3082,7 @@ bool __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
   else
   {
     DebugFail();
+    Result = false; // shut up
   }
   return Result;
 }
@@ -3114,6 +3109,7 @@ TOperationSide TCustomScpExplorerForm::GetOtherSide(TOperationSide Side)
       Result = osLocal;
       break;
     default:
+      Result = osCurrent; // shut up
       DebugFail();
       Abort();
   }
@@ -6187,9 +6183,9 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
   bool AnyOperation = false;
   TDateTime StartTime = Now();
   TSynchronizeChecklist * AChecklist = NULL;
+  TObjectReleaser<TSynchronizeProgressForm> SynchronizeProgressFormReleaser(FSynchronizeProgressForm, new TSynchronizeProgressForm(Application, true, -1));
   try
   {
-    FSynchronizeProgressForm = new TSynchronizeProgressForm(Application, true, -1);
     if (FLAGCLEAR(Params, TTerminal::spDelayProgress))
     {
       FSynchronizeProgressForm->Start();
@@ -6234,7 +6230,7 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
     }
 
     FAutoOperation = false;
-    SAFE_DESTROY(FSynchronizeProgressForm);
+    SynchronizeProgressFormReleaser.Reset();
     BatchEnd(BatchStorage);
     ReloadLocalDirectory();
     if (AnyOperation)
@@ -7384,7 +7380,7 @@ void __fastcall TCustomScpExplorerForm::TerminalRemoved(TObject * Sender)
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FileTerminalReplaced(
-  const UnicodeString FileName, TEditedFileData * Data, TObject * /*Token*/, void * Arg)
+  const UnicodeString DebugUsedArg(FileName), TEditedFileData * Data, TObject * /*Token*/, void * Arg)
 {
   TManagedTerminal * ATerminal = static_cast<TManagedTerminal *>(Arg);
 
@@ -7566,7 +7562,7 @@ void TCustomScpExplorerForm::UpdateSessionTab(TThemeTabSheet * TabSheet)
     TManagedTerminal * ASession = GetSessionTabSession(TabSheet);
     if (DebugAlwaysTrue(ASession != NULL))
     {
-      TColor Color = (ASession == Terminal) ? FSessionColor : ASession->StateData->Color;
+      TColor Color = (ASession == Terminal) ? FSessionColor : static_cast<TColor>(ASession->StateData->Color);
       if (ASession->LocalBrowser)
       {
         TabSheet->ImageIndex = FLocalBrowserTabImageIndex;
@@ -8700,7 +8696,7 @@ TQueueOperation __fastcall TCustomScpExplorerForm::DefaultQueueOperation()
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::AllowQueueOperation(
-  TQueueOperation Operation, void ** Param)
+  TQueueOperation Operation, unsigned long * Param)
 {
   switch (Operation)
   {
@@ -8727,7 +8723,7 @@ void __fastcall TCustomScpExplorerForm::GoToQueue()
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ExecuteQueueOperation(
-  TQueueOperation Operation, void * Param)
+  TQueueOperation Operation, unsigned long Param)
 {
   if (Operation == qoGoTo)
   {
@@ -9574,11 +9570,11 @@ void __fastcall TCustomScpExplorerForm::StartUpdates()
     {
       Period = Updates.Period;
     }
-    AppLogFmt(L"Updates check period: %.2f", (double(Period)));
+    AppLogFmt(L"Updates check period: %.2f", (DateTimeToVariant(Period)));
     if (double(Period) > 0)
     {
       TDateTime Interval = Now() - Updates.LastCheck;
-      AppLogFmt(L"Interval since the last updates check: %.2f", (double(Interval)));
+      AppLogFmt(L"Interval since the last updates check: %.2f", (DateTimeToVariant(Interval)));
       if (Interval >= Period)
       {
         StartUpdateThread(UpdatesChecked);
@@ -11588,6 +11584,12 @@ void __fastcall TCustomScpExplorerForm::ClipboardDownload(const UnicodeString & 
   ExecuteFileOperation(foCopy, osRemote, FClipboardFileList.get(), NoConfirmation, &Params);
 }
 //---------------------------------------------------------------------------
+void TCustomScpExplorerForm::PasteFilesCleanupRetry(const UnicodeString & Target)
+{
+  bool Removed = RemoveDir(ApiPath(Target));
+  AppLogFmt(L"Second attempt to delete pasted fake clipboard directory \"%s\" - %d", (Target, int(Removed)));
+}
+//---------------------------------------------------------------------------
 void TCustomScpExplorerForm::PasteFiles()
 {
   // Guard against possible race conditions
@@ -11621,8 +11623,7 @@ void TCustomScpExplorerForm::PasteFiles()
     {
       if (!Removed)
       {
-        Removed = RemoveDir(ApiPath(Target));
-        AppLogFmt(L"Second attempt to delete pasted fake clipboard directory \"%s\" - %d", (Target, int(Removed)));
+        PasteFilesCleanupRetry(Target);
       }
     }
   }

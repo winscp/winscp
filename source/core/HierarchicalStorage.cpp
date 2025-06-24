@@ -829,6 +829,12 @@ void __fastcall THierarchicalStorage::WriteInteger(const UnicodeString & Name, i
   }
 }
 //---------------------------------------------------------------------------
+// Simple alias to WriteInteger
+void __fastcall THierarchicalStorage::WriteEnum(const UnicodeString & Name, int Value)
+{
+  WriteInteger(Name, Value);
+}
+//---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::WriteInt64(const UnicodeString & Name, __int64 Value)
 {
   if (CanWrite())

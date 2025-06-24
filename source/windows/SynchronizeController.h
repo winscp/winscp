@@ -63,7 +63,6 @@ private:
   TSynchronizeEvent FOnSynchronize;
   TSynchronizeParamType FSynchronizeParams;
   TSynchronizeOptions * FOptions;
-  TSynchronizeThreadsEvent FOnSynchronizeThreads;
   Discmon::TDiscMonitor * FSynchronizeMonitor;
   TSynchronizeAbortEvent FSynchronizeAbort;
   TSynchronizeInvalidEvent FOnSynchronizeInvalid;

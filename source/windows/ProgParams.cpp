@@ -7,7 +7,7 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-std::unique_ptr<TProgramParams> ProgramParamsOwner;
+static std::unique_ptr<TProgramParams> ProgramParamsOwner;
 //---------------------------------------------------------------------------
 TProgramParams * __fastcall TProgramParams::Instance()
 {

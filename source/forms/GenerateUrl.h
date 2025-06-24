@@ -76,7 +76,7 @@ protected:
   UnicodeString __fastcall GenerateAssemblyCode(UnicodeString & AssemblyDescription);
   void __fastcall AddSampleDescription(UnicodeString & Description);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   __fastcall TGenerateUrlDialog(

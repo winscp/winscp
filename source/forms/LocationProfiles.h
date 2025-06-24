@@ -164,7 +164,7 @@ private:
   bool __fastcall ProfileMatch(TTreeNode * Node);
   UnicodeString __fastcall BookmarkText(TBookmark * Bookmark);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 };
 //----------------------------------------------------------------------------
 #endif

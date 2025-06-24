@@ -2658,7 +2658,7 @@ void __fastcall TLoginDialog::PortNumberEditChange(TObject * Sender)
   if (!NoUpdate)
   {
     bool WellKnownPort = false;
-    TFSProtocol FSProtocol;
+    TFSProtocol FSProtocol = TFSProtocol(); // shut up
     TFtps Ftps = ftpsNone;
 
     // For ambiguous port numbers, keep the current protocol, even if it is not the default protocol for the port

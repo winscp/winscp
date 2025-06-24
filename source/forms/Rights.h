@@ -145,7 +145,7 @@ protected:
   void UpdateButton(TSpeedButton * Button, UnicodeString & Caption);
   bool IsButtonAccel(TCMDialogChar & Message, TSpeedButton * Button, TWinControl * FocusControl);
 
-  INTERFACE_HOOK_CUSTOM(TFrame);
+  INTERFACE_HOOK_CUSTOM(TFrame)
 
   __property TRights::TState States[TRights::TRight Right] = { read = GetStates, write = SetStates };
 };

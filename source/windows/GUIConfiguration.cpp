@@ -648,7 +648,7 @@ void __fastcall TGUIConfiguration::UpdateStaticUsage()
     KEYEX(Bool,   SessionRememberPassword, L"QueueRememberPassword"); \
     KEY(String,   PuttySession); \
     KEY(String,   PuttyPath); \
-    KEY(Integer,  UsePuttyPwFile); \
+    KEY(Enum,     UsePuttyPwFile); \
     KEY(Bool,     PuttyPassword); \
     KEY(Bool,     TelnetForFtpInPutty); \
     KEY(DateTime, IgnoreCancelBeforeFinish); \

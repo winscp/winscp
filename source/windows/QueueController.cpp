@@ -82,7 +82,7 @@ TQueueOperation __fastcall TQueueController::DefaultOperation()
 }
 //---------------------------------------------------------------------------
 bool __fastcall TQueueController::AllowOperation(
-  TQueueOperation Operation, void ** Param)
+  TQueueOperation Operation, unsigned long * Param)
 {
   TQueueItemProxy * QueueItem = NULL;
 
@@ -139,7 +139,7 @@ bool __fastcall TQueueController::AllowOperation(
           TFileOperationProgressType::IsTransferOperation(QueueItem->Info->Operation);
         if (Result && (Param != NULL))
         {
-          Result = QueueItem->GetCPSLimit(*reinterpret_cast<unsigned long *>(Param));
+          Result = QueueItem->GetCPSLimit(*Param);
         }
         return Result;
       }
@@ -175,7 +175,7 @@ bool __fastcall TQueueController::AllowOperation(
 }
 //---------------------------------------------------------------------------
 void __fastcall TQueueController::ExecuteOperation(TQueueOperation Operation,
-  void * Param)
+  unsigned long Param)
 {
   TQueueItemProxy * QueueItem = NULL;
 
@@ -235,7 +235,7 @@ void __fastcall TQueueController::ExecuteOperation(TQueueOperation Operation,
     case qoItemSpeed:
       if (QueueItem != NULL)
       {
-        QueueItem->SetCPSLimit(reinterpret_cast<unsigned long>(Param));
+        QueueItem->SetCPSLimit(Param);
       }
       break;
 

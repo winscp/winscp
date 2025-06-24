@@ -53,7 +53,7 @@ void __fastcall DoAboutDialog(TConfiguration * Configuration,
   {
     DoAboutDialog(Configuration, AllowLicense, Registration, true);
   }
-  catch (EOleException & E)
+  catch (EOleException &)
   {
     // This happens particularly on Wine that does not support some
     // functionality of embedded IE we need.

@@ -290,12 +290,12 @@ UnicodeString FormatDateTimeSpan(const TDateTime & DateTime);
 UnicodeString FormatRelativeTime(const TDateTime & ANow, const TDateTime & AThen, bool DateOnly);
 TStrings * TlsCipherList();
 //---------------------------------------------------------------------------
-template<class MethodT>
-MethodT __fastcall MakeMethod(void * Data, void * Code)
+template<typename MethodT, typename FuncT>
+MethodT __fastcall MakeMethod(void * Data, FuncT Code)
 {
   MethodT Method;
   ((TMethod*)&Method)->Data = Data;
-  ((TMethod*)&Method)->Code = Code;
+  ((TMethod*)&Method)->Code = reinterpret_cast<void *>(Code);
   return Method;
 }
 //---------------------------------------------------------------------------
@@ -388,10 +388,48 @@ public:
     Release();
   }
 
+  void Set(const T & Value)
+  {
+    DebugAssert(FArmed);
+    FTarget = Value;
+  }
+
 protected:
   T & FTarget;
   T FValue;
   bool FArmed;
+};
+//---------------------------------------------------------------------------
+template<class T>
+class TObjectReleaser
+{
+public:
+  TObjectReleaser(T *& Target, T * Value) :
+    FPtr(Value),
+    FRestorer(Target, Value)
+  {
+  }
+
+  TObjectReleaser(T *& Target) :
+    FRestorer(Target)
+  {
+  }
+
+  void Set(T * Value)
+  {
+    FPtr.reset(Value);
+    FRestorer.Set(Value);
+  }
+
+  void Reset()
+  {
+    FPtr.reset(NULL);
+    FRestorer.Release();
+  }
+
+private:
+  std::unique_ptr<T> FPtr;
+  TValueRestorer<T *> FRestorer;
 };
 //---------------------------------------------------------------------------
 class TAutoNestingCounter : public TValueRestorer<int>

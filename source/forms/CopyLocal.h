@@ -40,7 +40,7 @@ private:
   UnicodeString GetFileMask();
   void SetDirectoryAndFileMask(const UnicodeString & Directory, const UnicodeString & FileMask);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   TCopyLocalDialog(TComponent * Owner, bool Move, int Options);

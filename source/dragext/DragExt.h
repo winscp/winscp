@@ -14,6 +14,7 @@
 #pragma clang diagnostic ignored "-Wmissing-variable-declarations"
 #endif
 //---------------------------------------------------------------------------
+EXTERN_C const CLSID CLSID_ShellExtension;
 DEFINE_GUID(CLSID_ShellExtension, 0xe15e1d68, 0x0d1c, 0x49f7,
   0xbe, 0xb8, 0x81, 0x2b, 0x1e, 0x00, 0xfa, 0x60 );
 //---------------------------------------------------------------------------

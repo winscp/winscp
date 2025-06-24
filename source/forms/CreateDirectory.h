@@ -41,7 +41,7 @@ public:
 protected:
   void __fastcall UpdateControls();
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 private:
   int FAllowedChanges;

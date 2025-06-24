@@ -67,7 +67,7 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   return Result;
 }
 //---------------------------------------------------------------------------
-const TSynchronizeDialog::MaxLogItems = 1000;
+const int TSynchronizeDialog::MaxLogItems = 1000;
 //---------------------------------------------------------------------------
 struct TLogItemData
 {
@@ -452,7 +452,7 @@ void __fastcall TSynchronizeDialog::StartButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::Start()
 {
-  bool Synchronize;
+  bool Synchronize = false; // shut up
   bool Continue = true;
   if (SynchronizeSynchronizeCheck->State == cbGrayed)
   {

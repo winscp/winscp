@@ -97,8 +97,6 @@ private:
   bool FLastTotalSizeSet;
   bool FMinimizedByMe;
   int FUpdateCounter;
-  bool FAsciiTransferChanged;
-  bool FResumeStatusChanged;
   void * FShowAsModalStorage;
   bool FDeleteLocalToRecycleBin;
   bool FDeleteRemoteToRecycleBin;
@@ -138,7 +136,7 @@ protected:
   DYNAMIC void __fastcall MouseWheelHandler(TMessage & Message);
   virtual void __fastcall CreateWnd();
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 
 public:
   static UnicodeString __fastcall ProgressStr(

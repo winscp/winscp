@@ -124,7 +124,7 @@ private:
   UnicodeString __fastcall BookmarkText(TBookmark * Bookmark);
   inline TBookmark * __fastcall GetBookmark(TListBox * BookmarksList, int Index);
 
-  INTERFACE_HOOK;
+  INTERFACE_HOOK
 };
 //----------------------------------------------------------------------------
 #endif

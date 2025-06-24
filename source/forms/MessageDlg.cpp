@@ -460,9 +460,9 @@ void __fastcall TMessageForm::ButtonDropDownClick(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-const ResourceString * Captions[] = { &_SMsgDlgWarning, &_SMsgDlgError, &_SMsgDlgInformation,
+static const ResourceString * Captions[] = { &_SMsgDlgWarning, &_SMsgDlgError, &_SMsgDlgInformation,
   &_SMsgDlgConfirm, NULL };
-const wchar_t * ImageNames[] = { L"Warning", L"Error", L"Information",
+static const wchar_t * ImageNames[] = { L"Warning", L"Error", L"Information",
   L"Help Blue", NULL };
 const int mcHorzMargin = 8;
 const int mcVertMargin = 13;
@@ -998,10 +998,11 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   int IconHeight = 0;
 
   UnicodeString ImageName = AImageName;
+  int DlgTypeIndex = static_cast<int>(DlgType);
   if (ImageName.IsEmpty() &&
-      DebugAlwaysTrue(ImageNames[DlgType] != NULL))
+      DebugAlwaysTrue(ImageNames[DlgTypeIndex] != NULL))
   {
-    ImageName = ImageNames[DlgType];
+    ImageName = ImageNames[DlgTypeIndex];
   }
 
   if (DebugAlwaysTrue(!ImageName.IsEmpty()))
@@ -1207,7 +1208,7 @@ TForm * __fastcall TMessageForm::Create(const UnicodeString & Msg,
   }
   else if (DebugAlwaysTrue(DlgType != mtCustom))
   {
-    Result->Caption = LoadResourceString(Captions[DlgType]);
+    Result->Caption = LoadResourceString(Captions[DlgTypeIndex]);
   }
   else
   {

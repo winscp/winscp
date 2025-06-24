@@ -181,8 +181,8 @@ int __fastcall TThemePageControl::GetTabsHeight()
   // so we want to know in case they differ.
   if (DebugAlwaysTrue(PageCount >= 0))
   {
-    TRect Rect = TabRect(0);
-    int Result2 = Rect.Bottom + 1;
+    TRect Rect2 = TabRect(0);
+    int Result2 = Rect2.Bottom + 1;
     // On Windows 10 with 200% scaling, the first is 40, the second is 42.
     // With 250% scaling it's 50 vs 53.
     // Using the larger.
@@ -411,10 +411,10 @@ void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int
   {
     if (ATabTheme != NULL)
     {
-      SetTextColor(DC, ATabTheme->GetItemTextColor(GetItemInfo(State)));
+      SetTextColor(DC, static_cast<COLORREF>(ATabTheme->GetItemTextColor(GetItemInfo(State))));
     }
     HFONT OldFont = (HFONT)SelectObject(DC, Font->Handle);
-    wchar_t * Buf = new wchar_t[Text.Length() + 1 + 4];
+    wchar_t * Buf = new wchar_t[static_cast<size_t>(Text.Length() + 1 + 4)];
     wcscpy(Buf, Text.c_str());
     TRect TextRect(0, 0, Rect.Width(), 20);
     // Truncates too long texts with ellipsis
@@ -443,11 +443,11 @@ void __fastcall TThemePageControl::DrawTabItem(HDC DC, int Item, TRect Rect, int
       COLORREF ShapeColor;
       if (ATabTheme != NULL)
       {
-        ShapeColor = ColorToRGB(ATabTheme->GetItemTextColor(ButtonItemInfo));
+        ShapeColor = static_cast<COLORREF>(ColorToRGB(ATabTheme->GetItemTextColor(ButtonItemInfo)));
       }
       else
       {
-        ShapeColor = ColorToRGB(Font->Color);
+        ShapeColor = static_cast<COLORREF>(ColorToRGB(Font->Color));
       }
       #define BlendValue(FN) (((4 * static_cast<int>(FN(BackColor))) + static_cast<int>(FN(ShapeColor))) / 5)
       COLORREF BlendColor = RGB(BlendValue(GetRValue), BlendValue(GetGValue), BlendValue(GetBValue));

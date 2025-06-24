@@ -29,7 +29,7 @@ struct TScpExplorerConfiguration {
     { return C(WindowParams) C(DirViewParams) C(ToolbarsLayout) C(ToolbarsButtons)
         C(SessionsTabs) C(StatusBar)
         C(LastLocalTargetDirectory) C(ViewStyle) C(ShowFullAddress)
-        C(DriveView) C(DriveViewWidth) C(DriveViewWidthPixelsPerInch) 0; };
+        C(DriveView) C(DriveViewWidth) C(DriveViewWidthPixelsPerInch) 0; }
 };
 //---------------------------------------------------------------------------
 struct TScpCommanderPanelConfiguration {
@@ -45,7 +45,7 @@ struct TScpCommanderPanelConfiguration {
   bool __fastcall operator !=(TScpCommanderPanelConfiguration & rhc)
     { return C(DirViewParams) C(ViewStyle) C(StatusBar)
         C(DriveView) C(DriveViewHeight) C(DriveViewHeightPixelsPerInch)
-        C(DriveViewWidth) C(DriveViewWidthPixelsPerInch) C(LastPath) 0; };
+        C(DriveViewWidth) C(DriveViewWidthPixelsPerInch) C(LastPath) 0; }
 };
 //---------------------------------------------------------------------------
 struct TScpCommanderConfiguration {
@@ -76,7 +76,7 @@ struct TScpCommanderConfiguration {
       C(NortonLikeMode) C(PreserveLocalDirectory)
       C(CompareBySize) C(CompareByTime) C(SwappedPanels)
       C(TreeOnLeft) C(ExplorerKeyboardShortcuts) C(SystemContextMenu)
-      C(OtherLocalPanelDirViewParams) C(OtherLocalPanelViewStyle) C(OtherLocalPanelLastPath) 0; };
+      C(OtherLocalPanelDirViewParams) C(OtherLocalPanelViewStyle) C(OtherLocalPanelLastPath) 0; }
 
   TCompareCriterias __fastcall CompareCriterias()
   {
@@ -110,7 +110,7 @@ struct TFontConfiguration
   // keep in sync with SameFont
   bool __fastcall operator !=(const TFontConfiguration & rhc)
     { return !SameText(FontName, rhc.FontName) || C(FontSize)
-      C(FontCharset) C(FontStyle) 0; };
+      C(FontCharset) C(FontStyle) 0; }
 };
 //---------------------------------------------------------------------------
 struct TEditorConfiguration {
@@ -137,7 +137,7 @@ struct TEditorConfiguration {
     { return C(Font) C(FontColor) C(BackgroundColor) C(WordWrap) C(FindText) C(ReplaceText)
       C(FindMatchCase) C(FindWholeWord) C(FindDown) C(TabSize)
       C(MaxEditors) C(EarlyClose) C(SDIShellEditor) C(WindowParams)
-      C(Encoding) C(WarnOnEncodingFallback) C(WarnOrLargeFileSize) C(AutoFont) C(DisableSmoothScroll) 0; };
+      C(Encoding) C(WarnOnEncodingFallback) C(WarnOrLargeFileSize) C(AutoFont) C(DisableSmoothScroll) 0; }
 };
 //---------------------------------------------------------------------------
 enum TQueueViewShow { qvShow, qvHideWhenEmpty, qvHide };
@@ -154,7 +154,7 @@ struct TQueueViewConfiguration {
   int FileListHeightPixelsPerInch;
   bool __fastcall operator !=(TQueueViewConfiguration & rhc)
     { return C(Height) C(HeightPixelsPerInch) C(Layout) C(Show) C(LastHideShow) C(ToolBar) C(Label)
-        C(FileList) C(FileListHeight) C(FileListHeightPixelsPerInch) 0; };
+        C(FileList) C(FileListHeight) C(FileListHeightPixelsPerInch) 0; }
 };
 //---------------------------------------------------------------------------
 struct TUpdatesData
@@ -185,7 +185,7 @@ struct TUpdatesData
              C(Disabled) C(Url) C(UrlButton) C(NewsUrl) C(NewsSize)
              C(DownloadUrl) C(DownloadSize) C(DownloadSha256) C(AuthenticationError)
              C(OpenGettingStarted) C(DownloadingUrl)
-             C(TipsSize) C(TipsUrl) C(Tips) C(TipsIntervalDays) C(TipsIntervalRuns) 0; };
+             C(TipsSize) C(TipsUrl) C(Tips) C(TipsIntervalDays) C(TipsIntervalRuns) 0; }
   void Reset()
   {
     ForVersion = 0;
@@ -212,7 +212,7 @@ struct TUpdatesData
   }
 };
 //---------------------------------------------------------------------------
-enum TConnectionType { ctDirect, ctAuto, ctProxy };
+enum TConnectionType { ctUndefined = -1, ctDirect, ctAuto, ctProxy };
 extern TDateTime DefaultUpdatesPeriod;
 extern const UnicodeString ScpExplorerDirViewParamsDefault;
 extern const UnicodeString ScpCommanderRemotePanelDirViewParamsDefault;
@@ -242,7 +242,7 @@ struct TUpdatesConfiguration
     { return C(Period) C(LastCheck) C(ConnectionType) C(ProxyHost) C(ProxyPort)
         C(BetaVersions) C(ShowOnStartup) C(AuthenticationEmail) C(Mode)
         C(HaveResults) C(ShownResults) C(DotNetVersion)
-        C(ConsoleVersion) C(Results)  0; };
+        C(ConsoleVersion) C(Results)  0; }
 
   bool __fastcall HaveValidResultsForVersion(int CompoundVersion)
   {
@@ -311,7 +311,7 @@ private:
   mutable UnicodeString FName;
 
   UnicodeString __fastcall GetName() const;
-  const TEditorData * __fastcall GetConstData() const { return &FData; };
+  const TEditorData * __fastcall GetConstData() const { return &FData; }
 };
 //---------------------------------------------------------------------------
 class TEditorList
