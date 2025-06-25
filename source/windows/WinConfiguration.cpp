@@ -3254,7 +3254,7 @@ void __fastcall TCustomCommandType::LoadExtension(TStrings * Lines, const Unicod
 
     if (!Continuation)
     {
-      int P = 0; // shut up
+      int P CLANG_INITIALIZE(0); // shut up
       if (!ExtensionLine.IsEmpty() && (ExtensionLine[1] == ExtensionMark) && ((P = Pos(L" ", ExtensionLine)) >= 2))
       {
         UnicodeString Key = ExtensionLine.SubString(2, P - 2).LowerCase();
