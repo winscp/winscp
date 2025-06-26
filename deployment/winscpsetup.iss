@@ -126,7 +126,6 @@ DisableProgramGroupPage=yes
 SetupIconFile=winscpsetup.ico
 DisableDirPage=no
 WizardStyle=modern
-; We do not want the Explorer restarts as that is not pleasant to the user
 CloseApplications=yes
 UsedUserAreasWarning=no
 #ifdef Sign
