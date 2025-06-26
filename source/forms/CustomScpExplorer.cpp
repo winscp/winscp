@@ -7805,13 +7805,6 @@ void __fastcall TCustomScpExplorerForm::WMEndSession(TWMEndSession & Message)
   }
   TForm::Dispatch(&Message);
 }
-#ifdef _DEBUG
-//---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::WMWindowPosChanged(TWMWindowPosMsg & Message)
-{
-  TForm::Dispatch(&Message);
-}
-#endif
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SysResizing(unsigned int /*Cmd*/)
 {
@@ -9937,16 +9930,6 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
       WMEndSession(*reinterpret_cast<TWMEndSession *>(M));
       break;
 
-#ifdef _DEBUG
-    case WM_WINDOWPOSCHANGED:
-      WMWindowPosChanged(*reinterpret_cast<TWMWindowPosMsg *>(M));
-      break;
-
-    case CM_CUSTOMSTYLECHANGED:
-      TForm::Dispatch(Message);
-      break;
-
-#endif
     case WM_COMPONENT_HIDE:
       {
         Byte Component = static_cast<Byte>(M->WParam);
