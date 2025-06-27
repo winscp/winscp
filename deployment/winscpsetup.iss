@@ -217,7 +217,7 @@ Name: searchpath; Description: {cm:AddSearchPath}; \
 
 [Icons]
 Name: "{autoprograms}\WinSCP"; Filename: "{app}\WinSCP.exe"; Components: main; \
-  Comment: "{cm:ProgramComment2}"
+  Comment: "{cm:ProgramComment2}"; Check: not CmdLineParamExists('/NoStartIcon');
 ; This is created when desktopicon task is selected
 Name: "{autodesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
   Tasks: desktopicon; Comment: "{cm:ProgramComment2}"
