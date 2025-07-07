@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2015-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -721,7 +721,9 @@ static EVP_PKEY *make_key_fromdata(char *keytype, OSSL_PARAM *params)
 
     if (!TEST_ptr(pctx = EVP_PKEY_CTX_new_from_name(testctx, keytype, testpropq)))
         goto err;
-    if (!TEST_int_gt(EVP_PKEY_fromdata_init(pctx), 0)
+    /* Check that premature EVP_PKEY_CTX_set_params() fails gracefully */
+    if (!TEST_int_eq(EVP_PKEY_CTX_set_params(pctx, params), 0)
+        || !TEST_int_gt(EVP_PKEY_fromdata_init(pctx), 0)
         || !TEST_int_gt(EVP_PKEY_fromdata(pctx, &tmp_pkey, EVP_PKEY_KEYPAIR,
                                           params), 0))
         goto err;
@@ -2728,6 +2730,7 @@ static int test_empty_salt_info_HKDF(void)
     size_t outlen;
     int ret = 0;
     unsigned char salt[] = "";
+    unsigned char fake[] = "0123456789";
     unsigned char key[] = "012345678901234567890123456789";
     unsigned char info[] = "";
     const unsigned char expected[] = {
@@ -2744,6 +2747,8 @@ static int test_empty_salt_info_HKDF(void)
 
     if (!TEST_int_gt(EVP_PKEY_derive_init(pctx), 0)
             || !TEST_int_gt(EVP_PKEY_CTX_set_hkdf_md(pctx, EVP_sha256()), 0)
+            || !TEST_int_gt(EVP_PKEY_CTX_set1_hkdf_salt(pctx, fake,
+                                                        sizeof(fake) - 1), 0)
             || !TEST_int_gt(EVP_PKEY_CTX_set1_hkdf_salt(pctx, salt,
                                                         sizeof(salt) - 1), 0)
             || !TEST_int_gt(EVP_PKEY_CTX_set1_hkdf_key(pctx, key,

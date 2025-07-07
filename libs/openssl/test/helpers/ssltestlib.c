@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -532,6 +532,40 @@ int mempacket_move_packet(BIO *bio, int d, int s)
         thispkt = sk_MEMPACKET_value(ctx->pkts, i);
         thispkt->num++;
     }
+    return 1;
+}
+
+int mempacket_dup_last_packet(BIO *bio)
+{
+    MEMPACKET_TEST_CTX *ctx = BIO_get_data(bio);
+    MEMPACKET *thispkt, *duppkt;
+    int numpkts = sk_MEMPACKET_num(ctx->pkts);
+
+    /* We can only duplicate a packet if there is at least 1 pending */
+    if (numpkts <= 0)
+        return 0;
+
+    /* Get the last packet */
+    thispkt = sk_MEMPACKET_value(ctx->pkts, numpkts - 1);
+    if (thispkt == NULL)
+        return 0;
+
+    duppkt = OPENSSL_malloc(sizeof(*duppkt));
+    if (duppkt == NULL)
+        return 0;
+
+    *duppkt = *thispkt;
+    duppkt->data = OPENSSL_memdup(thispkt->data, thispkt->len);
+    if (duppkt->data == NULL) {
+        mempacket_free(duppkt);
+        return 0;
+    }
+    duppkt->num++;
+    if (sk_MEMPACKET_insert(ctx->pkts, duppkt, numpkts) <= 0) {
+        mempacket_free(duppkt);
+        return 0;
+    }
+
     return 1;
 }
 

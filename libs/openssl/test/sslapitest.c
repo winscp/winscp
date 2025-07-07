@@ -7172,18 +7172,6 @@ static int test_ssl_clear(int idx)
         } else {
             SSL_set_accept_state(serverssl);
         }
-        /*
-         * A peculiarity of SSL_clear() is that it does not clear the session.
-         * This is intended behaviour so that a client can create a new
-         * connection and reuse the session. But this doesn't make much sense
-         * on the server side - and causes incorrect behaviour due to the
-         * handshake failing (even though the documentation does say SSL_clear()
-         * is supposed to work on the server side). We clear the session
-         * explicitly - although note that the documentation for
-         * SSL_set_session() says that its only useful for clients!
-         */
-        if (!TEST_true(SSL_set_session(serverssl, NULL)))
-            goto end;
         SSL_free(clientssl);
         clientssl = NULL;
     } else {
@@ -9992,8 +9980,10 @@ static int create_cert_key(int idx, char *certfilename, char *privkeyfilename)
  * correctly establish a TLS (1.3) connection.
  * Test 0: Signature algorithm with built-in hashing functionality: "xorhmacsig"
  * Test 1: Signature algorithm using external SHA2 hashing: "xorhmacsha2sig"
- * Test 2: Test 0 using RPK
- * Test 3: Test 1 using RPK
+ * Test 2: Signature algorithm with built-in hashing configured via SSL_CONF_cmd
+ * Test 3: Test 0 using RPK
+ * Test 4: Test 1 using RPK
+ * Test 5: Test 2 using RPK
  */
 static int test_pluggable_signature(int idx)
 {
@@ -10005,8 +9995,14 @@ static int test_pluggable_signature(int idx)
     OSSL_PROVIDER *defaultprov = OSSL_PROVIDER_load(libctx, "default");
     char *certfilename = "tls-prov-cert.pem";
     char *privkeyfilename = "tls-prov-key.pem";
-    int sigidx = idx % 2;
-    int rpkidx = idx / 2;
+    int sigidx = idx % 3;
+    int rpkidx = idx / 3;
+    int do_conf_cmd = 0;
+
+    if (sigidx == 2) {
+        sigidx = 0;
+        do_conf_cmd = 1;
+    }
 
     /* create key and certificate for the different algorithm types */
     if (!TEST_ptr(tlsprov)
@@ -10017,9 +10013,40 @@ static int test_pluggable_signature(int idx)
                                        TLS_client_method(),
                                        TLS1_3_VERSION,
                                        TLS1_3_VERSION,
-                                       &sctx, &cctx, certfilename, privkeyfilename))
-            || !TEST_true(create_ssl_objects(sctx, cctx, &serverssl, &clientssl,
-                                             NULL, NULL)))
+                                       &sctx, &cctx, NULL, NULL)))
+        goto end;
+
+    if (do_conf_cmd) {
+        SSL_CONF_CTX *confctx = SSL_CONF_CTX_new();
+
+        if (!TEST_ptr(confctx))
+            goto end;
+        SSL_CONF_CTX_set_flags(confctx, SSL_CONF_FLAG_FILE
+                                        | SSL_CONF_FLAG_SERVER
+                                        | SSL_CONF_FLAG_CERTIFICATE
+                                        | SSL_CONF_FLAG_REQUIRE_PRIVATE
+                                        | SSL_CONF_FLAG_SHOW_ERRORS);
+        SSL_CONF_CTX_set_ssl_ctx(confctx, sctx);
+        if (!TEST_int_gt(SSL_CONF_cmd(confctx, "Certificate", certfilename), 0)
+                || !TEST_int_gt(SSL_CONF_cmd(confctx, "PrivateKey", privkeyfilename), 0)
+                || !TEST_true(SSL_CONF_CTX_finish(confctx))) {
+            SSL_CONF_CTX_free(confctx);
+            goto end;
+        }
+        SSL_CONF_CTX_free(confctx);
+    } else {
+        if (!TEST_int_eq(SSL_CTX_use_certificate_file(sctx, certfilename,
+                                                      SSL_FILETYPE_PEM), 1)
+                || !TEST_int_eq(SSL_CTX_use_PrivateKey_file(sctx,
+                                                            privkeyfilename,
+                                                            SSL_FILETYPE_PEM), 1))
+            goto end;
+    }
+    if (!TEST_int_eq(SSL_CTX_check_private_key(sctx), 1))
+        goto end;
+
+    if (!TEST_true(create_ssl_objects(sctx, cctx, &serverssl, &clientssl,
+                                      NULL, NULL)))
         goto end;
 
     /* Enable RPK for server cert */
@@ -12298,6 +12325,79 @@ static int test_alpn(int idx)
     return testresult;
 }
 
+static int test_no_renegotiation(int idx)
+{
+    SSL_CTX *sctx = NULL, *cctx = NULL;
+    SSL *serverssl = NULL, *clientssl = NULL;
+    int testresult = 0, ret;
+    int max_proto;
+    const SSL_METHOD *sm, *cm;
+    unsigned char buf[5];
+
+    if (idx == 0) {
+#ifndef OPENSSL_NO_TLS1_2
+        max_proto = TLS1_2_VERSION;
+        sm = TLS_server_method();
+        cm = TLS_client_method();
+#else
+        return TEST_skip("TLSv1.2 is disabled in this build");
+#endif
+    } else {
+#ifndef OPENSSL_NO_DTLS1_2
+        max_proto = DTLS1_2_VERSION;
+        sm = DTLS_server_method();
+        cm = DTLS_client_method();
+#else
+        return TEST_skip("DTLSv1.2 is disabled in this build");
+#endif
+    }
+    if (!TEST_true(create_ssl_ctx_pair(libctx, sm, cm, 0, max_proto,
+                                       &sctx, &cctx, cert, privkey)))
+        goto end;
+
+    SSL_CTX_set_options(sctx, SSL_OP_NO_RENEGOTIATION);
+
+    if (!TEST_true(create_ssl_objects(sctx, cctx, &serverssl, &clientssl, NULL,
+                                      NULL)))
+        goto end;
+
+    if (!TEST_true(create_ssl_connection(serverssl, clientssl, SSL_ERROR_NONE)))
+        goto end;
+
+    if (!TEST_true(SSL_renegotiate(clientssl))
+            || !TEST_int_le(ret = SSL_connect(clientssl), 0)
+            || !TEST_int_eq(SSL_get_error(clientssl, ret), SSL_ERROR_WANT_READ))
+        goto end;
+
+    /*
+     * We've not sent any application data, so we expect this to fail. It should
+     * also read the renegotiation attempt, and send back a no_renegotiation
+     * warning alert because we have renegotiation disabled.
+     */
+    if (!TEST_int_le(ret = SSL_read(serverssl, buf, sizeof(buf)), 0))
+        goto end;
+    if (!TEST_int_eq(SSL_get_error(serverssl, ret), SSL_ERROR_WANT_READ))
+        goto end;
+
+    /*
+     * The client should now see the no_renegotiation warning and fail the
+     * connection
+     */
+    if (!TEST_int_le(ret = SSL_connect(clientssl), 0)
+            || !TEST_int_eq(SSL_get_error(clientssl, ret), SSL_ERROR_SSL)
+            || !TEST_int_eq(ERR_GET_REASON(ERR_get_error()), SSL_R_NO_RENEGOTIATION))
+        goto end;
+
+    testresult = 1;
+ end:
+    SSL_free(serverssl);
+    SSL_free(clientssl);
+    SSL_CTX_free(sctx);
+    SSL_CTX_free(cctx);
+
+    return testresult;
+}
+
 OPT_TEST_DECLARE_USAGE("certfile privkeyfile srpvfile tmpfile provider config dhfile\n")
 
 int setup_tests(void)
@@ -12576,7 +12676,7 @@ int setup_tests(void)
 #endif
 #ifndef OPENSSL_NO_TLS1_3
     ADD_ALL_TESTS(test_pluggable_group, 2);
-    ADD_ALL_TESTS(test_pluggable_signature, 4);
+    ADD_ALL_TESTS(test_pluggable_signature, 6);
 #endif
 #ifndef OPENSSL_NO_TLS1_2
     ADD_TEST(test_ssl_dup);
@@ -12619,6 +12719,7 @@ int setup_tests(void)
     ADD_ALL_TESTS(test_npn, 5);
 #endif
     ADD_ALL_TESTS(test_alpn, 4);
+    ADD_ALL_TESTS(test_no_renegotiation, 2);
     return 1;
 
  err:

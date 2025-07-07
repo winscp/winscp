@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2024-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -11,6 +11,16 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include "../ssl_local.h"
+
+#if defined(_AIX)
+/*
+ * Some versions of AIX define macros for events and revents for use when
+ * accessing pollfd structures (see Github issue #24236). That interferes
+ * with our use of these names here. We simply undef them.
+ */
+# undef revents
+# undef events
+#endif
 
 #define ITEM_N(items, stride, n) \
     (*(SSL_POLL_ITEM *)((char *)(items) + (n)*(stride)))

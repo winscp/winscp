@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2021 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -59,7 +59,7 @@ static char *change_path(const char *file)
 
     ret = chdir(s);
     if (ret == 0)
-        new_config_name = strdup(last + DIRSEP_PRESERVE + 1);
+        new_config_name = OPENSSL_strdup(last + DIRSEP_PRESERVE + 1);
  err:
     OPENSSL_free(s);
     return new_config_name;

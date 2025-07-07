@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2007-2025 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright Nokia 2007-2019
  * Copyright Siemens AG 2015-2019
  *
@@ -224,7 +224,8 @@ static int test_exec_IR_ses_poll_ok(void)
 static int test_exec_IR_ses_poll_no_timeout(void)
 {
     return test_exec_REQ_ses_poll(OSSL_CMP_PKIBODY_IR, checkAfter,
-                                  2 /* pollCount */, checkAfter + 4,
+                                  2 /* pollCount */,
+                                  checkAfter + 14, /* usually 4 is sufficient */
                                   OSSL_CMP_PKISTATUS_accepted);
 }
 
