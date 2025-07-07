@@ -26,6 +26,22 @@ OpenSSL Releases
 OpenSSL 3.3
 -----------
 
+### Changes between 3.3.3 and 3.3.4 [1 Jul 2025]
+
+ * Aligned the behaviour of TLS and DTLS in the event of a no_renegotiation
+   alert being received. Older versions of OpenSSL failed with DTLS if a
+   no_renegotiation alert was received. All versions of OpenSSL do this for TLS.
+   From 3.2 a bug was exposed that meant that DTLS ignored no_rengotiation. We
+   have now restored the original behaviour and brought DTLS back into line with
+   TLS.
+
+   *Matt Caswell*
+
+ * When displaying distinguished names in the openssl application escape control
+   characters by default.
+
+   *Tomáš Mráz*
+
 ### Changes between 3.3.2 and 3.3.3 [11 Feb 2025]
 
  * Fixed RFC7250 handshakes with unauthenticated servers don't abort as expected.
@@ -4047,7 +4063,7 @@ OpenSSL 1.1.1
  * Support for TLSv1.3 added. Note that users upgrading from an earlier
    version of OpenSSL should review their configuration settings to ensure
    that they are still appropriate for TLSv1.3. For further information see:
-   <https://wiki.openssl.org/index.php/TLS1.3>
+   <https://github.com/openssl/openssl/wiki/TLS1.3>
 
    *Matt Caswell*
 
@@ -5335,7 +5351,7 @@ OpenSSL 1.1.0
 
  * The GOST engine was out of date and therefore it has been removed. An up
    to date GOST engine is now being maintained in an external repository.
-   See: <https://wiki.openssl.org/index.php/Binaries>. Libssl still retains
+   See: <https://github.com/openssl/openssl/wiki/Binaries>. Libssl still retains
    support for GOST ciphersuites (these are only activated if a GOST engine
    is present).
 
@@ -6113,6 +6129,11 @@ OpenSSL 1.1.0
    validated when establishing a connection.
 
    *Rob Percival <robpercival@google.com>*
+
+ * SSLv3 is by default disabled at build-time. Builds that are not
+   configured with "enable-ssl3" will not support SSLv3.
+
+   *Kurt Roeckx*
 
 OpenSSL 1.0.2
 -------------

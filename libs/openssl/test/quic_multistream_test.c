@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2023-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -24,6 +24,16 @@
 #include "internal/numbers.h"  /* UINT64_C */
 
 static const char *certfile, *keyfile;
+
+#if defined(_AIX)
+/*
+ * Some versions of AIX define macros for events and revents for use when
+ * accessing pollfd structures (see Github issue #24236). That interferes
+ * with our use of these names here. We simply undef them.
+ */
+# undef revents
+# undef events
+#endif
 
 #if defined(OPENSSL_THREADS)
 struct child_thread_args {
@@ -2822,7 +2832,7 @@ static int script_21_inject_plain(struct helper *h, QUIC_PKT_HDR *hdr,
 {
     int ok = 0;
     WPACKET wpkt;
-    unsigned char frame_buf[8];
+    unsigned char frame_buf[9];
     size_t written;
 
     if (h->inject_word0 == 0 || hdr->type != h->inject_word0)
@@ -2834,6 +2844,22 @@ static int script_21_inject_plain(struct helper *h, QUIC_PKT_HDR *hdr,
 
     if (!TEST_true(WPACKET_quic_write_vlint(&wpkt, h->inject_word1)))
         goto err;
+
+    switch (h->inject_word1) {
+    case OSSL_QUIC_FRAME_TYPE_PATH_CHALLENGE:
+    case OSSL_QUIC_FRAME_TYPE_PATH_RESPONSE:
+        if (!TEST_true(WPACKET_put_bytes_u64(&wpkt, (uint64_t)0)))
+            goto err;
+        break;
+    case OSSL_QUIC_FRAME_TYPE_STOP_SENDING:
+    case OSSL_QUIC_FRAME_TYPE_MAX_STREAM_DATA:
+    case OSSL_QUIC_FRAME_TYPE_STREAM_DATA_BLOCKED:
+        if (!TEST_true(WPACKET_quic_write_vlint(&wpkt, (uint64_t)0)))
+            goto err;
+        if (!TEST_true(WPACKET_quic_write_vlint(&wpkt, (uint64_t)0)))
+            goto err;
+        break;
+    }
 
     if (!TEST_true(WPACKET_get_total_written(&wpkt, &written)))
         goto err;

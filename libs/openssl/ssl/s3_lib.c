@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2025 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  * Copyright 2005 Nokia. All rights reserved.
  *
@@ -4898,7 +4898,10 @@ int ssl_derive(SSL_CONNECTION *s, EVP_PKEY *privkey, EVP_PKEY *pubkey, int gense
     }
 
     if (EVP_PKEY_derive(pctx, pms, &pmslen) <= 0) {
-        SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
+        /*
+         * the public key was probably a weak key
+         */
+        SSLfatal(s, SSL_AD_ILLEGAL_PARAMETER, SSL_R_BAD_KEY_SHARE);
         goto err;
     }
 
@@ -5003,7 +5006,7 @@ int ssl_encapsulate(SSL_CONNECTION *s, EVP_PKEY *pubkey,
     }
 
     if (EVP_PKEY_encapsulate(pctx, ct, &ctlen, pms, &pmslen) <= 0) {
-        SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
+        SSLfatal(s, SSL_AD_ILLEGAL_PARAMETER, SSL_R_BAD_KEY_SHARE);
         goto err;
     }
 

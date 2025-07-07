@@ -1,5 +1,5 @@
 /*
- *  Copyright 2022-2024 The OpenSSL Project Authors. All Rights Reserved.
+ *  Copyright 2022-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  *  Licensed under the Apache License 2.0 (the "License").  You may not use
  *  this file except in compliance with the License.  You can obtain a copy
@@ -19,7 +19,7 @@
 
 static const int server_port = 4433;
 
-typedef unsigned char   bool;
+typedef unsigned char   flag;
 #define true            1
 #define false           0
 
@@ -27,9 +27,9 @@ typedef unsigned char   bool;
  * This flag won't be useful until both accept/read (TCP & SSL) methods
  * can be called with a timeout. TBD.
  */
-static volatile bool    server_running = true;
+static volatile flag server_running = true;
 
-int create_socket(bool isServer)
+int create_socket(flag isServer)
 {
     int s;
     int optval = 1;
@@ -67,7 +67,7 @@ int create_socket(bool isServer)
     return s;
 }
 
-SSL_CTX* create_context(bool isServer)
+SSL_CTX *create_context(flag isServer)
 {
     const SSL_METHOD *method;
     SSL_CTX *ctx;
@@ -130,7 +130,7 @@ void usage(void)
 
 int main(int argc, char **argv)
 {
-    bool isServer;
+    flag isServer;
     int result;
 
     SSL_CTX *ssl_ctx = NULL;
@@ -251,6 +251,11 @@ int main(int argc, char **argv)
                 SSL_shutdown(ssl);
                 SSL_free(ssl);
                 close(client_skt);
+                /*
+                 * Set client_skt to -1 to avoid double close when
+                 * server_running become false before next accept
+                 */
+                client_skt = -1;
             }
         }
         printf("Server exiting...\n");
