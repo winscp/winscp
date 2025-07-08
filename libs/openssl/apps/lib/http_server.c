@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -200,7 +200,7 @@ BIO *http_server_init(const char *prog, const char *port, int verb)
     int port_num;
     char name[40];
 
-    snprintf(name, sizeof(name), "*:%s", port); /* port may be "0" */
+    BIO_snprintf(name, sizeof(name), "*:%s", port); /* port may be "0" */
     if (verb >= 0 && !log_set_verbosity(prog, verb))
         return NULL;
     bufbio = BIO_new(BIO_f_buffer());

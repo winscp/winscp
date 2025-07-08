@@ -20,6 +20,14 @@ OpenSSL Releases
 OpenSSL 3.2
 -----------
 
+### Major changes between OpenSSL 3.2.4 and OpenSSL 3.2.5 [1 Jul 2025]
+
+OpenSSL 3.2.5 is a bug fix release.
+
+This release incorporates the following bug fixes and mitigations:
+
+  * Miscellaneous minor bug fixes.
+
 ### Major changes between OpenSSL 3.2.3 and OpenSSL 3.2.4 [11 Feb 2025]
 
 OpenSSL 3.2.4 is a security patch release. The most severe CVE fixed in this
@@ -450,7 +458,7 @@ OpenSSL 1.1.1
     * Rewrite of the packet construction code for "safer" packet handling
     * Rewrite of the extension handling code
     For further important information, see the [TLS1.3 page](
-    https://wiki.openssl.org/index.php/TLS1.3) in the OpenSSL Wiki.
+    https://github.com/openssl/openssl/wiki/TLS1.3) in the OpenSSL Wiki.
 
   * Complete rewrite of the OpenSSL random number generator to introduce the
     following capabilities

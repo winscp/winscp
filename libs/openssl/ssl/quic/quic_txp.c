@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2022-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -611,8 +611,7 @@ int ossl_quic_tx_packetiser_set_peer(OSSL_QUIC_TX_PACKETISER *txp,
         return 1;
     }
 
-    txp->args.peer = *peer;
-    return 1;
+    return BIO_ADDR_copy(&txp->args.peer, peer);
 }
 
 void ossl_quic_tx_packetiser_set_ack_tx_cb(OSSL_QUIC_TX_PACKETISER *txp,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2016-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -179,6 +179,29 @@ static int test_thread_local(void)
 
     if (!TEST_true(CRYPTO_THREAD_cleanup_local(&thread_local_key)))
         return 0;
+    return 1;
+}
+
+/*
+ * Basic test to ensure that we can repeatedly create and
+ * destroy local keys without leaking anything
+ */
+static int test_thread_local_multi_key(void)
+{
+    int dummy;
+    int i;
+
+    for (i = 0; i < 1000; i++) {
+        if (!TEST_true(CRYPTO_THREAD_init_local(&thread_local_key,
+                                                thread_local_destructor)))
+            return 0;
+
+        if (!TEST_true(CRYPTO_THREAD_set_local(&thread_local_key, &dummy)))
+            return 0;
+
+        if (!TEST_true(CRYPTO_THREAD_cleanup_local(&thread_local_key)))
+            return 0;
+    }
     return 1;
 }
 
@@ -891,6 +914,7 @@ int setup_tests(void)
     ADD_TEST(test_lock);
     ADD_TEST(test_once);
     ADD_TEST(test_thread_local);
+    ADD_TEST(test_thread_local_multi_key);
     ADD_TEST(test_atomic);
     ADD_TEST(test_multi_load);
     ADD_TEST(test_multi_general_worker_default_provider);

@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Copyright 2021-2023 The OpenSSL Project Authors. All Rights Reserved.
+# Copyright 2021-2025 The OpenSSL Project Authors. All Rights Reserved.
 #
 # Licensed under the Apache License 2.0 (the "License").  You may not use
 # this file except in compliance with the License.  You can obtain a copy
@@ -141,13 +141,13 @@ ossl_hwsm3_block_data_order:
 
 .Loop:
 	// load input
-	ld1     {$s0.16b-$s3.16b}, [$pdata], #64
+	ld1     {$s0.4s-$s3.4s}, [$pdata], #64
 	sub     $num, $num, #1
 
 	mov     $bkstate1.16b, $state1.16b
 	mov     $bkstate2.16b, $state2.16b
 
-#ifndef __ARMEB__
+#ifndef __AARCH64EB__
 	rev32   $s0.16b, $s0.16b
 	rev32   $s1.16b, $s1.16b
 	rev32   $s2.16b, $s2.16b

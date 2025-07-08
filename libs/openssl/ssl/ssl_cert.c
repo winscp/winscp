@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2025 The OpenSSL Project Authors. All Rights Reserved.
  * Copyright (c) 2002, Oracle and/or its affiliates. All rights reserved
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
@@ -467,9 +467,9 @@ static int ssl_verify_internal(SSL_CONNECTION *s, STACK_OF(X509) *sk, EVP_PKEY *
     /* Set suite B flags if needed */
     X509_STORE_CTX_set_flags(ctx, tls1_suiteb(s));
     if (!X509_STORE_CTX_set_ex_data(ctx,
-            SSL_get_ex_data_X509_STORE_CTX_idx(), s)) {
+            SSL_get_ex_data_X509_STORE_CTX_idx(),
+            SSL_CONNECTION_GET_USER_SSL(s)))
         goto end;
-    }
 
     /* Verify via DANE if enabled */
     if (DANETLS_ENABLED(&s->dane))
@@ -926,16 +926,17 @@ static int add_uris_recursive(STACK_OF(X509_NAME) *stack,
     OSSL_STORE_CTX *ctx = NULL;
     X509 *x = NULL;
     X509_NAME *xn = NULL;
+    OSSL_STORE_INFO *info = NULL;
 
     if ((ctx = OSSL_STORE_open(uri, NULL, NULL, NULL, NULL)) == NULL)
         goto err;
 
     while (!OSSL_STORE_eof(ctx) && !OSSL_STORE_error(ctx)) {
-        OSSL_STORE_INFO *info = OSSL_STORE_load(ctx);
-        int infotype = info == 0 ? 0 : OSSL_STORE_INFO_get_type(info);
+        int infotype;
 
-        if (info == NULL)
+        if ((info = OSSL_STORE_load(ctx)) == NULL)
             continue;
+        infotype = OSSL_STORE_INFO_get_type(info);
 
         if (infotype == OSSL_STORE_INFO_NAME) {
             /*
@@ -960,6 +961,7 @@ static int add_uris_recursive(STACK_OF(X509_NAME) *stack,
         }
 
         OSSL_STORE_INFO_free(info);
+        info = NULL;
     }
 
     ERR_clear_error();
@@ -967,6 +969,7 @@ static int add_uris_recursive(STACK_OF(X509_NAME) *stack,
 
  err:
     ok = 0;
+    OSSL_STORE_INFO_free(info);
  done:
     OSSL_STORE_close(ctx);
 
@@ -1256,7 +1259,7 @@ SSL_CERT_LOOKUP *ssl_cert_lookup_by_pkey(const EVP_PKEY *pk, size_t *pidx, SSL_C
         }
     }
     /* check provider-loaded pk types */
-    for (i = 0; ctx->sigalg_list_len; i++) {
+    for (i = 0; i < ctx->sigalg_list_len; i++) {
         SSL_CERT_LOOKUP *tmp_lu = &(ctx->ssl_cert_info[i]);
 
         if (EVP_PKEY_is_a(pk, OBJ_nid2sn(tmp_lu->nid))
