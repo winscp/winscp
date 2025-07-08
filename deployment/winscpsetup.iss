@@ -497,9 +497,18 @@ begin
     if (InstalledMinor > ExistingMinor) or
        ((InstalledMinor = ExistingMinor) and (InstalledRev > ExistingRev)) then
     begin
-      Log('Installed extension is newer than existing extension, but major version is the same, allowing installation, but we will delay replacing the extension until the next system start, if it is locked.');
-      Result := True;
-      ShellExtNoRestart := True;
+      if IsAdminInstallMode then
+      begin
+        Log('Installed extension is newer than existing extension, but major version is the same, allowing installation, but we will delay replacing the extension until the next system start, if it is locked.');
+        Result := True;
+        ShellExtNoRestart := True;
+      end
+        else
+      begin
+        Log('Installed extension is newer than existing extension, but major version is the same, and installer does not have administrator privileges, so delayed replacement is not possible, skipping installation (extension will be upgraded only with the next major release)');
+        ShellExtNoRestart := False;
+        Result := False;
+      end;
     end
       else
     begin
