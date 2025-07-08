@@ -1,5 +1,5 @@
 /*
- * Copyright 1995-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 1995-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -2965,9 +2965,8 @@ int tls1_set_sigalgs_list(SSL_CTX *ctx, CERT *c, const char *str, int client)
     sig_cb_st sig;
     sig.sigalgcnt = 0;
 
-    if (ctx != NULL && ssl_load_sigalgs(ctx)) {
+    if (ctx != NULL)
         sig.ctx = ctx;
-    }
     if (!CONF_parse_list(str, ':', 1, sig_cb, &sig))
         return 0;
     if (c == NULL)
