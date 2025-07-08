@@ -480,8 +480,6 @@ begin
     if (InstalledMajor <> ExistingMajor) or
        ((ExistingMajor = 1) and (ExistingMinor <= 1)) then
     begin
-      // Still on 1.x, so this won't be used when upgrading,
-      // but it will be useful, if downgrading from future version with a different major version.
       if InstalledMajor <> ExistingMajor then
       begin
         Log('Existing extension has different major version, allowing installation, and will require restart, if it is locked.')
