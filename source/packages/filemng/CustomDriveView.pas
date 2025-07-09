@@ -987,6 +987,7 @@ begin
   end;
 end; {WMContextMenu}
 
+// Might not be always called, see comment in TDriveView.DestroyWnd
 procedure TCustomDriveView.CMRecreateWnd(var Msg: TMessage);
 var
   HadHandle: Boolean;

@@ -1411,6 +1411,7 @@ begin
   inherited;
 end;
 
+// Might not be always called, see comment in TDriveView.DestroyWnd
 procedure TCustomDirView.CMRecreateWnd(var Message: TMessage);
 var
   HadHandle: Boolean;
