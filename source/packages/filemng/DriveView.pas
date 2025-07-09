@@ -666,7 +666,7 @@ begin
         end;
         Node := Node.GetNext;
       end;
-      if Count = 0 then Assert(False); // shut up
+      if Count <> 0 then Assert(False); // shut up
     end;
   finally
     FSection.Leave;
