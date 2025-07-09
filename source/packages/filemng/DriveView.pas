@@ -176,6 +176,7 @@ type
     FSubDirReaderThread: TSubDirReaderThread;
     FDelayedNodes: TStringList;
     FDelayedNodeTimer: TTimer;
+    FRecreateScheduledCount: Integer;
 
     {Additional events:}
     FOnDisplayContextMenu: TNotifyEvent;
@@ -247,7 +248,6 @@ type
     procedure Edit(const Item: TTVItem); override;
 
     procedure WMUserRename(var Message: TMessage); message WM_USER_RENAME;
-    procedure CMRecreateWnd(var Msg: TMessage); message CM_RECREATEWND;
     procedure CMSysColorChange(var Message: TMessage); message CM_SYSCOLORCHANGE;
 
     function GetCustomDirView: TCustomDirView; override;
@@ -857,6 +857,7 @@ begin
   FPrevSelected := nil;
   FPrevSelectedIndex := -1;
   FChangeTimerSuspended := 0;
+  FRecreateScheduledCount := -1;
 
   FConfirmOverwrite := True;
   FLastPathCut := '';
@@ -952,6 +953,12 @@ begin
     end;
 
   UpdateDelayedNodeTimer;
+
+  if FRecreateScheduledCount >= 0 then
+  begin
+    FSubDirReaderThread.Reattach(FRecreateScheduledCount);
+    FRecreateScheduledCount := -1;
+  end;
 end; {CreateWnd}
 
 procedure TDriveView.DestroyWnd;
@@ -968,25 +975,35 @@ begin
     FSubDirReaderThread.WaitFor;
   end
     else
-  if CreateWndRestores and (Items.Count > 0) then
+  if CreateWndRestores then
   begin
-    FPrevSelectedIndex := -1;
-    if Assigned(FPrevSelected) then
-    begin
-      FPrevSelectedIndex := FPrevSelected.AbsoluteIndex;
-      FPrevSelected := nil;
-    end;
 
-    for DriveStatus in FDriveStatus.Values do
-      with DriveStatus do
+    Assert(FRecreateScheduledCount < 0);
+    // Have to use field, instead of local variable in CM_RECREATEWND handler,
+    // as CM_RECREATEWND is not invoked, when the recreation is trigerred recursivelly from parent
+    // control/form.
+    FRecreateScheduledCount := FSubDirReaderThread.Detach;
+
+    if Items.Count > 0 then // redundant test?
+    begin
+      FPrevSelectedIndex := -1;
+      if Assigned(FPrevSelected) then
       begin
-        RootNodeIndex := -1;
-        if Assigned(RootNode) then
-        begin
-          RootNodeIndex := RootNode.AbsoluteIndex;
-          RootNode := nil;
-        end;
+        FPrevSelectedIndex := FPrevSelected.AbsoluteIndex;
+        FPrevSelected := nil;
       end;
+
+      for DriveStatus in FDriveStatus.Values do
+        with DriveStatus do
+        begin
+          RootNodeIndex := -1;
+          if Assigned(RootNode) then
+          begin
+            RootNodeIndex := RootNode.AbsoluteIndex;
+            RootNode := nil;
+          end;
+        end;
+    end;
   end;
   inherited;
 end;
@@ -3040,18 +3057,6 @@ begin
     Result := True;
   end;
 end; {PasteFromClipBoard}
-
-procedure TDriveView.CMRecreateWnd(var Msg: TMessage);
-var
-  ScheduledCount: Integer;
-begin
-  ScheduledCount := FSubDirReaderThread.Detach;
-  try
-    inherited;
-  finally
-    FSubDirReaderThread.Reattach(ScheduledCount);
-  end;
-end;
 
 procedure TDriveView.CMSysColorChange(var Message: TMessage);
 begin

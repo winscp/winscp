@@ -536,6 +536,7 @@ begin
   inherited;
 end; { TCustomIEListView.WMNotify }
 
+// Might not be always called, see comment in TDriveView.DestroyWnd
 procedure TCustomIEListView.CMRecreateWnd(var Message: TMessage);
 begin
   inherited;
