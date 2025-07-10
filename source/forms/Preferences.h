@@ -359,6 +359,7 @@ __published:
   TComboEdit *SearchEdit;
   TTabSheet *SearchSheet;
   TGroupBox *SearchGroup;
+  TPanel *NavigationPanel;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
