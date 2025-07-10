@@ -1385,6 +1385,8 @@ void __fastcall TPreferencesDialog::UpdateControls()
     }
     SetLabelHintPopup(CopyParamLabel, InfoStr);
 
+    // As we change the font (via Color), it stops being scaled automatically
+    DragExtStatusLabel->Font->Height = DDFakeFileEnabledLabel->Font->Height;
     if (WinConfiguration->IsDDExtBroken())
     {
       DragExtStatusLabel->Caption = LoadStr(PREFERENCES_DRAGEXT_BROKEN);
