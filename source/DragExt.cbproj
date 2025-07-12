@@ -32,9 +32,11 @@
         <BCC_AllWarnings>true</BCC_AllWarnings>
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-        <BCC_wdlx>false</BCC_wdlx>
+        <BCC_UseClassicCompiler>false</BCC_UseClassicCompiler>
+        <BCC_UserSuppliedOptions>-Wno-c++98-compat-pedantic -Wno-padded</BCC_UserSuppliedOptions>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
+        <Defines>UNICODE;$(Defines)</Defines>
         <FinalOutputDir>$(FINAL_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <ILINK_GenerateImportLibrary>true</ILINK_GenerateImportLibrary>
         <ILINK_LibraryPath>dragext\;$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
@@ -52,7 +54,7 @@
         <VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=Drag&amp;Drop shell extension for WinSCP ($(Platform));FileVersion=2.1.0.0;InternalName=dragext;LegalCopyright=(c) 2000-2025 Martin Prikryl;LegalTrademarks=;OriginalFilename=dragext.dll;ProductName=WinSCP;ProductVersion=6.6.0.0;ReleaseType=stable;WWW=https://winscp.net/</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_MajorVer>2</VerInfo_MajorVer>
-        <VerInfo_MinorVer>1</VerInfo_MinorVer>
+        <VerInfo_MinorVer>2</VerInfo_MinorVer>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win64)'!=''">
         <OutputName>DragExt64</OutputName>

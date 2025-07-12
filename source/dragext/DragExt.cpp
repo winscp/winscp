@@ -7,21 +7,20 @@
 //---------------------------------------------------------------------------
 #define LENOF(x) ( (sizeof((x))) / (sizeof(*(x))))
 //---------------------------------------------------------------------------
-#include <initguid.h>
-#include <shlguid.h>
 #include <stdlib.h>
 #include <stdio.h>
-#pragma warn -inl
-#include <shlobj.h>
-#pragma warn .inl
-#include <olectl.h>
 #include <time.h>
-#include "DragExt.h"
 //---------------------------------------------------------------------------
-#ifdef __BORLANDC__
-#undef STDAPI
-#define STDAPI EXTERN_C __declspec(dllexport) HRESULT STDAPICALLTYPE
-#endif
+// prevent the system header files from messing with compiler settings
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wall"
+#include <initguid.h>
+#include <shlguid.h>
+#include <shlobj.h>
+#include <olectl.h>
+#pragma clang diagnostic pop
+//---------------------------------------------------------------------------
+#include "DragExt.h"
 //---------------------------------------------------------------------------
 #define Debug(MSG) \
   if (GLogOn) \
@@ -61,11 +60,6 @@ protected:
   unsigned long FReferenceCounter;
 };
 //---------------------------------------------------------------------------
-#ifdef _WIN64
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wpadded"
-#endif
-//---------------------------------------------------------------------------
 class CShellExt : public IShellExtInit, ICopyHook
 {
 public:
@@ -91,13 +85,6 @@ protected:
   unsigned long FLastTicks;
 };
 //---------------------------------------------------------------------------
-#ifdef WIN64
-#pragma clang diagnostic pop
-#endif
-//---------------------------------------------------------------------------
-#ifndef __clang__
-#define nullptr 0
-#endif
 static unsigned int GRefThisDll = 0;
 static bool GEnabled = false;
 static wchar_t GLogFile[MAX_PATH] = L"";
@@ -298,9 +285,11 @@ DllMain(HINSTANCE HInstance, DWORD Reason, LPVOID /*Reserved*/)
   return 1;   // ok
 }
 //---------------------------------------------------------------------------
-#ifdef _WIN64
+// There's no dllexport in the header (compbaseapi.h), but we need it to export the function
+// (alternativelly we can use .def file)
+#undef STDAPI
+#define STDAPI EXTERN_C __declspec(dllexport) HRESULT STDAPICALLTYPE
 #pragma clang diagnostic ignored "-Wdll-attribute-on-redeclaration"
-#endif
 //---------------------------------------------------------------------------
 STDAPI DllCanUnloadNow(void)
 {
