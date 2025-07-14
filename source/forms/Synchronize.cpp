@@ -280,7 +280,7 @@ void __fastcall TSynchronizeDialog::LocalDirectoryBrowseButtonClick(
       TObject * /*Sender*/)
 {
   UnicodeString Directory = LocalDirectoryEdit->Text;
-  if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY), false))
+  if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY)))
   {
     LocalDirectoryEdit->Text = Directory;
   }

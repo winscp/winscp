@@ -1356,8 +1356,7 @@ bool __fastcall ReleaseAsModal(TForm * Form, void *& Storage)
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall SelectDirectory(UnicodeString & Path, const UnicodeString Prompt,
-  bool PreserveFileName)
+bool SelectDirectory(UnicodeString & ADirectory, const UnicodeString & Prompt)
 {
   bool Result;
   unsigned int ErrorMode;
@@ -1365,27 +1364,12 @@ bool __fastcall SelectDirectory(UnicodeString & Path, const UnicodeString Prompt
 
   try
   {
-    UnicodeString Directory;
-    UnicodeString FileName;
-    // We do not have any real use for the PreserveFileName
-    if (!PreserveFileName || DirectoryExists(ApiPath(Path)))
-    {
-      Directory = Path;
-    }
-    else
-    {
-      Directory = ExtractFilePath(Path);
-      FileName = ExtractFileName(Path);
-    }
+    UnicodeString Directory = ADirectory;
     TSelectDirExtOpts Opts = TSelectDirExtOpts() << sdNewUI;
     Result = SelectDirectory(Prompt, EmptyStr, Directory, Opts);
     if (Result)
     {
-      Path = Directory;
-      if (!FileName.IsEmpty())
-      {
-        Path = IncludeTrailingBackslash(Path) + FileName;
-      }
+      ADirectory = Directory;
     }
   }
   __finally
@@ -1400,7 +1384,7 @@ void SelectDirectoryForEdit(THistoryComboBox * Edit)
 {
   UnicodeString OriginalDirectory = ExpandEnvironmentVariables(Edit->Text);
   UnicodeString Directory = OriginalDirectory;
-  if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY), true) &&
+  if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY)) &&
       !SamePaths(OriginalDirectory, Directory))
   {
     Edit->Text = Directory;

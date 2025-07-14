@@ -313,7 +313,7 @@ void __fastcall TFullSynchronizeDialog::LocalDirectoryBrowseButtonClick(
       TObject * /*Sender*/)
 {
   UnicodeString Directory = LocalDirectoryEdit->Text;
-  if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY), false))
+  if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY)))
   {
     LocalDirectoryEdit->Text = Directory;
   }

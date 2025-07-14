@@ -44,8 +44,7 @@ void __fastcall ShowAsModal(TForm * Form, void *& Storage, bool BringToFront = t
 void __fastcall HideAsModal(TForm * Form, void *& Storage);
 bool __fastcall ReleaseAsModal(TForm * Form, void *& Storage);
 bool __fastcall IsMainFormLike(TCustomForm * Form);
-bool __fastcall SelectDirectory(UnicodeString & Path, const UnicodeString Prompt,
-  bool PreserveFileName);
+bool SelectDirectory(UnicodeString & Path, const UnicodeString & Prompt);
 void SelectDirectoryForEdit(THistoryComboBox * Edit);
 enum TListViewCheckAll { caCheck, caUncheck, caToggle };
 bool __fastcall ListViewAnyChecked(TListView * ListView, bool Checked = true);

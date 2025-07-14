@@ -478,7 +478,7 @@ void __fastcall TCopyDialog::LocalDirectoryBrowseButtonClick(
     ADirectory = Directory;
   }
 
-  if (SelectDirectory(ADirectory, LoadStr(SELECT_LOCAL_DIRECTORY), true))
+  if (SelectDirectory(ADirectory, LoadStr(SELECT_LOCAL_DIRECTORY)))
   {
     Directory = ADirectory;
     UpdateControls();

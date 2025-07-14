@@ -149,7 +149,7 @@ void __fastcall TCopyLocalDialog::HelpButtonClick(TObject *)
 void __fastcall TCopyLocalDialog::LocalDirectoryBrowseButtonClick(TObject *)
 {
   UnicodeString ADirectory = GetDirectory();
-  if (SelectDirectory(ADirectory, LoadStr(SELECT_LOCAL_DIRECTORY), false))
+  if (SelectDirectory(ADirectory, LoadStr(SELECT_LOCAL_DIRECTORY)))
   {
     SetDirectoryAndFileMask(ADirectory, GetFileMask());
     UpdateControls();
