@@ -26,6 +26,7 @@
 #include <UpDownEdit.hpp>
 #include <WinApi.h>
 #include <vssym32.h>
+#include <ComboEdit.hpp>
 //---------------------------------------------------------------------------
 const UnicodeString ContextSeparator(TraceInitStr(L"\x00BB"));
 const UnicodeString LinkAppLabelMark(TraceInitStr(UnicodeString(L" ") + ContextSeparator));
@@ -1353,30 +1354,6 @@ bool __fastcall ReleaseAsModal(TForm * Form, void *& Storage)
   {
     HideAsModal(Form, Storage);
   }
-  return Result;
-}
-//---------------------------------------------------------------------------
-bool SelectDirectory(UnicodeString & ADirectory, const UnicodeString & Prompt)
-{
-  bool Result;
-  unsigned int ErrorMode;
-  ErrorMode = SetErrorMode(SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS);
-
-  try
-  {
-    UnicodeString Directory = ADirectory;
-    TSelectDirExtOpts Opts = TSelectDirExtOpts() << sdNewUI;
-    Result = SelectDirectory(Prompt, EmptyStr, Directory, Opts);
-    if (Result)
-    {
-      ADirectory = Directory;
-    }
-  }
-  __finally
-  {
-    SetErrorMode(ErrorMode);
-  }
-
   return Result;
 }
 //---------------------------------------------------------------------------

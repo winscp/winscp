@@ -142,7 +142,6 @@ type
 
   TFileDirEdit = class(TCustomComboEdit)
   private
-    FErrMode: Cardinal;
     FAcceptFiles: Boolean;
     FOnBeforeDialog: TExecOpenDialogEvent;
     FOnAfterDialog: TExecOpenDialogEvent;
@@ -156,8 +155,6 @@ type
     procedure DoBeforeDialog(var FileName: string; var Action: Boolean); dynamic;
     procedure ReceptFileDir(const AFileName: string); virtual; abstract;
     procedure ClearFileList; virtual;
-    procedure DisableSysErrors;
-    procedure EnableSysErrors;
     property MaxLength;
   published
     property AcceptFiles: Boolean read FAcceptFiles write SetAcceptFiles default False;
@@ -341,14 +338,34 @@ type
 
 procedure Register;
 
+function SelectDirectory(var Directory: string; Prompt: string): Boolean;
+
 implementation
 
 uses
-  ShellAPI, Consts, ExtDlgs, Variants, PasTools, UITypes;
+  ShellAPI, Consts, ExtDlgs, Variants, PasTools, UITypes, StrUtils;
 
 procedure Register;
 begin
   RegisterComponents('Martin', [TComboEdit, TFilenameEdit, TDirectoryEdit]);
+end;
+
+function SelectDirectory(var Directory: string; Prompt: string): Boolean;
+var
+  Folders: TArray<string>;
+begin
+  // Prompt was originally used with old-style SHBrowseForFolder directory browsing dialog,
+  // where it is displayed as instructions on a label. Hence it had a dot at the end.
+  // Now it is used in window title, so we are removing the trailing dot.
+  if EndsStr('.', Prompt) then
+    SetLength(Prompt, Length(Prompt) - 1);
+
+  Folders := [];
+  Result :=
+    FileCtrl.SelectDirectory(Directory, Folders, [], Prompt) and
+    (Length(Folders) > 0);
+  if Result then
+    Directory := Folders[0];
 end;
 
 { Utility functions }
@@ -665,17 +682,6 @@ begin
   end;
 end;
 
-procedure TFileDirEdit.DisableSysErrors;
-begin
-  FErrMode := SetErrorMode(SEM_NOOPENFILEERRORBOX or SEM_FAILCRITICALERRORS);
-end;
-
-procedure TFileDirEdit.EnableSysErrors;
-begin
-  SetErrorMode(FErrMode);
-  FErrMode := 0;
-end;
-
 procedure TFileDirEdit.WMDropFiles(var Msg: TWMDropFiles);
 var
   AFileName: array[0..255] of Char;
@@ -866,12 +872,7 @@ begin
       { ignore any exceptions }
     end;
   FDialog.HelpContext := Self.HelpContext;
-  DisableSysErrors;
-  try
-    Action := FDialog.Execute;
-  finally
-    EnableSysErrors;
-  end;
+  Action := FDialog.Execute;
   if Action then Temp := FDialog.FileName;
   if CanFocus then SetFocus;
   DoAfterDialog(Temp, Action);
@@ -1024,12 +1025,9 @@ begin
     else Temp := '\';
   end;
   if not DirectoryExists(Temp) then Temp := '\';
-  DisableSysErrors;
-  try
-    Action := SelectDirectory(FDialogText, '', Temp);
-  finally
-    EnableSysErrors;
-  end;
+
+  Action := SelectDirectory(Temp, FDialogText);
+
   if CanFocus then SetFocus;
   DoAfterDialog(Temp, Action);
   if Action then

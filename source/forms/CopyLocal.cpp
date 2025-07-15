@@ -9,6 +9,7 @@
 #include "GUITools.h"
 #include "Tools.h"
 #include "WinInterface.h"
+#include "ComboEdit.hpp"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "HistoryComboBox"
