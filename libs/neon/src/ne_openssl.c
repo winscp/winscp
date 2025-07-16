@@ -957,7 +957,6 @@ ne_ssl_client_cert * ne_ssl_clicert_create(X509 * cert, EVP_PKEY * pkey)
     
     cc = ne_calloc(sizeof *cc);
     cc->pkey = pkey;
-    cc->decrypted = 1;
     if (name && len > 0)
         cc->friendly_name = ne_strndup((char *)name, len);
     populate_cert(&cc->cert, cert);
