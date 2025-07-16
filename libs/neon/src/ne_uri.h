@@ -1,6 +1,6 @@
 /* 
    URI manipulation routines.
-   Copyright (C) 1999-2023, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1999-2025, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -26,19 +26,26 @@
 
 NE_BEGIN_DECLS
 
-/* Return a copy of a path string with anything other than
- * "unreserved" and the forward-slash character percent-encoded
- * according to the URI encoding rules.  Returns a malloc-allocated
- * string and never NULL. */
+/* Return a copy of a path string with anything not allowed in the URI
+ * "pchar" rule, or the forward-slash character, percent-escaped. This
+ * is equivalent to calling ne_path_escape() with the NE_PATH_NONPC
+ * flag set. Returns a malloc-allocated string and never NULL. */
 char *ne_path_escape(const char *path)
     ne_attribute((nonnull));
 
- /* NE_PATH_NONRES - anything other than "unreserved" and the
-  * forward-slash character percent-encoded according to the URI
-  * encoding rules; same rules as ne_path_escape(). */
+/* Flags for ne_path_escapef():
+ *
+ * NE_PATH_NONRES - matching behaviour of ne_path_escape() prior to
+ * neon 0.35.0, percent-encodes anything other than "unreserved" and
+ * the forward-slash character.
+ * NE_PATH_NONURI - pct-encodes characters outside of those allowed
+ * in URIs.
+ * NE_PATH_NONPC - pct-encodes characters which are not allowed in
+ * either the URI "pchar" rule or a forward slash; i.e. characters
+ * which are not allowed in path definitions. */
 #define NE_PATH_NONRES (0x0001)
-/* Escape any characters outside of those allowed in URIs. */
 #define NE_PATH_NONURI (0x0002)
+#define NE_PATH_NONPC  (0x0004)
 
 /* Return a copy of a path string with escaping applied per rules
  * determined by any combination of NE_PATH_* flags given.  Returns a

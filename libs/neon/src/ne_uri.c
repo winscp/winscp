@@ -1,6 +1,6 @@
 /* 
    URI manipulation routines.
-   Copyright (C) 1999-2021, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1999-2025, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -42,7 +42,7 @@
 #include "ne_alloc.h"
 #include "ne_uri.h"
 
-/* URI ABNF from RFC 3986: */
+/* Character classes defined from URI ABNF from RFC 3986. */
 
 #define PS (0x0001) /* "+" */
 #define PC (0x0002) /* "%" */
@@ -68,6 +68,10 @@
 #define OT (0x4000) /* others */
 /* UNUSED  (0x8000) .. only remaining bit. */
 
+/* ALL defined characters classes, note that 0x8000 is an unused class
+ * bit so is not (currently) included. */
+#define URI_ALL (0x7FFF)
+
 #define URI_ALPHA (AL)
 #define URI_DIGIT (DG)
 #define URI_NONURI (OT)
@@ -91,8 +95,14 @@
 /* fragment == query */
 #define URI_FRAGMENT URI_QUERY
 
-/* any characters which should be path-escaped: */
-#define URI_ESCAPE ((URI_GENDELIM & ~(FS)) | URI_SUBDELIM | OT | PC)
+/* Used previously for the ne_path_escape() rule, or NE_PATH_NONRES
+ * flag for ne_path_escapef(): */
+#define URI_OLD_ESCAPE ((URI_GENDELIM & ~(FS)) | URI_SUBDELIM | OT | PC)
+
+/* Characters which should be pct-encoded are the INVERSE of the
+ * SEGCHAR class. Used now by ne_path_escape() and the NE_PATH_NONPC
+ * rule. */
+#define URI_ESCAPE ((URI_ALL & ~(URI_SEGCHAR)) | PC)
 
 /* Maximum allowed port number. */
 #define MAX_PORT (65535)
@@ -514,7 +524,7 @@ char *ne_path_unescape(const char *uri)
 
 char *ne_path_escape(const char *path)
 {
-    return ne_path_escapef(path, NE_PATH_NONRES);
+    return ne_path_escapef(path, NE_PATH_NONPC);
 }
 
 char *ne_path_escapef(const char *path, unsigned int flags)
@@ -524,8 +534,9 @@ char *ne_path_escapef(const char *path, unsigned int flags)
     size_t count = 0;
     unsigned short mask = 0;
 
-    if (flags & NE_PATH_NONRES) mask |= URI_ESCAPE;
+    if (flags & NE_PATH_NONRES) mask |= URI_OLD_ESCAPE;
     if (flags & NE_PATH_NONURI) mask |= URI_NONURI;
+    if (flags & NE_PATH_NONPC) mask |= URI_ESCAPE;
 
     for (pnt = (const unsigned char *)path; *pnt != '\0'; pnt++) {
         count += path_escape_ch(*pnt, mask);
@@ -624,9 +635,7 @@ char *ne_uri_unparse(const ne_uri *uri)
         if (uri->port > 0
             && (!uri->scheme 
                 || ne_uri_defaultport(uri->scheme) != uri->port)) {
-            char str[20];
-            ne_snprintf(str, 20, ":%d", uri->port);
-            ne_buffer_zappend(buf, str);
+            ne_buffer_snprintf(buf, 20, ":%d", uri->port);
         }
     }
 

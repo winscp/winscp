@@ -68,7 +68,10 @@ extern void *ne_md5_finish_ctx(struct ne_md5_ctx *ctx, void *resbuf);
    to the wanted ASCII representation of the message digest.
 
    IMPORTANT: On some systems it is required that RESBUF is correctly
-   aligned for a 32 bits value.  */
+   aligned for a 32 bits value.
+
+   This function may return NULL if it is not possible to serialise
+   the intermediate state.  */
 extern void *ne_md5_read_ctx(const struct ne_md5_ctx *ctx, void *resbuf);
 
 /* Take a copy of the state structure. */

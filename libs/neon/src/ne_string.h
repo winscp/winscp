@@ -220,6 +220,13 @@ char *ne_strparam(const char *charset, const char *lang,
                   const unsigned char *value)
     ne_attribute((nonnull (1, 3))) ne_attribute_malloc;
 
+/* Parse a hex string like strtoul(,,16), but:
+ * a) any whitespace, 0x or -/+ prefixes result in EINVAL
+ * b) errno is always set (to zero or an error)
+ * c) end pointer is const char *
+ */
+unsigned long ne_strhextoul(const char *str, const char **endptr);
+
 NE_END_DECLS
 
 #endif /* NE_STRING_H */

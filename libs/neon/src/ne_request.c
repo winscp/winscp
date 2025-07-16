@@ -1,6 +1,6 @@
 /* 
    HTTP request/response handling
-   Copyright (C) 1999-2024, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1999-2025, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -51,6 +51,7 @@
 #include "ne_utils.h"
 #include "ne_socket.h"
 #include "ne_uri.h"
+#include "ne_dates.h"
 
 #include "ne_private.h"
 
@@ -93,6 +94,7 @@ struct field {
 #define HH_HV_CONTENT_LENGTH    (0x13)
 #define HH_HV_TRANSFER_ENCODING (0x07)
 #define HH_HV_LOCATION          (0x05)
+#define HH_HV_RETRY_AFTER       (0x28)
 
 struct ne_request_s {
     char *method, *target; /* method and request-target */
@@ -844,6 +846,28 @@ fail:
     return ret;
 }
 
+time_t ne_get_response_retry_after(ne_request *req)
+{
+    char *val, *endp;
+    unsigned long abs;
+    time_t ret;
+
+    val = get_response_header_hv(req, HH_HV_RETRY_AFTER, "retry-after");
+    if (!val) return 0;
+
+    errno = 0;
+    abs = strtoul(val, &endp, 10);
+    if (errno == 0 && abs != ULONG_MAX && *endp == '\0') {
+        ret = time(NULL) + abs;
+    }
+    else {
+        if ((ret = ne_httpdate_parse(val)) == -1)
+            ret = 0;
+    }
+
+    return ret;
+}
+
 void ne_add_response_body_reader(ne_request *req, ne_accept_response acpt,
 				 ne_block_reader rdr, void *userdata)
 {
@@ -974,6 +998,7 @@ static int read_response_block(ne_request *req, struct ne_response *resp,
          * number of bytes left to read in the current chunk. */
 	if (resp->body.chunk.remain == 0) {
             unsigned long chunk_len;
+            const char *cptr;
             char *ptr;
 
             /* Read chunk-size. */
@@ -995,19 +1020,11 @@ static int read_response_block(ne_request *req, struct ne_response *resp,
                 *ptr = '\0';
             }
 
-            /* Reject things strtoul would otherwise allow */
-            ptr = req->respbuf;
-            if (*ptr == '\0' || *ptr == '-' || *ptr == '+'
-                || (ptr[0] == '0' && ptr[1] == 'x')) {
-                return aborted(req, _("Could not parse chunk size"), 0);
-            }
-
             /* Limit chunk size to <= UINT_MAX, for sanity; must have
              * a following NUL due to chunk-ext handling above. */
-            errno = 0;
-            chunk_len = strtoul(req->respbuf, &ptr, 16);
-            if (errno || ptr == req->respbuf || (*ptr != '\0' && *ptr != '\r')
-                || chunk_len == ULONG_MAX || chunk_len > UINT_MAX) {
+            chunk_len = ne_strhextoul(req->respbuf, &cptr);
+            if (errno || (*cptr != '\0' && *cptr != '\r')
+                || chunk_len > UINT_MAX) {
                 return aborted(req, _("Could not parse chunk size"), 0);
             }
             NE_DEBUG(NE_DBG_WINSCP_HTTP_DETAIL, "req: Chunk size: %lu\n", chunk_len);

@@ -136,12 +136,12 @@ AC_DEFUN([NE_VERSIONS_BUNDLED], [
 
 # Define the current versions.
 NE_VERSION_MAJOR=0
-NE_VERSION_MINOR=34
-NE_VERSION_PATCH=2
+NE_VERSION_MINOR=35
+NE_VERSION_PATCH=0
 NE_VERSION_TAG=
 
-# 0.34.x is backwards-compatible to 0.27.x, so AGE=7
-NE_LIBTOOL_VERSINFO="34:${NE_VERSION_PATCH}:7"
+# 0.35.x is backwards-compatible to 0.27.x, so AGE=8
+NE_LIBTOOL_VERSINFO="35:${NE_VERSION_PATCH}:8"
 
 NE_DEFINE_VERSIONS
 
@@ -366,6 +366,14 @@ else
 fi
 
 AC_SUBST(NEON_BUILD_BUNDLED)
+
+dnl Define NE_MINIMUM_VERSION() for both bundled and non-bundled
+dnl builds.
+AH_BOTTOM([#undef NE_MINIMUM_VERSION
+#define NE_MINIMUM_VERSION(majv_, minv_) \
+    (((majv_) == NE_VERSION_MAJOR && NE_VERSION_MINOR >= (minv_)) \
+     || NE_VERSION_MAJOR > (majv_))
+])
 
 ])
 

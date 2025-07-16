@@ -1367,10 +1367,9 @@ static int verify_digest_response(struct auth_request *req, auth_session *sess,
                                    "client nonce mismatch"));
     }
     else if (nc) {
-        char *ptr;
+        const char *ptr;
         
-        errno = 0;
-        nonce_count = strtoul(nc, &ptr, 16);
+        nonce_count = ne_strhextoul(nc, &ptr);
         if (*ptr != '\0' || errno) {
             ret = NE_ERROR;
             ne_set_error(sess->sess, _("Digest mutual authentication failure: "
@@ -1852,7 +1851,8 @@ static void challenge_error(ne_buffer **errbuf, const char *fmt, ...)
     va_start(ap, fmt);
     len = ne_vsnprintf(err, sizeof err, fmt, ap);
     va_end(ap);
-    
+    NE_DEBUG(NE_DBG_HTTPAUTH, "auth: Challenge error: %s\n", err);
+
     if (*errbuf == NULL) {
         *errbuf = ne_buffer_create();
         ne_buffer_append(*errbuf, err, len);

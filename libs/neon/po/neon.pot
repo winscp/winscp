@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: https://github.com/notroj/neon\n"
-"POT-Creation-Date: 2025-04-14 15:07+0100\n"
+"POT-Creation-Date: 2025-07-15 18:08+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -136,17 +136,17 @@ msgstr ""
 msgid "Digest mutual authentication failure: client nonce mismatch"
 msgstr ""
 
-#: src/ne_auth.c:1314
+#: src/ne_auth.c:1313
 #, c-format
 msgid "Digest mutual authentication failure: could not parse nonce count"
 msgstr ""
 
-#: src/ne_auth.c:1319
+#: src/ne_auth.c:1318
 #, c-format
 msgid "Digest mutual authentication failure: nonce count mismatch (%u not %u)"
 msgstr ""
 
-#: src/ne_auth.c:1346
+#: src/ne_auth.c:1345
 #, c-format
 msgid "Digest mutual authentication failure: request-digest mismatch"
 msgstr ""
@@ -193,55 +193,55 @@ msgstr ""
 msgid "Could not initialize zlib"
 msgstr ""
 
-#: src/ne_gnutls.c:184
+#: src/ne_gnutls.c:183
 #, c-format
 msgid "[unprintable:#%lu]"
 msgstr ""
 
-#: src/ne_gnutls.c:213
+#: src/ne_gnutls.c:211
 msgid "[unprintable]"
 msgstr ""
 
-#: src/ne_gnutls.c:637
+#: src/ne_gnutls.c:635
 #, c-format
 msgid "Failed to import private key: %s"
 msgstr ""
 
-#: src/ne_gnutls.c:927
+#: src/ne_gnutls.c:925
 msgid "signed using insecure algorithm"
 msgstr ""
 
-#: src/ne_gnutls.c:930
+#: src/ne_gnutls.c:928
 #, c-format
 msgid "unrecognized errors (%u)"
 msgstr ""
 
-#: src/ne_gnutls.c:971 src/ne_openssl.c:462
+#: src/ne_gnutls.c:969 src/ne_openssl.c:484
 #, c-format
 msgid "Server certificate was missing commonName attribute in subject name"
 msgstr ""
 
-#: src/ne_gnutls.c:985
+#: src/ne_gnutls.c:983
 #, c-format
 msgid "Could not verify server certificate: %s"
 msgstr ""
 
-#: src/ne_gnutls.c:1004 src/ne_openssl.c:452
+#: src/ne_gnutls.c:1002 src/ne_openssl.c:474
 #, c-format
 msgid "Certificate verification error: %s"
 msgstr ""
 
-#: src/ne_gnutls.c:1037 src/ne_openssl.c:719
+#: src/ne_gnutls.c:1035 src/ne_openssl.c:745
 #, c-format
 msgid "SSL handshake failed, client certificate was requested: %s"
 msgstr ""
 
-#: src/ne_gnutls.c:1042 src/ne_openssl.c:724
+#: src/ne_gnutls.c:1040 src/ne_openssl.c:750
 #, c-format
 msgid "SSL handshake failed: %s"
 msgstr ""
 
-#: src/ne_gnutls.c:1052
+#: src/ne_gnutls.c:1050
 #, c-format
 msgid "Server did not send certificate chain"
 msgstr ""
@@ -260,7 +260,7 @@ msgstr ""
 msgid "No activelock for <%s> returned in LOCK refresh response"
 msgstr ""
 
-#: src/ne_openssl.c:744
+#: src/ne_openssl.c:770
 #, c-format
 msgid "SSL server did not present certificate"
 msgstr ""
@@ -269,161 +269,161 @@ msgstr ""
 msgid "Response exceeds maximum property count"
 msgstr ""
 
-#: src/ne_request.c:205
+#: src/ne_request.c:207
 #, c-format
 msgid "%s: connection was closed by proxy server"
 msgstr ""
 
-#: src/ne_request.c:208
+#: src/ne_request.c:210
 #, c-format
 msgid "%s: connection was closed by server"
 msgstr ""
 
-#: src/ne_request.c:213
+#: src/ne_request.c:215
 #, c-format
 msgid "%s: connection timed out"
 msgstr ""
 
-#: src/ne_request.c:316
+#: src/ne_request.c:318
 #, c-format
 msgid "Premature EOF in request body file"
 msgstr ""
 
-#: src/ne_request.c:323
+#: src/ne_request.c:325
 #, c-format
 msgid "Failed reading request body file: %s"
 msgstr ""
 
-#: src/ne_request.c:343
+#: src/ne_request.c:345
 msgid "offset invalid"
 msgstr ""
 
-#: src/ne_request.c:348
+#: src/ne_request.c:350
 #, c-format
 msgid "Could not seek to offset %s of request body file: %s"
 msgstr ""
 
-#: src/ne_request.c:434
+#: src/ne_request.c:436
 msgid "Could not send request body"
 msgstr ""
 
-#: src/ne_request.c:461
+#: src/ne_request.c:463
 msgid "Could not send chunked request terminator"
 msgstr ""
 
-#: src/ne_request.c:785
+#: src/ne_request.c:787
 #, c-format
 msgid "Could not parse redirect destination URL"
 msgstr ""
 
-#: src/ne_request.c:791
+#: src/ne_request.c:793
 #, c-format
 msgid "Could not parse request target URI"
 msgstr ""
 
-#: src/ne_request.c:943
+#: src/ne_request.c:968
 msgid "Could not read chunk size"
 msgstr ""
 
-#: src/ne_request.c:946
+#: src/ne_request.c:971
 msgid "Invalid chunk-size line"
 msgstr ""
 
-#: src/ne_request.c:963 src/ne_request.c:972
+#: src/ne_request.c:989
 msgid "Could not parse chunk size"
 msgstr ""
 
-#: src/ne_request.c:1009
+#: src/ne_request.c:1026
 msgid "Could not read response body"
 msgstr ""
 
-#: src/ne_request.c:1025
+#: src/ne_request.c:1042
 msgid "Could not read chunk delimiter"
 msgstr ""
 
-#: src/ne_request.c:1028
+#: src/ne_request.c:1045
 msgid "Chunk delimiter was invalid"
 msgstr ""
 
-#: src/ne_request.c:1129
+#: src/ne_request.c:1146
 msgid "Could not read status line (TLS client certificate was requested)"
 msgstr ""
 
-#: src/ne_request.c:1130
+#: src/ne_request.c:1147
 msgid "Could not read status line"
 msgstr ""
 
-#: src/ne_request.c:1153
+#: src/ne_request.c:1170
 msgid "Could not parse response status line"
 msgstr ""
 
-#: src/ne_request.c:1156
+#: src/ne_request.c:1173
 msgid "Incompatible HTTP version"
 msgstr ""
 
-#: src/ne_request.c:1195
+#: src/ne_request.c:1212
 msgid "Could not send request"
 msgstr ""
 
-#: src/ne_request.c:1237
+#: src/ne_request.c:1254
 msgid "Timed out reading interim responses"
 msgstr ""
 
-#: src/ne_request.c:1266 src/ne_request.c:1283 src/ne_request.c:1293
+#: src/ne_request.c:1283 src/ne_request.c:1300 src/ne_request.c:1310
 msgid "Error reading response headers"
 msgstr ""
 
-#: src/ne_request.c:1303
+#: src/ne_request.c:1320
 #, c-format
 msgid "Response header too long"
 msgstr ""
 
-#: src/ne_request.c:1433
+#: src/ne_request.c:1450
 msgid "Response exceeded maximum number of header fields"
 msgstr ""
 
-#: src/ne_request.c:1448
+#: src/ne_request.c:1465
 #, c-format
 msgid "Could not resolve hostname `%s': %s"
 msgstr ""
 
-#: src/ne_request.c:1571
+#: src/ne_request.c:1588
 msgid "Unknown transfer-coding in response"
 msgstr ""
 
-#: src/ne_request.c:1586
+#: src/ne_request.c:1603
 msgid "Invalid Content-Length in response"
 msgstr ""
 
-#: src/ne_request.c:1662
+#: src/ne_request.c:1679
 #, c-format
 msgid "Could not write to file: %s"
 msgstr ""
 
-#: src/ne_request.c:1735
+#: src/ne_request.c:1752
 #, c-format
 msgid "Could not create SSL connection through proxy server: %s"
 msgstr ""
 
-#: src/ne_request.c:1774
+#: src/ne_request.c:1791
 #, c-format
 msgid "Could not create socket"
 msgstr ""
 
-#: src/ne_request.c:1810
+#: src/ne_request.c:1827
 msgid "Could not connect to server"
 msgstr ""
 
-#: src/ne_request.c:1812
+#: src/ne_request.c:1829
 msgid "Could not connect to proxy server"
 msgstr ""
 
-#: src/ne_request.c:1855
+#: src/ne_request.c:1872
 #, c-format
 msgid "Could not find IPv4 address of hostname %s for SOCKS v4 proxy"
 msgstr ""
 
-#: src/ne_request.c:1913
+#: src/ne_request.c:1930
 #, c-format
 msgid "Could not establish connection from SOCKS proxy (%s:%u): %s"
 msgstr ""
@@ -546,11 +546,11 @@ msgstr ""
 msgid "Could not create SSL structure"
 msgstr ""
 
-#: src/ne_socket.c:2142
+#: src/ne_socket.c:2144
 msgid "Missing flags for socket shutdown"
 msgstr ""
 
-#: src/ne_socket.c:2160 src/ne_socket.c:2171 src/ne_socket.c:2186
+#: src/ne_socket.c:2162 src/ne_socket.c:2173 src/ne_socket.c:2188
 msgid "Incomplete TLS closure"
 msgstr ""
 

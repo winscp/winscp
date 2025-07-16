@@ -36,6 +36,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <errno.h>
 
 #include "ne_alloc.h"
 #include "ne_string.h"
@@ -800,4 +801,26 @@ char *ne_strparam(const char *charset, const char *lang,
     *rp = '\0';
 
     return rv;
+}
+
+unsigned long ne_strhextoul(const char *str, const char **end)
+{
+    unsigned long ret;
+    char *p;
+
+    if ((str[0] == '0' && (str[1] == 'x' || str[1] == 'X'))
+        || !((str[0] >= '0' && str[0] <= '9')
+             || (str[0] >= 'A' && str[0] <= 'Z')
+             || (str[0] >= 'a' && str[0] <= 'z'))) {
+        errno = EINVAL;
+        p = (char *)str;
+        ret = ULONG_MAX;
+    }
+    else {
+        errno = 0;
+        ret = strtoul(str, &p, 16);
+    }
+    if (end) *end = (const char *)p;
+
+    return ret;
 }

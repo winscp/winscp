@@ -44,8 +44,8 @@
     <para>Memory consumption attacks against applications based on
     &neon; by use of unbounded response length are also possible, but
     must be mitigated at application level.  Memory consumption in
-    &neon; itself is fixed and is not proportional to the response
-    size.</para>
+    &neon; while reading response bodies is fixed and is not
+    proportional to the response length.</para>
 
     <para>Test cases for all the above attacks are present in the
     &neon; test suite.</para>
@@ -123,12 +123,27 @@
     allowing the application (and hence, user) to specify that only a
     specific set of authentication protocols is permitted.</para>
 
+    <para>When using Basic authentication, &neon; applies the scoping
+    rules from <ulink
+    url="https://www.rfc-editor.org/rfc/rfc7617.html#section-2.2">RFC
+    7617 Section 2.2</ulink> to limit reuse of cached credentials
+    within a session.</para>
+
     <para>&neon; supports the Digest and Negotiate authentication
     schemes, which both allow authentication of users without passing
-    credentials in cleartext over the wire.  The "domain" parameter is
-    supported in Digest, allowing the server to restrict an
-    authentication session to a particular set of URIs.</para>
+    credentials in cleartext over the wire.</para>
+
+    <para>When using Digest authentication, &neon; uses hash algorithm
+    implementations from the configured SSL/TLS toolkit where
+    possible, or falls back to a bundled MD5 implementation where
+    SSL/TLS is not supported. If available, the SSL/TLS toolkit is
+    also used to generate random <literal>cnonce</literal> values.
+    The <literal>userhash</literal> field is supported for username
+    privacy (this depends on server-side enablement). The full range
+    of hash algorithms specified in <ulink
+    url="https://www.rfc-editor.org/rfc/rfc7616.html#section-6.1">RFC
+    7616 Section 6.1</ulink> is supported if configured using OpenSSL
+    1.1.0 or later.</para>
 
   </sect2>
-
 </sect1>
