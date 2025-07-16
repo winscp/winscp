@@ -93,9 +93,6 @@
 
 /* any characters which should be path-escaped: */
 #define URI_ESCAPE ((URI_GENDELIM & ~(FS)) | URI_SUBDELIM | OT | PC)
-#ifdef WINSCP
-#define URI_NONPC (URI_ESCAPE & (~PC))
-#endif
 
 /* Maximum allowed port number. */
 #define MAX_PORT (65535)
