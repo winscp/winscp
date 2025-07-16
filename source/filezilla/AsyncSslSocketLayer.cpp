@@ -840,6 +840,8 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
       // OpenSSL refutes this as a bug in Python session handling.
       // https://github.com/openssl/openssl/issues/1550
       // But it works for us too.
+      // For alternative (better) API, see
+      // https://github.com/notroj/neon/pull/203/commits/36c918a66691ed1a40ab512821aa8c278081818f
       const unsigned char * P = m_Main->m_sessionidSerialized;
       SSL_SESSION * Session = DebugNotNull(d2i_SSL_SESSION(NULL, &P, m_Main->m_sessionidSerializedLen));
       if (!SSL_set_session(m_ssl, Session))
