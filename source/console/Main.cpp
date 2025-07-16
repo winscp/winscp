@@ -12,28 +12,28 @@
 #define LENOF(x) ( (sizeof((x))) / (sizeof(*(x))))
 //---------------------------------------------------------------------------
 using namespace std;
-HANDLE ConsoleInput = NULL;
-HANDLE ConsoleOutput = NULL;
-HANDLE ConsoleStandardOutput = NULL;
-HANDLE ConsoleErrorOutput = NULL;
-TConsoleCommStruct::TInitEvent::STDINOUT OutputFormat;
-TConsoleCommStruct::TInitEvent::STDINOUT InputFormat;
-HANDLE Child = NULL;
-HANDLE CancelEvent = NULL;
-HANDLE InputTimerEvent = NULL;
-bool SupportsUtf8ConsoleOutput = false;
-unsigned int OutputType = FILE_TYPE_UNKNOWN;
-unsigned int InputType = FILE_TYPE_UNKNOWN;
+static HANDLE ConsoleInput = nullptr;
+static HANDLE ConsoleOutput = nullptr;
+static HANDLE ConsoleStandardOutput = nullptr;
+static HANDLE ConsoleErrorOutput = nullptr;
+static TConsoleCommStruct::TInitEvent::STDINOUT OutputFormat;
+static TConsoleCommStruct::TInitEvent::STDINOUT InputFormat;
+static HANDLE Child = nullptr;
+static HANDLE CancelEvent = nullptr;
+static HANDLE InputTimerEvent = nullptr;
+static bool SupportsUtf8ConsoleOutput = false;
+static unsigned int OutputType = FILE_TYPE_UNKNOWN;
+static unsigned int InputType = FILE_TYPE_UNKNOWN;
 enum { RESULT_GLOBAL_ERROR = 1, RESULT_INIT_ERROR = 2, RESULT_PROCESSING_ERROR = 3,
   RESULT_UNKNOWN_ERROR = 4 };
-const wchar_t* CONSOLE_CHILD_PARAM = L"consolechild";
+static const wchar_t* CONSOLE_CHILD_PARAM = L"consolechild";
 //---------------------------------------------------------------------------
 inline TConsoleCommStruct* GetCommStruct(HANDLE FileMapping)
 {
   TConsoleCommStruct* Result;
   Result = static_cast<TConsoleCommStruct*>(MapViewOfFile(FileMapping,
     FILE_MAP_ALL_ACCESS, 0, 0, 0));
-  if (Result == NULL)
+  if (Result == nullptr)
   {
     throw runtime_error("Cannot open mapping object.");
   }
@@ -45,8 +45,8 @@ inline void FreeCommStruct(TConsoleCommStruct* CommStruct)
   UnmapViewOfFile(CommStruct);
 }
 //---------------------------------------------------------------------------
-void InitializeConsole(wchar_t* InstanceName, HANDLE& RequestEvent, HANDLE& ResponseEvent,
-  HANDLE& CancelEvent, HANDLE& FileMapping, HANDLE& Job)
+static void InitializeConsole(
+  wchar_t* InstanceName, HANDLE& RequestEvent, HANDLE& ResponseEvent, HANDLE& ACancelEvent, HANDLE& FileMapping, HANDLE& Job)
 {
   unsigned int Process = GetCurrentProcessId();
 
@@ -70,7 +70,7 @@ void InitializeConsole(wchar_t* InstanceName, HANDLE& RequestEvent, HANDLE& Resp
     swprintf(InstanceName, L"_%u_%d", Process, InstanceNumber);
     swprintf(Name, L"%s%s", CONSOLE_EVENT_REQUEST, InstanceName);
     HANDLE EventHandle = OpenEvent(EVENT_ALL_ACCESS, false, Name);
-    UniqEvent = (EventHandle == NULL);
+    UniqEvent = (EventHandle == nullptr);
     if (!UniqEvent)
     {
       CloseHandle(EventHandle);
@@ -79,37 +79,37 @@ void InitializeConsole(wchar_t* InstanceName, HANDLE& RequestEvent, HANDLE& Resp
   }
   while (!UniqEvent);
 
-  RequestEvent = CreateEvent(NULL, false, false, Name);
-  if (RequestEvent == NULL)
+  RequestEvent = CreateEvent(nullptr, false, false, Name);
+  if (RequestEvent == nullptr)
   {
     throw runtime_error("Cannot create request event object.");
   }
 
   swprintf(Name, L"%s%s", CONSOLE_EVENT_RESPONSE, InstanceName);
-  ResponseEvent = CreateEvent(NULL, false, false, Name);
-  if (ResponseEvent == NULL)
+  ResponseEvent = CreateEvent(nullptr, false, false, Name);
+  if (ResponseEvent == nullptr)
   {
     throw runtime_error("Cannot create response event object.");
   }
 
   swprintf(Name, L"%s%s", CONSOLE_EVENT_CANCEL, InstanceName);
-  CancelEvent = CreateEvent(NULL, false, false, Name);
-  if (CancelEvent == NULL)
+  ACancelEvent = CreateEvent(nullptr, false, false, Name);
+  if (ACancelEvent == nullptr)
   {
     throw runtime_error("Cannot create cancel event object.");
   }
 
   swprintf(Name, L"%s%s", CONSOLE_MAPPING, InstanceName);
-  FileMapping = CreateFileMapping((HANDLE)0xFFFFFFFF, NULL, PAGE_READWRITE,
-    0, sizeof(TConsoleCommStruct), Name);
-  if (FileMapping == NULL)
+  FileMapping =
+    CreateFileMapping(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, sizeof(TConsoleCommStruct), Name);
+  if (FileMapping == nullptr)
   {
     throw runtime_error("Cannot create mapping object.");
   }
 
   swprintf(Name, L"%s%s", CONSOLE_JOB, InstanceName);
-  Job = CreateJobObject(NULL, Name);
-  if (Job == NULL)
+  Job = CreateJobObject(nullptr, Name);
+  if (Job == nullptr)
   {
     throw runtime_error("Cannot create job object.");
   }
@@ -122,7 +122,7 @@ void InitializeConsole(wchar_t* InstanceName, HANDLE& RequestEvent, HANDLE& Resp
         &ExtendedLimitInformation, sizeof(ExtendedLimitInformation)) == 0)
   {
     CloseHandle(Job);
-    Job = NULL;
+    Job = nullptr;
   }
 
   TConsoleCommStruct* CommStruct = GetCommStruct(FileMapping);
@@ -133,13 +133,13 @@ void InitializeConsole(wchar_t* InstanceName, HANDLE& RequestEvent, HANDLE& Resp
 }
 //---------------------------------------------------------------------------
 // duplicated in Common.cpp
-bool __fastcall CutToken(const wchar_t*& Str, wchar_t* Token)
+static bool CutToken(const wchar_t*& Str, wchar_t* Token)
 {
   bool Result;
 
   // inspired by Putty's sftp_getcmd() from PSFTP.C
-  int Length = wcslen(Str);
-  int Index = 0;
+  size_t Length = wcslen(Str);
+  size_t Index = 0;
   while ((Index < Length) &&
     ((Str[Index] == L' ') || (Str[Index] == L'\t')))
   {
@@ -196,34 +196,34 @@ bool __fastcall CutToken(const wchar_t*& Str, wchar_t* Token)
   return Result;
 }
 //---------------------------------------------------------------------------
-char* WideStringToString(const wchar_t* Message)
+static char* WideStringToString(const wchar_t* Message)
 {
   char* Buffer;
-  int Size = WideCharToMultiByte(CP_UTF8, 0, Message, -1, 0, 0, 0, 0);
+  int Size = WideCharToMultiByte(CP_UTF8, 0, Message, -1, nullptr, 0, nullptr, nullptr);
   if (Size > 0)
   {
-    Buffer = new char[(Size * 2) + 1];
-    if (WideCharToMultiByte(CP_UTF8, 0, Message, -1, Buffer, Size, 0, 0) > 0)
+    Buffer = new char[(static_cast<size_t>(Size) * 2) + 1];
+    if (WideCharToMultiByte(CP_UTF8, 0, Message, -1, Buffer, Size, nullptr, nullptr) > 0)
     {
       Buffer[Size] = '\0';
     }
     else
     {
       delete[] Buffer;
-      Buffer = NULL;
+      Buffer = nullptr;
     }
   }
   else
   {
-    Buffer = NULL;
+    Buffer = nullptr;
   }
   return Buffer;
 }
 //---------------------------------------------------------------------------
-void GetProductVersion(wchar_t* ProductVersion)
+static void GetProductVersion(wchar_t* ProductVersion)
 {
   wchar_t Buffer[MAX_PATH];
-  DWORD ModuleNameLen = GetModuleFileName(NULL, Buffer, MAX_PATH);
+  DWORD ModuleNameLen = GetModuleFileName(nullptr, Buffer, MAX_PATH);
   if ((ModuleNameLen == 0) || (ModuleNameLen == MAX_PATH))
   {
     throw runtime_error("Error retrieving executable name.");
@@ -233,12 +233,12 @@ void GetProductVersion(wchar_t* ProductVersion)
   unsigned int Size = GetFileVersionInfoSize(Buffer, &Handle);
   if (Size > 0)
   {
-    void * VersionInfo = new char[Size];
+    char * VersionInfo = new char[Size];
     VS_FIXEDFILEINFO* FixedFileInfo;
     unsigned int Length;
     if (GetFileVersionInfo(Buffer, Handle, Size, VersionInfo))
     {
-      if (VerQueryValue(VersionInfo, L"\\", (void**)&FixedFileInfo, &Length))
+      if (VerQueryValue(VersionInfo, L"\\", reinterpret_cast<void**>(&FixedFileInfo), &Length))
       {
         int ProductMajor = HIWORD(FixedFileInfo->dwProductVersionMS);
         int ProductMinor = LOWORD(FixedFileInfo->dwProductVersionMS);
@@ -260,19 +260,19 @@ void GetProductVersion(wchar_t* ProductVersion)
   }
 }
 //---------------------------------------------------------------------------
-void InitializeChild(const wchar_t* CommandLine, const wchar_t* InstanceName, HANDLE& Child)
+static void InitializeChild(const wchar_t* CommandLine, const wchar_t* InstanceName, HANDLE& AChild)
 {
-  int SkipParam = 0;
+  unsigned int SkipParam = 0;
   wchar_t ChildPath[MAX_PATH] = L"";
 
   size_t CommandLineLen = wcslen(CommandLine);
   wchar_t* Buffer = new wchar_t[(CommandLineLen > MAX_PATH ? CommandLineLen : MAX_PATH) + 1];
 
-  int Count = 0;
+  unsigned int Count = 0;
   const wchar_t* P = CommandLine;
   while (CutToken(P, Buffer))
   {
-    if ((wcschr(L"-/", Buffer[0]) != NULL) &&
+    if ((wcschr(L"-/", Buffer[0]) != nullptr) &&
         (wcsncmpi(Buffer + 1, CONSOLE_CHILD_PARAM, wcslen(CONSOLE_CHILD_PARAM)) == 0) &&
         (Buffer[wcslen(CONSOLE_CHILD_PARAM) + 1] == L'='))
     {
@@ -284,16 +284,16 @@ void InitializeChild(const wchar_t* CommandLine, const wchar_t* InstanceName, HA
 
   if (wcslen(ChildPath) == 0)
   {
-    DWORD ModuleNameLen = GetModuleFileName(NULL, Buffer, MAX_PATH);
+    DWORD ModuleNameLen = GetModuleFileName(nullptr, Buffer, MAX_PATH);
     if ((ModuleNameLen == 0) || (ModuleNameLen == MAX_PATH))
     {
       throw runtime_error("Error retrieving executable name.");
     }
     const wchar_t* LastDelimiter = wcsrchr(Buffer, L'\\');
     const wchar_t* AppFileName;
-    if (LastDelimiter != NULL)
+    if (LastDelimiter != nullptr)
     {
-      wcsncpy(ChildPath, Buffer, LastDelimiter - Buffer + 1);
+      wcsncpy(ChildPath, Buffer, static_cast<size_t>(LastDelimiter - Buffer + 1));
       ChildPath[LastDelimiter - Buffer + 1] = L'\0';
       AppFileName = LastDelimiter + 1;
     }
@@ -304,10 +304,10 @@ void InitializeChild(const wchar_t* CommandLine, const wchar_t* InstanceName, HA
     }
 
     const wchar_t* ExtensionStart = wcsrchr(AppFileName, L'.');
-    if (ExtensionStart != NULL)
+    if (ExtensionStart != nullptr)
     {
       wchar_t* End = ChildPath + wcslen(ChildPath);
-      wcsncpy(End, AppFileName, ExtensionStart - AppFileName);
+      wcsncpy(End, AppFileName, static_cast<size_t>(ExtensionStart - AppFileName));
       *(End + (ExtensionStart - AppFileName)) = L'\0';
     }
     else
@@ -325,7 +325,7 @@ void InitializeChild(const wchar_t* CommandLine, const wchar_t* InstanceName, HA
   P = CommandLine;
   // skip executable path
   CutToken(P, Buffer);
-  int i = 1;
+  unsigned int i = 1;
   while (CutToken(P, Buffer))
   {
     if (i != SkipParam)
@@ -353,33 +353,33 @@ void InitializeChild(const wchar_t* CommandLine, const wchar_t* InstanceName, HA
 
   delete[] Buffer;
 
-  STARTUPINFO StartupInfo = { sizeof(STARTUPINFO) };
+  STARTUPINFO StartupInfo = { .cb = sizeof(STARTUPINFO) };
   PROCESS_INFORMATION ProcessInfomation;
 
   BOOL Result =
-    CreateProcess(ChildPath, Parameters, NULL, NULL, false, 0, NULL, NULL,
-      &StartupInfo, &ProcessInfomation);
+    CreateProcess(ChildPath, Parameters, nullptr, nullptr, false, 0, nullptr, nullptr, &StartupInfo, &ProcessInfomation);
 
   delete[] Parameters;
 
   if (Result)
   {
-    Child = ProcessInfomation.hProcess;
+    AChild = ProcessInfomation.hProcess;
   }
   else
   {
     size_t Len = MAX_PATH + 1024;
     DWORD Error = GetLastError();
-    wchar_t * Buffer = NULL;
-    Len += FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, 0, Error, 0, (LPTSTR)&Buffer, 0, NULL);
+    wchar_t * Buffer2 = nullptr;
+    DWORD Flags = FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER;
+    Len += FormatMessage(Flags, nullptr, Error, 0, reinterpret_cast<LPTSTR>(&Buffer2), 0, nullptr);
 
     wchar_t* Message = new wchar_t[Len];
     wsprintf(Message, L"Cannot start WinSCP application \"%s\".", ChildPath);
-    if (Buffer != NULL)
+    if (Buffer2 != nullptr)
     {
       wcscat(Message, L"\n");
-      wcscat(Message, Buffer);
-      LocalFree(Buffer);
+      wcscat(Message, Buffer2);
+      LocalFree(Buffer2);
     }
     char* MessageString = WideStringToString(Message);
     delete[] Message;
@@ -389,23 +389,23 @@ void InitializeChild(const wchar_t* CommandLine, const wchar_t* InstanceName, HA
   }
 }
 //---------------------------------------------------------------------------
-void FinalizeChild(HANDLE Child)
+static void FinalizeChild(HANDLE AChild)
 {
-  if (Child != NULL)
+  if (AChild != nullptr)
   {
-    TerminateProcess(Child, 0);
-    CloseHandle(Child);
+    TerminateProcess(AChild, 0);
+    CloseHandle(AChild);
   }
 }
 //---------------------------------------------------------------------------
-void FinalizeConsole(const wchar_t* /*InstanceName*/, HANDLE RequestEvent,
-  HANDLE ResponseEvent, HANDLE CancelEvent, HANDLE FileMapping, HANDLE Job)
+static void FinalizeConsole(
+  const wchar_t* /*InstanceName*/, HANDLE RequestEvent, HANDLE ResponseEvent, HANDLE ACancelEvent, HANDLE FileMapping, HANDLE Job)
 {
   CloseHandle(RequestEvent);
   CloseHandle(ResponseEvent);
-  CloseHandle(CancelEvent);
+  CloseHandle(ACancelEvent);
   CloseHandle(FileMapping);
-  if (Job != NULL)
+  if (Job != nullptr)
   {
     CloseHandle(Job);
   }
@@ -421,12 +421,12 @@ inline void Flush()
   }
 }
 //---------------------------------------------------------------------------
-void PrintException(const exception& e)
+static void PrintException(const exception& e)
 {
-  if (ConsoleOutput != NULL)
+  if (ConsoleOutput != nullptr)
   {
     unsigned long Written;
-    WriteFile(ConsoleOutput, e.what(), strlen(e.what()), &Written, NULL);
+    WriteFile(ConsoleOutput, e.what(), strlen(e.what()), &Written, nullptr);
   }
   else
   {
@@ -434,25 +434,25 @@ void PrintException(const exception& e)
   }
 }
 //---------------------------------------------------------------------------
-void Print(const wchar_t* Message)
+static void Print(const wchar_t* Message)
 {
   char* Buffer = WideStringToString(Message);
-  if (Buffer != NULL)
+  if (Buffer != nullptr)
   {
     char* Ptr = Buffer;
-    while ((Ptr = strchr(Ptr, '\n')) != NULL)
+    while ((Ptr = strchr(Ptr, '\n')) != nullptr)
     {
       memmove(Ptr + 1, Ptr, strlen(Ptr) + 1);
       *Ptr = '\r';
       Ptr += 2;
     }
     unsigned long Written;
-    WriteFile(ConsoleOutput, Buffer, strlen(Buffer), &Written, NULL);
+    WriteFile(ConsoleOutput, Buffer, strlen(Buffer), &Written, nullptr);
     delete[] Buffer;
   }
 }
 //---------------------------------------------------------------------------
-void Print(bool FromBeginning, const wchar_t* Message)
+static void Print(bool FromBeginning, const wchar_t* Message)
 {
   size_t Len = wcslen(Message);
   if ((OutputType == FILE_TYPE_DISK) || (OutputType == FILE_TYPE_PIPE))
@@ -486,22 +486,22 @@ void Print(bool FromBeginning, const wchar_t* Message)
     unsigned long Written;
     if (FromBeginning)
     {
-      WriteConsole(ConsoleOutput, L"\r", 1, &Written, NULL);
+      WriteConsole(ConsoleOutput, L"\r", 1, &Written, nullptr);
     }
     bool WriteResult =
-      WriteConsole(ConsoleOutput, Message, Len, &Written, NULL);
-    int Error = GetLastError();
+      WriteConsole(ConsoleOutput, Message, Len, &Written, nullptr);
+    DWORD Error = GetLastError();
     // The current console font does not support some characters in the message,
     // fall back to ansi-writting
     if (!WriteResult && (Error == ERROR_GEN_FAILURE))
     {
-      int Size = WideCharToMultiByte(CP_ACP, 0, Message, -1, 0, 0, 0, 0);
+      int Size = WideCharToMultiByte(CP_ACP, 0, Message, -1, nullptr, 0, nullptr, nullptr);
       if (Size > 0)
       {
-        char* Buffer = new char[Size];
-        if (WideCharToMultiByte(CP_ACP, 0, Message, -1, Buffer, Size, 0, 0) > 0)
+        char* Buffer = new char[static_cast<size_t>(Size)];
+        if (WideCharToMultiByte(CP_ACP, 0, Message, -1, Buffer, Size, nullptr, nullptr) > 0)
         {
-          WriteConsoleA(ConsoleOutput, Buffer, strlen(Buffer), &Written, NULL);
+          WriteConsoleA(ConsoleOutput, Buffer, strlen(Buffer), &Written, nullptr);
         }
         delete[] Buffer;
       }
@@ -514,12 +514,12 @@ inline void ProcessPrintEvent(TConsoleCommStruct::TPrintEvent& Event)
   Print(Event.FromBeginning, Event.Message);
 }
 //---------------------------------------------------------------------------
-void CancelInput()
+static void CancelInput()
 {
   SetEvent(CancelEvent);
 }
 //---------------------------------------------------------------------------
-void BreakInput()
+static void BreakInput()
 {
   FlushConsoleInputBuffer(ConsoleInput);
 
@@ -537,7 +537,7 @@ void BreakInput()
   WriteConsoleInput(ConsoleInput, &InputRecord, 1, &Written);
 }
 //---------------------------------------------------------------------------
-DWORD WINAPI InputTimerThreadProc(void* Parameter)
+static DWORD WINAPI InputTimerThreadProc(void* Parameter)
 {
   unsigned int Timer = reinterpret_cast<unsigned int>(Parameter);
   unsigned int Remaining = Timer;
@@ -599,7 +599,7 @@ DWORD WINAPI InputTimerThreadProc(void* Parameter)
   return 0;
 }
 //---------------------------------------------------------------------------
-void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event)
+static void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event)
 {
   if ((InputType == FILE_TYPE_DISK) || (InputType == FILE_TYPE_PIPE))
   {
@@ -609,7 +609,7 @@ void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event)
     char Ch;
     char Buf[LENOF(Event.Str) * 3];
 
-    while (((Result = (ReadFile(ConsoleInput, &Ch, 1, &Read, NULL) != 0)) != false) &&
+    while (((Result = (ReadFile(ConsoleInput, &Ch, 1, &Read, nullptr) != 0)) != false) &&
            (Read > 0) && (Bytes < LENOF(Buf) - 1) && (Ch != '\n'))
     {
       if (Ch != '\r')
@@ -639,30 +639,30 @@ void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event)
     }
     else
     {
-      NewMode &= ~ENABLE_ECHO_INPUT;
+      NewMode &= static_cast<unsigned long>(~ENABLE_ECHO_INPUT);
     }
     SetConsoleMode(ConsoleInput, NewMode);
 
-    HANDLE InputTimerThread = NULL;
+    HANDLE InputTimerThread = nullptr;
 
     try
     {
       if (Event.Timer > 0)
       {
         unsigned long ThreadId;
-        InputTimerEvent = CreateEvent(NULL, false, false, NULL);
-        InputTimerThread = CreateThread(NULL, 0, InputTimerThreadProc,
-          reinterpret_cast<void *>(Event.Timer), 0, &ThreadId);
+        InputTimerEvent = CreateEvent(nullptr, false, false, nullptr);
+        InputTimerThread =
+          CreateThread(nullptr, 0, InputTimerThreadProc, reinterpret_cast<void *>(Event.Timer), 0, &ThreadId);
       }
 
       unsigned long Read;
-      Event.Result = ReadConsole(ConsoleInput, Event.Str, LENOF(Event.Str) - 1, &Read, NULL);
+      Event.Result = ReadConsole(ConsoleInput, Event.Str, LENOF(Event.Str) - 1, &Read, nullptr);
       Event.Str[Read] = L'\0';
 
       bool PendingCancel = (WaitForSingleObject(CancelEvent, 0) == WAIT_OBJECT_0);
       if (PendingCancel || !Event.Echo)
       {
-        WriteFile(ConsoleOutput, "\n", 1, NULL, NULL);
+        WriteFile(ConsoleOutput, "\n", 1, nullptr, nullptr);
         Flush();
       }
 
@@ -673,12 +673,12 @@ void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event)
     }
     __finally
     {
-      if (InputTimerThread != NULL)
+      if (InputTimerThread != nullptr)
       {
         SetEvent(InputTimerEvent);
         WaitForSingleObject(InputTimerThread, 100);
         CloseHandle(InputTimerEvent);
-        InputTimerEvent = NULL;
+        InputTimerEvent = nullptr;
         CloseHandle(InputTimerThread);
       }
       SetConsoleMode(ConsoleInput, PrevMode);
@@ -686,7 +686,7 @@ void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event)
   }
 }
 //---------------------------------------------------------------------------
-void ProcessChoiceEvent(TConsoleCommStruct::TChoiceEvent& Event)
+static void ProcessChoiceEvent(TConsoleCommStruct::TChoiceEvent& Event)
 {
   // note that if output is redirected to file, input is still FILE_TYPE_CHAR
   if ((InputType == FILE_TYPE_DISK) || (InputType == FILE_TYPE_PIPE))
@@ -707,7 +707,7 @@ void ProcessChoiceEvent(TConsoleCommStruct::TChoiceEvent& Event)
 
     unsigned long PrevMode, NewMode;
     GetConsoleMode(ConsoleInput, &PrevMode);
-    NewMode = (PrevMode | ENABLE_PROCESSED_INPUT) & ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
+    NewMode = (PrevMode | ENABLE_PROCESSED_INPUT) & static_cast<unsigned long>(~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT));
     SetConsoleMode(ConsoleInput, NewMode);
 
     unsigned int ATimer = Event.Timer;
@@ -744,7 +744,7 @@ void ProcessChoiceEvent(TConsoleCommStruct::TChoiceEvent& Event)
                 {
                   Event.Result = Event.Cancel;
                 }
-                else if ((wcschr(Event.Options, C) != NULL) &&
+                else if ((wcschr(Event.Options, C) != nullptr) &&
                          ((Record.Event.KeyEvent.dwControlKeyState &
                            (LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED | LEFT_ALT_PRESSED |
                            RIGHT_ALT_PRESSED)) == 0))
@@ -859,7 +859,7 @@ inline void ProcessTransferInEvent(TConsoleCommStruct::TTransferEvent& Event)
   }
 }
 //---------------------------------------------------------------------------
-void ProcessEvent(HANDLE ResponseEvent, HANDLE FileMapping)
+static void ProcessEvent(HANDLE ResponseEvent, HANDLE FileMapping)
 {
   TConsoleCommStruct* CommStruct = GetCommStruct(FileMapping);
   try
@@ -899,7 +899,8 @@ void ProcessEvent(HANDLE ResponseEvent, HANDLE FileMapping)
         ProcessTransferInEvent(CommStruct->TransferEvent);
         break;
 
-      default:
+      case TConsoleCommStruct::NONE:
+      case TConsoleCommStruct::PROGRESS:
         throw runtime_error("Unknown event");
     }
 
@@ -914,7 +915,7 @@ void ProcessEvent(HANDLE ResponseEvent, HANDLE FileMapping)
   }
 }
 //---------------------------------------------------------------------------
-BOOL WINAPI HandlerRoutine(DWORD CtrlType)
+static BOOL WINAPI HandlerRoutine(DWORD CtrlType)
 {
   if ((CtrlType == CTRL_C_EVENT) || (CtrlType == CTRL_BREAK_EVENT))
   {
@@ -940,7 +941,10 @@ int wmain(int /*argc*/, wchar_t* /*argv*/[])
 
     OSVERSIONINFO VersionInfo;
     VersionInfo.dwOSVersionInfoSize = sizeof(VersionInfo);
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     GetVersionEx(&VersionInfo);
+    #pragma clang diagnostic pop
 
     ConsoleInput = GetStdHandle(STD_INPUT_HANDLE);
     InputType = GetFileType(ConsoleInput);
@@ -1009,7 +1013,7 @@ int wmain(int /*argc*/, wchar_t* /*argv*/[])
             case WAIT_OBJECT_0 + 1:
               GetExitCodeProcess(Child, &Result);
               CloseHandle(Child);
-              Child = NULL;
+              Child = nullptr;
               Continue = false;
               break;
 
@@ -1052,6 +1056,6 @@ int wmain(int /*argc*/, wchar_t* /*argv*/[])
     Result = RESULT_GLOBAL_ERROR;
   }
 
-  return Result;
+  return static_cast<int>(Result);
 }
 //---------------------------------------------------------------------------
