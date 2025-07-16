@@ -213,6 +213,10 @@ char* WideStringToString(const wchar_t* Message)
       Buffer = NULL;
     }
   }
+  else
+  {
+    Buffer = NULL;
+  }
   return Buffer;
 }
 //---------------------------------------------------------------------------
