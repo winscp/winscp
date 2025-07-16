@@ -68,13 +68,13 @@ if (cert) {
         <para><function>ne_ssl_trust_default_ca</function> is not safe
         to call for non-SSL sessions versions of &neon; before
         0.33.0. In 0.33.0 and later, this function is a no-op for
-        non-SSL sessinos.</para>
+        non-SSL sessions.</para>
       </refsect1>
       
       <refsect1>
 	<title>See also</title>
 
-	<para><xref linkend="ne_ssl_cert_read"/>, <xref
+	<para><xref linkend="ne_session_create"/>, <xref linkend="ne_ssl_cert_read"/>, <xref
 	linkend="ne_ssl_cert_import"/>, <xref
 	linkend="ne_ssl_cert_free"/></para> </refsect1>
 

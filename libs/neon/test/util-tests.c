@@ -189,6 +189,10 @@ static int md5_read(void)
     char hex[33];
 
     rv = ne_md5_read_ctx(ctx, u.buf);
+    if (rv == NULL) {
+        ne_md5_destroy_ctx(ctx);
+        return SKIP;
+    }
     ONN("bogus return value", rv != u.buf);
 
     ne_md5_to_ascii(u.buf, hex);

@@ -2,12 +2,12 @@
 .\"     Title: ne_addr_resolve
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 15 April 2025
+.\"      Date: 15 July 2025
 .\"    Manual: neon API reference
-.\"    Source: neon 0.34.2
+.\"    Source: neon 0.35.0
 .\"  Language: English
 .\"
-.TH "NE_ADDR_RESOLVE" "3" "15 April 2025" "neon 0.34.2" "neon API reference"
+.TH "NE_ADDR_RESOLVE" "3" "15 July 2025" "neon 0.35.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -28,7 +28,7 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-ne_addr_resolve, ne_addr_result, ne_addr_first, ne_addr_next, ne_addr_error, ne_addr_destroy \- functions to resolve hostnames to addresses
+ne_addr_resolve, ne_addr_result, ne_addr_first, ne_addr_next, ne_addr_error, ne_addr_canonical, ne_addr_destroy \- functions to resolve hostnames to addresses
 .SH "SYNOPSIS"
 .sp
 .ft B
@@ -46,6 +46,8 @@ ne_addr_resolve, ne_addr_result, ne_addr_first, ne_addr_next, ne_addr_error, ne_
 .BI "const ne_inet_addr *ne_addr_next(ne_sock_addr\ *" "addr" ");"
 .HP \w'char\ *ne_addr_error('u
 .BI "char *ne_addr_error(const\ ne_sock_addr\ *" "addr" ", char\ *" "buffer" ", size_t\ " "bufsiz" ");"
+.HP \w'const\ char\ *ne_addr_canonical('u
+.BI "const char *ne_addr_canonical(const\ ne_sock_addr\ *" "addr" ");"
 .HP \w'void\ ne_addr_destroy('u
 .BI "void ne_addr_destroy(ne_sock_addr\ *" "addr" ");"
 .SH "DESCRIPTION"
@@ -57,7 +59,9 @@ function resolves the given
 \fBne_sock_addr\fR
 object representing the address (or addresses) associated with the hostname\&. The
 \fIflags\fR
-parameter is currently unused, and must be passed as 0\&.
+parameter should be zero, or if
+NE_ADDR_CANON
+used, the canonical name for the hostname will be determined\&.
 .PP
 The
 \fIhostname\fR
@@ -96,6 +100,12 @@ pointer returned by these functions can be passed to
 \fBne_sock_connect\fR
 to connect a socket\&.
 .PP
+If the
+NE_ADDR_CANON
+flag was used with
+\fBne_addr_resolve\fR, the canonical hostname can be retrieved using
+\fBne_addr_canonical\fR\&.
+.PP
 After the address object has been used, it should be destroyed using
 \fBne_addr_destroy\fR\&.
 .SH "RETURN VALUE"
@@ -106,7 +116,7 @@ NULL\&.
 \fBne_addr_error\fR
 returns the
 \fIbuffer\fR
-parameter \&.
+parameter\&.
 .SH "EXAMPLES"
 .PP
 The code below prints out the set of addresses associated with the hostname
@@ -136,10 +146,14 @@ ne_addr_destroy(addr);
 .if n \{\
 .RE
 .\}
+.SH "HISTORY"
+.PP
+\fBne_addr_canonical\fR
+was added in neon 0\&.30\&.0\&.
 .SH "SEE ALSO"
 .PP
 ne_iaddr_print
 .SH "COPYRIGHT"
 .br
-Copyright \(co 2001-2024 Joe Orton
+Copyright \(co 2001-2025 Joe Orton
 .br

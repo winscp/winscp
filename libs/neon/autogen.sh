@@ -21,9 +21,9 @@ fi
 printf  "aclocal... "
 ${ACLOCAL:-aclocal} -I macros
 printf  "autoheader... "
-${AUTOHEADER:-autoheader}
+${AUTOHEADER:-autoheader} -Wall
 printf  "autoconf... "
-${AUTOCONF:-autoconf} -Wall
+${AUTOCONF:-autoconf} -Wall -Werror
 echo okay.
 # remove the autoconf cache
 rm -rf autom4te*.cache

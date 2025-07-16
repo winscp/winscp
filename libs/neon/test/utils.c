@@ -31,6 +31,7 @@
 #include <arpa/inet.h>
 
 #include "ne_session.h"
+#include "ne_string.h"
 
 #include "child.h"
 #include "tests.h"
@@ -311,4 +312,51 @@ int file_to_buffer(const char *filename, ne_buffer *buf)
     close(fd);
     
     return 0;
+}
+
+void sess_notifier(void *userdata, ne_session_status status,
+                   const ne_session_status_info *info)
+{
+    ne_buffer *buf = userdata;
+    char scratch[512];
+
+    switch (status) {
+    case ne_status_lookup:
+        ne_buffer_concat(buf, "lookup(", info->lu.hostname, ")-", NULL);
+        break;
+    case ne_status_connecting:
+        ne_iaddr_print(info->ci.address, scratch, sizeof scratch);
+        ne_buffer_concat(buf, "connecting(", info->lu.hostname,
+                         ",", scratch, ")-", NULL);
+        break;
+    case ne_status_disconnected:
+        ne_buffer_czappend(buf, "dis");
+        /* fallthrough */
+    case ne_status_connected:
+        ne_buffer_concat(buf, "connected(", info->cd.hostname,
+                         ")-", NULL);
+        break;
+    case ne_status_sending:
+    case ne_status_recving:
+        ne_snprintf(scratch, sizeof scratch,
+                    "%" NE_FMT_NE_OFF_T ",%" NE_FMT_NE_OFF_T,
+                    info->sr.progress, info->sr.total);
+        ne_buffer_concat(buf,
+                         status == ne_status_sending ? "send" : "recv",
+                         "(", scratch, ")-", NULL);
+        break;
+    case ne_status_handshake:
+        ne_buffer_snprintf(buf, 256,
+                           "handshake(%s, %s)-",
+                           ne_ssl_proto_name(info->hs.protocol),
+                           info->hs.ciphersuite ?
+                           info->hs.ciphersuite : "[none]");
+        break;
+    default:
+        ne_buffer_czappend(buf, "bork!");
+        break;
+    }
+
+    NE_DEBUG(NE_DBG_HTTP, "notifier %d => %s\n",
+             status, buf->data);
 }

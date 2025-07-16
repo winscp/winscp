@@ -175,7 +175,8 @@ typedef enum {
     ne_status_connected, /* connected to host */
     ne_status_sending, /* sending a request body */
     ne_status_recving, /* receiving a response body */
-    ne_status_disconnected /* disconnected from host */
+    ne_status_disconnected, /* disconnected from host */
+    ne_status_handshake /* TLS handshake complete */
 } ne_session_status;
 
 /* Status event information union; the relevant structure within
@@ -205,6 +206,12 @@ typedef union ne_session_status_info_u {
          * the number of bytes transferred so far. */
         ne_off_t progress, total;
     } sr;
+    struct /* ne_status_handshake */ {
+        /* TLS handshake completed successfully; ciphersuite is
+         * non-NULL if available. */
+        enum ne_ssl_protocol protocol;
+        const char *ciphersuite;
+    } hs;
 } ne_session_status_info;
 
 /* Callback invoked to notify a new session status event, given by the

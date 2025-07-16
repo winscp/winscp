@@ -29,6 +29,9 @@
 #ifdef HAVE_ERRNO_H
 #include <errno.h> /* for the ENOENT definitions in str_errors */
 #endif
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#endif
 
 #include "ne_string.h"
 #include "ne_utils.h"
@@ -783,6 +786,58 @@ static int strparam(void)
     return OK;
 }
 
+static int strhextoul(void)
+{
+    static const struct {
+        const char *input;
+        unsigned long expect;
+        int error; /* errno */
+        const char *endp;
+    } *t, ts[] = {
+        { "0x0", ULONG_MAX, EINVAL },
+        { "0X1", ULONG_MAX, EINVAL },
+        { "+1", ULONG_MAX, EINVAL },
+        { "-0", ULONG_MAX, EINVAL },
+        { "+0x1", ULONG_MAX, EINVAL },
+        { "+0X1", ULONG_MAX, EINVAL },
+        { "", ULONG_MAX, EINVAL },
+        { "1", 1, 0, "" },
+        { " 10", ULONG_MAX, EINVAL, " 10" },
+        { "0000010 ", 16, 0, " " },
+        { "4242", 16962, 0 },
+        { "4242zZZz", 16962, 0, "zZZz" },
+        { "cAfEBeEf", 3405692655 },
+#if SIZEOF_LONG == 8
+        { "10000000000000000", ULONG_MAX, ERANGE },
+        { "100000000", 0x100000000, 0 },
+#elif SIZEOF_LONG == 4
+        { "100000000", ULONG_MAX, ERANGE },
+#endif
+        { NULL }
+    };
+    unsigned n;
+
+    for (n = 0; ts[n].input; n++) {
+        unsigned long actual;
+        const char *endp = "(unset)", **endpp;
+        int errnum;
+
+        t = ts + n;
+
+        endpp = t->endp ? &endp : NULL;
+        errno = ENOENT;
+        actual = ne_strhextoul(t->input, endpp);
+        errnum = errno;
+        ONV(errnum != t->error,
+            ("got errno %d not %d for [%s]", errnum, t->error, t->input));
+        ONV(actual != t->expect,
+            ("got %lu not %lu for [%s]", actual, t->expect, t->input));
+        if (endpp) ONCMP(*endpp, t->endp);
+    }
+
+    return OK;
+}
+
 ne_test tests[] = {
     T(simple),
     T(buf_concat),
@@ -816,6 +871,7 @@ ne_test tests[] = {
     T(strhash_sha_512),
     T(strhash_sha_512_256),
     T(strparam),
+    T(strhextoul),
     T(NULL)
 };
 

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: neon 0.29.x\n"
 "Report-Msgid-Bugs-To: https://github.com/notroj/neon\n"
-"POT-Creation-Date: 2025-04-14 15:07+0100\n"
+"POT-Creation-Date: 2025-07-15 18:06+0100\n"
 "PO-Revision-Date: 2008-03-03 11:20+0800\n"
 "Last-Translator: Dongsheng Song <dongsheng.song@gmail.com>\n"
 "Language-Team: neon@webdav.org\n"
@@ -141,17 +141,17 @@ msgstr "摘要互相认证失败：参数遗漏"
 msgid "Digest mutual authentication failure: client nonce mismatch"
 msgstr "摘要互相认证失败：客户现时不匹配"
 
-#: src/ne_auth.c:1314
+#: src/ne_auth.c:1313
 #, c-format
 msgid "Digest mutual authentication failure: could not parse nonce count"
 msgstr "摘要互相认证失败：不能解析现时计数"
 
-#: src/ne_auth.c:1319
+#: src/ne_auth.c:1318
 #, c-format
 msgid "Digest mutual authentication failure: nonce count mismatch (%u not %u)"
 msgstr "摘要互相认证失败：现时计算不匹配 (应该是 %u，不是 %u)"
 
-#: src/ne_auth.c:1346
+#: src/ne_auth.c:1345
 #, c-format
 msgid "Digest mutual authentication failure: request-digest mismatch"
 msgstr "摘要互相认证失败：请求摘要不匹配"
@@ -198,55 +198,55 @@ msgstr "解压数据失败"
 msgid "Could not initialize zlib"
 msgstr "初始化 zlib 失败"
 
-#: src/ne_gnutls.c:184
+#: src/ne_gnutls.c:183
 #, c-format
 msgid "[unprintable:#%lu]"
 msgstr "[非打印字符:#%lu]"
 
-#: src/ne_gnutls.c:213
+#: src/ne_gnutls.c:211
 msgid "[unprintable]"
 msgstr "[非打印字符]"
 
-#: src/ne_gnutls.c:637
+#: src/ne_gnutls.c:635
 #, c-format
 msgid "Failed to import private key: %s"
 msgstr ""
 
-#: src/ne_gnutls.c:927
+#: src/ne_gnutls.c:925
 msgid "signed using insecure algorithm"
 msgstr ""
 
-#: src/ne_gnutls.c:930
+#: src/ne_gnutls.c:928
 #, c-format
 msgid "unrecognized errors (%u)"
 msgstr ""
 
-#: src/ne_gnutls.c:971 src/ne_openssl.c:462
+#: src/ne_gnutls.c:969 src/ne_openssl.c:484
 #, c-format
 msgid "Server certificate was missing commonName attribute in subject name"
 msgstr "服务器证书在主题名称遗漏了属性 commonName"
 
-#: src/ne_gnutls.c:985
+#: src/ne_gnutls.c:983
 #, fuzzy, c-format
 msgid "Could not verify server certificate: %s"
 msgstr "不能写入文件：%s"
 
-#: src/ne_gnutls.c:1004 src/ne_openssl.c:452
+#: src/ne_gnutls.c:1002 src/ne_openssl.c:474
 #, c-format
 msgid "Certificate verification error: %s"
 msgstr "证书校验失败：%s"
 
-#: src/ne_gnutls.c:1037 src/ne_openssl.c:719
+#: src/ne_gnutls.c:1035 src/ne_openssl.c:745
 #, c-format
 msgid "SSL handshake failed, client certificate was requested: %s"
 msgstr ""
 
-#: src/ne_gnutls.c:1042 src/ne_openssl.c:724
+#: src/ne_gnutls.c:1040 src/ne_openssl.c:750
 #, fuzzy, c-format
 msgid "SSL handshake failed: %s"
 msgstr "SSL 协商失败：%s"
 
-#: src/ne_gnutls.c:1052
+#: src/ne_gnutls.c:1050
 #, c-format
 msgid "Server did not send certificate chain"
 msgstr "服务器不能发送证书链"
@@ -265,7 +265,7 @@ msgstr "锁定 %s 的响应遗漏了主动锁"
 msgid "No activelock for <%s> returned in LOCK refresh response"
 msgstr "刷新锁定 %s 的响应没有返回主动锁"
 
-#: src/ne_openssl.c:744
+#: src/ne_openssl.c:770
 #, c-format
 msgid "SSL server did not present certificate"
 msgstr "SSL 服务器不能呈现证书"
@@ -274,163 +274,163 @@ msgstr "SSL 服务器不能呈现证书"
 msgid "Response exceeds maximum property count"
 msgstr "响应超过了属性的最大计数"
 
-#: src/ne_request.c:205
+#: src/ne_request.c:207
 #, c-format
 msgid "%s: connection was closed by proxy server"
 msgstr "%s: 连接被代理服务器关闭"
 
-#: src/ne_request.c:208
+#: src/ne_request.c:210
 #, c-format
 msgid "%s: connection was closed by server"
 msgstr "%s: 连接被服务器关闭"
 
-#: src/ne_request.c:213
+#: src/ne_request.c:215
 #, c-format
 msgid "%s: connection timed out"
 msgstr "%s: 连接超时"
 
-#: src/ne_request.c:316
+#: src/ne_request.c:318
 #, c-format
 msgid "Premature EOF in request body file"
 msgstr ""
 
-#: src/ne_request.c:323
+#: src/ne_request.c:325
 #, c-format
 msgid "Failed reading request body file: %s"
 msgstr ""
 
-#: src/ne_request.c:343
+#: src/ne_request.c:345
 msgid "offset invalid"
 msgstr "非法偏移"
 
-#: src/ne_request.c:348
+#: src/ne_request.c:350
 #, c-format
 msgid "Could not seek to offset %s of request body file: %s"
 msgstr "在请求主体文件不能定位到偏移 %s： %s"
 
-#: src/ne_request.c:434
+#: src/ne_request.c:436
 msgid "Could not send request body"
 msgstr "不能发送请求主体"
 
-#: src/ne_request.c:461
+#: src/ne_request.c:463
 #, fuzzy
 msgid "Could not send chunked request terminator"
 msgstr "不能发送请求"
 
-#: src/ne_request.c:785
+#: src/ne_request.c:787
 #, c-format
 msgid "Could not parse redirect destination URL"
 msgstr "不能解析重定向 URL"
 
-#: src/ne_request.c:791
+#: src/ne_request.c:793
 #, fuzzy, c-format
 msgid "Could not parse request target URI"
 msgstr "不能解析重定向 URL"
 
-#: src/ne_request.c:943
+#: src/ne_request.c:968
 msgid "Could not read chunk size"
 msgstr "不能读块大小"
 
-#: src/ne_request.c:946
+#: src/ne_request.c:971
 msgid "Invalid chunk-size line"
 msgstr ""
 
-#: src/ne_request.c:963 src/ne_request.c:972
+#: src/ne_request.c:989
 msgid "Could not parse chunk size"
 msgstr "不能解析块大小"
 
-#: src/ne_request.c:1009
+#: src/ne_request.c:1026
 msgid "Could not read response body"
 msgstr "不能读取响应主体"
 
-#: src/ne_request.c:1025
+#: src/ne_request.c:1042
 msgid "Could not read chunk delimiter"
 msgstr "不能读块分割符"
 
-#: src/ne_request.c:1028
+#: src/ne_request.c:1045
 msgid "Chunk delimiter was invalid"
 msgstr "非法的分割符"
 
-#: src/ne_request.c:1129
+#: src/ne_request.c:1146
 msgid "Could not read status line (TLS client certificate was requested)"
 msgstr ""
 
-#: src/ne_request.c:1130
+#: src/ne_request.c:1147
 msgid "Could not read status line"
 msgstr "不能读状态行"
 
-#: src/ne_request.c:1153
+#: src/ne_request.c:1170
 msgid "Could not parse response status line"
 msgstr "不能解析响应状态行"
 
-#: src/ne_request.c:1156
+#: src/ne_request.c:1173
 msgid "Incompatible HTTP version"
 msgstr ""
 
-#: src/ne_request.c:1195
+#: src/ne_request.c:1212
 msgid "Could not send request"
 msgstr "不能发送请求"
 
-#: src/ne_request.c:1237
+#: src/ne_request.c:1254
 #, fuzzy
 msgid "Timed out reading interim responses"
 msgstr "不能读临时响应头"
 
-#: src/ne_request.c:1266 src/ne_request.c:1283 src/ne_request.c:1293
+#: src/ne_request.c:1283 src/ne_request.c:1300 src/ne_request.c:1310
 msgid "Error reading response headers"
 msgstr "读取响应头出错"
 
-#: src/ne_request.c:1303
+#: src/ne_request.c:1320
 #, c-format
 msgid "Response header too long"
 msgstr "响应头太长"
 
-#: src/ne_request.c:1433
+#: src/ne_request.c:1450
 msgid "Response exceeded maximum number of header fields"
 msgstr "响应头的域数量超出了最大数量"
 
-#: src/ne_request.c:1448
+#: src/ne_request.c:1465
 #, c-format
 msgid "Could not resolve hostname `%s': %s"
 msgstr "不能解析主机名称 “%s”: %s"
 
-#: src/ne_request.c:1571
+#: src/ne_request.c:1588
 msgid "Unknown transfer-coding in response"
 msgstr "响应中的传输代码未知"
 
-#: src/ne_request.c:1586
+#: src/ne_request.c:1603
 msgid "Invalid Content-Length in response"
 msgstr "非法的 Content-Length 响应域"
 
-#: src/ne_request.c:1662
+#: src/ne_request.c:1679
 #, c-format
 msgid "Could not write to file: %s"
 msgstr "不能写入文件：%s"
 
-#: src/ne_request.c:1735
+#: src/ne_request.c:1752
 #, c-format
 msgid "Could not create SSL connection through proxy server: %s"
 msgstr "不能通过代理服务器 “%s” 创建 SSL 连接"
 
-#: src/ne_request.c:1774
+#: src/ne_request.c:1791
 #, c-format
 msgid "Could not create socket"
 msgstr "不能创建套接字"
 
-#: src/ne_request.c:1810
+#: src/ne_request.c:1827
 msgid "Could not connect to server"
 msgstr "不能连接到服务器"
 
-#: src/ne_request.c:1812
+#: src/ne_request.c:1829
 msgid "Could not connect to proxy server"
 msgstr "不能连接到代理服务器"
 
-#: src/ne_request.c:1855
+#: src/ne_request.c:1872
 #, c-format
 msgid "Could not find IPv4 address of hostname %s for SOCKS v4 proxy"
 msgstr ""
 
-#: src/ne_request.c:1913
+#: src/ne_request.c:1930
 #, fuzzy, c-format
 msgid "Could not establish connection from SOCKS proxy (%s:%u): %s"
 msgstr "不能通过代理服务器 “%s” 创建 SSL 连接"
@@ -557,11 +557,11 @@ msgstr "由于缺少熵，SSL 已经禁用"
 msgid "Could not create SSL structure"
 msgstr "不能创建 SSL 结构"
 
-#: src/ne_socket.c:2142
+#: src/ne_socket.c:2144
 msgid "Missing flags for socket shutdown"
 msgstr ""
 
-#: src/ne_socket.c:2160 src/ne_socket.c:2171 src/ne_socket.c:2186
+#: src/ne_socket.c:2162 src/ne_socket.c:2173 src/ne_socket.c:2188
 msgid "Incomplete TLS closure"
 msgstr ""
 

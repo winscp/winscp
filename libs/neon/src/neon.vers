@@ -51,3 +51,8 @@ NEON_0_34 {
     ne_sock_getproto;
 };
 
+NEON_0_35 {
+    ne_strhextoul;
+    ne_get_response_retry_after;
+    ne_ssl_clicert_fromuri;
+};

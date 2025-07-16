@@ -1,3 +1,24 @@
+Changes in release 0.35.0:
+* Interface changes:
+ - API and ABI backwards-compatible with 0.27.x and later
+ - pakchois-based PKCS#11 support is now deprecated
+* Interface clarifications:
+ - ne_md5_read_ctx() may return NULL
+* New interfaces and features:
+ - ne_request.h: add ne_get_response_retry_after()
+ - ne_uri.h: add NE_PATH_NONPC escaping rule
+ - ne_string.h: add ne_strhextoul()
+ - ne_ssl.h: add ne_ssl_clicert_fromuri(), a simpler API
+   to retrieve client certs based on (e.g.) PKCS#11 URIs;
+   only supported with OpenSSL currently.
+ - ne_session.h: add ne_status_handshake to notifier API
+* Bug fixes:
+ - ne_path_escape() now follows NE_PATH_NONPC pct-encoding
+   rule by default (fixes #181)
+ - ne_md5_*(): for OpenSSL, now uses the EVP* API
+ - session caching fixes for OpenSSL
+* "BUGS" document removed, use https://github.com/notroj/neon/issues
+
 Changes in release 0.34.2:
 * Fix regression in NTLM auth in 0.34.0 (issue #190).
 * Add docs for ne_ssl_proto_name, ne_ssl_protovers, ne_get_request_target.

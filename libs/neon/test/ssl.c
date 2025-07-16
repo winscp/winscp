@@ -1,6 +1,6 @@
 /* 
    neon test suite
-   Copyright (C) 2002-2009, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 2002-2025, Joe Orton <joe@manyfish.co.uk>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <errno.h>
 
 #include "ne_request.h"
 #include "ne_socket.h"
@@ -201,6 +202,9 @@ static int ssl_server(ne_socket *sock, void *userdata)
                 || memcmp(args->session.id, sessid, len));
         }
     }	
+
+    ret = ne_sock_shutdown(sock, NE_SOCK_SEND);
+    NE_DEBUG(NE_DBG_SSL, "ssl: Shutdown received %d\n", ret);
     
     return 0;
 }
@@ -974,7 +978,6 @@ static int fail_ca_notyetvalid(void)
                             "issuer ca not yet valid", NE_SSL_BADCHAIN);
 }
 
-#if 0
 /* Test that the SSL session is cached across connections. */
 static int session_cache(void)
 {
@@ -987,6 +990,10 @@ static int session_cache(void)
     CALL(multi_session_server(&sess, "https", "localhost",
                               2, ssl_server, &args));
 
+    /* This currently fails under OpenSSL with TLSv1.3. */
+    ne_ssl_set_protovers(sess, NE_SSL_PROTO_UNSPEC,
+                         NE_SSL_PROTO_TLS_1_2);
+
     ne_ssl_trust_cert(sess, def_ca_cert);
 
     ONREQ(any_request(sess, "/req1"));
@@ -994,7 +1001,6 @@ static int session_cache(void)
 
     return destroy_and_wait(sess);
 }
-#endif
 
 /* Callback for client_cert_provider; takes a c. cert as userdata and
  * registers it. */
@@ -1814,18 +1820,29 @@ static int nonssl_trust(void)
     return OK;
 }
 
+#ifdef HAVE_PAKCHOIS
+#define PINMAX (2)
+struct pindata {
+    const char *password[PINMAX];
+    ne_buffer *trace;
+};
+
 /* PIN password provider callback. */
 static int pkcs11_pin(void *userdata, int attempt,
                       const char *slot_descr, const char *token_label,
                       unsigned int flags, char *pin)
 {
-    char *sekrit = userdata;
+    struct pindata *data = userdata;
 
-    NE_DEBUG(NE_DBG_SSL, "pkcs11: slot = [%s], token = [%s]\n",
+    NE_DEBUG(NE_DBG_SSL, "pk11: slot = [%s], token = [%s]\n",
              slot_descr, token_label);
 
-    if (attempt == 0) {
-        strcpy(pin, sekrit);
+    ne_buffer_snprintf(data->trace, 200, "pin(%d,%s,%s,%u)\n",
+                       attempt, slot_descr?slot_descr:"[none]",
+                       token_label?token_label:"[none]", flags);
+
+    if (attempt < PINMAX && data->password[attempt]) {
+        strcpy(pin, data->password[attempt]);
         return 0;
     }
     else {
@@ -1833,11 +1850,15 @@ static int pkcs11_pin(void *userdata, int attempt,
     }
 }
 
+#define SLOT_NSS "NSS User Private Key and Certificate Services"
+#define TOKEN_NSS "NSS Certificate DB"
+
 static int nss_pkcs11_test(const char *dbname)
 {
     ne_session *sess = DEFSESS;
     struct ssl_server_args args = {SERVER_CERT, NULL};
     ne_ssl_pkcs11_provider *prov;
+    struct pindata pindata;
     int ret;
 
     args.require_cc = 1;
@@ -1857,13 +1878,22 @@ static int nss_pkcs11_test(const char *dbname)
         return SKIP;
     }
 
-    ne_ssl_pkcs11_provider_pin(prov, pkcs11_pin, "foobar");
+    pindata.password[0] = "notfoobar";
+    pindata.password[1] = "foobar";
+    pindata.trace = ne_buffer_create();
+
+    ne_ssl_pkcs11_provider_pin(prov, pkcs11_pin, &pindata);
     ne_ssl_set_pkcs11_provider(sess, prov);
 
     ret = any_ssl_request(sess, ssl_server, &args, CA_CERT, NULL, NULL);
 
     ne_session_destroy(sess);
     ne_ssl_pkcs11_provider_destroy(prov);
+
+    if (ret == OK)
+        ONCMPN("pin(0," SLOT_NSS "," TOKEN_NSS ",0)\n"
+               "pin(1," SLOT_NSS "," TOKEN_NSS ",0)\n", pindata.trace->data, "pin callback", "data");
+    ne_buffer_destroy(pindata.trace);
 
     return ret;
 }
@@ -1877,6 +1907,7 @@ static int pkcs11_dsa(void)
 {
     return nss_pkcs11_test("nssdb-dsa");
 }
+#endif
 
 static int protovers(void)
 {
@@ -1894,6 +1925,69 @@ static int protovers(void)
     ne_session_destroy(sess);
     return OK;
 }
+
+static int notifier(void)
+{
+    ne_session *sess = DEFSESS;
+    struct ssl_server_args args = {SERVER_CERT, NULL};
+    ne_buffer *buf = ne_buffer_create();
+
+    args.minver = NE_SSL_PROTO_TLS_1_2;
+    args.maxver = NE_SSL_PROTO_TLS_1_2;
+
+    ONV(ne_ssl_set_protovers(sess, args.minver, args.maxver),
+        ("setting TLS protocol version failed: %s", ne_get_error(sess)));
+
+    ne_set_notifier(sess, sess_notifier, buf);
+
+    CALL(any_ssl_request(sess, ssl_server, &args, CA_CERT, NULL, NULL));
+
+    ONV(strstr(buf->data, "-handshake(TLSv1.2, TLS_") == NULL
+        && strstr(buf->data, "-handshake(TLSv1.2, [none]") == NULL,
+        ("missing handshake from notifier: %s", buf->data));
+
+    ne_session_destroy(sess);
+    ne_buffer_destroy(buf);
+
+    return OK;
+}
+
+#define TEST_URI "./enclient.pem"
+
+static int clicert_uri(void)
+{
+    ne_session *sess;
+    struct ssl_server_args args = {SERVER_CERT, NULL};
+    ne_ssl_client_cert *cc;
+    int ret;
+
+    args.require_cc = 1;
+
+    cc = ne_ssl_clicert_fromuri(TEST_URI, 0);
+    if (!cc && errno == ENOTSUP) {
+        t_context("client certificate URI support not available");
+        return SKIP;
+    }
+    ONV(!cc, ("could not load client certificate URI %s: %s",
+              TEST_URI, strerror(errno)));
+
+    ONN("cc not in encrypted state", !ne_ssl_clicert_encrypted(cc));
+    ONN("successful decrypt with bad password",
+        ne_ssl_clicert_decrypt(cc, "not-the-password") == 0);
+    ONN("unsuccessful decrypt with good password",
+        ne_ssl_clicert_decrypt(cc, P12_PASSPHRASE) != 0);
+
+    sess = DEFSESS;
+    ne_ssl_set_clicert(sess, cc);
+
+    ret = any_ssl_request(sess, ssl_server, &args, CA_CERT, NULL, NULL);
+
+    ne_session_destroy(sess);
+    ne_ssl_clicert_free(cc);
+
+    return ret;
+}
+
 
 /* TODO: code paths still to test in cert verification:
  * - server cert changes between connections: Mozilla gives
@@ -1982,9 +2076,7 @@ ne_test tests[] = {
     T(fail_nul_san),
 #endif
 
-#if 0
     T(session_cache),
-#endif
 
     T(fail_tunnel),
     T(proxy_tunnel),
@@ -1996,8 +2088,12 @@ ne_test tests[] = {
 
     T(nonssl_trust),
 
+#ifdef HAVE_PAKCHOIS
     T(pkcs11),
     T_XFAIL(pkcs11_dsa), /* unclear why this fails currently. */
+#endif
+    T(notifier),
+    T(clicert_uri),
 
     T(NULL) 
 };

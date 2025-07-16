@@ -2,12 +2,12 @@
 .\"     Title: ne_get_status
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 15 April 2025
+.\"      Date: 15 July 2025
 .\"    Manual: neon API reference
-.\"    Source: neon 0.34.2
+.\"    Source: neon 0.35.0
 .\"  Language: English
 .\"
-.TH "NE_GET_STATUS" "3" "15 April 2025" "neon 0.34.2" "neon API reference"
+.TH "NE_GET_STATUS" "3" "15 July 2025" "neon 0.35.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -28,7 +28,7 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-ne_get_status, ne_get_response_location \- retrieve HTTP response properties
+ne_get_status, ne_get_response_location, ne_get_response_retry_after \- retrieve HTTP response properties
 .SH "SYNOPSIS"
 .sp
 .ft B
@@ -40,6 +40,8 @@ ne_get_status, ne_get_response_location \- retrieve HTTP response properties
 .BI "const ne_status *ne_get_status(const\ ne_request\ *" "request" ");"
 .HP \w'ne_uri\ *ne_get_response_location('u
 .BI "ne_uri *ne_get_response_location(ne_request\ *" "request" ");"
+.HP \w'time_t\ ne_get_response_retry_after('u
+.BI "time_t ne_get_response_retry_after(ne_request\ *" "request" ");"
 .SH "DESCRIPTION"
 .PP
 The
@@ -57,6 +59,12 @@ Location
 header, the
 \fBne_get_response_location\fR
 function parses and resolves the URI\-reference relative to the request target\&. If a fragment ("#fragment") is applicable to the request target, it can be passed as an argument to allow appropriate relative resolution\&.
+.PP
+The
+\fBne_get_response_retry_after\fR
+function parses any
+Retry\-After
+header included in the response\&. If the header value uses a relative time, it is interpreted relative to the time the function was invoked, rather than the time the response was received, so the function should be used directly after dispatching the request\&.
 .SH "RETURN VALUE"
 .PP
 \fBne_get_status\fR
@@ -64,6 +72,9 @@ returns a pointer to the HTTP status object giving the result of a request\&. Th
 .PP
 \fBne_get_response_location\fR
 returns a malloc\-allocated ne_uri object, or NULL if either the URI in the Location header could not be parsed or the Location header was not present\&.
+.PP
+\fBne_get_response_retry_after\fR
+returns a time_t value, or zero if either no Retry\-After header was included or the header value could not be parsed\&.
 .SH "EXAMPLES"
 .PP
 Display the response status code of applying the
@@ -94,5 +105,5 @@ ne_status,
 ne_request_create
 .SH "COPYRIGHT"
 .br
-Copyright \(co 2001-2024 Joe Orton
+Copyright \(co 2001-2025 Joe Orton
 .br

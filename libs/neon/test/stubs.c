@@ -43,7 +43,7 @@
 #include "child.h"
 #include "utils.h"
 
-#if defined(NE_HAVE_ZLIB) && defined(NE_HAVE_SSL)
+#if defined(NE_HAVE_ZLIB) && defined(NE_HAVE_SSL) && defined(HAVE_PAKCHOIS)
 #define NO_TESTS 1
 #endif
 
@@ -129,6 +129,7 @@ static int stub_ssl(void)
     ONN("this code shouldn't run", ne_ssl_cert_import("foo") != NULL);
     ONN("this code shouldn't run", ne_ssl_cert_read("Makefile") != NULL);
     ONN("this code shouldn't succeed", ne_ssl_cert_cmp(NULL, NULL) == 0);
+    ONN("this code shouldn't run", ne_ssl_clicert_fromuri("Makefile", 0) != NULL);
 
     ONN("certificate load succeeded", cert != NULL);
     ne_ssl_cert_free(cert);
@@ -153,7 +154,9 @@ static int stub_ssl(void)
     ne_session_destroy(sess);
     return OK;
 }
+#endif
 
+#ifndef HAVE_PAKCHOIS
 static int stub_pkcs11(void)
 {
     ne_session *sess = ne_session_create("https", "localhost", 1234);
@@ -179,7 +182,6 @@ static int stub_pkcs11(void)
 
     return OK;
 }
-
 #endif
 
 #ifdef NO_TESTS
@@ -192,6 +194,8 @@ ne_test tests[] = {
 #endif
 #ifndef NE_HAVE_SSL
     T(stub_ssl),
+#endif
+#ifndef HAVE_PAKCHOIS
     T(stub_pkcs11),
 #endif
 /* to prevent failure when SSL and zlib are supported. */

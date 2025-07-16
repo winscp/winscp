@@ -70,7 +70,7 @@ static int passes = 0, fails = 0, skipped = 0, warnings = 0;
 static int warned, aborted = 0;
 static const char *test_name; /* current test name */
 
-static int use_colour = 0;
+static int use_colour = 0, tty_output = 0;
 
 static int flag_child;
 
@@ -201,10 +201,13 @@ int main(int argc, char *argv[])
     ne_i18n_init(NULL);
 
 #if defined(HAVE_ISATTY) && defined(STDOUT_FILENO)
-    if (isatty(STDOUT_FILENO)) {
-	use_colour = 1;
-    }
+    tty_output = isatty(STDOUT_FILENO);
 #endif
+
+    if ((tmp = getenv("TEST_COLOUR")) != NULL)
+        use_colour = strcmp(tmp, "1") == 0;
+    else
+        use_colour = tty_output;
 
     test_argc = argc;
     test_argv = argv;
@@ -251,8 +254,15 @@ int main(int argc, char *argv[])
 	printf(" Socket library initialization failed.\n");
     }
 
-    if ((tmp = getenv("TEST_QUIET")) != NULL && strcmp(tmp, "1") == 0) {
-        quiet = 1;
+#ifdef NEON_TEST_INIT
+    if (NEON_TEST_INIT(test_argc, (const char *const *)test_argv, &use_colour, &quiet)) {
+	fprintf(stderr, "%s: Failed parsing command-line.\n", test_suite);
+        return -1;
+    }
+#endif
+
+    if ((tmp = getenv("TEST_QUIET")) != NULL) {
+        quiet = strcmp(tmp, "1") == 0;
     }
 
     if (!quiet)
@@ -284,7 +294,8 @@ int main(int argc, char *argv[])
 
 #ifdef NEON_MEMLEAK
         /* issue warnings for memory leaks, if requested */
-        if ((tests[n].flags & T_CHECK_LEAKS) && result == OK &&
+        if ((tests[n].flags & T_CHECK_LEAKS)
+            && (result == OK || result == SKIP) &&
             ne_alloc_used > allocated) {
             t_context("memory leak of %" NE_FMT_SIZE_T " bytes",
                       ne_alloc_used - allocated);

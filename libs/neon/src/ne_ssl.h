@@ -141,6 +141,16 @@ ne_ssl_client_cert *ne_ssl_clicert_read(const char *filename);
 ne_ssl_client_cert *ne_ssl_clicert_import(const unsigned char *buffer, 
                                           size_t buflen);
 
+/* Import a client certificate (and private key) from URI 'uri'. This
+ * may be a PKCS#11 URI (RFC 7512); support for other URI schemes is
+ * implementation-defined. 'flags' must be zero. Returns a client
+ * certificate object on success or NULL on error. On success, the
+ * returned object may be in either the encrypted or decrypted
+ * state. On error, errno is set to describe the error.
+ */
+ne_ssl_client_cert *ne_ssl_clicert_fromuri(const char *uri,
+                                           unsigned int flags);
+
 /* Returns non-zero if client cert is in the encrypted state. */
 int ne_ssl_clicert_encrypted(const ne_ssl_client_cert *ccert);
 

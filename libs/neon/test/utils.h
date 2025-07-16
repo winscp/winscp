@@ -162,6 +162,11 @@ int fakeproxied_multi_session_server(int count,
 /* Read contents of file 'filename' into buffer 'buf'. */
 int file_to_buffer(const char *filename, ne_buffer *buf);
 
+/* Notifier callback which serializes notifier invocations.
+ * ne_buffer * must be passed as userdata. */
+void sess_notifier(void *userdata, ne_session_status status,
+                   const ne_session_status_info *info);
+
 #define MULTI_207(x) "HTTP/1.0 207 Foo\r\nConnection: close\r\n\r\n" \
 "<?xml version='1.0'?>\r\n" \
 "<D:multistatus xmlns:D='DAV:'>" x "</D:multistatus>"

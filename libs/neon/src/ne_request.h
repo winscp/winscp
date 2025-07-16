@@ -1,6 +1,6 @@
 /* 
    HTTP Request Handling
-   Copyright (C) 1999-2024, Joe Orton <joe@manyfish.co.uk>
+   Copyright (C) 1999-2025, Joe Orton <joe@manyfish.co.uk>
 
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Library General Public
@@ -181,6 +181,14 @@ const ne_uri *ne_get_request_target(ne_request *req)
  * header could not be parsed, or the Location header was not
  * present. */
 ne_uri *ne_get_response_location(ne_request *req, const char *fragment)
+    ne_attribute((nonnull (1)));
+
+/* If the response includes a Retry-After header, this function parses
+ * the time given in the header value and returns it. If a relative
+ * time is sent by the server, it will be handled relative to the time
+ * when this function is called. If no header is present, or the
+ * header value cannot be parsed, 0 is returned. */
+time_t ne_get_response_retry_after(ne_request *req)
     ne_attribute((nonnull (1)));
 
 /* ne_request_dispatch: Sends the given request, and reads the

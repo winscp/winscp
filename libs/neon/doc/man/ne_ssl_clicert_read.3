@@ -2,12 +2,12 @@
 .\"     Title: ne_ssl_client_cert
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets vsnapshot <http://docbook.sf.net/>
-.\"      Date: 15 April 2025
+.\"      Date: 15 July 2025
 .\"    Manual: neon API reference
-.\"    Source: neon 0.34.2
+.\"    Source: neon 0.35.0
 .\"  Language: English
 .\"
-.TH "NE_SSL_CLIENT_CERT" "3" "15 April 2025" "neon 0.34.2" "neon API reference"
+.TH "NE_SSL_CLIENT_CERT" "3" "15 July 2025" "neon 0.35.0" "neon API reference"
 .\" -----------------------------------------------------------------
 .\" * Define some portability stuff
 .\" -----------------------------------------------------------------
@@ -28,7 +28,7 @@
 .\" * MAIN CONTENT STARTS HERE *
 .\" -----------------------------------------------------------------
 .SH "NAME"
-ne_ssl_clicert_read, ne_ssl_clicert_name, ne_ssl_clicert_encrypted, ne_ssl_clicert_decrypt, ne_ssl_clicert_owner, ne_ssl_clicert_free \- SSL client certificate handling
+ne_ssl_clicert_read, ne_ssl_clicert_import, ne_ssl_clicert_fromuri, ne_ssl_clicert_name, ne_ssl_clicert_encrypted, ne_ssl_clicert_decrypt, ne_ssl_clicert_owner, ne_ssl_clicert_free \- SSL client certificate handling
 .SH "SYNOPSIS"
 .sp
 .ft B
@@ -38,6 +38,10 @@ ne_ssl_clicert_read, ne_ssl_clicert_name, ne_ssl_clicert_encrypted, ne_ssl_clice
 .ft
 .HP \w'ne_ssl_client_cert\ *ne_ssl_clicert_read('u
 .BI "ne_ssl_client_cert *ne_ssl_clicert_read(const\ char\ *" "filename" ");"
+.HP \w'ne_ssl_client_cert\ *ne_ssl_clicert_import('u
+.BI "ne_ssl_client_cert *ne_ssl_clicert_import(const\ unsigned\ char\ *" "filename" ", size_t\ " "buflen" ");"
+.HP \w'ne_ssl_client_cert\ *ne_ssl_clicert_fromuri('u
+.BI "ne_ssl_client_cert *ne_ssl_clicert_fromuri(const\ char\ *" "uri" ", unsigned\ " "flags" ");"
 .HP \w'const\ char\ *ne_ssl_clicert_name('u
 .BI "const char *ne_ssl_clicert_name(const\ ne_ssl_client_cert\ *" "ccert" ");"
 .HP \w'int\ ne_ssl_clicert_encrypted('u
@@ -56,21 +60,27 @@ function reads a
 client certificate
 from a PKCS#12\-formatted file, and returns an
 \fBne_ssl_client_cert\fR
-object\&. If the client certificate is encrypted, it must be decrypted before it is used\&. An
-\fBne_ssl_client_cert\fR
-object holds a client certificate and the associated private key, not just a certificate; the term "client certificate" will used to refer to this pair\&.
+object\&. The
+\fBne_ssl_clicert_import\fR
+function reads a client certificate from a memory buffer using the PKCS#12 format\&. The
+\fBne_ssl_clicert_fromuri\fR
+function loads a client certificate from a URI\&. URI schemes supported are defined by the SSL/TLS toolkit, and may include
+\m[blue]\fBPKCS#11 URIs\fR\m[]\&\s-2\u[1]\d\s+2\&.
 .PP
-A client certificate can be in one of two states:
+A
+\fBne_ssl_client_cert\fR
+object represents both a client certificate and the associated private key; the term "client certificate" is used here to refer to this pair\&. A client certificate object loaded by any of the above functions can be in one of two states:
 \fIencrypted\fR
 or
 \fIdecrypted\fR\&. The
 \fBne_ssl_clicert_encrypted\fR
 function will return non\-zero if the client certificate is in the
 \fIencrypted\fR
-state\&. A client certificate object returned by
-\fBne_ssl_clicert_read\fR
-may be initially in either state, depending on whether the file was encrypted or not\&.
+state\&.
 .PP
+A client certificate
+\fImust\fR
+be in the decrypted state before it is associated with a session\&.
 \fBne_ssl_clicert_decrypt\fR
 can be used to decrypt a client certificate using the appropriate password\&. This function must only be called if the object is in the
 \fIencrypted\fR
@@ -90,15 +100,18 @@ returns the certificate part of the client certificate; it must only be called i
 \fIdecrypted\fR
 state\&.
 .PP
-When the client certificate is no longer needed, the
+When the client certificate object is no longer needed, the
 \fBne_ssl_clicert_free\fR
 function should be used to destroy the object\&.
 .SH "RETURN VALUE"
 .PP
-\fBne_ssl_clicert_read\fR
-returns a client certificate object, or
+\fBne_ssl_clicert_read\fR,
+\fBne_ssl_clicert_import\fR
+and
+\fBne_ssl_clicert_fromuri\fR
+all return a client certificate object, or
 NULL
-if the file could not be read\&.
+if the certificate could not be read/imported\&.
 \fBne_ssl_clicert_encrypted\fR
 returns zero if the object is in the decrypted state, or non\-zero if it is in the encrypted state\&.
 \fBne_ssl_clicert_name\fR
@@ -134,10 +147,22 @@ ne_ssl_set_clicert(sess, ccert);
 .if n \{\
 .RE
 .\}
+.SH "HISTORY"
+.PP
+\fBne_ssl_clicert_import\fR
+was added in neon 0\&.30\&.0\&.
+\fBne_ssl_clicert_fromuri\fR
+was added in neon 0\&.35\&.0\&.
 .SH "SEE ALSO"
 .PP
 ne_ssl_cert_read
 .SH "COPYRIGHT"
 .br
-Copyright \(co 2001-2024 Joe Orton
+Copyright \(co 2001-2025 Joe Orton
 .br
+.SH "REFERENCES"
+.IP " 1." 4
+PKCS#11 URIs
+.RS 4
+\%https://www.rfc-editor.org/rfc/rfc7512.html
+.RE

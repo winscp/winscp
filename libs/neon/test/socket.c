@@ -1267,7 +1267,9 @@ static int ssl_session_id(void)
     unsigned char buf[128];
     size_t len1;
 
-    CALL(begin(&sock, serve_close, NULL));
+    CALL(begin(&sock, echo_server, NULL));
+
+    ECHO("hello, session ID test case!\n");
 
 #ifdef SOCKET_SSL
     len1 = 0;

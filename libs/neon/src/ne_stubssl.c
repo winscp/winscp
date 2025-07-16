@@ -148,3 +148,9 @@ ne_ssl_certificate *ne_ssl_cert_import(const char *data)
 
 void ne_ssl_set_clicert(ne_session *sess, const ne_ssl_client_cert *cc) 
 {}
+
+ne_ssl_client_cert *ne_ssl_clicert_fromuri(const char *uri,
+                                           unsigned int flags)
+{
+    return NULL;
+}

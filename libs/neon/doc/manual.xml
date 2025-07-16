@@ -14,7 +14,7 @@
 <!-- date/version stamp files created as release tarball is rolled -->
 <!ENTITY date SYSTEM "date.xml">
 <!ENTITY version SYSTEM "version.xml">
-<!ENTITY copyright "<copyright><year>2001-2024</year><holder>Joe Orton</holder></copyright>">
+<!ENTITY copyright "<copyright><year>2001-2025</year><holder>Joe Orton</holder></copyright>">
 
 <!ENTITY neon "neon">
 

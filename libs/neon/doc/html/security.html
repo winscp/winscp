@@ -15,8 +15,8 @@
         value</p></li></ul></div><p>Memory consumption attacks against applications based on
     neon by use of unbounded response length are also possible, but
     must be mitigated at application level.  Memory consumption in
-    neon itself is fixed and is not proportional to the response
-    size.</p><p>Test cases for all the above attacks are present in the
+    neon while reading response bodies is fixed and is not
+    proportional to the response length.</p><p>Test cases for all the above attacks are present in the
     neon test suite.</p></div><div class="sect2"><div class="titlepage"><div><div><h3 class="title"><a name="id1346"></a>SSL/TLS connection security</h3></div></div></div><p>When using a connection secured by SSL/TLS, it is necessary
     for clients to verify that the X.509 certificate presented by the
     server matches the server's expected identity.  The algorithm
@@ -50,8 +50,18 @@
     MITM presents a Basic authentication challenge in place of the
     server's Digest challenge.  neon mitigates these attacks by
     allowing the application (and hence, user) to specify that only a
-    specific set of authentication protocols is permitted.</p><p>neon supports the Digest and Negotiate authentication
+    specific set of authentication protocols is permitted.</p><p>When using Basic authentication, neon applies the scoping
+    rules from <a class="ulink" href="https://www.rfc-editor.org/rfc/rfc7617.html#section-2.2" target="_top">RFC
+    7617 Section 2.2</a> to limit reuse of cached credentials
+    within a session.</p><p>neon supports the Digest and Negotiate authentication
     schemes, which both allow authentication of users without passing
-    credentials in cleartext over the wire.  The "domain" parameter is
-    supported in Digest, allowing the server to restrict an
-    authentication session to a particular set of URIs.</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="compliance.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="intro.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="api.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Standards compliance </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 2. The neon C language interface</td></tr></table></div></body></html>
+    credentials in cleartext over the wire.</p><p>When using Digest authentication, neon uses hash algorithm
+    implementations from the configured SSL/TLS toolkit where
+    possible, or falls back to a bundled MD5 implementation where
+    SSL/TLS is not supported. If available, the SSL/TLS toolkit is
+    also used to generate random <code class="literal">cnonce</code> values.
+    The <code class="literal">userhash</code> field is supported for username
+    privacy (this depends on server-side enablement). The full range
+    of hash algorithms specified in <a class="ulink" href="https://www.rfc-editor.org/rfc/rfc7616.html#section-6.1" target="_top">RFC
+    7616 Section 6.1</a> is supported if configured using OpenSSL
+    1.1.0 or later.</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="compliance.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="intro.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="api.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Standards compliance </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 2. The neon C language interface</td></tr></table></div></body></html>

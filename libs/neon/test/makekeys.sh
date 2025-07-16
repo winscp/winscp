@@ -32,6 +32,7 @@ for i in ca ca1 ca2 ca3; do
 done
 
 ${OPENSSL} genrsa -rand ${srcdir}/../configure 2048 > client.key
+${OPENSSL} genrsa -aes128 -passout pass:foobar -rand ${srcdir}/../configure 2048 > enclient.key
 ${OPENSSL} genrsa -rand ${srcdir}/../configure 2048 > server.key
 
 ${OPENSSL} dsaparam -genkey -rand ${srcdir}/../configure 1024 > client.dsap
@@ -161,6 +162,9 @@ ${REQ} -new -key server.key -out wildip.csr
 csr_fields "Neon Client Cert" ignored.example.com | \
 ${REQ} -new -key client.key -out client.csr
 
+csr_fields "Neon Encrypted Client Cert" ignored.example.com | \
+${REQ} -new -key enclient.key -passin pass:foobar -out enclient.csr
+
 csr_fields "Neon Client Cert" ignored.example.com | \
 ${REQ} -new -key clientdsa.key -out clientdsa.csr
 
@@ -186,11 +190,14 @@ First OU Dept" | ${REQ} -new -key server.key -out twoou.csr
 
 ### don't put ${REQ} invocations after here
 
-for f in server client clientdsa twocn caseless cnfirst \
+for f in server client clientdsa enclient twocn caseless cnfirst \
     t61subj bmpsubj utf8subj \
     missingcn justmail twoou wildcard wildip wrongcn; do
   ${CA} -days 900 -in ${f}.csr -out ${f}.cert
 done
+
+cat client.key client.cert > clientp.pem
+cat enclient.key enclient.cert > enclient.pem
 
 ${CA} -startdate `asn1date "2 days ago"` -enddate `asn1date "yesterday"` -in expired.csr -out expired.cert
 

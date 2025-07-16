@@ -1941,9 +1941,11 @@ int ne_sock_connect_ssl(ne_socket *sock, ne_ssl_context *ctx, void *userdata)
         }
     }
 #endif
-    
-    if (ctx->sess)
-	SSL_set_session(ssl, ctx->sess);
+
+    if (ctx->sess) {
+        ret = SSL_set_session(ssl, ctx->sess);
+        NE_DEBUG(NE_DBG_SSL, "sslsess: Using cached session: set_session = %d.\n", ret);
+    }
 
     ret = SSL_connect(ssl);
     if (ret != 1) {
