@@ -343,6 +343,8 @@ int ne_sock_proxy(ne_socket *sock, enum ne_sock_sversion vers,
 
 // WINSCP
 void ne_sock_set_buffers(ne_socket *sock, unsigned int sndbuf);
+#include <openssl/ssl.h>
+void ne_init_ssl_session(SSL *ssl, void *userdata);
 
 NE_END_DECLS
 

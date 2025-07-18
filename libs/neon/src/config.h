@@ -19,6 +19,9 @@
    MA 02111-1307, USA
 
 */
+#ifndef NEON_CONFIG_H
+#define NEON_CONFIG_H
+
 #if defined(_WIN32) && !defined(WIN32)
 #define WIN32
 #endif
@@ -133,5 +136,7 @@ typedef int socklen_t;
 
 #include <io.h>
 #define read _read
+
+#endif
 
 #endif

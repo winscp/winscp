@@ -240,8 +240,9 @@ void CheckRedirectLoop(const UnicodeString & RedirectUrl, TStrings * AttemptedUr
 extern "C"
 {
 
-void ne_init_ssl_session(struct ssl_st * Ssl, ne_session * Session)
+void ne_init_ssl_session(SSL * Ssl, void * UserData)
 {
+  ne_session * Session = static_cast<ne_session *>(UserData);
   void * Code = ne_get_session_private(Session, SESSION_TLS_INIT_KEY);
   void * Data = ne_get_session_private(Session, SESSION_TLS_INIT_DATA_KEY);
   TNeonTlsInit OnNeonTlsInit = MakeMethod<TNeonTlsInit>(Data, Code);
