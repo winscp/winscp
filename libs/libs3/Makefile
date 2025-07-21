@@ -1,17 +1,16 @@
-# Set your compiler options
-CFLAG=-DWIN32 -DWIN32_LEAN_AND_MEAN -DWINSCP -DNE_LFS -q-c -tWC -tWM -P
-CFLAG = $(CFLAG) -w-aus -w-par
+!include ../Makefile.inc
 
-# The output directory for everything interesting
-OUT_D=$(LIB_PATH)
+# Set your compiler options
+DEFINES = WIN32;WIN32_LEAN_AND_MEAN;WINSCP;NE_LFS
+WARNINGS = -w-aus -w-par
+# Compile like C++ (it's probably only to support newer features and won't be needed with Clang)
+CFLAG = -P
+CFLAG = -D$(DEFINES:;= -D) $(WARNINGS) $(CFLAG) $(CFLAG_COMMON)
 # The output directory for all the temporary muck
 TMP_D=tmp
 
-CC=bcc32
-MKLIB=tlib /P64 /C
-
 .autodepend
-.PATH.c   = src
+.path.c   = src
 
 # ---------------------------------------------------------------------------
 
@@ -19,11 +18,10 @@ MKLIB=tlib /P64 /C
 OBJ_D=$(TMP_D)
 INCL=inc;inc/mingw;../openssl/include;../expat/lib;../neon/src
 
-O_LIBS3=$(OUT_D)\libs3.lib
+O_LIBS3=$(LIB_PATH)\libs3.lib
 
-INC=-I$(INCL)
+INC=-I$(INCL:;= -I)
 LIB_CFLAGS=$(INC) $(CFLAG) $(LIB_CFLAG)
-LIBS_DEP=$(O_LIBS3)
 
 #############################################
 LIBS3_OBJS=\
@@ -43,26 +41,19 @@ LIBS3_OBJS=\
     $(OBJ_D)\util.obj
 
 .c.obj:
-    $(CC) -n$(OBJ_D) $(LIB_CFLAGS) -c {$< }
+    $(CC) $(LIB_CFLAGS) -n$(@D) {$< }
 
 $(O_LIBS3): $(LIBS3_OBJS)
     if exist $(O_LIBS3) del $(O_LIBS3)
-    $(MKLIB) $(O_LIBS3) @&&!
-+$(**: = &^
-+)
-!
+    $(MKLIB) /P64 $@ $(**)
 
 ###################################################################
-all: banner $(TMP_D) $(OUT_D) lib
+all: banner $(TMP_D) lib
 
 banner:
     @echo Building libs3
-    @echo $(LIBS3_OBJS)
 
 $(TMP_D):
     if not exist "$(TMP_D)" ( mkdir "$(TMP_D)" )
 
-$(OUT_D):
-    if not exist "$(OUT_D)" ( mkdir "$(OUT_D)" )
-
-lib: $(LIBS_DEP)
+lib: $(O_LIBS3)

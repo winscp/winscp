@@ -1,10 +1,12 @@
-# Set your compiler options
-OPENSSL_CFLAG=-DOPENSSL_SYSNAME_WIN32 -DL_ENDIAN -DDSO_WIN32 -DBN_ASM -DMD5_ASM -DSHA1_ASM -DRMD160_ASM -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_SEED -DOPENSSL_NO_RC5 -DOPENSSL_NO_MDC2 -DOPENSSL_NO_CMS -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_KRB5 -DOPENSSL_NO_ENGINE -DOPENSSL_NO_DYNAMIC_ENGINE -DOPENSSL_DISABLE_OLD_DES_SUPPORT -DNO_CHMOD -DOPENSSL_NO_DGRAM -DOPENSSL_NO_EC -DOPENSSL_NO_ECDH -DOPENSSL_NO_ECDSA -DDOPENSSL_NO_EC_NISTP_64_GCC_128
-EXPAT_CFLAG=-DCOMPILED_FROM_DSP;XML_STATIC
+!include ../Makefile.inc
 
-CFLAG=-DWIN32;WIN32_LEAN_AND_MEAN;_WINDOWS;WIN32;NDEBUG;_LIB;_NO_VCL;_ASSERTE;NO_STRICT;_RTLDLL -DNE_HAVE_SSL;HAVE_OPENSSL;HAVE_EXPAT;HAVE_EXPAT_H;NE_HAVE_DAV;NE_LFS;NOUSER;NOGDI;HAVE_STRTOLL;WINSCP;
-CFLAG=$(CFLAG) -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl -w-8065 -w-8069  -c -tWC -tWM -O2 -ff -fp
-LIB_CFLAG=$(OPENSSL_CFLAG) $(EXPAT_CFLAG)
+# Set your compiler options
+OPENSSL_DEFINES=OPENSSL_SYSNAME_WIN32;L_ENDIAN;DSO_WIN32;BN_ASM;MD5_ASM;SHA1_ASM;RMD160_ASM;OPENSSL_NO_CAMELLIA;OPENSSL_NO_SEED;OPENSSL_NO_RC5;OPENSSL_NO_MDC2;OPENSSL_NO_CMS;OPENSSL_NO_CAPIENG;OPENSSL_NO_KRB5;OPENSSL_NO_ENGINE;OPENSSL_NO_DYNAMIC_ENGINE;OPENSSL_DISABLE_OLD_DES_SUPPORT;NO_CHMOD;OPENSSL_NO_DGRAM;OPENSSL_NO_EC;OPENSSL_NO_ECDH;OPENSSL_NO_ECDSA;DOPENSSL_NO_EC_NISTP_64_GCC_128
+EXPAT_DEFINES=COMPILED_FROM_DSP;XML_STATIC
+DEFINES=WIN32;WIN32_LEAN_AND_MEAN;_WINDOWS;WIN32;NDEBUG;_LIB;_NO_VCL;_ASSERTE;NO_STRICT;_RTLDLL;NE_HAVE_SSL;HAVE_OPENSSL;HAVE_EXPAT;HAVE_EXPAT_H;NE_HAVE_DAV;NE_LFS;NOUSER;NOGDI;HAVE_STRTOLL;WINSCP
+ALLDEFINES=$(OPENSSL_DEFINES);$(EXPAT_DEFINES);$(DEFINES)
+WARNINGS=-w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl -w-8065 -w-8069
+CFLAG=$(WARNINGS) $(CFLAG_COMMON)
 
 # neon directory
 SRC_D=.
@@ -14,36 +16,26 @@ OUT_D=$(LIB_PATH)
 # The output directory for all the temporary muck
 TMP_D=tmp
 
-CC=bcc32
-CP=copy
-RM=del
-MKDIR=mkdir
-MKLIB=tlib /P64 /C
-
-######################################################
-# You should not need to touch anything below this point
 ######################################################
 
 # INCL_D - local library directory
 # OBJ_D  - temp object file directory
 OBJ_D=$(TMP_D)
 INCL_D=src
-INCL=$(INCL_D);../openssl/include;../expat/lib;
+INCL=$(INCL_D);../openssl/include;../expat/lib;.
 
 O_NEON=$(OUT_D)\neon.lib
 
 ######################################################
-# Don't touch anything below this point
-######################################################
 
-INC=-I$(INCL) -I.
-LIB_CFLAGS=$(INC) $(CFLAG) $(LIB_CFLAG)
+INC=-I$(INCL:;= -I)
+LIB_CFLAGS=$(INC) $(CFLAG) -D$(ALLDEFINES:;= -D)
 LIBS_DEP=$(O_NEON)
 
 #############################################
 HEADER=$(INCL_D)\ne_uri.h
 
-NEONOBJS=\
+OBJFILES=\
     $(OBJ_D)\ne_alloc.obj \
     $(OBJ_D)\ne_auth.obj \
     $(OBJ_D)\ne_basic.obj \
@@ -70,79 +62,28 @@ NEONOBJS=\
     $(OBJ_D)\ne_locks.obj \
     $(OBJ_D)\ne_openssl.obj
 
-$(OBJ_D)\ne_alloc.obj: $(SRC_D)/src/ne_alloc.c
-    $(CC) -o$(OBJ_D)\ne_alloc.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_alloc.c
-$(OBJ_D)\ne_auth.obj: $(SRC_D)/src/ne_auth.c
-    $(CC) -o$(OBJ_D)\ne_auth.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_auth.c
-$(OBJ_D)\ne_basic.obj: $(SRC_D)/src/ne_basic.c
-    $(CC) -o$(OBJ_D)\ne_basic.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_basic.c
-$(OBJ_D)\ne_compress.obj: $(SRC_D)/src/ne_compress.c
-    $(CC) -o$(OBJ_D)\ne_compress.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_compress.c
-$(OBJ_D)\ne_dates.obj: $(SRC_D)/src/ne_dates.c
-    $(CC) -o$(OBJ_D)\ne_dates.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_dates.c
-$(OBJ_D)\ne_i18n.obj: $(SRC_D)/src/ne_i18n.c
-    $(CC) -o$(OBJ_D)\ne_i18n.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_i18n.c
-$(OBJ_D)\ne_md5.obj: $(SRC_D)/src/ne_md5.c
-    $(CC) -o$(OBJ_D)\ne_md5.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_md5.c
-$(OBJ_D)\ne_pkcs11.obj: $(SRC_D)/src/ne_pkcs11.c
-    $(CC) -o$(OBJ_D)\ne_pkcs11.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_pkcs11.c
-$(OBJ_D)\ne_redirect.obj: $(SRC_D)/src/ne_redirect.c
-    $(CC) -o$(OBJ_D)\ne_redirect.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_redirect.c
-$(OBJ_D)\ne_request.obj: $(SRC_D)/src/ne_request.c
-    $(CC) -o$(OBJ_D)\ne_request.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_request.c
-$(OBJ_D)\ne_session.obj: $(SRC_D)/src/ne_session.c
-    $(CC) -o$(OBJ_D)\ne_session.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_session.c
-$(OBJ_D)\ne_socket.obj: $(SRC_D)/src/ne_socket.c
-    $(CC) -o$(OBJ_D)\ne_socket.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_socket.c
-$(OBJ_D)\ne_socks.obj: $(SRC_D)/src/ne_socks.c
-    $(CC) -o$(OBJ_D)\ne_socks.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_socks.c
-$(OBJ_D)\ne_sspi.obj: $(SRC_D)/src/ne_sspi.c
-    $(CC) -o$(OBJ_D)\ne_sspi.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_sspi.c
-$(OBJ_D)\ne_string.obj: $(SRC_D)/src/ne_string.c
-    $(CC) -o$(OBJ_D)\ne_string.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_string.c
-$(OBJ_D)\ne_uri.obj: $(SRC_D)/src/ne_uri.c
-    $(CC) -o$(OBJ_D)\ne_uri.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_uri.c
-$(OBJ_D)\ne_utils.obj: $(SRC_D)/src/ne_utils.c
-    $(CC) -o$(OBJ_D)\ne_utils.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_utils.c
-$(OBJ_D)\ne_207.obj: $(SRC_D)/src/ne_207.c
-    $(CC) -o$(OBJ_D)\ne_207.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_207.c
-$(OBJ_D)\ne_xml.obj: $(SRC_D)/src/ne_xml.c
-    $(CC) -o$(OBJ_D)\ne_xml.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_xml.c
-$(OBJ_D)\ne_xmlreq.obj: $(SRC_D)/src/ne_xmlreq.c
-    $(CC) -o$(OBJ_D)\ne_xmlreq.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_xmlreq.c
-$(OBJ_D)\ne_oldacl.obj: $(SRC_D)/src/ne_oldacl.c
-    $(CC) -o$(OBJ_D)\ne_oldacl.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_oldacl.c
-$(OBJ_D)\ne_acl3744.obj: $(SRC_D)/src/ne_acl3744.c
-    $(CC) -o$(OBJ_D)\ne_acl3744.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_acl3744.c
-$(OBJ_D)\ne_props.obj: $(SRC_D)/src/ne_props.c
-    $(CC) -o$(OBJ_D)\ne_props.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_props.c
-$(OBJ_D)\ne_locks.obj: $(SRC_D)/src/ne_locks.c
-    $(CC) -o$(OBJ_D)\ne_locks.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_locks.c
-$(OBJ_D)\ne_openssl.obj: $(SRC_D)/src/ne_openssl.c
-    $(CC) -o$(OBJ_D)\ne_openssl.obj $(LIB_CFLAGS) -c $(SRC_D)/src/ne_openssl.c
+.path.c = $(SRC_D)/src
+.c.obj:
+    $(CC) $(LIB_CFLAGS) -n$(@D) {$< }
 
-$(O_NEON): $(NEONOBJS)
-    if exist $(O_NEON) $(RM) $(O_NEON)
-    $(MKLIB) $(O_NEON) @&&!
-+$(**: = &^
-+)
-!
+$(O_NEON): $(OBJFILES)
+    if exist $(O_NEON) del $(O_NEON)
+    $(MKLIB) /P64 $@ $(**)
 
 ###################################################################
 all: banner clean_lib $(TMP_D) $(OUT_D) headers lib
 
 banner:
     @echo Building neon
-    @echo $(NEONOBJS)
 
 clean_lib:
     if exist $(O_NEON) $(RM) $(O_NEON)
 
 $(TMP_D):
-    if not exist "$(TMP_D)" ( $(MKDIR) "$(TMP_D)" )
+    if not exist "$(TMP_D)" ( mkdir "$(TMP_D)" )
 
 $(OUT_D):
-    if not exist "$(OUT_D)" ( $(MKDIR) "$(OUT_D)" )
+    if not exist "$(OUT_D)" ( mkdir "$(OUT_D)" )
 
 headers: $(HEADER)
     @

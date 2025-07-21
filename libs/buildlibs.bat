@@ -36,12 +36,10 @@ cd expat\bcb5
 make -f makefile.mak
 cd ..\..
 
-if not exist expat\bcb5\release\libexpats_mtd.lib (
+if not exist %LIB_PATH%\libexpats_mtd.lib (
 echo Expat build failed
 exit /B 1
 )
-
-copy expat\bcb5\release\libexpats_mtd.lib %LIB_PATH%
 
 :SKIP_EXPAT
 
@@ -111,7 +109,7 @@ goto SKIP_MFC
 
 echo Building MFC ...
 cd mfc\source
-make -fborland.mak NO_WARNINGS=1
+make -fborland.mak
 cd ..\..
 
 if not exist %LIB_PATH%\UafxcW.lib (
