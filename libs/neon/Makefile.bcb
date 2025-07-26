@@ -6,7 +6,7 @@ EXPAT_DEFINES=COMPILED_FROM_DSP;XML_STATIC
 DEFINES=WIN32;WIN32_LEAN_AND_MEAN;_WINDOWS;WIN32;NDEBUG;_LIB;_NO_VCL;_ASSERTE;NO_STRICT;_RTLDLL;NE_HAVE_SSL;HAVE_OPENSSL;HAVE_EXPAT;HAVE_EXPAT_H;NE_HAVE_DAV;NE_LFS;NOUSER;NOGDI;HAVE_STRTOLL;WINSCP
 ALLDEFINES=$(OPENSSL_DEFINES);$(EXPAT_DEFINES);$(DEFINES)
 WARNINGS=-w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl -w-8065 -w-8069
-CFLAG=$(WARNINGS) $(CFLAG_COMMON)
+CFLAG=$(CFLAG_COMMON) $(WARNINGS)
 
 # neon directory
 SRC_D=.
@@ -29,7 +29,7 @@ O_NEON=$(OUT_D)\neon.lib
 ######################################################
 
 INC=-I$(INCL:;= -I)
-LIB_CFLAGS=$(INC) $(CFLAG) -D$(ALLDEFINES:;= -D)
+LIB_CFLAGS=$(CFLAG) $(INC) -D$(ALLDEFINES:;= -D)
 LIBS_DEP=$(O_NEON)
 
 #############################################
@@ -64,7 +64,7 @@ OBJFILES=\
 
 .path.c = $(SRC_D)/src
 .c.obj:
-    $(CC) $(LIB_CFLAGS) -n$(@D) {$< }
+    $(CC) $(LIB_CFLAGS) -o $@ $<
 
 $(O_NEON): $(OBJFILES)
     if exist $(O_NEON) del $(O_NEON)

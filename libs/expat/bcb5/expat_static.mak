@@ -23,5 +23,5 @@ $(PROJECT): $(OBJFILES)
 # ---------------------------------------------------------------------------
 .path.c = ..\lib
 .c.obj:
-    $(CC) $(CFLAG1) $(WARNINGS) -I$(INCLUDEPATH:;= -I) $(DEFINESARGS) -n$(@D) {$< }
+    $(CC) $(CFLAG1) $(WARNINGS) -I$(INCLUDEPATH:;= -I) $(DEFINESARGS) -o $@ $<
 # ---------------------------------------------------------------------------

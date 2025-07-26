@@ -69,7 +69,7 @@ GOAL=$(MODEL)afxc$(BASE)$(DEBUGSUF)
 # COMPILER OPTIONS
 #
 # -VF4 Support MFC 4.0
-CL_OPT=-VF4 -n$(D) -w-
+CL_OPT=-VF4 -w-
 
 DEFS=_declspec=__declspec;_WCHAR_T_DEFINED;__MSC;_ANONYMOUS_STRUCT;_MSC_VER=1200;_WINDOWS
 DEFS=$(DEFS)$(DEBDEFS);$(TARGDEFS)
@@ -114,7 +114,7 @@ BORFLAGS=$(CPPFLAGS) -I$(INCL:;= -I)
 .path.obj = $(D)
 
 .cpp.obj:
-	$(CC) $(BORFLAGS) { $< }
+	$(CC) $(BORFLAGS) -o $@ $<
 
 #############################################################################
 # Goals to build

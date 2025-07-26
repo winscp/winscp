@@ -5,7 +5,7 @@ DEFINES = WIN32;WIN32_LEAN_AND_MEAN;WINSCP;NE_LFS
 WARNINGS = -w-aus -w-par
 # Compile like C++ (it's probably only to support newer features and won't be needed with Clang)
 CFLAG = -P
-CFLAG = -D$(DEFINES:;= -D) $(WARNINGS) $(CFLAG) $(CFLAG_COMMON)
+CFLAG = $(CFLAG_COMMON) $(CFLAG) -D$(DEFINES:;= -D) $(WARNINGS)
 # The output directory for all the temporary muck
 TMP_D=tmp
 
@@ -21,7 +21,7 @@ INCL=inc;inc/mingw;../openssl/include;../expat/lib;../neon/src
 O_LIBS3=$(LIB_PATH)\libs3.lib
 
 INC=-I$(INCL:;= -I)
-LIB_CFLAGS=$(INC) $(CFLAG) $(LIB_CFLAG)
+LIB_CFLAGS=$(CFLAG) $(INC)
 
 #############################################
 LIBS3_OBJS=\
@@ -41,7 +41,7 @@ LIBS3_OBJS=\
     $(OBJ_D)\util.obj
 
 .c.obj:
-    $(CC) $(LIB_CFLAGS) -n$(@D) {$< }
+    $(CC) $(LIB_CFLAGS) -o $@ $<
 
 $(O_LIBS3): $(LIBS3_OBJS)
     if exist $(O_LIBS3) del $(O_LIBS3)
