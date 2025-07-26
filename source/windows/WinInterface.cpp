@@ -1315,7 +1315,28 @@ static void __fastcall DoApplicationMinimizeRestore(bool Minimize)
     {
       if (Minimize)
       {
-        Application->Minimize();
+        // WORKAROUND:
+        // VCL enables minimized windows (why?) and restores the previous disabled state on restore.
+        // But if we meanwhile re-enable the window (like when transfer finishes while minimized),
+        // the VCL will re-disable the window on restore.
+        // (This does not help in scenario, then the main window is minimized with its own title's minimize window,
+        // but then it should not be disabled in the first place)
+        bool WasDisabled = !MainForm->Enabled;
+        if (WasDisabled)
+        {
+          MainForm->Enabled = true;
+        }
+        try
+        {
+          Application->Minimize();
+        }
+        __finally
+        {
+          if (WasDisabled)
+          {
+            MainForm->Enabled = false;
+          }
+        }
         MinimizedToTray = WinConfiguration->MinimizeToTray;
       }
       else

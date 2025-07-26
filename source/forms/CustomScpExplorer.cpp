@@ -10384,6 +10384,7 @@ void __fastcall TCustomScpExplorerForm::LockWindow(bool Force)
   // Shouldn't we use IsApplicationMinimized() here?
   if ((FLockSuspendLevel == 0) && !IsIconic(Application->Handle) && (Force || (Screen->ActiveForm == this)))
   {
+    AppLog(L"Disabling window");
     Enabled = false;
   }
 
@@ -10398,6 +10399,7 @@ void __fastcall TCustomScpExplorerForm::UnlockWindow()
   if (FLockLevel == 0)
   {
     DebugAssert(FLockSuspendLevel == 0);
+    AppLog(L"Re-enabling window");
     Enabled = true;
     // VCL_COPY (TCustomForm.SetWindowFocus)
     if (Active && (ActiveControl != NULL))
