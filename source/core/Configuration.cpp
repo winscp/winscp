@@ -396,6 +396,7 @@ UnicodeString __fastcall TConfiguration::PropertyToKey(const UnicodeString & Pro
     KEY(Bool,     CollectUsage); \
     KEY(String,   CertificateStorage); \
     KEY(String,   AWSAPI); \
+    KEY(String,   ChecksumCommands); \
   ); \
   BLOCK(L"Logging", CANCREATE, \
     KEYEX(Bool,  PermanentLogging, L"Logging"); \

@@ -390,7 +390,7 @@ public:
   __property UnicodeString CertificateStorage = { read = FCertificateStorage, write = SetCertificateStorage };
   __property UnicodeString CertificateStorageExpanded = { read = GetCertificateStorageExpanded };
   __property UnicodeString AWSAPI = { read = FAWSAPI, write = SetAWSAPI };
-  __property UnicodeString ChecksumCommands = { read = FChecksumCommands };
+  __property UnicodeString ChecksumCommands = { read = FChecksumCommands, write = FChecksumCommands };
   __property int LocalPortNumberMin = { read = FLocalPortNumberMin, write = SetLocalPortNumberMin };
   __property int LocalPortNumberMax = { read = FLocalPortNumberMax, write = SetLocalPortNumberMax };
   __property bool TryFtpWhenSshFails = { read = FTryFtpWhenSshFails, write = SetTryFtpWhenSshFails };
