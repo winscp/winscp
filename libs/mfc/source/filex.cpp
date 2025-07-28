@@ -11,37 +11,6 @@
 #include "stdafx.h"
 #include <errno.h>
 
-#ifdef AFX_CORE1_SEG
-#pragma code_seg(AFX_CORE1_SEG)
-#endif
-
-#ifdef _DEBUG
-#undef THIS_FILE
-static char THIS_FILE[] = __FILE__;
-#endif
-
-#ifdef _DEBUG
-static const LPCSTR rgszCFileExceptionCause[] =
-{
-	"none",
-	"generic",
-	"fileNotFound",
-	"badPath",
-	"tooManyOpenFiles",
-	"accessDenied",
-	"invalidFile",
-	"removeCurrentDir",
-	"directoryFull",
-	"badSeek",
-	"hardIO",
-	"sharingViolation",
-	"lockViolation",
-	"diskFull",
-	"endOfFile",
-};
-static const char szUnknown[] = "unknown";
-#endif
-
 /////////////////////////////////////////////////////////////////////////////
 // CFileException
 
@@ -51,14 +20,6 @@ void PASCAL CFileException::ThrowOsError(LONG lOsError,
 	if (lOsError != 0)
 		AfxThrowFileException(CFileException::OsErrorToException(lOsError),
 			lOsError, lpszFileName);
-}
-
-void PASCAL CFileException::ThrowErrno(int nErrno,
-	LPCTSTR lpszFileName /* = NULL */)
-{
-	if (nErrno != 0)
-		AfxThrowFileException(CFileException::ErrnoToException(nErrno),
-			_doserrno, lpszFileName);
 }
 
 BOOL CFileException::GetErrorMessage(LPTSTR lpszError, UINT nMaxError,
@@ -73,31 +34,12 @@ BOOL CFileException::GetErrorMessage(LPTSTR lpszError, UINT nMaxError,
 	CString strFileName = m_strFileName;
 	if (strFileName.IsEmpty())
 		strFileName.LoadString(AFX_IDS_UNNAMED_FILE);
-	AfxFormatString1(strMessage,
-		m_cause + AFX_IDP_FILE_NONE, strFileName);
+	strMessage.LoadString(m_cause + AFX_IDP_FILE_NONE);
+	strMessage.Replace(L"%1", strFileName);
 	lstrcpyn(lpszError, strMessage, nMaxError);
 
 	return TRUE;
 }
-
-/////////////////////////////////////////////////////////////////////////////
-// CFileException diagnostics
-
-#ifdef _DEBUG
-void CFileException::Dump(CDumpContext& dc) const
-{
-	CObject::Dump(dc);
-
-	dc << "m_cause = ";
-	if (m_cause >= 0 && m_cause < _countof(rgszCFileExceptionCause))
-		dc << rgszCFileExceptionCause[m_cause];
-	else
-		dc << szUnknown;
-	dc << "\nm_lOsError = " << (void*)m_lOsError;
-
-	dc << "\n";
-}
-#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // CFileException helpers
@@ -105,42 +47,7 @@ void CFileException::Dump(CDumpContext& dc) const
 void AFXAPI AfxThrowFileException(int cause, LONG lOsError,
 	LPCTSTR lpszFileName /* == NULL */)
 {
-#ifdef _DEBUG
-	LPCSTR lpsz;
-	if (cause >= 0 && cause < _countof(rgszCFileExceptionCause))
-		lpsz = rgszCFileExceptionCause[cause];
-	else
-		lpsz = szUnknown;
-	TRACE3("CFile exception: %hs, File %s, OS error information = %ld.\n",
-		lpsz, (lpszFileName == NULL) ? _T("Unknown") : lpszFileName, lOsError);
-#endif
 	THROW(new CFileException(cause, lOsError, lpszFileName));
-}
-
-int PASCAL CFileException::ErrnoToException(int nErrno)
-{
-	switch(nErrno)
-	{
-	case EPERM:
-	case EACCES:
-		return CFileException::accessDenied;
-	case EBADF:
-		return CFileException::invalidFile;
-	case EDEADLOCK:
-		return CFileException::sharingViolation;
-	case EMFILE:
-		return CFileException::tooManyOpenFiles;
-	case ENOENT:
-	case ENFILE:
-		return CFileException::fileNotFound;
-	case ENOSPC:
-		return CFileException::diskFull;
-	case EINVAL:
-	case EIO:
-		return CFileException::hardIO;
-	default:
-		return CFileException::generic;
-	}
 }
 
 int PASCAL CFileException::OsErrorToException(LONG lOsErr)
@@ -310,11 +217,5 @@ int PASCAL CFileException::OsErrorToException(LONG lOsErr)
 		return CFileException::generic;
 	}
 }
-
-#ifdef AFX_INIT_SEG
-#pragma code_seg(AFX_INIT_SEG)
-#endif
-
-IMPLEMENT_DYNAMIC(CFileException, CException)
 
 /////////////////////////////////////////////////////////////////////////////

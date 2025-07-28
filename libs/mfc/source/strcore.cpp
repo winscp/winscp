@@ -11,24 +11,13 @@
 #include "stdafx.h"
 #include "fixalloc.h"
 
-#ifdef AFX_CORE1_SEG
-#pragma code_seg(AFX_CORE1_SEG)
-#endif
-
-#ifdef _DEBUG
-#undef THIS_FILE
-static char THIS_FILE[] = __FILE__;
-#endif
-
-#define new DEBUG_NEW
-
 HINSTANCE afxCurrentResourceHandle;
 
 /////////////////////////////////////////////////////////////////////////////
 // static class data, special inlines
 
 // afxChNil is left for backward compatibility
-AFX_DATADEF TCHAR afxChNil = '\0';
+TCHAR afxChNil = '\0';
 
 // For an empty string, m_pchData will point here
 // (note: avoids special case of checking for NULL m_pchData)
@@ -42,13 +31,6 @@ const CString& AFXAPI AfxGetEmptyString()
 
 //////////////////////////////////////////////////////////////////////////////
 // Construction/Destruction
-
-#ifdef _AFXDLL
-CString::CString()
-{
-	Init();
-}
-#endif
 
 CString::CString(const CString& stringSrc)
 {
@@ -67,9 +49,6 @@ CString::CString(const CString& stringSrc)
 }
 
 #ifndef _DEBUG
-
-#pragma warning(disable: 4074)
-#pragma init_seg(compiler)
 
 #define ROUND(x,y) (((x)+(y-1))&~(y-1))
 #define ROUND4(x) ROUND(x, 4)
@@ -263,7 +242,6 @@ CString::CString(LPCTSTR lpsz)
 /////////////////////////////////////////////////////////////////////////////
 // Special conversion constructors
 
-#ifdef _UNICODE
 CString::CString(LPCSTR lpsz)
 {
 	Init();
@@ -275,30 +253,6 @@ CString::CString(LPCSTR lpsz)
 		ReleaseBuffer();
 	}
 }
-#else //_UNICODE
-CString::CString(LPCWSTR lpsz)
-{
-	Init();
-	int nSrcLen = lpsz != NULL ? wcslen(lpsz) : 0;
-	if (nSrcLen != 0)
-	{
-		AllocBuffer(nSrcLen*2);
-		_wcstombsz(m_pchData, lpsz, (nSrcLen*2)+1);
-		ReleaseBuffer();
-	}
-}
-#endif //!_UNICODE
-
-//////////////////////////////////////////////////////////////////////////////
-// Diagnostic support
-
-#ifdef _DEBUG
-CDumpContext& AFXAPI operator<<(CDumpContext& dc, const CString& string)
-{
-	dc << string.m_pchData;
-	return dc;
-}
-#endif //_DEBUG
 
 //////////////////////////////////////////////////////////////////////////////
 // Assignment operators
@@ -351,7 +305,6 @@ const CString& CString::operator=(LPCTSTR lpsz)
 /////////////////////////////////////////////////////////////////////////////
 // Special conversion assignment
 
-#ifdef _UNICODE
 const CString& CString::operator=(LPCSTR lpsz)
 {
 	int nSrcLen = lpsz != NULL ? lstrlenA(lpsz) : 0;
@@ -360,16 +313,6 @@ const CString& CString::operator=(LPCSTR lpsz)
 	ReleaseBuffer();
 	return *this;
 }
-#else //!_UNICODE
-const CString& CString::operator=(LPCWSTR lpsz)
-{
-	int nSrcLen = lpsz != NULL ? wcslen(lpsz) : 0;
-	AllocBeforeWrite(nSrcLen*2);
-	_wcstombsz(m_pchData, lpsz, (nSrcLen*2)+1);
-	ReleaseBuffer();
-	return *this;
-}
-#endif  //!_UNICODE
 
 //////////////////////////////////////////////////////////////////////////////
 // concatenation
@@ -482,11 +425,6 @@ LPTSTR CString::GetBuffer(int nMinBufLength)
 
 	if (GetData()->nRefs > 1 || nMinBufLength > GetData()->nAllocLength)
 	{
-#ifdef _DEBUG
-		// give a warning in case locked string becomes unlocked
-		if (GetData() != _afxDataNil && GetData()->nRefs < 0)
-			TRACE0("Warning: GetBuffer on locked CString creates unlocked CString!\n");
-#endif
 		// we have to grow the buffer
 		CStringData* pOldData = GetData();
 		int nOldLen = GetData()->nDataLength;   // AllocBuffer will tromp it
@@ -514,44 +452,6 @@ void CString::ReleaseBuffer(int nNewLength)
 	ASSERT(nNewLength <= GetData()->nAllocLength);
 	GetData()->nDataLength = nNewLength;
 	m_pchData[nNewLength] = '\0';
-}
-
-LPTSTR CString::GetBufferSetLength(int nNewLength)
-{
-	ASSERT(nNewLength >= 0);
-
-	GetBuffer(nNewLength);
-	GetData()->nDataLength = nNewLength;
-	m_pchData[nNewLength] = '\0';
-	return m_pchData;
-}
-
-void CString::FreeExtra()
-{
-	ASSERT(GetData()->nDataLength <= GetData()->nAllocLength);
-	if (GetData()->nDataLength != GetData()->nAllocLength)
-	{
-		CStringData* pOldData = GetData();
-		AllocBuffer(GetData()->nDataLength);
-		memcpy(m_pchData, pOldData->data(), pOldData->nDataLength*sizeof(TCHAR));
-		ASSERT(m_pchData[GetData()->nDataLength] == '\0');
-		CString::Release(pOldData);
-	}
-	ASSERT(GetData() != NULL);
-}
-
-LPTSTR CString::LockBuffer()
-{
-	LPTSTR lpsz = GetBuffer(0);
-	GetData()->nRefs = -1;
-	return lpsz;
-}
-
-void CString::UnlockBuffer()
-{
-	ASSERT(GetData()->nRefs == -1);
-	if (GetData() != _afxDataNil)
-		GetData()->nRefs = 1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -582,22 +482,10 @@ int CString::FindOneOf(LPCTSTR lpszCharSet) const
 	return (lpsz == NULL) ? -1 : (int)(lpsz - m_pchData);
 }
 
-void CString::MakeUpper()
-{
-	CopyBeforeWrite();
-	_tcsupr(m_pchData);
-}
-
 void CString::MakeLower()
 {
 	CopyBeforeWrite();
 	_tcslwr(m_pchData);
-}
-
-void CString::MakeReverse()
-{
-	CopyBeforeWrite();
-	_tcsrev(m_pchData);
 }
 
 void CString::SetAt(int nIndex, TCHAR ch)
@@ -609,34 +497,8 @@ void CString::SetAt(int nIndex, TCHAR ch)
 	m_pchData[nIndex] = ch;
 }
 
-#ifndef _UNICODE
-void CString::AnsiToOem()
-{
-	CopyBeforeWrite();
-	::AnsiToOem(m_pchData, m_pchData);
-}
-void CString::OemToAnsi()
-{
-	CopyBeforeWrite();
-	::OemToAnsi(m_pchData, m_pchData);
-}
-#endif
-
 ///////////////////////////////////////////////////////////////////////////////
 // CString conversion helpers (these use the current system locale)
-
-int AFX_CDECL _wcstombsz(char* mbstr, const wchar_t* wcstr, size_t count)
-{
-	if (count == 0 && mbstr != NULL)
-		return 0;
-
-	int result = ::WideCharToMultiByte(CP_ACP, 0, wcstr, -1,
-		mbstr, count, NULL, NULL);
-	ASSERT(mbstr == NULL || result <= (int)count);
-	if (result > 0)
-		mbstr[result-1] = 0;
-	return result;
-}
 
 int AFX_CDECL _mbstowcsz(wchar_t* wcstr, const char* mbstr, size_t count)
 {

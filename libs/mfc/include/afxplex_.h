@@ -19,10 +19,6 @@
 #pragma pack(push, _AFX_PACKING)
 #endif
 
-#ifdef AFX_COLL_SEG
-#pragma code_seg(AFX_COLL_SEG)
-#endif
-
 struct CPlex     // warning variable length structure
 {
 	CPlex* pNext;
@@ -39,10 +35,6 @@ struct CPlex     // warning variable length structure
 
 	void FreeDataChain();       // free this one and links
 };
-
-#ifdef AFX_COLL_SEG
-#pragma code_seg()
-#endif
 
 #ifdef _AFX_PACKING
 #pragma pack(pop)

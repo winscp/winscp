@@ -22,9 +22,6 @@
 #include <set>
 #include <algorithm>
 //---------------------------------------------------------------------------
-class CFileFix;
-#define CFile CFileFix
-//---------------------------------------------------------------------------
 #pragma hdrstop
 //---------------------------------------------------------------------------
 #include <Global.h>
@@ -61,46 +58,6 @@ typedef struct
   __int64 transfersize;
   BOOL bFileTransfer;
 } t_ffam_transferstatus;
-//---------------------------------------------------------------------------
-#undef CFile
-//---------------------------------------------------------------------------
-class CFileFix : public CFile
-{
-public:
-  // MFC CFile::Read does not include file name into error message
-  UINT Read(void * lpBuf, UINT nCount)
-  {
-    ASSERT_VALID(this);
-    DebugAssert(m_hFile != (UINT)hFileNull);
-
-    if (nCount == 0)
-    {
-      return 0;   // avoid Win32 "null-read"
-    }
-
-    DebugAssert(lpBuf != NULL);
-    DebugAssert(AfxIsValidAddress(lpBuf, nCount));
-
-    DWORD dwRead;
-    if (!::ReadFile((HANDLE)m_hFile, lpBuf, nCount, &dwRead, NULL))
-    {
-      // The only change from MFC CFile::Read is m_strFileName
-      CFileException::ThrowOsError((LONG)::GetLastError(), m_strFileName);
-    }
-
-    return (UINT)dwRead;
-  }
-
-  // MFC allocates CObject (ancestor of CFile) with new, but deallocates with free,
-  // what codeguard dislikes, this is fix, not sure if it is necessary for
-  // release version, but probably causes no harm
-  void PASCAL operator delete(void * p)
-  {
-    delete p;
-  }
-};
-//---------------------------------------------------------------------------
-#define CFile CFileFix
 //---------------------------------------------------------------------------
 struct CStringDataA
 {
@@ -210,7 +167,6 @@ public:
 
   const CStringA & operator=(LPCSTR lpsz)
   {
-    DebugAssert(lpsz == NULL || AfxIsValidString(lpsz));
     AssignCopy(SafeStrlen(lpsz), lpsz);
     return *this;
   }
@@ -230,7 +186,6 @@ public:
 
   int Compare(LPCSTR lpsz) const
   {
-    DebugAssert(AfxIsValidString(lpsz));
     return strcmp(m_pchData, lpsz);
   }
 
@@ -313,8 +268,6 @@ public:
 
   int Find(LPCSTR lpszSub, int nStart) const
   {
-    DebugAssert(AfxIsValidString(lpszSub));
-
     int nLength = GetData()->nDataLength;
     if (nStart > nLength)
     {
