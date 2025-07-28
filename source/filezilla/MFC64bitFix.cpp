@@ -40,38 +40,35 @@ BOOL PASCAL GetStatus64(LPCTSTR lpszFileName, CFileStatus64& rStatus)
   rStatus.m_size = ((_int64)findFileData.nFileSizeHigh<<32)+findFileData.nFileSizeLow;
 
   // convert times as appropriate
-  TRY
+  try
   {
     rStatus.m_ctime = CTime(findFileData.ftCreationTime);
     rStatus.m_has_ctime = true;
   }
-  CATCH_ALL(e)
+  catch (CException*)
   {
     rStatus.m_has_ctime = false;
   }
-  END_CATCH_ALL;
 
-  TRY
+  try
   {
     rStatus.m_atime = CTime(findFileData.ftLastAccessTime);
     rStatus.m_has_atime = true;
   }
-  CATCH_ALL(e)
+  catch (CException*)
   {
     rStatus.m_has_atime = false;
   }
-  END_CATCH_ALL;
 
-  TRY
+  try
   {
     rStatus.m_mtime = CTime(findFileData.ftLastWriteTime);
     rStatus.m_has_mtime = true;
   }
-  CATCH_ALL(e)
+  catch (CException*)
   {
     rStatus.m_has_mtime = false;
   }
-  END_CATCH_ALL;
 
   if (!rStatus.m_has_ctime || rStatus.m_ctime.GetTime() == 0)
   {

@@ -133,7 +133,7 @@ protected:
   BOOL ParsePwdReply(CString & rawpwd, CServerPath & realPath);
   BOOL SendAuthSsl();
 
-  void DiscardLine(CStringA line);
+  void DiscardLine(RawByteString line);
   int FileTransferListState(bool get);
   bool NeedModeCommand();
   bool NeedOptsCommand();
@@ -183,11 +183,11 @@ protected:
 
   CFile * m_pDataFile;
   CTransferSocket * m_pTransferSocket;
-  CStringA m_MultiLine;
+  RawByteString m_MultiLine;
   CTime m_LastSendTime;
 
   CString m_ServerName;
-  std::list<CStringA> m_RecvBuffer;
+  std::list<RawByteString> m_RecvBuffer;
   CTime m_LastRecvTime;
   class CLogonData;
   class CListData;
@@ -204,7 +204,7 @@ protected:
   bool m_bAnnouncesUTF8;
   bool m_hasClntCmd;
   TFTPServerCapabilities m_serverCapabilities;
-  CStringA m_ListFile;
+  RawByteString m_ListFile;
   __int64 m_ListFileSize;
   bool m_isFileZilla;
 

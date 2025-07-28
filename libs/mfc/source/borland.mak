@@ -41,7 +41,7 @@ OBJECT = except.obj
 	
 FILES = filecore.obj filex.obj filest.obj
 
-MISC = strcore.obj strex.obj timecore.obj fixalloc.obj plex.obj
+MISC = strcore.obj strex.obj timecore.obj
 
 WINMISC = winstr.obj
 

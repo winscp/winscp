@@ -846,18 +846,19 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
   {
     if (GetReplyCode() == 2)
     {
-      const CStringA reply = m_RecvBuffer.front();
-      if (reply.GetLength() > 7 && reply.Mid(3, 4) == " MVS")
+      const RawByteString reply = m_RecvBuffer.front();
+      if (reply.Length() > 7 && reply.SubString(4, 4) == " MVS")
         m_mayBeMvsFilesystem = true;
-      else if (reply.GetLength() >= 11 && reply.Mid(3, 8) == " BS-2000")
+      else if (reply.Length() >= 11 && reply.SubString(4, 8) == " BS-2000")
         m_mayBeBS2000Filesystem = true;
 
-      if (reply.Left(4) == "VMS ")
+      // This is probably wrong
+      if (reply.SubString(1, 4) == "VMS ")
       {
         m_CurrentServer.nServerType |= FZ_SERVERTYPE_SUB_FTP_VMS;
       }
 
-      if (reply.Find("FileZilla") != -1)
+      if (reply.Pos("FileZilla") > 0)
         m_isFileZilla = true;
     }
 
@@ -1229,7 +1230,7 @@ void CFtpControlSocket::OnReceive(int nErrorCode)
         if (m_bUTF8)
         {
           // convert from UTF-8 to ANSI
-          LPCSTR utf8 = (LPCSTR)m_RecvBuffer.back();
+          LPCSTR utf8 = m_RecvBuffer.back().c_str();
           if (DetectUTF8Encoding(RawByteString(utf8)) == etANSI)
           {
             if (m_CurrentServer.nUTF8 != 1)
@@ -1255,23 +1256,23 @@ void CFtpControlSocket::OnReceive(int nErrorCode)
         }
         else
         {
-          ShowStatus(A2CT(m_RecvBuffer.back()), FZ_LOG_REPLY);
+          ShowStatus(A2CT(m_RecvBuffer.back().c_str()), FZ_LOG_REPLY);
         }
         // Check for multi-line responses
         // Partially duplicated in TFTPFileSystem::HandleReplyStatus
-        if (m_RecvBuffer.back().GetLength() > 3)
+        if (m_RecvBuffer.back().Length() > 3)
         {
           if (m_MultiLine != "")
           {
-            if (m_RecvBuffer.back().Left(4) != m_MultiLine)
+            if (m_RecvBuffer.back().SubString(1, 4) != m_MultiLine)
             {
-              CStringA line = m_RecvBuffer.back();
-              if (line.Left(4) == m_MultiLine.Left(3) + '-')
+              RawByteString line = m_RecvBuffer.back();
+              if (line.SubString(1, 4) == m_MultiLine.SubString(1, 3) + '-')
               {
-                line = line.Mid(4, line.GetLength() - 4);
+                line = line.SubString(5, line.Length() - 4);
               }
               DiscardLine(line);
-               m_RecvBuffer.pop_back();
+              m_RecvBuffer.pop_back();
             }
             else // end of multi-line found
             {
@@ -1284,10 +1285,10 @@ void CFtpControlSocket::OnReceive(int nErrorCode)
             }
           }
           // start of new multi-line
-          else if (m_RecvBuffer.back()[3] == '-')
+          else if (m_RecvBuffer.back()[4] == '-')
           {
             // DDD<SP> is the end of a multi-line response
-            m_MultiLine = m_RecvBuffer.back().Left(3) + ' ';
+            m_MultiLine = m_RecvBuffer.back().SubString(1, 3) + ' ';
             m_RecvBuffer.pop_back();
           }
           else
@@ -1312,7 +1313,7 @@ void CFtpControlSocket::OnReceive(int nErrorCode)
       //send extremely large commands to fill the memory of the server
       if (m_RecvBuffer.empty())
         m_RecvBuffer.push_back("");
-      if (m_RecvBuffer.back().GetLength() < 2000)
+      if (m_RecvBuffer.back().Length() < 2000)
         m_RecvBuffer.back() += buffer[i];
     }
   }
@@ -1531,12 +1532,12 @@ int CFtpControlSocket::TryGetReplyCode()
 {
   if (m_RecvBuffer.empty())
     return 0;
-  CStringA str = m_RecvBuffer.front();
+  RawByteString str = m_RecvBuffer.front();
   if (str == "")
   {
     return -1;
   }
-  else if ((str[0] < '1') || (str[0] > '9'))
+  else if ((str[1] < '1') || (str[1] > '9'))
   {
     UnicodeString Error = FMTLOAD(FTP_MALFORMED_RESPONSE, (UnicodeString(str)));
     LogMessageRaw(FZ_LOG_WARNING, Error.c_str());
@@ -1544,7 +1545,7 @@ int CFtpControlSocket::TryGetReplyCode()
   }
   else
   {
-    return str[0]-'0';
+    return str[1]-'0';
   }
 }
 
@@ -2427,10 +2428,10 @@ void CFtpControlSocket::ListFile(CString filename, const CServerPath &path)
     }
     else
     {
-      CStringA Buf = m_ListFile + '\n';
+      RawByteString Buf = m_ListFile + '\n';
       const bool mlst = true;
       CFtpListResult * pListResult = CreateListResult(mlst);
-      pListResult->AddData(static_cast<const char *>(Buf), Buf.GetLength());
+      pListResult->AddData(Buf.c_str(), Buf.Length());
       pData->direntry = pListResult->getList(num);
       if (pListResult->m_server.nServerType & FZ_SERVERTYPE_SUB_FTP_VMS && m_CurrentServer.nServerType & FZ_SERVERTYPE_FTP)
         m_CurrentServer.nServerType |= FZ_SERVERTYPE_SUB_FTP_VMS;
@@ -5046,12 +5047,12 @@ int CFtpControlSocket::CheckOverwriteFile()
 
 
       CTime *localtime = NULL;
-      TRY
+      try
       {
         if (status.m_has_mtime && status.m_mtime != -1)
           localtime = new CTime(status.m_mtime);
       }
-      CATCH_ALL(e)
+      catch (CException* e)
       {
         TCHAR buffer[1024];
         CString str =L"Exception creating CTime object: ";
@@ -5062,7 +5063,6 @@ int CFtpControlSocket::CheckOverwriteFile()
         LogMessageRaw(FZ_LOG_WARNING, str);
         localtime = NULL;
       }
-      END_CATCH_ALL;
       BOOL bRemoteFileExists = FALSE;
       __int64 remotesize = -1;
       t_directory::t_direntry::t_date remotetime;
@@ -6172,23 +6172,23 @@ BOOL CFtpControlSocket::ParsePwdReply(CString& rawpwd, CServerPath & realPath)
   return TRUE;
 }
 
-void CFtpControlSocket::DiscardLine(CStringA line)
+void CFtpControlSocket::DiscardLine(RawByteString line)
 {
   if (m_Operation.nOpMode == CSMODE_CONNECT && m_Operation.nOpState == CONNECT_FEAT)
   {
-    line.MakeUpper();
-    while (line.Left(1) == " ")
+    line = line.UpperCase();
+    while (line.SubString(1, 1) == " ")
     {
-      line = line.Mid(1, line.GetLength() - 1);
+      line = line.SubString(2, line.Length() - 1);
     }
 #ifndef MPEXT_NO_ZLIB
-    if (line == "MODE Z" || line.Left(7) == "MODE Z ")
+    if (line == "MODE Z" || line.SubString(1, 7) == "MODE Z ")
       m_zlibSupported = true;
     else
 #endif
       if (line == "UTF8" && m_CurrentServer.nUTF8 != 2)
       m_bAnnouncesUTF8 = true;
-    else if (line == "CLNT" || line.Left(5) == "CLNT ")
+    else if (line == "CLNT" || line.SubString(1, 5) == "CLNT ")
       m_hasClntCmd = true;
     else if (line == "MLSD")
     {
@@ -6198,12 +6198,12 @@ void CFtpControlSocket::DiscardLine(CStringA line)
     {
       m_serverCapabilities.SetCapability(mdtm_command, yes);
     }
-    else if (line.Left(4) == "MLST")
+    else if (line.SubString(1, 4) == "MLST")
     {
       std::string facts;
-      if (line.GetLength() > 5)
+      if (line.Length() > 5)
       {
-        facts = (LPCSTR)line.Mid(5, line.GetLength() - 5);
+        facts = line.SubString(6, line.Length() - 5).c_str();
       }
       m_serverCapabilities.SetCapability(mlsd_command, yes, facts);
     }
@@ -6275,11 +6275,11 @@ CString CFtpControlSocket::GetReply()
       (GetReplyCode() == 2))
   {
     // this is probably never used anyway
-    line = (LPCSTR)m_ListFile;
+    line = m_ListFile.c_str();
   }
   else
   {
-    line = (LPCSTR)m_RecvBuffer.front();
+    line = m_RecvBuffer.front().c_str();
   }
 
   if (m_bUTF8)

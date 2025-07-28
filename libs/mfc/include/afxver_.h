@@ -31,13 +31,6 @@
 
 #include <afxv_w32.h>
 
-#if defined (__BORLANDC__)
-#define _AFX_PACKING 8      // __BORLANDC__
-#else
-// setup default packing value
-#define _AFX_PACKING    4   // default packs structs at 4 bytes
-#endif
-
 /////////////////////////////////////////////////////////////////////////////
 // Standard preprocessor symbols if not already defined
 /////////////////////////////////////////////////////////////////////////////
@@ -69,29 +62,6 @@
 // AFX_CDECL is used for rare functions taking variable arguments
 #ifndef AFX_CDECL
 	#define AFX_CDECL __cdecl
-#endif
-
-#ifndef AFX_STATIC
-	#define AFX_STATIC extern
-	#define AFX_STATIC_DATA extern __declspec(selectany)
-#endif
-
-// The following macros are used to enable export/import
-
-// This macro is used to reduce size requirements of some classes
-#ifndef AFX_ALWAYS_VTABLE
-#ifndef AFX_NOVTABLE
-#if _MSC_VER >= 1100
-#define AFX_NOVTABLE __declspec(novtable)
-#else
-#define AFX_NOVTABLE
-#endif
-#endif
-#endif
-
-// for global data that should be in COMDATs (packaged data)
-#ifndef AFX_COMDAT
-	#define AFX_COMDAT
 #endif
 
 /////////////////////////////////////////////////////////////////////////////

@@ -9,11 +9,7 @@
 // Microsoft Foundation Classes product.
 
 #include "stdafx.h"
-
-AFX_STATIC inline BOOL IsDirSep(TCHAR ch)
-{
-	return (ch == '\\' || ch == '/');
-}
+#include <SysUtils.hpp>
 
 ////////////////////////////////////////////////////////////////////////////
 // CFile implementation
@@ -21,12 +17,6 @@ AFX_STATIC inline BOOL IsDirSep(TCHAR ch)
 CFile::CFile()
 {
 	m_hFile = (UINT) hFileNull;
-	m_bCloseOnDelete = FALSE;
-}
-
-CFile::CFile(int hFile)
-{
-	m_hFile = hFile;
 	m_bCloseOnDelete = FALSE;
 }
 
@@ -209,93 +199,25 @@ void CFile::Close()
 // CFile implementation helpers
 
 // turn a file, relative path or other into an absolute path
+// Used for error reporting only, so not critical.
 BOOL AFXAPI AfxFullPath(LPTSTR lpszPathOut, LPCTSTR lpszFileIn)
 	// lpszPathOut = buffer of _MAX_PATH
 	// lpszFileIn = file, relative path or absolute path
 	// (both in ANSI character set)
 {
-	ASSERT(AfxIsValidAddress(lpszPathOut, _MAX_PATH));
-
-	// first, fully qualify the path name
-	LPTSTR lpszFilePart;
-	if (!GetFullPathName(lpszFileIn, _MAX_PATH, lpszPathOut, &lpszFilePart))
-	{
-		lstrcpyn(lpszPathOut, lpszFileIn, _MAX_PATH); // take it literally
-		return FALSE;
+        UnicodeString Path;
+        BOOL Result;
+        try
+        {
+	        Path = ExpandFileName(lpszFileIn);
+	        Result = TRUE;
 	}
-
-	CString strRoot;
-	// determine the root name of the volume
-	AfxGetRoot(lpszPathOut, strRoot);
-
-	// get file system information for the volume
-	DWORD dwFlags, dwDummy;
-	if (!GetVolumeInformation(strRoot, NULL, 0, NULL, &dwDummy, &dwFlags,
-		NULL, 0))
+	catch (...)
 	{
-		TRACE1("Warning: could not get volume information '%s'.\n",
-			(LPCTSTR)strRoot);
-		return FALSE;   // preserving case may not be correct
+		Path = lpszFileIn; // take it literally
+	        Result = FALSE;
 	}
-
-	// not all characters have complete uppercase/lowercase
-	if (!(dwFlags & FS_CASE_IS_PRESERVED))
-		CharUpper(lpszPathOut);
-
-	// assume non-UNICODE file systems, use OEM character set
-	if (!(dwFlags & FS_UNICODE_STORED_ON_DISK))
-	{
-		WIN32_FIND_DATA data;
-		HANDLE h = FindFirstFile(lpszFileIn, &data);
-		if (h != INVALID_HANDLE_VALUE)
-		{
-			FindClose(h);
-			lstrcpy(lpszFilePart, data.cFileName);
-		}
-	}
-	return TRUE;
+	lstrcpyn(lpszPathOut, Path.c_str(), _MAX_PATH);
+	return Result;
 }
-
-void AFXAPI AfxGetRoot(LPCTSTR lpszPath, CString& strRoot)
-{
-	ASSERT(lpszPath != NULL);
-	// determine the root name of the volume
-	LPTSTR lpszRoot = strRoot.GetBuffer(_MAX_PATH);
-	memset(lpszRoot, 0, _MAX_PATH);
-	lstrcpyn(lpszRoot, lpszPath, _MAX_PATH);
-	for (LPTSTR lpsz = lpszRoot; *lpsz != '\0'; lpsz = _tcsinc(lpsz))
-	{
-		// find first double slash and stop
-		if (IsDirSep(lpsz[0]) && IsDirSep(lpsz[1]))
-			break;
-	}
-	if (*lpsz != '\0')
-	{
-		// it is a UNC name, find second slash past '\\'
-		ASSERT(IsDirSep(lpsz[0]));
-		ASSERT(IsDirSep(lpsz[1]));
-		lpsz += 2;
-		while (*lpsz != '\0' && (!IsDirSep(*lpsz)))
-			lpsz = _tcsinc(lpsz);
-		if (*lpsz != '\0')
-			lpsz = _tcsinc(lpsz);
-		while (*lpsz != '\0' && (!IsDirSep(*lpsz)))
-			lpsz = _tcsinc(lpsz);
-		// terminate it just after the UNC root (ie. '\\server\share\')
-		if (*lpsz != '\0')
-			lpsz[1] = '\0';
-	}
-	else
-	{
-		// not a UNC, look for just the first slash
-		lpsz = lpszRoot;
-		while (*lpsz != '\0' && (!IsDirSep(*lpsz)))
-			lpsz = _tcsinc(lpsz);
-		// terminate it just after root (ie. 'x:\')
-		if (*lpsz != '\0')
-			lpsz[1] = '\0';
-	}
-	strRoot.ReleaseBuffer();
-}
-
 /////////////////////////////////////////////////////////////////////////////

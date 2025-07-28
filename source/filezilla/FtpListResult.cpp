@@ -714,12 +714,13 @@ BOOL CFtpListResult::parseAsVMS(const char *line, const int linelen, t_directory
   if (dir.dir)
   {
     int i;
-    LPTSTR pBuffer = dir.name.GetBuffer(tokenlen - 4);
+    UnicodeString Buf;
+    Buf.SetLength(tokenlen - 4);
     for (i = 0; i < (separator - str - 4); i++)
-      pBuffer[i] = str[i];
+      Buf[i + 1] = str[i];
     for (i = 0; i < (tokenlen - (separator - str)); i++)
-      pBuffer[i + (separator - str) - 4] = separator[i];
-    dir.name.ReleaseBuffer(tokenlen - 4);
+      Buf[i + (separator - str) - 4 + 1] = separator[i];
+    dir.name = CString(Buf);
   }
   else
     copyStr(dir.name, 0, str, tokenlen);

@@ -243,7 +243,7 @@ void CTransferSocket::OnReceive(int nErrorCode)
 
     int written = 0;
     m_LastActiveTime = CTime::GetCurrentTime();
-    TRY
+    try
     {
 #ifndef MPEXT_NO_ZLIB
       if (m_useZlib)
@@ -283,7 +283,7 @@ void CTransferSocket::OnReceive(int nErrorCode)
         written = numread;
       }
     }
-    CATCH(CFileException,e)
+    catch (CFileException * e)
     {
       LPTSTR msg = new TCHAR[BUFSIZE];
       if (e->GetErrorMessage(msg, BUFSIZE))
@@ -292,7 +292,6 @@ void CTransferSocket::OnReceive(int nErrorCode)
       CloseAndEnsureSendClose(CSMODE_TRANSFERERROR);
       return;
     }
-    END_CATCH;
     m_transferdata.transferleft -= written;
 
     UpdateStatusBar(false);
@@ -1136,7 +1135,7 @@ int CTransferSocket::ReadData(char * buffer, int len)
 
 int CTransferSocket::ReadDataFromFile(char *buffer, int len)
 {
-  TRY
+  try
   {
     // Comparing to Filezilla 2, we do not do any translation locally,
     // leaving it onto the server (what Filezilla 3 seems to do too)
@@ -1156,7 +1155,7 @@ int CTransferSocket::ReadDataFromFile(char *buffer, int len)
     }
     return read;
   }
-  CATCH_ALL(e)
+  catch (CException* e)
   {
     TCHAR error[BUFSIZE];
     if (e->GetErrorMessage(error, BUFSIZE))
@@ -1164,7 +1163,6 @@ int CTransferSocket::ReadDataFromFile(char *buffer, int len)
     CloseOnShutDownOrError(CSMODE_TRANSFERERROR);
     return -1;
   }
-  END_CATCH_ALL;
 }
 
 void CTransferSocket::LogSocketMessageRaw(int nMessageType, LPCTSTR pMsg)

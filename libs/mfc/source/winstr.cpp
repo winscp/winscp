@@ -26,14 +26,16 @@ BOOL CString::LoadString(UINT nID)
 		return nLen > 0;
 	}
 
+	// Shouldn't happen as we do not have such long string in FileZilla
 	// try buffer size of 512, then larger size until entire string is retrieved
 	int nSize = 256;
 	do
 	{
 		nSize += 256;
-		nLen = AfxLoadString(nID, GetBuffer(nSize-1), nSize);
+		m_Data.SetLength(nSize - 1);
+		nLen = AfxLoadString(nID, m_Data.c_str(), nSize);
 	} while (nSize - nLen <= CHAR_FUDGE);
-	ReleaseBuffer();
+	m_Data.SetLength(nLen);
 
 	return nLen > 0;
 }

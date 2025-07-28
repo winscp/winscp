@@ -29,14 +29,10 @@ _AFX_INLINE CFileException::~CFileException()
 	{ }
 
 // CString
-_AFX_INLINE CStringData* CString::GetData() const
-	{ ASSERT(m_pchData != NULL); return ((CStringData*)m_pchData)-1; }
-_AFX_INLINE void CString::Init()
-	{ m_pchData = afxEmptyString.m_pchData; }
 _AFX_INLINE CString::CString()
-	{ m_pchData = afxEmptyString.m_pchData; }
+	{ }
 _AFX_INLINE CString::CString(const unsigned char* lpsz)
-	{ Init(); *this = (LPCSTR)lpsz; }
+	{ *this = (LPCSTR)lpsz; }
 _AFX_INLINE const CString& CString::operator=(const unsigned char* lpsz)
 	{ *this = (LPCSTR)lpsz; return *this; }
 _AFX_INLINE const CString& CString::operator+=(char ch)
@@ -49,34 +45,30 @@ _AFX_INLINE CString AFXAPI operator+(char ch, const CString& string)
 	{ return (TCHAR)ch + string; }
 
 _AFX_INLINE int CString::GetLength() const
-	{ return GetData()->nDataLength; }
-_AFX_INLINE int CString::GetAllocLength() const
-	{ return GetData()->nAllocLength; }
+	{ return m_Data.Length(); }
 _AFX_INLINE BOOL CString::IsEmpty() const
-	{ return GetData()->nDataLength == 0; }
+	{ return m_Data.IsEmpty(); }
 _AFX_INLINE CString::operator LPCTSTR() const
-	{ return m_pchData; }
-_AFX_INLINE int PASCAL CString::SafeStrlen(LPCTSTR lpsz)
-	{ return (lpsz == NULL) ? 0 : lstrlen(lpsz); }
+	{ return m_Data.c_str(); }
 
 // CString support (windows specific)
 _AFX_INLINE int CString::Compare(LPCTSTR lpsz) const
-	{ ASSERT(AfxIsValidString(lpsz)); return _tcscmp(m_pchData, lpsz); }    // MBCS/Unicode aware
+	{ ASSERT(AfxIsValidString(lpsz)); return _tcscmp(m_Data.c_str(), lpsz); }    // MBCS/Unicode aware
 _AFX_INLINE int CString::CompareNoCase(LPCTSTR lpsz) const
-	{ ASSERT(AfxIsValidString(lpsz)); return _tcsicmp(m_pchData, lpsz); }   // MBCS/Unicode aware
+	{ ASSERT(AfxIsValidString(lpsz)); return _tcsicmp(m_Data.c_str(), lpsz); }   // MBCS/Unicode aware
 
 _AFX_INLINE TCHAR CString::GetAt(int nIndex) const
 {
 	ASSERT(nIndex >= 0);
-	ASSERT(nIndex < GetData()->nDataLength);
-	return m_pchData[nIndex];
+	ASSERT(nIndex < m_Data.Length());
+	return m_Data[nIndex + 1];
 }
 _AFX_INLINE TCHAR CString::operator[](int nIndex) const
 {
 	// same as GetAt
 	ASSERT(nIndex >= 0);
-	ASSERT(nIndex < GetData()->nDataLength);
-	return m_pchData[nIndex];
+	ASSERT(nIndex < m_Data.Length());
+	return m_Data[nIndex + 1];
 }
 _AFX_INLINE bool AFXAPI operator==(const CString& s1, const CString& s2)
 	{ return s1.Compare(s2) == 0; }

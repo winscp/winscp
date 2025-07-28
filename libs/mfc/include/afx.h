@@ -54,15 +54,10 @@ struct CFileStatus;                   // file status information
 #ifndef _INC_STDDEF
 	#include <stddef.h>
 #endif
-
-#ifdef _AFX_PACKING
-#pragma pack(push, _AFX_PACKING)
-#endif
+#include <System.hpp>
 
 /////////////////////////////////////////////////////////////////////////////
 // Basic types
-
-struct _AFX_DOUBLE  { BYTE doubleBits[sizeof(double)]; };
 
 // Standard constants
 #undef FALSE
@@ -115,17 +110,6 @@ struct _AFX_DOUBLE  { BYTE doubleBits[sizeof(double)]; };
 /////////////////////////////////////////////////////////////////////////////
 // Strings
 
-struct CStringData
-{
-	long nRefs;             // reference count
-	int nDataLength;        // length of data (including terminator)
-	int nAllocLength;       // length of allocation
-	// TCHAR data[nAllocLength]
-
-	TCHAR* data()           // TCHAR* to managed data
-		{ return (TCHAR*)(this+1); }
-};
-
 class CString
 {
 public:
@@ -135,6 +119,8 @@ public:
 	CString();
 	// copy constructor
 	CString(const CString& stringSrc);
+	// copy constructor
+	explicit CString(const UnicodeString& str);
 	// from an ANSI string (converts to TCHAR)
 	CString(LPCSTR lpsz);
 	// from a UNICODE string (converts to TCHAR)
@@ -239,7 +225,7 @@ public:
 	int Replace(TCHAR chOld, TCHAR chNew);
 	// replace occurrences of substring lpszOld with lpszNew;
 	// empty lpszNew removes instances of lpszOld
-	int Replace(LPCTSTR lpszOld, LPCTSTR lpszNew);
+	BOOL Replace(LPCTSTR lpszOld, LPCTSTR lpszNew);
 	// delete nCount characters starting at zero-based index
 	int Delete(int nIndex, int nCount = 1);
 
@@ -270,35 +256,9 @@ public:
 	// load from string resource
 	BOOL LoadString(UINT nID);
 
-	// Access to string implementation buffer as "C" character array
-
-	// get pointer to modifiable buffer at least as long as nMinBufLength
-	LPTSTR GetBuffer(int nMinBufLength);
-	// release buffer, setting length to nNewLength (or to first nul if -1)
-	void ReleaseBuffer(int nNewLength = -1);
-
 // Implementation
-public:
-	~CString();
-	int GetAllocLength() const;
-
 protected:
-	LPTSTR m_pchData;   // pointer to ref counted string data
-
-	// implementation helpers
-	CStringData* GetData() const;
-	void Init();
-	void AllocCopy(CString& dest, int nCopyLen, int nCopyIndex, int nExtraLen) const;
-	void AllocBuffer(int nLen);
-	void AssignCopy(int nSrcLen, LPCTSTR lpszSrcData);
-	void ConcatCopy(int nSrc1Len, LPCTSTR lpszSrc1Data, int nSrc2Len, LPCTSTR lpszSrc2Data);
-	void ConcatInPlace(int nSrcLen, LPCTSTR lpszSrcData);
-	void CopyBeforeWrite();
-	void AllocBeforeWrite(int nLen);
-	void Release();
-	static void PASCAL Release(CStringData* pData);
-	static int PASCAL SafeStrlen(LPCTSTR lpsz);
-	static void FASTCALL FreeData(CStringData* pData);
+	UnicodeString m_Data;
 };
 
 // Compare helpers
@@ -312,18 +272,10 @@ bool AFXAPI operator<(const CString& s1, const CString& s2);
 bool AFXAPI operator<(const CString& s1, LPCTSTR s2);
 bool AFXAPI operator<(LPCTSTR s1, const CString& s2);
 
-// conversion helpers
-int AFX_CDECL _mbstowcsz(wchar_t* wcstr, const char* mbstr, size_t count);
-
-// Globals
-extern TCHAR afxChNil;
-extern LPCTSTR _afxPchNil;
-#define afxEmptyString ((CString&)*(CString*)&_afxPchNil)
-
 /////////////////////////////////////////////////////////////////////////////
 // class CObject is the root of all compliant objects
 
-class AFX_NOVTABLE CObject
+class CObject
 {
 public:
 
@@ -343,15 +295,13 @@ private:
 /////////////////////////////////////////////////////////////////////////////
 // Exceptions
 
-class AFX_NOVTABLE CException : public CObject
+class CException : public CObject
 {
 public:
 // Constructors
 	CException();
 
 // Operations
-	void Delete();  // use to delete exception in 'catch' block
-
 	virtual BOOL GetErrorMessage(LPTSTR lpszError, UINT nMaxError,
 		PUINT pnHelpContext = NULL);
 
@@ -359,65 +309,6 @@ public:
 public:
 	virtual ~CException();
 };
-
-// for THROW_LAST auto-delete backward compatiblity
-void AFXAPI AfxThrowLastCleanup();
-
-// other out-of-line helper functions
-void AFXAPI AfxTryCleanup();
-
-// Placed on frame for EXCEPTION linkage, or CException cleanup
-struct AFX_EXCEPTION_LINK
-{
-	AFX_EXCEPTION_LINK* m_pLinkPrev;    // previous top, next in handler chain
-	CException* m_pException;   // current exception (NULL in TRY block)
-
-	AFX_EXCEPTION_LINK();       // for initialization and linking
-	~AFX_EXCEPTION_LINK()       // for cleanup and unlinking
-		{ AfxTryCleanup(); };
-};
-
-// Exception global state - never access directly
-struct AFX_EXCEPTION_CONTEXT
-{
-	AFX_EXCEPTION_LINK* m_pLinkTop;
-
-	// Note: most of the exception context is now in the AFX_EXCEPTION_LINK
-};
-
-/////////////////////////////////////////////////////////////////////////////
-// Exception macros using try, catch and throw
-//  (for backward compatibility to previous versions of MFC)
-
-#define TRY { AFX_EXCEPTION_LINK _afxExceptionLink; try {
-
-#define CATCH(class, e) } catch (class* e) \
-	{ ASSERT(e->IsKindOf(RUNTIME_CLASS(class))); \
-		_afxExceptionLink.m_pException = e;
-
-#define AND_CATCH(class, e) } catch (class* e) \
-	{ ASSERT(e->IsKindOf(RUNTIME_CLASS(class))); \
-		_afxExceptionLink.m_pException = e;
-
-#define END_CATCH } }
-
-#define THROW(e) throw e
-#define THROW_LAST() (AfxThrowLastCleanup(), throw)
-
-// Advanced macros for smaller code
-#define CATCH_ALL(e) } catch (CException* e) \
-	{ { ASSERT(e->IsKindOf(RUNTIME_CLASS(CException))); \
-		_afxExceptionLink.m_pException = e;
-
-#define AND_CATCH_ALL(e) } catch (CException* e) \
-	{ { ASSERT(e->IsKindOf(RUNTIME_CLASS(CException))); \
-		_afxExceptionLink.m_pException = e;
-
-#define END_CATCH_ALL } } }
-
-#define END_TRY } catch (CException* e) \
-	{ ASSERT(e->IsKindOf(RUNTIME_CLASS(CException))); \
-		_afxExceptionLink.m_pException = e; } }
 
 /////////////////////////////////////////////////////////////////////////////
 // Standard Exception classes
@@ -509,7 +400,6 @@ public:
 
 // Constructors
 	CFile();
-	CFile(int hFile);
         void PASCAL operator delete(void * p);
 
 // Attributes
@@ -618,10 +508,6 @@ struct CFileStatus
 
 /////////////////////////////////////////////////////////////////////////////
 // Special include for Win32s compatibility
-
-#ifdef _AFX_PACKING
-#pragma pack(pop)
-#endif
 
 /////////////////////////////////////////////////////////////////////////////
 // Inline function declarations

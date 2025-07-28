@@ -47,7 +47,7 @@ BOOL CFileException::GetErrorMessage(LPTSTR lpszError, UINT nMaxError,
 void AFXAPI AfxThrowFileException(int cause, LONG lOsError,
 	LPCTSTR lpszFileName /* == NULL */)
 {
-	THROW(new CFileException(cause, lOsError, lpszFileName));
+	throw new CFileException(cause, lOsError, lpszFileName);
 }
 
 int PASCAL CFileException::OsErrorToException(LONG lOsErr)

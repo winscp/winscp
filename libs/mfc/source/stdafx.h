@@ -14,11 +14,8 @@
 // MFC inline constructors (including compiler generated) can get deep
 #pragma inline_depth(16)
 
-#define AFX_COMDAT __declspec(selectany)
-
 // core headers
 #include "afx.h"
-#include "afxplex_.h"
 
 // public headers
 #include "afxres.h"
@@ -29,25 +26,11 @@ inline HINSTANCE AFXAPI AfxGetResourceHandle()
 int AFXAPI AfxLoadString(UINT nIDS, LPTSTR lpszBuf, UINT nMaxBuf = 256);
 #define _countof(array) (sizeof(array)/sizeof(array[0]))
 BOOL AFXAPI AfxFullPath(LPTSTR lpszPathOut, LPCTSTR lpszFileIn);
-void AFXAPI AfxGetRoot(LPCTSTR lpszPath, CString& strRoot);
 
 #include <stddef.h>
 #include <limits.h>
 #include <malloc.h>
 #include <new.h>
-
-// implementation uses _AFX_PACKING as well
-#ifdef _AFX_PACKING
-#ifndef ALL_WARNINGS
-#pragma warning(disable: 4103)
-#endif
-#ifndef __BORLANDC__
-// In Borland C++ we set the packing to 4 in the BCC32.CFG file
-// This is because the inclusion of the following pragma line disables our
-// Pre-Compiled-Headers
-#pragma pack(_AFX_PACKING)
-#endif // __BORLANDC__
-#endif
 
 // MFC does not rely on auto-delete semantics of the TRY..CATCH macros,
 //  therefore those macros are mapped to something closer to the native
@@ -81,8 +64,5 @@ void AFXAPI AfxGetRoot(LPCTSTR lpszPath, CString& strRoot);
 
 // Because of the above definitions of TRY...CATCH it is necessary to
 //  explicitly delete exception objects at the catch site.
-
-#define min std::min
-#define max std::max
 
 /////////////////////////////////////////////////////////////////////////////
