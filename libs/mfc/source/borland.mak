@@ -41,7 +41,7 @@ OBJS=$(CPP_OBJS)
 # Set CPPFLAGS for use with .cpp.obj and .c.obj rules
 # Define rule for use with OBJ directory
 
-CPPFLAGS=$(CFLAG_COMMON) $(CL_OPT) -D$(DEFS:;= -D)
+CPPFLAGS=$(CFLAG_CPP) $(CL_OPT) -D$(DEFS:;= -D)
 
 BORFLAGS=$(CPPFLAGS) -I$(INCL:;= -I)
 

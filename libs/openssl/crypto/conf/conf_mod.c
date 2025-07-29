@@ -48,7 +48,9 @@
 #define ossl_rcu_write_unlock CRYPTO_THREAD_unlock
 #define ossl_rcu_read_unlock CRYPTO_THREAD_unlock
 #define ossl_synchronize_rcu(lock)
+#undef ossl_rcu_deref
 #define ossl_rcu_deref(p) (*(p))
+#undef ossl_rcu_assign_ptr
 #define ossl_rcu_assign_ptr(p, v) (*(p)) = (*(v))
 
 #endif // WINSCP

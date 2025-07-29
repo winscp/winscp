@@ -68,7 +68,7 @@ void S3_put_object(const S3BucketContext *bucketContext, const char *key,
         putProperties,                                // putProperties
         handler->responseHandler.propertiesCallback,  // propertiesCallback
         handler->putObjectDataCallback,               // toS3Callback
-        contentLength,                                // toS3CallbackTotalSize
+        static_cast<int64_t>(contentLength),          // toS3CallbackTotalSize (WINSCP cast)
         0,                                            // fromS3Callback
         handler->responseHandler.completeCallback,    // completeCallback
         callbackData,                                 // callbackData
@@ -302,8 +302,8 @@ void S3_get_object(const S3BucketContext *bucketContext, const char *key,
         0,                                            // copySourceBucketName
         0,                                            // copySourceKey
         getConditions,                                // getConditions
-        startByte,                                    // startByte
-        byteCount,                                    // byteCount
+        static_cast<size_t>(startByte),               // startByte (WINSCP cast)
+        static_cast<size_t>(byteCount),               // byteCount (WINSCP cast)
         0,                                            // putProperties
         handler->responseHandler.propertiesCallback,  // propertiesCallback
         0,                                            // toS3Callback

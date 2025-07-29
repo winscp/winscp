@@ -33,8 +33,9 @@ CFLAG=$(CFLAG) -D$(DEFINES:;= -D)
 
 # Copied from generated OpenSSL "makefile"
 # (but the OPENSSL_BUILDING_OPENSSL, _stricmp, _strnicmp and _setmode are not needed)
+# (and DSO_WIN32 removed as it clashes with dso_conf.h)
 CFLAG= $(CFLAG) \
-    -D"OPENSSL_BUILDING_OPENSSL" -D"WIN32_LEAN_AND_MEAN" -D"OPENSSL_SYS_WIN32" -D"L_ENDIAN" -D"DSO_WIN32" \
+    -D"OPENSSL_BUILDING_OPENSSL" -D"WIN32_LEAN_AND_MEAN" -D"OPENSSL_SYS_WIN32" -D"L_ENDIAN" \
     -D"_stricmp=stricmp" -D"_strnicmp=strnicmp" -D"_malloca=malloc" -D"_freea=free" -D"_setmode=setmode" \
     -D"NDEBUG"
 
@@ -70,7 +71,7 @@ O_CRYPTO=  $(OUT_D)\$(CRYPTO).lib
 # Don't touch anything below this point
 ######################################################
 
-INC=-Iinclude -Icommon\include -Iproviders\implementations\include -Iproviders\common\include
+INC=-Iinclude -Icommon\include -Iproviders\implementations\include -Iproviders\common\include -I.
 LIB_CFLAGS=$(CFLAG) $(INC)
 LIBS_DEP=$(O_CRYPTO) $(O_SSL)
 

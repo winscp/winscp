@@ -58,7 +58,7 @@
 #pragma warning(disable: 4390)  // empty controlled statement
 #endif //!ALL_WARNINGS
 
-#define UNUSED(x) x
+#define UNUSED(x) (static_cast<const void *>(&x) == static_cast<const void *>(&x))
 
 /////////////////////////////////////////////////////////////////////////////
 // Basic object model

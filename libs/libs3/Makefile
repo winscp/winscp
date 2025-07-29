@@ -3,9 +3,8 @@
 # Set your compiler options
 DEFINES = WIN32;WIN32_LEAN_AND_MEAN;WINSCP;NE_LFS
 WARNINGS = -w-aus -w-par
-# Compile like C++ (it's probably only to support newer features and won't be needed with Clang)
-CFLAG = -P
-CFLAG = $(CFLAG_COMMON) $(CFLAG) -D$(DEFINES:;= -D) $(WARNINGS)
+# Compile like C++
+CFLAG = $(CFLAG_CPP) -D$(DEFINES:;= -D) $(WARNINGS)
 # The output directory for all the temporary muck
 TMP_D=tmp
 
