@@ -9,21 +9,15 @@
 // Microsoft Foundation Classes product.
 
 #include "stdafx.h"
-#include <errno.h>
-#include <io.h>
-#include <sys\types.h>
-#include <sys\stat.h>
 
 ////////////////////////////////////////////////////////////////////////////
-// Status information for all file classes
-// In this file so everyone doesn't get the CTime package
 
-BOOL PASCAL CFile::GetStatus(LPCTSTR lpszFileName, CFileStatus& rStatus)
+BOOL CFile::IsValid(LPCTSTR lpszFileName)
 {
 	// attempt to fully qualify path first
-	if (!AfxFullPath(rStatus.m_szFullName, lpszFileName))
+	TCHAR m_szFullName[_MAX_PATH];
+	if (!AfxFullPath(m_szFullName, lpszFileName))
 	{
-		rStatus.m_szFullName[0] = '\0';
 		return FALSE;
 	}
 
@@ -31,26 +25,6 @@ BOOL PASCAL CFile::GetStatus(LPCTSTR lpszFileName, CFileStatus& rStatus)
 	HANDLE hFind = FindFirstFile((LPTSTR)lpszFileName, &findFileData);
 	if (hFind == INVALID_HANDLE_VALUE)
 		return FALSE;
-	VERIFY(FindClose(hFind));
-
-	// strip attribute of NORMAL bit, our API doesn't have a "normal" bit.
-	rStatus.m_attribute = (BYTE)
-		(findFileData.dwFileAttributes & ~FILE_ATTRIBUTE_NORMAL);
-
-	// get just the low DWORD of the file size
-	ASSERT(findFileData.nFileSizeHigh == 0);
-	rStatus.m_size = (LONG)findFileData.nFileSizeLow;
-
-	// convert times as appropriate
-	rStatus.m_ctime = CTime(findFileData.ftCreationTime);
-	rStatus.m_atime = CTime(findFileData.ftLastAccessTime);
-	rStatus.m_mtime = CTime(findFileData.ftLastWriteTime);
-
-	if (rStatus.m_ctime.GetTime() == 0)
-		rStatus.m_ctime = rStatus.m_mtime;
-
-	if (rStatus.m_atime.GetTime() == 0)
-		rStatus.m_atime = rStatus.m_mtime;
 
 	return TRUE;
 }

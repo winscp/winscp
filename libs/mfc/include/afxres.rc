@@ -11,9 +11,7 @@
 #ifndef __AFXRES_RC__
 #define __AFXRES_RC__
 
-#ifndef __AFXRES_H__
-	#include <afxres.h>
-#endif
+#include <afxres.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // Strings

@@ -9,12 +9,11 @@
 // Microsoft Foundation Classes product.
 
 #include "stdafx.h"
-#include <errno.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // CFileException
 
-void PASCAL CFileException::ThrowOsError(LONG lOsError,
+void CFileException::ThrowOsError(LONG lOsError,
 	LPCTSTR lpszFileName /* = NULL */)
 {
 	if (lOsError != 0)
@@ -50,7 +49,7 @@ void AFXAPI AfxThrowFileException(int cause, LONG lOsError,
 	throw new CFileException(cause, lOsError, lpszFileName);
 }
 
-int PASCAL CFileException::OsErrorToException(LONG lOsErr)
+int CFileException::OsErrorToException(LONG lOsErr)
 {
 	// NT Error codes
 	switch ((UINT)lOsErr)

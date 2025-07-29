@@ -12,21 +12,9 @@
 
 #ifdef _AFX_INLINE
 
-// CObject
-_AFX_INLINE CObject::CObject()
-	{ }
-_AFX_INLINE CObject::~CObject()
-	{ }
-
-// exceptions
-_AFX_INLINE CException::~CException()
-	{ }
-
 _AFX_INLINE CFileException::CFileException(int cause, LONG lOsError,
 	LPCTSTR pstrFileName /* = NULL */)
 	{ m_cause = cause; m_lOsError = lOsError; m_strFileName = pstrFileName; }
-_AFX_INLINE CFileException::~CFileException()
-	{ }
 
 // CString
 _AFX_INLINE CString::CString()

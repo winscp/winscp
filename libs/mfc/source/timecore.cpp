@@ -72,7 +72,7 @@ CTime::CTime(const FILETIME& fileTime, int nDST)
 	*this = timeT;
 }
 
-CTime PASCAL CTime::GetCurrentTime()
+CTime CTime::GetCurrentTime()
 // return the current system time
 {
 	return CTime(::time(NULL));

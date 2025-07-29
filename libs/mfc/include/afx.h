@@ -20,53 +20,9 @@
 #include <afxver_.h>        // Target version control
 
 /////////////////////////////////////////////////////////////////////////////
-// Classes declared in this file
-//   in addition to standard primitive data types and various helper macros
-
-class CObject;                        // the root of all objects classes
-
-	class CException;                 // the root of all exceptions
-		class CFileException;         // file exception
-
-	class CFile;                      // raw binary file
-
-// Non CObject classes
-struct CFileStatus;                   // file status information
-
-/////////////////////////////////////////////////////////////////////////////
 // Other includes from standard "C" runtimes
 
-#ifndef _INC_STRING
-	#include <string.h>
-#endif
-#ifndef _INC_STDIO
-	#include <stdio.h>
-#endif
-#ifndef _INC_STDLIB
-	#include <stdlib.h>
-#endif
-#ifndef _INC_TIME
-	#include <time.h>
-#endif
-#ifndef _INC_LIMITS
-	#include <limits.h>
-#endif
-#ifndef _INC_STDDEF
-	#include <stddef.h>
-#endif
 #include <System.hpp>
-
-/////////////////////////////////////////////////////////////////////////////
-// Basic types
-
-// Standard constants
-#undef FALSE
-#undef TRUE
-#undef NULL
-
-#define FALSE   0
-#define TRUE    1
-#define NULL    0
 
 /////////////////////////////////////////////////////////////////////////////
 // Diagnostic support
@@ -247,9 +203,9 @@ public:
 	// simple formatting
 
 	// printf-like formatting using passed string
-	void AFX_CDECL Format(LPCTSTR lpszFormat, ...);
+	void Format(LPCTSTR lpszFormat, ...);
 	// printf-like formatting using referenced string resource
-	void AFX_CDECL Format(UINT nFormatID, ...);
+	void Format(UINT nFormatID, ...);
 	// printf-like formatting using variable arguments parameter
 	void FormatV(LPCTSTR lpszFormat, va_list argList);
 
@@ -273,47 +229,9 @@ bool AFXAPI operator<(const CString& s1, LPCTSTR s2);
 bool AFXAPI operator<(LPCTSTR s1, const CString& s2);
 
 /////////////////////////////////////////////////////////////////////////////
-// class CObject is the root of all compliant objects
-
-class CObject
-{
-public:
-
-// Object model (types, destruction, allocation)
-	virtual ~CObject();  // virtual destructors are necessary
-
-	// Disable the copy constructor and assignment by default so you will get
-	//   compiler errors instead of unexpected behaviour if you pass objects
-	//   by value or assign objects.
-protected:
-	CObject();
-private:
-	CObject(const CObject& objectSrc);              // no implementation
-	void operator=(const CObject& objectSrc);       // no implementation
-};
-
-/////////////////////////////////////////////////////////////////////////////
-// Exceptions
-
-class CException : public CObject
-{
-public:
-// Constructors
-	CException();
-
-// Operations
-	virtual BOOL GetErrorMessage(LPTSTR lpszError, UINT nMaxError,
-		PUINT pnHelpContext = NULL);
-
-// Implementation
-public:
-	virtual ~CException();
-};
-
-/////////////////////////////////////////////////////////////////////////////
 // Standard Exception classes
 
-class CFileException : public CException
+class CFileException
 {
 public:
 	enum {
@@ -345,15 +263,14 @@ public:
 
 // Operations
 	// convert a OS dependent error code to a Cause
-	static int PASCAL OsErrorToException(LONG lOsError);
+	static int OsErrorToException(LONG lOsError);
 
 	// helper functions to throw exception after converting to a Cause
-	static void PASCAL ThrowOsError(LONG lOsError, LPCTSTR lpszFileName = NULL);
+	static void ThrowOsError(LONG lOsError, LPCTSTR lpszFileName = NULL);
 
 // Implementation
 public:
-	virtual ~CFileException();
-	virtual BOOL GetErrorMessage(LPTSTR lpszError, UINT nMaxError,
+	BOOL GetErrorMessage(LPTSTR lpszError, UINT nMaxError,
 		PUINT pnHelpContext = NULL);
 };
 
@@ -366,7 +283,7 @@ void AFXAPI AfxThrowFileException(int cause, LONG lOsError = -1,
 /////////////////////////////////////////////////////////////////////////////
 // File - raw unbuffered disk file I/O
 
-class CFile : public CObject
+class CFile
 {
 public:
 // Flag values
@@ -386,21 +303,10 @@ public:
 		typeBinary =   (int)0x8000 // derived classes only
 		};
 
-	enum Attribute {
-		normal =    0x00,
-		readOnly =  0x01,
-		hidden =    0x02,
-		system =    0x04,
-		volume =    0x08,
-		directory = 0x10,
-		archive =   0x20
-		};
-
 	enum { hFileNull = -1 };
 
 // Constructors
 	CFile();
-        void PASCAL operator delete(void * p);
 
 // Attributes
 	UINT m_hFile;
@@ -409,8 +315,7 @@ public:
 	BOOL Open(LPCTSTR lpszFileName, UINT nOpenFlags,
 		CFileException* pError = NULL);
 
-	static BOOL PASCAL GetStatus(LPCTSTR lpszFileName,
-				CFileStatus& rStatus);
+	static BOOL IsValid(LPCTSTR lpszFileName);
 
 // Overridables
 	UINT Read(void* lpBuf, UINT nCount);
@@ -459,7 +364,7 @@ class CTime
 public:
 
 // Constructors
-	static CTime PASCAL GetCurrentTime();
+	static CTime GetCurrentTime();
 
 	CTime();
 	CTime(time_t time);
@@ -491,23 +396,6 @@ public:
 private:
 	time_t m_time;
 };
-
-/////////////////////////////////////////////////////////////////////////////
-// File status
-
-struct CFileStatus
-{
-	CTime m_ctime;          // creation date/time of file
-	CTime m_mtime;          // last modification date/time of file
-	CTime m_atime;          // last access date/time of file
-	LONG m_size;            // logical size of file in bytes
-	BYTE m_attribute;       // logical OR of CFile::Attribute enum values
-	BYTE _m_padding;        // pad the structure to a WORD
-	TCHAR m_szFullName[_MAX_PATH]; // absolute path name
-};
-
-/////////////////////////////////////////////////////////////////////////////
-// Special include for Win32s compatibility
 
 /////////////////////////////////////////////////////////////////////////////
 // Inline function declarations

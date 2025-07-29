@@ -5012,13 +5012,13 @@ int CFtpControlSocket::CheckOverwriteFile()
   CFileTransferData *pData = reinterpret_cast<CFileTransferData *>(m_Operation.pData);
 
   int nReplyError = 0;
-  CFileStatus64 status;
+  CFileStatus status;
   if ((pData->transferfile.OnTransferOut != NULL) ||
       (pData->transferfile.OnTransferIn != NULL))
   {
     m_Operation.nOpState = FILETRANSFER_TYPE;
   }
-  else if (!GetStatus64(pData->transferfile.localfile, status))
+  else if (!GetFileStatus(pData->transferfile.localfile, status))
   {
     if (!pData->transferfile.get)
     {
@@ -5047,22 +5047,8 @@ int CFtpControlSocket::CheckOverwriteFile()
 
 
       CTime *localtime = NULL;
-      try
-      {
-        if (status.m_has_mtime && status.m_mtime != -1)
-          localtime = new CTime(status.m_mtime);
-      }
-      catch (CException* e)
-      {
-        TCHAR buffer[1024];
-        CString str =L"Exception creating CTime object: ";
-        if (e->GetErrorMessage(buffer, 1024, NULL))
-          str += buffer;
-        else
-          str += L"Unknown exception";
-        LogMessageRaw(FZ_LOG_WARNING, str);
-        localtime = NULL;
-      }
+      if (status.m_mtime != -1)
+        localtime = new CTime(status.m_mtime);
       BOOL bRemoteFileExists = FALSE;
       __int64 remotesize = -1;
       t_directory::t_direntry::t_date remotetime;
@@ -5171,8 +5157,7 @@ void CFtpControlSocket::SetFileExistsAction(int nAction, COverwriteRequestData *
   case FILEEXISTS_RENAME:
     if (pTransferData->transferfile.get)
     {
-      CFileStatus64 status;
-      if (GetStatus64(pData->FileName1, status))
+      if (CFile::IsValid(pData->FileName1))
       {
         ShowStatus(IDS_ERRORMSG_NAMEINUSE, FZ_LOG_ERROR);
         nReplyError=  FZ_REPLY_CRITICALERROR;

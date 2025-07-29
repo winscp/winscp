@@ -11,10 +11,6 @@
 #ifndef __AFXCONV_H__
 #define __AFXCONV_H__
 
-#ifndef _OBJBASE_H_
-#include <objbase.h>
-#endif
-
 /////////////////////////////////////////////////////////////////////////////
 // Global UNICODE<>ANSI translation helpers
 

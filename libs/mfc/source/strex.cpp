@@ -189,7 +189,7 @@ void CString::FormatV(LPCTSTR lpszFormat, va_list argList)
 }
 
 // formatting (using wsprintf style formatting)
-void AFX_CDECL CString::Format(LPCTSTR lpszFormat, ...)
+void CString::Format(LPCTSTR lpszFormat, ...)
 {
 	ASSERT(AfxIsValidString(lpszFormat));
 
@@ -199,7 +199,7 @@ void AFX_CDECL CString::Format(LPCTSTR lpszFormat, ...)
 	va_end(argList);
 }
 
-void AFX_CDECL CString::Format(UINT nFormatID, ...)
+void CString::Format(UINT nFormatID, ...)
 {
 	CString strFormat;
 	VERIFY(strFormat.LoadString(nFormatID) != 0);

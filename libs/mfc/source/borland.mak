@@ -1,22 +1,11 @@
 !include ../../Makefile.inc
 
 #############################################################################
-# Lib Path
-LPATH=..\..\lib;..\..\lib\psdk
-
-# MFC Include directory base
-MFCINCL=..\include
-
-# BC Include directory
-BCINCL=..\..\include;..\..\include\atl
+INCL=..\include
 
 BASE=W
 MODEL=U
-TARGDEFS=_UNICODE;UNICODE;WINSCP
-TARGDEFS=$(TARGDEFS);_MBCS;_MT=1;_X86_
-
-LFLAGS=$(LFLAGS) /j$(LPATH) /L$(LPATH)
-LFLAGS=$(LFLAGS) /w-
+DEFS=_UNICODE;UNICODE;WINSCP;_WINDOWS
 
 #
 # Object File Directory
@@ -31,23 +20,16 @@ GOAL=$(MODEL)afxc$(BASE)
 # -VF4 Support MFC 4.0
 CL_OPT=-VF4 -w-
 
-DEFS=_declspec=__declspec;_WCHAR_T_DEFINED;__MSC;_ANONYMOUS_STRUCT;_MSC_VER=1200;_WINDOWS
-DEFS=$(DEFS)$(DEBDEFS);$(TARGDEFS)
-
 #############################################################################
 # Library Components
 
-OBJECT = except.obj
-	
 FILES = filecore.obj filex.obj filest.obj
 
 MISC = strcore.obj strex.obj timecore.obj
 
 WINMISC = winstr.obj
 
-INLINES =
-
-CPP_OBJS=$(OBJECT) $(FILES)  $(MISC) $(WINMISC)
+CPP_OBJS=$(FILES) $(MISC) $(WINMISC)
 
 OBJS=$(CPP_OBJS)
 
@@ -60,8 +42,6 @@ OBJS=$(CPP_OBJS)
 # Define rule for use with OBJ directory
 
 CPPFLAGS=$(CFLAG_COMMON) $(CL_OPT) -D$(DEFS:;= -D)
-
-INCL=$(BCINCL);$(MFCINCL)
 
 BORFLAGS=$(CPPFLAGS) -I$(INCL:;= -I)
 

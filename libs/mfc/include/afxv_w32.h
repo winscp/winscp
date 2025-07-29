@@ -48,23 +48,6 @@
 #pragma warning(disable: 4201)  // winnt.h uses nameless structs
 #endif
 
-#define _WIN32_WINDOWS 0x0500
 #include <windows.h>
-
-#ifndef EXPORT
-#define EXPORT
-#endif
-
-#ifndef _INC_TCHAR
-	#include <tchar.h>      // used for ANSI v.s. UNICODE abstraction
-#endif
-#ifdef _MBCS
-#ifndef _INC_MBCTYPE
-	#include <mbctype.h>
-#endif
-#ifndef _INC_MBSTRING
-	#include <mbstring.h>
-#endif
-#endif
 
 /////////////////////////////////////////////////////////////////////////////

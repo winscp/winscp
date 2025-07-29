@@ -15,9 +15,7 @@
 	#error ATL requires C++ compilation (use a .cpp suffix)
 #endif
 
-#ifndef _INC_MALLOC
 #include <malloc.h>
-#endif // _INC_MALLOC
 
 #pragma pack(push,8)
 

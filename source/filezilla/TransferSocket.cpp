@@ -1155,7 +1155,7 @@ int CTransferSocket::ReadDataFromFile(char *buffer, int len)
     }
     return read;
   }
-  catch (CException* e)
+  catch (CFileException* e)
   {
     TCHAR error[BUFSIZE];
     if (e->GetErrorMessage(error, BUFSIZE))
