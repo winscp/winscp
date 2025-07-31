@@ -32,6 +32,7 @@ class TCollectedFileList;
 struct TLocalFileHandle;
 struct TNeonCertificateData;
 class TQueueItem;
+class TTerminalUI;
 typedef std::vector<__int64> TCalculatedSizes;
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TQueryUserEvent)
@@ -126,7 +127,7 @@ const int tfAutoResume = 0x04;
 const int tfPreCreateDir = 0x08;
 const int tfUseFileTransferAny = 0x10;
 //---------------------------------------------------------------------------
-class TTerminal : public TObject, public TSessionUI
+class TTerminal : public TObject
 {
 public:
   // TScript::SynchronizeProc relies on the order
@@ -159,6 +160,7 @@ friend class TCallbackGuard;
 friend class TSecondaryTerminal;
 friend class TRetryOperationLoop;
 friend class TParallelOperation;
+friend class TTerminalUI;
 
 private:
   TSessionData * FSessionData;
@@ -237,6 +239,7 @@ private:
   TFileOperationProgressType::TPersistence * FOperationProgressPersistence;
   TOnceDoneOperation FOperationProgressOnceDoneOperation;
   UnicodeString FCollectedCalculatedChecksum;
+  TTerminalUI * FTerminalUI;
 
   void __fastcall CommandError(Exception * E, const UnicodeString Msg);
   unsigned int __fastcall CommandError(Exception * E, const UnicodeString Msg,

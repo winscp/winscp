@@ -323,6 +323,88 @@ void __fastcall TTunnelUI::ProcessGUI()
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+class TTerminalUI : public TSessionUI
+{
+public:
+  __fastcall TTerminalUI(TTerminal * Terminal);
+
+  virtual void __fastcall Information(const UnicodeString & Str);
+  virtual unsigned int __fastcall QueryUser(
+    const UnicodeString Query, TStrings * MoreMessages, unsigned int Answers, const TQueryParams * Params,
+    TQueryType QueryType);
+  virtual unsigned int __fastcall QueryUserException(
+    const UnicodeString Query, Exception * E, unsigned int Answers, const TQueryParams * Params,
+    TQueryType QueryType);
+  virtual bool __fastcall PromptUser(
+    TSessionData * Data, TPromptKind Kind, UnicodeString Name, UnicodeString Instructions, TStrings * Prompts,
+    TStrings * Results);
+  virtual void __fastcall DisplayBanner(const UnicodeString & Banner);
+  virtual void __fastcall FatalError(Exception * E, UnicodeString Msg, UnicodeString HelpContext);
+  virtual void __fastcall HandleExtendedException(Exception * E);
+  virtual void __fastcall Closed();
+  virtual void __fastcall ProcessGUI();
+
+private:
+  TTerminal * FTerminal;
+};
+//---------------------------------------------------------------------------
+__fastcall TTerminalUI::TTerminalUI(TTerminal * Terminal) :
+  FTerminal(Terminal)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalUI::Information(const UnicodeString & Str)
+{
+  FTerminal->Information(Str);
+}
+//---------------------------------------------------------------------------
+unsigned int __fastcall TTerminalUI::QueryUser(
+  const UnicodeString Query, TStrings * MoreMessages, unsigned int Answers, const TQueryParams * Params,
+  TQueryType QueryType)
+{
+  return FTerminal->QueryUser(Query, MoreMessages, Answers, Params, QueryType);
+}
+//---------------------------------------------------------------------------
+unsigned int __fastcall TTerminalUI::QueryUserException(
+  const UnicodeString Query, Exception * E, unsigned int Answers, const TQueryParams * Params,
+  TQueryType QueryType)
+{
+  return FTerminal->QueryUserException(Query, E, Answers, Params, QueryType);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminalUI::PromptUser(
+  TSessionData * Data, TPromptKind Kind, UnicodeString Name, UnicodeString Instructions, TStrings * Prompts,
+  TStrings * Results)
+{
+  return FTerminal->PromptUser(Data, Kind, Name, Instructions, Prompts, Results);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalUI::DisplayBanner(const UnicodeString & Banner)
+{
+  FTerminal->DisplayBanner(Banner);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalUI::FatalError(Exception * E, UnicodeString Msg, UnicodeString HelpContext)
+{
+  FTerminal->FatalError(E, Msg, HelpContext);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalUI::HandleExtendedException(Exception * E)
+{
+  FTerminal->HandleExtendedException(E);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalUI::Closed()
+{
+  FTerminal->Closed();
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalUI::ProcessGUI()
+{
+  FTerminal->ProcessGUI();
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 class TCallbackGuard
 {
 public:
@@ -1212,7 +1294,8 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData, TConfiguration * Con
   // Cache it, in case it changes (particularly by ConfigureTunnel)
   FPasswordEncryptionKey = SessionData->GetSessionPasswordEncryptionKey();
   TDateTime Started = Now(); // use the same time for session and XML log
-  FLog = new TSessionLog(this, Started, FSessionData, Configuration);
+  FTerminalUI = new TTerminalUI(this);
+  FLog = new TSessionLog(FTerminalUI, Started, FSessionData, Configuration);
   if (ActionLog != NULL)
   {
     FActionLog = ActionLog;
@@ -1220,7 +1303,7 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData, TConfiguration * Con
   }
   else
   {
-    FActionLog = new TActionLog(this, Started, FSessionData, Configuration);
+    FActionLog = new TActionLog(FTerminalUI, Started, FSessionData, Configuration);
     FActionLogOwned = true;
   }
   FFiles = new TRemoteDirectory(this);
@@ -1305,6 +1388,7 @@ __fastcall TTerminal::~TTerminal()
   delete FDirectoryCache;
   delete FDirectoryChangesCache;
   SAFE_DESTROY(FSessionData);
+  SAFE_DESTROY_EX(TTerminalUI, FTerminalUI);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::Idle()
@@ -1539,7 +1623,7 @@ void __fastcall TTerminal::Open()
               DebugAssert(FSecureShell == NULL);
               try
               {
-                FSecureShell = new TSecureShell(this, FSessionData, Log, Configuration);
+                FSecureShell = new TSecureShell(FTerminalUI, FSessionData, Log, Configuration);
                 try
                 {
                   // there will be only one channel in this session
@@ -1730,7 +1814,7 @@ void __fastcall TTerminal::OpenTunnel()
     FTunnelData = FSessionData->CreateTunnelData(FTunnelLocalPortNumber);
 
     // The Started argument is not used with Parent being set
-    FTunnelLog = new TSessionLog(this, TDateTime(), FTunnelData, Configuration);
+    FTunnelLog = new TSessionLog(FTerminalUI, TDateTime(), FTunnelData, Configuration);
     FTunnelLog->SetParent(FLog, L"Tunnel");
     FTunnelLog->ReflectSettings();
     FTunnelUI = new TTunnelUI(this);
