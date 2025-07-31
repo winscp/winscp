@@ -1458,7 +1458,7 @@ static TDateTime DirectoryReadingProgressDelay(0, 0, 1, 500);
 void __fastcall TTerminalManager::TerminalReadDirectoryProgress(
   TObject * Sender, int Progress, int ResolvedLinks, bool & Cancel)
 {
-  DebugAlwaysTrue((Sender == FOpeningTerminal) == (FAuthenticateForm != NULL));
+  DebugAssert((Sender == FOpeningTerminal) == (FAuthenticateForm != NULL));
   if (Progress == 0)
   {
     if ((ScpExplorer != NULL) && (Sender != FOpeningTerminal))

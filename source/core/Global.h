@@ -56,11 +56,13 @@ private:
 #ifndef DODEBUGGING
 #define DebugAssert(p)   ((void)0)
 #define DebugCheck(p) (p)
+#define DebugCheckNotEqual(p, e) (p)
 #define DebugFail()
 #else // ifndef DODEBUGGING
 void __fastcall DoAssert(const wchar_t * Message, const wchar_t * Filename, int LineNumber);
 #define DebugAssert(p) ((p) ? (void)0 : DoAssert(TEXT(#p), TEXT(__FILE__), __LINE__))
 #define DebugCheck(p) { bool __CHECK_RESULT__ = (p); DebugAssert(__CHECK_RESULT__); }
+#define DebugCheckNotEqual(p, e) DebugCheck((p) != e)
 #define DebugFail() DebugAssert(false)
 #endif // ifndef DODEBUGGING
 //---------------------------------------------------------------------------

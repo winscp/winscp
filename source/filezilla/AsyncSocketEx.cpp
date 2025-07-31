@@ -868,7 +868,7 @@ void CAsyncSocketEx::Close()
     m_pFirstLayer->Close();
   if (m_SocketData.hSocket != INVALID_SOCKET)
   {
-    DebugCheck((closesocket(m_SocketData.hSocket) != SOCKET_ERROR));
+    DebugCheckNotEqual(closesocket(m_SocketData.hSocket), SOCKET_ERROR);
     DetachHandle(m_SocketData.hSocket);
     m_SocketData.hSocket = INVALID_SOCKET;
   }

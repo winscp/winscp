@@ -3569,7 +3569,7 @@ void __fastcall TCustomScpExplorerForm::AnyInternalEditorModified(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::LocalEditorClosed(TObject * Sender, bool /*Forced*/)
 {
-  DebugCheck(FLocalEditors->Extract(Sender) != NULL);
+  DebugCheckNotEqual(FLocalEditors->Extract(Sender), NULL);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TemporaryDirectoryForRemoteFiles(
@@ -5615,8 +5615,8 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
       // Multiple tabs, but all are inactive or local, and saving of worspace is not enabled
       else
       {
-        DebugAlwaysTrue(Manager->Count > 1);
-        DebugAlwaysTrue(!WinConfiguration->AutoSaveWorkspace);
+        DebugAssert(Manager->Count > 1);
+        DebugAssert(!WinConfiguration->AutoSaveWorkspace);
         Message = LoadStr(CLOSE_WORKSPACE);
       }
 
@@ -7394,6 +7394,7 @@ void __fastcall TCustomScpExplorerForm::FileTerminalRemoved(const UnicodeString 
   TEditedFileData * Data, TObject * /*Token*/, void * Arg)
 {
   TTerminal * Terminal = static_cast<TTerminal *>(Arg);
+  DebugUsedParam(FileName);
   DebugAssert(Terminal != NULL);
 
   if (Data->Terminal == Terminal)
@@ -12173,7 +12174,7 @@ void TCustomScpExplorerForm::CalculateDirectorySizes(TOperationSide Side)
 void __fastcall TCustomScpExplorerForm::DirectorySizeCalculated(
   TOperationSide Side, const UnicodeString & FileName, bool Success, bool NotCancelled)
 {
-  DebugAlwaysTrue(FCalculateSizeOperation != NULL);
+  DebugAssert(FCalculateSizeOperation != NULL);
 
   TListItem * Item = VisualiseOperationFinished(Side, FileName, false);
   TCustomDirView * ADirView = dynamic_cast<TCustomDirView *>(Item->Owner->Owner);

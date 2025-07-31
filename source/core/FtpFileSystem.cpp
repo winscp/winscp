@@ -587,7 +587,10 @@ void __fastcall TFTPFileSystem::Close()
   bool Opening = (FTerminal->Status == ssOpening);
   if (FFileZillaIntf->Close(Opening))
   {
-    DebugCheck(FLAGSET(WaitForCommandReply(false), TFileZillaIntf::REPLY_DISCONNECTED));
+    if (!FLAGSET(WaitForCommandReply(false), TFileZillaIntf::REPLY_DISCONNECTED))
+    {
+      DebugFail();
+    }
     Result = true;
   }
   else

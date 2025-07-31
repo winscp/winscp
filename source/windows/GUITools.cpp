@@ -320,7 +320,7 @@ TPuttyPasswordThread::TPuttyPasswordThread(const UnicodeString & Password, const
 //---------------------------------------------------------------------------
 __fastcall TPuttyPasswordThread::~TPuttyPasswordThread()
 {
-  DebugAlwaysTrue(FFinished);
+  DebugAssert(FFinished);
   AppLog(L"Disconnecting and closing password pipe");
   DisconnectNamedPipe(FPipe);
   CloseHandle(FPipe);
@@ -703,6 +703,7 @@ TObjectList * StartCreationDirectoryMonitorsOnEachDrive(unsigned int Filter, TFi
     catch (Exception & E)
     {
       // Ignore errors watching not-ready drives
+      DebugUsedParam(E);
     }
   }
   return Result.release();

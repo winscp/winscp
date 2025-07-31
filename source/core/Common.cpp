@@ -1635,10 +1635,12 @@ int __fastcall FileGetAttrFix(const UnicodeString & FileName)
       }
       catch (EOSError & E)
       {
+        DebugUsedParam(E);
         Result = -1;
       }
       catch (EDirectoryNotFoundException & E) // throws by FileSystemAttributes
       {
+        DebugUsedParam(E);
         Result = -1;
       }
     }
