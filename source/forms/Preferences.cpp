@@ -7,6 +7,7 @@
 #include <Common.h>
 #include <math.h>
 #include <limits>
+#include <algorithm>
 
 #include "Preferences.h"
 #include "Custom.h"

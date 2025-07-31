@@ -7,6 +7,7 @@
 #include "Queue.h"
 #include "Exceptions.h"
 #include <System.DateUtils.hpp>
+#include <algorithm>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

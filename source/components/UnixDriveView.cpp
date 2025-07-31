@@ -18,11 +18,6 @@
 
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-static inline void ValidCtrCheck(TUnixDriveView *)
-{
-  new TUnixDriveView(NULL);
-}
-//---------------------------------------------------------------------------
 namespace Unixdriveview
 {
   void __fastcall PACKAGE Register()

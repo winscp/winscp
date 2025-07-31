@@ -12,6 +12,7 @@
 #include <StrUtils.hpp>
 #include <CustomWinConfiguration.h>
 #include "ThemePageControl.h"
+#include <algorithm>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -19,11 +20,6 @@
 // https://www.codeproject.com/Articles/6355/XP-Themes-Tab-Control-in-any-orientation
 //---------------------------------------------------------------------------
 #define IDS_UTIL_TAB            L"TAB"
-//---------------------------------------------------------------------------
-static inline void ValidCtrCheck(TThemePageControl *)
-{
-  new TThemePageControl(NULL);
-}
 //---------------------------------------------------------------------------
 namespace Themepagecontrol
 {

@@ -28,11 +28,6 @@
 #define ASSERT_VALID_ITEM
 #endif
 //---------------------------------------------------------------------------
-static inline void ValidCtrCheck(TUnixDirView *)
-{
-  new TUnixDirView(NULL);
-}
-//---------------------------------------------------------------------------
 namespace Unixdirview
 {
   void __fastcall PACKAGE Register()

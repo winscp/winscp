@@ -3,6 +3,7 @@
 #pragma hdrstop
 
 #include <shlwapi.h>
+#include <algorithm>
 
 #include <Common.h>
 #include <Queue.h>

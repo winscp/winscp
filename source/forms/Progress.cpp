@@ -15,6 +15,7 @@
 #include <Consts.hpp>
 #include <HistoryComboBox.hpp>
 #include <windowsx.h>
+#include <algorithm>
 
 #include "Progress.h"
 //---------------------------------------------------------------------

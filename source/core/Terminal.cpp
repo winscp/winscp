@@ -201,6 +201,7 @@ class TTunnelUI : public TSessionUI
 {
 public:
   __fastcall TTunnelUI(TTerminal * Terminal);
+  virtual __fastcall ~TTunnelUI();
   virtual void __fastcall Information(const UnicodeString & Str);
   virtual unsigned int __fastcall QueryUser(const UnicodeString Query,
     TStrings * MoreMessages, unsigned int Answers, const TQueryParams * Params,
@@ -226,6 +227,10 @@ __fastcall TTunnelUI::TTunnelUI(TTerminal * Terminal)
 {
   FTerminal = Terminal;
   FTerminalThread = GetCurrentThreadId();
+}
+//---------------------------------------------------------------------------
+__fastcall TTunnelUI::~TTunnelUI()
+{
 }
 //---------------------------------------------------------------------------
 void __fastcall TTunnelUI::Information(const UnicodeString & Str)
