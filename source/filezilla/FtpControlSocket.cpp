@@ -5705,7 +5705,7 @@ _int64 CFtpControlSocket::GetSpeedLimit(enum transferDirection direction, CTime 
   return ( _int64)1000000000000;
 }
 
-_int64 CFtpControlSocket::GetAbleToUDSize( bool &beenWaiting, CTime &curTime, _int64 &curLimit, std::list<CFtpControlSocket::t_ActiveList>::iterator &iter, enum transferDirection direction, int nBufSize)
+_int64 CFtpControlSocket::GetAbleToUDSize( bool &beenWaiting, CTime &curTime, _int64 &curLimit, std::list<CFtpControlSocket::t_ActiveList>::iterator &iter, enum transferDirection direction)
 {
   beenWaiting = false;
 
@@ -5790,15 +5790,12 @@ _int64 CFtpControlSocket::GetAbleToUDSize( bool &beenWaiting, CTime &curTime, _i
 
   curTime = nowTime;
 
-  if (!nBufSize)
-    nBufSize = BUFSIZE;
-  if (ableToRead > nBufSize)
-    ableToRead = nBufSize;
+  ableToRead = std::min(ableToRead, static_cast<_int64>(BUFSIZE));
 
   return ableToRead;
 }
 
-_int64 CFtpControlSocket::GetAbleToTransferSize(enum transferDirection direction, bool &beenWaiting, int nBufSize)
+_int64 CFtpControlSocket::GetAbleToTransferSize(enum transferDirection direction, bool &beenWaiting)
 {
   m_SpeedLimitSync.Lock();
   std::list<t_ActiveList>::iterator iter;
@@ -5816,7 +5813,7 @@ _int64 CFtpControlSocket::GetAbleToTransferSize(enum transferDirection direction
     iter = m_InstanceList[direction].end();
     iter--;
   }
-  _int64 limit = GetAbleToUDSize(beenWaiting, m_CurrentTransferTime[direction], m_CurrentTransferLimit[direction], iter, direction, nBufSize);
+  _int64 limit = GetAbleToUDSize(beenWaiting, m_CurrentTransferTime[direction], m_CurrentTransferLimit[direction], iter, direction);
   m_SpeedLimitSync.Unlock();
   return limit;
 }

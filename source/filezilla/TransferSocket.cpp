@@ -73,6 +73,14 @@ CTransferSocket::~CTransferSocket()
   delete m_pListResult;
 }
 
+_int64 CTransferSocket::GetTransferSize(CFtpControlSocket::transferDirection direction, bool & beenWaiting)
+{
+  if (GetState() != closed)
+    return m_pOwner->GetAbleToTransferSize(direction, beenWaiting);
+  else
+    return BUFSIZE;
+}
+
 /////////////////////////////////////////////////////////////////////////////
 // Member-Funktion CTransferSocket
 void CTransferSocket::OnReceive(int nErrorCode)
@@ -138,11 +146,7 @@ void CTransferSocket::OnReceive(int nErrorCode)
       OnConnect(0);
 
     bool beenWaiting = false;
-    _int64 ableToRead;
-    if (GetState() != closed)
-      ableToRead = m_pOwner->GetAbleToTransferSize(CFtpControlSocket::download, beenWaiting);
-    else
-      ableToRead = BUFSIZE;
+    _int64 ableToRead = GetTransferSize(CFtpControlSocket::download, beenWaiting);
 
     if (!beenWaiting)
       DebugAssert(ableToRead);
@@ -485,51 +489,59 @@ void CTransferSocket::OnSend(int nErrorCode)
   if (!m_pBuffer)
     m_pBuffer = new char[BUFSIZE];
 
-  int numread;
-
-  bool beenWaiting = false;
-  _int64 currentBufferSize;
-  if (GetState() != closed)
-    currentBufferSize = m_pOwner->GetAbleToTransferSize(CFtpControlSocket::upload, beenWaiting);
-  else
-    currentBufferSize = BUFSIZE;
-
-  if (!currentBufferSize && !m_bufferpos)
-  {
-    // Not allowed to send yet, try later
-    TriggerEvent(FD_WRITE);
-    return;
-  }
-  else if (m_bufferpos < currentBufferSize)
-  {
-    numread = ReadDataFromFile(m_pBuffer + m_bufferpos, static_cast<int>(currentBufferSize - m_bufferpos));
-    if (numread < 0 )
-    {
-      return;
-    }
-    else if (!numread && !m_bufferpos)
-    {
-      CloseOnShutDownOrError(0);
-      return;
-    }
-  }
-  else
-    numread = 0;
-
-  DebugAssert((numread+m_bufferpos) <= BUFSIZE);
-  DebugAssert(numread>=0);
-  DebugAssert(m_bufferpos>=0);
-
-  if (numread+m_bufferpos <= 0)
-  {
-    CloseOnShutDownOrError(0);
-    return;
-  }
-
-  int numsent = Send(m_pBuffer, numread + m_bufferpos);
+  bool firstPass = true;
 
   while (TRUE)
   {
+    bool beenWaiting = false;
+    _int64 currentBufferSize = GetTransferSize(CFtpControlSocket::upload, beenWaiting);
+
+    int numread;
+    if ((currentBufferSize == 0) && (m_bufferpos == 0))
+    {
+      // Not allowed to send yet, try later
+      TriggerEvent(FD_WRITE);
+      return;
+    }
+
+    int readwanted = static_cast<int>(currentBufferSize - m_bufferpos);
+    if (m_bufferpos < currentBufferSize)
+    {
+      numread = ReadDataFromFile(m_pBuffer + m_bufferpos, readwanted);
+      if (numread < 0 )
+      {
+        return;
+      }
+      else if ((numread == 0) && (m_bufferpos == 0))
+      {
+        CloseOnShutDownOrError(0);
+        return;
+      }
+    }
+    else
+    {
+      numread = 0;
+    }
+
+    DebugAssert(numread>=0);
+    DebugAssert(m_bufferpos>=0);
+
+    int bufferlen = (numread + m_bufferpos);
+    // Just to make the change noop, but the test should probably be done everytime
+    if (firstPass)
+    {
+      DebugAssert(bufferlen <= BUFSIZE);
+
+      if (bufferlen <= 0)
+      {
+        CloseOnShutDownOrError(0);
+        return;
+      }
+      firstPass = false;
+    }
+
+    int numsent = Send(m_pBuffer, bufferlen);
+
     if (numsent != SOCKET_ERROR)
     {
       m_pOwner->SpeedLimitAddTransferredBytes(CFtpControlSocket::upload, numsent);
@@ -567,7 +579,7 @@ void CTransferSocket::OnSend(int nErrorCode)
     }
     else
     {
-      int pos = numread + m_bufferpos - numsent;
+      int pos = bufferlen - numsent;
 
       if (pos < 0 || (numsent + pos) > BUFSIZE)
       {
@@ -576,7 +588,7 @@ void CTransferSocket::OnSend(int nErrorCode)
         return;
       }
       else if (!pos && // all data in buffer were sent
-               numread < (currentBufferSize-m_bufferpos) && // was read less then wanted (eof reached?)
+               numread < readwanted && // was read less then wanted (eof reached?)
                m_bufferpos != currentBufferSize) // and it's not because the buffer is full?
       {
         // With TLS 1.3 we can get back
@@ -605,40 +617,6 @@ void CTransferSocket::OnSend(int nErrorCode)
       return;
     }
     UpdateStatusBar(false);
-
-    if (GetState() != closed)
-      currentBufferSize = m_pOwner->GetAbleToTransferSize(CFtpControlSocket::upload, beenWaiting);
-    else
-      currentBufferSize = BUFSIZE;
-
-    if (m_bufferpos < currentBufferSize)
-    {
-      numread = ReadDataFromFile(m_pBuffer + m_bufferpos, static_cast<int>(currentBufferSize - m_bufferpos));
-      if (numread < 0 )
-      {
-        return;
-      }
-      else if (!numread && !m_bufferpos)
-      {
-        CloseOnShutDownOrError(0);
-        return;
-      }
-    }
-    else
-    {
-      numread = 0;
-    }
-
-    if (!currentBufferSize && !m_bufferpos)
-    {
-      // Not allowed to send yet, try later
-      TriggerEvent(FD_WRITE);
-      return;
-    }
-
-    DebugAssert(numread>=0);
-    DebugAssert(m_bufferpos>=0);
-    numsent = Send(m_pBuffer, numread+m_bufferpos);
   }
 
 }
@@ -898,6 +876,7 @@ int CTransferSocket::ReadData(char * buffer, int len)
   return result;
 }
 
+// Used only once now
 int CTransferSocket::ReadDataFromFile(char *buffer, int len)
 {
   try

@@ -95,7 +95,7 @@ public:
 
   _int64 GetSpeedLimit(enum transferDirection direction, CTime & time);
 
-  _int64 GetAbleToTransferSize(enum transferDirection direction, bool &beenWaiting, int nBufSize = 0);
+  _int64 GetAbleToTransferSize(enum transferDirection direction, bool &beenWaiting);
 
   t_server GetCurrentServer();
   CFtpListResult * CreateListResult(bool mlst);
@@ -168,7 +168,7 @@ protected:
   static CTime m_CurrentTransferTime[2];
   static _int64 m_CurrentTransferLimit[2];
   static CCriticalSectionWrapper m_SpeedLimitSync;
-  _int64 GetAbleToUDSize(bool & beenWaiting, CTime & curTime, _int64 & curLimit, std::list<t_ActiveList>::iterator & iter, enum transferDirection direction, int nBufSize);
+  _int64 GetAbleToUDSize(bool & beenWaiting, CTime & curTime, _int64 & curLimit, std::list<t_ActiveList>::iterator & iter, enum transferDirection direction);
   _int64 GetSpeedLimit(CTime & time, int valType, int valValue);
 
   void SetDirectoryListing(t_directory * pDirectory, bool bSetWorkingDir = true);
