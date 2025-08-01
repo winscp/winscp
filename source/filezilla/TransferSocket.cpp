@@ -587,9 +587,11 @@ void CTransferSocket::OnSend(int nErrorCode)
         CloseOnShutDownOrError(CSMODE_TRANSFERERROR);
         return;
       }
-      else if (!pos && // all data in buffer were sent
-               numread < readwanted && // was read less then wanted (eof reached?)
-               m_bufferpos != currentBufferSize) // and it's not because the buffer is full?
+      else if ((pos == 0) && // all data in buffer were sent
+               // was read less then wanted (eof reached?)
+               // (should be safe to always just do (numread <= 0), but limiting the impact of the change for now)
+               (numread < ((m_OnTransferIn != NULL) ? 1 : readwanted)) &&
+               (m_bufferpos != currentBufferSize)) // and it's not because the buffer is full?
       {
         // With TLS 1.3 we can get back
         m_bufferpos = 0;
