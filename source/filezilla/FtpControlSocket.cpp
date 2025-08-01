@@ -51,9 +51,6 @@ public:
   _int64 *pFileSize; //Used when LIST failes
   BOOL bUseAbsolutePaths;
   BOOL bTriedPortPasvOnce;
-#ifndef MPEXT_NO_ZLIB
-  int newZlibLevel;
-#endif
   bool askOnResumeFail;
 };
 
@@ -96,9 +93,6 @@ public:
   int nFinish;
   t_directory *pDirectoryListing;
   BOOL bTriedPortPasvOnce;
-#ifndef MPEXT_NO_ZLIB
-  int newZlibLevel;
-#endif
   bool lastCmdSentCDUP;
 };
 
@@ -171,12 +165,6 @@ CFtpControlSocket::CFtpControlSocket(CMainThread *pMainThread, CFileZillaTools *
   m_bKeepAliveActive=FALSE;
   m_bCheckForTimeout=TRUE;
   m_bDidRejectCertificate = FALSE;
-
-#ifndef MPEXT_NO_ZLIB
-  m_useZlib = false;
-  m_zlibSupported = false;
-  m_zlibLevel = 8;
-#endif
 
   m_bUTF8 = true;
   m_hasClntCmd = false;
@@ -1574,12 +1562,6 @@ void CFtpControlSocket::DoClose(int nError /*=0*/)
   m_MultiLine = "";
   m_bDidRejectCertificate = FALSE;
 
-#ifndef MPEXT_NO_ZLIB
-  m_useZlib = false;
-  m_zlibSupported = false;
-  m_zlibLevel = 0;
-#endif
-
   m_bUTF8 = false;
   m_hasClntCmd = false;
   m_serverCapabilities.Clear();
@@ -1706,8 +1688,6 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
   #define LIST_PWD2  2
   #define LIST_CWD2  3
   #define LIST_PWD3  4
-  #define LIST_MODE  5
-  #define LIST_OPTS  6
   #define LIST_PORT_PASV  7
   #define LIST_TYPE  8
   #define LIST_LIST  9
@@ -1855,7 +1835,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
         return;
       if (pData->path.IsEmpty() || pData->path == m_pOwner->GetCurrentPath())
       {
-        m_Operation.nOpState = NeedModeCommand() ? LIST_MODE : (NeedOptsCommand() ? LIST_OPTS : LIST_TYPE);
+        m_Operation.nOpState = LIST_TYPE;
       }
       else
         m_Operation.nOpState = LIST_CWD;
@@ -1885,7 +1865,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
       }
       else
       {
-        m_Operation.nOpState = NeedModeCommand() ? LIST_MODE : (NeedOptsCommand() ? LIST_OPTS : LIST_TYPE);
+        m_Operation.nOpState = LIST_TYPE;
       }
       break;
     case LIST_CWD2:
@@ -1910,20 +1890,6 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
         if (!ParsePwdReply(pData->rawpwd))
           return;
       }
-      m_Operation.nOpState = NeedModeCommand() ? LIST_MODE : (NeedOptsCommand() ? LIST_OPTS : LIST_TYPE);
-      break;
-    case LIST_MODE:
-#ifndef MPEXT_NO_ZLIB
-      if (code == 2 || code == 3)
-        m_useZlib = !m_useZlib;
-#endif
-      m_Operation.nOpState = NeedOptsCommand() ? LIST_OPTS : LIST_TYPE;
-      break;
-    case LIST_OPTS:
-#ifndef MPEXT_NO_ZLIB
-      if (code == 2 || code == 3)
-        m_zlibLevel = pData->newZlibLevel;
-#endif
       m_Operation.nOpState = LIST_TYPE;
       break;
     case LIST_TYPE:
@@ -2067,7 +2033,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
         m_Operation.nOpState=LIST_CWD2;
       else
       {
-        m_Operation.nOpState = NeedModeCommand() ? LIST_MODE : (NeedOptsCommand() ? LIST_OPTS : LIST_TYPE);;
+        m_Operation.nOpState = LIST_TYPE;
       }
     }
     else
@@ -2114,42 +2080,9 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
   }
   else if (m_Operation.nOpState == LIST_PWD3)
     cmd=L"PWD";
-  else if (m_Operation.nOpState == LIST_MODE)
-  {
-#ifdef MPEXT_NO_ZLIB
-    DebugFail();
-#else
-    if (m_useZlib)
-#endif
-      cmd = L"MODE S";
-#ifndef MPEXT_NO_ZLIB
-    else
-      cmd = L"MODE Z";
-#endif
-  }
-  else if (m_Operation.nOpState == LIST_OPTS)
-  {
-#ifdef MPEXT_NO_ZLIB
-    DebugFail();
-#else
-    pData->newZlibLevel = GetOptionVal(OPTION_MODEZ_LEVEL);
-    cmd.Format(L"OPTS MODE Z LEVEL %d", pData->newZlibLevel);
-#endif
-  }
   else if (m_Operation.nOpState == LIST_PORT_PASV)
   {
     m_pTransferSocket = new CTransferSocket(this, m_Operation.nOpMode);
-#ifndef MPEXT_NO_ZLIB
-    if (m_useZlib)
-    {
-      if (!m_pTransferSocket->InitZlib(m_zlibLevel))
-      {
-        ShowStatus(L"Failed to initialize zlib", FZ_LOG_ERROR);
-        ResetOperation(FZ_REPLY_ERROR);
-        return;
-      }
-    }
-#endif
     m_pTransferSocket->m_nInternalMessageID = m_pOwner->m_nInternalMessageID;
 #ifndef MPEXT_NO_GSS
     if (m_pGssLayer && m_pGssLayer->AuthSuccessful())
@@ -2701,8 +2634,6 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
   #define FILETRANSFER_MKD      2
   #define FILETRANSFER_CWD2      3
   #define FILETRANSFER_PWD2      4
-  #define FILETRANSFER_LIST_MODE    5
-  #define FILETRANSFER_LIST_OPTS    6
   #define FILETRANSFER_LIST_PORTPASV  7
   #define FILETRANSFER_LIST_TYPE    8
   #define FILETRANSFER_LIST_LIST    9
@@ -2711,8 +2642,6 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
   #define FILETRANSFER_NOLIST_MDTM  12
   #define FILETRANSFER_TYPE      13
   #define FILETRANSFER_REST      14
-  #define FILETRANSFER_MODE      15
-  #define FILETRANSFER_OPTS      16
   #define FILETRANSFER_PORTPASV    17
   #define FILETRANSFER_RETRSTOR    18
   #define FILETRANSFER_WAITFINISH    19
@@ -2721,9 +2650,6 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 
   #define FILETRANSFER_MFMT      21
   #define FILETRANSFER_OPTS_REST 22
-
-  #define FILETRANSFER_OPTION_COMMAND_2 (NeedOptsCommand() ? FILETRANSFER_OPTS : FILETRANSFER_PORTPASV)
-  #define FILETRANSFER_OPTION_COMMAND_1 (NeedModeCommand() ? FILETRANSFER_MODE : FILETRANSFER_OPTION_COMMAND_2)
 
   //Partial flowchart of FileTransfer
   //
@@ -3223,25 +3149,6 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         m_Operation.nOpState = FileTransferListState(pData->transferfile.get);
       }
       break;
-    case FILETRANSFER_LIST_MODE:
-#ifdef MPEXT_NO_ZLIB
-      DebugFail();
-      m_Operation.nOpState = FILETRANSFER_LIST_TYPE;
-#else
-      if (code == 2 || code == 3)
-        m_useZlib = !m_useZlib;
-      m_Operation.nOpState = NeedOptsCommand() ? FILETRANSFER_LIST_OPTS : FILETRANSFER_LIST_TYPE;
-#endif
-      break;
-    case FILETRANSFER_LIST_OPTS:
-#ifdef MPEXT_NO_ZLIB
-      DebugFail();
-#else
-      if (code == 2 || code == 3)
-        m_zlibLevel = pData->newZlibLevel;
-      m_Operation.nOpState = FILETRANSFER_LIST_TYPE;
-#endif
-      break;
     case FILETRANSFER_LIST_TYPE:
       if (code != 2 && code != 3)
         nReplyError = FZ_REPLY_ERROR;
@@ -3348,17 +3255,6 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         }
 
         m_pTransferSocket = new CTransferSocket(this, CSMODE_LIST);
-#ifndef MPEXT_NO_ZLIB
-        if (m_useZlib)
-        {
-          if (!m_pTransferSocket->InitZlib(m_zlibLevel))
-          {
-            ShowStatus(L"Failed to initialize zlib", FZ_LOG_ERROR);
-            ResetOperation(FZ_REPLY_ERROR);
-            return;
-          }
-        }
-#endif
 #ifndef MPEXT_NO_GSS
         if (m_pGssLayer && m_pGssLayer->AuthSuccessful())
           m_pTransferSocket->UseGSS(m_pGssLayer);
@@ -3455,32 +3351,13 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     case FILETRANSFER_TYPE:
       if (code!=2 && code!=3)
         nReplyError = FZ_REPLY_ERROR;
-      m_Operation.nOpState = !pData->transferfile.get && pData->transferdata.bResume ? FILETRANSFER_OPTS_REST : FILETRANSFER_OPTION_COMMAND_1;
+      m_Operation.nOpState = !pData->transferfile.get && pData->transferdata.bResume ? FILETRANSFER_OPTS_REST : FILETRANSFER_PORTPASV;
       break;
     case FILETRANSFER_WAIT:
       if (!pData->nWaitNextOpState)
         nReplyError=FZ_REPLY_ERROR;
       else
         m_Operation.nOpState=pData->nWaitNextOpState;
-      break;
-    case FILETRANSFER_MODE:
-#ifdef MPEXT_NO_ZLIB
-      DebugFail();
-      m_Operation.nOpState = FILETRANSFER_PORTPASV;
-#else
-      if (code == 2 || code == 3)
-        m_useZlib = !m_useZlib;
-      m_Operation.nOpState = FILETRANSFER_OPTION_COMMAND_2;
-#endif
-      break;
-    case FILETRANSFER_OPTS:
-#ifdef MPEXT_NO_ZLIB
-      DebugFail();
-#else
-      if (code == 2 || code == 3)
-        m_zlibLevel = pData->newZlibLevel;
-#endif
-      m_Operation.nOpState = FILETRANSFER_PORTPASV;
       break;
     case FILETRANSFER_PORTPASV:
       if (code == 3 || code == 2)
@@ -3576,17 +3453,6 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
             break;
           }
           m_pTransferSocket = new CTransferSocket(this, m_Operation.nOpMode);
-#ifndef MPEXT_NO_ZLIB
-          if (m_useZlib)
-          {
-            if (!m_pTransferSocket->InitZlib(m_zlibLevel))
-            {
-              ShowStatus(L"Failed to initialize zlib", FZ_LOG_ERROR);
-              ResetOperation(FZ_REPLY_ERROR);
-              return;
-            }
-          }
-#endif
 #ifndef MPEXT_NO_GSS
           if (m_pGssLayer && m_pGssLayer->AuthSuccessful())
             m_pTransferSocket->UseGSS(m_pGssLayer);
@@ -3698,7 +3564,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         ShowStatus(L"Resume not allowed by the server, restarting upload from the scratch.", FZ_LOG_PROGRESS);
         CancelTransferResume(pData);
       }
-      m_Operation.nOpState = FILETRANSFER_OPTION_COMMAND_1;
+      m_Operation.nOpState = FILETRANSFER_PORTPASV;
       break;
     case FILETRANSFER_REST:
       { //Resume
@@ -3929,33 +3795,6 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
     if (!Send(L"PWD"))
       bError=TRUE;
     break;
-  case FILETRANSFER_LIST_MODE:
-#ifdef MPEXT_NO_ZLIB
-    DebugFail();
-#else
-    if (m_useZlib)
-    {
-      if (!Send(L"MODE S"))
-        bError = TRUE;
-    }
-    else
-      if (!Send(L"MODE Z"))
-        bError = TRUE;
-#endif
-    break;
-  case FILETRANSFER_LIST_OPTS:
-#ifdef MPEXT_NO_ZLIB
-    DebugFail();
-#else
-    {
-      pData->newZlibLevel = GetOptionVal(OPTION_MODEZ_LEVEL);
-      CString str;
-      str.Format(L"OPTS MODE Z LEVEL %d", pData->newZlibLevel);
-      if (!Send(str))
-        bError = TRUE;
-    }
-#endif
-    break;
   case FILETRANSFER_LIST_PORTPASV:
     delete m_pDirectoryListing;
     m_pDirectoryListing=0;
@@ -3971,17 +3810,6 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         delete m_pTransferSocket;
       }
       m_pTransferSocket = new CTransferSocket(this, CSMODE_LIST);
-#ifndef MPEXT_NO_ZLIB
-      if (m_useZlib)
-      {
-        if (!m_pTransferSocket->InitZlib(m_zlibLevel))
-        {
-          ShowStatus(L"Failed to initialize zlib", FZ_LOG_ERROR);
-          ResetOperation(FZ_REPLY_ERROR);
-          return;
-        }
-      }
-#endif
 #ifndef MPEXT_NO_GSS
       if (m_pGssLayer && m_pGssLayer->AuthSuccessful())
         m_pTransferSocket->UseGSS(m_pGssLayer);
@@ -4163,33 +3991,6 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       if (!Send(L"TYPE I"))
         bError=TRUE;
     break;
-  case FILETRANSFER_MODE:
-#ifdef MPEXT_NO_ZLIB
-    DebugFail();
-#else
-    if (m_useZlib)
-    {
-      if (!Send(L"MODE S"))
-        bError = TRUE;
-    }
-    else
-      if (!Send(L"MODE Z"))
-        bError = TRUE;
-#endif
-    break;
-  case FILETRANSFER_OPTS:
-#ifdef MPEXT_NO_ZLIB
-    DebugFail();
-#else
-    {
-      pData->newZlibLevel = GetOptionVal(OPTION_MODEZ_LEVEL);
-      CString str;
-      str.Format(L"OPTS MODE Z LEVEL %d", pData->newZlibLevel);
-      if (!Send(str))
-        bError = TRUE;
-    }
-#endif
-    break;
   case FILETRANSFER_PORTPASV:
     if (pData->bPasv)
     {
@@ -4203,17 +4004,6 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         delete m_pTransferSocket;
       }
       m_pTransferSocket=new CTransferSocket(this, m_Operation.nOpMode);
-#ifndef MPEXT_NO_ZLIB
-      if (m_useZlib)
-      {
-        if (!m_pTransferSocket->InitZlib(m_zlibLevel))
-        {
-          ShowStatus(L"Failed to initialize zlib", FZ_LOG_ERROR);
-          ResetOperation(FZ_REPLY_ERROR);
-          return;
-        }
-      }
-#endif
 #ifndef MPEXT_NO_GSS
       if (m_pGssLayer && m_pGssLayer->AuthSuccessful())
         m_pTransferSocket->UseGSS(m_pGssLayer);
@@ -6166,12 +5956,7 @@ void CFtpControlSocket::DiscardLine(RawByteString line)
     {
       line = line.SubString(2, line.Length() - 1);
     }
-#ifndef MPEXT_NO_ZLIB
-    if (line == "MODE Z" || line.SubString(1, 7) == "MODE Z ")
-      m_zlibSupported = true;
-    else
-#endif
-      if (line == "UTF8" && m_CurrentServer.nUTF8 != 2)
+    if (line == "UTF8" && m_CurrentServer.nUTF8 != 2)
       m_bAnnouncesUTF8 = true;
     else if (line == "CLNT" || line.SubString(1, 5) == "CLNT ")
       m_hasClntCmd = true;
@@ -6205,46 +5990,7 @@ void CFtpControlSocket::DiscardLine(RawByteString line)
 
 int CFtpControlSocket::FileTransferListState(bool get)
 {
-  int Result;
-  if (GetOptionVal(OPTION_MPEXT_NOLIST))
-  {
-    Result = FILETRANSFER_TYPE;
-  }
-  else
-  {
-    Result = NeedModeCommand() ? FILETRANSFER_LIST_MODE : (NeedOptsCommand() ? FILETRANSFER_LIST_OPTS : FILETRANSFER_LIST_TYPE);
-  }
-  return Result;
-}
-
-bool CFtpControlSocket::NeedModeCommand()
-{
-#ifdef MPEXT_NO_ZLIB
-  return false;
-#else
-  bool useZlib;
-  if (m_Operation.nOpMode == CSMODE_LIST || (m_Operation.nOpMode == CSMODE_TRANSFER && m_Operation.nOpMode <= FILETRANSFER_TYPE))
-    useZlib = GetOptionVal(OPTION_MODEZ_USE) != 0;
-  else
-    useZlib = GetOptionVal(OPTION_MODEZ_USE) > 1;
-
-  if (!m_useZlib && !m_zlibSupported)
-    return false;
-
-  return m_useZlib != useZlib;
-#endif
-}
-
-bool CFtpControlSocket::NeedOptsCommand()
-{
-#ifndef MPEXT_NO_ZLIB
-  if (!m_useZlib)
-#endif
-    return false;
-
-#ifndef MPEXT_NO_ZLIB
-  return m_zlibLevel != GetOptionVal(OPTION_MODEZ_LEVEL);
-#endif
+  return GetOptionVal(OPTION_MPEXT_NOLIST) ? FILETRANSFER_TYPE : FILETRANSFER_LIST_TYPE;
 }
 
 CString CFtpControlSocket::GetReply()

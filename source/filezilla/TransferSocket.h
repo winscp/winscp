@@ -7,10 +7,6 @@
 #include "FtpControlSocket.h"
 #include "ApiLog.h"
 //---------------------------------------------------------------------------
-#ifndef MPEXT_NO_ZLIB
-#include <zlib.h>
-#endif
-//---------------------------------------------------------------------------
 class CFtpControlSocket;
 class CAsyncProxySocketLayer;
 class CAsyncSslSocketLayer;
@@ -42,9 +38,6 @@ public:
 #ifndef MPEXT_NO_GSS
   void UseGSS(CAsyncGssSocketLayer * pGssLayer);
 #endif
-#ifndef MPEXT_NO_ZLIB
-  bool InitZlib(int level);
-#endif
 
 public:
   virtual void OnReceive(int nErrorCode);
@@ -75,9 +68,6 @@ protected:
   BOOL m_bSentClose;
   int m_bufferpos;
   char * m_pBuffer;
-#ifndef MPEXT_NO_ZLIB
-  char * m_pBuffer2; // Used by zlib transfers
-#endif
   BOOL m_bCheckTimeout;
   CTime m_LastActiveTime;
   int m_nTransferState;
@@ -93,11 +83,6 @@ protected:
   LARGE_INTEGER m_LastUpdateTime;
   unsigned int m_LastSendBufferUpdate;
   DWORD m_SendBuf;
-
-#ifndef MPEXT_NO_ZLIB
-  z_stream m_zlibStream;
-  bool m_useZlib;
-#endif
 };
 //---------------------------------------------------------------------------
 #endif // TransferSocketH

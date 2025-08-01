@@ -4,7 +4,6 @@
 //---------------------------------------------------------------------------
 #define _int64 __int64
 //---------------------------------------------------------------------------
-#define MPEXT_NO_ZLIB
 #define MPEXT_NO_GSS
 #define _AFX_ENABLE_INLINES
 #define _AFX_NOFORCE_LIBS

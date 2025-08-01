@@ -25,9 +25,6 @@ CTransferSocket::CTransferSocket(CFtpControlSocket *pOwner, int nMode)
   m_nTransferState = STATE_WAITING;
   m_bCheckTimeout = FALSE;
   m_pBuffer = 0;
-#ifndef MPEXT_NO_ZLIB
-  m_pBuffer2 = 0;
-#endif
   m_bufferpos = 0;
   m_pFile = 0;
   m_OnTransferOut = NULL;
@@ -58,19 +55,11 @@ CTransferSocket::CTransferSocket(CFtpControlSocket *pOwner, int nMode)
   else
     m_pListResult = 0;
   m_LastUpdateTime.QuadPart = 0;
-
-#ifndef MPEXT_NO_ZLIB
-  memset(&m_zlibStream, 0, sizeof(m_zlibStream));
-  m_useZlib = false;
-#endif
 }
 
 CTransferSocket::~CTransferSocket()
 {
   delete [] m_pBuffer;
-#ifndef MPEXT_NO_ZLIB
-  delete [] m_pBuffer2;
-#endif
   GetIntern()->PostMessage(FZ_MSG_MAKEMSG(FZ_MSG_TRANSFERSTATUS, 0), 0);
   Close();
   RemoveAllLayers();
@@ -82,16 +71,6 @@ CTransferSocket::~CTransferSocket()
   m_pOwner->RemoveActiveTransfer();
 
   delete m_pListResult;
-
-#ifndef MPEXT_NO_ZLIB
-  if (m_useZlib)
-  {
-    if (m_nMode & CSMODE_UPLOAD)
-      deflateEnd(&m_zlibStream);
-    else
-      inflateEnd(&m_zlibStream);
-  }
-#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -121,37 +100,7 @@ void CTransferSocket::OnReceive(int nErrorCode)
     if (numread != SOCKET_ERROR && numread)
     {
       m_LastActiveTime = CTime::GetCurrentTime();
-
-#ifndef MPEXT_NO_ZLIB
-      if (m_useZlib)
-      {
-        m_zlibStream.next_in = (Bytef *)&Buffer[0];
-        m_zlibStream.avail_in = numread;
-        std::unique_ptr<char []> out(new char[BUFSIZE]);
-        m_zlibStream.next_out = (Bytef *)&out[0];
-        m_zlibStream.avail_out = BUFSIZE;
-        int res = inflate(&m_zlibStream, 0);
-        while (res == Z_OK)
-        {
-          m_pListResult->AddData(&out[0], BUFSIZE - m_zlibStream.avail_out);
-          out.reset(new char[BUFSIZE]);
-          m_zlibStream.next_out = (Bytef *)&out[0];
-          m_zlibStream.avail_out = BUFSIZE;
-          res = inflate(&m_zlibStream, 0);
-        }
-        if (res == Z_STREAM_END)
-          m_pListResult->AddData(&out[0], BUFSIZE - m_zlibStream.avail_out);
-        else if (res != Z_OK && res != Z_BUF_ERROR)
-        {
-          CloseAndEnsureSendClose(CSMODE_TRANSFERERROR);
-          return;
-        }
-      }
-      else
-#endif
-      {
-        m_pListResult->AddData(&Buffer[0], numread);
-      }
+      m_pListResult->AddData(&Buffer[0], numread);
       m_transferdata.transfersize += numread;
       t_ffam_transferstatus *status = new t_ffam_transferstatus;
       status->bFileTransfer = FALSE;
@@ -245,43 +194,8 @@ void CTransferSocket::OnReceive(int nErrorCode)
     m_LastActiveTime = CTime::GetCurrentTime();
     try
     {
-#ifndef MPEXT_NO_ZLIB
-      if (m_useZlib)
-      {
-        if (!m_pBuffer2)
-          m_pBuffer2 = new char[BUFSIZE];
-
-        m_zlibStream.next_in = (Bytef *)m_pBuffer;
-        m_zlibStream.avail_in = numread;
-        m_zlibStream.next_out = (Bytef *)m_pBuffer2;
-        m_zlibStream.avail_out = BUFSIZE;
-        int res = inflate(&m_zlibStream, 0);
-        while (res == Z_OK)
-        {
-          WriteData(m_pBuffer2, BUFSIZE - m_zlibStream.avail_out);
-          written += BUFSIZE - m_zlibStream.avail_out;
-          m_zlibStream.next_out = (Bytef *)m_pBuffer2;
-          m_zlibStream.avail_out = BUFSIZE;
-          res = inflate(&m_zlibStream, 0);
-        }
-        if (res == Z_STREAM_END)
-        {
-          WriteData(m_pBuffer2, BUFSIZE - m_zlibStream.avail_out);
-          written += BUFSIZE - m_zlibStream.avail_out;
-        }
-        else if (res != Z_OK && res != Z_BUF_ERROR)
-        {
-          m_pOwner->ShowStatus(L"Compression error", FZ_LOG_ERROR);
-          CloseAndEnsureSendClose(CSMODE_TRANSFERERROR);
-          return;
-        }
-      }
-      else
-#endif
-      {
-        WriteData(m_pBuffer, numread);
-        written = numread;
-      }
+      WriteData(m_pBuffer, numread);
+      written = numread;
     }
     catch (CFileException * e)
     {
@@ -564,162 +478,140 @@ void CTransferSocket::OnSend(int nErrorCode)
     }
   }
 
-#ifndef MPEXT_NO_ZLIB
-  if (m_useZlib)
+  if (!m_pFile && (m_OnTransferIn == NULL))
   {
-    if (!m_pBuffer)
-    {
-      m_pBuffer = new char[BUFSIZE];
-      m_bufferpos = 0;
-
-      m_zlibStream.next_out = (Bytef *)m_pBuffer;
-      m_zlibStream.avail_out = BUFSIZE;
-    }
-    if (!m_pBuffer2)
-    {
-      m_pBuffer2 = new char[BUFSIZE];
-
-      m_zlibStream.next_in = (Bytef *)m_pBuffer2;
-    }
-
-    bool beenWaiting = false;
-    while (true)
-    {
-      int numsend;
-      if (!m_zlibStream.avail_in)
-      {
-        if (m_pFile)
-        {
-          DWORD numread;
-          numread = ReadDataFromFile(m_pBuffer2, BUFSIZE);
-          if (numread < 0)
-          {
-            return;
-          }
-
-          m_transferdata.transferleft -= numread;
-          m_zlibStream.next_in = (Bytef *)m_pBuffer2;
-          m_zlibStream.avail_in = numread;
-
-          if (numread < BUFSIZE)
-            m_pFile = 0;
-        }
-      }
-      if (!m_zlibStream.avail_out)
-      {
-        if (m_bufferpos >= BUFSIZE)
-        {
-          m_bufferpos = 0;
-          m_zlibStream.next_out = (Bytef *)m_pBuffer;
-          m_zlibStream.avail_out = BUFSIZE;
-        }
-      }
-
-      int res = Z_OK;
-      if (m_zlibStream.avail_out)
-      {
-        res = deflate(&m_zlibStream, m_pFile ? 0 : Z_FINISH);
-        if (res != Z_OK && (!m_pFile && res != Z_STREAM_END))
-        {
-          m_pOwner->ShowStatus("Decompression error", FZ_LOG_ERROR);
-          CloseAndEnsureSendClose(CSMODE_TRANSFERERROR);
-          return;
-        }
-      }
-
-      numsend = BUFSIZE;
-      int len = BUFSIZE - m_bufferpos - m_zlibStream.avail_out;
-      if (!len && !m_pFile)
-      {
-        break;
-      }
-
-      if (len < BUFSIZE)
-        numsend = len;
-
-      int nLimit = (int)m_pOwner->GetAbleToTransferSize(CFtpControlSocket::upload, beenWaiting);
-      if (nLimit != -1 && GetState() != closed && numsend > nLimit)
-        numsend = nLimit;
-
-      if (!numsend)
-      {
-        TriggerEvent(FD_WRITE);
-        return;
-      }
-
-      int numsent = Send(m_pBuffer + m_bufferpos, numsend);
-      if (numsent == SOCKET_ERROR)
-      {
-        int nError = GetLastError();
-        if (nError == WSAENOTCONN)
-        {
-          //Not yet connected
-          return;
-        }
-        else if (m_pSslLayer && nError == WSAESHUTDOWN)
-        {
-          // Do nothing, wait for shutdown complete notification.
-          return;
-        }
-        else if (nError != WSAEWOULDBLOCK)
-        {
-          LogError(nError);
-          CloseOnShutDownOrError(CSMODE_TRANSFERERROR);
-        }
-        UpdateStatusBar(true);
-        return;
-      }
-
-      m_uploaded += numsent;
-      m_pOwner->SpeedLimitAddTransferredBytes(CFtpControlSocket::upload, numsent);
-      m_LastActiveTime = CTime::GetCurrentTime();
-
-      m_bufferpos += numsent;
-
-      UpdateStatusBar(false);
-
-      if (!m_zlibStream.avail_in && !m_pFile && m_zlibStream.avail_out &&
-        m_zlibStream.avail_out + m_bufferpos == BUFSIZE && res == Z_STREAM_END)
-      {
-        CloseOnShutDownOrError(0);
-        return;
-      }
-
-      //Check if there are other commands in the command queue.
-      MSG msg;
-      if (PeekMessage(&msg,0, 0, 0, PM_NOREMOVE))
-      {
-        TriggerEvent(FD_WRITE);
-        return;
-      }
-    }
+    return;
   }
+  if (!m_pBuffer)
+    m_pBuffer = new char[BUFSIZE];
+
+  int numread;
+
+  bool beenWaiting = false;
+  _int64 currentBufferSize;
+  if (GetState() != closed)
+    currentBufferSize = m_pOwner->GetAbleToTransferSize(CFtpControlSocket::upload, beenWaiting);
   else
-#endif
+    currentBufferSize = BUFSIZE;
+
+  if (!currentBufferSize && !m_bufferpos)
   {
-    if (!m_pFile && (m_OnTransferIn == NULL))
+    // Not allowed to send yet, try later
+    TriggerEvent(FD_WRITE);
+    return;
+  }
+  else if (m_bufferpos < currentBufferSize)
+  {
+    numread = ReadDataFromFile(m_pBuffer + m_bufferpos, static_cast<int>(currentBufferSize - m_bufferpos));
+    if (numread < 0 )
     {
       return;
     }
-    if (!m_pBuffer)
-      m_pBuffer = new char[BUFSIZE];
+    else if (!numread && !m_bufferpos)
+    {
+      CloseOnShutDownOrError(0);
+      return;
+    }
+  }
+  else
+    numread = 0;
 
-    int numread;
+  DebugAssert((numread+m_bufferpos) <= BUFSIZE);
+  DebugAssert(numread>=0);
+  DebugAssert(m_bufferpos>=0);
 
-    bool beenWaiting = false;
-    _int64 currentBufferSize;
+  if (numread+m_bufferpos <= 0)
+  {
+    CloseOnShutDownOrError(0);
+    return;
+  }
+
+  int numsent = Send(m_pBuffer, numread + m_bufferpos);
+
+  while (TRUE)
+  {
+    if (numsent != SOCKET_ERROR)
+    {
+      m_pOwner->SpeedLimitAddTransferredBytes(CFtpControlSocket::upload, numsent);
+      m_LastActiveTime = CTime::GetCurrentTime();
+      m_transferdata.transferleft -= numsent;
+      m_uploaded += numsent;
+    }
+
+    if (numsent==SOCKET_ERROR || !numsent)
+    {
+      int nError = GetLastError();
+      if (nError == WSAENOTCONN)
+      {
+        //Not yet connected
+        m_bufferpos += numread;
+        return;
+      }
+      else if (nError == WSAEWOULDBLOCK)
+      {
+        m_bufferpos += numread;
+      }
+      else if (m_pSslLayer && nError == WSAESHUTDOWN)
+      {
+        m_bufferpos += numread;
+        // Do nothing, wait for shutdown complete notification.
+        return;
+      }
+      else
+      {
+        LogError(nError);
+        CloseOnShutDownOrError(CSMODE_TRANSFERERROR);
+      }
+      UpdateStatusBar(true);
+      return;
+    }
+    else
+    {
+      int pos = numread + m_bufferpos - numsent;
+
+      if (pos < 0 || (numsent + pos) > BUFSIZE)
+      {
+        LogMessage(FZ_LOG_WARNING, L"Index out of range");
+        CloseOnShutDownOrError(CSMODE_TRANSFERERROR);
+        return;
+      }
+      else if (!pos && // all data in buffer were sent
+               numread < (currentBufferSize-m_bufferpos) && // was read less then wanted (eof reached?)
+               m_bufferpos != currentBufferSize) // and it's not because the buffer is full?
+      {
+        // With TLS 1.3 we can get back
+        m_bufferpos = 0;
+        CloseOnShutDownOrError(0);
+        return;
+      }
+      else if (!pos)
+      {
+        m_bufferpos = 0;
+      }
+      else
+      {
+        memmove(m_pBuffer, m_pBuffer+numsent, pos);
+        m_bufferpos=pos;
+      }
+    }
+    //Check if there are other commands in the command queue.
+    MSG msg;
+    if (PeekMessage(&msg, 0, m_nInternalMessageID, m_nInternalMessageID, PM_NOREMOVE))
+    {
+      //Send resume message
+      LogMessage(FZ_LOG_DEBUG, L"Message waiting in queue, resuming later");
+      TriggerEvent(FD_WRITE);
+      UpdateStatusBar(false);
+      return;
+    }
+    UpdateStatusBar(false);
+
     if (GetState() != closed)
       currentBufferSize = m_pOwner->GetAbleToTransferSize(CFtpControlSocket::upload, beenWaiting);
     else
       currentBufferSize = BUFSIZE;
 
-    if (!currentBufferSize && !m_bufferpos)
-    {
-      // Not allowed to send yet, try later
-      TriggerEvent(FD_WRITE);
-      return;
-    }
-    else if (m_bufferpos < currentBufferSize)
+    if (m_bufferpos < currentBufferSize)
     {
       numread = ReadDataFromFile(m_pBuffer + m_bufferpos, static_cast<int>(currentBufferSize - m_bufferpos));
       if (numread < 0 )
@@ -733,133 +625,22 @@ void CTransferSocket::OnSend(int nErrorCode)
       }
     }
     else
-      numread = 0;
-
-    DebugAssert((numread+m_bufferpos) <= BUFSIZE);
-    DebugAssert(numread>=0);
-    DebugAssert(m_bufferpos>=0);
-
-    if (numread+m_bufferpos <= 0)
     {
-      CloseOnShutDownOrError(0);
+      numread = 0;
+    }
+
+    if (!currentBufferSize && !m_bufferpos)
+    {
+      // Not allowed to send yet, try later
+      TriggerEvent(FD_WRITE);
       return;
     }
 
-    int numsent = Send(m_pBuffer, numread + m_bufferpos);
-
-    while (TRUE)
-    {
-      if (numsent != SOCKET_ERROR)
-      {
-        m_pOwner->SpeedLimitAddTransferredBytes(CFtpControlSocket::upload, numsent);
-        m_LastActiveTime = CTime::GetCurrentTime();
-        m_transferdata.transferleft -= numsent;
-        m_uploaded += numsent;
-      }
-
-      if (numsent==SOCKET_ERROR || !numsent)
-      {
-        int nError = GetLastError();
-        if (nError == WSAENOTCONN)
-        {
-          //Not yet connected
-          m_bufferpos += numread;
-          return;
-        }
-        else if (nError == WSAEWOULDBLOCK)
-        {
-          m_bufferpos += numread;
-        }
-        else if (m_pSslLayer && nError == WSAESHUTDOWN)
-        {
-          m_bufferpos += numread;
-          // Do nothing, wait for shutdown complete notification.
-          return;
-        }
-        else
-        {
-          LogError(nError);
-          CloseOnShutDownOrError(CSMODE_TRANSFERERROR);
-        }
-        UpdateStatusBar(true);
-        return;
-      }
-      else
-      {
-        int pos = numread + m_bufferpos - numsent;
-
-        if (pos < 0 || (numsent + pos) > BUFSIZE)
-        {
-          LogMessage(FZ_LOG_WARNING, L"Index out of range");
-          CloseOnShutDownOrError(CSMODE_TRANSFERERROR);
-          return;
-        }
-        else if (!pos && // all data in buffer were sent
-                 numread < (currentBufferSize-m_bufferpos) && // was read less then wanted (eof reached?)
-                 m_bufferpos != currentBufferSize) // and it's not because the buffer is full?
-        {
-          // With TLS 1.3 we can get back
-          m_bufferpos = 0;
-          CloseOnShutDownOrError(0);
-          return;
-        }
-        else if (!pos)
-        {
-          m_bufferpos = 0;
-        }
-        else
-        {
-          memmove(m_pBuffer, m_pBuffer+numsent, pos);
-          m_bufferpos=pos;
-        }
-      }
-      //Check if there are other commands in the command queue.
-      MSG msg;
-      if (PeekMessage(&msg, 0, m_nInternalMessageID, m_nInternalMessageID, PM_NOREMOVE))
-      {
-        //Send resume message
-        LogMessage(FZ_LOG_DEBUG, L"Message waiting in queue, resuming later");
-        TriggerEvent(FD_WRITE);
-        UpdateStatusBar(false);
-        return;
-      }
-      UpdateStatusBar(false);
-
-      if (GetState() != closed)
-        currentBufferSize = m_pOwner->GetAbleToTransferSize(CFtpControlSocket::upload, beenWaiting);
-      else
-        currentBufferSize = BUFSIZE;
-
-      if (m_bufferpos < currentBufferSize)
-      {
-        numread = ReadDataFromFile(m_pBuffer + m_bufferpos, static_cast<int>(currentBufferSize - m_bufferpos));
-        if (numread < 0 )
-        {
-          return;
-        }
-        else if (!numread && !m_bufferpos)
-        {
-          CloseOnShutDownOrError(0);
-          return;
-        }
-      }
-      else
-      {
-        numread = 0;
-      }
-
-      if (!currentBufferSize && !m_bufferpos)
-      {
-        // Not allowed to send yet, try later
-        TriggerEvent(FD_WRITE);
-        return;
-      }
-
-      DebugAssert(numread>=0);
-      DebugAssert(m_bufferpos>=0);
-      numsent = Send(m_pBuffer, numread+m_bufferpos);
-    }
+    DebugAssert(numread>=0);
+    DebugAssert(m_bufferpos>=0);
+    numsent = Send(m_pBuffer, numread+m_bufferpos);
   }
+
 }
 
 void CTransferSocket::UpdateStatusBar(bool forceUpdate)
@@ -1087,22 +868,6 @@ void CTransferSocket::UseGSS(CAsyncGssSocketLayer *pGssLayer)
 {
   m_pGssLayer = new CAsyncGssSocketLayer;
   m_pGssLayer->InitTransferChannel(pGssLayer);
-}
-#endif
-
-#ifndef MPEXT_NO_ZLIB
-bool CTransferSocket::InitZlib(int level)
-{
-  int res;
-  if (m_nMode & CSMODE_UPLOAD)
-    res = deflateInit2(&m_zlibStream, level, Z_DEFLATED, 15, 8, Z_DEFAULT_STRATEGY);
-  else
-    res = inflateInit2(&m_zlibStream, 15);
-
-  if (res == Z_OK)
-    m_useZlib = true;
-
-  return res == Z_OK;
 }
 #endif
 

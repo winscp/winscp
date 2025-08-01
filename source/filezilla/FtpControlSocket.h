@@ -135,7 +135,6 @@ protected:
 
   void DiscardLine(RawByteString line);
   int FileTransferListState(bool get);
-  bool NeedModeCommand();
   bool NeedOptsCommand();
   CString GetListingCmd();
 
@@ -193,12 +192,6 @@ protected:
   class CListData;
   class CListFileData;
   class CMakeDirData;
-
-#ifndef MPEXT_NO_ZLIB
-  bool m_useZlib;
-  bool m_zlibSupported;
-  int m_zlibLevel;
-#endif
 
   bool m_bUTF8;
   bool m_bAnnouncesUTF8;
