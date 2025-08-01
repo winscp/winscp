@@ -2913,7 +2913,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
           {
             delete m_pDirectoryListing;
             m_pDirectoryListing=0;
-            m_Operation.nOpState = FileTransferListState(transferfile->get);
+            m_Operation.nOpState = FileTransferListState();
             break;
           }
         }
@@ -2924,13 +2924,13 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
       }
       else
       {
-        m_Operation.nOpState = FileTransferListState(transferfile->get);
+        m_Operation.nOpState = FileTransferListState();
       }
     }
     else
     {
       if (pData->transferfile.remotepath.IsEmpty() && GetOptionVal(OPTION_MPEXT_WORK_FROM_CWD))
-        m_Operation.nOpState = FileTransferListState(pData->transferfile.get);
+        m_Operation.nOpState = FileTransferListState();
       else if (path.IsEmpty())
         m_Operation.nOpState = FILETRANSFER_PWD;
       else
@@ -2977,7 +2977,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 
       if (m_pOwner->GetCurrentPath() == pData->transferfile.remotepath)
       {
-        m_Operation.nOpState = FileTransferListState(pData->transferfile.get);
+        m_Operation.nOpState = FileTransferListState();
       }
       else
         m_Operation.nOpState = LIST_CWD;
@@ -3146,7 +3146,7 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
         if (!ParsePwdReply(pData->rawpwd))
           return;
 
-        m_Operation.nOpState = FileTransferListState(pData->transferfile.get);
+        m_Operation.nOpState = FileTransferListState();
       }
       break;
     case FILETRANSFER_LIST_TYPE:
@@ -5988,7 +5988,7 @@ void CFtpControlSocket::DiscardLine(RawByteString line)
   }
 }
 
-int CFtpControlSocket::FileTransferListState(bool get)
+int CFtpControlSocket::FileTransferListState()
 {
   return GetOptionVal(OPTION_MPEXT_NOLIST) ? FILETRANSFER_TYPE : FILETRANSFER_LIST_TYPE;
 }
