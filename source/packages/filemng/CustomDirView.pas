@@ -221,11 +221,13 @@ type
     procedure SetPathLabel(Value: TCustomPathLabel);
     procedure SetTargetPopupMenu(Value: Boolean);
     procedure WMUserRename(var Message: TMessage); message WM_User_Rename;
+    procedure ClearItemsStats;
   protected
     FCaseSensitive: Boolean;
     FDirty: Boolean;
     FFilesSize: Int64;
     FFilesSelSize: Int64;
+    FFilesSelected: Integer;
     FHasParentDir: Boolean;
     FIsRecycleBin: Boolean;
     FLastPath: string;
@@ -844,8 +846,7 @@ begin
   inherited;
 
   FWatchForChanges := False;
-  FFilesSize := 0;
-  FFilesSelSize := 0;
+  ClearItemsStats;
   FDimmHiddenFiles := True;
   FShowHiddenFiles := True;
   FFormatSizeBytes := fbNone;
@@ -935,6 +936,13 @@ begin
   FScrollOnDragOver.OnAfterUpdate := ScrollOnDragOverAfterUpdate;
 end;
 
+procedure TCustomDirView.ClearItemsStats;
+begin
+  FFilesSize := 0;
+  FFilesSelSize := 0;
+  FFilesSelected := 0;
+end;
+
 procedure TCustomDirView.ClearItems;
 begin
   CancelEdit;
@@ -942,8 +950,7 @@ begin
   try
     inherited;
   finally
-    FFilesSelSize := 0;
-    FFilesSize := 0;
+    ClearItemsStats;
     DoUpdateStatusBar;
   end;
 end;
@@ -1035,6 +1042,7 @@ var
   OverlayIndexes: Word;
   UpdateStatusBarPending: Boolean;
   Nmcd: PNMCustomDraw;
+  IsFile: Boolean;
 begin
   UpdateStatusBarPending := False;
   case Message.NMHdr^.code of
@@ -1049,8 +1057,19 @@ begin
             if (uOldState and LVIS_SELECTED) <> (uNewState and LVIS_SELECTED) then
             begin
               FileSize := ItemFileSize(Item);
-              if (uOldState and LVIS_SELECTED) <> 0 then Dec(FFilesSelSize, FileSize)
-                else Inc(FFilesSelSize, FileSize);
+              IsFile := ItemIsFile(Item) and (not ItemIsDirectory(Item));
+              if (uOldState and LVIS_SELECTED) <> 0 then
+              begin
+                Dec(FFilesSelSize, FileSize);
+                if IsFile then
+                  Dec(FFilesSelected);
+              end
+                else
+              begin
+                Inc(FFilesSelSize, FileSize);
+                if IsFile then
+                  Inc(FFilesSelected);
+              end;
             end;
             if (uOldState and LVIS_FOCUSED) <> (uNewState and LVIS_FOCUSED) then
             begin
@@ -2033,8 +2052,7 @@ begin
         FNotifyEnabled := False;
         ClearItems;
 
-        FFilesSize := 0;
-        FFilesSelSize := 0;
+        ClearItemsStats;
         SortType := stNone;
         Items.BeginUpdate;
         try
@@ -2539,8 +2557,6 @@ end;
 
 function TCustomDirView.AnyFileSelected(
   OnlyFocused: Boolean; FilesOnly: Boolean; FocusedFileOnlyWhenFocused: Boolean): Boolean;
-var
-  Item: TListItem;
 begin
   if OnlyFocused or
      ((SelCount = 0) and
@@ -2552,15 +2568,17 @@ begin
   end
     else
   begin
-    Result := True;
-    Item := GetNextItem(nil, sdAll, [isSelected]);
-    while Assigned(Item) do
+    if FilesOnly then
     begin
-      if ItemIsFile(Item) and
-         ((not FilesOnly) or (not ItemIsDirectory(Item))) then Exit;
-      Item := GetNextItem(Item, sdAll, [isSelected]);
+      // Though note that this is used only for "Edit" command, where we should actually check for "are ONLY files selected".
+      Result := (FFilesSelected > 0);
+    end
+      else
+    begin
+      // Parent dir cannot be selected, so any selection counts.
+      // SelCount seems to be O(1), while GetNextItem(nil, sdAll, [isSelected]) would be O(n).
+      Result := (SelCount > 0);
     end;
-    Result := False;
   end;
 end;
 
