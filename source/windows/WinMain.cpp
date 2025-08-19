@@ -497,32 +497,42 @@ void InterfaceStartDontMeasure()
   StartupThread->Terminate();
 }
 //---------------------------------------------------------------------------
+int TensOfSecondBetween(TDateTime ANow, TDateTime AThen)
+{
+  return static_cast<int>(MilliSecondsBetween(ANow, AThen) / 100);
+}
+//---------------------------------------------------------------------------
 void AddStartupSequence(const UnicodeString & Tag)
 {
-  int SequenceTensOfSecond = static_cast<int>(MilliSecondsBetween(Now(), LastStartupStartupSequence) / 100);
+  int SequenceTensOfSecond = TensOfSecondBetween(Now(), LastStartupStartupSequence);
   LastStartupStartupSequence = Now();
   AddToList(StartupSequence, FORMAT(L"%s:%d", (Tag, SequenceTensOfSecond)), L",");
 }
 //---------------------------------------------------------------------------
 void InterfaceStarted()
 {
-  if ((Started != TDateTime()) && (LifetimeRuns > 0))
+  if (Started != TDateTime())
   {
     // deliberate downcast
-    int StartupSeconds = static_cast<int>(SecondsBetween(Now(), Started));
+    int StartupTensOfSecond = TensOfSecondBetween(Now(), Started);
+    int StartupSeconds = StartupTensOfSecond / 10;
     int StartupSecondsReal = DebugNotNull(StartupThread)->GetStartupSeconds();
-    if (LifetimeRuns == 1)
+    AppLogFmt(L"Startup time: %d.%d s (real: %d s)", (StartupTensOfSecond / 10, StartupTensOfSecond % 10, StartupSecondsReal));
+    if (LifetimeRuns > 0)
     {
-      Configuration->Usage->Set(L"StartupSeconds1", StartupSeconds);
+      if (LifetimeRuns == 1)
+      {
+        Configuration->Usage->Set(L"StartupSeconds1", StartupSeconds);
+      }
+      else if (LifetimeRuns == 2)
+      {
+        Configuration->Usage->Set(L"StartupSeconds2", StartupSeconds);
+      }
+      Configuration->Usage->Set(L"StartupSecondsLast", StartupSeconds);
+      Configuration->Usage->Set(L"StartupSecondsLastReal", StartupSecondsReal);
+      AddStartupSequence(L"I");
+      Configuration->Usage->Set(L"StartupSequenceLast", StartupSequence);
     }
-    else if (LifetimeRuns == 2)
-    {
-      Configuration->Usage->Set(L"StartupSeconds2", StartupSeconds);
-    }
-    Configuration->Usage->Set(L"StartupSecondsLast", StartupSeconds);
-    Configuration->Usage->Set(L"StartupSecondsLastReal", StartupSecondsReal);
-    AddStartupSequence(L"I");
-    Configuration->Usage->Set(L"StartupSequenceLast", StartupSequence);
   }
   StartupThread->Terminate();
 }
@@ -1372,7 +1382,9 @@ int __fastcall Execute()
                   }
 
                   AddStartupSequence(L"R");
+                  AppLog(L"Running...");
                   Application->Run();
+                  AppLog(L"Terminated.");
                   // to allow dialog boxes show later (like from CheckConfigurationForceSave)
                   SetAppTerminated(False);
                 }

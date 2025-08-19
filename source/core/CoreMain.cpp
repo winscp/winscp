@@ -146,6 +146,7 @@ void CoreLoad()
   // should be noop, unless exception occurred above
   ConfigStorage->CloseAll();
 
+  AppLog(L"Loading sites");
   StoredSessions = new TStoredSessionList();
 
   try
