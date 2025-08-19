@@ -17,6 +17,11 @@
 #include <ne_redirect.h>
 #include <ne_xmlreq.h>
 #include <ne_locks.h>
+// ne_sspi.h is not a public interface, so it is not ready to be included from C++
+#define HAVE_SSPI
+NE_BEGIN_DECLS
+#include <ne_sspi.h>
+NE_END_DECLS
 #include <expat.h>
 
 #include "WebDAVFileSystem.h"
@@ -89,31 +94,14 @@ static UnicodeString PathUnescape(const char * Path)
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 static bool NeonInitialized = false;
-static bool NeonSspiInitialized = false;
+static int NeonSspiInitialized = -1;
 //---------------------------------------------------------------------------
 void __fastcall NeonInitialize()
 {
   // Even if this fails, we do not want to interrupt WinSCP starting for that.
   // Anyway, it can hardly fail.
-  // Though it fails on Wine on Debian VM, because of ne_sspi_init():
-  // sspi: QuerySecurityPackageInfo [failed] [80090305].
-  // sspi: Unable to get negotiate maximum packet size
   int NeonResult = ne_sock_init();
-  if (NeonResult == 0)
-  {
-    NeonInitialized = true;
-    NeonSspiInitialized = true;
-  }
-  else if (NeonResult == -2)
-  {
-    NeonInitialized = true;
-    NeonSspiInitialized = false;
-  }
-  else
-  {
-    NeonInitialized = false;
-    NeonSspiInitialized = false;
-  }
+  NeonInitialized = (NeonResult == 0);
 }
 //---------------------------------------------------------------------------
 void __fastcall NeonFinalize()
@@ -122,6 +110,7 @@ void __fastcall NeonFinalize()
   {
     ne_sock_exit();
     NeonInitialized = false;
+    NeonSspiInitialized = -1;
   }
 }
 //---------------------------------------------------------------------------
@@ -132,7 +121,23 @@ void __fastcall RequireNeon(TTerminal * Terminal)
     throw Exception(LoadStr(NEON_INIT_FAILED2));
   }
 
-  if (!NeonSspiInitialized)
+  if (NeonSspiInitialized < 0)
+  {
+    // This fails on Wine on Debian VM:
+    // sspi: QuerySecurityPackageInfo [failed] [80090305].
+    // sspi: Unable to get negotiate maximum packet size
+    // This takes about second, when debugging, that's why it is postponed until the first connection.
+    if (ne_sspi_init() < 0)
+    {
+      NeonSspiInitialized = 0;
+    }
+    else
+    {
+      NeonSspiInitialized = 1;
+    }
+  }
+
+  if (NeonSspiInitialized <= 0)
   {
     Terminal->LogEvent(L"Warning: SSPI initialization failed.");
   }
