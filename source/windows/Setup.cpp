@@ -1888,6 +1888,10 @@ void __fastcall SetupInitialize()
 {
   try
   {
+    AppLog(L"Updating jumplist...");
+    // This takes about 1s when debugging
+    // (particularly the first time DestinationList::BeginList and IShellLink::SetPath are called)
+    // but it's quick otherwise
     WinConfiguration->UpdateJumpList();
   }
   catch (Exception & E)

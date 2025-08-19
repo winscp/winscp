@@ -1124,6 +1124,7 @@ int __fastcall Execute()
       // reduces risk of an occasional crash.
       // It seems that the point is to load the lists before any call to SHGetFileInfoWithTimeout.
       InitFileControls();
+      SetupInitialize();
 
       if (!Params->Empty)
       {

@@ -160,6 +160,7 @@ void CoreLoad()
   {
     ShowExtendedException(&E);
   }
+  AppLog(L"Sites loaded");
 }
 //---------------------------------------------------------------------------
 void CoreInitialize()
