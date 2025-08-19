@@ -1402,7 +1402,7 @@ void __fastcall TEditorForm::LoadFromFile(bool PrimaryEncoding)
           DebugFail();
           // fallthru
 
-        case CP_ACP:
+        case CP_ACP: // = 0
           FEncoding = PrimaryEncoding ? FAnsiEncoding : TEncoding::UTF8;
           break;
       }

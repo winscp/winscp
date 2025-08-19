@@ -665,7 +665,7 @@ void __fastcall TWinConfiguration::Default()
   FEditor.EarlyClose = 2; // seconds
   FEditor.SDIShellEditor = false;
   FEditor.WindowParams = L"";
-  FEditor.Encoding = CP_ACP;
+  FEditor.Encoding = CP_UTF8;
   FEditor.WarnOnEncodingFallback = true;
   FEditor.WarnOrLargeFileSize = true;
   FEditor.AutoFont = true;
