@@ -2282,3 +2282,8 @@ void ne_sock_set_buffers(ne_socket *sock, unsigned int sndbuf)
         do_ne_sock_sndbuf(sock, SO_RCVBUF, 4 * 1024 * 1024);
     }
 }
+
+int ne_sock_sspi_init(void)
+{
+    return ne_sspi_init();
+}
