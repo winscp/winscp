@@ -1,21 +1,9 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-
 #include "ImportSessions.h"
-
-#include <Configuration.h>
-#include <CoreMain.h>
-
-#include <VCLCommon.h>
-#include <WinInterface.h>
-#include <TextsWin.h>
-#include <CoreMain.h>
-#include <Tools.h>
 #include <WinApi.h>
-#include <PasTools.hpp>
 //---------------------------------------------------------------------
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------

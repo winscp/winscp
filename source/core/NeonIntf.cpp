@@ -1,21 +1,16 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
 #include "NeonIntf.h"
-#include "Interface.h"
-#include "CoreMain.h"
-#include "Exceptions.h"
 #include "Security.h"
 #include "Terminal.h"
 #include "Cryptography.h"
-#include <TextsCore.h>
 extern "C"
 {
 #include <ne_redirect.h>
 #include <ne_auth.h>
 }
-#include <StrUtils.hpp>
 #include <openssl/ssl.h>
 //---------------------------------------------------------------------------
 #define SESSION_PROXY_AUTH_KEY "proxyauth"

@@ -1,26 +1,12 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
 #include "ScpCommander.h"
 
-#include <Common.h>
-#include <CoreMain.h>
-#include <Interface.h>
-#include <TextsCore.h>
-#include <TextsWin.h>
-#include <HelpWin.h>
-#include <VCLCommon.h>
-#include <GUITools.h>
 #include <DragDrop.hpp>
-#include <StrUtils.hpp>
-#include <IOUtils.hpp>
-#include <DateUtils.hpp>
-
 #include "Glyphs.h"
 #include "NonVisual.h"
-#include "Tools.h"
-#include "WinConfiguration.h"
 #include "TerminalManager.h"
 #include "Bookmarks.h"
 //---------------------------------------------------------------------------

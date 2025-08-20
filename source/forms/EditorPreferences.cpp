@@ -1,14 +1,7 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <WinConfiguration.h>
-#include <WinInterface.h>
-#include <VCLCommon.h>
-#include <TextsWin.h>
-#include <Tools.h>
-#include <CoreMain.h>
 #include "EditorPreferences.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)

@@ -1,15 +1,6 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
-
-#include <Common.h>
-#include <WinInterface.h>
-#include <CoreMain.h>
-#include <TextsWin.h>
-#include <VCLCommon.h>
-#include <CustomWinConfiguration.h>
-#include <Tools.h>
-#include <GUITools.h>
 
 #include "Copy.h"
 //---------------------------------------------------------------------------

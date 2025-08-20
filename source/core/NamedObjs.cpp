@@ -1,8 +1,7 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include "Common.h"
 #include "NamedObjs.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)

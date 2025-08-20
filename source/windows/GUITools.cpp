@@ -1,32 +1,19 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
+
+#include "GUITools.h"
 
 #include <shlobj.h>
 #include <mshtmhst.h>
-#include <Common.h>
 
-#include "GUITools.h"
-#include "WinConfiguration.h"
-#include <TextsCore.h>
-#include <TextsWin.h>
-#include <CoreMain.h>
 #include <SessionData.h>
-#include <WinInterface.h>
 #include <TBXUtils.hpp>
-#include <Math.hpp>
-#include <Tools.h>
 #include "PngImageList.hpp"
-#include <StrUtils.hpp>
-#include <limits>
 #include <Glyphs.h>
-#include <PasTools.hpp>
-#include <VCLCommon.h>
 #include <WinApi.h>
 #include <HistoryComboBox.hpp>
 #include <vssym32.h>
-#include <DateUtils.hpp>
-#include <IOUtils.hpp>
 #include <Queue.h>
 #include <Vcl.Themes.hpp>
 

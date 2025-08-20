@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------------
+#include <ResourcesPCH.h>
 #pragma hdrstop
 
-#include "Global.h"
 #include "Glyphs120.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)

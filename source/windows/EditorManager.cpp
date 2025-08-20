@@ -1,15 +1,9 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <CoreMain.h>
-#include <TextsWin.h>
 #include <SessionData.h>
-#include "WinConfiguration.h"
 #include "EditorManager.h"
-#include <algorithm>
-#include <DateUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

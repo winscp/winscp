@@ -1,17 +1,12 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
-#include <Common.h>
+
 #include "GUIConfiguration.h"
-#include "GUITools.h"
+
 #include <FileInfo.h>
-#include <TextsCore.h>
-#include <TextsWin.h>
 #include <Terminal.h>
-#include <CoreMain.h>
 #include <shlobj.h>
-#include <System.IOUtils.hpp>
-#include <System.StrUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -565,7 +560,7 @@ void __fastcall TGUIConfiguration::Default()
   FQueueAutoPopup = true;
   FSessionRememberPassword = true;
   UnicodeString ProgramsFolder;
-  SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
+  ::SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
   FDefaultPuttyPathOnly = IncludeTrailingBackslash(ProgramsFolder) + L"PuTTY\\" + OriginalPuttyExecutable;
   FDefaultPuttyPath = L"%ProgramFiles%\\PuTTY\\" + OriginalPuttyExecutable;
   FPuttyPath = FormatCommand(FDefaultPuttyPath, L"");

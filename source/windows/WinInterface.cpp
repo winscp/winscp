@@ -1,34 +1,17 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
 #include <shlwapi.h>
-#include <algorithm>
 
-#include <Common.h>
 #include <Queue.h>
-#include <Exceptions.h>
-#include <CoreMain.h>
-#include <TextsCore.h>
-#include <TextsWin.h>
-#include <HelpWin.h>
-#include <HelpCore.h>
-#include <Interface.h>
-#include <VCLCommon.h>
 #include <Glyphs.h>
-#include <PasTools.hpp>
-#include <DateUtils.hpp>
 #include <Custom.h>
 #include <HistoryComboBox.hpp>
 
-#include "WinInterface.h"
-#include "GUITools.h"
 #include "JclDebug.hpp"
 #include "JclHookExcept.hpp"
-#include <System.IOUtils.hpp>
-#include <StrUtils.hpp>
 #include <WinApi.h>
-#include "Tools.h"
 #include <Vcl.AppEvnts.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)

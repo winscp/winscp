@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-#include "stdafx.h"
+#include "FileZillaPCH.h"
 
 __int64 GetLength64(CFile &file)
 {

@@ -1,24 +1,17 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
 #include "SessionData.h"
 
-#include "Common.h"
-#include "Exceptions.h"
 #include "FileBuffer.h"
-#include "CoreMain.h"
-#include "TextsCore.h"
 #include "PuttyIntf.h"
 #include "RemoteFiles.h"
 #include "SftpFileSystem.h"
 #include "S3FileSystem.h"
 #include "FileMasks.h"
 #include <Soap.EncdDecd.hpp>
-#include <StrUtils.hpp>
 #include <XMLDoc.hpp>
-#include <System.IOUtils.hpp>
-#include <algorithm>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

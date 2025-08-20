@@ -1,28 +1,14 @@
 //---------------------------------------------------------------------------
-#define NO_WIN32_LEAN_AND_MEAN
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
 #include "TerminalManager.h"
 #include <Authenticate.h>
 #include "CustomScpExplorer.h"
 #include "NonVisual.h"
-#include "WinConfiguration.h"
-#include "Tools.h"
-#include <Common.h>
-#include <CoreMain.h>
-#include <GUITools.h>
-#include <TextsWin.h>
-#include <TextsCore.h>
 #include <Progress.h>
-#include <Exceptions.h>
-#include <VCLCommon.h>
 #include <WinApi.h>
 #include <PuttyTools.h>
-#include <HelpWin.h>
-#include <System.IOUtils.hpp>
-#include <StrUtils.hpp>
-#include <DateUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

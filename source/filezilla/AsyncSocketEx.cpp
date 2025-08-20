@@ -6,7 +6,7 @@
 // If you use this class in commercial applications, please send a short message
 // to tim.kosse@gmx.de
 //---------------------------------------------------------------------------
-#include "stdafx.h"
+#include "FileZillaPCH.h"
 #include "AsyncSocketEx.h"
 #include "wtypes.h"
 #include "oleauto.h"

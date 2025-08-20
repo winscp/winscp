@@ -1,12 +1,6 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
-
-#include <CoreMain.h>
-
-#include <TextsWin.h>
-#include <TextsCore.h>
-#include <HelpWin.h>
 
 #include "CustomScpExplorer.h"
 #include "TerminalManager.h"
@@ -14,12 +8,7 @@
 #include "Glyphs.h"
 #include "ProgParams.h"
 #include "Setup.h"
-#include "WinConfiguration.h"
-#include "GUITools.h"
-#include "Tools.h"
 #include "WinApi.h"
-#include <DateUtils.hpp>
-#include <StrUtils.hpp>
 #include <Xml.Win.msxmldom.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)

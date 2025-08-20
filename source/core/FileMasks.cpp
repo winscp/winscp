@@ -1,15 +1,11 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
 #include "FileMasks.h"
-
-#include "Common.h"
-#include "TextsCore.h"
 #include "RemoteFiles.h"
 #include "PuttyTools.h"
 #include "Terminal.h"
-#include <StrUtils.hpp>
 //---------------------------------------------------------------------------
 extern const wchar_t IncludeExcludeFileMasksDelimiter = L'|';
 UnicodeString FileMasksDelimiters = L";,";

@@ -1,32 +1,18 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
-#include <Consts.hpp>
 #include <shlobj.h>
 #include <stdio.h>
 #define INITGUID
 #include <propkey.h>
 #include <powrprof.h>
 
-#include <Common.h>
-#include <TextsWin.h>
-#include <TextsCore.h>
-#include <HelpWin.h>
-#include <Exceptions.h>
-#include <CoreMain.h>
 #include <RemoteFiles.h>
 #include <PuttyTools.h>
-
-#include "GUITools.h"
-#include "VCLCommon.h"
 #include "Setup.h"
-#include "Tools.h"
 #include <WinHelpViewer.hpp>
-#include <PasTools.hpp>
 #include <System.Win.ComObj.hpp>
-#include <StrUtils.hpp>
-#include <WinConfiguration.h>
 #include <ProgParams.h>
 //---------------------------------------------------------------------------
 // WORKAROUND

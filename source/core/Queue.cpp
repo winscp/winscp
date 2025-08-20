@@ -1,13 +1,9 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include "Common.h"
 #include "Terminal.h"
 #include "Queue.h"
-#include "Exceptions.h"
-#include <System.DateUtils.hpp>
-#include <algorithm>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

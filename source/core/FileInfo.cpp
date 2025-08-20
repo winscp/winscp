@@ -1,11 +1,7 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <Exceptions.h>
-#include <Windows.hpp>
-#include <Math.hpp>
 #include "FileInfo.h"
 #include "FileBuffer.h"
 //---------------------------------------------------------------------------

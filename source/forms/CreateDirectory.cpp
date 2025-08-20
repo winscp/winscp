@@ -1,16 +1,8 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <CoreMain.h>
-#include <Configuration.h>
 #include <RemoteFiles.h>
-#include <VCLCommon.h>
-#include <TextsWin.h>
-#include <Common.h>
-#include <WinInterface.h>
-#include <Tools.h>
-
 #include "CreateDirectory.h"
 //---------------------------------------------------------------------
 #pragma link "Rights"

@@ -1,19 +1,9 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-
 #include "Authenticate.h"
-
-#include <VCLCommon.h>
-#include <TextsWin.h>
-#include <Terminal.h>
-#include <CoreMain.h>
-#include <PasTools.hpp>
-#include <CustomWinConfiguration.h>
 #include <Character.hpp>
-#include <Tools.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"

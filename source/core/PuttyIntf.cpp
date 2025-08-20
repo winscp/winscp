@@ -1,14 +1,10 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
 #include "PuttyIntf.h"
-#include "Interface.h"
 #include "SecureShell.h"
 #include "Exceptions.h"
-#include "CoreMain.h"
-#include "TextsCore.h"
-#include <StrUtils.hpp>
 #include <Soap.EncdDecd.hpp>
 //---------------------------------------------------------------------------
 char sshver[50];

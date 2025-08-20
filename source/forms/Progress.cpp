@@ -1,21 +1,8 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <CoreMain.h>
-#include <TextsWin.h>
-#include <HelpWin.h>
-#include <WinInterface.h>
-#include <VCLCommon.h>
-#include <CustomWinConfiguration.h>
-#include <GUITools.h>
-#include <BaseUtils.hpp>
-#include <DateUtils.hpp>
-#include <Consts.hpp>
-#include <HistoryComboBox.hpp>
 #include <windowsx.h>
-#include <algorithm>
 
 #include "Progress.h"
 //---------------------------------------------------------------------

@@ -1,18 +1,11 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
 #include "ScpExplorer.h"
 
-#include <Common.h>
-#include <CoreMain.h>
-
 #include "NonVisual.h"
 #include "Glyphs.h"
-#include "Tools.h"
-#include "WinConfiguration.h"
-#include <VCLCommon.h>
-#include <TextsWin.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "CustomDirView"

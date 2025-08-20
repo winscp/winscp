@@ -1,9 +1,7 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include <limits>
-#include "Common.h"
 #include "Security.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)

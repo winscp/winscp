@@ -1,14 +1,8 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <TextsWin.h>
-#include <GUIConfiguration.h>
-#include <GUITools.h>
-#include <Tools.h>
 #include "CopyParamPreset.h"
-#include "VCLCommon.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "CopyParams"

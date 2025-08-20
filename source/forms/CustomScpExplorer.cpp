@@ -1,43 +1,24 @@
 //---------------------------------------------------------------------------
-#define NO_WIN32_LEAN_AND_MEAN
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
-
-#include <Common.h>
 
 #include "CustomScpExplorer.h"
 
-#include <algorithm>
 #include <Bookmarks.h>
-#include <Interface.h>
-#include <Exceptions.h>
-#include <CoreMain.h>
 #include <FileSystems.h>
-#include <TextsCore.h>
-#include <TextsWin.h>
-#include <HelpWin.h>
-
-#include <VCLCommon.h>
 #include <Progress.h>
 #include <SynchronizeProgress.h>
-
 #include <DragExt.h>
 #include <WinApi.h>
-
 #include "NonVisual.h"
 #include "Glyphs.h"
-#include "Tools.h"
-#include "WinConfiguration.h"
 #include "TerminalManager.h"
 #include "EditorManager.h"
 #include "ProgParams.h"
 #include "Setup.h"
-#include <Consts.hpp>
-#include <DateUtils.hpp>
 #include <TB2Common.hpp>
 #include <DirectoryMonitor.hpp>
-#include <System.IOUtils.hpp>
-#include <System.StrUtils.hpp>
+#include <mmsystem.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "CustomDirView"

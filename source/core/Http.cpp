@@ -1,13 +1,11 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
 #include "Http.h"
 #include "NeonIntf.h"
 #include "Exceptions.h"
-#include "CoreMain.h"
 #include "ne_request.h"
-#include "TextsCore.h"
 #include <openssl/ssl.h>
 //---------------------------------------------------------------------------
 const int BasicHttpResponseLimit = 102400;

@@ -1,25 +1,11 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-
-#include "WinInterface.h"
 #include "SynchronizeChecklist.h"
 
 #include <Terminal.h>
-#include <TextsWin.h>
-#include <CoreMain.h>
-
-#include <VCLCommon.h>
-#include <Tools.h>
-#include <BaseUtils.hpp>
-#include <Math.hpp>
-#include <WinConfiguration.h>
 #include <TerminalManager.h>
-#include <System.IOUtils.hpp>
-#include <System.StrUtils.hpp>
-#include <algorithm>
 //---------------------------------------------------------------------
 #pragma link "IEListView"
 #pragma link "NortonLikeListView"

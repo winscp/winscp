@@ -1,16 +1,8 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-
 #include "CopyParams.h"
-
-#include <VCLCommon.h>
-#include <CoreMain.h>
-#include "CustomWinConfiguration.h"
-#include "TextsWin.h"
-#include "Tools.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "Rights"

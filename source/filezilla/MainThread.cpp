@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-#include "stdafx.h"
+#include "FileZillaPCH.h"
 #include "MainThread.h"
 
 #define ECS m_CriticalSection.Lock()

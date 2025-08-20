@@ -1,23 +1,10 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <StrUtils.hpp>
-#include <CoreMain.h>
-#include <Common.h>
 #include <PuttyTools.h>
-#include <TextsWin.h>
-#include <TextsCore.h>
-#include <HelpWin.h>
-#include <VCLCommon.h>
-#include <limits>
-
-#include "WinInterface.h"
 #include "Login.h"
-#include "GUITools.h"
-#include "Tools.h"
 #include "Setup.h"
-#include "WinConfiguration.h"
 #include "ProgParams.h"
 #include "WinApi.h"
 #include "S3FileSystem.h"

@@ -1,10 +1,8 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
 #include <Configuration.h>
-#include <CoreMain.h>
-#include <Common.h>
 #include <Usage.h>
 #include <FileInfo.h>
 //---------------------------------------------------------------------------

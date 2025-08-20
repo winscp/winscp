@@ -1,14 +1,8 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-
 #include "Rights.h"
-
-#include <VCLCommon.h>
-#include <Tools.h>
-#include <TextsWin.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "GrayedCheckBox"

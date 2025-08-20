@@ -1,20 +1,16 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include "Common.h"
 #include "PuttyIntf.h"
 #include "Cryptography.h"
 #include "FileBuffer.h"
-#include "TextsCore.h"
-#include "CoreMain.h"
 #include "Exceptions.h"
 #include <openssl\rand.h>
 #include <openssl\err.h>
 #include <openssl\ssl.h>
 #include <process.h>
 #include <Soap.EncdDecd.hpp>
-#include <System.StrUtils.hpp>
 
 /*
  ---------------------------------------------------------------------------

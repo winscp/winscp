@@ -6,7 +6,7 @@
 // If you use this class in commercial applications, please send a short message
 // to tim.kosse@gmx.de
 //---------------------------------------------------------------------------
-#include "stdafx.h"
+#include "FileZillaPCH.h"
 #include "AsyncProxySocketLayer.h"
 #include "atlconv.h" //Unicode<->Ascii conversion macros declared here
 #include <Soap.EncdDecd.hpp>

@@ -1,17 +1,9 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
 #include <Terminal.h>
-#include <VCLCommon.h>
-#include "WinInterface.h"
 #include "FileSystemInfo.h"
-#include "TextsCore.h"
-#include "TextsWin.h"
-#include "GUITools.h"
-#include <BaseUtils.hpp>
-#include <StrUtils.hpp>
 //---------------------------------------------------------------------
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"

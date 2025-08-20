@@ -1,23 +1,15 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
 #include <FileInfo.h>
 
-#include "Common.h"
-#include "Exceptions.h"
 #include "Configuration.h"
 #include "PuttyIntf.h"
-#include "TextsCore.h"
-#include "Interface.h"
-#include "CoreMain.h"
 #include "Security.h"
 #include "FileMasks.h"
 #include "CopyParam.h"
 #include <shlobj.h>
-#include <System.IOUtils.hpp>
-#include <System.StrUtils.hpp>
-#include <System.DateUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

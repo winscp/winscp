@@ -1,29 +1,15 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <Exceptions.h>
 #include <Script.h>
-#include <CoreMain.h>
 #include <Terminal.h>
 #include <PuttyTools.h>
 #include <Queue.h>
 #include <HierarchicalStorage.h>
-#include <Tools.h>
-
-#include <Consts.hpp>
-#include <StrUtils.hpp>
-
 #include "Console.h"
-#include "WinInterface.h"
 #include "ProgParams.h"
-#include "TextsWin.h"
-#include "TextsCore.h"
-#include "WinConfiguration.h"
 #include "SynchronizeController.h"
-#include "GUITools.h"
-#include "VCLCommon.h"
 #include "Setup.h"
 #include "FtpFileSystem.h"
 #include "SessionInfo.h"

@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-#include "stdafx.h"
+#include "FileZillaPCH.h"
 #include "FileZillaApi.h"
 #include "MainThread.h"
 

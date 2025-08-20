@@ -1,15 +1,7 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <WinInterface.h>
-#include <VCLCommon.h>
-#include <TextsWin.h>
-#include <WinConfiguration.h>
-#include <CoreMain.h>
-#include <Tools.h>
-#include <BaseUtils.hpp>
 #include <Terminal.h>
 #include "FileFind.h"
 //---------------------------------------------------------------------------

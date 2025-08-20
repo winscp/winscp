@@ -1,11 +1,7 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <Tools.h>
-#include <TextsWin.h>
-#include <CoreMain.h>
 #include <HelpIntfs.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)

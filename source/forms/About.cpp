@@ -1,29 +1,15 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <SysUtils.hpp>
-//---------------------------------------------------------------------
-#include <VCLCommon.h>
-#include <Common.h>
-#include <Tools.h>
-#include <GUITools.h>
-#include <CoreMain.h>
 #include <PuttyTools.h>
-#include "WinInterface.h"
 #include "About.h"
-#include "TextsCore.h"
-#include "TextsWin.h"
-#ifndef NO_COMPONENTS
 // must be included before WebBrowserEx.hpp to avoid ambiguity of tagLOGFONTW
 #include <TB2Version.hpp>
 #include <TBX.hpp>
-#endif
 #include <JclBase.hpp>
 #include <JclDebug.hpp>
 #include <WebBrowserEx.hpp>
-#include <StrUtils.hpp>
-#include <Dialogs.hpp>
 #include <FtpFileSystem.h>
 #include <S3FileSystem.h>
 //---------------------------------------------------------------------
@@ -264,8 +250,6 @@ void __fastcall TAboutDialog::DoLoadThirdParty()
 
   AddBrowserLinkHandler(FThirdPartyWebBrowser, EXPAT_LICENSE_URL, ExpatLicenceHandler);
 
-#ifndef NO_COMPONENTS
-
   AddPara(ThirdParty,
     FMTLOAD(ABOUT_TOOLBAR2000, (Toolbar2000Version)) + Br +
     LoadStr(ABOUT_TOOLBAR2000_COPYRIGHT) + Br +
@@ -279,8 +263,6 @@ void __fastcall TAboutDialog::DoLoadThirdParty()
   AddPara(ThirdParty,
     LoadStr(ABOUT_FILEMANAGER) + Br +
     LoadStr(ABOUT_FILEMANAGER_COPYRIGHT));
-
-#endif
 
   UnicodeString JclVersion =
     FormatVersion(JclVersionMajor, JclVersionMinor, JclVersionRelease) + L" " + JclCommit;

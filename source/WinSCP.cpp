@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
 USEFORM("forms\CustomScpExplorer.cpp", CustomScpExplorerForm);
@@ -7,14 +7,8 @@ USEFORM("forms\NonVisual.cpp", NonVisualDataModule); /* TDataModule: File Type *
 USEFORM("forms\ScpCommander.cpp", ScpCommanderForm);
 USEFORM("forms\ScpExplorer.cpp", ScpExplorerForm);
 //---------------------------------------------------------------------------
-#include <CoreMain.h>
-#include <WinInterface.h>
 #include <ProgParams.h>
-#include <VCLCommon.h>
-#include <Setup.h>
 #include <PuttyTools.h>
-#include <GUITools.h>
-#include <Tools.h>
 //---------------------------------------------------------------------------
 void __fastcall AppLogImpl(UnicodeString S)
 {

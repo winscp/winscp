@@ -1,18 +1,8 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <TextsWin.h>
-#include <Interface.h>
-#include <CoreMain.h>
-#include <VCLCommon.h>
-#include <CustomWinConfiguration.h>
-
 #include "Console.h"
-#include <Tools.h>
-#include <PasTools.hpp>
-#include <GUITools.h>
 //---------------------------------------------------------------------
 #pragma link "HistoryComboBox"
 #pragma link "PathLabel"

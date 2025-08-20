@@ -1,14 +1,6 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
-
-#include <Common.h>
-#include <VCLCommon.h>
-#include <TextsWin.h>
-#include <CustomWinConfiguration.h>
-#include <CoreMain.h>
-#include <WinInterface.h>
-#include <GUITools.h>
 
 #include "RemoteTransfer.h"
 //---------------------------------------------------------------------------

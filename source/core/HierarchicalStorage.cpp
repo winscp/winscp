@@ -1,15 +1,10 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include "Common.h"
 #include "Exceptions.h"
 #include "PuttyIntf.h"
 #include "HierarchicalStorage.h"
-#include <Interface.h>
-#include <TextsCore.h>
-#include <StrUtils.hpp>
-#include <vector>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

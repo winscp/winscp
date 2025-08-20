@@ -1,17 +1,10 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include "VCLCommon.h"
 #include "GenerateUrl.h"
-#include "CoreMain.h"
-#include "WinConfiguration.h"
-#include <StrUtils.hpp>
-#include <Tools.h>
 #include <PuttyTools.h>
-#include <TextsWin.h>
 #include <ProgParams.h>
-#include <GUITools.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"

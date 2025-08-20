@@ -1,19 +1,9 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include "Common.h"
 #include "RemoteFiles.h"
-
-#include <SysUtils.hpp>
-#include <StrUtils.hpp>
-#include <DateUtils.hpp>
-
-#include "Exceptions.h"
-#include "Interface.h"
 #include "Terminal.h"
-#include "TextsCore.h"
-#include "HelpCore.h"
 #include "Cryptography.h"
 /* TODO 1 : Path class instead of UnicodeString (handle relativity...) */
 //---------------------------------------------------------------------------

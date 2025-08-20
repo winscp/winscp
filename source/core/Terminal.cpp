@@ -1,18 +1,11 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
 #include "Terminal.h"
 
-#include <SysUtils.hpp>
-#include <FileCtrl.hpp>
-#include <StrUtils.hpp>
-#include <System.IOUtils.hpp>
-
-#include "Common.h"
 #include "PuttyTools.h"
 #include "FileBuffer.h"
-#include "Interface.h"
 #include "RemoteFiles.h"
 #include "SecureShell.h"
 #include "ScpFileSystem.h"
@@ -20,16 +13,12 @@
 #include "FtpFileSystem.h"
 #include "WebDAVFileSystem.h"
 #include "S3FileSystem.h"
-#include "TextsCore.h"
-#include "HelpCore.h"
-#include "CoreMain.h"
 #include "Queue.h"
 #include "Cryptography.h"
 #include "NeonIntf.h"
 #include <PuttyTools.h>
 #include <openssl/pkcs12.h>
 #include <openssl/err.h>
-#include <algorithm>
 
 #ifndef AUTO_WINSOCK
 #include <winsock2.h>

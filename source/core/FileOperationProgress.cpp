@@ -1,11 +1,8 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include "Common.h"
 #include "FileOperationProgress.h"
-#include "CoreMain.h"
-#include "Interface.h"
 //---------------------------------------------------------------------------
 #define TRANSFER_BUF_SIZE 32768
 //---------------------------------------------------------------------------

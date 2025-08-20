@@ -1,16 +1,10 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include <SysUtils.hpp>
-
-#include "Common.h"
-#include "Exceptions.h"
-#include "TextsCore.h"
 #include "Script.h"
 #include "Terminal.h"
 #include "SessionData.h"
-#include "CoreMain.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

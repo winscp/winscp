@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-#include "stdafx.h"
+#include "FileZillaPCH.h"
 #include "TransferSocket.h"
 #include "MainThread.h"
 #include "AsyncProxySocketLayer.h"

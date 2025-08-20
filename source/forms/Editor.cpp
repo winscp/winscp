@@ -1,17 +1,8 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
 #include "Editor.h"
-#include "TextsWin.h"
-#include "Tools.h"
-#include <CoreMain.h>
-#include "VCLCommon.h"
-#include "WinConfiguration.h"
-#include "HelpWin.h"
-#include <BaseUtils.hpp>
-#include <GUITools.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "TB2Dock"

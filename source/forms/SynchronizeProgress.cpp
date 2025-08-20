@@ -1,15 +1,8 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <WinInterface.h>
 #include "SynchronizeProgress.h"
-#include <Common.h>
-#include <Configuration.h>
-#include <CoreMain.h>
-#include <TextsWin.h>
-#include <VCLCommon.h>
-#include <GUITools.h>
 #include <Progress.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)

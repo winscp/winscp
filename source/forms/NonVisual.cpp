@@ -1,21 +1,12 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
-
-#include <Common.h>
 
 #include "NonVisual.h"
 
-#include <CoreMain.h>
-#include <TextsWin.h>
-#include <Tools.h>
 #include <Setup.h>
-
-#include <Interface.h>
-#include "WinConfiguration.h"
 #include "TerminalManager.h"
 #include "TBX.hpp"
-#include "VCLCommon.h"
 #include <HistoryComboBox.hpp>
 #include "Glyphs.h"
 //---------------------------------------------------------------------------

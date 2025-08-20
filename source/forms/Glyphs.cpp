@@ -1,15 +1,11 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <ResourcesPCH.h>
 #pragma hdrstop
 
-#include "Global.h"
 #include "Glyphs.h"
 #include "Glyphs120.h"
 #include "Glyphs144.h"
 #include "Glyphs192.h"
-#include "Common.h"
-#include "GUITools.h"
-#include "GUIConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "PngImageList"

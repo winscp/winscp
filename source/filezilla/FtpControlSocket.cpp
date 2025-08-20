@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-#include "stdafx.h"
+#include "FileZillaPCH.h"
 #include "FtpControlSocket.h"
 #include "MainThread.h"
 #include "transfersocket.h"

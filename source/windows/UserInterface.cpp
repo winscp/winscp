@@ -1,27 +1,14 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
 #include "ScpCommander.h"
 #include "ScpExplorer.h"
 
-#include <CoreMain.h>
-#include <Common.h>
-#include <Exceptions.h>
 #include <Cryptography.h>
-#include "ProgParams.h"
-#include "VCLCommon.h"
-#include "WinConfiguration.h"
 #include "TerminalManager.h"
-#include "TextsWin.h"
-#include "WinInterface.h"
 #include "ProgParams.h"
-#include "Tools.h"
 #include "Custom.h"
-#include "HelpWin.h"
-#include <Math.hpp>
-#include <PasTools.hpp>
-#include <GUITools.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

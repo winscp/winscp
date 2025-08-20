@@ -1,23 +1,10 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Dialogs.hpp>
-//---------------------------------------------------------------------
-#include <Common.h>
-#include <CustomWinConfiguration.h>
-#include <WinInterface.h>
-#include <VCLCommon.h>
-#include <TextsWin.h>
-#include <HelpWin.h>
-#include <CoreMain.h>
-#include <PasTools.hpp>
 #include <ProgParams.h>
-#include <Tools.h>
-#include <GUITools.h>
 #include <PuttyTools.h>
 #include <HistoryComboBox.hpp>
-#include <Math.hpp>
 #include <System.Character.hpp>
 
 #include "Custom.h"

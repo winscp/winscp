@@ -1,29 +1,12 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <StrUtils.hpp>
-#include <System.IOUtils.hpp>
-#include <Common.h>
-#include <math.h>
-#include <limits>
-#include <algorithm>
-
 #include "Preferences.h"
-#include "Custom.h"
 
-#include <CoreMain.h>
+#include "Custom.h"
 #include <Terminal.h>
 #include <Bookmarks.h>
-
-#include "VCLCommon.h"
-#include "GUITools.h"
-#include "Tools.h"
-#include "TextsCore.h"
-#include "TextsWin.h"
-#include "HelpWin.h"
-#include "WinInterface.h"
-#include "WinConfiguration.h"
 #include "Setup.h"
 #include "ProgParams.h"
 #include "Http.h"

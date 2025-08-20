@@ -1,25 +1,13 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include "WinInterface.h"
-#include "VCLCommon.h"
-
-#include <Common.h>
-#include <TextsWin.h>
 #include <RemoteFiles.h>
-#include <GUITools.h>
-#include <Tools.h>
-#include <CustomWinConfiguration.h>
-#include <CoreMain.h>
 
 #include <Vcl.StdActns.hpp>
 #include <FileCtrl.hpp>
 #include <PathLabel.hpp>
-#include <PasTools.hpp>
-#include <StrUtils.hpp>
 #include <Vcl.Imaging.pngimage.hpp>
-#include <Math.hpp>
 #include <TB2ExtItems.hpp>
 #include <TBXExtItems.hpp>
 #include <IEListView.hpp>

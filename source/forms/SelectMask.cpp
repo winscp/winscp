@@ -1,17 +1,9 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
 #include <FileMasks.h>
-#include <CoreMain.h>
-#include <TextsWin.h>
-#include <HelpWin.h>
-#include <Tools.h>
-#include <VCLCommon.h>
-
 #include "SelectMask.h"
-#include "WinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "HistoryComboBox"

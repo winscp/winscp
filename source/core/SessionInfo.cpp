@@ -1,21 +1,14 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include <stdio.h>
 #include <lmcons.h>
 #define SECURITY_WIN32
 #include <sspi.h>
 #include <secext.h>
 
-#include "Common.h"
 #include "SessionInfo.h"
-#include "Exceptions.h"
-#include "TextsCore.h"
-#include "CoreMain.h"
 #include "Script.h"
-#include <System.IOUtils.hpp>
-#include <DateUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

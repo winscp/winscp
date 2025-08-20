@@ -1,24 +1,13 @@
 //---------------------------------------------------------------------------
-#define NO_WIN32_LEAN_AND_MEAN
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include "Common.h"
 #include "Exceptions.h"
-#include "TextsCore.h"
-#include "Interface.h"
-#include <StrUtils.hpp>
-#include <DateUtils.hpp>
-#include <System.IOUtils.hpp>
 #include <math.h>
 #include <shlobj.h>
-#include <limits>
-#include <algorithm>
-#include <memory>
 #include <shlwapi.h>
 #include <tlhelp32.h>
 #include <psapi.h>
-#include <CoreMain.h>
 #include <SessionInfo.h>
 #include <Soap.EncdDecd.hpp>
 #include <openssl/pkcs12.h>

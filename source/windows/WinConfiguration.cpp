@@ -1,27 +1,17 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
-#include "Common.h"
-#include "WinConfiguration.h"
-#include "Exceptions.h"
+
 #include "Bookmarks.h"
 #include "Terminal.h"
-#include "TextsWin.h"
-#include "WinInterface.h"
-#include "GUITools.h"
-#include "Tools.h"
 #include "Setup.h"
 #include "Security.h"
 #include "TerminalManager.h"
 #include "Cryptography.h"
-#include <VCLCommon.h>
 #include <initguid.h>
 #include <DragExt.h>
-#include <Math.hpp>
-#include <StrUtils.hpp>
 #include <OperationWithTimeout.hpp>
 #include "FileInfo.h"
-#include "CoreMain.h"
 #include "DriveView.hpp"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)

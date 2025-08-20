@@ -1,20 +1,10 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <CoreMain.h>
-#include <Configuration.h>
 #include <RemoteFiles.h>
-#include <VCLCommon.h>
-#include <TextsWin.h>
-#include <HelpWin.h>
-#include <Common.h>
-
 #include "LocationProfiles.h"
-#include "WinConfiguration.h"
 #include "Custom.h"
-#include <Math.hpp>
-#include <GUITools.h>
 //---------------------------------------------------------------------
 #pragma link "HistoryComboBox"
 #pragma link "PngImageList"

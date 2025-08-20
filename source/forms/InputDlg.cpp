@@ -1,13 +1,7 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include "WinInterface.h"
-#include <VCLCommon.h>
-#include <Windows.hpp>
-#include <Consts.hpp>
-#include <HistoryComboBox.hpp>
-#include <PasTools.hpp>
 #include <Custom.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)

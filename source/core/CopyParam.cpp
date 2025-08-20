@@ -1,13 +1,9 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include "Common.h"
-#include "Exceptions.h"
 #include "CopyParam.h"
 #include "HierarchicalStorage.h"
-#include "TextsCore.h"
-#include "Interface.h"
 //---------------------------------------------------------------------------
 const wchar_t * TransferModeNames[] = { L"binary", L"ascii", L"automatic" };
 const int TransferModeNamesCount = LENOF(TransferModeNames);

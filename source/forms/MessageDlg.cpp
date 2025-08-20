@@ -1,21 +1,8 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Consts.hpp>
-#include <GUITools.h>
-
-#include <Common.h>
-#include <VCLCommon.h>
-#include <CoreMain.h>
-#include <WinInterface.h>
-#include <Tools.h>
-#include <TextsWin.h>
-#include <TextsCore.h>
 #include <Vcl.Imaging.pngimage.hpp>
-#include <StrUtils.hpp>
-#include <PasTools.hpp>
-#include <Math.hpp>
 #include <WebBrowserEx.hpp>
 #include <RegularExpressions.hpp>
 #include <Setup.h>

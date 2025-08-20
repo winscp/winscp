@@ -1,15 +1,9 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-#include <CoreMain.h>
 #include <Queue.h>
-#include <TextsWin.h>
-#include <GUITools.h>
-#include <WinConfiguration.h>
 #include "QueueController.h"
-#include <BaseUtils.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

@@ -1,8 +1,7 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
 #include "ProgParams.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)

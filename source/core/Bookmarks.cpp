@@ -1,12 +1,10 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
-#include <Common.h>
 #include "NamedObjs.h"
 #include "Bookmarks.h"
 #include "Configuration.h"
 #include "HierarchicalStorage.h"
-#include "TextsCore.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

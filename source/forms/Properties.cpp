@@ -1,18 +1,10 @@
 //---------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include "WinInterface.h"
 #include "Properties.h"
 
-#include <VCLCommon.h>
-#include <Common.h>
 #include <Terminal.h>
-#include <TextsWin.h>
-#include <GUITools.h>
-#include <CoreMain.h>
-#include <Tools.h>
-#include <BaseUtils.hpp>
 //---------------------------------------------------------------------
 #pragma link "PathLabel"
 #pragma link "Rights"

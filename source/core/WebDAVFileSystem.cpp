@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
 #include <io.h>
@@ -21,16 +21,9 @@
 
 #include "WebDAVFileSystem.h"
 
-#include "Interface.h"
-#include "Common.h"
-#include "Exceptions.h"
 #include "Terminal.h"
-#include "TextsCore.h"
 #include "SecureShell.h"
-#include "HelpCore.h"
-#include "CoreMain.h"
 #include "Security.h"
-#include <StrUtils.hpp>
 #include <NeonIntf.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)

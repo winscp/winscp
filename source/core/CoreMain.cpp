@@ -1,18 +1,12 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
-#include "CoreMain.h"
-
-#include "Common.h"
-#include "Interface.h"
 #include "Configuration.h"
 #include "PuttyIntf.h"
 #include "Cryptography.h"
-#include <DateUtils.hpp>
 #include "FileZillaIntf.h"
 #include "NeonIntf.h"
-#include "TextsCore.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

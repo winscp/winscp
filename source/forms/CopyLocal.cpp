@@ -1,14 +1,8 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
 #include "CopyLocal.h"
-#include "VCLCommon.h"
-#include "TextsWin.h"
-#include "GUITools.h"
-#include "Tools.h"
-#include "WinInterface.h"
 #include "ComboEdit.hpp"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)

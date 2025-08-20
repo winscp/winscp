@@ -2,38 +2,23 @@
 // Part of this code is
 // Copyright (C) 2002-2004, Marco Barisione <marco.bari@vene.ws>
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <WinPCH.h>
 #pragma hdrstop
 
 #include <stdio.h>
 #include <tchar.h>
 #include <shlobj.h>
 #include <tlhelp32.h>
-#include <Common.h>
-#include <CoreMain.h>
-#include <Exceptions.h>
-#include <TextsWin.h>
-#include <TextsCore.h>
-#include <HelpWin.h>
 #include <Http.h>
 #include <CompThread.hpp>
 #include <FileInfo.h>
-#include "WinConfiguration.h"
-#include "WinInterface.h"
-#include "Tools.h"
 #include "Setup.h"
-#include <StrUtils.hpp>
 #include "ProgParams.h"
-#include <Consts.hpp>
-#include <GUITools.h>
 #include <PuttyTools.h>
-#include <VCLCommon.h>
 #include <WebBrowserEx.hpp>
-#include <DateUtils.hpp>
 #include <OperationWithTimeout.hpp>
 #include <Soap.HTTPUtil.hpp>
 #include <Web.HTTPApp.hpp>
-#include <System.IOUtils.hpp>
 #include <WinApi.h>
 #include <System.NetEncoding.hpp>
 //---------------------------------------------------------------------------

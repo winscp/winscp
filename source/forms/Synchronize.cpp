@@ -1,24 +1,11 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Common.h>
-
-#include "WinInterface.h"
 #include "Synchronize.h"
-#include "VCLCommon.h"
 #include "CopyParams.h"
 #include "Terminal.h"
-#include "GUITools.h"
-
-#include <CoreMain.h>
-#include <Configuration.h>
-#include <TextsWin.h>
-#include <HelpWin.h>
-#include <WinConfiguration.h>
 #include <TerminalManager.h>
-#include <StrUtils.hpp>
-#include <Tools.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "HistoryComboBox"

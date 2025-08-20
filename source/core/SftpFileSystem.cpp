@@ -1,22 +1,14 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
 #include "SftpFileSystem.h"
 
 #include "PuttyTools.h"
-#include "Common.h"
-#include "Exceptions.h"
-#include "Interface.h"
 #include "Terminal.h"
-#include "TextsCore.h"
-#include "HelpCore.h"
 #include "SecureShell.h"
 #include "Cryptography.h"
 #include <WideStrUtils.hpp>
-#include <limits>
-
-#include <memory>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

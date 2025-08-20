@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>
+#include <CorePCH.h>
 #pragma hdrstop
 
 #define NE_LFS
@@ -8,21 +8,12 @@
 #include "S3FileSystem.h"
 
 #include "SessionData.h"
-#include "Interface.h"
-#include "Common.h"
-#include "Exceptions.h"
 #include "Terminal.h"
-#include "TextsCore.h"
-#include "HelpCore.h"
 #include "NeonIntf.h"
 #include <ne_request.h>
-#include <StrUtils.hpp>
-#include <limits>
-#include "CoreMain.h"
 #include "Http.h"
 #include "Cryptography.h"
 #include <System.JSON.hpp>
-#include <System.DateUtils.hpp>
 #include "request.h"
 #include <XMLDoc.hpp>
 //---------------------------------------------------------------------------
