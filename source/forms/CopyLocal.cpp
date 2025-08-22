@@ -5,7 +5,6 @@
 #include "CopyLocal.h"
 #include "ComboEdit.hpp"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------

@@ -5,7 +5,6 @@
 #include "Authenticate.h"
 #include <Character.hpp>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 __fastcall TAuthenticateForm::TAuthenticateForm(TComponent * Owner)

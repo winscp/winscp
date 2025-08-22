@@ -7,7 +7,6 @@
 #include "Terminal.h"
 #include <TerminalManager.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "HistoryComboBox"
 #pragma link "GrayedCheckBox"
 #pragma resource "*.dfm"

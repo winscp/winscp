@@ -13,8 +13,6 @@
 #include <Soap.EncdDecd.hpp>
 #include <XMLDoc.hpp>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 #define SET_SESSION_PROPERTY_FROM(PROPERTY, FROM) \
   if (F##PROPERTY != FROM) { F##PROPERTY = FROM; Modify(); }
 //---------------------------------------------------------------------------

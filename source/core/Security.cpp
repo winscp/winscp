@@ -4,8 +4,6 @@
 
 #include "Security.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 #define PWALG_SIMPLE_INTERNAL 0x00
 #define PWALG_SIMPLE_EXTERNAL 0x01
 #define PWALG_SIMPLE_INTERNAL2 0x02

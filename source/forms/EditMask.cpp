@@ -5,7 +5,6 @@
 #include <FileMasks.h>
 #include "EditMask.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 bool __fastcall DoEditMaskDialog(TFileMasks & Mask)

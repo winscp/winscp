@@ -10,8 +10,6 @@
 #include "SessionInfo.h"
 #include "Script.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 UnicodeString __fastcall DoXmlEscape(UnicodeString Str, bool NewLine)
 {
   for (int i = 1; i <= Str.Length(); i++)

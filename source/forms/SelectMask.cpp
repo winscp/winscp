@@ -5,7 +5,6 @@
 #include <FileMasks.h>
 #include "SelectMask.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------

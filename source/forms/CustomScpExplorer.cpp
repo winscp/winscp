@@ -20,7 +20,6 @@
 #include <DirectoryMonitor.hpp>
 #include <mmsystem.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "CustomDirView"
 #pragma link "CustomUnixDirView"
 #pragma link "IEListView"

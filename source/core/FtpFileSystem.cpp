@@ -16,8 +16,6 @@
 #include <openssl/x509_vfy.h>
 #include <openssl/err.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 #define FILE_OPERATION_LOOP_TERMINAL FTerminal
 //---------------------------------------------------------------------------
 const int DummyCodeClass = 8;

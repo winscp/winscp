@@ -5,7 +5,6 @@
 #include <Terminal.h>
 #include "FileFind.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "HistoryComboBox"
 #pragma link "IEListView"
 #pragma link "NortonLikeListView"

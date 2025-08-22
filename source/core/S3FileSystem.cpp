@@ -17,8 +17,6 @@
 #include "request.h"
 #include <XMLDoc.hpp>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 // Should be used with character pointer only
 #define StrFromS3(S) StrFromNeon(S)
 #define StrToS3(S) StrToNeon(S)

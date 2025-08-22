@@ -8,8 +8,6 @@
 #include <Terminal.h>
 #include <shlobj.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 const int ccLocal = ccUser;
 const int ccShowResults = ccUser << 1;
 const int ccCopyResults = ccUser << 2;

@@ -2,8 +2,6 @@
 #include <CorePCH.h>
 #pragma hdrstop
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 const UnicodeString EmptyString(TraceInitStr(L"\1\1\1")); // magic
 //---------------------------------------------------------------------------
 UnicodeString NormalizeString(const UnicodeString & S)

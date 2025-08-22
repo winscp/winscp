@@ -19,8 +19,6 @@
 const UnicodeString ContextSeparator(TraceInitStr(L"\x00BB"));
 const UnicodeString LinkAppLabelMark(TraceInitStr(UnicodeString(L" ") + ContextSeparator));
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 class TFormCustomizationComponent : public TComponent
 {
 public:

@@ -11,8 +11,6 @@
 #include "WinApi.h"
 #include <Xml.Win.msxmldom.hpp>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 UnicodeString GetFolderOrWorkspaceName(const UnicodeString & SessionName)
 {
   UnicodeString FolderOrWorkspaceName = DecodeUrlChars(SessionName);

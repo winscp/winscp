@@ -4,7 +4,6 @@
 
 #include "CopyParams.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "Rights"
 #pragma link "HistoryComboBox"
 #pragma link "ComboEdit"

@@ -7,8 +7,6 @@
 #include <DiscMon.hpp>
 #include "SynchronizeController.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 __fastcall TSynchronizeController::TSynchronizeController(
   TSynchronizeEvent AOnSynchronize, TSynchronizeInvalidEvent AOnSynchronizeInvalid,
   TSynchronizeTooManyDirectories AOnTooManyDirectories)

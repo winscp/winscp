@@ -7,7 +7,6 @@
 #include "NonVisual.h"
 #include "Glyphs.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "CustomDirView"
 #pragma link "CustomScpExplorer"
 #pragma link "CustomUnixDirView"

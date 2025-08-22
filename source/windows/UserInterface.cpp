@@ -10,8 +10,6 @@
 #include "ProgParams.h"
 #include "Custom.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 const UnicodeString AppName = L"WinSCP";
 //---------------------------------------------------------------------------
 TConfiguration * __fastcall CreateConfiguration()

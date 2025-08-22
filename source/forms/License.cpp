@@ -4,7 +4,6 @@
 
 #include "License.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 static UnicodeString LicenseStr[2] =

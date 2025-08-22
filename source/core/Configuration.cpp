@@ -11,8 +11,6 @@
 #include "CopyParam.h"
 #include <shlobj.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 const wchar_t * AutoSwitchNames = L"On;Off;Auto";
 const wchar_t * NotAutoSwitchNames = L"Off;On;Auto";
 //---------------------------------------------------------------------------

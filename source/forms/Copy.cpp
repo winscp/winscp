@@ -4,7 +4,6 @@
 
 #include "Copy.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "Rights"
 #pragma link "CopyParams"
 #pragma link "HistoryComboBox"

@@ -14,8 +14,6 @@
 #include "FileInfo.h"
 #include "DriveView.hpp"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 TWinConfiguration * WinConfiguration = NULL;
 //---------------------------------------------------------------------------
 static UnicodeString NotepadName(L"notepad.exe");

@@ -4,8 +4,6 @@
 
 #include <Custom.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 class TInputDialog : public TCustomDialog
 {
 public:

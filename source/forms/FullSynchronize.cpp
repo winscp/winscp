@@ -6,7 +6,6 @@
 #include "CopyParams.h"
 #include <Terminal.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------

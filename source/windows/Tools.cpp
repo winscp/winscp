@@ -52,8 +52,6 @@
 #undef HTTP_VERSION_INFO
 #undef LPHTTP_VERSION_INFO
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 TFontStyles __fastcall IntToFontStyles(int value)
 {
   TFontStyles Result;

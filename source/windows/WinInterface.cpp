@@ -14,8 +14,6 @@
 #include <WinApi.h>
 #include <Vcl.AppEvnts.hpp>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 #define WM_TRAY_ICON (WM_WINSCP_USER + 5)
 //---------------------------------------------------------------------
 static TNotifyEvent GlobalOnMinimize = NULL;

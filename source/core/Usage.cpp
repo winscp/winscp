@@ -6,8 +6,6 @@
 #include <Usage.h>
 #include <FileInfo.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 const UnicodeString LastInternalExceptionCounter(L"LastInternalException2");
 const UnicodeString LastUpdateExceptionCounter(L"LastUpdateException");
 //---------------------------------------------------------------------------

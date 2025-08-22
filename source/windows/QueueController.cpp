@@ -5,8 +5,6 @@
 #include <Queue.h>
 #include "QueueController.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 __fastcall TQueueController::TQueueController(TCustomListView * ListView)
 {
   FListView = static_cast<TListView *>(ListView);

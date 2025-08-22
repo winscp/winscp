@@ -4,8 +4,6 @@
 
 #include "ProgParams.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 static std::unique_ptr<TProgramParams> ProgramParamsOwner;
 //---------------------------------------------------------------------------
 TProgramParams * __fastcall TProgramParams::Instance()

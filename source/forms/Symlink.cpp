@@ -4,7 +4,6 @@
 
 #include "Symlink.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 bool __fastcall DoSymlinkDialog(UnicodeString & FileName, UnicodeString & PointTo,

@@ -26,8 +26,6 @@
 #include "Security.h"
 #include <NeonIntf.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 #define FILE_OPERATION_LOOP_TERMINAL FTerminal
 //---------------------------------------------------------------------------
 #define SESSION_CONTEXT_KEY "sessioncontext"

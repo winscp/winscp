@@ -4,7 +4,6 @@
 
 #include "CopyParamCustom.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "CopyParams"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------

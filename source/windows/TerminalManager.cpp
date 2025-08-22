@@ -10,8 +10,6 @@
 #include <WinApi.h>
 #include <PuttyTools.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 TTerminalManager * TTerminalManager::FInstance = NULL;
 //---------------------------------------------------------------------------
 __fastcall TManagedTerminal::TManagedTerminal(TSessionData * SessionData,

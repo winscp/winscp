@@ -5,8 +5,6 @@
 #include "Terminal.h"
 #include "Queue.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 class TBackgroundTerminal;
 //---------------------------------------------------------------------------
 class TParallelTransferQueueItem : public TLocatedQueueItem

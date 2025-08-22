@@ -4,7 +4,6 @@
 
 #include "Rights.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "GrayedCheckBox"
 #pragma link "PngImageList"
 #pragma resource "*.dfm"

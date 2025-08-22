@@ -17,8 +17,6 @@
 #define WM_INTERUPT_IDLE (WM_WINSCP_USER + 3)
 #define BATCH_INPUT_TIMEOUT 10000
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 void TrimNewLine(UnicodeString & Str)
 {
   while (!Str.IsEmpty() &&

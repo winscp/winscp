@@ -5,8 +5,6 @@
 #include <SessionData.h>
 #include "EditorManager.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 TEditedFileData::TEditedFileData()
 {
   ForceText = false;

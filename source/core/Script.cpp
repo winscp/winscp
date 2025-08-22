@@ -6,8 +6,6 @@
 #include "Terminal.h"
 #include "SessionData.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 const wchar_t * ToggleNames[] = { L"off", L"on" };
 const UnicodeString InOutParam(TraceInitStr(L"-"));
 //---------------------------------------------------------------------------

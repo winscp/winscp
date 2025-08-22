@@ -4,8 +4,6 @@
 
 #include <HelpIntfs.hpp>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 class TWebHelpSystem : public TInterfacedObject, public ICustomHelpViewer
 {
 public:

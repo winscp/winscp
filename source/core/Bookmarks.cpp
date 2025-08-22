@@ -6,8 +6,6 @@
 #include "Configuration.h"
 #include "HierarchicalStorage.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 __fastcall TBookmarks::TBookmarks(): TObject()
 {
   FSharedKey = TNamedObjectList::HiddenPrefix + L"shared";

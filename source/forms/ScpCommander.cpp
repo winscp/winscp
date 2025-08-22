@@ -10,7 +10,6 @@
 #include "TerminalManager.h"
 #include "Bookmarks.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "CustomDirView"
 #pragma link "CustomScpExplorer"
 #pragma link "CustomUnixDirView"

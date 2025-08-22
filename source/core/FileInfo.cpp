@@ -5,8 +5,6 @@
 #include "FileInfo.h"
 #include "FileBuffer.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 // Return pointer to file version info block
 void * __fastcall CreateFileInfo(UnicodeString FileName)
 {

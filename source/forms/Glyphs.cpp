@@ -7,7 +7,6 @@
 #include "Glyphs144.h"
 #include "Glyphs192.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "PngImageList"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------

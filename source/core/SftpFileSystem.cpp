@@ -10,8 +10,6 @@
 #include "Cryptography.h"
 #include <WideStrUtils.hpp>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 #define FILE_OPERATION_LOOP_TERMINAL FTerminal
 //---------------------------------------------------------------------------
 #define SSH_FX_OK                                 0

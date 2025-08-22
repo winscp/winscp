@@ -4,8 +4,6 @@
 
 #include "NamedObjs.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 int __fastcall NamedObjectSortProc(void * Item1, void * Item2)
 {
   return static_cast<TNamedObject *>(Item1)->Compare(static_cast<TNamedObject *>(Item2));

@@ -10,7 +10,6 @@
 #include <HistoryComboBox.hpp>
 #include "Glyphs.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "TB2Item"
 #pragma link "TBX"
 #pragma link "TB2ExtItems"

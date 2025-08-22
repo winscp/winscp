@@ -4,7 +4,6 @@
 
 #include "Editor.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "TB2Dock"
 #pragma link "TBX"
 #pragma link "TB2Item"

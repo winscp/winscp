@@ -6,7 +6,6 @@
 #include <PuttyTools.h>
 #include <ProgParams.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 const UnicodeString AllFilesMask(L"*");

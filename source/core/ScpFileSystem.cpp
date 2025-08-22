@@ -7,8 +7,6 @@
 #include "Terminal.h"
 #include "SecureShell.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 #define FILE_OPERATION_LOOP_TERMINAL FTerminal
 //---------------------------------------------------------------------------
 const int coRaiseExcept = 1;

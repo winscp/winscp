@@ -8,8 +8,6 @@
 #include "FileZillaIntf.h"
 #include "NeonIntf.h"
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
-//---------------------------------------------------------------------------
 TConfiguration * Configuration = NULL;
 TStoredSessionList * StoredSessions = NULL;
 TApplicationLog * ApplicationLog = NULL;

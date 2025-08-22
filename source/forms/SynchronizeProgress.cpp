@@ -5,7 +5,6 @@
 #include "SynchronizeProgress.h"
 #include <Progress.h>
 //---------------------------------------------------------------------------
-#pragma package(smart_init)
 #pragma link "PathLabel"
 #pragma link "PngImageList"
 #pragma link "TB2Dock"
