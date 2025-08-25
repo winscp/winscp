@@ -1362,6 +1362,7 @@ begin
         FChangeFlag := True;
         FLastDir := NewDir;
 
+        // Most of this is done already in CanChange and possibly redundant here
         OldSerial := DriveInfo.Get(Drive).DriveSerial;
         DriveInfo.ReadDriveStatus(Drive, dsSize or dsImageIndex);
         with DriveInfo.Get(Drive) do
@@ -1373,6 +1374,7 @@ begin
           begin
             if not DirectoryExists(ApiPath(NewDir)) then
             begin
+              // Unlikely to ever happen, as CanChange already tests the directory
               ValidateDirectory(GetDriveStatus(Drive).RootNode);
               Exit;
             end;

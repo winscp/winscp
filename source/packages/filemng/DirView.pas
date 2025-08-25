@@ -2804,19 +2804,12 @@ begin
     if PFileRec(Item.Data)^.IsDirectory then
     begin
       FileName := ItemFullFileName(Item);
-      if not DirectoryExistsFix(FileName) then
-      begin
-        Reload2;
-        if Assigned(FDriveView) and Assigned(FDriveView.Selected) then
-          with FDriveView do
-            ValidateDirectory(Selected);
-        Exit;
-      end;
     end
       else
     FileName := ResolveFileShortCut(ItemFullFileName(Item), True);
 
-    if DirectoryExistsFix(FileName) then
+    // Don't check link target existence, if is does not exist, let it fail later, so that an error message is shown
+    if DirectoryExistsFix(FileName, False) then
     begin
       Path := FileName;
       Exit;

@@ -72,7 +72,7 @@ procedure ForceColorChange(Control: TWinControl);
 
 function IsUncPath(Path: string): Boolean;
 function FileExistsFix(Path: string): Boolean;
-function DirectoryExistsFix(Path: string): Boolean;
+function DirectoryExistsFix(Path: string; FollowLink: Boolean = True): Boolean;
 
 const
   FIND_FIRST_EX_LARGE_FETCH_PAS = 2; // VCLCOPY (actually should be part of Winapi)
@@ -1049,11 +1049,11 @@ begin
   Result := DoExists(FileExists(ApiPath(Path)), Path);
 end;
 
-function DirectoryExistsFix(Path: string): Boolean;
+function DirectoryExistsFix(Path: string; FollowLink: Boolean): Boolean;
 begin
   // WORKAROUND
   SetLastError(ERROR_SUCCESS);
-  Result := DoExists(DirectoryExists(ApiPath(Path)), Path);
+  Result := DoExists(DirectoryExists(ApiPath(Path), FollowLink), Path);
 end;
 
 // VCLCOPY
