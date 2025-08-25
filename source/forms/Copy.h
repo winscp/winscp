@@ -11,8 +11,6 @@
 #include <HistoryComboBox.hpp>
 #include <Vcl.Imaging.pngimage.hpp>
 
-#include "Rights.h"
-#include "CopyParams.h"
 #include <Menus.hpp>
 //---------------------------------------------------------------------------
 class TCopyDialog : public TForm

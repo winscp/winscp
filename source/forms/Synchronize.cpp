@@ -3,7 +3,7 @@
 #pragma hdrstop
 
 #include "Synchronize.h"
-#include "CopyParams.h"
+#include <ComboEdit.hpp>
 #include "Terminal.h"
 #include <TerminalManager.h>
 //---------------------------------------------------------------------------

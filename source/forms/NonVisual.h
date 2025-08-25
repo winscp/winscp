@@ -10,7 +10,6 @@
 #include <Menus.hpp>
 #include <ImgList.hpp>
 #include <ExtCtrls.hpp>
-#include <Rights.h>
 
 #include "CustomScpExplorer.h"
 #include "TB2Item.hpp"

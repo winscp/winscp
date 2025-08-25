@@ -3,7 +3,7 @@
 #pragma hdrstop
 
 #include "FullSynchronize.h"
-#include "CopyParams.h"
+#include <ComboEdit.hpp>
 #include <Terminal.h>
 //---------------------------------------------------------------------------
 #pragma link "HistoryComboBox"

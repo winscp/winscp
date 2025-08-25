@@ -219,7 +219,7 @@ object PropertiesDialog: TPropertiesDialog
       inline RightsFrame: TRightsFrame
         Left = 89
         Top = 194
-        Width = 258
+        Width = 273
         Height = 128
         TabOrder = 5
       end

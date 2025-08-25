@@ -3,9 +3,8 @@
 #pragma hdrstop
 
 #include "Copy.h"
+#include <ComboEdit.hpp>
 //---------------------------------------------------------------------------
-#pragma link "Rights"
-#pragma link "CopyParams"
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
