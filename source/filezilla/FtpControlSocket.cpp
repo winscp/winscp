@@ -134,7 +134,7 @@ public:
 
 std::list<CFtpControlSocket::t_ActiveList> CFtpControlSocket::m_InstanceList[2];
 
-CTime CFtpControlSocket::m_CurrentTransferTime[2] = { CTime::GetCurrentTime(), CTime::GetCurrentTime() };
+CTime CFtpControlSocket::m_CurrentTransferTime[2] = { CTime::CreateForCurrentTime(), CTime::CreateForCurrentTime() };
 _int64 CFtpControlSocket::m_CurrentTransferLimit[2] = {0, 0};
 
 CCriticalSectionWrapper CFtpControlSocket::m_SpeedLimitSync;
@@ -536,7 +536,7 @@ void CFtpControlSocket::Connect(t_server &server)
     LogMessage(FZ_LOG_INFO, L"Connected");
   }
   m_ServerName = logontype?fwhost:hostname;
-  m_LastRecvTime = m_LastSendTime = CTime::GetCurrentTime();
+  m_LastRecvTime = m_LastSendTime = CTime::CreateForCurrentTime();
 
   m_Operation.pData = new CLogonData();
 }
@@ -1159,7 +1159,7 @@ BOOL CFtpControlSocket::SendAuthSsl()
 #define BUFFERSIZE 4096
 void CFtpControlSocket::OnReceive(int nErrorCode)
 {
-  m_LastRecvTime = CTime::GetCurrentTime();
+  m_LastRecvTime = CTime::CreateForCurrentTime();
 
   if (!m_pOwner->IsConnected())
   {
@@ -1507,7 +1507,7 @@ BOOL CFtpControlSocket::Send(CString str)
   if (res > 0)
   {
     m_awaitsReply = true;
-    m_LastSendTime = CTime::GetCurrentTime();
+    m_LastSendTime = CTime::CreateForCurrentTime();
     // Count timeout since the last request, not only since the last received data
     // otherwise we may happen to timeout immediately after sending request if
     // CheckForTimeout occurs in between and we haven't received any data for a while
@@ -1605,12 +1605,12 @@ void CFtpControlSocket::CheckForTimeout()
       if (res == 1)
       {
         // avoid trying to set keepalive command right after the transfer finishes
-        m_LastSendTime = CTime::GetCurrentTime();
+        m_LastSendTime = CTime::CreateForCurrentTime();
       }
       return;
     }
   }
-  CTimeSpan span=CTime::GetCurrentTime()-m_LastRecvTime;
+  CTimeSpan span=CTime::CreateForCurrentTime()-m_LastRecvTime;
   if (span.GetTotalSeconds()>=delay)
   {
     ShowTimeoutError(IDS_CONTROL_CONNECTION);
@@ -2501,7 +2501,7 @@ void CFtpControlSocket::TransferEnd(int nMode)
     LogMessage(FZ_LOG_INFO, L"Ignoring old TransferEnd message");
     return;
   }
-  m_LastRecvTime=CTime::GetCurrentTime();
+  m_LastRecvTime=CTime::CreateForCurrentTime();
   if (m_Operation.nOpMode&CSMODE_TRANSFER)
     FileTransfer(0,TRUE,nMode&(CSMODE_TRANSFERERROR|CSMODE_TRANSFERTIMEOUT));
   else if (m_Operation.nOpMode&CSMODE_LIST)
@@ -4412,7 +4412,7 @@ void CFtpControlSocket::ResetOperation(int nSuccessful /*=FALSE*/)
     }
 
     if (m_Operation.nOpMode & (CSMODE_LIST|CSMODE_LISTFILE|CSMODE_TRANSFER) && nSuccessful==FZ_REPLY_OK)
-      m_LastSendTime=CTime::GetCurrentTime();
+      m_LastSendTime=CTime::CreateForCurrentTime();
 
     //Update remote file entry
     if (m_Operation.pData &&
@@ -5364,7 +5364,7 @@ void CFtpControlSocket::SetVerifyCertResult(int nResult, t_SslCertData *pData)
     return;
   m_bCheckForTimeout = TRUE;
   m_pSslLayer->SetNotifyReply(pData->priv_data, SSL_VERIFY_CERT, nResult);
-  m_LastRecvTime = CTime::GetCurrentTime();
+  m_LastRecvTime = CTime::CreateForCurrentTime();
 }
 
 void CFtpControlSocket::OnTimer()
@@ -5382,7 +5382,7 @@ void CFtpControlSocket::OnTimer()
       //Choose a new delay
       int delay=low+(rand()*diff)/RAND_MAX;
 
-      CTimeSpan span=CTime::GetCurrentTime()-m_LastSendTime;
+      CTimeSpan span=CTime::CreateForCurrentTime()-m_LastSendTime;
       if (span.GetTotalSeconds()>=delay)
         SendKeepAliveCommand();
     }
@@ -5709,7 +5709,7 @@ _int64 CFtpControlSocket::GetAbleToUDSize( bool &beenWaiting, CTime &curTime, _i
 {
   beenWaiting = false;
 
-  CTime nowTime = CTime::GetCurrentTime();
+  CTime nowTime = CTime::CreateForCurrentTime();
   _int64 ableToRead = BUFSIZE;
 
   if ( nowTime == curTime)
@@ -5719,7 +5719,7 @@ _int64 CFtpControlSocket::GetAbleToUDSize( bool &beenWaiting, CTime &curTime, _i
     if (ableToRead <= 0)
     {
       //  we should wait till next second
-      nowTime = CTime::GetCurrentTime();
+      nowTime = CTime::CreateForCurrentTime();
 
       while (nowTime == curTime && !iter->nBytesAvailable)
       {
@@ -5736,7 +5736,7 @@ _int64 CFtpControlSocket::GetAbleToUDSize( bool &beenWaiting, CTime &curTime, _i
         m_SpeedLimitSync.Unlock();
         Sleep(100);
         m_SpeedLimitSync.Lock();
-        nowTime = CTime::GetCurrentTime();
+        nowTime = CTime::CreateForCurrentTime();
         beenWaiting = true;
 
         // Since we didn't hold the critical section for some time, we have to renew the iterator
@@ -5805,7 +5805,7 @@ _int64 CFtpControlSocket::GetAbleToTransferSize(enum transferDirection direction
   if (iter == m_InstanceList[direction].end())
   {
     t_ActiveList item;
-    CTime time = CTime::GetCurrentTime();
+    CTime time = CTime::CreateForCurrentTime();
     item.nBytesAvailable = GetSpeedLimit(direction, time) / (m_InstanceList[direction].size() + 1);
     item.nBytesTransferred = 0;
     item.pOwner = this;
@@ -6069,7 +6069,7 @@ void CFtpControlSocket::OnSend(int nErrorCode)
   }
 
   m_awaitsReply = true;
-  m_LastSendTime = CTime::GetCurrentTime();
+  m_LastSendTime = CTime::CreateForCurrentTime();
 
   if (res == m_sendBufferLen)
   {

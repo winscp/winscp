@@ -1188,7 +1188,7 @@ void CFtpListResult::GuessYearIfUnknown(t_directory::t_direntry::t_date & Date)
   // dated in the near future. Under normal conditions there should not be such files.
   if (!Date.year) // might use direntry.date.hasyear now?
   {
-    CTime curtime = CTime::GetCurrentTime();
+    CTime curtime = CTime::CreateForCurrentTime();
     int curday = curtime.GetDay();
     int curmonth = curtime.GetMonth();
     int curyear = curtime.GetYear();

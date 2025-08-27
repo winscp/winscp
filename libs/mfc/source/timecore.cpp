@@ -72,7 +72,7 @@ CTime::CTime(const FILETIME& fileTime, int nDST)
 	*this = timeT;
 }
 
-CTime CTime::GetCurrentTime()
+CTime CTime::CreateForCurrentTime()
 // return the current system time
 {
 	return CTime(::time(NULL));

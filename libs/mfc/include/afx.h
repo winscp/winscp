@@ -364,7 +364,7 @@ class CTime
 public:
 
 // Constructors
-	static CTime GetCurrentTime();
+	static CTime CreateForCurrentTime();
 
 	CTime();
 	CTime(time_t time);
