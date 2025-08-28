@@ -669,6 +669,10 @@ void __fastcall TScpCommanderForm::SessionChanged(bool Replaced)
 
       if (ManagedSession->LocalBrowser)
       {
+        // Particularly, when switching from a remote to a local-local session,
+        // the other local dir view path may not change at all,
+        // so the path combo box would retain the remote path.
+        OtherLocalPathComboUpdateDrives();
         RestoreSessionLocalDirView(OtherLocalDirView, ManagedSession->StateData->OtherLocalDirectory);
       }
 
@@ -703,14 +707,6 @@ void __fastcall TScpCommanderForm::SessionChanged(bool Replaced)
     __finally
     {
       AnnounceLocalStates(RestoreState, ManagedSession->LocalBrowser, NULL, NULL);
-    }
-
-    if (ManagedSession->LocalBrowser)
-    {
-      // Particularly, when switching from a remote to a local-local session,
-      // the other local dir view path may not change at all,
-      // so the path combo box would retain the remote path.
-      OtherLocalPathComboUpdateDrives();
     }
   }
 }
