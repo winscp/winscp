@@ -8946,7 +8946,7 @@ UnicodeString __fastcall TTerminal::EncryptFileName(const UnicodeString & Path, 
     }
 
     FileDir = EncryptFileName(FileDir, EncryptNewFiles);
-    Result = UnixCombinePaths(FileDir, FileName);
+    Result = UnixCombinePathsForce(FileDir, FileName);
   }
   return Result;
 }

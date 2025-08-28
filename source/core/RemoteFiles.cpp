@@ -56,10 +56,15 @@ UnicodeString __fastcall SimpleUnixExcludeTrailingBackslash(const UnicodeString 
   return UnixExcludeTrailingBackslash(Path, true);
 }
 //---------------------------------------------------------------------------
+UnicodeString UnixCombinePathsForce(const UnicodeString & Path1, const UnicodeString & Path2)
+{
+  return UnixIncludeTrailingBackslash(Path1) + Path2;
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall UnixCombinePaths(const UnicodeString & Path1, const UnicodeString & Path2)
 {
   DebugAssert(!Path2.IsEmpty());
-  return UnixIncludeTrailingBackslash(Path1) + Path2;
+  return UnixCombinePathsForce(Path1, Path2);
 }
 //---------------------------------------------------------------------------
 // Eventually make UnixCombinePaths do this,
