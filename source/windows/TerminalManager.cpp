@@ -683,7 +683,7 @@ void __fastcall TTerminalManager::ReconnectActiveTerminal()
   DebugAssert(ActiveTerminal);
 
   if ((ScpExplorer != NULL) &&
-      DebugAlwaysTrue(ActiveTerminal != FReconnectingInactiveTerminal) &&
+      (ActiveTerminal != FReconnectingInactiveTerminal) &&
       (ScpExplorer->Terminal == ActiveTerminal))
   {
     ScpExplorer->UpdateSession(ActiveTerminal);
