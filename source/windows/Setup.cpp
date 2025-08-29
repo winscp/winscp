@@ -1463,7 +1463,7 @@ void __fastcall TUpdateDownloadThread::UpdateDownloaded()
   {
     Params += L" /OpenGettingStarted";
   }
-  if (ApplicationLog->Logging)
+  if (!ApplicationLog->Path.IsEmpty())
   {
     Params += FORMAT(" /LOG=\"%s\"", (ApplicationLog->Path + L".setup"));
   }

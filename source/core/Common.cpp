@@ -4522,8 +4522,7 @@ UnicodeString GetAncestorProcessNames()
 //---------------------------------------------------------------------------
 void LogModules()
 {
-  bool DoLogModules = ApplicationLog->Logging;
-  if (DoLogModules)
+  if (ApplicationLog->Logging)
   {
     const int Max = 1024;
     HMODULE Modules[Max];

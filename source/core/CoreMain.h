@@ -9,8 +9,7 @@ extern TConfiguration *Configuration;
 extern TStoredSessionList *StoredSessions;
 extern bool AnySession;
 extern TApplicationLog * ApplicationLog;
-#define APPLOG_INTERNAL(S) if (ApplicationLog->Logging) ApplicationLog->Log(S)
-#define AppLog(S) APPLOG_INTERNAL(S)
+#define AppLog(S) if (ApplicationLog->Logging) ApplicationLog->Log(S)
 #define AppLogFmt(S, F) AppLog(FORMAT(S, F))
 //---------------------------------------------------------------------------
 void CoreInitialize();

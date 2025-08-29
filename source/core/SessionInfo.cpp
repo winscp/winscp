@@ -1802,7 +1802,7 @@ void TApplicationLog::AddStartupInfo()
 //---------------------------------------------------------------------------
 void __fastcall TApplicationLog::Log(const UnicodeString & S)
 {
-  if (FFile != NULL)
+  if (Logging)
   {
     TDateTime N = Now();
     UnicodeString Timestamp = FormatDateTime(L"yyyy-mm-dd hh:nn:ss.zzz", N);
@@ -1814,7 +1814,10 @@ void __fastcall TApplicationLog::Log(const UnicodeString & S)
 
     {
       TGuard Guard(FCriticalSection.get());
-      fwrite(UtfLine.c_str(), 1, Writting, static_cast<FILE *>(FFile));
+      if (FFile != NULL)
+      {
+        fwrite(UtfLine.c_str(), 1, Writting, static_cast<FILE *>(FFile));
+      }
 
       __int64 SecondsSinceLastMemoryCheck = SecondsBetween(N, FLastMemoryCheck);
       CheckMemory = (SecondsSinceLastMemoryCheck >= 10);
