@@ -508,11 +508,8 @@ unsigned int __fastcall SimpleErrorDialog(const UnicodeString Msg, const Unicode
   return Result;
 }
 //---------------------------------------------------------------------------
-static TStrings * __fastcall StackInfoListToStrings(
-  TJclStackInfoList * StackInfoList)
+static void FormatStackTrace(TStrings * StackTrace)
 {
-  std::unique_ptr<TStrings> StackTrace(new TStringList());
-  StackInfoList->AddToStrings(StackTrace.get(), true, false, true, true);
   for (int Index = 0; Index < StackTrace->Count; Index++)
   {
     UnicodeString Frame = StackTrace->Strings[Index];
@@ -531,21 +528,31 @@ static TStrings * __fastcall StackInfoListToStrings(
     }
     StackTrace->Strings[Index] = Frame;
   }
+}
+//---------------------------------------------------------------------------
+static TStrings * __fastcall StackInfoListToStrings(
+  TJclStackInfoList * StackInfoList)
+{
+  std::unique_ptr<TStrings> StackTrace(new TStringList());
+  // Corresponds to our JclExceptionStacktraceOptions
+  StackInfoList->AddToStrings(StackTrace.get(), true, false, true, true);
+  FormatStackTrace(StackTrace.get());
   return StackTrace.release();
 }
 //---------------------------------------------------------------------------
-static std::unique_ptr<TCriticalSection> StackTraceCriticalSection(TraceInitPtr(new TCriticalSection()));
-typedef std::map<DWORD, TStrings *> TStackTraceMap;
-static TStackTraceMap StackTraceMap;
+static TStrings * GetExceptionStackTraceStrings(Exception * E)
+{
+  std::unique_ptr<TStrings> StackTrace(TextToStringList(E->StackTrace));
+  FormatStackTrace(StackTrace.get());
+  return StackTrace.release();
+}
 //---------------------------------------------------------------------------
-UnicodeString __fastcall GetExceptionDebugInfo()
+UnicodeString GetExceptionDebugInfo(Exception * E)
 {
   UnicodeString Result;
-  TGuard Guard(StackTraceCriticalSection.get());
-  TStackTraceMap::iterator Iterator = StackTraceMap.find(GetCurrentThreadId());
-  if (Iterator != StackTraceMap.end())
+  if (DebugAlwaysTrue(IsInternalException(E)) && DebugAlwaysTrue(E->StackInfo != NULL))
   {
-    TStrings * StackTrace = Iterator->second;
+    std::unique_ptr<TStrings> StackTrace(GetExceptionStackTraceStrings(E));
     for (int Index = 0; Index < StackTrace->Count; Index++)
     {
       UnicodeString Frame = StackTrace->Strings[Index];
@@ -569,20 +576,19 @@ UnicodeString __fastcall GetExceptionDebugInfo()
           }
         }
       }
-    }
+  }
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall AppendExceptionStackTraceAndForget(TStrings *& MoreMessages)
+bool AppendExceptionStackTrace(Exception * E, TStrings *& MoreMessages)
 {
   bool Result = false;
 
-  TGuard Guard(StackTraceCriticalSection.get());
-
-  TStackTraceMap::iterator Iterator = StackTraceMap.find(GetCurrentThreadId());
-  if (Iterator != StackTraceMap.end())
+  if (IsInternalException(E) && DebugAlwaysTrue(E->StackInfo != NULL))
   {
+    std::unique_ptr<TStrings> StackTrace(GetExceptionStackTraceStrings(E));
+
     std::unique_ptr<TStrings> OwnedMoreMessages;
     if (MoreMessages == NULL)
     {
@@ -595,10 +601,7 @@ bool __fastcall AppendExceptionStackTraceAndForget(TStrings *& MoreMessages)
       MoreMessages->Text = MoreMessages->Text + "\n";
     }
     MoreMessages->Text = MoreMessages->Text + LoadStr(STACK_TRACE) + "\n";
-    MoreMessages->AddStrings(Iterator->second);
-
-    delete Iterator->second;
-    StackTraceMap.erase(Iterator);
+    MoreMessages->AddStrings(StackTrace.get());
 
     OwnedMoreMessages.release();
   }
@@ -628,7 +631,7 @@ unsigned int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
   HelpKeyword = MergeHelpKeyword(HelpKeyword, GetExceptionHelpKeyword(E));
 
   std::unique_ptr<TStrings> OwnedMoreMessages;
-  if (AppendExceptionStackTraceAndForget(MoreMessages))
+  if (AppendExceptionStackTrace(E, MoreMessages))
   {
     OwnedMoreMessages.reset(MoreMessages);
   }
@@ -660,45 +663,6 @@ unsigned int __fastcall FatalExceptionMessageDialog(
   return ExceptionMessageDialog(E, Type, MessageFormat, Answers, HelpKeyword, &AParams);
 }
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-static void __fastcall DoExceptNotify(TObject * ExceptObj, void * ExceptAddr,
-  bool OSException, void * BaseOfStack)
-{
-  if (ExceptObj != NULL)
-  {
-    Exception * E = dynamic_cast<Exception *>(ExceptObj);
-    if ((E != NULL) && IsInternalException(E))
-    {
-      DoExceptionStackTrace(ExceptObj, ExceptAddr, OSException, BaseOfStack);
-
-      TJclStackInfoList * StackInfoList = JclLastExceptStackList();
-
-      if (DebugAlwaysTrue(StackInfoList != NULL))
-      {
-        std::unique_ptr<TStrings> StackTrace(StackInfoListToStrings(StackInfoList));
-
-        DWORD ThreadID = GetCurrentThreadId();
-
-        TGuard Guard(StackTraceCriticalSection.get());
-
-        TStackTraceMap::iterator Iterator = StackTraceMap.find(ThreadID);
-        if (Iterator != StackTraceMap.end())
-        {
-          Iterator->second->Add(L"");
-          Iterator->second->AddStrings(StackTrace.get());
-        }
-        else
-        {
-          StackTraceMap.insert(std::make_pair(ThreadID, StackTrace.release()));
-        }
-
-        // this chains so that JclLastExceptStackList() returns NULL the next time
-        // for the current thread
-        delete StackInfoList;
-      }
-    }
-  }
-}
 //---------------------------------------------------------------------------
 void * __fastcall BusyStart()
 {
@@ -1500,7 +1464,8 @@ void __fastcall WinInitialize()
   if (JclHookExceptions())
   {
     JclStackTrackingOptions << stAllModules;
-    JclAddExceptNotifier(DoExceptNotify, npFirstChain);
+    // See also StackInfoListToStrings
+    JclExceptionStacktraceOptions >> estoIncludeAdressOffset;
     CallstackThread.reset(new TCallstackThread());
     CallstackThread->Start();
   }
@@ -1514,7 +1479,6 @@ void __fastcall WinInitialize()
 void __fastcall WinFinalize()
 {
   CallstackThread.reset(NULL);
-  JclRemoveExceptNotifier(DoExceptNotify);
 }
 //---------------------------------------------------------------------------
 __fastcall ::TTrayIcon::TTrayIcon(unsigned int Id)

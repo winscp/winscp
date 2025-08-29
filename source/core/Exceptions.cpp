@@ -163,7 +163,7 @@ static bool __fastcall ExceptionMessage(Exception * E, bool Count,
   {
     Configuration->Usage->Inc(CounterName);
     UnicodeString ExceptionDebugInfo =
-      E->ClassName() + L":" + GetExceptionDebugInfo();
+      E->ClassName() + L":" + GetExceptionDebugInfo(E);
     Configuration->Usage->Set(LastInternalExceptionCounter, ExceptionDebugInfo);
   }
 
@@ -362,10 +362,7 @@ void __fastcall ExtException::AddMoreMessages(Exception* E)
       FMoreMessages->Insert(0, UnformatMessage(Msg));
     }
 
-    if (IsInternalException(E))
-    {
-      AppendExceptionStackTraceAndForget(FMoreMessages);
-    }
+    AppendExceptionStackTrace(E, FMoreMessages);
 
     if (FMoreMessages->Count == 0)
     {

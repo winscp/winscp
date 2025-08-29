@@ -39,9 +39,9 @@ class TOptions;
 TOptions * __fastcall GetGlobalOptions();
 
 void __fastcall ShowExtendedException(Exception * E);
-bool __fastcall AppendExceptionStackTraceAndForget(TStrings *& MoreMessages);
+bool AppendExceptionStackTrace(Exception * E, TStrings *& MoreMessages);
 void __fastcall IgnoreException(const std::type_info & ExceptionType);
-UnicodeString __fastcall GetExceptionDebugInfo();
+UnicodeString GetExceptionDebugInfo(Exception * E);
 
 UnicodeString __fastcall GetCompanyRegistryKey();
 UnicodeString __fastcall GetRegistryKey();

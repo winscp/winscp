@@ -2146,9 +2146,9 @@ unsigned int __fastcall TTerminal::QueryUserException(const UnicodeString Query,
       }
 
       // We know MoreMessages not to be NULL here,
-      // AppendExceptionStackTraceAndForget should never return true
+      // AppendExceptionStackTrace should never return true
       // (indicating it had to create the string list)
-      DebugAlwaysFalse(AppendExceptionStackTraceAndForget(MoreMessages));
+      DebugAlwaysFalse(AppendExceptionStackTrace(E, MoreMessages));
 
       TQueryParams HelpKeywordOverrideParams;
       if (Params != NULL)
