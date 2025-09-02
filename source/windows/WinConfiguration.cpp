@@ -2238,7 +2238,7 @@ void __fastcall TWinConfiguration::SetDarkTheme(TAutoSwitch value)
 //---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::UseDarkTheme()
 {
-  switch (WinConfiguration->DarkTheme)
+  switch (DarkTheme)
   {
     case asOn:
       return true;
