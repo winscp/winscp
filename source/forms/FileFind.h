@@ -14,9 +14,7 @@
 #include <ExtCtrls.hpp>
 #include "IEListView.hpp"
 #include "NortonLikeListView.hpp"
-#include <Vcl.Imaging.pngimage.hpp>
 #include <Vcl.ImgList.hpp>
-#include "PngImageList.hpp"
 #include <System.Actions.hpp>
 #include <Vcl.ActnList.hpp>
 #include <Vcl.Menus.hpp>

@@ -9,7 +9,6 @@
 #include <Mask.hpp>
 #include <ExtCtrls.hpp>
 #include <HistoryComboBox.hpp>
-#include <Vcl.Imaging.pngimage.hpp>
 
 #include <Menus.hpp>
 //---------------------------------------------------------------------------

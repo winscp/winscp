@@ -10,7 +10,6 @@
 #include "GrayedCheckBox.hpp"
 #include <ComCtrls.hpp>
 #include <ExtCtrls.hpp>
-#include <Vcl.Imaging.pngimage.hpp>
 #include <Vcl.Menus.hpp>
 //---------------------------------------------------------------------------
 #include <WinInterface.h>

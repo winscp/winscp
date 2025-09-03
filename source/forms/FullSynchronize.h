@@ -8,7 +8,6 @@
 #include <Forms.hpp>
 #include <HistoryComboBox.hpp>
 #include <Vcl.ExtCtrls.hpp>
-#include <Vcl.Imaging.pngimage.hpp>
 #include <Vcl.Menus.hpp>
 //---------------------------------------------------------------------------
 #include <WinInterface.h>

@@ -2,7 +2,6 @@
 #include <FormsPCH.h>
 #pragma hdrstop
 
-#include <Vcl.Imaging.pngimage.hpp>
 #include <WebBrowserEx.hpp>
 #include <RegularExpressions.hpp>
 #include <Setup.h>

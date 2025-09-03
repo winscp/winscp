@@ -8,7 +8,6 @@
 #include <Forms.hpp>
 #include "HistoryComboBox.hpp"
 #include <Vcl.ExtCtrls.hpp>
-#include <Vcl.Imaging.pngimage.hpp>
 //---------------------------------------------------------------------------
 class TRemoteTransferDialog : public TForm
 {

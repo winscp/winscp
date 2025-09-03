@@ -8,7 +8,6 @@
 #pragma link "HistoryComboBox"
 #pragma link "IEListView"
 #pragma link "NortonLikeListView"
-#pragma link "PngImageList"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 static TFileFindDialog * FileFindDialog = NULL;

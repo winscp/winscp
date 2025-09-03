@@ -15,7 +15,6 @@
 #include <PasTools.hpp>
 #include <ComCtrls.hpp>
 #include <Vcl.ExtCtrls.hpp>
-#include <Vcl.Imaging.pngimage.hpp>
 //----------------------------------------------------------------------------
 class TOpenDirectoryDialog : public TForm
 {

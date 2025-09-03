@@ -17,7 +17,6 @@
 #include <PasTools.hpp>
 #include "HistoryComboBox.hpp"
 #include "PathLabel.hpp"
-#include <Vcl.Imaging.pngimage.hpp>
 #include <Vcl.Menus.hpp>
 #include <WinInterface.h>
 #include <WinConfiguration.h>

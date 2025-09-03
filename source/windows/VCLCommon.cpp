@@ -7,7 +7,6 @@
 #include <Vcl.StdActns.hpp>
 #include <FileCtrl.hpp>
 #include <PathLabel.hpp>
-#include <Vcl.Imaging.pngimage.hpp>
 #include <TB2ExtItems.hpp>
 #include <TBXExtItems.hpp>
 #include <IEListView.hpp>

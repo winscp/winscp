@@ -14,7 +14,6 @@
 #include <Vcl.Mask.hpp>
 #include <Vcl.Menus.hpp>
 #include <Vcl.StdCtrls.hpp>
-#include "PngImageList.hpp"
 //----------------------------------------------------------------------------
 #include <Configuration.h>
 #include <SessionData.h>
