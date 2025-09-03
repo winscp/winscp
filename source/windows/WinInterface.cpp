@@ -1410,8 +1410,13 @@ void __fastcall TCallstackThread::ProcessEvent()
   {
     UnicodeString Path = DumpCallstackFileName(GetCurrentProcessId());
     std::unique_ptr<TStrings> StackStrings;
-    HANDLE MainThreadHandle = reinterpret_cast<HANDLE>(MainThreadID);
-    if (SuspendThread(MainThreadHandle) == static_cast<DWORD>(-1))
+    HANDLE MainThreadHandle = OpenThread(THREAD_SUSPEND_RESUME | THREAD_QUERY_INFORMATION, false, MainThreadID);
+    if (MainThreadHandle == NULL)
+    {
+      RaiseLastOSError();
+    }
+    DWORD SuspendError = static_cast<DWORD>(-1);
+    if (SuspendThread(MainThreadHandle) == SuspendError)
     {
       RaiseLastOSError();
     }
@@ -1426,10 +1431,11 @@ void __fastcall TCallstackThread::ProcessEvent()
     }
     __finally
     {
-      if (ResumeThread(MainThreadHandle) == static_cast<DWORD>(-1))
+      if (ResumeThread(MainThreadHandle) == SuspendError)
       {
         RaiseLastOSError();
       }
+      CloseHandle(MainThreadHandle);
     }
     TFile::WriteAllText(Path, StackStrings->Text);
   }
