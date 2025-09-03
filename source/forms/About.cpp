@@ -318,6 +318,10 @@ void __fastcall TAboutDialog::OKButtonMouseDown(TObject * /*Sender*/,
     {
       AccessViolationTest();
     }
+    else if (Shift.Contains(ssShift))
+    {
+      InternalExceptionTest();
+    }
     else if (Shift.Contains(ssCtrl))
     {
       LookupAddress();
@@ -340,6 +344,18 @@ void __fastcall TAboutDialog::AccessViolationTest()
   try
   {
     ACCESS_VIOLATION_TEST;
+  }
+  catch (Exception & E)
+  {
+    throw ExtException(&E, MainInstructions(L"Internal error test."));
+  }
+}
+//---------------------------------------------------------------------------
+void TAboutDialog::InternalExceptionTest()
+{
+  try
+  {
+    (new TList())->Error(L"List error", 0);
   }
   catch (Exception & E)
   {

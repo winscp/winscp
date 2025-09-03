@@ -55,6 +55,7 @@ private:
   void __fastcall ExpatLicenceHandler(TObject * Sender);
   void __fastcall AccessViolationTest();
   void __fastcall LookupAddress();
+  void InternalExceptionTest();
   void __fastcall DoLoadThirdParty();
   void __fastcall ShiftControls(int From, int Diff);
 
