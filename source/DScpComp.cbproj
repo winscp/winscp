@@ -9,6 +9,7 @@
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>1</TargetedPlatforms>
         <AppType>Package</AppType>
+        <CC_Suffix Condition="'$(CC_Suffix)'==''">c</CC_Suffix>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
         <Base>true</Base>
@@ -46,6 +47,8 @@
         <BCC_AllWarnings>true</BCC_AllWarnings>
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
+        <BCC_UseClassicCompiler>false</BCC_UseClassicCompiler>
+        <BCC_UserSuppliedOptions>-Wno-ignored-attributes -Wno-zero-as-null-pointer-constant -Wno-c++98-compat-pedantic -Wno-language-extension-token -Wno-missing-prototypes -Wno-old-style-cast -Wno-padded</BCC_UserSuppliedOptions>
         <BPILibOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</BPILibOutputDir>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>

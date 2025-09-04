@@ -23,6 +23,7 @@ class TRemoteToken
 {
 public:
   __fastcall TRemoteToken();
+  TRemoteToken(const TRemoteToken &) = default;
   explicit __fastcall TRemoteToken(const UnicodeString & Name);
 
   void __fastcall Clear();
@@ -444,6 +445,7 @@ public:
 
   __fastcall TRemoteProperties();
   __fastcall TRemoteProperties(const TRemoteProperties & rhp);
+  TRemoteProperties & operator =(const TRemoteProperties &) = default;
   bool __fastcall operator ==(const TRemoteProperties & rhp) const;
   bool __fastcall operator !=(const TRemoteProperties & rhp) const;
   void __fastcall Default();

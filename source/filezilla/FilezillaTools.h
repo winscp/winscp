@@ -3,7 +3,10 @@
 #define FileZillaToolsH
 //---------------------------------------------------------------------------
 #include <ctime>
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreserved-id-macro"
 #include <openssl/ssl.h>
+#pragma clang diagnostic pop
 //---------------------------------------------------------------------------
 class CFileZillaTools
 {

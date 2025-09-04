@@ -19,7 +19,7 @@ struct TPuttyTranslation
 {
   const wchar_t * Original;
   int Translation;
-  UnicodeString HelpKeyword;
+  UnicodeString HelpKeyword = UnicodeString();
 };
 //---------------------------------------------------------------------------
 struct ScpLogPolicy : public LogPolicy

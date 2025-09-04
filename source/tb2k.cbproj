@@ -9,6 +9,7 @@
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>1</TargetedPlatforms>
         <AppType>Package</AppType>
+        <CC_Suffix Condition="'$(CC_Suffix)'==''">c</CC_Suffix>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
         <Base>true</Base>
@@ -32,6 +33,7 @@
         <_TCHARMapping>wchar_t</_TCHARMapping>
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
+        <BCC_UseClassicCompiler>false</BCC_UseClassicCompiler>
         <BPILibOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</BPILibOutputDir>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_CVT_ACHAR_TO_WCHAR>true</DCC_CVT_ACHAR_TO_WCHAR>

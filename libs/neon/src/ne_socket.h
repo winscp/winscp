@@ -343,7 +343,10 @@ int ne_sock_proxy(ne_socket *sock, enum ne_sock_sversion vers,
 
 // WINSCP
 void ne_sock_set_buffers(ne_socket *sock, unsigned int sndbuf);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreserved-id-macro"
 #include <openssl/ssl.h>
+#pragma clang diagnostic pop
 void ne_init_ssl_session(SSL *ssl, void *userdata);
 int ne_sock_sspi_init(void);
 

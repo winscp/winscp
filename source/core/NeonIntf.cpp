@@ -6,12 +6,15 @@
 #include "Security.h"
 #include "Terminal.h"
 #include "Cryptography.h"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreserved-id-macro"
 extern "C"
 {
 #include <ne_redirect.h>
 #include <ne_auth.h>
 }
 #include <openssl/ssl.h>
+#pragma clang diagnostic pop
 //---------------------------------------------------------------------------
 #define SESSION_PROXY_AUTH_KEY "proxyauth"
 #define SESSION_TLS_INIT_KEY "tlsinit"

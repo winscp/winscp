@@ -49,7 +49,8 @@ private:
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #include <assert.h>
-#define ACCESS_VIOLATION_TEST { (*((volatile int*)NULL)) = 0; }
+// Mere write to constant null pointer would be optimized out by Clang, so we need to calculate one
+#define ACCESS_VIOLATION_TEST { (*strchr(const_cast<char *>(""), 'a')) = 0; }
 #if defined(_DEBUG) && !defined(DESIGN_ONLY)
 #define DODEBUGGING
 #endif

@@ -6,7 +6,10 @@
 #include "NeonIntf.h"
 #include "Exceptions.h"
 #include "ne_request.h"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreserved-id-macro"
 #include <openssl/ssl.h>
+#pragma clang diagnostic pop
 //---------------------------------------------------------------------------
 const int BasicHttpResponseLimit = 102400;
 //---------------------------------------------------------------------------

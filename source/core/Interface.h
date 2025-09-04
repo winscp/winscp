@@ -116,6 +116,8 @@ struct TQueryParams
   TQueryParams(unsigned int AParams = 0, UnicodeString AHelpKeyword = HELP_NONE);
   TQueryParams(const TQueryParams & Source);
 
+  TQueryParams & operator =(const TQueryParams &) = default;
+
   void Assign(const TQueryParams & Source);
 
   const TQueryButtonAlias * Aliases;

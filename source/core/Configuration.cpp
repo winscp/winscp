@@ -1181,7 +1181,10 @@ bool __fastcall TConfiguration::GetIsUnofficial()
 //---------------------------------------------------------------------------
 static TDateTime GetBuildDate()
 {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdate-time"
   UnicodeString BuildDateStr = __DATE__;
+#pragma clang diagnostic pop
   UnicodeString MonthStr = CutToChar(BuildDateStr, L' ', true);
   int Month = ParseShortEngMonthName(MonthStr);
   int Day = StrToInt(CutToChar(BuildDateStr, L' ', true));

@@ -66,7 +66,10 @@ namespace Webbrowserex
 {
   class TWebBrowserEx;
 }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wheader-hygiene"
 using namespace Webbrowserex;
+#pragma clang diagnostic pop
 TWebBrowserEx * __fastcall CreateBrowserViewer(TPanel * Parent, const UnicodeString & LoadingLabel);
 void __fastcall SetBrowserDesignModeOff(TWebBrowserEx * WebBrowser);
 void __fastcall AddBrowserLinkHandler(TWebBrowserEx * WebBrowser,
@@ -113,7 +116,10 @@ namespace Pngimagelist
   class TPngImageList;
   class TPngImageCollectionItem;
 }
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wheader-hygiene"
 using namespace Pngimagelist;
+#pragma clang diagnostic pop
 //---------------------------------------------------------------------------
 TPngImageList * __fastcall GetAnimationsImages(TControl * Control);
 TImageList * __fastcall GetButtonImages(TControl * Control);

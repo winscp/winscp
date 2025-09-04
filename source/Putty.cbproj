@@ -8,6 +8,7 @@
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>1</TargetedPlatforms>
         <AppType>StaticLibrary</AppType>
+        <CC_Suffix Condition="'$(CC_Suffix)'==''">c</CC_Suffix>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
         <Base>true</Base>
@@ -31,30 +32,8 @@
         <AllPackageLibs>rtl.lib</AllPackageLibs>
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-        <BCC_wamb>true</BCC_wamb>
-        <BCC_wamp>true</BCC_wamp>
-        <BCC_wasm>true</BCC_wasm>
-        <BCC_waus>false</BCC_waus>
-        <BCC_wbbf>false</BCC_wbbf>
-        <BCC_wccc>false</BCC_wccc>
-        <BCC_wcln>true</BCC_wcln>
-        <BCC_wcsu>false</BCC_wcsu>
-        <BCC_wdef>true</BCC_wdef>
-        <BCC_weff>false</BCC_weff>
-        <BCC_wexc>true</BCC_wexc>
-        <BCC_wimp>true</BCC_wimp>
-        <BCC_wnak>true</BCC_wnak>
-        <BCC_wnod>true</BCC_wnod>
-        <BCC_wntn>true</BCC_wntn>
-        <BCC_wpad>true</BCC_wpad>
-        <BCC_wpar>false</BCC_wpar>
-        <BCC_wpch>false</BCC_wpch>
-        <BCC_wpia>false</BCC_wpia>
-        <BCC_wrch>false</BCC_wrch>
-        <BCC_wrvl>false</BCC_wrvl>
-        <BCC_wstl>true</BCC_wstl>
-        <BCC_wstv>true</BCC_wstv>
-        <BCC_wsus>false</BCC_wsus>
+        <BCC_UseClassicCompiler>false</BCC_UseClassicCompiler>
+        <BCC_UserSuppliedOptions>-Wno-typedef-redefinition</BCC_UserSuppliedOptions>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
         <Defines>SECURITY_WIN32;WINSCP;MPEXT;PLATFORM_HAS_SMEMCLR;_WINDOWS;$(Defines)</Defines>

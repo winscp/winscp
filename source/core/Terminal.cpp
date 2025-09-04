@@ -17,8 +17,11 @@
 #include "Cryptography.h"
 #include "NeonIntf.h"
 #include <PuttyTools.h>
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreserved-id-macro"
 #include <openssl/pkcs12.h>
 #include <openssl/err.h>
+#pragma clang diagnostic pop
 
 #ifndef AUTO_WINSOCK
 #include <winsock2.h>

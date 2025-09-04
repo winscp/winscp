@@ -1212,7 +1212,7 @@ __fastcall TBackgroundTerminal::TBackgroundTerminal(TTerminal * MainTerminal,
   ActionLog->Enabled = false;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TBackgroundTerminal::DoQueryReopen(Exception * /*E*/)
+bool __fastcall TBackgroundTerminal::DoQueryReopen(Exception *)
 {
   bool Result;
   if (FItem->IsCancelled())

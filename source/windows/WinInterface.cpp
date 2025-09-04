@@ -1467,9 +1467,14 @@ static void __fastcall AppGetMainFormHandle(void * /*Data*/, HWND & Handle)
 //---------------------------------------------------------------------------
 void __fastcall WinInitialize()
 {
+  // Not sure if we need to call JclHookExceptions at all, stack trace tracking seems to work without it.
+  // Note though that with Clang, this does not work for exceptions explicitly raised from C++ code.
+  // Not a big deal for us, as we are primarily looking for system exceptions and internal exceptions raised from Pascal VCL code.
   if (JclHookExceptions())
   {
     JclStackTrackingOptions << stAllModules;
+    // Neeeded with Clang
+    JclStackTrackingOptions << stRawMode;
     // See also StackInfoListToStrings
     JclExceptionStacktraceOptions >> estoIncludeAdressOffset;
     CallstackThread.reset(new TCallstackThread());

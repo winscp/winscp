@@ -17,8 +17,8 @@ GOAL=$(MODEL)afxc$(BASE)
 #
 # COMPILER OPTIONS
 #
-# -VF4 Support MFC 4.0
-CL_OPT=-VF4 -w-
+WARNINGS=-Wno-extra-tokens -Wno-extern-initializer -Wno-varargs
+CL_OPT=$(WARNINGS)
 
 #############################################################################
 # Library Components
@@ -43,7 +43,7 @@ OBJS=$(CPP_OBJS)
 
 CPPFLAGS=$(CFLAG_CPP) $(CL_OPT) -D$(DEFS:;= -D)
 
-BORFLAGS=$(CPPFLAGS) -I$(INCL:;= -I)
+BORFLAGS=$(CPPFLAGS) -I$(INCL:;= -I) -isystem "$(BDS)/include/windows/rtl"
 
 .SUFFIXES: .cpp
 

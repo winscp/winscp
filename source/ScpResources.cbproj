@@ -8,6 +8,7 @@
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>1</TargetedPlatforms>
         <AppType>StaticLibrary</AppType>
+        <CC_Suffix Condition="'$(CC_Suffix)'==''">c</CC_Suffix>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
         <Base>true</Base>
@@ -27,8 +28,12 @@
         <BCC_AllWarnings>true</BCC_AllWarnings>
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
+        <BCC_PCHName_Clang>forms\ResourcesPCH.h</BCC_PCHName_Clang>
+        <BCC_UseClassicCompiler>false</BCC_UseClassicCompiler>
+        <BCC_UserSuppliedOptions>-Wno-objc-interface-ivars -Wno-return-type-c-linkage -Wno-covered-switch-default -Wno-cast-align -Wno-implicit-fallthrough -Wno-missing-prototypes -Wno-switch -Wno-shadow -Wno-sign-conversion -Wno-global-constructors -Wno-exit-time-destructors -Wno-padded -Wno-c++98-compat-pedantic -Wno-zero-as-null-pointer-constant -Wno-language-extension-token -Wno-old-style-cast -Wno-ignored-attributes -Wno-float-equal -Wno-switch-enum</BCC_UserSuppliedOptions>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
+        <Defines>UNICODE;$(Defines)</Defines>
         <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <IncludePath>core\;forms\;windows\;packages\my;packages\png;packages\tb2k;packages\tbx;$(BDS)\include\windows;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
         <IntermediateOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</IntermediateOutputDir>
@@ -138,6 +143,10 @@
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
         </BuildConfiguration>
+        <PCHCompile Include="forms\ResourcesPCH.h">
+            <BuildOrder>8</BuildOrder>
+            <PCH>true</PCH>
+        </PCHCompile>
     </ItemGroup>
     <Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
     <ProjectExtensions>

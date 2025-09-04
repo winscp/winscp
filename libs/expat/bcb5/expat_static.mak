@@ -11,7 +11,6 @@ OBJFILES = \
 # ---------------------------------------------------------------------------
 DEFINES = _WINDOWS;WIN32;NDEBUG;_LIB;XML_STATIC;WINSCP;_NO_VCL;_ASSERTE;NO_STRICT;_RTLDLL
 INCLUDEPATH = ..;..\lib
-WARNINGS = -w-rch -w-par -w-8027 -w-8026 -w-ccc -w-8012
 CFLAG1 = $(CFLAG_COMMON)
 # ---------------------------------------------------------------------------
 .autodepend
@@ -23,5 +22,5 @@ $(PROJECT): $(OBJFILES)
 # ---------------------------------------------------------------------------
 .path.c = ..\lib
 .c.obj:
-    $(CC) $(CFLAG1) $(WARNINGS) -I$(INCLUDEPATH:;= -I) $(DEFINESARGS) -o $@ $<
+    $(CC) $(CFLAG1) -I$(INCLUDEPATH:;= -I) $(DEFINESARGS) -o $@ $<
 # ---------------------------------------------------------------------------

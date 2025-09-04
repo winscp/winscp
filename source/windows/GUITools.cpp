@@ -1311,7 +1311,8 @@ public:
 protected:
   ICustomDoc * FCustomDoc;
 
-  #pragma warn -hid
+  #pragma clang diagnostic push
+  #pragma clang diagnostic ignored "-Woverloaded-virtual"
   virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID ClassId, void ** Intf)
   {
     HRESULT Result = S_OK;
@@ -1329,7 +1330,7 @@ protected:
     }
     return Result;
   }
-  #pragma warn .hid
+  #pragma clang diagnostic pop
 
   virtual ULONG STDMETHODCALLTYPE AddRef()
   {

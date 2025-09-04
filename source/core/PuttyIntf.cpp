@@ -337,7 +337,10 @@ size_t banner(Seat * seat, const void * data, size_t len)
 NORETURN static void SSHFatalError(const char * Format, va_list Param)
 {
   char Buf[200];
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
   vsnprintf(Buf, LENOF(Buf), Format, Param);
+#pragma clang diagnostic pop
   Buf[LENOF(Buf) - 1] = '\0';
 
   // Only few calls from putty\winnet.c might be connected with specific

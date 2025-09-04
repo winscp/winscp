@@ -9,6 +9,7 @@
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>1</TargetedPlatforms>
         <AppType>Application</AppType>
+        <CC_Suffix Condition="'$(CC_Suffix)'==''">c</CC_Suffix>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
         <Base>true</Base>
@@ -53,14 +54,16 @@
         <BCC_AllWarnings>true</BCC_AllWarnings>
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-        <BCC_wdiu>false</BCC_wdiu>
+        <BCC_PCHName_Clang>windows\WinPCH.h</BCC_PCHName_Clang>
+        <BCC_UseClassicCompiler>false</BCC_UseClassicCompiler>
+        <BCC_UserSuppliedOptions>-Wno-objc-interface-ivars -Wno-return-type-c-linkage -Wno-covered-switch-default -Wno-cast-align -Wno-implicit-fallthrough -Wno-missing-prototypes -Wno-switch -Wno-shadow -Wno-sign-conversion -Wno-global-constructors -Wno-exit-time-destructors -Wno-padded -Wno-c++98-compat-pedantic -Wno-zero-as-null-pointer-constant -Wno-language-extension-token -Wno-old-style-cast -Wno-ignored-attributes -Wno-float-equal -Wno-switch-enum</BCC_UserSuppliedOptions>
         <BRCC_CodePage>65001</BRCC_CodePage>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
         <DCC_SYMBOL_DEPRECATED>false</DCC_SYMBOL_DEPRECATED>
         <DCC_SYMBOL_PLATFORM>false</DCC_SYMBOL_PLATFORM>
         <DCC_UNSUPPORTED_CONSTRUCT>false</DCC_UNSUPPORTED_CONSTRUCT>
-        <Defines>WINSCP;STRICT;$(Defines)</Defines>
+        <Defines>WINSCP;STRICT;UNICODE;$(Defines)</Defines>
         <FinalOutputDir>$(FINAL_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <Icon_MainIcon>resource\Application.ico</Icon_MainIcon>
         <ILINK_GenerateDRC>True</ILINK_GenerateDRC>
@@ -92,6 +95,7 @@
         <BCC_SourceDebuggingOn>true</BCC_SourceDebuggingOn>
         <BCC_StackFrames>true</BCC_StackFrames>
         <BCC_UseRegisterVariables>None</BCC_UseRegisterVariables>
+        <BT_BuildType>Debug</BT_BuildType>
         <DCC_DebugDCUs>true</DCC_DebugDCUs>
         <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
         <DCC_Define>DEBUG</DCC_Define>
@@ -104,7 +108,7 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
         <ILINK_DisableIncrementalLinking>true</ILINK_DisableIncrementalLinking>
-        <ILINK_LibraryPath>$(INTERM_PATH)\Win32\Debug\;$(INTERM_PATH)\Win32\;$(BDS)\lib\Win32\Debug\;$(BDS)\lib\Win32\Release\;$(BDS)\lib\Win32\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+        <ILINK_LibraryPath>$(INTERM_PATH)\Win32\Debug\;$(INTERM_PATH)\Win32\;$(BDS)\lib\Win32$(CC_Suffix)\Debug\;$(BDS)\lib\Win32\Debug\;$(BDS)\lib\Win32$(CC_Suffix)\Release\;$(BDS)\lib\Win32$(CC_Suffix)\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <ILINK_LibraryPath>$(INTERM_PATH)\Win64\Debug\;$(INTERM_PATH)\Win64\;$(BDS)\lib\Win64\Debug\;$(BDS)\lib\Win64\Release\;$(BDS)\lib\Win64\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
@@ -114,7 +118,7 @@
         <TASM_Debugging>None</TASM_Debugging>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
-        <ILINK_LibraryPath>$(INTERM_PATH)\Win32\Release\;$(INTERM_PATH)\Win32\;$(BDS)\lib\Win32\Release\;$(BDS)\lib\Win32\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
+        <ILINK_LibraryPath>$(INTERM_PATH)\Win32\Release\;$(INTERM_PATH)\Win32\;$(BDS)\lib\Win32$(CC_Suffix)\Release\;$(BDS)\lib\Win32$(CC_Suffix)\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
         <ILINK_LibraryPath>$(INTERM_PATH)\Win64\Release\;$(INTERM_PATH)\Win64\;$(BDS)\lib\Win64\Release\;$(BDS)\lib\Win64\Release\psdk\;$(ILINK_LibraryPath)</ILINK_LibraryPath>
@@ -280,6 +284,10 @@
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
         </BuildConfiguration>
+        <PCHCompile Include="windows\WinPCH.h">
+            <BuildOrder>35</BuildOrder>
+            <PCH>true</PCH>
+        </PCHCompile>
     </ItemGroup>
     <Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
     <ProjectExtensions>

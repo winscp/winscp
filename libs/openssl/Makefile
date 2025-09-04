@@ -17,7 +17,7 @@
 
 # Set your compiler options
 
-CFLAG_WARNINGS=-w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl
+CFLAG_WARNINGS=-Wno-incompatible-function-pointer-types -Wno-deprecated-declarations
 CFLAG=$(CFLAG_COMMON) $(CFLAG_WARNINGS)
 
 DEFINES=MD5_ASM;SHA1_ASM;SHA256_ASM;SHA512_ASM;RMD160_ASM

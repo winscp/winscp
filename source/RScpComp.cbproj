@@ -8,6 +8,7 @@
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>1</TargetedPlatforms>
         <AppType>StaticLibrary</AppType>
+        <CC_Suffix Condition="'$(CC_Suffix)'==''">c</CC_Suffix>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
         <Base>true</Base>
@@ -33,9 +34,11 @@
         <BCC_AllWarnings>true</BCC_AllWarnings>
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-        <BCC_wdiu>false</BCC_wdiu>
+        <BCC_UseClassicCompiler>false</BCC_UseClassicCompiler>
+        <BCC_UserSuppliedOptions>-Wno-ignored-attributes -Wno-zero-as-null-pointer-constant -Wno-c++98-compat-pedantic -Wno-language-extension-token -Wno-missing-prototypes -Wno-old-style-cast -Wno-padded -Wno-float-equal</BCC_UserSuppliedOptions>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
+        <Defines>UNICODE;$(Defines)</Defines>
         <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <ILINK_LibraryPath>$(BDS)\lib;$(ILINK_LibraryPath)</ILINK_LibraryPath>
         <IncludePath>components\;core;windows;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>

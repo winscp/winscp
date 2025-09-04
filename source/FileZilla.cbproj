@@ -8,6 +8,7 @@
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>1</TargetedPlatforms>
         <AppType>StaticLibrary</AppType>
+        <CC_Suffix Condition="'$(CC_Suffix)'==''">c</CC_Suffix>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
         <Base>true</Base>
@@ -31,19 +32,12 @@
         <_TCHARMapping>wchar_t</_TCHARMapping>
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
-        <BCC_waus>false</BCC_waus>
-        <BCC_wccc>false</BCC_wccc>
-        <BCC_wcom>false</BCC_wcom>
-        <BCC_wcpt>false</BCC_wcpt>
-        <BCC_wcsu>false</BCC_wcsu>
-        <BCC_whid>false</BCC_whid>
-        <BCC_wovf>false</BCC_wovf>
-        <BCC_wpar>false</BCC_wpar>
-        <BCC_wpia>false</BCC_wpia>
-        <BCC_wrch>false</BCC_wrch>
+        <BCC_PCHName_Clang>filezilla\FileZillaPCH.h</BCC_PCHName_Clang>
+        <BCC_UseClassicCompiler>false</BCC_UseClassicCompiler>
+        <BCC_UserSuppliedOptions>-Wno-ignored-attributes -Wno-dangling-else -Wno-extra-tokens</BCC_UserSuppliedOptions>
         <DCC_CBuilderOutput>JPHNE</DCC_CBuilderOutput>
         <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;Vcl;$(DCC_Namespace)</DCC_Namespace>
-        <Defines>WINSCP;WIN32;$(Defines)</Defines>
+        <Defines>WINSCP;WIN32;UNICODE;$(Defines)</Defines>
         <FinalOutputDir>$(INTERM_PATH)\$(Platform)\$(Config)</FinalOutputDir>
         <ILINK_LibraryPath>$(BDS)\lib;$(BDS)\lib\obj;$(BDS)\lib\psdk;$(ILINK_LibraryPath)</ILINK_LibraryPath>
         <IncludePath>filezilla\misc\;filezilla\;resource;core;..\libs\openssl\include;..\libs\mfc\include;$(BDS)\include;$(BDS)\include\windows\vcl;$(IncludePath)</IncludePath>
@@ -145,6 +139,10 @@
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
         </BuildConfiguration>
+        <PCHCompile Include="filezilla\FileZillaPCH.h">
+            <BuildOrder>16</BuildOrder>
+            <PCH>true</PCH>
+        </PCHCompile>
     </ItemGroup>
     <Import Condition="Exists('$(BDS)\Bin\CodeGear.Cpp.Targets')" Project="$(BDS)\Bin\CodeGear.Cpp.Targets"/>
     <ProjectExtensions>

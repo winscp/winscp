@@ -10,10 +10,13 @@
 #include <psapi.h>
 #include <SessionInfo.h>
 #include <Soap.EncdDecd.hpp>
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreserved-id-macro"
 #include <openssl/pkcs12.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
+#pragma clang diagnostic pop
 //---------------------------------------------------------------------------
 const wchar_t * DSTModeNames = L"Win;Unix;Keep";
 //---------------------------------------------------------------------------

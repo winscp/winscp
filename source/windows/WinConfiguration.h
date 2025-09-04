@@ -257,6 +257,7 @@ struct TEditorData
 {
   __fastcall TEditorData();
   __fastcall TEditorData(const TEditorData & Source);
+  TEditorData & operator =(const TEditorData &) = default;
 
   TFileMasks FileMask;
   TEditor Editor;
