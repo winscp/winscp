@@ -2165,7 +2165,8 @@ bool __fastcall TFTPFileSystem::LookupUploadModificationTime(
     {
       TDateTime UploadModification = Iterator->second;
       TDateTime UploadModificationReduced = ReduceDateTimePrecision(UploadModification, ModificationFmt);
-      if (UploadModificationReduced == Modification)
+      // Though we might use seconds (or even milliseconds) precision comparison here, not FAT precision
+      if (CompareFileTime(UploadModificationReduced, Modification) == 0)
       {
         if ((FTerminal->Configuration->ActualLogProtocol >= 2))
         {
