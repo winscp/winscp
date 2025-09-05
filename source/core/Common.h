@@ -284,6 +284,7 @@ UnicodeString __fastcall FormatTimeZone(long Sec);
 UnicodeString __fastcall GetTimeZoneLogString();
 bool __fastcall AdjustClockForDSTEnabled();
 int __fastcall CompareFileTime(TDateTime T1, TDateTime T2);
+// All three to be used for "short" times only (basically for times that should have been time spans)
 int __fastcall TimeToMSec(TDateTime T);
 int __fastcall TimeToSeconds(TDateTime T);
 int __fastcall TimeToMinutes(TDateTime T);
