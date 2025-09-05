@@ -30,6 +30,7 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
         <_TCHARMapping>wchar_t</_TCHARMapping>
+        <BCC_EnableBatchCompilation>true</BCC_EnableBatchCompilation>
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
         <BCC_PCHName_Clang>filezilla\FileZillaPCH.h</BCC_PCHName_Clang>
@@ -46,7 +47,9 @@
         <Multithreaded>true</Multithreaded>
         <OutputExt>lib</OutputExt>
         <ProjectType>CppStaticLibrary</ProjectType>
+        <RunBCCOutOfProcess>true</RunBCCOutOfProcess>
         <SanitizedProjectName>FileZilla</SanitizedProjectName>
+        <SubProcessesNumber>8</SubProcessesNumber>
         <TLIB_PageSize>128</TLIB_PageSize>
         <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>

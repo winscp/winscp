@@ -40,7 +40,7 @@ LIBS3_OBJS=\
     $(OBJ_D)\util.obj
 
 .c.obj:
-    $(CC) $(LIB_CFLAGS) -o $@ $<
+    $(CC) $(LIB_CFLAGS) -output-dir $(@D) {$< }
 
 $(O_LIBS3): $(LIBS3_OBJS)
     if exist $(O_LIBS3) del $(O_LIBS3)

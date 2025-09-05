@@ -26,6 +26,7 @@
     <PropertyGroup Condition="'$(Base)'!=''">
         <_TCHARMapping>wchar_t</_TCHARMapping>
         <BCC_AllWarnings>true</BCC_AllWarnings>
+        <BCC_EnableBatchCompilation>true</BCC_EnableBatchCompilation>
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
         <BCC_PCHName_Clang>forms\ResourcesPCH.h</BCC_PCHName_Clang>
@@ -40,7 +41,9 @@
         <Manifest_File>None</Manifest_File>
         <Multithreaded>true</Multithreaded>
         <ProjectType>CppStaticLibrary</ProjectType>
+        <RunBCCOutOfProcess>true</RunBCCOutOfProcess>
         <SanitizedProjectName>ScpResources</SanitizedProjectName>
+        <SubProcessesNumber>8</SubProcessesNumber>
         <TLIB_PageSize>64</TLIB_PageSize>
         <VerInfo_Locale>1033</VerInfo_Locale>
     </PropertyGroup>

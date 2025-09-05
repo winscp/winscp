@@ -32,6 +32,7 @@
         <_TCHARMapping>wchar_t</_TCHARMapping>
         <AllPackageLibs>rtl.lib;vclx.lib;vcl.lib;xmlrtl.lib</AllPackageLibs>
         <BCC_AllWarnings>true</BCC_AllWarnings>
+        <BCC_EnableBatchCompilation>true</BCC_EnableBatchCompilation>
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
         <BCC_PCHName_Clang>core\CorePCH.h</BCC_PCHName_Clang>
@@ -48,7 +49,9 @@
         <Multithreaded>true</Multithreaded>
         <OutputExt>lib</OutputExt>
         <ProjectType>CppStaticLibrary</ProjectType>
+        <RunBCCOutOfProcess>true</RunBCCOutOfProcess>
         <SanitizedProjectName>ScpCore</SanitizedProjectName>
+        <SubProcessesNumber>8</SubProcessesNumber>
         <TLIB_PageSize>512</TLIB_PageSize>
         <UsingDelphiRTL>true</UsingDelphiRTL>
         <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>

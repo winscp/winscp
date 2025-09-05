@@ -27,6 +27,7 @@
         <_TCHARMapping>wchar_t</_TCHARMapping>
         <AllPackageLibs>vcl.lib;rtl.lib;My.lib;vclx.lib;DriveDir.lib;DragDropP.lib;tb2k.lib;tbxp.lib;bcbie.lib;PngComponents.lib;xmlrtl.lib;vclactnband.lib;vclimg.lib;vclie.lib</AllPackageLibs>
         <BCC_AllWarnings>true</BCC_AllWarnings>
+        <BCC_EnableBatchCompilation>true</BCC_EnableBatchCompilation>
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
         <BCC_PCHName_Clang>forms\FormsPCH.h</BCC_PCHName_Clang>
@@ -43,7 +44,9 @@
         <OutputExt>lib</OutputExt>
         <PackageImports>vcl.bpi;rtl.bpi;vclx.bpi;DragDrop.bpi;My.bpi;DriveDir.bpi;$(PackageImports)</PackageImports>
         <ProjectType>CppStaticLibrary</ProjectType>
+        <RunBCCOutOfProcess>true</RunBCCOutOfProcess>
         <SanitizedProjectName>ScpForms</SanitizedProjectName>
+        <SubProcessesNumber>8</SubProcessesNumber>
         <TLIB_PageSize>1024</TLIB_PageSize>
         <UsingDelphiRTL>true</UsingDelphiRTL>
         <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>

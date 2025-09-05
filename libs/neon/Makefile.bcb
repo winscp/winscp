@@ -64,7 +64,7 @@ OBJFILES=\
 
 .path.c = $(SRC_D)/src
 .c.obj:
-    $(CC) $(LIB_CFLAGS) -o $@ $<
+    $(CC) $(LIB_CFLAGS) -output-dir $(@D) {$< }
 
 $(O_NEON): $(OBJFILES)
     if exist $(O_NEON) del $(O_NEON)

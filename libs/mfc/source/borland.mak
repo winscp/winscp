@@ -50,7 +50,7 @@ BORFLAGS=$(CPPFLAGS) -I$(INCL:;= -I) -isystem "$(BDS)/include/windows/rtl"
 .path.obj = $(D)
 
 .cpp.obj:
-	$(CC) $(BORFLAGS) -o $@ $<
+	$(CC) $(BORFLAGS) -output-dir $(@D) {$< }
 
 #############################################################################
 # Goals to build

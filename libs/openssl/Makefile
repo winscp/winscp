@@ -342,7 +342,9 @@ CRYPTOOBJ= \
     $(OBJ_D)\decode_der2key.obj $(OBJ_D)\decode_epki2pki.obj $(OBJ_D)\decode_msblob2key.obj $(OBJ_D)\decode_pem2der.obj \
     $(OBJ_D)\decode_pvk2key.obj $(OBJ_D)\decode_spki2typespki.obj $(OBJ_D)\encode_key2any.obj $(OBJ_D)\encode_key2blob.obj \
     $(OBJ_D)\encode_key2ms.obj $(OBJ_D)\encode_key2text.obj $(OBJ_D)\endecoder_common.obj \
-    $(OBJ_D)\file_store.obj $(OBJ_D)\file_store_any2obj.obj $(OBJ_D)\winstore_store.obj \
+    $(OBJ_D)\file_store.obj $(OBJ_D)\file_store_any2obj.obj $(OBJ_D)\winstore_store.obj
+
+CRYPTOOBJASM= \
     $(OBJ_D)\des_586.obj \
     $(OBJ_D)\bf_586.obj \
     $(OBJ_D)\cast_586.obj \
@@ -362,2543 +364,855 @@ $(TMP_D):
 
 lib: $(LIBS_DEP)
 
-$(OBJ_D)\s3_lib.obj: $(SRC_D)\ssl\s3_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\s3_lib.obj $(SRC_D)\ssl\s3_lib.c
-
-$(OBJ_D)\s3_enc.obj: $(SRC_D)\ssl\s3_enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\s3_enc.obj $(SRC_D)\ssl\s3_enc.c
-
-$(OBJ_D)\s3_msg.obj: $(SRC_D)\ssl\s3_msg.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\s3_msg.obj $(SRC_D)\ssl\s3_msg.c
-
-$(OBJ_D)\t1_lib.obj: $(SRC_D)\ssl\t1_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\t1_lib.obj $(SRC_D)\ssl\t1_lib.c
-
-$(OBJ_D)\t1_enc.obj: $(SRC_D)\ssl\t1_enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\t1_enc.obj $(SRC_D)\ssl\t1_enc.c
-
-$(OBJ_D)\tls_srp.obj: $(SRC_D)\ssl\tls_srp.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\tls_srp.obj $(SRC_D)\ssl\tls_srp.c
-
-$(OBJ_D)\tls13_enc.obj: $(SRC_D)\ssl\tls13_enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\tls13_enc.obj $(SRC_D)\ssl\tls13_enc.c
-
-$(OBJ_D)\d1_srtp.obj: $(SRC_D)\ssl\d1_srtp.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\d1_srtp.obj $(SRC_D)\ssl\d1_srtp.c
-
-$(OBJ_D)\d1_lib.obj: $(SRC_D)\ssl\d1_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\d1_lib.obj $(SRC_D)\ssl\d1_lib.c
-
-$(OBJ_D)\d1_msg.obj: $(SRC_D)\ssl\d1_msg.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\d1_msg.obj $(SRC_D)\ssl\d1_msg.c
-
-$(OBJ_D)\ssl_lib.obj: $(SRC_D)\ssl\ssl_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ssl_lib.obj $(SRC_D)\ssl\ssl_lib.c
-
-$(OBJ_D)\ssl_cert.obj: $(SRC_D)\ssl\ssl_cert.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ssl_cert.obj $(SRC_D)\ssl\ssl_cert.c
-
-$(OBJ_D)\ssl_sess.obj: $(SRC_D)\ssl\ssl_sess.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ssl_sess.obj $(SRC_D)\ssl\ssl_sess.c
-
-$(OBJ_D)\ssl_ciph.obj: $(SRC_D)\ssl\ssl_ciph.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ssl_ciph.obj $(SRC_D)\ssl\ssl_ciph.c
-
-$(OBJ_D)\ssl_stat.obj: $(SRC_D)\ssl\ssl_stat.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ssl_stat.obj $(SRC_D)\ssl\ssl_stat.c
-
-$(OBJ_D)\ssl_rsa.obj: $(SRC_D)\ssl\ssl_rsa.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ssl_rsa.obj $(SRC_D)\ssl\ssl_rsa.c
-
-$(OBJ_D)\ssl_asn1.obj: $(SRC_D)\ssl\ssl_asn1.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ssl_asn1.obj $(SRC_D)\ssl\ssl_asn1.c
-
-$(OBJ_D)\ssl_txt.obj: $(SRC_D)\ssl\ssl_txt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ssl_txt.obj $(SRC_D)\ssl\ssl_txt.c
-
-$(OBJ_D)\ssl_err.obj: $(SRC_D)\ssl\ssl_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ssl_err.obj $(SRC_D)\ssl\ssl_err.c
-
-$(OBJ_D)\ssl_init.obj: $(SRC_D)\ssl\ssl_init.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ssl_init.obj $(SRC_D)\ssl\ssl_init.c
-
-$(OBJ_D)\ssl_mcnf.obj: $(SRC_D)\ssl\ssl_mcnf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ssl_mcnf.obj $(SRC_D)\ssl\ssl_mcnf.c
-
-$(OBJ_D)\bio_ssl.obj: $(SRC_D)\ssl\bio_ssl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bio_ssl.obj $(SRC_D)\ssl\bio_ssl.c
-
-$(OBJ_D)\pqueue.obj: $(SRC_D)\ssl\pqueue.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pqueue.obj $(SRC_D)\ssl\pqueue.c
-
-$(OBJ_D)\methods.obj: $(SRC_D)\ssl\methods.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\methods.obj $(SRC_D)\ssl\methods.c
-
-$(OBJ_D)\ssl_conf.obj: $(SRC_D)\ssl\ssl_conf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ssl_conf.obj $(SRC_D)\ssl\ssl_conf.c
-
-$(OBJ_D)\tls_depr.obj: $(SRC_D)\ssl\tls_depr.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\tls_depr.obj $(SRC_D)\ssl\tls_depr.c
-
-$(OBJ_D)\ssl_cert_comp.obj: $(SRC_D)\ssl\ssl_cert_comp.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ssl_cert_comp.obj $(SRC_D)\ssl\ssl_cert_comp.c
-
-$(OBJ_D)\statem.obj: $(SRC_D)\ssl\statem\statem.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\statem.obj $(SRC_D)\ssl\statem\statem.c
-
-$(OBJ_D)\statem_clnt.obj: $(SRC_D)\ssl\statem\statem_clnt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\statem_clnt.obj $(SRC_D)\ssl\statem\statem_clnt.c
-
-$(OBJ_D)\statem_dtls.obj: $(SRC_D)\ssl\statem\statem_dtls.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\statem_dtls.obj $(SRC_D)\ssl\statem\statem_dtls.c
-
-$(OBJ_D)\statem_lib.obj: $(SRC_D)\ssl\statem\statem_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\statem_lib.obj $(SRC_D)\ssl\statem\statem_lib.c
-
-$(OBJ_D)\statem_srvr.obj: $(SRC_D)\ssl\statem\statem_srvr.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\statem_srvr.obj $(SRC_D)\ssl\statem\statem_srvr.c
-
-$(OBJ_D)\extensions.obj: $(SRC_D)\ssl\statem\extensions.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\extensions.obj $(SRC_D)\ssl\statem\extensions.c
-
-$(OBJ_D)\extensions_clnt.obj: $(SRC_D)\ssl\statem\extensions_clnt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\extensions_clnt.obj $(SRC_D)\ssl\statem\extensions_clnt.c
-
-$(OBJ_D)\extensions_cust.obj: $(SRC_D)\ssl\statem\extensions_cust.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\extensions_cust.obj $(SRC_D)\ssl\statem\extensions_cust.c
-
-$(OBJ_D)\extensions_srvr.obj: $(SRC_D)\ssl\statem\extensions_srvr.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\extensions_srvr.obj $(SRC_D)\ssl\statem\extensions_srvr.c
-
-$(OBJ_D)\rec_layer_s3.obj: $(SRC_D)\ssl\record\rec_layer_s3.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rec_layer_s3.obj $(SRC_D)\ssl\record\rec_layer_s3.c
-
-$(OBJ_D)\rec_layer_d1.obj: $(SRC_D)\ssl\record\rec_layer_d1.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rec_layer_d1.obj $(SRC_D)\ssl\record\rec_layer_d1.c
-
-$(OBJ_D)\ssl3_cbc.obj: $(SRC_D)\ssl\record\methods\ssl3_cbc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ssl3_cbc.obj $(SRC_D)\ssl\record\methods\ssl3_cbc.c
-
-$(OBJ_D)\tls_pad.obj: $(SRC_D)\ssl\record\methods\tls_pad.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\tls_pad.obj $(SRC_D)\ssl\record\methods\tls_pad.c
-
-$(OBJ_D)\dtls_meth.obj: $(SRC_D)\ssl\record\methods\dtls_meth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dtls_meth.obj $(SRC_D)\ssl\record\methods\dtls_meth.c
-
-$(OBJ_D)\tls_common.obj: $(SRC_D)\ssl\record\methods\tls_common.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\tls_common.obj $(SRC_D)\ssl\record\methods\tls_common.c
-
-$(OBJ_D)\tlsany_meth.obj: $(SRC_D)\ssl\record\methods\tlsany_meth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\tlsany_meth.obj $(SRC_D)\ssl\record\methods\tlsany_meth.c
-
-$(OBJ_D)\tls13_meth.obj: $(SRC_D)\ssl\record\methods\tls13_meth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\tls13_meth.obj $(SRC_D)\ssl\record\methods\tls13_meth.c
-
-$(OBJ_D)\tls1_meth.obj: $(SRC_D)\ssl\record\methods\tls1_meth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\tls1_meth.obj $(SRC_D)\ssl\record\methods\tls1_meth.c
-
-$(OBJ_D)\ssl3_meth.obj: $(SRC_D)\ssl\record\methods\ssl3_meth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ssl3_meth.obj $(SRC_D)\ssl\record\methods\ssl3_meth.c
-
-$(OBJ_D)\tls_multib.obj: $(SRC_D)\ssl\record\methods\tls_multib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\tls_multib.obj $(SRC_D)\ssl\record\methods\tls_multib.c
-
-$(OBJ_D)\cryptlib.obj: $(SRC_D)\crypto\cryptlib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cryptlib.obj $(SRC_D)\crypto\cryptlib.c
-
-$(OBJ_D)\ctype.obj: $(SRC_D)\crypto\ctype.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ctype.obj $(SRC_D)\crypto\ctype.c
-
-$(OBJ_D)\init.obj: $(SRC_D)\crypto\init.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\init.obj $(SRC_D)\crypto\init.c
-
-$(OBJ_D)\mem.obj: $(SRC_D)\crypto\mem.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\mem.obj $(SRC_D)\crypto\mem.c
-
-$(OBJ_D)\mem_clr.obj: $(SRC_D)\crypto\mem_clr.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\mem_clr.obj $(SRC_D)\crypto\mem_clr.c
-
-$(OBJ_D)\ex_data.obj: $(SRC_D)\crypto\ex_data.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ex_data.obj $(SRC_D)\crypto\ex_data.c
-
-$(OBJ_D)\cpt_err.obj: $(SRC_D)\crypto\cpt_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cpt_err.obj $(SRC_D)\crypto\cpt_err.c
-
-$(OBJ_D)\ebcdic.obj: $(SRC_D)\crypto\ebcdic.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ebcdic.obj $(SRC_D)\crypto\ebcdic.c
-
-$(OBJ_D)\uid.obj: $(SRC_D)\crypto\uid.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\uid.obj $(SRC_D)\crypto\uid.c
-
-$(OBJ_D)\o_time.obj: $(SRC_D)\crypto\o_time.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\o_time.obj $(SRC_D)\crypto\o_time.c
-
-$(OBJ_D)\o_str.obj: $(SRC_D)\crypto\o_str.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\o_str.obj $(SRC_D)\crypto\o_str.c
-
-$(OBJ_D)\o_dir.obj: $(SRC_D)\crypto\o_dir.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\o_dir.obj $(SRC_D)\crypto\o_dir.c
-
-$(OBJ_D)\o_fopen.obj: $(SRC_D)\crypto\o_fopen.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\o_fopen.obj $(SRC_D)\crypto\o_fopen.c
-
-$(OBJ_D)\getenv.obj: $(SRC_D)\crypto\getenv.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\getenv.obj $(SRC_D)\crypto\getenv.c
-
-$(OBJ_D)\mem_sec.obj: $(SRC_D)\crypto\mem_sec.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\mem_sec.obj $(SRC_D)\crypto\mem_sec.c
-
-$(OBJ_D)\threads_win.obj: $(SRC_D)\crypto\threads_win.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\threads_win.obj $(SRC_D)\crypto\threads_win.c
-
-$(OBJ_D)\packet.obj: $(SRC_D)\crypto\packet.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\packet.obj $(SRC_D)\crypto\packet.c
-
-$(OBJ_D)\bsearch.obj: $(SRC_D)\crypto\bsearch.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bsearch.obj $(SRC_D)\crypto\bsearch.c
-
-$(OBJ_D)\context.obj: $(SRC_D)\crypto\context.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\context.obj $(SRC_D)\crypto\context.c
-
-$(OBJ_D)\cpuid.obj: $(SRC_D)\crypto\cpuid.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cpuid.obj $(SRC_D)\crypto\cpuid.c
-
-$(OBJ_D)\initthread.obj: $(SRC_D)\crypto\initthread.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\initthread.obj $(SRC_D)\crypto\initthread.c
-
-$(OBJ_D)\param_build_set.obj: $(SRC_D)\crypto\param_build_set.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\param_build_set.obj $(SRC_D)\crypto\param_build_set.c
-
-$(OBJ_D)\params.obj: $(SRC_D)\crypto\params.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\params.obj $(SRC_D)\crypto\params.c
-
-$(OBJ_D)\params_dup.obj: $(SRC_D)\crypto\params_dup.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\params_dup.obj $(SRC_D)\crypto\params_dup.c
-
-$(OBJ_D)\params_idx.obj: $(SRC_D)\crypto\params_idx.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\params_idx.obj $(SRC_D)\crypto\params_idx.c
-
-$(OBJ_D)\sparse_array.obj: $(SRC_D)\crypto\sparse_array.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\sparse_array.obj $(SRC_D)\crypto\sparse_array.c
-
-$(OBJ_D)\provider.obj: $(SRC_D)\crypto\provider.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\provider.obj $(SRC_D)\crypto\provider.c
-
-$(OBJ_D)\provider_core.obj: $(SRC_D)\crypto\provider_core.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\provider_core.obj $(SRC_D)\crypto\provider_core.c
-
-$(OBJ_D)\provider_conf.obj: $(SRC_D)\crypto\provider_conf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\provider_conf.obj $(SRC_D)\crypto\provider_conf.c
-
-$(OBJ_D)\provider_child.obj: $(SRC_D)\crypto\provider_child.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\provider_child.obj $(SRC_D)\crypto\provider_child.c
-
-$(OBJ_D)\provider_predefined.obj: $(SRC_D)\crypto\provider_predefined.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\provider_predefined.obj $(SRC_D)\crypto\provider_predefined.c
-
-$(OBJ_D)\core_algorithm.obj: $(SRC_D)\crypto\core_algorithm.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\core_algorithm.obj $(SRC_D)\crypto\core_algorithm.c
-
-$(OBJ_D)\core_namemap.obj: $(SRC_D)\crypto\core_namemap.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\core_namemap.obj $(SRC_D)\crypto\core_namemap.c
-
-$(OBJ_D)\core_fetch.obj: $(SRC_D)\crypto\core_fetch.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\core_fetch.obj $(SRC_D)\crypto\core_fetch.c
-
-$(OBJ_D)\asn1_dsa.obj: $(SRC_D)\crypto\asn1_dsa.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\asn1_dsa.obj $(SRC_D)\crypto\asn1_dsa.c
-
-$(OBJ_D)\self_test_core.obj: $(SRC_D)\crypto\self_test_core.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\self_test_core.obj $(SRC_D)\crypto\self_test_core.c
-
-$(OBJ_D)\passphrase.obj: $(SRC_D)\crypto\passphrase.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\passphrase.obj $(SRC_D)\crypto\passphrase.c
-
-$(OBJ_D)\punycode.obj: $(SRC_D)\crypto\punycode.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\punycode.obj $(SRC_D)\crypto\punycode.c
-
-$(OBJ_D)\param_build.obj: $(SRC_D)\crypto\param_build.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\param_build.obj $(SRC_D)\crypto\param_build.c
-
-$(OBJ_D)\params_from_text.obj: $(SRC_D)\crypto\params_from_text.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\params_from_text.obj $(SRC_D)\crypto\params_from_text.c
-
-$(OBJ_D)\trace.obj: $(SRC_D)\crypto\trace.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\trace.obj $(SRC_D)\crypto\trace.c
-
-$(OBJ_D)\der_writer.obj: $(SRC_D)\crypto\der_writer.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\der_writer.obj $(SRC_D)\crypto\der_writer.c
-
-$(OBJ_D)\sleep.obj: $(SRC_D)\crypto\sleep.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\sleep.obj $(SRC_D)\crypto\sleep.c
-
-$(OBJ_D)\deterministic_nonce.obj: $(SRC_D)\crypto\deterministic_nonce.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\deterministic_nonce.obj $(SRC_D)\crypto\deterministic_nonce.c
-
-$(OBJ_D)\time.obj: $(SRC_D)\crypto\time.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\time.obj $(SRC_D)\crypto\time.c
-
-$(OBJ_D)\md4_dgst.obj: $(SRC_D)\crypto\md4\md4_dgst.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\md4_dgst.obj $(SRC_D)\crypto\md4\md4_dgst.c
-
-$(OBJ_D)\md4_one.obj: $(SRC_D)\crypto\md4\md4_one.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\md4_one.obj $(SRC_D)\crypto\md4\md4_one.c
-
-$(OBJ_D)\md5_dgst.obj: $(SRC_D)\crypto\md5\md5_dgst.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\md5_dgst.obj $(SRC_D)\crypto\md5\md5_dgst.c
-
-$(OBJ_D)\md5_one.obj: $(SRC_D)\crypto\md5\md5_one.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\md5_one.obj $(SRC_D)\crypto\md5\md5_one.c
-
-$(OBJ_D)\md5_sha1.obj: $(SRC_D)\crypto\md5\md5_sha1.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\md5_sha1.obj $(SRC_D)\crypto\md5\md5_sha1.c
-
-$(OBJ_D)\cbc128.obj: $(SRC_D)\crypto\modes\cbc128.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cbc128.obj $(SRC_D)\crypto\modes\cbc128.c
-
-$(OBJ_D)\cfb128.obj: $(SRC_D)\crypto\modes\cfb128.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cfb128.obj $(SRC_D)\crypto\modes\cfb128.c
-
-$(OBJ_D)\ofb128.obj: $(SRC_D)\crypto\modes\ofb128.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ofb128.obj $(SRC_D)\crypto\modes\ofb128.c
-
-$(OBJ_D)\ccm128.obj: $(SRC_D)\crypto\modes\ccm128.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ccm128.obj $(SRC_D)\crypto\modes\ccm128.c
-
-$(OBJ_D)\gcm128.obj: $(SRC_D)\crypto\modes\gcm128.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\gcm128.obj $(SRC_D)\crypto\modes\gcm128.c
-
-$(OBJ_D)\xts128.obj: $(SRC_D)\crypto\modes\xts128.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\xts128.obj $(SRC_D)\crypto\modes\xts128.c
-
-$(OBJ_D)\xts128gb.obj: $(SRC_D)\crypto\modes\xts128gb.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\xts128gb.obj $(SRC_D)\crypto\modes\xts128gb.c
-
-$(OBJ_D)\wrap128.obj: $(SRC_D)\crypto\modes\wrap128.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\wrap128.obj $(SRC_D)\crypto\modes\wrap128.c
-
-$(OBJ_D)\ctr128.obj: $(SRC_D)\crypto\modes\ctr128.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ctr128.obj $(SRC_D)\crypto\modes\ctr128.c
-
-$(OBJ_D)\ocb128.obj: $(SRC_D)\crypto\modes\ocb128.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ocb128.obj $(SRC_D)\crypto\modes\ocb128.c
-
-$(OBJ_D)\siv128.obj: $(SRC_D)\crypto\modes\siv128.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\siv128.obj $(SRC_D)\crypto\modes\siv128.c
-
-$(OBJ_D)\sha1dgst.obj: $(SRC_D)\crypto\sha\sha1dgst.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\sha1dgst.obj $(SRC_D)\crypto\sha\sha1dgst.c
-
-$(OBJ_D)\sha1_one.obj: $(SRC_D)\crypto\sha\sha1_one.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\sha1_one.obj $(SRC_D)\crypto\sha\sha1_one.c
-
-$(OBJ_D)\sha256.obj: $(SRC_D)\crypto\sha\sha256.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\sha256.obj $(SRC_D)\crypto\sha\sha256.c
-
-$(OBJ_D)\sha512.obj: $(SRC_D)\crypto\sha\sha512.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\sha512.obj $(SRC_D)\crypto\sha\sha512.c
-
-$(OBJ_D)\keccak1600.obj: $(SRC_D)\crypto\sha\keccak1600.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\keccak1600.obj $(SRC_D)\crypto\sha\keccak1600.c
-
-$(OBJ_D)\sha3.obj: $(SRC_D)\crypto\sha\sha3.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\sha3.obj $(SRC_D)\crypto\sha\sha3.c
-
-$(OBJ_D)\hmac.obj: $(SRC_D)\crypto\hmac\hmac.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\hmac.obj $(SRC_D)\crypto\hmac\hmac.c
-
-$(OBJ_D)\rmd_dgst.obj: $(SRC_D)\crypto\ripemd\rmd_dgst.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rmd_dgst.obj $(SRC_D)\crypto\ripemd\rmd_dgst.c
-
-$(OBJ_D)\rmd_one.obj: $(SRC_D)\crypto\ripemd\rmd_one.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rmd_one.obj $(SRC_D)\crypto\ripemd\rmd_one.c
-
-$(OBJ_D)\set_key.obj: $(SRC_D)\crypto\des\set_key.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\set_key.obj $(SRC_D)\crypto\des\set_key.c
-
-$(OBJ_D)\ecb_enc.obj: $(SRC_D)\crypto\des\ecb_enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecb_enc.obj $(SRC_D)\crypto\des\ecb_enc.c
-
-$(OBJ_D)\cbc_enc.obj: $(SRC_D)\crypto\des\cbc_enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cbc_enc.obj $(SRC_D)\crypto\des\cbc_enc.c
-
-$(OBJ_D)\ecb3_enc.obj: $(SRC_D)\crypto\des\ecb3_enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecb3_enc.obj $(SRC_D)\crypto\des\ecb3_enc.c
-
-$(OBJ_D)\cfb64enc.obj: $(SRC_D)\crypto\des\cfb64enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cfb64enc.obj $(SRC_D)\crypto\des\cfb64enc.c
-
-$(OBJ_D)\cfb64ede.obj: $(SRC_D)\crypto\des\cfb64ede.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cfb64ede.obj $(SRC_D)\crypto\des\cfb64ede.c
-
-$(OBJ_D)\cfb_enc.obj: $(SRC_D)\crypto\des\cfb_enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cfb_enc.obj $(SRC_D)\crypto\des\cfb_enc.c
-
-$(OBJ_D)\ofb64ede.obj: $(SRC_D)\crypto\des\ofb64ede.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ofb64ede.obj $(SRC_D)\crypto\des\ofb64ede.c
-
-$(OBJ_D)\ofb64enc.obj: $(SRC_D)\crypto\des\ofb64enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ofb64enc.obj $(SRC_D)\crypto\des\ofb64enc.c
-
-$(OBJ_D)\ofb_enc.obj: $(SRC_D)\crypto\des\ofb_enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ofb_enc.obj $(SRC_D)\crypto\des\ofb_enc.c
-
-$(OBJ_D)\str2key.obj: $(SRC_D)\crypto\des\str2key.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\str2key.obj $(SRC_D)\crypto\des\str2key.c
-
-$(OBJ_D)\pcbc_enc.obj: $(SRC_D)\crypto\des\pcbc_enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pcbc_enc.obj $(SRC_D)\crypto\des\pcbc_enc.c
-
-$(OBJ_D)\qud_cksm.obj: $(SRC_D)\crypto\des\qud_cksm.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\qud_cksm.obj $(SRC_D)\crypto\des\qud_cksm.c
-
-$(OBJ_D)\rand_key.obj: $(SRC_D)\crypto\des\rand_key.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rand_key.obj $(SRC_D)\crypto\des\rand_key.c
-
-$(OBJ_D)\xcbc_enc.obj: $(SRC_D)\crypto\des\xcbc_enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\xcbc_enc.obj $(SRC_D)\crypto\des\xcbc_enc.c
-
-$(OBJ_D)\cbc_cksm.obj: $(SRC_D)\crypto\des\cbc_cksm.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cbc_cksm.obj $(SRC_D)\crypto\des\cbc_cksm.c
-
-$(OBJ_D)\rc2_ecb.obj: $(SRC_D)\crypto\rc2\rc2_ecb.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rc2_ecb.obj $(SRC_D)\crypto\rc2\rc2_ecb.c
-
-$(OBJ_D)\rc2_skey.obj: $(SRC_D)\crypto\rc2\rc2_skey.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rc2_skey.obj $(SRC_D)\crypto\rc2\rc2_skey.c
-
-$(OBJ_D)\rc2_cbc.obj: $(SRC_D)\crypto\rc2\rc2_cbc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rc2_cbc.obj $(SRC_D)\crypto\rc2\rc2_cbc.c
-
-$(OBJ_D)\rc2cfb64.obj: $(SRC_D)\crypto\rc2\rc2cfb64.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rc2cfb64.obj $(SRC_D)\crypto\rc2\rc2cfb64.c
-
-$(OBJ_D)\rc2ofb64.obj: $(SRC_D)\crypto\rc2\rc2ofb64.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rc2ofb64.obj $(SRC_D)\crypto\rc2\rc2ofb64.c
-
-$(OBJ_D)\rc4_skey.obj: $(SRC_D)\crypto\rc4\rc4_skey.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rc4_skey.obj $(SRC_D)\crypto\rc4\rc4_skey.c
-
-$(OBJ_D)\rc4_enc.obj: $(SRC_D)\crypto\rc4\rc4_enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rc4_enc.obj $(SRC_D)\crypto\rc4\rc4_enc.c
-
-$(OBJ_D)\i_cbc.obj: $(SRC_D)\crypto\idea\i_cbc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\i_cbc.obj $(SRC_D)\crypto\idea\i_cbc.c
-
-$(OBJ_D)\i_cfb64.obj: $(SRC_D)\crypto\idea\i_cfb64.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\i_cfb64.obj $(SRC_D)\crypto\idea\i_cfb64.c
-
-$(OBJ_D)\i_ofb64.obj: $(SRC_D)\crypto\idea\i_ofb64.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\i_ofb64.obj $(SRC_D)\crypto\idea\i_ofb64.c
-
-$(OBJ_D)\i_ecb.obj: $(SRC_D)\crypto\idea\i_ecb.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\i_ecb.obj $(SRC_D)\crypto\idea\i_ecb.c
-
-$(OBJ_D)\i_skey.obj: $(SRC_D)\crypto\idea\i_skey.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\i_skey.obj $(SRC_D)\crypto\idea\i_skey.c
-
-$(OBJ_D)\bf_skey.obj: $(SRC_D)\crypto\bf\bf_skey.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bf_skey.obj $(SRC_D)\crypto\bf\bf_skey.c
-
-$(OBJ_D)\bf_ecb.obj: $(SRC_D)\crypto\bf\bf_ecb.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bf_ecb.obj $(SRC_D)\crypto\bf\bf_ecb.c
-
-$(OBJ_D)\bf_cfb64.obj: $(SRC_D)\crypto\bf\bf_cfb64.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bf_cfb64.obj $(SRC_D)\crypto\bf\bf_cfb64.c
-
-$(OBJ_D)\bf_ofb64.obj: $(SRC_D)\crypto\bf\bf_ofb64.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bf_ofb64.obj $(SRC_D)\crypto\bf\bf_ofb64.c
-
-$(OBJ_D)\c_skey.obj: $(SRC_D)\crypto\cast\c_skey.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\c_skey.obj $(SRC_D)\crypto\cast\c_skey.c
-
-$(OBJ_D)\c_ecb.obj: $(SRC_D)\crypto\cast\c_ecb.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\c_ecb.obj $(SRC_D)\crypto\cast\c_ecb.c
-
-$(OBJ_D)\c_cfb64.obj: $(SRC_D)\crypto\cast\c_cfb64.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\c_cfb64.obj $(SRC_D)\crypto\cast\c_cfb64.c
-
-$(OBJ_D)\c_ofb64.obj: $(SRC_D)\crypto\cast\c_ofb64.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\c_ofb64.obj $(SRC_D)\crypto\cast\c_ofb64.c
-
-$(OBJ_D)\aes_misc.obj: $(SRC_D)\crypto\aes\aes_misc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\aes_misc.obj $(SRC_D)\crypto\aes\aes_misc.c
-
-$(OBJ_D)\aes_ecb.obj: $(SRC_D)\crypto\aes\aes_ecb.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\aes_ecb.obj $(SRC_D)\crypto\aes\aes_ecb.c
-
-$(OBJ_D)\aes_cfb.obj: $(SRC_D)\crypto\aes\aes_cfb.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\aes_cfb.obj $(SRC_D)\crypto\aes\aes_cfb.c
-
-$(OBJ_D)\aes_ofb.obj: $(SRC_D)\crypto\aes\aes_ofb.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\aes_ofb.obj $(SRC_D)\crypto\aes\aes_ofb.c
-
-$(OBJ_D)\aes_ige.obj: $(SRC_D)\crypto\aes\aes_ige.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\aes_ige.obj $(SRC_D)\crypto\aes\aes_ige.c
-
-$(OBJ_D)\aes_wrap.obj: $(SRC_D)\crypto\aes\aes_wrap.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\aes_wrap.obj $(SRC_D)\crypto\aes\aes_wrap.c
-
-$(OBJ_D)\aes_core.obj: $(SRC_D)\crypto\aes\aes_core.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\aes_core.obj $(SRC_D)\crypto\aes\aes_core.c
-
-$(OBJ_D)\aes_cbc.obj: $(SRC_D)\crypto\aes\aes_cbc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\aes_cbc.obj $(SRC_D)\crypto\aes\aes_cbc.c
-
-$(OBJ_D)\bn_add.obj: $(SRC_D)\crypto\bn\bn_add.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_add.obj $(SRC_D)\crypto\bn\bn_add.c
-
-$(OBJ_D)\bn_div.obj: $(SRC_D)\crypto\bn\bn_div.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_div.obj $(SRC_D)\crypto\bn\bn_div.c
-
-$(OBJ_D)\bn_exp.obj: $(SRC_D)\crypto\bn\bn_exp.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_exp.obj $(SRC_D)\crypto\bn\bn_exp.c
-
-$(OBJ_D)\bn_lib.obj: $(SRC_D)\crypto\bn\bn_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_lib.obj $(SRC_D)\crypto\bn\bn_lib.c
-
-$(OBJ_D)\bn_ctx.obj: $(SRC_D)\crypto\bn\bn_ctx.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_ctx.obj $(SRC_D)\crypto\bn\bn_ctx.c
-
-$(OBJ_D)\bn_mul.obj: $(SRC_D)\crypto\bn\bn_mul.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_mul.obj $(SRC_D)\crypto\bn\bn_mul.c
-
-$(OBJ_D)\bn_mod.obj: $(SRC_D)\crypto\bn\bn_mod.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_mod.obj $(SRC_D)\crypto\bn\bn_mod.c
-
-$(OBJ_D)\bn_print.obj: $(SRC_D)\crypto\bn\bn_print.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_print.obj $(SRC_D)\crypto\bn\bn_print.c
-
-$(OBJ_D)\bn_rand.obj: $(SRC_D)\crypto\bn\bn_rand.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_rand.obj $(SRC_D)\crypto\bn\bn_rand.c
-
-$(OBJ_D)\bn_shift.obj: $(SRC_D)\crypto\bn\bn_shift.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_shift.obj $(SRC_D)\crypto\bn\bn_shift.c
-
-$(OBJ_D)\bn_word.obj: $(SRC_D)\crypto\bn\bn_word.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_word.obj $(SRC_D)\crypto\bn\bn_word.c
-
-$(OBJ_D)\bn_blind.obj: $(SRC_D)\crypto\bn\bn_blind.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_blind.obj $(SRC_D)\crypto\bn\bn_blind.c
-
-$(OBJ_D)\bn_kron.obj: $(SRC_D)\crypto\bn\bn_kron.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_kron.obj $(SRC_D)\crypto\bn\bn_kron.c
-
-$(OBJ_D)\bn_sqrt.obj: $(SRC_D)\crypto\bn\bn_sqrt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_sqrt.obj $(SRC_D)\crypto\bn\bn_sqrt.c
-
-$(OBJ_D)\bn_gcd.obj: $(SRC_D)\crypto\bn\bn_gcd.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_gcd.obj $(SRC_D)\crypto\bn\bn_gcd.c
-
-$(OBJ_D)\bn_prime.obj: $(SRC_D)\crypto\bn\bn_prime.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_prime.obj $(SRC_D)\crypto\bn\bn_prime.c
-
-$(OBJ_D)\bn_err.obj: $(SRC_D)\crypto\bn\bn_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_err.obj $(SRC_D)\crypto\bn\bn_err.c
-
-$(OBJ_D)\bn_sqr.obj: $(SRC_D)\crypto\bn\bn_sqr.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_sqr.obj $(SRC_D)\crypto\bn\bn_sqr.c
-
-$(OBJ_D)\bn_recp.obj: $(SRC_D)\crypto\bn\bn_recp.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_recp.obj $(SRC_D)\crypto\bn\bn_recp.c
-
-$(OBJ_D)\bn_mont.obj: $(SRC_D)\crypto\bn\bn_mont.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_mont.obj $(SRC_D)\crypto\bn\bn_mont.c
-
-$(OBJ_D)\bn_mpi.obj: $(SRC_D)\crypto\bn\bn_mpi.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_mpi.obj $(SRC_D)\crypto\bn\bn_mpi.c
-
-$(OBJ_D)\bn_exp2.obj: $(SRC_D)\crypto\bn\bn_exp2.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_exp2.obj $(SRC_D)\crypto\bn\bn_exp2.c
-
-$(OBJ_D)\bn_gf2m.obj: $(SRC_D)\crypto\bn\bn_gf2m.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_gf2m.obj $(SRC_D)\crypto\bn\bn_gf2m.c
-
-$(OBJ_D)\bn_nist.obj: $(SRC_D)\crypto\bn\bn_nist.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_nist.obj $(SRC_D)\crypto\bn\bn_nist.c
-
-$(OBJ_D)\bn_depr.obj: $(SRC_D)\crypto\bn\bn_depr.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_depr.obj $(SRC_D)\crypto\bn\bn_depr.c
-
-$(OBJ_D)\bn_const.obj: $(SRC_D)\crypto\bn\bn_const.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_const.obj $(SRC_D)\crypto\bn\bn_const.c
-
-$(OBJ_D)\bn_intern.obj: $(SRC_D)\crypto\bn\bn_intern.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_intern.obj $(SRC_D)\crypto\bn\bn_intern.c
-
-$(OBJ_D)\bn_dh.obj: $(SRC_D)\crypto\bn\bn_dh.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_dh.obj $(SRC_D)\crypto\bn\bn_dh.c
-
-$(OBJ_D)\bn_srp.obj: $(SRC_D)\crypto\bn\bn_srp.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_srp.obj $(SRC_D)\crypto\bn\bn_srp.c
-
-$(OBJ_D)\bn_conv.obj: $(SRC_D)\crypto\bn\bn_conv.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_conv.obj $(SRC_D)\crypto\bn\bn_conv.c
-
-$(OBJ_D)\bn_rsa_fips186_4.obj: $(SRC_D)\crypto\bn\bn_rsa_fips186_4.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bn_rsa_fips186_4.obj $(SRC_D)\crypto\bn\bn_rsa_fips186_4.c
-
-$(OBJ_D)\rsa_ossl.obj: $(SRC_D)\crypto\rsa\rsa_ossl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_ossl.obj $(SRC_D)\crypto\rsa\rsa_ossl.c
-
-$(OBJ_D)\rsa_gen.obj: $(SRC_D)\crypto\rsa\rsa_gen.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_gen.obj $(SRC_D)\crypto\rsa\rsa_gen.c
-
-$(OBJ_D)\rsa_lib.obj: $(SRC_D)\crypto\rsa\rsa_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_lib.obj $(SRC_D)\crypto\rsa\rsa_lib.c
-
-$(OBJ_D)\rsa_sign.obj: $(SRC_D)\crypto\rsa\rsa_sign.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_sign.obj $(SRC_D)\crypto\rsa\rsa_sign.c
-
-$(OBJ_D)\rsa_saos.obj: $(SRC_D)\crypto\rsa\rsa_saos.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_saos.obj $(SRC_D)\crypto\rsa\rsa_saos.c
-
-$(OBJ_D)\rsa_err.obj: $(SRC_D)\crypto\rsa\rsa_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_err.obj $(SRC_D)\crypto\rsa\rsa_err.c
-
-$(OBJ_D)\rsa_pk1.obj: $(SRC_D)\crypto\rsa\rsa_pk1.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_pk1.obj $(SRC_D)\crypto\rsa\rsa_pk1.c
-
-$(OBJ_D)\rsa_none.obj: $(SRC_D)\crypto\rsa\rsa_none.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_none.obj $(SRC_D)\crypto\rsa\rsa_none.c
-
-$(OBJ_D)\rsa_oaep.obj: $(SRC_D)\crypto\rsa\rsa_oaep.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_oaep.obj $(SRC_D)\crypto\rsa\rsa_oaep.c
-
-$(OBJ_D)\rsa_chk.obj: $(SRC_D)\crypto\rsa\rsa_chk.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_chk.obj $(SRC_D)\crypto\rsa\rsa_chk.c
-
-$(OBJ_D)\rsa_pss.obj: $(SRC_D)\crypto\rsa\rsa_pss.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_pss.obj $(SRC_D)\crypto\rsa\rsa_pss.c
-
-$(OBJ_D)\rsa_x931.obj: $(SRC_D)\crypto\rsa\rsa_x931.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_x931.obj $(SRC_D)\crypto\rsa\rsa_x931.c
-
-$(OBJ_D)\rsa_asn1.obj: $(SRC_D)\crypto\rsa\rsa_asn1.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_asn1.obj $(SRC_D)\crypto\rsa\rsa_asn1.c
-
-$(OBJ_D)\rsa_depr.obj: $(SRC_D)\crypto\rsa\rsa_depr.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_depr.obj $(SRC_D)\crypto\rsa\rsa_depr.c
-
-$(OBJ_D)\rsa_pmeth.obj: $(SRC_D)\crypto\rsa\rsa_pmeth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_pmeth.obj $(SRC_D)\crypto\rsa\rsa_pmeth.c
-
-$(OBJ_D)\rsa_crpt.obj: $(SRC_D)\crypto\rsa\rsa_crpt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_crpt.obj $(SRC_D)\crypto\rsa\rsa_crpt.c
-
-$(OBJ_D)\rsa_ameth.obj: $(SRC_D)\crypto\rsa\rsa_ameth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_ameth.obj $(SRC_D)\crypto\rsa\rsa_ameth.c
-
-$(OBJ_D)\rsa_mp.obj: $(SRC_D)\crypto\rsa\rsa_mp.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_mp.obj $(SRC_D)\crypto\rsa\rsa_mp.c
-
-$(OBJ_D)\rsa_backend.obj: $(SRC_D)\crypto\rsa\rsa_backend.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_backend.obj $(SRC_D)\crypto\rsa\rsa_backend.c
-
-$(OBJ_D)\rsa_sp800_56b_check.obj: $(SRC_D)\crypto\rsa\rsa_sp800_56b_check.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_sp800_56b_check.obj $(SRC_D)\crypto\rsa\rsa_sp800_56b_check.c
-
-$(OBJ_D)\rsa_sp800_56b_gen.obj: $(SRC_D)\crypto\rsa\rsa_sp800_56b_gen.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_sp800_56b_gen.obj $(SRC_D)\crypto\rsa\rsa_sp800_56b_gen.c
-
-$(OBJ_D)\rsa_mp_names.obj: $(SRC_D)\crypto\rsa\rsa_mp_names.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_mp_names.obj $(SRC_D)\crypto\rsa\rsa_mp_names.c
-
-$(OBJ_D)\rsa_schemes.obj: $(SRC_D)\crypto\rsa\rsa_schemes.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_schemes.obj $(SRC_D)\crypto\rsa\rsa_schemes.c
-
-$(OBJ_D)\dsa_gen.obj: $(SRC_D)\crypto\dsa\dsa_gen.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dsa_gen.obj $(SRC_D)\crypto\dsa\dsa_gen.c
-
-$(OBJ_D)\dsa_key.obj: $(SRC_D)\crypto\dsa\dsa_key.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dsa_key.obj $(SRC_D)\crypto\dsa\dsa_key.c
-
-$(OBJ_D)\dsa_lib.obj: $(SRC_D)\crypto\dsa\dsa_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dsa_lib.obj $(SRC_D)\crypto\dsa\dsa_lib.c
-
-$(OBJ_D)\dsa_asn1.obj: $(SRC_D)\crypto\dsa\dsa_asn1.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dsa_asn1.obj $(SRC_D)\crypto\dsa\dsa_asn1.c
-
-$(OBJ_D)\dsa_vrf.obj: $(SRC_D)\crypto\dsa\dsa_vrf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dsa_vrf.obj $(SRC_D)\crypto\dsa\dsa_vrf.c
-
-$(OBJ_D)\dsa_sign.obj: $(SRC_D)\crypto\dsa\dsa_sign.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dsa_sign.obj $(SRC_D)\crypto\dsa\dsa_sign.c
-
-$(OBJ_D)\dsa_err.obj: $(SRC_D)\crypto\dsa\dsa_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dsa_err.obj $(SRC_D)\crypto\dsa\dsa_err.c
-
-$(OBJ_D)\dsa_ossl.obj: $(SRC_D)\crypto\dsa\dsa_ossl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dsa_ossl.obj $(SRC_D)\crypto\dsa\dsa_ossl.c
-
-$(OBJ_D)\dsa_depr.obj: $(SRC_D)\crypto\dsa\dsa_depr.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dsa_depr.obj $(SRC_D)\crypto\dsa\dsa_depr.c
-
-$(OBJ_D)\dsa_pmeth.obj: $(SRC_D)\crypto\dsa\dsa_pmeth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dsa_pmeth.obj $(SRC_D)\crypto\dsa\dsa_pmeth.c
-
-$(OBJ_D)\dsa_ameth.obj: $(SRC_D)\crypto\dsa\dsa_ameth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dsa_ameth.obj $(SRC_D)\crypto\dsa\dsa_ameth.c
-
-$(OBJ_D)\dsa_backend.obj: $(SRC_D)\crypto\dsa\dsa_backend.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dsa_backend.obj $(SRC_D)\crypto\dsa\dsa_backend.c
-
-$(OBJ_D)\dsa_check.obj: $(SRC_D)\crypto\dsa\dsa_check.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dsa_check.obj $(SRC_D)\crypto\dsa\dsa_check.c
-
-$(OBJ_D)\dso_dl.obj: $(SRC_D)\crypto\dso\dso_dl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dso_dl.obj $(SRC_D)\crypto\dso\dso_dl.c
-
-$(OBJ_D)\dso_dlfcn.obj: $(SRC_D)\crypto\dso\dso_dlfcn.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dso_dlfcn.obj $(SRC_D)\crypto\dso\dso_dlfcn.c
-
-$(OBJ_D)\dso_err.obj: $(SRC_D)\crypto\dso\dso_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dso_err.obj $(SRC_D)\crypto\dso\dso_err.c
-
-$(OBJ_D)\dso_lib.obj: $(SRC_D)\crypto\dso\dso_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dso_lib.obj $(SRC_D)\crypto\dso\dso_lib.c
-
-$(OBJ_D)\dso_openssl.obj: $(SRC_D)\crypto\dso\dso_openssl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dso_openssl.obj $(SRC_D)\crypto\dso\dso_openssl.c
-
-$(OBJ_D)\dso_win32.obj: $(SRC_D)\crypto\dso\dso_win32.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dso_win32.obj $(SRC_D)\crypto\dso\dso_win32.c
-
-$(OBJ_D)\dh_asn1.obj: $(SRC_D)\crypto\dh\dh_asn1.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dh_asn1.obj $(SRC_D)\crypto\dh\dh_asn1.c
-
-$(OBJ_D)\dh_gen.obj: $(SRC_D)\crypto\dh\dh_gen.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dh_gen.obj $(SRC_D)\crypto\dh\dh_gen.c
-
-$(OBJ_D)\dh_key.obj: $(SRC_D)\crypto\dh\dh_key.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dh_key.obj $(SRC_D)\crypto\dh\dh_key.c
-
-$(OBJ_D)\dh_lib.obj: $(SRC_D)\crypto\dh\dh_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dh_lib.obj $(SRC_D)\crypto\dh\dh_lib.c
-
-$(OBJ_D)\dh_check.obj: $(SRC_D)\crypto\dh\dh_check.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dh_check.obj $(SRC_D)\crypto\dh\dh_check.c
-
-$(OBJ_D)\dh_err.obj: $(SRC_D)\crypto\dh\dh_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dh_err.obj $(SRC_D)\crypto\dh\dh_err.c
-
-$(OBJ_D)\dh_depr.obj: $(SRC_D)\crypto\dh\dh_depr.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dh_depr.obj $(SRC_D)\crypto\dh\dh_depr.c
-
-$(OBJ_D)\dh_pmeth.obj: $(SRC_D)\crypto\dh\dh_pmeth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dh_pmeth.obj $(SRC_D)\crypto\dh\dh_pmeth.c
-
-$(OBJ_D)\dh_ameth.obj: $(SRC_D)\crypto\dh\dh_ameth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dh_ameth.obj $(SRC_D)\crypto\dh\dh_ameth.c
-
-$(OBJ_D)\dh_rfc5114.obj: $(SRC_D)\crypto\dh\dh_rfc5114.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dh_rfc5114.obj $(SRC_D)\crypto\dh\dh_rfc5114.c
-
-$(OBJ_D)\dh_kdf.obj: $(SRC_D)\crypto\dh\dh_kdf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dh_kdf.obj $(SRC_D)\crypto\dh\dh_kdf.c
-
-$(OBJ_D)\dh_backend.obj: $(SRC_D)\crypto\dh\dh_backend.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dh_backend.obj $(SRC_D)\crypto\dh\dh_backend.c
-
-$(OBJ_D)\dh_group_params.obj: $(SRC_D)\crypto\dh\dh_group_params.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dh_group_params.obj $(SRC_D)\crypto\dh\dh_group_params.c
-
-$(OBJ_D)\buffer.obj: $(SRC_D)\crypto\buffer\buffer.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\buffer.obj $(SRC_D)\crypto\buffer\buffer.c
-
-$(OBJ_D)\buf_err.obj: $(SRC_D)\crypto\buffer\buf_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\buf_err.obj $(SRC_D)\crypto\buffer\buf_err.c
-
-$(OBJ_D)\bio_lib.obj: $(SRC_D)\crypto\bio\bio_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bio_lib.obj $(SRC_D)\crypto\bio\bio_lib.c
-
-$(OBJ_D)\bio_cb.obj: $(SRC_D)\crypto\bio\bio_cb.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bio_cb.obj $(SRC_D)\crypto\bio\bio_cb.c
-
-$(OBJ_D)\bio_err.obj: $(SRC_D)\crypto\bio\bio_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bio_err.obj $(SRC_D)\crypto\bio\bio_err.c
-
-$(OBJ_D)\bss_mem.obj: $(SRC_D)\crypto\bio\bss_mem.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bss_mem.obj $(SRC_D)\crypto\bio\bss_mem.c
-
-$(OBJ_D)\bss_null.obj: $(SRC_D)\crypto\bio\bss_null.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bss_null.obj $(SRC_D)\crypto\bio\bss_null.c
-
-$(OBJ_D)\bss_fd.obj: $(SRC_D)\crypto\bio\bss_fd.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bss_fd.obj $(SRC_D)\crypto\bio\bss_fd.c
-
-$(OBJ_D)\bss_file.obj: $(SRC_D)\crypto\bio\bss_file.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bss_file.obj $(SRC_D)\crypto\bio\bss_file.c
-
-$(OBJ_D)\bss_sock.obj: $(SRC_D)\crypto\bio\bss_sock.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bss_sock.obj $(SRC_D)\crypto\bio\bss_sock.c
-
-$(OBJ_D)\bss_dgram.obj: $(SRC_D)\crypto\bio\bss_dgram.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bss_dgram.obj $(SRC_D)\crypto\bio\bss_dgram.c
-
-$(OBJ_D)\bss_dgram_pair.obj: $(SRC_D)\crypto\bio\bss_dgram_pair.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bss_dgram_pair.obj $(SRC_D)\crypto\bio\bss_dgram_pair.c
-
-$(OBJ_D)\bf_null.obj: $(SRC_D)\crypto\bio\bf_null.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bf_null.obj $(SRC_D)\crypto\bio\bf_null.c
-
-$(OBJ_D)\bf_buff.obj: $(SRC_D)\crypto\bio\bf_buff.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bf_buff.obj $(SRC_D)\crypto\bio\bf_buff.c
-
-$(OBJ_D)\bf_nbio.obj: $(SRC_D)\crypto\bio\bf_nbio.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bf_nbio.obj $(SRC_D)\crypto\bio\bf_nbio.c
-
-$(OBJ_D)\bf_prefix.obj: $(SRC_D)\crypto\bio\bf_prefix.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bf_prefix.obj $(SRC_D)\crypto\bio\bf_prefix.c
-
-$(OBJ_D)\bf_readbuff.obj: $(SRC_D)\crypto\bio\bf_readbuff.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bf_readbuff.obj $(SRC_D)\crypto\bio\bf_readbuff.c
-
-$(OBJ_D)\bio_addr.obj: $(SRC_D)\crypto\bio\bio_addr.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bio_addr.obj $(SRC_D)\crypto\bio\bio_addr.c
-
-$(OBJ_D)\bio_dump.obj: $(SRC_D)\crypto\bio\bio_dump.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bio_dump.obj $(SRC_D)\crypto\bio\bio_dump.c
-
-$(OBJ_D)\bio_meth.obj: $(SRC_D)\crypto\bio\bio_meth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bio_meth.obj $(SRC_D)\crypto\bio\bio_meth.c
-
-$(OBJ_D)\bio_print.obj: $(SRC_D)\crypto\bio\bio_print.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bio_print.obj $(SRC_D)\crypto\bio\bio_print.c
-
-$(OBJ_D)\bio_sock.obj: $(SRC_D)\crypto\bio\bio_sock.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bio_sock.obj $(SRC_D)\crypto\bio\bio_sock.c
-
-$(OBJ_D)\bio_sock2.obj: $(SRC_D)\crypto\bio\bio_sock2.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bio_sock2.obj $(SRC_D)\crypto\bio\bio_sock2.c
-
-$(OBJ_D)\bss_bio.obj: $(SRC_D)\crypto\bio\bss_bio.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bss_bio.obj $(SRC_D)\crypto\bio\bss_bio.c
-
-$(OBJ_D)\bss_conn.obj: $(SRC_D)\crypto\bio\bss_conn.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bss_conn.obj $(SRC_D)\crypto\bio\bss_conn.c
-
-$(OBJ_D)\bss_log.obj: $(SRC_D)\crypto\bio\bss_log.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bss_log.obj $(SRC_D)\crypto\bio\bss_log.c
-
-$(OBJ_D)\bss_acpt.obj: $(SRC_D)\crypto\bio\bss_acpt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bss_acpt.obj $(SRC_D)\crypto\bio\bss_acpt.c
-
-$(OBJ_D)\bss_core.obj: $(SRC_D)\crypto\bio\bss_core.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bss_core.obj $(SRC_D)\crypto\bio\bss_core.c
-
-$(OBJ_D)\ossl_core_bio.obj: $(SRC_D)\crypto\bio\ossl_core_bio.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ossl_core_bio.obj $(SRC_D)\crypto\bio\ossl_core_bio.c
-
-$(OBJ_D)\stack.obj: $(SRC_D)\crypto\stack\stack.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\stack.obj $(SRC_D)\crypto\stack\stack.c
-
-$(OBJ_D)\lhash.obj: $(SRC_D)\crypto\lhash\lhash.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\lhash.obj $(SRC_D)\crypto\lhash\lhash.c
-
-$(OBJ_D)\lh_stats.obj: $(SRC_D)\crypto\lhash\lh_stats.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\lh_stats.obj $(SRC_D)\crypto\lhash\lh_stats.c
-
-$(OBJ_D)\rand_lib.obj: $(SRC_D)\crypto\rand\rand_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rand_lib.obj $(SRC_D)\crypto\rand\rand_lib.c
-
-$(OBJ_D)\rand_err.obj: $(SRC_D)\crypto\rand\rand_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rand_err.obj $(SRC_D)\crypto\rand\rand_err.c
-
-$(OBJ_D)\rand_egd.obj: $(SRC_D)\crypto\rand\rand_egd.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rand_egd.obj $(SRC_D)\crypto\rand\rand_egd.c
-
-$(OBJ_D)\rand_win.obj: $(SRC_D)\crypto\rand\rand_win.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rand_win.obj $(SRC_D)\crypto\rand\rand_win.c
-
-$(OBJ_D)\rand_pool.obj: $(SRC_D)\crypto\rand\rand_pool.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rand_pool.obj $(SRC_D)\crypto\rand\rand_pool.c
-
-$(OBJ_D)\rand_meth.obj: $(SRC_D)\crypto\rand\rand_meth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rand_meth.obj $(SRC_D)\crypto\rand\rand_meth.c
-
-$(OBJ_D)\prov_seed.obj: $(SRC_D)\crypto\rand\prov_seed.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\prov_seed.obj $(SRC_D)\crypto\rand\prov_seed.c
-
-$(OBJ_D)\rand_uniform.obj: $(SRC_D)\crypto\rand\rand_uniform.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rand_uniform.obj $(SRC_D)\crypto\rand\rand_uniform.c
-
-$(OBJ_D)\err.obj: $(SRC_D)\crypto\err\err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\err.obj $(SRC_D)\crypto\err\err.c
-
-$(OBJ_D)\err_all.obj: $(SRC_D)\crypto\err\err_all.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\err_all.obj $(SRC_D)\crypto\err\err_all.c
-
-$(OBJ_D)\err_prn.obj: $(SRC_D)\crypto\err\err_prn.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\err_prn.obj $(SRC_D)\crypto\err\err_prn.c
-
-$(OBJ_D)\err_blocks.obj: $(SRC_D)\crypto\err\err_blocks.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\err_blocks.obj $(SRC_D)\crypto\err\err_blocks.c
-
-$(OBJ_D)\err_mark.obj: $(SRC_D)\crypto\err\err_mark.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\err_mark.obj $(SRC_D)\crypto\err\err_mark.c
-
-$(OBJ_D)\err_save.obj: $(SRC_D)\crypto\err\err_save.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\err_save.obj $(SRC_D)\crypto\err\err_save.c
-
-$(OBJ_D)\o_names.obj: $(SRC_D)\crypto\objects\o_names.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\o_names.obj $(SRC_D)\crypto\objects\o_names.c
-
-$(OBJ_D)\obj_dat.obj: $(SRC_D)\crypto\objects\obj_dat.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\obj_dat.obj $(SRC_D)\crypto\objects\obj_dat.c
-
-$(OBJ_D)\obj_lib.obj: $(SRC_D)\crypto\objects\obj_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\obj_lib.obj $(SRC_D)\crypto\objects\obj_lib.c
-
-$(OBJ_D)\obj_err.obj: $(SRC_D)\crypto\objects\obj_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\obj_err.obj $(SRC_D)\crypto\objects\obj_err.c
-
-$(OBJ_D)\obj_xref.obj: $(SRC_D)\crypto\objects\obj_xref.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\obj_xref.obj $(SRC_D)\crypto\objects\obj_xref.c
-
-$(OBJ_D)\encode.obj: $(SRC_D)\crypto\evp\encode.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\encode.obj $(SRC_D)\crypto\evp\encode.c
-
-$(OBJ_D)\digest.obj: $(SRC_D)\crypto\evp\digest.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\digest.obj $(SRC_D)\crypto\evp\digest.c
-
-$(OBJ_D)\evp_enc.obj: $(SRC_D)\crypto\evp\evp_enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\evp_enc.obj $(SRC_D)\crypto\evp\evp_enc.c
-
-$(OBJ_D)\evp_key.obj: $(SRC_D)\crypto\evp\evp_key.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\evp_key.obj $(SRC_D)\crypto\evp\evp_key.c
-
-$(OBJ_D)\e_des.obj: $(SRC_D)\crypto\evp\e_des.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\e_des.obj $(SRC_D)\crypto\evp\e_des.c
-
-$(OBJ_D)\e_bf.obj: $(SRC_D)\crypto\evp\e_bf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\e_bf.obj $(SRC_D)\crypto\evp\e_bf.c
-
-$(OBJ_D)\e_idea.obj: $(SRC_D)\crypto\evp\e_idea.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\e_idea.obj $(SRC_D)\crypto\evp\e_idea.c
-
-$(OBJ_D)\e_des3.obj: $(SRC_D)\crypto\evp\e_des3.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\e_des3.obj $(SRC_D)\crypto\evp\e_des3.c
-
-$(OBJ_D)\e_rc4.obj: $(SRC_D)\crypto\evp\e_rc4.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\e_rc4.obj $(SRC_D)\crypto\evp\e_rc4.c
-
-$(OBJ_D)\e_aes.obj: $(SRC_D)\crypto\evp\e_aes.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\e_aes.obj $(SRC_D)\crypto\evp\e_aes.c
-
-$(OBJ_D)\e_aes_cbc_hmac_sha1.obj: $(SRC_D)\crypto\evp\e_aes_cbc_hmac_sha1.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\e_aes_cbc_hmac_sha1.obj $(SRC_D)\crypto\evp\e_aes_cbc_hmac_sha1.c
-
-$(OBJ_D)\e_aes_cbc_hmac_sha256.obj: $(SRC_D)\crypto\evp\e_aes_cbc_hmac_sha256.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\e_aes_cbc_hmac_sha256.obj $(SRC_D)\crypto\evp\e_aes_cbc_hmac_sha256.c
-
-$(OBJ_D)\names.obj: $(SRC_D)\crypto\evp\names.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\names.obj $(SRC_D)\crypto\evp\names.c
-
-$(OBJ_D)\e_xcbc_d.obj: $(SRC_D)\crypto\evp\e_xcbc_d.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\e_xcbc_d.obj $(SRC_D)\crypto\evp\e_xcbc_d.c
-
-$(OBJ_D)\e_rc2.obj: $(SRC_D)\crypto\evp\e_rc2.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\e_rc2.obj $(SRC_D)\crypto\evp\e_rc2.c
-
-$(OBJ_D)\e_cast.obj: $(SRC_D)\crypto\evp\e_cast.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\e_cast.obj $(SRC_D)\crypto\evp\e_cast.c
-
-$(OBJ_D)\m_null.obj: $(SRC_D)\crypto\evp\m_null.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\m_null.obj $(SRC_D)\crypto\evp\m_null.c
-
-$(OBJ_D)\p_open.obj: $(SRC_D)\crypto\evp\p_open.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p_open.obj $(SRC_D)\crypto\evp\p_open.c
-
-$(OBJ_D)\p_seal.obj: $(SRC_D)\crypto\evp\p_seal.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p_seal.obj $(SRC_D)\crypto\evp\p_seal.c
-
-$(OBJ_D)\p_sign.obj: $(SRC_D)\crypto\evp\p_sign.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p_sign.obj $(SRC_D)\crypto\evp\p_sign.c
-
-$(OBJ_D)\p_verify.obj: $(SRC_D)\crypto\evp\p_verify.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p_verify.obj $(SRC_D)\crypto\evp\p_verify.c
-
-$(OBJ_D)\p_lib.obj: $(SRC_D)\crypto\evp\p_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p_lib.obj $(SRC_D)\crypto\evp\p_lib.c
-
-$(OBJ_D)\p_enc.obj: $(SRC_D)\crypto\evp\p_enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p_enc.obj $(SRC_D)\crypto\evp\p_enc.c
-
-$(OBJ_D)\p_dec.obj: $(SRC_D)\crypto\evp\p_dec.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p_dec.obj $(SRC_D)\crypto\evp\p_dec.c
-
-$(OBJ_D)\bio_md.obj: $(SRC_D)\crypto\evp\bio_md.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bio_md.obj $(SRC_D)\crypto\evp\bio_md.c
-
-$(OBJ_D)\bio_b64.obj: $(SRC_D)\crypto\evp\bio_b64.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bio_b64.obj $(SRC_D)\crypto\evp\bio_b64.c
-
-$(OBJ_D)\bio_enc.obj: $(SRC_D)\crypto\evp\bio_enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bio_enc.obj $(SRC_D)\crypto\evp\bio_enc.c
-
-$(OBJ_D)\evp_err.obj: $(SRC_D)\crypto\evp\evp_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\evp_err.obj $(SRC_D)\crypto\evp\evp_err.c
-
-$(OBJ_D)\e_null.obj: $(SRC_D)\crypto\evp\e_null.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\e_null.obj $(SRC_D)\crypto\evp\e_null.c
-
-$(OBJ_D)\c_allc.obj: $(SRC_D)\crypto\evp\c_allc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\c_allc.obj $(SRC_D)\crypto\evp\c_allc.c
-
-$(OBJ_D)\c_alld.obj: $(SRC_D)\crypto\evp\c_alld.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\c_alld.obj $(SRC_D)\crypto\evp\c_alld.c
-
-$(OBJ_D)\evp_lib.obj: $(SRC_D)\crypto\evp\evp_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\evp_lib.obj $(SRC_D)\crypto\evp\evp_lib.c
-
-$(OBJ_D)\bio_ok.obj: $(SRC_D)\crypto\evp\bio_ok.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bio_ok.obj $(SRC_D)\crypto\evp\bio_ok.c
-
-$(OBJ_D)\evp_pkey.obj: $(SRC_D)\crypto\evp\evp_pkey.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\evp_pkey.obj $(SRC_D)\crypto\evp\evp_pkey.c
-
-$(OBJ_D)\evp_pbe.obj: $(SRC_D)\crypto\evp\evp_pbe.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\evp_pbe.obj $(SRC_D)\crypto\evp\evp_pbe.c
-
-$(OBJ_D)\p5_crpt.obj: $(SRC_D)\crypto\evp\p5_crpt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p5_crpt.obj $(SRC_D)\crypto\evp\p5_crpt.c
-
-$(OBJ_D)\p5_crpt2.obj: $(SRC_D)\crypto\evp\p5_crpt2.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p5_crpt2.obj $(SRC_D)\crypto\evp\p5_crpt2.c
-
-$(OBJ_D)\e_old.obj: $(SRC_D)\crypto\evp\e_old.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\e_old.obj $(SRC_D)\crypto\evp\e_old.c
-
-$(OBJ_D)\pmeth_lib.obj: $(SRC_D)\crypto\evp\pmeth_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pmeth_lib.obj $(SRC_D)\crypto\evp\pmeth_lib.c
-
-$(OBJ_D)\pmeth_gn.obj: $(SRC_D)\crypto\evp\pmeth_gn.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pmeth_gn.obj $(SRC_D)\crypto\evp\pmeth_gn.c
-
-$(OBJ_D)\m_sigver.obj: $(SRC_D)\crypto\evp\m_sigver.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\m_sigver.obj $(SRC_D)\crypto\evp\m_sigver.c
-
-$(OBJ_D)\e_rc4_hmac_md5.obj: $(SRC_D)\crypto\evp\e_rc4_hmac_md5.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\e_rc4_hmac_md5.obj $(SRC_D)\crypto\evp\e_rc4_hmac_md5.c
-
-$(OBJ_D)\pbe_scrypt.obj: $(SRC_D)\crypto\evp\pbe_scrypt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pbe_scrypt.obj $(SRC_D)\crypto\evp\pbe_scrypt.c
-
-$(OBJ_D)\evp_cnf.obj: $(SRC_D)\crypto\evp\evp_cnf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\evp_cnf.obj $(SRC_D)\crypto\evp\evp_cnf.c
-
-$(OBJ_D)\e_aria.obj: $(SRC_D)\crypto\evp\e_aria.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\e_aria.obj $(SRC_D)\crypto\evp\e_aria.c
-
-$(OBJ_D)\e_chacha20_poly1305.obj: $(SRC_D)\crypto\evp\e_chacha20_poly1305.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\e_chacha20_poly1305.obj $(SRC_D)\crypto\evp\e_chacha20_poly1305.c
-
-$(OBJ_D)\e_sm4.obj: $(SRC_D)\crypto\evp\e_sm4.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\e_sm4.obj $(SRC_D)\crypto\evp\e_sm4.c
-
-$(OBJ_D)\evp_rand.obj: $(SRC_D)\crypto\evp\evp_rand.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\evp_rand.obj $(SRC_D)\crypto\evp\evp_rand.c
-
-$(OBJ_D)\evp_utils.obj: $(SRC_D)\crypto\evp\evp_utils.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\evp_utils.obj $(SRC_D)\crypto\evp\evp_utils.c
-
-$(OBJ_D)\evp_fetch.obj: $(SRC_D)\crypto\evp\evp_fetch.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\evp_fetch.obj $(SRC_D)\crypto\evp\evp_fetch.c
-
-$(OBJ_D)\keymgmt_meth.obj: $(SRC_D)\crypto\evp\keymgmt_meth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\keymgmt_meth.obj $(SRC_D)\crypto\evp\keymgmt_meth.c
-
-$(OBJ_D)\keymgmt_lib.obj: $(SRC_D)\crypto\evp\keymgmt_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\keymgmt_lib.obj $(SRC_D)\crypto\evp\keymgmt_lib.c
-
-$(OBJ_D)\ec_support.obj: $(SRC_D)\crypto\evp\ec_support.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec_support.obj $(SRC_D)\crypto\evp\ec_support.c
-
-$(OBJ_D)\legacy_sha.obj: $(SRC_D)\crypto\evp\legacy_sha.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\legacy_sha.obj $(SRC_D)\crypto\evp\legacy_sha.c
-
-$(OBJ_D)\signature.obj: $(SRC_D)\crypto\evp\signature.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\signature.obj $(SRC_D)\crypto\evp\signature.c
-
-$(OBJ_D)\asymcipher.obj: $(SRC_D)\crypto\evp\asymcipher.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\asymcipher.obj $(SRC_D)\crypto\evp\asymcipher.c
-
-$(OBJ_D)\legacy_md5.obj: $(SRC_D)\crypto\evp\legacy_md5.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\legacy_md5.obj $(SRC_D)\crypto\evp\legacy_md5.c
-
-$(OBJ_D)\p_legacy.obj: $(SRC_D)\crypto\evp\p_legacy.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p_legacy.obj $(SRC_D)\crypto\evp\p_legacy.c
-
-$(OBJ_D)\kdf_meth.obj: $(SRC_D)\crypto\evp\kdf_meth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\kdf_meth.obj $(SRC_D)\crypto\evp\kdf_meth.c
-
-$(OBJ_D)\ctrl_params_translate.obj: $(SRC_D)\crypto\evp\ctrl_params_translate.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ctrl_params_translate.obj $(SRC_D)\crypto\evp\ctrl_params_translate.c
-
-$(OBJ_D)\exchange.obj: $(SRC_D)\crypto\evp\exchange.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\exchange.obj $(SRC_D)\crypto\evp\exchange.c
-
-$(OBJ_D)\kem.obj: $(SRC_D)\crypto\evp\kem.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\kem.obj $(SRC_D)\crypto\evp\kem.c
-
-$(OBJ_D)\dh_ctrl.obj: $(SRC_D)\crypto\evp\dh_ctrl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dh_ctrl.obj $(SRC_D)\crypto\evp\dh_ctrl.c
-
-$(OBJ_D)\dsa_ctrl.obj: $(SRC_D)\crypto\evp\dsa_ctrl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dsa_ctrl.obj $(SRC_D)\crypto\evp\dsa_ctrl.c
-
-$(OBJ_D)\ec_ctrl.obj: $(SRC_D)\crypto\evp\ec_ctrl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec_ctrl.obj $(SRC_D)\crypto\evp\ec_ctrl.c
-
-$(OBJ_D)\legacy_md4.obj: $(SRC_D)\crypto\evp\legacy_md4.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\legacy_md4.obj $(SRC_D)\crypto\evp\legacy_md4.c
-
-$(OBJ_D)\legacy_md5_sha1.obj: $(SRC_D)\crypto\evp\legacy_md5_sha1.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\legacy_md5_sha1.obj $(SRC_D)\crypto\evp\legacy_md5_sha1.c
-
-$(OBJ_D)\legacy_ripemd.obj: $(SRC_D)\crypto\evp\legacy_ripemd.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\legacy_ripemd.obj $(SRC_D)\crypto\evp\legacy_ripemd.c
-
-$(OBJ_D)\kdf_lib.obj: $(SRC_D)\crypto\evp\kdf_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\kdf_lib.obj $(SRC_D)\crypto\evp\kdf_lib.c
-
-$(OBJ_D)\dh_support.obj: $(SRC_D)\crypto\evp\dh_support.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dh_support.obj $(SRC_D)\crypto\evp\dh_support.c
-
-$(OBJ_D)\pmeth_check.obj: $(SRC_D)\crypto\evp\pmeth_check.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pmeth_check.obj $(SRC_D)\crypto\evp\pmeth_check.c
-
-$(OBJ_D)\legacy_blake2.obj: $(SRC_D)\crypto\evp\legacy_blake2.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\legacy_blake2.obj $(SRC_D)\crypto\evp\legacy_blake2.c
-
-$(OBJ_D)\mac_lib.obj: $(SRC_D)\crypto\evp\mac_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\mac_lib.obj $(SRC_D)\crypto\evp\mac_lib.c
-
-$(OBJ_D)\mac_meth.obj: $(SRC_D)\crypto\evp\mac_meth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\mac_meth.obj $(SRC_D)\crypto\evp\mac_meth.c
-
-$(OBJ_D)\a_object.obj: $(SRC_D)\crypto\asn1\a_object.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\a_object.obj $(SRC_D)\crypto\asn1\a_object.c
-
-$(OBJ_D)\a_bitstr.obj: $(SRC_D)\crypto\asn1\a_bitstr.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\a_bitstr.obj $(SRC_D)\crypto\asn1\a_bitstr.c
-
-$(OBJ_D)\a_utctm.obj: $(SRC_D)\crypto\asn1\a_utctm.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\a_utctm.obj $(SRC_D)\crypto\asn1\a_utctm.c
-
-$(OBJ_D)\a_gentm.obj: $(SRC_D)\crypto\asn1\a_gentm.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\a_gentm.obj $(SRC_D)\crypto\asn1\a_gentm.c
-
-$(OBJ_D)\a_time.obj: $(SRC_D)\crypto\asn1\a_time.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\a_time.obj $(SRC_D)\crypto\asn1\a_time.c
-
-$(OBJ_D)\a_int.obj: $(SRC_D)\crypto\asn1\a_int.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\a_int.obj $(SRC_D)\crypto\asn1\a_int.c
-
-$(OBJ_D)\a_octet.obj: $(SRC_D)\crypto\asn1\a_octet.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\a_octet.obj $(SRC_D)\crypto\asn1\a_octet.c
-
-$(OBJ_D)\a_print.obj: $(SRC_D)\crypto\asn1\a_print.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\a_print.obj $(SRC_D)\crypto\asn1\a_print.c
-
-$(OBJ_D)\a_type.obj: $(SRC_D)\crypto\asn1\a_type.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\a_type.obj $(SRC_D)\crypto\asn1\a_type.c
-
-$(OBJ_D)\a_dup.obj: $(SRC_D)\crypto\asn1\a_dup.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\a_dup.obj $(SRC_D)\crypto\asn1\a_dup.c
-
-$(OBJ_D)\a_d2i_fp.obj: $(SRC_D)\crypto\asn1\a_d2i_fp.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\a_d2i_fp.obj $(SRC_D)\crypto\asn1\a_d2i_fp.c
-
-$(OBJ_D)\a_i2d_fp.obj: $(SRC_D)\crypto\asn1\a_i2d_fp.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\a_i2d_fp.obj $(SRC_D)\crypto\asn1\a_i2d_fp.c
-
-$(OBJ_D)\a_utf8.obj: $(SRC_D)\crypto\asn1\a_utf8.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\a_utf8.obj $(SRC_D)\crypto\asn1\a_utf8.c
-
-$(OBJ_D)\a_sign.obj: $(SRC_D)\crypto\asn1\a_sign.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\a_sign.obj $(SRC_D)\crypto\asn1\a_sign.c
-
-$(OBJ_D)\a_digest.obj: $(SRC_D)\crypto\asn1\a_digest.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\a_digest.obj $(SRC_D)\crypto\asn1\a_digest.c
-
-$(OBJ_D)\a_verify.obj: $(SRC_D)\crypto\asn1\a_verify.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\a_verify.obj $(SRC_D)\crypto\asn1\a_verify.c
-
-$(OBJ_D)\a_mbstr.obj: $(SRC_D)\crypto\asn1\a_mbstr.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\a_mbstr.obj $(SRC_D)\crypto\asn1\a_mbstr.c
-
-$(OBJ_D)\a_strex.obj: $(SRC_D)\crypto\asn1\a_strex.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\a_strex.obj $(SRC_D)\crypto\asn1\a_strex.c
-
-$(OBJ_D)\ameth_lib.obj: $(SRC_D)\crypto\asn1\ameth_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ameth_lib.obj $(SRC_D)\crypto\asn1\ameth_lib.c
-
-$(OBJ_D)\x_algor.obj: $(SRC_D)\crypto\asn1\x_algor.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x_algor.obj $(SRC_D)\crypto\asn1\x_algor.c
-
-$(OBJ_D)\x_val.obj: $(SRC_D)\crypto\asn1\x_val.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x_val.obj $(SRC_D)\crypto\asn1\x_val.c
-
-$(OBJ_D)\x_sig.obj: $(SRC_D)\crypto\asn1\x_sig.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x_sig.obj $(SRC_D)\crypto\asn1\x_sig.c
-
-$(OBJ_D)\x_bignum.obj: $(SRC_D)\crypto\asn1\x_bignum.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x_bignum.obj $(SRC_D)\crypto\asn1\x_bignum.c
-
-$(OBJ_D)\x_long.obj: $(SRC_D)\crypto\asn1\x_long.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x_long.obj $(SRC_D)\crypto\asn1\x_long.c
-
-$(OBJ_D)\x_info.obj: $(SRC_D)\crypto\asn1\x_info.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x_info.obj $(SRC_D)\crypto\asn1\x_info.c
-
-$(OBJ_D)\x_spki.obj: $(SRC_D)\crypto\asn1\x_spki.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x_spki.obj $(SRC_D)\crypto\asn1\x_spki.c
-
-$(OBJ_D)\nsseq.obj: $(SRC_D)\crypto\asn1\nsseq.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\nsseq.obj $(SRC_D)\crypto\asn1\nsseq.c
-
-$(OBJ_D)\d2i_pu.obj: $(SRC_D)\crypto\asn1\d2i_pu.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\d2i_pu.obj $(SRC_D)\crypto\asn1\d2i_pu.c
-
-$(OBJ_D)\d2i_pr.obj: $(SRC_D)\crypto\asn1\d2i_pr.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\d2i_pr.obj $(SRC_D)\crypto\asn1\d2i_pr.c
-
-$(OBJ_D)\t_pkey.obj: $(SRC_D)\crypto\asn1\t_pkey.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\t_pkey.obj $(SRC_D)\crypto\asn1\t_pkey.c
-
-$(OBJ_D)\t_spki.obj: $(SRC_D)\crypto\asn1\t_spki.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\t_spki.obj $(SRC_D)\crypto\asn1\t_spki.c
-
-$(OBJ_D)\t_bitst.obj: $(SRC_D)\crypto\asn1\t_bitst.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\t_bitst.obj $(SRC_D)\crypto\asn1\t_bitst.c
-
-$(OBJ_D)\tasn_new.obj: $(SRC_D)\crypto\asn1\tasn_new.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\tasn_new.obj $(SRC_D)\crypto\asn1\tasn_new.c
-
-$(OBJ_D)\tasn_fre.obj: $(SRC_D)\crypto\asn1\tasn_fre.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\tasn_fre.obj $(SRC_D)\crypto\asn1\tasn_fre.c
-
-$(OBJ_D)\tasn_enc.obj: $(SRC_D)\crypto\asn1\tasn_enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\tasn_enc.obj $(SRC_D)\crypto\asn1\tasn_enc.c
-
-$(OBJ_D)\tasn_dec.obj: $(SRC_D)\crypto\asn1\tasn_dec.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\tasn_dec.obj $(SRC_D)\crypto\asn1\tasn_dec.c
-
-$(OBJ_D)\tasn_utl.obj: $(SRC_D)\crypto\asn1\tasn_utl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\tasn_utl.obj $(SRC_D)\crypto\asn1\tasn_utl.c
-
-$(OBJ_D)\tasn_typ.obj: $(SRC_D)\crypto\asn1\tasn_typ.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\tasn_typ.obj $(SRC_D)\crypto\asn1\tasn_typ.c
-
-$(OBJ_D)\tasn_prn.obj: $(SRC_D)\crypto\asn1\tasn_prn.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\tasn_prn.obj $(SRC_D)\crypto\asn1\tasn_prn.c
-
-$(OBJ_D)\f_int.obj: $(SRC_D)\crypto\asn1\f_int.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\f_int.obj $(SRC_D)\crypto\asn1\f_int.c
-
-$(OBJ_D)\f_string.obj: $(SRC_D)\crypto\asn1\f_string.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\f_string.obj $(SRC_D)\crypto\asn1\f_string.c
-
-$(OBJ_D)\n_pkey.obj: $(SRC_D)\crypto\asn1\n_pkey.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\n_pkey.obj $(SRC_D)\crypto\asn1\n_pkey.c
-
-$(OBJ_D)\x_pkey.obj: $(SRC_D)\crypto\asn1\x_pkey.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x_pkey.obj $(SRC_D)\crypto\asn1\x_pkey.c
-
-$(OBJ_D)\asn_mime.obj: $(SRC_D)\crypto\asn1\asn_mime.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\asn_mime.obj $(SRC_D)\crypto\asn1\asn_mime.c
-
-$(OBJ_D)\asn1_gen.obj: $(SRC_D)\crypto\asn1\asn1_gen.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\asn1_gen.obj $(SRC_D)\crypto\asn1\asn1_gen.c
-
-$(OBJ_D)\asn1_parse.obj: $(SRC_D)\crypto\asn1\asn1_parse.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\asn1_parse.obj $(SRC_D)\crypto\asn1\asn1_parse.c
-
-$(OBJ_D)\asn1_lib.obj: $(SRC_D)\crypto\asn1\asn1_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\asn1_lib.obj $(SRC_D)\crypto\asn1\asn1_lib.c
-
-$(OBJ_D)\asn1_err.obj: $(SRC_D)\crypto\asn1\asn1_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\asn1_err.obj $(SRC_D)\crypto\asn1\asn1_err.c
-
-$(OBJ_D)\bio_asn1.obj: $(SRC_D)\crypto\asn1\bio_asn1.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bio_asn1.obj $(SRC_D)\crypto\asn1\bio_asn1.c
-
-$(OBJ_D)\bio_ndef.obj: $(SRC_D)\crypto\asn1\bio_ndef.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bio_ndef.obj $(SRC_D)\crypto\asn1\bio_ndef.c
-
-$(OBJ_D)\a_strnid.obj: $(SRC_D)\crypto\asn1\a_strnid.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\a_strnid.obj $(SRC_D)\crypto\asn1\a_strnid.c
-
-$(OBJ_D)\evp_asn1.obj: $(SRC_D)\crypto\asn1\evp_asn1.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\evp_asn1.obj $(SRC_D)\crypto\asn1\evp_asn1.c
-
-$(OBJ_D)\asn_pack.obj: $(SRC_D)\crypto\asn1\asn_pack.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\asn_pack.obj $(SRC_D)\crypto\asn1\asn_pack.c
-
-$(OBJ_D)\p5_pbe.obj: $(SRC_D)\crypto\asn1\p5_pbe.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p5_pbe.obj $(SRC_D)\crypto\asn1\p5_pbe.c
-
-$(OBJ_D)\p5_pbev2.obj: $(SRC_D)\crypto\asn1\p5_pbev2.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p5_pbev2.obj $(SRC_D)\crypto\asn1\p5_pbev2.c
-
-$(OBJ_D)\p8_pkey.obj: $(SRC_D)\crypto\asn1\p8_pkey.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p8_pkey.obj $(SRC_D)\crypto\asn1\p8_pkey.c
-
-$(OBJ_D)\asn_moid.obj: $(SRC_D)\crypto\asn1\asn_moid.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\asn_moid.obj $(SRC_D)\crypto\asn1\asn_moid.c
-
-$(OBJ_D)\p5_scrypt.obj: $(SRC_D)\crypto\asn1\p5_scrypt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p5_scrypt.obj $(SRC_D)\crypto\asn1\p5_scrypt.c
-
-$(OBJ_D)\asn_mstbl.obj: $(SRC_D)\crypto\asn1\asn_mstbl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\asn_mstbl.obj $(SRC_D)\crypto\asn1\asn_mstbl.c
-
-$(OBJ_D)\x_int64.obj: $(SRC_D)\crypto\asn1\x_int64.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x_int64.obj $(SRC_D)\crypto\asn1\x_int64.c
-
-$(OBJ_D)\i2d_evp.obj: $(SRC_D)\crypto\asn1\i2d_evp.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\i2d_evp.obj $(SRC_D)\crypto\asn1\i2d_evp.c
-
-$(OBJ_D)\pem_sign.obj: $(SRC_D)\crypto\pem\pem_sign.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pem_sign.obj $(SRC_D)\crypto\pem\pem_sign.c
-
-$(OBJ_D)\pem_info.obj: $(SRC_D)\crypto\pem\pem_info.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pem_info.obj $(SRC_D)\crypto\pem\pem_info.c
-
-$(OBJ_D)\pem_lib.obj: $(SRC_D)\crypto\pem\pem_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pem_lib.obj $(SRC_D)\crypto\pem\pem_lib.c
-
-$(OBJ_D)\pem_all.obj: $(SRC_D)\crypto\pem\pem_all.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pem_all.obj $(SRC_D)\crypto\pem\pem_all.c
-
-$(OBJ_D)\pem_err.obj: $(SRC_D)\crypto\pem\pem_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pem_err.obj $(SRC_D)\crypto\pem\pem_err.c
-
-$(OBJ_D)\pem_x509.obj: $(SRC_D)\crypto\pem\pem_x509.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pem_x509.obj $(SRC_D)\crypto\pem\pem_x509.c
-
-$(OBJ_D)\pem_xaux.obj: $(SRC_D)\crypto\pem\pem_xaux.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pem_xaux.obj $(SRC_D)\crypto\pem\pem_xaux.c
-
-$(OBJ_D)\pem_oth.obj: $(SRC_D)\crypto\pem\pem_oth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pem_oth.obj $(SRC_D)\crypto\pem\pem_oth.c
-
-$(OBJ_D)\pem_pk8.obj: $(SRC_D)\crypto\pem\pem_pk8.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pem_pk8.obj $(SRC_D)\crypto\pem\pem_pk8.c
-
-$(OBJ_D)\pem_pkey.obj: $(SRC_D)\crypto\pem\pem_pkey.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pem_pkey.obj $(SRC_D)\crypto\pem\pem_pkey.c
-
-$(OBJ_D)\pvkfmt.obj: $(SRC_D)\crypto\pem\pvkfmt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pvkfmt.obj $(SRC_D)\crypto\pem\pvkfmt.c
-
-$(OBJ_D)\x509_def.obj: $(SRC_D)\crypto\x509\x509_def.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509_def.obj $(SRC_D)\crypto\x509\x509_def.c
-
-$(OBJ_D)\x509_d2.obj: $(SRC_D)\crypto\x509\x509_d2.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509_d2.obj $(SRC_D)\crypto\x509\x509_d2.c
-
-$(OBJ_D)\x509_r2x.obj: $(SRC_D)\crypto\x509\x509_r2x.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509_r2x.obj $(SRC_D)\crypto\x509\x509_r2x.c
-
-$(OBJ_D)\x509_cmp.obj: $(SRC_D)\crypto\x509\x509_cmp.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509_cmp.obj $(SRC_D)\crypto\x509\x509_cmp.c
-
-$(OBJ_D)\x509_obj.obj: $(SRC_D)\crypto\x509\x509_obj.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509_obj.obj $(SRC_D)\crypto\x509\x509_obj.c
-
-$(OBJ_D)\x509_req.obj: $(SRC_D)\crypto\x509\x509_req.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509_req.obj $(SRC_D)\crypto\x509\x509_req.c
-
-$(OBJ_D)\x509spki.obj: $(SRC_D)\crypto\x509\x509spki.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509spki.obj $(SRC_D)\crypto\x509\x509spki.c
-
-$(OBJ_D)\x509_vfy.obj: $(SRC_D)\crypto\x509\x509_vfy.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509_vfy.obj $(SRC_D)\crypto\x509\x509_vfy.c
-
-$(OBJ_D)\x509_set.obj: $(SRC_D)\crypto\x509\x509_set.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509_set.obj $(SRC_D)\crypto\x509\x509_set.c
-
-$(OBJ_D)\x509cset.obj: $(SRC_D)\crypto\x509\x509cset.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509cset.obj $(SRC_D)\crypto\x509\x509cset.c
-
-$(OBJ_D)\x509rset.obj: $(SRC_D)\crypto\x509\x509rset.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509rset.obj $(SRC_D)\crypto\x509\x509rset.c
-
-$(OBJ_D)\x509_err.obj: $(SRC_D)\crypto\x509\x509_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509_err.obj $(SRC_D)\crypto\x509\x509_err.c
-
-$(OBJ_D)\x509name.obj: $(SRC_D)\crypto\x509\x509name.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509name.obj $(SRC_D)\crypto\x509\x509name.c
-
-$(OBJ_D)\x509_v3.obj: $(SRC_D)\crypto\x509\x509_v3.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509_v3.obj $(SRC_D)\crypto\x509\x509_v3.c
-
-$(OBJ_D)\x509_ext.obj: $(SRC_D)\crypto\x509\x509_ext.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509_ext.obj $(SRC_D)\crypto\x509\x509_ext.c
-
-$(OBJ_D)\x509_att.obj: $(SRC_D)\crypto\x509\x509_att.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509_att.obj $(SRC_D)\crypto\x509\x509_att.c
-
-$(OBJ_D)\x509type.obj: $(SRC_D)\crypto\x509\x509type.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509type.obj $(SRC_D)\crypto\x509\x509type.c
-
-$(OBJ_D)\x509_lu.obj: $(SRC_D)\crypto\x509\x509_lu.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509_lu.obj $(SRC_D)\crypto\x509\x509_lu.c
-
-$(OBJ_D)\x_all.obj: $(SRC_D)\crypto\x509\x_all.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x_all.obj $(SRC_D)\crypto\x509\x_all.c
-
-$(OBJ_D)\x509_txt.obj: $(SRC_D)\crypto\x509\x509_txt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509_txt.obj $(SRC_D)\crypto\x509\x509_txt.c
-
-$(OBJ_D)\x509_trust.obj: $(SRC_D)\crypto\x509\x509_trust.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509_trust.obj $(SRC_D)\crypto\x509\x509_trust.c
-
-$(OBJ_D)\by_file.obj: $(SRC_D)\crypto\x509\by_file.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\by_file.obj $(SRC_D)\crypto\x509\by_file.c
-
-$(OBJ_D)\by_dir.obj: $(SRC_D)\crypto\x509\by_dir.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\by_dir.obj $(SRC_D)\crypto\x509\by_dir.c
-
-$(OBJ_D)\x509_vpm.obj: $(SRC_D)\crypto\x509\x509_vpm.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x509_vpm.obj $(SRC_D)\crypto\x509\x509_vpm.c
-
-$(OBJ_D)\x_pubkey.obj: $(SRC_D)\crypto\x509\x_pubkey.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x_pubkey.obj $(SRC_D)\crypto\x509\x_pubkey.c
-
-$(OBJ_D)\x_req.obj: $(SRC_D)\crypto\x509\x_req.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x_req.obj $(SRC_D)\crypto\x509\x_req.c
-
-$(OBJ_D)\x_attrib.obj: $(SRC_D)\crypto\x509\x_attrib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x_attrib.obj $(SRC_D)\crypto\x509\x_attrib.c
-
-$(OBJ_D)\x_name.obj: $(SRC_D)\crypto\x509\x_name.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x_name.obj $(SRC_D)\crypto\x509\x_name.c
-
-$(OBJ_D)\x_x509.obj: $(SRC_D)\crypto\x509\x_x509.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x_x509.obj $(SRC_D)\crypto\x509\x_x509.c
-
-$(OBJ_D)\x_x509a.obj: $(SRC_D)\crypto\x509\x_x509a.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x_x509a.obj $(SRC_D)\crypto\x509\x_x509a.c
-
-$(OBJ_D)\x_crl.obj: $(SRC_D)\crypto\x509\x_crl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x_crl.obj $(SRC_D)\crypto\x509\x_crl.c
-
-$(OBJ_D)\t_req.obj: $(SRC_D)\crypto\x509\t_req.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\t_req.obj $(SRC_D)\crypto\x509\t_req.c
-
-$(OBJ_D)\t_x509.obj: $(SRC_D)\crypto\x509\t_x509.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\t_x509.obj $(SRC_D)\crypto\x509\t_x509.c
-
-$(OBJ_D)\t_crl.obj: $(SRC_D)\crypto\x509\t_crl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\t_crl.obj $(SRC_D)\crypto\x509\t_crl.c
-
-$(OBJ_D)\x_exten.obj: $(SRC_D)\crypto\x509\x_exten.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x_exten.obj $(SRC_D)\crypto\x509\x_exten.c
-
-$(OBJ_D)\by_store.obj: $(SRC_D)\crypto\x509\by_store.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\by_store.obj $(SRC_D)\crypto\x509\by_store.c
-
-$(OBJ_D)\v3_bcons.obj: $(SRC_D)\crypto\x509\v3_bcons.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_bcons.obj $(SRC_D)\crypto\x509\v3_bcons.c
-
-$(OBJ_D)\v3_bitst.obj: $(SRC_D)\crypto\x509\v3_bitst.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_bitst.obj $(SRC_D)\crypto\x509\v3_bitst.c
-
-$(OBJ_D)\v3_conf.obj: $(SRC_D)\crypto\x509\v3_conf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_conf.obj $(SRC_D)\crypto\x509\v3_conf.c
-
-$(OBJ_D)\v3_extku.obj: $(SRC_D)\crypto\x509\v3_extku.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_extku.obj $(SRC_D)\crypto\x509\v3_extku.c
-
-$(OBJ_D)\v3_ia5.obj: $(SRC_D)\crypto\x509\v3_ia5.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_ia5.obj $(SRC_D)\crypto\x509\v3_ia5.c
-
-$(OBJ_D)\v3_lib.obj: $(SRC_D)\crypto\x509\v3_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_lib.obj $(SRC_D)\crypto\x509\v3_lib.c
-
-$(OBJ_D)\v3_prn.obj: $(SRC_D)\crypto\x509\v3_prn.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_prn.obj $(SRC_D)\crypto\x509\v3_prn.c
-
-$(OBJ_D)\v3_utl.obj: $(SRC_D)\crypto\x509\v3_utl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_utl.obj $(SRC_D)\crypto\x509\v3_utl.c
-
-$(OBJ_D)\v3err.obj: $(SRC_D)\crypto\x509\v3err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3err.obj $(SRC_D)\crypto\x509\v3err.c
-
-$(OBJ_D)\v3_genn.obj: $(SRC_D)\crypto\x509\v3_genn.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_genn.obj $(SRC_D)\crypto\x509\v3_genn.c
-
-$(OBJ_D)\v3_san.obj: $(SRC_D)\crypto\x509\v3_san.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_san.obj $(SRC_D)\crypto\x509\v3_san.c
-
-$(OBJ_D)\v3_skid.obj: $(SRC_D)\crypto\x509\v3_skid.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_skid.obj $(SRC_D)\crypto\x509\v3_skid.c
-
-$(OBJ_D)\v3_akid.obj: $(SRC_D)\crypto\x509\v3_akid.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_akid.obj $(SRC_D)\crypto\x509\v3_akid.c
-
-$(OBJ_D)\v3_pku.obj: $(SRC_D)\crypto\x509\v3_pku.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_pku.obj $(SRC_D)\crypto\x509\v3_pku.c
-
-$(OBJ_D)\v3_int.obj: $(SRC_D)\crypto\x509\v3_int.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_int.obj $(SRC_D)\crypto\x509\v3_int.c
-
-$(OBJ_D)\v3_enum.obj: $(SRC_D)\crypto\x509\v3_enum.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_enum.obj $(SRC_D)\crypto\x509\v3_enum.c
-
-$(OBJ_D)\v3_sxnet.obj: $(SRC_D)\crypto\x509\v3_sxnet.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_sxnet.obj $(SRC_D)\crypto\x509\v3_sxnet.c
-
-$(OBJ_D)\v3_cpols.obj: $(SRC_D)\crypto\x509\v3_cpols.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_cpols.obj $(SRC_D)\crypto\x509\v3_cpols.c
-
-$(OBJ_D)\v3_crld.obj: $(SRC_D)\crypto\x509\v3_crld.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_crld.obj $(SRC_D)\crypto\x509\v3_crld.c
-
-$(OBJ_D)\v3_purp.obj: $(SRC_D)\crypto\x509\v3_purp.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_purp.obj $(SRC_D)\crypto\x509\v3_purp.c
-
-$(OBJ_D)\v3_info.obj: $(SRC_D)\crypto\x509\v3_info.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_info.obj $(SRC_D)\crypto\x509\v3_info.c
-
-$(OBJ_D)\v3_akeya.obj: $(SRC_D)\crypto\x509\v3_akeya.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_akeya.obj $(SRC_D)\crypto\x509\v3_akeya.c
-
-$(OBJ_D)\v3_pmaps.obj: $(SRC_D)\crypto\x509\v3_pmaps.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_pmaps.obj $(SRC_D)\crypto\x509\v3_pmaps.c
-
-$(OBJ_D)\v3_pcons.obj: $(SRC_D)\crypto\x509\v3_pcons.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_pcons.obj $(SRC_D)\crypto\x509\v3_pcons.c
-
-$(OBJ_D)\v3_ncons.obj: $(SRC_D)\crypto\x509\v3_ncons.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_ncons.obj $(SRC_D)\crypto\x509\v3_ncons.c
-
-$(OBJ_D)\v3_pcia.obj: $(SRC_D)\crypto\x509\v3_pcia.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_pcia.obj $(SRC_D)\crypto\x509\v3_pcia.c
-
-$(OBJ_D)\v3_pci.obj: $(SRC_D)\crypto\x509\v3_pci.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_pci.obj $(SRC_D)\crypto\x509\v3_pci.c
-
-$(OBJ_D)\pcy_cache.obj: $(SRC_D)\crypto\x509\pcy_cache.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pcy_cache.obj $(SRC_D)\crypto\x509\pcy_cache.c
-
-$(OBJ_D)\pcy_node.obj: $(SRC_D)\crypto\x509\pcy_node.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pcy_node.obj $(SRC_D)\crypto\x509\pcy_node.c
-
-$(OBJ_D)\pcy_data.obj: $(SRC_D)\crypto\x509\pcy_data.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pcy_data.obj $(SRC_D)\crypto\x509\pcy_data.c
-
-$(OBJ_D)\pcy_map.obj: $(SRC_D)\crypto\x509\pcy_map.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pcy_map.obj $(SRC_D)\crypto\x509\pcy_map.c
-
-$(OBJ_D)\pcy_tree.obj: $(SRC_D)\crypto\x509\pcy_tree.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pcy_tree.obj $(SRC_D)\crypto\x509\pcy_tree.c
-
-$(OBJ_D)\pcy_lib.obj: $(SRC_D)\crypto\x509\pcy_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pcy_lib.obj $(SRC_D)\crypto\x509\pcy_lib.c
-
-$(OBJ_D)\v3_asid.obj: $(SRC_D)\crypto\x509\v3_asid.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_asid.obj $(SRC_D)\crypto\x509\v3_asid.c
-
-$(OBJ_D)\v3_addr.obj: $(SRC_D)\crypto\x509\v3_addr.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_addr.obj $(SRC_D)\crypto\x509\v3_addr.c
-
-$(OBJ_D)\v3_tlsf.obj: $(SRC_D)\crypto\x509\v3_tlsf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_tlsf.obj $(SRC_D)\crypto\x509\v3_tlsf.c
-
-$(OBJ_D)\v3_admis.obj: $(SRC_D)\crypto\x509\v3_admis.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_admis.obj $(SRC_D)\crypto\x509\v3_admis.c
-
-$(OBJ_D)\v3_utf8.obj: $(SRC_D)\crypto\x509\v3_utf8.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_utf8.obj $(SRC_D)\crypto\x509\v3_utf8.c
-
-$(OBJ_D)\v3_ist.obj: $(SRC_D)\crypto\x509\v3_ist.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_ist.obj $(SRC_D)\crypto\x509\v3_ist.c
-
-$(OBJ_D)\v3_no_rev_avail.obj: $(SRC_D)\crypto\x509\v3_no_rev_avail.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_no_rev_avail.obj $(SRC_D)\crypto\x509\v3_no_rev_avail.c
-
-$(OBJ_D)\v3_soa_id.obj: $(SRC_D)\crypto\x509\v3_soa_id.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_soa_id.obj $(SRC_D)\crypto\x509\v3_soa_id.c
-
-$(OBJ_D)\v3_ind_iss.obj: $(SRC_D)\crypto\x509\v3_ind_iss.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_ind_iss.obj $(SRC_D)\crypto\x509\v3_ind_iss.c
-
-$(OBJ_D)\v3_no_ass.obj: $(SRC_D)\crypto\x509\v3_no_ass.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_no_ass.obj $(SRC_D)\crypto\x509\v3_no_ass.c
-
-$(OBJ_D)\v3_single_use.obj: $(SRC_D)\crypto\x509\v3_single_use.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_single_use.obj $(SRC_D)\crypto\x509\v3_single_use.c
-
-$(OBJ_D)\v3_group_ac.obj: $(SRC_D)\crypto\x509\v3_group_ac.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_group_ac.obj $(SRC_D)\crypto\x509\v3_group_ac.c
-
-$(OBJ_D)\conf_err.obj: $(SRC_D)\crypto\conf\conf_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\conf_err.obj $(SRC_D)\crypto\conf\conf_err.c
-
-$(OBJ_D)\conf_lib.obj: $(SRC_D)\crypto\conf\conf_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\conf_lib.obj $(SRC_D)\crypto\conf\conf_lib.c
-
-$(OBJ_D)\conf_api.obj: $(SRC_D)\crypto\conf\conf_api.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\conf_api.obj $(SRC_D)\crypto\conf\conf_api.c
-
-$(OBJ_D)\conf_def.obj: $(SRC_D)\crypto\conf\conf_def.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\conf_def.obj $(SRC_D)\crypto\conf\conf_def.c
-
-$(OBJ_D)\conf_mod.obj: $(SRC_D)\crypto\conf\conf_mod.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\conf_mod.obj $(SRC_D)\crypto\conf\conf_mod.c
-
-$(OBJ_D)\conf_mall.obj: $(SRC_D)\crypto\conf\conf_mall.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\conf_mall.obj $(SRC_D)\crypto\conf\conf_mall.c
-
-$(OBJ_D)\conf_sap.obj: $(SRC_D)\crypto\conf\conf_sap.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\conf_sap.obj $(SRC_D)\crypto\conf\conf_sap.c
-
-$(OBJ_D)\conf_ssl.obj: $(SRC_D)\crypto\conf\conf_ssl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\conf_ssl.obj $(SRC_D)\crypto\conf\conf_ssl.c
-
-$(OBJ_D)\pk7_asn1.obj: $(SRC_D)\crypto\pkcs7\pk7_asn1.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pk7_asn1.obj $(SRC_D)\crypto\pkcs7\pk7_asn1.c
-
-$(OBJ_D)\pk7_lib.obj: $(SRC_D)\crypto\pkcs7\pk7_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pk7_lib.obj $(SRC_D)\crypto\pkcs7\pk7_lib.c
-
-$(OBJ_D)\pkcs7err.obj: $(SRC_D)\crypto\pkcs7\pkcs7err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pkcs7err.obj $(SRC_D)\crypto\pkcs7\pkcs7err.c
-
-$(OBJ_D)\pk7_doit.obj: $(SRC_D)\crypto\pkcs7\pk7_doit.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pk7_doit.obj $(SRC_D)\crypto\pkcs7\pk7_doit.c
-
-$(OBJ_D)\pk7_smime.obj: $(SRC_D)\crypto\pkcs7\pk7_smime.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pk7_smime.obj $(SRC_D)\crypto\pkcs7\pk7_smime.c
-
-$(OBJ_D)\pk7_attr.obj: $(SRC_D)\crypto\pkcs7\pk7_attr.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pk7_attr.obj $(SRC_D)\crypto\pkcs7\pk7_attr.c
-
-$(OBJ_D)\pk7_mime.obj: $(SRC_D)\crypto\pkcs7\pk7_mime.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pk7_mime.obj $(SRC_D)\crypto\pkcs7\pk7_mime.c
-
-$(OBJ_D)\p12_add.obj: $(SRC_D)\crypto\pkcs12\p12_add.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p12_add.obj $(SRC_D)\crypto\pkcs12\p12_add.c
-
-$(OBJ_D)\p12_asn.obj: $(SRC_D)\crypto\pkcs12\p12_asn.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p12_asn.obj $(SRC_D)\crypto\pkcs12\p12_asn.c
-
-$(OBJ_D)\p12_attr.obj: $(SRC_D)\crypto\pkcs12\p12_attr.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p12_attr.obj $(SRC_D)\crypto\pkcs12\p12_attr.c
-
-$(OBJ_D)\p12_crpt.obj: $(SRC_D)\crypto\pkcs12\p12_crpt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p12_crpt.obj $(SRC_D)\crypto\pkcs12\p12_crpt.c
-
-$(OBJ_D)\p12_crt.obj: $(SRC_D)\crypto\pkcs12\p12_crt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p12_crt.obj $(SRC_D)\crypto\pkcs12\p12_crt.c
-
-$(OBJ_D)\p12_decr.obj: $(SRC_D)\crypto\pkcs12\p12_decr.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p12_decr.obj $(SRC_D)\crypto\pkcs12\p12_decr.c
-
-$(OBJ_D)\p12_init.obj: $(SRC_D)\crypto\pkcs12\p12_init.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p12_init.obj $(SRC_D)\crypto\pkcs12\p12_init.c
-
-$(OBJ_D)\p12_key.obj: $(SRC_D)\crypto\pkcs12\p12_key.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p12_key.obj $(SRC_D)\crypto\pkcs12\p12_key.c
-
-$(OBJ_D)\p12_kiss.obj: $(SRC_D)\crypto\pkcs12\p12_kiss.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p12_kiss.obj $(SRC_D)\crypto\pkcs12\p12_kiss.c
-
-$(OBJ_D)\p12_mutl.obj: $(SRC_D)\crypto\pkcs12\p12_mutl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p12_mutl.obj $(SRC_D)\crypto\pkcs12\p12_mutl.c
-
-$(OBJ_D)\p12_utl.obj: $(SRC_D)\crypto\pkcs12\p12_utl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p12_utl.obj $(SRC_D)\crypto\pkcs12\p12_utl.c
-
-$(OBJ_D)\p12_npas.obj: $(SRC_D)\crypto\pkcs12\p12_npas.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p12_npas.obj $(SRC_D)\crypto\pkcs12\p12_npas.c
-
-$(OBJ_D)\pk12err.obj: $(SRC_D)\crypto\pkcs12\pk12err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pk12err.obj $(SRC_D)\crypto\pkcs12\pk12err.c
-
-$(OBJ_D)\p12_p8d.obj: $(SRC_D)\crypto\pkcs12\p12_p8d.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p12_p8d.obj $(SRC_D)\crypto\pkcs12\p12_p8d.c
-
-$(OBJ_D)\p12_p8e.obj: $(SRC_D)\crypto\pkcs12\p12_p8e.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p12_p8e.obj $(SRC_D)\crypto\pkcs12\p12_p8e.c
-
-$(OBJ_D)\p12_sbag.obj: $(SRC_D)\crypto\pkcs12\p12_sbag.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\p12_sbag.obj $(SRC_D)\crypto\pkcs12\p12_sbag.c
-
-$(OBJ_D)\comp_lib.obj: $(SRC_D)\crypto\comp\comp_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\comp_lib.obj $(SRC_D)\crypto\comp\comp_lib.c
-
-$(OBJ_D)\comp_err.obj: $(SRC_D)\crypto\comp\comp_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\comp_err.obj $(SRC_D)\crypto\comp\comp_err.c
-
-$(OBJ_D)\cmac.obj: $(SRC_D)\crypto\cmac\cmac.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cmac.obj $(SRC_D)\crypto\cmac\cmac.c
-
-$(OBJ_D)\ocsp_asn.obj: $(SRC_D)\crypto\ocsp\ocsp_asn.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ocsp_asn.obj $(SRC_D)\crypto\ocsp\ocsp_asn.c
-
-$(OBJ_D)\ocsp_ext.obj: $(SRC_D)\crypto\ocsp\ocsp_ext.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ocsp_ext.obj $(SRC_D)\crypto\ocsp\ocsp_ext.c
-
-$(OBJ_D)\ocsp_http.obj: $(SRC_D)\crypto\ocsp\ocsp_http.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ocsp_http.obj $(SRC_D)\crypto\ocsp\ocsp_http.c
-
-$(OBJ_D)\ocsp_lib.obj: $(SRC_D)\crypto\ocsp\ocsp_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ocsp_lib.obj $(SRC_D)\crypto\ocsp\ocsp_lib.c
-
-$(OBJ_D)\ocsp_cl.obj: $(SRC_D)\crypto\ocsp\ocsp_cl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ocsp_cl.obj $(SRC_D)\crypto\ocsp\ocsp_cl.c
-
-$(OBJ_D)\ocsp_srv.obj: $(SRC_D)\crypto\ocsp\ocsp_srv.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ocsp_srv.obj $(SRC_D)\crypto\ocsp\ocsp_srv.c
-
-$(OBJ_D)\ocsp_prn.obj: $(SRC_D)\crypto\ocsp\ocsp_prn.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ocsp_prn.obj $(SRC_D)\crypto\ocsp\ocsp_prn.c
-
-$(OBJ_D)\ocsp_vfy.obj: $(SRC_D)\crypto\ocsp\ocsp_vfy.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ocsp_vfy.obj $(SRC_D)\crypto\ocsp\ocsp_vfy.c
-
-$(OBJ_D)\ocsp_err.obj: $(SRC_D)\crypto\ocsp\ocsp_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ocsp_err.obj $(SRC_D)\crypto\ocsp\ocsp_err.c
-
-$(OBJ_D)\v3_ocsp.obj: $(SRC_D)\crypto\ocsp\v3_ocsp.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\v3_ocsp.obj $(SRC_D)\crypto\ocsp\v3_ocsp.c
-
-$(OBJ_D)\ui_err.obj: $(SRC_D)\crypto\ui\ui_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ui_err.obj $(SRC_D)\crypto\ui\ui_err.c
-
-$(OBJ_D)\ui_lib.obj: $(SRC_D)\crypto\ui\ui_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ui_lib.obj $(SRC_D)\crypto\ui\ui_lib.c
-
-$(OBJ_D)\ui_openssl.obj: $(SRC_D)\crypto\ui\ui_openssl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ui_openssl.obj $(SRC_D)\crypto\ui\ui_openssl.c
-
-$(OBJ_D)\ui_util.obj: $(SRC_D)\crypto\ui\ui_util.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ui_util.obj $(SRC_D)\crypto\ui\ui_util.c
-
-$(OBJ_D)\ui_null.obj: $(SRC_D)\crypto\ui\ui_null.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ui_null.obj $(SRC_D)\crypto\ui\ui_null.c
-
-$(OBJ_D)\o_init.obj: $(SRC_D)\crypto\o_init.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\o_init.obj $(SRC_D)\crypto\o_init.c
-
-$(OBJ_D)\srp_lib.obj: $(SRC_D)\crypto\srp\srp_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\srp_lib.obj $(SRC_D)\crypto\srp\srp_lib.c
-
-$(OBJ_D)\srp_vfy.obj: $(SRC_D)\crypto\srp\srp_vfy.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\srp_vfy.obj $(SRC_D)\crypto\srp\srp_vfy.c
-
-$(OBJ_D)\txt_db.obj: $(SRC_D)\crypto\txt_db\txt_db.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\txt_db.obj $(SRC_D)\crypto\txt_db\txt_db.c
-
-$(OBJ_D)\ec_ameth.obj: $(SRC_D)\crypto\ec\ec_ameth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec_ameth.obj $(SRC_D)\crypto\ec\ec_ameth.c
-
-$(OBJ_D)\ec_asn1.obj: $(SRC_D)\crypto\ec\ec_asn1.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec_asn1.obj $(SRC_D)\crypto\ec\ec_asn1.c
-
-$(OBJ_D)\ec_curve.obj: $(SRC_D)\crypto\ec\ec_curve.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec_curve.obj $(SRC_D)\crypto\ec\ec_curve.c
-
-$(OBJ_D)\ec_cvt.obj: $(SRC_D)\crypto\ec\ec_cvt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec_cvt.obj $(SRC_D)\crypto\ec\ec_cvt.c
-
-$(OBJ_D)\ec_err.obj: $(SRC_D)\crypto\ec\ec_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec_err.obj $(SRC_D)\crypto\ec\ec_err.c
-
-$(OBJ_D)\ec_check.obj: $(SRC_D)\crypto\ec\ec_check.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec_check.obj $(SRC_D)\crypto\ec\ec_check.c
-
-$(OBJ_D)\ec_key.obj: $(SRC_D)\crypto\ec\ec_key.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec_key.obj $(SRC_D)\crypto\ec\ec_key.c
-
-$(OBJ_D)\ec_lib.obj: $(SRC_D)\crypto\ec\ec_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec_lib.obj $(SRC_D)\crypto\ec\ec_lib.c
-
-$(OBJ_D)\ec_mult.obj: $(SRC_D)\crypto\ec\ec_mult.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec_mult.obj $(SRC_D)\crypto\ec\ec_mult.c
-
-$(OBJ_D)\ec_oct.obj: $(SRC_D)\crypto\ec\ec_oct.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec_oct.obj $(SRC_D)\crypto\ec\ec_oct.c
-
-$(OBJ_D)\ec_pmeth.obj: $(SRC_D)\crypto\ec\ec_pmeth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec_pmeth.obj $(SRC_D)\crypto\ec\ec_pmeth.c
-
-$(OBJ_D)\ec_print.obj: $(SRC_D)\crypto\ec\ec_print.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec_print.obj $(SRC_D)\crypto\ec\ec_print.c
-
-$(OBJ_D)\ec2_oct.obj: $(SRC_D)\crypto\ec\ec2_oct.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec2_oct.obj $(SRC_D)\crypto\ec\ec2_oct.c
-
-$(OBJ_D)\ec2_smpl.obj: $(SRC_D)\crypto\ec\ec2_smpl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec2_smpl.obj $(SRC_D)\crypto\ec\ec2_smpl.c
-
-$(OBJ_D)\eck_prn.obj: $(SRC_D)\crypto\ec\eck_prn.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\eck_prn.obj $(SRC_D)\crypto\ec\eck_prn.c
-
-$(OBJ_D)\ecp_mont.obj: $(SRC_D)\crypto\ec\ecp_mont.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecp_mont.obj $(SRC_D)\crypto\ec\ecp_mont.c
-
-$(OBJ_D)\ecp_nist.obj: $(SRC_D)\crypto\ec\ecp_nist.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecp_nist.obj $(SRC_D)\crypto\ec\ecp_nist.c
-
-$(OBJ_D)\ecp_nistputil.obj: $(SRC_D)\crypto\ec\ecp_nistputil.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecp_nistputil.obj $(SRC_D)\crypto\ec\ecp_nistputil.c
-
-$(OBJ_D)\ecp_oct.obj: $(SRC_D)\crypto\ec\ecp_oct.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecp_oct.obj $(SRC_D)\crypto\ec\ecp_oct.c
-
-$(OBJ_D)\ecp_smpl.obj: $(SRC_D)\crypto\ec\ecp_smpl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecp_smpl.obj $(SRC_D)\crypto\ec\ecp_smpl.c
-
-$(OBJ_D)\ecdh_ossl.obj: $(SRC_D)\crypto\ec\ecdh_ossl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecdh_ossl.obj $(SRC_D)\crypto\ec\ecdh_ossl.c
-
-$(OBJ_D)\ec_kmeth.obj: $(SRC_D)\crypto\ec\ec_kmeth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec_kmeth.obj $(SRC_D)\crypto\ec\ec_kmeth.c
-
-$(OBJ_D)\ecx_meth.obj: $(SRC_D)\crypto\ec\ecx_meth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecx_meth.obj $(SRC_D)\crypto\ec\ecx_meth.c
-
-$(OBJ_D)\ecdsa_ossl.obj: $(SRC_D)\crypto\ec\ecdsa_ossl.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecdsa_ossl.obj $(SRC_D)\crypto\ec\ecdsa_ossl.c
-
-$(OBJ_D)\curve25519.obj: $(SRC_D)\crypto\ec\curve25519.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\curve25519.obj $(SRC_D)\crypto\ec\curve25519.c
-
-$(OBJ_D)\ecdsa_sign.obj: $(SRC_D)\crypto\ec\ecdsa_sign.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecdsa_sign.obj $(SRC_D)\crypto\ec\ecdsa_sign.c
-
-$(OBJ_D)\ecdsa_vrf.obj: $(SRC_D)\crypto\ec\ecdsa_vrf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecdsa_vrf.obj $(SRC_D)\crypto\ec\ecdsa_vrf.c
-
-$(OBJ_D)\ec_backend.obj: $(SRC_D)\crypto\ec\ec_backend.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec_backend.obj $(SRC_D)\crypto\ec\ec_backend.c
-
-$(OBJ_D)\ecx_key.obj: $(SRC_D)\crypto\ec\ecx_key.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecx_key.obj $(SRC_D)\crypto\ec\ecx_key.c
-
-$(OBJ_D)\ecx_backend.obj: $(SRC_D)\crypto\ec\ecx_backend.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecx_backend.obj $(SRC_D)\crypto\ec\ecx_backend.c
-
-$(OBJ_D)\eddsa.obj: $(SRC_D)\crypto\ec\curve448\eddsa.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\eddsa.obj $(SRC_D)\crypto\ec\curve448\eddsa.c
-
-$(OBJ_D)\curve448.obj: $(SRC_D)\crypto\ec\curve448\curve448.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\curve448.obj $(SRC_D)\crypto\ec\curve448\curve448.c
-
-$(OBJ_D)\scalar.obj: $(SRC_D)\crypto\ec\curve448\scalar.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\scalar.obj $(SRC_D)\crypto\ec\curve448\scalar.c
-
-$(OBJ_D)\curve448_tables.obj: $(SRC_D)\crypto\ec\curve448\curve448_tables.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\curve448_tables.obj $(SRC_D)\crypto\ec\curve448\curve448_tables.c
-
-$(OBJ_D)\f_generic.obj: $(SRC_D)\crypto\ec\curve448\f_generic.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\f_generic.obj $(SRC_D)\crypto\ec\curve448\f_generic.c
-
-$(OBJ_D)\f_impl32.obj: $(SRC_D)\crypto\ec\curve448\arch_32\f_impl32.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\f_impl32.obj $(SRC_D)\crypto\ec\curve448\arch_32\f_impl32.c
-
-$(OBJ_D)\cms_sd.obj: $(SRC_D)\crypto\cms\cms_sd.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cms_sd.obj $(SRC_D)\crypto\cms\cms_sd.c
-
-$(OBJ_D)\cms_err.obj: $(SRC_D)\crypto\cms\cms_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cms_err.obj $(SRC_D)\crypto\cms\cms_err.c
-
-$(OBJ_D)\cms_lib.obj: $(SRC_D)\crypto\cms\cms_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cms_lib.obj $(SRC_D)\crypto\cms\cms_lib.c
-
-$(OBJ_D)\cms_env.obj: $(SRC_D)\crypto\cms\cms_env.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cms_env.obj $(SRC_D)\crypto\cms\cms_env.c
-
-$(OBJ_D)\cms_asn1.obj: $(SRC_D)\crypto\cms\cms_asn1.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cms_asn1.obj $(SRC_D)\crypto\cms\cms_asn1.c
-
-$(OBJ_D)\cms_kari.obj: $(SRC_D)\crypto\cms\cms_kari.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cms_kari.obj $(SRC_D)\crypto\cms\cms_kari.c
-
-$(OBJ_D)\cms_dd.obj: $(SRC_D)\crypto\cms\cms_dd.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cms_dd.obj $(SRC_D)\crypto\cms\cms_dd.c
-
-$(OBJ_D)\cms_enc.obj: $(SRC_D)\crypto\cms\cms_enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cms_enc.obj $(SRC_D)\crypto\cms\cms_enc.c
-
-$(OBJ_D)\cms_io.obj: $(SRC_D)\crypto\cms\cms_io.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cms_io.obj $(SRC_D)\crypto\cms\cms_io.c
-
-$(OBJ_D)\cms_pwri.obj: $(SRC_D)\crypto\cms\cms_pwri.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cms_pwri.obj $(SRC_D)\crypto\cms\cms_pwri.c
-
-$(OBJ_D)\cms_att.obj: $(SRC_D)\crypto\cms\cms_att.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cms_att.obj $(SRC_D)\crypto\cms\cms_att.c
-
-$(OBJ_D)\ct_oct.obj: $(SRC_D)\crypto\ct\ct_oct.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ct_oct.obj $(SRC_D)\crypto\ct\ct_oct.c
-
-$(OBJ_D)\ct_prn.obj: $(SRC_D)\crypto\ct\ct_prn.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ct_prn.obj $(SRC_D)\crypto\ct\ct_prn.c
-
-$(OBJ_D)\ct_err.obj: $(SRC_D)\crypto\ct\ct_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ct_err.obj $(SRC_D)\crypto\ct\ct_err.c
-
-$(OBJ_D)\ct_x509v3.obj: $(SRC_D)\crypto\ct\ct_x509v3.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ct_x509v3.obj $(SRC_D)\crypto\ct\ct_x509v3.c
-
-$(OBJ_D)\ct_sct.obj: $(SRC_D)\crypto\ct\ct_sct.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ct_sct.obj $(SRC_D)\crypto\ct\ct_sct.c
-
-$(OBJ_D)\ct_log.obj: $(SRC_D)\crypto\ct\ct_log.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ct_log.obj $(SRC_D)\crypto\ct\ct_log.c
-
-$(OBJ_D)\ct_policy.obj: $(SRC_D)\crypto\ct\ct_policy.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ct_policy.obj $(SRC_D)\crypto\ct\ct_policy.c
-
-$(OBJ_D)\ct_sct_ctx.obj: $(SRC_D)\crypto\ct\ct_sct_ctx.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ct_sct_ctx.obj $(SRC_D)\crypto\ct\ct_sct_ctx.c
-
-$(OBJ_D)\ct_b64.obj: $(SRC_D)\crypto\ct\ct_b64.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ct_b64.obj $(SRC_D)\crypto\ct\ct_b64.c
-
-$(OBJ_D)\ct_vfy.obj: $(SRC_D)\crypto\ct\ct_vfy.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ct_vfy.obj $(SRC_D)\crypto\ct\ct_vfy.c
-
-$(OBJ_D)\async.obj: $(SRC_D)\crypto\async\async.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\async.obj $(SRC_D)\crypto\async\async.c
-
-$(OBJ_D)\async_err.obj: $(SRC_D)\crypto\async\async_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\async_err.obj $(SRC_D)\crypto\async\async_err.c
-
-$(OBJ_D)\async_wait.obj: $(SRC_D)\crypto\async\async_wait.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\async_wait.obj $(SRC_D)\crypto\async\async_wait.c
-
-$(OBJ_D)\async_win.obj: $(SRC_D)\crypto\async\arch\async_win.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\async_win.obj $(SRC_D)\crypto\async\arch\async_win.c
-
-$(OBJ_D)\ecdh_kdf.obj: $(SRC_D)\crypto\ec\ecdh_kdf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecdh_kdf.obj $(SRC_D)\crypto\ec\ecdh_kdf.c
-
-$(OBJ_D)\store_lib.obj: $(SRC_D)\crypto\store\store_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\store_lib.obj $(SRC_D)\crypto\store\store_lib.c
-
-$(OBJ_D)\store_init.obj: $(SRC_D)\crypto\store\store_init.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\store_init.obj $(SRC_D)\crypto\store\store_init.c
-
-$(OBJ_D)\store_register.obj: $(SRC_D)\crypto\store\store_register.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\store_register.obj $(SRC_D)\crypto\store\store_register.c
-
-$(OBJ_D)\store_err.obj: $(SRC_D)\crypto\store\store_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\store_err.obj $(SRC_D)\crypto\store\store_err.c
-
-$(OBJ_D)\store_meth.obj: $(SRC_D)\crypto\store\store_meth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\store_meth.obj $(SRC_D)\crypto\store\store_meth.c
-
-$(OBJ_D)\store_result.obj: $(SRC_D)\crypto\store\store_result.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\store_result.obj $(SRC_D)\crypto\store\store_result.c
-
-$(OBJ_D)\aria.obj: $(SRC_D)\crypto\aria\aria.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\aria.obj $(SRC_D)\crypto\aria\aria.c
-
-$(OBJ_D)\sm3.obj: $(SRC_D)\crypto\sm3\sm3.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\sm3.obj $(SRC_D)\crypto\sm3\sm3.c
-
-$(OBJ_D)\legacy_sm3.obj: $(SRC_D)\crypto\sm3\legacy_sm3.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\legacy_sm3.obj $(SRC_D)\crypto\sm3\legacy_sm3.c
-
-$(OBJ_D)\sm4.obj: $(SRC_D)\crypto\sm4\sm4.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\sm4.obj $(SRC_D)\crypto\sm4\sm4.c
-
-$(OBJ_D)\poly1305.obj: $(SRC_D)\crypto\poly1305\poly1305.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\poly1305.obj $(SRC_D)\crypto\poly1305\poly1305.c
-
-$(OBJ_D)\siphash.obj: $(SRC_D)\crypto\siphash\siphash.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\siphash.obj $(SRC_D)\crypto\siphash\siphash.c
-
-$(OBJ_D)\sm2_crypt.obj: $(SRC_D)\crypto\sm2\sm2_crypt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\sm2_crypt.obj $(SRC_D)\crypto\sm2\sm2_crypt.c
-
-$(OBJ_D)\sm2_sign.obj: $(SRC_D)\crypto\sm2\sm2_sign.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\sm2_sign.obj $(SRC_D)\crypto\sm2\sm2_sign.c
-
-$(OBJ_D)\sm2_key.obj: $(SRC_D)\crypto\sm2\sm2_key.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\sm2_key.obj $(SRC_D)\crypto\sm2\sm2_key.c
-
-$(OBJ_D)\chacha_enc.obj: $(SRC_D)\crypto\chacha\chacha_enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\chacha_enc.obj $(SRC_D)\crypto\chacha\chacha_enc.c
-
-$(OBJ_D)\http_err.obj: $(SRC_D)\crypto\http\http_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\http_err.obj $(SRC_D)\crypto\http\http_err.c
-
-$(OBJ_D)\http_client.obj: $(SRC_D)\crypto\http\http_client.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\http_client.obj $(SRC_D)\crypto\http\http_client.c
-
-$(OBJ_D)\http_lib.obj: $(SRC_D)\crypto\http\http_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\http_lib.obj $(SRC_D)\crypto\http\http_lib.c
-
-$(OBJ_D)\crmf_err.obj: $(SRC_D)\crypto\crmf\crmf_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\crmf_err.obj $(SRC_D)\crypto\crmf\crmf_err.c
-
-$(OBJ_D)\cmp_err.obj: $(SRC_D)\crypto\cmp\cmp_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cmp_err.obj $(SRC_D)\crypto\cmp\cmp_err.c
-
-$(OBJ_D)\cmp_util.obj: $(SRC_D)\crypto\cmp\cmp_util.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cmp_util.obj $(SRC_D)\crypto\cmp\cmp_util.c
-
-$(OBJ_D)\ess_err.obj: $(SRC_D)\crypto\ess\ess_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ess_err.obj $(SRC_D)\crypto\ess\ess_err.c
-
-$(OBJ_D)\property_err.obj: $(SRC_D)\crypto\property\property_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\property_err.obj $(SRC_D)\crypto\property\property_err.c
-
-$(OBJ_D)\property.obj: $(SRC_D)\crypto\property\property.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\property.obj $(SRC_D)\crypto\property\property.c
-
-$(OBJ_D)\property_parse.obj: $(SRC_D)\crypto\property\property_parse.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\property_parse.obj $(SRC_D)\crypto\property\property_parse.c
-
-$(OBJ_D)\property_string.obj: $(SRC_D)\crypto\property\property_string.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\property_string.obj $(SRC_D)\crypto\property\property_string.c
-
-$(OBJ_D)\defn_cache.obj: $(SRC_D)\crypto\property\defn_cache.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\defn_cache.obj $(SRC_D)\crypto\property\defn_cache.c
-
-$(OBJ_D)\property_query.obj: $(SRC_D)\crypto\property\property_query.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\property_query.obj $(SRC_D)\crypto\property\property_query.c
-
-$(OBJ_D)\decoder_meth.obj: $(SRC_D)\crypto\encode_decode\decoder_meth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\decoder_meth.obj $(SRC_D)\crypto\encode_decode\decoder_meth.c
-
-$(OBJ_D)\decoder_lib.obj: $(SRC_D)\crypto\encode_decode\decoder_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\decoder_lib.obj $(SRC_D)\crypto\encode_decode\decoder_lib.c
-
-$(OBJ_D)\decoder_pkey.obj: $(SRC_D)\crypto\encode_decode\decoder_pkey.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\decoder_pkey.obj $(SRC_D)\crypto\encode_decode\decoder_pkey.c
-
-$(OBJ_D)\encoder_meth.obj: $(SRC_D)\crypto\encode_decode\encoder_meth.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\encoder_meth.obj $(SRC_D)\crypto\encode_decode\encoder_meth.c
-
-$(OBJ_D)\encoder_lib.obj: $(SRC_D)\crypto\encode_decode\encoder_lib.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\encoder_lib.obj $(SRC_D)\crypto\encode_decode\encoder_lib.c
-
-$(OBJ_D)\encoder_pkey.obj: $(SRC_D)\crypto\encode_decode\encoder_pkey.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\encoder_pkey.obj $(SRC_D)\crypto\encode_decode\encoder_pkey.c
-
-$(OBJ_D)\ffc_params.obj: $(SRC_D)\crypto\ffc\ffc_params.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ffc_params.obj $(SRC_D)\crypto\ffc\ffc_params.c
-
-$(OBJ_D)\ffc_params_validate.obj: $(SRC_D)\crypto\ffc\ffc_params_validate.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ffc_params_validate.obj $(SRC_D)\crypto\ffc\ffc_params_validate.c
-
-$(OBJ_D)\ffc_params_generate.obj: $(SRC_D)\crypto\ffc\ffc_params_generate.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ffc_params_generate.obj $(SRC_D)\crypto\ffc\ffc_params_generate.c
-
-$(OBJ_D)\ffc_key_generate.obj: $(SRC_D)\crypto\ffc\ffc_key_generate.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ffc_key_generate.obj $(SRC_D)\crypto\ffc\ffc_key_generate.c
-
-$(OBJ_D)\ffc_key_validate.obj: $(SRC_D)\crypto\ffc\ffc_key_validate.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ffc_key_validate.obj $(SRC_D)\crypto\ffc\ffc_key_validate.c
-
-$(OBJ_D)\ffc_dh.obj: $(SRC_D)\crypto\ffc\ffc_dh.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ffc_dh.obj $(SRC_D)\crypto\ffc\ffc_dh.c
-
-$(OBJ_D)\ffc_backend.obj: $(SRC_D)\crypto\ffc\ffc_backend.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ffc_backend.obj $(SRC_D)\crypto\ffc\ffc_backend.c
-
-$(OBJ_D)\hpke_util.obj: $(SRC_D)\crypto\hpke\hpke_util.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\hpke_util.obj $(SRC_D)\crypto\hpke\hpke_util.c
-
-$(OBJ_D)\internal.obj: $(SRC_D)\crypto\thread\internal.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\internal.obj $(SRC_D)\crypto\thread\internal.c
-
-$(OBJ_D)\arch.obj: $(SRC_D)\crypto\thread\arch.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\arch.obj $(SRC_D)\crypto\thread\arch.c
-
-$(OBJ_D)\thread_win.obj: $(SRC_D)\crypto\thread\arch\thread_win.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\thread_win.obj $(SRC_D)\crypto\thread\arch\thread_win.c
-
-$(OBJ_D)\prov_running.obj: $(SRC_D)\providers\prov_running.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\prov_running.obj $(SRC_D)\providers\prov_running.c
-
-$(OBJ_D)\nullprov.obj: $(SRC_D)\providers\nullprov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\nullprov.obj $(SRC_D)\providers\nullprov.c
-
-$(OBJ_D)\baseprov.obj: $(SRC_D)\providers\baseprov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\baseprov.obj $(SRC_D)\providers\baseprov.c
-
-$(OBJ_D)\defltprov.obj: $(SRC_D)\providers\defltprov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\defltprov.obj $(SRC_D)\providers\defltprov.c
-
-$(OBJ_D)\bio_prov.obj: $(SRC_D)\providers\common\bio_prov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\bio_prov.obj $(SRC_D)\providers\common\bio_prov.c
-
-$(OBJ_D)\digest_to_nid.obj: $(SRC_D)\providers\common\digest_to_nid.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\digest_to_nid.obj $(SRC_D)\providers\common\digest_to_nid.c
-
-$(OBJ_D)\provider_err.obj: $(SRC_D)\providers\common\provider_err.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\provider_err.obj $(SRC_D)\providers\common\provider_err.c
-
-$(OBJ_D)\provider_ctx.obj: $(SRC_D)\providers\common\provider_ctx.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\provider_ctx.obj $(SRC_D)\providers\common\provider_ctx.c
-
-$(OBJ_D)\provider_util.obj: $(SRC_D)\providers\common\provider_util.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\provider_util.obj $(SRC_D)\providers\common\provider_util.c
-
-$(OBJ_D)\provider_seeding.obj: $(SRC_D)\providers\common\provider_seeding.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\provider_seeding.obj $(SRC_D)\providers\common\provider_seeding.c
-
-$(OBJ_D)\securitycheck.obj: $(SRC_D)\providers\common\securitycheck.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\securitycheck.obj $(SRC_D)\providers\common\securitycheck.c
-
-$(OBJ_D)\securitycheck_default.obj: $(SRC_D)\providers\common\securitycheck_default.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\securitycheck_default.obj $(SRC_D)\providers\common\securitycheck_default.c
-
-$(OBJ_D)\capabilities.obj: $(SRC_D)\providers\common\capabilities.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\capabilities.obj $(SRC_D)\providers\common\capabilities.c
-
-$(OBJ_D)\der_dsa_key.obj: $(SRC_D)\providers\common\der\der_dsa_key.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\der_dsa_key.obj $(SRC_D)\providers\common\der\der_dsa_key.c
-
-$(OBJ_D)\der_dsa_sig.obj: $(SRC_D)\providers\common\der\der_dsa_sig.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\der_dsa_sig.obj $(SRC_D)\providers\common\der\der_dsa_sig.c
-
-$(OBJ_D)\der_ec_key.obj: $(SRC_D)\providers\common\der\der_ec_key.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\der_ec_key.obj $(SRC_D)\providers\common\der\der_ec_key.c
-
-$(OBJ_D)\der_ec_sig.obj: $(SRC_D)\providers\common\der\der_ec_sig.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\der_ec_sig.obj $(SRC_D)\providers\common\der\der_ec_sig.c
-
-$(OBJ_D)\der_ecx_key.obj: $(SRC_D)\providers\common\der\der_ecx_key.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\der_ecx_key.obj $(SRC_D)\providers\common\der\der_ecx_key.c
-
-$(OBJ_D)\der_rsa_key.obj: $(SRC_D)\providers\common\der\der_rsa_key.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\der_rsa_key.obj $(SRC_D)\providers\common\der\der_rsa_key.c
-
-$(OBJ_D)\der_rsa_sig.obj: $(SRC_D)\providers\common\der\der_rsa_sig.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\der_rsa_sig.obj $(SRC_D)\providers\common\der\der_rsa_sig.c
-
-$(OBJ_D)\der_sm2_key.obj: $(SRC_D)\providers\common\der\der_sm2_key.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\der_sm2_key.obj $(SRC_D)\providers\common\der\der_sm2_key.c
-
-$(OBJ_D)\der_sm2_sig.obj: $(SRC_D)\providers\common\der\der_sm2_sig.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\der_sm2_sig.obj $(SRC_D)\providers\common\der\der_sm2_sig.c
-
-$(OBJ_D)\der_digests_gen.obj: $(SRC_D)\providers\common\der\der_digests_gen.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\der_digests_gen.obj $(SRC_D)\providers\common\der\der_digests_gen.c
-
-$(OBJ_D)\der_dsa_gen.obj: $(SRC_D)\providers\common\der\der_dsa_gen.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\der_dsa_gen.obj $(SRC_D)\providers\common\der\der_dsa_gen.c
-
-$(OBJ_D)\der_ec_gen.obj: $(SRC_D)\providers\common\der\der_ec_gen.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\der_ec_gen.obj $(SRC_D)\providers\common\der\der_ec_gen.c
-
-$(OBJ_D)\der_ecx_gen.obj: $(SRC_D)\providers\common\der\der_ecx_gen.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\der_ecx_gen.obj $(SRC_D)\providers\common\der\der_ecx_gen.c
-
-$(OBJ_D)\der_rsa_gen.obj: $(SRC_D)\providers\common\der\der_rsa_gen.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\der_rsa_gen.obj $(SRC_D)\providers\common\der\der_rsa_gen.c
-
-$(OBJ_D)\der_sm2_gen.obj: $(SRC_D)\providers\common\der\der_sm2_gen.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\der_sm2_gen.obj $(SRC_D)\providers\common\der\der_sm2_gen.c
-
-$(OBJ_D)\der_wrap_gen.obj: $(SRC_D)\providers\common\der\der_wrap_gen.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\der_wrap_gen.obj $(SRC_D)\providers\common\der\der_wrap_gen.c
-
-$(OBJ_D)\blake2_prov.obj: $(SRC_D)\providers\implementations\digests\blake2_prov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\blake2_prov.obj $(SRC_D)\providers\implementations\digests\blake2_prov.c
-
-$(OBJ_D)\blake2b_prov.obj: $(SRC_D)\providers\implementations\digests\blake2b_prov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\blake2b_prov.obj $(SRC_D)\providers\implementations\digests\blake2b_prov.c
-
-$(OBJ_D)\blake2s_prov.obj: $(SRC_D)\providers\implementations\digests\blake2s_prov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\blake2s_prov.obj $(SRC_D)\providers\implementations\digests\blake2s_prov.c
-
-$(OBJ_D)\digestcommon.obj: $(SRC_D)\providers\implementations\digests\digestcommon.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\digestcommon.obj $(SRC_D)\providers\implementations\digests\digestcommon.c
-
-$(OBJ_D)\sha2_prov.obj: $(SRC_D)\providers\implementations\digests\sha2_prov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\sha2_prov.obj $(SRC_D)\providers\implementations\digests\sha2_prov.c
-
-$(OBJ_D)\sha3_prov.obj: $(SRC_D)\providers\implementations\digests\sha3_prov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\sha3_prov.obj $(SRC_D)\providers\implementations\digests\sha3_prov.c
-
-$(OBJ_D)\sm3_prov.obj: $(SRC_D)\providers\implementations\digests\sm3_prov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\sm3_prov.obj $(SRC_D)\providers\implementations\digests\sm3_prov.c
-
-$(OBJ_D)\md5_prov.obj: $(SRC_D)\providers\implementations\digests\md5_prov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\md5_prov.obj $(SRC_D)\providers\implementations\digests\md5_prov.c
-
-$(OBJ_D)\ripemd_prov.obj: $(SRC_D)\providers\implementations\digests\ripemd_prov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ripemd_prov.obj $(SRC_D)\providers\implementations\digests\ripemd_prov.c
-
-$(OBJ_D)\md5_sha1_prov.obj: $(SRC_D)\providers\implementations\digests\md5_sha1_prov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\md5_sha1_prov.obj $(SRC_D)\providers\implementations\digests\md5_sha1_prov.c
-
-$(OBJ_D)\null_prov.obj: $(SRC_D)\providers\implementations\digests\null_prov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\null_prov.obj $(SRC_D)\providers\implementations\digests\null_prov.c
-
-$(OBJ_D)\drbg.obj: $(SRC_D)\providers\implementations\rands\drbg.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\drbg.obj $(SRC_D)\providers\implementations\rands\drbg.c
-
-$(OBJ_D)\crngt.obj: $(SRC_D)\providers\implementations\rands\crngt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\crngt.obj $(SRC_D)\providers\implementations\rands\crngt.c
-
-$(OBJ_D)\drbg_ctr.obj: $(SRC_D)\providers\implementations\rands\drbg_ctr.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\drbg_ctr.obj $(SRC_D)\providers\implementations\rands\drbg_ctr.c
-
-$(OBJ_D)\drbg_hash.obj: $(SRC_D)\providers\implementations\rands\drbg_hash.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\drbg_hash.obj $(SRC_D)\providers\implementations\rands\drbg_hash.c
-
-$(OBJ_D)\drbg_hmac.obj: $(SRC_D)\providers\implementations\rands\drbg_hmac.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\drbg_hmac.obj $(SRC_D)\providers\implementations\rands\drbg_hmac.c
-
-$(OBJ_D)\seed_src.obj: $(SRC_D)\providers\implementations\rands\seed_src.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\seed_src.obj $(SRC_D)\providers\implementations\rands\seed_src.c
-
-$(OBJ_D)\test_rng.obj: $(SRC_D)\providers\implementations\rands\test_rng.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\test_rng.obj $(SRC_D)\providers\implementations\rands\test_rng.c
-
-$(OBJ_D)\ciphercommon_block.obj: $(SRC_D)\providers\implementations\ciphers\ciphercommon_block.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ciphercommon_block.obj $(SRC_D)\providers\implementations\ciphers\ciphercommon_block.c
-
-$(OBJ_D)\ciphercommon_hw.obj: $(SRC_D)\providers\implementations\ciphers\ciphercommon_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ciphercommon_hw.obj $(SRC_D)\providers\implementations\ciphers\ciphercommon_hw.c
-
-$(OBJ_D)\ciphercommon_gcm.obj: $(SRC_D)\providers\implementations\ciphers\ciphercommon_gcm.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ciphercommon_gcm.obj $(SRC_D)\providers\implementations\ciphers\ciphercommon_gcm.c
-
-$(OBJ_D)\ciphercommon_gcm_hw.obj: $(SRC_D)\providers\implementations\ciphers\ciphercommon_gcm_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ciphercommon_gcm_hw.obj $(SRC_D)\providers\implementations\ciphers\ciphercommon_gcm_hw.c
-
-$(OBJ_D)\ciphercommon_ccm.obj: $(SRC_D)\providers\implementations\ciphers\ciphercommon_ccm.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ciphercommon_ccm.obj $(SRC_D)\providers\implementations\ciphers\ciphercommon_ccm.c
-
-$(OBJ_D)\ciphercommon_ccm_hw.obj: $(SRC_D)\providers\implementations\ciphers\ciphercommon_ccm_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ciphercommon_ccm_hw.obj $(SRC_D)\providers\implementations\ciphers\ciphercommon_ccm_hw.c
-
-$(OBJ_D)\cipher_null.obj: $(SRC_D)\providers\implementations\ciphers\cipher_null.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_null.obj $(SRC_D)\providers\implementations\ciphers\cipher_null.c
-
-$(OBJ_D)\cipher_aes.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes.c
-
-$(OBJ_D)\ciphercommon.obj: $(SRC_D)\providers\implementations\ciphers\ciphercommon.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ciphercommon.obj $(SRC_D)\providers\implementations\ciphers\ciphercommon.c
-
-$(OBJ_D)\cipher_cts.obj: $(SRC_D)\providers\implementations\ciphers\cipher_cts.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_cts.obj $(SRC_D)\providers\implementations\ciphers\cipher_cts.c
-
-$(OBJ_D)\cipher_aes_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes_hw.c
-
-$(OBJ_D)\cipher_aria.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aria.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aria.obj $(SRC_D)\providers\implementations\ciphers\cipher_aria.c
-
-$(OBJ_D)\cipher_aria_ccm.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aria_ccm.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aria_ccm.obj $(SRC_D)\providers\implementations\ciphers\cipher_aria_ccm.c
-
-$(OBJ_D)\cipher_aria_ccm_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aria_ccm_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aria_ccm_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_aria_ccm_hw.c
-
-$(OBJ_D)\cipher_aes_xts.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes_xts.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes_xts.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes_xts.c
-
-$(OBJ_D)\cipher_aes_xts_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes_xts_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes_xts_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes_xts_hw.c
-
-$(OBJ_D)\cipher_aes_ocb.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes_ocb.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes_ocb.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes_ocb.c
-
-$(OBJ_D)\cipher_aes_ocb_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes_ocb_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes_ocb_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes_ocb_hw.c
-
-$(OBJ_D)\cipher_aes_siv.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes_siv.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes_siv.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes_siv.c
-
-$(OBJ_D)\cipher_aes_siv_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes_siv_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes_siv_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes_siv_hw.c
-
-$(OBJ_D)\cipher_aes_gcm.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes_gcm.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes_gcm.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes_gcm.c
-
-$(OBJ_D)\cipher_aes_gcm_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes_gcm_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes_gcm_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes_gcm_hw.c
-
-$(OBJ_D)\cipher_aes_gcm_siv.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes_gcm_siv.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes_gcm_siv.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes_gcm_siv.c
-
-$(OBJ_D)\cipher_aes_gcm_siv_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes_gcm_siv_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes_gcm_siv_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes_gcm_siv_hw.c
-
-$(OBJ_D)\cipher_aes_gcm_siv_polyval.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes_gcm_siv_polyval.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes_gcm_siv_polyval.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes_gcm_siv_polyval.c
-
-$(OBJ_D)\cipher_aes_ccm.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes_ccm.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes_ccm.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes_ccm.c
-
-$(OBJ_D)\cipher_aes_ccm_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes_ccm_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes_ccm_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes_ccm_hw.c
-
-$(OBJ_D)\cipher_aes_wrp.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes_wrp.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes_wrp.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes_wrp.c
-
-$(OBJ_D)\cipher_aes_cbc_hmac_sha.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes_cbc_hmac_sha.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes_cbc_hmac_sha.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes_cbc_hmac_sha.c
-
-$(OBJ_D)\cipher_aes_cbc_hmac_sha1_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes_cbc_hmac_sha1_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes_cbc_hmac_sha1_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes_cbc_hmac_sha1_hw.c
-
-$(OBJ_D)\cipher_aes_cbc_hmac_sha256_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes_cbc_hmac_sha256_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes_cbc_hmac_sha256_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes_cbc_hmac_sha256_hw.c
-
-$(OBJ_D)\cipher_aes_xts_fips.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aes_xts_fips.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aes_xts_fips.obj $(SRC_D)\providers\implementations\ciphers\cipher_aes_xts_fips.c
-
-$(OBJ_D)\cipher_aria_gcm.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aria_gcm.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aria_gcm.obj $(SRC_D)\providers\implementations\ciphers\cipher_aria_gcm.c
-
-$(OBJ_D)\cipher_aria_gcm_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aria_gcm_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aria_gcm_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_aria_gcm_hw.c
-
-$(OBJ_D)\cipher_aria_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_aria_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_aria_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_aria_hw.c
-
-$(OBJ_D)\cipher_tdes.obj: $(SRC_D)\providers\implementations\ciphers\cipher_tdes.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_tdes.obj $(SRC_D)\providers\implementations\ciphers\cipher_tdes.c
-
-$(OBJ_D)\cipher_tdes_common.obj: $(SRC_D)\providers\implementations\ciphers\cipher_tdes_common.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_tdes_common.obj $(SRC_D)\providers\implementations\ciphers\cipher_tdes_common.c
-
-$(OBJ_D)\cipher_tdes_default.obj: $(SRC_D)\providers\implementations\ciphers\cipher_tdes_default.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_tdes_default.obj $(SRC_D)\providers\implementations\ciphers\cipher_tdes_default.c
-
-$(OBJ_D)\cipher_tdes_default_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_tdes_default_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_tdes_default_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_tdes_default_hw.c
-
-$(OBJ_D)\cipher_tdes_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_tdes_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_tdes_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_tdes_hw.c
-
-$(OBJ_D)\cipher_tdes_wrap.obj: $(SRC_D)\providers\implementations\ciphers\cipher_tdes_wrap.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_tdes_wrap.obj $(SRC_D)\providers\implementations\ciphers\cipher_tdes_wrap.c
-
-$(OBJ_D)\cipher_tdes_wrap_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_tdes_wrap_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_tdes_wrap_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_tdes_wrap_hw.c
-
-$(OBJ_D)\cipher_sm4.obj: $(SRC_D)\providers\implementations\ciphers\cipher_sm4.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_sm4.obj $(SRC_D)\providers\implementations\ciphers\cipher_sm4.c
-
-$(OBJ_D)\cipher_sm4_ccm.obj: $(SRC_D)\providers\implementations\ciphers\cipher_sm4_ccm.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_sm4_ccm.obj $(SRC_D)\providers\implementations\ciphers\cipher_sm4_ccm.c
-
-$(OBJ_D)\cipher_sm4_gcm.obj: $(SRC_D)\providers\implementations\ciphers\cipher_sm4_gcm.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_sm4_gcm.obj $(SRC_D)\providers\implementations\ciphers\cipher_sm4_gcm.c
-
-$(OBJ_D)\cipher_sm4_ccm_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_sm4_ccm_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_sm4_ccm_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_sm4_ccm_hw.c
-
-$(OBJ_D)\cipher_sm4_gcm_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_sm4_gcm_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_sm4_gcm_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_sm4_gcm_hw.c
-
-$(OBJ_D)\cipher_sm4_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_sm4_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_sm4_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_sm4_hw.c
-
-$(OBJ_D)\cipher_sm4_xts.obj: $(SRC_D)\providers\implementations\ciphers\cipher_sm4_xts.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_sm4_xts.obj $(SRC_D)\providers\implementations\ciphers\cipher_sm4_xts.c
-
-$(OBJ_D)\cipher_sm4_xts_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_sm4_xts_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_sm4_xts_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_sm4_xts_hw.c
-
-$(OBJ_D)\cipher_chacha20.obj: $(SRC_D)\providers\implementations\ciphers\cipher_chacha20.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_chacha20.obj $(SRC_D)\providers\implementations\ciphers\cipher_chacha20.c
-
-$(OBJ_D)\cipher_chacha20_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_chacha20_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_chacha20_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_chacha20_hw.c
-
-$(OBJ_D)\cipher_chacha20_poly1305.obj: $(SRC_D)\providers\implementations\ciphers\cipher_chacha20_poly1305.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_chacha20_poly1305.obj $(SRC_D)\providers\implementations\ciphers\cipher_chacha20_poly1305.c
-
-$(OBJ_D)\cipher_chacha20_poly1305_hw.obj: $(SRC_D)\providers\implementations\ciphers\cipher_chacha20_poly1305_hw.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cipher_chacha20_poly1305_hw.obj $(SRC_D)\providers\implementations\ciphers\cipher_chacha20_poly1305_hw.c
-
-$(OBJ_D)\blake2b_mac.obj: $(SRC_D)\providers\implementations\macs\blake2b_mac.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\blake2b_mac.obj $(SRC_D)\providers\implementations\macs\blake2b_mac.c
-
-$(OBJ_D)\blake2s_mac.obj: $(SRC_D)\providers\implementations\macs\blake2s_mac.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\blake2s_mac.obj $(SRC_D)\providers\implementations\macs\blake2s_mac.c
-
-$(OBJ_D)\cmac_prov.obj: $(SRC_D)\providers\implementations\macs\cmac_prov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\cmac_prov.obj $(SRC_D)\providers\implementations\macs\cmac_prov.c
-
-$(OBJ_D)\gmac_prov.obj: $(SRC_D)\providers\implementations\macs\gmac_prov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\gmac_prov.obj $(SRC_D)\providers\implementations\macs\gmac_prov.c
-
-$(OBJ_D)\hmac_prov.obj: $(SRC_D)\providers\implementations\macs\hmac_prov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\hmac_prov.obj $(SRC_D)\providers\implementations\macs\hmac_prov.c
-
-$(OBJ_D)\kmac_prov.obj: $(SRC_D)\providers\implementations\macs\kmac_prov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\kmac_prov.obj $(SRC_D)\providers\implementations\macs\kmac_prov.c
-
-$(OBJ_D)\poly1305_prov.obj: $(SRC_D)\providers\implementations\macs\poly1305_prov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\poly1305_prov.obj $(SRC_D)\providers\implementations\macs\poly1305_prov.c
-
-$(OBJ_D)\siphash_prov.obj: $(SRC_D)\providers\implementations\macs\siphash_prov.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\siphash_prov.obj $(SRC_D)\providers\implementations\macs\siphash_prov.c
-
-$(OBJ_D)\hkdf.obj: $(SRC_D)\providers\implementations\kdfs\hkdf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\hkdf.obj $(SRC_D)\providers\implementations\kdfs\hkdf.c
-
-$(OBJ_D)\kbkdf.obj: $(SRC_D)\providers\implementations\kdfs\kbkdf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\kbkdf.obj $(SRC_D)\providers\implementations\kdfs\kbkdf.c
-
-$(OBJ_D)\krb5kdf.obj: $(SRC_D)\providers\implementations\kdfs\krb5kdf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\krb5kdf.obj $(SRC_D)\providers\implementations\kdfs\krb5kdf.c
-
-$(OBJ_D)\pbkdf1.obj: $(SRC_D)\providers\implementations\kdfs\pbkdf1.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pbkdf1.obj $(SRC_D)\providers\implementations\kdfs\pbkdf1.c
-
-$(OBJ_D)\pbkdf2.obj: $(SRC_D)\providers\implementations\kdfs\pbkdf2.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pbkdf2.obj $(SRC_D)\providers\implementations\kdfs\pbkdf2.c
-
-$(OBJ_D)\pbkdf2_fips.obj: $(SRC_D)\providers\implementations\kdfs\pbkdf2_fips.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pbkdf2_fips.obj $(SRC_D)\providers\implementations\kdfs\pbkdf2_fips.c
-
-$(OBJ_D)\pkcs12kdf.obj: $(SRC_D)\providers\implementations\kdfs\pkcs12kdf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\pkcs12kdf.obj $(SRC_D)\providers\implementations\kdfs\pkcs12kdf.c
-
-$(OBJ_D)\scrypt.obj: $(SRC_D)\providers\implementations\kdfs\scrypt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\scrypt.obj $(SRC_D)\providers\implementations\kdfs\scrypt.c
-
-$(OBJ_D)\sshkdf.obj: $(SRC_D)\providers\implementations\kdfs\sshkdf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\sshkdf.obj $(SRC_D)\providers\implementations\kdfs\sshkdf.c
-
-$(OBJ_D)\sskdf.obj: $(SRC_D)\providers\implementations\kdfs\sskdf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\sskdf.obj $(SRC_D)\providers\implementations\kdfs\sskdf.c
-
-$(OBJ_D)\tls1_prf.obj: $(SRC_D)\providers\implementations\kdfs\tls1_prf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\tls1_prf.obj $(SRC_D)\providers\implementations\kdfs\tls1_prf.c
-
-$(OBJ_D)\x942kdf.obj: $(SRC_D)\providers\implementations\kdfs\x942kdf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\x942kdf.obj $(SRC_D)\providers\implementations\kdfs\x942kdf.c
-
-$(OBJ_D)\hmacdrbg_kdf.obj: $(SRC_D)\providers\implementations\kdfs\hmacdrbg_kdf.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\hmacdrbg_kdf.obj $(SRC_D)\providers\implementations\kdfs\hmacdrbg_kdf.c
-
-$(OBJ_D)\argon2.obj: $(SRC_D)\providers\implementations\kdfs\argon2.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\argon2.obj $(SRC_D)\providers\implementations\kdfs\argon2.c
-
-$(OBJ_D)\dh_exch.obj: $(SRC_D)\providers\implementations\exchange\dh_exch.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dh_exch.obj $(SRC_D)\providers\implementations\exchange\dh_exch.c
-
-$(OBJ_D)\ecdh_exch.obj: $(SRC_D)\providers\implementations\exchange\ecdh_exch.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecdh_exch.obj $(SRC_D)\providers\implementations\exchange\ecdh_exch.c
-
-$(OBJ_D)\ecx_exch.obj: $(SRC_D)\providers\implementations\exchange\ecx_exch.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecx_exch.obj $(SRC_D)\providers\implementations\exchange\ecx_exch.c
-
-$(OBJ_D)\kdf_exch.obj: $(SRC_D)\providers\implementations\exchange\kdf_exch.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\kdf_exch.obj $(SRC_D)\providers\implementations\exchange\kdf_exch.c
-
-$(OBJ_D)\dsa_sig.obj: $(SRC_D)\providers\implementations\signature\dsa_sig.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dsa_sig.obj $(SRC_D)\providers\implementations\signature\dsa_sig.c
-
-$(OBJ_D)\ecdsa_sig.obj: $(SRC_D)\providers\implementations\signature\ecdsa_sig.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecdsa_sig.obj $(SRC_D)\providers\implementations\signature\ecdsa_sig.c
-
-$(OBJ_D)\eddsa_sig.obj: $(SRC_D)\providers\implementations\signature\eddsa_sig.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\eddsa_sig.obj $(SRC_D)\providers\implementations\signature\eddsa_sig.c
-
-$(OBJ_D)\mac_legacy_sig.obj: $(SRC_D)\providers\implementations\signature\mac_legacy_sig.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\mac_legacy_sig.obj $(SRC_D)\providers\implementations\signature\mac_legacy_sig.c
-
-$(OBJ_D)\rsa_sig.obj: $(SRC_D)\providers\implementations\signature\rsa_sig.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_sig.obj $(SRC_D)\providers\implementations\signature\rsa_sig.c
-
-$(OBJ_D)\sm2_sig.obj: $(SRC_D)\providers\implementations\signature\sm2_sig.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\sm2_sig.obj $(SRC_D)\providers\implementations\signature\sm2_sig.c
-
-$(OBJ_D)\rsa_enc.obj: $(SRC_D)\providers\implementations\asymciphers\rsa_enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_enc.obj $(SRC_D)\providers\implementations\asymciphers\rsa_enc.c
-
-$(OBJ_D)\sm2_enc.obj: $(SRC_D)\providers\implementations\asymciphers\sm2_enc.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\sm2_enc.obj $(SRC_D)\providers\implementations\asymciphers\sm2_enc.c
-
-$(OBJ_D)\rsa_kem.obj: $(SRC_D)\providers\implementations\kem\rsa_kem.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_kem.obj $(SRC_D)\providers\implementations\kem\rsa_kem.c
-
-$(OBJ_D)\ec_kem.obj: $(SRC_D)\providers\implementations\kem\ec_kem.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec_kem.obj $(SRC_D)\providers\implementations\kem\ec_kem.c
-
-$(OBJ_D)\kem_util.obj: $(SRC_D)\providers\implementations\kem\kem_util.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\kem_util.obj $(SRC_D)\providers\implementations\kem\kem_util.c
-
-$(OBJ_D)\ecx_kem.obj: $(SRC_D)\providers\implementations\kem\ecx_kem.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecx_kem.obj $(SRC_D)\providers\implementations\kem\ecx_kem.c
-
-$(OBJ_D)\dh_kmgmt.obj: $(SRC_D)\providers\implementations\keymgmt\dh_kmgmt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dh_kmgmt.obj $(SRC_D)\providers\implementations\keymgmt\dh_kmgmt.c
-
-$(OBJ_D)\dsa_kmgmt.obj: $(SRC_D)\providers\implementations\keymgmt\dsa_kmgmt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\dsa_kmgmt.obj $(SRC_D)\providers\implementations\keymgmt\dsa_kmgmt.c
-
-$(OBJ_D)\ec_kmgmt.obj: $(SRC_D)\providers\implementations\keymgmt\ec_kmgmt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ec_kmgmt.obj $(SRC_D)\providers\implementations\keymgmt\ec_kmgmt.c
-
-$(OBJ_D)\ecx_kmgmt.obj: $(SRC_D)\providers\implementations\keymgmt\ecx_kmgmt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\ecx_kmgmt.obj $(SRC_D)\providers\implementations\keymgmt\ecx_kmgmt.c
-
-$(OBJ_D)\kdf_legacy_kmgmt.obj: $(SRC_D)\providers\implementations\keymgmt\kdf_legacy_kmgmt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\kdf_legacy_kmgmt.obj $(SRC_D)\providers\implementations\keymgmt\kdf_legacy_kmgmt.c
-
-$(OBJ_D)\mac_legacy_kmgmt.obj: $(SRC_D)\providers\implementations\keymgmt\mac_legacy_kmgmt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\mac_legacy_kmgmt.obj $(SRC_D)\providers\implementations\keymgmt\mac_legacy_kmgmt.c
-
-$(OBJ_D)\rsa_kmgmt.obj: $(SRC_D)\providers\implementations\keymgmt\rsa_kmgmt.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\rsa_kmgmt.obj $(SRC_D)\providers\implementations\keymgmt\rsa_kmgmt.c
-
-$(OBJ_D)\decode_der2key.obj: $(SRC_D)\providers\implementations\encode_decode\decode_der2key.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\decode_der2key.obj $(SRC_D)\providers\implementations\encode_decode\decode_der2key.c
-
-$(OBJ_D)\decode_epki2pki.obj: $(SRC_D)\providers\implementations\encode_decode\decode_epki2pki.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\decode_epki2pki.obj $(SRC_D)\providers\implementations\encode_decode\decode_epki2pki.c
-
-$(OBJ_D)\decode_msblob2key.obj: $(SRC_D)\providers\implementations\encode_decode\decode_msblob2key.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\decode_msblob2key.obj $(SRC_D)\providers\implementations\encode_decode\decode_msblob2key.c
-
-$(OBJ_D)\decode_pem2der.obj: $(SRC_D)\providers\implementations\encode_decode\decode_pem2der.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\decode_pem2der.obj $(SRC_D)\providers\implementations\encode_decode\decode_pem2der.c
-
-$(OBJ_D)\decode_pvk2key.obj: $(SRC_D)\providers\implementations\encode_decode\decode_pvk2key.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\decode_pvk2key.obj $(SRC_D)\providers\implementations\encode_decode\decode_pvk2key.c
-
-$(OBJ_D)\decode_spki2typespki.obj: $(SRC_D)\providers\implementations\encode_decode\decode_spki2typespki.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\decode_spki2typespki.obj $(SRC_D)\providers\implementations\encode_decode\decode_spki2typespki.c
-
-$(OBJ_D)\encode_key2any.obj: $(SRC_D)\providers\implementations\encode_decode\encode_key2any.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\encode_key2any.obj $(SRC_D)\providers\implementations\encode_decode\encode_key2any.c
-
-$(OBJ_D)\encode_key2blob.obj: $(SRC_D)\providers\implementations\encode_decode\encode_key2blob.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\encode_key2blob.obj $(SRC_D)\providers\implementations\encode_decode\encode_key2blob.c
-
-$(OBJ_D)\encode_key2ms.obj: $(SRC_D)\providers\implementations\encode_decode\encode_key2ms.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\encode_key2ms.obj $(SRC_D)\providers\implementations\encode_decode\encode_key2ms.c
-
-$(OBJ_D)\encode_key2text.obj: $(SRC_D)\providers\implementations\encode_decode\encode_key2text.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\encode_key2text.obj $(SRC_D)\providers\implementations\encode_decode\encode_key2text.c
-
-$(OBJ_D)\endecoder_common.obj: $(SRC_D)\providers\implementations\encode_decode\endecoder_common.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\endecoder_common.obj $(SRC_D)\providers\implementations\encode_decode\endecoder_common.c
-
-$(OBJ_D)\file_store.obj: $(SRC_D)\providers\implementations\storemgmt\file_store.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\file_store.obj $(SRC_D)\providers\implementations\storemgmt\file_store.c
-
-$(OBJ_D)\file_store_any2obj.obj: $(SRC_D)\providers\implementations\storemgmt\file_store_any2obj.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\file_store_any2obj.obj $(SRC_D)\providers\implementations\storemgmt\file_store_any2obj.c
-
-$(OBJ_D)\winstore_store.obj: $(SRC_D)\providers\implementations\storemgmt\winstore_store.c
-    $(CC) $(LIB_CFLAGS) -o$(OBJ_D)\winstore_store.obj $(SRC_D)\providers\implementations\storemgmt\winstore_store.c
+SSLSRC= \
+    $(SRC_D)\ssl\s3_lib.c \
+    $(SRC_D)\ssl\s3_enc.c \
+    $(SRC_D)\ssl\s3_msg.c \
+    $(SRC_D)\ssl\t1_lib.c \
+    $(SRC_D)\ssl\t1_enc.c \
+    $(SRC_D)\ssl\tls_srp.c \
+    $(SRC_D)\ssl\tls13_enc.c \
+    $(SRC_D)\ssl\d1_srtp.c \
+    $(SRC_D)\ssl\d1_lib.c \
+    $(SRC_D)\ssl\d1_msg.c \
+    $(SRC_D)\ssl\ssl_lib.c \
+    $(SRC_D)\ssl\ssl_cert.c \
+    $(SRC_D)\ssl\ssl_sess.c \
+    $(SRC_D)\ssl\ssl_ciph.c \
+    $(SRC_D)\ssl\ssl_stat.c \
+    $(SRC_D)\ssl\ssl_rsa.c \
+    $(SRC_D)\ssl\ssl_asn1.c \
+    $(SRC_D)\ssl\ssl_txt.c \
+    $(SRC_D)\ssl\ssl_err.c \
+    $(SRC_D)\ssl\ssl_init.c \
+    $(SRC_D)\ssl\ssl_mcnf.c \
+    $(SRC_D)\ssl\bio_ssl.c \
+    $(SRC_D)\ssl\pqueue.c \
+    $(SRC_D)\ssl\methods.c \
+    $(SRC_D)\ssl\ssl_conf.c \
+    $(SRC_D)\ssl\tls_depr.c \
+    $(SRC_D)\ssl\ssl_cert_comp.c \
+    $(SRC_D)\ssl\statem\statem.c \
+    $(SRC_D)\ssl\statem\statem_clnt.c \
+    $(SRC_D)\ssl\statem\statem_dtls.c \
+    $(SRC_D)\ssl\statem\statem_lib.c \
+    $(SRC_D)\ssl\statem\statem_srvr.c \
+    $(SRC_D)\ssl\statem\extensions.c \
+    $(SRC_D)\ssl\statem\extensions_clnt.c \
+    $(SRC_D)\ssl\statem\extensions_cust.c \
+    $(SRC_D)\ssl\statem\extensions_srvr.c \
+    $(SRC_D)\ssl\record\rec_layer_s3.c \
+    $(SRC_D)\ssl\record\rec_layer_d1.c \
+    $(SRC_D)\ssl\record\methods\ssl3_cbc.c \
+    $(SRC_D)\ssl\record\methods\tls_pad.c \
+    $(SRC_D)\ssl\record\methods\dtls_meth.c \
+    $(SRC_D)\ssl\record\methods\tls_common.c \
+    $(SRC_D)\ssl\record\methods\tlsany_meth.c \
+    $(SRC_D)\ssl\record\methods\tls13_meth.c \
+    $(SRC_D)\ssl\record\methods\tls1_meth.c \
+    $(SRC_D)\ssl\record\methods\ssl3_meth.c \
+    $(SRC_D)\ssl\record\methods\tls_multib.c
+
+CRYPTOSRC= \
+    $(SRC_D)\crypto\cryptlib.c \
+    $(SRC_D)\crypto\ctype.c \
+    $(SRC_D)\crypto\init.c \
+    $(SRC_D)\crypto\mem.c \
+    $(SRC_D)\crypto\mem_clr.c \
+    $(SRC_D)\crypto\ex_data.c \
+    $(SRC_D)\crypto\cpt_err.c \
+    $(SRC_D)\crypto\ebcdic.c \
+    $(SRC_D)\crypto\uid.c \
+    $(SRC_D)\crypto\o_time.c \
+    $(SRC_D)\crypto\o_str.c \
+    $(SRC_D)\crypto\o_dir.c \
+    $(SRC_D)\crypto\o_fopen.c \
+    $(SRC_D)\crypto\getenv.c \
+    $(SRC_D)\crypto\mem_sec.c \
+    $(SRC_D)\crypto\threads_win.c \
+    $(SRC_D)\crypto\packet.c \
+    $(SRC_D)\crypto\bsearch.c \
+    $(SRC_D)\crypto\context.c \
+    $(SRC_D)\crypto\cpuid.c \
+    $(SRC_D)\crypto\initthread.c \
+    $(SRC_D)\crypto\param_build_set.c \
+    $(SRC_D)\crypto\params.c \
+    $(SRC_D)\crypto\params_dup.c \
+    $(SRC_D)\crypto\params_idx.c \
+    $(SRC_D)\crypto\sparse_array.c \
+    $(SRC_D)\crypto\provider.c \
+    $(SRC_D)\crypto\provider_core.c \
+    $(SRC_D)\crypto\provider_conf.c \
+    $(SRC_D)\crypto\provider_child.c \
+    $(SRC_D)\crypto\provider_predefined.c \
+    $(SRC_D)\crypto\core_algorithm.c \
+    $(SRC_D)\crypto\core_namemap.c \
+    $(SRC_D)\crypto\core_fetch.c \
+    $(SRC_D)\crypto\asn1_dsa.c \
+    $(SRC_D)\crypto\self_test_core.c \
+    $(SRC_D)\crypto\passphrase.c \
+    $(SRC_D)\crypto\punycode.c \
+    $(SRC_D)\crypto\param_build.c \
+    $(SRC_D)\crypto\params_from_text.c \
+    $(SRC_D)\crypto\trace.c \
+    $(SRC_D)\crypto\der_writer.c \
+    $(SRC_D)\crypto\sleep.c \
+    $(SRC_D)\crypto\deterministic_nonce.c \
+    $(SRC_D)\crypto\time.c \
+    $(SRC_D)\crypto\md4\md4_dgst.c \
+    $(SRC_D)\crypto\md4\md4_one.c \
+    $(SRC_D)\crypto\md5\md5_dgst.c \
+    $(SRC_D)\crypto\md5\md5_one.c \
+    $(SRC_D)\crypto\md5\md5_sha1.c \
+    $(SRC_D)\crypto\modes\cbc128.c \
+    $(SRC_D)\crypto\modes\cfb128.c \
+    $(SRC_D)\crypto\modes\ofb128.c \
+    $(SRC_D)\crypto\modes\ccm128.c \
+    $(SRC_D)\crypto\modes\gcm128.c \
+    $(SRC_D)\crypto\modes\xts128.c \
+    $(SRC_D)\crypto\modes\xts128gb.c \
+    $(SRC_D)\crypto\modes\wrap128.c \
+    $(SRC_D)\crypto\modes\ctr128.c \
+    $(SRC_D)\crypto\modes\ocb128.c \
+    $(SRC_D)\crypto\modes\siv128.c \
+    $(SRC_D)\crypto\sha\sha1dgst.c \
+    $(SRC_D)\crypto\sha\sha1_one.c \
+    $(SRC_D)\crypto\sha\sha256.c \
+    $(SRC_D)\crypto\sha\sha512.c \
+    $(SRC_D)\crypto\sha\keccak1600.c \
+    $(SRC_D)\crypto\sha\sha3.c \
+    $(SRC_D)\crypto\hmac\hmac.c \
+    $(SRC_D)\crypto\ripemd\rmd_dgst.c \
+    $(SRC_D)\crypto\ripemd\rmd_one.c \
+    $(SRC_D)\crypto\des\set_key.c \
+    $(SRC_D)\crypto\des\ecb_enc.c \
+    $(SRC_D)\crypto\des\cbc_enc.c \
+    $(SRC_D)\crypto\des\ecb3_enc.c \
+    $(SRC_D)\crypto\des\cfb64enc.c \
+    $(SRC_D)\crypto\des\cfb64ede.c \
+    $(SRC_D)\crypto\des\cfb_enc.c \
+    $(SRC_D)\crypto\des\ofb64ede.c \
+    $(SRC_D)\crypto\des\ofb64enc.c \
+    $(SRC_D)\crypto\des\ofb_enc.c \
+    $(SRC_D)\crypto\des\str2key.c \
+    $(SRC_D)\crypto\des\pcbc_enc.c \
+    $(SRC_D)\crypto\des\qud_cksm.c \
+    $(SRC_D)\crypto\des\rand_key.c \
+    $(SRC_D)\crypto\des\xcbc_enc.c \
+    $(SRC_D)\crypto\des\cbc_cksm.c \
+    $(SRC_D)\crypto\rc2\rc2_ecb.c \
+    $(SRC_D)\crypto\rc2\rc2_skey.c \
+    $(SRC_D)\crypto\rc2\rc2_cbc.c \
+    $(SRC_D)\crypto\rc2\rc2cfb64.c \
+    $(SRC_D)\crypto\rc2\rc2ofb64.c \
+    $(SRC_D)\crypto\rc4\rc4_skey.c \
+    $(SRC_D)\crypto\rc4\rc4_enc.c \
+    $(SRC_D)\crypto\idea\i_cbc.c \
+    $(SRC_D)\crypto\idea\i_cfb64.c \
+    $(SRC_D)\crypto\idea\i_ofb64.c \
+    $(SRC_D)\crypto\idea\i_ecb.c \
+    $(SRC_D)\crypto\idea\i_skey.c \
+    $(SRC_D)\crypto\bf\bf_skey.c \
+    $(SRC_D)\crypto\bf\bf_ecb.c \
+    $(SRC_D)\crypto\bf\bf_cfb64.c \
+    $(SRC_D)\crypto\bf\bf_ofb64.c \
+    $(SRC_D)\crypto\cast\c_skey.c \
+    $(SRC_D)\crypto\cast\c_ecb.c \
+    $(SRC_D)\crypto\cast\c_cfb64.c \
+    $(SRC_D)\crypto\cast\c_ofb64.c \
+    $(SRC_D)\crypto\aes\aes_misc.c \
+    $(SRC_D)\crypto\aes\aes_ecb.c \
+    $(SRC_D)\crypto\aes\aes_cfb.c \
+    $(SRC_D)\crypto\aes\aes_ofb.c \
+    $(SRC_D)\crypto\aes\aes_ige.c \
+    $(SRC_D)\crypto\aes\aes_wrap.c \
+    $(SRC_D)\crypto\aes\aes_core.c \
+    $(SRC_D)\crypto\aes\aes_cbc.c \
+    $(SRC_D)\crypto\bn\bn_add.c \
+    $(SRC_D)\crypto\bn\bn_div.c \
+    $(SRC_D)\crypto\bn\bn_exp.c \
+    $(SRC_D)\crypto\bn\bn_lib.c \
+    $(SRC_D)\crypto\bn\bn_ctx.c \
+    $(SRC_D)\crypto\bn\bn_mul.c \
+    $(SRC_D)\crypto\bn\bn_mod.c \
+    $(SRC_D)\crypto\bn\bn_print.c \
+    $(SRC_D)\crypto\bn\bn_rand.c \
+    $(SRC_D)\crypto\bn\bn_shift.c \
+    $(SRC_D)\crypto\bn\bn_word.c \
+    $(SRC_D)\crypto\bn\bn_blind.c \
+    $(SRC_D)\crypto\bn\bn_kron.c \
+    $(SRC_D)\crypto\bn\bn_sqrt.c \
+    $(SRC_D)\crypto\bn\bn_gcd.c \
+    $(SRC_D)\crypto\bn\bn_prime.c \
+    $(SRC_D)\crypto\bn\bn_err.c \
+    $(SRC_D)\crypto\bn\bn_sqr.c \
+    $(SRC_D)\crypto\bn\bn_recp.c \
+    $(SRC_D)\crypto\bn\bn_mont.c \
+    $(SRC_D)\crypto\bn\bn_mpi.c \
+    $(SRC_D)\crypto\bn\bn_exp2.c \
+    $(SRC_D)\crypto\bn\bn_gf2m.c \
+    $(SRC_D)\crypto\bn\bn_nist.c \
+    $(SRC_D)\crypto\bn\bn_depr.c \
+    $(SRC_D)\crypto\bn\bn_const.c \
+    $(SRC_D)\crypto\bn\bn_intern.c \
+    $(SRC_D)\crypto\bn\bn_dh.c \
+    $(SRC_D)\crypto\bn\bn_srp.c \
+    $(SRC_D)\crypto\bn\bn_conv.c \
+    $(SRC_D)\crypto\bn\bn_rsa_fips186_4.c \
+    $(SRC_D)\crypto\rsa\rsa_ossl.c \
+    $(SRC_D)\crypto\rsa\rsa_gen.c \
+    $(SRC_D)\crypto\rsa\rsa_lib.c \
+    $(SRC_D)\crypto\rsa\rsa_sign.c \
+    $(SRC_D)\crypto\rsa\rsa_saos.c \
+    $(SRC_D)\crypto\rsa\rsa_err.c \
+    $(SRC_D)\crypto\rsa\rsa_pk1.c \
+    $(SRC_D)\crypto\rsa\rsa_none.c \
+    $(SRC_D)\crypto\rsa\rsa_oaep.c \
+    $(SRC_D)\crypto\rsa\rsa_chk.c \
+    $(SRC_D)\crypto\rsa\rsa_pss.c \
+    $(SRC_D)\crypto\rsa\rsa_x931.c \
+    $(SRC_D)\crypto\rsa\rsa_asn1.c \
+    $(SRC_D)\crypto\rsa\rsa_depr.c \
+    $(SRC_D)\crypto\rsa\rsa_pmeth.c \
+    $(SRC_D)\crypto\rsa\rsa_crpt.c \
+    $(SRC_D)\crypto\rsa\rsa_ameth.c \
+    $(SRC_D)\crypto\rsa\rsa_mp.c \
+    $(SRC_D)\crypto\rsa\rsa_backend.c \
+    $(SRC_D)\crypto\rsa\rsa_sp800_56b_check.c \
+    $(SRC_D)\crypto\rsa\rsa_sp800_56b_gen.c \
+    $(SRC_D)\crypto\rsa\rsa_mp_names.c \
+    $(SRC_D)\crypto\rsa\rsa_schemes.c \
+    $(SRC_D)\crypto\dsa\dsa_gen.c \
+    $(SRC_D)\crypto\dsa\dsa_key.c \
+    $(SRC_D)\crypto\dsa\dsa_lib.c \
+    $(SRC_D)\crypto\dsa\dsa_asn1.c \
+    $(SRC_D)\crypto\dsa\dsa_vrf.c \
+    $(SRC_D)\crypto\dsa\dsa_sign.c \
+    $(SRC_D)\crypto\dsa\dsa_err.c \
+    $(SRC_D)\crypto\dsa\dsa_ossl.c \
+    $(SRC_D)\crypto\dsa\dsa_depr.c \
+    $(SRC_D)\crypto\dsa\dsa_pmeth.c \
+    $(SRC_D)\crypto\dsa\dsa_ameth.c \
+    $(SRC_D)\crypto\dsa\dsa_backend.c \
+    $(SRC_D)\crypto\dsa\dsa_check.c \
+    $(SRC_D)\crypto\dso\dso_dl.c \
+    $(SRC_D)\crypto\dso\dso_dlfcn.c \
+    $(SRC_D)\crypto\dso\dso_err.c \
+    $(SRC_D)\crypto\dso\dso_lib.c \
+    $(SRC_D)\crypto\dso\dso_openssl.c \
+    $(SRC_D)\crypto\dso\dso_win32.c \
+    $(SRC_D)\crypto\dh\dh_asn1.c \
+    $(SRC_D)\crypto\dh\dh_gen.c \
+    $(SRC_D)\crypto\dh\dh_key.c \
+    $(SRC_D)\crypto\dh\dh_lib.c \
+    $(SRC_D)\crypto\dh\dh_check.c \
+    $(SRC_D)\crypto\dh\dh_err.c \
+    $(SRC_D)\crypto\dh\dh_depr.c \
+    $(SRC_D)\crypto\dh\dh_pmeth.c \
+    $(SRC_D)\crypto\dh\dh_ameth.c \
+    $(SRC_D)\crypto\dh\dh_rfc5114.c \
+    $(SRC_D)\crypto\dh\dh_kdf.c \
+    $(SRC_D)\crypto\dh\dh_backend.c \
+    $(SRC_D)\crypto\dh\dh_group_params.c \
+    $(SRC_D)\crypto\buffer\buffer.c \
+    $(SRC_D)\crypto\buffer\buf_err.c \
+    $(SRC_D)\crypto\bio\bio_lib.c \
+    $(SRC_D)\crypto\bio\bio_cb.c \
+    $(SRC_D)\crypto\bio\bio_err.c \
+    $(SRC_D)\crypto\bio\bss_mem.c \
+    $(SRC_D)\crypto\bio\bss_null.c \
+    $(SRC_D)\crypto\bio\bss_fd.c \
+    $(SRC_D)\crypto\bio\bss_file.c \
+    $(SRC_D)\crypto\bio\bss_sock.c \
+    $(SRC_D)\crypto\bio\bss_dgram.c \
+    $(SRC_D)\crypto\bio\bss_dgram_pair.c \
+    $(SRC_D)\crypto\bio\bf_null.c \
+    $(SRC_D)\crypto\bio\bf_buff.c \
+    $(SRC_D)\crypto\bio\bf_nbio.c \
+    $(SRC_D)\crypto\bio\bf_prefix.c \
+    $(SRC_D)\crypto\bio\bf_readbuff.c \
+    $(SRC_D)\crypto\bio\bio_addr.c \
+    $(SRC_D)\crypto\bio\bio_dump.c \
+    $(SRC_D)\crypto\bio\bio_meth.c \
+    $(SRC_D)\crypto\bio\bio_print.c \
+    $(SRC_D)\crypto\bio\bio_sock.c \
+    $(SRC_D)\crypto\bio\bio_sock2.c \
+    $(SRC_D)\crypto\bio\bss_bio.c \
+    $(SRC_D)\crypto\bio\bss_conn.c \
+    $(SRC_D)\crypto\bio\bss_log.c \
+    $(SRC_D)\crypto\bio\bss_acpt.c \
+    $(SRC_D)\crypto\bio\bss_core.c \
+    $(SRC_D)\crypto\bio\ossl_core_bio.c \
+    $(SRC_D)\crypto\stack\stack.c \
+    $(SRC_D)\crypto\lhash\lhash.c \
+    $(SRC_D)\crypto\lhash\lh_stats.c \
+    $(SRC_D)\crypto\rand\rand_lib.c \
+    $(SRC_D)\crypto\rand\rand_err.c \
+    $(SRC_D)\crypto\rand\rand_egd.c \
+    $(SRC_D)\crypto\rand\rand_win.c \
+    $(SRC_D)\crypto\rand\rand_pool.c \
+    $(SRC_D)\crypto\rand\rand_meth.c \
+    $(SRC_D)\crypto\rand\prov_seed.c \
+    $(SRC_D)\crypto\rand\rand_uniform.c \
+    $(SRC_D)\crypto\err\err.c \
+    $(SRC_D)\crypto\err\err_all.c \
+    $(SRC_D)\crypto\err\err_prn.c \
+    $(SRC_D)\crypto\err\err_blocks.c \
+    $(SRC_D)\crypto\err\err_mark.c \
+    $(SRC_D)\crypto\err\err_save.c \
+    $(SRC_D)\crypto\objects\o_names.c \
+    $(SRC_D)\crypto\objects\obj_dat.c \
+    $(SRC_D)\crypto\objects\obj_lib.c \
+    $(SRC_D)\crypto\objects\obj_err.c \
+    $(SRC_D)\crypto\objects\obj_xref.c \
+    $(SRC_D)\crypto\evp\encode.c \
+    $(SRC_D)\crypto\evp\digest.c \
+    $(SRC_D)\crypto\evp\evp_enc.c \
+    $(SRC_D)\crypto\evp\evp_key.c \
+    $(SRC_D)\crypto\evp\e_des.c \
+    $(SRC_D)\crypto\evp\e_bf.c \
+    $(SRC_D)\crypto\evp\e_idea.c \
+    $(SRC_D)\crypto\evp\e_des3.c \
+    $(SRC_D)\crypto\evp\e_rc4.c \
+    $(SRC_D)\crypto\evp\e_aes.c \
+    $(SRC_D)\crypto\evp\e_aes_cbc_hmac_sha1.c \
+    $(SRC_D)\crypto\evp\e_aes_cbc_hmac_sha256.c \
+    $(SRC_D)\crypto\evp\names.c \
+    $(SRC_D)\crypto\evp\e_xcbc_d.c \
+    $(SRC_D)\crypto\evp\e_rc2.c \
+    $(SRC_D)\crypto\evp\e_cast.c \
+    $(SRC_D)\crypto\evp\m_null.c \
+    $(SRC_D)\crypto\evp\p_open.c \
+    $(SRC_D)\crypto\evp\p_seal.c \
+    $(SRC_D)\crypto\evp\p_sign.c \
+    $(SRC_D)\crypto\evp\p_verify.c \
+    $(SRC_D)\crypto\evp\p_lib.c \
+    $(SRC_D)\crypto\evp\p_enc.c \
+    $(SRC_D)\crypto\evp\p_dec.c \
+    $(SRC_D)\crypto\evp\bio_md.c \
+    $(SRC_D)\crypto\evp\bio_b64.c \
+    $(SRC_D)\crypto\evp\bio_enc.c \
+    $(SRC_D)\crypto\evp\evp_err.c \
+    $(SRC_D)\crypto\evp\e_null.c \
+    $(SRC_D)\crypto\evp\c_allc.c \
+    $(SRC_D)\crypto\evp\c_alld.c \
+    $(SRC_D)\crypto\evp\evp_lib.c \
+    $(SRC_D)\crypto\evp\bio_ok.c \
+    $(SRC_D)\crypto\evp\evp_pkey.c \
+    $(SRC_D)\crypto\evp\evp_pbe.c \
+    $(SRC_D)\crypto\evp\p5_crpt.c \
+    $(SRC_D)\crypto\evp\p5_crpt2.c \
+    $(SRC_D)\crypto\evp\e_old.c \
+    $(SRC_D)\crypto\evp\pmeth_lib.c \
+    $(SRC_D)\crypto\evp\pmeth_gn.c \
+    $(SRC_D)\crypto\evp\m_sigver.c \
+    $(SRC_D)\crypto\evp\e_rc4_hmac_md5.c \
+    $(SRC_D)\crypto\evp\pbe_scrypt.c \
+    $(SRC_D)\crypto\evp\evp_cnf.c \
+    $(SRC_D)\crypto\evp\e_aria.c \
+    $(SRC_D)\crypto\evp\e_chacha20_poly1305.c \
+    $(SRC_D)\crypto\evp\e_sm4.c \
+    $(SRC_D)\crypto\evp\evp_rand.c \
+    $(SRC_D)\crypto\evp\evp_utils.c \
+    $(SRC_D)\crypto\evp\evp_fetch.c \
+    $(SRC_D)\crypto\evp\keymgmt_meth.c \
+    $(SRC_D)\crypto\evp\keymgmt_lib.c \
+    $(SRC_D)\crypto\evp\ec_support.c \
+    $(SRC_D)\crypto\evp\legacy_sha.c \
+    $(SRC_D)\crypto\evp\signature.c \
+    $(SRC_D)\crypto\evp\asymcipher.c \
+    $(SRC_D)\crypto\evp\legacy_md5.c \
+    $(SRC_D)\crypto\evp\p_legacy.c \
+    $(SRC_D)\crypto\evp\kdf_meth.c \
+    $(SRC_D)\crypto\evp\ctrl_params_translate.c \
+    $(SRC_D)\crypto\evp\exchange.c \
+    $(SRC_D)\crypto\evp\kem.c \
+    $(SRC_D)\crypto\evp\dh_ctrl.c \
+    $(SRC_D)\crypto\evp\dsa_ctrl.c \
+    $(SRC_D)\crypto\evp\ec_ctrl.c \
+    $(SRC_D)\crypto\evp\legacy_md4.c \
+    $(SRC_D)\crypto\evp\legacy_md5_sha1.c \
+    $(SRC_D)\crypto\evp\legacy_ripemd.c \
+    $(SRC_D)\crypto\evp\kdf_lib.c \
+    $(SRC_D)\crypto\evp\dh_support.c \
+    $(SRC_D)\crypto\evp\pmeth_check.c \
+    $(SRC_D)\crypto\evp\legacy_blake2.c \
+    $(SRC_D)\crypto\evp\mac_lib.c \
+    $(SRC_D)\crypto\evp\mac_meth.c \
+    $(SRC_D)\crypto\asn1\a_object.c \
+    $(SRC_D)\crypto\asn1\a_bitstr.c \
+    $(SRC_D)\crypto\asn1\a_utctm.c \
+    $(SRC_D)\crypto\asn1\a_gentm.c \
+    $(SRC_D)\crypto\asn1\a_time.c \
+    $(SRC_D)\crypto\asn1\a_int.c \
+    $(SRC_D)\crypto\asn1\a_octet.c \
+    $(SRC_D)\crypto\asn1\a_print.c \
+    $(SRC_D)\crypto\asn1\a_type.c \
+    $(SRC_D)\crypto\asn1\a_dup.c \
+    $(SRC_D)\crypto\asn1\a_d2i_fp.c \
+    $(SRC_D)\crypto\asn1\a_i2d_fp.c \
+    $(SRC_D)\crypto\asn1\a_utf8.c \
+    $(SRC_D)\crypto\asn1\a_sign.c \
+    $(SRC_D)\crypto\asn1\a_digest.c \
+    $(SRC_D)\crypto\asn1\a_verify.c \
+    $(SRC_D)\crypto\asn1\a_mbstr.c \
+    $(SRC_D)\crypto\asn1\a_strex.c \
+    $(SRC_D)\crypto\asn1\ameth_lib.c \
+    $(SRC_D)\crypto\asn1\x_algor.c \
+    $(SRC_D)\crypto\asn1\x_val.c \
+    $(SRC_D)\crypto\asn1\x_sig.c \
+    $(SRC_D)\crypto\asn1\x_bignum.c \
+    $(SRC_D)\crypto\asn1\x_long.c \
+    $(SRC_D)\crypto\asn1\x_info.c \
+    $(SRC_D)\crypto\asn1\x_spki.c \
+    $(SRC_D)\crypto\asn1\nsseq.c \
+    $(SRC_D)\crypto\asn1\d2i_pu.c \
+    $(SRC_D)\crypto\asn1\d2i_pr.c \
+    $(SRC_D)\crypto\asn1\t_pkey.c \
+    $(SRC_D)\crypto\asn1\t_spki.c \
+    $(SRC_D)\crypto\asn1\t_bitst.c \
+    $(SRC_D)\crypto\asn1\tasn_new.c \
+    $(SRC_D)\crypto\asn1\tasn_fre.c \
+    $(SRC_D)\crypto\asn1\tasn_enc.c \
+    $(SRC_D)\crypto\asn1\tasn_dec.c \
+    $(SRC_D)\crypto\asn1\tasn_utl.c \
+    $(SRC_D)\crypto\asn1\tasn_typ.c \
+    $(SRC_D)\crypto\asn1\tasn_prn.c \
+    $(SRC_D)\crypto\asn1\f_int.c \
+    $(SRC_D)\crypto\asn1\f_string.c \
+    $(SRC_D)\crypto\asn1\n_pkey.c \
+    $(SRC_D)\crypto\asn1\x_pkey.c \
+    $(SRC_D)\crypto\asn1\asn_mime.c \
+    $(SRC_D)\crypto\asn1\asn1_gen.c \
+    $(SRC_D)\crypto\asn1\asn1_parse.c \
+    $(SRC_D)\crypto\asn1\asn1_lib.c \
+    $(SRC_D)\crypto\asn1\asn1_err.c \
+    $(SRC_D)\crypto\asn1\bio_asn1.c \
+    $(SRC_D)\crypto\asn1\bio_ndef.c \
+    $(SRC_D)\crypto\asn1\a_strnid.c \
+    $(SRC_D)\crypto\asn1\evp_asn1.c \
+    $(SRC_D)\crypto\asn1\asn_pack.c \
+    $(SRC_D)\crypto\asn1\p5_pbe.c \
+    $(SRC_D)\crypto\asn1\p5_pbev2.c \
+    $(SRC_D)\crypto\asn1\p8_pkey.c \
+    $(SRC_D)\crypto\asn1\asn_moid.c \
+    $(SRC_D)\crypto\asn1\p5_scrypt.c \
+    $(SRC_D)\crypto\asn1\asn_mstbl.c \
+    $(SRC_D)\crypto\asn1\x_int64.c \
+    $(SRC_D)\crypto\asn1\i2d_evp.c \
+    $(SRC_D)\crypto\pem\pem_sign.c \
+    $(SRC_D)\crypto\pem\pem_info.c \
+    $(SRC_D)\crypto\pem\pem_lib.c \
+    $(SRC_D)\crypto\pem\pem_all.c \
+    $(SRC_D)\crypto\pem\pem_err.c \
+    $(SRC_D)\crypto\pem\pem_x509.c \
+    $(SRC_D)\crypto\pem\pem_xaux.c \
+    $(SRC_D)\crypto\pem\pem_oth.c \
+    $(SRC_D)\crypto\pem\pem_pk8.c \
+    $(SRC_D)\crypto\pem\pem_pkey.c \
+    $(SRC_D)\crypto\pem\pvkfmt.c \
+    $(SRC_D)\crypto\x509\x509_def.c \
+    $(SRC_D)\crypto\x509\x509_d2.c \
+    $(SRC_D)\crypto\x509\x509_r2x.c \
+    $(SRC_D)\crypto\x509\x509_cmp.c \
+    $(SRC_D)\crypto\x509\x509_obj.c \
+    $(SRC_D)\crypto\x509\x509_req.c \
+    $(SRC_D)\crypto\x509\x509spki.c \
+    $(SRC_D)\crypto\x509\x509_vfy.c \
+    $(SRC_D)\crypto\x509\x509_set.c \
+    $(SRC_D)\crypto\x509\x509cset.c \
+    $(SRC_D)\crypto\x509\x509rset.c \
+    $(SRC_D)\crypto\x509\x509_err.c \
+    $(SRC_D)\crypto\x509\x509name.c \
+    $(SRC_D)\crypto\x509\x509_v3.c \
+    $(SRC_D)\crypto\x509\x509_ext.c \
+    $(SRC_D)\crypto\x509\x509_att.c \
+    $(SRC_D)\crypto\x509\x509type.c \
+    $(SRC_D)\crypto\x509\x509_lu.c \
+    $(SRC_D)\crypto\x509\x_all.c \
+    $(SRC_D)\crypto\x509\x509_txt.c \
+    $(SRC_D)\crypto\x509\x509_trust.c \
+    $(SRC_D)\crypto\x509\by_file.c \
+    $(SRC_D)\crypto\x509\by_dir.c \
+    $(SRC_D)\crypto\x509\x509_vpm.c \
+    $(SRC_D)\crypto\x509\x_pubkey.c \
+    $(SRC_D)\crypto\x509\x_req.c \
+    $(SRC_D)\crypto\x509\x_attrib.c \
+    $(SRC_D)\crypto\x509\x_name.c \
+    $(SRC_D)\crypto\x509\x_x509.c \
+    $(SRC_D)\crypto\x509\x_x509a.c \
+    $(SRC_D)\crypto\x509\x_crl.c \
+    $(SRC_D)\crypto\x509\t_req.c \
+    $(SRC_D)\crypto\x509\t_x509.c \
+    $(SRC_D)\crypto\x509\t_crl.c \
+    $(SRC_D)\crypto\x509\x_exten.c \
+    $(SRC_D)\crypto\x509\by_store.c \
+    $(SRC_D)\crypto\x509\v3_bcons.c \
+    $(SRC_D)\crypto\x509\v3_bitst.c \
+    $(SRC_D)\crypto\x509\v3_conf.c \
+    $(SRC_D)\crypto\x509\v3_extku.c \
+    $(SRC_D)\crypto\x509\v3_ia5.c \
+    $(SRC_D)\crypto\x509\v3_lib.c \
+    $(SRC_D)\crypto\x509\v3_prn.c \
+    $(SRC_D)\crypto\x509\v3_utl.c \
+    $(SRC_D)\crypto\x509\v3err.c \
+    $(SRC_D)\crypto\x509\v3_genn.c \
+    $(SRC_D)\crypto\x509\v3_san.c \
+    $(SRC_D)\crypto\x509\v3_skid.c \
+    $(SRC_D)\crypto\x509\v3_akid.c \
+    $(SRC_D)\crypto\x509\v3_pku.c \
+    $(SRC_D)\crypto\x509\v3_int.c \
+    $(SRC_D)\crypto\x509\v3_enum.c \
+    $(SRC_D)\crypto\x509\v3_sxnet.c \
+    $(SRC_D)\crypto\x509\v3_cpols.c \
+    $(SRC_D)\crypto\x509\v3_crld.c \
+    $(SRC_D)\crypto\x509\v3_purp.c \
+    $(SRC_D)\crypto\x509\v3_info.c \
+    $(SRC_D)\crypto\x509\v3_akeya.c \
+    $(SRC_D)\crypto\x509\v3_pmaps.c \
+    $(SRC_D)\crypto\x509\v3_pcons.c \
+    $(SRC_D)\crypto\x509\v3_ncons.c \
+    $(SRC_D)\crypto\x509\v3_pcia.c \
+    $(SRC_D)\crypto\x509\v3_pci.c \
+    $(SRC_D)\crypto\x509\pcy_cache.c \
+    $(SRC_D)\crypto\x509\pcy_node.c \
+    $(SRC_D)\crypto\x509\pcy_data.c \
+    $(SRC_D)\crypto\x509\pcy_map.c \
+    $(SRC_D)\crypto\x509\pcy_tree.c \
+    $(SRC_D)\crypto\x509\pcy_lib.c \
+    $(SRC_D)\crypto\x509\v3_asid.c \
+    $(SRC_D)\crypto\x509\v3_addr.c \
+    $(SRC_D)\crypto\x509\v3_tlsf.c \
+    $(SRC_D)\crypto\x509\v3_admis.c \
+    $(SRC_D)\crypto\x509\v3_utf8.c \
+    $(SRC_D)\crypto\x509\v3_ist.c \
+    $(SRC_D)\crypto\x509\v3_no_rev_avail.c \
+    $(SRC_D)\crypto\x509\v3_soa_id.c \
+    $(SRC_D)\crypto\x509\v3_ind_iss.c \
+    $(SRC_D)\crypto\x509\v3_no_ass.c \
+    $(SRC_D)\crypto\x509\v3_single_use.c \
+    $(SRC_D)\crypto\x509\v3_group_ac.c \
+    $(SRC_D)\crypto\conf\conf_err.c \
+    $(SRC_D)\crypto\conf\conf_lib.c \
+    $(SRC_D)\crypto\conf\conf_api.c \
+    $(SRC_D)\crypto\conf\conf_def.c \
+    $(SRC_D)\crypto\conf\conf_mod.c \
+    $(SRC_D)\crypto\conf\conf_mall.c \
+    $(SRC_D)\crypto\conf\conf_sap.c \
+    $(SRC_D)\crypto\conf\conf_ssl.c \
+    $(SRC_D)\crypto\pkcs7\pk7_asn1.c \
+    $(SRC_D)\crypto\pkcs7\pk7_lib.c \
+    $(SRC_D)\crypto\pkcs7\pkcs7err.c \
+    $(SRC_D)\crypto\pkcs7\pk7_doit.c \
+    $(SRC_D)\crypto\pkcs7\pk7_smime.c \
+    $(SRC_D)\crypto\pkcs7\pk7_attr.c \
+    $(SRC_D)\crypto\pkcs7\pk7_mime.c \
+    $(SRC_D)\crypto\pkcs12\p12_add.c \
+    $(SRC_D)\crypto\pkcs12\p12_asn.c \
+    $(SRC_D)\crypto\pkcs12\p12_attr.c \
+    $(SRC_D)\crypto\pkcs12\p12_crpt.c \
+    $(SRC_D)\crypto\pkcs12\p12_crt.c \
+    $(SRC_D)\crypto\pkcs12\p12_decr.c \
+    $(SRC_D)\crypto\pkcs12\p12_init.c \
+    $(SRC_D)\crypto\pkcs12\p12_key.c \
+    $(SRC_D)\crypto\pkcs12\p12_kiss.c \
+    $(SRC_D)\crypto\pkcs12\p12_mutl.c \
+    $(SRC_D)\crypto\pkcs12\p12_utl.c \
+    $(SRC_D)\crypto\pkcs12\p12_npas.c \
+    $(SRC_D)\crypto\pkcs12\pk12err.c \
+    $(SRC_D)\crypto\pkcs12\p12_p8d.c \
+    $(SRC_D)\crypto\pkcs12\p12_p8e.c \
+    $(SRC_D)\crypto\pkcs12\p12_sbag.c \
+    $(SRC_D)\crypto\comp\comp_lib.c \
+    $(SRC_D)\crypto\comp\comp_err.c \
+    $(SRC_D)\crypto\cmac\cmac.c \
+    $(SRC_D)\crypto\ocsp\ocsp_asn.c \
+    $(SRC_D)\crypto\ocsp\ocsp_ext.c \
+    $(SRC_D)\crypto\ocsp\ocsp_http.c \
+    $(SRC_D)\crypto\ocsp\ocsp_lib.c \
+    $(SRC_D)\crypto\ocsp\ocsp_cl.c \
+    $(SRC_D)\crypto\ocsp\ocsp_srv.c \
+    $(SRC_D)\crypto\ocsp\ocsp_prn.c \
+    $(SRC_D)\crypto\ocsp\ocsp_vfy.c \
+    $(SRC_D)\crypto\ocsp\ocsp_err.c \
+    $(SRC_D)\crypto\ocsp\v3_ocsp.c \
+    $(SRC_D)\crypto\ui\ui_err.c \
+    $(SRC_D)\crypto\ui\ui_lib.c \
+    $(SRC_D)\crypto\ui\ui_openssl.c \
+    $(SRC_D)\crypto\ui\ui_util.c \
+    $(SRC_D)\crypto\ui\ui_null.c \
+    $(SRC_D)\crypto\o_init.c \
+    $(SRC_D)\crypto\srp\srp_lib.c \
+    $(SRC_D)\crypto\srp\srp_vfy.c \
+    $(SRC_D)\crypto\txt_db\txt_db.c \
+    $(SRC_D)\crypto\ec\ec_ameth.c \
+    $(SRC_D)\crypto\ec\ec_asn1.c \
+    $(SRC_D)\crypto\ec\ec_curve.c \
+    $(SRC_D)\crypto\ec\ec_cvt.c \
+    $(SRC_D)\crypto\ec\ec_err.c \
+    $(SRC_D)\crypto\ec\ec_check.c \
+    $(SRC_D)\crypto\ec\ec_key.c \
+    $(SRC_D)\crypto\ec\ec_lib.c \
+    $(SRC_D)\crypto\ec\ec_mult.c \
+    $(SRC_D)\crypto\ec\ec_oct.c \
+    $(SRC_D)\crypto\ec\ec_pmeth.c \
+    $(SRC_D)\crypto\ec\ec_print.c \
+    $(SRC_D)\crypto\ec\ec2_oct.c \
+    $(SRC_D)\crypto\ec\ec2_smpl.c \
+    $(SRC_D)\crypto\ec\eck_prn.c \
+    $(SRC_D)\crypto\ec\ecp_mont.c \
+    $(SRC_D)\crypto\ec\ecp_nist.c \
+    $(SRC_D)\crypto\ec\ecp_nistputil.c \
+    $(SRC_D)\crypto\ec\ecp_oct.c \
+    $(SRC_D)\crypto\ec\ecp_smpl.c \
+    $(SRC_D)\crypto\ec\ecdh_ossl.c \
+    $(SRC_D)\crypto\ec\ec_kmeth.c \
+    $(SRC_D)\crypto\ec\ecx_meth.c \
+    $(SRC_D)\crypto\ec\ecdsa_ossl.c \
+    $(SRC_D)\crypto\ec\curve25519.c \
+    $(SRC_D)\crypto\ec\ecdsa_sign.c \
+    $(SRC_D)\crypto\ec\ecdsa_vrf.c \
+    $(SRC_D)\crypto\ec\ec_backend.c \
+    $(SRC_D)\crypto\ec\ecx_key.c \
+    $(SRC_D)\crypto\ec\ecx_backend.c \
+    $(SRC_D)\crypto\ec\curve448\eddsa.c \
+    $(SRC_D)\crypto\ec\curve448\curve448.c \
+    $(SRC_D)\crypto\ec\curve448\scalar.c \
+    $(SRC_D)\crypto\ec\curve448\curve448_tables.c \
+    $(SRC_D)\crypto\ec\curve448\f_generic.c \
+    $(SRC_D)\crypto\ec\curve448\arch_32\f_impl32.c \
+    $(SRC_D)\crypto\cms\cms_sd.c \
+    $(SRC_D)\crypto\cms\cms_err.c \
+    $(SRC_D)\crypto\cms\cms_lib.c \
+    $(SRC_D)\crypto\cms\cms_env.c \
+    $(SRC_D)\crypto\cms\cms_asn1.c \
+    $(SRC_D)\crypto\cms\cms_kari.c \
+    $(SRC_D)\crypto\cms\cms_dd.c \
+    $(SRC_D)\crypto\cms\cms_enc.c \
+    $(SRC_D)\crypto\cms\cms_io.c \
+    $(SRC_D)\crypto\cms\cms_pwri.c \
+    $(SRC_D)\crypto\cms\cms_att.c \
+    $(SRC_D)\crypto\ct\ct_oct.c \
+    $(SRC_D)\crypto\ct\ct_prn.c \
+    $(SRC_D)\crypto\ct\ct_err.c \
+    $(SRC_D)\crypto\ct\ct_x509v3.c \
+    $(SRC_D)\crypto\ct\ct_sct.c \
+    $(SRC_D)\crypto\ct\ct_log.c \
+    $(SRC_D)\crypto\ct\ct_policy.c \
+    $(SRC_D)\crypto\ct\ct_sct_ctx.c \
+    $(SRC_D)\crypto\ct\ct_b64.c \
+    $(SRC_D)\crypto\ct\ct_vfy.c \
+    $(SRC_D)\crypto\async\async.c \
+    $(SRC_D)\crypto\async\async_err.c \
+    $(SRC_D)\crypto\async\async_wait.c \
+    $(SRC_D)\crypto\async\arch\async_win.c \
+    $(SRC_D)\crypto\ec\ecdh_kdf.c \
+    $(SRC_D)\crypto\store\store_lib.c \
+    $(SRC_D)\crypto\store\store_init.c \
+    $(SRC_D)\crypto\store\store_register.c \
+    $(SRC_D)\crypto\store\store_err.c \
+    $(SRC_D)\crypto\store\store_meth.c \
+    $(SRC_D)\crypto\store\store_result.c \
+    $(SRC_D)\crypto\aria\aria.c \
+    $(SRC_D)\crypto\sm3\sm3.c \
+    $(SRC_D)\crypto\sm3\legacy_sm3.c \
+    $(SRC_D)\crypto\sm4\sm4.c \
+    $(SRC_D)\crypto\poly1305\poly1305.c \
+    $(SRC_D)\crypto\siphash\siphash.c \
+    $(SRC_D)\crypto\sm2\sm2_crypt.c \
+    $(SRC_D)\crypto\sm2\sm2_sign.c \
+    $(SRC_D)\crypto\sm2\sm2_key.c \
+    $(SRC_D)\crypto\chacha\chacha_enc.c \
+    $(SRC_D)\crypto\http\http_err.c \
+    $(SRC_D)\crypto\http\http_client.c \
+    $(SRC_D)\crypto\http\http_lib.c \
+    $(SRC_D)\crypto\crmf\crmf_err.c \
+    $(SRC_D)\crypto\cmp\cmp_err.c \
+    $(SRC_D)\crypto\cmp\cmp_util.c \
+    $(SRC_D)\crypto\ess\ess_err.c \
+    $(SRC_D)\crypto\property\property_err.c \
+    $(SRC_D)\crypto\property\property.c \
+    $(SRC_D)\crypto\property\property_parse.c \
+    $(SRC_D)\crypto\property\property_string.c \
+    $(SRC_D)\crypto\property\defn_cache.c \
+    $(SRC_D)\crypto\property\property_query.c \
+    $(SRC_D)\crypto\encode_decode\decoder_meth.c \
+    $(SRC_D)\crypto\encode_decode\decoder_lib.c \
+    $(SRC_D)\crypto\encode_decode\decoder_pkey.c \
+    $(SRC_D)\crypto\encode_decode\encoder_meth.c \
+    $(SRC_D)\crypto\encode_decode\encoder_lib.c \
+    $(SRC_D)\crypto\encode_decode\encoder_pkey.c \
+    $(SRC_D)\crypto\ffc\ffc_params.c \
+    $(SRC_D)\crypto\ffc\ffc_params_validate.c \
+    $(SRC_D)\crypto\ffc\ffc_params_generate.c \
+    $(SRC_D)\crypto\ffc\ffc_key_generate.c \
+    $(SRC_D)\crypto\ffc\ffc_key_validate.c \
+    $(SRC_D)\crypto\ffc\ffc_dh.c \
+    $(SRC_D)\crypto\ffc\ffc_backend.c \
+    $(SRC_D)\crypto\hpke\hpke_util.c \
+    $(SRC_D)\crypto\thread\internal.c \
+    $(SRC_D)\crypto\thread\arch.c \
+    $(SRC_D)\crypto\thread\arch\thread_win.c \
+    $(SRC_D)\providers\prov_running.c \
+    $(SRC_D)\providers\nullprov.c \
+    $(SRC_D)\providers\baseprov.c \
+    $(SRC_D)\providers\defltprov.c \
+    $(SRC_D)\providers\common\bio_prov.c \
+    $(SRC_D)\providers\common\digest_to_nid.c \
+    $(SRC_D)\providers\common\provider_err.c \
+    $(SRC_D)\providers\common\provider_ctx.c \
+    $(SRC_D)\providers\common\provider_util.c \
+    $(SRC_D)\providers\common\provider_seeding.c \
+    $(SRC_D)\providers\common\securitycheck.c \
+    $(SRC_D)\providers\common\securitycheck_default.c \
+    $(SRC_D)\providers\common\capabilities.c \
+    $(SRC_D)\providers\common\der\der_dsa_key.c \
+    $(SRC_D)\providers\common\der\der_dsa_sig.c \
+    $(SRC_D)\providers\common\der\der_ec_key.c \
+    $(SRC_D)\providers\common\der\der_ec_sig.c \
+    $(SRC_D)\providers\common\der\der_ecx_key.c \
+    $(SRC_D)\providers\common\der\der_rsa_key.c \
+    $(SRC_D)\providers\common\der\der_rsa_sig.c \
+    $(SRC_D)\providers\common\der\der_sm2_key.c \
+    $(SRC_D)\providers\common\der\der_sm2_sig.c \
+    $(SRC_D)\providers\common\der\der_digests_gen.c \
+    $(SRC_D)\providers\common\der\der_dsa_gen.c \
+    $(SRC_D)\providers\common\der\der_ec_gen.c \
+    $(SRC_D)\providers\common\der\der_ecx_gen.c \
+    $(SRC_D)\providers\common\der\der_rsa_gen.c \
+    $(SRC_D)\providers\common\der\der_sm2_gen.c \
+    $(SRC_D)\providers\common\der\der_wrap_gen.c \
+    $(SRC_D)\providers\implementations\digests\blake2_prov.c \
+    $(SRC_D)\providers\implementations\digests\blake2b_prov.c \
+    $(SRC_D)\providers\implementations\digests\blake2s_prov.c \
+    $(SRC_D)\providers\implementations\digests\digestcommon.c \
+    $(SRC_D)\providers\implementations\digests\sha2_prov.c \
+    $(SRC_D)\providers\implementations\digests\sha3_prov.c \
+    $(SRC_D)\providers\implementations\digests\sm3_prov.c \
+    $(SRC_D)\providers\implementations\digests\md5_prov.c \
+    $(SRC_D)\providers\implementations\digests\ripemd_prov.c \
+    $(SRC_D)\providers\implementations\digests\md5_sha1_prov.c \
+    $(SRC_D)\providers\implementations\digests\null_prov.c \
+    $(SRC_D)\providers\implementations\rands\drbg.c \
+    $(SRC_D)\providers\implementations\rands\crngt.c \
+    $(SRC_D)\providers\implementations\rands\drbg_ctr.c \
+    $(SRC_D)\providers\implementations\rands\drbg_hash.c \
+    $(SRC_D)\providers\implementations\rands\drbg_hmac.c \
+    $(SRC_D)\providers\implementations\rands\seed_src.c \
+    $(SRC_D)\providers\implementations\rands\test_rng.c \
+    $(SRC_D)\providers\implementations\ciphers\ciphercommon_block.c \
+    $(SRC_D)\providers\implementations\ciphers\ciphercommon_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\ciphercommon_gcm.c \
+    $(SRC_D)\providers\implementations\ciphers\ciphercommon_gcm_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\ciphercommon_ccm.c \
+    $(SRC_D)\providers\implementations\ciphers\ciphercommon_ccm_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_null.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes.c \
+    $(SRC_D)\providers\implementations\ciphers\ciphercommon.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_cts.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aria.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aria_ccm.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aria_ccm_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes_xts.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes_xts_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes_ocb.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes_ocb_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes_siv.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes_siv_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes_gcm.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes_gcm_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes_gcm_siv.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes_gcm_siv_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes_gcm_siv_polyval.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes_ccm.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes_ccm_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes_wrp.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes_cbc_hmac_sha.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes_cbc_hmac_sha1_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes_cbc_hmac_sha256_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aes_xts_fips.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aria_gcm.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aria_gcm_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_aria_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_tdes.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_tdes_common.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_tdes_default.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_tdes_default_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_tdes_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_tdes_wrap.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_tdes_wrap_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_sm4.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_sm4_ccm.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_sm4_gcm.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_sm4_ccm_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_sm4_gcm_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_sm4_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_sm4_xts.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_sm4_xts_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_chacha20.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_chacha20_hw.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_chacha20_poly1305.c \
+    $(SRC_D)\providers\implementations\ciphers\cipher_chacha20_poly1305_hw.c \
+    $(SRC_D)\providers\implementations\macs\blake2b_mac.c \
+    $(SRC_D)\providers\implementations\macs\blake2s_mac.c \
+    $(SRC_D)\providers\implementations\macs\cmac_prov.c \
+    $(SRC_D)\providers\implementations\macs\gmac_prov.c \
+    $(SRC_D)\providers\implementations\macs\hmac_prov.c \
+    $(SRC_D)\providers\implementations\macs\kmac_prov.c \
+    $(SRC_D)\providers\implementations\macs\poly1305_prov.c \
+    $(SRC_D)\providers\implementations\macs\siphash_prov.c \
+    $(SRC_D)\providers\implementations\kdfs\hkdf.c \
+    $(SRC_D)\providers\implementations\kdfs\kbkdf.c \
+    $(SRC_D)\providers\implementations\kdfs\krb5kdf.c \
+    $(SRC_D)\providers\implementations\kdfs\pbkdf1.c \
+    $(SRC_D)\providers\implementations\kdfs\pbkdf2.c \
+    $(SRC_D)\providers\implementations\kdfs\pbkdf2_fips.c \
+    $(SRC_D)\providers\implementations\kdfs\pkcs12kdf.c \
+    $(SRC_D)\providers\implementations\kdfs\scrypt.c \
+    $(SRC_D)\providers\implementations\kdfs\sshkdf.c \
+    $(SRC_D)\providers\implementations\kdfs\sskdf.c \
+    $(SRC_D)\providers\implementations\kdfs\tls1_prf.c \
+    $(SRC_D)\providers\implementations\kdfs\x942kdf.c \
+    $(SRC_D)\providers\implementations\kdfs\hmacdrbg_kdf.c \
+    $(SRC_D)\providers\implementations\kdfs\argon2.c \
+    $(SRC_D)\providers\implementations\exchange\dh_exch.c \
+    $(SRC_D)\providers\implementations\exchange\ecdh_exch.c \
+    $(SRC_D)\providers\implementations\exchange\ecx_exch.c \
+    $(SRC_D)\providers\implementations\exchange\kdf_exch.c \
+    $(SRC_D)\providers\implementations\signature\dsa_sig.c \
+    $(SRC_D)\providers\implementations\signature\ecdsa_sig.c \
+    $(SRC_D)\providers\implementations\signature\eddsa_sig.c \
+    $(SRC_D)\providers\implementations\signature\mac_legacy_sig.c \
+    $(SRC_D)\providers\implementations\signature\rsa_sig.c \
+    $(SRC_D)\providers\implementations\signature\sm2_sig.c \
+    $(SRC_D)\providers\implementations\asymciphers\rsa_enc.c \
+    $(SRC_D)\providers\implementations\asymciphers\sm2_enc.c \
+    $(SRC_D)\providers\implementations\kem\rsa_kem.c \
+    $(SRC_D)\providers\implementations\kem\ec_kem.c \
+    $(SRC_D)\providers\implementations\kem\kem_util.c \
+    $(SRC_D)\providers\implementations\kem\ecx_kem.c \
+    $(SRC_D)\providers\implementations\keymgmt\dh_kmgmt.c \
+    $(SRC_D)\providers\implementations\keymgmt\dsa_kmgmt.c \
+    $(SRC_D)\providers\implementations\keymgmt\ec_kmgmt.c \
+    $(SRC_D)\providers\implementations\keymgmt\ecx_kmgmt.c \
+    $(SRC_D)\providers\implementations\keymgmt\kdf_legacy_kmgmt.c \
+    $(SRC_D)\providers\implementations\keymgmt\mac_legacy_kmgmt.c \
+    $(SRC_D)\providers\implementations\keymgmt\rsa_kmgmt.c \
+    $(SRC_D)\providers\implementations\encode_decode\decode_der2key.c \
+    $(SRC_D)\providers\implementations\encode_decode\decode_epki2pki.c \
+    $(SRC_D)\providers\implementations\encode_decode\decode_msblob2key.c \
+    $(SRC_D)\providers\implementations\encode_decode\decode_pem2der.c \
+    $(SRC_D)\providers\implementations\encode_decode\decode_pvk2key.c \
+    $(SRC_D)\providers\implementations\encode_decode\decode_spki2typespki.c \
+    $(SRC_D)\providers\implementations\encode_decode\encode_key2any.c \
+    $(SRC_D)\providers\implementations\encode_decode\encode_key2blob.c \
+    $(SRC_D)\providers\implementations\encode_decode\encode_key2ms.c \
+    $(SRC_D)\providers\implementations\encode_decode\encode_key2text.c \
+    $(SRC_D)\providers\implementations\encode_decode\endecoder_common.c \
+    $(SRC_D)\providers\implementations\storemgmt\file_store.c \
+    $(SRC_D)\providers\implementations\storemgmt\file_store_any2obj.c \
+    $(SRC_D)\providers\implementations\storemgmt\winstore_store.c
 
 $(OBJ_D)\des_586.obj: $(SRC_D)\crypto\des\asm\des_586.asm
     $(ASM) -o$(OBJ_D)\des_586.obj $(SRC_D)\crypto\des\asm\des_586.asm
@@ -2936,14 +1250,20 @@ $(OBJ_D)\sha256_586.obj: $(SRC_D)\crypto\sha\asm\sha256_586.asm
 $(OBJ_D)\sha512_586.obj: $(SRC_D)\crypto\sha\asm\sha512_586.asm
     $(ASM) -o$(OBJ_D)\sha512_586.obj $(SRC_D)\crypto\sha\asm\sha512_586.asm
 
-$(O_SSL): $(SSLOBJ)
+$(O_SSL):
     -if exist $(O_SSL) $(RM) $(O_SSL)
+    $(CC) $(LIB_CFLAGS) -output-dir $(TMP_D) @&&!
+$(SSLSRC)
+!
     $(MKLIB) /P256 /C $(O_SSL) @&&!
-$(**)
+$(SSLOBJ)
 !
 
-$(O_CRYPTO): $(CRYPTOOBJ)
+$(O_CRYPTO): $(CRYPTOOBJASM)
     -if exist $(O_CRYPTO) $(RM) $(O_CRYPTO)
+    $(CC) $(LIB_CFLAGS) -output-dir $(TMP_D) @&&!
+$(CRYPTOSRC)
+!
     $(MKLIB) /P2048 /C $(O_CRYPTO) @&&!
-$(**)
+$(CRYPTOOBJ) $(**)
 !

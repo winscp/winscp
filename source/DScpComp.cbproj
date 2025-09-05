@@ -45,6 +45,7 @@
         <_TCHARMapping>wchar_t</_TCHARMapping>
         <AllPackageLibs>rtl.lib;vcl.lib;vclx.lib</AllPackageLibs>
         <BCC_AllWarnings>true</BCC_AllWarnings>
+        <BCC_EnableBatchCompilation>true</BCC_EnableBatchCompilation>
         <BCC_ExtendedErrorInfo>true</BCC_ExtendedErrorInfo>
         <BCC_OptimizeForSpeed>true</BCC_OptimizeForSpeed>
         <BCC_UseClassicCompiler>false</BCC_UseClassicCompiler>
@@ -64,7 +65,9 @@
         <Multithreaded>true</Multithreaded>
         <OutputExt>bpl</OutputExt>
         <ProjectType>CppPackage</ProjectType>
+        <RunBCCOutOfProcess>true</RunBCCOutOfProcess>
         <SanitizedProjectName>DScpComp</SanitizedProjectName>
+        <SubProcessesNumber>8</SubProcessesNumber>
         <TLIB_PageSize>64</TLIB_PageSize>
         <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
