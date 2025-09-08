@@ -453,15 +453,9 @@ end;
 
 function SizeFromSRec(const SRec: SysUtils.TSearchRec): Int64;
 begin
-  with SRec do
-  begin
-    // Hopefuly TSearchRec.FindData is available with all Windows versions
-    {if Size >= 0 then Result := Size
-      else}
 {$WARNINGS OFF}
-    Result := Int64(FindData.nFileSizeHigh) shl 32 + FindData.nFileSizeLow;
+  Result := Int64(SRec.FindData.nFileSizeHigh) shl 32 + SRec.FindData.nFileSizeLow;
 {$WARNINGS ON}
-  end;
 end;
 
 function DropLink(Item: PFDDListItem; TargetPath: string): Boolean;
@@ -724,14 +718,10 @@ begin
   FConfirmOverwrite := True;
   DDLinkOnExeDrag := True;
 
-  with DragDropFilesEx do
-  begin
-    SourceEffects := DragSourceEffects;
-    TargetEffects := [deCopy, deMove, deLink];
-
-    ShellExtensions.DragDropHandler := True;
-    ShellExtensions.DropHandler := True;
-  end;
+  DragDropFilesEx.SourceEffects := DragSourceEffects;
+  DragDropFilesEx.TargetEffects := [deCopy, deMove, deLink];
+  DragDropFilesEx.ShellExtensions.DragDropHandler := True;
+  DragDropFilesEx.ShellExtensions.DropHandler := True;
 
   FIconUpdateSet := TDictionary<Integer, Boolean>.Create;
   FIconUpdateQueue := TQueue<TIconUpdateSchedule>.Create;
@@ -945,46 +935,44 @@ var
 begin
   Item := TListItem.Create(Items);
   New(PItem);
-  with PItem^ do
-  begin
-    // must be set as soon as possible, at least before Caption is set,
-    // because if come column is "autosized" setting Caption invokes some callbacks
-    Item.Data := PItem;
+  // must be set as soon as possible, at least before Caption is set,
+  // because if come column is "autosized" setting Caption invokes some callbacks
+  Item.Data := PItem;
 
-    FileName := SRec.Name;
-    FileExt := UpperCase(ExtractFileExt(Srec.Name));
-    FileExt := Copy(FileExt, 2, Length(FileExt) - 1);
-    DisplayName := FileName;
+  PItem^.FileName := SRec.Name;
+  PItem^.FileExt := UpperCase(ExtractFileExt(SRec.Name));
+  PItem^.FileExt := Copy(PItem^.FileExt, 2, Length(PItem^.FileExt) - 1);
+  PItem^.DisplayName := PItem^.FileName;
 {$WARNINGS OFF}
-    Attr := SRec.FindData.dwFileAttributes;
+  PItem^.Attr := SRec.FindData.dwFileAttributes;
 {$WARNINGS ON}
-    IsParentDir := False;
-    IsDirectory := ((Attr and SysUtils.faDirectory) <> 0);
-    IsRecycleBin := IsDirectory and (Length(Path) = 2) and
-      Bool(Attr and SysUtils.faSysFile) and
-      ((UpperCase(FileName) = 'RECYCLED') or (UpperCase(FileName) = 'RECYCLER'));
-    if not IsDirectory then Size := SizeFromSRec(SRec)
-      else Size := -1;
+  PItem^.IsParentDir := False;
+  PItem^.IsDirectory := ((PItem^.Attr and SysUtils.faDirectory) <> 0);
+  PItem^.IsRecycleBin := PItem^.IsDirectory and (Length(Path) = 2) and
+    Bool(PItem^.Attr and SysUtils.faSysFile) and
+    ((UpperCase(PItem^.FileName) = 'RECYCLED') or (UpperCase(PItem^.FileName) = 'RECYCLER'));
+  if not PItem^.IsDirectory then PItem^.Size := SizeFromSRec(SRec)
+    else PItem^.Size := -1;
 
 {$WARNINGS OFF}
-    FileTime := SRec.FindData.ftLastWriteTime;
+  PItem^.FileTime := SRec.FindData.ftLastWriteTime;
 {$WARNINGS ON}
-    Empty := True;
-    IconEmpty := True;
-    Thumbnail := nil;
-    ThumbnailSize := ThumbnailNotNeeded;
-    if Size > 0 then Inc(FFilesSize, Size);
-    PIDL := nil;
-    CalculatedSize := -1;
+  PItem^.Empty := True;
+  PItem^.IconEmpty := True;
+  PItem^.Thumbnail := nil;
+  PItem^.ThumbnailSize := ThumbnailNotNeeded;
+  if PItem^.Size > 0 then Inc(FFilesSize, PItem^.Size);
+  PItem^.PIDL := nil;
+  PItem^.CalculatedSize := -1;
 
-    // Need to add before assigning to .Caption and .OverlayIndex,
-    // as the setters these call back to owning view.
-    // Assignment is redundant
-    Item := Items.AddItem(Item);
+  // Need to add before assigning to .Caption and .OverlayIndex,
+  // as the setters these call back to owning view.
+  // Assignment is redundant
+  Item := Items.AddItem(Item);
 
-    if not Self.IsRecycleBin then Item.Caption := SRec.Name;
-    if FileExt = 'LNK' then Item.OverlayIndex := 1;
-  end;
+  if not Self.IsRecycleBin then Item.Caption := SRec.Name;
+  if PItem^.FileExt = 'LNK' then Item.OverlayIndex := 1;
+
   if SelectNewFiles then Item.Selected := True;
 
   Result := Item;
@@ -1001,35 +989,33 @@ begin
   New(PItem);
   if FindFirst(ApiPath(FPath), faAnyFile, SRec) = 0 then
     FindClose(SRec);
-  with PItem^ do
-  begin
-    Item.Data := PItem;
-    FileName := '..';
-    FileExt := '';
-    DisplayName := '..';
-    Attr := SRec.Attr;
-    IsDirectory := True;
-    IsRecycleBin := False;
-    IsParentDir := True;
-    Size := -1;
-    CalculatedSize := -1;
 
-    Item.Caption := '..';
+  Item.Data := PItem;
+  PItem^.FileName := '..';
+  PItem^.FileExt := '';
+  PItem^.DisplayName := '..';
+  PItem^.Attr := SRec.Attr;
+  PItem^.IsDirectory := True;
+  PItem^.IsRecycleBin := False;
+  PItem^.IsParentDir := True;
+  PItem^.Size := -1;
+  PItem^.CalculatedSize := -1;
+
+  Item.Caption := '..';
 
 {$WARNINGS OFF}
-    FileTime := SRec.FindData.ftLastWriteTime;
+  PItem^.FileTime := SRec.FindData.ftLastWriteTime;
 {$WARNINGS ON}
-    Empty := True;
-    IconEmpty := False;
-    Thumbnail := nil;
-    ThumbnailSize := ThumbnailNotNeeded;
-    PIDL := nil;
+  PItem^.Empty := True;
+  PItem^.IconEmpty := False;
+  PItem^.Thumbnail := nil;
+  PItem^.ThumbnailSize := ThumbnailNotNeeded;
+  PItem^.PIDL := nil;
 
-    ImageIndex := StdDirIcon;
+  PItem^.ImageIndex := StdDirIcon;
 
-    TypeName := SParentDir;
-    Empty := False;
-  end;
+  PItem^.TypeName := SParentDir;
+  PItem^.Empty := False;
 end; {AddParentDirItem}
 
 procedure TDirView.LoadFromRecycleBin(Dir: string);
@@ -1353,19 +1339,18 @@ begin
 
         {Update TDriveView's subdir indicator:}
         if Assigned(FDriveView) and (FDriveType = DRIVE_REMOTE) then
-          with TDriveView(FDriveView) do
+        begin
+          Node := TDriveView(FDriveView).FindNodeToPath(PathName);
+          if Assigned(Node) and Assigned(Node.Data) and
+             not TNodeData(Node.Data).Scanned then
           begin
-            Node := FindNodeToPath(PathName);
-            if Assigned(Node) and Assigned(Node.Data) and
-               not TNodeData(Node.Data).Scanned then
+            if DirsCount = 0 then
             begin
-              if DirsCount = 0 then
-              begin
-                Node.HasChildren := False;
-                TNodeData(Node.Data).Scanned := True;
-              end;
+              Node.HasChildren := False;
+              TNodeData(Node.Data).Scanned := True;
             end;
           end;
+        end;
       end; {not isRecycleBin}
     end
       else FIsRecycleBin := False;
@@ -1437,14 +1422,12 @@ begin
           for Index := 0 to Items.Count - 1 do
           begin
             New(PEFile);
-            with PFileRec(Items[Index].Data)^ do
-            begin
-              PEFile^.iSize := Size;
-              PEFile^.iAttr := Attr;
-              PEFile^.iFileTime := FileTime;
-              PEFile^.iIndex := Index;
-            end;
-            EItems.AddObject(PFileRec(Items[Index].Data)^.FileName, Pointer(PEFile));
+            var PItem := PFileRec(Items[Index].Data);
+            PEFile^.iSize := PItem.Size;
+            PEFile^.iAttr := PItem.Attr;
+            PEFile^.iFileTime := PItem.FileTime;
+            PEFile^.iIndex := Index;
+            EItems.AddObject(PItem^.FileName, Pointer(PEFile));
           end;
           EItems.Sort;
 
@@ -1467,30 +1450,29 @@ begin
                   else
                 begin
                   FSize := SizeFromSRec(SRec);
-                  with PEFileRec(EItems.Objects[ItemIndex])^ do
+                  var PEFile2 := PEFileRec(EItems.Objects[ItemIndex]);
 {$WARNINGS OFF}
-                  if (iSize <> FSize) or (iAttr <> SRec.Attr) or
-                     not CompareMem(@iFileTime, @SRec.FindData.ftLastWriteTime,
-                        SizeOf(iFileTime)) Then
+                  if (PEFile2^.iSize <> FSize) or (PEFile2^.iAttr <> SRec.Attr) or
+                     not CompareMem(@PEFile2^.iFileTime, @SRec.FindData.ftLastWriteTime,
+                        SizeOf(PEFile2^.iFileTime)) Then
 {$WARNINGS ON}
                   begin
-                    with PFileRec(Items[iIndex].Data)^ do
+                    var PItem := PFileRec(Items[PEFile2^.iIndex].Data);
+                    Dec(FFilesSize, PItem^.Size);
+                    Inc(FFilesSize, FSize);
+                    if Items[PEFile2^.iIndex].Selected then
                     begin
-                      Dec(FFilesSize, Size);
-                      Inc(FFilesSize, FSize);
-                      if Items[iIndex].Selected then
-                      begin
-                        Dec(FFilesSelSize, Size);
-                        Inc(FFilesSelSize, FSize);
-                      end;
-
-                      Size := FSize;
-                      Attr := SRec.Attr;
-{$WARNINGS OFF}
-                      FileTime := SRec.FindData.ftLastWriteTime;
-{$WARNINGS ON}
+                      Dec(FFilesSelSize, PItem^.Size);
+                      Inc(FFilesSelSize, FSize);
                     end;
-                    InvalidateItem(Items[iIndex]);
+
+                    PItem^.Size := FSize;
+                    PItem^.Attr := SRec.Attr;
+{$WARNINGS OFF}
+                    PItem^.FileTime := SRec.FindData.ftLastWriteTime;
+{$WARNINGS ON}
+
+                    InvalidateItem(Items[PEFile2^.iIndex]);
                     AnyUpdate := True;
                   end;
                   FItems.Add(Srec.Name);
@@ -1547,12 +1529,9 @@ begin
               end;
               AnyUpdate := True;
 
-              with PFileRec(Items[Index].Data)^ do
-              begin
-                Dec(FFilesSize, Size);
-                // No need to decrease FFilesSelSize here as LVIF_STATE/deselect
-                // is called for item being deleted
-              end;
+              Dec(FFilesSize, PFileRec(Items[Index].Data)^.Size);
+              // No need to decrease FFilesSelSize here as LVIF_STATE/deselect
+              // is called for item being deleted
 
               Items[Index].Delete;
             end;
@@ -1795,46 +1774,44 @@ var
 begin
   Assert(Assigned(Item) and Assigned(Item.Data));
   FileRec := PFileRec(Item.Data);
-  with FileRec^ do
+
+  IsSpecialExt := MatchesFileExt(FileRec^.FileExt, SpecialExtensions);
+
+  FetchIcon := FileRec^.IconEmpty and (FetchIcon or not IsSpecialExt);
+
+  if FileRec^.Empty or FetchIcon then
   begin
-    IsSpecialExt := MatchesFileExt(FileExt, SpecialExtensions);
-
-    FetchIcon := IconEmpty and (FetchIcon or not IsSpecialExt);
-
-    if Empty or FetchIcon then
+    FilePath := FPath + '\' + FileRec^.FileName;
+    if FetchIcon then
     begin
-      FilePath := FPath + '\' + FileName;
-      if FetchIcon then
-      begin
-        DoFetchIcon(FilePath, IsSpecialExt, True, FileRec, ImageIndex, TypeName);
-        IconEmpty := False;
+      DoFetchIcon(FilePath, IsSpecialExt, True, FileRec, FileRec^.ImageIndex, FileRec^.TypeName);
+      FileRec^.IconEmpty := False;
 
-        if Length(TypeName) = 0 then
-          TypeName := Format(STextFileExt, [FileExt]);
-      end
-        else
-      begin
-        try
-          if IsDirectory then FileAttributes := FILE_ATTRIBUTE_DIRECTORY
-            else FileAttributes := FILE_ATTRIBUTE_NORMAL;
+      if Length(FileRec^.TypeName) = 0 then
+        FileRec^.TypeName := Format(STextFileExt, [FileRec^.FileExt]);
+    end
+      else
+    begin
+      try
+        if FileRec^.IsDirectory then FileAttributes := FILE_ATTRIBUTE_DIRECTORY
+          else FileAttributes := FILE_ATTRIBUTE_NORMAL;
 
-          GetFileInfo(
-            False, nil, FilePath, False, FileAttributes, FileInfo,
-            SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES);
-          TypeName := FileInfo.szTypeName;
-        except
-          {Capture exceptions generated by the shell}
-          TypeName := '';
-        end;
-
-        if IconEmpty then
-        begin
-          if FileExt = ExeExtension then ImageIndex := DefaultExeIcon
-            else ImageIndex := UnknownFileIcon;
-        end;
+        GetFileInfo(
+          False, nil, FilePath, False, FileAttributes, FileInfo,
+          SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES);
+        FileRec^.TypeName := FileInfo.szTypeName;
+      except
+        {Capture exceptions generated by the shell}
+        FileRec^.TypeName := '';
       end;
-      Empty := False;
+
+      if FileRec^.IconEmpty then
+      begin
+        if FileRec^.FileExt = ExeExtension then FileRec^.ImageIndex := DefaultExeIcon
+          else FileRec^.ImageIndex := UnknownFileIcon;
+      end;
     end;
+    FileRec^.Empty := False;
   end;
 end; {GetDisplayData}
 
@@ -2087,12 +2064,10 @@ begin
             Items.BeginUpdate;
             Updating := True;
           end;
-          with PFileRec(Item.Data)^ do
-          begin
-            Dec(FFilesSize, Size);
-            // No need to decrease FFilesSelSize here as LVIF_STATE/deselect
-            // is called for item being deleted
-          end;
+          Dec(FFilesSize, PFileRec(Item.Data)^.Size);
+          // No need to decrease FFilesSelSize here as LVIF_STATE/deselect
+          // is called for item being deleted
+
           Item.Delete;
           Updated := True;
         end;
@@ -2148,13 +2123,11 @@ begin
 
     if WatchForChanges then StartWatchThread;
     if Assigned(DriveView) then
-      with DriveView do
-      begin
-        if Assigned(Selected) then
-          ValidateDirectory(Selected);
-        TDriveView(FDriveView).StartWatchThread;
-      end;
-
+    begin
+      if Assigned(DriveView.Selected) then
+        DriveView.ValidateDirectory(DriveView.Selected);
+      TDriveView(FDriveView).StartWatchThread;
+    end;
   end;
 end; {CreateDirectory}
 
@@ -2343,64 +2316,62 @@ var
   FetchIcon: Boolean;
 begin
   Assert(Assigned(ListItem) and Assigned(ListItem.Data));
-  with PFileRec(ListItem.Data)^, DispInfo  do
+  var PItem := PFileRec(ListItem.Data);
+  {Fetch display data of current file:}
+  if PItem^.Empty then
   begin
-    {Fetch display data of current file:}
-    if Empty then
-    begin
-      FetchIcon :=
-        IconEmpty and
-        (not FUseIconUpdateThread or (ViewStyle <> vsReport));
-      GetDisplayData(ListItem, FetchIcon);
-    end;
+    FetchIcon :=
+      PItem^.IconEmpty and
+      (not FUseIconUpdateThread or (ViewStyle <> vsReport));
+    GetDisplayData(ListItem, FetchIcon);
+  end;
 
-    if IconEmpty and
-       (not FUseIconUpdateThread or
-        (ViewStyle <> vsReport)) and
-       ((DispInfo.Mask and LVIF_IMAGE) <> 0) then
-      GetDisplayData(ListItem, True);
+  if PItem^.IconEmpty and
+     (not FUseIconUpdateThread or
+      (ViewStyle <> vsReport)) and
+     ((DispInfo.mask and LVIF_IMAGE) <> 0) then
+    GetDisplayData(ListItem, True);
 
-    {Set IconUpdatethread :}
-    if IconEmpty and UseIconUpdateThread and (not FIsRecycleBin) then
-    begin
-      IconUpdateEnqueue(ListItem);
-    end;
+  {Set IconUpdatethread :}
+  if PItem^.IconEmpty and UseIconUpdateThread and (not FIsRecycleBin) then
+  begin
+    IconUpdateEnqueue(ListItem);
+  end;
 
-    if (DispInfo.Mask and LVIF_TEXT) <> 0 then
+  if (DispInfo.Mask and LVIF_TEXT) <> 0 then
+  begin
+    Value := '';
+    if DispInfo.iSubItem = 0 then Value := PItem^.DisplayName
+      else
+    if DispInfo.iSubItem < DirViewColumns then
     begin
-      Value := '';
-      if iSubItem = 0 then Value := DisplayName
-        else
-      if iSubItem < DirViewColumns then
-      begin
-        case TDirViewCol(iSubItem) of
-          dvSize: {Size:     }
-            begin
-              if not IsDirectory then ASize := Size
-                else ASize := CalculatedSize;
-              if ASize >= 0 then Value := FormatPanelBytes(ASize, FormatSizeBytes);
-            end;
-          dvType: {FileType: }
-            Value := TypeName;
-          dvChanged: {Date}
-            // Keep consistent with UserModificationStr
-            Value := FormatDateTime('ddddd tt', FileTimeToDateTime(FileTime));
-          dvAttr: {Attrs:}
-            Value := GetAttrString(Attr);
-          dvExt:
-            Value := FileExt;
-        end {Case}
-      end; {SubItem}
-      StrPLCopy(pszText, Value, cchTextMax - 1);
-    end;
+      case TDirViewCol(DispInfo.iSubItem) of
+        dvSize: {Size:     }
+          begin
+            if not PItem^.IsDirectory then ASize := PItem^.Size
+              else ASize := PItem^.CalculatedSize;
+            if ASize >= 0 then Value := FormatPanelBytes(ASize, FormatSizeBytes);
+          end;
+        dvType: {FileType: }
+          Value := PItem^.TypeName;
+        dvChanged: {Date}
+          // Keep consistent with UserModificationStr
+          Value := FormatDateTime('ddddd tt', FileTimeToDateTime(PItem^.FileTime));
+        dvAttr: {Attrs:}
+          Value := GetAttrString(PItem^.Attr);
+        dvExt:
+          Value := PItem^.FileExt;
+      end {Case}
+    end; {SubItem}
+    StrPLCopy(DispInfo.pszText, Value, DispInfo.cchTextMax - 1);
+  end;
 
-    {Set display icon of current file:}
-    if (iSubItem = 0) and ((DispInfo.Mask and LVIF_IMAGE) <> 0) then
-    begin
-      iImage := PFileRec(ListItem.Data).ImageIndex;
-      Mask := Mask or LVIF_DI_SETITEM;
-    end;
-  end; {With PFileRec Do}
+  {Set display icon of current file:}
+  if (DispInfo.iSubItem = 0) and ((DispInfo.mask and LVIF_IMAGE) <> 0) then
+  begin
+    DispInfo.iImage := PItem^.ImageIndex;
+    DispInfo.mask := DispInfo.mask or LVIF_DI_SETITEM;
+  end;
 end;
 
 function TDirView.ItemColor(Item: TListItem): TColor;
@@ -2663,16 +2634,14 @@ begin
     if not Assigned(FDiscMonitor) then
     begin
       FDiscMonitor := TDiscMonitor.Create(Self);
-      with FDiscMonitor do
-      begin
-        ChangeDelay := msThreadChangeDelay;
-        SubTree := False;
-        Filters := [moDirName, moFileName, moSize, moAttributes, moLastWrite];
-        SetDirectory(PathName);
-        OnChange := ChangeDetected;
-        OnInvalid := ChangeInvalid;
-        Open;
-      end;
+
+      FDiscMonitor.ChangeDelay := msThreadChangeDelay;
+      FDiscMonitor.SubTree := False;
+      FDiscMonitor.Filters := [moDirName, moFileName, moSize, moAttributes, moLastWrite];
+      FDiscMonitor.SetDirectory(PathName);
+      FDiscMonitor.OnChange := ChangeDetected;
+      FDiscMonitor.OnInvalid := ChangeInvalid;
+      FDiscMonitor.Open;
     end
       else
     begin
@@ -2907,16 +2876,18 @@ end;
 procedure TDirView.Delete(Item: TListItem);
 begin
   if Assigned(Item) and Assigned(Item.Data) and not (csRecreating in ControlState) then
-    with PFileRec(Item.Data)^ do
-    begin
-      SetLength(FileName, 0);
-      SetLength(TypeName, 0);
-      SetLength(DisplayName, 0);
-      if Assigned(PIDL) then FreePIDL(PIDL);
-      FreeAndNil(Thumbnail);
-      Dispose(PFileRec(Item.Data));
-      Item.Data := nil;
-    end;
+  begin
+    var PItem := PFileRec(Item.Data);
+    SetLength(PItem.FileName, 0);
+    SetLength(PItem.TypeName, 0);
+    SetLength(PItem.DisplayName, 0);
+    if Assigned(PItem.PIDL) then FreePIDL(PItem.PIDL);
+    FreeAndNil(PItem.Thumbnail);
+
+    Dispose(PFileRec(Item.Data));
+    Item.Data := nil;
+  end;
+
   inherited Delete(Item);
 end; {Delete}
 
@@ -2935,36 +2906,32 @@ begin
   if IsDirectory and Assigned(FDriveView) then
     TDriveView(FDriveView).StopWatchThread;
 
-  with FFileOperator do
-  begin
-    Flags := FileOperatorDefaultFlags + [foNoConfirmation];
-    Operation := foRename;
-    OperandFrom.Clear;
-    OperandTo.Clear;
-    OperandFrom.Add(ItemFullFileName(Item));
-    OperandTo.Add(FPath + '\' + HItem.pszText);
-  end;
+  FFileOperator.Flags := FileOperatorDefaultFlags + [foNoConfirmation];
+  FFileOperator.Operation := foRename;
+  FFileOperator.OperandFrom.Clear;
+  FFileOperator.OperandTo.Clear;
+  FFileOperator.OperandFrom.Add(ItemFullFileName(Item));
+  FFileOperator.OperandTo.Add(FPath + '\' + HItem.pszText);
 
   try
+    var PItem := GetFileRec(Item.Index);
+
     if FFileOperator.Execute then
     begin
       if IsDirectory and Assigned(FDriveView) then
-        with FDriveView do
-          if Assigned(Selected) then
-            ValidateDirectory(Selected);
+        if Assigned(FDriveView.Selected) then
+          FDriveView.ValidateDirectory(FDriveView.Selected);
 
-      with GetFileRec(Item.Index)^ do
-      begin
-        Empty := True;
-        IconEmpty := True;
-        FileName := NewCaption;
-        DisplayName := FileName;
-        FileExt := UpperCase(ExtractFileExt(HItem.pszText));
-        FileExt := Copy(FileExt, 2, Length(FileExt) - 1);
-        TypeName := EmptyStr;
-        if Assigned(PIDL) then
-          FreePIDL(PIDL);
-      end;
+      PItem^.Empty := True;
+      PItem^.IconEmpty := True;
+      PItem^.FileName := NewCaption;
+      PItem^.DisplayName := PItem^.FileName;
+      PItem^.FileExt := UpperCase(ExtractFileExt(HItem.pszText));
+      PItem^.FileExt := Copy(PItem^.FileExt, 2, Length(PItem^.FileExt) - 1);
+      PItem^.TypeName := EmptyStr;
+      if Assigned(PItem^.PIDL) then
+        FreePIDL(PItem^.PIDL);
+
       GetDisplayData(Item, True);
       ResetItemImage(Item.Index);
       UpdateItems(Item.Index, Item.Index);
@@ -2975,7 +2942,7 @@ begin
     end
       else
     begin
-      Item.Caption := GetFileRec(Item.Index)^.FileName;
+      Item.Caption := PItem^.FileName;
       Item.Update;
 
       if FileOrDirExists(IncludeTrailingPathDelimiter(FPath) + HItem.pszText) then
@@ -3056,19 +3023,16 @@ procedure TDirView.ResetItemImage(Index: Integer);
 var
   LVI: TLVItem;
 begin
-  with PFileRec(Items[Index].Data)^, LVI do
+  {Update imageindex:}
+  LVI.mask := LVIF_STATE or LVIF_DI_SETITEM or LVIF_IMAGE;
+  LVI.iItem := Index;
+  LVI.iSubItem := 0;
+  if ListView_GetItem(Handle, LVI) then
   begin
-    {Update imageindex:}
-    Mask := LVIF_STATE or LVIF_DI_SETITEM or LVIF_IMAGE;
-    iItem := Index;
-    iSubItem := 0;
-    if ListView_GetItem(Handle, LVI) then
-    begin
-      iImage := I_IMAGECALLBACK;
-      Mask := Mask and (not LVIF_DI_SETITEM);
-      ListView_SetItem(Handle, LVI);
-    end;
-  end; {With}
+    LVI.iImage := I_IMAGECALLBACK;
+    LVI.mask := LVI.mask and (not LVIF_DI_SETITEM);
+    ListView_SetItem(Handle, LVI);
+  end;
 end; {ResetItemImage}
 
 { Drag&Drop handling }
@@ -3276,27 +3240,25 @@ begin
 
           if Assigned(FDriveView) and SourceIsDirectory then
           begin
-            with TDriveView(FDriveView) do
-            begin
-              try
-                ValidateDirectory(FindNodeToPath(TargetPath));
-              except
-              end;
+            var ADriveView := TDriveView(FDriveView);
+            try
+              ADriveView.ValidateDirectory(ADriveView.FindNodeToPath(TargetPath));
+            except
+            end;
 
-              if (Effect = DROPEFFECT_MOVE) or IsRecycleBin then
-              try
-                Node := TryFindNodeToPath(SourcePath);
-                // If the path is not even in the tree, do not bother.
-                // This is particularly for dragging from remote folder, when the source path in %TEMP% and
-                // calling ValidateDirectory would load whole TEMP (and typically also "C:\Users")
-                if Assigned(Node) then
-                begin
-                  if Assigned(Node.Parent) then
-                    Node := Node.Parent;
-                  ValidateDirectory(Node);
-                end;
-              except
+            if (Effect = DROPEFFECT_MOVE) or IsRecycleBin then
+            try
+              Node := ADriveView.TryFindNodeToPath(SourcePath);
+              // If the path is not even in the tree, do not bother.
+              // This is particularly for dragging from remote folder, when the source path in %TEMP% and
+              // calling ValidateDirectory would load whole TEMP (and typically also "C:\Users")
+              if Assigned(Node) then
+              begin
+                if Assigned(Node.Parent) then
+                  Node := Node.Parent;
+                ADriveView.ValidateDirectory(Node);
               end;
+            except
             end;
           end;
         finally
@@ -3327,7 +3289,7 @@ begin
   Result := Assigned(FFileOperator) and FFileOperator.CanUndo;
 end; {CanUndoCopyMove}
 
-function TDirView.UndoCopyMove : Boolean;
+function TDirView.UndoCopyMove: Boolean;
 var
   LastTarget: string;
   LastSource: string;
@@ -3335,7 +3297,7 @@ begin
   Result := False;
   if FFileOperator.CanUndo then
   begin
-    Lasttarget := FFileOperator.LastOperandTo[0];
+    LastTarget := FFileOperator.LastOperandTo[0];
     LastSource := FFileOperator.LastOperandFrom[0];
     if Assigned(FDriveView) then
       TDriveView(FDriveView).StopAllWatchThreads;
@@ -3346,12 +3308,12 @@ begin
       Reload2;
 
     if Assigned(FDriveView) then
-      with TDriveView(FDriveView) do
-      begin
-        ValidateDirectory(FindNodeToPath(ExtractFilePath(LastTarget)));
-        ValidateDirectory(FindNodeToPath(ExtractFilePath(LastSource)));
-        StartAllWatchThreads;
-      end;
+    begin
+      var ADriveView := TDriveView(FDriveView);
+      ADriveView.ValidateDirectory(ADriveView.FindNodeToPath(ExtractFilePath(LastTarget)));
+      ADriveView.ValidateDirectory(ADriveView.FindNodeToPath(ExtractFilePath(LastSource)));
+      ADriveView.StartAllWatchThreads;
+    end;
   end;
 end; {UndoCopyMove}
 
@@ -3501,12 +3463,12 @@ end;
 procedure TDirView.SetItemImageIndex(Item: TListItem; Index: Integer);
 begin
   Assert(Assigned(Item));
-  if Assigned(Item.Data) then
-    with PFileRec(Item.Data)^ do
-    begin
-      ImageIndex := Index;
-      IconEmpty := (ImageIndex < 0);
-    end;
+  var PItem := PFileRec(Item.Data);
+  if Assigned(PItem) then
+  begin
+    PItem^.ImageIndex := Index;
+    PItem^.IconEmpty := (Index < 0);
+  end;
 end;
 
 procedure TDirView.SetItemCalculatedSize(Item: TListItem; ASize: Int64);
@@ -3514,11 +3476,9 @@ var
   OldSize: Int64;
 begin
   Assert(Assigned(Item) and Assigned(Item.Data));
-  with PFileRec(Item.Data)^ do
-  begin
-    OldSize := CalculatedSize;
-    CalculatedSize := ASize;
-  end;
+  var PItem := PFileRec(Item.Data);
+  OldSize := PItem^.CalculatedSize;
+  PItem^.CalculatedSize := ASize;
   ItemCalculatedSizeUpdated(Item, OldSize, ASize);
 end;
 
