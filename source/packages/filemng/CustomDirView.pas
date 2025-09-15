@@ -3425,7 +3425,10 @@ begin
     // (or we have tried to scroll to previously focused and visible item,
     // now make sure that it is really visible)
     else
-  if Assigned(ItemToFocus) then ItemToFocus.MakeVisible(False);
+  begin
+    if Assigned(ItemToFocus) then
+      ItemToFocus.MakeVisible(False);
+  end;
 end;
 
 procedure TCustomDirView.RestoreItemsState(AState: TObject);
