@@ -1845,13 +1845,10 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
         {
           FTerminal->OperationFinish(OperationProgress, Item, FileName, false, OnceDoneOperation);
 
+          // If ESkipFile occurs, just log it and continue with next file
+          if (!FTerminal->HandleException(&E))
           {
-            TSuspendFileOperationProgress Suspend(OperationProgress);
-            // If ESkipFile occurs, just log it and continue with next file
-            if (!FTerminal->HandleException(&E))
-            {
-              throw;
-            }
+            throw;
           }
         }
         catch (...)
@@ -2247,7 +2244,6 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const UnicodeString Directory
       catch (ESkipFile &E)
       {
         // If ESkipFile occurs, just log it and continue with next file
-        TSuspendFileOperationProgress Suspend(OperationProgress);
         if (!FTerminal->HandleException(&E))
         {
           throw;
@@ -2587,10 +2583,7 @@ void __fastcall TSCPFileSystem::SCPSink(const UnicodeString TargetDir,
         }
         catch (Exception &E)
         {
-          {
-            TSuspendFileOperationProgress Suspend(OperationProgress);
-            FTerminal->Log->AddException(&E);
-          }
+          FTerminal->Log->AddException(&E);
           SCPError(LoadStr(SCP_ILLEGAL_FILE_DESCRIPTOR), false);
         }
 

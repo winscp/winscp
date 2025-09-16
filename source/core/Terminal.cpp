@@ -4204,7 +4204,6 @@ bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
           }
           catch(ESkipFile & E)
           {
-            TSuspendFileOperationProgress Suspend(OperationProgress);
             if (!HandleException(&E))
             {
               throw;
@@ -6379,7 +6378,6 @@ void __fastcall TTerminal::SynchronizeCollectFile(const UnicodeString FileName,
   }
   catch(ESkipFile & E)
   {
-    TSuspendFileOperationProgress Suspend(OperationProgress);
     if (!HandleException(&E))
     {
       throw;
@@ -7620,7 +7618,6 @@ void __fastcall TTerminal::DoCopyToRemote(
       }
       catch (ESkipFile & E)
       {
-        TSuspendFileOperationProgress Suspend(OperationProgress);
         if (!HandleException(&E))
         {
           throw;
@@ -7746,10 +7743,6 @@ void __fastcall TTerminal::DirectorySource(
       catch (ESkipFile &E)
       {
         // If ESkipFile occurs, just log it and continue with next file
-        TSuspendFileOperationProgress Suspend(OperationProgress);
-        // here a message to user was displayed, which was not appropriate
-        // when user refused to overwrite the file in subdirectory.
-        // hopefully it won't be missing in other situations.
         if (!HandleException(&E))
         {
           throw;
@@ -8205,7 +8198,6 @@ void __fastcall TTerminal::DoCopyToLocal(
       }
       catch (ESkipFile & E)
       {
-        TSuspendFileOperationProgress Suspend(OperationProgress);
         if (!HandleException(&E))
         {
           throw;
@@ -8486,12 +8478,9 @@ void __fastcall TTerminal::SinkFile(UnicodeString FileName, const TRemoteFile * 
   {
     Params->Skipped = true;
 
+    if (!HandleException(&E))
     {
-      TSuspendFileOperationProgress Suspend(Params->OperationProgress);
-      if (!HandleException(&E))
-      {
-        throw;
-      }
+      throw;
     }
 
     if (Params->OperationProgress->Cancel)
