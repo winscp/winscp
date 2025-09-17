@@ -1353,6 +1353,7 @@ void __fastcall TSynchronizeChecklistDialog::OkButtonClick(TObject *)
   if (Queue && (FOnQueueSynchronize == NULL))
   {
     Beep();
+    ModalResult = mrNone;
   }
   else
   {
