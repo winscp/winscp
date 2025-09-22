@@ -521,6 +521,7 @@ void __fastcall ExecuteNewInstance(const UnicodeString & Param, const UnicodeStr
     Arg = FORMAT(L"\"%s\"", (Param));
   }
   UnicodeString Space(L" ");
+  AddToList(Arg, GetIniFileParam(), Space);
   AddToList(Arg, TProgramParams::FormatSwitch(NEWINSTANCE_SWICH), Space);
   AddToList(Arg, AdditionalParams, Space);
 
@@ -619,18 +620,23 @@ IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
   return pLink;
 }
 //---------------------------------------------------------------------------
+UnicodeString GetIniFileParam()
+{
+  UnicodeString ParamValue = Configuration->GetIniFileParamValue();
+
+  UnicodeString Result;
+  if (!ParamValue.IsEmpty())
+  {
+    Result = TProgramParams::FormatSwitch(INI_SWITCH) + L"=" + AddQuotes(ParamValue);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 IShellLink * __fastcall CreateAppDesktopShortCut(
   const UnicodeString & Name, const UnicodeString & AParams, const UnicodeString & Description,
   int SpecialFolder, int IconIndex, bool Return)
 {
-  UnicodeString ParamValue = Configuration->GetIniFileParamValue();
-
-  UnicodeString Params;
-  if (!ParamValue.IsEmpty())
-  {
-    Params = TProgramParams::FormatSwitch(INI_SWITCH) + L"=" + AddQuotes(ParamValue);
-  }
-
+  UnicodeString Params = GetIniFileParam();
   AddToList(Params, AParams, L" ");
 
   return CreateDesktopShortCut(Name, Application->ExeName, Params, Description, SpecialFolder, IconIndex, Return);

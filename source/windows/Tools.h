@@ -20,6 +20,7 @@ bool __fastcall UseAlternativeFunction();
 bool __fastcall OpenInNewWindow();
 void ExecuteSelf(const UnicodeString & Params);
 void __fastcall ExecuteNewInstance(const UnicodeString & Param, const UnicodeString & AdditionalParams = UnicodeString());
+UnicodeString GetIniFileParam();
 IShellLink * __fastcall CreateAppDesktopShortCut(
   const UnicodeString & Name, const UnicodeString & Params, const UnicodeString & Description,
   int SpecialFolder = -1, int IconIndex = 0, bool Return = false);
