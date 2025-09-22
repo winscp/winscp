@@ -16,7 +16,7 @@
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 // Based on
-// https://www.codeproject.com/Articles/6355/XP-Themes-Tab-Control-in-any-orientation
+// https://www.codeproject.com/articles/XP-Themes-Tab-Control-in-any-orientation
 //---------------------------------------------------------------------------
 #define IDS_UTIL_TAB            L"TAB"
 //---------------------------------------------------------------------------
