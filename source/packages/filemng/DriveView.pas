@@ -252,7 +252,6 @@ type
     procedure RebuildTree; override;
 
     procedure SetLastPathCut(Path: string);
-    function GetCanUndoCopyMove: Boolean; virtual;
     procedure CreateWnd; override;
     procedure DestroyWnd; override;
     procedure Edit(const Item: TTVItem); override;
@@ -276,6 +275,10 @@ type
     function DragCompleteFileList: Boolean; override;
     function DDExecute: TDragResult; override;
 
+    function CanPasteFromClipBoard: Boolean;
+    function PasteFromClipBoard(TargetPath: string = ''): Boolean;
+    procedure PerformDragDropFileOperation(Node: TTreeNode; Effect: Integer); override;
+
   public
     property Images;
     property StateImages;
@@ -284,18 +287,8 @@ type
 
     property DragImageList: TDragImageList read FDragImageList;
 
-    property CanUndoCopyMove: Boolean read GetCanUndoCopyMove;
-    property DDFileOperator: TFileOperator read FFileOperator;
     property LastPathCut: string read FLastPathCut write SetLastPathCut;
-
-    function UndoCopyMove: Boolean; dynamic;
     procedure EmptyClipboard; dynamic;
-    function CopyToClipBoard(Node: TTreeNode): Boolean; dynamic;
-    function CutToClipBoard(Node: TTreeNode): Boolean; dynamic;
-    function CanPasteFromClipBoard: Boolean; dynamic;
-    function PasteFromClipBoard(TargetPath: string = ''): Boolean; dynamic;
-    procedure PerformDragDropFileOperation(Node: TTreeNode; Effect: Integer); override;
-
     {Drive handling:}
     function GetDriveStatus(Drive: string): TDriveStatus;
     function GetDriveTypetoNode(Node: TTreeNode): Integer;  {Returns DRIVE_CDROM etc..}
@@ -2904,39 +2897,6 @@ begin
   end;
 end; {PerformDragDropFileOperation}
 
-function TDriveView.GetCanUndoCopyMove: Boolean;
-begin
-  Result := Assigned(FFileOperator) and FFileOperator.CanUndo;
-end; {CanUndoCopyMove}
-
-function TDriveView.UndoCopyMove: Boolean;
-var
-  LastTarget: string;
-  LastSource: string;
-begin
-  Result := False;
-  if FFileOperator.CanUndo then
-  begin
-    Lasttarget := FFileOperator.LastOperandTo[0];
-    LastSource := FFileOperator.LastOperandFrom[0];
-    StopAllWatchThreads;
-    Result := FFileOperator.UndoExecute;
-
-    ValidateDirectory(FindNodeToPath(ExtractFilePath(LastTarget)));
-    ValidateDirectory(FindNodeToPath(ExtractFilePath(LastSource)));
-    StartAllWatchThreads;
-
-    if Assigned(FDirView) then
-      with FDirView do
-        if not WatchThreadActive then
-        begin
-          if (IncludeTrailingBackslash(ExtractFilePath(LastTarget)) = IncludeTrailingBackslash(Path)) or
-             (IncludeTrailingBackslash(ExtractFilePath(LastSource)) = IncludeTrailingBackslash(Path)) then
-            Reload2;
-        end;
-      end;
-end; {UndoCopyMove}
-
 {Clipboard operations:}
 procedure TDriveView.SetLastPathCut(Path: string);
 var
@@ -2971,29 +2931,6 @@ begin
       FDirView.EmptyClipboard;
   end;
 end; {EmptyClipBoard}
-
-function TDriveView.CopyToClipBoard(Node: TTreeNode): Boolean;
-begin
-  Result := Assigned(Selected);
-  if Result then
-  begin
-    EmptyClipBoard;
-    ClearDragFileList(FDragDropFilesEx.FileList);
-    AddToDragFileList(FDragDropFilesEx.FileList, Selected);
-    Result := FDragDropFilesEx.CopyToClipBoard;
-    LastClipBoardOperation := cboCopy;
-  end;
-end; {CopyToClipBoard}
-
-function TDriveView.CutToClipBoard(Node: TTreeNode): Boolean;
-begin
-  Result := Assigned(Node) and Assigned(Node.Parent) and CopyToClipBoard(Node);
-  if Result then
-  begin
-    LastPathCut := NodePathName(Node);
-    LastClipBoardOperation := cboCut;
-  end;
-end; {CutToClipBoard}
 
 function TDriveView.CanPasteFromClipBoard: Boolean;
 begin

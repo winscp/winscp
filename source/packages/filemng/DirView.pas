@@ -128,7 +128,6 @@ type
     FDesktopFolder: IShellFolder;
     FDirOK: Boolean;
     FPath: string;
-    SelectNewFiles: Boolean;
     FHiddenCount: Integer;
     FFilteredCount: Integer;
     FNotRelative: Boolean;
@@ -170,7 +169,6 @@ type
 
     procedure Delete(Item: TListItem); override;
     procedure DDError(ErrorNo: TDDError);
-    function GetCanUndoCopyMove: Boolean; virtual;
     {Shell namespace functions:}
     function GetShellFolder(Dir: string): iShellFolder;
     function GetDirOK: Boolean; override;
@@ -245,17 +243,11 @@ type
     { required, otherwise AV generated, when dragging columns}
     property Columns stored False;
     property ParentFolder: IShellFolder read FParentFolder;
-    {Drag&Drop runtime, readonly properties:}
-    property CanUndoCopyMove: Boolean read GetCanUndoCopyMove;
-    property DDFileOperator: TFileOperator read FFileOperator;
-    {Drag&Drop fileoperation methods:}
-    function UndoCopyMove: Boolean; dynamic;
     {Clipboard fileoperation methods (requires drag&drop enabled):}
     procedure EmptyClipboard; dynamic;
-    function CopyToClipBoard(Focused: Boolean): Boolean; dynamic;
-    function CutToClipBoard(Focused: Boolean): Boolean; dynamic;
+    function CopyToClipBoard(Focused: Boolean): Boolean;
+    function CutToClipBoard(Focused: Boolean): Boolean;
     function PasteFromClipBoard(TargetPath: string = ''): Boolean; override;
-    function DuplicateSelectedFiles: Boolean; dynamic;
     procedure DisplayPropertiesMenu; override;
     procedure DisplayContextMenu(Where: TPoint); override;
 
@@ -570,8 +562,6 @@ begin
   if Result then
   begin
     FileOperator.Execute;
-    if DragDropFilesEx.FileNamesAreMapped then
-      FileOperator.ClearUndo;
   end;
 end;
 
@@ -695,7 +685,6 @@ begin
   FConfirmDelete := True;
   FParentFolder := nil;
   FDesktopFolder := nil;
-  SelectNewFiles := False;
   DragOnDriveIsMove := True;
   FHiddenCount := 0;
   FFilteredCount := 0;
@@ -972,8 +961,6 @@ begin
 
   if not Self.IsRecycleBin then Item.Caption := SRec.Name;
   if PItem^.FileExt = 'LNK' then Item.OverlayIndex := 1;
-
-  if SelectNewFiles then Item.Selected := True;
 
   Result := Item;
 end; {AddItem}
@@ -3284,39 +3271,6 @@ begin
   raise EDragDrop.Create(Format(SDragDropError, [Ord(ErrorNo)]));
 end; {DDError}
 
-function TDirView.GetCanUndoCopyMove: Boolean;
-begin
-  Result := Assigned(FFileOperator) and FFileOperator.CanUndo;
-end; {CanUndoCopyMove}
-
-function TDirView.UndoCopyMove: Boolean;
-var
-  LastTarget: string;
-  LastSource: string;
-begin
-  Result := False;
-  if FFileOperator.CanUndo then
-  begin
-    LastTarget := FFileOperator.LastOperandTo[0];
-    LastSource := FFileOperator.LastOperandFrom[0];
-    if Assigned(FDriveView) then
-      TDriveView(FDriveView).StopAllWatchThreads;
-
-    Result := FFileOperator.UndoExecute;
-
-    if not WatchthreadActive then
-      Reload2;
-
-    if Assigned(FDriveView) then
-    begin
-      var ADriveView := TDriveView(FDriveView);
-      ADriveView.ValidateDirectory(ADriveView.FindNodeToPath(ExtractFilePath(LastTarget)));
-      ADriveView.ValidateDirectory(ADriveView.FindNodeToPath(ExtractFilePath(LastSource)));
-      ADriveView.StartAllWatchThreads;
-    end;
-  end;
-end; {UndoCopyMove}
-
 procedure TDirView.EmptyClipboard;
 var
   Item: TListItem;
@@ -3423,32 +3377,6 @@ begin
   Result := inherited DragCompleteFileList and
     (FDriveType <> DRIVE_REMOVABLE);
 end;
-
-function TDirView.DuplicateSelectedFiles: Boolean;
-begin
-  Result := False;
-  if SelCount > 0 then
-  begin
-    Result := CopyToClipBoard(False);
-    if Result then
-      try
-        SelectNewFiles := True;
-        Selected := nil;
-        Result := PasteFromClipBoard();
-      finally
-        SelectNewFiles := False;
-        if Assigned(Selected) then
-        begin
-          ItemFocused := Selected;
-          Selected.MakeVisible(False);
-          if SelCount = 1 then
-            Selected.EditCaption;
-        end;
-      end;
-
-  end;
-  EmptyClipBoard;
-end; {DuplicateFiles}
 
 function TDirView.NewColProperties: TCustomListViewColProperties;
 begin
