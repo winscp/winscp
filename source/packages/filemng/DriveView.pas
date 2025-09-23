@@ -150,7 +150,11 @@ type
     function ProcessResult: Boolean;
     procedure Timer(Sender: TObject);
     procedure WndProc(var Msg: TMessage);
+    function DetachList(List: TEnumerable<TSubDirReaderSchedule>): Integer;
+    procedure DestroyScheduleList(List: TEnumerable<TSubDirReaderSchedule>);
   end;
+
+  TTreeNodeArray = array of TTreeNode;
 
   TDriveView = class(TCustomDriveView)
   private
@@ -202,6 +206,12 @@ type
     procedure DelayedNodeTimer(Sender: TObject);
     function ReadSubDirsBatch(Node: TTreeNode; var SRec: TSearchRec; CheckInterval, Limit: Integer): Boolean;
     procedure UpdateDelayedNodeTimer;
+    function DoSearchSubDirs(
+      ParentNode: TTreeNode; Path: string; Level: Integer; ExistingOnly: Boolean;
+      var SelectionHierarchy: TTreeNodeArray; var SelectionHierarchyHeight: Integer): TTreeNode;
+    function SearchSubDirs(
+      ParentNode: TTreeNode; Path: string; Level: Integer; ExistingOnly: Boolean;
+      var SelectionHierarchy: TTreeNodeArray; var SelectionHierarchyHeight: Integer): TTreeNode;
 
     {Callback-functions used by iteratesubtree:}
     function CallBackValidateDir(var Node: TTreeNode; Data: Pointer): Boolean;
@@ -491,21 +501,20 @@ begin
   FWindowHandle := AllocateHWnd(WndProc);
 end;
 
-destructor TSubDirReaderThread.Destroy;
-
-  procedure DestroyScheduleList(List: TEnumerable<TSubDirReaderSchedule>);
-  var
-    Schedule: TSubDirReaderSchedule;
+procedure TSubDirReaderThread.DestroyScheduleList(List: TEnumerable<TSubDirReaderSchedule>);
+var
+  Schedule: TSubDirReaderSchedule;
+begin
+  for Schedule in List do
   begin
-    for Schedule in List do
-    begin
-      if not Schedule.Deleted then
-        TNodeData(Schedule.Node.Data).Schedule := nil;
-      Schedule.Free;
-    end;
-    List.Destroy;
+    if not Schedule.Deleted then
+      TNodeData(Schedule.Node.Data).Schedule := nil;
+    Schedule.Free;
   end;
+  List.Destroy;
+end;
 
+destructor TSubDirReaderThread.Destroy;
 begin
   inherited;
 
@@ -593,32 +602,31 @@ begin
   TriggerEvent;
 end;
 
-function TSubDirReaderThread.Detach: Integer;
-
-  procedure DetachList(List: TEnumerable<TSubDirReaderSchedule>);
-  var
-    Schedule: TSubDirReaderSchedule;
+function TSubDirReaderThread.DetachList(List: TEnumerable<TSubDirReaderSchedule>): Integer;
+var
+  Schedule: TSubDirReaderSchedule;
+begin
+  Result := 0;
+  for Schedule in List do
   begin
-    for Schedule in List do
+    if Schedule.Deleted then Schedule.Free
+      else
     begin
-      if Schedule.Deleted then Schedule.Free
-        else
-      begin
-        Assert(Schedule.Processed = (List = FResults));
-        Schedule.Node := nil;
-        Inc(Result);
-      end;
+      Assert(Schedule.Processed = (List = FResults));
+      Schedule.Node := nil;
+      Inc(Result);
     end;
   end;
+end;
 
+function TSubDirReaderThread.Detach: Integer;
 begin
   // block thread while handle is being recreated
   FSection.Enter;
   try
-    Result := 0;
-
-    DetachList(FQueue);
-    DetachList(FResults);
+    Result :=
+      DetachList(FQueue) +
+      DetachList(FResults);
 
     FQueue.Clear;
     FResults.Clear;
@@ -1694,121 +1702,120 @@ begin {ScanDrive}
   GetDriveStatus(Drive).Verified := False;
 end; {ScanDrive}
 
+function ExtractFirstName(S: string): string;
+var
+  I: Integer;
+begin
+  I := Pos('\', S);
+
+  if I = 0 then
+    I := Length(S);
+
+  Result := System.Copy(S, 1, I);
+end;
+
+function TDriveView.DoSearchSubDirs(
+  ParentNode: TTreeNode; Path: string; Level: Integer; ExistingOnly: Boolean;
+  var SelectionHierarchy: TTreeNodeArray; var SelectionHierarchyHeight: Integer): TTreeNode;
+var
+  Node: TTreeNode;
+  Dir: string;
+begin
+  {Extract first directory from path:}
+  Dir := ExtractFirstName(Path);
+  System.Delete(Path, 1, Length(Dir));
+
+  if Dir[Length(Dir)] = '\' then
+    SetLength(Dir, Pred(Length(Dir)));
+
+  // Optimization. Avoid iterating possibly thousands of nodes,
+  // when the node we are looking for is the selected node or its ancestor.
+  // This is often the case, when navigating under node that has lot of siblings.
+  // Typically, when navigating in user's profile folder, and there are many [thousands] other user profile folders.
+  if (SelectionHierarchyHeight > 0) and
+     // Change of selection might indicate that the tree was rebuilt meanwhile and
+     // the references in SelectionHierarchy might not be valid anymore
+     (Selected = SelectionHierarchy[SelectionHierarchyHeight - 1]) and
+     (Level < SelectionHierarchyHeight) and
+     (Uppercase(GetDirName(SelectionHierarchy[Level])) = Dir) then
+  begin
+    Result := SelectionHierarchy[Level];
+  end
+    else
+  begin
+    // Paths have diverted
+    SelectionHierarchyHeight := 0;
+
+    Node := ParentNode.GetFirstChild;
+    if (not Assigned(Node)) and (not ExistingOnly) then
+    begin
+      ValidateDirectoryEx(ParentNode, rsRecursiveExisting, True);
+      Node := ParentNode.GetFirstChild;
+    end;
+
+    Result := nil;
+    while (not Assigned(Result)) and Assigned(Node) do
+    begin
+      if UpperCase(GetDirName(Node)) = Dir then
+      begin
+        Result := Node;
+      end
+        else
+      begin
+        Node := ParentNode.GetNextChild(Node);
+      end;
+    end;
+  end;
+
+  if Assigned(Result) and (Length(Path) > 0) then
+  begin
+    Result := SearchSubDirs(Result, Path, Level + 1, ExistingOnly, SelectionHierarchy, SelectionHierarchyHeight);
+  end;
+end;
+
+function TDriveView.SearchSubDirs(
+  ParentNode: TTreeNode; Path: string; Level: Integer; ExistingOnly: Boolean;
+  var SelectionHierarchy: TTreeNodeArray; var SelectionHierarchyHeight: Integer): TTreeNode;
+var
+  ParentPath, SubPath: string;
+  SRec: TSearchRec;
+  ParentNodeData: TNodeData;
+begin
+  Result := nil;
+  if Length(Path) > 0 then
+  begin
+    ParentNodeData := TNodeData(ParentNode.Data);
+    if (not ParentNodeData.Scanned) and (not ExistingOnly) then
+    begin
+      ReadSubDirs(ParentNode);
+    end;
+
+    Result := DoSearchSubDirs(ParentNode, Path, Level, ExistingOnly, SelectionHierarchy, SelectionHierarchyHeight);
+
+    if (not Assigned(Result)) and (not ExistingOnly) then
+    begin
+      ParentPath := NodePath(ParentNode);
+      if DirectoryExists(ApiPath(IncludeTrailingBackslash(ParentPath) + Path)) then
+      begin
+        SubPath := IncludeTrailingBackslash(ParentPath) + ExcludeTrailingBackslash(ExtractFirstName(Path));
+        if FindFirstSubDir(SubPath, SRec) then
+        begin
+          AddChildNode(ParentNode, ParentPath, SRec);
+          if Assigned(ParentNodeData.DelayedExclude) then
+            ParentNodeData.DelayedExclude.Add(SRec.Name);
+          SortChildren(ParentNode, False);
+          FindClose(SRec);
+        end;
+        Result := DoSearchSubDirs(ParentNode, Path, Level, ExistingOnly, SelectionHierarchy, SelectionHierarchyHeight);
+      end;
+    end;
+  end;
+end; {SearchSubDirs}
+
 function TDriveView.DoFindNodeToPath(Path: string; ExistingOnly: Boolean): TTreeNode;
 var
-  SelectionHierarchy: array of TTreeNode;
+  SelectionHierarchy: TTreeNodeArray;
   SelectionHierarchyHeight: Integer;
-
-  function SearchSubDirs(ParentNode: TTreeNode; Path: string; Level: Integer): TTreeNode; forward;
-
-  function ExtractFirstName(S: string): string;
-  var
-    I: Integer;
-  begin
-    I := Pos('\', S);
-
-    if I = 0 then
-      I := Length(S);
-
-    Result := System.Copy(S, 1, I);
-  end;
-
-  function DoSearchSubDirs(ParentNode: TTreeNode; Path: string; Level: Integer): TTreeNode;
-  var
-    Node: TTreeNode;
-    Dir: string;
-  begin
-    {Extract first directory from path:}
-    Dir := ExtractFirstName(Path);
-    System.Delete(Path, 1, Length(Dir));
-
-    if Dir[Length(Dir)] = '\' then
-      SetLength(Dir, Pred(Length(Dir)));
-
-    // Optimization. Avoid iterating possibly thousands of nodes,
-    // when the node we are looking for is the selected node or its ancestor.
-    // This is often the case, when navigating under node that has lot of siblings.
-    // Typically, when navigating in user's profile folder, and there are many [thousands] other user profile folders.
-    if (SelectionHierarchyHeight > 0) and
-       // Change of selection might indicate that the tree was rebuilt meanwhile and
-       // the references in SelectionHierarchy might not be valid anymore
-       (Selected = SelectionHierarchy[SelectionHierarchyHeight - 1]) and
-       (Level < SelectionHierarchyHeight) and
-       (Uppercase(GetDirName(SelectionHierarchy[Level])) = Dir) then
-    begin
-      Result := SelectionHierarchy[Level];
-    end
-      else
-    begin
-      // Paths have diverted
-      SelectionHierarchyHeight := 0;
-
-      Node := ParentNode.GetFirstChild;
-      if (not Assigned(Node)) and (not ExistingOnly) then
-      begin
-        ValidateDirectoryEx(ParentNode, rsRecursiveExisting, True);
-        Node := ParentNode.GetFirstChild;
-      end;
-
-      Result := nil;
-      while (not Assigned(Result)) and Assigned(Node) do
-      begin
-        if UpperCase(GetDirName(Node)) = Dir then
-        begin
-          Result := Node;
-        end
-          else
-        begin
-          Node := ParentNode.GetNextChild(Node);
-        end;
-      end;
-    end;
-
-    if Assigned(Result) and (Length(Path) > 0) then
-    begin
-      Result := SearchSubDirs(Result, Path, Level + 1);
-    end;
-  end;
-
-  function SearchSubDirs(ParentNode: TTreeNode; Path: string; Level: Integer): TTreeNode;
-  var
-    ParentPath, SubPath: string;
-    SRec: TSearchRec;
-    ParentNodeData: TNodeData;
-  begin
-    Result := nil;
-    if Length(Path) > 0 then
-    begin
-      ParentNodeData := TNodeData(ParentNode.Data);
-      if (not ParentNodeData.Scanned) and (not ExistingOnly) then
-      begin
-        ReadSubDirs(ParentNode);
-      end;
-
-      // Factored out of DoSearchSubDirs is remnant of Bug 956 superceded by Bug 1320
-      Result := DoSearchSubDirs(ParentNode, Path, Level);
-
-      if (not Assigned(Result)) and (not ExistingOnly) then
-      begin
-        ParentPath := NodePath(ParentNode);
-        if DirectoryExists(ApiPath(IncludeTrailingBackslash(ParentPath) + Path)) then
-        begin
-          SubPath := IncludeTrailingBackslash(ParentPath) + ExcludeTrailingBackslash(ExtractFirstName(Path));
-          if FindFirstSubDir(SubPath, SRec) then
-          begin
-            AddChildNode(ParentNode, ParentPath, SRec);
-            if Assigned(ParentNodeData.DelayedExclude) then
-              ParentNodeData.DelayedExclude.Add(SRec.Name);
-            SortChildren(ParentNode, False);
-            FindClose(SRec);
-          end;
-          Result := DoSearchSubDirs(ParentNode, Path, Level);
-        end;
-      end;
-    end;
-  end; {SearchSubDirs}
-
-var
   Drive: string;
   P, I: Integer;
   RootNode, Node: TTreeNode;
@@ -1899,7 +1906,7 @@ begin {FindNodeToPath}
         if RootNode <> SelectionHierarchy[0] then
           SelectionHierarchyHeight := 0;
       end;
-      Result := SearchSubDirs(RootNode, UpperCase(Path), 1);
+      Result := SearchSubDirs(RootNode, UpperCase(Path), 1, ExistingOnly, SelectionHierarchy, SelectionHierarchyHeight);
     end
       else Result := GetDriveStatus(Drive).RootNode;
   end;
