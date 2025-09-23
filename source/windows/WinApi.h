@@ -12,7 +12,7 @@ typedef BOOL WINAPI (* AddClipboardFormatListenerProc)(HWND hwnd);
 typedef BOOL WINAPI (* RemoveClipboardFormatListenerProc)(HWND hwnd);
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-// Taken from https://www.codeproject.com/Articles/35197/Undocumented-List-View-Features
+// Taken from https://www.codeproject.com/articles/Undocumented-List-View-Features
 //---------------------------------------------------------------------------
 #define LVM_QUERYINTERFACE (LVM_FIRST + 189)
 //---------------------------------------------------------------------------
