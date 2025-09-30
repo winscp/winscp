@@ -572,11 +572,14 @@ private:
 bool __fastcall IsUnixStyleWindowsPath(const UnicodeString & Path);
 bool __fastcall UnixIsAbsolutePath(const UnicodeString & Path);
 UnicodeString __fastcall UnixIncludeTrailingBackslash(const UnicodeString & Path);
+UnicodeString UniversalIncludeTrailingBackslash(bool Unix, const UnicodeString & Path);
 UnicodeString __fastcall UnixExcludeTrailingBackslash(const UnicodeString & Path, bool Simple = false);
+UnicodeString UniversalExcludeTrailingBackslash(bool Unix, const UnicodeString & Path);
 UnicodeString __fastcall SimpleUnixExcludeTrailingBackslash(const UnicodeString & Path);
 UnicodeString __fastcall UnixCombinePaths(const UnicodeString & Path1, const UnicodeString & Path2);
 UnicodeString UnixCombinePathsForce(const UnicodeString & Path1, const UnicodeString & Path2);
 UnicodeString UnixCombinePathsSmart(const UnicodeString & Path1, const UnicodeString & Path2);
+UnicodeString UniversalCombinePaths(bool Unix, const UnicodeString & Path1, const UnicodeString & Path2);
 UnicodeString __fastcall UnixExtractFileDir(const UnicodeString & Path);
 UnicodeString __fastcall UnixExtractFilePath(const UnicodeString & Path);
 UnicodeString __fastcall UnixExtractFileName(const UnicodeString & Path);

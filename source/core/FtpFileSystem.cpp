@@ -3883,20 +3883,9 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestOverwrite(
       UnicodeString TargetFileName = FileName1;
       DebugAssert(UserData.FileName == TargetFileName);
 
-      UnicodeString SourceFullFileName = Path2;
-      UnicodeString TargetFullFileName = Path1;
-      if (OperationProgress->Side == osLocal)
-      {
-        SourceFullFileName = IncludeTrailingBackslash(SourceFullFileName);
-        TargetFullFileName = UnixIncludeTrailingBackslash(TargetFullFileName);
-      }
-      else
-      {
-        SourceFullFileName = UnixIncludeTrailingBackslash(SourceFullFileName);
-        TargetFullFileName = IncludeTrailingBackslash(TargetFullFileName);
-      }
-      SourceFullFileName += FileName2;
-      TargetFullFileName += FileName1;
+      bool Local = (OperationProgress->Side == osLocal);
+      UnicodeString SourceFullFileName = UniversalIncludeTrailingBackslash(!Local, Path2) + FileName2;
+      UnicodeString TargetFullFileName = UniversalIncludeTrailingBackslash(Local, Path1) + FileName1;
 
       TOverwriteMode OverwriteMode = omOverwrite;
       TOverwriteFileParams FileParams;

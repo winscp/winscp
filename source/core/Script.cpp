@@ -1850,15 +1850,7 @@ UnicodeString __fastcall TScript::SynchronizeFileRecord(
 {
   const TSynchronizeChecklist::TItem::TFileInfo & FileInfo =
     Local ? Item->Local : Item->Remote;
-  UnicodeString Path;
-  if (Local)
-  {
-    Path = IncludeTrailingBackslash(FileInfo.Directory) + FileInfo.FileName;
-  }
-  else
-  {
-    Path = UnixIncludeTrailingBackslash(FileInfo.Directory) + FileInfo.FileName;
-  }
+  UnicodeString Path = UniversalCombinePaths(!Local, FileInfo.Directory, FileInfo.FileName);
 
   if (SameText(RootDirectory, Path.SubString(1, RootDirectory.Length())))
   {
@@ -1869,14 +1861,7 @@ UnicodeString __fastcall TScript::SynchronizeFileRecord(
   UnicodeString Result;
   if (Item->IsDirectory)
   {
-    if (Local)
-    {
-      Result = IncludeTrailingBackslash(Path);
-    }
-    else
-    {
-      Result = UnixIncludeTrailingBackslash(Path);
-    }
+    Result = UniversalIncludeTrailingBackslash(!Local, Path);
   }
   else
   {
@@ -2360,15 +2345,8 @@ void __fastcall TManagementScript::TerminalOperationProgress(
     {
       bool DoPrint = false;
       bool First = false;
-      UnicodeString ProgressFileName = ProgressData.FileName;
-      if (ProgressData.Side == osLocal)
-      {
-        ProgressFileName = ExcludeTrailingBackslash(ProgressFileName);
-      }
-      else
-      {
-        ProgressFileName = UnixExcludeTrailingBackslash(ProgressFileName);
-      }
+      UnicodeString ProgressFileName =
+        UniversalExcludeTrailingBackslash((ProgressData.Side != osLocal), ProgressData.FileName);
 
       if (ProgressFileName != FLastProgressFile)
       {

@@ -326,8 +326,7 @@ void __fastcall TCopyDialog::SetDirectory(UnicodeString value)
 {
   if (!value.IsEmpty())
   {
-    value = RemotePaths() ?
-      UnicodeString(UnixIncludeTrailingBackslash(value)) : IncludeTrailingBackslash(value);
+    value = UniversalIncludeTrailingBackslash(RemotePaths(), value);
   }
   DirectoryEdit->Text = value + GetFileMask();
 }
@@ -340,18 +339,14 @@ UnicodeString __fastcall TCopyDialog::GetDirectory()
   if (RemotePaths())
   {
     Result = UnixExtractFilePath(Result);
-    if (!Result.IsEmpty())
-    {
-      Result = UnixIncludeTrailingBackslash(Result);
-    }
   }
   else
   {
     Result = ExtractFilePath(Result);
-    if (!Result.IsEmpty())
-    {
-      Result = IncludeTrailingBackslash(Result);
-    }
+  }
+  if (!Result.IsEmpty())
+  {
+    Result = UniversalIncludeTrailingBackslash(RemotePaths(), Result);
   }
   return Result;
 }

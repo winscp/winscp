@@ -896,15 +896,7 @@ void TParallelOperation::Done(
         FDirectories.erase(DirectoryIterator);
         if (FFileList->Count > FListIndex)
         {
-          UnicodeString FileNameWithSlash;
-          if (FSide == osLocal)
-          {
-            FileNameWithSlash = IncludeTrailingBackslash(FileName);
-          }
-          else
-          {
-            FileNameWithSlash = UnixIncludeTrailingBackslash(FileName);
-          }
+          UnicodeString FileNameWithSlash = UniversalIncludeTrailingBackslash((FSide == osRemote), FileName);
 
           // It can actually be a different list than the one the directory was taken from,
           // but that does not matter that much. It should not happen anyway, as more lists should be in scripting only.
@@ -1173,15 +1165,7 @@ int TParallelOperation::GetNext(
       {
         DebugAssert(!OnlyFileName.IsEmpty());
         TDirectoryData DirectoryData;
-        if (FSide == osLocal)
-        {
-          DirectoryData.OppositePath = UnixCombinePaths(TargetDir, OnlyFileName);
-        }
-        else
-        {
-          DirectoryData.OppositePath = CombinePaths(TargetDir, OnlyFileName);
-        }
-
+        DirectoryData.OppositePath = UniversalCombinePaths((FSide == osLocal), TargetDir, OnlyFileName);
         DirectoryData.Exists = false;
 
         FDirectories.insert(std::make_pair(FileName, DirectoryData));

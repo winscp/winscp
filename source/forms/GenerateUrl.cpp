@@ -602,20 +602,13 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateAssemblyCode(UnicodeString 
       L")." + RtfLibraryMethod(L"OperationResultBase", L"Check", true) + L"()" +
       StatementSeparator + RtfPara;
 
+    UnicodeString SourcePath = UniversalIncludeTrailingBackslash(!FToRemote, FSourcePath);
     if (FFilesSelected == fsList)
     {
       for (int Index = 0; Index < FPaths->Count; Index++)
       {
         UnicodeString FileName = FPaths->Strings[Index];
-        UnicodeString Path;
-        if (!FToRemote)
-        {
-          Path = UnixIncludeTrailingBackslash(FSourcePath) + FileName;
-        }
-        else
-        {
-          Path = IncludeTrailingBackslash(FSourcePath) + FileName;
-        }
+        UnicodeString Path = SourcePath + FileName;
         UnicodeString PathCode = AssemblyString(Language, Path);
         if (!FToRemote && (FileName != EscapeFileMask(FileName)))
         {
@@ -628,15 +621,6 @@ UnicodeString __fastcall TGenerateUrlDialog::GenerateAssemblyCode(UnicodeString 
     }
     else
     {
-      UnicodeString SourcePath = FSourcePath;
-      if (FToRemote)
-      {
-        SourcePath = IncludeTrailingBackslash(SourcePath);
-      }
-      else
-      {
-        SourcePath = UnixIncludeTrailingBackslash(SourcePath);
-      }
       SourcePath += AllFilesMask;
       Code += TransferMethodCallStart + AssemblyString(Language, SourcePath) + TransferMethodCallEnd;
     }

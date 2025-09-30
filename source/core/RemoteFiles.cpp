@@ -35,6 +35,11 @@ UnicodeString __fastcall UnixIncludeTrailingBackslash(const UnicodeString & Path
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString UniversalIncludeTrailingBackslash(bool Unix, const UnicodeString & Path)
+{
+  return Unix ? UnixIncludeTrailingBackslash(Path) : IncludeTrailingBackslash(Path);
+}
+//---------------------------------------------------------------------------
 // Keeps "/" for root path
 UnicodeString __fastcall UnixExcludeTrailingBackslash(const UnicodeString & Path, bool Simple)
 {
@@ -51,6 +56,11 @@ UnicodeString __fastcall UnixExcludeTrailingBackslash(const UnicodeString & Path
   }
 }
 //---------------------------------------------------------------------------
+UnicodeString UniversalExcludeTrailingBackslash(bool Unix, const UnicodeString & Path)
+{
+  return Unix ? UnixExcludeTrailingBackslash(Path) : ExcludeTrailingBackslash(Path);
+}
+//---------------------------------------------------------------------------
 UnicodeString __fastcall SimpleUnixExcludeTrailingBackslash(const UnicodeString & Path)
 {
   return UnixExcludeTrailingBackslash(Path, true);
@@ -65,6 +75,11 @@ UnicodeString __fastcall UnixCombinePaths(const UnicodeString & Path1, const Uni
 {
   DebugAssert(!Path2.IsEmpty());
   return UnixCombinePathsForce(Path1, Path2);
+}
+//---------------------------------------------------------------------------
+UnicodeString UniversalCombinePaths(bool Unix, const UnicodeString & Path1, const UnicodeString & Path2)
+{
+  return Unix ? UnixCombinePaths(Path1, Path2) : CombinePaths(Path1, Path2);
 }
 //---------------------------------------------------------------------------
 // Eventually make UnixCombinePaths do this,
