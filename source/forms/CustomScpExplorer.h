@@ -321,6 +321,9 @@ private:
   bool FUpdatingSessionTabs;
   TCalculateSizeOperation * FCalculateSizeOperation;
   TTBXTheme * FHiContrastTheme;
+  HWND FOperationStatusWindow;
+  TTimer * FOperationStatusWindowTimer;
+  int FOperationStatusWindowIterations;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side, int FilesOnly);
@@ -381,6 +384,9 @@ private:
   void __fastcall StoreTransitionCloseClick(TObject * Sender);
   void __fastcall StoreTransitionLinkClick(TObject * Sender);
   void InitializeRemoteThumbnailMask();
+  void __fastcall OperationStatusWindowTimer(TObject *);
+  void __fastcall ActiveFormChange(TObject *);
+  void PlaceOperationStatusWindow();
 
 protected:
   TOperationSide FCurrentSide;

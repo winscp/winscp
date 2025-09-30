@@ -17,6 +17,7 @@
 //---------------------------------------------------------------------------
 const UnicodeString ContextSeparator(TraceInitStr(L"\x00BB"));
 const UnicodeString LinkAppLabelMark(TraceInitStr(UnicodeString(L" ") + ContextSeparator));
+TNotifyEvent OnActiveFormChange = nullptr;
 //---------------------------------------------------------------------------
 class TFormCustomizationComponent : public TComponent
 {
@@ -959,6 +960,14 @@ static void __fastcall FormWindowProc(void * Data, TMessage & Message)
     CountClicksForWindowPrint(AForm);
     WndProc(Message);
   }
+  else if (Message.Msg == WM_ACTIVATE)
+  {
+    if (OnActiveFormChange != nullptr)
+    {
+      OnActiveFormChange(nullptr);
+    }
+    WndProc(Message);
+  }
   else
   {
     WndProc(Message);
@@ -1752,6 +1761,26 @@ void __fastcall CutFormToDesktop(TForm * Form)
   }
 }
 //---------------------------------------------------------------------------
+void CenterFormOn(TRect & Bounds, TCustomForm * CenterForm, Forms::TMonitor * CenterMonitor)
+{
+  int X, Y;
+  if (CenterForm != NULL)
+  {
+    TForm * PublicCenterForm = reinterpret_cast<TForm *>(CenterForm);
+    X = ((PublicCenterForm->Width - Bounds.Width()) / 2) + PublicCenterForm->Left;
+    Y = ((PublicCenterForm->Height - Bounds.Height()) / 2) + PublicCenterForm->Top;
+  }
+  else
+  {
+    X = (CenterMonitor->Width - Bounds.Width()) / 2;
+    Y = (CenterMonitor->Height - Bounds.Height()) / 2;
+  }
+
+  X = std::max(X, 0);
+  Y = std::max(Y, 0);
+  Bounds.SetLocation(X, Y);
+}
+//---------------------------------------------------------------------------
 void __fastcall UpdateFormPosition(TCustomForm * Form, TPosition Position)
 {
   if ((Position == poScreenCenter) ||
@@ -1771,30 +1800,8 @@ void __fastcall UpdateFormPosition(TCustomForm * Form, TPosition Position)
     }
 
     TRect Bounds = Form->BoundsRect;
-    int X, Y;
-    if (CenterForm != NULL)
-    {
-      X = ((((TForm *)CenterForm)->Width - Bounds.Width()) / 2) +
-        ((TForm *)CenterForm)->Left;
-      Y = ((((TForm *)CenterForm)->Height - Bounds.Height()) / 2) +
-        ((TForm *)CenterForm)->Top;
-    }
-    else
-    {
-      X = (Form->Monitor->Width - Bounds.Width()) / 2;
-      Y = (Form->Monitor->Height - Bounds.Height()) / 2;
-    }
-
-    if (X < 0)
-    {
-      X = 0;
-    }
-    if (Y < 0)
-    {
-      Y = 0;
-    }
-
-    Form->SetBounds(X, Y, Bounds.Width(), Bounds.Height());
+    CenterFormOn(Bounds, CenterForm, Form->Monitor);
+    Form->SetBounds(Bounds.Left, Bounds.Top, Bounds.Width(), Bounds.Height());
   }
 }
 //---------------------------------------------------------------------------

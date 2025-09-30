@@ -9,6 +9,7 @@
 #include <HistoryComboBox.hpp>
 //---------------------------------------------------------------------------
 extern const UnicodeString ContextSeparator;
+extern TNotifyEvent OnActiveFormChange;
 //---------------------------------------------------------------------------
 void __fastcall FixListColumnWidth(TListView * TListView, int Index);
 void __fastcall AutoSizeListColumnsWidth(TListView * ListView, int ColumnToShrinkIndex = -1);
@@ -59,6 +60,7 @@ void __fastcall SetVerticalControlsOrder(TControl ** ControlsOrder, int Count);
 void __fastcall SetHorizontalControlsOrder(TControl ** ControlsOrder, int Count);
 void __fastcall MakeNextInTabOrder(TWinControl * Control, TWinControl * After);
 void __fastcall CutFormToDesktop(TForm * Form);
+void CenterFormOn(TRect & Bounds, TCustomForm * CenterForm, Forms::TMonitor * CenterMonitor);
 void __fastcall UpdateFormPosition(TCustomForm * Form, TPosition Position);
 void __fastcall ResizeForm(TCustomForm * Form, int Width, int Height);
 TComponent * __fastcall GetFormOwner();
