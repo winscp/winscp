@@ -6301,8 +6301,6 @@ void __fastcall TCustomScpExplorerForm::SynchronizeInNewWindow(
 //---------------------------------------------------------------------------
 struct TSynchronizeParams
 {
-  UnicodeString LocalDirectory;
-  UnicodeString RemoteDirectory;
   TSynchronizeMode Mode;
   TSynchronizeChecklist * Checklist;
   int Params;
@@ -6643,8 +6641,6 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
       }
 
       TSynchronizeParams SynchronizeParams;
-      SynchronizeParams.LocalDirectory = LocalDirectory;
-      SynchronizeParams.RemoteDirectory = RemoteDirectory;
       SynchronizeParams.Mode = Mode;
       SynchronizeParams.CopyParam = &CopyParam;
       SynchronizeParams.Params = Params;
