@@ -1486,7 +1486,7 @@ void __fastcall TSynchronizeChecklistDialog::MoveActionExecute(TObject *)
       }
       else
       {
-        // The remaning "transfer" item
+        // The remaining "transfer" item
         ListView2->Selected->MakeVisible(false);
       }
       UpdateControls();
