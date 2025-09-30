@@ -1235,6 +1235,7 @@ void __fastcall TTerminalManager::InitTaskbarButtonCreatedMessage()
   // XE6 VCL already handles TaskbarButtonCreated, but does not call ChangeWindowMessageFilterEx.
   // So we keep our implementation.
   // See also https://stackoverflow.com/q/14614823/850848#14618587
+  // See also VCL's TTaskbar class
   FTaskbarButtonCreatedMessage = RegisterWindowMessage(L"TaskbarButtonCreated");
 
   HINSTANCE User32Library = LoadLibrary(L"user32.dll");
