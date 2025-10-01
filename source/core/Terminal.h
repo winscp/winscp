@@ -33,6 +33,7 @@ struct TLocalFileHandle;
 struct TNeonCertificateData;
 class TQueueItem;
 class TTerminalUI;
+struct TSynchronizeFileData;
 typedef std::vector<__int64> TCalculatedSizes;
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TQueryUserEvent)
@@ -366,6 +367,7 @@ protected:
   void __fastcall SynchronizeCollectFile(const UnicodeString FileName,
     const TRemoteFile * File, /*TSynchronizeData*/ void * Param);
   bool SameFileChecksum(const UnicodeString & LeftFileName, const TRemoteFile * RightFile);
+  UnicodeString CalculateLocalFileChecksum(const UnicodeString & FileName, const UnicodeString & Alg);
   void __fastcall CollectCalculatedChecksum(
     const UnicodeString & FileName, const UnicodeString & Alg, const UnicodeString & Hash);
   void __fastcall SynchronizeRemoteTimestamp(const UnicodeString FileName,
@@ -373,6 +375,16 @@ protected:
   void __fastcall SynchronizeLocalTimestamp(const UnicodeString FileName,
     const TRemoteFile * File, void * Param);
   void __fastcall DoSynchronizeProgress(const TSynchronizeData & Data, bool Collect);
+  void SynchronizedFileCheckModified(
+    TSynchronizeData * Data, std::unique_ptr<TSynchronizeChecklist::TItem> & ChecklistItem,
+    const UnicodeString & FullLeftFileName, TSynchronizeFileData * LocalData,
+    const UnicodeString & FullRightFileName, const TRemoteFile * RightFile);
+  void SynchronizedFileNew(
+    TSynchronizeData * Data, std::unique_ptr<TSynchronizeChecklist::TItem> & ChecklistItem,
+    const UnicodeString & FullRightFileName, const TRemoteFile * RightLinkedFile);
+  void SynchronizedFileNewOrModified(
+    TSynchronizeData * Data, std::unique_ptr<TSynchronizeChecklist::TItem> & ChecklistItem, const TRemoteFile * File, bool New);
+  bool DoFilesMatch(const TSynchronizeFileData * LeftItem, TSynchronizeChecklist::TItem * RightItem);
   void __fastcall DeleteLocalFile(UnicodeString FileName,
     const TRemoteFile * File, void * Param);
   bool __fastcall RecycleFile(const UnicodeString & FileName, const TRemoteFile * File);
