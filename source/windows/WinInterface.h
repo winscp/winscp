@@ -379,10 +379,11 @@ const int fsoDoNotUsePresets =  0x02;
 const int fsoAllowSelectedOnly = 0x04;
 const int fsoDisableByChecksum = 0x08;
 typedef void __fastcall (__closure *TFullSynchronizeInNewWindow)
-  (TSynchronizeMode Mode, int Params, const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+  (TSynchronizeMode Mode, int Params, const UnicodeString & Directory1, const UnicodeString & Directory2,
    const TCopyParamType * CopyParams);
-bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
-  UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
+bool DoFullSynchronizeDialog(
+  TSynchronizeMode & Mode, int & Params,
+  UnicodeString & Directory1, UnicodeString & Directory2,
   TCopyParamType * CopyParams, bool & SaveSettings, bool & SaveMode,
   int Options, const TUsableCopyParamAttrs & CopyParamAttrs,
   TFullSynchronizeInNewWindow OnFullSynchronizeInNewWindow, int AutoSubmit);
@@ -401,9 +402,9 @@ typedef void __fastcall (__closure *TSynchronizeMoveEvent)(
   TOperationSide Side, TStrings * FileList, const UnicodeString & NewFileName, bool TargetIsDirectory, void * Token);
 typedef void __fastcall (__closure *TSynchronizeExploreEvent)(
   TOperationSide Side, TSynchronizeChecklist::TAction Action, const TSynchronizeChecklist::TItem * Item);
-bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
-  TSynchronizeMode Mode, int Params,
-  const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
+bool DoSynchronizeChecklistDialog(
+  TSynchronizeChecklist * Checklist, TSynchronizeMode Mode, int Params,
+  const UnicodeString & Directory1, const UnicodeString & Directory2,
   TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
   TQueueSynchronizeEvent OnQueueSynchronize,
   TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,

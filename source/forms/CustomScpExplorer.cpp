@@ -6229,7 +6229,7 @@ bool __fastcall TCustomScpExplorerForm::SynchronizeAllowSelectedOnly()
 {
   // can be called from command line
   return Visible &&
-    ((DirView(osRemote)->SelCount > 0) ||
+    ((DirView(osOther)->SelCount > 0) ||
      (HasDirView[osLocal] && (DirView(osLocal)->SelCount > 0)));
 }
 //---------------------------------------------------------------------------
@@ -6248,9 +6248,9 @@ void __fastcall TCustomScpExplorerForm::GetSynchronizeOptions(
     Options.Filter->CaseSensitive = false;
     Options.Filter->Duplicates = Types::dupAccept;
 
-    if (DirView(osRemote)->SelCount > 0)
+    if (DirView(osOther)->SelCount > 0)
     {
-      DirView(osRemote)->CreateFileList(false, false, Options.Filter);
+      DirView(osOther)->CreateFileList(false, false, Options.Filter);
     }
     if (HasDirView[osLocal] && (DirView(osLocal)->SelCount > 0))
     {
@@ -6517,12 +6517,12 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeMove(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DoSynchronizeExplore(TOperationSide Side, TSynchronizeChecklist::TAction Action, const TSynchronizeChecklist::TItem * Item)
 {
-  UnicodeString LocalPath = ExcludeTrailingBackslash(Item->Local.Directory);
+  UnicodeString Path1 = ExcludeTrailingBackslash(Item->Info1.Directory);
   if (Side == osLocal)
   {
     if (Action == TSynchronizeChecklist::saDownloadNew)
     {
-      OpenFolderInExplorer(LocalPath);
+      OpenFolderInExplorer(Path1);
     }
     else
     {
@@ -6533,10 +6533,10 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeExplore(TOperationSide Side
   {
     // Similar to CreateHiddenDuplicateSession, except that it modifies the initial directories
     std::unique_ptr<TSessionData> SessionData(CloneCurrentSessionData());
-    SessionData->RemoteDirectory = UnixExcludeTrailingBackslash(Item->Remote.Directory);
-    if (!LocalPath.IsEmpty())
+    SessionData->RemoteDirectory = UnixExcludeTrailingBackslash(Item->Info2.Directory);
+    if (!Path1.IsEmpty())
     {
-      SessionData->LocalDirectory = LocalPath;
+      SessionData->LocalDirectory = Path1;
     }
 
     UnicodeString SessionName = SaveHiddenDuplicateSession(SessionData.get());
@@ -6545,7 +6545,7 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeExplore(TOperationSide Side
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FullSynchronizeInNewWindow(
-  TSynchronizeMode Mode, int Params, const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+  TSynchronizeMode Mode, int Params, const UnicodeString & Directory1, const UnicodeString & Directory2,
    const TCopyParamType * CopyParams)
 {
   UnicodeString SessionName = CreateHiddenDuplicateSession();
@@ -6555,13 +6555,13 @@ void __fastcall TCustomScpExplorerForm::FullSynchronizeInNewWindow(
       TProgramParams::FormatSwitch(DEFAULTS_SWITCH),
       SerializeCopyParamForCommandLine(CopyParams),
       TProgramParams::FormatSwitch(SYNCHRONIZE_SWITCH),
-      LocalDirectory, RemoteDirectory, Mode, Params));
+      Directory1, Directory2, Mode, Params));
 
   ExecuteNewInstance(SessionName, AdditionalParams);
 }
 //---------------------------------------------------------------------------
 int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
-  UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
+  UnicodeString & Directory1, UnicodeString & Directory2,
   TSynchronizeMode & Mode, int Params, bool & SaveMode, int UseDefaults)
 {
   int Result;
@@ -6575,13 +6575,14 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
   TUsableCopyParamAttrs CopyParamAttrs = Terminal->UsableCopyParamAttrs(0);
   bool Continue =
     ((UseDefaults == 0) ||
-     DoFullSynchronizeDialog(Mode, Params, LocalDirectory, RemoteDirectory,
+     DoFullSynchronizeDialog(
+       Mode, Params, Directory1, Directory2,
        &CopyParam, SaveSettings, SaveMode, Options, CopyParamAttrs, FullSynchronizeInNewWindow, UseDefaults)) &&
     (FLAGCLEAR(Params, TTerminal::spByChecksum) || EnsureCommandSessionFallback(fcCalculatingChecksum));
   if (Continue)
   {
     Configuration->Usage->Inc(L"Synchronizations");
-    CopyParam.IncludeFileMask.SetRoots(LocalDirectory, RemoteDirectory);
+    CopyParam.IncludeFileMask.SetRoots(Directory1, Directory2);
     UpdateCopyParamCounters(CopyParam);
 
     TSynchronizeOptions SynchronizeOptions;
@@ -6607,7 +6608,7 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
       try
       {
         UnicodeString SessionKey = Terminal->SessionData->SessionKey;
-        std::unique_ptr<TStrings> DataList(Configuration->LoadDirectoryStatisticsCache(SessionKey, RemoteDirectory, CopyParam));
+        std::unique_ptr<TStrings> DataList(Configuration->LoadDirectoryStatisticsCache(SessionKey, Directory2, CopyParam));
 
         int Files = -1;
         if (DataList->Count >= 1)
@@ -6622,15 +6623,17 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
         FSynchronizeProgressForm = new TSynchronizeProgressForm(Application, true, Files);
         FSynchronizeProgressForm->Start();
 
-        Checklist = Terminal->SynchronizeCollect(LocalDirectory, RemoteDirectory,
-          static_cast<TTerminal::TSynchronizeMode>(Mode),
-          &CopyParam, Params | TTerminal::spNoConfirmation, TerminalSynchronizeDirectory,
-          &SynchronizeOptions);
+        Checklist =
+          ManagedSession->SynchronizeCollect(
+            Directory1, Directory2,
+            static_cast<TTerminal::TSynchronizeMode>(Mode),
+            &CopyParam, Params | TTerminal::spNoConfirmation, TerminalSynchronizeDirectory,
+            &SynchronizeOptions);
 
         if (Terminal->SessionData->CacheDirectories)
         {
           DataList->Strings[0] = IntToStr(SynchronizeOptions.Files);
-          Configuration->SaveDirectoryStatisticsCache(SessionKey, RemoteDirectory, CopyParam, DataList.get());
+          Configuration->SaveDirectoryStatisticsCache(SessionKey, Directory2, CopyParam, DataList.get());
         }
       }
       __finally
@@ -6658,8 +6661,9 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
           {
             OnQueueSynchronize = DoQueueSynchronize;
           }
+
           if (!DoSynchronizeChecklistDialog(
-                Checklist, Mode, Params, LocalDirectory, RemoteDirectory, CustomCommandMenu, DoFullSynchronize,
+                Checklist, Mode, Params, Directory1, Directory2, CustomCommandMenu, DoFullSynchronize,
                 OnQueueSynchronize, DoSynchronizeChecklistCalculateSize, DoSynchronizeMove, DoSynchronizeExplore,
                 &SynchronizeParams))
           {

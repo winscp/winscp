@@ -355,11 +355,11 @@ public:
 
     if (RecordLocal)
     {
-      SynchronizeChecklistItemFileInfo(Item->GetLocalPath(), Item->IsDirectory, Item->Local);
+      SynchronizeChecklistItemFileInfo(Item->GetLocalPath(), Item->IsDirectory, Item->Info1);
     }
     if (RecordRemote)
     {
-      SynchronizeChecklistItemFileInfo(Item->GetRemotePath(), Item->IsDirectory, Item->Remote);
+      SynchronizeChecklistItemFileInfo(Item->GetRemotePath(), Item->IsDirectory, Item->Info2);
     }
   }
 

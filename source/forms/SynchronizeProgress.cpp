@@ -81,11 +81,11 @@ void __fastcall TSynchronizeProgressForm::Start()
 }
 //---------------------------------------------------------------------------
 int __fastcall TSynchronizeProgressForm::SetData(
-  const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory, int Progress, bool & Continue)
+  const UnicodeString & Directory1, const UnicodeString & Directory2, int Progress, bool & Continue)
 {
   DebugAssert(FStarted);
-  LocalDirectoryLabel->Caption = LocalDirectory;
-  RemoteDirectoryLabel->Caption = RemoteDirectory;
+  LeftDirectoryLabel->Caption = Directory1;
+  RightDirectoryLabel->Caption = Directory2;
   OperationProgress->Position = Progress;
   Continue = !FCanceled;
 

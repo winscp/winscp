@@ -9,8 +9,9 @@
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
-bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
-  UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory,
+bool DoFullSynchronizeDialog(
+  TSynchronizeMode & Mode, int & Params,
+  UnicodeString & Directory1, UnicodeString & Directory2,
   TCopyParamType * CopyParams, bool & SaveSettings, bool & SaveMode, int Options,
   const TUsableCopyParamAttrs & CopyParamAttrs, TFullSynchronizeInNewWindow OnFullSynchronizeInNewWindow,
   int AutoSubmit)
@@ -22,8 +23,8 @@ bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
     Dialog->Init(Options, CopyParamAttrs, OnFullSynchronizeInNewWindow);
     Dialog->Mode = Mode;
     Dialog->Params = Params;
-    Dialog->LocalDirectory = LocalDirectory;
-    Dialog->RemoteDirectory = RemoteDirectory;
+    Dialog->Directory1 = Directory1;
+    Dialog->Directory2 = Directory2;
     Dialog->CopyParams = *CopyParams;
     Dialog->SaveSettings = SaveSettings;
     Dialog->SaveMode = SaveMode;
@@ -36,8 +37,8 @@ bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
     {
       Mode = Dialog->Mode;
       Params = Dialog->Params;
-      LocalDirectory = Dialog->LocalDirectory;
-      RemoteDirectory = Dialog->RemoteDirectory;
+      Directory1 = Dialog->Directory1;
+      Directory2 = Dialog->Directory2;
       *CopyParams = Dialog->CopyParams;
       SaveSettings = Dialog->SaveSettings;
       SaveMode = Dialog->SaveMode;
@@ -192,22 +193,22 @@ void __fastcall TFullSynchronizeDialog::Submitted()
   CustomWinConfiguration->History[L"RemoteDirectory"] = RemoteDirectoryEdit->Items;
 }
 //---------------------------------------------------------------------------
-void __fastcall TFullSynchronizeDialog::SetRemoteDirectory(const UnicodeString value)
+void TFullSynchronizeDialog::SetDirectory2(const UnicodeString & value)
 {
   RemoteDirectoryEdit->Text = value;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TFullSynchronizeDialog::GetRemoteDirectory()
+UnicodeString TFullSynchronizeDialog::GetDirectory2()
 {
   return RemoteDirectoryEdit->Text;
 }
 //---------------------------------------------------------------------------
-void __fastcall TFullSynchronizeDialog::SetLocalDirectory(const UnicodeString value)
+void TFullSynchronizeDialog::SetDirectory1(const UnicodeString & value)
 {
   LocalDirectoryEdit->Text = value;
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall TFullSynchronizeDialog::GetLocalDirectory()
+UnicodeString TFullSynchronizeDialog::GetDirectory1()
 {
   return LocalDirectoryEdit->Text;
 }
@@ -470,7 +471,7 @@ void __fastcall TFullSynchronizeDialog::StartInNewWindow()
 {
   Submitted();
   TCopyParamType ACopyParams = CopyParams;
-  FOnFullSynchronizeInNewWindow(Mode, Params, LocalDirectory, RemoteDirectory, &ACopyParams);
+  FOnFullSynchronizeInNewWindow(Mode, Params, Directory1, Directory2, &ACopyParams);
   Close();
 }
 //---------------------------------------------------------------------------

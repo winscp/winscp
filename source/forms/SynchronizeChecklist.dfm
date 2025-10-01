@@ -1563,7 +1563,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     OnSelectItem = ListView2SelectItem
     OnSecondaryColumnHeader = ListView2SecondaryColumnHeader
   end
-  object StatusBar: TStatusBar
+  object StatusBar2: TStatusBar
     Left = 0
     Top = 500
     Width = 695
@@ -1577,32 +1577,32 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       end
       item
         Style = psOwnerDraw
-        Text = 'New local files'
+        Text = 'New left files'
         Width = 95
       end
       item
         Style = psOwnerDraw
-        Text = 'New remote files'
+        Text = 'New right files'
         Width = 95
       end
       item
         Style = psOwnerDraw
-        Text = 'Updated local files'
+        Text = 'Updated left files'
         Width = 95
       end
       item
         Style = psOwnerDraw
-        Text = 'Updated remote files'
+        Text = 'Updated right files'
         Width = 95
       end
       item
         Style = psOwnerDraw
-        Text = 'Obsolete remote files'
+        Text = 'Obsolete right files'
         Width = 95
       end
       item
         Style = psOwnerDraw
-        Text = 'Obsolete local files'
+        Text = 'Obsolete left files'
         Width = 95
       end
       item
@@ -1610,9 +1610,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       end>
     ParentShowHint = False
     ShowHint = True
-    OnMouseDown = StatusBarMouseDown
-    OnDrawPanel = StatusBarDrawPanel
-    OnResize = StatusBarResize
+    OnMouseDown = StatusBar2MouseDown
+    OnDrawPanel = StatusBar2DrawPanel
+    OnResize = StatusBar2Resize
   end
   object ActionImages: TPngImageList
     PngImages = <
@@ -2111,8 +2111,8 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       object TMenuItem
       end
     end
-    object LocalDirectory1: TMenuItem
-      Caption = '&Local Directory'
+    object LeftDirectory1: TMenuItem
+      Caption = '&Left Directory'
       object ExploreLocalDirectory1: TMenuItem
         Action = ExploreLocalAction2
       end
@@ -2120,8 +2120,8 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
         Action = LocalPathToClipboardAction
       end
     end
-    object RemoteDirectory1: TMenuItem
-      Caption = '&Remote Directory'
+    object RightDirectory1: TMenuItem
+      Caption = 'Rig&ht Directory'
       object ExploreRemoteDirectory1: TMenuItem
         Action = ExploreRemoteAction2
       end

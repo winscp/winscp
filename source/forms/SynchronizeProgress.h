@@ -23,8 +23,8 @@ class TSynchronizeProgressForm : public TForm
 __published:
   TLabel *Label1;
   TLabel *Label2;
-  TPathLabel *RemoteDirectoryLabel;
-  TPathLabel *LocalDirectoryLabel;
+  TPathLabel *RightDirectoryLabel;
+  TPathLabel *LeftDirectoryLabel;
   TLabel *StartTimeLabel;
   TLabel *StartTimeLabelLabel;
   TLabel *Label3;
@@ -54,7 +54,7 @@ public:
 
   void __fastcall Start();
   int __fastcall SetData(
-    const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory, int Progress, bool & Continue);
+    const UnicodeString & Directory1, const UnicodeString & Directory2, int Progress, bool & Continue);
 
   __property bool Started = { read = FStarted };
 

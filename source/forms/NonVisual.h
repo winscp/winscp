@@ -197,7 +197,7 @@ __published:    // IDE-managed Components
   TAction *DonatePageAction;
   TAction *FileSystemInfoAction;
   TAction *ClearCachesAction;
-  TAction *FullSynchronizeAction;
+  TAction *FullSynchronizeAction2;
   TAction *RemoteMoveToAction;
   TAction *RemoteMoveToFocusedAction;
   TAction *SelectOneAction;

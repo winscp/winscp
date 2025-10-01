@@ -149,7 +149,7 @@ inherited ScpExplorerForm: TScpExplorerForm
           Action = NonVisualDataModule.SynchronizeAction
         end
         object TBXItem44: TTBXItem
-          Action = NonVisualDataModule.FullSynchronizeAction
+          Action = NonVisualDataModule.FullSynchronizeAction2
         end
         object TBXItem3: TTBXItem
           Action = NonVisualDataModule.RemoteFindFilesAction2
@@ -762,7 +762,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         Action = NonVisualDataModule.SynchronizeAction
       end
       object TBXItem65: TTBXItem
-        Action = NonVisualDataModule.FullSynchronizeAction
+        Action = NonVisualDataModule.FullSynchronizeAction2
         DisplayMode = nbdmImageAndText
       end
     end

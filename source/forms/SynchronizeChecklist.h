@@ -24,7 +24,7 @@ class TSynchronizeChecklistDialog : public TForm
 __published:
   TPanel * Panel;
   TIEListView *ListView2;
-  TStatusBar *StatusBar;
+  TStatusBar *StatusBar2;
   TPngImageList *ActionImages;
   TButton *OkButton;
   TButton *CancelButton;
@@ -81,15 +81,15 @@ __published:
   TPopupMenu *OkPopupMenu;
   TMenuItem *StartItem;
   TMenuItem *StartQueueItem;
-  TMenuItem *LocalDirectory1;
-  TMenuItem *RemoteDirectory1;
+  TMenuItem *LeftDirectory1;
+  TMenuItem *RightDirectory1;
   TAction *RemotePathToClipboardAction;
   TMenuItem *CopyPathtoClipboard1;
   TAction *LocalPathToClipboardAction;
   TMenuItem *CopyPathtoClipboard2;
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall FormShow(TObject * Sender);
-  void __fastcall StatusBarDrawPanel(TStatusBar *StatusBar,
+  void __fastcall StatusBar2DrawPanel(TStatusBar *StatusBar,
           TStatusPanel *Panel, const TRect &Rect);
   void __fastcall ListView2Change(TObject *Sender, TListItem *Item,
           TItemChange Change);
@@ -101,7 +101,7 @@ __published:
           bool Selected);
   void __fastcall UpdateTimerTimer(TObject *Sender);
   void __fastcall SelectAllActionExecute(TObject *Sender);
-  void __fastcall StatusBarMouseDown(TObject *Sender, TMouseButton Button,
+  void __fastcall StatusBar2MouseDown(TObject *Sender, TMouseButton Button,
           TShiftState Shift, int X, int Y);
   void __fastcall ListView2Compare(TObject *Sender, TListItem *Item1,
           TListItem *Item2, int Data, int &Compare);
@@ -112,7 +112,7 @@ __published:
   void __fastcall CustomCommandsActionExecute(TObject *Sender);
   void __fastcall ListView2AdvancedCustomDrawSubItem(TCustomListView *Sender, TListItem *Item,
           int SubItem, TCustomDrawState State, TCustomDrawStage Stage, bool &DefaultDraw);
-  void __fastcall StatusBarResize(TObject *Sender);
+  void __fastcall StatusBar2Resize(TObject *Sender);
   void __fastcall UncheckActionExecute(TObject *Sender);
   void __fastcall UncheckAllActionExecute(TObject *Sender);
   void __fastcall ReverseActionExecute(TObject *Sender);
@@ -138,7 +138,7 @@ __published:
 public:
   __fastcall TSynchronizeChecklistDialog(
     TComponent * AOwner, TSynchronizeMode Mode, int Params,
-    const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+    const UnicodeString & Directory1, const UnicodeString & Directory2,
     TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
     TQueueSynchronizeEvent OnQueueSynchronize,
     TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
@@ -152,8 +152,8 @@ protected:
   TSynchronizeChecklist * FChecklist;
   TSynchronizeMode FMode;
   int FParams;
-  UnicodeString FLocalDirectory;
-  UnicodeString FRemoteDirectory;
+  UnicodeString FDirectory1;
+  UnicodeString FDirectory2;
   TWndMethod FOrigListViewWindowProc;
   TWndMethod FOrigStatusBarWindowProc;
   int FTotals[1 + TSynchronizeChecklist::ActionCount];

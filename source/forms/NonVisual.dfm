@@ -1501,12 +1501,12 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'directory_cache'
       Hint = 'Clear directory listing and directory changes caches'
     end
-    object FullSynchronizeAction: TAction
+    object FullSynchronizeAction2: TAction
       Tag = 15
       Category = 'Command'
       Caption = '&Synchronize...'
       HelpKeyword = 'task_synchronize_full'
-      Hint = 'Synchronize local directory with remote directory'
+      Hint = 'Synchronize files between two directories'
       ImageIndex = 66
       ShortCut = 16467
     end

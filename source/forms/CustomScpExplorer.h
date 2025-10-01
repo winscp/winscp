@@ -518,7 +518,7 @@ protected:
   UnicodeString __fastcall SerializeCopyParamForCommandLine(const TCopyParamType * CopyParams);
   void __fastcall SynchronizeInNewWindow(const TSynchronizeParamType & Params, const TCopyParamType * CopyParams);
   void __fastcall FullSynchronizeInNewWindow(
-    TSynchronizeMode Mode, int Params, const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+    TSynchronizeMode Mode, int Params, const UnicodeString & Directory1, const UnicodeString & Directory2,
      const TCopyParamType * CopyParams);
   bool __fastcall SynchronizeAllowSelectedOnly();
   virtual void __fastcall BatchStart(void *& Storage);
@@ -884,8 +884,8 @@ public:
   bool __fastcall DoSynchronizeDirectories(
     UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory, int UseDefaults);
   int __fastcall DoFullSynchronizeDirectories(
-    UnicodeString & LocalDirectory, UnicodeString & RemoteDirectory, TSynchronizeMode & Mode,
-    int Params, bool & SaveMode, int UseDefaults);
+    UnicodeString & Directory1, UnicodeString & Directory2,
+    TSynchronizeMode & Mode, int Params, bool & SaveMode, int UseDefaults);
   void __fastcall StandaloneEdit(const UnicodeString & FileName);
   bool __fastcall CanPasteFromClipBoard();
   virtual void __fastcall PasteFromClipBoard();

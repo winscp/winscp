@@ -350,11 +350,7 @@ protected:
     const TOverwriteFileParams * FileParams, unsigned int Answers, TQueryParams * QueryParams,
     TOperationSide Side, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, UnicodeString Message = L"");
-  void __fastcall DoSynchronizeCollectDirectory(const UnicodeString LocalDirectory,
-    const UnicodeString RemoteDirectory, TSynchronizeMode Mode,
-    const TCopyParamType * CopyParam, int Params,
-    TSynchronizeDirectory OnSynchronizeDirectory,
-    TSynchronizeOptions * Options, int Level, TSynchronizeChecklist * Checklist);
+  void DoSynchronizeCollectDirectory(TSynchronizeData Data);
   bool __fastcall LocalFindFirstLoop(const UnicodeString & Directory, TSearchRecChecked & SearchRec);
   bool __fastcall LocalFindNextLoop(TSearchRecChecked & SearchRec);
   bool __fastcall DoAllowLocalFileTransfer(
@@ -369,7 +365,7 @@ protected:
     const TRemoteFile * File, /*TSynchronizeData*/ void * Param);
   void __fastcall SynchronizeCollectFile(const UnicodeString FileName,
     const TRemoteFile * File, /*TSynchronizeData*/ void * Param);
-  bool SameFileChecksum(const UnicodeString & LocalFileName, const TRemoteFile * File);
+  bool SameFileChecksum(const UnicodeString & LeftFileName, const TRemoteFile * RightFile);
   void __fastcall CollectCalculatedChecksum(
     const UnicodeString & FileName, const UnicodeString & Alg, const UnicodeString & Hash);
   void __fastcall SynchronizeRemoteTimestamp(const UnicodeString FileName,
@@ -610,9 +606,9 @@ public:
   void __fastcall CalculateFilesChecksum(
     const UnicodeString & Alg, TStrings * FileList, TCalculatedChecksumEvent OnCalculatedChecksum);
   void __fastcall ClearCaches();
-  TSynchronizeChecklist * __fastcall SynchronizeCollect(const UnicodeString LocalDirectory,
-    const UnicodeString RemoteDirectory, TSynchronizeMode Mode,
-    const TCopyParamType * CopyParam, int Params,
+  TSynchronizeChecklist * SynchronizeCollect(
+    const UnicodeString & Directory1, const UnicodeString & Directory2,
+    TSynchronizeMode Mode, const TCopyParamType * CopyParam, int Params,
     TSynchronizeDirectory OnSynchronizeDirectory, TSynchronizeOptions * Options);
   void __fastcall SynchronizeApply(
     TSynchronizeChecklist * Checklist,

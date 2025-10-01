@@ -14,9 +14,9 @@
 //---------------------------------------------------------------------
 const int ImageColumnIndex = 4;
 //---------------------------------------------------------------------
-bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
-  TSynchronizeMode Mode, int Params,
-  const UnicodeString LocalDirectory, const UnicodeString RemoteDirectory,
+bool DoSynchronizeChecklistDialog(
+  TSynchronizeChecklist * Checklist, TSynchronizeMode Mode, int Params,
+  const UnicodeString & Directory1, const UnicodeString & Directory2,
   TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
   TQueueSynchronizeEvent OnQueueSynchronize,
   TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
@@ -24,14 +24,14 @@ bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
 {
   std::unique_ptr<TSynchronizeChecklistDialog> Dialog(
     new TSynchronizeChecklistDialog(
-      Application, Mode, Params, LocalDirectory, RemoteDirectory, OnCustomCommandMenu, OnSynchronize,
+      Application, Mode, Params, Directory1, Directory2, OnCustomCommandMenu, OnSynchronize,
       OnQueueSynchronize, OnSynchronizeChecklistCalculateSize, OnSynchronizeMove, OnSynchronizeExplore, Token));
   return Dialog->Execute(Checklist);
 }
 //---------------------------------------------------------------------
 __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   TComponent * AOwner, TSynchronizeMode Mode, int Params,
-  const UnicodeString & LocalDirectory, const UnicodeString & RemoteDirectory,
+  const UnicodeString & Directory1, const UnicodeString & Directory2,
   TCustomCommandMenuEvent OnCustomCommandMenu, TFullSynchronizeEvent OnSynchronize,
   TQueueSynchronizeEvent OnQueueSynchronize,
   TSynchronizeChecklistCalculateSize OnSynchronizeChecklistCalculateSize, TSynchronizeMoveEvent OnSynchronizeMove,
@@ -41,8 +41,8 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FFormRestored = false;
   FMode = Mode;
   FParams = Params;
-  FLocalDirectory = ExcludeTrailingBackslash(LocalDirectory);
-  FRemoteDirectory = UnixExcludeTrailingBackslash(RemoteDirectory);
+  FDirectory1 = ExcludeTrailingBackslash(Directory1);
+  FDirectory2 = UnixExcludeTrailingBackslash(Directory2);
   FOnCustomCommandMenu = OnCustomCommandMenu;
   FOnSynchronizeChecklistCalculateSize = OnSynchronizeChecklistCalculateSize;
   FOnSynchronizeMove = OnSynchronizeMove;
@@ -53,7 +53,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FToken = Token;
   UseSystemSettings(this);
   UseDesktopFont(ListView2);
-  UseDesktopFont(StatusBar);
+  UseDesktopFont(StatusBar2);
   FChecklist = NULL;
   FChangingItem = NULL;
   FChangingItemIgnore = false;
@@ -66,8 +66,8 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
 
   FOrigListViewWindowProc = ListView2->WindowProc;
   ListView2->WindowProc = ListViewWindowProc;
-  FOrigStatusBarWindowProc = StatusBar->WindowProc;
-  StatusBar->WindowProc = StatusBarWindowProc;
+  FOrigStatusBarWindowProc = StatusBar2->WindowProc;
+  StatusBar2->WindowProc = StatusBarWindowProc;
 
   UpdateImages();
 
@@ -86,7 +86,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
 //---------------------------------------------------------------------
 __fastcall TSynchronizeChecklistDialog::~TSynchronizeChecklistDialog()
 {
-  StatusBar->WindowProc = FOrigStatusBarWindowProc;
+  StatusBar2->WindowProc = FOrigStatusBarWindowProc;
   ListView2->WindowProc = FOrigListViewWindowProc;
 }
 //---------------------------------------------------------------------
@@ -261,7 +261,7 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
 {
   UpdateCaption();
 
-  StatusBar->Invalidate();
+  StatusBar2->Invalidate();
 
   bool AllChecked = true;
   bool AllUnchecked = true;
@@ -408,11 +408,11 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
   }
   else
   {
-    S = ChecklistItem->Local.Directory;
-    if (AnsiSameText(FLocalDirectory, S.SubString(1, FLocalDirectory.Length())))
+    S = ChecklistItem->Info1.Directory;
+    if (AnsiSameText(FDirectory1, S.SubString(1, FDirectory1.Length())))
     {
       S[1] = L'.';
-      S.Delete(2, FLocalDirectory.Length() - 1);
+      S.Delete(2, FDirectory1.Length() - 1);
     }
     else
     {
@@ -433,11 +433,11 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
       else
       {
         AddSubItem(Item, Index,
-          FormatPanelBytes(ChecklistItem->Local.Size, WinConfiguration->FormatSizeBytes));
+          FormatPanelBytes(ChecklistItem->Info1.Size, WinConfiguration->FormatSizeBytes));
       }
       AddSubItem(Item, Index,
-        UserModificationStr(ChecklistItem->Local.Modification,
-          ChecklistItem->Local.ModificationFmt));
+        UserModificationStr(ChecklistItem->Info1.Modification,
+          ChecklistItem->Info1.ModificationFmt));
     }
   }
 
@@ -452,11 +452,11 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
   }
   else
   {
-    S = ChecklistItem->Remote.Directory;
-    if (AnsiSameText(FRemoteDirectory, S.SubString(1, FRemoteDirectory.Length())))
+    S = ChecklistItem->Info2.Directory;
+    if (AnsiSameText(FDirectory2, S.SubString(1, FDirectory2.Length())))
     {
       S[1] = L'.';
-      S.Delete(2, FRemoteDirectory.Length() - 1);
+      S.Delete(2, FDirectory2.Length() - 1);
     }
     else
     {
@@ -477,10 +477,10 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
       else
       {
         AddSubItem(Item, Index,
-          FormatPanelBytes(ChecklistItem->Remote.Size, WinConfiguration->FormatSizeBytes));
+          FormatPanelBytes(ChecklistItem->Info2.Size, WinConfiguration->FormatSizeBytes));
       }
-      AddSubItem(Item, Index, UserModificationStr(ChecklistItem->Remote.Modification,
-        ChecklistItem->Remote.ModificationFmt));
+      AddSubItem(Item, Index, UserModificationStr(ChecklistItem->Info2.Modification,
+        ChecklistItem->Info2.ModificationFmt));
     }
   }
 }
@@ -705,18 +705,18 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarHintShow(TCMHintShow & Hin
 
   if (IPanel >= 0)
   {
-    TStatusPanel * Panel = StatusBar->Panels->Items[IPanel];
-    HintShow.HintInfo->HintStr = FORMAT(L"%s|%s", (Panel->Text, StatusBar->Hint));
+    TStatusPanel * Panel = StatusBar2->Panels->Items[IPanel];
+    HintShow.HintInfo->HintStr = FORMAT(L"%s|%s", (Panel->Text, StatusBar2->Hint));
 
     HintShow.HintInfo->CursorRect.Left = 0;
     while (IPanel > 0)
     {
       IPanel--;
-      HintShow.HintInfo->CursorRect.Left += StatusBar->Panels->Items[IPanel]->Width;
+      HintShow.HintInfo->CursorRect.Left += StatusBar2->Panels->Items[IPanel]->Width;
     }
 
     HintShow.HintInfo->CursorRect.Top = 0;
-    HintShow.HintInfo->CursorRect.Bottom = StatusBar->ClientHeight;
+    HintShow.HintInfo->CursorRect.Bottom = StatusBar2->ClientHeight;
     HintShow.HintInfo->CursorRect.Right = HintShow.HintInfo->CursorRect.Left + Panel->Width;
 
     HintShow.Result = 0;
@@ -748,7 +748,7 @@ void __fastcall TSynchronizeChecklistDialog::ListView2AdvancedCustomDrawSubItem(
   // this is just fake handler that makes the list view request custom draw notification above
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::StatusBarDrawPanel(
+void __fastcall TSynchronizeChecklistDialog::StatusBar2DrawPanel(
   TStatusBar * StatusBar, TStatusPanel * Panel, const TRect & Rect)
 {
   bool Possible;
@@ -839,20 +839,20 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarDrawPanel(
 int __fastcall TSynchronizeChecklistDialog::PanelCount()
 {
   // last "panel" is technical
-  return StatusBar->Panels->Count - 1;
+  return StatusBar2->Panels->Count - 1;
 }
 //---------------------------------------------------------------------------
 int __fastcall TSynchronizeChecklistDialog::PanelAt(int X)
 {
   int Result = 0;
-  while ((X > StatusBar->Panels->Items[Result]->Width) &&
+  while ((X > StatusBar2->Panels->Items[Result]->Width) &&
     (Result < PanelCount()))
   {
-    X -= StatusBar->Panels->Items[Result]->Width;
+    X -= StatusBar2->Panels->Items[Result]->Width;
     Result++;
   }
 
-  return ((Result < StatusBar->Panels->Count - 1) ? Result : -1);
+  return ((Result < StatusBar2->Panels->Count - 1) ? Result : -1);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::ListView2Change(
@@ -1015,7 +1015,7 @@ void __fastcall TSynchronizeChecklistDialog::SelectAllActionExecute(
   SelectAll(true);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::StatusBarMouseDown(
+void __fastcall TSynchronizeChecklistDialog::StatusBar2MouseDown(
   TObject * /*Sender*/, TMouseButton /*Button*/, TShiftState Shift, int X,
   int /*Y*/)
 {
@@ -1059,12 +1059,12 @@ void __fastcall TSynchronizeChecklistDialog::ListView2Compare(
       break;
 
     case 2: // local size
-      Compare = CompareNumber(ChecklistItem1->Local.Size, ChecklistItem2->Local.Size);
+      Compare = CompareNumber(ChecklistItem1->Info1.Size, ChecklistItem2->Info1.Size);
       break;
 
     case 3: // local changed
-      Compare = CompareFileTime(ChecklistItem1->Local.Modification,
-        ChecklistItem2->Local.Modification);
+      Compare = CompareFileTime(ChecklistItem1->Info1.Modification,
+        ChecklistItem2->Info1.Modification);
       break;
 
     case ImageColumnIndex: // action
@@ -1072,12 +1072,12 @@ void __fastcall TSynchronizeChecklistDialog::ListView2Compare(
       break;
 
     case 6: // remote size
-      Compare = CompareNumber(ChecklistItem1->Remote.Size, ChecklistItem2->Remote.Size);
+      Compare = CompareNumber(ChecklistItem1->Info2.Size, ChecklistItem2->Info2.Size);
       break;
 
     case 7: // remote changed
-      Compare = CompareFileTime(ChecklistItem1->Remote.Modification,
-        ChecklistItem2->Remote.Modification);
+      Compare = CompareFileTime(ChecklistItem1->Info2.Modification,
+        ChecklistItem2->Info2.Modification);
       break;
   }
 
@@ -1150,14 +1150,14 @@ void __fastcall TSynchronizeChecklistDialog::CustomCommandsActionExecute(
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::UpdateStatusBarSize()
 {
-  int PanelWidth = Min(StatusBar->Width / PanelCount(), ScaleByTextHeight(this, 160));
+  int PanelWidth = Min(StatusBar2->Width / PanelCount(), ScaleByTextHeight(this, 160));
   for (int Index = 0; Index < PanelCount(); Index++)
   {
-    StatusBar->Panels->Items[Index]->Width = PanelWidth;
+    StatusBar2->Panels->Items[Index]->Width = PanelWidth;
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeChecklistDialog::StatusBarResize(TObject * /*Sender*/)
+void __fastcall TSynchronizeChecklistDialog::StatusBar2Resize(TObject * /*Sender*/)
 {
   UpdateStatusBarSize();
 }
@@ -1445,12 +1445,12 @@ void __fastcall TSynchronizeChecklistDialog::MoveActionExecute(TObject *)
   if (DeleteAction->Action == TSynchronizeChecklist::saDeleteRemote)
   {
     Side = osRemote;
-    NewFileName = UnixCombinePaths(TransferChecklistItem->Remote.Directory, TransferChecklistItem->Local.FileName);
+    NewFileName = UnixCombinePaths(TransferChecklistItem->Info2.Directory, TransferChecklistItem->Info1.FileName);
   }
   else if (DebugAlwaysTrue(DeleteAction->Action == TSynchronizeChecklist::saDeleteLocal))
   {
     Side = osLocal;
-    NewFileName = CombinePaths(TransferChecklistItem->Local.Directory, TransferChecklistItem->Remote.FileName);
+    NewFileName = CombinePaths(TransferChecklistItem->Info1.Directory, TransferChecklistItem->Info2.FileName);
   }
 
   if (DebugAlwaysTrue(!NewFileName.IsEmpty()))
@@ -1502,7 +1502,7 @@ void __fastcall TSynchronizeChecklistDialog::CheckDirectory(bool Check)
   {
     const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
     // It does not matter if we use local or remote directory
-    Directories->Add(IncludeTrailingBackslash(ChecklistItem->Local.Directory));
+    Directories->Add(IncludeTrailingBackslash(ChecklistItem->Info1.Directory));
   }
 
   TAutoFlag ChangingItemMassSwitch(FChangingItemMass);
@@ -1510,7 +1510,7 @@ void __fastcall TSynchronizeChecklistDialog::CheckDirectory(bool Check)
   {
     TListItem * Item = ListView2->Items->Item[Index];
     const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
-    UnicodeString Directory = IncludeTrailingBackslash(ChecklistItem->Local.Directory);
+    UnicodeString Directory = IncludeTrailingBackslash(ChecklistItem->Info1.Directory);
     for (int Index2 = 0; Index2 < Directories->Count; Index2++)
     {
       if (StartsText(Directories->Strings[Index2], Directory))
@@ -1699,12 +1699,12 @@ void __fastcall TSynchronizeChecklistDialog::FindMoveCandidateActionExecute(TObj
                 else if ((Action == TSynchronizeChecklist::saDeleteLocal) ||
                          (Action == TSynchronizeChecklist::saDownloadNew))
                 {
-                  IsCandidate = SamePaths(ChecklistItem->Local.Directory, ChecklistItem2->Local.Directory);
+                  IsCandidate = SamePaths(ChecklistItem->Info1.Directory, ChecklistItem2->Info1.Directory);
                 }
                 else if ((Action == TSynchronizeChecklist::saDeleteRemote) ||
                          (Action == TSynchronizeChecklist::saUploadNew))
                 {
-                  IsCandidate = UnixSamePath(ChecklistItem->Remote.Directory, ChecklistItem2->Remote.Directory);
+                  IsCandidate = UnixSamePath(ChecklistItem->Info2.Directory, ChecklistItem2->Info2.Directory);
                 }
                 else
                 {

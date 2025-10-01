@@ -483,8 +483,8 @@ public:
 
     TAction Action;
     bool IsDirectory;
-    TFileInfo Local;
-    TFileInfo Remote;
+    TFileInfo Info1;
+    TFileInfo Info2;
     int ImageIndex;
     bool Checked;
     TRemoteFile * RemoteFile;

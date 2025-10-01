@@ -6000,49 +6000,68 @@ struct TSynchronizeFileData
   bool New;
   bool IsDirectory;
   TSynchronizeChecklist::TItem::TFileInfo Info;
-  TSynchronizeChecklist::TItem::TFileInfo MatchingRemoteFile;
-  TRemoteFile * MatchingRemoteFileFile;
-  int MatchingRemoteFileImageIndex;
+  TSynchronizeChecklist::TItem::TFileInfo MatchingFile2;
+  TRemoteFile * MatchingRemoteFile2;
+  int MatchingRemoteFile2ImageIndex;
   FILETIME LocalLastWriteTime;
 };
 //---------------------------------------------------------------------------
 const int sfFirstLevel = 0x01;
 struct TSynchronizeData
 {
-  UnicodeString LocalDirectory;
-  UnicodeString RemoteDirectory;
+  UnicodeString Directory1;
+  UnicodeString Directory2;
   TTerminal::TSynchronizeMode Mode;
   int Params;
   TSynchronizeDirectory OnSynchronizeDirectory;
   TSynchronizeOptions * Options;
+  TStringList * LeftFileList;
   int Flags;
-  TStringList * LocalFileList;
   const TCopyParamType * CopyParam;
   TSynchronizeChecklist * Checklist;
+
+  void ClearLevelSpecific()
+  {
+    LeftFileList = NULL;
+  }
+
+  TSynchronizeData CloneFor(const UnicodeString & ADirectory1, const UnicodeString & ADirectory2)
+  {
+    TSynchronizeData Result = *this;
+    Result.ClearLevelSpecific();
+    Result.Directory1 = ADirectory1;
+    Result.Directory2 = ADirectory2;
+    Result.Flags = (Result.Flags & ~sfFirstLevel);
+    return Result;
+  }
 };
 //---------------------------------------------------------------------------
-TSynchronizeChecklist * __fastcall TTerminal::SynchronizeCollect(const UnicodeString LocalDirectory,
-  const UnicodeString RemoteDirectory, TSynchronizeMode Mode,
-  const TCopyParamType * CopyParam, int Params,
+TSynchronizeChecklist * TTerminal::SynchronizeCollect(
+  const UnicodeString & Directory1, const UnicodeString & Directory2,
+  TSynchronizeMode Mode, const TCopyParamType * CopyParam, int Params,
   TSynchronizeDirectory OnSynchronizeDirectory,
   TSynchronizeOptions * Options)
 {
   TValueRestorer<bool> UseBusyCursorRestorer(FUseBusyCursor, false);
 
-  TSynchronizeChecklist * Checklist = new TSynchronizeChecklist();
-  try
-  {
-    DoSynchronizeCollectDirectory(LocalDirectory, RemoteDirectory, Mode,
-      CopyParam, Params, OnSynchronizeDirectory, Options, sfFirstLevel,
-      Checklist);
-    Checklist->Sort();
-  }
-  catch(...)
-  {
-    delete Checklist;
-    throw;
-  }
-  return Checklist;
+  std::unique_ptr<TSynchronizeChecklist> Checklist(new TSynchronizeChecklist());
+
+  TSynchronizeData Data;
+  Data.Directory1 = Directory1;
+  Data.Directory2 = Directory2;
+  Data.Mode = Mode;
+  Data.CopyParam = CopyParam;
+  Data.Params = Params;
+  Data.OnSynchronizeDirectory = OnSynchronizeDirectory;
+  Data.Options = Options;
+  Data.Flags = sfFirstLevel;
+  Data.Checklist = Checklist.get();
+  Data.ClearLevelSpecific();
+
+  DoSynchronizeCollectDirectory(Data);
+  Checklist->Sort();
+
+  return Checklist.release();
 }
 //---------------------------------------------------------------------------
 static void __fastcall AddFlagName(UnicodeString & ParamsStr, int & Params, int Param, const UnicodeString & Name)
@@ -6180,71 +6199,58 @@ void DestroyLocalFileList(TStringList * LocalFileList)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString LocalDirectory,
-  const UnicodeString RemoteDirectory, TSynchronizeMode Mode,
-  const TCopyParamType * CopyParam, int Params,
-  TSynchronizeDirectory OnSynchronizeDirectory, TSynchronizeOptions * Options,
-  int Flags, TSynchronizeChecklist * Checklist)
+void TTerminal::DoSynchronizeCollectDirectory(TSynchronizeData Data)
 {
-  TSynchronizeData Data;
+  Data.Directory1 = IncludeTrailingBackslash(Data.Directory1);
+  Data.Directory2 = UnixIncludeTrailingBackslash(Data.Directory2);
 
-  Data.LocalDirectory = IncludeTrailingBackslash(LocalDirectory);
-  Data.RemoteDirectory = UnixIncludeTrailingBackslash(RemoteDirectory);
-  Data.Mode = Mode;
-  Data.Params = Params;
-  Data.OnSynchronizeDirectory = OnSynchronizeDirectory;
-  Data.LocalFileList = NULL;
-  Data.CopyParam = CopyParam;
-  Data.Options = Options;
-  Data.Flags = Flags;
-  Data.Checklist = Checklist;
+  LogEvent(FORMAT(
+    L"Collecting synchronization list for '%s' and '%s', mode = %s, params = 0x%x (%s), file mask = '%s'",
+    (Data.Directory1, Data.Directory2, SynchronizeModeStr(Data.Mode), int(Data.Params), SynchronizeParamsStr(Data.Params),
+     Data.CopyParam->IncludeFileMask.Masks)));
 
-  LogEvent(FORMAT(L"Collecting synchronization list for local directory '%s' and remote directory '%s', "
-    "mode = %s, params = 0x%x (%s), file mask = '%s'", (LocalDirectory, RemoteDirectory,
-    SynchronizeModeStr(Mode), int(Params), SynchronizeParamsStr(Params), CopyParam->IncludeFileMask.Masks)));
-
-  if (FLAGCLEAR(Params, spDelayProgress))
+  if (FLAGCLEAR(Data.Params, spDelayProgress))
   {
     DoSynchronizeProgress(Data, true);
   }
 
   try
   {
-    Data.LocalFileList = CreateSortedStringList(FLAGSET(Params, spCaseSensitive));
+    Data.LeftFileList = CreateSortedStringList(FLAGSET(Data.Params, spCaseSensitive));
 
     TSearchRecOwned SearchRec;
-    if (LocalFindFirstLoop(Data.LocalDirectory + L"*.*", SearchRec))
+    if (LocalFindFirstLoop(Data.Directory1 + L"*.*", SearchRec))
     {
       do
       {
         UnicodeString FileName = SearchRec.Name;
         UnicodeString FullLocalFileName = SearchRec.GetFilePath();
-        UnicodeString RemoteFileName = ChangeFileName(CopyParam, FileName, osLocal, false);
+        UnicodeString RemoteFileName = ChangeFileName(Data.CopyParam, FileName, osLocal, false);
         if (SearchRec.IsRealFile() &&
-            DoAllowLocalFileTransfer(FullLocalFileName, SearchRec, CopyParam, true) &&
-            (FLAGCLEAR(Flags, sfFirstLevel) ||
-             (Options == NULL) ||
-             Options->MatchesFilter(FileName) ||
-             Options->MatchesFilter(RemoteFileName)))
+            DoAllowLocalFileTransfer(FullLocalFileName, SearchRec, Data.CopyParam, true) &&
+            (FLAGCLEAR(Data.Flags, sfFirstLevel) ||
+             (Data.Options == NULL) ||
+             Data.Options->MatchesFilter(FileName) ||
+             Data.Options->MatchesFilter(RemoteFileName)))
         {
           TSynchronizeFileData * FileData = new TSynchronizeFileData;
 
           FileData->IsDirectory = SearchRec.IsDirectory();
           FileData->Info.FileName = FileName;
-          FileData->Info.Directory = Data.LocalDirectory;
+          FileData->Info.Directory = Data.Directory1;
           FileData->Info.Modification = SearchRec.GetLastWriteTime();
           FileData->Info.ModificationFmt = mfFull;
           FileData->Info.Size = SearchRec.Size;
           FileData->LocalLastWriteTime = SearchRec.FindData.ftLastWriteTime;
           FileData->New = true;
           FileData->Modified = false;
-          Data.LocalFileList->AddObject(FileName, reinterpret_cast<TObject*>(FileData));
-          LogEvent(0, FORMAT(L"Local file %s included to synchronization",
+          Data.LeftFileList->AddObject(FileName, reinterpret_cast<TObject*>(FileData));
+          LogEvent(0, FORMAT(L"Left file %s included to synchronization",
             (FormatFileDetailsForLog(FullLocalFileName, SearchRec.GetLastWriteTime(), SearchRec.Size))));
         }
         else
         {
-          LogEvent(0, FORMAT(L"Local file %s excluded from synchronization",
+          LogEvent(0, FORMAT(L"Left file %s excluded from synchronization",
             (FormatFileDetailsForLog(FullLocalFileName, SearchRec.GetLastWriteTime(), SearchRec.Size))));
         }
 
@@ -6255,33 +6261,32 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
 
       // can we expect that ProcessDirectory would take so little time
       // that we can postpone showing progress window until anything actually happens?
-      bool Cached = FLAGSET(Params, spUseCache) && SessionData->CacheDirectories &&
-        FDirectoryCache->HasFileList(RemoteDirectory);
+      bool Directory2ShouldBeQuick =
+        (FLAGSET(Data.Params, spUseCache) && SessionData->CacheDirectories && FDirectoryCache->HasFileList(Data.Directory2));
 
-      if (!Cached && FLAGSET(Params, spDelayProgress))
+      if (!Directory2ShouldBeQuick && FLAGSET(Data.Params, spDelayProgress))
       {
         DoSynchronizeProgress(Data, true);
       }
 
-      ProcessDirectory(RemoteDirectory, SynchronizeCollectFile, &Data,
-        FLAGSET(Params, spUseCache));
+      ProcessDirectory(Data.Directory2, SynchronizeCollectFile, &Data, FLAGSET(Data.Params, spUseCache));
 
       TSynchronizeFileData * FileData;
-      for (int Index = 0; Index < Data.LocalFileList->Count; Index++)
+      for (int Index = 0; Index < Data.LeftFileList->Count; Index++)
       {
         FileData = reinterpret_cast<TSynchronizeFileData *>
-          (Data.LocalFileList->Objects[Index]);
+          (Data.LeftFileList->Objects[Index]);
         // add local file either if we are going to upload it
         // (i.e. if it is updated or we want to upload even new files)
         // or if we are going to delete it (i.e. all "new"=obsolete files)
-        bool Modified = (FileData->Modified && ((Mode == smBoth) || (Mode == smRemote)));
+        bool Modified = (FileData->Modified && ((Data.Mode == smBoth) || (Data.Mode == smRemote)));
         bool New = (FileData->New &&
-          ((Mode == smLocal) ||
-           (((Mode == smBoth) || (Mode == smRemote)) && FLAGCLEAR(Params, spTimestamp))));
+          ((Data.Mode == smLocal) ||
+           (((Data.Mode == smBoth) || (Data.Mode == smRemote)) && FLAGCLEAR(Data.Params, spTimestamp))));
 
         if (New)
         {
-          LogEvent(FORMAT(L"Local file %s is new",
+          LogEvent(FORMAT(L"Left file %s is new",
             (FormatFileDetailsForLog(FileData->Info.Directory + FileData->Info.FileName,
              FileData->Info.Modification, FileData->Info.Size))));
         }
@@ -6293,37 +6298,37 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
           {
             ChecklistItem->IsDirectory = FileData->IsDirectory;
 
-            ChecklistItem->Local = FileData->Info;
+            ChecklistItem->Info1 = FileData->Info;
             ChecklistItem->FLocalLastWriteTime = FileData->LocalLastWriteTime;
 
             if (Modified)
             {
-              DebugAssert(!FileData->MatchingRemoteFile.Directory.IsEmpty());
-              ChecklistItem->Remote = FileData->MatchingRemoteFile;
-              ChecklistItem->ImageIndex = FileData->MatchingRemoteFileImageIndex;
-              ChecklistItem->RemoteFile = FileData->MatchingRemoteFileFile;
+              DebugAssert(!FileData->MatchingFile2.Directory.IsEmpty());
+              ChecklistItem->Info2 = FileData->MatchingFile2;
+              ChecklistItem->ImageIndex = FileData->MatchingRemoteFile2ImageIndex;
+              ChecklistItem->RemoteFile = FileData->MatchingRemoteFile2;
             }
             else
             {
-              ChecklistItem->Remote.Directory = Data.RemoteDirectory;
+              ChecklistItem->Info2.Directory = Data.Directory2;
             }
 
-            if ((Mode == smBoth) || (Mode == smRemote))
+            if ((Data.Mode == smBoth) || (Data.Mode == smRemote))
             {
               ChecklistItem->Action =
                 (Modified ? TSynchronizeChecklist::saUploadUpdate : TSynchronizeChecklist::saUploadNew);
               ChecklistItem->Checked =
-                (Modified || FLAGCLEAR(Params, spExistingOnly)) &&
-                (!ChecklistItem->IsDirectory || FLAGCLEAR(Params, spNoRecurse) ||
-                 FLAGSET(Params, spSubDirs));
+                (Modified || FLAGCLEAR(Data.Params, spExistingOnly)) &&
+                (!ChecklistItem->IsDirectory || FLAGCLEAR(Data.Params, spNoRecurse) ||
+                 FLAGSET(Data.Params, spSubDirs));
             }
-            else if ((Mode == smLocal) && FLAGCLEAR(Params, spTimestamp))
+            else if ((Data.Mode == smLocal) && FLAGCLEAR(Data.Params, spTimestamp))
             {
               ChecklistItem->Action = TSynchronizeChecklist::saDeleteLocal;
               ChecklistItem->Checked =
-                FLAGSET(Params, spDelete) &&
-                (!ChecklistItem->IsDirectory || FLAGCLEAR(Params, spNoRecurse) ||
-                 FLAGSET(Params, spSubDirs));
+                FLAGSET(Data.Params, spDelete) &&
+                (!ChecklistItem->IsDirectory || FLAGCLEAR(Data.Params, spNoRecurse) ||
+                 FLAGSET(Data.Params, spSubDirs));
             }
 
             if (ChecklistItem->Action != TSynchronizeChecklist::saNone)
@@ -6341,7 +6346,7 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
         {
           if (FileData->Modified)
           {
-            delete FileData->MatchingRemoteFileFile;
+            delete FileData->MatchingRemoteFile2;
           }
         }
       }
@@ -6349,7 +6354,7 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const UnicodeString Loc
   }
   __finally
   {
-    DestroyLocalFileList(Data.LocalFileList);
+    DestroyLocalFileList(Data.LeftFileList);
   }
 }
 //---------------------------------------------------------------------------
@@ -6394,7 +6399,7 @@ void __fastcall TTerminal::CollectCalculatedChecksum(
   FCollectedCalculatedChecksum = Hash;
 }
 //---------------------------------------------------------------------------
-bool TTerminal::SameFileChecksum(const UnicodeString & LocalFileName, const TRemoteFile * File)
+bool TTerminal::SameFileChecksum(const UnicodeString & LeftFileName, const TRemoteFile * RightFile)
 {
   UnicodeString DefaultAlg = Sha256ChecksumAlg;
   UnicodeString Algs =
@@ -6418,22 +6423,22 @@ bool TTerminal::SameFileChecksum(const UnicodeString & LocalFileName, const TRem
   }
 
   std::unique_ptr<TStrings> FileList(new TStringList());
-  FileList->AddObject(File->FullFileName, const_cast<TRemoteFile *>(File));
+  FileList->AddObject(RightFile->FullFileName, const_cast<TRemoteFile *>(RightFile));
   DebugAssert(FCollectedCalculatedChecksum.IsEmpty());
   FCollectedCalculatedChecksum = EmptyStr;
   CalculateFilesChecksum(Alg, FileList.get(), CollectCalculatedChecksum);
-  UnicodeString RemoteChecksum = FCollectedCalculatedChecksum;
+  UnicodeString RightChecksum = FCollectedCalculatedChecksum;
   FCollectedCalculatedChecksum = EmptyStr;
 
-  UnicodeString LocalChecksum;
+  UnicodeString LeftChecksum;
   FILE_OPERATION_LOOP_BEGIN
   {
-    std::unique_ptr<THandleStream> Stream(TSafeHandleStream::CreateFromFile(LocalFileName, fmOpenRead | fmShareDenyWrite));
-    LocalChecksum = CalculateFileChecksum(Stream.get(), Alg);
+    std::unique_ptr<THandleStream> Stream(TSafeHandleStream::CreateFromFile(LeftFileName, fmOpenRead | fmShareDenyWrite));
+    LeftChecksum = CalculateFileChecksum(Stream.get(), Alg);
   }
-  FILE_OPERATION_LOOP_END(FMTLOAD(CHECKSUM_ERROR, (LocalFileName)));
+  FILE_OPERATION_LOOP_END(FMTLOAD(CHECKSUM_ERROR, (LeftFileName)));
 
-  return SameText(RemoteChecksum, LocalChecksum);
+  return SameText(RightChecksum, LeftChecksum);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName,
@@ -6462,11 +6467,11 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
       ChecklistItem->IsDirectory = File->IsDirectory;
       ChecklistItem->ImageIndex = File->IconIndex;
 
-      ChecklistItem->Remote.FileName = File->FileName;
-      ChecklistItem->Remote.Directory = Data->RemoteDirectory;
-      ChecklistItem->Remote.Modification = File->Modification;
-      ChecklistItem->Remote.ModificationFmt = File->ModificationFmt;
-      ChecklistItem->Remote.Size = File->Resolve()->Size;
+      ChecklistItem->Info2.FileName = File->FileName;
+      ChecklistItem->Info2.Directory = Data->Directory2;
+      ChecklistItem->Info2.Modification = File->Modification;
+      ChecklistItem->Info2.ModificationFmt = File->ModificationFmt;
+      ChecklistItem->Info2.Size = File->Resolve()->Size;
 
       bool Modified = false;
       bool New = false;
@@ -6476,12 +6481,12 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
       }
       else
       {
-        int LocalIndex = Data->LocalFileList->IndexOf(LocalFileName);
+        int LocalIndex = Data->LeftFileList->IndexOf(LocalFileName);
         New = (LocalIndex < 0);
         if (!New)
         {
           TSynchronizeFileData * LocalData =
-            reinterpret_cast<TSynchronizeFileData *>(Data->LocalFileList->Objects[LocalIndex]);
+            reinterpret_cast<TSynchronizeFileData *>(Data->LeftFileList->Objects[LocalIndex]);
 
           LocalData->New = false;
           UnicodeString FullLocalFileName = LocalData->Info.Directory + LocalData->Info.FileName;
@@ -6493,22 +6498,22 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
           }
           else if (!File->IsDirectory)
           {
-            ChecklistItem->Local = LocalData->Info;
+            ChecklistItem->Info1 = LocalData->Info;
 
-            ChecklistItem->Local.Modification =
-              ReduceDateTimePrecision(ChecklistItem->Local.Modification, File->ModificationFmt);
+            ChecklistItem->Info1.Modification =
+              ReduceDateTimePrecision(ChecklistItem->Info1.Modification, File->ModificationFmt);
 
-            bool LocalModified = false;
+            bool LeftModified = false;
             // for spTimestamp+spBySize require that the file sizes are the same
             // before comparing file time
             int TimeCompare;
             if (FLAGCLEAR(Data->Params, spNotByTime) &&
                 (FLAGCLEAR(Data->Params, spTimestamp) ||
                  FLAGCLEAR(Data->Params, spBySize) ||
-                 (ChecklistItem->Local.Size == ChecklistItem->Remote.Size)))
+                 (ChecklistItem->Info1.Size == ChecklistItem->Info2.Size)))
             {
-              TimeCompare = CompareFileTime(ChecklistItem->Local.Modification,
-                   ChecklistItem->Remote.Modification);
+              TimeCompare =
+                CompareFileTime(ChecklistItem->Info1.Modification, ChecklistItem->Info2.Modification);
             }
             else
             {
@@ -6523,7 +6528,7 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
               }
               else
               {
-                LocalModified = true;
+                LeftModified = true;
               }
             }
             else if (TimeCompare > 0)
@@ -6531,7 +6536,7 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
               if ((FLAGCLEAR(Data->Params, spTimestamp) && FLAGCLEAR(Data->Params, spMirror)) ||
                   (Data->Mode == smBoth) || (Data->Mode == smRemote))
               {
-                LocalModified = true;
+                LeftModified = true;
               }
               else
               {
@@ -6539,11 +6544,11 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
               }
             }
             else if (FLAGSET(Data->Params, spBySize) &&
-                     (ChecklistItem->Local.Size != ChecklistItem->Remote.Size) &&
+                     (ChecklistItem->Info1.Size != ChecklistItem->Info2.Size) &&
                      FLAGCLEAR(Data->Params, spTimestamp))
             {
               Modified = true;
-              LocalModified = true;
+              LeftModified = true;
             }
             else if (FLAGSET(Data->Params, spByChecksum) &&
                      FLAGCLEAR(Data->Params, spTimestamp) &&
@@ -6551,42 +6556,38 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
                      FLAGCLEAR(Data->Params, spTimestamp))
             {
               Modified = true;
-              LocalModified = true;
+              LeftModified = true;
             }
 
-            if (LocalModified)
+            if (LeftModified)
             {
               LocalData->Modified = true;
-              LocalData->MatchingRemoteFile = ChecklistItem->Remote;
-              LocalData->MatchingRemoteFileImageIndex = ChecklistItem->ImageIndex;
+              LocalData->MatchingFile2 = ChecklistItem->Info2;
+              LocalData->MatchingRemoteFile2ImageIndex = ChecklistItem->ImageIndex;
               // we need this for custom commands over checklist only,
               // not for sync itself
-              LocalData->MatchingRemoteFileFile = File->Duplicate();
-              LogEvent(FORMAT(L"Local file %s is modified comparing to remote file %s",
+              LocalData->MatchingRemoteFile2 = File->Duplicate();
+              LogEvent(FORMAT(L"Left file %s is modified comparing to right file %s",
                 (FormatFileDetailsForLog(FullLocalFileName, LocalData->Info.Modification, LocalData->Info.Size),
                  FormatFileDetailsForLog(FullRemoteFileName, File->Modification, File->Size, File->LinkedFile))));
             }
 
             if (Modified)
             {
-              LogEvent(FORMAT(L"Remote file %s is modified comparing to local file %s",
+              LogEvent(FORMAT(L"Right file %s is modified comparing to left file %s",
                 (FormatFileDetailsForLog(FullRemoteFileName, File->Modification, File->Size, File->LinkedFile),
                  FormatFileDetailsForLog(FullLocalFileName, LocalData->Info.Modification, LocalData->Info.Size))));
             }
           }
           else if (FLAGCLEAR(Data->Params, spNoRecurse))
           {
-            DoSynchronizeCollectDirectory(
-              FullLocalFileName, FullRemoteFileName,
-              Data->Mode, Data->CopyParam, Data->Params, Data->OnSynchronizeDirectory,
-              Data->Options, (Data->Flags & ~sfFirstLevel),
-              Data->Checklist);
+            DoSynchronizeCollectDirectory(Data->CloneFor(FullLocalFileName, FullRemoteFileName));
           }
         }
         else
         {
-          ChecklistItem->Local.Directory = Data->LocalDirectory;
-          LogEvent(FORMAT(L"Remote file %s is new",
+          ChecklistItem->Info1.Directory = Data->Directory1;
+          LogEvent(FORMAT(L"Right file %s is new",
             (FormatFileDetailsForLog(FullRemoteFileName, File->Modification, File->Size, File->LinkedFile))));
         }
       }
@@ -6635,7 +6636,7 @@ void __fastcall TTerminal::DoSynchronizeCollectFile(const UnicodeString FileName
   }
   else
   {
-    LogEvent(0, FORMAT(L"Remote file %s excluded from synchronization",
+    LogEvent(0, FORMAT(L"Right file %s excluded from synchronization",
       (FormatFileDetailsForLog(FullRemoteFileName, File->Modification, File->Size, File->LinkedFile))));
   }
 }
@@ -6754,15 +6755,15 @@ void __fastcall TTerminal::SynchronizeApply(
     {
       UnicodeString LocalTarget = ChecklistItem->GetLocalTarget();
       UnicodeString RemoteTarget = ChecklistItem->GetRemoteTarget();
-      if (!SamePaths(Data.LocalDirectory, LocalTarget) ||
-          !UnixSamePath(Data.RemoteDirectory, RemoteTarget))
+      if (!SamePaths(Data.Directory1, LocalTarget) ||
+          !UnixSamePath(Data.Directory2, RemoteTarget))
       {
-        Data.LocalDirectory = LocalTarget;
-        Data.RemoteDirectory = RemoteTarget;
+        Data.Directory1 = LocalTarget;
+        Data.Directory2 = RemoteTarget;
 
         LogEvent(
           FORMAT(L"Synchronizing local directory '%s' with remote directory '%s', params = 0x%x (%s)",
-          (Data.LocalDirectory, Data.RemoteDirectory, int(Params), SynchronizeParamsStr(Params))));
+          (Data.Directory1, Data.Directory2, int(Params), SynchronizeParamsStr(Params))));
 
         DoSynchronizeProgress(Data, false);
       }
@@ -6952,7 +6953,7 @@ void __fastcall TTerminal::DoSynchronizeProgress(const TSynchronizeData & Data,
   {
     bool Continue = true;
     Data.OnSynchronizeDirectory(
-      Data.LocalDirectory, Data.RemoteDirectory, Continue, Collect, Data.Options);
+      Data.Directory1, Data.Directory2, Continue, Collect, Data.Options);
 
     if (!Continue)
     {
@@ -6974,7 +6975,7 @@ void __fastcall TTerminal::SynchronizeLocalTimestamp(const UnicodeString /*FileN
     HANDLE Handle;
     OpenLocalFile(LocalFile, GENERIC_WRITE, NULL, &Handle,
       NULL, NULL, NULL, NULL);
-    FILETIME WrTime = DateTimeToFileTime(ChecklistItem->Remote.Modification,
+    FILETIME WrTime = DateTimeToFileTime(ChecklistItem->Info2.Modification,
       SessionData->DSTMode);
     bool Result = SetFileTime(Handle, NULL, NULL, &WrTime);
     int Error = GetLastError();

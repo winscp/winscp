@@ -2866,12 +2866,12 @@ void __fastcall TRemoteProperties::Save(THierarchicalStorage * Storage) const
 TSynchronizeChecklist::TItem::TItem() :
   Action(saNone), IsDirectory(false), ImageIndex(-1), Checked(true), RemoteFile(NULL), FDirectoryHasSize(false)
 {
-  Local.ModificationFmt = mfFull;
-  Local.Modification = 0;
-  Local.Size = 0;
-  Remote.ModificationFmt = mfFull;
-  Remote.Modification = 0;
-  Remote.Size = 0;
+  Info1.ModificationFmt = mfFull;
+  Info1.Modification = 0;
+  Info1.Size = 0;
+  Info2.ModificationFmt = mfFull;
+  Info2.Modification = 0;
+  Info2.Size = 0;
 }
 //---------------------------------------------------------------------------
 TSynchronizeChecklist::TItem::~TItem()
@@ -2881,14 +2881,14 @@ TSynchronizeChecklist::TItem::~TItem()
 //---------------------------------------------------------------------------
 const UnicodeString& TSynchronizeChecklist::TItem::GetFileName() const
 {
-  if (!Remote.FileName.IsEmpty())
+  if (!Info2.FileName.IsEmpty())
   {
-    return Remote.FileName;
+    return Info2.FileName;
   }
   else
   {
-    DebugAssert(!Local.FileName.IsEmpty());
-    return Local.FileName;
+    DebugAssert(!Info1.FileName.IsEmpty());
+    return Info1.FileName;
   }
 }
 //---------------------------------------------------------------------------
@@ -2921,12 +2921,12 @@ __int64 __fastcall TSynchronizeChecklist::TItem::GetBaseSize(TAction AAction) co
     case saUploadNew:
     case saUploadUpdate:
     case saDeleteLocal:
-      return Local.Size;
+      return Info1.Size;
 
     case saDownloadNew:
     case saDownloadUpdate:
     case saDeleteRemote:
-      return Remote.Size;
+      return Info2.Size;
 
     default:
       DebugFail();
@@ -2936,32 +2936,32 @@ __int64 __fastcall TSynchronizeChecklist::TItem::GetBaseSize(TAction AAction) co
 //---------------------------------------------------------------------------
 UnicodeString TSynchronizeChecklist::TItem::GetLocalPath() const
 {
-  return CombinePaths(Local.Directory, Local.FileName);
+  return CombinePaths(Info1.Directory, Info1.FileName);
 }
 //---------------------------------------------------------------------------
 UnicodeString TSynchronizeChecklist::TItem::ForceGetLocalPath() const
 {
-  return CombinePaths(Local.Directory, DefaultStr(Local.FileName, Remote.FileName));
+  return CombinePaths(Info1.Directory, DefaultStr(Info1.FileName, Info2.FileName));
 }
 //---------------------------------------------------------------------------
 UnicodeString TSynchronizeChecklist::TItem::GetRemotePath() const
 {
-  return UnixCombinePaths(Remote.Directory, Remote.FileName);
+  return UnixCombinePaths(Info2.Directory, Info2.FileName);
 }
 //---------------------------------------------------------------------------
 UnicodeString TSynchronizeChecklist::TItem::ForceGetRemotePath() const
 {
-  return UnixCombinePaths(Remote.Directory, GetFileName());
+  return UnixCombinePaths(Info2.Directory, GetFileName());
 }
 //---------------------------------------------------------------------------
 UnicodeString TSynchronizeChecklist::TItem::GetLocalTarget() const
 {
-  return IncludeTrailingBackslash(Local.Directory);
+  return IncludeTrailingBackslash(Info1.Directory);
 }
 //---------------------------------------------------------------------------
 UnicodeString TSynchronizeChecklist::TItem::GetRemoteTarget() const
 {
-  return UnixIncludeTrailingBackslash(Remote.Directory);
+  return UnixIncludeTrailingBackslash(Info2.Directory);
 };
 //---------------------------------------------------------------------------
 TStrings * TSynchronizeChecklist::TItem::GetFileList() const
@@ -3012,14 +3012,14 @@ void TSynchronizeChecklist::Add(TItem * Item)
 int TSynchronizeChecklist::Compare(const TItem * Item1, const TItem * Item2)
 {
   int Result;
-  if (!Item1->Local.Directory.IsEmpty())
+  if (!Item1->Info1.Directory.IsEmpty())
   {
-    Result = AnsiCompareText(Item1->Local.Directory, Item2->Local.Directory);
+    Result = AnsiCompareText(Item1->Info1.Directory, Item2->Info1.Directory);
   }
   else
   {
-    DebugAssert(!Item1->Remote.Directory.IsEmpty());
-    Result = AnsiCompareText(Item1->Remote.Directory, Item2->Remote.Directory);
+    DebugAssert(!Item1->Info2.Directory.IsEmpty());
+    Result = AnsiCompareText(Item1->Info2.Directory, Item2->Info2.Directory);
   }
 
   if (Result == 0)
@@ -3108,11 +3108,11 @@ void __fastcall TSynchronizeChecklist::UpdateDirectorySize(const TItem * Item, _
 
     if (Item->IsRemoteOnly())
     {
-      MutableItem->Remote.Size = Size;
+      MutableItem->Info2.Size = Size;
     }
     else if (Item->IsLocalOnly())
     {
-      MutableItem->Local.Size = Size;
+      MutableItem->Info1.Size = Size;
     }
     else
     {

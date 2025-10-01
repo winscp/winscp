@@ -331,7 +331,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           Action = NonVisualDataModule.SynchronizeAction
         end
         object TBXItem44: TTBXItem
-          Action = NonVisualDataModule.FullSynchronizeAction
+          Action = NonVisualDataModule.FullSynchronizeAction2
         end
         object TBXItem45: TTBXItem
           Action = NonVisualDataModule.SynchronizeBrowsingAction2
@@ -1021,7 +1021,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Action = NonVisualDataModule.SynchronizeAction
       end
       object TBXItem156: TTBXItem
-        Action = NonVisualDataModule.FullSynchronizeAction
+        Action = NonVisualDataModule.FullSynchronizeAction2
         DisplayMode = nbdmImageAndText
       end
       object TBXSeparatorItem41: TTBXSeparatorItem

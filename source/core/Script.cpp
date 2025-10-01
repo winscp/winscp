@@ -1848,8 +1848,7 @@ void __fastcall TScript::SynchronizeDirectories(TScriptProcParams * Parameters,
 UnicodeString __fastcall TScript::SynchronizeFileRecord(
   const UnicodeString & RootDirectory, const TSynchronizeChecklist::TItem * Item, bool Local)
 {
-  const TSynchronizeChecklist::TItem::TFileInfo & FileInfo =
-    Local ? Item->Local : Item->Remote;
+  const TSynchronizeChecklist::TItem::TFileInfo & FileInfo = Local ? Item->Info1 : Item->Info2;
   UnicodeString Path = UniversalIncludeTrailingBackslash(!Local, FileInfo.Directory) + FileInfo.FileName;
 
   if (SameText(RootDirectory, Path.SubString(1, RootDirectory.Length())))

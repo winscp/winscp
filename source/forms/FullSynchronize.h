@@ -78,10 +78,10 @@ private:
   UnicodeString FPreset;
   UnicodeString FSynchronizeBySizeCaption;
   TFullSynchronizeInNewWindow FOnFullSynchronizeInNewWindow;
-  void __fastcall SetRemoteDirectory(const UnicodeString value);
-  UnicodeString __fastcall GetRemoteDirectory();
-  void __fastcall SetLocalDirectory(const UnicodeString value);
-  UnicodeString __fastcall GetLocalDirectory();
+  void SetDirectory2(const UnicodeString & value);
+  UnicodeString GetDirectory2();
+  void SetDirectory1(const UnicodeString & value);
+  UnicodeString GetDirectory1();
   void __fastcall SetMode(TSynchronizeMode value);
   TSynchronizeMode __fastcall GetMode();
   void __fastcall SetParams(int value);
@@ -107,8 +107,8 @@ public:
 
   bool __fastcall Execute();
 
-  __property UnicodeString RemoteDirectory = { read = GetRemoteDirectory, write = SetRemoteDirectory };
-  __property UnicodeString LocalDirectory = { read = GetLocalDirectory, write = SetLocalDirectory };
+  __property UnicodeString Directory1 = { read = GetDirectory1, write = SetDirectory1 };
+  __property UnicodeString Directory2 = { read = GetDirectory2, write = SetDirectory2 };
   __property int Params = { read = GetParams, write = SetParams };
   __property TSynchronizeMode Mode = { read = GetMode, write = SetMode };
   __property bool SaveSettings = { read = GetSaveSettings, write = SetSaveSettings };

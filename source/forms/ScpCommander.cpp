@@ -1261,14 +1261,14 @@ void __fastcall TScpCommanderForm::SynchronizeDirectories()
 void __fastcall TScpCommanderForm::FullSynchronizeDirectories()
 {
   DebugAssert(!IsLocalBrowserMode());
-  UnicodeString LocalDirectory = LocalDirView->PathName;
-  UnicodeString RemoteDirectory = RemoteDirView->PathName;
+  UnicodeString Directory1 = LocalDirView->PathName;
+  UnicodeString Directory2 = DirView(osOther)->PathName;
   bool SaveMode = !(GUIConfiguration->SynchronizeModeAuto < 0);
   TSynchronizeMode Mode =
     (SaveMode ? (TSynchronizeMode)GUIConfiguration->SynchronizeModeAuto :
       ((FCurrentSide == osLocal) ? smRemote : smLocal));
   int Params = GUIConfiguration->SynchronizeParams;
-  if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode, Params, SaveMode, -1) >= 0)
+  if (DoFullSynchronizeDirectories(Directory1, Directory2, Mode, Params, SaveMode, -1) >= 0)
   {
     if (SaveMode)
     {
