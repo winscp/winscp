@@ -515,7 +515,7 @@ public:
     __int64 __fastcall GetBaseSize(TAction AAction) const;
   };
 
-  typedef std::vector<const TSynchronizeChecklist::TItem *> TItemList;
+  typedef std::vector<const TItem *> TItemList;
 
   ~TSynchronizeChecklist();
 
