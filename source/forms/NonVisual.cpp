@@ -435,7 +435,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   // COMMAND
   UPD(CompareDirectoriesAction2, HasManagedSession) // Or simply true, as the command is in Commander only and it always has a managed session
   UPD(SynchronizeAction, HasTerminal)
-  UPD(FullSynchronizeAction2, HasTerminal)
+  UPD(FullSynchronizeAction2, ScpExplorer->IsLocalBrowserMode() || HasTerminal)
   UPD(ConsoleAction, ScpExplorer->CanConsole())
   UPD(PuttyAction, HasTerminal && TTerminalManager::Instance()->CanOpenInPutty())
   UPD(SynchronizeBrowsingAction2, HasTerminal)

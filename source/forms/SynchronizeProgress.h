@@ -21,8 +21,8 @@
 class TSynchronizeProgressForm : public TForm
 {
 __published:
-  TLabel *Label1;
-  TLabel *Label2;
+  TLabel *LeftLabel;
+  TLabel *RightLabel;
   TPathLabel *RightDirectoryLabel;
   TPathLabel *LeftDirectoryLabel;
   TLabel *StartTimeLabel;
@@ -49,7 +49,7 @@ __published:
   void __fastcall CancelItemClick(TObject *Sender);
 
 public:
-  __fastcall TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize, int Files);
+  __fastcall TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize, int Files, bool LocalLocal);
   virtual __fastcall ~TSynchronizeProgressForm();
 
   void __fastcall Start();

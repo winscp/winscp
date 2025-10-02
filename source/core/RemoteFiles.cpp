@@ -5,6 +5,7 @@
 #include "RemoteFiles.h"
 #include "Terminal.h"
 #include "Cryptography.h"
+#include <System.Win.ComObj.hpp>
 /* TODO 1 : Path class instead of UnicodeString (handle relativity...) */
 //---------------------------------------------------------------------------
 const UnicodeString PartialExt(L".filepart");
@@ -2939,9 +2940,19 @@ UnicodeString TSynchronizeChecklist::TItem::GetLocalPath() const
   return CombinePaths(Info1.Directory, Info1.FileName);
 }
 //---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::GetLocalPath2() const
+{
+  return CombinePaths(Info2.Directory, Info2.FileName);
+}
+//---------------------------------------------------------------------------
 UnicodeString TSynchronizeChecklist::TItem::ForceGetLocalPath() const
 {
   return CombinePaths(Info1.Directory, DefaultStr(Info1.FileName, Info2.FileName));
+}
+//---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::ForceGetLocalPath2() const
+{
+  return CombinePaths(Info2.Directory, DefaultStr(Info2.FileName, Info1.FileName));
 }
 //---------------------------------------------------------------------------
 UnicodeString TSynchronizeChecklist::TItem::GetRemotePath() const
@@ -2957,6 +2968,11 @@ UnicodeString TSynchronizeChecklist::TItem::ForceGetRemotePath() const
 UnicodeString TSynchronizeChecklist::TItem::GetLocalTarget() const
 {
   return IncludeTrailingBackslash(Info1.Directory);
+}
+//---------------------------------------------------------------------------
+UnicodeString TSynchronizeChecklist::TItem::GetLocalTarget2() const
+{
+  return IncludeTrailingBackslash(Info2.Directory);
 }
 //---------------------------------------------------------------------------
 UnicodeString TSynchronizeChecklist::TItem::GetRemoteTarget() const
@@ -3162,6 +3178,167 @@ bool __fastcall TSynchronizeChecklist::IsItemSizeIrrelevant(TAction Action)
 
     default:
       return false;
+  }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TFileOperationProgressSink : public TCppInterfacedObject<IFileOperationProgressSink>
+{
+public:
+  TFileOperationProgressSink(TSynchronizeChecklistFileOperation * FileOperation) : FFileOperation(FileOperation)
+  {
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE StartOperations() { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE FinishOperations(HRESULT) { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE PreRenameItem(DWORD, IShellItem *, LPCWSTR) { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE PostRenameItem(DWORD, IShellItem * Item, LPCWSTR, HRESULT, IShellItem *)
+  {
+    DebugFail();
+    FFileOperation->ProcessedItem(Item);
+    return S_OK;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE PreMoveItem(DWORD, IShellItem *, IShellItem *, LPCWSTR) { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE PostMoveItem(DWORD, IShellItem * Item, IShellItem *, LPCWSTR, HRESULT, IShellItem *)
+  {
+    DebugFail();
+    FFileOperation->ProcessedItem(Item);
+    return S_OK;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE PreCopyItem(DWORD, IShellItem *, IShellItem *, LPCWSTR) { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE PostCopyItem(DWORD, IShellItem * Item, IShellItem *, LPCWSTR, HRESULT, IShellItem *)
+  {
+    FFileOperation->ProcessedItem(Item);
+    return S_OK;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE PreDeleteItem(DWORD, IShellItem *) { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE PostDeleteItem(DWORD, IShellItem * Item, HRESULT, IShellItem *)
+  {
+    FFileOperation->ProcessedItem(Item);
+    return S_OK;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE PreNewItem(DWORD, IShellItem *, LPCWSTR) { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE PostNewItem(DWORD, IShellItem *, LPCWSTR, LPCWSTR, DWORD, HRESULT, IShellItem *)
+  {
+    DebugFail();
+    return S_OK;
+  }
+
+  virtual HRESULT STDMETHODCALLTYPE UpdateProgress(UINT, UINT) { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE ResetTimer() { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE PauseTimer() { return S_OK; }
+
+  virtual HRESULT STDMETHODCALLTYPE ResumeTimer() { return S_OK; }
+
+private:
+  TSynchronizeChecklistFileOperation * FFileOperation;
+};
+//---------------------------------------------------------------------------
+IShellItem * CreateShellItemFromParsingName(const UnicodeString & Path)
+{
+  IShellItem * Result;
+  OleCheck(SHCreateItemFromParsingName(Path.c_str(), nullptr, IID_PPV_ARGS(&Result)));
+  return Result;
+}
+//---------------------------------------------------------------------------
+TSynchronizeChecklistFileOperation::TSynchronizeChecklistFileOperation(
+    const TSynchronizeChecklist * Checklist, TProcessedSynchronizationChecklistItem OnProcessedItem, void * Token) :
+  FOnProcessedItem(OnProcessedItem),
+  FToken(Token)
+{
+  OleCheck(CoCreateInstance(CLSID_FileOperation, NULL, CLSCTX_ALL, IID_PPV_ARGS(&FFileOperation)));
+
+  FProgressSink = new TFileOperationProgressSink(this);
+  DWORD UnusedCookie;
+  OleCheck(FFileOperation->Advise(FProgressSink, &UnusedCookie));
+
+  int Index = 0;
+  const TSynchronizeChecklist::TItem * ChecklistItem;
+  while (Checklist->GetNextChecked(Index, ChecklistItem))
+  {
+    UnicodeString ItemPath;
+    switch (ChecklistItem->Action)
+    {
+      case TSynchronizeChecklist::saDownloadNew:
+      case TSynchronizeChecklist::saDownloadUpdate:
+      case TSynchronizeChecklist::saUploadNew:
+      case TSynchronizeChecklist::saUploadUpdate:
+        {
+          UnicodeString DestinationFolderPath;
+          if ((ChecklistItem->Action == TSynchronizeChecklist::saDownloadNew) ||
+              (ChecklistItem->Action == TSynchronizeChecklist::saDownloadUpdate))
+          {
+            ItemPath = ChecklistItem->GetLocalPath2();
+            DestinationFolderPath = ChecklistItem->GetLocalTarget();
+          }
+          else
+          {
+            ItemPath = ChecklistItem->GetLocalPath();
+            DestinationFolderPath = ChecklistItem->GetLocalTarget2();
+          }
+          TComPtr<IShellItem> Item = CreateShellItemFromParsingName(ItemPath);
+          TComPtr<IShellItem> DestinationFolder = CreateShellItemFromParsingName(DestinationFolderPath);
+          OleCheck(FFileOperation->CopyItem(Item.Get(), DestinationFolder.Get(), nullptr, nullptr));
+        }
+        break;
+
+      case TSynchronizeChecklist::saDeleteRemote:
+      case TSynchronizeChecklist::saDeleteLocal:
+        {
+          bool Left = (ChecklistItem->Action == TSynchronizeChecklist::saDeleteLocal);
+          ItemPath = Left ? ChecklistItem->GetLocalPath() : ChecklistItem->GetLocalPath2();
+          TComPtr<IShellItem> Item = CreateShellItemFromParsingName(ItemPath);
+          OleCheck(FFileOperation->DeleteItem(Item.Get(), nullptr));
+        }
+        break;
+
+      default:
+        DebugFail();
+        break;
+    }
+
+    if (!ItemPath.IsEmpty())
+    {
+      FShellItems.insert(std::make_pair(ItemPath.LowerCase(), ChecklistItem));
+    }
+  }
+}
+//---------------------------------------------------------------------------
+TSynchronizeChecklistFileOperation::~TSynchronizeChecklistFileOperation()
+{
+  FProgressSink->Release();
+}
+//---------------------------------------------------------------------------
+void TSynchronizeChecklistFileOperation::ProcessedItem(IShellItem * ShellItem)
+{
+  wchar_t * NamePtr;
+  // It's different IShellItem than what we pass to IFileOperation above, so we have to use underlying path for lookup
+  if (DebugAlwaysTrue(SUCCEEDED(ShellItem->GetDisplayName(SIGDN_FILESYSPATH, &NamePtr))))
+  {
+    UnicodeString Name = NamePtr;
+    CoTaskMemFree(NamePtr);
+    auto I = FShellItems.find(Name.LowerCase());
+    // The callback are triggered even for files in folders, so we do not get here only for top level checklist items.
+    // The folder is triggered before the files, so we unfortunatelly mark the folder as processed before its files are processed.
+    // Solution would be to wait until we get (Pre?) trigger for another checklist item (or until the end of whole operation).
+    if (I != FShellItems.end())
+    {
+      auto ChecklistItem = I->second;
+      FOnProcessedItem(FToken, ChecklistItem);
+    }
   }
 }
 //---------------------------------------------------------------------------

@@ -709,6 +709,14 @@
 #define TAG_ADD                 6212
 #define TAG_KEY                 6213
 #define TAG_VALUE               6214
+#define SYNCHRONIZE_LEFT_DIR    6215
+#define SYNCHRONIZE_RIGHT_DIR   6216
+#define SYNCHRONIZE_LEFT        6217
+#define SYNCHRONIZE_RIGHT       6218
+#define SYNCHRONIZE_PROGRESS_LEFT_DIR 6219
+#define SYNCHRONIZE_PROGRESS_RIGHT_DIR 6220
+#define SYNCHRONIZE_CHECKLIST_LEFT_DIR 6221
+#define SYNCHRONIZE_CHECKLIST_RIGHT_DIR 6222
 
 // 2xxx is reserved for TextsFileZilla.h
 

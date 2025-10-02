@@ -42,7 +42,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FMode = Mode;
   FParams = Params;
   FDirectory1 = ExcludeTrailingBackslash(Directory1);
-  FDirectory2 = UnixExcludeTrailingBackslash(Directory2);
+  FDirectory2 = UniversalExcludeTrailingBackslash(FLAGCLEAR(Params, TTerminal::spLocalLocal), Directory2);
   FOnCustomCommandMenu = OnCustomCommandMenu;
   FOnSynchronizeChecklistCalculateSize = OnSynchronizeChecklistCalculateSize;
   FOnSynchronizeMove = OnSynchronizeMove;
@@ -71,9 +71,6 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
 
   UpdateImages();
 
-  CustomCommandsAction->Visible = (FOnCustomCommandMenu != NULL);
-  // button visibility cannot be bound to action visibility
-  CustomCommandsButton2->Visible = CustomCommandsAction->Visible;
   MenuButton(CustomCommandsButton2);
   MenuButton(ToolsMenuButton);
 
@@ -81,6 +78,12 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   if (FOnQueueSynchronize != NULL)
   {
     OkButton->Style = TCustomButton::bsSplitButton;
+  }
+
+  if (FLAGSET(Params, TTerminal::spLocalLocal))
+  {
+    ListView2->Columns->Items[1]->Caption = LoadStr(SYNCHRONIZE_CHECKLIST_LEFT_DIR);
+    ListView2->Columns->Items[5]->Caption = LoadStr(SYNCHRONIZE_CHECKLIST_RIGHT_DIR);
   }
 }
 //---------------------------------------------------------------------
@@ -175,7 +178,9 @@ struct TMoveActionData
     ItemsCount = 0;
   }
 
-  bool Collect(const TSynchronizeChecklist::TItem * ChecklistItem, TSynchronizeChecklist::TAction AAction, bool CollectFileList)
+  bool Collect(
+    const TSynchronizeChecklist::TItem * ChecklistItem, TSynchronizeChecklist::TAction AAction,
+    bool CollectFileList, bool LocalLocal)
   {
     bool Result = (ItemsCount == 0) || (Action == AAction);
     if (Result)
@@ -197,8 +202,15 @@ struct TMoveActionData
         TObject * Object = NULL;
         if (Action == TSynchronizeChecklist::saDeleteRemote)
         {
-          FileName = ChecklistItem->GetRemotePath();
-          Object = ChecklistItem->RemoteFile;
+          if (!LocalLocal)
+          {
+            FileName = ChecklistItem->GetRemotePath();
+            Object = ChecklistItem->RemoteFile;
+          }
+          else
+          {
+            FileName = ChecklistItem->GetLocalPath2();
+          }
         }
         else if (Action == TSynchronizeChecklist::saDeleteLocal)
         {
@@ -238,16 +250,17 @@ struct TMoveData
   TMoveActionData SecondAction;
   bool ThreeActions;
 
-  TMoveData(bool CollectFileList)
+  TMoveData(bool CollectFileList, bool LocalLocal)
   {
     ThreeActions = false;
     FCollectFileList = CollectFileList;
+    FLocalLocal = LocalLocal;
   }
 
   void Collect(const TSynchronizeChecklist::TItem * ChecklistItem, TSynchronizeChecklist::TAction Action)
   {
-    if (!FirstAction.Collect(ChecklistItem, Action, FCollectFileList) &&
-        !SecondAction.Collect(ChecklistItem, Action, FCollectFileList))
+    if (!FirstAction.Collect(ChecklistItem, Action, FCollectFileList, FLocalLocal) &&
+        !SecondAction.Collect(ChecklistItem, Action, FCollectFileList, FLocalLocal))
     {
       ThreeActions = true;
     }
@@ -255,6 +268,7 @@ struct TMoveData
 
 private:
   bool FCollectFileList;
+  bool FLocalLocal;
 };
 //---------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::UpdateControls()
@@ -268,7 +282,7 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
   bool AnyBoth = false;
   bool AnyNonBoth = false;
   bool AnyDirectory = false;
-  TMoveData MoveData(false);
+  TMoveData MoveData(false, FLAGSET(FParams, TTerminal::spLocalLocal));
   TListItem * Item = NULL;
   while (IterateSelectedItems(Item))
   {
@@ -311,7 +325,7 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
   UncheckAllAction->Enabled = (FChecked[0] > 0) && !FSynchronizing;
   CheckDirectoryAction->Enabled = CheckAllAction->Enabled; // sic
   UncheckDirectoryAction->Enabled = UncheckAllAction->Enabled; // sic
-  CustomCommandsAction->Enabled = AnyBoth && !AnyNonBoth && DebugAlwaysTrue(!FSynchronizing);
+  CustomCommandsAction->Enabled = (FOnCustomCommandMenu != NULL) && AnyBoth && !AnyNonBoth && DebugAlwaysTrue(!FSynchronizing);
   ReverseAction->Enabled = (SelCount > 0) && DebugAlwaysTrue(!FSynchronizing);
   MoveAction->Enabled =
     // All actions are of exactly two and opposite types
@@ -1277,7 +1291,10 @@ void __fastcall TSynchronizeChecklistDialog::FormAfterMonitorDpiChanged(TObject 
 void __fastcall TSynchronizeChecklistDialog::ProcessedItem(void * /*Token*/, const TSynchronizeChecklist::TItem * ChecklistItem)
 {
   TListItem * Item = FChecklistToListViewMap[ChecklistItem];
-  DebugAssert(Item->Checked);
+  // We can get multiple triggeres on IFileOperationProgressSink for the same file, particularly multiple errors.
+  // Do not know yet how (if possible at all) to tell what trigger is the last one, so we have to uncheck on the first trigger,
+  // and ignore the others.
+  DebugAssert(Item->Checked || FLAGSET(FParams, TTerminal::spLocalLocal));
   Item->Checked = false;
   Item->MakeVisible(false);
 }
@@ -1420,7 +1437,8 @@ void __fastcall TSynchronizeChecklistDialog::DeleteItem(const TSynchronizeCheckl
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::MoveActionExecute(TObject *)
 {
-  TMoveData MoveData(true);
+  bool LocalLocal = FLAGSET(FParams, TTerminal::spLocalLocal);
+  TMoveData MoveData(true, LocalLocal);
   TListItem * Item = NULL;
   while (IterateSelectedItems(Item))
   {
@@ -1445,7 +1463,7 @@ void __fastcall TSynchronizeChecklistDialog::MoveActionExecute(TObject *)
   if (DeleteAction->Action == TSynchronizeChecklist::saDeleteRemote)
   {
     Side = osRemote;
-    NewFileName = UnixCombinePaths(TransferChecklistItem->Info2.Directory, TransferChecklistItem->Info1.FileName);
+    NewFileName = UniversalCombinePaths(!LocalLocal, TransferChecklistItem->Info2.Directory, TransferChecklistItem->Info1.FileName);
   }
   else if (DebugAlwaysTrue(DeleteAction->Action == TSynchronizeChecklist::saDeleteLocal))
   {
@@ -1554,7 +1572,7 @@ void __fastcall TSynchronizeChecklistDialog::KeyDown(Word & Key, TShiftState Shi
 {
   TShortCut KeyShortCut = ShortCut(Key, Shift);
   TShortCut CustomShortCut = NormalizeCustomShortCut(KeyShortCut);
-  if (IsCustomShortCut(CustomShortCut))
+  if ((FOnCustomCommandMenu != NULL) && IsCustomShortCut(CustomShortCut))
   {
     TTBXItem * MenuItem = new TTBXItem(this);
     CustomCommandsAction->ActionComponent = MenuItem;
@@ -1830,7 +1848,22 @@ void TSynchronizeChecklistDialog::PathToClipboard(bool Local)
   while (IterateSelectedItems(Item))
   {
     const TSynchronizeChecklist::TItem * ChecklistItem = GetChecklistItem(Item);
-    UnicodeString Path = Local ? ChecklistItem->ForceGetLocalPath() : ChecklistItem->ForceGetRemotePath();
+    UnicodeString Path;
+    if (Local)
+    {
+      Path = ChecklistItem->ForceGetLocalPath();
+    }
+    else
+    {
+      if (FLAGCLEAR(FParams, TTerminal::spLocalLocal))
+      {
+        Path = ChecklistItem->ForceGetRemotePath();
+      }
+      else
+      {
+        Path = ChecklistItem->ForceGetLocalPath2();
+      }
+    }
     Paths->Add(Path);
   }
 

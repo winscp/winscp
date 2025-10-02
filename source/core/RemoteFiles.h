@@ -497,11 +497,14 @@ public:
     __int64 __fastcall GetSize() const;
     __int64 __fastcall GetSize(TAction AAction) const;
     UnicodeString GetLocalPath() const;
+    UnicodeString GetLocalPath2() const;
     UnicodeString ForceGetLocalPath() const;
+    UnicodeString ForceGetLocalPath2() const;
     // Contrary to RemoteFile->FullFileName, this does not include trailing slash for directories
     UnicodeString GetRemotePath() const;
     UnicodeString ForceGetRemotePath() const;
     UnicodeString GetLocalTarget() const;
+    UnicodeString GetLocalTarget2() const;
     UnicodeString GetRemoteTarget() const;
     TStrings * GetFileList() const;
 
@@ -547,6 +550,35 @@ private:
   TList * FList;
 
   static int __fastcall Compare(void * Item1, void * Item2);
+};
+//---------------------------------------------------------------------------
+typedef void __fastcall (__closure *TProcessedSynchronizationChecklistItem)(
+  void * Token, const TSynchronizeChecklist::TItem * Item);
+struct IFileOperation;
+struct IShellItem;
+class TFileOperationProgressSink;
+//---------------------------------------------------------------------------
+class TSynchronizeChecklistFileOperation
+{
+friend class TSynchronizeChecklist;
+friend class TFileOperationProgressSink;
+public:
+  TSynchronizeChecklistFileOperation(
+    const TSynchronizeChecklist * Checklist, TProcessedSynchronizationChecklistItem OnProcessedItem, void * Token);
+  ~TSynchronizeChecklistFileOperation();
+
+  __property IFileOperation * FileOperation = { read = GetFileOperation };
+
+protected:
+  void ProcessedItem(IShellItem * ShellItem);
+  IFileOperation * GetFileOperation() { return FFileOperation.Get(); }
+
+private:
+  TComPtr<IFileOperation> FFileOperation;
+  TFileOperationProgressSink * FProgressSink;
+  std::map<UnicodeString, const TSynchronizeChecklist::TItem *> FShellItems;
+  TProcessedSynchronizationChecklistItem FOnProcessedItem;
+  void * FToken;
 };
 //---------------------------------------------------------------------------
 class TFileOperationProgressType;

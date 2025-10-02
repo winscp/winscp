@@ -52,6 +52,7 @@ __published:
   TMenuItem *StartInNewWindowItem;
   TCheckBox *SynchronizeCaseSensitiveCheck;
   TCheckBox *SynchronizeByChecksumCheck;
+  TButton *OtherLocalDirectoryBrowseButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall TransferSettingsButtonClick(TObject *Sender);
@@ -66,6 +67,7 @@ __published:
   void __fastcall OkButtonDropDownClick(TObject *Sender);
   void __fastcall OkButtonClick(TObject *Sender);
   void __fastcall StartInNewWindowItemClick(TObject *Sender);
+  void __fastcall OtherLocalDirectoryBrowseButtonClick(TObject *Sender);
 
 private:
   int FParams;
@@ -97,6 +99,9 @@ private:
   bool __fastcall CanStartInNewWindow();
   void __fastcall Submitted();
   void __fastcall StartInNewWindow();
+  void DoLocalDirectoryBrowseButtonClick(TComboBox * ComboBox);
+  bool CanSynchronizeTimestamps();
+  UnicodeString GetRightDirectoryHistory();
 
 public:
   __fastcall TFullSynchronizeDialog(TComponent* Owner);

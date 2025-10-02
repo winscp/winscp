@@ -14,7 +14,7 @@
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 // Used for comparing only
-__fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize, int Files)
+__fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize, int Files, bool LocalLocal)
   : TForm(Owner)
 {
   FStarted = false;
@@ -38,6 +38,12 @@ __fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner
   else
   {
     SetGlobalMinimizeHandler(this, GlobalMinimize);
+  }
+  if (LocalLocal)
+  {
+    LeftLabel->Caption = LoadStr(SYNCHRONIZE_PROGRESS_LEFT_DIR);
+    RightLabel->Caption = LoadStr(SYNCHRONIZE_PROGRESS_RIGHT_DIR);
+    RightDirectoryLabel->UnixPath = false;
   }
   FFrameAnimation.Init(AnimationPaintBox, L"SynchronizeDirectories");
 }

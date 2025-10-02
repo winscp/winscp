@@ -61,8 +61,6 @@ typedef void __fastcall (__closure *TSynchronizeDirectory)
    bool & Continue, bool Collect, const TSynchronizeOptions * Options);
 typedef void __fastcall (__closure *TUpdatedSynchronizationChecklistItems)(
   const TSynchronizeChecklist::TItemList & Items);
-typedef void __fastcall (__closure *TProcessedSynchronizationChecklistItem)(
-  void * Token, const TSynchronizeChecklist::TItem * Item);
 typedef void __fastcall (__closure *TDeleteLocalFileEvent)(
   const UnicodeString FileName, bool Alternative, int & Deleted);
 typedef int __fastcall (__closure *TDirectoryModifiedEvent)
@@ -148,6 +146,7 @@ public:
   static const int spMirror = 0x1000;
   static const int spCaseSensitive = 0x2000;
   static const int spByChecksum = 0x4000; // cannot be combined with spTimestamp and smBoth
+  static const int spLocalLocal = 0x8000; // internal only
   static const int spDefault = TTerminal::spNoConfirmation | TTerminal::spPreviewChanges;
 
 // for ReactOnCommand()
@@ -366,7 +365,10 @@ protected:
     const TRemoteFile * File, /*TSynchronizeData*/ void * Param);
   void __fastcall SynchronizeCollectFile(const UnicodeString FileName,
     const TRemoteFile * File, /*TSynchronizeData*/ void * Param);
-  bool SameFileChecksum(const UnicodeString & LeftFileName, const TRemoteFile * RightFile);
+  void SynchronizeCollectLocalFile(
+    const UnicodeString & FileName, const TSearchRecSmart & Rec, TSynchronizeData * Data);
+  void DoSynchronizeCollectLocalFile(const UnicodeString & FileName, const TSearchRecSmart & SearchRec, TSynchronizeData * Data);
+  bool SameFileChecksum(const UnicodeString & LeftFileName, const UnicodeString & RightFileName, const TRemoteFile * RightFile);
   UnicodeString CalculateLocalFileChecksum(const UnicodeString & FileName, const UnicodeString & Alg);
   void __fastcall CollectCalculatedChecksum(
     const UnicodeString & FileName, const UnicodeString & Alg, const UnicodeString & Hash);
@@ -632,7 +634,7 @@ public:
     const TSynchronizeChecklist::TItem * ChecklistItem, const TCopyParamType * CopyParam, int Params, bool Parallel);
   void __fastcall SynchronizeChecklistCalculateSize(
     TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items,
-    const TCopyParamType * CopyParam);
+    const TCopyParamType * CopyParam, int Params);
   static TCopyParamType GetSynchronizeCopyParam(const TCopyParamType * CopyParam, int Params);
   static int GetSynchronizeCopyParams(int Params);
   void __fastcall FilesFind(UnicodeString Directory, const TFileMasks & FileMask,

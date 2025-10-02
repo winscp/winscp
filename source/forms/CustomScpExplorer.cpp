@@ -6163,7 +6163,8 @@ void __fastcall TCustomScpExplorerForm::Synchronize(const UnicodeString LocalDir
   bool AnyOperation = false;
   TDateTime StartTime = Now();
   TSynchronizeChecklist * AChecklist = NULL;
-  TObjectReleaser<TSynchronizeProgressForm> SynchronizeProgressFormReleaser(FSynchronizeProgressForm, new TSynchronizeProgressForm(Application, true, -1));
+  TObjectReleaser<TSynchronizeProgressForm> SynchronizeProgressFormReleaser(
+    FSynchronizeProgressForm, new TSynchronizeProgressForm(Application, true, -1, false));
   try
   {
     if (FLAGCLEAR(Params, TTerminal::spDelayProgress))
@@ -6236,7 +6237,6 @@ void __fastcall TCustomScpExplorerForm::SynchronizeSessionLog(const UnicodeStrin
 void __fastcall TCustomScpExplorerForm::GetSynchronizeOptions(
   int Params, TSynchronizeOptions & Options)
 {
-  DebugAssert(!IsLocalBrowserMode());
   if (FLAGSET(Params, TTerminal::spSelectedOnly) && SynchronizeAllowSelectedOnly())
   {
     Options.Filter = new TStringList();
@@ -6305,6 +6305,60 @@ struct TSynchronizeParams
   TProcessedSynchronizationChecklistItem OnProcessedItem;
 };
 //---------------------------------------------------------------------------
+void TCustomScpExplorerForm::SynchronizeApplyLocal(TSynchronizeChecklist * Checklist, TSynchronizeParams & Params)
+{
+  DebugAssert(FLAGCLEAR(Params.Params, TTerminal::spTimestamp));
+
+  std::unique_ptr<TSynchronizeChecklistFileOperation> ChecklistFileOperation(
+    new TSynchronizeChecklistFileOperation(Checklist, SynchronizeProcessedItem, &Params));
+
+  unsigned int OperationFlags =
+    FOF_ALLOWUNDO |
+    FOF_NOCONFIRMMKDIR |
+    FOFX_RECYCLEONDELETE | // same effect as FOF_ALLOWUNDO?
+    FLAGMASK(FLAGSET(Params.Params, TTerminal::spNoConfirmation), FOF_NOCONFIRMATION);
+  IFileOperation * FileOperation = ChecklistFileOperation->FileOperation;
+  OleCheck(FileOperation->SetOperationFlags(OperationFlags));
+
+  TForm * ActiveForm = Screen->ActiveForm;
+  if (ActiveForm == this)
+  {
+    LockWindow();
+  }
+  else
+  {
+    ActiveForm->Enabled = false;
+  }
+
+  FileOperation->SetOwnerWindow(ActiveForm->Handle);
+
+  try
+  {
+    HRESULT Result = FileOperation->PerformOperations();
+    AppLogFmt(L"Performed %d", (int(Result)));
+    BOOL Aborted;
+    OleCheck(FileOperation->GetAnyOperationsAborted(&Aborted));
+    if ((Result == HRESULT_FROM_WIN32(ERROR_CANCELLED)) || Aborted)
+    {
+      AppLog(L"Aborted");
+      Abort();
+    }
+    AppLog(L"Checking");
+    OleCheck(Result);
+  }
+  __finally
+  {
+    if (ActiveForm == this)
+    {
+      UnlockWindow();
+    }
+    else
+    {
+      ActiveForm->Enabled = true;
+    }
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FullSynchronize(
   TSynchronizeParams & Params, TProcessedSynchronizationChecklistItem OnProcessedItem,
   TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems)
@@ -6317,23 +6371,38 @@ void __fastcall TCustomScpExplorerForm::FullSynchronize(
   TFileOperationStatistics Statistics;
   TDateTime Start = Now();
 
+  bool LocalLocal = FLAGSET(Params.Params, TTerminal::spLocalLocal);
+
   try
   {
     Params.OnProcessedItem = OnProcessedItem;
 
-    TSynchronizeProgress SynchronizeProgress(Params.Checklist);
-    CreateProgressForm(&SynchronizeProgress);
+    if (!LocalLocal)
+    {
+      TSynchronizeProgress SynchronizeProgress(Params.Checklist);
+      CreateProgressForm(&SynchronizeProgress);
 
-    Terminal->SynchronizeApply(
-      Params.Checklist, Params.CopyParam, Params.Params | TTerminal::spNoConfirmation,
-      TerminalSynchronizeDirectory, SynchronizeProcessedItem, OnUpdatedSynchronizationChecklistItems, &Params,
-      &Statistics);
+      try
+      {
+        Terminal->SynchronizeApply(
+          Params.Checklist, Params.CopyParam, Params.Params | TTerminal::spNoConfirmation,
+          TerminalSynchronizeDirectory, SynchronizeProcessedItem, OnUpdatedSynchronizationChecklistItems, &Params,
+          &Statistics);
+      }
+      __finally
+      {
+        DestroyProgressForm();
+      }
+    }
+    else
+    {
+      SynchronizeApplyLocal(Params.Checklist, Params);
+    }
   }
   __finally
   {
     Params.OnProcessedItem = NULL;
     FAutoOperation = false;
-    DestroyProgressForm();
     BatchEnd(BatchStorage);
     ReloadLocalDirectory();
   }
@@ -6343,7 +6412,8 @@ void __fastcall TCustomScpExplorerForm::FullSynchronize(
     UnicodeString Message = MainInstructions(LoadStr(SYNCHRONIZE_COMPLETE)) + L"\n";
 
     // The statistics should be 0 anyway in this case
-    if (FLAGCLEAR(Params.Params, TTerminal::spTimestamp))
+    if (FLAGCLEAR(Params.Params, TTerminal::spTimestamp) &&
+        !LocalLocal)
     {
       Message += L"\n";
       if (Statistics.FilesUploaded > 0)
@@ -6380,7 +6450,8 @@ void __fastcall TCustomScpExplorerForm::FullSynchronize(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SynchronizeProcessedItem(void * Token, const TSynchronizeChecklist::TItem * ChecklistItem)
 {
-  if (DebugAlwaysTrue(FProgressForm != NULL) && DebugAlwaysTrue(FProgressForm->SynchronizeProgress != NULL))
+  // There only the external shell's progress form for local-local
+  if ((FProgressForm != NULL) && DebugAlwaysTrue(FProgressForm->SynchronizeProgress != NULL))
   {
     FProgressForm->SynchronizeProgress->ItemProcessed(ChecklistItem);
   }
@@ -6392,6 +6463,11 @@ void __fastcall TCustomScpExplorerForm::SynchronizeProcessedItem(void * Token, c
     if (Params.OnProcessedItem != NULL)
     {
       Params.OnProcessedItem(NULL, ChecklistItem);
+      // in local-local, nothing pumps the message queue, so we have to do it here
+      if (FLAGSET(Params.Params, TTerminal::spLocalLocal))
+      {
+        Application->ProcessMessages();
+      }
     }
   }
 }
@@ -6427,23 +6503,22 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeChecklistCalculateSize(
   TSynchronizeChecklist * Checklist, const TSynchronizeChecklist::TItemList & Items, void * Token)
 {
   // terminal can be already closed (e.g. dropped connection)
-  if (Terminal != NULL)
+  if ((ManagedSession != NULL) && (IsLocalBrowserMode() || ManagedSession->Active))
   {
     TSynchronizeParams & Params = *static_cast<TSynchronizeParams *>(Token);
-    Terminal->SynchronizeChecklistCalculateSize(Checklist, Items, Params.CopyParam);
+    ManagedSession->SynchronizeChecklistCalculateSize(Checklist, Items, Params.CopyParam, Params.Params);
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DoSynchronizeMove(
   TOperationSide Side, TStrings * FileList, const UnicodeString & NewFileName, bool TargetIsDirectory, void * Token)
 {
-  DebugAssert(!IsLocalBrowserMode());
   TAutoBatch AutoBatch(this);
   TAutoFlag AutoOperationFlag(FAutoOperation);
 
   TSynchronizeParams & Params = *static_cast<TSynchronizeParams *>(Token);
 
-  if (Side == osRemote)
+  if (!IsSideLocalBrowser(Side))
   {
     UnicodeString Target;
     UnicodeString FileMask;
@@ -6471,7 +6546,7 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeMove(
     }
     RemoteDirView->RestoreSelection();
   }
-  else if (DebugAlwaysTrue(Side == osLocal))
+  else
   {
     std::unique_ptr<TStrings> Directories(CreateSortedStringList());
     if (TargetIsDirectory)
@@ -6497,6 +6572,12 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeMove(
       {
         NewFilePath = TPath::Combine(NewFilePath, ExtractFileName(FileName));
       }
+      UnicodeString LogMsg = FORMAT(L"Moving file \"%s\" to \"%s\".", (FileName, NewFilePath));
+      if (Terminal != NULL)
+      {
+        Terminal->LogEvent(LogMsg);
+      }
+      AppLog(LogMsg);
       if (!MoveFile(ApiPath(FileName).c_str(), ApiPath(NewFilePath).c_str()))
       {
         throw EOSExtException(FMTLOAD(RENAME_FILE_ERROR, (FileName, NewFilePath)));
@@ -6513,15 +6594,18 @@ void __fastcall TCustomScpExplorerForm::DoSynchronizeMove(
 void __fastcall TCustomScpExplorerForm::DoSynchronizeExplore(TOperationSide Side, TSynchronizeChecklist::TAction Action, const TSynchronizeChecklist::TItem * Item)
 {
   UnicodeString Path1 = ExcludeTrailingBackslash(Item->Info1.Directory);
-  if (Side == osLocal)
+  if ((Side == osLocal) || IsLocalBrowserMode())
   {
-    if (Action == TSynchronizeChecklist::saDownloadNew)
+    if (((Side == osLocal) && (Action == TSynchronizeChecklist::saDownloadNew)) ||
+        ((Side == osRemote) && (Action == TSynchronizeChecklist::saUploadNew)))
     {
-      OpenFolderInExplorer(Path1);
+      UnicodeString Directory = (Side == osLocal) ? Path1 : ExcludeTrailingBackslash(Item->Info2.Directory);
+      OpenFolderInExplorer(Directory);
     }
     else
     {
-      OpenFileInExplorer(Item->ForceGetLocalPath());
+      UnicodeString Path = (Side == osLocal) ? Item->ForceGetLocalPath() : Item->ForceGetLocalPath2();
+      OpenFileInExplorer(Path);
     }
   }
   else if (DebugAlwaysTrue(Side == osRemote))
@@ -6562,12 +6646,16 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
   int Result;
 
   bool SaveSettings = false;
+  bool LocalLocal = IsLocalBrowserMode();
   int Options =
-    FLAGMASK(!Terminal->IsCapable[fcTimestampChanging], fsoDisableTimestamp) |
-    FLAGMASK(!CanCalculateChecksum(), fsoDisableByChecksum) |
-    FLAGMASK(SynchronizeAllowSelectedOnly(), fsoAllowSelectedOnly);
-  TCopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
-  TUsableCopyParamAttrs CopyParamAttrs = Terminal->UsableCopyParamAttrs(0);
+    FLAGMASK(LocalLocal || !Terminal->IsCapable[fcTimestampChanging], fsoDisableTimestamp) |
+    FLAGMASK(!LocalLocal && !CanCalculateChecksum(), fsoDisableByChecksum) |
+    FLAGMASK(SynchronizeAllowSelectedOnly(), fsoAllowSelectedOnly) |
+    FLAGMASK(LocalLocal, fsoLocalLocal);
+  // For local-local the file mask would still be relevant, and while it's somehat supported by SynchronizeCollect,
+  // it is not supported for (externally implemented) recursive transfers when applying folder differences.
+  TCopyParamType CopyParam = LocalLocal ? TCopyParamType() : GUIConfiguration->CurrentCopyParam;
+  TUsableCopyParamAttrs CopyParamAttrs = LocalLocal ? TUsableCopyParamAttrs() : Terminal->UsableCopyParamAttrs(0);
   bool Continue =
     ((UseDefaults == 0) ||
      DoFullSynchronizeDialog(
@@ -6577,8 +6665,11 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
   if (Continue)
   {
     Configuration->Usage->Inc(L"Synchronizations");
-    CopyParam.IncludeFileMask.SetRoots(Directory1, Directory2);
-    UpdateCopyParamCounters(CopyParam);
+    if (!LocalLocal)
+    {
+      CopyParam.IncludeFileMask.SetRoots(Directory1, Directory2);
+      UpdateCopyParamCounters(CopyParam);
+    }
 
     TSynchronizeOptions SynchronizeOptions;
     GetSynchronizeOptions(Params, SynchronizeOptions);
@@ -6592,6 +6683,8 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
       SaveMode = false;
     }
 
+    Params |= FLAGMASK(LocalLocal, TTerminal::spLocalLocal);
+
     TDateTime StartTime = Now();
 
     TSynchronizeChecklist * Checklist = NULL;
@@ -6602,7 +6695,7 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
 
       try
       {
-        UnicodeString SessionKey = Terminal->SessionData->SessionKey;
+        UnicodeString SessionKey = LocalLocal ? EmptyStr : Terminal->SessionData->SessionKey;
         std::unique_ptr<TStrings> DataList(Configuration->LoadDirectoryStatisticsCache(SessionKey, Directory2, CopyParam));
 
         int Files = -1;
@@ -6615,7 +6708,7 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
           DataList->Add(UnicodeString());
         }
 
-        FSynchronizeProgressForm = new TSynchronizeProgressForm(Application, true, Files);
+        FSynchronizeProgressForm = new TSynchronizeProgressForm(Application, true, Files, LocalLocal);
         FSynchronizeProgressForm->Start();
 
         Checklist =
@@ -6625,7 +6718,7 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
             &CopyParam, Params | TTerminal::spNoConfirmation, TerminalSynchronizeDirectory,
             &SynchronizeOptions);
 
-        if (Terminal->SessionData->CacheDirectories)
+        if (LocalLocal || Terminal->SessionData->CacheDirectories)
         {
           DataList->Strings[0] = IntToStr(SynchronizeOptions.Files);
           Configuration->SaveDirectoryStatisticsCache(SessionKey, Directory2, CopyParam, DataList.get());
@@ -6651,14 +6744,12 @@ int __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
       {
         if (FLAGSET(Params, TTerminal::spPreviewChanges))
         {
-          TQueueSynchronizeEvent OnQueueSynchronize = NULL;
-          if (Visible && FLAGCLEAR(Params, TTerminal::spTimestamp))
-          {
-            OnQueueSynchronize = DoQueueSynchronize;
-          }
+          bool CanQueue = Visible && FLAGCLEAR(Params, TTerminal::spTimestamp) && !LocalLocal;
+          TQueueSynchronizeEvent OnQueueSynchronize = CanQueue ? DoQueueSynchronize : TQueueSynchronizeEvent();
+          TCustomCommandMenuEvent OnCustomCommandMenu = !LocalLocal ? CustomCommandMenu : TCustomCommandMenuEvent();
 
           if (!DoSynchronizeChecklistDialog(
-                Checklist, Mode, Params, Directory1, Directory2, CustomCommandMenu, DoFullSynchronize,
+                Checklist, Mode, Params, Directory1, Directory2, OnCustomCommandMenu, DoFullSynchronize,
                 OnQueueSynchronize, DoSynchronizeChecklistCalculateSize, DoSynchronizeMove, DoSynchronizeExplore,
                 &SynchronizeParams))
           {

@@ -588,6 +588,51 @@ private:
 
 };
 //---------------------------------------------------------------------------
+template <typename T>
+class TComPtr
+{
+public:
+  TComPtr(T * P = nullptr) : FP(P)
+  {
+  }
+
+  ~TComPtr()
+  {
+    Reset(nullptr);
+  }
+
+  void Reset(T * P)
+  {
+    if (FP != nullptr)
+    {
+      FP->Release();
+    }
+    FP = P;
+  }
+
+  T * Detach()
+  {
+    T * Result = FP;
+    FP = nullptr;
+    return Result;
+  }
+
+  // Address-of operator for out parameters
+  T** operator&()
+  {
+    Reset(nullptr); // ensures no leak if reused
+    return &FP;
+  }
+
+  // Accessors
+  T * operator->() const { return FP; }
+  T * Get() const { return FP; }
+  explicit operator bool() const { return FP != nullptr; }
+
+private:
+  T * FP;
+};
+//---------------------------------------------------------------------------
 typedef std::vector<UnicodeString> TUnicodeStringVector;
 //---------------------------------------------------------------------------
 #endif

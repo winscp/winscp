@@ -1260,7 +1260,6 @@ void __fastcall TScpCommanderForm::SynchronizeDirectories()
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::FullSynchronizeDirectories()
 {
-  DebugAssert(!IsLocalBrowserMode());
   UnicodeString Directory1 = LocalDirView->PathName;
   UnicodeString Directory2 = DirView(osOther)->PathName;
   bool SaveMode = !(GUIConfiguration->SynchronizeModeAuto < 0);

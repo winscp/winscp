@@ -720,6 +720,7 @@ protected:
     TSynchronizeParams & Params, TProcessedSynchronizationChecklistItem OnProcessedItem,
     TUpdatedSynchronizationChecklistItems OnUpdatedSynchronizationChecklistItems);
   void __fastcall SynchronizeProcessedItem(void * Token, const TSynchronizeChecklist::TItem * ChecklistItem);
+  void SynchronizeApplyLocal(TSynchronizeChecklist * Checklist, TSynchronizeParams & Params);
   void __fastcall CreateOpenDirMenuList(TTBCustomItem * Menu, TOperationSide Side, TBookmarkList * BookmarkList);
   void __fastcall CreateOpenDirMenu(TTBCustomItem * Menu, TOperationSide Side);
   bool __fastcall TryOpenDirectory(TOperationSide Side, const UnicodeString & Path);

@@ -25,7 +25,10 @@ bool DoFullSynchronizeDialog(
     Dialog->Params = Params;
     Dialog->Directory1 = Directory1;
     Dialog->Directory2 = Directory2;
-    Dialog->CopyParams = *CopyParams;
+    if (CopyParams != NULL)
+    {
+      Dialog->CopyParams = *CopyParams;
+    }
     Dialog->SaveSettings = SaveSettings;
     Dialog->SaveMode = SaveMode;
     if (AutoSubmit > 0)
@@ -39,7 +42,10 @@ bool DoFullSynchronizeDialog(
       Params = Dialog->Params;
       Directory1 = Dialog->Directory1;
       Directory2 = Dialog->Directory2;
-      *CopyParams = Dialog->CopyParams;
+      if (CopyParams != NULL)
+      {
+        *CopyParams = Dialog->CopyParams;
+      }
       SaveSettings = Dialog->SaveSettings;
       SaveMode = Dialog->SaveMode;
     }
@@ -70,24 +76,45 @@ __fastcall TFullSynchronizeDialog::~TFullSynchronizeDialog()
   delete FPresetsMenu;
 }
 //---------------------------------------------------------------------------
+bool TFullSynchronizeDialog::CanSynchronizeTimestamps()
+{
+  return FLAGCLEAR(FOptions, fsoDisableTimestamp) && FLAGCLEAR(FOptions, fsoLocalLocal);
+}
+//---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::Init(
   int Options, const TUsableCopyParamAttrs & CopyParamAttrs, TFullSynchronizeInNewWindow OnFullSynchronizeInNewWindow)
 {
   FOptions = Options;
-  if (FLAGSET(Options, fsoDisableTimestamp) &&
-      SynchronizeTimestampsButton->Checked)
+  // somewhat redundant
+  if (!CanSynchronizeTimestamps() && SynchronizeTimestampsButton->Checked)
   {
     SynchronizeFilesButton->Checked = true;
   }
   FCopyParamAttrs = CopyParamAttrs;
   FOnFullSynchronizeInNewWindow = OnFullSynchronizeInNewWindow;
-  DebugAssert(FOnFullSynchronizeInNewWindow != NULL);
+  if (FLAGSET(FOptions, fsoLocalLocal))
+  {
+    LocalDirectoryLabel->Caption = LoadStr(SYNCHRONIZE_LEFT_DIR);
+    RemoteDirectoryLabel->Caption = LoadStr(SYNCHRONIZE_RIGHT_DIR);
+    RemoteDirectoryEdit->Width = LocalDirectoryEdit->Width;
+    SynchronizeRemoteButton->Caption = LoadStr(SYNCHRONIZE_RIGHT);
+    SynchronizeLocalButton->Caption = LoadStr(SYNCHRONIZE_LEFT);
+    CopyParamGroup->Visible = false;
+    ClientHeight -= OkButton->Top - CopyParamGroup->Top;
+    TransferSettingsButton->Visible = false;
+  }
+  else
+  {
+    DebugAssert(FOnFullSynchronizeInNewWindow != NULL);
+    OtherLocalDirectoryBrowseButton->Visible = false;
+  }
+
   UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::UpdateControls()
 {
-  EnableControl(SynchronizeTimestampsButton, FLAGCLEAR(FOptions, fsoDisableTimestamp));
+  EnableControl(SynchronizeTimestampsButton, CanSynchronizeTimestamps());
   if (SynchronizeTimestampsButton->Checked)
   {
     SynchronizeExistingOnlyCheck->Checked = true;
@@ -171,12 +198,17 @@ void __fastcall TFullSynchronizeDialog::ControlChange(TObject * /*Sender*/)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
+UnicodeString TFullSynchronizeDialog::GetRightDirectoryHistory()
+{
+  return FLAGCLEAR(FOptions, fsoLocalLocal) ? L"RemoteDirectory" : L"LocalDirectory2";
+}
+//---------------------------------------------------------------------------
 bool __fastcall TFullSynchronizeDialog::Execute()
 {
   // at start assume that copy param is current preset
   FPreset = GUIConfiguration->CopyParamCurrent;
   LocalDirectoryEdit->Items = CustomWinConfiguration->History[L"LocalDirectory"];
-  RemoteDirectoryEdit->Items = CustomWinConfiguration->History[L"RemoteDirectory"];
+  RemoteDirectoryEdit->Items = CustomWinConfiguration->History[GetRightDirectoryHistory()];
   bool Result = (ShowModal() == DefaultResult(this));
   if (Result)
   {
@@ -190,7 +222,7 @@ void __fastcall TFullSynchronizeDialog::Submitted()
   LocalDirectoryEdit->SaveToHistory();
   CustomWinConfiguration->History[L"LocalDirectory"] = LocalDirectoryEdit->Items;
   RemoteDirectoryEdit->SaveToHistory();
-  CustomWinConfiguration->History[L"RemoteDirectory"] = RemoteDirectoryEdit->Items;
+  CustomWinConfiguration->History[GetRightDirectoryHistory()] = RemoteDirectoryEdit->Items;
 }
 //---------------------------------------------------------------------------
 void TFullSynchronizeDialog::SetDirectory2(const UnicodeString & value)
@@ -262,7 +294,7 @@ void __fastcall TFullSynchronizeDialog::SetParams(int value)
   SynchronizeExistingOnlyCheck->Checked = FLAGSET(value, TTerminal::spExistingOnly);
   SynchronizePreviewChangesCheck->Checked = FLAGSET(value, TTerminal::spPreviewChanges);
   SynchronizeSelectedOnlyCheck->Checked = FLAGSET(value, TTerminal::spSelectedOnly);
-  if (FLAGSET(value, TTerminal::spTimestamp) && FLAGCLEAR(FOptions, fsoDisableTimestamp))
+  if (FLAGSET(value, TTerminal::spTimestamp) && CanSynchronizeTimestamps())
   {
     SynchronizeTimestampsButton->Checked = true;
   }
@@ -288,8 +320,7 @@ int __fastcall TFullSynchronizeDialog::GetParams()
     FLAGMASK(SynchronizeExistingOnlyCheck->Checked, TTerminal::spExistingOnly) |
     FLAGMASK(SynchronizePreviewChangesCheck->Checked, TTerminal::spPreviewChanges) |
     FLAGMASK(SynchronizeSelectedOnlyCheck->Checked, TTerminal::spSelectedOnly) |
-    FLAGMASK(SynchronizeTimestampsButton->Checked && FLAGCLEAR(FOptions, fsoDisableTimestamp),
-      TTerminal::spTimestamp) |
+    FLAGMASK(SynchronizeTimestampsButton->Checked && CanSynchronizeTimestamps(), TTerminal::spTimestamp) |
     FLAGMASK(MirrorFilesButton->Checked, TTerminal::spMirror) |
     FLAGMASK(!SynchronizeByTimeCheck->Checked, TTerminal::spNotByTime) |
     FLAGMASK(SynchronizeBySizeCheck->Checked, TTerminal::spBySize) |
@@ -297,14 +328,23 @@ int __fastcall TFullSynchronizeDialog::GetParams()
     FLAGMASK(SynchronizeCaseSensitiveCheck->Checked, TTerminal::spCaseSensitive);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFullSynchronizeDialog::LocalDirectoryBrowseButtonClick(
-      TObject * /*Sender*/)
+void TFullSynchronizeDialog::DoLocalDirectoryBrowseButtonClick(TComboBox * ComboBox)
 {
-  UnicodeString Directory = LocalDirectoryEdit->Text;
+  UnicodeString Directory = ComboBox->Text;
   if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY)))
   {
-    LocalDirectoryEdit->Text = Directory;
+    ComboBox->Text = Directory;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFullSynchronizeDialog::LocalDirectoryBrowseButtonClick(TObject *)
+{
+  DoLocalDirectoryBrowseButtonClick(LocalDirectoryEdit);
+}
+//---------------------------------------------------------------------------
+void __fastcall TFullSynchronizeDialog::OtherLocalDirectoryBrowseButtonClick(TObject *)
+{
+  DoLocalDirectoryBrowseButtonClick(RemoteDirectoryEdit);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::SetSaveSettings(bool value)
@@ -430,7 +470,7 @@ void __fastcall TFullSynchronizeDialog::TransferSettingsButtonDropDownClick(TObj
 //---------------------------------------------------------------------------
 bool __fastcall TFullSynchronizeDialog::AllowStartInNewWindow()
 {
-  return !IsMainFormLike(this);
+  return !IsMainFormLike(this) && FLAGCLEAR(FOptions, fsoLocalLocal);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFullSynchronizeDialog::CanStartInNewWindow()

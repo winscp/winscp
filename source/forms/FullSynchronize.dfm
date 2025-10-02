@@ -89,6 +89,16 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       TabOrder = 1
       OnClick = LocalDirectoryBrowseButtonClick
     end
+    object OtherLocalDirectoryBrowseButton: TButton
+      Left = 429
+      Top = 86
+      Width = 80
+      Height = 25
+      Anchors = [akTop, akRight]
+      Caption = 'Bro&wse...'
+      TabOrder = 3
+      OnClick = OtherLocalDirectoryBrowseButtonClick
+    end
   end
   object OkButton: TButton
     Left = 260

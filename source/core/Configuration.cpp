@@ -1902,7 +1902,17 @@ UnicodeString __fastcall TConfiguration::GetDirectoryStatisticsCacheKey(
 {
   std::unique_ptr<TStringList> RawOptions(new TStringList());
   RawOptions->Add(SessionKey);
-  RawOptions->Add(UnixExcludeTrailingBackslash(Path));
+
+  UnicodeString PathKey;
+  if (SessionKey.IsEmpty())
+  {
+    PathKey = ExcludeTrailingBackslash(Path).LowerCase();
+  }
+  else
+  {
+    PathKey = UnixExcludeTrailingBackslash(Path);
+  }
+  RawOptions->Add(PathKey);
 
   TCopyParamType Defaults;
   TCopyParamType FilterCopyParam;

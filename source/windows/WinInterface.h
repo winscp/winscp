@@ -375,9 +375,10 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
 struct TUsableCopyParamAttrs;
 enum TSynchronizeMode { smRemote, smLocal, smBoth };
 const int fsoDisableTimestamp = 0x01;
-const int fsoDoNotUsePresets =  0x02;
+const int fsoDoNotUsePresets = 0x02;
 const int fsoAllowSelectedOnly = 0x04;
 const int fsoDisableByChecksum = 0x08;
+const int fsoLocalLocal = 0x10;
 typedef void __fastcall (__closure *TFullSynchronizeInNewWindow)
   (TSynchronizeMode Mode, int Params, const UnicodeString & Directory1, const UnicodeString & Directory2,
    const TCopyParamType * CopyParams);
