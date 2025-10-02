@@ -6012,12 +6012,12 @@ struct TSynchronizeData
   UnicodeString Directory1;
   UnicodeString Directory2;
   TTerminal::TSynchronizeMode Mode;
+  const TCopyParamType * CopyParam;
   int Params;
   TSynchronizeDirectory OnSynchronizeDirectory;
   TSynchronizeOptions * Options;
   TStringList * LeftFileList;
   int Flags;
-  const TCopyParamType * CopyParam;
   TSynchronizeChecklist * Checklist;
 
   void ClearLevelSpecific()
