@@ -138,7 +138,30 @@ bool __fastcall ExportSessionToPutty(TSessionData * SessionData, bool ReuseExist
   return Result;
 }
 //---------------------------------------------------------------------------
-class TPuttyCleanupThread : public TSimpleThread
+//---------------------------------------------------------------------------
+class TStandaloneThread : public TSimpleThread
+{
+public:
+  virtual void __fastcall Terminate();
+protected:
+  virtual bool __fastcall Finished();
+};
+//---------------------------------------------------------------------------
+void __fastcall TStandaloneThread::Terminate()
+{
+  // noop - the thread always self-terminates
+  DebugFail();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TStandaloneThread::Finished()
+{
+  // self-destroy
+  return TSimpleThread::Finished() || true;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+template<typename T, int TT, int I>
+class TSingletonThread : public TStandaloneThread
 {
 public:
   static void Schedule();
@@ -146,25 +169,26 @@ public:
 
 protected:
   virtual void __fastcall Execute();
-  virtual void __fastcall Terminate();
-  bool __fastcall Finished();
   void DoSchedule();
+  virtual void DoExecute(bool HasExpired) = 0;
 
-private:
   TDateTime FTimer;
-  static TPuttyCleanupThread * FInstance;
+  static T * FInstance;
   static std::unique_ptr<TCriticalSection> FSection;
 };
 //---------------------------------------------------------------------------
-std::unique_ptr<TCriticalSection> TPuttyCleanupThread::FSection(TraceInitPtr(new TCriticalSection()));
-TPuttyCleanupThread * TPuttyCleanupThread::FInstance;
+template<typename T, int TT, int I>
+std::unique_ptr<TCriticalSection> TSingletonThread<T, TT, I>::FSection(TraceInitPtr(new TCriticalSection()));
+template<typename T, int TT, int I>
+T * TSingletonThread<T, TT, I>::FInstance;
 //---------------------------------------------------------------------------
-void TPuttyCleanupThread::Schedule()
+template<typename T, int TT, int I>
+void TSingletonThread<T, TT, I>::Schedule()
 {
   TGuard Guard(FSection.get());
   if (FInstance == NULL)
   {
-    FInstance = new TPuttyCleanupThread();
+    FInstance = new T();
     FInstance->DoSchedule();
     FInstance->Start();
   }
@@ -174,7 +198,8 @@ void TPuttyCleanupThread::Schedule()
   }
 }
 //---------------------------------------------------------------------------
-void TPuttyCleanupThread::Finalize()
+template<typename T, int TT, int I>
+void TSingletonThread<T, TT, I>::Finalize()
 {
   while (true)
   {
@@ -189,64 +214,25 @@ void TPuttyCleanupThread::Finalize()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPuttyCleanupThread::Execute()
+template<typename T, int TT, int I>
+void __fastcall TSingletonThread<T, TT, I>::Execute()
 {
   try
   {
-    std::unique_ptr<TStrings> Sessions(new TStringList());
-    bool Continue = true;
-
+    bool HasExpired;
     do
     {
       {
         TGuard Guard(FSection.get());
-        std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(Configuration->PuttySessionsKey));
-        Storage->AccessMode = smReadWrite;
-        Storage->ConfigureForPutty();
-
-        std::unique_ptr<TStringList> Sessions2(new TStringList());
-        if (Storage->OpenRootKey(true))
-        {
-          std::unique_ptr<TStrings> SubKeys(new TStringList());
-          Storage->GetSubKeyNames(SubKeys.get());
-          for (int Index = 0; Index < SubKeys->Count; Index++)
-          {
-            UnicodeString SessionName = SubKeys->Strings[Index];
-            if (StartsStr(GUIConfiguration->PuttySession, SessionName))
-            {
-              Sessions2->Add(SessionName);
-            }
-          }
-
-          Sessions2->Sort();
-          if (!Sessions->Equals(Sessions2.get()))
-          {
-            // Just in case new sessions from another WinSCP instance are added, delay the cleanup
-            // (to avoid having to implement some inter-process communication).
-            // Both instances will attempt to do the cleanup, but that not a problem
-            Sessions->Assign(Sessions2.get());
-            DoSchedule();
-          }
-        }
-
-        if (FTimer < Now())
-        {
-          for (int Index = 0; Index < Sessions->Count; Index++)
-          {
-            UnicodeString SessionName = Sessions->Strings[Index];
-            Storage->RecursiveDeleteSubKey(SessionName);
-          }
-
-          Continue = false;
-        }
+        HasExpired = (FTimer < Now());
       }
-
-      if (Continue)
+      DoExecute(HasExpired);
+      if (!HasExpired)
       {
-        Sleep(1000);
+        Sleep(I);
       }
     }
-    while (Continue);
+    while (!HasExpired);
   }
   __finally
   {
@@ -255,23 +241,65 @@ void __fastcall TPuttyCleanupThread::Execute()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPuttyCleanupThread::Terminate()
+template<typename T, int TT, int I>
+void TSingletonThread<T, TT, I>::DoSchedule()
 {
-  DebugFail();
+  FTimer = IncSecond(Now(), TT);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TPuttyCleanupThread::Finished()
+//---------------------------------------------------------------------------
+class TPuttyCleanupThread : public TSingletonThread<TPuttyCleanupThread, 10, 1000>
 {
-  // self-destroy
-  return TSimpleThread::Finished() || true;
+protected:
+  virtual void DoExecute(bool HasExpired);
+};
+//---------------------------------------------------------------------------
+void TPuttyCleanupThread::DoExecute(bool HasExpired)
+{
+  std::unique_ptr<TStrings> Sessions(new TStringList());
+
+  TGuard Guard(FSection.get());
+  std::unique_ptr<TRegistryStorage> Storage(new TRegistryStorage(Configuration->PuttySessionsKey));
+  Storage->AccessMode = smReadWrite;
+  Storage->ConfigureForPutty();
+
+  std::unique_ptr<TStringList> Sessions2(new TStringList());
+  if (Storage->OpenRootKey(true))
+  {
+    std::unique_ptr<TStrings> SubKeys(new TStringList());
+    Storage->GetSubKeyNames(SubKeys.get());
+    for (int Index = 0; Index < SubKeys->Count; Index++)
+    {
+      UnicodeString SessionName = SubKeys->Strings[Index];
+      if (StartsStr(GUIConfiguration->PuttySession, SessionName))
+      {
+        Sessions2->Add(SessionName);
+      }
+    }
+
+    Sessions2->Sort();
+    if (!Sessions->Equals(Sessions2.get()))
+    {
+      // Just in case new sessions from another WinSCP instance are added, delay the cleanup
+      // (to avoid having to implement some inter-process communication).
+      // Both instances will attempt to do the cleanup, but that not a problem
+      Sessions->Assign(Sessions2.get());
+      DoSchedule();
+    }
+  }
+
+  if (HasExpired)
+  {
+    for (int Index = 0; Index < Sessions->Count; Index++)
+    {
+      UnicodeString SessionName = Sessions->Strings[Index];
+      Storage->RecursiveDeleteSubKey(SessionName);
+    }
+
+  }
 }
 //---------------------------------------------------------------------------
-void TPuttyCleanupThread::DoSchedule()
-{
-  FTimer = IncSecond(Now(), 10);
-}
-//---------------------------------------------------------------------------
-class TPuttyPasswordThread : public TSimpleThread
+class TPuttyPasswordThread : public TStandaloneThread
 {
 public:
   TPuttyPasswordThread(const UnicodeString & Password, const UnicodeString & PipeName);
@@ -279,8 +307,6 @@ public:
 
 protected:
   virtual void __fastcall Execute();
-  virtual void __fastcall Terminate();
-  virtual bool __fastcall Finished();
 
 private:
   HANDLE FPipe;
@@ -309,16 +335,6 @@ __fastcall TPuttyPasswordThread::~TPuttyPasswordThread()
   AppLog(L"Disconnecting and closing password pipe");
   DisconnectNamedPipe(FPipe);
   CloseHandle(FPipe);
-}
-//---------------------------------------------------------------------------
-void __fastcall TPuttyPasswordThread::Terminate()
-{
-  // noop - the thread always self-terminates
-}
-//---------------------------------------------------------------------------
-bool __fastcall TPuttyPasswordThread::Finished()
-{
-  return true;
 }
 //---------------------------------------------------------------------------
 void TPuttyPasswordThread::DoSleep(int & Timeout)
@@ -598,6 +614,64 @@ void OpenSessionInPutty(TSessionData * SessionData)
   else
   {
     throw Exception(FMTLOAD(FILE_NOT_FOUND, (Program)));
+  }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+static HWND OperationStatusWindow = 0;
+static TRect OperationStatusCenterRect;
+//---------------------------------------------------------------------------
+void PlaceOperationStatusWindow()
+{
+  TRect CurRect;
+  if (GetWindowRect(OperationStatusWindow, &CurRect))
+  {
+    TRect Rect = CurRect;
+    CenterFormOn(Rect, OperationStatusCenterRect);
+    if (Rect != CurRect)
+    {
+      // What TWinControl.SetBounds does
+      SetWindowPos(OperationStatusWindow, 0, Rect.Left, Rect.Top, 0, 0, SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOSIZE);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+class TOperationStatusWindowMonitorThread : public TSingletonThread<TOperationStatusWindowMonitorThread, 3, 25>
+{
+protected:
+  virtual void DoExecute(bool HasExpired);
+};
+//---------------------------------------------------------------------------
+void TOperationStatusWindowMonitorThread::DoExecute(bool)
+{
+  PlaceOperationStatusWindow();
+}
+//---------------------------------------------------------------------------
+void CheckOperationStatusWindow()
+{
+  if (Screen->ActiveForm != nullptr)
+  {
+    OperationStatusCenterRect = GetCenterRect(Screen->ActiveForm, nullptr);
+    HWND WindowHandle = GetForegroundWindow();
+    if ((WindowHandle != nullptr) && (WindowHandle != OperationStatusWindow))
+    {
+      DWORD ProcessId;
+      if ((GetWindowThreadProcessId(WindowHandle, &ProcessId) != 0) &&
+          (ProcessId == GetCurrentProcessId()))
+      {
+        UnicodeString ClassName;
+        ClassName.SetLength(256);
+        GetClassName(WindowHandle, ClassName.c_str(), ClassName.Length());
+        PackStr(ClassName);
+        if ((ClassName == L"OperationStatusWindow") &&
+            !IsIconic(WindowHandle))
+        {
+          OperationStatusWindow = WindowHandle;
+          PlaceOperationStatusWindow();
+          TOperationStatusWindowMonitorThread::Schedule();
+        }
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------

@@ -136,13 +136,6 @@ TColor __fastcall GetNonZeroColor(TColor Color)
   return Color;
 }
 //---------------------------------------------------------------------------
-void __fastcall CenterFormOn(TForm * Form, TControl * CenterOn)
-{
-  TPoint ScreenPoint = CenterOn->ClientToScreen(TPoint(0, 0));
-  Form->Left = ScreenPoint.x + (CenterOn->Width / 2) - (Form->Width / 2);
-  Form->Top = ScreenPoint.y + (CenterOn->Height / 2) - (Form->Height / 2);
-}
-//---------------------------------------------------------------------------
 UnicodeString __fastcall GetListViewStr(TCustomListView * ListView)
 {
   UnicodeString Result;

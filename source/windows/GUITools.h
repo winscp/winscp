@@ -85,6 +85,7 @@ TComponent * __fastcall FindComponentRecursively(TComponent * Root, const Unicod
 void __fastcall GetInstrutionsTheme(
   TColor & MainInstructionColor, HFONT & MainInstructionFont, HFONT & InstructionFont);
 bool CanShowTimeEstimate(TDateTime StartTime);
+void CheckOperationStatusWindow();
 //---------------------------------------------------------------------------
 class TLocalCustomCommand : public TFileCustomCommand
 {

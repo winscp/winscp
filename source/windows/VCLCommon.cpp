@@ -14,10 +14,10 @@
 #include <WinApi.h>
 #include <vssym32.h>
 #include <ComboEdit.hpp>
+#include <GUITools.h>
 //---------------------------------------------------------------------------
 const UnicodeString ContextSeparator(TraceInitStr(L"\x00BB"));
 const UnicodeString LinkAppLabelMark(TraceInitStr(UnicodeString(L" ") + ContextSeparator));
-TNotifyEvent OnActiveFormChange = nullptr;
 //---------------------------------------------------------------------------
 class TFormCustomizationComponent : public TComponent
 {
@@ -962,10 +962,7 @@ static void __fastcall FormWindowProc(void * Data, TMessage & Message)
   }
   else if (Message.Msg == WM_ACTIVATE)
   {
-    if (OnActiveFormChange != nullptr)
-    {
-      OnActiveFormChange(nullptr);
-    }
+    CheckOperationStatusWindow();
     WndProc(Message);
   }
   else
@@ -1761,24 +1758,37 @@ void __fastcall CutFormToDesktop(TForm * Form)
   }
 }
 //---------------------------------------------------------------------------
-void CenterFormOn(TRect & Bounds, TCustomForm * CenterForm, Forms::TMonitor * CenterMonitor)
+TRect GetCenterRect(TControl * CenterControl, Forms::TMonitor * CenterMonitor)
 {
-  int X, Y;
-  if (CenterForm != NULL)
+  TRect Result;
+  if (CenterControl != NULL)
   {
-    TForm * PublicCenterForm = reinterpret_cast<TForm *>(CenterForm);
-    X = ((PublicCenterForm->Width - Bounds.Width()) / 2) + PublicCenterForm->Left;
-    Y = ((PublicCenterForm->Height - Bounds.Height()) / 2) + PublicCenterForm->Top;
+    Result = CenterControl->BoundsRect;
+    TPoint P = CenterControl->BoundsRect.TopLeft();
+    if (CenterControl->Parent != nullptr)
+    {
+      P = CenterControl->Parent->ClientToScreen(P);
+    }
+    Result.SetLocation(P);
   }
   else
   {
-    X = (CenterMonitor->Width - Bounds.Width()) / 2;
-    Y = (CenterMonitor->Height - Bounds.Height()) / 2;
+    Result = CenterMonitor->BoundsRect;
   }
-
-  X = std::max(X, 0);
-  Y = std::max(Y, 0);
+  return Result;
+}
+//---------------------------------------------------------------------------
+void CenterFormOn(TRect & Bounds, const TRect & CenterRect)
+{
+  TRect DesktopRect = Screen->DesktopRect;
+  int X = std::max(DesktopRect.Left, ((CenterRect.Width() - Bounds.Width()) / 2) + CenterRect.Left);
+  int Y = std::max(DesktopRect.Top, ((CenterRect.Height() - Bounds.Height()) / 2) + CenterRect.Top);
   Bounds.SetLocation(X, Y);
+}
+//---------------------------------------------------------------------------
+void CenterFormOn(TRect & Bounds, TControl * CenterControl, Forms::TMonitor * CenterMonitor)
+{
+  CenterFormOn(Bounds, GetCenterRect(CenterControl, CenterMonitor));
 }
 //---------------------------------------------------------------------------
 void __fastcall UpdateFormPosition(TCustomForm * Form, TPosition Position)

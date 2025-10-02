@@ -280,11 +280,6 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   // (necessary for "explorer" only, as "commander" loads it for its drive menu)
   DriveInfo->NeedData();
   UsesCustomColorMode(this);
-
-  FOperationStatusWindow = nullptr;
-  FOperationStatusWindowTimer = nullptr;
-  DebugAssert(OnActiveFormChange == nullptr);
-  OnActiveFormChange = ActiveFormChange;
 }
 //---------------------------------------------------------------------------
 __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
@@ -12385,62 +12380,5 @@ void TCustomScpExplorerForm::ChangeDirViewStyle(TOperationSide Side, TDirViewSty
     }
     ADirView->DirViewStyle = DirViewStyle;
     UpdateControls();
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::ActiveFormChange(TObject *)
-{
-  HWND WindowHandle = GetForegroundWindow();
-  if ((WindowHandle != nullptr) && (WindowHandle != FOperationStatusWindow))
-  {
-    DWORD ProcessId;
-    if ((GetWindowThreadProcessId(WindowHandle, &ProcessId) != 0) &&
-        (ProcessId == GetCurrentProcessId()))
-    {
-      UnicodeString ClassName;
-      ClassName.SetLength(256);
-      GetClassName(WindowHandle, ClassName.c_str(), ClassName.Length());
-      PackStr(ClassName);
-      if ((ClassName == L"OperationStatusWindow") &&
-          !IsIconic(WindowHandle))
-      {
-        FOperationStatusWindow = WindowHandle;
-        PlaceOperationStatusWindow();
-        FOperationStatusWindowIterations = 0;
-        if (FOperationStatusWindowTimer == nullptr)
-        {
-          FOperationStatusWindowTimer = new TTimer(this);
-        }
-        FOperationStatusWindowTimer->OnTimer = OperationStatusWindowTimer;
-        FOperationStatusWindowTimer->Interval = 50;
-        FOperationStatusWindowTimer->Enabled = true;
-      }
-    }
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::OperationStatusWindowTimer(TObject *)
-{
-  FOperationStatusWindowIterations++;
-  PlaceOperationStatusWindow();
-  if (FOperationStatusWindowIterations == 5)
-  {
-    SAFE_DESTROY(FOperationStatusWindowTimer);
-  }
-}
-//---------------------------------------------------------------------------
-void TCustomScpExplorerForm::PlaceOperationStatusWindow()
-{
-  TRect CurRect;
-  if ((Screen->ActiveForm != nullptr) &&
-      GetWindowRect(FOperationStatusWindow, &CurRect))
-  {
-    TRect Rect = CurRect;
-    CenterFormOn(Rect, Screen->ActiveForm, nullptr);
-    if (Rect != CurRect)
-    {
-      // What TWinControl.SetBounds does
-      SetWindowPos(FOperationStatusWindow, 0, Rect.Left, Rect.Top, 0, 0, SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOSIZE);
-    }
   }
 }

@@ -177,7 +177,9 @@ void __fastcall TSelectMaskDialog::FormShow(TObject * /*Sender*/)
   if (FParent != NULL)
   {
     // Only now it is scaled
-    CenterFormOn(this, FParent);
+    TRect Bounds = BoundsRect;
+    CenterFormOn(Bounds, FParent, nullptr);
+    BoundsRect = Bounds;
   }
   UpdateControls();
 }
