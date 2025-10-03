@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2021-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ static int imptypes_selection;
 static int exptypes_selection;
 static int query_id;
 static int key_deleted;
+
+unsigned fake_rsa_query_operation_name = 0;
 
 struct fake_rsa_keydata {
     int selection;
@@ -77,7 +79,7 @@ static const char *fake_rsa_keymgmt_query(int id)
     /* record global for checking */
     query_id = id;
 
-    return "RSA";
+    return fake_rsa_query_operation_name ? NULL: "RSA";
 }
 
 static int fake_rsa_keymgmt_import(void *keydata, int selection,
