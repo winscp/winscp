@@ -114,22 +114,19 @@ main(int argc, char *argv[]) {
   bufferSize = atoi(argv[j + 2]);
   nrOfLoops = atoi(argv[j + 3]);
   if (bufferSize <= 0 || nrOfLoops <= 0) {
-    fclose(file);
-    close(fd);
+    fclose(file); // NOTE: this closes fd as well
     fprintf(stderr, "buffer size and nr of loops must be greater than zero.\n");
     return 3;
   }
 
   XMLBuf = malloc(fileAttr.st_size);
   if (XMLBuf == NULL) {
-    fclose(file);
-    close(fd);
+    fclose(file); // NOTE: this closes fd as well
     fprintf(stderr, "ouf of memory.\n");
     return 5;
   }
   fileSize = fread(XMLBuf, sizeof(char), fileAttr.st_size, file);
-  fclose(file);
-  close(fd);
+  fclose(file); // NOTE: this closes fd as well
 
   if (ns)
     parser = XML_ParserCreateNS(NULL, '!');
