@@ -70,7 +70,7 @@ START_TEST(test_misc_alloc_create_parser) {
 
   /* Something this simple shouldn't need more than 10 allocations */
   for (i = 0; i < max_alloc_count; i++) {
-    g_allocation_count = i;
+    g_allocation_count = (int)i;
     g_parser = XML_ParserCreate_MM(NULL, &memsuite, NULL);
     if (g_parser != NULL)
       break;
@@ -90,7 +90,7 @@ START_TEST(test_misc_alloc_create_parser_with_encoding) {
 
   /* Try several levels of allocation */
   for (i = 0; i < max_alloc_count; i++) {
-    g_allocation_count = i;
+    g_allocation_count = (int)i;
     g_parser = XML_ParserCreate_MM(XCS("us-ascii"), &memsuite, NULL);
     if (g_parser != NULL)
       break;
@@ -211,7 +211,8 @@ START_TEST(test_misc_version) {
   if (! versions_equal(&read_version, &parsed_version))
     fail("Version mismatch");
 
-  if (xcstrcmp(version_text, XCS("expat_2.7.0"))) /* needs bump on releases */
+  if (xcstrcmp(version_text, XCS("expat_2.7.3"))
+      != 0) /* needs bump on releases */
     fail("XML_*_VERSION in expat.h out of sync?\n");
 }
 END_TEST
@@ -618,6 +619,158 @@ START_TEST(test_renter_loop_finite_content) {
 }
 END_TEST
 
+// Inspired by function XML_OriginalString of Perl's XML::Parser
+static char *
+dup_original_string(XML_Parser parser) {
+  const int byte_count = XML_GetCurrentByteCount(parser);
+
+  assert_true(byte_count >= 0);
+
+  int offset = -1;
+  int size = -1;
+
+  const char *const context = XML_GetInputContext(parser, &offset, &size);
+
+#if XML_CONTEXT_BYTES > 0
+  assert_true(context != NULL);
+  assert_true(offset >= 0);
+  assert_true(size >= 0);
+  return portable_strndup(context + offset, byte_count);
+#else
+  assert_true(context == NULL);
+  return NULL;
+#endif
+}
+
+static void
+on_characters_issue_980(void *userData, const XML_Char *s, int len) {
+  (void)s;
+  (void)len;
+  XML_Parser parser = (XML_Parser)userData;
+
+  char *const original_string = dup_original_string(parser);
+
+#if XML_CONTEXT_BYTES > 0
+  assert_true(original_string != NULL);
+  assert_true(strcmp(original_string, "&draft.day;") == 0);
+  free(original_string);
+#else
+  assert_true(original_string == NULL);
+#endif
+}
+
+START_TEST(test_misc_expected_event_ptr_issue_980) {
+  // NOTE: This is a tiny subset of sample "REC-xml-19980210.xml"
+  //       from Perl's XML::Parser
+  const char *const doc = "<!DOCTYPE day [\n"
+                          "  <!ENTITY draft.day '10'>\n"
+                          "]>\n"
+                          "<day>&draft.day;</day>\n";
+
+  XML_Parser parser = XML_ParserCreate(NULL);
+  XML_SetUserData(parser, parser);
+  XML_SetCharacterDataHandler(parser, on_characters_issue_980);
+
+  assert_true(_XML_Parse_SINGLE_BYTES(parser, doc, (int)strlen(doc),
+                                      /*isFinal=*/XML_TRUE)
+              == XML_STATUS_OK);
+
+  XML_ParserFree(parser);
+}
+END_TEST
+
+START_TEST(test_misc_sync_entity_tolerated) {
+  const char *const doc = "<!DOCTYPE t0 [\n"
+                          "   <!ENTITY a '<t1></t1>'>\n"
+                          "   <!ENTITY b '<t2>two</t2>'>\n"
+                          "   <!ENTITY c '<t3>three<t4>four</t4>three</t3>'>\n"
+                          "   <!ENTITY d '<t5>&b;</t5>'>\n"
+                          "]>\n"
+                          "<t0>&a;&b;&c;&d;</t0>\n";
+  XML_Parser parser = XML_ParserCreate(NULL);
+
+  assert_true(_XML_Parse_SINGLE_BYTES(parser, doc, (int)strlen(doc),
+                                      /*isFinal=*/XML_TRUE)
+              == XML_STATUS_OK);
+
+  XML_ParserFree(parser);
+}
+END_TEST
+
+START_TEST(test_misc_async_entity_rejected) {
+  struct test_case {
+    const char *doc;
+    enum XML_Status expectedStatusNoGE;
+    enum XML_Error expectedErrorNoGE;
+    XML_Size expectedErrorLine;
+    XML_Size expectedErrorColumn;
+  };
+  const struct test_case cases[] = {
+      // Opened by one entity, closed by another
+      {"<!DOCTYPE t0 [\n"
+       "   <!ENTITY open '<t1>'>\n"
+       "   <!ENTITY close '</t1>'>\n"
+       "]>\n"
+       "<t0>&open;&close;</t0>\n",
+       XML_STATUS_OK, XML_ERROR_NONE, 5, 4},
+      // Opened by tag, closed by entity (non-root case)
+      {"<!DOCTYPE t0 [\n"
+       "  <!ENTITY g0 ''>\n"
+       "  <!ENTITY g1 '&g0;</t1>'>\n"
+       "]>\n"
+       "<t0><t1>&g1;</t0>\n",
+       XML_STATUS_ERROR, XML_ERROR_TAG_MISMATCH, 5, 8},
+      // Opened by tag, closed by entity (root case)
+      {"<!DOCTYPE t0 [\n"
+       "  <!ENTITY g0 ''>\n"
+       "  <!ENTITY g1 '&g0;</t0>'>\n"
+       "]>\n"
+       "<t0>&g1;\n",
+       XML_STATUS_ERROR, XML_ERROR_NO_ELEMENTS, 5, 4},
+      // Opened by entity, closed by tag <-- regression from 2.7.0
+      {"<!DOCTYPE t0 [\n"
+       "  <!ENTITY g0 ''>\n"
+       "  <!ENTITY g1 '<t1>&g0;'>\n"
+       "]>\n"
+       "<t0>&g1;</t1></t0>\n",
+       XML_STATUS_ERROR, XML_ERROR_TAG_MISMATCH, 5, 4},
+      // Opened by tag, closed by entity; then the other way around
+      {"<!DOCTYPE t0 [\n"
+       "  <!ENTITY open '<t1>'>\n"
+       "  <!ENTITY close '</t1>'>\n"
+       "]>\n"
+       "<t0><t1>&close;&open;</t1></t0>\n",
+       XML_STATUS_OK, XML_ERROR_NONE, 5, 8},
+  };
+
+  for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+    const struct test_case testCase = cases[i];
+    set_subtest("cases[%d]", (int)i);
+
+    const char *const doc = testCase.doc;
+#if XML_GE == 1
+    const enum XML_Status expectedStatus = XML_STATUS_ERROR;
+    const enum XML_Error expectedError = XML_ERROR_ASYNC_ENTITY;
+#else
+    const enum XML_Status expectedStatus = testCase.expectedStatusNoGE;
+    const enum XML_Error expectedError = testCase.expectedErrorNoGE;
+#endif
+
+    XML_Parser parser = XML_ParserCreate(NULL);
+    assert_true(_XML_Parse_SINGLE_BYTES(parser, doc, (int)strlen(doc),
+                                        /*isFinal=*/XML_TRUE)
+                == expectedStatus);
+    assert_true(XML_GetErrorCode(parser) == expectedError);
+#if XML_GE == 1
+    assert_true(XML_GetCurrentLineNumber(parser) == testCase.expectedErrorLine);
+    assert_true(XML_GetCurrentColumnNumber(parser)
+                == testCase.expectedErrorColumn);
+#endif
+    XML_ParserFree(parser);
+  }
+}
+END_TEST
+
 void
 make_miscellaneous_test_case(Suite *s) {
   TCase *tc_misc = tcase_create("miscellaneous tests");
@@ -645,4 +798,7 @@ make_miscellaneous_test_case(Suite *s) {
   tcase_add_test(tc_misc, test_misc_resumeparser_not_crashing);
   tcase_add_test(tc_misc, test_misc_stopparser_rejects_unstarted_parser);
   tcase_add_test__if_xml_ge(tc_misc, test_renter_loop_finite_content);
+  tcase_add_test(tc_misc, test_misc_expected_event_ptr_issue_980);
+  tcase_add_test(tc_misc, test_misc_sync_entity_tolerated);
+  tcase_add_test(tc_misc, test_misc_async_entity_rejected);
 }

@@ -50,6 +50,7 @@ if(HAVE_SYS_TYPES_H)
         #include <sys/types.h>
         int main(void) {
             const off_t offset = -123;
+            (void)offset;
             return 0;
         }"
         HAVE_OFF_T)
