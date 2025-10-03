@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The OpenSSL Project Authors. All Rights Reserved.
+ * Copyright 2019-2025 The OpenSSL Project Authors. All Rights Reserved.
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -718,7 +718,7 @@ static int rsa_verify_recover(void *vprsactx,
                 return 0;
             ret = RSA_public_decrypt(siglen, sig, prsactx->tbuf, prsactx->rsa,
                                      RSA_X931_PADDING);
-            if (ret < 1) {
+            if (ret <= 0) {
                 ERR_raise(ERR_LIB_PROV, ERR_R_RSA_LIB);
                 return 0;
             }
@@ -768,7 +768,7 @@ static int rsa_verify_recover(void *vprsactx,
     } else {
         ret = RSA_public_decrypt(siglen, sig, rout, prsactx->rsa,
                                  prsactx->pad_mode);
-        if (ret < 0) {
+        if (ret <= 0) {
             ERR_raise(ERR_LIB_PROV, ERR_R_RSA_LIB);
             return 0;
         }
