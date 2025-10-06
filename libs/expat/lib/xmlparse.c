@@ -816,6 +816,7 @@ expat_heap_increase_tolerable(XML_Parser rootParser, XmlBigCount increase,
   assert(rootParser != NULL);
   assert(increase > 0);
 
+  { // WINSCP
   XmlBigCount newTotal = 0;
   bool tolerable = true;
 
@@ -828,12 +829,14 @@ expat_heap_increase_tolerable(XML_Parser rootParser, XmlBigCount increase,
     if (newTotal >= rootParser->m_alloc_tracker.activationThresholdBytes) {
       assert(newTotal > 0);
       // NOTE: This can be +infinity when dividing by zero but not -nan
+      { // WINSCP
       const float amplification
           = (float)newTotal / (float)rootParser->m_accounting.countBytesDirect;
       if (amplification
           > rootParser->m_alloc_tracker.maximumAmplificationFactor) {
         tolerable = false;
       }
+      } // WINSCP
     }
   }
 
@@ -842,6 +845,7 @@ expat_heap_increase_tolerable(XML_Parser rootParser, XmlBigCount increase,
   }
 
   return tolerable;
+  } // WINSCP
 }
 
 #  if defined(XML_TESTING)
@@ -855,9 +859,11 @@ expat_malloc(XML_Parser parser, size_t size, int sourceLine) {
     return NULL;
   }
 
+  { // WINSCP
   const XML_Parser rootParser = getRootParserOf(parser, NULL);
   assert(rootParser->m_parentParser == NULL);
 
+  { // WINSCP
   const size_t bytesToAllocate = sizeof(size_t) + EXPAT_MALLOC_PADDING + size;
 
   if ((XmlBigCount)-1 - rootParser->m_alloc_tracker.bytesAllocated
@@ -870,6 +876,7 @@ expat_malloc(XML_Parser parser, size_t size, int sourceLine) {
     return NULL; // i.e. signal violation as out-of-memory
   }
 
+  { // WINSCP
   // Actually allocate
   void *const mallocedPtr = parser->m_mem.malloc_fcn(bytesToAllocate);
 
@@ -896,6 +903,9 @@ expat_malloc(XML_Parser parser, size_t size, int sourceLine) {
   }
 
   return (char *)mallocedPtr + sizeof(size_t) + EXPAT_MALLOC_PADDING;
+  } // WINSCP
+  } // WINSCP
+  } // WINSCP
 }
 
 #  if defined(XML_TESTING)
@@ -910,9 +920,11 @@ expat_free(XML_Parser parser, void *ptr, int sourceLine) {
     return;
   }
 
+  { // WINSCP
   const XML_Parser rootParser = getRootParserOf(parser, NULL);
   assert(rootParser->m_parentParser == NULL);
 
+  { // WINSCP
   // Extract size (to the eyes of malloc_fcn/realloc_fcn) and
   // the original pointer returned by malloc/realloc
   void *const mallocedPtr = (char *)ptr - EXPAT_MALLOC_PADDING - sizeof(size_t);
@@ -932,6 +944,8 @@ expat_free(XML_Parser parser, void *ptr, int sourceLine) {
 
   // NOTE: This may be freeing rootParser, so freeing has to come last
   parser->m_mem.free_fcn(mallocedPtr);
+  } // WINSCP
+  } // WINSCP
 }
 
 #  if defined(XML_TESTING)
@@ -951,9 +965,11 @@ expat_realloc(XML_Parser parser, void *ptr, size_t size, int sourceLine) {
     return NULL;
   }
 
+  { // WINSCP
   const XML_Parser rootParser = getRootParserOf(parser, NULL);
   assert(rootParser->m_parentParser == NULL);
 
+  { // WINSCP
   // Extract original size (to the eyes of the caller) and the original
   // pointer returned by malloc/realloc
   void *mallocedPtr = (char *)ptr - EXPAT_MALLOC_PADDING - sizeof(size_t);
@@ -1009,6 +1025,8 @@ expat_realloc(XML_Parser parser, void *ptr, size_t size, int sourceLine) {
   *(size_t *)mallocedPtr = size;
 
   return (char *)mallocedPtr + sizeof(size_t) + EXPAT_MALLOC_PADDING;
+  } // WINSCP
+  } // WINSCP
 }
 #endif // XML_GE == 1
 
@@ -1429,6 +1447,7 @@ parserCreate(const XML_Char *encodingName,
     parser->m_parentParser = parentParser;
   }
 
+  { // WINSCP
   // Record XML_ParserStruct allocation we did a few lines up before
   const XML_Parser rootParser = getRootParserOf(parser, NULL);
   assert(rootParser->m_parentParser == NULL);
@@ -1542,6 +1561,7 @@ parserCreate(const XML_Char *encodingName,
   }
 
   return parser;
+  } // WINSCP
 }
 
 static void
@@ -2336,6 +2356,7 @@ XML_SetHashSalt(XML_Parser parser, unsigned long hash_salt) {
   if (parser == NULL)
     return 0;
 
+  { // WINSCP
   const XML_Parser rootParser = getRootParserOf(parser, NULL);
   assert(! rootParser->m_parentParser);
 
@@ -2344,6 +2365,7 @@ XML_SetHashSalt(XML_Parser parser, unsigned long hash_salt) {
     return 0;
   rootParser->m_hash_secret_salt = hash_salt;
   return 1;
+  } // WINSCP
 }
 
 enum XML_Status XMLCALL
