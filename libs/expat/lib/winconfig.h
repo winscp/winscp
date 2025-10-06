@@ -44,6 +44,5 @@
 
 #include <memory.h>
 #include <string.h>
-#include <float.h>
 
 #endif /* ndef WINCONFIG_H */
