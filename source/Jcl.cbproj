@@ -131,9 +131,6 @@
         <DelphiCompile Include="packages\jcl\JclTD32.pas">
             <BuildOrder>15</BuildOrder>
         </DelphiCompile>
-        <DelphiCompile Include="packages\jcl\JclUnitVersioning.pas">
-            <BuildOrder>16</BuildOrder>
-        </DelphiCompile>
         <DelphiCompile Include="packages\jcl\JclWin32.pas">
             <BuildOrder>13</BuildOrder>
         </DelphiCompile>

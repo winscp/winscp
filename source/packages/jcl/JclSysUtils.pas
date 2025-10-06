@@ -493,6 +493,8 @@ type
     property PositiveSign: Char read GetPositiveSign write SetPositiveSign;
   end;
 
+{$ENDIF ~WINSCP}
+
 function IntToStrZeroPad(Value, Count: Integer): string;
 
 // Child processes
@@ -640,6 +642,7 @@ type
     property Output: string read GetOutput;
   end;
 
+{$IFNDEF WINSCP}
 // Console Utilities
 function ReadKey: Char;
 {$ENDIF ~WINSCP}
@@ -2761,6 +2764,8 @@ begin
   FSignChars[True] := Value;
 end;
 
+{$ENDIF ~WINSCP}
+
 //=== Child processes ========================================================
 
 const
@@ -3480,6 +3485,7 @@ end;
 
 //=== Console Utilities ======================================================
 
+{$IFNDEF WINSCP}
 function ReadKey: Char;
 {$IFDEF MSWINDOWS}
 { TODO -cHelp : Contributor: Robert Rossmair }
