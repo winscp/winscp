@@ -35,11 +35,11 @@
 # Unlike most of Expat,
 # this file is copyrighted under the BSD-license for buildsystem files of KDE.
 
-cmake_minimum_required(VERSION 3.13.0)
+cmake_minimum_required(VERSION 3.15.0)
 
 project(expat
     VERSION
-        2.7.1
+        2.7.3
     LANGUAGES
         C
 )
@@ -118,9 +118,8 @@ macro(expat_shy_set var default cache type desc)
 
     if(DEFINED ${var})
         # NOTE: The idea is to (ideally) only add to the cache if
-        #       there is no cache entry, yet.  "if(DEFINED CACHE{var})"
-        #       requires CMake >=3.14.
-        if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.14" AND NOT DEFINED "CACHE{${var}}")
+        #       there is no cache entry, yet.
+        if(NOT DEFINED "CACHE{${var}}")
             set("${var}" "${${var}}" CACHE "${type}" "${desc}")
         endif()
     else()
@@ -206,8 +205,8 @@ if(MSVC)
     # - https://sourceforge.net/p/predef/wiki/Compilers/
     # - https://en.wikipedia.org/wiki/Microsoft_Visual_Studio#History
     set(_EXPAT_MSVC_REQUIRED_INT 1800)  # i.e. 12.0/2013/1800; see PR #426
-    set(_EXPAT_MSVC_SUPPORTED_INT 1920)
-    set(_EXPAT_MSVC_SUPPORTED_DISPLAY "Visual Studio 16.0/2019/${_EXPAT_MSVC_SUPPORTED_INT}")
+    set(_EXPAT_MSVC_SUPPORTED_INT 1930)
+    set(_EXPAT_MSVC_SUPPORTED_DISPLAY "Visual Studio 17.0/2022/${_EXPAT_MSVC_SUPPORTED_INT}")
 
     if(MSVC_VERSION VERSION_LESS ${_EXPAT_MSVC_SUPPORTED_INT})
         if(MSVC_VERSION VERSION_LESS ${_EXPAT_MSVC_REQUIRED_INT})
@@ -344,22 +343,16 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${EXTRA_COMPILE_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EXTRA_COMPILE_FLAGS}")
 
 if (MSVC)
+    cmake_policy(GET CMP0091 _policy_cmp0091_behavior)
+    if (NOT _policy_cmp0091_behavior STREQUAL NEW)
+        message(SEND_ERROR "Policy CMP0091 behavior is '${_policy_cmp0091_behavior}' rather than 'NEW', mis-compilation detected.")
+    endif()
+
+    message(STATUS "-- Using static CRT ${EXPAT_MSVC_STATIC_CRT}")
     if (EXPAT_MSVC_STATIC_CRT)
-        message("-- Using static CRT ${EXPAT_MSVC_STATIC_CRT}")
-        foreach(flag_var
-                CMAKE_CXX_FLAGS_${_EXPAT_BUILD_TYPE_UPPER}
-                CMAKE_CXX_FLAGS_DEBUG
-                CMAKE_CXX_FLAGS_RELEASE
-                CMAKE_CXX_FLAGS_MINSIZEREL
-                CMAKE_CXX_FLAGS_RELWITHDEBINFO
-                CMAKE_C_FLAGS_${_EXPAT_BUILD_TYPE_UPPER}
-                CMAKE_C_FLAGS_DEBUG
-                CMAKE_C_FLAGS_RELEASE
-                CMAKE_C_FLAGS_MINSIZEREL
-                CMAKE_C_FLAGS_RELWITHDEBINFO
-                )
-            string(REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-        endforeach()
+        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")  # .. without suffix "DLL": static
+    else()
+        set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")  # i.e. CMake default behavior: shared
     endif()
 endif()
 
@@ -471,9 +464,9 @@ foreach(build_type_upper
     set_property(TARGET expat PROPERTY ${build_type_upper}_POSTFIX ${EXPAT_${build_type_upper}_POSTFIX})
 endforeach()
 
-set(LIBCURRENT 11)  # sync
-set(LIBREVISION 2)  # with
-set(LIBAGE 10)      # configure.ac!
+set(LIBCURRENT 12)  # sync
+set(LIBREVISION 1)  # with
+set(LIBAGE 11)      # configure.ac!
 math(EXPR LIBCURRENT_MINUS_AGE "${LIBCURRENT} - ${LIBAGE}")
 
 if(NOT WIN32)
@@ -975,6 +968,8 @@ endif()
 get_property(_EXPAT_GENERATOR_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
 message(STATUS "===========================================================================")
+message(STATUS "")
+message(STATUS "CMake version in use ......... ${CMAKE_VERSION}")
 message(STATUS "")
 message(STATUS "Configuration")
 message(STATUS "  Generator .................. ${CMAKE_GENERATOR}")
