@@ -38,7 +38,7 @@
 ; OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 ; USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#define expatVer "2.7.1"
+#define expatVer "2.7.3"
 
 [Setup]
 AppName=Expat
