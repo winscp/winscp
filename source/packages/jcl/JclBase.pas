@@ -64,7 +64,6 @@ const
   JclVersionMinor   = 8;    // Fifth minor release since JCL 1.90
   JclVersionRelease = 1;    // 0: pre-release|beta/ 1: release
   JclVersionBuild   = 9330; // build number, days since march 1, 2000
-  JclCommit = '6380ce72';
   JclVersion = (JclVersionMajor shl 24) or (JclVersionMinor shl 16) or
     (JclVersionRelease shl 15) or (JclVersionBuild shl 0);
 
