@@ -170,6 +170,8 @@
   DELPHIX_ALEXANDRIA     Alias for DELPHI28
   DELPHI29               Defined when compiling with Delphi 12 for Win32 (Codename YUKON)
   DELPHI_ATHENS          Alias for DELPHI29
+  DELPHI37               Defined when compiling with Delphi 13 for Win32 (Codename GANYMEDE)
+  DELPHI_FLORENCE        Alias for DELPHI37
   DELPHI1_UP             Defined when compiling with Delphi 1 or higher
   DELPHI2_UP             Defined when compiling with Delphi 2 or higher
   DELPHI3_UP             Defined when compiling with Delphi 3 or higher
@@ -218,6 +220,8 @@
   DELPHIX_ALEXANDRIA_UP  Alias for DELPHI28_UP
   DELPHI29_UP            Defined when compiling with Delphi 12 for Win32 or higher
   DELPHI_ATHENS_UP       Alias for DELPHI29_UP
+  DELPHI37_UP            Defined when compiling with Delphi 13 for Win32 or higher
+  DELPHI_FLORENCE_UP     Alias for DELPHI37_UP
 
 
 - Kylix Versions
@@ -268,6 +272,7 @@
   DELPHICOMPILER27     Defined when compiling with Delphi Personality of BDS 21.0
   DELPHICOMPILER28     Defined when compiling with Delphi Personality of BDS 22.0
   DELPHICOMPILER29     Defined when compiling with Delphi Personality of BDS 23.0
+  DELPHICOMPILER37     Defined when compiling with Delphi Personality of BDS 37.0
   DELPHICOMPILER1_UP   Defined when compiling with Delphi 1 or higher
   DELPHICOMPILER2_UP   Defined when compiling with Delphi 2 or higher
   DELPHICOMPILER3_UP   Defined when compiling with Delphi 3 or higher
@@ -296,6 +301,7 @@
   DELPHICOMPILER27_UP  Defined when compiling with Delphi 10.4 for Win32 or higher
   DELPHICOMPILER28_UP  Defined when compiling with Delphi 11 for Win32 or higher
   DELPHICOMPILER29_UP  Defined when compiling with Delphi 12 for Win32 or higher
+  DELPHICOMPILER37_UP  Defined when compiling with Delphi 13 for Win32 or higher
 
 
 - C++Builder Versions
@@ -330,6 +336,7 @@
   BCB27        Defined when compiling with C++Builder Personality of RAD Studio 10.4 Sydney (also known as C++Builder 10.4 Sydney) (Codename DENALI)
   BCB28        Defined when compiling with C++Builder Personality of RAD Studio 11 Alexandria (also known as C++Builder 11 Alexandria) (Codename OLYMPUS)
   BCB29        Defined when compiling with C++Builder Personality of RAD Studio 12 Athens (also known as C++Builder 12 Athens) (Codename YUKON)
+  BCB37        Defined when compiling with C++Builder Personality of RAD Studio 13 ??? (also known as C++Builder 13 Florence) (Codename GANYMEDE)
   BCB1_UP      Defined when compiling with C++Builder 1 or higher
   BCB3_UP      Defined when compiling with C++Builder 3 or higher
   BCB4_UP      Defined when compiling with C++Builder 4 or higher
@@ -354,6 +361,7 @@
   BCB27_UP     Defined when compiling with C++Builder Personality of RAD Studio 10.4 or higher
   BCB28_UP     Defined when compiling with C++Builder Personality of RAD Studio 11 or higher
   BCB29_UP     Defined when compiling with C++Builder Personality of RAD Studio 12 or higher
+  BCB37_UP     Defined when compiling with C++Builder Personality of RAD Studio 13 or higher
 
 
 - RAD Studio / Borland Developer Studio Versions
@@ -389,6 +397,7 @@
   BDS21        Defined when compiling with BDS 21.0 (Embarcadero RAD Studio 10.4) (Codename DENALI)
   BDS22        Defined when compiling with BDS 22.0 (Embarcadero RAD Studio 11) (Codename OLYMPUS)
   BDS23        Defined when compiling with BDS 22.0 (Embarcadero RAD Studio 12) (Codename YUKON)
+  BDS37        Defined when compiling with BDS 37.0 (Embarcadero RAD Studio 13) (Codename GANYMEDE)
   BDS2_UP      Defined when compiling with BDS 2.0 or higher
   BDS3_UP      Defined when compiling with BDS 3.0 or higher
   BDS4_UP      Defined when compiling with BDS 4.0 or higher
@@ -410,6 +419,7 @@
   BDS21_UP     Defined when compiling with BDS 21.0 or higher
   BDS22_UP     Defined when compiling with BDS 22.0 or higher
   BDS23_UP     Defined when compiling with BDS 23.0 or higher
+  BDS37_UP     Defined when compiling with BDS 37.0 or higher
 
 - Compiler Versions
 
@@ -450,6 +460,7 @@
   COMPILER27     Defined when compiling with Delphi or C++Builder Personalities of BDS 21.0
   COMPILER28     Defined when compiling with Delphi or C++Builder Personalities of BDS 22.0
   COMPILER29     Defined when compiling with Delphi or C++Builder Personalities of BDS 23.0
+  COMPILER37     Defined when compiling with Delphi or C++Builder Personalities of BDS 37.0
   COMPILER1_UP   Defined when compiling with Delphi 1 or higher
   COMPILER2_UP   Defined when compiling with Delphi 2 or C++Builder 1 or higher
   COMPILER3_UP   Defined when compiling with Delphi 3 or higher
@@ -479,6 +490,7 @@
   COMPILER27_UP  Defined when compiling with Delphi or C++Builder Personalities of BDS 21.0 or higher
   COMPILER28_UP  Defined when compiling with Delphi or C++Builder Personalities of BDS 22.0 or higher
   COMPILER29_UP  Defined when compiling with Delphi or C++Builder Personalities of BDS 23.0 or higher
+  COMPILER37_UP  Defined when compiling with Delphi or C++Builder Personalities of BDS 37.0 or higher
 
 
 - RTL Versions
@@ -525,6 +537,7 @@
   RTL340_UP     Defined when compiling with Delphi or C++Builder Personalities of BDS 21.0 or higher
   RTL350_UP     Defined when compiling with Delphi or C++Builder Personalities of BDS 22.0 or higher
   RTL360_UP     Defined when compiling with Delphi or C++Builder Personalities of BDS 23.0 or higher
+  RTL370_UP     Defined when compiling with Delphi or C++Builder Personalities of BDS 37.0 or higher
 
 
 - CLR Versions
@@ -1159,17 +1172,33 @@
       {$UNDEF UNKNOWN_COMPILER_VERSION}
     {$ENDIF VER360}
 
+    {$IFDEF VER370} // RAD Studio 13
+      {$DEFINE BDS}
+      {$DEFINE BDS37}
+      {$DEFINE COMPILER37}
+      {$IFDEF BCB}
+        {$DEFINE BCB37}
+      {$ELSE}
+        {$DEFINE DELPHI37}
+        {$DEFINE DELPHI_FLORENCE} // synonym to DELPHI37
+        {$DEFINE DELPHICOMPILER37}
+      {$ENDIF BCB}
+      {$DEFINE RTL370_UP}
+      {$UNDEF UNKNOWN_COMPILER_VERSION}
+    {$ENDIF VER370}
+
     {$IFDEF UNKNOWN_COMPILER_VERSION} // adjust for newer version (always use latest version)
       {$DEFINE BDS}
-      {$DEFINE BDS23}
-      {$DEFINE COMPILER29}
+      {$DEFINE BDS37}
+      {$DEFINE COMPILER37}
       {$IFDEF BCB}
-        {$DEFINE BCB29}
+        {$DEFINE BCB37}
       {$ELSE}
-        {$DEFINE DELPHI29}
-        {$DEFINE DELPHICOMPILER29}
+        {$DEFINE DELPHI37}
+        {$DEFINE DELPHI_FLORENCE} // synonym to DELPHI37
+        {$DEFINE DELPHICOMPILER37}
       {$ENDIF BCB}
-      {$DEFINE RTL360_UP}
+      {$DEFINE RTL370_UP}
       {$UNDEF UNKNOWN_COMPILER_VERSION}
     {$ENDIF}
 
@@ -1189,6 +1218,7 @@
 { DELPHIX_UP from DELPHIX mappings                                             }
 {------------------------------------------------------------------------------}
 
+{$IFDEF DELPHI37} {$DEFINE DELPHI37_UP} {$ENDIF}
 {$IFDEF DELPHI29} {$DEFINE DELPHI29_UP} {$ENDIF}
 {$IFDEF DELPHI28} {$DEFINE DELPHI28_UP} {$ENDIF}
 {$IFDEF DELPHI27} {$DEFINE DELPHI27_UP} {$ENDIF}
@@ -1221,6 +1251,11 @@
 {------------------------------------------------------------------------------}
 { DELPHIX_UP from DELPHIX_UP mappings                                          }
 {------------------------------------------------------------------------------}
+
+{$IFDEF DELPHI37_UP}
+  {$DEFINE DELPHI_FLORENCE_UP} // synonym to DELPHI37_UP
+  {$DEFINE DELPHI29_UP}
+{$ENDIF}
 
 {$IFDEF DELPHI29_UP}
   {$DEFINE DELPHI_ATHENS_UP} // synonym to DELPHI29_UP
@@ -1334,6 +1369,7 @@
 { BCBX_UP from BCBX mappings                                                   }
 {------------------------------------------------------------------------------}
 
+{$IFDEF BCB37} {$DEFINE BCB37_UP} {$ENDIF}
 {$IFDEF BCB29} {$DEFINE BCB29_UP} {$ENDIF}
 {$IFDEF BCB28} {$DEFINE BCB28_UP} {$ENDIF}
 {$IFDEF BCB27} {$DEFINE BCB27_UP} {$ENDIF}
@@ -1363,6 +1399,7 @@
 { BCBX_UP from BCBX_UP mappings                                                }
 {------------------------------------------------------------------------------}
 
+{$IFDEF BCB37_UP} {$DEFINE BCB29_UP} {$ENDIF}
 {$IFDEF BCB29_UP} {$DEFINE BCB28_UP} {$ENDIF}
 {$IFDEF BCB28_UP} {$DEFINE BCB27_UP} {$ENDIF}
 {$IFDEF BCB27_UP} {$DEFINE BCB26_UP} {$ENDIF}
@@ -1391,6 +1428,7 @@
 { BDSX_UP from BDSX mappings                                                   }
 {------------------------------------------------------------------------------}
 
+{$IFDEF BDS37} {$DEFINE BDS37_UP} {$ENDIF}
 {$IFDEF BDS23} {$DEFINE BDS23_UP} {$ENDIF}
 {$IFDEF BDS22} {$DEFINE BDS22_UP} {$ENDIF}
 {$IFDEF BDS21} {$DEFINE BDS21_UP} {$ENDIF}
@@ -1417,6 +1455,7 @@
 { BDSX_UP from BDSX_UP mappings                                                }
 {------------------------------------------------------------------------------}
 
+{$IFDEF BDS37_UP} {$DEFINE BDS23_UP} {$ENDIF}
 {$IFDEF BDS23_UP} {$DEFINE BDS22_UP} {$ENDIF}
 {$IFDEF BDS22_UP} {$DEFINE BDS21_UP} {$ENDIF}
 {$IFDEF BDS21_UP} {$DEFINE BDS20_UP} {$ENDIF}
@@ -1442,6 +1481,7 @@
 { DELPHICOMPILERX_UP from DELPHICOMPILERX mappings                             }
 {------------------------------------------------------------------------------}
 
+{$IFDEF DELPHICOMPILER37} {$DEFINE DELPHICOMPILER37_UP} {$ENDIF}
 {$IFDEF DELPHICOMPILER29} {$DEFINE DELPHICOMPILER29_UP} {$ENDIF}
 {$IFDEF DELPHICOMPILER28} {$DEFINE DELPHICOMPILER28_UP} {$ENDIF}
 {$IFDEF DELPHICOMPILER27} {$DEFINE DELPHICOMPILER27_UP} {$ENDIF}
@@ -1475,6 +1515,7 @@
 { DELPHICOMPILERX_UP from DELPHICOMPILERX_UP mappings                          }
 {------------------------------------------------------------------------------}
 
+{$IFDEF DELPHICOMPILER37_UP} {$DEFINE DELPHICOMPILER29_UP} {$ENDIF}
 {$IFDEF DELPHICOMPILER29_UP} {$DEFINE DELPHICOMPILER28_UP} {$ENDIF}
 {$IFDEF DELPHICOMPILER28_UP} {$DEFINE DELPHICOMPILER27_UP} {$ENDIF}
 {$IFDEF DELPHICOMPILER27_UP} {$DEFINE DELPHICOMPILER26_UP} {$ENDIF}
@@ -1508,6 +1549,7 @@
 { COMPILERX_UP from COMPILERX mappings                                         }
 {------------------------------------------------------------------------------}
 
+{$IFDEF COMPILER37} {$DEFINE COMPILER37_UP} {$ENDIF}
 {$IFDEF COMPILER29} {$DEFINE COMPILER29_UP} {$ENDIF}
 {$IFDEF COMPILER28} {$DEFINE COMPILER28_UP} {$ENDIF}
 {$IFDEF COMPILER27} {$DEFINE COMPILER27_UP} {$ENDIF}
@@ -1542,6 +1584,7 @@
 { COMPILERX_UP from COMPILERX_UP mappings                                      }
 {------------------------------------------------------------------------------}
 
+{$IFDEF COMPILER37_UP} {$DEFINE COMPILER29_UP} {$ENDIF}
 {$IFDEF COMPILER29_UP} {$DEFINE COMPILER28_UP} {$ENDIF}
 {$IFDEF COMPILER28_UP} {$DEFINE COMPILER27_UP} {$ENDIF}
 {$IFDEF COMPILER27_UP} {$DEFINE COMPILER26_UP} {$ENDIF}
@@ -1575,6 +1618,7 @@
 { RTLX_UP from RTLX_UP mappings                                                }
 {------------------------------------------------------------------------------}
 
+{$IFDEF RTL370_UP} {$DEFINE RTL360_UP} {$ENDIF}
 {$IFDEF RTL360_UP} {$DEFINE RTL350_UP} {$ENDIF}
 {$IFDEF RTL350_UP} {$DEFINE RTL340_UP} {$ENDIF}
 {$IFDEF RTL340_UP} {$DEFINE RTL330_UP} {$ENDIF}

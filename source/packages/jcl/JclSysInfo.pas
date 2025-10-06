@@ -282,7 +282,7 @@ type
     wvWin2003, wvWinXP64, wvWin2003R2, wvWinVista, wvWinServer2008,
     wvWin7, wvWinServer2008R2, wvWin8, wvWin8RT, wvWinServer2012,
     wvWin81, wvWin81RT, wvWinServer2012R2, wvWin10, wvWinServer2016,
-    wvWinServer2019, wvWinServer, wvWin11, wvWinServer2022);
+    wvWinServer2019, wvWinServer, wvWin11, wvWinServer2022, wvWinServer2025);
   TWindowsEdition =
    (weUnknown, weWinXPHome, weWinXPPro, weWinXPHomeN, weWinXPProN, weWinXPHomeK,
     weWinXPProK, weWinXPHomeKN, weWinXPProKN, weWinXPStarter, weWinXPMediaCenter,
@@ -339,6 +339,7 @@ var
   IsWinServer2016: Boolean = False;
   IsWinServer2019: Boolean = False;
   IsWinServer2022: Boolean = False;
+  IsWinServer2025: Boolean = False;
   IsWinServer: Boolean = False;
   IsWin11: Boolean = False;
   {$ENDIF}
@@ -361,6 +362,7 @@ const
 
 const
   Windows11InitialBuildNumber = 22000;
+  Windows2025ServerInitialBuildNumber = 26100;
 
 {$IFNDEF WINSCP}
 function GetWindowsVersion: TWindowsVersion;
@@ -3715,7 +3717,7 @@ begin
                   Win32MinorVersionEx := 4 // Windows 10 (builds < 9926) and Windows Server 2016 (builds < 10074)
                 else
                 if Win32MajorVersionEx = 10 then
-                  Win32MinorVersionEx := -1 // Windows 10 (builds >= 9926) and Windows Server 2016/2019/2022 (builds >= 10074), set to -1 to escape case block
+                  Win32MinorVersionEx := -1 // Windows 10 (builds >= 9926) and Windows Server 2016/2019/2022/2025 (builds >= 10074), set to -1 to escape case block
                 else
                   Win32MinorVersionEx := Win32MinorVersion;
               end;
@@ -3808,7 +3810,12 @@ begin
                   1809:
                     Result := wvWinServer2019;
                   2009:
-                    Result := wvWinServer2022;
+                      begin
+                        if GetWindowsBuildNumber >= Windows2025ServerInitialBuildNumber then
+                           Result := wvWinServer2025
+                        else
+                           Result := wvWinServer2022;
+                      end
                 else
                   Result := wvWinServer;
                 end;
@@ -4136,6 +4143,8 @@ begin
       Result := LoadResString(@RsOSVersionWinServer2019);
     wvWinServer2022:
       Result := LoadResString(@RsOSVersionWinServer2022);
+    wvWinServer2025:
+      Result := LoadResString(@RsOSVersionWinServer2025);
     wvWinServer:
       Result := LoadResString(@RsOSVersionWinServer);
     wvWin11:
@@ -6799,6 +6808,8 @@ begin
         IsWinServer2019 := True;
       wvWinServer2022:
         IsWinServer2022 := True;
+      wvWinServer2025:
+        IsWinServer2025 := True;
       wvWinServer:
         IsWinServer := True;
       wvWin11:

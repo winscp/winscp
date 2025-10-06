@@ -91,10 +91,10 @@
 // ANSI/UTF8 PCRE
 {$DEFINE PCRE_8}
 // UCS2/UTF16 enabled PCRE
-{$DEFINE PCRE_16} // only valid when PCRE_STATICLINK is enabled, the RTL does not support it and the DLL found over the internet are completly outdated.
+{.$DEFINE PCRE_16} // only valid when PCRE_STATICLINK is enabled, the RTL does not support it and the DLL found over the internet are completly outdated.
 
 // use PCRE16 when available rather than good old PCRE8
-{$DEFINE PCRE_PREFER_16}
+{.$DEFINE PCRE_PREFER_16}
 
 // BZIP2 options, mutually exclusive
 
