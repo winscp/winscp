@@ -157,6 +157,7 @@ protected:
   BOOL Connect(CString hostAddress, UINT nHostPort);
   CString ConvertDomainName(CString domain);
   bool ConnectTransferSocket(const CString & host, UINT port);
+  void TransferSocketFailed();
 
   struct t_ActiveList
   {

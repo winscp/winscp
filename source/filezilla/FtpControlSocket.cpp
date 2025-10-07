@@ -2279,6 +2279,7 @@ bool CFtpControlSocket::ConnectTransferSocket(const CString & host, UINT port)
   {
     if (GetLastError() != WSAEWOULDBLOCK)
     {
+      TransferSocketFailed();
       result = false;
     }
     else
@@ -2494,6 +2495,12 @@ void CFtpControlSocket::ListFile(CString filename, const CServerPath &path)
   }
 }
 
+void CFtpControlSocket::TransferSocketFailed()
+{
+  // if the control connection is to be used further, the response to LIST/RETR/STOR must be skipped
+  m_skipReply = true;
+}
+
 void CFtpControlSocket::TransferEnd(int nMode)
 {
   if (!m_Operation.nOpMode)
@@ -2502,10 +2509,19 @@ void CFtpControlSocket::TransferEnd(int nMode)
     return;
   }
   m_LastRecvTime=CTime::CreateForCurrentTime();
-  if (m_Operation.nOpMode&CSMODE_TRANSFER)
-    FileTransfer(0,TRUE,nMode&(CSMODE_TRANSFERERROR|CSMODE_TRANSFERTIMEOUT));
+  int error = nMode & (CSMODE_TRANSFERERROR | CSMODE_TRANSFERTIMEOUT);
+  if (error)
+  {
+    TransferSocketFailed();
+  }
+  if (m_Operation.nOpMode & CSMODE_TRANSFER)
+  {
+    FileTransfer(0, TRUE, error);
+  }
   else if (m_Operation.nOpMode&CSMODE_LIST)
-    List(TRUE,nMode&(CSMODE_TRANSFERERROR|CSMODE_TRANSFERTIMEOUT));
+  {
+    List(TRUE, error);
+  }
 }
 
 void CFtpControlSocket::OnClose(int nErrorCode)
