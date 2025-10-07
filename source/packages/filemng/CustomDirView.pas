@@ -3455,10 +3455,16 @@ begin
   if Assigned(ItemToFocus) then
   begin
     // we have found item that was previously focused and visible, scroll to it
-    if (ViewStyle = vsReport) and FocusedShown and
-       (ItemToFocus.Index > ShownItemOffset) then
+    if (ViewStyle = vsReport) and FocusedShown then
     begin
-      MakeTopItem(Items[ItemToFocus.Index - ShownItemOffset]);
+      var Index := ItemToFocus.Index - ShownItemOffset;
+      // Seen a situation when the the first (index 0, ..) item was focused and IsItemVisible,
+      // yet TopItem was index 1. So we end p here with -1
+      if (Index >= 0) and (Index < Items.Count) then
+      begin
+        var Item := Items[Index];
+        MakeTopItem(Item);
+      end;
     end;
     // Strangely after this mouse selection works correctly, so we do not have to call FocusItem.
     ItemFocused := ItemToFocus;
