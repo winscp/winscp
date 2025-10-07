@@ -3307,7 +3307,7 @@ UnicodeString __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned i
           }
           if (ContainsText(FLastError->Strings[0], CantOpenTransferChannelMessage))
           {
-            FTerminal->LogEvent(L"Failed to connection data connection after some previous data connections succeeded, retrying connection");
+            FTerminal->LogEvent(L"Failed to connect data connection after some previous data connections succeeded, retrying connection");
             RetryTransfer = true;
           }
         }
