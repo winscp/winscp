@@ -289,14 +289,13 @@ static int neon_write_func(void * data, const char * buf, size_t len)
 }
 
 
-static S3Status append_amz_header(RequestComputedValues *values,
+static S3Status do_append_amz_header(RequestComputedValues *values,
                                   int addPrefix,
                                   const char *headerName,
                                   const char *headerValue)
 {
     int rawPos = values->amzHeadersRawLength + 1;
-    values->amzHeaders[values->amzHeadersCount++] = &(values->amzHeadersRaw[rawPos]);
-
+    int initPos = rawPos;
     const char *headerStr = headerName;
     
     char headerNameWithPrefix[S3_MAX_METADATA_SIZE - sizeof(": v")];
@@ -331,6 +330,7 @@ static S3Status append_amz_header(RequestComputedValues *values,
     }
     values->amzHeadersRaw[++rawPos] = '\0';
     values->amzHeadersRawLength = rawPos;
+    values->amzHeaders[values->amzHeadersCount++] = &(values->amzHeadersRaw[initPos]);
     return S3StatusOK;
 }
 
@@ -355,6 +355,8 @@ static S3Status compose_amz_headers(const RequestParams *params,
     values->amzHeadersRaw[0] = '\0';
     values->amzHeadersRawLength = 0;
 
+    S3Status status;
+    #define append_amz_header(...) if ((status = do_append_amz_header(__VA_ARGS__)) != S3StatusOK) return status;
     // Check and copy in the x-amz-meta headers
     if (properties) {
         int i;
