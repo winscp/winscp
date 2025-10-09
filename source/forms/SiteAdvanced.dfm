@@ -1169,7 +1169,7 @@ object SiteAdvancedDialog: TSiteAdvancedDialog
             Width = 419
             Height = 93
             Anchors = [akLeft, akTop, akRight]
-            MaxLength = 10000
+            MaxLength = 4096
             TabOrder = 0
             OnChange = DataChange
             OnKeyDown = NoteMemoKeyDown

@@ -160,7 +160,10 @@ extern "C" {
  * S3_MAX_METADATA_SIZE is the maximum number of bytes allowed for
  * x-amz-meta header names and values in any request passed to Amazon S3
  **/
-#define S3_MAX_METADATA_SIZE               2048
+// WINSCP: Session token can have any size, but the documentation explicitly mentions 4096 bytes:
+// https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_request.html
+// AWS itself does not support headers larger than 8192 (returns RequestHeaderSectionTooLarge)
+#define S3_MAX_METADATA_SIZE               8192
 
 
 /**
