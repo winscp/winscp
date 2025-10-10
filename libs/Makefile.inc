@@ -13,5 +13,5 @@ CFLAG_COMMON = \
 CFLAG_CPP = \
     $(CFLAG_BASE) -x c++ -std=c++17 -fcxx-exceptions -ffunction-sections -fno-use-cxa-atexit
 
-# Debug:
+# Debug (and replace -O2 with -O0):
 # CFLAG_CPP=$(CFLAG_CPP) -D_DEBUG -debug-info-kind=standalone
