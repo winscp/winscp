@@ -52,8 +52,7 @@
 
 // This is the maximum number of bytes needed in a "compacted meta header"
 // buffer, which is a buffer storing all of the compacted meta headers.
-#define COMPACTED_METADATA_BUFFER_SIZE \
-    (S3_MAX_METADATA_COUNT * sizeof(S3_METADATA_HEADER_NAME_PREFIX "n: v"))
+#define COMPACTED_METADATA_BUFFER_SIZE S3_MAX_METADATA_SIZE // WINSCP
 
 // Maximum url encoded key size; since every single character could require
 // URL encoding, it's 3 times the size of a key (since each url encoded

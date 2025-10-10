@@ -174,13 +174,9 @@ extern "C" {
 
 /**
  * S3_MAX_METADATA_COUNT is the maximum number of x-amz-meta- headers that
- * could be included in a request to S3.  The smallest meta header is
- * "x-amz-meta-n: v".  Since S3 doesn't count the ": " against the total, the
- * smallest amount of data to count for a header would be the length of
- * "x-amz-meta-nv".
+ * could be included in a request to S3.
  **/
-#define S3_MAX_METADATA_COUNT \
-    (S3_MAX_METADATA_SIZE / (sizeof(S3_METADATA_HEADER_NAME_PREFIX "nv") - 1))
+#define S3_MAX_METADATA_COUNT 128
 
 
 /**

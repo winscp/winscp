@@ -55,6 +55,7 @@
 
 #ifdef WINSCP
 #define SIGNATURE_DEBUG
+#include <memory>
 #endif
 
 static char userAgentG[USER_AGENT_SIZE];
@@ -413,7 +414,7 @@ static S3Status compose_amz_headers(const RequestParams *params,
         }
         // If byteCount != 0 then we're just copying a range, add header
         if (params->byteCount > 0) {
-            char byteRange[S3_MAX_METADATA_SIZE];
+            char byteRange[64];
             snprintf(byteRange, sizeof(byteRange), "bytes=%zd-%zd",
                      params->startByte, params->startByte + params->byteCount);
             append_amz_header(values, 0, "x-amz-copy-source-range", byteRange);
@@ -1618,14 +1619,15 @@ void request_perform(const RequestParams *params, S3RequestContext *context)
     return
 
     // These will hold the computed values
-    RequestComputedValues computed;
+    // WINSCP: too big for stack
+    std::unique_ptr<RequestComputedValues> computed(new RequestComputedValues());
 
-    if ((status = setup_request(params, &computed, 0, context->requesterPays)) != S3StatusOK) { // WINSCP
+    if ((status = setup_request(params, computed.get(), 0, context->requesterPays)) != S3StatusOK) { // WINSCP
         return_status(status);
     }
 
     // Get an initialized Request structure now
-    if ((status = request_get(params, &computed, context, &request)) != S3StatusOK) {
+    if ((status = request_get(params, computed.get(), context, &request)) != S3StatusOK) {
         return_status(status);
     }
     // WINSCP (we should always verify the peer)
