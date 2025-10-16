@@ -49,7 +49,7 @@
         <SanitizedProjectName>DragExt</SanitizedProjectName>
         <VerInfo_DLL>true</VerInfo_DLL>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-        <VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=Drag&amp;Drop shell extension for WinSCP ($(Platform));FileVersion=2.1.0.0;InternalName=dragext;LegalCopyright=(c) 2000-2025 Martin Prikryl;LegalTrademarks=;OriginalFilename=dragext.dll;ProductName=WinSCP;ProductVersion=6.5.4.0;ReleaseType=stable;WWW=https://winscp.net/</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Martin Prikryl;FileDescription=Drag&amp;Drop shell extension for WinSCP ($(Platform));FileVersion=2.1.0.0;InternalName=dragext;LegalCopyright=(c) 2000-2025 Martin Prikryl;LegalTrademarks=;OriginalFilename=dragext.dll;ProductName=WinSCP;ProductVersion=6.5.5.0;ReleaseType=stable;WWW=https://winscp.net/</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_MajorVer>2</VerInfo_MajorVer>
         <VerInfo_MinorVer>1</VerInfo_MinorVer>
