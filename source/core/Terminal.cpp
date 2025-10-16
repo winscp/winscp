@@ -8702,6 +8702,32 @@ static UnicodeString __fastcall FormatCertificateData(const UnicodeString & Fing
   return FORMAT(L"%s;%2.2X", (Fingerprint, Failures));
 }
 //---------------------------------------------------------------------------
+bool TTerminal::VerifyCertificateAgainstSessionData(
+  const UnicodeString & FingerprintSHA1, const UnicodeString & FingerprintSHA256,
+  const UnicodeString & CertificateSubject)
+{
+  bool Result = false;
+  UnicodeString Buf = SessionData->HostKey;
+  while (!Result && !Buf.IsEmpty())
+  {
+    UnicodeString ExpectedKey = CutToChar(Buf, L';', false);
+    if (ExpectedKey == L"*")
+    {
+      UnicodeString Message = LoadStr(ANY_CERTIFICATE);
+      Information(Message);
+      Log->Add(llException, Message);
+      Result = true;
+    }
+    else if (SameChecksum(ExpectedKey, FingerprintSHA1, false) ||
+             SameChecksum(ExpectedKey, FingerprintSHA256, false))
+    {
+      LogEvent(FORMAT(L"Certificate for \"%s\" matches configured fingerprint", (CertificateSubject)));
+      Result = true;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool  __fastcall TTerminal::VerifyCertificate(
   const UnicodeString & CertificateStorageKey, const UnicodeString & SiteKey,
   const UnicodeString & FingerprintSHA1, const UnicodeString & FingerprintSHA256,
@@ -8736,24 +8762,7 @@ bool  __fastcall TTerminal::VerifyCertificate(
 
   if (!Result)
   {
-    UnicodeString Buf = SessionData->HostKey;
-    while (!Result && !Buf.IsEmpty())
-    {
-      UnicodeString ExpectedKey = CutToChar(Buf, L';', false);
-      if (ExpectedKey == L"*")
-      {
-        UnicodeString Message = LoadStr(ANY_CERTIFICATE);
-        Information(Message);
-        Log->Add(llException, Message);
-        Result = true;
-      }
-      else if (SameChecksum(ExpectedKey, FingerprintSHA1, false) ||
-               SameChecksum(ExpectedKey, FingerprintSHA256, false))
-      {
-        LogEvent(FORMAT(L"Certificate for \"%s\" matches configured fingerprint", (CertificateSubject)));
-        Result = true;
-      }
-    }
+    Result = VerifyCertificateAgainstSessionData(FingerprintSHA1, FingerprintSHA256, CertificateSubject);
   }
 
   return Result;
@@ -8849,36 +8858,47 @@ bool TTerminal::VerifyOrConfirmHttpCertificate(
   {
     LogEvent(0, CertificateVerificationMessage(Data));
 
-    UnicodeString WindowsValidatedMessage;
-    // Side effect is that NE_SSL_UNTRUSTED is removed from Failure, before we call VerifyCertificate,
-    // as it compares failures against a cached failures that do not include NE_SSL_UNTRUSTED
-    // (if the certificate is trusted by Windows certificate store).
-    // But we will log that result only if we actually use it for the decision.
-    bool WindowsValidated = NeonWindowsValidateCertificateWithMessage(Data, WindowsValidatedMessage);
-
-    UnicodeString SiteKey = TSessionData::FormatSiteKey(AHostName, APortNumber);
-    Result =
-      VerifyCertificate(
-        HttpsCertificateStorageKey, SiteKey, Data.FingerprintSHA1, Data.FingerprintSHA256, Data.Subject, Data.Failures);
-
+    Result = VerifyCertificateAgainstSessionData(Data.FingerprintSHA1, Data.FingerprintSHA256, Data.Subject);
     if (Result)
     {
       SessionInfo.CertificateVerifiedManually = true;
+      // Em-Dash - don't know status of the certificate and it won't typically be shown anyway
+      UnicodeString Summary = L"\u2014";
+      SessionInfo.Certificate = CertificateSummary(Data, AHostName, Summary);
     }
     else
     {
-      Result = WindowsValidated;
-      LogEvent(0, WindowsValidatedMessage);
-    }
+      UnicodeString WindowsValidatedMessage;
+      // Side effect is that NE_SSL_UNTRUSTED is removed from Failure, before we call VerifyCertificate,
+      // as it compares failures against a cached failures that do not include NE_SSL_UNTRUSTED
+      // (if the certificate is trusted by Windows certificate store).
+      // But we will log that result only if we actually use it for the decision.
+      bool WindowsValidated = NeonWindowsValidateCertificateWithMessage(Data, WindowsValidatedMessage);
 
-    SessionInfo.Certificate = CertificateSummary(Data, AHostName);
+      UnicodeString SiteKey = TSessionData::FormatSiteKey(AHostName, APortNumber);
+      Result =
+        VerifyCertificate(
+          HttpsCertificateStorageKey, SiteKey, Data.FingerprintSHA1, Data.FingerprintSHA256, Data.Subject, Data.Failures);
 
-    if (!Result)
-    {
-      if (ConfirmCertificate(SessionInfo, Data.Failures, HttpsCertificateStorageKey, CanRemember))
+      if (Result)
       {
-        Result = true;
         SessionInfo.CertificateVerifiedManually = true;
+      }
+      else
+      {
+        Result = WindowsValidated;
+        LogEvent(0, WindowsValidatedMessage);
+      }
+
+      SessionInfo.Certificate = CertificateSummary(Data, AHostName);
+
+      if (!Result)
+      {
+        if (ConfirmCertificate(SessionInfo, Data.Failures, HttpsCertificateStorageKey, CanRemember))
+        {
+          Result = true;
+          SessionInfo.CertificateVerifiedManually = true;
+        }
       }
     }
   }

@@ -269,6 +269,9 @@ private:
   void LogAndInformation(const UnicodeString & S);
   static UnicodeString __fastcall SynchronizeModeStr(TSynchronizeMode Mode);
   static UnicodeString __fastcall SynchronizeParamsStr(int Params);
+  bool VerifyCertificateAgainstSessionData(
+    const UnicodeString & FingerprintSHA1, const UnicodeString & FingerprintSHA256,
+    const UnicodeString & CertificateSubject);
 
 protected:
   bool FReadCurrentDirectoryPending;

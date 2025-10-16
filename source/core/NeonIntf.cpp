@@ -520,10 +520,15 @@ UnicodeString __fastcall CertificateVerificationMessage(const TNeonCertificateDa
            (Data.Subject, Data.FingerprintSHA256, Data.Failures));
 }
 //---------------------------------------------------------------------------
-UnicodeString __fastcall CertificateSummary(const TNeonCertificateData & Data, const UnicodeString & HostName)
+UnicodeString CertificateSummary(
+  const TNeonCertificateData & Data, const UnicodeString & HostName, const UnicodeString & SummaryOverride)
 {
   UnicodeString Summary;
-  if (Data.Failures == 0)
+  if (!SummaryOverride.IsEmpty())
+  {
+    Summary = SummaryOverride;
+  }
+  else if (Data.Failures == 0)
   {
     Summary = LoadStr(CERT_OK);
   }

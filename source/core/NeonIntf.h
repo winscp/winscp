@@ -54,7 +54,8 @@ void __fastcall RequireNeon(TTerminal * Terminal);
 void __fastcall RetrieveNeonCertificateData(
   int Failures, const ne_ssl_certificate * Certificate, TNeonCertificateData & Data);
 UnicodeString __fastcall CertificateVerificationMessage(const TNeonCertificateData & Data);
-UnicodeString __fastcall CertificateSummary(const TNeonCertificateData & Data, const UnicodeString & HostName);
+UnicodeString CertificateSummary(
+  const TNeonCertificateData & Data, const UnicodeString & HostName, const UnicodeString & SummaryOverride = UnicodeString());
 struct TSessionInfo;
 UnicodeString __fastcall NeonTlsSessionInfo(
   ne_session * Session, TSessionInfo & FSessionInfo, UnicodeString & TlsVersionStr);
