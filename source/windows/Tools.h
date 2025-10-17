@@ -48,6 +48,7 @@ void __fastcall ValidateMaskEdit(TEdit * Edit);
 void __fastcall ValidateMaskEdit(TMemo * Edit, bool Directory);
 bool __fastcall IsWinSCPUrl(const UnicodeString & Url);
 UnicodeString __fastcall SecureUrl(const UnicodeString & Url);
+void ShellOpen(const UnicodeString & Param);
 void __fastcall OpenBrowser(UnicodeString URL);
 void __fastcall OpenFileInExplorer(const UnicodeString & Path);
 void __fastcall OpenFolderInExplorer(const UnicodeString & Path);

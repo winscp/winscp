@@ -766,6 +766,14 @@ UnicodeString __fastcall SecureUrl(const UnicodeString & Url)
   return Result;
 }
 //---------------------------------------------------------------------------
+void ShellOpen(const UnicodeString & Param)
+{
+  if (!CopyCommandToClipboard(Param))
+  {
+    ShellExecute(Application->Handle, L"open", Param.c_str(), NULL, NULL, SW_SHOWNORMAL);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall OpenBrowser(UnicodeString URL)
 {
   if (IsWinSCPUrl(URL))
@@ -773,16 +781,13 @@ void __fastcall OpenBrowser(UnicodeString URL)
     DebugAssert(!IsHttpUrl(URL));
     URL = CampaignUrl(URL);
   }
-  if (!CopyCommandToClipboard(URL))
+  // Rather arbitrary limit. Opening a URL over approx. 5 KB fails in Chrome, Firefox and Edge.
+  const int URLLimit = 4*1024;
+  if (URL.Length() > URLLimit)
   {
-    // Rather arbitrary limit. Opening a URL over approx. 5 KB fails in Chrome, Firefox and Edge.
-    const int URLLimit = 4*1024;
-    if (URL.Length() > URLLimit)
-    {
-      URL.SetLength(URLLimit);
-    }
-    ShellExecute(Application->Handle, L"open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
+    URL.SetLength(URLLimit);
   }
+  ShellOpen(URL);
 }
 //---------------------------------------------------------------------------
 void __fastcall OpenFolderInExplorer(const UnicodeString & Path)
