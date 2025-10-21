@@ -143,7 +143,6 @@ type
     procedure SubscribeDriveNotifications(Drive: string);
   end;
 
-function GetShellFileName(const Name: string): string; overload;
 function GetShellFileName(PIDL: PItemIDList): string; overload;
 function GetNetWorkName(Drive: string): string;
 function GetNetWorkConnected(Drive: string): Boolean;
@@ -1050,20 +1049,6 @@ begin
 end;
 
 // ===================
-
-function GetShellFileName(const Name: string): string;
-var
-  SFI: TSHFileInfo;
-  E: Integer;
-begin
-  E := SetErrorMode(SEM_FAILCRITICALERRORS);
-  try
-    if SHGetFileInfo(PChar(Name), 0, SFI, SizeOf(TSHFileInfo), SHGFI_DISPLAYNAME) <> 0 then
-      Result := SFI.szDisplayName;
-  finally
-    SetErrorMode(E);
-  end;
-end; {GetShellFileName}
 
 function GetShellFileName(PIDL: PItemIDList): string;
 var
