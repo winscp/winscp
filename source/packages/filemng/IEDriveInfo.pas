@@ -607,7 +607,6 @@ end;
 
 procedure TDriveInfo.DoReadDriveStatus(Drive: string; Flags: Integer);
 var
-  ErrorMode: Word;
   FileInfo: TShFileInfo;
   DriveRoot: string;
   DriveID: string;
@@ -653,35 +652,28 @@ begin
       {Read driveStatus:}
       if (Flags and dsSize) <> 0 then
       begin
-        { turn off critical errors }
-        ErrorMode := SetErrorMode(SEM_FailCriticalErrors or SEM_NOOPENFILEERRORBOX);
-        try
-          DriveReady := GetDiskFreeSpaceEx(PChar(DriveRoot), FreeSpace, Size, nil);
-          if DriveReady then
+        DriveReady := GetDiskFreeSpaceEx(PChar(DriveRoot), FreeSpace, Size, nil);
+        if DriveReady then
+        begin
+          {Access the physical drive:}
+          if GetVolumeInformation(PChar(DriveRoot), nil, 0,
+               @DriveSerial, MaxFileNameLength, FileSystemFlags,
+               nil, 0) then
           begin
-            {Access the physical drive:}
-            if GetVolumeInformation(PChar(DriveRoot), nil, 0,
-                 @DriveSerial, MaxFileNameLength, FileSystemFlags,
-                 nil, 0) then
-            begin
-            end
-              else
-            begin
-              DriveSerial := 0;
-            end;
           end
             else
           begin
             DriveSerial := 0;
           end;
-          // Particularly when removing drive fails (as other app has it locked), we end up with not monitoring the
-          // drive. When the drive is visited again in panel, it calls into here, and we take the opportunity
-          // to resume monitoring
-          UpdateDriveNotifications(Drive);
-        finally
-          { restore old error mode }
-          SetErrorMode(ErrorMode);
+        end
+          else
+        begin
+          DriveSerial := 0;
         end;
+        // Particularly when removing drive fails (as other app has it locked), we end up with not monitoring the
+        // drive. When the drive is visited again in panel, it calls into here, and we take the opportunity
+        // to resume monitoring
+        UpdateDriveNotifications(Drive);
       end;
 
       {DisplayName:}
@@ -1053,15 +1045,9 @@ end;
 function GetShellFileName(PIDL: PItemIDList): string;
 var
   SFI: TSHFileInfo;
-  E: Integer;
 begin
-  E := SetErrorMode(SEM_FAILCRITICALERRORS);
-  try
-    if SHGetFileInfo(PChar(PIDL), 0, SFI, SizeOf(TSHFileInfo), SHGFI_PIDL or SHGFI_DISPLAYNAME) <> 0 then
-      Result := SFI.szDisplayName;
-  finally
-    SetErrorMode(E);
-  end;
+  if SHGetFileInfo(PChar(PIDL), 0, SFI, SizeOf(TSHFileInfo), SHGFI_PIDL or SHGFI_DISPLAYNAME) <> 0 then
+    Result := SFI.szDisplayName;
 end; {GetShellFileName}
 
 function GetNetWorkName(Drive: string): string;

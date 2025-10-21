@@ -1944,8 +1944,6 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
 {
   ICustomDestinationList * DestinationList = NULL;
   TStringList * Removed = NULL;
-  int OldErrMode = SetErrorMode(SEM_FAILCRITICALERRORS);
-
   try
   {
     if (SUCCEEDED(CoCreateInstance(CLSID_DestinationList, NULL,
@@ -1994,7 +1992,6 @@ void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceName
   }
   __finally
   {
-    SetErrorMode(OldErrMode);
     if (DestinationList != NULL)
     {
       DestinationList->Release();

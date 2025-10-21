@@ -1481,7 +1481,8 @@ void __fastcall WinInitialize()
     CallstackThread->Start();
   }
 
-  SetErrorMode(SEM_FAILCRITICALERRORS);
+  // SEM_NOOPENFILEERRORBOX should affect OpenFile only, which we probably never use
+  SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
   OnApiPath = ApiPath;
   MainThread = GetCurrentThreadId();
   Application->OnGetMainFormHandle = MakeMethod<TGetHandleEvent>(NULL, AppGetMainFormHandle);
