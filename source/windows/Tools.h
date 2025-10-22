@@ -86,22 +86,6 @@ bool __fastcall DetectSystemExternalEditor(
   UnicodeString & Executable, UnicodeString & ExecutableDescription,
   UnicodeString & UsageState, bool & TryNextTime);
 //---------------------------------------------------------------------------
-#define IUNKNOWN \
-  virtual HRESULT __stdcall QueryInterface(const GUID& IID, void **Obj) \
-  { \
-    return TInterfacedObject::QueryInterface(IID, (void *)Obj); \
-  } \
-  \
-  virtual ULONG __stdcall AddRef() \
-  { \
-    return TInterfacedObject::_AddRef(); \
-  } \
-  \
-  virtual ULONG __stdcall Release() \
-  { \
-    return TInterfacedObject::_Release(); \
-  }
-//---------------------------------------------------------------------------
 void __fastcall InitializeCustomHelp(ICustomHelpViewer * HelpViewer);
 void __fastcall FinalizeCustomHelp();
 //---------------------------------------------------------------------------

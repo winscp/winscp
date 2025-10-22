@@ -135,7 +135,6 @@ __fastcall TTerminalManager::TTerminalManager() :
   FTerminalPendingAction = tpNull;
   FDirectoryReadingStart = 0;
   FAuthenticateForm = NULL;
-  FTaskbarList = NULL;
   FAuthenticating = 0;
   FMainThread = GetCurrentThreadId();
   FChangeSection.reset(new TCriticalSection());
@@ -188,7 +187,6 @@ __fastcall TTerminalManager::~TTerminalManager()
   delete FSessionList;
   CloseAutheticateForm();
   delete FQueueSection;
-  ReleaseTaskbarList();
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::SetQueueConfiguration(TTerminalQueue * Queue)
@@ -1252,11 +1250,7 @@ void __fastcall TTerminalManager::InitTaskbarButtonCreatedMessage()
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::CreateTaskbarList()
 {
-
-  ReleaseTaskbarList();
-
-  if(SUCCEEDED(CoCreateInstance(CLSID_TaskbarList, NULL, CLSCTX_ALL,
-        IID_ITaskbarList3, (void **) &FTaskbarList)))
+  if (FTaskbarList.TryCreate(CLSID_TaskbarList, CLSCTX_ALL))
   {
     if (ScpExplorer != NULL)
     {
@@ -1265,17 +1259,9 @@ void __fastcall TTerminalManager::CreateTaskbarList()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::ReleaseTaskbarList()
-{
-  if (FTaskbarList != NULL)
-  {
-    FTaskbarList->Release();
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::UpdateTaskbarList()
 {
-  ScpExplorer->UpdateTaskbarList(FTaskbarList);
+  ScpExplorer->UpdateTaskbarList(FTaskbarList.Get());
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::DeleteLocalFile(const UnicodeString FileName, bool Alternative, int & Deleted)

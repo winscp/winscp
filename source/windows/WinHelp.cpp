@@ -4,7 +4,7 @@
 
 #include <HelpIntfs.hpp>
 //---------------------------------------------------------------------------
-class TWebHelpSystem : public TInterfacedObject, public ICustomHelpViewer
+class TWebHelpSystem : public TCppInterfacedObject<ICustomHelpViewer>
 {
 public:
   __fastcall TWebHelpSystem(const UnicodeString & Version, const UnicodeString & Language);
@@ -17,8 +17,6 @@ public:
   virtual bool __fastcall CanShowTableOfContents();
   virtual void __fastcall ShowTableOfContents();
   virtual void __fastcall ShowHelp(const UnicodeString HelpString);
-
-  IUNKNOWN
 
 private:
   UnicodeString FVersion;

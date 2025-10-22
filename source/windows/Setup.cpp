@@ -717,15 +717,10 @@ void __fastcall LaunchAdvancedAssociationUI()
   }
   else
   {
-    IApplicationAssociationRegistrationUI * AppAssocRegUI;
-
-    HRESULT Result =
-      CoCreateInstance(CLSID_ApplicationAssociationRegistrationUI,
-        NULL, CLSCTX_INPROC, __uuidof(IApplicationAssociationRegistrationUI), (void**)&AppAssocRegUI);
-    if (SUCCEEDED(Result))
+    TComPtr<IApplicationAssociationRegistrationUI> AppAssocRegUI;
+    if (AppAssocRegUI.TryCreate(CLSID_ApplicationAssociationRegistrationUI, CLSCTX_INPROC))
     {
       AppAssocRegUI->LaunchAdvancedAssociationUI(AppNameString().c_str());
-      AppAssocRegUI->Release();
     }
   }
 }
@@ -1871,132 +1866,90 @@ void __fastcall SetupInitialize()
   }
 }
 //---------------------------------------------------------------------------
-static bool __fastcall AddJumpListCategory(TStrings * Names,
-  UnicodeString AdditionalParams, TStringList * Removed,
+static void AddJumpListCategory(
+  TStrings * Names, UnicodeString AdditionalParams, TStringList * Removed,
   ICustomDestinationList * DestinationList, UnicodeString CategoryName,
   int IconIndex)
 {
-  bool Result = false;
-  IObjectCollection * Collection = NULL;
-  if (SUCCEEDED(CoCreateInstance(CLSID_EnumerableObjectCollection, NULL,
-        CLSCTX_INPROC_SERVER, IID_IObjectCollection, (void**)&Collection)))
+  TComPtr<IObjectCollection> Collection;
+  if (Collection.TryCreate(CLSID_EnumerableObjectCollection, CLSCTX_INPROC_SERVER))
   {
-    try
+    AddToList(AdditionalParams, TProgramParams::FormatSwitch(JUMPLIST_SWITCH), L" ");
+
+    int Count = 0;
+    for (int Index = 0; Index < Names->Count; Index++)
     {
-      AddToList(AdditionalParams, TProgramParams::FormatSwitch(JUMPLIST_SWITCH), L" ");
+      TComPtr<IShellLink> Link(
+        CreateDesktopSessionShortCut(
+          Names->Strings[Index], L"", AdditionalParams, -1, IconIndex, true));
 
-      int Count = 0;
-      for (int Index = 0; Index < Names->Count; Index++)
+      wchar_t Desc[2048];
+      if (SUCCEEDED(Link->GetDescription(Desc, LENOF(Desc) - 1)))
       {
-        IShellLink * Link =
-          CreateDesktopSessionShortCut(
-            Names->Strings[Index], L"", AdditionalParams, -1, IconIndex, true);
-
-        wchar_t Desc[2048];
-        if (SUCCEEDED(Link->GetDescription(Desc, LENOF(Desc) - 1)))
+        if (Removed->IndexOf(Desc) < 0)
         {
-          if (Removed->IndexOf(Desc) < 0)
-          {
-            try
-            {
-              DebugCheck(SUCCEEDED(Collection->AddObject(Link)));
-              Count++;
-            }
-            __finally
-            {
-              Link->Release();
-            }
-          }
-          else
-          {
-            Names->Delete(Index);
-            Index--;
-          }
+          DebugCheck(SUCCEEDED(Collection->AddObject(Link.Get())));
+          Count++;
         }
-      }
-
-      if (Count > 0)
-      {
-        IObjectArray * Array;
-        if (SUCCEEDED(Collection->QueryInterface(IID_IObjectArray, (void**)&Array)))
+        else
         {
-          try
-          {
-            Result = SUCCEEDED(
-              DestinationList->AppendCategory(CategoryName.c_str(), Array));
-          }
-          __finally
-          {
-            Array->Release();
-          }
+          Names->Delete(Index);
+          Index--;
         }
       }
     }
-    __finally
+
+    if (Count > 0)
     {
-      Collection->Release();
+      TComPtr<IObjectArray> Array;
+      if (SUCCEEDED(Collection->QueryInterface(IID_PPV_ARGS(&Array))))
+      {
+        DestinationList->AppendCategory(CategoryName.c_str(), Array.Get());
+      }
     }
   }
-  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall UpdateJumpList(TStrings * SessionNames, TStrings * WorkspaceNames)
 {
-  ICustomDestinationList * DestinationList = NULL;
-  TStringList * Removed = NULL;
-  try
+  TComPtr<ICustomDestinationList> DestinationList;
+  if (DestinationList.TryCreate(CLSID_DestinationList, CLSCTX_INPROC_SERVER))
   {
-    if (SUCCEEDED(CoCreateInstance(CLSID_DestinationList, NULL,
-          CLSCTX_INPROC_SERVER, IID_ICustomDestinationList, (void**)&DestinationList)))
+    unsigned int MinSlots;
+    void * ppv = NULL;
+    HRESULT Result = DestinationListBeginList(DestinationList.Get(), MinSlots, IID_IObjectArray, ppv, 50000);
+    if (SUCCEEDED(Result) && DebugAlwaysTrue(ppv != NULL))
     {
+      IObjectArray * RemovedArray = static_cast<IObjectArray *>(ppv);
 
-      unsigned int MinSlots;
-      void * ppv = NULL;
-      HRESULT Result = DestinationListBeginList(DestinationList, MinSlots, IID_IObjectArray, ppv, 50000);
-      if (SUCCEEDED(Result) && DebugAlwaysTrue(ppv != NULL))
+      unsigned int RemovedCount;
+      if (FAILED(RemovedArray->GetCount(&RemovedCount)))
       {
-        IObjectArray * RemovedArray = static_cast<IObjectArray*>(ppv);
-        Removed = new TStringList();
+        RemovedCount = 0;
+      }
 
-        unsigned int RemovedCount;
-        if (FAILED(RemovedArray->GetCount(&RemovedCount)))
+      std::unique_ptr<TStringList> Removed(new TStringList());
+      for (unsigned int Index = 0; Index < RemovedCount; Index++)
+      {
+        IShellLink * Link;
+        wchar_t Desc[2048];
+        if (SUCCEEDED(RemovedArray->GetAt(Index, IID_IShellLink, (void**)&Link)) &&
+            SUCCEEDED(Link->GetDescription(Desc, LENOF(Desc) - 1)))
         {
-          RemovedCount = 0;
-        }
-
-        for (unsigned int Index = 0; Index < RemovedCount; Index++)
-        {
-          IShellLink * Link;
-          wchar_t Desc[2048];
-          if (SUCCEEDED(RemovedArray->GetAt(Index, IID_IShellLink, (void**)&Link)) &&
-              SUCCEEDED(Link->GetDescription(Desc, LENOF(Desc) - 1)))
-          {
-            Removed->Add(Desc);
-          }
-        }
-
-        AddJumpListCategory(
-          WorkspaceNames, L"", Removed, DestinationList,
-          LoadStr(JUMPLIST_WORKSPACES), WORKSPACE_ICON);
-
-        AddJumpListCategory(
-          SessionNames, TProgramParams::FormatSwitch(UPLOAD_IF_ANY_SWITCH), Removed, DestinationList,
-          LoadStr(JUMPLIST_RECENT), SITE_ICON);
-
-        if (DestinationList != NULL)
-        {
-          DestinationList->CommitList();
+          Removed->Add(Desc);
         }
       }
+
+      AddJumpListCategory(
+        WorkspaceNames, L"", Removed.get(), DestinationList.Get(),
+        LoadStr(JUMPLIST_WORKSPACES), WORKSPACE_ICON);
+
+      AddJumpListCategory(
+        SessionNames, TProgramParams::FormatSwitch(UPLOAD_IF_ANY_SWITCH), Removed.get(), DestinationList.Get(),
+        LoadStr(JUMPLIST_RECENT), SITE_ICON);
+
+      DestinationList->CommitList();
     }
-  }
-  __finally
-  {
-    if (DestinationList != NULL)
-    {
-      DestinationList->Release();
-    }
-    delete Removed;
   }
 }
 //---------------------------------------------------------------------------

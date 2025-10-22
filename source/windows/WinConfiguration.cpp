@@ -1799,18 +1799,10 @@ bool __fastcall TWinConfiguration::GetDDExtInstalled()
     }
     else
     {
-      void * DragExtRef;
-      int CreateResult =
-        CoCreateInstance(CLSID_ShellExtension, NULL,
-          CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_IUnknown,
-          &DragExtRef);
-      bool Result = (CreateResult == S_OK);
+      TComPtr<IUnknown> DragExtRef;
+      bool Result = DragExtRef.TryCreate(CLSID_ShellExtension, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER);
       FDDExtInstalled = (Result ? 1 : 0);
-      if (Result)
-      {
-        reinterpret_cast<IUnknown *>(DragExtRef)->Release();
-        CoFreeUnusedLibraries();
-      }
+      CoFreeUnusedLibraries();
     }
   }
   return (FDDExtInstalled > 0);

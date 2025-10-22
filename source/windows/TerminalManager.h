@@ -165,7 +165,7 @@ private:
   std::unique_ptr<TCriticalSection> FChangeSection;
   std::vector<std::pair<TTerminalQueue *, TQueueEvent> > FQueueEvents;
   unsigned int FTaskbarButtonCreatedMessage;
-  ITaskbarList3 * FTaskbarList;
+  TComPtr<ITaskbarList3> FTaskbarList;
   int FAuthenticating;
   void * FBusyToken;
   bool FAuthenticationCancelled;
@@ -227,7 +227,6 @@ private:
   void __fastcall FileNameInputDialogInitializeRenameBaseName(
     TObject * Sender, TInputDialogData * Data);
   void __fastcall InitTaskbarButtonCreatedMessage();
-  void __fastcall ReleaseTaskbarList();
   void __fastcall CreateTaskbarList();
   void __fastcall UpdateTaskbarList();
   void __fastcall AuthenticateFormCancel(TObject * Sender);

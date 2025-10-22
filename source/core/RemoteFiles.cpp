@@ -3259,7 +3259,7 @@ TSynchronizeChecklistFileOperation::TSynchronizeChecklistFileOperation(
   FOnProcessedItem(OnProcessedItem),
   FToken(Token)
 {
-  OleCheck(CoCreateInstance(CLSID_FileOperation, NULL, CLSCTX_ALL, IID_PPV_ARGS(&FFileOperation)));
+  FFileOperation.Create(CLSID_FileOperation, CLSCTX_ALL);
 
   FProgressSink = new TFileOperationProgressSink(this);
   DWORD UnusedCookie;

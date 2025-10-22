@@ -525,7 +525,7 @@ IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
   const UnicodeString &File, const UnicodeString & Params, const UnicodeString & Description,
   int SpecialFolder, int IconIndex, bool Return)
 {
-  IShellLink* pLink = NULL;
+  TComPtr<IShellLink> Link;
 
   if (SpecialFolder < 0)
   {
@@ -534,83 +534,51 @@ IShellLink * __fastcall CreateDesktopShortCut(const UnicodeString & Name,
 
   try
   {
-    OleCheck(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (void **) &pLink));
+    Link.Create(CLSID_ShellLink, CLSCTX_INPROC_SERVER);
 
-    try
+    Link->SetPath(File.c_str());
+    Link->SetDescription(Description.c_str());
+    Link->SetArguments(Params.c_str());
+    Link->SetShowCmd(SW_SHOW);
+    // Explicitly setting icon file,
+    // without this icons are not shown at least in Windows 7 jumplist
+    Link->SetIconLocation(File.c_str(), IconIndex);
+
+    TComPtr<IPersistFile> PersistFile;
+    if (!Return &&
+        SUCCEEDED(Link->QueryInterface(IID_PPV_ARGS(&PersistFile))))
     {
-      pLink->SetPath(File.c_str());
-      pLink->SetDescription(Description.c_str());
-      pLink->SetArguments(Params.c_str());
-      pLink->SetShowCmd(SW_SHOW);
-      // Explicitly setting icon file,
-      // without this icons are not shown at least in Windows 7 jumplist
-      pLink->SetIconLocation(File.c_str(), IconIndex);
-
-      IPersistFile* pPersistFile;
-      if (!Return &&
-          SUCCEEDED(pLink->QueryInterface(IID_IPersistFile, (void **)&pPersistFile)))
+      UnicodeString FolderPath;
+      if (::SpecialFolderLocation(SpecialFolder, FolderPath))
       {
-        try
-        {
-          LPMALLOC      ShellMalloc;
-          LPITEMIDLIST  DesktopPidl;
-          wchar_t DesktopDir[MAX_PATH];
-
-          OleCheck(SHGetMalloc(&ShellMalloc));
-
-          try
-          {
-            OleCheck(SHGetSpecialFolderLocation(NULL, SpecialFolder, &DesktopPidl));
-
-            OleCheck(SHGetPathFromIDList(DesktopPidl, DesktopDir));
-          }
-          __finally
-          {
-            ShellMalloc->Free(DesktopPidl);
-            ShellMalloc->Release();
-          }
-
-          WideString strShortCutLocation(DesktopDir);
-          // Name can contain even path (e.g. to create quick launch icon)
-          strShortCutLocation += UnicodeString(L"\\") + Name + L".lnk";
-          OleCheck(pPersistFile->Save(strShortCutLocation.c_bstr(), TRUE));
-        }
-        __finally
-        {
-          pPersistFile->Release();
-        }
-      }
-
-      // this is necessary for Windows 7 taskbar jump list links
-      IPropertyStore * PropertyStore;
-      if (SUCCEEDED(pLink->QueryInterface(IID_IPropertyStore, (void**)&PropertyStore)))
-      {
-        PROPVARIANT Prop;
-        Prop.vt = VT_LPWSTR;
-        Prop.pwszVal = Name.c_str();
-        PropertyStore->SetValue(PKEY_Title, Prop);
-        PropertyStore->Commit();
-        PropertyStore->Release();
+        // Name can contain even path (e.g. to create quick launch icon)
+        WideString ShortCutPath = WideString(CombinePaths(FolderPath, Name + L".lnk"));
+        OleCheck(PersistFile->Save(ShortCutPath.c_bstr(), TRUE));
       }
     }
-    catch(...)
+
+    // this is necessary for Windows 7 taskbar jump list links
+    TComPtr<IPropertyStore> PropertyStore;
+    if (SUCCEEDED(Link->QueryInterface(IID_PPV_ARGS(&PropertyStore))))
     {
-      pLink->Release();
-      throw;
+      PROPVARIANT Prop;
+      Prop.vt = VT_LPWSTR;
+      Prop.pwszVal = Name.c_str();
+      PropertyStore->SetValue(PKEY_Title, Prop);
+      PropertyStore->Commit();
     }
 
     if (!Return)
     {
-      pLink->Release();
-      pLink = NULL;
+      Link.Reset(nullptr);
     }
   }
-  catch(Exception & E)
+  catch (Exception & E)
   {
     throw ExtException(&E, LoadStr(CREATE_SHORTCUT_ERROR));
   }
 
-  return pLink;
+  return Link.Detach();
 }
 //---------------------------------------------------------------------------
 UnicodeString GetIniFileParam()
@@ -1654,7 +1622,7 @@ bool __fastcall AutodetectProxy(UnicodeString & HostName, int & PortNumber)
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-class TWinHelpTester : public TInterfacedObject, public IWinHelpTester
+class TWinHelpTester : public TCppInterfacedObject<IWinHelpTester>
 {
 public:
   virtual bool __fastcall CanShowALink(const UnicodeString ALink, const UnicodeString FileName);
@@ -1663,19 +1631,15 @@ public:
   virtual TStringList * __fastcall GetHelpStrings(const UnicodeString ALink);
   virtual UnicodeString __fastcall GetHelpPath();
   virtual UnicodeString __fastcall GetDefaultHelpFile();
-
-  IUNKNOWN
 };
 //---------------------------------------------------------------------------
-class TCustomHelpSelector : public TInterfacedObject, public IHelpSelector
+class TCustomHelpSelector : public TCppInterfacedObject<IHelpSelector>
 {
 public:
   __fastcall TCustomHelpSelector(const UnicodeString & Name);
 
   virtual int __fastcall SelectKeyword(TStrings * Keywords);
   virtual int __fastcall TableOfContents(TStrings * Contents);
-
-  IUNKNOWN
 
 private:
   UnicodeString FName;

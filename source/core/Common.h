@@ -588,6 +588,11 @@ private:
 
 };
 //---------------------------------------------------------------------------
+// to avoid including ComObj.hpp
+namespace System { namespace Win { namespace Comobj {
+extern DELPHI_PACKAGE void __fastcall OleCheck(HRESULT Result);
+}}}
+//---------------------------------------------------------------------------
 template <typename T>
 class TComPtr
 {
@@ -599,6 +604,16 @@ public:
   ~TComPtr()
   {
     Reset(nullptr);
+  }
+
+  bool TryCreate(REFCLSID RClsId, DWORD ClsContext)
+  {
+    return SUCCEEDED(DoCreate(RClsId, ClsContext));
+  }
+
+  void Create(REFCLSID RClsId, DWORD ClsContext)
+  {
+    System::Win::Comobj::OleCheck(DoCreate(RClsId, ClsContext));
   }
 
   void Reset(T * P)
@@ -631,6 +646,12 @@ public:
 
 private:
   T * FP;
+
+  HRESULT DoCreate(REFCLSID RClsId, DWORD ClsContext)
+  {
+    Reset(nullptr);
+    return CoCreateInstance(RClsId, NULL, ClsContext, IID_PPV_ARGS(&FP));
+  }
 };
 //---------------------------------------------------------------------------
 typedef std::vector<UnicodeString> TUnicodeStringVector;
