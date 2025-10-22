@@ -801,8 +801,9 @@ void __fastcall OpenFolderInExplorer(const UnicodeString & Path)
 //---------------------------------------------------------------------------
 void __fastcall OpenFileInExplorer(const UnicodeString & Path)
 {
-  PCIDLIST_ABSOLUTE Folder = ILCreateFromPathW(ApiPath(Path).c_str());
+  PIDLIST_ABSOLUTE Folder = ILCreateFromPathW(ApiPath(Path).c_str());
   SHOpenFolderAndSelectItems(Folder, 0, NULL, 0);
+  ILFree(Folder);
 }
 //---------------------------------------------------------------------------
 void __fastcall ShowHelp(const UnicodeString & AHelpKeyword)

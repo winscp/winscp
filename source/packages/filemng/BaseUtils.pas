@@ -60,7 +60,7 @@ resourcestring
 implementation
 
 uses
-  Windows, SysUtils, DateUtils, SysConst, Math, PIDL, Forms;
+  Windows, SysUtils, DateUtils, SysConst, Math, PIDL, Forms, Winapi.Ole2;
 
 function StrContains(Str1, Str2: string): Boolean;
 var
@@ -260,6 +260,8 @@ var
   PIDL: PItemIDList;
 begin
   Result := SpecialFolderLocation(Folder, Path, PIDL);
+  if Result then
+    CoTaskMemFree(PIDL);
 end;
 
 function FormatLastOSError(Message: string): string;

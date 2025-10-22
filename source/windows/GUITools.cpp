@@ -885,14 +885,18 @@ void __fastcall ExecuteShellCheckedAndWait(const UnicodeString Command,
 bool __fastcall SpecialFolderLocation(int PathID, UnicodeString & Path)
 {
   LPITEMIDLIST Pidl;
-  wchar_t Buf[256];
-  if (SHGetSpecialFolderLocation(NULL, PathID, &Pidl) == NO_ERROR &&
-      SHGetPathFromIDList(Pidl, Buf))
+  bool Result = SUCCEEDED(SHGetSpecialFolderLocation(NULL, PathID, &Pidl));
+  if (Result)
   {
-    Path = UnicodeString(Buf);
-    return true;
+    wchar_t Buf[MAX_PATH];
+    Result = SHGetPathFromIDList(Pidl, Buf);
+    CoTaskMemFree(Pidl);
+    if (Result)
+    {
+      Path = UnicodeString(Buf);
+    }
   }
-  return false;
+  return Result;
 }
 //---------------------------------------------------------------------------
 UnicodeString __fastcall UniqTempDir(const UnicodeString BaseDir, const UnicodeString Identity,
