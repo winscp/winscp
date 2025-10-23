@@ -2813,7 +2813,7 @@ begin
       end;
 
       if DropFiles(
-           DragDropFilesEx, Effect, FFileOperator, TargetPath, false, IsRecycleBin, ConfirmDelete, ConfirmOverwrite, False,
+           DragDropFilesEx, Effect, FFileOperator, TargetPath, false, IsRecycleBin, ConfirmDelete, ConfirmOverwrite,
            Self, OnDDFileOperation, SourcePath, SourceIsDirectory) then
       begin
         if Assigned(FOnDDFileOperationExecuted) then
