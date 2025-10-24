@@ -158,8 +158,7 @@ type
 
     {Drag&drop helper functions:}
     procedure SignalFileDelete(Sender: TObject; Files: TStringList);
-    procedure PerformDragDropFileOperation(
-      TargetPath: string; Effect: Integer; RenameOnCollision: Boolean);
+    procedure PerformDragDropFileOperation(TargetPath: string; Effect: Integer);
     procedure SetDirColProperties(Value: TDirViewColProperties);
 
   protected
@@ -379,7 +378,7 @@ function MatchesFileExt(Ext: string; const FileExtList: string): Boolean;
 function DropLink(Item: PFDDListItem; TargetPath: string): Boolean;
 function DropFiles(
   DragDropFilesEx: TCustomizableDragDropFilesEx; Effect: Integer; FileOperator: TFileOperator; TargetPath: string;
-  RenameOnCollision: Boolean; IsRecycleBin: Boolean; ConfirmDelete: Boolean; ConfirmOverwrite: Boolean;
+  IsRecycleBin: Boolean; ConfirmDelete: Boolean; ConfirmOverwrite: Boolean;
   Sender: TObject; OnDDFileOperation: TDDFileOperationEvent;
   out SourcePath: string; out SourceIsDirectory: Boolean): Boolean;
 procedure CheckCanOpenDirectory(Path: string);
@@ -475,7 +474,7 @@ end;
 
 function DropFiles(
   DragDropFilesEx: TCustomizableDragDropFilesEx; Effect: Integer; FileOperator: TFileOperator; TargetPath: string;
-  RenameOnCollision: Boolean; IsRecycleBin: Boolean; ConfirmDelete: Boolean; ConfirmOverwrite: Boolean;
+  IsRecycleBin: Boolean; ConfirmDelete: Boolean; ConfirmOverwrite: Boolean;
   Sender: TObject; OnDDFileOperation: TDDFileOperationEvent;
   out SourcePath: string; out SourceIsDirectory: Boolean): Boolean;
 var
@@ -509,6 +508,7 @@ begin
   end;
 
   FileOperator.Flags := FileOperatorDefaultFlags;
+  var RenameOnCollision := SameText(ExcludeTrailingPathDelimiter(SourcePath), ExcludeTrailingPathDelimiter(TargetPath));
   if RenameOnCollision then
   begin
     FileOperator.Flags := FileOperator.Flags + [foRenameOnCollision];
@@ -1580,10 +1580,8 @@ end; {Reload2}
 procedure TDirView.PerformItemDragDropOperation(Item: TListItem; Effect: Integer; Paste: Boolean);
 var
   TargetPath: string;
-  RenameOnCollision: Boolean;
 begin
   TargetPath := '';
-  RenameOnCollision := False;
 
   if Assigned(Item) then
   begin
@@ -1598,11 +1596,10 @@ begin
     else
   begin
     TargetPath := PathName;
-    RenameOnCollision := DDOwnerIsSource and (Effect = DROPEFFECT_COPY);
   end;
 
   if TargetPath <> '' then
-    PerformDragDropFileOperation(TargetPath, Effect, RenameOnCollision);
+    PerformDragDropFileOperation(TargetPath, Effect);
 end;
 
 procedure TDirView.ReLoad(CacheIcons: Boolean);
@@ -3148,8 +3145,7 @@ begin
   inherited;
 end;
 
-procedure TDirView.PerformDragDropFileOperation(
-  TargetPath: string; Effect: Integer; RenameOnCollision: Boolean);
+procedure TDirView.PerformDragDropFileOperation(TargetPath: string; Effect: Integer);
 var
   Index: Integer;
   SourcePath: string;
@@ -3193,7 +3189,7 @@ begin
                 TDirView(DropSourceControl).StopWatchThread;
 
             if DropFiles(
-                 DragDropFilesEx, Effect, FFileOperator, TargetPath, RenameOnCollision, IsRecycleBin,
+                 DragDropFilesEx, Effect, FFileOperator, TargetPath, IsRecycleBin,
                  ConfirmDelete, ConfirmOverwrite,
                  Self, OnDDFileOperation, SourcePath, SourceIsDirectory) then
             begin
@@ -3352,18 +3348,17 @@ begin
     case LastClipBoardOperation of
       cboNone:
         begin
-          PerformDragDropFileOperation(TargetPath, DROPEFFECT_COPY, False);
+          PerformDragDropFileOperation(TargetPath, DROPEFFECT_COPY);
           if Assigned(OnDDExecuted) then OnDDExecuted(Self, DROPEFFECT_COPY);
         end;
       cboCopy:
         begin
-          PerformDragDropFileOperation(TargetPath, DROPEFFECT_COPY,
-            ExcludeTrailingPathDelimiter(ExtractFilePath(TFDDListItem(DragDropFilesEx.FileList[0]^).Name)) = Path);
+          PerformDragDropFileOperation(TargetPath, DROPEFFECT_COPY);
           if Assigned(OnDDExecuted) then OnDDExecuted(Self, DROPEFFECT_COPY);
         end;
       cboCut:
         begin
-          PerformDragDropFileOperation(TargetPath, DROPEFFECT_MOVE, False);
+          PerformDragDropFileOperation(TargetPath, DROPEFFECT_MOVE);
           if Assigned(OnDDExecuted) then OnDDExecuted(Self, DROPEFFECT_MOVE);
           EmptyClipBoard;
         end;
