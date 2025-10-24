@@ -151,6 +151,7 @@ type
 
     FLastPath: TDictionary<string, string>;
     FTimeoutShellIconRetrieval: Boolean;
+    FAnyCut: Boolean;
 
     {Drag&Drop:}
     function GetDirColProperties: TDirViewColProperties;
@@ -230,6 +231,7 @@ type
       CanUsePIDL: Boolean; PIDL: PItemIDList; Path: string; CanTimeout: Boolean;
       dwFileAttributes: DWORD; var psfi: TSHFileInfoW; uFlags: UINT): DWORD_PTR;
     function DoCopyToClipboard(Focused: Boolean; Cut: Boolean; Operation: TClipBoardOperation): Boolean;
+    procedure ClearCutState;
 
     function HiddenCount: Integer; override;
     function FilteredCount: Integer; override;
@@ -296,6 +298,7 @@ type
     procedure ExecuteDrive(Drive: string);
     property HomeDirectory: string read GetHomeDirectory write FHomeDirectory;
     property TimeoutShellIconRetrieval: Boolean read FTimeoutShellIconRetrieval write FTimeoutShellIconRetrieval;
+    property AnyCut: Boolean read FAnyCut;
 
   published
     property DirColProperties: TDirViewColProperties read GetDirColProperties write SetDirColProperties;
@@ -1248,6 +1251,7 @@ var
 begin
   FHiddenCount := 0;
   FFilteredCount := 0;
+  FAnyCut := False;
 
   try
     if Length(FPath) > 0 then
@@ -2185,25 +2189,24 @@ begin
         {------------ Cut -----------}
         if Verb = shcCut then
         begin
+          ClearCutState;
           LastClipBoardOperation := cboCut;
-          {Clear items previous marked as cut:}
-          Item := GetNextItem(nil, sdAll, [isCut]);
-          while Assigned(Item) do
-          begin
-            Item.Cut := False;
-            Item := GetNextItem(Item, sdAll, [isCut]);
-          end;
           {Set property cut to TRUE for all selected items:}
           Item := GetNextItem(nil, sdAll, [isSelected]);
           while Assigned(Item) do
           begin
             Item.Cut := True;
+            FAnyCut := True;
             Item := GetNextItem(Item, sdAll, [isSelected]);
           end;
         end
           else
         {----------- Copy -----------}
-        if Verb = shcCopy then LastClipBoardOperation := cboCopy
+        if Verb = shcCopy then
+        begin
+          ClearCutState;
+          LastClipBoardOperation := cboCopy;
+        end
           else
         {----------- Paste ----------}
         if Verb = shcPaste then
@@ -2240,19 +2243,18 @@ begin
         {------------ Cut -----------}
         if Verb = shcCut then
         begin
+          ClearCutState;
           LastClipBoardOperation := cboCut;
-
-          Item := GetNextItem(nil, sdAll, [isCut]);
-          while Assigned(Item) do
-          begin
-            Item.Cut := False;
-            Item := GetNextItem(ITem, sdAll, [isCut]);
-          end;
           ItemFocused.Cut := True;
+          FAnyCut := True;
         end
           else
         {----------- Copy -----------}
-        if Verb = shcCopy then LastClipBoardOperation := cboCopy
+        if Verb = shcCopy then
+        begin
+          ClearCutState;
+          LastClipBoardOperation := cboCopy;
+        end
           else
         {----------- Paste ----------}
         if Verb = shcPaste then
@@ -3267,26 +3269,37 @@ begin
   raise EDragDrop.Create(Format(SDragDropError, [Ord(ErrorNo)]));
 end; {DDError}
 
+procedure TDirView.ClearCutState;
+begin
+  // This is all far from perfect, as the clipboard can change for number of other reasons.
+  // We should better monitor the clipboard changes (the way we do in TImportSessionsDialog).
+  // But at least as long as the cutting is not our native feature, but can only happen indirectly via shell's menu,
+  // it's good enough.
+  if FAnyCut then
+  begin
+    var Item := GetNextItem(nil, sdAll, [isCut]);
+    while Assigned(Item) do
+    begin
+      Item.Cut := False;
+      Item := GetNextItem(Item, sdAll, [isCut]);
+    end;
+    FAnyCut := False;
+  end;
+  LastClipBoardOperation := cboNone;
+  if Assigned(FDriveView) and
+     (TDriveView(FDriveView).LastPathCut <> '') then // prevent recursion
+  begin
+    TDriveView(FDriveView).EmptyClipboard;
+  end;
+end;
+
 procedure TDirView.EmptyClipboard;
-var
-  Item: TListItem;
 begin
   if Windows.OpenClipBoard(0) then
   begin
     Windows.EmptyClipBoard;
     Windows.CloseClipBoard;
-    if LastClipBoardOperation <> cboNone then
-    begin
-      Item := GetNextItem(nil, sdAll, [isCut]);
-      while Assigned(Item) do
-      begin
-        Item.Cut := False;
-        Item := GetNextItem(Item, sdAll, [isCut]);
-      end;
-    end;
-    LastClipBoardOperation := cboNone;
-    if Assigned(FDriveView) then
-      TDriveView(FDriveView).LastPathCut := '';
+    ClearCutState;
   end;
 end; {EmptyClipBoard}
 

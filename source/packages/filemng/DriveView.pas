@@ -251,7 +251,6 @@ type
       NewDirs: Boolean); override;
     procedure RebuildTree; override;
 
-    procedure SetLastPathCut(Path: string);
     procedure CreateWnd; override;
     procedure DestroyWnd; override;
     procedure Edit(const Item: TTVItem); override;
@@ -278,6 +277,7 @@ type
     function CanPasteFromClipBoard: Boolean;
     procedure PasteFromClipBoard(Node: TTreeNode);
     procedure PerformDragDropFileOperation(Node: TTreeNode; Effect: Integer); override;
+    procedure ClearCutState;
 
   public
     property Images;
@@ -287,7 +287,7 @@ type
 
     property DragImageList: TDragImageList read FDragImageList;
 
-    property LastPathCut: string read FLastPathCut write SetLastPathCut;
+    property LastPathCut: string read FLastPathCut;
     procedure EmptyClipboard; dynamic;
     {Drive handling:}
     function GetDriveStatus(Drive: string): TDriveStatus;
@@ -2668,11 +2668,17 @@ begin
     else
   if Verb = shcCut then
   begin
+    ClearCutState;
     LastClipBoardOperation := cboCut;
-    LastPathCut := NodePathName(Node);
+    FLastPathCut := NodePathName(Node);
+    Node.Cut := True;
   end
     else
-  if Verb = shcCopy then LastClipBoardOperation := cboCopy
+  if Verb = shcCopy then
+  begin
+    ClearCutState;
+    LastClipBoardOperation := cboCopy;
+  end
     else
   if Verb = shcPaste then
     PasteFromClipBoard(Node);
@@ -2898,26 +2904,24 @@ begin
 end; {PerformDragDropFileOperation}
 
 {Clipboard operations:}
-procedure TDriveView.SetLastPathCut(Path: string);
-var
-  Node: TTreeNode;
+procedure TDriveView.ClearCutState;
 begin
-  if FLastPathCut <> Path then
+  if FLastPathCut <> '' then
   begin
-    Node := FindNodeToPath(FLastPathCut);
+    var Node := FindNodeToPath(FLastPathCut);
     if Assigned(Node) then
     begin
-      FLastPathCut := Path;
       Node.Cut := False;
     end;
-    Node := FindNodeToPath(Path);
-    if Assigned(Node) then
-    begin
-      FLastPathCut := Path;
-      Node.Cut := True;
-    end;
+    FLastPathCut := '';
   end;
-end; {SetLastNodeCut}
+  LastClipBoardOperation := cboNone;
+  if Assigned(FDirView) and
+     FDirView.AnyCut then // prevent recursion
+  begin
+    FDirView.EmptyClipboard;
+  end;
+end;
 
 procedure TDriveView.EmptyClipboard;
 begin
@@ -2925,10 +2929,7 @@ begin
   begin
     Windows.EmptyClipBoard;
     Windows.CloseClipBoard;
-    LastPathCut := '';
-    LastClipBoardOperation := cboNone;
-    if Assigned(FDirView) then
-      FDirView.EmptyClipboard;
+    ClearCutState;
   end;
 end; {EmptyClipBoard}
 
