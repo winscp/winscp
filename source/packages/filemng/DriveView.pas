@@ -276,7 +276,7 @@ type
     function DDExecute: TDragResult; override;
 
     function CanPasteFromClipBoard: Boolean;
-    function PasteFromClipBoard(TargetPath: string = ''): Boolean;
+    procedure PasteFromClipBoard(Node: TTreeNode);
     procedure PerformDragDropFileOperation(Node: TTreeNode; Effect: Integer); override;
 
   public
@@ -2675,7 +2675,7 @@ begin
   if Verb = shcCopy then LastClipBoardOperation := cboCopy
     else
   if Verb = shcPaste then
-    PasteFromClipBoard(NodePathName(Node));
+    PasteFromClipBoard(Node);
 
   DropTarget := nil;
 
@@ -2942,32 +2942,27 @@ begin
   end;
 end; {CanPasteFromClipBoard}
 
-function TDriveView.PasteFromClipBoard(TargetPath: String = ''): Boolean;
+procedure TDriveView.PasteFromClipBoard(Node: TTreeNode);
 begin
   ClearDragFileList(FDragDropFilesEx.FileList);
-  Result := False;
-  if CanPasteFromClipBoard and {MP}FDragDropFilesEx.GetFromClipBoard{/MP}
-    then
+  if CanPasteFromClipBoard and FDragDropFilesEx.GetFromClipBoard then
   begin
-    if TargetPath = '' then
-      TargetPath := NodePathName(Selected);
     case LastClipBoardOperation of
       cboCopy,
       cboNone:
         begin
-          PerformDragDropFileOperation(Selected, DROPEFFECT_COPY);
+          PerformDragDropFileOperation(Node, DROPEFFECT_COPY);
           if Assigned(FOnDDExecuted) then
             FOnDDExecuted(Self, DROPEFFECT_COPY);
         end;
       cboCut:
         begin
-          PerformDragDropFileOperation(Selected, DROPEFFECT_MOVE);
+          PerformDragDropFileOperation(Node, DROPEFFECT_MOVE);
           if Assigned(FOnDDExecuted) then
             FOnDDExecuted(Self, DROPEFFECT_MOVE);
           EmptyClipBoard;
         end;
     end;
-    Result := True;
   end;
 end; {PasteFromClipBoard}
 
